@@ -118,7 +118,7 @@ void *propval_dup(uint16_t type, const void *pvi)
 		return preturn;
 	}
 	case PT_SRESTRICTION:
-		return restriction_dup(static_cast<const RESTRICTION *>(pvi));
+		return static_cast<const SRestriction *>(pvi)->dup();
 	case PT_ACTIONS:
 		return rule_actions_dup(static_cast<const RULE_ACTIONS *>(pvi));
 	case PT_BINARY:

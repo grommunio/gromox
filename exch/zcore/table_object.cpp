@@ -663,7 +663,7 @@ BOOL table_object::set_restriction(const RESTRICTION *res)
 		ptable->prestriction = NULL;
 		return TRUE;
 	}
-	ptable->prestriction = restriction_dup(res);
+	ptable->prestriction = res->dup();
 	return ptable->prestriction != nullptr ? TRUE : false;
 }
 

@@ -1284,6 +1284,7 @@ struct GX_EXPORT SRestriction {
 	};
 
 	std::string repr() const;
+	SRestriction *dup() const;
 };
 using RESTRICTION = SRestriction;
 
@@ -1292,6 +1293,7 @@ struct GX_EXPORT restriction_list {
 	SRestriction *pres;
 
 	std::string repr() const;
+	restriction_list *dup() const;
 };
 using RESTRICTION_AND_OR = restriction_list;
 using SAndRestriction = restriction_list;
@@ -1301,6 +1303,7 @@ struct GX_EXPORT SNotRestriction {
 	RESTRICTION res;
 
 	std::string repr() const;
+	SNotRestriction *dup() const;
 };
 using RESTRICTION_NOT = SNotRestriction;
 
@@ -1312,6 +1315,7 @@ struct GX_EXPORT SContentRestriction {
 	bool eval(const void *) const;
 
 	std::string repr() const;
+	SContentRestriction *dup() const;
 };
 using RESTRICTION_CONTENT = SContentRestriction;
 
@@ -1327,6 +1331,7 @@ struct GX_EXPORT SPropertyRestriction {
 	bool eval(const void *) const;
 
 	std::string repr() const;
+	SPropertyRestriction *dup() const;
 };
 using RESTRICTION_PROPERTY = SPropertyRestriction;
 
@@ -1337,6 +1342,7 @@ struct GX_EXPORT SComparePropsRestriction {
 	bool comparable() const;
 
 	std::string repr() const;
+	SComparePropsRestriction *dup() const;
 };
 using RESTRICTION_PROPCOMPARE = SComparePropsRestriction;
 
@@ -1348,6 +1354,7 @@ struct GX_EXPORT SBitMaskRestriction {
 	bool eval(const void *) const;
 
 	std::string repr() const;
+	SBitMaskRestriction *dup() const;
 };
 using RESTRICTION_BITMASK = SBitMaskRestriction;
 
@@ -1358,6 +1365,7 @@ struct GX_EXPORT SSizeRestriction {
 	bool eval(const void *) const;
 
 	std::string repr() const;
+	SSizeRestriction *dup() const;
 };
 using RESTRICTION_SIZE = SSizeRestriction;
 
@@ -1365,6 +1373,7 @@ struct GX_EXPORT SExistRestriction {
 	uint32_t proptag;
 
 	std::string repr() const;
+	SExistRestriction *dup() const;
 };
 using RESTRICTION_EXIST = SExistRestriction;
 
@@ -1373,6 +1382,7 @@ struct GX_EXPORT SSubRestriction {
 	RESTRICTION res;
 
 	std::string repr() const;
+	SSubRestriction *dup() const;
 };
 using RESTRICTION_SUBOBJ = SSubRestriction;
 
@@ -1382,6 +1392,7 @@ struct GX_EXPORT SCommentRestriction {
 	RESTRICTION *pres;
 
 	std::string repr() const;
+	SCommentRestriction *dup() const;
 };
 using RESTRICTION_COMMENT = SCommentRestriction;
 
@@ -1390,6 +1401,7 @@ struct GX_EXPORT SCountRestriction {
 	RESTRICTION sub_res;
 
 	std::string repr() const;
+	SCountRestriction *dup() const;
 };
 using RESTRICTION_COUNT = SCountRestriction;
 

@@ -142,7 +142,7 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb) try
 			sqlite3_column_bytes(pstmt, 2), common_util_alloc, 0);
 		if (ext_pull.g_restriction(&tmp_restriction) != EXT_ERR_SUCCESS)
 			continue;
-		pdynamic->prestriction = restriction_dup(&tmp_restriction);
+		pdynamic->prestriction = tmp_restriction.dup();
 		if (pdynamic->prestriction == nullptr)
 			break;
 		if (!common_util_load_search_scopes(pdb->psqlite,
@@ -835,7 +835,7 @@ BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t cpid,
 	holder.emplace_back();
 	auto psearch = &holder.back();
 	psearch->dir = dir;
-	psearch->prestriction = restriction_dup(prestriction);
+	psearch->prestriction = prestriction->dup();
 	if (psearch->prestriction == nullptr)
 		return FALSE;
 	psearch->folder_ids.pll = me_alloc<uint64_t>(pfolder_ids->count);
@@ -877,7 +877,7 @@ void DB_ITEM::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	
 	dn.folder_id    = folder_id;
 	dn.search_flags = search_flags;
-	dn.prestriction = restriction_dup(prestriction);
+	dn.prestriction = prestriction->dup();
 	if (dn.prestriction == nullptr)
 		return;
 	dn.folder_ids.count = pfolder_ids->count;
