@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -18,6 +18,7 @@
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -65,6 +66,8 @@ struct rx_delete {
 	void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
 };
 
+using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, rx_delete>;
+
 /**
  * @ev_from:      Envelope-From of the original message.
  * @ev_to:        Envelope-To of the original message.
@@ -80,11 +83,9 @@ struct rx_delete {
 struct rxparam {
 	const char *ev_from = nullptr, *ev_to = nullptr;
 	message_node cur;
-	MESSAGE_CONTENT *ctnt = nullptr;
+	message_content_ptr ctnt;
 	bool del = false, exit = false;
 };
-
-using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, rx_delete>;
 
 }
 
@@ -744,7 +745,7 @@ static ec_error_t op_process(rxparam &par, const rule_node &rule)
 	if (rule.cond != nullptr) {
 		if (g_ruleproc_debug)
 			mlog(LV_DEBUG, "Rule_Condition %s", rule.cond->repr().c_str());
-		if (!rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond))
+		if (!rx_eval_props(par.ctnt.get(), par.ctnt->proplist, *rule.cond))
 			return ecSuccess;
 	}
 	if (rule.state & ST_EXIT_LEVEL)
@@ -780,7 +781,7 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
 	if (rule.cond != nullptr &&
-	    !rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond))
+	    !rx_eval_props(par.ctnt.get(), par.ctnt->proplist, *rule.cond))
 		return ecSuccess;
 	if (rule.state & ST_EXIT_LEVEL)
 		par.exit = true;
@@ -815,7 +816,7 @@ ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
 
 	rxparam par = {ev_from, ev_to, {{dir, folder_id}, msg_id}};
 	if (!exmdb_client::read_message(par.cur.dirc(), nullptr, CP_ACP,
-	    par.cur.mid, &par.ctnt))
+	    par.cur.mid, &unique_tie(par.ctnt)))
 		return ecError;
 	for (auto &&rule : rule_list) {
 		err = rule.extended ? opx_process(par, rule) : op_process(par, rule);
