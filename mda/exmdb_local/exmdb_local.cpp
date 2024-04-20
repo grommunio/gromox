@@ -439,7 +439,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	auto err = exmdb_local_rules_execute(home_dir, pcontext->ctrl.from,
 	           address, folder_id, message_id);
 	if (err != ecSuccess)
-		mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s\n", mapi_strerror(err));
+		mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s", mapi_strerror(err));
 	return delivery_status::ok;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1472: ENOMEM");

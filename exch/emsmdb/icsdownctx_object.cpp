@@ -526,7 +526,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(MESSAGE_CONTENT *pmsgctnt,
 	
 	bin = pmsgctnt->proplist.get<BINARY>(PR_CHANGE_KEY);
 	if (bin == nullptr) {
-		mlog(LV_INFO, "I-2362: ICS: cannot transfer msg %llxh without PR_CHANGE_KEY\n",
+		mlog(LV_INFO, "I-2362: ICS: cannot transfer msg %llxh without PR_CHANGE_KEY",
 			LLU{message_id});
 		return FALSE;
 	}

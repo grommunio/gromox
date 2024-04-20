@@ -635,11 +635,11 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 		mlog(LV_DEBUG, "ruleproc: write_message failed");
 		return ecRpcFailed;
 	} else if (e_result != ecSuccess) {
-		mlog(LV_DEBUG, "ruleproc: write_message: %s\n", mapi_strerror(e_result));
+		mlog(LV_DEBUG, "ruleproc: write_message: %s", mapi_strerror(e_result));
 		return ecRpcFailed;
 	}
 	if (g_ruleproc_debug)
-		mlog(LV_DEBUG, "ruleproc: OP_COPY/MOVE to %s:%llxh\n", newdir, LLU{dst_fid});
+		mlog(LV_DEBUG, "ruleproc: OP_COPY/MOVE to %s:%llxh", newdir, LLU{dst_fid});
 	if (act_type != OP_MOVE)
 		return ecSuccess;
 

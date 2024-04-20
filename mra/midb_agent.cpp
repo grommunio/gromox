@@ -187,7 +187,7 @@ BOOL SVC_midb_agent(int reason, void **ppdata)
 		auto pconfig = config_file_initd("midb_agent.cfg",
 		               get_config_path(), midb_agent_cfg_defaults);
 		if (NULL == pconfig) {
-			mlog(LV_ERR, "midb_agent: config_file_initd midb_agent.cfg: %s\n",
+			mlog(LV_ERR, "midb_agent: config_file_initd midb_agent.cfg: %s",
 				strerror(errno));
 			return FALSE;
 		}

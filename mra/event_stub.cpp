@@ -63,7 +63,7 @@ BOOL SVC_event_stub(int reason, void **ppdata)
 		auto pfile = config_file_initd("event_stub.cfg",
 		             get_config_path(), nullptr);
 		if (NULL == pfile) {
-			mlog(LV_ERR, "event_stub: config_file_initd event_stub.cfg: %s\n",
+			mlog(LV_ERR, "event_stub: config_file_initd event_stub.cfg: %s",
 				strerror(errno));
 			return FALSE;
 		}
