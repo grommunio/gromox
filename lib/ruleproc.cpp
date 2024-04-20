@@ -731,7 +731,8 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
 
 static ec_error_t op_process(rxparam &par, const rule_node &rule)
 {
-	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
+	/* WHEN_OOF rules already excluded during rule loading. */
+	if (par.exit /* && !(rule.state & ST_ONLY_WHEN_OOF) */)
 		return ecSuccess;
 	if (rule.cond != nullptr) {
 		if (g_ruleproc_debug)
