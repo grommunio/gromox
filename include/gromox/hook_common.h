@@ -47,7 +47,6 @@ using HOOK_FUNCTION = gromox::hook_result (*)(MESSAGE_CONTEXT *);
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x BOOL (*register_hook)(HOOK_FUNCTION); \
 	x BOOL (*register_local)(HOOK_FUNCTION); \
-	x BOOL (*register_remote)(HOOK_FUNCTION); \
 	x const char *(*get_host_ID)(); \
 	x const char *(*get_admin_mailbox)(); \
 	x const char *(*get_config_path)(); \
@@ -72,7 +71,6 @@ DECLARE_HOOK_API(extern);
 	query_serviceF = reinterpret_cast<decltype(query_serviceF)>(param[0]); \
 	query_service1(register_hook); \
 	query_service1(register_local); \
-	query_service1(register_remote); \
 	query_service1(get_host_ID); \
 	query_service1(get_admin_mailbox); \
 	query_service1(get_config_path); \

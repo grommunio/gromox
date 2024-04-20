@@ -25,6 +25,7 @@
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/hook_common.h>
+#include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
 #include <gromox/plugin.hpp>
 #include <gromox/scope.hpp>
@@ -81,8 +82,8 @@ struct THREAD_DATA {
 
 static char				g_path[256];
 static std::vector<static_module> g_plugin_names;
-static std::string g_local_path, g_remote_path;
-static HOOK_FUNCTION g_local_hook, g_remote_hook;
+static std::string g_local_path;
+static HOOK_FUNCTION g_local_hook;
 static unsigned int g_threads_max, g_threads_min, g_free_num;
 static gromox::atomic_bool g_notify_stop;
 static DOUBLE_LIST		g_threads_list;
@@ -104,7 +105,6 @@ static void *dxp_scanwork(void *);
 static void *transporter_queryservice(const char *service, const std::type_info &);
 static BOOL transporter_register_hook(HOOK_FUNCTION func);
 static BOOL transporter_register_local(HOOK_FUNCTION func);
-static bool transporter_register_remote(HOOK_FUNCTION);
 static hook_result transporter_pass_mpc_hooks(MESSAGE_CONTEXT *, THREAD_DATA *);
 static MESSAGE_CONTEXT *transporter_get_context();
 static void transporter_put_context(MESSAGE_CONTEXT *pcontext);
@@ -149,7 +149,6 @@ void transporter_init(const char *path, std::vector<static_module> &&names,
 	gx_strlcpy(g_path, path, std::size(g_path));
 	g_plugin_names = std::move(names);
 	g_local_path.clear();
-	g_remote_path.clear();
 	g_notify_stop = false;
 	g_threads_min = threads_min;
 	g_threads_max = threads_max;
@@ -195,9 +194,6 @@ int transporter_run()
 	if (g_local_path.empty()) {
 		mlog(LV_ERR, "transporter: no local delivery hook registered");
 		return -8;
-	} else if (g_remote_path.empty()) {
-		mlog(LV_ERR, "transporter: no remote delivery hook registered");
-		return -1;
 	}
 
 	for (unsigned int i = g_threads_min; i < g_threads_max; ++i)
@@ -263,6 +259,15 @@ void transporter_wakeup_one_thread()
 	g_waken_cond.notify_one();
 }
 
+static gromox::hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
+{
+	auto err = cu_send_mail(ctx->mail, g_outgoing_smtp_url.c_str(),
+	           ctx->ctrl.from, ctx->ctrl.rcpt);
+	if (err != ecSuccess)
+		mlog(LV_ERR, "E-1194: cu_send_mail: %s", mapi_strerror(err));
+	return hook_result::stop;
+}
+
 /*
  *	make the hooks in mpc process the message context
  *	@param
@@ -287,9 +292,9 @@ static gromox::hook_result transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 		if (hook_result != hook_result::xcontinue)
 			return hook_result;
 	}
-	if (pthr_data->last_thrower != g_remote_hook) {
-		pthr_data->last_hook = g_remote_hook;
-		hook_result = g_remote_hook(pcontext);
+	if (pthr_data->last_thrower != remote_delivery_hook) {
+		pthr_data->last_hook = remote_delivery_hook;
+		hook_result = remote_delivery_hook(pcontext);
 		if (hook_result != hook_result::xcontinue)
 			return hook_result;
 	}
@@ -456,7 +461,7 @@ int transporter_load_library(static_module &&mod) try
 	auto path = mod.path.c_str();
 
 	/* check whether the plugin is same as local or remote plugin */
-	if (g_local_path == mod.path || g_remote_path == mod.path) {
+	if (g_local_path == mod.path) {
 		mlog(LV_ERR, "transporter: %s is already loaded", path);
 		return PLUGIN_ALREADY_LOADED;
 	}
@@ -510,7 +515,6 @@ static void *transporter_queryservice(const char *service, const std::type_info 
 	} while (false)
 	E("register_hook", transporter_register_hook);
 	E("register_local", transporter_register_local);
-	E("register_remote", transporter_register_remote);
 	E("get_host_ID", +[]() { return g_config_file->get_value("host_id"); });
 	E("get_admin_mailbox", +[]() { return g_config_file->get_value("admin_mailbox"); });
 	E("get_config_path", +[]() {
@@ -719,18 +723,6 @@ static BOOL transporter_register_local(HOOK_FUNCTION func)
 	g_local_hook = func;
 	g_local_path = g_cur_lib->file_name;
 	return TRUE;
-}
-
-static bool transporter_register_remote(HOOK_FUNCTION func)
-{
-	if (!g_remote_path.empty()) {
-		mlog(LV_ERR, "A remote hook is already registered (%s), cannot load another",
-			g_remote_path.c_str());
-		return false;
-	}
-	g_remote_hook = func;
-	g_remote_path = g_cur_lib->file_name;
-	return true;
 }
 
 static void transporter_log_info(const CONTROL_INFO &ctrl, int level,

@@ -42,8 +42,7 @@ dist_unit_DATA = system/gromox-delivery.service \
 program_plugins = ${mta_plugins} ${hpm_plugins} ${proc_plugins} ${svc_plugins}
 mta_plugins = \
 	libgxm_alias_resolve.la \
-	libgxm_exmdb_local.la \
-	libgxm_remote_delivery.la
+	libgxm_exmdb_local.la
 hpm_plugins = \
 	libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oab.la libgxh_oxdisco.la
 proc_plugins = \
@@ -101,7 +100,7 @@ libgromox_rule_la_SOURCES = lib/ruleproc.cpp
 libgromox_rule_la_LIBADD = libgromox_common.la libgromox_exrpc.la
 
 delivery_SOURCES = lib/svc_loader.cpp mda/delivery_app/delivery.hpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/transporter.cpp
-delivery_LDADD = -lpthread ${libHX_LIBS} ${libssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgxm_remote_delivery.la libgxs_authmgr.la libgxs_ldap_adaptor.la libgxs_mysql_adaptor.la
+delivery_LDADD = -lpthread ${libHX_LIBS} ${libssl_LIBS} ${vmime_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgxs_authmgr.la libgxs_ldap_adaptor.la libgxs_mysql_adaptor.la
 delivery_queue_SOURCES = lib/svc_loader.cpp mda/message_enqueue.cpp mda/smtp/flusher.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_cmd_handler.h mda/smtp/smtp_aux.hpp mda/smtp/smtp_parser.cpp mda/smtp/smtp_parser.h
 delivery_queue_LDADD = -lpthread ${libcrypto_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_common.la libgromox_epoll.la libgxs_authmgr.la libgxs_dnsbl_filter.la libgxs_ldap_adaptor.la libgxs_mysql_adaptor.la libgxs_user_filter.la
 libgxm_alias_resolve_la_SOURCES = mda/alias_resolve.cpp mda/mlist_expand/bounce_producer.cpp mda/mlist_expand/bounce_producer.h lib/bounce_mda.cpp
@@ -112,10 +111,6 @@ libgxm_exmdb_local_la_SOURCES = lib/bounce_mda.cpp mda/exmdb_local/auto_response
 libgxm_exmdb_local_la_LDFLAGS = ${default_SYFLAGS${NO_VSYM}}
 libgxm_exmdb_local_la_LIBADD = -lpthread ${libHX_LIBS} ${jsoncpp_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 EXTRA_libgxm_exmdb_local_la_DEPENDENCIES = ${default_sym}
-libgxm_remote_delivery_la_SOURCES = mda/remote_delivery.cpp
-libgxm_remote_delivery_la_LDFLAGS = ${default_SYFLAGS${NO_VSYM}}
-libgxm_remote_delivery_la_LIBADD = -lpthread ${libssl_LIBS} libgromox_common.la libgromox_email.la
-EXTRA_libgxm_remote_delivery_la_DEPENDENCIES = ${default_sym}
 
 pop3_SOURCES = lib/svc_loader.cpp mra/midb_agent.hpp mra/pop3/main.cpp mra/pop3/pop3.hpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp
 pop3_LDADD = -lpthread ${libcrypto_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_exrpc.la libgxs_authmgr.la libgxs_dnsbl_filter.la libgxs_event_proxy.la libgxs_ldap_adaptor.la libgxs_midb_agent.la libgxs_mysql_adaptor.la libgxs_user_filter.la

@@ -49,3 +49,4 @@ extern int transporter_load_library(gromox::static_module &&);
 extern void transporter_trigger_all(unsigned int);
 
 extern std::shared_ptr<config_file> g_config_file;
+extern std::string g_outgoing_smtp_url;
