@@ -66,8 +66,16 @@ struct rx_delete {
 };
 
 /**
- * @ev_to:	Envelope-To, and thus also the rule executing identity
- * @cur:	current pointer to message
+ * @ev_from:      Envelope-From of the original message.
+ * @ev_to:        Envelope-To of the original message.
+ * @cur:          Pointer to the current message.
+ *                Due to OP_MOVE, MIDs can change while rules execute.
+ * @ctnt:         Message content. Also due to OP_MOVE, PR_CHANGE_KEY/PCL
+ *                can change.
+ * @rule_list:    Rules loaded from the mailbox (original Envelope-To's).
+ *                Unlike EXC, we won't recurse into other mailbox's rules.
+ * @exit:         Flag for op_process to stop early.
+ * @del:          Message should be deleted at end of processing.
  */
 struct rxparam {
 	const char *ev_from = nullptr, *ev_to = nullptr;
@@ -244,7 +252,6 @@ static ec_error_t rx_load_std_rules(const char *dir, eid_t fid, bool oof,
 	RESTRICTION_AND_OR rst_7  = {std::size(rst_6), rst_6};
 	RESTRICTION rst_8         = {RES_AND, {&rst_7}};
 
-	/* XXX: Where is my sort order parameter */
 	if (!exmdb_client::load_rule_table(dir, fid, 0, &rst_8,
 	    &table_id, &row_count))
 		return ecError;
@@ -799,6 +806,11 @@ ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
 	err = rx_load_ext_rules(dir, folder_id, oof, rule_list);
 	if (err != ecSuccess)
 		return err;
+	/*
+	 * load_rule_table has no sortorder parameter, but ok, we have to
+	 * download the entire rule table anyway, so the benefits of
+	 * server-side sorting are zero.
+	 */
 	std::sort(rule_list.begin(), rule_list.end());
 
 	rxparam par = {ev_from, ev_to, {{dir, folder_id}, msg_id}};
