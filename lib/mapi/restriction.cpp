@@ -17,9 +17,8 @@ static RESTRICTION_AND_OR* restriction_dup_and_or(
 	const RESTRICTION_AND_OR *prestriction)
 {
 	auto pres = me_alloc<RESTRICTION_AND_OR>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
 	pres->count = prestriction->count;
 	pres->pres = me_alloc<RESTRICTION>(pres->count);
 	if (NULL == pres->pres) {
@@ -47,9 +46,8 @@ static void restriction_free_and_or(RESTRICTION_AND_OR *prestriction)
 	for (size_t i = 0; i < prestriction->count; ++i)
 		restriction_free_by_type(prestriction->pres[i].rt,
 								prestriction->pres[i].pres);
-	if (NULL != prestriction->pres) {
+	if (prestriction->pres != nullptr)
 		free(prestriction->pres);
-	}
 	free(prestriction);
 }
 
@@ -57,9 +55,8 @@ static RESTRICTION_NOT* restriction_dup_not(
 	const RESTRICTION_NOT *prestriction)
 {
 	auto pres = me_alloc<RESTRICTION_NOT>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
 	pres->res.rt = prestriction->res.rt;
 	pres->res.pres = restriction_dup_by_type(
 		prestriction->res.rt, prestriction->res.pres);
@@ -81,9 +78,8 @@ static RESTRICTION_CONTENT* restriction_dup_content(
 	const RESTRICTION_CONTENT *prestriction)
 {
 	auto pres = me_alloc<RESTRICTION_CONTENT>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
 	pres->fuzzy_level = prestriction->fuzzy_level;
 	pres->proptag = prestriction->proptag;
 	pres->propval.proptag = prestriction->propval.proptag;
@@ -106,9 +102,8 @@ static RESTRICTION_PROPERTY* restriction_dup_property(
 	const RESTRICTION_PROPERTY *prestriction)
 {
 	auto pres = me_alloc<RESTRICTION_PROPERTY>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
 	pres->relop = prestriction->relop;
 	pres->proptag = prestriction->proptag;
 	pres->propval.proptag = prestriction->propval.proptag;
@@ -133,9 +128,8 @@ static RESTRICTION_PROPCOMPARE* restriction_dup_propcompare(
 	const RESTRICTION_PROPCOMPARE *prestriction)
 {
 	auto pres = me_alloc<RESTRICTION_PROPCOMPARE>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
 	pres->relop = prestriction->relop;
 	pres->proptag1 = prestriction->proptag1;
 	pres->proptag2 = prestriction->proptag2;
@@ -152,9 +146,8 @@ static RESTRICTION_BITMASK* restriction_dup_bitmask(
 	const RESTRICTION_BITMASK *prestriction)
 {
 	auto pres = me_alloc<RESTRICTION_BITMASK>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
 	pres->bitmask_relop = prestriction->bitmask_relop;
 	pres->proptag = prestriction->proptag;
 	pres->mask = prestriction->mask;
@@ -171,9 +164,8 @@ static RESTRICTION_SIZE* restriction_dup_size(
 	const RESTRICTION_SIZE *prestriction)
 {
 	auto pres = me_alloc<RESTRICTION_SIZE>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
 	pres->relop = prestriction->relop;
 	pres->proptag = prestriction->proptag;
 	pres->size = prestriction->size;
@@ -190,9 +182,8 @@ static RESTRICTION_EXIST* restriction_dup_exist(
 	const RESTRICTION_EXIST *prestriction)
 {
 	auto pres = me_alloc<RESTRICTION_EXIST>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
 	pres->proptag = prestriction->proptag;
 	return pres;
 }
@@ -206,9 +197,8 @@ static RESTRICTION_SUBOBJ* restriction_dup_subobj(
 	const RESTRICTION_SUBOBJ *prestriction)
 {
 	auto pres = me_alloc<RESTRICTION_SUBOBJ>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
 	pres->subobject = prestriction->subobject;
 	pres->res.rt = prestriction->res.rt;
 	pres->res.pres = restriction_dup_by_type(
@@ -232,9 +222,8 @@ static RESTRICTION_COMMENT* restriction_dup_comment(
 {
 	int i;
 	auto pres = me_alloc<RESTRICTION_COMMENT>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
 	pres->count = prestriction->count;
 	pres->ppropval = me_alloc<TAGGED_PROPVAL>(pres->count);
 	if (NULL == pres->ppropval) {
@@ -246,10 +235,9 @@ static RESTRICTION_COMMENT* restriction_dup_comment(
 		pres->ppropval[i].pvalue = propval_dup(PROP_TYPE(prestriction->ppropval[i].proptag),
 				prestriction->ppropval[i].pvalue);
 		if (NULL == pres->ppropval[i].pvalue) {
-			for (i-=1; i>=0; i--) {
+			for (i -= 1; i >= 0; i--)
 				propval_free(PROP_TYPE(pres->ppropval[i].proptag),
 									pres->ppropval[i].pvalue);
-			}
 			free(pres->ppropval);
 			free(pres);
 			return NULL;
@@ -258,10 +246,9 @@ static RESTRICTION_COMMENT* restriction_dup_comment(
 	if (NULL != prestriction->pres) {
 		pres->pres = restriction_dup(prestriction->pres);
 		if (NULL == pres->pres) {
-			for (i=0; i<pres->count; i++) {
+			for (i = 0; i < pres->count; ++i)
 				propval_free(PROP_TYPE(pres->ppropval[i].proptag),
 									pres->ppropval[i].pvalue);
-			}
 			free(pres->ppropval);
 			free(pres);
 			return NULL;
@@ -275,16 +262,12 @@ static RESTRICTION_COMMENT* restriction_dup_comment(
 static void restriction_free_comment(
 	RESTRICTION_COMMENT *prestriction)
 {
-	int i;
-	
-	for (i=0; i<prestriction->count; i++) {
+	for (unsigned int i = 0 ; i < prestriction->count; ++i)
 		propval_free(PROP_TYPE(prestriction->ppropval[i].proptag),
 							prestriction->ppropval[i].pvalue);
-	}
 	free(prestriction->ppropval);
-	if (NULL != prestriction->pres) {
+	if (prestriction->pres != nullptr)
 		restriction_free(prestriction->pres);
-	}
 	free(prestriction);
 }
 
@@ -292,9 +275,8 @@ static RESTRICTION_COUNT* restriction_dup_count(
 	const RESTRICTION_COUNT *prestriction)
 {
 	auto pres = me_alloc<RESTRICTION_COUNT>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
 	pres->count = prestriction->count;
 	pres->sub_res.rt = prestriction->sub_res.rt;
 	pres->sub_res.pres = restriction_dup_by_type(
@@ -380,9 +362,8 @@ static void restriction_free_by_type(mapi_rtype rt, void *prestriction)
 RESTRICTION* restriction_dup(const RESTRICTION *prestriction)
 {
 	auto pres = me_alloc<RESTRICTION>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
 	pres->rt = prestriction->rt;
 	pres->pres = restriction_dup_by_type(prestriction->rt, prestriction->pres);
 	if (NULL == pres->pres) {
@@ -461,18 +442,15 @@ static uint32_t restriction_size_subobj(
 static uint32_t restriction_comment_size(
 	const RESTRICTION_COMMENT *r)
 {
-	int i;
 	uint32_t size;
 	
 	size = sizeof(uint8_t);
-	for (i=0; i<r->count; i++) {
+	for (unsigned int i = 0; i < r->count; ++i)
 		size += propval_size(PROP_TYPE(r->ppropval[i].proptag),
 					r->ppropval[i].pvalue) + sizeof(uint32_t);
-	}
 	size ++;
-	if (NULL != r->pres) {
+	if (r->pres != nullptr)
 		size += restriction_size(r->pres);
-	}
 	return size;
 }
 
