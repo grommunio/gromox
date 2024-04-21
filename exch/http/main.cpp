@@ -117,7 +117,6 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"oxcical_allday_ymd", "1", CFG_BOOL},
 	{"request_max_mem", "4M", CFG_SIZE, "1M"},
 	{"running_identity", RUNNING_IDENTITY},
-	{"state_path", PKGSTATEDIR},
 	{"tcp_max_segment", "0", CFG_SIZE},
 	{"thread_charge_num", "http_thread_charge_num", CFG_ALIAS},
 	{"thread_init_num", "http_thread_init_num", CFG_ALIAS},
@@ -304,7 +303,6 @@ int main(int argc, char **argv)
 	filedes_limit_bump(gxconfig->get_ll("http_fd_limit"));
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
-		g_config_file->get_value("state_path"),
 		g_dfl_svc_plugins, context_num, "http"});
 	auto cleanup_6 = make_scope_exit(service_stop);
 	if (!service_register_service("ndr_stack_alloc",

@@ -524,7 +524,6 @@ static void *transporter_queryservice(const char *service, const std::type_info 
 		auto r = g_config_file->get_value("data_file_path");
 		return r != nullptr ? r : PKGDATADIR "/delivery:" PKGDATADIR;
 	});
-	E("get_state_path", +[]() { return g_config_file->get_value("state_path"); });
 	E("get_queue_path", +[]() { return g_config_file->get_value("dequeue_path"); });
 	E("get_threads_num", +[]() { return g_threads_max; });
 	E("get_context_num", +[]() { return g_threads_max + g_free_num; });

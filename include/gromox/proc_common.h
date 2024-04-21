@@ -25,7 +25,6 @@ struct DCERPC_INTERFACE;
 	x const char *(*get_host_ID)(); \
 	x const char *(*get_config_path)(); \
 	x const char *(*get_data_path)(); \
-	x const char *(*get_state_path)(); \
 	x unsigned int (*get_context_num)(); \
 	x uint64_t (*get_binding_handle)(); \
 	x DCERPC_INFO (*get_rpc_info)(); \
@@ -56,7 +55,6 @@ DECLARE_PROC_API(extern);
 	query_service1(get_host_ID); \
 	query_service1(get_config_path); \
 	query_service1(get_data_path); \
-	query_service1(get_state_path); \
 	query_service1(get_context_num); \
 	query_service1(get_binding_handle); \
 	query_service1(get_rpc_info); \

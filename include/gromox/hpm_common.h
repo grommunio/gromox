@@ -71,7 +71,6 @@ struct HTTP_AUTH_INFO {
 	x const char *(*get_host_ID)(); \
 	x const char *(*get_config_path)(); \
 	x const char *(*get_data_path)(); \
-	x const char *(*get_state_path)(); \
 	x unsigned int (*get_context_num)(); \
 	x void (*set_context)(int); \
 	x void (*set_ep_info)(int, const char *, int); \
@@ -98,7 +97,6 @@ DECLARE_HPM_API(extern);
 	query_service1(get_host_ID); \
 	query_service1(get_config_path); \
 	query_service1(get_data_path); \
-	query_service1(get_state_path); \
 	query_service1(get_context_num); \
 	query_service1(set_context); \
 	query_service1(set_ep_info); \

@@ -110,11 +110,6 @@ of outbound connections for sending commands.
 .br
 Default: \fI10\fP
 .TP
-\fBstate_path\fP
-Directory for runtime variadic data.
-.br
-Default: \fI/var/lib/gromox\fP
-.TP
 \fBsubmit_command\fP
 Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
 .TP

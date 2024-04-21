@@ -64,7 +64,7 @@ const char version_info_for_memory_dumps[] = "gromox " PACKAGE_VERSION;
 static int service_load_library(static_module &&);
 static void *service_query_service(const char *service, const std::type_info &);
 
-static char g_config_dir[256], g_data_dir[256], g_state_dir[256];
+static char g_config_dir[256], g_data_dir[256];
 static std::list<SVC_PLUG_ENTITY> g_list_plug;
 static std::vector<std::shared_ptr<service_entry>> g_list_service;
 static thread_local SVC_PLUG_ENTITY *g_cur_plug;
@@ -82,7 +82,6 @@ void service_init(service_init_param &&parm)
 	g_context_num = parm.context_num;
 	gx_strlcpy(g_config_dir, parm.config_dir, sizeof(g_config_dir));
 	gx_strlcpy(g_data_dir, parm.data_dir, sizeof(g_data_dir));
-	gx_strlcpy(g_state_dir, parm.state_dir, sizeof(g_state_dir));
 	g_plugin_names = std::move(parm.plugin_list);
 	g_program_identifier = parm.prog_id;
 }
@@ -227,8 +226,6 @@ static void *service_query_service(const char *service, const std::type_info &ti
 	if (0 == strcmp(service, "get_data_path")) {
 		return reinterpret_cast<void *>(+[]() { return g_data_dir; });
 	}
-	if (strcmp(service, "get_state_path") == 0)
-		return reinterpret_cast<void *>(+[]() { return g_state_dir; });
 	if (0 == strcmp(service, "get_context_num")) {
 		return reinterpret_cast<void *>(+[]() { return g_context_num; });
 	}

@@ -51,7 +51,6 @@ using HOOK_FUNCTION = gromox::hook_result (*)(MESSAGE_CONTEXT *);
 	x const char *(*get_admin_mailbox)(); \
 	x const char *(*get_config_path)(); \
 	x const char *(*get_data_path)(); \
-	x const char *(*get_state_path)(); \
 	x const char *(*get_queue_path)(); \
 	x unsigned int (*get_context_num)(); \
 	x unsigned int (*get_threads_num)(); \
@@ -75,7 +74,6 @@ DECLARE_HOOK_API(extern);
 	query_service1(get_admin_mailbox); \
 	query_service1(get_config_path); \
 	query_service1(get_data_path); \
-	query_service1(get_state_path); \
 	query_service1(get_queue_path); \
 	query_service1(get_context_num); \
 	query_service1(get_threads_num); \
