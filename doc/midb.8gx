@@ -137,11 +137,6 @@ silent, since our queries ought to never fail.)
 .br
 Default: \fI0\fP
 .TP
-\fBstate_path\fP
-Directory for runtime variadic data.
-.br
-Default: \fI/var/lib/gromox\fP
-.TP
 \fBx500_org_name\fP
 Default: (unspecified)
 .SH Files

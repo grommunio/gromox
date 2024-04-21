@@ -60,7 +60,6 @@ static std::vector<static_module> g_dfl_svc_plugins =
 static constexpr cfg_directive eml2mt_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR},
 	{"data_path", PKGDATADIR},
-	{"state_path", PKGSTATEDIR},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
 };
@@ -286,7 +285,6 @@ int main(int argc, const char **argv) try
 	}
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_path"),
-		g_config_file->get_value("state_path"),
 		std::move(g_dfl_svc_plugins), 1});
 	auto cl_0 = make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {

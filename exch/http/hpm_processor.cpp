@@ -145,11 +145,6 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 			auto r = g_config_file->get_value("data_file_path");
 			return r != nullptr ? r : PKGDATADIR "/http:" PKGDATADIR;
 		});
-	if (strcmp(service, "get_state_path") == 0)
-		return reinterpret_cast<void *>(+[]() {
-			auto r = g_config_file->get_value("state_path");
-			return r != nullptr ? r : PKGSTATEDIR;
-		});
 	if (strcmp(service, "get_context_num") == 0)
 		return reinterpret_cast<void *>(+[]() { return g_context_num; });
 	if (strcmp(service, "get_request") == 0)
