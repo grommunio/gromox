@@ -37,7 +37,7 @@ using namespace gromox;
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 GET_USER_IDS system_services_get_user_ids;
 GET_DOMAIN_IDS system_services_get_domain_ids;
-std::shared_ptr<CONFIG_FILE> g_config_file;
+static std::shared_ptr<config_file> g_config_file;
 static char *g_username;
 static unsigned int g_export_mode = EXPORT_MAIL;
 static int g_allday_mode = -1;
@@ -121,9 +121,7 @@ int main(int argc, char **argv) try
 		fprintf(stderr, "Something went wrong with config files\n");
 		return EXIT_FAILURE;
 	}
-	service_init({g_config_file->get_value("config_file_path"),
-		g_config_file->get_value("data_path"),
-		std::move(g_dfl_svc_plugins), 1});
+	service_init({g_config_file, std::move(g_dfl_svc_plugins), 1});
 	auto cl_0 = make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");

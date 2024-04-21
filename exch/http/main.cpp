@@ -301,9 +301,7 @@ int main(int argc, char **argv)
 	}
 
 	filedes_limit_bump(gxconfig->get_ll("http_fd_limit"));
-	service_init({g_config_file->get_value("config_file_path"),
-		g_config_file->get_value("data_file_path"),
-		g_dfl_svc_plugins, context_num, "http"});
+	service_init({g_config_file, g_dfl_svc_plugins, context_num, "http"});
 	auto cleanup_6 = make_scope_exit(service_stop);
 	if (!service_register_service("ndr_stack_alloc",
 	    reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc),

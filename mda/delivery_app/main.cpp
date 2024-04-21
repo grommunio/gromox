@@ -201,9 +201,7 @@ int main(int argc, char **argv)
 	mlog(LV_NOTICE, "delivery: remote_delivery SMTP server is %s", g_outgoing_smtp_url.c_str());
 
 	filedes_limit_bump(gxconfig->get_ll("lda_fd_limit"));
-	service_init({g_config_file->get_value("config_file_path"),
-		g_config_file->get_value("data_file_path"),
-		g_dfl_svc_plugins, threads_max + free_contexts});
+	service_init({g_config_file, g_dfl_svc_plugins, threads_max + free_contexts});
 	if (service_run_early() != 0) {
 		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
 		return EXIT_FAILURE;

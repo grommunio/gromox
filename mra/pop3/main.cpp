@@ -530,9 +530,7 @@ int main(int argc, char **argv)
 	auto cleanup_4 = make_scope_exit(listener_stop);
 
 	filedes_limit_bump(gxconfig->get_ll("pop3_fd_limit"));
-	service_init({g_config_file->get_value("config_file_path"),
-		g_config_file->get_value("data_file_path"),
-		g_dfl_svc_plugins, context_num});
+	service_init({g_config_file, g_dfl_svc_plugins, context_num});
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return EXIT_FAILURE;

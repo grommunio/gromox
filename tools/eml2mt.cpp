@@ -285,9 +285,7 @@ int main(int argc, char **argv) try
 		fprintf(stderr, "Something went wrong with config files\n");
 		return EXIT_FAILURE;
 	}
-	service_init({g_config_file->get_value("config_file_path"),
-		g_config_file->get_value("data_path"),
-		std::move(g_dfl_svc_plugins), 1});
+	service_init({g_config_file, std::move(g_dfl_svc_plugins), 1});
 	auto cl_0 = make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");
