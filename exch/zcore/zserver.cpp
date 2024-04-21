@@ -1479,11 +1479,11 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 		return ecError;
 	if (permission == rightsNone) {
 		if (g_zrpc_debug >= 1)
-			mlog(LV_ERR, "openstore: \"%s\" has no rights to access \"%s\"\n",
+			mlog(LV_ERR, "openstore: \"%s\" has no rights to access \"%s\"",
 				pinfo->get_username(), username);
 		return ecLoginPerm;
 	} else if (g_zrpc_debug >= 2) {
-		mlog(LV_DEBUG, "openstore: \"%s\" granted access to \"%s\"\n",
+		mlog(LV_DEBUG, "openstore: \"%s\" granted access to \"%s\"",
 			pinfo->get_username(), username);
 	}
 	if (permission & frightsGromoxStoreOwner) try {

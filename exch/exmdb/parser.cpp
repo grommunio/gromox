@@ -76,14 +76,16 @@ std::shared_ptr<EXMDB_CONNECTION> exmdb_parser_get_connection()
 	return nullptr;
 }
 
-static BOOL exmdb_parser_check_local(const char *prefix, BOOL *pb_private)
+static bool exmdb_parser_is_local(const char *prefix, BOOL *pb_private)
 {
+	if (*prefix == '\0')
+		return true;
 	auto i = std::find_if(g_local_list.cbegin(), g_local_list.cend(),
 	         [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), prefix, s.prefix.size()) == 0; });
 	if (i == g_local_list.cend())
 		return false;
 	*pb_private = i->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
-	return TRUE;
+	return true;
 }
 
 static BOOL exmdb_parser_dispatch3(const exreq *q0, std::unique_ptr<exresp> &r0)
@@ -143,8 +145,8 @@ static BOOL exmdb_parser_dispatch2(const exreq *prequest, std::unique_ptr<exresp
 
 static BOOL exmdb_parser_dispatch(const exreq *prequest, std::unique_ptr<exresp> &presponse)
 {
-	if (access(prequest->dir, R_OK | X_OK) < 0)
-		mlog(LV_DEBUG, "exmdb rpc %s accessing %s: %s",
+	if (*prequest->dir != '\0' && access(prequest->dir, R_OK | X_OK) < 0)
+		mlog(LV_DEBUG, "exrpc %s access(\"%s\"): %s",
 			exmdb_rpc_idtoname(prequest->call_id),
 		       prequest->dir, strerror(errno));
 	exmdb_server::set_dir(prequest->dir);
@@ -261,7 +263,7 @@ static void *request_parser_thread(void *pparam)
 		} else if (!is_connected) {
 			if (request->call_id == exmdb_callid::connect) {
 				auto &q = *static_cast<const exreq_connect *>(request.get());
-				if (!exmdb_parser_check_local(q.prefix, &b_private)) {
+				if (!exmdb_parser_is_local(q.prefix, &b_private)) {
 					tmp_byte = exmdb_response::misconfig_prefix;
 				} else if (b_private != q.b_private) {
 					tmp_byte = exmdb_response::misconfig_mode;

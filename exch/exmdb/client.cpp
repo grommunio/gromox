@@ -33,7 +33,7 @@ BOOL exmdb_client_relay_delivery(const char *dir, const char *from_address,
 {
 	BOOL b_private;
 	
-	if (exmdb_client_check_local(dir, &b_private)) {
+	if (exmdb_client_is_local(dir, &b_private)) {
 		auto original_dir = exmdb_server::get_dir();
 		exmdb_server::set_dir(dir);
 		uint64_t folder_id = 0, msg_id = 0;

@@ -14,6 +14,12 @@ Enhancements:
 * mysql_adaptor: allow Unicode in alternate usernames (altnames)
 * Populate PR_DELETED_ON property for softdeleted items
 
+Changes:
+
+* remote_delivery.cfg is obsolete! If you need an SMTP relay for outgoing mail
+  (and you do not have a local postfix to take care of that), you should set
+  gromox.cfg:outgoing_smtp_url.
+
 
 Gromox 2.27 (2024-04-07)
 ========================

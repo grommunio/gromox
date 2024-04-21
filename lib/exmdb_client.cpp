@@ -430,8 +430,10 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 	return 0;
 }
 
-bool exmdb_client_check_local(const char *prefix, BOOL *pvt)
+bool exmdb_client_is_local(const char *prefix, BOOL *pvt)
 {
+	if (*prefix == '\0')
+		return true;
 	auto i = std::find_if(mdcl_server_list.cbegin(), mdcl_server_list.cend(),
 	         [&](const EXMDB_ITEM &s) {
 	         	return s.local && strncmp(s.prefix.c_str(),
@@ -457,7 +459,8 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 {
 	remote_conn_ref fc;
 	std::lock_guard sv_hold(mdcl_server_lock);
-	auto i = std::find_if(mdcl_server_list.begin(), mdcl_server_list.end(),
+	auto i = *dir == '\0' ? mdcl_server_list.begin() :
+	         std::find_if(mdcl_server_list.begin(), mdcl_server_list.end(),
 	         [&](const remote_svr &s) { return strncmp(dir, s.prefix.c_str(), s.prefix.size()) == 0; });
 	if (i == mdcl_server_list.end()) {
 		mlog(LV_ERR, "exmdb_client: cannot find remote server for %s", dir);

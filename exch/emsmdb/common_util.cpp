@@ -1248,7 +1248,7 @@ void common_util_notify_receipt(const char *username, int type,
 		return;
 	auto ret = ems_send_vmail(std::move(imail), username, rcpt_list);
 	if (ret != ecSuccess)
-		mlog2(LV_ERR, "E-1189: ems_send_mail: %s\n", mapi_strerror(ret));
+		mlog2(LV_ERR, "E-1189: ems_send_mail: %s", mapi_strerror(ret));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2035: ENOMEM");
 }

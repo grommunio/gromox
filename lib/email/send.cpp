@@ -21,13 +21,13 @@ ec_error_t cu_send_mail(MAIL &mail, const char *smtp_url, const char *sender,
     const std::vector<std::string> &rcpt_list) try
 {
 	if (*sender == '\0') {
-		mlog(LV_ERR, "cu_send_mail: empty envelope-from\n");
+		mlog(LV_ERR, "cu_send_mail: empty envelope-from");
 		return MAPI_W_CANCEL_MESSAGE;
 	} else if (rcpt_list.size() == 0) {
-		mlog(LV_ERR, "cu_send_mail: empty envelope-rcpt\n");
+		mlog(LV_ERR, "cu_send_mail: empty envelope-rcpt");
 		return MAPI_W_CANCEL_MESSAGE;
 	} else if (*smtp_url == '\0') {
-		mlog(LV_ERR, "cu_send_mail: no SMTP target given\n");
+		mlog(LV_ERR, "cu_send_mail: no SMTP target given");
 		return MAPI_W_NO_SERVICE;
 	}
 	vmime::mailbox vsender(sender);
@@ -45,7 +45,7 @@ ec_error_t cu_send_mail(MAIL &mail, const char *smtp_url, const char *sender,
 		return z;
 	};
 	if (!mail.emit(xwrite, &content)) {
-		mlog(LV_ERR, "cu_send_mail: mail.serialize failed\n");
+		mlog(LV_ERR, "cu_send_mail: mail.serialize failed");
 		return MAPI_W_NO_SERVICE;
 	}
 	vmime::utility::inputStreamStringAdapter ct_adap(content); /* copies */
@@ -77,13 +77,13 @@ ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message> msg,
     const std::vector<std::string> &rcpt_list) try
 {
 	if (*sender == '\0') {
-		mlog(LV_ERR, "cu_send_mail: empty envelope-from\n");
+		mlog(LV_ERR, "cu_send_mail: empty envelope-from");
 		return MAPI_W_CANCEL_MESSAGE;
 	} else if (rcpt_list.size() == 0) {
-		mlog(LV_ERR, "cu_send_mail: empty envelope-rcpt\n");
+		mlog(LV_ERR, "cu_send_mail: empty envelope-rcpt");
 		return MAPI_W_CANCEL_MESSAGE;
 	} else if (*smtp_url == '\0') {
-		mlog(LV_ERR, "cu_send_mail: no SMTP target given\n");
+		mlog(LV_ERR, "cu_send_mail: no SMTP target given");
 		return MAPI_W_NO_SERVICE;
 	}
 	vmime::mailbox vsender(sender);

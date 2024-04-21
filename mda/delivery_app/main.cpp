@@ -16,6 +16,7 @@
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/types.h>
+#include <vmime/utility/url.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
@@ -30,6 +31,7 @@ using namespace gromox;
 int (*system_services_check_domain)(const char *);
 gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
+std::string g_outgoing_smtp_url;
 static char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
 static constexpr HXoption g_options_table[] = {
@@ -41,7 +43,6 @@ static constexpr HXoption g_options_table[] = {
 static std::vector<static_module> g_dfl_mpc_plugins = {
 	{"libgxm_alias_resolve.so", HOOK_alias_resolve},
 	{"libgxm_exmdb_local.so", HOOK_exmdb_local},
-	{"libgxm_remote_delivery.so", HOOK_remote_delivery},
 };
 static std::vector<static_module> g_dfl_svc_plugins = {
 	{"libgxs_ldap_adaptor.so", SVC_ldap_adaptor},
@@ -52,6 +53,7 @@ static std::vector<static_module> g_dfl_svc_plugins = {
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "lda_fd_limit", CFG_ALIAS},
 	{"lda_fd_limit", "0", CFG_SIZE},
+	{"outgoing_smtp_url", ""},
 	CFG_TABLE_END,
 };
 
@@ -166,7 +168,38 @@ int main(int argc, const char **argv)
 	size_t max_mem = g_config_file->get_ll("dequeue_maximum_mem");
 	HX_unit_size(temp_buff, std::size(temp_buff), max_mem, 1024, 0);
 	mlog(LV_INFO, "message_dequeue: maximum allocated memory is %s", temp_buff);
-    
+
+	str_val = gxconfig->get_value("outgoing_smtp_url");
+	if (str_val != nullptr) {
+		try {
+			g_outgoing_smtp_url = vmime::utility::url(str_val);
+		} catch (const vmime::exceptions::malformed_url &e) {
+			mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
+				str_val, e.what());
+			return EXIT_FAILURE;
+		}
+	} else {
+		static constexpr cfg_directive rd_dfl[] = {
+			{"mx_host", "::1"},
+			{"mx_port", "25", 0, "1", "65535"},
+			CFG_TABLE_END,
+		};
+		auto cfg = config_file_initd("remote_delivery.cfg", PKGSYSCONFDIR, rd_dfl);
+		if (cfg == nullptr)
+			return 0;
+		str_val = cfg->get_value("mx_host");
+		uint16_t port = cfg->get_ll("mx_port");
+		try {
+			g_outgoing_smtp_url = vmime::utility::url("smtp",
+				cfg->get_value("mx_host"), cfg->get_ll("mx_port"));
+		} catch (const vmime::exceptions::malformed_url &e) {
+			mlog(LV_ERR, "Malformed outgoing SMTP: [%s]:%hu: %s",
+				str_val, port, e.what());
+			return EXIT_FAILURE;
+		}
+	}
+	mlog(LV_NOTICE, "delivery: remote_delivery SMTP server is %s", g_outgoing_smtp_url.c_str());
+
 	filedes_limit_bump(gxconfig->get_ll("lda_fd_limit"));
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),

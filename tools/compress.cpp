@@ -92,7 +92,7 @@ static int do_file(const std::string &file)
 {
 	struct stat sb;
 	if (stat(file.c_str(), &sb) != 0) {
-		mlog(LV_ERR, "stat %s: %s\n", file.c_str(), strerror(errno));
+		mlog(LV_ERR, "stat %s: %s", file.c_str(), strerror(errno));
 		return EXIT_FAILURE;
 	}
 	auto v1t_name = file + ".v1t"s;
@@ -100,22 +100,22 @@ static int do_file(const std::string &file)
 	const char *args[] = {"zstd", g_complvl_str, "-kqo", v1t_name.c_str(), file.c_str(), nullptr};
 	auto ret = HXproc_run_sync(args, HXPROC_NULL_STDIN | HXPROC_VERBOSE);
 	if (ret != 0) {
-		mlog(LV_ERR, "zstd %s exited with error %d\n", file.c_str(), ret);
+		mlog(LV_ERR, "zstd %s exited with error %d", file.c_str(), ret);
 		unlink(v1t_name.c_str());
 		return EXIT_FAILURE;
 	}
 	if (chown(v1t_name.c_str(), sb.st_uid, sb.st_gid) != 0) {
-		mlog(LV_ERR, "chown %s: %s\n", v1t_name.c_str(), strerror(errno));
+		mlog(LV_ERR, "chown %s: %s", v1t_name.c_str(), strerror(errno));
 		unlink(v1t_name.c_str());
 		return EXIT_FAILURE;
 	}
 	if (rename(v1t_name.c_str(), v1z_name.c_str()) != 0) {
-		mlog(LV_ERR, "rename %s: %s\n", v1t_name.c_str(), strerror(errno));
+		mlog(LV_ERR, "rename %s: %s", v1t_name.c_str(), strerror(errno));
 		unlink(v1t_name.c_str());
 		return EXIT_FAILURE;
 	}
 	if (unlink(file.c_str()) != 0) {
-		mlog(LV_ERR, "unlink %s: %s\n", file.c_str(), strerror(errno));
+		mlog(LV_ERR, "unlink %s: %s", file.c_str(), strerror(errno));
 		unlink(v1z_name.c_str());
 		return EXIT_FAILURE;
 	}

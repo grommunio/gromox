@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 
 	static constexpr STORE_ENTRYID other_store = {0, 0, 0, 0, {}, 0, deconst(""), deconst("")};
-	const char *g_storedir = argc == 1 ? "/" : argv[1];
+	const char *g_storedir = argc == 1 ? "" : argv[1];
 	char *newdir = nullptr;
 	unsigned int user_id = 0, domain_id = 0;
 

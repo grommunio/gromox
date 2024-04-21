@@ -4404,7 +4404,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		std::string tmp_buff;
 		auto err = ical.serialize(tmp_buff);
 		if (err != ecSuccess) {
-			mlog(LV_ERR, "E-2361: %s\n", mapi_strerror(err));
+			mlog(LV_ERR, "E-2361: %s", mapi_strerror(err));
 			return exp_false;
 		}
 		if (!pcalendar->write_content(tmp_buff.c_str(), tmp_buff.size(),

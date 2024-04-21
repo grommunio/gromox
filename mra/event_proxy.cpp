@@ -65,7 +65,7 @@ BOOL SVC_event_proxy(int reason, void **ppdata)
 		auto pfile = config_file_initd("event_proxy.cfg",
 		             get_config_path(), nullptr);
 		if (NULL == pfile) {
-			mlog(LV_ERR, "event_proxy: config_file_initd event_proxy.cfg: %s\n",
+			mlog(LV_ERR, "event_proxy: config_file_initd event_proxy.cfg: %s",
 				strerror(errno));
 			return FALSE;
 		}

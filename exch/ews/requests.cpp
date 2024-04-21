@@ -119,7 +119,7 @@ optional<string> readMessageBody(const std::string& path) try
 	ifs.read(content.data(), content.size());
 	return content;
 } catch (const std::exception &e) {
-	mlog(LV_ERR, "[ews] %s\n", e.what());
+	mlog(LV_ERR, "[ews] %s", e.what());
 	return std::nullopt;
 }
 

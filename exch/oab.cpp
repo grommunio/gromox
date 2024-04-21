@@ -97,7 +97,7 @@ static BOOL oab_init(void **apidata)
 		g_oab_plugin.reset(new OabPlugin());
 	}
 	catch (std::exception& e) {
-		mlog(LV_DEBUG, "[oab] failed to initialize plugin: %s\n", e.what());
+		mlog(LV_DEBUG, "[oab] failed to initialize plugin: %s", e.what());
 		return false;
 	}
 	return TRUE;

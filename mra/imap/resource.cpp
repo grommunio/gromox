@@ -167,7 +167,7 @@ int resource_run()
 	}
 	auto it = std::find(std::begin(g_lang_list), std::end(g_lang_list), dfl_lang);
 	if (it == std::end(g_lang_list)) {
-		mlog(LV_ERR, "resource: cannot find default lang (%s) in <built-in list>\n", dfl_lang);
+		mlog(LV_ERR, "resource: cannot find default lang (%s) in <built-in list>", dfl_lang);
 		return -1;
 	}
 	for (size_t i = 0; i < std::size(g_default_code_table); ++i) {

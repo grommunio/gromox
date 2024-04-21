@@ -196,8 +196,7 @@ autodiscover(4gx) inside php-fpm(8): /etc/gromox/autodiscover.ini,
 .IP \(bu 4
 delivery(8gx): /etc/gromox/alias_resolve.cfg, /etc/gromox/exmdb_local.cfg,
 /etc/gromox/ldap_adaptor.cfg,
-/etc/gromox/mlist_expand.cfg, /etc/gromox/mysql_adaptor.cfg,
-/etc/gromox/remote_delivery.cfg
+/etc/gromox/mlist_expand.cfg, /etc/gromox/mysql_adaptor.cfg
 .IP \(bu 4
 delivery-queue(8gx): /etc/gromox/authmgr.cfg,
 /etc/gromox/midb_agent.cfg, /etc/gromox/ldap_adaptor.cfg,
@@ -239,8 +238,6 @@ mh_nsp(4gx) inside http(8gx): no config file
 pop3(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/event_proxy.cfg,
 /etc/gromox/imap.cfg, /etc/gromox/ldap_adaptor.cfg,
 /etc/gromox/mysql_adaptor.cfg
-.IP \(bu 4
-remote_delivery(4gx) inside delivery(8gx): /etc/gromox/remote_delivery.cfg
 .IP \(bu 4
 timer(8gx): /etc/gromox/timer.cfg
 .IP \(bu 4
@@ -326,9 +323,6 @@ imap(8gx), pop3(8gx), zcore(8gx) processes.
 by arbitrary PAM applications.
 .IP \(bu 4
 /etc/gromox/pop3.cfg: used by the pop3(8gx) process.
-.IP \(bu 4
-/etc/gromox/remote_delivery.cfg: used by the remote_delivery(4gx) plugin,
-accessed process-wise by delivery(8gx).
 .IP \(bu 4
 /etc/gromox/timer.cfg: used by the timer(8gx) process.
 .IP \(bu 4
