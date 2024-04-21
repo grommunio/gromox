@@ -358,9 +358,7 @@ int main(int argc, const char **argv)
 	filedes_limit_bump(gxconfig->get_ll("midb_fd_limit"));
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
 	unsigned int cmd_debug = pconfig->get_ll("midb_cmd_debug");
-	service_init({g_config_file->get_value("config_file_path"),
-		g_config_file->get_value("data_path"),
-		g_dfl_svc_plugins, threads_num});
+	service_init({g_config_file, g_dfl_svc_plugins, threads_num});
 	auto cl_0 = make_scope_exit(service_stop);
 	
 	exmdb_client_init(proxy_num, stub_num);

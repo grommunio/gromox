@@ -27,8 +27,6 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-extern std::shared_ptr<CONFIG_FILE> g_config_file;
-
 namespace {
 
 struct reference_node {
@@ -64,7 +62,7 @@ const char version_info_for_memory_dumps[] = "gromox " PACKAGE_VERSION;
 static int service_load_library(static_module &&);
 static void *service_query_service(const char *service, const std::type_info &);
 
-static char g_config_dir[256], g_data_dir[256];
+static std::string g_config_dir, g_data_dir;
 static std::list<SVC_PLUG_ENTITY> g_list_plug;
 static std::vector<std::shared_ptr<service_entry>> g_list_service;
 static thread_local SVC_PLUG_ENTITY *g_cur_plug;
@@ -72,6 +70,7 @@ static unsigned int g_context_num;
 static std::vector<static_module> g_plugin_names;
 static const char *g_program_identifier;
 static SVC_PLUG_ENTITY g_system_image;
+static std::shared_ptr<config_file> g_config_file;
 
 /*
  *  init the service module with the path specified where
@@ -80,16 +79,20 @@ static SVC_PLUG_ENTITY g_system_image;
 void service_init(service_init_param &&parm)
 {
 	g_context_num = parm.context_num;
-	gx_strlcpy(g_config_dir, parm.config_dir, sizeof(g_config_dir));
-	gx_strlcpy(g_data_dir, parm.data_dir, sizeof(g_data_dir));
+	g_config_file = std::move(parm.cfg);
 	g_plugin_names = std::move(parm.plugin_list);
 	g_program_identifier = parm.prog_id;
 }
 
 static void *const server_funcs[] = {reinterpret_cast<void *>(service_query_service)};
 
-int service_run_early()
+int service_run_early() try
 {
+	if (g_config_file == nullptr)
+		g_config_file = std::make_shared<config_file>();
+	g_config_dir = znul(g_config_file->get_value("config_file_path"));
+	g_data_dir = znul(g_config_file->get_value("data_file_path"));
+
 	for (auto &&i : g_plugin_names) {
 		int ret = service_load_library(std::move(i));
 		if (ret == PLUGIN_LOAD_OK) {
@@ -106,6 +109,8 @@ int service_run_early()
 		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
 	return 0;
+} catch (const std::bad_alloc &) {
+	return PLUGIN_FAIL_EXECUTEMAIN;
 }
 
 int service_run()
@@ -215,10 +220,10 @@ static void *service_query_service(const char *service, const std::type_info &ti
 		return reinterpret_cast<void *>(service_register_service);
     }
 	if (0 == strcmp(service, "get_config_path")) {
-		return reinterpret_cast<void *>(+[]() { return g_config_dir; });
+		return reinterpret_cast<void *>(+[]() { return g_config_dir.c_str(); });
 	}
 	if (0 == strcmp(service, "get_data_path")) {
-		return reinterpret_cast<void *>(+[]() { return g_data_dir; });
+		return reinterpret_cast<void *>(+[]() { return g_data_dir.c_str(); });
 	}
 	if (0 == strcmp(service, "get_context_num")) {
 		return reinterpret_cast<void *>(+[]() { return g_context_num; });

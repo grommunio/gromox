@@ -477,9 +477,7 @@ int main(int argc, const char **argv)
 	auto cleanup_4 = make_scope_exit(listener_stop);
 
 	filedes_limit_bump(gxconfig->get_ll("lda_fd_limit"));
-	service_init({g_config_file->get_value("config_file_path"),
-		g_config_file->get_value("data_file_path"),
-		g_dfl_svc_plugins, scfg.context_num});
+	service_init({g_config_file, g_dfl_svc_plugins, scfg.context_num});
 	if (service_run_early() != 0) {
 		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
 		return EXIT_FAILURE;
