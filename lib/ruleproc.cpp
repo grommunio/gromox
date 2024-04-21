@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -18,12 +18,14 @@
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 
 namespace {
+
 /**
  * @rule_id:	if @extended, message id of the extrule, else rule id.
  * @folder_id:	(Current) enclosing folder for @msg_id,
@@ -54,17 +56,10 @@ struct rule_node {
 	bool operator<(const struct rule_node &o) const { return seq < o.seq; }
 };
 
-struct folder_node {
+struct message_node {
 	std::string dir;
-	eid_t fid = 0;
-	inline bool operator<(const struct folder_node &o) const { return std::tie(dir, fid) < std::tie(o.dir, o.fid); }
-	inline bool operator==(const struct folder_node &o) const { return dir == o.dir && fid == o.fid; }
-};
-
-struct message_node : public folder_node {
-	eid_t mid = 0;
-	void operator<(const struct message_node &) = delete;
-	void operator==(const struct message_node &) = delete;
+	eid_t fid = 0, mid = 0;
+	inline const char *dirc() const { return dir.c_str(); }
 };
 
 struct rx_delete {
@@ -72,19 +67,39 @@ struct rx_delete {
 	void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
 };
 
+using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, rx_delete>;
+
 /**
- * @ev_to:	Envelope-To, and thus also the rule executing identity
- * @cur:	current pointer to message
+ * @ev_from:      Envelope-From of the original message.
+ * @ev_to:        Envelope-To of the original message.
+ * @cur:          Pointer to the current message.
+ *                Due to OP_MOVE, MIDs can change while rules execute.
+ * @ctnt:         Message content. Also due to OP_MOVE, PR_CHANGE_KEY/PCL
+ *                can change.
+ * @rule_list:    Rules loaded from the mailbox (original Envelope-To's).
+ *                Unlike EXC, we won't recurse into other mailbox's rules.
+ * @exit:         Flag for op_process to stop early.
+ * @del:          Message should be deleted at end of processing.
  */
 struct rxparam {
+	/**
+	 * @store_owner, @store_dir, @store_acctid: because EXRPCs APIs are terribly designed
+	 */
+	struct deleter {
+		void operator()(message_content *x) const { message_content_free(x); }
+	};
+
+	rxparam(message_node &&in);
+	ec_error_t run();
+	ec_error_t is_oof(bool *out) const;
+	ec_error_t load_std_rules(bool oof, std::vector<rule_node> &out) const;
+	ec_error_t load_ext_rules(bool oof, std::vector<rule_node> &out) const;
+
 	const char *ev_from = nullptr, *ev_to = nullptr;
 	message_node cur;
-	std::set<folder_node> loop_check;
-	MESSAGE_CONTENT *ctnt = nullptr;
+	message_content_ptr ctnt;
 	bool del = false, exit = false;
 };
-
-using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, rx_delete>;
 
 }
 
@@ -202,10 +217,10 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 		rx_delete_local(src_name_arr);
 		free(dst_id_arr.ppropid);
 	});
-	if (!exmdb_client::get_named_propnames(par.cur.dir.c_str(),
+	if (!exmdb_client::get_named_propnames(par.cur.dirc(),
 	    &src_id_arr, &src_name_arr)) {
 		mlog(LV_DEBUG, "ruleproc: get_named_propnames(%s) failed",
-			par.cur.dir.c_str());
+			par.cur.dirc());
 		return ecRpcFailed;
 	}
 	if (src_name_arr.count != src_id_arr.count) {
@@ -225,20 +240,24 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 	return ecSuccess;
 }
 
-static ec_error_t rx_is_oof(const char *dir, bool *oof)
+ec_error_t rxparam::is_oof(bool *oof) const
 {
 	static constexpr uint32_t tags[] = {PR_OOF_STATE};
 	static constexpr PROPTAG_ARRAY pt = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY props{};
-	if (!exmdb_client::get_store_properties(dir, CP_UTF8, &pt, &props))
+	if (!exmdb_client::get_store_properties(cur.dirc(), CP_UTF8, &pt, &props))
 		return ecError;
 	auto flag = props.get<uint8_t>(PR_OOF_STATE);
 	*oof = flag != nullptr ? *flag : 0;
 	return ecSuccess;
 }
 
-static ec_error_t rx_load_std_rules(const char *dir, eid_t fid, bool oof,
-    std::vector<rule_node> &rule_list)
+/**
+ * Preconditions: @this->cur needs to be set
+ * Postconditions: @rule_list has new rules appended to
+ */
+ec_error_t rxparam::load_std_rules(bool oof,
+    std::vector<rule_node> &rule_list) const
 {
 	uint32_t table_id = 0, row_count = 0;
 
@@ -252,8 +271,8 @@ static ec_error_t rx_load_std_rules(const char *dir, eid_t fid, bool oof,
 	RESTRICTION_AND_OR rst_7  = {std::size(rst_6), rst_6};
 	RESTRICTION rst_8         = {RES_AND, {&rst_7}};
 
-	/* XXX: Where is my sort order parameter */
-	if (!exmdb_client::load_rule_table(dir, fid, 0, &rst_8,
+	auto dir = cur.dirc();
+	if (!exmdb_client::load_rule_table(dir, cur.fid, 0, &rst_8,
 	    &table_id, &row_count))
 		return ecError;
 	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(dir, table_id); });
@@ -283,14 +302,18 @@ static ec_error_t rx_load_std_rules(const char *dir, eid_t fid, bool oof,
 		rule.name = znul(row->get<const char>(PR_RULE_NAME));
 		rule.provider = znul(row->get<const char>(PR_RULE_PROVIDER));
 		rule.cond = row->get<RESTRICTION>(PR_RULE_CONDITION);
-		rule.act  = row->get<RULE_ACTIONS>(PR_RULE_ACTIONS);
+		rule.act = row->get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 		rule_list.push_back(std::move(rule));
 	}
 	return ecSuccess;
 }
 
-static ec_error_t rx_load_ext_rules(const char *dir, eid_t fid, bool oof,
-    std::vector<rule_node> &rule_list)
+/**
+ * Preconditions: @this->cur needs to be set
+ * Postconditions: @rule_list has new rules appended to
+ */
+ec_error_t rxparam::load_ext_rules(bool oof,
+    std::vector<rule_node> &rule_list) const
 {
 	uint32_t table_id = 0, row_count = 0;
 
@@ -308,7 +331,8 @@ static ec_error_t rx_load_ext_rules(const char *dir, eid_t fid, bool oof,
 
 	static constexpr SORT_ORDER sort_spec[] = {{PT_LONG, PROP_ID(PR_RULE_MSG_SEQUENCE), TABLE_SORT_ASCEND}};
 	static constexpr SORTORDER_SET sort_order = {std::size(sort_spec), 0, 0, deconst(sort_spec)};
-	if (!exmdb_client::load_content_table(dir, CP_ACP, fid, nullptr,
+	auto dir = cur.dirc();
+	if (!exmdb_client::load_content_table(dir, CP_ACP, cur.fid, nullptr,
 	    TABLE_FLAG_ASSOCIATED, &rst_10, &sort_order, &table_id, &row_count))
 		return ecError;
 	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(dir, table_id); });
@@ -523,7 +547,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 		return ecNotFound;
 	unsigned int user_id = 0, domain_id = 0;
 	char *newdir = nullptr;
-	if (!exmdb_client::store_eid_to_user(par.cur.dir.c_str(), &other_store,
+	if (!exmdb_client::store_eid_to_user(par.cur.dirc(), &other_store,
 	    &newdir, &user_id, &domain_id))
 		return ecRpcFailed;
 	if (newdir == nullptr)
@@ -552,9 +576,11 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 		dst_fid = rop_util_make_eid_ex(1, rop_util_gc_to_value(folder_eid.global_counter));
 	}
 
-	/* Loop & permission checks. */
-	if (par.loop_check.find({newdir, dst_fid}) != par.loop_check.end())
-		return ecRootFolder;
+	/*
+	 * This would be the place to add a check that the message does not
+	 * loop. However, as we only ever load one rule table, namely from the
+	 * Envelope-To INBOX folder, we know the execution is finite.
+	 */
 	uint32_t permission = 0;
 	if (!exmdb_client::get_folder_perm(newdir, dst_fid, par.ev_to, &permission))
 		return ecRpcFailed;
@@ -622,11 +648,11 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	del_mids.count = 1;
 	del_mids.pids = reinterpret_cast<uint64_t *>(&par.cur.mid);
 	BOOL partial = false;
-	if (!exmdb_client::delete_messages(par.cur.dir.c_str(),
+	if (!exmdb_client::delete_messages(par.cur.dirc(),
 	    tgt_public ? domain_id : user_id, CP_UTF8,
 	    nullptr, par.cur.fid, &del_mids, true, &partial))
 		mlog(LV_ERR, "ruleproc: OP_MOVE del_msg %s:%llxh failed",
-			par.cur.dir.c_str(), LLU{rop_util_get_gc_value(par.cur.mid)});
+			par.cur.dirc(), LLU{rop_util_get_gc_value(par.cur.mid)});
 	par.cur.dir = newdir;
 	par.cur.fid = eid_t(dst_fid);
 	par.cur.mid = eid_t(dst_mid);
@@ -644,13 +670,11 @@ static ec_error_t op_copy(rxparam &par, const rule_node &rule,
 	auto dst_fid = svreid.folder_id;
 	if (rop_util_get_replid(dst_fid) != 1)
 		return ecNotFound;
-	if (par.loop_check.find({par.cur.dir, dst_fid}) != par.loop_check.end())
-		return ecSuccess;
 	uint64_t dst_mid = 0;
 	BOOL result = false;
-	if (!exmdb_client::allocate_message_id(par.cur.dir.c_str(), dst_fid, &dst_mid))
+	if (!exmdb_client::allocate_message_id(par.cur.dirc(), dst_fid, &dst_mid))
 		return ecRpcFailed;
-	if (!exmdb_client::movecopy_message(par.cur.dir.c_str(), 0, CP_ACP,
+	if (!exmdb_client::movecopy_message(par.cur.dirc(), 0, CP_ACP,
 	    par.cur.mid, dst_fid, dst_mid, act_type == OP_MOVE ? TRUE : false, &result))
 		return ecRpcFailed;
 	if (act_type == OP_MOVE) {
@@ -682,7 +706,7 @@ static ec_error_t op_tag(rxparam &par, const rule_node &rule,
 	if (setval == nullptr)
 		return ecSuccess;
 	uint64_t change_num = 0, modtime = 0;
-	if (!exmdb_client::allocate_cn(par.cur.dir.c_str(), &change_num))
+	if (!exmdb_client::allocate_cn(par.cur.dirc(), &change_num))
 		return ecRpcFailed;
 	auto change_key = xid_to_bin({GUID{}, change_num});
 	if (change_key == nullptr)
@@ -698,7 +722,7 @@ static ec_error_t op_tag(rxparam &par, const rule_node &rule,
 	if (valdata[1].pvalue == nullptr)
 		return ecServerOOM;
 	PROBLEM_ARRAY problems{};
-	if (!exmdb_client::set_message_properties(par.cur.dir.c_str(),
+	if (!exmdb_client::set_message_properties(par.cur.dirc(),
 	    nullptr, CP_ACP, par.cur.mid, &valhdr, &problems))
 		return ecRpcFailed;
 	return ecSuccess;
@@ -708,7 +732,7 @@ static ec_error_t op_read(rxparam &par, const rule_node &rule)
 {
 	uint64_t cn = 0;
 	/* XXX: this RPC cannot cope with nullptr username on public stores */
-	if (!exmdb_client::set_message_read_state(par.cur.dir.c_str(),
+	if (!exmdb_client::set_message_read_state(par.cur.dirc(),
 	    nullptr, par.cur.mid, true, &cn))
 		return ecRpcFailed;
 	return ecSuccess;
@@ -739,12 +763,13 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
 
 static ec_error_t op_process(rxparam &par, const rule_node &rule)
 {
-	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
+	/* WHEN_OOF rules already excluded during rule loading. */
+	if (par.exit /* && !(rule.state & ST_ONLY_WHEN_OOF) */)
 		return ecSuccess;
 	if (rule.cond != nullptr) {
 		if (g_ruleproc_debug)
 			mlog(LV_DEBUG, "Rule_Condition %s", rule.cond->repr().c_str());
-		if (!rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond))
+		if (!rx_eval_props(par.ctnt.get(), par.ctnt->proplist, *rule.cond))
 			return ecSuccess;
 	}
 	if (rule.state & ST_EXIT_LEVEL)
@@ -780,7 +805,7 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
 	if (rule.cond != nullptr &&
-	    !rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond))
+	    !rx_eval_props(par.ctnt.get(), par.ctnt->proplist, *rule.cond))
 		return ecSuccess;
 	if (rule.state & ST_EXIT_LEVEL)
 		par.exit = true;
@@ -792,45 +817,59 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 	return ecSuccess;
 }
 
-ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
-    const char *ev_to, eid_t folder_id, eid_t msg_id) try
+rxparam::rxparam(message_node &&x) : cur(std::move(x))
+{}
+
+ec_error_t rxparam::run()
 {
 	bool oof = false;
-	auto err = rx_is_oof(dir, &oof);
+	auto err = is_oof(&oof);
 	if (err != ecSuccess)
 		return err;
 	std::vector<rule_node> rule_list;
-	err = rx_load_std_rules(dir, folder_id, oof, rule_list);
+	err = load_std_rules(oof, rule_list);
 	if (err != ecSuccess)
 		return err;
-	err = rx_load_ext_rules(dir, folder_id, oof, rule_list);
+	err = load_ext_rules(oof, rule_list);
 	if (err != ecSuccess)
 		return err;
+	/*
+	 * load_rule_table has no sortorder parameter, but ok, we have to
+	 * download the entire rule table anyway, so the benefits of
+	 * server-side sorting are zero.
+	 */
 	std::sort(rule_list.begin(), rule_list.end());
 
-	rxparam par = {ev_from, ev_to, {{dir, folder_id}, msg_id}, {{dir, folder_id}}};
-	if (!exmdb_client::read_message(par.cur.dir.c_str(), nullptr, CP_ACP,
-	    par.cur.mid, &par.ctnt))
+	if (!exmdb_client::read_message(cur.dirc(), nullptr, CP_ACP,
+	    cur.mid, &unique_tie(ctnt)))
 		return ecError;
 	for (auto &&rule : rule_list) {
-		err = rule.extended ? opx_process(par, rule) : op_process(par, rule);
+		err = rule.extended ? opx_process(*this, rule) : op_process(*this, rule);
 		if (err != ecSuccess)
 			return err;
-		if (par.del)
+		if (del)
 			break;
 	}
-	if (par.del) {
-		const EID_ARRAY ids = {1, reinterpret_cast<uint64_t *>(&par.cur.mid)};
+	if (del) {
+		const EID_ARRAY ids = {1, reinterpret_cast<uint64_t *>(&cur.mid)};
 		BOOL partial;
-		if (!exmdb_client::delete_messages(par.cur.dir.c_str(), 0,
-		    CP_ACP, nullptr, par.cur.fid, &ids, true/*hard*/, &partial))
+		if (!exmdb_client::delete_messages(cur.dirc(), 0,
+		    CP_ACP, nullptr, cur.fid, &ids, true/*hard*/, &partial))
 			mlog(LV_DEBUG, "ruleproc: deletion unsuccessful");
 		return ecSuccess;
 	}
-	if (!exmdb_client::notify_new_mail(par.cur.dir.c_str(),
-	    par.cur.fid, par.cur.mid))
+	if (!exmdb_client::notify_new_mail(cur.dirc(), cur.fid, cur.mid))
 		mlog(LV_ERR, "ruleproc: newmail notification unsuccessful");
 	return ecSuccess;
+}
+
+ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
+    const char *ev_to, eid_t folder_id, eid_t msg_id) try
+{
+	rxparam p({dir, folder_id, msg_id});
+	p.ev_from = ev_from;
+	p.ev_to   = ev_to;
+	return std::move(p).run();
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1121: ENOMEM");
 	return ecServerOOM;
