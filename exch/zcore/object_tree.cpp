@@ -129,12 +129,6 @@ static void object_tree_write_root(root_object *prootobj)
 		"zcore_profsect", PT_BINARY, ext_push.m_udata, ext_push.m_offset);
 }
 
-static void object_tree_free_root(root_object *prootobj)
-{
-	object_tree_write_root(prootobj);
-	delete prootobj;
-}
-
 object_node::object_node(object_node &&o) noexcept :
 	handle(o.handle), type(o.type), pobject(o.pobject)
 {
@@ -147,7 +141,7 @@ object_node::~object_node()
 {
 	switch (type) {
 	case zs_objtype::root:
-		object_tree_free_root(static_cast<root_object *>(pobject));
+		delete static_cast<root_object *>(pobject);
 		break;
 	case zs_objtype::table:
 		delete static_cast<table_object *>(pobject);
