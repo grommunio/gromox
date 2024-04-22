@@ -1410,7 +1410,8 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context *ctx) tr
 		} else {
 			fprintf(stderr, "<");
 			for (int i = 0; i < argc; ++i)
-				fprintf(stderr, " %s", argv_copy[i].c_str());
+				fprintf(stderr, " %s", argv_copy[i].empty() ?
+				        "\"\"" : argv_copy[i].c_str());
 			fprintf(stderr, ": ret=%xh code=%u\n", ret, code);
 		}
 	}
