@@ -32,6 +32,7 @@
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
@@ -45,6 +46,7 @@ static std::string g_storedir_s;
 const char *g_storedir;
 unsigned int g_user_id, g_show_tree, g_show_props, g_wet_run = 1, g_public_folder;
 static thread_local alloc_context g_alloc_mgr;
+static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t);
 
 YError::YError(const std::string &s) : m_str(s)
 {}
@@ -422,6 +424,10 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct, unsigned int mode)
 	}
 	if (!(mode & DELIVERY_TWOSTEP))
 		return EXIT_SUCCESS;
+	if (exmdb_local_rules_execute == nullptr) {
+		fprintf(stderr, "Programmer's error: libgxs_ruleproc.so was not activated, cannot perform rule processing");
+		return EXIT_FAILURE;
+	}
 	fprintf(stderr, "Exercising TWOSTEP ruleprocessor:\n");
 	if (msg_id == 0) {
 		fprintf(stderr, "deliver_message RPC did not give us a message_id -- not executing any rules.\n");
@@ -628,6 +634,8 @@ int gi_setup_from_dir()
 
 int gi_setup()
 {
+	exmdb_local_rules_execute = reinterpret_cast<decltype(exmdb_local_rules_execute)>(service_query("rules_execute",
+	                            "system", typeid(*exmdb_local_rules_execute)));
 	auto sqh = sql_login();
 	if (sqh == nullptr)
 		return EXIT_FAILURE;
@@ -737,4 +745,5 @@ void gi_shutdown()
 {
 	g_alloc_mgr.clear();
 	exmdb_client_stop();
+	service_release("rules_execute", "system");
 }

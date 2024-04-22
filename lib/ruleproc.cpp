@@ -18,11 +18,13 @@
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/svc_common.h>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
+DECLARE_SVC_API(,);
 
 namespace {
 
@@ -862,7 +864,7 @@ ec_error_t rxparam::run()
 	return ecSuccess;
 }
 
-ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
+static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
     const char *ev_to, eid_t folder_id, eid_t msg_id) try
 {
 	rxparam p({dir, folder_id, msg_id});
@@ -872,4 +874,14 @@ ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1121: ENOMEM");
 	return ecServerOOM;
+}
+
+BOOL SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
+{
+	if (reason != PLUGIN_INIT)
+		return TRUE;
+	LINK_SVC_API(param);
+	if (!register_service("rules_execute", exmdb_local_rules_execute))
+		return false;
+	return TRUE;
 }

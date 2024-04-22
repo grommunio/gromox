@@ -116,7 +116,7 @@ extern "C" GX_EXPORT PLUGIN_DMAIN
 	HPM_ews, HPM_mh_emsmdb, HPM_mh_nsp, HPM_oab, HPM_oxdisco,
 	SVC_authmgr, SVC_dnsbl_filter, SVC_exmdb_provider, SVC_ldap_adaptor,
 	SVC_mysql_adaptor, SVC_timer_agent, SVC_user_filter, SVC_event_proxy,
-	SVC_event_stub, SVC_midb_agent;
+	SVC_event_stub, SVC_midb_agent, SVC_ruleproc;
 
 namespace gromox {
 

@@ -14,6 +14,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
@@ -41,6 +42,10 @@ static uint64_t g_anchor_folder; /* GCV */
 static unsigned int g_oexcl = 1, g_repeat_iter = 1;
 static unsigned int g_do_delivery, g_skip_notif, g_skip_rules, g_twostep;
 static unsigned int g_continuous_mode;
+
+static std::vector<static_module> g_dfl_svc_plugins = {
+	{"libgxs_ruleproc.so", SVC_ruleproc},
+};
 
 static const char *strerror_eof(int e)
 {
@@ -428,6 +433,12 @@ int main(int argc, char **argv) try
 		fprintf(stderr, "mt2exm: -B option has no effect when -D is used\n");
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
+	service_init({nullptr, std::move(g_dfl_svc_plugins), 1});
+	auto cl_1 = make_scope_exit(service_stop);
+	if (service_run_early() != 0 || service_run() != 0) {
+		fprintf(stderr, "service_run: failed\n");
+		return EXIT_FAILURE;
+	}
 	gi_setup_early(g_username);
 	if (gi_setup() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
