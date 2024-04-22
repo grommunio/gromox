@@ -26,4 +26,3 @@ BOOL exmdb_client_remove_instance_property(const char *dir,
 BOOL exmdb_client_check_message_owner(const char *dir,
 	uint64_t message_id, const char *username, BOOL *pb_owner);
 extern BOOL exmdb_client_remove_message_property(const char *dir, cpid_t, uint64_t message_id, uint32_t proptag);
-void exmdb_client_register_proc(void *pproc);

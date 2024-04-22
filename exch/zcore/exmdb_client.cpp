@@ -10,11 +10,9 @@
 #include <gromox/usercvt.hpp>
 #include "common_util.h"
 #include "exmdb_client.h"
+#include "zserver.hpp"
 
 using namespace gromox;
-
-static void (*exmdb_client_event_proc)(const char *dir,
-	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
 
 static void buildenv(const remote_svr &s)
 {
@@ -24,7 +22,7 @@ static void buildenv(const remote_svr &s)
 int exmdb_client_run_front(const char *dir)
 {
 	return exmdb_client_run(dir, EXMDB_CLIENT_ASYNC_CONNECT, buildenv,
-	       common_util_free_environment, exmdb_client_event_proc);
+	       common_util_free_environment, zs_notification_proc);
 }
 
 BOOL exmdb_client_get_named_propid(const char *dir,
@@ -170,9 +168,4 @@ BOOL exmdb_client_check_message_owner(const char *dir,
 	}
 	*pb_owner = strcasecmp(username, es_result.c_str()) == 0 ? TRUE : false;
 	return TRUE;
-}
-
-void exmdb_client_register_proc(void *pproc)
-{
-	exmdb_client_event_proc = reinterpret_cast<decltype(exmdb_client_event_proc)>(pproc);
 }

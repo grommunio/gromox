@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <gromox/mapi_types.hpp>
 
+struct DB_NOTIFY;
 struct OBJECT_TREE;
 
 struct sink_node {
@@ -49,6 +50,7 @@ struct USER_INFO {
 extern void zserver_init(size_t table_size, int cache_interval, int ping_interval);
 extern int zserver_run();
 extern void zserver_stop();
+extern void zs_notification_proc(const char *dir, BOOL table, uint32_t notify_id, const DB_NOTIFY *);
 extern USER_INFO *zs_get_info();
 extern ec_error_t zs_logon_token(const char *token, const char *rhost, GUID *ses);
 extern ec_error_t zs_logon(const char *username, const char *password, const char *rhost, uint32_t flags, GUID *ses);

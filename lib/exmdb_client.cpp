@@ -112,6 +112,7 @@ void exmdb_client_stop()
 		}
 	}
 	mdcl_notify_stop = true;
+	std::lock_guard sv_hold(mdcl_server_lock);
 	for (auto &ag : mdcl_agent_list) {
 		pthread_kill(ag.thr_id, SIGALRM);
 		pthread_join(ag.thr_id, nullptr);

@@ -669,6 +669,7 @@ int main(int argc, const char **argv)
 	exmdb_rpc_alloc = imrpc_alloc;
 	exmdb_rpc_free = [](void *) {};
 	exmdb_client_init(1, 0);
+	auto cl_0 = make_scope_exit(exmdb_client_stop);
 	if (exmdb_client_run(g_config_file->get_value("config_file_path"),
 	    EXMDB_CLIENT_ASYNC_CONNECT, imrpc_build_env1, imrpc_free_env, nullptr) != 0) {
 		mlog(LV_ERR, "Failed to start exmdb_client");

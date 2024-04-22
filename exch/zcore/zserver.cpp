@@ -287,8 +287,8 @@ static void *zcorezs_scanwork(void *param)
 	return NULL;
 }
 
-static void zs_notification_proc(const char *dir,
-	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify)
+void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
+    const DB_NOTIFY *pdb_notify)
 {
 	int i;
 	int tv_msec;
@@ -636,7 +636,6 @@ int zserver_run()
 		return -4;
 	}
 	pthread_setname_np(g_scan_id, "zarafa");
-	exmdb_client_register_proc(reinterpret_cast<void *>(zs_notification_proc));
 	return 0;
 }
 
