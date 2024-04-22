@@ -51,6 +51,7 @@ BOOL (*exmdb_local_check_same_org2)(
 static GET_USER_IDS exmdb_local_get_user_ids;
 static GET_DOMAIN_IDS exmdb_local_get_domain_ids;
 static BOOL (*exmdb_local_get_username)(unsigned int, char *, size_t);
+static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t);
 
 static int exmdb_local_sequence_ID()
 {
@@ -486,6 +487,11 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_HOOK_API(ppdata);
+		query_service2("rules_execute", exmdb_local_rules_execute);
+		if (exmdb_local_rules_execute == nullptr) {
+			mlog(LV_ERR, "exmdb_local: libgxs_ruleproc not initialized");
+			return false;
+		}
 		textmaps_init();
 		auto cfg = config_file_initd("gromox.cfg", get_config_path(), mdlgx_cfg_defaults);
 		if (cfg != nullptr)
