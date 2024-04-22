@@ -405,8 +405,6 @@ int main(int argc, const char **argv)
 	int stub_num = pconfig->get_ll("notify_stub_threads_num");
 	mlog(LV_INFO, "system: exmdb notify stub threads number is %d", stub_num);
 	
-	exmdb_client_init(proxy_num, stub_num);
-	auto cl_8 = make_scope_exit(exmdb_client_stop);
 	table_size = pconfig->get_ll("user_table_size");
 	mlog(LV_INFO, "system: hash table size is %d", table_size);
 
@@ -420,6 +418,8 @@ int main(int argc, const char **argv)
 	
 	zserver_init(table_size, cache_interval, ping_interval);
 	auto cl_7 = make_scope_exit(zserver_stop);
+	exmdb_client_init(proxy_num, stub_num);
+	auto cl_8 = make_scope_exit(exmdb_client_stop);
 	rpc_parser_init(threads_num);
 	auto cl_6 = make_scope_exit(rpc_parser_stop);
 
