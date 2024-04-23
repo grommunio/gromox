@@ -175,7 +175,7 @@ static bool midb_agent_reload(std::shared_ptr<CONFIG_FILE> &&cfg)
 	return true;
 }
 
-BOOL SVC_midb_agent(int reason, void **ppdata)
+BOOL SVC_midb_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	switch(reason) {
 	case PLUGIN_RELOAD:
@@ -241,8 +241,9 @@ BOOL SVC_midb_agent(int reason, void **ppdata)
 		}
 		g_server_list.clear();
 		return TRUE;
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }
 
 static void *midbag_scanwork(void *param)

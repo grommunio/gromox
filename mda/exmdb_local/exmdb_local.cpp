@@ -476,7 +476,7 @@ static constexpr cfg_directive mdlgx_cfg_defaults[] = {
 
 DECLARE_HOOK_API();
 
-BOOL HOOK_exmdb_local(int reason, void **ppdata)
+BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	char charset[32], org_name[256], temp_buff[45], cache_path[256];
 	int cache_interval, retrying_times;
@@ -585,6 +585,7 @@ BOOL HOOK_exmdb_local(int reason, void **ppdata)
 		cache_queue_stop();
 		cache_queue_free();
 		return TRUE;
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }

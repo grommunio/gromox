@@ -54,7 +54,7 @@ static void broadcast_select(const char *username, const char *folder);
 
 static void broadcast_unselect(const char *username, const char *folder);
 
-BOOL SVC_event_proxy(int reason, void **ppdata)
+BOOL SVC_event_proxy(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	int i, conn_num;
 	
@@ -133,8 +133,9 @@ BOOL SVC_event_proxy(int reason, void **ppdata)
 		g_lost_list.clear();
 		g_back_list.clear();
 		return TRUE;
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }
 
 static void *evpx_scanwork(void *param)

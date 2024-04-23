@@ -33,4 +33,4 @@ BOOL hpm_processor_send(HTTP_CONTEXT *phttp,
 	const void *pbuff, int length);
 int hpm_processor_receive(HTTP_CONTEXT *phttp,
 	char *pbuff, int length);
-extern void hpm_processor_trigger(unsigned int ev);
+extern void hpm_processor_trigger(enum plugin_op);

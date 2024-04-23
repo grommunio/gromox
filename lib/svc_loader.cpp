@@ -60,7 +60,6 @@ extern const char version_info_for_memory_dumps[];
 const char version_info_for_memory_dumps[] = "gromox " PACKAGE_VERSION;
 
 static int service_load_library(static_module &&);
-static void *service_query_service(const char *service, const std::type_info &);
 
 static std::string g_config_dir, g_data_dir;
 static std::list<SVC_PLUG_ENTITY> g_list_plug;
@@ -84,7 +83,19 @@ void service_init(service_init_param &&parm)
 	g_program_identifier = parm.prog_id;
 }
 
-static void *const server_funcs[] = {reinterpret_cast<void *>(service_query_service)};
+/* See commentary of service_query() why it's done */
+static constexpr struct dlfuncs server_funcs = {
+	/* .symget = */ service_query,
+	/* .symreg = */ service_register_service,
+	/* .get_config_path = */ []() { return g_config_dir.c_str(); },
+	/* .get_data_path = */ []() { return g_data_dir.c_str(); },
+	/* .get_context_num = */ []() { return g_context_num; },
+	/* .get_host_ID = */ []() {
+                        auto r = g_config_file->get_value("host_id");
+                        return r != nullptr ? r : "localhost";
+	},
+	/* .get_prog_id = */ []() { return g_program_identifier; },
+};
 
 int service_run_early() try
 {
@@ -98,7 +109,7 @@ int service_run_early() try
 		if (ret == PLUGIN_LOAD_OK) {
 			if (g_cur_plug == nullptr)
 				continue;
-			if (g_cur_plug->lib_main(PLUGIN_EARLY_INIT, const_cast<void **>(server_funcs))) {
+			if (g_cur_plug->lib_main(PLUGIN_EARLY_INIT, server_funcs)) {
 				g_cur_plug = nullptr;
 				continue;
 			}
@@ -117,7 +128,7 @@ int service_run()
 {
 	for (auto it = g_list_plug.begin(); it != g_list_plug.end(); ) {
 		g_cur_plug = &*it;
-		if (g_cur_plug->lib_main(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
+		if (g_cur_plug->lib_main(PLUGIN_INIT, server_funcs)) {
 			g_cur_plug->completed_init = true;
 			g_cur_plug = nullptr;
 			++it;
@@ -209,35 +220,7 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 	func = (PLUGIN_MAIN)plib->lib_main;
 	if (func != nullptr && plib->completed_init)
 		/* notify the plugin that it will be unloaded */
-		func(PLUGIN_FREE, NULL);
-}
-
-/*
- *  get services
- *  @param
- *      service    name of service
- *
- *  @return
- *      address of function
- */
-static void *service_query_service(const char *service, const std::type_info &ti)
-{
-	if (strcmp(service, "register_service") == 0)
-		return reinterpret_cast<void *>(service_register_service);
-	if (strcmp(service, "get_config_path") == 0)
-		return reinterpret_cast<void *>(+[]() { return g_config_dir.c_str(); });
-	if (strcmp(service, "get_data_path") == 0)
-		return reinterpret_cast<void *>(+[]() { return g_data_dir.c_str(); });
-	if (strcmp(service, "get_context_num") == 0)
-		return reinterpret_cast<void *>(+[]() { return g_context_num; });
-	if (strcmp(service, "get_host_ID") == 0)
-		return reinterpret_cast<void *>(+[]() {
-			auto r = g_config_file->get_value("host_id");
-			return r != nullptr ? r : "localhost";
-		});
-	if (strcmp(service, "get_prog_id") == 0)
-		return reinterpret_cast<void *>(+[]() { return g_program_identifier; });
-	return service_query(service, nullptr, ti);
+		func(PLUGIN_FREE, server_funcs);
 }
 
 /*
@@ -296,14 +279,8 @@ void *service_query(const char *service_name, const char *module, const std::typ
 	/* first find out the service node in global service list */
 	auto node = std::find_if(g_list_service.begin(), g_list_service.end(),
 	                [&](const std::shared_ptr<service_entry> &e) { return e->service_name == service_name; });
-	if (node == g_list_service.end()) {
-		static constexpr const char *excl[] =
-			{"ndr_stack_alloc"};
-		if (std::none_of(excl, &excl[std::size(excl)],
-		    [&](const char *s) { return strcmp(service_name, s) == 0; }))
-			mlog(LV_ERR, "service: dlname \"%s\" not found", service_name);
+	if (node == g_list_service.end())
 		return NULL;
-	}
 	auto &pservice = *node;
 	if (strcmp(ti.name(), pservice->type_info->name()) != 0)
 		mlog(LV_ERR, "service: type mismatch on dlname \"%s\" (%s VS %s)",
@@ -362,11 +339,11 @@ void service_release(const char *service_name, const char *module)
 		rh.erase(i);
 }
 
-void service_trigger_all(unsigned int ev)
+void service_trigger_all(enum plugin_op ev)
 {
 	for (auto &p : g_list_plug) {
 		g_cur_plug = &p;
-		p.lib_main(ev, nullptr);
+		p.lib_main(ev, server_funcs);
 	}
 	g_cur_plug = nullptr;
 }

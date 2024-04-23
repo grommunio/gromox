@@ -160,7 +160,7 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 	return false;
 }
 
-BOOL SVC_dnsbl_filter(int reason, void **data)
+BOOL SVC_dnsbl_filter(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason != PLUGIN_INIT)
 		return TRUE;
