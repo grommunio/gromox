@@ -216,24 +216,19 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
  */
 static void *service_query_service(const char *service, const std::type_info &ti)
 {
-    if (0 == strcmp(service, "register_service")) {
+	if (strcmp(service, "register_service") == 0)
 		return reinterpret_cast<void *>(service_register_service);
-    }
-	if (0 == strcmp(service, "get_config_path")) {
+	if (strcmp(service, "get_config_path") == 0)
 		return reinterpret_cast<void *>(+[]() { return g_config_dir.c_str(); });
-	}
-	if (0 == strcmp(service, "get_data_path")) {
+	if (strcmp(service, "get_data_path") == 0)
 		return reinterpret_cast<void *>(+[]() { return g_data_dir.c_str(); });
-	}
-	if (0 == strcmp(service, "get_context_num")) {
+	if (strcmp(service, "get_context_num") == 0)
 		return reinterpret_cast<void *>(+[]() { return g_context_num; });
-	}
-	if (0 == strcmp(service, "get_host_ID")) {
+	if (strcmp(service, "get_host_ID") == 0)
 		return reinterpret_cast<void *>(+[]() {
 			auto r = g_config_file->get_value("host_id");
 			return r != nullptr ? r : "localhost";
 		});
-	}
 	if (strcmp(service, "get_prog_id") == 0)
 		return reinterpret_cast<void *>(+[]() { return g_program_identifier; });
 	return service_query(service, nullptr, ti);
@@ -254,9 +249,8 @@ static void *service_query_service(const char *service, const std::type_info &ti
 BOOL service_register_service(const char *func_name, void *addr,
     const std::type_info &ti) try
 {
-	if (NULL == func_name) {
+	if (func_name == nullptr)
 		return FALSE;
-	}
 	/*check if register service is invoked only in SVC_LibMain(PLUGIN_INIT,..)*/
 	auto plug = g_cur_plug;
 	if (plug == nullptr)
@@ -305,10 +299,9 @@ void *service_query(const char *service_name, const char *module, const std::typ
 		return NULL;
 	}
 	auto &pservice = *node;
-	if (strcmp(ti.name(), pservice->type_info->name()) != 0) {
+	if (strcmp(ti.name(), pservice->type_info->name()) != 0)
 		mlog(LV_ERR, "service: type mismatch on dlname \"%s\" (%s VS %s)",
 			service_name, pservice->type_info->name(), ti.name());
-	}
 	if (module == nullptr)
 		/* untracked user */
 		return pservice->service_addr;
@@ -354,9 +347,8 @@ void service_release(const char *service_name, const char *module)
 		return;
 	pmodule->ref_count --;
 	/* if reference count of module node is 0, free this node */ 
-	if (0 == pmodule->ref_count) {
+	if (pmodule->ref_count == 0)
 		pservice->list_reference.erase(pmodule);
-	}
 	pservice->plib->ref_count --;
 	auto &rh = pservice->plib->ref_holders;
 	auto i = std::find(rh.begin(), rh.end(), service_name + "@"s + znul(module));
