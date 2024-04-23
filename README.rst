@@ -7,14 +7,16 @@ options include RPC/HTTP (Outlook Anywhere), MAPI/HTTP, EWS, IMAP, POP3, an
 SMTP-speaking LDA, and a PHP module with a MAPI function subset. Components can
 scale-out over multiple hosts.
 
-|shield-agpl| |shield-release|_ |shield-cov|_ |shield-loc|
+|shield-agpl| |shield-release| |shield-cov| |shield-loc|
 
-.. |shield-agpl| image:: https://img.shields.io/badge/license-AGPL--3.0-green
+.. |shield-agpl| image:: https://img.shields.io/badge/license-AGPL--3%2E0-green
+                 :target: LICENSE.txt
 .. |shield-release| image:: https://shields.io/github/v/tag/grommunio/gromox
-.. _shield-release: https://github.com/grommunio/gromox/tags
+                    :target: https://github.com/grommunio/gromox/tags
 .. |shield-cov| image:: https://img.shields.io/coverity/scan/gromox
-.. _shield-cov: https://scan.coverity.com/projects/gromox
+                  :target: https://scan.coverity.com/projects/gromox
 .. |shield-loc| image:: https://img.shields.io/github/languages/code-size/grommunio/gromox
+                :target: https://github.com/grommunio/gromox/
 
 Gromox is modular and consists of a set of components and programs to provide
 its feature set. This repository includes a number of manual pages, for which a
