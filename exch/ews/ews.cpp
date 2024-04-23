@@ -580,7 +580,7 @@ static std::unique_ptr<EWSPlugin> g_ews_plugin; ///< Current plugin
  *
  * @return     TRUE if initialization was successful, false otherwise
  */
-static BOOL ews_init(void **apidata)
+static BOOL ews_init(const struct dlfuncs &apidata)
 {
 	auto fail = [](auto&&... args){mlog(LV_ERR, args...); return false;};
 	LINK_HPM_API(apidata)
@@ -609,7 +609,7 @@ static BOOL ews_init(void **apidata)
  *
  * @return     TRUE if successful, false otherwise
  */
-BOOL HPM_ews(int reason, void **data)
+BOOL HPM_ews(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_INIT)
 		return ews_init(data);

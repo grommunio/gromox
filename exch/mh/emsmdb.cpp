@@ -206,7 +206,7 @@ class MhEmsmdbPlugin {
 public:
 	using SessionIterator = std::unordered_map<std::string, session_data>::iterator;
 
-	explicit MhEmsmdbPlugin(void**);
+	explicit MhEmsmdbPlugin(const struct dlfuncs &);
 	~MhEmsmdbPlugin();
 	NOMOVE(MhEmsmdbPlugin);
 
@@ -252,7 +252,7 @@ static constexpr struct cfg_directive mhems_gxcfg_deflt[] = {
  *
  * @param	ppdata	Plugin context data
  */
-MhEmsmdbPlugin::MhEmsmdbPlugin(void** ppdata)
+MhEmsmdbPlugin::MhEmsmdbPlugin(const struct dlfuncs &ppdata)
 {
 	LINK_HPM_API(ppdata)
 	if (!query_service1(emsmdb_interface_connect_ex) ||
@@ -375,7 +375,7 @@ static std::unique_ptr<MhEmsmdbPlugin> g_mhems_plugin;
  *
  * @return	TRUE if successful, false otherwise
  */
-BOOL HPM_mh_emsmdb(int reason, void **ppdata)
+BOOL HPM_mh_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	HPM_INTERFACE interface;
 
@@ -408,8 +408,9 @@ BOOL HPM_mh_emsmdb(int reason, void **ppdata)
 	case PLUGIN_FREE:
 		g_mhems_plugin.reset();
 		return TRUE;
+	default:
+		return false;
 	}
-	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

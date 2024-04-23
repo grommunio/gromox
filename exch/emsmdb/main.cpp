@@ -122,7 +122,7 @@ static constexpr DCERPC_INTERFACE interface_async_emsmdb = {
 };
 
 extern void emsmdb_report();
-BOOL PROC_exchange_emsmdb(int reason, void **ppdata)
+BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	int max_mail;
 	int max_rcpt;
@@ -266,8 +266,9 @@ BOOL PROC_exchange_emsmdb(int reason, void **ppdata)
 		rop_processor_stop();
 		asyncemsmdb_interface_free();
 		return TRUE;
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }
 
 static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,

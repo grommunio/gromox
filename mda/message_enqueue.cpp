@@ -360,7 +360,7 @@ static int message_enqueue_retrieve_max_ID() try
 	return 0;
 }
 
-BOOL FLH_LibMain(int reason)
+BOOL FLH_LibMain(enum plugin_op reason)
 {
 	const char *queue_path;
 
@@ -393,6 +393,7 @@ BOOL FLH_LibMain(int reason)
 	case PLUGIN_FREE:
 		message_enqueue_free();
 		return TRUE;
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }

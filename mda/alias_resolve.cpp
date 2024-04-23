@@ -321,7 +321,7 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> &&mcfg,
 	return true;
 }
 
-BOOL HOOK_alias_resolve(int reason, void **data)
+BOOL HOOK_alias_resolve(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_RELOAD) {
 		xa_reload_config(nullptr, nullptr);

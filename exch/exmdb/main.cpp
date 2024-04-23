@@ -124,7 +124,7 @@ static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
 	return true;
 }
 
-BOOL SVC_exmdb_provider(int reason, void **ppdata)
+BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	switch(reason) {
 	case PLUGIN_RELOAD:
@@ -274,6 +274,7 @@ BOOL SVC_exmdb_provider(int reason, void **ppdata)
 		exmdb_parser_stop();
 		db_engine_stop();
 		return TRUE;
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }

@@ -97,6 +97,11 @@ class interface_eq {
 
 }
 
+static void *pdu_processor_queryservice(const char *, const char *, const std::type_info &);
+static DCERPC_INFO pdu_processor_get_rpc_info();
+static uint64_t pdu_processor_get_binding_handle();
+static void *pdu_processor_queryservice(const char *, const char *, const std::type_info &);
+
 unsigned int g_msrpc_debug;
 static BOOL g_bigendian;
 static unsigned int g_connection_num;
@@ -2864,6 +2869,42 @@ static void pdu_processor_unregister_interface(DCERPC_ENDPOINT *ep,
 #endif
 }
 
+static constexpr struct dlfuncs server_funcs = {
+	/* .symget = */ pdu_processor_queryservice,
+	/* .symreg = */ service_register_service,
+	/* .get_config_path = */ []() {
+		auto r = g_config_file->get_value("config_file_path");
+		return r != nullptr ? r : PKGSYSCONFDIR;
+	},
+	/* .get_data_path = */ []() {
+		auto r = g_config_file->get_value("data_file_path");
+		return r != nullptr ? r : PKGDATADIR "/http:" PKGDATADIR;
+	},
+	/* .get_context_num = */ []() { return g_connection_num; },
+	/* .get_host_ID = */ []() { return g_config_file->get_value("host_id"); },
+	/* .get_prog_id = */ nullptr,
+	/* .ndr_stack_alloc = */ pdu_processor_ndr_stack_alloc,
+	/* .rpc_new_stack = */ pdu_processor_rpc_new_stack,
+	/* .rpc_free_stack = */ pdu_processor_rpc_free_stack,
+
+	/* PROC_ */ {
+	pdu_processor_register_endpoint,
+	pdu_processor_register_interface,
+	pdu_processor_unregister_interface,
+	pdu_processor_get_binding_handle,
+	pdu_processor_get_rpc_info,
+	/* .rpc_is_bigendian = */ []() -> BOOL {
+		auto c = pdu_processor_get_call();
+		return c != nullptr ? c->b_bigendian : g_bigendian;
+	},
+	pdu_processor_apply_async_id,
+	pdu_processor_activate_async_id,
+	pdu_processor_cancel_async_id,
+	pdu_processor_rpc_build_environment,
+	pdu_processor_async_reply,
+	},
+};
+
 PROC_PLUGIN::~PROC_PLUGIN()
 {
 	PLUGIN_MAIN func;
@@ -2874,7 +2915,7 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	func = (PLUGIN_MAIN)pplugin->lib_main;
 	if (func != nullptr && pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
-		func(PLUGIN_FREE, NULL);
+		func(PLUGIN_FREE, server_funcs);
 	for (const auto &nd : list_reference)
 		service_release(nd.service_name.c_str(), pplugin->file_name.c_str());
 }
@@ -2929,59 +2970,13 @@ static uint64_t pdu_processor_get_binding_handle()
 	return 0;
 }
 
-static void *pdu_processor_queryservice(const char *service, const std::type_info &ti)
+static void *pdu_processor_queryservice(const char *service, const char *rq,
+    const std::type_info &ti)
 {
 	void *ret_addr;
 
 	if (g_cur_plugin == nullptr)
 		return NULL;
-	if (strcmp(service, "register_endpoint") == 0)
-		return reinterpret_cast<void *>(pdu_processor_register_endpoint);
-	if (strcmp(service, "register_interface") == 0)
-		return reinterpret_cast<void *>(pdu_processor_register_interface);
-	if (strcmp(service, "unregister_interface") == 0)
-		return reinterpret_cast<void *>(pdu_processor_unregister_interface);
-	if (strcmp(service, "register_service") == 0)
-		return reinterpret_cast<void *>(service_register_service);
-	if (strcmp(service, "get_host_ID") == 0)
-		return reinterpret_cast<void *>(+[]() { return g_config_file->get_value("host_id"); });
-	if (strcmp(service, "get_config_path") == 0)
-		return reinterpret_cast<void *>(+[]() {
-			auto r = g_config_file->get_value("config_file_path");
-			return r != nullptr ? r : PKGSYSCONFDIR;
-		});
-	if (strcmp(service, "get_data_path") == 0)
-		return reinterpret_cast<void *>(+[]() {
-			auto r = g_config_file->get_value("data_file_path");
-			return r != nullptr ? r : PKGDATADIR "/http:" PKGDATADIR;
-		});
-	if (strcmp(service, "get_context_num") == 0)
-		return reinterpret_cast<void *>(+[]() { return g_connection_num; });
-	if (strcmp(service, "get_binding_handle") == 0)
-		return reinterpret_cast<void *>(pdu_processor_get_binding_handle);
-	if (strcmp(service, "get_rpc_info") == 0)
-		return reinterpret_cast<void *>(pdu_processor_get_rpc_info);
-	if (strcmp(service, "is_rpc_bigendian") == 0)
-		return reinterpret_cast<void *>(+[]() -> BOOL {
-			auto c = pdu_processor_get_call();
-			return c != nullptr ? c->b_bigendian : g_bigendian;
-		});
-	if (strcmp(service, "ndr_stack_alloc") == 0)
-		return reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc);
-	if (strcmp(service, "apply_async_id") == 0)
-		return reinterpret_cast<void *>(pdu_processor_apply_async_id);
-	if (strcmp(service, "activate_async_id") == 0)
-		return reinterpret_cast<void *>(pdu_processor_activate_async_id);
-	if (strcmp(service, "cancel_async_id") == 0)
-		return reinterpret_cast<void *>(pdu_processor_cancel_async_id);
-	if (strcmp(service, "rpc_build_environment") == 0)
-		return reinterpret_cast<void *>(pdu_processor_rpc_build_environment);
-	if (strcmp(service, "rpc_new_stack") == 0)
-		return reinterpret_cast<void *>(pdu_processor_rpc_new_stack);
-	if (strcmp(service, "rpc_free_stack") == 0)
-		return reinterpret_cast<void *>(pdu_processor_rpc_free_stack);
-	if (strcmp(service, "async_reply") == 0)
-		return reinterpret_cast<void *>(pdu_processor_async_reply);
 	/* check if already exists in the reference list */
 	for (const auto &nd : g_cur_plugin->list_reference)
 		if (nd.service_name == service)
@@ -3013,7 +3008,6 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
  */
 static int pdu_processor_load_library(static_module &&mod)
 {
-	static void *const server_funcs[] = {reinterpret_cast<void *>(pdu_processor_queryservice)};
 	PROC_PLUGIN plug;
 
 	plug.lib_main = mod.efunc;
@@ -3024,7 +3018,7 @@ static int pdu_processor_load_library(static_module &&mod)
 	
 	/* append the pendpoint node into endpoint list */
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-	if (!g_cur_plugin->lib_main(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
+	if (!g_cur_plugin->lib_main(PLUGIN_INIT, server_funcs)) {
 		mlog(LV_ERR, "pdu_processor: error executing the plugin's init "
 			"function in %s", fake_path);
 		g_plugin_list.pop_back();
@@ -3036,11 +3030,11 @@ static int pdu_processor_load_library(static_module &&mod)
 	return PLUGIN_LOAD_OK;
 }
 
-void pdu_processor_trigger(unsigned int ev)
+void pdu_processor_trigger(enum plugin_op ev)
 {
 	for (auto &p : g_plugin_list) {
 		g_cur_plugin = &p;
-		p.lib_main(ev, nullptr);
+		p.lib_main(ev, server_funcs);
 	}
 	g_cur_plugin = nullptr;
 }
