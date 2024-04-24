@@ -460,9 +460,9 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 		PR_HIER_REV, &nt_time, &b_result);
 	cu_set_property(MAPI_FOLDER, folder_id, CP_ACP, pdb->psqlite,
 		PR_HIER_REV, &nt_time, &b_result);
+	pdb->notify_folder_creation(parent_id, folder_id, *dbase);
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
-	pdb->notify_folder_creation(parent_id, folder_id, *dbase);
 	*pfolder_id = rop_util_make_eid_ex(1, folder_id);
 	*errcode = ecSuccess;
 	return TRUE;
@@ -544,10 +544,10 @@ BOOL exmdb_server::set_folder_properties(const char *dir, cpid_t cpid,
 	if (!cu_set_properties(MAPI_FOLDER,
 	    fid_val, cpid, pdb->psqlite, pproperties, pproblems))
 		return FALSE;
-	if (sql_transact.commit() != SQLITE_OK)
-		return false;
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, fid_val), fid_val, *dbase);
+	if (sql_transact.commit() != SQLITE_OK)
+		return false;
 	return TRUE;
 }
 
@@ -565,10 +565,10 @@ BOOL exmdb_server::remove_folder_properties(const char *dir,
 	if (!cu_remove_properties(MAPI_FOLDER,
 	    fid_val, pdb->psqlite, pproptags))
 		return FALSE;
-	if (sql_transact.commit() != SQLITE_OK)
-		return false;
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, fid_val), fid_val, *dbase);
+	if (sql_transact.commit() != SQLITE_OK)
+		return false;
 	return TRUE;
 }
 
@@ -1697,9 +1697,9 @@ BOOL exmdb_server::movecopy_folder(const char *dir, cpid_t cpid, BOOL b_guest,
 	         LLU{nt_time}, LLU{dst_val}, PR_HIER_REV);
 	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
+	pdb->notify_folder_movecopy(b_copy, dst_val, fid_val, parent_val, src_val, *dbase);
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
-	pdb->notify_folder_movecopy(b_copy, dst_val, fid_val, parent_val, src_val, *dbase);
 	*errcode = ecSuccess;
 	return TRUE;
 }
@@ -1919,8 +1919,6 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	BOOL b_update = false, b_populate = false;
 	if (!folder_clear_search_folder(pdb, cpid, fid_val, dbase))
 		return false;
-	if (sql_transact.commit() != SQLITE_OK)
-		return false;
 	if (search_flags & RESTART_SEARCH) {
 		b_populate = TRUE;
 		if (!(search_flags & STATIC_SEARCH))
@@ -1931,6 +1929,8 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 			prestriction, &folder_ids, *dbase);
 	else
 		pdb->delete_dynamic(fid_val, dbase);
+	if (sql_transact.commit() != SQLITE_OK)
+		return false;
 
 	pdb.reset();
 	if (b_populate && !db_engine_enqueue_populating_criteria(dir,

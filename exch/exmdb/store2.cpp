@@ -58,6 +58,8 @@ BOOL exmdb_server::notify_new_mail(const char *dir, uint64_t folder_id,
 	if (!pdb)
 		return false;
 	db_base *dbase = pdb->m_base;
+	/* Notifications need an externally managed transaction on main. */
+	auto sql_trans = gx_sql_begin_trans(pdb->psqlite, false);
 	pdb->notify_new_mail(rop_util_get_gc_value(folder_id),
 		rop_util_get_gc_value(message_id), *dbase);
 	return TRUE;

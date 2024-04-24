@@ -633,7 +633,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 			count = 0;
 			t_start = tp_now();
 		}
-		auto sql_transact1 = gx_sql_begin_trans(pdb->psqlite, false); // ends before writes take place
+		auto sql_transact1 = gx_sql_begin_trans(pdb->psqlite, false);
 		if (!sql_transact1)
 			return false;
 		if (!cu_eval_msg_restriction(pdb->psqlite,
@@ -651,8 +651,6 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 			break;
 		else if (ret != SQLITE_OK)
 			continue;
-		if (sql_transact1.commit() != SQLITE_OK)
-			return false;
 		/*
 		 * Update other search folders (seems like it is allowed to
 		 * have a search folder have a scope containing another search
@@ -664,6 +662,8 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 		 * Regular notifications
 		 */
 		pdb->notify_link_creation(search_fid, pmessage_ids->pids[i], dbase);
+		if (sql_transact1.commit() != SQLITE_OK)
+			return false;
 	}
 	return TRUE;
 }
