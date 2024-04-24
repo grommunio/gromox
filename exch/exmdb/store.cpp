@@ -433,7 +433,7 @@ BOOL exmdb_server::transport_new_mail(const char *dir, uint64_t folder_id,
 		return FALSE;
 	/* No database access, so no transaction. */
 	pdb->transport_new_mail(rop_util_get_gc_value(folder_id),
-		rop_util_get_gc_value(message_id), message_flags, pstr_class);
+		rop_util_get_gc_value(message_id), message_flags, pstr_class, pdb->m_base);
 	return TRUE;
 }
 
