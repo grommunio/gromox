@@ -213,7 +213,6 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
     uint32_t *ptable_id, uint32_t *prow_count) try
 {
 	uint64_t fid_val;
-	uint32_t table_id;
 	char sql_string[256];
 	
 	auto pdb = db_engine_get_db(dir);
@@ -224,8 +223,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 		exmdb_server::set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	fid_val = rop_util_get_gc_value(folder_id);
-	dbase->tables.last_id ++;
-	table_id = dbase->tables.last_id;
+	auto table_id = ++dbase->tables.last_id;
 	auto table_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!table_transact)
 		return false;
@@ -1149,7 +1147,6 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
     uint32_t table_flags, uint32_t *ptable_id, uint32_t *prow_count) try
 {
 	uint64_t fid_val;
-	uint32_t table_id;
 	char sql_string[256];
 	
 	auto pdb = db_engine_get_db(dir);
@@ -1158,8 +1155,7 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 	/* Only one SQL operation on main, no transaction needed. */
 	auto dbase = pdb->m_base;
 	fid_val = rop_util_get_gc_value(folder_id);
-	++dbase->tables.last_id;
-	table_id = dbase->tables.last_id;
+	auto table_id = ++dbase->tables.last_id;
 	auto table_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!table_transact)
 		return false;
@@ -1320,7 +1316,6 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
     uint32_t *prow_count) try
 {
 	uint64_t fid_val;
-	uint32_t table_id;
 	char sql_string[256];
 	
 	auto pdb = db_engine_get_db(dir);
@@ -1328,8 +1323,7 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
 		return FALSE;
 	auto dbase = pdb->m_base;
 	fid_val = rop_util_get_gc_value(folder_id);
-	++dbase->tables.last_id;
-	table_id = dbase->tables.last_id;
+	auto table_id = ++dbase->tables.last_id;
 	auto table_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!table_transact)
 		return false;

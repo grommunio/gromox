@@ -126,7 +126,7 @@ struct db_base {
 	gromox::time_point last_time{};
 	/* memory database for holding rop table objects instance */
 	struct {
-		uint32_t last_id = 0;
+		std::atomic<uint32_t> last_id = 0;
 		bool b_batch = false; /* message database is in batch-mode */
 		std::list<table_node> table_list;
 	} tables;
