@@ -223,7 +223,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 		exmdb_server::set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	fid_val = rop_util_get_gc_value(folder_id);
-	auto table_id = ++dbase->tables.last_id;
+	auto table_id = pdb->next_table_id();
 	auto table_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!table_transact)
 		return false;
@@ -580,7 +580,7 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, cpid_t cpid,
 		b_search = pstmt.col_int64(0) != 0;
 	}
 	auto cl_1 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
-	uint32_t table_id = *ptable_id != 0 ? *ptable_id : ++dbase->tables.last_id;
+	uint32_t table_id = *ptable_id != 0 ? *ptable_id : pdb->next_table_id();
 	auto table_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!table_transact)
 		return false;
@@ -1155,7 +1155,7 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 	/* Only one SQL operation on main, no transaction needed. */
 	auto dbase = pdb->m_base;
 	fid_val = rop_util_get_gc_value(folder_id);
-	auto table_id = ++dbase->tables.last_id;
+	auto table_id = pdb->next_table_id();
 	auto table_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!table_transact)
 		return false;
@@ -1323,7 +1323,7 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
 		return FALSE;
 	auto dbase = pdb->m_base;
 	fid_val = rop_util_get_gc_value(folder_id);
-	auto table_id = ++dbase->tables.last_id;
+	auto table_id = pdb->next_table_id();
 	auto table_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!table_transact)
 		return false;

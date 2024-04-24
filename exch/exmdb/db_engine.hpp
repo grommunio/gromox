@@ -197,6 +197,7 @@ struct db_conn {
 	int exec(const char *q, unsigned int fl = 0) const { return gromox::gx_sql_exec(psqlite, q, fl); }
 	gromox::xstmt eph_prep(const char *q) const { return gromox::gx_sql_prep(m_sqlite_eph, q); }
 	int eph_exec(const char *q) const { return gromox::gx_sql_exec(m_sqlite_eph, q); }
+	inline uint32_t next_table_id() { return ++m_base->tables.last_id; }
 
 	sqlite3 *psqlite = nullptr, *m_sqlite_eph = nullptr;
 	db_base *m_base = nullptr;
