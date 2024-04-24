@@ -568,13 +568,12 @@ static bool db_reload(db_conn_ptr &pdb, const char *dir)
 
 static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
     uint64_t search_fid, uint64_t scope_fid, const RESTRICTION *prestriction,
-    db_conn_ptr &pdb)
+    db_conn_ptr &pdb, db_base *dbase)
 {
 	char sql_string[128];
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false); // ends before writes take place
 	if (!sql_transact)
 		return false;
-	auto dbase = pdb->m_base;
 	snprintf(sql_string, std::size(sql_string), "SELECT is_search "
 	          "FROM folders WHERE folder_id=%llu", LLU{scope_fid});
 	auto pstmt = pdb->prep(sql_string);
@@ -747,12 +746,12 @@ static void dg_notify(DB_NOTIFY_DATAGRAM &&dg, ID_ARRAYS &&a)
 	}
 }
 
-static void dbeng_notify_search_completion(db_conn_ptr &pdb,
+static void dbeng_notify_search_completion(const db_base &dbase,
     uint64_t folder_id) try
 {
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb->m_base,
+	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_SEARCH_COMPLETE, folder_id, 0);
 	if (!parrays.has_value() || parrays->count == 0)
 		return;
@@ -810,19 +809,19 @@ static void *sf_popul_thread(void *param)
 		auto pdb = db_engine_get_db(psearch->dir.c_str());
 		if (!pdb)
 			goto NEXT_SEARCH;
+		db_base *dbase = pdb->m_base;
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
 			if (g_notify_stop)
 				break;
 			if (!db_engine_search_folder(psearch->dir.c_str(),
 			    psearch->cpid, psearch->folder_id,
-			    pfolder_ids->pids[i], psearch->prestriction, pdb))
-				break;	
+			    pfolder_ids->pids[i], psearch->prestriction, pdb, dbase))
+				break;
 		}
 		if (g_notify_stop)
 			break;
-		const db_base *dbase = pdb->m_base;
 		/* Stop animation (does nothing else in OL really) */
-		dbeng_notify_search_completion(pdb, psearch->folder_id);
+		dbeng_notify_search_completion(*dbase, psearch->folder_id);
 		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 			pdb->psqlite, psearch->folder_id),
 			psearch->folder_id, dbase);
@@ -960,9 +959,9 @@ bool db_engine_check_populating(const char *dir, uint64_t folder_id)
 }
 
 void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
-    const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids) try
+    const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids,
+    db_base *dbase) try
 {
-	auto pdb = this;
 	dynamic_node dn;
 	
 	dn.folder_id    = folder_id;
@@ -975,7 +974,6 @@ void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	if (dn.folder_ids.pll == nullptr)
 		return;
 	memcpy(dn.folder_ids.pll, pfolder_ids->pll, sizeof(*pfolder_ids->pll) * pfolder_ids->count);
-	auto dbase = pdb->m_base;
 	auto i = std::find_if(dbase->dynamic_list.begin(), dbase->dynamic_list.end(),
 	         [=](const dynamic_node &n) { return n.folder_id == folder_id; });
 	if (i == dbase->dynamic_list.end())
@@ -986,9 +984,8 @@ void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	mlog(LV_ERR, "E-1143: ENOMEM");
 }
 
-void db_conn::delete_dynamic(uint64_t folder_id)
+void db_conn::delete_dynamic(uint64_t folder_id, db_base *dbase)
 {
-	auto dbase = m_base;
 	gromox::erase_first_if(dbase->dynamic_list,
 		[=](const dynamic_node &n) { return n.folder_id == folder_id; });
 }
@@ -1420,7 +1417,7 @@ static inline void *pick_single_val(uint16_t type, void *mv, size_t j)
 }
 
 static void dbeng_notify_cttbl_add_row(db_conn *pdb,
-    uint64_t folder_id, uint64_t message_id)
+    uint64_t folder_id, uint64_t message_id, db_base *dbase)
 {
 	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE};
 	DB_NOTIFY_DATAGRAM datagram1 = datagram;
@@ -1435,7 +1432,6 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 		return;	
 	std::unique_ptr<prepared_statements> optim;
 	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
-	auto dbase = pdb->m_base;
 	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2160: failed to start transaction in cttbl_add_row");
@@ -2033,12 +2029,11 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 }
 
 void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
-    uint32_t message_flags, const char *pstr_class) try
+    uint32_t message_flags, const char *pstr_class, const db_base *dbase) try
 {
-	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb->m_base,
+	auto parrays = db_engine_classify_id_array(*dbase,
 	               NF_NEW_MAIL, folder_id, 0);
 	if (!parrays.has_value() || parrays->count == 0)
 		return;
@@ -2058,13 +2053,13 @@ void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
 }
 	
 void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
-    const db_base *dbase) try
+    db_base *dbase) try
 {
 	auto pdb = this;
 	void *pvalue;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb->m_base,
+	auto parrays = db_engine_classify_id_array(*dbase,
 	               NF_NEW_MAIL, folder_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2087,7 +2082,7 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 		pnew_mail->pmessage_class = static_cast<char *>(pvalue);
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id);
+	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase);
 } catch (const std::bad_alloc &) {
@@ -2095,12 +2090,12 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 }
 
 void db_conn::notify_message_creation(uint64_t folder_id,
-    uint64_t message_id, const db_base *dbase) try
+    uint64_t message_id, db_base *dbase) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb->m_base,
+	auto parrays = db_engine_classify_id_array(*dbase,
 	               NF_OBJECT_CREATED, folder_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2116,7 +2111,7 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 		pcreated_mail->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id);
+	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase);
 } catch (const std::bad_alloc &) {
@@ -2124,7 +2119,7 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 }
 
 void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
-    const db_base *dbase) try
+    db_base *dbase) try
 {
 	auto pdb = this;
 	uint64_t anchor_fld;
@@ -2134,7 +2129,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 		return;
 
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb->m_base,
+	auto parrays = db_engine_classify_id_array(*dbase,
 	               NF_OBJECT_CREATED, anchor_fld, 0);
 	if (!parrays.has_value())
 		return;
@@ -2151,7 +2146,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 		plinked_mail->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	dbeng_notify_cttbl_add_row(pdb, srch_fld, message_id);
+	dbeng_notify_cttbl_add_row(pdb, srch_fld, message_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, srch_fld), srch_fld, dbase);
 } catch (const std::bad_alloc &) {
@@ -2317,7 +2312,7 @@ void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb->m_base,
+	auto parrays = db_engine_classify_id_array(*dbase,
 	               NF_OBJECT_CREATED, parent_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2396,7 +2391,7 @@ static void *db_engine_get_extremum_value(db_conn *pdb, cpid_t cpid,
 }
 
 static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
-    uint64_t folder_id, uint64_t message_id)
+    uint64_t folder_id, uint64_t message_id, db_base *dbase)
 {
 	int result;
 	BOOL b_index;
@@ -2423,7 +2418,6 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row = nullptr;
 	
 	pdeleted_row = NULL;
-	auto dbase = pdb->m_base;
 	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2162: failed to start transaction in cttbl_delete_row");
@@ -2851,12 +2845,12 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 }
 
 void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
-    const db_base *dbase) try
+    db_base *dbase) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb->m_base,
+	auto parrays = db_engine_classify_id_array(*dbase,
 	               NF_OBJECT_DELETED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -2871,7 +2865,7 @@ void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
 		pdeleted_mail->message_id = message_id;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	dbeng_notify_cttbl_delete_row(pdb, folder_id, message_id);
+	dbeng_notify_cttbl_delete_row(pdb, folder_id, message_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase);
 } catch (const std::bad_alloc &) {
@@ -2879,7 +2873,7 @@ void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
 }
 
 void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
-    const db_base *dbase) try
+    db_base *dbase) try
 {
 	auto pdb = this;
 	uint64_t folder_id;
@@ -2890,7 +2884,7 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 		return;
 
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb->m_base,
+	auto parrays = db_engine_classify_id_array(*dbase,
 	               NF_OBJECT_DELETED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -2906,7 +2900,7 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 		punlinked_mail->parent_id = parent_id;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	dbeng_notify_cttbl_delete_row(pdb, parent_id, message_id);
+	dbeng_notify_cttbl_delete_row(pdb, parent_id, message_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id, dbase);
 } catch (const std::bad_alloc &) {
@@ -2991,7 +2985,7 @@ void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb->m_base,
+	auto parrays = db_engine_classify_id_array(*dbase,
 	               NF_OBJECT_DELETED, parent_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -3576,8 +3570,8 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 	if (tmp_list.empty())
 		return;
 	std::swap(dbase->tables.table_list, tmp_list);
-	dbeng_notify_cttbl_delete_row(pdb, folder_id, message_id);
-	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id);
+	dbeng_notify_cttbl_delete_row(pdb, folder_id, message_id, dbase);
+	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id, dbase);
 	std::swap(dbase->tables.table_list, tmp_list);
 	for (const auto &tnode : tmp_list) {
 		auto ptable = &tnode;
@@ -3606,7 +3600,7 @@ void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_i
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb->m_base,
+	auto parrays = db_engine_classify_id_array(*dbase,
 	               NF_OBJECT_MODIFIED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -3797,7 +3791,7 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb->m_base,
+	auto parrays = db_engine_classify_id_array(*dbase,
 	               NF_OBJECT_MODIFIED, folder_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -3822,7 +3816,7 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 
 void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
     uint64_t message_id, uint64_t old_fid, uint64_t old_mid,
-    const db_base *dbase)
+    db_base *dbase)
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
@@ -3864,11 +3858,11 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	if (!b_copy) {
-		dbeng_notify_cttbl_delete_row(pdb, old_fid, old_mid);
+		dbeng_notify_cttbl_delete_row(pdb, old_fid, old_mid, dbase);
 		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 			pdb->psqlite, old_fid), old_fid, dbase);
 	}
-	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id);
+	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase);
 }
@@ -3945,15 +3939,13 @@ void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base *dbase)
 		ptable->remote_id, &datagram);
 }
 
-void db_conn::begin_batch_mode()
+void db_conn::begin_batch_mode(db_base *dbase)
 {
-	auto dbase = m_base;
 	dbase->tables.b_batch = true;
 }
 
-void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb)
+void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb, db_base *dbase)
 {
-	auto dbase = pdb->m_base;
 	auto table_num = dbase->tables.table_list.size();
 	auto ptable_ids = table_num > 0 ? cu_alloc<uint32_t>(table_num) : nullptr;
 	table_num = 0;
@@ -3973,9 +3965,8 @@ void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb)
 		exmdb_server::reload_content_table(dir, ptable_ids[table_num]);
 }
 
-void db_conn::cancel_batch_mode()
+void db_conn::cancel_batch_mode(db_base *dbase)
 {
-	auto dbase = m_base;
 	for (auto &t : dbase->tables.table_list)
 		t.b_hint = false;
 	dbase->tables.b_batch = false;

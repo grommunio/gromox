@@ -877,7 +877,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 			pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
 				fid_val, pstmt.col_int64(0), 0, dbase);
 		pstmt.finalize();
-		pdb->delete_dynamic(fid_val);
+		pdb->delete_dynamic(fid_val, dbase);
 	}
 	auto parent_id = common_util_get_folder_parent_fid(pdb->psqlite, fid_val);
 	if (b_search) {
@@ -1928,9 +1928,9 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	}
 	if (b_update)
 		pdb->update_dynamic(fid_val, search_flags,
-			prestriction, &folder_ids);
+			prestriction, &folder_ids, dbase);
 	else
-		pdb->delete_dynamic(fid_val);
+		pdb->delete_dynamic(fid_val, dbase);
 
 	pdb.reset();
 	if (b_populate && !db_engine_enqueue_populating_criteria(dir,

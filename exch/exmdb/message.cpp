@@ -279,10 +279,10 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 	}
 	auto b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
 	if (b_batch)
-		pdb->begin_batch_mode();
+		pdb->begin_batch_mode(dbase);
 	auto cl_0 = make_scope_exit([&]() {
 		if (b_batch)
-			pdb->cancel_batch_mode();
+			pdb->cancel_batch_mode(dbase);
 	});
 	auto stm_find = pdb->prep("SELECT parent_fid, "
 	             "is_associated FROM messages WHERE message_id=?");
@@ -441,7 +441,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		return false;
 	if (b_batch) {
 		b_batch = false;
-		db_conn::commit_batch_mode_release(std::move(pdb));
+		db_conn::commit_batch_mode_release(std::move(pdb), dbase);
 	}
 	return TRUE;
 }
@@ -482,10 +482,10 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 	}
 	auto b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
 	if (b_batch)
-		pdb->begin_batch_mode();
+		pdb->begin_batch_mode(dbase);
 	auto cl_0 = make_scope_exit([&]() {
 		if (b_batch)
-			pdb->cancel_batch_mode();
+			pdb->cancel_batch_mode(dbase);
 	});
 	auto pstmt = pdb->prep("SELECT parent_fid, is_associated, "
 	             "message_size FROM messages WHERE message_id=?");
@@ -643,7 +643,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		return false;
 	if (b_batch) {
 		b_batch = false;
-		db_conn::commit_batch_mode_release(std::move(pdb));
+		db_conn::commit_batch_mode_release(std::move(pdb), dbase);
 	}
 	return TRUE;
 }

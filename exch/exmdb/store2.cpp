@@ -57,7 +57,7 @@ BOOL exmdb_server::notify_new_mail(const char *dir, uint64_t folder_id,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return false;
-	const db_base *dbase = pdb->m_base;
+	db_base *dbase = pdb->m_base;
 	pdb->notify_new_mail(rop_util_get_gc_value(folder_id),
 		rop_util_get_gc_value(message_id), dbase);
 	return TRUE;
