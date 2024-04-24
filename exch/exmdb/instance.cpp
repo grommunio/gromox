@@ -397,6 +397,7 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite); // may be required later but must be started here to avoid deadlocks
 	auto dbase = pdb->m_base;
 	auto instance_id = dbase->next_instance_id();
 	if (instance_id == UINT32_MAX)
@@ -410,7 +411,6 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
 			*pinstance_id = 0;
 			return TRUE;
 		}
-		auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 		if (!sql_transact)
 			return false;
 		if (!common_util_allocate_eid(pdb->psqlite, &mid_val))
@@ -436,6 +436,7 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
 		*pinstance_id = instance_id;
 		return TRUE;
 	}
+	sql_transact = xtransaction(); // not required, end transaction
 	if (b_new) {
 		*pinstance_id = 0;
 		return TRUE;
