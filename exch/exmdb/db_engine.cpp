@@ -333,7 +333,8 @@ db_base::db_base() :
 	reference(1), // is decremented when open() is run.
 	last_time(tp_now())
 {
-	giant_lock.lock(); // prevent access until open() has completed
+	/* Prevent instantiation by db_conn until open() has completed. */
+	sqlite_lock.lock();
 }
 
 /**
@@ -376,6 +377,16 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 }
 
 /**
+ * Get cached database handles or open new ones.
+ */
+void db_base::get_dbs(const char* dir, sqlite3 *&main, sqlite3 *&eph)
+{
+	std::unique_lock lock(sqlite_lock);
+	main = get_db(dir, db_base::DB_MAIN).release();
+	eph  = get_db(dir, db_base::DB_EPH).release();
+}
+
+/**
  * @brief      Initialize and unlock database
  *
  * Perform database initializations that should not be run for each connection:
@@ -388,8 +399,7 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
  */
 void db_base::open(const char* dir)
 {
-	auto unlock = make_scope_exit([this]{giant_lock.unlock(); --reference;}); /* unlock whenever we're done */
-
+	auto unlock = make_scope_exit([this] { sqlite_lock.unlock(); --reference; }); /* unlock whenever we're done */
 	auto db_path = fmt::format("{}/tables.sqlite3", dir);
 	auto ret = ::unlink(db_path.c_str());
 	if (ret != 0 && errno != ENOENT)
@@ -409,6 +419,7 @@ void db_base::open(const char* dir)
 void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
 {
 	static constexpr size_t unlimited = 0;
+	std::unique_lock lock(sqlite_lock);
 	try {
 		if (eph != nullptr && g_exmdb_max_sqlite_spares != unlimited &&
 		    mx_sqlite_eph.size() < g_exmdb_max_sqlite_spares) {
@@ -422,6 +433,7 @@ void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
 		}
 	} catch (const std::bad_alloc &) {
 	}
+	lock.unlock();
 	if (eph != nullptr)
 		sqlite3_close(eph);
 	if (main != nullptr)
@@ -472,9 +484,8 @@ db_conn &db_conn::operator=(db_conn &&o)
  */
 bool db_conn::open(const char *dir) try
 {
+	m_base->get_dbs(dir, psqlite, m_sqlite_eph);
 	m_lock.lock();
-	psqlite = m_base->get_db(dir, db_base::DB_MAIN).release();
-	m_sqlite_eph = m_base->get_db(dir, db_base::DB_EPH).release();
 	return psqlite && m_sqlite_eph;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1349: ENOMEM");
