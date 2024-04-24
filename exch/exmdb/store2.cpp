@@ -55,7 +55,7 @@ BOOL exmdb_server::notify_new_mail(const char *dir, uint64_t folder_id,
 		return false;
 	db_base *dbase = pdb->m_base;
 	pdb->notify_new_mail(rop_util_get_gc_value(folder_id),
-		rop_util_get_gc_value(message_id), dbase);
+		rop_util_get_gc_value(message_id), *dbase);
 	return TRUE;
 }
 
@@ -253,7 +253,7 @@ static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
 		         "WHERE folder_id=%llu", LLU{subfld});
 		if (gx_sql_exec(db->psqlite, qstr) != SQLITE_OK)
 			return false;
-		db->notify_folder_deletion(folder_id, subfld, dbase);
+		db->notify_folder_deletion(folder_id, subfld, *dbase);
 	}
 	return true;
 }

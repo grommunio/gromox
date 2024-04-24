@@ -113,7 +113,7 @@ unsigned int g_exmdb_pvt_folder_softdel, g_exmdb_max_sqlite_spares;
 unsigned long long g_sqlite_busy_timeout_ns;
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_point);
-static void dbeng_notify_cttbl_modify_row(db_conn *, uint64_t folder_id, uint64_t message_id, db_base *) __attribute__((nonnull(1,4)));
+static void dbeng_notify_cttbl_modify_row(db_conn *, uint64_t folder_id, uint64_t message_id, db_base &) __attribute__((nonnull(1)));
 
 static void db_engine_load_dynamic_list(db_base *dbase, sqlite3* psqlite) try
 {
@@ -570,7 +570,7 @@ static bool db_reload(db_conn_ptr &pdb, const char *dir)
 
 static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
     uint64_t search_fid, uint64_t scope_fid, const RESTRICTION *prestriction,
-    db_conn_ptr &pdb, db_base *dbase)
+    db_conn_ptr &pdb, db_base &dbase)
 {
 	char sql_string[128];
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false); // ends before writes take place
@@ -817,7 +817,7 @@ static void *sf_popul_thread(void *param)
 				break;
 			if (!db_engine_search_folder(psearch->dir.c_str(),
 			    psearch->cpid, psearch->folder_id,
-			    pfolder_ids->pids[i], psearch->prestriction, pdb, dbase))
+			    pfolder_ids->pids[i], psearch->prestriction, pdb, *dbase))
 				break;
 		}
 		if (g_notify_stop)
@@ -826,7 +826,7 @@ static void *sf_popul_thread(void *param)
 		dbeng_notify_search_completion(*dbase, psearch->folder_id);
 		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 			pdb->psqlite, psearch->folder_id),
-			psearch->folder_id, dbase);
+			psearch->folder_id, *dbase);
 		std::vector<uint32_t> table_ids;
 		try {
 			table_ids.reserve(dbase->tables.table_list.size());
@@ -962,7 +962,7 @@ bool db_engine_check_populating(const char *dir, uint64_t folder_id)
 
 void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
     const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids,
-    db_base *dbase) try
+    db_base &dbase) try
 {
 	dynamic_node dn;
 	
@@ -976,10 +976,10 @@ void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	if (dn.folder_ids.pll == nullptr)
 		return;
 	memcpy(dn.folder_ids.pll, pfolder_ids->pll, sizeof(*pfolder_ids->pll) * pfolder_ids->count);
-	auto i = std::find_if(dbase->dynamic_list.begin(), dbase->dynamic_list.end(),
+	auto i = std::find_if(dbase.dynamic_list.begin(), dbase.dynamic_list.end(),
 	         [=](const dynamic_node &n) { return n.folder_id == folder_id; });
-	if (i == dbase->dynamic_list.end())
-		dbase->dynamic_list.push_back(std::move(dn));
+	if (i == dbase.dynamic_list.end())
+		dbase.dynamic_list.push_back(std::move(dn));
 	else
 		*i = std::move(dn);
 } catch (const std::bad_alloc &) {
@@ -994,7 +994,7 @@ void db_conn::delete_dynamic(uint64_t folder_id, db_base *dbase)
 
 static void dbeng_dynevt_1(db_conn *pdb, cpid_t cpid, uint64_t id1,
     uint64_t id2, uint64_t id3, uint32_t folder_type,
-    const dynamic_node *pdynamic, size_t i, db_base *dbase)
+    const dynamic_node *pdynamic, size_t i, db_base &dbase)
 {
 	BOOL b_exist, b_included, b_included1;
 	uint64_t message_id;
@@ -1054,7 +1054,7 @@ static void dbeng_dynevt_1(db_conn *pdb, cpid_t cpid, uint64_t id1,
 
 static void dbeng_dynevt_2(db_conn *pdb, cpid_t cpid, dynamic_event event_type,
     uint64_t id1, uint64_t id2, const dynamic_node *pdynamic, size_t i,
-    db_base *dbase)
+    db_base &dbase)
 {
 	BOOL b_exist;
 	BOOL b_included;
@@ -1169,7 +1169,7 @@ static void dbeng_dynevt_2(db_conn *pdb, cpid_t cpid, dynamic_event event_type,
  * change).
  */
 void db_conn::proc_dynamic_event(cpid_t cpid, dynamic_event event_type,
-    uint64_t id1, uint64_t id2, uint64_t id3, db_base *dbase)
+    uint64_t id1, uint64_t id2, uint64_t id3, db_base &dbase)
 {
 	auto pdb = this;
 	uint32_t folder_type;
@@ -1180,7 +1180,7 @@ void db_conn::proc_dynamic_event(cpid_t cpid, dynamic_event event_type,
 		return;
 	}
 	/* Iterate over all search folders (event sinks)... */
-	for (auto &dn : dbase->dynamic_list) {
+	for (auto &dn : dbase.dynamic_list) {
 		auto pdynamic = &dn;
 		/*
 		 * Iterate over source folders (a.k.a. search scope; MS-OXCFOLD
@@ -1419,7 +1419,7 @@ static inline void *pick_single_val(uint16_t type, void *mv, size_t j)
 }
 
 static void dbeng_notify_cttbl_add_row(db_conn *pdb,
-    uint64_t folder_id, uint64_t message_id, db_base *dbase)
+    uint64_t folder_id, uint64_t message_id, db_base &dbase)
 {
 	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE};
 	DB_NOTIFY_DATAGRAM datagram1 = datagram;
@@ -1439,20 +1439,20 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 		mlog(LV_ERR, "E-2160: failed to start transaction in cttbl_add_row");
 		return;
 	}
-	for (auto &tnode : dbase->tables.table_list) {
+	for (auto &tnode : dbase.tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::content ||
 		    folder_id != ptable->folder_id)
 			continue;
 		if (!!(ptable->table_flags & TABLE_FLAG_ASSOCIATED) == !b_fai)
 			continue;
-		if (dbase->tables.b_batch && ptable->b_hint)
+		if (dbase.tables.b_batch && ptable->b_hint)
 			continue;
 		if (ptable->prestriction != nullptr &&
 		    !cu_eval_msg_restriction(pdb->psqlite,
 		    ptable->cpid, message_id, ptable->prestriction))
 			continue;
-		if (dbase->tables.b_batch) {
+		if (dbase.tables.b_batch) {
 			ptable->b_hint = TRUE;
 			continue;
 		}
@@ -2031,11 +2031,11 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 }
 
 void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
-    uint32_t message_flags, const char *pstr_class, const db_base *dbase) try
+    uint32_t message_flags, const char *pstr_class, const db_base &dbase) try
 {
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*dbase,
+	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_NEW_MAIL, folder_id, 0);
 	if (!parrays.has_value() || parrays->count == 0)
 		return;
@@ -2055,13 +2055,13 @@ void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
 }
 	
 void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
-    db_base *dbase) try
+    db_base &dbase) try
 {
 	auto pdb = this;
 	void *pvalue;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*dbase,
+	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_NEW_MAIL, folder_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2092,12 +2092,12 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 }
 
 void db_conn::notify_message_creation(uint64_t folder_id,
-    uint64_t message_id, db_base *dbase) try
+    uint64_t message_id, db_base &dbase) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*dbase,
+	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_CREATED, folder_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2121,7 +2121,7 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 }
 
 void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
-    db_base *dbase) try
+    db_base &dbase) try
 {
 	auto pdb = this;
 	uint64_t anchor_fld;
@@ -2131,7 +2131,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 		return;
 
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*dbase,
+	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_CREATED, anchor_fld, 0);
 	if (!parrays.has_value())
 		return;
@@ -2156,7 +2156,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 }
 
 static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
-    uint64_t parent_id, uint64_t folder_id, const db_base *dbase)
+    uint64_t parent_id, uint64_t folder_id, const db_base &dbase)
 {
 	uint32_t idx;
 	uint32_t depth;
@@ -2173,7 +2173,7 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
 		mlog(LV_ERR, "E-2166: failed to start transaction in hiertbl_add_row");
 		return;
 	}
-	for (const auto &tnode : dbase->tables.table_list) {
+	for (const auto &tnode : dbase.tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::hierarchy)
 			continue;
@@ -2309,12 +2309,12 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
 }
 
 void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
-    const db_base *dbase) try
+    const db_base &dbase) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*dbase,
+	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_CREATED, parent_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2393,7 +2393,7 @@ static void *db_engine_get_extremum_value(db_conn *pdb, cpid_t cpid,
 }
 
 static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
-    uint64_t folder_id, uint64_t message_id, db_base *dbase)
+    uint64_t folder_id, uint64_t message_id, db_base &dbase)
 {
 	int result;
 	BOOL b_index;
@@ -2425,12 +2425,12 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 		mlog(LV_ERR, "E-2162: failed to start transaction in cttbl_delete_row");
 		return;
 	}
-	for (auto &tnode : dbase->tables.table_list) {
+	for (auto &tnode : dbase.tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::content ||
 		    folder_id != ptable->folder_id)
 			continue;
-		if (dbase->tables.b_batch && ptable->b_hint)
+		if (dbase.tables.b_batch && ptable->b_hint)
 			continue;
 		if (ptable->instance_tag == 0)
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id "
@@ -2444,7 +2444,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			continue;
 		pstmt.finalize();
-		if (dbase->tables.b_batch) {
+		if (dbase.tables.b_batch) {
 			ptable->b_hint = TRUE;
 			continue;
 		}
@@ -2847,12 +2847,12 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 }
 
 void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
-    db_base *dbase) try
+    db_base &dbase) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*dbase,
+	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_DELETED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -2875,7 +2875,7 @@ void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
 }
 
 void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
-    db_base *dbase) try
+    db_base &dbase) try
 {
 	auto pdb = this;
 	uint64_t folder_id;
@@ -2886,7 +2886,7 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 		return;
 
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*dbase,
+	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_DELETED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -2910,7 +2910,7 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 }
 
 static void dbeng_notify_hiertbl_delete_row(db_conn *pdb,
-    uint64_t parent_id, uint64_t folder_id, const db_base *dbase)
+    uint64_t parent_id, uint64_t folder_id, const db_base &dbase)
 {
 	int idx;
 	BOOL b_included;
@@ -2924,7 +2924,7 @@ static void dbeng_notify_hiertbl_delete_row(db_conn *pdb,
 		mlog(LV_ERR, "E-2168: failed to start transaction in hiertbl_delete_row");
 		return;
 	}
-	for (const auto &tnode : dbase->tables.table_list) {
+	for (const auto &tnode : dbase.tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::hierarchy)
 			continue;
@@ -2982,12 +2982,12 @@ static void dbeng_notify_hiertbl_delete_row(db_conn *pdb,
 }
 
 void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
-    const db_base *dbase) try
+    const db_base &dbase) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*dbase,
+	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_DELETED, parent_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -3008,7 +3008,7 @@ void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
 }
 
 static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
-    uint64_t folder_id, uint64_t message_id, db_base *dbase)
+    uint64_t folder_id, uint64_t message_id, db_base &dbase)
 {
 	int result;
 	int row_type;
@@ -3038,7 +3038,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 		mlog(LV_ERR, "E-2164: failed to start transaction in cttbl_modify_row");
 		return;
 	}
-	for (const auto &tnode : dbase->tables.table_list) {
+	for (const auto &tnode : dbase.tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::content ||
 		    folder_id != ptable->folder_id)
@@ -3571,14 +3571,14 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 		mlog(LV_ERR, "E-2165: failed to commit cttbl_modify_row");
 	if (tmp_list.empty())
 		return;
-	std::swap(dbase->tables.table_list, tmp_list);
+	std::swap(dbase.tables.table_list, tmp_list);
 	dbeng_notify_cttbl_delete_row(pdb, folder_id, message_id, dbase);
 	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id, dbase);
-	std::swap(dbase->tables.table_list, tmp_list);
+	std::swap(dbase.tables.table_list, tmp_list);
 	for (const auto &tnode : tmp_list) {
 		auto ptable = &tnode;
 		datagram.id_array = {1, deconst(&ptable->table_id)};
-		for (auto &tnode1 : dbase->tables.table_list) {
+		for (auto &tnode1 : dbase.tables.table_list) {
 			auto ptnode = &tnode1;
 			if (ptable->table_id != ptnode->table_id)
 				continue;
@@ -3597,12 +3597,12 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 }
 
 void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_id,
-    db_base *dbase) try
+    db_base &dbase) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*dbase,
+	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_MODIFIED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -3626,7 +3626,7 @@ void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_i
 }
 
 static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
-    uint64_t parent_id, uint64_t folder_id, const db_base *dbase)
+    uint64_t parent_id, uint64_t folder_id, const db_base &dbase)
 {
 	int idx;
 	BOOL b_included;
@@ -3646,7 +3646,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 		mlog(LV_ERR, "E-2170: failed to start transaction in hiertbl_modify_row");
 		return;
 	}
-	for (const auto &tnode : dbase->tables.table_list) {
+	for (const auto &tnode : dbase.tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::hierarchy)
 			continue;
@@ -3788,12 +3788,12 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 }
 
 void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
-    const db_base *dbase) try
+    const db_base &dbase) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*dbase,
+	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_MODIFIED, folder_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -3818,14 +3818,14 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 
 void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
     uint64_t message_id, uint64_t old_fid, uint64_t old_mid,
-    db_base *dbase)
+    db_base &dbase)
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	std::vector<ID_NODE> tmp_list;
 
-	for (const auto &sub : dbase->nsub_list) {
+	for (const auto &sub : dbase.nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
 			if (!(pnsub->notification_type & NF_OBJECT_COPIED))
@@ -3870,14 +3870,14 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 }
 
 void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
-    uint64_t folder_id, uint64_t old_pid, uint64_t old_fid, const db_base *dbase)
+    uint64_t folder_id, uint64_t old_pid, uint64_t old_fid, const db_base &dbase)
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	std::vector<ID_NODE> tmp_list;
 
-	for (const auto &sub : dbase->nsub_list) {
+	for (const auto &sub : dbase.nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
 			if (!(pnsub->notification_type & NF_OBJECT_COPIED))
@@ -3922,10 +3922,10 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 		pdb->psqlite, parent_id), parent_id, dbase);
 }
 
-void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base *dbase)
+void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base &dbase)
 {
 	DB_NOTIFY_DATAGRAM datagram;
-	const auto &list = dbase->tables.table_list;
+	const auto &list = dbase.tables.table_list;
 	auto ptable = std::find_if(list.cbegin(), list.cend(),
 	              [=](const table_node &n) { return n.table_id == table_id; });
 	if (ptable == list.cend())
@@ -3941,9 +3941,9 @@ void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base *dbase)
 		ptable->remote_id, &datagram);
 }
 
-void db_conn::begin_batch_mode(db_base *dbase)
+void db_conn::begin_batch_mode(db_base &dbase)
 {
-	dbase->tables.b_batch = true;
+	dbase.tables.b_batch = true;
 }
 
 void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb, db_base *dbase)
@@ -3967,9 +3967,9 @@ void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb, db_base *dbase)
 		exmdb_server::reload_content_table(dir, ptable_ids[table_num]);
 }
 
-void db_conn::cancel_batch_mode(db_base *dbase)
+void db_conn::cancel_batch_mode(db_base &dbase)
 {
-	for (auto &t : dbase->tables.table_list)
+	for (auto &t : dbase.tables.table_list)
 		t.b_hint = false;
-	dbase->tables.b_batch = false;
+	dbase.tables.b_batch = false;
 }
