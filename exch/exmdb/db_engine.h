@@ -141,10 +141,12 @@ struct db_base {
 	void handle_spares(sqlite3 *, sqlite3 *);
 
 	void open(const char* dir);
-
-	db_handle get_db(const char* dir, DB_TYPE type);
+	void get_dbs(const char *dir, sqlite3 *&main, sqlite3 *&eph);
 
 private:
+	db_handle get_db(const char *dir, DB_TYPE);
+
+	std::mutex sqlite_lock;
 	std::vector<db_handle> mx_sqlite, mx_sqlite_eph;
 };
 
