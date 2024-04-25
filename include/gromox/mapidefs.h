@@ -1254,52 +1254,60 @@ struct GX_EXPORT RECIPIENT_BLOCK {
 	std::string repr() const;
 };
 
-struct RESTRICTION_AND_OR;
-struct RESTRICTION_NOT;
-struct RESTRICTION_CONTENT;
-struct RESTRICTION_PROPERTY;
-struct RESTRICTION_PROPCOMPARE;
-struct RESTRICTION_BITMASK;
-struct RESTRICTION_SIZE;
-struct RESTRICTION_EXIST;
-struct RESTRICTION_SUBOBJ;
-struct RESTRICTION_COMMENT;
-struct RESTRICTION_COUNT;
+struct restriction_list;
+struct SNotRestriction;
+struct SContentRestriction;
+struct SPropertyRestriction;
+struct SComparePropsRestriction;
+struct SBitMaskRestriction;
+struct SSizeRestriction;
+struct SExistRestriction;
+struct SSubRestriction;
+struct SCommentRestriction;
+struct SCountRestriction;
 
-struct GX_EXPORT RESTRICTION {
+struct GX_EXPORT SRestriction {
 	enum mapi_rtype rt;
 	union {
 		void *pres;
-		RESTRICTION_AND_OR *andor;
-		RESTRICTION_NOT *xnot;
-		RESTRICTION_CONTENT *cont;
-		RESTRICTION_PROPERTY *prop;
-		RESTRICTION_PROPCOMPARE *pcmp;
-		RESTRICTION_BITMASK *bm;
-		RESTRICTION_SIZE *size;
-		RESTRICTION_EXIST *exist;
-		RESTRICTION_SUBOBJ *sub;
-		RESTRICTION_COMMENT *comment;
-		RESTRICTION_COUNT *count;
+		restriction_list *andor;
+		SNotRestriction *xnot;
+		SContentRestriction *cont;
+		SPropertyRestriction *prop;
+		SComparePropsRestriction *pcmp;
+		SBitMaskRestriction *bm;
+		SSizeRestriction *size;
+		SExistRestriction *exist;
+		SSubRestriction *sub;
+		SCommentRestriction *comment;
+		SCountRestriction *count;
 	};
 
 	std::string repr() const;
+	SRestriction *dup() const;
 };
+using RESTRICTION = SRestriction;
 
-struct GX_EXPORT RESTRICTION_AND_OR {
+struct GX_EXPORT restriction_list {
 	uint32_t count;
-	RESTRICTION *pres;
+	SRestriction *pres;
 
 	std::string repr() const;
+	restriction_list *dup() const;
 };
+using RESTRICTION_AND_OR = restriction_list;
+using SAndRestriction = restriction_list;
+using SOrRestriction = restriction_list;
 
-struct GX_EXPORT RESTRICTION_NOT {
+struct GX_EXPORT SNotRestriction {
 	RESTRICTION res;
 
 	std::string repr() const;
+	SNotRestriction *dup() const;
 };
+using RESTRICTION_NOT = SNotRestriction;
 
-struct GX_EXPORT RESTRICTION_CONTENT {
+struct GX_EXPORT SContentRestriction {
 	uint32_t fuzzy_level;
 	uint32_t proptag;
 	TAGGED_PROPVAL propval;
@@ -1307,9 +1315,11 @@ struct GX_EXPORT RESTRICTION_CONTENT {
 	bool eval(const void *) const;
 
 	std::string repr() const;
+	SContentRestriction *dup() const;
 };
+using RESTRICTION_CONTENT = SContentRestriction;
 
-struct GX_EXPORT RESTRICTION_PROPERTY {
+struct GX_EXPORT SPropertyRestriction {
 	enum relop relop;
 	uint32_t proptag;
 	/*
@@ -1321,18 +1331,22 @@ struct GX_EXPORT RESTRICTION_PROPERTY {
 	bool eval(const void *) const;
 
 	std::string repr() const;
+	SPropertyRestriction *dup() const;
 };
+using RESTRICTION_PROPERTY = SPropertyRestriction;
 
-struct GX_EXPORT RESTRICTION_PROPCOMPARE {
+struct GX_EXPORT SComparePropsRestriction {
 	enum relop relop;
 	uint32_t proptag1;
 	uint32_t proptag2;
 	bool comparable() const;
 
 	std::string repr() const;
+	SComparePropsRestriction *dup() const;
 };
+using RESTRICTION_PROPCOMPARE = SComparePropsRestriction;
 
-struct GX_EXPORT RESTRICTION_BITMASK {
+struct GX_EXPORT SBitMaskRestriction {
 	enum bm_relop bitmask_relop;
 	uint32_t proptag;
 	uint32_t mask;
@@ -1340,44 +1354,56 @@ struct GX_EXPORT RESTRICTION_BITMASK {
 	bool eval(const void *) const;
 
 	std::string repr() const;
+	SBitMaskRestriction *dup() const;
 };
+using RESTRICTION_BITMASK = SBitMaskRestriction;
 
-struct GX_EXPORT RESTRICTION_SIZE {
+struct GX_EXPORT SSizeRestriction {
 	enum relop relop;
 	uint32_t proptag;
 	uint32_t size;
 	bool eval(const void *) const;
 
 	std::string repr() const;
+	SSizeRestriction *dup() const;
 };
+using RESTRICTION_SIZE = SSizeRestriction;
 
-struct GX_EXPORT RESTRICTION_EXIST {
+struct GX_EXPORT SExistRestriction {
 	uint32_t proptag;
 
 	std::string repr() const;
+	SExistRestriction *dup() const;
 };
+using RESTRICTION_EXIST = SExistRestriction;
 
-struct GX_EXPORT RESTRICTION_SUBOBJ {
+struct GX_EXPORT SSubRestriction {
 	uint32_t subobject;
 	RESTRICTION res;
 
 	std::string repr() const;
+	SSubRestriction *dup() const;
 };
+using RESTRICTION_SUBOBJ = SSubRestriction;
 
-struct GX_EXPORT RESTRICTION_COMMENT {
+struct GX_EXPORT SCommentRestriction {
 	uint8_t count;
 	TAGGED_PROPVAL *ppropval;
 	RESTRICTION *pres;
 
 	std::string repr() const;
+	SCommentRestriction *dup() const;
 };
+using RESTRICTION_COMMENT = SCommentRestriction;
 
-struct GX_EXPORT RESTRICTION_COUNT {
+struct GX_EXPORT SCountRestriction {
 	uint32_t count;
 	RESTRICTION sub_res;
 
 	std::string repr() const;
+	SCountRestriction *dup() const;
 };
+using RESTRICTION_COUNT = SCountRestriction;
 
 struct GX_EXPORT RULE_ACTIONS {
 	uint16_t count;

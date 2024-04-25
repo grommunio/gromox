@@ -252,7 +252,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 			ptnode->handle_guid = *phandle_guid;
 	}
 	if (NULL != prestriction) {
-		ptnode->prestriction = restriction_dup(prestriction);
+		ptnode->prestriction = prestriction->dup();
 		if (ptnode->prestriction == nullptr)
 			return FALSE;
 	}
@@ -638,7 +638,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 			return false;
 	}
 	if (NULL != prestriction) {
-		ptnode->prestriction = restriction_dup(prestriction);
+		ptnode->prestriction = prestriction->dup();
 		if (ptnode->prestriction == nullptr)
 			return false;
 	}
@@ -1332,7 +1332,7 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
 	ptnode->type = table_type::rule;
 	ptnode->folder_id = fid_val;
 	if (NULL != prestriction) {
-		ptnode->prestriction = restriction_dup(prestriction);
+		ptnode->prestriction = prestriction->dup();
 		if (ptnode->prestriction == nullptr)
 			return FALSE;
 	}

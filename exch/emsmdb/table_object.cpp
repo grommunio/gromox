@@ -202,7 +202,7 @@ BOOL table_object::set_restriction(const RESTRICTION *prestriction)
 		m_restriction = nullptr;
 		return TRUE;
 	}
-	m_restriction = restriction_dup(prestriction);
+	m_restriction = prestriction->dup();
 	return m_restriction != nullptr ? TRUE : false;
 }
 

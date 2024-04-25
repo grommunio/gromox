@@ -13,13 +13,12 @@ using namespace gromox;
 static void *restriction_dup_by_type(mapi_rtype, const void *rst);
 static void restriction_free_by_type(mapi_rtype, void *rst);
 
-static RESTRICTION_AND_OR* restriction_dup_and_or(
-	const RESTRICTION_AND_OR *prestriction)
+restriction_list *restriction_list::dup() const
 {
 	auto pres = me_alloc<RESTRICTION_AND_OR>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
+	auto prestriction = this;
 	pres->count = prestriction->count;
 	pres->pres = me_alloc<RESTRICTION>(pres->count);
 	if (NULL == pres->pres) {
@@ -47,19 +46,17 @@ static void restriction_free_and_or(RESTRICTION_AND_OR *prestriction)
 	for (size_t i = 0; i < prestriction->count; ++i)
 		restriction_free_by_type(prestriction->pres[i].rt,
 								prestriction->pres[i].pres);
-	if (NULL != prestriction->pres) {
+	if (prestriction->pres != nullptr)
 		free(prestriction->pres);
-	}
 	free(prestriction);
 }
 
-static RESTRICTION_NOT* restriction_dup_not(
-	const RESTRICTION_NOT *prestriction)
+SNotRestriction *SNotRestriction::dup() const
 {
 	auto pres = me_alloc<RESTRICTION_NOT>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
+	auto prestriction = this;
 	pres->res.rt = prestriction->res.rt;
 	pres->res.pres = restriction_dup_by_type(
 		prestriction->res.rt, prestriction->res.pres);
@@ -77,13 +74,12 @@ static void restriction_free_not(
 	free(prestriction);
 }
 
-static RESTRICTION_CONTENT* restriction_dup_content(
-	const RESTRICTION_CONTENT *prestriction)
+SContentRestriction *SContentRestriction::dup() const
 {
 	auto pres = me_alloc<RESTRICTION_CONTENT>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
+	auto prestriction = this;
 	pres->fuzzy_level = prestriction->fuzzy_level;
 	pres->proptag = prestriction->proptag;
 	pres->propval.proptag = prestriction->propval.proptag;
@@ -102,13 +98,12 @@ static void restriction_free_content(RESTRICTION_CONTENT *prestriction)
 	free(prestriction);
 }
 
-static RESTRICTION_PROPERTY* restriction_dup_property(
-	const RESTRICTION_PROPERTY *prestriction)
+SPropertyRestriction *SPropertyRestriction::dup() const
 {
 	auto pres = me_alloc<RESTRICTION_PROPERTY>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
+	auto prestriction = this;
 	pres->relop = prestriction->relop;
 	pres->proptag = prestriction->proptag;
 	pres->propval.proptag = prestriction->propval.proptag;
@@ -129,13 +124,12 @@ static void restriction_free_property(
 	free(prestriction);
 }
 
-static RESTRICTION_PROPCOMPARE* restriction_dup_propcompare(
-	const RESTRICTION_PROPCOMPARE *prestriction)
+SComparePropsRestriction *SComparePropsRestriction::dup() const
 {
 	auto pres = me_alloc<RESTRICTION_PROPCOMPARE>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
+	auto prestriction = this;
 	pres->relop = prestriction->relop;
 	pres->proptag1 = prestriction->proptag1;
 	pres->proptag2 = prestriction->proptag2;
@@ -148,13 +142,12 @@ static void restriction_free_propcompare(
 	free(prestriction);
 }
 
-static RESTRICTION_BITMASK* restriction_dup_bitmask(
-	const RESTRICTION_BITMASK *prestriction)
+SBitMaskRestriction *SBitMaskRestriction::dup() const
 {
 	auto pres = me_alloc<RESTRICTION_BITMASK>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
+	auto prestriction = this;
 	pres->bitmask_relop = prestriction->bitmask_relop;
 	pres->proptag = prestriction->proptag;
 	pres->mask = prestriction->mask;
@@ -167,13 +160,12 @@ static void restriction_free_bitmask(
 	free(prestriction);
 }
 
-static RESTRICTION_SIZE* restriction_dup_size(
-	const RESTRICTION_SIZE *prestriction)
+SSizeRestriction *SSizeRestriction::dup() const
 {
 	auto pres = me_alloc<RESTRICTION_SIZE>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
+	auto prestriction = this;
 	pres->relop = prestriction->relop;
 	pres->proptag = prestriction->proptag;
 	pres->size = prestriction->size;
@@ -186,13 +178,12 @@ static void restriction_free_size(
 	free(prestriction);
 }
 
-static RESTRICTION_EXIST* restriction_dup_exist(
-	const RESTRICTION_EXIST *prestriction)
+SExistRestriction *SExistRestriction::dup() const
 {
 	auto pres = me_alloc<RESTRICTION_EXIST>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
+	auto prestriction = this;
 	pres->proptag = prestriction->proptag;
 	return pres;
 }
@@ -202,13 +193,12 @@ static void restriction_free_exist(RESTRICTION_EXIST *prestriction)
 	free(prestriction);
 }
 
-static RESTRICTION_SUBOBJ* restriction_dup_subobj(
-	const RESTRICTION_SUBOBJ *prestriction)
+SSubRestriction *SSubRestriction::dup() const
 {
 	auto pres = me_alloc<RESTRICTION_SUBOBJ>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
+	auto prestriction = this;
 	pres->subobject = prestriction->subobject;
 	pres->res.rt = prestriction->res.rt;
 	pres->res.pres = restriction_dup_by_type(
@@ -227,14 +217,13 @@ static void restriction_free_subobj(
 	free(prestriction);
 }
 
-static RESTRICTION_COMMENT* restriction_dup_comment(
-	const RESTRICTION_COMMENT *prestriction)
+SCommentRestriction *SCommentRestriction::dup() const
 {
 	int i;
 	auto pres = me_alloc<RESTRICTION_COMMENT>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
+	auto prestriction = this;
 	pres->count = prestriction->count;
 	pres->ppropval = me_alloc<TAGGED_PROPVAL>(pres->count);
 	if (NULL == pres->ppropval) {
@@ -246,22 +235,20 @@ static RESTRICTION_COMMENT* restriction_dup_comment(
 		pres->ppropval[i].pvalue = propval_dup(PROP_TYPE(prestriction->ppropval[i].proptag),
 				prestriction->ppropval[i].pvalue);
 		if (NULL == pres->ppropval[i].pvalue) {
-			for (i-=1; i>=0; i--) {
+			for (i -= 1; i >= 0; i--)
 				propval_free(PROP_TYPE(pres->ppropval[i].proptag),
 									pres->ppropval[i].pvalue);
-			}
 			free(pres->ppropval);
 			free(pres);
 			return NULL;
 		}
 	}
 	if (NULL != prestriction->pres) {
-		pres->pres = restriction_dup(prestriction->pres);
+		pres->pres = prestriction->pres->dup();
 		if (NULL == pres->pres) {
-			for (i=0; i<pres->count; i++) {
+			for (i = 0; i < pres->count; ++i)
 				propval_free(PROP_TYPE(pres->ppropval[i].proptag),
 									pres->ppropval[i].pvalue);
-			}
 			free(pres->ppropval);
 			free(pres);
 			return NULL;
@@ -275,26 +262,21 @@ static RESTRICTION_COMMENT* restriction_dup_comment(
 static void restriction_free_comment(
 	RESTRICTION_COMMENT *prestriction)
 {
-	int i;
-	
-	for (i=0; i<prestriction->count; i++) {
+	for (unsigned int i = 0 ; i < prestriction->count; ++i)
 		propval_free(PROP_TYPE(prestriction->ppropval[i].proptag),
 							prestriction->ppropval[i].pvalue);
-	}
 	free(prestriction->ppropval);
-	if (NULL != prestriction->pres) {
+	if (prestriction->pres != nullptr)
 		restriction_free(prestriction->pres);
-	}
 	free(prestriction);
 }
 
-static RESTRICTION_COUNT* restriction_dup_count(
-	const RESTRICTION_COUNT *prestriction)
+SCountRestriction *SCountRestriction::dup() const
 {
 	auto pres = me_alloc<RESTRICTION_COUNT>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
+	auto prestriction = this;
 	pres->count = prestriction->count;
 	pres->sub_res.rt = prestriction->sub_res.rt;
 	pres->sub_res.pres = restriction_dup_by_type(
@@ -317,28 +299,28 @@ static void *restriction_dup_by_type(mapi_rtype rt, const void *prestriction)
 	switch (rt) {
 	case RES_AND:
 	case RES_OR:
-		return restriction_dup_and_or(static_cast<const RESTRICTION_AND_OR *>(prestriction));
+		return static_cast<const restriction_list *>(prestriction)->dup();
 	case RES_NOT:
-		return restriction_dup_not(static_cast<const RESTRICTION_NOT *>(prestriction));
+		return static_cast<const SNotRestriction *>(prestriction)->dup();
 	case RES_CONTENT:
-		return restriction_dup_content(static_cast<const RESTRICTION_CONTENT *>(prestriction));
+		return static_cast<const SContentRestriction *>(prestriction)->dup();
 	case RES_PROPERTY:
-		return restriction_dup_property(static_cast<const RESTRICTION_PROPERTY *>(prestriction));
+		return static_cast<const SPropertyRestriction *>(prestriction)->dup();
 	case RES_PROPCOMPARE:
-		return restriction_dup_propcompare(static_cast<const RESTRICTION_PROPCOMPARE *>(prestriction));
+		return static_cast<const SComparePropsRestriction *>(prestriction)->dup();
 	case RES_BITMASK:
-		return restriction_dup_bitmask(static_cast<const RESTRICTION_BITMASK *>(prestriction));
+		return static_cast<const SBitMaskRestriction *>(prestriction)->dup();
 	case RES_SIZE:
-		return restriction_dup_size(static_cast<const RESTRICTION_SIZE *>(prestriction));
+		return static_cast<const SSizeRestriction *>(prestriction)->dup();
 	case RES_EXIST:
-		return restriction_dup_exist(static_cast<const RESTRICTION_EXIST *>(prestriction));
+		return static_cast<const SExistRestriction *>(prestriction)->dup();
 	case RES_SUBRESTRICTION:
-		return restriction_dup_subobj(static_cast<const RESTRICTION_SUBOBJ *>(prestriction));
+		return static_cast<const SSubRestriction *>(prestriction)->dup();
 	case RES_COMMENT:
 	case RES_ANNOTATION:
-		return restriction_dup_comment(static_cast<const RESTRICTION_COMMENT *>(prestriction));
+		return static_cast<const SCommentRestriction *>(prestriction)->dup();
 	case RES_COUNT:
-		return restriction_dup_count(static_cast<const RESTRICTION_COUNT *>(prestriction));
+		return static_cast<const SCountRestriction *>(prestriction)->dup();
 	default:
 		return NULL;
 	}
@@ -377,12 +359,12 @@ static void restriction_free_by_type(mapi_rtype rt, void *prestriction)
 	}
 }
 
-RESTRICTION* restriction_dup(const RESTRICTION *prestriction)
+SRestriction *SRestriction::dup() const
 {
 	auto pres = me_alloc<RESTRICTION>();
-	if (NULL == pres) {
+	if (pres == nullptr)
 		return NULL;
-	}
+	auto prestriction = this;
 	pres->rt = prestriction->rt;
 	pres->pres = restriction_dup_by_type(prestriction->rt, prestriction->pres);
 	if (NULL == pres->pres) {
@@ -461,18 +443,15 @@ static uint32_t restriction_size_subobj(
 static uint32_t restriction_comment_size(
 	const RESTRICTION_COMMENT *r)
 {
-	int i;
 	uint32_t size;
 	
 	size = sizeof(uint8_t);
-	for (i=0; i<r->count; i++) {
+	for (unsigned int i = 0; i < r->count; ++i)
 		size += propval_size(PROP_TYPE(r->ppropval[i].proptag),
 					r->ppropval[i].pvalue) + sizeof(uint32_t);
-	}
 	size ++;
-	if (NULL != r->pres) {
+	if (r->pres != nullptr)
 		size += restriction_size(r->pres);
-	}
 	return size;
 }
 

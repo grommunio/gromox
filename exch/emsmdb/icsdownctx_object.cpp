@@ -77,7 +77,7 @@ std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogo
 	if (!proptag_array_append(pctx->pproptags, PR_PREVIEW))
 		return nullptr;
 	if (NULL != prestriction) {
-		pctx->prestriction = restriction_dup(prestriction);
+		pctx->prestriction = prestriction->dup();
 		if (pctx->prestriction == nullptr)
 			return NULL;
 	}
