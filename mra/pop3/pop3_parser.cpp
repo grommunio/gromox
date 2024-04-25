@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 /* pop3 parser is a module, which first read data from socket, parses the pop3 
  * commands and then do the corresponding action. 
  */ 
@@ -595,6 +597,7 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, pop3_context *ctx
 	auto ret = pop3_parser_dispatch_cmd2(line, len, ctx);
 	auto code = ret & DISPATCH_VALMASK;
 	if (g_popcmd_debug >= 2 || (g_popcmd_debug >= 1 && code != 0 && code != 1700)) {
+		fprintf(stderr, "[%s]:%hu ", ctx->connection.client_ip, ctx->connection.client_port);
 		if (strcasecmp(line, "PASS") == 0)
 			fprintf(stderr, "< PASS ****: ret=%xh code=%u\n", ret, code);
 		else
