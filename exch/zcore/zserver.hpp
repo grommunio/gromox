@@ -47,11 +47,18 @@ struct USER_INFO {
 	std::recursive_mutex lock;
 };
 
+struct user_info_del {
+	void operator()(USER_INFO *x);
+};
+
+using USER_INFO_REF = std::unique_ptr<USER_INFO, user_info_del>;
+
 extern void zserver_init(size_t table_size, int cache_interval, int ping_interval);
 extern int zserver_run();
 extern void zserver_stop();
 extern void zs_notification_proc(const char *dir, BOOL table, uint32_t notify_id, const DB_NOTIFY *);
 extern USER_INFO *zs_get_info();
+extern USER_INFO_REF zs_query_session(GUID);
 extern ec_error_t zs_logon_token(const char *token, const char *rhost, GUID *ses);
 extern ec_error_t zs_logon(const char *username, const char *password, const char *rhost, uint32_t flags, GUID *ses);
 extern ec_error_t zs_checksession(GUID ses);

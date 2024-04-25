@@ -63,13 +63,7 @@ struct NOTIFY_ITEM {
 	time_t last_time = 0;
 };
 
-struct user_info_del {
-	void operator()(USER_INFO *x);
-};
-
 }
-
-using USER_INFO_REF = std::unique_ptr<USER_INFO, user_info_del>;
 
 static size_t g_table_size;
 static gromox::atomic_bool g_notify_stop;
@@ -118,7 +112,7 @@ static int zs_get_user_id(GUID hsession)
 	return user_id;
 }
 
-static USER_INFO_REF zs_query_session(GUID hsession)
+USER_INFO_REF zs_query_session(GUID hsession)
 {
 	auto user_id = zs_get_user_id(hsession);
 	std::unique_lock tl_hold(g_table_lock);

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <chrono>
 #include <climits>
 #include <condition_variable>
@@ -71,6 +73,7 @@ BOOL rpc_parser_activate_connection(int clifd)
 static int rpc_parser_dispatch(const zcreq *q0, std::unique_ptr<zcresp> &r0) try
 {
 	auto tstart = tp_now();
+	GUID dbg_hsession{};
 	switch (q0->call_id) {
 #include <zrpc_dispatch.cpp>
 	default:
@@ -84,12 +87,15 @@ static int rpc_parser_dispatch(const zcreq *q0, std::unique_ptr<zcresp> &r0) try
 	r0->call_id = q0->call_id;
 	if (g_zrpc_debug == 0)
 		return DISPATCH_TRUE;
-	if (r0->result != 0 || g_zrpc_debug == 2)
-		mlog(LV_DEBUG, "ZRPC %s %8xh %5luµs %s",
+	if (r0->result != 0 || g_zrpc_debug == 2) {
+		auto info = zs_query_session(dbg_hsession);
+		mlog(LV_DEBUG, "ZRPC %s %s %8xh %5luµs %s",
+		        info != nullptr ? info->username.c_str() : "<>",
 		        r0->result == 0 ? "ok  " : "FAIL",
 		        r0->result,
 		        static_cast<unsigned long>(std::chrono::duration_cast<std::chrono::microseconds>(tend - tstart).count()),
 		        zcore_rpc_idtoname(q0->call_id));
+	}
 	return DISPATCH_TRUE;
 } catch (const std::bad_alloc &) {
 	return DISPATCH_FALSE;
