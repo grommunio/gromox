@@ -22,6 +22,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <libHX/socket.h>
+#include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_ext.hpp>
@@ -145,6 +146,7 @@ static BOOL exmdb_parser_dispatch2(const exreq *prequest, std::unique_ptr<exresp
 
 static BOOL exmdb_parser_dispatch(const exreq *prequest, std::unique_ptr<exresp> &presponse)
 {
+	auto tstart = tp_now();
 	if (*prequest->dir != '\0' && access(prequest->dir, R_OK | X_OK) < 0)
 		mlog(LV_DEBUG, "exrpc %s access(\"%s\"): %s",
 			exmdb_rpc_idtoname(prequest->call_id),
@@ -155,9 +157,11 @@ static BOOL exmdb_parser_dispatch(const exreq *prequest, std::unique_ptr<exresp>
 		presponse->call_id = prequest->call_id;
 	if (g_exrpc_debug == 0)
 		return ret;
+	auto tend = tp_now();
 	if (!ret || g_exrpc_debug == 2)
-		mlog(LV_DEBUG, "EXRPC %s %s (%s)",
+		mlog(LV_DEBUG, "EXRPC %s %5luµs %s (%s)",
 		        ret == 0 ? "FAIL" : "ok  ",
+		        static_cast<unsigned long>(std::chrono::duration_cast<std::chrono::microseconds>(tend - tstart).count()),
 		        exmdb_rpc_idtoname(prequest->call_id),
 		        znul(prequest->dir));
 	return ret;

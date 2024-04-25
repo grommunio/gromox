@@ -31,6 +31,10 @@ while (<STDIN>) {
 		print "case zcore_callid::$func: {\n";
 		if (scalar(@$iargs) > 0) {
 			print "\tauto &q = *static_cast<const zcreq_$func *>(q0);\n";
+			if ($iargs->[0][0] eq "GUID" &&
+			    $iargs->[0][1] eq "hsession") {
+				print "\tdbg_hsession = q.hsession;\n";
+			}
 		}
 		print "\tauto r1 = std::make_unique<zcresp_$func>();\n";
 		if (scalar(@$oargs) > 0) {
