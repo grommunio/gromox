@@ -598,7 +598,7 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, pop3_context *ctx
 	auto code = ret & DISPATCH_VALMASK;
 	if (g_popcmd_debug >= 2 || (g_popcmd_debug >= 1 && code != 0 && code != 1700)) {
 		fprintf(stderr, "[%s]:%hu ", ctx->connection.client_ip, ctx->connection.client_port);
-		if (strcasecmp(line, "PASS") == 0)
+		if (strncasecmp(line, "PASS", 4) == 0)
 			fprintf(stderr, "< PASS ****: ret=%xh code=%u\n", ret, code);
 		else
 			fprintf(stderr, "< %s: ret=%xh code=%u\n", line, ret, code);
