@@ -1405,6 +1405,7 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context *ctx) tr
 		 * Can't really hide AUTHENTICATE because the prompts
 		 * and answers are backend-specific.
 		 */
+		fprintf(stderr, "[%s]:%hu ", ctx->connection.client_ip, ctx->connection.client_port);
 		if (strcasecmp(argv[1], "LOGIN") == 0) {
 			fprintf(stderr, "< LOGIN ****: ret=%xh code=%u\n", ret, code);
 		} else {
