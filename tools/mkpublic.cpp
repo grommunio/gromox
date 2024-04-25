@@ -148,7 +148,7 @@ int main(int argc, const char **argv)
 		printf("Failed to initialize sqlite engine\n");
 		return EXIT_FAILURE;
 	}
-	auto cl_0 = make_scope_exit([]() { sqlite3_shutdown(); });
+	auto cl_0 = make_scope_exit(sqlite3_shutdown);
 	if (opt_upgrade)
 		return mbop_upgrade(temp_path.c_str(), sqlite_kind::pub);
 	if (sqlite3_open_v2(temp_path.c_str(), &psqlite,
