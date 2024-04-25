@@ -379,23 +379,23 @@ include/mapitags.cpp: include/gromox/mapitags.hpp tools/defs2php.sh tools/defs2p
 
 php_mapi/zrpc.cpp: include/gromox/zcore_client.hpp tools/zcidl.sh tools/zcidl.pl
 	${AM_V_GEN}${MKDIR_P} php_mapi
-	${AM_V_at}${srcdir}/tools/zcidl.sh -c <${srcdir}/include/gromox/zcore_client.hpp >"$@"
+	${AM_V_at}${srcdir}/tools/zcidl.sh --client <${srcdir}/include/gromox/zcore_client.hpp >"$@"
 
 include/zrpc_dispatch.cpp: include/gromox/zcore_client.hpp tools/zcidl.sh tools/zcidl.pl
 	${AM_V_GEN}${MKDIR_P} php_mapi
-	${AM_V_at}${srcdir}/tools/zcidl.sh -d <${srcdir}/include/gromox/zcore_client.hpp >"$@"
+	${AM_V_at}${srcdir}/tools/zcidl.sh --server <${srcdir}/include/gromox/zcore_client.hpp >"$@"
 
 lib/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh tools/exmidl.pl
 	${AM_V_GEN}${MKDIR_P} include/gromox
-	${AM_V_at}${srcdir}/tools/exmidl.sh -c <${srcdir}/include/gromox/exmdb_idef.hpp >"$@"
+	${AM_V_at}${srcdir}/tools/exmidl.sh --client <${srcdir}/include/gromox/exmdb_idef.hpp >"$@"
 
 include/exmdb_dispatch.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh tools/exmidl.pl
 	${AM_V_GEN}${MKDIR_P} include/gromox
-	${AM_V_at}${srcdir}/tools/exmidl.sh -d <${srcdir}/include/gromox/exmdb_idef.hpp >"$@"
+	${AM_V_at}${srcdir}/tools/exmidl.sh --server <${srcdir}/include/gromox/exmdb_idef.hpp >"$@"
 
 exch/exmdb/rpc.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh tools/exmidl.pl
 	${AM_V_GEN}${MKDIR_P} include/gromox
-	${AM_V_at}${srcdir}/tools/exmidl.sh -p <${srcdir}/include/gromox/exmdb_idef.hpp >"$@"
+	${AM_V_at}${srcdir}/tools/exmidl.sh --shm-api <${srcdir}/include/gromox/exmdb_idef.hpp >"$@"
 
 install-exec-hook:
 	${MKDIR_P} ${DESTDIR}${sbindir}

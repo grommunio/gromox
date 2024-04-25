@@ -3,11 +3,11 @@
 use Getopt::Long;
 use strict;
 use warnings;
-our $gen_mode;
+our $gen_mode = "";
 &Getopt::Long::Configure(qw(bundling));
 &GetOptions(
-	"c" => sub { $gen_mode = "CLN"; },
-	"d" => sub { $gen_mode = "SDF"; },
+	"client" => sub { $gen_mode = "CLN"; },
+	"server" => sub { $gen_mode = "SDF"; },
 );
 
 if ($gen_mode eq "CLN") {

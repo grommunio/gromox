@@ -3,12 +3,12 @@
 use Getopt::Long;
 use strict;
 use warnings;
-our $gen_mode;
+our $gen_mode = "";
 &Getopt::Long::Configure(qw(bundling));
 &GetOptions(
-	"c" => sub { $gen_mode = "CLN"; }, # networked client
-	"d" => sub { $gen_mode = "SDF"; }, # server-side dispatch
-	"p" => sub { $gen_mode = "SDP"; }, # SHMEM/LPC client (emsmdb)
+	"client" => sub { $gen_mode = "CLN"; },
+	"server" => sub { $gen_mode = "SDF"; },
+	"shm-api" => sub { $gen_mode = "SDP"; },
 );
 
 if ($gen_mode eq "CLN" || $gen_mode eq "SDP") {
