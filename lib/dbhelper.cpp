@@ -28,8 +28,7 @@ xstmt gx_sql_prep(sqlite3 *db, const char *query)
 
 xtransaction &xtransaction::operator=(xtransaction &&o) noexcept
 {
-	if (m_db != nullptr)
-		sqlite3_exec(m_db, "ROLLBACK", nullptr, nullptr, nullptr);
+	teardown();
 	m_db = o.m_db;
 	o.m_db = nullptr;
 	return *this;
@@ -39,6 +38,11 @@ static std::unordered_map<void *, std::string> active_xa;
 static std::mutex active_xa_lock;
 
 xtransaction::~xtransaction()
+{
+	teardown();
+}
+
+void xtransaction::teardown()
 {
 	if (m_db != nullptr) {
 		gx_sql_exec(m_db, "ROLLBACK");
