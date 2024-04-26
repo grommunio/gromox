@@ -243,7 +243,7 @@ BOOL service_register_service(const char *func_name, void *addr,
 	auto it = std::find_if(g_list_service.begin(), g_list_service.end(),
 	          [&](const std::shared_ptr<service_entry> &e) { return e->service_name == func_name; });
 	if (it != g_list_service.end())
-		return FALSE;
+		return (*it)->service_addr == addr ? TRUE : false;
 	auto e = std::make_shared<service_entry>();
 	e->service_name = func_name;
 	e->service_addr = addr;
