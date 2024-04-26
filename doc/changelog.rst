@@ -3,16 +3,25 @@ Development 2.27.30
 
 Fixes:
 
+* exmdb: set PR_DELETED_ON property during softdelete
 * imap: repair messages not getting added to midb during 64K+ append
 * imap: cure client session hang when midb failed to add
   a mail during 64K-append
 * mysql_adaptor: gracefully handle attempts to use Unicode in usernames
   (treat as non-existing user rather than failing the user lookup altogether)
+* zcore: a crash on shutdown was addressed
 
 Enhancements:
 
 * mysql_adaptor: allow Unicode in alternate usernames (altnames)
 * Populate PR_DELETED_ON property for softdeleted items
+* exmdb: ``exmdb_rpc_debug`` will now emit execution time for EXRPCs
+* zcore: ``zrpc_debug`` logging now includes the session GUID
+  to help correlate which ZRPCs are executed by which user
+* imap: ``imap_cmd_debug`` logging now includes the client IP address
+  to help correlate which actions are executed by which user
+* pop3: ``pop3_cmd_debug`` logging now includes the client IP address
+  to help correlate which actions are executed by which user
 
 Changes:
 
