@@ -1458,7 +1458,7 @@ struct tSingleRecipient
 /**
  * Types.xsd:4419
  */
-struct tAttendee
+struct tAttendee : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "Attendee";
 
