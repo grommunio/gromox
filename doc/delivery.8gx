@@ -95,11 +95,6 @@ An unprivileged user account to switch the process to after startup.
 .br
 Default: \fIgromox\fP
 .TP
-\fBstate_path\fP
-Directory for runtime variadic data.
-.br
-Default: \fI/var/lib/gromox\fP
-.TP
 \fBwork_threads_max\fP
 The number of threads that gromox\-delivery may spawn to process incoming
 messages. This number must be less-or-equal to the exmdb_local(4)

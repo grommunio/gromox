@@ -80,6 +80,8 @@ struct THREAD_DATA {
 
 }
 
+static void *transporter_queryservice(const char *service, const char *rq, const std::type_info &);
+
 static char				g_path[256];
 static std::vector<static_module> g_plugin_names;
 static std::string g_local_path;
@@ -102,7 +104,6 @@ static HOOK_PLUG_ENTITY *g_cur_lib;
 
 static void *dxp_thrwork(void *);
 static void *dxp_scanwork(void *);
-static void *transporter_queryservice(const char *service, const std::type_info &);
 static BOOL transporter_register_hook(HOOK_FUNCTION func);
 static BOOL transporter_register_local(HOOK_FUNCTION func);
 static hook_result transporter_pass_mpc_hooks(MESSAGE_CONTEXT *, THREAD_DATA *);
@@ -123,12 +124,46 @@ hook_plug_entity::hook_plug_entity(hook_plug_entity &&o) noexcept :
 	o.completed_init = false;
 }
 
+static constexpr struct dlfuncs server_funcs = {
+	/* .symget = */ transporter_queryservice,
+	/* .symreg = */ nullptr,
+	/* .get_config_path = */ []() {
+		auto r = g_config_file->get_value("config_file_path");
+		return r != nullptr ? r : PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR;
+	},
+	/* .get_data_path = */ []() {
+		auto r = g_config_file->get_value("data_file_path");
+		return r != nullptr ? r : PKGDATADIR "/delivery:" PKGDATADIR;
+	},
+	/* .get_context_num = */ []() { return g_threads_max + g_free_num; },
+	/* .get_host_ID = */ []() { return g_config_file->get_value("host_id"); },
+	/* .get_prog_id = */ nullptr,
+	/* .ndr_stack_alloc = */ nullptr,
+	/* .rpc_new_stack = */ nullptr,
+	/* .rpc_free_stack = */ nullptr,
+	/* PROC_ */ {},
+	/* HPM_ */ {},
+	/* HOOK_ */
+	{
+		/* .register_hook = */ transporter_register_hook,
+		/* .register_local = */ transporter_register_local,
+		/* .get_admin_mailbox = */ []() { return g_config_file->get_value("admin_mailbox"); },
+		/* .get_queue_path = */ []() { return g_config_file->get_value("dequeue_path"); },
+		/* .get_threads_num = */ []() { return g_threads_max; },
+		/* .get_ctx = */ transporter_get_context,
+		/* .put_ctx = */ transporter_put_context,
+		/* .enqueue_ctx = */ transporter_enqueue_context,
+		/* .throw_ctx = */ transporter_throw_context,
+	},
+};
+
+
 hook_plug_entity::~hook_plug_entity()
 {
 	if (file_name.size() > 0)
 		mlog(LV_INFO, "transporter: unloading %s", file_name.c_str());
 	if (lib_main != nullptr && completed_init)
-		lib_main(PLUGIN_FREE, nullptr);
+		lib_main(PLUGIN_FREE, server_funcs);
 	g_hook_list.erase(std::remove_if(g_hook_list.begin(), g_hook_list.end(),
 		[this](const hook_entry *e) { return e->plib == this; }), g_hook_list.end());
 	for (const auto &nd : list_reference)
@@ -311,7 +346,7 @@ static void *dxp_thrwork(void *arg)
 	auto pthr_data = static_cast<THREAD_DATA *>(arg);
 	g_tls_key = pthr_data;
 	for (const auto &plug : g_lib_list)
-		plug.lib_main(PLUGIN_THREAD_CREATE, nullptr);
+		plug.lib_main(PLUGIN_THREAD_CREATE, server_funcs);
 	cannot_served_times = 0;
 	if (pthr_data->wait_on_event) {
 		std::unique_lock cm_hold(g_cond_mutex);
@@ -334,7 +369,7 @@ static void *dxp_thrwork(void *arg)
 						double_list_remove(&g_threads_list, &pthr_data->node);
 						tl_hold.unlock();
 						for (auto &plug : g_lib_list)
-							plug.lib_main(PLUGIN_THREAD_DESTROY, nullptr);
+							plug.lib_main(PLUGIN_THREAD_DESTROY, server_funcs);
 						std::unique_lock ft_hold(g_free_threads_mutex);
 						double_list_append_as_tail(&g_free_threads,
 							&pthr_data->node);
@@ -402,7 +437,7 @@ static void *dxp_thrwork(void *arg)
 		}
 	}
 	for (auto &plug : g_lib_list)
-		plug.lib_main(PLUGIN_THREAD_DESTROY, nullptr);
+		plug.lib_main(PLUGIN_THREAD_DESTROY, server_funcs);
 	return NULL;
 }
 
@@ -457,7 +492,6 @@ static void *dxp_scanwork(void *arg)
  */
 int transporter_load_library(static_module &&mod) try
 {
-	static void *const server_funcs[] = {reinterpret_cast<void *>(transporter_queryservice)};
 	auto path = mod.path.c_str();
 
 	/* check whether the plugin is same as local or remote plugin */
@@ -481,7 +515,7 @@ int transporter_load_library(static_module &&mod) try
 	g_lib_list.push_back(std::move(plug));
 	g_cur_lib = &g_lib_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-	if (!g_cur_lib->lib_main(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
+	if (!g_cur_lib->lib_main(PLUGIN_INIT, server_funcs)) {
 		mlog(LV_ERR, "transporter: error executing the plugin's init function "
                 "in %s", path);
 		g_cur_lib = NULL;
@@ -496,44 +530,12 @@ int transporter_load_library(static_module &&mod) try
 	return PLUGIN_FAIL_OPEN;
 }
 
-/*
- *	get services
- *	@param
- *		service [in]			service name
- *	@return
- *		service pointer
- */
-static void *transporter_queryservice(const char *service, const std::type_info &ti)
+static void *transporter_queryservice(const char *service,
+    const char *requestor, const std::type_info &ti)
 {
     if (NULL == g_cur_lib) {
         return NULL;
     }
-#define E(s, f) \
-	do { \
-		if (strcmp(service, (s)) == 0) \
-			return reinterpret_cast<void *>(f); \
-	} while (false)
-	E("register_hook", transporter_register_hook);
-	E("register_local", transporter_register_local);
-	E("get_host_ID", +[]() { return g_config_file->get_value("host_id"); });
-	E("get_admin_mailbox", +[]() { return g_config_file->get_value("admin_mailbox"); });
-	E("get_config_path", +[]() {
-		auto r = g_config_file->get_value("config_file_path");
-		return r != nullptr ? r : PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR;
-	});
-	E("get_data_path", +[]() {
-		auto r = g_config_file->get_value("data_file_path");
-		return r != nullptr ? r : PKGDATADIR "/delivery:" PKGDATADIR;
-	});
-	E("get_state_path", +[]() { return g_config_file->get_value("state_path"); });
-	E("get_queue_path", +[]() { return g_config_file->get_value("dequeue_path"); });
-	E("get_threads_num", +[]() { return g_threads_max; });
-	E("get_context_num", +[]() { return g_threads_max + g_free_num; });
-	E("get_context", transporter_get_context);
-	E("put_context", transporter_put_context);
-	E("enqueue_context", transporter_enqueue_context);
-	E("throw_context", transporter_throw_context);
-#undef E
 	/* check if already exists in the reference list */
 	for (auto &nd : g_cur_lib->list_reference)
 		if (nd.service_name == service)
@@ -769,11 +771,11 @@ static void transporter_log_info(const CONTROL_INFO &ctrl, int level,
 	mlog(LV_ERR, "E-1080: ENOMEM");
 }
 
-void transporter_trigger_all(unsigned int ev)
+void transporter_trigger_all(enum plugin_op ev)
 {
 	for (auto &plug : g_lib_list) {
 		g_cur_lib = &plug;
-		plug.lib_main(ev, nullptr);
+		plug.lib_main(ev, server_funcs);
 	}
 	g_cur_lib = nullptr;
 }

@@ -620,7 +620,7 @@ bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARRAY &pro
 	return false;
 }
 
-BOOL SVC_mysql_adaptor(int reason, void **data)
+BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_FREE) {
 		mysql_adaptor_stop();

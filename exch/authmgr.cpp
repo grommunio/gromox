@@ -318,7 +318,7 @@ static bool authmgr_init()
 	return true;
 }
 
-BOOL SVC_authmgr(int reason, void **datap) try
+BOOL SVC_authmgr(enum plugin_op reason, const struct dlfuncs &datap) try
 {
 	if (reason == PLUGIN_RELOAD) {
 		authmgr_reload();

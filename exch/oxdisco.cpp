@@ -1098,7 +1098,7 @@ static std::unique_ptr<OxdiscoPlugin> g_oxdisco_plugin;
  *
  * @return     TRUE if initialization was successful, false otherwise
  */
-static BOOL oxdisco_init(void **apidata)
+static BOOL oxdisco_init(const struct dlfuncs &apidata)
 {
 	LINK_HPM_API(apidata)
 	HPM_INTERFACE ifc{};
@@ -1127,7 +1127,7 @@ static BOOL oxdisco_init(void **apidata)
  *
  * @return     TRUE if successful, false otherwise
  */
-BOOL HPM_oxdisco(int reason, void **data)
+BOOL HPM_oxdisco(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_INIT)
 		return oxdisco_init(data);

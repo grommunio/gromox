@@ -141,7 +141,6 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"listen_port", "imap_listen_port", CFG_ALIAS},
 	{"listen_ssl_port", "imap_listen_tls_port", CFG_ALIAS},
 	{"running_identity", RUNNING_IDENTITY},
-	{"state_path", PKGSTATEDIR},
 	{"thread_charge_num", "imap_thread_charge_num", CFG_ALIAS},
 	{"thread_init_num", "imap_thread_init_num", CFG_ALIAS},
 	{"tls_min_proto", "tls1.2"},
@@ -606,10 +605,7 @@ int main(int argc, const char **argv)
 	auto cleanup_4 = make_scope_exit(listener_stop);
 
 	filedes_limit_bump(gxconfig->get_ll("imap_fd_limit"));
-	service_init({g_config_file->get_value("config_file_path"),
-		g_config_file->get_value("data_file_path"),
-		g_config_file->get_value("state_path"),
-		g_dfl_svc_plugins, context_num});
+	service_init({g_config_file, g_dfl_svc_plugins, context_num});
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return EXIT_FAILURE;

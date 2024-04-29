@@ -272,11 +272,6 @@ To inhibit the switch, assign the empty value.
 .br
 Default: \fIgromox\fP
 .TP
-\fBstate_path\fP
-Directory for runtime variadic data.
-.br
-Default: \fI/var/lib/gromox\fP
-.TP
 \fBtcp_mss_size\fP
 Sets the TCP_MAXSEG socket option with the given MSS value for the listening
 socket(s), cf. tcp(7).

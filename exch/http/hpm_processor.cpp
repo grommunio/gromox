@@ -123,66 +123,13 @@ static void hpm_processor_wakeup_context(unsigned int context_id)
 	contexts_pool_signal(phttp);
 }
 
-static void *hpm_processor_queryservice(const char *service, const std::type_info &ti)
+static void *hpm_processor_queryservice(const char *service, const char *rq,
+    const std::type_info &ti)
 {
 	void *ret_addr;
 
 	if (g_cur_plugin == nullptr)
 		return NULL;
-	if (strcmp(service, "register_interface") == 0)
-		return reinterpret_cast<void *>(hpm_processor_register_interface);
-	if (strcmp(service, "register_service") == 0)
-		return reinterpret_cast<void *>(service_register_service);
-	if (strcmp(service, "get_host_ID") == 0)
-		return reinterpret_cast<void *>(+[]() { return g_config_file->get_value("host_id"); });
-	if (strcmp(service, "get_config_path") == 0)
-		return reinterpret_cast<void *>(+[]() {
-			auto r = g_config_file->get_value("config_file_path");
-			return r != nullptr ? r : PKGSYSCONFDIR;
-		});
-	if (strcmp(service, "get_data_path") == 0)
-		return reinterpret_cast<void *>(+[]() {
-			auto r = g_config_file->get_value("data_file_path");
-			return r != nullptr ? r : PKGDATADIR "/http:" PKGDATADIR;
-		});
-	if (strcmp(service, "get_state_path") == 0)
-		return reinterpret_cast<void *>(+[]() {
-			auto r = g_config_file->get_value("state_path");
-			return r != nullptr ? r : PKGSTATEDIR;
-		});
-	if (strcmp(service, "get_context_num") == 0)
-		return reinterpret_cast<void *>(+[]() { return g_context_num; });
-	if (strcmp(service, "get_request") == 0)
-		return reinterpret_cast<void *>(hpm_processor_get_request);
-	if (strcmp(service, "get_auth_info") == 0)
-		return reinterpret_cast<void *>(hpm_processor_get_auth_info);
-	if (strcmp(service, "get_connection") == 0)
-		return reinterpret_cast<void *>(+[](unsigned int id) {
-			auto h = static_cast<http_context *>(http_parser_get_contexts_list()[id]);
-			return &h->connection;
-		});
-	if (strcmp(service, "write_response") == 0)
-		return reinterpret_cast<void *>(+[](unsigned int id, const void *b, size_t z) -> http_status {
-			auto h = static_cast<http_context *>(http_parser_get_contexts_list()[id]);
-			return h->stream_out.write(b, z) == STREAM_WRITE_OK ?
-			       http_status::ok : http_status::none;
-		});
-	if (strcmp(service, "wakeup_context") == 0)
-		return reinterpret_cast<void *>(hpm_processor_wakeup_context);
-	if (strcmp(service, "activate_context") == 0)
-		return reinterpret_cast<void *>(+[](unsigned int id) {
-			context_pool_activate_context(http_parser_get_contexts_list()[id]);
-		});
-	if (strcmp(service, "set_context") == 0)
-		return reinterpret_cast<void *>(http_parser_set_context);
-	if (strcmp(service, "set_ep_info") == 0)
-		return reinterpret_cast<void *>(hpm_processor_set_ep_info);
-	if (strcmp(service, "ndr_stack_alloc") == 0)
-		return reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc);
-	if (strcmp(service, "rpc_new_stack") == 0)
-		return reinterpret_cast<void *>(pdu_processor_rpc_new_stack);
-	if (strcmp(service, "rpc_free_stack") == 0)
-		return reinterpret_cast<void *>(pdu_processor_rpc_free_stack);
 	/* check if already exists in the reference list */
 	for (const auto &nd : g_cur_plugin->list_reference)
 		if (nd.service_name == service)
@@ -201,6 +148,47 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 	return ret_addr;
 }
 
+static constexpr struct dlfuncs server_funcs = {
+	/* .symget = */ hpm_processor_queryservice,
+	/* .symreg = */ service_register_service,
+	/* .get_config_path = */ []() {
+		auto r = g_config_file->get_value("config_file_path");
+		return r != nullptr ? r : PKGSYSCONFDIR;
+	},
+	/* .get_data_path = */ []() {
+		auto r = g_config_file->get_value("data_file_path");
+		return r != nullptr ? r : PKGDATADIR "/http:" PKGDATADIR;
+	},
+	/* .get_context_num = */ []() { return g_context_num; },
+	/* .get_host_ID = */ []() { return g_config_file->get_value("host_id"); },
+	/* .get_prog_id = */ nullptr,
+	/* .ndr_stack_alloc = */ pdu_processor_ndr_stack_alloc,
+	/* .rpc_new_stack = */ pdu_processor_rpc_new_stack,
+	/* .rpc_free_stack = */ pdu_processor_rpc_free_stack,
+	/* PROC */ {},
+	/* HPM_ */
+	{
+		/* .reg_intf = */ hpm_processor_register_interface,
+		/* .get_req = */ hpm_processor_get_request,
+		/* .get_auth_info = */ hpm_processor_get_auth_info,
+		/* .get_conn = */ [](unsigned int id) {
+			auto h = static_cast<http_context *>(http_parser_get_contexts_list()[id]);
+			return &h->connection;
+		},
+		/* .write_response = */ [](unsigned int id, const void *b, size_t z) -> http_status {
+			auto h = static_cast<http_context *>(http_parser_get_contexts_list()[id]);
+			return h->stream_out.write(b, z) == STREAM_WRITE_OK ?
+			       http_status::ok : http_status::none;
+		},
+		/* .wakeup_ctx = */ hpm_processor_wakeup_context,
+		/* .activate_ctx = */ [](unsigned int id) {
+			context_pool_activate_context(http_parser_get_contexts_list()[id]);
+		},
+		/* .set_ctx = */ http_parser_set_context,
+		/* .set_ep_info = */ hpm_processor_set_ep_info,
+	},
+};
+
 HPM_PLUGIN::~HPM_PLUGIN()
 {
 	PLUGIN_MAIN func;
@@ -210,7 +198,7 @@ HPM_PLUGIN::~HPM_PLUGIN()
 	func = (PLUGIN_MAIN)pplugin->lib_main;
 	if (func != nullptr && pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
-		func(PLUGIN_FREE, NULL);
+		func(PLUGIN_FREE, server_funcs);
 
 	/* free the reference list */
 	for (const auto &nd : list_reference)
@@ -219,7 +207,6 @@ HPM_PLUGIN::~HPM_PLUGIN()
 
 static int hpm_processor_load_library(static_module &&mod)
 {
-	static void *const server_funcs[] = {reinterpret_cast<void *>(hpm_processor_queryservice)};
 	HPM_PLUGIN plug;
 
 	plug.lib_main = mod.efunc;
@@ -228,7 +215,7 @@ static int hpm_processor_load_library(static_module &&mod)
 	g_plugin_list.push_back(std::move(plug));
 	g_cur_plugin = &g_plugin_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-	if (!g_cur_plugin->lib_main(PLUGIN_INIT, const_cast<void **>(server_funcs)) ||
+	if (!g_cur_plugin->lib_main(PLUGIN_INIT, server_funcs) ||
 	    g_cur_plugin->interface.preproc == nullptr ||
 	    g_cur_plugin->interface.proc == nullptr ||
 	    g_cur_plugin->interface.retr == nullptr) {
@@ -517,11 +504,11 @@ void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 	phpm_ctx->pinterface = NULL;
 }
 
-void hpm_processor_trigger(unsigned int ev)
+void hpm_processor_trigger(enum plugin_op ev)
 {
 	for (auto &p : g_plugin_list) {
 		g_cur_plugin = &p;
-		p.lib_main(ev, nullptr);
+		p.lib_main(ev, server_funcs);
 	}
 	g_cur_plugin = nullptr;
 }

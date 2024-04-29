@@ -134,8 +134,7 @@ struct MhNspContext : public MhContext
 
 class MhNspPlugin {
 public:
-
-	explicit MhNspPlugin(void**);
+	explicit MhNspPlugin(const struct dlfuncs &);
 	~MhNspPlugin();
 	NOMOVE(MhNspPlugin);
 
@@ -222,7 +221,7 @@ static constexpr struct cfg_directive mhnsp_gxcfg_deflt[] = {
  *
  * @param	ppdata	Plugin API data
  */
-MhNspPlugin::MhNspPlugin(void** ppdata)
+MhNspPlugin::MhNspPlugin(const struct dlfuncs &ppdata)
 {
 	LINK_HPM_API(ppdata)
 	if (!query_service1(get_user_ids))
@@ -327,7 +326,7 @@ static http_status nsp_proc(int, const void*, uint64_t);
  *
  * @return	TRUE if successful, false otherwise
  */
-BOOL HPM_mh_nsp(int reason, void **plugdata)
+BOOL HPM_mh_nsp(enum plugin_op reason, const struct dlfuncs &plugdata)
 {
 	HPM_INTERFACE interface;
 
@@ -357,8 +356,9 @@ BOOL HPM_mh_nsp(int reason, void **plugdata)
 	case PLUGIN_FREE:
 		g_mhnsp_plugin.reset();
 		return TRUE;
+	default:
+		return false;
 	}
-	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

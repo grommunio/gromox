@@ -293,7 +293,7 @@ static bool ldap_adaptor_load() try
 	return false;
 }
 
-BOOL SVC_ldap_adaptor(int reason, void **ppdata) try
+BOOL SVC_ldap_adaptor(enum plugin_op reason, const struct dlfuncs &ppdata) try
 {
 	if (reason == PLUGIN_FREE) {
 		g_conn_pool.clear();

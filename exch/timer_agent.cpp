@@ -60,7 +60,7 @@ static int add_timer(const char *command, int interval);
 
 static BOOL cancel_timer(int timer_id);
 
-BOOL SVC_timer_agent(int reason, void **ppdata)
+BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	switch(reason) {
 	case PLUGIN_INIT: {
@@ -125,8 +125,9 @@ BOOL SVC_timer_agent(int reason, void **ppdata)
 		}
 		g_back_list.clear();
 		return TRUE;
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }
 
 static void *tmrag_scanwork(void *param)

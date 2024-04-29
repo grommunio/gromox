@@ -55,7 +55,7 @@ static constexpr DCERPC_INTERFACE interface = {
 	exchange_nsp_unbind,
 };
 
-BOOL PROC_exchange_nsp(int reason, void **ppdata)
+BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	BOOL b_check;
 	const char *org_name;
@@ -155,8 +155,9 @@ BOOL PROC_exchange_nsp(int reason, void **ppdata)
 		exch_nsp_reload(nullptr);
 		ab_tree_invalidate_cache();
 		return TRUE;
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }
 
 static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
