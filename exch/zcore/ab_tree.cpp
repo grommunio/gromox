@@ -33,6 +33,7 @@
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/gab.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/propval.hpp>
@@ -1049,8 +1050,9 @@ static uint32_t ab_tree_get_etyp(const tree_node *n)
 		return DT_CONTAINER;
 	else if (a.node_type == abnode_type::mlist)
 		return DT_DISTLIST;
-	else
+	else if (a.node_type != abnode_type::user)
 		return DT_MAILUSER;
+	return dtypx_to_etyp(static_cast<const sql_user *>(a.d_info)->dtypx);
 }
 
 static std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *n)

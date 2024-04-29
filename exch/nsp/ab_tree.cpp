@@ -43,6 +43,7 @@
 #include "ab_tree.h"
 #include "common_util.h"
 #include "nsp_types.h"
+#include "../gab.cpp"
 
 #define BASE_STATUS_CONSTRUCTING			0
 #define BASE_STATUS_LIVING					1
@@ -1173,8 +1174,9 @@ uint32_t ab_tree_get_etyp(const tree_node *n)
 		return DT_CONTAINER;
 	else if (a.node_type == abnode_type::mlist)
 		return DT_DISTLIST;
-	else
+	else if (a.node_type != abnode_type::user)
 		return DT_MAILUSER;
+	return dtypx_to_etyp(static_cast<const sql_user *>(a.d_info)->dtypx);
 }
 
 /**

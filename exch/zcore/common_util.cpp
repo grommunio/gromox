@@ -26,6 +26,7 @@
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/gab.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mail_func.hpp>
@@ -647,7 +648,8 @@ BINARY* common_util_username_to_addressbook_entryid(
 	return pbin;
 }
 
-BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
+BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin,
+    unsigned int etyp)
 {
 	EXT_PUSH ext_push;
 	EMSAB_ENTRYID tmp_entryid;
@@ -656,8 +658,9 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 	if (pbin->pv == nullptr)
 		return FALSE;
 	tmp_entryid.flags = 0;
-	tmp_entryid.type = DT_MAILUSER;
+	tmp_entryid.type = etyp;
 	tmp_entryid.px500dn = deconst(essdn);
+
 	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return false;
@@ -673,7 +676,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 	EXT_PUSH ext_push;
 	char tmp_name[UADDR_SIZE];
 	ONEOFF_ENTRYID oneoff_entry;
-	auto dtypx = DT_MAILUSER;
+	enum display_type dtypx = DT_MAILUSER;
 	
 	if (system_services_get_user_ids(username, &user_id, &domain_id, &dtypx)) {
 		gx_strlcpy(tmp_name, username, std::size(tmp_name));
@@ -685,7 +688,8 @@ static BOOL common_util_username_to_entryid(const char *username,
 		if (cvt_username_to_essdn(tmp_name, g_org_name, user_id,
 		    domain_id, essdn) != ecSuccess)
 			return false;
-		if (!common_util_essdn_to_entryid(essdn.c_str(), pbin))
+		if (!common_util_essdn_to_entryid(essdn.c_str(), pbin,
+		    dtypx_to_etyp(dtypx)))
 			return FALSE;
 		if (dtpp != nullptr)
 			*dtpp = dtypx;
