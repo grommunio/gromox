@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -9,6 +11,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
@@ -100,14 +103,9 @@ int common_util_to_utf8(cpid_t codepage, const char *src, char *dst, size_t len)
 void common_util_guid_to_binary(GUID *pguid, BINARY *pbin)
 {
 	pbin->cb = 16;
-	pbin->pb[0] = pguid->time_low & 0XFF;
-	pbin->pb[1] = (pguid->time_low >> 8) & 0XFF;
-	pbin->pb[2] = (pguid->time_low >> 16) & 0XFF;
-	pbin->pb[3] = (pguid->time_low >> 24) & 0XFF;
-	pbin->pb[4] = pguid->time_mid & 0XFF;
-	pbin->pb[5] = (pguid->time_mid >> 8) & 0XFF;
-	pbin->pb[6] = pguid->time_hi_and_version & 0XFF;
-	pbin->pb[7] = (pguid->time_hi_and_version >> 8) & 0XFF;
+	cpu_to_le32p(&pbin->pb[0], pguid->time_low);
+	cpu_to_le16p(&pbin->pb[4], pguid->time_mid);
+	cpu_to_le16p(&pbin->pb[6], pguid->time_hi_and_version);
 	memcpy(pbin->pb + 8,  pguid->clock_seq, sizeof(uint8_t) * 2);
 	memcpy(pbin->pb + 10, pguid->node, sizeof(uint8_t) * 6);
 }
@@ -115,99 +113,59 @@ void common_util_guid_to_binary(GUID *pguid, BINARY *pbin)
 void common_util_set_ephemeralentryid(uint32_t display_type,
 	uint32_t minid, EPHEMERAL_ENTRYID *pephid)
 {
-	pephid->id_type = ENTRYID_TYPE_EPHEMERAL;
-	pephid->r1 = 0x0;
-	pephid->r2 = 0x0;
-	pephid->r3 = 0x0;
-	pephid->provider_uid.ab[0] =
-		g_server_guid.time_low & 0XFF;
-	pephid->provider_uid.ab[1] =
-		(g_server_guid.time_low >> 8) & 0XFF;
-	pephid->provider_uid.ab[2] =
-		(g_server_guid.time_low >> 16) & 0XFF;
-	pephid->provider_uid.ab[3] =
-		(g_server_guid.time_low >> 24) & 0XFF;
-	pephid->provider_uid.ab[4] =
-		g_server_guid.time_mid & 0XFF;
-	pephid->provider_uid.ab[5] =
-		(g_server_guid.time_mid >> 8) & 0XFF;
-	pephid->provider_uid.ab[6] =
-		g_server_guid.time_hi_and_version & 0XFF;
-	pephid->provider_uid.ab[7] =
-		(g_server_guid.time_hi_and_version >> 8) & 0XFF;
-	memcpy(pephid->provider_uid.ab + 8, 
-		g_server_guid.clock_seq, sizeof(uint8_t) * 2);
-	memcpy(pephid->provider_uid.ab + 10,
-		g_server_guid.node, sizeof(uint8_t) * 6);
-	pephid->r4 = 0x1;
+	pephid->flags = ENTRYID_TYPE_EPHEMERAL;
 	pephid->display_type = display_type;
 	pephid->mid = minid;
 }
 
-BOOL common_util_set_permanententryid(uint32_t display_type,
-	const GUID *pobj_guid, const char *pdn, PERMANENT_ENTRYID *ppermeid)
+BOOL common_util_set_permanententryid(unsigned int display_type,
+    const GUID *pobj_guid, const char *pdn, EMSAB_ENTRYID *ppermeid)
 {
 	int len;
 	char buff[128];
 	
-	ppermeid->id_type = ENTRYID_TYPE_PERMANENT;
-	ppermeid->r1 = 0x0;
-	ppermeid->r2 = 0x0;
-	ppermeid->r3 = 0x0;
-	ppermeid->provider_uid = muidEMSAB;
-	ppermeid->r4 = 0x1;
-	ppermeid->display_type = display_type;
-	ppermeid->pdn = NULL;
+	ppermeid->flags = ENTRYID_TYPE_PERMANENT;
+	ppermeid->type = display_type;
+	ppermeid->px500dn = nullptr;
 	if (DT_CONTAINER == display_type) {
 		if (NULL == pobj_guid) {
-			ppermeid->pdn = deconst("/");
+			ppermeid->px500dn = deconst("/");
 		} else {
 			memcpy(buff, "/guid=", 6);
 			pobj_guid->to_str(&buff[6], 32);
 			buff[38] = '\0';
 			len = 38;
-			ppermeid->pdn = ndr_stack_anew<char>(NDR_STACK_OUT, len + 1);
-			if (ppermeid->pdn == nullptr)
+			ppermeid->px500dn = ndr_stack_anew<char>(NDR_STACK_OUT, len + 1);
+			if (ppermeid->px500dn == nullptr)
 				return FALSE;
-			memcpy(ppermeid->pdn, buff, len + 1);
+			memcpy(ppermeid->px500dn, buff, len + 1);
 		}
 	}  else {
 		len = strlen(pdn);
-		ppermeid->pdn = ndr_stack_anew<char>(NDR_STACK_OUT, len + 1);
-		if (ppermeid->pdn == nullptr)
+		ppermeid->px500dn = ndr_stack_anew<char>(NDR_STACK_OUT, len + 1);
+		if (ppermeid->px500dn == nullptr)
 			return FALSE;
-		memcpy(ppermeid->pdn, pdn, len + 1);
+		memcpy(ppermeid->px500dn, pdn, len + 1);
 	}
 	return TRUE;
 }
 
-BOOL common_util_permanent_entryid_to_binary(
-	const PERMANENT_ENTRYID *ppermeid, BINARY *pbin)
+BOOL common_util_permanent_entryid_to_binary(const EMSAB_ENTRYID *ppermeid, BINARY *pbin)
 {
-	int len;
-	
-	len = strlen(ppermeid->pdn) + 1;
+	size_t len = strlen(ppermeid->px500dn) + 1;
 	pbin->cb = 28 + len;
 	pbin->pv = ndr_stack_alloc(NDR_STACK_OUT, pbin->cb);
 	if (pbin->pv == nullptr)
 		return FALSE;
 	memset(pbin->pb, 0, pbin->cb);
-	if (ppermeid->id_type != ENTRYID_TYPE_PERMANENT)
+	if (ppermeid->flags != ENTRYID_TYPE_PERMANENT)
 		mlog(LV_WARN, "W-2040: %s: conversion of a non-permanent entryid attempted", __func__);
-	pbin->pb[0] = ppermeid->id_type;
-	pbin->pb[1] = ppermeid->r1;
-	pbin->pb[2] = ppermeid->r2;
-	pbin->pb[3] = ppermeid->r3;
-	memcpy(pbin->pb + 4, ppermeid->provider_uid.ab, 16);
-	pbin->pb[20] = (ppermeid->r4 & 0xFF);
-	pbin->pb[21] = ((ppermeid->r4 >> 8)  & 0xFF);
-	pbin->pb[22] = ((ppermeid->r4 >> 16) & 0xFF);
-	pbin->pb[23] = ((ppermeid->r4 >> 24) & 0xFF);
-	pbin->pb[24] = (ppermeid->display_type & 0xFF);
-	pbin->pb[25] = ((ppermeid->display_type >> 8)  & 0xFF);
-	pbin->pb[26] = ((ppermeid->display_type >> 16) & 0xFF);
-	pbin->pb[27] = ((ppermeid->display_type >> 24) & 0xFF);
-	memcpy(pbin->pb + 28, ppermeid->pdn, len);
+	cpu_to_le32p(&pbin->pb[0], ppermeid->flags);
+	FLATUID guid = muidEMSAB;
+	memcpy(&pbin->pb[4], guid.ab, 16);
+	cpu_to_le32p(&pbin->pb[20], 1);
+	cpu_to_le32p(&pbin->pb[24], ppermeid->type);
+	memcpy(&pbin->pb[28], ppermeid->px500dn, len);
 	return TRUE;
 }
 
@@ -219,25 +177,14 @@ BOOL common_util_ephemeral_entryid_to_binary(
 	if (pbin->pv == nullptr)
 		return FALSE;
 	memset(pbin->pb, 0, pbin->cb);
-	if (pephid->id_type != ENTRYID_TYPE_EPHEMERAL)
+	if (pephid->flags != ENTRYID_TYPE_EPHEMERAL)
 		mlog(LV_WARN, "W-2041: %s: conversion of a non-permanent entryid attempted", __func__);
-	pbin->pb[0] = pephid->id_type;
-	pbin->pb[1] = pephid->r1;
-	pbin->pb[2] = pephid->r2;
-	pbin->pb[3] = pephid->r3;
-	memcpy(pbin->pb + 4, pephid->provider_uid.ab, 16);
-	pbin->pb[20] = pephid->r4 & 0xFF;
-	pbin->pb[21] = (pephid->r4 >> 8)  & 0xFF;
-	pbin->pb[22] = (pephid->r4 >> 16) & 0xFF;
-	pbin->pb[23] = (pephid->r4 >> 24) & 0xFF;
-	pbin->pb[24] = pephid->display_type & 0xFF;
-	pbin->pb[25] = (pephid->display_type >> 8)  & 0xFF;
-	pbin->pb[26] = (pephid->display_type >> 16) & 0xFF;
-	pbin->pb[27] = (pephid->display_type >> 24) & 0xFF;
-	pbin->pb[28] = pephid->mid & 0xFF;
-	pbin->pb[29] = (pephid->mid >> 8)  & 0xFF;
-	pbin->pb[30] = (pephid->mid >> 16) & 0xFF;
-	pbin->pb[31] = (pephid->mid >> 24) & 0xFF;
+	cpu_to_le32p(&pbin->pb[0], pephid->flags);
+	FLATUID f = g_server_guid;
+	memcpy(&pbin->pb[4], &f, 16);
+	cpu_to_le32p(&pbin->pb[20], 1);
+	cpu_to_le32p(&pbin->pb[24], pephid->display_type);
+	cpu_to_le32p(&pbin->pb[28], pephid->mid);
 	return TRUE;
 }
 
@@ -350,5 +297,11 @@ BOOL common_util_load_file(const char *path, BINARY *pbin)
 int common_util_run()
 {
 	g_server_guid = GUID::random_new();
+	if (g_server_guid == muidEMSAB)
+		g_server_guid = GUID::random_new();
+	if (g_server_guid == muidEMSAB) {
+		mlog(LV_ERR, "nsp: unlucky random number generator");
+		return -1;
+	}
 	return 0;
 }

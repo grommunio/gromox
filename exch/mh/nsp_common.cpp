@@ -20,38 +20,6 @@ static uint64_t cu_filetime_to_nttime(const FILETIME &f)
 	return (static_cast<uint64_t>(f.high_datetime) << 32) | f.low_datetime;
 }
 
-FLATUID cu_guid_to_flatuid(const GUID &g)
-{
-	FLATUID f;
-	f.ab[0] = g.time_low & 0xFF;
-	f.ab[1] = (g.time_low >> 8) & 0xFF;
-	f.ab[2] = (g.time_low >> 16) & 0xFF;
-	f.ab[3] = (g.time_low >> 24) & 0xFF;
-	f.ab[4] = g.time_mid & 0xFF;
-	f.ab[5] = (g.time_mid >> 8) & 0xFF;
-	f.ab[6] = g.time_hi_and_version & 0xFF;
-	f.ab[7] = (g.time_hi_and_version >> 8) & 0xFF;
-	memcpy(f.ab + 8,  g.clock_seq, sizeof(uint8_t) * 2);
-	memcpy(f.ab + 10, g.node, sizeof(uint8_t) * 6);
-	return f;
-}
-
-GUID cu_flatuid_to_guid(const FLATUID &f)
-{
-	GUID g;
-	g.time_low = static_cast<uint32_t>(f.ab[3]) << 24;
-	g.time_low |= static_cast<uint32_t>(f.ab[2]) << 16;
-	g.time_low |= static_cast<uint32_t>(f.ab[1]) << 8;
-	g.time_low |= f.ab[0];
-	g.time_mid = static_cast<uint32_t>(f.ab[5]) << 8;
-	g.time_mid |= f.ab[4];
-	g.time_hi_and_version = static_cast<uint32_t>(f.ab[7]) << 8;
-	g.time_hi_and_version |= f.ab[6];
-	memcpy(g.clock_seq, f.ab + 8, sizeof(uint8_t) * 2);
-	memcpy(g.node, f.ab + 10, sizeof(uint8_t) * 6);
-	return g;
-}
-
 static BOOL cu_guid_array_to_flatuid_array(const GUID_ARRAY &g, FLATUID_ARRAY &f)
 {
 	f.cvalues = g.count;
@@ -62,7 +30,7 @@ static BOOL cu_guid_array_to_flatuid_array(const GUID_ARRAY &g, FLATUID_ARRAY &f
 		f.ppguid[i] = cu_alloc<FLATUID>();
 		if (f.ppguid[i] == nullptr)
 			return false;
-		*f.ppguid[i] = cu_guid_to_flatuid(g.pguid[i]);
+		*f.ppguid[i] = g.pguid[i];
 	}
 	return TRUE;
 }
@@ -74,7 +42,7 @@ static BOOL cu_flatuid_array_to_guid_array(const FLATUID_ARRAY &f, GUID_ARRAY &g
 	if (g.pguid == nullptr)
 		return false;
 	for (size_t i = 0; i < g.count; ++i)
-		g.pguid[i] = cu_flatuid_to_guid(*f.ppguid[i]);
+		g.pguid[i] = *f.ppguid[i];
 	return TRUE;
 }
 
@@ -83,7 +51,7 @@ BOOL cu_propname_to_nsp(const nsp_propname2 &a, NSP_PROPNAME &p)
 	p.pguid = cu_alloc<FLATUID>();
 	if (p.pguid == nullptr)
 		return false;
-	*p.pguid = cu_guid_to_flatuid(a.guid);
+	*p.pguid = a.guid;
 	p.reserved = 0;
 	p.id = a.id;
 	return TRUE;
@@ -117,7 +85,7 @@ static BOOL cu_propval_to_valunion(uint16_t type, const void *x, PROP_VAL_UNION 
 		u.pguid = cu_alloc<FLATUID>();
 		if (u.pguid == nullptr)
 			return false;
-		*reinterpret_cast<FLATUID *>(u.pguid) = cu_guid_to_flatuid(*static_cast<const GUID *>(x));
+		*reinterpret_cast<FLATUID *>(u.pguid) = *static_cast<const GUID *>(x);
 		return TRUE;
 	case PT_SYSTIME:
 		u.ftime = cu_nttime_to_filetime(*static_cast<const uint64_t *>(x));
@@ -194,7 +162,7 @@ static BOOL cu_valunion_to_propval(uint16_t type, const PROP_VAL_UNION *u, void 
 		value = cu_alloc<GUID>();
 		if (value == nullptr)
 			return false;
-		*static_cast<GUID *>(value) = cu_flatuid_to_guid(*u->pguid);
+		*static_cast<GUID *>(value) = *u->pguid;
 		break;
 	case PT_SYSTIME:
 		value = cu_alloc<uint64_t>();

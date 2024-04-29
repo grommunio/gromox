@@ -234,7 +234,6 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 	EMSAB_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_MAILUSER;
 	tmp_entryid.px500dn = deconst(pessdn);
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16) ||

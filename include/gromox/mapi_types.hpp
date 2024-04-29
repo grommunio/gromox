@@ -254,7 +254,6 @@ struct GX_EXPORT PROBLEM_ARRAY {
 
 struct EMSAB_ENTRYID {
 	uint32_t flags;
-	uint32_t version; /* should be 0x00000001 */
 	uint32_t type;
 	char *px500dn;
 };
