@@ -97,7 +97,7 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 	int *pdomain_id, int *puser_id);
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
-BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin);
+extern BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin, unsigned int etyp = DT_MAILUSER);
 BOOL common_util_exmdb_locinfo_from_string(
 	const char *loc_string, uint8_t *ptype,
 	int *pdb_id, uint64_t *peid);

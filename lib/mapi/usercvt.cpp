@@ -118,15 +118,9 @@ static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id
 	 * exmdb, which leaves e.g. sender (PR_SENDER_ENTRYID), sent_repr and
 	 * PR_READ_RECEIPT_ENTRYID.
 	 *
-	 * The entryid type (EMSAB_ENTRYID::type) is set based on the
-	 * NSP-provided PR_DISPLAY_TYPE value. Even though PR_DISPLAY_TYPE_EX
-	 * may be DT_ROOM, rooms have PR_DISPLAY_TYPE=DT_MAILUSER. This might
-	 * explain the historic DT_MAILUSER check.
+	 * The type field (EMSAB_ENTRYID::type) is oddly set (cf.
+	 * doc/user_properties.rst).
 	 */
-	/*
-	if (eid.type != DT_MAILUSER)
-		return ecInvalidParam;
-	*/
 	return cvt_essdn_to_username(eid.px500dn, org, std::move(id2user), smtpaddr);
 }
 

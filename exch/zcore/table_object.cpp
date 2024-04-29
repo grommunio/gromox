@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -11,6 +11,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <gromox/gab.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
@@ -314,7 +315,12 @@ static BOOL rcpttable_query_rows(const table_object *ptable,
 		auto pentryid = cu_alloc<BINARY>();
 		if (pentryid == nullptr)
 			return FALSE;
-		if (!common_util_essdn_to_entryid(emaddr, pentryid))
+		auto dtype_p = row.get<uint32_t>(PR_DISPLAY_TYPE);
+		auto dtypx_p = row.get<uint32_t>(PR_DISPLAY_TYPE_EX);
+		unsigned int etyp = dtypx_to_etyp(static_cast<enum display_type>(
+		                    dtypx_p != nullptr ? *dtypx_p & DTE_MASK_LOCAL :
+		                    dtype_p != nullptr ? *dtype_p : DT_MAILUSER));
+		if (!common_util_essdn_to_entryid(emaddr, pentryid, etyp))
 			return FALSE;
 		auto pvalue = cu_alloc<TAGGED_PROPVAL>(row.count + 1);
 		if (pvalue == nullptr)
