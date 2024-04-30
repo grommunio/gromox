@@ -53,7 +53,6 @@ static std::vector<static_module> g_dfl_svc_plugins = {
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "lda_fd_limit", CFG_ALIAS},
 	{"lda_fd_limit", "0", CFG_SIZE},
-	{"outgoing_smtp_url", ""},
 	CFG_TABLE_END,
 };
 
@@ -185,17 +184,17 @@ int main(int argc, const char **argv)
 			CFG_TABLE_END,
 		};
 		auto cfg = config_file_initd("remote_delivery.cfg", PKGSYSCONFDIR, rd_dfl);
-		if (cfg == nullptr)
-			return 0;
-		str_val = cfg->get_value("mx_host");
-		uint16_t port = cfg->get_ll("mx_port");
-		try {
-			g_outgoing_smtp_url = vmime::utility::url("smtp",
-				cfg->get_value("mx_host"), cfg->get_ll("mx_port"));
-		} catch (const vmime::exceptions::malformed_url &e) {
-			mlog(LV_ERR, "Malformed outgoing SMTP: [%s]:%hu: %s",
-				str_val, port, e.what());
-			return EXIT_FAILURE;
+		if (cfg != nullptr) {
+			str_val = cfg->get_value("mx_host");
+			uint16_t port = cfg->get_ll("mx_port");
+			try {
+				g_outgoing_smtp_url = vmime::utility::url("smtp",
+					cfg->get_value("mx_host"), cfg->get_ll("mx_port"));
+			} catch (const vmime::exceptions::malformed_url &e) {
+				mlog(LV_ERR, "Malformed outgoing SMTP: [%s]:%hu: %s",
+					str_val, port, e.what());
+				return EXIT_FAILURE;
+			}
 		}
 	}
 	mlog(LV_NOTICE, "delivery: remote_delivery SMTP server is %s", g_outgoing_smtp_url.c_str());
