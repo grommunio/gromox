@@ -34,7 +34,6 @@
 #include "rop_ids.hpp"
 #include "rop_processor.h"
 #include "stream_object.h"
-#include "subscription_object.h"
 #include "table_object.h"
 
 using namespace gromox;
