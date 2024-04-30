@@ -3,9 +3,9 @@
 // This file is part of Gromox.
 
 #pragma once
+#include <array>
 #include <string>
 #include <tinyxml2.h>
-#include <vector>
 
 namespace gromox::EWS::SOAP
 {
@@ -15,13 +15,18 @@ static constexpr char NS_XSI[] = "http://www.w3.org/2001/XMLSchema-instance";
 static constexpr char NS_XSD[] = "http://www.w3.org/2001/XMLSchema";
 static constexpr char NS_TYPS[] = "http://schemas.microsoft.com/exchange/services/2006/types";
 
+struct VersionInfo {
+	std::array<uint16_t, 4> server; ///< Server version
+	std::string schema; ///< EWS schema version string
+};
+
 
 /**
  * @brief      Basic class to manage SOAP Envelopes
  */
 class Envelope {
 	public:
-	Envelope(const std::vector<uint16_t> &);
+	explicit Envelope(const VersionInfo &);
 	explicit Envelope(const char*, size_t=static_cast< size_t >(-1));
 
 	tinyxml2::XMLDocument doc; ///< XML document containing the envelope

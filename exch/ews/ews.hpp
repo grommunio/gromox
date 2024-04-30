@@ -175,6 +175,8 @@ public:
 	void unsubscribe(const detail::ExmdbSubscriptionKey&) const;
 	void wakeContext(int, std::chrono::milliseconds) const;
 
+	inline const SOAP::VersionInfo& server_version() const {return m_server_version;}
+
 	std::string x500_org_name; ///< organization name or empty string if not configured
 	std::string smtp_url;
 	std::string timestampFormat = " "; ///< format specification for log timestamps or empty to disable timestamps
@@ -219,7 +221,7 @@ private:
 
 	std::unique_ptr<DebugCtx> debug;
 	std::vector<std::string> logFilters;
-	std::vector<uint16_t> m_server_version;
+	SOAP::VersionInfo m_server_version;
 	bool invertFilter = true;
 	bool teardown = false;
 
@@ -236,7 +238,7 @@ public:
 
 	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE, S_STREAM_NOTIFY};
 
-	EWSContext(int, HTTP_AUTH_INFO, const char *, uint64_t, const std::vector<uint16_t> &ver, EWSPlugin &);
+	EWSContext(int, HTTP_AUTH_INFO, const char *, uint64_t, EWSPlugin &);
 	~EWSContext();
 
 	EWSContext(const EWSContext&) = delete;
@@ -361,7 +363,6 @@ private:
 
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 
-	std::vector<uint16_t> m_server_version;
 	int m_ID = 0;
 	http_status m_code = http_status::ok;
 	State m_state = S_DEFAULT;

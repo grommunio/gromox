@@ -348,8 +348,7 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 	using namespace std::string_literals;
 	auto &pc = contexts[ctx_id] =
 	           std::make_unique<EWSContext>(ctx_id,
-	           auth_info, static_cast<const char *>(data), len, m_server_version,
-	           *this);
+	           auth_info, static_cast<const char *>(data), len, *this);
 	EWSContext& context = *pc;
 	const XMLElement* request = context.request().body->FirstChildElement();
 	if(!request)
@@ -479,6 +478,7 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 	{"ews_pretty_response", "0", CFG_BOOL},
 	{"ews_request_logging", "0"},
 	{"ews_response_logging", "0"},
+	{"ews_schema_version", "V2017_07_11"},
 	{"smtp_server_ip", "::1", CFG_DEPRECATED},
 	{"smtp_server_port", "25", CFG_DEPRECATED},
 	CFG_TABLE_END,
@@ -501,9 +501,7 @@ void EWSPlugin::loadConfig()
 	}
 	auto str = gxcfg->get_value("reported_server_version");
 	auto &ver = m_server_version;
-	ver.clear();
-	ver.resize(4);
-	sscanf(str, "%hu.%hu.%hu.%hu", &ver[0], &ver[1], &ver[2], &ver[3]);
+	sscanf(str, "%hu.%hu.%hu.%hu", &ver.server[0], &ver.server[1], &ver.server[2], &ver.server[3]);
 
 	auto cfg = config_file_initd("exmdb_provider.cfg", get_config_path(), x500_defaults);
 	if(!cfg)
@@ -526,6 +524,7 @@ void EWSPlugin::loadConfig()
 	event_stream_interval = std::chrono::milliseconds(cfg->get_ll("ews_event_stream_interval"));
 	cache_embedded_instance_lifetime = std::chrono::milliseconds(cfg->get_ll("ews_cache_embedded_instance_lifetime"));
 	max_user_photo_size = cfg->get_ll("ews_max_user_photo_size");
+	ver.schema = cfg->get_value("ews_schema_version");
 
 	str = gxcfg->get_value("outgoing_smtp_url");
 	if (str != nullptr) {
@@ -654,7 +653,7 @@ int EWSContext::notify()
 
 	mGetStreamingEventsResponse data;
 	mGetStreamingEventsResponseMessage& msg = data.ResponseMessages.emplace_back();
-	SOAP::Envelope envelope(m_server_version);
+	SOAP::Envelope envelope(m_plugin.server_version());
 	tinyxml2::XMLElement* response = envelope.body->InsertNewChildElement("m:GetStreamingEventsResponse");
 	response->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
 	response->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
