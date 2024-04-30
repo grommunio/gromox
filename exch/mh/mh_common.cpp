@@ -10,9 +10,9 @@
 using namespace gromox;
 using namespace hpm_mh;
 
-MhContext::MhContext(int context_id, const std::string &srvver) :
-	ID(context_id), orig(*get_request(context_id)),
-	auth_info(get_auth_info(context_id)), start_time(tp_now()),
+MhContext::MhContext(int context_id, http_request &rq, HTTP_AUTH_INFO &&ai,
+    const std::string &srvver) :
+	ID(context_id), orig(rq), auth_info(std::move(ai)), start_time(tp_now()),
 	push_buff(std::make_unique<char[]>(push_buff_size)),
 	m_server_version(srvver)
 {}

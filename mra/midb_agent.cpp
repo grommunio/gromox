@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#define DECLARE_SVC_API_STATIC
 #include <algorithm>
 #include <atomic>
 #include <cassert>
@@ -41,6 +40,7 @@
 
 using namespace gromox;
 using AGENT_MITEM = MITEM;
+DECLARE_SVC_API(,);
 
 namespace {
 

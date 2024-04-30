@@ -59,7 +59,8 @@ struct HTTP_AUTH_INFO {
 	const char* lang;
 };
 
-#define DECLARE_HPM_API(x) \
+/* Plugin is expected to use `using namespace ns;` too */
+#define DECLARE_HPM_API(ns, x) namespace ns { \
 	x decltype(dlfuncs::symget) imp__symget; \
 	x decltype(dlfuncs::hpm.reg_intf) register_interface; \
 	x decltype(dlfuncs::hpm.get_conn) get_connection; \
@@ -76,14 +77,10 @@ struct HTTP_AUTH_INFO {
 	x decltype(dlfuncs::hpm.set_ep_info) set_ep_info; \
 	x decltype(dlfuncs::ndr_stack_alloc) ndr_stack_alloc; \
 	x decltype(dlfuncs::rpc_new_stack) rpc_new_stack; \
-	x decltype(dlfuncs::rpc_free_stack) rpc_free_stack;
+	x decltype(dlfuncs::rpc_free_stack) rpc_free_stack; \
+}
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(imp__symget((n), nullptr, typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
-#ifdef DECLARE_HPM_API_STATIC
-DECLARE_HPM_API(static);
-#else
-DECLARE_HPM_API(extern);
-#endif
 	
 #define LINK_HPM_API(param) \
 	imp__symget = param.symget; \

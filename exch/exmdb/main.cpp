@@ -28,8 +28,8 @@
 
 using namespace std::string_literals;
 using namespace gromox;
-
-DECLARE_SVC_API();
+DECLARE_SVC_API(exmdb, );
+using namespace exmdb;
 
 static std::shared_ptr<CONFIG_FILE> g_config_during_init;
 

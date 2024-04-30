@@ -16,8 +16,8 @@
 
 using namespace std::string_literals;
 using namespace gromox;
-
-DECLARE_SVC_API();
+DECLARE_SVC_API(user_filter, );
+using namespace user_filter;
 
 BOOL SVC_user_filter(enum plugin_op reason, const struct dlfuncs &ppdata)
 {

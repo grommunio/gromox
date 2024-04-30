@@ -25,6 +25,8 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+DECLARE_HOOK_API(exmdb_local, extern);
+using namespace exmdb_local;
 
 static char g_path[256];
 static int g_mess_id;

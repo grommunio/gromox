@@ -31,6 +31,8 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+DECLARE_HOOK_API(alias_resolve, extern);
+using namespace alias_resolve;
 
 int (*bounce_producer_check_domain)(const char *domainname);
 bool (*bounce_producer_get_lang)(const char *username, char *lang, size_t);

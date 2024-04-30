@@ -45,7 +45,8 @@ using domain_set = std::set<std::string>;
 
 }
 
-DECLARE_HOOK_API();
+DECLARE_HOOK_API(alias_resolve, );
+using namespace alias_resolve;
 
 static std::atomic<bool> xa_notify_stop{false};
 static std::condition_variable xa_thread_wake;

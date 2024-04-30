@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
-#define DECLARE_PROC_API_STATIC
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -12,10 +11,12 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
-#include <gromox/zz_ndr_stack.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
 
 using namespace gromox;
+DECLARE_PROC_API(,);
+#define ZZNDR_NS
+#include <gromox/zz_ndr_stack.hpp>
 
 enum {
 	RfrGetNewDSA = 0,

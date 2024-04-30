@@ -25,7 +25,8 @@ struct MESSAGE_CONTEXT {
 	MAIL mail; /* Note limitations of MAIL's default ctor */
 };
 
-#define DECLARE_HOOK_API(x) \
+/* Plugin is expected to use `using namespace ns;` too */
+#define DECLARE_HOOK_API(ns, x) namespace ns { \
 	x decltype(dlfuncs::symget) imp__symget; \
 	x decltype(dlfuncs::hook.register_hook) register_hook; \
 	x decltype(dlfuncs::hook.register_local) register_local; \
@@ -39,14 +40,10 @@ struct MESSAGE_CONTEXT {
 	x decltype(dlfuncs::hook.get_ctx) get_context; \
 	x decltype(dlfuncs::hook.put_ctx) put_context; \
 	x decltype(dlfuncs::hook.enqueue_ctx) enqueue_context; \
-	x decltype(dlfuncs::hook.throw_ctx) throw_context;
+	x decltype(dlfuncs::hook.throw_ctx) throw_context; \
+}
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(imp__symget((n), nullptr, typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
-#ifdef DECLARE_HOOK_API_STATIC
-DECLARE_HOOK_API(static);
-#else
-DECLARE_HOOK_API(extern);
-#endif
 
 #define LINK_HOOK_API(param) \
 	imp__symget = param.symget; \

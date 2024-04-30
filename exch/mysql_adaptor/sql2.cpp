@@ -29,8 +29,8 @@
 #define JOIN_WITH_DISPLAYTYPE "LEFT JOIN user_properties AS dt ON u.id=dt.user_id AND dt.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
 
 using namespace std::string_literals;
-
-DECLARE_SVC_API();
+DECLARE_SVC_API(mysql_adaptor, extern);
+using namespace mysql_adaptor;
 
 using namespace gromox;
 using aliasmap_t = std::multimap<std::string, std::string, std::less<>>;

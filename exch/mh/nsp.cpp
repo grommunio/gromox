@@ -32,8 +32,8 @@
 
 using namespace gromox;
 using namespace hpm_mh;
-
-DECLARE_HPM_API();
+DECLARE_HPM_API(mh_nsp, );
+using namespace mh_nsp;
 
 using NspRequest = std::variant<
 	bind_request,
@@ -117,8 +117,10 @@ struct MhNspContext : public MhContext
 	template<size_t I> using Response_t = std::variant_alternative_t<I, NspResponse>; ///< Response type by index
 
 	explicit MhNspContext(int contextId, const std::string &excver) :
-		MhContext(contextId, excver)
+		MhContext(contextId, *get_request(contextId),
+		get_auth_info(contextId), excver)
 	{
+		this->write_response = mh_nsp::write_response;
 		ext_push.init(push_buff.get(), static_cast<uint32_t>(push_buff_size), EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 		epush = &ext_push;
 	}
