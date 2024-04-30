@@ -49,16 +49,6 @@
 
 using namespace gromox;
 
-enum {
-	SMTP_SEND_OK = 0,
-	SMTP_CANNOT_CONNECT,
-	SMTP_CONNECT_ERROR,
-	SMTP_TIME_OUT,
-	SMTP_TEMP_ERROR,
-	SMTP_UNKOWN_RESPONSE,
-	SMTP_PERMANENT_ERROR
-};
-
 using LLU = unsigned long long;
 
 unsigned int emsmdb_backfill_transporthdr;
