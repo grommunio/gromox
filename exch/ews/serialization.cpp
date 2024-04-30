@@ -1719,8 +1719,8 @@ void mMoveItemResponse::serialize(tinyxml2::XMLElement* xml) const
 void mResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPA(ResponseClass);
-	XMLDUMPM(ResponseCode);
 	XMLDUMPM(MessageText);
+	XMLDUMPM(ResponseCode);
 	XMLDUMPM(DescriptiveLinkKey);
 }
 

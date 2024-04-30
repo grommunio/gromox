@@ -22,7 +22,7 @@ namespace gromox::EWS::SOAP
 /**
  * @brief      Generate empty SOAP Envelope
  */
-Envelope::Envelope(const std::vector<uint16_t> &ver)
+Envelope::Envelope(const VersionInfo &ver)
 {
 	auto decl = doc.NewDeclaration();
 	doc.InsertEndChild(decl);
@@ -36,11 +36,11 @@ Envelope::Envelope(const std::vector<uint16_t> &ver)
 
 	XMLElement* ServerVersionInfo = header->InsertNewChildElement("t:ServerVersionInfo");
 	ServerVersionInfo->SetAttribute("xmlns:t", NS_TYPS);
-	assert(ver.size() >= 4);
-	ServerVersionInfo->SetAttribute("MajorVersion", ver[0]);
-	ServerVersionInfo->SetAttribute("MinorVersion", ver[1]);
-	ServerVersionInfo->SetAttribute("MajorBuildNumber", ver[2]);
-	ServerVersionInfo->SetAttribute("MinorBuildNumber", ver[3]);
+	ServerVersionInfo->SetAttribute("MajorVersion", ver.server[0]);
+	ServerVersionInfo->SetAttribute("MinorVersion", ver.server[1]);
+	ServerVersionInfo->SetAttribute("MajorBuildNumber", ver.server[2]);
+	ServerVersionInfo->SetAttribute("MinorBuildNumber", ver.server[3]);
+	ServerVersionInfo->SetAttribute("Version", ver.schema.c_str());
 }
 
 /**
