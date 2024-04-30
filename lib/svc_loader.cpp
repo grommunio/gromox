@@ -132,7 +132,13 @@ int service_run()
 void service_stop()
 {
 	while (!g_list_plug.empty())
+		/*
+		 * PLUGIN_FREE handlers an invoke service_release, so clear
+		 * list_service after the loop.
+		 */
 		g_list_plug.pop_back();
+
+	g_list_service.clear();
 }
 
 /*
