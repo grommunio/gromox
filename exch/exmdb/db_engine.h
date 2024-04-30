@@ -4,6 +4,7 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <sqlite3.h>
 #include <string>
 #include <gromox/clock.hpp>
@@ -100,74 +101,99 @@ struct prepared_statements {
 };
 
 /**
- * @reference: client reference count, item can be closed only when count is 0
+ * Per-mailbox state shared across multiple (and basically indepdent of)
+ * db_conn.
+ *
+ * @reference: client reference count, db_base can be destroyed when count is 0
+ * @mx_sqlite: cached sqlite handles for exchange.sqlite3
+ * @mx_sqlite_eph: cached sqlite handles for tables.sqlite3
  */
-class db_item_deleter;
-struct DB_ITEM {
-	DB_ITEM();
-	~DB_ITEM();
-	NOMOVE(DB_ITEM);
-	bool postconstruct_init(const char *dir);
-	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
-	void delete_dynamic(uint64_t folder_id);
-	void proc_dynamic_event(cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3);
-	void notify_new_mail(uint64_t folder_id, uint64_t msg_id);
-	void notify_message_creation(uint64_t folder_id, uint64_t msg_id);
-	void notify_link_creation(uint64_t parent_id, uint64_t msg_id);
-	void notify_folder_creation(uint64_t parent_id, uint64_t folder_id);
-	void notify_message_deletion(uint64_t folder_id, uint64_t msg_id);
-	void notify_link_deletion(uint64_t parent_id, uint64_t msg_id);
-	void notify_folder_deletion(uint64_t parent_id, uint64_t folder_id);
-	void notify_message_modification(uint64_t folder_id, uint64_t msg_id);
-	void notify_folder_modification(uint64_t parent_id, uint64_t folder_id);
-	void notify_message_movecopy(BOOL b_copy, uint64_t folder_id, uint64_t msg_id, uint64_t old_fid, uint64_t old_mid);
-	void notify_folder_movecopy(BOOL b_copy, uint64_t parent_id, uint64_t folder_id, uint64_t old_pid, uint64_t old_fid);
-	void notify_cttbl_reload(uint32_t table_id);
-	void transport_new_mail(uint64_t folder_id, uint64_t msg_id, uint32_t msg_flags, const char *klass);
-	void begin_batch_mode();
-	/* pdb will also be put */
-	static void commit_batch_mode_release(std::unique_ptr<DB_ITEM, db_item_deleter> &&pdb);
-	void cancel_batch_mode();
-	std::unique_ptr<prepared_statements> begin_optim();
-	uint32_t next_instance_id() const;
-	instance_node *get_instance(uint32_t);
-	inline const instance_node *get_instance_c(uint32_t id) const { return const_cast<DB_ITEM *>(this)->get_instance(id); }
-	const table_node *find_table(uint32_t) const;
+struct db_base {
+	db_base();
+	~db_base();
+	NOMOVE(db_base);
 
+	mutable std::shared_mutex giant_lock;
 	std::atomic<int> reference;
 	gromox::time_point last_time{};
-	std::timed_mutex giant_lock; /* should be broken up */
-	sqlite3 *psqlite = nullptr;
-	std::vector<dynamic_node> dynamic_list; /* dynamic searches */
-	std::vector<nsub_node> nsub_list;
-	std::vector<instance_node> instance_list;
-
+	std::vector<sqlite3 *> mx_sqlite, mx_sqlite_eph;
 	/* memory database for holding rop table objects instance */
 	struct {
 		uint32_t last_id = 0;
 		bool b_batch = false; /* message database is in batch-mode */
 		std::list<table_node> table_list;
 	} tables;
-	sqlite3 *m_sqlite_eph = nullptr;
+	std::vector<nsub_node> nsub_list;
+	std::vector<dynamic_node> dynamic_list; /* dynamic searches */
+	std::vector<instance_node> instance_list;
+
+	uint32_t next_instance_id() const;
+	instance_node *get_instance(uint32_t);
+	inline const instance_node *get_instance_c(uint32_t id) const { return const_cast<db_base *>(this)->get_instance(id); }
+	const table_node *find_table(uint32_t) const;
+	void handle_spares(sqlite3 *, sqlite3 *);
+};
+
+struct db_base_unlock_rd {
+	inline void operator()(const db_base *b) const { b->giant_lock.unlock_shared(); }
+};
+
+struct db_base_unlock_wr {
+	inline void operator()(db_base *b) const { b->giant_lock.unlock(); }
+};
+
+using db_base_rd_ptr = std::unique_ptr<const db_base, db_base_unlock_rd>;
+using db_base_wr_ptr = std::unique_ptr<db_base, db_base_unlock_wr>;
+
+class db_item_deleter;
+struct db_conn {
+	db_conn(db_base &);
+	~db_conn();
+	db_conn(db_conn &&);
+	db_conn &operator=(db_conn &&);
+	inline operator db_base &() { return *m_base; }
+	inline operator const db_base &() const { return *m_base; }
+	bool open(const char *dir);
+	db_base_rd_ptr lock_base_rd() const;
+	db_base_wr_ptr lock_base_wr();
+	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
+	void delete_dynamic(uint64_t folder_id);
+	void proc_dynamic_event(cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3, db_base *) __attribute__((nonnull(7)));
+	void notify_new_mail(uint64_t folder_id, uint64_t msg_id, const db_base *) __attribute__((nonnull(4)));
+	void notify_message_creation(uint64_t folder_id, uint64_t msg_id, const db_base *) __attribute__((nonnull(4)));
+	void notify_link_creation(uint64_t parent_id, uint64_t msg_id, const db_base *) __attribute__((nonnull(4)));
+	void notify_folder_creation(uint64_t parent_id, uint64_t folder_id, const db_base *) __attribute__((nonnull(4)));
+	void notify_message_deletion(uint64_t folder_id, uint64_t msg_id, const db_base *) __attribute__((nonnull(4)));
+	void notify_link_deletion(uint64_t parent_id, uint64_t msg_id, const db_base *) __attribute__((nonnull(4)));
+	void notify_folder_deletion(uint64_t parent_id, uint64_t folder_id, const db_base *) __attribute__((nonnull(4)));
+	void notify_message_modification(uint64_t folder_id, uint64_t msg_id, db_base *) __attribute__((nonnull(4)));
+	void notify_folder_modification(uint64_t parent_id, uint64_t folder_id, const db_base *) __attribute__((nonnull(4)));
+	void notify_message_movecopy(BOOL b_copy, uint64_t folder_id, uint64_t msg_id, uint64_t old_fid, uint64_t old_mid, const db_base *) __attribute__((nonnull(7)));
+	void notify_folder_movecopy(BOOL b_copy, uint64_t parent_id, uint64_t folder_id, uint64_t old_pid, uint64_t old_fid, const db_base *) __attribute__((nonnull(7)));
+	void notify_cttbl_reload(uint32_t table_id, const db_base *) __attribute__((nonnull(3)));
+	void transport_new_mail(uint64_t folder_id, uint64_t msg_id, uint32_t msg_flags, const char *klass);
+	void begin_batch_mode();
+	/* pdb will also be put */
+	static void commit_batch_mode_release(std::optional<db_conn> &&pdb);
+	void cancel_batch_mode();
+	std::unique_ptr<prepared_statements> begin_optim();
 
 	gromox::xstmt prep(const char *q) const { return gromox::gx_sql_prep(psqlite, q); }
 	int exec(const char *q, unsigned int fl = 0) const { return gromox::gx_sql_exec(psqlite, q, fl); }
 	gromox::xstmt eph_prep(const char *q) const { return gromox::gx_sql_prep(m_sqlite_eph, q); }
 	int eph_exec(const char *q) const { return gromox::gx_sql_exec(m_sqlite_eph, q); }
+
+	sqlite3 *psqlite = nullptr, *m_sqlite_eph = nullptr;
+	db_base *m_base = nullptr;
+	std::unique_lock<std::shared_mutex> m_lock;
 };
+using db_conn_ptr = std::optional<db_conn>;
 
 extern void db_engine_init(size_t table_size, int cache_interval, unsigned int threads_num);
 extern int db_engine_run();
 extern void db_engine_stop();
 
-class db_item_deleter {
-	public:
-	void operator()(DB_ITEM *) const;
-};
-
-using db_item_ptr = std::unique_ptr<DB_ITEM, db_item_deleter>;
-
-extern db_item_ptr db_engine_get_db(const char *dir);
+extern db_conn_ptr db_engine_get_db(const char *dir);
 extern BOOL db_engine_vacuum(const char *path);
 BOOL db_engine_unload_db(const char *path);
 extern BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t, uint64_t folder_id, BOOL recursive, const RESTRICTION *, const LONGLONG_ARRAY *folder_ids);
@@ -178,3 +204,5 @@ extern unsigned long long g_exmdb_search_pacing_time, g_exmdb_lock_timeout;
 extern unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 extern unsigned int g_exmdb_pvt_folder_softdel;
 extern std::string g_exmdb_ics_log_file;
+/* Max number of cached DB connections per store, 0 = unlimited */
+extern unsigned int g_exmdb_max_sqlite_spares;

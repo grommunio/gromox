@@ -474,7 +474,7 @@ prepared_statements::~prepared_statements()
 		g_opt_key = nullptr;
 }
 
-std::unique_ptr<prepared_statements> DB_ITEM::begin_optim() try
+std::unique_ptr<prepared_statements> db_conn::begin_optim() try
 {
 	auto op = std::make_unique<prepared_statements>();
 	if (!op->begin(psqlite))
