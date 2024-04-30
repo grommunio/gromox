@@ -30,10 +30,10 @@
 #include <gromox/util.hpp>
 #include "mh_common.hpp"
 
-DECLARE_HPM_API();
-
 using namespace gromox;
 using namespace hpm_mh;
+DECLARE_HPM_API(mh_emsmdb, );
+using namespace mh_emsmdb;
 
 enum {
 	PENDING_STATUS_NONE = 0,
@@ -177,8 +177,10 @@ struct ems_push : public EXT_PUSH {
 struct MhEmsmdbContext : public MhContext
 {
 	explicit MhEmsmdbContext(int contextId, const std::string &excver) :
-		MhContext(contextId, excver)
+		MhContext(contextId, *get_request(contextId),
+		get_auth_info(contextId), excver)
 	{
+		this->write_response = mh_emsmdb::write_response;
 		ext_push.init(push_buff.get(), push_buff_size, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 		epush = &ext_push;
 	}

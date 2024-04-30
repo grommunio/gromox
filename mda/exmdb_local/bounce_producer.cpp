@@ -27,6 +27,8 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+DECLARE_HOOK_API(exmdb_local, extern);
+using namespace exmdb_local;
 
 /*
  *	make a bounce mail

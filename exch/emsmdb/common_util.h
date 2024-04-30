@@ -8,11 +8,15 @@
 #include <vmime/message.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #define NOTIFY_RECEIPT_READ							1
 #define NOTIFY_RECEIPT_NON_READ						2
 #define MINIMUM_COMPRESS_SIZE						0x100
 #define STORE_OWNER_GRANTED nullptr
+
+DECLARE_PROC_API(emsmdb, extern);
+using namespace emsmdb;
 
 struct logon_object;
 struct MAIL;

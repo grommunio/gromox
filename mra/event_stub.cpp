@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#define DECLARE_SVC_API_STATIC
 #include <cerrno>
 #include <csignal>
 #include <cstdint>
@@ -25,6 +24,7 @@
 #define MAX_CMD_LENGTH			64*1024
 
 using namespace gromox;
+DECLARE_SVC_API(,);
 
 namespace {
 

@@ -88,11 +88,12 @@ struct MhContext
 	std::string m_server_version;
 
 protected:
-	MhContext(int, const std::string &);
+	MhContext(int, http_request &, HTTP_AUTH_INFO &&, const std::string &);
 	~MhContext() = default;
 	NOMOVE(MhContext);
 
 	EXT_PUSH *epush = nullptr;
+	http_status (*write_response)(unsigned int, const void *, size_t);
 };
 
 }

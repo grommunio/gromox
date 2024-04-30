@@ -20,7 +20,7 @@ class OabPlugin {
 
 }
 
-DECLARE_HPM_API();
+DECLARE_HPM_API(,);
 
 static constexpr char
 	response[] = "<?xml version=\"1.0\" encoding=\"utf-8\"?><OAB></OAB>",

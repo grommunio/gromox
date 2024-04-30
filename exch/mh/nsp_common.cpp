@@ -1,6 +1,8 @@
 #include <cstring>
 #include <gromox/hpm_common.h>
 #include "nsp_common.hpp"
+DECLARE_HPM_API(mh_nsp, extern);
+using namespace mh_nsp;
 
 void *cu_alloc1(size_t size)
 {

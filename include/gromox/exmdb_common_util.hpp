@@ -10,11 +10,15 @@
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/svc_common.h>
 #define MAXIMUM_PROPNAME_NUMBER								0x7000
 #define MAX_DIGLEN											256*1024
 #define MAX_RULE_RECIPIENTS									256
 #define MAX_DAMS_PER_RULE_FOLDER							128
 #define STORE_OWNER_GRANTED nullptr
+
+DECLARE_SVC_API(exmdb, extern);
+using namespace exmdb;
 
 /*
  * These are used by exmdb internally; they never show up in the SQLite

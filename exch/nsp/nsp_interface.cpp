@@ -35,7 +35,6 @@
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include <gromox/zz_ndr_stack.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
 #include "nsp_interface.hpp"

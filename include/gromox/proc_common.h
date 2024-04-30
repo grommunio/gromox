@@ -13,7 +13,8 @@
 #define DISPATCH_SUCCESS			1
 #define DISPATCH_PENDING			2
 
-#define DECLARE_PROC_API(x) \
+/* Plugin is expected to use `using namespace ns;` too */
+#define DECLARE_PROC_API(ns, x) namespace ns { \
 	x decltype(dlfuncs::symget) imp__symget; \
 	x decltype(dlfuncs::symreg) imp__symreg; \
 	x decltype(dlfuncs::proc.reg_ep) register_endpoint; \
@@ -33,15 +34,11 @@
 	x decltype(dlfuncs::proc.rpc_build_env) rpc_build_environment; \
 	x decltype(dlfuncs::rpc_new_stack) rpc_new_stack; \
 	x decltype(dlfuncs::rpc_free_stack) rpc_free_stack; \
-	x decltype(dlfuncs::proc.async_reply) async_reply;
+	x decltype(dlfuncs::proc.async_reply) async_reply; \
+}
 #define register_service(n, f) imp__symreg((n), reinterpret_cast<void *>(f), typeid(decltype(*(f))))
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(imp__symget((n), nullptr, typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
-#ifdef DECLARE_PROC_API_STATIC
-DECLARE_PROC_API(static);
-#else
-DECLARE_PROC_API(extern);
-#endif
 
 #define LINK_PROC_API(param) \
 	imp__symget = param.symget; \

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2023 grommunio GmbH
 // This file is part of Gromox.
-#define DECLARE_SVC_API_STATIC
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
@@ -20,6 +19,7 @@
 
 using namespace gromox;
 static std::string g_zone_suffix;
+DECLARE_SVC_API(,);
 
 /**
  * An empty string is returned when there is nothing to complain about.

@@ -26,7 +26,7 @@
 #include "requests.hpp"
 #include "soaputil.hpp"
 
-DECLARE_HPM_API();
+DECLARE_HPM_API(gromox::EWS, );
 
 namespace gromox::EWS::Exceptions
 {

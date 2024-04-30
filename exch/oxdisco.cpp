@@ -98,7 +98,7 @@ class OxdiscoPlugin {
 
 }
 
-DECLARE_HPM_API();
+DECLARE_HPM_API(,);
 
 static constexpr char
 	response_xmlns[] = "http://schemas.microsoft.com/exchange/autodiscover/responseschema/2006",

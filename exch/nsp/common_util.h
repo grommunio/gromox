@@ -1,8 +1,14 @@
 #pragma once
 #include <cstdint>
 #include <gromox/common_types.hpp>
+#include <gromox/proc_common.h>
 #include "nsp_types.h"
 #define HANDLE_EXCHANGE_NSP				1
+
+DECLARE_PROC_API(nsp, extern);
+using namespace nsp;
+#define ZZNDR_NS nsp
+#include <gromox/zz_ndr_stack.hpp>
 
 /* bitmap NspiBind flags */
 enum {

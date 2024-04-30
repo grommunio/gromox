@@ -32,6 +32,8 @@
 #define MAX_DIGLEN				256*1024
 
 using namespace gromox;
+DECLARE_HOOK_API(exmdb_local, );
+using namespace exmdb_local;
 
 static bool g_lda_twostep;
 static char g_org_name[256];
@@ -473,8 +475,6 @@ static constexpr cfg_directive mdlgx_cfg_defaults[] = {
 	{"autoreply_silence_window", "1day", CFG_TIME, "0"},
 	CFG_TABLE_END,
 };
-
-DECLARE_HOOK_API();
 
 BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
