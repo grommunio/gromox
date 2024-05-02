@@ -57,7 +57,7 @@ function mapi_message_getattachmenttable(resource $msg) : resource|false {}
 function mapi_message_getrecipienttable(resource $msg) : resource|false {}
 function mapi_message_openattach(resource $msg, int $id) : resource|false {}
 function mapi_message_createattach(resource $msg, ?int $flags = 0) : resource|false {}
-function mapi_message_deleteattach(resource $msg, int $id = 0, ?int $flags = flags) : bool {}
+function mapi_message_deleteattach(resource $msg, int $id = 0, ?int $flags = 0) : bool {}
 function mapi_message_modifyrecipients(resource $msg, int $flags, array $adrlist) : bool {}
 function mapi_message_submitmessage(resource $msg) : bool {}
 function mapi_message_setreadflag(resource $msg, int $flags) : bool {}
