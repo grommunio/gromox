@@ -110,11 +110,12 @@ unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 unsigned long long g_exmdb_search_pacing_time = 2000000000;
 unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 unsigned int g_exmdb_pvt_folder_softdel, g_exmdb_max_sqlite_spares;
+unsigned long long g_sqlite_busy_timeout_ns;
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_point);
 static void dbeng_notify_cttbl_modify_row(db_conn *, uint64_t folder_id, uint64_t message_id, db_base *) __attribute__((nonnull(1,4)));
 
-static void db_engine_load_dynamic_list(db_conn *pdb) try
+static void db_engine_load_dynamic_list(db_base *dbase, sqlite3* psqlite) try
 {
 	EXT_PULL ext_pull;
 	char sql_string[256];
@@ -125,10 +126,9 @@ static void db_engine_load_dynamic_list(db_conn *pdb) try
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id,"
 		" search_flags, search_criteria FROM folders"
 		" WHERE is_search=1");
-	auto pstmt = pdb->prep(sql_string);
+	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return;
-	auto dbase = pdb->m_base;
 	while (pstmt.step() == SQLITE_ROW) {
 		if (dbase->dynamic_list.size() >= MAX_DYNAMIC_NODES)
 			break;
@@ -145,7 +145,7 @@ static void db_engine_load_dynamic_list(db_conn *pdb) try
 		pdynamic->prestriction = tmp_restriction.dup();
 		if (pdynamic->prestriction == nullptr)
 			break;
-		if (!common_util_load_search_scopes(pdb->psqlite,
+		if (!common_util_load_search_scopes(psqlite,
 		    pdynamic->folder_id, &tmp_fids))
 			continue;
 		pdynamic->folder_ids.count = tmp_fids.count;
@@ -207,14 +207,10 @@ db_conn_ptr db_engine_get_db(const char *path)
 	auto it = g_hash_table.find(path);
 	if (it != g_hash_table.end()) {
 		pdb = &it->second;
-		++pdb->reference;
-		hhold.unlock();
 		db_conn_ptr conn(*pdb);
-		if (!conn->open(path)) {
-			--pdb->reference;
+		hhold.unlock();
+		if (!conn->open(path))
 			return std::nullopt;
-		}
-		--pdb->reference;
 		return conn;
 	}
 	if (g_hash_table.size() >= g_table_size) {
@@ -230,18 +226,24 @@ db_conn_ptr db_engine_get_db(const char *path)
 		mlog(LV_ERR, "E-1296: ENOMEM");
 		return std::nullopt;
 	}
+
 	/*
 	 * Release central map lock (g_hash_lock) early to unblock map read
 	 * access looking for DBs of other dirs.
 	 */
 	hhold.unlock();
+	try {
+		pdb->open(path);
+	} catch (const std::runtime_error& err) {
+		mlog(LV_ERR, "%s", err.what());
+		return std::nullopt;
+	}
+
 	/* Wait for another thread's costly postconstruct_init (or any EXRPC) to finish. */
 	db_conn_ptr conn(*pdb);
 	if (!conn->open(path)) {
-		--pdb->reference;
 		return std::nullopt;
 	}
-	--pdb->reference;
 	return conn;
 }
 
@@ -328,9 +330,80 @@ table_node::~table_node()
 }
 
 db_base::db_base() :
-	reference(1),
+	reference(1), // is decremented when open() is run.
 	last_time(tp_now())
-{}
+{
+	giant_lock.lock(); // prevent access until open() has completed
+}
+
+/**
+ * @brief      Get database handle
+ *
+ * @param      dir     User or domain base directory
+ * @param      type    Requested database type
+ *
+ * @return     SQLite database handle or nullptr on error
+ */
+db_handle db_base::get_db(const char* dir, DB_TYPE type)
+{
+	const char* name = type == DB_MAIN? "MAIN" : "EPH";
+	auto& spares = type == DB_MAIN? mx_sqlite : mx_sqlite_eph;
+	if(!spares.empty()) {
+		db_handle handle = std::move(spares.back());
+		spares.pop_back();
+		return handle;
+	}
+	auto path = type == DB_MAIN? fmt::format("{}/exmdb/exchange.sqlite3", dir) : fmt::format("{}/tables.sqlite3", dir);
+	int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX;
+	flags |= type == DB_MAIN? 0 : SQLITE_OPEN_CREATE;
+	sqlite3* db;
+	int ret = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
+	db_handle hdb(db); /* automatically close connection if something goes wrong */
+	if(ret != SQLITE_OK) {
+		mlog(LV_ERR, "E-1350: sqlite_open_v2 %s: %s (%d)", name, sqlite3_errstr(ret), ret);
+		return nullptr;
+	}
+	if((ret = gx_sql_exec(db, "PRAGMA foreign_keys=ON")) != SQLITE_OK) {
+		mlog(LV_ERR, "E-1439: enable foreign keys %s: %s (%d)", dir, sqlite3_errstr(ret), ret);
+		return nullptr;
+	}
+	gx_sql_exec(db, "PRAGMA journal_mode=WAL");
+	sqlite3_busy_timeout(db, int(g_sqlite_busy_timeout_ns / 1000000)); // ns -> ms
+	if(type == DB_EPH)
+		gx_sql_exec(db, "PRAGMA	synchronous=OFF"); /* completely disable disk synchronization for eph db */
+	return hdb;
+}
+
+/**
+ * @brief      Initialize and unlock database
+ *
+ * Perform database initializations that should not be run for each connection:
+ * - Remove residue ephemeral db
+ * - Perform schema upgrade
+ *
+ * @param      dir     User or domain base directory
+ *
+ * @throws     std::runtime_error  if any initialization step fails
+ */
+void db_base::open(const char* dir)
+{
+	auto unlock = make_scope_exit([this]{giant_lock.unlock(); --reference;}); /* unlock whenever we're done */
+
+	auto db_path = fmt::format("{}/tables.sqlite3", dir);
+	auto ret = ::unlink(db_path.c_str());
+	if (ret != 0 && errno != ENOENT)
+		throw std::runtime_error(fmt::format("E-1351: unlink {}: {}", db_path.c_str(), strerror(errno)));
+
+	db_handle hdb(get_db(dir, DB_MAIN));
+	if (!hdb)
+		throw std::runtime_error(fmt::format("E-1434: sqlite3_open {} failed", dir));
+	ret = db_engine_autoupgrade(hdb.get(), dir);
+	if(ret != 0)
+		throw std::runtime_error(fmt::format("E-1438: autoupgrade {}: {}", dir, ret));
+	if (exmdb_server::is_private())
+		db_engine_load_dynamic_list(this, hdb.get());
+	mx_sqlite.emplace_back(std::move(hdb));
+}
 
 void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
 {
@@ -338,12 +411,12 @@ void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
 	try {
 		if (eph != nullptr && g_exmdb_max_sqlite_spares != unlimited &&
 		    mx_sqlite_eph.size() < g_exmdb_max_sqlite_spares) {
-			mx_sqlite_eph.push_back(std::move(eph));
+			mx_sqlite_eph.emplace_back(std::move(eph));
 			eph = nullptr;
 		}
 		if (main != nullptr && g_exmdb_max_sqlite_spares != unlimited &&
 		    mx_sqlite.size() < g_exmdb_max_sqlite_spares) {
-			mx_sqlite.push_back(std::move(main));
+			mx_sqlite.emplace_back(std::move(main));
 			main = nullptr;
 		}
 	} catch (const std::bad_alloc &) {
@@ -355,17 +428,10 @@ void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
 }
 
 db_conn::db_conn(db_base &base) :
-	m_base(&base), m_lock(base.giant_lock)
+	m_base(&base),
+	m_lock(base.giant_lock, std::defer_lock) // will be acquired during open()
 {
 	++base.reference;
-	if (base.mx_sqlite.size() > 0) {
-		psqlite = std::move(base.mx_sqlite.back());
-		base.mx_sqlite.pop_back();
-	}
-	if (base.mx_sqlite_eph.size() > 0) {
-		m_sqlite_eph = std::move(base.mx_sqlite_eph.back());
-		base.mx_sqlite_eph.pop_back();
-	}
 }
 
 db_conn::db_conn(db_conn &&o) :
@@ -399,45 +465,16 @@ db_conn &db_conn::operator=(db_conn &&o)
 /**
  * Create a new database connection (handle)
  *
+ * Should be called exactly once after creation and before first usage.
+ *
  * @dir:  Store directory
  */
 bool db_conn::open(const char *dir) try
 {
-	assert((psqlite == nullptr) == (m_sqlite_eph == nullptr));
-	if (psqlite != nullptr && m_sqlite_eph != nullptr)
-		return true;
-
-	auto db_path = fmt::format("{}/tables.sqlite3", dir);
-	auto ret = ::unlink(db_path.c_str());
-	if (ret != 0 && errno != ENOENT) {
-		mlog(LV_ERR, "E-1351: unlink %s: %s", db_path.c_str(), strerror(errno));
-		return false;
-	}
-	ret = sqlite3_open_v2(db_path.c_str(), &m_sqlite_eph,
-	      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
-	if (ret != SQLITE_OK) {
-		mlog(LV_ERR, "E-1350: sqlite_open_v2 %s: %s",
-			db_path.c_str(), sqlite3_errstr(ret));
-		return false;
-	}
-	if (eph_exec("PRAGMA foreign_keys=ON") != SQLITE_OK)
-		return false;
-	db_path = fmt::format("{}/exmdb/exchange.sqlite3", dir);
-	ret = sqlite3_open_v2(db_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
-	if (ret != SQLITE_OK) {
-		mlog(LV_ERR, "E-1434: sqlite3_open %s: %s", dir, sqlite3_errstr(ret));
-		return false;
-	}
-	ret = db_engine_autoupgrade(psqlite, dir);
-	if (ret != 0)
-		return false;
-	else if (exec("PRAGMA foreign_keys=ON") != SQLITE_OK)
-		return false;
-	if (exec("PRAGMA journal_mode=WAL") != SQLITE_OK)
-		/* ignore (stay in prior mode); exec will mlog */;
-	if (exmdb_server::is_private())
-		db_engine_load_dynamic_list(this);
-	return true;
+	m_lock.lock();
+	psqlite = m_base->get_db(dir, db_base::DB_MAIN).release();
+	m_sqlite_eph = m_base->get_db(dir, db_base::DB_EPH).release();
+	return psqlite && m_sqlite_eph;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1349: ENOMEM");
 	return false;
@@ -472,11 +509,6 @@ db_base::~db_base()
 	pdb->instance_list.clear();
 	dynamic_list.clear();
 	tables.table_list.clear();
-	for (auto db : mx_sqlite_eph)
-		sqlite3_close(db);
-	pdb->last_time = {};
-	for (auto db : mx_sqlite)
-		sqlite3_close(db);
 }
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &it,
@@ -714,7 +746,7 @@ static void dbeng_notify_search_completion(db_conn_ptr &pdb,
 {
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_SEARCH_COMPLETE, folder_id, 0);
 	if (!parrays.has_value() || parrays->count == 0)
 		return;
@@ -1993,7 +2025,7 @@ void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_NEW_MAIL, folder_id, 0);
 	if (!parrays.has_value() || parrays->count == 0)
 		return;
@@ -2019,7 +2051,7 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 	void *pvalue;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_NEW_MAIL, folder_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2055,7 +2087,7 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_CREATED, folder_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2089,7 +2121,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 		return;
 
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_CREATED, anchor_fld, 0);
 	if (!parrays.has_value())
 		return;
@@ -2265,7 +2297,7 @@ void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_CREATED, parent_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2797,7 +2829,7 @@ void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_DELETED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -2831,7 +2863,7 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 		return;
 
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_DELETED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -2925,7 +2957,7 @@ void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_DELETED, parent_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -3533,7 +3565,7 @@ void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_i
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_MODIFIED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -3712,7 +3744,7 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_MODIFIED, folder_id, 0);
 	if (!parrays.has_value())
 		return;

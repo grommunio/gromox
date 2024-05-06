@@ -67,6 +67,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"populating_threads_num", "50", CFG_SIZE, "1", "50"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "0"},
 	{"sqlite_debug", "0"},
+	{"sqlite_busy_timeout", "60s", CFG_TIME_NS, "0s", "1h"},
 	{"table_size", "5000", CFG_SIZE, "100"},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
@@ -106,6 +107,7 @@ static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
 	g_exmdb_search_nice = pconfig->get_ll("exmdb_search_nice");
 	g_exmdb_search_pacing_time = pconfig->get_ll("exmdb_search_pacing_time");
 	g_exmdb_max_sqlite_spares = pconfig->get_ll("exmdb_max_sqlite_spares");
+	g_sqlite_busy_timeout_ns = pconfig->get_ll("sqlite_busy_timeout");
 	auto s = gxcfg->get_value("exmdb_ics_log_file");
 	if (s != nullptr)
 		g_exmdb_ics_log_file = s;

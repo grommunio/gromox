@@ -100,6 +100,12 @@ struct prepared_statements {
 	gromox::xstmt msg_norm, msg_str, rcpt_norm, rcpt_str;
 };
 
+struct db_close {
+	inline void operator()(sqlite3* sql) const { sqlite3_close_v2(sql); }
+};
+
+using db_handle = std::unique_ptr<sqlite3, db_close>;
+
 /**
  * Per-mailbox state shared across multiple (and basically indepdent of)
  * db_conn.
@@ -109,6 +115,8 @@ struct prepared_statements {
  * @mx_sqlite_eph: cached sqlite handles for tables.sqlite3
  */
 struct db_base {
+	enum DB_TYPE : uint8_t {DB_MAIN = 0, DB_EPH = 1};
+
 	db_base();
 	~db_base();
 	NOMOVE(db_base);
@@ -116,7 +124,6 @@ struct db_base {
 	mutable std::shared_mutex giant_lock;
 	std::atomic<int> reference;
 	gromox::time_point last_time{};
-	std::vector<sqlite3 *> mx_sqlite, mx_sqlite_eph;
 	/* memory database for holding rop table objects instance */
 	struct {
 		uint32_t last_id = 0;
@@ -132,6 +139,13 @@ struct db_base {
 	inline const instance_node *get_instance_c(uint32_t id) const { return const_cast<db_base *>(this)->get_instance(id); }
 	const table_node *find_table(uint32_t) const;
 	void handle_spares(sqlite3 *, sqlite3 *);
+
+	void open(const char* dir);
+
+	db_handle get_db(const char* dir, DB_TYPE type);
+
+private:
+	std::vector<db_handle> mx_sqlite, mx_sqlite_eph;
 };
 
 struct db_base_unlock_rd {
@@ -151,8 +165,7 @@ struct db_conn {
 	~db_conn();
 	db_conn(db_conn &&);
 	db_conn &operator=(db_conn &&);
-	inline operator db_base &() { return *m_base; }
-	inline operator const db_base &() const { return *m_base; }
+
 	bool open(const char *dir);
 	db_base_rd_ptr lock_base_rd() const;
 	db_base_wr_ptr lock_base_wr();
@@ -206,3 +219,4 @@ extern unsigned int g_exmdb_pvt_folder_softdel;
 extern std::string g_exmdb_ics_log_file;
 /* Max number of cached DB connections per store, 0 = unlimited */
 extern unsigned int g_exmdb_max_sqlite_spares;
+extern unsigned long long g_sqlite_busy_timeout_ns;
