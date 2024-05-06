@@ -17,6 +17,9 @@ class GX_EXPORT xtransaction {
 
 	protected:
 	sqlite3 *m_db = nullptr;
+
+	private:
+	void teardown();
 };
 
 extern GX_EXPORT int gx_sql_step(sqlite3_stmt *, unsigned int flags = 0);
