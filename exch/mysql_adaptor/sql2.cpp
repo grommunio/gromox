@@ -58,11 +58,8 @@ static bool db_upgrade_check_2(MYSQL *conn)
 		mlog(LV_NOTICE, "mysql_adaptor: Current schema n%d is recent.", current);
 		return true;
 	}
-	bool not_me = g_parm.schema_upgrade == SSU_NOT_ME;
-	mlog(not_me ? LV_INFO : LV_NOTICE, "mysql_adaptor: Current schema n%d. Update available: n%d.",
+	mlog(LV_NOTICE, "mysql_adaptor: Current schema n%d. Update available: n%d.",
 	       current, recent);
-	if (not_me)
-		return true;
 	static constexpr const char *msg =
 		"The upgrade either needs to be manually done with gromox-dbop(8gx), "
 		"or configure mysql_adaptor(4gx) [see warning in manpage] to do it.";
