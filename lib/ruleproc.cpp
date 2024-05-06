@@ -914,6 +914,7 @@ static ec_error_t mr_mark_done(rxparam &par)
 	static constexpr uint8_t v_yes = 1;
 	auto &prop = par.ctnt->proplist;
 	prop.erase(PR_CHANGE_KEY); /* assign new CK upon write */
+	prop.erase(PidTagChangeNumber);
 	if (prop.set(PR_PROCESSED, &v_yes) != 0 ||
 	    prop.set(PR_READ, &v_yes) != 0)
 		return ecServerOOM;
@@ -921,6 +922,39 @@ static ec_error_t mr_mark_done(rxparam &par)
 	ec_error_t err = ecSuccess;
 	if (!exmdb_client::write_message_v2(par.cur.dir.c_str(), CP_ACP,
 	    par.cur.fid, par.ctnt.get(), &cal_mid, &cal_cn, &err))
+		return ecRpcFailed;
+	return err;
+}
+
+static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
+    eid_t cal_fid, uint32_t accept_type)
+{
+	message_content_ptr msg(par.ctnt->dup());
+	if (msg == nullptr)
+		return ecServerOOM;
+	auto &prop = msg->proplist;
+	static constexpr uint32_t rmprops[] = {
+		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
+		PR_PREDECESSOR_CHANGE_LIST,
+		PR_RECEIVED_BY_ENTRYID, PR_RECEIVED_BY_NAME,
+		PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS,
+		PR_RECEIVED_BY_SEARCH_KEY, PR_RCVD_REPRESENTING_ENTRYID,
+		PR_RCVD_REPRESENTING_NAME, PR_RCVD_REPRESENTING_ADDRTYPE,
+		PR_RCVD_REPRESENTING_EMAIL_ADDRESS,
+		PR_RCVD_REPRESENTING_SEARCH_KEY, PR_MESSAGE_TO_ME,
+		PR_TRANSPORT_MESSAGE_HEADERS, PR_CONTENT_FILTER_SCL,
+	};
+	for (auto t : rmprops)
+		prop.erase(t);
+	static constexpr uint32_t v_busy = olBusy;
+	if (prop.set(PROP_TAG(PT_LONG, propids.ppropid[l_response_status]), deconst(&accept_type)) != 0 ||
+	    prop.set(PROP_TAG(PT_LONG, propids.ppropid[l_busy_status]), deconst(&v_busy)) != 0 ||
+	    prop.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
+		return ecError;
+	uint64_t cal_mid = 0, cal_cn = 0;
+	ec_error_t err = ecSuccess;
+	if (!exmdb_client::write_message_v2(par.cur.dir.c_str(), CP_ACP,
+	    cal_fid, msg.get(), &cal_mid, &cal_cn, &err))
 		return ecRpcFailed;
 	return err;
 }
@@ -1091,6 +1125,21 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	/* Decline double-booking if so configured */
 	if (res_in_use && policy.decline_overlap) {
 		auto err = mr_send_response(par, recurring_flg, propids, respDeclined);
+		if (err != ecSuccess)
+			return err;
+		return mr_mark_done(par);
+	}
+
+	/* Enter meeting into calendar */
+	auto tent = policy.accept_appts ? respAccepted : respTentative;
+	auto cal_fid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	auto err = mr_insert_to_cal(par, propids, cal_fid, tent);
+	if (err != ecSuccess)
+		return err;
+	if (policy.is_resource())
+		return mr_mark_done(par);
+	if (tent == respAccepted) {
+		err = mr_send_response(par, recurring_flg, propids, tent);
 		if (err != ecSuccess)
 			return err;
 		return mr_mark_done(par);
