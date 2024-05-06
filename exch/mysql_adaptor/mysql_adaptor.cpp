@@ -51,6 +51,8 @@ static std::mutex g_crypt_lock;
 
 int mysql_adaptor_run()
 {
+	if (g_parm.schema_upgrade == SSU_NOT_ME)
+		return 0;
 	if (!db_upgrade_check())
 		return -1;
 	return 0;
