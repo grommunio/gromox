@@ -1495,7 +1495,7 @@ static BOOL folder_copy_folder_internal(db_conn_ptr &pdb,
  * Callers need to update the hierarchy change number when done with copy
  * operations.
  */
-BOOL exmdb_server::copy_folder_internal(const char *dir, int, cpid_t cpid,
+BOOL exmdb_server::copy_folder_internal(const char *dir, cpid_t cpid,
     BOOL b_guest, const char *username, uint64_t src_fid, BOOL b_normal,
     BOOL b_fai, BOOL b_sub, uint64_t dst_fid, BOOL *pb_collid, BOOL *pb_partial)
 {
@@ -1554,9 +1554,9 @@ BOOL exmdb_server::copy_folder_internal(const char *dir, int, cpid_t cpid,
  * Callers need to update the hierarchy change number when done with copy
  * operations.
  */
-BOOL exmdb_server::movecopy_folder(const char *dir, int, cpid_t cpid,
-    BOOL b_guest, const char *username, uint64_t src_pid, uint64_t src_fid,
-    uint64_t dst_fid, const char *str_new, BOOL b_copy, ec_error_t *errcode)
+BOOL exmdb_server::movecopy_folder(const char *dir, cpid_t cpid, BOOL b_guest,
+    const char *username, uint64_t src_pid, uint64_t src_fid, uint64_t dst_fid,
+    const char *str_new, BOOL b_copy, ec_error_t *errcode)
 {
 	uint64_t tmp_fid = 0, fid_val = 0;
 	char sql_string[256];

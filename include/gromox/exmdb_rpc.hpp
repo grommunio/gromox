@@ -316,7 +316,6 @@ struct exreq_set_search_criteria final : public exreq {
 };
 
 struct exreq_movecopy_message final : public exreq {
-	int32_t account_id;
 	cpid_t cpid;
 	uint64_t message_id;
 	uint64_t dst_fid;
@@ -325,7 +324,6 @@ struct exreq_movecopy_message final : public exreq {
 };
 
 struct exreq_movecopy_messages final : public exreq {
-	int32_t account_id;
 	cpid_t cpid;
 	BOOL b_guest;
 	char *username;
@@ -336,7 +334,6 @@ struct exreq_movecopy_messages final : public exreq {
 };
 
 struct exreq_movecopy_folder final : public exreq {
-	int32_t account_id;
 	cpid_t cpid;
 	BOOL b_guest;
 	char *username;

@@ -1320,7 +1320,7 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
 	   !(permissions(dir, parentFolder.folderId) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3157);
 	ec_error_t errcode = ecSuccess;
-	if (!m_plugin.exmdb.movecopy_folder(dir.c_str(), accountId, CP_ACP, false,
+	if (!m_plugin.exmdb.movecopy_folder(dir.c_str(), CP_ACP, false,
 	    m_auth_info.username, *parentFid, folder.folderId, newParent,
 	    folderName, copy ? TRUE : false, &errcode))
 		throw EWSError::MoveCopyFailed(E3161);
@@ -1356,8 +1356,9 @@ uint64_t EWSContext::moveCopyItem(const std::string& dir, const sMessageEntryId&
 	if(!exmdb.allocate_message_id(dir.c_str(), newParent, &newId))
 		throw DispatchError(E3182);
 	BOOL success;
-	if(!m_plugin.exmdb.movecopy_message(dir.c_str(), 0, CP_ACP, meid.messageId(), newParent, newId, copy? false : TRUE, &success)
-	                                  || !success)
+	if (!m_plugin.exmdb.movecopy_message(dir.c_str(), CP_ACP,
+	    meid.messageId(), newParent, newId, copy? false : TRUE,
+	    &success) || !success)
 		throw EWSError::MoveCopyFailed(E3183);
 	return newId;
 }
