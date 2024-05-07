@@ -1743,21 +1743,10 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		if (message_rectify_message(account, pmsgctnt, &msgctnt) != ecSuccess)
 			return FALSE;
 		if (!b_embedded && !b_cn) {
-			XID tmp_xid;
-			if (exmdb_server::is_private()) {
-				unsigned int tmp_int = 0;
-				if (!common_util_get_user_ids(account, &tmp_int, nullptr, nullptr))
-					return FALSE;
-				tmp_xid.guid = rop_util_make_user_guid(tmp_int);
-			} else {
-				unsigned int tmp_int = 0, tmp_int1 = 0;
-				if (!common_util_get_domain_ids(account, &tmp_int, &tmp_int1))
-					return FALSE;
-				tmp_xid.guid = rop_util_make_domain_guid(tmp_int);
-			}
-			memcpy(tmp_xid.local_id, rop_util_value_to_gc(change_num).ab, 6);
-			tmp_xid.size = 22;
-			auto pvalue = cu_xid_to_bin(std::move(tmp_xid));
+			auto pvalue = cu_xid_to_bin({exmdb_server::is_private() ?
+			              	rop_util_make_user_guid(exmdb_server::get_account_id()) :
+			              	rop_util_make_domain_guid(exmdb_server::get_account_id()),
+			              change_num});
 			if (pvalue == nullptr)
 				return FALSE;
 			msgctnt.proplist.emplace_back(PR_CHANGE_KEY, pvalue);
@@ -3254,25 +3243,11 @@ static ec_error_t opx_reply(const rulexec_in &rp, const rule_node &rule,
     const EXT_ACTION_BLOCK &block)
 {
 	auto pextreply = static_cast<EXT_REPLY_ACTION *>(block.pdata);
-	if (exmdb_server::is_private()) {
-		unsigned int tmp_id = 0;
-		if (!common_util_get_user_ids(rp.ev_to, &tmp_id, nullptr, nullptr))
-			return ecSuccess;
-		auto tmp_guid = rop_util_make_user_guid(tmp_id);
-		if (tmp_guid != pextreply->message_eid.message_database_guid)
-			return message_disable_rule(rp.sqlite, TRUE, rule.id);
-	} else {
-		auto pc = strchr(rp.ev_to, '@');
-		if (pc == nullptr)
-			return ecSuccess;
-		++pc;
-		unsigned int tmp_id = 0, tmp_id1 = 0;
-		if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
-			return ecSuccess;
-		auto tmp_guid = rop_util_make_domain_guid(tmp_id);
-		if (tmp_guid != pextreply->message_eid.message_database_guid)
-			return message_disable_rule(rp.sqlite, TRUE, rule.id);
-	}
+	auto exp_guid = exmdb_server::is_private() ?
+	                rop_util_make_user_guid(exmdb_server::get_account_id()) :
+	                rop_util_make_domain_guid(exmdb_server::get_account_id());
+	if (exp_guid != pextreply->message_eid.message_database_guid)
+		return message_disable_rule(rp.sqlite, TRUE, rule.id);
 	auto dst_mid = rop_util_gc_to_value(
 		       pextreply->message_eid.message_global_counter);
 	BOOL b_result = false;
