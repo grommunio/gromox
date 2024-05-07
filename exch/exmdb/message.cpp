@@ -105,15 +105,13 @@ unsigned int format_as(proptag_t x) { return x; }
 #endif
 
 /**
- * @account_id: Used for the generation of PR_CHANGE_KEYs. This must be the id
- *              of the store, or 0 for autodetect from @dir.
  * @username:   Used for permission checks (SFOD & generic folders).
  *
  * Can be used when submitting message.
  */
-BOOL exmdb_server::movecopy_message(const char *dir, int32_t account_id,
-    cpid_t cpid, uint64_t message_id, uint64_t dst_fid, uint64_t dst_id,
-    BOOL b_move, BOOL *pb_result)
+BOOL exmdb_server::movecopy_message(const char *dir, int32_t, cpid_t cpid,
+    uint64_t message_id, uint64_t dst_fid, uint64_t dst_id, BOOL b_move,
+    BOOL *pb_result)
 {
 	*pb_result = false;
 	auto pdb = db_engine_get_db(dir);
@@ -123,8 +121,6 @@ BOOL exmdb_server::movecopy_message(const char *dir, int32_t account_id,
 	if (!sql_transact)
 		return false;
 	auto dbase = pdb->m_base;
-	if (account_id == 0)
-		account_id = get_account_id();
 	if (!b_move &&
 	    cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) &&
 	    common_util_check_msgcnt_overflow(pdb->psqlite))
@@ -160,8 +156,8 @@ BOOL exmdb_server::movecopy_message(const char *dir, int32_t account_id,
 		pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
 			parent_fid, mid_val, 0, dbase);
 	uint32_t message_size = 0;
-	if (!common_util_copy_message(pdb->psqlite, account_id, mid_val,
-	    fid_val, &dst_val, &b_result, &message_size))
+	if (!cu_copy_message(pdb->psqlite, mid_val, fid_val, &dst_val,
+	    &b_result, &message_size))
 		return FALSE;
 	if (!b_result)
 		return TRUE;
@@ -202,6 +198,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, int32_t account_id,
 		if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 			return FALSE;
 		auto tmp_cn = rop_util_make_eid_ex(1, change_num);
+		auto account_id = exmdb_server::get_account_id();
 		tmp_propvals[0].proptag = PidTagChangeNumber;
 		tmp_propvals[0].pvalue = &tmp_cn;
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
@@ -241,8 +238,6 @@ BOOL exmdb_server::movecopy_message(const char *dir, int32_t account_id,
 }
 
 /**
- * @account_id: Used for the generation of PR_CHANGE_KEYs. This must be the id
- *              of the store, or 0 for autodetect from @dir.
  * @b_guest:    0=acting as store owner (no permission checks),
  *              1=acting as logon_mode::delegate or ::guest.
  *              XXX: This field is redundant because it coincides with
@@ -252,10 +247,9 @@ BOOL exmdb_server::movecopy_message(const char *dir, int32_t account_id,
  * @src_fid:    The folder from which the action was invoked (this way, we know
  *              if it came from a search folder or a generic folder).
  */
-BOOL exmdb_server::movecopy_messages(const char *dir, int32_t account_id,
-    cpid_t cpid, BOOL b_guest, const char *username, uint64_t src_fid,
-    uint64_t dst_fid, BOOL b_copy, const EID_ARRAY *pmessage_ids,
-    BOOL *pb_partial)
+BOOL exmdb_server::movecopy_messages(const char *dir, int32_t, cpid_t cpid,
+    BOOL b_guest, const char *username, uint64_t src_fid, uint64_t dst_fid,
+    BOOL b_copy, const EID_ARRAY *pmessage_ids, BOOL *pb_partial)
 {
 	BOOL b_check, b_owner, b_result;
 	uint32_t permission, folder_type;
@@ -268,8 +262,6 @@ BOOL exmdb_server::movecopy_messages(const char *dir, int32_t account_id,
 	if (!sql_transact)
 		return false;
 	auto dbase = pdb->m_base;
-	if (account_id == 0)
-		account_id = get_account_id();
 	*pb_partial = FALSE;
 	auto src_val = rop_util_get_gc_value(src_fid);
 	auto dst_val = rop_util_get_gc_value(dst_fid);
@@ -361,8 +353,8 @@ BOOL exmdb_server::movecopy_messages(const char *dir, int32_t account_id,
 				dynamic_event::del_msg,
 				parent_fid, tmp_val, 0, dbase);
 		uint64_t tmp_val1 = 0;
-		if (!common_util_copy_message(pdb->psqlite, account_id, tmp_val,
-		    dst_val, &tmp_val1, &b_result, &message_size))
+		if (!cu_copy_message(pdb->psqlite, tmp_val, dst_val, &tmp_val1,
+		    &b_result, &message_size))
 			return FALSE;
 		if (!b_result) {
 			*pb_partial = TRUE;
@@ -416,6 +408,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, int32_t account_id,
 		if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 			return FALSE;
 		auto tmp_cn = rop_util_make_eid_ex(1, change_num);
+		auto account_id = exmdb_server::get_account_id();
 		tmp_propvals[0].proptag = PidTagChangeNumber;
 		tmp_propvals[0].pvalue = &tmp_cn;
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
@@ -454,13 +447,11 @@ BOOL exmdb_server::movecopy_messages(const char *dir, int32_t account_id,
 }
 
 /**
- * @account_id: Used for the generation of PR_CHANGE_KEYs. This must be the id
- *              of the store, or 0 for autodetect from @dir.
  * @username:   Used for evaluating delete permission.
  */
-BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
-    cpid_t cpid, const char *username, uint64_t folder_id,
-    const EID_ARRAY *pmessage_ids, BOOL b_hard, BOOL *pb_partial)
+BOOL exmdb_server::delete_messages(const char *dir, int32_t, cpid_t cpid,
+    const char *username, uint64_t folder_id, const EID_ARRAY *pmessage_ids,
+    BOOL b_hard, BOOL *pb_partial)
 {
 	void *pvalue;
 	BOOL b_check;
@@ -474,8 +465,6 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 	if (!sql_transact)
 		return false;
 	auto dbase = pdb->m_base;
-	if (account_id == 0)
-		account_id = get_account_id();
 	*pb_partial = FALSE;
 	auto src_val = rop_util_get_gc_value(folder_id);
 	uint32_t folder_type = 0;
@@ -569,6 +558,7 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 			if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 				return false;
 			change_num = rop_util_make_eid_ex(1, change_num);
+			auto account_id = exmdb_server::get_account_id();
 			TAGGED_PROPVAL nprop[5];
 			nprop[0].proptag = PidTagChangeNumber;
 			nprop[0].pvalue = &change_num;
@@ -622,6 +612,7 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 	if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 		return FALSE;
 	auto tmp_cn = rop_util_make_eid_ex(1, change_num);
+	auto account_id = exmdb_server::get_account_id();
 	tmp_propvals[0].proptag = PidTagChangeNumber;
 	tmp_propvals[0].pvalue = &tmp_cn;
 	tmp_propvals[1].proptag = PR_CHANGE_KEY;
@@ -2872,18 +2863,9 @@ static ec_error_t op_move_same(const rulexec_in &rp,
 			act_idx, rule.provider.c_str(), seen);
 		return message_disable_rule(rp.sqlite, false, rule.id);
 	}
-	unsigned int tmp_id = 0, tmp_id1 = 0;
-	auto is_pvt = exmdb_server::is_private();
-	if (is_pvt) {
-		if (!common_util_get_user_ids(rp.ev_to, &tmp_id, nullptr, nullptr))
-			return ecError;
-	} else {
-		if (!common_util_get_domain_ids(rp.ev_to, &tmp_id, &tmp_id1))
-			return ecError;
-	}
 	uint32_t message_size = 0;
 	BOOL b_result = false;
-	if (!common_util_copy_message(rp.sqlite, tmp_id, rp.message_id, dst_fid,
+	if (!cu_copy_message(rp.sqlite, rp.message_id, dst_fid,
 	    &dst_mid, &b_result, &message_size))
 		return ecError;
 	if (!b_result) {
@@ -2903,7 +2885,7 @@ static ec_error_t op_move_same(const rulexec_in &rp,
 	char *pmid_string = nullptr;
 	rex.folder_id = dst_fid;
 	rex.message_id = dst_mid;
-	if (is_pvt && rp.digest.has_value() &&
+	if (exmdb_server::is_private() && rp.digest.has_value() &&
 	    common_util_get_mid_string(rp.sqlite, dst_mid, &pmid_string) &&
 	    pmid_string != nullptr) {
 		(*rex.digest)["file"] = pmid_string;
@@ -3233,19 +3215,10 @@ static ec_error_t opx_move(const rulexec_in &rp,
 		return ecError;
 	if (!b_exist)
 		return message_disable_rule(rp.sqlite, TRUE, rule.id);
-	unsigned int tmp_id = 0, tmp_id1 = 0;
-	auto is_pvt = exmdb_server::is_private();
-	if (is_pvt) {
-		if (!common_util_get_user_ids(rp.ev_to, &tmp_id, nullptr, nullptr))
-			return ecError;
-	} else {
-		if (!common_util_get_domain_ids(rp.ev_to, &tmp_id, &tmp_id1))
-			return ecError;
-	}
 	uint64_t dst_mid = 0;
 	uint32_t message_size = 0;
 	BOOL b_result = 0;
-	if (!common_util_copy_message(rp.sqlite, tmp_id, rp.message_id, dst_fid,
+	if (!cu_copy_message(rp.sqlite, rp.message_id, dst_fid,
 	    &dst_mid, &b_result, &message_size))
 		return ecError;
 	if (!b_result)
@@ -3259,7 +3232,7 @@ static ec_error_t opx_move(const rulexec_in &rp,
 
 	rulexec_in rex = rp;
 	char *pmid_string = nullptr;
-	if (is_pvt && rp.digest.has_value() &&
+	if (exmdb_server::is_private() && rp.digest.has_value() &&
 	    common_util_get_mid_string(rp.sqlite, dst_mid, &pmid_string) &&
 	    pmid_string != nullptr)
 		(*rex.digest)["file"] = pmid_string;
