@@ -3119,35 +3119,26 @@ static ec_error_t op_process(const rulexec_in &rp,
 	return ecSuccess;
 }
 
-static ec_error_t opx_move_private(const char *account, sqlite3 *psqlite,
-    const rule_node &rule, const EXT_MOVECOPY_ACTION *pextmvcp)
+/* This is for moves within one private store */
+static ec_error_t opx_move_private(sqlite3 *psqlite, const rule_node &rule,
+    const EXT_MOVECOPY_ACTION *pextmvcp)
 {
 	if (pextmvcp->folder_eid.folder_type != EITLT_PRIVATE_FOLDER)
 		return message_disable_rule(psqlite, TRUE, rule.id);
-	unsigned int tmp_id = 0;
-	if (!common_util_get_user_ids(account, &tmp_id, nullptr, nullptr))
-		return ecSuccess;
-	auto tmp_guid = rop_util_make_user_guid(tmp_id);
-	if (tmp_guid != pextmvcp->folder_eid.database_guid)
+	if (pextmvcp->folder_eid.database_guid !=
+	    rop_util_make_user_guid(exmdb_server::get_account_id()))
 		return message_disable_rule(psqlite, TRUE, rule.id);
 	return ecSuccess;
 }
 
-static ec_error_t opx_move_public(const char *account, sqlite3 *psqlite,
-    const rule_node &rule, const EXT_MOVECOPY_ACTION *pextmvcp)
+/* This is for moves within one public store */
+static ec_error_t opx_move_public(sqlite3 *psqlite, const rule_node &rule,
+    const EXT_MOVECOPY_ACTION *pextmvcp)
 {
 	if (pextmvcp->folder_eid.folder_type != EITLT_PUBLIC_FOLDER)
 		return message_disable_rule(psqlite, TRUE, rule.id);
-	const char *pc = strchr(account, '@'); /* CONST-STRCHR-MARKER */
-	if (pc == nullptr)
-		pc = account;
-	else
-		++pc;
-	unsigned int tmp_id = 0, tmp_id1 = 0;
-	if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
-		return ecSuccess;
-	auto tmp_guid = rop_util_make_domain_guid(tmp_id);
-	if (tmp_guid != pextmvcp->folder_eid.database_guid)
+	if (pextmvcp->folder_eid.database_guid !=
+	    rop_util_make_domain_guid(exmdb_server::get_account_id()))
 		return message_disable_rule(psqlite, TRUE, rule.id);
 	return ecSuccess;
 }
@@ -3158,8 +3149,8 @@ static ec_error_t opx_move(const rulexec_in &rp,
 {
 	auto pextmvcp = static_cast<EXT_MOVECOPY_ACTION *>(block.pdata);
 	auto ec = exmdb_server::is_private() ?
-	          opx_move_private(rp.ev_to, rp.sqlite, rule, pextmvcp) :
-	          opx_move_public(rp.ev_to, rp.sqlite, rule, pextmvcp);
+	          opx_move_private(rp.sqlite, rule, pextmvcp) :
+	          opx_move_public(rp.sqlite, rule, pextmvcp);
 	if (ec != ecSuccess)
 		return ec;
 	auto dst_fid = rop_util_gc_to_value(
@@ -3794,7 +3785,7 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
  *              or forwardings with the right new Envelope-From.
  */
 BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
-    const char *account, cpid_t cpid, uint64_t folder_id,
+    const char *, cpid_t cpid, uint64_t folder_id,
     uint64_t message_id) try
 {
 	char *pmid_string = nullptr, tmp_path[256];
@@ -3823,13 +3814,16 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 		}
 	}
 	seen_list seen{{fid_val}};
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	char account[UDOM_SIZE];
+	if (!common_util_get_username_from_id(exmdb_server::get_account_id(),
+	    account, std::size(account)))
+		return false;
 	auto ec = message_rule_new_message({ENVELOPE_FROM_NULL, account, cpid, false,
 	          pdb->psqlite, fid_val, mid_val, std::move(digest)}, seen);
 	if (ec != ecSuccess)
 		return FALSE;
-	if (sql_transact.commit() != 0)
-		return false;
+//	if (sql_transact.commit() != 0)
+//		return false;
 	for (const auto &mn : seen.msg) {
 		if (mid_val == mn.message_id)
 			continue;
