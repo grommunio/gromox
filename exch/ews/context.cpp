@@ -450,7 +450,8 @@ sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, cons
 	auto messageId = content.proplist.get<const uint64_t>(PidTagMid);
 	if(!messageId)
 		throw DispatchError(E3112);
-	if(!m_plugin.exmdb.write_message(dir.c_str(), m_auth_info.username, CP_ACP, parent.folderId, &content, &error) || error)
+	if (!m_plugin.exmdb.write_message(dir.c_str(), CP_ACP, parent.folderId,
+	    &content, &error) || error)
 		throw EWSError::ItemSave(E3254);
 
 	sShape retshape = sShape(tItemResponseShape());

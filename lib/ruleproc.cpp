@@ -630,8 +630,8 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 
 	/* Writeout */
 	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::write_message(newdir, other_store.pserver_name, CP_UTF8,
-	    dst_fid, dst.get(), &e_result)) {
+	if (!exmdb_client::write_message(newdir, CP_UTF8, dst_fid,
+	    dst.get(), &e_result)) {
 		mlog(LV_DEBUG, "ruleproc: write_message failed");
 		return ecRpcFailed;
 	} else if (e_result != ecSuccess) {

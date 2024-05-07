@@ -479,8 +479,7 @@ ec_error_t message_object::save()
 		return ecRpcFailed;
 	
 	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::flush_instance(dir,
-	    pmessage->instance_id, pmessage->plogon->get_account(),
+	if (!exmdb_client::flush_instance(dir, pmessage->instance_id,
 	    &e_result) || e_result != ecSuccess)
 		return e_result;
 	auto is_new = pmessage->b_new;

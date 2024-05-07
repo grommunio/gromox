@@ -1590,8 +1590,9 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 			if (ret == -ENOMEM)
 				throw EWSError::ItemSave(E3035);
 			ec_error_t error;
-			if(!ctx.plugin().exmdb.write_message(dir.c_str(), ctx.auth_info().username, CP_ACP, parentFolder.folderId,
-				                                 content.get(), &error) || error)
+			if (!ctx.plugin().exmdb.write_message(dir.c_str(),
+			    CP_ACP, parentFolder.folderId, content.get(),
+			    &error) || error)
 				throw EWSError::ItemSave(E3255);
 		} else {
 			TPROPVAL_ARRAY props = shape.write();

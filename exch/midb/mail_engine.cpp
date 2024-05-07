@@ -2423,7 +2423,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	if (cpid == CP_ACP)
 		cpid = static_cast<cpid_t>(1252);
 	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
+	if (!exmdb_client::write_message(argv[1], cpid,
 	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, &e_result) ||
 	    e_result != ecSuccess)
 		return MIDB_E_MDB_WRITEMESSAGE;
@@ -2637,7 +2637,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (cpid == CP_ACP)
 		cpid = static_cast<cpid_t>(1252);
 	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
+	if (!exmdb_client::write_message(argv[1], cpid,
 	    rop_util_make_eid_ex(1, folder_id1), pmsgctnt, &e_result) ||
 	    e_result != ecSuccess)
 		return MIDB_E_MDB_WRITEMESSAGE;

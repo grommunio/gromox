@@ -1568,9 +1568,8 @@ ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
 		return ecError;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	ec_error_t e_result = ecError;
-	if (!exmdb_client::write_message(dst_store->get_dir(),
-	    dst_store->get_account(), pinfo->cpid, folder_id1,
-	    pmsgctnt, &e_result) || e_result != ecSuccess)
+	if (!exmdb_client::write_message(dst_store->get_dir(), pinfo->cpid,
+	    folder_id1, pmsgctnt, &e_result) || e_result != ecSuccess)
 		return e_result;
 	return ecSuccess;
 }

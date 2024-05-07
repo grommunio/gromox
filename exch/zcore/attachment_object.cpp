@@ -102,7 +102,7 @@ ec_error_t attachment_object::save()
 		return ecError;
 	ec_error_t e_result = ecError;
 	if (!exmdb_client::flush_instance(pattachment->pparent->pstore->get_dir(),
-	    pattachment->instance_id, nullptr, &e_result) || e_result != ecSuccess)
+	    pattachment->instance_id, &e_result) || e_result != ecSuccess)
 		return e_result;
 	pattachment->b_new = FALSE;
 	pattachment->b_touched = FALSE;
