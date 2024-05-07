@@ -1523,8 +1523,8 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 			        LLU{rop_util_get_gc_value(message_id)});
 			return ecWarnWithErrors;
 		}
-		if (!exmdb_client::movecopy_message(dir, plogon->account_id,
-		    cpid, message_id, folder_id, new_id, TRUE, &b_result)) {
+		if (!exmdb_client::movecopy_message(dir, cpid, message_id,
+		    folder_id, new_id, TRUE, &b_result)) {
 			mlog2(LV_WARN, "W-1277: Failed to move to target folder while sending mid:%llu",
 			        LLU{rop_util_get_gc_value(message_id)});
 			return ecWarnWithErrors;
@@ -1546,7 +1546,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 	if (ptarget == nullptr ||
 	    !cu_entryid_to_fid(plogon, ptarget, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
-	if (!exmdb_client::movecopy_messages(dir, plogon->account_id, cpid,
+	if (!exmdb_client::movecopy_messages(dir, cpid,
 	    false, STORE_OWNER_GRANTED, parent_id, folder_id, false,
 	    &ids, &b_partial)) {
 		mlog2(LV_WARN, "W-1275: Failed to move to \"Sent\" folder while sending mid:%llu",

@@ -104,8 +104,8 @@ static int main(int argc, char **argv)
 	BOOL partial = false;
 	uint32_t prev_delc, prev_fldc, curr_delc, curr_fldc;
 	delcount(g_folderid, &prev_delc, &prev_fldc);
-	if (!exmdb_client::delete_messages(g_storedir, g_user_id, CP_UTF8,
-	    nullptr, g_folderid, &ea, !g_soft, &partial)) {
+	if (!exmdb_client::delete_messages(g_storedir, CP_UTF8, nullptr,
+	    g_folderid, &ea, !g_soft, &partial)) {
 		printf("RPC was rejected.\n");
 		return EXIT_FAILURE;
 	}
@@ -146,8 +146,8 @@ static int generic_del(eid_t fid, const std::vector<uint64_t> &chosen)
 	EID_ARRAY ea;
 	ea.count = chosen.size();
 	ea.pids  = deconst(chosen.data());
-	if (!exmdb_client::delete_messages(g_storedir, g_user_id, CP_ACP,
-	    nullptr, fid, &ea, false, &partial_complete)) {
+	if (!exmdb_client::delete_messages(g_storedir, CP_ACP, nullptr, fid,
+	    &ea, false, &partial_complete)) {
 		fprintf(stderr, "fid %llxh delete_messages failed\n", LLU{fid});
 		return EXIT_FAILURE;
 	}
@@ -704,8 +704,8 @@ static errno_t clear_rwz()
 	ea_info.pids  = ids.data();
 	BOOL partial = false;
 	printf("Deleting %u messages...\n", ea_info.count);
-	if (!exmdb_client::delete_messages(g_storedir, g_user_id, CP_ACP,
-	    nullptr, inbox, &ea_info, 1, &partial))
+	if (!exmdb_client::delete_messages(g_storedir, CP_ACP, nullptr, inbox,
+	    &ea_info, 1, &partial))
 		return EIO;
 	return 0;
 }

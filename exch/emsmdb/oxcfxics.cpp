@@ -1211,9 +1211,8 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		ec_error_t err = ecSuccess;
-		if (!exmdb_client::movecopy_folder(dir,
-		    plogon->account_id, pinfo->cpid, b_guest, rpc_info.username,
-		    parent_id, folder_id, parent_id1,
+		if (!exmdb_client::movecopy_folder(dir, pinfo->cpid, b_guest,
+		    rpc_info.username, parent_id, folder_id, parent_id1,
 		    static_cast<char *>(phichyvals->ppropval[5].pvalue), false,
 		    &err))
 			return ecError;
@@ -1395,9 +1394,8 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 		}
 	}
 	if (sync_type == SYNC_TYPE_CONTENTS && message_ids.count > 0 &&
-	    (!exmdb_client::delete_messages(dir,
-	    plogon->account_id, pinfo->cpid, nullptr, folder_id,
-	    &message_ids, b_hard, &b_partial) || b_partial))
+	    (!exmdb_client::delete_messages(dir, pinfo->cpid, nullptr,
+	    folder_id, &message_ids, b_hard, &b_partial) || b_partial))
 		return ecError;
 	return ecSuccess;
 }
@@ -1498,9 +1496,8 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 		return ecError;
 	BOOL b_newer = result == PCL_INCLUDED ? TRUE : false;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (!exmdb_client::movecopy_message(dir,
-	    plogon->account_id, pinfo->cpid, src_mid, folder_id, dst_mid,
-	    TRUE, &b_result) || !b_result)
+	if (!exmdb_client::movecopy_message(dir, pinfo->cpid, src_mid,
+	    folder_id, dst_mid, TRUE, &b_result) || !b_result)
 		return ecError;
 	if (b_newer) {
 		uint32_t result_unused;

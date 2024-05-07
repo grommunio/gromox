@@ -109,7 +109,7 @@ unsigned int format_as(proptag_t x) { return x; }
  *
  * Can be used when submitting message.
  */
-BOOL exmdb_server::movecopy_message(const char *dir, int32_t, cpid_t cpid,
+BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
     uint64_t message_id, uint64_t dst_fid, uint64_t dst_id, BOOL b_move,
     BOOL *pb_result)
 {
@@ -246,9 +246,9 @@ BOOL exmdb_server::movecopy_message(const char *dir, int32_t, cpid_t cpid,
  * @src_fid:    The folder from which the action was invoked (this way, we know
  *              if it came from a search folder or a generic folder).
  */
-BOOL exmdb_server::movecopy_messages(const char *dir, int32_t, cpid_t cpid,
-    BOOL b_guest, const char *username, uint64_t src_fid, uint64_t dst_fid,
-    BOOL b_copy, const EID_ARRAY *pmessage_ids, BOOL *pb_partial)
+BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
+    const char *username, uint64_t src_fid, uint64_t dst_fid, BOOL b_copy,
+    const EID_ARRAY *pmessage_ids, BOOL *pb_partial)
 {
 	BOOL b_check, b_owner, b_result;
 	uint32_t permission, folder_type;
@@ -447,7 +447,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, int32_t, cpid_t cpid,
 /**
  * @username:   Used for evaluating delete permission.
  */
-BOOL exmdb_server::delete_messages(const char *dir, int32_t, cpid_t cpid,
+BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
     const char *username, uint64_t folder_id, const EID_ARRAY *pmessage_ids,
     BOOL b_hard, BOOL *pb_partial)
 {

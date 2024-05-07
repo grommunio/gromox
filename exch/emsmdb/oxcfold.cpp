@@ -496,9 +496,8 @@ ec_error_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 			return ecAccessDenied;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (!exmdb_client::movecopy_messages(plogon->get_dir(),
-	    plogon->account_id, pinfo->cpid, b_guest, rpc_user,
-	    psrc_folder->folder_id, pdst_folder->folder_id,
+	if (!exmdb_client::movecopy_messages(plogon->get_dir(), pinfo->cpid,
+	    b_guest, rpc_user, psrc_folder->folder_id, pdst_folder->folder_id,
 	    b_copy, &ids, &b_partial))
 		return ecError;
 	*ppartial_completion = !!b_partial;
@@ -581,10 +580,9 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 		return ecError;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	ec_error_t err = ecSuccess;
-	if (!exmdb_client::movecopy_folder(dir,
-	    plogon->account_id, pinfo->cpid, b_guest, rpc_user,
-	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id,
-	    new_name, false, &err))
+	if (!exmdb_client::movecopy_folder(dir, pinfo->cpid, b_guest, rpc_user,
+	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id, new_name,
+	    false, &err))
 		return ecError;
 	if (err == ecDuplicateName)
 		return err;
@@ -665,8 +663,7 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 		return ecRootFolder;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	ec_error_t err = ecSuccess;
-	if (!exmdb_client::movecopy_folder(dir,
-	    plogon->account_id, pinfo->cpid, b_guest, rpc_user,
+	if (!exmdb_client::movecopy_folder(dir, pinfo->cpid, b_guest, rpc_user,
 	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id, new_name,
 	    TRUE, &err))
 		return ecError;
@@ -773,9 +770,8 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 	if (0 == notify_non_read) {
 		ids.count = pmessage_ids->count;
 		ids.pids = pmessage_ids->pll;
-		if (!exmdb_client::delete_messages(dir,
-		    plogon->account_id, pinfo->cpid, username,
-		    pfolder->folder_id, &ids, b_hard, &b_partial))
+		if (!exmdb_client::delete_messages(dir, pinfo->cpid,
+		    username, pfolder->folder_id, &ids, b_hard, &b_partial))
 			return ecError;
 		*ppartial_completion = !!b_partial;
 		return ecSuccess;
@@ -816,8 +812,8 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 			common_util_notify_receipt(dir,
 				NOTIFY_RECEIPT_NON_READ, pbrief);
 	}
-	if (!exmdb_client::delete_messages(dir, plogon->account_id,
-	    pinfo->cpid, username, pfolder->folder_id, &ids, b_hard, &b_partial1))
+	if (!exmdb_client::delete_messages(dir, pinfo->cpid, username,
+	    pfolder->folder_id, &ids, b_hard, &b_partial1))
 		return ecError;
 	*ppartial_completion = b_partial || b_partial1;
 	return ecSuccess;
