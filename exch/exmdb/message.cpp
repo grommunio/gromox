@@ -3561,7 +3561,7 @@ static unsigned int detect_rcpt_type(const char *account, const TARRAY_SET *rcpt
 
 /* 0 means success, 1 means mailbox full, other unknown error */
 BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
-    const char *account, cpid_t cpid, uint32_t dlflags,
+    const char *, cpid_t cpid, uint32_t dlflags,
     const MESSAGE_CONTENT *pmsg, const char *pdigest, uint64_t *new_folder_id,
     uint64_t *new_msg_id, uint32_t *presult) try
 {
@@ -3569,9 +3569,18 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	uint64_t fid_val;
 	char tmp_path[256];
 	BINARY searchkey_bin;
-	char mid_string[128];
-	char display_name[1024];
-	
+	char mid_string[128], display_name[1024], account[UDOM_SIZE];
+
+	if (exmdb_server::is_private()) {
+		if (!common_util_get_username_from_id(exmdb_server::get_account_id(),
+		    account, std::size(account)))
+			return false;
+	} else {
+		sql_domain dinfo;
+		if (!common_util_get_domain_info(exmdb_server::get_account_id(), dinfo))
+			return false;
+		gx_strlcpy(account, dinfo.name.c_str(), std::size(account));
+	}
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
