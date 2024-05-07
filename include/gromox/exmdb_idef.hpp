@@ -109,7 +109,7 @@ EXMIDL(try_mark_submit, (const char *dir, uint64_t message_id, IDLOUT BOOL *b_ma
 EXMIDL(clear_submit, (const char *dir, uint64_t message_id, BOOL b_unsent))
 EXMIDL(link_message, (const char *dir, cpid_t cpid, uint64_t folder_id, uint64_t message_id, IDLOUT BOOL *b_result))
 EXMIDL(unlink_message, (const char *dir, cpid_t cpid, uint64_t folder_id, uint64_t message_id))
-EXMIDL(rule_new_message, (const char *dir, const char *username, const char *account, cpid_t cpid, uint64_t folder_id, uint64_t message_id))
+EXMIDL(rule_new_message, (const char *dir, const char *username, cpid_t cpid, uint64_t folder_id, uint64_t message_id))
 EXMIDL(set_message_timer, (const char *dir, uint64_t message_id, uint32_t timer_id))
 EXMIDL(get_message_timer, (const char *dir, uint64_t message_id, IDLOUT uint32_t **ptimer_id))
 EXMIDL(empty_folder_permission, (const char *dir, uint64_t folder_id))

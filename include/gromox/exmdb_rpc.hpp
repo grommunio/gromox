@@ -714,7 +714,6 @@ struct exreq_unlink_message final : public exreq {
 
 struct exreq_rule_new_message final : public exreq {
 	char *username;
-	char *account;
 	cpid_t cpid;
 	uint64_t folder_id;
 	uint64_t message_id;

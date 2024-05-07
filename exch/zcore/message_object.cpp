@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -422,8 +422,7 @@ ec_error_t message_object::save()
 	if (is_new && !b_fai && pmessage->message_id != 0 &&
 	    !pmessage->pstore->b_private)
 		exmdb_client::rule_new_message(dir, pinfo->get_username(),
-			pmessage->pstore->get_account(), pmessage->cpid,
-			pmessage->folder_id, pmessage->message_id);
+			pmessage->cpid, pmessage->folder_id, pmessage->message_id);
 	return ecSuccess;
 }
 

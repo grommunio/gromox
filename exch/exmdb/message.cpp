@@ -3827,14 +3827,11 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 }
 
 /**
- * @username:   Used for operations on public store readstate
- * @account:    Mailbox which initially received the message and which is the
- *              "executor" of the rules. Used e.g. for producing error reports
- *              or forwardings with the right new Envelope-From.
+ * @dir:        Mailbox where the action occurs
+ * @username:   Actor/Rule executor, used for public store readstate tracking only
  */
 BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
-    const char *, cpid_t cpid, uint64_t folder_id,
-    uint64_t message_id) try
+    cpid_t cpid, uint64_t folder_id, uint64_t message_id) try
 {
 	char *pmid_string = nullptr, tmp_path[256];
 	
