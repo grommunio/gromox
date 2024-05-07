@@ -1494,8 +1494,8 @@ static bool message_md5_string(const char *string, uint8_t *pdgt)
 	return true;
 }
 
-static ec_error_t message_rectify_message(const char *account,
-    const MESSAGE_CONTENT *src, MESSAGE_CONTENT *dst)
+static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
+    MESSAGE_CONTENT *dst)
 {
 	EXT_PUSH ext_push;
 	char cid_string[256];
@@ -1564,6 +1564,10 @@ static ec_error_t message_rectify_message(const char *account,
 		encode_hex_binary(cid_string, 16, cid_string + 16, 64);
 		memmove(cid_string, cid_string + 16, 32);
 		cid_string[32] = '@';
+		char account[UDOM_SIZE]{};
+		if (!common_util_get_username_from_id(exmdb_server::get_account_id(),
+		    account, std::size(account)))
+			gx_strlcpy(account, "localhost", std::size(account));
 		const char *pc = strchr(account, '@'); /* CONST-STRCHR-MARKER */
 		if (pc == nullptr)
 			pc = account;
@@ -1684,7 +1688,7 @@ static ec_error_t message_rectify_message(const char *account,
 		auto pembedded = cu_alloc<MESSAGE_CONTENT>();
 		if (pembedded == nullptr)
 			return ecServerOOM;
-		auto err = message_rectify_message(account, sal->pplist[i]->pembedded, pembedded);
+		auto err = message_rectify_message(sal->pplist[i]->pembedded, pembedded);
 		if (err != ecSuccess)
 			return err;
 		dal->pplist[i]->pembedded = pembedded;
@@ -1704,7 +1708,7 @@ static ec_error_t message_rectify_message(const char *account,
  * - folder's PR_LOCAL_COMMIT_TIME_MAX is updated
  */
 static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
-    const char *account, cpid_t cpid, BOOL b_embedded, uint64_t parent_id,
+    cpid_t cpid, BOOL b_embedded, uint64_t parent_id,
     const MESSAGE_CONTENT *pmsgctnt, uint64_t *pmessage_id, uint64_t *outcn,
     bool *partial_completion)
 {
@@ -1731,7 +1735,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		b_cn = TRUE;
 	}
 	if (!b_internal) {
-		if (message_rectify_message(account, pmsgctnt, &msgctnt) != ecSuccess)
+		if (message_rectify_message(pmsgctnt, &msgctnt) != ecSuccess)
 			return FALSE;
 		if (!b_embedded && !b_cn) {
 			auto pvalue = cu_xid_to_bin({exmdb_server::is_private() ?
@@ -1926,7 +1930,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			if (at.pembedded == nullptr)
 				continue;
 			uint64_t message_id = 0;
-			if (!message_write_message(TRUE, psqlite, account, cpid, TRUE,
+			if (!message_write_message(TRUE, psqlite, cpid, TRUE,
 			    tmp_id, at.pembedded, &message_id, &change_num,
 			    partial_completion))
 				return FALSE;
@@ -2256,7 +2260,7 @@ static BOOL message_make_dem(const char *username,
 		return FALSE;
 	uint64_t mid_val = 0, cn_val = 0;
 	bool partial = false;
-	if (!message_write_message(false, psqlite, username, CP_ACP, false,
+	if (!message_write_message(false, psqlite, CP_ACP, false,
 	    PRIVATE_FID_DEFERRED_ACTION, pmsg.get(), &mid_val, &cn_val, &partial))
 		return FALSE;
 	pmsg.reset();
@@ -2734,7 +2738,7 @@ static BOOL message_make_dam(const rulexec_in &rp,
 	uint64_t mid_val = 0, cn_val = 0;
 	bool partial = false;
 	if (pmsg->proplist.set(PR_RULE_IDS, &tmp_bin) != 0 ||
-	    !message_write_message(false, rp.sqlite, rp.ev_to, CP_ACP, false,
+	    !message_write_message(false, rp.sqlite, CP_ACP, false,
 	    PRIVATE_FID_DEFERRED_ACTION, pmsg.get(), &mid_val, &cn_val, &partial))
 		return FALSE;
 	pmsg.reset();
@@ -3518,18 +3522,9 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	uint64_t fid_val;
 	char tmp_path[256];
 	BINARY searchkey_bin;
-	const char *paccount;
 	char mid_string[128];
 	char display_name[1024];
 	
-	if (exmdb_server::is_private()) {
-		paccount = account;
-	} else {
-		paccount = strchr(account, '@');
-		if (paccount == nullptr)
-			return FALSE;
-		paccount ++;
-	}
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
@@ -3608,7 +3603,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		return false;
 	bool partial = false;
 	uint64_t message_id = 0, new_cn = 0;
-	if (!message_write_message(FALSE, pdb->psqlite, paccount, cpid, false,
+	if (!message_write_message(false, pdb->psqlite, cpid, false,
 	    fid_val, &tmp_msg, &message_id, &new_cn, &partial))
 		return FALSE;
 	if (0 == message_id) {
@@ -3723,7 +3718,7 @@ BOOL exmdb_server::write_message_v2(const char *dir, const char *account,
 	if (!sql_transact)
 		return false;
 	bool partial = false;
-	if (!message_write_message(false, pdb->psqlite, account, cpid, false,
+	if (!message_write_message(false, pdb->psqlite, cpid, false,
 	    fid_val, pmsgctnt, &mid_val, &cn_val, &partial))
 		return FALSE;
 	if (0 == mid_val) {
