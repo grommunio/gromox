@@ -1339,7 +1339,7 @@ BOOL exmdb_server::delete_message_instance_attachment(const char *dir,
 
 /* account must be available when it is a normal message instance */ 
 BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
-    const char *account, ec_error_t *pe_result)
+    ec_error_t *pe_result)
 {
 	int i;
 	uint64_t folder_id;
@@ -1505,7 +1505,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		exmdb_server::set_public_username(pinstance->username.c_str());
 	pdb.reset();
 	g_inside_flush_instance = true;
-	BOOL b_result = exmdb_server::write_message(dir, account, CP_ACP,
+	BOOL b_result = exmdb_server::write_message(dir, CP_ACP,
 	                folder_id, pmsgctnt, pe_result);
 	g_inside_flush_instance = false;
 	exmdb_server::set_public_username(nullptr);

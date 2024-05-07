@@ -323,8 +323,7 @@ ec_error_t message_object::save()
 	
 	ec_error_t e_result = ecError;
 	if (!exmdb_client::flush_instance(dir, pmessage->instance_id,
-	    pmessage->pstore->get_account(), &e_result) ||
-	    e_result != ecSuccess)
+	    &e_result) || e_result != ecSuccess)
 		return e_result;
 
 	auto is_new = pmessage->b_new;

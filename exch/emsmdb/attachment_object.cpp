@@ -112,7 +112,7 @@ ec_error_t attachment_object::save()
 		return ecRpcFailed;
 	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::flush_instance(pattachment->pparent->plogon->get_dir(),
-	    pattachment->instance_id, NULL, &e_result) || e_result != ecSuccess)
+	    pattachment->instance_id, &e_result) || e_result != ecSuccess)
 		return e_result;
 	pattachment->b_new = FALSE;
 	pattachment->b_touched = FALSE;

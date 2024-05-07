@@ -543,7 +543,6 @@ struct exreq_delete_message_instance_attachment final : public exreq {
 
 struct exreq_flush_instance final : public exreq {
 	uint32_t instance_id;
-	char *account;
 };
 
 struct exreq_unload_instance final : public exreq {
@@ -766,7 +765,6 @@ struct exreq_deliver_message final : public exreq {
 };
 
 struct exreq_write_message final : public exreq {
-	char *account;
 	cpid_t cpid;
 	uint64_t folder_id;
 	MESSAGE_CONTENT *pmsgctnt;

@@ -3726,8 +3726,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
  *   replaced.
  * - If PR_LAST_MODIFICATION_TIME is not present, it will be set to now().
  */
-BOOL exmdb_server::write_message_v2(const char *dir, const char *account,
-    cpid_t cpid, uint64_t folder_id, const MESSAGE_CONTENT *pmsgctnt,
+BOOL exmdb_server::write_message_v2(const char *dir, cpid_t cpid,
+    uint64_t folder_id, const MESSAGE_CONTENT *pmsgctnt,
     uint64_t *outmid, uint64_t *outcn, ec_error_t *pe_result)
 {
 	BOOL b_exist;
@@ -3790,16 +3790,15 @@ BOOL exmdb_server::write_message_v2(const char *dir, const char *account,
 	return TRUE;
 }
 
-BOOL exmdb_server::write_message(const char *dir, const char *account,
-    cpid_t cpid, uint64_t folder_id, const MESSAGE_CONTENT *ctnt,
-    ec_error_t *e_result)
+BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
+    uint64_t folder_id, const MESSAGE_CONTENT *ctnt, ec_error_t *e_result)
 {
 	if (!ctnt->proplist.has(PidTagChangeNumber)) {
 		*e_result = ecRpcFailed;
 		return TRUE;
 	}
 	uint64_t outmid = 0, outcn = 0;
-	return write_message_v2(dir, account, cpid, folder_id, ctnt,
+	return write_message_v2(dir, cpid, folder_id, ctnt,
 	       &outmid, &outcn, e_result);
 }
 
