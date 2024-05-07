@@ -99,6 +99,7 @@ E(get_domain_ids)
 E(get_id_from_maildir)
 E(get_id_from_homedir)
 E(get_handle)
+E(get_domain_info)
 #undef E
 decltype(ems_send_mail) ems_send_mail;
 decltype(ems_send_vmail) ems_send_vmail;
