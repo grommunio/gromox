@@ -126,7 +126,7 @@ struct db_base {
 	gromox::time_point last_time{};
 	/* memory database for holding rop table objects instance */
 	struct {
-		uint32_t last_id = 0;
+		std::atomic<uint32_t> last_id = 0;
 		bool b_batch = false; /* message database is in batch-mode */
 		std::list<table_node> table_list;
 	} tables;
@@ -141,10 +141,12 @@ struct db_base {
 	void handle_spares(sqlite3 *, sqlite3 *);
 
 	void open(const char* dir);
-
-	db_handle get_db(const char* dir, DB_TYPE type);
+	void get_dbs(const char *dir, sqlite3 *&main, sqlite3 *&eph);
 
 private:
+	db_handle get_db(const char *dir, DB_TYPE);
+
+	std::mutex sqlite_lock;
 	std::vector<db_handle> mx_sqlite, mx_sqlite_eph;
 };
 
@@ -169,32 +171,33 @@ struct db_conn {
 	bool open(const char *dir);
 	db_base_rd_ptr lock_base_rd() const;
 	db_base_wr_ptr lock_base_wr();
-	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
-	void delete_dynamic(uint64_t folder_id);
-	void proc_dynamic_event(cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3, db_base *) __attribute__((nonnull(7)));
-	void notify_new_mail(uint64_t folder_id, uint64_t msg_id, const db_base *) __attribute__((nonnull(4)));
-	void notify_message_creation(uint64_t folder_id, uint64_t msg_id, const db_base *) __attribute__((nonnull(4)));
-	void notify_link_creation(uint64_t parent_id, uint64_t msg_id, const db_base *) __attribute__((nonnull(4)));
-	void notify_folder_creation(uint64_t parent_id, uint64_t folder_id, const db_base *) __attribute__((nonnull(4)));
-	void notify_message_deletion(uint64_t folder_id, uint64_t msg_id, const db_base *) __attribute__((nonnull(4)));
-	void notify_link_deletion(uint64_t parent_id, uint64_t msg_id, const db_base *) __attribute__((nonnull(4)));
-	void notify_folder_deletion(uint64_t parent_id, uint64_t folder_id, const db_base *) __attribute__((nonnull(4)));
-	void notify_message_modification(uint64_t folder_id, uint64_t msg_id, db_base *) __attribute__((nonnull(4)));
-	void notify_folder_modification(uint64_t parent_id, uint64_t folder_id, const db_base *) __attribute__((nonnull(4)));
-	void notify_message_movecopy(BOOL b_copy, uint64_t folder_id, uint64_t msg_id, uint64_t old_fid, uint64_t old_mid, const db_base *) __attribute__((nonnull(7)));
-	void notify_folder_movecopy(BOOL b_copy, uint64_t parent_id, uint64_t folder_id, uint64_t old_pid, uint64_t old_fid, const db_base *) __attribute__((nonnull(7)));
-	void notify_cttbl_reload(uint32_t table_id, const db_base *) __attribute__((nonnull(3)));
-	void transport_new_mail(uint64_t folder_id, uint64_t msg_id, uint32_t msg_flags, const char *klass);
-	void begin_batch_mode();
+	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids, db_base &);
+	void delete_dynamic(uint64_t folder_id, db_base *);
+	void proc_dynamic_event(cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3, db_base &);
+	void notify_new_mail(uint64_t folder_id, uint64_t msg_id, db_base &);
+	void notify_message_creation(uint64_t folder_id, uint64_t msg_id, db_base &);
+	void notify_link_creation(uint64_t parent_id, uint64_t msg_id, db_base &);
+	void notify_folder_creation(uint64_t parent_id, uint64_t folder_id, const db_base &);
+	void notify_message_deletion(uint64_t folder_id, uint64_t msg_id, db_base &);
+	void notify_link_deletion(uint64_t parent_id, uint64_t msg_id, db_base &);
+	void notify_folder_deletion(uint64_t parent_id, uint64_t folder_id, const db_base &);
+	void notify_message_modification(uint64_t folder_id, uint64_t msg_id, db_base &);
+	void notify_folder_modification(uint64_t parent_id, uint64_t folder_id, const db_base &);
+	void notify_message_movecopy(BOOL b_copy, uint64_t folder_id, uint64_t msg_id, uint64_t old_fid, uint64_t old_mid, db_base &);
+	void notify_folder_movecopy(BOOL b_copy, uint64_t parent_id, uint64_t folder_id, uint64_t old_pid, uint64_t old_fid, const db_base &);
+	void notify_cttbl_reload(uint32_t table_id, const db_base &);
+	void transport_new_mail(uint64_t folder_id, uint64_t msg_id, uint32_t msg_flags, const char *klass, const db_base &);
+	void begin_batch_mode(db_base &);
 	/* pdb will also be put */
-	static void commit_batch_mode_release(std::optional<db_conn> &&pdb);
-	void cancel_batch_mode();
+	static void commit_batch_mode_release(std::optional<db_conn> &&pdb, db_base *);
+	void cancel_batch_mode(db_base &);
 	std::unique_ptr<prepared_statements> begin_optim();
 
 	gromox::xstmt prep(const char *q) const { return gromox::gx_sql_prep(psqlite, q); }
 	int exec(const char *q, unsigned int fl = 0) const { return gromox::gx_sql_exec(psqlite, q, fl); }
 	gromox::xstmt eph_prep(const char *q) const { return gromox::gx_sql_prep(m_sqlite_eph, q); }
 	int eph_exec(const char *q) const { return gromox::gx_sql_exec(m_sqlite_eph, q); }
+	inline uint32_t next_table_id() { return ++m_base->tables.last_id; }
 
 	sqlite3 *psqlite = nullptr, *m_sqlite_eph = nullptr;
 	db_base *m_base = nullptr;

@@ -318,7 +318,6 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	const db_base *dbase = pdb->m_base;
 	if (!common_util_get_folder_type(pdb->psqlite, parent_id, &parent_type)) {
 		*errcode = ecNotFound;
 		return FALSE;
@@ -460,9 +459,9 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 		PR_HIER_REV, &nt_time, &b_result);
 	cu_set_property(MAPI_FOLDER, folder_id, CP_ACP, pdb->psqlite,
 		PR_HIER_REV, &nt_time, &b_result);
+	pdb->notify_folder_creation(parent_id, folder_id, *pdb->m_base);
 	if (sql_transact.commit() != 0)
 		return false;
-	pdb->notify_folder_creation(parent_id, folder_id, dbase);
 	*pfolder_id = rop_util_make_eid_ex(1, folder_id);
 	*errcode = ecSuccess;
 	return TRUE;
@@ -523,7 +522,6 @@ BOOL exmdb_server::set_folder_properties(const char *dir, cpid_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	const db_base *dbase = pdb->m_base;
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
@@ -544,10 +542,10 @@ BOOL exmdb_server::set_folder_properties(const char *dir, cpid_t cpid,
 	if (!cu_set_properties(MAPI_FOLDER,
 	    fid_val, cpid, pdb->psqlite, pproperties, pproblems))
 		return FALSE;
+	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
+		pdb->psqlite, fid_val), fid_val, *pdb->m_base);
 	if (sql_transact.commit() != 0)
 		return false;
-	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
-		pdb->psqlite, fid_val), fid_val, dbase);
 	return TRUE;
 }
 
@@ -557,7 +555,6 @@ BOOL exmdb_server::remove_folder_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	const db_base *dbase = pdb->m_base;
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
@@ -565,10 +562,10 @@ BOOL exmdb_server::remove_folder_properties(const char *dir,
 	if (!cu_remove_properties(MAPI_FOLDER,
 	    fid_val, pdb->psqlite, pproptags))
 		return FALSE;
+	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
+		pdb->psqlite, fid_val), fid_val, *pdb->m_base);
 	if (sql_transact.commit() != 0)
 		return false;
-	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
-		pdb->psqlite, fid_val), fid_val, dbase);
 	return TRUE;
 }
 
@@ -630,11 +627,11 @@ static BOOL folder_empty_sf(db_conn_ptr &pdb, cpid_t cpid, const char *username,
 		else if (!is_associated && pnormal_size != nullptr)
 			*pnormal_size += sqlite3_column_int64(pstmt, 2);
 		pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
-			folder_id, message_id, 0, dbase);
+			folder_id, message_id, 0, *dbase);
 		pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
-			parent_fid, message_id, 0, dbase);
-		pdb->notify_link_deletion(folder_id, message_id, dbase);
-		pdb->notify_message_deletion(parent_fid, message_id, dbase);
+			parent_fid, message_id, 0, *dbase);
+		pdb->notify_link_deletion(folder_id, message_id, *dbase);
+		pdb->notify_message_deletion(parent_fid, message_id, *dbase);
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM messages "
 			"WHERE message_id=%llu", LLU{message_id});
 		if (pdb->exec(sql_string) != SQLITE_OK)
@@ -712,8 +709,8 @@ static BOOL folder_empty_folder(db_conn_ptr &pdb, cpid_t cpid,
 				*pnormal_size += sqlite3_column_int64(pstmt, 1);
 			if (0 == is_deleted) {
 				pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
-					folder_id, message_id, 0, dbase);
-				pdb->notify_message_deletion(folder_id, message_id, dbase);
+					folder_id, message_id, 0, *dbase);
+				pdb->notify_message_deletion(folder_id, message_id, *dbase);
 			}
 			if (b_check) {
 				if (b_hard)
@@ -803,7 +800,7 @@ static BOOL folder_empty_folder(db_conn_ptr &pdb, cpid_t cpid,
 				LLU{fid_val});
 		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
-		pdb->notify_folder_deletion(folder_id, fid_val, dbase);
+		pdb->notify_folder_deletion(folder_id, fid_val, *dbase);
 	}
 	return TRUE;
 }
@@ -823,7 +820,6 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	auto dbase = pdb->m_base;
 	BOOL b_search = false;
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	if (exmdb_server::is_private()) {
@@ -846,6 +842,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		*pb_result = FALSE;
 		return TRUE;
 	}
+	db_base *dbase = pdb->m_base;
 	if (!b_search) {
 		snprintf(sql_string, std::size(sql_string), "SELECT count(*) FROM "
 		          "folders WHERE parent_id=%llu", LLU{fid_val});
@@ -875,9 +872,9 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 			return FALSE;
 		while (pstmt.step() == SQLITE_ROW)
 			pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
-				fid_val, pstmt.col_int64(0), 0, dbase);
+				fid_val, pstmt.col_int64(0), 0, *dbase);
 		pstmt.finalize();
-		pdb->delete_dynamic(fid_val);
+		pdb->delete_dynamic(fid_val, dbase);
 	}
 	auto parent_id = common_util_get_folder_parent_fid(pdb->psqlite, fid_val);
 	if (b_search) {
@@ -940,7 +937,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 	}
 	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
-	pdb->notify_folder_deletion(parent_id, fid_val, dbase);
+	pdb->notify_folder_deletion(parent_id, fid_val, *dbase);
 	snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
 	        "proptag=%u", LLU{parent_id}, PR_DELETED_FOLDER_COUNT);
@@ -988,13 +985,13 @@ BOOL exmdb_server::empty_folder(const char *dir, cpid_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto dbase = pdb->m_base;
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	uint32_t message_count = 0, folder_count = 0;
 	uint64_t normal_size = 0, fai_size = 0;
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
+	auto dbase = pdb->m_base;
 	if (!folder_empty_folder(pdb, cpid, username, fid_val, flags,
 	    pb_partial, &normal_size, &fai_size,
 	    &message_count, &folder_count, dbase))
@@ -1248,7 +1245,7 @@ static BOOL folder_copy_search_folder(db_conn_ptr &pdb, cpid_t cpid,
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW)
 		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg, last_eid,
-			sqlite3_column_int64(pstmt, 0), 0, dbase);
+			sqlite3_column_int64(pstmt, 0), 0, *dbase);
 	*pdst_fid = last_eid;
 	return TRUE;
 }
@@ -1333,7 +1330,7 @@ static BOOL folder_copy_sf_int(db_conn_ptr &pdb, int account_id, cpid_t cpid,
 				*pfai_size += message_size;
 		}
 		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
-			dst_fid, message_id1, 0, dbase);
+			dst_fid, message_id1, 0, *dbase);
 	}
 	return TRUE;
 }
@@ -1422,7 +1419,7 @@ static BOOL folder_copy_folder_internal(db_conn_ptr &pdb, int account_id,
 					*pfai_size += message_size;
 			}
 			pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
-				dst_fid, message_id1, 0, dbase);
+				dst_fid, message_id1, 0, *dbase);
 		}
 	}
  COPY_SUBFOLDER:
@@ -1507,7 +1504,6 @@ BOOL exmdb_server::copy_folder_internal(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto dbase = pdb->m_base;
 	if (account_id == 0)
 		account_id = get_account_id();
 	auto src_val = rop_util_get_gc_value(src_fid);
@@ -1524,6 +1520,7 @@ BOOL exmdb_server::copy_folder_internal(const char *dir,
 	uint32_t folder_count = 0;
 	uint64_t normal_size = 0, fai_size = 0;
 	BOOL b_partial = false;
+	auto dbase = pdb->m_base;
 	if (!folder_copy_folder_internal(pdb, account_id, cpid,
 	    b_guest, username, src_val, b_normal, b_fai, b_sub, dst_val,
 	    &b_partial, &normal_size, &fai_size, &folder_count, dbase))
@@ -1593,7 +1590,6 @@ BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	auto dbase = pdb->m_base;
 	if (account_id == 0)
 		account_id = get_account_id();
 	if (b_copy &&
@@ -1618,6 +1614,7 @@ BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
 			return TRUE;
 		}
 	}
+	auto dbase = pdb->m_base;
 	if (!b_copy) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE folders SET parent_id=%llu"
 		        " WHERE folder_id=%llu", LLU{dst_val}, LLU{src_val});
@@ -1656,7 +1653,7 @@ BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
 			return FALSE;
 		fid_val = src_val;
 		pdb->proc_dynamic_event(cpid, dynamic_event::move_folder,
-			parent_val, dst_val, src_val, dbase);
+			parent_val, dst_val, src_val, *dbase);
 	} else {
 		if (!common_util_get_folder_type(pdb->psqlite, src_val, &folder_type))
 			return FALSE;
@@ -1707,9 +1704,9 @@ BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
 	         LLU{nt_time}, LLU{dst_val}, PR_HIER_REV);
 	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
+	pdb->notify_folder_movecopy(b_copy, dst_val, fid_val, parent_val, src_val, *dbase);
 	if (sql_transact.commit() != 0)
 		return false;
-	pdb->notify_folder_movecopy(b_copy, dst_val, fid_val, parent_val, src_val, dbase);
 	*errcode = ecSuccess;
 	return TRUE;
 }
@@ -1798,7 +1795,7 @@ static BOOL folder_clear_search_folder(db_conn_ptr &pdb,
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW)
 		pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
-			folder_id, pstmt.col_int64(0), 0, dbase);
+			folder_id, pstmt.col_int64(0), 0, *dbase);
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "DELETE FROM search_result"
 	        " WHERE folder_id=%llu", LLU{folder_id});
@@ -1826,7 +1823,6 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	auto dbase = pdb->m_base;
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	if (pfolder_ids->count > 0) {
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
@@ -1927,9 +1923,8 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	}
 	BOOL b_recursive = (search_flags & RECURSIVE_SEARCH) ? TRUE : false;
 	BOOL b_update = false, b_populate = false;
+	auto dbase = pdb->m_base;
 	if (!folder_clear_search_folder(pdb, cpid, fid_val, dbase))
-		return false;
-	if (sql_transact.commit() != 0)
 		return false;
 	if (search_flags & RESTART_SEARCH) {
 		b_populate = TRUE;
@@ -1938,9 +1933,11 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	}
 	if (b_update)
 		pdb->update_dynamic(fid_val, search_flags,
-			prestriction, &folder_ids);
+			prestriction, &folder_ids, *dbase);
 	else
-		pdb->delete_dynamic(fid_val);
+		pdb->delete_dynamic(fid_val, dbase);
+	if (sql_transact.commit() != 0)
+		return false;
 
 	pdb.reset();
 	if (b_populate && !db_engine_enqueue_populating_criteria(dir,

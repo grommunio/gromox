@@ -5,6 +5,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <sqlite3.h>
+#include <string>
 #include <unistd.h>
 #include <gromox/database.h>
 #include <gromox/util.hpp>
@@ -96,6 +97,56 @@ xtransaction gx_sql_begin(const std::string &pos, sqlite3 *db, bool write)
 	std::unique_lock lk(active_xa_lock);
 	active_xa.erase(db);
 	return xtransaction(nullptr);
+}
+
+/**
+ * @brief      Start savepoint with given name
+ *
+ * @param      d     Database handle
+ * @param      name  Savepoint name
+ */
+xsavepoint::xsavepoint(sqlite3 *d, const char *name) : m_db(d), m_name(name)
+{
+	if (gx_sql_exec(m_db, ("SAVEPOINT " + m_name).c_str()) != SQLITE_OK)
+		m_db = nullptr;
+}
+
+/**
+ * @brief      End savepoint
+ *
+ * Rolls back to the savepoint if still active
+ */
+xsavepoint::~xsavepoint()
+{
+	rollback();
+}
+
+/**
+ * @brief      Release savepoint
+ *
+ * @return     SQLite return code
+ */
+int xsavepoint::commit()
+{
+	if(!m_db)
+		return SQLITE_OK;
+	int res = gx_sql_exec(m_db, ("RELEASE " + m_name).c_str());
+	m_db = nullptr;
+	return res;
+}
+
+/**
+ * @brief      Rollback to savepoint
+ *
+ * @return     SQLite return code
+ */
+int xsavepoint::rollback()
+{
+	if(!m_db)
+		return SQLITE_OK;
+	int res = gx_sql_exec(m_db, ("ROLLBACK TO " + m_name).c_str());
+	m_db = nullptr;
+	return res;
 }
 
 int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
