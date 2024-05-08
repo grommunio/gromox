@@ -93,7 +93,7 @@ protected:
 	NOMOVE(MhContext);
 
 	EXT_PUSH *epush = nullptr;
-	http_status (*write_response)(unsigned int, const void *, size_t);
+	http_status (*write_response)(unsigned int, const void *, size_t) = nullptr;
 };
 
 }
