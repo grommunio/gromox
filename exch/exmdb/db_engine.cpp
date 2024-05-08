@@ -353,7 +353,8 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 		spares.pop_back();
 		return handle;
 	}
-	auto path = type == DB_MAIN? fmt::format("{}/exmdb/exchange.sqlite3", dir) : fmt::format("{}/tables.sqlite3", dir);
+	const auto &path = type == DB_MAIN ? fmt::format("{}/exmdb/exchange.sqlite3", dir) :
+	                   fmt::format("{}/tables.sqlite3", dir);
 	int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX;
 	flags |= type == DB_MAIN? 0 : SQLITE_OPEN_CREATE;
 	sqlite3* db;
