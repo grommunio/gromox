@@ -1436,6 +1436,11 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 	std::unique_ptr<prepared_statements> optim;
 	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
 	auto dbase = pdb->m_base;
+	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
+	if (!sql_transact_eph) {
+		mlog(LV_ERR, "E-2160: failed to start transaction in cttbl_add_row");
+		return;
+	}
 	for (auto &tnode : dbase->tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::content ||
@@ -1576,8 +1581,8 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 					continue;
 				padded_row->after_row_id = inst_id1;
 			} else {
-				auto sql_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
-				if (!sql_transact)
+				xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp1");
+				if (!sql_savepoint)
 					continue;
 				snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=-(idx+1)"
 					" WHERE idx>=%u;UPDATE t%u SET idx=-idx WHERE"
@@ -1605,7 +1610,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 				        " row_id=%llu", ptable->table_id, LLU{row_id}, LLU{row_id1});
 				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					continue;
-				if (sql_transact.commit() != SQLITE_OK)
+				if (sql_savepoint.commit() != SQLITE_OK)
 					continue;
 				padded_row->after_row_id = inst_id;
 			}
@@ -1665,8 +1670,8 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 				}
 			}
 		}
-		auto sql_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
-		if (!sql_transact)
+		xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp2");
+		if (!sql_savepoint)
 			continue;
 		char sql_string[164];
 		snprintf(sql_string, std::size(sql_string), "SELECT row_id, inst_id, "
@@ -1939,7 +1944,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 			return;
 		pstmt.finalize();
 		pstmt1.finalize();
-		if (sql_transact.commit() != SQLITE_OK)
+		if (sql_savepoint.commit() != SQLITE_OK)
 			continue;
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 			continue;
@@ -2023,6 +2028,8 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 			stm_sel_tx.reset();
 		}
 	}
+	if (sql_transact_eph.commit() != SQLITE_OK)
+		mlog(LV_ERR, "E-2161: failed to commit cttbl_add_row");
 }
 
 void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
@@ -2164,6 +2171,11 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
 	DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *padded_row;
 	
 	padded_row = NULL;
+	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
+	if (!sql_transact_eph) {
+		mlog(LV_ERR, "E-2166: failed to start transaction in hiertbl_add_row");
+		return;
+	}
 	for (const auto &tnode : dbase->tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::hierarchy)
@@ -2241,20 +2253,20 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
 			pstmt1.finalize();
 			if (idx == 0)
 				goto APPEND_END_OF_TABLE;
-			auto sql_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
-			if (!sql_transact)
+			xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp1");
+			if (!sql_savepoint)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=-(idx+1)"
 				" WHERE idx>%u;UPDATE t%u SET idx=-idx WHERE"
 				" idx<0", ptable->table_id, idx, ptable->table_id);
 			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
-			if (sql_transact.commit() != SQLITE_OK)
-				continue;
 			snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (idx, "
 				"folder_id, depth) VALUES (%u, %llu, %u)",
 				ptable->table_id, idx + 1, LLU{folder_id}, depth);
 			if (pdb->eph_exec(sql_string) != SQLITE_OK)
+				continue;
+			if (sql_savepoint.commit() != SQLITE_OK)
 				continue;
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 				continue;
@@ -2295,6 +2307,8 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
 		notification_agent_backward_notify(
 			ptable->remote_id, &datagram);
 	}
+	if (sql_transact_eph.commit() != SQLITE_OK)
+		mlog(LV_ERR, "E-2167: failed to commit hiertbl_add_row");
 }
 
 void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
@@ -2410,6 +2424,11 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 	
 	pdeleted_row = NULL;
 	auto dbase = pdb->m_base;
+	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
+	if (!sql_transact_eph) {
+		mlog(LV_ERR, "E-2162: failed to start transaction in cttbl_delete_row");
+		return;
+	}
 	for (auto &tnode : dbase->tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::content ||
@@ -2459,8 +2478,8 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			idx = sqlite3_column_int64(pstmt, 1);
 			prev_id = sqlite3_column_int64(pstmt, 2);
 			pstmt.finalize();
-			auto sql_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
-			if (!sql_transact)
+			xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp1");
+			if (!sql_savepoint)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM t%u WHERE "
 				"row_id=%llu", ptable->table_id, LLU{row_id});
@@ -2480,7 +2499,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 				ptable->table_id, ptable->table_id);
 			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
-			if (sql_transact.commit() != SQLITE_OK)
+			if (sql_savepoint.commit() != SQLITE_OK)
 				continue;
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 				continue;
@@ -2529,9 +2548,9 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			double_list_append_as_tail(&tmp_list, &pdelnode->node);
 		}
 		pstmt.finalize();
-		auto sql_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
-		if (!sql_transact)
-			continue;
+		xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp2");
+			if (!sql_savepoint)
+				continue;
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM"
 			" t%u WHERE row_id=?", ptable->table_id);
 		pstmt = pdb->eph_prep(sql_string);
@@ -2742,7 +2761,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			pstmt.finalize();
 			pstmt1.finalize();
 		}
-		if (sql_transact.commit() != SQLITE_OK)
+		if (sql_savepoint.commit() != SQLITE_OK)
 			continue;
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 			continue;
@@ -2827,6 +2846,8 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			sqlite3_reset(pstmt1);
 		}
 	}
+	if (sql_transact_eph.commit() != SQLITE_OK)
+		mlog(LV_ERR, "E-2163: failed to commit cttbl_delete_row");
 }
 
 void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
@@ -2902,6 +2923,11 @@ static void dbeng_notify_hiertbl_delete_row(db_conn *pdb,
 	DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *pdeleted_row;
 	
 	pdeleted_row = NULL;
+	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
+	if (!sql_transact_eph) {
+		mlog(LV_ERR, "E-2168: failed to start transaction in hiertbl_delete_row");
+		return;
+	}
 	for (const auto &tnode : dbase->tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::hierarchy)
@@ -2955,7 +2981,9 @@ static void dbeng_notify_hiertbl_delete_row(db_conn *pdb,
 		notification_agent_backward_notify(
 			ptable->remote_id, &datagram);
 	}
-}	
+	if (sql_transact_eph.commit() != SQLITE_OK)
+		mlog(LV_ERR, "E-2169: failed to commit hiertbl_delete_row");
+}
 
 void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
     const db_base *dbase) try
@@ -3009,6 +3037,11 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row;
 	
 	pmodified_row = NULL;
+	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
+	if (!sql_transact_eph) {
+		mlog(LV_ERR, "E-2164: failed to start transaction in cttbl_modify_row");
+		return;
+	}
 	for (const auto &tnode : dbase->tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::content ||
@@ -3538,6 +3571,8 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 		static_assert(!std::is_move_constructible_v<table_node>);
 		static_assert(!std::is_move_assignable_v<table_node>);
 	}
+	if (sql_transact_eph.commit() != SQLITE_OK)
+		mlog(LV_ERR, "E-2165: failed to commit cttbl_modify_row");
 	if (tmp_list.empty())
 		return;
 	std::swap(dbase->tables.table_list, tmp_list);
@@ -3610,6 +3645,11 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 	padded_row = NULL;
 	pdeleted_row = NULL;
 	pmodified_row = NULL;
+	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
+	if (!sql_transact_eph) {
+		mlog(LV_ERR, "E-2170: failed to start transaction in hiertbl_modify_row");
+		return;
+	}
 	for (const auto &tnode : dbase->tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::hierarchy)
@@ -3680,6 +3720,9 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 		if (NULL != ptable->prestriction &&
 		    !cu_eval_folder_restriction(pdb->psqlite,
 		    folder_id, ptable->prestriction)) {
+			xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp1");
+			if (!sql_savepoint)
+				continue;
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM t%u WHERE "
 			        "folder_id=%llu", ptable->table_id, LLU{folder_id});
 			if (pdb->eph_exec(sql_string) != SQLITE_OK)
@@ -3693,6 +3736,8 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 				"(SELECT count(*) FROM t%u) WHERE name='t%u'",
 				ptable->table_id, ptable->table_id);
 			pdb->eph_exec(sql_string);
+			if (sql_savepoint.commit() != SQLITE_OK)
+				continue;
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 				continue;
 			if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
@@ -3742,6 +3787,8 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 		notification_agent_backward_notify(
 			ptable->remote_id, &datagram);
 	}
+	if (sql_transact_eph.commit() != SQLITE_OK)
+		mlog(LV_ERR, "E-2171: failed to commit hiertbl_modify_row");
 }
 
 void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
