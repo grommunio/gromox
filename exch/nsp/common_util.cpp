@@ -171,7 +171,7 @@ BOOL common_util_permanent_entryid_to_binary(const EMSAB_ENTRYID *ppermeid, BINA
 BOOL common_util_ephemeral_entryid_to_binary(
 	const EPHEMERAL_ENTRYID *pephid, BINARY *pbin)
 {
-	pbin->cb = sizeof(EPHEMERAL_ENTRYID);
+	pbin->cb = 32;
 	pbin->pv = ndr_stack_alloc(NDR_STACK_OUT, pbin->cb);
 	if (pbin->pv == nullptr)
 		return FALSE;
