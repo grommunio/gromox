@@ -2498,7 +2498,7 @@ static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
 	if (!sql_transact)
 		return false;
-	auto sql_transact_eph = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph, false);
 	if (!sql_transact_eph)
 		return false;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
