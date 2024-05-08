@@ -22,6 +22,25 @@ class GX_EXPORT xtransaction {
 	void teardown();
 };
 
+/**
+ * SQLite3 SAVEPOINT wrapper
+ * @m_db:   database handle
+ * @m_name: identifier for the savepoint
+ */
+class GX_EXPORT xsavepoint {
+	public:
+	xsavepoint(sqlite3 *, const char *sp_name);
+	NOMOVE(xsavepoint);
+	~xsavepoint();
+	inline operator bool() const { return m_db != nullptr; }
+	int commit();
+	int rollback();
+
+	private:
+	sqlite3 *m_db = nullptr;
+	std::string m_name;
+};
+
 extern GX_EXPORT int gx_sql_step(sqlite3_stmt *, unsigned int flags = 0);
 
 struct GX_EXPORT xstmt {
