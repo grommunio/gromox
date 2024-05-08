@@ -1073,9 +1073,11 @@ static tproc_status htp_auth(http_context &ctx)
 	auto past_method = line;
 	while (*past_method != '\0' && !HX_isspace(*past_method))
 		++past_method;
-	*past_method++ = '\0';
-	while (HX_isspace(*past_method))
-		++past_method;
+	if (*past_method != '\0') {
+		*past_method++ = '\0';
+		while (HX_isspace(*past_method))
+			++past_method;
+	}
 	if (strcasecmp(method, "Basic") == 0 &&
 	    g_config_file->get_ll("http_auth_basic")) {
 		char decoded[1024];
