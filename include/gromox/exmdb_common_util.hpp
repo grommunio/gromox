@@ -54,6 +54,7 @@ E(get_homedir)
 E(get_timezone)
 E(get_user_displayname)
 E(get_user_lang)
+E(get_domain_info)
 #undef E
 extern ec_error_t (*ems_send_mail)(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
 extern ec_error_t (*ems_send_vmail)(vmime::shared_ptr<vmime::message>, const char *sender, const std::vector<std::string> &rcpts);
@@ -145,9 +146,7 @@ BOOL common_util_set_mid_string(sqlite3 *psqlite,
 	uint64_t message_id, const char *pmid_string);
 BOOL common_util_check_message_owner(sqlite3 *psqlite,
 	uint64_t message_id, const char *username, BOOL *pb_owner);
-BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
-	uint64_t message_id, uint64_t folder_id, uint64_t *pdst_mid,
-	BOOL *pb_result, uint32_t *pmessage_size);
+extern BOOL cu_copy_message(sqlite3 *, uint64_t msg_id, uint64_t folder_id, uint64_t *dst_mid, BOOL *result, uint32_t *msg_size);
 BOOL common_util_get_named_propids(sqlite3 *psqlite,
 	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids);

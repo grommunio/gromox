@@ -1256,7 +1256,7 @@ static BOOL folder_copy_search_folder(db_conn_ptr &pdb, cpid_t cpid,
  * @username:   Used for SFOD permission checks and for population of ACLs of
  *              newly created folders
  */
-static BOOL folder_copy_sf_int(db_conn_ptr &pdb, int account_id, cpid_t cpid,
+static BOOL folder_copy_sf_int(db_conn_ptr &pdb, cpid_t cpid,
     bool b_guest, const char *username, uint64_t fid_val, bool b_normal,
     bool b_fai, uint64_t dst_fid, BOOL *pb_partial, uint64_t *pnormal_size,
     uint64_t *pfai_size, db_base *dbase)
@@ -1314,9 +1314,8 @@ static BOOL folder_copy_sf_int(db_conn_ptr &pdb, int account_id, cpid_t cpid,
 		uint64_t message_id1 = 0;
 		uint32_t message_size = 0;
 		BOOL b_result = false;
-		if (!common_util_copy_message(pdb->psqlite,
-		    account_id, message_id, dst_fid, &message_id1,
-		    &b_result, &message_size))
+		if (!cu_copy_message(pdb->psqlite, message_id, dst_fid,
+		    &message_id1, &b_result, &message_size))
 			return FALSE;
 		if (!b_result) {
 			*pb_partial = TRUE;
@@ -1341,7 +1340,7 @@ static BOOL folder_copy_sf_int(db_conn_ptr &pdb, int account_id, cpid_t cpid,
  * @username:   Used for permission checks (SFOD & generic folders) and for
  *              population of ACLs of newly created folders.
  */
-static BOOL folder_copy_folder_internal(db_conn_ptr &pdb, int account_id,
+static BOOL folder_copy_folder_internal(db_conn_ptr &pdb,
     cpid_t cpid, BOOL b_guest, const char *username, uint64_t src_fid,
     BOOL b_normal, BOOL b_fai, BOOL b_sub, uint64_t dst_fid, BOOL *pb_partial,
     uint64_t *pnormal_size, uint64_t *pfai_size, uint32_t *pfolder_count,
@@ -1354,7 +1353,7 @@ static BOOL folder_copy_folder_internal(db_conn_ptr &pdb, int account_id,
 	if (!common_util_get_folder_type(pdb->psqlite, fid_val, &folder_type))
 		return FALSE;
 	if (folder_type == FOLDER_SEARCH)
-		return folder_copy_sf_int(pdb, account_id, cpid, b_guest,
+		return folder_copy_sf_int(pdb, cpid, b_guest,
 		       username, fid_val, b_normal, b_fai, dst_fid,
 		       pb_partial, pnormal_size, pfai_size, dbase);
 
@@ -1403,8 +1402,8 @@ static BOOL folder_copy_folder_internal(db_conn_ptr &pdb, int account_id,
 				}
 			}
 			uint64_t message_id1 = 0;
-			if (!common_util_copy_message(pdb->psqlite, account_id,
-			    message_id, dst_fid, &message_id1, &b_result, &message_size))
+			if (!cu_copy_message(pdb->psqlite, message_id, dst_fid,
+			    &message_id1, &b_result, &message_size))
 				return FALSE;
 			if (!b_result) {
 				*pb_partial = TRUE;
@@ -1470,9 +1469,9 @@ static BOOL folder_copy_folder_internal(db_conn_ptr &pdb, int account_id,
 			(*pfolder_count) ++;
 		if (folder_type == FOLDER_SEARCH)
 			continue;
-		if (!folder_copy_folder_internal(pdb, account_id,
-		    cpid, b_guest, username, src_fid1, TRUE, TRUE, TRUE,
-		    fid_val, &b_partial, pnormal_size, pfai_size, nullptr, dbase))
+		if (!folder_copy_folder_internal(pdb, cpid, b_guest, username,
+		    src_fid1, TRUE, TRUE, TRUE, fid_val, &b_partial,
+		    pnormal_size, pfai_size, nullptr, dbase))
 			return FALSE;
 		if (b_partial) {
 			*pb_partial = TRUE;
@@ -1483,8 +1482,6 @@ static BOOL folder_copy_folder_internal(db_conn_ptr &pdb, int account_id,
 }
 
 /**
- * @account_id: Used for the generation of PR_CHANGE_KEYs. This must be the id
- *              of the store, or 0 for autodetect from @dir.
  * @b_guest:    0=acting as store owner (no permission checks),
  *              1=acting as logon_mode::delegate or ::guest.
  *              XXX: This field appears redundant because it coincides with
@@ -1495,17 +1492,14 @@ static BOOL folder_copy_folder_internal(db_conn_ptr &pdb, int account_id,
  * Callers need to update the hierarchy change number when done with copy
  * operations.
  */
-BOOL exmdb_server::copy_folder_internal(const char *dir,
-    int account_id, cpid_t cpid, BOOL b_guest, const char *username,
-	uint64_t src_fid, BOOL b_normal, BOOL b_fai, BOOL b_sub,
-	uint64_t dst_fid, BOOL *pb_collid, BOOL *pb_partial)
+BOOL exmdb_server::copy_folder_internal(const char *dir, cpid_t cpid,
+    BOOL b_guest, const char *username, uint64_t src_fid, BOOL b_normal,
+    BOOL b_fai, BOOL b_sub, uint64_t dst_fid, BOOL *pb_collid, BOOL *pb_partial)
 {
 	char sql_string[256];
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	if (account_id == 0)
-		account_id = get_account_id();
 	auto src_val = rop_util_get_gc_value(src_fid);
 	auto dst_val = rop_util_get_gc_value(dst_fid);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
@@ -1521,9 +1515,9 @@ BOOL exmdb_server::copy_folder_internal(const char *dir,
 	uint64_t normal_size = 0, fai_size = 0;
 	BOOL b_partial = false;
 	auto dbase = pdb->m_base;
-	if (!folder_copy_folder_internal(pdb, account_id, cpid,
-	    b_guest, username, src_val, b_normal, b_fai, b_sub, dst_val,
-	    &b_partial, &normal_size, &fai_size, &folder_count, dbase))
+	if (!folder_copy_folder_internal(pdb, cpid, b_guest, username, src_val,
+	    b_normal, b_fai, b_sub, dst_val, &b_partial, &normal_size,
+	    &fai_size, &folder_count, dbase))
 		return FALSE;
 	if (folder_count > 0) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET "
@@ -1551,17 +1545,15 @@ BOOL exmdb_server::copy_folder_internal(const char *dir,
 }
 
 /**
- * @account_id: Used for the generation of PR_CHANGE_KEYs. This must be the id
- *              of the store, or 0 for autodetect from @dir.
  * @username:   Used for permission checks (SFOD & generic folders) and for
  *              population of ACLs of newly created folders
  *
  * Callers need to update the hierarchy change number when done with copy
  * operations.
  */
-BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
-    BOOL b_guest, const char *username, uint64_t src_pid, uint64_t src_fid,
-    uint64_t dst_fid, const char *str_new, BOOL b_copy, ec_error_t *errcode)
+BOOL exmdb_server::movecopy_folder(const char *dir, cpid_t cpid, BOOL b_guest,
+    const char *username, uint64_t src_pid, uint64_t src_fid, uint64_t dst_fid,
+    const char *str_new, BOOL b_copy, ec_error_t *errcode)
 {
 	uint64_t tmp_fid = 0, fid_val = 0;
 	char sql_string[256];
@@ -1590,8 +1582,6 @@ BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	if (account_id == 0)
-		account_id = get_account_id();
 	if (b_copy &&
 	    cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) &&
 	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
@@ -1679,9 +1669,9 @@ BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
 		if (folder_type != FOLDER_SEARCH) {
 			uint64_t normal_size = 0, fai_size = 0;
 			BOOL b_partial = false;
-			if (!folder_copy_folder_internal(pdb, account_id,
-			    cpid, b_guest, username, src_val, TRUE, TRUE, TRUE,
-			    fid_val, &b_partial, &normal_size, &fai_size, nullptr, dbase))
+			if (!folder_copy_folder_internal(pdb, cpid, b_guest,
+			    username, src_val, TRUE, TRUE, TRUE, fid_val,
+			    &b_partial, &normal_size, &fai_size, nullptr, dbase))
 				return FALSE;
 			if (!cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE,
 			    normal_size, fai_size))

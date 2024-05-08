@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -822,8 +822,7 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
 			BOOL b_guest = username != STORE_OWNER_GRANTED ? TRUE : false;
 			if (!exmdb_client::copy_folder_internal(plogon->get_dir(),
-			    plogon->account_id, pinfo->cpid, b_guest,
-			    rpc_user, fldsrc->folder_id,
+			    pinfo->cpid, b_guest, rpc_user, fldsrc->folder_id,
 			    b_normal, b_fai, b_sub, flddst->folder_id,
 			    &b_collid, &b_partial))
 				return ecError;

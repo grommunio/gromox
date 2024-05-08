@@ -335,8 +335,6 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 
 	mDeleteItemResponse data;
 	data.ResponseMessages.reserve(request.ItemIds.size());
-
-	uint32_t accountId = ctx.getAccountId(ctx.auth_info().username, false);
 	auto& exmdb = ctx.plugin().exmdb;
 
 	for(const tItemId& itemId : request.ItemIds) try
@@ -355,8 +353,9 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 
 			sFolderSpec deletedItems = ctx.resolveFolder(tDistinguishedFolderId(Enum::deleteditems));
 			BOOL result;
-			if(!exmdb.movecopy_message(dir.c_str(), accountId, CP_ACP, meid.messageId(), deletedItems.folderId, newMid,
-			                                      TRUE, &result) || !result)
+			if (!exmdb.movecopy_message(dir.c_str(), CP_ACP,
+			    meid.messageId(), deletedItems.folderId, newMid,
+			    TRUE, &result) || !result)
 				throw EWSError::MoveCopyFailed(E3133);
 			else
 				data.ResponseMessages.emplace_back().success();
@@ -366,8 +365,9 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 			EID_ARRAY eids{1, &eid};
 			BOOL hardDelete = request.DeleteType == Enum::HardDelete? TRUE : false;
 			BOOL partial;
-			if(!ctx.plugin().exmdb.delete_messages(dir.c_str(), accountId, CP_ACP, ctx.effectiveUser(parent), fid, &eids,
-			                                     hardDelete, &partial) || partial)
+			if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),
+			    CP_ACP, ctx.effectiveUser(parent), fid, &eids,
+			    hardDelete, &partial) || partial)
 				throw EWSError::CannotDeleteObject(E3134);
 			else
 				data.ResponseMessages.emplace_back().success();
@@ -1542,8 +1542,9 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 			if (ret == -ENOMEM)
 				throw EWSError::ItemSave(E3035);
 			ec_error_t error;
-			if(!ctx.plugin().exmdb.write_message(dir.c_str(), ctx.auth_info().username, CP_ACP, parentFolder.folderId,
-				                                 content.get(), &error) || error)
+			if (!ctx.plugin().exmdb.write_message(dir.c_str(),
+			    CP_ACP, parentFolder.folderId, content.get(),
+			    &error) || error)
 				throw EWSError::ItemSave(E3255);
 		} else {
 			TPROPVAL_ARRAY props = shape.write();

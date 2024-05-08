@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -2428,7 +2428,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	if (cpid == CP_ACP)
 		cpid = static_cast<cpid_t>(1252);
 	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
+	if (!exmdb_client::write_message(argv[1], cpid,
 	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, &e_result) ||
 	    e_result != ecSuccess)
 		return MIDB_E_MDB_WRITEMESSAGE;
@@ -2479,9 +2479,8 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	}
 	pstmt.finalize();
 	pidb.reset();
-	if (!exmdb_client::delete_messages(argv[1],
-	    user_id, CP_ACP, nullptr, rop_util_make_eid_ex(1, folder_id),
-	    &message_ids, TRUE, &b_partial))
+	if (!exmdb_client::delete_messages(argv[1], CP_ACP, nullptr,
+	    rop_util_make_eid_ex(1, folder_id), &message_ids, TRUE, &b_partial))
 		return MIDB_E_MDB_DELETEMESSAGES;
 	return cmd_write(sockd, "TRUE\r\n");
 }
@@ -2643,7 +2642,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (cpid == CP_ACP)
 		cpid = static_cast<cpid_t>(1252);
 	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
+	if (!exmdb_client::write_message(argv[1], cpid,
 	    rop_util_make_eid_ex(1, folder_id1), pmsgctnt, &e_result) ||
 	    e_result != ecSuccess)
 		return MIDB_E_MDB_WRITEMESSAGE;
@@ -2738,9 +2737,8 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	pidb.reset();
 	if (parent_id != folder_id1) {
 		ec_error_t errcode = ecSuccess;
-		if (!exmdb_client::movecopy_folder(argv[1], user_id, CP_ACP,
-		    false, nullptr,
-		    rop_util_make_eid_ex(1, parent_id),
+		if (!exmdb_client::movecopy_folder(argv[1], CP_ACP, false,
+		    nullptr, rop_util_make_eid_ex(1, parent_id),
 		    rop_util_make_eid_ex(1, folder_id),
 		    rop_util_make_eid_ex(1, folder_id1),
 		    ptoken, false, &errcode))

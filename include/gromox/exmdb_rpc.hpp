@@ -316,7 +316,6 @@ struct exreq_set_search_criteria final : public exreq {
 };
 
 struct exreq_movecopy_message final : public exreq {
-	int32_t account_id;
 	cpid_t cpid;
 	uint64_t message_id;
 	uint64_t dst_fid;
@@ -325,7 +324,6 @@ struct exreq_movecopy_message final : public exreq {
 };
 
 struct exreq_movecopy_messages final : public exreq {
-	int32_t account_id;
 	cpid_t cpid;
 	BOOL b_guest;
 	char *username;
@@ -336,7 +334,6 @@ struct exreq_movecopy_messages final : public exreq {
 };
 
 struct exreq_movecopy_folder final : public exreq {
-	int32_t account_id;
 	cpid_t cpid;
 	BOOL b_guest;
 	char *username;
@@ -546,7 +543,6 @@ struct exreq_delete_message_instance_attachment final : public exreq {
 
 struct exreq_flush_instance final : public exreq {
 	uint32_t instance_id;
-	char *account;
 };
 
 struct exreq_unload_instance final : public exreq {
@@ -718,7 +714,6 @@ struct exreq_unlink_message final : public exreq {
 
 struct exreq_rule_new_message final : public exreq {
 	char *username;
-	char *account;
 	cpid_t cpid;
 	uint64_t folder_id;
 	uint64_t message_id;
@@ -769,7 +764,6 @@ struct exreq_deliver_message final : public exreq {
 };
 
 struct exreq_write_message final : public exreq {
-	char *account;
 	cpid_t cpid;
 	uint64_t folder_id;
 	MESSAGE_CONTENT *pmsgctnt;

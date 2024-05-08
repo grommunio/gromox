@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -125,8 +127,8 @@ BOOL delete_message(const char *dir, int account_id, cpid_t cpid,
 	
 	message_ids.count = 1;
 	message_ids.pids = &message_id;
-	if (!exmdb_client::delete_messages(dir, account_id, cpid, nullptr,
-	    folder_id, &message_ids, b_hard, &b_partial))
+	if (!exmdb_client::delete_messages(dir, cpid, nullptr, folder_id,
+	    &message_ids, b_hard, &b_partial))
 		return FALSE;	
 	*pb_done = !b_partial;
 	return TRUE;

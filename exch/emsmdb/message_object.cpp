@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -479,8 +479,7 @@ ec_error_t message_object::save()
 		return ecRpcFailed;
 	
 	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::flush_instance(dir,
-	    pmessage->instance_id, pmessage->plogon->get_account(),
+	if (!exmdb_client::flush_instance(dir, pmessage->instance_id,
 	    &e_result) || e_result != ecSuccess)
 		return e_result;
 	auto is_new = pmessage->b_new;
@@ -572,8 +571,7 @@ ec_error_t message_object::save()
 		when the message is first saved to the folder */
 	if (is_new && !b_fai && pmessage->message_id != 0 &&
 	    !pmessage->plogon->is_private())
-		exmdb_client::rule_new_message(dir,
-			rpc_info.username, pmessage->plogon->get_account(),
+		exmdb_client::rule_new_message(dir, rpc_info.username,
 			pmessage->cpid, pmessage->folder_id,
 			pmessage->message_id);
 	return ecSuccess;

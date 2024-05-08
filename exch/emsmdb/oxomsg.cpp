@@ -575,9 +575,8 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	if (NULL != ptarget) {
 		if (!cu_entryid_to_mid(plogon, ptarget, &folder_id, &new_id))
 			return ecError;
-		if (!exmdb_client::movecopy_message(dir,
-		    plogon->account_id, pinfo->cpid, message_id, folder_id,
-		    new_id, b_delete, &b_result))
+		if (!exmdb_client::movecopy_message(dir, pinfo->cpid,
+		    message_id, folder_id, new_id, b_delete, &b_result))
 			return ecError;
 	} else if (b_delete) {
 		exmdb_client::delete_message(dir,
