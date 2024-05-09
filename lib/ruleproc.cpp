@@ -10,6 +10,7 @@
 #include <vmime/utility/url.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/element_data.hpp>
+#include <gromox/endian.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -141,6 +142,28 @@ struct rxparam {
 unsigned int g_ruleproc_debug;
 static bool (*rp_getuserprops)(const char *, TPROPVAL_ARRAY &);
 static std::string rp_smtp_url;
+static thread_local alloc_context rp_alloc_ctx;
+static thread_local const char *rp_storedir;
+
+static void *cu_alloc(size_t z)
+{
+	return rp_alloc_ctx.alloc(z);
+}
+
+static BOOL cu_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
+{
+	return exmdb_client::get_named_propids(rp_storedir, false, names, ids);
+}
+
+static BOOL cu_get_propname(uint16_t propid, PROPERTY_NAME **name)
+{
+	PROPID_ARRAY ids = {1, &propid};
+	PROPNAME_ARRAY names = {};
+	if (!exmdb_client_remote::get_named_propnames(rp_storedir, &ids, &names))
+		return false;
+	*name = names.count != 0 ? &names.ppropname[0] : nullptr;
+	return TRUE;
+}
 
 rule_node::rule_node(rule_node &&o) :
 	seq(o.seq), state(o.state), extended(o.extended), rule_id(o.rule_id),
@@ -902,6 +925,133 @@ static ec_error_t mr_mark_done(rxparam &par)
 	return err;
 }
 
+static inline uint32_t cvidx_make_delta(uint64_t oldtime, uint64_t now)
+{
+	auto delta = now - oldtime;
+	return delta >= (1ULL << 48) ?
+	       (delta >> 23) | (1ULL << 31) :
+	       (delta >> 18) & ~(1ULL << 31);
+}
+
+static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
+    const PROPID_ARRAY &propids, uint32_t rsp_status) try
+{
+	auto &rq_prop = par.ctnt->proplist;
+	auto want_response = rq_prop.get<const uint8_t>(PR_RESPONSE_REQUESTED);
+	if (want_response == nullptr || *want_response == 0)
+		return ecSuccess;
+
+	message_content_ptr rsp_ctnt(message_content_init());
+	if (rsp_ctnt == nullptr)
+		return ecMAPIOOM;
+	auto &rsp_prop = rsp_ctnt->proplist;
+	static const uint32_t copytags_1[] = {
+		/* OXOCAL §3.1.4.8.4 */
+		PROP_TAG(PT_UNICODE, propids.ppropid[l_location]),
+		PROP_TAG(PT_UNICODE, propids.ppropid[l_where]),
+		PROP_TAG(PT_LONG, propids.ppropid[l_appt_seq]),
+		PROP_TAG(PT_SYSTIME, propids.ppropid[l_ownercritchg]),
+		PROP_TAG(PT_SYSTIME, propids.ppropid[l_start_whole]),
+		PROP_TAG(PT_SYSTIME, propids.ppropid[l_end_whole]),
+		PROP_TAG(PT_BINARY, propids.ppropid[l_goid]),
+		PROP_TAG(PT_BOOLEAN, propids.ppropid[l_is_exception]),
+		PR_START_DATE, PR_END_DATE, PR_OWNER_APPT_ID, PR_SENSITIVITY,
+		PR_ICON_INDEX,
+		/* Our stuff */
+		PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT,
+		PR_CONVERSATION_INDEX_TRACKING,
+	};
+	static const uint32_t copytags_2[] = {
+		/* OXOCAL §3.1.4.8.4 */
+		PROP_TAG(PT_BINARY, propids.ppropid[l_tzstruct]),
+		PROP_TAG(PT_BINARY, propids.ppropid[l_apptrecur]),
+		PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefrecur]),
+		PROP_TAG(PT_BOOLEAN, propids.ppropid[l_is_recurring]),
+		PROP_TAG(PT_LONG, propids.ppropid[l_tz]),
+		PROP_TAG(PT_UNICODE, propids.ppropid[l_tzdesc]),
+	};
+	for (const auto propid : copytags_1) {
+		auto v = rq_prop.getval(propid);
+		if (v != nullptr && rsp_prop.set(propid, v) != 0)
+			return ecMAPIOOM;
+	}
+	if (recurring_flg)
+		for (const auto propid : copytags_2) {
+			auto v = rq_prop.getval(propid);
+			if (v != nullptr && rsp_prop.set(propid, v) != 0)
+				return ecMAPIOOM;
+		}
+	if (rsp_status == respAccepted) {
+		if (rsp_prop.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Resp.Pos") != 0 ||
+		    rsp_prop.set(PR_SUBJECT_PREFIX, "Accepted: ") != 0)
+			return ecMAPIOOM;
+	} else if (rsp_status == respTentative) {
+		if (rsp_prop.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Resp.Tent") != 0 ||
+		    rsp_prop.set(PR_SUBJECT_PREFIX, "Maybe: ") != 0)
+			return ecMAPIOOM;
+	} else if (rsp_status == respDeclined) {
+		if (rsp_prop.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Resp.Neg") != 0 ||
+		    rsp_prop.set(PR_SUBJECT_PREFIX, "Declined: ") != 0)
+			return ecMAPIOOM;
+	}
+	auto nt_time = rop_util_current_nttime();
+	if (rsp_prop.set(PROP_TAG(PT_SYSTIME, propids.ppropid[l_attendeecritchg]), &nt_time) != 0)
+		return ecMAPIOOM;
+	auto rcpts = tarray_set_init();
+	if (rcpts == nullptr)
+		return ecMAPIOOM;
+	auto row = rcpts->emplace();
+	if (row == nullptr)
+		return ecMAPIOOM;
+	auto txt = rq_prop.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
+	if (txt == nullptr) {
+		mlog(LV_ERR, "%s: no PR_SENT_REPRESENTING_ADDRTYPE available", __func__);
+		return ecInvalidParam;
+	} else if (row->set(PR_ADDRTYPE, txt) != 0) {
+		return ecMAPIOOM;
+	}
+	txt = rq_prop.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+	if (txt == nullptr) {
+		mlog(LV_ERR, "%s: no PR_SENT_REPRESENTING_EMAIL_ADDRESS available", __func__);
+		return ecInvalidParam;
+	} else if (row->set(PR_EMAIL_ADDRESS, txt) != 0) {
+		return ecMAPIOOM;
+	}
+	txt = rq_prop.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (txt == nullptr) {
+		mlog(LV_ERR, "%s: no PR_SENT_REPRESENTING_SMTP_ADDRESS available", __func__);
+		return ecInvalidParam;
+	}
+	auto bin = rq_prop.get<const BINARY>(PR_CONVERSATION_INDEX);
+	if (bin != nullptr && bin->cb >= 22) {
+		auto cvidx = std::make_unique<char[]>(bin->cb + 5);
+		memcpy(&cvidx[0], bin->pv, bin->cb);
+		/* Well that's just great, Y2057 problem */
+		auto oldtime = be64p_to_cpu(&cvidx[1]) & 0xffffffffff000000ULL;
+		cpu_to_be32p(&cvidx[bin->cb], cvidx_make_delta(oldtime, nt_time));
+		cvidx[bin->cb+4] = gromox::rand();
+		BINARY cvbin;
+		cvbin.cb = bin->cb + 5;
+		cvbin.pc = cvidx.get();
+		if (rsp_prop.set(PR_CONVERSATION_INDEX, &cvbin) != 0)
+			return ecMAPIOOM;
+	}
+
+	MAIL imail;
+	rp_storedir = par.cur.dirc();
+	if (!oxcmail_export(rsp_ctnt.get(), false, oxcmail_body::plain_and_html,
+	    &imail, cu_alloc, cu_get_propids, cu_get_propname)) {
+		mlog(LV_ERR, "mr_send_response: oxcmail_export failed for an unspecified reason.\n");
+		return ecError;
+	}
+	auto err = cu_send_mail(imail, rp_smtp_url.c_str(), par.ev_to, {txt});
+	rp_alloc_ctx.clear();
+	rp_storedir = nullptr;
+	return err;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
+}
+
 static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
     const mr_policy &policy)
 {
@@ -910,6 +1060,9 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	auto recurring_ptr = rq_prop.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[l_recurring]));
 	auto recurring_flg = recurring_ptr != nullptr && *recurring_ptr != 0;
 	if (recurring_flg && policy.decline_recurring) {
+		auto err = mr_send_response(par, recurring_flg, propids, respDeclined);
+		if (err != ecSuccess)
+			return err;
 		return mr_mark_done(par);
 	}
 
@@ -936,10 +1089,10 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	}
 
 	/* Decline double-booking if so configured */
-	if (res_in_use) {
-		if (policy.decline_overlap) {
-		}
-		/* else: no decline = request stays unanswered */
+	if (res_in_use && policy.decline_overlap) {
+		auto err = mr_send_response(par, recurring_flg, propids, respDeclined);
+		if (err != ecSuccess)
+			return err;
 		return mr_mark_done(par);
 	}
 	return ecSuccess;
