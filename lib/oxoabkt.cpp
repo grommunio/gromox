@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
+#include <cassert>
 #include <climits>
 #include <cstdint>
 #include <cstring>
@@ -157,9 +158,14 @@ static pack_result abkt_read(EXT_PULL &bin, Json::Value &tpl, cpid_t cpid)
 	return pack_result::success;
 }
 
+/**
+ * @auxstart: Start of auxiliary region
+ * @auxofs:   Current write pointer in the auxiliary region
+ */
 static pack_result abkt_write_row(Json::Value &jrow, EXT_PUSH &bin,
-    uint32_t &auxofs, cpid_t cpid)
+    uint32_t auxstart, uint32_t &auxofs, cpid_t cpid)
 {
+	assert(auxofs >= auxstart);
 	unsigned int ct_type = abkt_cttype2int(jrow["ct_type"].asString().c_str());
 	unsigned int flags = _DT_NONE;
 	if (ct_type == _DTCT_NONE) {
@@ -191,7 +197,8 @@ static pack_result abkt_write_row(Json::Value &jrow, EXT_PUSH &bin,
 	std::string text = jrow[field].asString();
 	TRY(bin.p_uint32(auxofs));
 	auto saved_offset = bin.m_offset;
-	if (saved_offset > auxofs)
+	if (saved_offset > auxstart)
+		/* More rows written than predicted */
 		return pack_result::format;
 	TRY(bin.advance(auxofs - saved_offset));
 	bin.m_offset = auxofs;
@@ -222,9 +229,10 @@ static pack_result abkt_write(Json::Value &tpl, EXT_PUSH &bin,
 	uint32_t auxofs = 8 + 36 * rows;
 	if (dogap)
 		auxofs += 4;
+	const auto auxstart = auxofs;
 	for (unsigned int i = 0; i < rows; ++i) {
 		auto &row = tpl["rowdata"][i];
-		abkt_write_row(row, bin, auxofs, cpid);
+		abkt_write_row(row, bin, auxstart, auxofs, cpid);
 	}
 	if (dogap)
 		TRY(bin.p_uint32(0));
