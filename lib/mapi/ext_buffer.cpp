@@ -2193,8 +2193,9 @@ BOOL EXT_PUSH::init(void *pdata, uint32_t alloc_size,
 {
 	const EXT_BUFFER_MGT default_mgt = {zalloc, realloc, free};
 	m_mgt = mgt != nullptr ? *mgt : default_mgt;
+	m_flags = flags;
 	if (pdata == nullptr) {
-		b_alloc = TRUE;
+		m_flags |= EXT_FLAG_DYNAMIC;
 		m_alloc_size = 8192;
 		m_udata = static_cast<uint8_t *>(m_mgt.alloc(m_alloc_size));
 		if (m_udata == nullptr) {
@@ -2202,18 +2203,17 @@ BOOL EXT_PUSH::init(void *pdata, uint32_t alloc_size,
 			return FALSE;
 		}
 	} else {
-		b_alloc = FALSE;
+		m_flags &= ~EXT_FLAG_DYNAMIC;
 		m_udata = static_cast<uint8_t *>(pdata);
 		m_alloc_size = alloc_size;
 	}
 	m_offset = 0;
-	m_flags = flags;
 	return TRUE;
 }
 
 EXT_PUSH::~EXT_PUSH()
 {
-	if (b_alloc)
+	if (m_flags & EXT_FLAG_DYNAMIC)
 		m_mgt.free(m_udata);
 }
 
@@ -2231,7 +2231,7 @@ BOOL EXT_PUSH::check_ovf(uint32_t extra_size)
 	auto alloc_size = extra_size + m_offset;
 	if (m_alloc_size >= alloc_size)
 		return TRUE;
-	if (!b_alloc)
+	if (!(m_flags & EXT_FLAG_DYNAMIC))
 		return FALSE;
 	if (alloc_size < m_alloc_size * 2)
 		/* Exponential growth policy, needed to reach amortized linear time (like std::string) */
@@ -3596,10 +3596,9 @@ pack_result EXT_PUSH::p_fbevent(const freebusy_event &r)
 
 uint8_t *EXT_PUSH::release()
 {
-	auto p = this;
-	auto t = p->m_udata;
+	auto t = m_udata;
 	m_udata = nullptr;
-	p->b_alloc = false;
+	m_flags &= ~EXT_FLAG_DYNAMIC;
 	m_offset = 0;
 	return t;
 }
