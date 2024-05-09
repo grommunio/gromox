@@ -98,7 +98,7 @@ libgromox_rpc_la_SOURCES = lib/rpc/arcfour.cpp lib/rpc/ndr.cpp lib/rpc/ntlmssp.c
 libgromox_rpc_la_LIBADD = ${libcrypto_LIBS} ${libHX_LIBS} ${iconv_LIBS} libgromox_common.la
 libgxs_ruleproc_la_SOURCES = lib/ruleproc.cpp
 libgxs_ruleproc_la_LDFLAGS = ${default_SYFLAGS}
-libgxs_ruleproc_la_LIBADD = libgromox_common.la libgromox_exrpc.la
+libgxs_ruleproc_la_LIBADD = ${vmime_LIBS} libgromox_common.la libgromox_exrpc.la
 EXTRA_libgxs_ruleproc_la_DEPENDENCIES = ${default_SYM}
 
 delivery_SOURCES = lib/svc_loader.cpp mda/delivery_app/delivery.hpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/transporter.cpp

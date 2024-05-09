@@ -7,6 +7,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <vmime/utility/url.hpp>
+#include <gromox/config_file.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
@@ -138,6 +140,7 @@ struct rxparam {
 
 unsigned int g_ruleproc_debug;
 static bool (*rp_getuserprops)(const char *, TPROPVAL_ARRAY &);
+static std::string rp_smtp_url;
 
 rule_node::rule_node(rule_node &&o) :
 	seq(o.seq), state(o.state), extended(o.extended), rule_id(o.rule_id),
@@ -1060,6 +1063,11 @@ static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from
 	return ecServerOOM;
 }
 
+static constexpr cfg_directive rp_config_defaults[] = {
+	{"outgoing_smtp_url", "smtp://[::1]:25"},
+	CFG_TABLE_END,
+};
+
 BOOL SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 {
 	if (reason != PLUGIN_INIT)
@@ -1069,5 +1077,16 @@ BOOL SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 		return false;
 	if (!register_service("rules_execute", exmdb_local_rules_execute))
 		return false;
+	auto cfg = config_file_prg(nullptr, "gromox.cfg", rp_config_defaults);
+	auto str = cfg->get_value("outgoing_smtp_url");
+	if (str != nullptr) {
+		try {
+			rp_smtp_url = vmime::utility::url(str);
+		} catch (const vmime::exceptions::malformed_url &e) {
+			mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
+				str, e.what());
+			return EXIT_FAILURE;
+		}
+	}
 	return TRUE;
 }
