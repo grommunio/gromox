@@ -39,6 +39,7 @@ enum class pack_result {
  * 			(GetContentsTable / GetHierarchyTable)
  * %EXT_FLAG_ABK:	packed rep includes extra set/unset flags
  * %EXT_FLAG_ZCORE:	unpacked rep uses zcore types for rule element pointers
+ * %EXT_FLAG_DYNAMIC:   buffer is managed by EXT_PUSH [private flag]
  *
  * The Exchange protocols use UTF-16, but the Gromox exmdb and zcore RPC
  * protocols use UTF-8. This may require using more than one context to process
@@ -53,6 +54,7 @@ enum {
 	EXT_FLAG_TBLLMT = 1U << 2,
 	EXT_FLAG_ABK = 1U << 3,
 	EXT_FLAG_ZCORE = 1U << 4,
+	EXT_FLAG_DYNAMIC = 1U << 5,
 };
 
 using EXT_BUFFER_ALLOC = void *(*)(size_t);
@@ -290,7 +292,6 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_rpchdr(const RPC_HEADER_EXT &);
 	pack_result p_fbevent(const freebusy_event &);
 
-	BOOL b_alloc = false;
 	union {
 		uint8_t *m_udata;
 		char *m_cdata;
