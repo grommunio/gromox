@@ -4091,6 +4091,48 @@ struct mUpdateItemResponse
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
+/*
+ * Types.xsd:7203
+ */
+struct tUserConfigurationName
+{
+	explicit tUserConfigurationName(const tinyxml2::XMLElement*);
+
+	std::string Name; //Attribute
+	std::optional<tFolderId> FolderId;
+	std::optional<tDistinguishedFolderId> DistinguishedFolderId;
+};
+
+/**
+ * Messages.xsg:2557
+ */
+struct mGetUserConfigurationRequest
+{
+	explicit mGetUserConfigurationRequest(const tinyxml2::XMLElement*);
+
+	tUserConfigurationName UserConfigurationName;
+	Enum::UserConfigurationPropertyType UserConfigurationProperties;
+};
+
+/**
+ * Messages.xsg:2571
+ */
+struct mGetUserConfigurationResponseMessage : public mResponseMessageType
+{
+	static constexpr char NAME[] = "GetUserConfigurationResponseMessage";
+};
+
+/**
+ * Messages.xsg:2581
+ */
+struct mGetUserConfigurationResponse
+{
+	std::vector<mGetUserConfigurationResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+
 #undef ALIAS
 
 }

@@ -809,6 +809,30 @@ void process(mGetStreamingEventsRequest&& request, XMLElement* response, EWSCont
 }
 
 /**
+ * @brief      Process GetUserConfigurationRequest
+ *
+ * Provides the functionality of GetUserConfiguration
+ *
+ * In its current state it does nothing more than sending not found response.
+ *
+ * @todo       This function lacks most of its functionality and is practically worthless.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetUserConfigurationRequest&&, XMLElement* response, const EWSContext&)
+{
+	response->SetName("m:GetUserConfigurationResponse");
+
+	mGetUserConfigurationResponse data;
+	mGetUserConfigurationResponseMessage& msg = data.ResponseMessages.emplace_back();
+
+	msg.error("ErrorItemNotFound", "Object not found in the information store");
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetUserOofSettingsRequest
  *
  * Provides the functionality of GetUserOofSettingsRequest

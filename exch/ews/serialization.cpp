@@ -1408,6 +1408,11 @@ tTargetFolderIdType::tTargetFolderIdType(const XMLElement* xml) :
 	VXMLINIT(folderId)
 {}
 
+tUserConfigurationName::tUserConfigurationName(const tinyxml2::XMLElement* xml) :
+	XMLINITA(Name),
+	XMLINIT(FolderId)
+{}
+
 tUserId::tUserId(const tinyxml2::XMLElement* xml) :
 	XMLINIT(PrimarySmtpAddress),
 	XMLINIT(DisplayName),
@@ -1677,6 +1682,14 @@ void mGetUserAvailabilityResponse::serialize(XMLElement* xml) const
 mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement* xml) :
 	XMLINIT(Mailbox)
 {}
+
+mGetUserConfigurationRequest::mGetUserConfigurationRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(UserConfigurationName),
+	XMLINIT(UserConfigurationProperties)
+{}
+
+void mGetUserConfigurationResponse::serialize(XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
 
 void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
 {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -246,6 +246,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"GetServiceConfiguration", process<Structures::mGetServiceConfigurationRequest>},
 	{"GetStreamingEvents", process<Structures::mGetStreamingEventsRequest>},
 	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},
+	{"GetUserConfiguration", process<Structures::mGetUserConfigurationRequest>},
 	{"GetUserPhoto", process<Structures::mGetUserPhotoRequest>},
 	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
 	{"MoveFolder", process<Structures::mMoveFolderRequest>},

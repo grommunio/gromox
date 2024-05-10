@@ -110,6 +110,7 @@ struct Enum
 	STR(Best);
 	STR(Binary);
 	STR(BinaryArray);
+	STR(BinaryData);
 	STR(Boolean);
 	STR(Business);
 	STR(BusinessFax);
@@ -153,6 +154,7 @@ struct Enum
 	STR(Descending);
 	STR(Detailed);
 	STR(DetailedMerged);
+	STR(Dictionary);
 	STR(Disabled);
 	STR(DisplayName);
 	STR(Double);
@@ -198,6 +200,7 @@ struct Enum
 	STR(HomeFax);
 	STR(HomePhone);
 	STR(HomePhone2);
+	STR(Id);
 	STR(IdOnly);
 	STR(ImplicitContact);
 	STR(InProgress);
@@ -343,6 +346,7 @@ struct Enum
 	STR(Weekday);
 	STR(WeekendDay);
 	STR(WorkingElsewhere);
+	STR(XmlData);
 	STR(adminauditlogs);
 	STR(allcategorizeditems);
 	STR(alltaggeditems);
@@ -465,6 +469,7 @@ struct Enum
 	using SortDirectionType = StrEnum<Ascending, Descending>; ///< Types.xsd:5986, in sync with TABLE_SORT_(ASCEND|DESCEND)
 	using SuggestionQuality = StrEnum<Excellent, Good, Fair, Poor>; ///< Types.xsd:6423
 	using SyncFolderItemsScopeType = StrEnum<NormalItems, NormalAndAssociatedItems>; ///< Types.xsd:6256
+	using UserConfigurationPropertyType = StrEnum<Id, Dictionary, XmlData, BinaryData, All>; ///< Types.xsd:7256
 	using TaskStatusType = StrEnum<NotStarted, InProgress, Completed, WaitingOnOthers, Deferred>; ///< Types.xsd:4072
 };
 

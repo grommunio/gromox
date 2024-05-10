@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 
 #pragma once
@@ -29,10 +29,10 @@ EWSFUNC(mGetEventsRequest);
 EWSFUNC(mGetFolderRequest);
 EWSFUNC(mGetItemRequest);
 EWSFUNC(mGetMailTipsRequest);
-EWSFUNC(mGetMailTipsRequest);
 EWSFUNC(mGetServiceConfigurationRequest);
 EWSFUNC_NC(mGetStreamingEventsRequest);
 EWSFUNC(mGetUserAvailabilityRequest);
+EWSFUNC(mGetUserConfigurationRequest);
 EWSFUNC(mGetUserOofSettingsRequest);
 EWSFUNC_NC(mGetUserPhotoRequest);
 void process(const Structures::mBaseMoveCopyFolder&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
