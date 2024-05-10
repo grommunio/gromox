@@ -27,6 +27,7 @@ EWSFUNC(mFindItemRequest);
 EWSFUNC(mGetAttachmentRequest);
 EWSFUNC(mGetEventsRequest);
 EWSFUNC(mGetFolderRequest);
+EWSFUNC(mGetInboxRulesRequest);
 EWSFUNC(mGetItemRequest);
 EWSFUNC(mGetMailTipsRequest);
 EWSFUNC(mGetServiceConfigurationRequest);

@@ -1789,6 +1789,16 @@ void mSyncFolderItemsResponseMessage::serialize(XMLElement* xml) const
 void mSyncFolderItemsResponse::serialize(XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
 
+mGetInboxRulesRequest::mGetInboxRulesRequest(const XMLElement* xml) :
+	XMLINIT(MailboxSmtpAddress)
+{}
+
+void mGetInboxRulesResponse::serialize(XMLElement* xml) const
+{
+	XMLDUMPT(OutlookRuleBlobExists);
+	// XMLDUMPT(InboxRules);
+}
+
 mGetItemRequest::mGetItemRequest(const XMLElement* xml) :
 	XMLINIT(ItemShape),
 	XMLINIT(ItemIds)

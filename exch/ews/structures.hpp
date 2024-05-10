@@ -4132,6 +4132,34 @@ struct mGetUserConfigurationResponse
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
+/**
+ * @brief      Get inbox rules request
+ *
+ * Messages.xsg:2935
+ */
+struct mGetInboxRulesRequest
+{
+	explicit mGetInboxRulesRequest(const tinyxml2::XMLElement*);
+
+	std::optional<std::string> MailboxSmtpAddress;
+};
+
+/**
+ * @brief      Get inbox rules response
+ *
+ * Messages.xsg:2959
+ */
+struct mGetInboxRulesResponse : mResponseMessageType
+{
+	static constexpr char NAME[] = "GetInboxRulesResponse";
+
+	using mResponseMessageType::success;
+
+	std::optional<bool> OutlookRuleBlobExists;
+	// <xs:element name="InboxRules" type="t:ArrayOfRulesType" minOccurs="0" maxOccurs="1" />
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
 
 #undef ALIAS
 

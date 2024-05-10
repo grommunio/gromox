@@ -675,6 +675,30 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 }
 
 /**
+ * @brief      Process GetInboxRulesRequest
+ *
+ * Provides the functionality of GetInboxRules
+ *
+ * In its current state it does nothing more than sending no rules response.
+ *
+ * @todo       This function lacks most of its functionality and is practically worthless.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetInboxRulesRequest&&, XMLElement* response, const EWSContext&)
+{
+	response->SetName("m:GetInboxRulesResponse");
+
+	mGetInboxRulesResponse data;
+	data.OutlookRuleBlobExists = false;
+
+	data.success();
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetMailTipsRequest
  *
  * Provides the functionality of GetMailTips
