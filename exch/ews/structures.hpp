@@ -128,7 +128,7 @@ struct sBase64Binary : public std::string {
 	sBase64Binary() = default;
 	sBase64Binary(const TAGGED_PROPVAL&);
 	sBase64Binary(const BINARY*);
-	explicit sBase64Binary(std::string);
+	explicit sBase64Binary(std::string &&);
 	explicit sBase64Binary(const tinyxml2::XMLElement*);
 	explicit sBase64Binary(const tinyxml2::XMLAttribute*);
 
