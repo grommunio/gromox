@@ -4331,6 +4331,37 @@ void mail_engine_init(const char *default_charset, const char *org_name,
 	g_table_size = table_size;
 }
 
+static constexpr struct {
+	const char key[8];
+	midb_cmd value;
+} mail_engine_commands[] = {
+	{"M-INST", {mail_engine_minst, 6}},
+	{"M-DELE", {mail_engine_mdele, 4, INT_MAX}},
+	{"M-COPY", {mail_engine_mcopy, 5}},
+	{"M-MAKF", {mail_engine_mmakf, 3}},
+	{"M-REMF", {mail_engine_mremf, 3}},
+	{"M-RENF", {mail_engine_mrenf, 4}},
+	{"M-ENUM", {mail_engine_menum, 2}},
+	{"M-CKFL", {mail_engine_mckfl, 2}},
+	{"M-PING", {mail_engine_mping, 2}},
+	{"P-UNID", {mail_engine_punid, 4}},
+	{"P-FDDT", {mail_engine_pfddt, 3}},
+	{"P-SUBF", {mail_engine_psubf, 3}},
+	{"P-UNSF", {mail_engine_punsf, 3}},
+	{"P-SUBL", {mail_engine_psubl, 2}},
+	{"P-SIMU", {mail_engine_psimu, 5}},
+	{"P-DELL", {mail_engine_pdell, 3}},
+	{"P-DTLU", {mail_engine_pdtlu, 5}},
+	{"P-SFLG", {mail_engine_psflg, 5}},
+	{"P-RFLG", {mail_engine_prflg, 5}},
+	{"P-GFLG", {mail_engine_pgflg, 4}},
+	{"P-SRHL", {mail_engine_psrhl, 5}},
+	{"P-SRHU", {mail_engine_psrhu, 5}},
+	{"X-UNLD", {mail_engine_xunld, 2}},
+	{"X-RSYM", {mail_engine_xrsym, 2}},
+	{"X-RSYF", {mail_engine_xrsyf, 3}},
+};
+
 int mail_engine_run()
 {
 	if (sqlite3_config(SQLITE_CONFIG_MULTITHREAD) != SQLITE_OK)
@@ -4351,31 +4382,8 @@ int mail_engine_run()
 		return -5;
 	}
 	pthread_setname_np(g_scan_tid, "mail_engine");
-	cmd_parser_register_command("M-INST", {mail_engine_minst, 6});
-	cmd_parser_register_command("M-DELE", {mail_engine_mdele, 4, INT_MAX});
-	cmd_parser_register_command("M-COPY", {mail_engine_mcopy, 5});
-	cmd_parser_register_command("M-MAKF", {mail_engine_mmakf, 3});
-	cmd_parser_register_command("M-REMF", {mail_engine_mremf, 3});
-	cmd_parser_register_command("M-RENF", {mail_engine_mrenf, 4});
-	cmd_parser_register_command("M-ENUM", {mail_engine_menum, 2});
-	cmd_parser_register_command("M-CKFL", {mail_engine_mckfl, 2});
-	cmd_parser_register_command("M-PING", {mail_engine_mping, 2});
-	cmd_parser_register_command("P-UNID", {mail_engine_punid, 4});
-	cmd_parser_register_command("P-FDDT", {mail_engine_pfddt, 3});
-	cmd_parser_register_command("P-SUBF", {mail_engine_psubf, 3});
-	cmd_parser_register_command("P-UNSF", {mail_engine_punsf, 3});
-	cmd_parser_register_command("P-SUBL", {mail_engine_psubl, 2});
-	cmd_parser_register_command("P-SIMU", {mail_engine_psimu, 5});
-	cmd_parser_register_command("P-DELL", {mail_engine_pdell, 3});
-	cmd_parser_register_command("P-DTLU", {mail_engine_pdtlu, 5});
-	cmd_parser_register_command("P-SFLG", {mail_engine_psflg, 5});
-	cmd_parser_register_command("P-RFLG", {mail_engine_prflg, 5});
-	cmd_parser_register_command("P-GFLG", {mail_engine_pgflg, 4});
-	cmd_parser_register_command("P-SRHL", {mail_engine_psrhl, 5});
-	cmd_parser_register_command("P-SRHU", {mail_engine_psrhu, 5});
-	cmd_parser_register_command("X-UNLD", {mail_engine_xunld, 2});
-	cmd_parser_register_command("X-RSYM", {mail_engine_xrsym, 2});
-	cmd_parser_register_command("X-RSYF", {mail_engine_xrsyf, 3});
+	for (const auto &e : mail_engine_commands)
+		cmd_parser_register_command(e.key, e.value);
 	exmdb_client_register_proc(reinterpret_cast<void *>(mail_engine_notification_proc));
 	return 0;
 }
