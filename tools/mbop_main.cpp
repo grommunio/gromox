@@ -236,7 +236,7 @@ static int main(int argc, const char **argv)
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (g_del_flags & DEL_FOLDERS && g_recurse) {
-		fprintf(stderr, "Combining -R and --nuke-folders is not supported; use two separate mbop calls.\n");
+		fprintf(stderr, "Combining -R and --nuke-folders is unreasonable: when you nuke folders, you cannot recurse into them anymore.\n");
 		return EXIT_FAILURE;
 	}
 	if (g_time_str != nullptr) {
@@ -246,13 +246,13 @@ static int main(int argc, const char **argv)
 			fprintf(stderr, "Timespec \"%s\" is too damn big\n", g_time_str);
 			return EXIT_FAILURE;
 		} else if (end != nullptr && *end != '\0') {
-			fprintf(stderr, "Timespec \"%s\" not fully understand (error at: \"%s\")\n",
+			fprintf(stderr, "Timespec \"%s\" not fully understood (error at: \"%s\")\n",
 				g_time_str, end);
 			return EXIT_FAILURE;
 		}
 		g_cutoff_time = rop_util_unix_to_nttime(time(nullptr) - t);
 		if (g_del_flags & DEL_FOLDERS) {
-			fprintf(stderr, "Combining -t and --nuke-folders is not supported; use two separate mbop calls.\n");
+			fprintf(stderr, "Combining -t and --nuke-folders is unreasonable: when you delete folders, it may delete messages therein which are younger than -t.\n");
 			return EXIT_FAILURE;
 		}
 	}
