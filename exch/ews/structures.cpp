@@ -452,7 +452,7 @@ sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
  *
  * @param    data   Binary data to copy
  */
-sBase64Binary::sBase64Binary(std::string data) : std::string(std::move(data))
+sBase64Binary::sBase64Binary(std::string &&data) : std::string(std::move(data))
 {}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
