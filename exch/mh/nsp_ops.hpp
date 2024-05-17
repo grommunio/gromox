@@ -1,7 +1,7 @@
 #pragma once
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
-#include "../nsp/nsp_types.h"
+#include "../nsp/nsp_types.hpp"
 
 struct nsp_propname2 {
 	GUID guid{};

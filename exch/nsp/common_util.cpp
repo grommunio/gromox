@@ -15,7 +15,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
+#include "common_util.hpp"
 
 using namespace gromox;
 
