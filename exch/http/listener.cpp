@@ -27,9 +27,9 @@
 #include <gromox/contexts_pool.hpp>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
-#include "http_parser.h"
-#include "listener.h"
-#include "resource.h"
+#include "http_parser.hpp"
+#include "listener.hpp"
+#include "resource.hpp"
 #include "system_services.hpp"
 
 using namespace gromox;

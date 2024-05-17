@@ -10,7 +10,7 @@
 #include <gromox/ntlmssp.hpp>
 #include <gromox/plugin.hpp>
 #include <gromox/stream.hpp>
-#include "pdu_ndr.h"
+#include "pdu_ndr.hpp"
 #define DCERPC_BASE_MARSHALL_SIZE					(16*1024)
 #define DISPATCH_FAIL								0
 #define DISPATCH_SUCCESS							1
