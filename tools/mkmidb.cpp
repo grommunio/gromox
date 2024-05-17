@@ -184,5 +184,5 @@ int main(int argc, char **argv)
 		fprintf(stderr, "dbop_sqlite_create_top: %s\n", strerror(-ret));
 		return EXIT_FAILURE;
 	}
-	return sql_transact.commit() == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+	return sql_transact.commit() == SQLITE_OK ? EXIT_SUCCESS : EXIT_FAILURE;
 }

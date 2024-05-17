@@ -371,7 +371,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	           reinterpret_cast<MESSAGE_CONTENT **>(&pinstance->pcontent));
 	if (!ret)
 		return FALSE;
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	if (NULL == pinstance->pcontent) {
 		*pinstance_id = 0;

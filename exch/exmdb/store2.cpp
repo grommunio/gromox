@@ -324,7 +324,7 @@ BOOL exmdb_server::purge_softdelete(const char *dir, const char *username,
 	}
 	if (!cu_adjust_store_size(db->psqlite, ADJ_DECREASE, normal_size, fai_size))
 		return false;
-	return xact.commit() == 0 ? TRUE : false;
+	return xact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 static bool purg_discover_ids(sqlite3 *db, const std::string &query,

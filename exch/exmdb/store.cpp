@@ -78,7 +78,7 @@ BOOL exmdb_server::get_named_propids(const char *dir,
 	if (!common_util_get_named_propids(pdb->psqlite,
 	    b_create, ppropnames, ppropids))
 		return FALSE;
-	return transact.commit() == 0 ? TRUE : false;
+	return transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 BOOL exmdb_server::get_named_propnames(const char *dir,
@@ -178,7 +178,7 @@ BOOL exmdb_server::set_store_properties(const char *dir, cpid_t cpid,
 	if (!cu_set_properties(MAPI_STORE, 0, cpid, pdb->psqlite,
 	    ppropvals, pproblems))
 		return FALSE;
-	return transact.commit() == 0 ? TRUE : false;
+	return transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 BOOL exmdb_server::remove_store_properties(const char *dir,
@@ -190,7 +190,7 @@ BOOL exmdb_server::remove_store_properties(const char *dir,
 	auto transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!cu_remove_properties(MAPI_STORE, 0, pdb->psqlite, pproptags))
 		return FALSE;
-	return transact.commit() == 0 ? TRUE : false;
+	return transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 /**

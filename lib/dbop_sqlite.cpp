@@ -748,7 +748,7 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 			mlog(LV_ERR, "dbop_sqlite: malformed entry in upgrade table, sv %u", entry->v);
 			return -EINVAL;
 		}
-		if (dbop_sqlite_bump(db, entry->v) != 0 || tx.commit() != 0)
+		if (dbop_sqlite_bump(db, entry->v) != 0 || tx.commit() != SQLITE_OK)
 			return -EIO;
 	}
 	/* Reclaim some diskspace */

@@ -1580,7 +1580,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 			return FALSE;
 	}
 	pstmt.finalize();
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 
 	pstmt = gx_sql_prep(psqlite, "SELECT COUNT(*) FROM messages");
@@ -1870,7 +1870,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 			return FALSE;
 	}
 	pstmt.finalize();
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	auto pidb_transact = gx_sql_begin_trans(pidb->psqlite);
 	if (!pidb_transact)
@@ -1979,7 +1979,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 		}
 		pstmt.finalize();
 	}
-	if (pidb_transact.commit() != 0)
+	if (pidb_transact.commit() != SQLITE_OK)
 		return false;
 	}
 	cl_err.release();

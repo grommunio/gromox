@@ -230,7 +230,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 	}
 	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	*pb_result = TRUE;
 	return TRUE;
@@ -435,7 +435,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 	}
 	cu_set_property(MAPI_FOLDER, dst_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	if (b_batch) {
 		b_batch = false;
@@ -636,7 +636,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		&propvals, &problems);
 	common_util_increase_deleted_count(
 		pdb->psqlite, src_val, del_count);
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	if (b_batch) {
 		b_batch = false;
@@ -900,7 +900,7 @@ BOOL exmdb_server::set_message_properties(const char *dir,
 	BOOL b_result = false;
 	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	pdb->proc_dynamic_event(cpid, dynamic_event::modify_msg,
 		fid_val, mid_val, 0);
@@ -927,7 +927,7 @@ BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
 	BOOL b_result = false;
 	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	pdb->proc_dynamic_event(cpid, dynamic_event::modify_msg,
 		fid_val, mid_val, 0);
@@ -987,7 +987,7 @@ BOOL exmdb_server::set_message_read_state(const char *dir,
 	BOOL b_result = false;
 	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	pdb->proc_dynamic_event(CP_ACP, dynamic_event::modify_msg,
 		fid_val, mid_val, 0);
@@ -1257,7 +1257,7 @@ BOOL exmdb_server::clear_submit(const char *dir,
 	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
 	pstmt.finalize();
-	return sql_transact.commit() == 0 ? TRUE : false;
+	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 /* private only */
@@ -3644,7 +3644,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		if (ec != ecSuccess)
 			return FALSE;
 	}
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	if (dlflags & DELIVERY_DO_NOTIF) {
 		for (const auto &mn : seen.msg) {
@@ -3725,7 +3725,7 @@ BOOL exmdb_server::write_message_v2(const char *dir, cpid_t cpid,
 		// auto rollback at end of scope
 		*pe_result = ecRpcFailed;
 	} else {
-		if (sql_transact.commit() != 0)
+		if (sql_transact.commit() != SQLITE_OK)
 			return false;
 		*pe_result = ecSuccess;
 	}
@@ -3775,7 +3775,7 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 	if (!ret)
 		return FALSE;
 	optim.reset();
-	return sql_transact.commit() == 0 ? TRUE : false;
+	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 /**
@@ -3819,7 +3819,7 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 	          pdb->psqlite, fid_val, mid_val, std::move(digest)}, seen);
 	if (ec != ecSuccess)
 		return FALSE;
-//	if (sql_transact.commit() != 0)
+//	if (sql_transact.commit() != SQLITE_OK)
 //		return false;
 	for (const auto &mn : seen.msg) {
 		if (mid_val == mn.message_id)

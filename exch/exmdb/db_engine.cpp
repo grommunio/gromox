@@ -1510,7 +1510,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 				        " row_id=%llu", ptable->table_id, LLU{row_id}, LLU{row_id1});
 				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					continue;
-				if (sql_transact.commit() != 0)
+				if (sql_transact.commit() != SQLITE_OK)
 					continue;
 				padded_row->after_row_id = inst_id;
 			}
@@ -1844,7 +1844,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 			return;
 		pstmt.finalize();
 		pstmt1.finalize();
-		if (sql_transact.commit() != 0)
+		if (sql_transact.commit() != SQLITE_OK)
 			continue;
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 			continue;
@@ -2152,7 +2152,7 @@ static void dbeng_notify_hiertbl_add_row(DB_ITEM *pdb,
 				" idx<0", ptable->table_id, idx, ptable->table_id);
 			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
-			if (sql_transact.commit() != 0)
+			if (sql_transact.commit() != SQLITE_OK)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (idx, "
 				"folder_id, depth) VALUES (%u, %llu, %u)",
@@ -2381,7 +2381,7 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 				ptable->table_id, ptable->table_id);
 			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
-			if (sql_transact.commit() != 0)
+			if (sql_transact.commit() != SQLITE_OK)
 				continue;
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 				continue;
@@ -2643,7 +2643,7 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 			pstmt.finalize();
 			pstmt1.finalize();
 		}
-		if (sql_transact.commit() != 0)
+		if (sql_transact.commit() != SQLITE_OK)
 			continue;
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 			continue;

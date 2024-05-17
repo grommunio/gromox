@@ -266,7 +266,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 	    prestriction, pstmt, 1, prow_count))
 		return FALSE;
 	pstmt.finalize();
-	if (table_transact.commit() != 0)
+	if (table_transact.commit() != SQLITE_OK)
 		return false;
 	*ptable_id = ptnode->table_id;
 	pdb->tables.table_list.splice(pdb->tables.table_list.end(), std::move(holder));
@@ -929,7 +929,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		sqlite3_reset(pstmt1);
 	}
 	if (NULL != psorts) {
-		if (psort_transact.commit() != 0)
+		if (psort_transact.commit() != SQLITE_OK)
 			return false;
 		psort_transact = gx_sql_begin_trans(psqlite);
 		if (!psort_transact)
@@ -957,7 +957,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 			return false;
 		pstmt.finalize();
 		pstmt1.finalize();
-		if (psort_transact.commit() != 0)
+		if (psort_transact.commit() != SQLITE_OK)
 			return false;
 		sqlite3_close(psqlite);
 		psqlite = NULL;
@@ -1007,7 +1007,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		}
 	}
 	cl_0.release();
-	if (table_transact.commit() != 0)
+	if (table_transact.commit() != SQLITE_OK)
 		return false;
 	pdb->tables.table_list.splice(pdb->tables.table_list.end(), std::move(holder));
 	if (*ptable_id == 0)
@@ -1170,7 +1170,7 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 	if (!table_load_permissions(pdb->psqlite, fid_val, pstmt, prow_count))
 		return FALSE;
 	pstmt.finalize();
-	if (table_transact.commit() != 0)
+	if (table_transact.commit() != SQLITE_OK)
 		return false;
 	*ptable_id = ptnode->table_id;
 	pdb->tables.table_list.splice(pdb->tables.table_list.end(), std::move(holder));
@@ -1344,7 +1344,7 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
 	    pstmt, prow_count))
 		return FALSE;
 	pstmt.finalize();
-	if (table_transact.commit() != 0)
+	if (table_transact.commit() != SQLITE_OK)
 		return false;
 	pdb->tables.table_list.splice(pdb->tables.table_list.end(), std::move(holder));
 	*ptable_id = ptnode->table_id;
@@ -1612,7 +1612,7 @@ static BOOL query_hierarchy(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		}
 		++pset->count;
 	}
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	return TRUE;
 }
@@ -1707,7 +1707,7 @@ static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		++pset->count;
 	}
 	optim.reset();
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	return TRUE;
 }
@@ -2093,7 +2093,7 @@ static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		}
 		break;
 	}
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	*pposition = idx - 1;
 	return TRUE;
@@ -2196,7 +2196,7 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		break;
 	}
 	optim.reset();
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	*pposition = idx - 1;
 	return TRUE;
@@ -2412,7 +2412,7 @@ static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 		}
 		ppropvals->emplace_back(tag, pvalue);
 	}
-	return sql_transact.commit() == 0 ? TRUE : false;
+	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
@@ -2487,7 +2487,7 @@ static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 		}
 		ppropvals->emplace_back(tag, pvalue);
 	}
-	return sql_transact.commit() == 0 ? TRUE : false;
+	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 /**
@@ -3227,7 +3227,7 @@ BOOL exmdb_server::store_table_state(const char *dir,
 			return FALSE;
 		sqlite3_reset(pstmt1);
 	}
-	return sql_transact.commit() == 0 ? TRUE : false;
+	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 BOOL exmdb_server::restore_table_state(const char *dir,
@@ -3442,7 +3442,7 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 		return FALSE;
 	pstmt.finalize();
 	pstmt1.finalize();
-	if (table_transact.commit() != 0)
+	if (table_transact.commit() != SQLITE_OK)
 		return false;
 	}
  RESTORE_POSITION:
