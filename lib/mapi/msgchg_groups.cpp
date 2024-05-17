@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <dirent.h>
 #include <map>
 #include <string>
 #include <vector>
@@ -13,10 +12,10 @@
 #include <libHX/string.h>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
-#include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/msgchg_grouping.hpp>
 #include <gromox/proptag_array.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 using namespace std::string_literals;
@@ -67,6 +66,7 @@ static errno_t mcg_parse(const char *line, tag_entry &node)
 			if (node.proptag == PR_NULL)
 				return EINVAL;
 		} else if (line[0] == '0' && line[1] == 'x') {
+			pn.guid = {};
 			node.proptag = PROP_TAG(strtoul(&line[0], nullptr, 0), 0);
 			if (node.proptag == PR_NULL)
 				return EINVAL;
@@ -78,22 +78,21 @@ static errno_t mcg_parse(const char *line, tag_entry &node)
 	return 0;
 }
 
-static errno_t mcg_loadfile(const char *file_path, uint32_t group_id)
+static errno_t mcg_loadfile(const char *dirs, const char *file, uint32_t group_id)
 {
 	auto emp_res = g_group_list.emplace(group_id, indextotags_t{});
 	if (!emp_res.second)
 		return EEXIST;
-	std::vector<std::string> thelines;
-	auto err = list_file_read_fixedstrings(file_path, nullptr, thelines);
-	if (err != 0) {
-		mlog(LV_ERR, "msgchggrp: list_file_init %s: %s",
-		       file_path, strerror(err));
-		return EIO;
+	std::unique_ptr<FILE, file_deleter> fp(fopen_sd(file, dirs));
+	if (fp == nullptr) {
+		mlog(LV_ERR, "Could not open %s: %s", file, strerror(errno));
+		return errno;
 	}
 	auto &index_list = emp_res.first->second;
 	std::vector<tag_entry> *tag_list = nullptr;
-	for (auto &&linestr : thelines) {
-		auto line = linestr.c_str();
+	hxmc_t *line = nullptr;
+	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	while (HX_getl(&line, fp.get()) != nullptr) {
 		if (strncasecmp(line, "index:", 6) == 0) {
 			auto i = strtoul(&line[6], nullptr, 0);
 			tag_list = &index_list.emplace(i, taglist_t{}).first->second;
@@ -106,7 +105,7 @@ static errno_t mcg_loadfile(const char *file_path, uint32_t group_id)
 		tag_entry tag;
 		if (tag_list->size() > 0)
 			tag.propname.guid = tag_list->back().propname.guid;
-		err = mcg_parse(line, tag);
+		auto err = mcg_parse(line, tag);
 		if (err != 0)
 			return err;
 		tag_list->push_back(std::move(tag));
@@ -114,34 +113,12 @@ static errno_t mcg_loadfile(const char *file_path, uint32_t group_id)
 	return 0;
 }
 
-errno_t msgchg_grouping_run(const char *sdlist) try
+errno_t msgchg_grouping_run(const char *datadir) try
 {
-	auto dinfo = opendir_sd("msgchg_grouping", sdlist);
-	if (dinfo.m_dir == nullptr) {
-		auto se = errno;
-		mlog(LV_ERR, "msgchggrp: opendir \"%s\": %s",
-		       dinfo.m_path.c_str(), strerror(se));
-		return se;
-	}
-	const struct dirent *de;
-	while ((de = readdir(dinfo.m_dir.get())) != nullptr) {
-		if (de->d_name[0] != '0' || de->d_name[1] != 'x')
-			continue;
-		char *end = nullptr;
-		auto grp_id = strtoul(&de->d_name[2], &end, 16);
-		if (end == nullptr || strcasecmp(end, ".txt") != 0)
-			continue;
-		auto abspath = dinfo.m_path.c_str() + "/"s + de->d_name;
-		auto err = mcg_loadfile(abspath.c_str(), grp_id);
-		if (err != 0) {
-			mlog(LV_ERR, "msgchggrp: %s: %s", abspath.c_str(), strerror(err));
-			return err;
-		}
-	}
-	if (g_group_list.size() != 0)
-		return 0;
-	mlog(LV_ERR, "msgchggrp: no usable files found in \"%s\"", dinfo.m_path.c_str());
-	return ENOENT;
+	auto err = mcg_loadfile(datadir, "msgchg_group_0x1.txt", 1);
+	if (err != 0)
+		mlog(LV_ERR, "msgchggrp: group 1: %s", strerror(err));
+	return g_group_list.size() != 0 ? err : errno_t{ENOENT};
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1493: ENOMEM");
 	return ENOMEM;
