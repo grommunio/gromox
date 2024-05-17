@@ -3,7 +3,7 @@
 #include <memory>
 #include <utility>
 #include <gromox/mapi_types.hpp>
-#include "rop_processor.h"
+#include "rop_processor.hpp"
 #define MAX_LENGTH_FOR_FOLDER						64*1024
 
 struct stream_object {

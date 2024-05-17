@@ -21,10 +21,10 @@
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "fastupctx_object.h"
-#include "ftstream_parser.h"
-#include "rop_processor.h"
+#include "common_util.hpp"
+#include "fastupctx_object.hpp"
+#include "ftstream_parser.hpp"
+#include "rop_processor.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;

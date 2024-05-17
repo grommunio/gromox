@@ -7,9 +7,9 @@
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "rop_dispatch.h"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "rop_dispatch.hpp"
 #include "rop_funcs.hpp"
 #include "rop_ids.hpp"
 

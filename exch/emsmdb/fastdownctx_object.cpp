@@ -11,13 +11,13 @@
 #include <gromox/eid_array.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "exmdb_client.h"
-#include "fastdownctx_object.h"
-#include "ftstream_producer.h"
-#include "ics_state.h"
-#include "logon_object.h"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "exmdb_client.hpp"
+#include "fastdownctx_object.hpp"
+#include "ftstream_producer.hpp"
+#include "ics_state.hpp"
+#include "logon_object.hpp"
 
 using namespace gromox;
 

@@ -11,17 +11,17 @@
 #include <gromox/propval.hpp>
 #include <gromox/safeint.hpp>
 #include <gromox/util.hpp>
-#include "attachment_object.h"
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "exmdb_client.h"
-#include "folder_object.h"
-#include "logon_object.h"
-#include "message_object.h"
-#include "processor_types.h"
+#include "attachment_object.hpp"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "exmdb_client.hpp"
+#include "folder_object.hpp"
+#include "logon_object.hpp"
+#include "message_object.hpp"
+#include "processor_types.hpp"
 #include "rop_funcs.hpp"
-#include "rop_processor.h"
-#include "stream_object.h"
+#include "rop_processor.hpp"
+#include "stream_object.hpp"
 
 using namespace gromox;
 

@@ -19,14 +19,14 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "asyncemsmdb_interface.h"
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "emsmdb_ndr.h"
-#include "exmdb_client.h"
-#include "logon_object.h"
-#include "rop_dispatch.h"
-#include "rop_processor.h"
+#include "asyncemsmdb_interface.hpp"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "emsmdb_ndr.hpp"
+#include "exmdb_client.hpp"
+#include "logon_object.hpp"
+#include "rop_dispatch.hpp"
+#include "rop_processor.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;

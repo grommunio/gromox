@@ -27,14 +27,14 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "asyncemsmdb_interface.h"
-#include "aux_types.h"
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "notify_response.h"
-#include "processor_types.h"
+#include "asyncemsmdb_interface.hpp"
+#include "aux_types.hpp"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "notify_response.hpp"
+#include "processor_types.hpp"
 #include "rop_ids.hpp"
-#include "rop_processor.h"
+#include "rop_processor.hpp"
 #define	EMSMDB_PCMSPOLLMAX				60000
 #define	EMSMDB_PCRETRY					6
 #define	EMSMDB_PCRETRYDELAY				10000

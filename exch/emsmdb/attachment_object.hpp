@@ -4,7 +4,7 @@
 #include <vector>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapierr.hpp>
-#include "message_object.h"
+#include "message_object.hpp"
 
 struct stream_object;
 
