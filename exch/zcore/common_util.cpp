@@ -42,10 +42,10 @@
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
 #include "bounce_producer.hpp"
-#include "common_util.h"
-#include "exmdb_client.h"
+#include "common_util.hpp"
+#include "exmdb_client.hpp"
 #include "objects.hpp"
-#include "store_object.h"
+#include "store_object.hpp"
 #include "system_services.hpp"
 #include "zserver.hpp"
 #include "../bounce_exch.cpp"

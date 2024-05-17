@@ -21,8 +21,8 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zcore_rpc.hpp>
-#include "common_util.h"
-#include "rpc_ext.h"
+#include "common_util.hpp"
+#include "rpc_ext.hpp"
 #include "rpc_parser.hpp"
 #include "zserver.hpp"
 

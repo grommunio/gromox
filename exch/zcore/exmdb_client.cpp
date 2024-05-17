@@ -8,8 +8,8 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/usercvt.hpp>
-#include "common_util.h"
-#include "exmdb_client.h"
+#include "common_util.hpp"
+#include "exmdb_client.hpp"
 #include "zserver.hpp"
 
 using namespace gromox;

@@ -9,11 +9,11 @@
 #include <gromox/proptag_array.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/rop_util.hpp>
-#include "common_util.h"
-#include "exmdb_client.h"
-#include "ics_state.h"
+#include "common_util.hpp"
+#include "exmdb_client.hpp"
+#include "ics_state.hpp"
 #include "objects.hpp"
-#include "store_object.h"
+#include "store_object.hpp"
 #include "zserver.hpp"
 
 std::unique_ptr<icsdownctx_object>

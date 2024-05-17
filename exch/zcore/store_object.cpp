@@ -31,10 +31,10 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "exmdb_client.h"
-#include "object_tree.h"
-#include "store_object.h"
+#include "common_util.hpp"
+#include "exmdb_client.hpp"
+#include "object_tree.hpp"
+#include "store_object.hpp"
 #include "system_services.hpp"
 #include "zserver.hpp"
 

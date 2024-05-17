@@ -19,10 +19,10 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "exmdb_client.h"
+#include "common_util.hpp"
+#include "exmdb_client.hpp"
 #include "objects.hpp"
-#include "store_object.h"
+#include "store_object.hpp"
 #include "zserver.hpp"
 
 using namespace std::string_literals;

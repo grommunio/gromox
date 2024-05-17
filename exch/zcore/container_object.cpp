@@ -17,12 +17,12 @@
 #include <gromox/safeint.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "ab_tree.h"
-#include "common_util.h"
-#include "exmdb_client.h"
-#include "object_tree.h"
+#include "ab_tree.hpp"
+#include "common_util.hpp"
+#include "exmdb_client.hpp"
+#include "object_tree.hpp"
 #include "objects.hpp"
-#include "store_object.h"
+#include "store_object.hpp"
 #include "zserver.hpp"
 
 using namespace gromox;

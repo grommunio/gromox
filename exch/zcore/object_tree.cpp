@@ -17,12 +17,12 @@
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "object_tree.h"
+#include "common_util.hpp"
+#include "object_tree.hpp"
 #include "objects.hpp"
-#include "store_object.h"
+#include "store_object.hpp"
 #include "system_services.hpp"
-#include "table_object.h"
+#include "table_object.hpp"
 #include "zserver.hpp"
 
 enum {
