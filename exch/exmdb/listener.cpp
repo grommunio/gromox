@@ -23,8 +23,8 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/util.hpp>
-#include "listener.h"
-#include "parser.h"
+#include "listener.hpp"
+#include "parser.hpp"
 
 using namespace gromox;
 

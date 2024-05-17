@@ -31,8 +31,8 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/util.hpp>
-#include "notification_agent.h"
-#include "parser.h"
+#include "notification_agent.hpp"
+#include "parser.hpp"
 #ifndef AI_V4MAPPED
 #	define AI_V4MAPPED 0
 #endif

@@ -41,8 +41,8 @@
 #include <gromox/scope.hpp>
 #include <gromox/sortorder_set.hpp>
 #include <gromox/util.hpp>
-#include "db_engine.h"
-#include "notification_agent.h"
+#include "db_engine.hpp"
+#include "notification_agent.hpp"
 #define MAX_DYNAMIC_NODES				100
 
 using LLD = long long;

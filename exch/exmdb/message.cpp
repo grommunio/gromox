@@ -40,8 +40,8 @@
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
-#include "db_engine.h"
-#include "parser.h"
+#include "db_engine.hpp"
+#include "parser.hpp"
 #define MIN_BATCH_MESSAGE_NUM 20
 
 using XUI = unsigned int;

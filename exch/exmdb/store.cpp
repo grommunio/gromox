@@ -17,7 +17,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
-#include "db_engine.h"
+#include "db_engine.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;
