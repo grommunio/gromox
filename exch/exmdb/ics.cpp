@@ -320,7 +320,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		*plast_cn = rop_util_make_eid_ex(1, *plast_cn);
 	if (*plast_readcn != 0)
 		*plast_readcn = rop_util_make_eid_ex(1, *plast_readcn);
-	if (transact1.commit() != 0)
+	if (transact1.commit() != SQLITE_OK)
 		return false;
 	} /* section 1 */
 
@@ -680,7 +680,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	stm_insert_exist.finalize();
 	if (*plast_cn != 0)
 		*plast_cn = rop_util_make_eid_ex(1, *plast_cn);
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	} /* section 1 */
 

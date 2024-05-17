@@ -460,7 +460,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 	cu_set_property(MAPI_FOLDER, folder_id, CP_ACP, pdb->psqlite,
 		PR_HIER_REV, &nt_time, &b_result);
 	pdb->notify_folder_creation(parent_id, folder_id, *pdb->m_base);
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	*pfolder_id = rop_util_make_eid_ex(1, folder_id);
 	*errcode = ecSuccess;
@@ -544,7 +544,7 @@ BOOL exmdb_server::set_folder_properties(const char *dir, cpid_t cpid,
 		return FALSE;
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, fid_val), fid_val, *pdb->m_base);
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	return TRUE;
 }
@@ -564,7 +564,7 @@ BOOL exmdb_server::remove_folder_properties(const char *dir,
 		return FALSE;
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, fid_val), fid_val, *pdb->m_base);
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	return TRUE;
 }
@@ -962,7 +962,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 	if (pstmt.step() != SQLITE_DONE)
 		return FALSE;
 	pstmt.finalize();
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	*pb_result = TRUE;
 	return TRUE;
@@ -1695,7 +1695,7 @@ BOOL exmdb_server::movecopy_folder(const char *dir, cpid_t cpid, BOOL b_guest,
 	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	pdb->notify_folder_movecopy(b_copy, dst_val, fid_val, parent_val, src_val, *dbase);
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 	*errcode = ecSuccess;
 	return TRUE;
@@ -1926,7 +1926,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 			prestriction, &folder_ids, *dbase);
 	else
 		pdb->delete_dynamic(fid_val, dbase);
-	if (sql_transact.commit() != 0)
+	if (sql_transact.commit() != SQLITE_OK)
 		return false;
 
 	pdb.reset();
