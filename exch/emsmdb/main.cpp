@@ -243,7 +243,7 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_ERR, "emsmdb: failed to run exmdb client");
 			return FALSE;
 		}
-		if (msgchg_grouping_run(get_data_path()) != 0) {
+		if (msgchg_grouping_run() != 0) {
 			mlog(LV_ERR, "emsmdb: failed to run msgchg grouping");
 			return FALSE;
 		}

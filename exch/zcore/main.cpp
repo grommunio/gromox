@@ -452,7 +452,7 @@ int main(int argc, const char **argv)
 		mlog(LV_ERR, "system: failed to start bounce producer");
 		return EXIT_FAILURE;
 	}
-	if (msgchg_grouping_run(g_config_file->get_value("data_file_path")) != 0) {
+	if (msgchg_grouping_run() != 0) {
 		mlog(LV_ERR, "system: failed to start msgchg grouping");
 		return EXIT_FAILURE;
 	}
