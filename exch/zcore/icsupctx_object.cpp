@@ -3,8 +3,8 @@
 #include <cstdlib>
 #include <memory>
 #include <gromox/mapi_types.hpp>
-#include "common_util.h"
-#include "ics_state.h"
+#include "common_util.hpp"
+#include "ics_state.hpp"
 #include "objects.hpp"
 
 std::unique_ptr<icsupctx_object>

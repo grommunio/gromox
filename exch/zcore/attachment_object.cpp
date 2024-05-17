@@ -7,10 +7,10 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
-#include "common_util.h"
-#include "exmdb_client.h"
+#include "common_util.hpp"
+#include "exmdb_client.hpp"
 #include "objects.hpp"
-#include "store_object.h"
+#include "store_object.hpp"
 
 static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 

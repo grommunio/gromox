@@ -4,7 +4,7 @@
 #include <vector>
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
-#include "ics_state.h"
+#include "ics_state.hpp"
 
 enum {
 	SPECIAL_CONTAINER_ROOT = 0xc,

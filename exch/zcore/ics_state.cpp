@@ -8,8 +8,8 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
-#include "common_util.h"
-#include "ics_state.h"
+#include "common_util.hpp"
+#include "ics_state.hpp"
 
 static void ics_state_clear(ics_state *pstate)
 {

@@ -3,7 +3,7 @@
 // This file is part of Gromox.
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
-#include "common_util.h"
+#include "common_util.hpp"
 
 using namespace gromox;
 
