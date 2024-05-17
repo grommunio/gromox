@@ -12,11 +12,11 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "exmdb_client.h"
-#include "folder_object.h"
-#include "logon_object.h"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "exmdb_client.hpp"
+#include "folder_object.hpp"
+#include "logon_object.hpp"
 
 std::unique_ptr<folder_object> folder_object::create(logon_object *plogon,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access)

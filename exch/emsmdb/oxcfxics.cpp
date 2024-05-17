@@ -15,18 +15,18 @@
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
-#include "attachment_object.h"
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "exmdb_client.h"
-#include "fastdownctx_object.h"
-#include "fastupctx_object.h"
-#include "folder_object.h"
-#include "ics_state.h"
-#include "icsdownctx_object.h"
-#include "message_object.h"
+#include "attachment_object.hpp"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "exmdb_client.hpp"
+#include "fastdownctx_object.hpp"
+#include "fastupctx_object.hpp"
+#include "folder_object.hpp"
+#include "ics_state.hpp"
+#include "icsdownctx_object.hpp"
+#include "message_object.hpp"
 #include "rop_funcs.hpp"
-#include "rop_processor.h"
+#include "rop_processor.hpp"
 
 using namespace gromox;
 

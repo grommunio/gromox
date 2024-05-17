@@ -9,13 +9,13 @@
 #include <gromox/lzxpress.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "logon_object.h"
-#include "notify_response.h"
-#include "rop_ext.h"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "logon_object.hpp"
+#include "notify_response.hpp"
+#include "rop_ext.hpp"
 #include "rop_ids.hpp"
-#include "rop_processor.h"
+#include "rop_processor.hpp"
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 using namespace gromox;

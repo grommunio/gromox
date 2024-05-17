@@ -9,16 +9,16 @@
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/rop_util.hpp>
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "exmdb_client.h"
-#include "logon_object.h"
-#include "notify_response.h"
-#include "processor_types.h"
-#include "rop_ext.h"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "exmdb_client.hpp"
+#include "logon_object.hpp"
+#include "notify_response.hpp"
+#include "processor_types.hpp"
+#include "rop_ext.hpp"
 #include "rop_funcs.hpp"
 #include "rop_ids.hpp"
-#include "rop_processor.h"
+#include "rop_processor.hpp"
 
 using namespace gromox;
 

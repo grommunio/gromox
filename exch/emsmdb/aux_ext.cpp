@@ -30,8 +30,8 @@ X-ClientApplication: Outlook/16.0.15928.20006
 #include <gromox/lzxpress.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
-#include "aux_types.h"
-#include "common_util.h"
+#include "aux_types.hpp"
+#include "common_util.hpp"
 #define AUX_ALIGN_SIZE									4
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 

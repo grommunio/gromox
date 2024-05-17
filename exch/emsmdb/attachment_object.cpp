@@ -9,12 +9,12 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
-#include "attachment_object.h"
-#include "common_util.h"
-#include "exmdb_client.h"
-#include "logon_object.h"
-#include "message_object.h"
-#include "stream_object.h"
+#include "attachment_object.hpp"
+#include "common_util.hpp"
+#include "exmdb_client.hpp"
+#include "logon_object.hpp"
+#include "message_object.hpp"
+#include "stream_object.hpp"
 
 static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 

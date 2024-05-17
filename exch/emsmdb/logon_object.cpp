@@ -18,10 +18,10 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "exmdb_client.h"
-#include "logon_object.h"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "exmdb_client.hpp"
+#include "logon_object.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;

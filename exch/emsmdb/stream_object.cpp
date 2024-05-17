@@ -9,12 +9,12 @@
 #include <gromox/proc_common.h>
 #include <gromox/safeint.hpp>
 #include <gromox/util.hpp>
-#include "attachment_object.h"
-#include "common_util.h"
-#include "folder_object.h"
-#include "message_object.h"
-#include "rop_processor.h"
-#include "stream_object.h"
+#include "attachment_object.hpp"
+#include "common_util.hpp"
+#include "folder_object.hpp"
+#include "message_object.hpp"
+#include "rop_processor.hpp"
+#include "stream_object.hpp"
 
 using namespace gromox;
 

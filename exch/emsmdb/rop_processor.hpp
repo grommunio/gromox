@@ -3,7 +3,7 @@
 #include <ctime>
 #include <memory>
 #include <gromox/mapi_types.hpp>
-#include "logon_object.h"
+#include "logon_object.hpp"
 
 enum class ems_objtype : uint8_t {
 	none = 0, logon, folder, message, attach, table, stream, fastdownctx,

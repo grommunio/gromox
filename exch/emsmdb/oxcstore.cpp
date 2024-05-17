@@ -9,11 +9,11 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "exmdb_client.h"
-#include "logon_object.h"
+#include "common_util.hpp"
+#include "exmdb_client.hpp"
+#include "logon_object.hpp"
 #include "rop_funcs.hpp"
-#include "rop_processor.h"
+#include "rop_processor.hpp"
 
 using namespace gromox;
 

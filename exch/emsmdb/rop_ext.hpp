@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <gromox/ext_buffer.hpp>
-#include "processor_types.h"
+#include "processor_types.hpp"
 
 struct notify_response;
 

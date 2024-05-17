@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rpc_types.hpp>
-#include "rop_processor.h"
+#include "rop_processor.hpp"
 
 enum {
 	RPCEXT2_FLAG_NOCOMPRESSION = 0x1U,
