@@ -102,9 +102,9 @@ libgromox_rule_la_LIBADD = libgromox_common.la libgromox_exrpc.la
 
 delivery_SOURCES = mda/delivery_app/delivery.hpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/transporter.cpp
 delivery_LDADD = -lpthread ${libHX_LIBS} ${libssl_LIBS} ${vmime_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgxs_authmgr.la libgxs_ldap_adaptor.la libgxs_mysql_adaptor.la
-delivery_queue_SOURCES = mda/message_enqueue.cpp mda/smtp/flusher.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_cmd_handler.h mda/smtp/smtp_aux.hpp mda/smtp/smtp_parser.cpp mda/smtp/smtp_parser.h
+delivery_queue_SOURCES = mda/message_enqueue.cpp mda/smtp/flusher.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_cmd_handler.hpp mda/smtp/smtp_aux.hpp mda/smtp/smtp_parser.cpp mda/smtp/smtp_parser.hpp
 delivery_queue_LDADD = -lpthread ${libcrypto_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_common.la libgromox_epoll.la libgxs_authmgr.la libgxs_dnsbl_filter.la libgxs_ldap_adaptor.la libgxs_mysql_adaptor.la libgxs_user_filter.la
-libgxm_alias_resolve_la_SOURCES = mda/alias_resolve.cpp mda/mlist_expand/bounce_producer.cpp mda/mlist_expand/bounce_producer.h lib/bounce_mda.cpp
+libgxm_alias_resolve_la_SOURCES = mda/alias_resolve.cpp mda/mdabounce.cpp mda/mdabounce.hpp lib/bounce_mda.cpp
 libgxm_alias_resolve_la_LDFLAGS = ${default_SYFLAGS}
 libgxm_alias_resolve_la_LIBADD = -lpthread ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libgxm_alias_resolve_la_DEPENDENCIES = ${default_sym}
