@@ -39,9 +39,9 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "ab_tree.h"
-#include "common_util.h"
-#include "nsp_types.h"
+#include "ab_tree.hpp"
+#include "common_util.hpp"
+#include "nsp_types.hpp"
 #include "../gab.cpp"
 
 #define BASE_STATUS_CONSTRUCTING			0

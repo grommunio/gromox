@@ -1,6 +1,6 @@
 #pragma once
 #include <gromox/simple_tree.hpp>
-#include "nsp_types.h"
+#include "nsp_types.hpp"
 
 void nsp_interface_init(BOOL b_check);
 extern int nsp_interface_run();

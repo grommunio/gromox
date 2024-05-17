@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <gromox/common_types.hpp>
 #include <gromox/proc_common.h>
-#include "nsp_types.h"
+#include "nsp_types.hpp"
 #define HANDLE_EXCHANGE_NSP				1
 
 DECLARE_PROC_API(nsp, extern);
