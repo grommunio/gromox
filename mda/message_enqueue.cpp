@@ -34,7 +34,7 @@
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
 #include "smtp/smtp_aux.hpp"
-#include "smtp/smtp_parser.h"
+#include "smtp/smtp_parser.hpp"
 #define TOKEN_MESSAGE_QUEUE     1
 #define MAX_LINE_LENGTH			64*1024
 

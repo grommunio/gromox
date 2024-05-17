@@ -24,8 +24,8 @@
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "smtp_aux.hpp"
-#include "smtp_cmd_handler.h"
-#include "smtp_parser.h"
+#include "smtp_cmd_handler.hpp"
+#include "smtp_parser.hpp"
 #if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \
     (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
 #	define OLD_SSL 1
