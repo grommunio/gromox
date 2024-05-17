@@ -24,8 +24,8 @@
 #include <gromox/midb.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
-#include "cmd_parser.h"
-#include "common_util.h"
+#include "cmd_parser.hpp"
+#include "common_util.hpp"
 #define MAX_ARGS			(32*1024)
 
 #define CONN_BUFFLEN        (257*1024)

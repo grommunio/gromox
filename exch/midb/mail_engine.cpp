@@ -47,9 +47,9 @@
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "cmd_parser.h"
-#include "common_util.h"
-#include "exmdb_client.h"
+#include "cmd_parser.hpp"
+#include "common_util.hpp"
+#include "exmdb_client.hpp"
 #include "mail_engine.hpp"
 #include "system_services.hpp"
 #define MAX_DIGLEN						256*1024
