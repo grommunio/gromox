@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <libHX/ctype_helper.h>
+#include <libHX/string.h>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
@@ -35,15 +36,21 @@ using indextotags_t = std::map<uint32_t, taglist_t>;
 
 static std::map<uint32_t, indextotags_t> g_group_list; /* group to indices; index to tags */
 
-static errno_t mcg_parse(char *line, tag_entry &node)
+static errno_t mcg_parse(const char *line, tag_entry &node)
 {
 	auto &pn = node.propname;
 	while (line != nullptr && *line != '\0') {
-		auto end = strchr(line, ',');
-		if (end != nullptr)
-			*end++ = '\0';
+		const char *end = strchr(line, ','); /* CONST-STRCHR-MARKER */
+		if (end == nullptr)
+			end = line + strlen(line);
 		if (strncasecmp(line, "GUID=", 5) == 0) {
-			if (!pn.guid.from_str(&line[5]))
+			/* from_str really needs a \0 */
+			char gp[39];
+			gx_strlcpy(gp, &line[5], std::size(gp));
+			auto p = strchr(gp, ',');
+			if (p != nullptr)
+				*p = '\0';
+			if (!pn.guid.from_str(gp))
 				return EINVAL;
 		} else if (strncasecmp(line, "LID=", 4) == 0) {
 			pn.kind = MNID_ID;
@@ -52,7 +59,7 @@ static errno_t mcg_parse(char *line, tag_entry &node)
 				return EINVAL;
 		} else if (strncasecmp(line, "NAME=", 5) == 0) {
 			pn.kind = MNID_STRING;
-			pn.name = &line[5];
+			pn.name = std::string(&line[5], end - &line[5]);
 			if (pn.name.empty())
 				return EINVAL;
 		} else if (strncasecmp(line, "TYPE=", 5) == 0) {
@@ -65,6 +72,8 @@ static errno_t mcg_parse(char *line, tag_entry &node)
 				return EINVAL;
 		}
 		line = end;
+		while (*line == ',')
+			++line;
 	}
 	return 0;
 }
@@ -84,7 +93,7 @@ static errno_t mcg_loadfile(const char *file_path, uint32_t group_id)
 	auto &index_list = emp_res.first->second;
 	std::vector<tag_entry> *tag_list = nullptr;
 	for (auto &&linestr : thelines) {
-		auto line = linestr.data();
+		auto line = linestr.c_str();
 		if (strncasecmp(line, "index:", 6) == 0) {
 			auto i = strtoul(&line[6], nullptr, 0);
 			tag_list = &index_list.emplace(i, taglist_t{}).first->second;
