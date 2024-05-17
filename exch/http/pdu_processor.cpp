@@ -26,10 +26,10 @@
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
-#include "hpm_processor.h"
-#include "http_parser.h"
-#include "pdu_processor.h"
-#include "resource.h"
+#include "hpm_processor.hpp"
+#include "http_parser.hpp"
+#include "pdu_processor.hpp"
+#include "resource.hpp"
 #define ASSOC_GROUP_HASH_SIZE			10000
 #define ASSOC_GROUP_HASH_GROWING		1000
 

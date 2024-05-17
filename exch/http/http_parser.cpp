@@ -52,13 +52,13 @@
 #include <gromox/scope.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include "hpm_processor.h"
-#include "http_parser.h"
+#include "hpm_processor.hpp"
+#include "http_parser.hpp"
 #include "mod_cache.hpp"
-#include "mod_fastcgi.h"
-#include "mod_rewrite.h"
-#include "pdu_ndr.h"
-#include "resource.h"
+#include "mod_fastcgi.hpp"
+#include "mod_rewrite.hpp"
+#include "pdu_ndr.hpp"
+#include "resource.hpp"
 #include "system_services.hpp"
 #if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \
     (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
