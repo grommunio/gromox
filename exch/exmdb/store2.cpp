@@ -27,7 +27,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/usercvt.hpp>
-#include "db_engine.h"
+#include "db_engine.hpp"
 
 using LLU = unsigned long long;
 using namespace std::string_literals;

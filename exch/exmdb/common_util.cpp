@@ -49,7 +49,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "db_engine.h"
+#include "db_engine.hpp"
 #define S2A(x) reinterpret_cast<const char *>(x)
 
 using XUI = unsigned int;

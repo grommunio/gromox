@@ -26,7 +26,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "db_engine.h"
+#include "db_engine.hpp"
 
 enum {
 	PR_BODY_U = CHANGE_PROP_TYPE(PR_BODY, PT_UNSPECIFIED),

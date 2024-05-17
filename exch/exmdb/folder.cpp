@@ -17,7 +17,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "db_engine.h"
+#include "db_engine.hpp"
 #define MAXIMUM_RECIEVE_FOLDERS				2000
 #define SYSTEM_ALLOCATED_EID_RANGE			10000
 

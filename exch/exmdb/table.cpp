@@ -30,8 +30,8 @@
 #include <gromox/sortorder_set.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "db_engine.h"
-#include "parser.h"
+#include "db_engine.hpp"
+#include "parser.hpp"
 
 using LLU = unsigned long long;
 using namespace gromox;

@@ -5,7 +5,7 @@
 #include <gromox/exmdb_server.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
-#include "db_engine.h"
+#include "db_engine.hpp"
 
 namespace {
 
