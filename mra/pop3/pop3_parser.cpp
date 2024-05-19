@@ -13,6 +13,7 @@
 #include <mutex>
 #include <pthread.h>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 #include <libHX/ctype_helper.h>
 #include <libHX/io.h>
@@ -21,6 +22,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
@@ -560,9 +562,9 @@ SCHEDULE_CONTEXT **pop3_parser_get_contexts_list()
  *         DISPATCH_LIST			need to respond list
  */
 static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
-    pop3_context *pcontext)
+    pop3_context *ctx) try
 {
-	static constexpr std::pair<const char *, int (*)(const char *, int, pop3_context *)> proc[] = {
+	static constexpr std::pair<const char *, pophnd *> proc[] = {
 		{"CAPA", pop3_cmd_handler_capa},
 		{"DELE", pop3_cmd_handler_dele},
 		{"LIST", pop3_cmd_handler_list},
@@ -577,15 +579,17 @@ static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 		{"UIDL", pop3_cmd_handler_uidl},
 		{"USER", pop3_cmd_handler_user},
 	};
-	auto scmp = [](decltype(*proc) &p, const char *line) { return strncasecmp(line, p.first, strlen(p.first)) < 0; };
-	auto it = std::lower_bound(std::begin(proc), std::end(proc), cmd_line, scmp);
-	if (it != std::end(proc)) {
-		auto z = strlen(it->first);
-		if (strncasecmp(cmd_line, it->first, z) == 0 &&
-		    (cmd_line[z] == '\0' || HX_isspace(cmd_line[z])))
-			return it->second(cmd_line, line_length, pcontext);
-	}
-	return pop3_cmd_handler_else(cmd_line, line_length, pcontext);
+	auto argv = gx_split(std::string_view(cmd_line, line_length), ' ');
+	if (argv.size() < 1)
+		return 1703;
+	auto scmp = [](decltype(*proc) &p, const char *cmd) { return strcasecmp(p.first, cmd) < 0; };
+	auto it = std::lower_bound(std::begin(proc), std::end(proc), argv[0].c_str(), scmp);
+	if (it != std::end(proc) && strcasecmp(argv[0].c_str(), it->first) == 0)
+		return it->second(std::move(argv), ctx);
+	return pop3_cmd_handler_else(std::move(argv), ctx);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1248: ENOMEM");
+	return 1730;
 }
 
 static int pop3_parser_dispatch_cmd(const char *line, int len, pop3_context *ctx)

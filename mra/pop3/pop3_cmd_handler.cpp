@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 /* 
  * collection of functions for handling the pop3 command
  */ 
@@ -11,6 +13,7 @@
 #include <fcntl.h>
 #include <string>
 #include <unistd.h>
+#include <utility>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -34,8 +37,7 @@ template<typename T> static inline T *sa_get_item(std::vector<T> &arr, size_t id
 	return idx < arr.size() ? &arr[idx] : nullptr;
 }
 
-int pop3_cmd_handler_capa(const char* cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_capa(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	char buff[256];
 
@@ -56,8 +58,7 @@ int pop3_cmd_handler_capa(const char* cmd_line, int line_length,
 	return DISPATCH_CONTINUE;
 }
 
-int pop3_cmd_handler_stls(const char *cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_stls(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	if (pcontext->connection.ssl != nullptr)
 		return 1703;
@@ -69,27 +70,18 @@ int pop3_cmd_handler_stls(const char *cmd_line, int line_length,
 	return 1724;
 }
 
-
-int pop3_cmd_handler_user(const char* cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_user(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char buff[1024];
     
 	if (g_support_tls && g_force_tls && pcontext->connection.ssl == nullptr)
 		return 1726;
-	if (line_length <= 5 || line_length > 255 + 1 + 4)
+	if (argv.size() < 2)
 		return 1704;
-	
-    /* command error, cannot be recognized by system */
-	if (cmd_line[4] != ' ')
-		return 1703;
 	if (pcontext->is_login)
 		return 1720;
-	auto umx = std::min(static_cast<size_t>(line_length - 5), std::size(pcontext->username) - 1);
-	memcpy(pcontext->username, cmd_line + 5, umx);
-	pcontext->username[umx] = '\0';
-	HX_strltrim(pcontext->username);
+	gx_strlcpy(pcontext->username, argv[1].c_str(), std::size(pcontext->username));
 	if (!system_services_judge_user(pcontext->username)) {
 		string_length = sprintf(buff, "%s%s%s",
 				resource_get_pop3_code(1717, 1, &string_length),
@@ -117,16 +109,10 @@ static bool store_owner_over(const char *actor, const char *mbox, const char *mb
 	return ok;
 }
 
-int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_pass(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
-	char temp_password[256];
-    
-	if (line_length <= 5 || line_length > 255 + 1 + 4)
+	if (argv.size() < 2)
 		return 1704;
-    /* command error, cannot be recognized by system */
-	if (cmd_line[4] != ' ')
-		return 1703;
 	if (pcontext->is_login)
 		return 1720;
 	auto target_mbox = strchr(pcontext->username, '!');
@@ -136,10 +122,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 		return 1705;
 	
 	sql_meta_result mres_auth, mres /* target */;
-    memcpy(temp_password, cmd_line + 5, line_length - 5);
-    temp_password[line_length - 5] = '\0';
-	HX_strltrim(temp_password);
-	if (!system_services_auth_login(pcontext->username, temp_password,
+	if (!system_services_auth_login(pcontext->username, argv[1].c_str(),
 	    USER_PRIVILEGE_POP3, mres_auth)) {
 		pop3_parser_log_info(pcontext, LV_WARN, "login rejected: %s",
 			mres_auth.errstr.c_str());
@@ -152,7 +135,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 		return 1714 | DISPATCH_CONTINUE;
 	}
 
-	safe_memset(temp_password, 0, std::size(temp_password));
+	safe_memset(argv[1].data(), 0, argv[1].size());
 	if (target_mbox == nullptr) {
 		mres = std::move(mres_auth);
 	} else {
@@ -209,13 +192,12 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 	return 1700;
 }
 
-int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_stat(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char temp_buff[1024];
     
-	if (line_length != 4)
+	if (argv.size() != 1)
 		return 1704;
 	if (!pcontext->is_login)
 		return 1708;
@@ -226,18 +208,12 @@ int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
     return DISPATCH_CONTINUE;    
 }
 
-int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_uidl(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char temp_buff[1024];
-	char temp_command[1024];
 	
-	memcpy(temp_command, cmd_line, line_length);
-	temp_command[line_length] = '\0';
-	HX_strrtrim(temp_command);
-	
-	if (4 == strlen(temp_command)) {
+	if (argv.size() == 1) {
 		if (!pcontext->is_login)
 			return 1708;
 		pcontext->stream.clear();
@@ -264,12 +240,11 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		return DISPATCH_LIST;
 	}
 	
-	if (temp_command[4] != ' ')
+	if (argv.size() < 2)
 		return 1703;
 	if (!pcontext->is_login)
 		return 1708;
-	
-	int n = strtol(temp_command + 5, nullptr, 0);
+	int n = strtol(argv[1].c_str(), nullptr, 0);
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->msg_array.size()) {
 		auto punit = sa_get_item(pcontext->msg_array, n - 1);
 		auto z = gx_snprintf(temp_buff, std::size(temp_buff),
@@ -280,18 +255,12 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 	return 1707;
 }
 
-int pop3_cmd_handler_list(const char* cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_list(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char temp_buff[1024];
-	char temp_command[1024];
 	
-	memcpy(temp_command, cmd_line, line_length);
-	temp_command[line_length] = '\0';
-	HX_strrtrim(temp_command);
-	
-	if (4 == strlen(temp_command)) {
+	if (argv.size() == 1) {
 		if (!pcontext->is_login)
 			return 1708;
 		pcontext->stream.clear();
@@ -318,12 +287,11 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		return DISPATCH_LIST;
 	}
 	
-	if (temp_command[4] != ' ')
+	if (argv.size() < 2)
 		return 1703;
 	if (!pcontext->is_login)
 		return 1708;
-	
-	int n = strtol(temp_command + 5, nullptr, 0);
+	int n = strtol(argv[1].c_str(), nullptr, 0);
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->msg_array.size()) {
 		auto punit = sa_get_item(pcontext->msg_array, n - 1);
 		string_length = sprintf(temp_buff, "+OK %d %zu\r\n", n, punit->size);	
@@ -333,23 +301,14 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	return 1707;
 }
 
-int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_retr(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
-	char temp_command[256];
-	
-	memcpy(temp_command, cmd_line, line_length);
-	temp_command[line_length] = '\0';
-	HX_strrtrim(temp_command);
-	
-	if (strlen(temp_command) <= 5)
+	if (argv.size() < 2)
 		return 1704;
-	if (temp_command[4] != ' ')
-		return 1703;
 	if (!pcontext->is_login)
 		return 1708;
 	
-	int n = strtol(temp_command + 5, nullptr, 0);
+	int n = strtol(argv[1].c_str(), nullptr, 0);
 	pcontext->cur_line = -1;
 	pcontext->until_line = 0x7FFFFFFF;
 	if (n <= 0 || static_cast<size_t>(n) > pcontext->msg_array.size())
@@ -381,23 +340,14 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	return DISPATCH_DATA;
 }
 
-int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_dele(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
-	char temp_command[256];
-	
-	memcpy(temp_command, cmd_line, line_length);
-	temp_command[line_length] = '\0';
-	HX_strrtrim(temp_command);
-	
-	if (strlen(temp_command) <= 5)
+	if (argv.size() < 2)
 		return 1704;
-	if (temp_command[4] != ' ')
-		return 1703;
 	if (!pcontext->is_login)
 		return 1708;
 	
-	int n = strtol(temp_command + 5, nullptr, 0);
+	int n = strtol(argv[1].c_str(), nullptr, 0);
 	if (n <= 0 || static_cast<size_t>(n) > pcontext->msg_array.size())
 		return 1707;
 	auto punit = sa_get_item(pcontext->msg_array, n - 1);
@@ -411,36 +361,15 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	return 1700;
 }
 
-int pop3_cmd_handler_top(const char* cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_top(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
-	int n;
-	char *ptoken;
-	char temp_buff[1024];
-	char temp_command[256];
-	
-	memcpy(temp_command, cmd_line, line_length);
-	temp_command[line_length] = '\0';
-	HX_strrtrim(temp_command);
-	
-	if (strlen(temp_command) <= 4)
+	if (argv.size() < 2)
 		return 1704;
-	if (temp_command[3] != ' ')
-		return 1703;
 	if (!pcontext->is_login)
 		return 1708;
 	
-	gx_strlcpy(temp_buff, &temp_command[4], std::size(temp_buff));
-	HX_strltrim(temp_buff);
-	ptoken = strchr(temp_buff, ' ');
-	if (NULL == ptoken) {
-		n = strtol(temp_buff, nullptr, 0);
-		pcontext->until_line = 0x7FFFFFFF;
-	} else {
-		*ptoken = '\0';
-		n = strtol(temp_buff, nullptr, 0);
-		pcontext->until_line = strtol(ptoken + 1, nullptr, 0);
-	}
+	int n = strtol(argv[1].c_str(), nullptr, 0);
+	pcontext->until_line = argv.size() >= 3 ? strtol(argv[2].c_str(), nullptr, 0) : 0x7FFFFFFF;
 	pcontext->cur_line = -1;
 	if (n <= 0 || static_cast<size_t>(n) > pcontext->msg_array.size())
 		return 1707;
@@ -464,13 +393,12 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	return DISPATCH_DATA;
 }
 
-int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_quit(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char temp_buff[1024];
     
-	if (line_length != 4)
+	if (argv.size() != 1)
 		return 1704;
 	if (pcontext->is_login && pcontext->delmsg_list.size() > 0) {
 		switch (system_services_delete_mail(pcontext->maildir, "inbox",
@@ -514,10 +442,9 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 	
 }
 
-int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_rset(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
-	if (line_length != 4)
+	if (argv.size() != 1)
 		return 1704;
 	if (pcontext->is_login)
 		for (auto m : pcontext->delmsg_list)
@@ -525,16 +452,14 @@ int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
 	return 1700;
 }    
 
-int pop3_cmd_handler_noop(const char* cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_noop(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
-	if (line_length != 4)
+	if (argv.size() != 1)
 		return 1704;
 	return 1700;
 }
 
-int pop3_cmd_handler_else(const char* cmd_line, int line_length,
-    pop3_context *pcontext)
+int pop3_cmd_handler_else(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
     /* command not implement*/
 	return 1703;
