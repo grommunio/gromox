@@ -14,6 +14,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <vector>
+#include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
@@ -561,35 +562,30 @@ SCHEDULE_CONTEXT **pop3_parser_get_contexts_list()
 static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
     pop3_context *pcontext)
 {
-    if (0 == strncasecmp(cmd_line, "CAPA", 4)) {
-        return pop3_cmd_handler_capa(cmd_line, line_length, pcontext);    
-	} else if (0 == strncasecmp(cmd_line, "STLS", 4)) {
-        return pop3_cmd_handler_stls(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "USER", 4)) {
-        return pop3_cmd_handler_user(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "PASS", 4)) {
-        return pop3_cmd_handler_pass(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "STAT", 4)) {
-        return pop3_cmd_handler_stat(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "UIDL", 4)) {
-        return pop3_cmd_handler_uidl(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "LIST", 4)) {
-        return pop3_cmd_handler_list(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "RETR", 4)) {
-        return pop3_cmd_handler_retr(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "RSET", 4)) {
-        return pop3_cmd_handler_rset(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "NOOP", 4)) {
-        return pop3_cmd_handler_noop(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "DELE", 4)) {
-        return pop3_cmd_handler_dele(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "TOP", 3)) {
-        return pop3_cmd_handler_top(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "QUIT", 4)) {
-        return pop3_cmd_handler_quit(cmd_line, line_length, pcontext);    
-    } else {
-        return pop3_cmd_handler_else(cmd_line, line_length, pcontext);    
-    }
+	static constexpr std::pair<const char *, int (*)(const char *, int, pop3_context *)> proc[] = {
+		{"CAPA", pop3_cmd_handler_capa},
+		{"DELE", pop3_cmd_handler_dele},
+		{"LIST", pop3_cmd_handler_list},
+		{"NOOP", pop3_cmd_handler_noop},
+		{"PASS", pop3_cmd_handler_pass},
+		{"QUIT", pop3_cmd_handler_quit},
+		{"RETR", pop3_cmd_handler_retr},
+		{"RSET", pop3_cmd_handler_rset},
+		{"STAT", pop3_cmd_handler_stat},
+		{"STLS", pop3_cmd_handler_stls},
+		{"TOP", pop3_cmd_handler_top},
+		{"UIDL", pop3_cmd_handler_uidl},
+		{"USER", pop3_cmd_handler_user},
+	};
+	auto scmp = [](decltype(*proc) &p, const char *line) { return strncasecmp(line, p.first, strlen(p.first)) < 0; };
+	auto it = std::lower_bound(std::begin(proc), std::end(proc), cmd_line, scmp);
+	if (it != std::end(proc)) {
+		auto z = strlen(it->first);
+		if (strncasecmp(cmd_line, it->first, z) == 0 &&
+		    (cmd_line[z] == '\0' || HX_isspace(cmd_line[z])))
+			return it->second(cmd_line, line_length, pcontext);
+	}
+	return pop3_cmd_handler_else(cmd_line, line_length, pcontext);
 }
 
 static int pop3_parser_dispatch_cmd(const char *line, int len, pop3_context *ctx)
