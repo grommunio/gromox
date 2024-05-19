@@ -39,6 +39,7 @@
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include "pop3.hpp"
+#include "../../lib/haproxy.cpp"
 
 using namespace gromox;
 
@@ -65,6 +66,7 @@ static std::string g_listener_addr;
 static int g_listener_sock = -1, g_listener_ssl_sock = -1;
 uint16_t g_listener_port, g_listener_ssl_port;
 static pthread_t g_ssl_thr_id;
+static unsigned int g_haproxy_level;
 
 static struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -85,6 +87,7 @@ static std::vector<static_module> g_dfl_svc_plugins = {
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "pop3_fd_limit", CFG_ALIAS},
 	{"pop3_fd_limit", "0", CFG_SIZE},
+	{"pop3_accept_haproxy", "0", CFG_SIZE},
 	CFG_TABLE_END,
 };
 
@@ -136,6 +139,14 @@ static bool pop3_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
 	}
 	mlog_init("gromox-pop3", pconfig->get_value("pop3_log_file"), pconfig->get_ll("pop3_log_level"));
 	g_popcmd_debug = pconfig->get_ll("pop3_cmd_debug");
+
+	if (gxcfg == nullptr)
+		gxcfg = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
+	if (opt_config_file != nullptr && gxcfg == nullptr) {
+		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
+		return false;
+	}
+	g_haproxy_level = gxcfg->get_ll("pop3_accept_haproxy");
 	return true;
 }
 
@@ -192,6 +203,10 @@ static void *p3ls_thrwork(void *arg)
 		}
 		if (sockd2 == -1)
 			continue;
+		if (haproxy_intervene(sockd2, g_haproxy_level, &client_peer) < 0) {
+			close(sockd2);
+			continue;
+		}
 		int ret = getnameinfo(reinterpret_cast<sockaddr *>(&client_peer),
 		          addrlen, client_hostip, sizeof(client_hostip),
 		          client_txtport, sizeof(client_txtport),
