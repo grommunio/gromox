@@ -41,6 +41,7 @@ static void pop3_parser_context_clear(pop3_context *);
 unsigned int g_popcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_tls, g_force_tls;
+static bool g_support_haproxy;
 static size_t g_context_num, g_retrieving_size;
 static time_duration g_timeout;
 static std::unique_ptr<pop3_context[]> g_context_list;
@@ -54,7 +55,7 @@ static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 void pop3_parser_init(int context_num, size_t retrieving_size,
     time_duration timeout, int max_auth_times, int block_auth_fail,
     bool support_tls, bool force_tls, const char *certificate_path,
-    const char *cb_passwd, const char *key_path)
+    const char *cb_passwd, const char *key_path, bool support_haproxy)
 {
     g_context_num           = context_num;
 	g_retrieving_size       = retrieving_size;
@@ -62,6 +63,7 @@ void pop3_parser_init(int context_num, size_t retrieving_size,
 	g_max_auth_times        = max_auth_times;
 	g_block_auth_fail       = block_auth_fail;
 	g_support_tls       = support_tls;
+	g_support_haproxy = support_haproxy;
 	g_ssl_mutex_buf         = NULL;
 	if (!support_tls)
 		return;
@@ -570,6 +572,7 @@ static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 		{"LIST", pop3_cmd_handler_list},
 		{"NOOP", pop3_cmd_handler_noop},
 		{"PASS", pop3_cmd_handler_pass},
+		{"PROXY", pop3_cmd_handler_proxy},
 		{"QUIT", pop3_cmd_handler_quit},
 		{"RETR", pop3_cmd_handler_retr},
 		{"RSET", pop3_cmd_handler_rset},
@@ -584,9 +587,13 @@ static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 		return 1703;
 	auto scmp = [](decltype(*proc) &p, const char *cmd) { return strcasecmp(p.first, cmd) < 0; };
 	auto it = std::lower_bound(std::begin(proc), std::end(proc), argv[0].c_str(), scmp);
+	int ret;
 	if (it != std::end(proc) && strcasecmp(argv[0].c_str(), it->first) == 0)
-		return it->second(std::move(argv), ctx);
-	return pop3_cmd_handler_else(std::move(argv), ctx);
+		ret = it->second(std::move(argv), ctx);
+	else
+		ret = pop3_cmd_handler_else(std::move(argv), ctx);
+	ctx->past_first_command = true;
+	return ret;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1248: ENOMEM");
 	return 1730;

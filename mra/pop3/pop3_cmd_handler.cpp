@@ -459,6 +459,25 @@ int pop3_cmd_handler_noop(std::vector<std::string> &&argv, pop3_context *pcontex
 	return 1700;
 }
 
+int pop3_cmd_handler_proxy(std::vector<std::string> &&argv, pop3_context *ctx)
+{
+	if (ctx->past_first_command)
+		return pop3_cmd_handler_else(std::move(argv), ctx);
+	if (argv.size() < 2)
+		return 1704;
+	if (strcmp(argv[1].c_str(), "TCP6") == 0 || strcmp(argv[1].c_str(), "TCP4") == 0) {
+		if (argv.size() < 6)
+			return 1704;
+		auto &cn = ctx->connection;
+		gx_strlcpy(cn.client_ip, argv[3].c_str(), std::size(cn.client_ip));
+		cn.client_port = strtoul(argv[5].c_str(), nullptr, 0);
+	} else if (strcmp(argv[1].c_str(), "UNKNOWN") == 0) {
+	} else {
+		return 1704;
+	}
+	return 0;
+}
+
 int pop3_cmd_handler_else(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
     /* command not implement*/

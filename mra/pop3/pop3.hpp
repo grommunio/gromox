@@ -60,6 +60,7 @@ struct pop3_context final : public schedule_context {
 	std::vector<gromox::MSG_UNIT *> delmsg_list;
 	BOOL is_login = false; /* if user is logged in */
 	BOOL is_stls = false; /* if last command is STLS */
+	bool past_first_command = false;
 	int auth_times = 0;
 	char username[UADDR_SIZE]{};
 	char maildir[256]{};
@@ -80,8 +81,9 @@ extern pophnd
 	pop3_cmd_handler_dele,
 	pop3_cmd_handler_top,
 	pop3_cmd_handler_quit,
+	pop3_cmd_handler_proxy,
 	pop3_cmd_handler_else;
-extern void pop3_parser_init(int context_num, size_t retrieving_size, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
+extern void pop3_parser_init(int context_num, size_t retrieving_size, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path, bool support_haproxy);
 extern int pop3_parser_run();
 extern tproc_status pop3_parser_process(schedule_context *);
 extern void pop3_parser_stop();
