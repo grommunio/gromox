@@ -110,6 +110,7 @@ static std::vector<static_module> g_dfl_svc_plugins = {
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "imap_fd_limit", CFG_ALIAS},
 	{"imap_fd_limit", "0", CFG_SIZE},
+	{"imap_support_haproxy", "0", CFG_BOOL},
 	CFG_TABLE_END,
 };
 
@@ -605,6 +606,7 @@ int main(int argc, const char **argv)
 	auto cleanup_4 = make_scope_exit(listener_stop);
 
 	filedes_limit_bump(gxconfig->get_ll("imap_fd_limit"));
+	auto support_haproxy = gxconfig->get_ll("imap_support_haproxy");
 	service_init({g_config_file, g_dfl_svc_plugins, context_num});
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
@@ -629,7 +631,8 @@ int main(int argc, const char **argv)
 	imap_parser_init(context_num, context_aver_mitem, context_max_mem,
 		imap_conn_timeout, autologout_time, imap_auth_times,
 		block_interval_auth, imap_support_tls, imap_force_tls,
-		certificate_path, cb_passwd, private_key_path);  
+		certificate_path, cb_passwd, private_key_path,
+		support_haproxy);
  
 	if (0 != imap_parser_run()) { 
 		printf("[system]: failed to run imap parser\n");

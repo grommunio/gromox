@@ -129,10 +129,10 @@ struct imap_context final : public schedule_context {
 	STREAM stream; /* stream for writing to imap client */
 	int auth_times = 0;
 	char username[UADDR_SIZE]{}, maildir[256]{}, lang[32]{}, defcharset[32]{};
-	bool synchronizing_literal = true;
+	bool synchronizing_literal = true, past_first_command = false;
 };
 
-extern void imap_parser_init(int context_num, int average_num, size_t cache_size, gromox::time_duration timeout, gromox::time_duration autologout_time, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
+extern void imap_parser_init(int context_num, int average_num, size_t cache_size, gromox::time_duration timeout, gromox::time_duration autologout_time, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path, bool support_haproxy = false);
 extern int imap_parser_run();
 extern tproc_status imap_parser_process(schedule_context *);
 extern void imap_parser_stop();
@@ -156,6 +156,7 @@ extern int imap_cmd_parser_id(int argc, char **argv, imap_context *);
 extern int imap_cmd_parser_noop(int argc, char **argv, imap_context *);
 extern int imap_cmd_parser_logout(int argc, char **argv, imap_context *);
 extern int imap_cmd_parser_starttls(int argc, char **argv, imap_context *);
+extern int imap_cmd_parser_proxy(int argc, char **argv, imap_context *);
 extern int imap_cmd_parser_authenticate(int argc, char **argv, imap_context *);
 extern int imap_cmd_parser_username(int argc, char **argv, imap_context *);
 extern int imap_cmd_parser_password(int argc, char **argv, imap_context *);

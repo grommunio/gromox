@@ -1344,6 +1344,25 @@ int imap_cmd_parser_starttls(int argc, char **argv, imap_context *pcontext)
 	return 1704;
 }
 
+int imap_cmd_parser_proxy(int argc, char **argv, imap_context *ctx)
+{
+	if (argc < 2)
+		return DISPATCH_SHOULD_CLOSE;
+	if (strcmp(argv[1], "TCP6") == 0 || strcmp(argv[1], "TCP4") == 0) {
+		if (argc < 6)
+			return DISPATCH_SHOULD_CLOSE;
+		gx_strlcpy(ctx->connection.client_ip, argv[2], std::size(ctx->connection.client_ip));
+		char *e = nullptr;
+		ctx->connection.client_port = strtoul(argv[4], &e, 0);
+		if (e == nullptr || *e != '\0')
+			return DISPATCH_SHOULD_CLOSE;
+	} else if (strcmp(argv[1], "UNKNOWN") == 0) {
+	} else {
+		return DISPATCH_SHOULD_CLOSE;
+	}
+	return DISPATCH_CONTINUE;
+}
+
 int imap_cmd_parser_authenticate(int argc, char **argv, imap_context *pcontext)
 {
 	if (g_support_tls && g_force_tls && pcontext->connection.ssl == nullptr)
