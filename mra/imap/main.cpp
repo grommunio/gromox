@@ -40,6 +40,7 @@
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include "imap.hpp"
+#include "../../lib/haproxy.cpp"
 
 using namespace gromox;
 
@@ -88,6 +89,7 @@ static gromox::atomic_bool g_stop_accept;
 static std::string g_listener_addr;
 static int g_listener_sock = -1, g_listener_ssl_sock = -1;
 static uint16_t g_listener_port;
+static unsigned int g_haproxy_level;
 uint16_t g_listener_ssl_port;
 
 static struct HXoption g_options_table[] = {
@@ -110,6 +112,7 @@ static std::vector<static_module> g_dfl_svc_plugins = {
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "imap_fd_limit", CFG_ALIAS},
 	{"imap_fd_limit", "0", CFG_SIZE},
+	{"imap_accept_haproxy", "0", CFG_SIZE},
 	CFG_TABLE_END,
 };
 
@@ -160,6 +163,14 @@ static bool imap_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
 	mlog_init("gromox-imap", cfg->get_value("imap_log_file"), cfg->get_ll("imap_log_level"));
 	g_imapcmd_debug = cfg->get_ll("imap_cmd_debug");
 	g_rfc9051_enable = cfg->get_ll("imap_rfc9051");
+
+	if (gxcfg == nullptr)
+		gxcfg = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
+	if (opt_config_file != nullptr && gxcfg == nullptr) {
+		fprintf(stderr, "config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		return false;
+	}
+	g_haproxy_level = gxcfg->get_ll("imap_accept_haproxy");
 	return true;
 }
 
@@ -259,6 +270,10 @@ static void *imls_thrwork(void *arg)
 		}
 		if (sockd2 == -1)
 			continue;
+		if (haproxy_intervene(sockd2, g_haproxy_level, &client_peer) < 0) {
+			close(sockd2);
+			continue;
+		}
 		auto ret = getnameinfo(reinterpret_cast<sockaddr *>(&client_peer),
 		           addrlen, client_hostip, sizeof(client_hostip),
 		           client_txtport, sizeof(client_txtport),
