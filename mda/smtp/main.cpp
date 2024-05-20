@@ -38,6 +38,7 @@
 #include <gromox/util.hpp>
 #include "smtp_aux.hpp"
 #include "smtp_parser.hpp"
+#include "../../lib/haproxy.cpp"
 
 using namespace gromox;
 
@@ -56,6 +57,7 @@ static pthread_t g_thr_id;
 static gromox::atomic_bool g_stop_accept;
 static std::string g_listener_addr;
 static int g_listener_sock = -1, g_listener_ssl_sock = -1;
+static unsigned int g_haproxy_level;
 uint16_t g_listener_port, g_listener_ssl_port;
 static pthread_t g_ssl_thr_id;
 
@@ -77,6 +79,7 @@ static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "lda_fd_limit", CFG_ALIAS},
 	{"lda_fd_limit", "0", CFG_SIZE},
 	{"lda_recipient_delimiter", ""},
+	{"lda_accept_haproxy", "0", CFG_SIZE},
 	CFG_TABLE_END,
 };
 
@@ -120,6 +123,7 @@ static bool dq_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
 		return false;
 	}
 	g_rcpt_delimiter = znul(gxcfg->get_value("lda_recipient_delimiter"));
+	g_haproxy_level = gxcfg->get_ll("lda_accept_haproxy");
 	return true;
 }
 
@@ -167,6 +171,10 @@ static void *smls_thrwork(void *arg)
 		}
 		if (sockd2 == -1)
 			continue;
+		if (haproxy_intervene(sockd2, g_haproxy_level, &client_peer) < 0) {
+			close(sockd2);
+			continue;
+		}
 		auto ret = getnameinfo(reinterpret_cast<sockaddr *>(&client_peer),
 		           addrlen, client_hostip, sizeof(client_hostip),
 		           client_txtport, sizeof(client_txtport),
