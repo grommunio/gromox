@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 /* smtp parser is a module, which first read data from socket, parses the smtp 
  * commands and then do the corresponding action. 
  */ 
+#include <algorithm>
 #include <cerrno>
 #include <cstdarg>
 #include <cstdio>
@@ -13,6 +16,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
@@ -531,6 +535,23 @@ SCHEDULE_CONTEXT **smtp_parser_get_contexts_list()
 static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 	SMTP_CONTEXT *pcontext)
 {
+	static constexpr struct {
+		char cmd[9];
+		unsigned int len;
+		int (*func)(const char *, int, smtp_context *);
+	} proc[] = {
+		{"AUTH", 4, smtp_cmd_handler_auth},
+		{"DATA", 4, smtp_cmd_handler_data},
+		{"ETRN", 4, smtp_cmd_handler_etrn},
+		{"HELP", 4, smtp_cmd_handler_help},
+		{"MAIL", 4, smtp_cmd_handler_mail},
+		{"NOOP", 4, smtp_cmd_handler_noop},
+		{"QUIT", 4, smtp_cmd_handler_quit},
+		{"RCPT", 4, smtp_cmd_handler_rcpt},
+		{"RSET", 4, smtp_cmd_handler_rset},
+		{"STARTTLS", 8, smtp_cmd_handler_starttls},
+		{"VRFY", 4, smtp_cmd_handler_vrfy},
+	};
 	/* check the line length */
 	if (line_length > 1000) {
 		/* 500 syntax error - line too long */
@@ -546,31 +567,12 @@ static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 		if (strncasecmp(cmd_line, "EHLO", 4) == 0)
 			return smtp_cmd_handler_ehlo(cmd_line, line_length, pcontext);
 	}
-	if (strncasecmp(cmd_line, "STARTTLS", 8) == 0) {
-		return smtp_cmd_handler_starttls(cmd_line, line_length, pcontext);
-	} else if (0 == strncasecmp(cmd_line, "AUTH", 4)) {
-		return smtp_cmd_handler_auth(cmd_line, line_length, pcontext);    
-	} else if (0 == strncasecmp(cmd_line, "MAIL", 4)) {
-		return smtp_cmd_handler_mail(cmd_line, line_length, pcontext);    
-	} else if (0 == strncasecmp(cmd_line, "RCPT", 4)) {
-		return smtp_cmd_handler_rcpt(cmd_line, line_length, pcontext);    
-	} else if (0 == strncasecmp(cmd_line, "DATA", 4)) {
-		return smtp_cmd_handler_data(cmd_line, line_length, pcontext);    
-	} else if (0 == strncasecmp(cmd_line, "RSET", 4)) {
-		return smtp_cmd_handler_rset(cmd_line, line_length, pcontext);    
-	} else if (0 == strncasecmp(cmd_line, "NOOP", 4)) {
-		return smtp_cmd_handler_noop(cmd_line, line_length, pcontext);    
-	} else if (0 == strncasecmp(cmd_line, "HELP", 4)) {
-		return smtp_cmd_handler_help(cmd_line, line_length, pcontext);    
-	} else if (0 == strncasecmp(cmd_line, "VRFY", 4)) {
-		return smtp_cmd_handler_vrfy(cmd_line, line_length, pcontext);    
-	} else if (0 == strncasecmp(cmd_line, "QUIT", 4)) {
-		return smtp_cmd_handler_quit(cmd_line, line_length, pcontext);    
-	} else if (0 == strncasecmp(cmd_line, "ETRN", 4)) {
-		return smtp_cmd_handler_etrn(cmd_line, line_length, pcontext);    
-	} else {
-		return smtp_cmd_handler_else(cmd_line, line_length, pcontext);    
-	}
+	auto scmp = [](decltype(*proc) &p, const char *line) { return strncasecmp(p.cmd, line, p.len) < 0; };
+	auto it = std::lower_bound(std::begin(proc), std::end(proc), cmd_line, scmp);
+	if (it != std::end(proc) && strncasecmp(cmd_line, it->cmd, it->len) == 0 &&
+	    (cmd_line[it->len] == '\0' || HX_isspace(cmd_line[it->len])))
+		return it->func(cmd_line, line_length, pcontext);
+	return smtp_cmd_handler_else(cmd_line, line_length, pcontext);
 }
 
 static int smtp_parser_dispatch_cmd(const char *cmd, int len, SMTP_CONTEXT *ctx)
