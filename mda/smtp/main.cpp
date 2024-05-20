@@ -76,6 +76,7 @@ static std::vector<static_module> g_dfl_svc_plugins = {
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "lda_fd_limit", CFG_ALIAS},
 	{"lda_fd_limit", "0", CFG_SIZE},
+	{"lda_recipient_delimiter", ""},
 	CFG_TABLE_END,
 };
 
@@ -109,16 +110,11 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 
 static void term_handler(int signo);
 
-static constexpr const cfg_directive dq_gxcfg_dflt[] = {
-	{"lda_recipient_delimiter", ""},
-	CFG_TABLE_END,
-};
-
 static bool dq_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
     std::shared_ptr<CONFIG_FILE> pconfig = nullptr)
 {
 	if (gxcfg == nullptr)
-		gxcfg = config_file_prg(opt_config_file, "gromox.cfg", dq_gxcfg_dflt);
+		gxcfg = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxcfg == nullptr) {
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
