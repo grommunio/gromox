@@ -76,6 +76,7 @@ static std::vector<static_module> g_dfl_svc_plugins = {
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "lda_fd_limit", CFG_ALIAS},
 	{"lda_fd_limit", "0", CFG_SIZE},
+	{"lda_support_haproxy", "0", CFG_BOOL},
 	CFG_TABLE_END,
 };
 
@@ -498,6 +499,7 @@ int main(int argc, const char **argv)
 	}
 	auto cleanup_8 = make_scope_exit(system_services_stop);
 
+	scfg.support_haproxy = gxconfig->get_ll("lda_support_haproxy");
 	smtp_parser_init(scfg);
 	if (0 != smtp_parser_run()) { 
 		mlog(LV_ERR, "system: failed to start SMTP parser");

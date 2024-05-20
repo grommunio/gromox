@@ -69,6 +69,7 @@ struct smtp_context final : public schedule_context {
 	envelope_info menv; /* for recording the mail information */
 	FLUSH_INFO flusher{}; /* the flusher for saving mail information */
 	BOOL is_spam = false; /* whether the mail is spam */
+	bool past_first_command = false;
 	unsigned int session_num = 0; /* session number of the context */
 	size_t total_length = 0; /* mail total length */
 	char last_bytes[4]{}; /* last bytes for part mail */
@@ -81,6 +82,7 @@ struct smtp_param {
 	unsigned int context_num = 0;
 	BOOL support_pipeline = TRUE;
 	BOOL support_starttls = false, force_starttls = false;
+	bool support_haproxy = false;
 	size_t max_mail_length = 64ULL * 1024 * 1024;
 	size_t flushing_size = 0;
 	gromox::time_duration timeout{std::chrono::seconds{0x7fffffff}};

@@ -557,6 +557,10 @@ static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 		/* 500 syntax error - line too long */
 		return 502;
 	}
+	auto fc = !pcontext->past_first_command;
+	pcontext->past_first_command = true;
+	if (fc && strncasecmp(cmd_line, "PROXY", 5) == 0)
+		return smtp_cmd_handler_proxy(cmd_line, line_length, pcontext);
 	if (g_param.cmd_prot & HT_LMTP) {
 		if (strncasecmp(cmd_line, "LHLO", 4) == 0)
 			return smtp_cmd_handler_lhlo(cmd_line, line_length, pcontext);
