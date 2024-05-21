@@ -85,6 +85,7 @@ static std::vector<static_module> g_dfl_svc_plugins = {
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "pop3_fd_limit", CFG_ALIAS},
 	{"pop3_fd_limit", "0", CFG_SIZE},
+	{"pop3_support_haproxy", "0", CFG_BOOL},
 	CFG_TABLE_END,
 };
 
@@ -528,6 +529,7 @@ int main(int argc, const char **argv)
 	auto cleanup_4 = make_scope_exit(listener_stop);
 
 	filedes_limit_bump(gxconfig->get_ll("pop3_fd_limit"));
+	auto support_haproxy = gxconfig->get_ll("pop3_support_haproxy");
 	service_init({g_config_file, g_dfl_svc_plugins, context_num});
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
@@ -551,7 +553,7 @@ int main(int argc, const char **argv)
 	pop3_parser_init(context_num, context_max_mem, pop3_conn_timeout,
 		pop3_auth_times, block_interval_auth, pop3_support_tls,
 		pop3_force_tls, certificate_path, cb_passwd,
-		private_key_path);
+		private_key_path, support_haproxy);
  
 	if (0 != pop3_parser_run()) { 
 		printf("[system]: failed to run pop3 parser\n");

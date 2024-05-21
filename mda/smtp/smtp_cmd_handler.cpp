@@ -111,6 +111,27 @@ int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,
 	return 210;
 }
 
+int smtp_cmd_handler_proxy(const char *cmd_line, int len, smtp_context *ctx) try
+{
+	auto argv = gx_split(std::string_view(cmd_line, len), ' ');
+	if (argv.size() < 2)
+		return 500;
+	if (strcmp(argv[1].c_str(), "TCP6") == 0 || strcmp(argv[1].c_str(), "TCP4") == 0) {
+		if (argv.size() < 6)
+			return 500;
+		auto &cn = ctx->connection;
+		gx_strlcpy(cn.client_ip, argv[3].c_str(), std::size(cn.client_ip));
+		cn.client_port = strtoul(argv[5].c_str(), nullptr, 0);
+	} else if (strcmp(argv[1].c_str(), "UNKNOWN") == 0) {
+	} else {
+		return 500;
+	}
+	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1249: ENOMEM");
+	return 416;
+}
+
 int smtp_cmd_handler_auth(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {

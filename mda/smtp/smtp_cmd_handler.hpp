@@ -20,6 +20,7 @@ int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext);
 int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,
 	SMTP_CONTEXT *pcontext);
+extern int smtp_cmd_handler_proxy(const char *cmd, int len, smtp_context *);
 int smtp_cmd_handler_auth(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext);
 int smtp_cmd_handler_mail(const char* cmd_line, int line_length,

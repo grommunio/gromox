@@ -64,6 +64,7 @@ static int imap_parser_wrdat_retrieve(imap_context *);
 unsigned int g_imapcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_tls, g_force_tls;
+static bool g_support_haproxy;
 static std::atomic<int> g_sequence_id;
 static int g_average_num;
 static size_t g_context_num, g_cache_size;
@@ -85,7 +86,8 @@ static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 void imap_parser_init(int context_num, int average_num, size_t cache_size,
     time_duration timeout, time_duration autologout_time, int max_auth_times,
     int block_auth_fail, bool support_tls, bool force_tls,
-	const char *certificate_path, const char *cb_passwd, const char *key_path)
+    const char *certificate_path, const char *cb_passwd, const char *key_path,
+    bool support_haproxy)
 {
     g_context_num           = context_num;
 	g_average_num           = average_num;
@@ -95,6 +97,7 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	g_max_auth_times        = max_auth_times;
 	g_block_auth_fail       = block_auth_fail;
 	g_support_tls       = support_tls;
+	g_support_haproxy = support_haproxy;
 	g_ssl_mutex_buf         = NULL;
 	g_notify_stop = true;
 	g_sequence_id = 0;
@@ -1372,7 +1375,11 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv,
 	};
 
 	auto scmp = [](decltype(*proc) &p, const char *cmd) { return strcasecmp(p.first, cmd) < 0; };
-	if (strcasecmp(argv[1], "UID") == 0) {
+	auto fc = !pcontext->past_first_command;
+	pcontext->past_first_command = true;
+	if (fc && g_support_haproxy && strcmp(argv[0], "PROXY") == 0) {
+		return imap_cmd_parser_proxy(argc, argv, pcontext);
+	} else if (strcasecmp(argv[1], "UID") == 0) {
 		auto it = std::lower_bound(std::begin(proc_uid), std::end(proc_uid), argv[2], scmp);
 		if (it != std::end(proc_uid) && strcasecmp(argv[2], it->first) == 0)
 			return it->second(argc, argv, pcontext);

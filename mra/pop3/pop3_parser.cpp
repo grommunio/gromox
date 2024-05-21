@@ -13,13 +13,16 @@
 #include <mutex>
 #include <pthread.h>
 #include <unistd.h>
+#include <utility>
 #include <vector>
+#include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
 #include <gromox/config_file.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
@@ -38,6 +41,7 @@ static void pop3_parser_context_clear(pop3_context *);
 unsigned int g_popcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_tls, g_force_tls;
+static bool g_support_haproxy;
 static size_t g_context_num, g_retrieving_size;
 static time_duration g_timeout;
 static std::unique_ptr<pop3_context[]> g_context_list;
@@ -51,7 +55,7 @@ static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 void pop3_parser_init(int context_num, size_t retrieving_size,
     time_duration timeout, int max_auth_times, int block_auth_fail,
     bool support_tls, bool force_tls, const char *certificate_path,
-    const char *cb_passwd, const char *key_path)
+    const char *cb_passwd, const char *key_path, bool support_haproxy)
 {
     g_context_num           = context_num;
 	g_retrieving_size       = retrieving_size;
@@ -59,6 +63,7 @@ void pop3_parser_init(int context_num, size_t retrieving_size,
 	g_max_auth_times        = max_auth_times;
 	g_block_auth_fail       = block_auth_fail;
 	g_support_tls       = support_tls;
+	g_support_haproxy = support_haproxy;
 	g_ssl_mutex_buf         = NULL;
 	if (!support_tls)
 		return;
@@ -559,37 +564,39 @@ SCHEDULE_CONTEXT **pop3_parser_get_contexts_list()
  *         DISPATCH_LIST			need to respond list
  */
 static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
-    pop3_context *pcontext)
+    pop3_context *ctx) try
 {
-    if (0 == strncasecmp(cmd_line, "CAPA", 4)) {
-        return pop3_cmd_handler_capa(cmd_line, line_length, pcontext);    
-	} else if (0 == strncasecmp(cmd_line, "STLS", 4)) {
-        return pop3_cmd_handler_stls(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "USER", 4)) {
-        return pop3_cmd_handler_user(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "PASS", 4)) {
-        return pop3_cmd_handler_pass(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "STAT", 4)) {
-        return pop3_cmd_handler_stat(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "UIDL", 4)) {
-        return pop3_cmd_handler_uidl(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "LIST", 4)) {
-        return pop3_cmd_handler_list(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "RETR", 4)) {
-        return pop3_cmd_handler_retr(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "RSET", 4)) {
-        return pop3_cmd_handler_rset(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "NOOP", 4)) {
-        return pop3_cmd_handler_noop(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "DELE", 4)) {
-        return pop3_cmd_handler_dele(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "TOP", 3)) {
-        return pop3_cmd_handler_top(cmd_line, line_length, pcontext);    
-    } else if (0 == strncasecmp(cmd_line, "QUIT", 4)) {
-        return pop3_cmd_handler_quit(cmd_line, line_length, pcontext);    
-    } else {
-        return pop3_cmd_handler_else(cmd_line, line_length, pcontext);    
-    }
+	static constexpr std::pair<const char *, pophnd *> proc[] = {
+		{"CAPA", pop3_cmd_handler_capa},
+		{"DELE", pop3_cmd_handler_dele},
+		{"LIST", pop3_cmd_handler_list},
+		{"NOOP", pop3_cmd_handler_noop},
+		{"PASS", pop3_cmd_handler_pass},
+		{"PROXY", pop3_cmd_handler_proxy},
+		{"QUIT", pop3_cmd_handler_quit},
+		{"RETR", pop3_cmd_handler_retr},
+		{"RSET", pop3_cmd_handler_rset},
+		{"STAT", pop3_cmd_handler_stat},
+		{"STLS", pop3_cmd_handler_stls},
+		{"TOP", pop3_cmd_handler_top},
+		{"UIDL", pop3_cmd_handler_uidl},
+		{"USER", pop3_cmd_handler_user},
+	};
+	auto argv = gx_split(std::string_view(cmd_line, line_length), ' ');
+	if (argv.size() < 1)
+		return 1703;
+	auto scmp = [](decltype(*proc) &p, const char *cmd) { return strcasecmp(p.first, cmd) < 0; };
+	auto it = std::lower_bound(std::begin(proc), std::end(proc), argv[0].c_str(), scmp);
+	int ret;
+	if (it != std::end(proc) && strcasecmp(argv[0].c_str(), it->first) == 0)
+		ret = it->second(std::move(argv), ctx);
+	else
+		ret = pop3_cmd_handler_else(std::move(argv), ctx);
+	ctx->past_first_command = true;
+	return ret;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1248: ENOMEM");
+	return 1730;
 }
 
 static int pop3_parser_dispatch_cmd(const char *line, int len, pop3_context *ctx)
