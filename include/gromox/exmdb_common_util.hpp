@@ -41,6 +41,8 @@ enum {
 };
 
 struct MAIL;
+
+namespace exmdb {
 #define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
 E(get_username_from_id)
 E(check_mlist_include)
@@ -177,3 +179,5 @@ extern unsigned int g_max_rule_num, g_max_extrule_num, g_cid_compression;
 extern thread_local unsigned int g_inside_flush_instance;
 extern thread_local sqlite3 *g_sqlite_for_oxcmail;
 extern char g_exmdb_org_name[];
+
+}

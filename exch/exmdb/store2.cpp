@@ -33,9 +33,13 @@ using LLU = unsigned long long;
 using namespace std::string_literals;
 using namespace gromox;
 
+namespace {
+
 struct sql_del {
 	void operator()(sqlite3 *x) const { sqlite3_close(x); }
 };
+
+}
 
 BOOL exmdb_server::vacuum(const char *dir)
 {
@@ -86,6 +90,8 @@ BOOL exmdb_server::store_eid_to_user(const char *, const STORE_ENTRYID *store_ei
 	return TRUE;
 }
 
+namespace exmdb {
+
 int need_msg_perm_check(sqlite3 *db, const char *user, uint64_t fid)
 {
 	if (user == STORE_OWNER_GRANTED)
@@ -121,6 +127,8 @@ int have_delete_perm(sqlite3 *db, const char *user, uint64_t fid, uint64_t mid)
 	if (!common_util_check_message_owner(db, mid, user, &owner))
 		return -1;
 	return !!owner;
+}
+
 }
 
 /**
