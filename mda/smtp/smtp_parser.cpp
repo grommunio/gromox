@@ -614,7 +614,6 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	memset(&pcontext->ext_data, 0, sizeof(EXT_DATA));
 	memset(&pcontext->last_bytes, '\0', std::size(pcontext->last_bytes));
 	pcontext->last_cmd                     = 0;
-	pcontext->is_spam                      = FALSE;
 	pcontext->total_length                 = 0;
 	pcontext->pre_rstlen                   = 0;
 	pcontext->stream.clear();

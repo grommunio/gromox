@@ -82,7 +82,6 @@ BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext) try
 	if (0 == pcontext->flusher.flush_ID) {
 		pcontext->flusher.flush_ID = flusher_increase_max_ID();
 	}
-	e.is_spam        = pcontext->is_spam;
 	e.pconnection    = &pcontext->connection;
 	e.penvelope      = &pcontext->menv;
 	e.pflusher       = &pcontext->flusher;
@@ -107,7 +106,6 @@ void flusher_cancel(SMTP_CONTEXT *pcontext)
 		return;
 	}   
 	FLUSH_ENTITY entity;
-	entity.is_spam      = pcontext->is_spam;
 	entity.pconnection  = &pcontext->connection;
 	entity.penvelope    = &pcontext->menv;
 	entity.pflusher     = &pcontext->flusher;

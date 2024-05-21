@@ -18,7 +18,6 @@ class config_file;
 struct MESSAGE {
 	int flush_ID = 0; /* flush_ID by smtp server */
 	int bound_type = 0; /* BOUND_IN, BOUND_OUT, BOUND_RELAY ... */
-	BOOL is_spam = false; /* is this a spam mail */
 	int message_option = 0; /* tape message or mess message */
 	int message_data = 0; /* tape position or mess ID*/
 	char *begin_address = nullptr; /* message buffer address */

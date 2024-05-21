@@ -246,9 +246,6 @@ static void message_dequeue_retrieve_to_message(MESSAGE *pmessage,
 	memcpy(&pmessage->mail_length, in_buff, sizeof(size_t));
 	memcpy(&pmessage->flush_ID, in_buff + sizeof(size_t) + pmessage->mail_length, sizeof(uint32_t));
 	memcpy(&pmessage->bound_type, in_buff + sizeof(size_t) + sizeof(uint32_t) + pmessage->mail_length, sizeof(uint32_t));
-	int z;
-	memcpy(&z, in_buff + sizeof(size_t) + 2 * sizeof(uint32_t) + pmessage->mail_length, sizeof(uint32_t));
-	pmessage->is_spam = z;
 	pmessage->envelope_from = deconst(in_buff) + sizeof(size_t) + 3*sizeof(uint32_t) + pmessage->mail_length;
 	pmessage->envelope_rcpt = pmessage->envelope_from + strlen(pmessage->envelope_from) + 1;
 }

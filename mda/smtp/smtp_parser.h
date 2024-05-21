@@ -68,7 +68,6 @@ struct smtp_context final : public schedule_context {
 	int last_cmd = 0; /* indicate SMTP state of the connection */
 	envelope_info menv; /* for recording the mail information */
 	FLUSH_INFO flusher{}; /* the flusher for saving mail information */
-	BOOL is_spam = false; /* whether the mail is spam */
 	unsigned int session_num = 0; /* session number of the context */
 	size_t total_length = 0; /* mail total length */
 	char last_bytes[4]{}; /* last bytes for part mail */

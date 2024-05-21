@@ -56,7 +56,7 @@ int main()
 		}
 		auto cl_1 = make_scope_exit([&]() { munmap(fcontent, sb.st_size); });
 		size_t mail_len = 0;
-		unsigned int flush_id = 0, bound_type = 0, is_spam = 0;
+		unsigned int flush_id = 0, bound_type = 0;
 		memcpy(&mail_len, fcontent, sizeof(mail_len));
 		if (static_cast<size_t>(sb.st_size) < clump_size + mail_len) {
 			printf("\n");
@@ -67,8 +67,7 @@ int main()
 		ptr += sizeof(flush_id);
 		memcpy(&bound_type, ptr, sizeof(bound_type));
 		ptr += sizeof(bound_type);
-		memcpy(&is_spam, ptr, sizeof(is_spam));
-		ptr += sizeof(is_spam);
+		ptr += sizeof(uint32_t); // old is_spam flag
 		const char *from = ptr;
 		ptr += strlen(from) + 1;
 		const char *rcpt = ptr;

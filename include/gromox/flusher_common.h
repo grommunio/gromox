@@ -51,7 +51,6 @@ struct FLUSH_ENTITY final {
 	GENERIC_CONNECTION *pconnection = nullptr;
 	FLUSH_INFO *pflusher = nullptr; /* the flusher for saving mail information */
 	envelope_info *penvelope = nullptr;
-	BOOL is_spam = false; /* whether the mail is spam */
 	int context_ID = 0;
 	unsigned int command_protocol = 0;
 	SMTP_CONTEXT *pcontext = nullptr;
