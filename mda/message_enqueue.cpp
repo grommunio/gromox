@@ -290,8 +290,9 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	if (fwrite(&pentity->pflusher->flush_ID, 1, sizeof(uint32_t), fp) != sizeof(uint32_t))
 		goto REMOVE_MESS;
 	/* write bound type */
+	static constexpr uint32_t is_spam = false;
 	if (fwrite(&smtp_type, 1, sizeof(uint32_t), fp) != sizeof(uint32_t) ||
-	    fwrite(&pentity->is_spam, 1, sizeof(uint32_t), fp) != sizeof(uint32_t))
+	    fwrite(&is_spam, 1, sizeof(uint32_t), fp) != sizeof(uint32_t))
 		goto REMOVE_MESS;
 	/* write envelope from */
 	utmp_len = strlen(pentity->penvelope->from) + 1;

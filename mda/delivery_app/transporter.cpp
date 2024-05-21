@@ -401,7 +401,6 @@ static void *dxp_thrwork(void *arg)
 			}	
 			pcontext->ctrl.queue_ID = pmessage->flush_ID;
 			pcontext->ctrl.bound_type = pmessage->bound_type;
-			pcontext->ctrl.is_spam = pmessage->is_spam;
 			pcontext->ctrl.need_bounce = TRUE;
 			gx_strlcpy(pcontext->ctrl.from, pmessage->envelope_from, std::size(pcontext->ctrl.from));
 			ptr = pmessage->envelope_rcpt;
@@ -583,7 +582,6 @@ static void transporter_put_context(MESSAGE_CONTEXT *pcontext)
 	/* reset the context object */
 	pcontext->ctrl.rcpt.clear();
 	pcontext->ctrl.queue_ID = 0;
-	pcontext->ctrl.is_spam = FALSE;
 	pcontext->ctrl.bound_type = BOUND_UNKNOWN;
 	pcontext->ctrl.need_bounce = FALSE;
 	pcontext->ctrl.from[0] = '\0';

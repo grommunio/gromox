@@ -155,7 +155,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	}
 	uint32_t enc_qid    = cpu_to_le32(pcontext->ctrl.queue_ID);
 	uint32_t enc_bound  = cpu_to_le32(pcontext->ctrl.bound_type);
-	uint32_t enc_spam   = cpu_to_le32(pcontext->ctrl.is_spam);
+	uint32_t enc_spam   = cpu_to_le32(false);
 	uint32_t enc_bounce = cpu_to_le32(pcontext->ctrl.need_bounce);
 	if (!pcontext->mail.to_file(fd.get()) ||
 	    write(fd.get(), &enc_qid, sizeof(enc_qid)) != sizeof(enc_qid) ||
@@ -352,7 +352,7 @@ static void *mdl_thrwork(void *arg)
 				mlog(LV_WARN, "W-1557: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
-			pcontext->ctrl.is_spam = le32p_to_cpu(ptr);
+			// pcontext->ctrl.is_spam = le32p_to_cpu(ptr);
 			ptr += sizeof(uint32_t);
 			size -= sizeof(uint32_t);
 			if (size < sizeof(uint32_t)) {
