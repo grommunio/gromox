@@ -200,6 +200,8 @@ static bool fxs_tagcmp_rcpt(const TAGGED_PROPVAL &a, const TAGGED_PROPVAL &b)
 	}
 }
 
+namespace emsmdb {
+
 static void fxs_propsort(FOLDER_CONTENT &fc)
 {
 	auto &p = fc.proplist.ppropval;
@@ -225,6 +227,8 @@ void fxs_propsort(MESSAGE_CONTENT &mc)
 				fxs_propsort(*e);
 		}
 	}
+}
+
 }
 
 BOOL fastdownctx_object::make_foldercontent(BOOL b_subfolders,
