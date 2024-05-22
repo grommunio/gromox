@@ -1310,7 +1310,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 
 	mResolveNamesResponse data;
 
-	auto unres = strchr(request.UnresolvedEntry.c_str(), ':');
+	const char *unres = strchr(request.UnresolvedEntry.c_str(), ':'); /* CONST-STRCHR-MARKER */
 	unres = unres? unres+1 : request.UnresolvedEntry.c_str();
 	request.UnresolvedEntry = gx_utf8_to_punycode(unres);
 

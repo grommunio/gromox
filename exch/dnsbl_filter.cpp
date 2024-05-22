@@ -1,22 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
 #include <cerrno>
 #include <cstring>
-#include <netdb.h>
-#include <resolv.h>
 #include <string>
-#include <arpa/inet.h>
-#include <arpa/nameser.h>
+#	include <arpa/inet.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <gromox/config_file.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
+#ifdef HAVE_LDNS
+#	include <ldns/ldns.h>
+#elif defined(HAVE_RES_NQUERYDOMAIN)
+#	include <netdb.h>
+#	include <resolv.h>
+#	include <arpa/nameser.h>
+#endif
 
 using namespace gromox;
 static std::string g_zone_suffix;
@@ -27,9 +31,6 @@ DECLARE_SVC_API(,);
  */
 static bool dnsbl_check(const char *src, std::string &reason) try
 {
-#ifndef HAVE_RES_NQUERYDOMAIN
-	return true;
-#else
 	static constexpr char txt[] = "0123456789abcdef";
 	if (g_zone_suffix.empty())
 		return true;
@@ -38,8 +39,8 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 		reason = "E-1734: inet_pton";
 		return false;
 	}
-	char dotrep[97];
-	dotrep[0] = '\0';
+	std::string dotrep;
+	dotrep.resize(64);
 	size_t z = 0;
 	for (unsigned int i = 16; i-- > 0; ) {
 		dotrep[z++] = txt[dst.s6_addr[i] & 0xF];
@@ -47,9 +48,54 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 		dotrep[z++] = txt[(dst.s6_addr[i] & 0xF0) >> 4];
 		dotrep[z++] = '.';
 	}
-	if (z > 0)
-		dotrep[--z] = '\0';
+	dotrep += g_zone_suffix;
 
+#if defined(HAVE_LDNS)
+	auto dname = ldns_dname_new_frm_str(dotrep.c_str());
+	if (dname == nullptr) {
+		mlog(LV_ERR, "E-1251: ENOMEM");
+		return false;
+	}
+	ldns_resolver *rsv = nullptr;
+	auto status = ldns_resolver_new_frm_file(&rsv, nullptr);
+	if (status != LDNS_STATUS_OK) {
+		mlog(LV_ERR, "E-1250: ENOMEM");
+		return false;
+	}
+	auto cl_0 = make_scope_exit([&]() { ldns_resolver_deep_free(rsv); });
+	ldns_pkt *pkt = nullptr;
+	status = ldns_resolver_query_status(&pkt, rsv, dname, LDNS_RR_TYPE_TXT,
+	         LDNS_RR_CLASS_IN, LDNS_RD);
+	if (status != LDNS_STATUS_OK)
+		/* probably SERVFAIL */
+		return true;
+
+	auto cl_1 = make_scope_exit([&]() { ldns_pkt_free(pkt); });
+	/* NXDOMAIN represented as 0-sized list */
+	auto rrlist = ldns_pkt_answer(pkt);
+	if (rrlist == nullptr) {
+		mlog(LV_DEBUG, "E-1255: no packet");
+		return false;
+	}
+	size_t i = 0;
+	for (ldns_rr *rr; (rr = ldns_rr_list_rr(rrlist, i)) != nullptr; ++i) {
+		if (ldns_rr_get_type(rr) != LDNS_RR_TYPE_TXT)
+			continue;
+		auto rdf = ldns_rr_rdf(rr, 0);
+		if (rdf == nullptr)
+			continue;
+		auto str = ldns_rdf2str(rdf);
+		if (str == nullptr) {
+			mlog(LV_ERR, "E-1256: ENOMEM");
+			return false;
+		}
+		auto cl_2 = make_scope_exit([&]() { free(str); });
+		reason += str;
+		reason += "; ";
+	}
+	return false;
+#elif defined(HAVE_RES_NQUERYDOMAIN)
+	/* BIND8-like API in glibc */
 	std::remove_pointer_t<res_state> state;
 	uint8_t rsp[1500];
 	if (res_ninit(&state) != 0) {
@@ -61,12 +107,12 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 	 * NQD works differently from /usr/bin/host; if there are no TXT
 	 * entries, it will return -1 rather than an empty result list.
 	 */
-	auto ret = res_nquerydomain(&state, dotrep, g_zone_suffix.c_str(),
-	           ns_c_in, ns_t_txt, rsp, std::size(rsp));
+	auto ret = res_nquery(&state, dotrep.c_str(), ns_c_in, ns_t_txt,
+	           rsp, std::size(rsp));
 	if (ret <= 0) {
 		bool pass = h_errno == HOST_NOT_FOUND || h_errno == NO_DATA;
 		if (!pass)
-			mlog(LV_DEBUG, "nquerydomain(%s%s): %d %s", dotrep,
+			mlog(LV_DEBUG, "nquery(%s%s): %d %s", dotrep.c_str(),
 				g_zone_suffix.c_str(), h_errno, hstrerror(h_errno));
 		return pass;
 	}
@@ -99,6 +145,15 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 		reason += std::string_view(reinterpret_cast<const char *>(ptr + 1), len);
 		reason += "; ";
 	}
+	return false;
+#else
+	static bool g_zone_warn;
+	if (g_zone_suffix.empty())
+		return true;
+	if (!g_zone_warn)
+		mlog(LV_ERR, "Cannot perform DNSBL checks; program was built without DNS resolution. "
+			"Possible remedy: Deactivate DNSBL in the config file.");
+	g_zone_warn = true;
 	return false;
 #endif
 } catch (const std::bad_alloc &) {

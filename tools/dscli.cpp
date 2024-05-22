@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -7,17 +7,24 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
-#include <netdb.h>
-#include <resolv.h>
 #include <string>
 #include <unordered_set>
 #include <unistd.h>
 #include <utility>
 #include <tinyxml2.h>
-#include <arpa/nameser.h>
 #include <curl/curl.h>
 #include <libHX/option.h>
 #include <gromox/scope.hpp>
+#include <gromox/util.hpp>
+#ifdef HAVE_LDNS
+#	include <ldns/ldns.h>
+#	define HAVE_NS 1
+#elif defined(HAVE_RES_NQUERYDOMAIN)
+#	include <netdb.h>
+#	include <resolv.h>
+#	include <arpa/nameser.h>
+#	define HAVE_NS 1
+#endif
 
 struct curl_del {
 	void operator()(CURL *x) const { curl_easy_cleanup(x); }
@@ -43,7 +50,7 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-#ifdef HAVE_RES_NQUERYDOMAIN
+#ifdef HAVE_NS
 static void dnssrv_missing(const char *dom)
 {
 	fprintf(stderr, "%sDNS SRV entry \"_autodiscover._tcp.%s\" is missing!%s\n",
@@ -193,7 +200,53 @@ static size_t oxd_write(char *ptr, size_t size, size_t nemb, void *udata)
 	return size * nemb;
 }
 
-#ifdef HAVE_RES_NQUERYDOMAIN
+#ifdef HAVE_LDNS
+static std::string domain_to_oxsrv(const char *dom)
+{
+	auto dname = ldns_dname_new_frm_str(("_autodiscover._tcp."s + dom).c_str());
+	if (dname == nullptr) {
+		fprintf(stderr, "E-1261: ENOMEM");
+		return {};
+	}
+	ldns_resolver *rsv = nullptr;
+	auto status = ldns_resolver_new_frm_file(&rsv, nullptr);
+	if (status != LDNS_STATUS_OK) {
+		fprintf(stderr, "E-1262: ENOMEM");
+		return {};
+	}
+	auto cl_0 = make_scope_exit([&]() { ldns_resolver_deep_free(rsv); });
+	ldns_pkt *pkt = nullptr;
+	status = ldns_resolver_query_status(&pkt, rsv, dname, LDNS_RR_TYPE_SRV,
+	         LDNS_RR_CLASS_IN, LDNS_RD);
+	if (status != LDNS_STATUS_OK) {
+		fprintf(stderr, "SERVFAIL");
+		return {};
+	}
+	auto cl_1 = make_scope_exit([&]() { ldns_pkt_free(pkt); });
+	auto rrlist = ldns_pkt_answer(pkt);
+	if (rrlist == nullptr)
+		return {};
+	auto rr = ldns_rr_list_rr(rrlist, 0);
+	if (rr == nullptr)
+		return {};
+	if (ldns_rr_get_type(rr) != LDNS_RR_TYPE_SRV)
+		return {};
+	auto port   = ldns_rr_rdf(rr, 2);
+	auto target = ldns_rr_rdf(rr, 3);
+	if (port == nullptr || ldns_rdf_get_type(port) != LDNS_RDF_TYPE_INT16 ||
+	    target == nullptr || ldns_rdf_get_type(target) != LDNS_RDF_TYPE_DNAME)
+		return {};
+	auto tgbuf = ldns_rdf2str(target);
+	if (tgbuf == nullptr)
+		return {};
+	auto cl_2 = make_scope_exit([&]() { free(tgbuf); });
+	std::string tgstr = tgbuf;
+	if (tgstr.size() > 0 && tgstr.back() == '.')
+		tgstr.pop_back();
+	tgstr += ":" + std::to_string(ldns_rdf2native_int16(port));
+	return tgstr;
+}
+#elif defined(HAVE_RES_NQUERYDOMAIN)
 static std::string domain_to_oxsrv(const char *dom)
 {
 	std::remove_pointer_t<res_state> state;
@@ -241,10 +294,13 @@ static std::string autodisc_url()
 		auto p = strchr(g_emailaddr, '@');
 		if (p != nullptr) {
 			auto dom = p + 1;
-#ifdef HAVE_RES_NQUERYDOMAIN
+#ifdef HAVE_NS
 			auto srv = domain_to_oxsrv(dom);
-			if (!srv.empty())
-				return "https://" + srv + xmlpath;
+			if (!srv.empty()) {
+				auto url = "https://" + srv + xmlpath;
+				fprintf(stderr, "Followed SRV: %s -> %s\n", dom, url.c_str());
+				return url;
+			}
 			dnssrv_missing(dom);
 #else
 			dnssrv_notbuilt();
