@@ -7,6 +7,7 @@
 #endif
 #include <cerrno>
 #include <cstring>
+#include <netdb.h>
 #include <resolv.h>
 #include <string>
 #include <arpa/inet.h>
@@ -56,10 +57,19 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 		return false;
 	}
 	auto cl_0 = make_scope_exit([&]() { res_nclose(&state); });
+	/*
+	 * NQD works differently from /usr/bin/host; if there are no TXT
+	 * entries, it will return -1 rather than an empty result list.
+	 */
 	auto ret = res_nquerydomain(&state, dotrep, g_zone_suffix.c_str(),
 	           ns_c_in, ns_t_txt, rsp, std::size(rsp));
-	if (ret <= 0)
-		return true; /* e.g. NXDOMAIN */
+	if (ret <= 0) {
+		bool pass = h_errno == HOST_NOT_FOUND || h_errno == NO_DATA;
+		if (!pass)
+			mlog(LV_DEBUG, "nquerydomain(%s%s): %d %s", dotrep,
+				g_zone_suffix.c_str(), h_errno, hstrerror(h_errno));
+		return pass;
+	}
 
 	ns_msg handle;
 	if (ns_initparse(rsp, ret, &handle) != 0) {
@@ -79,6 +89,7 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 			continue;
 		if (ns_rr_type(rr) != ns_t_txt)
 			continue;
+		/* All types are t_txt anyway (NQD) */
 		auto len = ns_rr_rdlen(rr);
 		auto ptr = ns_rr_rdata(rr);
 		if (len > 0)
