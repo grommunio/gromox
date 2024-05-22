@@ -308,7 +308,7 @@ static errno_t mcg_parse(const char *line, tag_entry &node)
 {
 	auto &pn = node.propname;
 	while (line != nullptr && *line != '\0') {
-		auto end = strchr(line, ',');
+		const char *end = strchr(line, ','); /* CONST-STRCHR-MARKER */
 		if (end == nullptr)
 			end = line + strlen(line);
 		if (strncasecmp(line, "GUID=", 5) == 0) {
