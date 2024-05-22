@@ -238,7 +238,7 @@ AC_ARG_WITH([php], [
 	[PHP_CONFIG="$withval"],
 	[
 	dnl OpenBSD uses php-config-N, Debian php-configN
-	AC_PATH_PROGS([PHP_CONFIG], [php-config php-config-8.2 php-config8.2 php-config-8.1 php-config8.1 php-config-8.0 php-config8.0 php-config-7.4 php-config7.4])
+	AC_PATH_PROGS([PHP_CONFIG], [php-config php-config-8.3 php-config8.3 php-config83 php-config-8.2 php-config8.2 php-config82 php-config-8.1 php-config8.1 php-config81 php-config-8.0 php-config8.0 php-config80 php-config-7.4 php-config7.4 php-config74])
 	dnl Set something so the error messages make more sense
 	AS_IF([test -z "$PHP_CONFIG"], [PHP_CONFIG="php-config"])
 ])
