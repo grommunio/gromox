@@ -81,13 +81,13 @@ errno_t bounce_gen_init(const char *cfgdir, const char *datadir,
 {
 	auto cfg = config_file_initd("gromox.cfg", cfgdir, bounce_gen_dflt);
 	if (cfg == nullptr) {
-		mlog(LV_ERR, "exmdb_provider: config_file_initd master.cfg: %s",
+		mlog(LV_ERR, "exmdb_provider: config_file_initd gromox.cfg: %s",
 		       strerror(errno));
 		return EIO;
 	}
 	auto str = cfg->get_value("bounce_postmaster");
 	if (strchr(str, '@') == nullptr) {
-		mlog(LV_ERR, "master.cfg: \"bounce_postmaster\" directive has bogus value: no @ character");
+		mlog(LV_ERR, "gromox.cfg: \"bounce_postmaster\" directive has bogus value: no @ character");
 		return EINVAL;
 	}
 	g_bounce_postmaster = str;
