@@ -27,9 +27,7 @@ static std::string g_zone_suffix;
  */
 static bool dnsbl_check(const char *src, std::string &reason) try
 {
-#ifndef HAVE_RES_NQUERYDOMAIN
-	return true;
-#else
+#if defined(HAVE_RES_NQUERYDOMAIN)
 	static constexpr char txt[] = "0123456789abcdef";
 	if (g_zone_suffix.empty())
 		return true;
@@ -99,6 +97,15 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 		reason += std::string_view(reinterpret_cast<const char *>(ptr + 1), len);
 		reason += "; ";
 	}
+	return false;
+#else
+	static bool g_zone_warn;
+	if (g_zone_suffix.empty())
+		return true;
+	if (!g_zone_warn)
+		mlog(LV_ERR, "Cannot perform DNSBL checks; program was built without DNS resolution. "
+			"Possible remedy: Deactivate DNSBL in the config file.");
+	g_zone_warn = true;
 	return false;
 #endif
 } catch (const std::bad_alloc &) {
