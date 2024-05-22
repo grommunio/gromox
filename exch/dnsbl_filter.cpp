@@ -99,17 +99,20 @@ BOOL SVC_dnsbl_filter(int reason, void **data)
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 	LINK_SVC_API(data);
-	auto cfg = config_file_initd("master.cfg", get_config_path(), nullptr);
-	if (cfg == nullptr) {
-		mlog(LV_ERR, "dnsbl_filter: config_file_initd master.cfg: %s",
-			strerror(errno));
-		return false;
-	}
 	// TODO: dnsbl_client=<apikey>.authbl.dq.spamhaus.net=127.0.0.20
 	// dnsbl_client=zen.spamhaus.org
-	auto str = cfg->get_value("dnsbl_client");
-	if (str != nullptr)
-		g_zone_suffix = str;
+	auto cfg = config_file_initd("master.cfg", get_config_path(), nullptr);
+	if (cfg != nullptr) {
+		auto str = cfg->get_value("dnsbl_client");
+		if (str != nullptr)
+			g_zone_suffix = str;
+	}
+	cfg = config_file_initd("gromox.cfg", get_config_path(), nullptr);
+	if (cfg != nullptr) {
+		auto str = cfg->get_value("dnsbl_client");
+		if (str != nullptr)
+			g_zone_suffix = str;
+	}
 	if (!register_service("ip_filter_judge", dnsbl_check))
 		return false;
 	return TRUE;
