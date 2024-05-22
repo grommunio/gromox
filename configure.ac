@@ -96,6 +96,7 @@ pam_LIBS=""
 resolv_LIBS=""
 AH_TEMPLATE([HAVE_ESEDB], [])
 AH_TEMPLATE([HAVE_GSSAPI], [])
+AH_TEMPLATE([HAVE_LDNS], [])
 AH_TEMPLATE([HAVE_LIBHX4_18], [])
 AH_TEMPLATE([HAVE_XXHASH], [])
 PKG_PROG_PKG_CONFIG
@@ -106,6 +107,7 @@ PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 1.4.0], [], [
 PKG_CHECK_MODULES([gss], [krb5-gssapi], [
 	AC_DEFINE([HAVE_GSSAPI], [1])
 ], [:])
+PKG_CHECK_MODULES([ldns], [ldns], [AC_DEFINE([HAVE_LDNS], [1])], [:])
 PKG_CHECK_MODULES([libHX], [libHX >= 4.12])
 PKG_CHECK_MODULES([libHX_4_18], [libHX >= 4.18], [AC_DEFINE([HAVE_LIBHX4_18], [1])], [:])
 PKG_CHECK_MODULES([libcrypto], [libcrypto])

@@ -31,7 +31,9 @@ dependencies are needed:
 
 Optional deps:
 
-* libc/libresolv with "res_nquerydomain" & "ns_initparse" functions
+* A resolver library
+  * libc/libresolv with interface "res_nquery" & "ns_initparse" functions
+  * LDNS (Unbound)
 * libesedb
 * libolecf
 * libpff
