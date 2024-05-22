@@ -104,14 +104,20 @@ BOOL SVC_dnsbl_filter(int reason, void **data)
 	auto cfg = config_file_initd("master.cfg", get_config_path(), nullptr);
 	if (cfg != nullptr) {
 		auto str = cfg->get_value("dnsbl_client");
-		if (str != nullptr)
+		if (str != nullptr) {
+			while (*str == '.')
+				++str;
 			g_zone_suffix = str;
+		}
 	}
 	cfg = config_file_initd("gromox.cfg", get_config_path(), nullptr);
 	if (cfg != nullptr) {
 		auto str = cfg->get_value("dnsbl_client");
-		if (str != nullptr)
+		if (str != nullptr) {
+			while (*str == '.')
+				++str;
 			g_zone_suffix = str;
+		}
 	}
 	if (!register_service("ip_filter_judge", dnsbl_check))
 		return false;
