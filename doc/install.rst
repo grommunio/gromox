@@ -91,11 +91,6 @@ call ``make`` with the sanitizer libs (asan, ubsan or both, depending on
 choice) if they are shared libraries (usually gcc). The command is ``make
 LIBS="-lasan -lubsan"``.
 
-**In addition**, when using ASAN with gcc >= 7, < 14 or ASAN with clang >= 10,
-< 17, there is `an issue with ASAN and a dlopened crypt(3) function
-<https://github.com/llvm/llvm-project/commit/d7bead833631486e337e541e692d9b4a1ca14edd>`_,
-which requires that ``-lcrypt`` *also* be part of the ``LIBS`` variable.
-
 
 Optional runtime components
 ===========================
