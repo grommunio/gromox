@@ -134,10 +134,9 @@ users, groups and other objects like distribution lists. The default database
 name Gromox's mysql_adaptor plugin will use is ``email``, hence you would
 create that as a blank database. The default database access users is root with
 no password, which fits the default installation of MariaDB too. Any deviations
-will have to be specified in ``/etc/gromox/mysql_adaptor.cfg`` and
-``/etc/gromox/autodiscover.ini``; the corresponding manpage is
-mysql_adaptor(4gx) and autodiscover(4gx). The database can then be populated
-using ``gromox-dbop -C``.
+will have to be specified in ``/etc/gromox/mysql_adaptor.cfg``; the
+corresponding manpage is mysql_adaptor(4gx) and autodiscover(4gx). The database
+can then be populated using ``gromox-dbop -C``.
 
 Gromox only requires SELECT,UPDATE permissions on this database as it does not
 create or delete users. The grommunio Administration Backend is in charge of user
