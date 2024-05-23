@@ -214,11 +214,15 @@ read/write to it irrespective of the creator of files.
 The directory ``/etc/gromox`` and all contents are supposed to be owned by user
 ``root`` or ``grommunio``, be owned by group ``gromoxcf`` read-only, and be
 otherwise inaccessible. Gromox has no need to update config files at all, just
-read them.
+read them. One exception is ``pam.cfg`` which, if it exists, has to be readable
+by arbitrary programs.
 
 .. code-block:: text
 
-	drwxr-x--- 2 root gromoxcf 125 Feb 20 21:47 /etc/gromox
+	drwxr-x--x 2 grommunio gromoxcf  64 Feb 20 21:47 /etc/gromox
+	-rw-r----- 1 grommunio gromoxcf 128 Feb 20 21:47 /etc/gromox/gromox.cfg
+	-rw-r----- 1 grommunio gromoxcf 128 Feb 20 21:47 /etc/gromox/mysql_adaptor.cfg
+	-rw-r--r-- 1 grommunio gromoxcf 128 Feb 20 21:47 /etc/gromox/pam.cfg
 
 If you plan on utilizing SSO authentication via ``/usr/bin/ntlm_auth``, you
 *may* need to add ``winbind`` to the list of supplementary groups for the
