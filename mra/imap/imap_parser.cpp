@@ -816,7 +816,8 @@ static tproc_status ps_stat_wrdat(imap_context *pcontext)
 		len = 64 * 1024;
 	auto read_len = read(pcontext->message_fd, pcontext->write_buff, len);
 	if (read_len != len) {
-		imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
+		imap_parser_log_info(pcontext, LV_WARN, "W-1512: short read %s, exp %d, got %zd",
+			pcontext->file_path.c_str(), len, read_len);
 		/* IMAP_CODE_2180012: * BAD internal error: fail to read file */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1812, 1, &string_length);
@@ -1007,7 +1008,8 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 					read_len = read(pcontext->message_fd, pcontext->write_buff +
 					           pcontext->write_length, len);
 					if (read_len != len) {
-						imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
+						imap_parser_log_info(pcontext, LV_WARN, "W-1499: short read %s, exp %u, got %d",
+							pcontext->file_path.c_str(), len, read_len);
 						pcontext->close_fd();
 						return IMAP_RETRIEVE_ERROR;
 					}
@@ -1054,7 +1056,8 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 					read_len = read(pcontext->message_fd, pcontext->write_buff +
 					           pcontext->write_length, len);
 					if (read_len != len) {
-						imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
+						imap_parser_log_info(pcontext, LV_WARN, "W-1511: short read %s, exp %u, got %d",
+							pcontext->file_path.c_str(), len, read_len);
 						pcontext->close_fd();
 						return IMAP_RETRIEVE_ERROR;
 					}
