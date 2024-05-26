@@ -89,12 +89,10 @@ static int rpc_parser_dispatch(const zcreq *q0, std::unique_ptr<zcresp> &r0) try
 		return DISPATCH_TRUE;
 	if (r0->result != 0 || g_zrpc_debug == 2) {
 		auto info = zs_query_session(dbg_hsession);
-		mlog(LV_DEBUG, "ZRPC %s %s %8xh %5luµs %s",
+		mlog(LV_DEBUG, "ZRPC %s %5luµs %8xh %s",
 		        info != nullptr ? info->username.c_str() : "<>",
-		        r0->result == 0 ? "ok  " : "FAIL",
-		        r0->result,
 		        static_cast<unsigned long>(std::chrono::duration_cast<std::chrono::microseconds>(tend - tstart).count()),
-		        zcore_rpc_idtoname(q0->call_id));
+		        r0->result, zcore_rpc_idtoname(q0->call_id));
 	}
 	return DISPATCH_TRUE;
 } catch (const std::bad_alloc &) {

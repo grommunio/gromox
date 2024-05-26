@@ -159,11 +159,10 @@ static BOOL exmdb_parser_dispatch(const exreq *prequest, std::unique_ptr<exresp>
 		return ret;
 	auto tend = tp_now();
 	if (!ret || g_exrpc_debug == 2)
-		mlog(LV_DEBUG, "EXRPC %s %5luµs %s (%s)",
-		        ret == 0 ? "FAIL" : "ok  ",
+		mlog(LV_DEBUG, "EXRPC %s %s %5luµs %s", znul(prequest->dir),
+		        ret == 0 ? "ERR" : "ok ",
 		        static_cast<unsigned long>(std::chrono::duration_cast<std::chrono::microseconds>(tend - tstart).count()),
-		        exmdb_rpc_idtoname(prequest->call_id),
-		        znul(prequest->dir));
+		        exmdb_rpc_idtoname(prequest->call_id));
 	return ret;
 }
 
