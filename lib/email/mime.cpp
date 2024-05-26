@@ -1398,6 +1398,7 @@ int MIME::make_mimes_digest(const char *id_string, size_t *poffset,
 #endif
 	if (pmime->mime_type == mime_type::none)
 		return -1;
+	/* This function must produce *exactly* the same bytecount as MIME::emit */
 	size_t head_offset = *poffset;
 	if (!pmime->head_touched) {
 		/* the original buffer contains \r\n */
@@ -1554,7 +1555,7 @@ static int make_digest_multi(const MIME *pmime, const char *id_string,
 		*poffset += pmime->boundary_len + 6;
 	*poffset += pmime->boundary_len + 4;
 	if (NULL == pmime->last_boundary) {
-		*poffset += 4;
+		*poffset += 2;
 		return 0;
 	}
 	tmp_len = pmime->content_length - (pmime->last_boundary -
