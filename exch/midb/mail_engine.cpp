@@ -239,7 +239,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite, const char *mid_string,
 		if (!imail.load_from_str_move(slurp_data.get(), slurp_size))
 			return 0;
 		slurp_data.reset();
-		if (imail.get_digest(&size, digest) <= 0)
+		if (imail.make_digest(&size, digest) <= 0)
 			return 0;
 		imail.clear();
 		digest["file"] = "";
@@ -1418,7 +1418,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 		}
 		common_util_switch_allocator();
 		Json::Value digest;
-		if (imail.get_digest(&size, digest) <= 0)
+		if (imail.make_digest(&size, digest) <= 0)
 			return;
 		digest["file"] = "";
 		djson = json_to_str(digest);
@@ -2343,7 +2343,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	if (!imail.load_from_str_move(pbuff.get(), slurp_size))
 		return MIDB_E_IMAIL_RETRIEVE;
 	Json::Value digest;
-	if (imail.get_digest(&mess_len, digest) <= 0)
+	if (imail.make_digest(&mess_len, digest) <= 0)
 		return MIDB_E_IMAIL_DIGEST;
 	digest["file"] = "";
 	auto djson = json_to_str(digest);

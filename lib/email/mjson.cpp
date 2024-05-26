@@ -1003,7 +1003,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 		return;
 	}
 	Json::Value digest;
-	auto result = imail.get_digest(&mess_len, digest);
+	auto result = imail.make_digest(&mess_len, digest);
 	imail.clear();
 	pbuff.reset();
 	if (result <= 0) {
