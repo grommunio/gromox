@@ -50,11 +50,6 @@ static constexpr uint32_t g_uri_usual[] = {
     0xffffffff  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
 };
 
-void parse_email_addr(EMAIL_ADDR *e_addr, const char *email)
-{
-	parse_mime_addr(e_addr, email);
-}
-
 BOOL parse_uri(const char *uri_buff, char *parsed_uri)
 {
 	int tmp_len;

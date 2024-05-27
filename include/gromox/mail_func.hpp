@@ -36,7 +36,6 @@ struct ENCODE_STRING {
 };
 
 struct MAIL;
-extern GX_EXPORT void parse_email_addr(EMAIL_ADDR *e_addr, const char *email);
 extern GX_EXPORT void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email);
 extern GX_EXPORT BOOL parse_uri(const char *uri_buff, char *parsed_uri);
 extern GX_EXPORT size_t parse_mime_field(const char *, size_t, MIME_FIELD *);
