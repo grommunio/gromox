@@ -1,3 +1,11 @@
+Gromox 2.28.22 (status report)
+==============================
+
+* dnsbl_filter: support DNSBL servers that do not emit TXT records
+* email_lib: avoid generating ext digests with MIME epilogue counted
+* imap: workaround ext digests with epilogue size bug
+
+
 Gromox 2.28 (2024-05-02)
 ========================
 
