@@ -1344,8 +1344,7 @@ static void mail_engine_extract_digest_fields(const Json::Value &digest, char *s
 	    std::size(temp_buff1), &out_len) == 0) {
 		memset(&temp_address, 0, sizeof(temp_address));
 		parse_mime_addr(&temp_address, temp_buff1);
-		snprintf(from, fromsize, "%s@%s",
-		         temp_address.local_part, temp_address.domain);
+		gx_strlcpy(from, temp_address.addr, fromsize);
 	}
 	rcpt[0] = '\0';
 	if (get_digest(digest, "to", temp_buff, std::size(temp_buff)) &&
@@ -1361,8 +1360,7 @@ static void mail_engine_extract_digest_fields(const Json::Value &digest, char *s
 		HX_strrtrim(temp_buff1);
 		memset(&temp_address, 0, sizeof(temp_address));
 		parse_mime_addr(&temp_address, temp_buff1);
-		snprintf(rcpt, rcptsize, "%s@%s",
-		         temp_address.local_part, temp_address.domain);
+		gx_strlcpy(rcpt, temp_address.addr, rcptsize);
 	}
 	*psize = 0;
 	if (get_digest(digest, "size", temp_buff, std::size(temp_buff)))

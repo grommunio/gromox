@@ -268,6 +268,7 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *input) try
 
 	gx_strlcpy(e_addr->display_name, mb.getName().getConvertedText("utf-8").c_str(), std::size(e_addr->display_name));
 	auto emp = mb.getEmail().generate();
+	gx_strlcpy(e_addr->addr, emp.c_str(), std::size(e_addr->addr));
 	auto at  = emp.find('@');
 	if (at == emp.npos) {
 		*e_addr = {};
