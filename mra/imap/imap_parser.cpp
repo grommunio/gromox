@@ -1010,6 +1010,10 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 						return IMAP_RETRIEVE_ERROR;
 					}
 					pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
+					struct stat sb;
+					if (fstat(pcontext->message_fd, &sb) == 0)
+						pcontext->literal_len = std::min(static_cast<long long>(pcontext->literal_len),
+						                        std::max(0LL, static_cast<long long>(sb.st_size - newofs)));
 					pcontext->current_len = 0;
 					pcontext->write_length += sprintf(&pcontext->write_buff[pcontext->write_length], "{%d}\r\n", pcontext->literal_len);
 					len = MAX_LINE_LENGTH - pcontext->write_length;
@@ -1066,6 +1070,10 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 						return IMAP_RETRIEVE_ERROR;
 					}
 					pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
+					struct stat sb;
+					if (fstat(pcontext->message_fd, &sb) == 0)
+						pcontext->literal_len = std::min(static_cast<long long>(pcontext->literal_len),
+						                        std::max(0LL, static_cast<long long>(sb.st_size - newofs)));
 					pcontext->current_len = 0;
 					pcontext->write_length += sprintf(&pcontext->write_buff[pcontext->write_length], "{%d}\r\n", pcontext->literal_len);
 					len = MAX_LINE_LENGTH - pcontext->write_length;
