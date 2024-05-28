@@ -1182,8 +1182,20 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 			pproblems->emplace_back(i, tag, ecAccessDenied);
 			continue;
 		}
-		poriginal_indices[tmp_proptags.count] = i;
-		tmp_proptags.emplace_back(tag);
+		switch (PROP_ID(tag)) {
+		case PROP_ID(PR_SENDER_ADDRTYPE):
+		case PROP_ID(PR_SENDER_EMAIL_ADDRESS):
+		case PROP_ID(PR_SENT_REPRESENTING_ADDRTYPE):
+		case PROP_ID(PR_SENT_REPRESENTING_EMAIL_ADDRESS):
+			/* (EXC) You can change the values, but not delete it */
+			mlog(LV_INFO, "I-1654: averted client removing tag %xh on msg %llxh/instance %u",
+				tag, static_cast<unsigned long long>(message_id), instance_id);
+			continue;
+		default:
+			poriginal_indices[tmp_proptags.count] = i;
+			tmp_proptags.emplace_back(tag);
+			break;
+		}
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
