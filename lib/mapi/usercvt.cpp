@@ -84,6 +84,12 @@ ec_error_t cvt_genaddr_to_smtpaddr(const char *addrtype, const char *emaddr,
 		 */
 		return ecNullObject;
 	}
+	/*
+	 * Unresolvable recipients are stored by OL using
+	 * {PR_ADDRTYPE = "NONE", PR_EMAIL_ADDRESS = ""},
+	 * g-web with
+	 * {PR_ADDRTYPE = "SMTP", PR_EMAIL_ADDRESS = ""}.
+	 */
 	return ecUnknownUser;
 }
 

@@ -1047,13 +1047,12 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	return TRUE;	
 }
 
-static BOOL message_object_check_stream_property(message_object *pmessage,
-    uint32_t proptag)
+static bool mo_has_open_streams(message_object *pmessage, uint32_t proptag)
 {
 	for (auto so : pmessage->stream_list)
 		if (so->get_proptag() == proptag)
-			return TRUE;
-	return FALSE;
+			return true;
+	return false;
 }
 
 static BOOL message_object_set_properties_internal(message_object *pmessage,
@@ -1085,7 +1084,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 		const auto &pv = ppropvals->ppropval[i];
 		if (b_check) {
 			if (pmessage->is_readonly_prop(pv.proptag) ||
-			    message_object_check_stream_property(pmessage, pv.proptag)) {
+			    mo_has_open_streams(pmessage, pv.proptag)) {
 				pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
 				continue;
 			} else if (pv.proptag == PR_EXTENDED_RULE_MSG_CONDITION) {
@@ -1179,12 +1178,24 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		if (is_readonly_prop(tag) ||
-		    message_object_check_stream_property(pmessage, tag)) {
+		    mo_has_open_streams(pmessage, tag)) {
 			pproblems->emplace_back(i, tag, ecAccessDenied);
 			continue;
 		}
-		poriginal_indices[tmp_proptags.count] = i;
-		tmp_proptags.emplace_back(tag);
+		switch (PROP_ID(tag)) {
+		case PROP_ID(PR_SENDER_ADDRTYPE):
+		case PROP_ID(PR_SENDER_EMAIL_ADDRESS):
+		case PROP_ID(PR_SENT_REPRESENTING_ADDRTYPE):
+		case PROP_ID(PR_SENT_REPRESENTING_EMAIL_ADDRESS):
+			/* (EXC) You can change the values, but not delete it */
+			mlog(LV_INFO, "I-1654: averted client removing tag %xh on msg %llxh/instance %u",
+				tag, static_cast<unsigned long long>(message_id), instance_id);
+			continue;
+		default:
+			poriginal_indices[tmp_proptags.count] = i;
+			tmp_proptags.emplace_back(tag);
+			break;
+		}
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;

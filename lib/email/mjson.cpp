@@ -683,8 +683,7 @@ static int mjson_convert_address(const char *address, const char *charset,
 	memcpy(buff + offset, " NIL", 4);
 	offset += 4;
 	
-	if ('\0' != email_addr.local_part[0] &&
-	    str_isasciipr(email_addr.local_part)) {
+	if (*email_addr.local_part != '\0') {
 		mjson_add_backslash(email_addr.local_part, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);
@@ -693,8 +692,7 @@ static int mjson_convert_address(const char *address, const char *charset,
 		offset += 4;
 	}
 
-	if ('\0' != email_addr.domain[0] &&
-	    str_isasciipr(email_addr.domain)) {
+	if (*email_addr.domain != '\0') {
 		mjson_add_backslash(email_addr.domain, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\")", temp_buff);

@@ -307,13 +307,12 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 	return TRUE;	
 }
 
-static BOOL attachment_object_check_stream_property(
-    attachment_object *at, uint32_t proptag)
+static bool ao_has_open_streams(attachment_object *at, uint32_t proptag)
 {
 	for (auto so : at->stream_list)
 		if (so->get_proptag() == proptag)
-			return TRUE;
-	return FALSE;
+			return true;
+	return false;
 }
 
 BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
@@ -337,7 +336,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
 		if (is_readonly_prop(pv.proptag) ||
-		    attachment_object_check_stream_property(pattachment, pv.proptag)) {
+		    ao_has_open_streams(pattachment, pv.proptag)) {
 			pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
 			continue;
 		}
@@ -385,7 +384,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		if (is_readonly_prop(tag) ||
-		    attachment_object_check_stream_property(pattachment, tag)) {
+		    ao_has_open_streams(pattachment, tag)) {
 			pproblems->emplace_back(i, tag, ecAccessDenied);
 			continue;
 		}
