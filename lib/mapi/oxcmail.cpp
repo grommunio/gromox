@@ -391,8 +391,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			return FALSE;
 	}
 	std::string skb, essdn;
-	if (paddr->has_addr() && str_isascii(paddr->local_part) &&
-	    str_isascii(paddr->domain)) {
+	if (paddr->has_addr()) {
 		snprintf(username, std::size(username), "%s@%s", paddr->local_part, paddr->domain);
 		auto dtypx = DT_MAILUSER;
 		std::string essdn, skb;
@@ -475,9 +474,7 @@ static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
 		gx_strlcpy(email_addr.local_part, &emp[0], std::size(email_addr.local_part));
 		gx_strlcpy(email_addr.domain, &emp[at+1], std::size(email_addr.domain));
 
-		if (!email_addr.has_addr() ||
-		    !str_isascii(email_addr.local_part) ||
-		    !str_isascii(email_addr.domain))
+		if (!email_addr.has_addr())
 			continue;
 		if (!oxcmail_parse_recipient(charset,
 		    &email_addr, rcpt_type, pset))
@@ -505,8 +502,7 @@ static BOOL oxcmail_parse_address(const char *field, uint32_t pr_name,
 		if (pproplist->set(pr_name, username) != 0)
 			return FALSE;
 	}
-	bool ok = paddr->has_addr() && str_isascii(paddr->local_part) &&
-	          str_isascii(paddr->domain);
+	bool ok = paddr->has_addr();
 	if (!ok)
 		return TRUE;
 	snprintf(username, std::size(username), "%s@%s", paddr->local_part, paddr->domain);
@@ -585,9 +581,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 		gx_strlcpy(email_addr.local_part, &emp[0], std::size(email_addr.local_part));
 		gx_strlcpy(email_addr.domain, &emp[at+1], std::size(email_addr.domain));
 
-		if (!email_addr.has_addr() ||
-		    !str_isascii(email_addr.local_part) ||
-		    !str_isascii(email_addr.domain))
+		if (!email_addr.has_addr())
 			continue;
 		snprintf(tmp_buff, std::size(tmp_buff), "%s@%s",
 			 email_addr.local_part, email_addr.domain);
