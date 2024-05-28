@@ -38,7 +38,7 @@ Gromox relies on other components to provide a sensibly complete mail system,
   `grommunio Sync <https://github.com/grommunio/grommunio-sync>`_
 * CalDAV & CardDAV (Interoperability with Clients):
   `grommunio DAV <https://github.com/grommunio/grommunio-dav>`_
-* a mail transfer agent like Postfx, Exim, ad more
+* a mail transfer agent like Postfix, Exim, and more
 * mail security solutions like rspamd and others (commercial ones included)
 
 The grommunio Appliance ships these essentials and has a ready-to-run
