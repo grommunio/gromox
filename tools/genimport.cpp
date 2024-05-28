@@ -45,7 +45,7 @@ static std::string g_dstuser;
 static std::string g_storedir_s;
 const char *g_storedir;
 unsigned int g_user_id, g_show_tree, g_show_props, g_wet_run = 1, g_public_folder;
-static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t);
+static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int);
 
 YError::YError(const std::string &s) : m_str(s)
 {}
@@ -433,7 +433,7 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct, unsigned int mode)
 		return EXIT_SUCCESS;
 	}
 	auto err = exmdb_local_rules_execute(g_storedir, ENVELOPE_FROM_NULL,
-	           target, folder_id, msg_id);
+	           target, folder_id, msg_id, mode);
 	if (err != ecSuccess) {
 		fprintf(stderr, "Rule execution not successful: %s\n", mapi_strerror(err));
 		return EXIT_FAILURE;

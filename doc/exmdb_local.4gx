@@ -24,12 +24,18 @@ Default: \fIwindows-1252\fP
 \fBexmdb_connection_num\fP
 Default: \fI5\fP
 .TP
+\fBlda_mrautoproc\fP
+Perform meeting request autoprocessing. This feature is currently experimental.
+Requires lda_twostep_ruleproc to be enabled.
+.br
+Default: \fIno\fP
+.TP
 \fBlda_twostep_ruleproc\fP
 If set to \fI1\fP, an alternate rule processor codebase will be used which
 supports cross-store moves and OOF condition but (at this time) no delegation,
 or autoreply.
 .br
-Default: \fI0\fP
+Default: \fI1\fP
 .TP
 \fBresponse_audit_capacity\fP
 Keep track of at most this many {From address, To address} pairs for bounce

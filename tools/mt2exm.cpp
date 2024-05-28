@@ -41,7 +41,7 @@ static uint8_t g_splice;
 static uint64_t g_anchor_folder; /* GCV */
 static unsigned int g_oexcl = 1, g_repeat_iter = 1;
 static unsigned int g_do_delivery, g_skip_notif, g_skip_rules, g_twostep;
-static unsigned int g_continuous_mode;
+static unsigned int g_continuous_mode, g_mrautoproc;
 
 static std::vector<static_module> g_dfl_svc_plugins = {
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
@@ -65,6 +65,7 @@ static constexpr HXoption g_options_table[] = {
 	{"skip-notif", 0, HXTYPE_NONE, &g_skip_notif, nullptr, nullptr, 0, "Skip emission of notifications (if -D)"},
 	{"skip-rules", 0, HXTYPE_NONE, &g_skip_rules, nullptr, nullptr, 0, "Skip execution of rules (if -D)"},
 	{"twostep", '2', HXTYPE_NONE, &g_twostep, nullptr, nullptr, 0, "TWOSTEP rule executor (implies -D; development)"},
+	{"autoproc", 0, HXTYPE_NONE, &g_mrautoproc, {}, {}, 0, "Perform meeting request processing (development)"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -330,6 +331,8 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 		mode |= DELIVERY_DO_NOTIF;
 	if (g_twostep)
 		mode |= DELIVERY_TWOSTEP;
+	if (g_mrautoproc)
+		mode |= DELIVERY_MRAUTOPROC;
 	for (auto i = 0U; i < g_repeat_iter; ++i) {
 		if (i > 0 && i % 1024 == 0)
 			fprintf(stderr, "mt2exm repeat %u/%u\n", i, g_repeat_iter);
