@@ -1,9 +1,18 @@
-Gromox 2.28.22 (status report)
+Gromox 2.28.33 (status report)
 ==============================
 
+Fixes:
+
 * dnsbl_filter: support DNSBL servers that do not emit TXT records
-* email_lib: avoid generating ext digests with MIME epilogue counted
-* imap: workaround ext digests with epilogue size bug
+* email_lib: cure IMAP Structure Descriptions indicating a mail size 2 bytes
+  larger than it is
+* imap: cope with truncated EML files
+
+Changes:
+
+* emsmdb: attempt to synthesize PR_SENDER_ADDRTYPE &
+  PR_SENT_REPRESENTING_ADDRTYPE when they are missing (also warn when those
+  properties are deleted)
 
 
 Gromox 2.28 (2024-05-02)
