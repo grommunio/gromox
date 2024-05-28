@@ -35,7 +35,7 @@ using namespace gromox;
 DECLARE_HOOK_API(exmdb_local, );
 using namespace exmdb_local;
 
-static bool g_lda_twostep;
+static bool g_lda_twostep, g_lda_mrautoproc;
 static char g_org_name[256];
 static thread_local ALLOC_CONTEXT *g_alloc_key;
 static thread_local const char *g_storedir;
@@ -51,7 +51,7 @@ BOOL (*exmdb_local_check_same_org2)(
 static GET_USER_IDS exmdb_local_get_user_ids;
 static GET_DOMAIN_IDS exmdb_local_get_domain_ids;
 static BOOL (*exmdb_local_get_username)(unsigned int, char *, size_t);
-static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t);
+static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int flags);
 
 static int exmdb_local_sequence_ID()
 {
@@ -439,8 +439,10 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 			return delivery_status::bounce_sent;
 		return delivery_status::ok;
 	}
+	if (g_lda_mrautoproc)
+		flags |= DELIVERY_DO_MRAUTOPROC;
 	auto err = exmdb_local_rules_execute(home_dir, pcontext->ctrl.from,
-	           address, folder_id, message_id);
+	           address, folder_id, message_id, flags);
 	if (err != ecSuccess)
 		mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s", mapi_strerror(err));
 	return delivery_status::ok;
@@ -557,6 +559,7 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		mlog(LV_INFO, "exmdb_local: auto response interval is %s", temp_buff);
 
 		g_lda_twostep = parse_bool(pfile->get_value("lda_twostep_ruleproc"));
+		g_lda_mrautoproc = parse_bool(pfile->get_value("lda_mrautoproc"));
 
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(cache_path, cache_interval, retrying_times);

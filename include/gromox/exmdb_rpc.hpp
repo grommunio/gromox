@@ -752,6 +752,7 @@ struct exreq_update_folder_rule final : public exreq {
 enum delivery_flags {
 	DELIVERY_DO_RULES = 0x1U,
 	DELIVERY_DO_NOTIF = 0x2U,
+	DELIVERY_DO_MRAUTOPROC = 0x4U,
 };
 
 struct exreq_deliver_message final : public exreq {

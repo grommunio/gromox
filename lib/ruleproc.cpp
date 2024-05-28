@@ -134,7 +134,7 @@ struct rxparam {
 	const char *ev_from = nullptr, *ev_to = nullptr;
 	message_node cur;
 	message_content_ptr ctnt;
-	bool del = false, exit = false;
+	bool del = false, exit = false, do_autoproc = true;
 };
 
 }
@@ -1242,13 +1242,15 @@ ec_error_t rxparam::run()
 		return ecSuccess;
 	}
 
-	mr_policy res_policy;
-	err = mr_get_policy(ev_to, res_policy);
-	if (err != ecSuccess)
-		return err;
-	err = mr_start(*this, res_policy);
-	if (err != ecSuccess)
-		return err;
+	if (do_autoproc) {
+		mr_policy res_policy;
+		err = mr_get_policy(ev_to, res_policy);
+		if (err != ecSuccess)
+			return err;
+		err = mr_start(*this, res_policy);
+		if (err != ecSuccess)
+			return err;
+	}
 
 	if (!exmdb_client::notify_new_mail(cur.dirc(), cur.fid, cur.mid))
 		mlog(LV_ERR, "ruleproc: newmail notification unsuccessful");
@@ -1256,11 +1258,12 @@ ec_error_t rxparam::run()
 }
 
 static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
-    const char *ev_to, eid_t folder_id, eid_t msg_id) try
+    const char *ev_to, eid_t folder_id, eid_t msg_id, unsigned int flags) try
 {
 	rxparam p({dir, folder_id, msg_id});
 	p.ev_from = ev_from;
 	p.ev_to   = ev_to;
+	p.do_autoproc = flags & DELIVERY_DO_MRAUTOPROC;
 	return std::move(p).run();
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1121: ENOMEM");

@@ -81,7 +81,10 @@ using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>;
 using propname_array_ptr = std::unique_ptr<PROPNAME_ARRAY, gi_delete>;
 using tarray_set_ptr = std::unique_ptr<TARRAY_SET, gi_delete>;
 
-static constexpr unsigned int DELIVERY_TWOSTEP = 0x8000;
+enum {
+	DELIVERY_TWOSTEP = 0x8000U,
+	DELIVERY_MRAUTOPROC = 0x10000U,
+};
 
 extern std::string g_dstuser;
 extern const char *g_storedir;
