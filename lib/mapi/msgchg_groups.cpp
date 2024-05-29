@@ -381,7 +381,7 @@ errno_t msgchg_grouping_run() try
 	auto err = mcg_loadfile(g_builtin_group_1, 1);
 	if (err != 0)
 		mlog(LV_ERR, "msgchggrp: group 1: %s", strerror(err));
-	return g_group_list.size() != 0 ? err : ENOENT;
+	return g_group_list.size() != 0 ? err : errno_t{ENOENT};
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1493: ENOMEM");
 	return ENOMEM;
