@@ -76,22 +76,22 @@ the properties do have semantics or warrants remarks from our side.
 * ``PR_EMS_AB_ROOM_CAPACITY``: This property is only of informational value; no
   decisions in code paths are made based on the value.
 
-* ``PR_SCHDINFO_BOSS_WANTS_COPY`` (proposed extension): If set to ``1``, any
-  delegate operations will put the boss (the delegator, the representee) in Cc.
-  [Originally, this property was used in OXOPFFB configuration messages. Gromox
-  repurposed the property to be set on user objects.]
+* ``PR_SCHDINFO_AUTO_ACCEPT_APPTS``: [Originally, this property was used in
+  OXOPFFB configuratino messages. Gromox repurposed the property to be set on
+  user objects.] If set to ``0``, meeting requests will not be automatically
+  accepted by the server system (but they may still be added to the calendar as
+  tentative appointments). If set to ``1``, meeting requests will be accepted
+  (subject to availability and other constraints).
 
-* ``PR_SCHDINFO_DISALLOW_RECURRING_APPTS`` (proposed extension): If set to
-  ``1``, Rooms and Equipment (Resource mailboxes) will respond to, and decline,
-  any Meeting Requests with a Recurrence Pattern. [Originally OXOPFFB-specific,
-  repurposed as a user property by Gromox.]
+* ``PR_SCHDINFO_BOSS_WANTS_COPY``: [Originally OXOPFFB.] (Proposed) If set to
+  ``1``, any delegate operations will put the boss (the delegator, the
+  representee) in Cc.
 
-* ``PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS`` (proposed extension): If set to
-  ``1``, Rooms and Equipment (Resource mailboxes) will respond and decline
-  Meeting Requests that conflict with an existing appointment. When the value
-  is ``0``, insatisfiable requests will get no response. (Satisfiable requests
-  will get accepted.) [Originally OXOPFFB-specific, repurposed as a user
-  property by Gromox.]
+* ``PR_SCHDINFO_DISALLOW_RECURRING_APPTS``: [Originally OXOPFFB.] If set to
+  ``1``, any meeting requests involving a recurrence are declined.
+
+* ``PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS``: [Originally OXOPFFB.] If set to
+  ``1``, any meeting requests involving a scheduling conflict are declined.
 
 All other property values have no extra meaning and are passed through.
 

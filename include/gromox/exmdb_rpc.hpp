@@ -752,6 +752,7 @@ struct exreq_update_folder_rule final : public exreq {
 enum delivery_flags {
 	DELIVERY_DO_RULES = 0x1U,
 	DELIVERY_DO_NOTIF = 0x2U,
+	DELIVERY_DO_MRAUTOPROC = 0x4U,
 };
 
 struct exreq_deliver_message final : public exreq {
@@ -1354,7 +1355,6 @@ extern GX_EXPORT pack_result exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *
 extern GX_EXPORT const char *exmdb_rpc_strerror(exmdb_response);
 extern GX_EXPORT BOOL exmdb_client_read_socket(int, BINARY &, long timeout = -1);
 extern GX_EXPORT BOOL exmdb_client_write_socket(int, const BINARY &, long timeout = -1);
-extern GX_EXPORT ec_error_t exmdb_local_rules_execute(const char *dir, const char *from, const char *to, eid_t fid, eid_t mid);
 
 extern GX_EXPORT void *(*exmdb_rpc_alloc)(size_t);
 extern GX_EXPORT void (*exmdb_rpc_free)(void *);

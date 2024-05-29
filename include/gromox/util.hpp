@@ -44,6 +44,7 @@ struct GX_EXPORT alloc_context {
 		return nullptr;
 	}
 	size_t get_total() const { return m_total_size; }
+	void clear() { m_ptrs.clear(); }
 
 	std::vector<std::unique_ptr<char[]>> m_ptrs;
 	size_t m_total_size = 0;
