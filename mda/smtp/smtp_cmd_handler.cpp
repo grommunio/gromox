@@ -162,7 +162,7 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
 	if (g_param.support_starttls && g_param.force_starttls &&
 	    pcontext->connection.ssl == nullptr)
 		return 520;
-    parse_email_addr(&email_addr, buff);
+	parse_mime_addr(&email_addr, buff);
 	if (!email_addr.has_addr()) {
         /* 550 invalid user - <email_addr> */
 		smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);
@@ -206,7 +206,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 		return 520;
     memcpy(buff, cmd_line + 8, line_length - 8);
     buff[line_length - 8] = '\0';
-    parse_email_addr(&email_addr, buff);
+	parse_mime_addr(&email_addr, buff);
 	if (!email_addr.has_addr()) {
         /* 550 invalid user - <email_addr> */
 		smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);

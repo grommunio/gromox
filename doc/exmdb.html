@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style type="text/css">
+body { background-color: #ffffff; color: #000000; }
+.ybg { background-color: #ffd428; color: #000000; }
+.red { background-color: #ffcccc; color: #cc0000; font-weight: bold; text-align: center; }
+.yel { background-color: #ffffcc; color: #996600; font-weight: bold; text-align: center; }
+.grn { background-color: #ccffcc; color: #006600; font-weight: bold; text-align: center; }
+.gray { background-color: #dddddd; color: #000000; font-weight: bold; text-align: center; }
+.bdtop { border-top: 2px solid black; }
+.bold, th { font-weight: bold; text-align: center; }
+.file, .func { font-family: "Arial Narrow", monospace; }
+.cntr { text-align: center; }
+</style>
+</head>
+
+<body>
+<table cellspacing="0">
+<tr>
+	<th>Abbrev.</th>
+	<th>Description</th>
+</tr>
+<tr>
+	<td class="red bdtop">W</td>
+	<td class="bdtop">write (explicit transaction)</td>
+</tr>
+<tr>
+	<td class="red">w</td>
+	<td>write (implicit transaction)</td>
+</tr>
+<tr>
+	<td class="yel">R</td>
+	<td>read (explicit transaction)</td>
+</tr>
+<tr>
+	<td class="yel">r</td>
+	<td>read (implicit transaction)</td>
+</tr>
+<tr>
+	<td class="grn">x</td>
+	<td>not used</td>
+</tr>
+<tr>
+	<td class="gray bdtop">n</td>
+	<td class="bdtop">used for notifications</td>
+</tr>
+<tr>
+	<td class="red">D</td>
+	<td>dynamic list modified</td>
+</tr>
+<tr>
+	<td class="yel">d</td>
+	<td>dynamic list accessed</td>
+</tr>
+<tr>
+	<td class="red">I</td>
+	<td>instance modified</td>
+</tr>
+<tr>
+	<td class="yel">i</td>
+	<td>instance accessed</td>
+</tr>
+<tr>
+	<td class="red">S</td>
+	<td>subscription modified</td>
+</tr>
+<tr>
+	<td class="yel">s</td>
+	<td>subscription accessed</td>
+</tr>
+<tr>
+	<td class="red">T</td>
+	<td>table modified</td>
+</tr>
+<tr>
+	<td class="yel">t</td>
+	<td>table accessed</td>
+</tr>
+<tr>
+	<td class="red">+</td>
+	<td>management struct modified</td>
+</tr>
+	<td class="bold bdtop">b</td>
+	<td class="bdtop">read lock on base</td>
+</tr>
+<tr>
+	<td class="bold">B</td>
+	<td>write lock on base</td>
+</tr>
+<tr>
+	<td class="bold">e</td>
+	<td>read transaction on eph</td>
+</tr>
+<tr>
+	<td class="bold">E</td>
+	<td>write transaction on eph</td>
+</tr>
+<tr>
+	<td class="bold">m</td>
+	<td>read transaction on main</td>
+</tr>
+<tr>
+	<td class="bold">M</td>
+	<td>write transaction on main</td>
+</tr>
+</table>
+
+<p>&nbsp;</p>
+
+<table cellspacing="0">
+<tr>
+	<th>Location</td>
+	<th>Function</td>
+	<th>main</td>
+	<th>eph</td>
+	<th>base</td>
+	<th>locking order</td>
+	<th>notify</td>
+	<th>Notes</td>
+</tr>
+<tr class="ybg">
+	<td class="file">folder.cpp:1466</td>
+	<td class="func">copy_folder_internal</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(b)</td>
+	<td>dynamic_event</td>
+	<td>notification in transaction</td>
+</tr>
+<tr class="ybg">
+	<td class="file">folder.cpp:250</td>
+	<td class="func">create_folder</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(b)</td>
+	<td>folder_creation</td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">folder.cpp:815</td>
+	<td class="func">delete_folder</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>dynamic_event, delete_dynamic, link_deletion, message_deletion, folder_deletion</td>
+	<td>notification in transaction</td>
+</tr>
+<tr class="ybg">
+	<td class="file">folder.cpp:949</td>
+	<td class="func">empty_folder</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>dynamic_event, link_deletion, message_deletion</td>
+	<td>notification in transaction</td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:1938</td>
+	<td class="func">empty_folder_permission</td>
+	<td class="red">w</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:2150</td>
+	<td class="func">empty_folder_rule</td>
+	<td class="red">w</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:479</td>
+	<td class="func">get_folder_all_proptags</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:31</td>
+	<td class="func">get_folder_by_class</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:230</td>
+	<td class="func">get_folder_by_name</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:139</td>
+	<td class="func">get_folder_class_table</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:1924</td>
+	<td class="func">get_folder_perm</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:505</td>
+	<td class="func">get_folder_properties</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:2406</td>
+	<td class="func">get_public_folder_unread_count</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:1682</td>
+	<td class="func">get_search_criteria</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:1012</td>
+	<td class="func">is_descendant_folder</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:212</td>
+	<td class="func">is_folder_deleted</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:201</td>
+	<td class="func">is_folder_present</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">folder.cpp:1532</td>
+	<td class="func">movecopy_folder</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>dynamic_event, folder_movecopy</td>
+	<td>notification in transaction</td>
+</tr>
+<tr class="ybg">
+	<td class="file">folder.cpp:554</td>
+	<td class="func">remove_folder_properties</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(b)</td>
+	<td>folder_modification</td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:84</td>
+	<td class="func">set_folder_by_class</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">folder.cpp:518</td>
+	<td class="func">set_folder_properties</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(b)</td>
+	<td>folder_modification</td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">folder.cpp:1777</td>
+	<td class="func">set_search_criteria</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>dynamic_event, update_dynamic, delete_dynamic</td>
+	<td>notification in transaction</td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:2118</td>
+	<td class="func">update_folder_permission</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">folder.cpp:2165</td>
+	<td class="func">update_folder_rule</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">ics.cpp:97</td>
+	<td class="func">get_content_sync</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">ics.cpp:631</td>
+	<td class="func">get_hierarchy_sync</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:553</td>
+	<td class="func">clear_message_instanct</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2889</td>
+	<td class="func">copy_instance_attachments</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2778</td>
+	<td class="func">copy_instance_rcpts</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:1166</td>
+	<td class="func">create_attachment_instance</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I+</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:1304</td>
+	<td class="func">delete_message_instance_attachment</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2811</td>
+	<td class="func">empty_message_instance_attachment</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2576</td>
+	<td class="func">empty_message_instance_rcpts</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:1339</td>
+	<td class="func">flush_instance</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:471</td>
+	<td class="func">get_embedded_cn</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">i</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:1589</td>
+	<td class="func">get_instance_all_proptags</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">i</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:1887</td>
+	<td class="func">get_instance_properties</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">i</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2847</td>
+	<td class="func">get_message_instance_attachment_table_all_proptags</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">i</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2830</td>
+	<td class="func">get_message_instance_attachments_num</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">i</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2651</td>
+	<td class="func">get_message_instance_rcpts</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">i</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2612</td>
+	<td class="func">get_message_instance_rcpts_all_proptags</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">i</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2595</td>
+	<td class="func">get_message_instance_rcpts_num</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">i</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2552</td>
+	<td class="func">is_descendant_instance</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">i</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:1123</td>
+	<td class="func">load_attachment_instance</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I+</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">instance.cpp:390</td>
+	<td class="func">load_embedded_instance</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="red">I+</td>
+	<td class="cntr">M(B[)]</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:317</td>
+	<td class="func">load_message_instance</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="red">I+</td>
+	<td>b(m)</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2924</td>
+	<td class="func">query_message_instance_attachment_table</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">i</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:1218</td>
+	<td class="func">read_attachment_instance</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">i</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:931</td>
+	<td class="func">read_message_instance</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">i</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:491</td>
+	<td class="func">reload_message_instance</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td>m(B)</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2536</td>
+	<td class="func">remove_instance_properties</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2433</td>
+	<td class="func">set_instance_properties</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2989</td>
+	<td class="func">set_message_instance_conflict</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:1515</td>
+	<td class="func">unload_instance</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I+</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:2722</td>
+	<td class="func">update_message_instance_rcpts</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:1233</td>
+	<td class="func">write_attachment_instance</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">instance.cpp:980</td>
+	<td class="func">write_message_instance</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">I</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:1021</td>
+	<td class="func">allocate_message_id</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:1272</td>
+	<td class="func">clear_submit</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">message.cpp:483</td>
+	<td class="func">delete_messages</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B[)]</td>
+	<td>dynamic_event, message_deletion</td>
+	<td>batch mode</td>
+</tr>
+<tr class="ybg">
+	<td class="file">message.cpp:3626</td>
+	<td class="func">deliver_message</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>dynamic_event, new_mail, message_creation</td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:1134</td>
+	<td class="func">get_change_indices</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:705</td>
+	<td class="func">get_message_brief</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:1045</td>
+	<td class="func">get_message_group_id</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:869</td>
+	<td class="func">get_message_properties</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:852</td>
+	<td class="func">get_message_rcpts</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:1408</td>
+	<td class="func">get_message_timer</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:830</td>
+	<td class="func">is_msg_deleted</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:791</td>
+	<td class="func">is_msg_present</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">message.cpp:1314</td>
+	<td class="func">link_message</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>dynamic_event, link_creation</td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:1214</td>
+	<td class="func">mark_modified</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">message.cpp:114</td>
+	<td class="func">movecopy_message</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>dynamic_event, message_movecopy</td>
+	<td>notification in transaction</td>
+</tr>
+<tr class="ybg">
+	<td class="file">message.cpp:255</td>
+	<td class="func">movecopy_messages</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B[)]</td>
+	<td>dynamic_event, message_movecopy</td>
+	<td>batch mode</td>
+</tr>
+<tr>
+	<td class="file">message.cpp:3869</td>
+	<td class="func">read_message</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">message.cpp:925</td>
+	<td class="func">remove_message_properties</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>dynamic_event, message_modification</td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">message.cpp:3897</td>
+	<td class="func">rule_new_message</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>dynamic_event, message_creation</td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:1088</td>
+	<td class="func">save_change_indices</td>
+	<td class="red">w</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:1071</td>
+	<td class="func">set_message_group_id</td>
+	<td class="red">w</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">message.cpp:890</td>
+	<td class="func">set_message_properties</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>dynamic_event, message_modification</td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">message.cpp:959</td>
+	<td class="func">set_message_read_state</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>dynamic_event, message_modification</td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:1388</td>
+	<td class="func">set_message_timer</td>
+	<td class="red">w</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">message.cpp:1241</td>
+	<td class="func">try_mark_submit</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">message.cpp:1360</td>
+	<td class="func">unlink_message</td>
+	<td class="red">w</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>dynamic_event, link_deletion</td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">message.cpp:3788</td>
+	<td class="func">write_message_v2</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>dynamic_event, message_modification, message_creation</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:307</td>
+	<td class="func">allocate_cn</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:324</td>
+	<td class="func">allocate_ids</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:469</td>
+	<td class="func">check_contact_address</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:33</td>
+	<td class="func">get_all_named_propids</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:97</td>
+	<td class="func">get_mapping_guid</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:110</td>
+	<td class="func">get_mapping_replid</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:220</td>
+	<td class="func">get_mbox_perm</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:71</td>
+	<td class="func">get_named_propids</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:87</td>
+	<td class="func">get_named_propnames</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:154</td>
+	<td class="func">get_store_all_proptags</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:172</td>
+	<td class="func">get_store_properties</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:196</td>
+	<td class="func">remove_store_properties</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:183</td>
+	<td class="func">set_store_properties</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:364</td>
+	<td class="func">subscribe_notification</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">S+</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:427</td>
+	<td class="func">transport_new_mail</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">s</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store.cpp:413</td>
+	<td class="func">unsubscribe_notification</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">S+</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store2.cpp:50</td>
+	<td class="func">notify_new_mail</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td></td>
+	<td>new_mail</td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">store2.cpp:480</td>
+	<td class="func">purge_datafiles</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">store2.cpp:267</td>
+	<td class="func">purge_softdelete</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="gray">n</td>
+	<td class="cntr">M(B)</td>
+	<td>folder_deletion</td>
+	<td>notification in transaction</td>
+</tr>
+<tr>
+	<td class="file">store2.cpp:538</td>
+	<td class="func">recalc_store_size</td>
+	<td class="red">W</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">table.cpp:2920</td>
+	<td class="func">collapse_table</td>
+	<td class="grn">x</td>
+	<td class="red">W</td>
+	<td class="yel">t</td>
+	<td class="cntr">b(E[)]</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">table.cpp:2810</td>
+	<td class="func">expand_table</td>
+	<td class="grn">x</td>
+	<td class="red">W</td>
+	<td class="yel">t</td>
+	<td class="cntr">b(E[)]</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">table.cpp:2618</td>
+	<td class="func">get_table_all_proptags</td>
+	<td class="yel">R</td>
+	<td class="yel">r</td>
+	<td class="yel">t</td>
+	<td>m(b)</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">table.cpp:1039</td>
+	<td class="func">load_content_table</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="red">T+</td>
+	<td>m(E, B)</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">table.cpp:209</td>
+	<td class="func">load_hierarchy_table</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="red">T+</td>
+	<td>E(m), B</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">table.cpp:1148</td>
+	<td class="func">load_permission_table</td>
+	<td class="yel">r</td>
+	<td class="red">W</td>
+	<td class="red">T+</td>
+	<td>E, B</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">table.cpp:1318</td>
+	<td class="func">load_rule_table</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="red">T+</td>
+	<td>E(m), B</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">table.cpp:2324</td>
+	<td class="func">locate_table</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">t</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">table.cpp:2557</td>
+	<td class="func">mark_table</td>
+	<td class="grn">x</td>
+	<td class="yel">r</td>
+	<td class="yel">t</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">table.cpp:2292</td>
+	<td class="func">match_table</td>
+	<td class="yel">R</td>
+	<td class="yel">R</td>
+	<td class="yel">t</td>
+	<td class="cntr">b(m) | b(m(e))</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">table.cpp:1873</td>
+	<td class="func">query_table</td>
+	<td class="yel">R</td>
+	<td class="yel">R</td>
+	<td class="yel">t</td>
+	<td class="cntr">b(m) | b(m(e))</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">table.cpp:2529</td>
+	<td class="func">read_table_row</td>
+	<td class="yel">R</td>
+	<td class="yel">R</td>
+	<td class="yel">t</td>
+	<td class="cntr">b(m) | b(m(e))</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">table.cpp:1065</td>
+	<td class="func">reload_content_table</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="red">n, T+</td>
+	<td>B(m(E))</td>
+	<td>cttbl_reload</td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">table.cpp:3284</td>
+	<td class="func">restore_table_state</td>
+	<td class="grn">x</td>
+	<td class="red">W</td>
+	<td class="yel">t</td>
+	<td>B(E)</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">table.cpp:3008</td>
+	<td class="func">store_table_state</td>
+	<td class="grn">x</td>
+	<td class="yel">R</td>
+	<td class="yel">t</td>
+	<td class="cntr">b(e)</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">table.cpp:284</td>
+	<td class="func">sum_content</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">table.cpp:191</td>
+	<td class="func">sum_hierarchy</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">table.cpp:1404</td>
+	<td class="func">sum_table</td>
+	<td class="grn">x</td>
+	<td class="yel">r</td>
+	<td class="grn">x</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">table.cpp:1382</td>
+	<td class="func">unload_table</td>
+	<td class="grn">x</td>
+	<td class="red">w</td>
+	<td class="red">T+</td>
+	<td>B, e</td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">db_engine.cpp:3870</td>
+	<td class="func">cttbl_reload</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="yel">t</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">db_engine.cpp:2288</td>
+	<td class="func">folder_creation</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="yel">n, s, t</td>
+	<td></td>
+	<td>folder_modification</td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">db_engine.cpp:2948</td>
+	<td class="func">folder_deletion</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="yel">s, t</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">db_engine.cpp:3735</td>
+	<td class="func">folder_modification</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="yel">s, t</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">db_engine.cpp:3817</td>
+	<td class="func">folder_movecopy</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="yel">n, s, t</td>
+	<td></td>
+	<td>folder_modification</td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">db_engine.cpp:2107</td>
+	<td class="func">link_creation</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="yel">n, s, t</td>
+	<td></td>
+	<td>folder_modification</td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">db_engine.cpp:2851</td>
+	<td class="func">link_deletion</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="yel">n, s, t</td>
+	<td></td>
+	<td>folder_modification</td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">db_engine.cpp:2078</td>
+	<td class="func">message_creation</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="yel">n, s, t</td>
+	<td></td>
+	<td>folder_modification</td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">db_engine.cpp:2820</td>
+	<td class="func">message_deletion</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="yel">n, s, t</td>
+	<td></td>
+	<td>folder_modification</td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">db_engine.cpp:3556</td>
+	<td class="func">message_modification</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="yel">n, s, t</td>
+	<td></td>
+	<td>folder_modification</td>
+	<td></td>
+</tr>
+<tr class="ybg">
+	<td class="file">db_engine.cpp:3764</td>
+	<td class="func">message_movecopy</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="yel">n, s, t</td>
+	<td></td>
+	<td>folder_modification</td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">db_engine.cpp:2044</td>
+	<td class="func">new_mail</td>
+	<td class="yel">R</td>
+	<td class="red">W</td>
+	<td class="yel">n, s, t</td>
+	<td></td>
+	<td>folder_modification</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">db_engine.cpp:977</td>
+	<td class="func">delete_dynamic</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">D+</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">db_engine.cpp:1160</td>
+	<td class="func">dynamic_event</td>
+	<td class="yel">R</td>
+	<td class="grn">x</td>
+	<td class="yel">d, n</td>
+	<td></td>
+	<td>dynamic_event, link_creation, link_deletion</td>
+	<td></td>
+</tr>
+<tr>
+	<td class="file">db_engine.cpp:950</td>
+	<td class="func">update_dynamic</td>
+	<td class="grn">x</td>
+	<td class="grn">x</td>
+	<td class="red">D+</td>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+</table>
+</body>

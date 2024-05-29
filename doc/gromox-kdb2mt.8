@@ -101,9 +101,9 @@ kopano-server.cfg, call kdb2mt with the L1 and L2 options.
 .TP
 \fB\-\-only\-obj\fP \fIhid\fP
 Extract just the object with the given hierarchy id. This option may be
-specified multiple times. In the output stream, the objects will have an
-unspecified location given as their parent folder. (mt2exm will use the
-drafts folder because it is expectedly less crowded than one's inbox.)
+specified multiple times to selectively extract more objects. In the output
+stream, objects so extracted will be declared as unanchored so they can be
+imported to a folder of choice later (cf. gromox-mt2exm \-B).
 .TP
 \fB\-\-acl\fP={\fIauto\fP|\fIno\fP|\fInoextract\fP|\fIextract\fP|\fIconvert\fP}
 Handling for ACLs on MAPI objects: ignore, extract to synthetic address, or

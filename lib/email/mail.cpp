@@ -350,7 +350,7 @@ static void replace_qb(char *s)
  *		0					buffer length insufficient
  *		1					digest mail OK
  */
-int MAIL::get_digest(size_t *poffset, Json::Value &digest) const try
+int MAIL::make_digest(size_t *poffset, Json::Value &digest) const try
 {
 	auto pmail = this;
 	char *ptr;
@@ -506,12 +506,12 @@ int MAIL::get_digest(size_t *poffset, Json::Value &digest) const try
 		digest["encrypt"] = 1;
 	*poffset = 0;
 	Json::Value dsarray = Json::arrayValue;
-	if (pmail->get_head()->get_structure_digest("", poffset, dsarray) < 0)
+	if (pmail->get_head()->make_structure_digest("", poffset, dsarray) < 0)
 		return -1;
 	digest["structure"] = std::move(dsarray);
 	*poffset = 0;
 	dsarray = Json::arrayValue;
-	if (pmail->get_head()->get_mimes_digest("", poffset, dsarray) < 0)
+	if (pmail->get_head()->make_mimes_digest("", poffset, dsarray) < 0)
 		return -1;
 	digest["mimes"] = std::move(dsarray);
 	digest["size"] = Json::Value::UInt64(*poffset);

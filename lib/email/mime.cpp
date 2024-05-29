@@ -1374,8 +1374,8 @@ bool MIME::get_filename(char *file_name, size_t fnsize) const
 	return *file_name != '\0';
 }
 
-static int mime_get_digest_single(const MIME *, const char *id, size_t *ofs, size_t head_ofs, Json::Value &);
-static int mime_get_digest_multi(const MIME *, const char *id, size_t *ofs, Json::Value &);
+static int make_digest_single(const MIME *, const char *id, size_t *ofs, size_t head_ofs, Json::Value &);
+static int make_digest_multi(const MIME *, const char *id, size_t *ofs, Json::Value &);
 
 /*
  *  get the digest string of mail mime
@@ -1386,7 +1386,7 @@ static int mime_get_digest_multi(const MIME *, const char *id, size_t *ofs, Json
  *  @return
  *      string length in pbuff
  */
-int MIME::get_mimes_digest(const char *id_string, size_t *poffset,
+int MIME::make_mimes_digest(const char *id_string, size_t *poffset,
     Json::Value &dsarray) const try
 {
 	auto pmime = this;
@@ -1398,6 +1398,7 @@ int MIME::get_mimes_digest(const char *id_string, size_t *poffset,
 #endif
 	if (pmime->mime_type == mime_type::none)
 		return -1;
+	/* This function must produce *exactly* the same bytecount as MIME::emit */
 	size_t head_offset = *poffset;
 	if (!pmime->head_touched) {
 		/* the original buffer contains \r\n */
@@ -1423,8 +1424,8 @@ int MIME::get_mimes_digest(const char *id_string, size_t *poffset,
 	}
 	return pmime->mime_type == mime_type::single ||
 	       pmime->mime_type == mime_type::single_obj ?
-	       mime_get_digest_single(this, id_string, poffset, head_offset, dsarray) :
-	       mime_get_digest_multi(this, id_string, poffset, dsarray);
+	       make_digest_single(this, id_string, poffset, head_offset, dsarray) :
+	       make_digest_multi(this, id_string, poffset, dsarray);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1132: ENOMEM");
 	return -1;
@@ -1437,7 +1438,7 @@ static void replace_qb(char *s)
 			*s = ' ';
 }
 
-static int mime_get_digest_single(const MIME *pmime, const char *id_string,
+static int make_digest_single(const MIME *pmime, const char *id_string,
     size_t *poffset, size_t head_offset, Json::Value &dsarray)
 {
 	size_t content_len = 0;
@@ -1524,7 +1525,7 @@ static int mime_get_digest_single(const MIME *pmime, const char *id_string,
 	return 0;
 }
 
-static int mime_get_digest_multi(const MIME *pmime, const char *id_string,
+static int make_digest_multi(const MIME *pmime, const char *id_string,
     size_t *poffset, Json::Value &dsarray)
 {
 	int count;
@@ -1545,7 +1546,7 @@ static int mime_get_digest_multi(const MIME *pmime, const char *id_string,
 		else
 			snprintf(temp_id, 64, "%s.%d", id_string, count);
 		auto mime = static_cast<const MIME *>(pnode->pdata);
-		if (mime->get_mimes_digest(temp_id, poffset, dsarray) < 0)
+		if (mime->make_mimes_digest(temp_id, poffset, dsarray) < 0)
 			return -1;
 		pnode = pnode->get_sibling();
 		count++;
@@ -1554,7 +1555,7 @@ static int mime_get_digest_multi(const MIME *pmime, const char *id_string,
 		*poffset += pmime->boundary_len + 6;
 	*poffset += pmime->boundary_len + 4;
 	if (NULL == pmime->last_boundary) {
-		*poffset += 4;
+		*poffset += 2;
 		return 0;
 	}
 	tmp_len = pmime->content_length - (pmime->last_boundary -
@@ -1563,7 +1564,7 @@ static int mime_get_digest_multi(const MIME *pmime, const char *id_string,
 	return 0;
 }
 
-static int mime_get_struct_multi(const MIME *, const char *id, size_t *ofs, size_t head_ofs, Json::Value &);
+static int make_struct_multi(const MIME *, const char *id, size_t *ofs, size_t head_ofs, Json::Value &);
 
 /*
  *  get the digest string of mail struct
@@ -1574,7 +1575,7 @@ static int mime_get_struct_multi(const MIME *, const char *id, size_t *ofs, size
  *  @return
  *      string length in pbuff
  */
-int MIME::get_structure_digest(const char *id_string, size_t *poffset,
+int MIME::make_structure_digest(const char *id_string, size_t *poffset,
     Json::Value &dsarray) const try
 {
 	auto pmime = this;
@@ -1610,7 +1611,7 @@ int MIME::get_structure_digest(const char *id_string, size_t *poffset,
 		*poffset += 4;
 	}
 	if (pmime->mime_type == mime_type::multiple)
-		return mime_get_struct_multi(this, id_string, poffset,
+		return make_struct_multi(this, id_string, poffset,
 		       head_offset, dsarray);
 	if (pmime->content_begin == nullptr) {
 		/* if there's nothing, just append an empty line */
@@ -1631,7 +1632,7 @@ int MIME::get_structure_digest(const char *id_string, size_t *poffset,
 	return -1;
 }
 
-static int mime_get_struct_multi(const MIME *pmime, const char *id_string,
+static int make_struct_multi(const MIME *pmime, const char *id_string,
     size_t *poffset, size_t head_offset, Json::Value &dsarray)
 {
 	size_t count = 0;
@@ -1666,7 +1667,7 @@ static int mime_get_struct_multi(const MIME *pmime, const char *id_string,
 			snprintf(temp_id, 64, "%zu", count);
 		else
 			snprintf(temp_id, 64, "%s.%zu", id_string, count);
-		if (static_cast<const MIME *>(pnode->pdata)->get_structure_digest(temp_id,
+		if (static_cast<const MIME *>(pnode->pdata)->make_structure_digest(temp_id,
 		    poffset, dsarray) < 0)
 			return -1;
 		pnode = pnode->get_sibling();

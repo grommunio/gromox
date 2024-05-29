@@ -175,11 +175,11 @@ std::string TAGGED_PROPVAL::value_repr(bool verbose) const
 		return {};
 	case PT_SHORT: {
 		auto v = *static_cast<int16_t *>(pvalue);
-		return fmt::format("{}/0x{:x}", v, v);
+		return fmt::format("{}/0x{:x}", v, static_cast<uint64_t>(v));
 	}
 	case PT_LONG: {
 		auto v = *static_cast<int32_t *>(pvalue);
-		return fmt::format("{}/0x{:x}", v, v);
+		return fmt::format("{}/0x{:x}", v, static_cast<uint32_t>(v));
 	}
 	case PT_FLOAT:
 		return std::to_string(*static_cast<float *>(pvalue));

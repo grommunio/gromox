@@ -41,8 +41,8 @@ struct GX_EXPORT MIME {
 	bool remove_field(const char *tag);
 	bool get_content_param(const char *tag, char *value, size_t len) const;
 	bool set_content_param(const char *tag, const char *value);
-	int get_mimes_digest(const char *, size_t *, Json::Value &) const;
-	int get_structure_digest(const char *, size_t *, Json::Value &) const;
+	int make_mimes_digest(const char *, size_t *, Json::Value &) const;
+	int make_structure_digest(const char *, size_t *, Json::Value &) const;
 	bool serialize(STREAM *) const;
 	bool emit(write_func, void *) const;
 	ssize_t get_length() const;

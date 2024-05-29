@@ -817,9 +817,12 @@ static tproc_status ps_stat_wrdat(imap_context *pcontext)
 	auto len = pcontext->literal_len - pcontext->current_len;
 	if (len > 64 * 1024)
 		len = 64 * 1024;
+	auto curofs = lseek(pcontext->message_fd, 0, SEEK_CUR);
 	auto read_len = read(pcontext->message_fd, pcontext->write_buff, len);
 	if (read_len != len) {
-		imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
+		imap_parser_log_info(pcontext, LV_WARN, "W-1512: short read %s, exp cur+%d, got %lld+%zd",
+			pcontext->file_path.c_str(), len,
+			static_cast<long long>(curofs), read_len);
 		/* IMAP_CODE_2180012: * BAD internal error: fail to read file */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1812, 1, &string_length);
@@ -999,9 +1002,21 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 					strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
 					pcontext->write_length += 3;
 				} else {
-					if (lseek(pcontext->message_fd, strtol(ptr + 1, nullptr, 0), SEEK_SET) < 0)
-						mlog(LV_ERR, "E-1426: lseek: %s", strerror(errno));
+					auto wantofs = strtol(&ptr[1], nullptr, 0);
+					errno = 0;
+					auto newofs = lseek(pcontext->message_fd, wantofs, SEEK_SET);
+					if (newofs != wantofs) {
+						mlog(LV_ERR, "E-1426: lseek %s exp %ld got %lld: %s",
+							pcontext->file_path.c_str(), wantofs,
+							static_cast<long long>(newofs), strerror(errno));
+						pcontext->close_fd();
+						return IMAP_RETRIEVE_ERROR;
+					}
 					pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
+					struct stat sb;
+					if (fstat(pcontext->message_fd, &sb) == 0)
+						pcontext->literal_len = std::min(static_cast<long long>(pcontext->literal_len),
+						                        std::max(0LL, static_cast<long long>(sb.st_size - newofs)));
 					pcontext->current_len = 0;
 					pcontext->write_length += sprintf(&pcontext->write_buff[pcontext->write_length], "{%d}\r\n", pcontext->literal_len);
 					len = MAX_LINE_LENGTH - pcontext->write_length;
@@ -1010,7 +1025,9 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 					read_len = read(pcontext->message_fd, pcontext->write_buff +
 					           pcontext->write_length, len);
 					if (read_len != len) {
-						imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
+						imap_parser_log_info(pcontext, LV_WARN, "W-1499: short read %s, exp %ld+%u, got %lld+%d",
+							pcontext->file_path.c_str(), wantofs, len,
+							static_cast<long long>(newofs), read_len);
 						pcontext->close_fd();
 						return IMAP_RETRIEVE_ERROR;
 					}
@@ -1046,9 +1063,20 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 					strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
 					pcontext->write_length += 3;
 				} else {
-					if (lseek(pcontext->message_fd, strtol(ptr + 1, nullptr, 0), SEEK_SET) < 0)
-						mlog(LV_ERR, "E-1427: lseek: %s", strerror(errno));
+					auto wantofs = strtol(&ptr[1], nullptr, 0);
+					auto newofs  = lseek(pcontext->message_fd, wantofs, SEEK_SET);
+					if (newofs != wantofs) {
+						mlog(LV_ERR, "E-1427: lseek %s exp %ld got %lld: %s",
+							pcontext->file_path.c_str(), wantofs,
+							static_cast<long long>(newofs), strerror(errno));
+						pcontext->close_fd();
+						return IMAP_RETRIEVE_ERROR;
+					}
 					pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
+					struct stat sb;
+					if (fstat(pcontext->message_fd, &sb) == 0)
+						pcontext->literal_len = std::min(static_cast<long long>(pcontext->literal_len),
+						                        std::max(0LL, static_cast<long long>(sb.st_size - newofs)));
 					pcontext->current_len = 0;
 					pcontext->write_length += sprintf(&pcontext->write_buff[pcontext->write_length], "{%d}\r\n", pcontext->literal_len);
 					len = MAX_LINE_LENGTH - pcontext->write_length;
@@ -1057,7 +1085,9 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 					read_len = read(pcontext->message_fd, pcontext->write_buff +
 					           pcontext->write_length, len);
 					if (read_len != len) {
-						imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
+						imap_parser_log_info(pcontext, LV_WARN, "W-1511: short read %s, exp %ld+%u, got %lld+%d",
+							pcontext->file_path.c_str(), wantofs, len,
+							static_cast<long long>(newofs), read_len);
 						pcontext->close_fd();
 						return IMAP_RETRIEVE_ERROR;
 					}

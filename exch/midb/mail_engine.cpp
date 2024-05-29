@@ -239,7 +239,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite, const char *mid_string,
 		if (!imail.load_from_str_move(slurp_data.get(), slurp_size))
 			return 0;
 		slurp_data.reset();
-		if (imail.get_digest(&size, digest) <= 0)
+		if (imail.make_digest(&size, digest) <= 0)
 			return 0;
 		imail.clear();
 		digest["file"] = "";
@@ -1343,9 +1343,8 @@ static void mail_engine_extract_digest_fields(const Json::Value &digest, char *s
 	    decode64(temp_buff, strlen(temp_buff), temp_buff1,
 	    std::size(temp_buff1), &out_len) == 0) {
 		memset(&temp_address, 0, sizeof(temp_address));
-		parse_email_addr(&temp_address, temp_buff1);
-		snprintf(from, fromsize, "%s@%s",
-		         temp_address.local_part, temp_address.domain);
+		parse_mime_addr(&temp_address, temp_buff1);
+		gx_strlcpy(from, temp_address.addr, fromsize);
 	}
 	rcpt[0] = '\0';
 	if (get_digest(digest, "to", temp_buff, std::size(temp_buff)) &&
@@ -1360,9 +1359,8 @@ static void mail_engine_extract_digest_fields(const Json::Value &digest, char *s
 		}
 		HX_strrtrim(temp_buff1);
 		memset(&temp_address, 0, sizeof(temp_address));
-		parse_email_addr(&temp_address, temp_buff1);
-		snprintf(rcpt, rcptsize, "%s@%s",
-		         temp_address.local_part, temp_address.domain);
+		parse_mime_addr(&temp_address, temp_buff1);
+		gx_strlcpy(rcpt, temp_address.addr, rcptsize);
 	}
 	*psize = 0;
 	if (get_digest(digest, "size", temp_buff, std::size(temp_buff)))
@@ -1418,7 +1416,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 		}
 		common_util_switch_allocator();
 		Json::Value digest;
-		if (imail.get_digest(&size, digest) <= 0)
+		if (imail.make_digest(&size, digest) <= 0)
 			return;
 		digest["file"] = "";
 		djson = json_to_str(digest);
@@ -2343,7 +2341,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	if (!imail.load_from_str_move(pbuff.get(), slurp_size))
 		return MIDB_E_IMAIL_RETRIEVE;
 	Json::Value digest;
-	if (imail.get_digest(&mess_len, digest) <= 0)
+	if (imail.make_digest(&mess_len, digest) <= 0)
 		return MIDB_E_IMAIL_DIGEST;
 	digest["file"] = "";
 	auto djson = json_to_str(digest);

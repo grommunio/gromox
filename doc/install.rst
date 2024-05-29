@@ -91,11 +91,6 @@ call ``make`` with the sanitizer libs (asan, ubsan or both, depending on
 choice) if they are shared libraries (usually gcc). The command is ``make
 LIBS="-lasan -lubsan"``.
 
-**In addition**, when using ASAN with gcc >= 7, < 14 or ASAN with clang >= 10,
-< 17, there is `an issue with ASAN and a dlopened crypt(3) function
-<https://github.com/llvm/llvm-project/commit/d7bead833631486e337e541e692d9b4a1ca14edd>`_,
-which requires that ``-lcrypt`` *also* be part of the ``LIBS`` variable.
-
 
 Optional runtime components
 ===========================
@@ -134,10 +129,9 @@ users, groups and other objects like distribution lists. The default database
 name Gromox's mysql_adaptor plugin will use is ``email``, hence you would
 create that as a blank database. The default database access users is root with
 no password, which fits the default installation of MariaDB too. Any deviations
-will have to be specified in ``/etc/gromox/mysql_adaptor.cfg`` and
-``/etc/gromox/autodiscover.ini``; the corresponding manpage is
-mysql_adaptor(4gx) and autodiscover(4gx). The database can then be populated
-using ``gromox-dbop -C``.
+will have to be specified in ``/etc/gromox/mysql_adaptor.cfg``; the
+corresponding manpage is mysql_adaptor(4gx) and autodiscover(4gx). The database
+can then be populated using ``gromox-dbop -C``.
 
 Gromox only requires SELECT,UPDATE permissions on this database as it does not
 create or delete users. The grommunio Administration Backend is in charge of user
@@ -215,11 +209,15 @@ read/write to it irrespective of the creator of files.
 The directory ``/etc/gromox`` and all contents are supposed to be owned by user
 ``root`` or ``grommunio``, be owned by group ``gromoxcf`` read-only, and be
 otherwise inaccessible. Gromox has no need to update config files at all, just
-read them.
+read them. One exception is ``pam.cfg`` which, if it exists, has to be readable
+by arbitrary programs.
 
 .. code-block:: text
 
-	drwxr-x--- 2 root gromoxcf 125 Feb 20 21:47 /etc/gromox
+	drwxr-x--x 2 grommunio gromoxcf  64 Feb 20 21:47 /etc/gromox
+	-rw-r----- 1 grommunio gromoxcf 128 Feb 20 21:47 /etc/gromox/gromox.cfg
+	-rw-r----- 1 grommunio gromoxcf 128 Feb 20 21:47 /etc/gromox/mysql_adaptor.cfg
+	-rw-r--r-- 1 grommunio gromoxcf 128 Feb 20 21:47 /etc/gromox/pam.cfg
 
 If you plan on utilizing SSO authentication via ``/usr/bin/ntlm_auth``, you
 *may* need to add ``winbind`` to the list of supplementary groups for the

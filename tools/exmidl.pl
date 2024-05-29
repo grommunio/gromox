@@ -23,8 +23,8 @@ if ($gen_mode eq "SDP") {
 	print "unsigned int g_exrpc_debug;\n\n";
 	print "static void smlpc_log(bool ok, const char *dir, const char *func, gromox::time_point tstart, gromox::time_point tend)\n{\n";
 	print "\tif (g_exrpc_debug >= 2 || (!ok && g_exrpc_debug == 1))\n";
-	print "\t\tmlog(LV_DEBUG, \"SMLPC \%s \%5luµs \%s (\%s)\", ok == 0 ? \"FAIL\" : \"ok  \",\n";
-	print "\t\t\tstatic_cast<unsigned long>(std::chrono::duration_cast<std::chrono::microseconds>(tend - tstart).count()), func, dir);\n";
+	print "\t\tmlog(LV_DEBUG, \"SMLPC %s %s \%5luµs \%s\", dir, !ok ? \"ERR\" : \"ok \",\n";
+	print "\t\t\tstatic_cast<unsigned long>(std::chrono::duration_cast<std::chrono::microseconds>(tend - tstart).count()), func);\n";
 	print "}\n\n";
 }
 

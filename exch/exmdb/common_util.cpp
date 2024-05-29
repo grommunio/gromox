@@ -535,7 +535,7 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 	/*
 	 * All computed/synthesized tags should appear in these tag lists (XXX:
 	 * but needs more research to which extent), because this function is
-	 * used to feed rop_getallproptags (IMAPIProp::GetPropList) and
+	 * used to feed ropGetPropertiesList (IMAPIProp::GetPropList) and
 	 * exmdb_server::read_message, so it's not just for the default columns
 	 * of content tables.
 	 */
@@ -602,6 +602,10 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 		auto tag = pstmt.col_uint64(0);
 		if (PROP_ID(tag) == PROP_ID(PR_NULL))
 			continue;
+		if (table_type == MAPI_MESSAGE && tag == PR_SENDER_EMAIL_ADDRESS)
+			tags.push_back(PR_SENDER_ADDRTYPE);
+		if (table_type == MAPI_MESSAGE && tag == PR_SENT_REPRESENTING_EMAIL_ADDRESS)
+			tags.push_back(PR_SENT_REPRESENTING_ADDRTYPE);
 		if (table_type == MAPI_MESSAGE && !b_subject) {
 			if (tag == PR_NORMALIZED_SUBJECT ||
 			    tag == PR_SUBJECT_PREFIX) {
@@ -2045,15 +2049,47 @@ static GP_RESULT gp_spectableprop(mapi_object_type table_type, uint32_t tag,
 	}
 }
 
-static GP_RESULT gp_msgprop_synth(uint32_t proptag, TAGGED_PROPVAL &pv)
+static GP_RESULT gp_msgprop_synth(uint64_t msgid, uint32_t proptag,
+    TAGGED_PROPVAL &pv, sqlite3 *db)
 {
-	if (proptag == PR_MESSAGE_CLASS) {
+	switch (proptag) {
+	case PR_MESSAGE_CLASS: {
 		auto v = cu_alloc<char>(9);
 		pv.pvalue = v;
 		if (v == nullptr)
 			return GP_ERR;
 		strcpy(v, "IPM.Note");
 		return GP_ADV;
+	}
+	case PR_SENDER_ADDRTYPE:
+	case PR_SENT_REPRESENTING_ADDRTYPE: {
+		auto stm = gx_sql_prep(db, "SELECT propval FROM message_properties WHERE message_id=? AND proptag=?");
+		if (stm == nullptr)
+			break;
+		stm.bind_int64(1, msgid);
+		stm.bind_int64(2, proptag == PR_SENDER_ADDRTYPE ? PR_SENDER_EMAIL_ADDRESS : PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+		if (stm.step() != SQLITE_ROW)
+			break;
+		auto val = stm.col_text(0);
+		if (val == nullptr)
+			break;
+		if (*val == '/') {
+			auto v = cu_alloc<char>(3);
+			pv.pvalue = v;
+			if (v == nullptr)
+				return GP_ERR;
+			strcpy(v, "EX");
+			return GP_ADV;
+		} else if (strchr(val, '@') != nullptr) {
+			auto v = cu_alloc<char>(5);
+			pv.pvalue = v;
+			if (v == nullptr)
+				return GP_ERR;
+			strcpy(v, "SMTP");
+			return GP_ADV;
+		}
+		break;
+	}
 	}
 	return GP_UNHANDLED;
 }
@@ -2093,12 +2129,12 @@ static GP_RESULT gp_rcptprop_synth(uint32_t proptag, TAGGED_PROPVAL &pv)
 	}
 }
 
-static GP_RESULT gp_fallbackprop(mapi_object_type table_type, uint32_t proptag,
-    TAGGED_PROPVAL &pv)
+static GP_RESULT gp_fallbackprop(mapi_object_type table_type, uint64_t msgid,
+    uint32_t proptag, TAGGED_PROPVAL &pv, sqlite3 *db)
 {
 	pv.proptag = proptag;
 	if (table_type == MAPI_MESSAGE)
-		return gp_msgprop_synth(proptag, pv);
+		return gp_msgprop_synth(msgid, proptag, pv, db);
 	if (table_type == MAPI_MAILUSER)
 		return gp_rcptprop_synth(proptag, pv);
 	return GP_UNHANDLED;
@@ -2148,7 +2184,7 @@ BOOL cu_get_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 				return false;
 		}
 		if (gx_sql_step(pstmt) != SQLITE_ROW) {
-			ret = gp_fallbackprop(table_type, tag, pv);
+			ret = gp_fallbackprop(table_type, id, tag, pv, psqlite);
 			if (ret == GP_ERR)
 				return false;
 			if (ret == GP_ADV) {
