@@ -617,10 +617,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	auto cl_0 = make_scope_exit([&]() {
 		pstmt.finalize();
 		pstmt1.finalize();
-		if (psqlite != nullptr) {
-			gx_sql_exec(psqlite, "ROLLBACK");
+		if (psqlite != nullptr)
 			sqlite3_close(psqlite);
-		}
 	});
 	if (NULL != remote_id) {
 		ptnode->remote_id = strdup(remote_id);
