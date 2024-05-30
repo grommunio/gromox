@@ -1,5 +1,5 @@
-Gromox 2.28.33 (status report)
-==============================
+Gromox 2.28.37 (2024-05-31)
+===========================
 
 Fixes:
 
@@ -7,6 +7,8 @@ Fixes:
 * email_lib: cure IMAP Structure Descriptions indicating a mail size 2 bytes
   larger than it is
 * imap: cope with truncated EML files
+* exmdb: delete leftover stray ROLLBACK statement
+* ews: cure null dereference in tInternetMessageHeader::parse
 
 Changes:
 

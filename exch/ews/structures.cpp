@@ -3329,15 +3329,17 @@ std::vector<tInternetMessageHeader> tInternetMessageHeader::parse(std::string_vi
 	for(size_t from = 0, to; from != content.npos; from = to == content.npos? to : to+1) {
 		to = content.find('\n', from);
 		std::string_view line = content.substr(from, to-from);
-		if(line.empty() || (std::isspace(line[0]) && content.empty()))
+		if (line.empty())
 			continue;
 		size_t sep;
-		if(std::isspace(line[0]))
-			result.back().content.append(" ").append(trim(line));
-		else if((sep = line.find(':')) == std::string_view::npos)
+		if (std::isspace(line[0])) {
+			if (result.size() > 0)
+				result.back().content.append(" ").append(trim(line));
+		} else if ((sep = line.find(':')) == std::string_view::npos) {
 			continue;
-		else if(sep && line.size() > sep+1 && line.substr(0, sep) != "From")
+		} else if (sep && line.size() > sep + 1 && line.substr(0, sep) != "From") {
 			result.emplace_back(line.substr(0, sep), trim(line.substr(sep+1)));
+		}
 	}
 	return result;
 }
