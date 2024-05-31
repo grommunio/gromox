@@ -1083,7 +1083,7 @@ struct tInternetMessageHeader : NS_EWS_Types
 	std::string HeaderName;
 	std::string content;
 
-	static std::vector<tInternetMessageHeader> parse(std::string_view);
+	static std::vector<tInternetMessageHeader> parse(const char *);
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

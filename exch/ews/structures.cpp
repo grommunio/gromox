@@ -12,6 +12,8 @@
 #include <iterator>
 #include <set>
 #include <utility>
+#include <vmime/header.hpp>
+#include <vmime/text.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/freebusy.hpp>
@@ -161,21 +163,6 @@ inline C mkArray(const std::vector<T>& data)
 	if(data.size() > max_count<C>())
 		throw DispatchError(E3099);
 	return C{count_t<C>(data.size()), deconst(data.data())};
-}
-
-/**
- * @brief      Remove leading and trailing whitespaces
- *
- * @param      sv      String to trim
- *
- * @return     Trimmed version
- */
-std::string_view trim(const std::string_view& sv)
-{
-	size_t from = 0, to = sv.length();
-	while(from < to && std::isspace(sv[from])) ++from;
-	while(to > from && std::isspace(sv[to-1])) --to;
-	return sv.substr(from, to-from);
 }
 
 /**
@@ -3321,25 +3308,18 @@ tInternetMessageHeader::tInternetMessageHeader(const std::string_view& hn, const
  *
  * @return List of header objects
  */
-std::vector<tInternetMessageHeader> tInternetMessageHeader::parse(std::string_view content)
+std::vector<tInternetMessageHeader> tInternetMessageHeader::parse(const char *content)
 {
 	std::vector<tInternetMessageHeader> result;
-	if(content.empty())
-		return result;
-	for(size_t from = 0, to; from != content.npos; from = to == content.npos? to : to+1) {
-		to = content.find('\n', from);
-		std::string_view line = content.substr(from, to-from);
-		if (line.empty())
-			continue;
-		size_t sep;
-		if (std::isspace(line[0])) {
-			if (result.size() > 0)
-				result.back().content.append(" ").append(trim(line));
-		} else if ((sep = line.find(':')) == std::string_view::npos) {
-			continue;
-		} else if (sep && line.size() > sep + 1 && line.substr(0, sep) != "From") {
-			result.emplace_back(line.substr(0, sep), trim(line.substr(sep+1)));
-		}
+	vmime::parsingContext vpctx;
+	vpctx.setInternationalizedEmailSupport(true); /* RFC 6532 */
+	vmime::header hdr;
+	hdr.parse(vpctx, content);
+	for (const auto &hf : hdr.getFieldList()) {
+		auto k = hf->getName();
+		vmime::text txt;
+		txt.parse(hf->getValue()->generate());
+		result.emplace_back(k, txt.getConvertedText(vmime::charsets::UTF_8).c_str());
 	}
 	return result;
 }
