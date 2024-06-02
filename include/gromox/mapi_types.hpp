@@ -1038,9 +1038,11 @@ enum sqlite_config_id {
 	CONFIG_ID_SCHEMAVERSION = 10,
 };
 
-#define ALLOCATED_EID_RANGE							0x10000
-#define CHANGE_NUMBER_BEGIN 0
-static_assert(ALLOCATED_EID_RANGE > CUSTOM_EID_BEGIN,
+enum {
+	ALLOCATED_EID_RANGE = 0x10000,
+	CHANGE_NUMBER_BEGIN = 0,
+};
+static_assert(static_cast<unsigned int>(ALLOCATED_EID_RANGE) > static_cast<unsigned int>(CUSTOM_EID_BEGIN),
 	"mkprivate/mkpublic picks EIDs such that it expects to find a hole between CUSTOM_EID_BEGIN and ALLOCATED_EID_RANGE.");
 
 using GET_PROPIDS = std::function<BOOL(const PROPNAME_ARRAY *, PROPID_ARRAY *)>;

@@ -19,7 +19,6 @@
 #include <gromox/util.hpp>
 #include "db_engine.hpp"
 #define MAXIMUM_RECIEVE_FOLDERS				2000
-#define SYSTEM_ALLOCATED_EID_RANGE			10000
 
 using namespace gromox;
 using LLD = long long;
@@ -395,7 +394,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 	if (type == FOLDER_GENERIC) {
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO allocated_eids"
 			" VALUES (%llu, %llu, %lld, 1)", LLU{max_eid}, LLU{max_eid +
-			SYSTEM_ALLOCATED_EID_RANGE - 1}, LLD{time(nullptr)});
+			ALLOCATED_EID_RANGE - 1}, LLD{time(nullptr)});
 		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		uint64_t cur_eid = 0;
@@ -406,7 +405,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 			folder_id = rop_util_get_gc_value(tmp_fid);
 			cur_eid = max_eid;
 		}
-		max_eid += SYSTEM_ALLOCATED_EID_RANGE;
+		max_eid += ALLOCATED_EID_RANGE;
 		pstmt = pdb->prep("INSERT INTO folders "
 		        "(folder_id, parent_id, change_number, "
 		        "cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
