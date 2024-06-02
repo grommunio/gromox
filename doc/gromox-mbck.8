@@ -1,0 +1,16 @@
+.TH gromox\-mbck 8 "" "Gromox" "Gromox admin reference"
+.SH Name
+\fBgromox\-mbck\fP \(em Mailbox check and repair utility
+.SH Synopsis
+\fBgromox\-mbck\fP [\fB\-p\fP] x.sqlite
+.SH Description
+mbck can be used to check one or more mailboxes for problems, and optionally
+repairing them. Since Gromox 2.30, the utility can be run while the mailbox is
+in active use by gromox\-http.
+.SH Options
+.TP
+\fB\-p\fP
+Perform repairs / write operations. (Default: just readonly checks)
+.TP
+\fB\-?\fP
+Display option summary.

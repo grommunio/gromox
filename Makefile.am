@@ -60,7 +60,7 @@ svc_plugins = \
 	libgxs_ldap_adaptor.la \
 	libgxs_mysql_adaptor.la libgxs_ruleproc.la \
 	libgxs_user_filter.la
-sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
+sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbck gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
 if HAVE_ESEDB
 sbin_PROGRAMS += gromox-edb2mt
 endif
@@ -230,6 +230,8 @@ gromox_mailq_SOURCES = tools/mailq.cpp
 gromox_mailq_LDADD = libgromox_common.la
 gromox_mbop_SOURCES = tools/genimport.cpp tools/genimport.hpp tools/mbop_main.cpp
 gromox_mbop_LDADD = ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
+gromox_mbck_SOURCES = tools/mbck.cpp
+gromox_mbck_LDADD = ${HX_LIBS} ${fmt_LIBS} ${sqlite3_LIBS} libgromox_common.la
 gromox_mkmidb_SOURCES = tools/mkmidb.cpp tools/mkshared.cpp tools/mkshared.hpp
 gromox_mkmidb_LDADD = ${fmt_LIBS} ${libHX_LIBS} ${mysql_LIBS} ${libssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_dbop.la libgromox_mapi.la
 gromox_mkprivate_SOURCES = tools/mkprivate.cpp tools/mkshared.cpp tools/mkshared.hpp
