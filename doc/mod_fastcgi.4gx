@@ -46,6 +46,7 @@ If the file is absent however, a set of default entries will be used.
 .nf
 * /sync /usr/share/grommunio-sync php index.php | /run/php-fpm/php-grommunio-sync-fpm.sock
 * /web /usr/share/grommunio-web php index.php | /run/php-fpm/php-grommunio-web-fpm.sock
+* /dav /usr/share/grommunio-dav php index.php | /run/php-fpm/php-grommunio-dav-fpm.sock
 .fi
 .PP
 \fBNOTE:\fP The path designated for FPM sockets varies between distributions,
