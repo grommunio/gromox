@@ -78,13 +78,11 @@ static int t_convert()
 
 static int t_emailaddr()
 {
-	EMAIL_ADDR em;
 	for (const auto s : {"u@d.at", "<u@d.at>", "\"u@d.at\"", "U D <u@d.at>",
 	     "\"U D\" <u@d.at>", "\"U\\\"D\" <u@d.at>",
 	     "=?utf-8?Q?=C3=A5 D?= <u@d.at>", "\"U D\"", "\"U D\" <>"}) {
 		printf("%s:\n", s);
-		em = {};
-		parse_mime_addr(&em, s);
+		EMAIL_ADDR em(s);
 		printf("\tmime: <%s> <%s> <%s>\n", em.display_name, em.local_part, em.domain);
 	}
 	return EXIT_SUCCESS;

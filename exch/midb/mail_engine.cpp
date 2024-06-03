@@ -1331,7 +1331,6 @@ static void mail_engine_extract_digest_fields(const Json::Value &digest, char *s
 	size_t out_len;
 	char temp_buff[64*1024];
 	char temp_buff1[64*1024];
-	EMAIL_ADDR temp_address;
 	
 	subject[0] = '\0';
 	if (get_digest(digest, "subject", temp_buff, std::size(temp_buff)) &&
@@ -1342,8 +1341,7 @@ static void mail_engine_extract_digest_fields(const Json::Value &digest, char *s
 	if (get_digest(digest, "from", temp_buff, std::size(temp_buff)) &&
 	    decode64(temp_buff, strlen(temp_buff), temp_buff1,
 	    std::size(temp_buff1), &out_len) == 0) {
-		memset(&temp_address, 0, sizeof(temp_address));
-		parse_mime_addr(&temp_address, temp_buff1);
+		EMAIL_ADDR temp_address(temp_buff1);
 		gx_strlcpy(from, temp_address.addr, fromsize);
 	}
 	rcpt[0] = '\0';
@@ -1358,8 +1356,7 @@ static void mail_engine_extract_digest_fields(const Json::Value &digest, char *s
 			}
 		}
 		HX_strrtrim(temp_buff1);
-		memset(&temp_address, 0, sizeof(temp_address));
-		parse_mime_addr(&temp_address, temp_buff1);
+		EMAIL_ADDR temp_address(temp_buff1);
 		gx_strlcpy(rcpt, temp_address.addr, rcptsize);
 	}
 	*psize = 0;
