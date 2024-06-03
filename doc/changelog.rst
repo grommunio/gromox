@@ -1,5 +1,5 @@
-Gromox 2.28.37 (2024-05-31)
-===========================
+Gromox 2.29 (2024-06-04)
+========================
 
 Fixes:
 
@@ -9,6 +9,8 @@ Fixes:
 * imap: cope with truncated EML files
 * exmdb: delete leftover stray ROLLBACK statement
 * ews: cure null dereference in tInternetMessageHeader::parse
+* ews: use vmime parser to break down IMHs and reset an Apple workaround for
+  "From" lines
 
 Changes:
 
