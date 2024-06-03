@@ -4259,6 +4259,10 @@ const char *exmdb_rpc_strerror(exmdb_response v)
 
 BOOL exmdb_client_read_socket(int fd, BINARY &bin, long timeout_ms)
 {
+	if (fd < 0) {
+		errno = EBADF;
+		return false;
+	}
 	uint32_t offset = 0;
 	struct pollfd pfd;
 
@@ -4316,6 +4320,10 @@ BOOL exmdb_client_read_socket(int fd, BINARY &bin, long timeout_ms)
 
 BOOL exmdb_client_write_socket(int fd, const BINARY &bin, long timeout_ms)
 {
+	if (fd < 0) {
+		errno = EBADF;
+		return false;
+	}
 	uint32_t offset = 0;
 	struct pollfd pfd;
 
