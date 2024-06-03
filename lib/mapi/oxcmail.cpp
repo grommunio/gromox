@@ -463,6 +463,7 @@ static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
 			continue;
 		gx_strlcpy(email_addr.display_name, mb->getName().getConvertedText("utf-8").c_str(), std::size(email_addr.display_name));
 		auto emp = mb->getEmail().generate();
+		gx_strlcpy(email_addr.addr, emp.c_str(), std::size(email_addr.addr));
 		auto at  = emp.find('@');
 		if (at == emp.npos)
 			continue;
@@ -567,6 +568,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 			continue;
 		gx_strlcpy(email_addr.display_name, mb->getName().getConvertedText("utf-8").c_str(), std::size(email_addr.display_name));
 		auto emp = mb->getEmail().generate();
+		gx_strlcpy(email_addr.addr, emp.c_str(), std::size(email_addr.addr));
 		auto at  = emp.find('@');
 		if (at == emp.npos)
 			continue;
