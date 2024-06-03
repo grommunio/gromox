@@ -545,8 +545,8 @@ static inline const BINARY *get_conv_id(const RESTRICTION *x)
  *
  * Under public mode username, always available for read state.
  */
-static BOOL table_load_content_table(db_conn_ptr &pdb, cpid_t cpid,
-	uint64_t fid_val, const char *username, uint8_t table_flags,
+static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
+    cpid_t cpid, uint64_t fid_val, const char *username, uint8_t table_flags,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
    uint32_t *ptable_id, uint32_t *prow_count) try
 {
@@ -1016,9 +1016,7 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, cpid_t cpid,
 	cl_0.release();
 	if (table_transact.commit() != SQLITE_OK)
 		return false;
-	auto dbase = pdb->lock_base_wr();
 	dbase->tables.table_list.splice(dbase->tables.table_list.end(), std::move(holder));
-	dbase.reset();
 	if (*ptable_id == 0)
 		*ptable_id = table_id;
 	*prow_count = 0;
@@ -1052,12 +1050,13 @@ BOOL exmdb_server::load_content_table(const char *dir, cpid_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto dbase = pdb->lock_base_wr();
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
 	if (!sql_transact)
 		return false;
 	*ptable_id = 0;
 	fid_val = rop_util_get_gc_value(folder_id);
-	return table_load_content_table(pdb, cpid, fid_val, username,
+	return table_load_content_table(pdb, dbase, cpid, fid_val, username,
 	       table_flags, prestriction, psorts, ptable_id, prow_count);
 }
 
@@ -1088,7 +1087,7 @@ BOOL exmdb_server::reload_content_table(const char *dir, uint32_t table_id)
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
 	if (!sql_transact)
 		return false;
-	b_result = table_load_content_table(pdb, ptnode->cpid,
+	b_result = table_load_content_table(pdb, dbase, ptnode->cpid,
 			ptnode->folder_id, ptnode->username, ptnode->table_flags,
 			ptnode->prestriction, ptnode->psorts, &table_id,
 			&row_count);
