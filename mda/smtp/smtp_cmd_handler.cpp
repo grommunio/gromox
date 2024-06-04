@@ -148,7 +148,6 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
 	size_t string_length = 0;
     const char *smtp_reply_str, *smtp_reply_str2;
     char buff[1024], buff2[1024];
-    EMAIL_ADDR email_addr;    
     
 	if (line_length <= 10 || 0 != strncasecmp(cmd_line + 4, " FROM:", 6))
 		/* syntax error or arguments error*/
@@ -162,7 +161,7 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
 	if (g_param.support_starttls && g_param.force_starttls &&
 	    pcontext->connection.ssl == nullptr)
 		return 520;
-	parse_mime_addr(&email_addr, buff);
+	EMAIL_ADDR email_addr(buff);
 	if (!email_addr.has_addr()) {
         /* 550 invalid user - <email_addr> */
 		smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);
@@ -196,7 +195,6 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 	size_t string_length = 0;
     const char*smtp_reply_str, *smtp_reply_str2;
     char buff[1024], reason[1024], path[256];
-    EMAIL_ADDR email_addr;
     
 	if (line_length <= 8 || 0 != strncasecmp(cmd_line + 4, " TO:", 4))
         /* syntax error or arguments error*/
@@ -206,7 +204,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 		return 520;
     memcpy(buff, cmd_line + 8, line_length - 8);
     buff[line_length - 8] = '\0';
-	parse_mime_addr(&email_addr, buff);
+	EMAIL_ADDR email_addr(buff);
 	if (!email_addr.has_addr()) {
         /* 550 invalid user - <email_addr> */
 		smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);

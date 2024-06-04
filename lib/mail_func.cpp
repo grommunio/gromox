@@ -255,30 +255,40 @@ BOOL parse_uri(const char *uri_buff, char *parsed_uri)
     return TRUE;
 }
 
-/*
- *	  parse email address in mime field into e_addr
- *	  @param
- *		  email	 [in]	  string contain the address
- *		  e_addr [out]	  for retrieving parsed address
- */
-void parse_mime_addr(EMAIL_ADDR *e_addr, const char *input) try
+void EMAIL_ADDR::clear()
 {
-	vmime::mailbox mb("");
-	mb.parse(input);
+	memset(this, 0, sizeof(*this));
+}
+
+void EMAIL_ADDR::set(const vmime::mailbox &mb) try
+{
+	auto e_addr = this;
 
 	gx_strlcpy(e_addr->display_name, mb.getName().getConvertedText("utf-8").c_str(), std::size(e_addr->display_name));
 	auto emp = mb.getEmail().generate();
 	gx_strlcpy(e_addr->addr, emp.c_str(), std::size(e_addr->addr));
 	auto at  = emp.find('@');
 	if (at == emp.npos) {
-		*e_addr = {};
+		clear();
 		return;
 	}
 	emp[at] = '\0';
 	gx_strlcpy(e_addr->local_part, &emp[0], std::size(e_addr->local_part));
 	gx_strlcpy(e_addr->domain, &emp[at+1], std::size(e_addr->domain));
 } catch (const std::bad_alloc &) {
-	*e_addr = {};
+	clear();
+}
+
+/**
+ * @input: whatever is normally allowed in the From header value
+ */
+void EMAIL_ADDR::parse(const char *input) try
+{
+	vmime::mailbox mb("");
+	mb.parse(input);
+	set(mb);
+} catch (const std::bad_alloc &) {
+	clear();
 }
 
 /*

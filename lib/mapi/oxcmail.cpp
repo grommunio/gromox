@@ -447,8 +447,6 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
     uint32_t rcpt_type, TARRAY_SET *pset) try
 {
-	EMAIL_ADDR email_addr;
-
 	vmime::mailboxList mblist;
 	try {
 		mblist.parse(field);
@@ -460,15 +458,7 @@ static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
 		auto mb = vmime::dynamicCast<vmime::mailbox>(compo);
 		if (mb == nullptr)
 			continue;
-		gx_strlcpy(email_addr.display_name, mb->getName().getConvertedText("utf-8").c_str(), std::size(email_addr.display_name));
-		auto emp = mb->getEmail().generate();
-		auto at  = emp.find('@');
-		if (at == emp.npos)
-			continue;
-		emp[at] = '\0';
-		gx_strlcpy(email_addr.local_part, &emp[0], std::size(email_addr.local_part));
-		gx_strlcpy(email_addr.domain, &emp[at+1], std::size(email_addr.domain));
-
+		EMAIL_ADDR email_addr(*mb);
 		if (!email_addr.has_addr())
 			continue;
 		if (!oxcmail_parse_recipient(charset,
@@ -485,8 +475,7 @@ static BOOL oxcmail_parse_address(const char *field, uint32_t pr_name,
     uint32_t pr_addrtype, uint32_t pr_emaddr, uint32_t pr_smtpaddr,
     uint32_t pr_searchkey, uint32_t pr_entryid, TPROPVAL_ARRAY *pproplist) try
 {
-	EMAIL_ADDR email_addr, *paddr = &email_addr;
-	parse_mime_addr(&email_addr, field);
+	EMAIL_ADDR email_addr(field), *paddr = &email_addr;
 	
 	if (paddr->has_dispname()) {
 		if (pproplist->set(pr_name, paddr->display_name) != 0)
@@ -564,15 +553,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 		auto mb = vmime::dynamicCast<vmime::mailbox>(compo);
 		if (mb == nullptr)
 			continue;
-		gx_strlcpy(email_addr.display_name, mb->getName().getConvertedText("utf-8").c_str(), std::size(email_addr.display_name));
-		auto emp = mb->getEmail().generate();
-		auto at  = emp.find('@');
-		if (at == emp.npos)
-			continue;
-		emp[at] = '\0';
-		gx_strlcpy(email_addr.local_part, &emp[0], std::size(email_addr.local_part));
-		gx_strlcpy(email_addr.domain, &emp[at+1], std::size(email_addr.domain));
-
+		email_addr.set(*mb);
 		if (!email_addr.has_addr())
 			continue;
 		snprintf(tmp_buff, std::size(tmp_buff), "%s@%s",

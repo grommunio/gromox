@@ -652,11 +652,10 @@ static int mjson_convert_address(const char *address, const char *charset,
 {
 	int offset;
 	size_t ecode_len;
-	EMAIL_ADDR email_addr;
 	char temp_buff[2048];
 	
 	offset = 0;
-	parse_mime_addr(&email_addr, address);
+	EMAIL_ADDR email_addr(address);
 	if (*email_addr.display_name == '\0') {
 		memcpy(buff + offset, "(NIL", 4);
 		offset += 4;

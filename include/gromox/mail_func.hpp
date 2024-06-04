@@ -6,6 +6,7 @@
 #include <ctime>
 #include <string>
 #include <vector>
+#include <vmime/mailbox.hpp>
 #include <vmime/message.hpp>
 #include <gromox/mapi_types.hpp>
 #define MIME_NAME_LEN 80U
@@ -17,6 +18,12 @@ struct attachment_list;
  * All fields are always UTF-8 for consistency.
  */
 struct GX_EXPORT EMAIL_ADDR {
+	EMAIL_ADDR() = default;
+	EMAIL_ADDR(const char *x) { parse(x); }
+	EMAIL_ADDR(const vmime::mailbox &x) { set(x); }
+	void clear();
+	void set(const vmime::mailbox &);
+	void parse(const char *);
 	inline bool has_dispname() const { return *display_name != '\0'; }
 	inline bool has_addr() const { return *local_part != '\0' && *domain != '\0'; }
 	inline bool has_value() const { return has_dispname() || has_addr(); }
@@ -36,7 +43,6 @@ struct ENCODE_STRING {
 };
 
 struct MAIL;
-extern GX_EXPORT void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email);
 extern GX_EXPORT BOOL parse_uri(const char *uri_buff, char *parsed_uri);
 extern GX_EXPORT size_t parse_mime_field(const char *, size_t, MIME_FIELD *);
 extern GX_EXPORT void parse_field_value(const char *in_buff, long buff_len, char *value, long val_len, std::vector<kvpair> &);
