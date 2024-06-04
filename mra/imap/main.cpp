@@ -290,7 +290,7 @@ static void *imls_thrwork(void *arg)
 		static constexpr int flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
 			mlog(LV_WARN, "W-1417: setsockopt: %s", strerror(errno));
-		auto ctx = static_cast<imap_context *>(contexts_pool_get_context(CONTEXT_FREE));
+		auto ctx = static_cast<imap_context *>(contexts_pool_get_context(sctx_status::free));
 		/* there's no context available in contexts pool, close the connection*/
 		if (ctx == nullptr) {
 			/* IMAP_CODE_2180015: BAD Service not available */
@@ -303,7 +303,7 @@ static void *imls_thrwork(void *arg)
 			close(sockd2);
 			continue;
 		}
-		ctx->type = CONTEXT_CONSTRUCTING;
+		ctx->type = sctx_status::constructing;
 		/* pass the client ipaddr into the ipaddr filter */
 		std::string reason;
 		if (!system_services_judge_ip(client_hostip, reason)) {
@@ -319,7 +319,7 @@ static void *imls_thrwork(void *arg)
 				client_hostip, reason.c_str());
 			close(sockd2);
 			/* release the context */
-			contexts_pool_put_context(ctx, CONTEXT_FREE);
+			contexts_pool_put_context(ctx, sctx_status::free);
 			continue;
 		}
 		if (!use_tls) {
@@ -343,7 +343,7 @@ static void *imls_thrwork(void *arg)
 		 * some threads block on the condition variable.
 		 */
 		ctx->polling_mask = POLLING_READ;
-		contexts_pool_put_context(ctx, CONTEXT_POLLING);
+		contexts_pool_put_context(ctx, sctx_status::polling);
 	}
 	return nullptr;
 }

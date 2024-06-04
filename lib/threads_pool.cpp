@@ -160,8 +160,6 @@ static void *tpol_thrwork(void *pparam)
 	int cannot_served_times;
 	int max_contexts_per_thr;
 	int contexts_per_threads;
-	SCHEDULE_CONTEXT *pcontext;
-	
 	
 	pdata = (THR_DATA*)pparam;
 	max_contexts_per_thr = contexts_pool_get_param(CONTEXTS_PER_THR);
@@ -171,7 +169,7 @@ static void *tpol_thrwork(void *pparam)
 	
 	cannot_served_times = 0;
 	while (!pdata->notify_stop) {
-		pcontext = contexts_pool_get_context(CONTEXT_TURNING);
+		auto pcontext = contexts_pool_get_context(sctx_status::turning);
 		if (NULL == pcontext) {
 			if (MAX_TIMES_NOT_SERVED == cannot_served_times) {
 				std::unique_lock tpd_hold(g_threads_pool_data_lock);
@@ -204,24 +202,24 @@ static void *tpol_thrwork(void *pparam)
 		cannot_served_times = 0;
 		switch (threads_pool_process_func(pcontext)) {
 		case tproc_status::cont:
-			contexts_pool_put_context(pcontext, CONTEXT_TURNING);
+			contexts_pool_put_context(pcontext, sctx_status::turning);
 			break;
 		case tproc_status::idle:
-			contexts_pool_put_context(pcontext, CONTEXT_IDLING);
+			contexts_pool_put_context(pcontext, sctx_status::idling);
 			break;
 		case tproc_status::polling_rdonly:
 			pcontext->polling_mask = POLLING_READ;
-			contexts_pool_put_context(pcontext, CONTEXT_POLLING);
+			contexts_pool_put_context(pcontext, sctx_status::polling);
 			break;
 		case tproc_status::polling_wronly:
 			pcontext->polling_mask = POLLING_WRITE;
-			contexts_pool_put_context(pcontext, CONTEXT_POLLING);
+			contexts_pool_put_context(pcontext, sctx_status::polling);
 			break;
 		case tproc_status::sleeping:
-			contexts_pool_put_context(pcontext, CONTEXT_SLEEPING);
+			contexts_pool_put_context(pcontext, sctx_status::sleeping);
 			break;
 		case tproc_status::close:
-			contexts_pool_put_context(pcontext, CONTEXT_FREE);
+			contexts_pool_put_context(pcontext, sctx_status::free);
 			break;
 		default:
 			break;

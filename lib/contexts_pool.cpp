@@ -54,8 +54,8 @@ static pthread_t g_scan_id;
 static SCHEDULE_CONTEXT **g_context_ptr;
 static pthread_t g_thread_id;
 static gromox::atomic_bool g_notify_stop{true};
-static DOUBLE_LIST g_context_lists[CONTEXT_TYPES];
-static std::mutex g_context_locks[CONTEXT_TYPES];
+static DOUBLE_LIST g_context_lists[static_cast<int>(sctx_status::_alloc_max)];
+static std::mutex g_context_locks[static_cast<int>(sctx_status::_alloc_max)];
 
 static int (*contexts_pool_get_context_socket)(const schedule_context *);
 static time_point (*contexts_pool_get_context_timestamp)(const schedule_context *);
@@ -156,7 +156,7 @@ static void context_init(SCHEDULE_CONTEXT *pcontext)
 		mlog(LV_DEBUG, "pcontext is NULL in %s", __PRETTY_FUNCTION__);
 		return;
 	}
-	pcontext->type = CONTEXT_FREE;
+	pcontext->type = sctx_status::free;
 	pcontext->node.pdata = pcontext;
 }
 
@@ -166,7 +166,7 @@ static void context_free(SCHEDULE_CONTEXT *pcontext)
 		mlog(LV_DEBUG, "pcontext is NULL in %s", __PRETTY_FUNCTION__);
 		return;
 	}
-	pcontext->type = -1;
+	pcontext->type = sctx_status::invalid;
 	pcontext->node.pdata = NULL;
 	return;
 }
@@ -179,14 +179,11 @@ int contexts_pool_get_param(int type)
 	case CONTEXTS_PER_THR:
 		return g_contexts_per_thr;
 	case CUR_VALID_CONTEXTS:
-		return g_context_num - double_list_get_nodes_num(
-						&g_context_lists[CONTEXT_FREE]);
+		return g_context_num - double_list_get_nodes_num(&g_context_lists[static_cast<int>(sctx_status::free)]);
 	case CUR_SLEEPING_CONTEXTS:
-		return double_list_get_nodes_num(
-			&g_context_lists[CONTEXT_SLEEPING]);
+		return double_list_get_nodes_num(&g_context_lists[static_cast<int>(sctx_status::sleeping)]);
 	case CUR_SCHEDULING_CONTEXTS:
-		return double_list_get_nodes_num(
-			&g_context_lists[CONTEXT_TURNING]);
+		return double_list_get_nodes_num(&g_context_lists[static_cast<int>(sctx_status::turning)]);
 	default:
 		return -1;
 	}
@@ -200,8 +197,8 @@ static void *ctxp_thrwork(void *pparam)
 			continue;
 		for (unsigned int i = 0; i < static_cast<unsigned int>(num); ++i) {
 			auto pcontext = g_poll_ctx.get_data(i);
-			std::unique_lock poll_hold(g_context_locks[CONTEXT_POLLING]);
-			if (pcontext->type != CONTEXT_POLLING)
+			std::unique_lock poll_hold(g_context_locks[static_cast<int>(sctx_status::polling)]);
+			if (pcontext->type != sctx_status::polling)
 				/* context may be waked up and modified by
 				scan_work_func or context_pool_activate_context */
 				continue;
@@ -211,11 +208,10 @@ static void *ctxp_thrwork(void *pparam)
 					" context: %p", pcontext);
 				continue;
 			}
-			double_list_remove(&g_context_lists[CONTEXT_POLLING],
-				&pcontext->node);
-			pcontext->type = CONTEXT_SWITCHING;
+			double_list_remove(&g_context_lists[static_cast<int>(sctx_status::polling)], &pcontext->node);
+			pcontext->type = sctx_status::switching;
 			poll_hold.unlock();
-			contexts_pool_put_context(pcontext, CONTEXT_TURNING);
+			contexts_pool_put_context(pcontext, sctx_status::turning);
 		}
 		if (num == 1)
 			threads_pool_wakeup_thread();
@@ -230,19 +226,17 @@ static void *ctxp_scanwork(void *pparam)
 	int num;
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *ptail;
 	SCHEDULE_CONTEXT *pcontext;
 	
 	double_list_init(&temp_list);
 	while (!g_notify_stop) {
-		std::unique_lock poll_hold(g_context_locks[CONTEXT_POLLING]);
+		std::unique_lock poll_hold(g_context_locks[static_cast<int>(sctx_status::polling)]);
 		auto current_time = tp_now();
-		ptail = double_list_get_tail(
-			&g_context_lists[CONTEXT_POLLING]);
-		while ((pnode = double_list_pop_front(&g_context_lists[CONTEXT_POLLING])) != nullptr) {
+		auto ptail = double_list_get_tail(&g_context_lists[static_cast<int>(sctx_status::polling)]);
+		while ((pnode = double_list_pop_front(&g_context_lists[static_cast<int>(sctx_status::polling)])) != nullptr) {
 			pcontext = (SCHEDULE_CONTEXT*)pnode->pdata;
 			if (!pcontext->b_waiting) {
-				pcontext->type = CONTEXT_SWITCHING;
+				pcontext->type = sctx_status::switching;
 				double_list_append_as_tail(&temp_list, pnode);
 				goto CHECK_TAIL;
 			}
@@ -251,31 +245,29 @@ static void *ctxp_scanwork(void *pparam)
 					mlog(LV_DEBUG, "contexts_pool: failed to remove event from epoll");
 				} else {
 					pcontext->b_waiting = FALSE;
-					pcontext->type = CONTEXT_SWITCHING;
+					pcontext->type = sctx_status::switching;
 					double_list_append_as_tail(&temp_list, pnode);
 					goto CHECK_TAIL;
 				}
 			}
-			double_list_append_as_tail(
-				&g_context_lists[CONTEXT_POLLING], pnode);
+			double_list_append_as_tail(&g_context_lists[static_cast<int>(sctx_status::polling)], pnode);
  CHECK_TAIL:
 			if (pnode == ptail)
 				break;
 		}
 		poll_hold.unlock();
-		std::unique_lock idle_hold(g_context_locks[CONTEXT_IDLING]);
-		while ((pnode = double_list_pop_front(&g_context_lists[CONTEXT_IDLING])) != nullptr) {
+		std::unique_lock idle_hold(g_context_locks[static_cast<int>(sctx_status::idling)]);
+		while ((pnode = double_list_pop_front(&g_context_lists[static_cast<int>(sctx_status::idling)])) != nullptr) {
 			pcontext = (SCHEDULE_CONTEXT*)pnode->pdata;
-			pcontext->type = CONTEXT_SWITCHING;
+			pcontext->type = sctx_status::switching;
 			double_list_append_as_tail(&temp_list, pnode);
 		}
 		idle_hold.unlock();
 		num = 0;
-		std::unique_lock turn_hold(g_context_locks[CONTEXT_TURNING]);
+		std::unique_lock turn_hold(g_context_locks[static_cast<int>(sctx_status::turning)]);
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
-			((SCHEDULE_CONTEXT*)pnode->pdata)->type = CONTEXT_TURNING;
-			double_list_append_as_tail(
-				&g_context_lists[CONTEXT_TURNING], pnode);
+			static_cast<schedule_context *>(pnode->pdata)->type = sctx_status::turning;
+			double_list_append_as_tail(&g_context_lists[static_cast<int>(sctx_status::turning)], pnode);
 			num ++;
 		}
 		turn_hold.unlock();
@@ -301,13 +293,12 @@ void contexts_pool_init(SCHEDULE_CONTEXT **pcontexts, unsigned int context_num,
 	contexts_pool_get_context_timestamp = get_timestamp;
 	g_contexts_per_thr = contexts_per_thr;
 	g_time_out = timeout;
-	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)
+	for (auto i = static_cast<unsigned int>(sctx_status::begin); i < std::size(g_context_lists); ++i)
 		double_list_init(&g_context_lists[i]);
 	for (size_t i = 0; i < g_context_num; ++i) {
 		auto pcontext = g_context_ptr[i];
 		context_init(pcontext);
-		double_list_append_as_tail(
-			&g_context_lists[CONTEXT_FREE], &pcontext->node);
+		double_list_append_as_tail(&g_context_lists[static_cast<int>(sctx_status::free)], &pcontext->node);
 	}
 }
 
@@ -354,7 +345,7 @@ void contexts_pool_stop()
 	g_poll_ctx.reset();
 	for (size_t i = 0; i < g_context_num; ++i)
 		context_free(g_context_ptr[i]);
-	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)
+	for (auto i = static_cast<unsigned int>(sctx_status::begin); i < std::size(g_context_lists); ++i)
 		double_list_free(&g_context_lists[i]);
 	g_context_ptr = nullptr;
 	g_context_num = 0;
@@ -363,14 +354,15 @@ void contexts_pool_stop()
 
 /*
  *	@param    
- *		type	type can only be one of CONTEXT_FREE OR CONTEXT_TURNING
+ *		type	type can only be one of sctx_status::free OR sctx_status::turning
  *	@return    
  * 		the pointer of SCHEDULE_CONTEXT, NULL if there's no context available
  */
-SCHEDULE_CONTEXT* contexts_pool_get_context(int type)
+schedule_context *contexts_pool_get_context(sctx_status tpraw)
 {
+	const auto type = static_cast<unsigned int>(tpraw);
 	DOUBLE_LIST_NODE *pnode;
-	if (type != CONTEXT_FREE && type != CONTEXT_TURNING)
+	if (tpraw != sctx_status::free && tpraw != sctx_status::turning)
 		return NULL;
 	std::lock_guard xhold(g_context_locks[type]);
 	pnode = double_list_pop_front(&g_context_lists[type]);
@@ -382,31 +374,32 @@ SCHEDULE_CONTEXT* contexts_pool_get_context(int type)
  *	release one context to the pool
  *	@param
  *		 pcontext	the context pointer to release
- *		 type		type can only be CONTEXT_FREE, CONTEXT_SLEEPING
- *					CONTEXT_POLLING, CONTEXT_IDLING, CONTEXT_TURNING
+ *		 type		type can only be sctx_status::free, sctx_status::sleeping
+ *					sctx_status::polling, sctx_status::idling, sctx_status::turning
  */
-void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
+void contexts_pool_put_context(schedule_context *pcontext, sctx_status tpraw)
 {
 	if (pcontext == nullptr)
 		return;
-	switch(type) {
-	case CONTEXT_FREE:
-	case CONTEXT_IDLING:
-	case CONTEXT_POLLING:
-	case CONTEXT_TURNING:
-	case CONTEXT_SLEEPING:
+	const auto type = static_cast<unsigned int>(tpraw);
+	switch (tpraw) {
+	case sctx_status::free:
+	case sctx_status::idling:
+	case sctx_status::polling:
+	case sctx_status::turning:
+	case sctx_status::sleeping:
 		break;
 	default:
-		mlog(LV_DEBUG, "contexts_pool: cannot put context into queue of type %d", type); 
+		mlog(LV_DEBUG, "contexts_pool: cannot put context into queue of type %u", type);
 		return;
 	}
 	
 	/* append the context at the tail of the corresponding list */
 	std::lock_guard xhold(g_context_locks[type]);
 	auto original_type = pcontext->type;
-	pcontext->type = type;
-	if (CONTEXT_POLLING == type) {
-		if (original_type == CONTEXT_CONSTRUCTING) {
+	pcontext->type = tpraw;
+	if (tpraw == sctx_status::polling) {
+		if (original_type == sctx_status::constructing) {
 			if (g_poll_ctx.mod(pcontext, true) != 0) {
 				pcontext->b_waiting = FALSE;
 				mlog(LV_DEBUG, "contexts_pool: failed to add event to epoll");
@@ -427,7 +420,7 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 				         pcontext), SHUT_RDWR);
 			}
 		}
-	} else if (type == CONTEXT_FREE && original_type == CONTEXT_TURNING) {
+	} else if (tpraw == sctx_status::free && original_type == sctx_status::turning) {
 		if (pcontext->b_waiting)
 			/* socket was removed by "close()" function automatically,
 				no need to call epoll_ctl with EPOLL_CTL_DEL */
@@ -438,13 +431,13 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 
 void contexts_pool_signal(SCHEDULE_CONTEXT *pcontext)
 {
-	std::unique_lock idle_hold(g_context_locks[CONTEXT_IDLING]);
-	if (pcontext->type != CONTEXT_IDLING)
+	std::unique_lock idle_hold(g_context_locks[static_cast<int>(sctx_status::idling)]);
+	if (pcontext->type != sctx_status::idling)
 		return;
-	double_list_remove(&g_context_lists[CONTEXT_IDLING], &pcontext->node);
-	pcontext->type = CONTEXT_SWITCHING;
+	double_list_remove(&g_context_lists[static_cast<int>(sctx_status::idling)], &pcontext->node);
+	pcontext->type = sctx_status::switching;
 	idle_hold.unlock();
-	contexts_pool_put_context(pcontext, CONTEXT_TURNING);
+	contexts_pool_put_context(pcontext, sctx_status::turning);
 	threads_pool_wakeup_thread();
 }
 
@@ -452,29 +445,29 @@ void contexts_pool_signal(SCHEDULE_CONTEXT *pcontext)
  *	wake up a context in sleeping queue
  *	@param
  *		pcontext [in]	indicate the context object
- *		type			can only be CONTEXT_POLLING,
- *						CONTEXT_IDLING or CONTEXT_TURNING
+ *		type			can only be sctx_status::polling,
+ *						sctx_status::idling or sctx_status::turning
  *	@return
  *		TRUE     contextis waked up
  *		FALSE    context is not in sleeping queue
  */
-BOOL contexts_pool_wakeup_context(SCHEDULE_CONTEXT *pcontext, int type)
+BOOL contexts_pool_wakeup_context(schedule_context *pcontext, sctx_status type)
 {
 	if (pcontext == nullptr)
 		return FALSE;
-	if (type != CONTEXT_POLLING && type != CONTEXT_IDLING &&
-	    type != CONTEXT_TURNING)
+	if (type != sctx_status::polling && type != sctx_status::idling &&
+	    type != sctx_status::turning)
 		return FALSE;
-	while (CONTEXT_SLEEPING != pcontext->type) {
+	while (pcontext->type != sctx_status::sleeping) {
 		usleep(100000);
-		mlog(LV_DEBUG, "contexts_pool: waiting context %p to be CONTEXT_SLEEPING", pcontext);
+		mlog(LV_DEBUG, "contexts_pool: waiting context %p to be sctx_status::sleeping", pcontext);
 	}
-	std::unique_lock sleep_hold(g_context_locks[CONTEXT_SLEEPING]);
-	double_list_remove(&g_context_lists[CONTEXT_SLEEPING], &pcontext->node);
+	std::unique_lock sleep_hold(g_context_locks[static_cast<int>(sctx_status::sleeping)]);
+	double_list_remove(&g_context_lists[static_cast<int>(sctx_status::sleeping)], &pcontext->node);
 	sleep_hold.unlock();
 	/* put the context into waiting queue */
 	contexts_pool_put_context(pcontext, type);
-	if (type == CONTEXT_TURNING)
+	if (type == sctx_status::turning)
 		threads_pool_wakeup_thread();
 	return TRUE;
 }
@@ -483,21 +476,19 @@ BOOL contexts_pool_wakeup_context(SCHEDULE_CONTEXT *pcontext, int type)
  *	try to activate a context from polling queue
  *	@param
  *		pcontext [in]	indicate the context object
- *		type			can only be CONTEXT_POLLING,
+ *		type			can only be sctx_status::polling,
  */
 void context_pool_activate_context(SCHEDULE_CONTEXT *pcontext)
 {
-	std::unique_lock poll_hold(g_context_locks[CONTEXT_POLLING]);
-	if (pcontext->type != CONTEXT_POLLING)
+	std::unique_lock poll_hold(g_context_locks[static_cast<int>(sctx_status::polling)]);
+	if (pcontext->type != sctx_status::polling)
 		return;
-	double_list_remove(&g_context_lists[CONTEXT_POLLING], &pcontext->node);
-	pcontext->type = CONTEXT_SWITCHING;
+	double_list_remove(&g_context_lists[static_cast<int>(sctx_status::polling)], &pcontext->node);
+	pcontext->type = sctx_status::switching;
 	poll_hold.unlock();
-	std::unique_lock turn_hold(g_context_locks[CONTEXT_TURNING]);
-	pcontext->type = CONTEXT_TURNING;
-	double_list_append_as_tail(
-		&g_context_lists[CONTEXT_TURNING],
-		&pcontext->node);
+	std::unique_lock turn_hold(g_context_locks[static_cast<int>(sctx_status::turning)]);
+	pcontext->type = sctx_status::turning;
+	double_list_append_as_tail(&g_context_lists[static_cast<int>(sctx_status::turning)], &pcontext->node);
 	turn_hold.unlock();
 	threads_pool_wakeup_thread();
 }

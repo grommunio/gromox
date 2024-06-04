@@ -223,7 +223,7 @@ static void *p3ls_thrwork(void *arg)
 		static constexpr int flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
 			mlog(LV_WARN, "W-1339: setsockopt: %s", strerror(errno));
-		auto ctx = static_cast<pop3_context *>(contexts_pool_get_context(CONTEXT_FREE));
+		auto ctx = static_cast<pop3_context *>(contexts_pool_get_context(sctx_status::free));
 		/* there's no context available in contexts pool, close the connection*/
 		if (ctx == nullptr) {
 			/* 421 <domain> Service not available */
@@ -239,7 +239,7 @@ static void *p3ls_thrwork(void *arg)
 			close(sockd2);
 			continue;
 		}
-		ctx->type = CONTEXT_CONSTRUCTING;
+		ctx->type = sctx_status::constructing;
 		/* pass the client ipaddr into the ipaddr filter */
 		std::string reason;
 		if (!system_services_judge_ip(client_hostip, reason)) {
@@ -256,7 +256,7 @@ static void *p3ls_thrwork(void *arg)
 				client_hostip);
 			close(sockd2);
 			/* release the context */
-			contexts_pool_put_context(ctx, CONTEXT_FREE);
+			contexts_pool_put_context(ctx, sctx_status::free);
 			continue;
 		}
 
@@ -285,7 +285,7 @@ static void *p3ls_thrwork(void *arg)
 		 * block on the condition variable.
 		 */
 		ctx->polling_mask = POLLING_READ;
-		contexts_pool_put_context(ctx, CONTEXT_POLLING);
+		contexts_pool_put_context(ctx, sctx_status::polling);
 	}
 	return nullptr;
 }

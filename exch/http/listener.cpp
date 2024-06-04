@@ -182,7 +182,7 @@ static void *htls_thrwork(void *arg)
 		static const int flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
 			mlog(LV_WARN, "W-1409: setsockopt: %s", strerror(errno));
-		auto pcontext = static_cast<HTTP_CONTEXT *>(contexts_pool_get_context(CONTEXT_FREE));
+		auto pcontext = static_cast<HTTP_CONTEXT *>(contexts_pool_get_context(sctx_status::free));
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			mlog(LV_NOTICE, "Rejecting connection from [%s]:%hu: "
@@ -198,7 +198,7 @@ static void *htls_thrwork(void *arg)
 			close(sockd2);
 			continue;
 		}
-		pcontext->type = CONTEXT_CONSTRUCTING;
+		pcontext->type = sctx_status::constructing;
 		/* pass the client ipaddr into the ipaddr filter */
 		std::string reason;
 		if (!system_services_judge_ip(client_hostip, reason)) {
@@ -212,7 +212,7 @@ static void *htls_thrwork(void *arg)
 				client_hostip, reason.c_str());
 			close(sockd2);
 			/* release the context */
-			contexts_pool_put_context(pcontext, CONTEXT_FREE);
+			contexts_pool_put_context(pcontext, sctx_status::free);
 			continue;
 		}
 
@@ -229,7 +229,7 @@ static void *htls_thrwork(void *arg)
 		block on the condition variable 
 		*/
 		pcontext->polling_mask = POLLING_READ;
-		contexts_pool_put_context(pcontext, CONTEXT_POLLING);
+		contexts_pool_put_context(pcontext, sctx_status::polling);
 	}
 	return nullptr;
 }

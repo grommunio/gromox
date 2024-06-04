@@ -1549,7 +1549,7 @@ static void *imps_thrwork(void *argp)
 			if (pcontext->sched_stat == isched_stat::idling) {
 				if (pcontext->async_change_mask != 0) {
 					pcontext->sched_stat = isched_stat::notifying;
-					contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
+					contexts_pool_wakeup_context(pcontext, sctx_status::turning);
 					if (pcontext == ptail)
 						break;
 					continue;
@@ -1557,12 +1557,12 @@ static void *imps_thrwork(void *argp)
 			}
 			peek_len = recv(pcontext->connection.sockd, &tmp_buff, 1, MSG_PEEK);
 			if (1 == peek_len) {
-				contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
+				contexts_pool_wakeup_context(pcontext, sctx_status::turning);
 			} else if (peek_len < 0) {
 				auto current_time = tp_now();
 				if (current_time - pcontext->connection.last_timestamp >= g_autologout_time) {
 					pcontext->sched_stat = isched_stat::autologout;
-					contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
+					contexts_pool_wakeup_context(pcontext, sctx_status::turning);
 				} else {
 					ll_hold.lock();
 					g_sleeping_list.push_back(pcontext);
@@ -1570,7 +1570,7 @@ static void *imps_thrwork(void *argp)
 				}
 			} else {
 				pcontext->sched_stat = isched_stat::disconnected;
-				contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
+				contexts_pool_wakeup_context(pcontext, sctx_status::turning);
 			}
 		} while (pcontext != ptail);
 		usleep(100000);
