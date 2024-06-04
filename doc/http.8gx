@@ -223,12 +223,15 @@ is false because you need a certificate for this first.
 Default: \fIfalse\fP
 .TP
 \fBhttp_thread_charge_num\fP
-The maximum number of connections that each thread is allowed to process.
+Connection load factor (oversubscription ratio) for a processing thread.
 .br
 Default: \fI20\fP
 .TP
 \fBhttp_thread_init_num\fP
-The minimum number of client processing threads to keep around.
+The initial and also minimum number of client processing threads to keep
+around. This is similar to php-fpm's start_servers/min_spare_servere. (The
+maximum number of threads, i.e. what would be max_spare_servers, is determined
+by: context_num divided by imap_thread_charge_num)
 .br
 Default: \fI5\fP
 .TP

@@ -176,6 +176,11 @@ static void *tpol_thrwork(void *pparam)
 			if (MAX_TIMES_NOT_SERVED == cannot_served_times) {
 				std::unique_lock tpd_hold(g_threads_pool_data_lock);
 				int gpr;
+				/*
+				 * See if some worker threads can be dropped
+				 * (logic similar to PHP-FPM
+				 * min_spare_servers).
+				 */
 				if (g_threads_pool_cur_thr_num > g_threads_pool_min_num &&
 				    (gpr = contexts_pool_get_param(CUR_VALID_CONTEXTS)) >= 0 &&
 				    g_threads_pool_cur_thr_num * contexts_per_threads > static_cast<size_t>(gpr)) {
@@ -247,6 +252,11 @@ void threads_pool_wakeup_all_threads()
 	g_threads_pool_waken_cond.notify_all();
 }
 
+/**
+ * Dedicated thread "ep_pool/scan", which watches context_pool for
+ * contention, and if so, spawn more threads. This is similar to
+ * PHP-FPM's max_spare_servers.
+ */
 static void *tpol_scanwork(void *pparam)
 {
 	int not_empty_times;
