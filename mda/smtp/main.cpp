@@ -360,7 +360,7 @@ int main(int argc, const char **argv)
 	if (!dq_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
 
-	mlog_init(g_config_file->get_value("lda_log_file"), g_config_file->get_ll("lda_log_level"));
+	mlog_init("gromox-delivery-queue", g_config_file->get_value("lda_log_file"), g_config_file->get_ll("lda_log_level"));
 	if (0 != resource_run()) { 
 		mlog(LV_ERR, "system: failed to load resources");
 		return EXIT_FAILURE;

@@ -164,7 +164,7 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
 		       opt_config_file, strerror(errno));
 		return false;
 	}
-	mlog_init(pconfig->get_value("zcore_log_file"), pconfig->get_ll("zcore_log_level"));
+	mlog_init("gromox-zcore", pconfig->get_value("zcore_log_file"), pconfig->get_ll("zcore_log_level"));
 	g_zrpc_debug = pconfig->get_ll("zrpc_debug");
 	g_oxcical_allday_ymd = pconfig->get_ll("oxcical_allday_ymd");
 	zcore_max_obh_per_session = pconfig->get_ll("zcore_max_obh_per_session");

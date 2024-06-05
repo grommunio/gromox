@@ -1110,7 +1110,7 @@ errno_t tmpfile::link_to(const char *newpath)
 	return 0;
 }
 
-void mlog_init(const char *filename, unsigned int max_level)
+void mlog_init(const char *ident, const char *filename, unsigned int max_level)
 {
 	g_max_loglevel = max_level;
 	if (filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0)
@@ -1120,7 +1120,7 @@ void mlog_init(const char *filename, unsigned int max_level)
 	if (g_logfp == nullptr && getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
 		g_log_syslog = true;
 	if (g_log_syslog) {
-		openlog(nullptr, LOG_PID, LOG_MAIL);
+		openlog(ident, LOG_PID, LOG_MAIL);
 		setlogmask((1 << (max_level + 2)) - 1);
 		return;
 	}
