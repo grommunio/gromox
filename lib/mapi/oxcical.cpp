@@ -3354,9 +3354,47 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
     const MESSAGE_CONTENT *pmsg, ical &pical, const char *org_name,
     cvt_id2user id2user, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
+	const PROPERTY_NAME namequeries[] = {
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentCounterProposal},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentProposedStartWhole},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentProposedEndWhole},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStartWhole},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentEndWhole},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentDuration},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneStruct},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneDescription},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentTimeZoneDefinitionRecur},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentTimeZoneDefinitionStartDisplay},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentTimeZoneDefinitionEndDisplay},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSubType},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime},
+		{MNID_ID, PSETID_TASK, PidLidTaskStartDate},
+		{MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameKeywords)},
+		{MNID_ID, PSETID_MEETING, PidLidAttendeeCriticalChange},
+		{MNID_ID, PSETID_MEETING, PidLidOwnerCriticalChange},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidBusyStatus},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSequence},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidLocation},
+		{MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameLocationUrl)},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidIntendedBusyStatus},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentNotAllowPropose},
+	};
+	enum {
+		l_counterproposal, l_proposedstartwhole, l_proposedendwhole,
+		l_startwhole, l_endwhole, l_duration, l_recur, l_tzstruct,
+		l_tzdesc, l_tzdefrecur, l_tzdefstart, l_tzdefend, l_subtype, l_replacetime,
+		l_taskstart, l_keywords, l_attcritchg, l_ownercritchg, l_busystatus,
+		l_apptseq, l_location, l_locationurl, l_intendedbusy, l_nopropose,
+	};
+	static_assert(l_nopropose + 1 == std::size(namequeries));
 	PROPID_ARRAY propids;
 	APPOINTMENT_RECUR_PAT apprecurr;
 	
+	const PROPNAME_ARRAY pna = {std::size(namequeries), deconst(namequeries)};
+	if (!get_propids(&pna, &propids))
+		return E_2201;
+
 	auto num = pmsg->proplist.get<const uint32_t>(PR_MESSAGE_LOCALE_ID);
 	auto planguage = num != nullptr ? lcid_to_ltag(*num) : nullptr;
 	auto str = pmsg->proplist.get<const char>(PR_MESSAGE_CLASS);
@@ -3379,11 +3417,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			partstat = "ACCEPTED";
 		} else if (class_match_prefix(str, "IPM.Schedule.Meeting.Resp.Tent") == 0) {
 			partstat = "TENTATIVE";
-			PROPERTY_NAME pn = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentCounterProposal};
-			const PROPNAME_ARRAY pna = {1, &pn};
-			if (!get_propids(&pna, &propids))
-				return E_2201;
-			auto flag = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
+			auto flag = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[l_counterproposal]));
 			if (flag != nullptr && *flag != 0) {
 				b_proposal = true;
 				method = "COUNTER";
@@ -3408,30 +3442,19 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			return fmt::format("W-2202: oxcical_export does not handle message class \"{}\"", str);
 		}
 	}
-	PROPERTY_NAME propname = {MNID_ID, PSETID_APPOINTMENT, b_proposal ?
-		PidLidAppointmentProposedStartWhole : PidLidAppointmentStartWhole};
-	const PROPNAME_ARRAY propnames = {1, &propname};
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	auto lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
+	auto lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME,
+	            propids.ppropid[b_proposal ? l_proposedstartwhole : l_startwhole]));
 	bool has_start_time = false;
 	time_t start_time = 0, end_time = 0;
 	if (lnum != nullptr) {
 		start_time = rop_util_nttime_to_unix(*lnum);
 		has_start_time = true;
-		propname = {MNID_ID, PSETID_APPOINTMENT, b_proposal ?
-			   PidLidAppointmentProposedEndWhole : PidLidAppointmentEndWhole};
-		if (!get_propids(&propnames, &propids))
-			return E_2201;
-		lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
+		lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[b_proposal ? l_proposedendwhole : l_endwhole]));
 		if (lnum != nullptr) {
 			end_time = rop_util_nttime_to_unix(*lnum);
 		} else {
-			propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentDuration};
-			if (!get_propids(&propnames, &propids))
-				return E_2201;
 			end_time = start_time;
-			num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
+			num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[l_duration]));
 			if (num != nullptr)
 				end_time += *num;
 		}
@@ -3445,10 +3468,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	pical.append_line("PRODID", "gromox-oxcical");
 	pical.append_line("VERSION", "2.0");
 	
-	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur};
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	auto bin = pmsg->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
+	auto bin = pmsg->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_recur]));
 	if (bin != nullptr) {
 		EXT_PULL ext_pull;
 		ext_pull.init(bin->pb, bin->cb, alloc, EXT_FLAG_UTF16);
@@ -3481,14 +3501,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	
 	tzid = NULL;
 	if (b_recurrence) {
-		propname = {MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneStruct};
-		if (!get_propids(&propnames, &propids))
-			return E_2201;
-		bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
-		propname = {MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneDescription};
-		if (!get_propids(&propnames, &propids))
-			return E_2201;
-		tzid = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
+		bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzstruct]));
+		tzid = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[l_tzdesc]));
 		if (bin != nullptr && tzid != nullptr) {
 			EXT_PULL ext_pull;
 			TIMEZONESTRUCT tz_struct;
@@ -3501,10 +3515,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			if (ptz_component == nullptr)
 				return "E-2206: export_timezone returned an unspecified error";
 		} else {
-			propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentTimeZoneDefinitionRecur};
-			if (!get_propids(&propnames, &propids))
-				return E_2201;
-			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
+			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefrecur]));
 			if (bin != nullptr) {
 				EXT_PULL ext_pull;
 				TIMEZONEDEFINITION tz_definition;
@@ -3522,16 +3533,9 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			}
 		}
 	} else {
-		propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentTimeZoneDefinitionStartDisplay};
-		if (!get_propids(&propnames, &propids))
-			return E_2201;
-		bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
-		if (bin != nullptr) {
-			propname.lid = PidLidAppointmentTimeZoneDefinitionEndDisplay;
-			if (!get_propids(&propnames, &propids))
-				return E_2201;
-			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
-		}
+		bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefstart]));
+		if (bin != nullptr)
+			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefend]));
 		if (bin != nullptr) {
 			EXT_PULL ext_pull;
 			TIMEZONEDEFINITION tz_definition;
@@ -3550,10 +3554,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	}
     }
 	
-	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSubType};
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	auto snum = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
+	auto snum = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[l_subtype]));
 	BOOL b_allday = snum != nullptr && *snum != 0 ? TRUE : false;
 	auto pcomponent = icaltype != nullptr ? &pical.append_comp(icaltype) : &pical;
 	
@@ -3591,10 +3592,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (err != nullptr)
 		return err;
 
-	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime};
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	auto proptag_xrt = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
+	auto proptag_xrt = PROP_TAG(PT_SYSTIME, propids.ppropid[l_replacetime]);
 	err = oxcical_export_recid(*pmsg, proptag_xrt, b_exceptional,
 	      b_allday && g_oxcical_allday_ymd, *pcomponent, ptz_component,
 	      tzid, alloc, get_propids);
@@ -3616,10 +3614,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			b_allday && g_oxcical_allday_ymd,
 			ptz_component != nullptr ? tzid : nullptr);
 	} else {
-		propname = {MNID_ID, PSETID_TASK, PidLidTaskStartDate};
-		if (!get_propids(&propnames, &propids))
-			return E_2201;
-		lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
+		lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[l_taskstart]));
 		if (lnum != nullptr) {
 			ical_time itime;
 			if (!ical_utc_to_datetime(ptz_component, rop_util_nttime_to_unix(*lnum), &itime))
@@ -3644,10 +3639,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (err != nullptr)
 		return err;
 
-	propname = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameKeywords)};
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	auto sa = pmsg->proplist.get<const STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, propids.ppropid[0]));
+	auto sa = pmsg->proplist.get<const STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, propids.ppropid[l_keywords]));
 	if (sa != nullptr) {
 		auto piline = &pical.append_line("CATEGORIES");
 		auto &pivalue = piline->append_value();
@@ -3661,12 +3653,9 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	num = pmsg->proplist.get<uint32_t>(PR_IMPORTANCE);
 	if (num != nullptr)
 		importance_to_lines(static_cast<mapi_importance>(*num), pcomponent);
-	propname = {MNID_ID, PSETID_MEETING};
-	propname.lid = (strcmp(method, "REPLY") == 0 || strcmp(method, "COUNTER") == 0) ?
-	               PidLidAttendeeCriticalChange : PidLidOwnerCriticalChange;
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
+	auto ll_crittype = strcmp(method, "REPLY") == 0 || strcmp(method, "COUNTER") == 0 ?
+	                   l_attcritchg : l_ownercritchg;
+	lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[ll_crittype]));
 	if (lnum != nullptr) {
 		ical_time itime;
 		char tmp_buff[1024];
@@ -3675,10 +3664,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		pcomponent->append_line("DTSTAMP", tmp_buff);
 	}
 	
-	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidBusyStatus};
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	auto pbusystatus = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
+	auto pbusystatus = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[l_busystatus]));
 	if (NULL != pbusystatus) {
 		switch (static_cast<ol_busy_status>(*pbusystatus)) {
 		case olFree:
@@ -3695,23 +3681,14 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 	
-	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSequence};
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	auto psequence = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
+	auto psequence = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[l_apptseq]));
 	if (psequence != nullptr)
 		pcomponent->append_line("SEQUENCE", std::to_string(*psequence));
 	
-	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidLocation};
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
+	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[l_location]));
 	if (str != nullptr) {
 		auto piline = &pcomponent->append_line("LOCATION", str);
-		propname = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameLocationUrl)};
-		if (!get_propids(&propnames, &propids))
-			return E_2201;
-		str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
+		str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[l_locationurl]));
 		if (str != nullptr)
 			piline->append_param("ALTREP", str);
 		if (planguage != nullptr)
@@ -3727,10 +3704,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		busystatus_to_line(static_cast<ol_busy_status>(*pbusystatus),
 			"X-MICROSOFT-CDO-BUSYSTATUS", pcomponent);
 
-	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidIntendedBusyStatus};
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
+	num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[l_intendedbusy]));
 	if (num != nullptr)
 		busystatus_to_line(static_cast<ol_busy_status>(*num),
 			"X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent);
@@ -3738,10 +3712,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	pcomponent->append_line("X-MICROSOFT-CDO-ALLDAYEVENT", b_allday ? "TRUE" : "FALSE");
 	pcomponent->append_line("X-MICROSOFT-CDO-INSTTYPE", b_exceptional ? "3" : b_recurrence ? "1" : "0");
 	
-	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentNotAllowPropose};
-	if (!get_propids(&propnames, &propids))
-		return E_2201;
-	auto flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
+	auto flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[l_nopropose]));
 	if (flag != nullptr)
 		pcomponent->append_line("X-MICROSOFT-DISALLOW-COUNTER", *flag != 0 ? "TRUE" : "FALSE");
 	
