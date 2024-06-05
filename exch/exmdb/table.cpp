@@ -1112,14 +1112,14 @@ static BOOL table_load_permissions(sqlite3 *psqlite,
 			b_default = TRUE;
 	}
 	if (!b_default) {
-		sqlite3_bind_int64(pstmt, 1, 0);
+		sqlite3_bind_int64(pstmt, 1, MEMBER_ID_DEFAULT);
 		if (gx_sql_step(pstmt) != SQLITE_DONE)
 			return FALSE;
 		(*prow_count) ++;
 		sqlite3_reset(pstmt);
 	}
 	if (!b_anonymous) {
-		sqlite3_bind_int64(pstmt, 1, -1);
+		sqlite3_bind_int64(pstmt, 1, MEMBER_ID_ANONYMOUS);
 		if (gx_sql_step(pstmt) != SQLITE_DONE)
 			return FALSE;
 		(*prow_count) ++;

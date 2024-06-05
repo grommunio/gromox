@@ -2006,12 +2006,11 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     bool b_freebusy, uint64_t fid_val)
 {
-	static constexpr uint64_t DEFAULT = 0, ANONYMOUS = UINT64_MAX;
 	auto lnum = propvals.get<const uint64_t>(PR_MEMBER_ID);
 	if (lnum == nullptr)
 		return true;
 	auto member_id = *lnum;
-	if (member_id == DEFAULT || member_id == ANONYMOUS) {
+	if (member_id == MEMBER_ID_DEFAULT || member_id == MEMBER_ID_ANONYMOUS) {
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "SELECT member_id "
 			"FROM permissions WHERE folder_id=%llu AND "
@@ -2019,12 +2018,13 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		auto pstmt1 = pdb->prep(sql_string);
 		if (pstmt1 == nullptr)
 			return false;
-		sqlite3_bind_text(pstmt1, 1, member_id == DEFAULT ? "default" : "", -1, SQLITE_STATIC);
+		pstmt1.bind_text(1, member_id == MEMBER_ID_DEFAULT ? "default" : "");
 		if (pstmt1.step() != SQLITE_ROW) {
 			pstmt1.finalize();
 			snprintf(sql_string, std::size(sql_string), "SELECT config_value "
 				"FROM configurations WHERE config_id=%d",
-				member_id == DEFAULT ? CONFIG_ID_DEFAULT_PERMISSION : CONFIG_ID_ANONYMOUS_PERMISSION);
+				member_id == MEMBER_ID_DEFAULT ?
+				CONFIG_ID_DEFAULT_PERMISSION : CONFIG_ID_ANONYMOUS_PERMISSION);
 			pstmt1 = pdb->prep(sql_string);
 			if (pstmt1 == nullptr)
 				return false;
@@ -2086,13 +2086,13 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	auto member_id = propvals.get<const uint64_t>(PR_MEMBER_ID);
 	if (member_id == nullptr)
 		return true;
-	if (*member_id == 0) {
+	if (*member_id == MEMBER_ID_DEFAULT) {
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM permissions WHERE "
 			"folder_id=%llu and username=\"default\"", LLU{fid_val});
 		if (pdb->exec(sql_string) != SQLITE_OK)
 			return false;
-	} else if (*member_id == UINT64_MAX) {
+	} else if (*member_id == MEMBER_ID_ANONYMOUS) {
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM permissions WHERE "
 			"folder_id=%llu and username=\"\"", LLU{fid_val});
