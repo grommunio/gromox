@@ -111,7 +111,8 @@ level 2 emits all commands.
 Default: \fI0\fP
 .TP
 \fBpop3_conn_timeout\fP
-If a POP3 connection stalls for the given period, the connection is terminated.
+If a POP3 connection is inactive for the given period, the connection is
+terminated.
 .br
 Default: \fI3 minutes\fP
 .TP

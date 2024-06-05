@@ -131,7 +131,7 @@ directive to pull CA certs in).
 Default: (unset)
 .TP
 \fBsmtp_conn_timeout\fP
-If an SMTP connection stalls for the given period, the connection is
+If an SMTP connection is inactive for the given period, the connection is
 terminated.
 .br
 Default: \fI3 minutes\fP

@@ -107,8 +107,10 @@ The number of login tries a user is allowed before the account is blocked.
 Default: \fI10\fP
 .TP
 \fBimap_autologout_time\fP
-If an IMAP connection is idle for the given period, the connection is
-terminated.
+If an authenticated IMAP connection is idle for the given period, the
+connection is terminated. RFC 2060 §5.4 recommends 30 minutes minimum.
+(Connections that have not authenticated are subject to the regular
+imap_conn_timeout.)
 .br
 Default: \fI30 minutes\fP
 .TP
@@ -132,8 +134,10 @@ level 2 emits all commands.
 Default: \fI0\fP
 .TP
 \fBimap_conn_timeout\fP
-If an IMAP connection stalls for the given period, the connection is
-terminated.
+If an IMAP connection stalls (writing responses to client) for the given
+period, the connection is terminated. If unauthenticated IMAP connections do
+not have any activity (requests from clients) for the given period, the
+connection is terminated.
 .br
 Default: \fI3 minutes\fP
 .TP

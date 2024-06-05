@@ -154,7 +154,8 @@ directive to pull CA certs in).
 Default: (unset)
 .TP
 \fBhttp_conn_timeout\fP
-If a HTTP connection stalls for the given period, the connection is terminated.
+If a HTTP connection is inactive for the given period, the connection is
+terminated.
 .br
 Default: \fI3 minutes\fP
 .TP
