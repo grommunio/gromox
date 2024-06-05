@@ -432,7 +432,7 @@ enum {
 	PR_VIEWS_ENTRYID = PROP_TAG(PT_BINARY, 0x35E5), /* PidTagViewsEntryId */
 	PR_COMMON_VIEWS_ENTRYID = PROP_TAG(PT_BINARY, 0x35E6), /* PidTagCommonViewsEntryId */
 	PR_FINDER_ENTRYID = PROP_TAG(PT_BINARY, 0x35E7), /* PidTagFinderEntryId */
-	// PidTagXSpoolerQueueEntryId = PROP_TAG(PT_BINARY, 0x35E8),
+	PidTagXSpoolerQueueEntryId = PROP_TAG(PT_BINARY, 0x35E8),
 	// PR_SYNC_ROOT_ENTRYID = PROP_TAG(PT_BINARY, 0x35EA), /* entryid to "exchangeSyncData" folder (EXC2019) */
 	// PR_VOICEMAIL_FOLDER_ENTRYID = PROP_TAG(PT_BINARY, 0x35EB),
 	// PidTagXAllItemsFolderEntryId = PROP_TAG(PT_BINARY, 0x35EE),
