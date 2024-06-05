@@ -135,7 +135,7 @@ static bool pop3_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
-	mlog_init(pconfig->get_value("pop3_log_file"), pconfig->get_ll("pop3_log_level"));
+	mlog_init("gromox-pop3", pconfig->get_value("pop3_log_file"), pconfig->get_ll("pop3_log_level"));
 	g_popcmd_debug = pconfig->get_ll("pop3_cmd_debug");
 	return true;
 }
