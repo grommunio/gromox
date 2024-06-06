@@ -2018,7 +2018,8 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		auto pstmt1 = pdb->prep(sql_string);
 		if (pstmt1 == nullptr)
 			return false;
-		pstmt1.bind_text(1, member_id == MEMBER_ID_DEFAULT ? "default" : "");
+		auto uname = member_id == MEMBER_ID_DEFAULT ? "default" : "";
+		pstmt1.bind_text(1, uname);
 		if (pstmt1.step() != SQLITE_ROW) {
 			pstmt1.finalize();
 			snprintf(sql_string, std::size(sql_string), "SELECT config_value "
@@ -2038,7 +2039,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 			pstmt1 = pdb->prep(sql_string);
 			if (pstmt1 == nullptr)
 				return false;
-			sqlite3_bind_text(pstmt1, 1, "default", -1, SQLITE_STATIC);
+			sqlite3_bind_text(pstmt1, 1, uname, -1, SQLITE_STATIC);
 			sqlite3_bind_int64(pstmt1, 2, permission);
 			if (pstmt1.step() != SQLITE_DONE)
 				return false;
