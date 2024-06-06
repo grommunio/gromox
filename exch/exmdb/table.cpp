@@ -1112,14 +1112,14 @@ static BOOL table_load_permissions(sqlite3 *psqlite,
 			b_default = TRUE;
 	}
 	if (!b_default) {
-		sqlite3_bind_int64(pstmt, 1, 0);
+		sqlite3_bind_int64(pstmt, 1, MEMBER_ID_DEFAULT);
 		if (gx_sql_step(pstmt) != SQLITE_DONE)
 			return FALSE;
 		(*prow_count) ++;
 		sqlite3_reset(pstmt);
 	}
 	if (!b_anonymous) {
-		sqlite3_bind_int64(pstmt, 1, -1);
+		sqlite3_bind_int64(pstmt, 1, MEMBER_ID_ANONYMOUS);
 		if (gx_sql_step(pstmt) != SQLITE_DONE)
 			return FALSE;
 		(*prow_count) ++;
@@ -1740,7 +1740,7 @@ static BOOL query_perm(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
-		auto member_id = pstmt.col_uint64(0);
+		auto member_id = pstmt.col_int64(0);
 		auto mrow = pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (mrow == nullptr)
 			return FALSE;
@@ -1754,7 +1754,7 @@ static BOOL query_perm(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 			auto u_tag = tag;
 			if (u_tag == PR_MEMBER_NAME_A)
 				u_tag = PR_MEMBER_NAME;
-			if (!common_util_get_permission_property(member_id,
+			if (!cu_get_permission_property(member_id,
 			    pdb->psqlite, u_tag, &pvalue))
 				return FALSE;
 			if (tag == PR_MEMBER_RIGHTS &&

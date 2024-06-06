@@ -3744,7 +3744,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 	return TRUE;
 }
 
-BOOL common_util_get_permission_property(uint64_t member_id,
+bool cu_get_permission_property(int64_t member_id,
 	sqlite3 *psqlite, uint32_t proptag, void **ppvalue)
 {
 	char sql_string[128];
@@ -3754,27 +3754,29 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	
 	switch (proptag) {
 	case PR_ENTRYID:
-		if (0 == member_id || -1 == (int64_t)member_id) {
+		if (member_id == MEMBER_ID_DEFAULT ||
+		    member_id == MEMBER_ID_ANONYMOUS) {
 			*ppvalue = deconst(&fake_bin);
 			return TRUE;
 		}
 		snprintf(sql_string, std::size(sql_string), "SELECT username FROM"
-		          " permissions WHERE member_id=%llu", LLU{member_id});
+		          " permissions WHERE member_id=%lld", LLD{member_id});
 		break;
 	case PR_MEMBER_NAME:
 	case PR_SMTP_ADDRESS:
-		if (0 == member_id) {
+		if (member_id == MEMBER_ID_DEFAULT) {
 			*ppvalue = deconst("default");
 			return TRUE;
-		} else if (member_id == UINT64_MAX) {
+		} else if (member_id == MEMBER_ID_ANONYMOUS) {
 			*ppvalue = deconst("anonymous");
 			return TRUE;
 		}
 		snprintf(sql_string, std::size(sql_string), "SELECT username FROM"
-		          " permissions WHERE member_id=%llu", LLU{member_id});
+		          " permissions WHERE member_id=%lld", LLD{member_id});
 		break;
 	case PR_MEMBER_ID:
-		if (0 == member_id || -1 == (int64_t)member_id) {
+		if (member_id == MEMBER_ID_DEFAULT ||
+		    member_id == MEMBER_ID_ANONYMOUS) {
 			auto v = cu_alloc<uint64_t>();
 			*ppvalue = v;
 			if (v == nullptr)
@@ -3783,20 +3785,20 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			return TRUE;
 		}
 		snprintf(sql_string, std::size(sql_string), "SELECT username FROM"
-		          " permissions WHERE member_id=%llu", LLU{member_id});
+		          " permissions WHERE member_id=%lld", LLD{member_id});
 		break;
 	case PR_MEMBER_RIGHTS:
-		if (member_id == 0)
+		if (member_id == MEMBER_ID_DEFAULT)
 			snprintf(sql_string, std::size(sql_string), "SELECT config_value "
 					"FROM configurations WHERE config_id=%d",
 					CONFIG_ID_DEFAULT_PERMISSION);
-		else if (member_id == UINT64_MAX)
+		else if (member_id == MEMBER_ID_ANONYMOUS)
 			snprintf(sql_string, std::size(sql_string), "SELECT config_value "
 					"FROM configurations WHERE config_id=%d",
 					CONFIG_ID_ANONYMOUS_PERMISSION);
 		else
 			snprintf(sql_string, std::size(sql_string), "SELECT permission FROM "
-			          "permissions WHERE member_id=%llu", LLU{member_id});
+			         "permissions WHERE member_id=%lld", LLD{member_id});
 		break;
 	default:
 		*ppvalue = NULL;
@@ -3820,9 +3822,9 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		}
 		pusername = pstmt.col_text(0);
 		if (*pusername == '\0')
-			*v = UINT64_MAX;
+			*v = MEMBER_ID_ANONYMOUS;
 		else if (strcasecmp(pusername, "default") == 0)
-			*v = 0;
+			*v = MEMBER_ID_DEFAULT;
 		else
 			*v = member_id;
 		return TRUE;

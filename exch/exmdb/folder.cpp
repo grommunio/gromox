@@ -2006,12 +2006,11 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     bool b_freebusy, uint64_t fid_val)
 {
-	static constexpr uint64_t DEFAULT = 0, ANONYMOUS = UINT64_MAX;
-	auto lnum = propvals.get<const uint64_t>(PR_MEMBER_ID);
-	if (lnum == nullptr)
+	auto snum = propvals.get<const int64_t>(PR_MEMBER_ID);
+	if (snum == nullptr)
 		return true;
-	auto member_id = *lnum;
-	if (member_id == DEFAULT || member_id == ANONYMOUS) {
+	auto member_id = *snum;
+	if (member_id == MEMBER_ID_DEFAULT || member_id == MEMBER_ID_ANONYMOUS) {
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "SELECT member_id "
 			"FROM permissions WHERE folder_id=%llu AND "
@@ -2019,12 +2018,14 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		auto pstmt1 = pdb->prep(sql_string);
 		if (pstmt1 == nullptr)
 			return false;
-		sqlite3_bind_text(pstmt1, 1, member_id == DEFAULT ? "default" : "", -1, SQLITE_STATIC);
+		auto uname = member_id == MEMBER_ID_DEFAULT ? "default" : "";
+		pstmt1.bind_text(1, uname);
 		if (pstmt1.step() != SQLITE_ROW) {
 			pstmt1.finalize();
 			snprintf(sql_string, std::size(sql_string), "SELECT config_value "
 				"FROM configurations WHERE config_id=%d",
-				member_id == DEFAULT ? CONFIG_ID_DEFAULT_PERMISSION : CONFIG_ID_ANONYMOUS_PERMISSION);
+				member_id == MEMBER_ID_DEFAULT ?
+				CONFIG_ID_DEFAULT_PERMISSION : CONFIG_ID_ANONYMOUS_PERMISSION);
 			pstmt1 = pdb->prep(sql_string);
 			if (pstmt1 == nullptr)
 				return false;
@@ -2038,7 +2039,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 			pstmt1 = pdb->prep(sql_string);
 			if (pstmt1 == nullptr)
 				return false;
-			sqlite3_bind_text(pstmt1, 1, "default", -1, SQLITE_STATIC);
+			sqlite3_bind_text(pstmt1, 1, uname, -1, SQLITE_STATIC);
 			sqlite3_bind_int64(pstmt1, 2, permission);
 			if (pstmt1.step() != SQLITE_DONE)
 				return false;
@@ -2050,7 +2051,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	}
 	char sql_string[128];
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM"
-		  " permissions WHERE member_id=%llu", LLU{member_id});
+	         " permissions WHERE member_id=%lld", LLD{member_id});
 	auto pstmt1 = pdb->prep(sql_string);
 	if (pstmt1 == nullptr)
 		return false;
@@ -2074,7 +2075,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	    fid_val != PRIVATE_FID_CALENDAR)
 		permission &= ~(frightsFreeBusySimple | frightsFreeBusyDetailed);
 	snprintf(sql_string, std::size(sql_string), "UPDATE permissions SET permission=%u"
-		" WHERE member_id=%llu", permission, LLU{member_id});
+	         " WHERE member_id=%lld", permission, LLD{member_id});
 	if (pdb->exec(sql_string) != SQLITE_OK)
 		return false;
 	return true;
@@ -2083,16 +2084,16 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     uint64_t fid_val)
 {
-	auto member_id = propvals.get<const uint64_t>(PR_MEMBER_ID);
+	auto member_id = propvals.get<const int64_t>(PR_MEMBER_ID);
 	if (member_id == nullptr)
 		return true;
-	if (*member_id == 0) {
+	if (*member_id == MEMBER_ID_DEFAULT) {
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM permissions WHERE "
 			"folder_id=%llu and username=\"default\"", LLU{fid_val});
 		if (pdb->exec(sql_string) != SQLITE_OK)
 			return false;
-	} else if (*member_id == UINT64_MAX) {
+	} else if (*member_id == MEMBER_ID_ANONYMOUS) {
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM permissions WHERE "
 			"folder_id=%llu and username=\"\"", LLU{fid_val});
@@ -2101,7 +2102,7 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	} else {
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM"
-			  " permissions WHERE member_id=%llu", LLU{*member_id});
+			  " permissions WHERE member_id=%lld", LLD{*member_id});
 		auto pstmt1 = pdb->prep(sql_string);
 		if (pstmt1 == nullptr)
 			return false;
@@ -2110,7 +2111,7 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 			return true;
 		pstmt1.finalize();
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM permissions"
-			" WHERE member_id=%llu", LLU{*member_id});
+			" WHERE member_id=%lld", LLD{*member_id});
 		if (pdb->exec(sql_string) != SQLITE_OK)
 			return false;
 	}
