@@ -192,8 +192,11 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		default: {
 			void *newval = nullptr;
 			if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
-			    psqlite, tag, &newval) || newval == nullptr ||
-			    pmsgctnt->proplist.set(tag, newval) != 0)
+			    psqlite, tag, &newval))
+				return false;
+			if (newval == nullptr)
+				continue;
+			if (pmsgctnt->proplist.set(tag, newval) != 0)
 				return FALSE;
 			break;
 		}
@@ -221,8 +224,11 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		for (auto tag : rcpt_tags) {
 			void *newval = nullptr;
 			if (!cu_get_property(MAPI_MAILUSER, rcpt_id, CP_ACP,
-			    psqlite, tag, &newval) || newval == nullptr ||
-			    pproplist->set(tag, newval) != 0)
+			    psqlite, tag, &newval))
+				return false;
+			if (newval == nullptr)
+				continue;
+			if (pproplist->set(tag, newval) != 0)
 				return FALSE;
 		}
 	}
@@ -276,9 +282,11 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			default: {
 				void *newval = nullptr;
 				if (!cu_get_property(MAPI_ATTACH, attachment_id,
-				    CP_ACP, psqlite, tag, &newval) ||
-				    newval == nullptr ||
-				    pattachment->proplist.set(tag, newval) != 0)
+				    CP_ACP, psqlite, tag, &newval))
+					return false;
+				if (newval == nullptr)
+					continue;
+				if (pattachment->proplist.set(tag, newval) != 0)
 					return FALSE;
 				break;
 			}
