@@ -28,11 +28,11 @@ s   -   -   s   s    35E4    PR_IPM_SENTMAIL_ENTRYID
 sS  -   -   s   s    35E5    PR_VIEWS_ENTRYID
 s   -   -   s   s    35E6    PR_COMMON_VIEWS_ENTRYID
 sS  -   -   s   s    35E7    PR_FINDER_ENTRYID
--   sS  -   sS  -    35E8    SpoolerQueueEntryId
+-   sS  sS  sS  -    35E8    SpoolerQueueEntryId
 s   -   -   s   s    661E    PR_SCHEDULE_FOLDER_ENTRYID
 s   -   -   s   -    661F    PR_IPM_DAF_ENTRYID
--    S  -    S  -    6620    PR_NON_IPM_SUBTREE_ENTRYID
--    S  -    S  -    6621    PR_EFORMS_REGISTRY_ENTRYID
+-    S   S   S  -    6620    PR_NON_IPM_SUBTREE_ENTRYID
+-    S   S   S  -    6621    PR_EFORMS_REGISTRY_ENTRYID
 -    S  -   -   -    6622    PR_SPLUS_FREE_BUSY_ENTRYID
 -    S  -   -   -    6623    PR_OFFLINE_ADDRBOOK_ENTRYID
 sS  -   -   sS  sS   6630    PR_IPM_FAVORITES_ENTRYID
