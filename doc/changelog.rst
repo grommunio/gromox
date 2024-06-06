@@ -1,3 +1,14 @@
+2.29.16
+=======
+
+Fixes:
+
+* exmdb: instace_load_message RPC with unsynthesizable properties will no
+  longer yield an erroneous error
+* exmdb: setting anonymous-ID permissions on folders was erroneously
+  treated as wanting to set default-ID permissions and did not complete
+
+
 Gromox 2.29 (2024-06-04)
 ========================
 
