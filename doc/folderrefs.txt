@@ -1,41 +1,87 @@
 Read as:
-Exchange puts PR_IPM_SUBTREE_ENTRYID on S(Store),
-but PR_IPM_APPOINTMENT_ENTRYID on R(Root) and I(Inbox).
-T(Top of Information Store aka IPM_SUBTREE).
+* MS: visible in MSMAPI; depending on EX/GH indicates synthesis
+* EX: Exchange server returns this property with value on
+ropGetPropertiesList and ropGetPropertiesSpecific
+* GH: gromox-http return this property on rop...
+* GZ: gromox-zcore emits this property on zs_getpropvals
+* KDB: KGWC database has this property...
 
-The store properties are readonly in EXC2019 (MAPI_E_COMPUTED),
+* S: on private('s')/public('S') store object
+* R: on the root folder object of private('r')/public('R') stores
+* I: on the Inbox folder object
+
+The store properties are readonly in MFCMAPI (MAPI_E_COMPUTED),
 the one inside the mailbox are writable.
 
-EX  GX  KDB  mnemonic
-===============================================
-S   S   -   35D8  PR_ROOT_ENTRYID
-S   S   S   35E0  PR_IPM_SUBTREE_ENTRYID
-S   S   -   35E1  PR_IPM_INBOX_ENTRYID
-S   S   S   35E2  PR_IPM_OUTBOX_ENTRYID
-S   S   S   35E3  PR_IPM_WASTEBASKET_ENTRYID
-S   S   S   35E4  PR_IPM_SENTMAIL_ENTRYID
-S   S   S   35E5  PR_VIEWS_ENTRYID
-S   S   S   35E6  PR_COMMON_VIEWS_ENTRYID
-S   S   S   35E7  PR_FINDER_ENTRYID
-S   -   -   35E8  SpoolerQueueEntryId
-S   S   S   661E  PR_SCHEDULE_FOLDER_ENTRYID
-S   S   -   661F  PR_IPM_DAF_ENTRYID
-S   S   S   6630  PR_IPM_FAVORITES_ENTRYID
-S   -   -   6814  entryid to IPM.Microsoft.OOF.UserOofSettings message
-RI  -   -   120D  entryid to Calendar\Birthdays folder
-RI  -   -   35EB  PR_VOICEMAIL_FOLDER_ENTRYID
-RI  -   -   35EE  AllItemsFolderEntryId
-RI  -   -   35EF  IpmSharingEntryId
-RI  -   -   35FD  AdminDataEntryId
-RI  RI  RI  36D0  PR_IPM_APPOINTMENT_ENTRYID
-RI  RI  RI  36D1  PR_IPM_CONTACT_ENTRYID
-RI  RI  RI  36D2  PR_IPM_JOURNAL_ENTRYID
-RI  RI  RI  36D3  PR_IPM_NOTE_ENTRYID
-RI  RI  RI  36D4  PR_IPM_TASK_ENTRYID
-RI  RI  R-  36D5  PR_REM_ONLINE_ENTRYID
-RI  RI  RI  36D7  PR_IPM_DRAFTS_ENTRYID
-RI  RI  -   36D8  PR_ADDITIONAL_REN_ENTRYIDS
-RI  RI  RI  36D9  PR_ADDITIONAL_REN_ENTRYIDS_EX
-RI  RI  -   36E4  PR_FREEBUSY_ENTRYIDS
-T   T   T   -     none
-===============================================
+Store properties
+================
+
+==  ==  ==  ==  ===  ======  ===========================
+MS  EX  GH  GZ  KDB  propid  mnemonic
+==  ==  ==  ==  ===  ======  ===========================
+-   sS  sS  sS  -    35D8    PR_ROOT_ENTRYID
+sS  -   -   sS  sS   35E0    PR_IPM_SUBTREE_ENTRYID
+-   sS  sS  sS  -    35E1    PR_IPM_INBOX_ENTRYID
+s   -   -   s   s    35E2    PR_IPM_OUTBOX_ENTRYID
+s   -   -   s   s    35E3    PR_IPM_WASTEBASKET_ENTRYID
+s   -   -   s   s    35E4    PR_IPM_SENTMAIL_ENTRYID
+sS  -   -   s   s    35E5    PR_VIEWS_ENTRYID
+s   -   -   s   s    35E6    PR_COMMON_VIEWS_ENTRYID
+sS  -   -   s   s    35E7    PR_FINDER_ENTRYID
+-   sS  sS  sS  -    35E8    SpoolerQueueEntryId
+s   -   -   s   s    661E    PR_SCHEDULE_FOLDER_ENTRYID
+s   -   -   s   -    661F    PR_IPM_DAF_ENTRYID
+-    S   S   S  -    6620    PR_NON_IPM_SUBTREE_ENTRYID
+-    S   S   S  -    6621    PR_EFORMS_REGISTRY_ENTRYID
+-    S  -   -   -    6622    PR_SPLUS_FREE_BUSY_ENTRYID
+-    S  -   -   -    6623    PR_OFFLINE_ADDRBOOK_ENTRYID
+sS  -   -   sS  sS   6630    PR_IPM_FAVORITES_ENTRYID
+-    S  -    S   S   6631    PR_IPM_PUBLIC_FOLDERS_ENTRYID
+s   -   -   -   -    6814    entryid to IPM.Microsoft.OOF.UserOofSettings message
+==  ==  ==  ==  ===  ======  ====================================================
+
+In addition, PR_IPM_WASTEBASKET_ENTRYID appears on every folder in a EX public
+store.
+
+MSMAPI:
+Public stores are weird.
+
+.. code-block:: text
+
+	Root Container
+	 \_ "IPM_SUBTREE"
+	     \_ "PF1"
+         \_ "NON_IPM_SUBTREE"
+         \_ "IPM_SUBTREE" (virtual, hidden from root hierarchy view, and has different entryid
+	    than the other IPM_SUBTREE) [PR_IPM_SUBTREE_ENTRYID]
+             \_ "All Public Folders" (virtual) [PR_IPM_PUBLIC_FOLDERS_ENTRYID]
+                 \_ "PF1" (mounted)
+
+PR_SPLUS_FREE_BUSY_ENTRYID and PR_OFFLINE_ADDRBOOK_ENTRYID are set,
+but points to an invalid folder (GUID_NULL dbguid).
+
+
+Root/Inbox properties
+=====================
+
+==  ==  ==  ===  ======  ===========================
+EX  GH  GZ  KDB  propid  mnemonic
+==  ==  ==  ===  ======  ===========================
+ri  -   -   -    120D    entryid to Calendar\Birthdays folder
+-   -   -   -    35EB    PR_VOICEMAIL_FOLDER_ENTRYID
+ri  -   -   -    35EE    AllItemsFolderEntryId
+ri  -   -   -    35EF    IpmSharingEntryId
+ri  -   -   -    35FD    AdminDataEntryId
+ri  ri  -   ri   36D0    PR_IPM_APPOINTMENT_ENTRYID
+ri  ri  -   ri   36D1    PR_IPM_CONTACT_ENTRYID
+ri  ri  -   ri   36D2    PR_IPM_JOURNAL_ENTRYID
+ri  ri  -   ri   36D3    PR_IPM_NOTE_ENTRYID
+ri  ri  -   ri   36D4    PR_IPM_TASK_ENTRYID
+ri  ri  -   r    36D5    PR_REM_ONLINE_ENTRYID
+ri  ri  -   ri   36D7    PR_IPM_DRAFTS_ENTRYID
+ri  ri  -   -    36D8    PR_ADDITIONAL_REN_ENTRYIDS
+ri  ri  -   ri   36D9    PR_ADDITIONAL_REN_ENTRYIDS_EX
+ri  ri  -   -    36E4    PR_FREEBUSY_ENTRYIDS
+==  ==  ==  ===  ======  ===========================
+
+Indeed none of those are generated for public store folders.

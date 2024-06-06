@@ -312,6 +312,8 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 		PR_MESSAGE_SIZE, PR_NORMAL_MESSAGE_SIZE,
 		PR_CONTENT_COUNT, PR_ASSOC_CONTENT_COUNT,
 		PR_EMAIL_ADDRESS, PR_ROOT_ENTRYID, PR_IPM_INBOX_ENTRYID,
+		PidTagXSpoolerQueueEntryId, PR_NON_IPM_SUBTREE_ENTRYID,
+		PR_EFORMS_REGISTRY_ENTRYID,
 	};
 	if (plogon->is_private())
 		for (auto t : pvt_tags)
@@ -375,6 +377,9 @@ static bool lo_is_readonly_prop(const logon_object *plogon, uint32_t proptag)
 	case PR_HIERARCHY_SERVER:
 	case PR_ROOT_ENTRYID:
 	case PR_IPM_INBOX_ENTRYID:
+	case PidTagXSpoolerQueueEntryId:
+	case PR_NON_IPM_SUBTREE_ENTRYID:
+	case PR_EFORMS_REGISTRY_ENTRYID:
 		return TRUE;
 	}
 	return FALSE;
@@ -564,14 +569,26 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 			return FALSE;
 		return TRUE;
 	}
-	case PR_ROOT_ENTRYID: {
+	case PR_ROOT_ENTRYID:
 		*ppvalue = cu_fid_to_entryid(plogon, plogon->is_private() ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT);
 		return *ppvalue != nullptr ? TRUE : false;
-	}
-	case PR_IPM_INBOX_ENTRYID: {
+	case PR_IPM_INBOX_ENTRYID:
 		*ppvalue = cu_fid_to_entryid(plogon, plogon->is_private() ? PRIVATE_FID_INBOX : PUBLIC_FID_IPMSUBTREE);
 		return *ppvalue != nullptr ? TRUE : false;
-	}
+	case PidTagXSpoolerQueueEntryId:
+		*ppvalue = cu_fid_to_entryid(plogon, plogon->is_private() ?
+		           PRIVATE_FID_SPOOLER_QUEUE : PUBLIC_FID_NONIPMSUBTREE);
+		return *ppvalue != nullptr ? TRUE : false;
+	case PR_NON_IPM_SUBTREE_ENTRYID:
+		if (plogon->is_private())
+			return false;
+		*ppvalue = cu_fid_to_entryid(plogon, PUBLIC_FID_NONIPMSUBTREE);
+		return *ppvalue != nullptr ? TRUE : false;
+	case PR_EFORMS_REGISTRY_ENTRYID:
+		if (plogon->is_private())
+			return false;
+		*ppvalue = cu_fid_to_entryid(plogon, PUBLIC_FID_EFORMSREGISTRY);
+		return *ppvalue != nullptr ? TRUE : false;
 	case PR_TEST_LINE_SPEED:
 		*ppvalue = deconst(&test_bin);
 		return TRUE;

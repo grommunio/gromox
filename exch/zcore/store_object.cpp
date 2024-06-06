@@ -334,13 +334,15 @@ static BOOL store_object_is_readonly_prop(store_object *pstore, uint32_t proptag
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
 	switch (proptag) {
+	case PidTagXSpoolerQueueEntryId:
 	case PR_ACCESS:
 	case PR_ACCESS_LEVEL:
-	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
+	case PR_ASSOC_MESSAGE_SIZE:
+	case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
 	case PR_CODE_PAGE_ID:
+	case PR_COMMON_VIEWS_ENTRYID:
 	case PR_CONTENT_COUNT:
 	case PR_DEFAULT_STORE:
-	case PR_DELETE_AFTER_SUBMIT:
 	case PR_DELETED_ASSOC_MESSAGE_SIZE:
 	case PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED:
 	case PR_DELETED_ASSOC_MSG_COUNT:
@@ -349,52 +351,56 @@ static BOOL store_object_is_readonly_prop(store_object *pstore, uint32_t proptag
 	case PR_DELETED_MSG_COUNT:
 	case PR_DELETED_NORMAL_MESSAGE_SIZE:
 	case PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED:
+	case PR_DELETE_AFTER_SUBMIT:
+	case PR_EC_ENABLED_FEATURES_L:
+	case PR_EFORMS_REGISTRY_ENTRYID:
 	case PR_EMAIL_ADDRESS:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
 	case PR_ENTRYID:
 	case PR_EXTENDED_RULE_SIZE_LIMIT:
+	case PR_FINDER_ENTRYID:
+	case PR_HIERARCHY_SERVER:
+	case PR_INSTANCE_KEY:
 	case PR_INTERNET_ARTICLE_NUMBER:
+	case PR_IPM_DAF_ENTRYID:
+	case PR_IPM_FAVORITES_ENTRYID:
+	case PR_IPM_INBOX_ENTRYID:
+	case PR_IPM_OUTBOX_ENTRYID:
+	case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
+	case PR_IPM_SENTMAIL_ENTRYID:
+	case PR_IPM_SUBTREE_ENTRYID:
+	case PR_IPM_WASTEBASKET_ENTRYID:
 	case PR_LOCALE_ID:
-	case PR_MAPPING_SIGNATURE:
-	case PR_MAX_SUBMIT_MESSAGE_SIZE:
 	case PR_MAILBOX_OWNER_ENTRYID:
 	case PR_MAILBOX_OWNER_NAME:
+	case PR_MAPPING_SIGNATURE:
+	case PR_MAX_SUBMIT_MESSAGE_SIZE:
+	case PR_MDB_PROVIDER:
 	case PR_MESSAGE_SIZE:
 	case PR_MESSAGE_SIZE_EXTENDED:
-	case PR_ASSOC_MESSAGE_SIZE:
-	case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
+	case PR_NON_IPM_SUBTREE_ENTRYID:
 	case PR_NORMAL_MESSAGE_SIZE:
 	case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
 	case PR_OBJECT_TYPE:
 	case PR_OOF_STATE:
 	case PR_PROHIBIT_RECEIVE_QUOTA:
 	case PR_PROHIBIT_SEND_QUOTA:
-	case PR_INSTANCE_KEY:
 	case PR_RECORD_KEY:
+	case PR_ROOT_ENTRYID:
 	case PR_RIGHTS:
+	case PR_SCHEDULE_FOLDER_ENTRYID:
 	case PR_SEARCH_KEY:
 	case PR_SORT_LOCALE_ID:
 	case PR_STORAGE_QUOTA_LIMIT:
 	case PR_STORE_ENTRYID:
 	case PR_STORE_OFFLINE:
-	case PR_MDB_PROVIDER:
 	case PR_STORE_RECORD_KEY:
 	case PR_STORE_STATE:
 	case PR_STORE_SUPPORT_MASK:
 	case PR_TEST_LINE_SPEED:
 	case PR_USER_ENTRYID:
 	case PR_VALID_FOLDER_MASK:
-	case PR_HIERARCHY_SERVER:
-	case PR_FINDER_ENTRYID:
-	case PR_IPM_FAVORITES_ENTRYID:
-	case PR_IPM_SUBTREE_ENTRYID:
-	case PR_IPM_OUTBOX_ENTRYID:
-	case PR_IPM_SENTMAIL_ENTRYID:
-	case PR_IPM_WASTEBASKET_ENTRYID:
-	case PR_SCHEDULE_FOLDER_ENTRYID:
-	case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
-	case PR_NON_IPM_SUBTREE_ENTRYID:
-	case PR_EFORMS_REGISTRY_ENTRYID:
-	case PR_EC_ENABLED_FEATURES_L:
+	case PR_VIEWS_ENTRYID:
 		return TRUE;
 	}
 	return FALSE;
@@ -407,57 +413,63 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	
 	if (!exmdb_client::get_store_all_proptags(pstore->dir, &tmp_proptags))
 		return FALSE;	
-	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 50);
+	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 56);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
 				sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 	if (pstore->b_private) {
-		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_NAME;
-		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_MAX_SUBMIT_MESSAGE_SIZE;
-		pproptags->pproptag[pproptags->count++] = PR_EMAIL_ADDRESS;
-		pproptags->pproptag[pproptags->count++] = PR_EMS_AB_DISPLAY_NAME_PRINTABLE;
-		pproptags->pproptag[pproptags->count++] = PR_FINDER_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_OUTBOX_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_SENTMAIL_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_WASTEBASKET_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_SCHEDULE_FOLDER_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_MSG;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_SUBJECT;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_FROM;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_UNTIL;
+		pproptags->pproptag[pproptags->count++] = PidTagXSpoolerQueueEntryId;
+		pproptags->pproptag[pproptags->count++] = PR_COMMON_VIEWS_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_EC_ALLOW_EXTERNAL;
 		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_AUDIENCE;
 		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_REPLY;
 		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_SUBJECT;
+		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE;
+		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_FROM;
+		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_MSG;
+		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_SUBJECT;
+		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_UNTIL;
+		pproptags->pproptag[pproptags->count++] = PR_EMAIL_ADDRESS;
+		pproptags->pproptag[pproptags->count++] = PR_EMS_AB_DISPLAY_NAME_PRINTABLE;
+		pproptags->pproptag[pproptags->count++] = PR_FINDER_ENTRYID;
+		pproptags->pproptag[pproptags->count++] = PR_IPM_DAF_ENTRYID;
+		pproptags->pproptag[pproptags->count++] = PR_IPM_INBOX_ENTRYID;
+		pproptags->pproptag[pproptags->count++] = PR_IPM_OUTBOX_ENTRYID;
+		pproptags->pproptag[pproptags->count++] = PR_IPM_SENTMAIL_ENTRYID;
+		pproptags->pproptag[pproptags->count++] = PR_IPM_WASTEBASKET_ENTRYID;
+		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_ENTRYID;
+		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_NAME;
+		pproptags->pproptag[pproptags->count++] = PR_MAX_SUBMIT_MESSAGE_SIZE;
+		pproptags->pproptag[pproptags->count++] = PR_SCHEDULE_FOLDER_ENTRYID;
+		pproptags->pproptag[pproptags->count++] = PR_VIEWS_ENTRYID;
 	} else {
+		pproptags->pproptag[pproptags->count++] = PR_EFORMS_REGISTRY_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_IPM_PUBLIC_FOLDERS_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_NON_IPM_SUBTREE_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_EFORMS_REGISTRY_ENTRYID;
 	}
-	pproptags->pproptag[pproptags->count++] = PR_IPM_FAVORITES_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_IPM_SUBTREE_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_MDB_PROVIDER;
+	pproptags->pproptag[pproptags->count++] = PR_CONTENT_COUNT;
 	pproptags->pproptag[pproptags->count++] = PR_DEFAULT_STORE;
 	pproptags->pproptag[pproptags->count++] = PR_DISPLAY_NAME;
+	pproptags->pproptag[pproptags->count++] = PR_EC_SERVER_VERSION;
+	pproptags->pproptag[pproptags->count++] = PR_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_EXTENDED_RULE_SIZE_LIMIT;
-	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_CONTENT_COUNT;
+	pproptags->pproptag[pproptags->count++] = PR_INSTANCE_KEY;
+	pproptags->pproptag[pproptags->count++] = PR_IPM_FAVORITES_ENTRYID;
+	pproptags->pproptag[pproptags->count++] = PR_IPM_SUBTREE_ENTRYID;
+	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
+	pproptags->pproptag[pproptags->count++] = PR_MDB_PROVIDER;
 	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
 	pproptags->pproptag[pproptags->count++] = PR_PROVIDER_DISPLAY;
+	pproptags->pproptag[pproptags->count++] = PR_RECORD_KEY;
 	pproptags->pproptag[pproptags->count++] = PR_RESOURCE_FLAGS;
 	pproptags->pproptag[pproptags->count++] = PR_RESOURCE_TYPE;
-	pproptags->pproptag[pproptags->count++] = PR_RECORD_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_INSTANCE_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
-	pproptags->pproptag[pproptags->count++] = PR_ENTRYID;
+	pproptags->pproptag[pproptags->count++] = PR_ROOT_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
+	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_SUPPORT_MASK;
-	pproptags->pproptag[pproptags->count++] = PR_EC_SERVER_VERSION;
+	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
 	return TRUE;
 }
 
@@ -815,6 +827,10 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;
 		return TRUE;
 	}
+	case PR_ROOT_ENTRYID:
+		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1, pstore->b_private ?
+		           PRIVATE_FID_ROOT : PUBLIC_FID_ROOT));
+		return *ppvalue != nullptr ? TRUE : false;
 	case PR_FINDER_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
@@ -824,6 +840,10 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;
 		return TRUE;
 	case PR_IPM_FAVORITES_ENTRYID:
+		/*
+		 * Our PR_IPM_FAVORITES_ENTRYID for public stores is not
+		 * replicating the behavior exhibited by MSMAPI.
+		 */
 		*ppvalue = cu_fid_to_entryid(pstore,
 		           rop_util_make_eid_ex(1, pstore->b_private ?
 		           PRIVATE_FID_SHORTCUTS : PUBLIC_FID_IPMSUBTREE));
@@ -836,6 +856,12 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		           pstore->b_private ? PRIVATE_FID_IPMSUBTREE : PUBLIC_FID_IPMSUBTREE));
 		if (*ppvalue == nullptr)
 			return FALSE;
+		return TRUE;
+	case PR_IPM_INBOX_ENTRYID:
+		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1,
+		           pstore->b_private ? PRIVATE_FID_INBOX : PUBLIC_FID_IPMSUBTREE));
+		if (*ppvalue == nullptr)
+			return false;
 		return TRUE;
 	case PR_IPM_OUTBOX_ENTRYID:
 		if (!pstore->b_private)
@@ -861,6 +887,12 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
+	case PR_IPM_DAF_ENTRYID:
+		if (!pstore->b_private)
+			return FALSE;
+		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1,
+		           PRIVATE_FID_DEFERRED_ACTION));
+		return *ppvalue != nullptr ? TRUE : false;
 	case PR_SCHEDULE_FOLDER_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
@@ -869,6 +901,11 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
+	case PR_VIEWS_ENTRYID:
+		if (!pstore->b_private)
+			return FALSE;
+		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1, PRIVATE_FID_VIEWS));
+		return *ppvalue != nullptr ? TRUE : false;
 	case PR_COMMON_VIEWS_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
@@ -878,6 +915,10 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;
 		return TRUE;
 	case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
+		/*
+		 * Our PR_IPM_PUBLIC_FOLDERS_ENTRYID for public stores is not
+		 * replicating the behavior exhibited by MSMAPI.
+		 */
 	case PR_NON_IPM_SUBTREE_ENTRYID:
 		if (pstore->b_private)
 			return FALSE;
@@ -894,6 +935,10 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
+	case PidTagXSpoolerQueueEntryId:
+		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1,
+		           pstore->b_private ? PRIVATE_FID_SPOOLER_QUEUE : PUBLIC_FID_NONIPMSUBTREE));
+		return *ppvalue != nullptr ? TRUE : false;
 	case PR_EC_SERVER_VERSION:
 		*ppvalue = deconst(PACKAGE_VERSION);
 		return TRUE;
