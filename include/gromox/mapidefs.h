@@ -1510,7 +1510,7 @@ enum { /* for PidLidResponseStatus */
 
 enum {
 	MEMBER_ID_DEFAULT = 0,
-	MEMBER_ID_ANONYMOUS = 0xffffffffffffffffU,
+	MEMBER_ID_ANONYMOUS = -1,
 };
 
 /*

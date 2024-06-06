@@ -3744,7 +3744,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 	return TRUE;
 }
 
-BOOL common_util_get_permission_property(uint64_t member_id,
+bool cu_get_permission_property(int64_t member_id,
 	sqlite3 *psqlite, uint32_t proptag, void **ppvalue)
 {
 	char sql_string[128];
@@ -3760,7 +3760,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			return TRUE;
 		}
 		snprintf(sql_string, std::size(sql_string), "SELECT username FROM"
-		          " permissions WHERE member_id=%llu", LLU{member_id});
+		          " permissions WHERE member_id=%lld", LLD{member_id});
 		break;
 	case PR_MEMBER_NAME:
 	case PR_SMTP_ADDRESS:
@@ -3772,7 +3772,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			return TRUE;
 		}
 		snprintf(sql_string, std::size(sql_string), "SELECT username FROM"
-		          " permissions WHERE member_id=%llu", LLU{member_id});
+		          " permissions WHERE member_id=%lld", LLD{member_id});
 		break;
 	case PR_MEMBER_ID:
 		if (member_id == MEMBER_ID_DEFAULT ||
@@ -3785,7 +3785,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			return TRUE;
 		}
 		snprintf(sql_string, std::size(sql_string), "SELECT username FROM"
-		          " permissions WHERE member_id=%llu", LLU{member_id});
+		          " permissions WHERE member_id=%lld", LLD{member_id});
 		break;
 	case PR_MEMBER_RIGHTS:
 		if (member_id == MEMBER_ID_DEFAULT)
@@ -3798,7 +3798,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 					CONFIG_ID_ANONYMOUS_PERMISSION);
 		else
 			snprintf(sql_string, std::size(sql_string), "SELECT permission FROM "
-			          "permissions WHERE member_id=%llu", LLU{member_id});
+			         "permissions WHERE member_id=%lld", LLD{member_id});
 		break;
 	default:
 		*ppvalue = NULL;

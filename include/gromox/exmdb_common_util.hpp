@@ -97,8 +97,7 @@ extern BOOL cu_remove_property(mapi_object_type, uint64_t id, sqlite3 *, uint32_
 extern BOOL cu_remove_properties(mapi_object_type, uint64_t id, sqlite3 *, const PROPTAG_ARRAY *);
 BOOL common_util_get_rule_property(uint64_t rule_id,
 	sqlite3 *psqlite, uint32_t proptag, void **ppvalue);
-BOOL common_util_get_permission_property(uint64_t member_id,
-	sqlite3 *psqlite, uint32_t proptag, void **ppvalue);
+extern bool cu_get_permission_property(int64_t member_id, sqlite3 *, uint32_t proptag, void **outval);
 BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite);
 extern BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag);
 extern uint32_t cu_folder_unread_count(sqlite3 *psqlite, uint64_t folder_id, unsigned int flags = 0);
