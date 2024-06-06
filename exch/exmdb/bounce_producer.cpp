@@ -65,9 +65,9 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 		gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
 	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
-	    psqlite, PR_MESSAGE_SIZE, &pvalue) || pvalue == nullptr)
+	    psqlite, PR_MESSAGE_SIZE, &pvalue))
 		return FALSE;
-	auto message_size = *static_cast<uint32_t *>(pvalue);
+	auto message_size = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
 	if ('\0' == charset[0]) {
 		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
 		    PR_INTERNET_CPID, &pvalue))
@@ -98,8 +98,7 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
 	    PR_SUBJECT, &pvalue))
 		return FALSE;
-	if (HXformat_add(fa, "subject", pvalue != nullptr ?
-	    static_cast<const char *>(pvalue) : "", HXTYPE_STRING) < 0 ||
+	if (HXformat_add(fa, "subject", znul(static_cast<const char *>(pvalue)), HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "parts",
 	    exmdb_bouncer_attachs(psqlite, message_id).c_str(),
 	    HXTYPE_STRING | immed) < 0)

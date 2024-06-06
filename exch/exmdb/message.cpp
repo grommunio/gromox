@@ -2305,11 +2305,12 @@ static ec_error_t message_disable_rule(sqlite3 *psqlite,
 		return ecSuccess;
 	}
 	if (!cu_get_property(MAPI_MESSAGE, id, CP_ACP, psqlite,
-	    PR_RULE_MSG_STATE, &pvalue) || pvalue == nullptr)
+	    PR_RULE_MSG_STATE, &pvalue))
 		return ecError;
-	*static_cast<uint32_t *>(pvalue) |= ST_ERROR;
+	uint32_t newflags = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
+	newflags |= ST_ERROR;
 	if (!cu_set_property(MAPI_MESSAGE, id, CP_ACP, psqlite,
-	    PR_RULE_MSG_STATE, pvalue, &b_result))
+	    PR_RULE_MSG_STATE, &newflags, &b_result))
 		return ecError;
 	return ecSuccess;
 }
@@ -3521,9 +3522,9 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 	}
 	void *pvalue = nullptr;
 	if (!cu_get_property(MAPI_MESSAGE, rp.message_id, CP_ACP, rp.sqlite,
-	    PR_MESSAGE_SIZE, &pvalue) || pvalue == nullptr)
+	    PR_MESSAGE_SIZE, &pvalue))
 		return ecError;
-	auto message_size = *static_cast<uint32_t *>(pvalue);
+	auto message_size = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
 	char sql_string[128];
 	snprintf(sql_string, std::size(sql_string), "DELETE FROM messages"
 		" WHERE message_id=%llu", LLU{rp.message_id});
