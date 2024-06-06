@@ -40,7 +40,7 @@ using namespace std::string_literals;
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 
-static std::string g_dstuser;
+std::string g_dstuser;
 static std::string g_storedir_s;
 const char *g_storedir;
 unsigned int g_user_id, g_show_tree, g_show_props, g_wet_run = 1, g_public_folder;

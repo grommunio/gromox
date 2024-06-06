@@ -83,6 +83,7 @@ using tarray_set_ptr = std::unique_ptr<TARRAY_SET, gi_delete>;
 
 static constexpr unsigned int DELIVERY_TWOSTEP = 0x8000;
 
+extern std::string g_dstuser;
 extern const char *g_storedir;
 extern unsigned int g_user_id, g_show_tree, g_show_props, g_wet_run, g_public_folder;
 

@@ -14,7 +14,10 @@
 #include <libHX/string.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/svc_loader.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
 
@@ -340,6 +343,86 @@ static int main(int argc, char **argv)
 
 }
 
+namespace set_locale {
+
+static const char *g_language;
+static unsigned int g_verbose;
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'l', HXTYPE_STRING, &g_language, {}, {}, 0, "XPG/POSIX-style locale code (e.g. ja_JP)", "CODE"},
+	{nullptr, 'v', HXTYPE_NONE, &g_verbose, {}, {}, 0, "Verbose mode"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+static std::vector<static_module> g_dfl_svc_plugins =
+	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
+
+static int main(int argc, char **argv)
+{
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+	if (g_language == nullptr) {
+		fprintf(stderr, "You need to specify the -l option\n");
+		return EXIT_FAILURE;
+	}
+	textmaps_init();
+	service_init({nullptr, g_dfl_svc_plugins, 1});
+	auto cl_0 = make_scope_exit(service_stop);
+	if (service_run_early() != 0 || service_run() != 0) {
+		fprintf(stderr, "service_run: failed\n");
+		return EXIT_FAILURE;
+	}
+	decltype(mysql_adaptor_set_user_lang) *sul;
+	sul = reinterpret_cast<decltype(sul)>(service_query("set_user_lang", "system", typeid(*sul)));
+	if (sul == nullptr) {
+		fprintf(stderr, "no set_user_lang function in mysql_adaptor\n");
+		return EXIT_FAILURE;
+	}
+	auto cl_1 = make_scope_exit([]() { service_release("set_user_lang", "system"); });
+	if (!sul(g_dstuser.c_str(), g_language)) {
+		fprintf(stderr, "Update of UI language rejected\n");
+		return EXIT_FAILURE;
+	}
+
+	auto lang = folder_namedb_resolve(g_language);
+	if (lang == nullptr) {
+		fprintf(stderr, "No folder name translations for locale \"%s\" available.\n", g_language);
+		return EXIT_SUCCESS;
+	}
+	unsigned int start_gcv = g_public_folder ? PUBLIC_FID_ROOT : PRIVATE_FID_ROOT;
+	unsigned int end_gcv   = g_public_folder ? PUBLIC_FID_CUSTOM : PRIVATE_FID_CUSTOM;
+	for (unsigned int gcv = start_gcv; gcv < end_gcv; ++gcv) {
+		auto new_name = folder_namedb_get(lang, gcv);
+		if (new_name == nullptr)
+			continue;
+		auto folder_id = rop_util_make_eid_ex(1, gcv);
+		if (g_verbose) {
+			static constexpr uint32_t tags[] = {PR_DISPLAY_NAME};
+			static constexpr PROPTAG_ARRAY taghdr = {std::size(tags), deconst(tags)};
+			TPROPVAL_ARRAY props{};
+			if (!exmdb_client::get_folder_properties(g_storedir,
+			    CP_ACP, folder_id, &taghdr, &props)) {
+				fprintf(stderr, "get_folder_props failed\n");
+				return EXIT_FAILURE;
+			}
+			auto orig_name = props.get<const char>(PR_DISPLAY_NAME);
+			printf("[0x%02x] %s -> %s\n", gcv, znul(orig_name), new_name);
+		}
+		TAGGED_PROPVAL tp = {PR_DISPLAY_NAME, deconst(new_name)};
+		const TPROPVAL_ARRAY new_props = {1, &tp};
+		PROBLEM_ARRAY probs{};
+		if (!exmdb_client::set_folder_properties(g_storedir, CP_ACP,
+		    folder_id, &new_props, &probs)) {
+			fprintf(stderr, "set_folder_props failed\n");
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
+}
+
 namespace global {
 
 static char *g_arg_username, *g_arg_userdir;
@@ -355,7 +438,7 @@ static int help()
 	fprintf(stderr, "Usage: gromox-mbop [global-options] command [command-args...]\n");
 	fprintf(stderr, "Global options:\n");
 	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
-	fprintf(stderr, "Commands:\n\tclear-photo clear-profile delmsg emptyfld purge-datafiles recalc-sizes unload vacuum\n");
+	fprintf(stderr, "Commands:\n\tclear-photo clear-profile delmsg emptyfld purge-datafiles recalc-sizes set-locale unload vacuum\n");
 	return EXIT_FAILURE;
 }
 
@@ -655,6 +738,8 @@ int main(int argc, char **argv)
 		ret = setstoreprop(PSETID_GROMOX, "websettings_persistent", PT_UNICODE);
 	} else if (strcmp(argv[0], "purge-softdelete") == 0) {
 		ret = purgesoftdel::main(argc, argv);
+	} else if (strcmp(argv[0], "set-locale") == 0) {
+		ret = set_locale::main(argc, argv);
 	} else {
 		ret = simple_rpc::main(argc, argv);
 		if (ret == -EINVAL)

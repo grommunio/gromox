@@ -8,6 +8,10 @@ Fixes:
 * exmdb: setting anonymous-ID permissions on folders was erroneously
   treated as wanting to set default-ID permissions and did not complete
 
+Enhancements:
+
+* gromox-mbop: new subcommand ``set-locale`` to change store language
+
 
 Gromox 2.29 (2024-06-04)
 ========================

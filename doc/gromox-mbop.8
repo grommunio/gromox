@@ -38,6 +38,8 @@ purge\-softdelete: remove soft-deleted items from a folder
 .IP \(bu 4
 recalc\-sizes: recalculate store size
 .IP \(bu 4
+set\-locale: reset UI language and special folders' names
+.IP \(bu 4
 set\-photo: read user image from stdin and save to store
 .IP \(bu 4
 set\-websettings, set\-websettings\-persistent: read new grommunio-web settings
@@ -161,6 +163,28 @@ To process an entire mailbox and wipe everything older than a few days:
 gromox\-mbop \-u abc@example.com purge\-softdelete \-r / \-t 10d
 .SH recalc\-sizes
 Recalculates the store size.
+.SH set\-locale
+.SS Synopsis
+\fBset\-locale\fP [\fB\-v\fP] \-l\fP \fIid\fP
+.SS Description
+First, the set\-locale operation changes the "preferred language" setting for
+the user account. This affects the display of user interfaces like
+grommunio-web, and also affects mailbox truncate/re-creation with
+gromox\-mkprivate(8).
+.PP
+Second, provided Gromox has default folder name translations for the desired
+locale, set\-locale also resets the display names of the mailbox's built-in
+folders.
+.SS Options
+.TP
+\fB\-l\fP \fIid\fP
+XPG/POSIX-style locale identifier, e.g. ja_JP, pt_BR.
+.TP
+\fB\-v\fP
+Verbose mode.
+.SS Examples
+.IP \(bu 4
+gromox\-mbop \-u abc@example.com set\-locale \-l ja_JP
 .SH set\-photo
 .SS Synopsis
 \fBset\-photo <\fP\fIsomefile\fP
