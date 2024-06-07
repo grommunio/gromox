@@ -268,7 +268,7 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 		return ENOMEM;
 	*msglcid = pinfo->lcid_string;
 	if (*msglcid == 0)
-		*msglcid = 0x0409;
+		*msglcid = 0x409; /* en-US */
 	propvals.emplace_back(PR_MESSAGE_LOCALE_ID, msglcid);
 	propvals.emplace_back(PR_LOCALE_ID, msglcid);
 	
@@ -974,7 +974,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError;
-	static const uint32_t lcid_default = 0x0409;
+	static const uint32_t lcid_default = 0x409; /* en-US */
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
