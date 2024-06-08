@@ -112,7 +112,7 @@ struct XID;
 
 struct GX_EXPORT EXT_PULL {
 	EXT_BUFFER_ALLOC m_alloc{};
-	void init(const void *, uint32_t, EXT_BUFFER_ALLOC, uint32_t) __attribute__((nonnull(4)));
+	void init(const void *, uint32_t, EXT_BUFFER_ALLOC, uint32_t);
 	pack_result advance(uint32_t);
 	pack_result g_rpc_header_ext(RPC_HEADER_EXT *);
 	pack_result g_uint8(uint8_t *);

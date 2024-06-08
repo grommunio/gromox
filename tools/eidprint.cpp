@@ -162,7 +162,7 @@ static void try_folder_eid(const std::string_view s, unsigned int ind)
 		return;
 	EXT_PULL ep;
 	FOLDER_ENTRYID eid;
-	ep.init(s.data(), s.size(), malloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
+	ep.init(s.data(), s.size(), nullptr, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 	if (ep.g_folder_eid(&eid) != pack_result::ok)
 		return;
 	printf("%-*sEX folder entry ID\n", lead(ind), "");
@@ -181,7 +181,7 @@ static void try_message_eid(const std::string_view s, unsigned int ind)
 		return;
 	EXT_PULL ep;
 	MESSAGE_ENTRYID eid;
-	ep.init(s.data(), s.size(), malloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
+	ep.init(s.data(), s.size(), nullptr, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 	if (ep.g_msg_eid(&eid) != pack_result::ok)
 		return;
 	printf("%-*sEX message entry ID\n", lead(ind), "");
