@@ -786,7 +786,7 @@ void gx_reexec_record(int new_fd)
  * file access errors that would occur before gx_reexec, and we can be sure
  * that privileged informationed does not escape into a dump.
  */
-errno_t gx_reexec(const char *const *argv) try
+static errno_t gx_reexec(const char *const *argv) try
 {
 	auto s = getenv("GX_REEXEC_DONE");
 	if (s != nullptr || argv == nullptr) {
@@ -850,7 +850,7 @@ errno_t gx_reexec(const char *const *argv) try
 	return ENOMEM;
 }
 
-errno_t switch_user_exec(const CONFIG_FILE &cf, const char **argv)
+errno_t switch_user_exec(const CONFIG_FILE &cf, char *const *argv)
 {
 	auto user = cf.get_value("running_identity");
 	if (user == nullptr)
@@ -866,7 +866,7 @@ errno_t switch_user_exec(const CONFIG_FILE &cf, const char **argv)
 		return 0;
 	}
 	case HXPROC_SU_SUCCESS: {
-		auto ret = gx_reexec(argv);
+		auto ret = gx_reexec(const_cast<const char *const *>(argv));
 		if (ret != 0)
 			return ret;
 		auto m = umask(07777);

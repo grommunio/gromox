@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
 // This file is part of Gromox.
 #include <csignal>
 #include <cstdio>
@@ -9,6 +9,7 @@
 #include <spawn.h>
 #include <libHX/option.h>
 #include <sys/wait.h>
+#include <gromox/scope.hpp>
 #include "genimport.hpp"
 
 extern "C" {
@@ -33,13 +34,14 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-int main(int argc, const char **argv) try
+int main(int argc, char **argv) try
 {
 	if (argc == 0)
 		return EXIT_FAILURE;
-	if (HX_getopt(g_options_table, &argc, &argv,
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0 = gromox::make_scope_exit([=]() { HX_zvecfree(argv); });
 	int pfd[2] = {-1, -1};
 	if (pipe(pfd) < 0) {
 		perror("pipe");

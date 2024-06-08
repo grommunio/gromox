@@ -817,7 +817,7 @@ static int htp_auth_ntlmssp(http_context &ctx, const char *prog,
 		if (prog == nullptr || *prog == '\0')
 			prog = "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp";
 		auto args = HX_split(prog, " ", nullptr, 0);
-		auto cl_0 = make_scope_exit([&]() { HX_zvecfree(args); });
+		auto cl_0 = make_scope_exit([=]() { HX_zvecfree(args); });
 		pinfo.p_flags = HXPROC_STDIN | HXPROC_STDOUT | HXPROC_STDERR;
 		auto ret = HXproc_run_async(&args[0], &pinfo);
 		if (ret < 0) {

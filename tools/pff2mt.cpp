@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -28,6 +28,7 @@
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
+#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
@@ -1266,11 +1267,13 @@ static void terse_help()
 	fprintf(stderr, "Documentation: man gromox-pff2mt\n");
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_with_hidden < 0)
 		g_with_hidden = !g_splice;
 	if (argc != 2) {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdlib>
@@ -12,6 +12,7 @@
 #include <gromox/database_mysql.hpp>
 #include <gromox/dbop.h>
 #include <gromox/paths.h>
+#include <gromox/scope.hpp>
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -34,10 +35,12 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	std::shared_ptr<CONFIG_FILE> pconfig;
 	if (opt_config_file == nullptr) {

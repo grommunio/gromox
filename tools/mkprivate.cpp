@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -103,15 +105,17 @@ static int create_search_folder(sqlite3 *sdb, uint64_t fid, uint64_t parent,
 	return ret;
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
 	uint64_t nt_time;
 	sqlite3 *psqlite;
 	char tmp_sql[1024];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (2 != argc) {
 		printf("usage: %s <username>\n", argv[0]);
 		return EXIT_FAILURE;

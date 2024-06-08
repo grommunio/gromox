@@ -411,11 +411,13 @@ static void terse_help()
 	fprintf(stderr, "Documentation: man gromox-mt2exm\n");
 }
 
-int main(int argc, const char **argv) try
+int main(int argc, char **argv) try
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_username == nullptr) {
 		terse_help();
 		return EXIT_FAILURE;

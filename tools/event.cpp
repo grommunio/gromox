@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
 #include <condition_variable>
@@ -190,12 +192,14 @@ void qsock::sk_close()
 	sockd = -1;
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv,
-	    HXOPT_USAGEONERR | HXOPT_KEEP_ARGV) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+
 	startup_banner("gromox-event");
 	if (opt_show_version)
 		return EXIT_SUCCESS;

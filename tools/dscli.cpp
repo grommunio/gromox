@@ -369,12 +369,14 @@ static CURLcode setopts(CURL *ch, const char *password, curl_slist *hdrs,
 	return CURLE_OK;
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
 	g_tty = isatty(STDERR_FILENO);
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	auto cl_args = make_scope_exit([]() {
 		free(g_disc_host);
 		free(g_disc_url);

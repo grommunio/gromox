@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -16,6 +16,7 @@
 #ifdef HAVE_ESEDB
 #	include <libesedb.h>
 #endif
+#include <gromox/scope.hpp>
 #include "../tools/edb_pack.hpp"
 
 using namespace gromox;
@@ -110,11 +111,14 @@ static void terse_help()
 	fprintf(stderr, "Usage: epv_unpack [-c|-C|-?] [files...]\n");
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+
 	if (argc < 2) {
 		terse_help();
 		return EXIT_FAILURE;

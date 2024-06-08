@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
@@ -10,6 +10,7 @@
 #include <new>
 #include <libHX/option.h>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/scope.hpp>
 #include "genimport.hpp"
 
 namespace exmdb_client = exmdb_client_remote;
@@ -141,11 +142,12 @@ static int repair_mbox()
 	return 0;
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
-	if (HX_getopt(g_options_table, &argc, &argv,
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_primail == nullptr) {
 		fprintf(stderr, "Usage: cgkrepair -e primary_mailaddr\n");
 		return EXIT_FAILURE;

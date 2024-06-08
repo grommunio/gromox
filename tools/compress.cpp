@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdio>
@@ -63,7 +63,7 @@ static void cid_read_dir(const char *dir, std::vector<std::string> &files)
 	}
 }
 
-static std::vector<std::string> cid_read_args(int argc, const char **argv)
+static std::vector<std::string> cid_read_args(int argc, const char *const *argv)
 {
 	std::vector<std::string> files;
 	while (*++argv != nullptr) {
@@ -122,15 +122,17 @@ static int do_file(const std::string &file)
 	return EXIT_SUCCESS;
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	std::vector<std::string> filelist;
 	if (g_arg_type == ARG_CIDS) {
-		filelist = cid_read_args(argc, argv);
+		filelist = cid_read_args(argc, const_cast<const char *const *>(argv));
 	} else {
 		mlog(LV_ERR, "A mode of operation must be specified. Available: --cid.");
 		return EXIT_FAILURE;

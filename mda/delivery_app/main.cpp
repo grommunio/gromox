@@ -105,15 +105,17 @@ static void system_services_stop()
 	service_release("domain_list_query", "system");
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 { 
 	int retcode = EXIT_FAILURE;
 	char temp_buff[256];
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv,
-	    HXOPT_USAGEONERR | HXOPT_KEEP_ARGV) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+
 	startup_banner("gromox-delivery");
 	setup_sigalrm();
 	struct sigaction sact{};

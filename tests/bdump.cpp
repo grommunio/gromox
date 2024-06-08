@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <memory>
@@ -9,6 +9,7 @@
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/util.hpp>
+#include <gromox/scope.hpp>
 
 using namespace gromox;
 
@@ -22,11 +23,14 @@ static constexpr struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+
 	size_t slurp_len = 0;
 	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_fd(STDIN_FILENO, &slurp_len));
 	if (slurp_data == nullptr)

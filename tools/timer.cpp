@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
 #include <cerrno>
@@ -208,7 +210,7 @@ static TIMER *put_timer(TIMER &&ptimer)
 	return &g_exec_list.back();
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
 	time_t cur_time;
 	time_t last_cltime;
@@ -216,9 +218,11 @@ int main(int argc, const char **argv)
 	std::vector<pthread_t> thr_ids;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv,
-	    HXOPT_USAGEONERR | HXOPT_KEEP_ARGV) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+
 	startup_banner("gromox-timer");
 	if (opt_show_version)
 		return EXIT_SUCCESS;

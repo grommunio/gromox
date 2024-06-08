@@ -257,7 +257,7 @@ static constexpr cfg_directive delivery_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-int main(int argc, const char **argv) try
+int main(int argc, char **argv) try
 {
 	auto bn = HX_basename(argv[0]);
 	if (strcmp(bn, "gromox-eml2mt") == 0) {
@@ -271,8 +271,10 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (argc < 2) {
 		terse_help();
 		return EXIT_FAILURE;

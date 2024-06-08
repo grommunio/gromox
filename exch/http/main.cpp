@@ -151,7 +151,7 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> xcfg = nullptr,
 	return true;
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
 	char temp_buff[256];
 	int retcode = EXIT_FAILURE;
@@ -159,9 +159,10 @@ int main(int argc, const char **argv)
 	const char *dns_name, *dns_domain, *netbios_name;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv,
-	    HXOPT_USAGEONERR | HXOPT_KEEP_ARGV) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	startup_banner("gromox-http");
 	setup_sigalrm();

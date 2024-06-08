@@ -301,7 +301,7 @@ static void listener_stop()
 	g_listen_sockd = -1;
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
 	char temp_buff[45];
 	std::shared_ptr<CONFIG_FILE> pconfig;
@@ -309,9 +309,11 @@ int main(int argc, const char **argv)
 	exmdb_rpc_alloc = common_util_alloc;
 	exmdb_rpc_free = [](void *) {};
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv,
-	    HXOPT_USAGEONERR | HXOPT_KEEP_ARGV) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+
 	startup_banner("gromox-zcore");
 	if (opt_show_version)
 		return EXIT_SUCCESS;

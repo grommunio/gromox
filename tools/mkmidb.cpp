@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -55,13 +57,15 @@ static constexpr cfg_directive mkmidb_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
 	sqlite3 *psqlite;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (2 != argc) {
 		printf("usage: %s <username>\n", argv[0]);
 		return EXIT_FAILURE;
