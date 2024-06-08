@@ -155,6 +155,7 @@ int main(int argc, char **argv)
 	gi_setup_early(g_primail);
 	if (gi_setup() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_1 = make_scope_exit(gi_shutdown);
 	auto ret = repair_mbox();
 	if (ret == -ENOMEM) {
 		fprintf(stderr, "Insufficient system memory.\n");
@@ -165,6 +166,5 @@ int main(int argc, char **argv)
 	} else if (ret == 0) {
 		ret = EXIT_SUCCESS;
 	}
-	gi_shutdown();
 	return ret;
 }

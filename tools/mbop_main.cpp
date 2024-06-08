@@ -740,6 +740,7 @@ int main(int argc, char **argv)
 		if (gi_setup_from_dir() != EXIT_SUCCESS)
 			return EXIT_FAILURE;
 	}
+	auto cl_1 = make_scope_exit(gi_shutdown);
 
 	int ret = EXIT_FAILURE;
 	if (strcmp(argv[0], "delmsg") == 0) {
@@ -773,6 +774,5 @@ int main(int argc, char **argv)
 		if (ret == -EINVAL)
 			fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
 	}
-	gi_shutdown();
 	return !!ret;
 }

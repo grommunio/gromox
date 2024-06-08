@@ -44,6 +44,7 @@ std::string g_dstuser;
 static std::string g_storedir_s;
 const char *g_storedir;
 unsigned int g_user_id, g_show_tree, g_show_props, g_wet_run = 1, g_public_folder;
+static thread_local alloc_context g_alloc_mgr;
 
 YError::YError(const std::string &s) : m_str(s)
 {}
@@ -597,6 +598,9 @@ void gi_setup_early(const char *username)
 	g_dstuser = username;
 }
 
+static void *gi_alloc(size_t z) { return g_alloc_mgr.alloc(z); }
+static void gi_free(void *) {}
+
 int gi_setup_from_dir()
 {
 	auto sqh = sql_login();
@@ -616,6 +620,8 @@ int gi_setup_from_dir()
 		        g_storedir, strerror(-ret));
 		return EXIT_FAILURE;
 	}
+	exmdb_rpc_alloc = gi_alloc;
+	exmdb_rpc_free = gi_free;
 	exmdb_client_init(1, 0);
 	return exmdb_client_run(PKGSYSCONFDIR);
 }
@@ -638,6 +644,8 @@ int gi_setup()
 		return EXIT_FAILURE;
 	}
 	g_storedir = g_storedir_s.c_str();
+	exmdb_rpc_alloc = gi_alloc;
+	exmdb_rpc_free = gi_free;
 	exmdb_client_init(1, 0);
 	return exmdb_client_run(PKGSYSCONFDIR);
 }
@@ -727,5 +735,6 @@ eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 
 void gi_shutdown()
 {
+	g_alloc_mgr.clear();
 	exmdb_client_stop();
 }
