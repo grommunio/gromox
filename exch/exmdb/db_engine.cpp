@@ -568,7 +568,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
     db_conn_ptr &pdb)
 {
 	char sql_string[128];
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false); // ends before writes take place
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read); // ends before writes take place
 	if (!sql_transact)
 		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT is_search "
@@ -611,7 +611,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
 		if (g_notify_stop)
 			break;
-		auto sql_transact1 = gx_sql_begin_trans(pdb->psqlite, true);
+		auto sql_transact1 = gx_sql_begin(pdb->psqlite, txn_mode::write);
 		if (!sql_transact1)
 			return false;
 		if (!cu_eval_msg_restriction(pdb->psqlite,
@@ -1424,7 +1424,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 		return;	
 	std::unique_ptr<prepared_statements> optim;
 	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
-	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
+	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2160: failed to start transaction in cttbl_add_row");
 		return;
@@ -2158,7 +2158,7 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
 	DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *padded_row;
 	
 	padded_row = NULL;
-	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
+	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2166: failed to start transaction in hiertbl_add_row");
 		return;
@@ -2410,7 +2410,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row = nullptr;
 	
 	pdeleted_row = NULL;
-	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
+	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2162: failed to start transaction in cttbl_delete_row");
 		return;
@@ -2909,7 +2909,7 @@ static void dbeng_notify_hiertbl_delete_row(db_conn *pdb,
 	DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *pdeleted_row;
 	
 	pdeleted_row = NULL;
-	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
+	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2168: failed to start transaction in hiertbl_delete_row");
 		return;
@@ -3023,7 +3023,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row;
 	
 	pmodified_row = NULL;
-	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
+	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2164: failed to start transaction in cttbl_modify_row");
 		return;
@@ -3631,7 +3631,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 	padded_row = NULL;
 	pdeleted_row = NULL;
 	pmodified_row = NULL;
-	auto sql_transact_eph = gx_sql_begin_trans(pdb->m_sqlite_eph);
+	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
 		mlog(LV_ERR, "E-2170: failed to start transaction in hiertbl_modify_row");
 		return;

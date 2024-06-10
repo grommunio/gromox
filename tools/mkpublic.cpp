@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	auto sql_transact = gx_sql_begin_trans(psqlite);
+	auto sql_transact = gx_sql_begin(psqlite, txn_mode::write);
 	if (!sql_transact)
 		return EXIT_FAILURE;
 	if (opt_create_old)

@@ -729,7 +729,7 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 		if (flags & DBOP_VERBOSE)
 			mlog(LV_NOTICE, "dbop_sqlite: upgrading %s to schema E%c-%u",
 			        filedesc, kind_to_char(kind), entry->v);
-		auto tx = gx_sql_begin_trans(db);
+		auto tx = gx_sql_begin(db, txn_mode::write);
 		if (!tx)
 			return -EIO;
 		if (entry->command != nullptr && entry->tbl_name == nullptr &&

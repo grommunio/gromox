@@ -151,7 +151,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	 * Read-only transaction ensuring consistency of data across several blocks.
 	 * Nothing is ever written to pdb->psqlite, so no need to commit anything.
 	 */
-	xtransaction transact2 = gx_sql_begin_trans(pdb->psqlite, false);
+	xtransaction transact2 = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!transact2)
 		return false;
 
@@ -161,7 +161,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	 * (The result is dependent on prestriction.)
 	 */
 	{
-	auto transact1 = gx_sql_begin_trans(psqlite);
+	auto transact1 = gx_sql_begin(psqlite, txn_mode::write);
 	if (!transact1)
 		return false;
 	char sql_string[256];
@@ -651,7 +651,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact2 = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_transact2 = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact2)
 		return false;
 
@@ -661,7 +661,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	                      "SELECT folder_id, change_number FROM folders WHERE parent_id=? AND is_deleted=0");
 	if (stm_select_fld == nullptr)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(psqlite);
+	auto sql_transact = gx_sql_begin(psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	auto stm_insert_chg = gx_sql_prep(psqlite,

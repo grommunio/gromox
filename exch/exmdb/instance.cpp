@@ -364,7 +364,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
 	auto optim = pdb->begin_optim();
@@ -405,7 +405,7 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite); // may be required later but must be started here to avoid deadlocks
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write); // may be required later but must be started here to avoid deadlocks
 	auto dbase = pdb->lock_base_wr();
 	auto instance_id = dbase->next_instance_id();
 	if (instance_id == UINT32_MAX)
@@ -507,7 +507,7 @@ BOOL exmdb_server::reload_message_instance(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
 	auto dbase = pdb->lock_base_wr();

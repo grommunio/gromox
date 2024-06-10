@@ -42,7 +42,7 @@ BOOL exmdb_server::get_folder_by_class(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
 	auto pstmt = pdb->prep("SELECT folder_id"
@@ -91,7 +91,7 @@ BOOL exmdb_server::set_folder_by_class(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	if (0 == folder_id) {
@@ -144,7 +144,7 @@ BOOL exmdb_server::get_folder_class_table(
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT "
@@ -315,7 +315,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 		*errcode = ecError;
 		return FALSE;
 	}
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	if (!common_util_get_folder_type(pdb->psqlite, parent_id, &parent_type)) {
@@ -523,7 +523,7 @@ BOOL exmdb_server::set_folder_properties(const char *dir, cpid_t cpid,
 	if (!pdb)
 		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	if (exmdb_server::is_private() && fid_val == PRIVATE_FID_ROOT) {
@@ -556,7 +556,7 @@ BOOL exmdb_server::remove_folder_properties(const char *dir,
 	if (!pdb)
 		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	if (!cu_remove_properties(MAPI_FOLDER,
@@ -817,7 +817,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	BOOL b_search = false;
@@ -989,7 +989,7 @@ BOOL exmdb_server::empty_folder(const char *dir, cpid_t cpid,
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	uint32_t message_count = 0, folder_count = 0;
 	uint64_t normal_size = 0, fai_size = 0;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	auto dbase = pdb->lock_base_wr();
@@ -1047,7 +1047,7 @@ BOOL exmdb_server::is_descendant_folder(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
 	if (!cu_is_descendant_folder(pdb->psqlite,
@@ -1504,7 +1504,7 @@ BOOL exmdb_server::copy_folder_internal(const char *dir, cpid_t cpid,
 		return FALSE;
 	auto src_val = rop_util_get_gc_value(src_fid);
 	auto dst_val = rop_util_get_gc_value(dst_fid);
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	if (!cu_is_descendant_folder(pdb->psqlite, dst_fid,
@@ -1582,7 +1582,7 @@ BOOL exmdb_server::movecopy_folder(const char *dir, cpid_t cpid, BOOL b_guest,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	if (b_copy &&
@@ -1716,7 +1716,7 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
 	auto fid_val = rop_util_get_gc_value(folder_id);
@@ -1814,7 +1814,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	auto fid_val = rop_util_get_gc_value(folder_id);
@@ -1954,7 +1954,7 @@ BOOL exmdb_server::get_folder_perm(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
 	return cu_get_folder_permission(pdb->psqlite,
@@ -2151,7 +2151,7 @@ BOOL exmdb_server::update_folder_permission(const char *dir,
 		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	xstmt pstmt;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	for (unsigned int i = 0; i < count; ++i) {
@@ -2202,7 +2202,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	auto fid_val = rop_util_get_gc_value(folder_id);
@@ -2446,7 +2446,7 @@ BOOL exmdb_server::get_public_folder_unread_count(const char *dir,
 	 * cu_folder_unread_count may start two queries in some cases, use
 	 * transaction to keep them consistent.
 	 */
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
 	exmdb_server::set_public_username(username);

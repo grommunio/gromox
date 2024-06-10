@@ -58,7 +58,7 @@ BOOL exmdb_server::notify_new_mail(const char *dir, uint64_t folder_id,
 	if (!pdb)
 		return false;
 	/* Notifications need an externally managed transaction on main. */
-	auto sql_trans = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_trans = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	pdb->notify_new_mail(rop_util_get_gc_value(folder_id),
 		rop_util_get_gc_value(message_id), *pdb->lock_base_wr());
 	return TRUE;
@@ -282,7 +282,7 @@ BOOL exmdb_server::purge_softdelete(const char *dir, const char *username,
 	if (!db)
 		return false;
 	auto fid_val = rop_util_get_gc_value(folder_id);
-	auto xact = gx_sql_begin_trans(db->psqlite);
+	auto xact = gx_sql_begin(db->psqlite, txn_mode::write);
 	if (!xact)
 		return false;
 	uint64_t normal_size = 0, fai_size = 0;
@@ -491,7 +491,7 @@ BOOL exmdb_server::purge_datafiles(const char *dir)
 	auto db = db_engine_get_db(dir);
 	if (!db)
 		return false;
-	auto sql_transact = gx_sql_begin_trans(db->psqlite, false);
+	auto sql_transact = gx_sql_begin(db->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
 	auto upper_bound_ts = time(nullptr) - 60;
@@ -549,7 +549,7 @@ BOOL exmdb_server::recalc_store_size(const char *dir, uint32_t flags)
 	auto db = db_engine_get_db(dir);
 	if (!db)
 		return false;
-	auto sql_transact = gx_sql_begin_trans(db->psqlite);
+	auto sql_transact = gx_sql_begin(db->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	auto idb = db->psqlite;

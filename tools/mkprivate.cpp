@@ -217,7 +217,7 @@ int main(int argc, char **argv)
 	if (opt_integ)
 		return dbop_sqlite_integcheck(psqlite, LV_ERR) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 	unsigned int flags = 0;
-	auto sql_transact = gx_sql_begin_trans(psqlite);
+	auto sql_transact = gx_sql_begin(psqlite, txn_mode::write);
 	if (!sql_transact)
 		return EXIT_FAILURE;
 	if (opt_create_old)

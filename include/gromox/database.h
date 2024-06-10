@@ -89,9 +89,13 @@ enum {
 	SQLEXEC_SILENT_CONSTRAINT = 0x1U,
 };
 
+enum class txn_mode {
+	read, write,
+};
+
 extern GX_EXPORT struct xstmt gx_sql_prep(sqlite3 *, const char *);
-extern GX_EXPORT xtransaction gx_sql_begin(const std::string &, sqlite3 *, bool = true);
-#define gx_sql_begin_trans(...) gx_sql_begin(std::string(__FILE__) + ":" + std::to_string(__LINE__), __VA_ARGS__)
+extern GX_EXPORT xtransaction gx_sql_begin3(const std::string &, sqlite3 *, txn_mode);
+#define gx_sql_begin(...) gx_sql_begin3(std::string(__FILE__) + ":" + std::to_string(__LINE__), __VA_ARGS__)
 extern GX_EXPORT int gx_sql_exec(sqlite3 *, const char *query, unsigned int flags = 0);
 
 static inline uint64_t gx_sql_col_uint64(sqlite3_stmt *s, int c)

@@ -39,7 +39,7 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT "
@@ -75,7 +75,7 @@ BOOL exmdb_server::get_named_propids(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto transact = gx_sql_begin_trans(pdb->psqlite);
+	auto transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!transact)
 		return false;
 	if (!common_util_get_named_propids(pdb->psqlite,
@@ -113,7 +113,7 @@ BOOL exmdb_server::get_mapping_replid(const char *dir, GUID guid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	char guid_string[GUIDSTR_SIZE], sql_string[128];
@@ -186,7 +186,7 @@ BOOL exmdb_server::set_store_properties(const char *dir, cpid_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto transact = gx_sql_begin_trans(pdb->psqlite);
+	auto transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!cu_set_properties(MAPI_STORE, 0, cpid, pdb->psqlite,
 	    ppropvals, pproblems))
 		return FALSE;
@@ -199,7 +199,7 @@ BOOL exmdb_server::remove_store_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto transact = gx_sql_begin_trans(pdb->psqlite);
+	auto transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!cu_remove_properties(MAPI_STORE, 0, pdb->psqlite, pproptags))
 		return FALSE;
 	return transact.commit() == SQLITE_OK ? TRUE : false;
@@ -227,7 +227,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
 	*ppermission = rightsNone;
@@ -310,7 +310,7 @@ BOOL exmdb_server::allocate_cn(const char *dir, uint64_t *pcn)
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess ||
@@ -331,7 +331,7 @@ BOOL exmdb_server::allocate_ids(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT "
@@ -479,7 +479,7 @@ BOOL exmdb_server::check_contact_address(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
 	propnames.count = 3;
