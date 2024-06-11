@@ -237,8 +237,8 @@ struct PROPERTY_PROBLEM {
 };
 
 struct GX_EXPORT PROBLEM_ARRAY {
-	uint16_t count;
-	PROPERTY_PROBLEM *pproblem;
+	uint16_t count = 0;
+	PROPERTY_PROBLEM *pproblem = nullptr;
 
 	I_BEGIN_END(pproblem, count);
 	bool have_index(unsigned int) const;
