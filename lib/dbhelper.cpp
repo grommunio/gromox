@@ -46,7 +46,7 @@ xtransaction &xtransaction::operator=(xtransaction &&o) noexcept
 	return *this;
 }
 
-static std::unordered_map<void *, std::string> active_xa;
+static std::unordered_map<std::string, std::string> active_xa;
 static std::mutex active_xa_lock;
 
 xtransaction::~xtransaction()
@@ -58,8 +58,11 @@ void xtransaction::teardown()
 {
 	if (m_db != nullptr) {
 		gx_sql_exec(m_db, "ROLLBACK");
-		std::unique_lock lk(active_xa_lock);
-		active_xa.erase(m_db);
+		auto fn = sqlite3_db_filename(m_db, nullptr);
+		if (fn != nullptr && *fn != '\0') {
+			std::unique_lock lk(active_xa_lock);
+			active_xa.erase(fn);
+		}
 	}
 }
 
@@ -85,9 +88,10 @@ int xtransaction::commit()
 		 */
 		return ret;
 
-	{
+	auto fn = sqlite3_db_filename(m_db, nullptr);
+	if (fn != nullptr && *fn != '\0') {
 		std::unique_lock lk(active_xa_lock);
-		active_xa.erase(m_db);
+		active_xa.erase(fn);
 	}
 	m_db = nullptr;
 	return ret;
@@ -95,18 +99,23 @@ int xtransaction::commit()
 
 xtransaction gx_sql_begin3(const std::string &pos, sqlite3 *db, txn_mode mode)
 {
-	{
-		std::unique_lock lk(active_xa_lock);
-		auto pair = active_xa.emplace(db, pos);
-		if (!pair.second)
-			mlog(LV_ERR, "Nested transaction attempted. DB %p, origin %s, now %s",
-				db, pair.first->second.c_str(), pos.c_str());
-	}
 	auto ret = gx_sql_exec(db, mode == txn_mode::write ? "BEGIN IMMEDIATE" : "BEGIN");
-	if (ret == SQLITE_OK)
+	if (ret == SQLITE_OK) {
+		auto fn = sqlite3_db_filename(db, nullptr);
+		if (fn != nullptr && *fn != '\0') {
+			std::unique_lock lk(active_xa_lock);
+			active_xa[fn] = pos;
+		}
 		return xtransaction(db);
-	std::unique_lock lk(active_xa_lock);
-	active_xa.erase(db);
+	}
+	if (ret == SQLITE_BUSY && mode == txn_mode::write) {
+		auto fn = sqlite3_db_filename(db, nullptr);
+		if (fn == nullptr || *fn == '\0')
+			fn = ":memory:";
+		auto it = active_xa.find(fn);
+		mlog(LV_ERR, "sqlite_busy on %s: write txn held by %s", znul(fn),
+			it != active_xa.end() ? it->second.c_str() : "unknown");
+	}
 	return xtransaction(nullptr);
 }
 
