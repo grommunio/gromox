@@ -10,6 +10,7 @@
 #include <cstring>
 #include <memory>
 #include <utility>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -664,7 +665,7 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 }
 
 BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
-    PROBLEM_ARRAY *pproblems)
+    PROBLEM_ARRAY *pproblems) try
 {
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -680,17 +681,15 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
 	if (tmp_propvals.ppropval == nullptr)
 		return FALSE;
-	auto poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
-	if (poriginal_indices == nullptr)
-		return FALSE;
+	std::vector<uint16_t> poriginal_indices;
 	auto plogon = this;
 	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
 		if (lo_is_readonly_prop(plogon, pv.proptag)) {
 			pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
 		} else {
-			tmp_propvals.ppropval[tmp_propvals.count] = pv;
-			poriginal_indices[tmp_propvals.count++] = i;
+			tmp_propvals.ppropval[tmp_propvals.count++] = pv;
+			poriginal_indices.push_back(i);
 		}
 	}
 	if (tmp_propvals.count == 0)
@@ -703,6 +702,9 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	tmp_problems.transform(poriginal_indices);
 	*pproblems += std::move(tmp_problems);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1744: ENOMEM");
+	return false;
 }
 
 BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,

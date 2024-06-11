@@ -246,7 +246,7 @@ struct GX_EXPORT PROBLEM_ARRAY {
 	inline void emplace_back(unsigned int i, uint32_t tag, uint32_t err) {
 		pproblem[count++] = PROPERTY_PROBLEM{static_cast<uint16_t>(i), tag, err};
 	}
-	void transform(const uint16_t *);
+	void transform(const std::vector<uint16_t> &);
 	size_t indexof(uint32_t tag) const;
 	inline bool has(uint32_t tag) const { return indexof(tag) != npos; }
 	static constexpr size_t npos = -1;

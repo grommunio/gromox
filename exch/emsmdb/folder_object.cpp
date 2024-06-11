@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <climits>
 #include <cstdint>
@@ -7,6 +9,7 @@
 #include <cstring>
 #include <memory>
 #include <utility>
+#include <vector>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
@@ -17,6 +20,8 @@
 #include "exmdb_client.hpp"
 #include "folder_object.hpp"
 #include "logon_object.hpp"
+
+using namespace gromox;
 
 std::unique_ptr<folder_object> folder_object::create(logon_object *plogon,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access)
@@ -458,7 +463,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 }
 
 BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
-    PROBLEM_ARRAY *pproblems)
+    PROBLEM_ARRAY *pproblems) try
 {
 	uint16_t count;
 	BINARY *pbin_pcl;
@@ -479,17 +484,15 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(count);
 	if (tmp_propvals.ppropval == nullptr)
 		return FALSE;
-	auto poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
-	if (poriginal_indices == nullptr)
-		return FALSE;
+	std::vector<uint16_t> poriginal_indices;
 	auto pfolder = this;
 	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
 		if (pfolder->is_readonly_prop(pv.proptag)) {
 			pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
 		} else {
-			tmp_propvals.ppropval[tmp_propvals.count] = pv;
-			poriginal_indices[tmp_propvals.count++] = i;
+			tmp_propvals.ppropval[tmp_propvals.count++] = pv;
+			poriginal_indices.push_back(i);
 		}
 	}
 	if (tmp_propvals.count == 0)
@@ -522,6 +525,9 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	tmp_problems.transform(poriginal_indices);
 	*pproblems += std::move(tmp_problems);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1743: ENOMEM");
+	return false;
 }
 
 BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,

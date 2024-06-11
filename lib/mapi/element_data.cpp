@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <utility>
+#include <vector>
 #include <gromox/eid_array.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
@@ -401,8 +404,15 @@ PROBLEM_ARRAY &PROBLEM_ARRAY::operator+=(PROBLEM_ARRAY &&other)
 	return *this;
 }
 
-void PROBLEM_ARRAY::transform(const uint16_t *orig_indices)
+void PROBLEM_ARRAY::transform(const std::vector<uint16_t> &orig_indices)
 {
-	for (size_t i = 0; i < count; ++i)
+	/*
+	 * Cut off problems related to internally tacked-on properties (cf.
+	 * emsmdb/folder_object::set_folder_properties).
+	 */
+	auto end = std::remove_if(&pproblem[0], &pproblem[count],
+	           [=](const PROPERTY_PROBLEM &p) { return p.index >= orig_indices.size(); });
+	count = end - &pproblem[0];
+	for (unsigned int i = 0; i < count; ++i)
 		pproblem[i].index = orig_indices[pproblem[i].index];
 }

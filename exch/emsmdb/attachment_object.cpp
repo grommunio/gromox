@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <climits>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <utility>
+#include <vector>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
@@ -15,6 +18,8 @@
 #include "logon_object.hpp"
 #include "message_object.hpp"
 #include "stream_object.hpp"
+
+using namespace gromox;
 
 static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 
@@ -316,7 +321,7 @@ static bool ao_has_open_streams(attachment_object *at, uint32_t proptag)
 }
 
 BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
-    PROBLEM_ARRAY *pproblems)
+    PROBLEM_ARRAY *pproblems) try
 {
 	auto pattachment = this;
 	PROBLEM_ARRAY tmp_problems;
@@ -330,9 +335,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
 	if (tmp_propvals.ppropval == nullptr)
 		return FALSE;
-	auto poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
-	if (poriginal_indices == nullptr)
-		return FALSE;
+	std::vector<uint16_t> poriginal_indices;
 	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
 		if (is_readonly_prop(pv.proptag) ||
@@ -340,8 +343,8 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 			pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
 			continue;
 		}
-		tmp_propvals.ppropval[tmp_propvals.count] = pv;
-		poriginal_indices[tmp_propvals.count++] = i;
+		tmp_propvals.ppropval[tmp_propvals.count++] = pv;
+		poriginal_indices.push_back(i);
 	}
 	if (tmp_propvals.count == 0)
 		return TRUE;
@@ -361,10 +364,13 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 		}
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1669: ENOMEM");
+	return false;
 }
 
 BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
-    PROBLEM_ARRAY *pproblems)
+    PROBLEM_ARRAY *pproblems) try
 {
 	auto pattachment = this;
 	PROBLEM_ARRAY tmp_problems;
@@ -378,9 +384,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
-	auto poriginal_indices = cu_alloc<uint16_t>(pproptags->count);
-	if (poriginal_indices == nullptr)
-		return FALSE;
+	std::vector<uint16_t> poriginal_indices;
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		if (is_readonly_prop(tag) ||
@@ -388,7 +392,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 			pproblems->emplace_back(i, tag, ecAccessDenied);
 			continue;
 		}
-		poriginal_indices[tmp_proptags.count] = i;
+		poriginal_indices.push_back(i);
 		tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)
@@ -409,6 +413,9 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		}
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1670: ENOMEM");
+	return false;
 }
 
 BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
