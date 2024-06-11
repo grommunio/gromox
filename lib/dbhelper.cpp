@@ -14,11 +14,22 @@ namespace gromox {
 
 unsigned int gx_sqlite_debug;
 
+static bool write_statement(const char *q)
+{
+	return strncasecmp(q, "CREATE", 6) == 0 || strncasecmp(q, "ALTER", 5) == 0 ||
+	       strncasecmp(q, "DROP", 4) == 0 || strncasecmp(q, "INSERT", 6) == 0 ||
+	       strncasecmp(q, "UPDATE", 6) == 0 || strncasecmp(q, "REPLACE", 7) == 0 ||
+	       strncasecmp(q, "DELETE", 6) == 0;
+}
+
 xstmt gx_sql_prep(sqlite3 *db, const char *query)
 {
 	xstmt out;
 	if (gx_sqlite_debug >= 1)
 		mlog(LV_DEBUG, "> sqlite3_prep(%s)", query);
+	auto state = sqlite3_txn_state(db, "main");
+	if (state == SQLITE_TXN_READ && write_statement(query))
+		mlog(LV_ERR, "> sqlite3_prep(%s) inside a readonly TXN", query);
 	int ret = sqlite3_prepare_v2(db, query, -1, &out.m_ptr, nullptr);
 	if (ret != SQLITE_OK)
 		mlog(LV_ERR, "sqlite3_prepare_v2(%s) \"%s\": %s (%d)",
@@ -154,6 +165,9 @@ int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 	char *estr = nullptr;
 	if (gx_sqlite_debug >= 1)
 		mlog(LV_DEBUG, "> sqlite3_exec(%s)", query);
+	auto state = sqlite3_txn_state(db, "main");
+	if (state == SQLITE_TXN_READ && write_statement(query))
+		mlog(LV_ERR, "> sqlite3_exec(%s) inside a readonly TXN", query);
 	auto ret = sqlite3_exec(db, query, nullptr, nullptr, &estr);
 	if (ret == SQLITE_OK)
 		return ret;
