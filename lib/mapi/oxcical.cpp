@@ -3462,60 +3462,80 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	
 	ical_component *ptz_component = nullptr;
 	if (!b_exceptional) {
-	
-	if (*method != '\0')
-		pical.append_line("METHOD", method);
-	pical.append_line("PRODID", "gromox-oxcical");
-	pical.append_line("VERSION", "2.0");
-	
-	auto bin = pmsg->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_recur]));
-	if (bin != nullptr) {
-		EXT_PULL ext_pull;
-		ext_pull.init(bin->pb, bin->cb, alloc, EXT_FLAG_UTF16);
-		if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
-			return "E-2204: PidLidAppointmentRecur contents not recognized";
-		b_recurrence = true;
-	}
-	
-	if (b_recurrence) {
-		auto it = std::lower_bound(cal_scale_names, std::end(cal_scale_names),
-		          apprecurr.recur_pat.calendartype,
-		          [&](const auto &p, unsigned int v) { return p.first < v; });
-		str = it != std::end(cal_scale_names) &&
-		      it->first == apprecurr.recur_pat.calendartype ?
-		      it->second : nullptr;
-		if (PATTERNTYPE_HJMONTH ==
-			apprecurr.recur_pat.patterntype ||
-			PATTERNTYPE_HJMONTHNTH ==
-			apprecurr.recur_pat.patterntype) {
-			str = "Hijri";
-		}
-		if (str != nullptr)
-			pical.append_line("X-MICROSOFT-CALSCALE", str);
-	}
-	
-	struct tm tmp_tm;
-	unsigned int year = 1601;
-	if (has_start_time && gmtime_r(&start_time, &tmp_tm) != nullptr)
-		year = tmp_tm.tm_year + 1900;
-	
-	tzid = NULL;
-	if (b_recurrence) {
-		bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzstruct]));
-		tzid = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[l_tzdesc]));
-		if (bin != nullptr && tzid != nullptr) {
-			EXT_PULL ext_pull;
-			TIMEZONESTRUCT tz_struct;
 
-			ext_pull.init(bin->pb, bin->cb, alloc, 0);
-			if (ext_pull.g_tzstruct(&tz_struct) != EXT_ERR_SUCCESS)
-				return "E-2205: PidLidTimeZoneDescription contents not recognized";
-			ptz_component = oxcical_export_timezone(
-					pical, year - 1, tzid, &tz_struct);
-			if (ptz_component == nullptr)
-				return "E-2206: export_timezone returned an unspecified error";
+		if (*method != '\0')
+			pical.append_line("METHOD", method);
+		pical.append_line("PRODID", "gromox-oxcical");
+		pical.append_line("VERSION", "2.0");
+
+		auto bin = pmsg->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_recur]));
+		if (bin != nullptr) {
+			EXT_PULL ext_pull;
+			ext_pull.init(bin->pb, bin->cb, alloc, EXT_FLAG_UTF16);
+			if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
+				return "E-2204: PidLidAppointmentRecur contents not recognized";
+			b_recurrence = true;
+		}
+
+		if (b_recurrence) {
+			auto it = std::lower_bound(cal_scale_names, std::end(cal_scale_names),
+				  apprecurr.recur_pat.calendartype,
+				  [&](const auto &p, unsigned int v) { return p.first < v; });
+			str = it != std::end(cal_scale_names) &&
+			      it->first == apprecurr.recur_pat.calendartype ?
+			      it->second : nullptr;
+			if (PATTERNTYPE_HJMONTH ==
+				apprecurr.recur_pat.patterntype ||
+				PATTERNTYPE_HJMONTHNTH ==
+				apprecurr.recur_pat.patterntype) {
+				str = "Hijri";
+			}
+			if (str != nullptr)
+				pical.append_line("X-MICROSOFT-CALSCALE", str);
+		}
+
+		struct tm tmp_tm;
+		unsigned int year = 1601;
+		if (has_start_time && gmtime_r(&start_time, &tmp_tm) != nullptr)
+			year = tmp_tm.tm_year + 1900;
+
+		tzid = NULL;
+		if (b_recurrence) {
+			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzstruct]));
+			tzid = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[l_tzdesc]));
+			if (bin != nullptr && tzid != nullptr) {
+				EXT_PULL ext_pull;
+				TIMEZONESTRUCT tz_struct;
+
+				ext_pull.init(bin->pb, bin->cb, alloc, 0);
+				if (ext_pull.g_tzstruct(&tz_struct) != EXT_ERR_SUCCESS)
+					return "E-2205: PidLidTimeZoneDescription contents not recognized";
+				ptz_component = oxcical_export_timezone(
+						pical, year - 1, tzid, &tz_struct);
+				if (ptz_component == nullptr)
+					return "E-2206: export_timezone returned an unspecified error";
+			} else {
+				bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefrecur]));
+				if (bin != nullptr) {
+					EXT_PULL ext_pull;
+					TIMEZONEDEFINITION tz_definition;
+					TIMEZONESTRUCT tz_struct;
+
+					ext_pull.init(bin->pb, bin->cb, alloc, 0);
+					if (ext_pull.g_tzdef(&tz_definition) != EXT_ERR_SUCCESS)
+						return "E-2207: PidLidAppointmentTimeZoneDefinitionRecur contents not recognized";
+					tzid = tz_definition.keyname;
+					oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
+					ptz_component = oxcical_export_timezone(
+							pical, year - 1, tzid, &tz_struct);
+					if (ptz_component == nullptr)
+						return "E-2208: export_timezone returned an unspecified error";
+				}
+			}
 		} else {
-			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefrecur]));
+			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefstart]));
+			if (bin != nullptr)
+				bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefend]));
 			if (bin != nullptr) {
 				EXT_PULL ext_pull;
 				TIMEZONEDEFINITION tz_definition;
@@ -3523,36 +3543,16 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != EXT_ERR_SUCCESS)
-					return "E-2207: PidLidAppointmentTimeZoneDefinitionRecur contents not recognized";
+					return "E-2209: PidLidAppointmentTimeZoneDefinitionEndDisplay contents not recognized";
 				tzid = tz_definition.keyname;
 				oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
 				ptz_component = oxcical_export_timezone(
 						pical, year - 1, tzid, &tz_struct);
 				if (ptz_component == nullptr)
-					return "E-2208: export_timezone returned an unspecified error";
+					return "E-2210: export_timezone returned an unspecified error";
 			}
 		}
-	} else {
-		bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefstart]));
-		if (bin != nullptr)
-			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefend]));
-		if (bin != nullptr) {
-			EXT_PULL ext_pull;
-			TIMEZONEDEFINITION tz_definition;
-			TIMEZONESTRUCT tz_struct;
-
-			ext_pull.init(bin->pb, bin->cb, alloc, 0);
-			if (ext_pull.g_tzdef(&tz_definition) != EXT_ERR_SUCCESS)
-				return "E-2209: PidLidAppointmentTimeZoneDefinitionEndDisplay contents not recognized";
-			tzid = tz_definition.keyname;
-			oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
-			ptz_component = oxcical_export_timezone(
-					pical, year - 1, tzid, &tz_struct);
-			if (ptz_component == nullptr)
-				return "E-2210: export_timezone returned an unspecified error";
-		}
 	}
-    }
 	
 	auto snum = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[l_subtype]));
 	BOOL b_allday = snum != nullptr && *snum != 0 ? TRUE : false;
