@@ -1575,6 +1575,12 @@ void mFindItemResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 void mFindItemResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
 
+void mGetAppManifestsResponse::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	xml->InsertNewChildElement("m:Manifests");
+}
+
 mGetAttachmentRequest::mGetAttachmentRequest(const XMLElement* xml) :
 	XMLINIT(AttachmentIds)
 {}
