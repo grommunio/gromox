@@ -44,12 +44,12 @@ struct service_node {
 	std::string service_name;
 };
 
-struct static_module {
+struct GX_EXPORT static_module {
 	std::string path;
 	PLUGIN_MAIN efunc;
 };
 
-struct generic_module {
+struct GX_EXPORT generic_module {
 	generic_module() = default;
 	generic_module(generic_module &&) noexcept;
 	void operator=(generic_module &&) noexcept = delete;
