@@ -469,8 +469,6 @@ static void *db_expiry_thread(void *param)
 		}
 #endif
 	}
-	std::lock_guard hhold(g_hash_lock);
-	g_hash_table.clear();
 	return nullptr;
 }
 
@@ -811,14 +809,14 @@ void db_engine_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
-		if (!pthread_equal(g_scan_tid, {})) {
-			pthread_kill(g_scan_tid, SIGALRM);
-			pthread_join(g_scan_tid, NULL);
-		}
 		g_waken_cond.notify_all();
 		for (auto tid : g_thread_ids) {
 			pthread_kill(tid, SIGALRM);
 			pthread_join(tid, nullptr);
+		}
+		if (!pthread_equal(g_scan_tid, {})) {
+			pthread_kill(g_scan_tid, SIGALRM);
+			pthread_join(g_scan_tid, NULL);
 		}
 	}
 	g_thread_ids.clear();
