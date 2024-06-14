@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
-#define DECLARE_PROC_API_STATIC
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -12,10 +11,12 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
-#include <gromox/zz_ndr_stack.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
 
 using namespace gromox;
+DECLARE_PROC_API(,);
+#define ZZNDR_NS
+#include <gromox/zz_ndr_stack.hpp>
 
 enum {
 	RfrGetNewDSA = 0,
@@ -63,7 +64,7 @@ static constexpr DCERPC_INTERFACE interface = {
 	1, exchange_rfr_ndr_pull, exchange_rfr_dispatch, exchange_rfr_ndr_push,
 };
 
-BOOL PROC_exchange_rfr(int reason, void **ppdata)
+BOOL PROC_exchange_rfr(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	if (reason == PLUGIN_FREE) {
 		unregister_interface(ep_6002, &interface);
@@ -96,8 +97,9 @@ BOOL PROC_exchange_rfr(int reason, void **ppdata)
 		}
 		return TRUE;
 	}
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }
 
 static ec_error_t rfr_get_newdsa(uint32_t flags, const char *puserdn,

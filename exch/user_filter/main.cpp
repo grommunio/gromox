@@ -16,10 +16,10 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+DECLARE_SVC_API(user_filter, );
+using namespace user_filter;
 
-DECLARE_SVC_API();
-
-BOOL SVC_user_filter(int reason, void **ppdata)
+BOOL SVC_user_filter(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	char temp_buff[128];
 	int audit_max, audit_interval, audit_times, temp_list_size;
@@ -94,6 +94,7 @@ BOOL SVC_user_filter(int reason, void **ppdata)
 		str_filter_stop();
 		str_filter_free();
 		return TRUE;
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }

@@ -45,7 +45,8 @@ using domain_set = std::set<std::string>;
 
 }
 
-DECLARE_HOOK_API();
+DECLARE_HOOK_API(alias_resolve, );
+using namespace alias_resolve;
 
 static std::atomic<bool> xa_notify_stop{false};
 static std::condition_variable xa_thread_wake;
@@ -321,7 +322,7 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> &&mcfg,
 	return true;
 }
 
-BOOL HOOK_alias_resolve(int reason, void **data)
+BOOL HOOK_alias_resolve(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_RELOAD) {
 		xa_reload_config(nullptr, nullptr);

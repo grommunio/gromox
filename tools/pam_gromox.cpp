@@ -30,7 +30,6 @@
 
 using namespace gromox;
 
-std::shared_ptr<CONFIG_FILE> g_config_file;
 static std::mutex g_svc_once;
 static std::vector<static_module> g_dfl_svc_plugins = {
 	{"libgxs_ldap_adaptor.so", SVC_ldap_adaptor},
@@ -70,8 +69,8 @@ static int read_password(pam_handle_t *pamh, const char *prompt, char **pass)
 PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     int argc, const char **argv)
 {
-	auto cfg = g_config_file = config_file_prg(nullptr, "pam.cfg", nullptr);
-	if (g_config_file == nullptr)
+	auto cfg = config_file_prg(nullptr, "pam.cfg", nullptr);
+	if (cfg == nullptr)
 		return PAM_AUTH_ERR;
 
 	const char *service = nullptr, *username = nullptr;
@@ -95,13 +94,12 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 			return ret;
 	}
 
-	const char *val;
-	auto config_dir = val = cfg->get_value("config_file_path");
+	const char *val = cfg->get_value("config_file_path");
 	if (val == nullptr)
-		config_dir = PKGSYSCONFDIR "/pam:" PKGSYSCONFDIR;
+		cfg->set_value("config_file_path", PKGSYSCONFDIR "/pam:" PKGSYSCONFDIR);
 
 	std::lock_guard<std::mutex> holder(g_svc_once);
-	service_init({config_dir, "", "", g_dfl_svc_plugins, 1});
+	service_init({std::move(cfg), g_dfl_svc_plugins, 1});
 	if (service_run_early() != 0)
 		return PAM_AUTH_ERR;
 	if (service_run() != 0)

@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <memory>
 #include <gromox/common_types.hpp>
+#include <gromox/plugin.hpp>
 #define FLUSHING_INVALID_FD -1
 
 enum {
@@ -23,7 +24,7 @@ void flusher_cancel(SMTP_CONTEXT *pcontext);
 extern void message_enqueue_handle_workitem(FLUSH_ENTITY &);
 extern BOOL flusher_register_cancel(CANCEL_FUNCTION);
 extern void flusher_set_flush_ID(int);
-extern BOOL FLH_LibMain(int);
+extern BOOL FLH_LibMain(enum plugin_op);
 
 extern uint16_t g_listener_ssl_port;
 

@@ -73,14 +73,17 @@ class fhash {
 
 }
 
-char g_exmdb_org_name[256];
 static unsigned int g_max_msg, g_cid_use_xxhash = 1;
+static thread_local prepared_statements *g_opt_key;
+static std::atomic<unsigned int> g_sequence_id;
+
+namespace exmdb {
+
+char g_exmdb_org_name[256];
 thread_local unsigned int g_inside_flush_instance;
 thread_local sqlite3 *g_sqlite_for_oxcmail;
-static thread_local prepared_statements *g_opt_key;
 unsigned int g_max_rule_num, g_max_extrule_num;
 unsigned int g_cid_compression = 0; /* disabled(0), specific_level(n) */
-static std::atomic<unsigned int> g_sequence_id;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
 E(get_username_from_id)
@@ -443,6 +446,8 @@ BOOL common_util_allocate_cid(sqlite3 *psqlite, uint64_t *pcid)
 	return TRUE;
 }
 
+}
+
 bool prepared_statements::begin(sqlite3 *psqlite)
 {
 	msg_norm = gx_sql_prep(psqlite, "SELECT propval"
@@ -487,6 +492,8 @@ std::unique_ptr<prepared_statements> DB_ITEM::begin_optim() try
 	mlog(LV_ERR, "E-2358: ENOMEM");
 	return nullptr;
 }
+
+namespace exmdb {
 
 static sqlite3_stmt *
 cu_get_optimize_stmt(mapi_object_type table_type, bool b_normal)
@@ -2841,6 +2848,8 @@ static BOOL common_util_set_message_subject(cpid_t cpid, uint64_t message_id,
 	return TRUE;
 }
 
+}
+
 fhash::fhash(const std::string_view data)
 {
 	/*
@@ -2879,6 +2888,8 @@ void fhash::hexify(const unsigned char *digest, unsigned int bytes)
 		cid[z++] = digits[digest[i] & 0x0F];
 	}
 }
+
+namespace exmdb {
 
 /**
  * @data:	[in] attachment/body
@@ -5431,4 +5442,6 @@ uint32_t common_util_calculate_attachment_size(
 	if (pattachment->pembedded != nullptr)
 		attachment_size += common_util_calculate_message_size(pattachment->pembedded);
 	return attachment_size;
+}
+
 }

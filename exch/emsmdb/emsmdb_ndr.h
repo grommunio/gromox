@@ -1,8 +1,13 @@
 #pragma once
+#define ZZNDR_NS emsmdb
 #include <cstdint>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rpc_types.hpp>
+
+DECLARE_PROC_API(emsmdb, extern);
+using namespace emsmdb;
+
 #include <gromox/zz_ndr_stack.hpp>
 
 enum {

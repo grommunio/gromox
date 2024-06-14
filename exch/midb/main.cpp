@@ -105,7 +105,6 @@ static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "200"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "200"},
 	{"sqlite_debug", "0"},
-	{"state_path", PKGSTATEDIR},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
 };
@@ -361,10 +360,7 @@ int main(int argc, char **argv)
 	filedes_limit_bump(gxconfig->get_ll("midb_fd_limit"));
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
 	unsigned int cmd_debug = pconfig->get_ll("midb_cmd_debug");
-	service_init({g_config_file->get_value("config_file_path"),
-		g_config_file->get_value("data_path"),
-		g_config_file->get_value("state_path"),
-		g_dfl_svc_plugins, threads_num});
+	service_init({g_config_file, g_dfl_svc_plugins, threads_num});
 	auto cl_0 = make_scope_exit(service_stop);
 	
 	exmdb_client_init(proxy_num, stub_num);

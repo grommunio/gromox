@@ -29,8 +29,8 @@
 #define JOIN_WITH_DISPLAYTYPE "LEFT JOIN user_properties AS dt ON u.id=dt.user_id AND dt.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
 
 using namespace std::string_literals;
-
-DECLARE_SVC_API();
+DECLARE_SVC_API(mysql_adaptor, extern);
+using namespace mysql_adaptor;
 
 using namespace gromox;
 using aliasmap_t = std::multimap<std::string, std::string, std::less<>>;
@@ -58,11 +58,8 @@ static bool db_upgrade_check_2(MYSQL *conn)
 		mlog(LV_NOTICE, "mysql_adaptor: Current schema n%d is recent.", current);
 		return true;
 	}
-	bool not_me = g_parm.schema_upgrade == SSU_NOT_ME;
-	mlog(not_me ? LV_INFO : LV_NOTICE, "mysql_adaptor: Current schema n%d. Update available: n%d.",
+	mlog(LV_NOTICE, "mysql_adaptor: Current schema n%d. Update available: n%d.",
 	       current, recent);
-	if (not_me)
-		return true;
 	static constexpr const char *msg =
 		"The upgrade either needs to be manually done with gromox-dbop(8gx), "
 		"or configure mysql_adaptor(4gx) [see warning in manpage] to do it.";
@@ -620,7 +617,7 @@ bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARRAY &pro
 	return false;
 }
 
-BOOL SVC_mysql_adaptor(int reason, void **data)
+BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_FREE) {
 		mysql_adaptor_stop();

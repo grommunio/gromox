@@ -7,7 +7,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
-#include <gromox/zz_ndr_stack.hpp>
+#include "common_util.h"
 #include "nsp_ndr.hpp"
 #define FLAG_HEADER			0x1
 #define FLAG_CONTENT		0x2

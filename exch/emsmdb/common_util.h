@@ -8,16 +8,22 @@
 #include <vmime/message.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #define NOTIFY_RECEIPT_READ							1
 #define NOTIFY_RECEIPT_NON_READ						2
 #define MINIMUM_COMPRESS_SIZE						0x100
 #define STORE_OWNER_GRANTED nullptr
 
+DECLARE_PROC_API(emsmdb, extern);
+using namespace emsmdb;
+
 struct logon_object;
 struct MAIL;
 struct message_content;
 struct message_object;
+
+namespace emsmdb {
 
 void* common_util_alloc(size_t size);
 template<typename T> T *cu_alloc()
@@ -115,6 +121,8 @@ extern ec_error_t replguid_to_replid(const logon_object &, const GUID &, uint16_
 extern unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 extern unsigned int g_max_rule_len, g_max_extrule_len;
 extern char g_emsmdb_org_name[256];
+
+}
 
 static inline size_t fx_divisor(size_t total)
 {

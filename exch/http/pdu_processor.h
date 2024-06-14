@@ -119,4 +119,4 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 void* pdu_processor_ndr_stack_alloc(int type, size_t size);
 extern BOOL pdu_processor_rpc_new_stack();
 extern void pdu_processor_rpc_free_stack();
-extern void pdu_processor_trigger(unsigned int ev);
+extern void pdu_processor_trigger(enum plugin_op);

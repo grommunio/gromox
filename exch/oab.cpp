@@ -20,7 +20,7 @@ class OabPlugin {
 
 }
 
-DECLARE_HPM_API();
+DECLARE_HPM_API(,);
 
 static constexpr char
 	response[] = "<?xml version=\"1.0\" encoding=\"utf-8\"?><OAB></OAB>",
@@ -83,7 +83,7 @@ static std::unique_ptr<OabPlugin> g_oab_plugin;
  *
  * @return     TRUE if initialization was successful, false otherwise
  */
-static BOOL oab_init(void **apidata)
+static BOOL oab_init(const struct dlfuncs &apidata)
 {
 	LINK_HPM_API(apidata)
 	HPM_INTERFACE ifc{};
@@ -113,7 +113,7 @@ static BOOL oab_init(void **apidata)
  *
  * @return     TRUE if successful, false otherwise
  */
-BOOL HPM_oab(int reason, void **data)
+BOOL HPM_oab(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_INIT)
 		return oab_init(data);

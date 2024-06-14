@@ -10,11 +10,15 @@
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/svc_common.h>
 #define MAXIMUM_PROPNAME_NUMBER								0x7000
 #define MAX_DIGLEN											256*1024
 #define MAX_RULE_RECIPIENTS									256
 #define MAX_DAMS_PER_RULE_FOLDER							128
 #define STORE_OWNER_GRANTED nullptr
+
+DECLARE_SVC_API(exmdb, extern);
+using namespace exmdb;
 
 /*
  * These are used by exmdb internally; they never show up in the SQLite
@@ -37,6 +41,8 @@ enum {
 };
 
 struct MAIL;
+
+namespace exmdb {
 #define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
 E(get_username_from_id)
 E(check_mlist_include)
@@ -173,3 +179,5 @@ extern unsigned int g_max_rule_num, g_max_extrule_num, g_cid_compression;
 extern thread_local unsigned int g_inside_flush_instance;
 extern thread_local sqlite3 *g_sqlite_for_oxcmail;
 extern char g_exmdb_org_name[];
+
+}

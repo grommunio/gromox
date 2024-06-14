@@ -21,6 +21,8 @@
 #include "namedtags.hpp"
 #include "structures.hpp"
 
+DECLARE_HPM_API(gromox::EWS, extern);
+
 namespace gromox::EWS
 {
 

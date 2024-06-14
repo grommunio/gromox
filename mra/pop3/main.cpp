@@ -113,7 +113,6 @@ static constexpr cfg_directive pop3_cfg_defaults[] = {
 	{"pop3_thread_charge_num", "20", CFG_SIZE, "4"},
 	{"pop3_thread_init_num", "5", CFG_SIZE},
 	{"running_identity", RUNNING_IDENTITY},
-	{"state_path", PKGSTATEDIR},
 	{"thread_charge_num", "pop3_thread_charge_num", CFG_ALIAS},
 	{"thread_init_num", "pop3_threaD_init_num", CFG_ALIAS},
 	{"tls_min_proto", "tls1.2"},
@@ -531,10 +530,7 @@ int main(int argc, char **argv)
 	auto cleanup_4 = make_scope_exit(listener_stop);
 
 	filedes_limit_bump(gxconfig->get_ll("pop3_fd_limit"));
-	service_init({g_config_file->get_value("config_file_path"),
-		g_config_file->get_value("data_file_path"),
-		g_config_file->get_value("state_path"),
-		g_dfl_svc_plugins, context_num});
+	service_init({g_config_file, g_dfl_svc_plugins, context_num});
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return EXIT_FAILURE;

@@ -45,7 +45,7 @@ extern int transporter_run();
 extern void transporter_stop();
 extern void transporter_wakeup_one_thread();
 extern int transporter_load_library(gromox::static_module &&);
-extern void transporter_trigger_all(unsigned int);
+extern void transporter_trigger_all(enum plugin_op);
 
 extern std::shared_ptr<config_file> g_config_file;
 extern std::string g_outgoing_smtp_url;

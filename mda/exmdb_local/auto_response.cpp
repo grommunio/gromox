@@ -19,6 +19,8 @@
 #include "exmdb_local.hpp"
 
 using namespace gromox;
+DECLARE_HOOK_API(exmdb_local, extern);
+using namespace exmdb_local;
 namespace exmdb_client = exmdb_client_remote;
 unsigned int autoreply_silence_window;
 

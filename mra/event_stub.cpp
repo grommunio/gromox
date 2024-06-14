@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#define DECLARE_SVC_API_STATIC
 #include <cerrno>
 #include <csignal>
 #include <cstdint>
@@ -25,6 +24,7 @@
 #define MAX_CMD_LENGTH			64*1024
 
 using namespace gromox;
+DECLARE_SVC_API(,);
 
 namespace {
 
@@ -49,7 +49,7 @@ static int read_line(int sockd, char *buff, int length);
 static int connect_event();
 static void install_event_stub(EVENT_STUB_FUNC event_stub_func);
 
-BOOL SVC_event_stub(int reason, void **ppdata)
+BOOL SVC_event_stub(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	int i, conn_num;
 	DOUBLE_LIST_NODE *pnode;
@@ -144,8 +144,9 @@ BOOL SVC_event_stub(int reason, void **ppdata)
 		double_list_free(&g_back_list);
 		g_event_stub_func = NULL;
 		return TRUE;
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }
 
 static int read_line(int sockd, char *buff, int length)

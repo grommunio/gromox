@@ -10,18 +10,17 @@
 #include <gromox/proc_common.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include <gromox/zz_ndr_stack.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
 #include "nsp_interface.hpp"
 #include "nsp_ndr.hpp"
 
 using namespace gromox;
+DECLARE_PROC_API(nsp, );
 
 static int exchange_nsp_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
 static void exchange_nsp_unbind(uint64_t handle);
 
-DECLARE_PROC_API();
 static DCERPC_ENDPOINT *ep_6001, *ep_6004;
 
 static constexpr cfg_directive nsp_cfg_defaults[] = {
@@ -55,7 +54,7 @@ static constexpr DCERPC_INTERFACE interface = {
 	exchange_nsp_unbind,
 };
 
-BOOL PROC_exchange_nsp(int reason, void **ppdata)
+BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	BOOL b_check;
 	const char *org_name;
@@ -155,8 +154,9 @@ BOOL PROC_exchange_nsp(int reason, void **ppdata)
 		exch_nsp_reload(nullptr);
 		ab_tree_invalidate_cache();
 		return TRUE;
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }
 
 static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,

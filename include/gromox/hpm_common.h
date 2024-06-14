@@ -59,49 +59,44 @@ struct HTTP_AUTH_INFO {
 	const char* lang;
 };
 
-#define DECLARE_HPM_API(x) \
-	x void *(*query_serviceF)(const char *, const std::type_info &); \
-	x BOOL (*register_interface)(HPM_INTERFACE *); \
-	x GENERIC_CONNECTION *(*get_connection)(int); \
-	x HTTP_REQUEST *(*get_request)(int); \
-	x HTTP_AUTH_INFO (*get_auth_info)(int); \
-	x http_status (*write_response)(int, const void *, int); \
-	x void (*wakeup_context)(int); \
-	x void (*activate_context)(int); \
-	x const char *(*get_host_ID)(); \
-	x const char *(*get_config_path)(); \
-	x const char *(*get_data_path)(); \
-	x const char *(*get_state_path)(); \
-	x unsigned int (*get_context_num)(); \
-	x void (*set_context)(int); \
-	x void (*set_ep_info)(int, const char *, int); \
-	x void *(*ndr_stack_alloc)(int, size_t); \
-	x BOOL (*rpc_new_stack)(); \
-	x void (*rpc_free_stack)();
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
+/* Plugin is expected to use `using namespace ns;` too */
+#define DECLARE_HPM_API(ns, x) namespace ns { \
+	x decltype(dlfuncs::symget) imp__symget; \
+	x decltype(dlfuncs::hpm.reg_intf) register_interface; \
+	x decltype(dlfuncs::hpm.get_conn) get_connection; \
+	x decltype(dlfuncs::hpm.get_req) get_request; \
+	x decltype(dlfuncs::hpm.get_auth_info) get_auth_info; \
+	x decltype(dlfuncs::hpm.write_response) write_response; \
+	x decltype(dlfuncs::hpm.wakeup_ctx) wakeup_context; \
+	x decltype(dlfuncs::hpm.activate_ctx) activate_context; \
+	x decltype(dlfuncs::get_host_ID) get_host_ID; \
+	x decltype(dlfuncs::get_config_path) get_config_path; \
+	x decltype(dlfuncs::get_data_path) get_data_path; \
+	x decltype(dlfuncs::get_context_num) get_context_num; \
+	x decltype(dlfuncs::hpm.set_ctx) set_context; \
+	x decltype(dlfuncs::hpm.set_ep_info) set_ep_info; \
+	x decltype(dlfuncs::ndr_stack_alloc) ndr_stack_alloc; \
+	x decltype(dlfuncs::rpc_new_stack) rpc_new_stack; \
+	x decltype(dlfuncs::rpc_free_stack) rpc_free_stack; \
+}
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(imp__symget((n), nullptr, typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
-#ifdef DECLARE_HPM_API_STATIC
-DECLARE_HPM_API(static);
-#else
-DECLARE_HPM_API(extern);
-#endif
 	
 #define LINK_HPM_API(param) \
-	query_serviceF = reinterpret_cast<decltype(query_serviceF)>(param[0]); \
-	query_service1(register_interface); \
-	query_service1(get_connection); \
-	query_service1(get_request); \
-	query_service1(get_auth_info); \
-	query_service1(write_response); \
-	query_service1(wakeup_context); \
-	query_service1(activate_context); \
-	query_service1(get_host_ID); \
-	query_service1(get_config_path); \
-	query_service1(get_data_path); \
-	query_service1(get_state_path); \
-	query_service1(get_context_num); \
-	query_service1(set_context); \
-	query_service1(set_ep_info); \
-	query_service1(ndr_stack_alloc); \
-	query_service1(rpc_new_stack); \
-	query_service1(rpc_free_stack);
+	imp__symget = param.symget; \
+	register_interface = param.hpm.reg_intf; \
+	get_connection = param.hpm.get_conn; \
+	get_request = param.hpm.get_req; \
+	get_auth_info = param.hpm.get_auth_info; \
+	write_response = param.hpm.write_response; \
+	wakeup_context = param.hpm.wakeup_ctx; \
+	activate_context = param.hpm.activate_ctx; \
+	get_host_ID = param.get_host_ID; \
+	get_config_path = param.get_config_path; \
+	get_data_path = param.get_data_path; \
+	get_context_num = param.get_context_num; \
+	set_context = param.hpm.set_ctx; \
+	set_ep_info = param.hpm.set_ep_info; \
+	ndr_stack_alloc = param.ndr_stack_alloc; \
+	rpc_new_stack = param.rpc_new_stack; \
+	rpc_free_stack = param.rpc_free_stack;

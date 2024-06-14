@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
-#define DECLARE_SVC_API_STATIC
 #include <cassert>
 #include <cerrno>
 #include <climits>
@@ -26,6 +25,7 @@
 
 using namespace gromox;
 using namespace std::string_literals;
+DECLARE_SVC_API(,);
 
 namespace {
 struct ldapfree {
@@ -293,7 +293,7 @@ static bool ldap_adaptor_load() try
 	return false;
 }
 
-BOOL SVC_ldap_adaptor(int reason, void **ppdata) try
+BOOL SVC_ldap_adaptor(enum plugin_op reason, const struct dlfuncs &ppdata) try
 {
 	if (reason == PLUGIN_FREE) {
 		g_conn_pool.clear();

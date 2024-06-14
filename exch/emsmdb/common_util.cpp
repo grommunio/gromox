@@ -61,9 +61,12 @@ enum {
 
 using LLU = unsigned long long;
 
+unsigned int emsmdb_backfill_transporthdr;
+
+namespace emsmdb {
+
 unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 unsigned int g_max_rule_len, g_max_extrule_len;
-unsigned int emsmdb_backfill_transporthdr;
 static std::string g_smtp_url;
 char g_emsmdb_org_name[256];
 static thread_local const char *g_dir_key;
@@ -1642,4 +1645,6 @@ ec_error_t cu_id2user(int id, std::string &user) try
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
+}
+
 }

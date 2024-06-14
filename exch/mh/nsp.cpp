@@ -32,8 +32,8 @@
 
 using namespace gromox;
 using namespace hpm_mh;
-
-DECLARE_HPM_API();
+DECLARE_HPM_API(mh_nsp, );
+using namespace mh_nsp;
 
 using NspRequest = std::variant<
 	bind_request,
@@ -117,8 +117,10 @@ struct MhNspContext : public MhContext
 	template<size_t I> using Response_t = std::variant_alternative_t<I, NspResponse>; ///< Response type by index
 
 	explicit MhNspContext(int contextId, const std::string &excver) :
-		MhContext(contextId, excver)
+		MhContext(contextId, *get_request(contextId),
+		get_auth_info(contextId), excver)
 	{
+		this->write_response = mh_nsp::write_response;
 		ext_push.init(push_buff.get(), static_cast<uint32_t>(push_buff_size), EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 		epush = &ext_push;
 	}
@@ -134,8 +136,7 @@ struct MhNspContext : public MhContext
 
 class MhNspPlugin {
 public:
-
-	explicit MhNspPlugin(void**);
+	explicit MhNspPlugin(const struct dlfuncs &);
 	~MhNspPlugin();
 	NOMOVE(MhNspPlugin);
 
@@ -222,7 +223,7 @@ static constexpr struct cfg_directive mhnsp_gxcfg_deflt[] = {
  *
  * @param	ppdata	Plugin API data
  */
-MhNspPlugin::MhNspPlugin(void** ppdata)
+MhNspPlugin::MhNspPlugin(const struct dlfuncs &ppdata)
 {
 	LINK_HPM_API(ppdata)
 	if (!query_service1(get_user_ids))
@@ -327,7 +328,7 @@ static http_status nsp_proc(int, const void*, uint64_t);
  *
  * @return	TRUE if successful, false otherwise
  */
-BOOL HPM_mh_nsp(int reason, void **plugdata)
+BOOL HPM_mh_nsp(enum plugin_op reason, const struct dlfuncs &plugdata)
 {
 	HPM_INTERFACE interface;
 
@@ -357,8 +358,9 @@ BOOL HPM_mh_nsp(int reason, void **plugdata)
 	case PLUGIN_FREE:
 		g_mhnsp_plugin.reset();
 		return TRUE;
+	default:
+		return false;
 	}
-	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

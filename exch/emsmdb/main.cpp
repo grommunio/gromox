@@ -30,13 +30,14 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+DECLARE_PROC_API(emsmdb, );
+using namespace emsmdb;
 
 static int exchange_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
 static void exchange_emsmdb_unbind(uint64_t handle);
 static int exchange_async_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
 static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 
-DECLARE_PROC_API();
 static DCERPC_ENDPOINT *ep_6001;
 
 static constexpr cfg_directive emsmdb_gxcfg_dflt[] = {
@@ -122,7 +123,7 @@ static constexpr DCERPC_INTERFACE interface_async_emsmdb = {
 };
 
 extern void emsmdb_report();
-BOOL PROC_exchange_emsmdb(int reason, void **ppdata)
+BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	int max_mail;
 	int max_rcpt;
@@ -266,8 +267,9 @@ BOOL PROC_exchange_emsmdb(int reason, void **ppdata)
 		rop_processor_stop();
 		asyncemsmdb_interface_free();
 		return TRUE;
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }
 
 static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,

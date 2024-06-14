@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
-#define DECLARE_SVC_API_STATIC
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
@@ -42,6 +41,7 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+DECLARE_SVC_API(,);
 enum { A_DENY_ALL, A_ALLOW_ALL, A_EXTERNID_LDAP, A_EXTERNID_PAM };
 
 namespace {
@@ -318,7 +318,7 @@ static bool authmgr_init()
 	return true;
 }
 
-BOOL SVC_authmgr(int reason, void **datap) try
+BOOL SVC_authmgr(enum plugin_op reason, const struct dlfuncs &datap) try
 {
 	if (reason == PLUGIN_RELOAD) {
 		authmgr_reload();

@@ -126,7 +126,6 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
 	{"smtp_server_ip", "::1", CFG_DEPRECATED},
 	{"smtp_server_port", "25", CFG_DEPRECATED},
-	{"state_path", PKGSTATEDIR},
 	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
 	{"user_cache_interval", "1h", CFG_TIME, "1min", "1day"},
 	{"user_table_size", "5000", CFG_SIZE, "100", "50000"},
@@ -342,10 +341,7 @@ int main(int argc, char **argv)
 	mlog(LV_INFO, "system: connection threads number is %d", threads_num);
 
 	filedes_limit_bump(gxconfig->get_ll("zcore_fd_limit"));
-	service_init({g_config_file->get_value("config_file_path"),
-		g_config_file->get_value("data_file_path"),
-		g_config_file->get_value("state_path"),
-		g_dfl_svc_plugins, threads_num});
+	service_init({g_config_file, g_dfl_svc_plugins, threads_num});
 	auto cl_0 = make_scope_exit(service_stop);
 	
 	unsigned int table_size = pconfig->get_ll("address_table_size");

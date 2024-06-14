@@ -19,6 +19,7 @@
 #include <gromox/defs.h>
 #include <gromox/icase.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include "sql2.hpp"
 
@@ -46,11 +47,15 @@ enum class mlist_priv {
 
 using namespace std::string_literals;
 using namespace gromox;
+DECLARE_SVC_API(mysql_adaptor, );
+using namespace mysql_adaptor;
 
 static std::mutex g_crypt_lock;
 
 int mysql_adaptor_run()
 {
+	if (g_parm.schema_upgrade == SSU_NOT_ME)
+		return 0;
 	if (!db_upgrade_check())
 		return -1;
 	return 0;
