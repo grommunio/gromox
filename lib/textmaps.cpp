@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -37,6 +37,7 @@ static str_to_int_t g_cpname2id_map, g_lctag2id_map;
 static str_to_str_t g_ext2mime_map, g_mime2ext_map, g_lang2cset_map, g_ignore_map;
 static folder_name_map_t folder_name_map;
 static std::once_flag g_textmaps_done;
+static std::unordered_map<uint32_t, std::string> g_mapitags;
 
 static void xmap_read(const char *file, const char *dirs,
     int_to_str_t &fm, str_to_int_t &bm)
@@ -245,6 +246,64 @@ const char *folder_namedb_get(const char *locale, unsigned int tid)
 	return id_it->second.c_str();
 }
 
+static bool mt_overwrite(const std::string &given, const std::string_view &replace)
+{
+	if (given[0] == 'P' && given[1] == 'R' && given[2] == '_')
+		return false;
+	if (replace[0] == 'P' && replace[1] == 'R' && replace[2] == '_')
+		return true;
+	return (given[0] != 'P' || given[1] != 'i' || given[2] != 'd') &&
+	       replace[0] == 'P' && replace[1] == 'i' && replace[2] == 'd';
+}
+
+static void mapitags_read(const char *file, std::unordered_map<uint32_t, std::string> &map)
+{
+	std::unique_ptr<FILE, file_deleter> filp(fopen(file, "r"));
+	if (filp == nullptr)
+		return;
+	hxmc_t *line = nullptr;
+	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	while (HX_getl(&line, filp.get()) != nullptr) {
+		HX_chomp(line);
+		char *opts = nullptr;
+		uint32_t tag = strtoul(line, &opts, 16);
+		if (tag == 0)
+			continue;
+		auto name = opts;
+		while (*name != '\0' && !HX_isspace(*name))
+			++name;
+		while (HX_isspace(*name))
+			++name;
+		if (*name == '\0')
+			continue;
+		auto name_end = name;
+		while (*name_end != '\0' && !HX_isspace(*name_end))
+			++name_end;
+		std::string name_sv(name, name_end - name);
+		auto [iter, added] = map.emplace(tag, name_sv);
+		bool do_overwrite = !added && mt_overwrite(iter->second, name_sv);
+		if (do_overwrite)
+			iter->second = name_sv;
+		while (*opts == '+') {
+			++opts;
+			uint16_t newtype = *opts == 'A' ? PT_STRING8 :
+			                   *opts == 'W' ? PT_UNICODE :
+			                   *opts == 'O' ? PT_OBJECT : PT_NULL;
+			if (newtype == PT_NULL)
+				continue;
+			std::tie(iter, added) = map.emplace(CHANGE_PROP_TYPE(tag, newtype), name_sv);
+			if (do_overwrite)
+				iter->second = name_sv;
+		}
+	}
+}
+
+const char *mapitags_namelookup(uint32_t tag)
+{
+	auto i = g_mapitags.find(tag);
+	return i != g_mapitags.cend() ? i->second.c_str() : nullptr;
+}
+
 void textmaps_init(const char *datapath)
 {
 	if (datapath == nullptr)
@@ -265,6 +324,8 @@ void textmaps_init(const char *datapath)
 		        g_ext2mime_map.size(), g_mime2ext_map.size());
 		folder_namedb_read("folder_names.txt", datapath, folder_name_map);
 		mlog(LV_INFO, "textmaps: %zu translations in folder namedb", folder_name_map.size());
+		mapitags_read(DATADIR "/mapitags/mapitags.txt", g_mapitags);
+		mapitags_read(DATADIR "/mapitags/gromox.txt", g_mapitags);
 	});
 }
 
