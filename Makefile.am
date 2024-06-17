@@ -10,7 +10,7 @@ AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la ${program_plugins}
 noinst_LTLIBRARIES = libphp_mapi.la
-pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/eidprint
+pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/eidprint tools/textmapquery
 pkglib_LTLIBRARIES = libmapi4zf.la
 if WITH_GNU_LD
 platform_LDVSC = -Wl,--version-script=
@@ -296,6 +296,8 @@ tests_zendfake_SOURCES = tests/zendfake.cpp
 tests_zendfake_LDADD = libmapi4zf.la
 tools_eidprint_SOURCES = tools/eidprint.cpp
 tools_eidprint_LDADD = libgromox_common.la libgromox_mapi.la
+tools_textmapquery_SOURCES = tools/textmapquery.cpp
+tools_textmapquery_LDADD = libgromox_common.la
 tools_tzdump_SOURCES = tools/tzdump.cpp
 tools_tzdump_LDADD = ${libHX_LIBS} libgromox_common.la
 

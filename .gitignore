@@ -87,4 +87,5 @@ Makefile.in
 /tests/*.trs
 /test-suite.log
 /tools/eidprint
+/tools/textmapquery
 /tools/tzdump
