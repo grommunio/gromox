@@ -140,7 +140,7 @@ static void cb_only_obj(const HXoptcb *cb)
 }
 
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
+	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Splice PFF objects into existing store hierarchy"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{"with-assoc", 0, HXTYPE_VAL, &g_with_assoc, nullptr, nullptr, 1, "Do import FAI messages"},
@@ -813,7 +813,7 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 	auto props = item_to_tpropval_a(item, parent.names);
 	if (g_show_tree) {
 		auto tset = item_to_tarray_set(item, parent.names);
-		gi_print(depth, *tset);
+		gi_print(depth, *tset, ee_get_propname);
 	} else {
 		auto name = props->get<char>(PR_DISPLAY_NAME);
 		if (name != nullptr)
@@ -920,7 +920,7 @@ static int do_message(unsigned int depth, const parent_desc &parent,
 
 	/* Normal message, not embedded */
 	if (g_show_tree)
-		gi_print(depth, *ctnt);
+		gi_print(depth, *ctnt, ee_get_propname);
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
@@ -1036,7 +1036,7 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 		 */
 		do_print(depth++, item);
 		auto tset = item_to_tarray_set(item, parent.names);
-		gi_print(depth, *tset);
+		gi_print(depth, *tset, ee_get_propname);
 	}
 
 	if (ret < 0)

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdarg>
 #include <cstdio>
@@ -14,6 +14,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 
 /*
@@ -642,17 +643,41 @@ void tlog(const char *fmt, ...)
 	va_end(args);
 }
 
-void gi_print(unsigned int depth, const TAGGED_PROPVAL &tp)
+void gi_print(unsigned int depth, const TAGGED_PROPVAL &tp,
+    const PROPERTY_XNAME *(*get_propname)(uint16_t))
 {
 	if (!g_show_props) {
 		tlog("%08xh,", tp.proptag);
 		return;
 	}
 	tree(depth);
+	if (g_show_props >= 2) {
+		const PROPERTY_XNAME *xn;
+		if (is_nameprop_id(PROP_ID(tp.proptag)))
+			printf("*");
+		if (is_nameprop_id(PROP_ID(tp.proptag)) && get_propname != nullptr &&
+		    (xn = get_propname(PROP_ID(tp.proptag))) != nullptr) {
+			char gtxt[39];
+			xn->guid.to_str(gtxt, std::size(gtxt));
+			if (xn->kind == MNID_STRING)
+				tlog("GUID=%s,NAME=%s (%08xh):%s\n", gtxt,
+					xn->name.c_str(), tp.proptag,
+					tp.value_repr(true).c_str());
+			else
+				tlog("GUID=%s,LID=%u (%08xh):%s\n", gtxt,
+					xn->lid, tp.proptag,
+					tp.value_repr(true).c_str());
+			return;
+		} else if (auto i = mapitags_namelookup(tp.proptag)) {
+			tlog("%s (%08xh):%s\n", i, tp.proptag, tp.value_repr(true).c_str());
+			return;
+		}
+	}
 	tlog("%08xh:%s\n", tp.proptag, tp.value_repr(true).c_str());
 }
 
-void gi_print(unsigned int depth, const TPROPVAL_ARRAY &props)
+void gi_print(unsigned int depth, const TPROPVAL_ARRAY &props,
+    const PROPERTY_XNAME *(*get_propname)(uint16_t))
 {
 	if (props.count == 0)
 		return;
@@ -660,7 +685,7 @@ void gi_print(unsigned int depth, const TPROPVAL_ARRAY &props)
 	tlog("props(%d):", props.count);
 	tlog(g_show_props ? "\n" : " {");
 	for (size_t i = 0; i < props.count; ++i)
-		gi_print(depth + 1, props.ppropval[i]);
+		gi_print(depth + 1, props.ppropval[i], get_propname);
 	if (!g_show_props)
 		tlog("}\n");
 	auto p = props.get<const char>(PR_DISPLAY_NAME);
@@ -674,33 +699,33 @@ void gi_print(unsigned int depth, const TPROPVAL_ARRAY &props)
 		tlog("subject=\"%s\"\n", p);
 	}
 	p = props.get<char>(PR_ATTACH_LONG_FILENAME);
-	if (p == nullptr)
-		p = props.get<char>(PR_ATTACH_LONG_FILENAME_A);
 	if (p != nullptr) {
 		tree(depth);
 		tlog("filename=\"%s\"\n", p);
 	}
 }
 
-void gi_print(unsigned int depth, const tarray_set &tset)
+void gi_print(unsigned int depth, const tarray_set &tset,
+    const PROPERTY_XNAME *(*get_propname)(uint16_t))
 {
 	for (size_t i = 0; i < tset.count; ++i) {
 		tree(depth);
 		tlog("set %zu\n", i);
-		gi_print(depth + 1, *tset.pparray[i]);
+		gi_print(depth + 1, *tset.pparray[i], get_propname);
 	}
 }
 
-void gi_print(unsigned int depth, const message_content &ctnt)
+void gi_print(unsigned int depth, const message_content &ctnt,
+    const PROPERTY_XNAME *(*get_propname)(uint16_t))
 {
-	gi_print(depth, ctnt.proplist);
+	gi_print(depth, ctnt.proplist, get_propname);
 	auto &r = ctnt.children.prcpts;
 	if (r != nullptr) {
 		for (size_t n = 0; n < r->count; ++n) {
 			tree(depth);
 			tlog("Recipient #%zu\n", n);
 			if (r->pparray[n] != nullptr)
-				gi_print(depth + 1, *r->pparray[n]);
+				gi_print(depth + 1, *r->pparray[n], get_propname);
 		}
 	}
 	auto &a = ctnt.children.pattachments;
@@ -711,12 +736,12 @@ void gi_print(unsigned int depth, const message_content &ctnt)
 			auto atc = a->pplist[n];
 			if (atc == nullptr)
 				continue;
-			gi_print(depth + 1, atc->proplist);
+			gi_print(depth + 1, atc->proplist, get_propname);
 			if (atc->pembedded == nullptr)
 				continue;
 			tree(depth + 1);
 			tlog("Embedded message\n");
-			gi_print(depth + 2, *atc->pembedded);
+			gi_print(depth + 2, *atc->pembedded, get_propname);
 		}
 	}
 }

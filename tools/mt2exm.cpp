@@ -13,11 +13,14 @@
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
+#include "staticnpmap.cpp"
 
 using namespace gromox;
 using namespace gi_dump;
@@ -58,7 +61,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'B', HXTYPE_STRING, &g_anchor_folder_str, nullptr, nullptr, 0, "Placement position for unanchored messages", "NAME"},
 	{nullptr, 'D', HXTYPE_NONE, &g_do_delivery, nullptr, nullptr, 0, "Use delivery mode"},
 	{nullptr, 'c', HXTYPE_NONE, &g_continuous_mode, {}, {}, 0, "Continuous operation mode (do not stop on errors)"},
-	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
+	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
 	{nullptr, 'v', HXTYPE_NONE | HXOPT_INC, &g_verbose_create, nullptr, nullptr, 0, "Be more verbose"},
@@ -228,7 +231,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 			static_cast<unsigned long>(obd.nid),
 			static_cast<unsigned long long>(obd.parent.folder_id));
 		if (g_show_props)
-			gi_print(0, props);
+			gi_print(0, props, ee_get_propname);
 	}
 	exm_folder_adjust(props);
 
@@ -303,7 +306,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 			static_cast<unsigned long>(obd.nid),
 			static_cast<unsigned long long>(obd.parent.folder_id));
 	if (g_show_tree && g_show_props)
-		gi_print(0, ctnt);
+		gi_print(0, ctnt, ee_get_propname);
 	auto folder_it = g_folder_map.find(obd.parent.folder_id);
 	if (!g_do_delivery && folder_it == g_folder_map.end()) {
 		fprintf(stderr, "PF-1123: unknown parent folder %llxh\n",
@@ -314,7 +317,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 	if (g_show_tree && g_show_props) {
 		tree(0);
 		tlog("adjusted properties:\n");
-		gi_print(0, ctnt);
+		gi_print(0, ctnt, ee_get_propname);
 	}
 	if (!g_do_delivery) {
 		for (auto i = 0U; i < g_repeat_iter; ++i) {
@@ -445,6 +448,7 @@ int main(int argc, char **argv) try
 		fprintf(stderr, "service_run: failed\n");
 		return EXIT_FAILURE;
 	}
+	textmaps_init(PKGDATADIR);
 	gi_setup_early(g_username);
 	if (gi_setup() != EXIT_SUCCESS)
 		return EXIT_FAILURE;

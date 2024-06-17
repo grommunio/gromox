@@ -6,6 +6,7 @@
 #include <gromox/mapi_types.hpp>
 
 struct attachment_content;
+struct PROPERTY_XNAME;
 
 struct GX_EXPORT property_groupinfo {
 	property_groupinfo(uint32_t group_id);
@@ -136,9 +137,9 @@ extern GX_EXPORT unsigned int g_show_tree, g_show_props;
 
 extern GX_EXPORT void tree(unsigned int d);
 extern GX_EXPORT void tlog(const char *f, ...) __attribute__((format(printf, 1, 2)));
-extern GX_EXPORT void gi_print(unsigned int depth, const TAGGED_PROPVAL &);
-extern GX_EXPORT void gi_print(unsigned int depth, const TPROPVAL_ARRAY &);
-extern GX_EXPORT void gi_print(unsigned int depth, const tarray_set &);
-extern GX_EXPORT void gi_print(unsigned int depth, const message_content &);
+extern GX_EXPORT void gi_print(unsigned int depth, const TAGGED_PROPVAL &, const PROPERTY_XNAME *(*gpn)(uint16_t) = nullptr);
+extern GX_EXPORT void gi_print(unsigned int depth, const TPROPVAL_ARRAY &, const PROPERTY_XNAME *(*gpn)(uint16_t) = nullptr);
+extern GX_EXPORT void gi_print(unsigned int depth, const tarray_set &, const PROPERTY_XNAME *(*gpn)(uint16_t) = nullptr);
+extern GX_EXPORT void gi_print(unsigned int depth, const message_content &, const PROPERTY_XNAME *(*gpn)(uint16_t) = nullptr);
 
 }

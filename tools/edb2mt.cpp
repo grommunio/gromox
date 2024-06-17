@@ -88,7 +88,7 @@ static char *g_extract_mbox;
 
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'l', HXTYPE_NONE, &g_list_mbox, nullptr, nullptr, 0, "Show available mailboxes in database"},
-	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
+	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'x', HXTYPE_STRING, &g_extract_mbox, nullptr, nullptr, 0, "Extract the given mailbox", "ID/RK/GUID"},
 	HXOPT_AUTOHELP,
@@ -526,7 +526,7 @@ static void do_folder(mbox_state &mbs, const edb_folder &folder)
 	if (g_show_tree)
 		tlog("[fld=%s]\n", bin2hex(folder.fid.data(), folder.fid.size()).c_str());
 	++mbs.depth;
-	gi_print(mbs.depth, folder.props);
+	gi_print(mbs.depth, folder.props, ee_get_propname);
 	for (const auto &child_id : folder.children)
 		do_folder(mbs, mbs.hier[child_id]);
 	--mbs.depth;
@@ -618,7 +618,7 @@ static errno_t do_file(const char *filename) try
 
 	auto parent = parent_desc::as_folder(~0ULL);
 	if (g_show_tree)
-		gi_print(0, *ctnt);
+		gi_print(0, *ctnt, ee_get_propname);
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT)) {
 		fprintf(stderr, "E-2020: ENOMEM\n");

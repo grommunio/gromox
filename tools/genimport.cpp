@@ -33,6 +33,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"

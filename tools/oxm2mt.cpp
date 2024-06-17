@@ -59,7 +59,7 @@ using bin_ptr       = std::unique_ptr<BINARY, bin_del>;
 }
 
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
+	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -554,7 +554,7 @@ static errno_t do_file(const char *filename) try
 
 	auto parent = parent_desc::as_folder(~0ULL);
 	if (g_show_tree)
-		gi_print(0, *ctnt);
+		gi_print(0, *ctnt, ee_get_propname);
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT)) {
 		fprintf(stderr, "E-2012: ENOMEM\n");

@@ -22,6 +22,7 @@
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
 #include "genimport.hpp"
@@ -44,7 +45,7 @@ static unsigned int g_import_mode = IMPORT_MAIL;
 static unsigned int g_oneoff;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'P', HXTYPE_NONE, &g_oxvcard_pedantic, nullptr, nullptr, 0, "Enable pedantic import mode"},
-	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
+	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{"ical", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_ICAL, "Treat input as iCalendar"},
 	{"mail", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_MAIL, "Treat input as Internet Mail"},
@@ -284,6 +285,7 @@ int main(int argc, char **argv) try
 	}
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
+	textmaps_init(PKGDATADIR);
 	g_config_file = config_file_prg(nullptr, "midb.cfg", eml2mt_cfg_defaults);
 	if (g_config_file == nullptr) {
 		fprintf(stderr, "Something went wrong with config files\n");
@@ -368,7 +370,7 @@ int main(int argc, char **argv) try
 	for (size_t i = 0; i < msgs.size(); ++i) {
 		if (g_show_tree) {
 			fprintf(stderr, "Message %zu\n", i + 1);
-			gi_print(0, *msgs[i]);
+			gi_print(0, *msgs[i], ee_get_propname);
 		}
 		EXT_PUSH ep;
 		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT)) {

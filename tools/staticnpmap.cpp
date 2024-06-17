@@ -54,3 +54,10 @@ static BOOL ee_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 		ids->ppropid[i] = static_namedprop_map.emplace(0, names->ppropname[i]);
 	return TRUE;
 }
+
+static const PROPERTY_XNAME *ee_get_propname(uint16_t) __attribute__((unused));
+static const PROPERTY_XNAME *ee_get_propname(uint16_t propid)
+{
+	auto i = static_namedprop_map.fwd.find(propid);
+	return i != static_namedprop_map.fwd.end() ? &i->second : nullptr;
+}

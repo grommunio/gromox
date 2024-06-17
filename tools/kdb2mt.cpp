@@ -30,7 +30,9 @@
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/paths.h>
 #include <gromox/scope.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
 #include "staticnpmap.cpp"
@@ -172,7 +174,7 @@ static void acl_cb(const struct HXoptcb *i)
 }
 
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
+	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Map folders of a private store (see manpage for detail)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the source archive"},
 	{nullptr, 'v', HXTYPE_NONE | HXOPT_INC, &g_verbose, nullptr, nullptr, 0, "More detailed progress reports"},
@@ -1085,7 +1087,7 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 	props->erase_if(skip_property);
 	if (g_show_tree) {
 		gi_dump_acl(depth, item.m_acl);
-		gi_print(depth, *props);
+		gi_print(depth, *props, ee_get_propname);
 	} else {
 		auto dn = props->get<const char>(PR_DISPLAY_NAME);
 		fprintf(stderr, "Processing folder \"%s\" (%zu elements)...\n",
@@ -1186,7 +1188,7 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 		return 0;
 
 	if (g_show_tree)
-		gi_print(depth, *ctnt);
+		gi_print(depth, *ctnt, ee_get_propname);
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
@@ -1338,7 +1340,7 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 	} else {
 		auto &props = item.get_props();
 		if (g_show_tree)
-			gi_print(depth, *props);
+			gi_print(depth, *props, ee_get_propname);
 	}
 	if (ret < 0)
 		return ret;
@@ -1469,6 +1471,7 @@ int main(int argc, char **argv)
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
+	textmaps_init(PKGDATADIR);
 	if (g_acl_conv == aclconv::convert && g_user_map_file == nullptr) {
 		fprintf(stderr, "kdb2mt: The --acl=convert option also requires the use of --user-map.\n");
 		exit(EXIT_FAILURE);
