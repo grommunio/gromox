@@ -71,7 +71,7 @@ static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 	return -ENOMEM;
 }
 
-static BOOL oxcical_parse_vtsubcomponent(const ical_component &sub,
+static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	int32_t *pbias, int32_t *pdaylightbias, int16_t *pyear,
 	SYSTEMTIME *pdate)
 {
@@ -86,37 +86,37 @@ static BOOL oxcical_parse_vtsubcomponent(const ical_component &sub,
 	memset(pdate, 0, sizeof(SYSTEMTIME));
 	auto piline = sub.get_line("TZOFFSETTO");
 	if (piline == nullptr)
-		return FALSE;
+		return false;
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
-		return FALSE;
+		return false;
 	if (!ical_parse_utc_offset(pvalue, &hour, &minute))
-		return FALSE;
+		return false;
 	*pbias = 60*hour + minute;
 	if (strcasecmp(sub.m_name.c_str(), "DAYLIGHT") == 0) {
 		piline = sub.get_line("TZOFFSETFROM");
 		if (piline == nullptr)
-			return FALSE;
+			return false;
 		pvalue = piline->get_first_subvalue();
 		if (pvalue == nullptr)
-			return FALSE;
+			return false;
 		int fromhour, fromminute;
 		if (!ical_parse_utc_offset(pvalue, &fromhour, &fromminute))
-			return FALSE;
+			return false;
 		*pdaylightbias = 60 * hour + minute - (60 * fromhour + fromminute);
 	}
 	piline = sub.get_line("DTSTART");
 	if (piline == nullptr)
-		return FALSE;
+		return false;
 	if (piline->get_first_paramval("TZID") != nullptr)
-		return FALSE;
+		return false;
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
-		return FALSE;
+		return false;
 	ical_time itime{};
 	if (!ical_parse_datetime(pvalue, &itime) || itime.type == ICT_UTC)
 		/* Z specifier should not be used with VTIMEZONE.DTSTART */
-		return FALSE;
+		return false;
 	*pyear = itime.year;
 	pdate->hour = itime.hour;
 	pdate->minute = itime.minute;
@@ -128,32 +128,32 @@ static BOOL oxcical_parse_vtsubcomponent(const ical_component &sub,
 		pdate->dayofweek = ical_get_dayofweek(
 			itime.year, itime.month, itime.day);
 		pdate->day = ical_get_monthweekorder(itime.day);
-		return TRUE;
+		return true;
 	}
 	pvalue = piline->get_first_subvalue_by_name("FREQ");
 	if (pvalue == nullptr || strcasecmp(pvalue, "YEARLY") != 0)
-		return FALSE;
+		return false;
 	pvalue = piline->get_first_subvalue_by_name("BYDAY");
 	pvalue1 = piline->get_first_subvalue_by_name("BYMONTHDAY");
 	if ((pvalue == nullptr && pvalue1 == nullptr) ||
 	    (pvalue != nullptr && pvalue1 != nullptr))
-		return FALSE;
+		return false;
 	pvalue2 = piline->get_first_subvalue_by_name("BYMONTH");
-	if (NULL == pvalue2) {
+	if (pvalue2 == nullptr) {
 		pdate->month = itime.month;
 	} else {
 		pdate->month = strtol(pvalue2, nullptr, 0);
 		if (pdate->month < 1 || pdate->month > 12)
-			return FALSE;
+			return false;
 	}
-	if (NULL != pvalue) {
+	if (pvalue != nullptr) {
 		pdate->year = 0;
 		if (!ical_parse_byday(pvalue, &dayofweek, &weekorder))
-			return FALSE;
+			return false;
 		if (weekorder == -1)
 			weekorder = 5;
 		if (weekorder > 5 || weekorder < 1)
-			return FALSE;
+			return false;
 		pdate->dayofweek = dayofweek;
 		pdate->day = weekorder;
 	} else {
@@ -161,16 +161,16 @@ static BOOL oxcical_parse_vtsubcomponent(const ical_component &sub,
 		pdate->dayofweek = 0;
 		pdate->day = strtol(pvalue1, nullptr, 0);
 		if (abs(pdate->day) < 1 || abs(pdate->day) > 31)
-			return FALSE;
+			return false;
 	}
-	return TRUE;
+	return true;
 }
 
-static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
+static bool oxcical_parse_tzdefinition(const ical_component &vt,
 	TIMEZONEDEFINITION *ptz_definition)
 {
 	int i;
-	BOOL b_found;
+	bool b_found;
 	int16_t year;
 	SYSTEMTIME date;
 	BOOL b_daylight;
@@ -182,32 +182,32 @@ static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
 	ptz_definition->reserved = 0x0002;
 	auto piline = vt.get_line("TZID");
 	if (piline == nullptr)
-		return FALSE;
+		return false;
 	ptz_definition->keyname = deconst(piline->get_first_subvalue());
 	if (ptz_definition->keyname == nullptr)
-		return FALSE;
+		return false;
 	ptz_definition->crules = 0;
 	for (const auto &comp : vt.component_list) {
 		auto pcomponent = &comp;
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") == 0)
-			b_daylight = FALSE;
+			b_daylight = false;
 		else if (strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") == 0)
-			b_daylight = TRUE;
+			b_daylight = true;
 		else
 			continue;
 		int32_t bias = 0, dstbias = 0;
 		if (!oxcical_parse_vtsubcomponent(*pcomponent, &bias, &dstbias, &year, &date))
-			return FALSE;
-		b_found = FALSE;
+			return false;
+		b_found = false;
 		for (i=0; i<ptz_definition->crules; i++) {
 			if (year == ptz_definition->prules[i].year) {
-				b_found = TRUE;
+				b_found = true;
 				break;
 			}
 		}
 		if (!b_found) {
 			if (ptz_definition->crules >= MAX_TZRULE_NUMBER)
-				return FALSE;
+				return false;
 			ptz_definition->crules ++;
 			memset(ptz_definition->prules + i, 0, sizeof(TZRULE));
 			ptz_definition->prules[i].major = 2;
@@ -224,10 +224,10 @@ static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
 		}
 	}
 	if (ptz_definition->crules == 0)
-		return FALSE;
+		return false;
 	std::sort(ptz_definition->prules, ptz_definition->prules + ptz_definition->crules);
-	pstandard_rule = NULL;
-	pdaylight_rule = NULL;
+	pstandard_rule = nullptr;
+	pdaylight_rule = nullptr;
 	for (i=0; i<ptz_definition->crules; i++) {
 		if (0 != ptz_definition->prules[i].standarddate.month) {
 			pstandard_rule = ptz_definition->prules + i;
@@ -263,7 +263,7 @@ static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
 	ptz_definition->prules[0].year = 1601;
 	ptz_definition->prules[0].x[0] = 1;
 	ptz_definition->prules[0].x[4] = 1;
-	return TRUE;
+	return true;
 }
 
 static void oxcical_convert_to_tzstruct(
@@ -283,7 +283,7 @@ static void oxcical_convert_to_tzstruct(
 	ptz_struct->daylightyear = ptz_struct->daylightdate.year;
 }
 
-static BOOL oxcical_tzdefinition_to_binary(
+static bool oxcical_tzdefinition_to_binary(
 	TIMEZONEDEFINITION *ptz_definition,
 	uint16_t tzrule_flags, BINARY *pbin)
 {
@@ -294,12 +294,12 @@ static BOOL oxcical_tzdefinition_to_binary(
 	for (size_t i = 0; i < ptz_definition->crules; ++i)
 		ptz_definition->prules[i].flags = tzrule_flags;
 	if (ext_push.p_tzdef(*ptz_definition) != EXT_ERR_SUCCESS)
-		return FALSE;
+		return false;
 	pbin->cb = ext_push.m_offset;
-	return TRUE;
+	return true;
 }
 
-static BOOL oxcical_timezonestruct_to_binary(
+static bool oxcical_timezonestruct_to_binary(
 	TIMEZONESTRUCT *ptzstruct, BINARY *pbin)
 {
 	EXT_PUSH ext_push;
@@ -308,11 +308,11 @@ static BOOL oxcical_timezonestruct_to_binary(
 	    ext_push.p_tzstruct(*ptzstruct) != EXT_ERR_SUCCESS)
 		return false;
 	pbin->cb = ext_push.m_offset;
-	return TRUE;
+	return true;
 }
 
 /* ptz_component can be NULL, represents UTC */
-static BOOL oxcical_parse_rrule(const ical_component &tzcom,
+static bool oxcical_parse_rrule(const ical_component &tzcom,
     const ical_line &iline, uint16_t calendartype, time_t start_time,
     uint32_t duration_minutes, APPOINTMENT_RECUR_PAT *apr)
 {
@@ -326,26 +326,26 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 	auto piline = &iline;
 	if (piline->get_subval_list("BYYEARDAY") != nullptr ||
 	    piline->get_subval_list("BYWEEKNO") != nullptr)
-		return FALSE;
+		return false;
 	auto psubval_list = piline->get_subval_list("BYMONTHDAY");
 	if (psubval_list != nullptr && psubval_list->size() > 1)
-		return FALSE;
+		return false;
 	psubval_list = piline->get_subval_list("BYSETPOS");
 	if (psubval_list != nullptr && psubval_list->size() > 1)
-		return FALSE;
+		return false;
 	psubval_list = piline->get_subval_list("BYSECOND");
 	if (NULL != psubval_list) {
 		if (psubval_list->size() > 1)
-			return FALSE;
+			return false;
 		pvalue = piline->get_first_subvalue_by_name("BYSECOND");
 		if (pvalue != nullptr && strtol(pvalue, nullptr, 0) != start_time % 60)
-			return FALSE;
+			return false;
 	}
 	if (!ical_parse_rrule(&tzcom, start_time, &piline->value_list, &irrule))
-		return FALSE;
+		return false;
 	auto b_exceptional = irrule.b_start_exceptional;
 	if (b_exceptional && !irrule.iterate())
-		return FALSE;
+		return false;
 	ical_time itime_base = irrule.base_itime, itime_first = irrule.instance_itime;
 	apr->readerversion2 = 0x3006;
 	apr->writerversion2 = 0x3009;
@@ -376,7 +376,7 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 			if (itime1.year == itime.year &&
 				itime1.month == itime.month &&
 			    itime1.day == itime.day)
-				return FALSE;
+				return false;
 			itime = itime1;
 		}
 		if (irrule.total_count != 0) {
@@ -400,15 +400,15 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 	case ical_frequency::second:
 	case ical_frequency::minute:
 	case ical_frequency::hour:
-		return FALSE;
+		return false;
 	case ical_frequency::day:
 		if (piline->get_subval_list("BYDAY") != nullptr ||
 		    piline->get_subval_list("BYMONTH") != nullptr ||
 		    piline->get_subval_list("BYSETPOS") != nullptr)
-			return FALSE;
+			return false;
 		apr->recur_pat.recurfrequency = RECURFREQUENCY_DAILY;
 		if (irrule.interval > 999)
-			return FALSE;
+			return false;
 		apr->recur_pat.period = irrule.interval * 1440;
 		apr->recur_pat.firstdatetime = apr->recur_pat.startdate % apr->recur_pat.period;
 		patterntype = PATTERNTYPE_DAY;
@@ -416,10 +416,10 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 	case ical_frequency::week:
 		if (piline->get_subval_list("BYMONTH") != nullptr ||
 		    piline->get_subval_list("BYSETPOS") != nullptr)
-			return FALSE;
+			return false;
 		apr->recur_pat.recurfrequency = RECURFREQUENCY_WEEKLY;
 		if (irrule.interval > 99)
-			return FALSE;
+			return false;
 		apr->recur_pat.period = irrule.interval;
 		itime = itime_base;
 		itime.hour = 0;
@@ -446,10 +446,10 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 		break;
 	case ical_frequency::month:
 		if (piline->get_subval_list("BYMONTH") != nullptr)
-			return FALSE;
+			return false;
 		apr->recur_pat.recurfrequency = RECURFREQUENCY_MONTHLY;
 		if (irrule.interval > 99)
-			return FALSE;
+			return false;
 		apr->recur_pat.period = irrule.interval;
 		itime = {};
 		itime.year = 1601;
@@ -477,14 +477,14 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
 			int tmp_int = strtol(pvalue, nullptr, 0);
 			if (tmp_int > 4 || tmp_int < -1)
-				return FALSE;
+				return false;
 			else if (tmp_int == -1)
 				tmp_int = 5;
 			apr->recur_pat.pts.monthnth.recurnum = tmp_int;
 		} else {
 			if (irrule.check_bymask(RRULE_BY_DAY) ||
 			    irrule.check_bymask(RRULE_BY_SETPOS))
-				return FALSE;
+				return false;
 			int tmp_int;
 			patterntype = PATTERNTYPE_MONTH;
 			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
@@ -494,7 +494,7 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 			} else {
 				tmp_int = strtol(pvalue, nullptr, 0);
 				if (tmp_int < -1)
-					return FALSE;
+					return false;
 				else if (tmp_int == -1)
 					tmp_int = 31;
 			}
@@ -504,7 +504,7 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 	case ical_frequency::year:
 		apr->recur_pat.recurfrequency = RECURFREQUENCY_YEARLY;
 		if (irrule.interval > 8)
-			return FALSE;
+			return false;
 		apr->recur_pat.period = 12 * irrule.interval;
 		itime = {};
 		itime.year = 1601;
@@ -521,7 +521,7 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 		    irrule.check_bymask(RRULE_BY_SETPOS) &&
 		    irrule.check_bymask(RRULE_BY_MONTH)) {
 			if (irrule.check_bymask(RRULE_BY_MONTHDAY))
-				return FALSE;
+				return false;
 			patterntype = PATTERNTYPE_MONTHNTH;
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.monthnth.weekrecur = 0;
@@ -534,14 +534,14 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
 			int tmp_int = strtol(pvalue, nullptr, 0);
 			if (tmp_int > 4 || tmp_int < -1)
-				return FALSE;
+				return false;
 			else if (tmp_int == -1)
 				tmp_int = 5;
 			apr->recur_pat.pts.monthnth.recurnum = tmp_int;
 		} else {
 			if (irrule.check_bymask(RRULE_BY_DAY) ||
 			    irrule.check_bymask(RRULE_BY_SETPOS))
-				return FALSE;
+				return false;
 			int tmp_int;
 			patterntype = PATTERNTYPE_MONTH;
 			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
@@ -551,7 +551,7 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 			} else {
 				tmp_int = strtol(pvalue, nullptr, 0);
 				if (tmp_int < -1)
-					return FALSE;
+					return false;
 				else if (tmp_int == -1)
 					tmp_int = 31;
 			}
@@ -570,7 +570,7 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 	}
 	apr->recur_pat.patterntype = patterntype;
 	apr->recur_pat.calendartype = calendartype;
-	return TRUE;
+	return true;
 }
 
 static const ical_component *oxcical_find_vtimezone(const ical &pical, const char *tzid)
@@ -590,10 +590,10 @@ static const ical_component *oxcical_find_vtimezone(const ical &pical, const cha
 		if (strcasecmp(pvalue, tzid) == 0)
 			return pcomponent;
 	}
-	return NULL;
+	return nullptr;
 }
 
-static BOOL oxcical_parse_tzdisplay(BOOL b_dtstart, const ical_component &tzcom,
+static bool oxcical_parse_tzdisplay(BOOL b_dtstart, const ical_component &tzcom,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
@@ -603,24 +603,24 @@ static BOOL oxcical_parse_tzdisplay(BOOL b_dtstart, const ical_component &tzcom,
 	
 	tz_definition.prules = rules_buff;
 	if (!oxcical_parse_tzdefinition(tzcom, &tz_definition))
-		return FALSE;
+		return false;
 	tmp_bin.pb = bin_buff;
 	tmp_bin.cb = 0;
 	if (!oxcical_tzdefinition_to_binary(&tz_definition,
 	    TZRULE_FLAG_EFFECTIVE_TZREG, &tmp_bin))
-		return FALSE;
+		return false;
 	PROPERTY_NAME propname = {MNID_ID, PSETID_APPOINTMENT, b_dtstart ?
 		PidLidAppointmentTimeZoneDefinitionStartDisplay :
 		PidLidAppointmentTimeZoneDefinitionEndDisplay};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
+		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
-		return FALSE;
+		return false;
 	(*plast_propid) ++;
-	return TRUE;
+	return true;
 }
 
-static BOOL oxcical_parse_recurring_timezone(const ical_component &tzcom,
+static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
@@ -632,42 +632,42 @@ static BOOL oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	
 	tz_definition.prules = rules_buff;
 	if (!oxcical_parse_tzdefinition(tzcom, &tz_definition))
-		return FALSE;
+		return false;
 	auto piline = tzcom.get_line("TZID");
 	if (piline == nullptr)
-		return FALSE;
+		return false;
 	ptzid = piline->get_first_subvalue();
 	if (ptzid == nullptr)
-		return FALSE;
+		return false;
 	PROPERTY_NAME propname = {MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneDescription};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
+		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), ptzid) != 0)
-		return FALSE;
+		return false;
 	(*plast_propid) ++;
 	oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
 	tmp_bin.pb = bin_buff;
 	tmp_bin.cb = 0;
 	if (!oxcical_timezonestruct_to_binary(&tz_struct, &tmp_bin))
-		return FALSE;
+		return false;
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneStruct};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
+		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
-		return FALSE;
+		return false;
 	(*plast_propid) ++;
 	tmp_bin.pb = bin_buff;
 	tmp_bin.cb = 0;
 	if (!oxcical_tzdefinition_to_binary(&tz_definition,
 	    TZRULE_FLAG_EFFECTIVE_TZREG | TZRULE_FLAG_RECUR_CURRENT_TZREG, &tmp_bin))
-		return FALSE;
+		return false;
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentTimeZoneDefinitionRecur};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
+		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
-		return FALSE;
+		return false;
 	(*plast_propid) ++;
-	return TRUE;
+	return true;
 }
 
 static BOOL oxcical_parse_proposal(namemap &phash,
