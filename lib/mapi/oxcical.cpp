@@ -1435,24 +1435,24 @@ static bool oxcical_parse_summary(const ical_component &main_event,
 	return true;
 }
 
-static BOOL oxcical_parse_ownerapptid(const ical_component &main_event,
+static bool oxcical_parse_ownerapptid(const ical_component &main_event,
     MESSAGE_CONTENT *pmsg)
 {
 	auto piline = main_event.get_line("X-MICROSOFT-CDO-OWNERAPPTID");
 	if (piline == nullptr)
-		return TRUE;
+		return true;
 	const char *pvalue;
 
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
-		return TRUE;
+		return true;
 	uint32_t tmp_int32 = strtol(pvalue, nullptr, 0);
 	if (pmsg->proplist.set(PR_OWNER_APPT_ID, &tmp_int32) != 0)
-		return FALSE;
+		return false;
 	return TRUE;
 }
 
-static BOOL oxcical_parse_recurrence_id(const ical_component *ptz_component,
+static bool oxcical_parse_recurrence_id(const ical_component *ptz_component,
     const ical_line &piline, namemap &phash,
     uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
@@ -1462,43 +1462,43 @@ static BOOL oxcical_parse_recurrence_id(const ical_component *ptz_component,
 
 	if (!oxcical_parse_dtvalue(ptz_component,
 	    piline, &itime, &tmp_time))
-		return FALSE;
+		return false;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime};
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
-		return FALSE;
+		return false;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
-		return FALSE;
+		return false;
 	(*plast_propid) ++;
-	return TRUE;
+	return true;
 }
 
-static BOOL oxcical_parse_disallow_counter(const ical_component &main_event,
+static bool oxcical_parse_disallow_counter(const ical_component &main_event,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	auto piline = main_event.get_line("X-MICROSOFT-DISALLOW-COUNTER");
 	if (piline == nullptr)
-		return TRUE;
+		return true;
 	uint8_t tmp_byte;
 	const char *pvalue;
 
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
-		return TRUE;
+		return true;
 	if (strcasecmp(pvalue, "TRUE") == 0)
 		tmp_byte = 1;
 	else if (strcasecmp(pvalue, "FALSE") == 0)
 		tmp_byte = 0;
 	else
-		return TRUE;
+		return true;
 
 	PROPERTY_NAME pn = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentNotAllowPropose};
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
-		return FALSE;
+		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != 0)
-		return FALSE;
+		return false;
 	(*plast_propid) ++;
-	return TRUE;
+	return true;
 }
 
 static uint32_t aptrecur_to_recurtype(const APPOINTMENT_RECUR_PAT &apr)
@@ -1512,7 +1512,7 @@ static uint32_t aptrecur_to_recurtype(const APPOINTMENT_RECUR_PAT &apr)
 	}
 }
 
-static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
+static bool oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
@@ -1520,14 +1520,14 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
 	    ext_push.p_apptrecpat(*apr) != EXT_ERR_SUCCESS)
-		return FALSE;
+		return false;
 	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pb = ext_push.m_udata;
 	PROPERTY_NAME propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
+		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
-		return FALSE;
+		return false;
 	(*plast_propid) ++;
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidRecurring};
 	uint8_t flag = 1;
@@ -1547,18 +1547,18 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 		ENDDATE_MISSING : apr->recur_pat.enddate);
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidClipEnd};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
+		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &nt_time) != 0)
-		return FALSE;
+		return false;
 	(*plast_propid) ++;
 	nt_time = rop_util_rtime_to_nttime(apr->recur_pat.startdate);
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidClipStart};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
+		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &nt_time) != 0)
-		return FALSE;
+		return false;
 	(*plast_propid) ++;
-	return TRUE;
+	return true;
 }
 
 static void oxcical_replace_propid(TPROPVAL_ARRAY *pproplist,
@@ -1584,7 +1584,7 @@ static void oxcical_replace_propid(TPROPVAL_ARRAY *pproplist,
 	}
 }
 
-static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
+static bool oxcical_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
     EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
 {
 	PROPID_ARRAY propids;
@@ -1594,17 +1594,17 @@ static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 	propids.count = 0;
 	propids.ppropid = static_cast<uint16_t *>(alloc(sizeof(uint16_t) * phash.size()));
 	if (propids.ppropid == nullptr)
-		return FALSE;
+		return false;
 	propnames.count = 0;
 	propnames.ppropname = static_cast<PROPERTY_NAME *>(alloc(sizeof(PROPERTY_NAME) * phash.size()));
 	if (propnames.ppropname == nullptr)
-		return FALSE;
+		return false;
 	for (const auto &pair : phash) {
 		propids.ppropid[propids.count++] = pair.first;
 		propnames.ppropname[propnames.count++] = pair.second;
 	}
 	if (!get_propids(&propnames, &propids1))
-		return FALSE;
+		return false;
 	propididmap_t phash1;
 	for (size_t i = 0; i < propids.count; ++i) try {
 		phash1.emplace(propids.ppropid[i], propids1.ppropid[i]);
@@ -1617,10 +1617,10 @@ static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 	if (pmsg->children.pattachments != nullptr)
 		for (auto &at : *pmsg->children.pattachments)
 			oxcical_replace_propid(&at.proplist, phash1);
-	return TRUE;
+	return true;
 }
 
-static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment,
+static bool oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment,
     const ical_component &, ical_time start_itime, ical_time end_itime,
     message_content *pmsg)
 {
@@ -1632,44 +1632,44 @@ static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment
 
 	tmp_int32 = ATTACH_EMBEDDED_MSG;
 	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
-		return FALSE;
+		return false;
 	if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
-		return FALSE;
+		return false;
 	auto newval = pattachment->pembedded->proplist.getval(PR_SUBJECT);
 	if (newval != nullptr &&
 	    pattachment->proplist.set(PR_DISPLAY_NAME, newval) != 0)
-		return FALSE;
+		return false;
 	if (!ical_itime_to_utc(nullptr, start_itime, &tmp_time))
-		return FALSE;
+		return false;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 	if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0)
-		return FALSE;
+		return false;
 	if (!ical_itime_to_utc(nullptr, end_itime, &tmp_time))
-		return FALSE;
+		return false;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 	if (pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
-		return FALSE;
+		return false;
 	tmp_bin.cb = 0;
 	tmp_bin.pb = NULL;
 	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
-		return FALSE;
+		return false;
 	tmp_int32 = afException;
 	if (pattachment->proplist.set(PR_ATTACHMENT_FLAGS, &tmp_int32) != 0)
-		return FALSE;
+		return false;
 	tmp_int32 = 0x00000000;
 	if (pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != 0 ||
 	    pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0)
-		return FALSE;
+		return false;
 	tmp_byte = 1;
 	if (pattachment->proplist.set(PR_ATTACHMENT_HIDDEN, &tmp_byte) != 0)
-		return FALSE;
+		return false;
 	tmp_byte = 0;
 	if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
-		return FALSE;
-	return TRUE;
+		return false;
+	return true;
 }
 
-static BOOL oxcical_parse_atx_value(const ical_line &piline,
+static bool oxcical_parse_atx_value(const ical_line &piline,
     int count, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
@@ -1682,66 +1682,66 @@ static BOOL oxcical_parse_atx_value(const ical_line &piline,
 
 	auto pvalue = piline.get_first_subvalue();
 	if (pvalue == nullptr || strncasecmp(pvalue, "CID:", 4) == 0)
-		return TRUE;
+		return true;
 	if (NULL == pmsg->children.pattachments) {
 		pattachments = attachment_list_init();
 		if (pattachments == nullptr)
-			return FALSE;
+			return false;
 		pmsg->set_attachments_internal(pattachments);
 	} else {
 		pattachments = pmsg->children.pattachments;
 	}
 	pattachment = attachment_content_init();
 	if (pattachment == nullptr)
-		return FALSE;
+		return false;
 	if (!pattachments->append_internal(pattachment)) {
 		attachment_content_free(pattachment);
-		return FALSE;
+		return false;
 	}
 	tmp_bin.cb = gx_snprintf(tmp_buff, std::size(tmp_buff),
 		"[InternetShortcut]\r\nURL=%s", pvalue);
 	tmp_bin.pc = tmp_buff;
 	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0)
-		return FALSE;
+		return false;
 	tmp_bin.cb = 0;
-	tmp_bin.pb = NULL;
+	tmp_bin.pb = nullptr;
 	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
-		return FALSE;
+		return false;
 	if (pattachment->proplist.set(PR_ATTACH_EXTENSION, ".URL") != 0)
-		return FALSE;
+		return false;
 	const char *pvalue1 = strrchr(pvalue, '/'); /* CONST-STRCHR-MARKER */
 	if (pvalue1 == nullptr)
 		pvalue1 = pvalue;
 	snprintf(tmp_buff, 256, "%s.url", pvalue1);
 	if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, tmp_buff) != 0 ||
 	    pattachment->proplist.set(PR_DISPLAY_NAME, tmp_buff) != 0)
-		return FALSE;
+		return false;
 	tmp_int32 = ATTACH_BY_VALUE;
 	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
-		return FALSE;
+		return false;
 	pvalue1 = piline.get_first_paramval("FMTYPE");
 	if (pvalue1 != nullptr &&
 	    pattachment->proplist.set(PR_ATTACH_MIME_TAG, pvalue1) != 0)
-		return FALSE;
+		return false;
 	tmp_int32 = 0;
 	if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0)
-		return FALSE;
+		return false;
 	tmp_int32 = 0;
 	if (pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != 0)
-		return FALSE;
+		return false;
 	tmp_byte = 0;
 	if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
-		return FALSE;
+		return false;
 	tmp_int64 = 0x0CB34557A3DD4000;
 	if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0 ||
 	    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
-		return FALSE;
+		return false;
 	if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
-		return FALSE;
-	return TRUE;
+		return false;
+	return true;
 }
 
-static BOOL oxcical_parse_atx_binary(const ical_line &piline,
+static bool oxcical_parse_atx_binary(const ical_line &piline,
     int count, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
@@ -1754,49 +1754,49 @@ static BOOL oxcical_parse_atx_binary(const ical_line &piline,
 
 	auto pvalue = piline.get_first_paramval("ENCODING");
 	if (pvalue == nullptr || strcasecmp(pvalue, "BASE64") != 0)
-		return FALSE;
+		return false;
 	if (NULL == pmsg->children.pattachments) {
 		pattachments = attachment_list_init();
 		if (pattachments == nullptr)
-			return FALSE;
+			return false;
 		pmsg->set_attachments_internal(pattachments);
 	} else {
 		pattachments = pmsg->children.pattachments;
 	}
 	pattachment = attachment_content_init();
 	if (pattachment == nullptr)
-		return FALSE;
+		return false;
 	if (!pattachments->append_internal(pattachment)) {
 		attachment_content_free(pattachment);
-		return FALSE;
+		return false;
 	}
 	pvalue = piline.get_first_subvalue();
 	if (NULL != pvalue) {
 		uint32_t tmp_int32 = strlen(pvalue) / 4 * 3 + 1;
 		tmp_bin.pv = malloc(tmp_int32);
 		if (tmp_bin.pv == nullptr)
-			return FALSE;
+			return false;
 		if (decode64(pvalue, tmp_int32, tmp_bin.pv, tmp_int32, &decode_len) != 0) {
 			free(tmp_bin.pb);
-			return FALSE;
+			return false;
 		}
 		tmp_bin.cb = decode_len;
 	} else {
 		tmp_bin.cb = 0;
-		tmp_bin.pb = NULL;
+		tmp_bin.pb = nullptr;
 	}
 	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0)
-		return FALSE;
+		return false;
 	if (tmp_bin.pb != nullptr)
 		free(tmp_bin.pb);
 	tmp_bin.cb = 0;
-	tmp_bin.pb = NULL;
+	tmp_bin.pb = nullptr;
 	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
-		return FALSE;
+		return false;
 	pvalue = piline.get_first_paramval("X-FILENAME");
 	if (pvalue == nullptr)
 		pvalue = piline.get_first_paramval("FILENAME");
-	if (NULL == pvalue) {
+	if (pvalue == nullptr) {
 		snprintf(tmp_buff, std::size(tmp_buff), "calendar_attachment%d.dat", count);
 		pvalue = tmp_buff;
 	}
@@ -1806,31 +1806,31 @@ static BOOL oxcical_parse_atx_binary(const ical_line &piline,
 	if (pattachment->proplist.set(PR_ATTACH_EXTENSION, pvalue1) != 0 ||
 	    pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, pvalue) != 0 ||
 	    pattachment->proplist.set(PR_DISPLAY_NAME, pvalue) != 0)
-		return FALSE;
+		return false;
 	uint32_t tmp_int32 = ATTACH_BY_VALUE;
 	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
-		return FALSE;
+		return false;
 	pvalue1 = piline.get_first_paramval("FMTYPE");
 	if (pvalue1 != nullptr &&
 	    pattachment->proplist.set(PR_ATTACH_MIME_TAG, pvalue1) != 0)
-		return FALSE;
+		return false;
 	tmp_int32 = 0;
 	if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0 ||
 	    pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != 0)
-		return FALSE;
+		return false;
 	tmp_byte = 0;
 	if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
-		return FALSE;
+		return false;
 	tmp_int64 = 0x0CB34557A3DD4000;
 	if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0 ||
 	    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
-		return FALSE;
+		return false;
 	if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
-		return FALSE;
-	return TRUE;
+		return false;
+	return true;
 }
 
-static BOOL oxcical_parse_attachment(const ical_line &piline,
+static bool oxcical_parse_attachment(const ical_line &piline,
     int count, MESSAGE_CONTENT *pmsg)
 {
 	auto v = piline.get_first_paramval("VALUE");
@@ -1838,45 +1838,45 @@ static BOOL oxcical_parse_attachment(const ical_line &piline,
 		return oxcical_parse_atx_value(piline, count, pmsg);
 	else if (strcasecmp(v, "BINARY") == 0)
 		return oxcical_parse_atx_binary(piline, count, pmsg);
-	return TRUE;
+	return true;
 }
 
-static BOOL oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
+static bool oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	uint8_t tmp_byte;
 	uint64_t tmp_int64;
 	PROPERTY_NAME propname = {MNID_ID, PSETID_COMMON, PidLidReminderDelta};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
+		return false;
 	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &reminder_delta) != 0)
-		return FALSE;
+		return false;
 	(*plast_propid) ++;
 	propname.guid = PSETID_COMMON;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidReminderTime;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
+		return false;
 	tmp_int64 = rop_util_unix_to_nttime(start_time);
 	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
-		return FALSE;
+		return false;
 	(*plast_propid) ++;
 	propname = {MNID_ID, PSETID_COMMON, PidLidReminderSignalTime};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
+		return false;
 	tmp_int64 = rop_util_unix_to_nttime(
 		start_time - reminder_delta*60);
 	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
-		return FALSE;
+		return false;
 	(*plast_propid) ++;
 	propname = {MNID_ID, PSETID_COMMON, PidLidReminderSet};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
+		return false;
 	tmp_byte = 1;
 	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != 0)
-		return FALSE;
+		return false;
 	(*plast_propid) ++;
-	return TRUE;
+	return true;
 }
 
 static const ical_component *oxcical_main_event(const event_list_t &evlist, const char **err)
@@ -1975,7 +1975,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 	auto pmain_event = oxcical_main_event(pevent_list, &mev_error);
 	if (pmain_event == nullptr)
 		return znul(mev_error);
-	if (NULL != pexception && NULL != pext_exception) {
+	if (pexception != nullpts && pext_exception != nullptr) {
 		memset(pexception, 0, sizeof(EXCEPTIONINFO));
 		memset(pext_exception, 0, sizeof(EXTENDEDEXCEPTION));
 		pext_exception->changehighlight.size = sizeof(uint32_t);
@@ -2032,7 +2032,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 		*pstart_itime = start_itime;
 
 	piline = pmain_event->get_line("DTEND");
-	if (NULL != piline) {
+	if (piline != nullptr) {
 		auto pvalue = piline->get_first_paramval("TZID");
 		bool parse_dtv = (pvalue == nullptr && ptzid == nullptr) ||
 		                 (pvalue != nullptr && ptzid != nullptr &&
@@ -2046,9 +2046,9 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			return "E-2795: ical not imported due to end_time < start_time";
 	} else {
 		piline = pmain_event->get_line("DURATION");
-		if (NULL == piline) {
+		if (piline == nullptr) {
 			end_itime = start_itime;
-			if (NULL != pvalue1 && 0 == strcasecmp(pvalue1, "DATE")) {
+			if (pvalue1 != nullptr && strcasecmp(pvalue1, "DATE") == 0) {
 				end_itime.hour = 0;
 				end_itime.minute = 0;
 				end_itime.second = 0;
@@ -2073,7 +2073,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 	if (ptz_component != nullptr && !oxcical_parse_tzdisplay(false,
 	    *ptz_component, phash, &last_propid, pmsg))
 		return "E-2701: oxcical_parse_tzdisplay returned an unspecified error";
-	if (!oxcical_parse_start_end(FALSE, b_proposal,
+	if (!oxcical_parse_start_end(false, b_proposal,
 	    *pmain_event, end_time, phash, &last_propid, pmsg))
 		return "E-2702: oxcical_parse_start_end returned an unspecified error";
 	uint32_t duration_min = (end_time - start_time) / 60;
@@ -2091,7 +2091,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 
 	ical_time itime{};
 	piline = pmain_event->get_line("RECURRENCE-ID");
-	if (NULL != piline) {
+	if (piline != nullptr) {
 		if (pexception != nullptr && pext_exception != nullptr &&
 		    !oxcical_parse_recurrence_id(ptz_component, *piline,
 		    phash, &last_propid, pmsg))
@@ -2173,7 +2173,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 	piline = pmain_event->get_line("RRULE");
 	if (piline == nullptr)
 		piline = pmain_event->get_line("X-MICROSOFT-RRULE");
-	if (NULL != piline) {
+	if (piline != nullptr) {
 		if (ptz_component != nullptr &&
 		    !oxcical_parse_recurring_timezone(*ptz_component,
 		    phash, &last_propid, pmsg))
@@ -2309,12 +2309,12 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			return "E-2733";
 	}
 
-	BOOL b_alarm = FALSE;
+	bool b_alarm = false;
 	uint32_t alarmdelta = 0;
 	if (pmain_event->component_list.size() > 0) {
 		auto palarm_component = &pmain_event->component_list.front();
 		if (strcasecmp(palarm_component->m_name.c_str(), "VALARM") == 0) {
-			b_alarm = TRUE;
+			b_alarm = true;
 			piline = palarm_component->get_line("TRIGGER");
 			const char *pvalue = nullptr;
 			if (piline == nullptr ||
@@ -2343,7 +2343,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 		}
 	}
 
-	if (NULL != pexception) {
+	if (pexception != nullptr) {
 		if (!b_alarm) {
 			pexception->overrideflags |= ARO_REMINDER;
 			pexception->reminderset = 0;
@@ -2357,7 +2357,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 	return nullptr;
 }
 
-static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
+static bool oxcical_import_events(const char *str_zone, uint16_t calendartype,
     const ical &pical, const uidxevent_list_t &uid_list, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
     std::vector<message_ptr> &msgvec)
@@ -2366,21 +2366,21 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 		auto &event_list = listentry.second;
 		message_ptr msg(message_content_init());
 		if (msg == nullptr)
-			return FALSE;
+			return false;
 		msgvec.push_back(std::move(msg));
 		auto pembedded = msgvec.back().get();
 		if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
-			return FALSE;
+			return false;
 		auto err = oxcical_import_internal(str_zone, "PUBLISH", false,
 		           calendartype, pical, event_list, alloc, get_propids,
 		           username_to_entryid, pembedded, nullptr, nullptr,
 		           nullptr, nullptr);
 		if (err != nullptr) {
 			mlog(LV_ERR, "%s", err);
-			return FALSE;
+			return false;
 		}
 	}
-	return TRUE;
+	return true;
 }
 
 /**
@@ -2390,7 +2390,7 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
  * @ul. (The caller should ensure that the uidxevent_list_t object does not
  * outlive a const ICAL *pointer.)
  */
-static BOOL oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) try
+static bool oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) try
 {
 	for (const auto &comp : pical.component_list) {
 		auto pcomponent = &comp;
@@ -2401,7 +2401,7 @@ static BOOL oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) t
 		if (puid != nullptr)
 			ul[puid].push_back(pcomponent);
 	}
-	return TRUE;
+	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2053: ENOMEM");
 	return false;
@@ -2416,7 +2416,7 @@ static const char *oxcical_get_partstat(const uidxevent_list_t &uid_list)
 		if (piline != nullptr)
 			return piline->get_first_paramval("PARTSTAT");
 	}
-	return NULL;
+	return nullptr;
 }
 
 static constexpr std::pair<enum calendar_scale, const char *> cal_scale_names[] = {
@@ -2465,10 +2465,10 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
     EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
     USERNAME_TO_ENTRYID username_to_entryid, std::vector<message_ptr> &finalvec)
 {
-	BOOL b_proposal;
+	bool b_proposal;
 	const char *pvalue = nullptr, *pvalue1 = nullptr;
 
-	b_proposal = FALSE;
+	b_proposal = false;
 	auto piline = pical.get_line("X-MICROSOFT-CALSCALE");
 	uint16_t calendartype = oxcical_get_calendartype(piline);
 	auto mclass = "IPM.Appointment";
@@ -2488,8 +2488,8 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 	}
 
 	pvalue = piline->get_first_subvalue();
-	if (NULL != pvalue) {
-		if (0 == strcasecmp(pvalue, "PUBLISH")) {
+	if (pvalue != nullptr) {
+		if (strcasecmp(pvalue, "PUBLISH") == 0) {
 			if (uid_list.size() > 1) {
 				if (!oxcical_import_events(str_zone,
 				    calendartype, pical,
@@ -2500,15 +2500,15 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 				return ecSuccess;
 			}
 			mclass = "IPM.Appointment";
-		} else if (0 == strcasecmp(pvalue, "REQUEST")) {
+		} else if (strcasecmp(pvalue, "REQUEST") == 0) {
 			if (uid_list.size() != 1)
 				return ecNotFound;
 			mclass = "IPM.Schedule.Meeting.Request";
-		} else if (0 == strcasecmp(pvalue, "REPLY")) {
+		} else if (strcasecmp(pvalue, "REPLY") == 0) {
 			if (uid_list.size() != 1)
 				return ecNotFound;
 			pvalue1 = oxcical_get_partstat(uid_list);
-			if (NULL != pvalue1) {
+			if (pvalue1 != nullptr) {
 				if (strcasecmp(pvalue1, "ACCEPTED") == 0)
 					mclass = "IPM.Schedule.Meeting.Resp.Pos";
 				else if (strcasecmp(pvalue1, "TENTATIVE") == 0)
@@ -2516,7 +2516,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 				else if (strcasecmp(pvalue1, "DECLINED") == 0)
 					mclass = "IPM.Schedule.Meeting.Resp.Neg";
 			}
-		} else if (0 == strcasecmp(pvalue, "COUNTER")) {
+		} else if (strcasecmp(pvalue, "COUNTER") == 0) {
 			if (uid_list.size() != 1)
 				return ecNotFound;
 			pvalue1 = oxcical_get_partstat(uid_list);
@@ -2524,7 +2524,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 				mclass = "IPM.Schedule.Meeting.Resp.Tent";
 				b_proposal = TRUE;
 			}
-		} else if (0 == strcasecmp(pvalue, "CANCEL")) {
+		} else if (strcasecmp(pvalue, "CANCEL") == 0) {
 			mclass = "IPM.Schedule.Meeting.Canceled";
 		}
 	}
@@ -2636,7 +2636,7 @@ static ical_component *oxcical_export_timezone(ical &pical,
 			(int)ptzstruct->standarddate.minute,
 			(int)ptzstruct->standarddate.second);
 	} else {
-		return NULL;
+		return nullptr;
 	}
 	pcomponent1->append_line("DTSTART", tmp_buff);
 	if (0 != ptzstruct->daylightdate.month) {
@@ -2731,14 +2731,14 @@ static bool is_meeting_response(const char *s)
 	       class_match_prefix(s, "IPM.Schedule.Meeting.Resp.Tent") == 0;
 }
 
-static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
+static bool oxcical_export_recipient_table(ical_component &pevent_component,
     const char *org_name, cvt_id2user id2user, EXT_BUFFER_ALLOC alloc,
     const char *partstat, const MESSAGE_CONTENT *pmsg) try
 {
 	char tmp_value[334];
 
 	if (pmsg->children.prcpts == nullptr)
-		return TRUE;
+		return true;
 	auto str = pmsg->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (str == nullptr)
 		str = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
@@ -2746,16 +2746,16 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 		str = "IPM.Note";
 	/* ignore ATTENDEE when METHOD is "PUBLIC" */
 	if (class_match_prefix(str, "IPM.Appointment") == 0)
-		return TRUE;
+		return true;
 	if (is_meeting_response(str)) {
 		str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 		if (str == nullptr)
-			return TRUE;
+			return true;
 		auto piline = &pevent_component.append_line("ATTENDEE");
 		piline->append_param("PARTSTAT", partstat);
 		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", str);
 		piline->append_value(nullptr, tmp_value);
-		return TRUE;
+		return true;
 	}
 	auto flag = pmsg->proplist.get<const uint8_t>(PR_RESPONSE_REQUESTED);
 	auto b_rsvp = flag != nullptr && *flag != 0;
@@ -2789,19 +2789,19 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 			piline->append_value(nullptr, tmp_value);
 		}
 	}
-	return TRUE;
+	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2094: ENOMEM");
 	return false;
 }
 
-static BOOL oxcical_export_rrule(const ical_component *ptz_component,
+static bool oxcical_export_rrule(const ical_component *ptz_component,
     ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
 	ical_time itime;
 	const char *str_tag;
 
-	str_tag = NULL;
+	str_tag = nullptr;
 	switch (apr->recur_pat.calendartype) {
 	case CAL_DEFAULT:
 		switch (apr->recur_pat.patterntype) {
@@ -2840,7 +2840,7 @@ static BOOL oxcical_export_rrule(const ical_component *ptz_component,
 		break;
 	}
 	if (str_tag == nullptr)
-		return FALSE;
+		return false;
 	auto piline = &pcomponent.append_line(str_tag);
 	switch (apr->recur_pat.patterntype) {
 	case PATTERNTYPE_DAY:
@@ -2906,7 +2906,7 @@ static BOOL oxcical_export_rrule(const ical_component *ptz_component,
 		break;
 	}
 	default:
-		return FALSE;
+		return false;
 	}
 	if (ENDTYPE_AFTER_N_OCCURRENCES ==
 		apr->recur_pat.endtype) {
@@ -2916,7 +2916,7 @@ static BOOL oxcical_export_rrule(const ical_component *ptz_component,
 		auto unix_time = rop_util_rtime_to_unix(apr->recur_pat.enddate + apr->starttimeoffset);
 		ical_utc_to_datetime(NULL, unix_time, &itime);
 		if (!ical_itime_to_utc(ptz_component, itime, &unix_time))
-			return FALSE;
+			return false;
 		ical_utc_to_datetime(NULL, unix_time, &itime);
 		char tmp_buff[1024];
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
@@ -2925,39 +2925,39 @@ static BOOL oxcical_export_rrule(const ical_component *ptz_component,
 	if (PATTERNTYPE_WEEK == apr->recur_pat.patterntype) {
 		auto wd = weekday_to_str(apr->recur_pat.firstdow);
 		if (wd == nullptr)
-			return FALSE;
+			return false;
 		piline->append_value("WKST", wd);
 	}
-	return TRUE;
+	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2091: ENOMEM");
 	return false;
 }
 
-static BOOL oxcical_check_exdate(APPOINTMENT_RECUR_PAT *apr)
+static bool oxcical_check_exdate(APPOINTMENT_RECUR_PAT *apr)
 {
-	BOOL b_found;
+	bool b_found;
 	size_t count = 0;
 	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
-		b_found = FALSE;
+		b_found = false;
 		for (size_t j = 0; j < apr->exceptioncount; ++j) {
 			if (apr->recur_pat.pdeletedinstancedates[i]
 				== apr->pexceptioninfo[j].originalstartdate &&
 				0 != apr->pexceptioninfo[j].overrideflags) {
-				b_found = TRUE;
+				b_found = true;
 				break;
 			}
 		}
 		if (!b_found)
 			count ++;
 	}
-	return count != 0 ? TRUE : false;
+	return count != 0;
 }
 
-static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
+static bool oxcical_export_exdate(const char *tzid, BOOL b_date,
     ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
-	BOOL b_found;
+	bool b_found;
 	ical_time itime;
 	char tmp_buff[1024];
 	ical_line *piline;
@@ -2974,12 +2974,12 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 	if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
 	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
-		b_found = FALSE;
+		b_found = false;
 		for (size_t j = 0; j < apr->exceptioncount; ++j) {
 			if (apr->recur_pat.pdeletedinstancedates[i]
 				== apr->pexceptioninfo[j].originalstartdate &&
 				0 != apr->pexceptioninfo[j].overrideflags) {
-				b_found = TRUE;
+				b_found = true;
 				break;
 			}
 		}
@@ -2994,37 +2994,37 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
 		pivalue.append_subval(tmp_buff);
 	}
-	return TRUE;
+	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2095: ENOMEM");
 	return false;
 }
 
-static BOOL oxcical_check_rdate(APPOINTMENT_RECUR_PAT *apr)
+static bool oxcical_check_rdate(APPOINTMENT_RECUR_PAT *apr)
 {
 	size_t count = 0;
-	BOOL b_found;
+	bool b_found;
 
 	for (size_t i = 0; i < apr->recur_pat.modifiedinstancecount; ++i) {
-		b_found = FALSE;
+		b_found = false;
 		for (size_t j = 0; j < apr->exceptioncount; ++j) {
 			if (apr->recur_pat.pmodifiedinstancedates[i]
 				== apr->pexceptioninfo[j].startdatetime &&
 				0 != apr->pexceptioninfo[j].overrideflags) {
-				b_found = TRUE;
+				b_found = true;
 				break;
 			}
 		}
 		if (!b_found)
 			count ++;
 	}
-	return count != 0 ? TRUE : false;
+	return count != 0;
 }
 
-static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
+static bool oxcical_export_rdate(const char *tzid, BOOL b_date,
      ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
-	BOOL b_found;
+	bool b_found;
 	ical_time itime;
 	char tmp_buff[1024];
 
@@ -3035,12 +3035,12 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 	if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
 	for (size_t i = 0; i < apr->recur_pat.modifiedinstancecount; ++i) {
-		b_found = FALSE;
+		b_found = false;
 		for (size_t j = 0; j < apr->exceptioncount; ++j) {
 			if (apr->recur_pat.pmodifiedinstancedates[i]
 				== apr->pexceptioninfo[j].startdatetime &&
 				0 != apr->pexceptioninfo[j].overrideflags) {
-				b_found = TRUE;
+				b_found = true;
 				break;
 			}
 		}
@@ -3055,7 +3055,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
 		pivalue.append_subval(tmp_buff);
 	}
-	return TRUE;
+	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2096: ENOMEM");
 	return false;
