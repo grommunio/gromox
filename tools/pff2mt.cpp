@@ -1223,8 +1223,7 @@ static errno_t do_file(const char *filename) try
 	if (libpff_file_get_root_item(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1)
 		throw az_error("PF-1025", err);
 	gi_name_map name_map;
-	gi_dump_name_map(name_map);
-	gi_name_map_write(name_map);
+	gi_name_map_write({}); /* required by GXMT0003 format */
 
 	if (g_show_tree)
 		fprintf(stderr, "Object tree:\n");
