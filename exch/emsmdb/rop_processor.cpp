@@ -26,7 +26,6 @@
 #include "fastupctx_object.h"
 #include "folder_object.h"
 #include "icsdownctx_object.h"
-#include "icsupctx_object.h"
 #include "message_object.h"
 #include "notify_response.h"
 #include "processor_types.h"
@@ -35,7 +34,6 @@
 #include "rop_ids.hpp"
 #include "rop_processor.h"
 #include "stream_object.h"
-#include "subscription_object.h"
 #include "table_object.h"
 
 using namespace gromox;

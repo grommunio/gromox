@@ -5,15 +5,58 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/rop_util.hpp>
 #include "common_util.h"
+#include "emsmdb_interface.h"
+#include "exmdb_client.h"
+#include "logon_object.h"
 #include "notify_response.h"
 #include "processor_types.h"
 #include "rop_ext.h"
+#include "rop_funcs.hpp"
 #include "rop_ids.hpp"
+#include "rop_processor.h"
 
 using namespace gromox;
+
+std::unique_ptr<subscription_object>
+subscription_object::create(logon_object *plogon, uint8_t logon_id,
+    uint16_t notification_types, BOOL b_whole, uint64_t folder_id,
+    uint64_t message_id)
+{
+	std::unique_ptr<subscription_object> psub;
+	try {
+		psub.reset(new subscription_object);
+	} catch (const std::bad_alloc &) {
+		return NULL;
+	}
+	if (!emsmdb_interface_get_cxh(&psub->cxh))
+		return NULL;
+	psub->plogon = plogon;
+	psub->logon_id = logon_id;
+	if (!exmdb_client::subscribe_notification(plogon->get_dir(),
+	    notification_types, b_whole, folder_id, message_id, &psub->sub_id))
+		return NULL;
+	return psub;
+}
+
+void subscription_object::set_handle(uint32_t h)
+{
+	auto psub = this;
+	psub->handle = h;
+	emsmdb_interface_add_subscription_notify(psub->plogon->get_dir(),
+		psub->sub_id, psub->handle, psub->logon_id, &psub->cxh.guid);
+}
+
+subscription_object::~subscription_object()
+{
+	auto psub = this;
+	exmdb_client::unsubscribe_notification(psub->plogon->get_dir(), psub->sub_id);
+	emsmdb_interface_remove_subscription_notify(psub->plogon->get_dir(), psub->sub_id);
+}
 
 notify_response *notify_response::create(uint32_t handle, uint8_t logon_id) try
 {
@@ -443,3 +486,46 @@ pack_result rop_ext_push(EXT_PUSH &x, const notify_response &n)
 	return pack_result::success;
 }
 #undef TRY
+
+ec_error_t rop_registernotification(uint8_t notification_types, uint8_t reserved,
+    uint8_t want_whole_store, const uint64_t *pfolder_id,
+    const uint64_t *pmessage_id, LOGMAP *plogmap, uint8_t logon_id,
+    uint32_t hin, uint32_t *phout)
+{
+	BOOL b_whole;
+	ems_objtype object_type;
+	uint64_t folder_id;
+	uint64_t message_id;
+
+	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
+	if (plogon == nullptr)
+		return ecNullObject;
+	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
+		return ecNullObject;
+	if (0 == want_whole_store) {
+		b_whole = FALSE;
+		folder_id = *pfolder_id;
+		message_id = *pmessage_id;
+	} else {
+		b_whole = TRUE;
+		folder_id = 0;
+		message_id = 0;
+	}
+	auto psub = subscription_object::create(plogon, logon_id,
+	            notification_types, b_whole, folder_id, message_id);
+	if (psub == nullptr)
+		return ecServerOOM;
+	auto rsub = psub.get();
+	auto hnd = rop_processor_add_object_handle(plogmap,
+	           logon_id, hin, {ems_objtype::subscription, std::move(psub)});
+	if (hnd < 0)
+		return aoh_to_error(hnd);
+	rsub->set_handle(hnd);
+	*phout = hnd;
+	return ecSuccess;
+}
+
+void rop_release(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
+{
+	rop_processor_release_object_handle(plogmap, logon_id, hin);
+}
