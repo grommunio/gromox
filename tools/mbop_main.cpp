@@ -26,6 +26,11 @@ using namespace gromox;
 using LLU = unsigned long long;
 namespace exmdb_client = exmdb_client_remote;
 
+static constexpr HXoption empty_options_table[] = {
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
 namespace delmsg {
 
 static char *g_folderstr;
@@ -435,10 +440,16 @@ static constexpr HXoption g_options_table[] = {
 
 static int help()
 {
-	fprintf(stderr, "Usage: gromox-mbop [global-options] command [command-args...]\n");
+	fprintf(stderr, "Usage: gromox-mbop [global-options] command [command-options] [command-args...]\n");
 	fprintf(stderr, "Global options:\n");
+	fprintf(stderr, "\t-?                           Global help (this text)\n");
 	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
-	fprintf(stderr, "Commands:\n\tclear-photo clear-profile delmsg emptyfld purge-datafiles recalc-sizes set-locale unload vacuum\n");
+	fprintf(stderr, "Commands:\n\tclear-photo clear-profile clear-rwz delmsg "
+		"emptyfld get-photo get-websettings get-websettings-persistent "
+		"purge-datafiles purge-softdelete recalc-sizes set-locale "
+		"set-photo set-websettings set-websettings-persistent unload vacuum\n");
+	fprintf(stderr, "Command options:\n");
+	fprintf(stderr, "\t-?                           Call up option help for subcommand\n");
 	return EXIT_FAILURE;
 }
 
@@ -527,8 +538,13 @@ static errno_t resolvename(const GUID &guid, const char *name, bool create,
 	return 0;
 }
 
-static errno_t delstoreprop(const GUID &guid, const char *name)
+static errno_t delstoreprop(int argc, char **argv, const GUID &guid, const char *name)
 {
+	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+
 	uint16_t propid = 0;
 	auto err = resolvename(guid, name, false, &propid);
 	if (err == ENOENT)
@@ -579,8 +595,14 @@ static errno_t showstoreprop(uint32_t proptag)
 	}
 }
 
-static errno_t showstoreprop(const GUID guid, const char *name, uint16_t proptype)
+static errno_t showstoreprop(int argc, char **argv, const GUID guid,
+    const char *name, uint16_t proptype)
 {
+	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+
 	uint16_t propid = 0;
 	auto err = resolvename(guid, name, false, &propid);
 	if (err == ENOENT)
@@ -625,8 +647,14 @@ static errno_t setstoreprop(uint32_t proptag)
 	return 0;
 }
 
-static errno_t setstoreprop(const GUID guid, const char *name, uint16_t proptype)
+static errno_t setstoreprop(int argc, char **argv, const GUID guid,
+    const char *name, uint16_t proptype)
 {
+	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+
 	uint16_t propid = 0;
 	auto err = resolvename(guid, name, true, &propid);
 	if (err == ENOENT) {
@@ -719,23 +747,23 @@ int main(int argc, char **argv)
 	} else if (strcmp(argv[0], "emptyfld") == 0) {
 		ret = emptyfld::main(argc, argv);
 	} else if (strcmp(argv[0], "clear-photo") == 0) {
-		ret = delstoreprop(PSETID_GROMOX, "photo");
+		ret = delstoreprop(argc, argv, PSETID_GROMOX, "photo");
 	} else if (strcmp(argv[0], "clear-profile") == 0) {
-		ret = delstoreprop(PSETID_GROMOX, "zcore_profsect");
+		ret = delstoreprop(argc, argv, PSETID_GROMOX, "zcore_profsect");
 	} else if (strcmp(argv[0], "clear-rwz") == 0) {
 		ret = clear_rwz();
 	} else if (strcmp(argv[0], "get-photo") == 0) {
-		ret = showstoreprop(PSETID_GROMOX, "photo", PT_BINARY);
+		ret = showstoreprop(argc, argv, PSETID_GROMOX, "photo", PT_BINARY);
 	} else if (strcmp(argv[0], "set-photo") == 0) {
-		ret = setstoreprop(PSETID_GROMOX, "photo", PT_BINARY);
+		ret = setstoreprop(argc, argv, PSETID_GROMOX, "photo", PT_BINARY);
 	} else if (strcmp(argv[0], "get-websettings") == 0) {
-		ret = showstoreprop(PSETID_GROMOX, "websettings", PT_UNICODE);
+		ret = showstoreprop(argc, argv, PSETID_GROMOX, "websettings", PT_UNICODE);
 	} else if (strcmp(argv[0], "set-websettings") == 0) {
-		ret = setstoreprop(PSETID_GROMOX, "websettings", PT_UNICODE);
+		ret = setstoreprop(argc, argv, PSETID_GROMOX, "websettings", PT_UNICODE);
 	} else if (strcmp(argv[0], "get-websettings-persistent") == 0) {
-		ret = showstoreprop(PSETID_GROMOX, "websettings_persistent", PT_UNICODE);
+		ret = showstoreprop(argc, argv, PSETID_GROMOX, "websettings_persistent", PT_UNICODE);
 	} else if (strcmp(argv[0], "set-websettings-persistent") == 0) {
-		ret = setstoreprop(PSETID_GROMOX, "websettings_persistent", PT_UNICODE);
+		ret = setstoreprop(argc, argv, PSETID_GROMOX, "websettings_persistent", PT_UNICODE);
 	} else if (strcmp(argv[0], "purge-softdelete") == 0) {
 		ret = purgesoftdel::main(argc, argv);
 	} else if (strcmp(argv[0], "set-locale") == 0) {
