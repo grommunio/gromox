@@ -4,8 +4,8 @@
 #include <memory>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
-#include "common_util.h"
-#include "ics_state.h"
+#include "common_util.hpp"
+#include "ics_state.hpp"
 
 static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int type)
 {

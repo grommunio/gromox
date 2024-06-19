@@ -22,7 +22,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "mlist_expand/bounce_producer.h"
+#include "mdabounce.hpp"
 
 using namespace gromox;
 

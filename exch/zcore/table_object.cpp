@@ -17,13 +17,13 @@
 #include <gromox/restriction.hpp>
 #include <gromox/sortorder_set.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "exmdb_client.h"
-#include "object_tree.h"
+#include "common_util.hpp"
+#include "exmdb_client.hpp"
+#include "object_tree.hpp"
 #include "objects.hpp"
-#include "store_object.h"
+#include "store_object.hpp"
 #include "system_services.hpp"
-#include "table_object.h"
+#include "table_object.hpp"
 #include "zserver.hpp"
 
 using namespace gromox;

@@ -27,7 +27,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "bounce_producer.h"
+#include "mdabounce.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;

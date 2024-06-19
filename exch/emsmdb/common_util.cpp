@@ -40,11 +40,11 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "exmdb_client.h"
-#include "logon_object.h"
-#include "message_object.h"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "exmdb_client.hpp"
+#include "logon_object.hpp"
+#include "message_object.hpp"
 #include "../bounce_exch.cpp"
 
 using namespace gromox;

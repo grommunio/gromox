@@ -8,7 +8,7 @@
 #include <sys/socket.h>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
-#include "pdu_ndr.h"
+#include "pdu_ndr.hpp"
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
 #define IPV6_BYTES		16
 

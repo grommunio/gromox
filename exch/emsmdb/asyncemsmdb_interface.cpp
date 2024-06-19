@@ -17,10 +17,10 @@
 #include <gromox/double_list.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
-#include "asyncemsmdb_interface.h"
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "emsmdb_ndr.h"
+#include "asyncemsmdb_interface.hpp"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "emsmdb_ndr.hpp"
 #define WAITING_INTERVAL						300
 
 #define FLAG_NOTIFICATION_PENDING				0x00000001

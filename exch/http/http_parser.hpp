@@ -20,7 +20,7 @@
 #include <gromox/stream.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include "pdu_processor.h"
+#include "pdu_processor.hpp"
 
 enum class auth_method {
 	none, basic, negotiate, negotiate_b64,

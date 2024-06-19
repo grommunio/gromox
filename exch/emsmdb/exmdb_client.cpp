@@ -8,9 +8,9 @@
 #include <gromox/proc_common.h>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "exmdb_client.h"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "exmdb_client.hpp"
 
 using namespace gromox;
 

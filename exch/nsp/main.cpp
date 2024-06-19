@@ -10,8 +10,8 @@
 #include <gromox/proc_common.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "ab_tree.h"
-#include "common_util.h"
+#include "ab_tree.hpp"
+#include "common_util.hpp"
 #include "nsp_interface.hpp"
 #include "nsp_ndr.hpp"
 

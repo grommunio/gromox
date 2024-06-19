@@ -37,7 +37,7 @@
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include "smtp_aux.hpp"
-#include "smtp_parser.h"
+#include "smtp_parser.hpp"
 
 using namespace gromox;
 

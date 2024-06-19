@@ -3,8 +3,8 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/zcore_rpc.hpp>
-#include "common_util.h"
-#include "rpc_ext.h"
+#include "common_util.hpp"
+#include "rpc_ext.hpp"
 #define QRF(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 static pack_result rpc_ext_pull_propval(

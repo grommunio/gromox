@@ -2,8 +2,8 @@
 #include <cstdint>
 #include <cstring>
 #include <gromox/ndr.hpp>
-#include "emsmdb_interface.h"
-#include "emsmdb_ndr.h"
+#include "emsmdb_interface.hpp"
+#include "emsmdb_ndr.hpp"
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
 
 static pack_result asyncemsmdb_ndr_pull_ecdoasyncwaitex(NDR_PULL *pndr,

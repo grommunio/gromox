@@ -19,10 +19,10 @@
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
-#include "common_util.h"
-#include "emsmdb_interface.h"
-#include "ftstream_producer.h"
-#include "logon_object.h"
+#include "common_util.hpp"
+#include "emsmdb_interface.hpp"
+#include "ftstream_producer.hpp"
+#include "logon_object.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;

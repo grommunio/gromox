@@ -40,11 +40,11 @@
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "ab_tree.h"
+#include "ab_tree.hpp"
 #include "bounce_producer.hpp"
-#include "common_util.h"
-#include "exmdb_client.h"
-#include "object_tree.h"
+#include "common_util.hpp"
+#include "exmdb_client.hpp"
+#include "object_tree.hpp"
 #include "rpc_parser.hpp"
 #include "system_services.hpp"
 #include "zserver.hpp"

@@ -1,6 +1,6 @@
 #pragma once
 #include <gromox/ndr.hpp>
-#include "nsp_types.h"
+#include "nsp_types.hpp"
 
 enum {
 	nspiBind = 0,
