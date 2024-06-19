@@ -241,7 +241,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		for (auto t : tags)
 			common_util_remove_propvals(&chg, t);
 		for (size_t j = 0; j < chg.count; ) {
-			if (PROP_ID(chg.ppropval[j].proptag) >= 0x8000)
+			if (is_nameprop_id(PROP_ID(chg.ppropval[j].proptag)))
 				/* emsmdb32.dll stinks */
 				common_util_remove_propvals(&chg, chg.ppropval[j].proptag);
 			else

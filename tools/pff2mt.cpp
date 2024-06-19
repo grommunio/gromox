@@ -598,7 +598,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 	TAGGED_PROPVAL pv;
 	pv.proptag = PROP_TAG(vtype, etype);
 	pv.pvalue = buf.get();
-	if (etype >= 0x8000 && name_map != nullptr)
+	if (is_nameprop_id(etype) && name_map != nullptr)
 		emit_namedprop(*name_map, rent, pv.proptag);
 	switch (vtype) {
 	case PT_SHORT:

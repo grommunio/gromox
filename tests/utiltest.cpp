@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdio>
@@ -439,7 +439,7 @@ static int t_mcg()
 	assert(pgi->group_id == 1);
 	assert(pgi->count == 25);
 	assert(pgi->pgroups[0].count == 5);
-	assert(PROP_ID(pgi->pgroups[7].pproptag[0]) >= 0x8000);
+	assert(is_nameprop_id(PROP_ID(pgi->pgroups[7].pproptag[0])));
 	assert(PROP_TYPE(pgi->pgroups[7].pproptag[0]) != 0);
 	return 0;
 }

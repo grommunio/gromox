@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <climits>
@@ -164,7 +164,7 @@ static void exm_adjust_namedprops(TPROPVAL_ARRAY &props)
 {
 	for (size_t i = 0; i < props.count; ++i) {
 		auto old_tag = props.ppropval[i].proptag;
-		if (PROP_ID(old_tag) < 0x8000)
+		if (!is_nameprop_id(PROP_ID(old_tag)))
 			continue;
 		auto thru_iter = g_thru_name_map.find(PROP_ID(old_tag));
 		if (thru_iter != g_thru_name_map.end()) {

@@ -84,7 +84,7 @@ GUID logon_object::guid() const
 BOOL logon_object::get_named_propname(uint16_t propid,
     PROPERTY_NAME *ppropname)
 {
-	if (propid < 0x8000) {
+	if (!is_nameprop_id(propid)) {
 		ppropname->guid = PS_MAPI;
 		ppropname->kind = MNID_ID;
 		ppropname->lid = propid;
@@ -126,7 +126,7 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY *ppropids,
 		return FALSE;
 	auto plogon = this;
 	for (i=0; i<ppropids->count; i++) {
-		if (ppropids->ppropid[i] < 0x8000) {
+		if (!is_nameprop_id(ppropids->ppropid[i])) {
 			ppropnames->ppropname[i].guid = PS_MAPI;
 			ppropnames->ppropname[i].kind = MNID_ID;
 			ppropnames->ppropname[i].lid = ppropids->ppropid[i];

@@ -209,7 +209,7 @@ static void rx_npid_collect(const TPROPVAL_ARRAY &props, std::set<uint16_t> &m)
 {
 	for (unsigned int i = 0; i < props.count; ++i) {
 		auto id = PROP_ID(props.ppropval[i].proptag);
-		if (id >= 0x8000)
+		if (is_nameprop_id(id))
 			m.emplace(id);
 	}
 }
@@ -234,7 +234,7 @@ static void rx_npid_transform(TPROPVAL_ARRAY &props,
 {
 	for (unsigned int i = 0; i < props.count; ++i) {
 		auto oldtag = props.ppropval[i].proptag;
-		if (PROP_ID(oldtag) < 0x8000)
+		if (!is_nameprop_id(PROP_ID(oldtag)))
 			continue;
 		auto it = std::find(src.begin(), src.end(), PROP_ID(oldtag));
 		if (it == src.end())

@@ -173,7 +173,7 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_AR
 		return FALSE;
 	auto pstore = this;
 	for (i=0; i<ppropids->count; i++) {
-		if (ppropids->ppropid[i] < 0x8000) {
+		if (!is_nameprop_id(ppropids->ppropid[i])) {
 			ppropnames->ppropname[i].guid = PS_MAPI;
 			ppropnames->ppropname[i].kind = MNID_ID;
 			ppropnames->ppropname[i].lid = ppropids->ppropid[i];
