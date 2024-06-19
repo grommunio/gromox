@@ -1222,7 +1222,7 @@ static BOOL common_util_check_message_named_properties(
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW)
-		if (sqlite3_column_int64(pstmt, 0) & 0x8000)
+		if (is_nameprop_id(PROP_ID(pstmt.col_int64(0))))
 			return TRUE;
 	return FALSE;
 }
