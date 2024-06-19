@@ -1,4 +1,4 @@
-2.29.16
+2.29.54
 =======
 
 Fixes:
@@ -7,6 +7,19 @@ Fixes:
   longer yield an erroneous error
 * exmdb: setting anonymous-ID permissions on folders was erroneously
   treated as wanting to set default-ID permissions and did not complete
+* oxcical: emit VTIMEZONE for events without
+  PidLidAppointmentTimeZoneDefinitionStartDisplay
+* php_mapi: delete nonsensical return types from function stubs used for
+  introspection
+* Set syslog process names (meaningful for non-glibc platforms)
+* pam_gromox: resolve a use-after-free when the module is invoked twice
+  in a row (as is the case with e.g. saslauthd)
+* exmdb: resolve use-after-free/crash on process shutdown (search folder
+  shutdown)
+
+Enhancements:
+
+* gromox-mbop: new subcommand ``set-locale`` to change store language
 
 
 Gromox 2.29 (2024-06-04)
