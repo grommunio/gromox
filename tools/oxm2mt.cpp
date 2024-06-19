@@ -22,6 +22,7 @@
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
+#include "staticnpmap.cpp"
 
 using namespace gromox;
 using namespace gi_dump;
@@ -430,7 +431,7 @@ static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt)
 	return 0;
 }
 
-static int npg_read(gi_name_map &map, libolecf_item_t *root)
+static int npg_read(libolecf_item_t *root)
 {
 	oxm_error_ptr err;
 	oxm_item_ptr nvdir;
@@ -493,7 +494,7 @@ static int npg_read(gi_name_map &map, libolecf_item_t *root)
 			fprintf(stderr, "[NP propidx mismatch %04xh != %04xh\n", propidx, current_np);
 			return -EIO;
 		}
-		map.emplace(PROP_TAG(PT_UNSPECIFIED, 0x8000 + current_np), std::move(pn_req));
+		static_namedprop_map.emplace(0, std::move(pn_req));
 	}
 	return 0;
 }
@@ -543,14 +544,13 @@ static errno_t do_file(const char *filename) try
 		throw YError("PG-1016: %s", strerror(errno));
 	gi_folder_map_write({});
 
-	gi_name_map name_map;
-	ret = npg_read(name_map, root.get());
+	ret = npg_read(root.get());
 	if (ret < 0) {
 		fprintf(stderr, "Error reading nameids\n");
 		return EXIT_FAILURE;
 	}
-	gi_dump_name_map(name_map);
-	gi_name_map_write(name_map);
+	gi_dump_name_map(static_namedprop_map.fwd);
+	gi_name_map_write(static_namedprop_map.fwd);
 
 	auto parent = parent_desc::as_folder(~0ULL);
 	if (g_show_tree)

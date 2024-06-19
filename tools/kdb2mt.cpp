@@ -33,6 +33,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
+#include "staticnpmap.cpp"
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -1006,7 +1007,7 @@ std::unique_ptr<kdb_item> kdb_item::get_sub_item(size_t idx)
 	return load_hid_base(m_drv, m_sub_hids[idx].first);
 }
 
-static void do_namemap_table(driver &drv, gi_name_map &map)
+static void do_namemap_table(driver &drv)
 {
 	auto res = drv.query("SELECT id, guid, nameid, namestring FROM names");
 	DB_ROW row;
@@ -1027,18 +1028,17 @@ static void do_namemap_table(driver &drv, gi_name_map &map)
 			pn_req.kind = MNID_STRING;
 			pn_req.name = std::move(str);
 		}
-		map.emplace(PROP_TAG(PT_UNSPECIFIED, 0x8501 + strtoul(row[0], nullptr, 0)), std::move(pn_req));
+		static_namedprop_map.emplace(0x8501 + strtoul(row[0], nullptr, 0), std::move(pn_req));
 	}
 
-	for (const auto &[tag, mn] : map)
+	for (const auto &[id, mn] : static_namedprop_map.fwd)
 		if (mn.kind == MNID_STRING && mn.guid == PSETID_KCARCHIVE &&
 		    strcasecmp(mn.name.c_str(), "stubbed") == 0)
-			g_proptag_stubbed = CHANGE_PROP_TYPE(tag, PT_BOOLEAN);
+			g_proptag_stubbed = PROP_TAG(PT_BOOLEAN, id);
 }
 
-static gi_name_map do_namemap(driver &drv)
+static void do_namemap(driver &drv)
 {
-	gi_name_map map;
 	static constexpr struct {
 		const GUID &guid;
 		unsigned int lid_min, lid_max, base;
@@ -1061,10 +1061,9 @@ static gi_name_map do_namemap(driver &drv)
 		pn.kind = MNID_ID;
 		pn.guid = row.guid;
 		for (pn.lid = row.lid_min; pn.lid < row.lid_max; ++pn.lid)
-			map.emplace(PROP_TAG(PT_UNSPECIFIED, pn.lid - row.lid_min + row.base), pn);
+			static_namedprop_map.emplace(pn.lid - row.lid_min + row.base, std::move(pn));
 	}
-	do_namemap_table(drv, map);
-	return map;
+	do_namemap_table(drv);
 }
 
 static void gi_dump_acl(unsigned int depth, const ace_list &acl)
@@ -1390,9 +1389,9 @@ static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 	gi_dump_folder_map(drv->m_folder_map);
 	gi_folder_map_write(drv->m_folder_map);
 
-	auto name_map = do_namemap(*drv);
-	gi_dump_name_map(name_map);
-	gi_name_map_write(name_map);
+	do_namemap(*drv);
+	gi_dump_name_map(static_namedprop_map.fwd);
+	gi_name_map_write(static_namedprop_map.fwd);
 
 	if (g_show_tree)
 		fprintf(stderr, "Object tree:\n");

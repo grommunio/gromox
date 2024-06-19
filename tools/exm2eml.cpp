@@ -25,6 +25,7 @@
 #include <gromox/vcard.hpp>
 #include "genimport.hpp"
 #include "exch/midb/system_services.hpp"
+#include "staticnpmap.cpp"
 
 using namespace gromox;
 using namespace gi_dump;
@@ -227,11 +228,10 @@ int main(int argc, char **argv) try
 			fprintf(stderr, "get_all_named_propids failed\n");
 			return EXIT_FAILURE;
 		}
-		gi_name_map name_map;
 		for (size_t i = 0; i < tags.size() && i < propnames.count; ++i) {
 			const auto &p = propnames.ppropname[i];
 			if (p.kind <= MNID_STRING)
-				name_map.emplace(PROP_TAG(PT_UNSPECIFIED, tags[i]), p);
+				static_namedprop_map.emplace(tags[i], p);
 		}
 		if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
 			throw YError("PG-1014: %s", strerror(errno));
@@ -241,7 +241,7 @@ int main(int argc, char **argv) try
 		if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* public store flag */
 			throw YError("PG-1016: %s", strerror(errno));
 		gi_folder_map_write({});
-		gi_name_map_write(name_map);
+		gi_name_map_write(static_namedprop_map.fwd);
 		EXT_PUSH ep;
 		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 			throw YError("ENOMEM");

@@ -92,10 +92,10 @@ void gi_dump_name_map(const gi_name_map &map)
 		char g[40];
 		propname.guid.to_str(g, std::size(g), 38);
 		if (propname.kind == MNID_ID)
-			fprintf(stderr, "\t%08xh <-> {MNID_ID, %s, %xh}\n",
+			fprintf(stderr, "\t%04xh <-> {MNID_ID, %s, %xh}\n",
 				propid, g, static_cast<unsigned int>(propname.lid));
 		else if (propname.kind == MNID_STRING)
-			fprintf(stderr, "\t%08xh <-> {MNID_STRING, %s, %s}\n",
+			fprintf(stderr, "\t%04xh <-> {MNID_STRING, %s, %s}\n",
 				propid, g, propname.name.c_str());
 	}
 }

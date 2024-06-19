@@ -24,6 +24,7 @@
 #include <gromox/util.hpp>
 #include "edb_pack.hpp"
 #include "genimport.hpp"
+#include "staticnpmap.cpp"
 #define TOCU8(s) reinterpret_cast<const uint8_t *>(s)
 #define TOU8(s) reinterpret_cast<uint8_t *>(s)
 
@@ -325,9 +326,8 @@ static std::map<unsigned int, mbox> get_mbox_list(libesedb_file_t *file)
  * Read the named properties list of the given mailbox and return a
  * genimport_namemap object for it.
  */
-static gi_name_map do_namedprops(mbox_state &mbs)
+static void do_namedprops(mbox_state &mbs)
 {
-	gi_name_map map;
 	ese_error_ptr err;
 	ese_table_ptr table;
 	std::string tbl_name = "ExtendedPropertyNameMapping_" + std::to_string(mbs.mbid);
@@ -360,9 +360,8 @@ static gi_name_map do_namedprops(mbox_state &mbs)
 			}
 		});
 		if (propid != 0)
-			map.emplace(PROP_TAG(PT_UNSPECIFIED, propid), std::move(pn_req));
+			static_namedprop_map.emplace(propid, std::move(pn_req));
 	}
-	return map;
 }
 
 /**
@@ -547,9 +546,9 @@ static errno_t do_mbox(mbox_state &mbs)
 		throw YError("PG-1016: %s", strerror(errno));
 	gi_folder_map_write({});
 
-	auto name_map = do_namedprops(mbs);
-	gi_dump_name_map(name_map);
-	gi_name_map_write(name_map);
+	do_namedprops(mbs);
+	gi_dump_name_map(static_namedprop_map.fwd);
+	gi_name_map_write(static_namedprop_map.fwd);
 
 	mbs.hier = read_hierarchy(mbs);
 	auto zero_base = mbs.hier.find(hierarchy_root_anchor);

@@ -37,6 +37,7 @@ struct gi_delete : public gromox::stdlib_delete {
 };
 
 using gi_name_map = std::unordered_map<uint32_t, PROPERTY_XNAME>;
+struct namedprop_bimap;
 
 struct parent_desc {
 	/* Here, MAPI_STORE is used to mean "unset" */
@@ -47,7 +48,7 @@ struct parent_desc {
 		MESSAGE_CONTENT *message;
 		ATTACHMENT_CONTENT *attach;
 	};
-	gi_name_map *names = nullptr;
+	namedprop_bimap *names = nullptr;
 
 	static inline parent_desc as_msg(MESSAGE_CONTENT *m)
 	{

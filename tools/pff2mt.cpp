@@ -33,6 +33,7 @@
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
+#include "staticnpmap.cpp"
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -278,7 +279,7 @@ static bool is_mapi_message(uint32_t nid)
 }
 
 static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc,
-    libpff_item_t *atx, gi_name_map &name_map)
+    libpff_item_t *atx, namedprop_bimap &name_map)
 {
 	int atype = LIBPFF_ATTACHMENT_TYPE_UNDEFINED;
 	uint64_t asize = 0;
@@ -493,10 +494,11 @@ mv_decode_bin(uint32_t proptag, const uint8_t *data, size_t dsize)
 	return tp;
 }
 
-static void emit_namedprop(gi_name_map &seen, libpff_record_entry_t *rent,
+static void emit_namedprop(namedprop_bimap &name_map, libpff_record_entry_t *rent,
     uint32_t proptag)
 {
-	if (seen.find(proptag) != seen.end())
+	uint16_t propid = PROP_ID(proptag);
+	if (name_map.fwd.find(propid) != name_map.fwd.cend())
 		return; /* already sent */
 	libpff_nti_entry_ptr nti_entry;
 	uint8_t nti_type = 0;
@@ -545,11 +547,13 @@ static void emit_namedprop(gi_name_map &seen, libpff_record_entry_t *rent,
 		throw YError("PG-1140: %s", strerror(errno));
 	if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
 		throw YError("PG-1141: %s", strerror(errno));
-	seen.emplace(proptag, std::move(pn_req));
+	auto asg = name_map.emplace(propid, std::move(pn_req));
+	if (asg != propid)
+		throw YError("PG-1142: did not assign namedprop propid as expected, call devs");
 }
 
 static void recordent_to_tpropval(libpff_record_entry_t *rent,
-    TPROPVAL_ARRAY *ar, gi_name_map *name_map)
+    TPROPVAL_ARRAY *ar, namedprop_bimap *name_map)
 {
 	libpff_error_ptr err, e2, e3;
 	unsigned int etype = 0, vtype = 0;
@@ -738,7 +742,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 }
 
 static void recordset_to_tpropval_a(libpff_record_set_t *rset,
-    TPROPVAL_ARRAY *props, gi_name_map *name_map)
+    TPROPVAL_ARRAY *props, namedprop_bimap *name_map)
 {
 	int nent = 0;
 	libpff_error_ptr err;
@@ -755,7 +759,7 @@ static void recordset_to_tpropval_a(libpff_record_set_t *rset,
 
 /* Collect all recordsets' properties into one TPROPVAL_ARRAY */
 static tpropval_array_ptr item_to_tpropval_a(libpff_item_t *item,
-    gi_name_map *name_map)
+    namedprop_bimap *name_map)
 {
 	tpropval_array_ptr props(tpropval_array_init());
 	if (props == nullptr)
@@ -777,7 +781,7 @@ static tpropval_array_ptr item_to_tpropval_a(libpff_item_t *item,
 
 /* Collect each recordset as its own TPROPVAL_ARRAY */
 static tarray_set_ptr item_to_tarray_set(libpff_item_t *item,
-    gi_name_map *name_map)
+    namedprop_bimap *name_map)
 {
 	tarray_set_ptr tset(tarray_set_init());
 	if (tset == nullptr)
@@ -1222,23 +1226,22 @@ static errno_t do_file(const char *filename) try
 	libpff_item_ptr root;
 	if (libpff_file_get_root_item(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1)
 		throw az_error("PF-1025", err);
-	gi_name_map name_map;
 	gi_name_map_write({}); /* required by GXMT0003 format */
 
 	if (g_show_tree)
 		fprintf(stderr, "Object tree:\n");
 	if (g_only_objs.size() == 0) {
 		parent_desc pd{};
-		pd.names = &name_map;
+		pd.names = &static_namedprop_map;
 		auto iret = do_item(0, std::move(pd), root.get());
 		if (iret < 0)
 			return iret;
-		gi_dump_name_map(name_map);
+		gi_dump_name_map(static_namedprop_map.fwd);
 		return 0;
 	}
 
 	auto pd = parent_desc::as_folder(~0ULL);
-	pd.names = &name_map;
+	pd.names = &static_namedprop_map;
 	for (const auto nid : g_only_objs) {
 		if (libpff_file_get_item_by_identifier(file.get(), nid,
 		    &~unique_tie(root), &~unique_tie(err)) < 1)
@@ -1247,7 +1250,7 @@ static errno_t do_file(const char *filename) try
 		if (ret < 0)
 			return ret;
 	}
-	gi_dump_name_map(name_map);
+	gi_dump_name_map(static_namedprop_map.fwd);
 	return 0;
 } catch (const char *e) {
 	fprintf(stderr, "pff: Exception: %s\n", e);
