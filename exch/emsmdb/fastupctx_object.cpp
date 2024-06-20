@@ -216,8 +216,8 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 		return ecRpcFailed;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::write_message(dir, plogon->get_account(), pinfo->cpid,
-	    folder_id, pctx->m_content, &e_result) || e_result != ecSuccess)
+	if (!exmdb_client::write_message(dir, pinfo->cpid, folder_id,
+	    pctx->m_content, &e_result) || e_result != ecSuccess)
 		return e_result;
 	return ecSuccess;
 }
@@ -470,7 +470,7 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			ec_error_t e_result = ecRpcFailed;
 			if (!exmdb_client::flush_instance(dir, pnode->instance_id,
-			    nullptr, &e_result) || e_result != ecSuccess)
+			    &e_result) || e_result != ecSuccess)
 				return e_result;
 			if (!exmdb_client::unload_instance(dir, pnode->instance_id))
 				return ecRpcFailed;
@@ -534,7 +534,7 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			ec_error_t e_result = ecRpcFailed;
 			if (!exmdb_client::flush_instance(dir, pnode->instance_id,
-			    nullptr, &e_result) || e_result != ecSuccess)
+			    &e_result) || e_result != ecSuccess)
 				return e_result;
 			if (!exmdb_client::unload_instance(dir, pnode->instance_id))
 				return ecRpcFailed;

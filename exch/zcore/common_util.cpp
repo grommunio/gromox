@@ -1293,9 +1293,8 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 			return FALSE;	
 		if (!exmdb_client::clear_submit(pstore->get_dir(), message_id, false))
 			return FALSE;
-		if (!exmdb_client::movecopy_message(pstore->get_dir(),
-		    pstore->account_id, cpid, message_id, folder_id, new_id,
-		    TRUE, &b_result))
+		if (!exmdb_client::movecopy_message(pstore->get_dir(), cpid,
+		    message_id, folder_id, new_id, TRUE, &b_result))
 			return FALSE;
 		return TRUE;
 	} else if (b_delete) {
@@ -1312,9 +1311,8 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 	if (ptarget == nullptr || !cu_entryid_to_fid(*ptarget,
 	    &b_private, &account_id, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
-	return exmdb_client::movecopy_messages(pstore->get_dir(),
-	       pstore->account_id, cpid, false, STORE_OWNER_GRANTED,
-	       parent_id, folder_id, false, &ids, &b_partial);
+	return exmdb_client::movecopy_messages(pstore->get_dir(), cpid, false,
+	       STORE_OWNER_GRANTED, parent_id, folder_id, false, &ids, &b_partial);
 }
 
 void common_util_notify_receipt(const char *username, int type,
@@ -1570,9 +1568,8 @@ ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
 		return ecError;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	ec_error_t e_result = ecError;
-	if (!exmdb_client::write_message(dst_store->get_dir(),
-	    dst_store->get_account(), pinfo->cpid, folder_id1,
-	    pmsgctnt, &e_result) || e_result != ecSuccess)
+	if (!exmdb_client::write_message(dst_store->get_dir(), pinfo->cpid,
+	    folder_id1, pmsgctnt, &e_result) || e_result != ecSuccess)
 		return e_result;
 	return ecSuccess;
 }

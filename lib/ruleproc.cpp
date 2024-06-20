@@ -630,8 +630,8 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 
 	/* Writeout */
 	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::write_message(newdir, other_store.pserver_name, CP_UTF8,
-	    dst_fid, dst.get(), &e_result)) {
+	if (!exmdb_client::write_message(newdir, CP_UTF8, dst_fid,
+	    dst.get(), &e_result)) {
 		mlog(LV_DEBUG, "ruleproc: write_message failed");
 		return ecRpcFailed;
 	} else if (e_result != ecSuccess) {
@@ -648,9 +648,8 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	del_mids.count = 1;
 	del_mids.pids = reinterpret_cast<uint64_t *>(&par.cur.mid);
 	BOOL partial = false;
-	if (!exmdb_client::delete_messages(par.cur.dirc(),
-	    tgt_public ? domain_id : user_id, CP_UTF8,
-	    nullptr, par.cur.fid, &del_mids, true, &partial))
+	if (!exmdb_client::delete_messages(par.cur.dirc(), CP_UTF8, nullptr,
+	    par.cur.fid, &del_mids, true, &partial))
 		mlog(LV_ERR, "ruleproc: OP_MOVE del_msg %s:%llxh failed",
 			par.cur.dirc(), LLU{rop_util_get_gc_value(par.cur.mid)});
 	par.cur.dir = newdir;
@@ -674,8 +673,8 @@ static ec_error_t op_copy(rxparam &par, const rule_node &rule,
 	BOOL result = false;
 	if (!exmdb_client::allocate_message_id(par.cur.dirc(), dst_fid, &dst_mid))
 		return ecRpcFailed;
-	if (!exmdb_client::movecopy_message(par.cur.dirc(), 0, CP_ACP,
-	    par.cur.mid, dst_fid, dst_mid, act_type == OP_MOVE ? TRUE : false, &result))
+	if (!exmdb_client::movecopy_message(par.cur.dirc(), CP_ACP, par.cur.mid,
+	    dst_fid, dst_mid, act_type == OP_MOVE ? TRUE : false, &result))
 		return ecRpcFailed;
 	if (act_type == OP_MOVE) {
 		par.cur.fid = eid_t(dst_fid);
@@ -853,8 +852,8 @@ ec_error_t rxparam::run()
 	if (del) {
 		const EID_ARRAY ids = {1, reinterpret_cast<uint64_t *>(&cur.mid)};
 		BOOL partial;
-		if (!exmdb_client::delete_messages(cur.dirc(), 0,
-		    CP_ACP, nullptr, cur.fid, &ids, true/*hard*/, &partial))
+		if (!exmdb_client::delete_messages(cur.dirc(), CP_ACP, nullptr,
+		    cur.fid, &ids, true/*hard*/, &partial))
 			mlog(LV_DEBUG, "ruleproc: deletion unsuccessful");
 		return ecSuccess;
 	}

@@ -99,6 +99,7 @@ E(get_domain_ids)
 E(get_id_from_maildir)
 E(get_id_from_homedir)
 E(get_handle)
+E(get_domain_info)
 #undef E
 decltype(ems_send_mail) ems_send_mail;
 decltype(ems_send_vmail) ems_send_vmail;
@@ -4793,9 +4794,8 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	return TRUE;
 }
 
-BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
-	uint64_t message_id, uint64_t folder_id, uint64_t *pdst_mid,
-	BOOL *pb_result, uint32_t *pmessage_size)
+BOOL cu_copy_message(sqlite3 *psqlite, uint64_t message_id, uint64_t folder_id,
+    uint64_t *pdst_mid, BOOL *pb_result, uint32_t *pmessage_size)
 {
 	void *pvalue;
 	BOOL b_result;
@@ -4821,6 +4821,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 	if (!cu_set_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
 	    PR_INTERNET_ARTICLE_NUMBER_NEXT, &next, &b_result))
 		return FALSE;
+	auto account_id = exmdb_server::get_account_id();
 	propval_buff[0].proptag = PR_CHANGE_KEY;
 	propval_buff[0].pvalue = cu_xid_to_bin({
 		exmdb_server::is_private() ?
