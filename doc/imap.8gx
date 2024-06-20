@@ -43,6 +43,16 @@ Request that the file descriptor table be at least this large. The magic value
 should be used.
 .br
 Default: \fI0\fP
+.TP
+\fBimap_accept_haproxy\fP
+This directive sets the expectation for incoming connections to carry haproxy's
+"PROXY" protocol extension version 2 (2), or no such header (0). When a
+(reverse) proxy is placed in front of gromox\-imap, the address that gximap
+normally sees is the proxy address (e.g. ::1). A proxy can use this protocol
+extension to convey the actual client address, and gximap can pick this up for
+its own reporting, which in turn is useful for e.g. fail2ban setups.
+.br
+Default: \fI0\fP
 .SH Configuration directives (imap.cfg)
 The following directives are recognized when reading from /etc/gromox/imap.cfg,
 or when the \fB\-c\fP option is used to specify a custom file:

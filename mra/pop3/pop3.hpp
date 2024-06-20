@@ -65,20 +65,22 @@ struct pop3_context final : public schedule_context {
 	char maildir[256]{};
 };
 
-extern int pop3_cmd_handler_capa(const char *cm, int len, pop3_context *);
-extern int pop3_cmd_handler_stls(const char *cm, int len, pop3_context *);
-extern int pop3_cmd_handler_user(const char *cm, int len, pop3_context *);
-extern int pop3_cmd_handler_pass(const char *cm, int len, pop3_context *);
-extern int pop3_cmd_handler_stat(const char *cm, int len, pop3_context *);
-extern int pop3_cmd_handler_uidl(const char *cm, int len, pop3_context *);
-extern int pop3_cmd_handler_list(const char *cm, int len, pop3_context *);
-extern int pop3_cmd_handler_retr(const char *cm, int len, pop3_context *);
-extern int pop3_cmd_handler_rset(const char *cm, int len, pop3_context *);
-extern int pop3_cmd_handler_noop(const char *cm, int len, pop3_context *);
-extern int pop3_cmd_handler_dele(const char *cm, int len, pop3_context *);
-extern int pop3_cmd_handler_top(const char *cm, int len, pop3_context *);
-extern int pop3_cmd_handler_quit(const char *cm, int len, pop3_context *);
-extern int pop3_cmd_handler_else(const char *cm, int len, pop3_context *);
+using pophnd = int(std::vector<std::string> &&, pop3_context *);
+extern pophnd
+	pop3_cmd_handler_capa,
+	pop3_cmd_handler_stls,
+	pop3_cmd_handler_user,
+	pop3_cmd_handler_pass,
+	pop3_cmd_handler_stat,
+	pop3_cmd_handler_uidl,
+	pop3_cmd_handler_list,
+	pop3_cmd_handler_retr,
+	pop3_cmd_handler_rset,
+	pop3_cmd_handler_noop,
+	pop3_cmd_handler_dele,
+	pop3_cmd_handler_top,
+	pop3_cmd_handler_quit,
+	pop3_cmd_handler_else;
 extern void pop3_parser_init(int context_num, size_t retrieving_size, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int pop3_parser_run();
 extern tproc_status pop3_parser_process(schedule_context *);
