@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -31,7 +31,9 @@
 #include <gromox/clock.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/gab.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/propval.hpp>
@@ -1040,6 +1042,19 @@ static uint32_t ab_tree_get_dtyp(const tree_node *n)
 	return DT_MAILUSER;
 }
 
+static uint32_t ab_tree_get_etyp(const tree_node *n)
+{
+	/* cloned from/to nsp/ab_tree.cpp */
+	auto &a = *containerof(n, AB_NODE, stree);
+	if (a.node_type >= abnode_type::containers)
+		return DT_CONTAINER;
+	else if (a.node_type == abnode_type::mlist)
+		return DT_DISTLIST;
+	else if (a.node_type != abnode_type::user)
+		return DT_MAILUSER;
+	return dtypx_to_etyp(static_cast<const sql_user *>(a.d_info)->dtypx);
+}
+
 static std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *n)
 {
 	auto &a = *containerof(n, AB_NODE, stree);
@@ -1227,13 +1242,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		auto bv = static_cast<BINARY *>(pvalue);
 		ab_entryid.flags = 0;
-		ab_entryid.version = 1;
-		if (node_type >= abnode_type::containers)
-			ab_entryid.type = DT_CONTAINER;
-		else if (node_type == abnode_type::mlist)
-			ab_entryid.type = DT_DISTLIST;
-		else
-			ab_entryid.type = DT_MAILUSER;
+		ab_entryid.type = ab_tree_get_etyp(pnode);
 		if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 			return FALSE;
 		ab_entryid.px500dn = dn;
@@ -1273,10 +1282,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		if (bv->pv == nullptr)
 			return FALSE;
 		minid = ab_tree_get_node_minid(pnode);
-		bv->pb[0] = minid & 0xFF;
-		bv->pb[1] = (minid >> 8) & 0xFF;
-		bv->pb[2] = (minid >> 16) & 0xFF;
-		bv->pb[3] = (minid >> 24) & 0xFF;
+		cpu_to_le32p(bv->pb, minid);
 		*ppvalue = pvalue;
 		return TRUE;
 	}

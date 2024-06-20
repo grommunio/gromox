@@ -1644,7 +1644,10 @@ pack_result EXT_PULL::g_abk_eid(EMSAB_ENTRYID *r)
 	TRY(g_guid(&g));
 	if (g != muidEMSAB)
 		return EXT_ERR_FORMAT;
-	TRY(g_uint32(&r->version));
+	uint32_t v;
+	TRY(g_uint32(&v));
+	if (v != 1)
+		return pack_result::format;
 	TRY(g_uint32(&r->type));
 	return g_str(&r->px500dn);
 }
@@ -3213,7 +3216,7 @@ pack_result EXT_PUSH::p_abk_eid(const EMSAB_ENTRYID &r)
 {
 	TRY(p_uint32(r.flags));
 	TRY(p_guid(muidEMSAB));
-	TRY(p_uint32(r.version));
+	TRY(p_uint32(1));
 	TRY(p_uint32(r.type));
 	return p_str(r.px500dn);
 }

@@ -42,6 +42,7 @@
 #include "ab_tree.hpp"
 #include "common_util.hpp"
 #include "nsp_types.hpp"
+#include "../gab.cpp"
 
 #define BASE_STATUS_CONSTRUCTING			0
 #define BASE_STATUS_LIVING					1
@@ -1163,6 +1164,18 @@ std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *n)
 	 * used in an ACL (and usernames are mandatory currently).
 	 */
 	return {(obj.dtypx & DTE_MASK_LOCAL) | DTE_FLAG_ACL_CAPABLE};
+}
+
+uint32_t ab_tree_get_etyp(const tree_node *n)
+{
+	auto &a = *containerof(n, AB_NODE, stree);
+	if (a.node_type >= abnode_type::containers)
+		return DT_CONTAINER;
+	else if (a.node_type == abnode_type::mlist)
+		return DT_DISTLIST;
+	else if (a.node_type != abnode_type::user)
+		return DT_MAILUSER;
+	return dtypx_to_etyp(static_cast<const sql_user *>(a.d_info)->dtypx);
 }
 
 /**

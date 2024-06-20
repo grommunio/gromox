@@ -2228,7 +2228,7 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	if (err != ecSuccess)
 		throw DispatchError(E3085);
 	HX_strupper(essdn.data());
-	EMSAB_ENTRYID abEid{0, 1, DT_MAILUSER, essdn.data()};
+	EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
 	if(!wAbEid.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) || wAbEid.p_abk_eid(abEid) != EXT_ERR_SUCCESS)
 		throw DispatchError(E3085);
 	BINARY* abEidContainer = construct<BINARY>(BINARY{wAbEid.m_offset, {abEidBuff}});

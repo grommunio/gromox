@@ -22,6 +22,7 @@
 #include <gromox/ab_tree.hpp>
 #include <gromox/archive.hpp>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
@@ -119,9 +120,8 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	int temp_len;
 	char dn[1280]{};
 	GUID temp_guid;
-	uint32_t display_type;
 	EPHEMERAL_ENTRYID ephid;
-	PERMANENT_ENTRYID permeid;
+	EMSAB_ENTRYID permeid;
 	
 	temp_len = 1024;
 	pprop->proptag = proptag;
@@ -211,26 +211,25 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		memcpy(pprop->value.bin.pb, &muidEMSAB, sizeof(muidEMSAB));
 		return ecSuccess;
 	case PR_TEMPLATEID:
-		display_type = node_type == abnode_type::mlist ? DT_DISTLIST : DT_MAILUSER;
 		if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 			return ecNotFound;
-		if (!common_util_set_permanententryid(display_type, nullptr, dn, &permeid) ||
+		if (!common_util_set_permanententryid(ab_tree_get_etyp(pnode),
+		    nullptr, dn, &permeid) ||
 		    !common_util_permanent_entryid_to_binary(&permeid, &pprop->value.bin))
 			return ecServerOOM;
 		return ecSuccess;
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
 	case PR_ORIGINAL_ENTRYID:
-		display_type = node_type == abnode_type::mlist ? DT_DISTLIST : DT_MAILUSER;
 		if (!b_ephid) {
 			if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 				return ecNotFound;
-			if (!common_util_set_permanententryid(display_type,
+			if (!common_util_set_permanententryid(ab_tree_get_etyp(pnode),
 			    nullptr, dn, &permeid) ||
 			    !common_util_permanent_entryid_to_binary(&permeid, &pprop->value.bin))
 				return ecServerOOM;
 		} else {
-			common_util_set_ephemeralentryid(display_type,
+			common_util_set_ephemeralentryid(ab_tree_get_etyp(pnode),
 				ab_tree_get_node_minid(pnode), &ephid);
 			if (!common_util_ephemeral_entryid_to_binary(&ephid,
 			    &pprop->value.bin))
@@ -262,10 +261,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		}
 		pprop->value.bin.cb = 4;
 		minid = ab_tree_get_node_minid(pnode);
-		pprop->value.bin.pb[0] = minid & 0xFF;
-		pprop->value.bin.pb[1] = (minid >> 8) & 0xFF;
-		pprop->value.bin.pb[2] = (minid >> 16) & 0xFF;
-		pprop->value.bin.pb[3] = (minid >> 24) & 0xFF;
+		cpu_to_le32p(pprop->value.bin.pb, minid);
 		return ecSuccess;
 	case PR_TRANSMITABLE_DISPLAY_NAME:
 		if (node_type != abnode_type::user)
@@ -1873,7 +1869,7 @@ int nsp_interface_mod_props(NSPI_HANDLE handle, uint32_t reserved,
 static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
     BOOL b_unicode, cpid_t codepage, BOOL has_child,
 	unsigned int depth, int container_id, const char *str_dname,
-	PERMANENT_ENTRYID *ppermeid_parent, PERMANENT_ENTRYID *ppermeid)
+    EMSAB_ENTRYID *ppermeid_parent, EMSAB_ENTRYID *ppermeid)
 {
 	int tmp_len;
 	char tmp_title[1024];
@@ -1964,7 +1960,7 @@ static BOOL nsp_interface_has_child(const SIMPLE_TREE_NODE *pnode)
 }
 
 static uint32_t nsp_interface_get_specialtables_from_node(
-    const SIMPLE_TREE_NODE *pnode, PERMANENT_ENTRYID *ppermeid_parent,
+    const SIMPLE_TREE_NODE *pnode, EMSAB_ENTRYID *ppermeid_parent,
     BOOL b_unicode, cpid_t codepage, NSP_ROWSET *prows)
 {
 	GUID tmp_guid;
@@ -1974,7 +1970,7 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	NSP_PROPROW *prow;
 	char str_dname[1024];
 	
-	auto ppermeid = ndr_stack_anew<PERMANENT_ENTRYID>(NDR_STACK_OUT);
+	auto ppermeid = ndr_stack_anew<EMSAB_ENTRYID>(NDR_STACK_OUT);
 	if (ppermeid == nullptr)
 		return ecServerOOM;
 	if (!ab_tree_node_to_guid(pnode, &tmp_guid))
@@ -2026,7 +2022,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	int base_id;
 	uint32_t result;
 	NSP_PROPROW *prow;
-	PERMANENT_ENTRYID permeid;
+	EMSAB_ENTRYID permeid;
 	
 	if (flags & NspiAddressCreationTemplates)
 		/* creation of templates table */
@@ -2073,7 +2069,6 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
     uint32_t proptag, uint32_t mid, const BINARY_ARRAY *pentry_ids) try
 {
 	int base_id;
-	uint32_t tmp_mid;
 	char maildir[256];
 	
 	if (mid == 0)
@@ -2105,11 +2100,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			continue;
 		if (pentry_ids->pbin[i].cb == 32 &&
 		    pentry_ids->pbin[i].pb[0] == ENTRYID_TYPE_EPHEMERAL) {
-			tmp_mid = pentry_ids->pbin[i].pb[28];
-			tmp_mid |= ((uint32_t)pentry_ids->pbin[i].pb[29]) << 8;
-			tmp_mid |= ((uint32_t)pentry_ids->pbin[i].pb[30]) << 16;
-			tmp_mid |= ((uint32_t)pentry_ids->pbin[i].pb[31]) << 24;
-			ptnode = ab_tree_minid_to_node(pbase.get(), tmp_mid);
+			ptnode = ab_tree_minid_to_node(pbase.get(), le32p_to_cpu(&pentry_ids->pbin[i].pb[28]));
 		} else if (pentry_ids->pbin[i].cb >= 28 &&
 		    pentry_ids->pbin[i].pb[0] == ENTRYID_TYPE_PERMANENT) {
 			ptnode = ab_tree_dn_to_node(pbase.get(), pentry_ids->pbin[i].pc + 28);
