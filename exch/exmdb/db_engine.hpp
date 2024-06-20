@@ -189,7 +189,7 @@ struct db_conn {
 	void transport_new_mail(uint64_t folder_id, uint64_t msg_id, uint32_t msg_flags, const char *klass, const db_base &);
 	void begin_batch_mode(db_base &);
 	/* pdb will also be put */
-	static void commit_batch_mode_release(std::optional<db_conn> &&pdb, db_base *);
+	static void commit_batch_mode_release(std::optional<db_conn> &&pdb, db_base_wr_ptr &&base);
 	void cancel_batch_mode(db_base &);
 	std::unique_ptr<prepared_statements> begin_optim();
 
@@ -200,8 +200,9 @@ struct db_conn {
 	inline uint32_t next_table_id() { return ++m_base->tables.last_id; }
 
 	sqlite3 *psqlite = nullptr, *m_sqlite_eph = nullptr;
+
+	private:
 	db_base *m_base = nullptr;
-	std::unique_lock<std::shared_mutex> m_lock;
 };
 using db_conn_ptr = std::optional<db_conn>;
 

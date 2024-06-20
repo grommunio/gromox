@@ -441,8 +441,7 @@ void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
 }
 
 db_conn::db_conn(db_base &base) :
-	m_base(&base),
-	m_lock(base.giant_lock, std::defer_lock) // will be acquired during open()
+	m_base(&base)
 {
 	++base.reference;
 }
@@ -450,8 +449,7 @@ db_conn::db_conn(db_base &base) :
 db_conn::db_conn(db_conn &&o) :
 	psqlite(std::move(o.psqlite)),
 	m_sqlite_eph(std::move(o.m_sqlite_eph)),
-	m_base(std::move(o.m_base)),
-	m_lock(std::move(o.m_lock))
+	m_base(std::move(o.m_base))
 {
 	o.psqlite = o.m_sqlite_eph = nullptr;
 	o.m_base = nullptr;
@@ -485,7 +483,6 @@ db_conn &db_conn::operator=(db_conn &&o)
 bool db_conn::open(const char *dir) try
 {
 	m_base->get_dbs(dir, psqlite, m_sqlite_eph);
-	m_lock.lock();
 	return psqlite && m_sqlite_eph;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1349: ENOMEM");
@@ -566,20 +563,9 @@ static void *db_expiry_thread(void *param)
 	return nullptr;
 }
 
-static bool db_reload(db_conn_ptr &pdb, const char *dir)
-{
-	pdb.reset();
-	exmdb_server::free_env();
-	if (g_exmdb_search_yield)
-		std::this_thread::yield(); /* +2 to +3% walltime */
-	exmdb_server::build_env(EM_PRIVATE, dir);
-	pdb = db_engine_get_db(dir);
-	return !!pdb;
-}
-
 static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
     uint64_t search_fid, uint64_t scope_fid, const RESTRICTION *prestriction,
-    db_conn_ptr &pdb, db_base &dbase)
+    db_conn_ptr &pdb)
 {
 	char sql_string[128];
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false); // ends before writes take place
@@ -625,15 +611,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
 		if (g_notify_stop)
 			break;
-		auto t_msg = tp_now();
-		if (count >= g_exmdb_search_pacing ||
-		    (t_msg - t_start) >= std::chrono::nanoseconds(g_exmdb_search_pacing_time)) {
-			if (!db_reload(pdb, dir))
-				return false;
-			count = 0;
-			t_start = tp_now();
-		}
-		auto sql_transact1 = gx_sql_begin_trans(pdb->psqlite, false);
+		auto sql_transact1 = gx_sql_begin_trans(pdb->psqlite, true);
 		if (!sql_transact1)
 			return false;
 		if (!cu_eval_msg_restriction(pdb->psqlite,
@@ -651,19 +629,21 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 			break;
 		else if (ret != SQLITE_OK)
 			continue;
+		if (sql_transact1.commit() != SQLITE_OK)
+			return false;
 		/*
 		 * Update other search folders (seems like it is allowed to
 		 * have a search folder have a scope containing another search
 		 * folder; exmdb_provider only does a descendant check).
 		 */
+		auto dbase = pdb->lock_base_wr();
 		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
-			search_fid, pmessage_ids->pids[i], 0, dbase);
+			search_fid, pmessage_ids->pids[i], 0, *dbase);
 		/*
 		 * Regular notifications
 		 */
-		pdb->notify_link_creation(search_fid, pmessage_ids->pids[i], dbase);
-		if (sql_transact1.commit() != SQLITE_OK)
-			return false;
+		pdb->notify_link_creation(search_fid, pmessage_ids->pids[i], *dbase);
+		dbase.reset();
 	}
 	return TRUE;
 }
@@ -820,17 +800,17 @@ static void *sf_popul_thread(void *param)
 		auto pdb = db_engine_get_db(psearch->dir.c_str());
 		if (!pdb)
 			goto NEXT_SEARCH;
-		db_base *dbase = pdb->m_base;
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
 			if (g_notify_stop)
 				break;
 			if (!db_engine_search_folder(psearch->dir.c_str(),
 			    psearch->cpid, psearch->folder_id,
-			    pfolder_ids->pids[i], psearch->prestriction, pdb, *dbase))
+			    pfolder_ids->pids[i], psearch->prestriction, pdb))
 				break;
 		}
 		if (g_notify_stop)
 			break;
+		auto dbase = pdb->lock_base_wr();
 		/* Stop animation (does nothing else in OL really) */
 		dbeng_notify_search_completion(*dbase, psearch->folder_id);
 		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
@@ -848,6 +828,7 @@ static void *sf_popul_thread(void *param)
 			if (t.type == table_type::content &&
 			    psearch->folder_id == t.folder_id)
 				table_ids.push_back(t.table_id);
+		dbase.reset();
 		pdb.reset();
 		/*
 		 * reload_ct triggers a table_change notification, and the
@@ -3955,7 +3936,7 @@ void db_conn::begin_batch_mode(db_base &dbase)
 	dbase.tables.b_batch = true;
 }
 
-void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb, db_base *dbase)
+void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb, db_base_wr_ptr &&dbase)
 {
 	auto table_num = dbase->tables.table_list.size();
 	auto ptable_ids = table_num > 0 ? cu_alloc<uint32_t>(table_num) : nullptr;
@@ -3970,6 +3951,7 @@ void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb, db_base *dbase)
 		}
 	}
 	dbase->tables.b_batch = false;
+	dbase.reset();
 	pdb.reset();
 	auto dir = exmdb_server::get_dir();
 	while (table_num-- > 0)

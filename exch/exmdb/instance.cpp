@@ -332,7 +332,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto instance_id = dbase->next_instance_id();
 	if (instance_id == UINT32_MAX)
 		return false;
@@ -406,7 +406,7 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
 	if (!pdb)
 		return FALSE;
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite); // may be required later but must be started here to avoid deadlocks
-	auto dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto instance_id = dbase->next_instance_id();
 	if (instance_id == UINT32_MAX)
 		return false;
@@ -486,7 +486,7 @@ BOOL exmdb_server::get_embedded_cn(const char *dir, uint32_t instance_id,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -510,7 +510,7 @@ BOOL exmdb_server::reload_message_instance(const char *dir,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
 	if (!sql_transact)
 		return false;
-	auto dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto pinstance = dbase->get_instance(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -567,7 +567,7 @@ BOOL exmdb_server::clear_message_instance(const char *dir, uint32_t instance_id)
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	auto dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto pinstance = dbase->get_instance(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -945,7 +945,7 @@ BOOL exmdb_server::read_message_instance(const char *dir,
 		return FALSE;
 	/* No database access, so no transaction. */
 	memset(pmsgctnt, 0, sizeof(MESSAGE_CONTENT));
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -999,7 +999,7 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	auto dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto pinstance = dbase->get_instance(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -1131,7 +1131,7 @@ BOOL exmdb_server::load_attachment_instance(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	auto dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto instance_id = dbase->next_instance_id();
 	if (instance_id == UINT32_MAX)
 		return false;
@@ -1184,7 +1184,7 @@ BOOL exmdb_server::create_attachment_instance(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	auto dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto instance_id = dbase->next_instance_id();
 	if (instance_id == UINT32_MAX)
 		return false;
@@ -1232,7 +1232,7 @@ BOOL exmdb_server::read_attachment_instance(const char *dir,
 		return FALSE;
 	/* No database access, so no transaction. */
 	memset(pattctnt, 0, sizeof(ATTACHMENT_CONTENT));
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::attachment)
 		return FALSE;
@@ -1250,7 +1250,7 @@ BOOL exmdb_server::write_attachment_instance(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::attachment)
 		return FALSE;
@@ -1321,7 +1321,7 @@ BOOL exmdb_server::delete_message_instance_attachment(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto pinstance = dbase->get_instance_c(message_instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -1359,7 +1359,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 	if (!pdb)
 		return FALSE;
 	/* No direct database access, so no transaction. */
-	auto dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto pinstance = dbase->get_instance(instance_id);
 	if (pinstance == nullptr)
 		return FALSE;
@@ -1512,6 +1512,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 	folder_id = rop_util_make_eid_ex(1, pinstance->folder_id);
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(pinstance->username.c_str());
+	dbase.reset();
 	pdb.reset();
 	g_inside_flush_instance = true;
 	BOOL b_result = exmdb_server::write_message(dir, CP_ACP,
@@ -1527,7 +1528,7 @@ BOOL exmdb_server::unload_instance(const char *dir, uint32_t instance_id)
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	auto dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	for (auto it = dbase->instance_list.begin(); it != dbase->instance_list.end(); ++it) {
 		if (it->instance_id == instance_id) {
 			dbase->instance_list.erase(it);
@@ -1604,7 +1605,7 @@ BOOL exmdb_server::get_instance_all_proptags(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr)
 		return FALSE;
@@ -1907,7 +1908,7 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr)
 		return FALSE;
@@ -2446,7 +2447,7 @@ BOOL exmdb_server::set_instance_properties(const char *dir,
 	if (!db)
 		return false;
 	/* No database access, so no transaction. */
-	auto dbase = db->m_base;
+	auto dbase = db->lock_base_wr();
 	auto ins = dbase->get_instance(instance_id);
 	if (ins == nullptr)
 		return false;
@@ -2550,7 +2551,7 @@ BOOL exmdb_server::remove_instance_properties(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr)
 		return FALSE;
@@ -2571,7 +2572,7 @@ BOOL exmdb_server::is_descendant_instance(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(dst_instance_id);
 	while (NULL != pinstance && 0 != pinstance->parent_id) {
 		if (pinstance->parent_id == src_instance_id) {
@@ -2591,7 +2592,7 @@ BOOL exmdb_server::empty_message_instance_rcpts(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -2610,7 +2611,7 @@ BOOL exmdb_server::get_message_instance_rcpts_num(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -2627,7 +2628,7 @@ BOOL exmdb_server::get_message_instance_rcpts_all_proptags(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -2669,7 +2670,7 @@ BOOL exmdb_server::get_message_instance_rcpts(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -2737,7 +2738,7 @@ BOOL exmdb_server::update_message_instance_rcpts(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -2793,7 +2794,7 @@ BOOL exmdb_server::copy_instance_rcpts(const char *dir, BOOL b_force,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto pinstance_src = dbase->get_instance_c(src_instance_id);
 	if (pinstance_src == nullptr || pinstance_src->type != instance_type::message)
 		return FALSE;
@@ -2826,7 +2827,7 @@ BOOL exmdb_server::empty_message_instance_attachments(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -2845,7 +2846,7 @@ BOOL exmdb_server::get_message_instance_attachments_num(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -2862,7 +2863,7 @@ BOOL exmdb_server::get_message_instance_attachment_table_all_proptags(const char
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -2904,7 +2905,7 @@ BOOL exmdb_server::copy_instance_attachments(const char *dir, BOOL b_force,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto pinstance_src = dbase->get_instance_c(src_instance_id);
 	if (pinstance_src == nullptr || pinstance_src->type != instance_type::message)
 		return FALSE;
@@ -2941,7 +2942,7 @@ BOOL exmdb_server::query_message_instance_attachment_table(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_rd();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
@@ -3009,7 +3010,7 @@ BOOL exmdb_server::set_message_instance_conflict(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	const db_base *dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto pinstance = dbase->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;

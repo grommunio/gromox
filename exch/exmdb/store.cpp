@@ -372,7 +372,7 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	auto dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	uint32_t last_id = dbase->nsub_list.size() == 0 ? 0 :
 	                   dbase->nsub_list.back().sub_id;
 	nsub_node sub, *pnsub = &sub;
@@ -417,7 +417,7 @@ BOOL exmdb_server::unsubscribe_notification(const char *dir, uint32_t sub_id)
 	if (!pdb)
 		return FALSE;
 	/* No database access, so no transaction. */
-	auto dbase = pdb->m_base;
+	auto dbase = pdb->lock_base_wr();
 	auto i = std::find_if(dbase->nsub_list.begin(), dbase->nsub_list.end(),
 		[&](const nsub_node &n) { return n.sub_id == sub_id; });
 	if (i != dbase->nsub_list.end())
@@ -433,7 +433,7 @@ BOOL exmdb_server::transport_new_mail(const char *dir, uint64_t folder_id,
 		return FALSE;
 	/* No database access, so no transaction. */
 	pdb->transport_new_mail(rop_util_get_gc_value(folder_id),
-		rop_util_get_gc_value(message_id), message_flags, pstr_class, *pdb->m_base);
+		rop_util_get_gc_value(message_id), message_flags, pstr_class, *pdb->lock_base_rd());
 	return TRUE;
 }
 

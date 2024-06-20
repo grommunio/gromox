@@ -60,7 +60,7 @@ BOOL exmdb_server::notify_new_mail(const char *dir, uint64_t folder_id,
 	/* Notifications need an externally managed transaction on main. */
 	auto sql_trans = gx_sql_begin_trans(pdb->psqlite, false);
 	pdb->notify_new_mail(rop_util_get_gc_value(folder_id),
-		rop_util_get_gc_value(message_id), *pdb->m_base);
+		rop_util_get_gc_value(message_id), *pdb->lock_base_wr());
 	return TRUE;
 }
 
@@ -288,11 +288,11 @@ BOOL exmdb_server::purge_softdelete(const char *dir, const char *username,
 	uint64_t normal_size = 0, fai_size = 0;
 	uint32_t msg_count = 0, fld_count = 0;
 	bool partial = false;
-	const db_base *dbase = db->m_base;
+	auto dbase = db->lock_base_wr();
 	if (!folder_purge_softdel(db, CP_ACP, username, fid_val, del_flags,
-	    &partial, &normal_size, &fai_size, &msg_count, &fld_count, cutoff, dbase))
+	    &partial, &normal_size, &fai_size, &msg_count, &fld_count, cutoff, dbase.get()))
 		return false;
-
+	dbase.reset();
 	char qstr[116];
 	if (msg_count > 0) {
 		snprintf(qstr, sizeof(qstr), "UPDATE folder_properties SET "
