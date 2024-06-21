@@ -1,5 +1,5 @@
-2.29.54
-=======
+2.30 (2024-06-21)
+=================
 
 Fixes:
 
@@ -20,6 +20,14 @@ Fixes:
 Enhancements:
 
 * gromox-mbop: new subcommand ``set-locale`` to change store language
+* exmdb: add more SQLite transactions and make concurrent read access for
+  stores possible
+* ruleproc: initial autoprocessing for meeting requests
+  * conflict detection, response sending for conflicts,
+    automatic addition to calendar
+  * needs to be enabled with gromox.cfg:``lda_mrautoproc``=yes
+* imap, pop3, delivery-queue: HAProxy protocol support (send-proxy-v2)
+* zcore: show private distribution lists the grommunio-web address book
 
 
 Gromox 2.29 (2024-06-04)
