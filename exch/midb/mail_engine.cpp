@@ -1538,7 +1538,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		return FALSE;
 	{
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	auto sql_transact = gx_sql_begin_trans(psqlite);
+	auto sql_transact = gx_sql_begin(psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	snprintf(sql_string, std::size(sql_string), "CREATE TABLE messages "
@@ -1820,7 +1820,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 		return FALSE;
 	{
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	auto sql_transact = gx_sql_begin_trans(psqlite);
+	auto sql_transact = gx_sql_begin(psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	snprintf(sql_string, std::size(sql_string), "CREATE TABLE folders "
@@ -1872,7 +1872,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 	pstmt.finalize();
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
-	auto pidb_transact = gx_sql_begin_trans(pidb->psqlite);
+	auto pidb_transact = gx_sql_begin(pidb->psqlite, txn_mode::write);
 	if (!pidb_transact)
 		return false;
 	pstmt = gx_sql_prep(psqlite, "SELECT folder_id, "

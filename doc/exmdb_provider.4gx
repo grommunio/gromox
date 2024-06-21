@@ -178,27 +178,6 @@ keep. The technical limit is somewhere around 2^47.
 .br
 Default: \fI0\fP (no limit)
 .TP
-\fBmbox_contention_warning\fP
-If there are more than this many threads waiting to use a mailbox, emit a
-warning log message. Use 0 to disable.
-.br
-Default: \fI10\fP
-.TP
-\fBmbox_contention_reject\fP
-If there are more than this many threads waiting to use a mailbox, refuse new
-exmdb calls to the mailbox. Use 0 to disable. When a call is not rejected
-upfront like this, it will be added to the waiting queue. (mailbox access is
-serialized.)
-.br
-Default: \fI0\fP
-.TP
-\fBmbox_contention_reject_time\fP
-If an exmdb call was queued in the waiting list for too long (cf.
-mbox_contention_reject), the call will be aborted, error E-2207 logged, an
-error returned to the client.
-.br
-Default: \fI60s\fP
-.TP
 \fBnotify_stub_threads_num\fP
 For every remote exmdb server in exmdb_list.txt, establish and keep this many
 number of outbound connections for receiving notification RPCs.

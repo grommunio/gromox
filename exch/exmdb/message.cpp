@@ -117,6 +117,9 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+	if (!sql_transact)
+		return false;
 	if (!b_move &&
 	    cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) &&
 	    common_util_check_msgcnt_overflow(pdb->psqlite))
@@ -138,9 +141,6 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 	if (pstmt.step() == SQLITE_ROW)
 		return TRUE;
 	pstmt.finalize();
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!sql_transact)
-		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT parent_fid, is_associated"
 	          " FROM messages WHERE message_id=%llu", LLU{mid_val});
 	pstmt = pdb->prep(sql_string);
@@ -151,9 +151,10 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 	uint64_t parent_fid = sqlite3_column_int64(pstmt, 0);
 	bool is_associated = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
+	auto dbase = pdb->lock_base_wr();
 	if (b_move)
 		pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
-			parent_fid, mid_val, 0);
+			parent_fid, mid_val, 0, *dbase);
 	uint32_t message_size = 0;
 	if (!cu_copy_message(pdb->psqlite, mid_val, fid_val, &dst_val,
 	    &b_result, &message_size))
@@ -161,9 +162,10 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 	if (!b_result)
 		return TRUE;
 	pdb->proc_dynamic_event(cpid,
-		dynamic_event::new_msg, fid_val, dst_val, 0);
+		dynamic_event::new_msg, fid_val, dst_val, 0, *dbase);
 	pdb->notify_message_movecopy(!b_move ? TRUE : false,
-		fid_val, dst_val, parent_fid, mid_val);
+		fid_val, dst_val, parent_fid, mid_val, *dbase);
+	dbase.reset();
 	BOOL b_update = TRUE;
 	if (b_move) {
 		if (exmdb_server::is_private()) {
@@ -257,6 +259,9 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+	if (!sql_transact)
+		return false;
 	*pb_partial = FALSE;
 	auto src_val = rop_util_get_gc_value(src_fid);
 	auto dst_val = rop_util_get_gc_value(dst_fid);
@@ -273,15 +278,13 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		b_check = TRUE;
 	}
 	auto b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
+	auto dbase = pdb->lock_base_wr();
 	if (b_batch)
-		pdb->begin_batch_mode();
+		pdb->begin_batch_mode(*dbase);
 	auto cl_0 = make_scope_exit([&]() {
 		if (b_batch)
-			pdb->cancel_batch_mode();
+			pdb->cancel_batch_mode(*dbase);
 	});
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!sql_transact)
-		return false;
 	auto stm_find = pdb->prep("SELECT parent_fid, "
 	             "is_associated FROM messages WHERE message_id=?");
 	if (stm_find == nullptr)
@@ -349,7 +352,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		if (!b_copy)
 			pdb->proc_dynamic_event(cpid,
 				dynamic_event::del_msg,
-				parent_fid, tmp_val, 0);
+				parent_fid, tmp_val, 0, *dbase);
 		uint64_t tmp_val1 = 0;
 		if (!cu_copy_message(pdb->psqlite, tmp_val, dst_val, &tmp_val1,
 		    &b_result, &message_size))
@@ -363,8 +366,8 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		else
 			fai_size += message_size;
 		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
-			dst_val, tmp_val1, 0);
-		pdb->notify_message_movecopy(b_copy, dst_val, tmp_val1, src_val, tmp_val);
+			dst_val, tmp_val1, 0, *dbase);
+		pdb->notify_message_movecopy(b_copy, dst_val, tmp_val1, src_val, tmp_val, *dbase);
 		if (b_copy)
 			continue;
 
@@ -439,7 +442,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		return false;
 	if (b_batch) {
 		b_batch = false;
-		DB_ITEM::commit_batch_mode_release(std::move(pdb));
+		db_conn::commit_batch_mode_release(std::move(pdb),std::move(dbase));
 	}
 	return TRUE;
 }
@@ -459,6 +462,9 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+	if (!sql_transact)
+		return false;
 	*pb_partial = FALSE;
 	auto src_val = rop_util_get_gc_value(folder_id);
 	uint32_t folder_type = 0;
@@ -475,15 +481,13 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		b_check = (permission & (frightsOwner | frightsDeleteAny)) ? false : TRUE;
 	}
 	auto b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
+	auto dbase = pdb->lock_base_wr();
 	if (b_batch)
-		pdb->begin_batch_mode();
+		pdb->begin_batch_mode(*dbase);
 	auto cl_0 = make_scope_exit([&]() {
 		if (b_batch)
-			pdb->cancel_batch_mode();
+			pdb->cancel_batch_mode(*dbase);
 	});
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!sql_transact)
-		return false;
 	auto pstmt = pdb->prep("SELECT parent_fid, is_associated, "
 	             "message_size FROM messages WHERE message_id=?");
 	if (pstmt == nullptr)
@@ -541,11 +545,11 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		else
 			normal_size += obj_size;
 		pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
-			parent_fid, tmp_val, 0);
+			parent_fid, tmp_val, 0, *dbase);
 		if (folder_type == FOLDER_SEARCH)
-			pdb->notify_link_deletion(src_val, tmp_val);
+			pdb->notify_link_deletion(src_val, tmp_val, *dbase);
 		else
-			pdb->notify_message_deletion(src_val, tmp_val);
+			pdb->notify_message_deletion(src_val, tmp_val, *dbase);
 		sqlite3_bind_int64(pstmt1, 1, tmp_val);
 		if (pstmt1.step() != SQLITE_DONE)
 			return FALSE;
@@ -640,7 +644,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		return false;
 	if (b_batch) {
 		b_batch = false;
-		DB_ITEM::commit_batch_mode_release(std::move(pdb));
+		db_conn::commit_batch_mode_release(std::move(pdb), std::move(dbase));
 	}
 	return TRUE;
 }
@@ -722,6 +726,9 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
+	if (!sql_transact)
+		return false;
 	auto mid_val = rop_util_get_gc_value(message_id);
 	char sql_string[256];
 	snprintf(sql_string, std::size(sql_string), "SELECT message_id FROM"
@@ -799,6 +806,9 @@ BOOL exmdb_server::is_msg_present(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
+	if (!sql_transact)
+		return false;
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto mid_val = rop_util_get_gc_value(message_id);
 	uint32_t folder_type = 0;
@@ -831,6 +841,7 @@ BOOL exmdb_server::is_msg_deleted(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* Only one SQL operation, no transaction needed. */
 	auto mid_val = rop_util_get_gc_value(message_id);
 	char sql_string[256];
 	snprintf(sql_string, std::size(sql_string), "SELECT is_deleted "
@@ -850,6 +861,9 @@ BOOL exmdb_server::get_message_rcpts(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
+	if (!sql_transact)
+		return false;
 	auto mid_val = rop_util_get_gc_value(message_id);
 	return message_get_message_rcpts(pdb->psqlite, mid_val, pset);
 }
@@ -864,6 +878,7 @@ BOOL exmdb_server::get_message_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* Only one SQL operation, no transaction needed. */
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
@@ -888,7 +903,7 @@ BOOL exmdb_server::set_message_properties(const char *dir,
 		exmdb_server::set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	auto mid_val = rop_util_get_gc_value(message_id);
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!cu_set_properties(MAPI_MESSAGE, mid_val, cpid,
 	    pdb->psqlite, pproperties, pproblems))
 		return FALSE;
@@ -900,11 +915,13 @@ BOOL exmdb_server::set_message_properties(const char *dir,
 	BOOL b_result = false;
 	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
+	auto dbase = pdb->lock_base_wr();
+	pdb->proc_dynamic_event(cpid, dynamic_event::modify_msg,
+		fid_val, mid_val, 0, *dbase);
+	pdb->notify_message_modification(fid_val, mid_val, *dbase);
+	dbase.reset();
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
-	pdb->proc_dynamic_event(cpid, dynamic_event::modify_msg,
-		fid_val, mid_val, 0);
-	pdb->notify_message_modification(fid_val, mid_val);
 	return TRUE;
 }
 
@@ -915,7 +932,8 @@ BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
 	if (!pdb)
 		return FALSE;
 	auto mid_val = rop_util_get_gc_value(message_id);
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	mid_val = rop_util_get_gc_value(message_id);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!cu_remove_properties(MAPI_MESSAGE, mid_val,
 	    pdb->psqlite, pproptags))
 		return FALSE;
@@ -927,11 +945,13 @@ BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
 	BOOL b_result = false;
 	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
+	auto dbase = pdb->lock_base_wr();
+	pdb->notify_message_modification(fid_val, mid_val, *dbase);
+	pdb->proc_dynamic_event(cpid, dynamic_event::modify_msg,
+		fid_val, mid_val, 0, *dbase);
+	dbase.reset();
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
-	pdb->proc_dynamic_event(cpid, dynamic_event::modify_msg,
-		fid_val, mid_val, 0);
-	pdb->notify_message_modification(fid_val, mid_val);
 	return TRUE;
 }
 
@@ -946,7 +966,7 @@ BOOL exmdb_server::set_message_read_state(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	uint64_t read_cn = 0;
@@ -987,11 +1007,13 @@ BOOL exmdb_server::set_message_read_state(const char *dir,
 	BOOL b_result = false;
 	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
+	auto dbase = pdb->lock_base_wr();
+	pdb->proc_dynamic_event(CP_ACP, dynamic_event::modify_msg,
+		fid_val, mid_val, 0, *dbase);
+	pdb->notify_message_modification(fid_val, mid_val, *dbase);
+	dbase.reset();
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
-	pdb->proc_dynamic_event(CP_ACP, dynamic_event::modify_msg,
-		fid_val, mid_val, 0);
-	pdb->notify_message_modification(fid_val, mid_val);
 	*pread_cn = rop_util_make_eid_ex(1, read_cn);
 	return TRUE;
 }
@@ -1004,17 +1026,20 @@ BOOL exmdb_server::allocate_message_id(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+	if (!sql_transact)
+		return false;
 	if (0 == folder_id) {
 		if (!common_util_allocate_eid(pdb->psqlite, &eid_val))
 			return FALSE;
 		*pmessage_id = rop_util_make_eid_ex(1, eid_val);
-		return TRUE;
+		return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 	}
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	if (!common_util_allocate_eid_from_folder(pdb->psqlite, fid_val, &eid_val))
 		return FALSE;
 	*pmessage_id = rop_util_make_eid_ex(1, eid_val);
-	return TRUE;
+	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 BOOL exmdb_server::get_message_group_id(const char *dir,
@@ -1024,6 +1049,7 @@ BOOL exmdb_server::get_message_group_id(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* Only one SQL operation, no transaction needed. */
 	snprintf(sql_string, std::size(sql_string), "SELECT group_id "
 				"FROM messages WHERE message_id=%llu",
 				LLU{rop_util_get_gc_value(message_id)});
@@ -1049,6 +1075,7 @@ BOOL exmdb_server::set_message_group_id(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* Only one SQL operation, no transaction needed. */
 	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
 		" group_id=%u WHERE message_id=%llu",
 		XUI{group_id}, LLU{rop_util_get_gc_value(message_id)});
@@ -1071,6 +1098,7 @@ BOOL exmdb_server::save_change_indices(const char *dir, uint64_t message_id,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* Only one SQL operation, no transaction needed. */
 	auto mid_val = rop_util_get_gc_value(message_id);
 	if (0 == pindices->count && 0 == pungroup_proptags->count) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET "
@@ -1114,6 +1142,7 @@ BOOL exmdb_server::get_change_indices(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* Only one SQL operation, no transaction needed. */
 	auto mid_val = rop_util_get_gc_value(message_id);
 	std::unique_ptr<INDEX_ARRAY, pta_delete> ptmp_indices(proptag_array_init());
 	if (ptmp_indices == nullptr)
@@ -1184,6 +1213,9 @@ BOOL exmdb_server::mark_modified(const char *dir, uint64_t message_id)
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+	if (!sql_transact)
+		return false;
 	auto mid_val = rop_util_get_gc_value(message_id);
 	uint32_t *pmessage_flags = nullptr;
 	if (!common_util_get_message_flags(pdb->psqlite,
@@ -1193,8 +1225,10 @@ BOOL exmdb_server::mark_modified(const char *dir, uint64_t message_id)
 		return TRUE;
 	*pmessage_flags &= ~MSGFLAG_UNMODIFIED;
 	BOOL b_result = false;
-	return cu_set_property(MAPI_MESSAGE, mid_val, CP_ACP, pdb->psqlite,
-	       PR_MESSAGE_FLAGS, pmessage_flags, &b_result);
+	if (!cu_set_property(MAPI_MESSAGE, mid_val, CP_ACP, pdb->psqlite,
+	    PR_MESSAGE_FLAGS, pmessage_flags, &b_result))
+		return false;
+	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 /* add MSGFLAG_SUBMITTED and clear
@@ -1205,6 +1239,9 @@ BOOL exmdb_server::try_mark_submit(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+	if (!sql_transact)
+		return false;
 	auto mid_val = rop_util_get_gc_value(message_id);
 	uint32_t *pmessage_flags = nullptr;
 	if (!common_util_get_message_flags(pdb->psqlite,
@@ -1216,8 +1253,10 @@ BOOL exmdb_server::try_mark_submit(const char *dir,
 	}
 	*pmessage_flags |= MSGFLAG_SUBMITTED;
 	*pmessage_flags &= ~MSGFLAG_UNSENT;
-	return cu_set_property(MAPI_MESSAGE, mid_val, CP_ACP, pdb->psqlite,
-	       PR_MESSAGE_FLAGS, pmessage_flags, pb_marked);
+	if (!cu_set_property(MAPI_MESSAGE, mid_val, CP_ACP, pdb->psqlite,
+	    PR_MESSAGE_FLAGS, pmessage_flags, pb_marked))
+		return false;
+	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
 /* clear MSGFLAG_SUBMITTED set by
@@ -1234,6 +1273,9 @@ BOOL exmdb_server::clear_submit(const char *dir,
 		return FALSE;
 	auto mid_val = rop_util_get_gc_value(message_id);
 	uint32_t *pmessage_flags = nullptr;
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+	if (!sql_transact)
+		return false;
 	if (!common_util_get_message_flags(pdb->psqlite,
 	    mid_val, TRUE, &pmessage_flags))
 		return FALSE;
@@ -1242,7 +1284,7 @@ BOOL exmdb_server::clear_submit(const char *dir,
 		*pmessage_flags |= MSGFLAG_UNSENT;
 	else
 		*pmessage_flags &= ~MSGFLAG_UNSENT;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+
 	if (!cu_set_property(MAPI_MESSAGE, mid_val, CP_ACP, pdb->psqlite,
 	    PR_MESSAGE_FLAGS, pmessage_flags, &b_result))
 		return FALSE;
@@ -1273,6 +1315,9 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+	if (!sql_transact)
+		return false;
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto mid_val = rop_util_get_gc_value(message_id);
 	if (!common_util_get_folder_type(pdb->psqlite, fid_val, &folder_type))
@@ -1291,9 +1336,13 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 	        " VALUES (%llu, %llu)", LLU{fid_val}, LLU{mid_val});
 	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
+	auto dbase = pdb->lock_base_wr();
 	pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
-		fid_val, mid_val, 0);
-	pdb->notify_link_creation(fid_val, mid_val);
+		fid_val, mid_val, 0, *dbase);
+	pdb->notify_link_creation(fid_val, mid_val, *dbase);
+	dbase.reset();
+	if (sql_transact.commit() != SQLITE_OK)
+		return FALSE;
 	*pb_result = TRUE;
 	return TRUE;
 }
@@ -1309,16 +1358,19 @@ BOOL exmdb_server::unlink_message(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* Only one SQL operation, no transaction needed. */
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto mid_val = rop_util_get_gc_value(message_id);
 	snprintf(sql_string, std::size(sql_string), "DELETE FROM search_result"
 		" WHERE folder_id=%llu AND message_id=%llu",
 		LLU{fid_val}, LLU{mid_val});
+	auto dbase = pdb->lock_base_wr();
+	pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
+		fid_val, mid_val, 0, *dbase);
+	pdb->notify_link_deletion(fid_val, mid_val, *dbase);
+	dbase.reset();
 	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
-	pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
-		fid_val, mid_val, 0);
-	pdb->notify_link_deletion(fid_val, mid_val);
 	return TRUE;
 }
 
@@ -1333,6 +1385,7 @@ BOOL exmdb_server::set_message_timer(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* Only one SQL operation, no transaction needed. */
 	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
 		" timer_id=%u WHERE message_id=%llu",
 		XUI{timer_id}, LLU{rop_util_get_gc_value(message_id)});
@@ -1352,6 +1405,7 @@ BOOL exmdb_server::get_message_timer(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* Only one SQL operation, no transaction needed. */
 	auto mid_val = rop_util_get_gc_value(message_id);
 	snprintf(sql_string, std::size(sql_string), "SELECT timer_id FROM "
 	          "messages WHERE message_id=%llu", LLU{mid_val});
@@ -3598,7 +3652,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	ts = tmp_msg.proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
 	if (ts != nullptr)
 		*ts = nt_time;
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
 	bool partial = false;
@@ -3644,18 +3698,19 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		if (ec != ecSuccess)
 			return FALSE;
 	}
-	if (sql_transact.commit() != SQLITE_OK)
-		return false;
 	if (dlflags & DELIVERY_DO_NOTIF) {
+		auto dbase = pdb->lock_base_wr();
 		for (const auto &mn : seen.msg) {
 			pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
-				mn.folder_id, mn.message_id, 0);
+				mn.folder_id, mn.message_id, 0, *dbase);
 			if (message_id == mn.message_id)
-				pdb->notify_new_mail(mn.folder_id, mn.message_id);
+				pdb->notify_new_mail(mn.folder_id, mn.message_id, *dbase);
 			else
-				pdb->notify_message_creation(mn.folder_id, mn.message_id);
+				pdb->notify_message_creation(mn.folder_id, mn.message_id, *dbase);
 		}
 	}
+	if (sql_transact.commit() != SQLITE_OK)
+		return false;
 	*new_folder_id = rop_util_make_eid_ex(1, fid_val);
 	*new_msg_id = rop_util_make_eid_ex(1, message_id);
 	*presult = static_cast<uint32_t>(partial ?
@@ -3690,6 +3745,9 @@ BOOL exmdb_server::write_message_v2(const char *dir, cpid_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+	if (!sql_transact)
+		return false;
 	if (cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) ||
 	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		*pe_result = MAPI_E_STORE_FULL;
@@ -3713,10 +3771,6 @@ BOOL exmdb_server::write_message_v2(const char *dir, cpid_t cpid,
 	if (pvalue != nullptr)
 		*pvalue = nt_time;
 
-	{
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!sql_transact)
-		return false;
 	bool partial = false;
 	if (!message_write_message(false, pdb->psqlite, cpid, false,
 	    fid_val, pmsgctnt, &mid_val, &cn_val, &partial))
@@ -3724,21 +3778,23 @@ BOOL exmdb_server::write_message_v2(const char *dir, cpid_t cpid,
 	if (0 == mid_val) {
 		// auto rollback at end of scope
 		*pe_result = ecRpcFailed;
-	} else {
-		if (sql_transact.commit() != SQLITE_OK)
-			return false;
-		*pe_result = ecSuccess;
+		return false;
 	}
-	}
+
+	auto dbase = pdb->lock_base_wr();
 	if (b_exist) {
 		pdb->proc_dynamic_event(cpid,
-			dynamic_event::modify_msg, fid_val, mid_val, 0);
-		pdb->notify_message_modification(fid_val, mid_val);
+			dynamic_event::modify_msg, fid_val, mid_val, 0, *dbase);
+		pdb->notify_message_modification(fid_val, mid_val, *dbase);
 	} else {
 		pdb->proc_dynamic_event(cpid,
-			dynamic_event::new_msg, fid_val, mid_val, 0);
-		pdb->notify_message_creation(fid_val, mid_val);
+			dynamic_event::new_msg, fid_val, mid_val, 0, *dbase);
+		pdb->notify_message_creation(fid_val, mid_val, *dbase);
 	}
+	dbase.reset();
+	if (sql_transact.commit() != SQLITE_OK)
+		return false;
+	*pe_result = ecSuccess;
 	return TRUE;
 }
 
@@ -3767,7 +3823,7 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 		exmdb_server::set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	auto mid_val = rop_util_get_gc_value(message_id);
-	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	auto optim = pdb->begin_optim();
 	if (optim == nullptr)
 		return FALSE;
@@ -3790,6 +3846,9 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
+	if (!sql_transact)
+		return false;
 	auto is_pvt = exmdb_server::is_private();
 	if (!is_pvt)
 		exmdb_server::set_public_username(username);
@@ -3819,15 +3878,17 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 	          pdb->psqlite, fid_val, mid_val, std::move(digest)}, seen);
 	if (ec != ecSuccess)
 		return FALSE;
-//	if (sql_transact.commit() != SQLITE_OK)
-//		return false;
+	auto dbase = pdb->lock_base_wr();
 	for (const auto &mn : seen.msg) {
 		if (mid_val == mn.message_id)
 			continue;
 		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
-			mn.folder_id, mn.message_id, 0);
-		pdb->notify_message_creation(mn.folder_id, mn.message_id);
+			mn.folder_id, mn.message_id, 0, *dbase);
+		pdb->notify_message_creation(mn.folder_id, mn.message_id, *dbase);
 	}
+	dbase.reset();
+	if (sql_transact.commit() != SQLITE_OK)
+		return false;
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2034: ENOMEM");

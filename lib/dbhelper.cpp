@@ -5,6 +5,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <sqlite3.h>
+#include <string>
 #include <unistd.h>
 #include <gromox/database.h>
 #include <gromox/util.hpp>
@@ -13,11 +14,22 @@ namespace gromox {
 
 unsigned int gx_sqlite_debug;
 
+static bool write_statement(const char *q)
+{
+	return strncasecmp(q, "CREATE", 6) == 0 || strncasecmp(q, "ALTER", 5) == 0 ||
+	       strncasecmp(q, "DROP", 4) == 0 || strncasecmp(q, "INSERT", 6) == 0 ||
+	       strncasecmp(q, "UPDATE", 6) == 0 || strncasecmp(q, "REPLACE", 7) == 0 ||
+	       strncasecmp(q, "DELETE", 6) == 0;
+}
+
 xstmt gx_sql_prep(sqlite3 *db, const char *query)
 {
 	xstmt out;
 	if (gx_sqlite_debug >= 1)
 		mlog(LV_DEBUG, "> sqlite3_prep(%s)", query);
+	auto state = sqlite3_txn_state(db, "main");
+	if (state == SQLITE_TXN_READ && write_statement(query))
+		mlog(LV_ERR, "> sqlite3_prep(%s) inside a readonly TXN", query);
 	int ret = sqlite3_prepare_v2(db, query, -1, &out.m_ptr, nullptr);
 	if (ret != SQLITE_OK)
 		mlog(LV_ERR, "sqlite3_prepare_v2(%s) \"%s\": %s (%d)",
@@ -34,7 +46,7 @@ xtransaction &xtransaction::operator=(xtransaction &&o) noexcept
 	return *this;
 }
 
-static std::unordered_map<void *, std::string> active_xa;
+static std::unordered_map<std::string, std::string> active_xa;
 static std::mutex active_xa_lock;
 
 xtransaction::~xtransaction()
@@ -46,8 +58,11 @@ void xtransaction::teardown()
 {
 	if (m_db != nullptr) {
 		gx_sql_exec(m_db, "ROLLBACK");
-		std::unique_lock lk(active_xa_lock);
-		active_xa.erase(m_db);
+		auto fn = sqlite3_db_filename(m_db, nullptr);
+		if (fn != nullptr && *fn != '\0') {
+			std::unique_lock lk(active_xa_lock);
+			active_xa.erase(fn);
+		}
 	}
 }
 
@@ -73,29 +88,85 @@ int xtransaction::commit()
 		 */
 		return ret;
 
-	{
+	auto fn = sqlite3_db_filename(m_db, nullptr);
+	if (fn != nullptr && *fn != '\0') {
 		std::unique_lock lk(active_xa_lock);
-		active_xa.erase(m_db);
+		active_xa.erase(fn);
 	}
 	m_db = nullptr;
 	return ret;
 }
 
-xtransaction gx_sql_begin(sqlite3 *db, const std::string &pos)
+xtransaction gx_sql_begin3(const std::string &pos, sqlite3 *db, txn_mode mode)
 {
-	{
-		std::unique_lock lk(active_xa_lock);
-		auto pair = active_xa.emplace(db, pos);
-		if (!pair.second)
-			mlog(LV_ERR, "Nested transaction attempted. DB %p, origin %s, now %s",
-				db, pair.first->second.c_str(), pos.c_str());
-	}
-	auto ret = gx_sql_exec(db, "BEGIN IMMEDIATE");
-	if (ret == SQLITE_OK)
+	auto ret = gx_sql_exec(db, mode == txn_mode::write ? "BEGIN IMMEDIATE" : "BEGIN");
+	if (ret == SQLITE_OK) {
+		auto fn = sqlite3_db_filename(db, nullptr);
+		if (fn != nullptr && *fn != '\0') {
+			std::unique_lock lk(active_xa_lock);
+			active_xa[fn] = pos;
+		}
 		return xtransaction(db);
-	std::unique_lock lk(active_xa_lock);
-	active_xa.erase(db);
+	}
+	if (ret == SQLITE_BUSY && mode == txn_mode::write) {
+		auto fn = sqlite3_db_filename(db, nullptr);
+		if (fn == nullptr || *fn == '\0')
+			fn = ":memory:";
+		auto it = active_xa.find(fn);
+		mlog(LV_ERR, "sqlite_busy on %s: write txn held by %s", znul(fn),
+			it != active_xa.end() ? it->second.c_str() : "unknown");
+	}
 	return xtransaction(nullptr);
+}
+
+/**
+ * @brief      Start savepoint with given name
+ *
+ * @param      d     Database handle
+ * @param      name  Savepoint name
+ */
+xsavepoint::xsavepoint(sqlite3 *d, const char *name) : m_db(d), m_name(name)
+{
+	if (gx_sql_exec(m_db, ("SAVEPOINT " + m_name).c_str()) != SQLITE_OK)
+		m_db = nullptr;
+}
+
+/**
+ * @brief      End savepoint
+ *
+ * Rolls back to the savepoint if still active
+ */
+xsavepoint::~xsavepoint()
+{
+	rollback();
+}
+
+/**
+ * @brief      Release savepoint
+ *
+ * @return     SQLite return code
+ */
+int xsavepoint::commit()
+{
+	if(!m_db)
+		return SQLITE_OK;
+	int res = gx_sql_exec(m_db, ("RELEASE " + m_name).c_str());
+	m_db = nullptr;
+	return res;
+}
+
+/**
+ * @brief      Rollback to savepoint
+ *
+ * @return     SQLite return code
+ */
+int xsavepoint::rollback()
+{
+	if(!m_db)
+		return SQLITE_OK;
+	int res = gx_sql_exec(m_db, ("ROLLBACK TO " + m_name).c_str());
+	m_db = nullptr;
+	return res;
 }
 
 int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
@@ -103,6 +174,9 @@ int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 	char *estr = nullptr;
 	if (gx_sqlite_debug >= 1)
 		mlog(LV_DEBUG, "> sqlite3_exec(%s)", query);
+	auto state = sqlite3_txn_state(db, "main");
+	if (state == SQLITE_TXN_READ && write_statement(query))
+		mlog(LV_ERR, "> sqlite3_exec(%s) inside a readonly TXN", query);
 	auto ret = sqlite3_exec(db, query, nullptr, nullptr, &estr);
 	if (ret == SQLITE_OK)
 		return ret;

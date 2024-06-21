@@ -22,6 +22,25 @@ class GX_EXPORT xtransaction {
 	void teardown();
 };
 
+/**
+ * SQLite3 SAVEPOINT wrapper
+ * @m_db:   database handle
+ * @m_name: identifier for the savepoint
+ */
+class GX_EXPORT xsavepoint {
+	public:
+	xsavepoint(sqlite3 *, const char *sp_name);
+	NOMOVE(xsavepoint);
+	~xsavepoint();
+	inline operator bool() const { return m_db != nullptr; }
+	int commit();
+	int rollback();
+
+	private:
+	sqlite3 *m_db = nullptr;
+	std::string m_name;
+};
+
 extern GX_EXPORT int gx_sql_step(sqlite3_stmt *, unsigned int flags = 0);
 
 struct GX_EXPORT xstmt {
@@ -70,9 +89,13 @@ enum {
 	SQLEXEC_SILENT_CONSTRAINT = 0x1U,
 };
 
+enum class txn_mode {
+	read, write,
+};
+
 extern GX_EXPORT struct xstmt gx_sql_prep(sqlite3 *, const char *);
-extern GX_EXPORT xtransaction gx_sql_begin(sqlite3 *, const std::string &);
-#define gx_sql_begin_trans(db) gx_sql_begin((db), std::string(__FILE__) + ":" + std::to_string(__LINE__))
+extern GX_EXPORT xtransaction gx_sql_begin3(const std::string &, sqlite3 *, txn_mode);
+#define gx_sql_begin(...) gx_sql_begin3(std::string(__FILE__) + ":" + std::to_string(__LINE__), __VA_ARGS__)
 extern GX_EXPORT int gx_sql_exec(sqlite3 *, const char *query, unsigned int flags = 0);
 
 static inline uint64_t gx_sql_col_uint64(sqlite3_stmt *s, int c)
