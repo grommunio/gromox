@@ -48,6 +48,7 @@ static std::vector<static_module> g_dfl_svc_plugins = {
 	{"libgxs_ldap_adaptor.so", SVC_ldap_adaptor},
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
 	{"libgxs_authmgr.so", SVC_authmgr},
+	{"libgxs_ruleproc.so", SVC_ruleproc},
 };
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {

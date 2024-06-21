@@ -175,7 +175,7 @@ enum {
 	PR_TNEF_CORRELATION_KEY = PROP_TAG(PT_BINARY, 0x007F), /* PidTagTnefCorrelationKey */
 	// PR_REPORT_DISPOSITION = PROP_TAG(PT_UNICODE, 0x0080), /* PidTagReportDisposition */
 	// PR_REPORT_DISPOSITION_MODE = PROP_TAG(PT_UNICODE, 0x0081), /* PidTagReportDispositionMode */
-	// PR_EMS_AB_ROOM_CAPACITY = PROP_TAG(PT_LONG, 0x0807), /* PidTagAddressBookRoomCapacity */
+	PR_EMS_AB_ROOM_CAPACITY = PROP_TAG(PT_LONG, 0x0807), /* PidTagAddressBookRoomCapacity */
 	// PR_EMS_AB_ROOM_DESCRIPTION = PROP_TAG(PT_UNICODE, 0x0809), /* PidTagAddressBookRoomDescription */
 	// PR_CONTENT_INTEGRITY_CHECK = PROP_TAG(PT_BINARY, 0x0C00), /* PidTagContentIntegrityCheck */
 	// PR_EXPLICIT_CONVERSION = PROP_TAG(PT_LONG, 0x0C01), /* PidTagExplicitConversion */
@@ -350,7 +350,7 @@ enum {
 	PR_LIST_UNSUBSCRIBE_A = PROP_TAG(PT_STRING8, 0x1045),
 	PidTagOriginalMessageId = PROP_TAG(PT_UNICODE, 0x1046),
 	// PR_INTERNET_RETURN_PATH = PROP_TAG(PT_UNICODE, 0x1046), /* PidTagInternetReturnPath */
-	// PR_ICON_INDEX = PROP_TAG(PT_LONG, 0x1080), /* PidTagIconIndex */
+	PR_ICON_INDEX = PROP_TAG(PT_LONG, 0x1080), /* PidTagIconIndex */
 	// PR_LAST_VERB_EXECUTED = PROP_TAG(PT_LONG, 0x1081), /* PidTagLastVerbExecuted */
 	// PR_LAST_VERB_EXECUTION_TIME = PROP_TAG(PT_SYSTIME, 0x1082), /* PidTagLastVerbExecutionTime */
 	PR_FLAG_STATUS = PROP_TAG(PT_LONG, 0x1090), /* PidTagFlagStatus */
@@ -1000,9 +1000,9 @@ enum {
 	// PR_SCHDINFO_APPT_TOMBSTONE = PROP_TAG(PT_BINARY, 0x686A), /* PidTagScheduleInfoAppointmentTombstone */
 	// PR_DELEGATE_FLAGS = PROP_TAG(PT_MV_LONG, 0x686B), /* PidTagDelegateFlags */
 	// PR_SCHDINFO_FREEBUSY = PROP_TAG(PT_BINARY, 0x686C), /* PidTagScheduleInfoFreeBusy */
-	// PR_SCHDINFO_AUTO_ACCEPT_APPTS = PROP_TAG(PT_BOOLEAN, 0x686D), /* PidTagScheduleInfoAutoAcceptAppointments */
-	// PR_SCHDINFO_DISALLOW_RECURRING_APPTS = PROP_TAG(PT_BOOLEAN, 0x686E), /* PidTagScheduleInfoDisallowRecurringAppts */
-	// PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS = PROP_TAG(PT_BOOLEAN, 0x686F), /* PidTagScheduleInfoDisallowOverlappingAppts */
+	PR_SCHDINFO_AUTO_ACCEPT_APPTS = PROP_TAG(PT_BOOLEAN, 0x686D), /* PidTagScheduleInfoAutoAcceptAppointments */
+	PR_SCHDINFO_DISALLOW_RECURRING_APPTS = PROP_TAG(PT_BOOLEAN, 0x686E), /* PidTagScheduleInfoDisallowRecurringAppts */
+	PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS = PROP_TAG(PT_BOOLEAN, 0x686F), /* PidTagScheduleInfoDisallowOverlappingAppts */
 	pidTagConversationContentCount = PROP_TAG(PT_LONG, 0x688E),
 	// PR_WLINK_CLIENTID = PROP_TAG(PT_BINARY, 0x6890), /* PidTagWlinkClientID */
 	// PR_WLINK_AB_EXSTOREEID = PROP_TAG(PT_BINARY, 0x6891), /* PidTagWlinkAddressBookStoreEID */
@@ -1026,7 +1026,7 @@ enum {
 	// PR_FORCE_USE_ENTRYID_SERVER = PROP_TAG(PT_BOOLEAN, 0x7CFE),
 	// PR_PROFILE_MDB_DN = PROP_TAG(PT_STRING8, 0x7CFF),
 	// PR_FAV_AUTOSUBFOLDERS = PROP_TAG(PT_LONG, 0x7D01),
-	// PR_PROCESSED = PROP_TAG(PT_BOOLEAN, 0x7D01), /* PidTagProcessed */
+	PR_PROCESSED = PROP_TAG(PT_BOOLEAN, 0x7D01), /* PidTagProcessed */
 	// PR_FAV_PARENT_SOURCE_KEY = PROP_TAG(PT_BINARY, 0x7D02),
 	// PR_FAV_LEVEL_MASK = PROP_TAG(PT_LONG, 0x7D03),
 	// PR_FAV_KNOWN_SUBS = PROP_TAG(PT_BINARY, 0x7D04),
@@ -1180,7 +1180,7 @@ enum {
 	PidLidAppointmentRecur = 0x8216,
 	PidLidAppointmentStateFlags = 0x8217,
 	PidLidResponseStatus = 0x8218,
-	PidLidRecurring = 0x8223,
+	PidLidRecurring = 0x8223, /* this object is a recurring series */
 	PidLidIntendedBusyStatus = 0x8224,
 	PidLidExceptionReplaceTime = 0x8228,
 	PidLidFInvited = 0x8229,
@@ -1197,6 +1197,13 @@ enum {
 	PidLidAppointmentTimeZoneDefinitionStartDisplay = 0x825E,
 	PidLidAppointmentTimeZoneDefinitionEndDisplay = 0x825F,
 	PidLidAppointmentTimeZoneDefinitionRecur = 0x8260,
+
+	/* PSETID_Meeting */
+	PidLidWhere = 0x0002,
+	PidLidIsSilent = 0x0004,
+	PidLidIsRecurring = 0x0005, /* object is associated with a recurring series object */
+	PidLidTimeZone = 0x000c,
+	PidLidMeetingType = 0x0026,
 
 	/* PSETID_Common */
 	PidLidReminderDelta = 0x8501,
