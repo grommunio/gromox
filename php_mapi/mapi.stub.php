@@ -74,7 +74,7 @@ function mapi_savechanges(resource $any, ?int $flags = 0) : bool {}
 function mapi_getprops(resource $any, ?array $proptags = null) : mixed {}
 function mapi_setprops(resource $any, array $propvals) : bool {}
 function mapi_copyto(resource $src, array $excliid, array $exclprop, resource $dst, ?int $flags = 0) : bool {}
-function mapi_openproperty(resource $any, int $proptag /* [more] */) : resource|bool {}
+function mapi_openproperty(resource $any, int $proptag, ?string $iid = null, ?int $interfaceflags = 0, ?int $flags = 0) : resource|bool {}
 function mapi_deleteprops(resource $any, array $proptags) : bool {}
 function mapi_getnamesfromids(resource $any, ?array $names = null) : array|bool {}
 function mapi_getidsfromnames(resource $store, array $names, ?array $guids = null) : array|bool {}
