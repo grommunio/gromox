@@ -88,10 +88,29 @@ Perform a soft deletion.
 \fBemptyfld\fP [\fB\-MRa\fP] [\fB\-t\fP \fIage\fP] [\fB\-\-soft\fP]
 \fIfolder_spec\fP...
 .SS Description
-This command deletes objects from one or more folders. (This was originally
-implemented with just the "empty_folder" RPC, but more options for selective
-deletion were added later. Thus, emptyfld may not completely \fIempty\fP a
-folder.)
+This command deletes objects from one or more folders. emptyfld is normally
+a one-shot server-side operation. The use of \-R,\-t is not covered by the
+existing network protocols and the mbop client program must perform the desired
+recursion and/or timestamp matching locally with multiple round trips to the
+server.
+.PP
+Just to spell it out again explicitly, emptyfld can be in one of three modes:
+.IP \(bu 4
+server-assisted operations:
+.RS 4
+.IP \(bu 4
+clear contents and/or FAI, no time conditions, no recursion
+.IP \(bu 4
+clear contents and/or FAI, no time conditions, nuke subfolders (recursion
+barred)
+.RE
+.IP \(bu 4
+client-side traversal:
+.RS 4
+.IP \(bu 4
+clear contents and/or FAI, with or without evaluating timestamps, with or
+without recursion into subfolders, no subfolder deletion at all
+.RE
 .SS Subcommand options
 .TP
 \fB\-M\fP
@@ -109,17 +128,31 @@ Select only messages which have a last modification timestamp older than
 explanation of timespec.)
 .TP
 \fB\-\-nuke\-folders\fP
-Rather than recursing into subfolders (to delete messages that match criteria
-like \-a,\-M,\-t), delete subfolders outright.
+Unconditionally delete subfolders outright. For obvious reasons, deleting
+subfolders disables recursion via \-R.
 .TP
 \fB\-\-soft\fP
-Perform soft deletion. More specifically, this sets the soft-delete flag (also
-called "hidden" in Exchange) on messages and/or folders. Softdeleted objects
-can be restored/unhidden by the user. The final deletion is possible also at
-the hands of the user, or by using mbop's purge\-softdelete subcommand.
+Perform soft deletion.
+.SS Soft deletion notes
+Soft deletion sets the soft-delete flag (also called "hidden" in Exchange) on
+messages and/or folders. Soft-deleted objects can be restored/unhidden by the
+user. Users are technically empowered to perform hard deletions as well, but
+most mail clients do not offer a user control (e.g. checkbox widget) for it,
+requiring the use of diagnostic utilities like MFCMAPI or gromox\-mbop instead.
+.PP
+When a folder's soft-delete flag changes, the messages and subfolders within
+are left untouched; their soft-delete flag does not change. In fact, this
+behaves exactly like setting a directory in the file system to hidden.
 .SS Examples
 .IP \(bu 4
-Take out the trash ("Deleted Items") for a lazy user:
+Clear one folder's contents like Outlook/grommunio-web:
+gromox\-mbop \-u a@b.de emptyfld \-\-soft DRAFTS
+.IP \(bu 4
+Outlook/grommunio-web behave differently when clearing trash! The equivalent
+mbop command is:
+gromox\-mbop \-u a@b.de emptyfld \-\-soft \-\-nuke\-folders DELETED
+.IP \(bu 4
+Timed deletion of trash:
 gromox\-mbop \-u abc@example.com emptyfld \-Rt 1week \-\-soft DELETED
 .SH get\-photo
 .SS Synopsis
