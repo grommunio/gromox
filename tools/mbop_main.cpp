@@ -120,7 +120,7 @@ static int main(int argc, char **argv)
 
 namespace emptyfld {
 
-static unsigned int g_del_flags = DEL_MESSAGES | DELETE_HARD_DELETE, g_recurse;
+static unsigned int g_del_flags = DEL_MESSAGES | DELETE_HARD_DELETE, g_recurse, g_delempty;
 static char *g_time_str;
 static mapitime_t g_cutoff_time;
 
@@ -132,6 +132,7 @@ static void opt_s(const struct HXoptcb *cb) { g_del_flags &= ~DELETE_HARD_DELETE
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'M', HXTYPE_NONE, {}, {}, opt_m, 0, "Exclude normal messages from deletion"},
 	{nullptr, 'R', HXTYPE_NONE, &g_recurse, {}, {}, 0, "Recurse into subfolders to delete messages"},
+	{"delempty", 0, HXTYPE_NONE, &g_delempty, {}, {}, 0, "Delete subfolders which are empty"},
 	{"nuke-folders", 0, HXTYPE_NONE, {}, {}, opt_nuke, 0, "Do not recurse but delete subfolders outright"},
 	{nullptr, 'a', HXTYPE_NONE, {}, {}, opt_a, 0, "Include associated messages in deletion"},
 	{nullptr, 't', HXTYPE_STRING, &g_time_str, {}, {}, 0, "Messages need to be older than...", "TIMESPEC"},
@@ -195,8 +196,9 @@ static int do_contents(eid_t fid, unsigned int tbl_flags)
 	return generic_del(fid, std::move(chosen));
 }
 
-static int do_hierarchy(eid_t fid)
+static int do_hierarchy(eid_t fid, uint32_t depth)
 {
+	{
 	uint32_t prev_delc, prev_fldc;
 	delcount(fid, &prev_delc, &prev_fldc);
 	auto cl_0 = make_scope_exit([&]() {
@@ -223,20 +225,49 @@ static int do_hierarchy(eid_t fid)
 		fprintf(stderr, "fid 0x%llx load_content_table failed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
 	}
+	auto cl_1 = make_scope_exit([=]() { exmdb_client::unload_table(g_storedir, table_id); });
 	static constexpr uint32_t ftags[] = {PidTagFolderId};
 	static constexpr PROPTAG_ARRAY ftaghdr = {std::size(ftags), deconst(ftags)};
 	tarray_set rowset{};
 	if (!exmdb_client::query_table(g_storedir, nullptr, CP_ACP, table_id,
 	    &ftaghdr, 0, row_count, &rowset)) {
 		fprintf(stderr, "fid 0x%llx query_table failed\n", LLU{rop_util_get_gc_value(fid)});
-		exmdb_client::unload_table(g_storedir, table_id);
 		return EXIT_FAILURE;
 	}
 	exmdb_client::unload_table(g_storedir, table_id);
 	for (const auto &row : rowset) {
 		auto p = row.get<const eid_t>(PidTagFolderId);
 		if (p != nullptr)
-			do_hierarchy(*p);
+			do_hierarchy(*p, depth + 1);
+	}
+	}
+
+	if (depth == 0 || !g_delempty)
+		return EXIT_SUCCESS;
+	static constexpr uint32_t ftags2[] = {PR_CONTENT_COUNT, PR_ASSOC_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT};
+	static constexpr PROPTAG_ARRAY ftaghdr2 = {std::size(ftags2), deconst(ftags2)};
+	TPROPVAL_ARRAY props{};
+	if (!exmdb_client::get_folder_properties(g_storedir, CP_ACP, fid, &ftaghdr2, &props)) {
+		fprintf(stderr, "fid 0x%llx get_folder_props failed\n", LLU{fid});
+		return EXIT_FAILURE;
+	}
+	auto p1 = props.get<const uint32_t>(PR_CONTENT_COUNT);
+	auto p2 = props.get<const uint32_t>(PR_ASSOC_CONTENT_COUNT);
+	auto p3 = props.get<const uint32_t>(PR_FOLDER_CHILD_COUNT);
+	auto n1 = p1 != nullptr ? *p1 : 0;
+	auto n2 = p2 != nullptr ? *p2 : 0;
+	auto n3 = p3 != nullptr ? *p3 : 0;
+	if (n1 != 0 || n2 != 0 || n3 != 0)
+		return EXIT_SUCCESS;
+	BOOL b_result = false;
+	if (!exmdb_client::delete_folder(g_storedir, CP_ACP, fid,
+	    g_del_flags & DELETE_HARD_DELETE, &b_result)) {
+		fprintf(stderr, "fid 0x%llx delete_folder RPC rejected/malformed\n", LLU{rop_util_get_gc_value(fid)});
+		return EXIT_FAILURE;
+	} else if (!b_result) {
+		fprintf(stderr, "fid 0x%llx delete_folder unsuccessful (no permissions etc.)\n", LLU{rop_util_get_gc_value(fid)});
+	} else {
+		fprintf(stderr, "Folder 0x%llx: deleted due to --delempty\n", LLU{rop_util_get_gc_value(fid)});
 	}
 	return EXIT_SUCCESS;
 }
@@ -249,6 +280,9 @@ static int main(int argc, char **argv)
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_del_flags & DEL_FOLDERS && g_recurse) {
 		fprintf(stderr, "Combining -R and --nuke-folders is unreasonable: when you nuke folders, you cannot recurse into them anymore.\n");
+		return EXIT_FAILURE;
+	} else if (g_delempty && !g_recurse) {
+		fprintf(stderr, "--delempty requires -R\n");
 		return EXIT_FAILURE;
 	}
 	if (g_time_str != nullptr) {
@@ -281,7 +315,7 @@ static int main(int argc, char **argv)
 		}
 		if (g_cutoff_time != 0 || g_recurse) {
 			/* Deletion via client */
-			ret = do_hierarchy(eid);
+			ret = do_hierarchy(eid, 0);
 			if (ret != EXIT_SUCCESS)
 				return ret;
 			continue;

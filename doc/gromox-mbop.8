@@ -109,7 +109,7 @@ client-side traversal:
 .RS 4
 .IP \(bu 4
 clear contents and/or FAI, with or without evaluating timestamps, with or
-without recursion into subfolders, no subfolder deletion at all
+without recursion into subfolders, with or without subfolder deletion if empty
 .RE
 .SS Subcommand options
 .TP
@@ -126,6 +126,9 @@ Select associated messages (FAI) for deletion.
 Select only messages which have a last modification timestamp older than
 \fItimespec\fP. (See further below near purge\-softdelete for a short
 explanation of timespec.)
+.TP
+\fB\-\-delempty\fP
+If, after message deletion, any subfolder is empty, delete it.
 .TP
 \fB\-\-nuke\-folders\fP
 Unconditionally delete subfolders outright. For obvious reasons, deleting
