@@ -23,6 +23,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/tie.hpp>
@@ -120,17 +121,19 @@ int smtp_parser_run()
 			SSL_CTX_set_default_passwd_cb_userdata(g_ssl_ctx, deconst(g_param.cert_passwd.c_str()));
 		enum gx_ll { LVE = 2, };
 		auto sloglevel = reinterpret_cast<void *>(static_cast<uintptr_t>(LVE));
-		if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx, g_param.cert_path.c_str()) <= 0) {
-			mlog(LV_ERR, "smtp_parser: failed to use certificate file \"%s\":",
-				g_param.cert_path.c_str());
-			ERR_print_errors_cb(ssllog, sloglevel);
-			return -2;
+		for (const auto &file : gx_split(g_param.cert_path, ':')) {
+			if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx, file.c_str()) <= 0) {
+				mlog(LV_ERR, "smtp_parser: failed to use certificate file \"%s\":", file.c_str());
+				ERR_print_errors_cb(ssllog, sloglevel);
+				return -2;
+			}
 		}
-		if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx, g_param.key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
-			mlog(LV_ERR, "smtp_parser: failed to use private key file \"%s\":",
-				g_param.key_path.c_str());
-			ERR_print_errors_cb(ssllog, sloglevel);
-			return -3;
+		for (const auto &file : gx_split(g_param.key_path, ':')) {
+			if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx, file.c_str(), SSL_FILETYPE_PEM) <= 0) {
+				mlog(LV_ERR, "smtp_parser: failed to use private key file \"%s\":", file.c_str());
+				ERR_print_errors_cb(ssllog, sloglevel);
+				return -3;
+			}
 		}
 
 		if (1 != SSL_CTX_check_private_key(g_ssl_ctx)) {
