@@ -134,40 +134,43 @@ int imap_parser_run()
 		SSL_load_error_strings();
 		g_ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 		if (g_ssl_ctx == nullptr) {
-			printf("[imap_parser]: Failed to init SSL context\n");
+			mlog(LV_ERR, "imap_parser: failed to init TLS context");
 			return -1;
 		}
 		if (g_certificate_passwd.size() > 0)
 			SSL_CTX_set_default_passwd_cb_userdata(g_ssl_ctx, deconst(g_certificate_passwd.c_str()));
+		auto sloglevel = reinterpret_cast<void *>(static_cast<uintptr_t>(LV_ERR));
 		if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx,
 		    g_certificate_path.c_str()) <= 0) {
-			printf("[imap_parser]: fail to use certificate file:");
-			ERR_print_errors_fp(stdout);
+			mlog(LV_ERR, "imap_parser: failed to use certificate file \"%s\":",
+				g_certificate_passwd.c_str());
+			ERR_print_errors_cb(ssllog, sloglevel);
 			return -2;
 		}
 
 		if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx,
 		    g_private_key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
-			printf("[imap_parser]: fail to use private key file:");
-			ERR_print_errors_fp(stdout);
+			mlog(LV_ERR, "imap_parser: failed to use private key file \"%s\":",
+				g_private_key_path.c_str());
+			ERR_print_errors_cb(ssllog, sloglevel);
 			return -3;
 		}
 
 		if (1 != SSL_CTX_check_private_key(g_ssl_ctx)) {
-			printf("[imap_parser]: private key does not match certificate:");
-			ERR_print_errors_fp(stdout);
+			mlog(LV_ERR, "imap_parser: private key does not match certificate:");
+			ERR_print_errors_cb(ssllog, sloglevel);
 			return -4;
 		}
 		auto mp = g_config_file->get_value("tls_min_proto");
 		if (mp != nullptr && tls_set_min_proto(g_ssl_ctx, mp) != 0) {
-			fprintf(stderr, "[imap_parser]: tls_min_proto value \"%s\" not accepted\n", mp);
+			mlog(LV_ERR, "imap_parser: tls_min_proto value \"%s\" not accepted\n", mp);
 			return -4;
 		}
 		tls_set_renego(g_ssl_ctx);
 		try {
 			g_ssl_mutex_buf = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
 		} catch (const std::bad_alloc &) {
-			printf("[imap_parser]: Failed to allocate SSL locking buffer\n");
+			mlog(LV_ERR, "imap_parser: failed to allocate TLS locking buffer");
 			return -5;
 		}
 #ifdef OLD_SSL
@@ -183,21 +186,21 @@ int imap_parser_run()
 			g_context_list2[i] = &g_context_list[i];
 		}
 	} catch (const std::bad_alloc &) {
-		printf("[imap_parser]: Failed to allocate IMAP contexts\n");
+		mlog(LV_ERR, "imap_parser: failed to allocate IMAP contexts");
         return -10;
     }
 
 	g_notify_stop = false;
 	auto ret = pthread_create4(&g_thr_id, nullptr, imps_thrwork, nullptr);
 	if (ret != 0) {
-		printf("[imap_parser]: failed to create sleeping list scanning thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "imap_parser: failed to create sleeping list scanning thread: %s", strerror(ret));
 		g_notify_stop = true;
 		return -11;
 	}
 	pthread_setname_np(g_thr_id, "parser/worker");
 	ret = pthread_create4(&g_scan_id, nullptr, imps_scanwork, nullptr);
 	if (ret != 0) {
-		printf("[imap_parser]: failed to create select hash scanning thread: %s\n", strerror(ret));
+		mlog(LV_ERR, "Failed to create select hash scanning thread: %s", strerror(ret));
 		g_notify_stop = true;
 		if (!pthread_equal(g_thr_id, {})) {
 			pthread_kill(g_thr_id, SIGALRM);

@@ -118,20 +118,24 @@ int smtp_parser_run()
 		}
 		if (g_param.cert_passwd.size() > 0)
 			SSL_CTX_set_default_passwd_cb_userdata(g_ssl_ctx, deconst(g_param.cert_passwd.c_str()));
+		enum gx_ll { LVE = 2, };
+		auto sloglevel = reinterpret_cast<void *>(static_cast<uintptr_t>(LVE));
 		if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx, g_param.cert_path.c_str()) <= 0) {
-			fprintf(stderr, "smtp_parser: failed to use certificate file:");
-			ERR_print_errors_fp(stdout);
+			mlog(LV_ERR, "smtp_parser: failed to use certificate file \"%s\":",
+				g_param.cert_path.c_str());
+			ERR_print_errors_cb(ssllog, sloglevel);
 			return -2;
 		}
 		if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx, g_param.key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
-			fprintf(stderr, "smtp_parser: failed to use private key file:");
-			ERR_print_errors_fp(stdout);
+			mlog(LV_ERR, "smtp_parser: failed to use private key file \"%s\":",
+				g_param.key_path.c_str());
+			ERR_print_errors_cb(ssllog, sloglevel);
 			return -3;
 		}
 
 		if (1 != SSL_CTX_check_private_key(g_ssl_ctx)) {
-			fprintf(stderr, "smtp_parser: private key does not match certificate:");
-			ERR_print_errors_fp(stdout);
+			mlog(LV_ERR, "smtp_parser: private key does not match certificate:");
+			ERR_print_errors_cb(ssllog, sloglevel);
 			return -4;
 		}
 		auto mp = g_config_file->get_value("tls_min_proto");

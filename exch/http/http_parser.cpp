@@ -221,21 +221,24 @@ int http_parser_run()
 		if (g_certificate_passwd.size() > 0)
 			SSL_CTX_set_default_passwd_cb_userdata(g_ssl_ctx,
 				deconst(g_certificate_passwd.c_str()));
+		auto sloglevel = reinterpret_cast<void *>(static_cast<uintptr_t>(LV_ERR));
 		if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx,
 		    g_certificate_path.c_str()) <= 0) {
-			printf("[http_parser]: fail to use certificate file:");
-			ERR_print_errors_fp(stdout);
+			mlog(LV_ERR, "http_parser: failed to use certificate file \"%s\":",
+				g_certificate_path.c_str());
+			ERR_print_errors_cb(ssllog, sloglevel);
 			return -2;
 		}
 		if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx,
 		    g_private_key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
-			printf("[http_parser]: fail to use private key file:");
-			ERR_print_errors_fp(stdout);
+			mlog(LV_ERR, "http_parser: failed to use private key file \"%s\":",
+				g_private_key_path.c_str());
+			ERR_print_errors_cb(ssllog, sloglevel);
 			return -3;
 		}
 		if (1 != SSL_CTX_check_private_key(g_ssl_ctx)) {
-			printf("[http_parser]: private key does not match certificate:");
-			ERR_print_errors_fp(stdout);
+			mlog(LV_ERR, "http_parser: private key does not match certificate:");
+			ERR_print_errors_cb(ssllog, sloglevel);
 			return -4;
 		}
 		auto mp = g_config_file->get_value("tls_min_proto");
