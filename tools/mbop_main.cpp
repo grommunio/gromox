@@ -148,7 +148,7 @@ static int generic_del(eid_t fid, const std::vector<uint64_t> &chosen)
 	ea.pids  = deconst(chosen.data());
 	if (!exmdb_client::delete_messages(g_storedir, CP_ACP, nullptr, fid,
 	    &ea, false, &partial_complete)) {
-		fprintf(stderr, "fid %llxh delete_messages failed\n", LLU{fid});
+		fprintf(stderr, "fid 0x%llx delete_messages failed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
@@ -166,7 +166,7 @@ static int select_mids_by_time(eid_t fid, unsigned int tbl_flags,
 	RESTRICTION rst_e = {RES_AND, {deconst(&rst_d)}};
 	if (!exmdb_client::load_content_table(g_storedir, CP_ACP, fid, nullptr,
 	    tbl_flags, &rst_e, nullptr, &table_id, &row_count)) {
-		fprintf(stderr, "fid %llxh load_content_table failed\n", LLU{fid});
+		fprintf(stderr, "fid 0x%llx load_content_table failed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
 	}
 	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(g_storedir, table_id); });
@@ -175,7 +175,7 @@ static int select_mids_by_time(eid_t fid, unsigned int tbl_flags,
 	tarray_set rowset{};
 	if (!exmdb_client::query_table(g_storedir, nullptr, CP_ACP, table_id,
 	    &mtaghdr, 0, row_count, &rowset)) {
-		fprintf(stderr, "fid %llxh query_table failed\n", LLU{fid});
+		fprintf(stderr, "fid 0x%llx query_table failed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
 	}
 	for (const auto &row : rowset) {
@@ -202,7 +202,7 @@ static int do_hierarchy(eid_t fid)
 	auto cl_0 = make_scope_exit([&]() {
 		uint32_t curr_delc, curr_fldc;
 		delcount(fid, &curr_delc, &curr_fldc);
-		printf("Folder %llxh: deleted %d messages\n", LLU{fid}, curr_delc - prev_delc);
+		printf("Folder 0x%llx: deleted %d messages\n", LLU{rop_util_get_gc_value(fid)}, curr_delc - prev_delc);
 	});
 	if (g_del_flags & DEL_MESSAGES) {
 		auto ret = do_contents(fid, 0);
@@ -220,7 +220,7 @@ static int do_hierarchy(eid_t fid)
 	uint32_t table_id = 0, row_count = 0;
 	if (!exmdb_client::load_hierarchy_table(g_storedir, fid,
 	    nullptr, 0, nullptr, &table_id, &row_count)) {
-		fprintf(stderr, "fid %llxh load_content_table failed\n", LLU{fid});
+		fprintf(stderr, "fid 0x%llx load_content_table failed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
 	}
 	static constexpr uint32_t ftags[] = {PidTagFolderId};
@@ -228,7 +228,7 @@ static int do_hierarchy(eid_t fid)
 	tarray_set rowset{};
 	if (!exmdb_client::query_table(g_storedir, nullptr, CP_ACP, table_id,
 	    &ftaghdr, 0, row_count, &rowset)) {
-		fprintf(stderr, "fid %llxh query_table failed\n", LLU{fid});
+		fprintf(stderr, "fid 0x%llx query_table failed\n", LLU{rop_util_get_gc_value(fid)});
 		exmdb_client::unload_table(g_storedir, table_id);
 		return EXIT_FAILURE;
 	}
