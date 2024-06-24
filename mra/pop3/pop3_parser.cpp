@@ -45,9 +45,7 @@ static size_t g_context_num, g_retrieving_size;
 static time_duration g_timeout;
 static std::unique_ptr<pop3_context[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static char g_certificate_path[256];
-static char g_private_key_path[256];
-static char g_certificate_passwd[1024];
+static std::string g_certificate_path, g_private_key_path, g_certificate_passwd;
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 
@@ -66,13 +64,9 @@ void pop3_parser_init(int context_num, size_t retrieving_size,
 	if (!support_tls)
 		return;
 	g_force_tls = force_tls;
-	gx_strlcpy(g_certificate_path, certificate_path, std::size(g_certificate_path));
-	if (NULL != cb_passwd) {
-		gx_strlcpy(g_certificate_passwd, cb_passwd, std::size(g_certificate_passwd));
-	} else {
-		g_certificate_passwd[0] = '\0';
-	}
-	gx_strlcpy(g_private_key_path, key_path, std::size(g_private_key_path));
+	g_certificate_path = znul(certificate_path);
+	g_certificate_passwd = znul(cb_passwd);
+	g_private_key_path = znul(key_path);
 }
 
 #ifdef OLD_SSL
@@ -108,21 +102,18 @@ int pop3_parser_run()
 			return -1;
 		}
 		
-		if ('\0' != g_certificate_passwd[0]) {
+		if (g_certificate_passwd.size() > 0)
 			SSL_CTX_set_default_passwd_cb_userdata(g_ssl_ctx,
-				g_certificate_passwd);
-		}
-		
-
+				deconst(g_certificate_passwd.c_str()));
 		if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx,
-			g_certificate_path) <= 0) {
+		    g_certificate_path.c_str()) <= 0) {
 			printf("[pop3_parser]: fail to use certificate file:");
 			ERR_print_errors_fp(stdout);
 			return -2;
 		}
 		
-		if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx, g_private_key_path,
-			SSL_FILETYPE_PEM) <= 0) {
+		if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx,
+		    g_private_key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
 			printf("[pop3_parser]: fail to use private key file:");
 			ERR_print_errors_fp(stdout);
 			return -3;

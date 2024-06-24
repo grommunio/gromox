@@ -77,9 +77,7 @@ static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static std::unordered_map<std::string, std::vector<imap_context *>> g_select_hash; /* username=>context */
 static std::mutex g_hash_lock, g_list_lock;
 static std::vector<imap_context *> g_sleeping_list;
-static char g_certificate_path[256];
-static char g_private_key_path[256];
-static char g_certificate_passwd[1024];
+static std::string g_certificate_path, g_private_key_path, g_certificate_passwd;
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 
@@ -102,12 +100,9 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	if (!support_tls)
 		return;
 	g_force_tls = force_tls;
-	gx_strlcpy(g_certificate_path, certificate_path, std::size(g_certificate_path));
-	if (cb_passwd != nullptr)
-		gx_strlcpy(g_certificate_passwd, cb_passwd, std::size(g_certificate_passwd));
-	else
-		g_certificate_passwd[0] = '\0';
-	gx_strlcpy(g_private_key_path, key_path, std::size(g_private_key_path));
+	g_certificate_path = znul(certificate_path);
+	g_certificate_passwd = znul(cb_passwd);
+	g_private_key_path = znul(key_path);
 }
 
 #ifdef OLD_SSL
@@ -142,18 +137,17 @@ int imap_parser_run()
 			printf("[imap_parser]: Failed to init SSL context\n");
 			return -1;
 		}
-		if (*g_certificate_passwd != '\0')
-			SSL_CTX_set_default_passwd_cb_userdata(g_ssl_ctx,
-				g_certificate_passwd);
+		if (g_certificate_passwd.size() > 0)
+			SSL_CTX_set_default_passwd_cb_userdata(g_ssl_ctx, deconst(g_certificate_passwd.c_str()));
 		if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx,
-			g_certificate_path) <= 0) {
+		    g_certificate_path.c_str()) <= 0) {
 			printf("[imap_parser]: fail to use certificate file:");
 			ERR_print_errors_fp(stdout);
 			return -2;
 		}
 
-		if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx, g_private_key_path,
-			SSL_FILETYPE_PEM) <= 0) {
+		if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx,
+		    g_private_key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
 			printf("[imap_parser]: fail to use private key file:");
 			ERR_print_errors_fp(stdout);
 			return -3;
