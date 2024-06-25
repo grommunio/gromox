@@ -1182,6 +1182,13 @@ void mlog(unsigned int level, const char *fmt, ...)
 	va_end(args);
 }
 
+int ssllog(const char *str, size_t len, void *lvp)
+{
+	auto level = reinterpret_cast<uintptr_t>(lvp);
+	mlog(level, "%.*s", static_cast<int>(std::min(static_cast<size_t>(INT_MAX), len)), str);
+	return 1;
+}
+
 errno_t wrapfd::close_rd() noexcept
 {
 	if (m_fd < 0)

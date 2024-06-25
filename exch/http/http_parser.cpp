@@ -124,9 +124,7 @@ bool g_enforce_auth;
 static thread_local HTTP_CONTEXT *g_context_key;
 static std::unique_ptr<HTTP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static char g_certificate_path[256];
-static char g_private_key_path[256];
-static char g_certificate_passwd[1024];
+static std::string g_certificate_path, g_private_key_path, g_certificate_passwd;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 static std::mutex g_vconnection_lock;
 
@@ -175,12 +173,12 @@ void http_parser_init(size_t context_num, time_duration timeout,
 	
 	if (!support_tls)
 		return;
-	gx_strlcpy(g_certificate_path, certificate_path, std::size(g_certificate_path));
+	g_certificate_path = certificate_path;
 	if (cb_passwd != nullptr)
-		gx_strlcpy(g_certificate_passwd, cb_passwd, std::size(g_certificate_passwd));
+		g_certificate_passwd = cb_passwd;
 	else
-		g_certificate_passwd[0] = '\0';
-	gx_strlcpy(g_private_key_path, key_path, std::size(g_private_key_path));
+		g_certificate_passwd.clear();
+	g_private_key_path = key_path;
 }
 
 #ifdef OLD_SSL
@@ -220,24 +218,29 @@ int http_parser_run()
 			mlog(LV_ERR, "http_parser: failed to init TLS context");
 			return -1;
 		}
-		if (*g_certificate_passwd != '\0')
-			SSL_CTX_set_default_passwd_cb_userdata(
-				g_ssl_ctx, g_certificate_passwd);
-		if (SSL_CTX_use_certificate_chain_file(
-			g_ssl_ctx, g_certificate_path) <= 0) {
-			printf("[http_parser]: fail to use certificate file:");
-			ERR_print_errors_fp(stdout);
-			return -2;
+		if (g_certificate_passwd.size() > 0)
+			SSL_CTX_set_default_passwd_cb_userdata(g_ssl_ctx,
+				deconst(g_certificate_passwd.c_str()));
+		auto sloglevel = reinterpret_cast<void *>(static_cast<uintptr_t>(LV_ERR));
+		for (const auto &file : gx_split(g_certificate_path, ':')) {
+			if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx,
+			    file.c_str()) <= 0) {
+				mlog(LV_ERR, "http_parser: failed to use certificate file \"%s\":", file.c_str());
+				ERR_print_errors_cb(ssllog, sloglevel);
+				return -2;
+			}
 		}
-		if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx,
-			g_private_key_path, SSL_FILETYPE_PEM) <= 0) {
-			printf("[http_parser]: fail to use private key file:");
-			ERR_print_errors_fp(stdout);
-			return -3;
+		for (const auto &file : gx_split(g_private_key_path, ':')) {
+			if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx,
+			    file.c_str(), SSL_FILETYPE_PEM) <= 0) {
+				mlog(LV_ERR, "Failed use private key file %s (details on stderr)", file.c_str());
+				ERR_print_errors_fp(stderr);
+				return -3;
+			}
 		}
 		if (1 != SSL_CTX_check_private_key(g_ssl_ctx)) {
-			printf("[http_parser]: private key does not match certificate:");
-			ERR_print_errors_fp(stdout);
+			mlog(LV_ERR, "http_parser: private key does not match certificate:");
+			ERR_print_errors_cb(ssllog, sloglevel);
 			return -4;
 		}
 		auto mp = g_config_file->get_value("tls_min_proto");

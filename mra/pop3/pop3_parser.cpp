@@ -45,9 +45,7 @@ static size_t g_context_num, g_retrieving_size;
 static time_duration g_timeout;
 static std::unique_ptr<pop3_context[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static char g_certificate_path[256];
-static char g_private_key_path[256];
-static char g_certificate_passwd[1024];
+static std::string g_certificate_path, g_private_key_path, g_certificate_passwd;
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 
@@ -66,13 +64,9 @@ void pop3_parser_init(int context_num, size_t retrieving_size,
 	if (!support_tls)
 		return;
 	g_force_tls = force_tls;
-	gx_strlcpy(g_certificate_path, certificate_path, std::size(g_certificate_path));
-	if (NULL != cb_passwd) {
-		gx_strlcpy(g_certificate_passwd, cb_passwd, std::size(g_certificate_passwd));
-	} else {
-		g_certificate_passwd[0] = '\0';
-	}
-	gx_strlcpy(g_private_key_path, key_path, std::size(g_private_key_path));
+	g_certificate_path = znul(certificate_path);
+	g_certificate_passwd = znul(cb_passwd);
+	g_private_key_path = znul(key_path);
 }
 
 #ifdef OLD_SSL
@@ -104,45 +98,46 @@ int pop3_parser_run()
 		SSL_load_error_strings();
 		g_ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 		if (NULL == g_ssl_ctx) {
-			printf("[pop3_parser]: Failed to init SSL context\n");
+			mlog(LV_ERR, "pop3_parser: failed to init TLS context");
 			return -1;
 		}
 		
-		if ('\0' != g_certificate_passwd[0]) {
+		if (g_certificate_passwd.size() > 0)
 			SSL_CTX_set_default_passwd_cb_userdata(g_ssl_ctx,
-				g_certificate_passwd);
+				deconst(g_certificate_passwd.c_str()));
+		auto sloglevel = reinterpret_cast<void *>(static_cast<uintptr_t>(LV_ERR));
+		for (const auto &file : gx_split(g_certificate_path, ':')) {
+			if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx,
+			    file.c_str()) <= 0) {
+				mlog(LV_ERR, "pop3_parser: failed to use certificate file \"%s\":", file.c_str());
+				ERR_print_errors_cb(ssllog, sloglevel);
+				return -2;
+			}
 		}
-		
-
-		if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx,
-			g_certificate_path) <= 0) {
-			printf("[pop3_parser]: fail to use certificate file:");
-			ERR_print_errors_fp(stdout);
-			return -2;
-		}
-		
-		if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx, g_private_key_path,
-			SSL_FILETYPE_PEM) <= 0) {
-			printf("[pop3_parser]: fail to use private key file:");
-			ERR_print_errors_fp(stdout);
-			return -3;
+		for (const auto &file : gx_split(g_private_key_path, ':')) {
+			if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx,
+			    file.c_str(), SSL_FILETYPE_PEM) <= 0) {
+				mlog(LV_ERR, "pop3_parser: failed to use private key file \"%s\":", file.c_str());
+				ERR_print_errors_fp(stdout);
+				return -3;
+			}
 		}
 		
 		if (1 != SSL_CTX_check_private_key(g_ssl_ctx)) {
-			printf("[pop3_parser]: private key does not match certificate:");
-			ERR_print_errors_fp(stdout);
+			mlog(LV_ERR, "pop3_parser: private key does not match certificate:");
+			ERR_print_errors_cb(ssllog, sloglevel);
 			return -4;
 		}
 		auto mp = g_config_file->get_value("tls_min_proto");
 		if (mp != nullptr && tls_set_min_proto(g_ssl_ctx, mp) != 0) {
-			fprintf(stderr, "[pop3_parser]: tls_min_proto value \"%s\" not accepted\n", mp);
+			mlog(LV_ERR, "pop3_parser: tls_min_proto value \"%s\" not accepted", mp);
 			return -4;
 		}
 		tls_set_renego(g_ssl_ctx);
 		try {
 			g_ssl_mutex_buf = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
 		} catch (const std::bad_alloc &) {
-			printf("[pop3_parser]: Failed to allocate SSL locking buffer\n");
+			mlog(LV_ERR, "pop3_parser: failed to allocate TLS locking buffer");
 			return -5;
 		}
 #ifdef OLD_SSL
@@ -159,7 +154,7 @@ int pop3_parser_run()
 			g_context_list2[i] = &g_context_list[i];
 		}
 	} catch (const std::bad_alloc &) {
-		printf("[pop3_parser]: Failed to allocate POP3 contexts\n");
+		mlog(LV_ERR, "pop3_parser: failed to allocate POP3 contexts");
         return -4;
     }
     return 0;
