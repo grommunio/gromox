@@ -480,8 +480,10 @@ static int help()
 	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
 	fprintf(stderr, "Commands:\n\tclear-photo clear-profile clear-rwz delmsg "
 		"emptyfld get-photo get-websettings get-websettings-persistent "
+		"get-websettings-recipients "
 		"purge-datafiles purge-softdelete recalc-sizes set-locale "
-		"set-photo set-websettings set-websettings-persistent unload vacuum\n");
+		"set-photo set-websettings set-websettings-persistent "
+		"set-websettings-recipients unload vacuum\n");
 	fprintf(stderr, "Command options:\n");
 	fprintf(stderr, "\t-?                           Call up option help for subcommand\n");
 	return EXIT_FAILURE;
@@ -799,6 +801,10 @@ int main(int argc, char **argv)
 		ret = showstoreprop(argc, argv, PSETID_GROMOX, "websettings_persistent", PT_UNICODE);
 	} else if (strcmp(argv[0], "set-websettings-persistent") == 0) {
 		ret = setstoreprop(argc, argv, PSETID_GROMOX, "websettings_persistent", PT_UNICODE);
+	} else if (strcmp(argv[0], "get-websettings-recipients") == 0) {
+		ret = showstoreprop(argc, argv, PSETID_GROMOX, "websettings_recipienthistory", PT_UNICODE);
+	} else if (strcmp(argv[0], "set-websettings-recipients") == 0) {
+		ret = setstoreprop(argc, argv, PSETID_GROMOX, "websettings_recipienthistory", PT_UNICODE);
 	} else if (strcmp(argv[0], "purge-softdelete") == 0) {
 		ret = purgesoftdel::main(argc, argv);
 	} else if (strcmp(argv[0], "set-locale") == 0) {
