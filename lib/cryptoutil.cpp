@@ -94,6 +94,7 @@ void tls_set_renego(SSL_CTX *ctx)
 	/* OpenSSL 1.x */
 	SSL_CTX_set_options(ctx, SSL_OP_NO_RENEGOTIATION);
 #endif
+	SSL_CTX_set_dh_auto(ctx, true);
 }
 
 std::string sss_obf_reverse(const std::string_view &x)
