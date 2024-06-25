@@ -984,6 +984,12 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (*ppvalue == nullptr)
 			return false;
 		return TRUE;
+	case PR_EC_RECIPIENT_HISTORY_JSON:
+		*ppvalue = cu_read_storenamedprop(pstore->dir, PSETID_GROMOX,
+		           "websettings_recipienthistory", PT_UNICODE);
+		if (*ppvalue == nullptr)
+			return false;
+		return TRUE;
 	case PR_EC_WEBAPP_PERSISTENT_SETTINGS_JSON:
 		*ppvalue = cu_read_storenamedprop(pstore->dir, PSETID_GROMOX,
 		           "websettings_persistent", PT_UNICODE);
@@ -1340,6 +1346,15 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 				break;
 			cu_write_storenamedprop(pstore->dir, PSETID_GROMOX,
 				"websettings", PT_UNICODE, pv.pvalue, 0);
+			/* Remove old copy in shadow store */
+			pinfo->ptree->remove_zstore_propval(pv.proptag);
+			continue;
+		}
+		case PR_EC_RECIPIENT_HISTORY_JSON: {
+			if (!pstore->b_private)
+				break;
+			cu_write_storenamedprop(pstore->dir, PSETID_GROMOX,
+				"websettings_recipienthistory", PT_UNICODE, pv.pvalue, 0);
 			/* Remove old copy in shadow store */
 			pinfo->ptree->remove_zstore_propval(pv.proptag);
 			continue;
