@@ -482,8 +482,9 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 				tmp_int = 5;
 			apr->recur_pat.pts.monthnth.recurnum = tmp_int;
 		} else {
-			if (irrule.check_bymask(RRULE_BY_DAY) ||
-			    irrule.check_bymask(RRULE_BY_SETPOS))
+			/* Cf. RFC 5545 pg. 43, "rule: BY_SETPOS" */
+			if (irrule.check_bymask(RRULE_BY_DAY) &&
+			    !irrule.check_bymask(RRULE_BY_SETPOS))
 				return false;
 			int tmp_int;
 			patterntype = PATTERNTYPE_MONTH;
