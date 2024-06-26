@@ -729,7 +729,10 @@ static bool oxcical_parse_recipients(const ical_component &main_ev,
 	pmsg->set_rcpts_internal(prcpts);
 	for (const auto &line : main_ev.line_list) {
 		auto piline = &line;
-		if (strcasecmp(piline->m_name.c_str(), "ATTENDEE") != 0)
+		/* Cf. [MS-OXCICAL] v20240416 §2.1.3.1.1.20.16 "property: ORGANIZER". */
+		auto is_attendee  = strcasecmp(piline->m_name.c_str(), "ATTENDEE") == 0;
+		auto is_organizer = strcasecmp(piline->m_name.c_str(), "ORGANIZER") == 0;
+		if (!is_attendee && !is_organizer)
 			continue;
 		paddress = piline->get_first_subvalue();
 		if (paddress == nullptr || strncasecmp(paddress, "MAILTO:", 7) != 0)
@@ -774,6 +777,8 @@ static bool oxcical_parse_recipients(const ical_component &main_ev,
 		if (pproplist->set(PR_RESPONSIBILITY, &tmp_byte) != 0)
 			return false;
 		tmp_int32 = recipSendable;
+		if (is_organizer)
+			tmp_int32 |= recipOrganizer;
 		if (pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32) != 0)
 			return false;
 	}
@@ -1281,6 +1286,19 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 	tmp_bin.cb = 0;
 	if (!username_to_entryid(paddress, pdisplay_name, &tmp_bin, nullptr))
 		return false;
+
+	/*
+	 * Cf. [MS-OXCICAL] v20240416 §2.1.3.1.1.20.61
+	 * "property: X-MS-OLK-SENDER":
+	 * Brief Description: The delegate sending the meeting on behalf of the
+	 * organizer.
+	 *
+	 * Note: The PR_SENDER_* MUST be set when the X-MS-OLK-SENDER property
+	 * has a valid URI. Here it is set on oxcmail_exchsched_compat, which
+	 * is apparently never set so not implemented. There is also no
+	 * mentioning of setting any PR_SENT_REPRESENTING_* in
+	 * MS-OXCICAL.
+	 */
 	if (pmsg->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP") != 0 ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, paddress) != 0 ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, paddress) != 0 ||
