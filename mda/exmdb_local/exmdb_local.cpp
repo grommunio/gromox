@@ -276,6 +276,18 @@ static bool exmdb_local_lang_to_charset(const char *lang, char (&charset)[32])
 	return true;
 }
 
+static void lq_report(unsigned int qid, unsigned long long mid, const char *txt,
+    const message_content *ct)
+{
+	auto &props = ct->proplist;
+	auto from = props.get<const char>(PR_SENDER_SMTP_ADDRESS);
+	auto subj = props.get<const char>(PR_SUBJECT);
+	auto abox = ct->children.pattachments;
+	auto acount = abox != nullptr ? abox->count : 0;
+	mlog(LV_DEBUG, "QID %u/MID %llu/%s: from=<%s> subj=<%s> attachments=%u",
+		qid, mid, txt, znul(from), znul(subj), acount);
+}
+
 delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
     const char *address) try
 {
@@ -367,6 +379,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		return delivery_status::perm_fail;
 	}
 	g_alloc_key = nullptr;
+	lq_report(pcontext->ctrl.queue_ID, 0, "before_delivery", pmsg);
 
 	nt_time = rop_util_current_nttime();
 	if (pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
@@ -402,6 +415,12 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		} else {
 			b_bounce_delivered = FALSE;
 		}
+
+		message_content *rbct = nullptr;
+		if (exmdb_client_remote::read_message(home_dir, nullptr, CP_ACP,
+		    message_id, &rbct) && rbct != nullptr)
+			lq_report(pcontext->ctrl.queue_ID, rop_util_get_gc_value(message_id),
+				"after_delivery", rbct);
 	}
 	message_content_free(pmsg);
 	switch (dm_status) {
