@@ -312,7 +312,7 @@ size_t parse_mime_field(const char *in_buff, size_t buff_len,
 	auto tmp_ptr = in_buff;
 
 	size_t i = 0, value_length = 0;
-	while (*tmp_ptr != ':' && i < buff_len &&
+	while (i < buff_len && *tmp_ptr != ':' &&
 		i <= MIME_NAME_LEN && *tmp_ptr != '\r'
 		&& *tmp_ptr != '\n') {
 		tmp_ptr ++; 
