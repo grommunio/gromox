@@ -704,7 +704,7 @@ int EWSContext::notify()
 	return flush();
 }
 
-int EWSPlugin::retr(int ctx_id)
+int EWSPlugin::retr(int ctx_id) try
 {
 	if(ctx_id < 0 || static_cast<size_t>(ctx_id) >= contexts.size() || !contexts[ctx_id])
 		return HPM_RETRIEVE_DONE;
@@ -731,6 +731,9 @@ int EWSPlugin::retr(int ctx_id)
 		return context.notify();
 	}
 	return HPM_RETRIEVE_DONE;
+} catch (const std::exception &err) {
+	mlog(LV_ERR, "[ews#%d]%s Retrieve error: %s", ctx_id, timestamp().c_str(), err.what());
+	return HPM_RETRIEVE_ERROR;
 }
 
 void EWSPlugin::term(int ctx)
