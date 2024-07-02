@@ -14,6 +14,12 @@ a process-local function API, a network client, and a network server.
 The following directives are recognized when they appear in
 /etc/gromox/gromox.cfg.
 .TP
+\fBexmdb_force_write_txn\fP
+(Developer option.) Perform all SQLite transactions as write transactions (i.e.
+with exclusive locking).
+.br
+Default: \fIno\fP
+.TP
 \fBexmdb_ics_log_file\fP
 Log ICS/synchronization requests (and their results) to this file.
 .br

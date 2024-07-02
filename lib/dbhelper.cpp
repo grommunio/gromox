@@ -12,7 +12,7 @@
 
 namespace gromox {
 
-unsigned int gx_sqlite_debug;
+unsigned int gx_sqlite_debug, gx_force_write_txn;
 
 static bool write_statement(const char *q)
 {
@@ -99,6 +99,8 @@ int xtransaction::commit()
 
 xtransaction gx_sql_begin3(const std::string &pos, sqlite3 *db, txn_mode mode)
 {
+	if (gx_force_write_txn)
+		mode = txn_mode::write;
 	auto ret = gx_sql_exec(db, mode == txn_mode::write ? "BEGIN IMMEDIATE" : "BEGIN");
 	if (ret == SQLITE_OK) {
 		auto fn = sqlite3_db_filename(db, nullptr);
