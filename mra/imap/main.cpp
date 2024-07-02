@@ -485,10 +485,9 @@ int main(int argc, char **argv)
 	char temp_buff[256];
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	startup_banner("gromox-imap");
 	setup_sigalrm();
