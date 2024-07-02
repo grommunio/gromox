@@ -14,6 +14,8 @@
 /*
  * INDEX names should be suffixed by the schema number, to facilitate
  * dbop_sqlite_upgrade (old table+index exists simultaneously with new table).
+ *
+ * If you add a new index name, add it to mbck.cpp:ck_indices_present too.
  */
 #define TABLE_END {}
 
