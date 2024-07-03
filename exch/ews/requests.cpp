@@ -576,6 +576,26 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 }
 
 /**
+ * @brief      Process GetAppManifests
+ *
+ * Provides a stub that returns an empty Manifests node.
+ *
+ * @todo       This function lacks most of its functionality and is practically worthless.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetAppManifestsRequest&&, XMLElement* response, const EWSContext&)
+{
+	response->SetName("m:GetAppManifestsResponse");
+
+	mGetAppManifestsResponse data;
+	data.success();
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetAttachment
  *
  * @param      request   Request data

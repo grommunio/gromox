@@ -7,8 +7,9 @@
 #include <cerrno>
 #include <cstring>
 #include <string>
-#	include <arpa/inet.h>
+#include <arpa/inet.h>
 #include <libHX/string.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 #include <gromox/config_file.hpp>
 #include <gromox/scope.hpp>

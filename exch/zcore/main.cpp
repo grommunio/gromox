@@ -308,10 +308,9 @@ int main(int argc, char **argv)
 	exmdb_rpc_alloc = common_util_alloc;
 	exmdb_rpc_free = [](void *) {};
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	startup_banner("gromox-zcore");
 	if (opt_show_version)

@@ -36,6 +36,7 @@ using namespace exmdb;
 static std::shared_ptr<CONFIG_FILE> g_config_during_init;
 
 static constexpr cfg_directive exmdb_gromox_cfg_defaults[] = {
+	{"exmdb_force_write_txn", "0", CFG_BOOL},
 	{"exmdb_ics_log_file", ""},
 	CFG_TABLE_END,
 };
@@ -110,6 +111,7 @@ static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
 	g_exmdb_search_pacing_time = pconfig->get_ll("exmdb_search_pacing_time");
 	g_exmdb_max_sqlite_spares = pconfig->get_ll("exmdb_max_sqlite_spares");
 	g_sqlite_busy_timeout_ns = pconfig->get_ll("sqlite_busy_timeout");
+	gx_force_write_txn = gxcfg->get_ll("exmdb_force_write_txn");
 	auto s = gxcfg->get_value("exmdb_ics_log_file");
 	if (s != nullptr)
 		g_exmdb_ics_log_file = s;

@@ -218,10 +218,9 @@ int main(int argc, char **argv)
 	std::vector<pthread_t> thr_ids;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	startup_banner("gromox-timer");
 	if (opt_show_version)

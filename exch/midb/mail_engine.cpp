@@ -1422,8 +1422,10 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 		mid_string = mid_string1;
 		sprintf(temp_path, "%s/ext/%s", dir, mid_string1);
 		wrapfd fd = open(temp_path, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
-		if (fd.get() < 0)
+		if (fd.get() < 0) {
+			mlog(LV_ERR, "E-1770: open %s for write: %s", temp_path, strerror(errno));
 			return;
+		}
 		if (HXio_fullwrite(fd.get(), djson.c_str(), djson.size()) < 0 ||
 		    fd.close_wr() != 0) {
 			mlog(LV_ERR, "E-1134: write %s: %s", temp_path, strerror(errno));
@@ -1431,10 +1433,14 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 		}
 		sprintf(temp_path1, "%s/eml/%s", dir, mid_string1);
 		fd = open(temp_path1, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
-		if (fd.get() < 0)
+		if (fd.get() < 0) {
+			mlog(LV_ERR, "E-1771: open %s for write: %s", temp_path, strerror(errno));
 			return;
-		if (!imail.to_file(fd.get()))
+		}
+		if (!imail.to_file(fd.get())) {
+			mlog(LV_ERR, "E-1772: to_file %s failed", temp_path);
 			return;
+		}
 	}
 	(*puidnext) ++;
 	auto b_unsent = !!(message_flags & MSGFLAG_UNSENT);

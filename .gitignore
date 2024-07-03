@@ -45,6 +45,7 @@ Makefile.in
 /gromox-kdb2mt
 /gromox-mailq
 /gromox-mbop
+/gromox-mbck
 /gromox-mkmidb
 /gromox-mkprivate
 /gromox-mkpublic

@@ -3630,6 +3630,38 @@ struct mFreeBusyResponse : public NS_EWS_Messages
 };
 
 /**
+ * Messages.xsd:3486
+ */
+struct mGetAppManifestsRequest
+{
+	explicit inline mGetAppManifestsRequest(const tinyxml2::XMLElement*) {} // nothing to do here for now
+
+	//<xs:element name="ApiVersionSupported" type="xs:string" minOccurs="0" maxOccurs="1" />
+	//<xs:element name="SchemaVersionSupported" type="xs:string" minOccurs="0" maxOccurs="1" />
+	//<xs:element name="IncludeAllInstalledAddIns" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+	//<xs:element name="IncludeEntitlementData" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+	//<xs:element name="IncludeManifestData" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+	//<xs:element name="IncludeCustomAppsData" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+	//<xs:element name="ExtensionIds" type="m:ListOfExtensionIdsType" minOccurs="0" maxOccurs="1" />
+	//<xs:element name="AddIns" type="m:ArrayOfPrivateCatalogAddInsType" minOccurs="0" maxOccurs="1"/>
+	//<xs:element name="IncludeExtensionMetaData" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+};
+
+/**
+ * Messages.xsd:3511
+ */
+struct mGetAppManifestsResponse : mResponseMessageType
+{
+	using mResponseMessageType::mResponseMessageType;
+
+	void serialize(tinyxml2::XMLElement*) const;
+	//<xs:choice>
+	//	<xs:element name="Apps" type="t:ArrayOfAppsType" maxOccurs="1"/>
+	//	<xs:element name="Manifests" type="m:ArrayOfAppManifestsType" maxOccurs="1"/>
+	//</xs:choice>
+};
+
+/**
  * Messages.xsd:2204
  */
 struct mGetUserAvailabilityResponse
