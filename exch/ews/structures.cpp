@@ -2301,6 +2301,27 @@ tEmailAddressType::tEmailAddressType(const TPROPVAL_ARRAY& tps)
 		RoutingType = data;
 }
 
+/**
+ * @brief      Generate recipient properties
+ *
+ * @param      rcpt    Propval array to place recipient properties in
+ * @param      type    Type of the recipient (MAPI_TO, MAPI_CC, or MAPI_BCC)
+ */
+void tEmailAddressType::mkRecipient(TPROPVAL_ARRAY* rcpt, uint32_t type) const
+{
+	if(rcpt == nullptr)
+		throw EWSError::NotEnoughMemory(E3289);
+	if(!EmailAddress)
+		throw EWSError::InvalidRecipients(E3290);
+	const char* displayname = Name? Name->c_str() : EmailAddress->c_str();
+	if(rcpt->set(PR_DISPLAY_NAME, displayname) ||
+	   rcpt->set(PR_TRANSMITABLE_DISPLAY_NAME, displayname) ||
+	   rcpt->set(PR_ADDRTYPE, RoutingType? RoutingType->c_str() : "SMTP") ||
+	   rcpt->set(PR_EMAIL_ADDRESS, EmailAddress->c_str()) ||
+	   rcpt->set(PR_RECIPIENT_TYPE, &type))
+		throw EWSError::NotEnoughMemory(E3291);
+}
+
 tAttendee::tAttendee(const TPROPVAL_ARRAY& tps)
 {
 	const char* data;

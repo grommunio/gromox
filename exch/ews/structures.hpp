@@ -715,6 +715,8 @@ struct tEmailAddressType : public NS_EWS_Types
 	explicit tEmailAddressType(const tinyxml2::XMLElement*);
 	explicit tEmailAddressType(const TPROPVAL_ARRAY&);
 
+	void mkRecipient(TPROPVAL_ARRAY*, uint32_t) const;
+
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::optional<std::string> Name;

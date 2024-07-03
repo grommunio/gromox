@@ -83,6 +83,7 @@ public:
 	ERR(InvalidIdNotAnItemAttachmentId) ///< Attachment id expected, but got something else
 	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
 	ERR(InvalidOccurrenceId) ///< Cannot deserialize occurrence ID
+	ERR(InvalidRecipients) ///< Recipient list is malformed
 	ERR(InvalidRestriction) ///< Restriction cannot be deserialized
 	ERR(InvalidRoutingType) ///< RoutingType holds an unrecognized value
 	ERR(InvalidSendItemSaveSettings) ///< Specifying target folder when not saving
@@ -411,6 +412,10 @@ E(3284, "failed to load permissions");
 E(3285, "too many folder members");
 E(3286, "failed to update folder permissions");
 E(3287, "failed to write folder permissions");
+E(3288, "could not initialize recipient list: out of memory");
+E(3289, "could not create recipient: out of memory");
+E(3290, "missing e-mail address for recipient");
+E(3291, "failed to set recipient: out of memory");
 
 #undef E
 }
