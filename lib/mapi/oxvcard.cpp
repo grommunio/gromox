@@ -44,6 +44,7 @@ unsigned int g_oxvcard_pedantic;
 static constexpr uint32_t g_n_proptags[] = 
 	{PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 	PR_DISPLAY_NAME_PREFIX, PR_GENERATION};
+/* The 8000s numbers must match up with the order of the oxvcard_get_propids::bf array */
 static constexpr uint32_t g_workaddr_proptags[] =
 	{0x8000001F, 0x8001001F, 0x8002001F, 0x8003001F, 0x8004001F, 0x8005001F};
 static constexpr uint32_t g_homeaddr_proptags[] =
@@ -56,6 +57,8 @@ static constexpr uint32_t g_otheraddr_proptags[] =
 	PR_OTHER_ADDRESS_POSTAL_CODE, PR_OTHER_ADDRESS_COUNTRY};
 static constexpr uint32_t g_email_proptags[] =
 	{0x8006001F, 0x8007001F, 0x8008001F};
+static constexpr uint32_t g_addrtype_proptags[] =
+	{0x8012001F, 0x8013001F, 0x8014001F};
 static constexpr uint32_t g_im_proptag = 0x8009001F;
 static constexpr uint32_t g_categories_proptag = 0x800A101F;
 static constexpr uint32_t g_bcd_proptag = 0x800B0102;
@@ -87,9 +90,10 @@ static BOOL oxvcard_check_compatible(const vcard *pvcard)
 static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	GET_PROPIDS get_propids)
 {
-	PROPERTY_NAME bf[18];
+	PROPERTY_NAME bf[21];
 	size_t start = 0, z = 0;
-	
+
+	/* bf array must be ordered w.r.t. g_workaddr_proptags et al */
 	bf[z++].lid = PidLidWorkAddressPostOfficeBox;
 	bf[z++].lid = PidLidWorkAddressStreet;
 	bf[z++].lid = PidLidWorkAddressCity;
@@ -125,6 +129,16 @@ static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	bf[z].guid = PSETID_GROMOX;
 	bf[z].kind = MNID_STRING;
 	bf[z++].pname = deconst("vcarduid");
+
+	bf[z].guid = PSETID_ADDRESS;
+	bf[z].kind = MNID_ID;
+	bf[z++].lid = PidLidEmail1AddressType;
+	bf[z].guid = PSETID_ADDRESS;
+	bf[z].kind = MNID_ID;
+	bf[z++].lid = PidLidEmail2AddressType;
+	bf[z].guid = PSETID_ADDRESS;
+	bf[z].kind = MNID_ID;
+	bf[z++].lid = PidLidEmail3AddressType;
 
 	PROPNAME_ARRAY propnames;
 	propnames.count = z;
@@ -401,7 +415,8 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 				continue;
 			if (mail_count > 2)
 				continue;
-			if (pmsg->proplist.set(g_email_proptags[mail_count++], pstring) != 0)
+			if (pmsg->proplist.set(g_email_proptags[mail_count], pstring) != 0 ||
+			    pmsg->proplist.set(g_addrtype_proptags[mail_count++], "SMTP") != 0)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "TITLE") == 0) {
 			auto pstring = pvline->get_first_subval();
