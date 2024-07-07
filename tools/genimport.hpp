@@ -88,7 +88,8 @@ enum {
 
 extern std::string g_dstuser;
 extern const char *g_storedir;
-extern unsigned int g_user_id, g_show_tree, g_show_props, g_wet_run, g_public_folder;
+extern unsigned int g_user_id, g_show_tree, g_show_props, g_wet_run;
+extern unsigned int g_public_folder, g_verbose_create;
 
 extern void tree(unsigned int d);
 extern void tlog(const char *f, ...) __attribute__((format(printf, 1, 2)));
