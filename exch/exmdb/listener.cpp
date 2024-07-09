@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
@@ -37,10 +38,6 @@ static pthread_t g_listener_id;
 
 static void *sockaccept_thread(void *param)
 {
-	socklen_t addrlen;
-	char client_hostip[40];
-	struct sockaddr_storage peer_name;
-	
 	while (NULL == common_util_get_user_displayname ||
 		NULL == common_util_check_mlist_include ||
 		NULL == common_util_get_user_lang ||
@@ -56,45 +53,33 @@ static void *sockaccept_thread(void *param)
 		sleep(1);	
 	}
 	while (!g_notify_stop) {
-		/* wait for an incoming connection */
-        addrlen = sizeof(peer_name);
-		auto sockd = accept4(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&peer_name),
-		             &addrlen, SOCK_CLOEXEC);
-		if (-1 == sockd) {
+		auto conn = generic_connection::accept(g_listen_sockd, false, &g_notify_stop);
+		if (conn.sockd == -2)
+			return nullptr;
+		else if (conn.sockd < 0)
 			continue;
-		}
-		int ret = getnameinfo(reinterpret_cast<struct sockaddr *>(&peer_name),
-		          addrlen, client_hostip, sizeof(client_hostip),
-		          nullptr, 0, NI_NUMERICSERV | NI_NUMERICHOST);
-		if (ret != 0) {
-			mlog(LV_ERR, "getnameinfo: %s", gai_strerror(ret));
-			close(sockd);
-			continue;
-		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-		    client_hostip) == g_acl_list.cend()) {
+		    conn.client_ip) == g_acl_list.cend()) {
 			static std::atomic<time_t> g_lastwarn_time;
 			auto prev = g_lastwarn_time.load();
 			auto next = prev + 60;
 			auto now = time(nullptr);
 			if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
-				mlog(LV_INFO, "I-1666: Rejecting %s: not allowed by exmdb_acl", client_hostip);
+				mlog(LV_INFO, "I-1666: Rejecting %s: not allowed by exmdb_acl", conn.client_ip);
 			auto tmp_byte = exmdb_response::access_deny;
-			if (write(sockd, &tmp_byte, 1) < 1)
+			if (HXio_fullwrite(conn.sockd, &tmp_byte, 1) != 1)
 				/* ignore */;
-			close(sockd);
 			continue;
 		}
 		auto pconnection = exmdb_parser_get_connection();
 		if (pconnection == nullptr) {
 			auto tmp_byte = exmdb_response::max_reached;
-			if (write(sockd, &tmp_byte, 1) < 1)
+			if (HXio_fullwrite(conn.sockd, &tmp_byte, 1) != 1)
 				/* ignore */;
-			close(sockd);
 			continue;
 
 		}
-		pconnection->sockd = sockd;
+		static_cast<generic_connection &>(*pconnection) = std::move(conn); // ask qir about D=std::move(Base)
 		exmdb_parser_put_connection(std::move(pconnection));
 	}
 	return nullptr;

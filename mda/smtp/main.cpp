@@ -154,55 +154,18 @@ static void system_services_stop()
 static void *smls_thrwork(void *arg)
 {
 	const bool use_tls = reinterpret_cast<uintptr_t>(arg);
+	auto sv_sock = use_tls ? g_listener_ssl_sock : g_listener_sock;
 	
 	while (true) {
-		struct sockaddr_storage fact_addr, client_peer;
-		socklen_t addrlen = sizeof(client_peer);
-		char client_hostip[40], client_txtport[8], server_hostip[40];
-		/* wait for an incoming connection */
-		auto sockd2 = accept4(use_tls ? g_listener_ssl_sock : g_listener_sock,
-		              reinterpret_cast<struct sockaddr *>(&client_peer),
-		              &addrlen, SOCK_CLOEXEC);
-		if (g_stop_accept) {
-			if (sockd2 >= 0)
-				close(sockd2);
-			return nullptr;
-		}
-		if (sockd2 == -1)
+		auto conn = generic_connection::accept(sv_sock, g_haproxy_level, &g_stop_accept);
+		if (conn.sockd == -2)
+			break;
+		else if (conn.sockd < 0)
 			continue;
-		if (haproxy_intervene(sockd2, g_haproxy_level, &client_peer) < 0) {
-			close(sockd2);
-			continue;
-		}
-		auto ret = getnameinfo(reinterpret_cast<sockaddr *>(&client_peer),
-		           addrlen, client_hostip, sizeof(client_hostip),
-		           client_txtport, sizeof(client_txtport),
-		           NI_NUMERICHOST | NI_NUMERICSERV);
-		if (ret != 0) {
-			mlog(LV_ERR, "getnameinfo: %s", gai_strerror(ret));
-			close(sockd2);
-			continue;
-		}
-		addrlen = sizeof(fact_addr);
-		ret = getsockname(sockd2, reinterpret_cast<sockaddr *>(&fact_addr), &addrlen);
-		if (ret != 0) {
-			mlog(LV_ERR, "getsockname: %s", strerror(errno));
-			close(sockd2);
-			continue;
-		}
-		ret = getnameinfo(reinterpret_cast<sockaddr *>(&fact_addr),
-		      addrlen, server_hostip, sizeof(server_hostip),
-		      nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
-		if (ret != 0) {
-			mlog(LV_ERR, "getnameinfo: %s", gai_strerror(ret));
-			close(sockd2);
-			continue;
-		}
-		uint16_t client_port = strtoul(client_txtport, nullptr, 0);
-		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
+		if (fcntl(conn.sockd, F_SETFL, O_NONBLOCK) < 0)
 			mlog(LV_WARN, "W-1412: fcntl: %s", strerror(errno));
 		static constexpr int flag = 1;
-		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
+		if (setsockopt(conn.sockd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
 			mlog(LV_WARN, "W-1413: setsockopt: %s", strerror(errno));
 		auto ctx = static_cast<smtp_context *>(contexts_pool_get_context(sctx_status::free));
 		/* there's no context available in contexts pool, close the connection*/
@@ -215,9 +178,8 @@ static void *smls_thrwork(void *arg)
 			char buff[1024];
 			auto len = snprintf(buff, std::size(buff), "%s%s%s",
 			           str, host_ID, str2);
-			if (HXio_fullwrite(sockd2, buff, len) < 0)
+			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				/* ignore */;
-			close(sockd2);
 			continue;
 		}
 		ctx->type = sctx_status::constructing;
@@ -230,17 +192,11 @@ static void *smls_thrwork(void *arg)
 			char buff[1024];
 			auto len = snprintf(buff, std::size(buff), "%s%s%s",
 			           str, host_ID, str2);
-			if (HXio_fullwrite(sockd2, buff, len) < 0)
+			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				/* ignore */;
 		}
-		/* construct the context object */
-		ctx->connection.last_timestamp = tp_now();
-		ctx->connection.sockd             = sockd2;
+		ctx->connection = std::move(conn);
 		ctx->last_cmd                  = use_tls ? T_STARTTLS_CMD : 0;
-		ctx->connection.client_port    = client_port;
-		ctx->connection.server_port    = use_tls ? g_listener_ssl_port : g_listener_port;
-		gx_strlcpy(ctx->connection.client_ip, client_hostip, std::size(ctx->connection.client_ip));
-		gx_strlcpy(ctx->connection.server_ip, server_hostip, std::size(ctx->connection.server_ip));
 		/*
 		 * Valid the context and wake up one thread if there are some threads
 		 * block on the condition variable.

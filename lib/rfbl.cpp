@@ -24,6 +24,7 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <netdb.h>
 #include <pthread.h>
 #include <spawn.h>
 #include <sstream>
@@ -63,10 +64,12 @@
 #endif
 #include <vmime/charset.hpp>
 #include <gromox/archive.hpp>
+#include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
+#include <gromox/generic_connection.hpp>
 #include <gromox/json.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapierr.hpp>
@@ -2022,4 +2025,80 @@ std::shared_ptr<CONFIG_FILE> config_file_prg(const char *ov, const char *fb,
 	if (cfg == nullptr)
 		mlog(LV_ERR, "config_file_init %s: %s", ov, strerror(errno));
 	return cfg;
+}
+
+generic_connection::generic_connection(generic_connection &&o) :
+	client_port(o.client_port), server_port(o.server_port),
+	sockd(std::move(o.sockd)), ssl(std::move(o.ssl)),
+	last_timestamp(o.last_timestamp)
+{
+	memcpy(client_ip, o.client_ip, sizeof(client_ip));
+	memcpy(server_ip, o.server_ip, sizeof(server_ip));
+	o.sockd = -1;
+	o.ssl = nullptr;
+}
+
+generic_connection &generic_connection::operator=(generic_connection &&o)
+{
+	memcpy(client_ip, o.client_ip, sizeof(client_ip));
+	memcpy(server_ip, o.server_ip, sizeof(server_ip));
+	client_port = o.client_port;
+	server_port = o.server_port;
+	sockd = std::move(o.sockd);
+	o.sockd = -1;
+	ssl = std::move(o.ssl);
+	o.ssl = nullptr;
+	last_timestamp = o.last_timestamp;
+	return *this;
+}
+
+generic_connection generic_connection::accept(int sv_sock,
+    int haproxy, gromox::atomic_bool *stop_accept)
+{
+	generic_connection conn;
+	struct sockaddr_storage sv_addr, cl_addr;
+	socklen_t addrlen = sizeof(cl_addr);
+	auto cl_sock = accept4(sv_sock, reinterpret_cast<struct sockaddr *>(&cl_addr),
+	               &addrlen, SOCK_CLOEXEC);
+	conn.sockd = cl_sock;
+	if (*stop_accept) {
+		conn.reset();
+		conn.sockd = -2;
+		return conn;
+	} else if (cl_sock < 0) {
+		conn.reset();
+		return conn;
+	}
+	if (haproxy_intervene(cl_sock, haproxy, &cl_addr) < 0) {
+		conn.reset();
+		return conn;
+	}
+	char txtport[40];
+	auto ret = getnameinfo(reinterpret_cast<sockaddr *>(&cl_addr), addrlen,
+		   conn.client_ip, sizeof(conn.client_ip), txtport,
+		   sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+	if (ret != 0) {
+		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		conn.reset();
+		return conn;
+	}
+	conn.client_port = strtoul(txtport, nullptr, 0);
+	addrlen = sizeof(sv_addr);
+	ret = getsockname(cl_sock, reinterpret_cast<sockaddr *>(&sv_addr), &addrlen);
+	if (ret != 0) {
+		mlog(LV_WARN, "getsockname: %s\n", strerror(errno));
+		conn.reset();
+		return conn;
+	}
+	ret = getnameinfo(reinterpret_cast<sockaddr *>(&sv_addr), addrlen,
+	      conn.server_ip, sizeof(conn.server_ip), txtport,
+	      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
+	if (ret != 0) {
+		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
+		conn.reset();
+		return conn;
+	}
+	conn.server_port = strtoul(txtport, nullptr, 0);
+	conn.last_timestamp = tp_now();
+	return conn;
 }

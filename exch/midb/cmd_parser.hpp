@@ -2,12 +2,12 @@
 #include <list>
 #include <pthread.h>
 #include <gromox/double_list.hpp>
+#include <gromox/generic_connection.hpp>
 
-struct midb_conn {
+struct midb_conn : public generic_connection {
 	~midb_conn();
 
 	DOUBLE_LIST_NODE node{};
-	int sockd = -1;
 	BOOL is_selecting = false;
 	pthread_t thr_id{};
 };

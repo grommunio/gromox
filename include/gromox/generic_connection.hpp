@@ -1,13 +1,17 @@
 #pragma once
 #include <unistd.h>
 #include <openssl/ssl.h>
+#include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>
 
-struct GX_EXPORT GENERIC_CONNECTION {
-	GENERIC_CONNECTION() = default;
-	~GENERIC_CONNECTION() { reset(); }
-	NOMOVE(GENERIC_CONNECTION);
+struct GX_EXPORT generic_connection {
+	generic_connection() = default;
+	generic_connection(generic_connection &&);
+	~generic_connection() { reset(); }
+	generic_connection &operator=(generic_connection &&);
+
+	static generic_connection accept(int listen_fd, int haproxy_level, gromox::atomic_bool *stop_accept);
 
 	void reset(bool slp = 0) noexcept
 	{
@@ -37,3 +41,4 @@ struct GX_EXPORT GENERIC_CONNECTION {
 	SSL *ssl = nullptr;
 	gromox::time_point last_timestamp; /* last time when system got data from */
 };
+using GENERIC_CONNECTION = generic_connection;

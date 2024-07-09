@@ -46,7 +46,7 @@ enum class http_status;
 struct DCERPC_ENDPOINT;
 struct DCERPC_INFO;
 struct DCERPC_INTERFACE;
-struct GENERIC_CONNECTION;
+struct generic_connection;
 struct MESSAGE_CONTEXT;
 struct HPM_INTERFACE;
 struct http_request;
@@ -85,7 +85,7 @@ struct dlfuncs {
 		BOOL (*reg_intf)(HPM_INTERFACE *);
 		http_request *(*get_req)(unsigned int);
 		HTTP_AUTH_INFO (*get_auth_info)(unsigned int);
-		GENERIC_CONNECTION *(*get_conn)(unsigned int);
+		generic_connection *(*get_conn)(unsigned int);
 		http_status (*write_response)(unsigned int, const void *, size_t);
 		void (*wakeup_ctx)(unsigned int);
 		void (*activate_ctx)(unsigned int);

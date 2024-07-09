@@ -186,55 +186,18 @@ static void system_services_stop()
 static void *p3ls_thrwork(void *arg)
 {
 	const bool use_tls = reinterpret_cast<uintptr_t>(arg);
+	auto sv_sock = use_tls ? g_listener_ssl_sock : g_listener_sock;
 	
 	while (true) {
-		struct sockaddr_storage fact_addr, client_peer;
-		socklen_t addrlen = sizeof(client_peer);
-		char client_hostip[40], client_txtport[8], server_hostip[40];
-		/* wait for an incoming connection */
-		auto sockd2 = accept4(use_tls ? g_listener_ssl_sock : g_listener_sock,
-		              reinterpret_cast<struct sockaddr *>(&client_peer),
-		              &addrlen, SOCK_CLOEXEC);
-		if (g_stop_accept) {
-			if (sockd2 >= 0)
-				close(sockd2);
-			return nullptr;
-		}
-		if (sockd2 == -1)
+		auto conn = generic_connection::accept(sv_sock, g_haproxy_level, &g_stop_accept);
+		if (conn.sockd == -2)
+			break;
+		else if (conn.sockd < 0)
 			continue;
-		if (haproxy_intervene(sockd2, g_haproxy_level, &client_peer) < 0) {
-			close(sockd2);
-			continue;
-		}
-		int ret = getnameinfo(reinterpret_cast<sockaddr *>(&client_peer),
-		          addrlen, client_hostip, sizeof(client_hostip),
-		          client_txtport, sizeof(client_txtport),
-		          NI_NUMERICHOST | NI_NUMERICSERV);
-		if (ret != 0) {
-			printf("getnameinfo: %s\n", gai_strerror(ret));
-			close(sockd2);
-			continue;
-		}
-		addrlen = sizeof(fact_addr); 
-		ret = getsockname(sockd2, reinterpret_cast<sockaddr *>(&fact_addr), &addrlen);
-		if (ret != 0) {
-			printf("getsockname: %s\n", strerror(errno));
-			close(sockd2);
-			continue;
-		}
-		ret = getnameinfo(reinterpret_cast<sockaddr *>(&fact_addr),
-		      addrlen, server_hostip, sizeof(server_hostip),
-		      nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
-		if (ret != 0) {
-			printf("getnameinfo: %s\n", gai_strerror(ret));
-			close(sockd2);
-			continue;
-		}
-		uint16_t client_port = strtoul(client_txtport, nullptr, 0);
-		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
+		if (fcntl(conn.sockd, F_SETFL, O_NONBLOCK) < 0)
 			mlog(LV_WARN, "W-1405: fctnl: %s", strerror(errno));
 		static constexpr int flag = 1;
-		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
+		if (setsockopt(conn.sockd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
 			mlog(LV_WARN, "W-1339: setsockopt: %s", strerror(errno));
 		auto ctx = static_cast<pop3_context *>(contexts_pool_get_context(sctx_status::free));
 		/* there's no context available in contexts pool, close the connection*/
@@ -247,27 +210,24 @@ static void *p3ls_thrwork(void *arg)
 			char buff[1024];
 			auto len = snprintf(buff, std::size(buff), "%s%s%s",
 			           str, host_ID, str2);
-			if (HXio_fullwrite(sockd2, buff, len) < 0)
+			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				/* ignore */;
-			close(sockd2);
 			continue;
 		}
 		ctx->type = sctx_status::constructing;
 		/* pass the client ipaddr into the ipaddr filter */
 		std::string reason;
-		if (!system_services_judge_ip(client_hostip, reason)) {
+		if (!system_services_judge_ip(conn.client_ip, reason)) {
 			/* access denied */
 			size_t sl = 0;
 			auto str = resource_get_pop3_code(1712, 1, &sl);
 			auto str2 = resource_get_pop3_code(1712, 2, &sl);
 			char buff[1024];
 			auto len = snprintf(buff, std::size(buff), "%s%s%s",
-			           str, client_hostip, str2);
-			if (HXio_fullwrite(sockd2, buff, len) < 0)
+			           str, conn.client_ip, str2);
+			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				/* ignore */;
-			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter",
-				client_hostip);
-			close(sockd2);
+			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter", conn.client_ip);
 			/* release the context */
 			contexts_pool_put_context(ctx, sctx_status::free);
 			continue;
@@ -282,17 +242,11 @@ static void *p3ls_thrwork(void *arg)
 			char buff[1024];
 			auto len = snprintf(buff, std::size(buff), "%s%s%s",
 			           str, host_ID, str2);
-			if (HXio_fullwrite(sockd2, buff, len) < 0)
+			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				/* ignore */;
 		}
-		/* construct the context object */
-		ctx->connection.last_timestamp = tp_now();
-		ctx->connection.sockd          = sockd2;
-		ctx->is_stls                   = use_tls;
-		ctx->connection.client_port    = client_port;
-		ctx->connection.server_port    = use_tls ? g_listener_ssl_port : g_listener_port;
-		gx_strlcpy(ctx->connection.client_ip, client_hostip, std::size(ctx->connection.client_ip));
-		gx_strlcpy(ctx->connection.server_ip, server_hostip, std::size(ctx->connection.server_ip));
+		ctx->connection = std::move(conn);
+		ctx->is_stls = use_tls;
 		/*
 		 * Valid the context and wake up one thread if there are some threads
 		 * block on the condition variable.

@@ -30,6 +30,7 @@
 #include <sys/wait.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
+#include <gromox/generic_connection.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -43,14 +44,13 @@ using namespace gromox;
 
 namespace {
 
-struct CONNECTION_NODE {
+struct CONNECTION_NODE : public generic_connection {
 	CONNECTION_NODE() = default;
 	CONNECTION_NODE(CONNECTION_NODE &&) noexcept;
-	~CONNECTION_NODE();
+	CONNECTION_NODE(generic_connection &&o) : generic_connection(std::move(o)) {}
 	void operator=(CONNECTION_NODE &&) noexcept = delete;
 	ssize_t sk_write(const char *, size_t = -1);
 
-	int sockd = -1;
 	int offset = 0;
 	char buffer[1024]{};
 	char line[1024]{};
@@ -117,17 +117,11 @@ static BOOL read_mark(CONNECTION_NODE *pconnection);
 static void term_handler(int signo);
 
 CONNECTION_NODE::CONNECTION_NODE(CONNECTION_NODE &&o) noexcept :
-	sockd(o.sockd), offset(o.offset)
+	generic_connection(std::move(o)), offset(o.offset)
+	//ask qir about D::D() : B(move(o.B)) {}
 {
-	o.sockd = -1;
 	memcpy(buffer, o.buffer, sizeof(buffer));
 	memcpy(line, o.line, sizeof(line));
-}
-
-CONNECTION_NODE::~CONNECTION_NODE()
-{
-	if (sockd >= 0)
-		close(sockd);
 }
 
 ssize_t CONNECTION_NODE::sk_write(const char *s, size_t z)
@@ -391,29 +385,16 @@ int main(int argc, char **argv)
 
 static void *tmr_acceptwork(void *param)
 {
-	char client_hostip[40];
-	struct sockaddr_storage peer_name;
-
 	int sockd = reinterpret_cast<intptr_t>(param);
 	while (!g_notify_stop) {
-		/* wait for an incoming connection */
-		socklen_t addrlen = sizeof(peer_name);
-		auto sockd2 = accept4(sockd, reinterpret_cast<struct sockaddr *>(&peer_name),
-		              &addrlen, SOCK_CLOEXEC);
-		if (sockd2 < 0)
+		CONNECTION_NODE conn(generic_connection::accept(sockd, false, &g_notify_stop));
+		if (conn.sockd == -2)
+			break;
+		else if (conn.sockd < 0)
 			continue;
-		CONNECTION_NODE conn;
-		conn.sockd = sockd2;
-		int ret = getnameinfo(reinterpret_cast<sockaddr *>(&peer_name),
-		          addrlen, client_hostip, sizeof(client_hostip),
-		          nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
-		if (ret != 0) {
-			printf("getnameinfo: %s\n", gai_strerror(ret));
-			continue;
-		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-		    client_hostip) == g_acl_list.cend()) {
-			if (HXio_fullwrite(sockd2, "FALSE Access Deny\r\n", 19) < 0)
+		    conn.client_ip) == g_acl_list.cend()) {
+			if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
 				/* ignore */;
 			continue;
 		}
@@ -421,17 +402,19 @@ static void *tmr_acceptwork(void *param)
 		std::unique_lock co_hold(g_connection_lock);
 		if (g_connection_list.size() + 1 + g_connection_list1.size() >= g_threads_num) {
 			co_hold.unlock();
-			if (HXio_fullwrite(sockd2, "FALSE Maximum Connection Reached!\r\n", 35) < 0)
+			if (HXio_fullwrite(conn.sockd, "FALSE Maximum number of connections reached!\r\n", 35) < 0)
 				/* ignore */;
 			continue;
 		}
 
 		CONNECTION_NODE *cn;
+		auto rawfd = conn.sockd;
 		try {
 			g_connection_list1.push_back(std::move(conn));
 			cn = &g_connection_list1.back();
 		} catch (const std::bad_alloc &) {
-			if (HXio_fullwrite(sockd2, "FALSE Not enough memory\r\n", 25) < 0)
+			// conn may be trash already (push_back isn't try_emplace)
+			if (HXio_fullwrite(rawfd, "FALSE Not enough memory\r\n", 25) < 0)
 				/* ignore */;
 			continue;
 		}

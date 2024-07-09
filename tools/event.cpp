@@ -35,6 +35,7 @@
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
+#include <gromox/generic_connection.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -68,8 +69,7 @@ struct FIFO {
 	size_t max_size = 0;
 };
 
-struct qsock {
-	int sockd = -1;
+struct qsock : public generic_connection {
 	ssize_t sk_write(const std::string_view &);
 	void sk_close();
 };
@@ -84,8 +84,6 @@ struct ENQUEUE_NODE : public qsock {
 };
 
 struct DEQUEUE_NODE : public qsock {
-	~DEQUEUE_NODE();
-
 	char res_id[272]{};
 	FIFO fifo{};
 	std::mutex lock, cond_mutex;
@@ -166,12 +164,6 @@ std::optional<std::string> FIFO::pop_front()
 		mlist.pop_front();
 	}
 	return ret;
-}
-
-DEQUEUE_NODE::~DEQUEUE_NODE()
-{
-	if (sockd >= 0)
-		close(sockd);
 }
 
 ssize_t qsock::sk_write(const std::string_view &sv)
@@ -365,40 +357,27 @@ static void *ev_scanwork(void *param)
 
 static void *ev_acceptwork(void *param)
 {
-	char client_hostip[40];
-	struct sockaddr_storage peer_name;
 	ENQUEUE_NODE *penqueue;
 
 	int sockd = reinterpret_cast<intptr_t>(param);
 	while (!g_notify_stop) {
-		/* wait for an incoming connection */
-		socklen_t addrlen = sizeof(peer_name);
-		auto sockd2 = accept4(sockd, (struct sockaddr*)&peer_name,
-		              &addrlen, SOCK_CLOEXEC);
-		if (sockd2 < 0)
+		auto conn = generic_connection::accept(sockd, false, &g_notify_stop);
+		if (conn.sockd == -2)
+			break;
+		else if (conn.sockd < 0)
 			continue;
-		int ret = getnameinfo(reinterpret_cast<sockaddr *>(&peer_name),
-		          addrlen, client_hostip, sizeof(client_hostip),
-		          nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
-		if (ret != 0) {
-			printf("getnameinfo: %s\n", gai_strerror(ret));
-			close(sockd2);
-			continue;
-		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-		    client_hostip) == g_acl_list.cend()) {
-			if (HXio_fullwrite(sockd2, "FALSE Access Deny\r\n", 19) < 0)
+		    conn.client_ip) == g_acl_list.cend()) {
+			if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
 				/* ignore */;
-			close(sockd2);
 			continue;
 		}
 
 		std::unique_lock eq_hold(g_enqueue_lock);
 		if (g_enqueue_list.size() + 1 + g_enqueue_list1.size() >= g_threads_num) {
 			eq_hold.unlock();
-			if (HXio_fullwrite(sockd2, "FALSE Maximum Connection Reached!\r\n", 35) < 0)
+			if (HXio_fullwrite(conn.sockd, "FALSE Maximum number of connections reached!\r\n", 35) < 0)
 				/* ignore */;
-			close(sockd2);
 			continue;
 		}
 		try {
@@ -406,18 +385,15 @@ static void *ev_acceptwork(void *param)
 			penqueue = &g_enqueue_list1.back();
 		} catch (const std::bad_alloc &) {
 			eq_hold.unlock();
-			if (HXio_fullwrite(sockd2, "FALSE Not enough memory\r\n", 25) < 0)
+			if (HXio_fullwrite(conn.sockd, "FALSE Not enough memory\r\n", 25) < 0)
 				/* ignore */;
-			close(sockd2);
 			continue;
 		}
 
-		penqueue->sockd = sockd2;
+		static_cast<generic_connection &>(*penqueue) = std::move(conn);
 		eq_hold.unlock();
-		if (HXio_fullwrite(sockd2, "OK\r\n", 4) < 0) {
-			close(penqueue->sockd);
-			penqueue->sockd = -1;
-		}
+		if (HXio_fullwrite(penqueue->sockd, "OK\r\n", 4) < 0)
+			penqueue->reset();
 		g_enqueue_waken_cond.notify_one();
 	}
 	return nullptr;

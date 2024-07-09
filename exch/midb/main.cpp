@@ -197,41 +197,27 @@ static void system_services_stop()
 static void *midls_thrwork(void *param)
 {
 	while (!g_listener_notify_stop) {
-		/* wait for an incoming connection */
-		struct sockaddr_storage peer_name;
-		socklen_t addrlen = sizeof(peer_name);
-		auto sockd = accept4(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&peer_name),
-		             &addrlen, SOCK_CLOEXEC);
-		if (sockd == -1)
+		auto gco = generic_connection::accept(g_listen_sockd, false, &g_listener_notify_stop);
+		if (gco.sockd == -2)
+			break;
+		else if (gco.sockd < 0)
 			continue;
-
-		char client_hostip[40];
-		auto ret = getnameinfo(reinterpret_cast<struct sockaddr *>(&peer_name),
-		           addrlen, client_hostip, sizeof(client_hostip),
-		           nullptr, 0, NI_NUMERICSERV | NI_NUMERICHOST);
-		if (ret != 0) {
-			mlog(LV_ERR, "getnameinfo: %s", gai_strerror(ret));
-			close(sockd);
-			continue;
-		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-		    client_hostip) == g_acl_list.cend()) {
-			if (HXio_fullwrite(sockd, "FALSE Access Deny\r\n", 19) < 0)
+		    gco.client_ip) == g_acl_list.cend()) {
+			if (HXio_fullwrite(gco.sockd, "FALSE Access denied\r\n", 19) < 0)
 				/* ignore */;
-			close(sockd);
 			continue;
 		}
 		auto holder = cmd_parser_get_connection();
 		if (holder.size() == 0) {
-			if (HXio_fullwrite(sockd, "FALSE Maximum Connection Reached!\r\n", 35) < 0)
+			if (HXio_fullwrite(gco.sockd, "FALSE Maximum Connection Reached!\r\n", 35) < 0)
 				/* ignore */;
-			close(sockd);
 			continue;
 		}
 		auto &conn = holder.front();
-		conn.sockd = sockd;
+		static_cast<generic_connection &>(conn) = std::move(gco);
 		conn.is_selecting = FALSE;
-		if (HXio_fullwrite(sockd, "OK\r\n", 4) < 0)
+		if (HXio_fullwrite(conn.sockd, "OK\r\n", 4) < 0)
 			continue;
 		cmd_parser_put_connection(std::move(holder));
 	}

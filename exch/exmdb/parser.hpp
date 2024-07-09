@@ -7,8 +7,10 @@
 #include <string>
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
+#include <gromox/generic_connection.hpp>
 
-class EXMDB_CONNECTION : public std::enable_shared_from_this<EXMDB_CONNECTION> {
+class EXMDB_CONNECTION :
+    public GENERIC_CONNECTION, public std::enable_shared_from_this<EXMDB_CONNECTION> {
 	public:
 	EXMDB_CONNECTION() = default;
 	~EXMDB_CONNECTION();
@@ -17,7 +19,6 @@ class EXMDB_CONNECTION : public std::enable_shared_from_this<EXMDB_CONNECTION> {
 	gromox::atomic_bool b_stop{false};
 	pthread_t thr_id{};
 	std::string remote_id;
-	int sockd = -1;
 };
 
 struct ROUTER_CONNECTION {
