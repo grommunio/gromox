@@ -614,8 +614,11 @@ static errno_t showstoreprop(uint32_t proptag)
 		}
 		if (isatty(STDOUT_FILENO) && isatty(STDERR_FILENO))
 			fprintf(stderr, "[%u bytes of binary data]\n", bv->cb);
-		if (!isatty(STDOUT_FILENO))
-			write(STDOUT_FILENO, bv->pc, bv->cb);
+		if (!isatty(STDOUT_FILENO)) {
+			auto ret = HXio_fullwrite(STDOUT_FILENO, bv->pc, bv->cb);
+			if (ret < 0 || static_cast<size_t>(ret) != bv->cb)
+				return EXIT_FAILURE;
+		}
 		return 0;
 	}
 	case PT_STRING8:

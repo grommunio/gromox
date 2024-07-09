@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
@@ -583,11 +584,15 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 			fdpoll.events = POLLOUT | POLLWRBAND;
 			if (rpc_ext_push_response(&response, &tmp_bin) != pack_result::ok) {
 				auto tmp_byte = zcore_response::push_error;
-				if (poll(&fdpoll, 1, tv_msec) == 1)
-					write(psink_node->clifd, &tmp_byte, 1);
+				if (poll(&fdpoll, 1, tv_msec) == 1 &&
+				    HXio_fullwrite(psink_node->clifd, &tmp_byte, 1) != 1)
+					/* ignore */;
 			} else {
-				if (poll(&fdpoll, 1, tv_msec) == 1)
-					write(psink_node->clifd, tmp_bin.pb, tmp_bin.cb);
+				if (poll(&fdpoll, 1, tv_msec) == 1) {
+					auto ret = HXio_fullwrite(psink_node->clifd, tmp_bin.pb, tmp_bin.cb);
+					if (ret < 0 || static_cast<size_t>(ret) != tmp_bin.cb)
+						/* ignore */;
+				}
 				free(tmp_bin.pb);
 			}
 			/* implied ~sink_node */

@@ -164,12 +164,12 @@ static void *evpx_scanwork(void *param)
 
 		while (temp_list.size() > 0) {
 			auto pback = &temp_list.front();
-			write(pback->sockd, "PING\r\n", 6);
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
-			if (1 != poll(&pfd_read, 1, tv_msec) ||
-				read(pback->sockd, temp_buff, 1024) <= 0) {
+			if (HXio_fullwrite(pback->sockd, "PING\r\n", 6) != 6 ||
+			    poll(&pfd_read, 1, tv_msec) != 1 ||
+			    read(pback->sockd, temp_buff, 1024) <= 0) {
 				close(pback->sockd);
 				pback->sockd = -1;
 				bl_hold.lock();
@@ -235,8 +235,8 @@ static void broadcast_event(const char *event)
 	bl_hold.unlock();
 	auto pback = &hold.front();
 	auto len = gx_snprintf(temp_buff, std::size(temp_buff), "%s\r\n", event);
-	write(pback->sockd, temp_buff, len);
-	if (0 != read_line(pback->sockd, temp_buff, 1024)) {
+	if (HXio_fullwrite(pback->sockd, temp_buff, len) != len ||
+	    read_line(pback->sockd, temp_buff, 1024) != 0) {
 		close(pback->sockd);
 		pback->sockd = -1;
 		bl_hold.lock();

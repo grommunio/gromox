@@ -18,10 +18,11 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <libHX/io.h>
 #include <libHX/socket.h>
+#include <libHX/string.h>
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include <gromox/exmdb_common_util.hpp>
@@ -224,7 +225,7 @@ static void *request_parser_thread(void *pparam)
 				break;
 			/* ping packet */
 			if (0 == buff_len) {
-				if (write(pconnection->sockd, resp_buff, 1) != 1)
+				if (HXio_fullwrite(pconnection->sockd, resp_buff, 1) != 1)
 					break;
 				continue;
 			} else if (buff_len >= UINT_MAX) {
@@ -234,8 +235,8 @@ static void *request_parser_thread(void *pparam)
 			pbuff = malloc(buff_len);
 			if (NULL == pbuff) {
 				auto tmp_byte = exmdb_response::lack_memory;
-				write(pconnection->sockd, &tmp_byte, 1);
-				if (!is_connected)
+				if (HXio_fullwrite(pconnection->sockd, &tmp_byte, 1) != 1 ||
+				    !is_connected)
 					break;
 				buff_len = 0;
 			}
@@ -275,7 +276,7 @@ static void *request_parser_thread(void *pparam)
 					exmdb_server::free_env();
 					exmdb_server::set_remote_id(pconnection->remote_id.c_str());
 					is_connected = TRUE;
-					if (write(pconnection->sockd, resp_buff, 5) != 5)
+					if (HXio_fullwrite(pconnection->sockd, resp_buff, 5) != 5)
 						break;
 					offset = 0;
 					buff_len = 0;
@@ -329,7 +330,8 @@ static void *request_parser_thread(void *pparam)
 			continue;
 		}
 		exmdb_server::free_env();
-		write(pconnection->sockd, &tmp_byte, 1);
+		if (HXio_fullwrite(pconnection->sockd, &tmp_byte, 1) != 1)
+			/* ignore */;
 		break;
 	}
 	close(pconnection->sockd);

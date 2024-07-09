@@ -14,6 +14,7 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
+#include <libHX/io.h>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
@@ -118,7 +119,8 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 			g_lost_list.clear();
 			while (g_back_list.size() > 0) {
 				auto pback = &g_back_list.front();
-				write(pback->sockd, "QUIT\r\n", 6);
+				if (HXio_fullwrite(pback->sockd, "QUIT\r\n", 6) != 6)
+					/* ignore */;
 				close(pback->sockd);
 				g_back_list.pop_front();
 			}
@@ -155,12 +157,12 @@ static void *tmrag_scanwork(void *param)
 
 		while (temp_list.size() > 0) {
 			auto pback = &temp_list.front();
-			write(pback->sockd, "PING\r\n", 6);
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
-			if (1 != poll(&pfd_read, 1, tv_msec) ||
-				read(pback->sockd, temp_buff, 1024) <= 0) {
+			if (HXio_fullwrite(pback->sockd, "PING\r\n", 6) != 6 ||
+			    poll(&pfd_read, 1, tv_msec) != 1 ||
+			    read(pback->sockd, temp_buff, 1024) <= 0) {
 				close(pback->sockd);
 				pback->sockd = -1;
 				bk_hold.lock();

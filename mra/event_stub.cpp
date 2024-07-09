@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <libHX/io.h>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
@@ -232,18 +233,20 @@ static void *evst_thrwork(void *param)
 			}
 		
 			if (0 == strcasecmp(buff, "PING")) {
-				write(pback->sockd, "TRUE\r\n", 6);
+				if (HXio_fullwrite(pback->sockd, "TRUE\r\n", 6) != 6)
+					goto out;
 				continue;
 			}
 
 			if (NULL != g_event_stub_func) {
 				g_event_stub_func(buff);
 			}
-			
-			write(pback->sockd, "TRUE\r\n", 6);
+			if (HXio_fullwrite(pback->sockd, "TRUE\r\n", 6) != 6)
+				goto out;
 		}
 	}
-	
+
+ out:
 	if (-1 != pback->sockd) {
 		close(pback->sockd);
 		pback->sockd = -1;

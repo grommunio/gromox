@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 #include <fmt/core.h>
+#include <libHX/io.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
@@ -2388,7 +2389,9 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv,
 		buf += str_received;
 	buf += '\0';
 	cpu_to_le32p(buf.data(), buf.size());
-	write(fd.get(), buf.c_str(), buf.size());
+	auto ret = HXio_fullwrite(fd.get(), buf.c_str(), buf.size());
+	if (ret < 0 || static_cast<size_t>(ret) != buf.size())
+		return DISPATCH_BREAK;
 	pcontext->message_fd = fd.release();
 	gx_strlcpy(pcontext->tag_string, argv[0], std::size(pcontext->tag_string));
 	pcontext->stream.clear();
