@@ -349,8 +349,12 @@ void exmdb_parser_put_connection(std::shared_ptr<EXMDB_CONNECTION> &&pconnection
 	chold.unlock();
 	auto ret = pthread_create4(&pconnection->thr_id, nullptr,
 	           request_parser_thread, pconnection.get());
-	if (ret == 0)
+	if (ret == 0) {
+		char txt[52];
+		snprintf(txt, std::size(txt), "exmdb/%s:%hu", pconnection->client_ip, pconnection->client_port);
+		pthread_setname_np(pconnection->thr_id, txt);
 		return;
+	}
 	mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
 	chold.lock();
 	g_connection_list.erase(stpair.first);
