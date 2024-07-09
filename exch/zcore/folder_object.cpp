@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <unistd.h>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -723,7 +724,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 		pfolder->folder_id, b_freebusy, count, pperm_data);
 }
 
-static BOOL folder_object_flush_delegates(int fd,
+static int folder_object_flush_delegates(int fd,
     const FORWARDDELEGATE_ACTION &action)
 {
 	for (const auto &dlgt : action) {
@@ -749,7 +750,7 @@ static BOOL folder_object_flush_delegates(int fd,
 			if (ret == ecSuccess)
 				/* ok */;
 			else if (ret != ecNullObject)
-				return false;
+				return -1;
 		}
 		if (address_buff.empty() && pentryid != nullptr) {
 			auto ret = cvt_entryid_to_smtpaddr(pentryid, g_org_name,
@@ -757,14 +758,16 @@ static BOOL folder_object_flush_delegates(int fd,
 			if (ret == ecSuccess)
 				/* ok */;
 			else if (ret != ecNullObject)
-				return false;
+				return -1;
 		}
 		if (address_buff.size() > 0) {
 			address_buff += '\n';
-			write(fd, address_buff.c_str(), address_buff.size());
+			auto ret = HXio_fullwrite(fd, address_buff.c_str(), address_buff.size());
+			if (ret < 0 || static_cast<size_t>(ret) != address_buff.size())
+				return -2;
 		}
 	}
-	return TRUE;
+	return 0;
 }
 
 BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
@@ -799,13 +802,20 @@ BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 		gromox::tmpfile fd;
 		if (fd.open_linkable(dlg_dir.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC) >= 0 &&
 		    b_delegate)
-			for (const auto &a : *pactions)
-				if (a.type == OP_DELEGATE &&
-				    !folder_object_flush_delegates(fd,
-				    *static_cast<const FORWARDDELEGATE_ACTION *>(a.pdata)))
-					return FALSE;
+			for (const auto &a : *pactions) {
+				if (a.type != OP_DELEGATE)
+					continue;
+				auto ret = folder_object_flush_delegates(fd,
+				           *static_cast<const FORWARDDELEGATE_ACTION *>(a.pdata));
+				if (ret == -2)
+					mlog(LV_ERR, "E-2330: write %s: %s",
+						fd.m_path.c_str(), strerror(errno));
+				if (ret < 0)
+					return false;
+			}
 		if (fd.link_to(dlg_path.c_str()) != 0)
-			mlog(LV_ERR, "E-2350: write %s: %s", dlg_path.c_str(), strerror(errno));
+			mlog(LV_ERR, "E-2350: link %s %s: %s", fd.m_path.c_str(),
+				dlg_path.c_str(), strerror(errno));
 	}
 	return exmdb_client::update_folder_rule(pfolder->pstore->get_dir(),
 		pfolder->folder_id, plist->count,
