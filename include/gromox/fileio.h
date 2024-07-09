@@ -13,6 +13,7 @@
 #include <gromox/defs.h>
 
 struct BINARY;
+struct sockaddr_storage;
 
 #ifdef COMPILE_DIAG
 /* Compiler generates important -Wformat-truncation diagnostics */
@@ -98,5 +99,6 @@ extern GX_EXPORT errno_t gx_compress_tofile(std::string_view, const char *outfil
 extern GX_EXPORT std::string base64_encode(const std::string_view &);
 extern GX_EXPORT std::string base64_decode(const std::string_view &);
 extern GX_EXPORT std::string sss_obf_reverse(const std::string_view &);
+extern GX_EXPORT int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *);
 
 }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
@@ -37,6 +37,7 @@
 #ifdef HAVE_SYSLOG_H
 #	include <syslog.h>
 #endif
+#include <netinet/in.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/socket.h>
@@ -44,6 +45,7 @@
 #	include <sys/syscall.h>
 #endif
 #include <sys/stat.h>
+#include <sys/un.h>
 #if defined(HAVE_SYS_XATTR_H)
 #	include <sys/xattr.h>
 #endif
@@ -1716,6 +1718,69 @@ bool str_isasciipr(const char *s)
 			return false;
 	}
 	return true;
+}
+
+int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *ss)
+{
+	if (level == 0)
+		return 0;
+	if (level != 2)
+		return -1;
+	static constexpr uint8_t sig[12] = {0xd, 0xa, 0xd, 0xa, 0x0, 0xd, 0xa, 0x51, 0x55, 0x49, 0x54, 0xa};
+	uint8_t buf[4096];
+	if (HXio_fullread(fd, buf, 16) != 16)
+		return -1;
+	if (memcmp(buf, sig, sizeof(sig)) != 0)
+		return -1;
+	if (((buf[12] & 0xF0) >> 4) != level)
+		return -1;
+	if ((buf[12] & 0xF) == 0)
+		return 0;
+	if ((buf[12] & 0xF) != 1)
+		return -1;
+	uint16_t hlen = (buf[14] << 8) | buf[15];
+	switch (buf[13] & 0xF0) {
+	case 0x10: {
+		if (hlen != 12 || HXio_fullread(fd, buf, 12) != 12)
+			return -1;
+		auto peer = reinterpret_cast<sockaddr_in *>(ss);
+		*peer = {};
+		peer->sin_family = AF_INET;
+		memcpy(&peer->sin_addr, &buf[0], sizeof(peer->sin_addr));
+		memcpy(&peer->sin_port, &buf[8], sizeof(peer->sin_port));
+		static_assert(sizeof(peer->sin_addr) == 4 && sizeof(peer->sin_port) == 2);
+		return 0;
+	}
+	case 0x20: {
+		if (hlen != 36 || HXio_fullread(fd, buf, 36) != 36)
+			return -1;
+		auto peer = reinterpret_cast<sockaddr_in6 *>(ss);
+		*peer = {};
+		peer->sin6_family = AF_INET6;
+		memcpy(&peer->sin6_addr, &buf[0], sizeof(peer->sin6_addr));
+		memcpy(&peer->sin6_port, &buf[32], sizeof(peer->sin6_port));
+		static_assert(sizeof(peer->sin6_addr) == 16 && sizeof(peer->sin6_port) == 2);
+		return 0;
+	}
+	case 0x30: {
+		if (hlen != 216 || HXio_fullread(fd, buf, 216) != 216)
+			return -1;
+		auto peer = reinterpret_cast<sockaddr_un *>(ss);
+		*peer = {};
+		peer->sun_family = AF_LOCAL;
+		memcpy(&peer->sun_path, &buf[0], std::min(static_cast<size_t>(108), sizeof(peer->sun_path)));
+		return 0;
+	}
+	default:
+		while (hlen > 0) {
+			int toread = std::min(static_cast<size_t>(hlen), sizeof(buf));
+			if (HXio_fullread(fd, buf, toread) != toread)
+				return -1;
+			hlen -= toread;
+		}
+		return 0;
+	}
+	return -1;
 }
 
 }

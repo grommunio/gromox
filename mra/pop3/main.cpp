@@ -39,7 +39,6 @@
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include "pop3.hpp"
-#include "../../lib/haproxy.cpp"
 
 using namespace gromox;
 

@@ -40,7 +40,6 @@
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include "imap.hpp"
-#include "../../lib/haproxy.cpp"
 
 using namespace gromox;
 
