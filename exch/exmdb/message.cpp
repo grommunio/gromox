@@ -1552,7 +1552,6 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
     MESSAGE_CONTENT *dst)
 {
 	EXT_PUSH ext_push;
-	char cid_string[256];
 	static constexpr uint32_t fake_int32 = 0;
 	static uint32_t fake_flags = MSGFLAG_UNMODIFIED; /* modified by cu_set_properties */
 	auto &sprop = src->proplist;
@@ -1612,12 +1611,11 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 		dprop.emplace_back(PR_SEARCH_KEY, pbin);
 	}
 	if (!sprop.has(PR_BODY_CONTENT_ID)) {
-		if (!ext_push.init(cid_string, 256, 0) ||
-		    ext_push.p_guid(GUID::random_new()) != EXT_ERR_SUCCESS)
-			return ecError;
-		encode_hex_binary(cid_string, 16, cid_string + 16, 64);
-		memmove(cid_string, cid_string + 16, 32);
+		char cid_string[33+UDOM_SIZE];
+		FLATUID ctid = GUID::random_new();
+		encode_hex_binary(&ctid, sizeof(ctid), cid_string, 33);
 		cid_string[32] = '@';
+		cid_string[33] = '\0';
 		char account[UDOM_SIZE]{};
 		if (!common_util_get_username_from_id(exmdb_server::get_account_id(),
 		    account, std::size(account)))
@@ -1627,7 +1625,7 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 			pc = account;
 		else
 			++pc;
-		strncpy(cid_string + 33, pc, 128);
+		HX_strlcat(cid_string, pc, std::size(cid_string));
 		auto pvalue = common_util_dup(cid_string);
 		if (pvalue == nullptr)
 			return ecServerOOM;
