@@ -43,7 +43,9 @@ static unsigned int g_export_mode = EXPORT_MAIL;
 static int g_allday_mode = -1;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'Y', HXTYPE_INT, &g_allday_mode, nullptr, nullptr, 0, "Allday emission mode (default=-1, YMDHMS=0, YMD=1)"},
-	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
+	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
+	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
+	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to export from", "EMAILADDR"},
 	{"ical", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_ICAL, "Export as calendar object"},
 	{"mail", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_MAIL, "Export as RFC5322 mail"},
 	{"mt", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_GXMT, "Export as Gromox mailbox transfer format"},
@@ -192,6 +194,10 @@ int main(int argc, char **argv) try
 			        static_cast<unsigned long long>(msg_id));
 			return EXIT_FAILURE;
 		}
+	}
+	if (g_show_tree) {
+		fprintf(stderr, "Message 0\n");
+		gi_dump_msgctnt(0, *ctnt);
 	}
 	if (g_export_mode == EXPORT_MAIL) {
 		if (!oxcmail_export(ctnt, false, oxcmail_body::plain_and_html,

@@ -39,12 +39,14 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+using LLU = unsigned long long;
 namespace exmdb_client = exmdb_client_remote;
 
 std::string g_dstuser;
 static std::string g_storedir_s;
 const char *g_storedir;
-unsigned int g_user_id, g_show_tree, g_show_props, g_wet_run = 1, g_public_folder;
+unsigned int g_user_id, g_show_tree, g_show_props, g_wet_run = 1;
+unsigned int g_public_folder, g_verbose_create;
 static thread_local alloc_context g_alloc_mgr;
 static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int);
 
@@ -170,8 +172,7 @@ void gi_dump_folder_map(const gi_folder_map_t &map)
 	fprintf(stderr, "\t# HierID (hex) -> Target name\n");
 	for (const auto &[nid, tgt] : map)
 		fprintf(stderr, "\t%xh -> %s (%s %llxh)\n", nid, tgt.create_name.c_str(),
-		        tgt.create ? "create under" : "splice into",
-		        static_cast<unsigned long long>(tgt.fid_to));
+		        tgt.create ? "create under" : "splice into", LLU{tgt.fid_to});
 }
 
 void gi_dump_name_map(const gi_name_map &map)
@@ -372,6 +373,9 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 		fprintf(stderr, "exm: Could not create folder \"%s\". "
 			"Either it already existed or some there was some other unspecified problem.\n", dn);
 		return -EEXIST;
+	} else if (g_verbose_create) {
+		fprintf(stderr, "exm: Created folder \"%s\" (fid=0x%llx)\n", dn,
+			LLU{rop_util_get_gc_value(*new_fld_id)});
 	}
 	return 0;
 }
@@ -382,8 +386,7 @@ int exm_permissions(eid_t fid, const std::vector<PERMISSION_DATA> &perms)
 		return 0;
 	if (!exmdb_client::update_folder_permission(g_storedir, fid, false,
 	    perms.size(), perms.data())) {
-		fprintf(stderr, "exm: update_folder_perm(%llxh) RPC failed\n",
-		        static_cast<unsigned long long>(fid));
+		fprintf(stderr, "exm: update_folder_perm(%llxh) RPC failed\n", LLU{fid});
 		return -EIO;
 	}
 	return 0;
@@ -408,6 +411,10 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct, unsigned int mode)
 	auto dm_status = static_cast<deliver_message_result>(r32);
 	switch (dm_status) {
 	case deliver_message_result::result_ok:
+		if (g_verbose_create)
+			fprintf(stderr, "Created/delivered new message 0x%llx:0x%llx\n",
+				LLU{rop_util_get_gc_value(folder_id)},
+				LLU{rop_util_get_gc_value(msg_id)});
 		break;
 	case deliver_message_result::result_error:
 		fprintf(stderr, "Message rejected - unspecified reason\n");
@@ -498,6 +505,10 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	} else if (e_result != ecSuccess) {
 		fprintf(stderr, "exm: write_message: %s\n", mapi_strerror(e_result));
 		return -EIO;
+	} else if (g_verbose_create) {
+		fprintf(stderr, "Created new message 0x%llx:0x%llx\n",
+			LLU{rop_util_get_gc_value(parent_fld)},
+			LLU{rop_util_get_gc_value(msg_id)});
 	}
 	return 0;
 }

@@ -60,6 +60,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
+	{nullptr, 'v', HXTYPE_NONE | HXOPT_INC, &g_verbose_create, nullptr, nullptr, 0, "Be more verbose"},
 	{nullptr, 'x', HXTYPE_VAL, &g_oexcl, nullptr, nullptr, 0, "Disable O_EXCL like behavior for non-spliced folders"},
 	{"repeat", 0, HXTYPE_UINT, &g_repeat_iter, {}, {}, 0, "For testing purposes, import each message N times", "N"},
 	{"skip-notif", 0, HXTYPE_NONE, &g_skip_notif, nullptr, nullptr, 0, "Skip emission of notifications (if -D)"},
