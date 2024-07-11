@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -1293,11 +1293,9 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 	 * Brief Description: The delegate sending the meeting on behalf of the
 	 * organizer.
 	 *
-	 * Note: The PR_SENDER_* MUST be set when the X-MS-OLK-SENDER property
-	 * has a valid URI. Here it is set on oxcmail_exchsched_compat, which
-	 * is apparently never set so not implemented. There is also no
-	 * mentioning of setting any PR_SENT_REPRESENTING_* in
-	 * MS-OXCICAL.
+	 * Subsection 61 says PR_SENDER_* "SHOULD" be set based on X-MS-OLK-SENDER,
+	 * but EXC2019 does not do that either, and X-MS-OLK-SENDER is only generated
+	 * under peculiar circumstances (cf. doc/oxocal.rst).
 	 */
 	if (pmsg->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP") != 0 ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, paddress) != 0 ||

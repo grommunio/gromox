@@ -531,7 +531,9 @@ enum { /* for PR_RECIPIENT_FLAGS */
 	recipOrganizer           = 0x2U,
 	recipExceptionalResponse = 0x10U,
 	recipExceptionalDeleted  = 0x20U,
+	/* nonoriginal_firstcontact = 0x40U, OL2019 */
 	recipOriginal            = 0x100U,
+	/* added_by_organizer    = 0x200U, OL2019 */
 };
 
 enum class relop : uint8_t {

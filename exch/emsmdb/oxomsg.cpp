@@ -242,9 +242,11 @@ static ec_error_t pass_scheduling(const char *code, const char *account,
     const char *username, message_object &msg, const char *cls)
 {
 	/*
-	 * IPM.Schedule is special; PR_SENT_REPRESENTING contains the
+	 * IPM.Schedule messages are special; PR_SENT_REPRESENTING contains the
 	 * organizer, not the delegator. So there is no delegation to
-	 * check/reject. oxcmail_export also checks message class again.
+	 * check/reject. oxcmail_export also checks message class again. (The
+	 * organizer may also be in the recipient list, or in
+	 * PidLidAppointmentUnsendableRecipients.)
 	 */
 	if (class_match_prefix(cls, "IPM.Schedule") == 0)
 		return ecSuccess;
