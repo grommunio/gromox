@@ -1735,13 +1735,13 @@ int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *ss)
 		return -1;
 	if (memcmp(buf, sig, sizeof(sig)) != 0)
 		return -1;
-	if (((buf[12] & 0xF0) >> 4) != level)
+	if (((buf[12] & 0xF0) >> 4) != level || level != 2)
 		return -1;
 	if ((buf[12] & 0xF) == 0)
 		return 0;
 	if ((buf[12] & 0xF) != 1)
 		return -1;
-	uint16_t hlen = (buf[14] << 8) | buf[15];
+	uint16_t hlen = static_cast<uint16_t>(buf[14] << 8) | buf[15];
 	switch (buf[13] & 0xF0) {
 	case 0x10: {
 		if (hlen != 12 || HXio_fullread(fd, buf, 12) != 12)
@@ -1776,8 +1776,9 @@ int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *ss)
 	}
 	default:
 		while (hlen > 0) {
-			int toread = std::min(static_cast<size_t>(hlen), sizeof(buf));
-			if (HXio_fullread(fd, buf, toread) != toread)
+			auto toread = std::min(static_cast<size_t>(hlen), sizeof(buf));
+			auto ret = HXio_fullread(fd, buf, toread);
+			if (ret < 0 || static_cast<size_t>(ret) != toread)
 				return -1;
 			hlen -= toread;
 		}
