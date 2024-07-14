@@ -5,7 +5,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/plugin.hpp>
 
-struct config_file;
+class config_file;
 
 struct service_init_param {
 	std::shared_ptr<config_file> cfg;
