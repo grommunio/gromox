@@ -49,6 +49,45 @@ enum class hchannel_type {
 
 struct fastcgi_context;
 
+struct rpc_channel {
+	rpc_channel();
+	virtual ~rpc_channel();
+	NOMOVE(rpc_channel);
+
+	DOUBLE_LIST pdu_list{};
+	gromox::time_duration client_keepalive{};
+	hchannel_stat channel_stat = hchannel_stat::openstart;
+	std::atomic<uint32_t> available_window{0};
+	uint16_t frag_length = 0;
+	char channel_cookie[GUIDSTR_SIZE]{}, connection_cookie[GUIDSTR_SIZE]{};
+};
+
+/**
+ * @rpc_channel::frag_length: indicating incoming PDU length
+ */
+struct rpc_in_channel final : public rpc_channel {
+	uint32_t life_time = 0, bytes_received = 0;
+	char assoc_group_id[64]{};
+};
+
+/**
+ * @b_obsolete: out channel is obsolete, wait for new out channel
+ * @rpc_channel::client_keepalive: get from in channel
+ */
+struct rpc_out_channel final : public rpc_channel {
+	rpc_out_channel() = default;
+	~rpc_out_channel();
+	NOMOVE(rpc_out_channel);
+
+	BOOL b_obsolete = false; /* out channel is obsolete, wait for new out channel */
+	uint32_t window_size = 0;
+	uint32_t bytes_sent = 0; /* length of sent data including RPC and RTS PDU, chunk data */
+	DCERPC_CALL *pcall = nullptr; /* first output pcall of PDU by out channel itself */
+};
+
+using RPC_IN_CHANNEL = rpc_in_channel;
+using RPC_OUT_CHANNEL = rpc_out_channel;
+
 struct http_context final : public schedule_context {
 	http_context();
 	~http_context();
@@ -92,7 +131,7 @@ struct http_context final : public schedule_context {
 	char host[UDOM_SIZE]{};
 	uint16_t port = 0;
 	hchannel_type channel_type = hchannel_type::none;
-	void *pchannel = nullptr;
+	rpc_channel *pchannel = nullptr;
 	struct HXproc ntlm_proc{};
 #ifdef HAVE_GSSAPI
 	gss_cred_id_t m_gss_srv_creds{};
@@ -101,38 +140,6 @@ struct http_context final : public schedule_context {
 	std::string last_gss_output;
 };
 using HTTP_CONTEXT = http_context;
-
-struct RPC_IN_CHANNEL {
-	RPC_IN_CHANNEL();
-	~RPC_IN_CHANNEL();
-	NOMOVE(RPC_IN_CHANNEL);
-
-	uint16_t frag_length = 0; /* indicating incoming PDU length */
-	char channel_cookie[GUIDSTR_SIZE]{}, connection_cookie[GUIDSTR_SIZE]{};
-	gromox::time_duration client_keepalive{};
-	uint32_t life_time = 0, available_window = 0;
-	uint32_t bytes_received = 0;
-	char assoc_group_id[64]{};
-	DOUBLE_LIST pdu_list{};
-	hchannel_stat channel_stat = hchannel_stat::openstart;
-};
-
-struct RPC_OUT_CHANNEL {
-	RPC_OUT_CHANNEL();
-	~RPC_OUT_CHANNEL();
-	NOMOVE(RPC_OUT_CHANNEL);
-
-	uint16_t frag_length = 0;
-	char channel_cookie[64]{}, connection_cookie[64]{};
-	BOOL b_obsolete = false; /* out channel is obsolete, wait for new out channel */
-	gromox::time_duration client_keepalive{}; /* get from in channel */
-	std::atomic<uint32_t> available_window{0};
-	uint32_t window_size = 0;
-	uint32_t bytes_sent = 0; /* length of sent data including RPC and RTS PDU, chunk data */
-	DCERPC_CALL *pcall = nullptr; /* first output pcall of PDU by out channel itself */
-	DOUBLE_LIST pdu_list{};
-	hchannel_stat channel_stat = hchannel_stat::openstart;
-};
 
 extern void http_parser_init(size_t context_num, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int http_parser_run();

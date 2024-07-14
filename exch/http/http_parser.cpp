@@ -2546,7 +2546,7 @@ BOOL http_context::recycle_inchannel(const char *predecessor_cookie)
 	auto ich = static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_in->pchannel);
 	hch->life_time = ich->life_time;
 	hch->client_keepalive = ich->client_keepalive;
-	hch->available_window = ich->available_window;
+	hch->available_window = ich->available_window.load();
 	hch->bytes_received = ich->bytes_received;
 	gx_strlcpy(hch->assoc_group_id, ich->assoc_group_id, std::size(hch->assoc_group_id));
 	pvconnection->pcontext_insucc = pcontext;
@@ -2649,12 +2649,12 @@ void http_context::set_keep_alive(time_duration keepalive)
 	}
 }
 
-RPC_IN_CHANNEL::RPC_IN_CHANNEL()
+rpc_channel::rpc_channel()
 {
 	double_list_init(&pdu_list);
 }
 
-RPC_IN_CHANNEL::~RPC_IN_CHANNEL()
+rpc_channel::~rpc_channel()
 {
 	DOUBLE_LIST_NODE *pnode;
 
@@ -2664,27 +2664,14 @@ RPC_IN_CHANNEL::~RPC_IN_CHANNEL()
 		pdu_processor_free_blob(bnode);
 	}
 	double_list_free(&pdu_list);
-}
-
-RPC_OUT_CHANNEL::RPC_OUT_CHANNEL()
-{
-	double_list_init(&pdu_list);
 }
 
 RPC_OUT_CHANNEL::~RPC_OUT_CHANNEL()
 {
-	DOUBLE_LIST_NODE *pnode;
-
 	if (pcall != nullptr) {
 		delete pcall;
 		pcall = nullptr;
 	}
-	while ((pnode = double_list_pop_front(&pdu_list)) != nullptr) {
-		auto bnode = static_cast<BLOB_NODE *>(pnode->pdata);
-		free(bnode->blob.pb);
-		pdu_processor_free_blob(bnode);
-	}
-	double_list_free(&pdu_list);
 }
 
 int htls_thrwork(generic_connection &&conn)
