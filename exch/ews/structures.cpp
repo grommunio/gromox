@@ -1548,6 +1548,11 @@ void tCalendarItem::update(const sShape& shape)
 		IsMeeting = *stateFlags & asfMeeting ? TRUE : false;
 		IsCancelled = *stateFlags & asfCanceled ? TRUE : false;
 	}
+	else {
+		AppointmentState = 0;
+		IsMeeting = false;
+		IsCancelled = false;
+	}
 
 	fromProp(shape.get(NtAppointmentSubType), IsAllDayEvent);
 
@@ -1589,6 +1594,8 @@ void tCalendarItem::update(const sShape& shape)
 		}
 		MyResponseType.emplace(responseType);
 	}
+	else
+		MyResponseType.emplace(Enum::Unknown);
 
 	if ((prop = shape.get(NtGlobalObjectId)))
 	{
