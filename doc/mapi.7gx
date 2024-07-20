@@ -6,10 +6,9 @@ mapi \(em Definition for "Messaging Application Programming Interface"
 .SH Definition
 MAPI (Messaging API) can have many different meanings. As abstracta:
 .IP \(bu 4
-The concept of the hierarchial organization into \fBcontainers\fP,
-\fBtables\fP, \fBcontents\fP and \fBproperties\fP. Typical containers are
-\fBstores\fP and \fBfolders\fP, typical contents are \fBmessages\fP,
-\fBrecipients\fP, \fBattachments\fP.
+The concept of the hierarchial organization into containers, tables, contents
+and properties. Typical containers are stores and \fBfolders\fP, typical
+contents are \fBmessages\fP, \fBrecipients\fP, \fBattachments\fP.
 .IP \(bu 4
 More concrete variations, such as the set of "well-known" properties like, for
 example, subject, modification date, body, etc., and the semantics expected of

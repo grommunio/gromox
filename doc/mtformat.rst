@@ -1,8 +1,15 @@
 Message Transfer Format
 =======================
 
-MT is meant for immediate consumption, not storage.
-As such, it was not designed with endian-independent encoding.
+The Gromox Mailbox Transfer format (GXMT) is our streaming-capable
+serialization format for conveying a bundle of MAPI objects for the purpose of
+interprocess communication.
+
+
+Spec
+====
+
+All integers are to be in little-endian form.
 
 * ``char magic[8] = "GXMT0003";``
   File identification.
