@@ -1443,9 +1443,14 @@ static bool rtf_word_output_date(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 				hour = strtol(string + 2, nullptr, 0);
 		}
 	} while ((pword = pword->get_sibling()) != nullptr);
-	tmp_len = snprintf(tmp_buff, std::size(tmp_buff), "%04d-%02d-%02d ", year, month, day);
+	year   = std::max(-1, std::min(9999, year));
+	month  = std::max(-1, std::min(99, month)); /* fit within %02d */
+	day    = std::max(-1, std::min(99, day));
+	hour   = std::max(-1, std::min(99, hour));
+	minute = std::max(-1, std::min(99, minute));
+	tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff), "%04d-%02d-%02d ", year, month, day);
 	if (hour >= 0 && minute >= 0)
-		tmp_len += sprintf(tmp_buff + tmp_len, "%02d:%02d ", hour, minute);
+		tmp_len += snprintf(&tmp_buff[tmp_len], std::size(tmp_buff)-tmp_len, "%02d:%02d ", hour, minute);
 	QRF(preader->ext_push.p_bytes(tmp_buff, tmp_len));
 	return true;
 }
