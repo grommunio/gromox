@@ -1647,7 +1647,7 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 {
 	DCERPC_CALL *pcall;
 	DOUBLE_LIST_NODE *pnode;
-	ASYNC_NODE *pasync_node;
+	ASYNC_NODE *pasync_node = nullptr;
 	
 	/* Caller needs to have invoked rpc_build_environment */
 	pcall = pdu_processor_get_call();
