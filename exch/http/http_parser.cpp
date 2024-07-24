@@ -1580,7 +1580,7 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 		auto pvconnection = http_parser_get_vconnection(pcontext->host,
 				pcontext->port, pchannel_out->connection_cookie);
 		auto pnode = double_list_get_head(&pchannel_out->pdu_list);
-		if (!static_cast<BLOB_NODE *>(pnode->pdata)->b_rts) {
+		if (pnode != nullptr && !static_cast<BLOB_NODE *>(pnode->pdata)->b_rts) {
 			pchannel_out->available_window -= written_len;
 			pchannel_out->bytes_sent += written_len;
 		}
