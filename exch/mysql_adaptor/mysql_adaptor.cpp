@@ -37,6 +37,7 @@ enum class mlist_priv {
 #define MLIST_RESULT_PRIVIL_INTERNAL	3
 #define MLIST_RESULT_PRIVIL_SPECIFIED	4
 #define JOIN_WITH_DISPLAYTYPE "LEFT JOIN user_properties AS dt ON u.id=dt.user_id AND dt.proptag=956628995" /* PR_DISPLAY_TYPE_EX */
+#define JOIN_ALTNAMES "LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='{0}'"
 
 /*
  * Terminology you might encounter in this file
@@ -106,7 +107,7 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 		mres.errstr = fmt::format("No such user", username);
 		return ENOENT;
 	}
-	
+
 	auto myrow = pmyres.fetch_row();
 	uint32_t dtypx;
 	if (myrow[1] == nullptr) {
@@ -213,7 +214,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 		return false;
 	char temp_name[UADDR_SIZE*2];
 	char encrypt_passwd[40];
-	
+
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr =
 		"SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
@@ -241,7 +242,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 
 	strncpy(encrypt_passwd, myrow[0], sizeof(encrypt_passwd));
 	encrypt_passwd[sizeof(encrypt_passwd) - 1] = '\0';
-	
+
 	std::unique_lock cr_hold(g_crypt_lock);
 	if (encrypt_passwd[0] != '\0' &&
 	    strcmp(crypt_estar(password, encrypt_passwd), encrypt_passwd) != 0)
@@ -282,7 +283,7 @@ BOOL mysql_adaptor_get_username_from_id(unsigned int user_id,
 BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *puser_id) try
 {
 	char temp_dir[512];
-	
+
 	mysql_adaptor_encode_squote(maildir, temp_dir);
 	auto qstr =
 		"SELECT u.id FROM users AS u " JOIN_WITH_DISPLAYTYPE
@@ -310,15 +311,17 @@ bool mysql_adaptor_get_user_displayname(const char *username,
 	if (!str_isascii(username))
 		return false;
 	char temp_name[UADDR_SIZE*2];
-	
+
 	mysql_adaptor_encode_squote(username, temp_name);
-	auto qstr =
+	auto qstr = fmt::format(
 		"SELECT u2.propval_str AS real_name, "
 		"u3.propval_str AS nickname, dt.propval_str AS dtypx FROM users AS u "
 		JOIN_WITH_DISPLAYTYPE " "
 		"LEFT JOIN user_properties AS u2 ON u.id=u2.user_id AND u2.proptag=805371935 " /* PR_DISPLAY_NAME */
 		"LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=978255903 " /* PR_NICKNAME */
-		"WHERE u.username='"s + temp_name + "' LIMIT 2";
+		JOIN_ALTNAMES " "
+		"WHERE u.username='{0}' OR alt.altname='{0}' LIMIT 2",
+		temp_name);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
@@ -349,9 +352,13 @@ BOOL mysql_adaptor_get_user_privilege_bits(const char *username,
 	if (!str_isascii(username))
 		return false;
 	char temp_name[UADDR_SIZE*2];
-	
+
 	mysql_adaptor_encode_squote(username, temp_name);
-	auto qstr = "SELECT privilege_bits FROM users WHERE username='"s + temp_name + "'";
+	auto qstr = fmt::format(
+		"SELECT privilege_bits FROM users AS u "
+		JOIN_ALTNAMES " "
+		"WHERE u.username='{0}' OR alt.altname='{0}' LIMIT 2",
+		temp_name);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
@@ -374,7 +381,7 @@ bool mysql_adaptor_get_user_lang(const char *username, char *lang, size_t lang_s
 	if (!str_isascii(username))
 		return false;
 	char temp_name[UADDR_SIZE*2];
-	
+
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr = "SELECT lang FROM users WHERE username='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
@@ -385,7 +392,7 @@ bool mysql_adaptor_get_user_lang(const char *username, char *lang, size_t lang_s
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 1) {
-		lang[0] = '\0';	
+		lang[0] = '\0';
 	} else {
 		auto myrow = pmyres.fetch_row();
 		gx_strlcpy(lang, myrow[0], lang_size);
@@ -402,7 +409,7 @@ BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang) try
 		return false;
 	char temp_name[UADDR_SIZE*2];
 	std::string fq_string;
-	
+
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr = "UPDATE users set lang='"s + lang +
 		    "' WHERE username='" + temp_name + "'";
@@ -420,7 +427,7 @@ bool mysql_adaptor_get_timezone(const char *username, char *zone, size_t zone_si
 	if (!str_isascii(username))
 		return false;
 	char temp_name[UADDR_SIZE*2];
-	
+
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr = "SELECT timezone FROM users WHERE username='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
@@ -448,7 +455,7 @@ BOOL mysql_adaptor_set_timezone(const char *username, const char *zone) try
 		return false;
 	char temp_name[UADDR_SIZE*2];
 	char temp_zone[128];
-	
+
 	mysql_adaptor_encode_squote(username, temp_name);
 	mysql_adaptor_encode_squote(zone, temp_zone);
 	auto qstr = "UPDATE users set timezone='"s + temp_zone +
@@ -467,7 +474,7 @@ bool mysql_adaptor_get_maildir(const char *username, char *maildir, size_t md_si
 	if (!str_isascii(username))
 		return false;
 	char temp_name[UADDR_SIZE*2];
-	
+
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr = "SELECT maildir FROM users WHERE username='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
@@ -492,7 +499,7 @@ bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t dsi
 	if (!str_isascii(domainname))
 		return false;
 	char temp_name[UDOM_SIZE*2];
-	
+
 	mysql_adaptor_encode_squote(domainname, temp_name);
 	auto qstr = "SELECT homedir, domain_status FROM domains WHERE domainname='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
@@ -536,7 +543,7 @@ bool mysql_adaptor_get_homedir_by_id(unsigned int domain_id, char *homedir,
 BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, unsigned int *pdomain_id) try
 {
 	char temp_dir[512];
-	
+
 	mysql_adaptor_encode_squote(homedir, temp_dir);
 	auto qstr = "SELECT id FROM domains WHERE homedir='"s + temp_dir + "'";
 	auto conn = g_sqlconn_pool.get_wait();
@@ -562,12 +569,13 @@ BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
 	if (!str_isascii(username))
 		return false;
 	char temp_name[UADDR_SIZE*2];
-	
+
 	mysql_adaptor_encode_squote(username, temp_name);
-	auto qstr =
+	auto qstr = fmt::format(
 		"SELECT u.id, u.domain_id, dt.propval_str AS dtypx"
-		" FROM users AS u " JOIN_WITH_DISPLAYTYPE
-		" WHERE u.username='"s + temp_name + "' LIMIT 2";
+		" FROM users AS u " JOIN_WITH_DISPLAYTYPE " " JOIN_ALTNAMES
+		" WHERE u.username='{0}' OR alt.altname='{0}' LIMIT 2",
+		temp_name);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
@@ -576,7 +584,7 @@ BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 1)
-		return FALSE;	
+		return FALSE;
 	auto myrow = pmyres.fetch_row();
 	if (puser_id != nullptr)
 		*puser_id = strtoul(myrow[0], nullptr, 0);
@@ -599,9 +607,14 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 	if (!str_isascii(domainname))
 		return false;
 	char temp_name[UDOM_SIZE*2];
-	
+
 	mysql_adaptor_encode_squote(domainname, temp_name);
-	auto qstr = "SELECT id, org_id FROM domains WHERE domainname='"s + temp_name + "'";
+	auto qstr = fmt::format(
+		"SELECT d.id, d.org_id FROM domains AS d "
+		"LEFT JOIN users AS u ON d.id=u.domain_id "
+		JOIN_ALTNAMES " "
+		"WHERE domainname='{0}' OR alt.altname='{0}' LIMIT 1",
+		temp_name);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
@@ -761,11 +774,11 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 	char temp_name[UADDR_SIZE*2];
 	char *pencode_domain;
 	char temp_account[512];
-	
+
 	if (NULL == strchr(mlist_name, '@')) {
 		return FALSE;
 	}
-	
+
 	mysql_adaptor_encode_squote(mlist_name, temp_name);
 	pencode_domain = strchr(temp_name, '@') + 1;
 	mysql_adaptor_encode_squote(account, temp_account);
