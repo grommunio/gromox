@@ -327,11 +327,11 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 {
 	if(ctx_id < 0 || static_cast<size_t>(ctx_id) >= contexts.size())
 		return fault(ctx_id, http_status::server_error, "Invalid context ID");
-	std::unique_ptr<std::lock_guard<std::mutex>> lockProxy;
+	std::unique_lock<std::mutex> lockProxy;
 	if(debug)
 	{
 		if(debug->flags & DebugCtx::FL_LOCK)
-			lockProxy.reset(new std::lock_guard(debug->requestLock));
+			lockProxy = std::unique_lock<std::mutex>(debug->requestLock);
 		if(debug->flags & DebugCtx::FL_RATELIMIT)
 		{
 			auto now = std::chrono::high_resolution_clock::now();
