@@ -452,21 +452,21 @@ void emsmdb_interface_stop()
 	g_handle_hash.clear();
 }
 
-int emsmdb_interface_disconnect(CXH &cxh)
+ec_error_t emsmdb_interface_disconnect(CXH &cxh)
 {
 	emsmdb_interface_remove_handle(cxh);
 	memset(&cxh, 0, sizeof(CXH));
 	return ecSuccess;
 }
 
-int emsmdb_interface_register_push_notification(CXH *pcxh, uint32_t rpc,
+ec_error_t emsmdb_interface_register_push_notification(CXH *pcxh, uint32_t rpc,
 	uint8_t *pctx, uint16_t cb_ctx, uint32_t advise_bits, uint8_t *paddr,
 	uint16_t cb_addr, uint32_t *phnotification)
 {
 	return ecNotSupported;
 }
 
-int emsmdb_interface_dummy_rpc(uint64_t hrpc)
+ec_error_t emsmdb_interface_dummy_rpc(uint64_t hrpc)
 {
 	return ecSuccess;
 }
