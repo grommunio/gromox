@@ -2073,12 +2073,15 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 		if(!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
 			throw EWSError::NotEnoughMemory(E3288);
 		TARRAY_SET* rcpts = content->children.prcpts;
-		for(const auto& rcpt : *item.ToRecipients)
-			rcpt.mkRecipient(rcpts->emplace(), MAPI_TO);
-		for(const auto& rcpt : *item.CcRecipients)
-			rcpt.mkRecipient(rcpts->emplace(), MAPI_CC);
-		for(const auto& rcpt : *item.BccRecipients)
-			rcpt.mkRecipient(rcpts->emplace(), MAPI_BCC);
+		if(item.ToRecipients)
+			for(const auto& rcpt : *item.ToRecipients)
+				rcpt.mkRecipient(rcpts->emplace(), MAPI_TO);
+		if(item.CcRecipients)
+			for(const auto& rcpt : *item.CcRecipients)
+				rcpt.mkRecipient(rcpts->emplace(), MAPI_CC);
+		if(item.BccRecipients)
+			for(const auto& rcpt : *item.BccRecipients)
+				rcpt.mkRecipient(rcpts->emplace(), MAPI_BCC);
 	}
 	if(item.From) {
 		if(item.From->Mailbox.RoutingType)
