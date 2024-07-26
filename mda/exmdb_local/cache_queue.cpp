@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <climits>
 #include <csignal>
@@ -29,15 +30,14 @@ DECLARE_HOOK_API(exmdb_local, extern);
 using namespace exmdb_local;
 
 static char g_path[256];
-static int g_mess_id;
+static std::atomic<unsigned long> g_mess_id;
 static int g_scan_interval;
 static int g_retrying_times;
 static pthread_t g_thread_id;
 static std::mutex g_id_lock;
 static gromox::atomic_bool g_notify_stop{true};
 
-static int cache_queue_retrieve_mess_ID();
-static int cache_queue_increase_mess_ID();
+static unsigned long cache_queue_retrieve_mess_ID();
 static void *mdl_thrwork(void *);
 
 /*
@@ -117,7 +117,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 {
 	std::string file_name;
 
-	auto mess_id = cache_queue_increase_mess_ID();
+	auto mess_id = ++g_mess_id;
 	try {
 		file_name = g_path + "/"s + std::to_string(mess_id);
 	} catch (const std::bad_alloc &) {
@@ -204,45 +204,21 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	return mess_id;
 }
 
-/*
- *	retrieve the message ID in the queue
- *	@return
- *		message ID
- */
-static int cache_queue_retrieve_mess_ID()
+static unsigned long cache_queue_retrieve_mess_ID()
 {
-    struct dirent *direntp;
-	int max_ID = 0;
-
-    /*
-    read every file under directory and retrieve the maximum number and
-    return it
-    */
+	struct dirent *direntp;
+	unsigned long max_ID = 0;
 	auto dirp = opendir_sd(g_path, nullptr);
 	if (dirp.m_dir != nullptr) while ((direntp = readdir(dirp.m_dir.get())) != nullptr) {
 		if (strcmp(direntp->d_name, ".") == 0 ||
 		    strcmp(direntp->d_name, "..") == 0)
 			continue;
-		max_ID = std::max(max_ID, static_cast<int>(strtol(direntp->d_name, nullptr, 0)));
-    }
-    return max_ID;
-}
-
-/*
- *	increase the message ID with 1
- *	@return
- *		message ID before increasement
- */
-static int cache_queue_increase_mess_ID()
-{
-	int current_id;
-	std::unique_lock hold(g_id_lock);
-	if (g_mess_id == INT32_MAX)
-		g_mess_id = 1;
-	else
-		g_mess_id++;
-    current_id  = g_mess_id;
-    return current_id;
+		errno = 0;
+		auto id = strtoul(direntp->d_name, nullptr, 0);
+		if (id != ULONG_MAX || errno != ERANGE)
+			max_ID = std::max(max_ID, id);
+	}
+	return max_ID;
 }
 
 static void *mdl_thrwork(void *arg)
