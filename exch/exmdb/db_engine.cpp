@@ -903,8 +903,14 @@ void db_engine_stop()
 		}
 	}
 	g_thread_ids.clear();
-	g_hash_table.clear();
-	g_populating_list.clear();
+	{ /* silence cov-scan, take locks even in single-thread scenarios */
+		std::lock_guard lk(g_hash_lock);
+		g_hash_table.clear();
+	}
+	{
+		std::lock_guard lk(g_list_lock);
+		g_populating_list.clear();
+	}
 	sqlite3_shutdown();
 }
 

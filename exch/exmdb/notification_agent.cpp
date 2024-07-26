@@ -109,9 +109,12 @@ void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter
 		sleep(1);
 	close(prouter->sockd);
 	prouter->sockd = -1;
-	for (auto &&bin : prouter->datagram_list)
-		free(bin.pb);
-	prouter->datagram_list.clear();
+	{
+		std::lock_guard lk(prouter->lock);
+		for (auto &&bin : prouter->datagram_list)
+			free(bin.pb);
+		prouter->datagram_list.clear();
+	}
 	if (!prouter->b_stop) {
 		prouter->thr_id = {};
 		pthread_detach(pthread_self());

@@ -72,7 +72,10 @@ int cache_queue_run()
 		mlog(LV_ERR, "exmdb_local: %s is not a directory", g_path);
         return -2;
     }
-	g_mess_id = cache_queue_retrieve_mess_ID();
+	{ /* silence cov-scan, take locks even in single-thread scenarios */
+		std::lock_guard lk(g_id_lock);
+		g_mess_id = cache_queue_retrieve_mess_ID();
+	}
 	g_notify_stop = false;
 	auto ret = pthread_create4(&g_thread_id, nullptr, mdl_thrwork, nullptr);
 	if (ret != 0) {

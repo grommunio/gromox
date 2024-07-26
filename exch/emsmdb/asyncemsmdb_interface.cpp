@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <condition_variable>
 #include <csignal>
 #include <cstdio>
@@ -120,8 +122,14 @@ void asyncemsmdb_interface_stop()
 		}
 	}
 	g_thread_ids.clear();
-	g_tag_hash.clear();
-	g_async_hash.clear();
+	{ /* silence cov-scan, take locks even in single-thread scenarios */
+		std::lock_guard lk(g_list_lock);
+		g_tag_hash.clear();
+	}
+	{
+		std::lock_guard lk(g_async_lock);
+		g_async_hash.clear();
+	}
 }
 
 void asyncemsmdb_interface_free()

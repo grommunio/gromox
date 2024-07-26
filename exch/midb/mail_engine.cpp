@@ -4396,5 +4396,8 @@ void mail_engine_stop()
 		pthread_kill(g_scan_tid, SIGALRM);
 		pthread_join(g_scan_tid, NULL);
 	}
-	g_hash_table.clear();
+	{ /* silence cov-scan, take locks even in single-thread scenarios */
+		std::lock_guard lk(g_hash_lock);
+		g_hash_table.clear();
+	}
 }

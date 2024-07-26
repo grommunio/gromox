@@ -360,7 +360,10 @@ void rop_processor_stop()
 			pthread_join(g_scan_id, NULL);
 		}
 	}
-	g_logon_hash.clear();
+	{ /* silence cov-scan, take locks even in single-thread scenarios */
+		std::lock_guard lk(g_hash_lock);
+		g_logon_hash.clear();
+	}
 }
 
 static uint32_t rpcext_cutoff = 32U << 10; /* OXCRPC v23 3.1.4.2.1.2.2 */

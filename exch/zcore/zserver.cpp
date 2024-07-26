@@ -645,9 +645,15 @@ void zserver_stop()
 		pthread_kill(g_scan_id, SIGALRM);
 		pthread_join(g_scan_id, NULL);
 	}
-	g_session_table.clear();
-	g_user_table.clear();
-	g_notify_table.clear();
+	{ /* silence cov-scan, take locks even in single-thread scenarios */
+		std::lock_guard lk(g_table_lock);
+		g_session_table.clear();
+		g_user_table.clear();
+	}
+	{
+		std::lock_guard lk(g_notify_lock);
+		g_notify_table.clear();
+	}
 }
 
 static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
