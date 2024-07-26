@@ -437,9 +437,10 @@ static void *mdq_thrwork(void *arg)
 
 int message_dequeue_get_param(int param)
 {
-	if (param == MESSAGE_DEQUEUE_HOLDING)
-		return g_used_list.size();
-	return 0;
+	if (param != MESSAGE_DEQUEUE_HOLDING)
+		return 0;
+	std::lock_guard lk(g_used_mutex);
+	return g_used_list.size();
 }
 
 /*

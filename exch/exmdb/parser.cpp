@@ -69,8 +69,11 @@ void exmdb_parser_init(size_t max_threads, size_t max_routers)
 
 std::shared_ptr<EXMDB_CONNECTION> exmdb_parser_get_connection()
 {
-	if (g_max_threads != 0 && g_connection_list.size() >= g_max_threads)
-		return nullptr;
+	if (g_max_threads != 0) {
+		std::lock_guard lk(g_connection_lock);
+		if (g_connection_list.size() >= g_max_threads)
+			return nullptr;
+	}
 	try {
 		return std::make_shared<EXMDB_CONNECTION>();
 	} catch (const std::bad_alloc &) {
