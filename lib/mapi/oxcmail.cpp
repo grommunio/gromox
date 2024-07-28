@@ -107,6 +107,18 @@ struct DSN_FILEDS_INFO {
 	const char *x_display_name;
 };
 
+/**
+ * @have_orig_fn: a filename was found in MIME header
+ * @tag:          _A or _W mapitag for new filename
+ * @fn:           new filename
+ * @ext:          new extension
+ */
+struct gmf_output {
+	bool have_orig_fn = false;
+	uint32_t tag = PR_ATTACH_LONG_FILENAME_A;
+	std::string fn, ext;
+};
+
 static constexpr addr_tags tags_self = {
 	PR_DISPLAY_NAME, PR_ADDRTYPE, PR_EMAIL_ADDRESS, PR_SMTP_ADDRESS,
 	PR_ENTRYID,
@@ -346,20 +358,6 @@ static void replace_trailing_dots(char *s)
 	while (z-- > 0 && s[z] == '.')
 		;
 	s[++z] = '\0';
-}
-
-static void oxcmail_split_filename(char *file_name, char *extension)
-{
-	char *ptoken;
-	
-	replace_reserved_chars(file_name);
-	replace_trailing_dots(file_name);
-	replace_leading_dots(file_name);
-	ptoken = strrchr(file_name, '.');
-	if (ptoken == nullptr || strlen(ptoken) >= 16)
-		extension[0] = '\0';
-	else
-		strcpy(extension, ptoken);
 }
 
 /**
@@ -1496,20 +1494,52 @@ static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
 	return TRUE;
 }
 
+static gmf_output oxcmail_get_massaged_filename(const MIME *mime,
+    MIME_ENUM_PARAM &ei, const char *cttype)
+{
+	gmf_output ret;
+	char raw_fn[1024];
+	auto have_fn = mime->get_filename(raw_fn, std::size(raw_fn));
+
+	if (have_fn) {
+		char cooked_fn[1024];
+		auto uni = mime_string_to_utf8(ei.charset, raw_fn,
+		           cooked_fn, std::size(cooked_fn));
+		if (uni) {
+			ret.tag = PR_ATTACH_LONG_FILENAME;
+			ret.fn  = cooked_fn;
+		} else {
+			ret.fn  = raw_fn;
+		}
+		replace_reserved_chars(ret.fn.data());
+		replace_trailing_dots(ret.fn.data());
+		replace_leading_dots(ret.fn.data());
+		auto pos = ret.fn.find_last_of('.');
+		if (pos != ret.fn.npos && ret.fn.size() - pos < 16)
+			ret.ext = ret.fn.substr(pos);
+	} else {
+		ret.fn = "attachment" + std::to_string(++ei.attach_id);
+	}
+	if (ret.ext.size() > 0)
+		return ret;
+	auto proposal = mime_to_extension(cttype);
+	if (proposal == nullptr)
+		proposal = "dat";
+	ret.ext = "."s + proposal;
+	ret.fn += ret.ext;
+	return ret;
+}
+
 static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 {
-	BOOL b_unifn;
-	char *ptoken;
 	BINARY tmp_bin;
 	time_t tmp_time;
 	uint64_t tmp_int64;
 	uint32_t tmp_int32;
-	char extension[16];
 	char mode_buff[32];
 	char dir_buff[256];
 	char tmp_buff[1024];
 	char site_buff[256];
-	char file_name[512];
 	char date_buff[128];
 	char mime_charset[32];
 	MESSAGE_CONTENT *pmsg;
@@ -1541,43 +1571,11 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	              "application/octet-stream" : cttype;
 	if (pattachment->proplist.set(PR_ATTACH_MIME_TAG, newval) != 0)
 		return;
-	auto b_filename = pmime->get_filename(tmp_buff, std::size(tmp_buff));
-	if (b_filename) {
-		if (mime_string_to_utf8(pmime_enum->charset, tmp_buff,
-		    file_name, std::size(file_name))) {
-			b_unifn = TRUE;
-		} else {
-			b_unifn = FALSE;
-			strcpy(file_name, tmp_buff);
-		}
-		oxcmail_split_filename(file_name, extension);
-		if ('\0' == extension[0]) {
-			auto pext = mime_to_extension(cttype);
-			if (pext != NULL) {
-				sprintf(extension, ".%s", pext);
-				HX_strlcat(file_name, extension, sizeof(file_name));
-			}
-		}
-	} else {
-		b_unifn = TRUE;
-		if ('\0' != extension[0]) {
-			auto pext = mime_to_extension(cttype);
-			if (NULL != pext) {
-				sprintf(extension, ".%s", pext);
-				HX_strlcat(file_name, extension, sizeof(file_name));
-			} else {
-				strcpy(extension, ".dat");
-			}
-		}
-		pmime_enum->attach_id ++;
-		sprintf(file_name, "attachment%d%s",
-			pmime_enum->attach_id, extension);
-	}
-	if (extension[0] != '\0' &&
-	    pattachment->proplist.set(PR_ATTACH_EXTENSION, extension) != 0)
+	auto gmf = oxcmail_get_massaged_filename(pmime, *pmime_enum, cttype);
+	if (gmf.ext.size() > 0 &&
+	    pattachment->proplist.set(PR_ATTACH_EXTENSION, gmf.ext.c_str()) != 0)
 		return;
-	if (pattachment->proplist.set(b_unifn ? PR_ATTACH_LONG_FILENAME :
-	    PR_ATTACH_LONG_FILENAME_A, file_name) != 0)
+	if (pattachment->proplist.set(gmf.tag, gmf.fn.c_str()) != 0)
 		return;
 	auto b_description = pmime->get_field("Content-Description", tmp_buff, 256);
 	if (b_description) {
@@ -1696,7 +1694,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 		}
 	}
 	if (strcasecmp(cttype, "message/rfc822") == 0 ||
-	    (b_filename && strcasecmp(".eml", extension) == 0)) {
+	    (gmf.have_orig_fn && strcasecmp(gmf.ext.c_str(), ".eml") == 0)) {
 		auto rdlength = pmime->get_length();
 		if (rdlength < 0) {
 			mlog(LV_ERR, "%s:MIME::get_length:%u: unsuccessful", __func__, __LINE__);
@@ -1714,11 +1712,12 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			pattachment->proplist.erase(PR_ATTACH_LONG_FILENAME_A);
 			pattachment->proplist.erase(PR_ATTACH_EXTENSION);
 			pattachment->proplist.erase(PR_ATTACH_EXTENSION_A);
+			char sbbf[512];
 			if (!b_description &&
-			    mail.get_head()->get_field("Subject", tmp_buff, 256) &&
+			    mail.get_head()->get_field("Subject", tmp_buff, std::size(tmp_buff)) &&
 			    mime_string_to_utf8(pmime_enum->charset, tmp_buff,
-			    file_name, std::size(file_name)) &&
-			    pattachment->proplist.set(PR_DISPLAY_NAME, file_name) != 0)
+			    sbbf, std::size(sbbf)) &&
+			    pattachment->proplist.set(PR_DISPLAY_NAME, sbbf) != 0)
 				return;
 			tmp_int32 = ATTACH_EMBEDDED_MSG;
 			if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
@@ -1733,7 +1732,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			return;
 		}
 	}
-	if (b_filename && strcasecmp(cttype, "message/external-body") == 0 &&
+	if (gmf.have_orig_fn != 0 && strcasecmp(cttype, "message/external-body") == 0 &&
 	    oxcmail_get_content_param(pmime, "access-type", tmp_buff, 32) &&
 	    strcasecmp(tmp_buff, "anon-ftp") == 0 &&
 	    oxcmail_get_content_param(pmime, "site", site_buff, 256) &&
@@ -1747,17 +1746,12 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			strcpy(mode_buff, ";type=i");
 		tmp_bin.cb = gx_snprintf(tmp_buff, std::size(tmp_buff), "[InternetShortcut]\r\n"
 					"URL=ftp://%s/%s/%s%s", site_buff, dir_buff,
-					file_name, mode_buff);
+					gmf.fn.c_str(), mode_buff);
 		tmp_bin.pc = mode_buff;
 		if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0)
 			return;
-		ptoken = strrchr(file_name, '.');
-		if (ptoken != nullptr)
-			strcpy(ptoken + 1, "URL");
-		else
-			strcat(file_name, ".URL");
-		uint32_t tag = b_unifn ? PR_ATTACH_LONG_FILENAME : PR_ATTACH_LONG_FILENAME_A;
-		if (pattachment->proplist.set(tag, file_name) == 0)
+		gmf.fn += ".url";
+		if (pattachment->proplist.set(gmf.tag, gmf.fn.c_str()) == 0)
 			pmime_enum->b_result = true;
 		return;
 	}
