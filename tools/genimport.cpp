@@ -119,6 +119,8 @@ void gi_dump_tpropval_a(unsigned int depth, const TPROPVAL_ARRAY &props)
 		tlog("subject=\"%s\"\n", p);
 	}
 	p = props.get<char>(PR_ATTACH_LONG_FILENAME);
+	if (p == nullptr)
+		p = props.get<char>(PR_ATTACH_LONG_FILENAME_A);
 	if (p != nullptr) {
 		tree(depth);
 		tlog("filename=\"%s\"\n", p);
