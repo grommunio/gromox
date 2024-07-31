@@ -2511,52 +2511,63 @@ static bool smime_clearsigned(const char *head_ct, const MIME *head, char (&buf)
 	       strcasecmp(buf, "application/x-pkcs7-signature") == 0;
 }
 
-static void select_parts(const MIME *part, MIME_ENUM_PARAM &info)
+/**
+ * @level: how often to recurse into multiparts.
+ *         If level==0, a top-level multipart/ will not be analyzed.
+ * Returns: bool indicator if something usable was found
+ */
+static bool select_parts(const MIME *part, MIME_ENUM_PARAM &info, unsigned int level)
 {
-	for (unsigned int i = 0; i < MAXIMUM_SEARCHING_DEPTH; ++i) {
-		auto child = part->get_child();
-		if (child == nullptr)
-			break;
-		part = child;
-	}
-	auto parent = part->get_parent();
-	bool alt = false;
-	if (parent != nullptr && strcasecmp(parent->content_type,
-	    "multipart/alternative") == 0)
-		alt = true;
-	do {
-		auto cttype = part->content_type;
-		if (strcasecmp(cttype, "text/plain") == 0 &&
-		    info.pplain == nullptr)
+	/*
+	 * At level 0, we are inspecting the root (the mail itself, only one of
+	 * these tests will succeed)
+	 */
+	if (part->mime_type == mime_type::single) {
+		if (strcasecmp(part->content_type, "text/plain") == 0) {
 			info.pplain = part;
-		if (strcasecmp(cttype, "text/html") == 0 &&
-		    info.phtml == nullptr)
+			return true;
+		} else if (strcasecmp(part->content_type, "text/html") == 0) {
 			info.phtml = part;
-		if (strcasecmp(cttype, "text/enriched") == 0 &&
-		    info.penriched == nullptr)
+			return true;
+		} else if (strcasecmp(part->content_type, "text/enriched") == 0) {
 			info.penriched = part;
-		if (strcasecmp(cttype, "text/calendar") == 0 &&
-		    info.pcalendar == nullptr)
+			return true;
+		} else if (strcasecmp(part->content_type, "text/calendar") == 0) {
 			info.pcalendar = part;
-		if (!alt || part->mime_type != mime_type::multiple)
-			continue;
-		for (auto child = part->get_child(); child != nullptr;
-		     child = child->get_sibling()) {
-			cttype = child->content_type;
-			if (strcasecmp(cttype, "text/plain") == 0 &&
-			    info.pplain == nullptr)
-				info.pplain = child;
-			if (strcasecmp(cttype, "text/html") == 0 &&
-			    info.phtml == nullptr)
-				info.phtml = child;
-			if (strcasecmp(cttype, "text/enriched") == 0 &&
-			    info.penriched == nullptr)
-				info.penriched = child;
-			if (strcasecmp(cttype, "text/calendar") == 0 &&
-			    info.pcalendar == nullptr)
-				info.pcalendar = child;
+			return true;
 		}
-	} while (alt && (part = part->get_sibling()) != nullptr);
+		return false;
+	}
+	if (level >= MAXIMUM_SEARCHING_DEPTH)
+		return false;
+	++level;
+	bool alt = strcasecmp(part->content_type, "multipart/alternative") == 0;
+
+	for (auto child = part->get_child(); child != nullptr;
+	     child = child->get_sibling()) {
+		if (child->mime_type == mime_type::multiple &&
+		    strcasecmp(child->content_type, "multipart/alternative") != 0)
+			/* Having 'mixed' as an alternative is awkward. */
+			continue;
+
+		MIME_ENUM_PARAM cld_info{info.phash};
+		auto found = select_parts(child, cld_info, level);
+		if (!found)
+			continue;
+		if (cld_info.pplain != nullptr)
+			info.pplain = cld_info.pplain;
+		if (cld_info.phtml != nullptr)
+			info.phtml = cld_info.phtml;
+		if (cld_info.penriched != nullptr)
+			info.penriched = cld_info.penriched;
+		if (cld_info.pcalendar != nullptr)
+			info.pcalendar = cld_info.pcalendar;
+		if (!alt)
+			/* First usable thing is good enough for /mixed and /report. */
+			return true;
+		/* Parts inside a multipart/alternatives container override one another */
+	}
+	return !!info.pplain + !!info.phtml + !!info.penriched + !!info.pcalendar;
 }
 
 static BOOL xlog_bool(const char *func, unsigned int line)
@@ -2717,7 +2728,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	mime_enum.alloc = alloc;
 	mime_enum.pmsg = pmsg.get();
 	mime_enum.phash = phash;
-	select_parts(phead, mime_enum);
+	select_parts(phead, mime_enum, 0);
 
 	if (mime_enum.pplain != nullptr &&
 	    !oxcmail_parse_message_body(default_charset,
