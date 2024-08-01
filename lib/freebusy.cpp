@@ -150,7 +150,7 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 		auto monthly  = rpat.period % 12 != 0;
 		auto interval = rpat.period;
 		line.append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
-		if (monthly)
+		if (!monthly)
 			interval /= 12;
 		line.append_value("INTERVAL", fmt::format("{}", interval));
 		line.append_value("BYMONTHDAY", fmt::format("{}",
@@ -166,7 +166,7 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 		auto monthly  = rpat.period % 12 != 0;
 		auto interval = rpat.period;
 		line.append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
-		if (monthly)
+		if (!monthly)
 			interval /= 12;
 		line.append_value("INTERVAL", fmt::format("{}", interval));
 		auto &pts = rpat.pts;
