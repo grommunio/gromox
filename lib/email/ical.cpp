@@ -1434,7 +1434,7 @@ static bool ical_parse_until(const ical_component *ptz_component,
 	}
 }
 
-static bool ical_hint_bitmap(unsigned char *pbitmap, unsigned int index)
+static bool ical_test_bitmap(unsigned char *pbitmap, unsigned int index)
 {
 	int bits;
 	int bytes;
@@ -1458,7 +1458,7 @@ static void ical_set_bitmap(unsigned char *pbitmap, unsigned int index)
 	pbitmap[bytes] |= mask;
 }
 
-static int ical_hint_rrule(ical_rrule *pirrule, ical_time itime)
+static int ical_test_rrule(ical_rrule *pirrule, ical_time itime)
 {
 	int yearday;
 	int yeardays;
@@ -1468,7 +1468,7 @@ static int ical_hint_rrule(ical_rrule *pirrule, ical_time itime)
 	BOOL b_yeargap;
 	
 	if (pirrule->by_mask[RRULE_BY_MONTH])
-		if (!ical_hint_bitmap(pirrule->month_bitmap, itime.month - 1))
+		if (!ical_test_bitmap(pirrule->month_bitmap, itime.month - 1))
 			return RRULE_BY_MONTH;
 	if (pirrule->by_mask[RRULE_BY_WEEKNO]) {
 		weekorder = ical_get_weekofyear(itime.year, itime.month,
@@ -1480,20 +1480,20 @@ static int ical_hint_rrule(ical_rrule *pirrule, ical_time itime)
 				pirrule->weekstart, &b_yeargap);
 		if (b_yeargap && pirrule->frequency == ical_frequency::year)
 			return RRULE_BY_WEEKNO;
-		if (!ical_hint_bitmap(pirrule->week_bitmap, weekorder - 1) &&
-		    !ical_hint_bitmap(pirrule->nweek_bitmap, -nweekorder - 1))
+		if (!ical_test_bitmap(pirrule->week_bitmap, weekorder - 1) &&
+		    !ical_test_bitmap(pirrule->nweek_bitmap, -nweekorder - 1))
 			return RRULE_BY_WEEKNO;
 	}
 	if (pirrule->by_mask[RRULE_BY_YEARDAY]) {
 		yeardays = 365 + ical_is_leap_year(itime.year);
 		yearday = ical_get_dayofyear(itime.year, itime.month, itime.day);
-		if (!ical_hint_bitmap(pirrule->yday_bitmap, yearday - 1) &&
-		    !ical_hint_bitmap(pirrule->nyday_bitmap, yeardays - yearday))
+		if (!ical_test_bitmap(pirrule->yday_bitmap, yearday - 1) &&
+		    !ical_test_bitmap(pirrule->nyday_bitmap, yeardays - yearday))
 			return RRULE_BY_YEARDAY;
 	}
 	if (pirrule->by_mask[RRULE_BY_MONTHDAY])
-		if (!ical_hint_bitmap(pirrule->mday_bitmap, itime.day - 1) &&
-		    !ical_hint_bitmap(pirrule->nmday_bitmap,
+		if (!ical_test_bitmap(pirrule->mday_bitmap, itime.day - 1) &&
+		    !ical_test_bitmap(pirrule->nmday_bitmap,
 		    ical_get_monthdays(itime.year, itime.month) - itime.day))
 			return RRULE_BY_MONTHDAY;
 	if (pirrule->by_mask[RRULE_BY_DAY]) {
@@ -1513,26 +1513,26 @@ static int ical_hint_rrule(ical_rrule *pirrule, ical_time itime)
 			nweekorder = ical_get_negative_yearweekorder(
 			             itime.year, itime.month, itime.day);
 		}
-		if (!ical_hint_bitmap(pirrule->wday_bitmap, 7 * (weekorder - 1) + dayofweek) &&
-		    !ical_hint_bitmap(pirrule->nwday_bitmap, 7 * (-nweekorder - 1) + dayofweek))
+		if (!ical_test_bitmap(pirrule->wday_bitmap, 7 * (weekorder - 1) + dayofweek) &&
+		    !ical_test_bitmap(pirrule->nwday_bitmap, 7 * (-nweekorder - 1) + dayofweek))
 			return RRULE_BY_DAY;
 	}
 	if (pirrule->by_mask[RRULE_BY_HOUR])
-		if (!ical_hint_bitmap(pirrule->hour_bitmap, itime.hour))
+		if (!ical_test_bitmap(pirrule->hour_bitmap, itime.hour))
 			return RRULE_BY_HOUR;
 	if (pirrule->by_mask[RRULE_BY_MINUTE])
-		if (!ical_hint_bitmap(pirrule->minute_bitmap, itime.minute))
+		if (!ical_test_bitmap(pirrule->minute_bitmap, itime.minute))
 			return RRULE_BY_MINUTE;
 	if (pirrule->by_mask[RRULE_BY_SECOND])
-		if (!ical_hint_bitmap(pirrule->second_bitmap, itime.second))
+		if (!ical_test_bitmap(pirrule->second_bitmap, itime.second))
 			return RRULE_BY_SECOND;
 	return 0;
 }
 
-static bool ical_hint_setpos(ical_rrule *pirrule)
+static bool ical_test_setpos(ical_rrule *pirrule)
 {
-	if (!ical_hint_bitmap(pirrule->setpos_bitmap, pirrule->cur_setpos - 1) &&
-	    !ical_hint_bitmap(pirrule->nsetpos_bitmap, pirrule->setpos_count - pirrule->cur_setpos))
+	if (!ical_test_bitmap(pirrule->setpos_bitmap, pirrule->cur_setpos - 1) &&
+	    !ical_test_bitmap(pirrule->nsetpos_bitmap, pirrule->setpos_count - pirrule->cur_setpos))
 		return false;
 	return true;
 }
@@ -1744,7 +1744,7 @@ static void ical_calculate_setpos(ical_rrule *pirrule)
 	itime = pirrule->base_itime;
 	for (int hint_result = 0; pirrule->next_base_itime > itime;
 	    itime = ical_next_rrule_itime(pirrule, hint_result, itime)) {
-		hint_result = ical_hint_rrule(pirrule, itime);
+		hint_result = ical_test_rrule(pirrule, itime);
 		if (hint_result == 0)
 			pirrule->setpos_count ++;
 	}
@@ -2141,12 +2141,12 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	     itime = ical_next_rrule_itime(pirrule, hint_result, itime)) {
 		if (pirrule->b_until && itime > pirrule->until_itime)
 			return false;
-		hint_result = ical_hint_rrule(pirrule, itime);
+		hint_result = ical_test_rrule(pirrule, itime);
 		if (hint_result != 0)
 			continue;
 		if (pirrule->by_mask[RRULE_BY_SETPOS]) {
 			pirrule->cur_setpos ++;
-			if (!ical_hint_setpos(pirrule))
+			if (!ical_test_setpos(pirrule))
 				continue;
 		}
 		int cmp_result = itime.twcompare(pirrule->instance_itime);
@@ -2213,12 +2213,12 @@ bool ical_rrule::iterate()
 			if (pirrule->by_mask[RRULE_BY_SETPOS])
 				ical_calculate_setpos(pirrule);
 		}
-		hint_result = ical_hint_rrule(pirrule, itime);
+		hint_result = ical_test_rrule(pirrule, itime);
 		if (hint_result != 0)
 			continue;
 		if (pirrule->by_mask[RRULE_BY_SETPOS]) {
 			pirrule->cur_setpos++;
-			if (!ical_hint_setpos(pirrule))
+			if (!ical_test_setpos(pirrule))
 				continue;
 		}
 		pirrule->current_instance++;
