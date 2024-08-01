@@ -2149,25 +2149,25 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		if (pirrule->b_until && itime > pirrule->until_itime)
 			return false;
 		hint_result = ical_hint_rrule(pirrule, itime);
-		if (0 == hint_result) {
-			if (pirrule->by_mask[RRULE_BY_SETPOS]) {
-				pirrule->cur_setpos ++;
-				if (!ical_hint_setpos(pirrule))
-					continue;
-			}
-			cmp_result = itime.twcompare(pirrule->instance_itime);
-			if (cmp_result < 0) {
+		if (hint_result != 0)
+			continue;
+		if (pirrule->by_mask[RRULE_BY_SETPOS]) {
+			pirrule->cur_setpos ++;
+			if (!ical_hint_setpos(pirrule))
 				continue;
-			} else if (cmp_result > 0) {
-				pirrule->b_start_exceptional = true;
-				pirrule->real_start_itime = itime;
-				pirrule->current_instance = 1;
-				pirrule->next_base_itime = pirrule->base_itime;
-				return true;
-			}
+		}
+		cmp_result = itime.twcompare(pirrule->instance_itime);
+		if (cmp_result < 0) {
+			continue;
+		} else if (cmp_result > 0) {
+			pirrule->b_start_exceptional = true;
+			pirrule->real_start_itime = itime;
 			pirrule->current_instance = 1;
+			pirrule->next_base_itime = pirrule->base_itime;
 			return true;
 		}
+		pirrule->current_instance = 1;
+		return true;
 	}
 	base_itime = pirrule->base_itime;
 	itime = pirrule->instance_itime;
