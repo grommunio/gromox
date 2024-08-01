@@ -13,15 +13,9 @@ enum class ical_frequency {
 	second, minute, hour, day, week, month, year,
 };
 
-#define RRULE_BY_SETPOS					0
-#define RRULE_BY_SECOND					1
-#define RRULE_BY_MINUTE					2
-#define RRULE_BY_HOUR					3
-#define RRULE_BY_DAY					4
-#define RRULE_BY_MONTHDAY				5
-#define RRULE_BY_YEARDAY				6
-#define RRULE_BY_WEEKNO					7
-#define RRULE_BY_MONTH					8
+enum class rrule_by {
+	setpos = 0, second, minute, hour, day, monthday, yearday, weekno, month,
+};
 
 struct GX_EXPORT ical_param {
 	public:
@@ -125,8 +119,8 @@ struct GX_EXPORT ical_rrule {
 	inline bool endless() const { return total_count == 0 && !b_until; }
 	inline const ical_time *get_until_itime() const { return b_until ? &until_itime : nullptr; }
 	inline int sequence() const { return current_instance; }
-	inline bool test_bymask(unsigned int rrule_by) const { return by_mask[rrule_by]; }
-	inline void set_bymask(unsigned int x) { by_mask[x] = true; }
+	inline bool test_bymask(rrule_by x) const { return by_mask[static_cast<size_t>(x)]; }
+	inline void set_bymask(rrule_by x) { by_mask[static_cast<size_t>(x)] = true; }
 
 	int total_count;
 	int current_instance;
