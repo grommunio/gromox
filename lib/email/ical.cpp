@@ -1737,17 +1737,16 @@ static ical_time ical_next_rrule_itime(ical_rrule *pirrule,
 	
 static void ical_calculate_setpos(ical_rrule *pirrule)
 {
-	int hint_result;
 	ical_time itime;
 	
 	pirrule->cur_setpos = 0;
 	pirrule->setpos_count = 0;
 	itime = pirrule->base_itime;
-	while (pirrule->next_base_itime > itime) {
+	for (int hint_result = 0; pirrule->next_base_itime > itime;
+	    itime = ical_next_rrule_itime(pirrule, hint_result, itime)) {
 		hint_result = ical_hint_rrule(pirrule, itime);
 		if (hint_result == 0)
 			pirrule->setpos_count ++;
-		itime = ical_next_rrule_itime(pirrule, hint_result, itime);
 	}
 }
 
@@ -1789,7 +1788,6 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	int dayofweek;
 	int weekorder;
 	int cmp_result;
-	int hint_result;
 	ical_time itime, base_itime;
 	time_t until_time;
 	const char *pvalue;
@@ -2146,22 +2144,19 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	ical_next_rrule_base_itime(pirrule);
 	if (pirrule->by_mask[RRULE_BY_SETPOS])
 		ical_calculate_setpos(pirrule);
-	while (itime < pirrule->next_base_itime) {
+	for (int hint_result = 0; itime < pirrule->next_base_itime;
+	     itime = ical_next_rrule_itime(pirrule, hint_result, itime)) {
 		if (pirrule->b_until && itime > pirrule->until_itime)
 			return false;
 		hint_result = ical_hint_rrule(pirrule, itime);
 		if (0 == hint_result) {
 			if (pirrule->by_mask[RRULE_BY_SETPOS]) {
 				pirrule->cur_setpos ++;
-				if (!ical_hint_setpos(pirrule)) {
-					itime = ical_next_rrule_itime(
-						pirrule, hint_result, itime);
+				if (!ical_hint_setpos(pirrule))
 					continue;
-				}
 			}
 			cmp_result = itime.twcompare(pirrule->instance_itime);
 			if (cmp_result < 0) {
-				itime = ical_next_rrule_itime(pirrule, hint_result, itime);
 				continue;
 			} else if (cmp_result > 0) {
 				pirrule->b_start_exceptional = true;
@@ -2173,7 +2168,6 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			pirrule->current_instance = 1;
 			return true;
 		}
-		itime = ical_next_rrule_itime(pirrule, hint_result, itime);
 	}
 	base_itime = pirrule->base_itime;
 	itime = pirrule->instance_itime;
