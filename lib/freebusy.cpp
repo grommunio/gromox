@@ -204,7 +204,7 @@ static bool find_recur_times(const ical_component *tzcom,
     time_t start_whole, const APPOINTMENT_RECUR_PAT &apr,
     time_t start_time, time_t end_time, std::vector<event> &evlist)
 {
-	ical_rrule irrule;
+	ical_rrule irrule{};
 
 	if (!recurrencepattern_to_rrule(tzcom, start_whole, apr, &irrule))
 		return false;

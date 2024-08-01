@@ -27,6 +27,8 @@ delmsg: issue "delete_message" RPCs for a mailbox
 .IP \(bu 4
 emptyfld: remove objects from folders
 .IP \(bu 4
+get\-freebusy: test FB schedule lookups
+.IP \(bu 4
 get\-photo: retrieve user image from store and print to stdout
 .IP \(bu 4
 get\-websettings, get\-websettings\-persistent, get\-websettings\-recipients:
@@ -157,6 +159,25 @@ gromox\-mbop \-u a@b.de emptyfld \-\-soft \-\-nuke\-folders DELETED
 .IP \(bu 4
 Timed deletion of trash:
 gromox\-mbop \-u abc@example.com emptyfld \-Rt 1week \-\-soft DELETED
+.SH get\-freebusy
+.SS Synopsis
+\fBget\-freebusy\fP [\fB\-a\fP \fIstart_time\fP] [\fB\-b\fP \fIend_time\fP]
+[\fB\-x\fP \fIusername\fP]
+.SS Description
+Runs the get_freebusy routine on the mailbox specified by the global \-d/\-u
+option(s), and asks for free/busy status within the given time period.
+.SS Options
+.TP
+\fB\-a\fP {\fIyyyy-mm-dd\fP\fBT\fP\fIhh:mm:ss\fP|\fIunixtime\fP}
+Left end of the timeframe to query.
+.TP
+\fB\-b\fP {\fIyyyy-mm-dd\fP\fBT\fP\fIhh:mm:ss\fP|\fIunixtime\fP}
+Right end of the timeframe to query.
+.TP
+\fB\-x\fP \fIusername\fP
+Perform the action under the given username (for permission tests).
+If the \-x option is omitted, the action is performed as the mailbox
+owner.
 .SH get\-photo
 .SS Synopsis
 \fBget\-photo >\fP\fIsomefile\fP
