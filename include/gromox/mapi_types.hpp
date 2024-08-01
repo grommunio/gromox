@@ -510,6 +510,13 @@ struct SYSTEMTIME {
 	int16_t minute;
 	int16_t second;
 	int16_t milliseconds;
+
+	/*
+	 * 63-bit mapitime limit is sometime in the year 30828. Rather than have an
+	 * incomplete year, the latest acceptable date for a SYSTEMTIME object is
+	 * 30827-12-31.
+	 */
+	static constexpr int16_t maxyear = 30828;
 };
 
 /* pidLidTimeZoneStruct */

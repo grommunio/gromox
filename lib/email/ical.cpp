@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
 #include <cstdio>
@@ -15,6 +17,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/ical.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/util.hpp>
 #define MAX_LINE 75
 
@@ -2208,6 +2211,13 @@ bool ical_rrule::iterate()
 	while (true) {
 		itime = ical_next_rrule_itime(pirrule, hint_result, itime);
 		if (pirrule->b_until && itime > pirrule->until_itime)
+			return false;
+		if (itime.year >= SYSTEMTIME::maxyear)
+			/*
+			 * If we are still iterating, something is fishy. Break
+			 * it up. Contemporary OSes cannot represent something
+			 * this high anyway.
+			 */
 			return false;
 		if (itime >= pirrule->next_base_itime) {
 			pirrule->base_itime = pirrule->next_base_itime;
