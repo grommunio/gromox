@@ -430,7 +430,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 		apr->recur_pat.firstdatetime = rop_util_unix_to_rtime(tmp_time) %
 			(10080 * irrule.interval);
 		patterntype = PATTERNTYPE_WEEK;
-		if (irrule.check_bymask(RRULE_BY_DAY)) {
+		if (irrule.test_bymask(RRULE_BY_DAY)) {
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.weekrecur = 0;
 			for (const auto &pnv2 : *psubval_list) {
@@ -463,8 +463,8 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 		itime1.month = 1;
 		itime1.day = 1;
 		apr->recur_pat.firstdatetime = itime.delta_day(itime1) * 1440;
-		if (irrule.check_bymask(RRULE_BY_DAY) &&
-		    irrule.check_bymask(RRULE_BY_SETPOS)) {
+		if (irrule.test_bymask(RRULE_BY_DAY) &&
+		    irrule.test_bymask(RRULE_BY_SETPOS)) {
 			patterntype = PATTERNTYPE_MONTHNTH;
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.monthnth.weekrecur = 0;
@@ -483,8 +483,8 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 			apr->recur_pat.pts.monthnth.recurnum = tmp_int;
 		} else {
 			/* Cf. RFC 5545 pg. 43, "rule: BY_SETPOS" */
-			if (irrule.check_bymask(RRULE_BY_DAY) &&
-			    !irrule.check_bymask(RRULE_BY_SETPOS))
+			if (irrule.test_bymask(RRULE_BY_DAY) &&
+			    !irrule.test_bymask(RRULE_BY_SETPOS))
 				return false;
 			int tmp_int;
 			patterntype = PATTERNTYPE_MONTH;
@@ -518,10 +518,10 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 		itime1.month = 1;
 		itime1.day = 1;
 		apr->recur_pat.firstdatetime = itime.delta_day(itime1) * 1440;
-		if (irrule.check_bymask(RRULE_BY_DAY) &&
-		    irrule.check_bymask(RRULE_BY_SETPOS) &&
-		    irrule.check_bymask(RRULE_BY_MONTH)) {
-			if (irrule.check_bymask(RRULE_BY_MONTHDAY))
+		if (irrule.test_bymask(RRULE_BY_DAY) &&
+		    irrule.test_bymask(RRULE_BY_SETPOS) &&
+		    irrule.test_bymask(RRULE_BY_MONTH)) {
+			if (irrule.test_bymask(RRULE_BY_MONTHDAY))
 				return false;
 			patterntype = PATTERNTYPE_MONTHNTH;
 			psubval_list = piline->get_subval_list("BYDAY");
@@ -540,8 +540,8 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 				tmp_int = 5;
 			apr->recur_pat.pts.monthnth.recurnum = tmp_int;
 		} else {
-			if (irrule.check_bymask(RRULE_BY_DAY) ||
-			    irrule.check_bymask(RRULE_BY_SETPOS))
+			if (irrule.test_bymask(RRULE_BY_DAY) ||
+			    irrule.test_bymask(RRULE_BY_SETPOS))
 				return false;
 			int tmp_int;
 			patterntype = PATTERNTYPE_MONTH;

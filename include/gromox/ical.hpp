@@ -125,7 +125,7 @@ struct GX_EXPORT ical_rrule {
 	inline bool endless() const { return total_count == 0 && !b_until; }
 	inline const ical_time *get_until_itime() const { return b_until ? &until_itime : nullptr; }
 	inline int sequence() const { return current_instance; }
-	inline bool check_bymask(unsigned int rrule_by) const { return by_mask[rrule_by]; }
+	inline bool test_bymask(unsigned int rrule_by) const { return by_mask[rrule_by]; }
 
 	int total_count;
 	int current_instance;
