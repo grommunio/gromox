@@ -1467,10 +1467,10 @@ static int ical_test_rrule(ical_rrule *pirrule, ical_time itime)
 	int nweekorder;
 	BOOL b_yeargap;
 	
-	if (pirrule->by_mask[RRULE_BY_MONTH])
+	if (pirrule->test_bymask(RRULE_BY_MONTH))
 		if (!ical_test_bitmap(pirrule->month_bitmap, itime.month - 1))
 			return RRULE_BY_MONTH;
-	if (pirrule->by_mask[RRULE_BY_WEEKNO]) {
+	if (pirrule->test_bymask(RRULE_BY_WEEKNO)) {
 		weekorder = ical_get_weekofyear(itime.year, itime.month,
 					itime.day, pirrule->weekstart, &b_yeargap);
 		if (b_yeargap && pirrule->frequency == ical_frequency::year)
@@ -1484,26 +1484,26 @@ static int ical_test_rrule(ical_rrule *pirrule, ical_time itime)
 		    !ical_test_bitmap(pirrule->nweek_bitmap, -nweekorder - 1))
 			return RRULE_BY_WEEKNO;
 	}
-	if (pirrule->by_mask[RRULE_BY_YEARDAY]) {
+	if (pirrule->test_bymask(RRULE_BY_YEARDAY)) {
 		yeardays = 365 + ical_is_leap_year(itime.year);
 		yearday = ical_get_dayofyear(itime.year, itime.month, itime.day);
 		if (!ical_test_bitmap(pirrule->yday_bitmap, yearday - 1) &&
 		    !ical_test_bitmap(pirrule->nyday_bitmap, yeardays - yearday))
 			return RRULE_BY_YEARDAY;
 	}
-	if (pirrule->by_mask[RRULE_BY_MONTHDAY])
+	if (pirrule->test_bymask(RRULE_BY_MONTHDAY))
 		if (!ical_test_bitmap(pirrule->mday_bitmap, itime.day - 1) &&
 		    !ical_test_bitmap(pirrule->nmday_bitmap,
 		    ical_get_monthdays(itime.year, itime.month) - itime.day))
 			return RRULE_BY_MONTHDAY;
-	if (pirrule->by_mask[RRULE_BY_DAY]) {
+	if (pirrule->test_bymask(RRULE_BY_DAY)) {
 		dayofweek = ical_get_dayofweek(itime.year,
 						itime.month, itime.day);
 		if (ical_frequency::week == pirrule->frequency) {
 			weekorder = itime.delta_day(pirrule->base_itime) / 7 + 1;
 			nweekorder = -(itime.delta_day(pirrule->next_base_itime) - 1) / 7 - 1;
 		} else if (pirrule->frequency == ical_frequency::month ||
-		    pirrule->by_mask[RRULE_BY_MONTH]) {
+		    pirrule->test_bymask(RRULE_BY_MONTH)) {
 			weekorder = ical_get_monthweekorder(itime.day);
 			nweekorder = ical_get_negative_monthweekorder(
 			             itime.year, itime.month, itime.day);
@@ -1517,13 +1517,13 @@ static int ical_test_rrule(ical_rrule *pirrule, ical_time itime)
 		    !ical_test_bitmap(pirrule->nwday_bitmap, 7 * (-nweekorder - 1) + dayofweek))
 			return RRULE_BY_DAY;
 	}
-	if (pirrule->by_mask[RRULE_BY_HOUR])
+	if (pirrule->test_bymask(RRULE_BY_HOUR))
 		if (!ical_test_bitmap(pirrule->hour_bitmap, itime.hour))
 			return RRULE_BY_HOUR;
-	if (pirrule->by_mask[RRULE_BY_MINUTE])
+	if (pirrule->test_bymask(RRULE_BY_MINUTE))
 		if (!ical_test_bitmap(pirrule->minute_bitmap, itime.minute))
 			return RRULE_BY_MINUTE;
-	if (pirrule->by_mask[RRULE_BY_SECOND])
+	if (pirrule->test_bymask(RRULE_BY_SECOND))
 		if (!ical_test_bitmap(pirrule->second_bitmap, itime.second))
 			return RRULE_BY_SECOND;
 	return 0;
@@ -1577,25 +1577,25 @@ static ical_time ical_next_rrule_itime(ical_rrule *pirrule,
 			dayofweek = ical_get_dayofweek(itime.year,
 							itime.month, itime.day);
 			itime.add_month(1);
-			if (pirrule->by_mask[RRULE_BY_WEEKNO])
+			if (pirrule->test_bymask(RRULE_BY_WEEKNO))
 				itime.day = ical_get_dayofmonth(itime.year,
 								itime.month, 1, dayofweek);
-			if (pirrule->by_mask[RRULE_BY_YEARDAY] ||
-			    pirrule->by_mask[RRULE_BY_MONTHDAY] ||
-			    pirrule->by_mask[RRULE_BY_DAY])
+			if (pirrule->test_bymask(RRULE_BY_YEARDAY) ||
+			    pirrule->test_bymask(RRULE_BY_MONTHDAY) ||
+			    pirrule->test_bymask(RRULE_BY_DAY))
 				itime.day = 1;
-			if (pirrule->by_mask[RRULE_BY_HOUR])
+			if (pirrule->test_bymask(RRULE_BY_HOUR))
 				itime.hour = 0;
-			if (pirrule->by_mask[RRULE_BY_MINUTE])
+			if (pirrule->test_bymask(RRULE_BY_MINUTE))
 				itime.minute = 0;
-			if (pirrule->by_mask[RRULE_BY_SECOND])
+			if (pirrule->test_bymask(RRULE_BY_SECOND))
 				itime.second = 0;
 			break;
 		case RRULE_BY_WEEKNO:
 			itime.add_day(7);
-			if (pirrule->by_mask[RRULE_BY_YEARDAY] ||
-			    pirrule->by_mask[RRULE_BY_MONTHDAY] ||
-			    pirrule->by_mask[RRULE_BY_DAY]) {
+			if (pirrule->test_bymask(RRULE_BY_YEARDAY) ||
+			    pirrule->test_bymask(RRULE_BY_MONTHDAY) ||
+			    pirrule->test_bymask(RRULE_BY_DAY)) {
 				dayofweek = ical_get_dayofweek(itime.year,
 								itime.month, itime.day);
 				if (dayofweek >= pirrule->weekstart)
@@ -1603,34 +1603,34 @@ static ical_time ical_next_rrule_itime(ical_rrule *pirrule,
 				else
 					itime.subtract_day(7 + dayofweek - pirrule->weekstart);
 			}
-			if (pirrule->by_mask[RRULE_BY_HOUR])
+			if (pirrule->test_bymask(RRULE_BY_HOUR))
 				itime.hour = 0;
-			if (pirrule->by_mask[RRULE_BY_MINUTE])
+			if (pirrule->test_bymask(RRULE_BY_MINUTE))
 				itime.minute = 0;
-			if (pirrule->by_mask[RRULE_BY_SECOND])
+			if (pirrule->test_bymask(RRULE_BY_SECOND))
 				itime.second = 0;
 			break;
 		case RRULE_BY_YEARDAY:
 		case RRULE_BY_MONTHDAY:
 		case RRULE_BY_DAY:
 			itime.add_day(1);
-			if (pirrule->by_mask[RRULE_BY_HOUR])
+			if (pirrule->test_bymask(RRULE_BY_HOUR))
 				itime.hour = 0;
-			if (pirrule->by_mask[RRULE_BY_MINUTE])
+			if (pirrule->test_bymask(RRULE_BY_MINUTE))
 				itime.minute = 0;
-			if (pirrule->by_mask[RRULE_BY_SECOND])
+			if (pirrule->test_bymask(RRULE_BY_SECOND))
 				itime.second = 0;
 			break;
 		case RRULE_BY_HOUR:
 			itime.add_hour(1);
-			if (pirrule->by_mask[RRULE_BY_MINUTE])
+			if (pirrule->test_bymask(RRULE_BY_MINUTE))
 				itime.minute = 0;
-			if (pirrule->by_mask[RRULE_BY_SECOND])
+			if (pirrule->test_bymask(RRULE_BY_SECOND))
 				itime.second = 0;
 			break;
 		case RRULE_BY_MINUTE:
 			itime.add_minute(1);
-			if (pirrule->by_mask[RRULE_BY_SECOND])
+			if (pirrule->test_bymask(RRULE_BY_SECOND))
 				itime.second = 0;
 			break;
 		case RRULE_BY_SECOND:
@@ -2135,7 +2135,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	}
 	pirrule->base_itime = itime;
 	ical_next_rrule_base_itime(pirrule);
-	if (pirrule->by_mask[RRULE_BY_SETPOS])
+	if (pirrule->test_bymask(RRULE_BY_SETPOS))
 		ical_calculate_setpos(pirrule);
 	for (int hint_result = 0; itime < pirrule->next_base_itime;
 	     itime = ical_next_rrule_itime(pirrule, hint_result, itime)) {
@@ -2144,7 +2144,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		hint_result = ical_test_rrule(pirrule, itime);
 		if (hint_result != 0)
 			continue;
-		if (pirrule->by_mask[RRULE_BY_SETPOS]) {
+		if (pirrule->test_bymask(RRULE_BY_SETPOS)) {
 			pirrule->cur_setpos ++;
 			if (!ical_test_setpos(pirrule))
 				continue;
@@ -2210,13 +2210,13 @@ bool ical_rrule::iterate()
 			pirrule->base_itime = pirrule->next_base_itime;
 			itime = pirrule->next_base_itime;
 			ical_next_rrule_base_itime(pirrule);
-			if (pirrule->by_mask[RRULE_BY_SETPOS])
+			if (pirrule->test_bymask(RRULE_BY_SETPOS))
 				ical_calculate_setpos(pirrule);
 		}
 		hint_result = ical_test_rrule(pirrule, itime);
 		if (hint_result != 0)
 			continue;
-		if (pirrule->by_mask[RRULE_BY_SETPOS]) {
+		if (pirrule->test_bymask(RRULE_BY_SETPOS)) {
 			pirrule->cur_setpos++;
 			if (!ical_test_setpos(pirrule))
 				continue;
