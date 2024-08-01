@@ -1850,7 +1850,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		}
 		if (pirrule->real_frequency > ical_frequency::second)
 			pirrule->real_frequency = ical_frequency::second;
-		pirrule->by_mask[RRULE_BY_SECOND] = true;
+		pirrule->set_bymask(RRULE_BY_SECOND);
 	}
 	auto pbyminute_list = ical_get_subval_list_internal(pvalue_list, "BYMINUTE");
 	if (NULL != pbyminute_list) {
@@ -1864,7 +1864,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		}
 		if (pirrule->real_frequency > ical_frequency::minute)
 			pirrule->real_frequency = ical_frequency::minute;
-		pirrule->by_mask[RRULE_BY_MINUTE] = true;
+		pirrule->set_bymask(RRULE_BY_MINUTE);
 	}
 	auto pbyhour_list = ical_get_subval_list_internal(pvalue_list, "BYHOUR");
 	if (NULL != pbyhour_list) {
@@ -1878,7 +1878,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		}
 		if (pirrule->real_frequency > ical_frequency::hour)
 			pirrule->real_frequency = ical_frequency::hour;
-		pirrule->by_mask[RRULE_BY_HOUR] = true;
+		pirrule->set_bymask(RRULE_BY_HOUR);
 	}
 	auto pbymday_list = ical_get_subval_list_internal(pvalue_list, "BYMONTHDAY");
 	if (NULL != pbymday_list) {
@@ -1895,7 +1895,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		}
 		if (pirrule->real_frequency > ical_frequency::day)
 			pirrule->real_frequency = ical_frequency::day;
-		pirrule->by_mask[RRULE_BY_MONTHDAY] = true;
+		pirrule->set_bymask(RRULE_BY_MONTHDAY);
 	}
 	auto pbyyday_list = ical_get_subval_list_internal(pvalue_list, "BYYEARDAY");
 	if (NULL != pbyyday_list) {
@@ -1912,7 +1912,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		}
 		if (pirrule->real_frequency > ical_frequency::day)
 			pirrule->real_frequency = ical_frequency::day;
-		pirrule->by_mask[RRULE_BY_YEARDAY] = true;
+		pirrule->set_bymask(RRULE_BY_YEARDAY);
 	}
 	auto pbywday_list = ical_get_subval_list_internal(pvalue_list, "BYDAY");
 	if (NULL != pbywday_list) {
@@ -1956,7 +1956,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		}
 		if (pirrule->real_frequency > ical_frequency::day)
 			pirrule->real_frequency = ical_frequency::day;
-		pirrule->by_mask[RRULE_BY_DAY] = true;
+		pirrule->set_bymask(RRULE_BY_DAY);
 	}
 	auto pbywnum_list = ical_get_subval_list_internal(pvalue_list, "BYWEEKNO");
 	if (NULL != pbywnum_list) {
@@ -1973,7 +1973,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		}
 		if (pirrule->real_frequency > ical_frequency::week)
 			pirrule->real_frequency = ical_frequency::week;
-		pirrule->by_mask[RRULE_BY_WEEKNO] = true;
+		pirrule->set_bymask(RRULE_BY_WEEKNO);
 	}
 	auto pbymonth_list = ical_get_subval_list_internal(pvalue_list, "BYMONTH");
 	if (NULL != pbymonth_list) {
@@ -1987,7 +1987,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		}
 		if (pirrule->real_frequency > ical_frequency::month)
 			pirrule->real_frequency = ical_frequency::month;
-		pirrule->by_mask[RRULE_BY_MONTH] = true;
+		pirrule->set_bymask(RRULE_BY_MONTH);
 	}
 	auto psetpos_list = ical_get_subval_list_internal(pvalue_list, "BYSETPOS");
 	if (NULL != psetpos_list) {
@@ -2058,7 +2058,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			else
 				ical_set_bitmap(pirrule->nsetpos_bitmap, -tmp_int - 1);
 		}
-		pirrule->by_mask[RRULE_BY_SETPOS] = true;
+		pirrule->set_bymask(RRULE_BY_SETPOS);
 	}
 	pvalue = ical_get_first_subvalue_by_name_internal(
 								pvalue_list, "WKST");
