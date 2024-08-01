@@ -1783,17 +1783,8 @@ bool ical_parse_rrule(const ical_component *ptz_component,
     time_t start_time, const std::vector<ical_value> *pvalue_list,
     ical_rrule *pirrule)
 {
-	int i;
-	int tmp_int;
-	int dayofweek;
-	int weekorder;
-	int cmp_result;
-	ical_time itime, base_itime;
-	time_t until_time;
-	const char *pvalue;
-	
 	*pirrule = {};
-	pvalue = ical_get_first_subvalue_by_name_internal(
+	auto pvalue = ical_get_first_subvalue_by_name_internal(
 								pvalue_list, "FREQ");
 	if (pvalue == nullptr)
 		return false;
@@ -1836,6 +1827,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	if (NULL != pvalue) {
 		if (pirrule->total_count != 0)
 			return false;
+		time_t until_time;
 		if (!ical_parse_until(ptz_component, pvalue, &until_time))
 			return false;
 		if (until_time <= start_time)
@@ -1851,7 +1843,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbysecond_list) {
 			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59)
 				return false;
 			ical_set_bitmap(pirrule->second_bitmap, tmp_int);
@@ -1865,7 +1857,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbyminute_list) {
 			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59)
 				return false;
 			ical_set_bitmap(pirrule->minute_bitmap, tmp_int);
@@ -1879,7 +1871,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbyhour_list) {
 			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 23)
 				return false;
 			ical_set_bitmap(pirrule->hour_bitmap, tmp_int);
@@ -1893,7 +1885,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbymday_list) {
 			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -31 || 0 == tmp_int || tmp_int > 31)
 				return false;
 			if (tmp_int > 0)
@@ -1910,7 +1902,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbyyday_list) {
 			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366)
 				return false;
 			if (tmp_int > 0)
@@ -1931,6 +1923,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbywday_list) {
 			if (pnv2.empty())
 				return false;
+			int dayofweek = -1, weekorder = -1;
 			if (!ical_parse_byday(pnv2.c_str(), &dayofweek, &weekorder))
 				return false;
 			if (ical_frequency::month == pirrule->frequency) {
@@ -1943,7 +1936,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 					ical_set_bitmap(pirrule->nwday_bitmap,
 						7 * (-weekorder - 1) + dayofweek);
 				else
-					for (i = 0; i < 5; ++i)
+					for (int i = 0; i < 5; ++i)
 						ical_set_bitmap(pirrule->wday_bitmap, 7*i + dayofweek); 
 			} else if (ical_frequency::year == pirrule->frequency) {
 				if (weekorder > 0)
@@ -1953,7 +1946,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 					ical_set_bitmap(pirrule->nwday_bitmap,
 						7 * (-weekorder - 1) + dayofweek);
 				else
-					for (i = 0; i < 53; ++i)
+					for (int i = 0; i < 53; ++i)
 						ical_set_bitmap(pirrule->wday_bitmap, 7*i + dayofweek); 
 			} else {
 				if (weekorder != 0)
@@ -1970,7 +1963,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbywnum_list) {
 			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -53 || 0 == tmp_int || tmp_int > 53)
 				return false;
 			if (tmp_int > 0)
@@ -1987,7 +1980,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbymonth_list) {
 			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 1 || tmp_int > 12)
 				return false;
 			ical_set_bitmap(pirrule->month_bitmap, tmp_int - 1);
@@ -2057,7 +2050,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *psetpos_list) {
 			if (pnv2.empty())
 				return false;
-			tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366)
 				return false;
 			if (tmp_int > 0)
@@ -2077,7 +2070,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	} else {
 		pirrule->weekstart = pbywnum_list != nullptr;
 	}
-	itime = pirrule->instance_itime;
+	auto itime = pirrule->instance_itime;
 	switch (pirrule->frequency) {
 	case ical_frequency::second:
 		break;
@@ -2101,7 +2094,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		break;
 	case ical_frequency::week:
 		if (NULL != pbywday_list) {
-			dayofweek = ical_get_dayofweek(itime.year,
+			int dayofweek = ical_get_dayofweek(itime.year,
 								itime.month, itime.day);
 			if (dayofweek >= pirrule->weekstart)
 				itime.subtract_day(dayofweek - pirrule->weekstart);
@@ -2156,7 +2149,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			if (!ical_hint_setpos(pirrule))
 				continue;
 		}
-		cmp_result = itime.twcompare(pirrule->instance_itime);
+		int cmp_result = itime.twcompare(pirrule->instance_itime);
 		if (cmp_result < 0) {
 			continue;
 		} else if (cmp_result > 0) {
@@ -2169,7 +2162,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		pirrule->current_instance = 1;
 		return true;
 	}
-	base_itime = pirrule->base_itime;
+	auto base_itime = pirrule->base_itime;
 	itime = pirrule->instance_itime;
 	pirrule->current_instance = 1;
 	pirrule->instance_itime = pirrule->next_base_itime;
