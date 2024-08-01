@@ -150,7 +150,7 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 		auto monthly  = rpat.period % 12 != 0;
 		auto interval = rpat.period;
 		line.append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
-		if (monthly)
+		if (!monthly)
 			interval /= 12;
 		line.append_value("INTERVAL", fmt::format("{}", interval));
 		line.append_value("BYMONTHDAY", fmt::format("{}",
@@ -166,7 +166,7 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 		auto monthly  = rpat.period % 12 != 0;
 		auto interval = rpat.period;
 		line.append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
-		if (monthly)
+		if (!monthly)
 			interval /= 12;
 		line.append_value("INTERVAL", fmt::format("{}", interval));
 		auto &pts = rpat.pts;
@@ -204,7 +204,7 @@ static bool find_recur_times(const ical_component *tzcom,
     time_t start_whole, const APPOINTMENT_RECUR_PAT &apr,
     time_t start_time, time_t end_time, std::vector<event> &evlist)
 {
-	ical_rrule irrule;
+	ical_rrule irrule{};
 
 	if (!recurrencepattern_to_rrule(tzcom, start_whole, apr, &irrule))
 		return false;

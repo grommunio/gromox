@@ -14,6 +14,7 @@
 #include <libHX/string.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/freebusy.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
@@ -462,6 +463,71 @@ static int main(int argc, char **argv)
 
 }
 
+namespace getfreebusy {
+
+static char *g_start_txt, *g_end_txt, *g_requestor;
+static constexpr struct HXoption g_options_table[] = {
+	{nullptr, 'a', HXTYPE_STRING, &g_start_txt, {}, {}, 0, "Start time"},
+	{nullptr, 'b', HXTYPE_STRING, &g_end_txt, {}, {}, 0, "End time"},
+	{nullptr, 'x', HXTYPE_STRING, &g_requestor, {}, {}, 0, "Requestor account name (not the same as -d/-u)"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
+static int xmktime(const char *str, time_t *out)
+{
+	char *end = nullptr;
+	*out = strtol(str, &end, 0);
+	if (end == nullptr || *end == '\0')
+		/* looks like we've got outselves a unixts */
+		return 0;
+	struct tm tm;
+	end = strptime(str, "%FT%T", &tm);
+	if (end != nullptr && *end != '\0') {
+		fprintf(stderr, "\"%s\" not understood, error at \"%s\". Required format is \"2024-01-01T00:00:00\" [always local system time] or unixtime.\n", g_start_txt, end);
+		return -1;
+	}
+	*out = mktime(&tm);
+	return 0;
+}
+
+static int main(int argc, char **argv)
+{
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	time_t start_time = -1, end_time = -1;
+	if (g_start_txt != nullptr && xmktime(g_start_txt, &start_time) < 0)
+		return EXIT_FAILURE;
+	if (g_end_txt != nullptr && xmktime(g_end_txt, &end_time) < 0)
+		return EXIT_FAILURE;
+	std::vector<freebusy_event> fbout;
+	if (!get_freebusy(g_requestor, g_storedir, start_time, end_time, fbout)) {
+		fprintf(stderr, "get_freebusy call not successful\n");
+		return EXIT_FAILURE;
+	}
+	printf("Results (%zu rows):\n", fbout.size());
+	for (const auto &e : fbout) {
+		char start_tx[64], end_tx[64];
+		struct tm tm{};
+		localtime_r(&e.start_time, &tm);
+		strftime(start_tx, std::size(start_tx), "%FT%T", &tm);
+		localtime_r(&e.end_time, &tm);
+		strftime(end_tx, std::size(end_tx), "%FT%T", &tm);
+		printf("{start=%s, end=%s, busy=%u, details?=%u, meeting?=%u, "
+		       "recurring?=%u, exception?=%u, reminder?=%u, private?=%u, "
+		       "id=%s, subject=\"%s\", location=\"%s\"}}\n",
+		       start_tx, end_tx, e.busy_status, e.has_details,
+		       e.is_meeting, e.is_recurring, e.is_exception,
+		       e.is_reminderset, e.is_private, e.m_id.c_str(),
+		       e.m_subject.c_str(), e.m_location.c_str());
+	}
+	return EXIT_SUCCESS;
+}
+
+}
+
 namespace global {
 
 static char *g_arg_username, *g_arg_userdir;
@@ -479,7 +545,8 @@ static int help()
 	fprintf(stderr, "\t-?                           Global help (this text)\n");
 	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
 	fprintf(stderr, "Commands:\n\tclear-photo clear-profile clear-rwz delmsg "
-		"emptyfld get-photo get-websettings get-websettings-persistent "
+		"emptyfld get-freebusy get-photo get-websettings "
+		"get-websettings-persistent "
 		"get-websettings-recipients "
 		"purge-datafiles purge-softdelete recalc-sizes set-locale "
 		"set-photo set-websettings set-websettings-persistent "
@@ -812,6 +879,8 @@ int main(int argc, char **argv)
 		ret = purgesoftdel::main(argc, argv);
 	} else if (strcmp(argv[0], "set-locale") == 0) {
 		ret = set_locale::main(argc, argv);
+	} else if (strcmp(argv[0], "get-freebusy") == 0 || strcmp(argv[0], "gfb") == 0) {
+		ret = getfreebusy::main(argc, argv);
 	} else {
 		ret = simple_rpc::main(argc, argv);
 		if (ret == -EINVAL)
