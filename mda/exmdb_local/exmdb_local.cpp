@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// This file is part of Gromox.
 #include <atomic>
 #include <cerrno>
 #include <climits>
@@ -267,15 +269,6 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 	       ppropnames, ppropids);
 }
 
-static bool exmdb_local_lang_to_charset(const char *lang, char (&charset)[32])
-{
-	auto c = lang_to_charset(lang);
-	if (c == nullptr)
-		return false;
-	gx_strlcpy(charset, c, std::size(charset));
-	return true;
-}
-
 static void lq_report(unsigned int qid, unsigned long long mid, const char *txt,
     const message_content *ct)
 {
@@ -294,7 +287,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	size_t mess_len;
 	int sequence_ID;
 	uint64_t nt_time;
-	char lang[32], charset[32], tmzone[64], hostname[UDOM_SIZE], home_dir[256];
+	char lang[32], tmzone[64], hostname[UDOM_SIZE], home_dir[256];
 	uint32_t tmp_int32;
 	uint32_t suppress_mask = 0;
 	BOOL b_bounce_delivered = false;
@@ -306,9 +299,9 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		return delivery_status::temp_fail;
 	}
 
-	if (*lang == '\0' ||
-	    !exmdb_local_lang_to_charset(lang, charset) || *charset == '\0')
-		strcpy(charset, g_default_charset);
+	auto charset = lang_to_charset(lang);
+	if (charset == nullptr)
+		charset = g_default_charset;
 	if ('\0' == home_dir[0]) {
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"<%s> has no mailbox here", address);
