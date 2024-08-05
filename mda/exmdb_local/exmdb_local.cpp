@@ -287,27 +287,26 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	size_t mess_len;
 	int sequence_ID;
 	uint64_t nt_time;
-	char lang[32], tmzone[64], hostname[UDOM_SIZE], home_dir[256];
+	char tmzone[64], hostname[UDOM_SIZE];
 	uint32_t tmp_int32;
 	uint32_t suppress_mask = 0;
 	BOOL b_bounce_delivered = false;
+	sql_meta_result mres{};
 
-	if (!exmdb_local_get_user_info(address, home_dir, std::size(home_dir),
-	    lang, std::size(lang), tmzone, std::size(tmzone))) {
+	if (exmdb_local_meta(address, WANTPRIV_METAONLY, mres) != 0) {
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail"
 			"to get user information from data source!");
 		return delivery_status::temp_fail;
-	}
-
-	auto charset = lang_to_charset(lang);
-	if (charset == nullptr)
-		charset = g_default_charset;
-	if ('\0' == home_dir[0]) {
+	} else if (mres.maildir.empty()) {
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"<%s> has no mailbox here", address);
 		return delivery_status::no_user;
 	}
-	if (tmzone[0] == '\0')
+	auto home_dir = mres.maildir.c_str();
+	auto charset = lang_to_charset(mres.lang.c_str());
+	if (*znul(charset) == '\0')
+		charset = g_default_charset;
+	if (*znul(tmzone) == '\0')
 		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
 	
 	auto pmail = &pcontext->mail;
@@ -321,7 +320,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	}
 	auto mid_string = std::to_string(time(nullptr)) + "." +
 	                  std::to_string(sequence_ID) + "." + hostname;
-	auto eml_path = std::string(home_dir) + "/eml/" + mid_string;
+	auto eml_path = mres.maildir + "/eml/" + mid_string;
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	if (fd.get() < 0) {
 		auto se = errno;
@@ -360,7 +359,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	auto djson = json_to_str(digest);
 	alloc_context alloc_ctx;
 	g_alloc_key = &alloc_ctx;
-	g_storedir = home_dir;
+	g_storedir = mres.maildir.c_str();
 	auto pmsg = oxcmail_import(charset, tmzone, pmail, exmdb_local_alloc,
 	            exmdb_local_get_propids);
 	g_storedir = nullptr;
