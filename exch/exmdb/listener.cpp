@@ -40,7 +40,7 @@ static void *sockaccept_thread(void *param)
 {
 	while (NULL == common_util_get_user_displayname ||
 		NULL == common_util_check_mlist_include ||
-		NULL == common_util_get_user_lang ||
+	    common_util_meta == nullptr ||
 		NULL == common_util_get_timezone ||
 		NULL == common_util_get_maildir ||
 	    common_util_get_homedir == nullptr ||

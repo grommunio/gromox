@@ -263,7 +263,7 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		E(common_util_get_username_from_id, "get_username_from_id");
 		E(common_util_get_user_displayname, "get_user_displayname");
 		E(common_util_check_mlist_include, "check_mlist_include");
-		E(common_util_get_user_lang, "get_user_lang");
+		E(common_util_meta, "mysql_auth_meta");
 		E(common_util_get_timezone, "get_timezone");
 		E(common_util_get_domain_info, "get_domain_info");
 #undef E

@@ -55,7 +55,7 @@ E(get_maildir)
 E(get_homedir)
 E(get_timezone)
 E(get_user_displayname)
-E(get_user_lang)
+E(meta)
 E(get_domain_info)
 #undef E
 extern ec_error_t (*ems_send_mail)(MAIL *, const char *sender, const std::vector<std::string> &rcpts);

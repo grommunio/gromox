@@ -89,7 +89,7 @@ unsigned int g_cid_compression = 0; /* disabled(0), specific_level(n) */
 E(get_username_from_id)
 E(get_user_displayname)
 E(check_mlist_include)
-E(get_user_lang)
+E(meta)
 E(get_timezone)
 E(get_maildir)
 E(get_homedir)
