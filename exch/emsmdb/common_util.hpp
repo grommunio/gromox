@@ -104,7 +104,7 @@ E(get_homedir)
 E(get_timezone)
 E(get_user_displayname)
 E(get_user_ids)
-E(get_user_lang)
+E(meta)
 E(get_username_from_id)
 #undef E
 extern int (*common_util_add_timer)(const char *command, int interval);

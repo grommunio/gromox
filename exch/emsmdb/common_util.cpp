@@ -68,7 +68,7 @@ E(get_maildir)
 E(get_homedir)
 E(get_user_displayname)
 E(check_mlist_include)
-E(get_user_lang)
+E(meta)
 E(get_timezone)
 E(get_username_from_id)
 E(get_user_ids)
@@ -1237,7 +1237,7 @@ void common_util_notify_receipt(const char *username, int type,
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	vmime::shared_ptr<vmime::message> imail;
 	if (!exch_bouncer_make(common_util_get_user_displayname,
-	    common_util_get_user_lang, username, pbrief, bounce_type, imail))
+	    common_util_meta, username, pbrief, bounce_type, imail))
 		return;
 	auto ret = ems_send_vmail(std::move(imail), username, rcpt_list);
 	if (ret != ecSuccess)
@@ -1585,7 +1585,7 @@ int common_util_run()
 	E(common_util_get_homedir, "get_homedir");
 	E(common_util_get_user_displayname, "get_user_displayname");
 	E(common_util_check_mlist_include, "check_mlist_include");
-	E(common_util_get_user_lang, "get_user_lang");
+	E(common_util_meta, "mysql_auth_meta");
 	E(common_util_get_timezone, "get_timezone");
 	E(common_util_get_user_ids, "get_user_ids");
 	E(common_util_get_domain_ids, "get_domain_ids");

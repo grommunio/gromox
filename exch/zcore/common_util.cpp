@@ -1329,7 +1329,7 @@ void common_util_notify_receipt(const char *username, int type,
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	vmime::shared_ptr<vmime::message> imail;
 	if (!exch_bouncer_make(system_services_get_user_displayname,
-	    system_services_get_user_lang, username, pbrief, bounce_type, imail))
+	    system_services_meta, username, pbrief, bounce_type, imail))
 		return;
 	imail->getHeader()->getField("X-Mailer")->setValue(vmime::text(ZCORE_UA));
 	auto ret = cu_send_vmail(std::move(imail), g_smtp_url.c_str(),

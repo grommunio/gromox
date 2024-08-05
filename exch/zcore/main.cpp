@@ -182,6 +182,7 @@ static int system_services_run()
 } while (false)
 
 	E(system_services_get_user_lang, "get_user_lang");
+	E(system_services_meta, "mysql_auth_meta");
 	E(system_services_set_user_lang, "set_user_lang");
 	E(system_services_get_maildir, "get_maildir");
 	E(system_services_get_homedir, "get_homedir");
@@ -213,6 +214,7 @@ static void system_services_stop()
 {
 #define E(b) service_release(b, "system")
 	E("get_user_lang");
+	E("mysql_auth_meta");
 	E("set_user_lang");
 	E("get_maildir");
 	E("get_homedir");
