@@ -77,7 +77,7 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 		"SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
 		"u.privilege_bits, u.maildir, u.lang, u.externid, "
 		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
-		"u.username FROM users AS u " JOIN_WITH_DISPLAYTYPE
+		"u.username, u.timezone FROM users AS u " JOIN_WITH_DISPLAYTYPE
 		" LEFT JOIN domains AS d ON u.domain_id=d.id"
 		" LEFT JOIN orgs ON d.org_id=orgs.id"
 		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.org_id AND op1.key='ldap_uri'"
@@ -151,6 +151,7 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 	mres.ldap_mail_attr = znul(myrow[11]);
 	mres.ldap_start_tls = parse_bool(znul(myrow[12]));
 	mres.username       = znul(myrow[13]);
+	mres.timezone       = znul(myrow[14]);
 	return 0;
 } catch (const std::bad_alloc &e) {
 	mlog(LV_ERR, "E-1701: ENOMEM");
