@@ -112,7 +112,6 @@ extern bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARR
 BOOL mysql_adaptor_get_user_privilege_bits(
 	const char *username, uint32_t *pprivilege_bits);
 BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang);
-extern bool mysql_adaptor_get_timezone(const char *username, char *timezone, size_t);
 BOOL mysql_adaptor_set_timezone(const char *username, const char *timezone);
 extern bool mysql_adaptor_get_maildir(const char *username, char *maildir, size_t);
 extern bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t);

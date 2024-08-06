@@ -396,33 +396,6 @@ BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang) try
 	return false;
 }
 
-bool mysql_adaptor_get_timezone(const char *username, char *zone, size_t zone_size) try
-{
-	if (!str_isascii(username))
-		return false;
-	char temp_name[UADDR_SIZE*2];
-
-	mysql_adaptor_encode_squote(username, temp_name);
-	auto qstr = "SELECT timezone FROM users WHERE username='"s + temp_name + "'";
-	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn->query(qstr.c_str()))
-		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
-	if (pmyres == nullptr)
-		return false;
-	conn.finish();
-	if (pmyres.num_rows() != 1) {
-		zone[0] = '\0';
-	} else {
-		auto myrow = pmyres.fetch_row();
-		gx_strlcpy(zone, myrow[0], zone_size);
-	}
-	return true;
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "%s: %s", "E-1712", e.what());
-	return false;
-}
-
 BOOL mysql_adaptor_set_timezone(const char *username, const char *zone) try
 {
 	if (!str_isascii(username))
