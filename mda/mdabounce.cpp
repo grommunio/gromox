@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
 #include <cstdio>
@@ -16,6 +18,7 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <gromox/authmgr.hpp>
 #include <gromox/bounce_gen.hpp>
 #include <gromox/defs.h>
 #include <gromox/dsn.hpp>
@@ -24,6 +27,7 @@
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mime.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -35,7 +39,7 @@ DECLARE_HOOK_API(alias_resolve, extern);
 using namespace alias_resolve;
 
 int (*bounce_producer_check_domain)(const char *domainname);
-bool (*bounce_producer_get_lang)(const char *username, char *lang, size_t);
+static decltype(mysql_adaptor_meta) *bounce_producer_meta;
 
 int mlex_bounce_init(const char *cfg_path,
     const char *data_path, const char *bounce_grp)
@@ -49,7 +53,7 @@ int mlex_bounce_init(const char *cfg_path,
 } while (false)
 
 	E(bounce_producer_check_domain, "domain_list_query");
-	E(bounce_producer_get_lang, "get_user_lang");
+	E(bounce_producer_meta, "mysql_auth_meta");
 #undef E
 	return bounce_gen_init(cfg_path, data_path, bounce_grp) == 0 ? 0 : -1;
 }
@@ -64,9 +68,10 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
     MAIL *pmail_original, const char *bounce_type, MAIL *pmail) try
 {
 	MIME *pmime;
-	char charset[32], date_buff[128], lang[32];
+	char date_buff[128];
+	sql_meta_result mres;
+	const char *charset = nullptr;
 	
-	charset[0] = '\0';
 	auto pdomain = strchr(from, '@');
 	if (NULL != pdomain) {
 		pdomain ++;
@@ -76,14 +81,14 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 			        strerror(-lcldom));
 			return false;
 		}
-		if (lcldom > 0 &&
-		    bounce_producer_get_lang(from, lang, std::size(lang)))
-			gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
+		if (lcldom > 0 && bounce_producer_meta(from,
+		    WANTPRIV_METAONLY, mres) == 0)
+			charset = lang_to_charset(mres.lang.c_str());
 	}
 	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	auto mcharset = bounce_gen_charset(*pmail_original);
-	if (*charset == '\0')
-		gx_strlcpy(charset, mcharset.c_str(), std::size(charset));
+	if (*znul(charset) == '\0')
+		charset = mcharset.c_str();
 	auto tpptr = bounce_gen_lookup(charset, bounce_type);
 	if (tpptr == nullptr)
 		return false;
