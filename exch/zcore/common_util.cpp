@@ -1853,8 +1853,7 @@ static void zc_unwrap_smime(MAIL &ma) try
 MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
     unsigned int mxf_flags, /* effective-moved-from */ BINARY *peml_bin)
 {
-	char charset[32], tmzone[64];
-	
+	char charset[32];
 	auto pinfo = zs_get_info();
 	MAIL imail;
 	if (!imail.load_from_str_move(peml_bin->pc, peml_bin->cb))
@@ -1866,9 +1865,12 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 		gx_strlcpy(charset, c, std::size(charset));
 	else
 		strcpy(charset, g_default_charset);
-	if (!system_services_get_timezone(pinfo->get_username(), tmzone,
-	    std::size(tmzone)) || tmzone[0] == '\0')
-		strcpy(tmzone, common_util_get_default_timezone());
+	sql_meta_result mres;
+	auto tmzone = system_services_meta(pinfo->get_username(),
+	              WANTPRIV_METAONLY, mres) == 0 ?
+	              mres.timezone.c_str() : nullptr;
+	if (*znul(tmzone) == '\0')
+		tmzone = common_util_get_default_timezone();
 	common_util_set_dir(pstore->get_dir());
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                common_util_alloc, common_util_get_propids_create);
@@ -1907,12 +1909,13 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) try
 {
 	ical ical;
-	char tmzone[64];
-	
 	auto pinfo = zs_get_info();
-	if (!system_services_get_timezone(pinfo->get_username(), tmzone,
-	    std::size(tmzone)) || tmzone[0] == '\0')
-		strcpy(tmzone, common_util_get_default_timezone());
+	sql_meta_result mres;
+	auto tmzone = system_services_meta(pinfo->get_username(),
+	              WANTPRIV_METAONLY, mres) == 0 ?
+	              mres.timezone.c_str() : nullptr;
+	if (*znul(tmzone) == '\0')
+		tmzone = common_util_get_default_timezone();
 	auto pbuff = cu_alloc<char>(pical_bin->cb + 1);
 	if (pbuff == nullptr)
 		return nullptr;
@@ -1932,10 +1935,12 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
     std::vector<message_ptr> &msgvec) try
 {
 	auto info = zs_get_info();
-	char tmzone[64];
-	if (!system_services_get_timezone(info->get_username(), tmzone,
-	    std::size(tmzone)) || tmzone[0] == '\0')
-		gx_strlcpy(tmzone, common_util_get_default_timezone(), std::size(tmzone));
+	sql_meta_result mres;
+	auto tmzone = system_services_meta(info->get_username(),
+	              WANTPRIV_METAONLY, mres) == 0 ?
+	              mres.timezone.c_str() : nullptr;
+	if (*znul(tmzone) == '\0')
+		tmzone = common_util_get_default_timezone();
 
 	ical icobj;
 	if (!icobj.load_from_str_move(ical_data))

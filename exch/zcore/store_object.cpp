@@ -968,18 +968,21 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		*ppvalue = common_util_dup(mres.lang.c_str());
 		return TRUE;
 	}
-	case PR_EC_USER_TIMEZONE:
+	case PR_EC_USER_TIMEZONE: {
 		if (!pstore->b_private)
 			return FALSE;
-		if (!system_services_get_timezone(pstore->account, temp_buff,
-		    std::size(temp_buff)) || temp_buff[0] == '\0') {
+		sql_meta_result mres;
+		auto tmzone = system_services_meta(pstore->account, WANTPRIV_METAONLY, mres) == 0 ?
+		              mres.timezone.c_str() : nullptr;
+		if (*znul(tmzone) == '\0') {
 			*ppvalue = deconst(common_util_get_default_timezone());
 			return TRUE;
 		}
-		*ppvalue = common_util_dup(temp_buff);
+		*ppvalue = common_util_dup(tmzone);
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
+	}
 	case PR_EC_WEBACCESS_SETTINGS_JSON:
 		*ppvalue = cu_read_storenamedprop(pstore->dir, PSETID_GROMOX,
 		           "websettings", PT_UNICODE);
