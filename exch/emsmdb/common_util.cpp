@@ -69,7 +69,6 @@ E(get_homedir)
 E(get_user_displayname)
 E(check_mlist_include)
 E(meta)
-E(get_timezone)
 E(get_username_from_id)
 E(get_user_ids)
 E(get_domain_ids)
@@ -1586,7 +1585,6 @@ int common_util_run()
 	E(common_util_get_user_displayname, "get_user_displayname");
 	E(common_util_check_mlist_include, "check_mlist_include");
 	E(common_util_meta, "mysql_auth_meta");
-	E(common_util_get_timezone, "get_timezone");
 	E(common_util_get_user_ids, "get_user_ids");
 	E(common_util_get_domain_ids, "get_domain_ids");
 	E(common_util_check_same_org, "check_same_org");
