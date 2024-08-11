@@ -98,6 +98,92 @@ static int select_parts_1()
 	return 0;
 }
 
+static int select_parts_2()
+{
+	auto data = std::string(appl_header) + appl_plain + appl_mixed +
+	            appl_html1 + appl_zip + appl_mixed_footer + appl_alt_footer;
+	MAIL m;
+	assert(m.load_from_str_move(data.data(), data.size()));
+	auto mc = oxcmail_import("us-ascii", "UTC", &m, g_alloc, ee_get_propids);
+	assert(mc != nullptr);
+	auto atl = mc->children.pattachments;
+	assert(atl != nullptr);
+	if (atl->count != 1)
+		gi_print(0, *mc);
+	assert(atl->count == 1);
+	auto v = atl->pplist[0]->proplist.get<const char>(PR_ATTACH_MIME_TAG);
+	assert(v != nullptr && strcasecmp(v, "application/zip") == 0);
+	v = mc->proplist.get<const char>(PR_BODY);
+	assert(v != nullptr && strcmp(v, "ZplainZ") == 0);
+	auto bin = mc->proplist.get<BINARY>(PR_HTML);
+	if (bin != nullptr)
+		assert(HX_memmem(bin->pv, bin->cb, "Zhtml1Z", 7) != nullptr);
+	return 0;
+}
+
+static int select_parts_3()
+{
+	/* Exchange V6 and M365 generate weird alternative containers. */
+	char data[] =
+		"Content-Type: multipart/mixed;\r\n"
+		"	boundary=\"_007D\"\r\n"
+		"MIME-Version: 1.0\r\n"
+		"\r\n"
+		"--_007D\r\n"
+		"Content-Type: multipart/related;\r\n"
+		"	boundary=\"_006D\";\r\n"
+		"	type=\"multipart/alternative\"\r\n"
+		"\r\n"
+		"--_006D\r\n"
+		"Content-Type: multipart/alternative;\r\n"
+		"	boundary=\"_000D\"\r\n"
+		"\r\n"
+		"--_000D\r\n"
+		"Content-Type: text/plain; charset=\"utf-8\"\r\n"
+		"\r\n"
+		"ZplainZ\r\n"
+		"--_000D\r\n"
+		"Content-Type: text/html; charset=\"utf-8\"\r\n"
+		"\r\n"
+		"Zhtml1Z\r\n"
+		"--_000D--\r\n"
+		"\r\n"
+		"--_006D\r\n"
+		"Content-Type: image/png; name=\"image001.png\"\r\n"
+		"\r\n"
+		"PNG\r\n"
+		"--_006D\r\n"
+		"Content-Type: image/gif; name=\"image001.gif\"\r\n"
+		"\r\n"
+		"GIF\r\n"
+		"--_006D--\r\n"
+		"\r\n"
+		"--_007D\r\n"
+		"Content-Type: application/pdf; name=\"RE-20249303.pdf\"\r\n"
+		"\r\n"
+		"PDF\r\n"
+		"--_007D--\r\n";
+
+	MAIL m;
+	assert(m.load_from_str_move(data, std::size(data)));
+	auto mc = oxcmail_import("us-ascii", "UTC", &m, g_alloc, ee_get_propids);
+	assert(mc != nullptr);
+	gi_print(0, *mc);
+	auto atl = mc->children.pattachments;
+	assert(atl != nullptr);
+	if (atl->count != 3)
+		gi_print(0, *mc);
+	assert(atl->count == 3);
+	auto v = atl->pplist[2]->proplist.get<const char>(PR_ATTACH_MIME_TAG);
+	assert(v != nullptr && strcasecmp(v, "application/pdf") == 0);
+	v = mc->proplist.get<const char>(PR_BODY);
+	assert(v != nullptr && strcmp(v, "ZplainZ") == 0);
+	auto bin = mc->proplist.get<BINARY>(PR_HTML);
+	if (bin != nullptr)
+		assert(HX_memmem(bin->pv, bin->cb, "Zhtml1Z", 7) != nullptr);
+	return 0;
+}
+
 int main()
 {
 	auto ee_get_user_ids = [](const char *, unsigned int *, unsigned int *, enum display_type *) -> BOOL { return false; };
@@ -109,5 +195,7 @@ int main()
 		return EXIT_FAILURE;
 	}
 	select_parts_1();
+	select_parts_2();
+	select_parts_3();
 	return EXIT_SUCCESS;
 }
