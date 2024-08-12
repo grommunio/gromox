@@ -28,6 +28,7 @@
 #define TOU8(s) reinterpret_cast<uint8_t *>(s)
 
 using namespace gromox;
+using namespace gi_dump;
 
 namespace {
 
@@ -526,7 +527,7 @@ static void do_folder(mbox_state &mbs, const edb_folder &folder)
 	if (g_show_tree)
 		tlog("[fld=%s]\n", bin2hex(folder.fid.data(), folder.fid.size()).c_str());
 	++mbs.depth;
-	gi_dump_tpropval_a(mbs.depth, folder.props);
+	gi_print(mbs.depth, folder.props);
 	for (const auto &child_id : folder.children)
 		do_folder(mbs, mbs.hier[child_id]);
 	--mbs.depth;
@@ -618,7 +619,7 @@ static errno_t do_file(const char *filename) try
 
 	auto parent = parent_desc::as_folder(~0ULL);
 	if (g_show_tree)
-		gi_dump_msgctnt(0, *ctnt);
+		gi_print(0, *ctnt);
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT)) {
 		fprintf(stderr, "E-2020: ENOMEM\n");

@@ -34,6 +34,10 @@
 #include <gromox/util.hpp>
 #include "genimport.hpp"
 
+using namespace std::string_literals;
+using namespace gromox;
+using namespace gi_dump;
+
 #define E(a, b) static_assert(static_cast<unsigned int>(LIBPFF_VALUE_TYPE_ ## a) == static_cast<unsigned int>(PT_ ## b));
 E(UNSPECIFIED, UNSPECIFIED)
 E(INTEGER_16BIT_SIGNED, SHORT)
@@ -121,9 +125,6 @@ enum {
 };
 
 }
-
-using namespace std::string_literals;
-using namespace gromox;
 
 static std::vector<uint32_t> g_only_objs;
 static gi_folder_map_t g_folder_map;
@@ -808,7 +809,7 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 	auto props = item_to_tpropval_a(item, parent.names);
 	if (g_show_tree) {
 		auto tset = item_to_tarray_set(item, parent.names);
-		gi_dump_tarray_set(depth, *tset);
+		gi_print(depth, *tset);
 	} else {
 		auto name = props->get<char>(PR_DISPLAY_NAME);
 		if (name != nullptr)
@@ -915,7 +916,7 @@ static int do_message(unsigned int depth, const parent_desc &parent,
 
 	/* Normal message, not embedded */
 	if (g_show_tree)
-		gi_dump_msgctnt(depth, *ctnt);
+		gi_print(depth, *ctnt);
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
@@ -1031,7 +1032,7 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 		 */
 		do_print(depth++, item);
 		auto tset = item_to_tarray_set(item, parent.names);
-		gi_dump_tarray_set(depth, *tset);
+		gi_print(depth, *tset);
 	}
 
 	if (ret < 0)

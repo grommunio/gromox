@@ -24,6 +24,7 @@
 #include "genimport.hpp"
 
 using namespace gromox;
+using namespace gi_dump;
 using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
 namespace {
@@ -553,7 +554,7 @@ static errno_t do_file(const char *filename) try
 
 	auto parent = parent_desc::as_folder(~0ULL);
 	if (g_show_tree)
-		gi_dump_msgctnt(0, *ctnt);
+		gi_print(0, *ctnt);
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT)) {
 		fprintf(stderr, "E-2020: ENOMEM\n");

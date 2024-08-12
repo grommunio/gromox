@@ -39,13 +39,14 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+using namespace gi_dump;
 using LLU = unsigned long long;
 namespace exmdb_client = exmdb_client_remote;
 
 std::string g_dstuser;
 static std::string g_storedir_s;
 const char *g_storedir;
-unsigned int g_user_id, g_show_tree, g_show_props, g_wet_run = 1;
+unsigned int g_user_id, g_wet_run = 1;
 unsigned int g_public_folder, g_verbose_create;
 static thread_local alloc_context g_alloc_mgr;
 static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int);
@@ -68,102 +69,6 @@ YError::YError(const char *fmt, ...)
 	auto ret = vasprintf(&unique_tie(strp), fmt, args);
 	va_end(args);
 	m_str = ret >= 0 && strp != nullptr ? strp.get() : "vasprintf";
-}
-
-void tree(unsigned int depth)
-{
-	if (!g_show_tree)
-		return;
-	fprintf(stderr, "%-*s \\_ ", depth * 4, "");
-}
-
-void tlog(const char *fmt, ...)
-{
-	if (!g_show_tree)
-		return;
-	va_list args;
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
-}
-
-static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
-{
-	if (!g_show_props) {
-		tlog("%08xh,", tp.proptag);
-		return;
-	}
-	tree(depth);
-	tlog("%08xh:%s\n", tp.proptag, tp.value_repr(true).c_str());
-}
-
-void gi_dump_tpropval_a(unsigned int depth, const TPROPVAL_ARRAY &props)
-{
-	if (props.count == 0)
-		return;
-	tree(depth);
-	tlog("props(%d):", props.count);
-	tlog(g_show_props ? "\n" : " {");
-	for (size_t i = 0; i < props.count; ++i)
-		gi_dump_tpropval(depth + 1, props.ppropval[i]);
-	if (!g_show_props)
-		tlog("}\n");
-	auto p = props.get<const char>(PR_DISPLAY_NAME);
-	if (p != nullptr) {
-		tree(depth);
-		tlog("display_name=\"%s\"\n", p);
-	}
-	p = props.get<char>(PR_SUBJECT);
-	if (p != nullptr) {
-		tree(depth);
-		tlog("subject=\"%s\"\n", p);
-	}
-	p = props.get<char>(PR_ATTACH_LONG_FILENAME);
-	if (p == nullptr)
-		p = props.get<char>(PR_ATTACH_LONG_FILENAME_A);
-	if (p != nullptr) {
-		tree(depth);
-		tlog("filename=\"%s\"\n", p);
-	}
-}
-
-void gi_dump_tarray_set(unsigned int depth, const tarray_set &tset)
-{
-	for (size_t i = 0; i < tset.count; ++i) {
-		tree(depth);
-		tlog("set %zu\n", i);
-		gi_dump_tpropval_a(depth + 1, *tset.pparray[i]);
-	}
-}
-
-void gi_dump_msgctnt(unsigned int depth, const MESSAGE_CONTENT &ctnt)
-{
-	gi_dump_tpropval_a(depth, ctnt.proplist);
-	auto &r = ctnt.children.prcpts;
-	if (r != nullptr) {
-		for (size_t n = 0; n < r->count; ++n) {
-			tree(depth);
-			tlog("Recipient #%zu\n", n);
-			if (r->pparray[n] != nullptr)
-				gi_dump_tpropval_a(depth + 1, *r->pparray[n]);
-		}
-	}
-	auto &a = ctnt.children.pattachments;
-	if (a != nullptr) {
-		for (size_t n = 0; n < a->count; ++n) {
-			tree(depth);
-			tlog("Attachment #%zu\n", n);
-			auto atc = a->pplist[n];
-			if (atc == nullptr)
-				continue;
-			gi_dump_tpropval_a(depth + 1, atc->proplist);
-			if (atc->pembedded == nullptr)
-				continue;
-			tree(depth + 1);
-			tlog("Embedded message\n");
-			gi_dump_msgctnt(depth + 2, *atc->pembedded);
-		}
-	}
 }
 
 void gi_dump_folder_map(const gi_folder_map_t &map)

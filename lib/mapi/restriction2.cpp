@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later WITH linking exception
 // SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
+#include <cstdarg>
+#include <cstdio>
 #include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <fmt/core.h>
 #include <libHX/string.h>
+#include <gromox/element_data.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/propval.hpp>
@@ -616,4 +619,106 @@ std::string TPROPVAL_ARRAY::repr() const
 		s += fmt::format("{:x}h={},", ppropval[i].proptag, ppropval[i].repr());
 	s += "}";
 	return s;
+}
+
+namespace gi_dump {
+
+unsigned int g_show_tree, g_show_props;
+
+void tree(unsigned int depth)
+{
+	if (!g_show_tree)
+		return;
+	fprintf(stderr, "%-*s \\_ ", depth * 4, "");
+}
+
+void tlog(const char *fmt, ...)
+{
+	if (!g_show_tree)
+		return;
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(stderr, fmt, args);
+	va_end(args);
+}
+
+void gi_print(unsigned int depth, const TAGGED_PROPVAL &tp)
+{
+	if (!g_show_props) {
+		tlog("%08xh,", tp.proptag);
+		return;
+	}
+	tree(depth);
+	tlog("%08xh:%s\n", tp.proptag, tp.value_repr(true).c_str());
+}
+
+void gi_print(unsigned int depth, const TPROPVAL_ARRAY &props)
+{
+	if (props.count == 0)
+		return;
+	tree(depth);
+	tlog("props(%d):", props.count);
+	tlog(g_show_props ? "\n" : " {");
+	for (size_t i = 0; i < props.count; ++i)
+		gi_print(depth + 1, props.ppropval[i]);
+	if (!g_show_props)
+		tlog("}\n");
+	auto p = props.get<const char>(PR_DISPLAY_NAME);
+	if (p != nullptr) {
+		tree(depth);
+		tlog("display_name=\"%s\"\n", p);
+	}
+	p = props.get<char>(PR_SUBJECT);
+	if (p != nullptr) {
+		tree(depth);
+		tlog("subject=\"%s\"\n", p);
+	}
+	p = props.get<char>(PR_ATTACH_LONG_FILENAME);
+	if (p == nullptr)
+		p = props.get<char>(PR_ATTACH_LONG_FILENAME_A);
+	if (p != nullptr) {
+		tree(depth);
+		tlog("filename=\"%s\"\n", p);
+	}
+}
+
+void gi_print(unsigned int depth, const tarray_set &tset)
+{
+	for (size_t i = 0; i < tset.count; ++i) {
+		tree(depth);
+		tlog("set %zu\n", i);
+		gi_print(depth + 1, *tset.pparray[i]);
+	}
+}
+
+void gi_print(unsigned int depth, const message_content &ctnt)
+{
+	gi_print(depth, ctnt.proplist);
+	auto &r = ctnt.children.prcpts;
+	if (r != nullptr) {
+		for (size_t n = 0; n < r->count; ++n) {
+			tree(depth);
+			tlog("Recipient #%zu\n", n);
+			if (r->pparray[n] != nullptr)
+				gi_print(depth + 1, *r->pparray[n]);
+		}
+	}
+	auto &a = ctnt.children.pattachments;
+	if (a != nullptr) {
+		for (size_t n = 0; n < a->count; ++n) {
+			tree(depth);
+			tlog("Attachment #%zu\n", n);
+			auto atc = a->pplist[n];
+			if (atc == nullptr)
+				continue;
+			gi_print(depth + 1, atc->proplist);
+			if (atc->pembedded == nullptr)
+				continue;
+			tree(depth + 1);
+			tlog("Embedded message\n");
+			gi_print(depth + 2, *atc->pembedded);
+		}
+	}
+}
+
 }

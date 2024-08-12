@@ -36,6 +36,7 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+using namespace gi_dump;
 
 namespace {
 
@@ -1085,7 +1086,7 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 	props->erase_if(skip_property);
 	if (g_show_tree) {
 		gi_dump_acl(depth, item.m_acl);
-		gi_dump_tpropval_a(depth, *props);
+		gi_print(depth, *props);
 	} else {
 		auto dn = props->get<const char>(PR_DISPLAY_NAME);
 		fprintf(stderr, "Processing folder \"%s\" (%zu elements)...\n",
@@ -1186,7 +1187,7 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 		return 0;
 
 	if (g_show_tree)
-		gi_dump_msgctnt(depth, *ctnt);
+		gi_print(depth, *ctnt);
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
@@ -1338,7 +1339,7 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 	} else {
 		auto &props = item.get_props();
 		if (g_show_tree)
-			gi_dump_tpropval_a(depth, *props);
+			gi_print(depth, *props);
 	}
 	if (ret < 0)
 		return ret;
