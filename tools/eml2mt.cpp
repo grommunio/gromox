@@ -30,6 +30,7 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+using namespace gi_dump;
 using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
 enum {
@@ -364,7 +365,7 @@ int main(int argc, char **argv) try
 	for (size_t i = 0; i < msgs.size(); ++i) {
 		if (g_show_tree) {
 			fprintf(stderr, "Message %zu\n", i + 1);
-			gi_dump_msgctnt(0, *msgs[i]);
+			gi_print(0, *msgs[i]);
 		}
 		EXT_PUSH ep;
 		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT)) {

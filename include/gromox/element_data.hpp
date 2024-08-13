@@ -122,8 +122,23 @@ extern GX_EXPORT void message_content_free_internal(message_content *);
 extern GX_EXPORT void message_content_free(message_content *);
 
 namespace gromox {
+
 struct GX_EXPORT mc_delete {
 	inline void operator()(ATTACHMENT_LIST *x) { attachment_list_free(x); }
 	inline void operator()(MESSAGE_CONTENT *x) { message_content_free(x); }
 };
+
+}
+
+namespace gi_dump {
+
+extern GX_EXPORT unsigned int g_show_tree, g_show_props;
+
+extern GX_EXPORT void tree(unsigned int d);
+extern GX_EXPORT void tlog(const char *f, ...) __attribute__((format(printf, 1, 2)));
+extern GX_EXPORT void gi_print(unsigned int depth, const TAGGED_PROPVAL &);
+extern GX_EXPORT void gi_print(unsigned int depth, const TPROPVAL_ARRAY &);
+extern GX_EXPORT void gi_print(unsigned int depth, const tarray_set &);
+extern GX_EXPORT void gi_print(unsigned int depth, const message_content &);
+
 }

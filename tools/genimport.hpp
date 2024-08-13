@@ -88,14 +88,9 @@ enum {
 
 extern std::string g_dstuser;
 extern const char *g_storedir;
-extern unsigned int g_user_id, g_show_tree, g_show_props, g_wet_run;
+extern unsigned int g_user_id, g_wet_run;
 extern unsigned int g_public_folder, g_verbose_create;
 
-extern void tree(unsigned int d);
-extern void tlog(const char *f, ...) __attribute__((format(printf, 1, 2)));
-extern void gi_dump_tpropval_a(unsigned int depth, const TPROPVAL_ARRAY &);
-extern void gi_dump_tarray_set(unsigned int depth, const tarray_set &);
-extern void gi_dump_msgctnt(unsigned int depth, const MESSAGE_CONTENT &);
 extern void gi_dump_folder_map(const gi_folder_map_t &);
 extern void gi_dump_name_map(const gi_name_map &);
 extern void gi_folder_map_read(const void *, size_t, gi_folder_map_t &);

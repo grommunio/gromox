@@ -26,6 +26,9 @@
 #include "genimport.hpp"
 #include "exch/midb/system_services.hpp"
 
+using namespace gromox;
+using namespace gi_dump;
+
 enum {
 	EXPORT_MAIL,
 	EXPORT_ICAL,
@@ -33,7 +36,6 @@ enum {
 	EXPORT_GXMT,
 };
 
-using namespace gromox;
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 GET_USER_IDS system_services_get_user_ids;
 GET_DOMAIN_IDS system_services_get_domain_ids;
@@ -197,7 +199,7 @@ int main(int argc, char **argv) try
 	}
 	if (g_show_tree) {
 		fprintf(stderr, "Message 0\n");
-		gi_dump_msgctnt(0, *ctnt);
+		gi_print(0, *ctnt);
 	}
 	if (g_export_mode == EXPORT_MAIL) {
 		if (!oxcmail_export(ctnt, false, oxcmail_body::plain_and_html,
