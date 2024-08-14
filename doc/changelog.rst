@@ -1,3 +1,26 @@
+Gromox 2.31 (2024-08-14)
+========================
+
+Fixes:
+
+* freebusy: get_freebusy erroneously underreported occurrences for
+  yearly occurrences
+* freebusy: the get_freebusy routine erroneously landed in an infinite loop if
+  a yearly-recurring February 29 appointment was originally created in a year
+  not divisible by 12.
+
+Enhancements:
+
+* oxcmail: take /etc/mime.types under consideration when adding extensions
+  to attachments
+
+Changes:
+
+* oxcmail: priorities for MIME parts have been rectified for
+  multipart/alternative and non-alternative containers; the conversion routine
+  is no longer making picks across multiple container siblings.
+
+
 2.30 (2024-06-21)
 =================
 

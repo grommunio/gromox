@@ -168,7 +168,6 @@ static int select_parts_3()
 	assert(m.load_from_str_move(data, std::size(data)));
 	auto mc = oxcmail_import("us-ascii", "UTC", &m, g_alloc, ee_get_propids);
 	assert(mc != nullptr);
-	gi_print(0, *mc);
 	auto atl = mc->children.pattachments;
 	assert(atl != nullptr);
 	if (atl->count != 3)
