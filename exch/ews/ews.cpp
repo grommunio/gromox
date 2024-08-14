@@ -620,6 +620,18 @@ BOOL HPM_ews(enum plugin_op reason, const struct dlfuncs &data)
 	return TRUE;
 }
 
+static std::string_view to_sv(const XMLPrinter &p)
+{
+	/*
+	 * Old tinyxml2 return `int`, which cause sign-extension when doing
+	 * just `size_t x = p.CStrSize()`.
+	 */
+	size_t len = static_cast<std::make_unsigned_t<decltype(p.CStrSize())>>(p.CStrSize());
+	if (len > 0) /* \0 is always included, but be extra safe */
+		--len;
+	return {p.CStr(), len};
+}
+
 /**
  * @brief      NotificationContext state management
  *
@@ -649,7 +661,7 @@ int EWSContext::notify()
 	if(nctx.state == NS::S_INIT) { // First call after initialization -> write context data
 		m_response.doc.Print(&printer);
 		writeheader(m_ID, m_code, 0);
-		writecontent(m_ID, {printer.CStr(), static_cast<size_t>(printer.CStrSize()-1)}, logResponse, loglevel);
+		writecontent(m_ID, to_sv(printer), logResponse, loglevel);
 		nctx.state = NS::S_WRITE;
 		return HPM_RETRIEVE_WRITE;
 	}
@@ -663,7 +675,7 @@ int EWSContext::notify()
 	auto flush = [&]() {
 		data.serialize(response);
 		envelope.doc.Print(&printer);
-		writecontent(m_ID, {printer.CStr(), static_cast<size_t>(printer.CStrSize()-1)}, logResponse, loglevel);
+		writecontent(m_ID, to_sv(printer), logResponse, loglevel);
 		return HPM_RETRIEVE_WRITE;
 	};
 
@@ -714,16 +726,17 @@ int EWSPlugin::retr(int ctx_id) try
 	case EWSContext::S_WRITE: {
 		XMLPrinter printer(nullptr, !pretty_response);
 		context.response().doc.Print(&printer);
-		writeheader(ctx_id, context.code(), printer.CStrSize()-1);
+		auto sv = to_sv(printer);
+		writeheader(ctx_id, context.code(), sv.size());
 		bool logResponse = context.log() && response_logging >= 2;
 		auto loglevel = context.code() == http_status::ok? LV_DEBUG : LV_ERR;
-		writecontent(ctx_id, {printer.CStr(), static_cast<size_t>(printer.CStrSize()-1)}, logResponse, loglevel);
+		writecontent(ctx_id, sv, logResponse, loglevel);
 		context.state(EWSContext::S_DONE);
 		if(context.log() && response_logging)
-			mlog(loglevel, "[ews#%d]%s Done, code %d, %d bytes, %.3fms",
+			mlog(loglevel, "[ews#%d]%s Done, code %d, %zu bytes, %.3fms",
 				ctx_id, timestamp().c_str(),
 				static_cast<int>(context.code()),
-				printer.CStrSize() - 1, context.age() * 1000);
+				sv.size(), context.age() * 1000);
 		return HPM_RETRIEVE_WRITE;
 	}
 	case EWSContext::S_DONE: return HPM_RETRIEVE_DONE;

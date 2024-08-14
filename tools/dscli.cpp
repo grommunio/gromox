@@ -343,7 +343,10 @@ static CURLcode setopts(CURL *ch, const char *password, curl_slist *hdrs,
 	ret = curl_easy_setopt(ch, CURLOPT_HTTPHEADER, hdrs);
 	if (ret != CURLE_OK)
 		return ret;
-	ret = curl_easy_setopt(ch, CURLOPT_POSTFIELDSIZE_LARGE, xml_request.CStrSize() - 1);
+	size_t rqlen = static_cast<std::make_unsigned_t<decltype(xml_request.CStrSize())>>(xml_request.CStrSize());
+	if (rqlen > 0)
+		--rqlen;
+	ret = curl_easy_setopt(ch, CURLOPT_POSTFIELDSIZE_LARGE, rqlen);
 	if (ret != CURLE_OK)
 		return ret;
 	ret = curl_easy_setopt(ch, CURLOPT_POSTFIELDS, xml_request.CStr());
