@@ -957,15 +957,17 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
-	case PR_EC_USER_LANGUAGE:
+	case PR_EC_USER_LANGUAGE: {
 		if (!pstore->b_private)
 			return FALSE;
-		if (!system_services_get_user_lang(pstore->account, temp_buff,
-		    std::size(temp_buff)) || temp_buff[0] == '\0')
+		sql_meta_result mres;
+		if (system_services_meta(pstore->account, WANTPRIV_METAONLY, mres) != 0)
 			return FALSE;	
-		HX_strlcat(temp_buff, ".UTF-8", sizeof(temp_buff));
-		*ppvalue = common_util_dup(temp_buff);
+		if (mres.lang.size() > 0)
+			mres.lang += ".UTF-8";
+		*ppvalue = common_util_dup(mres.lang.c_str());
 		return TRUE;
+	}
 	case PR_EC_USER_TIMEZONE:
 		if (!pstore->b_private)
 			return FALSE;

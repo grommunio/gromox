@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// This file is part of Gromox.
 #include <ctime>
 #include <string>
 #include <utility>
@@ -20,33 +22,32 @@ namespace {
 using namespace std::string_literals;
 using namespace gromox;
 using buff_t = bool (*)(const char *, char *, size_t);
+using meta_t = errno_t (*)(const char *, unsigned int, sql_meta_result &);
 
-static bool bounce_producer_make_content(buff_t gul,
+static bool bounce_producer_make_content(meta_t meta,
     const char *username, MESSAGE_CONTENT *pbrief, const char *bounce_type,
     std::string &subject, std::string &content)
 {
-	char charset[32], date_buff[128], lang[32];
+	char date_buff[128];
 
-	charset[0] = '\0';
 	auto tsptr = pbrief->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
 	auto ts = tsptr == nullptr ? time(nullptr) : rop_util_nttime_to_unix(*tsptr);
 	auto from = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (from == nullptr)
 		from = "";
-	if (gul(from, lang, std::size(lang)))
-		gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
+	sql_meta_result mres;
+	auto charset = meta(from, WANTPRIV_METAONLY, mres) == 0 ?
+	               lang_to_charset(mres.lang.c_str()) : nullptr;
 	rfc1123_dstring(date_buff, std::size(date_buff), ts);
 	auto message_size = pbrief->proplist.get<const uint32_t>(PR_MESSAGE_SIZE);
 	if (message_size == nullptr)
 		return false;
-	if (*charset == '\0') {
+	if (*znul(charset) == '\0') {
 		auto cpid = pbrief->proplist.get<const uint32_t>(PR_INTERNET_CPID);
-		if (cpid == nullptr) {
-			strcpy(charset, "ascii");
-		} else {
-			auto pcharset = cpid_to_cset(static_cast<cpid_t>(*cpid));
-			gx_strlcpy(charset, pcharset != nullptr ? pcharset : "ascii", std::size(charset));
-		}
+		if (cpid != nullptr)
+			charset = cpid_to_cset(static_cast<cpid_t>(*cpid));
+		if (charset == nullptr)
+			charset = "ascii";
 	}
 
 	auto tpptr = bounce_gen_lookup(charset, bounce_type);
@@ -83,7 +84,7 @@ static bool bounce_producer_make_content(buff_t gul,
 	return true;
 }
 
-bool exch_bouncer_make(buff_t gudn, buff_t gul,
+bool exch_bouncer_make(buff_t gudn, meta_t meta,
     const char *username, MESSAGE_CONTENT *pbrief,
     const char *bounce_type, vmime::shared_ptr<vmime::message> &pmail) try
 {
@@ -95,7 +96,7 @@ bool exch_bouncer_make(buff_t gudn, buff_t gul,
 	expeditor.setEmail(username);
 
 	std::string subject, content_buff;
-	if (!bounce_producer_make_content(gul, username, pbrief,
+	if (!bounce_producer_make_content(meta, username, pbrief,
 	    bounce_type, subject, content_buff))
 		return false;
 

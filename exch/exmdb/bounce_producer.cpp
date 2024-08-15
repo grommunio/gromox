@@ -58,26 +58,24 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
     std::string &subject, std::string &content) try
 {
 	void *pvalue;
-	char charset[32], date_buff[128], lang[32];
+	char date_buff[128];
 
-	charset[0] = '\0';
-	if (common_util_get_user_lang(from, lang, std::size(lang)))
-		gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
+	sql_meta_result mres;
+	auto charset = common_util_meta(from, WANTPRIV_METAONLY, mres) == 0 ?
+	               lang_to_charset(mres.lang.c_str()) : nullptr;
 	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    psqlite, PR_MESSAGE_SIZE, &pvalue))
 		return FALSE;
 	auto message_size = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
-	if ('\0' == charset[0]) {
+	if (*znul(charset) == '\0') {
 		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
 		    PR_INTERNET_CPID, &pvalue))
 			return FALSE;
-		if (NULL == pvalue) {
-			strcpy(charset, "ascii");
-		} else {
-			auto pcharset = cpid_to_cset(static_cast<cpid_t>(*static_cast<uint32_t *>(pvalue)));
-			gx_strlcpy(charset, pcharset != nullptr ? pcharset : "ascii", std::size(charset));
-		}
+		if (pvalue != nullptr)
+			charset = cpid_to_cset(static_cast<cpid_t>(*static_cast<uint32_t *>(pvalue)));
+		if (charset == nullptr)
+			charset = "ascii";
 	}
 
 	auto tpptr = bounce_gen_lookup(charset, bounce_type);

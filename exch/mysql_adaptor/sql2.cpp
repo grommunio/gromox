@@ -656,7 +656,6 @@ BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data)
 	E(get_id_from_maildir, "get_id_from_maildir");
 	E(get_user_displayname, "get_user_displayname");
 	E(get_user_privilege_bits, "get_user_privilege_bits");
-	E(get_user_lang, "get_user_lang");
 	E(set_user_lang, "set_user_lang");
 	E(get_timezone, "get_timezone");
 	E(set_timezone, "set_timezone");

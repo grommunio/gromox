@@ -2297,15 +2297,6 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 	return cmd_write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
 }
 
-static bool system_services_lang_to_charset(const char *lang, char (&charset)[32])
-{
-	auto c = lang_to_charset(lang);
-	if (c == nullptr)
-		return false;
-	gx_strlcpy(charset, lang, std::size(charset));
-	return true;
-}
-
 /*
  * Insert mail into exmdb and midb.sqlite.
  *
@@ -2319,9 +2310,8 @@ static bool system_services_lang_to_charset(const char *lang, char (&charset)[32
  */
 static int mail_engine_minst(int argc, char **argv, int sockd) try
 {
-	char lang[32];
 	size_t mess_len;
-	char charset[32], tmzone[64];
+	char tmzone[64];
 	uint32_t tmp_flags;
 	char temp_path[256];
 	uint64_t change_num;
@@ -2366,11 +2356,12 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	unsigned int user_id = 0;
 	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
-	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
-	    std::size(lang)) || lang[0] == '\0' ||
-	    !system_services_lang_to_charset(lang, charset) ||
-	    *charset == '\0')
-		strcpy(charset, g_default_charset);
+	sql_meta_result mres;
+	auto charset = system_services_meta(pidb->username.c_str(),
+	               WANTPRIV_METAONLY, mres) == 0 ?
+	               lang_to_charset(mres.lang.c_str()) : nullptr;
+	if (*znul(charset) == '\0')
+		charset = g_default_charset;
 	if (!system_services_get_timezone(pidb->username.c_str(), tmzone,
 	    std::size(tmzone)) || tmzone[0] == '\0')
 		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
@@ -2495,9 +2486,8 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
  */
 static int mail_engine_mcopy(int argc, char **argv, int sockd)
 {
-	char lang[32];
 	int flags_len;
-	char charset[32], tmzone[64];
+	char tmzone[64];
 	uint32_t tmp_flags;
 	char flags_buff[16];
 	uint64_t change_num;
@@ -2560,11 +2550,12 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	unsigned int user_id = 0;
 	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
-	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
-	    std::size(lang)) || lang[0] == '\0' ||
-	    !system_services_lang_to_charset(lang, charset) ||
-	    *charset == '\0')
-		strcpy(charset, g_default_charset);
+	sql_meta_result mres;
+	auto charset = system_services_meta(pidb->username.c_str(),
+	               WANTPRIV_METAONLY, mres) == 0 ?
+	               lang_to_charset(mres.lang.c_str()) : nullptr;
+	if (*znul(charset) == '\0')
+		charset = g_default_charset;
 	if (!system_services_get_timezone(pidb->username.c_str(), tmzone,
 	    std::size(tmzone)) || tmzone[0] == '\0')
 		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
