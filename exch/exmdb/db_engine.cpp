@@ -359,6 +359,9 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 	int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX;
 	flags |= type == DB_MAIN? 0 : SQLITE_OPEN_CREATE;
 	sqlite3* db;
+	if (access(path.c_str(), W_OK) != 0 && errno != ENOENT)
+		mlog(LV_ERR, "E-1734: %s is not writable (%s), there may be more errors later",
+			path.c_str(), strerror(errno));
 	int ret = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
 	db_handle hdb(db); /* automatically close connection if something goes wrong */
 	if(ret != SQLITE_OK) {
