@@ -77,7 +77,7 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 		"SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
 		"u.privilege_bits, u.maildir, u.lang, u.externid, "
 		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
-		"u.username FROM users AS u " JOIN_WITH_DISPLAYTYPE
+		"u.username, u.timezone FROM users AS u " JOIN_WITH_DISPLAYTYPE
 		" LEFT JOIN domains AS d ON u.domain_id=d.id"
 		" LEFT JOIN orgs ON d.org_id=orgs.id"
 		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.org_id AND op1.key='ldap_uri'"
@@ -151,6 +151,7 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 	mres.ldap_mail_attr = znul(myrow[11]);
 	mres.ldap_start_tls = parse_bool(znul(myrow[12]));
 	mres.username       = znul(myrow[13]);
+	mres.timezone       = znul(myrow[14]);
 	return 0;
 } catch (const std::bad_alloc &e) {
 	mlog(LV_ERR, "E-1701: ENOMEM");
@@ -392,33 +393,6 @@ BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang) try
 	return TRUE;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1710", e.what());
-	return false;
-}
-
-bool mysql_adaptor_get_timezone(const char *username, char *zone, size_t zone_size) try
-{
-	if (!str_isascii(username))
-		return false;
-	char temp_name[UADDR_SIZE*2];
-
-	mysql_adaptor_encode_squote(username, temp_name);
-	auto qstr = "SELECT timezone FROM users WHERE username='"s + temp_name + "'";
-	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn->query(qstr.c_str()))
-		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
-	if (pmyres == nullptr)
-		return false;
-	conn.finish();
-	if (pmyres.num_rows() != 1) {
-		zone[0] = '\0';
-	} else {
-		auto myrow = pmyres.fetch_row();
-		gx_strlcpy(zone, myrow[0], zone_size);
-	}
-	return true;
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "%s: %s", "E-1712", e.what());
 	return false;
 }
 

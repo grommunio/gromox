@@ -49,7 +49,6 @@
 using namespace gromox;
 
 decltype(system_services_meta) system_services_meta;
-bool (*system_services_get_timezone)(const char *, char *, size_t);
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 decltype(system_services_get_id_from_maildir) system_services_get_id_from_maildir;
 GET_USER_IDS system_services_get_user_ids;
@@ -173,7 +172,6 @@ static int system_services_run()
 } while (false)
 
 	E(system_services_meta, "mysql_auth_meta");
-	E(system_services_get_timezone, "get_timezone");
 	E(system_services_get_username_from_id, "get_username_from_id");
 	E(system_services_get_id_from_maildir, "get_id_from_maildir");
 	E(system_services_get_user_ids, "get_user_ids");
@@ -186,7 +184,6 @@ static int system_services_run()
 static void system_services_stop()
 {
 	service_release("mysql_auth_meta", "system");
-	service_release("get_timezone", "system");
 	service_release("get_username_from_id", "system");
 	service_release("get_id_from_maildir", "system");
 	service_release("get_domain_ids", "system");

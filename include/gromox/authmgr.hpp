@@ -58,7 +58,7 @@ enum {
  * 		(0=no / 1=yes / 0xFF=indeterminate)
  */
 struct sql_meta_result {
-	std::string username, maildir, lang, enc_passwd, errstr;
+	std::string username, maildir, lang, timezone, enc_passwd, errstr;
 	std::string ldap_uri, ldap_binddn, ldap_bindpw, ldap_basedn;
 	std::string ldap_mail_attr;
 	bool ldap_start_tls = false;

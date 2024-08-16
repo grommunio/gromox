@@ -2311,7 +2311,6 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 static int mail_engine_minst(int argc, char **argv, int sockd) try
 {
 	size_t mess_len;
-	char tmzone[64];
 	uint32_t tmp_flags;
 	char temp_path[256];
 	uint64_t change_num;
@@ -2357,14 +2356,14 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
 	sql_meta_result mres;
-	auto charset = system_services_meta(pidb->username.c_str(),
-	               WANTPRIV_METAONLY, mres) == 0 ?
-	               lang_to_charset(mres.lang.c_str()) : nullptr;
+	auto mret = system_services_meta(pidb->username.c_str(),
+	            WANTPRIV_METAONLY, mres);
+	auto charset = mret == 0 ? lang_to_charset(mres.lang.c_str()) : nullptr;
 	if (*znul(charset) == '\0')
 		charset = g_default_charset;
-	if (!system_services_get_timezone(pidb->username.c_str(), tmzone,
-	    std::size(tmzone)) || tmzone[0] == '\0')
-		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
+	auto tmzone = mret == 0 ? mres.timezone.c_str() : nullptr;
+	if (*znul(tmzone) == '\0')
+		tmzone = GROMOX_FALLBACK_TIMEZONE;
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                common_util_alloc, common_util_get_propids_create);
 	imail.clear();
@@ -2487,7 +2486,6 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 static int mail_engine_mcopy(int argc, char **argv, int sockd)
 {
 	int flags_len;
-	char tmzone[64];
 	uint32_t tmp_flags;
 	char flags_buff[16];
 	uint64_t change_num;
@@ -2551,14 +2549,14 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
 	sql_meta_result mres;
-	auto charset = system_services_meta(pidb->username.c_str(),
-	               WANTPRIV_METAONLY, mres) == 0 ?
-	               lang_to_charset(mres.lang.c_str()) : nullptr;
+	auto mret = system_services_meta(pidb->username.c_str(),
+	            WANTPRIV_METAONLY, mres);
+	auto charset = mret == 0 ? lang_to_charset(mres.lang.c_str()) : nullptr;
 	if (*znul(charset) == '\0')
 		charset = g_default_charset;
-	if (!system_services_get_timezone(pidb->username.c_str(), tmzone,
-	    std::size(tmzone)) || tmzone[0] == '\0')
-		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
+	auto tmzone = mret == 0 ? mres.timezone.c_str() : nullptr;
+	if (*znul(tmzone) == '\0')
+		tmzone = GROMOX_FALLBACK_TIMEZONE;
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                common_util_alloc, common_util_get_propids_create);
 	imail.clear();
