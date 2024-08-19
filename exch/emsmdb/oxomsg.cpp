@@ -219,9 +219,10 @@ static repr_grant oxomsg_get_perm(const char *account, const char *repr)
 {
 	if (strcasecmp(account, repr) == 0)
 		return repr_grant::send_as;
-	char repdir[256];
-	if (!common_util_get_maildir(repr, repdir, std::size(repdir)))
+	sql_meta_result mres;
+	if (common_util_meta(repr, WANTPRIV_METAONLY, mres) != 0)
 		return repr_grant::error;
+	auto repdir = mres.maildir.c_str();
 	auto ret = oxomsg_test_perm(account, repdir, true);
 	if (ret < 0)
 		return repr_grant::error;

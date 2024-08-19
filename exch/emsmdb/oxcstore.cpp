@@ -22,12 +22,11 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
     uint8_t *presponse_flags, GUID *pmailbox_guid, uint16_t *replid,
     GUID *replguid, LOGON_TIME *plogon_time, uint64_t *pgwart_time,
     uint32_t *pstore_stat, LOGMAP *plogmap, uint8_t logon_id,
-    uint32_t *phout)
+    uint32_t *phout) try
 {
 	enum logon_mode logon_mode;
 	struct tm *ptm;
 	struct tm tmp_tm;
-	char maildir[256];
 	uint32_t permission;
 	TPROPVAL_ARRAY propvals;
 	
@@ -52,12 +51,15 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		gx_strlcpy(pessdn, serverdn.c_str(), dnmax);
 		return ecWrongServer;
 	}
+	std::string maildir;
 	if (strcasecmp(username.c_str(), rpc_info.username) != 0) {
 		if (open_flags & LOGON_OPEN_FLAG_USE_ADMIN_PRIVILEGE)
 			return ecLoginPerm;
-		if (!common_util_get_maildir(username.c_str(), maildir, std::size(maildir)))
+		sql_meta_result mres;
+		if (common_util_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 			return ecError;
-		if (!exmdb_client::get_mbox_perm(maildir,
+		maildir = std::move(mres.maildir);
+		if (!exmdb_client::get_mbox_perm(maildir.c_str(),
 		    rpc_info.username, &permission))
 			return ecError;
 		if (permission == rightsNone)
@@ -78,7 +80,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	} else {
 		*presponse_flags = RESPONSE_FLAG_RESERVED | RESPONSE_FLAG_OWNERRIGHT |
 		                   RESPONSE_FLAG_SENDASRIGHT;
-		gx_strlcpy(maildir, rpc_info.maildir, std::size(maildir));
+		maildir = rpc_info.maildir;
 		logon_mode = logon_mode::owner;
 	}
 
@@ -86,7 +88,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		{PR_STORE_RECORD_KEY, PR_OOF_STATE};
 	static constexpr PROPTAG_ARRAY proptags =
 		{std::size(proptag_buff), deconst(proptag_buff)};
-	if (!exmdb_client::get_store_properties(maildir, CP_ACP,
+	if (!exmdb_client::get_store_properties(maildir.c_str(), CP_ACP,
 	    &proptags, &propvals))
 		return ecError;
 	auto bin = propvals.get<const BINARY>(PR_STORE_RECORD_KEY);
@@ -131,7 +133,8 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	
 	*pstore_stat = 0;
 	auto plogon = logon_object::create(logon_flags, open_flags, logon_mode,
-	              user_id, dom_id, username.c_str(), maildir, *pmailbox_guid);
+	              user_id, dom_id, username.c_str(), maildir.c_str(),
+	              *pmailbox_guid);
 	if (plogon == nullptr)
 		return ecServerOOM;
 	g_last_rop_dir = plogon->get_dir();
@@ -143,6 +146,9 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	}
 	*phout = handle;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2554: ENOMEM");
+	return ecServerOOM;
 }
 	
 ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,

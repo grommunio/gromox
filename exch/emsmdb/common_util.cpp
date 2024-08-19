@@ -64,7 +64,6 @@ static char g_submit_command[1024];
 static constexpr char EMSMDB_UA[] = PACKAGE_NAME "-emsmdb " PACKAGE_VERSION;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
-E(get_maildir)
 E(get_homedir)
 E(get_user_displayname)
 E(check_mlist_include)
@@ -1580,7 +1579,6 @@ int common_util_run()
 } while (false)
 
 	E(common_util_get_username_from_id, "get_username_from_id");
-	E(common_util_get_maildir, "get_maildir");
 	E(common_util_get_homedir, "get_homedir");
 	E(common_util_get_user_displayname, "get_user_displayname");
 	E(common_util_check_mlist_include, "check_mlist_include");
