@@ -756,10 +756,10 @@ void EWSContext::experimental(const char* name) const
  */
 std::string EWSContext::get_maildir(const std::string& username) const
 {
-	char temp[256];
-	if (!m_plugin.mysql.get_maildir(username.c_str(), temp, std::size(temp)))
+	sql_meta_result mres;
+	if (m_plugin.mysql.meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		throw EWSError::CannotFindUser(E3007);
-	return temp;
+	return std::move(mres.maildir);
 }
 
 /**
@@ -780,10 +780,10 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 		RoutingType = "smtp";
 	}
 	if(RoutingType == "smtp") {
-		char temp[256];
-		if(!m_plugin.mysql.get_maildir(Address.c_str(), temp, std::size(temp)))
+		sql_meta_result mres;
+		if (m_plugin.mysql.meta(Address.c_str(), WANTPRIV_METAONLY, mres) != 0)
 			throw EWSError::CannotFindUser(E3125);
-		return temp;
+		return std::move(mres.maildir);
 	} else
 		throw EWSError::InvalidRoutingType(E3006(RoutingType));
 }
@@ -800,13 +800,18 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
 	const char* target = folder.target? folder.target->c_str() : m_auth_info.username;
 	const char* at = strchr(target, '@');
 	bool isPublic = folder.location == sFolderSpec::AUTO? at == nullptr : folder.location == sFolderSpec::PUBLIC;
-	auto func = isPublic? m_plugin.mysql.get_homedir : m_plugin.mysql.get_maildir;
 	if(isPublic && at)
 		target = at+1;
-	char targetDir[256];
-	if (!func(target, targetDir, std::size(targetDir)))
+	if (isPublic) {
+		char targetDir[256];
+		if (!m_plugin.mysql.get_homedir(target, targetDir, std::size(targetDir)))
+			throw EWSError::CannotFindUser(E3126);
+		return targetDir;
+	}
+	sql_meta_result mres;
+	if (m_plugin.mysql.meta(target, WANTPRIV_METAONLY, mres) != 0)
 		throw EWSError::CannotFindUser(E3126);
-	return targetDir;
+	return std::move(mres.maildir);
 }
 
 /**
