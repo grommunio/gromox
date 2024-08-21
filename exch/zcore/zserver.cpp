@@ -1436,7 +1436,6 @@ ec_error_t zs_loadstoretable(GUID hsession, uint32_t *phobject)
 ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 {
 	int user_id;
-	char dir[256];
 	EXT_PULL ext_pull;
 	char username[UADDR_SIZE];
 	STORE_ENTRYID store_entryid = {};
@@ -1459,11 +1458,13 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 		return zh_error(*phobject);
 	}
 	if (!system_services_get_username_from_id(user_id,
-	    username, std::size(username)) ||
-	    !system_services_get_maildir(username, dir, std::size(dir)))
+	    username, std::size(username)))
+		return ecError;
+	sql_meta_result mres;
+	if (system_services_meta(username, WANTPRIV_METAONLY, mres) != 0)
 		return ecError;
 	uint32_t permission = rightsNone;
-	if (!exmdb_client::get_mbox_perm(dir,
+	if (!exmdb_client::get_mbox_perm(mres.maildir.c_str(),
 	    pinfo->get_username(), &permission))
 		return ecError;
 	if (permission == rightsNone) {
@@ -5082,36 +5083,34 @@ ec_error_t zs_vcftomessage(GUID hsession,
 ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
     time_t starttime, time_t endtime, std::vector<freebusy_event> *fb_data)
 {
-	char maildir[256];
-
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
 	std::string username;
+	sql_meta_result mres;
 	if (cvt_entryid_to_smtpaddr(&entryid, g_org_name,
 	    cu_id2user, username) != ecSuccess ||
-	    !system_services_get_maildir(username.c_str(), maildir, std::size(maildir)))
+	    system_services_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecSuccess;
-	return get_freebusy(pinfo->get_username(), maildir, starttime, endtime,
-	       *fb_data) ? ecSuccess : ecError;
+	return get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
+	       starttime, endtime, *fb_data) ? ecSuccess : ecError;
 }
 
 ec_error_t zs_getuserfreebusyical(GUID hsession, BINARY entryid,
     time_t starttime, time_t endtime, BINARY *bin)
 {
-	char maildir[256];
-
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
 	std::string username;
+	sql_meta_result mres;
 	if (cvt_entryid_to_smtpaddr(&entryid, g_org_name,
 	    cu_id2user, username) != ecSuccess ||
-	    !system_services_get_maildir(username.c_str(), maildir, std::size(maildir)))
+	    system_services_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecSuccess;
 	std::vector<freebusy_event> fb_data;
-	if (!get_freebusy(pinfo->get_username(), maildir, starttime, endtime,
-	    fb_data))
+	if (!get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
+	    starttime, endtime, fb_data))
 		return ecError;
 	return cu_fbdata_to_ical(pinfo->get_username(), username.c_str(),
 	       starttime, endtime, fb_data, bin);

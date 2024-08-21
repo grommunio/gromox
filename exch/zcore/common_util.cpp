@@ -202,10 +202,10 @@ repr_grant cu_get_delegate_perm_AA(const char *account, const char *repr)
 {
 	if (strcasecmp(account, repr) == 0)
 		return repr_grant::send_as;
-	char repdir[256];
-	if (!system_services_get_maildir(repr, repdir, std::size(repdir)))
+	sql_meta_result mres;
+	if (system_services_meta(repr, WANTPRIV_METAONLY, mres) != 0)
 		return repr_grant::error;
-	return cu_get_delegate_perm_MD(account, repdir);
+	return cu_get_delegate_perm_MD(account, mres.maildir.c_str());
 }
 
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,

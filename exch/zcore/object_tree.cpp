@@ -395,10 +395,12 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 			gx_strlcpy(dir, pinfo->get_maildir(), std::size(dir));
 			gx_strlcpy(account, pinfo->get_username(), std::size(account));
 		} else {
+			sql_meta_result mres;
 			if (!system_services_get_username_from_id(account_id,
 			    account, std::size(account)) ||
-			    !system_services_get_maildir(account, dir, std::size(dir)))
+			    system_services_meta(account, WANTPRIV_METAONLY, mres) != 0)
 				return ecZNullObject;
+			gx_strlcpy(dir, mres.maildir.c_str(), std::size(dir));
 		}
 	} else {
 		if (account_id != pinfo->domain_id)
