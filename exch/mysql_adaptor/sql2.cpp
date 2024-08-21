@@ -658,7 +658,6 @@ BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data)
 	E(get_user_privilege_bits, "get_user_privilege_bits");
 	E(set_user_lang, "set_user_lang");
 	E(set_timezone, "set_timezone");
-	E(get_maildir, "get_maildir");
 	E(get_homedir, "get_homedir");
 	E(get_homedir_by_id, "get_homedir_by_id");
 	E(get_id_from_homedir, "get_id_from_homedir");

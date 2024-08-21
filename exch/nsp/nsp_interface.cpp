@@ -63,7 +63,7 @@ unsigned int g_nsp_trace;
 static BOOL g_session_check;
 static decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
 static decltype(mysql_adaptor_get_user_ids) *get_user_ids;
-static decltype(mysql_adaptor_get_maildir) *get_maildir;
+static decltype(mysql_adaptor_meta) *get_meta;
 static decltype(mysql_adaptor_get_mlist_memb) *get_mlist_memb;
 static gromox::archive abkt_archive;
 
@@ -551,7 +551,7 @@ int nsp_interface_run()
 } while (false)
 
 	E(get_domain_ids, "get_domain_ids");
-	E(get_maildir, "get_maildir");
+	E(get_meta, "mysql_auth_meta");
 	E(get_user_ids, "get_user_ids");
 	E(get_mlist_memb, "get_mlist_memb");
 	return 0;
@@ -1330,12 +1330,12 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
 		if (pnode == nullptr)
 			return ecInvalidBookmark;
-		char maildir[256];
+		sql_meta_result mres;
 		auto temp_buff = ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS);
 		if (temp_buff == nullptr ||
-		    !get_maildir(temp_buff, maildir, std::size(maildir)))
+		    get_meta(temp_buff, WANTPRIV_METAONLY, mres) != 0)
 			return ecError;
-		auto delegate_list = delegates_for(maildir);
+		auto delegate_list = delegates_for(mres.maildir.c_str());
 		for (const auto &deleg : delegate_list) {
 			if (outmids->cvalues > requested)
 				break;
@@ -2069,7 +2069,6 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
     uint32_t proptag, uint32_t mid, const BINARY_ARRAY *pentry_ids) try
 {
 	int base_id;
-	char maildir[256];
 	
 	if (mid == 0)
 		return ecInvalidObject;
@@ -2090,10 +2089,11 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	auto username = ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS);
 	if (username == nullptr || strcasecmp(username, rpc_info.username) != 0)
 		return ecAccessDenied;
-	if (!get_maildir(username, maildir, std::size(maildir)))
+	sql_meta_result mres;
+	if (get_meta(username, WANTPRIV_METAONLY, mres) != 0)
 		return ecError;
 
-	auto tmp_list = delegates_for(maildir);
+	auto tmp_list = delegates_for(mres.maildir.c_str());
 	size_t item_num = tmp_list.size();
 	for (size_t i = 0; i < pentry_ids->count; ++i) {
 		if (pentry_ids->pbin[i].cb < 20)
@@ -2121,7 +2121,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	}
 	if (tmp_list.size() == item_num)
 		return ecSuccess;
-	auto dlg_path = maildir + "/config/delegates.txt"s;
+	auto dlg_path = mres.maildir + "/config/delegates.txt";
 	wrapfd fd = open(dlg_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC);
 	if (fd.get() < 0) {
 		mlog(LV_ERR, "E-2024: open %s: %s",
