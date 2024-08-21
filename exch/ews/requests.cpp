@@ -234,15 +234,13 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 
 	mCreateItemResponse data;
 
-	bool hasAccess = true;
 	std::optional<sFolderSpec> targetFolder;
 	if(request.SavedItemFolderId)
 		targetFolder = ctx.resolveFolder(request.SavedItemFolderId->folderId);
-	std::string dir = ctx.getDir(*targetFolder);
-	if(!targetFolder)
-		targetFolder = ctx.resolveFolder(tDistinguishedFolderId("outbox"));
 	else
-		hasAccess = ctx.permissions(dir, targetFolder->folderId) & (frightsOwner | frightsCreate);
+		targetFolder = ctx.resolveFolder(tDistinguishedFolderId("outbox"));
+	std::string dir = ctx.getDir(*targetFolder);
+	bool hasAccess = ctx.permissions(dir, targetFolder->folderId) & (frightsOwner | frightsCreate);
 
 	if(!request.MessageDisposition)
 		request.MessageDisposition = Enum::SaveOnly;
