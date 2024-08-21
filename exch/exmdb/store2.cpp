@@ -72,24 +72,29 @@ BOOL exmdb_server::store_eid_to_user(const char *, const STORE_ENTRYID *store_ei
 {
 	unsigned int uid = 0, domid = 0;
 	enum display_type dt;
-	char md[256];
+
 	if (store_eid == nullptr || store_eid->pserver_name == nullptr)
 		return false;
 	if (store_eid->wrapped_provider_uid == g_muidStorePrivate) {
+		sql_meta_result mres;
 		if (!common_util_get_user_ids(store_eid->pserver_name, &uid, &domid, &dt) ||
-		    !common_util_get_maildir(store_eid->pserver_name, md, std::size(md)))
+		    common_util_meta(store_eid->pserver_name, WANTPRIV_METAONLY, mres) != 0)
 			return false;
+		*maildir = common_util_dup(mres.maildir.c_str());
 	} else if (store_eid->wrapped_provider_uid == g_muidStorePublic) {
 		std::string es_result;
+		char md[256];
 		if (cvt_essdn_to_username(store_eid->pmailbox_dn,
 		    g_exmdb_org_name, cu_id2user, es_result) != ecSuccess ||
 		    !common_util_get_user_ids(es_result.c_str(), &uid, &domid, &dt) ||
 		    !common_util_get_homedir_by_id(domid, md, std::size(md)))
 			return false;
+		*maildir = common_util_dup(md);
 	} else {
 		return false;
 	}
-	*maildir = common_util_dup(md);
+	if (maildir == nullptr)
+		return false;
 	*user_id = uid;
 	*domain_id = domid;
 	return TRUE;

@@ -3089,9 +3089,10 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 	snprintf(tmp_path1, std::size(tmp_path1), "%s/eml/%s",
 		 exmdb_server::get_dir(), mid_string1);
 	for (const auto &eaddr : rcpt_list) {
-		char maildir[256];
-		if (!common_util_get_maildir(eaddr.c_str(), maildir, std::size(maildir)))
+		sql_meta_result mres;
+		if (common_util_meta(eaddr.c_str(), WANTPRIV_METAONLY, mres) != 0)
 			continue;
+		auto maildir = mres.maildir.c_str();
 		if (*maildir == '\0') {
 			mlog(LV_ERR, "E-1740: copy from %s to delegate %s not possible: no homedir",
 				tmp_path1, eaddr.c_str());
@@ -3389,9 +3390,10 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 	snprintf(tmp_path1, std::size(tmp_path1), "%s/eml/%s",
 	         exmdb_server::get_dir(), mid_string1);
 	for (const auto &eaddr : rcpt_list) {
-		char maildir[256];
-		if (!common_util_get_maildir(eaddr.c_str(), maildir, std::size(maildir)))
+		sql_meta_result mres;
+		if (common_util_meta(eaddr.c_str(), WANTPRIV_METAONLY, mres) != 0)
 			continue;
+		auto maildir = mres.maildir.c_str();
 		auto mid_string = std::to_string(time(nullptr)) + "." +
 				  std::to_string(common_util_sequence_ID()) + "." +
 				  get_host_ID();

@@ -256,7 +256,6 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 		E(common_util_get_user_ids, "get_user_ids");
 		E(common_util_get_domain_ids, "get_domain_ids");
-		E(common_util_get_maildir, "get_maildir");
 		E(common_util_get_homedir, "get_homedir");
 		E(common_util_get_homedir_by_id, "get_homedir_by_id");
 		E(common_util_get_id_from_maildir, "get_id_from_maildir");
