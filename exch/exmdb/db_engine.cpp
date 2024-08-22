@@ -49,6 +49,10 @@ using LLD = long long;
 using LLU = unsigned long long;
 using namespace gromox;
 
+struct db_close {
+	void operator()(sqlite3 *x) const;
+};
+
 namespace {
 
 struct POPULATING_NODE {
@@ -3972,4 +3976,10 @@ void db_conn::cancel_batch_mode(db_base &dbase)
 	for (auto &t : dbase.tables.table_list)
 		t.b_hint = false;
 	dbase.tables.b_batch = false;
+}
+
+void db_close::operator()(sqlite3 *x) const
+{
+	mlog(LV_INFO, "I-1762: exmdb: closing %s", znul(sqlite3_db_filename(x, nullptr)));
+	sqlite3_close_v2(x);
 }

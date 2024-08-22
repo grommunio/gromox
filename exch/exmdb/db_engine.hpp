@@ -100,10 +100,7 @@ struct prepared_statements {
 	gromox::xstmt msg_norm, msg_str, rcpt_norm, rcpt_str;
 };
 
-struct db_close {
-	inline void operator()(sqlite3* sql) const { sqlite3_close_v2(sql); }
-};
-
+struct db_close;
 using db_handle = std::unique_ptr<sqlite3, db_close>;
 
 /**
