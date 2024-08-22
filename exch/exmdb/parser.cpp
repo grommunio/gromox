@@ -196,7 +196,11 @@ static void *request_parser_thread(void *pparam)
 	b_private = FALSE; /* whatever for connect request */
 	/* unordered_set currently owns it, now take another ref */
 	auto pconnection = static_cast<EXMDB_CONNECTION *>(pparam)->shared_from_this();
-	pthread_setname_np(pconnection->thr_id, "exmdb_parser");
+	{
+		char txt[52];
+		snprintf(txt, std::size(txt), "exmdb/%s:%hu", pconnection->client_ip, pconnection->client_port);
+		pthread_setname_np(pthread_self(), txt);
+	}
 	pbuff = NULL;
 	offset = 0;
 	buff_len = 0;
@@ -356,12 +360,8 @@ void exmdb_parser_insert_conn(std::shared_ptr<EXMDB_CONNECTION> &&pconnection)
 	chold.unlock();
 	auto ret = pthread_create4(&pconnection->thr_id, nullptr,
 	           request_parser_thread, pconnection.get());
-	if (ret == 0) {
-		char txt[52];
-		snprintf(txt, std::size(txt), "exmdb/%s:%hu", pconnection->client_ip, pconnection->client_port);
-		pthread_setname_np(pconnection->thr_id, txt);
+	if (ret == 0)
 		return;
-	}
 	mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
 	chold.lock();
 	g_connection_list.erase(stpair.first);
