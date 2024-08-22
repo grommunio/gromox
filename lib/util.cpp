@@ -1038,7 +1038,8 @@ static size_t qp_decode(void *voutput, const char *input, size_t length,
 		switch (c) {
 		case '=': {
 			/* quoted char, process it */
-			if (i < length - 2 && HX_isxdigit(input[i+1]) &&
+			auto rem = length - i;
+			if (rem >= 3 && HX_isxdigit(input[i+1]) &&
 			    HX_isxdigit(input[i+2])) { /* OK, this is =HEX */
 				output[cnt++] = (hex_tab[input[i+1] & 0xff] << 4) | 
 					hex_tab[input[i+2] & 0xff];
@@ -1048,10 +1049,12 @@ static size_t qp_decode(void *voutput, const char *input, size_t length,
 			/* indicates 'soft-line break', implying ignore 
 			   it & the following CR 
 			*/
-			auto nl = newline_size(&input[i+1], length - i);
-			if (nl > 0) {
-				i += nl;
-				break;
+			if (rem > 1) {
+				auto nl = newline_size(&input[i+1], rem - 1);
+				if (nl > 0) {
+					i += nl;
+					break;
+				}
 			}
 			/* just ignore it, it doesn't seem to be correctly quoting
 			   anything (report an error/add a fussy mode?) 
@@ -1087,7 +1090,8 @@ ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
 		switch (c) {
 		case '=': {
 			/* quoted char, process it */
-			if (i < length - 2 && HX_isxdigit(input[i+1]) &&
+			size_t rem = length - i;
+			if (rem >= 3 && HX_isxdigit(input[i+1]) &&
 			    HX_isxdigit(input[i+2])) { /* OK, this is =HEX */
 				cnt++;
 				i +=2;
@@ -1096,10 +1100,12 @@ ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
 			/* indicates 'soft-line break', implying ignore 
 			   it & the following CR 
 			*/
-			auto nl = newline_size(&input[i+1], length - i);
-			if (nl > 0) {
-				i += nl;
-				break;
+			if (rem > 1) {
+				auto nl = newline_size(&input[i+1], rem - 1);
+				if (nl > 0) {
+					i += nl;
+					break;
+				}
 			}
 			/* just ignore it, it doesn't seem to be correctly quoting
 			   anything (report an error/add a fussy mode?) 

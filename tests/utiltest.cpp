@@ -391,6 +391,11 @@ static int t_base64()
 		return printf("TQ-3 failed\n");
 	if (qp_decode_ex(out, 2, "=3D", 3) < 0)
 		return printf("TQ-4 failed\n");
+
+	char thebuf[1];
+	thebuf[0] = '=';
+	if (qp_decode_ex(out, 4, &thebuf[0], 1) >= 0)
+		return printf("TQ-5 failed\n");
 	return 0;
 }
 
