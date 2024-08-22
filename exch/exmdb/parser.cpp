@@ -69,7 +69,7 @@ void exmdb_parser_init(size_t max_threads, size_t max_routers)
 	g_max_routers = max_routers;
 }
 
-std::shared_ptr<EXMDB_CONNECTION> exmdb_parser_make_conn()
+std::unique_ptr<EXMDB_CONNECTION> exmdb_parser_make_conn()
 {
 	if (g_max_threads != 0) {
 		std::lock_guard lk(g_connection_lock);
@@ -77,7 +77,7 @@ std::shared_ptr<EXMDB_CONNECTION> exmdb_parser_make_conn()
 			return nullptr;
 	}
 	try {
-		return std::make_shared<EXMDB_CONNECTION>();
+		return std::make_unique<EXMDB_CONNECTION>();
 	} catch (const std::bad_alloc &) {
 	}
 	return nullptr;
@@ -194,12 +194,22 @@ static void *request_parser_thread(void *pparam)
 	struct pollfd pfd_read;
 	
 	b_private = FALSE; /* whatever for connect request */
-	/* unordered_set currently owns it, now take another ref */
-	auto pconnection = static_cast<EXMDB_CONNECTION *>(pparam)->shared_from_this();
-	{
+	auto connraw = static_cast<EXMDB_CONNECTION *>(pparam);
+	std::shared_ptr<EXMDB_CONNECTION> pconnection;
+	try {
+		pconnection.reset(connraw);
+	} catch (...) {
+		delete connraw;
+		return nullptr;
+	}
+	try {
 		char txt[52];
 		snprintf(txt, std::size(txt), "exmdb/%s:%hu", pconnection->client_ip, pconnection->client_port);
 		pthread_setname_np(pthread_self(), txt);
+		std::unique_lock chold(g_connection_lock);
+		g_connection_list.insert(pconnection);
+	} catch (...) {
+		return nullptr;
 	}
 	pbuff = NULL;
 	offset = 0;
@@ -353,18 +363,14 @@ static void *request_parser_thread(void *pparam)
 	return nullptr;
 }
 
-void exmdb_parser_insert_conn(std::shared_ptr<EXMDB_CONNECTION> &&pconnection)
+void exmdb_parser_insert_conn(std::unique_ptr<EXMDB_CONNECTION> &&pconnection)
 {
-	std::unique_lock chold(g_connection_lock);
-	auto stpair = g_connection_list.insert(pconnection);
-	chold.unlock();
 	auto ret = pthread_create4(&pconnection->thr_id, nullptr,
 	           request_parser_thread, pconnection.get());
-	if (ret == 0)
-		return;
-	mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
-	chold.lock();
-	g_connection_list.erase(stpair.first);
+	if (ret != 0)
+		mlog(LV_WARN, "W-1440: pthread_create: %s", strerror(ret));
+	else
+		pconnection.release(); /* thread should be vivid now */
 }
 
 std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_extract_router(const char *remote_id)

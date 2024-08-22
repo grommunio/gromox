@@ -78,9 +78,9 @@ static void *sockaccept_thread(void *param)
 			if (HXio_fullwrite(conn.sockd, &tmp_byte, 1) != 1)
 				/* ignore */;
 			continue;
-
 		}
-		static_cast<generic_connection &>(*pconnection) = std::move(conn); // ask qir about D=std::move(Base)
+		/* move(conn) deferred until here, else cov-scan complains about conn.sockd being moved out */
+		static_cast<generic_connection &>(*pconnection) = std::move(conn);
 		exmdb_parser_insert_conn(std::move(pconnection));
 	}
 	return nullptr;
