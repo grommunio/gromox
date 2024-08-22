@@ -293,7 +293,7 @@ static void *imls_thrwork(void *arg)
 			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter: %s",
 				conn.client_ip, reason.c_str());
 			/* release the context */
-			contexts_pool_put_context(ctx, sctx_status::free);
+			contexts_pool_insert(ctx, sctx_status::free);
 			continue;
 		}
 		if (!use_tls) {
@@ -311,7 +311,7 @@ static void *imls_thrwork(void *arg)
 		 * some threads block on the condition variable.
 		 */
 		ctx->polling_mask = POLLING_READ;
-		contexts_pool_put_context(ctx, sctx_status::polling);
+		contexts_pool_insert(ctx, sctx_status::polling);
 	}
 	return nullptr;
 }

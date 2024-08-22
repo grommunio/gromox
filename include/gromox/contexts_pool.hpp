@@ -43,7 +43,7 @@ extern GX_EXPORT void contexts_pool_init(schedule_context **, unsigned int conte
 extern GX_EXPORT int contexts_pool_run();
 extern GX_EXPORT void contexts_pool_stop();
 extern GX_EXPORT schedule_context *contexts_pool_get_context(sctx_status);
-extern GX_EXPORT void contexts_pool_put_context(schedule_context *, sctx_status);
+extern GX_EXPORT void contexts_pool_insert(schedule_context *, sctx_status);
 extern GX_EXPORT BOOL contexts_pool_wakeup_context(schedule_context *, sctx_status);
 extern GX_EXPORT void context_pool_activate_context(schedule_context *);
 extern GX_EXPORT void contexts_pool_signal(schedule_context *);

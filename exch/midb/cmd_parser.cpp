@@ -55,7 +55,7 @@ void cmd_parser_init(unsigned int threads_num, int timeout, unsigned int debug)
 	g_cmd_debug = debug;
 }
 
-std::list<midb_conn> cmd_parser_get_connection() try
+std::list<midb_conn> cmd_parser_make_conn() try
 {
 	std::unique_lock chold(g_connection_lock);
 	if (g_connlist_active.size() + 1 + g_connlist_idle.size() >= g_threads_num)
@@ -69,14 +69,13 @@ std::list<midb_conn> cmd_parser_get_connection() try
 	return {};
 }
 
-void cmd_parser_put_connection(std::list<midb_conn> &&holder)
+void cmd_parser_insert_conn(std::list<midb_conn> &&holder)
 {	
 	std::unique_lock chold(g_connection_lock);
 	g_connlist_idle.splice(g_connlist_idle.end(), std::move(holder));
 	chold.unlock();
 	g_waken_cond.notify_one();
 }
-
 
 int cmd_parser_run()
 {

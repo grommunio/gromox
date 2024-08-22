@@ -747,7 +747,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 	return TRUE;
 }
 
-void mod_fastcgi_put_context(HTTP_CONTEXT *phttp)
+void mod_fastcgi_insert_ctx(HTTP_CONTEXT *phttp)
 {
 	auto &fctx = g_context_list[phttp->context_id];
 	phttp->request.body_fd.close();
@@ -826,7 +826,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 	auto &fctx = g_context_list[phttp->context_id];
 	
 	if (fctx.b_header && phttp->request.imethod == http_method::head) {
-		mod_fastcgi_put_context(phttp);
+		mod_fastcgi_insert_ctx(phttp);
 		return FALSE;	
 	}
 	response_offset = 0;
@@ -835,7 +835,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			phttp->log(LV_DEBUG, "failed to read"
 				" record header from fastcgi back-end %s",
 				fctx.pfnode->sock_path.c_str());
-			mod_fastcgi_put_context(phttp);
+			mod_fastcgi_insert_ctx(phttp);
 			return FALSE;	
 		}
 		ndr_pull.init(header_buff, 8, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
@@ -843,7 +843,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			&ndr_pull, &header)) {
 			phttp->log(LV_DEBUG, "failed to "
 				"pull record header in mod_fastcgi");
-			mod_fastcgi_put_context(phttp);
+			mod_fastcgi_insert_ctx(phttp);
 			return FALSE;
 		}
 		switch (header.type) {
@@ -852,7 +852,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				phttp->log(LV_DEBUG, "record header"
 					" format error from fastcgi back-end %s",
 					fctx.pfnode->sock_path.c_str());
-				mod_fastcgi_put_context(phttp);
+				mod_fastcgi_insert_ctx(phttp);
 				return FALSE;
 			}
 			tmp_len = header.padding_len + 8;
@@ -861,7 +861,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				phttp->log(LV_DEBUG, "failed to read"
 				" record header from fastcgi back-end %s",
 				fctx.pfnode->sock_path.c_str());
-				mod_fastcgi_put_context(phttp);
+				mod_fastcgi_insert_ctx(phttp);
 				return FALSE;
 			}
 			ndr_pull.init(tmp_buff, tmp_len, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
@@ -877,7 +877,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 						fctx.pfnode->sock_path.c_str());
 			if (fctx.b_header && rq.b_chunked)
 				phttp->stream_out.write("0\r\n\r\n", 5);
-			mod_fastcgi_put_context(phttp);
+			mod_fastcgi_insert_ctx(phttp);
 			return FALSE;
 		case RECORD_TYPE_STDOUT:
 		case RECORD_TYPE_STDERR:
@@ -887,7 +887,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				phttp->log(LV_DEBUG, "failed to read"
 					" record header from fastcgi back-end %s",
 					fctx.pfnode->sock_path.c_str());
-				mod_fastcgi_put_context(phttp);
+				mod_fastcgi_insert_ctx(phttp);
 				return FALSE;
 			}
 			ndr_pull.init(tmp_buff, tmp_len, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
@@ -896,7 +896,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				&ndr_pull, header.padding_len, &std_stream)) {
 				phttp->log(LV_DEBUG, "failed to"
 					" pull record body in mod_fastcgi");
-				mod_fastcgi_put_context(phttp);
+				mod_fastcgi_insert_ctx(phttp);
 				return FALSE;	
 			}
 			if (RECORD_TYPE_STDERR == header.type) {
@@ -911,7 +911,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				if (0 == std_stream.length) {
 					phttp->log(LV_DEBUG, "empty stdout "
 						"record is not supported by mod_fastcgi");
-					mod_fastcgi_put_context(phttp);
+					mod_fastcgi_insert_ctx(phttp);
 					return FALSE;
 				}
 				if (rq.b_chunked) {
@@ -922,7 +922,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 					    phttp->stream_out.write("\r\n", 2) != STREAM_WRITE_OK) {
 						phttp->log(LV_DEBUG, "failed to write"
 								" stdin into stream in mod_fastcgi");
-						mod_fastcgi_put_context(phttp);
+						mod_fastcgi_insert_ctx(phttp);
 						return FALSE;
 					}
 				} else {
@@ -930,7 +930,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 					    std_stream.length) != STREAM_WRITE_OK) {
 						phttp->log(LV_DEBUG, "failed to write"
 								" stdin into stream in mod_fastcgi");
-						mod_fastcgi_put_context(phttp);
+						mod_fastcgi_insert_ctx(phttp);
 						return FALSE;
 					}
 				}
@@ -940,7 +940,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				phttp->log(LV_DEBUG, "response "
 					"header too long from fastcgi back-end %s",
 					fctx.pfnode->sock_path.c_str());
-				mod_fastcgi_put_context(phttp);
+				mod_fastcgi_insert_ctx(phttp);
 				return FALSE;
 			}
 			memcpy(response_buff + response_offset,
@@ -968,7 +968,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 					phttp->log(LV_DEBUG, "response header"
 						"format error from fastcgi back-end %s",
 						fctx.pfnode->sock_path.c_str());
-					mod_fastcgi_put_context(phttp);
+					mod_fastcgi_insert_ctx(phttp);
 					return FALSE;
 				}
 				memcpy(status_line, ptoken, tmp_len);
@@ -1010,7 +1010,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK) {
 				phttp->log(LV_DEBUG, "failed to write "
 					"response header into stream in mod_fastcgi");
-				mod_fastcgi_put_context(phttp);
+				mod_fastcgi_insert_ctx(phttp);
 				return FALSE;
 			}
 			fctx.b_header = TRUE;
@@ -1026,14 +1026,14 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 					    phttp->stream_out.write("\r\n", 2) != STREAM_WRITE_OK) {
 						phttp->log(LV_DEBUG, "failed to write"
 								" stdin into stream in mod_fastcgi");
-						mod_fastcgi_put_context(phttp);
+						mod_fastcgi_insert_ctx(phttp);
 						return FALSE;
 					}
 				} else {
 					if (phttp->stream_out.write(pbody, response_offset) != STREAM_WRITE_OK) {
 						phttp->log(LV_DEBUG, "failed to write"
 								" stdin into stream in mod_fastcgi");
-						mod_fastcgi_put_context(phttp);
+						mod_fastcgi_insert_ctx(phttp);
 						return FALSE;	
 					}
 				}
@@ -1046,7 +1046,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				phttp->log(LV_DEBUG, "failed to read"
 				" record header from fastcgi back-end %s",
 				fctx.pfnode->sock_path.c_str());
-				mod_fastcgi_put_context(phttp);
+				mod_fastcgi_insert_ctx(phttp);
 				return FALSE;
 			}
 			phttp->log(LV_DEBUG, "ignore record %d"

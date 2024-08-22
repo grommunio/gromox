@@ -462,11 +462,11 @@ static tproc_status http_done(http_context *ctx, http_status code) try
 	if (static_cast<int>(code) < 0)
 		code = static_cast<http_status>(-static_cast<int>(code));
 	if (hpm_processor_is_in_charge(ctx))
-		hpm_processor_put_context(ctx);
+		hpm_processor_insert_ctx(ctx);
 	else if (mod_fastcgi_is_in_charge(ctx))
-		mod_fastcgi_put_context(ctx);
+		mod_fastcgi_insert_ctx(ctx);
 	else if (mod_cache_is_in_charge(ctx))
-		mod_cache_put_context(ctx);
+		mod_cache_insert_ctx(ctx);
 	auto rsp = http_make_err_response(*ctx, code);
 	ctx->stream_out.clear();
 	ctx->stream_out.write(rsp.c_str(), rsp.size());
@@ -485,11 +485,11 @@ static tproc_status http_done(http_context *ctx, http_status code) try
 static tproc_status http_end(http_context *ctx)
 {
 	if (hpm_processor_is_in_charge(ctx))
-		hpm_processor_put_context(ctx);
+		hpm_processor_insert_ctx(ctx);
 	else if (mod_fastcgi_is_in_charge(ctx))
-		mod_fastcgi_put_context(ctx);
+		mod_fastcgi_insert_ctx(ctx);
 	else if (mod_cache_is_in_charge(ctx))
-		mod_cache_put_context(ctx);
+		mod_cache_insert_ctx(ctx);
 
 	if (ctx->pchannel != nullptr) {
 		if (ctx->channel_type == hchannel_type::in) {
@@ -1409,7 +1409,7 @@ static tproc_status htparse_wrrep_nobuf(http_context *pcontext)
 			if (pcontext->b_close)
 				return tproc_status::runoff;
 			pcontext->request.clear();
-			hpm_processor_put_context(pcontext);
+			hpm_processor_insert_ctx(pcontext);
 			pcontext->sched_stat = hsched_stat::rdhead;
 			pcontext->stream_out.clear();
 			return tproc_status::cont;
@@ -2191,7 +2191,7 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 	pcontext->channel_type = hchannel_type::none;
 	pcontext->pchannel = NULL;
 	if (mod_fastcgi_is_in_charge(pcontext))
-		mod_fastcgi_put_context(pcontext);
+		mod_fastcgi_insert_ctx(pcontext);
 }
 
 http_context::~http_context()
@@ -2205,11 +2205,11 @@ http_context::~http_context()
 		gss_delete_sec_context(&st, &m_gss_ctx, GSS_C_NO_BUFFER);
 #endif
 	if (hpm_processor_is_in_charge(pcontext))
-		hpm_processor_put_context(pcontext);
+		hpm_processor_insert_ctx(pcontext);
 	else if (mod_fastcgi_is_in_charge(pcontext))
-		mod_fastcgi_put_context(pcontext);
+		mod_fastcgi_insert_ctx(pcontext);
 	else if (mod_cache_is_in_charge(pcontext))
-		mod_cache_put_context(pcontext);
+		mod_cache_insert_ctx(pcontext);
 }
 
 void http_context::log(int level, const char *format, ...) const

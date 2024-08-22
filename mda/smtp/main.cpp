@@ -202,7 +202,7 @@ static void *smls_thrwork(void *arg)
 		 * block on the condition variable.
 		 */
 		ctx->polling_mask = POLLING_READ;
-		contexts_pool_put_context(ctx, sctx_status::polling);
+		contexts_pool_insert(ctx, sctx_status::polling);
 	}
 	return nullptr;
 }

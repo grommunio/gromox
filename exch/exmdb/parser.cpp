@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
@@ -67,7 +69,7 @@ void exmdb_parser_init(size_t max_threads, size_t max_routers)
 	g_max_routers = max_routers;
 }
 
-std::shared_ptr<EXMDB_CONNECTION> exmdb_parser_get_connection()
+std::shared_ptr<EXMDB_CONNECTION> exmdb_parser_make_conn()
 {
 	if (g_max_threads != 0) {
 		std::lock_guard lk(g_connection_lock);
@@ -347,7 +349,7 @@ static void *request_parser_thread(void *pparam)
 	return nullptr;
 }
 
-void exmdb_parser_put_connection(std::shared_ptr<EXMDB_CONNECTION> &&pconnection)
+void exmdb_parser_insert_conn(std::shared_ptr<EXMDB_CONNECTION> &&pconnection)
 {
 	std::unique_lock chold(g_connection_lock);
 	auto stpair = g_connection_list.insert(pconnection);
@@ -365,7 +367,7 @@ void exmdb_parser_put_connection(std::shared_ptr<EXMDB_CONNECTION> &&pconnection
 	g_connection_list.erase(stpair.first);
 }
 
-std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_get_router(const char *remote_id)
+std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_extract_router(const char *remote_id)
 {
 	std::lock_guard rhold(g_router_lock);
 	auto it = std::find_if(g_router_list.begin(), g_router_list.end(),
@@ -377,7 +379,7 @@ std::shared_ptr<ROUTER_CONNECTION> exmdb_parser_get_router(const char *remote_id
 	return rt;
 }
 
-void exmdb_parser_put_router(std::shared_ptr<ROUTER_CONNECTION> &&pconnection)
+void exmdb_parser_insert_router(std::shared_ptr<ROUTER_CONNECTION> &&pconnection)
 {
 	std::lock_guard rhold(g_router_lock);
 	try {
@@ -386,7 +388,7 @@ void exmdb_parser_put_router(std::shared_ptr<ROUTER_CONNECTION> &&pconnection)
 	}
 }
 
-BOOL exmdb_parser_remove_router(const std::shared_ptr<ROUTER_CONNECTION> &pconnection)
+BOOL exmdb_parser_erase_router(const std::shared_ptr<ROUTER_CONNECTION> &pconnection)
 {
 	std::lock_guard rhold(g_router_lock);
 	auto it = g_router_list.find(pconnection);

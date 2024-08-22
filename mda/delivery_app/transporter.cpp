@@ -108,8 +108,7 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func);
 static BOOL transporter_register_local(HOOK_FUNCTION func);
 static hook_result transporter_pass_mpc_hooks(MESSAGE_CONTEXT *, THREAD_DATA *);
 static MESSAGE_CONTEXT *transporter_get_context();
-static void transporter_put_context(MESSAGE_CONTEXT *pcontext);
-
+static void transporter_insert_ctx(MESSAGE_CONTEXT *);
 static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext); 
 
 static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext);
@@ -151,7 +150,7 @@ static constexpr struct dlfuncs server_funcs = {
 		/* .get_queue_path = */ []() { return g_config_file->get_value("dequeue_path"); },
 		/* .get_threads_num = */ []() { return g_threads_max; },
 		/* .get_ctx = */ transporter_get_context,
-		/* .put_ctx = */ transporter_put_context,
+		/* .put_ctx = */ transporter_insert_ctx,
 		/* .enqueue_ctx = */ transporter_enqueue_context,
 		/* .throw_ctx = */ transporter_throw_context,
 	},
@@ -432,7 +431,7 @@ static void *dxp_thrwork(void *arg)
 				message_dequeue_save(pmessage);
 			message_dequeue_put(pmessage);
 		} else {
-			transporter_put_context(pcontext);
+			transporter_insert_ctx(pcontext);
 		}
 	}
 	for (auto &plug : g_lib_list)
@@ -577,7 +576,7 @@ static MESSAGE_CONTEXT* transporter_get_context()
  *	@param
  *		pcontext [in]		context pointer
  */
-static void transporter_put_context(MESSAGE_CONTEXT *pcontext)
+static void transporter_insert_ctx(MESSAGE_CONTEXT *pcontext)
 {
 	/* reset the context object */
 	pcontext->ctrl.rcpt.clear();
@@ -646,7 +645,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	}
 	auto pthr_data = g_tls_key;
 	if (NULL == pthr_data) {
-		transporter_put_context(pcontext);
+		transporter_insert_ctx(pcontext);
 		return FALSE;
 	}	
 	/* check if this hook is throwing the second message */
@@ -654,13 +653,13 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	    pthr_data->anti_loop.cend(), pthr_data->last_hook) !=
 	    pthr_data->anti_loop.cend()) {
 		mlog(LV_ERR, "transporter: message infinite loop is detected");
-		transporter_put_context(pcontext);
+		transporter_insert_ctx(pcontext);
 		return FALSE;
 	}
 	if (pthr_data->anti_loop.size() >= MAX_THROWING_NUM) {
 		mlog(LV_ERR, "transporter: exceed the maximum depth that one thread "
 			"can throw");
-		transporter_put_context(pcontext);
+		transporter_insert_ctx(pcontext);
         return FALSE;
 	}
 	try {
@@ -668,7 +667,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "transporter: exceed the maximum depth that one thread "
 			"can throw");
-		transporter_put_context(pcontext);
+		transporter_insert_ctx(pcontext);
 		return false;
 	}
 	/* save the last hook and last thrower, like function's call operation */
@@ -684,7 +683,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 		ret_val = TRUE;
 	}
 	pthr_data->anti_loop.pop_back();
-	transporter_put_context(pcontext);
+	transporter_insert_ctx(pcontext);
 	/* recover last thrower and last hook, like function's return operation */
 	pthr_data->last_hook = last_hook;
 	pthr_data->last_thrower = last_thrower;

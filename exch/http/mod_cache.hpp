@@ -9,7 +9,7 @@ extern int mod_cache_run();
 extern void mod_cache_stop();
 extern bool mod_cache_is_in_charge(HTTP_CONTEXT *);
 extern http_status mod_cache_take_request(http_context *);
-void mod_cache_put_context(HTTP_CONTEXT *phttp);
+extern void mod_cache_insert_ctx(http_context *);
 BOOL mod_cache_check_responded(HTTP_CONTEXT *phttp);
 BOOL mod_cache_read_response(HTTP_CONTEXT *phttp);
 extern bool mod_cache_discard_content(http_context *);

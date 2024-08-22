@@ -580,7 +580,7 @@ http_status mod_cache_take_request(http_context *phttp)
 	return http_status::ok;
 }
 
-void mod_cache_put_context(HTTP_CONTEXT *phttp)
+void mod_cache_insert_ctx(HTTP_CONTEXT *phttp)
 {
 	auto &rq = phttp->request;
 	CACHE_CONTEXT *pcontext;
@@ -612,18 +612,18 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 	if (!pcontext->b_header) {
 		if (pcontext->range.size() < 2) {
 			if (!mod_cache_response_single_header(phttp)) {
-				mod_cache_put_context(phttp);
+				mod_cache_insert_ctx(phttp);
 				return FALSE;
 			}
 		} else {
 			if (!mod_cache_response_multiple_header(phttp)) {
-				mod_cache_put_context(phttp);
+				mod_cache_insert_ctx(phttp);
 				return FALSE;
 			}
 		}
 		pcontext->b_header = true;
 		if (phttp->request.imethod == http_method::head) {
-			mod_cache_put_context(phttp);
+			mod_cache_insert_ctx(phttp);
 			return FALSE;
 		}
 	}
@@ -635,12 +635,12 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 	if (writeout_size != 0) {
 		if (item.mblk == nullptr) {
 			mlog(LV_DEBUG, "%s called without active memory mapping", __func__);
-			mod_cache_put_context(phttp);
+			mod_cache_insert_ctx(phttp);
 			return FALSE;
 		}
 		if (phttp->stream_out.write(static_cast<const char *>(item.mblk) +
 		    pcontext->offset, writeout_size) != STREAM_WRITE_OK) {
-			mod_cache_put_context(phttp);
+			mod_cache_insert_ctx(phttp);
 			return false;
 		}
 	}
@@ -672,14 +672,14 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 			}
 			tmp_len = std::max(0, tmp_len);
 			if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK) {
-				mod_cache_put_context(phttp);
+				mod_cache_insert_ctx(phttp);
 				return FALSE;
 			}
 			return TRUE;
 		}
 	}
 	if (pcontext->offset == pcontext->until) {
-		mod_cache_put_context(phttp);
+		mod_cache_insert_ctx(phttp);
 		return FALSE;
 	}
 	return TRUE;

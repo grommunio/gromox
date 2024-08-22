@@ -202,24 +202,24 @@ static void *tpol_thrwork(void *pparam)
 		cannot_served_times = 0;
 		switch (threads_pool_process_func(pcontext)) {
 		case tproc_status::cont:
-			contexts_pool_put_context(pcontext, sctx_status::turning);
+			contexts_pool_insert(pcontext, sctx_status::turning);
 			break;
 		case tproc_status::idle:
-			contexts_pool_put_context(pcontext, sctx_status::idling);
+			contexts_pool_insert(pcontext, sctx_status::idling);
 			break;
 		case tproc_status::polling_rdonly:
 			pcontext->polling_mask = POLLING_READ;
-			contexts_pool_put_context(pcontext, sctx_status::polling);
+			contexts_pool_insert(pcontext, sctx_status::polling);
 			break;
 		case tproc_status::polling_wronly:
 			pcontext->polling_mask = POLLING_WRITE;
-			contexts_pool_put_context(pcontext, sctx_status::polling);
+			contexts_pool_insert(pcontext, sctx_status::polling);
 			break;
 		case tproc_status::sleeping:
-			contexts_pool_put_context(pcontext, sctx_status::sleeping);
+			contexts_pool_insert(pcontext, sctx_status::sleeping);
 			break;
 		case tproc_status::close:
-			contexts_pool_put_context(pcontext, sctx_status::free);
+			contexts_pool_insert(pcontext, sctx_status::free);
 			break;
 		default:
 			break;

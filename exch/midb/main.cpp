@@ -205,7 +205,7 @@ static void *midls_thrwork(void *param)
 				/* ignore */;
 			continue;
 		}
-		auto holder = cmd_parser_get_connection();
+		auto holder = cmd_parser_make_conn();
 		if (holder.size() == 0) {
 			if (HXio_fullwrite(gco.sockd, "FALSE Maximum Connection Reached!\r\n", 35) < 0)
 				/* ignore */;
@@ -216,7 +216,7 @@ static void *midls_thrwork(void *param)
 		conn.is_selecting = FALSE;
 		if (HXio_fullwrite(conn.sockd, "OK\r\n", 4) < 0)
 			continue;
-		cmd_parser_put_connection(std::move(holder));
+		cmd_parser_insert_conn(std::move(holder));
 	}
 	return nullptr;
 }

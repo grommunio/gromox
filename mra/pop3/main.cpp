@@ -229,7 +229,7 @@ static void *p3ls_thrwork(void *arg)
 				/* ignore */;
 			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter", conn.client_ip);
 			/* release the context */
-			contexts_pool_put_context(ctx, sctx_status::free);
+			contexts_pool_insert(ctx, sctx_status::free);
 			continue;
 		}
 
@@ -252,7 +252,7 @@ static void *p3ls_thrwork(void *arg)
 		 * block on the condition variable.
 		 */
 		ctx->polling_mask = POLLING_READ;
-		contexts_pool_put_context(ctx, sctx_status::polling);
+		contexts_pool_insert(ctx, sctx_status::polling);
 	}
 	return nullptr;
 }

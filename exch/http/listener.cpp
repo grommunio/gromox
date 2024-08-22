@@ -176,7 +176,7 @@ static void *htls_thrwork(void *arg)
 			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter: %s",
 				conn.client_ip, reason.c_str());
 			/* release the context */
-			contexts_pool_put_context(pcontext, sctx_status::free);
+			contexts_pool_insert(pcontext, sctx_status::free);
 			continue;
 		}
 
@@ -188,7 +188,7 @@ static void *htls_thrwork(void *arg)
 		block on the condition variable 
 		*/
 		pcontext->polling_mask = POLLING_READ;
-		contexts_pool_put_context(pcontext, sctx_status::polling);
+		contexts_pool_insert(pcontext, sctx_status::polling);
 	}
 	return nullptr;
 }

@@ -492,7 +492,7 @@ int hpm_processor_retrieve_response(HTTP_CONTEXT *phttp)
 	return g_context_list[id].pinterface->retr(id);
 }
 
-void hpm_processor_put_context(HTTP_CONTEXT *phttp)
+void hpm_processor_insert_ctx(http_context *phttp)
 {
 	auto &rq = phttp->request;
 	auto phpm_ctx = &g_context_list[phttp->context_id];

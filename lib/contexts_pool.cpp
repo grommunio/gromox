@@ -211,7 +211,7 @@ static void *ctxp_thrwork(void *pparam)
 			double_list_remove(&g_context_lists[static_cast<int>(sctx_status::polling)], &pcontext->node);
 			pcontext->type = sctx_status::switching;
 			poll_hold.unlock();
-			contexts_pool_put_context(pcontext, sctx_status::turning);
+			contexts_pool_insert(pcontext, sctx_status::turning);
 		}
 		if (num == 1)
 			threads_pool_wakeup_thread();
@@ -370,14 +370,14 @@ schedule_context *contexts_pool_get_context(sctx_status tpraw)
 	return pnode != nullptr ? static_cast<SCHEDULE_CONTEXT *>(pnode->pdata) : nullptr;
 }
 
-/*
- *	release one context to the pool
+/**
+ * Move back a context into the pool
  *	@param
  *		 pcontext	the context pointer to release
  *		 type		type can only be sctx_status::free, sctx_status::sleeping
  *					sctx_status::polling, sctx_status::idling, sctx_status::turning
  */
-void contexts_pool_put_context(schedule_context *pcontext, sctx_status tpraw)
+void contexts_pool_insert(schedule_context *pcontext, sctx_status tpraw)
 {
 	if (pcontext == nullptr)
 		return;
@@ -437,7 +437,7 @@ void contexts_pool_signal(SCHEDULE_CONTEXT *pcontext)
 	double_list_remove(&g_context_lists[static_cast<int>(sctx_status::idling)], &pcontext->node);
 	pcontext->type = sctx_status::switching;
 	idle_hold.unlock();
-	contexts_pool_put_context(pcontext, sctx_status::turning);
+	contexts_pool_insert(pcontext, sctx_status::turning);
 	threads_pool_wakeup_thread();
 }
 
@@ -466,7 +466,7 @@ BOOL contexts_pool_wakeup_context(schedule_context *pcontext, sctx_status type)
 	double_list_remove(&g_context_lists[static_cast<int>(sctx_status::sleeping)], &pcontext->node);
 	sleep_hold.unlock();
 	/* put the context into waiting queue */
-	contexts_pool_put_context(pcontext, type);
+	contexts_pool_insert(pcontext, type);
 	if (type == sctx_status::turning)
 		threads_pool_wakeup_thread();
 	return TRUE;

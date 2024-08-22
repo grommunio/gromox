@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
 #include <csignal>
@@ -70,7 +72,7 @@ static void *sockaccept_thread(void *param)
 				/* ignore */;
 			continue;
 		}
-		auto pconnection = exmdb_parser_get_connection();
+		auto pconnection = exmdb_parser_make_conn();
 		if (pconnection == nullptr) {
 			auto tmp_byte = exmdb_response::max_reached;
 			if (HXio_fullwrite(conn.sockd, &tmp_byte, 1) != 1)
@@ -79,7 +81,7 @@ static void *sockaccept_thread(void *param)
 
 		}
 		static_cast<generic_connection &>(*pconnection) = std::move(conn); // ask qir about D=std::move(Base)
-		exmdb_parser_put_connection(std::move(pconnection));
+		exmdb_parser_insert_conn(std::move(pconnection));
 	}
 	return nullptr;
 }

@@ -24,7 +24,7 @@ extern void hpm_processor_init(int context_num, std::vector<gromox::static_modul
 extern int hpm_processor_run();
 extern void hpm_processor_stop();
 extern http_status hpm_processor_take_request(http_context *);
-void hpm_processor_put_context(HTTP_CONTEXT *phttp);
+extern void hpm_processor_insert_ctx(http_context *);
 extern bool hpm_processor_is_in_charge(HTTP_CONTEXT *);
 extern http_status http_write_request(http_context *);
 BOOL hpm_processor_proc(HTTP_CONTEXT *phttp);
