@@ -147,7 +147,7 @@ void mod_fastcgi_init(int context_num, time_duration exec_timeout)
 
 static int mod_fastcgi_defaults()
 {
-	mlog(LV_NOTICE, "mod_fastcgi: defaulting to built-in list of handled paths");
+	mlog(LV_INFO, "mod_fastcgi: defaulting to built-in list of handled paths");
 	FASTCGI_NODE node;
 	node.domain = "*";
 	node.path = "/sync";

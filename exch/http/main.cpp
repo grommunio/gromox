@@ -398,7 +398,7 @@ int main(int argc, char **argv)
 	auto cleanup_29 = make_scope_exit(listener_stop_accept);
 	
 	retcode = EXIT_SUCCESS;
-	mlog(LV_NOTICE, "system: HTTP daemon is now running");
+	mlog(LV_INFO, "system: HTTP daemon is now running");
 	while (!g_notify_stop) {
 		sleep(3);
 		if (g_hup_signalled.exchange(false)) {

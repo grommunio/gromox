@@ -816,7 +816,7 @@ static errno_t gx_reexec(const char *const *argv) try
 		mlog(LV_ERR, "reexec: readlink /proc/self/exe: %s", strerror(-ret));
 		return -ret;
 	}
-	mlog(LV_NOTICE, "Reexecing %s", resolved);
+	mlog(LV_INFO, "Reexecing %s", resolved);
 	execv(resolved, const_cast<char **>(argv));
 	int saved_errno = errno;
 	perror("execv");
@@ -838,14 +838,14 @@ static errno_t gx_reexec(const char *const *argv) try
 			return errno;
 		tgt.resize(tgt.size() * 2);
 	}
-	mlog(LV_NOTICE, "Reexecing %s", tgt.c_str());
+	mlog(LV_INFO, "Reexecing %s", tgt.c_str());
 	execv(tgt.c_str(), const_cast<char **>(argv));
 	int saved_errno = errno;
 	perror("execv");
 	return saved_errno;
 #else
 	/* Since none of our programs modify argv[0], executing the same should just work */
-	mlog(LV_NOTICE, "Reexecing %s", argv[0]);
+	mlog(LV_INFO, "Reexecing %s", argv[0]);
 	execv(argv[0], const_cast<char **>(argv));
 	int saved_errno = errno;
 	perror("execv");

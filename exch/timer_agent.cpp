@@ -80,7 +80,7 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 		gx_strlcpy(g_timer_ip, pfile->get_value("timer_host"), std::size(g_timer_ip));
 		g_timer_port = pfile->get_ll("timer_port");
-		mlog(LV_NOTICE, "timer_agent: timer address is [%s]:%hu",
+		mlog(LV_INFO, "timer_agent: timer address is [%s]:%hu",
 		       *g_timer_ip == '\0' ? "*" : g_timer_ip, g_timer_port);
 
 		for (size_t i = 0; i < conn_num; ++i) try {

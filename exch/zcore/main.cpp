@@ -473,7 +473,7 @@ int main(int argc, char **argv)
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
-	mlog(LV_NOTICE, "system: zcore is now running");
+	mlog(LV_INFO, "system: zcore is now running");
 	while (!g_main_notify_stop) {
 		sleep(1);
 		if (g_hup_signalled.exchange(false)) {

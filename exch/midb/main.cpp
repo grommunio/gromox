@@ -326,7 +326,7 @@ int main(int argc, char **argv)
 	
 	auto listen_ip = pconfig->get_value("midb_listen_ip");
 	uint16_t listen_port = pconfig->get_ll("midb_listen_port");
-	mlog(LV_NOTICE, "system: listen address is [%s]:%hu",
+	mlog(LV_INFO, "system: listen address is [%s]:%hu",
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
 	unsigned int threads_num = pconfig->get_ll("midb_threads_num");
@@ -399,7 +399,7 @@ int main(int argc, char **argv)
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
-	mlog(LV_NOTICE, "system: MIDB is now running");
+	mlog(LV_INFO, "system: MIDB is now running");
 	while (!g_main_notify_stop) {
 		sleep(1);
 		if (g_hup_signalled.exchange(false)) {

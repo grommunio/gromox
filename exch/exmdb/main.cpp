@@ -148,7 +148,7 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 		auto listen_ip = pconfig->get_value("listen_ip");
 		uint16_t listen_port = pconfig->get_ll("exmdb_listen_port");
-		mlog(LV_NOTICE, "exmdb_provider: listen address is [%s]:%hu",
+		mlog(LV_INFO, "exmdb_provider: listen address is [%s]:%hu",
 		       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
 		exmdb_listener_init(listen_ip, listen_port);

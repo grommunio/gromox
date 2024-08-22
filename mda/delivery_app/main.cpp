@@ -244,7 +244,7 @@ int main(int argc, char **argv)
     }
 
 	retcode = EXIT_SUCCESS;
-	mlog(LV_NOTICE, "system: LDA is now running");
+	mlog(LV_INFO, "system: LDA is now running");
 	while (!g_notify_stop) {
         sleep(3);
 		if (g_hup_signalled.exchange(false)) {

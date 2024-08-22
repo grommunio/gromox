@@ -128,7 +128,7 @@ void mod_cache_init(int context_num)
 
 static int mod_cache_defaults()
 {
-	mlog(LV_NOTICE, "mod_cache: defaulting to built-in list of handled paths");
+	mlog(LV_INFO, "mod_cache: defaulting to built-in list of handled paths");
 	DIRECTORY_NODE node;
 	node.domain = "*";
 	node.path = "/web";

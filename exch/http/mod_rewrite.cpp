@@ -115,7 +115,7 @@ static int mod_rewrite_default()
 	static constexpr size_t ebufsize = 512;
 	auto errbuf = std::make_unique<char[]>(ebufsize);
 
-	mlog(LV_NOTICE, "mod_rewrite: defaulting to built-in rule list");
+	mlog(LV_INFO, "mod_rewrite: defaulting to built-in rule list");
 	node.replace_string = "\\1/grommunio-sync/index.php";
 	auto ret = regcomp(&node.search_pattern, "\\(/Microsoft-Server-ActiveSync\\)", REG_ICASE);
 	if (ret != 0) {
