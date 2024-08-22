@@ -1735,7 +1735,7 @@ int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *ss)
 		return -1;
 	if (memcmp(buf, sig, sizeof(sig)) != 0)
 		return -1;
-	if (((buf[12] & 0xF0) >> 4) != level || level != 2)
+	if (static_cast<unsigned int>((buf[12] & 0xF0) >> 4) != level || level != 2)
 		return -1;
 	if ((buf[12] & 0xF) == 0)
 		return 0;
