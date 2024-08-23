@@ -641,7 +641,8 @@ static errno_t resolvename(const GUID &guid, const char *name, bool create,
 	return 0;
 }
 
-static errno_t delstoreprop(int argc, char **argv, const GUID &guid, const char *name)
+static errno_t delstoreprop(int argc, char **argv, const GUID &guid,
+    const char *name, uint16_t type)
 {
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
@@ -654,7 +655,7 @@ static errno_t delstoreprop(int argc, char **argv, const GUID &guid, const char 
 		return 0;
 	else if (err != 0)
 		return err;
-	uint32_t proptag = PROP_TAG(PT_BINARY, propid);
+	uint32_t proptag = PROP_TAG(type, propid);
 	const PROPTAG_ARRAY tags = {1, &proptag};
 	if (!exmdb_client::remove_store_properties(g_storedir, &tags))
 		return EINVAL;
@@ -854,9 +855,15 @@ int main(int argc, char **argv)
 	} else if (strcmp(argv[0], "emptyfld") == 0) {
 		ret = emptyfld::main(argc, argv);
 	} else if (strcmp(argv[0], "clear-photo") == 0) {
-		ret = delstoreprop(argc, argv, PSETID_GROMOX, "photo");
+		ret = delstoreprop(argc, argv, PSETID_GROMOX, "photo", PT_BINARY);
 	} else if (strcmp(argv[0], "clear-profile") == 0) {
-		ret = delstoreprop(argc, argv, PSETID_GROMOX, "zcore_profsect");
+		ret = delstoreprop(argc, argv, PSETID_GROMOX, "zcore_profsect", PT_BINARY);
+		if (ret == 0)
+			ret = delstoreprop(argc, argv, PSETID_GROMOX, "websettings", PT_UNICODE);
+		if (ret == 0)
+			ret = delstoreprop(argc, argv, PSETID_GROMOX, "websettings_persistent", PT_UNICODE);
+		if (ret == 0)
+			ret = delstoreprop(argc, argv, PSETID_GROMOX, "websettings_recipienthistory", PT_UNICODE);
 	} else if (strcmp(argv[0], "clear-rwz") == 0) {
 		ret = clear_rwz();
 	} else if (strcmp(argv[0], "get-photo") == 0) {
