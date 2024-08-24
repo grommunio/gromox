@@ -2266,11 +2266,14 @@ ec_error_t zs_emptyfolder(GUID hsession, uint32_t hfolder, uint32_t flags)
 	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
-	if (!pstore->b_private)
-		return ecNotSupported;
 	auto fid_val = rop_util_get_gc_value(pfolder->folder_id);
-	if (fid_val == PRIVATE_FID_ROOT || fid_val == PRIVATE_FID_IPMSUBTREE)
-		return ecAccessDenied;
+	if (pstore->b_private) {
+		if (fid_val == PRIVATE_FID_ROOT || fid_val == PRIVATE_FID_IPMSUBTREE)
+			return ecAccessDenied;
+	} else {
+		if (fid_val == PUBLIC_FID_ROOT || fid_val == PUBLIC_FID_IPMSUBTREE)
+			return ecAccessDenied;
+	}
 	const char *username = nullptr;
 	if (!pstore->owner_mode()) {
 		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
