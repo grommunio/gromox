@@ -191,21 +191,22 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 	auto ret = gx_ldap_search(tok_meta,
 	           base_dn.size() > 0 ? base_dn.c_str() : nullptr,
 	           filter.c_str(), const_cast<char **>(no_attrs), &unique_tie(msg));
+	auto act_base = base_dn.size() > 0 ? base_dn.c_str() : "(ldap.conf->BASE)";
 	if (ret != LDAP_SUCCESS && ret != LDAP_SIZELIMIT_EXCEEDED) {
-		mlog(LV_ERR, "ldap_adaptor: error during search in %s for %s: %s",
-		        base_dn.c_str(), filter.c_str(), ldap_err2string(ret));
+		mlog(LV_ERR, "ldap_adaptor: error during search in base \"%s\" for \"%s\": %s",
+		        act_base, filter.c_str(), ldap_err2string(ret));
 		return FALSE;
 	}
 	auto matches = validate_response(tok_meta.get(), msg.get());
 	if (matches < 0) {
 		return FALSE;
 	} else if (matches == 0) {
-		mlog(LV_DEBUG, "ldap_adaptor: search in %s for %s: 0 matches",
-			base_dn.c_str(), filter.c_str());
+		mlog(LV_DEBUG, "ldap_adaptor: search in base \"%s\" for \"%s\": 0 matches",
+			act_base, filter.c_str());
 		return false;
 	} else if (ret == LDAP_SIZELIMIT_EXCEEDED) {
-		mlog(LV_ERR, "ldap_adaptor: search in %s for %s: >1 match (ambiguous result)",
-			base_dn.c_str(), filter.c_str());
+		mlog(LV_ERR, "ldap_adaptor: search in base \"%s\" for \"%s\": >1 match (ambiguous result)",
+			act_base, filter.c_str());
 		return false;
 	}
 	auto firstmsg = ldap_first_message(tok_meta.get(), msg.get());
@@ -221,7 +222,7 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 	ret = gx_ldap_bind(tok_bind, dn, &bv);
 	if (ret == LDAP_SUCCESS)
 		return TRUE;
-	mlog(LV_ERR, "ldap_adaptor: ldap_simple_bind %s: %s", dn, ldap_err2string(ret));
+	mlog(LV_ERR, "ldap_adaptor: ldap_simple_bind \"%s\": %s", dn, ldap_err2string(ret));
 	return FALSE;
 }
 
