@@ -689,13 +689,6 @@ static ec_error_t oxcfold_emptyfolder(unsigned int flags,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (!plogon->is_private())
-		/* just like Exchange 2013 or later */
-		return ecNotSupported;
-	auto fid_val = rop_util_get_gc_value(pfolder->folder_id);
-	if (fid_val == PRIVATE_FID_ROOT ||
-	    fid_val == PRIVATE_FID_IPMSUBTREE)
-		return ecAccessDenied;
 	auto dir = plogon->get_dir();
 	auto username = plogon->eff_user();
 	if (username != STORE_OWNER_GRANTED) {
