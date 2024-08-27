@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdio>
 #include <cstring>
 #include <memory>
 #include <utility>
 #include <libHX/defs.h>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
@@ -228,6 +231,28 @@ bool MAIL::to_file(int fd) const
 	         };
 	return static_cast<const MIME *>(pnode->pdata)->emit(f,
 	       reinterpret_cast<void *>(static_cast<intptr_t>(fd)));
+}
+
+errno_t MAIL::to_fd(int fd) const
+{
+	STREAM st;
+	if (!serialize(&st))
+		return ENOMEM;
+	void *data;
+	unsigned int size = STREAM_BLOCK_SIZE;
+	while ((data = st.get_read_buf(&size)) != nullptr) {
+		auto wrret = HXio_fullwrite(fd, data, size);
+		if (wrret < 0)
+			return errno;
+		if (static_cast<size_t>(wrret) != size)
+			/*
+			 * Can't really happen right, either it is fully
+			 * written or there is a negative return.
+			 */
+			return ENOSPC;
+		size = STREAM_BLOCK_SIZE;
+	}
+	return 0;
 }
 
 /*
