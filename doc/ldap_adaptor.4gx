@@ -23,10 +23,14 @@ ldap_adaptor plugin, but is also read by the Grommunio Admin API.
 .SS Gromox directives
 .TP
 \fBauth_connections\fP
-The maximum number of LDAP connections that may be used for authentication
-requests. (Authentication cannot be run on the metadata connections, and so
-this consistutes a separate set of connections.) This parameter has fixed value
-and is currently not settable.
+The maximum size of the connection pool for authentication requests. This
+parameter has fixed value (same as data_connections) and is currently not
+settable!
+.br
+(Authentication operations incur an implicit logout of whatever identity was
+used before, which could incur extra latency if authentication operations and
+metadata lookups were to be done on the same connection, which is why
+ldap_adaptor has two separate connection pools.)
 .br
 Default: (same as data_connections)
 .TP
