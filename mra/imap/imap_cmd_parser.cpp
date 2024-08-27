@@ -2269,7 +2269,14 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	mid_string += "."s + znul(g_config_file->get_value("host_id"));
 	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, mid_string);
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
-	if (fd.get() < 0 || !imail.to_file(fd.get())) {
+	errno_t err;
+	if (fd.get() < 0)
+		err = errno;
+	else
+		err = imail.to_fd(fd.get());
+	if (err != 0) {
+		mlog(LV_ERR, "E-1763: write to %s failed: %s",
+			eml_path.c_str(), strerror(err));
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1370: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
@@ -2480,7 +2487,14 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 		time(&tmp_time);
 	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, pcontext->mid);
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
-	if (fd.get() < 0 || !imail.to_file(fd.get())) {
+	errno_t err;
+	if (fd.get() < 0)
+		err = errno;
+	else
+		err = imail.to_fd(fd.get());
+	if (err != 0) {
+		mlog(LV_ERR, "E-1764: write to %s failed: %s",
+			eml_path.c_str(), strerror(err));
 		imail.clear();
 		pbuff.reset();
 		pcontext->unlink_file();

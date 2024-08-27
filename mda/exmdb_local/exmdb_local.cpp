@@ -331,13 +331,15 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		return delivery_status::temp_fail;
 	}
 	
-	if (!pmail->to_file(fd.get())) {
+	auto syserr = pmail->to_fd(fd.get());
+	if (syserr != 0) {
 		fd.close_rd();
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1386: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
-			"%s: pmail->to_file failed for unspecified reasons", eml_path.c_str());
+			"%s: pmail->to_fd failed: %s",
+			eml_path.c_str(), strerror(syserr));
 		return delivery_status::temp_fail;
 	}
 	auto ret = fd.close_wr();

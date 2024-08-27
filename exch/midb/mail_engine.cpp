@@ -1437,8 +1437,11 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 			mlog(LV_ERR, "E-1771: open %s for write: %s", temp_path, strerror(errno));
 			return;
 		}
-		if (!imail.to_file(fd.get())) {
-			mlog(LV_ERR, "E-1772: to_file %s failed", temp_path);
+		auto err = imail.to_fd(fd.get());
+		if (err == 0)
+			err = fd.close_wr();
+		if (err != 0) {
+			mlog(LV_ERR, "E-1772: to_file %s failed: %s", temp_path, strerror(err));
 			return;
 		}
 	}

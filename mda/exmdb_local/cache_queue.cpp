@@ -160,8 +160,15 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	uint32_t enc_bound  = cpu_to_le32(pcontext->ctrl.bound_type);
 	uint32_t enc_spam   = cpu_to_le32(false);
 	uint32_t enc_bounce = cpu_to_le32(pcontext->ctrl.need_bounce);
-	if (!pcontext->mail.to_file(fd.get()) ||
-	    write(fd.get(), &enc_qid, sizeof(enc_qid)) != sizeof(enc_qid) ||
+	auto err = pcontext->mail.to_fd(fd.get());
+	if (err != 0) {
+		mlog(LV_ERR, "E-1765: writeout failed: %s", strerror(err));
+		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1356: remove %s: %s",
+			        file_name.c_str(), strerror(errno));
+		return -1;
+	}
+	if (write(fd.get(), &enc_qid, sizeof(enc_qid)) != sizeof(enc_qid) ||
 	    write(fd.get(), &enc_bound, sizeof(enc_bound)) != sizeof(enc_bound) ||
 	    write(fd.get(), &enc_spam, sizeof(enc_spam)) != sizeof(enc_spam) ||
 	    write(fd.get(), &enc_bounce, sizeof(enc_bounce)) != sizeof(enc_bounce)) {

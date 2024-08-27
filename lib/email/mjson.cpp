@@ -989,10 +989,17 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 	size_t mess_len;
 	fd = open(msg_path, O_CREAT|O_TRUNC|O_WRONLY, FMODE_PRIVATE);
 	if (fd.get() < 0) {
+		mlog(LV_ERR, "E-1767: open %s for write failed: %s",
+			msg_path, strerror(errno));
 		pbuild->build_result = FALSE;
 		return;
 	}
-	if (!imail.to_file(fd.get()) || fd.close_wr() != 0) {
+	auto err = imail.to_fd(fd.get());
+	if (err == 0)
+		err = fd.close_wr();
+	if (err != 0) {
+		mlog(LV_ERR, "E-1768: write to %s failed: %s",
+			msg_path, strerror(err));
 		fd.close_rd();
 		if (remove(msg_path) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1372: remove %s: %s", msg_path, strerror(errno));
