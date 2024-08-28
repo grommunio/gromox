@@ -170,6 +170,8 @@ static bool imap_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
 		return false;
 	}
 	g_haproxy_level = gxcfg->get_ll("imap_accept_haproxy");
+	if (g_haproxy_level > 0)
+		mlog(LV_NOTICE, "All incoming connections must be HAPROXY type %u", g_haproxy_level);
 	return true;
 }
 

@@ -123,6 +123,8 @@ static bool dq_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
 	}
 	g_rcpt_delimiter = znul(gxcfg->get_value("lda_recipient_delimiter"));
 	g_haproxy_level = gxcfg->get_ll("lda_accept_haproxy");
+	if (g_haproxy_level > 0)
+		mlog(LV_NOTICE, "All incoming connections must be HAPROXY type %u", g_haproxy_level);
 	return true;
 }
 
