@@ -10,7 +10,10 @@ a MySQL/MariaDB database.
 The usual config file location is /etc/gromox/mysql_adaptor.cfg.
 .TP
 \fBconnection_num\fP
-Number of SQL connections to keep active.
+Number of SQL connections to keep active. Note that the SQL server may have
+limits in place, such as "max_connections" and "wait_timeout" (cf. `SHOW GLOBAL
+VARIABLES LIKE "wait_timeout"`). Automatic reconnection happens by Gromox when
+a query is about to be executed.
 .br
 Default: \fI8\fP
 .TP
