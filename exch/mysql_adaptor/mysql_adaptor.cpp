@@ -315,13 +315,20 @@ bool mysql_adaptor_get_user_displayname(const char *username,
 
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr = fmt::format(
-		"SELECT u2.propval_str AS real_name, "
+		"(SELECT u2.propval_str AS real_name, "
 		"u3.propval_str AS nickname, dt.propval_str AS dtypx FROM users AS u "
 		JOIN_WITH_DISPLAYTYPE " "
 		"LEFT JOIN user_properties AS u2 ON u.id=u2.user_id AND u2.proptag=805371935 " /* PR_DISPLAY_NAME */
 		"LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=978255903 " /* PR_NICKNAME */
 		JOIN_ALTNAMES " "
-		"WHERE u.username='{0}' OR alt.altname='{0}' LIMIT 2",
+		"WHERE u.username='{0}' LIMIT 2) UNION"
+		"(SELECT u2.propval_str AS real_name, "
+		"u3.propval_str AS nickname, dt.propval_str AS dtypx FROM users AS u "
+		JOIN_WITH_DISPLAYTYPE " "
+		"LEFT JOIN user_properties AS u2 ON u.id=u2.user_id AND u2.proptag=805371935 " /* PR_DISPLAY_NAME */
+		"LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=978255903 " /* PR_NICKNAME */
+		JOIN_ALTNAMES " "
+		"WHERE alt.altname='{0}' LIMIT 2) LIMIT 2",
 		temp_name);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
@@ -356,9 +363,12 @@ BOOL mysql_adaptor_get_user_privilege_bits(const char *username,
 
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr = fmt::format(
-		"SELECT privilege_bits FROM users AS u "
+		"(SELECT privilege_bits FROM users AS u "
 		JOIN_ALTNAMES " "
-		"WHERE u.username='{0}' OR alt.altname='{0}' LIMIT 2",
+		"WHERE u.username='{0}' LIMIT 2) UNION"
+		"(SELECT privilege_bits FROM users AS u "
+		JOIN_ALTNAMES " "
+		"WHERE alt.altname='{0}' LIMIT 2) LIMIT 2",
 		temp_name);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
@@ -519,9 +529,12 @@ BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
 
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr = fmt::format(
-		"SELECT u.id, u.domain_id, dt.propval_str AS dtypx"
+		"(SELECT u.id, u.domain_id, dt.propval_str AS dtypx"
 		" FROM users AS u " JOIN_WITH_DISPLAYTYPE " " JOIN_ALTNAMES
-		" WHERE u.username='{0}' OR alt.altname='{0}' LIMIT 2",
+		" WHERE u.username='{0}' LIMIT 2) UNION"
+		" (SELECT u.id, u.domain_id, dt.propval_str AS dtypx"
+		" FROM users AS u " JOIN_WITH_DISPLAYTYPE " " JOIN_ALTNAMES
+		" WHERE alt.altname='{0}' LIMIT 2) LIMIT 2",
 		temp_name);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
