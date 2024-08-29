@@ -559,8 +559,7 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 	auto qstr = fmt::format(
 		"SELECT d.id, d.org_id FROM domains AS d "
 		"LEFT JOIN users AS u ON d.id=u.domain_id "
-		JOIN_ALTNAMES " "
-		"WHERE domainname='{0}' OR alt.altname='{0}' LIMIT 1",
+		"WHERE domainname='{0}' LIMIT 1",
 		temp_name);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
