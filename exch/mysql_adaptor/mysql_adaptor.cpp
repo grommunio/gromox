@@ -74,7 +74,7 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr = fmt::format(
-		"SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
+		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
 		"u.privilege_bits, u.maildir, u.lang, u.externid, "
 		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
 		"u.username, u.timezone FROM users AS u " JOIN_WITH_DISPLAYTYPE
@@ -86,11 +86,24 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 		" LEFT JOIN orgparam AS op4 ON orgs.id=op4.org_id AND op4.key='ldap_basedn'"
 		" LEFT JOIN orgparam AS op5 ON orgs.id=op5.org_id AND op5.key='ldap_mail_attr'"
 		" LEFT JOIN orgparam AS op6 ON orgs.id=op6.org_id AND op6.key='ldap_start_tls'"
-		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='{}'"
-		" WHERE {} OR alt.altname='{}' LIMIT 2",
+		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='{0}'"
+		" WHERE {1} LIMIT 2) UNION"
+		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
+		"u.privilege_bits, u.maildir, u.lang, u.externid, "
+		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
+		"u.username, u.timezone FROM users AS u " JOIN_WITH_DISPLAYTYPE
+		" LEFT JOIN domains AS d ON u.domain_id=d.id"
+		" LEFT JOIN orgs ON d.org_id=orgs.id"
+		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.org_id AND op1.key='ldap_uri'"
+		" LEFT JOIN orgparam AS op2 ON orgs.id=op2.org_id AND op2.key='ldap_binddn'"
+		" LEFT JOIN orgparam AS op3 ON orgs.id=op3.org_id AND op3.key='ldap_bindpw'"
+		" LEFT JOIN orgparam AS op4 ON orgs.id=op4.org_id AND op4.key='ldap_basedn'"
+		" LEFT JOIN orgparam AS op5 ON orgs.id=op5.org_id AND op5.key='ldap_mail_attr'"
+		" LEFT JOIN orgparam AS op6 ON orgs.id=op6.org_id AND op6.key='ldap_start_tls'"
+		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='{0}'"
+		" WHERE alt.altname='{0}' LIMIT 2) LIMIT 2",
 		temp_name,
-		str_isascii(temp_name) ? ("u.username='"s + temp_name + "'") : "0"s,
-		temp_name);
+		str_isascii(temp_name) ? ("u.username='"s + temp_name + "'") : "0"s);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return EIO;
