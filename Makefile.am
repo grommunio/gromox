@@ -254,11 +254,19 @@ timer_LDADD = -lpthread ${libHX_LIBS} ${libssl_LIBS} libgromox_common.la
 libphp_mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES}
 libphp_mapi_la_SOURCES = php_mapi/ext.hpp php_mapi/ext_pack.cpp php_mapi/mapi.cpp php_mapi/mapi_arginfo.hpp php_mapi/rpc_ext.cpp php_mapi/type_conversion.cpp php_mapi/type_conversion.hpp php_mapi/zclient.cpp php_mapi/zrpc.cpp
 libphp_mapi_la_LIBADD = ${fmt_LIBS} ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
+# allow-shlib-undefined makes no sense for libphp_mapi_la, since it
+# is a convenience archive (static archive in practice)
 libmapi4zf_la_SOURCES =
 libmapi4zf_la_LDFLAGS = ${PHP_LDFLAGS}
 libmapi4zf_la_LIBADD = libphp_mapi.la
+if WITH_GNU_LD
+libmapi4zf_la_LDFLAGS += -Wl,--allow-shlib-undefined
+endif
 mapi_la_SOURCES =
 mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
+if WITH_GNU_LD
+mapi_la_LDFLAGS += -Wl,--allow-shlib-undefined
+endif
 mapi_la_LIBADD = libphp_mapi.la
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
