@@ -220,19 +220,6 @@ bool MAIL::emit(MIME::write_func xw, void *fd) const
 	return static_cast<const MIME *>(nd->pdata)->emit(xw, fd);
 }
 
-bool MAIL::to_file(int fd) const
-{
-	auto pmail = this;
-	auto pnode = pmail->tree.get_root();
-	if (pnode == nullptr)
-		return false;
-	auto f = +[](void *obj, const void *buf, size_t z) {
-	         	return ::write(reinterpret_cast<intptr_t>(obj), buf, z);
-	         };
-	return static_cast<const MIME *>(pnode->pdata)->emit(f,
-	       reinterpret_cast<void *>(static_cast<intptr_t>(fd)));
-}
-
 errno_t MAIL::to_fd(int fd) const
 {
 	STREAM st;
