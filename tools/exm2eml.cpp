@@ -209,6 +209,10 @@ int main(int argc, char **argv) try
 			return EXIT_FAILURE;
 		}
 		auto err = imail.to_fd(STDOUT_FILENO);
+		if (err == EPIPE) {
+			printf("pipe\n");
+			return EXIT_FAILURE;
+		}
 		if (err != 0) {
 			fprintf(stderr, "Writeout failed for an unspecified reason. %s\n", strerror(err));
 			return EXIT_FAILURE;
