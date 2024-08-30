@@ -21,7 +21,6 @@ struct GX_EXPORT MAIL {
 	void clear();
 	bool load_from_str_move(char *in_buff, size_t length);
 	bool serialize(STREAM *) const;
-	bool emit(MIME::write_func, void *) const;
 	gromox::errno_t to_fd(int) const;
 	gromox::errno_t to_str(std::string &) const;
 	ssize_t get_length() const;

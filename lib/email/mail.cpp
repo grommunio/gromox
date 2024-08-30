@@ -212,14 +212,6 @@ bool MAIL::serialize(STREAM *pstream) const
 	return static_cast<const MIME *>(pnode->pdata)->serialize(pstream);
 }
 
-bool MAIL::emit(MIME::write_func xw, void *fd) const
-{
-	auto nd = tree.get_root();
-	if (nd == nullptr)
-		return false;
-	return static_cast<const MIME *>(nd->pdata)->emit(xw, fd);
-}
-
 errno_t MAIL::to_fd(int fd) const
 {
 	STREAM st;
