@@ -242,6 +242,22 @@ errno_t MAIL::to_fd(int fd) const
 	return 0;
 }
 
+errno_t MAIL::to_str(std::string &out) const try
+{
+	STREAM st;
+	if (!serialize(&st))
+		return ENOMEM;
+	char *data;
+	unsigned int size = STREAM_BLOCK_SIZE;
+	while ((data = static_cast<char *>(st.get_read_buf(&size))) != nullptr) {
+		out.append(data, size);
+		size = STREAM_BLOCK_SIZE;
+	}
+	return 0;
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
+}
+
 /*
  *	calculate the mail object length in bytes
  *	@param
