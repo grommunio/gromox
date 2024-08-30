@@ -35,17 +35,9 @@ ec_error_t cu_send_mail(MAIL &mail, const char *smtp_url, const char *sender,
 	for (const auto &r : rcpt_list)
 		vrcpt_list.appendMailbox(vmime::make_shared<vmime::mailbox>(r));
 	std::string content;
-	auto xwrite = +[](void *fd, const void *buf, size_t z) -> ssize_t {
-		try {
-			static_cast<std::string *>(fd)->append(static_cast<const char *>(buf), z);
-		} catch (const std::bad_alloc &) {
-			errno = ENOMEM;
-			return -1;
-		}
-		return z;
-	};
-	if (!mail.emit(xwrite, &content)) {
-		mlog(LV_ERR, "cu_send_mail: mail.serialize failed");
+	auto err = mail.to_str(content);
+	if (err != 0) {
+		mlog(LV_ERR, "cu_send_mail: mail.serialize failed: %s", strerror(errno));
 		return MAPI_W_NO_SERVICE;
 	}
 	vmime::utility::inputStreamStringAdapter ct_adap(content); /* copies */
