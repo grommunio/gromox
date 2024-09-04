@@ -70,6 +70,9 @@ GET_USER_IDS system_services_get_user_ids;
 GET_DOMAIN_IDS system_services_get_domain_ids;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 
+static thread_local alloc_context g_alloc_mgr;
+static void *gi_alloc(size_t z) { return g_alloc_mgr.alloc(z); }
+
 static void terse_help()
 {
 	fprintf(stderr, "Usage: gromox-eml2mt file.eml[...] | gromox-mt2 ...\n");
@@ -85,7 +88,7 @@ do_mail(const char *file, char *data, size_t dsize)
 		return nullptr;
 	}
 	std::unique_ptr<MESSAGE_CONTENT, mc_delete> msg(oxcmail_import("utf-8",
-		"UTC", &imail, zalloc, ee_get_propids));
+		"UTC", &imail, gi_alloc, ee_get_propids));
 	if (msg == nullptr)
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
 	return msg;
