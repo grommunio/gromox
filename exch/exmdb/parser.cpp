@@ -199,7 +199,7 @@ static void *request_parser_thread(void *pparam)
 	try {
 		pconnection.reset(connraw);
 	} catch (...) {
-		delete connraw;
+		/* reset() implies deletion of connraw */
 		return nullptr;
 	}
 	try {
