@@ -1,3 +1,19 @@
+Gromox 2.32 (2024-09-04)
+========================
+
+Fixes:
+
+* mysql_adaptor: re-speedup queries that came to ran without an index
+* mbop: make the "clear-profile" operation do clear g-web settings again
+* zcore: workaround potential hang during shutdown
+
+Enhancements:
+
+* emsmdb, zcore: allow "Empty Folder" operations in public stores
+* exmdb: increased verbosity during shutdown phase so it does not appear
+  like a hang
+
+
 Gromox 2.31 (2024-08-14)
 ========================
 
