@@ -2269,7 +2269,7 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	mid_string += "."s + znul(g_config_file->get_value("host_id"));
 	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, mid_string);
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
-	errno_t err;
+	errno_t err = 0;
 	if (fd.get() < 0)
 		err = errno;
 	else
@@ -2487,7 +2487,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 		time(&tmp_time);
 	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, pcontext->mid);
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
-	errno_t err;
+	errno_t err = 0;
 	if (fd.get() < 0)
 		err = errno;
 	else
