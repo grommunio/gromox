@@ -394,8 +394,10 @@ static int t_base64()
 
 	char thebuf[1];
 	thebuf[0] = '=';
-	if (qp_decode_ex(out, 4, &thebuf[0], 1) >= 0)
+	if (qp_decode_ex(out, 4, &thebuf[0], 1) > 0)
 		return printf("TQ-5 failed\n");
+	if (qp_decode_ex(out, 0, &thebuf[0], 1) >= 0)
+		return printf("TQ-6 failed\n");
 	return 0;
 }
 
