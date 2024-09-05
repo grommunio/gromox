@@ -13,14 +13,8 @@
 
 using namespace gromox;
 
-static int do_file(const char *filename)
+static int do_file(FILE *fp)
 {
-	std::unique_ptr<FILE, file_deleter> fp(fopen(filename, "r"));
-	if (fp == nullptr) {
-		fprintf(stderr, "Could not open %s: %s\n",
-		        filename, strerror(errno));
-		return EXIT_FAILURE;
-	}
 	auto now = time(nullptr);
 	auto now_s = ctime(&now);
 	if (now_s != nullptr)
@@ -28,13 +22,13 @@ static int do_file(const char *filename)
 	printf("From MAILER-DAEMON %s\n", now_s != nullptr ? now_s : "Sat Jan  1 00:00:00 2022");
 	hxmc_t *ln = nullptr;
 	auto cl_0 = make_scope_exit([&]() { HXmc_free(ln); });
-	while (HX_getl(&ln, fp.get()) != nullptr) {
+	while (HX_getl(&ln, fp) != nullptr) {
 		HX_chomp(ln);
 		printf("%s\n", ln);
 		if (*ln == '\0')
 			break;
 	}
-	while (HX_getl(&ln, fp.get()) != nullptr) {
+	while (HX_getl(&ln, fp) != nullptr) {
 		HX_chomp(ln);
 		if (strncmp(ln, "From ", 5) == 0)
 			printf(">");
@@ -44,7 +38,18 @@ static int do_file(const char *filename)
 	return EXIT_SUCCESS;
 }
 
-static int do_stdin()
+static int do_file(const char *filename)
+{
+	std::unique_ptr<FILE, file_deleter> fp(fopen(filename, "r"));
+	if (fp == nullptr) {
+		fprintf(stderr, "Could not open %s: %s\n",
+		        filename, strerror(errno));
+		return EXIT_FAILURE;
+	}
+	return do_file(fp.get());
+}
+
+static int do_filelist()
 {
 	hxmc_t *ln = nullptr;
 	auto cl_0 = make_scope_exit([&]() { HXmc_free(ln); });
@@ -58,9 +63,15 @@ static int do_stdin()
 
 int main(int argc, char **argv)
 {
+	if (argc == 1) {
+		auto ret = do_file(stdin);
+		if (ret != EXIT_SUCCESS)
+			return ret;
+		return EXIT_SUCCESS;
+	}
 	while (--argc > 0) {
 		++argv;
-		auto ret = strcmp(*argv, "-") == 0 ? do_stdin() : do_file(*argv);
+		auto ret = strcmp(*argv, "-") == 0 ? do_filelist() : do_file(*argv);
 		if (ret != EXIT_SUCCESS)
 			return ret;
 	}

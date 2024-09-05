@@ -5,23 +5,38 @@
 gromox\-eml2mbox \(em Utility for converting RFC5322 Internet Mail messages
 into a RFC4155 mbox-format mailbox
 .SH Synopsis
-\fBgromox\-eml2mbox\fP \fIfile\fP...
+\fBgromox\-eml2mbox\fP [\fIfile\fP...] \fB>\fP\fIout.mbox\fP
 .SH Description
 gromox\-eml2mbox reads one or more RFC5322-formated e-mail messages and
 re-exports them as a Unix mbox to stdout. The purpose is to make messages
-openable with command-line MUAs such as Alpine.
-.PP
-Passing \fB\-\fP as an argument will read a file list from stdin. This can help
-when *.eml leads to an expansion the system cannot handle.
+openable with command-line MUAs such as Alpine <https://alpineapp.email/>.
 .SH Examples
+.PP
+When \fB\-\fP is given as an argument, standard input is expected to
+contain a \fBlist of filenames\fP (i.e. indirection). This can help
+when *.eml leads to an expansion the system cannot handle:
+.PP
+.RS 4
 .nf
 gromox\-eml2mbox *.eml >all.mbox
 .fi
+.RE
+.PP
+May result in a "Argument list too long" error in sh. Remedy for that:
+.PP
+.RS 4
 .nf
-find . \-type f \-name "*.eml" | gromox\-eml2mbox \- >all.mbox
+find . \-maxdepth 1 \-type f \-name "*.eml" | gromox\-eml2mbox \-
+>all.mbox
 .fi
+.RE
+.PP
+To convert a single message coming from elsewhere via pipe:
+.PP
+.RS 4
 .nf
-alpine \-f $PWD/all.mbox
+stuff | gromox\-exm2eml >1.mbox
 .fi
+.RE
 .SH See also
 \fBgromox\fP(7)
