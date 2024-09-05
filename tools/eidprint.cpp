@@ -179,7 +179,7 @@ static void try_folder_eid(const std::string_view s, unsigned int ind)
 	printf("%-*sflags  = 0x%08x\n", lead(ind), "", eid.flags);
 	printf("%-*stype   = 0x%02x <<%s>>\n", lead(ind), "", eid.folder_type, objecttypename(eid.folder_type));
 	printf("%-*sdbguid = ", lead(ind), "");
-	print_guid(*reinterpret_cast<const FLATUID *>(&s[offsetof(FOLDER_ENTRYID, database_guid)]));
+	print_guid(eid.database_guid);
 	printf("\n%-*sfidgcv = 0x%llx\n", lead(ind), "", LLU{rop_util_gc_to_value(eid.global_counter)});
 	printf("%-*sreplid = %u\n", lead(ind), "", (eid.pad[0] << 8) | eid.pad[1]);
 }
@@ -196,13 +196,13 @@ static void try_message_eid(const std::string_view s, unsigned int ind)
 	printf("%-*sEX message entry ID\n", lead(ind), "");
 	++ind;
 	printf("%-*sflags  = 0x%08x\n", lead(ind), "", eid.flags);
-	printf("%-*stype   = 0x%02x\n", lead(ind), "", eid.message_type);
+	printf("%-*stype   = 0x%04x\n", lead(ind), "", eid.message_type);
 	printf("%-*sfdguid = ", lead(ind), "");
-	print_guid(*reinterpret_cast<const FLATUID *>(&s[offsetof(MESSAGE_ENTRYID, folder_database_guid)]));
+	print_guid(eid.folder_database_guid);
 	printf("\n%-*sfidgcv = 0x%llx\n", lead(ind), "", LLU{rop_util_gc_to_value(eid.folder_global_counter)});
 	printf("%-*sreplid = 0x%x\n", lead(ind), "", (eid.pad1[0] << 8) | eid.pad1[1]);
 	printf("%-*smdguid = ", lead(ind), "");
-	print_guid(*reinterpret_cast<const FLATUID *>(&s[offsetof(MESSAGE_ENTRYID, message_database_guid)]));
+	print_guid(eid.message_database_guid);
 	printf("\n%-*smidgcv = 0x%llx\n", lead(ind), "", LLU{rop_util_gc_to_value(eid.message_global_counter)});
 	printf("%-*sreplid = 0x%x\n", lead(ind), "", (eid.pad2[0] << 8) | eid.pad2[1]);
 }
