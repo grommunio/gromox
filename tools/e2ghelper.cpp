@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2024 grommunio GmbH
 // This file is part of Gromox.
+/*
+ * e2ghelper performs the equivalent of
+ *
+ * 	gromox-pff2mt [...] | gromox-mt2exm [...];
+ * 	test ${PIPESTATUS[0]} = 0 && test ${PIPESTATUS[1]} = 0
+ *
+ * e2ghelper exists because replicating that behavior in POSIX sh is awkward -
+ * https://unix.stackexchange.com/a/470884 .
+ */
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>

@@ -321,6 +321,7 @@ dist_man_MANS = \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
 	doc/gromox.7 doc/gromox.cfg.5 doc/gromox-abktconv.8 \
 	doc/gromox-abktpull.8 doc/gromox-dbop.8 doc/gromox-dscli.8 \
+	doc/gromox-e2ghelper.8 \
 	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 doc/gromox-exm2eml.8 \
 	doc/gromox-exm2ical.8 doc/gromox-exm2mt.8 doc/gromox-exm2vcf.8 \
 	doc/gromox-kdb2mt.8 doc/gromox-mailq.8 doc/gromox-mbop.8 \
