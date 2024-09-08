@@ -16,18 +16,18 @@ possibly transformed by the ABP:
 
 * ``PR_ACCOUNT``: Not read from SQL, but copied from PR_SMTP_ADDRESS.
 
-* ``PR_ADDRTYPE``: not read / synthesized
+* ``PR_ADDRTYPE``: Not read, but synthesized.
 
 * ``PR_COMPANY_NAME``: Not read from the user object, but copied from the
   ``domain.title`` column of the user's domain.
 
-* ``PR_CREATION_TIME``: not read / synthesized
+* ``PR_CREATION_TIME``: Not read, but synthesized.
 
-* ``PR_DEPARTMENT_NAME``: not read / copied from the ``groups.title``
+* ``PR_DEPARTMENT_NAME``: Not read, but copied from the ``groups.title``
   column of the user's group_id. ("groups" in SQL refer to departments, a
   feature to create hierarchies in the address book).
 
-* ``PR_DISPLAY_TYPE``: not read / synthesized based on PR_DISPLAY_TYPE_EX
+* ``PR_DISPLAY_TYPE``: Not read, but synthesized based on PR_DISPLAY_TYPE_EX.
 
 * ``PR_DISPLAY_TYPE_EX``: Indicates the mailbox type and user icon.
   Set to ``0`` (``DT_MAILUSER`` in source code) for regular users.
@@ -38,21 +38,22 @@ possibly transformed by the ABP:
   No other values are supported. The ABP synthesizes a suitable
   PR_DISPLAY_TYPE_EX value for MAPI clients built from this SQL row.
 
-* ``PR_EMAIL_ADDRESS``: not read / synthesized from username
+* ``PR_EMAIL_ADDRESS``: Not read, but synthesized from username.
 
-* ``PR_EMS_AB_DISPLAY_NAME_PRINTABLE``: not read / copied from PR_DISPLAY_NAME
+* ``PR_EMS_AB_DISPLAY_NAME_PRINTABLE``: Not read, but copied from
+  PR_DISPLAY_NAME.
 
-* ``PR_EMS_AB_HOME_MDB``: not read / synthesized
+* ``PR_EMS_AB_HOME_MDB``: Not read, but synthesized.
 
-* ``PR_EMS_AB_NETWORK_ADDRESS``: not read / synthesized
+* ``PR_EMS_AB_NETWORK_ADDRESS``: Not read, but synthesized.
 
-* ``PR_EMS_AB_PROXY_ADDRESSES``: not read / synthesized based on the
+* ``PR_EMS_AB_PROXY_ADDRESSES``: Not read, but synthesized based on the
   ``aliases`` SQL table.
 
-* ``PR_EMS_AB_THUMBNAIL_PHOTO``: not read / copied from the store property
+* ``PR_EMS_AB_THUMBNAIL_PHOTO``: Not read, but copied from the store property
   PR_EMS_AB_THUMBNAIL_PHOTO in the user store (exchange.sqlite3).
 
-* ``PR_OBJECT_TYPE``: not read / synthesized based on PR_DISPLAY_TYPE_EX
+* ``PR_OBJECT_TYPE``: Not read, but synthesized based on PR_DISPLAY_TYPE_EX.
 
 * ``PR_OFFICE_LOCATION``: Not read from the user object, but copied from the
   ``domain.address`` column of the user's domain.
@@ -64,11 +65,10 @@ possibly transformed by the ABP:
   (see PR_DISPLAY_TYPE_EX), this property is used to indicate the e-mail
   address for this contact. Otherwise, it is synthesized from the username.
 
-* ``PR_TEMPLATEID``: not read / synthesized based on
-  PR_DISPLAY_TYPE_EX
+* ``PR_TEMPLATEID``: Not read, but synthesized based on PR_DISPLAY_TYPE_EX.
 
-* ``PR_TRANSMITTABLE_DISPLAY_NAME``: not read / copied from
-  PR_DISPLAY_NAME
+* ``PR_TRANSMITTABLE_DISPLAY_NAME``: Not read, but copied from
+  PR_DISPLAY_NAME.
 
 The following properties have their value passed verbatim to MAPI clients, but
 the properties do have semantics or warrants remarks from our side.
