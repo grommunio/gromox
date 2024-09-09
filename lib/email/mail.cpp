@@ -314,7 +314,7 @@ MIME *MAIL::get_head()
 
 const MIME *MAIL::get_head() const { return deconst(this)->get_head(); }
 
-bool MAIL::get_charset(char *charset) const
+bool MAIL::get_charset(std::string &charset) const try
 {
 	auto pmail = this;
 	char temp_buff[1024];
@@ -326,7 +326,7 @@ bool MAIL::get_charset(char *charset) const
 		return false;
 	}
 #endif
-	charset[0] = '\0';
+	charset.clear();
 	auto pnode = pmail->tree.get_root();
 	if (pnode == nullptr)
 		return false;
@@ -335,7 +335,7 @@ bool MAIL::get_charset(char *charset) const
 		parse_mime_encode_string(temp_buff, strlen(temp_buff),
 			&encode_string);
 		if (0 != strcmp(encode_string.charset, "default")) {
-			strcpy(charset, encode_string.charset);
+			charset = encode_string.charset;
 			return true;
 		}
 	}
@@ -343,15 +343,17 @@ bool MAIL::get_charset(char *charset) const
 		parse_mime_encode_string(temp_buff, strlen(temp_buff),
 			&encode_string);
 		if (0 != strcmp(encode_string.charset, "default")) {
-			strcpy(charset, encode_string.charset);
+			charset = encode_string.charset;
 			return true;
 		}
 	}
-	pmail->enum_mime(mail_enum_text_mime_charset, charset);
-	if (*charset != '\0')
+	pmail->enum_mime(mail_enum_text_mime_charset, &charset);
+	if (!charset.empty())
 		return true;
-	pmail->enum_mime(mail_enum_html_charset, charset);
-	return *charset != '\0';
+	pmail->enum_mime(mail_enum_html_charset, &charset);
+	return !charset.empty();
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 static void replace_qb(char *s)
@@ -377,7 +379,6 @@ int MAIL::make_digest(size_t *poffset, Json::Value &digest) const try
 	int priority;
 	BOOL b_tags[TAG_NUM];
 	char temp_buff[1024];
-	char email_charset[64];
 	char mime_msgid[256];
 	char mime_date[256];
 	char mime_from[1024];
@@ -469,9 +470,9 @@ int MAIL::make_digest(size_t *poffset, Json::Value &digest) const try
 			encode64(ptr, strlen(ptr), mime_received, 256, NULL);
 		}
 	}
-	
-	if (!get_charset(email_charset))
-		email_charset[0] = '\0';
+
+	std::string email_charset;
+	get_charset(email_charset);
 	digest              = Json::objectValue;
 	digest["uid"]       = 0;
 	digest["recent"]    = 1;
@@ -488,9 +489,9 @@ int MAIL::make_digest(size_t *poffset, Json::Value &digest) const try
 	digest["subject"]   = mime_subject;
 	digest["received"]  = mime_received;
 	digest["date"]      = mime_date;
-	if (email_charset[0] != '\0' && str_isasciipr(email_charset)) {
-		replace_qb(email_charset);
-		digest["charset"] = email_charset;
+	if (!email_charset.empty() && str_isasciipr(email_charset.c_str())) {
+		replace_qb(email_charset.data());
+		digest["charset"] = std::move(email_charset);
 	}
 	if (*mime_sender != '\0')
 		digest["sender"] = mime_sender;

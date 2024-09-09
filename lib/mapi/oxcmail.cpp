@@ -2622,13 +2622,13 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		return imp_null;
 	pmsg->set_rcpts_internal(prcpts);
 
-	char default_charset[64];
+	std::string default_charset;
 	if (!pmail->get_charset(default_charset))
-		gx_strlcpy(default_charset, charset, std::size(default_charset));
+		default_charset = charset;
 	field_param.alloc = alloc;
 	field_param.pmail = pmail;
 	field_param.pmsg = pmsg.get();
-	field_param.charset = default_charset;
+	field_param.charset = default_charset.c_str();
 	field_param.last_propid = 0x8000;
 	field_param.b_flag_del = false;
 	const MIME *phead = pmail->get_head();
@@ -2719,7 +2719,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		    tnef_vfy_get_field(phead, tmp_buff, std::size(tmp_buff))) {
 			std::unique_ptr<message_content, mc_delete> pmsg1(oxcmail_parse_tnef(pmime1, alloc, get_propids));
 			if (pmsg1 != nullptr && tnef_vfy_check_key(pmsg1.get(), tmp_buff)) {
-				if (!oxcmail_parse_message_body(default_charset, pmime, &pmsg->proplist) ||
+				if (!oxcmail_parse_message_body(default_charset.c_str(), pmime, &pmsg->proplist) ||
 				    !oxcmail_fetch_propname(pmsg.get(), phash, alloc, get_propids))
 					return imp_null;
 				if (!oxcmail_copy_message_proplist(pmsg.get(), pmsg1.get()))
@@ -2743,7 +2743,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	}
 	mime_enum.b_result = true;
 	mime_enum.attach_id = 0;
-	mime_enum.charset = default_charset;
+	mime_enum.charset = default_charset.c_str();
 	mime_enum.str_zone = str_zone;
 	mime_enum.get_propids = get_propids;
 	mime_enum.alloc = alloc;
@@ -2752,15 +2752,15 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	select_parts(phead, mime_enum, 0);
 
 	if (mime_enum.pplain != nullptr &&
-	    !oxcmail_parse_message_body(default_charset,
+	    !oxcmail_parse_message_body(default_charset.c_str(),
 	    mime_enum.pplain, &pmsg->proplist))
 		return imp_null;
 	if (NULL != mime_enum.phtml) {
-		if (!oxcmail_parse_message_body(default_charset,
+		if (!oxcmail_parse_message_body(default_charset.c_str(),
 		    mime_enum.phtml, &pmsg->proplist))
 			return imp_null;
 	} else if (NULL != mime_enum.penriched) {
-		if (!oxcmail_parse_message_body(default_charset,
+		if (!oxcmail_parse_message_body(default_charset.c_str(),
 		    mime_enum.penriched, &pmsg->proplist))
 			return imp_null;
 	}
@@ -2784,7 +2784,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		if (!oxcmail_get_content_param(mime_enum.pcalendar, "charset",
 		    mime_charset, std::size(mime_charset)))
 			gx_strlcpy(mime_charset, !utf8_valid(pcontent.get()) ?
-				default_charset : "utf-8", std::size(mime_charset));
+				default_charset.c_str() : "utf-8", std::size(mime_charset));
 		if (!string_to_utf8(mime_charset, pcontent.get(),
 		    &pcontent[content_len+1], contoutsize - content_len - 1)) {
 			mime_enum.pcalendar = NULL;

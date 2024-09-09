@@ -27,7 +27,7 @@ struct GX_EXPORT MAIL {
 	MIME *add_head();
 	MIME *get_head();
 	const MIME *get_head() const;
-	bool get_charset(char *out) const;
+	bool get_charset(std::string &out) const;
 	int make_digest(size_t *offset, Json::Value &) const;
 	MIME *add_child(MIME *base, int opt);
 	void enum_mime(MAIL_MIME_ENUM, void *) const;
