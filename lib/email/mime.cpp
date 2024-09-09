@@ -1177,25 +1177,23 @@ bool MIME::get_filename(char *file_name, size_t fnsize) const
 	char *pbegin;
 	
 	if (pmime->get_content_param("name", file_name, fnsize)) {
-		goto FIND_FILENAME;
+		;
 	} else if (pmime->get_field("Content-Disposition", file_name, fnsize)) {
 		tmp_len = strlen(file_name);
 		pbegin = search_string(file_name, "filename=", tmp_len);
-		if (NULL != pbegin) {
-			pbegin += 9;
-			pend = strchr(pbegin, ';');
-			if (pend == nullptr)
-				pend = file_name + tmp_len;
-			tmp_len = pend - pbegin;
-			memmove(file_name, pbegin, tmp_len);
-			file_name[tmp_len] = '\0';
-			goto FIND_FILENAME;
-		}
+		if (pbegin == nullptr)
+			return false;
+		pbegin += 9;
+		pend = strchr(pbegin, ';');
+		if (pend == nullptr)
+			pend = file_name + tmp_len;
+		tmp_len = pend - pbegin;
+		memmove(file_name, pbegin, tmp_len);
+		file_name[tmp_len] = '\0';
+	} else {
 		return false;
 	}
-	return false;
 	
- FIND_FILENAME:
 	HX_strrtrim(file_name);
 	HX_strltrim(file_name);
 	tmp_len = strlen(file_name);
