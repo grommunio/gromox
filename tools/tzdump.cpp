@@ -24,7 +24,7 @@ using namespace gromox;
 static void d_systime(const SYSTEMTIME &t)
 {
 	printf("{%d-%02d-%02d dow=%d, %02d:%02d:%02d.%03d}",
-	       t.year, t.month, t.dayofweek, t.day,
+	       t.year, t.month, t.day, t.dayofweek,
 	       t.hour, t.minute, t.second, t.milliseconds);
 }
 
