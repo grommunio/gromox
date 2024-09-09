@@ -34,22 +34,19 @@ std::string bounce_gen_thrindex(const MAIL &m) try
 
 static void bp_enum_charset(const MIME *mime, void *arg)
 {
-	auto &result = *static_cast<std::string *>(arg);
-	char buf[32];
-	if (!result.empty() || !mime->get_content_param("charset",
-	    buf, std::size(buf)))
+	auto &cset = *static_cast<std::string *>(arg);
+	if (!cset.empty())
+		return; /* found something earlier already */
+	if (!mime->get_content_param("charset", cset))
 		return;
-	auto z = strlen(buf);
-	if (z <= 2)
-		return;
-	auto start = strchr(buf, '"');
-	if (start == nullptr) {
-		result = buf;
-		return;
-	}
-	auto end = strchr(start + 1, '"');
-	if (end != nullptr)
-		result.assign(start + 1, end - start - 1);
+	auto start = cset.find('"');
+	if (start == cset.npos)
+		return; /* no further massage needed */
+	++start;
+	auto end = cset.find('"', start);
+	if (end == cset.npos)
+		return; /* no further massage needed */
+	cset = cset.substr(start, end - start);
 }
 
 std::string bounce_gen_charset(const MAIL &m)

@@ -284,20 +284,18 @@ static inline bool oxcmail_check_crlf(const char *s)
 	       [](char c) { return c == '\n' || c == '\r'; });
 }
 
-static BOOL oxcmail_get_content_param(const MIME *pmime,
-	const char *tag, char *value, int length)
+static bool oxcmail_get_content_param(const MIME *pmime,
+    const char *tag, std::string &value)
 {
-	int tmp_len;
-	
-	if (!pmime->get_content_param(tag, value, length))
-		return FALSE;
-	tmp_len = strlen(value);
+	if (!pmime->get_content_param(tag, value))
+		return false;
+	auto tmp_len = value.size();
 	if (('"' == value[0] && '"' == value[tmp_len - 1]) ||
 		('\'' == value[0] && '\'' == value[tmp_len - 1])) {
-		value[tmp_len - 1] = '\0';
-		memmove(value, value + 1, tmp_len - 1);
+		value.pop_back();
+		value.erase(0, 1);
 	}
-	return *value != '\0' ? TRUE : false;
+	return !value.empty();
 }
 
 static BOOL oxcmail_get_field_param(char *field,
@@ -1433,8 +1431,6 @@ static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
     TPROPVAL_ARRAY *pproplist)
 {
 	BINARY tmp_bin;
-	char best_charset[32];
-	char temp_charset[32];
 	const char *content_type;
 	
 	auto rdlength = pmime->get_length();
@@ -1453,13 +1449,14 @@ static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
 	std::unique_ptr<char[], stdlib_delete> cutf(me_alloc<char>(content_size));
 	if (cutf == nullptr)
 		return false;
-	if (oxcmail_get_content_param(pmime, "charset", temp_charset, 32))
-		gx_strlcpy(best_charset, temp_charset, std::size(best_charset));
-	else
-		gx_strlcpy(best_charset, charset, std::size(best_charset));
+
+	std::string best_charset;
+	if (!oxcmail_get_content_param(pmime, "charset", best_charset))
+		best_charset = charset;
+
 	content_type = pmime->content_type;
 	if (0 == strcasecmp(content_type, "text/html")) {
-		uint32_t tmp_int32 = cset_to_cpid(best_charset);
+		uint32_t tmp_int32 = cset_to_cpid(best_charset.c_str());
 		if (pproplist->set(PR_INTERNET_CPID, &tmp_int32) != 0)
 			return FALSE;
 		tmp_bin.cb = length;
@@ -1473,7 +1470,7 @@ static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
 		 * an unconditional utf8_filter call in case the message
 		 * declared charset=utf-8 and still included garbage.
 		 */
-		if (string_to_utf8(best_charset, pcontent.get(), cutf.get(), content_size)) {
+		if (string_to_utf8(best_charset.c_str(), pcontent.get(), cutf.get(), content_size)) {
 			propval.proptag = PR_BODY;
 			propval.pvalue  = cutf.get();
 			utf8_filter(cutf.get());
@@ -1485,7 +1482,7 @@ static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
 			return false;
 	} else if (0 == strcasecmp(content_type, "text/enriched")) {
 		enriched_to_html(pcontent.get(), cutf.get(), content_size);
-		uint32_t tmp_int32 = cset_to_cpid(best_charset);
+		uint32_t tmp_int32 = cset_to_cpid(best_charset.c_str());
 		if (pproplist->set(PR_INTERNET_CPID, &tmp_int32) != 0)
 			return FALSE;
 		tmp_bin.cb = strlen(cutf.get());
@@ -1538,12 +1535,8 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	time_t tmp_time;
 	uint64_t tmp_int64;
 	uint32_t tmp_int32;
-	char mode_buff[32];
-	char dir_buff[256];
 	char tmp_buff[1024];
-	char site_buff[256];
 	char date_buff[128];
-	char mime_charset[32];
 	MESSAGE_CONTENT *pmsg;
 	char display_name[512];
 	ATTACHMENT_CONTENT *pattachment;
@@ -1667,11 +1660,13 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			if (!pmime->read_content(pcontent.get(), &content_len))
 				return;
 			pcontent[content_len] = '\0';
-			if (!oxcmail_get_content_param(pmime, "charset",
-			    mime_charset, std::size(mime_charset)))
-				gx_strlcpy(mime_charset, !utf8_valid(pcontent.get()) ?
-					pmime_enum->charset : "utf-8", std::size(mime_charset));
-			if (string_to_utf8(mime_charset, pcontent.get(),
+
+			std::string mime_charset;
+			if (!oxcmail_get_content_param(pmime, "charset", mime_charset))
+				mime_charset = utf8_valid(pcontent.get()) ?
+				               "utf-8" : pmime_enum->charset;
+
+			if (string_to_utf8(mime_charset.c_str(), pcontent.get(),
 			    &pcontent[content_len+1], contallocsz - content_len - 1)) {
 				utf8_filter(&pcontent[content_len+1]);
 				vcard vcard;
@@ -1734,22 +1729,23 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			return;
 		}
 	}
+
+	std::string tmp_str, site_buff, dir_buff;
 	if (gmf.have_orig_fn != 0 && strcasecmp(cttype, "message/external-body") == 0 &&
-	    oxcmail_get_content_param(pmime, "access-type", tmp_buff, 32) &&
-	    strcasecmp(tmp_buff, "anon-ftp") == 0 &&
-	    oxcmail_get_content_param(pmime, "site", site_buff, 256) &&
-	    oxcmail_get_content_param(pmime, "directory", dir_buff, 256)) {
-		if (!oxcmail_get_content_param(pmime, "mode",
-		    mode_buff, std::size(mode_buff)))
-			mode_buff[0] = '\0';
-		if (strcasecmp(mode_buff, "ascii") == 0)
-			strcpy(mode_buff, ";type=a");
-		else if (strcasecmp(mode_buff, "image") == 0)
-			strcpy(mode_buff, ";type=i");
+	    oxcmail_get_content_param(pmime, "access-type", tmp_str) &&
+	    strcasecmp(tmp_str.c_str(), "anon-ftp") == 0 &&
+	    oxcmail_get_content_param(pmime, "site", site_buff) &&
+	    oxcmail_get_content_param(pmime, "directory", dir_buff)) {
+		std::string mode_buff;
+		oxcmail_get_content_param(pmime, "mode", mode_buff);
+		if (strcasecmp(mode_buff.c_str(), "ascii") == 0)
+			mode_buff = ";type=a";
+		else if (strcasecmp(mode_buff.c_str(), "image") == 0)
+			mode_buff = ";type=i";
 		tmp_bin.cb = gx_snprintf(tmp_buff, std::size(tmp_buff), "[InternetShortcut]\r\n"
-					"URL=ftp://%s/%s/%s%s", site_buff, dir_buff,
-					gmf.fn.c_str(), mode_buff);
-		tmp_bin.pc = mode_buff;
+		                         "URL=ftp://%s/%s/%s%s", site_buff.c_str(), dir_buff.c_str(),
+		                         gmf.fn.c_str(), mode_buff.c_str());
+		tmp_bin.pc = deconst(mode_buff.c_str());
 		if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0)
 			return;
 		gmf.fn += ".url";
@@ -1761,11 +1757,11 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
 		return;
 	if (strncasecmp(cttype, "text/", 5) == 0 &&
-	    oxcmail_get_content_param(pmime, "charset", tmp_buff, 32)) {
-		uint32_t tag = str_isascii(tmp_buff) ?
+	    oxcmail_get_content_param(pmime, "charset", tmp_str)) {
+		uint32_t tag = str_isascii(tmp_str.c_str()) ?
 		               PidTagTextAttachmentCharset :
 		               PidTagTextAttachmentCharset_A;
-		if (pattachment->proplist.set(tag, tmp_buff) != 0)
+		if (pattachment->proplist.set(tag, tmp_str.c_str()) != 0)
 			return;
 	}
 	auto rdlength = pmime->get_length();
@@ -2497,14 +2493,15 @@ static inline bool tnef_vfy_check_key(MESSAGE_CONTENT *msg, const char *xtnefcor
 #endif
 }
 
-static bool smime_clearsigned(const char *head_ct, const MIME *head, char (&buf)[256])
+static bool smime_clearsigned(const char *head_ct, const MIME *head)
 {
 	if (strcasecmp(head_ct, "multipart/signed") != 0)
 		return false;
-	if (!oxcmail_get_content_param(head, "protocol", buf, std::size(buf)))
+	std::string buf;
+	if (!oxcmail_get_content_param(head, "protocol", buf))
 		return false;
-	return strcasecmp(buf, "application/pkcs7-signature") == 0 ||
-	       strcasecmp(buf, "application/x-pkcs7-signature") == 0;
+	return strcasecmp(buf.c_str(), "application/pkcs7-signature") == 0 ||
+	       strcasecmp(buf.c_str(), "application/x-pkcs7-signature") == 0;
 }
 
 /**
@@ -2698,13 +2695,15 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			return pmsg1.release();
 		}
 	}
+
+	std::string tmp_str;
 	if (strcasecmp(head_ct, "multipart/report") == 0 &&
-	    oxcmail_get_content_param(phead, "report-type", tmp_buff, 128) &&
-	    strcasecmp("delivery-status", tmp_buff) == 0)
+	    oxcmail_get_content_param(phead, "report-type", tmp_str) &&
+	    strcasecmp(tmp_str.c_str(), "delivery-status") == 0)
 		mime_enum.preport = oxcmail_parse_dsn(pmail, pmsg.get());
 	if ((strcasecmp(head_ct, "multipart/report") == 0 &&
-	    oxcmail_get_content_param(phead, "report-type", tmp_buff, 128) &&
-	    strcasecmp("disposition-notification", tmp_buff) == 0) ||
+	    oxcmail_get_content_param(phead, "report-type", tmp_str) &&
+	    strcasecmp(tmp_str.c_str(), "disposition-notification") == 0) ||
 	    strcasecmp("message/disposition-notification", head_ct) == 0)
 		mime_enum.preport = oxcmail_parse_mdn(pmail, pmsg.get());
 
@@ -2730,7 +2729,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 				return pmsg1.release();
 			}
 		}
-	} else if (smime_clearsigned(head_ct, phead, tmp_buff)) {
+	} else if (smime_clearsigned(head_ct, phead)) {
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME.MultipartSigned") != 0)
 			return imp_null;
 		b_smime = true;
@@ -2780,12 +2779,13 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		if (!mime_enum.pcalendar->read_content(pcontent.get(), &content_len))
 			return imp_null;
 		pcontent[content_len] = '\0';
-		char mime_charset[64];
+
+		std::string mime_charset;
 		if (!oxcmail_get_content_param(mime_enum.pcalendar, "charset",
-		    mime_charset, std::size(mime_charset)))
-			gx_strlcpy(mime_charset, !utf8_valid(pcontent.get()) ?
-				default_charset.c_str() : "utf-8", std::size(mime_charset));
-		if (!string_to_utf8(mime_charset, pcontent.get(),
+		    mime_charset))
+			mime_charset = utf8_valid(pcontent.get()) ?
+			               "utf-8" : default_charset;
+		if (!string_to_utf8(mime_charset.c_str(), pcontent.get(),
 		    &pcontent[content_len+1], contoutsize - content_len - 1)) {
 			mime_enum.pcalendar = NULL;
 		} else {

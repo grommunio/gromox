@@ -634,9 +634,8 @@ bool MIME::remove_field(const char *tag)
  *		pmime [in,out]		indicate the MIME object
  *		tag [in]			tag string		
  *		value [out]			buffer for retrieving value
- *		length				length of value
  */
-bool MIME::get_content_param(const char *tag, char *value, size_t length) const
+bool MIME::get_content_param(const char *tag, std::string &value) const try
 {
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
@@ -646,10 +645,12 @@ bool MIME::get_content_param(const char *tag, char *value, size_t length) const
 #endif
 	for (const auto &[k, v] : f_type_params) {
 		if (strcasecmp(tag, k.c_str()) == 0) {
-			gx_strlcpy(value, v.c_str(), length);
+			value = v;
 			return true;
 		} 
 	}
+	return false;
+} catch (const std::bad_alloc &) {
 	return false;
 }
 
@@ -1320,12 +1321,14 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
 	}
 
 	digest["length"] = Json::Value::UInt64(content_len);
-	if (pmime->get_content_param("charset", charset_buff, 32) &&
-	    str_isasciipr(charset_buff)) {
-		replace_qb(charset_buff);
-		HX_strrtrim(charset_buff);
-		HX_strltrim(charset_buff);
-		digest["charset"] = charset_buff;
+	std::string charset;
+	if (pmime->get_content_param("charset", charset) &&
+	    str_isasciipr(charset.c_str())) {
+		replace_qb(charset.data());
+		HX_strrtrim(charset.data());
+		HX_strltrim(charset.data());
+		charset.resize(strlen(charset.c_str()));
+		digest["charset"] = std::move(charset);
 	}
 
 	std::string file_name;

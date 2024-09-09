@@ -514,11 +514,11 @@ int MAIL::make_digest(size_t *poffset, Json::Value &digest) const try
 	b_tags[TAG_ENCRYPT] = FALSE;
 	
 	simple_tree_enum_from_node(pmail->tree.get_root(), [&](const tree_node *n, unsigned int) {
-		char buf[1024];
 		auto m = static_cast<const MIME *>(n->pdata);
 		if (strcasecmp(m->content_type, "multipart/signed") == 0)
 			b_tags[TAG_SIGNED] = TRUE;
-		if (m->get_content_param("smime-type", buf, std::size(buf)))
+		std::string buf;
+		if (m->get_content_param("smime-type", buf))
 			b_tags[TAG_ENCRYPT] = TRUE;
 	});
 	if (b_tags[TAG_SIGNED])
@@ -544,28 +544,29 @@ int MAIL::make_digest(size_t *poffset, Json::Value &digest) const try
 
 static void mail_enum_text_mime_charset(const MIME *pmime, void *param)
 {
-	auto email_charset = static_cast<char *>(param);
+	auto &cset = *static_cast<std::string *>(param);
 	
-	if (*email_charset != '\0')
-		return;
+	if (!cset.empty())
+		return; /* already found something earlier */
 	if (0 == strncasecmp(pmime->content_type, "text/", 5) &&
-	    pmime->get_content_param("charset", email_charset, 32)) {
-		replace_qb(email_charset);
-		HX_strrtrim(email_charset);
-		HX_strltrim(email_charset);
+	    pmime->get_content_param("charset", cset)) {
+		replace_qb(cset.data());
+		HX_strrtrim(cset.data());
+		HX_strltrim(cset.data());
+		cset.resize(strlen(cset.c_str()));
 	}
 }
 
-static void mail_enum_html_charset(const MIME *pmime, void *param)
+static void mail_enum_html_charset(const MIME *pmime, void *param) try
 {
-	auto email_charset = static_cast<char *>(param);
+	auto &cset = *static_cast<std::string *>(param);
 	int i;
 	char *ptr;
 	size_t length;
 	char buff[128*1024];
 	
-	if (*email_charset == '\0')
-		return;
+	if (!cset.empty())
+		return; /* already found something earlier */
 	if (strcasecmp(pmime->content_type, "text/html") != 0)
 		return;
 	length = 128*1024;
@@ -579,17 +580,17 @@ static void mail_enum_html_charset(const MIME *pmime, void *param)
 	ptr += 8;
 	if (*ptr == '"' || *ptr == '\'')
 		ptr ++;
+	auto start = ptr, stop = ptr;
 	for (i=0; i<32; i++) {
 		if ('"' == ptr[i] || '\'' == ptr[i] || ' ' == ptr[i] ||
 			',' == ptr[i] || ';' == ptr[i] || '>' == ptr[i]) {
-			email_charset[i] = '\0';
 			break;
 		} else {
-			email_charset[i] = ptr[i];
+			++stop;
 		}
 	}
-	if (i == 32)
-		email_charset[0] = '\0';
+	cset.assign(start, stop - start);
+} catch (const std::bad_alloc &) {
 }
 
 /*
