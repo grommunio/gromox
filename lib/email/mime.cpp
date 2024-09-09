@@ -132,9 +132,10 @@ bool MIME::load_from_str_move(MIME *pmime_parent, char *in_buff, size_t length) 
 				pmime->content_length = length - current_offset;
 			}
 			if (pmime->mime_type == mime_type::multiple) {
-				if (!pmime->get_content_param("boundary",
-				    pmime->boundary_string, VALUE_LEN - 1))
+				std::string bd;
+				if (!pmime->get_content_param("boundary", bd))
 					pmime->mime_type = mime_type::single;
+				gx_strlcpy(pmime->boundary_string, bd.c_str(), std::size(pmime->boundary_string));
 				if (!mime_parse_multiple(pmime))
 					pmime->mime_type = mime_type::single;
 			} else if (pmime->mime_type == mime_type::none) {
@@ -174,9 +175,10 @@ bool MIME::load_from_str_move(MIME *pmime_parent, char *in_buff, size_t length) 
 			pmime->content_length = length - current_offset;
 		}
 		if (pmime->mime_type == mime_type::multiple) {
-			if (!pmime->get_content_param("boundary",
-			    pmime->boundary_string, VALUE_LEN - 1))
+			std::string bd;
+			if (!pmime->get_content_param("boundary", bd))
 				pmime->mime_type = mime_type::single;
+			gx_strlcpy(pmime->boundary_string, bd.c_str(), std::size(pmime->boundary_string));
 			if (!mime_parse_multiple(pmime))
 				pmime->mime_type = mime_type::single;
 		} else if (pmime->mime_type == mime_type::none) {
@@ -1170,43 +1172,40 @@ ssize_t MIME::get_length() const
 	return std::min(mime_len, static_cast<size_t>(SSIZE_MAX));
 }
 
-bool MIME::get_filename(std::string &outfile) const
+bool MIME::get_filename(std::string &file_name) const
 {
 	static constexpr size_t fnsize = 1024;
-	char file_name[fnsize];
+	char cdname[fnsize];
 	auto pmime = this;
 	char *pend;
-	int tmp_len;
 	char *pbegin;
 	
-	if (pmime->get_content_param("name", file_name, fnsize)) {
+	if (pmime->get_content_param("name", file_name)) {
 		;
-	} else if (pmime->get_field("Content-Disposition", file_name, fnsize)) {
-		tmp_len = strlen(file_name);
-		pbegin = search_string(file_name, "filename=", tmp_len);
+	} else if (pmime->get_field("Content-Disposition", cdname, fnsize)) {
+		auto tmp_len = strlen(cdname);
+		pbegin = search_string(cdname, "filename=", tmp_len);
 		if (pbegin == nullptr)
 			return false;
 		pbegin += 9;
 		pend = strchr(pbegin, ';');
 		if (pend == nullptr)
-			pend = file_name + tmp_len;
+			pend = cdname + tmp_len;
 		tmp_len = pend - pbegin;
-		memmove(file_name, pbegin, tmp_len);
-		file_name[tmp_len] = '\0';
+		file_name.assign(pbegin, tmp_len);
 	} else {
 		return false;
 	}
 	
-	HX_strrtrim(file_name);
-	HX_strltrim(file_name);
-	tmp_len = strlen(file_name);
+	HX_strrtrim(file_name.data());
+	HX_strltrim(file_name.data());
+	auto tmp_len = file_name.size();
 	if (('"' == file_name[0] && '"' == file_name[tmp_len - 1]) ||
 		('\'' == file_name[0] && '\'' == file_name[tmp_len - 1])) {
-		file_name[tmp_len - 1] = '\0';
-		memmove(file_name, file_name + 1, tmp_len - 1);
+		file_name.pop_back();
+		file_name.erase(0, 1);
 	}
-	outfile = file_name;
-	return !outfile.empty();
+	return !file_name.empty();
 }
 
 static int make_digest_single(const MIME *, const char *id, size_t *ofs, size_t head_ofs, Json::Value &);
@@ -1277,7 +1276,7 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
     size_t *poffset, size_t head_offset, Json::Value &dsarray)
 {
 	size_t content_len = 0;
-	char charset_buff[32], content_type[256], encoding_buff[128];
+	char content_type[256], encoding_buff[128];
 	char temp_buff[512], content_ID[128];
 	char content_location[256], content_disposition[256], *ptoken;
 
