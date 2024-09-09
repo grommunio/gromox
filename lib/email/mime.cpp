@@ -1169,8 +1169,10 @@ ssize_t MIME::get_length() const
 	return std::min(mime_len, static_cast<size_t>(SSIZE_MAX));
 }
 
-bool MIME::get_filename(char *file_name, size_t fnsize) const
+bool MIME::get_filename(std::string &outfile) const
 {
+	static constexpr size_t fnsize = 1024;
+	char file_name[fnsize];
 	auto pmime = this;
 	char *pend;
 	int tmp_len;
@@ -1202,7 +1204,8 @@ bool MIME::get_filename(char *file_name, size_t fnsize) const
 		file_name[tmp_len - 1] = '\0';
 		memmove(file_name, file_name + 1, tmp_len - 1);
 	}
-	return *file_name != '\0';
+	outfile = file_name;
+	return !outfile.empty();
 }
 
 static int make_digest_single(const MIME *, const char *id, size_t *ofs, size_t head_ofs, Json::Value &);
@@ -1274,7 +1277,7 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
 {
 	size_t content_len = 0;
 	char charset_buff[32], content_type[256], encoding_buff[128];
-	char file_name[256], temp_buff[512], content_ID[128];
+	char temp_buff[512], content_ID[128];
 	char content_location[256], content_disposition[256], *ptoken;
 
 	strcpy(content_type, pmime->content_type);
@@ -1325,11 +1328,9 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
 		digest["charset"] = charset_buff;
 	}
 
-	if (pmime->get_filename(file_name, std::size(file_name))) {
-		size_t tmp_len = sizeof(temp_buff);
-		encode64(file_name, strlen(file_name), temp_buff, 512, &tmp_len);
-		digest["filename"] = temp_buff;
-	}
+	std::string file_name;
+	if (pmime->get_filename(file_name))
+		digest["filename"] = base64_encode(std::move(file_name));
 	if (pmime->get_field("Content-Disposition", content_disposition, 256)) {
 		ptoken = strchr(content_disposition, ';');
 		if (ptoken != nullptr)

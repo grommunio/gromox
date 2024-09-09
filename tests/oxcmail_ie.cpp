@@ -89,6 +89,8 @@ static int select_parts_1()
 	assert(v != nullptr && strcasecmp(v, "text/html") == 0);
 	v = atl->pplist[1]->proplist.get<const char>(PR_ATTACH_MIME_TAG);
 	assert(v != nullptr && strcasecmp(v, "application/zip") == 0);
+	v = atl->pplist[1]->proplist.get<char>(PR_ATTACH_LONG_FILENAME);
+	assert(v != nullptr && strcasecmp(v, "text.txt.zip") == 0);
 	v = atl->pplist[2]->proplist.get<const char>(PR_ATTACH_MIME_TAG);
 	assert(v != nullptr && strcasecmp(v, "text/html") == 0);
 	v = mc->proplist.get<const char>(PR_BODY);

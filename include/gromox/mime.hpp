@@ -45,7 +45,7 @@ struct GX_EXPORT MIME {
 	int make_structure_digest(const char *, size_t *, Json::Value &) const;
 	bool serialize(STREAM *) const;
 	ssize_t get_length() const;
-	bool get_filename(char *file_name, size_t) const;
+	bool get_filename(std::string &out) const;
 	MIME *get_child();
 	const MIME *get_child() const;
 	MIME *get_parent();

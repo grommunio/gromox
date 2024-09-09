@@ -1500,18 +1500,18 @@ static gmf_output oxcmail_get_massaged_filename(const MIME *mime,
     MIME_ENUM_PARAM &ei, const char *cttype)
 {
 	gmf_output ret;
-	char raw_fn[1024];
-	auto have_fn = mime->get_filename(raw_fn, std::size(raw_fn));
+	std::string raw_fn;
+	auto have_fn = mime->get_filename(raw_fn);
 
 	if (have_fn) {
 		char cooked_fn[1024];
-		auto uni = mime_string_to_utf8(ei.charset, raw_fn,
+		auto uni = mime_string_to_utf8(ei.charset, raw_fn.c_str(),
 		           cooked_fn, std::size(cooked_fn));
 		if (uni) {
 			ret.tag = PR_ATTACH_LONG_FILENAME;
 			ret.fn  = cooked_fn;
 		} else {
-			ret.fn  = raw_fn;
+			ret.fn  = std::move(raw_fn);
 		}
 		replace_reserved_chars(ret.fn.data());
 		replace_trailing_dots(ret.fn.data());
