@@ -379,19 +379,6 @@ int MAIL::make_digest(size_t *poffset, Json::Value &digest) const try
 	int priority;
 	BOOL b_tags[TAG_NUM];
 	char temp_buff[1024];
-	char mime_msgid[256];
-	char mime_date[256];
-	char mime_from[1024];
-	char mime_sender[1024];
-	char mime_reply_to[1024];
-	char mime_to[2048];
-	char mime_cc[2048];
-	char mime_in_reply_to[1024];
-	char mime_priority[32];
-	char mime_subject[1024];
-	char mime_received[256];
-	char mime_reference[2048];
-	char mime_notification[1024];
 
 #ifdef _DEBUG_UMTA
 	if (poffset == nullptr) {
@@ -403,77 +390,61 @@ int MAIL::make_digest(size_t *poffset, Json::Value &digest) const try
 	if (pnode == nullptr)
 		return -1;
 
+	digest = Json::objectValue;
 	auto pmime = static_cast<const MIME *>(pnode->pdata);
-	if (!pmime->get_field("Message-ID", temp_buff, 128))
-		mime_msgid[0] = '\0';
-	else
-		encode64(temp_buff, strlen(temp_buff), mime_msgid, 256, NULL);
+	if (pmime->get_field("Message-ID", temp_buff, 128))
+		digest["msgid"] = base64_encode(temp_buff);
+	if (pmime->get_field("Date", temp_buff, 128))
+		digest["date"] = base64_encode(temp_buff);
+	if (pmime->get_field("From", temp_buff, 512))
+		digest["from"] = base64_encode(temp_buff);
+	if (pmime->get_field("Sender", temp_buff, 512)) {
+		auto s = base64_encode(temp_buff);
+		if (!s.empty())
+			digest["sender"] = std::move(s);
+	}
+	if (pmime->get_field("Reply-To", temp_buff, 512)) {
+		auto s = base64_encode(temp_buff);
+		if (!s.empty())
+			digest["reply"] = std::move(s);
+	}
+	if (pmime->get_field("To", temp_buff, 1024))
+		digest["to"] = base64_encode(temp_buff);
+	if (pmime->get_field("Cc", temp_buff, 1024))
+		digest["cc"] = base64_encode(temp_buff);
+	if (pmime->get_field("In-Reply-To", temp_buff, 512)) {
+		auto s = base64_encode(temp_buff);
+		if (!s.empty())
+			digest["inreply"] = std::move(s);
+	}
 
-	if (!pmime->get_field("Date", temp_buff, 128))
-		mime_date[0] = '\0';
-	else
-		encode64(temp_buff, strlen(temp_buff), mime_date, 256, NULL);
-
-	if (!pmime->get_field("From", temp_buff, 512))
-		mime_from[0] = '\0';
-	else
-		encode64(temp_buff, strlen(temp_buff), mime_from, 1024, NULL);
-
-	if (!pmime->get_field("Sender", temp_buff, 512))
-		mime_sender[0] = '\0';
-	else
-		encode64(temp_buff, strlen(temp_buff), mime_sender, 1024, NULL);
-	
-	if (!pmime->get_field("Reply-To", temp_buff, 512))
-		mime_reply_to[0] = '\0';
-	else
-		encode64(temp_buff, strlen(temp_buff), mime_reply_to, 1024, NULL);
-
-	if (!pmime->get_field("To", temp_buff, 1024))
-		mime_to[0] = '\0';
-	else
-		encode64(temp_buff, strlen(temp_buff), mime_to, 2048, NULL);
-
-	if (!pmime->get_field("Cc", temp_buff, 1024))
-		mime_cc[0] = '\0';
-	else
-		encode64(temp_buff, strlen(temp_buff), mime_cc, 2048, NULL);
-
-	if (!pmime->get_field("In-Reply-To", temp_buff, 512))
-		mime_in_reply_to[0] = '\0';
-	else
-		encode64(temp_buff, strlen(temp_buff), mime_in_reply_to, 1024, NULL);
-
-	if (!pmime->get_field("X-Priority", mime_priority, 32)) {
+	if (!pmime->get_field("X-Priority", temp_buff, 32)) {
 		priority = 3;
 	} else {
-		priority = strtol(mime_priority, nullptr, 0);
+		priority = strtol(temp_buff, nullptr, 0);
 		if (priority <= 0 || priority > 5)
 			priority = 3;
 	}
 
-	if (!pmime->get_field("Subject", temp_buff, 512))
-		mime_subject[0] = '\0';
-	else
-		encode64(temp_buff, strlen(temp_buff), mime_subject, 1024, NULL);
+	if (pmime->get_field("Subject", temp_buff, 512))
+		digest["subject"] = base64_encode(temp_buff);
 	
 	if (!pmime->get_field("Received", temp_buff, 256)) {
-		strcpy(mime_received, mime_date);
+		digest["received"] = digest["date"];
 	} else {
 		ptr = strrchr(temp_buff, ';');
 		if (NULL == ptr) {
-			strcpy(mime_received, mime_date);
+			digest["received"] = digest["date"];
 		} else {
 			ptr ++;
 			while (*ptr == ' ' || *ptr == '\t')
 				ptr ++;
-			encode64(ptr, strlen(ptr), mime_received, 256, NULL);
+			digest["received"] = base64_encode(ptr);
 		}
 	}
 
 	std::string email_charset;
 	get_charset(email_charset);
-	digest              = Json::objectValue;
 	digest["uid"]       = 0;
 	digest["recent"]    = 1;
 	digest["read"]      = 0;
@@ -482,33 +453,14 @@ int MAIL::make_digest(size_t *poffset, Json::Value &digest) const try
 	digest["forwarded"] = 0;
 	digest["flag"]      = 0;
 	digest["priority"]  = Json::Value::UInt64(priority);
-	digest["msgid"]     = mime_msgid;
-	digest["from"]      = mime_from;
-	digest["to"]        = mime_to;
-	digest["cc"]        = mime_cc;
-	digest["subject"]   = mime_subject;
-	digest["received"]  = mime_received;
-	digest["date"]      = mime_date;
 	if (!email_charset.empty() && str_isasciipr(email_charset.c_str())) {
 		replace_qb(email_charset.data());
 		digest["charset"] = std::move(email_charset);
 	}
-	if (*mime_sender != '\0')
-		digest["sender"] = mime_sender;
-	if (*mime_reply_to != '\0')
-		digest["reply"] = mime_reply_to;
-	if (*mime_in_reply_to != '\0')
-		digest["inreply"] = mime_in_reply_to;
-
-	if (pmime->get_field("Disposition-Notification-To", temp_buff, 1024)) {
-		encode64(temp_buff, strlen(temp_buff), mime_notification, 1024, NULL);
-		digest["notification"] = mime_notification;
-	}
-
-	if (pmime->get_field("References", temp_buff, 1024)) {
-		encode64(temp_buff, strlen(temp_buff), mime_reference, 2048, NULL);
-		digest["ref"] = mime_reference;
-	}
+	if (pmime->get_field("Disposition-Notification-To", temp_buff, 1024))
+		digest["notification"] = base64_encode(temp_buff);
+	if (pmime->get_field("References", temp_buff, 1024))
+		digest["ref"] = base64_encode(temp_buff);
 
 	b_tags[TAG_SIGNED] = FALSE;
 	b_tags[TAG_ENCRYPT] = FALSE;
