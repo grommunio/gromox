@@ -563,18 +563,19 @@ static void mail_enum_html_charset(const MIME *pmime, void *param) try
 	int i;
 	char *ptr;
 	size_t length;
-	char buff[128*1024];
+	/* read_content won't do partial reads, so this buf is kinda large. yuck. */
+	auto buff = std::make_unique<char[]>(128*1024);
 	
 	if (!cset.empty())
 		return; /* already found something earlier */
 	if (strcasecmp(pmime->content_type, "text/html") != 0)
 		return;
 	length = 128*1024;
-	if (!pmime->read_content(buff, &length))
+	if (!pmime->read_content(buff.get(), &length))
 		return;
 	if (length > 4096)
 		length = 4096;
-	ptr = search_string(buff, "charset=", length);
+	ptr = search_string(buff.get(), "charset=", length);
 	if (ptr == nullptr)
 		return;
 	ptr += 8;
