@@ -1433,7 +1433,7 @@ static BOOL oxcmail_parse_transport_message_header(const MIME *pmime,
 }
 
 static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
-    TPROPVAL_ARRAY *pproplist)
+    TPROPVAL_ARRAY *pproplist) try
 {
 	BINARY tmp_bin;
 	const char *content_type;
@@ -1443,17 +1443,12 @@ static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
 		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
-	std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(rdlength + 1));
-	if (pcontent == nullptr)
-		return FALSE;
+	std::string rawbody;
+	rawbody.resize(rdlength);
 	size_t length = rdlength;
-	if (!pmime->read_content(pcontent.get(), &length))
+	if (!pmime->read_content(rawbody.data(), &length))
 		return TRUE;
-	pcontent[length] = '\0';
-	auto content_size = mb_to_utf8_xlen(length) + 1;
-	std::unique_ptr<char[], stdlib_delete> cutf(me_alloc<char>(content_size));
-	if (cutf == nullptr)
-		return false;
+	rawbody.resize(length);
 
 	std::string best_charset;
 	if (!oxcmail_get_content_param(pmime, "charset", best_charset))
@@ -1464,8 +1459,8 @@ static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
 		uint32_t tmp_int32 = cset_to_cpid(best_charset.c_str());
 		if (pproplist->set(PR_INTERNET_CPID, &tmp_int32) != 0)
 			return FALSE;
-		tmp_bin.cb = length;
-		tmp_bin.pc = pcontent.get();
+		tmp_bin.cb = rawbody.size();
+		tmp_bin.pc = rawbody.data();
 		if (pproplist->set(PR_HTML, &tmp_bin) != 0)
 			return false;
 	} else if (0 == strcasecmp(content_type, "text/plain")) {
@@ -1475,27 +1470,35 @@ static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
 		 * an unconditional utf8_filter call in case the message
 		 * declared charset=utf-8 and still included garbage.
 		 */
-		if (string_to_utf8(best_charset.c_str(), pcontent.get(), cutf.get(), content_size)) {
+		std::string utfbody;
+		utfbody.resize(mb_to_utf8_xlen(rawbody.size()));
+		if (string_to_utf8(best_charset.c_str(), rawbody.c_str(),
+		    utfbody.data(), utfbody.size() + 1)) {
+			utf8_filter(utfbody.data());
 			propval.proptag = PR_BODY;
-			propval.pvalue  = cutf.get();
-			utf8_filter(cutf.get());
+			propval.pvalue  = utfbody.data();
 		} else {
 			propval.proptag = PR_BODY_A;
-			propval.pvalue  = pcontent.get();
+			propval.pvalue  = rawbody.data();
 		}
 		if (pproplist->set(propval) != 0)
 			return false;
 	} else if (0 == strcasecmp(content_type, "text/enriched")) {
-		enriched_to_html(pcontent.get(), cutf.get(), content_size);
+		std::string utfbody;
+		utfbody.resize(mb_to_utf8_xlen(rawbody.size()));
+		enriched_to_html(rawbody.c_str(), utfbody.data(), utfbody.size() + 1);
 		uint32_t tmp_int32 = cset_to_cpid(best_charset.c_str());
 		if (pproplist->set(PR_INTERNET_CPID, &tmp_int32) != 0)
 			return FALSE;
-		tmp_bin.cb = strlen(cutf.get());
-		tmp_bin.pc = cutf.get();
+		tmp_bin.cb = utfbody.size();
+		tmp_bin.pc = utfbody.data();
 		if (pproplist->set(PR_HTML, &tmp_bin) != 0)
 			return false;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1745: ENOMEM");
+	return false;
 }
 
 static gmf_output oxcmail_get_massaged_filename(const MIME *mime,
