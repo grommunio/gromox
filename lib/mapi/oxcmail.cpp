@@ -275,6 +275,12 @@ BOOL oxcmail_username_to_entryid(const char *username,
 
 static unsigned int pick_strtype(const char *token)
 {
+	/*
+	 * This will recur throughout oxcmail.cpp: If it is pure
+	 * ASCII, we can upgrade it to Unicode. But if it is some
+	 * locale-specific encoding, just mark it as 8-bit and don't
+	 * worry about eager upconversion.
+	 */
 	return str_isascii(token) ? PT_UNICODE : PT_STRING8;
 }
 
