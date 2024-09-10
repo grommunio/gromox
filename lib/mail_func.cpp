@@ -389,7 +389,7 @@ size_t parse_mime_field(const char *in_buff, size_t buff_len,
 	return 0;
 }
 
-void parse_mime_encode_string(char *in_buff, long ibuff_len,
+void parse_mime_encode_string(const char *in_buff, long ibuff_len,
 	ENCODE_STRING *pencode_string)
 {
 	assert(ibuff_len >= 0);
