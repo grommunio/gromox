@@ -1,7 +1,9 @@
 #pragma once
 #include <cstdint>
+#include <set>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
@@ -13,6 +15,10 @@ namespace oxcmail {
 
 using namemap = std::unordered_map<int, PROPERTY_NAME>;
 
+/**
+ * @noattach: a set of MIME parts that were chosen for the body,
+ *            or which are considered discarded alternatives
+ */
 struct MIME_ENUM_PARAM {
 	MIME_ENUM_PARAM(namemap &r) : phash(r) {}
 	NOMOVE(MIME_ENUM_PARAM);
@@ -26,17 +32,20 @@ struct MIME_ENUM_PARAM {
 	namemap phash;
 	uint16_t last_propid = 0;
 	uint64_t nttime_stamp = 0;
-	const MIME *pplain = nullptr, *phtml = nullptr, *penriched = nullptr;
+	const MIME *pplain = nullptr, *penriched = nullptr;
 	const MIME *pcalendar = nullptr, *preport = nullptr;
-	unsigned int plain_count = 0, html_count = 0;
-	unsigned int enriched_count = 0, calendar_count = 0;
+	std::vector<const MIME *> htmls, hjoin;
+	std::unordered_map<const MIME *, std::string> new_ctids;
 };
 
 static constexpr unsigned int MAXIMUM_SEARCHING_DEPTH = 10;
 
-extern unsigned int select_parts(const MIME *, MIME_ENUM_PARAM &, unsigned int level);
+extern void select_parts(const MIME *, MIME_ENUM_PARAM &, unsigned int level);
 extern gromox::errno_t bodyset_html(TPROPVAL_ARRAY &, std::string &&, const char *);
 extern gromox::errno_t bodyset_plain(TPROPVAL_ARRAY &, std::string &&, const char *);
 extern gromox::errno_t bodyset_enriched(TPROPVAL_ARRAY &, std::string &&, const char *);
+extern gromox::errno_t bodyset_multi(MIME_ENUM_PARAM &, TPROPVAL_ARRAY &, const char *);
 
 }
+
+extern bool oxcmail_get_content_param(const MIME *, const char *tag, std::string &);

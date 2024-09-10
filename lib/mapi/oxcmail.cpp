@@ -270,7 +270,7 @@ static inline bool oxcmail_check_crlf(const char *s)
 	       [](char c) { return c == '\n' || c == '\r'; });
 }
 
-static bool oxcmail_get_content_param(const MIME *pmime,
+bool oxcmail_get_content_param(const MIME *pmime,
     const char *tag, std::string &value)
 {
 	if (!pmime->get_content_param(tag, value))
@@ -1489,10 +1489,12 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	char display_name[512];
 	ATTACHMENT_CONTENT *pattachment;
 	
+	assert(pmime != nullptr);
 	auto pmime_enum = static_cast<MIME_ENUM_PARAM *>(pparam);
 	if (!pmime_enum->b_result)
 		return;
-	if (pmime == pmime_enum->phtml ||
+	if (std::find(pmime_enum->htmls.cbegin(), pmime_enum->htmls.cend(),
+	    pmime) != pmime_enum->htmls.cend() ||
 		pmime == pmime_enum->pplain ||
 		pmime == pmime_enum->pcalendar ||
 		pmime == pmime_enum->penriched ||
@@ -1566,6 +1568,11 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			if (pattachment->proplist.set(tag, newval) != 0)
 				return;
 		}
+	} else {
+		auto ct_iter = pmime_enum->new_ctids.find(pmime);
+		if (ct_iter != pmime_enum->new_ctids.end() &&
+		    pattachment->proplist.set(PR_ATTACH_CONTENT_ID, ct_iter->second.c_str()) != 0)
+			return;
 	}
 	if (pmime->get_field("Content-Location", tmp_buff, 1024)) {
 		uint32_t tag = str_isascii(tmp_buff) ?
@@ -2620,9 +2627,11 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	    !oxcmail_parse_message_body(default_charset.c_str(),
 	    mime_enum.pplain, &pmsg->proplist))
 		return imp_null;
-	if (NULL != mime_enum.phtml) {
-		if (!oxcmail_parse_message_body(default_charset.c_str(),
-		    mime_enum.phtml, &pmsg->proplist))
+	if (mime_enum.htmls.size() > 0) {
+		assert(mime_enum.hjoin.size() >= mime_enum.htmls.size());
+		auto err = bodyset_multi(mime_enum, pmsg->proplist,
+		           default_charset.c_str());
+		if (err != 0)
 			return imp_null;
 	} else if (NULL != mime_enum.penriched) {
 		if (!oxcmail_parse_message_body(default_charset.c_str(),

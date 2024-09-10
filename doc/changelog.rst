@@ -1,3 +1,16 @@
+Development 2.32.30
+===================
+
+Enhancements:
+
+* oxcmail: Implement MIME fragment joining for the construction of the
+  contents of PR_HTML.
+  That is, MIME parts which have declared ``Content-Type: multipart/mixed`` and
+  where the first subpart of the Mixed container is ``text/html`` now trigger
+  the creation of a "jumbo" HTML document where other subparts of types
+  ``text/plain`` and further ``text/html`` from that container, are integrated.
+
+
 Gromox 2.32 (2024-09-04)
 ========================
 
