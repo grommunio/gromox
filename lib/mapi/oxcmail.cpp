@@ -41,6 +41,7 @@
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
+#include "oxcmail_int.hpp"
 
 /* uncomment below macro if you need system to verify X-MS-TNEF-Correlator */
 /* #define VERIFY_TNEF_CORRELATOR */
@@ -55,6 +56,7 @@
 */
 
 using namespace std::string_literals;
+using namespace oxcmail;
 using namespace gromox;
 using namemap = std::unordered_map<int, PROPERTY_NAME>;
 using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
@@ -1432,12 +1434,9 @@ static BOOL oxcmail_parse_transport_message_header(const MIME *pmime,
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
+static bool oxcmail_parse_message_body(const char *charset, const MIME *pmime,
     TPROPVAL_ARRAY *pproplist) try
 {
-	BINARY tmp_bin;
-	const char *content_type;
-	
 	auto rdlength = pmime->get_length();
 	if (rdlength < 0) {
 		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
@@ -1453,48 +1452,15 @@ static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
 	std::string best_charset;
 	if (!oxcmail_get_content_param(pmime, "charset", best_charset))
 		best_charset = charset;
-
-	content_type = pmime->content_type;
-	if (0 == strcasecmp(content_type, "text/html")) {
-		uint32_t tmp_int32 = cset_to_cpid(best_charset.c_str());
-		if (pproplist->set(PR_INTERNET_CPID, &tmp_int32) != 0)
-			return FALSE;
-		tmp_bin.cb = rawbody.size();
-		tmp_bin.pc = rawbody.data();
-		if (pproplist->set(PR_HTML, &tmp_bin) != 0)
-			return false;
-	} else if (0 == strcasecmp(content_type, "text/plain")) {
-		TAGGED_PROPVAL propval;
-		/*
-		 * string_to_utf8() may or may not(!) call iconv. Thus, we have
-		 * an unconditional utf8_filter call in case the message
-		 * declared charset=utf-8 and still included garbage.
-		 */
-		std::string utfbody;
-		utfbody.resize(mb_to_utf8_xlen(rawbody.size()));
-		if (string_to_utf8(best_charset.c_str(), rawbody.c_str(),
-		    utfbody.data(), utfbody.size() + 1)) {
-			utf8_filter(utfbody.data());
-			propval.proptag = PR_BODY;
-			propval.pvalue  = utfbody.data();
-		} else {
-			propval.proptag = PR_BODY_A;
-			propval.pvalue  = rawbody.data();
-		}
-		if (pproplist->set(propval) != 0)
-			return false;
-	} else if (0 == strcasecmp(content_type, "text/enriched")) {
-		std::string utfbody;
-		utfbody.resize(mb_to_utf8_xlen(rawbody.size()));
-		enriched_to_html(rawbody.c_str(), utfbody.data(), utfbody.size() + 1);
-		uint32_t tmp_int32 = cset_to_cpid(best_charset.c_str());
-		if (pproplist->set(PR_INTERNET_CPID, &tmp_int32) != 0)
-			return FALSE;
-		tmp_bin.cb = utfbody.size();
-		tmp_bin.pc = utfbody.data();
-		if (pproplist->set(PR_HTML, &tmp_bin) != 0)
-			return false;
-	}
+	if (strcasecmp(pmime->content_type, "text/html") == 0)
+		return bodyset_html(*pproplist, std::move(rawbody),
+		       best_charset.c_str()) == 0;
+	else if (strcasecmp(pmime->content_type, "text/plain") == 0)
+		return bodyset_plain(*pproplist, std::move(rawbody),
+		       best_charset.c_str()) == 0;
+	else if (strcasecmp(pmime->content_type, "text/enriched") == 0)
+		return bodyset_enriched(*pproplist, std::move(rawbody),
+		       best_charset.c_str()) == 0;
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1745: ENOMEM");
