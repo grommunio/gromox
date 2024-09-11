@@ -46,8 +46,6 @@
 /* uncomment below macro if you need system to verify X-MS-TNEF-Correlator */
 /* #define VERIFY_TNEF_CORRELATOR */
 
-#define MAXIMUM_SEARCHING_DEPTH					10
-
 /*
 	Caution. If any errors in parsing any sub type, ignore this sub type.
 	for example, if an error appears when parsing tnef attachment, treat
@@ -58,7 +56,6 @@
 using namespace std::string_literals;
 using namespace oxcmail;
 using namespace gromox;
-using namemap = std::unordered_map<int, PROPERTY_NAME>;
 using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
 
 namespace {
@@ -74,25 +71,6 @@ struct FIELD_ENUM_PARAM {
 	const char *charset = nullptr;
 	bool b_classified = false, b_flag_del = false;
 	const MAIL *pmail = nullptr;
-};
-
-struct MIME_ENUM_PARAM {
-	MIME_ENUM_PARAM(namemap &r) : phash(r) {}
-	NOMOVE(MIME_ENUM_PARAM);
-
-	bool b_result = false;
-	int attach_id = 0;
-	const char *charset = nullptr, *str_zone = nullptr;
-	GET_PROPIDS get_propids{};
-	EXT_BUFFER_ALLOC alloc{};
-	MESSAGE_CONTENT *pmsg = nullptr;
-	namemap phash;
-	uint16_t last_propid = 0;
-	uint64_t nttime_stamp = 0;
-	const MIME *pplain = nullptr, *phtml = nullptr, *penriched = nullptr;
-	const MIME *pcalendar = nullptr, *preport = nullptr;
-	unsigned int plain_count = 0, html_count = 0;
-	unsigned int enriched_count = 0, calendar_count = 0;
 };
 
 struct DSN_ENUM_INFO {
@@ -2476,90 +2454,6 @@ static bool smime_clearsigned(const char *head_ct, const MIME *head)
 		return false;
 	return strcasecmp(buf.c_str(), "application/pkcs7-signature") == 0 ||
 	       strcasecmp(buf.c_str(), "application/x-pkcs7-signature") == 0;
-}
-
-/**
- * @level: how often to recurse into multiparts.
- *         If level==0, a top-level multipart/ will not be analyzed.
- * Returns: indicator if something usable was found
- */
-static unsigned int select_parts(const MIME *part, MIME_ENUM_PARAM &info,
-    unsigned int level)
-{
-	info.plain_count = info.html_count = 0;
-	info.enriched_count = info.calendar_count = 0;
-
-	if (part->mime_type == mime_type::single) {
-		if (strcasecmp(part->content_type, "text/plain") == 0) {
-			info.pplain = part;
-			return info.plain_count = 1;
-		} else if (strcasecmp(part->content_type, "text/html") == 0) {
-			info.phtml = part;
-			return info.html_count = 1;
-		} else if (strcasecmp(part->content_type, "text/enriched") == 0) {
-			info.penriched = part;
-			return info.enriched_count = 1;
-		} else if (strcasecmp(part->content_type, "text/calendar") == 0) {
-			info.pcalendar = part;
-			return info.calendar_count = 1;
-		}
-		return 0;
-	}
-	/*
-	 * At level 0, we are inspecting the root (the mail itself, only one of
-	 * these tests will succeed)
-	 */
-	if (level >= MAXIMUM_SEARCHING_DEPTH)
-		return 0;
-	++level;
-	bool alt = strcasecmp(part->content_type, "multipart/alternative") == 0;
-
-	for (auto child = part->get_child(); child != nullptr;
-	     child = child->get_sibling()) {
-		MIME_ENUM_PARAM cld_info{info.phash};
-		auto cld_alt = strcasecmp(child->content_type, "multipart/alternative") == 0;
-		bool found = select_parts(child, cld_info, level);
-		if (!found)
-			continue;
-		if (!cld_alt && (cld_info.plain_count > 1 ||
-		    cld_info.html_count > 1 || cld_info.enriched_count > 1 ||
-		    cld_info.calendar_count > 1)) {
-			/*
-			 * @child is a /mixed or so, and has multiple
-			 * bodies of the same type, which is a bad
-			 * sign (AppleMail splitting one HTML body
-			 * into multiple MIME parts).
-			 */
-			continue;
-		}
-		info.plain_count    += cld_info.pplain != nullptr;
-		info.html_count     += cld_info.phtml != nullptr;
-		info.enriched_count += cld_info.penriched != nullptr;
-		info.calendar_count += cld_info.pcalendar != nullptr;
-		if (alt) {
-			/* Parts within a /alternative container override one another */
-			if (cld_info.pplain != nullptr)
-				info.pplain = cld_info.pplain;
-			if (cld_info.phtml != nullptr)
-				info.phtml = cld_info.phtml;
-			if (cld_info.penriched != nullptr)
-				info.penriched = cld_info.penriched;
-			if (cld_info.pcalendar != nullptr)
-				info.pcalendar = cld_info.pcalendar;
-			continue;
-		}
-		/* Parts within a /related don't */
-		if (cld_info.pplain != nullptr && info.pplain == nullptr)
-			info.pplain = cld_info.pplain;
-		if (cld_info.phtml != nullptr && info.phtml == nullptr)
-			info.phtml = cld_info.phtml;
-		if (cld_info.penriched != nullptr && info.penriched == nullptr)
-			info.penriched = cld_info.penriched;
-		if (cld_info.pcalendar != nullptr && info.pcalendar == nullptr)
-			info.pcalendar = cld_info.pcalendar;
-	}
-	return info.plain_count + info.html_count + info.enriched_count +
-	       info.calendar_count;
 }
 
 static BOOL xlog_bool(const char *func, unsigned int line)
