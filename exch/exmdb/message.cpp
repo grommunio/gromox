@@ -2667,10 +2667,12 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		if (pmime == nullptr)
 			return ecError;
 		auto num = pmime->get_field_num("Delivered-To");
-		for (int i = 0; i < num; ++i)
-			if (pmime->search_field("Delivered-To", i, tmp_buff, 256) &&
-			    strcasecmp(tmp_buff, rp.ev_to) == 0)
+		for (int i = 0; i < num; ++i) {
+			std::string dvto;
+			if (pmime->search_field("Delivered-To", i, dvto) &&
+			    strcasecmp(dvto.c_str(), rp.ev_to) == 0)
 				return ecSuccess;
+		}
 	} else {
 		if (!message_read_message(rp.sqlite, rp.cpid, rp.message_id,
 		    &pmsgctnt) || pmsgctnt == nullptr)

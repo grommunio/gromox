@@ -501,7 +501,7 @@ int MIME::get_field_num(const char *tag) const
  *		TRUE				OK to get value
  *		FALSE				no such tag in fields
  */		
-bool MIME::search_field(const char *tag, int order, char *value, size_t length) const
+bool MIME::search_field(const char *tag, int order, std::string &value) const try
 {
 	auto pmime = this;
 	int i;
@@ -517,8 +517,7 @@ bool MIME::search_field(const char *tag, int order, char *value, size_t length) 
 	if (0 == strcasecmp(tag, "Content-Type")) {
 		if (order != 0)
 			return false;
-		strncpy(value, pmime->content_type, length - 1);
-		value[length-1] = '\0';
+		value = pmime->content_type;
 	}
 	i = -1;
 	for (const auto &[k, v] : f_other_fields) {
@@ -526,10 +525,13 @@ bool MIME::search_field(const char *tag, int order, char *value, size_t length) 
 			continue;
 		i ++;
 		if (i == order) {
-			gx_strlcpy(value, v.c_str(), length);
+			value = v;
 			return true;
 		}
 	}
+	return false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1739: ENOMEM");
 	return false;
 }
 
