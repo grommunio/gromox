@@ -518,6 +518,7 @@ bool MIME::search_field(const char *tag, int order, std::string &value) const tr
 		if (order != 0)
 			return false;
 		value = pmime->content_type;
+		return true;
 	}
 	i = -1;
 	for (const auto &[k, v] : f_other_fields) {
