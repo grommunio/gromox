@@ -65,15 +65,35 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 	}
 	auto cl_0 = make_scope_exit([&]() { ldns_resolver_deep_free(rsv); });
 	ldns_pkt *pkt = nullptr;
-	status = ldns_resolver_query_status(&pkt, rsv, dname, LDNS_RR_TYPE_TXT,
+	status = ldns_resolver_query_status(&pkt, rsv, dname, LDNS_RR_TYPE_A,
 	         LDNS_RR_CLASS_IN, LDNS_RD);
 	if (status != LDNS_STATUS_OK)
 		/* probably SERVFAIL */
 		return true;
 
-	auto cl_1 = make_scope_exit([&]() { ldns_pkt_free(pkt); });
+	auto cl_0a = make_scope_exit([&]() {
+		if (pkt != nullptr)
+			ldns_pkt_free(pkt);
+	});
 	/* NXDOMAIN represented as 0-sized list */
 	auto rrlist = ldns_pkt_answer(pkt);
+	if (rrlist == nullptr) {
+		mlog(LV_DEBUG, "E-1744: no packet");
+		return false;
+	}
+	if (ldns_rr_list_rr_count(rrlist) == 0)
+		return true;
+	ldns_pkt_free(pkt);
+	pkt = nullptr;
+
+	/* In blocklist */
+	reason = "Host in blocklist (no reason text available)";
+	status = ldns_resolver_query_status(&pkt, rsv, dname, LDNS_RR_TYPE_TXT,
+	         LDNS_RR_CLASS_IN, LDNS_RD);
+	if (status != LDNS_STATUS_OK)
+		return false;
+
+	rrlist = ldns_pkt_answer(pkt);
 	if (rrlist == nullptr) {
 		mlog(LV_DEBUG, "E-1255: no packet");
 		return false;
@@ -105,17 +125,20 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 	}
 	auto cl_0 = make_scope_exit([&]() { res_nclose(&state); });
 	/*
-	 * NQD works differently from /usr/bin/host; if there are no TXT
+	 * NQD works differently from /usr/bin/host; if there are no
 	 * entries, it will return -1 rather than an empty result list.
+	 *
+	 * A-typed lookup needed per RFC 5782 p.3 §2.1.
 	 */
-	auto ret = res_nquery(&state, dotrep.c_str(), ns_c_in, ns_t_txt,
+	auto ret = res_nquery(&state, dotrep.c_str(), ns_c_in, ns_t_a,
 	           rsp, std::size(rsp));
+	if (ret <= 0 && (h_errno == HOST_NOT_FOUND || h_errno == NO_DATA))
+		return true;
+
+	ret = res_nquery(&state, dotrep.c_str(), ns_c_in, ns_t_txt, rsp, std::size(rsp));
 	if (ret <= 0) {
-		bool pass = h_errno == HOST_NOT_FOUND || h_errno == NO_DATA;
-		if (!pass)
-			mlog(LV_DEBUG, "nquery(%s%s): %d %s", dotrep.c_str(),
-				g_zone_suffix.c_str(), h_errno, hstrerror(h_errno));
-		return pass;
+		reason = "Host in blocklist (no detailed reason)";
+		return false;
 	}
 
 	ns_msg handle;

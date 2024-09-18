@@ -6,7 +6,9 @@ dnsbl_filter \(em DNS Blacklist filtering
 .SH Description
 dnsbl_filter is a module which will query a Domain Name System Realtime
 Blackhole/Blacklist/Block List to deny access to IP addresses attempting to
-connect to Gromox services.
+connect to Gromox services. In particular, (only) the four services
+use it; gromox\-imap(8), gromox\-pop3(8), gromox\-delivery\-queue(8)
+and gromox\-http(8).
 .SH Configuration directives
 The config file location is /etc/gromox/gromox.cfg; service specific
 locations are /etc/gromox/http/gromox.cfg, /etc/gromox/imap/gromox.cfg and
