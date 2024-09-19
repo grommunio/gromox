@@ -367,7 +367,7 @@ static int ftstream_parser_read_element(fxstream_parser &stream,
 	if (proptype & FXICS_CODEPAGE_FLAG) {
 		/* codepage string */
 		auto codepage = proptype & ~FXICS_CODEPAGE_FLAG;
-		if (1200 == codepage) {
+		if (codepage == CP_UTF16) {
 			propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PT_UNICODE);
 			propval.pvalue = ftstream_parser_read_wstring(pstream, &b_continue);
 		} else {

@@ -4042,7 +4042,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	
 	pmail->clear();
 	auto num = pmsg->proplist.get<uint32_t>(PR_INTERNET_CPID);
-	if (num == nullptr || *num == 1200) {
+	if (num == nullptr || *num == CP_UTF16) {
 		pcharset = "utf-8";
 	} else {
 		pcharset = cpid_to_cset(static_cast<cpid_t>(*num));

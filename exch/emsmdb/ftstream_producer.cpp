@@ -337,7 +337,7 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 					return FALSE;
 				write_type = FXICS_CODEPAGE_FLAG | (uint16_t)pinfo->cpid;
 			} else {
-				write_type = FXICS_CODEPAGE_FLAG | 1200;
+				write_type = FXICS_CODEPAGE_FLAG | static_cast<uint16_t>(CP_UTF16);
 			}
 		} else if (STRING_OPTION_NONE == pstream->string_option) {
 			if (proptype == PT_UNICODE) {
