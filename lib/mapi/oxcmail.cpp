@@ -4037,18 +4037,15 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	MIME *pcalendar;
 	char tmp_method[32];
 	char tmp_charset[32];
-	const char *pcharset;
+	const char *pcharset = nullptr;
 	MIME_FIELD mime_field;
 	
 	pmail->clear();
 	auto num = pmsg->proplist.get<uint32_t>(PR_INTERNET_CPID);
-	if (num == nullptr || *num == CP_UTF16) {
-		pcharset = "utf-8";
-	} else {
+	if (num != nullptr && *num != CP_UTF16)
 		pcharset = cpid_to_cset(static_cast<cpid_t>(*num));
-		if (pcharset == nullptr)
-			pcharset = "utf-8";
-	}
+	if (pcharset == nullptr)
+		pcharset = "utf-8";
 	mime_skeleton mime_skeleton;
 	if (!oxcmail_load_mime_skeleton(pmsg, pcharset, b_tnef,
 	    body_type, &mime_skeleton))
