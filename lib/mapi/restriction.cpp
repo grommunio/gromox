@@ -15,30 +15,29 @@ static void restriction_free_by_type(mapi_rtype, void *rst);
 
 restriction_list *restriction_list::dup() const
 {
-	auto pres = me_alloc<RESTRICTION_AND_OR>();
-	if (pres == nullptr)
+	auto n = me_alloc<RESTRICTION_AND_OR>();
+	if (n == nullptr)
 		return NULL;
 	auto prestriction = this;
-	pres->count = prestriction->count;
-	pres->pres = me_alloc<RESTRICTION>(pres->count);
-	if (NULL == pres->pres) {
-		free(pres);
+	n->count = prestriction->count;
+	n->pres = me_alloc<RESTRICTION>(n->count);
+	if (n->pres == nullptr) {
+		free(n);
 		return NULL;
 	}
 	for (size_t i = 0; i < prestriction->count; ++i) {
-		pres->pres[i].rt = prestriction->pres[i].rt;
-		pres->pres[i].pres = restriction_dup_by_type(
+		n->pres[i].rt = prestriction->pres[i].rt;
+		n->pres[i].pres = restriction_dup_by_type(
 			prestriction->pres[i].rt, prestriction->pres[i].pres);
-		if (NULL == pres->pres[i].pres) {
+		if (n->pres[i].pres == nullptr) {
 			while (i-- > 0)
-				restriction_free_by_type(
-					pres->pres[i].rt, pres->pres[i].pres);
-			free(pres->pres);
-			free(pres);
+				restriction_free_by_type(n->pres[i].rt, n->pres[i].pres);
+			free(n->pres);
+			free(n);
 			return NULL;
 		}
 	}
-	return pres;
+	return n;
 }
 
 static void restriction_free_and_or(RESTRICTION_AND_OR *prestriction)
@@ -220,43 +219,41 @@ static void restriction_free_subobj(
 SCommentRestriction *SCommentRestriction::dup() const
 {
 	int i;
-	auto pres = me_alloc<RESTRICTION_COMMENT>();
-	if (pres == nullptr)
+	auto n = me_alloc<RESTRICTION_COMMENT>();
+	if (n == nullptr)
 		return NULL;
 	auto prestriction = this;
-	pres->count = prestriction->count;
-	pres->ppropval = me_alloc<TAGGED_PROPVAL>(pres->count);
-	if (NULL == pres->ppropval) {
-		free(pres);
+	n->count = prestriction->count;
+	n->ppropval = me_alloc<TAGGED_PROPVAL>(n->count);
+	if (n->ppropval == nullptr) {
+		free(n);
 		return NULL;
 	}
 	for (i=0; i<prestriction->count; i++) {
-		pres->ppropval[i].proptag = prestriction->ppropval[i].proptag;
-		pres->ppropval[i].pvalue = propval_dup(PROP_TYPE(prestriction->ppropval[i].proptag),
+		n->ppropval[i].proptag = prestriction->ppropval[i].proptag;
+		n->ppropval[i].pvalue = propval_dup(PROP_TYPE(prestriction->ppropval[i].proptag),
 				prestriction->ppropval[i].pvalue);
-		if (NULL == pres->ppropval[i].pvalue) {
+		if (n->ppropval[i].pvalue == nullptr) {
 			for (i -= 1; i >= 0; i--)
-				propval_free(PROP_TYPE(pres->ppropval[i].proptag),
-									pres->ppropval[i].pvalue);
-			free(pres->ppropval);
-			free(pres);
+				propval_free(PROP_TYPE(n->ppropval[i].proptag), n->ppropval[i].pvalue);
+			free(n->ppropval);
+			free(n);
 			return NULL;
 		}
 	}
 	if (NULL != prestriction->pres) {
-		pres->pres = prestriction->pres->dup();
-		if (NULL == pres->pres) {
-			for (i = 0; i < pres->count; ++i)
-				propval_free(PROP_TYPE(pres->ppropval[i].proptag),
-									pres->ppropval[i].pvalue);
-			free(pres->ppropval);
-			free(pres);
+		n->pres = prestriction->pres->dup();
+		if (n->pres == nullptr) {
+			for (i = 0; i < n->count; ++i)
+				propval_free(PROP_TYPE(n->ppropval[i].proptag), n->ppropval[i].pvalue);
+			free(n->ppropval);
+			free(n);
 			return NULL;
 		}
 	} else {
-		pres->pres = NULL;
+		n->pres = NULL;
 	}
-	return pres;
+	return n;
 }
 
 static void restriction_free_comment(
@@ -361,17 +358,17 @@ static void restriction_free_by_type(mapi_rtype rt, void *prestriction)
 
 SRestriction *SRestriction::dup() const
 {
-	auto pres = me_alloc<RESTRICTION>();
-	if (pres == nullptr)
+	auto n = me_alloc<RESTRICTION>();
+	if (n == nullptr)
 		return NULL;
 	auto prestriction = this;
-	pres->rt = prestriction->rt;
-	pres->pres = restriction_dup_by_type(prestriction->rt, prestriction->pres);
-	if (NULL == pres->pres) {
-		free(pres);
+	n->rt = prestriction->rt;
+	n->pres = restriction_dup_by_type(prestriction->rt, prestriction->pres);
+	if (n->pres == nullptr) {
+		free(n);
 		return NULL;
 	}
-	return pres;
+	return n;
 }
 
 void restriction_free(RESTRICTION *prestriction)

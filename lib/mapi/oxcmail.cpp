@@ -384,7 +384,6 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME, paddr->addr) != 0)
 			return FALSE;
 	}
-	std::string skb, essdn;
 	if (paddr->has_addr()) {
 		auto dtypx = DT_MAILUSER;
 		std::string essdn, skb;

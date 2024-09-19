@@ -107,7 +107,7 @@ int main(int argc, char **argv) try
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_username == nullptr || argc < 2) {
 		terse_help();
 		return EXIT_FAILURE;
@@ -126,7 +126,7 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	}
 	service_init({g_config_file, std::move(g_dfl_svc_plugins), 1});
-	auto cl_0 = make_scope_exit(service_stop);
+	auto cl_1 = make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");
 		return EXIT_FAILURE;
@@ -158,7 +158,7 @@ int main(int argc, char **argv) try
 	gi_setup_early(g_username);
 	if (gi_setup() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_1 = make_scope_exit(gi_shutdown);
+	auto cl_5 = make_scope_exit(gi_shutdown);
 
 	MESSAGE_CONTENT *ctnt = nullptr;
 	uint64_t msg_id = 0;
@@ -178,7 +178,7 @@ int main(int argc, char **argv) try
 			fprintf(stderr, "RPC load_message_instance rejected; probably message not found.\n");
 			return EXIT_FAILURE;
 		}
-		auto cl_4 = make_scope_exit([&]() { exmdb_client_remote::unload_instance(g_storedir, inst_id); });
+		auto cl_6 = make_scope_exit([&]() { exmdb_client_remote::unload_instance(g_storedir, inst_id); });
 		if (!exmdb_client_remote::read_message_instance(g_storedir,
 		    inst_id, ctnt)) {
 			fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
