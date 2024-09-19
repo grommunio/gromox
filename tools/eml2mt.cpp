@@ -87,7 +87,7 @@ do_mail(const char *file, char *data, size_t dsize)
 		fprintf(stderr, "Unable to parse %s\n", file);
 		return nullptr;
 	}
-	std::unique_ptr<MESSAGE_CONTENT, mc_delete> msg(oxcmail_import("utf-8",
+	std::unique_ptr<MESSAGE_CONTENT, mc_delete> msg(oxcmail_import(nullptr,
 		"UTC", &imail, gi_alloc, ee_get_propids));
 	if (msg == nullptr)
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);

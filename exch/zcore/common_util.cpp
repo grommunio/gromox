@@ -1261,7 +1261,7 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 
 		imail.set_header("X-Mailer", ZCORE_UA);
 		if (zcore_backfill_transporthdr) {
-			std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import("utf-8",
+			std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import(nullptr,
 				"UTC", &imail, common_util_alloc, common_util_get_propids));
 			if (rmsg != nullptr) {
 				for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {

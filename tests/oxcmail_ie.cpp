@@ -78,7 +78,7 @@ static int select_parts_1()
 	            appl_mixed_footer + appl_alt_footer;
 	MAIL m;
 	assert(m.load_from_str_move(data.data(), data.size()));
-	mptr mc(oxcmail_import("us-ascii", "UTC", &m, g_alloc, ee_get_propids));
+	mptr mc(oxcmail_import(nullptr, "UTC", &m, g_alloc, ee_get_propids));
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
 	assert(atl != nullptr);
@@ -107,7 +107,7 @@ static int select_parts_2()
 	            appl_html1 + appl_zip + appl_mixed_footer + appl_alt_footer;
 	MAIL m;
 	assert(m.load_from_str_move(data.data(), data.size()));
-	mptr mc(oxcmail_import("us-ascii", "UTC", &m, g_alloc, ee_get_propids));
+	mptr mc(oxcmail_import(nullptr, "UTC", &m, g_alloc, ee_get_propids));
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
 	assert(atl != nullptr);
@@ -169,7 +169,7 @@ static int select_parts_3()
 
 	MAIL m;
 	assert(m.load_from_str_move(data, std::size(data)));
-	mptr mc(oxcmail_import("us-ascii", "UTC", &m, g_alloc, ee_get_propids));
+	mptr mc(oxcmail_import(nullptr, "UTC", &m, g_alloc, ee_get_propids));
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
 	assert(atl != nullptr);

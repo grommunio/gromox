@@ -2484,6 +2484,8 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	pmsg->set_rcpts_internal(prcpts);
 
 	std::string default_charset;
+	if (charset == nullptr)
+		charset = "us-ascii";
 	if (!pmail->get_charset(default_charset))
 		default_charset = charset;
 	field_param.alloc = alloc;
