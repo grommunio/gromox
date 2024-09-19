@@ -347,11 +347,10 @@ static void replace_trailing_dots(char *s)
 }
 
 /**
- * @charset:	charset of the MAPI session
  * @paddr:	always has UTF-8 display name in it
  */
-static BOOL oxcmail_parse_recipient(const char *charset,
-    const EMAIL_ADDR *paddr, uint32_t rcpt_type, TARRAY_SET *pset) try
+static BOOL oxcmail_parse_recipient(const EMAIL_ADDR *paddr,
+    uint32_t rcpt_type, TARRAY_SET *pset) try
 {
 	uint8_t tmp_byte;
 	uint32_t tmp_int32;
@@ -427,8 +426,8 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	return false;
 }
 
-static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
-    uint32_t rcpt_type, TARRAY_SET *pset) try
+static BOOL oxcmail_parse_addresses(const char *field, uint32_t rcpt_type,
+    TARRAY_SET *pset) try
 {
 	vmime::mailboxList mblist;
 	try {
@@ -444,8 +443,7 @@ static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
 		EMAIL_ADDR email_addr(*mb);
 		if (!email_addr.has_addr())
 			continue;
-		if (!oxcmail_parse_recipient(charset,
-		    &email_addr, rcpt_type, pset))
+		if (!oxcmail_parse_recipient(&email_addr, rcpt_type, pset))
 			return FALSE;
 	}
 	return TRUE;
@@ -502,8 +500,7 @@ static BOOL oxcmail_parse_address(const char *field, uint32_t pr_name,
 	return false;
 }
 
-static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
-    TPROPVAL_ARRAY *pproplist) try
+static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist) try
 {
 	uint32_t count;
 	BINARY tmp_bin;
@@ -1086,19 +1083,18 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		    PR_SENDER_ENTRYID, &penum_param->pmsg->proplist))
 			return FALSE;
 	} else if (strcasecmp(key, "Reply-To") == 0) {
-		if (!oxcmail_parse_reply_to(penum_param->charset, field,
-		    &penum_param->pmsg->proplist))
+		if (!oxcmail_parse_reply_to(field, &penum_param->pmsg->proplist))
 			return FALSE;
 	} else if (strcasecmp(key, "To") == 0) {
-		if (!oxcmail_parse_addresses(penum_param->charset, field, MAPI_TO,
+		if (!oxcmail_parse_addresses(field, MAPI_TO,
 		    penum_param->pmsg->children.prcpts))
 			return FALSE;
 	} else if (strcasecmp(key, "Cc") == 0) {
-		if (!oxcmail_parse_addresses(penum_param->charset, field, MAPI_CC,
+		if (!oxcmail_parse_addresses(field, MAPI_CC,
 		    penum_param->pmsg->children.prcpts))
 			return FALSE;
 	} else if (strcasecmp(key, "Bcc") == 0) {
-		if (!oxcmail_parse_addresses(penum_param->charset, field, MAPI_BCC,
+		if (!oxcmail_parse_addresses(field, MAPI_BCC,
 		    penum_param->pmsg->children.prcpts))
 			return FALSE;
 	} else if (strcasecmp(key, "Return-Receipt-To") == 0) {
