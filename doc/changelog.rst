@@ -1,5 +1,9 @@
-Development 2.32.30
+Development 2.32.31
 ===================
+
+Fixes:
+
+* oxdisco: allow retrieval of TB Autoconfig XML without authentication
 
 Enhancements:
 
