@@ -20,7 +20,7 @@ platform_LDVSC = -Wl,-M,
 endif
 version_sc_SYFLAGS = ${platform_LDVSC}${srcdir}/default.sym
 default_SYFLAGS = ${version_sc_SYFLAGS${NO_VSYM}}
-plugin_LDFLAGS = -avoid-version -module ${default_SYFLAGS}
+plugin_LDFLAGS = -avoid-version -module
 pamlibdir = ${libdir}/security
 if HAVE_PAM
 pamlib_LTLIBRARIES = pam_gromox.la
@@ -203,7 +203,7 @@ cgkrepair_LDADD = ${gromox_mt2exm_LDADD}
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
 pam_gromox_la_SOURCES = tools/pam_gromox.cpp
 pam_gromox_la_LIBADD = ${libHX_LIBS} ${pam_LIBS} libgromox_common.la libgxs_authmgr.la libgxs_ldap_adaptor.la libgxs_mysql_adaptor.la
-pam_gromox_la_LDFLAGS = ${plugin_LDFLAGS}
+pam_gromox_la_LDFLAGS = ${plugin_LDFLAGS} ${default_SYFLAGS}
 saphpdir = ${pkgdatadir}/sa
 dist_saphp_DATA = tools/php/submit.php
 event_SOURCES = tools/event.cpp
@@ -263,7 +263,7 @@ if WITH_GNU_LD
 libmapi4zf_la_LDFLAGS += -Wl,--allow-shlib-undefined
 endif
 mapi_la_SOURCES =
-mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
+mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${default_SYFLAGS} ${PHP_LDFLAGS}
 if WITH_GNU_LD
 mapi_la_LDFLAGS += -Wl,--allow-shlib-undefined
 endif
