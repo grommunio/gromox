@@ -35,7 +35,11 @@ using xmldocptr = std::unique_ptr<xmlDoc, xmlfree>;
  */
 void select_parts(const MIME *part, MIME_ENUM_PARAM &info, unsigned int level) try
 {
-	if (part->mime_type == mime_type::single /* && disposition != attachment */) {
+	char dispo[32];
+	if (part->get_field("Content-Disposition", dispo, std::size(dispo)) &&
+	    strcasecmp(dispo, "attachment") == 0)
+		return;
+	if (part->mime_type == mime_type::single) {
 		if (strcasecmp(part->content_type, "text/plain") == 0) {
 			info.pplain = part;
 			info.hjoin.push_back(part);

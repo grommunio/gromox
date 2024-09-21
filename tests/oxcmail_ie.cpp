@@ -94,6 +94,11 @@ static char data_4[] =
 	"\r\n"
 	"Zhtml3Z\r\n"
 	"--1\r\n"
+	"Content-Type: text/html\r\n"
+	"Content-Disposition: attachment\r\n"
+	"\r\n"
+	"dontjoin\r\n"
+	"--1\r\n"
 	"Content-Type: image/png\r\n"
 	"\r\n"
 	"///3\r\n"
@@ -102,12 +107,8 @@ static char data_4[] =
 static char data_5[] =
 	"Content-Type: multipart/related; boundary=\"0\"\r\n"
 	"\r\n"
-	"This is a multi-part message in MIME format.\r\n"
-	"\r\n"
 	"--0\r\n"
 	"Content-Type: multipart/alternative; boundary=\"--=1\"\r\n"
-	"\r\n"
-	"This is a multi-part message in MIME format.\r\n"
 	"\r\n"
 	"----=1\r\n"
 	"Content-Transfer-Encoding: quoted-printable\r\n"
@@ -265,19 +266,22 @@ static int select_parts_4()
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
 	assert(atl != nullptr);
-	if (atl->count != 4)
+	if (atl->count != 5)
 		gi_print(0, *mc);
-	assert(atl->count == 4);
+	assert(atl->count == 5);
 	auto v = atl->pplist[1]->proplist.get<const char>(PR_ATTACH_MIME_TAG);
 	assert(v != nullptr && strcasecmp(v, "image/png") == 0);
 	v = atl->pplist[2]->proplist.get<const char>(PR_ATTACH_MIME_TAG);
 	assert(v != nullptr && strcasecmp(v, "image/png") == 0);
 	v = atl->pplist[3]->proplist.get<const char>(PR_ATTACH_MIME_TAG);
+	assert(v != nullptr && strcasecmp(v, "text/html") == 0);
+	v = atl->pplist[4]->proplist.get<const char>(PR_ATTACH_MIME_TAG);
 	assert(v != nullptr && strcasecmp(v, "image/png") == 0);
 	v = mc->proplist.get<const char>(PR_BODY);
 	assert(v != nullptr && strcmp(v, "Zplain2Z") == 0);
 	auto bin = mc->proplist.get<const BINARY>(PR_HTML);
 	assert(bin != nullptr && HX_memmem(bin->pv, bin->cb, "Zhtml3Z", 7) != nullptr);
+	assert(HX_memmem(bin->pv, bin->cb, "dontjoin", 8) == nullptr);
 	assert(HX_memmem(bin->pv, bin->cb, "cid:", 4) != nullptr);
 	return 0;
 }
