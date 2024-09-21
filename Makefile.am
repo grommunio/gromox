@@ -13,11 +13,12 @@ noinst_LTLIBRARIES = libphp_mapi.la
 pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/eidprint
 pkglib_LTLIBRARIES = libmapi4zf.la
 if WITH_GNU_LD
-version_sc_SYFLAGS = -Wl,--version-script=${srcdir}/default.sym
+platform_LDVSC = -Wl,--version-script=
 endif
 if WITH_SUN_LD
-version_sc_SYFLAGS = -Wl,-M,${srcdir}/default.sym
+platform_LDVSC = -Wl,-M,
 endif
+version_sc_SYFLAGS = ${platform_LDVSC}${srcdir}/default.sym
 default_SYFLAGS = ${version_sc_SYFLAGS${NO_VSYM}}
 plugin_LDFLAGS = -avoid-version -module ${default_SYFLAGS}
 pamlibdir = ${libdir}/security
