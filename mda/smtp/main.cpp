@@ -42,8 +42,6 @@
 using namespace gromox;
 
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
-E(judge_user)
-E(add_user_into_temp_list)
 E(check_user)
 #undef E
 
@@ -138,8 +136,6 @@ static int system_services_run()
 	} \
 } while (false)
 
-	E(system_services_judge_user, "user_filter_judge");
-	E(system_services_add_user_into_temp_list, "user_filter_add");
 	E(system_services_check_user, "check_user");
 	return 0;
 #undef E
@@ -148,8 +144,6 @@ static int system_services_run()
 static void system_services_stop()
 {
 	service_release("ip_filter_judge", "system");
-	service_release("user_filter_judge", "system");
-	service_release("user_filter_add", "system");
 	service_release("check_user", "system");
 }
 

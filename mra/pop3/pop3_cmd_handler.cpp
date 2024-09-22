@@ -128,8 +128,7 @@ int pop3_cmd_handler_pass(std::vector<std::string> &&argv, pop3_context *pcontex
 			mres_auth.errstr.c_str());
 		pcontext->auth_times ++;
 		if (pcontext->auth_times >= g_max_auth_times) {
-			system_services_add_user_into_temp_list(pcontext->username,
-				g_block_auth_fail);
+			system_services_ban_user(pcontext->username, g_block_auth_fail);
 			return 1706 | DISPATCH_SHOULD_CLOSE;
 		}
 		return 1714 | DISPATCH_CONTINUE;
@@ -147,8 +146,7 @@ int pop3_cmd_handler_pass(std::vector<std::string> &&argv, pop3_context *pcontex
 				mres_auth.errstr.c_str());
 			pcontext->auth_times ++;
 			if (pcontext->auth_times >= g_max_auth_times) {
-				system_services_add_user_into_temp_list(pcontext->username,
-					g_block_auth_fail);
+				system_services_ban_user(pcontext->username, g_block_auth_fail);
 				return 1706 | DISPATCH_SHOULD_CLOSE;
 			}
 			return 1714 | DISPATCH_CONTINUE;

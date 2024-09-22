@@ -760,8 +760,7 @@ static tproc_status htp_auth_basic(http_context *pcontext) try
 	pcontext->log(LV_WARN, "HTTP auth rejected: %s", mres.errstr.c_str());
 	pcontext->auth_times ++;
 	if (pcontext->auth_times >= g_max_auth_times)
-		system_services_add_user_into_temp_list(
-			pcontext->username, g_block_auth_fail);
+		system_services_ban_user(pcontext->username, g_block_auth_fail);
 	return tproc_status::runoff;
 } catch (const std::bad_alloc &) {
 	pcontext->b_close = TRUE;

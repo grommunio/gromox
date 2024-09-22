@@ -1429,8 +1429,7 @@ static int imap_cmd_parser_password2(int argc, char **argv,
 		pcontext->auth_times ++;
 		if (pcontext->auth_times < g_max_auth_times)
 			return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
-		system_services_add_user_into_temp_list(pcontext->username,
-			g_block_auth_fail);
+		system_services_ban_user(pcontext->username, g_block_auth_fail);
 		return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
 	}
 	safe_memset(temp_password, 0, std::size(temp_password));
@@ -1445,8 +1444,7 @@ static int imap_cmd_parser_password2(int argc, char **argv,
 			++pcontext->auth_times;
 			if (pcontext->auth_times < g_max_auth_times)
 				return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
-			system_services_add_user_into_temp_list(pcontext->username,
-				g_block_auth_fail);
+			system_services_ban_user(pcontext->username, g_block_auth_fail);
 			return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
 		}
 	}
@@ -1510,8 +1508,7 @@ int imap_cmd_parser_login(int argc, char **argv, imap_context *pcontext)
 			gx_strlcpy(pcontext->tag_string, argv[0], std::size(pcontext->tag_string));
 			return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
 		}
-		system_services_add_user_into_temp_list(pcontext->username,
-			g_block_auth_fail);
+		system_services_ban_user(pcontext->username, g_block_auth_fail);
 		return 1903 | DISPATCH_SHOULD_CLOSE;
 	}
 	safe_memset(temp_password, 0, std::size(temp_password));
@@ -1526,8 +1523,7 @@ int imap_cmd_parser_login(int argc, char **argv, imap_context *pcontext)
 			++pcontext->auth_times;
 			if (pcontext->auth_times < g_max_auth_times)
 				return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
-			system_services_add_user_into_temp_list(pcontext->username,
-				g_block_auth_fail);
+			system_services_ban_user(pcontext->username, g_block_auth_fail);
 			return 1903 | DISPATCH_SHOULD_CLOSE;
 		}
 	}

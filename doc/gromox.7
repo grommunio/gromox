@@ -204,7 +204,7 @@ delivery(8gx): /etc/gromox/alias_resolve.cfg, /etc/gromox/exmdb_local.cfg,
 .IP \(bu 4
 delivery-queue(8gx): /etc/gromox/authmgr.cfg,
 /etc/gromox/midb_agent.cfg, /etc/gromox/ldap_adaptor.cfg,
-/etc/gromox/mysql_adaptor.cfg, /etc/gromox/user_filter.cfg
+/etc/gromox/mysql_adaptor.cfg
 .IP \(bu 4
 event(8gx): /etc/gromox/event.cfg
 .IP \(bu 4
@@ -247,8 +247,7 @@ timer(8gx): /etc/gromox/timer.cfg
 .IP \(bu 4
 timer_agent(4gx) inside http(8gx), zcore(8gx): /etc/gromox/timer_agent.cfg
 .IP \(bu 4
-user_filter(4gx) inside delivery-queue(8gx), http(8gx), imap(8gx), pop3(8gx):
-/etc/gromox/user_filter.cfg
+user_filter(4gx) inside http(8gx), imap(8gx), pop3(8gx): /etc/gromox/gromox.cfg
 .IP \(bu 4
 zcore(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/zcore.cfg,
 /etc/gromox/ldap_adaptor.cfg,
@@ -332,9 +331,6 @@ by arbitrary PAM applications.
 .IP \(bu 4
 /etc/gromox/timer_agent.cfg: used by the timer_agent(4gx) plugin, accessed
 process-wise by http(8gx), zcore(8gx).
-.IP \(bu 4
-/etc/gromox/user_filter.cfg: used by the user_filter(4gx) plugin, accessed
-process-wise by delivery-queue(8gx), http(8gx), imap(8gx), pop3(8gx)
 .IP \(bu 4
 /etc/gromox/zcore.cfg: used by the zcore(8gx) process.
 .SH Databases

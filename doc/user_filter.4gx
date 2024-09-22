@@ -1,50 +1,56 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
 .\" SPDX-FileCopyrightText: 2021 grommunio GmbH
-.TH filter 4gx "" "Gromox" "Gromox admin reference"
+.TH user_filter 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 user_filter \(em Service plugin for application of user login limits
-.SH Configuration directives
-The usual config file location is /etc/gromox/user_filter.cfg.
+.SH Description
+This plugin implements two core ideas (each independently configurable):
+.IP \(bu 4
+A mechanism for banning user identities for a set time window. When a user
+repeatedly fails to successfully authenticate, the http(8gx), imap(8gx),
+pop3(8gx) daemons can add the user to this list and set a time during which all
+authentication requests for the user are rejected. This is a bit like fail2ban,
+but operates on usernames rather than hosts/IP addresses.
+.IP \(bu 4
+A mechanism for rate-limiting authentication attempts. Whenever a user tries to
+authenticate, the daemons convey the occurrence to the user_filter plugin, and
+the plugin ensures that only a given amount of attempts can be made per time
+quantum, per user. This is a bit like iptables -m (hash)limit.
+.SH Configuration directives (gromox.cfg)
 .TP
-\fBadd_service_name\fP
+\fBuserfilter_icase\fP
+Treat usernames as case-insensitive within the user_filter plugin.
 .br
-Default: \fIuser_filter_add\fP
+Default: \fItrue\fP
 .TP
-\fBaudit_interval\fP
-Default: \fI1minute\fP
+\fBuserfilter_maxbans\fP
+Controls how much memory the banlist mechanism of user_filter is allowed to use
+at most, by limiting the number of unique usernames recorded. The list
+replacement policy is none (so, slightly different from MRU). The value 0
+therefore deactivates user_filter's banlist mechanism.
+.br
+Default: \fI1000\fP
 .TP
-\fBaudit_max_num\fP
+\fBuserfilter_maxusers\fP
+Controls how much memory the rate-limiting mechanism of user_filter is allowed
+to use at most, by limiting the number of unique usernames. The list
+replacement policy is none. The value 0 therefore deactivates user_filter's
+rate-limiting mechanism.
+.br
 Default: \fI0\fP
 .TP
-\fBaudit_times\fP
+\fBuserfilter_rl_maxtries\fP
+Rate-limit all authentication calls to rl_maxtries per rl_window. Note that
+there can be \fBa lot\fP of requests, particularly over MAPI/HTTP since every
+single HTTP request counts as one attempt. (Opening a message with MFCMAPI
+already incurs 4 HTTP requests. The Windows EMSMDB connector is anything but
+efficient.)
+.br
 Default: \fI10\fP
 .TP
-\fBgrowing_num\fP
-The maximum number of additional string table entries on top of what the
-on-disk table file has supplied. So when the table file contains 40 entries and
-growing_num is 100, the in-memory copy of the table can hold up to 140 entries
-total.
+\fBuserfilter_rl_window\fP
+Rate-limit all authentication attempts to rl_maxtries per rl_window.
 .br
-Default: \fI0\fP
-.TP
-\fBis_case_sensitive\fP
-Flag which determines whether matches should treat uppercase and lowercase
-differently or not.
-.br
-Default: \fIfalse\fP
-.TP
-\fBjudge_service_name\fP
-.br
-Default: \fIuser_filter_judge\fP
-.TP
-\fBquery_service_name\fP
-.br
-Default: \fIuser_filter_query\fP
-.TP
-\fBtemp_list_size\fP
-Default: \fI2000\fP
-.SH Files
-.IP \(bu 4
-\fIconfig_file_path\fP/user_filter.cfg: configuration
+Default: \fI1minute\fP
 .SH See also
 \fBgromox\fP(7)

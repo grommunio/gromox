@@ -1,4 +1,4 @@
-Development 2.32.31
+Development 2.32.40
 ===================
 
 Fixes:
@@ -13,6 +13,12 @@ Enhancements:
   where the first subpart of the Mixed container is ``text/html`` now trigger
   the creation of a "jumbo" HTML document where other subparts of types
   ``text/plain`` and further ``text/html`` from that container, are integrated.
+
+Changes:
+
+* The user_filter(4gx) plugin was replaced by a new implementation.
+  user_filter.cfg is no longer read. New config directives (with new names)
+  are in gromox.cfg.
 
 
 Gromox 2.32 (2024-09-04)
