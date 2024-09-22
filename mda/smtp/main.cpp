@@ -65,11 +65,11 @@ static struct HXoption g_options_table[] = {
 };
 
 static std::vector<static_module> g_dfl_svc_plugins = {
-	{"libgxs_dnsbl_filter.so", SVC_dnsbl_filter},
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
 	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
 	{"libgromox_auth.so/mgr", SVC_authmgr},
-	{"libgxs_user_filter.so", SVC_user_filter},
+	{"libgromox_authz.so/dnsbl", SVC_dnsbl_filter},
+	{"libgromox_authz.so/user", SVC_user_filter},
 };
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {
