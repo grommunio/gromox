@@ -77,9 +77,9 @@ static std::vector<static_module> g_dfl_svc_plugins = {
 	{"libgxs_dnsbl_filter.so", SVC_dnsbl_filter},
 	{"libgxs_event_proxy.so", SVC_event_proxy},
 	{"libgxs_midb_agent.so", SVC_midb_agent},
-	{"libgxs_ldap_adaptor.so", SVC_ldap_adaptor},
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-	{"libgxs_authmgr.so", SVC_authmgr},
+	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
+	{"libgromox_auth.so/mgr", SVC_authmgr},
 	{"libgxs_user_filter.so", SVC_user_filter},
 };
 
