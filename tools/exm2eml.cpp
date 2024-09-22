@@ -250,7 +250,7 @@ int main(int argc, char **argv) try
 		    ep.p_uint32(static_cast<uint32_t>(0)) != EXT_ERR_SUCCESS ||
 		    ep.p_uint64(~0ULL) != EXT_ERR_SUCCESS ||
 		    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS) {
-			fprintf(stderr, "E-2021\n");
+			fprintf(stderr, "E-2005\n");
 			return EXIT_FAILURE;
 		}
 		uint64_t xsize = cpu_to_le64(ep.m_offset);

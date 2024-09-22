@@ -630,7 +630,7 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1161: ENOMEM");
+	mlog(LV_ERR, "E-2135: ENOMEM");
 	return false;
 }
 
@@ -1593,7 +1593,7 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 		return nullptr;
 	return bv;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2387: ENOMEM");
+	mlog(LV_ERR, "E-2010: ENOMEM");
 	return nullptr;
 }
 
@@ -2911,7 +2911,7 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 	}
 	auto ret = HX_mkdir(extradir.get(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
 	if (ret < 0) {
-		mlog(LV_ERR, "E-2388: mkdir %s: %s", extradir.get(), strerror(-ret));
+		mlog(LV_ERR, "E-2009: mkdir %s: %s", extradir.get(), strerror(-ret));
 		return -ret;
 	}
 
@@ -2955,7 +2955,7 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 			path.c_str(), strerror(err));
 	return err;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2305: ENOMEM");
+	mlog(LV_ERR, "E-2065: ENOMEM");
 	return ENOMEM;
 }
 

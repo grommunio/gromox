@@ -201,7 +201,7 @@ static int oxomsg_test_perm(const char *account, const char *maildir, bool send_
 	std::vector<std::string> delegate_list;
 	auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
 	if (ret != 0 && ret != ENOENT) {
-		mlog(LV_ERR, "E-2045: %s: %s", dlg_path.c_str(), strerror(ret));
+		mlog(LV_ERR, "E-2064: %s: %s", dlg_path.c_str(), strerror(ret));
 		return ret;
 	}
 	for (const auto &deleg : delegate_list)
@@ -628,7 +628,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ecError;
 	auto msgflags = outvalues.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (msgflags != nullptr && *msgflags & MSGFLAG_SUBMITTED) {
-		mlog(LV_INFO, "I-2144: transportsend disallowed because "
+		mlog(LV_INFO, "I-2068: transportsend disallowed because "
 		        "message %llxh was already submitted once",
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;

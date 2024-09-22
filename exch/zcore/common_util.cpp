@@ -154,7 +154,7 @@ bool cu_extract_delegate(message_object *pmessage, std::string &username)
 		username.clear();
 		return TRUE;
 	}
-	mlog(LV_WARN, "W-1643: rejecting submission of msgid %llxh because "
+	mlog(LV_WARN, "W-2100: rejecting submission of msgid %llxh because "
 		"its PR_SENT_REPRESENTING_ENTRYID does not reference "
 		"a user in the local system",
 		static_cast<unsigned long long>(pmessage->message_id));

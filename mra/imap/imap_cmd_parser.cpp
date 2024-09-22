@@ -427,7 +427,7 @@ static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
 			[kw](const std::string &e) { return strcasecmp(e.c_str(), kw) != 0; });
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1271: ENOMEM");
+	mlog(LV_ERR, "E-2131: ENOMEM");
 	return false;
 }
 
@@ -2504,7 +2504,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 		return 1909 | DISPATCH_TAG;
 	}
 	if (fd.close_wr() < 0) {
-		mlog(LV_WARN, "E-2395: write %s: %s", eml_path.c_str(), strerror(errno));
+		mlog(LV_WARN, "E-2016: write %s: %s", eml_path.c_str(), strerror(errno));
 		return 1909 | DISPATCH_TAG;
 	}
 	imail.clear();

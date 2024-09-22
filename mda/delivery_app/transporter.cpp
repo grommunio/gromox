@@ -298,7 +298,7 @@ static gromox::hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 	auto err = cu_send_mail(ctx->mail, g_outgoing_smtp_url.c_str(),
 	           ctx->ctrl.from, ctx->ctrl.rcpt);
 	if (err != ecSuccess)
-		mlog(LV_ERR, "E-1194: cu_send_mail: %s", mapi_strerror(err));
+		mlog(LV_ERR, "E-2134: cu_send_mail: %s", mapi_strerror(err));
 	return hook_result::stop;
 }
 

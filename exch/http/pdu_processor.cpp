@@ -2790,7 +2790,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		return PDU_PROCESSOR_OUTPUT;
 	}
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2370: ENOMEM");
+	mlog(LV_ERR, "E-2058: ENOMEM");
 	return PDU_PROCESSOR_ERROR;
 }
 

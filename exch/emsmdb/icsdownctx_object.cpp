@@ -781,7 +781,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	auto folder_id = pctx->pfolder->folder_id;
 	auto pstatus = pmsgctnt->proplist.get<uint32_t>(PR_MSG_STATUS);
 	if (pstatus == nullptr) {
-		mlog(LV_INFO, "I-2384: ICS: cannot transfer msg %llxh without PR_MSG_STATUS", LLU{message_id});
+		mlog(LV_INFO, "I-2055: ICS: cannot transfer msg %llxh without PR_MSG_STATUS", LLU{message_id});
 		return FALSE;
 	}
 	if (*pstatus & MSGSTATUS_IN_CONFLICT) {
@@ -1208,7 +1208,7 @@ BOOL icsdownctx_object::continue_state_stream(const BINARY *pstream_data) try
 		return FALSE;
 	f_state_stream += std::string_view(pstream_data->pc, pstream_data->cb);
 	if (f_state_stream.size() >= UINT32_MAX) {
-		mlog(LV_INFO, "I-1089: Too much ICS state sent by client");
+		mlog(LV_INFO, "I-2141: Too much ICS state sent by client");
 		return false;
 	}
 	return TRUE;

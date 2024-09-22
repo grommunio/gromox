@@ -255,7 +255,7 @@ static bool login_gen(const char *username, const char *password,
 	safe_memset(mres.enc_passwd.data(), 0, mres.enc_passwd.size());
 	return auth;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1701: ENOMEM");
+	mlog(LV_ERR, "E-2000: ENOMEM");
 	return false;
 }
 

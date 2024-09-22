@@ -414,7 +414,7 @@ static errno_t mysql_adaptor_homeserver(const char *entity, bool is_pvt,
 	servers.second = znul(row[1]);
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1210: ENOMEM");
+	mlog(LV_ERR, "E-2132: ENOMEM");
 	return -ENOMEM;
 }
 

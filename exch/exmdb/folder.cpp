@@ -2022,7 +2022,7 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
 	sqlite3_reset(pstmt);
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2348: ENOMEM");
+	mlog(LV_ERR, "E-2059: ENOMEM");
 	return false;
 }
 

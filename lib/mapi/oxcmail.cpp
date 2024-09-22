@@ -2142,7 +2142,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields,
 		return false;
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1741: ENOMEM");
+	mlog(LV_ERR, "E-2072: ENOMEM");
 	return false;
 }
 

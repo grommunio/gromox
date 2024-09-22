@@ -225,7 +225,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite, const char *mid_string,
 		if (!json_from_str(slurp_data.get(), digest))
 			return 0;
 	} else if (errno != ENOENT) {
-		mlog(LV_ERR, "E-1131: read %s: %s", temp_path, strerror(errno));
+		mlog(LV_ERR, "E-2139: read %s: %s", temp_path, strerror(errno));
 		return 0;
 	} else {
 		snprintf(temp_path, 256, "%s/eml/%s",
@@ -252,7 +252,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite, const char *mid_string,
 			    fd.close_wr() != 0)
 				mlog(LV_ERR, "E-2082: write %s: %s", temp_path, strerror(errno));
 		} else {
-			mlog(LV_ERR, "E-1137: open %s for write: %s", temp_path, strerror(errno));
+			mlog(LV_ERR, "E-2138: open %s for write: %s", temp_path, strerror(errno));
 		}
 	}
 	auto pstmt = gx_sql_prep(psqlite, "SELECT uid, recent, read,"

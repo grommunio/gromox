@@ -167,10 +167,10 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 	mres.timezone       = znul(myrow[14]);
 	return 0;
 } catch (const std::bad_alloc &e) {
-	mlog(LV_ERR, "E-1701: ENOMEM");
+	mlog(LV_ERR, "E-2007: ENOMEM");
 	return ENOMEM;
 } catch (const std::exception &e) {
-	mlog(LV_ERR, "E-1701: %s", e.what());
+	mlog(LV_ERR, "E-2008: %s", e.what());
 	return EIO;
 }
 

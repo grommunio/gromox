@@ -1051,7 +1051,7 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 					pcontext->open_mode = O_RDONLY;
 					pcontext->message_fd = open(pcontext->file_path.c_str(), pcontext->open_mode);
 					if (pcontext->message_fd < 0)
-						mlog(LV_ERR, "E-1742: %s: %s", pcontext->file_path.c_str(), strerror(errno));
+						mlog(LV_ERR, "E-2069: %s: %s", pcontext->file_path.c_str(), strerror(errno));
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1467: ENOMEM");
 				}

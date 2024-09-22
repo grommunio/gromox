@@ -161,7 +161,7 @@ static void db_engine_load_dynamic_list(db_base *dbase, sqlite3* psqlite) try
 		dbase->dynamic_list.push_back(std::move(dn));
 	}
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1142: ENOMEM");
+	mlog(LV_ERR, "E-2137: ENOMEM");
 }
 
 static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
@@ -256,7 +256,7 @@ BOOL db_engine_vacuum(const char *path)
 	auto db = db_engine_get_db(path);
 	if (!db)
 		return false;
-	mlog(LV_INFO, "I-2102: Vacuuming %s (exchange.sqlite3)", path);
+	mlog(LV_INFO, "I-2067: Vacuuming %s (exchange.sqlite3)", path);
 	if (gx_sql_exec(db->psqlite, "VACUUM") != SQLITE_OK)
 		return false;
 	mlog(LV_INFO, "I-2102: Vacuuming %s ended", path);
@@ -373,7 +373,7 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 		return nullptr;
 	}
 	if((ret = gx_sql_exec(db, "PRAGMA foreign_keys=ON")) != SQLITE_OK) {
-		mlog(LV_ERR, "E-1439: enable foreign keys %s: %s (%d)", dir, sqlite3_errstr(ret), ret);
+		mlog(LV_ERR, "E-2101: enable foreign keys %s: %s (%d)", dir, sqlite3_errstr(ret), ret);
 		return nullptr;
 	}
 	gx_sql_exec(db, "PRAGMA journal_mode=WAL");
@@ -417,7 +417,7 @@ void db_base::open(const char* dir)
 		throw std::runtime_error(fmt::format("E-1434: sqlite3_open {} failed", dir));
 	ret = db_engine_autoupgrade(hdb.get(), dir);
 	if(ret != 0)
-		throw std::runtime_error(fmt::format("E-1438: autoupgrade {}: {}", dir, ret));
+		throw std::runtime_error(fmt::format("E-2105: autoupgrade {}: {}", dir, ret));
 	if (exmdb_server::is_private())
 		db_engine_load_dynamic_list(this, hdb.get());
 	mx_sqlite.emplace_back(std::move(hdb));
@@ -986,7 +986,7 @@ void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	else
 		*i = std::move(dn);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1143: ENOMEM");
+	mlog(LV_ERR, "E-2136: ENOMEM");
 }
 
 void db_conn::delete_dynamic(uint64_t folder_id, db_base *dbase)
@@ -1439,7 +1439,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
-		mlog(LV_ERR, "E-2160: failed to start transaction in cttbl_add_row");
+		mlog(LV_ERR, "E-2063: failed to start transaction in cttbl_add_row");
 		return;
 	}
 	for (auto &tnode : dbase.tables.table_list) {

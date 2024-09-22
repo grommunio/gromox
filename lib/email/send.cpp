@@ -100,7 +100,7 @@ ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message> msg,
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1196: ENOMEM");
+	mlog(LV_ERR, "E-2133: ENOMEM");
 	return ecServerOOM;
 }
 

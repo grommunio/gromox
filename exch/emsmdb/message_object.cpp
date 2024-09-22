@@ -1186,7 +1186,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		case PROP_ID(PR_SENT_REPRESENTING_ADDRTYPE):
 		case PROP_ID(PR_SENT_REPRESENTING_EMAIL_ADDRESS):
 			/* (EXC) You can change the values, but not delete it */
-			mlog(LV_INFO, "I-1654: averted client removing tag %xh on msg %llxh/instance %u",
+			mlog(LV_INFO, "I-2093: averted client removing tag %xh on msg %llxh/instance %u",
 				tag, static_cast<unsigned long long>(message_id), instance_id);
 			continue;
 		default:

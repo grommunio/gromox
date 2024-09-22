@@ -37,7 +37,7 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 		return true;
 	struct in6_addr dst;
 	if (inet_pton(AF_INET6, src, &dst) != 1) {
-		reason = "E-1734: inet_pton";
+		reason = "E-2076: inet_pton";
 		return false;
 	}
 	std::string dotrep;

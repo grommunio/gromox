@@ -377,7 +377,7 @@ static bool purg_discover_mids(const char *dir, std::vector<std::string> &used)
 	ret = sqlite3_open_v2(dbpath.c_str(), &unique_tie(db),
 	      SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
-		mlog(LV_ERR, "E-2386: cannot open %s: %s", dbpath.c_str(), sqlite3_errstr(ret));
+		mlog(LV_ERR, "E-2018: cannot open %s: %s", dbpath.c_str(), sqlite3_errstr(ret));
 		return false;
 	}
 	return purg_discover_ids(db.get(), "SELECT mid_string FROM messages", used);
@@ -391,7 +391,7 @@ purg_delete_unused_files4(const std::string &cid_dir, const std::string &subdir,
 	if (dh == nullptr) {
 		if (errno == ENOENT)
 			return {0, 0};
-		mlog(LV_ERR, "E-2387: cannot open %s/%s: %s",
+		mlog(LV_ERR, "E-2011: cannot open %s/%s: %s",
 			cid_dir.c_str(), subdir.c_str(), strerror(errno));
 		return {UINT64_MAX, 0};
 	}
@@ -446,13 +446,13 @@ purg_delete_unused_files4(const std::string &cid_dir, const std::string &subdir,
 static uint64_t purg_delete_unused_files(const std::string &cid_dir,
     const std::vector<std::string> &used_ids, time_t upper_bound_ts)
 {
-	mlog(LV_INFO, "I-2388: purge_data: processing %s...", cid_dir.c_str());
+	mlog(LV_INFO, "I-2019: purge_data: processing %s...", cid_dir.c_str());
 	auto [bytes, filecount] = purg_delete_unused_files4(cid_dir, {}, used_ids, upper_bound_ts);
 	if (bytes == UINT64_MAX)
 		return bytes;
 	char buf[32];
 	HX_unit_size(buf, std::size(buf), bytes, 0, 0);
-	mlog(LV_NOTICE, "I-2393: Purged %zu files (%sB) from %s",
+	mlog(LV_NOTICE, "I-2017: Purged %zu files (%sB) from %s",
 	     filecount, buf, cid_dir.c_str());
 	return bytes;
 }

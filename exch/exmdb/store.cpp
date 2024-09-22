@@ -300,7 +300,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2044: ENOMEM");
+	mlog(LV_ERR, "E-2066: ENOMEM");
 	return false;
 }
 
@@ -463,7 +463,7 @@ static BOOL table_check_address_in_contact_folder(
 	*pb_found = FALSE;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1727: ENOMEM");
+	mlog(LV_ERR, "E-2089: ENOMEM");
 	return false;
 }
 

@@ -557,7 +557,7 @@ static errno_t do_file(const char *filename) try
 		gi_print(0, *ctnt);
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT)) {
-		fprintf(stderr, "E-2020: ENOMEM\n");
+		fprintf(stderr, "E-2012: ENOMEM\n");
 		return EXIT_FAILURE;
 	}
 	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
@@ -565,7 +565,7 @@ static errno_t do_file(const char *filename) try
 	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != EXT_ERR_SUCCESS ||
 	    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
 	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS) {
-		fprintf(stderr, "E-2021\n");
+		fprintf(stderr, "E-2006\n");
 		return EXIT_FAILURE;
 	}
 	uint64_t xsize = cpu_to_le64(ep.m_offset);

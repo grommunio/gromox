@@ -358,7 +358,7 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 	*pmime = std::move(temp_mime);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2185: ENOMEM");
+	mlog(LV_ERR, "E-2062: ENOMEM");
 	return false;
 }
 
@@ -403,7 +403,7 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
 	buff[ret_len] = '\0';
 	return ret_len;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2186: ENOMEM");
+	mlog(LV_ERR, "E-2061: ENOMEM");
 	return -1;
 }
 
@@ -1030,7 +1030,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 	}
 	if (HXio_fullwrite(fd.get(), djson.data(), djson.size()) < 0 ||
 	    fd.close_wr() != 0) {
-		mlog(LV_ERR, "E-1333: write %s: %s", dgt_path, strerror(errno));
+		mlog(LV_ERR, "E-2129: write %s: %s", dgt_path, strerror(errno));
 		fd.close_rd();
 		if (remove(dgt_path) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1375: remove %s: %s", dgt_path, strerror(errno));

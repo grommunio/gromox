@@ -800,7 +800,7 @@ pack_result EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 	}
 	TRY(g_uint8(&r->version));
 	if (r->version != 0) {
-		mlog(LV_INFO, "I-1969: not a recognized wrapuid");
+		mlog(LV_INFO, "I-2014: not a recognized wrapuid");
 		return pack_result::format;
 	}
 	TRY(g_uint8(&r->ivflag));
@@ -831,7 +831,7 @@ pack_result EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 		*r->pmailbox_dn = '\0';
 		return pack_result::success;
 	}
-	mlog(LV_INFO, "I-1969: not a recognized wrapuid");
+	mlog(LV_INFO, "I-2015: not a recognized wrapuid");
 	return pack_result::format;
 }
 

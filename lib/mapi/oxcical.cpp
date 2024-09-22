@@ -3293,7 +3293,7 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 	if (lnum != nullptr) {
 		ical_time itime;
 		if (!ical_utc_to_datetime(tzcom, rop_util_nttime_to_unix(*lnum), &itime))
-			return "E-2221";
+			return "E-2001";
 		append_dt(com, "COMPLETED", itime, false, tzid);
 	}
 
@@ -3335,8 +3335,6 @@ static void importance_to_lines(mapi_importance n, ical_component *c)
 		c->append_line("PRIORITY", "9");
 	}
 }
-
-#define E_2201 "E-2201: get_propids failed for an unspecified reason"
 
 static std::string oxcical_export_valarm(const MESSAGE_CONTENT &msg,
     ical_component &pical, GET_PROPIDS get_propids)
@@ -3457,7 +3455,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			icaltype = nullptr;
 			pical.m_name = "VJOURNAL";
 		} else {
-			return fmt::format("W-2202: oxcical_export does not handle message class \"{}\"", str);
+			return fmt::format("W-2060: oxcical_export does not handle message class \"{}\"", str);
 		}
 	}
 
@@ -3628,7 +3626,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (has_start_time) {
 		ical_time itime;
 		if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
-			return "E-2221";
+			return "E-2002";
 		append_dt(*pcomponent, "DTSTART", itime,
 			b_allday && g_oxcical_allday_ymd,
 			ptz_component != nullptr ? tzid : nullptr);
@@ -3637,7 +3635,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		if (lnum != nullptr) {
 			ical_time itime;
 			if (!ical_utc_to_datetime(ptz_component, rop_util_nttime_to_unix(*lnum), &itime))
-				return "E-2221";
+				return "E-2003";
 			append_dt(*pcomponent, "DTSTART", itime,
 				b_allday && g_oxcical_allday_ymd,
 				ptz_component != nullptr ? tzid : nullptr);
