@@ -1893,6 +1893,21 @@ void tChangeDescription::convDate(uint32_t tag, const XMLElement* v, sShape& sha
 }
 
 /**
+ * @brief      Property conversion function for datetime fields
+ *
+ * @param      name   Tag name
+ * @param      v      XML value node
+ * @param      shape  Shape to store property in
+ */
+void tChangeDescription::convDate(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
+{
+	uint32_t tag = shape.tag(name);
+	if(tag)
+		convDate(tag, v, shape);
+}
+
+
+/**
  * @brief      Property coversion function for enumerations
  *
  * Converts string to corresponding index and stores it in a numeric property.
