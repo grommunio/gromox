@@ -35,7 +35,7 @@ using namespace std::string_literals;
 using namespace gromox;
 
 static bool g_tty, g_verbose;
-static unsigned int g_eas_mode;
+static unsigned int g_eas_mode, g_tb_mode;
 static constexpr char g_user_agent[] = "Microsoft Office/16"; /* trigger MH codepath */
 static char *g_disc_host, *g_disc_url, *g_emailaddr, *g_legacydn, *g_auth_user;
 static constexpr HXoption g_options_table[] = {
@@ -46,6 +46,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'v', HXTYPE_NONE, &g_verbose, nullptr, nullptr, 0, "Be verbose, dump HTTP and XML"},
 	{nullptr, 'x', HXTYPE_STRING, &g_legacydn, nullptr, nullptr, 0, "Legacy DN"},
 	{"eas", 0, HXTYPE_NONE, &g_eas_mode, nullptr, nullptr, 0, "Request EAS response"},
+	{"tb", 0, HXTYPE_NONE, &g_tb_mode, {}, {}, 0, "Perform Thunderbird Autoconf request"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -286,15 +287,25 @@ static std::string domain_to_oxsrv(const char *dom)
 static std::string autodisc_url()
 {
 #define xmlpath "/Autodiscover/Autodiscover.xml"
+#define tbac_path "/.well-known/autoconfig/mail/config-v1.1.xml"
 	if (g_disc_url != nullptr)
 		return g_disc_url;
-	if (g_disc_host != nullptr)
+	if (g_disc_host != nullptr) {
+		if (g_tb_mode)
+			return "https://"s + g_disc_host + tbac_path + "?emailaddress=" + g_emailaddr;
 		return "https://"s + g_disc_host + xmlpath;
+	}
 	if (g_emailaddr != nullptr) {
 		auto p = strchr(g_emailaddr, '@');
 		if (p != nullptr) {
 			auto dom = p + 1;
 #ifdef HAVE_NS
+			/*
+			 * In the future, TB may look at _imap._tcp, but who
+			 * knows when that is going to happen.
+			 */
+			if (g_tb_mode)
+				return "https://"s + dom + tbac_path + "?emailaddress=" + g_emailaddr;
 			auto srv = domain_to_oxsrv(dom);
 			if (!srv.empty()) {
 				auto url = "https://" + srv + xmlpath;
@@ -312,8 +323,7 @@ static std::string autodisc_url()
 #undef xmlpath
 }
 
-static CURLcode setopts(CURL *ch, const char *password, curl_slist *hdrs,
-    tinyxml2::XMLPrinter &xml_request, std::string &xml_response)
+static CURLcode setopts_base(CURL *ch, std::string &output_buffer)
 {
 	auto ret = curl_easy_setopt(ch, CURLOPT_NOPROGRESS, 1L);
 	if (ret != CURLE_OK)
@@ -324,13 +334,39 @@ static CURLcode setopts(CURL *ch, const char *password, curl_slist *hdrs,
 	ret = curl_easy_setopt(ch, CURLOPT_TCP_NODELAY, 0L);
 	if (ret != CURLE_OK)
 		return ret;
-	ret= curl_easy_setopt(ch, CURLOPT_SSL_VERIFYHOST, 0L);
+	ret = curl_easy_setopt(ch, CURLOPT_SSL_VERIFYHOST, 0L);
 	if (ret != CURLE_OK)
 		return ret;
 	ret = curl_easy_setopt(ch, CURLOPT_SSL_VERIFYPEER, 0L);
 	if (ret != CURLE_OK)
 		return ret;
 	ret = curl_easy_setopt(ch, CURLOPT_FOLLOWLOCATION, 1L);
+	if (ret != CURLE_OK)
+		return ret;
+	ret = curl_easy_setopt(ch, CURLOPT_WRITEDATA, &output_buffer);
+	if (ret != CURLE_OK)
+		return ret;
+	ret = curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, oxd_write);
+	if (ret != CURLE_OK)
+		return ret;
+	if (g_verbose) {
+		ret = curl_easy_setopt(ch, CURLOPT_VERBOSE, 1L);
+		if (ret != CURLE_OK)
+			return ret;
+	}
+	ret = curl_easy_setopt(ch, CURLOPT_USERAGENT, g_user_agent);
+	if (ret != CURLE_OK)
+		return ret;
+	ret = curl_easy_setopt(ch, CURLOPT_URL, autodisc_url().c_str());
+	if (ret != CURLE_OK)
+		return ret;
+	return CURLE_OK;
+}
+
+static CURLcode setopts_oxd(CURL *ch, const char *password, curl_slist *hdrs,
+    tinyxml2::XMLPrinter &xml_request, std::string &xml_response)
+{
+	auto ret = setopts_base(ch, xml_response);
 	if (ret != CURLE_OK)
 		return ret;
 	ret = curl_easy_setopt(ch, CURLOPT_USERNAME, g_auth_user != nullptr ?
@@ -352,24 +388,30 @@ static CURLcode setopts(CURL *ch, const char *password, curl_slist *hdrs,
 	ret = curl_easy_setopt(ch, CURLOPT_POSTFIELDS, xml_request.CStr());
 	if (ret != CURLE_OK)
 		return ret;
-	ret = curl_easy_setopt(ch, CURLOPT_WRITEDATA, &xml_response);
-	if (ret != CURLE_OK)
-		return ret;
-	ret = curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, oxd_write);
-	if (ret != CURLE_OK)
-		return ret;
-	if (g_verbose) {
-		ret = curl_easy_setopt(ch, CURLOPT_VERBOSE, 1L);
-		if (ret != CURLE_OK)
-			return ret;
-	}
-	ret = curl_easy_setopt(ch, CURLOPT_USERAGENT, g_user_agent);
-	if (ret != CURLE_OK)
-		return ret;
-	ret = curl_easy_setopt(ch, CURLOPT_URL, autodisc_url().c_str());
-	if (ret != CURLE_OK)
-		return ret;
 	return CURLE_OK;
+}
+
+static int tb_main(const char *email)
+{
+	std::string xml_response;
+	std::unique_ptr<CURL, curl_del> chp(curl_easy_init());
+	auto ch = chp.get();
+	auto result = setopts_base(ch, xml_response);
+	if (result != CURLE_OK ||
+	    (result = curl_easy_setopt(ch, CURLOPT_URL, autodisc_url().c_str()))) {
+		fprintf(stderr, "curl_easy_setopt(): %s\n", curl_easy_strerror(result));
+		return EXIT_FAILURE;
+	}
+	result = curl_easy_perform(ch);
+	if (result != CURLE_OK) {
+		fprintf(stderr, "curl_easy_perform(): %s\n", curl_easy_strerror(result));
+		return EXIT_FAILURE;
+	}
+	if (g_verbose)
+		printf("* Response body:\n%s\n", xml_response.c_str());
+	else
+		printf("Request performed OK; use -v to show response.\n");
+	return EXIT_SUCCESS;
 }
 
 int main(int argc, char **argv)
@@ -390,12 +432,19 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Can only use one of -H and -h.\n");
 		return EXIT_FAILURE;
 	}
+	if (g_tb_mode) {
+		if (g_emailaddr == nullptr) {
+			fprintf(stderr, "The -e argument is required for Thunderbird mode.\n");
+			return EXIT_FAILURE;
+		}
+		return tb_main(g_emailaddr);
+	}
 	auto password = getenv("PASS");
 	if (password == nullptr) {
-		fprintf(stderr, "No password specified. Use the $PASS environment variable.\n");
+		fprintf(stderr, "A password is required to make an AutoDiscover request. Use the PASS environment variable.\n");
 		return EXIT_FAILURE;
 	} else if (g_emailaddr == nullptr && g_legacydn == nullptr) {
-		fprintf(stderr, "At least one of -e or -x is required.\n");
+		fprintf(stderr, "At least one of -e or -x is required to make an AutoDiscover request.\n");
 		return EXIT_FAILURE;
 	}
 
@@ -404,7 +453,7 @@ int main(int argc, char **argv)
 	std::unique_ptr<CURL, curl_del> chp(curl_easy_init());
 	std::unique_ptr<curl_slist, curl_del> hdrs(curl_slist_append(nullptr, "Content-Type: text/xml"));
 	auto ch = chp.get();
-	auto result = setopts(ch, password, hdrs.get(), *xml_request, xml_response);
+	auto result = setopts_oxd(ch, password, hdrs.get(), *xml_request, xml_response);
 	if (result != CURLE_OK) {
 		fprintf(stderr, "curl_easy_setopt(): %s\n", curl_easy_strerror(result));
 		return EXIT_FAILURE;

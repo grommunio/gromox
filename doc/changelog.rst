@@ -1,4 +1,4 @@
-Development 2.32.40
+Development 2.32.41
 ===================
 
 Fixes:
@@ -13,6 +13,7 @@ Enhancements:
   where the first subpart of the Mixed container is ``text/html`` now trigger
   the creation of a "jumbo" HTML document where other subparts of types
   ``text/plain`` and further ``text/html`` from that container, are integrated.
+* dscli: add --tb option to test Thunderbird autoconfig
 
 Changes:
 

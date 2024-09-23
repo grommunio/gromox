@@ -45,22 +45,20 @@ Default: (none)
 .TP
 \fB\-\-eas\fP
 Use the request schema from [MS-ASCMD].
+.TP
+\fB\-\-tb\fP
+Perform Thunderbird autoconfig request instead of AutoDiscover.
 .SH Examples
 Discover your store:
 .PP
 .RS 4
-.nf
 PASS=letmein gromox\-dscli \-e user@domain.example
-.fi
 .RE
 .PP
 Test public store discovery:
 .PP
 .RS 4
-.nf
-PASS=letmein gromox\-dscli \-e public.folder.root@domain.example \-u
-user@domain.example
-.fi
+PASS=letmein gromox\-dscli \-e public.folder.root@domain.example \-u user@domain.example
 .RE
 .SH Normative references
 .IP \(bu 4
