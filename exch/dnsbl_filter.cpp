@@ -111,7 +111,11 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 			return false;
 		}
 		auto cl_2 = make_scope_exit([&]() { free(str); });
-		reason += str;
+		if (i == 0)
+			/* Overwrite filler string "no reason" */
+			reason = str;
+		else
+			reason += str;
 		reason += "; ";
 	}
 	return false;
@@ -166,7 +170,10 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 			--len;
 		if (ptr + len >= max)
 			len = 0;
-		reason += std::string_view(reinterpret_cast<const char *>(ptr + 1), len);
+		if (rrnum == 0)
+			reason = std::string_view(reinterpret_cast<const char *>(ptr + 1), len);
+		else
+			reason += std::string_view(reinterpret_cast<const char *>(ptr + 1), len);
 		reason += "; ";
 	}
 	return false;
