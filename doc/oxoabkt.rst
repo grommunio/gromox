@@ -149,7 +149,7 @@ Contact in private "Contacts" folder:
 * PR_MESSAGE_CLASS=``IPM.Contact``
 * PidLidEmail1AddressType=``SMTP``/``EX``
 
-Same contact as seen in the AB Hierarchy:
+Same contact as seen through the AB provider:
 
 * PR_ADDRTYPE=``SMTP``/``EX``
 * PR_DISPLAY_TYPE=``0`` DT_MAILUSER
@@ -161,10 +161,11 @@ Contact group in private "Contacts" folder:
 * PR_MESSAGE_CLASS=``IPM.DistList``
 * members in PidLidDistributionListOneOffMembers (PSETID_Address:0x8054:PT_MV_BINARY)
 * members in PidLidDistributionListMembers (PSETID_Address:0x8055:PT_MV_BINARY)
-* entryids found in 8054 are all muidOOP
-* entryids found in 8055 can be either muidOOP or WAB_GUID {d3ad91c0-9d51-11cf-a4a9-00aa0047faa4} wrapping muidEMSAB
+* entryids found in LIDprop 0x8054 are all muidOOP
+* entryids found in LIDprop 0x8055 can be either muidOOP or WAB_GUID
+  wrapping muidEMSAB
 
-Same contact group as seen in the AB Hierarchy:
+Same contact group as seen through the AB provider:
 
 * PR_ADDRTYPE=``MAPIPDL``
 * PR_DISPLAY_TYPE_EX={unset}
