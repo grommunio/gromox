@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <dirent.h>
 #include <map>
@@ -99,6 +99,8 @@ errno_t bounce_gen_init(const char *cfgdir, const char *datadir,
 		}
 		static constexpr struct addrinfo hints = {AI_CANONNAME};
 		struct addrinfo *aires = nullptr;
+		mlog(LV_DEBUG, "bounce_gen: group %s: DNS lookup for \"%s\"...",
+			bounce_grp, buf);
 		auto err = getaddrinfo(buf, nullptr, &hints, &aires);
 		if (err != 0) {
 			mlog(LV_ERR, "getaddrinfo %s: %s", buf, gai_strerror(err));
