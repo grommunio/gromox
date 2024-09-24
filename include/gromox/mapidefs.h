@@ -1598,7 +1598,7 @@ extern GX_EXPORT const GUID
 	PSETID_Report, PSETID_Sharing, PSETID_Task, PSETID_UnifiedMessaging,
 	PSETID_Zarafa_Archive, PSETID_Zarafa_CalDav,
 	PS_INTERNET_HEADERS, PS_MAPI,
-	PS_PUBLIC_STRINGS,
+	PS_PUBLIC_STRINGS, EWS_Mac_PropertySetId,
 	gx_dbguid_store_private, gx_dbguid_store_public,
 	exc_replid2, exc_replid3, exc_replid4;
 extern GX_EXPORT const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlobalId[12];
