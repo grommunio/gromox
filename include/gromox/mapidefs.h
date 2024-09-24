@@ -1573,7 +1573,7 @@ enum {
 #define MAPI_ASSOCIATED 0x40U
 
 extern GX_EXPORT const FLATUID
-	muidStoreWrap, muidEMSAB, pbLongTermNonPrivateGuid,
+	muidStoreWrap, muidEMSAB, WAB_GUID, muidContabDLL, pbLongTermNonPrivateGuid,
 	pbExchangeProviderPrimaryUserGuid, pbExchangeProviderPublicGuid,
 	pbExchangeProviderDelegateGuid,
 	g_muidStorePrivate, g_muidStorePublic, muidOOP,
