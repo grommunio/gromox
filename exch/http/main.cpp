@@ -79,6 +79,7 @@ static void term_handler(int signo);
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "http_fd_limit", CFG_ALIAS},
+	{"http_basic_auth_cred_caching", "1min", CFG_TIME_NS},
 	{"http_fd_limit", "0", CFG_SIZE},
 	{"http_remote_host_hdr", ""},
 	CFG_TABLE_END,
@@ -147,6 +148,7 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> xcfg = nullptr,
 		return false;
 	}
 	g_http_remote_host_hdr = znul(xcfg->get_value("http_remote_host_hdr"));
+	g_http_basic_auth_validity = std::chrono::duration_cast<time_duration>(std::chrono::nanoseconds(xcfg->get_ll("http_basic_auth_cred_caching")));
 	return true;
 }
 

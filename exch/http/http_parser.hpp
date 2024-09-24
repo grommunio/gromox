@@ -70,9 +70,11 @@ struct http_context final : public schedule_context {
 	int write_offset = 0, write_length = 0;
 	BOOL b_close = TRUE; /* Connection MIME Header for indicating closing */
 	/* @auth_status: 0=untried, 200=success, 401=rejected */
-	http_status auth_status = http_status::none;
+	http_status auth_status = http_status::none, prev_auth_status = http_status::none;
 	/* last known authorization method */
-	enum auth_method auth_method = auth_method::none;
+	enum auth_method auth_method = auth_method::none, prev_auth_method = auth_method::none;
+	char prev_auth_token[256]{};
+	gromox::time_point auth_ts{};
 	int auth_times = 0;
 	char username[UADDR_SIZE]{}, password[128]{}, maildir[256]{}, lang[32]{};
 	DOUBLE_LIST_NODE node{};
@@ -143,3 +145,4 @@ extern unsigned int g_http_debug, g_msrpc_debug;
 extern size_t g_rqbody_flush_size, g_rqbody_max_size;
 extern bool g_enforce_auth;
 extern std::string g_http_remote_host_hdr;
+extern gromox::time_duration g_http_basic_auth_validity;

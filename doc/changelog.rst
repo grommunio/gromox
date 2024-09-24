@@ -1,4 +1,4 @@
-Development 2.32.41
+Development 2.32.49
 ===================
 
 Fixes:
@@ -14,6 +14,8 @@ Enhancements:
   the creation of a "jumbo" HTML document where other subparts of types
   ``text/plain`` and further ``text/html`` from that container, are integrated.
 * dscli: add --tb option to test Thunderbird autoconfig
+* http: credential caching for HTTP Basic (config directive
+  ``http_basic_auth_cred_caching``, defaulting to 60s)
 
 Changes:
 

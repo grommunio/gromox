@@ -127,6 +127,7 @@ static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static std::string g_certificate_path, g_private_key_path, g_certificate_passwd;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 static std::mutex g_vconnection_lock;
+time_duration g_http_basic_auth_validity;
 
 static void http_parser_context_clear(HTTP_CONTEXT *pcontext);
 
@@ -727,6 +728,21 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 static tproc_status htp_auth_basic(http_context *pcontext, const char *token) try
 {
 	auto &ctx = *pcontext;
+	auto now = tp_now();
+	if (ctx.prev_auth_status == http_status::ok &&
+	    ctx.prev_auth_method == auth_method::basic &&
+	    now - ctx.auth_ts < g_http_basic_auth_validity &&
+	    strcmp(ctx.prev_auth_token, token) == 0) {
+		/*
+		 * The exact same Authorization line was used as previously,
+		 * skip out on calling crypt() repeatedly for auth_validity
+		 * time.
+		 */
+		ctx.auth_status = http_status::ok;
+		ctx.auth_method = auth_method::basic;
+		return tproc_status::runoff;
+	}
+
 	char decoded[1024];
 	size_t decode_len = 0;
 	if (decode64(token, strlen(token), decoded, std::size(decoded), &decode_len) != 0)
@@ -763,6 +779,8 @@ static tproc_status htp_auth_basic(http_context *pcontext, const char *token) tr
 		if (*pcontext->lang == '\0')
 			gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("user_default_lang")), sizeof(pcontext->lang));
 		pcontext->auth_status = http_status::ok;
+		ctx.auth_ts = now;
+		gx_strlcpy(ctx.prev_auth_token, token, std::size(ctx.prev_auth_token));
 		pcontext->log(LV_DEBUG, "htp_auth success");
 		return tproc_status::runoff;
 	}
@@ -1074,6 +1092,8 @@ static tproc_status htp_auth(http_context &ctx)
 		 */
 		return tproc_status::runoff;
 	/* Under anything else, it resets */
+	ctx.prev_auth_method = ctx.auth_method;
+	ctx.prev_auth_status = ctx.auth_status;
 	ctx.auth_method = auth_method::none;
 	ctx.auth_status = http_status::none;
 	if (line == nullptr) {

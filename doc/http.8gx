@@ -52,6 +52,11 @@ custom file:
 \fBdaemons_fd_limit\fP
 In gromox-http, this is treated as an alias for http_fd_limit.
 .TP
+\fBhttp_basic_auth_cred_caching\fP
+Perform credential caching for HTTP Basic.
+.br
+Default: \fI1minute\fP
+.TP
 \fBhttp_fd_limit\fP
 Request that the file descriptor table be at least this large. The magic value
 0 indicates that the system default hard limit (rlim_max, cf. setrlimit(2))
