@@ -150,7 +150,7 @@ enum {
 unsigned int g_midb_schema_upgrades;
 unsigned int g_midb_cache_interval, g_midb_reload_interval;
 
-static constexpr auto DB_LOCK_TIMEOUT = std::chrono::seconds(60);
+static constexpr time_duration DB_LOCK_TIMEOUT = std::chrono::seconds(60);
 static size_t g_table_size;
 static std::atomic<unsigned int> g_sequence_id;
 static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */

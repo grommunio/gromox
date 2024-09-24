@@ -17,7 +17,7 @@
 
 namespace hpm_mh {
 
-static constexpr auto
+static constexpr gromox::time_duration
 	response_pending_period = std::chrono::seconds(30),
 	session_valid_interval = std::chrono::seconds(900),
 	session_valid_extragrace = std::chrono::seconds(60);

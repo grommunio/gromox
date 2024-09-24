@@ -32,7 +32,7 @@ class user_filter {
 	public:
 	user_filter() = default;
 	user_filter(size_t maxbans, size_t maxact, size_t maxtries,
-	    std::chrono::nanoseconds window, bool icase) :
+	    time_duration window, bool icase) :
 		m_maxbans(maxbans), m_maxact(maxact), m_maxtries(maxtries),
 		m_window(window), m_icase(icase)
 	{}
@@ -47,7 +47,7 @@ class user_filter {
 	std::unordered_map<std::string, time_point> m_banlist;
 	std::mutex m_bl_lock;
 	size_t m_maxbans = 0, m_maxact = 0, m_maxtries = 0;
-	std::chrono::nanoseconds m_window{};
+	time_duration m_window{};
 	bool m_icase = true;
 };
 
@@ -187,7 +187,7 @@ BOOL SVC_user_filter(enum plugin_op reason, const struct dlfuncs &fptrs) try
 	size_t maxbans  = cfg->get_ll("userfilter_maxbans");
 	size_t maxact   = cfg->get_ll("userfilter_maxusers");
 	size_t maxtries = cfg->get_ll("userfilter_rl_maxtries");
-	auto window     = std::chrono::nanoseconds(cfg->get_ll("userfilter_rl_window"));
+	time_duration window = std::chrono::nanoseconds(cfg->get_ll("userfilter_rl_window"));
 	char temp_buff[41];
 	HX_unit_seconds(temp_buff, std::size(temp_buff),
 		std::chrono::duration_cast<std::chrono::seconds>(window).count(), 0);

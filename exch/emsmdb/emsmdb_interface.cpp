@@ -88,7 +88,7 @@ struct NOTIFY_ITEM {
 
 }
 
-static constexpr auto HANDLE_VALID_INTERVAL = std::chrono::seconds(2000);
+static constexpr time_duration HANDLE_VALID_INTERVAL = std::chrono::seconds(2000);
 static constexpr size_t TAG_SIZE = 256;
 static time_point g_start_time;
 static pthread_t g_scan_id;
