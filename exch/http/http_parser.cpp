@@ -724,8 +724,19 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	return http_done(pcontext, http_status::enomem_CL);
 }
 
-static tproc_status htp_auth_basic(http_context *pcontext) try
+static tproc_status htp_auth_basic(http_context *pcontext, const char *token) try
 {
+	auto &ctx = *pcontext;
+	char decoded[1024];
+	size_t decode_len = 0;
+	if (decode64(token, strlen(token), decoded, std::size(decoded), &decode_len) != 0)
+		return tproc_status::runoff;
+	auto p = strchr(decoded, ':');
+	if (p == nullptr)
+		return tproc_status::runoff;
+	*p++ = '\0';
+	gx_strlcpy(ctx.username, decoded, std::size(ctx.username));
+	gx_strlcpy(ctx.password, p, std::size(ctx.password));
 	pcontext->auth_method = auth_method::basic;
 	if (!system_services_judge_user(pcontext->username)) {
 		pcontext->log(LV_DEBUG,
@@ -1082,17 +1093,7 @@ static tproc_status htp_auth(http_context &ctx)
 	}
 	if (strcasecmp(method, "Basic") == 0 &&
 	    g_config_file->get_ll("http_auth_basic")) {
-		char decoded[1024];
-		size_t decode_len = 0;
-		if (decode64(past_method, strlen(past_method), decoded, std::size(decoded), &decode_len) != 0)
-			return tproc_status::runoff;
-		auto p = strchr(decoded, ':');
-		if (p == nullptr)
-			return tproc_status::runoff;
-		*p++ = '\0';
-		gx_strlcpy(ctx.username, decoded, std::size(ctx.username));
-		gx_strlcpy(ctx.password, p, std::size(ctx.password));
-		auto ret = htp_auth_basic(&ctx);
+		auto ret = htp_auth_basic(&ctx, past_method);
 		if (ret != tproc_status::runoff)
 			return ret;
 	} else if (strcasecmp(method, "Negotiate") == 0 &&
