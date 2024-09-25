@@ -325,12 +325,9 @@ void Cleaner::operator()(MESSAGE_CONTENT *x) {message_content_free(x);}
 
 EWSContext::EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length,
     EWSPlugin &p) :
-	m_ID(id),
-	m_orig(*get_request(id)),
-	m_auth_info(ai),
-	m_request(data, length),
-	m_response(p.server_version()),
-	m_plugin(p)
+	m_ID(id), m_orig(*get_request(id)), m_auth_info(ai),
+	m_request(data, length), m_response(p.server_version()), m_plugin(p),
+	m_created(tp_now())
 {
 	tinyxml2::XMLElement* imp = nullptr;
 	if(m_request.header && (imp = m_request.header->FirstChildElement("ExchangeImpersonation")) &&
@@ -346,7 +343,9 @@ EWSContext::~EWSContext()
 }
 
 double EWSContext::age() const
-{return std::chrono::duration<double>(std::chrono::high_resolution_clock::now()-m_created).count();}
+{
+	return std::chrono::duration<double>(tp_now() - m_created).count();
+}
 
 /**
  * @brief      Copy string to context allocated buffer

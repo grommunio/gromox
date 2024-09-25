@@ -143,8 +143,8 @@ struct EWSPlugin::DebugCtx
 	std::mutex requestLock{};
 	std::mutex hashLock{};
 	std::unordered_map<uint64_t, size_t> requestHashes; ///< How often a request with this hash value occurred
-	std::chrono::high_resolution_clock::time_point last;
-	std::chrono::high_resolution_clock::duration minRequestTime{};
+	gromox::time_point last{};
+	gromox::time_duration minRequestTime{};
 	uint32_t loopThreshold = 0;  ///< How many request repetitions to ignore before warning
 	uint8_t flags = 0;
 };
@@ -334,7 +334,7 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 			lockProxy = std::unique_lock<std::mutex>(debug->requestLock);
 		if(debug->flags & DebugCtx::FL_RATELIMIT)
 		{
-			auto now = std::chrono::high_resolution_clock::now();
+			auto now = tp_now();
 			std::this_thread::sleep_for(debug->last-now+debug->minRequestTime);
 			debug->last = now;
 		}

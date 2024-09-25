@@ -374,7 +374,7 @@ private:
 	EWSPlugin& m_plugin;
 	std::string impersonationUser; ///< Buffer to hold username of impersonated user
 	std::string impersonationMaildir; ///< Buffer to hold maildir of impersonated user
-	std::chrono::high_resolution_clock::time_point m_created = std::chrono::high_resolution_clock::now();
+	gromox::time_point m_created{};
 	std::unique_ptr<NotificationContext> m_notify;
 };
 
