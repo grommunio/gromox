@@ -30,6 +30,7 @@ namespace gromox::EWS
 {
 class EWSContext;
 using clock = gromox::time_point::clock;
+using time_point = clock::time_point;
 }
 
 namespace gromox::EWS::Exceptions
@@ -443,8 +444,8 @@ struct sTime
  */
 struct sTimePoint
 {
-	explicit sTimePoint(const gromox::time_point&);
-	sTimePoint(const gromox::time_point&, const tSerializableTimeZone&);
+	explicit sTimePoint(time_point);
+	sTimePoint(time_point, const tSerializableTimeZone&);
 	explicit sTimePoint(const char*);
 	explicit sTimePoint(const tinyxml2::XMLAttribute*);
 	explicit sTimePoint(const tinyxml2::XMLElement*);
@@ -454,7 +455,7 @@ struct sTimePoint
 	static sTimePoint fromNT(uint64_t);
 	uint64_t toNT() const;
 
-	gromox::time_point time;
+	time_point time{};
 	std::chrono::minutes offset = std::chrono::minutes(0);
 };
 
@@ -702,8 +703,7 @@ struct tDuration
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	gromox::time_point StartTime;
-	gromox::time_point EndTime;
+	time_point StartTime{}, EndTime{};
 };
 
 /**
@@ -1470,9 +1470,7 @@ struct tAttendee : public NS_EWS_Types
 
 	tEmailAddressType Mailbox;
 	std::optional<Enum::ResponseTypeType> ResponseType;
-	std::optional<gromox::time_point> LastResponseTime;
-	std::optional<gromox::time_point> ProposedStart;
-	std::optional<gromox::time_point> ProposedEnd;
+	std::optional<time_point> LastResponseTime{}, ProposedStart{}, ProposedEnd{};
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -1687,12 +1685,12 @@ using tRecurrencePattern = std::variant<
  */
 struct tRecurrenceRangeBase : public NS_EWS_Types
 {
-	gromox::time_point StartDate;
+	time_point StartDate{};
 
 	void serialize(tinyxml2::XMLElement*) const;
 
 	tRecurrenceRangeBase() = default;
-	explicit tRecurrenceRangeBase(const gromox::time_point& sd) : StartDate(sd) {};
+	explicit tRecurrenceRangeBase(time_point sd) : StartDate(sd) {}
 	explicit tRecurrenceRangeBase(const tinyxml2::XMLElement*);
 };
 
@@ -1707,7 +1705,7 @@ struct tNoEndRecurrenceRange : public tRecurrenceRangeBase
 
 	using tRecurrenceRangeBase::tRecurrenceRangeBase;
 	tNoEndRecurrenceRange() = default;
-	explicit tNoEndRecurrenceRange(const gromox::time_point& sd) : tRecurrenceRangeBase(sd) {};
+	explicit tNoEndRecurrenceRange(time_point sd) : tRecurrenceRangeBase(sd) {}
 	explicit tNoEndRecurrenceRange(const tinyxml2::XMLElement*);
 };
 
@@ -1720,11 +1718,11 @@ struct tEndDateRecurrenceRange : public tRecurrenceRangeBase
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	gromox::time_point EndDate;
+	time_point EndDate{};
 
 	using tRecurrenceRangeBase::tRecurrenceRangeBase;
 	tEndDateRecurrenceRange() = default;
-	explicit tEndDateRecurrenceRange(const gromox::time_point& sd, const gromox::time_point& ed) :
+	explicit tEndDateRecurrenceRange(time_point sd, time_point ed) :
 		tRecurrenceRangeBase(sd), EndDate(ed) {};
 	explicit tEndDateRecurrenceRange(const tinyxml2::XMLElement*);
 };
@@ -1742,7 +1740,7 @@ struct tNumberedRecurrenceRange : public tRecurrenceRangeBase
 
 	using tRecurrenceRangeBase::tRecurrenceRangeBase;
 	tNumberedRecurrenceRange() = default;
-	explicit tNumberedRecurrenceRange(const gromox::time_point& sd, const int& noo) :
+	explicit tNumberedRecurrenceRange(time_point sd, int noo) :
 		tRecurrenceRangeBase(sd), NumberOfOccurrences(noo) {};
 	explicit tNumberedRecurrenceRange(const tinyxml2::XMLElement*);
 };
@@ -1777,14 +1775,11 @@ struct tOccurrenceInfoType : public NS_EWS_Types
 	static constexpr char NAME[] = "Occurrence";
 
 	sOccurrenceId ItemId;
-	gromox::time_point Start;
-	gromox::time_point End;
-	gromox::time_point OriginalStart;
+	time_point Start{}, End{}, OriginalStart{};
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	tOccurrenceInfoType(const sOccurrenceId id, const gromox::time_point s,
-		const gromox::time_point e, const gromox::time_point os) :
+	tOccurrenceInfoType(const sOccurrenceId id, time_point s, time_point e, time_point os) :
 		ItemId(id), Start(s), End(e), OriginalStart(os) {};
 };
 
@@ -1795,11 +1790,11 @@ struct tDeletedOccurrenceInfoType : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "DeletedOccurrence";
 
-	gromox::time_point Start;
+	time_point Start{};
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	tDeletedOccurrenceInfoType(const gromox::time_point s) : Start(s) {};
+	tDeletedOccurrenceInfoType(time_point s) : Start(s) {}
 };
 
 /**
@@ -1846,9 +1841,9 @@ struct tItem : public NS_EWS_Types
 	std::optional<sTimePoint> DateTimeSent;
 	std::optional<sTimePoint> DateTimeCreated;
 	//<xs:element name="ResponseObjects" type="t:NonEmptyArrayOfResponseObjectsType" minOccurs="0" />
-	std::optional<gromox::time_point> ReminderDueBy;
+	std::optional<time_point> ReminderDueBy;
 	std::optional<bool> ReminderIsSet;
-	//std::optional<gromox::time_point> ReminderNextTime;
+	//std::optional<time_point> ReminderNextTime;
 	std::optional<int32_t> ReminderMinutesBeforeStart;
 	std::optional<std::string> DisplayCc;
 	std::optional<std::string> DisplayTo;
@@ -1916,15 +1911,13 @@ struct tTask : public tItem
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::optional<int> ActualWork; // 0 <= ActualWork < 0x5AE980DF
-	std::optional<gromox::time_point> AssignedTime;
+	std::optional<time_point> AssignedTime, CompleteDate, DueDate, StartDate;
 	std::optional<std::string> BillingInformation;
 	std::optional<int> ChangeCount;
 	std::optional<std::vector<std::string>> Companies;
-	std::optional<gromox::time_point> CompleteDate;
 	std::optional<std::vector<std::string>> Contacts;
 	// <xs:element name="DelegationState" type="t:TaskDelegateStateType" minOccurs="0" />
 	std::optional<std::string> Delegator;
-	std::optional<gromox::time_point> DueDate;
 	std::optional<int> IsAssignmentEditable;
 	std::optional<bool> IsComplete;
 	std::optional<bool> IsRecurring;
@@ -1933,7 +1926,6 @@ struct tTask : public tItem
 	std::optional<std::string> Owner;
 	std::optional<double> PercentComplete;
 	std::optional<tTaskRecurrence> Recurrence;
-	std::optional<gromox::time_point> StartDate;
 	std::optional<Enum::TaskStatusType> Status;
 	std::optional<std::string> StatusDescription;
 	std::optional<int> TotalWork; // 0 <= TotalWork < 0x5AE980DF
@@ -1956,7 +1948,7 @@ struct tCalendarItem : public tItem
 
 	//<!-- iCalendar properties -->
 	std::optional<std::string> UID;
-	std::optional<gromox::time_point> RecurrenceId;
+	std::optional<time_point> RecurrenceId;
 	std::optional<sTimePoint> DateTimeStamp;
 
 	// <!-- Single and Occurrence only -->
@@ -1964,7 +1956,7 @@ struct tCalendarItem : public tItem
 	std::optional<sTimePoint> End;
 
 	// <!-- Occurrence only -->
-	std::optional<gromox::time_point> OriginalStart;
+	std::optional<time_point> OriginalStart;
 	std::optional<bool> IsAllDayEvent;
 	std::optional<Enum::LegacyFreeBusyType> LegacyFreeBusyStatus;
 	std::optional<std::string> Location;
@@ -1989,7 +1981,7 @@ struct tCalendarItem : public tItem
 	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
 	// <xs:element name="Duration" type="xs:string" minOccurs="0" />
 	// <xs:element name="TimeZone" type="xs:string" minOccurs="0" />
-	std::optional<gromox::time_point> AppointmentReplyTime;
+	std::optional<time_point> AppointmentReplyTime;
 	std::optional<int> AppointmentSequenceNumber;
 	std::optional<int> AppointmentState;
 
@@ -2331,10 +2323,9 @@ struct tSerializableTimeZone
 	tSerializableTimeZoneTime StandardTime;
 	tSerializableTimeZoneTime DaylightTime;
 
-	std::chrono::minutes offset(const gromox::time_point&) const;
-	gromox::time_point apply(const gromox::time_point&) const;
-	gromox::time_point remove(const gromox::time_point&) const;
-
+	std::chrono::minutes offset(time_point) const;
+	time_point apply(time_point) const;
+	time_point remove(time_point) const;
 	bool hasDst() const;
 };
 
@@ -2885,7 +2876,7 @@ struct tSuggestionsViewOptions
 	std::optional<int32_t> MeetingDurationInMinutes;
 	std::optional<Enum::SuggestionQuality> MinimumSuggestionQuality;
 	tDuration DetailedSuggestionsWindow;
-	std::optional<gromox::time_point> CurrentMeetingTime;
+	std::optional<time_point> CurrentMeetingTime;
 	std::optional<std::string> GlobalObjectId;
 };
 

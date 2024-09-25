@@ -161,13 +161,13 @@ struct ExplicitConvert<Structures::sString> : public ExplicitConvert<std::string
  * @brief      Conversion specialization for timestamps
  */
 template<>
-struct ExplicitConvert<gromox::time_point>
+struct ExplicitConvert<EWS::time_point>
 {
 	static constexpr uint8_t value = EC_IN | EC_OUT;
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement*, gromox::time_point&);
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement*, EWS::time_point);
 
-	static void serialize(const gromox::time_point &value, SetterFunc setter)
+	static void serialize(time_point value, SetterFunc setter)
 	{
 		tm t;
 		auto timestamp = clock::to_time_t(value);

@@ -483,7 +483,7 @@ const char* EWSContext::effectiveUser(const sFolderSpec& folder) const
 void EWSContext::enableEventStream(int timeout)
 {
 	m_state = S_STREAM_NOTIFY;
-	gromox::time_point expire = tp_now()+std::chrono::minutes(timeout);
+	auto expire = tp_now() + std::chrono::minutes(timeout);
 	m_notify = std::make_unique<NotificationContext>(expire);
 }
 

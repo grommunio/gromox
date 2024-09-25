@@ -1185,10 +1185,10 @@ void sSyncState::update(const EID_ARRAY& given_fids, const EID_ARRAY& deleted_fi
 
 ///////////////////////////////////////////////////////////////////////////////
 
-sTimePoint::sTimePoint(const gromox::time_point& tp) : time(tp)
+sTimePoint::sTimePoint(time_point tp) : time(tp)
 {}
 
-sTimePoint::sTimePoint(const gromox::time_point& tp, const tSerializableTimeZone& tz) :
+sTimePoint::sTimePoint(time_point tp, const tSerializableTimeZone& tz) :
     time(tp), offset(tz.offset(tp))
 {}
 
@@ -1217,7 +1217,7 @@ sTimePoint::sTimePoint(const char* dtstr)
 	if (timestamp == static_cast<time_t>(-1))
 		throw EWSError::ValueOutOfRange(E3152);
 	time = clock::from_time_t(timestamp);
-	time += std::chrono::duration_cast<gromox::time_point::duration>(std::chrono::duration<double>(seconds));
+	time += std::chrono::duration_cast<time_point::duration>(std::chrono::duration<double>(seconds));
 	offset = std::chrono::minutes(60*tz_hour+(tz_hour < 0? -tz_min : tz_min));
 }
 
@@ -3810,7 +3810,7 @@ std::vector<PERMISSION_DATA> tCalendarPermissionSet::write() const
  *
  * @return     Offset in minutes
  */
-std::chrono::minutes tSerializableTimeZone::offset(const time_point& tp) const
+std::chrono::minutes tSerializableTimeZone::offset(time_point tp) const
 {
 	if(!hasDst())
 		return std::chrono::minutes(Bias);
@@ -3850,7 +3850,7 @@ std::chrono::minutes tSerializableTimeZone::offset(const time_point& tp) const
  *
  * @return     Adjusted time point
  */
-gromox::time_point tSerializableTimeZone::apply(const gromox::time_point& tp) const
+EWS::time_point tSerializableTimeZone::apply(EWS::time_point tp) const
 {return tp+offset(tp);}
 
 
@@ -3861,7 +3861,7 @@ gromox::time_point tSerializableTimeZone::apply(const gromox::time_point& tp) co
  *
  * @return     Adjusted time point
  */
-gromox::time_point tSerializableTimeZone::remove(const gromox::time_point& tp) const
+EWS::time_point tSerializableTimeZone::remove(EWS::time_point tp) const
 {return tp-offset(tp);}
 
 /**

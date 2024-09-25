@@ -49,7 +49,7 @@ struct Cleaner
 } // Anonymous namespace
 
 
-XMLError ExplicitConvert<gromox::time_point>::deserialize(const tinyxml2::XMLElement* xml, gromox::time_point& value)
+XMLError ExplicitConvert<EWS::time_point>::deserialize(const tinyxml2::XMLElement* xml, EWS::time_point value)
 {
 	const char* data = xml->GetText();
 	if(!data)
@@ -73,7 +73,7 @@ XMLError ExplicitConvert<gromox::time_point>::deserialize(const tinyxml2::XMLEle
 	if (timestamp == static_cast<time_t>(-1))
 		return tinyxml2::XML_CAN_NOT_CONVERT_TEXT;
 	value = clock::from_time_t(timestamp);
-	value += std::chrono::duration_cast<gromox::time_point::duration>(std::chrono::duration<double>(seconds));
+	value += std::chrono::duration_cast<time_point::duration>(std::chrono::duration<double>(seconds));
 	return tinyxml2::XML_SUCCESS;
 }
 
