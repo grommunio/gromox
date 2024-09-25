@@ -8,7 +8,7 @@ AM_LDFLAGS  = ${my_LDFLAGS}
 AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 
-lib_LTLIBRARIES = libgromox_auth.la libgromox_authz.la libgromox_common.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la ${program_plugins}
+lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la ${program_plugins}
 noinst_LTLIBRARIES = libphp_mapi.la
 pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/eidprint
 pkglib_LTLIBRARIES = libmapi4zf.la
@@ -40,7 +40,7 @@ dist_unit_DATA = system/gromox-delivery.service \
 	system/gromox-snapshot.service system/gromox-snapshot.timer \
 	system/gromox-timer.service system/gromox-zcore.service
 
-program_plugins = ${mta_plugins} ${hpm_plugins} ${proc_plugins} ${svc_plugins}
+program_plugins = libgromox_auth.la libgromox_authz.la ${mta_plugins} ${hpm_plugins} ${proc_plugins} ${svc_plugins}
 mta_plugins = \
 	libgxm_alias_resolve.la \
 	libgxm_exmdb_local.la
