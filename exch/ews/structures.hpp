@@ -12,8 +12,6 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
-
-#include <gromox/clock.hpp>
 #include <gromox/freebusy.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
@@ -29,7 +27,7 @@ namespace tinyxml2
 namespace gromox::EWS
 {
 class EWSContext;
-using clock = gromox::time_point::clock;
+using clock = std::chrono::system_clock;
 using time_point = clock::time_point;
 }
 

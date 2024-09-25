@@ -1,4 +1,5 @@
 #pragma once
+#include <chrono>
 #include <cstdint>
 #include <ctime>
 #include <gromox/clock.hpp>
@@ -29,10 +30,10 @@ extern GX_EXPORT GUID rop_util_make_domain_guid(int domain_id);
 extern GX_EXPORT int rop_util_get_user_id(GUID);
 extern GX_EXPORT int rop_util_get_domain_id(GUID);
 extern GX_EXPORT uint64_t rop_util_unix_to_nttime(time_t unix_time);
-extern GX_EXPORT uint64_t rop_util_unix_to_nttime(const gromox::time_point&);
+extern GX_EXPORT uint64_t rop_util_unix_to_nttime(std::chrono::system_clock::time_point);
 extern GX_EXPORT time_t rop_util_nttime_to_unix(uint64_t nt_time);
-extern GX_EXPORT gromox::time_point rop_util_nttime_to_unix2(uint64_t nt_time);
-extern GX_EXPORT gromox::time_point rop_util_rtime_to_unix2(uint32_t t);
+extern GX_EXPORT std::chrono::system_clock::time_point rop_util_nttime_to_unix2(uint64_t nt_time);
+extern GX_EXPORT std::chrono::system_clock::time_point rop_util_rtime_to_unix2(uint32_t t);
 inline uint32_t rop_util_nttime_to_rtime(uint64_t t) { return t / RTIME_FACTOR; }
 inline uint64_t rop_util_rtime_to_nttime(uint32_t t) { return t * RTIME_FACTOR; }
 extern GX_EXPORT uint32_t rop_util_unix_to_rtime(time_t);

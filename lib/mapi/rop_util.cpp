@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -181,7 +182,7 @@ uint64_t rop_util_unix_to_nttime(time_t unix_time)
 	return nt_time;
 }
 
-uint64_t rop_util_unix_to_nttime(const gromox::time_point& unix_time)
+uint64_t rop_util_unix_to_nttime(std::chrono::system_clock::time_point unix_time)
 {return (std::chrono::duration_cast<nt_dur>(unix_time.time_since_epoch())+nt_offset).count();}
 
 time_t rop_util_nttime_to_unix(uint64_t nt_time)
@@ -194,14 +195,14 @@ time_t rop_util_nttime_to_unix(uint64_t nt_time)
 	return (time_t)unix_time;
 }
 
-gromox::time_point rop_util_nttime_to_unix2(uint64_t nt_time)
+std::chrono::system_clock::time_point rop_util_nttime_to_unix2(uint64_t nt_time)
 {
-	return gromox::time_point(std::chrono::duration_cast<gromox::time_point::duration>(nt_dur(nt_time) - nt_offset));
+	return std::chrono::system_clock::time_point(std::chrono::duration_cast<std::chrono::system_clock::duration>(nt_dur(nt_time) - nt_offset));
 }
 
-gromox::time_point rop_util_rtime_to_unix2(uint32_t t)
+std::chrono::system_clock::time_point rop_util_rtime_to_unix2(uint32_t t)
 {
-	return gromox::time_point(std::chrono::duration_cast<gromox::time_point::duration>(nt_dur(rop_util_rtime_to_nttime(t)) - nt_offset));
+	return std::chrono::system_clock::time_point(std::chrono::duration_cast<std::chrono::system_clock::duration>(nt_dur(rop_util_rtime_to_nttime(t)) - nt_offset));
 }
 
 time_t rop_util_rtime_to_unix(uint32_t t)

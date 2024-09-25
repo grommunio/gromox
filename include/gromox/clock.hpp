@@ -1,8 +1,8 @@
 #pragma once
 #include <chrono>
 namespace gromox {
-using time_duration = std::chrono::steady_clock::duration;
-using time_point = std::chrono::time_point<std::chrono::system_clock>;
+using time_point = std::chrono::steady_clock::time_point;
+using time_duration = time_point::duration;
 inline time_point tp_now() { return time_point::clock::now(); }
 }
 #define CLK_D0 \
