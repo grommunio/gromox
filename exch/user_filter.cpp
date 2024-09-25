@@ -66,7 +66,7 @@ void user_filter::banlist_insert(std::string &&id, std::chrono::seconds bantime)
 		std::erase_if(m_banlist, [=](const auto &e) { return now >= e.second; });
 #else
 		for (auto it = m_banlist.begin(); it != m_banlist.end(); )
-			if (cutoff >= it->second)
+			if (now >= it->second)
 				it = m_banlist.erase(it);
 			else
 				++it;
@@ -132,7 +132,7 @@ bool user_filter::judge(std::string &&id)
 #else
 		for (auto it = m_activity.begin(); it != m_activity.end(); )
 			if (now - it->second.last >= m_window)
-				it = m_hash.erase(it);
+				it = m_activity.erase(it);
 			else
 				++it;
 #endif
