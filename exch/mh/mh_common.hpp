@@ -21,6 +21,7 @@ static constexpr gromox::time_duration
 	response_pending_period = std::chrono::seconds(30),
 	session_valid_interval = std::chrono::seconds(900),
 	session_valid_extragrace = std::chrono::seconds(60);
+using wallclock = std::chrono::system_clock;
 
 struct session_data {
 	session_data() = default;
@@ -58,8 +59,8 @@ static constexpr const char *g_error_text[] = {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-extern std::string render_content(gromox::time_point, gromox::time_point);
-extern std::string commonHeader(const char *rq_type, const char *rq_id, const char *cl_info, const char *sid, const std::string &excver, gromox::time_point);
+extern std::string render_content(wallclock::time_point, wallclock::time_point);
+extern std::string commonHeader(const char *rq_type, const char *rq_id, const char *cl_info, const char *sid, const std::string &excver, wallclock::time_point);
 
 struct MhContext
 {
@@ -77,7 +78,8 @@ struct MhContext
 	HTTP_REQUEST& orig;
 	HTTP_AUTH_INFO auth_info{};
 
-	gromox::time_point start_time;
+	gromox::time_point start_time{};
+	wallclock::time_point wall_start_time{};
 	GUID session_guid{}, sequence_guid{};
 	const char *request_id = nullptr, *client_info = nullptr, *cl_app = nullptr;
 	char request_value[32]{}, session_string[64]{};

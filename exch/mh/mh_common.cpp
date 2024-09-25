@@ -13,6 +13,7 @@ using namespace hpm_mh;
 MhContext::MhContext(int context_id, http_request &rq, HTTP_AUTH_INFO &&ai,
     const std::string &srvver) :
 	ID(context_id), orig(rq), auth_info(std::move(ai)), start_time(tp_now()),
+	wall_start_time(wallclock::now()),
 	push_buff(std::make_unique<char[]>(push_buff_size)),
 	m_server_version(srvver)
 {}
@@ -57,13 +58,13 @@ namespace hpm_mh {
  *
  * @param	start	Time stamp of request start
  */
-std::string render_content(time_point now, time_point start)
+std::string render_content(std::chrono::system_clock::time_point now, std::chrono::system_clock::time_point start)
 {
 	static constexpr char templ[] = "PROCESSING\r\nDONE\r\n"
 		"X-ElapsedTime: {}\r\n"
 		"X-StartTime: {}\r\n\r\n";
 	char dstring[128];
-	rfc1123_dstring(dstring, std::size(dstring), time_point::clock::to_time_t(start));
+	rfc1123_dstring(dstring, std::size(dstring), decltype(start)::clock::to_time_t(start));
 	long long elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - start).count();
 	return fmt::format(templ, elapsed, dstring);
 }
@@ -78,8 +79,8 @@ std::string render_content(time_point now, time_point start)
  * @param date				Date string
  */
 std::string commonHeader(const char *requestType, const char *requestId,
-    const char *clientInfo, const char *sid,
-    const std::string &excver, time_point date)
+    const char *clientInfo, const char *sid, const std::string &excver,
+    wallclock::time_point date)
 {
 	static constexpr char templ[] = "HTTP/1.1 200 OK\r\n"
         "Cache-Control: private\r\n"
@@ -94,7 +95,7 @@ std::string commonHeader(const char *requestType, const char *requestId,
         "Date: {}\r\n";
 	using namespace std::chrono;
 	char dstring[128];
-	rfc1123_dstring(dstring, std::size(dstring), gromox::time_point::clock::to_time_t(date));
+	rfc1123_dstring(dstring, std::size(dstring), wallclock::to_time_t(date));
 	auto rs = fmt::format(templ, requestType, requestId, clientInfo,
 	          static_cast<long long>(duration_cast<milliseconds>(response_pending_period).count()),
 	          static_cast<long long>(duration_cast<milliseconds>(session_valid_interval).count()),
@@ -120,7 +121,7 @@ http_status MhContext::error_responsecode(resp_code response_code) const
 		"<h1>Diagnostic Information</h1>\r\n"
 		"<p>%s</p>\r\n"
 		"</body></html>\r\n", g_error_text[static_cast<unsigned int>(response_code)]);
-	rfc1123_dstring(dstring, std::size(dstring), time_point::clock::to_time_t(start_time));
+	rfc1123_dstring(dstring, std::size(dstring), wallclock::to_time_t(wall_start_time));
 	static constexpr char templ[] =
 		"HTTP/1.1 200 OK\r\n"
 		"Cache-Control: private\r\n"
@@ -137,8 +138,8 @@ http_status MhContext::error_responsecode(resp_code response_code) const
 
 http_status MhContext::ping_response() const try
 {
-	auto current_time = tp_now();
-	auto ct = render_content(current_time, start_time);
+	auto current_time = wallclock::now();
+	auto ct = render_content(current_time, wall_start_time);
 	auto rs = commonHeader("PING", request_id, client_info, session_string,
 	          m_server_version, current_time) +
 	          fmt::format("Content-Length: {}\r\n", ct.size()) +
@@ -152,8 +153,8 @@ http_status MhContext::ping_response() const try
 http_status MhContext::failure_response(uint32_t status) const try
 {
 	char stbuf[8];
-	auto current_time = tp_now();
-	auto ct = render_content(current_time, start_time);
+	auto current_time = wallclock::now();
+	auto ct = render_content(current_time, wall_start_time);
 	auto rs = commonHeader(request_value, request_id, client_info,
 	          session_string, m_server_version, current_time) +
 	          fmt::format("Content-Length: {}\r\n", ct.size());
@@ -172,7 +173,7 @@ http_status MhContext::failure_response(uint32_t status) const try
 http_status MhContext::normal_response() const try
 {
 	char chunk_string[32];
-	auto current_time = tp_now();
+	auto current_time = wallclock::now();
 	auto rs = commonHeader(request_value, request_id, client_info,
 	          session_string, m_server_version, current_time) +
 	          "Transfer-Encoding: chunked\r\n";
@@ -185,7 +186,7 @@ http_status MhContext::normal_response() const try
 	auto wr = write_response(ID, rs.c_str(), rs.size());
 	if (wr != http_status::ok)
 		return wr;
-	auto ct = render_content(current_time, start_time);
+	auto ct = render_content(current_time, wall_start_time);
 	auto tmp_len = sprintf(chunk_string, "%zx\r\n", ct.size());
 	wr = write_response(ID, chunk_string, tmp_len);
 	if (wr != http_status::ok)

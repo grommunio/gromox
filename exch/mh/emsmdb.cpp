@@ -80,7 +80,7 @@ struct notification_ctx {
 	uint8_t pending_status = 0, notification_status = 0;
 	GUID session_guid{};
 	time_point pending_time{}; ///< Since when the connection is pending
-	time_point start_time{};
+	wallclock::time_point wall_start_time{};
 };
 
 }
@@ -418,8 +418,8 @@ BOOL HPM_mh_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Response generation
 
-static http_status notification_response(int ID, time_point start_time,
-    uint32_t result, uint32_t flags_out)
+static http_status notification_response(int ID,
+    wallclock::time_point start_time, uint32_t result, uint32_t flags_out)
 {
 	decltype(MhEmsmdbContext::response) response;
 	ems_push ext_push;
@@ -431,8 +431,7 @@ static http_status notification_response(int ID, time_point start_time,
 	response.notificationwait.flags_out = flags_out;
 	ext_push.p_notificationwait_rsp(response.notificationwait);
 
-	auto current_time = tp_now();
-	auto ct = render_content(current_time, start_time);
+	auto ct = render_content(wallclock::now(), start_time);
 	auto tmp_len = sprintf(chunk_string, "%zx\r\n", ct.size() + ext_push.m_offset);
 	auto wr = write_response(ID, chunk_string, tmp_len);
 	if (wr != http_status::ok)
@@ -448,9 +447,8 @@ static http_status notification_response(int ID, time_point start_time,
 
 http_status MhEmsmdbContext::notification_response() const try
 {
-	auto current_time = tp_now();
 	auto rs = commonHeader("NotificationWait", request_id, client_info,
-	          session_string, m_server_version, current_time) +
+	          session_string, m_server_version, wallclock::now()) +
 	          "Transfer-Encoding: chunked\r\n\r\n";
 	auto wr = write_response(ID, rs.c_str(), rs.size());
 	if (wr != http_status::ok)
@@ -462,7 +460,9 @@ http_status MhEmsmdbContext::notification_response() const try
 }
 
 http_status MhEmsmdbContext::notification_response(uint32_t result, uint32_t flags_out) const
-{return ::notification_response(ID, start_time, result, flags_out);}
+{
+	return ::notification_response(ID, wall_start_time, result, flags_out);
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Emsmdb bridge
@@ -699,7 +699,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::wait(MhEmsmdbContext &ctx)
 		nctx.pending_status = PENDING_STATUS_WAITING;
 		nctx.notification_status = NOTIFICATION_STATUS_NONE;
 		nctx.session_guid = ctx.session_guid;
-		nctx.start_time = ctx.start_time;
+		nctx.wall_start_time = ctx.wall_start_time;
 		nctx.pending_time = tp_now();
 		std::unique_lock ll_hold(pending_lock);
 		try {
@@ -762,13 +762,13 @@ int MhEmsmdbPlugin::retr(int context_id)
 	switch (status[context_id].notification_status) {
 	case NOTIFICATION_STATUS_TIMED:
 		notification_response(context_id,
-			status[context_id].start_time,
+			status[context_id].wall_start_time,
 			ecSuccess, 0);
 		status[context_id].notification_status = NOTIFICATION_STATUS_NONE;
 		return HPM_RETRIEVE_WRITE;
 	case NOTIFICATION_STATUS_PENDING:
 		notification_response(context_id,
-			status[context_id].start_time,
+			status[context_id].wall_start_time,
 			ecSuccess, FLAG_NOTIFICATION_PENDING);
 		status[context_id].notification_status = NOTIFICATION_STATUS_NONE;
 		return HPM_RETRIEVE_WRITE;
