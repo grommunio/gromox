@@ -5,6 +5,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <list>
 #include <optional>
 #include <string>
@@ -26,7 +27,10 @@ namespace tinyxml2
 }
 
 namespace gromox::EWS
-{class EWSContext;}
+{
+class EWSContext;
+using clock = gromox::time_point::clock;
+}
 
 namespace gromox::EWS::Exceptions
 {class EWSError;}

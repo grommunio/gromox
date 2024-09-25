@@ -1216,7 +1216,7 @@ sTimePoint::sTimePoint(const char* dtstr)
 	auto timestamp = timegm(&t);
 	if (timestamp == static_cast<time_t>(-1))
 		throw EWSError::ValueOutOfRange(E3152);
-	time = gromox::time_point::clock::from_time_t(timestamp);
+	time = clock::from_time_t(timestamp);
 	time += std::chrono::duration_cast<gromox::time_point::duration>(std::chrono::duration<double>(seconds));
 	offset = std::chrono::minutes(60*tz_hour+(tz_hour < 0? -tz_min : tz_min));
 }
@@ -1620,8 +1620,8 @@ void tCalendarItem::update(const sShape& shape)
 ///////////////////////////////////////////////////////////////////////////////
 
 tCalendarEvent::tCalendarEvent(const freebusy_event& fb_event) :
-	StartTime(time_point::clock::from_time_t(fb_event.start_time)),
-	EndTime(time_point::clock::from_time_t(fb_event.end_time))
+	StartTime(clock::from_time_t(fb_event.start_time)),
+	EndTime(clock::from_time_t(fb_event.end_time))
 {
 	switch(fb_event.busy_status)
 	{
@@ -3814,7 +3814,7 @@ std::chrono::minutes tSerializableTimeZone::offset(const time_point& tp) const
 {
 	if(!hasDst())
 		return std::chrono::minutes(Bias);
-	time_t temp = time_point::clock::to_time_t(tp)-Bias*60;
+	auto temp = clock::to_time_t(tp) - Bias * 60;
 	tm datetime;
 	if (gmtime_r(&temp, &datetime) == nullptr)
 		datetime = {};

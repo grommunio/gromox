@@ -72,7 +72,7 @@ XMLError ExplicitConvert<gromox::time_point>::deserialize(const tinyxml2::XMLEle
 	auto timestamp = timegm(&t);
 	if (timestamp == static_cast<time_t>(-1))
 		return tinyxml2::XML_CAN_NOT_CONVERT_TEXT;
-	value = gromox::time_point::clock::from_time_t(timestamp);
+	value = clock::from_time_t(timestamp);
 	value += std::chrono::duration_cast<gromox::time_point::duration>(std::chrono::duration<double>(seconds));
 	return tinyxml2::XML_SUCCESS;
 }
@@ -244,7 +244,7 @@ sTimePoint::sTimePoint(const tinyxml2::XMLElement* xml) : sTimePoint(xml->GetTex
 void sTimePoint::serialize(XMLElement* xml) const
 {
 	tm t;
-	time_t timestamp = gromox::time_point::clock::to_time_t(time-offset);
+	auto timestamp = clock::to_time_t(time - offset);
 	if (gmtime_r(&timestamp, &t) == nullptr)
 		t = {};
 	auto frac = time.time_since_epoch() % std::chrono::seconds(1);

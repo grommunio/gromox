@@ -1239,7 +1239,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	PROPTAG_ARRAY tags = shape.proptags();
 	tags.emplace_back(ex_replace_time_tag);
 
-	time_t basedate_ts = gromox::time_point::clock::to_time_t(rop_util_rtime_to_unix2(basedate));
+	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
 	struct tm basedate_local;
 	localtime_r(&basedate_ts, &basedate_local);
 
@@ -1253,7 +1253,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 		auto exstarttime = props.get<const uint64_t>(ex_replace_time_tag);
 		if(!exstarttime)
 			continue;
-		time_t exstart = gromox::time_point::clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
+		auto exstart = clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
 		struct tm exstart_local;
 		localtime_r(&exstart, &exstart_local);
 		if(is_same_day(basedate_local, exstart_local))
@@ -1710,8 +1710,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	uint8_t isrecurring = item.IsRecurring && item.IsRecurring.value() ? 1 : 0;
 
 	if(item.Recurrence) {
-		time_t localStartTime = gromox::time_point::clock::to_time_t(item.Start.value().time);
-		time_t localEndTime = gromox::time_point::clock::to_time_t(item.End.value().time);
+		auto localStartTime = clock::to_time_t(item.Start.value().time);
+		auto localEndTime = clock::to_time_t(item.End.value().time);
 		auto duration = localEndTime - localStartTime;
 		struct tm startdate_tm;
 		if (localtime_r(&localStartTime, &startdate_tm) == nullptr)
@@ -1849,7 +1849,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			apr.recur_pat.endtype = ENDTYPE_AFTER_DATE;
 			apr.recur_pat.occurrencecount = 0xA; // TODO count occurrences, but this field doesn't really matter
 			auto ed = std::get<tEndDateRecurrenceRange>(rr).EndDate;
-			time_t enddate = gromox::time_point::clock::to_time_t(ed);
+			auto enddate = clock::to_time_t(ed);
 			apr.recur_pat.enddate = rop_util_unix_to_rtime(enddate);
 		}
 		else if(std::holds_alternative<tNumberedRecurrenceRange>(rr)) {

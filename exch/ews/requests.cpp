@@ -29,8 +29,6 @@ using namespace gromox::EWS::Exceptions;
 using namespace gromox::EWS::Structures;
 using namespace tinyxml2;
 
-using Clock = time_point::clock;
-
 ///////////////////////////////////////////////////////////////////////////////
 //Helper functions
 
@@ -805,8 +803,8 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 	for(const tMailboxData& MailboxData : request.MailboxDataArray) try
 	{
 		string maildir = ctx.get_maildir(MailboxData.Email);
-		time_t start = gromox::time_point::clock::to_time_t(request.TimeZone->remove(TimeWindow.StartTime));
-		time_t end = gromox::time_point::clock::to_time_t(request.TimeZone->remove(TimeWindow.EndTime));
+		auto start = clock::to_time_t(request.TimeZone->remove(TimeWindow.StartTime));
+		auto end   = clock::to_time_t(request.TimeZone->remove(TimeWindow.EndTime));
 		tFreeBusyView fbv(ctx.auth_info().username, maildir.c_str(), start, end);
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back(std::move(fbv));
 		for(auto& event : *fbr.FreeBusyView->CalendarEventArray)
@@ -933,8 +931,8 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 		auto end_time = configFile->get_value("end_time");
 		if (start_time != nullptr && end_time != nullptr) {
 			tDuration& Duration = data.OofSettings->Duration.emplace();
-			Duration.StartTime = Clock::from_time_t(strtoll(start_time, nullptr, 0));
-			Duration.EndTime = Clock::from_time_t(strtoll(end_time, nullptr, 0));
+			Duration.StartTime = clock::from_time_t(strtoll(start_time, nullptr, 0));
+			Duration.EndTime = clock::from_time_t(strtoll(end_time, nullptr, 0));
 		}
 		optional<string> reply = readMessageBody(maildir+"/config/internal-reply");
 		if(reply)
@@ -1122,8 +1120,8 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
 	if(allow_external_oof)
 		file << "external_audience = " << external_audience << "\n";
 	if(OofSettings.Duration)
-		file << "start_time = " << Clock::to_time_t(OofSettings.Duration->StartTime) << "\n"
-		     << "end_time = " << Clock::to_time_t(OofSettings.Duration->EndTime) << "\n";
+		file << "start_time = " << clock::to_time_t(OofSettings.Duration->StartTime) << "\n"
+		     << "end_time = " << clock::to_time_t(OofSettings.Duration->EndTime) << "\n";
 	file.close();
 
 	writeMessageBody(maildir+"/config/internal-reply", OofSettings.InternalReply);

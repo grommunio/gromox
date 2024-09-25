@@ -823,7 +823,7 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 	if(!sub)
 		return;
 	lock = std::unique_lock(sub->lock);
-	sTimePoint now(gromox::time_point::clock::now());
+	sTimePoint now(clock::now());
 	auto mkFid = [&](uint64_t fid){return tFolderId(mkFolderEntryId(sub->mailboxInfo, rop_util_make_eid_ex(1, fid)).serialize());};
 	auto mkMid = [&](uint64_t fid, uint64_t mid){return tItemId(mkMessageEntryId(sub->mailboxInfo, rop_util_make_eid_ex(1, fid), rop_util_make_eid_ex(1, mid)).serialize());};
 	switch(notification->type)

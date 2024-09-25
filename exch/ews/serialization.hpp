@@ -170,7 +170,7 @@ struct ExplicitConvert<gromox::time_point>
 	static void serialize(const gromox::time_point &value, SetterFunc setter)
 	{
 		tm t;
-		time_t timestamp = gromox::time_point::clock::to_time_t(value);
+		auto timestamp = clock::to_time_t(value);
 		if (gmtime_r(&timestamp, &t) == nullptr)
 			t = {};
 		auto frac = value.time_since_epoch() % std::chrono::seconds(1);
