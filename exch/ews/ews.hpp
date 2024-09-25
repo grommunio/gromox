@@ -304,7 +304,7 @@ public:
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
 	void writePermissions(const std::string&, uint64_t, const std::vector<PERMISSION_DATA>&) const;
 
-	double age() const;
+	gromox::time_duration age() const { return tp_now() - m_created; }
 	void experimental(const char*) const;
 
 	inline int ID() const {return m_ID;}

@@ -736,7 +736,7 @@ int EWSPlugin::retr(int ctx_id) try
 			mlog(loglevel, "[ews#%d]%s Done, code %d, %zu bytes, %.3fms",
 				ctx_id, timestamp().c_str(),
 				static_cast<int>(context.code()),
-				sv.size(), context.age() * 1000);
+				sv.size(), std::chrono::duration<double, std::milli>(context.age()).count());
 		return HPM_RETRIEVE_WRITE;
 	}
 	case EWSContext::S_DONE: return HPM_RETRIEVE_DONE;

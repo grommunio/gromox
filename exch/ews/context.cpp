@@ -342,11 +342,6 @@ EWSContext::~EWSContext()
 			unsubscribe(sub);
 }
 
-double EWSContext::age() const
-{
-	return std::chrono::duration<double>(tp_now() - m_created).count();
-}
-
 /**
  * @brief      Copy string to context allocated buffer
  *
