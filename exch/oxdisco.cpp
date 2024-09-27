@@ -947,6 +947,10 @@ http_status OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) co
 	return write_response(ctx_id, response.c_str(), response.size());
 }
 
+/**
+ * RFC draft proposal:
+ * https://datatracker.ietf.org/doc/html/draft-ietf-mailmaint-autoconfig-00
+ */
 http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 {
 	tinyxml2::XMLDocument respdoc;

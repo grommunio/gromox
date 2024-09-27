@@ -46,7 +46,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'v', HXTYPE_NONE, &g_verbose, nullptr, nullptr, 0, "Be verbose, dump HTTP and XML"},
 	{nullptr, 'x', HXTYPE_STRING, &g_legacydn, nullptr, nullptr, 0, "Legacy DN"},
 	{"eas", 0, HXTYPE_NONE, &g_eas_mode, nullptr, nullptr, 0, "Request EAS response"},
-	{"tb", 0, HXTYPE_NONE, &g_tb_mode, {}, {}, 0, "Perform Thunderbird Autoconf request"},
+	{"ac", 0, HXTYPE_NONE, &g_tb_mode, {}, {}, 0, "Perform Mail Autoconfig request instead of AutoDiscover"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };

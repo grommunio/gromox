@@ -13,7 +13,8 @@ Enhancements:
   where the first subpart of the Mixed container is ``text/html`` now trigger
   the creation of a "jumbo" HTML document where other subparts of types
   ``text/plain`` and further ``text/html`` from that container, are integrated.
-* dscli: add --tb option to test Thunderbird autoconfig
+* dscli: add --ac option to test Mail Autoconfig (what Thunderbird uses
+  in leu of AutoDiscover)
 * http: credential caching for HTTP Basic (config directive
   ``http_basic_auth_cred_caching``, defaulting to 60s)
 
