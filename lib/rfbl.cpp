@@ -640,8 +640,18 @@ std::string bin2cstr(const void *vdata, size_t len)
  * Average expansion: x2.13
  * Worst expansion: x3.00
  */
+namespace {
+struct bin2txt_init {
+	bin2txt_init() { m_cstr = *znul(getenv("BIN2TXT_CSTR")) != '\0'; }
+	bool m_cstr = false;
+};
+static bin2txt_init g_bin2txt_choice;
+}
+
 std::string bin2txt(const void *vdata, size_t len)
 {
+	if (g_bin2txt_choice.m_cstr)
+		return bin2cstr(vdata, len);
 	auto data = static_cast<const unsigned char *>(vdata);
 	std::string ret;
 	char b[4]{};
