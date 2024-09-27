@@ -644,7 +644,7 @@ std::string bin2cstr(const void *vdata, size_t len)
  * Represent a binary blob in a form that is somewhat compact but also show
  * ASCII and low control codes recognizably.
  *
- * Average expansion: x2.13
+ * Average expansion: x2.15
  * Worst expansion: x3.00
  */
 namespace {
@@ -663,13 +663,24 @@ std::string bin2txt(const void *vdata, size_t len)
 	std::string ret;
 	char b[4]{};
 	for (size_t i = 0; i < len; ++i) {
-		if (data[i] < 32) {
+		if (data[i] == '\n') {
+			b[0] = '\\';
+			b[1] = 'n';
+			b[2] = '\0';
+		} else if (data[i] == '\r') {
+			b[0] = '\\';
+			b[1] = 'r';
+			b[2] = '\0';
+		} else if (data[i] < 32) {
 			static constexpr char enc[] = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_";
 			b[0] = '^';
 			b[1] = enc[data[i]];
 			b[2] = '\0';
-		} else if (isprint(data[i]) && data[i] != '"' &&
-		    data[i] != '\'' && data[i] != '\\' && data[i] != '^') {
+		} else if (data[i] == '"' || data[i] == '\\') {
+			b[0] = '\\';
+			b[1] = data[i];
+			b[2] = '\0';
+		} else if (isprint(data[i]) && data[i] != '^') {
 			b[0] = data[i];
 			b[1] = '\0';
 		} else {
