@@ -595,7 +595,7 @@ bool parse_bool(const char *s)
  * Use of octal representation: it is shortest (\377 is just as long as \xff,
  * but \0 is shorter than \x00).
  *
- * Average expansion: x2.35
+ * Average expansion: x2.71
  * Worst expansion: x4.00
  */
 std::string bin2cstr(const void *vdata, size_t len)
@@ -604,29 +604,36 @@ std::string bin2cstr(const void *vdata, size_t len)
 	std::string ret;
 	char b[5];
 	for (size_t i = 0; i < len; ++i) {
-		if (isprint(data[i]) && data[i] != '"' &&
-		    data[i] != '\'' && data[i] != '\\') {
-			/*
-			 * Facilitate inclusion in string literals - and not
-			 * messing up in-editor coloring.
-			 */
+		b[0] = '\\';
+		b[2] = '\0';
+		switch (data[i]) {
+		case '\a': b[1] = 'a'; break;
+		case '\b': b[1] = 'b'; break;
+		case '\f': b[1] = 'f'; break;
+		case '\n': b[1] = 'n'; break;
+		case '\r': b[1] = 'r'; break;
+		case '\t': b[1] = 't'; break;
+		case '\v': b[1] = 'v'; break;
+		case '"':
+		case '\\':
+			b[1] = data[i]; break;
+		default:
+		if (isprint(data[i])) {
 			b[0] = data[i];
 			b[1] = '\0';
 		} else if (data[i] < 0010) {
-			b[0] = '\\';
 			b[1] = '0' + (data[i] % 8);
-			b[2] = '\0';
 		} else if (data[i] < 0100) {
-			b[0] = '\\';
 			b[1] = '0' + (data[i] / 8 % 8);
 			b[2] = '0' + (data[i] % 8);
 			b[3] = '\0';
 		} else {
-			b[0] = '\\';
 			b[1] = '0' + (data[i] / 64 % 8);
 			b[2] = '0' + (data[i] / 8 % 8);
 			b[3] = '0' + (data[i] % 8);
 			b[4] = '\0';
+		}
+			break;
 		}
 		ret.append(b);
 	}
