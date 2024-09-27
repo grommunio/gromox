@@ -1,15 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2024 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <libHX/string.h>
 #include <gromox/element_data.hpp>
+#include <gromox/ical.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/util.hpp>
 #include "../tools/staticnpmap.cpp"
 #undef assert
 #define assert(x) do { if (!(x)) { printf("%s failed\n", #x); return EXIT_FAILURE; } } while (false)
+
+namespace {
+struct ie_name_entry {
+	uint16_t proptag;
+	PROPERTY_NAME pn;
+};
+}
 
 using namespace gromox;
 using namespace gi_dump;
@@ -136,6 +145,19 @@ static char data_5[] =
 	"\r\n"
 	"///2\r\n"
 	"--0--\r\n";
+
+static BOOL ie_get_propids(const ie_name_entry *map, size_t mapsize,
+    const PROPNAME_ARRAY *pna, PROPID_ARRAY *idp)
+{
+	auto &id = *idp;
+	id.resize(pna->size());
+	for (size_t i = 0; i < pna->size(); ++i) {
+		auto row = std::find_if(&map[0], &map[mapsize],
+		           [&](const auto &r) -> bool { return r.pn == (*pna)[i]; });
+		id[i] = row != &map[mapsize] ? row->proptag : 0;
+	}
+	return TRUE;
+}
 
 static int select_parts_1()
 {
@@ -309,6 +331,53 @@ static int select_parts_5()
 	return 0;
 }
 
+static void ical_export_1()
+{
+	/*
+	 * DESK-2104: Old Zarafa imports (which lack some TZ fields) shifted by
+	 * one day in some MUA, attributed to DTSTART not containing any TZID
+	 * but just UTC.
+	 */
+	const ie_name_entry ie_map[] = {
+		{0x809d, {MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole}},
+		{0x809e, {MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole}},
+		{0x80b8, {MNID_ID, PSETID_Appointment, PidLidTimeZoneStruct}},
+		{0x80b9, {MNID_ID, PSETID_Appointment, PidLidTimeZoneDescription}},
+	};
+	auto get_propids = [&](const PROPNAME_ARRAY *a, PROPID_ARRAY *i) {
+		return ie_get_propids(ie_map, std::size(ie_map), a, i);
+	};
+	static constexpr uint64_t v_time = 0x1dabd02f773da00;
+	const BINARY bin_48{48, {reinterpret_cast<uint8_t *>(deconst("\304\377\377\377\0\0\0\0\304\377\377\377\0\0\0\0\n\0\0\0\5\0\3\0\0\0\0\0\0\0\0\0\0\0\3\0\0\0\5\0\2\0\0\0\0\0\0\0"))}};
+	const TAGGED_PROPVAL props[] = {
+		{PR_MESSAGE_CLASS, deconst("IPM.Appointment")},
+		{PR_START_DATE, deconst(&v_time)},
+		{PR_END_DATE, deconst(&v_time)},
+		{0x809d0040, deconst(&v_time)},
+		{0x809e0040, deconst(&v_time)},
+		{0x80b80102, deconst(&bin_48)},
+		{0x80b9001f, deconst("Europe/Vienna")},
+	};
+	const MESSAGE_CONTENT msgctnt = {{std::size(props), deconst(props)}};
+	ical icalout;
+	fprintf(stderr, "=== ical_export_1\n");
+	if (!oxcical_export(&msgctnt, icalout, "x500org", malloc, get_propids, nullptr)) {
+		fprintf(stderr, "oxcical_export failed\n");
+		return;
+	}
+	std::string icstr;
+	if (icalout.serialize(icstr) != ecSuccess) {
+		fprintf(stderr, "ical_serialize failed\n");
+		return;
+	}
+	constexpr char needle[] = "DTSTART;TZID=Europe/Vienna:20240612T215900";
+	auto ptr = strstr(icstr.c_str(), needle);
+	if (ptr == nullptr) {
+		printf("%s\n", icstr.c_str());
+		fprintf(stderr, "FAILED. Substrings Europe/215900 not found.\n");
+	}
+}
+
 int main()
 {
 	auto ee_get_user_ids = [](const char *, unsigned int *, unsigned int *, enum display_type *) -> BOOL { return false; };
@@ -324,5 +393,6 @@ int main()
 	select_parts_3();
 	select_parts_4();
 	select_parts_5();
+	ical_export_1();
 	return EXIT_SUCCESS;
 }
