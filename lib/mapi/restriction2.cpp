@@ -622,6 +622,59 @@ std::string TPROPVAL_ARRAY::repr() const
 	return s;
 }
 
+namespace gromox {
+
+std::string guid2name(const FLATUID le)
+{
+	GUID he = le;
+#define FN(v) if (memcmp(le.ab, &v, sizeof(le.ab)) == 0) return #v;
+#define GN(v) if (he == v) return #v;
+	FN(muidStoreWrap);
+	FN(muidEMSAB);
+	FN(pbLongTermNonPrivateGuid);
+	FN(g_muidStorePrivate);
+	FN(g_muidStorePublic);
+	FN(muidOOP);
+	FN(muidECSAB);
+	FN(muidZCSAB);
+	FN(EncodedGlobalId);
+	FN(IID_IStorage);
+	FN(IID_IStream);
+	FN(IID_IMessage);
+	FN(IID_IExchangeExportChanges);
+	FN(IID_IExchangeImportContentsChanges);
+	FN(IID_IExchangeImportHierarchyChanges);
+	GN(GUID_NULL);
+	GN(PSETID_Address);
+	GN(PSETID_Appointment);
+	GN(PSETID_BusinessCardView);
+	GN(PSETID_CalendarAssistant);
+	GN(PSETID_Common);
+	GN(PSETID_Gromox);
+	GN(PSETID_KC);
+	GN(PSETID_KCArchive);
+	GN(PSETID_Log);
+	GN(PSETID_Meeting);
+	GN(PSETID_Note);
+	GN(PSETID_Remote);
+	GN(PSETID_Report);
+	GN(PSETID_Sharing);
+	GN(PSETID_Task);
+	GN(PSETID_UnifiedMessaging);
+	GN(PS_INTERNET_HEADERS);
+	GN(PS_MAPI);
+	GN(PS_PUBLIC_STRINGS);
+	GN(gx_dbguid_store_private);
+	GN(gx_dbguid_store_public);
+#undef FN
+#undef GN
+	char txt[39];
+	he.to_str(txt, std::size(txt), 38);
+	return txt;
+}
+
+}
+
 namespace gi_dump {
 
 unsigned int g_show_tree, g_show_props;
@@ -657,14 +710,19 @@ void gi_print(unsigned int depth, const TAGGED_PROPVAL &tp,
 			printf("*");
 		if (is_nameprop_id(PROP_ID(tp.proptag)) && get_propname != nullptr &&
 		    (xn = get_propname(PROP_ID(tp.proptag))) != nullptr) {
-			char gtxt[39];
-			xn->guid.to_str(gtxt, std::size(gtxt));
+			auto gtxt = guid2name(xn->guid);
+			if (gtxt.empty()) {
+				gtxt.resize(39);
+				xn->guid.to_str(gtxt.data(), gtxt.size());
+				gtxt.resize(strlen(gtxt.c_str()));
+			}
+#undef E
 			if (xn->kind == MNID_STRING)
-				tlog("GUID=%s,NAME=%s (%08xh):%s\n", gtxt,
+				tlog("GUID=%s,NAME=%s (%08xh):%s\n", gtxt.c_str(),
 					xn->name.c_str(), tp.proptag,
 					tp.value_repr(true).c_str());
 			else
-				tlog("GUID=%s,LID=%u (%08xh):%s\n", gtxt,
+				tlog("GUID=%s,LID=%u (%08xh):%s\n", gtxt.c_str(),
 					xn->lid, tp.proptag,
 					tp.value_repr(true).c_str());
 			return;

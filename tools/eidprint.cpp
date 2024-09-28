@@ -26,47 +26,9 @@ static void print_guid(const FLATUID le)
 	char txt[39];
 	he.to_str(txt, std::size(txt), 38);
 	printf("%s", txt);
-#define FN(v) if (memcmp(le.ab, &v, sizeof(le.ab)) == 0) printf(" <<" #v ">>");
-#define GN(v) if (he == v) printf(" <<" #v ">>");
-	FN(muidStoreWrap);
-	FN(muidEMSAB);
-	FN(pbLongTermNonPrivateGuid);
-	FN(g_muidStorePrivate);
-	FN(g_muidStorePublic);
-	FN(muidOOP);
-	FN(muidECSAB);
-	FN(muidZCSAB);
-	FN(EncodedGlobalId);
-	FN(IID_IStorage);
-	FN(IID_IStream);
-	FN(IID_IMessage);
-	FN(IID_IExchangeExportChanges);
-	FN(IID_IExchangeImportContentsChanges);
-	FN(IID_IExchangeImportHierarchyChanges);
-	GN(GUID_NULL);
-	GN(PSETID_Address);
-	GN(PSETID_Appointment);
-	GN(PSETID_BusinessCardView);
-	GN(PSETID_CalendarAssistant);
-	GN(PSETID_Common);
-	GN(PSETID_Gromox);
-	GN(PSETID_KC);
-	GN(PSETID_KCArchive);
-	GN(PSETID_Log);
-	GN(PSETID_Meeting);
-	GN(PSETID_Note);
-	GN(PSETID_Remote);
-	GN(PSETID_Report);
-	GN(PSETID_Sharing);
-	GN(PSETID_Task);
-	GN(PSETID_UnifiedMessaging);
-	GN(PS_INTERNET_HEADERS);
-	GN(PS_MAPI);
-	GN(PS_PUBLIC_STRINGS);
-	GN(gx_dbguid_store_private);
-	GN(gx_dbguid_store_public);
-#undef FN
-#undef GN
+	auto name = guid2name(le);
+	if (!name.empty())
+		printf(" <<%s>>", name.c_str());
 }
 
 static void try_guid(const std::string_view s, unsigned int ind)

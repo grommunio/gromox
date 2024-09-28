@@ -1591,3 +1591,7 @@ extern GX_EXPORT const GUID
 	gx_dbguid_store_private, gx_dbguid_store_public,
 	exc_replid2, exc_replid3, exc_replid4;
 extern GX_EXPORT const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlobalId[12];
+
+namespace gromox {
+extern GX_EXPORT std::string guid2name(const FLATUID);
+}
