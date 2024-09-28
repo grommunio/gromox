@@ -236,6 +236,7 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_guid(const GUID &);
 	pack_result p_guid(const FLATUID &v) { return p_bytes(&v, sizeof(v)); }
 	pack_result p_str(const char *);
+	pack_result p_str(const std::string &s) { return p_str(s.c_str()); }
 	pack_result p_wstr(const char *);
 	pack_result p_uint16_a(const SHORT_ARRAY &);
 	pack_result p_uint32_a(const LONG_ARRAY &);

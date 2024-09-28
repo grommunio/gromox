@@ -41,7 +41,7 @@ while (<STDIN>) {
 			print "\tauto &r = *r1;\n";
 		}
 		print "\tr1->result = zs_$func(", join(", ",
-			(map { my($type, $field) = @$_; (substr($type, -1, 1) eq "&" ? "*" : "")."q.$field"; } @$iargs),
+			(map { my($type, $field) = @$_; "q.$field"; } @$iargs),
 			(map { my($type, $field) = @$_; (substr($type, -1, 1) eq "&" ? "" : "&")."r.$field"; } @$oargs),
 		), ");\n";
 		print "\tr0 = std::move(r1);\n";
@@ -56,8 +56,6 @@ while (<STDIN>) {
 		my($type, $field) = @$_;
 		if (substr($type, -1, 1) eq "*") {
 			print "\tq.$field = deconst($field);\n";
-		} elsif (substr($type, -1, 1) eq "&") {
-			print "\tq.$field = deconst(&$field);\n";
 		} else {
 			print "\tq.$field = $field;\n";
 		}
