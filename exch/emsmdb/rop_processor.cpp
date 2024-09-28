@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <climits>
@@ -374,7 +374,6 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
     uint32_t *pbuff_len, ROP_BUFFER *prop_buff, BOOL b_notify,
     DOUBLE_LIST *presponse_list) try
 {
-	int rop_num;
 	BOOL b_icsup;
 	BINARY tmp_bin;
 	EXT_PUSH ext_push;
@@ -401,11 +400,11 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		tmp_len = ext_buff_size;
 	if (!ext_push.init(ext_buff.get(), tmp_len, EXT_FLAG_UTF16))
 		return ecServerOOM;
-	rop_num = double_list_get_nodes_num(&prop_buff->rop_list);
+	auto rop_num = double_list_get_nodes_num(&prop_buff->rop_list);
+	size_t rop_idx = 0;
 	emsmdb_interface_set_rop_num(rop_num);
 	b_icsup = FALSE;
 	auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-	size_t rop_count = double_list_get_nodes_num(&prop_buff->rop_list), rop_idx = 0;
 	for (pnode=double_list_get_head(&prop_buff->rop_list); NULL!=pnode;
 		pnode=double_list_get_after(&prop_buff->rop_list, pnode)) {
 		auto pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
@@ -436,13 +435,13 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			auto rpd = g_last_rop_dir != nullptr ? g_last_rop_dir : ".";
 			if (rsp != nullptr)
 				mlog(LV_DEBUG, "[%zu/%zu] %s %s EC=%s RS=%s",
-					++rop_idx, rop_count, rpd,
+					++rop_idx, rop_num, rpd,
 					rop_idtoname(req->rop_id),
 					mapi_errname_r(result, e1, std::size(e1)),
 					mapi_errname_r(rsp->result, e2, std::size(e2)));
 			else
 				mlog(LV_DEBUG, "[%zu/%zu] %s %s EC=%s RS=none",
-					++rop_idx, rop_count, rpd,
+					++rop_idx, rop_num, rpd,
 					rop_idtoname(req->rop_id),
 					mapi_errname_r(result, e1, std::size(e1)));
 		}
