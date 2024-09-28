@@ -28,8 +28,8 @@ using LLU = unsigned long long;
 unsigned int exmdb_pf_read_per_user, exmdb_pf_read_states;
 
 /* private only */
-BOOL exmdb_server::get_folder_by_class(const char *dir,
-    const char *str_class, uint64_t *pid, char **str_explicit)
+BOOL exmdb_server::get_folder_by_class(const char *dir, const char *str_class,
+    uint64_t *pid, std::string *str_explicit) try
 {
 	char tmp_class[256];
 	char sql_string[1024];
@@ -56,10 +56,7 @@ BOOL exmdb_server::get_folder_by_class(const char *dir,
 		if (pstmt.step() == SQLITE_ROW) {
 			*pid = rop_util_make_eid_ex(1,
 				sqlite3_column_int64(pstmt, 0));
-			*str_explicit = cu_alloc<char>(strlen(tmp_class) + 1);
-			if (*str_explicit == nullptr)
-				return false;
-			strcpy(*str_explicit, tmp_class);
+			*str_explicit = tmp_class;
 			return TRUE;
 		}
 		sqlite3_reset(pstmt);
@@ -67,17 +64,17 @@ BOOL exmdb_server::get_folder_by_class(const char *dir,
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id "
 				"FROM receive_table WHERE class=''");
-	*str_explicit = cu_alloc<char>(1);
-	if (*str_explicit == nullptr)
-		return false;
 	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	*pid = pstmt.step() == SQLITE_ROW ?
 	       rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 0)) :
 	       rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
-	**str_explicit = '\0';
+	str_explicit->clear();
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2159: ENOMEM");
+	return false;
 }
 
 /* private only */

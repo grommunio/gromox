@@ -226,7 +226,7 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 }
 
 ec_error_t rop_getreceivefolder(const char *pstr_class, uint64_t *pfolder_id,
-    char **ppstr_explicit, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
+    std::string *ppstr_explicit, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
 	

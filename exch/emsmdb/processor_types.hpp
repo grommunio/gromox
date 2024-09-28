@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <string>
 #include <vector>
 #include <gromox/mapi_types.hpp>
 
@@ -74,7 +75,7 @@ struct GETRECEIVEFOLDER_REQUEST final : public rop_request {
 
 struct GETRECEIVEFOLDER_RESPONSE final : public rop_response {
 	uint64_t folder_id;
-	char *pstr_class;
+	std::string pstr_class;
 };
 
 struct SETRECEIVEFOLDER_REQUEST final : public rop_request {

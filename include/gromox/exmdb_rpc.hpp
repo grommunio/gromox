@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
@@ -901,7 +902,7 @@ struct exresp_get_mbox_perm final : public exresp {
 
 struct exresp_get_folder_by_class final : public exresp {
 	uint64_t id;
-	char *str_explicit;
+	std::string str_explicit;
 };
 
 struct exresp_set_folder_by_class final : public exresp {

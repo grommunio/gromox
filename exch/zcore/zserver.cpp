@@ -3093,7 +3093,6 @@ ec_error_t zs_getreceivefolder(GUID hsession,
 	BINARY *pbin;
 	zs_objtype mapi_type;
 	uint64_t folder_id;
-	char *temp_class = nullptr;
 	
 	if (pstrclass == nullptr)
 		pstrclass = "";
@@ -3110,6 +3109,7 @@ ec_error_t zs_getreceivefolder(GUID hsession,
 		return ecNotSupported;
 	if (!pstore->b_private)
 		return ecNotSupported;
+	std::string temp_class;
 	if (!exmdb_client::get_folder_by_class(pstore->get_dir(), pstrclass,
 	    &folder_id, &temp_class))
 		return ecError;

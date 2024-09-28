@@ -17,7 +17,7 @@ EXMIDL(get_store_properties, (const char *dir, cpid_t cpid, const PROPTAG_ARRAY 
 EXMIDL(set_store_properties, (const char *dir, cpid_t cpid, const TPROPVAL_ARRAY *ppropvals, IDLOUT PROBLEM_ARRAY *problems))
 EXMIDL(remove_store_properties, (const char *dir, const PROPTAG_ARRAY *pproptags))
 EXMIDL(get_mbox_perm, (const char *dir, const char *username, IDLOUT uint32_t *permission))
-EXMIDL(get_folder_by_class, (const char *dir, const char *str_class, IDLOUT uint64_t *id, char **str_explicit))
+EXMIDL(get_folder_by_class, (const char *dir, const char *str_class, IDLOUT uint64_t *id, std::string *str_explicit))
 EXMIDL(set_folder_by_class, (const char *dir, uint64_t folder_id, const char *str_class, IDLOUT BOOL *b_result))
 EXMIDL(get_folder_class_table, (const char *dir, IDLOUT TARRAY_SET *table))
 EXMIDL(is_folder_present, (const char *dir, uint64_t folder_id, IDLOUT BOOL *b_exist))
