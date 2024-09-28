@@ -60,8 +60,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			if (pmb == nullptr)
 				return ecServerOOM;
 			pmb->logon_flags = rq->logon_flags;
-			rshead = pmb;
-			rshead->result = rop_logon_pmb(rq->logon_flags,
+			pmb->result = rop_logon_pmb(rq->logon_flags,
 				rq->open_flags, rq->store_stat,
 				rdr->pserver_name, std::size(rdr->pserver_name), pmb->folder_ids,
 				&pmb->response_flags, &pmb->mailbox_guid,
@@ -69,22 +68,23 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 				&pmb->logon_time, &pmb->gwart_time,
 				&pmb->store_stat,
 				&pemsmdb_info->logmap, prequest->logon_id, &phandles[prequest->hindex]);
+			rshead = std::move(pmb);
 		} else {
 			auto pfr = cu_alloc<LOGON_PF_RESPONSE>();
 			if (pfr == nullptr)
 				return ecServerOOM;
 			pfr->logon_flags = rq->logon_flags;
-			rshead = pfr;
-			rshead->result = rop_logon_pf(rq->logon_flags,
+			pfr->result = rop_logon_pf(rq->logon_flags,
 				rq->open_flags, rq->store_stat,
 				rdr->pserver_name, pfr->folder_ids,
 				&pfr->replid, &pfr->replguid,
 				&pfr->per_user_guid,
 				&pemsmdb_info->logmap, prequest->logon_id, &phandles[prequest->hindex]);
+			rshead = std::move(pfr);
 		}
 		if (rshead->result == ecWrongServer) {
 			rdr->logon_flags = rq->logon_flags;
-			rshead = rdr;
+			rshead = std::move(rdr);
 		}
 		rshead->hindex = prequest->hindex;
 		break;
@@ -94,11 +94,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(GETRECEIVEFOLDER);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getreceivefolder(rq->pstr_class,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getreceivefolder(rq->pstr_class,
 			&rsp->folder_id, &rsp->pstr_class,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSetReceiveFolder: {
@@ -113,20 +113,20 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<GETRECEIVEFOLDERTABLE_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getreceivefoldertable(&rsp->rows,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getreceivefoldertable(&rsp->rows,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetStoreState: {
 		auto rsp = cu_alloc<GETSTORESTAT_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getstorestat(&rsp->stat,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getstorestat(&rsp->stat,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetOwningServers: {
@@ -134,11 +134,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(GETOWNINGSERVERS);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getowningservers(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getowningservers(
 			rq->folder_id, &rsp->ghost,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropPublicFolderIsGhosted: {
@@ -146,11 +146,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(PUBLICFOLDERISGHOSTED);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_publicfolderisghosted(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_publicfolderisghosted(
 			rq->folder_id, &rsp->pghost,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropLongTermIdFromId: {
@@ -158,11 +158,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(LONGTERMIDFROMID);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_longtermidfromid(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_longtermidfromid(
 			rq->id, &rsp->long_term_id,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropIdFromLongTermId: {
@@ -170,11 +170,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(IDFROMLONGTERMID);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_idfromlongtermid(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_idfromlongtermid(
 			&rq->long_term_id, &rsp->id,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetPerUserLongTermIds: {
@@ -182,11 +182,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(GETPERUSERLONGTERMIDS);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getperuserlongtermids(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getperuserlongtermids(
 			&rq->guid, &rsp->ids,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetPerUserGuid: {
@@ -194,11 +194,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(GETPERUSERGUID);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getperuserguid(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getperuserguid(
 			&rq->long_term_id, &rsp->guid,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropReadPerUserInformation: {
@@ -206,12 +206,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(READPERUSERINFORMATION);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_readperuserinformation(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_readperuserinformation(
 			&rq->long_folder_id, rq->reserved, rq->data_offset,
 			rq->max_data_size, &rsp->has_finished, &rsp->data,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropWritePerUserInformation: {
@@ -230,12 +230,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<OPENFOLDER_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = rq->ohindex;
-		rshead->result = rop_openfolder(rq->folder_id,
+		rsp->hindex = rq->ohindex;
+		rsp->result = rop_openfolder(rq->folder_id,
 			rq->open_flags, &rsp->has_rules, &rsp->pghost,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
-			phandles + rshead->hindex);
+			phandles + rsp->hindex);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropCreateFolder: {
@@ -245,15 +245,15 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<CREATEFOLDER_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = rq->ohindex;
-		rshead->result = rop_createfolder(rq->folder_type,
+		rsp->hindex = rq->ohindex;
+		rsp->result = rop_createfolder(rq->folder_type,
 			rq->use_unicode, rq->open_existing, rq->reserved,
 			rq->pfolder_name, rq->pfolder_comment,
 			&rsp->folder_id, &rsp->is_existing, &rsp->has_rules,
 			&rsp->pghost,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
-			phandles + rshead->hindex);
+			phandles + rsp->hindex);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropDeleteFolder: {
@@ -261,11 +261,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(DELETEFOLDER);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_deletefolder(rq->flags,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_deletefolder(rq->flags,
 			rq->folder_id, &rsp->partial_completion,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSetSearchCriteria: {
@@ -282,12 +282,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		auto rq = CAST_TO(GETSEARCHCRITERIA);
 		rsp->logon_id = prequest->logon_id;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getsearchcriteria(rq->use_unicode,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getsearchcriteria(rq->use_unicode,
 			rq->include_restriction, rq->include_folders,
 			&rsp->pres, &rsp->folder_ids, &rsp->search_status,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropMoveCopyMessages: {
@@ -297,13 +297,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<MOVECOPYMESSAGES_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_movecopymessages(&rq->message_ids,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_movecopymessages(&rq->message_ids,
 			rq->want_asynchronous, rq->want_copy,
 			&rsp->partial_completion,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
+		rshead = std::move(rsp);
 		if (rshead->result != ecDstNullObject)
 			break;
 		auto nr = cu_alloc<NULL_DST_RESPONSE>();
@@ -311,8 +311,8 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		*static_cast<rop_response *>(nr) = *rshead;
 		nr->dhindex = rq->dhindex;
-		nr->partial_completion = rsp->partial_completion;
-		rshead = nr;
+		nr->partial_completion = static_cast<const MOVECOPYMESSAGES_RESPONSE *>(rshead)->partial_completion;
+		rshead = std::move(nr);
 		break;
 	}
 	case ropMoveFolder: {
@@ -322,13 +322,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<MOVEFOLDER_RESPONSE>();;
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_movefolder(rq->want_asynchronous,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_movefolder(rq->want_asynchronous,
 			rq->use_unicode, rq->folder_id, rq->pnew_name,
 			&rsp->partial_completion,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
+		rshead = std::move(rsp);
 		if (rshead->result != ecDstNullObject)
 			break;
 		auto nr = cu_alloc<NULL_DST_RESPONSE>();
@@ -336,8 +336,8 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		*static_cast<rop_response *>(nr) = *rshead;
 		nr->dhindex = rq->dhindex;
-		nr->partial_completion = rsp->partial_completion;
-		rshead = nr;
+		nr->partial_completion = static_cast<const MOVEFOLDER_RESPONSE *>(rshead)->partial_completion;
+		rshead = std::move(nr);
 		break;
 	}
 	case ropCopyFolder: {
@@ -347,13 +347,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<COPYFOLDER_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_copyfolder(rq->want_asynchronous,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_copyfolder(rq->want_asynchronous,
 			rq->want_recursive, rq->use_unicode, rq->folder_id,
 			rq->pnew_name, &rsp->partial_completion,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
+		rshead = std::move(rsp);
 		if (rshead->result != ecDstNullObject)
 			break;
 		auto nr = cu_alloc<NULL_DST_RESPONSE>();
@@ -361,8 +361,8 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		*static_cast<rop_response *>(nr) = *rshead;
 		nr->dhindex = rq->dhindex;
-		nr->partial_completion = rsp->partial_completion;
-		rshead = nr;
+		nr->partial_completion = static_cast<COPYFOLDER_RESPONSE *>(rshead)->partial_completion;
+		rshead = std::move(nr);
 		break;
 	}
 	case ropEmptyFolder: {
@@ -370,11 +370,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(EMPTYFOLDER);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_emptyfolder(rq->want_asynchronous,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_emptyfolder(rq->want_asynchronous,
 			rq->want_delete_associated, &rsp->partial_completion,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropHardDeleteMessagesAndSubfolders: {
@@ -382,12 +382,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(HARDDELETEMESSAGESANDSUBFOLDERS);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_harddeletemessagesandsubfolders(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_harddeletemessagesandsubfolders(
 			rq->want_asynchronous, rq->want_delete_associated,
 			&rsp->partial_completion,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropDeleteMessages: {
@@ -395,12 +395,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(DELETEMESSAGES);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_deletemessages(rq->want_asynchronous,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_deletemessages(rq->want_asynchronous,
 			rq->notify_non_read, &rq->message_ids,
 			&rsp->partial_completion,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropHardDeleteMessages: {
@@ -408,12 +408,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(HARDDELETEMESSAGES);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_harddeletemessages(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_harddeletemessages(
 			rq->want_asynchronous, rq->notify_non_read,
 			&rq->message_ids, &rsp->partial_completion,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetHierarchyTable: {
@@ -423,12 +423,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<GETHIERARCHYTABLE_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = rq->ohindex;
-		rshead->result = rop_gethierarchytable(
+		rsp->hindex = rq->ohindex;
+		rsp->result = rop_gethierarchytable(
 			rq->table_flags, &rsp->row_count,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
-			phandles + rshead->hindex);
+			phandles + rsp->hindex);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetContentsTable: {
@@ -438,12 +438,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<GETCONTENTSTABLE_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = rq->ohindex;
-		rshead->result = rop_getcontentstable(rq->table_flags,
+		rsp->hindex = rq->ohindex;
+		rsp->result = rop_getcontentstable(rq->table_flags,
 			&rsp->row_count,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
-			phandles + rshead->hindex);
+			phandles + rsp->hindex);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSetColumns: {
@@ -451,11 +451,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(SETCOLUMNS);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_setcolumns(rq->table_flags,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_setcolumns(rq->table_flags,
 			&rq->proptags, &rsp->table_status,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSortTable: {
@@ -463,11 +463,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(SORTTABLE);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_sorttable(rq->table_flags,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_sorttable(rq->table_flags,
 			&rq->sort_criteria, &rsp->table_status,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropRestrict: {
@@ -475,11 +475,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(RESTRICT);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_restrict(rq->res_flags, rq->pres,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_restrict(rq->res_flags, rq->pres,
 			&rsp->table_status,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropQueryRows: {
@@ -495,48 +495,48 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		    !ext_push.init(pdata, max_rop, EXT_FLAG_UTF16 | EXT_FLAG_TBLLMT))
 			return ecServerOOM;
 		auto rq = CAST_TO(QUERYROWS);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_queryrows(rq->flags,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_queryrows(rq->flags,
 			rq->forward_read, rq->row_count, &rsp->seek_pos,
 			&rsp->count,
 			&ext_push, &pemsmdb_info->logmap, prequest->logon_id,
 			phandles[prequest->hindex]);
-		if (rshead->result != ecSuccess)
-			break;
-		rsp->bin_rows.pv = pdata;
-		rsp->bin_rows.cb = ext_push.m_offset;
+		if (rsp->result == ecSuccess) {
+			rsp->bin_rows.pv = pdata;
+			rsp->bin_rows.cb = ext_push.m_offset;
+		}
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropAbort: {
 		auto rsp = cu_alloc<ABORT_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_abort(&rsp->table_status,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_abort(&rsp->table_status,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetStatus: {
 		auto rsp = cu_alloc<GETSTATUS_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getstatus(&rsp->table_status,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getstatus(&rsp->table_status,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropQueryPosition: {
 		auto rsp = cu_alloc<QUERYPOSITION_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_queryposition(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_queryposition(
 			&rsp->numerator, &rsp->denominator,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSeekRow: {
@@ -544,12 +544,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(SEEKROW);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_seekrow(rq->seek_pos, rq->offset,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_seekrow(rq->seek_pos, rq->offset,
 			rq->want_moved_count, &rsp->has_soughtless,
 			&rsp->offset_sought,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSeekRowBookmark: {
@@ -557,12 +557,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(SEEKROWBOOKMARK);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_seekrowbookmark(&rq->bookmark,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_seekrowbookmark(&rq->bookmark,
 			rq->offset, rq->want_moved_count, &rsp->row_invisible,
 			&rsp->has_soughtless, &rsp->offset_sought,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSeekRowFractional: {
@@ -576,20 +576,20 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<CREATEBOOKMARK_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_createbookmark(&rsp->bookmark,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_createbookmark(&rsp->bookmark,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropQueryColumnsAll: {
 		auto rsp = cu_alloc<QUERYCOLUMNSALL_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_querycolumnsall(&rsp->proptags,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_querycolumnsall(&rsp->proptags,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropFindRow: {
@@ -597,12 +597,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(FINDROW);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_findrow(rq->flags, rq->pres,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_findrow(rq->flags, rq->pres,
 			rq->seek_pos, &rq->bookmark, &rsp->bookmark_invisible,
 			&rsp->prow, &rsp->pcolumns,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropFreeBookmark: {
@@ -630,16 +630,16 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		    !ext_push.init(pdata, max_rop, EXT_FLAG_UTF16))
 			return ecServerOOM;
 		auto rq = CAST_TO(EXPANDROW);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_expandrow(rq->max_count,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_expandrow(rq->max_count,
 			rq->category_id, &rsp->expanded_count,
 			&rsp->count, &ext_push,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
-		if (rshead->result != ecSuccess)
-			break;
-		rsp->bin_rows.pv = pdata;
-		rsp->bin_rows.cb = ext_push.m_offset;
+		if (rsp->result == ecSuccess) {
+			rsp->bin_rows.pv = pdata;
+			rsp->bin_rows.cb = ext_push.m_offset;
+		}
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropCollapseRow: {
@@ -647,11 +647,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(COLLAPSEROW);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_collapserow(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_collapserow(
 			rq->category_id, &rsp->collapsed_count,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetCollapseState: {
@@ -659,11 +659,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(GETCOLLAPSESTATE);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getcollapsestate(rq->row_id,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getcollapsestate(rq->row_id,
 			rq->row_instance, &rsp->collapse_state,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSetCollapseState: {
@@ -671,11 +671,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(SETCOLLAPSESTATE);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_setcollapsestate(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_setcollapsestate(
 			&rq->collapse_state, &rsp->bookmark,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropOpenMessage: {
@@ -685,16 +685,16 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<OPENMESSAGE_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = rq->ohindex;
-		rshead->result = rop_openmessage(rq->cpid, rq->folder_id,
+		rsp->hindex = rq->ohindex;
+		rsp->result = rop_openmessage(rq->cpid, rq->folder_id,
 			rq->open_mode_flags, rq->message_id,
 			&rsp->has_named_properties, &rsp->subject_prefix,
 			&rsp->normalized_subject, &rsp->recipient_count,
 			&rsp->recipient_columns, &rsp->row_count,
 			&rsp->precipient_row,
 			 &pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
-			 phandles + rshead->hindex);
+			 phandles + rsp->hindex);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropCreateMessage: {
@@ -704,12 +704,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<CREATEMESSAGE_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = rq->ohindex;
-		rshead->result = rop_createmessage(rq->cpid,
+		rsp->hindex = rq->ohindex;
+		rsp->result = rop_createmessage(rq->cpid,
 			rq->folder_id, rq->associated_flag, &rsp->pmessage_id,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
-			phandles + rshead->hindex);
+			phandles + rsp->hindex);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSaveChangesMessage: {
@@ -718,12 +718,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		auto rq = CAST_TO(SAVECHANGESMESSAGE);
 		rsp->ihindex2 = rq->ihindex2;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_savechangesmessage(rq->save_flags,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_savechangesmessage(rq->save_flags,
 			&rsp->message_id,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->ihindex2]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropRemoveAllRecipients: {
@@ -754,32 +754,31 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		    !ext_push.init(pdata, max_rop, EXT_FLAG_UTF16))
 			return ecServerOOM;
 		auto rq = CAST_TO(READRECIPIENTS);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_readrecipients(rq->row_id,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_readrecipients(rq->row_id,
 			rq->reserved, &rsp->count,
 			&ext_push, &pemsmdb_info->logmap, prequest->logon_id,
 			phandles[prequest->hindex]);
-		if (rshead->result != ecSuccess)
-			break;
-		rsp->bin_recipients.pv = pdata;
-		rsp->bin_recipients.cb = ext_push.m_offset;
+		if (rsp->result == ecSuccess) {
+			rsp->bin_recipients.pv = pdata;
+			rsp->bin_recipients.cb = ext_push.m_offset;
+		}
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropReloadCachedInformation: {
 		auto rsp = cu_alloc<RELOADCACHEDINFORMATION_RESPONSE>();
-		rshead = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(RELOADCACHEDINFORMATION);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_reloadcachedinformation(rq->reserved,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_reloadcachedinformation(rq->reserved,
 			&rsp->has_named_properties, &rsp->subject_prefix,
 			&rsp->normalized_subject, &rsp->recipient_count,
 			&rsp->recipient_columns, &rsp->row_count,
 			&rsp->precipient_row,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSetMessageStatus: {
@@ -787,12 +786,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SETMESSAGESTATUS_REQUEST *>(prequest);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_setmessagestatus(rq->message_id,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_setmessagestatus(rq->message_id,
 			rq->message_status, rq->status_mask,
 			&rsp->message_status,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetMessageStatus: {
@@ -800,11 +799,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(GETMESSAGESTATUS);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getmessagestatus(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getmessagestatus(
 			rq->message_id, &rsp->message_status,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSetReadFlags: {
@@ -812,12 +811,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(SETREADFLAGS);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_setreadflags(rq->want_asynchronous,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_setreadflags(rq->want_asynchronous,
 			rq->read_flags, &rq->message_ids,
 			&rsp->partial_completion,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSetMessageReadFlag: {
@@ -829,12 +828,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		rsp->logon_id = prequest->logon_id;
 		rsp->pclient_data = rq->pclient_data;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_setmessagereadflag(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_setmessagereadflag(
 			rq->flags, rq->pclient_data, &rsp->read_changed,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->ihindex2]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropOpenAttachment: {
@@ -855,12 +854,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<CREATEATTACHMENT_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = rq->ohindex;
-		rshead->result = rop_createattachment(
+		rsp->hindex = rq->ohindex;
+		rsp->result = rop_createattachment(
 			&rsp->attachment_id,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
-			phandles + rshead->hindex);
+			phandles + rsp->hindex);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropDeleteAttachment: {
@@ -888,16 +887,16 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<OPENEMBEDDEDMESSAGE_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = rq->ohindex;
-		rshead->result = rop_openembeddedmessage(rq->cpid,
+		rsp->hindex = rq->ohindex;
+		rsp->result = rop_openembeddedmessage(rq->cpid,
 			rq->open_embedded_flags, &rsp->reserved,
 			&rsp->message_id, &rsp->has_named_properties,
 			&rsp->subject_prefix, &rsp->normalized_subject,
 			&rsp->recipient_count, &rsp->recipient_columns,
 			&rsp->row_count, &rsp->precipient_row,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
-			phandles + rshead->hindex);
+			phandles + rsp->hindex);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetAttachmentTable: {
@@ -914,10 +913,10 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<GETVALIDATTACHMENTS_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getvalidattachments(&rsp->attachment_ids,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getvalidattachments(&rsp->attachment_ids,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSubmitMessage: {
@@ -939,10 +938,10 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<GETADDRESSTYPES_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getaddresstypes(&rsp->address_types,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getaddresstypes(&rsp->address_types,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSetSpooler:
@@ -962,10 +961,10 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<TRANSPORTSEND_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_transportsend(&rsp->ppropvals,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_transportsend(&rsp->ppropvals,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropTransportNewMail: {
@@ -980,10 +979,10 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<GETTRANSPORTFOLDER_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_gettransportfolder(&rsp->folder_id,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_gettransportfolder(&rsp->folder_id,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropOptionsData: {
@@ -991,12 +990,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(OPTIONSDATA);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_optionsdata(rq->paddress_type,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_optionsdata(rq->paddress_type,
 			rq->want_win32, &rsp->reserved, &rsp->options_info,
 			&rsp->help_file, &rsp->pfile_name,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetPropertyIdsFromNames: {
@@ -1004,11 +1003,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(GETPROPERTYIDSFROMNAMES);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getpropertyidsfromnames(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getpropertyidsfromnames(
 			rq->flags, &rq->propnames, &rsp->propids,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetNamesFromPropertyIds: {
@@ -1016,11 +1015,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(GETNAMESFROMPROPERTYIDS);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getnamesfrompropertyids(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getnamesfrompropertyids(
 			&rq->propids, &rsp->propnames,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetPropertiesSpecific: {
@@ -1029,11 +1028,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		auto rq = CAST_TO(GETPROPERTIESSPECIFIC);
 		rsp->pproptags = deconst(&rq->proptags);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getpropertiesspecific(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getpropertiesspecific(
 			rq->size_limit, rq->want_unicode, &rq->proptags, &rsp->row,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetPropertiesAll: {
@@ -1041,21 +1040,21 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(GETPROPERTIESALL);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getpropertiesall(rq->size_limit,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getpropertiesall(rq->size_limit,
 			rq->want_unicode, &rsp->propvals,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropGetPropertiesList: {
 		auto rsp = cu_alloc<GETPROPERTIESLIST_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getpropertieslist(&rsp->proptags,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getpropertieslist(&rsp->proptags,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSetProperties: {
@@ -1063,11 +1062,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(SETPROPERTIES);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_setproperties(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_setproperties(
 			&rq->propvals, &rsp->problems,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSetPropertiesNoReplicate: {
@@ -1075,11 +1074,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(SETPROPERTIESNOREPLICATE);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_setpropertiesnoreplicate(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_setpropertiesnoreplicate(
 			&rq->propvals, &rsp->problems,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropDeleteProperties: {
@@ -1087,11 +1086,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(DELETEPROPERTIES);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_deleteproperties(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_deleteproperties(
 			&rq->proptags, &rsp->problems,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropDeletePropertiesNoReplicate: {
@@ -1099,11 +1098,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(DELETEPROPERTIESNOREPLICATE);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_deletepropertiesnoreplicate(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_deletepropertiesnoreplicate(
 			&rq->proptags, &rsp->problems,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropQueryNamedProperties: {
@@ -1111,11 +1110,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(QUERYNAMEDPROPERTIES);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_querynamedproperties(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_querynamedproperties(
 			rq->query_flags, rq->pguid, &rsp->propidnames,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropCopyProperties: {
@@ -1125,13 +1124,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<COPYPROPERTIES_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_copyproperties(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_copyproperties(
 			rq->want_asynchronous, rq->copy_flags, &rq->proptags,
 			&rsp->problems,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
+		rshead = std::move(rsp);
 		if (rshead->result != ecDstNullObject)
 			break;
 		auto nr = cu_alloc<NULL_DST1_RESPONSE>();
@@ -1139,7 +1138,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		*static_cast<rop_response *>(nr) = *rshead;
 		nr->dhindex = rq->dhindex;
-		rshead = nr;
+		rshead = std::move(nr);
 		break;
 	}
 	case ropCopyTo: {
@@ -1149,13 +1148,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<COPYTO_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_copyto(rq->want_asynchronous,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_copyto(rq->want_asynchronous,
 			rq->want_subobjects, rq->copy_flags,
 			&rq->excluded_proptags, &rsp->problems,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
+		rshead = std::move(rsp);
 		if (rshead->result != ecDstNullObject)
 			break;
 		auto nr = cu_alloc<NULL_DST1_RESPONSE>();
@@ -1163,7 +1162,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		*static_cast<rop_response *>(nr) = *rshead;
 		nr->dhindex = rq->dhindex;
-		rshead = nr;
+		rshead = std::move(nr);
 		break;
 	}
 	case ropProgress: {
@@ -1172,12 +1171,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		auto rq = CAST_TO(PROGRESS);
 		rsp->logon_id = prequest->logon_id;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_progress(rq->want_cancel,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_progress(rq->want_cancel,
 			&rsp->completed_count, &rsp->total_count,
 			&rop_id, &partial_completion, &pemsmdb_info->logmap,
 			prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropOpenStream: {
@@ -1187,12 +1186,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<OPENSTREAM_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = rq->ohindex;
-		rshead->result = rop_openstream(rq->proptag,
+		rsp->hindex = rq->ohindex;
+		rsp->result = rop_openstream(rq->proptag,
 			rq->flags, &rsp->stream_size,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
-			phandles + rshead->hindex);
+			phandles + rsp->hindex);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropReadStream: {
@@ -1200,11 +1199,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(READSTREAM);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_readstream(rq->byte_count,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_readstream(rq->byte_count,
 			rq->max_byte_count, &rsp->data,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropWriteStream: {
@@ -1212,11 +1211,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(WRITESTREAM);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_writestream(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_writestream(
 			&rq->data, &rsp->written_size,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropCommitStream:
@@ -1228,10 +1227,10 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<GETSTREAMSIZE_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getstreamsize(&rsp->stream_size,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getstreamsize(&rsp->stream_size,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSetStreamSize: {
@@ -1246,11 +1245,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(SEEKSTREAM);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_seekstream(rq->seek_pos,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_seekstream(rq->seek_pos,
 			rq->offset, &rsp->new_pos,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropCopyToStream: {
@@ -1260,12 +1259,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<COPYTOSTREAM_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_copytostream(rq->byte_count,
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_copytostream(rq->byte_count,
 			&rsp->read_bytes, &rsp->written_bytes,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
+		rshead = std::move(rsp);
 		if (rshead->result != ecDstNullObject)
 			break;
 		auto nr = cu_alloc<COPYTOSTREAM_NULL_DEST_RESPONSE>();
@@ -1275,7 +1274,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		nr->dhindex = rq->dhindex;
 		nr->read_bytes = 0;
 		nr->written_bytes = 0;
-		rshead = nr;
+		rshead = std::move(nr);
 		break;
 	}
 	case ropLockRegionStream: {
@@ -1299,11 +1298,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(WRITEANDCOMMITSTREAM);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_writeandcommitstream(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_writeandcommitstream(
 			&rq->data, &rsp->written_size,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropCloneStream: {
@@ -1376,13 +1375,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(FASTTRANSFERDESTPUTBUFFER);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_fasttransferdestputbuffer(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_fasttransferdestputbuffer(
 			&rq->transfer_data, &rsp->transfer_status,
 			&rsp->in_progress_count, &rsp->total_step_count,
 			&rsp->reserved, &rsp->used_size,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropFastTransferSourceGetBuffer: {
@@ -1390,14 +1389,14 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(FASTTRANSFERSOURCEGETBUFFER);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_fasttransfersourcegetbuffer(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_fasttransfersourcegetbuffer(
 			rq->buffer_size, rq->max_buffer_size,
 			&rsp->transfer_status, &rsp->in_progress_count,
 			&rsp->total_step_count, &rsp->reserved,
 			&rsp->transfer_data,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		if (rshead->result == ecBufferTooSmall)
 			return ecBufferTooSmall;
 		break;
@@ -1429,7 +1428,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
 		rshead->hindex = rq->ohindex;
-		rshead->result =	rop_fasttransfersourcecopyto(
+		rshead->result = rop_fasttransfersourcecopyto(
 			rq->level, rq->flags, rq->send_options, &rq->proptags,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
@@ -1472,12 +1471,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rsp = cu_alloc<SYNCIMPORTMESSAGECHANGE_RESPONSE>();
 		if (rsp == nullptr)
 			return ecServerOOM;
-		rshead = rsp;
-		rshead->hindex = rq->ohindex;
-		rshead->result = rop_syncimportmessagechange(
+		rsp->hindex = rq->ohindex;
+		rsp->result = rop_syncimportmessagechange(
 			rq->import_flags, &rq->propvals, &rsp->message_id,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
-			phandles + rshead->hindex);
+			phandles + rsp->hindex);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSynchronizationImportReadStateChanges: {
@@ -1493,11 +1492,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(SYNCIMPORTHIERARCHYCHANGE);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_syncimporthierarchychange(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_syncimporthierarchychange(
 			&rq->hichyvals, &rq->propvals, &rsp->folder_id,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSynchronizationImportDeletes: {
@@ -1513,13 +1512,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(SYNCIMPORTMESSAGEMOVE);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_syncimportmessagemove(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_syncimportmessagemove(
 			&rq->src_folder_id, &rq->src_message_id,
 			&rq->change_list, &rq->dst_message_id,
 			&rq->change_number, &rsp->message_id,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropSynchronizationOpenCollector: {
@@ -1576,11 +1575,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = CAST_TO(GETLOCALREPLICAIDS);
-		rshead = rsp;
-		rshead->hindex = prequest->hindex;
-		rshead->result = rop_getlocalreplicaids(
+		rsp->hindex = prequest->hindex;
+		rsp->result = rop_getlocalreplicaids(
 			rq->count, &rsp->replguid, &rsp->global_count,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
+		rshead = std::move(rsp);
 		break;
 	}
 	case ropRegisterNotification: {
