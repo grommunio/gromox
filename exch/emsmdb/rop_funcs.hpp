@@ -81,7 +81,7 @@ extern ec_error_t rop_transportnewmail(uint64_t msg_id, uint64_t folder_id, cons
 extern ec_error_t rop_gettransportfolder(uint64_t *folder_id, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_optionsdata(const char *addr_type, uint8_t want_win32, uint8_t *reserved, BINARY *options_info, BINARY *help_file, char **file_name, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_getpropertyidsfromnames(uint8_t flags, const PROPNAME_ARRAY *, PROPID_ARRAY *, LOGMAP *, uint8_t logon_id, uint32_t hin);
-extern ec_error_t rop_getnamesfrompropertyids(const PROPID_ARRAY *, PROPNAME_ARRAY *, LOGMAP *, uint8_t logon_id, uint32_t hin);
+extern ec_error_t rop_getnamesfrompropertyids(const PROPID_ARRAY &, PROPNAME_ARRAY *, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode, const PROPTAG_ARRAY *, PROPERTY_ROW *, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode, TPROPVAL_ARRAY *, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_getpropertieslist(PROPTAG_ARRAY *, LOGMAP *, uint8_t logon_id, uint32_t hin);

@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 #include <type_traits>
 #include <gromox/defs.h>
 
@@ -1051,11 +1052,7 @@ struct GX_EXPORT PROPERTY_XNAME {
 	std::string name;
 };
 
-struct PROPID_ARRAY {
-	uint16_t count;
-	uint16_t *ppropid;
-	I_BEGIN_END(ppropid, count);
-};
+using PROPID_ARRAY = std::vector<uint16_t>;
 
 struct PROPNAME_ARRAY {
 	uint16_t count;

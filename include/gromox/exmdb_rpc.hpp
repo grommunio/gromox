@@ -193,7 +193,7 @@ struct exreq_get_named_propids final : public exreq {
 };
 
 struct exreq_get_named_propnames final : public exreq {
-	PROPID_ARRAY *ppropids;
+	PROPID_ARRAY ppropids;
 };
 
 struct exreq_get_mapping_guid final : public exreq {

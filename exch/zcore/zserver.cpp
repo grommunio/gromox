@@ -3898,7 +3898,7 @@ ec_error_t zs_getnamedpropids(GUID hsession, uint32_t hstore,
 }
 
 ec_error_t zs_getpropnames(GUID hsession, uint32_t hstore,
-	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
+    const PROPID_ARRAY &ppropids, PROPNAME_ARRAY *ppropnames)
 {
 	zs_objtype mapi_type;
 	auto pinfo = zs_query_session(hsession);

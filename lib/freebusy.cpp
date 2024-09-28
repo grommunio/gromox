@@ -463,3 +463,4 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 
 	return true;
 }
+

@@ -1784,16 +1784,12 @@ static void oxcmail_replace_propid(TPROPVAL_ARRAY *pproplist,
 }
 
 static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
-    EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
+    EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
 	PROPID_ARRAY propids;
 	PROPID_ARRAY propids1;
 	PROPNAME_ARRAY propnames;
 	
-	propids.count = 0;
-	propids.ppropid = static_cast<uint16_t *>(alloc(sizeof(uint16_t) * phash.size()));
-	if (propids.ppropid == nullptr)
-		return FALSE;
 	propnames.count = 0;
 	propnames.ppropname = static_cast<PROPERTY_NAME *>(alloc(sizeof(PROPERTY_NAME) * phash.size()));
 	if (propnames.ppropname == nullptr)
@@ -1806,10 +1802,8 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 	    propids1.size() != propnames.size())
 		return FALSE;
 	propididmap_t phash1;
-	for (size_t i = 0; i < propids.size(); ++i) try {
+	for (size_t i = 0; i < propids.size(); ++i)
 		phash1.emplace(propids[i], propids1[i]);
-	} catch (const std::bad_alloc &) {
-	}
 	oxcmail_replace_propid(&pmsg->proplist, phash1);
 	if (pmsg->children.prcpts != nullptr)
 		for (auto &rcpt : *pmsg->children.prcpts)
@@ -1818,6 +1812,9 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 		for (auto &at : *pmsg->children.pattachments)
 			oxcmail_replace_propid(&at.proplist, phash1);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2173: ENOMEM");
+	return false;
 }
 
 static void oxcmail_remove_flag_properties(

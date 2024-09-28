@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
@@ -1156,10 +1158,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_getpropnames &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hstore));
-	d.ppropids = x.anew<PROPID_ARRAY>();
-	if (d.ppropids == nullptr)
-		return pack_result::alloc;
-	QRF(x.g_propid_a(d.ppropids));
+	QRF(x.g_propid_a(&d.ppropids));
 	return pack_result::ok;
 }
 

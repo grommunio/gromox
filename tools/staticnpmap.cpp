@@ -44,15 +44,15 @@ uint16_t namedprop_bimap::emplace(uint16_t desired_propid, PROPERTY_XNAME &&name
 }
 
 static BOOL ee_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) __attribute__((unused));
-static BOOL ee_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
+static BOOL ee_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) try
 {
-	ids->ppropid = gromox::me_alloc<uint16_t>(names->count);
-	if (ids->ppropid == nullptr)
-		return false;
-	ids->count = names->count;
+	ids->resize(names->count);
 	for (size_t i = 0; i < names->count; ++i)
 		(*ids)[i] = static_namedprop_map.emplace(0, names->ppropname[i]);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	gromox::mlog(LV_ERR, "E-2237: ENOMEM");
+	return false;
 }
 
 static const PROPERTY_XNAME *ee_get_propname(uint16_t) __attribute__((unused));

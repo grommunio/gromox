@@ -150,9 +150,9 @@ bool store_object::primary_mode() const
 	return pinfo->user_id == account_id;
 }
 
-BOOL store_object::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
+BOOL store_object::get_named_propnames(const PROPID_ARRAY &propids,
+    PROPNAME_ARRAY *ppropnames) try
 {
-	auto &propids = *ppropids;
 	PROPID_ARRAY tmp_propids;
 	PROPNAME_ARRAY tmp_propnames;
 	
@@ -167,10 +167,6 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_AR
 	if (ppropnames->ppropname == nullptr)
 		return FALSE;
 	ppropnames->count = propids.size();
-	tmp_propids.count = 0;
-	tmp_propids.ppropid = cu_alloc<uint16_t>(propids.size());
-	if (tmp_propids.ppropid == nullptr)
-		return FALSE;
 	auto pstore = this;
 	for (size_t i = 0; i < propids.size(); ++i) {
 		if (!is_nameprop_id(propids[i])) {
@@ -191,8 +187,9 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_AR
 	}
 	if (tmp_propids.empty())
 		return TRUE;
-	if (!exmdb_client::get_named_propnames(pstore->dir, &tmp_propids,
-	    &tmp_propnames) || tmp_propnames.size() != tmp_propids.size())
+	if (!exmdb_client::get_named_propnames(
+	    pstore->dir, tmp_propids, &tmp_propnames) ||
+	    tmp_propnames.size() != tmp_propids.size())
 		return FALSE;	
 	for (size_t i = 0; i < propids.size(); ++i) {
 		if (pindex_map[i] >= 0)
@@ -204,6 +201,9 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_AR
 				propids[i], ppropnames->ppropname + i);
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2231: ENOMEM");
+	return false;
 }
 
 static BOOL store_object_get_named_propid(store_object *pstore,
@@ -234,30 +234,26 @@ static BOOL store_object_get_named_propid(store_object *pstore,
 }
 
 BOOL store_object::get_named_propids(BOOL b_create,
-    const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids)
+    const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids) try
 {
 	auto &propids = *ppropids;
-	int i;
 	PROPID_ARRAY tmp_propids;
 	PROPNAME_ARRAY tmp_propnames;
 	
 	if (0 == ppropnames->count) {
-		ppropids->count = 0;
+		ppropids->clear();
 		return TRUE;
 	}
 	auto pindex_map = cu_alloc<int>(ppropnames->count);
 	if (pindex_map == nullptr)
 		return FALSE;
-	ppropids->count = ppropnames->count;
-	ppropids->ppropid = cu_alloc<uint16_t>(ppropnames->count);
-	if (ppropids->ppropid == nullptr)
-		return FALSE;
+	propids.resize(ppropnames->count);
 	tmp_propnames.count = 0;
 	tmp_propnames.ppropname = cu_alloc<PROPERTY_NAME>(ppropnames->count);
 	if (tmp_propnames.ppropname == nullptr)
 		return FALSE;
 	auto pstore = this;
-	for (i=0; i<ppropnames->count; i++) {
+	for (size_t i = 0; i < ppropnames->count; ++i) {
 		if (ppropnames->ppropname[i].guid == PS_MAPI) {
 			propids[i] = ppropnames->ppropname[i].kind == MNID_ID ?
 			                       ppropnames->ppropname[i].lid : 0;
@@ -285,7 +281,7 @@ BOOL store_object::get_named_propids(BOOL b_create,
 	    b_create, &tmp_propnames, &tmp_propids) ||
 	    tmp_propids.size() != tmp_propnames.size())
 		return FALSE;	
-	for (i=0; i<ppropnames->count; i++) {
+	for (size_t i = 0; i < ppropnames->count; ++i) {
 		if (pindex_map[i] >= 0)
 			continue;
 		propids[i] = tmp_propids[-pindex_map[i]-1];
@@ -294,6 +290,9 @@ BOOL store_object::get_named_propids(BOOL b_create,
 				propids[i], ppropnames->ppropname + i);
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2233: ENOMEM");
+	return false;
 }
 
 static BOOL gnpwrap(void *store, BOOL create, const PROPERTY_NAME *pn, uint16_t *pid)

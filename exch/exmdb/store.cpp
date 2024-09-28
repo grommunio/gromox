@@ -31,7 +31,7 @@ BOOL exmdb_server::ping_store(const char *dir)
 }
 
 BOOL exmdb_server::get_all_named_propids(const char *dir,
-    PROPID_ARRAY *ppropids)
+    PROPID_ARRAY *ppropids) try
 {
 	int total_count;
 	char sql_string[256];
@@ -49,23 +49,21 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 		return FALSE;
 	total_count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
+	ppropids->clear();
 	if (0 == total_count) {
-		ppropids->count = 0;
-		ppropids->ppropid = NULL;
 		return TRUE;
 	}
-	ppropids->ppropid = cu_alloc<uint16_t>(total_count);
-	if (ppropids->ppropid == nullptr)
-		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT"
 		" propid FROM named_properties");
 	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	ppropids->count = 0;
 	while (pstmt.step() == SQLITE_ROW)
 		ppropids->push_back(pstmt.col_int64(0));
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2209: ENOMEM");
+	return false;
 }
 
 BOOL exmdb_server::get_named_propids(const char *dir,
@@ -85,7 +83,7 @@ BOOL exmdb_server::get_named_propids(const char *dir,
 }
 
 BOOL exmdb_server::get_named_propnames(const char *dir,
-	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
+    const PROPID_ARRAY &ppropids, PROPNAME_ARRAY *ppropnames)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)

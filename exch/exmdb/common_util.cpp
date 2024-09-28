@@ -4844,17 +4844,13 @@ BOOL cu_copy_message(sqlite3 *psqlite, uint64_t message_id, uint64_t folder_id,
 	       &propvals, &tmp_problems);
 }
 
-BOOL common_util_get_named_propids(sqlite3 *psqlite,
-	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
-	PROPID_ARRAY *ppropids)
+BOOL common_util_get_named_propids(sqlite3 *psqlite, BOOL b_create,
+    const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids) try
 {
 	auto &propids = *ppropids;
 	char sql_string[128];
 	
-	ppropids->ppropid = cu_alloc<uint16_t>(ppropnames->count);
-	if (ppropids->ppropid == nullptr)
-		return FALSE;
-	ppropids->count = ppropnames->count;
+	ppropids->resize(ppropnames->count);
 	if (b_create) {
 		snprintf(sql_string, std::size(sql_string), "SELECT"
 			" count(*) FROM named_properties");
@@ -4879,7 +4875,7 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 		if (pstmt1 == nullptr)
 			return FALSE;
 	}
-	for (size_t i = 0; i < ppropnames->count; ++i) try {
+	for (size_t i = 0; i < ppropnames->count; ++i) {
 		char guid_string[GUIDSTR_SIZE];
 		ppropnames->ppropname[i].guid.to_str(guid_string, std::size(guid_string));
 		std::string name_string;
@@ -4902,7 +4898,7 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 		}
 		sqlite3_bind_text(pstmt, 1, name_string.c_str(), -1, SQLITE_STATIC);
 		if (pstmt.step() == SQLITE_ROW) {
-			propids[i] = sqlite3_column_int64(pstmt, 0);
+			propids[i] = pstmt.col_int64(0);
 			sqlite3_reset(pstmt);
 			continue;
 		}
@@ -4916,17 +4912,16 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 		} else {
 			propids[i] = 0;
 		}
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1503: ENOMEM");
-		return false;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1503: ENOMEM");
+	return false;
 }
 
 BOOL common_util_get_named_propnames(sqlite3 *psqlite,
-	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
+    const PROPID_ARRAY &propids, PROPNAME_ARRAY *ppropnames)
 {
-	auto &propids = *ppropids;
 	char *ptoken;
 	char temp_name[1024];
 	
@@ -4939,7 +4934,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	for (size_t i = 0; i < propids.size(); ++i) {
-		sqlite3_bind_int64(pstmt, 1, propids[i]);
+		pstmt.bind_int64(1, propids[i]);
 		if (pstmt.step() != SQLITE_ROW) {
 			sqlite3_reset(pstmt);
 			goto NOT_FOUND_PROPNAME;

@@ -24,7 +24,7 @@ struct logon_object {
 	const char *get_account() const { return account; }
 	const char *get_dir() const { return dir; }
 	BOOL get_named_propname(uint16_t propid, PROPERTY_NAME *);
-	BOOL get_named_propnames(const PROPID_ARRAY *, PROPNAME_ARRAY *);
+	BOOL get_named_propnames(const PROPID_ARRAY &, PROPNAME_ARRAY *);
 	BOOL get_named_propid(BOOL create, const PROPERTY_NAME *, uint16_t *propid);
 	BOOL get_named_propids(BOOL create, const PROPNAME_ARRAY *, PROPID_ARRAY *);
 	/*

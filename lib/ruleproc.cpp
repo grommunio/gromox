@@ -155,15 +155,16 @@ static BOOL cu_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 	return exmdb_client::get_named_propids(rp_storedir, false, names, ids);
 }
 
-static BOOL cu_get_propname(uint16_t propid, PROPERTY_NAME **name)
+static BOOL cu_get_propname(uint16_t propid, PROPERTY_NAME **name) try
 {
-	PROPID_ARRAY ids = {1, &propid};
 	PROPNAME_ARRAY names = {};
 	if (!exmdb_client_remote::get_named_propnames(rp_storedir,
-	    &ids, &names) || names.size() != 1)
+	    {propid}, &names) || names.size() != 1)
 		return false;
 	*name = &names.ppropname[0];
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 rule_node::rule_node(rule_node &&o) :
@@ -264,27 +265,21 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
     const char *newdir)
 {
 	std::set<uint16_t> src_id_set;
-	std::vector<uint16_t> src_id_vec;
+	std::vector<uint16_t> src_id_vec, dst_id_arr;
 	rx_npid_collect(ctnt, src_id_set);
 	if (src_id_set.size() == 0)
 		return ecSuccess;
 	for (auto id : src_id_set)
 		src_id_vec.push_back(id);
-	PROPID_ARRAY src_id_arr, dst_id_arr{};
-	src_id_arr.count = src_id_vec.size();
-	src_id_arr.ppropid = src_id_vec.data();
 	PROPNAME_ARRAY src_name_arr{};
-	auto cl_0 = make_scope_exit([&]() {
-		rx_delete_local(src_name_arr);
-		free(dst_id_arr.ppropid);
-	});
+	auto cl_0 = make_scope_exit([&]() { rx_delete_local(src_name_arr); });
 	if (!exmdb_client::get_named_propnames(par.cur.dirc(),
-	    &src_id_arr, &src_name_arr)) {
+	    src_id_vec, &src_name_arr)) {
 		mlog(LV_DEBUG, "ruleproc: get_named_propnames(%s) failed",
 			par.cur.dirc());
 		return ecRpcFailed;
 	}
-	if (src_name_arr.size() != src_id_arr.size()) {
+	if (src_name_arr.size() != src_id_vec.size()) {
 		mlog(LV_ERR, "ruleproc: np(src) counts are fishy");
 		return ecError;
 	}

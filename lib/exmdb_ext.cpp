@@ -75,15 +75,12 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_named_propids &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_get_named_propnames &d)
 {
-	d.ppropids = cu_alloc<PROPID_ARRAY>();
-	if (d.ppropids == nullptr)
-		return EXT_ERR_ALLOC;
-	return x.g_propid_a(d.ppropids);
+	return x.g_propid_a(&d.ppropids);
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_named_propnames &d)
 {
-	return x.p_propid_a(*d.ppropids);
+	return x.p_propid_a(d.ppropids);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_get_mapping_guid &d)

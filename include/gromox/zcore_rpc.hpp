@@ -445,7 +445,7 @@ struct zcreq_getnamedpropids final : public zcreq {
 struct zcreq_getpropnames final : public zcreq {
 	GUID hsession;
 	uint32_t hstore;
-	PROPID_ARRAY *ppropids;
+	PROPID_ARRAY ppropids;
 };
 
 struct zcreq_copyto final : public zcreq {

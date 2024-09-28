@@ -63,15 +63,17 @@ static BOOL cu_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 	       false, names, ids);
 }
 
-static BOOL cu_get_propname(uint16_t propid, PROPERTY_NAME **name)
+static BOOL cu_get_propname(uint16_t propid, PROPERTY_NAME **name) try
 {
-	PROPID_ARRAY ids = {1, &propid};
 	PROPNAME_ARRAY names = {};
-	if (!exmdb_client_remote::get_named_propnames(g_storedir, &ids, &names) ||
-	    names.size() != 1)
+	if (!exmdb_client_remote::get_named_propnames(g_storedir,
+	    {propid}, &names) || names.size() != 1)
 		return false;
 	*name = &names.ppropname[0];
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2238: ENOMEM");
+	return false;
 }
 
 static void terse_help()
@@ -223,10 +225,9 @@ int main(int argc, char **argv) try
 		std::vector<uint16_t> tags;
 		for (const auto &p : ctnt->proplist)
 			tags.push_back(PROP_ID(p.proptag));
-		const PROPID_ARRAY propids = {static_cast<uint16_t>(tags.size()), deconst(tags.data())};
 		PROPNAME_ARRAY propnames{};
-		if (!exmdb_client_remote::get_named_propnames(g_storedir, &propids, &propnames) ||
-		    propnames.size() != propids.size()) {
+		if (!exmdb_client_remote::get_named_propnames(g_storedir, tags, &propnames) ||
+		    propnames.size() != tags.size()) {
 			fprintf(stderr, "get_all_named_propids failed\n");
 			return EXIT_FAILURE;
 		}

@@ -2385,21 +2385,21 @@ static BOOL message_get_propids(const PROPNAME_ARRAY *ppropnames,
 }
 
 static BOOL message_get_propname(uint16_t propid,
-	PROPERTY_NAME **pppropname)
+	PROPERTY_NAME **pppropname) try
 {
-	PROPID_ARRAY propids;
 	PROPNAME_ARRAY propnames;
 	
 	auto psqlite = g_sqlite_for_oxcmail;
 	if (psqlite == nullptr)
 		return FALSE;
-	propids.count = 1;
-	propids.ppropid = &propid;
-	if (!common_util_get_named_propnames(psqlite, &propids, &propnames) ||
+	if (!common_util_get_named_propnames(psqlite, {propid}, &propnames) ||
 	    propnames.size() != 1)
 		return FALSE;
 	*pppropname = propnames.ppropname;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2227: ENOMEM");
+	return false;
 }
 
 static bool cu_rcpt_to_list(const TPROPVAL_ARRAY &props,

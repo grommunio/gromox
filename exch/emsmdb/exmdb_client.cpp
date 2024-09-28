@@ -76,18 +76,18 @@ BOOL get_named_propid(const char *dir, BOOL b_create,
 }
 
 BOOL get_named_propname(const char *dir, uint16_t propid,
-    PROPERTY_NAME *ppropname)
+    PROPERTY_NAME *ppropname) try
 {
-	PROPID_ARRAY tmp_propids;
 	PROPNAME_ARRAY tmp_propnames;
 	
-	tmp_propids.count = 1;
-	tmp_propids.ppropid = &propid;
-	if (!exmdb_client::get_named_propnames(dir, &tmp_propids,
-	    &tmp_propnames) || tmp_propnames.size() != 1)
+	if (!exmdb_client::get_named_propnames(dir, {propid}, &tmp_propnames) ||
+	    tmp_propnames.size() != 1)
 		return FALSE;	
 	*ppropname = *tmp_propnames.ppropname;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2235: ENOMEM");
+	return false;
 }
 
 BOOL get_store_property(const char *dir, cpid_t cpid,

@@ -19,8 +19,8 @@ struct store_object {
 	bool primary_mode() const;
 	const char *get_account() const { return account; }
 	const char *get_dir() const { return dir; }
-	BOOL get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames);
-	BOOL get_named_propids(BOOL b_create, const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids);
+	BOOL get_named_propnames(const PROPID_ARRAY &, PROPNAME_ARRAY *);
+	BOOL get_named_propids(BOOL create, const PROPNAME_ARRAY *, PROPID_ARRAY *);
 	/*
 	 * Used for message partial change information when saving message, the
 	 * return value is maintained by logon object, do not free it outside.

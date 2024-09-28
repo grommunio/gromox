@@ -1334,18 +1334,18 @@ static BOOL common_util_get_propids(
 }
 
 static BOOL common_util_get_propname(
-	uint16_t propid, PROPERTY_NAME **pppropname)
+	uint16_t propid, PROPERTY_NAME **pppropname) try
 {
-	PROPID_ARRAY propids;
 	PROPNAME_ARRAY propnames;
 	
-	propids.count = 1;
-	propids.ppropid = &propid;
 	if (!exmdb_client::get_named_propnames(common_util_get_dir(),
-	    &propids, &propnames) || propnames.size() != 1)
+	    {propid}, &propnames) || propnames.size() != 1)
 		return FALSE;
 	*pppropname = propnames.ppropname;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2234: ENOMEM");
+	return false;
 }
 
 static bool mapi_p1(const TPROPVAL_ARRAY &props)

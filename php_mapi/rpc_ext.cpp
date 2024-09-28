@@ -714,7 +714,7 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getpropnames &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hstore));
-	TRY(x.p_propid_a(*d.ppropids));
+	TRY(x.p_propid_a(d.ppropids));
 	return pack_result::ok;
 }
 

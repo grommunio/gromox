@@ -9,7 +9,7 @@
 EXMIDL(ping_store, (const char *dir))
 EXMIDL(get_all_named_propids, (const char *dir, IDLOUT PROPID_ARRAY *propids))
 EXMIDL(get_named_propids, (const char *dir, BOOL b_create, const PROPNAME_ARRAY *ppropnames, IDLOUT PROPID_ARRAY *propids))
-EXMIDL(get_named_propnames, (const char *dir, const PROPID_ARRAY *ppropids, IDLOUT PROPNAME_ARRAY *propnames))
+EXMIDL(get_named_propnames, (const char *dir, const PROPID_ARRAY &ppropids, IDLOUT PROPNAME_ARRAY *propnames))
 EXMIDL(get_mapping_guid, (const char *dir, uint16_t replid, IDLOUT BOOL *b_found, GUID *guid))
 EXMIDL(get_mapping_replid, (const char *dir, GUID guid, IDLOUT uint16_t *replid, ec_error_t *e_result))
 EXMIDL(get_store_all_proptags, (const char *dir, IDLOUT PROPTAG_ARRAY *proptags))

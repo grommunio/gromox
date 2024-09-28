@@ -2778,15 +2778,15 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 	auto err = php_to_proptag_array(pzarray, &proptags);
 	if (err != ecSuccess)
 		pthrow(err);
-	propids.count = proptags.count;
-	propids.ppropid = sta_malloc<uint16_t>(proptags.count);
-	if (NULL == propids.ppropid)
+	try {
+		propids.resize(proptags.size());
+	} catch (const std::bad_alloc &) {
 		pthrow(ecMAPIOOM);
+	}
 	for (unsigned int i = 0; i < proptags.count; ++i)
 		propids[i] = PROP_ID(proptags.pproptag[i]);
-	auto result = zclient_getpropnames(
-		pstore->hsession, pstore->hobject,
-		&propids, &propnames);
+	auto result = zclient_getpropnames(pstore->hsession, pstore->hobject,
+	              propids, &propnames);
 	if (result != ecSuccess)
 		pthrow(result);
 	zarray_init(return_value);

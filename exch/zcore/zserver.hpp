@@ -114,7 +114,7 @@ extern ec_error_t zs_deletepropvals(GUID ses, uint32_t obj_handle, const PROPTAG
 extern ec_error_t zs_setmessagereadflag(GUID ses, uint32_t msg_handle, uint32_t flags);
 extern ec_error_t zs_openembedded(GUID ses, uint32_t atx_handle, uint32_t flags, uint32_t *obj_handle);
 extern ec_error_t zs_getnamedpropids(GUID ses, uint32_t store_handle, const PROPNAME_ARRAY *, PROPID_ARRAY *);
-extern ec_error_t zs_getpropnames(GUID ses, uint32_t store_handle, const PROPID_ARRAY *, PROPNAME_ARRAY *);
+extern ec_error_t zs_getpropnames(GUID ses, uint32_t store_handle, const PROPID_ARRAY &, PROPNAME_ARRAY *);
 extern ec_error_t zs_copyto(GUID ses, uint32_t srcobj_handle, const PROPTAG_ARRAY *exclprop, uint32_t dstobj_handle, uint32_t flags);
 extern ec_error_t zs_savechanges(GUID ses, uint32_t obj_handle);
 extern ec_error_t zs_hierarchysync(GUID ses, uint32_t fld_handle, uint32_t *obj_handle);

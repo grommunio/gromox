@@ -102,10 +102,9 @@ BOOL logon_object::get_named_propname(uint16_t propid,
 	return TRUE;
 }
 
-BOOL logon_object::get_named_propnames(const PROPID_ARRAY *ppropids,
-    PROPNAME_ARRAY *ppropnames)
+BOOL logon_object::get_named_propnames(const PROPID_ARRAY &propids,
+    PROPNAME_ARRAY *ppropnames) try
 {
-	auto &propids = *ppropids;
 	PROPID_ARRAY tmp_propids;
 	PROPNAME_ARRAY tmp_propnames;
 	
@@ -120,10 +119,6 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY *ppropids,
 	if (ppropnames->ppropname == nullptr)
 		return FALSE;
 	ppropnames->count = propids.size();
-	tmp_propids.count = 0;
-	tmp_propids.ppropid = cu_alloc<uint16_t>(propids.size());
-	if (tmp_propids.ppropid == nullptr)
-		return FALSE;
 	auto plogon = this;
 	for (size_t i = 0; i < propids.size(); ++i) {
 		if (!is_nameprop_id(propids[i])) {
@@ -139,13 +134,13 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY *ppropids,
 			ppropnames->ppropname[i] = static_cast<PROPERTY_NAME>(iter->second);
 		} else {
 			tmp_propids.push_back(propids[i]);
-			pindex_map[i] = -tmp_propids.count;
+			pindex_map[i] = -static_cast<int>(tmp_propids.size());
 		}
 	}
 	if (tmp_propids.empty())
 		return TRUE;
-	if (!exmdb_client::get_named_propnames(plogon->dir, &tmp_propids,
-	    &tmp_propnames) || tmp_propnames.size() != tmp_propids.size())
+	if (!exmdb_client::get_named_propnames(plogon->dir,
+	    tmp_propids, &tmp_propnames) || tmp_propnames.size() != tmp_propids.size())
 		return FALSE;	
 	for (size_t i = 0; i < propids.size(); ++i) {
 		if (pindex_map[i] >= 0)
@@ -157,6 +152,9 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY *ppropids,
 				propids[i], ppropnames->ppropname + i);
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2236: ENOMEM");
+	return false;
 }
 
 BOOL logon_object::get_named_propid(BOOL b_create,
@@ -187,7 +185,7 @@ BOOL logon_object::get_named_propid(BOOL b_create,
 }
 
 BOOL logon_object::get_named_propids(BOOL b_create,
-    const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids)
+    const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids) try
 {
 	auto &propids = *ppropids;
 	int i;
@@ -195,16 +193,13 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 	PROPNAME_ARRAY tmp_propnames;
 	
 	if (0 == ppropnames->count) {
-		ppropids->count = 0;
+		ppropids->clear();
 		return TRUE;
 	}
 	auto pindex_map = cu_alloc<int>(ppropnames->count);
 	if (pindex_map == nullptr)
 		return FALSE;
-	ppropids->count = ppropnames->count;
-	ppropids->ppropid = cu_alloc<uint16_t>(ppropnames->count);
-	if (ppropids->ppropid == nullptr)
-		return FALSE;
+	propids.resize(ppropnames->count);
 	tmp_propnames.count = 0;
 	tmp_propnames.ppropname = cu_alloc<PROPERTY_NAME>(ppropnames->count);
 	if (tmp_propnames.ppropname == nullptr)
@@ -247,6 +242,9 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 				propids[i], ppropnames->ppropname + i);
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2177: ENOMEM");
+	return false;
 }
 
 static BOOL gnpwrap(void *obj, BOOL create, const PROPERTY_NAME *pn, uint16_t *pid)

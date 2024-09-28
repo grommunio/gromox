@@ -1176,7 +1176,7 @@ static bool is_meeting_response(const char *s)
 
 static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	uint32_t length, BOOL b_embedded, EXT_BUFFER_ALLOC alloc,
-	GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid)
+	GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid) try
 {
 	BOOL b_props;
 	BINARY tmp_bin;
@@ -1548,32 +1548,24 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		}
 	}
  FETCH_PROPNAME:
-	propids.count = 0;
-	propids.ppropid = static_cast<uint16_t *>(alloc(sizeof(uint16_t) * phash.size()));
-	if (propids.ppropid == nullptr)
-		return NULL;
 	propnames.count = 0;
 	propnames.ppropname = static_cast<PROPERTY_NAME *>(alloc(sizeof(PROPERTY_NAME) * phash.size()));
 	if (propnames.ppropname == nullptr)
 		return NULL;
 	for (const auto &[name, propid] : phash) {
-		propids[propids.count] = propid;
 		if (!tnef_convert_to_propname(name,
 		    propnames.ppropname + propnames.count, alloc))
 			return NULL;
-		propids.count ++;
+		propids.push_back(propid);
 		propnames.count ++;
 	}
 	phash.clear();
 	
-	if (!get_propids(&propnames, &propids1))
+	if (!get_propids(&propnames, &propids1) || propids1.size() != propnames.size())
 		return NULL;
 	propididmap_t phash1;
-	try { for (size_t i = 0; i < propids.size(); ++i)
+	for (size_t i = 0; i < propids.size(); ++i)
 		phash1.emplace(propids[i], propids1[i]);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1987: ENOMEM");
-	}
 	tnef_replace_propid(&pmsg->proplist, phash1);
 	if (pmsg->children.prcpts != nullptr)
 		for (auto &rcpt : *pmsg->children.prcpts)
@@ -1591,6 +1583,9 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	auto pmsg_ret = pmsg;
 	pmsg = nullptr; /* note cl_0 scope guard */
 	return pmsg_ret;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1987: ENOMEM");
+	return nullptr;
 }
 
 MESSAGE_CONTENT* tnef_deserialize(const void *pbuff,

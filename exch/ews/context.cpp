@@ -578,9 +578,9 @@ void EWSContext::getNamedTags(const std::string& dir, sShape& shape, bool create
  */
 PROPERTY_NAME* EWSContext::getPropertyName(const std::string& dir, uint16_t id) const
 {
-	PROPID_ARRAY propids{1, &id};
 	PROPNAME_ARRAY propnames{};
-	if(!m_plugin.exmdb.get_named_propnames(dir.c_str(), &propids, &propnames) || propnames.count != 1)
+	if (!m_plugin.exmdb.get_named_propnames(dir.c_str(), {id}, &propnames) ||
+	    propnames.size() != 1)
 		throw DispatchError(E3070);
 	return propnames.ppropname;
 }

@@ -889,7 +889,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 		auto rq = CAST_TO(GETNAMESFROMPROPERTYIDS);
 		rsp->hindex = prequest->hindex;
 		rsp->result = rop_getnamesfrompropertyids(
-			&rq->propids, &rsp->propnames,
+			rq->propids, &rsp->propnames,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		rshead = std::move(rsp);
 		break;

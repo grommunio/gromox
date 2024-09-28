@@ -251,18 +251,17 @@ BOOL common_util_get_propids_create(const PROPNAME_ARRAY *names, PROPID_ARRAY *i
 	       TRUE, names, ids);
 }
 
-BOOL common_util_get_propname(
-	uint16_t propid, PROPERTY_NAME **pppropname)
+BOOL common_util_get_propname(uint16_t propid, PROPERTY_NAME **pppropname) try
 {
-	PROPID_ARRAY propids;
 	PROPNAME_ARRAY propnames;
 	
-	propids.count = 1;
-	propids.ppropid = &propid;
 	if (!exmdb_client::get_named_propnames(
-	    common_util_get_maildir(), &propids, &propnames) ||
+	    common_util_get_maildir(), {propid}, &propnames) ||
 	    propnames.size() != 1)
 		return FALSE;	
 	*pppropname = propnames.ppropname;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2228: ENOMEM");
+	return false;
 }

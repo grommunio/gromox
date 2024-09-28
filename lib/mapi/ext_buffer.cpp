@@ -1160,22 +1160,20 @@ pack_result EXT_PULL::g_propname_a(PROPNAME_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-pack_result EXT_PULL::g_propid_a(PROPID_ARRAY *r)
+pack_result EXT_PULL::g_propid_a(PROPID_ARRAY *r) try
 {
 	uint16_t nelem = 0;
 	TRY(g_uint16(&nelem));
 	if (nelem == 0) {
-		r->ppropid = NULL;
+		r->clear();
 		return EXT_ERR_SUCCESS;
 	}
-	r->ppropid = anew<uint16_t>(nelem);
-	if (r->ppropid == nullptr) {
-		r->count = 0;
-		return EXT_ERR_ALLOC;
-	}
+	r->resize(nelem);
 	for (size_t i = 0; i < nelem; ++i)
 		TRY(g_uint16(&(*r)[i]));
 	return EXT_ERR_SUCCESS;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 pack_result EXT_PULL::g_tpropval_a(TPROPVAL_ARRAY *r)

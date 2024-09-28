@@ -150,8 +150,7 @@ extern BOOL cu_copy_message(sqlite3 *, uint64_t msg_id, uint64_t folder_id, uint
 BOOL common_util_get_named_propids(sqlite3 *psqlite,
 	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids);
-BOOL common_util_get_named_propnames(sqlite3 *psqlite,
-	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames);
+extern BOOL common_util_get_named_propnames(sqlite3 *, const PROPID_ARRAY &, PROPNAME_ARRAY *);
 extern BOOL cu_is_folder_present(sqlite3 *, uint64_t folder_id, BOOL *exist);
 BOOL common_util_increase_deleted_count(sqlite3 *psqlite,
 	uint64_t folder_id, uint32_t del_count);

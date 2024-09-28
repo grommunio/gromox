@@ -64,7 +64,7 @@ ec_error_t rop_getpropertyidsfromnames(uint8_t flags,
 	return ecSuccess;
 }
 
-ec_error_t rop_getnamesfrompropertyids(const PROPID_ARRAY *ppropids,
+ec_error_t rop_getnamesfrompropertyids(const PROPID_ARRAY &ppropids,
     PROPNAME_ARRAY *ppropnames, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
@@ -481,7 +481,7 @@ ec_error_t rop_deletepropertiesnoreplicate(const PROPTAG_ARRAY *pproptags,
 
 ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
     PROPIDNAME_ARRAY *ppropidnames, LOGMAP *plogmap,
-    uint8_t logon_id, uint32_t hin)
+    uint8_t logon_id, uint32_t hin) try
 {
 	ems_objtype object_type;
 	PROPID_ARRAY propids;
@@ -521,10 +521,6 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 	default:
 		return ecNotSupported;
 	}
-	propids.count = 0;
-	propids.ppropid = cu_alloc<uint16_t>(proptags.count);
-	if (propids.ppropid == nullptr)
-		return ecServerOOM;
 	for (unsigned int i = 0; i < proptags.count; ++i) {
 		uint16_t propid = PROP_ID(proptags.pproptag[i]);
 		if (!is_nameprop_id(propid))
@@ -544,10 +540,10 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 	ppropidnames->ppropname = cu_alloc<PROPERTY_NAME>(propids.size());
 	if (ppropidnames->ppropid == nullptr)
 		return ecServerOOM;
-	if (!plogon->get_named_propnames(&propids, &propnames) ||
+	if (!plogon->get_named_propnames(propids, &propnames) ||
 	    propnames.size() != propids.size())
 		return ecError;
-	for (unsigned int i = 0; i < propids.size(); ++i) {
+	for (size_t i = 0; i < propids.size(); ++i) {
 		if (propnames.ppropname[i].kind == KIND_NONE)
 			continue;
 		if (pguid != nullptr && *pguid != propnames.ppropname[i].guid)
@@ -562,6 +558,9 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 		ppropidnames->ppropname[ppropidnames->count++] = ppropidnames->ppropname[i];
 	}
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2206: ENOMEM");
+	return ecServerOOM;
 }
 
 ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
