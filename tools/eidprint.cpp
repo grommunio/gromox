@@ -44,27 +44,27 @@ static void print_guid(const FLATUID le)
 	FN(IID_IExchangeImportContentsChanges);
 	FN(IID_IExchangeImportHierarchyChanges);
 	GN(GUID_NULL);
-	GN(PSETID_ADDRESS);
-	GN(PSETID_APPOINTMENT);
-	GN(PSETID_BUSINESSCARDVIEW);
-	GN(PSETID_CALENDARASSISTANT);
-	GN(PSETID_COMMON);
-	GN(PSETID_GROMOX);
+	GN(PSETID_Address);
+	GN(PSETID_Appointment);
+	GN(PSETID_BusinessCardView);
+	GN(PSETID_CalendarAssistant);
+	GN(PSETID_Common);
+	GN(PSETID_Gromox);
 	GN(PSETID_KC);
-	GN(PSETID_KCARCHIVE);
-	GN(PSETID_LOG);
-	GN(PSETID_MEETING);
-	GN(PSETID_NOTE);
-	GN(PSETID_REMOTE);
-        GN(PSETID_REPORT);
-        GN(PSETID_SHARING);
-        GN(PSETID_TASK);
-        GN(PSETID_UNIFIEDMESSAGING);
-        GN(PS_INTERNET_HEADERS);
-        GN(PS_MAPI);
-        GN(PS_PUBLIC_STRINGS);
-        GN(gx_dbguid_store_private);
-        GN(gx_dbguid_store_public);
+	GN(PSETID_KCArchive);
+	GN(PSETID_Log);
+	GN(PSETID_Meeting);
+	GN(PSETID_Note);
+	GN(PSETID_Remote);
+	GN(PSETID_Report);
+	GN(PSETID_Sharing);
+	GN(PSETID_Task);
+	GN(PSETID_UnifiedMessaging);
+	GN(PS_INTERNET_HEADERS);
+	GN(PS_MAPI);
+	GN(PS_PUBLIC_STRINGS);
+	GN(gx_dbguid_store_private);
+	GN(gx_dbguid_store_public);
 #undef FN
 #undef GN
 }

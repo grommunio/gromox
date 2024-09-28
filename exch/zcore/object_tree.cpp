@@ -85,7 +85,7 @@ object_tree_init_root(const char *maildir) try
 		return NULL;
 	prootobj->b_touched = FALSE;
 	auto bv = static_cast<const BINARY *>(cu_read_storenamedprop(maildir,
-	          PSETID_GROMOX, "zcore_profsect", PT_BINARY));
+	          PSETID_Gromox, "zcore_profsect", PT_BINARY));
 	if (bv != nullptr && object_tree_deserialize(*prootobj, bv->pb, bv->cb) == 0)
 		return prootobj;
 
@@ -125,7 +125,7 @@ static void object_tree_write_root(root_object *prootobj)
 	    ext_push.p_tpropval_a(*prootobj->pprivate_proplist) != EXT_ERR_SUCCESS ||
 	    ext_push.p_tarray_set(*prootobj->pprof_set) != EXT_ERR_SUCCESS)
 		return;
-	cu_write_storenamedprop(prootobj->maildir, PSETID_GROMOX,
+	cu_write_storenamedprop(prootobj->maildir, PSETID_Gromox,
 		"zcore_profsect", PT_BINARY, ext_push.m_udata, ext_push.m_offset);
 }
 

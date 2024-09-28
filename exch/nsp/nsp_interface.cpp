@@ -98,7 +98,7 @@ static const BINARY *nsp_photo_rpc(const char *dir)
 {
 	if (*dir == '\0')
 		return nullptr;
-	const PROPERTY_NAME xn = {MNID_STRING, PSETID_GROMOX, 0, deconst("photo")};
+	const PROPERTY_NAME xn = {MNID_STRING, PSETID_Gromox, 0, deconst("photo")};
 	const PROPNAME_ARRAY name_req = {1, deconst(&xn)};
 	PROPID_ARRAY name_rsp{};
 	if (!get_named_propids(dir, false, &name_req, &name_rsp) ||

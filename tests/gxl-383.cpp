@@ -15,7 +15,7 @@ using namespace gromox;
 
 static uint32_t propid_elist(const char *dir)
 {
-	const PROPERTY_NAME pn = {MNID_ID, PSETID_ADDRESS, dispidEmailList};
+	const PROPERTY_NAME pn = {MNID_ID, PSETID_Address, dispidEmailList};
 	const PROPNAME_ARRAY pna = {1, deconst(&pn)};
 	PROPID_ARRAY pia{};
 

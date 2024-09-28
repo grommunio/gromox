@@ -737,7 +737,7 @@ Fixes:
   resolving a failure to export (broken) recipients to MSG,
   and resolving _one_ instance of OL sync error 80070057.
 * oxvcard: PidLidBusinessCardDisplayDefinition named property was not
-  assigned the right namespace (PSETID_ADDRESS)
+  assigned the right namespace (PSETID_Address)
 * oxcmail: do not abort export routine if SMIME message is lacking an SMIME
   body (just treat it as empty instead)
 * oxcical: do not abort export routine if IPM.*.Resp.* has no attendee

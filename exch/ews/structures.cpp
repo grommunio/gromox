@@ -1663,8 +1663,8 @@ tCalendarEvent::tCalendarEvent(const freebusy_event& fb_event) :
  */
 RESTRICTION* tCalendarView::datefilter(const sTimePoint& time, bool isStart, const sGetNameId& getId)
 {
-	static const PROPERTY_NAME startName = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStartWhole, nullptr},
-		endName = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentEndWhole, nullptr};
+	static const PROPERTY_NAME startName = {MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole, nullptr},
+		endName = {MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole, nullptr};
 	// Counterintuitive: isStart == true -> check if end of event is after start, invert for isStart == false
 	const PROPERTY_NAME& tagName = isStart? endName : startName;
 	RESTRICTION* res = EWSContext::construct<RESTRICTION>();
@@ -1740,7 +1740,7 @@ decltype(tChangeDescription::itemTypes) tChangeDescription::itemTypes = {
 	"PostItem",
 	"RoleMember",
 	"SharingMessage",
-	"Task"
+	"Task",
 };
 
 /**
@@ -2265,16 +2265,16 @@ decltype(tExtendedFieldURI::typeMap) tExtendedFieldURI::typeMap = {{
 }};
 
 decltype(tExtendedFieldURI::propsetIds) tExtendedFieldURI::propsetIds = {
-	&PSETID_MEETING,
-	&PSETID_APPOINTMENT,
-	&PSETID_COMMON,
+	&PSETID_Meeting,
+	&PSETID_Appointment,
+	&PSETID_Common,
 	&PS_PUBLIC_STRINGS,
-	&PSETID_ADDRESS,
+	&PSETID_Address,
 	&PS_INTERNET_HEADERS,
-	&PSETID_CALENDARASSISTANT,
-	&PSETID_UNIFIEDMESSAGING,
-	&PSETID_TASK,
-	&PSETID_SHARING
+	&PSETID_CalendarAssistant,
+	&PSETID_UnifiedMessaging,
+	&PSETID_Task,
+	&PSETID_Sharing
 };
 
 /**

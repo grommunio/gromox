@@ -1381,7 +1381,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		if (pvalue == nullptr)
 			return FALSE;
 		auto bv = static_cast<BINARY *>(cu_read_storenamedprop(path,
-		          PSETID_GROMOX, "photo", PT_BINARY));
+		          PSETID_Gromox, "photo", PT_BINARY));
 		if (bv != nullptr) {
 			*ppvalue = bv;
 			return TRUE;

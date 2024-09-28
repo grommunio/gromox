@@ -105,14 +105,14 @@ static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	bf[z++].lid = PidLidEmail3EmailAddress;
 	bf[z++].lid = PidLidInstantMessagingAddress;
 	for (size_t i = start; i < z; ++i) {
-		bf[i].guid = PSETID_ADDRESS;
+		bf[i].guid = PSETID_Address;
 		bf[i].kind = MNID_ID;
 	}
 
 	bf[z].guid = PS_PUBLIC_STRINGS;
 	bf[z].kind = MNID_ID;
 	bf[z++].lid = PidLidCategories;
-	bf[z].guid = PSETID_ADDRESS;
+	bf[z].guid = PSETID_Address;
 	bf[z].kind = MNID_ID;
 	bf[z++].lid = PidLidBusinessCardDisplayDefinition;
 
@@ -123,20 +123,20 @@ static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	bf[z++].lid = PidLidContactUserField4;
 	bf[z++].lid = PidLidFreeBusyLocation;
 	for (size_t i = start; i < z; ++i) {
-		bf[i].guid = PSETID_ADDRESS;
+		bf[i].guid = PSETID_Address;
 		bf[i].kind = MNID_ID;
 	}
-	bf[z].guid = PSETID_GROMOX;
+	bf[z].guid = PSETID_Gromox;
 	bf[z].kind = MNID_STRING;
 	bf[z++].pname = deconst("vcarduid");
 
-	bf[z].guid = PSETID_ADDRESS;
+	bf[z].guid = PSETID_Address;
 	bf[z].kind = MNID_ID;
 	bf[z++].lid = PidLidEmail1AddressType;
-	bf[z].guid = PSETID_ADDRESS;
+	bf[z].guid = PSETID_Address;
 	bf[z].kind = MNID_ID;
 	bf[z++].lid = PidLidEmail2AddressType;
-	bf[z].guid = PSETID_ADDRESS;
+	bf[z].guid = PSETID_Address;
 	bf[z].kind = MNID_ID;
 	bf[z++].lid = PidLidEmail3AddressType;
 

@@ -306,10 +306,10 @@ static int t_cmp_guid()
 	char buf[sizeof(FLATUID)];
 	EXT_PUSH ep;
 	ep.init(buf, sizeof(buf), 0);
-	if (ep.p_guid(PSETID_ADDRESS) != EXT_ERR_SUCCESS)
+	if (ep.p_guid(PSETID_Address) != pack_result::success)
 		return EXIT_FAILURE;
-	assert((memcmp(&PSETID_ADDRESS, buf, sizeof(buf)) != 0) == GX_BIG_ENDIAN);
-	static_assert(std::is_same_v<decltype(PSETID_ADDRESS), const GUID>);
+	assert((memcmp(&PSETID_Address, buf, sizeof(buf)) != 0) == GX_BIG_ENDIAN);
+	static_assert(std::is_same_v<decltype(PSETID_Address), const GUID>);
 
 	ep.init(buf, sizeof(buf), 0);
 	if (ep.p_guid(muidEMSAB) != EXT_ERR_SUCCESS)

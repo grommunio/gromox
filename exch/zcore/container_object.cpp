@@ -124,7 +124,7 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	propnames.count = 9;
 	propnames.ppropname = propname_buff;
 	for (size_t i = 0; i < std::size(propname_buff); ++i) {
-		propname_buff[i].guid = PSETID_ADDRESS;
+		propname_buff[i].guid = PSETID_Address;
 		propname_buff[i].kind = MNID_ID;
 	}
 	propname_buff[0].lid = PidLidEmail1DisplayName;

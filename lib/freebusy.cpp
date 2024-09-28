@@ -22,19 +22,19 @@ namespace exmdb_client = exmdb_client_remote;
 freebusy_tags::freebusy_tags(const char *dir)
 {
 	static const PROPERTY_NAME propname_buff[] = {
-		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStartWhole},
-		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentEndWhole},
-		{MNID_ID, PSETID_APPOINTMENT, PidLidBusyStatus},
-		{MNID_ID, PSETID_APPOINTMENT, PidLidRecurring},
-		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur},
-		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSubType},
-		{MNID_ID, PSETID_COMMON,      PidLidPrivate},
-		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStateFlags},
-		{MNID_ID, PSETID_APPOINTMENT, PidLidClipEnd},
-		{MNID_ID, PSETID_APPOINTMENT, PidLidLocation},
-		{MNID_ID, PSETID_COMMON,      PidLidReminderSet},
-		{MNID_ID, PSETID_MEETING,     PidLidGlobalObjectId},
-		{MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneStruct},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole},
+		{MNID_ID, PSETID_Appointment, PidLidBusyStatus},
+		{MNID_ID, PSETID_Appointment, PidLidRecurring},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentRecur},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentSubType},
+		{MNID_ID, PSETID_Common,      PidLidPrivate},
+		{MNID_ID, PSETID_Appointment, PidLidAppointmentStateFlags},
+		{MNID_ID, PSETID_Appointment, PidLidClipEnd},
+		{MNID_ID, PSETID_Appointment, PidLidLocation},
+		{MNID_ID, PSETID_Common,      PidLidReminderSet},
+		{MNID_ID, PSETID_Meeting,     PidLidGlobalObjectId},
+		{MNID_ID, PSETID_Appointment, PidLidTimeZoneStruct},
 	};
 
 	const PROPNAME_ARRAY propnames = {std::size(propname_buff), deconst(propname_buff)};

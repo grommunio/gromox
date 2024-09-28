@@ -1230,7 +1230,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	propnames.count = 1;
 	PROPERTY_NAME propname_buff[1];
 	propname_buff[0].kind = MNID_ID;
-	propname_buff[0].guid = PSETID_APPOINTMENT;
+	propname_buff[0].guid = PSETID_Appointment;
 	propname_buff[0].lid = PidLidExceptionReplaceTime;
 	propnames.ppropname = propname_buff;
 	PROPID_ARRAY namedids = getNamedPropIds(dir, propnames, true);
