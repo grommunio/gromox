@@ -4,20 +4,23 @@
 #include <gromox/mapi_types.hpp>
 
 struct rop_request {
-	uint8_t rop_id;
-	uint8_t logon_id;
+	rop_request() = default; /* Prevent use of direct-list-init */
+	virtual ~rop_request() = default;
+	uint8_t rop_id = 0, logon_id = 0;
 	// meaning dependent on rop_id (OutputHandleIndex, InputHandleIndex,
 	// SourceHandleIndex, ResposneHandleIndex)
-	uint8_t hindex;
-	BINARY rq_bookmark;
+	uint8_t hindex = 0;
+	BINARY rq_bookmark{};
 };
 using ROP_REQUEST = rop_request;
 
 struct rop_response {
-	uint8_t rop_id;
+	rop_response() = default; /* Prevent use of direct-list-init */
+	virtual ~rop_response() = default;
+	uint8_t rop_id = 0;
 	// meaning dependent on rop_id (OutputHandleIndex, InputHandleIndex, ..)
-	uint8_t hindex;
-	uint32_t result;
+	uint8_t hindex = 0;
+	uint32_t result = 0;
 };
 using ROP_RESPONSE = rop_response;
 
@@ -1023,7 +1026,7 @@ using COPYTO_RESPONSE = PROBLEM_RESPONSE;
  */
 struct ROP_BUFFER {
 	uint16_t rhe_version = 0, rhe_flags = 0;
-	std::vector<rop_request *> rop_list;
+	std::vector<std::unique_ptr<rop_request>> rop_list;
 	uint8_t hnum = 0;
 	uint32_t *phandles = nullptr;
 };

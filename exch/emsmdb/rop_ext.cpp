@@ -1535,7 +1535,7 @@ pack_result rop_ext_push(EXT_PUSH &x, const PENDING_RESPONSE &r)
 	return x.p_uint16(r.session_index);
 }
 
-static pack_result rop_ext_pull(EXT_PULL &x, rop_request *&request)
+static pack_result rop_ext_pull(EXT_PULL &x, std::unique_ptr<rop_request> &request) try
 {
 	rop_request head;
 	auto ret = pack_result::success;
@@ -1548,11 +1548,9 @@ static pack_result rop_ext_pull(EXT_PULL &x, rop_request *&request)
 	
 #define H(rop, t) \
 	case (rop): { \
-		auto r0 = x.anew<t ## _REQUEST>(); \
-		request = r0; \
-		if (r0 == nullptr) \
-			return pack_result::alloc; \
+		auto r0 = std::make_unique<t ## _REQUEST>(); \
 		ret = rop_ext_pull(x, *r0); \
+		request = std::move(r0); \
 		break; \
 	}
 
@@ -1568,15 +1566,13 @@ static pack_result rop_ext_pull(EXT_PULL &x, rop_request *&request)
 	H(ropGetPerUserGuid, GETPERUSERGUID);
 	H(ropReadPerUserInformation, READPERUSERINFORMATION);
 	case ropWritePerUserInformation: {
-		auto r0 = x.anew<WRITEPERUSERINFORMATION_REQUEST>();
-		if (r0 == nullptr)
-			return EXT_ERR_ALLOC;
+		auto r0 = std::make_unique<WRITEPERUSERINFORMATION_REQUEST>();
 		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, head.logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
 		ret = rop_ext_pull(x, *r0, plogon->is_private());
-		request = r0;
+		request = std::move(r0);
 		break;
 	}
 	H(ropOpenFolder, OPENFOLDER);
@@ -1617,15 +1613,13 @@ static pack_result rop_ext_pull(EXT_PULL &x, rop_request *&request)
 	H(ropGetMessageStatus, GETMESSAGESTATUS);
 	H(ropSetReadFlags, SETREADFLAGS);
 	case ropSetMessageReadFlag: {
-		auto r0 = x.anew<SETMESSAGEREADFLAG_REQUEST>();
-		if (r0 == nullptr)
-			return EXT_ERR_ALLOC;
+		auto r0 = std::make_unique<SETMESSAGEREADFLAG_REQUEST>();
 		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, head.logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
 		ret = rop_ext_pull(x, *r0, plogon->is_private());
-		request = r0;
+		request = std::move(r0);
 		break;
 	}
 	H(ropOpenAttachment, OPENATTACHMENT);
@@ -1705,10 +1699,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, rop_request *&request)
 	case ropGetStreamSize:
 	case ropSynchronizationUploadStateStreamEnd:
 	case ropRelease: {
-		auto r0 = x.anew<rop_request>();
-		request = r0;
-		if (r0 == nullptr)
-			return pack_result::alloc;
+		request = std::make_unique<rop_request>();
 		break;
 	}
 	default:
@@ -1717,6 +1708,8 @@ static pack_result rop_ext_pull(EXT_PULL &x, rop_request *&request)
 	*request = std::move(head);
 	return ret;
 #undef H
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 /* not including ropNotify, ropPending, ropBackoff, ropBufferTooSmall */
@@ -1950,9 +1943,9 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 	subext.init(pbuff, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 	TRY(subext.g_uint16(&size));
 	while (subext.m_offset < size) try {
-		rop_request *rq = nullptr;
+		std::unique_ptr<rop_request> rq;
 		TRY(rop_ext_pull(subext, rq));
-		r.rop_list.push_back(rq);
+		r.rop_list.push_back(std::move(rq));
 	} catch (const std::bad_alloc &) {
 		return pack_result::alloc;
 	}

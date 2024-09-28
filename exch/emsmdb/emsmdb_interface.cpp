@@ -1109,19 +1109,13 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		emsmdb_interface_put_handle_notify_list(phandle);
 		return;
 	}
-	pnode->pdata = me_alloc<rop_response>();
-	if (NULL == pnode->pdata) {
-		emsmdb_interface_put_handle_notify_list(phandle);
-		free(pnode);
-		return;
-	}
 	auto nfr = notify_response::create(obj_handle, logon_id);
 	if (nfr == nullptr) {
 		emsmdb_interface_put_handle_notify_list(phandle);
-		free(pnode->pdata);
 		free(pnode);
 		return;
 	}
+	pnode->pdata = nfr;
 	nfr->rop_id = ropNotify;
 	nfr->hindex = 0; /* ignore by system */
 	nfr->result = 0; /* ignore by system */

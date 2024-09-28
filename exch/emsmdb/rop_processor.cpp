@@ -372,7 +372,7 @@ thread_local const char *g_last_rop_dir;
 
 static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
     uint32_t *pbuff_len, ROP_BUFFER *prop_buff, BOOL b_notify,
-    std::vector<rop_response *> &response_list) try
+    std::vector<std::unique_ptr<rop_response>> &response_list) try
 {
 	BOOL b_icsup;
 	BINARY tmp_bin;
@@ -408,7 +408,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	for (auto req_iter = prop_buff->rop_list.cbegin();
 	     req_iter != prop_buff->rop_list.cend(); ++req_iter) {
 		emsmdb_interface_set_rop_left(tmp_len - ext_push.m_offset);
-		const rop_request *req = *req_iter;
+		const rop_request *req = req_iter->get();
 		/*
 		 * One RPC may contain multiple ROPs and if one ROP fails,
 		 * subsequent ROPs may still be invoked, albeit with
@@ -418,7 +418,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		 *
 		 * Think of it as close(open("nonexisting",O_RDONLY));
 		 */
-		rop_response *rsp = nullptr;
+		std::unique_ptr<rop_response> rsp;
 		g_last_rop_dir = nullptr;
 		auto result = rop_dispatch(*req, rsp, prop_buff->phandles, prop_buff->hnum);
 		bool dbg = g_rop_debug >= 2;
@@ -472,7 +472,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		switch (status) {
 		case EXT_ERR_SUCCESS:
 			try {
-				response_list.push_back(rsp);
+				response_list.push_back(std::move(rsp));
 			} catch (const std::bad_alloc &) {
 				return ecServerOOM;
 			}
@@ -577,7 +577,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	 * to (rop_buff.)GETPROPERTIESSPECIFIC_REQUEST::pproptags, so watch
 	 * lifetime and destruction order.
 	 */
-	std::vector<rop_response *> response_list;
+	std::vector<std::unique_ptr<rop_response>> response_list;
 	
 	ext_pull.init(pin, cb_in, common_util_alloc, EXT_FLAG_UTF16);
 	switch (rop_ext_pull(ext_pull, rop_buff)) {
@@ -618,9 +618,10 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		*pcb_out = offset;
 		return ecSuccess;
 	}
-	auto prequest_mutable = static_cast<rop_request *>(rop_buff.rop_list.back());
+	auto prequest_mutable = static_cast<rop_request *>(rop_buff.rop_list.back().get());
 	auto prequest = static_cast<const rop_request *>(prequest_mutable);
-	auto presponse = static_cast<const rop_response *>(response_list.back());
+	auto presponse = static_cast<const rop_response *>(response_list.back().get());
+	auto tail_response_ropid = presponse->rop_id;
 
 	if (prequest->rop_id != presponse->rop_id) {
 		rop_ext_set_rhe_flag_last(pout, last_offset);
@@ -629,9 +630,10 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	}
 	rop_buff.rop_list[0] = std::move(rop_buff.rop_list.back());
 	rop_buff.rop_list.erase(rop_buff.rop_list.begin() + 1, rop_buff.rop_list.end());
+	auto holder_rsp = std::move(response_list.back()); // presponse stays valid
 	response_list.clear();
 	
-	if (presponse->rop_id == ropQueryRows) {
+	if (tail_response_ropid == ropQueryRows) {
 		auto req = static_cast<QUERYROWS_REQUEST *>(prequest_mutable);
 		auto rsp = static_cast<const QUERYROWS_RESPONSE *>(presponse);
 		if (req->flags == QUERY_ROWS_FLAGS_ENABLEPACKEDBUFFERS) {
@@ -660,7 +662,9 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 				break;
 			if (response_list.empty())
 				break;
-			presponse = static_cast<const rop_response *>(response_list.front());
+			holder_rsp = std::move(response_list.front());
+			response_list.erase(response_list.begin());
+			presponse = holder_rsp.get();
 			if (presponse->rop_id != ropQueryRows ||
 			    presponse->result != ecSuccess)
 				break;
@@ -668,7 +672,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			offset += tmp_cb;
 			count ++;
 		}
-	} else if (presponse->rop_id == ropReadStream &&
+	} else if (tail_response_ropid == ropReadStream &&
 	    !(flags & GROMOX_READSTREAM_NOCHAIN)) {
 		while (presponse->result == ecSuccess &&
 		       *pcb_out - offset >= 0x2000 && count < g_max_rop_payloads) {
@@ -683,7 +687,9 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 				break;
 			if (response_list.empty())
 				break;
-			presponse = static_cast<const rop_response *>(response_list.front());
+			holder_rsp = std::move(response_list.front());
+			response_list.erase(response_list.begin());
+			presponse = holder_rsp.get();
 			if (presponse->rop_id != ropReadStream ||
 			    presponse->result != ecSuccess)
 				break;
@@ -691,7 +697,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			offset += tmp_cb;
 			count ++;
 		}
-	} else if (presponse->rop_id == ropFastTransferSourceGetBuffer) {
+	} else if (tail_response_ropid == ropFastTransferSourceGetBuffer) {
 		while (presponse->result == ecSuccess &&
 		       *pcb_out - offset >= 0x2000 && count < g_max_rop_payloads) {
 			auto sgb = static_cast<const FASTTRANSFERSOURCEGETBUFFER_RESPONSE *>(presponse);
@@ -707,7 +713,9 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 				break;
 			if (response_list.empty())
 				break;
-			presponse = static_cast<const rop_response *>(response_list.front());
+			holder_rsp = std::move(response_list.front());
+			response_list.erase(response_list.begin());
+			presponse = holder_rsp.get();
 			if (presponse->rop_id != ropFastTransferSourceGetBuffer ||
 			    presponse->result != ecSuccess)
 				break;
