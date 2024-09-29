@@ -1819,7 +1819,7 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 	return TRUE;
 }
 
-static void oxcmail_remove_flag_propties(
+static void oxcmail_remove_flag_properties(
 	MESSAGE_CONTENT *pmsg, GET_PROPIDS get_propids)
 {
 	PROPID_ARRAY propids;
@@ -2564,7 +2564,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 				return imp_null;
 			std::swap(pmsg->children.prcpts, pmsg1->children.prcpts);
 			if (field_param.b_flag_del)
-				oxcmail_remove_flag_propties(pmsg1.get(), get_propids);
+				oxcmail_remove_flag_properties(pmsg1.get(), get_propids);
 			return pmsg1.release();
 		}
 	}
@@ -2598,7 +2598,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 					return imp_null;
 				std::swap(pmsg->children.prcpts, pmsg1->children.prcpts);
 				if (field_param.b_flag_del)
-					oxcmail_remove_flag_propties(pmsg1.get(), get_propids);
+					oxcmail_remove_flag_properties(pmsg1.get(), get_propids);
 				return pmsg1.release();
 			}
 		}
@@ -2767,7 +2767,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			return imp_null;
 	}
 	if (field_param.b_flag_del)
-		oxcmail_remove_flag_propties(pmsg.get(), std::move(get_propids));
+		oxcmail_remove_flag_properties(pmsg.get(), std::move(get_propids));
 	return pmsg.release();
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2182: ENOMEM");
