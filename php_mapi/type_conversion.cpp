@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -1622,7 +1622,6 @@ ec_error_t php_to_propname_array(zval *pzval_names, zval *pzval_guids,
     PROPNAME_ARRAY *ppropnames)
 {
 	int i;
-	zval *guidentry;
 	HashTable *pnameshash;
 	static const GUID guid_appointment = {0x00062002, 0x0000, 0x0000,
 			{0xC0, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
@@ -1652,10 +1651,12 @@ ec_error_t php_to_propname_array(zval *pzval_names, zval *pzval_guids,
 		zend_hash_internal_pointer_reset_ex(pguidhash, &ghpos);
 	for (i=0; i<ppropnames->count; i++) {
 		auto entry = zend_hash_get_current_data_ex(pnameshash, &thpos);
+		zval *guidentry = nullptr;
 		if (pguidhash != nullptr)
 			guidentry = zend_hash_get_current_data_ex(pguidhash, &ghpos);
 		ppropnames->ppropname[i].guid = guid_appointment;
-		if (pguidhash != nullptr && Z_TYPE_P(guidentry) == IS_STRING &&
+		if (pguidhash != nullptr && guidentry != nullptr &&
+		    Z_TYPE_P(guidentry) == IS_STRING &&
 		    Z_STRLEN_P(guidentry) == sizeof(GUID))
 			memcpy(&ppropnames->ppropname[i].guid, Z_STRVAL_P(guidentry), sizeof(GUID));
 		switch (Z_TYPE_P(entry)) {
