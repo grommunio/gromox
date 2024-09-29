@@ -193,9 +193,9 @@ uint16_t gi_resolve_namedprop(const PROPERTY_XNAME &xpn_req)
 	PROPID_ARRAY pid_rsp{};
 	if (!exmdb_client::get_named_propids(g_storedir, TRUE, &pna_req, &pid_rsp))
 		throw YError("PF-1047: request to server for propname mapping failed");
-	if (pid_rsp.count != 1)
+	if (pid_rsp.size() != 1)
 		throw YError("PF-1048");
-	return pid_rsp.ppropid[0];
+	return pid_rsp[0];
 }
 
 int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t change_num)

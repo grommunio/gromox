@@ -51,7 +51,7 @@ static BOOL ee_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 		return false;
 	ids->count = names->count;
 	for (size_t i = 0; i < names->count; ++i)
-		ids->ppropid[i] = static_namedprop_map.emplace(0, names->ppropname[i]);
+		(*ids)[i] = static_namedprop_map.emplace(0, names->ppropname[i]);
 	return TRUE;
 }
 

@@ -23,7 +23,7 @@ static uint32_t propid_elist(const char *dir)
 		return 0;
 	if (pia.size() != 1)
 		return 0;
-	return PROP_TAG(PT_MV_LONG, pia.ppropid[0]);
+	return PROP_TAG(PT_MV_LONG, pia[0]);
 }
 
 static int askfor(const char *dir, uint64_t folder_id, uint32_t elist_tag,

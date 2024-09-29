@@ -633,11 +633,11 @@ static errno_t resolvename(const GUID &guid, const char *name, bool create,
 	PROPID_ARRAY name_rsp{};
 	if (!exmdb_client::get_named_propids(g_storedir, create, &name_req, &name_rsp))
 		return EINVAL;
-	if (name_rsp.count != name_req.count)
+	if (name_rsp.size() != name_req.size())
 		return EINVAL;
-	if (name_rsp.ppropid[0] == 0)
+	if (name_rsp[0] == 0)
 		return ENOENT;
-	*out = name_rsp.ppropid[0];
+	*out = name_rsp[0];
 	return 0;
 }
 

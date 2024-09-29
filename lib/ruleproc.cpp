@@ -240,7 +240,7 @@ static void rx_npid_transform(TPROPVAL_ARRAY &props,
 		auto it = std::find(src.begin(), src.end(), PROP_ID(oldtag));
 		if (it == src.end())
 			continue;
-		props.ppropval[i].proptag = PROP_TAG(PROP_TYPE(oldtag), dst.ppropid[it-src.begin()]);
+		props.ppropval[i].proptag = PROP_TAG(PROP_TYPE(oldtag), dst[it - src.begin()]);
 	}
 }
 
@@ -284,7 +284,7 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 			par.cur.dirc());
 		return ecRpcFailed;
 	}
-	if (src_name_arr.count != src_id_arr.count) {
+	if (src_name_arr.size() != src_id_arr.size()) {
 		mlog(LV_ERR, "ruleproc: np(src) counts are fishy");
 		return ecError;
 	}
@@ -293,7 +293,7 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 		mlog(LV_DEBUG, "ruleproc: get_named_propids(%s) failed", newdir);
 		return ecRpcFailed;
 	}
-	if (dst_id_arr.count != src_name_arr.count) {
+	if (dst_id_arr.size() != src_name_arr.size()) {
 		mlog(LV_ERR, "ruleproc: np(dst) counts are fishy");
 		return ecError;
 	}
@@ -948,8 +948,8 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 	for (auto t : rmprops)
 		prop.erase(t);
 	static constexpr uint32_t v_busy = olBusy;
-	if (prop.set(PROP_TAG(PT_LONG, propids.ppropid[l_response_status]), deconst(&accept_type)) != 0 ||
-	    prop.set(PROP_TAG(PT_LONG, propids.ppropid[l_busy_status]), deconst(&v_busy)) != 0 ||
+	if (prop.set(PROP_TAG(PT_LONG, propids[l_response_status]), deconst(&accept_type)) != 0 ||
+	    prop.set(PROP_TAG(PT_LONG, propids[l_busy_status]), deconst(&v_busy)) != 0 ||
 	    prop.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
 		return ecError;
 	uint64_t cal_mid = 0, cal_cn = 0;
@@ -982,14 +982,14 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	auto &rsp_prop = rsp_ctnt->proplist;
 	static const uint32_t copytags_1[] = {
 		/* OXOCAL §3.1.4.8.4 */
-		PROP_TAG(PT_UNICODE, propids.ppropid[l_location]),
-		PROP_TAG(PT_UNICODE, propids.ppropid[l_where]),
-		PROP_TAG(PT_LONG, propids.ppropid[l_appt_seq]),
-		PROP_TAG(PT_SYSTIME, propids.ppropid[l_ownercritchg]),
-		PROP_TAG(PT_SYSTIME, propids.ppropid[l_start_whole]),
-		PROP_TAG(PT_SYSTIME, propids.ppropid[l_end_whole]),
-		PROP_TAG(PT_BINARY, propids.ppropid[l_goid]),
-		PROP_TAG(PT_BOOLEAN, propids.ppropid[l_is_exception]),
+		PROP_TAG(PT_UNICODE, propids[l_location]),
+		PROP_TAG(PT_UNICODE, propids[l_where]),
+		PROP_TAG(PT_LONG, propids[l_appt_seq]),
+		PROP_TAG(PT_SYSTIME, propids[l_ownercritchg]),
+		PROP_TAG(PT_SYSTIME, propids[l_start_whole]),
+		PROP_TAG(PT_SYSTIME, propids[l_end_whole]),
+		PROP_TAG(PT_BINARY, propids[l_goid]),
+		PROP_TAG(PT_BOOLEAN, propids[l_is_exception]),
 		PR_START_DATE, PR_END_DATE, PR_OWNER_APPT_ID, PR_SENSITIVITY,
 		PR_ICON_INDEX,
 		/* Our stuff */
@@ -998,12 +998,12 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	};
 	static const uint32_t copytags_2[] = {
 		/* OXOCAL §3.1.4.8.4 */
-		PROP_TAG(PT_BINARY, propids.ppropid[l_tzstruct]),
-		PROP_TAG(PT_BINARY, propids.ppropid[l_apptrecur]),
-		PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefrecur]),
-		PROP_TAG(PT_BOOLEAN, propids.ppropid[l_is_recurring]),
-		PROP_TAG(PT_LONG, propids.ppropid[l_tz]),
-		PROP_TAG(PT_UNICODE, propids.ppropid[l_tzdesc]),
+		PROP_TAG(PT_BINARY, propids[l_tzstruct]),
+		PROP_TAG(PT_BINARY, propids[l_apptrecur]),
+		PROP_TAG(PT_BINARY, propids[l_tzdefrecur]),
+		PROP_TAG(PT_BOOLEAN, propids[l_is_recurring]),
+		PROP_TAG(PT_LONG, propids[l_tz]),
+		PROP_TAG(PT_UNICODE, propids[l_tzdesc]),
 	};
 	for (const auto propid : copytags_1) {
 		auto v = rq_prop.getval(propid);
@@ -1030,7 +1030,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 			return ecMAPIOOM;
 	}
 	auto nt_time = rop_util_current_nttime();
-	if (rsp_prop.set(PROP_TAG(PT_SYSTIME, propids.ppropid[l_attendeecritchg]), &nt_time) != 0)
+	if (rsp_prop.set(PROP_TAG(PT_SYSTIME, propids[l_attendeecritchg]), &nt_time) != 0)
 		return ecMAPIOOM;
 	auto rcpts = tarray_set_init();
 	if (rcpts == nullptr)
@@ -1092,7 +1092,7 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 {
 	/* Reject recurring requests right away if so configured */
 	auto &rq_prop = par.ctnt->proplist;
-	auto recurring_ptr = rq_prop.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[l_recurring]));
+	auto recurring_ptr = rq_prop.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_recurring]));
 	auto recurring_flg = recurring_ptr != nullptr && *recurring_ptr != 0;
 	if (recurring_flg && policy.decline_recurring) {
 		auto err = mr_send_response(par, recurring_flg, propids, respDeclined);

@@ -152,56 +152,56 @@ bool store_object::primary_mode() const
 
 BOOL store_object::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {
-	int i;
+	auto &propids = *ppropids;
 	PROPID_ARRAY tmp_propids;
 	PROPNAME_ARRAY tmp_propnames;
 	
-	if (0 == ppropids->count) {
+	if (propids.empty()) {
 		ppropnames->count = 0;
 		return TRUE;
 	}
-	auto pindex_map = cu_alloc<int>(ppropids->count);
+	auto pindex_map = cu_alloc<int>(propids.size());
 	if (pindex_map == nullptr)
 		return FALSE;
-	ppropnames->ppropname = cu_alloc<PROPERTY_NAME>(ppropids->count);
+	ppropnames->ppropname = cu_alloc<PROPERTY_NAME>(propids.size());
 	if (ppropnames->ppropname == nullptr)
 		return FALSE;
-	ppropnames->count = ppropids->count;
+	ppropnames->count = propids.size();
 	tmp_propids.count = 0;
-	tmp_propids.ppropid = cu_alloc<uint16_t>(ppropids->count);
+	tmp_propids.ppropid = cu_alloc<uint16_t>(propids.size());
 	if (tmp_propids.ppropid == nullptr)
 		return FALSE;
 	auto pstore = this;
-	for (i=0; i<ppropids->count; i++) {
-		if (!is_nameprop_id(ppropids->ppropid[i])) {
+	for (size_t i = 0; i < propids.size(); ++i) {
+		if (!is_nameprop_id(propids[i])) {
 			ppropnames->ppropname[i].guid = PS_MAPI;
 			ppropnames->ppropname[i].kind = MNID_ID;
-			ppropnames->ppropname[i].lid = ppropids->ppropid[i];
+			ppropnames->ppropname[i].lid = propids[i];
 			pindex_map[i] = i;
 			continue;
 		}
-		auto iter = propid_hash.find(ppropids->ppropid[i]);
+		auto iter = propid_hash.find(propids[i]);
 		if (iter != propid_hash.end()) {
 			pindex_map[i] = i;
 			ppropnames->ppropname[i] = static_cast<PROPERTY_NAME>(iter->second);
 		} else {
-			tmp_propids.ppropid[tmp_propids.count++] = ppropids->ppropid[i];
-			pindex_map[i] = -tmp_propids.count;
+			tmp_propids.push_back(propids[i]);
+			pindex_map[i] = -static_cast<int>(tmp_propids.size());
 		}
 	}
-	if (tmp_propids.count == 0)
+	if (tmp_propids.empty())
 		return TRUE;
 	if (!exmdb_client::get_named_propnames(pstore->dir, &tmp_propids,
 	    &tmp_propnames) || tmp_propnames.size() != tmp_propids.size())
 		return FALSE;	
-	for (i=0; i<ppropids->count; i++) {
+	for (size_t i = 0; i < propids.size(); ++i) {
 		if (pindex_map[i] >= 0)
 			continue;
 		ppropnames->ppropname[i] = tmp_propnames.ppropname[-pindex_map[i]-1];
 		if (ppropnames->ppropname[i].kind == MNID_ID ||
 		    ppropnames->ppropname[i].kind == MNID_STRING)
 			store_object_cache_propname(pstore,
-				ppropids->ppropid[i], ppropnames->ppropname + i);
+				propids[i], ppropnames->ppropname + i);
 	}
 	return TRUE;
 }
@@ -236,6 +236,7 @@ static BOOL store_object_get_named_propid(store_object *pstore,
 BOOL store_object::get_named_propids(BOOL b_create,
     const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids)
 {
+	auto &propids = *ppropids;
 	int i;
 	PROPID_ARRAY tmp_propids;
 	PROPNAME_ARRAY tmp_propnames;
@@ -258,21 +259,21 @@ BOOL store_object::get_named_propids(BOOL b_create,
 	auto pstore = this;
 	for (i=0; i<ppropnames->count; i++) {
 		if (ppropnames->ppropname[i].guid == PS_MAPI) {
-			ppropids->ppropid[i] = ppropnames->ppropname[i].kind == MNID_ID ?
+			propids[i] = ppropnames->ppropname[i].kind == MNID_ID ?
 			                       ppropnames->ppropname[i].lid : 0;
 			pindex_map[i] = i;
 			continue;
 		}
 		char ps[NP_STRBUF_SIZE];
 		if (!propname_to_packed(ppropnames->ppropname[i], ps, std::size(ps))) {
-			ppropids->ppropid[i] = 0;
+			propids[i] = 0;
 			pindex_map[i] = i;
 			continue;
 		}
 		auto iter = propname_hash.find(ps);
 		if (iter != propname_hash.end()) {
 			pindex_map[i] = i;
-			ppropids->ppropid[i] = iter->second;
+			propids[i] = iter->second;
 		} else {
 			tmp_propnames.ppropname[tmp_propnames.count++] = ppropnames->ppropname[i];
 			pindex_map[i] = -tmp_propnames.count;
@@ -287,10 +288,10 @@ BOOL store_object::get_named_propids(BOOL b_create,
 	for (i=0; i<ppropnames->count; i++) {
 		if (pindex_map[i] >= 0)
 			continue;
-		ppropids->ppropid[i] = tmp_propids.ppropid[-pindex_map[i]-1];
-		if (ppropids->ppropid[i] != 0)
+		propids[i] = tmp_propids[-pindex_map[i]-1];
+		if (propids[i] != 0)
 			store_object_cache_propname(pstore,
-				ppropids->ppropid[i], ppropnames->ppropname + i);
+				propids[i], ppropnames->ppropname + i);
 	}
 	return TRUE;
 }

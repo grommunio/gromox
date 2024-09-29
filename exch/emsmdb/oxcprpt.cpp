@@ -529,25 +529,25 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 		uint16_t propid = PROP_ID(proptags.pproptag[i]);
 		if (!is_nameprop_id(propid))
 			continue;
-		propids.ppropid[propids.count++] = propid;
+		propids.push_back(propid);
 	}
-	if (0 == propids.count) {
+	if (propids.empty()) {
 		ppropidnames->count = 0;
 		ppropidnames->ppropid = NULL;
 		ppropidnames->ppropname = NULL;
 		return ecSuccess;
 	}
 	ppropidnames->count = 0;
-	ppropidnames->ppropid = cu_alloc<uint16_t>(propids.count);
+	ppropidnames->ppropid = cu_alloc<uint16_t>(propids.size());
 	if (ppropidnames->ppropid == nullptr)
 		return ecServerOOM;
-	ppropidnames->ppropname = cu_alloc<PROPERTY_NAME>(propids.count);
+	ppropidnames->ppropname = cu_alloc<PROPERTY_NAME>(propids.size());
 	if (ppropidnames->ppropid == nullptr)
 		return ecServerOOM;
 	if (!plogon->get_named_propnames(&propids, &propnames) ||
 	    propnames.size() != propids.size())
 		return ecError;
-	for (unsigned int i = 0; i < propids.count; ++i) {
+	for (unsigned int i = 0; i < propids.size(); ++i) {
 		if (propnames.ppropname[i].kind == KIND_NONE)
 			continue;
 		if (pguid != nullptr && *pguid != propnames.ppropname[i].guid)
@@ -558,7 +558,7 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 		if ((query_flags & QUERY_FLAG_NOIDS) &&
 		    ppropidnames->ppropname[i].kind == MNID_ID)
 			continue;
-		ppropidnames->ppropid[ppropidnames->count] = propids.ppropid[i];
+		ppropidnames->ppropid[ppropidnames->count] = propids[i];
 		ppropidnames->ppropname[ppropidnames->count++] = ppropidnames->ppropname[i];
 	}
 	return ecSuccess;

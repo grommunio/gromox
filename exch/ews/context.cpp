@@ -522,9 +522,10 @@ uint16_t EWSContext::getNamedPropId(const std::string& dir, const PROPERTY_NAME&
 {
 	PROPNAME_ARRAY propNames{1, deconst(&propName)};
 	PROPID_ARRAY namedIds{};
-	if(!m_plugin.exmdb.get_named_propids(dir.c_str(), create? TRUE : false, &propNames, &namedIds) || namedIds.count != 1)
+	if (!m_plugin.exmdb.get_named_propids(dir.c_str(), create ? TRUE : false,
+	    &propNames, &namedIds) || namedIds.size() != 1)
 		throw DispatchError(E3246);
-	return *namedIds.ppropid;
+	return namedIds[0];
 }
 
 /**
@@ -561,7 +562,7 @@ void EWSContext::getNamedTags(const std::string& dir, sShape& shape, bool create
 	if(propNames.count == 0)
 		return;
 	PROPID_ARRAY namedIds = getNamedPropIds(dir, propNames, create);
-	if(namedIds.count != propNames.count)
+	if (namedIds.size() != propNames.size())
 		return;
 	shape.namedProperties(namedIds);
 	shape.store = dir;
@@ -1234,7 +1235,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	propname_buff[0].lid = PidLidExceptionReplaceTime;
 	propnames.ppropname = propname_buff;
 	PROPID_ARRAY namedids = getNamedPropIds(dir, propnames, true);
-	auto ex_replace_time_tag = PROP_TAG(PT_SYSTIME, namedids.ppropid[0]);
+	auto ex_replace_time_tag = PROP_TAG(PT_SYSTIME, namedids[0]);
 	TPROPVAL_ARRAY props;
 	PROPTAG_ARRAY tags = shape.proptags();
 	tags.emplace_back(ex_replace_time_tag);

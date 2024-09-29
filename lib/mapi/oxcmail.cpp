@@ -1799,15 +1799,15 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 	if (propnames.ppropname == nullptr)
 		return FALSE;
 	for (const auto &pair : phash) {
-		propids.ppropid[propids.count++] = pair.first;
+		propids.push_back(pair.first);
 		propnames.ppropname[propnames.count++] = pair.second;
 	}
 	if (!get_propids(&propnames, &propids1) ||
 	    propids1.size() != propnames.size())
 		return FALSE;
 	propididmap_t phash1;
-	for (size_t i = 0; i < propids.count; ++i) try {
-		phash1.emplace(propids.ppropid[i], propids1.ppropid[i]);
+	for (size_t i = 0; i < propids.size(); ++i) try {
+		phash1.emplace(propids[i], propids1[i]);
 	} catch (const std::bad_alloc &) {
 	}
 	oxcmail_replace_propid(&pmsg->proplist, phash1);
@@ -2767,7 +2767,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		if (!get_propids(&propnames, &propids) || propids.size() != 1)
 			return imp_null;
 		uint8_t tmp_byte = 1;
-		if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]), &tmp_byte) != 0)
+		if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, propids[0]), &tmp_byte) != 0)
 			return imp_null;
 	}
 	if (field_param.b_flag_del)

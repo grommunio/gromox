@@ -968,9 +968,9 @@ void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& c
 		PROPERTY_NAME photo = {MNID_STRING, PSETID_Gromox, 0, deconst("photo")};
 		PROPNAME_ARRAY propNames{1, &photo};
 		PROPID_ARRAY propIds = ctx.getNamedPropIds(dir, propNames);
-		if(propIds.count != 1)
+		if (propIds.size() != 1)
 			throw std::runtime_error("failed to get photo property id");
-		uint32_t tag = PROP_TAG(PT_BINARY, *propIds.ppropid);
+		uint32_t tag = PROP_TAG(PT_BINARY, propIds[0]);
 		PROPTAG_ARRAY tags{1, &tag};
 		TPROPVAL_ARRAY props;
 		ctx.plugin().exmdb.get_store_properties(dir.c_str(), CP_ACP, &tags, & props);

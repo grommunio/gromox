@@ -2038,9 +2038,9 @@ void *cu_read_storenamedprop(const char *dir, const GUID &guid,
 	const PROPNAME_ARRAY name_req = {1, deconst(&xn)};
 	PROPID_ARRAY name_rsp{};
 	if (!exmdb_client::get_named_propids(dir, false, &name_req, &name_rsp) ||
-	    name_rsp.count != name_req.count || name_rsp.ppropid[0] == 0)
+	    name_rsp.size() != name_req.size() || name_rsp[0] == 0)
 		return nullptr;
-	uint32_t proptag = PROP_TAG(proptype, name_rsp.ppropid[0]);
+	uint32_t proptag = PROP_TAG(proptype, name_rsp[0]);
 	const PROPTAG_ARRAY tags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY values{};
 	if (!exmdb_client::get_store_properties(dir, CP_ACP, &tags, &values))
@@ -2057,9 +2057,9 @@ errno_t cu_write_storenamedprop(const char *dir, const GUID &guid,
 	const PROPNAME_ARRAY name_req = {1, deconst(&xn)};
 	PROPID_ARRAY name_rsp{};
 	if (!exmdb_client::get_named_propids(dir, true, &name_req, &name_rsp) ||
-	    name_rsp.count != name_req.count || name_rsp.ppropid[0] == 0)
+	    name_rsp.size() != name_req.size() || name_rsp[0] == 0)
 		return EINVAL;
-	TAGGED_PROPVAL pv = {PROP_TAG(proptype, name_rsp.ppropid[0])};
+	TAGGED_PROPVAL pv = {PROP_TAG(proptype, name_rsp[0])};
 	BINARY bin;
 	if (proptype == PT_BINARY) {
 		bin.cb = size;

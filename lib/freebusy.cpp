@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <vector>
 #include <fmt/core.h>
@@ -40,21 +40,20 @@ freebusy_tags::freebusy_tags(const char *dir)
 	const PROPNAME_ARRAY propnames = {std::size(propname_buff), deconst(propname_buff)};
 	PROPID_ARRAY ids;
 	if (exmdb_client::get_named_propids(dir, false, &propnames, &ids) &&
-	    ids.count == propnames.count) {
-
-		apptstartwhole = PROP_TAG(PT_SYSTIME, ids.ppropid[0]);
-		apptendwhole   = PROP_TAG(PT_SYSTIME, ids.ppropid[1]);
-		busystatus     = PROP_TAG(PT_LONG,    ids.ppropid[2]);
-		recurring      = PROP_TAG(PT_BOOLEAN, ids.ppropid[3]);
-		apptrecur      = PROP_TAG(PT_BINARY,  ids.ppropid[4]);
-		apptsubtype    = PROP_TAG(PT_BOOLEAN, ids.ppropid[5]);
-		private_flag   = PROP_TAG(PT_BOOLEAN, ids.ppropid[6]);
-		apptstateflags = PROP_TAG(PT_LONG,    ids.ppropid[7]);
-		clipend        = PROP_TAG(PT_SYSTIME, ids.ppropid[8]);
-		location       = PROP_TAG(PT_UNICODE, ids.ppropid[9]);
-		reminderset    = PROP_TAG(PT_BOOLEAN, ids.ppropid[10]);
-		globalobjectid = PROP_TAG(PT_BINARY,  ids.ppropid[11]);
-		timezonestruct = PROP_TAG(PT_BINARY,  ids.ppropid[12]);
+	    ids.size() == propnames.size()) {
+		apptstartwhole = PROP_TAG(PT_SYSTIME, ids[0]);
+		apptendwhole   = PROP_TAG(PT_SYSTIME, ids[1]);
+		busystatus     = PROP_TAG(PT_LONG,    ids[2]);
+		recurring      = PROP_TAG(PT_BOOLEAN, ids[3]);
+		apptrecur      = PROP_TAG(PT_BINARY,  ids[4]);
+		apptsubtype    = PROP_TAG(PT_BOOLEAN, ids[5]);
+		private_flag   = PROP_TAG(PT_BOOLEAN, ids[6]);
+		apptstateflags = PROP_TAG(PT_LONG,    ids[7]);
+		clipend        = PROP_TAG(PT_SYSTIME, ids[8]);
+		location       = PROP_TAG(PT_UNICODE, ids[9]);
+		reminderset    = PROP_TAG(PT_BOOLEAN, ids[10]);
+		globalobjectid = PROP_TAG(PT_BINARY,  ids[11]);
+		timezonestruct = PROP_TAG(PT_BINARY,  ids[12]);
 	}
 }
 

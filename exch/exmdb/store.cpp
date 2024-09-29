@@ -64,7 +64,7 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 		return FALSE;
 	ppropids->count = 0;
 	while (pstmt.step() == SQLITE_ROW)
-		ppropids->ppropid[ppropids->count++] = sqlite3_column_int64(pstmt, 0);
+		ppropids->push_back(pstmt.col_int64(0));
 	return TRUE;
 }
 
@@ -492,11 +492,11 @@ BOOL exmdb_server::check_contact_address(const char *dir,
 	propname_buff[1].lid = PidLidEmail2EmailAddress;
 	propname_buff[2].lid = PidLidEmail3EmailAddress;
 	if (!common_util_get_named_propids(pdb->psqlite,
-	    false, &propnames, &propids) || 3 != propids.count)
+	    false, &propnames, &propids) || propids.size() != 3)
 		return FALSE;	
-	proptags[0] = PROP_TAG(PT_UNICODE, propids.ppropid[0]);
-	proptags[1] = PROP_TAG(PT_UNICODE, propids.ppropid[1]);
-	proptags[2] = PROP_TAG(PT_UNICODE, propids.ppropid[2]);
+	proptags[0] = PROP_TAG(PT_UNICODE, propids[0]);
+	proptags[1] = PROP_TAG(PT_UNICODE, propids[1]);
+	proptags[2] = PROP_TAG(PT_UNICODE, propids[2]);
 	auto pstmt1 = pdb->prep("SELECT folder_id"
 	              " FROM folders WHERE parent_id=?");
 	if (pstmt1 == nullptr)

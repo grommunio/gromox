@@ -2313,8 +2313,8 @@ static ZEND_FUNCTION(mapi_getidsfromnames)
 	if (result != ecSuccess)
 		pthrow(result);
 	zarray_init(return_value);
-	for (unsigned int i = 0; i < propids.count; ++i)
-		add_next_index_long(return_value, PROP_TAG(PT_UNSPECIFIED, propids.ppropid[i]));
+	for (unsigned int i = 0; i < propids.size(); ++i)
+		add_next_index_long(return_value, PROP_TAG(PT_UNSPECIFIED, propids[i]));
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -2783,7 +2783,7 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 	if (NULL == propids.ppropid)
 		pthrow(ecMAPIOOM);
 	for (unsigned int i = 0; i < proptags.count; ++i)
-		propids.ppropid[i] = PROP_ID(proptags.pproptag[i]);
+		propids[i] = PROP_ID(proptags.pproptag[i]);
 	auto result = zclient_getpropnames(
 		pstore->hsession, pstore->hobject,
 		&propids, &propnames);

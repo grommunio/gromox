@@ -1015,7 +1015,7 @@ PROPNAME_ARRAY sShape::namedProperties() const
  */
 bool sShape::namedProperties(const PROPID_ARRAY& ids)
 {
-	if(ids.count != names.size()) //Abort if sizes don't match
+	if (ids.size() != names.size()) // Abort if sizes do not match
 		return false;
 	size_t namedAdd = 0, namedRm = 0;
 	for(uint32_t tag : namedTags) {//Remove all named tags
@@ -1030,7 +1030,7 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 	if(dTags.size() >=namedRm)
 		dTags.resize(dTags.size()-namedRm);//Truncate named IDs
 	for(size_t index = 0; index < names.size(); ++index) { //Add named IDs
-		uint32_t tag = PROP_TAG(PROP_TYPE(namedTags[index]), ids.ppropid[index]);
+		uint32_t tag = PROP_TAG(PROP_TYPE(namedTags[index]), ids[index]);
 		namedTags[index] = tag;
 		if(!PROP_ID(tag))
 			continue;

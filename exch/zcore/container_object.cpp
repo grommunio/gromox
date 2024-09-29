@@ -140,7 +140,7 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	    propids.size() != propnames.size() || propids.size() != 9)
 		return FALSE;
 	for (size_t i = 0; i < 9; ++i)
-		pproptags->pproptag[i] = PROP_TAG(PT_UNICODE, propids.ppropid[i]);
+		pproptags->pproptag[i] = PROP_TAG(PT_UNICODE, propids[i]);
 	pproptags->count = 9;
 	return TRUE;
 }

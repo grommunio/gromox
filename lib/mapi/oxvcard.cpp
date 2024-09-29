@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -705,7 +705,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 		propid = PROP_ID(proptag);
 		if (!is_nameprop_id(propid))
 			continue;
-		proptag = propids.ppropid[propid - 0x8000];
+		proptag = propids[propid - 0x8000];
 		pmsg->proplist.ppropval[i].proptag =
 			PROP_TAG(PROP_TYPE(pmsg->proplist.ppropval[i].proptag), proptag);
 	}
@@ -775,7 +775,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	
 	for (size_t i = 0; i < std::size(g_email_proptags); ++i) {
 		propid = PROP_ID(g_email_proptags[i]);
-		proptag = PROP_TAG(PROP_TYPE(g_email_proptags[i]), propids.ppropid[propid - 0x8000]);
+		proptag = PROP_TAG(PROP_TYPE(g_email_proptags[i]), propids[propid - 0x8000]);
 		pvalue = pmsg->proplist.get<char>(proptag);
 		if (pvalue == nullptr)
 			continue;
@@ -837,7 +837,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	adr_line->append_param("TYPE", "WORK");
 	for (size_t i = 0; i < std::size(g_workaddr_proptags); ++i) {
 		propid = PROP_ID(g_workaddr_proptags[i]);
-		proptag = PROP_TAG(PROP_TYPE(g_workaddr_proptags[i]), propids.ppropid[propid - 0x8000]);
+		proptag = PROP_TAG(PROP_TYPE(g_workaddr_proptags[i]), propids[propid - 0x8000]);
 		pvalue = pmsg->proplist.get<char>(proptag);
 		if (pvalue == nullptr)
 			continue;
@@ -891,7 +891,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	}
 	
 	propid = PROP_ID(g_categories_proptag);
-	proptag = PROP_TAG(PROP_TYPE(g_categories_proptag), propids.ppropid[propid - 0x8000]);
+	proptag = PROP_TAG(PROP_TYPE(g_categories_proptag), propids[propid - 0x8000]);
 	saval = pmsg->proplist.get<STRING_ARRAY>(proptag);
 	if (saval != nullptr) {
 		auto &cat_line = vcard.append_line("CATEGORIES");
@@ -921,7 +921,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	}
 	
 	propid = PROP_ID(g_bcd_proptag);
-	proptag = PROP_TAG(PROP_TYPE(g_bcd_proptag), propids.ppropid[propid - 0x8000]);
+	proptag = PROP_TAG(PROP_TYPE(g_bcd_proptag), propids[propid - 0x8000]);
 	pvalue = pmsg->proplist.get<char>(proptag);
 	if (pvalue != nullptr) {
 		vcard.append_line("X-MS-OL-DESIGN", pvalue);
@@ -934,7 +934,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	
 	for (size_t i = 0; i < std::size(g_ufld_proptags); ++i) {
 		propid = PROP_ID(g_ufld_proptags[i]);
-		proptag = PROP_TAG(PROP_TYPE(g_ufld_proptags[i]), propids.ppropid[propid - 0x8000]);
+		proptag = PROP_TAG(PROP_TYPE(g_ufld_proptags[i]), propids[propid - 0x8000]);
 		pvalue = pmsg->proplist.get<char>(proptag);
 		if (pvalue == nullptr)
 			continue;
@@ -971,7 +971,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 		as_line.append_value(pvalue);
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids.ppropid[PROP_ID(g_vcarduid_proptag)-0x8000]));
+	pvalue = pmsg->proplist.get<char>(PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids[PROP_ID(g_vcarduid_proptag)-0x8000]));
 	if (pvalue == nullptr) {
 		auto guid = GUID::random_new();
 		vcarduid = "uuid:" + bin2hex(&guid, sizeof(guid));
@@ -982,7 +982,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	}
 
 	propid = PROP_ID(g_fbl_proptag);
-	proptag = PROP_TAG(PROP_TYPE(g_fbl_proptag), propids.ppropid[propid - 0x8000]);
+	proptag = PROP_TAG(PROP_TYPE(g_fbl_proptag), propids[propid - 0x8000]);
 	pvalue = pmsg->proplist.get<char>(proptag);
 	if (pvalue != nullptr) {
 		vcard.append_line("FBURL", pvalue);
@@ -1012,7 +1012,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	vcard.append_line("TITLE", pvalue);
 	
 	propid = PROP_ID(g_im_proptag);
-	proptag = PROP_TAG(PROP_TYPE(g_im_proptag), propids.ppropid[propid - 0x8000]);
+	proptag = PROP_TAG(PROP_TYPE(g_im_proptag), propids[propid - 0x8000]);
 	pvalue = pmsg->proplist.get<char>(proptag);
 	vcard.append_line("X-MS-IMADDRESS", pvalue);
 	

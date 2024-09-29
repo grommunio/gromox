@@ -4848,6 +4848,7 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids)
 {
+	auto &propids = *ppropids;
 	char sql_string[128];
 	
 	ppropids->ppropid = cu_alloc<uint16_t>(ppropnames->count);
@@ -4889,19 +4890,19 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 			break;
 		case MNID_STRING:
 			if (strlen(ppropnames->ppropname[i].pname) >= 1024) {
-				ppropids->ppropid[i] = 0;
+				propids[i] = 0;
 				continue;
 			}
 			name_string = "GUID="s + guid_string + ",NAME=" +
 			              ppropnames->ppropname[i].pname;
 			break;
 		default:
-			ppropids->ppropid[i] = 0;
+			propids[i] = 0;
 			continue;
 		}
 		sqlite3_bind_text(pstmt, 1, name_string.c_str(), -1, SQLITE_STATIC);
 		if (pstmt.step() == SQLITE_ROW) {
-			ppropids->ppropid[i] = sqlite3_column_int64(pstmt, 0);
+			propids[i] = sqlite3_column_int64(pstmt, 0);
 			sqlite3_reset(pstmt);
 			continue;
 		}
@@ -4910,10 +4911,10 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 			sqlite3_bind_text(pstmt1, 1, name_string.c_str(), -1, SQLITE_STATIC);
 			if (pstmt1.step() != SQLITE_DONE)
 				return FALSE;
-			ppropids->ppropid[i] = sqlite3_last_insert_rowid(psqlite);
+			propids[i] = sqlite3_last_insert_rowid(psqlite);
 			sqlite3_reset(pstmt1);
 		} else {
-			ppropids->ppropid[i] = 0;
+			propids[i] = 0;
 		}
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1503: ENOMEM");
@@ -4925,20 +4926,20 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {
-	int i;
+	auto &propids = *ppropids;
 	char *ptoken;
 	char temp_name[1024];
 	
-	ppropnames->ppropname = cu_alloc<PROPERTY_NAME>(ppropids->count);
+	ppropnames->ppropname = cu_alloc<PROPERTY_NAME>(propids.size());
 	if (ppropnames->ppropname == nullptr)
 		return FALSE;
-	ppropnames->count = ppropids->count;
+	ppropnames->count = propids.size();
 	auto pstmt = gx_sql_prep(psqlite, "SELECT name_string "
 	             "FROM named_properties WHERE propid=?");
 	if (pstmt == nullptr)
 		return FALSE;
-	for (i=0; i<ppropids->count; i++) {
-		sqlite3_bind_int64(pstmt, 1, ppropids->ppropid[i]);
+	for (size_t i = 0; i < propids.size(); ++i) {
+		sqlite3_bind_int64(pstmt, 1, propids[i]);
 		if (pstmt.step() != SQLITE_ROW) {
 			sqlite3_reset(pstmt);
 			goto NOT_FOUND_PROPNAME;

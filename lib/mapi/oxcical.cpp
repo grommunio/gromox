@@ -1617,15 +1617,15 @@ static bool oxcical_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 	if (propnames.ppropname == nullptr)
 		return false;
 	for (const auto &pair : phash) {
-		propids.ppropid[propids.count++] = pair.first;
+		propids.push_back(pair.first);
 		propnames.ppropname[propnames.count++] = pair.second;
 	}
 	if (!get_propids(&propnames, &propids1) ||
 	    propids1.size() != propnames.size())
 		return false;
 	propididmap_t phash1;
-	for (size_t i = 0; i < propids.count; ++i) try {
-		phash1.emplace(propids.ppropid[i], propids1.ppropid[i]);
+	for (size_t i = 0; i < propids.size(); ++i) try {
+		phash1.emplace(propids[i], propids1[i]);
 	} catch (const std::bad_alloc &) {
 	}
 	oxcical_replace_propid(&pmsg->proplist, phash1);
@@ -3122,7 +3122,7 @@ static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
 
 	if (!get_propids(&propnames, &propids) || propids.size() != 1)
 		return E_2201;
-	auto bin = msg.proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
+	auto bin = msg.proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[0]));
 	if (bin != nullptr) {
 		EXT_PULL ext_pull;
 
@@ -3437,7 +3437,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			partstat = "ACCEPTED";
 		} else if (class_match_prefix(str, "IPM.Schedule.Meeting.Resp.Tent") == 0) {
 			partstat = "TENTATIVE";
-			auto flag = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[l_counterproposal]));
+			auto flag = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_counterproposal]));
 			if (flag != nullptr && *flag != 0) {
 				b_proposal = true;
 				method = "COUNTER";
@@ -3472,18 +3472,18 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	 * NOTE: b_proposal is correctly set on COUNTER (see above).
 	 */
 	auto lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME,
-	            propids.ppropid[b_proposal ? l_proposedstartwhole : l_startwhole]));
+	            propids[b_proposal ? l_proposedstartwhole : l_startwhole]));
 	bool has_start_time = false;
 	time_t start_time = 0, end_time = 0;
 	if (lnum != nullptr) {
 		start_time = rop_util_nttime_to_unix(*lnum);
 		has_start_time = true;
-		lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[b_proposal ? l_proposedendwhole : l_endwhole]));
+		lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids[b_proposal ? l_proposedendwhole : l_endwhole]));
 		if (lnum != nullptr) {
 			end_time = rop_util_nttime_to_unix(*lnum);
 		} else {
 			end_time = start_time;
-			num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[l_duration]));
+			num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids[l_duration]));
 			if (num != nullptr)
 				end_time += *num;
 		}
@@ -3497,7 +3497,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		pical.append_line("PRODID", "gromox-oxcical");
 		pical.append_line("VERSION", "2.0");
 
-		auto bin = pmsg->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_recur]));
+		auto bin = pmsg->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, propids[l_recur]));
 		if (bin != nullptr) {
 			EXT_PULL ext_pull;
 			ext_pull.init(bin->pb, bin->cb, alloc, EXT_FLAG_UTF16);
@@ -3541,7 +3541,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		 */
 		tzid = nullptr;
 		if (b_recurrence) {
-			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefrecur]));
+			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefrecur]));
 			if (bin != nullptr) {
 				EXT_PULL ext_pull;
 				TIMEZONEDEFINITION tz_definition;
@@ -3558,8 +3558,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 					return "E-2208: export_timezone returned an unspecified error";
 			}
 		} else {
-			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzstruct]));
-			tzid = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[l_tzdesc]));
+			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzstruct]));
+			tzid = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_tzdesc]));
 			if (bin != nullptr && tzid != nullptr) {
 				EXT_PULL ext_pull;
 				TIMEZONESTRUCT tz_struct;
@@ -3575,7 +3575,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 
-	auto snum = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[l_subtype]));
+	auto snum = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_subtype]));
 	bool b_allday = snum != nullptr && *snum != 0;
 	auto pcomponent = icaltype != nullptr ? &pical.append_comp(icaltype) : &pical;
 
@@ -3613,7 +3613,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (err != nullptr)
 		return err;
 
-	auto proptag_xrt = PROP_TAG(PT_SYSTIME, propids.ppropid[l_replacetime]);
+	auto proptag_xrt = PROP_TAG(PT_SYSTIME, propids[l_replacetime]);
 	err = oxcical_export_recid(*pmsg, proptag_xrt, b_exceptional,
 	      b_allday && g_oxcical_allday_ymd, *pcomponent, ptz_component,
 	      tzid, alloc, get_propids);
@@ -3635,7 +3635,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			b_allday && g_oxcical_allday_ymd,
 			ptz_component != nullptr ? tzid : nullptr);
 	} else {
-		lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[l_taskstart]));
+		lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_taskstart]));
 		if (lnum != nullptr) {
 			ical_time itime;
 			if (!ical_utc_to_datetime(ptz_component, rop_util_nttime_to_unix(*lnum), &itime))
@@ -3660,7 +3660,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (err != nullptr)
 		return err;
 
-	auto sa = pmsg->proplist.get<const STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, propids.ppropid[l_keywords]));
+	auto sa = pmsg->proplist.get<const STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, propids[l_keywords]));
 	if (sa != nullptr) {
 		auto piline = &pical.append_line("CATEGORIES");
 		auto &pivalue = piline->append_value();
@@ -3676,7 +3676,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		importance_to_lines(static_cast<mapi_importance>(*num), pcomponent);
 	auto ll_crittype = strcmp(method, "REPLY") == 0 || strcmp(method, "COUNTER") == 0 ?
 	                   l_attcritchg : l_ownercritchg;
-	lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[ll_crittype]));
+	lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids[ll_crittype]));
 	if (lnum != nullptr) {
 		ical_time itime;
 		char tmp_buff[1024];
@@ -3685,7 +3685,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		pcomponent->append_line("DTSTAMP", tmp_buff);
 	}
 
-	auto pbusystatus = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[l_busystatus]));
+	auto pbusystatus = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids[l_busystatus]));
 	if (pbusystatus != nullptr) {
 		switch (static_cast<ol_busy_status>(*pbusystatus)) {
 		case olFree:
@@ -3702,14 +3702,14 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 
-	auto psequence = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[l_apptseq]));
+	auto psequence = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids[l_apptseq]));
 	if (psequence != nullptr)
 		pcomponent->append_line("SEQUENCE", std::to_string(*psequence));
 
-	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[l_location]));
+	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_location]));
 	if (str != nullptr) {
 		auto piline = &pcomponent->append_line("LOCATION", str);
-		str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[l_locationurl]));
+		str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_locationurl]));
 		if (str != nullptr)
 			piline->append_param("ALTREP", str);
 		if (planguage != nullptr)
@@ -3725,7 +3725,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		busystatus_to_line(static_cast<ol_busy_status>(*pbusystatus),
 			"X-MICROSOFT-CDO-BUSYSTATUS", pcomponent);
 
-	num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[l_intendedbusy]));
+	num = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids[l_intendedbusy]));
 	if (num != nullptr)
 		busystatus_to_line(static_cast<ol_busy_status>(*num),
 			"X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent);
@@ -3733,7 +3733,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	pcomponent->append_line("X-MICROSOFT-CDO-ALLDAYEVENT", b_allday ? "TRUE" : "FALSE");
 	pcomponent->append_line("X-MICROSOFT-CDO-INSTTYPE", b_exceptional ? "3" : b_recurrence ? "1" : "0");
 
-	auto flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[l_nopropose]));
+	auto flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_nopropose]));
 	if (flag != nullptr)
 		pcomponent->append_line("X-MICROSOFT-DISALLOW-COUNTER", *flag != 0 ? "TRUE" : "FALSE");
 

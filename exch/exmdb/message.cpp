@@ -2182,7 +2182,7 @@ static BOOL message_get_real_propid(sqlite3 *psqlite,
 	propnames.ppropname = &ppropname_info->ppropname[i];
 	if (!common_util_get_named_propids(psqlite, TRUE, &propnames, &propids))
 		return FALSE;
-	if (propids.count != 1)
+	if (propids.size() != 1)
 		return TRUE;
 	if (propids[0] == 0)
 		return TRUE;

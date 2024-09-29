@@ -102,9 +102,9 @@ static const BINARY *nsp_photo_rpc(const char *dir)
 	const PROPNAME_ARRAY name_req = {1, deconst(&xn)};
 	PROPID_ARRAY name_rsp{};
 	if (!get_named_propids(dir, false, &name_req, &name_rsp) ||
-	    name_rsp.count != name_req.count || name_rsp.ppropid[0] == 0)
+	    name_rsp.size() != name_req.size() || name_rsp[0] == 0)
 		return nullptr;
-	uint32_t proptag = PROP_TAG(PT_BINARY, name_rsp.ppropid[0]);
+	uint32_t proptag = PROP_TAG(PT_BINARY, name_rsp[0]);
 	const PROPTAG_ARRAY tags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY values{};
 	if (!get_store_properties(dir, CP_ACP, &tags, &values))

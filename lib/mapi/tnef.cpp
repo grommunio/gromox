@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <climits>
 #include <cstdint>
 #include <cstdio>
@@ -1555,7 +1557,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	if (propnames.ppropname == nullptr)
 		return NULL;
 	for (const auto &[name, propid] : phash) {
-		propids.ppropid[propids.count] = propid;
+		propids[propids.count] = propid;
 		if (!tnef_convert_to_propname(name,
 		    propnames.ppropname + propnames.count, alloc))
 			return NULL;
@@ -1567,8 +1569,8 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	if (!get_propids(&propnames, &propids1))
 		return NULL;
 	propididmap_t phash1;
-	try { for (size_t i = 0; i < propids.count; ++i)
-		phash1.emplace(propids.ppropid[i], propids1.ppropid[i]);
+	try { for (size_t i = 0; i < propids.size(); ++i)
+		phash1.emplace(propids[i], propids1[i]);
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1987: ENOMEM");
 	}

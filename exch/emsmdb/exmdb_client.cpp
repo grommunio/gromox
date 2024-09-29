@@ -71,7 +71,7 @@ BOOL get_named_propid(const char *dir, BOOL b_create,
 	if (!exmdb_client::get_named_propids(dir, b_create,
 	    &tmp_propnames, &tmp_propids) || tmp_propids.size() != 1)
 		return FALSE;	
-	*ppropid = *tmp_propids.ppropid;
+	*ppropid = tmp_propids[0];
 	return TRUE;
 }
 

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <climits>
 #include <cstdint>
 #include <cstdlib>
@@ -1160,18 +1162,19 @@ pack_result EXT_PULL::g_propname_a(PROPNAME_ARRAY *r)
 
 pack_result EXT_PULL::g_propid_a(PROPID_ARRAY *r)
 {
-	TRY(g_uint16(&r->count));
-	if (r->count == 0) {
+	uint16_t nelem = 0;
+	TRY(g_uint16(&nelem));
+	if (nelem == 0) {
 		r->ppropid = NULL;
 		return EXT_ERR_SUCCESS;
 	}
-	r->ppropid = anew<uint16_t>(r->count);
+	r->ppropid = anew<uint16_t>(nelem);
 	if (r->ppropid == nullptr) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(g_uint16(&r->ppropid[i]));
+	for (size_t i = 0; i < nelem; ++i)
+		TRY(g_uint16(&(*r)[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2940,9 +2943,10 @@ pack_result EXT_PUSH::p_propname_a(const PROPNAME_ARRAY &r)
 
 pack_result EXT_PUSH::p_propid_a(const PROPID_ARRAY &r)
 {
-	TRY(p_uint16(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_uint16(r.ppropid[i]));
+	auto nelem = std::min(r.size(), static_cast<size_t>(UINT16_MAX));
+	TRY(p_uint16(nelem));
+	for (size_t i = 0; i < nelem; ++i)
+		TRY(p_uint16(r[i]));
 	return EXT_ERR_SUCCESS;
 }
 
