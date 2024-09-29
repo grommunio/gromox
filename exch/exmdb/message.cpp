@@ -2184,11 +2184,9 @@ static BOOL message_get_real_propid(sqlite3 *psqlite,
 		return FALSE;
 	if (propids.count != 1)
 		return TRUE;
-	propid = *propids.ppropid;
-	if (propid == 0)
+	if (propids[0] == 0)
 		return TRUE;
-	(*pproptag) &= 0xFFFF;
-	(*pproptag) |= ((uint32_t)propid) << 16;
+	*pproptag = PROP_TAG(PROP_TYPE(*pproptag), propids[0]);
 	*pb_replaced = TRUE;
 	return TRUE;
 }
