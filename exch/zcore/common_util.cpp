@@ -1142,9 +1142,9 @@ static BOOL common_util_get_propname(
 	propids.count = 1;
 	propids.ppropid = &propid;
 	if (!exmdb_client::get_named_propnames(common_util_get_dir(),
-	    &propids, &propnames))
+	    &propids, &propnames) || propnames.size() != 1)
 		return FALSE;
-	*pppropname = propnames.count != 1 ? nullptr : propnames.ppropname;
+	*pppropname = propnames.ppropname;
 	return TRUE;
 }
 

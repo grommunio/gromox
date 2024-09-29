@@ -1620,7 +1620,8 @@ static bool oxcical_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 		propids.ppropid[propids.count++] = pair.first;
 		propnames.ppropname[propnames.count++] = pair.second;
 	}
-	if (!get_propids(&propnames, &propids1))
+	if (!get_propids(&propnames, &propids1) ||
+	    propids1.size() != propnames.size())
 		return false;
 	propididmap_t phash1;
 	for (size_t i = 0; i < propids.count; ++i) try {
@@ -3119,7 +3120,7 @@ static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
 	char buf[1024], buf1[2048];
 	GLOBALOBJECTID goid;
 
-	if (!get_propids(&propnames, &propids))
+	if (!get_propids(&propnames, &propids) || propids.size() != 1)
 		return E_2201;
 	auto bin = msg.proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 	if (bin != nullptr) {
@@ -3204,12 +3205,12 @@ static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
 		const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
 		PROPID_ARRAY propids;
 
-		if (!get_propids(&propnames, &propids))
+		if (!get_propids(&propnames, &propids) || propids.size() != 1)
 			return E_2201;
 		auto flag = msg.proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 		if (flag != nullptr && *flag != 0) {
 			propname = {MNID_ID, PSETID_Meeting, PidLidStartRecurrenceTime};
-			if (!get_propids(&propnames, &propids))
+			if (!get_propids(&propnames, &propids) || propids.size() != 1)
 				return E_2201;
 			auto num = msg.proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
 			if (num != nullptr) {
@@ -3218,7 +3219,7 @@ static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
 				itime.second = *num & 0x3f;
 				itime_is_set = true;
 				propname.lid = PidLidGlobalObjectId;
-				if (!get_propids(&propnames, &propids))
+				if (!get_propids(&propnames, &propids) || propids.size() != 1)
 					return E_2201;
 				auto bin = msg.proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 				if (bin != nullptr) {
@@ -3258,7 +3259,7 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 	const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
 	PROPID_ARRAY propids;
 
-	if (!get_propids(&propnames, &propids))
+	if (!get_propids(&propnames, &propids) || propids.size() != 1)
 		return E_2201;
 	auto num = msg.proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
 	if (num != nullptr)
@@ -3267,7 +3268,7 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 			*num == tsvComplete ? "COMPLETED" : "IN-PROGRESS");
 
 	propname = {MNID_ID, PSETID_Task, PidLidPercentComplete};
-	if (!get_propids(&propnames, &propids))
+	if (!get_propids(&propnames, &propids) || propids.size() != 1)
 		return E_2201;
 	auto dbl = msg.proplist.get<const double>(PROP_TAG(PT_DOUBLE, propids.ppropid[0]));
 	if (dbl != nullptr) {
@@ -3276,7 +3277,7 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 	}
 
 	propname = {MNID_ID, PSETID_Task, PidLidTaskDueDate};
-	if (!get_propids(&propnames, &propids))
+	if (!get_propids(&propnames, &propids) || propids.size() != 1)
 		return E_2201;
 	auto lnum = msg.proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
 	if (lnum != nullptr) {
@@ -3287,7 +3288,7 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 	}
 
 	propname = {MNID_ID, PSETID_Task, PidLidTaskDateCompleted};
-	if (!get_propids(&propnames, &propids))
+	if (!get_propids(&propnames, &propids) || propids.size() != 1)
 		return E_2201;
 	lnum = msg.proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
 	if (lnum != nullptr) {
@@ -3343,7 +3344,7 @@ static std::string oxcical_export_valarm(const MESSAGE_CONTENT &msg,
 	const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
 	PROPID_ARRAY propids;
 
-	if (!get_propids(&propnames, &propids))
+	if (!get_propids(&propnames, &propids) || propids.size() != 1)
 		return E_2201;
 	auto flag = msg.proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 	if (flag == nullptr || *flag == 0)
@@ -3351,7 +3352,7 @@ static std::string oxcical_export_valarm(const MESSAGE_CONTENT &msg,
 	auto com = &pical.append_comp("VALARM");
 	com->append_line("DESCRIPTION", "REMINDER");
 	propname = {MNID_ID, PSETID_Common, PidLidReminderDelta};
-	if (!get_propids(&propnames, &propids))
+	if (!get_propids(&propnames, &propids) || propids.size() != 1)
 		return E_2201;
 	auto num = msg.proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
 	char tmp_buff[32];
@@ -3407,7 +3408,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	APPOINTMENT_RECUR_PAT apprecurr;
 
 	const PROPNAME_ARRAY pna = {std::size(namequeries), deconst(namequeries)};
-	if (!get_propids(&pna, &propids))
+	if (!get_propids(&pna, &propids) || propids.size() != pna.size())
 		return E_2201;
 
 	/* Cf. MS-OXCICAL v20240416 §2.1.3.1.1.1, "property: METHOD". */

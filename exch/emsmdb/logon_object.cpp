@@ -144,8 +144,8 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY *ppropids,
 	}
 	if (tmp_propids.count == 0)
 		return TRUE;
-	if (!exmdb_client::get_named_propnames(plogon->dir,
-	    &tmp_propids, &tmp_propnames))
+	if (!exmdb_client::get_named_propnames(plogon->dir, &tmp_propids,
+	    &tmp_propnames) || tmp_propnames.size() != tmp_propids.size())
 		return FALSE;	
 	for (i=0; i<ppropids->count; i++) {
 		if (pindex_map[i] >= 0)
@@ -234,7 +234,8 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 	if (tmp_propnames.count == 0)
 		return TRUE;
 	if (!exmdb_client::get_named_propids(plogon->dir, b_create,
-	    &tmp_propnames, &tmp_propids))
+	    &tmp_propnames, &tmp_propids) ||
+	    tmp_propids.size() != tmp_propnames.size())
 		return FALSE;	
 	for (i=0; i<ppropnames->count; i++) {
 		if (pindex_map[i] >= 0)

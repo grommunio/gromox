@@ -67,9 +67,10 @@ static BOOL cu_get_propname(uint16_t propid, PROPERTY_NAME **name)
 {
 	PROPID_ARRAY ids = {1, &propid};
 	PROPNAME_ARRAY names = {};
-	if (!exmdb_client_remote::get_named_propnames(g_storedir, &ids, &names))
+	if (!exmdb_client_remote::get_named_propnames(g_storedir, &ids, &names) ||
+	    names.size() != 1)
 		return false;
-	*name = names.count != 0 ? &names.ppropname[0] : nullptr;
+	*name = &names.ppropname[0];
 	return TRUE;
 }
 
@@ -224,7 +225,8 @@ int main(int argc, char **argv) try
 			tags.push_back(PROP_ID(p.proptag));
 		const PROPID_ARRAY propids = {static_cast<uint16_t>(tags.size()), deconst(tags.data())};
 		PROPNAME_ARRAY propnames{};
-		if (!exmdb_client_remote::get_named_propnames(g_storedir, &propids, &propnames)) {
+		if (!exmdb_client_remote::get_named_propnames(g_storedir, &propids, &propnames) ||
+		    propnames.size() != propids.size()) {
 			fprintf(stderr, "get_all_named_propids failed\n");
 			return EXIT_FAILURE;
 		}

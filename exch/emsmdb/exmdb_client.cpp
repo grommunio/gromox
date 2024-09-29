@@ -69,7 +69,7 @@ BOOL get_named_propid(const char *dir, BOOL b_create,
 	PROPID_ARRAY tmp_propids;
 	const PROPNAME_ARRAY tmp_propnames = {1, deconst(ppropname)};
 	if (!exmdb_client::get_named_propids(dir, b_create,
-	    &tmp_propnames, &tmp_propids))
+	    &tmp_propnames, &tmp_propids) || tmp_propids.size() != 1)
 		return FALSE;	
 	*ppropid = *tmp_propids.ppropid;
 	return TRUE;
@@ -83,7 +83,8 @@ BOOL get_named_propname(const char *dir, uint16_t propid,
 	
 	tmp_propids.count = 1;
 	tmp_propids.ppropid = &propid;
-	if (!exmdb_client::get_named_propnames(dir, &tmp_propids, &tmp_propnames))
+	if (!exmdb_client::get_named_propnames(dir, &tmp_propids,
+	    &tmp_propnames) || tmp_propnames.size() != 1)
 		return FALSE;	
 	*ppropname = *tmp_propnames.ppropname;
 	return TRUE;

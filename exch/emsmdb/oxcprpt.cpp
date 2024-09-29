@@ -544,7 +544,8 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 	ppropidnames->ppropname = cu_alloc<PROPERTY_NAME>(propids.count);
 	if (ppropidnames->ppropid == nullptr)
 		return ecServerOOM;
-	if (!plogon->get_named_propnames(&propids, &propnames))
+	if (!plogon->get_named_propnames(&propids, &propnames) ||
+	    propnames.size() != propids.size())
 		return ecError;
 	for (unsigned int i = 0; i < propids.count; ++i) {
 		if (propnames.ppropname[i].kind == KIND_NONE)

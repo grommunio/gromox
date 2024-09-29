@@ -159,9 +159,10 @@ static BOOL cu_get_propname(uint16_t propid, PROPERTY_NAME **name)
 {
 	PROPID_ARRAY ids = {1, &propid};
 	PROPNAME_ARRAY names = {};
-	if (!exmdb_client_remote::get_named_propnames(rp_storedir, &ids, &names))
+	if (!exmdb_client_remote::get_named_propnames(rp_storedir,
+	    &ids, &names) || names.size() != 1)
 		return false;
-	*name = names.count != 0 ? &names.ppropname[0] : nullptr;
+	*name = &names.ppropname[0];
 	return TRUE;
 }
 
@@ -1190,7 +1191,7 @@ static ec_error_t mr_start(rxparam &par, const mr_policy &policy)
 	const PROPNAME_ARRAY rq_propname = {std::size(rq_propname1), deconst(rq_propname1)};
 	PROPID_ARRAY propids;
 	if (!exmdb_client::get_named_propids(par.cur.dir.c_str(), false,
-	    &rq_propname, &propids))
+	    &rq_propname, &propids) || propids.size() != rq_propname.size())
 		return ecError;
 
 	auto &rq_prop = par.ctnt->proplist;

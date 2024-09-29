@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -258,10 +260,9 @@ BOOL common_util_get_propname(
 	propids.count = 1;
 	propids.ppropid = &propid;
 	if (!exmdb_client::get_named_propnames(
-	    common_util_get_maildir(), &propids, &propnames))
+	    common_util_get_maildir(), &propids, &propnames) ||
+	    propnames.size() != 1)
 		return FALSE;	
-	if (propnames.count == 0)
-		*pppropname = NULL;
 	*pppropname = propnames.ppropname;
 	return TRUE;
 }

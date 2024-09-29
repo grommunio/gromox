@@ -2395,9 +2395,10 @@ static BOOL message_get_propname(uint16_t propid,
 		return FALSE;
 	propids.count = 1;
 	propids.ppropid = &propid;
-	if (!common_util_get_named_propnames(psqlite, &propids, &propnames))
+	if (!common_util_get_named_propnames(psqlite, &propids, &propnames) ||
+	    propnames.size() != 1)
 		return FALSE;
-	*pppropname = propnames.count != 1 ? nullptr : propnames.ppropname;
+	*pppropname = propnames.ppropname;
 	return TRUE;
 }
 

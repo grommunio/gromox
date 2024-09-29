@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -21,7 +21,7 @@ static uint32_t propid_elist(const char *dir)
 
 	if (!exmdb_client::get_named_propids(dir, false, &pna, &pia))
 		return 0;
-	if (pia.count == 0)
+	if (pia.size() != 1)
 		return 0;
 	return PROP_TAG(PT_MV_LONG, pia.ppropid[0]);
 }

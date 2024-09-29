@@ -32,7 +32,7 @@ BOOL exmdb_client_get_named_propid(const char *dir,
 	PROPID_ARRAY tmp_propids;
 	const PROPNAME_ARRAY tmp_propnames = {1, deconst(ppropname)};
 	if (!exmdb_client::get_named_propids(dir,
-	    b_create, &tmp_propnames, &tmp_propids))
+	    b_create, &tmp_propnames, &tmp_propids) || tmp_propids.size() != 1)
 		return FALSE;	
 	*ppropid = *tmp_propids.ppropid;
 	return TRUE;
