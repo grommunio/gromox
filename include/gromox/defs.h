@@ -17,12 +17,19 @@
 	K(K &&) noexcept = delete; \
 	void operator=(K &&) noexcept = delete;
 #define I_BEGIN_END(memb, count) \
-	using iterator = decltype(&memb[0]); \
-	using const_iterator = std::add_pointer_t<std::add_const_t<std::remove_pointer_t<iterator>>>; \
+	public: \
+	using value_type = std::remove_reference_t<decltype((memb)[0])>; \
+	using iterator = std::add_pointer_t<value_type>; \
+	using const_iterator = std::add_pointer_t<const value_type>; \
 	inline iterator begin() { return (memb); } \
 	inline const_iterator begin() const { return (memb); } \
 	inline iterator end() { return (memb) + (count); } \
-	inline const_iterator end() const { return (memb) + (count); }
+	inline const_iterator end() const { return (memb) + (count); } \
+	inline const value_type &operator[](size_t i) const { return (memb)[i]; } \
+	inline value_type &operator[](size_t i) { return (memb)[i]; } \
+	inline size_t size() const { return (count); } \
+	inline bool empty() const { return (count) == 0; } \
+	inline void push_back(const value_type &v) { (memb)[(count)++] = v; }
 
 /*
  * The timezone column in the user database ought to be never empty. Having an

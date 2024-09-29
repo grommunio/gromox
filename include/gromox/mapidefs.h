@@ -1252,8 +1252,8 @@ struct GX_EXPORT RECIPIENT_BLOCK {
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;
 
-	I_BEGIN_END(ppropval, count);
 	std::string repr() const;
+	I_BEGIN_END(ppropval, count);
 };
 
 struct restriction_list;
@@ -1411,8 +1411,8 @@ struct GX_EXPORT RULE_ACTIONS {
 	uint16_t count;
 	ACTION_BLOCK *pblock;
 
-	I_BEGIN_END(pblock, count);
 	std::string repr() const;
+	I_BEGIN_END(pblock, count);
 };
 
 struct RULE_DATA {
@@ -1452,8 +1452,8 @@ struct GX_EXPORT FORWARDDELEGATE_ACTION {
 	uint16_t count;
 	RECIPIENT_BLOCK *pblock;
 
-	I_BEGIN_END(pblock, count);
 	std::string repr() const;
+	I_BEGIN_END(pblock, count);
 };
 
 enum { /* for GetSearchCriteria */
