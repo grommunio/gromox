@@ -1027,37 +1027,62 @@ static ZEND_FUNCTION(mapi_openprofilesection)
 	MAPI_G(hr) = ecSuccess;
 }
 
+MAPI_RESOURCE invalid_object;
+
+static MAPI_RESOURCE *resolve_resource(zval *arg, const std::vector<int> &dt)
+{
+	auto type = Z_RES_TYPE_P(arg);
+	auto iter = std::find(dt.cbegin(), dt.cend(), type);
+	if (iter == dt.cend())
+		return nullptr;
+	auto obj = static_cast<MAPI_RESOURCE *>(zend_fetch_resource(Z_RES_P(arg), nullptr, *iter));
+	switch (obj->type) {
+#define E(a, b) case zs_objtype::a: return *iter == le_mapi_ ## b ? obj : &invalid_object;
+	E(abcont, abcont)
+	E(addrbook, addressbook)
+	E(advisesink, advisesink)
+	E(attach, attachment)
+	E(distlist, distlist)
+	E(folder, folder)
+	E(mailuser, mailuser)
+	E(message, message)
+	E(oneoff, mailuser)
+	E(profproperty, property)
+	E(session, session)
+	E(store, msgstore)
+	E(table, table)
+#undef E
+	case zs_objtype::invalid:
+		return &invalid_object;
+	default:
+		fprintf(stderr, "resolve_resource called with zs_objtype::%u. Implement me!\n",
+		        static_cast<uint8_t>(obj->type));
+		return nullptr;
+	}
+}
+
 static ZEND_FUNCTION(mapi_folder_gethierarchytable)
 {
 	ZCL_MEMORY;
 	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *probject, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource)
 		pthrow(ecInvalidParam);
-	{
-	auto type = Z_RES_TYPE_P(pzresource);
-	if (type == le_mapi_folder) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_folder);
-		if (probject->type != zs_objtype::folder)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_abcont) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_abcont);
-		if (probject->type != zs_objtype::abcont)
-			pthrow(ecInvalidObject);
-	} else {
+	auto probject = resolve_resource(pzresource, {le_mapi_folder, le_mapi_abcont});
+	if (probject == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (probject == nullptr)
 		pthrow(ecInvalidParam);
-	}
-	}
+
 	auto result = zclient_loadhierarchytable(
 		probject->hsession, probject->hobject,
 		flags, &hobject);
 	if (result != ecSuccess)
 		pthrow(result);
-	presource = st_malloc<MAPI_RESOURCE>();
+	auto presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource)
 		pthrow(ecMAPIOOM);
 	presource->type = zs_objtype::table;
@@ -1073,35 +1098,21 @@ static ZEND_FUNCTION(mapi_folder_getcontentstable)
 	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
-	MAPI_RESOURCE *probject, *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource)
 		pthrow(ecInvalidParam);
-	{
-	auto type = Z_RES_TYPE_P(pzresource);
-	if (type == le_mapi_folder) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_folder);
-		if (probject->type != zs_objtype::folder)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_abcont) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_abcont);
-		if (probject->type != zs_objtype::abcont)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_distlist) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_distlist);
-		if (probject->type != zs_objtype::distlist)
-			pthrow(ecInvalidObject);
-	} else {
+	auto probject = resolve_resource(pzresource, {le_mapi_folder, le_mapi_abcont, le_mapi_distlist});
+	if (probject == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (probject == nullptr)
 		pthrow(ecInvalidParam);
-	}
-	}
 	auto result = zclient_loadcontenttable(
 		probject->hsession, probject->hobject,
 		flags, &hobject);
 	if (result != ecSuccess)
 		pthrow(result);
-	presource = st_malloc<MAPI_RESOURCE>();
+	auto presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource)
 		pthrow(ecMAPIOOM);
 	presource->type = zs_objtype::table;
@@ -2146,7 +2157,6 @@ static ZEND_FUNCTION(mapi_openpropertytostream)
 	void *pvalue;
 	char *guidstr = nullptr;
 	zval *pzresource;
-	MAPI_RESOURCE *probject;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rl|ls", &pzresource, &proptag, &flags, &guidstr,
@@ -2160,33 +2170,11 @@ static ZEND_FUNCTION(mapi_openpropertytostream)
 	default:
 		pthrow(ecInvalidParam);
 	}
-	{
-	auto type = Z_RES_TYPE_P(pzresource);
-	if(type == le_mapi_message) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_message);
-		if (probject->type != zs_objtype::message)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_folder) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_folder);
-		if (probject->type != zs_objtype::folder)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_attachment) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_attachment);
-		if (probject->type != zs_objtype::attach)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_msgstore) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_msgstore);
-		if (probject->type != zs_objtype::store)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_mailuser) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_mailuser);
-		if (probject->type != zs_objtype::mailuser &&
-		    probject->type != zs_objtype::oneoff)
-			pthrow(ecInvalidObject);
-	} else {
+	auto probject = resolve_resource(pzresource, {le_mapi_msgstore, le_mapi_folder, le_mapi_message, le_mapi_attachment, le_mapi_mailuser});
+	if (probject == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (probject == nullptr)
 		pthrow(ecInvalidParam);
-	}
-	}
 	auto pstream = st_calloc<STREAM_OBJECT>();
 	if (NULL == pstream)
 		pthrow(ecMAPIOOM);
@@ -2322,39 +2310,17 @@ static ZEND_FUNCTION(mapi_setprops)
 {
 	ZCL_MEMORY;
 	zval *pzpropvals, *pzresource;
-	MAPI_RESOURCE *probject;
 	TPROPVAL_ARRAY propvals;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ra", &pzresource, &pzpropvals) == FAILURE ||
 		NULL == pzresource || NULL == pzpropvals)
 		pthrow(ecInvalidParam);
-	{
-	auto type = Z_RES_TYPE_P(pzresource);
-	if(type == le_mapi_message) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_message);
-		if (probject->type != zs_objtype::message)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_folder) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_folder);
-		if (probject->type != zs_objtype::folder)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_attachment) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_attachment);
-		if (probject->type != zs_objtype::attach)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_msgstore) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_msgstore);
-		if (probject->type != zs_objtype::store)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_property) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_property);
-		if (probject->type != zs_objtype::profproperty)
-			pthrow(ecInvalidObject);
-	} else {
+	auto probject = resolve_resource(pzresource, {le_mapi_msgstore, le_mapi_folder, le_mapi_message, le_mapi_property, le_mapi_attachment});
+	if (probject == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (probject == nullptr)
 		pthrow(ecInvalidParam);
-	}
-	}
 	auto err = php_to_tpropval_array(pzpropvals, &propvals);
 	if (err != ecSuccess)
 		pthrow(err);
@@ -2371,43 +2337,25 @@ static ZEND_FUNCTION(mapi_copyto)
 	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzsrc, *pzdst, *pzexcludeiids, *pzexcludeprops;
-	MAPI_RESOURCE *psrcobject, *pdstobject;
 	PROPTAG_ARRAY exclude_proptags, *pexclude_proptags = nullptr;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "raar|l",
 		&pzsrc, &pzexcludeiids, &pzexcludeprops, &pzdst, &flags)
 		== FAILURE || NULL == pzsrc || NULL == pzdst)
 		pthrow(ecInvalidParam);
-	{
-	auto type  = Z_RES_TYPE_P(pzsrc);
-	auto type1 = Z_RES_TYPE_P(pzdst);
-	if (type != type1)
+	if (Z_RES_TYPE_P(pzsrc) != Z_RES_TYPE_P(pzdst))
 		pthrow(ecInvalidParam);
-	if(type == le_mapi_message) {
-		ZEND_FETCH_RESOURCE(psrcobject, pzsrc, le_mapi_message);
-		if (psrcobject->type != zs_objtype::message)
-			pthrow(ecInvalidObject);
-		ZEND_FETCH_RESOURCE(pdstobject, pzdst, le_mapi_message);
-		if (pdstobject->type != zs_objtype::message)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_folder) {
-		ZEND_FETCH_RESOURCE(psrcobject, pzsrc, le_mapi_folder);
-		if (psrcobject->type != zs_objtype::folder)
-			pthrow(ecInvalidObject);
-		ZEND_FETCH_RESOURCE(pdstobject, pzdst, le_mapi_folder);
-		if (pdstobject->type != zs_objtype::folder)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_attachment) {
-		ZEND_FETCH_RESOURCE(psrcobject, pzsrc, le_mapi_attachment);
-		if (psrcobject->type != zs_objtype::attach)
-			pthrow(ecInvalidObject);
-		ZEND_FETCH_RESOURCE(pdstobject, pzdst, le_mapi_attachment);
-		if (pdstobject->type != zs_objtype::attach)
-			pthrow(ecInvalidObject);
-	} else {
+	auto psrcobject = resolve_resource(pzsrc, {le_mapi_folder, le_mapi_message, le_mapi_attachment});
+	if (psrcobject == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (psrcobject == nullptr)
 		pthrow(ecInvalidParam);
-	}
-	}
+	auto pdstobject = resolve_resource(pzdst, {le_mapi_folder, le_mapi_message, le_mapi_attachment});
+	if (pdstobject == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (pdstobject == nullptr)
+		pthrow(ecInvalidParam);
+
 	if (pzexcludeprops != nullptr) {
 		auto err = php_to_proptag_array(pzexcludeprops, &exclude_proptags);
 		if (err != ecSuccess)
@@ -2428,37 +2376,15 @@ static ZEND_FUNCTION(mapi_savechanges)
 	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzresource;
-	MAPI_RESOURCE *probject;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource)
 		pthrow(ecInvalidParam);
-	{
-	auto type = Z_RES_TYPE_P(pzresource);
-	if (type == le_mapi_message) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_message);
-		if (probject->type != zs_objtype::message)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_folder) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_folder);
-		if (probject->type != zs_objtype::folder)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_attachment) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_attachment);
-		if (probject->type != zs_objtype::attach)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_msgstore) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_msgstore);
-		if (probject->type != zs_objtype::store)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_property) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_property);
-		if (probject->type != zs_objtype::profproperty)
-			pthrow(ecInvalidObject);
-	} else {
+	auto probject = resolve_resource(pzresource, {le_mapi_msgstore, le_mapi_folder, le_mapi_message, le_mapi_property, le_mapi_attachment});
+	if (probject == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (probject == nullptr)
 		pthrow(ecInvalidParam);
-	}
-	}
 	switch (probject->type) {
 	case zs_objtype::attach:
 	case zs_objtype::message: {
@@ -2480,34 +2406,16 @@ static ZEND_FUNCTION(mapi_deleteprops)
 	ZCL_MEMORY;
 	zval *pzresource, *pzproptags;
 	PROPTAG_ARRAY proptags;
-	MAPI_RESOURCE *probject;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ra", &pzresource, &pzproptags) == FAILURE ||
 		NULL == pzresource || NULL == pzproptags)
 		pthrow(ecInvalidParam);
-	{
-	auto type = Z_RES_TYPE_P(pzresource);
-	if(type == le_mapi_message) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_message);
-		if (probject->type != zs_objtype::message)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_folder) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_folder);
-		if (probject->type != zs_objtype::folder)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_attachment) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_attachment);
-		if (probject->type != zs_objtype::attach)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_msgstore) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_msgstore);
-		if (probject->type != zs_objtype::store)
-			pthrow(ecInvalidObject);
-	} else {
+	auto probject = resolve_resource(pzresource, {le_mapi_msgstore, le_mapi_folder, le_mapi_message, le_mapi_attachment});
+	if (probject == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (probject == nullptr)
 		pthrow(ecInvalidParam);
-	}
-	}
 	auto err = php_to_proptag_array(pzproptags, &proptags);
 	if (err != ecSuccess)
 		pthrow(err);
@@ -2530,7 +2438,6 @@ static ZEND_FUNCTION(mapi_openproperty)
 	zval *pzresource;
 	PULL_CTX pull_ctx;
 	zend_long flags = 0, interfaceflags = 0, proptag;
-	MAPI_RESOURCE *probject, *presource;
 	ICS_IMPORT_CTX *pimporter;
 	ICS_EXPORT_CTX *pexporter;
 	
@@ -2551,25 +2458,11 @@ static ZEND_FUNCTION(mapi_openproperty)
 			pthrow(ecInvalidParam);
 	}
 	auto type = Z_RES_TYPE_P(pzresource);
-	if (type == le_mapi_message) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_message);
-		if (probject->type != zs_objtype::message)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_folder) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_folder);
-		if (probject->type != zs_objtype::folder)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_attachment) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_attachment);
-		if (probject->type != zs_objtype::attach)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_msgstore) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_msgstore);
-		if (probject->type != zs_objtype::store)
-			pthrow(ecInvalidObject);
-	} else {
+	auto probject = resolve_resource(pzresource, {le_mapi_msgstore, le_mapi_folder, le_mapi_message, le_mapi_attachment});
+	if (probject == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (probject == nullptr)
 		pthrow(ecNotSupported);
-	}
 	if (iid_guid == IID_IStream) {
 		auto pt = PROP_TYPE(proptag);
 		if (pt != PT_BINARY && pt != PT_UNICODE && pt != PT_STRING8)
@@ -2611,7 +2504,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 		              probject->hobject, flags, &hobject);
 		if (result != ecSuccess)
 			pthrow(result);
-		presource = st_malloc<MAPI_RESOURCE>();
+		auto presource = st_malloc<MAPI_RESOURCE>();
 		if (NULL == presource)
 			pthrow(ecMAPIOOM);
 		presource->type = zs_objtype::message;
@@ -2694,56 +2587,20 @@ static ZEND_FUNCTION(mapi_getprops)
 	zval pzpropvals, *pzresource, *pztagarray = nullptr;
 	PROPTAG_ARRAY proptags, *pproptags = nullptr;
 	TPROPVAL_ARRAY propvals;
-	MAPI_RESOURCE *probject;
 	
 	ZVAL_NULL(&pzpropvals);
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r|a", &pzresource, &pztagarray) == FAILURE ||
 		NULL == pzresource)
 		pthrow(ecInvalidParam);
-	{
-	auto type = Z_RES_TYPE_P(pzresource);
-	if (type == le_mapi_message) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_message);
-		if (probject->type != zs_objtype::message)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_folder) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_folder);
-		if (probject->type != zs_objtype::folder)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_attachment) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_attachment);
-		if (probject->type != zs_objtype::attach)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_msgstore) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_msgstore);
-		if (probject->type != zs_objtype::store)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_mailuser) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_mailuser);
-		if (probject->type != zs_objtype::mailuser &&
-		    probject->type != zs_objtype::oneoff)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_distlist) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_distlist);
-		if (probject->type != zs_objtype::distlist)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_abcont) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_abcont);
-		if (probject->type != zs_objtype::abcont)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_property) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_property);
-		if (probject->type != zs_objtype::profproperty)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_addressbook) {
-		ZEND_FETCH_RESOURCE(probject, pzresource, le_mapi_addressbook);
-		if (probject->type != zs_objtype::addrbook)
-			pthrow(ecInvalidObject);
-	} else {
+	auto probject = resolve_resource(pzresource, {le_mapi_msgstore,
+	                le_mapi_folder, le_mapi_message, le_mapi_property,
+	                le_mapi_attachment, le_mapi_addressbook, le_mapi_abcont,
+	                le_mapi_mailuser, le_mapi_distlist});
+	if (probject == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (probject == nullptr)
 		pthrow(ecNotSupported);
-	}
-	}
 	if(NULL != pztagarray) {
 		auto err = php_to_proptag_array(pztagarray, &proptags);
 		if (err != ecSuccess)
@@ -2994,7 +2851,6 @@ static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 	zend_long acl_type;
 	zval *pzresource;
 	PERMISSION_SET perm_set;
-	MAPI_RESOURCE *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rl", &pzresource, &acl_type) == FAILURE || NULL
@@ -3002,20 +2858,11 @@ static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 		pthrow(ecInvalidParam);
 	if (ACCESS_TYPE_GRANT != acl_type)
 		pthrow(ecNotSupported);
-	{
-	auto type = Z_RES_TYPE_P(pzresource);
-	if (type == le_mapi_msgstore) {
-		ZEND_FETCH_RESOURCE(presource, pzresource, le_mapi_msgstore);
-		if (presource->type != zs_objtype::store)
-			pthrow(ecInvalidObject);
-	} else if (type == le_mapi_folder) {
-		ZEND_FETCH_RESOURCE(presource, pzresource, le_mapi_folder);
-		if (presource->type != zs_objtype::folder)
-			pthrow(ecInvalidObject);
-	} else {
+	auto presource = resolve_resource(pzresource, {le_mapi_msgstore, le_mapi_folder});
+	if (presource == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (presource == nullptr)
 		pthrow(ecNotSupported);
-	}
-	}
 	auto result = zclient_getpermissions(
 		presource->hsession, presource->hobject,
 		&perm_set);
@@ -3045,7 +2892,6 @@ static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 	ZCL_MEMORY;
 	zval *pzperms, *pzresource;
 	HashTable *pdata, *ptarget_hash;
-	MAPI_RESOURCE *pfolder;
 	PERMISSION_SET perm_set;
 	zstrplus str_mbid(zend_string_init(ZEND_STRL("memberid"), 0));
 	zstrplus str_userid(zend_string_init(ZEND_STRL("userid"), 0));
@@ -3057,16 +2903,12 @@ static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 		"ra", &pzresource, &pzperms) == FAILURE || NULL
 		== pzresource || NULL == pzperms)
 		pthrow(ecInvalidParam);
-	{
-	auto type = Z_RES_TYPE_P(pzresource);
-	if (type == le_mapi_folder) {
-		ZEND_FETCH_RESOURCE(pfolder, pzresource, le_mapi_folder);
-		if (pfolder->type != zs_objtype::folder)
-			pthrow(ecInvalidObject);
-	} else {
+	auto pfolder = resolve_resource(pzresource, {le_mapi_folder});
+	if (pfolder == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (pfolder == nullptr)
 		pthrow(ecNotSupported);
-	}
-	}
+
 	ZVAL_DEREF(pzperms);
 	ptarget_hash = HASH_OF(pzperms);
 	if (NULL == ptarget_hash)
