@@ -1623,8 +1623,6 @@ ec_error_t php_to_propname_array(zval *pzval_names, zval *pzval_guids,
 {
 	int i;
 	HashTable *pnameshash;
-	static const GUID guid_appointment = {0x00062002, 0x0000, 0x0000,
-			{0xC0, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
 	
 	pnameshash = Z_ARRVAL_P(pzval_names);
 	auto pguidhash = pzval_guids != nullptr ? Z_ARRVAL_P(pzval_guids) : nullptr;
@@ -1654,7 +1652,7 @@ ec_error_t php_to_propname_array(zval *pzval_names, zval *pzval_guids,
 		zval *guidentry = nullptr;
 		if (pguidhash != nullptr)
 			guidentry = zend_hash_get_current_data_ex(pguidhash, &ghpos);
-		ppropnames->ppropname[i].guid = guid_appointment;
+		ppropnames->ppropname[i].guid = PSETID_Appointment; // compat with Zarafa
 		if (pguidhash != nullptr && guidentry != nullptr &&
 		    Z_TYPE_P(guidentry) == IS_STRING &&
 		    Z_STRLEN_P(guidentry) == sizeof(GUID))
