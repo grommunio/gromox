@@ -3201,27 +3201,29 @@ static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
 
 	auto lnum = msg.proplist.get<uint64_t>(proptag_xrt);
 	if (lnum == nullptr) {
-		PROPERTY_NAME propname = {MNID_ID, PSETID_Meeting, PidLidIsException};
-		const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
+		const PROPERTY_NAME namequeries[] = {
+			{MNID_ID, PSETID_Meeting, PidLidIsException},
+			{MNID_ID, PSETID_Meeting, PidLidStartRecurrenceTime},
+			{MNID_ID, PSETID_Meeting, PidLidGlobalObjectId},
+		};
+		enum {
+			l_is_except = 0, l_startrecurtime, l_goid,
+		};
+		static_assert(l_goid + 1 == std::size(namequeries));
+		const PROPNAME_ARRAY propnames = {std::size(namequeries), deconst(namequeries)};
 		PROPID_ARRAY propids;
 
-		if (!get_propids(&propnames, &propids) || propids.size() != 1)
+		if (!get_propids(&propnames, &propids) || propids.size() != propnames.size())
 			return E_2201;
-		auto flag = msg.proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
+		auto flag = msg.proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_is_except]));
 		if (flag != nullptr && *flag != 0) {
-			propname = {MNID_ID, PSETID_Meeting, PidLidStartRecurrenceTime};
-			if (!get_propids(&propnames, &propids) || propids.size() != 1)
-				return E_2201;
-			auto num = msg.proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
+			auto num = msg.proplist.get<const uint32_t>(PROP_TAG(PT_LONG, propids[l_startrecurtime]));
 			if (num != nullptr) {
 				itime.hour   = (*num >> 12) & 0x1f;
 				itime.minute = (*num >> 6) & 0x3f;
 				itime.second = *num & 0x3f;
 				itime_is_set = true;
-				propname.lid = PidLidGlobalObjectId;
-				if (!get_propids(&propnames, &propids) || propids.size() != 1)
-					return E_2201;
-				auto bin = msg.proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
+				auto bin = msg.proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_goid]));
 				if (bin != nullptr) {
 					EXT_PULL ext_pull;
 					GLOBALOBJECTID globalobjectid;
@@ -3255,31 +3257,34 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
     ical_component &com, const ical_component *tzcom,
     const char *tzid, GET_PROPIDS get_propids)
 {
-	PROPERTY_NAME propname = {MNID_ID, PSETID_Task, PidLidTaskStatus};
-	const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
+	const PROPERTY_NAME namequeries[] = {
+		{MNID_ID, PSETID_Task, PidLidTaskStatus},
+		{MNID_ID, PSETID_Task, PidLidPercentComplete},
+		{MNID_ID, PSETID_Task, PidLidTaskDueDate},
+		{MNID_ID, PSETID_Task, PidLidTaskDateCompleted},
+	};
+	enum {
+		l_taskstatus = 0, l_pctcomplete, l_duedate, l_datecompl,
+	};
+	static_assert(l_datecompl + 1 == std::size(namequeries));
+	const PROPNAME_ARRAY propnames = {std::size(namequeries), deconst(namequeries)};
 	PROPID_ARRAY propids;
 
-	if (!get_propids(&propnames, &propids) || propids.size() != 1)
+	if (!get_propids(&propnames, &propids) || propids.size() != propnames.size())
 		return E_2201;
-	auto num = msg.proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
+	auto num = msg.proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids[l_taskstatus]));
 	if (num != nullptr)
 		com.append_line("STATUS",
 			*num == tsvNotStarted ? "NEEDS-ACTION" :
 			*num == tsvComplete ? "COMPLETED" : "IN-PROGRESS");
 
-	propname = {MNID_ID, PSETID_Task, PidLidPercentComplete};
-	if (!get_propids(&propnames, &propids) || propids.size() != 1)
-		return E_2201;
-	auto dbl = msg.proplist.get<const double>(PROP_TAG(PT_DOUBLE, propids.ppropid[0]));
+	auto dbl = msg.proplist.get<const double>(PROP_TAG(PT_DOUBLE, propids[l_pctcomplete]));
 	if (dbl != nullptr) {
 		auto v = std::clamp(static_cast<unsigned int>(100 * *dbl), 0U, 100U);
 		com.append_line("PERCENT-COMPLETE", std::to_string(v));
 	}
 
-	propname = {MNID_ID, PSETID_Task, PidLidTaskDueDate};
-	if (!get_propids(&propnames, &propids) || propids.size() != 1)
-		return E_2201;
-	auto lnum = msg.proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
+	auto lnum = msg.proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_duedate]));
 	if (lnum != nullptr) {
 		ical_time itime;
 		if (!ical_utc_to_datetime(tzcom, rop_util_nttime_to_unix(*lnum), &itime))
@@ -3287,17 +3292,13 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 		append_dt(com, "DUE", itime, false, tzid);
 	}
 
-	propname = {MNID_ID, PSETID_Task, PidLidTaskDateCompleted};
-	if (!get_propids(&propnames, &propids) || propids.size() != 1)
-		return E_2201;
-	lnum = msg.proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
+	lnum = msg.proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_datecompl]));
 	if (lnum != nullptr) {
 		ical_time itime;
 		if (!ical_utc_to_datetime(tzcom, rop_util_nttime_to_unix(*lnum), &itime))
 			return "E-2001";
 		append_dt(com, "COMPLETED", itime, false, tzid);
 	}
-
 	return nullptr;
 }
 
@@ -3340,21 +3341,23 @@ static void importance_to_lines(mapi_importance n, ical_component *c)
 static std::string oxcical_export_valarm(const MESSAGE_CONTENT &msg,
     ical_component &pical, GET_PROPIDS get_propids)
 {
-	PROPERTY_NAME propname = {MNID_ID, PSETID_Common, PidLidReminderSet};
-	const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
+	const PROPERTY_NAME namequeries[] = {
+		{MNID_ID, PSETID_Common, PidLidReminderSet},
+		{MNID_ID, PSETID_Common, PidLidReminderDelta},
+	};
+	enum { l_remset = 0, l_remdelta };
+	static_assert(l_remdelta + 1 == std::size(namequeries));
+	const PROPNAME_ARRAY propnames = {std::size(namequeries), deconst(namequeries)};
 	PROPID_ARRAY propids;
 
-	if (!get_propids(&propnames, &propids) || propids.size() != 1)
+	if (!get_propids(&propnames, &propids) || propids.size() != propnames.size())
 		return E_2201;
-	auto flag = msg.proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
+	auto flag = msg.proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_remset]));
 	if (flag == nullptr || *flag == 0)
 		return {};
 	auto com = &pical.append_comp("VALARM");
 	com->append_line("DESCRIPTION", "REMINDER");
-	propname = {MNID_ID, PSETID_Common, PidLidReminderDelta};
-	if (!get_propids(&propnames, &propids) || propids.size() != 1)
-		return E_2201;
-	auto num = msg.proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
+	auto num = msg.proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids[l_remdelta]));
 	char tmp_buff[32];
 	if (num == nullptr || *num == ENDDATE_MISSING_RDELTA)
 		strcpy(tmp_buff, "-PT15M");

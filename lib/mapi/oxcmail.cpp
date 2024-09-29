@@ -1824,19 +1824,22 @@ static void oxcmail_remove_flag_properties(
 	MESSAGE_CONTENT *pmsg, GET_PROPIDS get_propids)
 {
 	PROPID_ARRAY propids;
-	PROPERTY_NAME propname_buff[] = {
+	const PROPERTY_NAME propname_buff[] = {
 		{MNID_ID, PSETID_Task, PidLidTaskDueDate},
 		{MNID_ID, PSETID_Task, PidLidTaskStartDate},
 		{MNID_ID, PSETID_Task, PidLidTaskDateCompleted},
 	};
-	const PROPNAME_ARRAY propnames = {std::size(propname_buff), propname_buff};
+	enum { l_duedate = 0, l_startdate, l_datecompl };
+	static_assert(l_datecompl + 1 == std::size(propname_buff));
+	const PROPNAME_ARRAY propnames = {std::size(propname_buff), deconst(propname_buff)};
 	
 	pmsg->proplist.erase(PR_FLAG_COMPLETE_TIME);
-	if (!get_propids(&propnames, &propids) || propids.size() != 3)
+	if (!get_propids(&propnames, &propids) ||
+	    propids.size() != 3)
 		return;
-	pmsg->proplist.erase(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
-	pmsg->proplist.erase(PROP_TAG(PT_SYSTIME, propids.ppropid[1]));
-	pmsg->proplist.erase(PROP_TAG(PT_SYSTIME, propids.ppropid[2]));
+	pmsg->proplist.erase(PROP_TAG(PT_SYSTIME, propids[l_duedate]));
+	pmsg->proplist.erase(PROP_TAG(PT_SYSTIME, propids[l_startdate]));
+	pmsg->proplist.erase(PROP_TAG(PT_SYSTIME, propids[l_datecompl]));
 }
 
 static BOOL oxcmail_copy_message_proplist(
@@ -2758,8 +2761,8 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		 * all-hidden in O(1) without creating redundant information
 		 * like this property.
 		 */
-		PROPERTY_NAME propname = {MNID_ID, PSETID_Common, PidLidSmartNoAttach};
-		const PROPNAME_ARRAY propnames = {1, &propname};
+		const PROPERTY_NAME namequeries[] = {{MNID_ID, PSETID_Common, PidLidSmartNoAttach}};
+		const PROPNAME_ARRAY propnames = {std::size(namequeries), deconst(namequeries)};
 		PROPID_ARRAY propids;
 		if (!get_propids(&propnames, &propids) || propids.size() != 1)
 			return imp_null;
@@ -3344,17 +3347,33 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	if (oxcmail_export_reply_to(pmsg, *adrlist))
 		if (!phead->set_field("Reply-To", adrlist->generate().c_str()))
 			return FALSE;
+
+	const PROPERTY_NAME namequeries[] = {
+		{MNID_ID, PSETID_Common, PidLidInfoPathFromName},
+		{MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameKeywords)},
+		{MNID_ID, PSETID_Common, PidLidClassified},
+		{MNID_ID, PSETID_Common, PidLidClassification},
+		{MNID_ID, PSETID_Common, PidLidClassificationKeep},
+		{MNID_ID, PSETID_Common, PidLidClassificationDescription},
+		{MNID_ID, PSETID_Common, PidLidClassificationGuid},
+		{MNID_ID, PSETID_Common, PidLidFlagRequest},
+	};
+	enum {
+		l_infopath = 0, l_keywords, l_classified, l_classification,
+		l_classkeep, l_classdesc, l_classguid, l_flagreq,
+	};
+	static_assert(l_flagreq + 1 == std::size(namequeries));
+	const PROPNAME_ARRAY propnames = {std::size(namequeries), deconst(namequeries)};
+	if (!get_propids(&propnames, &propids) || propids.size() != propnames.size())
+		return false;
+
 	if (oxcmail_export_content_class(pskeleton->pmessage_class, tmp_field)) {
 		if (!phead->set_field("Content-Class", tmp_field))
 			return FALSE;
 	} else if (0 == strncasecmp(
 		pskeleton->pmessage_class,
 		"IPM.InfoPathForm.", 17)) {
-		PROPERTY_NAME propname = {MNID_ID, PSETID_Common, PidLidInfoPathFromName};
-		const PROPNAME_ARRAY propnames = {1, &propname};
-		if (!get_propids(&propnames, &propids) || propids.size() != 1)
-			return FALSE;
-		auto str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
+		auto str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_infopath]));
 		if (str != nullptr) {
 			auto str1 = strrchr(str, '.');
 			if (str1 != nullptr)
@@ -3434,11 +3453,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	str = pmsg->proplist.get<char>(PR_INTERNET_REFERENCES);
 	if (str != nullptr && !phead->set_field("References", str))
 		return FALSE;
-	PROPERTY_NAME propname = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameKeywords)};
-	const PROPNAME_ARRAY propnames = {1, &propname};
-	if (!get_propids(&propnames, &propids) || propids.size() != 1)
-		return FALSE;
-	auto sa = pmsg->proplist.get<STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, propids.ppropid[0]));
+	auto sa = pmsg->proplist.get<STRING_ARRAY>(PROP_TAG(PT_MV_UNICODE, propids[l_keywords]));
 	if (sa != nullptr) {
 		tmp_len = 0;
 		for (size_t i = 0; i < sa->count; ++i) {
@@ -3474,36 +3489,21 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		if (str != nullptr && !phead->set_field("Content-Language", str))
 			return FALSE;
 	}
-	propname = {MNID_ID, PSETID_Common, PidLidClassified};
-	if (!get_propids(&propnames, &propids) || propids.size() != 1)
-		return FALSE;
-	auto flag = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
+	auto flag = pmsg->proplist.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_classified]));
 	if (flag != nullptr && *flag != 0 &&
 	    !phead->set_field("X-Microsoft-Classified", "true"))
 		return FALSE;
-	propname = {MNID_ID, PSETID_Common, PidLidClassificationKeep};
-	if (!get_propids(&propnames, &propids) || propids.size() != 1)
-		return FALSE;
-	flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
+	flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids[l_classkeep]));
 	if (flag != nullptr && *flag != 0 &&
 	    !phead->set_field("X-Microsoft-ClassKeep", "true"))
 		return FALSE;
-	propname = {MNID_ID, PSETID_Common, PidLidClassification};
-	if (!get_propids(&propnames, &propids) || propids.size() != 1)
-		return FALSE;
-	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
+	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_classification]));
 	if (str != nullptr && !phead->set_field("X-Microsoft-Classification", str))
 		return FALSE;
-	propname = {MNID_ID, PSETID_Common, PidLidClassificationDescription};
-	if (!get_propids(&propnames, &propids) || propids.size() != 1)
-		return FALSE;
-	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
+	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_classdesc]));
 	if (str != nullptr && !phead->set_field("X-Microsoft-ClassDesc", str))
 		return FALSE;
-	propname = {MNID_ID, PSETID_Common, PidLidClassificationGuid};
-	if (!get_propids(&propnames, &propids) || propids.size() != 1)
-		return FALSE;
-	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
+	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_classguid]));
 	if (str != nullptr && !phead->set_field("X-Microsoft-ClassID", str))
 		return FALSE;
 	
@@ -3574,10 +3574,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			return FALSE;
 	}
 	
-	propname = {MNID_ID, PSETID_Common, PidLidFlagRequest};
-	if (!get_propids(&propnames, &propids) || propids.size() != 1)
-		return FALSE;
-	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
+	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_flagreq]));
 	if (str != nullptr && *str != '\0') {
 		if (!phead->set_field("X-Message-Flag", str))
 			return FALSE;
