@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -646,8 +646,9 @@ static ZEND_FUNCTION(mapi_logon_zarafa)
 	zend_long flags = 0;
 	size_t wa_len = 0, misc_len = 0, username_len = 0, password_len = 0;
 	size_t server_len = 0, sslcert_len = 0, sslpass_len = 0;
-	char *server, *sslcert, *sslpass, *username, *password;
-	char *wa_version, *misc_version;
+	char *server = nullptr, *sslcert = nullptr, *sslpass = nullptr;
+	char *username = nullptr, *password = nullptr;
+	char *wa_version = nullptr, *misc_version = nullptr;
 	MAPI_RESOURCE *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|ssslss",
@@ -772,7 +773,7 @@ static ZEND_FUNCTION(mapi_openentry)
 {
 	ZCL_MEMORY;
 	zend_long flags = 0;
-	BINARY entryid;
+	BINARY entryid{};
 	size_t eid_size = 0;
 	zval *pzresource;
 	uint32_t hobject;
@@ -838,7 +839,7 @@ static ZEND_FUNCTION(mapi_openaddressbook)
 static ZEND_FUNCTION(mapi_ab_openentry)
 {
 	zend_long flags = 0;
-	BINARY entryid;
+	BINARY entryid{};
 	size_t eid_size = 0;
 	zval *pzresource;
 	uint32_t hobject;
@@ -1336,7 +1337,7 @@ static ZEND_FUNCTION(mapi_folder_copyfolder)
 {
 	ZCL_MEMORY;
 	zend_long flags = 0;
-	char *pname;
+	char *pname = nullptr;
 	size_t name_len = 0, eid_size = 0;
 	BINARY entryid;
 	zval *pzvalsrcfolder, *pzvaldstfolder;
@@ -1626,7 +1627,7 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 static ZEND_FUNCTION(mapi_table_queryrows)
 {
 	ZCL_MEMORY;
-	zval pzrowset, *pzresource, *pzproptags;
+	zval pzrowset, *pzresource, *pzproptags = nullptr;
 	TARRAY_SET rowset;
 	MAPI_RESOURCE *ptable;
 	PROPTAG_ARRAY proptags, *pproptags = nullptr;
@@ -2198,7 +2199,7 @@ static ZEND_FUNCTION(mapi_openpropertytostream)
 	zend_long flags = 0, proptag;
 	size_t guidlen = 0;
 	void *pvalue;
-	char *guidstr;
+	char *guidstr = nullptr;
 	zval *pzresource;
 	MAPI_RESOURCE *probject;
 	
@@ -2355,7 +2356,7 @@ static ZEND_FUNCTION(mapi_attach_openobj)
 static ZEND_FUNCTION(mapi_getidsfromnames)
 {
 	ZCL_MEMORY;
-	zval *pzstore, *pznames, *pzguids;
+	zval *pzstore, *pznames, *pzguids = nullptr;
 	PROPID_ARRAY propids;
 	MAPI_RESOURCE *pstore;
 	PROPNAME_ARRAY propnames;
@@ -3662,7 +3663,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
 {
 	ZCL_MEMORY;
 	BINARY state_bin;
-	zval *pzresimport, *pzresstream;
+	zval *pzresimport, *pzresstream = nullptr;
 	ICS_IMPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
 	
@@ -3811,7 +3812,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
 {
 	ZCL_MEMORY;
 	BINARY state_bin;
-	zval *pzresimport, *pzresstream;
+	zval *pzresimport, *pzresstream = nullptr;
 	ICS_IMPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
 	
@@ -4365,7 +4366,7 @@ static ZEND_FUNCTION(mapi_linkmessage)
 	ZCL_MEMORY;
 	size_t srcheid_size = 0, msgeid_size = 0;
 	zval *pzresource;
-	BINARY search_entryid, message_entryid;
+	BINARY search_entryid{}, message_entryid{};
 	MAPI_RESOURCE *psession;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|ss",
