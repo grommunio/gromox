@@ -22,6 +22,7 @@
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/vcard.hpp>
 #include "genimport.hpp"
 #include "exch/midb/system_services.hpp"
@@ -46,7 +47,7 @@ static unsigned int g_export_mode = EXPORT_MAIL;
 static int g_allday_mode = -1;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'Y', HXTYPE_INT, &g_allday_mode, nullptr, nullptr, 0, "Allday emission mode (default=-1, YMDHMS=0, YMD=1)"},
-	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
+	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to export from", "EMAILADDR"},
 	{"ical", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_ICAL, "Export as calendar object"},
@@ -123,6 +124,7 @@ int main(int argc, char **argv) try
 	}
 	if (g_allday_mode >= 0)
 		g_oxcical_allday_ymd = g_allday_mode;
+	textmaps_init(PKGDATADIR);
 	g_config_file = config_file_prg(nullptr, "midb.cfg",
 	                exm2eml_cfg_defaults);
 	if (g_config_file == nullptr) {
