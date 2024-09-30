@@ -3410,7 +3410,6 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (!get_propids(&pna, &propids))
 		return E_2201;
 
-	/* Cf. MS-OXCICAL v20240416 §2.1.3.1.1.1, "property: METHOD". */
 	auto num = pmsg->proplist.get<const uint32_t>(PR_MESSAGE_LOCALE_ID);
 	auto planguage = num != nullptr ? lcid_to_ltag(*num) : nullptr;
 	auto str = pmsg->proplist.get<const char>(PR_MESSAGE_CLASS);
@@ -3458,15 +3457,6 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			return fmt::format("W-2060: oxcical_export does not handle message class \"{}\"", str);
 		}
 	}
-
-	/*
-	 * Cf. MS-OXCICAL v20240416: If the METHOD property of the VCALENDAR
-	 * component is set to "COUNTER", then apptProposedStartWhole should be
-	 * exported as a new DTSTART property. For other values of METHOD, the
-	 * apptStartWhole of a Calendar object should be exported as DTSTART.
-	 *
-	 * NOTE: b_proposal is correctly set on COUNTER (see above).
-	 */
 	auto lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME,
 	            propids.ppropid[b_proposal ? l_proposedstartwhole : l_startwhole]));
 	bool has_start_time = false;
@@ -3524,18 +3514,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		if (has_start_time && gmtime_r(&start_time, &tmp_tm) != nullptr)
 			year = tmp_tm.tm_year + 1900;
 
-		/*
-		 * Cf. [MS-OXCICAL] v20240416 §2.1.3.1.1.19.1 "property: TZID":
-		 * If the tzdefRecur, tzdefStartDisplay, or tzdefEndDisplay
-		 * property is being exported as a VTIMEZONE, then the value of
-		 * TZID must be derived from the KeyName field of the
-		 * tzdefRecur structure.
-		 *
-		 * Note: There is no need to check tzdefStartDisplay or
-		 * tzdefEndDisplay, as it is a MUST to use the KeyName of
-		 * tzdefRecur.
-		 */
-		tzid = nullptr;
+		tzid = NULL;
 		if (b_recurrence) {
 			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefrecur]));
 			if (bin != nullptr) {
@@ -3554,6 +3533,26 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 					return "E-2208: export_timezone returned an unspecified error";
 			}
 		} else {
+			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefstart]));
+			if (bin != nullptr)
+				bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzdefend]));
+			if (bin != nullptr) {
+				EXT_PULL ext_pull;
+				TIMEZONEDEFINITION tz_definition;
+				TIMEZONESTRUCT tz_struct;
+
+				ext_pull.init(bin->pb, bin->cb, alloc, 0);
+				if (ext_pull.g_tzdef(&tz_definition) != EXT_ERR_SUCCESS)
+					return "E-2209: PidLidAppointmentTimeZoneDefinitionEndDisplay contents not recognized";
+				tzid = tz_definition.keyname;
+				oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
+				ptz_component = oxcical_export_timezone(
+						pical, year - 1, tzid, &tz_struct);
+				if (ptz_component == nullptr)
+					return "E-2210: export_timezone returned an unspecified error";
+			}
+		}
+		if (ptz_component == nullptr) {
 			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[l_tzstruct]));
 			tzid = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[l_tzdesc]));
 			if (bin != nullptr && tzid != nullptr) {
@@ -3566,7 +3565,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				ptz_component = oxcical_export_timezone(
 						pical, year - 1, tzid, &tz_struct);
 				if (ptz_component == nullptr)
-					return "E-2210: export_timezone returned an unspecified error";
+					return "E-2206: export_timezone returned an unspecified error";
 			}
 		}
 	}
