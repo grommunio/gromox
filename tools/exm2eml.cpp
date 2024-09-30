@@ -136,7 +136,7 @@ int main(int argc, char **argv) try
 #define E(f, s) do { \
 	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))); \
 	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
+		fprintf(stderr, "[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
 		return -1; \
 	} \
 } while (false)
@@ -211,7 +211,7 @@ int main(int argc, char **argv) try
 		}
 		auto err = imail.to_fd(STDOUT_FILENO);
 		if (err == EPIPE) {
-			printf("pipe\n");
+			perror("pipe");
 			return EXIT_FAILURE;
 		}
 		if (err != 0) {
