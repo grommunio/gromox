@@ -41,10 +41,10 @@ int main(int argc, char **argv)
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	textmaps_init(PKGDATADIR);
 	if (g_cpid != CP_ACP && cpid_to_cset(g_cpid) == nullptr) {
-		printf("Unknown codepage %u\n", g_cpid);
+		fprintf(stderr, "Unknown codepage %u\n", g_cpid);
 		return EXIT_FAILURE;
 	} else if (g_tobin && g_tojson) {
-		printf("Cannot use both -b and -j\n");
+		fprintf(stderr, "Cannot use both -b and -j\n");
 		return EXIT_FAILURE;
 	}
 
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 			if (puts(out.c_str()) == EOF)
 				return EXIT_FAILURE;
 		} catch (const std::runtime_error &e) {
-			printf("abkt_read: %s\n", e.what());
+			fprintf(stderr, "abkt_read: %s\n", e.what());
 		}
 	} else if (g_tobin) {
 		try {
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 			if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0)
 				return EXIT_FAILURE;
 		} catch (const std::runtime_error &e) {
-			printf("abkt_write: %s\n", e.what());
+			fprintf(stderr, "abkt_write: %s\n", e.what());
 		}
 	}
 	return EXIT_SUCCESS;
