@@ -241,6 +241,7 @@ int main(int argc, char **argv) try
 		if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* public store flag */
 			throw YError("PG-1016: %s", strerror(errno));
 		gi_folder_map_write({});
+		gi_dump_name_map(static_namedprop_map.fwd);
 		gi_name_map_write(static_namedprop_map.fwd);
 		EXT_PUSH ep;
 		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
