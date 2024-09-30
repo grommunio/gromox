@@ -617,23 +617,28 @@ std::string bin2cstr(const void *vdata, size_t len)
 		case '"':
 		case '\\':
 			b[1] = data[i]; break;
-		default:
-		if (isprint(data[i])) {
-			b[0] = data[i];
-			b[1] = '\0';
-		} else if (data[i] < 0010) {
-			b[1] = '0' + (data[i] % 8);
-		} else if (data[i] < 0100) {
-			b[1] = '0' + (data[i] / 8 % 8);
-			b[2] = '0' + (data[i] % 8);
-			b[3] = '\0';
-		} else {
-			b[1] = '0' + (data[i] / 64 % 8);
-			b[2] = '0' + (data[i] / 8 % 8);
-			b[3] = '0' + (data[i] % 8);
-			b[4] = '\0';
-		}
+		default: {
+			if (isprint(data[i])) {
+				b[0] = data[i];
+				b[1] = '\0';
+				break;
+			}
+			char next_char = i < len && i + 1 < len ? data[i+1] : 0;
+			auto next_unsafe = next_char >= '0' && next_char <= '7';
+			if (next_unsafe || data[i] >= 0100) {
+				b[1] = '0' + (data[i] / 64 % 8);
+				b[2] = '0' + (data[i] / 8 % 8);
+				b[3] = '0' + (data[i] % 8);
+				b[4] = '\0';
+			} else if (data[i] >= 0010) {
+				b[1] = '0' + (data[i] / 8 % 8);
+				b[2] = '0' + (data[i] % 8);
+				b[3] = '\0';
+			} else {
+				b[1] = '0' + (data[i] % 8);
+			}
 			break;
+		}
 		}
 		ret.append(b);
 	}

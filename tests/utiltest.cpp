@@ -461,6 +461,18 @@ static int t_eidcvt()
 	return EXIT_SUCCESS;
 }
 
+static int t_bin2cstr()
+{
+	static constexpr char input[] = "\1""0\10""0\100""0";
+	static constexpr char exp[] = "\\0010\\b0@0";
+	auto got = bin2cstr(input, strlen(input));
+	if (strcmp(got.c_str(), exp) != 0) {
+		fprintf(stderr, "bin2cstr: expected %s, got %s\n", exp, got.c_str());
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_utf7() != 0)
@@ -512,6 +524,9 @@ static int runner()
 	if (ret != 0)
 		return ret;
 	ret = t_eidcvt();
+	if (ret != 0)
+		return ret;
+	ret = t_bin2cstr();
 	if (ret != 0)
 		return ret;
 	return EXIT_SUCCESS;
