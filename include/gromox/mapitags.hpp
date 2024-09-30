@@ -1117,12 +1117,6 @@ using proptag_t = decltype(PR_NULL);
 }
 
 enum {
-	PidLidAttendeeCriticalChange = 0x0001,
-	PidLidGlobalObjectId = 0x0003, /* a.k.a. LID_GLOBAL_OBJID */
-	PidLidIsException = 0x000A,
-	PidLidStartRecurrenceTime = 0x000E,
-	PidLidOwnerCriticalChange = 0x001A,
-	PidLidCleanGlobalObjectId = 0x0023,
 	PidLidCategories = 0x2328,
 
 	/* PSETID_Address */
@@ -1205,10 +1199,17 @@ enum {
 	PidLidAppointmentTimeZoneDefinitionRecur = 0x8260,
 
 	/* PSETID_Meeting */
+	PidLidAttendeeCriticalChange = 0x0001,
 	PidLidWhere = 0x0002,
+	PidLidGlobalObjectId = 0x0003, /* a.k.a. LID_GLOBAL_OBJID */
 	PidLidIsSilent = 0x0004,
 	PidLidIsRecurring = 0x0005, /* object is associated with a recurring series object */
-	PidLidTimeZone = 0x000c,
+	PidLidIsException = 0x000A,
+	PidLidTimeZone = 0x000C,
+	PidLidStartRecurrenceTime = 0x000E,
+	PidLidMonthOfYearMask = 0x0017,
+	PidLidOwnerCriticalChange = 0x001A,
+	PidLidCleanGlobalObjectId = 0x0023,
 	PidLidMeetingType = 0x0026,
 
 	/* PSETID_Common */

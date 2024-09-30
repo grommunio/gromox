@@ -378,6 +378,49 @@ static void ical_export_1()
 	}
 }
 
+static void ical_export_2()
+{
+	/* GXF-1819 */
+	const ie_name_entry ie_map[] = {
+		{0x809d, {MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole}},
+		{0x809e, {MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole}},
+		{0x80a5, {MNID_ID, PSETID_Appointment, PidLidAppointmentSubType}},
+		{0x80d2, {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionStartDisplay}},
+		{0x80d3, {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionEndDisplay}},
+	};
+	auto get_propids = [&](const PROPNAME_ARRAY *a, PROPID_ARRAY *i) {
+		return ie_get_propids(ie_map, std::size(ie_map), a, i);
+	};
+	static constexpr uint64_t v_start = 0x1db0f96441fb000, v_end = 0x1db105f6e897000;
+	static constexpr bool v_true = 1;
+	static const BINARY v_122 = {122, {reinterpret_cast<uint8_t *>(deconst("\x02\x01\x34\x00\x02\x00\x17\x00\x57\x00\x2e\x00\x20\x00\x45\x00\x75\x00\x72\x00\x6f\x00\x70\x00\x65\x00\x20\x00\x53\x00\x74\x00\x61\x00\x6e\x00\x64\x00\x61\x00\x72\x00\x64\x00\x20\x00\x54\x00\x69\x00\x6d\x00\x65\x00\x01\x00\x02\x01\x3e\x00\x02\x00\x41\x06\x01\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc4\xff\xff\xff\x00\x00\x00\x00\xc4\xff\xff\xff\x00\x00\x0a\x00\x00\x00\x05\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x05\x00\x02\x00\x00\x00\x00\x00\x00\x00"))}};
+	const TAGGED_PROPVAL props[] = {
+		{PR_MESSAGE_CLASS, deconst("IPM.Appointment")},
+		{0x809d0040, deconst(&v_start)},
+		{0x809e0040, deconst(&v_end)},
+		{0x80a5000b, deconst(&v_true)},
+		{0x80d20102, deconst(&v_122)},
+		{0x80d30102, deconst(&v_122)},
+	};
+	fprintf(stderr, "=== ical_export_2\n");
+	const MESSAGE_CONTENT msgctnt = {{std::size(props), deconst(props)}};
+	ical icalout;
+	if (!oxcical_export(&msgctnt, icalout, "x500org", malloc, get_propids, nullptr)) {
+		fprintf(stderr, "oxcical_export failed\n");
+		return;
+	}
+	std::string icstr;
+	if (icalout.serialize(icstr) != ecSuccess) {
+		fprintf(stderr, "ical_serialize failed\n");
+		return;
+	}
+	if (strstr(icstr.c_str(), "DTSTART;VALUE=DATE;TZID=W. Europe Standard Time:20240926") == nullptr ||
+	    strstr(icstr.c_str(), "DTEND;VALUE=DATE;TZID=W. Europe Standard Time:20240927") == nullptr) {
+		printf("%s\n", icstr.c_str());
+		fprintf(stderr, "FAILED. Substrings DTSTART/20240926 and DTEND/20240927 not found.\n");
+	}
+}
+
 int main()
 {
 	auto ee_get_user_ids = [](const char *, unsigned int *, unsigned int *, enum display_type *) -> BOOL { return false; };
@@ -394,5 +437,6 @@ int main()
 	select_parts_4();
 	select_parts_5();
 	ical_export_1();
+	ical_export_2();
 	return EXIT_SUCCESS;
 }
