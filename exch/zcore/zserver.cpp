@@ -3888,10 +3888,18 @@ ec_error_t zs_getnamedpropids(GUID hsession, uint32_t hstore,
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pstore = pinfo->ptree->get_object<store_object>(hstore, &mapi_type);
-	if (pstore == nullptr)
+	auto obj = pinfo->ptree->get_object<void>(hstore, &mapi_type);
+	if (obj == nullptr)
 		return ecNullObject;
-	if (mapi_type != zs_objtype::store)
+	store_object *pstore = nullptr;
+	switch (mapi_type) {
+	case zs_objtype::store: pstore = static_cast<store_object *>(obj); break;
+	case zs_objtype::folder: pstore = static_cast<folder_object *>(obj)->pstore; break;
+	case zs_objtype::message: pstore = static_cast<message_object *>(obj)->get_store(); break;
+	case zs_objtype::attach: pstore = static_cast<attachment_object *>(obj)->get_store(); break;
+	default: break;
+	}
+	if (pstore == nullptr)
 		return ecNotSupported;
 	return pstore->get_named_propids(TRUE, ppropnames, ppropids) ?
 	       ecSuccess : ecError;
@@ -3904,10 +3912,18 @@ ec_error_t zs_getpropnames(GUID hsession, uint32_t hstore,
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto pstore = pinfo->ptree->get_object<store_object>(hstore, &mapi_type);
-	if (pstore == nullptr)
+	auto obj = pinfo->ptree->get_object<void>(hstore, &mapi_type);
+	if (obj == nullptr)
 		return ecNullObject;
-	if (mapi_type != zs_objtype::store)
+	store_object *pstore = nullptr;
+	switch (mapi_type) {
+	case zs_objtype::store: pstore = static_cast<store_object *>(obj); break;
+	case zs_objtype::folder: pstore = static_cast<folder_object *>(obj)->pstore; break;
+	case zs_objtype::message: pstore = static_cast<message_object *>(obj)->get_store(); break;
+	case zs_objtype::attach: pstore = static_cast<attachment_object *>(obj)->get_store(); break;
+	default: break;
+	}
+	if (pstore == nullptr)
 		return ecNotSupported;
 	return pstore->get_named_propnames(ppropids, ppropnames) ?
 	       ecSuccess : ecError;

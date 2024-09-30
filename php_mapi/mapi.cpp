@@ -2282,22 +2282,23 @@ static ZEND_FUNCTION(mapi_getidsfromnames)
 	ZCL_MEMORY;
 	zval *pzstore, *pznames, *pzguids = nullptr;
 	PROPID_ARRAY propids;
-	MAPI_RESOURCE *pstore;
 	PROPNAME_ARRAY propnames;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"ra|a", &pzstore, &pznames, &pzguids) == FAILURE
 		|| NULL == pzstore || NULL == pznames)
 		pthrow(ecInvalidParam);
-	ZEND_FETCH_RESOURCE(pstore, pzstore, le_mapi_msgstore);
-	if (pstore->type != zs_objtype::store)
+	auto pstore = resolve_resource(pzstore, {le_mapi_msgstore,
+	              le_mapi_folder, le_mapi_message, le_mapi_attachment});
+	if (pstore == &invalid_object)
 		pthrow(ecInvalidObject);
+	else if (pstore == nullptr)
+		pthrow(ecInvalidParam);
 	auto err = php_to_propname_array(pznames, pzguids, &propnames);
 	if (err != ecSuccess)
 		pthrow(err);
-	auto result = zclient_getnamedpropids(
-		pstore->hsession, pstore->hobject,
-		&propnames, &propids);
+	auto result = zclient_getnamedpropids(pstore->hsession,
+	              pstore->hobject, &propnames, &propids);
 	if (result != ecSuccess)
 		pthrow(result);
 	zarray_init(return_value);
@@ -2624,7 +2625,6 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 	zval *pzarray, *pzresource;
 	char num_buff[20];
 	PROPID_ARRAY propids;
-	MAPI_RESOURCE *pstore;
 	PROPTAG_ARRAY proptags;
 	PROPNAME_ARRAY propnames;
 	
@@ -2632,9 +2632,12 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 		"ra", &pzresource, &pzarray) == FAILURE || NULL
 		== pzresource || NULL == pzarray)
 		pthrow(ecInvalidParam);
-	ZEND_FETCH_RESOURCE(pstore, pzresource, le_mapi_msgstore);
-	if (pstore->type != zs_objtype::store)
-			pthrow(ecInvalidObject);
+	auto probject = resolve_resource(pzresource, {le_mapi_msgstore,
+	                le_mapi_folder, le_mapi_message, le_mapi_attachment});
+	if (probject == &invalid_object)
+		pthrow(ecInvalidObject);
+	else if (probject == nullptr)
+		pthrow(ecInvalidParam);
 	auto err = php_to_proptag_array(pzarray, &proptags);
 	if (err != ecSuccess)
 		pthrow(err);
@@ -2645,8 +2648,8 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 	}
 	for (unsigned int i = 0; i < proptags.count; ++i)
 		propids[i] = PROP_ID(proptags.pproptag[i]);
-	auto result = zclient_getpropnames(pstore->hsession, pstore->hobject,
-	              propids, &propnames);
+	auto result = zclient_getpropnames(probject->hsession,
+	              probject->hobject, propids, &propnames);
 	if (result != ecSuccess)
 		pthrow(result);
 	zarray_init(return_value);
