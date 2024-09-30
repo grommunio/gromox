@@ -1034,7 +1034,7 @@ static void do_namemap_table(driver &drv)
 	}
 
 	for (const auto &[id, mn] : static_namedprop_map.fwd)
-		if (mn.kind == MNID_STRING && mn.guid == PSETID_KCArchive &&
+		if (mn.kind == MNID_STRING && mn.guid == PSETID_Zarafa_Archive &&
 		    strcasecmp(mn.name.c_str(), "stubbed") == 0)
 			g_proptag_stubbed = PROP_TAG(PT_BOOLEAN, id);
 }

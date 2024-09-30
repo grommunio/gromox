@@ -1580,9 +1580,10 @@ extern GX_EXPORT const FLATUID
 extern GX_EXPORT const GUID
 	GUID_NULL, PSETID_Address, PSETID_Appointment,
 	PSETID_BusinessCardView, PSETID_CalendarAssistant, PSETID_Common,
-	PSETID_Gromox, PSETID_KC, PSETID_KCArchive, PSETID_Log, PSETID_Meeting,
+	PSETID_Gromox, PSETID_KC, PSETID_Log, PSETID_Meeting,
 	PSETID_Note, PSETID_Remote,
 	PSETID_Report, PSETID_Sharing, PSETID_Task, PSETID_UnifiedMessaging,
+	PSETID_Zarafa_Archive, PSETID_Zarafa_CalDav,
 	PS_INTERNET_HEADERS, PS_MAPI,
 	PS_PUBLIC_STRINGS,
 	gx_dbguid_store_private, gx_dbguid_store_public,

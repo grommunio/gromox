@@ -138,9 +138,13 @@ const GUID PSETID_Gromox =
 const GUID PSETID_KC =
 	/* {63aed8c8-4049-4b75-bc88-96df9d723f2f} */
 	{0x63AED8C8, 0x4049, 0x4B75, {0xBC, 0x88}, {0x96, 0xDF, 0x9D, 0x72, 0x3F, 0x2F}};
-const GUID PSETID_KCArchive =
-	/* {72e98ebc-57d2-4ab5-b0aa-d50a7b531cb9} */
+const GUID PSETID_Zarafa_Archive =
+	/* {72e98ebc-57d2-4ab5-b0aa-d50a7b531cb9}, bc8ee972d257b54ab0aad50a7b531cb9 */
+	// originally just "PSETID_Archive"
 	{0x72E98EBC, 0x57D2, 0x4AB5, {0xB0, 0xAA}, {0xD5, 0x0A, 0x7B, 0x53, 0x1C, 0xB9}};
+const GUID PSETID_Zarafa_CalDav =
+	/* {77536087-cb81-4dc9-9958-ea4c51be3486}, 8760537781cbc94d9958ea4c51be3486 */
+	{0x77536087, 0xcb81, 0x4dc9, {0x99, 0x58}, {0xea, 0x4c, 0x51, 0xbe, 0x34, 0x86}};
 const GUID PSETID_Log =
 	/* {0006200a-0000-0000-c000-000000000046}, 0a20060000000000c000000000000046 */
 	GX_OLEGUID(0x006200A);

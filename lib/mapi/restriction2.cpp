@@ -652,7 +652,6 @@ std::string guid2name(const FLATUID le)
 	GN(PSETID_Common);
 	GN(PSETID_Gromox);
 	GN(PSETID_KC);
-	GN(PSETID_KCArchive);
 	GN(PSETID_Log);
 	GN(PSETID_Meeting);
 	GN(PSETID_Note);
@@ -661,6 +660,8 @@ std::string guid2name(const FLATUID le)
 	GN(PSETID_Sharing);
 	GN(PSETID_Task);
 	GN(PSETID_UnifiedMessaging);
+	GN(PSETID_Zarafa_Archive);
+	GN(PSETID_Zarafa_CalDav);
 	GN(PS_INTERNET_HEADERS);
 	GN(PS_MAPI);
 	GN(PS_PUBLIC_STRINGS);
