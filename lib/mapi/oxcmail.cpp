@@ -2627,11 +2627,15 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	    !oxcmail_parse_message_body(default_charset.c_str(),
 	    mime_enum.pplain, &pmsg->proplist))
 		return imp_null;
-	if (mime_enum.htmls.size() > 0) {
+	if (mime_enum.htmls.size() > 1) {
 		assert(mime_enum.hjoin.size() >= mime_enum.htmls.size());
 		auto err = bodyset_multi(mime_enum, pmsg->proplist,
 		           default_charset.c_str());
 		if (err != 0)
+			return imp_null;
+	} else if (mime_enum.htmls.size() > 0) {
+		if (!oxcmail_parse_message_body(default_charset.c_str(),
+		    mime_enum.htmls.front(), &pmsg->proplist))
 			return imp_null;
 	} else if (NULL != mime_enum.penriched) {
 		if (!oxcmail_parse_message_body(default_charset.c_str(),
