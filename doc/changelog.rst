@@ -1,9 +1,12 @@
-Development 2.32.49
-===================
+Gromox 2.33 (2024-10-01)
+========================
 
 Fixes:
 
-* oxdisco: allow retrieval of TB Autoconfig XML without authentication
+* oxdisco: serve TB Autoconfig XML without requiring authentication
+  (clients do not expect it to be protected)
+* oxcical: revert commit which evaluates different MAPI timezone properties to
+  generate DTSTART/DTEND's TZID value
 
 Enhancements:
 
