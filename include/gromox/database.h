@@ -69,12 +69,12 @@ struct GX_EXPORT xstmt {
 	inline uint64_t col_uint64(unsigned int col) { return sqlite3_column_int64(m_ptr, col); }
 	inline int step(unsigned int flags = 0) { return gx_sql_step(m_ptr, flags); }
 	inline int reset() { return sqlite3_reset(m_ptr); }
-	inline void finalize() { *this = nullptr; }
-	void operator=(std::nullptr_t) {
+	void finalize() {
 		if (m_ptr != nullptr)
 			sqlite3_finalize(m_ptr);
 		m_ptr = nullptr;
 	}
+	inline void operator=(std::nullptr_t) { finalize(); }
 	void operator=(xstmt &&o) noexcept {
 		if (m_ptr != nullptr)
 			sqlite3_finalize(m_ptr);
