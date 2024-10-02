@@ -765,7 +765,7 @@ enum zics_type {
 	ICS_TYPE_HIERARCHY = 2,
 };
 
-enum zs_objtype : uint8_t {
+enum class zs_objtype : uint8_t {
 	/* Zend resource type groups */
 	root = 0, table, message, attach, abcont, folder, session, addrbook,
 	store, mailuser, distlist, profproperty, advisesink, icsdownctx,

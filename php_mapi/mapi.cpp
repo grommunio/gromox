@@ -77,7 +77,7 @@ using namespace gromox;
 namespace {
 
 struct MAPI_RESOURCE {
-	uint8_t type;
+	enum zs_objtype type;
 	GUID hsession;
 	uint32_t hobject;
 };
@@ -153,21 +153,21 @@ static constexpr char
 	name_mapi_importcontentschanges[] = "ICS Import Contents Changes";
 
 static int le_stream;
-static int le_mapi_table;
 static int le_mapi_abcont;
-static int le_mapi_folder;
-static int le_mapi_message;
-static int le_mapi_session;
 static int le_mapi_addressbook;
-static int le_mapi_msgstore;
-static int le_mapi_mailuser;
-static int le_mapi_distlist;
-static int le_mapi_property;
 static int le_mapi_advisesink;
 static int le_mapi_attachment;
+static int le_mapi_distlist;
 static int le_mapi_exportchanges;
+static int le_mapi_folder;
 static int le_mapi_importcontentschanges;
 static int le_mapi_importhierarchychanges;
+static int le_mapi_mailuser;
+static int le_mapi_message;
+static int le_mapi_msgstore;
+static int le_mapi_property;
+static int le_mapi_session;
+static int le_mapi_table;
 
 static zend_bool stream_object_set_length(
 	STREAM_OBJECT *pstream, uint32_t length)
@@ -2461,11 +2461,14 @@ static ZEND_FUNCTION(mapi_savechanges)
 	}
 	switch (probject->type) {
 	case zs_objtype::attach:
-	case zs_objtype::message:
+	case zs_objtype::message: {
 		auto result = zclient_savechanges(
 			probject->hsession, probject->hobject);
 		if (result != ecSuccess)
 			pthrow(result);
+		break;
+	}
+	default:
 		break;
 	}
 	RETVAL_TRUE;

@@ -448,7 +448,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_openentry &d)
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_openentry &d)
 {
-	QRF(x.p_uint8(d.mapi_type));
+	QRF(x.p_uint8(static_cast<uint8_t>(d.mapi_type)));
 	QRF(x.p_uint32(d.hobject));
 	return pack_result::ok;
 }
@@ -464,7 +464,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_openstoreentry &d)
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_openstoreentry &d)
 {
-	QRF(x.p_uint8(d.mapi_type));
+	QRF(x.p_uint8(static_cast<uint8_t>(d.mapi_type)));
 	QRF(x.p_uint32(d.hxobject));
 	return pack_result::ok;
 }
@@ -478,7 +478,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_openabentry &d)
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_openabentry &d)
 {
-	QRF(x.p_uint8(d.mapi_type));
+	QRF(x.p_uint8(static_cast<uint8_t>(d.mapi_type)));
 	QRF(x.p_uint32(d.hobject));
 	return pack_result::ok;
 }
