@@ -4191,7 +4191,7 @@ static void mail_engine_modify_notification_message(
 }
 
 static void mail_engine_notification_proc(const char *dir,
-	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify)
+    BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify) try
 {
 	uint64_t parent_id = 0, folder_id = 0, message_id = 0;
 	char temp_buff[1280];
@@ -4240,8 +4240,12 @@ static void mail_engine_notification_proc(const char *dir,
 		auto stm = gx_sql_prep(pidb->psqlite, sql_string);
 		if (stm == nullptr || stm.step() != SQLITE_ROW)
 			return;
+		std::string name = znul(stm.col_text(0));
+		/* end implicit transaction since we have not attempted to read
+		 * past the last row yet */
+		stm.finalize();
 		mail_engine_delete_notification_message(pidb.get(), folder_id,
-			message_id, pidb->username, stm.col_text(0));
+			message_id, pidb->username, name.c_str());
 		folder_id = 0;
 		break;
 	}
@@ -4275,8 +4279,10 @@ static void mail_engine_notification_proc(const char *dir,
 		auto stm = gx_sql_prep(pidb->psqlite, sql_string);
 		if (stm == nullptr || stm.step() != SQLITE_ROW)
 			return;
+		std::string name = znul(stm.col_text(0));
+		stm.finalize();
 		mail_engine_delete_notification_message(pidb.get(), folder_id,
-			message_id, pidb->username, stm.col_text(0));
+			message_id, pidb->username, name.c_str());
 		folder_id = n->folder_id;
 		message_id = n->message_id;
 		mail_engine_add_notification_message(pidb.get(), folder_id,
@@ -4309,10 +4315,14 @@ static void mail_engine_notification_proc(const char *dir,
 		auto stm = gx_sql_prep(pidb->psqlite, sql_string);
 		if (stm == nullptr || stm.step() != SQLITE_ROW)
 			return;
+		std::string name = znul(stm.col_text(0));
+		stm.finalize();
 		snprintf(temp_buff, std::size(temp_buff), "FOLDER-TOUCH %s %s",
-			pidb->username.c_str(), stm.col_text(0));
+			pidb->username.c_str(), name.c_str());
 		system_services_broadcast_event(temp_buff);
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2346: ENOMEM");
 }
 
 void mail_engine_init(const char *default_charset, const char *org_name,
