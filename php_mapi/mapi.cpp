@@ -56,7 +56,7 @@ ZEND_END_MODULE_GLOBALS(mapi)
 			RETURN_FALSE; \
 		} while (false); \
 	} while (false)
-/* PHP macros do not have proper do..while guards on their own */
+/* PHP macros do not have proper do..while guards on their own before PHP-8.0.0 */
 #define RETVAL_RG(obj, category) \
 	do { RETVAL_RES(zend_register_resource(obj, category)); } while (false)
 #define pthrow(rv) \
