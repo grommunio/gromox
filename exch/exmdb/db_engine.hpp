@@ -168,6 +168,8 @@ struct db_conn {
 		}
 	};
 	using ID_ARRAYS = std::map<const char *, std::vector<uint32_t>, xless>;
+	/* As long as any NOTIFQ object is alive, dbase should be held at least read-locked. */
+	using NOTIFQ = std::vector<std::pair<DB_NOTIFY_DATAGRAM, ID_ARRAYS>>;
 
 	db_conn(db_base &);
 	~db_conn();
@@ -179,20 +181,20 @@ struct db_conn {
 	db_base_wr_ptr lock_base_wr();
 	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids, db_base &);
 	void delete_dynamic(uint64_t folder_id, db_base *);
-	void proc_dynamic_event(cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3, db_base &);
-	void notify_new_mail(uint64_t folder_id, uint64_t msg_id, db_base &);
-	void notify_message_creation(uint64_t folder_id, uint64_t msg_id, db_base &);
-	void notify_link_creation(uint64_t parent_id, uint64_t msg_id, db_base &);
-	void notify_folder_creation(uint64_t parent_id, uint64_t folder_id, const db_base &);
-	void notify_message_deletion(uint64_t folder_id, uint64_t msg_id, db_base &);
-	void notify_link_deletion(uint64_t parent_id, uint64_t msg_id, db_base &);
-	void notify_folder_deletion(uint64_t parent_id, uint64_t folder_id, const db_base &);
-	void notify_message_modification(uint64_t folder_id, uint64_t msg_id, db_base &);
-	void notify_folder_modification(uint64_t parent_id, uint64_t folder_id, const db_base &);
-	void notify_message_movecopy(BOOL b_copy, uint64_t folder_id, uint64_t msg_id, uint64_t old_fid, uint64_t old_mid, db_base &);
-	void notify_folder_movecopy(BOOL b_copy, uint64_t parent_id, uint64_t folder_id, uint64_t old_pid, uint64_t old_fid, const db_base &);
-	void notify_cttbl_reload(uint32_t table_id, const db_base &);
-	void transport_new_mail(uint64_t folder_id, uint64_t msg_id, uint32_t msg_flags, const char *klass, const db_base &);
+	void proc_dynamic_event(cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3, db_base &, NOTIFQ &);
+	void notify_new_mail(uint64_t folder_id, uint64_t msg_id, db_base &, NOTIFQ &);
+	void notify_message_creation(uint64_t folder_id, uint64_t msg_id, db_base &, NOTIFQ &);
+	void notify_link_creation(uint64_t parent_id, uint64_t msg_id, db_base &, NOTIFQ &);
+	void notify_folder_creation(uint64_t parent_id, uint64_t folder_id, const db_base &, NOTIFQ &);
+	void notify_message_deletion(uint64_t folder_id, uint64_t msg_id, db_base &, NOTIFQ &);
+	void notify_link_deletion(uint64_t parent_id, uint64_t msg_id, db_base &, NOTIFQ &);
+	void notify_folder_deletion(uint64_t parent_id, uint64_t folder_id, const db_base &, NOTIFQ &);
+	void notify_message_modification(uint64_t folder_id, uint64_t msg_id, db_base &, NOTIFQ &);
+	void notify_folder_modification(uint64_t parent_id, uint64_t folder_id, const db_base &, NOTIFQ &);
+	void notify_message_movecopy(BOOL b_copy, uint64_t folder_id, uint64_t msg_id, uint64_t old_fid, uint64_t old_mid, db_base &, NOTIFQ &);
+	void notify_folder_movecopy(BOOL b_copy, uint64_t parent_id, uint64_t folder_id, uint64_t old_pid, uint64_t old_fid, const db_base &, NOTIFQ &);
+	void notify_cttbl_reload(uint32_t table_id, const db_base &, NOTIFQ &);
+	void transport_new_mail(uint64_t folder_id, uint64_t msg_id, uint32_t msg_flags, const char *klass, const db_base &, NOTIFQ &);
 	void begin_batch_mode(db_base &);
 	/* pdb will also be put */
 	static void commit_batch_mode_release(std::optional<db_conn> &&pdb, db_base_wr_ptr &&base);
@@ -221,6 +223,7 @@ extern BOOL db_engine_vacuum(const char *path);
 BOOL db_engine_unload_db(const char *path);
 extern BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t, uint64_t folder_id, BOOL recursive, const RESTRICTION *, const LONGLONG_ARRAY *folder_ids);
 extern bool db_engine_check_populating(const char *dir, uint64_t folder_id);
+extern void dg_notify(db_conn::NOTIFQ &&);
 
 extern unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 extern unsigned long long g_exmdb_search_pacing_time, g_exmdb_lock_timeout;

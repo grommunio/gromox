@@ -1396,10 +1396,14 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 		if (!exmdb_client::read_message(dir, nullptr, CP_ACP,
 			rop_util_make_eid_ex(1, message_id), &pmsgctnt)) {
 			common_util_switch_allocator();
+			mlog(LV_ERR, "E-2394: read_message(%s,%llu) EXRPC failed",
+				dir, LLU{message_id});
 			return;
 		}
 		if (NULL == pmsgctnt) {
 			common_util_switch_allocator();
+			mlog(LV_ERR, "E-2398: read_message(%s,%llu) EXRPC: no message by this id",
+				dir, LLU{message_id});
 			return;
 		}
 		MAIL imail;

@@ -1070,6 +1070,7 @@ BOOL exmdb_server::reload_content_table(const char *dir, uint32_t table_id)
 	if (!pdb)
 		return FALSE;
 	auto dbase = pdb->lock_base_wr();
+	db_conn::NOTIFQ notifq;
 	auto &table_list = dbase->tables.table_list;
 	auto iter = std::find_if(table_list.begin(), table_list.end(),
 	            [&](const table_node &t) {
@@ -1091,7 +1092,8 @@ BOOL exmdb_server::reload_content_table(const char *dir, uint32_t table_id)
 			ptnode->folder_id, ptnode->username, ptnode->table_flags,
 			ptnode->prestriction, ptnode->psorts, &table_id,
 			&row_count);
-	pdb->notify_cttbl_reload(table_id, *dbase);
+	pdb->notify_cttbl_reload(table_id, *dbase, notifq);
+	dg_notify(std::move(notifq));
 	return b_result;
 }
 

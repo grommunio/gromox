@@ -57,10 +57,13 @@ BOOL exmdb_server::notify_new_mail(const char *dir, uint64_t folder_id,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return false;
-	/* Notifications need an externally managed transaction on main. */
+	/* notify_new_mail needs an externally managed transaction on main. */
 	auto sql_trans = gx_sql_begin(pdb->psqlite, txn_mode::read);
+	auto dbase = pdb->lock_base_wr();
+	db_conn::NOTIFQ notifq;
 	pdb->notify_new_mail(rop_util_get_gc_value(folder_id),
-		rop_util_get_gc_value(message_id), *pdb->lock_base_wr());
+		rop_util_get_gc_value(message_id), *dbase, notifq);
+	dg_notify(std::move(notifq));
 	return TRUE;
 }
 
@@ -143,7 +146,7 @@ static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
     const char *username, uint64_t folder_id, unsigned int del_flags,
     bool *partial, uint64_t *normal_size, uint64_t *fai_size,
     uint32_t *msg_count, uint32_t *fld_count, mapitime_t cutoff,
-    const db_base *dbase)
+    const db_base *dbase, db_conn::NOTIFQ &notifq)
 {
 	uint32_t folder_type = 0;
 	if (!common_util_get_folder_type(db->psqlite, folder_id, &folder_type))
@@ -235,7 +238,7 @@ static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
 		bool sub_partial = false;
 		if (!folder_purge_softdel(db, cpid, username, subfld,
 		    del_flags, &sub_partial, normal_size, fai_size,
-		    msg_count, fld_count, cutoff, dbase))
+		    msg_count, fld_count, cutoff, dbase, notifq))
 			return false;
 		if (sub_partial) {
 			*partial = true;
@@ -262,7 +265,7 @@ static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
 		         "WHERE folder_id=%llu", LLU{subfld});
 		if (gx_sql_exec(db->psqlite, qstr) != SQLITE_OK)
 			return false;
-		db->notify_folder_deletion(folder_id, subfld, *dbase);
+		db->notify_folder_deletion(folder_id, subfld, *dbase, notifq);
 	}
 	return true;
 }
@@ -288,11 +291,13 @@ BOOL exmdb_server::purge_softdelete(const char *dir, const char *username,
 	uint64_t normal_size = 0, fai_size = 0;
 	uint32_t msg_count = 0, fld_count = 0;
 	bool partial = false;
+
 	auto dbase = db->lock_base_wr();
+	db_conn::NOTIFQ notifq;
 	if (!folder_purge_softdel(db, CP_ACP, username, fid_val, del_flags,
-	    &partial, &normal_size, &fai_size, &msg_count, &fld_count, cutoff, dbase.get()))
+	    &partial, &normal_size, &fai_size, &msg_count, &fld_count, cutoff,
+	    dbase.get(), notifq))
 		return false;
-	dbase.reset();
 	char qstr[116];
 	if (msg_count > 0) {
 		snprintf(qstr, sizeof(qstr), "UPDATE folder_properties SET "
@@ -328,7 +333,10 @@ BOOL exmdb_server::purge_softdelete(const char *dir, const char *username,
 	}
 	if (!cu_adjust_store_size(db->psqlite, ADJ_DECREASE, normal_size, fai_size))
 		return false;
-	return xact.commit() == SQLITE_OK ? TRUE : false;
+	if (xact.commit() != SQLITE_OK)
+		return false;
+	dg_notify(std::move(notifq));
+	return TRUE;
 }
 
 static bool purg_discover_ids(sqlite3 *db, const std::string &query,
