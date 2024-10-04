@@ -18,5 +18,12 @@
 #define PKGSTATEGATEWAYDIR PKGSTATEDIR "/gateway"
 #define PKGSTATEQUEUEDIR PKGSTATEDIR "/queue"
 #define PKGLOGDIR LOCALSTATEDIR "/log/gromox"
-#define LOCAL_DISK_TMPDIR "/var/tmp/gromox" /* not RAM and not networked */
+/*
+ * LOCAL_DISK:
+ * - preferably not RAM (because used as temporary storage for fastcgi HTTP
+ *   request/response bodies, and the size of those are somewhat
+ *   user-influencable)
+ * - preferably low latency/preferably not a shared filesystem
+ */
+#define LOCAL_DISK_TMPDIR "/var/tmp/gromox"
 #define DFL_LOGOLINK "https://gromox.com/"
