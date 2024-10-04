@@ -682,7 +682,7 @@ POPULATING_NODE::~POPULATING_NODE()
 }
 
 static std::optional<ID_ARRAYS>
-db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
+db_engine_classify_id_array(std::vector<ID_NODE> &&substonotify) try
 {
 	struct xless {
 		bool operator()(const char *a, const char *b) const {
@@ -692,7 +692,7 @@ db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 	};
 	std::map<const char *, std::vector<uint32_t>, xless> counting_map;
 
-	for (const auto &e : plist)
+	for (const auto &e : substonotify)
 		counting_map[e.remote_id].emplace_back(e.id);
 	std::optional<ID_ARRAYS> parrays{std::in_place_t{}};
 	parrays->count = counting_map.size();
@@ -3826,7 +3826,7 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	std::vector<ID_NODE> tmp_list;
+	std::vector<ID_NODE> substonotify;
 
 	for (const auto &sub : dbase.nsub_list) {
 		auto pnsub = &sub;
@@ -3839,13 +3839,13 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 		}
 		if (pnsub->b_whole || (pnsub->folder_id == old_fid &&
 		    pnsub->message_id == old_mid)) try {
-			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
+			substonotify.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1521: ENOMEM");
 			return;
 		}
 	}
-	auto parrays = db_engine_classify_id_array(std::move(tmp_list));
+	auto parrays = db_engine_classify_id_array(std::move(substonotify));
 	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
@@ -3878,7 +3878,7 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	std::vector<ID_NODE> tmp_list;
+	std::vector<ID_NODE> substonotify;
 
 	for (const auto &sub : dbase.nsub_list) {
 		auto pnsub = &sub;
@@ -3892,13 +3892,13 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 		if (pnsub->b_whole ||
 		    (pnsub->folder_id == folder_id && pnsub->message_id == 0) ||
 		    (pnsub->folder_id == old_fid && pnsub->message_id == 0)) try {
-			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
+			substonotify.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1522: ENOMEM");
 			return;
 		}
 	}
-	auto parrays = db_engine_classify_id_array(std::move(tmp_list));
+	auto parrays = db_engine_classify_id_array(std::move(substonotify));
 	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
