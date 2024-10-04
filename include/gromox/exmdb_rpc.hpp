@@ -1343,7 +1343,7 @@ using exresp_movecopy_folder = exresp_error;
 struct DB_NOTIFY_DATAGRAM {
 	char *dir = nullptr;
 	BOOL b_table = false;
-	LONG_ARRAY id_array{};
+	std::vector<uint32_t> id_array;
 	DB_NOTIFY db_notify{};
 };
 

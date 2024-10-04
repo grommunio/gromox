@@ -296,9 +296,9 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 	if (write(agent.sockd, &resp_code, 1) != 1)
 		return -1;
 	if (resp_code == exmdb_response::success)
-		for (size_t i = 0; i < notify.id_array.count; ++i)
+		for (size_t i = 0; i < notify.id_array.size(); ++i)
 			mdcl_event_proc(notify.dir, notify.b_table,
-				notify.id_array.pl[i], &notify.db_notify);
+				notify.id_array[i], &notify.db_notify);
 	buff_len = 0;
 	return 0;
 }

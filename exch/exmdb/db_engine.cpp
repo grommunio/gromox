@@ -68,16 +68,13 @@ struct POPULATING_NODE {
 	LONGLONG_ARRAY folder_ids{};
 };
 
-struct ID_ARRAYS {
-	unsigned int count;
-	const char **remote_ids;
-	LONG_ARRAY *parray;
+struct xless {
+	bool operator()(const char *a, const char *b) const {
+		return b == nullptr ? false : a == nullptr ? true :
+		       strcasecmp(a, b) < 0;
+	}
 };
-
-struct ID_NODE {
-	const char *remote_id;
-	uint32_t id;
-};
+using ID_ARRAYS = std::map<const char *, std::vector<uint32_t>, xless>;
 
 struct ROWINFO_NODE {
 	DOUBLE_LIST_NODE node;
@@ -688,66 +685,28 @@ POPULATING_NODE::~POPULATING_NODE()
 	free(folder_ids.pll);
 }
 
-static std::optional<ID_ARRAYS>
-db_engine_classify_id_array(std::vector<ID_NODE> &&substonotify) try
-{
-	struct xless {
-		bool operator()(const char *a, const char *b) const {
-			return b == nullptr ? false : a == nullptr ? true :
-			       strcasecmp(a, b) < 0;
-		}
-	};
-	std::map<const char *, std::vector<uint32_t>, xless> counting_map;
-
-	for (const auto &e : substonotify)
-		counting_map[e.remote_id].emplace_back(e.id);
-	std::optional<ID_ARRAYS> parrays{std::in_place_t{}};
-	parrays->count = counting_map.size();
-	parrays->remote_ids = cu_alloc<const char *>(parrays->count);
-	if (parrays->remote_ids == nullptr)
-		return {};
-	parrays->parray = cu_alloc<LONG_ARRAY>(parrays->count);
-	if (parrays->parray == nullptr)
-		return {};
-	size_t i = 0;
-	for (auto &&[remote_id, idlist] : counting_map) {
-		parrays->remote_ids[i] = remote_id;
-		parrays->parray[i].count = idlist.size();
-		parrays->parray[i].pl = cu_alloc<uint32_t>(idlist.size());
-		if (parrays->parray[i].pl == nullptr)
-			return {};
-		if (idlist.data() != nullptr)
-			memcpy(parrays->parray[i].pl, idlist.data(), idlist.size() * sizeof(uint32_t));
-		i ++;
-	}
-	return parrays;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1509: ENOMEM");
-	return {};
-}
-
-static std::optional<ID_ARRAYS> db_engine_classify_id_array(const db_base &db,
+static ID_ARRAYS db_engine_classify_id_array(const db_base &db,
     unsigned int bits, uint64_t folder_id, uint64_t message_id) try
 {
-	std::vector<ID_NODE> tmp_list;
+	ID_ARRAYS out;
 	for (const auto &sub : db.nsub_list) {
 		if (!(sub.notification_type & bits))
 			continue;
 		if (sub.b_whole || (sub.folder_id == folder_id &&
 		    sub.message_id == message_id))
-			tmp_list.push_back(ID_NODE{sub.remote_id, sub.sub_id});
+			out[sub.remote_id].push_back(sub.sub_id);
 	}
-	return db_engine_classify_id_array(std::move(tmp_list));
+	return out;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1228: ENOMEM");
-	return {};
+	throw;
 }
 
 static void dg_notify(DB_NOTIFY_DATAGRAM &&dg, ID_ARRAYS &&a)
 {
-	for (unsigned int i = 0; i < a.count; ++i) {
-		dg.id_array = a.parray[i];
-		notification_agent_backward_notify(a.remote_ids[i], &dg);
+	for (auto &&[remote_id, sub_ids] : a) {
+		dg.id_array = std::move(sub_ids);
+		notification_agent_backward_notify(remote_id, &dg);
 	}
 }
 
@@ -758,7 +717,7 @@ static void dbeng_notify_search_completion(const db_base &dbase,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_SEARCH_COMPLETE, folder_id, 0);
-	if (!parrays.has_value() || parrays->count == 0)
+	if (parrays.size() == 0)
 		return;
 	datagram.dir = deconst(dir);
 	datagram.db_notify.type = db_notify_type::search_completed;
@@ -767,7 +726,7 @@ static void dbeng_notify_search_completion(const db_base &dbase,
 		return;
 	datagram.db_notify.pdata = psearch_completed;
 	psearch_completed->folder_id = folder_id;
-	dg_notify(std::move(datagram), std::move(*parrays));
+	dg_notify(std::move(datagram), std::move(parrays));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2118: ENOMEM");
 }
@@ -1429,9 +1388,9 @@ static inline void *pick_single_val(uint16_t type, void *mv, size_t j)
 }
 
 static void dbeng_notify_cttbl_add_row(db_conn *pdb,
-    uint64_t folder_id, uint64_t message_id, db_base &dbase)
+    uint64_t folder_id, uint64_t message_id, db_base &dbase) try
 {
-	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE};
+	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	DB_NOTIFY_DATAGRAM datagram1 = datagram;
 	BOOL b_read = false;
 	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
@@ -1481,8 +1440,8 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 			if (optim == nullptr)
 				return;
 		}
-		datagram.id_array = {1, &ptable->table_id};
-		datagram1.id_array = datagram.id_array;
+		datagram.id_array[0] = datagram1.id_array[0] =
+			ptable->table_id; // reserved earlier
 		if (NULL == ptable->psorts) {
 			char sql_string[148];
 			snprintf(sql_string, std::size(sql_string), "SELECT "
@@ -2038,6 +1997,8 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2161: failed to commit cttbl_add_row");
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2405: ENOMEM");
 }
 
 /*
@@ -2051,7 +2012,7 @@ void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_NEW_MAIL, folder_id, 0);
-	if (!parrays.has_value() || parrays->count == 0)
+	if (parrays.size() == 0)
 		return;
 	datagram.dir = deconst(dir);
 	datagram.db_notify.type = db_notify_type::new_mail;
@@ -2063,7 +2024,7 @@ void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
 	pnew_mail->message_id = message_id;
 	pnew_mail->message_flags = message_flags;
 	pnew_mail->pmessage_class = pstr_class;
-	dg_notify(std::move(datagram), std::move(*parrays));
+	dg_notify(std::move(datagram), std::move(parrays));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2119: ENOMEM");
 }
@@ -2077,9 +2038,7 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_NEW_MAIL, folder_id, 0);
-	if (!parrays.has_value())
-		return;
-	if (parrays->count > 0) {
+	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::new_mail;
 		auto pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
@@ -2096,7 +2055,7 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 		    pdb->psqlite, PR_MESSAGE_CLASS, &pvalue) || pvalue == nullptr)
 			return;
 		pnew_mail->pmessage_class = static_cast<char *>(pvalue);
-		dg_notify(std::move(datagram), std::move(*parrays));
+		dg_notify(std::move(datagram), std::move(parrays));
 	}
 	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
@@ -2113,9 +2072,7 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_CREATED, folder_id, 0);
-	if (!parrays.has_value())
-		return;
-	if (parrays->count > 0) {
+	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_created;
 		auto pcreated_mail = cu_alloc<DB_NOTIFY_MESSAGE_CREATED>();
@@ -2125,7 +2082,7 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 		pcreated_mail->folder_id = folder_id;
 		pcreated_mail->message_id = message_id;
 		pcreated_mail->proptags.count = 0;
-		dg_notify(std::move(datagram), std::move(*parrays));
+		dg_notify(std::move(datagram), std::move(parrays));
 	}
 	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
@@ -2147,9 +2104,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_CREATED, anchor_fld, 0);
-	if (!parrays.has_value())
-		return;
-	if (parrays->count > 0) {
+	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::link_created;
 		auto plinked_mail = cu_alloc<DB_NOTIFY_LINK_CREATED>();
@@ -2160,7 +2115,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 		plinked_mail->message_id = message_id;
 		plinked_mail->parent_id = srch_fld;
 		plinked_mail->proptags.count = 0;
-		dg_notify(std::move(datagram), std::move(*parrays));
+		dg_notify(std::move(datagram), std::move(parrays));
 	}
 	dbeng_notify_cttbl_add_row(pdb, srch_fld, message_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
@@ -2170,7 +2125,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 }
 
 static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
-    uint64_t parent_id, uint64_t folder_id, const db_base &dbase)
+    uint64_t parent_id, uint64_t folder_id, const db_base &dbase) try
 {
 	uint32_t idx;
 	uint32_t depth;
@@ -2178,7 +2133,7 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
 	uint64_t folder_id1;
 	xstmt pstmt;
 	char sql_string[256];
-	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE};
+	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *padded_row;
 	
 	padded_row = NULL;
@@ -2212,7 +2167,7 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
 				return;
 			datagram.db_notify.pdata = padded_row;
 		}
-		datagram.id_array = {1, deconst(&ptable->table_id)};
+		datagram.id_array[0] = ptable->table_id; // reserved earlier
 		if ((ptable->table_flags & TABLE_FLAG_DEPTH) &&
 			ptable->folder_id != parent_id) {
 			if (NULL == pstmt) {
@@ -2320,6 +2275,8 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2167: failed to commit hiertbl_add_row");
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2406: ENOMEM");
 }
 
 void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
@@ -2330,9 +2287,7 @@ void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_CREATED, parent_id, 0);
-	if (!parrays.has_value())
-		return;
-	if (parrays->count > 0) {
+	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_created;
 		auto pcreated_folder = cu_alloc<DB_NOTIFY_FOLDER_CREATED>();
@@ -2342,7 +2297,7 @@ void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
 		pcreated_folder->folder_id = folder_id;
 		pcreated_folder->parent_id = parent_id;
 		pcreated_folder->proptags.count = 0;
-		dg_notify(std::move(datagram), std::move(*parrays));
+		dg_notify(std::move(datagram), std::move(parrays));
 	}
 	dbeng_notify_hiertbl_add_row(pdb, parent_id, folder_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
@@ -2407,7 +2362,7 @@ static void *db_engine_get_extremum_value(db_conn *pdb, cpid_t cpid,
 }
 
 static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
-    uint64_t folder_id, uint64_t message_id, db_base &dbase)
+    uint64_t folder_id, uint64_t message_id, db_base &dbase) try
 {
 	int result;
 	BOOL b_index;
@@ -2428,7 +2383,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 	char sql_string[1024];
 	DOUBLE_LIST notify_list;
 	DOUBLE_LIST_NODE *pnode1;
-	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE};
+	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	DB_NOTIFY_DATAGRAM datagram1 = datagram;
 	DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *pdeleted_row;
 	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row = nullptr;
@@ -2475,8 +2430,8 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 			pmodified_row->after_folder_id = folder_id;
 			datagram1.db_notify.pdata = pmodified_row;
 		}
-		datagram.id_array = {1, deconst(&ptable->table_id)};
-		datagram1.id_array = datagram.id_array;
+		datagram.id_array[0] = datagram1.id_array[0] =
+			ptable->table_id; // reserved earlier
 		if (NULL == ptable->psorts || 0 == ptable->psorts->ccategories) {
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id, idx,"
 					" prev_id FROM t%u WHERE inst_id=%llu AND "
@@ -2858,6 +2813,8 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2163: failed to commit cttbl_delete_row");
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2407: ENOMEM");
 }
 
 void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
@@ -2868,9 +2825,7 @@ void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_DELETED, folder_id, message_id);
-	if (!parrays.has_value())
-		return;
-	if (parrays->count > 0) {
+	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_deleted;
 		auto pdeleted_mail = cu_alloc<DB_NOTIFY_MESSAGE_DELETED>();
@@ -2879,7 +2834,7 @@ void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
 		datagram.db_notify.pdata = pdeleted_mail;
 		pdeleted_mail->folder_id = folder_id;
 		pdeleted_mail->message_id = message_id;
-		dg_notify(std::move(datagram), std::move(*parrays));
+		dg_notify(std::move(datagram), std::move(parrays));
 	}
 	dbeng_notify_cttbl_delete_row(pdb, folder_id, message_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
@@ -2902,9 +2857,7 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_DELETED, folder_id, message_id);
-	if (!parrays.has_value())
-		return;
-	if (parrays->count > 0) {
+	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::link_deleted;
 		auto punlinked_mail = cu_alloc<DB_NOTIFY_LINK_DELETED>();
@@ -2914,7 +2867,7 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 		punlinked_mail->folder_id = folder_id;
 		punlinked_mail->message_id = message_id;
 		punlinked_mail->parent_id = parent_id;
-		dg_notify(std::move(datagram), std::move(*parrays));
+		dg_notify(std::move(datagram), std::move(parrays));
 	}
 	dbeng_notify_cttbl_delete_row(pdb, parent_id, message_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
@@ -2924,12 +2877,12 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 }
 
 static void dbeng_notify_hiertbl_delete_row(db_conn *pdb,
-    uint64_t parent_id, uint64_t folder_id, const db_base &dbase)
+    uint64_t parent_id, uint64_t folder_id, const db_base &dbase) try
 {
 	int idx;
 	BOOL b_included;
 	char sql_string[256];
-	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE};
+	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *pdeleted_row;
 	
 	pdeleted_row = NULL;
@@ -2987,12 +2940,14 @@ static void dbeng_notify_hiertbl_delete_row(db_conn *pdb,
 			datagram.db_notify.pdata = pdeleted_row;
 			pdeleted_row->row_folder_id = folder_id;
 		}
-		datagram.id_array = {1, deconst(&ptable->table_id)};
+		datagram.id_array[0] = ptable->table_id; // reserved earlier
 		notification_agent_backward_notify(
 			ptable->remote_id, &datagram);
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2169: failed to commit hiertbl_delete_row");
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2408: ENOMEM");
 }
 
 void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
@@ -3003,9 +2958,7 @@ void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_DELETED, parent_id, 0);
-	if (!parrays.has_value())
-		return;
-	if (parrays->count > 0) {
+	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_deleted;
 		auto pdeleted_folder = cu_alloc<DB_NOTIFY_FOLDER_DELETED>();
@@ -3014,7 +2967,7 @@ void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
 		datagram.db_notify.pdata = pdeleted_folder;
 		pdeleted_folder->parent_id = parent_id;
 		pdeleted_folder->folder_id = folder_id;
-		dg_notify(std::move(datagram), std::move(*parrays));
+		dg_notify(std::move(datagram), std::move(parrays));
 	}
 	dbeng_notify_hiertbl_delete_row(pdb, parent_id, folder_id, dbase);
 } catch (const std::bad_alloc &) {
@@ -3022,7 +2975,7 @@ void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
 }
 
 static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
-    uint64_t folder_id, uint64_t message_id, db_base &dbase)
+    uint64_t folder_id, uint64_t message_id, db_base &dbase) try
 {
 	int result;
 	int row_type;
@@ -3042,7 +2995,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 	uint64_t row_folder_id;
 	DOUBLE_LIST notify_list;
 	DOUBLE_LIST_NODE *pnode1;
-	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE};
+	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
 	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row;
 	
@@ -3079,7 +3032,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 			    message_id, &row_folder_id))
 				return;
 		}
-		datagram.id_array = {1, deconst(&ptable->table_id)};
+		datagram.id_array[0] = ptable->table_id; // reserved earlier
 		if (NULL == ptable->psorts) {
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 				continue;
@@ -3591,7 +3544,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 	std::swap(dbase.tables.table_list, tmp_list);
 	for (const auto &tnode : tmp_list) {
 		auto ptable = &tnode;
-		datagram.id_array = {1, deconst(&ptable->table_id)};
+		datagram.id_array[0] = ptable->table_id; // reserved earlier
 		for (auto &tnode1 : dbase.tables.table_list) {
 			auto ptnode = &tnode1;
 			if (ptable->table_id != ptnode->table_id)
@@ -3608,6 +3561,8 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 			break;
 		}
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2409: ENOMEM");
 }
 
 void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_id,
@@ -3618,9 +3573,7 @@ void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_i
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_MODIFIED, folder_id, message_id);
-	if (!parrays.has_value())
-		return;
-	if (parrays->count > 0) {
+	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_modified;
 		auto pmodified_mail = cu_alloc<DB_NOTIFY_MESSAGE_MODIFIED>();
@@ -3630,7 +3583,7 @@ void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_i
 		pmodified_mail->folder_id = folder_id;
 		pmodified_mail->message_id = message_id;
 		pmodified_mail->proptags.count = 0;
-		dg_notify(std::move(datagram), std::move(*parrays));
+		dg_notify(std::move(datagram), std::move(parrays));
 	}
 	dbeng_notify_cttbl_modify_row(pdb, folder_id, message_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
@@ -3640,12 +3593,12 @@ void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_i
 }
 
 static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
-    uint64_t parent_id, uint64_t folder_id, const db_base &dbase)
+    uint64_t parent_id, uint64_t folder_id, const db_base &dbase) try
 {
 	int idx;
 	BOOL b_included;
 	char sql_string[256];
-	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE};
+	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	DB_NOTIFY_DATAGRAM datagram1 = datagram;
 	DB_NOTIFY_DATAGRAM datagram2 = datagram;
 	DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *padded_row;
@@ -3679,9 +3632,8 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 		auto pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
-		datagram.id_array  = {1, deconst(&ptable->table_id)};
-		datagram1.id_array = datagram.id_array;
-		datagram2.id_array = datagram.id_array;
+		datagram.id_array[0] = datagram1.id_array[0] =
+			datagram2.id_array[0] = ptable->table_id; // reserved earlier
 		if (pstmt.step() != SQLITE_ROW) {
 			pstmt.finalize();
 			if (NULL != ptable->prestriction &&
@@ -3799,6 +3751,8 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2171: failed to commit hiertbl_modify_row");
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2410: ENOMEM");
 }
 
 void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
@@ -3809,9 +3763,7 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               NF_OBJECT_MODIFIED, folder_id, 0);
-	if (!parrays.has_value())
-		return;
-	if (parrays->count > 0) {
+	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_modified;
 		auto pmodified_folder = cu_alloc<DB_NOTIFY_FOLDER_MODIFIED>();
@@ -3823,7 +3775,7 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 		pmodified_folder->ptotal = NULL;
 		pmodified_folder->punread = NULL;
 		pmodified_folder->proptags.count = 0;
-		dg_notify(std::move(datagram), std::move(*parrays));
+		dg_notify(std::move(datagram), std::move(parrays));
 	}
 	dbeng_notify_hiertbl_modify_row(pdb, parent_id, folder_id, dbase);
 } catch (const std::bad_alloc &) {
@@ -3832,13 +3784,14 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 
 void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
     uint64_t message_id, uint64_t old_fid, uint64_t old_mid,
-    db_base &dbase)
+    db_base &dbase) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	std::vector<ID_NODE> substonotify;
 
+	/* open-coded db_engine_classify_id_array(4-arg) */
+	ID_ARRAYS recv_list;
 	for (const auto &sub : dbase.nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
@@ -3849,17 +3802,10 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 				continue;
 		}
 		if (pnsub->b_whole || (pnsub->folder_id == old_fid &&
-		    pnsub->message_id == old_mid)) try {
-			substonotify.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1521: ENOMEM");
-			return;
-		}
+		    pnsub->message_id == old_mid))
+			recv_list[pnsub->remote_id].push_back(pnsub->sub_id);
 	}
-	auto parrays = db_engine_classify_id_array(std::move(substonotify));
-	if (!parrays.has_value())
-		return;
-	if (parrays->count > 0) {
+	if (recv_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = b_copy ? db_notify_type::message_copied :
 		                          db_notify_type::message_moved;
@@ -3871,7 +3817,7 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 		pmvcp_mail->message_id = message_id;
 		pmvcp_mail->old_folder_id = old_fid;
 		pmvcp_mail->old_message_id = old_mid;
-		dg_notify(std::move(datagram), std::move(*parrays));
+		dg_notify(std::move(datagram), std::move(recv_list));
 	}
 	if (!b_copy) {
 		dbeng_notify_cttbl_delete_row(pdb, old_fid, old_mid, dbase);
@@ -3881,16 +3827,21 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1521: ENOMEM");
+	return;
 }
 
 void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
-    uint64_t folder_id, uint64_t old_pid, uint64_t old_fid, const db_base &dbase)
+    uint64_t folder_id, uint64_t old_pid, uint64_t old_fid,
+    const db_base &dbase) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	std::vector<ID_NODE> substonotify;
 
+	/* open-coded db_engine_classify_id_array(4-arg) */
+	ID_ARRAYS recv_list;
 	for (const auto &sub : dbase.nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
@@ -3902,17 +3853,10 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 		}
 		if (pnsub->b_whole ||
 		    (pnsub->folder_id == folder_id && pnsub->message_id == 0) ||
-		    (pnsub->folder_id == old_fid && pnsub->message_id == 0)) try {
-			substonotify.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1522: ENOMEM");
-			return;
-		}
+		    (pnsub->folder_id == old_fid && pnsub->message_id == 0))
+			recv_list[pnsub->remote_id].push_back(pnsub->sub_id);
 	}
-	auto parrays = db_engine_classify_id_array(std::move(substonotify));
-	if (!parrays.has_value())
-		return;
-	if (parrays->count > 0) {
+	if (recv_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = b_copy ? db_notify_type::folder_copied :
 		                          db_notify_type::folder_moved;
@@ -3924,7 +3868,7 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 		pmvcp_folder->parent_id = parent_id;
 		pmvcp_folder->old_folder_id = old_fid;
 		pmvcp_folder->old_parent_id = old_pid;
-		dg_notify(std::move(datagram), std::move(*parrays));
+		dg_notify(std::move(datagram), std::move(recv_list));
 	}
 	if (!b_copy) {
 		dbeng_notify_hiertbl_delete_row(pdb, old_pid, old_fid, dbase);
@@ -3934,9 +3878,12 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 	dbeng_notify_hiertbl_add_row(pdb, parent_id, folder_id, dbase);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id, dbase);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1522: ENOMEM");
+	return;
 }
 
-void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base &dbase)
+void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base &dbase) try
 {
 	DB_NOTIFY_DATAGRAM datagram;
 	const auto &list = dbase.tables.table_list;
@@ -3950,9 +3897,11 @@ void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base &dbase)
 		db_notify_type::srchtbl_changed;
 	datagram.db_notify.pdata = NULL;
 	datagram.b_table = TRUE;
-	datagram.id_array = {1, &table_id};
+	datagram.id_array.push_back(table_id);
 	notification_agent_backward_notify(
 		ptable->remote_id, &datagram);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2411: ENOMEM");
 }
 
 void db_conn::begin_batch_mode(db_base &dbase)

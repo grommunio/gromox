@@ -18,9 +18,9 @@ void notification_agent_backward_notify(const char *remote_id,
     const DB_NOTIFY_DATAGRAM *pnotify)
 {
 	if (NULL == remote_id) {
-		for (size_t i = 0; i < pnotify->id_array.count; ++i)
+		for (size_t i = 0; i < pnotify->id_array.size(); ++i)
 			exmdb_server::event_proc(pnotify->dir, pnotify->b_table,
-				pnotify->id_array.pl[i], &pnotify->db_notify);
+				pnotify->id_array[i], &pnotify->db_notify);
 		return;
 	}
 	auto prouter = exmdb_parser_extract_router(remote_id);
