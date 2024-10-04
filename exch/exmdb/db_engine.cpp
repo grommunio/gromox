@@ -116,7 +116,7 @@ unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 unsigned int g_exmdb_pvt_folder_softdel, g_exmdb_max_sqlite_spares;
 unsigned long long g_sqlite_busy_timeout_ns;
 
-static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_point);
+static bool remove_from_hash(const db_base &, time_point);
 static void dbeng_notify_cttbl_modify_row(db_conn *, uint64_t folder_id, uint64_t message_id, db_base &) __attribute__((nonnull(1)));
 
 static void db_engine_load_dynamic_list(db_base *dbase, sqlite3* psqlite) try
@@ -273,10 +273,13 @@ BOOL db_engine_unload_db(const char *path)
 		if (it == g_hash_table.end())
 			return TRUE;
 		auto now = tp_now();
-		if (remove_from_hash(*it, now + g_cache_interval)) {
+		auto &dbase = it->second;
+		std::unique_lock dhold(dbase.giant_lock);
+		if (remove_from_hash(dbase, now + g_cache_interval)) {
 			g_hash_table.erase(it);
 			return TRUE;
 		}
+		dhold.unlock();
 		hhold.unlock();
 		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	}
@@ -527,10 +530,11 @@ db_base::~db_base()
 	tables.table_list.clear();
 }
 
-static bool remove_from_hash(const decltype(g_hash_table)::value_type &it,
-    time_point now)
+/**
+ * Check if this db_base object is ripe for deletion.
+ */
+static bool remove_from_hash(const db_base &pdb, time_point now)
 {
-	auto &pdb = it.second;
 	if (pdb.tables.table_list.size() > 0)
 		/* emsmdb still references in-memory tables */
 		return false;
@@ -554,18 +558,21 @@ static void *db_expiry_thread(void *param)
 			continue;
 		}
 		count = 0;
+		/* Exclusive ownership over the list is needed, obviously, since we modify it */
 		std::lock_guard hhold(g_hash_lock);
 		auto now_time = tp_now();
-#if __cplusplus >= 202000L
-		std::erase_if(g_hash_table, [=](const auto &it) { return remove_from_hash(it, now_time); });
-#else
 		for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
-			if (remove_from_hash(*it, now_time))
+			auto &dbase = it->second;
+			/*
+			 * There must be no readers nor writers if we destroy it.
+			 * Hence another lock.
+			 */
+			std::unique_lock dhold(dbase.giant_lock);
+			if (remove_from_hash(dbase, now_time))
 				it = g_hash_table.erase(it);
 			else
 				++it;
 		}
-#endif
 	}
 	return nullptr;
 }
