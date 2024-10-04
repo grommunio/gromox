@@ -2040,6 +2040,10 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 		mlog(LV_ERR, "E-2161: failed to commit cttbl_add_row");
 }
 
+/*
+ * All ::notify_*() functions must be called with at least lock_base_rd held,
+ * because we access nsub_list.
+ */
 void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
     uint32_t message_flags, const char *pstr_class, const db_base &dbase) try
 {
