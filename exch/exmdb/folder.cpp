@@ -638,7 +638,21 @@ static BOOL folder_empty_sf(db_conn_ptr &pdb, cpid_t cpid, const char *username,
 }
 
 /**
- * @username:   Used for SFOD permission checks and for adjusting readstates
+ * @username:       Used for SFOD permission checks and for adjusting readstates
+ * @pb_partial:     Indicator for the immediate caller that operation was not
+ *                  fully carried out.
+ * @pnormal_size:   Indicator for the top-level callframe (e.g.
+ *                  exmdb_server::empty_folder) how much to adjust the store
+ *                  size.
+ * @pfai_size:      Indicator for the top-level callframe how much to adjust
+ *                  the store size.
+ * @pmessage_count: Indicator for immediate caller how many messages were purged.
+ *                  Only relevant for the top-level folder; recursive calls use
+ *                  %nullptr.
+ * @pfolder_count:  Indicator for immediate caller how many folders were purged.
+ *                  Only relevant for the top-level folder.
+ *
+ * Obtain the MIDs present in a folder, then delete messages by MIDs.
  */
 static BOOL folder_empty_folder(db_conn_ptr &pdb, cpid_t cpid,
     const char *username, uint64_t folder_id, unsigned int del_flags,
@@ -832,7 +846,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		if (pstmt == nullptr)
 			return FALSE;
 		if (pstmt.step() != SQLITE_ROW) {
-			/* Folder already gone */
+			/* Search folder already gone; treat as success */
 			*pb_result = TRUE;
 			return TRUE;
 		}
@@ -844,6 +858,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 	}
 	auto dbase = pdb->lock_base_wr();
 	if (!b_search) {
+		/* Ensure that the folder has no subordinate folders and no messages. */
 		snprintf(sql_string, std::size(sql_string), "SELECT count(*) FROM "
 		          "folders WHERE parent_id=%llu", LLU{fid_val});
 		auto pstmt = pdb->prep(sql_string);
@@ -876,13 +891,13 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		pstmt.finalize();
 		pdb->delete_dynamic(fid_val, dbase.get());
 	}
+
 	auto parent_id = common_util_get_folder_parent_fid(pdb->psqlite, fid_val);
 	if (b_search) {
 		/*
-		 * Calling folder_empty_folder() is too much for search
-		 * folders; it would delete not just the references but also
-		 * the messages, which we do not want for
-		 * exmdb_server::delete_folder.
+		 * Deleting (= shutdown of) a SF is different from emptying it.
+		 * SF have "hardlinks" (entries with same msgid as objects in
+		 * another folder), so emptying would mean purging messages.
 		 */
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM folders"
 		         " WHERE folder_id=%llu", LLU{fid_val});
@@ -897,7 +912,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 			return FALSE;
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM folders"
 			" WHERE folder_id=%llu", LLU{fid_val});
-	} else {
+	} else { /* softdel */
 		int account_id = get_account_id();
 		auto nt_time = rop_util_current_nttime();
 		uint64_t change_num = 0;
@@ -939,6 +954,8 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		return FALSE;
 	pdb->notify_folder_deletion(parent_id, fid_val, *dbase);
 	dbase.reset();
+
+	/* Statistical updates for the parent folder */
 	snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
 	        "proptag=%u", LLU{parent_id}, PR_DELETED_FOLDER_COUNT);
