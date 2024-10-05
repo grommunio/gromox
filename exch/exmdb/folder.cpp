@@ -831,8 +831,11 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		if (pstmt.step() != SQLITE_ROW)
+		if (pstmt.step() != SQLITE_ROW) {
+			/* Folder already gone */
+			*pb_result = TRUE;
 			return TRUE;
+		}
 		if (pstmt.col_int64(0) != 0)
 			b_search = b_hard = TRUE;
 	} else if (fid_val < PUBLIC_FID_CUSTOM) {
