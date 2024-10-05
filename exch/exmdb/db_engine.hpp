@@ -2,6 +2,7 @@
 #include <atomic>
 #include <cstdint>
 #include <list>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -160,6 +161,14 @@ using db_base_wr_ptr = std::unique_ptr<db_base, db_base_unlock_wr>;
 
 class db_item_deleter;
 struct db_conn {
+	struct xless {
+		bool operator()(const char *a, const char *b) const {
+			return b == nullptr ? false : a == nullptr ? true :
+			       strcasecmp(a, b) < 0;
+		}
+	};
+	using ID_ARRAYS = std::map<const char *, std::vector<uint32_t>, xless>;
+
 	db_conn(db_base &);
 	~db_conn();
 	db_conn(db_conn &&);

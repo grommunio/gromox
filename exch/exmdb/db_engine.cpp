@@ -68,14 +68,6 @@ struct POPULATING_NODE {
 	LONGLONG_ARRAY folder_ids{};
 };
 
-struct xless {
-	bool operator()(const char *a, const char *b) const {
-		return b == nullptr ? false : a == nullptr ? true :
-		       strcasecmp(a, b) < 0;
-	}
-};
-using ID_ARRAYS = std::map<const char *, std::vector<uint32_t>, xless>;
-
 struct ROWINFO_NODE {
 	DOUBLE_LIST_NODE node;
 	BOOL b_added;
@@ -685,10 +677,10 @@ POPULATING_NODE::~POPULATING_NODE()
 	free(folder_ids.pll);
 }
 
-static ID_ARRAYS db_engine_classify_id_array(const db_base &db,
+static db_conn::ID_ARRAYS db_engine_classify_id_array(const db_base &db,
     unsigned int bits, uint64_t folder_id, uint64_t message_id) try
 {
-	ID_ARRAYS out;
+	db_conn::ID_ARRAYS out;
 	for (const auto &sub : db.nsub_list) {
 		if (!(sub.notification_type & bits))
 			continue;
@@ -702,7 +694,7 @@ static ID_ARRAYS db_engine_classify_id_array(const db_base &db,
 	throw;
 }
 
-static void dg_notify(DB_NOTIFY_DATAGRAM &&dg, ID_ARRAYS &&a)
+static void dg_notify(DB_NOTIFY_DATAGRAM &&dg, db_conn::ID_ARRAYS &&a)
 {
 	for (auto &&[remote_id, sub_ids] : a) {
 		dg.id_array = std::move(sub_ids);
