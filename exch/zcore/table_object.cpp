@@ -909,18 +909,15 @@ BOOL table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 {
 	auto ptable = this;
 	TARRAY_SET tmp_set{};
-	uint32_t tmp_proptag;
 	PROPTAG_ARRAY proptags;
-	PROPTAG_ARRAY tmp_proptags;
 	
 	switch (ptable->table_type) {
 	case zcore_tbltype::attachment: {
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		if (!msg->get_attachment_table_all_proptags(&proptags))
 			return FALSE;	
-		tmp_proptag = PR_ATTACH_DATA_BIN;
-		tmp_proptags.count = 1;
-		tmp_proptags.pproptag = &tmp_proptag;
+		static constexpr proptag_t tmp_proptag[] = {PR_ATTACH_DATA_BIN};
+		static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 		common_util_reduce_proptags(&proptags, &tmp_proptags);
 		if (!msg->query_attachment_table(&proptags, ptable->position, INT32_MAX, &tmp_set))
 			return FALSE;	
@@ -960,18 +957,14 @@ BOOL table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
 	int32_t *pposition)
 {
 	auto ptable = this;
-	PROPTAG_ARRAY proptags;
-	uint32_t proptag_buff[2];
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (ptable->table_id == 0)
 		return FALSE;
 	auto pinfo = zs_get_info();
 	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
-	proptags.count = 2;
-	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PidTagInstID;
-	proptag_buff[1] = PidTagInstanceNum;
+	static constexpr proptag_t proptag_buff[] = {PidTagInstID, PidTagInstanceNum};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	return exmdb_client::match_table(ptable->pstore->get_dir(), username,
 		pinfo->cpid, ptable->table_id, b_forward,
 		ptable->position, pres, &proptags, pposition,

@@ -288,10 +288,8 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	uint64_t message_id;
 	struct pollfd fdpoll;
 	uint64_t old_parentid;
-	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	DOUBLE_LIST_NODE *pnode;
-	uint32_t proptag_buff[2];
 	ZNOTIFICATION *pnotification;
 	NEWMAIL_ZNOTIFICATION *pnew_mail;
 	OBJECT_ZNOTIFICATION *pobj_notify;
@@ -335,10 +333,8 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		if (pbin == nullptr)
 			return;
 		pnew_mail->parentid = *pbin;
-		proptags.count = 2;
-		proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PR_MESSAGE_CLASS;
-		proptag_buff[1] = PR_MESSAGE_FLAGS;
+		static constexpr proptag_t proptag_buff[] = {PR_MESSAGE_CLASS, PR_MESSAGE_FLAGS};
+		static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client::get_message_properties(dir, nullptr, CP_ACP,
 		    message_id, &proptags, &propvals))
 			return;
@@ -1628,8 +1624,6 @@ ec_error_t zs_createmessage(GUID hsession,
 	uint32_t tag_access;
 	uint32_t permission;
 	uint64_t message_id;
-	uint32_t proptag_buff[4];
-	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto pinfo = zs_query_session(hsession);
@@ -1657,12 +1651,11 @@ ec_error_t zs_createmessage(GUID hsession,
 	} else {
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 	}
-	tmp_proptags.count = 4;
-	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_MESSAGE_SIZE_EXTENDED;
-	proptag_buff[1] = PR_STORAGE_QUOTA_LIMIT;
-	proptag_buff[2] = PR_ASSOC_CONTENT_COUNT;
-	proptag_buff[3] = PR_CONTENT_COUNT;
+
+	static constexpr proptag_t proptag_buff[] =
+		{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
+		PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
+	static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	if (!pstore->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
 	auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
@@ -1710,8 +1703,6 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	uint32_t permission;
 	uint64_t message_id;
 	MESSAGE_CONTENT *pbrief;
-	uint32_t proptag_buff[2];
-	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	bool notify_non_read = flags & GX_DELMSG_NOTIFY_UNREAD;
 	
@@ -1770,10 +1761,10 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 			if (!b_owner)
 				continue;
 		}
-		tmp_proptags.count = 2;
-		tmp_proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
-		proptag_buff[1] = PR_READ;
+		static constexpr proptag_t proptag_buff[] =
+			{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, PR_READ};
+		static constexpr PROPTAG_ARRAY tmp_proptags =
+			{std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client::get_message_properties(pstore->get_dir(),
 		    nullptr, CP_ACP, i_eid, &tmp_proptags, &tmp_propvals))
 			return ecError;
@@ -1922,10 +1913,8 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 	uint64_t folder_id;
 	TARRAY_SET tmp_set;
 	uint64_t message_id;
-	uint32_t tmp_proptag;
 	BOOL b_notify = TRUE; /* TODO: Read from config or USER_INFO. */
 	BINARY_ARRAY tmp_bins;
-	PROPTAG_ARRAY proptags;
 	PROBLEM_ARRAY problems;
 	MESSAGE_CONTENT *pbrief;
 	TPROPVAL_ARRAY propvals;
@@ -1955,9 +1944,9 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 		    pfolder->folder_id, username, TABLE_FLAG_NONOTIFICATIONS,
 		    &restriction, nullptr, &table_id, &row_count))
 			return ecError;
-		proptags.count = 1;
-		proptags.pproptag = &tmp_proptag;
-		tmp_proptag = PR_ENTRYID;
+
+		static constexpr proptag_t tmp_proptag[] = {PR_ENTRYID};
+		static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 		if (!exmdb_client::query_table(pstore->get_dir(), username,
 		    CP_ACP, table_id, &proptags, 0, row_count, &tmp_set)) {
 			exmdb_client::unload_table(pstore->get_dir(), table_id);
@@ -3356,8 +3345,6 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 	zs_objtype mapi_type;
 	uint16_t rcpt_num;
 	char command_buff[1024];
-	uint32_t proptag_buff[6];
-	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto pinfo = zs_query_session(hsession);
@@ -3388,10 +3375,9 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 	if (rcpt_num > g_max_rcpt)
 		return ecTooManyRecips;
 
-	tmp_proptags.count = 1;
-	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_ASSOCIATED;
-	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
+	static constexpr proptag_t proptag_buff1[] = {PR_ASSOCIATED};
+	static constexpr PROPTAG_ARRAY tmp_proptags1 = {std::size(proptag_buff1), deconst(proptag_buff1)};
+	if (!pmessage->get_properties(&tmp_proptags1, &tmp_propvals))
 		return ecError;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
@@ -3417,12 +3403,11 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 	           repr_grant >= repr_grant::send_as);
 	if (err != ecSuccess)
 		return err;
-	tmp_proptags.count = 3;
-	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_MAX_SUBMIT_MESSAGE_SIZE;
-	proptag_buff[1] = PR_PROHIBIT_SEND_QUOTA;
-	proptag_buff[2] = PR_MESSAGE_SIZE_EXTENDED;
-	if (!pstore->get_properties(&tmp_proptags, &tmp_propvals))
+	static constexpr proptag_t proptag_buff2[] =
+		{PR_MAX_SUBMIT_MESSAGE_SIZE, PR_PROHIBIT_SEND_QUOTA, PR_MESSAGE_SIZE_EXTENDED};
+	static const PROPTAG_ARRAY tmp_proptags2 =
+		{std::size(proptag_buff2), deconst(proptag_buff2)};
+	if (!pstore->get_properties(&tmp_proptags2, &tmp_propvals))
 		return ecError;
 
 	auto sendquota = tmp_propvals.get<uint32_t>(PR_PROHIBIT_SEND_QUOTA);
@@ -3436,15 +3421,14 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 	ssize_t max_length = -1;
 	if (num != nullptr)
 		max_length = *num;
-	tmp_proptags.count = 6;
-	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_MESSAGE_SIZE;
-	proptag_buff[1] = PR_MESSAGE_FLAGS;
-	proptag_buff[2] = PR_DEFERRED_SEND_TIME;
-	proptag_buff[3] = PR_DEFERRED_SEND_NUMBER;
-	proptag_buff[4] = PR_DEFERRED_SEND_UNITS;
-	proptag_buff[5] = PR_DELETE_AFTER_SUBMIT;
-	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
+
+	static constexpr proptag_t proptag_buff3[] =
+		{PR_MESSAGE_SIZE, PR_MESSAGE_FLAGS, PR_DEFERRED_SEND_TIME,
+		PR_DEFERRED_SEND_NUMBER, PR_DEFERRED_SEND_UNITS,
+		PR_DELETE_AFTER_SUBMIT};
+	static constexpr PROPTAG_ARRAY tmp_proptags3 =
+		{std::size(proptag_buff3), deconst(proptag_buff3)};
+	if (!pmessage->get_properties(&tmp_proptags3, &tmp_propvals))
 		return ecError;
 	num = tmp_propvals.get<uint32_t>(PR_MESSAGE_SIZE);
 	if (num == nullptr)
@@ -4784,8 +4768,6 @@ ec_error_t zs_importreadstates(GUID hsession,
 	zs_objtype mapi_type;
 	uint64_t folder_id;
 	uint32_t permission;
-	uint32_t proptag_buff[2];
-	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto pinfo = zs_query_session(hsession);
@@ -4824,10 +4806,8 @@ ec_error_t zs_importreadstates(GUID hsession,
 			if (!b_owner)
 				continue;
 		}
-		tmp_proptags.count = 2;
-		tmp_proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PR_ASSOCIATED;
-		proptag_buff[1] = PR_READ;
+		static constexpr proptag_t proptag_buff[] = {PR_ASSOCIATED, PR_READ};
+		static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client::get_message_properties(pstore->get_dir(),
 		    nullptr, CP_ACP, message_id, &tmp_proptags, &tmp_propvals))
 			return ecError;

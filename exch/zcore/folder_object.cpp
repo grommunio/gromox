@@ -631,18 +631,16 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 {
 	uint32_t row_num;
 	uint32_t table_id;
-	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
 	PERMISSION_DATA *pperm_data;
-	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_ID};
 	
 	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();
 	if (!exmdb_client::load_permission_table(dir,
 	    pfolder->folder_id, 0, &table_id, &row_num))
 		return FALSE;
-	proptags.count = 2;
-	proptags.pproptag = deconst(proptag_buff);
+	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_ID};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client::query_table(dir, nullptr, CP_ACP,
 		table_id, &proptags, 0, row_num, &permission_set)) {
 		exmdb_client::unload_table(dir, table_id);

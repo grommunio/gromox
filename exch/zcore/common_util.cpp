@@ -115,16 +115,11 @@ BOOL common_util_verify_columns_and_sorts(
 /* Cf. oxomsg_extract_delegate for comments */
 bool cu_extract_delegate(message_object *pmessage, std::string &username)
 {
-	uint32_t proptag_buff[4];
-	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	
-	tmp_proptags.count = 4;
-	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_SENT_REPRESENTING_ADDRTYPE;
-	proptag_buff[1] = PR_SENT_REPRESENTING_EMAIL_ADDRESS;
-	proptag_buff[2] = PR_SENT_REPRESENTING_SMTP_ADDRESS;
-	proptag_buff[3] = PR_SENT_REPRESENTING_ENTRYID;
+	static constexpr proptag_t proptag_buff[] =
+		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID};
+	static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (0 == tmp_propvals.count) {
@@ -1667,16 +1662,14 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 	uint32_t table_id;
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
-	PROPTAG_ARRAY proptags;
 	EID_ARRAY *pmessage_ids;
 	
 	if (!exmdb_client::load_content_table(pstore->get_dir(), CP_ACP,
 	    folder_id, username, TABLE_FLAG_NONOTIFICATIONS,
 	    nullptr, nullptr, &table_id, &row_count))
 		return NULL;	
-	uint32_t tmp_proptag = PidTagMid;
-	proptags.count = 1;
-	proptags.pproptag = &tmp_proptag;
+	static constexpr proptag_t tmp_proptag[] = {PidTagMid};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 	if (!exmdb_client::query_table(pstore->get_dir(), nullptr, CP_ACP,
 	    table_id, &proptags, 0, row_count, &tmp_set))
 		return NULL;	
@@ -1748,11 +1741,11 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 	    username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
 	    &table_id, &row_count))
 		return ecError;
-	uint32_t tmp_proptag = PidTagFolderId;
-	tmp_proptags.count = 1;
-	tmp_proptags.pproptag = &tmp_proptag;
+
+	static constexpr proptag_t xb_proptag[] = {PidTagFolderId};
+	static constexpr PROPTAG_ARRAY xb_proptags = {std::size(xb_proptag), deconst(xb_proptag)};
 	if (!exmdb_client::query_table(src_store->get_dir(), nullptr, CP_ACP,
-	    table_id, &tmp_proptags, 0, row_count, &tmp_set))
+	    table_id, &xb_proptags, 0, row_count, &tmp_set))
 		return ecError;
 	exmdb_client::unload_table(src_store->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {

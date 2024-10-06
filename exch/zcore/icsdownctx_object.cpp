@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -278,8 +280,6 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
     TPROPVAL_ARRAY *pproplist)
 {
 	auto pctx = this;
-	PROPTAG_ARRAY proptags;
-	uint32_t proptag_buff[6];
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint8_t fake_false = false;
 	
@@ -304,14 +304,10 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	if (pvalue == nullptr)
 		return FALSE;
 	pproplist->emplace_back(PR_ENTRYID, pvalue);
-	proptags.count = 6;
-	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PidTagParentFolderId;
-	proptag_buff[1] = PR_DISPLAY_NAME;
-	proptag_buff[2] = PR_CONTAINER_CLASS;
-	proptag_buff[3] = PR_ATTR_HIDDEN;
-	proptag_buff[4] = PR_EXTENDED_FOLDER_FLAGS;
-	proptag_buff[5] = PidTagChangeNumber;
+	static constexpr gromox::proptag_t proptag_buff[] =
+		{PidTagParentFolderId, PR_DISPLAY_NAME, PR_CONTAINER_CLASS,
+		PR_ATTR_HIDDEN, PR_EXTENDED_FOLDER_FLAGS, PidTagChangeNumber};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client::get_folder_properties(pctx->pstore->get_dir(), CP_ACP,
 	    fid, &proptags, &tmp_propvals))
 		return FALSE;

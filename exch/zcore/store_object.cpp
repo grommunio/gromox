@@ -78,13 +78,10 @@ static BOOL store_object_cache_propname(store_object *pstore,
 std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	int account_id, const char *account, const char *dir)
 {
-	uint32_t proptag;
-	PROPTAG_ARRAY proptags;
+	static constexpr proptag_t proptag = PR_STORE_RECORD_KEY;
+	const PROPTAG_ARRAY proptags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY propvals;
 	
-	proptags.count = 1;
-	proptags.pproptag = &proptag;
-	proptag = PR_STORE_RECORD_KEY;
 	if (!exmdb_client::get_store_properties(dir, CP_ACP,
 	    &proptags, &propvals)) {
 		mlog(LV_ERR, "get_store_properties %s: failed", dir);
@@ -1460,8 +1457,6 @@ BOOL store_object::get_permissions(PERMISSION_SET *pperm_set)
 	uint32_t row_num;
 	uint32_t table_id;
 	TARRAY_SET tmp_set;
-	uint32_t tmp_proptag;
-	PROPTAG_ARRAY proptags;
 	uint64_t folder_id = rop_util_make_eid_ex(1, pstore->b_private ?
 	                     PRIVATE_FID_IPMSUBTREE : PUBLIC_FID_IPMSUBTREE);
 	
@@ -1469,9 +1464,8 @@ BOOL store_object::get_permissions(PERMISSION_SET *pperm_set)
 		pstore->dir, folder_id, NULL, TABLE_FLAG_DEPTH,
 	    NULL, &table_id, &row_num))
 		return FALSE;
-	proptags.count = 1;
-	proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PidTagFolderId;
+	static constexpr proptag_t tmp_proptag[] = {PidTagFolderId};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 	if (!exmdb_client::query_table(pstore->dir, nullptr, CP_ACP, table_id,
 	    &proptags, 0, row_num, &tmp_set))
 		return FALSE;
