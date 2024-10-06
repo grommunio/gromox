@@ -38,7 +38,7 @@ using namespace gromox;
 	{ \
 		C count; \
 		TRY(g_ ## c(&count)); \
-		return count != 0 ? g_ ## t ## _an(r, count) : pack_result::success; \
+		return g_ ## t ## _an(r, count); \
 	}
 
 A(uint16_t, uint16, uint32_t, uint32)
