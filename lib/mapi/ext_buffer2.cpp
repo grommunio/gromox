@@ -8,8 +8,14 @@
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::success) return klfdv; } while (false)
 using namespace gromox;
 
-#define AP(T, t, C, c) \
-	pack_result EXT_PUSH::p_ ## t ## _a(const std::vector<T> &r) \
+/*
+ * T: underlying scalar type
+ * t: name fragment of scalar push function for T
+ * C: type for array size
+ * c: name fragment of scalar push function for C
+ */
+#define PUSH_A(T, t, C, c, fn) \
+	pack_result EXT_PUSH::p_ ## fn ## _a(const std::vector<T> &r) \
 	{ \
 		if (r.size() > std::numeric_limits<C>::max()) \
 			return pack_result::format; \
@@ -19,8 +25,8 @@ using namespace gromox;
 		return pack_result::success; \
 	}
 
-#define AN(T, t) \
-	pack_result EXT_PULL::g_ ## t ## _an(std::vector<T> *r, size_t count) try \
+#define PULL_AN(T, t, fn) \
+	pack_result EXT_PULL::g_ ## fn ## _an(std::vector<T> *r, size_t count) try \
 	{ \
 		r->resize(count); \
 		if (count == 0) \
@@ -32,33 +38,37 @@ using namespace gromox;
 		return pack_result::alloc; \
 	}
 
-#define A(T, t, C, c) \
-	AN(T, t) \
-	pack_result EXT_PULL::g_ ## t ## _a(std::vector<T> *r) \
+#define PULL_AC(T, t, C, c, fn) \
+	pack_result EXT_PULL::g_ ## fn ## _a(std::vector<T> *r) \
 	{ \
 		C count; \
 		TRY(g_ ## c(&count)); \
 		return g_ ## t ## _an(r, count); \
 	}
 
-A(uint16_t, uint16, uint32_t, uint32)
-AP(uint16_t, uint16, uint32_t, uint32)
-A(uint32_t, uint32, uint32_t, uint32)
-AP(uint32_t, uint32, uint32_t, uint32)
-A(uint64_t, uint64, uint32_t, uint32)
-AP(uint64_t, uint64, uint32_t, uint32)
-A(float, float, uint32_t, uint32)
-AP(float, float, uint32_t, uint32)
-A(double, double, uint32_t, uint32)
-AP(double, double, uint32_t, uint32)
-A(GUID, guid, uint32_t, uint32)
-AP(GUID, guid, uint32_t, uint32)
-A(std::string, str, uint32_t, uint32)
-A(std::string, wstr, uint32_t, uint32)
+#define PULL_A(T, t, C, c, fn) \
+	PULL_AN(T, t, fn) \
+	PULL_AC(T, t, C, c, fn)
 
-#undef A
-#undef AN
-#undef AP
+PULL_A(uint16_t, uint16, uint32_t, uint32, uint16)
+PUSH_A(uint16_t, uint16, uint32_t, uint32, uint16)
+PULL_A(uint32_t, uint32, uint32_t, uint32, uint32)
+PUSH_A(uint32_t, uint32, uint32_t, uint32, uint32)
+PULL_A(uint64_t, uint64, uint32_t, uint32, uint64)
+PUSH_A(uint64_t, uint64, uint32_t, uint32, uint64)
+PULL_A(float, float, uint32_t, uint32, float)
+PUSH_A(float, float, uint32_t, uint32, float)
+PULL_A(double, double, uint32_t, uint32, double)
+PUSH_A(double, double, uint32_t, uint32, double)
+PULL_A(GUID, guid, uint32_t, uint32, guid)
+PUSH_A(GUID, guid, uint32_t, uint32, guid)
+PULL_A(std::string, str, uint32_t, uint32, str)
+PULL_A(std::string, wstr, uint32_t, uint32, wstr)
+
+#undef PUSH_A
+#undef PULL_A
+#undef PULL_AN
+#undef PULL_AC
 
 pack_result EXT_PULL::g_fb(freebusy_event *fb_event)
 {
