@@ -768,17 +768,14 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 	*ppbrief = cu_alloc<MESSAGE_CONTENT>();
 	if (*ppbrief == nullptr)
 		return FALSE;
-	uint32_t proptag_buff[9];
-	proptag_buff[0] = PR_SUBJECT;
-	proptag_buff[1] = PR_SENT_REPRESENTING_NAME;
-	proptag_buff[2] = PR_SENT_REPRESENTING_SMTP_ADDRESS;
-	proptag_buff[3] = PR_CLIENT_SUBMIT_TIME;
-	proptag_buff[4] = PR_MESSAGE_SIZE;
-	proptag_buff[5] = PR_INTERNET_CPID;
-	proptag_buff[6] = PR_INTERNET_MESSAGE_ID;
-	proptag_buff[7] = PR_PARENT_KEY;
-	proptag_buff[8] = PR_CONVERSATION_INDEX;
-	PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
+	static constexpr proptag_t proptag_buff[] = {
+		PR_SUBJECT, PR_SENT_REPRESENTING_NAME,
+		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_CLIENT_SUBMIT_TIME,
+		PR_MESSAGE_SIZE, PR_INTERNET_CPID, PR_INTERNET_MESSAGE_ID,
+		PR_PARENT_KEY, PR_CONVERSATION_INDEX,
+	};
+	static constexpr PROPTAG_ARRAY proptags =
+		{std::size(proptag_buff), deconst(proptag_buff)};
 	if (!cu_get_properties(MAPI_MESSAGE, mid_val, cpid,
 	    pdb->psqlite, &proptags, &(*ppbrief)->proplist))
 		return FALSE;
@@ -807,15 +804,16 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	proptags.count = 1;
-	proptag_buff[0] = PR_ATTACH_LONG_FILENAME;
+
+	static constexpr proptag_t proptag2_buff[] = {PR_ATTACH_LONG_FILENAME};
+	static constexpr PROPTAG_ARRAY proptags2 = {std::size(proptag2_buff), deconst(proptag2_buff)};
 	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t attachment_id = sqlite3_column_int64(pstmt, 0);
 		auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (pattachment == nullptr)
 			return FALSE;
 		if (!cu_get_properties(MAPI_ATTACH, attachment_id, cpid,
-		    pdb->psqlite, &proptags, &pattachment->proplist))
+		    pdb->psqlite, &proptags2, &pattachment->proplist))
 			return FALSE;
 		pattachment->pembedded = NULL;
 		auto &ats = *(*ppbrief)->children.pattachments;

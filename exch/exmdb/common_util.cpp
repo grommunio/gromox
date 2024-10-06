@@ -798,14 +798,11 @@ BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
 
 BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
 {
-	PROPTAG_ARRAY proptags;
+	const proptag_t proptag_buff[] = {qtag, PR_MESSAGE_SIZE_EXTENDED};
+	const PROPTAG_ARRAY proptags =
+		{std::size(proptag_buff), deconst(proptag_buff)};
 	TPROPVAL_ARRAY propvals;
-	uint32_t proptag_buff[2];
 	
-	proptags.count = 2;
-	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = qtag;
-	proptag_buff[1] = PR_MESSAGE_SIZE_EXTENDED;
 	if (!cu_get_properties(MAPI_STORE, 0, CP_ACP, psqlite,
 	    &proptags, &propvals))
 		return FALSE;
@@ -1652,11 +1649,9 @@ static void *cu_get_object_text_v0(const char *dir, const char *cid,
 BOOL cu_get_property(mapi_object_type table_type, uint64_t id,
     cpid_t cpid, sqlite3 *psqlite, uint32_t proptag, void **ppvalue)
 {
-	PROPTAG_ARRAY proptags;
+	const PROPTAG_ARRAY proptags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY propvals;
 	
-	proptags.count = 1;
-	proptags.pproptag = &proptag;
 	if (!cu_get_properties(table_type,
 	    id, cpid, psqlite, &proptags, &propvals))
 		return FALSE;
@@ -3551,11 +3546,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 BOOL cu_remove_property(mapi_object_type table_type,
 	uint64_t id, sqlite3 *psqlite, uint32_t proptag)
 {
-	PROPTAG_ARRAY tmp_proptags;
-	
-	tmp_proptags.count = 1;
-	tmp_proptags.pproptag = &proptag;
-	
+	const PROPTAG_ARRAY tmp_proptags = {1, deconst(&proptag)};
 	return cu_remove_properties(
 		table_type, id, psqlite, &tmp_proptags);
 }

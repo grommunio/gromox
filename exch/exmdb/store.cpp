@@ -472,7 +472,6 @@ static BOOL table_check_address_in_contact_folder(
 BOOL exmdb_server::check_contact_address(const char *dir,
 	const char *paddress, BOOL *pb_found)
 {
-	uint32_t proptags[3];
 	char sql_string[198];
 	PROPID_ARRAY propids;
 	PROPNAME_ARRAY propnames;
@@ -496,9 +495,11 @@ BOOL exmdb_server::check_contact_address(const char *dir,
 	if (!common_util_get_named_propids(pdb->psqlite,
 	    false, &propnames, &propids) || propids.size() != 3)
 		return FALSE;	
-	proptags[0] = PROP_TAG(PT_UNICODE, propids[0]);
-	proptags[1] = PROP_TAG(PT_UNICODE, propids[1]);
-	proptags[2] = PROP_TAG(PT_UNICODE, propids[2]);
+	const proptag_t proptags[] = {
+		PROP_TAG(PT_UNICODE, propids[0]),
+		PROP_TAG(PT_UNICODE, propids[1]),
+		PROP_TAG(PT_UNICODE, propids[2]),
+	};
 	auto pstmt1 = pdb->prep("SELECT folder_id"
 	              " FROM folders WHERE parent_id=?");
 	if (pstmt1 == nullptr)
