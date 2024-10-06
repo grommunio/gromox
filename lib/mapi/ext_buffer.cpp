@@ -1160,22 +1160,6 @@ pack_result EXT_PULL::g_propname_a(PROPNAME_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-pack_result EXT_PULL::g_propid_a(PROPID_ARRAY *r) try
-{
-	uint16_t nelem = 0;
-	TRY(g_uint16(&nelem));
-	if (nelem == 0) {
-		r->clear();
-		return EXT_ERR_SUCCESS;
-	}
-	r->resize(nelem);
-	for (size_t i = 0; i < nelem; ++i)
-		TRY(g_uint16(&(*r)[i]));
-	return EXT_ERR_SUCCESS;
-} catch (const std::bad_alloc &) {
-	return pack_result::alloc;
-}
-
 pack_result EXT_PULL::g_tpropval_a(TPROPVAL_ARRAY *r)
 {
 	TRY(g_uint16(&r->count));
@@ -2888,15 +2872,6 @@ pack_result EXT_PUSH::p_propname_a(const PROPNAME_ARRAY &r)
 	TRY(p_uint16(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_propname(r.ppropname[i]));
-	return EXT_ERR_SUCCESS;
-}
-
-pack_result EXT_PUSH::p_propid_a(const PROPID_ARRAY &r)
-{
-	auto nelem = std::min(r.size(), static_cast<size_t>(UINT16_MAX));
-	TRY(p_uint16(nelem));
-	for (size_t i = 0; i < nelem; ++i)
-		TRY(p_uint16(r[i]));
 	return EXT_ERR_SUCCESS;
 }
 

@@ -65,6 +65,15 @@ PUSH_A(GUID, guid, uint32_t, uint32, guid)
 PULL_A(std::string, str, uint32_t, uint32, str)
 PULL_A(std::string, wstr, uint32_t, uint32, wstr)
 
+pack_result EXT_PULL::g_propid_a(std::vector<uint16_t> *a)
+{
+	uint16_t count;
+	TRY(g_uint16(&count));
+	return g_uint16_an(a, count);
+}
+
+PUSH_A(uint16_t, uint16, uint16_t, uint16, propid)
+
 #undef PUSH_A
 #undef PULL_A
 #undef PULL_AN
