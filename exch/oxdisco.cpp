@@ -410,11 +410,7 @@ void OxdiscoPlugin::loadConfig()
 		if (s != nullptr) {
 			auto &x = x500_org_name;
 			x = s;
-#if __cplusplus >= 202000L
 			std::erase(x, '\'');
-#else
-			x.erase(std::remove(x.begin(), x.end(), '\''), x.end());
-#endif
 		}
 		s = c->get_value("hostname");
 		if (s != nullptr)

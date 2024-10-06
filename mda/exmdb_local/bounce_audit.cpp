@@ -30,22 +30,9 @@ void bounce_audit_init(int audit_num, int audit_interval)
 
 static size_t bounce_audit_collect_entry(time_t current_time)
 {
-#if __cplusplus >= 202001L
 	return std::erase_if(g_audit_hash, [=](const auto &e) {
 		return current_time - e.second >= g_audit_interval;
 	});
-#else
-	size_t collected = 0;
-	for (auto iter = g_audit_hash.begin(); iter != g_audit_hash.end(); ) {
-		if (current_time - iter->second >= g_audit_interval) {
-			iter = g_audit_hash.erase(iter);
-			++collected;
-		} else {
-			++iter;
-		}
-	}
-	return collected;
-#endif
 }
 
 BOOL bounce_audit_check(const char *audit_string) try

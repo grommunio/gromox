@@ -1731,24 +1731,11 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 			continue;
 		}
 		temp_name1[i] = '\0';
-#if __cplusplus < 202000L
-		/*
-		 * Heterogenous lookup only available with C++20; earlier
-		 * standards have to use a lambda to avoid conversion of
-		 * temp_name1.
-		 */
-		if (std::find_if(temp_file.cbegin(), temp_file.cend(),
-		    [&](const auto &elem) { return strcmp(elem.c_str(), temp_name1) == 0; }) != temp_file.cend()) {
-			temp_name1[i] = temp_name[i];
-			continue;
-		}
-#else
 		if (std::find(temp_file.cbegin(), temp_file.cend(), temp_name1) !=
 		    temp_file.cend()) {
 			temp_name1[i] = temp_name[i];
 			continue;
 		}
-#endif
 		if (!imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang,
 		    temp_name1, converted_name))
 			return 1800;

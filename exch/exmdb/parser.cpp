@@ -411,14 +411,8 @@ int exmdb_parser_run(const char *config_path)
 		mlog(LV_ERR, "exmdb_provider: list_file_read_exmdb: %s", strerror(ret));
 		return 1;
 	}
-#if __cplusplus >= 202000L
 	std::erase_if(g_local_list,
 		[&](const EXMDB_ITEM &s) { return !HX_ipaddr_is_local(s.host.c_str(), AI_V4MAPPED); });
-#else
-	g_local_list.erase(std::remove_if(g_local_list.begin(), g_local_list.end(),
-		[&](const EXMDB_ITEM &s) { return !HX_ipaddr_is_local(s.host.c_str(), AI_V4MAPPED); }),
-		g_local_list.end());
-#endif
 	return 0;
 }
 

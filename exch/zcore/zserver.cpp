@@ -265,19 +265,9 @@ static void *zcorezs_scanwork(void *param)
 			continue;
 		cur_time = time(nullptr);
 		std::unique_lock nl_hold(g_notify_lock);
-#if __cplusplus >= 202000L
 		std::erase_if(g_notify_table, [=](const auto &it) {
 			return cur_time - it.second.last_time >= g_cache_interval;
 		});
-#else
-		for (auto iter1 = g_notify_table.begin(); iter1 != g_notify_table.end(); ) {
-			auto pnitem = &iter1->second;
-			if (cur_time - pnitem->last_time >= g_cache_interval)
-				iter1 = g_notify_table.erase(iter1);
-			else
-				++iter1;
-		}
-#endif
 	}
 	return NULL;
 }

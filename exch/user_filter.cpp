@@ -60,18 +60,9 @@ void user_filter::banlist_insert(std::string &&id, std::chrono::seconds bantime)
 	if (m_icase)
 		HX_strlower(id.data());
 	std::lock_guard hold(m_bl_lock);
-	if (m_banlist.size() >= m_maxbans) {
+	if (m_banlist.size() >= m_maxbans)
 		/* Attempt to purge some outdated entries */
-#if __cplusplus >= 202000L
 		std::erase_if(m_banlist, [=](const auto &e) { return now >= e.second; });
-#else
-		for (auto it = m_banlist.begin(); it != m_banlist.end(); )
-			if (now >= it->second)
-				it = m_banlist.erase(it);
-			else
-				++it;
-#endif
-	}
 	if (m_banlist.size() < m_maxbans)
 		m_banlist.emplace(std::move(id), expiry);
 }
@@ -125,18 +116,9 @@ bool user_filter::judge(std::string &&id)
 		return true;
 	}
 	activity act = {now, now, 1};
-	if (m_activity.size() >= m_maxact) {
+	if (m_activity.size() >= m_maxact)
 		/* try pruning some outdated activity entries */
-#if __cplusplus >= 202000L
 		std::erase_if(m_activity, [&](const auto &it) { return now - it.second.last >= m_window; });
-#else
-		for (auto it = m_activity.begin(); it != m_activity.end(); )
-			if (now - it->second.last >= m_window)
-				it = m_activity.erase(it);
-			else
-				++it;
-#endif
-	}
 	if (m_activity.size() < m_maxact)
 		m_activity.emplace(std::move(id), std::move(act));
 	return true;

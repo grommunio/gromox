@@ -26,10 +26,18 @@ my_CXXFLAGS="-Wall -Wmissing-declarations"
 my_LDFLAGS=""
 AC_MSG_CHECKING([available C++ standard])
 cxxmode=""
-for i in "c++20" "c++2a" "c++17"; do
-	AS_IF([test "$i" != "c++20" && test "$i" != "c++17" && test -n "$COVERITY"], [continue])
+for i in "c++26" "c++2c" "c++23" "c++2b" "c++20"; do
+	dnl cov-scan cannot take too high a standard
+	AS_IF([test -n "$COVERITY" && test "$i" != "c++20"], [continue])
 	CXXFLAGS="$saved_CXXFLAGS -std=$i"
-	AC_COMPILE_IFELSE([AC_LANG_SOURCE([])], [cxxmode="$i"])
+	AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+		#include <span>
+		#include <vector>
+		int main() {
+			std::vector<int> v{1,9};
+			std::span s = v;
+		}
+	])], [cxxmode="$i"])
 	AS_IF([test -n "$cxxmode"], [break])
 done
 CXXFLAGS="$saved_CXXFLAGS"

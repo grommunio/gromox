@@ -2851,14 +2851,7 @@ static void pdu_processor_unregister_interface(DCERPC_ENDPOINT *ep,
     const DCERPC_INTERFACE *tp)
 {
 	auto &lst = ep->interface_list;
-#if __cplusplus >= 202000L
 	lst.remove_if(interface_eq(tp->uuid, tp->version));
-#else
-	auto ei = std::find_if(lst.begin(), lst.end(),
-	          interface_eq(tp->uuid, tp->version));
-	if (ei != lst.end())
-		lst.erase(ei);
-#endif
 }
 
 static constexpr struct dlfuncs server_funcs = {
