@@ -10,9 +10,19 @@
 #include <type_traits>
 #include <gromox/defs.h>
 
-#define PROP_ID(x) static_cast<uint16_t>((x) >> 16)
-#define PROP_TYPE(x) static_cast<uint16_t>((x) & 0xFFFF)
-#define CHANGE_PROP_TYPE(tag, newtype) static_cast<uint32_t>(((tag) & ~0xFFFF) | (newtype))
+namespace gromox {
+
+using propid_t = uint16_t;
+using proptype_t = uint16_t;
+using proptag_t = uint32_t;
+/* N.B.: PidLids are not propids (they are also 32-bit wide) */
+using mapitime_t = uint64_t;
+
+}
+
+#define PROP_ID(x) static_cast<gromox::propid_t>((x) >> 16)
+#define PROP_TYPE(x) static_cast<gromox::proptype_t>((x) & 0xFFFF)
+#define CHANGE_PROP_TYPE(tag, newtype) static_cast<gromox::proptag_t>(((tag) & ~0xFFFF) | (newtype))
 
 /*
  * x|y yields an unsigned result if either x or y are unsigned.
@@ -20,7 +30,7 @@
  * All the while | and << only make *sense* in an unsigned _context_ anyway
  * (i.e. the operator should have returned unsigned all the time)
  */
-#define PROP_TAG(type, tag) static_cast<uint32_t>((static_cast<uint32_t>(tag) << 16) | (type))
+#define PROP_TAG(type, tag) static_cast<gromox::proptag_t>((static_cast<uint32_t>(tag) << 16) | (type))
 namespace {
 enum {
 	/*
@@ -76,10 +86,7 @@ enum {
 	PT_MV_CLSID = 0x1048, /* PtypMultipleGuid */
 	PT_MV_BINARY = 0x1102, /* PtypMultipleBinary */
 };
-using proptype_t = decltype(PT_NULL);
 }
-
-using mapitime_t = uint64_t;
 
 #include "mapitags.hpp"
 
@@ -1053,7 +1060,7 @@ struct GX_EXPORT PROPERTY_XNAME {
 	std::string name;
 };
 
-using PROPID_ARRAY = std::vector<uint16_t>;
+using PROPID_ARRAY = std::vector<gromox::propid_t>;
 
 struct PROPNAME_ARRAY {
 	uint16_t count;

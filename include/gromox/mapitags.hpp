@@ -1113,7 +1113,6 @@ enum {
 	PR_EMS_AB_PARENT_ENTRYID = PROP_TAG(PT_BINARY, 0xFFFC), /* PidTagAddressBookParentEntryId */
 	PR_EMS_AB_CONTAINERID = PROP_TAG(PT_LONG, 0xFFFD), /* PidTagAddressBookContainerId */
 };
-using proptag_t = decltype(PR_NULL);
 }
 
 enum {

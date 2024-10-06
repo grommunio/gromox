@@ -836,7 +836,7 @@ struct exreq_purge_softdelete final : public exreq {
 	char *username;
 	uint64_t folder_id = 0;
 	uint32_t del_flags = 0;
-	mapitime_t cutoff = 0;
+	gromox::mapitime_t cutoff = 0;
 };
 
 struct exreq_autoreply_tsquery final : public exreq {
