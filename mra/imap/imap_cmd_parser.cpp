@@ -2298,6 +2298,7 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	auto imap_reply_str1 = resource_get_imap_code(1715, 2);
 	std::string buf;
 	for (i=0; i<10; i++) {
+		// wait for midb's actions showing up... woah terrible
 		uint32_t uidvalid = 0;
 		if (system_services_summary_folder(pcontext->maildir,
 		    temp_name, nullptr, nullptr, nullptr, &uidvalid, nullptr,

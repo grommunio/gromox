@@ -1110,6 +1110,28 @@ static std::vector<imap_context *> *sh_query(const char *x)
 	return i == g_select_hash.end() ? nullptr : &i->second;
 }
 
+/*
+ * The event bus does not loopback messages to the same connection id (PID),
+ * so, generally, anything that needs to be conveyed to imapd sibling threads
+ * we have to do via shared memory. Fair enough.
+ *
+ * But there is a caveat: exmdb actions loop do back as notifications to midb,
+ * which in turn goes back imapd, like so:
+ *
+ * - imapd issues M-DELE command to midb
+ * - midb issues delete_message EXRPC to exmdb
+ * - exmdb notifies midb due to a mailbox-wide subscription midb asked for
+ * - midb issues MESSAGE-EXPUNGED on the event bus
+ * - imapd receives MESSAGE-EXPUNGED event
+ *
+ * imap:APPEND commands actually behaves similar, leading to a
+ * FOLDER-TOUCH event coming back.
+ *
+ * Notifications arrive asynchronously though, and thus with a fair chance to
+ * be "late", such that the EXPUNGE command would respond with fewer EXPUNGE
+ * responses than the number of messages to delete.
+ */
+
 void imap_parser_bcast_touch(const imap_context *current, const char *username,
     const char *folder)
 {
@@ -1196,28 +1218,21 @@ void imap_parser_bcast_expunge(const imap_context &current,
 	char user_lo[UADDR_SIZE];
 	gx_strlcpy(user_lo, current.username, std::size(user_lo));
 	HX_strlower(user_lo);
-	/*
-	 * gromox-event does not send back events to our own process.
-	 * (So, we have to edit the data structures for our other threads
-	 * from this function.)
-	 * Benefit: no IPC roundtrip to notify other threads.
-	 * Downside: Some code duplication between imap_parser_event_expunge
-	 * and imap_parser_bcast_expunge.
-	 */
+
+	/* Distribute expunges via shared memory as mentioned earlier. */
 	std::unique_lock hl_hold(g_hash_lock);
 	auto ctx_list = sh_query(user_lo);
 	if (ctx_list == nullptr)
 		return;
 	for (auto &other : *ctx_list) {
-		if (&current == other ||
-		    strcmp(current.selected_folder, other->selected_folder) != 0)
+		if (strcmp(current.selected_folder, other->selected_folder) != 0)
 			continue;
 		for (auto p : exp_list)
 			other->f_expunged_uids.emplace_back(p->uid);
 		other->async_change_mask |= REPORT_EXPUNGE;
 	}
 	hl_hold.unlock();
-	/* Bcast to other entities */
+	/* Bcast to other bus listeners (IOW, pop3) */
 	auto cmd = "MESSAGE-EXPUNGE "s + user_lo + " " + current.selected_folder + " ";
 	auto csize = cmd.size();
 	for (auto p : exp_list) {
