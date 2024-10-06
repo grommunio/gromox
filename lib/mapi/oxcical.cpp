@@ -2490,8 +2490,10 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 	std::vector<message_ptr> msgvec;
 	uidxevent_list_t uid_list;
 	if (!oxcical_classify_calendar(pical, uid_list) ||
-	    uid_list.size() == 0)
+	    uid_list.size() == 0) {
+		mlog(LV_ERR, "E-2412: iCal import data contained no VEVENTs with UIDs");
 		return ecNotFound;
+	}
 	piline = pical.get_line("METHOD");
 	if (piline == nullptr) {
 		if (!oxcical_import_events(str_zone, calendartype,
