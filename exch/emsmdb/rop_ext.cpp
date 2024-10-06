@@ -153,12 +153,10 @@ static pack_result rop_ext_pull(EXT_PULL &x, SETRECEIVEFOLDER_REQUEST &r)
 
 static pack_result rop_ext_push(EXT_PUSH &x, const GETRECEIVEFOLDERTABLE_RESPONSE &r)
 {
-	PROPTAG_ARRAY columns;
-	static constexpr uint32_t proptags[] =
+	static constexpr proptag_t proptags[] =
 		{PidTagFolderId, PR_MESSAGE_CLASS_A, PR_LAST_MODIFICATION_TIME};
-	
-	columns.count = std::size(proptags);
-	columns.pproptag = deconst(proptags);
+	static constexpr PROPTAG_ARRAY columns = {std::size(proptags), deconst(proptags)};
+
 	TRY(x.p_uint32(r.rows.count));
 	for (size_t i = 0; i < r.rows.count; ++i)
 		TRY(x.p_proprow(columns, r.rows.prows[i]));

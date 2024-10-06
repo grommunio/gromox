@@ -40,9 +40,7 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 	TARRAY_SET rcpts;
 	uint32_t tag_access;
 	uint32_t permission;
-	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
-	uint32_t proptag_buff[3];
 	
 	if (0x0FFF == cpid) {
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -113,11 +111,9 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 	                &folder_id, tag_access, open_mode_flags, nullptr);
 	if (pmessage == nullptr)
 		return ecServerOOM;
-	proptags.count = 3;
-	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_HAS_NAMED_PROPERTIES;
-	proptag_buff[1] = PR_SUBJECT_PREFIX;
-	proptag_buff[2] = PR_NORMALIZED_SUBJECT;
+	static constexpr proptag_t proptag_buff[] =
+		{PR_HAS_NAMED_PROPERTIES, PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
 	auto flag = propvals.get<const uint8_t>(PR_HAS_NAMED_PROPERTIES);
@@ -173,8 +169,6 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	ems_objtype object_type;
 	uint32_t tag_access;
 	uint32_t permission;
-	uint32_t proptag_buff[4];
-	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (0x0FFF == cpid) {
@@ -205,12 +199,11 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	} else {
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 	}
-	tmp_proptags.count = 4;
-	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_MESSAGE_SIZE_EXTENDED;
-	proptag_buff[1] = PR_STORAGE_QUOTA_LIMIT;
-	proptag_buff[2] = PR_ASSOC_CONTENT_COUNT;
-	proptag_buff[3] = PR_CONTENT_COUNT;
+	static constexpr proptag_t proptag_buff[] =
+		{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
+		PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
+	static constexpr PROPTAG_ARRAY tmp_proptags =
+		{std::size(proptag_buff), deconst(proptag_buff)};
 	if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
 	auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
@@ -416,20 +409,17 @@ ec_error_t rop_reloadcachedinformation(uint16_t reserved,
 {
 	ems_objtype object_type;
 	TARRAY_SET rcpts;
-	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
-	uint32_t proptag_buff[3];
 	
 	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (pmessage == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
 		return ecNotSupported;
-	proptags.count = 3;
-	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_HAS_NAMED_PROPERTIES;
-	proptag_buff[1] = PR_SUBJECT_PREFIX;
-	proptag_buff[2] = PR_NORMALIZED_SUBJECT;
+	static constexpr proptag_t proptag_buff[] =
+		{PR_HAS_NAMED_PROPERTIES, PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT};
+	static constexpr PROPTAG_ARRAY proptags =
+		{std::size(proptag_buff), deconst(proptag_buff)};
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
 	auto flag = propvals.get<const uint8_t>(PR_HAS_NAMED_PROPERTIES);
@@ -848,9 +838,7 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 	auto cpid = static_cast<cpid_t>(cpraw);
 	ems_objtype object_type;
 	TARRAY_SET rcpts;
-	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
-	uint32_t proptag_buff[4];
 	
 	*preserved = 0;
 	if (0x0FFF == cpid) {
@@ -889,9 +877,9 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 			return ecError;
 		if (pmessage->init_message(false, cpid) != 0)
 			return ecError;
-		proptags.count = 1;
-		proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PidTagMid;
+
+		static constexpr proptag_t proptag_buff[] = {PidTagMid};
+		static constexpr PROPTAG_ARRAY proptags = {1, deconst(proptag_buff)};
 		if (!pmessage->get_properties(0, &proptags, &propvals))
 			return ecError;
 		auto mid_p = propvals.get<const eid_t>(PidTagMid);
@@ -915,12 +903,12 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 		*pprecipient_row = NULL;
 		return ecSuccess;
 	}
-	proptags.count = 4;
-	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PidTagMid;
-	proptag_buff[1] = PR_HAS_NAMED_PROPERTIES;
-	proptag_buff[2] = PR_SUBJECT_PREFIX;
-	proptag_buff[3] = PR_NORMALIZED_SUBJECT;
+
+	static constexpr proptag_t proptag_buff[] =
+		{PidTagMid, PR_HAS_NAMED_PROPERTIES,
+		PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT};
+	static constexpr PROPTAG_ARRAY proptags =
+		{std::size(proptag_buff), deconst(proptag_buff)};
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
 	auto mid_p = propvals.get<const eid_t>(PidTagMid);

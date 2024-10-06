@@ -29,9 +29,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	struct tm tmp_tm;
 	char maildir[256];
 	uint32_t permission;
-	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
-	uint32_t proptag_buff[2];
 	
 	auto rpc_info = get_rpc_info();
 	if (!(open_flags & LOGON_OPEN_FLAG_USE_PER_MDB_REPLID_MAPPING))
@@ -83,10 +81,11 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		gx_strlcpy(maildir, rpc_info.maildir, std::size(maildir));
 		logon_mode = logon_mode::owner;
 	}
-	proptags.count = 2;
-	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_STORE_RECORD_KEY;
-	proptag_buff[1] = PR_OOF_STATE;
+
+	static constexpr proptag_t proptag_buff[] =
+		{PR_STORE_RECORD_KEY, PR_OOF_STATE};
+	static constexpr PROPTAG_ARRAY proptags =
+		{std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client::get_store_properties(maildir, CP_ACP,
 	    &proptags, &propvals))
 		return ecError;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -161,8 +161,6 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 {
 	ems_objtype object_type;
 	int root_element;
-	uint32_t proptag_buff[4];
-	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (flags & ~FAST_DEST_CONFIG_FLAG_MOVE)
@@ -206,12 +204,11 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 	if (ROOT_ELEMENT_TOPFOLDER == root_element ||
 		ROOT_ELEMENT_MESSAGELIST == root_element ||
 		ROOT_ELEMENT_FOLDERCONTENT == root_element) {
-		tmp_proptags.count = 4;
-		tmp_proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PR_MESSAGE_SIZE_EXTENDED;
-		proptag_buff[1] = PR_STORAGE_QUOTA_LIMIT;
-		proptag_buff[2] = PR_ASSOC_CONTENT_COUNT;
-		proptag_buff[3] = PR_CONTENT_COUNT;
+		static constexpr proptag_t proptag_buff[] =
+			{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
+			PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
+		static constexpr PROPTAG_ARRAY tmp_proptags =
+			{std::size(proptag_buff), deconst(proptag_buff)};
 		if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
 			return ecError;
 		auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
@@ -960,8 +957,6 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 	uint64_t read_cn;
 	uint64_t folder_id;
 	uint32_t permission;
-	uint32_t proptag_buff[2];
-	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -1001,10 +996,9 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 			if (!b_owner)
 				continue;
 		}
-		tmp_proptags.count = 2;
-		tmp_proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PR_ASSOCIATED;
-		proptag_buff[1] = PR_READ;
+		static constexpr proptag_t proptag_buff[] = {PR_ASSOCIATED, PR_READ};
+		static constexpr PROPTAG_ARRAY tmp_proptags =
+			{std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client::get_message_properties(dir, nullptr, CP_ACP,
 		    message_id, &tmp_proptags, &tmp_propvals))
 			return ecError;

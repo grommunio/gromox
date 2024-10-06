@@ -146,16 +146,13 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 static bool oxomsg_extract_delegate(message_object *pmessage,
     std::string &username)
 {
-	uint32_t proptag_buff[4];
-	PROPTAG_ARRAY tmp_proptags;
+	static constexpr proptag_t proptag_buff[] =
+		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID};
+	static constexpr PROPTAG_ARRAY tmp_proptags =
+		{std::size(proptag_buff), deconst(proptag_buff)};
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	tmp_proptags.count = 4;
-	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_SENT_REPRESENTING_ADDRTYPE;
-	proptag_buff[1] = PR_SENT_REPRESENTING_EMAIL_ADDRESS;
-	proptag_buff[2] = PR_SENT_REPRESENTING_SMTP_ADDRESS;
-	proptag_buff[3] = PR_SENT_REPRESENTING_ENTRYID;
 	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (0 == tmp_propvals.count) {
@@ -265,8 +262,6 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	ems_objtype object_type;
 	uint16_t rcpt_num;
 	char command_buff[1024];
-	uint32_t proptag_buff[6];
-	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -307,12 +302,10 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecError;
 	if (rcpt_num > g_max_rcpt)
 		return ecTooManyRecips;
-	
-	tmp_proptags.count = 2;
-	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_ASSOCIATED;
-	proptag_buff[1] = PR_MESSAGE_CLASS;
-	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
+
+	static constexpr proptag_t ptbuf_one[] = {PR_ASSOCIATED, PR_MESSAGE_CLASS};
+	static constexpr PROPTAG_ARRAY ptags_one = {std::size(ptbuf_one), deconst(ptbuf_one)};
+	if (!pmessage->get_properties(0, &ptags_one, &tmp_propvals))
 		return ecError;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
@@ -345,12 +338,11 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (ret != ecSuccess)
 		return ret;
 	
-	tmp_proptags.count = 3;
-	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_MAX_SUBMIT_MESSAGE_SIZE;
-	proptag_buff[1] = PR_PROHIBIT_SEND_QUOTA;
-	proptag_buff[2] = PR_MESSAGE_SIZE_EXTENDED;
-	if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
+	static constexpr proptag_t ptbuf_two[] =
+		{PR_MAX_SUBMIT_MESSAGE_SIZE, PR_PROHIBIT_SEND_QUOTA, PR_MESSAGE_SIZE_EXTENDED};
+	static constexpr PROPTAG_ARRAY ptags_two =
+		{std::size(ptbuf_two), deconst(ptbuf_two)};
+	if (!plogon->get_properties(&ptags_two, &tmp_propvals))
 		return ecError;
 
 	auto sendquota = tmp_propvals.get<uint32_t>(PR_PROHIBIT_SEND_QUOTA);
@@ -362,14 +354,14 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 
 	auto inum = tmp_propvals.get<const int32_t>(PR_MAX_SUBMIT_MESSAGE_SIZE);
 	int32_t max_length = inum != nullptr ? *inum : -1;
-	tmp_proptags.count = (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) ? 2 : 6;
-	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_MESSAGE_SIZE;
-	proptag_buff[1] = PR_MESSAGE_FLAGS;
-	proptag_buff[2] = PR_DEFERRED_SEND_TIME;
-	proptag_buff[3] = PR_DEFERRED_SEND_NUMBER;
-	proptag_buff[4] = PR_DEFERRED_SEND_UNITS;
-	proptag_buff[5] = PR_DELETE_AFTER_SUBMIT;
+	static constexpr proptag_t ptbuf_three[] =
+		{PR_MESSAGE_SIZE, PR_MESSAGE_FLAGS,
+		PR_DEFERRED_SEND_TIME, PR_DEFERRED_SEND_NUMBER,
+		PR_DEFERRED_SEND_UNITS, PR_DELETE_AFTER_SUBMIT};
+	PROPTAG_ARRAY tmp_proptags;
+	tmp_proptags.count = (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) ?
+	                     2 : std::size(ptbuf_three);
+	tmp_proptags.pproptag = deconst(ptbuf_three);
 	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return ecError;
 	auto num = tmp_propvals.get<const uint32_t>(PR_MESSAGE_SIZE);

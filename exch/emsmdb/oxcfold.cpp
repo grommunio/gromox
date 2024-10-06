@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <libHX/string.h>
@@ -732,8 +732,6 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 	ems_objtype object_type;
 	uint32_t permission;
 	MESSAGE_CONTENT *pbrief;
-	uint32_t proptag_buff[2];
-	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	*ppartial_completion = 1;
@@ -783,10 +781,8 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 				continue;
 			}
 		}
-		tmp_proptags.count = 2;
-		tmp_proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
-		proptag_buff[1] = PR_READ;
+		static constexpr proptag_t proptag_buff[] = {PR_NON_RECEIPT_NOTIFICATION_REQUESTED, PR_READ};
+		static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client::get_message_properties(dir, nullptr, CP_ACP,
 		    pmessage_ids->pll[i], &tmp_proptags, &tmp_propvals))
 			return ecError;
