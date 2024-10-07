@@ -21,9 +21,7 @@ using namespace gromox;
 std::unique_ptr<stream_object> stream_object::create(void *pparent,
     ems_objtype object_type, uint32_t open_flags, uint32_t proptag, uint32_t max_length)
 {
-	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
-	uint32_t proptag_buff[2];
 	std::unique_ptr<stream_object> pstream;
 
 	try {
@@ -38,10 +36,8 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	pstream->max_length = max_length;
 	switch (object_type) {
 	case ems_objtype::message: {
-		proptags.count = 2;
-		proptags.pproptag = proptag_buff;
-		proptag_buff[0] = proptag;
-		proptag_buff[1] = PR_MESSAGE_SIZE;
+		const proptag_t proptag_buff[] = {proptag, PR_MESSAGE_SIZE};
+		const PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 		if (!static_cast<message_object *>(pparent)->get_properties(0, &proptags, &propvals))
 			return NULL;
 		auto psize = propvals.get<uint32_t>(PR_MESSAGE_SIZE);
@@ -50,10 +46,8 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		break;
 	}
 	case ems_objtype::attach: {
-		proptags.count = 2;
-		proptags.pproptag = proptag_buff;
-		proptag_buff[0] = proptag;
-		proptag_buff[1] = PR_ATTACH_SIZE;
+		const proptag_t proptag_buff[] = {proptag, PR_ATTACH_SIZE};
+		const PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 		if (!static_cast<attachment_object *>(pparent)->get_properties(0, &proptags, &propvals))
 			return NULL;
 		auto psize = propvals.get<uint32_t>(PR_ATTACH_SIZE);
@@ -61,12 +55,12 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 			return NULL;
 		break;
 	}
-	case ems_objtype::folder:
-		proptags.count = 1;
-		proptags.pproptag = &proptag;
+	case ems_objtype::folder: {
+		const PROPTAG_ARRAY proptags = {1, &proptag};
 		if (!static_cast<const folder_object *>(pparent)->get_properties(&proptags, &propvals))
 			return NULL;
 		break;
+	}
 	default:
 		return NULL;
 	}

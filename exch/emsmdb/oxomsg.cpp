@@ -525,8 +525,6 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	uint64_t parent_id;
 	uint64_t folder_id;
 	uint64_t fid_spooler;
-	uint32_t proptag_buff[3];
-	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -551,11 +549,11 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	if (!exmdb_client::unlink_message(dir, pinfo->cpid,
 	    fid_spooler, message_id))
 		return ecError;
-	tmp_proptags.count = 3;
-	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PR_DELETE_AFTER_SUBMIT;
-	proptag_buff[1] = PR_TARGET_ENTRYID;
-	proptag_buff[2] = PR_PARENT_ENTRYID;
+
+	static constexpr proptag_t proptag_buff[] =
+		{PR_DELETE_AFTER_SUBMIT, PR_TARGET_ENTRYID, PR_PARENT_ENTRYID};
+	static constexpr PROPTAG_ARRAY tmp_proptags =
+		{std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client::get_message_properties(dir, nullptr, CP_ACP,
 	    message_id, &tmp_proptags, &tmp_propvals))
 		return ecError;
@@ -585,8 +583,6 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin) try
 {
 	ems_objtype object_type;
-	PROPTAG_ARRAY proptags;
-	uint32_t proptag_buff[7];
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -652,15 +648,12 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ret;
 	*pppropvals = cu_alloc<TPROPVAL_ARRAY>();
 	if (NULL != *pppropvals) {
-		proptags.count = 7;
-		proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PR_SENDER_NAME;
-		proptag_buff[1] = PR_SENDER_ENTRYID;	
-		proptag_buff[2] = PR_SENDER_SEARCH_KEY;
-		proptag_buff[3] = PR_SENT_REPRESENTING_NAME;
-		proptag_buff[4] = PR_SENT_REPRESENTING_ENTRYID;
-		proptag_buff[5] = PR_SENT_REPRESENTING_SEARCH_KEY;
-		proptag_buff[6] = PR_PROVIDER_SUBMIT_TIME;
+		static constexpr proptag_t proptag_buff[] =
+			{PR_SENDER_NAME, PR_SENDER_ENTRYID, PR_SENDER_SEARCH_KEY,
+			PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ENTRYID,
+			PR_SENT_REPRESENTING_SEARCH_KEY, PR_PROVIDER_SUBMIT_TIME};
+		static constexpr PROPTAG_ARRAY proptags =
+			{std::size(proptag_buff), deconst(proptag_buff)};
 		if (!pmessage->get_properties(0, &proptags, *pppropvals))
 			*pppropvals = NULL;
 		if (!(**pppropvals).has(PR_PROVIDER_SUBMIT_TIME)) {
