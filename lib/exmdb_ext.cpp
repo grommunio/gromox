@@ -4238,15 +4238,16 @@ pack_result exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *pnotify,
 const char *exmdb_rpc_strerror(exmdb_response v)
 {
 	switch (v) {
-	case exmdb_response::access_deny: return "Access denied";
-	case exmdb_response::max_reached: return "Server reached maximum number of connections";
-	case exmdb_response::lack_memory: return "Out of memory";
-	case exmdb_response::misconfig_prefix: return "Prefix is not served";
-	case exmdb_response::misconfig_mode: return "Prefix has type mismatch";
-	case exmdb_response::connect_incomplete: return "No prior CONNECT RPC made";
-	case exmdb_response::pull_error: return "Invalid request/Server-side deserializing error";
-	case exmdb_response::dispatch_error: return "Dispatch error/Request rejected/DB error (check gromox-http log)";
-	case exmdb_response::push_error: return "Server-side serialize error";
+	using enum exmdb_response;
+	case access_deny: return "Access denied";
+	case max_reached: return "Server reached maximum number of connections";
+	case lack_memory: return "Out of memory";
+	case misconfig_prefix: return "Prefix is not served";
+	case misconfig_mode: return "Prefix has type mismatch";
+	case connect_incomplete: return "No prior CONNECT RPC made";
+	case pull_error: return "Invalid request/Server-side deserializing error";
+	case dispatch_error: return "Dispatch error/Request rejected/DB error (check gromox-http log)";
+	case push_error: return "Server-side serialize error";
 	default: break;
 	}
 	thread_local char xbuf[32];

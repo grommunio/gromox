@@ -39,10 +39,11 @@ ec_error_t rop_getpropertyidsfromnames(uint8_t flags,
 	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
 	switch (object_type) {
-	case ems_objtype::logon:
-	case ems_objtype::folder:
-	case ems_objtype::message:
-	case ems_objtype::attach:
+	using enum ems_objtype;
+	case logon:
+	case folder:
+	case message:
+	case attach:
 		break;
 	default:
 		return ecNotSupported;

@@ -1187,14 +1187,15 @@ static void ab_tree_dump_node(const tree_node *tnode, unsigned int lvl)
 	auto &a = *containerof(tnode, NSAB_NODE, stree);
 	const char *ty;
 	switch (a.node_type) {
-	case abnode_type::remote: ty = "remote"; break;
-	case abnode_type::user: ty = "user"; break;
-	case abnode_type::mlist: ty = "mlist"; break;
-	case abnode_type::folder: ty = "folder"; break;
-	case abnode_type::domain: ty = "domain"; break;
-	case abnode_type::group: ty = "group"; break;
-	case abnode_type::abclass: ty = "abclass"; break;
-	default: ty = "?"; break;
+	using enum abnode_type;
+	case remote:  ty = "remote"; break;
+	case user:    ty = "user"; break;
+	case mlist:   ty = "mlist"; break;
+	case folder:  ty = "folder"; break;
+	case domain:  ty = "domain"; break;
+	case group:   ty = "group"; break;
+	case abclass: ty = "abclass"; break;
+	default:      ty = "?"; break;
 	}
 	fprintf(stderr, "%-*sminid %xh, nodeid %d, type %s",
 	        4 * lvl, "", a.minid, a.id, ty);

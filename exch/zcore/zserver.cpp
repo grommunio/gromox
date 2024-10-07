@@ -3865,10 +3865,11 @@ ec_error_t zs_getnamedpropids(GUID hsession, uint32_t hstore,
 		return ecNullObject;
 	store_object *pstore = nullptr;
 	switch (mapi_type) {
-	case zs_objtype::store: pstore = static_cast<store_object *>(obj); break;
-	case zs_objtype::folder: pstore = static_cast<folder_object *>(obj)->pstore; break;
-	case zs_objtype::message: pstore = static_cast<message_object *>(obj)->get_store(); break;
-	case zs_objtype::attach: pstore = static_cast<attachment_object *>(obj)->get_store(); break;
+	using enum zs_objtype;
+	case store:   pstore = static_cast<store_object *>(obj); break;
+	case folder:  pstore = static_cast<folder_object *>(obj)->pstore; break;
+	case message: pstore = static_cast<message_object *>(obj)->get_store(); break;
+	case attach:  pstore = static_cast<attachment_object *>(obj)->get_store(); break;
 	default: break;
 	}
 	if (pstore == nullptr)
@@ -3889,10 +3890,11 @@ ec_error_t zs_getpropnames(GUID hsession, uint32_t hstore,
 		return ecNullObject;
 	store_object *pstore = nullptr;
 	switch (mapi_type) {
-	case zs_objtype::store: pstore = static_cast<store_object *>(obj); break;
-	case zs_objtype::folder: pstore = static_cast<folder_object *>(obj)->pstore; break;
-	case zs_objtype::message: pstore = static_cast<message_object *>(obj)->get_store(); break;
-	case zs_objtype::attach: pstore = static_cast<attachment_object *>(obj)->get_store(); break;
+	using enum zs_objtype;
+	case store:   pstore = static_cast<store_object *>(obj); break;
+	case folder:  pstore = static_cast<folder_object *>(obj)->pstore; break;
+	case message: pstore = static_cast<message_object *>(obj)->get_store(); break;
+	case attach:  pstore = static_cast<attachment_object *>(obj)->get_store(); break;
 	default: break;
 	}
 	if (pstore == nullptr)

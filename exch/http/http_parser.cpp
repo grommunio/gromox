@@ -140,10 +140,11 @@ static void httpctx_report(const HTTP_CONTEXT &ctx, size_t i)
 	        cn.client_ip, cn.client_port, cn.server_ip, cn.server_port);
 	const char *chtyp = "NONE";
 	switch (ctx.channel_type) {
-	case hchannel_type::none: chtyp = "NONE"; break;
-	case hchannel_type::in:   chtyp = "IN";   break;
-	case hchannel_type::out:  chtyp = "OUT";  break;
-	default:                  chtyp = "?";    break;
+	using enum hchannel_type;
+	case none: chtyp = "NONE"; break;
+	case in:   chtyp = "IN";   break;
+	case out:  chtyp = "OUT";  break;
+	default:   chtyp = "?";    break;
 	}
 	mlog(LV_INFO, "   %4s  [%s]:%hu  %s",
 		chtyp, ctx.host, ctx.port, ctx.username);
@@ -401,21 +402,22 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 static const char *status_text(http_status s)
 {
 	switch (s) {
-	case http_status::not_modified: return "Not Modified";
-	case http_status::bad_request: return "Bad Request";
-	case http_status::unauthorized: return "Unauthorized";
-	case http_status::forbidden: return "Forbidden";
-	case http_status::not_found: return "Not Found";
-	case http_status::method_not_allowed: return "Method Not Allowed";
-	case http_status::timeout: return "Request Timeout";
-	case http_status::uri_too_long: return "URI Too Long";
-	case http_status::range_insatisfiable: return "Range Not Satisfiable";
-	case http_status::too_many_ranges: return "Too Many Ranges";
-	case http_status::not_impl: return "Not Implemented";
-	case http_status::bad_gateway: return "Bad FCGI Gateway";
-	case http_status::service_unavailable: return "Service Unavailable";
-	case http_status::resources_exhausted: return "Resources Exhausted";
-	case http_status::gateway_timeout: return "Gateway Timeout";
+	using enum http_status;
+	case not_modified: return "Not Modified";
+	case bad_request: return "Bad Request";
+	case unauthorized: return "Unauthorized";
+	case forbidden: return "Forbidden";
+	case not_found: return "Not Found";
+	case method_not_allowed: return "Method Not Allowed";
+	case timeout: return "Request Timeout";
+	case uri_too_long: return "URI Too Long";
+	case range_insatisfiable: return "Range Not Satisfiable";
+	case too_many_ranges: return "Too Many Ranges";
+	case not_impl: return "Not Implemented";
+	case bad_gateway: return "Bad FCGI Gateway";
+	case service_unavailable: return "Service Unavailable";
+	case resources_exhausted: return "Resources Exhausted";
+	case gateway_timeout: return "Gateway Timeout";
 	default: return "Server Error";
 	}
 }
