@@ -1,3 +1,21 @@
+Gromox 2.34 (2024-10-08)
+========================
+
+Fixes:
+
+* php_mapi: cure crash occurring with mapi_getidsfromnames
+* midb: resolve "inside a readonly TXN" warnings during message deletion
+* exmdb: emit notifications only after SQL transactions are complete
+* imap: resolve unstable EXPUNGE observability
+
+Enhancements:
+
+* exm2eml: do output named property map when -p is used
+* exm2eml: show named property mnemonics when -p is used twice
+* php_mapi: allow calling namedprop resolution functions with
+  not just store objects, but also folder/message/attachment objects
+
+
 Gromox 2.33 (2024-10-01)
 ========================
 
