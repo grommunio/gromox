@@ -1732,8 +1732,13 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 		}
 		temp_name1[i] = '\0';
 #if __cplusplus < 202000L
+		/*
+		 * Heterogenous lookup only available with C++20; earlier
+		 * standards have to use a lambda to avoid conversion of
+		 * temp_name1.
+		 */
 		if (std::find_if(temp_file.cbegin(), temp_file.cend(),
-		    [&](const auto &elem) { return strcasecmp(elem.c_str(), temp_name1) == 0; }) != temp_file.cend()) {
+		    [&](const auto &elem) { return strcmp(elem.c_str(), temp_name1) == 0; }) != temp_file.cend()) {
 			temp_name1[i] = temp_name[i];
 			continue;
 		}
