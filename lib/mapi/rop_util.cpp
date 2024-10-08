@@ -26,7 +26,6 @@ using namespace gromox;
 
 uint16_t rop_util_get_replid(eid_t eid)
 {
-	/* replid is kept in host-endian, see rop_util_make_eid for detail */
 	return eid & 0xFFFF;
 }
 
@@ -35,7 +34,7 @@ uint16_t rop_util_get_replid(eid_t eid)
  */
 uint64_t rop_util_get_gc_value(eid_t eid)
 {
-	return rop_util_gc_to_value(rop_util_get_gc_array(eid));
+	return __builtin_bswap64(eid.m_value) & 0xFFFFFFFF;
 }
 
 /**
@@ -44,17 +43,14 @@ uint64_t rop_util_get_gc_value(eid_t eid)
 GLOBCNT rop_util_get_gc_array(eid_t eid)
 {
 	GLOBCNT gc;
-#if !GX_BIG_ENDIAN
+	eid.m_value = cpu_to_le64(eid.m_value);
 	memcpy(gc.ab, reinterpret_cast<uint8_t *>(&eid) + 2, 6);
-#else
-	memcpy(gc.ab, &eid, 6);
-#endif
 	return gc;
 }
 
 /**
  * @value:	One of the following:
- * 		* Gromox-level change number like 0x800000000005, 0x800000000006, ...,
+ * 		* Gromox-level change number
  * 		* Gromox-level folder identifier like 0xd (inbox), ...,
  * 		* Gromox-level message identifier
  * @gc:		Low 48 bits of @value, encoded as a 48-bit big-endian integer.
@@ -75,29 +71,14 @@ GLOBCNT rop_util_value_to_gc(uint64_t value)
  */
 uint64_t rop_util_gc_to_value(GLOBCNT gc)
 {
-	uint64_t value;
-	auto v = reinterpret_cast<uint8_t *>(&value);
-
-#if !GX_BIG_ENDIAN
-	v[0] = gc.ab[5];
-	v[1] = gc.ab[4];
-	v[2] = gc.ab[3];
-	v[3] = gc.ab[2];
-	v[4] = gc.ab[1];
-	v[5] = gc.ab[0];
-	v[6] = 0;
-	v[7] = 0;
-#else
-	v[0] = 0;
-	v[1] = 0;
-	memcpy(v + 2, gc.ab, 6);
-#endif
-	return value;
+	uint64_t value = 0;
+	memcpy(reinterpret_cast<uint8_t *>(&value) + 2, gc.ab, 6);
+	return be64_to_cpu(value);
 }
 
 /**
  * @replid:	replica id as per OXCFXICS
- * @gc:		Gromox-level folder/message id/CN encoded as 48-bit big-endian
+ * @gc:		GCV or CN Gromox-level folder/message id/CN encoded as 48-bit big-endian
  *
  * Produces an Exchange-level folder/message identifier (MS-OXCDATA v17
  * §2.2.1.2) — later visible in e.g. PR_RECORD_KEY (see also
@@ -116,24 +97,12 @@ uint64_t rop_util_gc_to_value(GLOBCNT gc)
  */
 eid_t rop_util_make_eid(uint16_t replid, GLOBCNT gc)
 {
-	eid_t eid;
-	auto e = reinterpret_cast<uint8_t *>(&eid);
-
-#if !GX_BIG_ENDIAN
-	e[0] = 0;
-	e[1] = 0;
-	memcpy(e + 2, gc.ab, 6);
-#else
-	memcpy(&eid, gc.ab, 6);
-	e[6] = 0;
-	e[7] = 0;
-#endif
-	return (eid | replid);
+	return {__builtin_bswap64(rop_util_gc_to_value(gc)) | replid};
 }
 
 eid_t rop_util_make_eid_ex(uint16_t replid, uint64_t value)
 {
-	return rop_util_make_eid(replid, rop_util_value_to_gc(value));
+	return {(__builtin_bswap64(value)) | replid};
 }
 
 eid_t rop_util_nfid_to_eid(uint64_t id)

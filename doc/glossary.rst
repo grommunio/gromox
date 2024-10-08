@@ -294,8 +294,9 @@ Change number / CN
 	host-endian stand-alone.
 
 Internal Identifier
-	The aggregation of the 16-bit *replid* plus the 48-bit *GLOBCNT* of the
-	creator. Scope: all replicas of a mailbox. Limit: not defined because
+	The aggregation of the 16-bit *replid* of the creator plus the
+	48-bit *GLOBCNT* (of a GCV or CN).
+	Scope: all replicas of a mailbox. Limit: not defined because
 	aggregate. Total size: 8 octets. IIDs have no particular order. On the
 	wire, replid is LSB-first, but GLOBCNT is MSB-first. MS-OXCDATA
 	specifies IIDs as an aggregate, while MS-OXCROPS specifies them as

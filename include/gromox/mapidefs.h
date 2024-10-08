@@ -837,6 +837,7 @@ enum {
 	RIGHT_AUTOUPDATE_DENIED = 0x8U,
 };
 
+/* cf. glossary.rst "Internal Identifier" */
 struct eid_t {
 	eid_t() = default;
 	constexpr eid_t(uint64_t v) : m_value(v) {}
