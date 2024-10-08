@@ -373,7 +373,7 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 	 -e 's|#define LOCALSTATEDIR .*|#define LOCALSTATEDIR "${localstatedir}"|' \
 	 -e 's|#define PKGDATADIR .*|#define PKGDATADIR "${pkgdatadir}"|' \
 		<${srcdir}/include/gromox/paths.h.in >"$@.tmp"
-	${AM_V_at}if ! cmp "$@" "$@.tmp" 2>/dev/null; then mv "$@.tmp" "$@"; fi; rm -f "$@.tmp"
+	${AM_V_at}if ! cmp "$@" "$@.tmp" >/dev/null 2>/dev/null; then mv "$@.tmp" "$@"; fi; rm -f "$@.tmp"
 
 include/mapierr.cpp: include/gromox/mapierr.hpp tools/defs2php.sh tools/defs2php.pl
 	${AM_V_GEN}${MKDIR_P} include/gromox
