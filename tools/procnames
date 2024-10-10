@@ -1,0 +1,12 @@
+#!/bin/sh
+# Print the thread names of a thread group
+pid="$1"
+if [ "$COLUMNS" = "0" ]; then
+	grep '' "/proc/$pid"/task/*/stat
+else
+	if [ -z "$COLUMNS" ]; then
+		set -- $(stty size)
+		COLUMNS="$2"
+	fi
+	grep -h '' "/proc/$pid"/task/*/stat | cut -b "1-$COLUMNS"
+fi
