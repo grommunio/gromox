@@ -52,9 +52,8 @@ static std::atomic<bool> xa_notify_stop{false};
 static std::condition_variable xa_thread_wake;
 static alias_map xa_empty_alias_map;
 static domain_set xa_empty_domain_set;
-static std::shared_ptr<alias_map> xa_alias_map;
-static std::shared_ptr<domain_set> xa_domain_set;
-static std::mutex xa_alias_lock;
+static std::atomic<std::shared_ptr<alias_map>> xa_alias_map;
+static std::atomic<std::shared_ptr<domain_set>> xa_domain_set;
 static std::thread xa_thread;
 static mysql_adaptor_init_param g_parm;
 static std::chrono::seconds g_cache_lifetime;
@@ -156,11 +155,10 @@ static void xa_refresh_once()
 	auto conn = sql_make_conn();
 	auto newmap = xa_refresh_aliases(conn);
 	auto newdom = xa_refresh_domains(conn);
-	std::unique_lock lk(xa_alias_lock);
 	if (newmap != nullptr)
-		xa_alias_map = std::move(newmap);
+		xa_alias_map.exchange(std::move(newmap));
 	if (newdom != nullptr)
-		xa_domain_set = std::move(newdom);
+		xa_domain_set.exchange(std::move(newdom));
 }
 
 static void xa_refresh_thread()
@@ -177,13 +175,8 @@ static void xa_refresh_thread()
 
 static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 {
-	decltype(xa_alias_map) alias_map_ptr;
-	decltype(xa_domain_set) domset_ptr;
-	{
-		std::unique_lock lk(xa_alias_lock);
-		alias_map_ptr = xa_alias_map;
-		domset_ptr = xa_domain_set;
-	}
+	auto alias_map_ptr = xa_alias_map.load();
+	auto domset_ptr = xa_domain_set.load();
 	auto &alias_map = alias_map_ptr != nullptr ? *alias_map_ptr : xa_empty_alias_map;
 	auto &domset = domset_ptr != nullptr ? *domset_ptr : xa_empty_domain_set;
 
