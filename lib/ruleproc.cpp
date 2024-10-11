@@ -1222,6 +1222,8 @@ ec_error_t rxparam::run()
 	if (!exmdb_client::read_message(cur.dirc(), nullptr, CP_ACP,
 	    cur.mid, &unique_tie(ctnt)))
 		return ecError;
+	if (ctnt == nullptr)
+		return ecNotFound;
 	for (auto &&rule : rule_list) {
 		err = rule.extended ? opx_process(*this, rule) : op_process(*this, rule);
 		if (err != ecSuccess)
