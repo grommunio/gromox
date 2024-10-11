@@ -151,22 +151,27 @@ static std::shared_ptr<domain_set> xa_refresh_domains(MYSQL *conn) try
 	return nullptr;
 }
 
+static void xa_refresh_once()
+{
+	auto conn = sql_make_conn();
+	auto newmap = xa_refresh_aliases(conn);
+	auto newdom = xa_refresh_domains(conn);
+	std::unique_lock lk(xa_alias_lock);
+	if (newmap != nullptr)
+		xa_alias_map = std::move(newmap);
+	if (newdom != nullptr)
+		xa_domain_set = std::move(newdom);
+}
+
 static void xa_refresh_thread()
 {
 	std::mutex slp_mtx;
 	while (!xa_notify_stop) {
 		{
-			auto conn = sql_make_conn();
-			auto newmap = xa_refresh_aliases(conn);
-			auto newdom = xa_refresh_domains(conn);
-			std::unique_lock lk(xa_alias_lock);
-			if (newmap != nullptr)
-				xa_alias_map = std::move(newmap);
-			if (newdom != nullptr)
-				xa_domain_set = std::move(newdom);
+			std::unique_lock slp_hold(slp_mtx);
+			xa_thread_wake.wait_for(slp_hold, g_cache_lifetime);
 		}
-		std::unique_lock slp_hold(slp_mtx);
-		xa_thread_wake.wait_for(slp_hold, g_cache_lifetime);
+		xa_refresh_once();
 	}
 }
 
@@ -365,8 +370,10 @@ BOOL HOOK_alias_resolve(enum plugin_op reason, const struct dlfuncs &data)
 		       strerror(errno));
 		return false;
 	}
-	if (!xa_reload_config(std::move(mcfg), std::move(acfg)) ||
-	    !register_hook(xa_alias_subst))
+	if (!xa_reload_config(std::move(mcfg), std::move(acfg)))
+		return false;
+	xa_refresh_once();
+	if (!register_hook(xa_alias_subst))
 		return false;
 	try {
 		xa_thread = std::thread(xa_refresh_thread);
