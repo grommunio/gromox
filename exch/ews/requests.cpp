@@ -1452,8 +1452,10 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 		if(!(ctx.permissions(dir, folder.folderId) & frightsReadAny))
 			throw EWSError::AccessDenied(E3142);
 
-		MESSAGE_CONTENT* content;
-		if(!ctx.plugin().exmdb.read_message(dir.c_str(), ctx.effectiveUser(folder), CP_ACP, meid.messageId(), &content))
+		MESSAGE_CONTENT *content = nullptr;
+		if (!ctx.plugin().exmdb.read_message(dir.c_str(),
+		    ctx.effectiveUser(folder), CP_ACP, meid.messageId(),
+		    &content) || content == nullptr)
 			throw EWSError::ItemNotFound(E3143);
 		ctx.send(dir, *content);
 

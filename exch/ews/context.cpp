@@ -1032,8 +1032,9 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	auto& exmdb = m_plugin.exmdb;
 	if(special & sShape::MimeContent)
 	{
-		MESSAGE_CONTENT* content;
-		if(!exmdb.read_message(dir.c_str(), nullptr, CP_ACP, mid, &content))
+		MESSAGE_CONTENT *content = nullptr;
+		if (!exmdb.read_message(dir.c_str(), nullptr, CP_ACP, mid, &content) ||
+		    content == nullptr)
 			throw EWSError::ItemNotFound(E3071);
 		MAIL mail;
 		auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
