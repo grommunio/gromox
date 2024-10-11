@@ -50,6 +50,8 @@ using namespace alias_resolve;
 
 static std::atomic<bool> xa_notify_stop{false};
 static std::condition_variable xa_thread_wake;
+static alias_map xa_empty_alias_map;
+static domain_set xa_empty_domain_set;
 static std::shared_ptr<alias_map> xa_alias_map;
 static std::shared_ptr<domain_set> xa_domain_set;
 static std::mutex xa_alias_lock;
@@ -177,8 +179,8 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 		alias_map_ptr = xa_alias_map;
 		domset_ptr = xa_domain_set;
 	}
-	auto &alias_map = *alias_map_ptr;
-	auto &domset = *domset_ptr;
+	auto &alias_map = alias_map_ptr != nullptr ? *alias_map_ptr : xa_empty_alias_map;
+	auto &domset = domset_ptr != nullptr ? *domset_ptr : xa_empty_domain_set;
 
 	auto ctrl = &ctx->ctrl;
 	if (strchr(ctrl->from, '@') != nullptr) {
