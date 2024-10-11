@@ -178,6 +178,8 @@ int main(int argc, char **argv) try
 		msg_id = strtoull(sep + 1, nullptr, 0);
 		uint32_t inst_id = 0;
 		ctnt = message_content_init();
+		if (ctnt == nullptr)
+			throw std::bad_alloc();
 		if (!exmdb_client_remote::load_message_instance(g_storedir,
 		    nullptr, CP_UTF8, false, rop_util_make_eid_ex(1, folder_id),
 		    rop_util_make_eid_ex(1, msg_id), &inst_id)) {
@@ -199,7 +201,7 @@ int main(int argc, char **argv) try
 		}
 		if (ctnt == nullptr) {
 			fprintf(stderr, "A message by the id %llxh was not found\n",
-			        static_cast<unsigned long long>(msg_id));
+				static_cast<unsigned long long>(msg_id));
 			return EXIT_FAILURE;
 		}
 	}
