@@ -158,10 +158,10 @@ static void xa_refresh_thread()
 			auto newmap = xa_refresh_aliases(conn);
 			auto newdom = xa_refresh_domains(conn);
 			std::unique_lock lk(xa_alias_lock);
-			if (newmap != nullptr) {
+			if (newmap != nullptr)
 				xa_alias_map = std::move(newmap);
+			if (newdom != nullptr)
 				xa_domain_set = std::move(newdom);
-			}
 		}
 		std::unique_lock slp_hold(slp_mtx);
 		xa_thread_wake.wait_for(slp_hold, g_cache_lifetime);
