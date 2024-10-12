@@ -34,10 +34,12 @@ for i in "" "c++26" "c++2c" "c++23" "c++2b" "c++20"; do
 	CXXFLAGS="$saved_CXXFLAGS${i:+ -std=$i}"
 	AC_COMPILE_IFELSE([AC_LANG_SOURCE([
 		#include <span>
+		#include <unordered_map>
 		#include <vector>
 		int main() {
 			std::vector<int> v{1,9};
 			std::span s = v;
+			std::unordered_map<int, int> um{{}};
 		}
 	])], [
 		AC_MSG_RESULT([yes])
