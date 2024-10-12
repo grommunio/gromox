@@ -254,17 +254,18 @@ GLOBCNT / GCV
 	2^48. Every folder and message object is assigned a **unique,
 	non-reusable** GC value (GCV). GCVs need not be assigned in any
 	particular order, and no particular order should be inferred from GCVs.
-	In practice, a strictly monotonically increasing counter is used. This
-	is memory efficient and incurs lower fragmentation of the GCV space
-	than random GCV assignment.
+	In practice, a strictly monotonically increasing counter is used.
 
 	Some components can perform a *range reservation* (e.g.
 	``ropGetLocalReplicaIds`` and the gromox-exmdb ``create_folder`` RPC),
 	which can cause GCV values to apparently jump around: For example, in
-	Gromox, a created folder may receive GCV 0x10000 and as
+	Gromox, a created folder may receive GCV 0x10000 and, because
 	``create_folder`` reserves 0x10001..0x1ffff for messages, the next
 	folder gets GCV 0x20000. Once the first folder has exceeded its
-	reservation, it will make another, e.g. 0x30000..0x3ffff.
+	reservation, it will make another, e.g. 0x30000..0x3ffff. The
+	per-folder range reservations improve the locality of a folder's
+	message IDs, which is conducive to IDSET compression and reducing
+	network traffic a little bit.
 
 	In Gromox (2.17), the SQLite fields ``folder_id`` and ``message_id``
 	are GCVs rather than internal identifiers. (This may change at a later
