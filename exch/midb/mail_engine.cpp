@@ -2414,24 +2414,8 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
  */
 static int mail_engine_mcopy(int argc, char **argv, int sockd) try
 {
-	uint32_t tmp_flags;
-	uint64_t change_num;
-	uint64_t message_id;
-	char sql_string[1024];
-
 	if (strlen(argv[4]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	auto eml_src = argv[1] + "/eml/"s + argv[3];
-	size_t slurp_size = 0;
-	std::unique_ptr<char[], stdlib_delete> pbuff(HX_slurp_file(eml_src.c_str(), &slurp_size));
-	if (pbuff == nullptr) {
-		mlog(LV_ERR, "E-2074: Opening %s for reading failed: %s", eml_src.c_str(), strerror(errno));
-		return errno == ENOMEM ? MIDB_E_NO_MEMORY : MIDB_E_DISK_ERROR;
-	}
-
-	MAIL imail;
-	if (!imail.load_from_str_move(pbuff.get(), slurp_size))
-		return MIDB_E_IMAIL_RETRIEVE;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -2452,103 +2436,42 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd) try
 	if (pstmt.step() != SQLITE_ROW ||
 	    pstmt.col_uint64(CTM_FOLDERID) != src_fid)
 		return MIDB_E_NO_MESSAGE;
-
-	std::string flags_buff = "(";
-	if (pstmt.col_uint64(CTM_REPLIED) != 0)
-		flags_buff += 'A';
-	if (pstmt.col_uint64(CTM_FLAGGED) != 0)
-		flags_buff += 'F';
-	if (pstmt.col_uint64(CTM_FWD) != 0)
-		flags_buff += 'W';
-	flags_buff += ')';
-	auto b_unsent = pstmt.col_uint64(CTM_UNSENT) != 0;
-	uint8_t b_read = pstmt.col_uint64(CTM_READ) != 0;
-	uint64_t nt_time = pstmt.col_int64(CTM_RCVDTIME);
+	uint64_t src_mid = pstmt.col_uint64(CTM_MSGID), message_id = 0;
 	pstmt.finalize();
-	unsigned int user_id = 0;
-	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
-		return MIDB_E_SSGETID;
-	sql_meta_result mres;
-	auto mret = system_services_meta(pidb->username.c_str(),
-	            WANTPRIV_METAONLY, mres);
-	auto charset = mret == 0 ? lang_to_charset(mres.lang.c_str()) : nullptr;
-	if (*znul(charset) == '\0')
-		charset = g_default_charset;
-	auto tmzone = mret == 0 ? mres.timezone.c_str() : nullptr;
-	if (*znul(tmzone) == '\0')
-		tmzone = GROMOX_FALLBACK_TIMEZONE;
-	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
-	                common_util_alloc, common_util_get_propids_create);
-	imail.clear();
-	pbuff.reset();
-	if (pmsgctnt == nullptr)
-		return MIDB_E_OXCMAIL_IMPORT;
-	auto cl_msg = make_scope_exit([&]() { message_content_free(pmsgctnt); });
-	if (pmsgctnt->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
-		return MIDB_E_NO_MEMORY;
-	static_assert(std::is_same_v<decltype(b_read), uint8_t>);
-	if (b_read && pmsgctnt->proplist.set(PR_READ, &b_read) != 0)
-		return MIDB_E_NO_MEMORY;
-	if (0 != b_unsent) {
-		tmp_flags = MSGFLAG_UNSENT;
-		if (pmsgctnt->proplist.set(PR_MESSAGE_FLAGS, &tmp_flags) != 0)
-			return MIDB_E_NO_MEMORY;
-	}
 	if (!exmdb_client::allocate_message_id(argv[1],
-	    rop_util_make_eid_ex(1, dst_fid), &message_id) ||
-	    !exmdb_client::allocate_cn(argv[1], &change_num))
+	    rop_util_make_eid_ex(1, dst_fid), &message_id))
 		return MIDB_E_MDB_ALLOCID;
 
-	auto mid_string = std::to_string(time(nullptr)) + "." +
-	             std::to_string(++g_sequence_id) + ".midb";
-	eml_src = argv[1] + "/eml/"s + argv[3];
-	auto eml_dst = argv[1] + "/eml/"s + mid_string;
-	if (link(eml_src.c_str(), eml_dst.c_str()) != 0)
-		mlog(LV_ERR, "E-2083: link %s %s: %s",
-		        eml_src.c_str(), eml_dst.c_str(),
-		        strerror(errno));
-	eml_src = argv[1] + "/ext/"s + argv[3];
-	eml_dst = argv[1] + "/ext/"s + mid_string;
-	if (link(eml_src.c_str(), eml_dst.c_str()) != 0)
-		mlog(LV_ERR, "E-2084: link %s %s: %s",
-		        eml_src.c_str(), eml_dst.c_str(),
-		        strerror(errno));
-	snprintf(sql_string, std::size(sql_string), "INSERT INTO mapping"
-		" (message_id, mid_string, flag_string) VALUES"
-		" (%llu, ?, ?)", LLU{rop_util_get_gc_value(message_id)});
-	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
-	if (pstmt == nullptr)
-		return MIDB_E_SQLPREP;
-	sqlite3_bind_text(pstmt, 1, mid_string.c_str(), -1, SQLITE_STATIC);
-	sqlite3_bind_text(pstmt, 2, flags_buff.c_str(), -1, SQLITE_STATIC);
-	if (pstmt.step() != SQLITE_DONE)
-		return MIDB_E_SQLUNEXP;
-	pstmt.finalize();
-	std::string username = pidb->username;
-	pidb.reset();
-	if (pmsgctnt->proplist.set(PidTagMid, &message_id) != 0 ||
-	    pmsgctnt->proplist.set(PidTagChangeNumber, &change_num) != 0)
-		return MIDB_E_NO_MEMORY;
-	auto pbin = cu_xid_to_bin({rop_util_make_user_guid(user_id), change_num});
-	if (pbin == nullptr ||
-	    pmsgctnt->proplist.set(PR_CHANGE_KEY, pbin) != 0)
-		return MIDB_E_NO_MEMORY;
-	auto newval = common_util_pcl_append(NULL, pbin);
-	if (newval == nullptr ||
-	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0)
-		return MIDB_E_NO_MEMORY;
-	auto cpid = cset_to_cpid(charset);
-	if (cpid == CP_ACP)
-		cpid = static_cast<cpid_t>(1252);
-	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::write_message(argv[1], cpid,
-	    rop_util_make_eid_ex(1, dst_fid), pmsgctnt, &e_result) ||
-	    e_result != ecSuccess)
+	/*
+	 * exmdb-level copy: this triggers an event and some other midb threads
+	 * will instantiate the midb message (and decide mid_string)
+	 */
+	BOOL e_result = false;
+	if (!exmdb_client::movecopy_message(argv[1], CP_UTF8, rop_util_make_eid_ex(1, src_mid),
+	    rop_util_make_eid_ex(1, dst_fid), message_id,
+	    false, &e_result) || !e_result)
 		return MIDB_E_MDB_WRITEMESSAGE;
-	cl_msg.release();
-	message_content_free(pmsgctnt);
-	mid_string.insert(0, "TRUE ");
-	mid_string.append("\r\n");
+
+	pidb.reset(); /* release giant lock, let event get processed */
+	std::string mid_string;
+	for (unsigned int i = 0; i < 10; ++i) {
+		pidb = mail_engine_get_idb(argv[1]);
+		if (pidb == nullptr)
+			return MIDB_E_HASHTABLE_FULL;
+		pstmt = gx_sql_prep(pidb->psqlite, "SELECT mid_string FROM messages WHERE message_id=?");
+		if (pstmt == nullptr)
+			return MIDB_E_NO_MEMORY;
+		pstmt.bind_int64(1, rop_util_get_gc_value(message_id));
+		if (pstmt.step() == SQLITE_ROW) {
+			mid_string = "TRUE "s + pstmt.col_text(0) + "\r\n";
+			break;
+		}
+		pstmt.reset();
+		pidb.reset();
+		usleep(100000);
+	}
+	if (mid_string.empty())
+		mid_string = "FALSE\r\n";
 	return cmd_write(sockd, mid_string.c_str(), mid_string.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1486: ENOMEM");
