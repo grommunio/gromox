@@ -2412,7 +2412,7 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
  * Response:
  * 	TRUE <new-mid>
  */
-static int mail_engine_mcopy(int argc, char **argv, int sockd)
+static int mail_engine_mcopy(int argc, char **argv, int sockd) try
 {
 	int flags_len;
 	uint32_t tmp_flags;
@@ -2423,13 +2423,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 
 	if (strlen(argv[4]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	std::string eml_path;
-	try {
-		eml_path = argv[1] + "/eml/"s + argv[3];
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1486: ENOMEM");
-		return MIDB_E_NO_MEMORY;
-	}
+	auto eml_path = argv[1] + "/eml/"s + argv[3];
 	size_t slurp_size = 0;
 	std::unique_ptr<char[], stdlib_delete> pbuff(HX_slurp_file(eml_path.c_str(), &slurp_size));
 	if (pbuff == nullptr) {
@@ -2508,26 +2502,20 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	    !exmdb_client::allocate_cn(argv[1], &change_num))
 		return MIDB_E_MDB_ALLOCID;
 
-	std::string mid_string;
-	try {
-		mid_string = std::to_string(time(nullptr)) + "." +
-		             std::to_string(++g_sequence_id) + ".midb";
-		eml_path = argv[1] + "/eml/"s + argv[3];
-		auto eml_path1 = argv[1] + "/eml/"s + mid_string;
-		if (link(eml_path.c_str(), eml_path1.c_str()) != 0)
-			mlog(LV_ERR, "E-2083: link %s %s: %s",
-			        eml_path.c_str(), eml_path1.c_str(),
-			        strerror(errno));
-		eml_path = argv[1] + "/ext/"s + argv[3];
-		eml_path1 = argv[1] + "/ext/"s + mid_string;
-		if (link(eml_path.c_str(), eml_path1.c_str()) != 0)
-			mlog(LV_ERR, "E-2084: link %s %s: %s",
-			        eml_path.c_str(), eml_path1.c_str(),
-			        strerror(errno));
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1487: ENOMEM");
-		return MIDB_E_NO_MEMORY;
-	}
+	auto mid_string = std::to_string(time(nullptr)) + "." +
+	             std::to_string(++g_sequence_id) + ".midb";
+	eml_path = argv[1] + "/eml/"s + argv[3];
+	auto eml_path1 = argv[1] + "/eml/"s + mid_string;
+	if (link(eml_path.c_str(), eml_path1.c_str()) != 0)
+		mlog(LV_ERR, "E-2083: link %s %s: %s",
+		        eml_path.c_str(), eml_path1.c_str(),
+		        strerror(errno));
+	eml_path = argv[1] + "/ext/"s + argv[3];
+	eml_path1 = argv[1] + "/ext/"s + mid_string;
+	if (link(eml_path.c_str(), eml_path1.c_str()) != 0)
+		mlog(LV_ERR, "E-2084: link %s %s: %s",
+		        eml_path.c_str(), eml_path1.c_str(),
+		        strerror(errno));
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO mapping"
 		" (message_id, mid_string, flag_string) VALUES"
 		" (%llu, ?, ?)", LLU{rop_util_get_gc_value(message_id)});
@@ -2539,12 +2527,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (pstmt.step() != SQLITE_DONE)
 		return MIDB_E_SQLUNEXP;
 	pstmt.finalize();
-	std::string username;
-	try {
-		username = pidb->username;
-	} catch (const std::bad_alloc &) {
-		return MIDB_E_NO_MEMORY;
-	}
+	std::string username = pidb->username;
 	pidb.reset();
 	if (pmsgctnt->proplist.set(PidTagMid, &message_id) != 0 ||
 	    pmsgctnt->proplist.set(PidTagChangeNumber, &change_num) != 0)
@@ -2567,14 +2550,12 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return MIDB_E_MDB_WRITEMESSAGE;
 	cl_msg.release();
 	message_content_free(pmsgctnt);
-	try {
-		mid_string.insert(0, "TRUE ");
-		mid_string.append("\r\n");
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1488: ENOMEM");
-		return MIDB_E_NO_MEMORY;
-	}
+	mid_string.insert(0, "TRUE ");
+	mid_string.append("\r\n");
 	return cmd_write(sockd, mid_string.c_str(), mid_string.size());
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1486: ENOMEM");
+	return MIDB_E_NO_MEMORY;
 }
 
 /*
