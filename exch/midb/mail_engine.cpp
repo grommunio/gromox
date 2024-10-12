@@ -2495,7 +2495,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd) try
 			return MIDB_E_NO_MEMORY;
 	}
 	if (!exmdb_client::allocate_message_id(argv[1],
-		rop_util_make_eid_ex(1, src_fid), &message_id) ||
+	    rop_util_make_eid_ex(1, dst_fid), &message_id) ||
 	    !exmdb_client::allocate_cn(argv[1], &change_num))
 		return MIDB_E_MDB_ALLOCID;
 
