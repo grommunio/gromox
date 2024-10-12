@@ -2421,11 +2421,11 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd) try
 
 	if (strlen(argv[4]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	auto eml_path = argv[1] + "/eml/"s + argv[3];
+	auto eml_src = argv[1] + "/eml/"s + argv[3];
 	size_t slurp_size = 0;
-	std::unique_ptr<char[], stdlib_delete> pbuff(HX_slurp_file(eml_path.c_str(), &slurp_size));
+	std::unique_ptr<char[], stdlib_delete> pbuff(HX_slurp_file(eml_src.c_str(), &slurp_size));
 	if (pbuff == nullptr) {
-		mlog(LV_ERR, "E-2074: Opening %s for reading failed: %s", eml_path.c_str(), strerror(errno));
+		mlog(LV_ERR, "E-2074: Opening %s for reading failed: %s", eml_src.c_str(), strerror(errno));
 		return errno == ENOMEM ? MIDB_E_NO_MEMORY : MIDB_E_DISK_ERROR;
 	}
 
@@ -2435,11 +2435,11 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd) try
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
-	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
-	if (folder_id == 0)
+	auto src_fid = mail_engine_get_folder_id(pidb.get(), argv[2]);
+	if (src_fid == 0)
 		return MIDB_E_NO_FOLDER;
-	auto folder_id1 = mail_engine_get_folder_id(pidb.get(), argv[4]);
-	if (folder_id1 == 0)
+	auto dst_fid = mail_engine_get_folder_id(pidb.get(), argv[4]);
+	if (dst_fid == 0)
 		return MIDB_E_NO_FOLDER;
 	/* Match this column list to ctm_field */
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT message_id, mod_time, "
@@ -2450,7 +2450,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd) try
 		return MIDB_E_SQLPREP;
 	sqlite3_bind_text(pstmt, 1, argv[3], -1, SQLITE_STATIC);
 	if (pstmt.step() != SQLITE_ROW ||
-	    pstmt.col_uint64(CTM_FOLDERID) != folder_id)
+	    pstmt.col_uint64(CTM_FOLDERID) != src_fid)
 		return MIDB_E_NO_MESSAGE;
 
 	std::string flags_buff = "(";
@@ -2495,23 +2495,23 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd) try
 			return MIDB_E_NO_MEMORY;
 	}
 	if (!exmdb_client::allocate_message_id(argv[1],
-		rop_util_make_eid_ex(1, folder_id), &message_id) ||
+		rop_util_make_eid_ex(1, src_fid), &message_id) ||
 	    !exmdb_client::allocate_cn(argv[1], &change_num))
 		return MIDB_E_MDB_ALLOCID;
 
 	auto mid_string = std::to_string(time(nullptr)) + "." +
 	             std::to_string(++g_sequence_id) + ".midb";
-	eml_path = argv[1] + "/eml/"s + argv[3];
-	auto eml_path1 = argv[1] + "/eml/"s + mid_string;
-	if (link(eml_path.c_str(), eml_path1.c_str()) != 0)
+	eml_src = argv[1] + "/eml/"s + argv[3];
+	auto eml_dst = argv[1] + "/eml/"s + mid_string;
+	if (link(eml_src.c_str(), eml_dst.c_str()) != 0)
 		mlog(LV_ERR, "E-2083: link %s %s: %s",
-		        eml_path.c_str(), eml_path1.c_str(),
+		        eml_src.c_str(), eml_dst.c_str(),
 		        strerror(errno));
-	eml_path = argv[1] + "/ext/"s + argv[3];
-	eml_path1 = argv[1] + "/ext/"s + mid_string;
-	if (link(eml_path.c_str(), eml_path1.c_str()) != 0)
+	eml_src = argv[1] + "/ext/"s + argv[3];
+	eml_dst = argv[1] + "/ext/"s + mid_string;
+	if (link(eml_src.c_str(), eml_dst.c_str()) != 0)
 		mlog(LV_ERR, "E-2084: link %s %s: %s",
-		        eml_path.c_str(), eml_path1.c_str(),
+		        eml_src.c_str(), eml_dst.c_str(),
 		        strerror(errno));
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO mapping"
 		" (message_id, mid_string, flag_string) VALUES"
@@ -2542,7 +2542,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd) try
 		cpid = static_cast<cpid_t>(1252);
 	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::write_message(argv[1], cpid,
-	    rop_util_make_eid_ex(1, folder_id1), pmsgctnt, &e_result) ||
+	    rop_util_make_eid_ex(1, dst_fid), pmsgctnt, &e_result) ||
 	    e_result != ecSuccess)
 		return MIDB_E_MDB_WRITEMESSAGE;
 	cl_msg.release();
