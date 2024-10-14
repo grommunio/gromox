@@ -1466,7 +1466,7 @@ static bool cu_deposit_repr_copy(logon_object *plogon,
 	auto xflag = xtag == 0 ? nullptr : props.get<const uint8_t>(xtag);
 	bool sole = xflag != nullptr && *xflag != 0;
 
-	auto fid = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
+	eid_t fid(1, PRIVATE_FID_SENT_ITEMS);
 	/*
 	 * The Send-As/Send-On-Behalf lists and folder ACLs are maintained
 	 * separately. A delegate without an explicit grant is a normal case
@@ -1683,7 +1683,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
 	if (ptarget == nullptr ||
 	    !cu_entryid_to_fid(*plogon, ptarget, &folder_id))
-		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
+		folder_id = eid_t(1, PRIVATE_FID_SENT_ITEMS);
 
 	const EID_ARRAY ids = {1, &message_id};
 	if (!exmdb_client->movecopy_messages(dir, cpid,

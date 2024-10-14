@@ -311,8 +311,8 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				return false;
 		}
 		auto inboxy = pctx->pstream->plogon->is_private() &&
-		              (folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
-		              folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX));
+		              (folder_id == eid_t(1, PRIVATE_FID_ROOT) ||
+		              folder_id == eid_t(1, PRIVATE_FID_INBOX));
 		if (!inboxy)
 			continue;
 		auto ppropval = cu_alloc<TAGGED_PROPVAL>(chg.count + 10);
@@ -321,37 +321,37 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		memcpy(ppropval, chg.ppropval, sizeof(TAGGED_PROPVAL) * chg.count);
 		chg.ppropval = ppropval;
 		auto pvalue = cu_fid_to_entryid(*pctx->pstream->plogon,
-		              rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
+		              eid_t(1, PRIVATE_FID_DRAFT));
 		if (pvalue == nullptr)
 			return FALSE;
 		if (cu_set_propval(&chg, PR_IPM_DRAFTS_ENTRYID, pvalue) != ecSuccess)
 			return false;
 		pvalue = cu_fid_to_entryid(*pctx->pstream->plogon,
-		         rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
+		         eid_t(1, PRIVATE_FID_CONTACTS));
 		if (pvalue == nullptr)
 			return FALSE;
 		if (cu_set_propval(&chg, PR_IPM_CONTACT_ENTRYID, pvalue) != ecSuccess)
 			return false;
 		pvalue = cu_fid_to_entryid(*pctx->pstream->plogon,
-		         rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
+		         eid_t(1, PRIVATE_FID_CALENDAR));
 		if (pvalue == nullptr)
 			return FALSE;
 		if (cu_set_propval(&chg, PR_IPM_APPOINTMENT_ENTRYID, pvalue) != ecSuccess)
 			return false;
 		pvalue = cu_fid_to_entryid(*pctx->pstream->plogon,
-		         rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
+		         eid_t(1, PRIVATE_FID_JOURNAL));
 		if (pvalue == nullptr)
 			return FALSE;
 		if (cu_set_propval(&chg, PR_IPM_JOURNAL_ENTRYID, pvalue) != ecSuccess)
 			return false;
 		pvalue = cu_fid_to_entryid(*pctx->pstream->plogon,
-		         rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
+		         eid_t(1, PRIVATE_FID_NOTES));
 		if (pvalue == nullptr)
 			return FALSE;
 		if (cu_set_propval(&chg, PR_IPM_NOTE_ENTRYID, pvalue) != ecSuccess)
 			return false;
 		pvalue = cu_fid_to_entryid(*pctx->pstream->plogon,
-		         rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
+		         eid_t(1, PRIVATE_FID_TASKS));
 		if (pvalue == nullptr)
 			return FALSE;
 		if (cu_set_propval(&chg, PR_IPM_TASK_ENTRYID, pvalue) != ecSuccess)
@@ -365,27 +365,27 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (ba->pbin == nullptr)
 				return FALSE;
 			pbin = cu_fid_to_entryid(*pctx->pstream->plogon,
-			       rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
+			       eid_t(1, PRIVATE_FID_CONFLICTS));
 			if (pbin == nullptr)
 				return FALSE;
 			ba->pbin[0] = *pbin;
 			pbin = cu_fid_to_entryid(*pctx->pstream->plogon,
-			       rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
+			       eid_t(1, PRIVATE_FID_SYNC_ISSUES));
 			if (pbin == nullptr)
 				return FALSE;
 			ba->pbin[1] = *pbin;
 			pbin = cu_fid_to_entryid(*pctx->pstream->plogon,
-			       rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
+			       eid_t(1, PRIVATE_FID_LOCAL_FAILURES));
 			if (pbin == nullptr)
 				return FALSE;
 			ba->pbin[2] = *pbin;
 			pbin = cu_fid_to_entryid(*pctx->pstream->plogon,
-			       rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
+			       eid_t(1, PRIVATE_FID_SERVER_FAILURES));
 			if (pbin == nullptr)
 				return FALSE;
 			ba->pbin[3] = *pbin;
 			pbin = cu_fid_to_entryid(*pctx->pstream->plogon,
-			       rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
+			       eid_t(1, PRIVATE_FID_JUNK));
 			if (pbin == nullptr)
 				return FALSE;
 			ba->pbin[4] = *pbin;
@@ -397,9 +397,9 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (bv == nullptr)
 				return FALSE;
 			const PERSISTDATA pd[] = {
-				{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
-				{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST))},
-				{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS))},
+				{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pctx->pstream->plogon, eid_t(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
+				{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pctx->pstream->plogon, eid_t(1, PRIVATE_FID_IMCONTACTLIST))},
+				{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pctx->pstream->plogon, eid_t(1, PRIVATE_FID_QUICKCONTACTS))},
 			};
 			if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
 			    ext_push.p_persistdata_a(pd) != pack_result::ok)
@@ -427,7 +427,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			ba->pbin[2].cb = 0;
 			ba->pbin[2].pb = nullptr;
 			pbin = cu_fid_to_entryid(*pctx->pstream->plogon,
-					rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
+			       eid_t(1, PRIVATE_FID_LOCAL_FREEBUSY));
 			if (pbin == nullptr)
 				return FALSE;
 			ba->pbin[3] = *pbin;

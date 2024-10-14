@@ -832,7 +832,7 @@ ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 		return ecNotSupported;
 	b_conversation = FALSE;
 	if (plogon->is_private()) {
-		if (pfolder->folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
+		if (pfolder->folder_id == eid_t(1, PRIVATE_FID_ROOT) &&
 		    (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS))
 			b_conversation = TRUE;
 	} else {

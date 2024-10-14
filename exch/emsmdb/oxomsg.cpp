@@ -381,7 +381,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	auto dir = plogon->get_dir();
 #if 0
 	/* check if it is already in spooler queue */
-	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
+	eid_t fid_spooler(1, PRIVATE_FID_SPOOLER_QUEUE);
 	if (!exmdb_client->is_msg_present(dir, fid_spooler,
 	    pmessage->get_id(), &b_exist))
 		return ecError;
@@ -439,7 +439,6 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 {
 	BOOL b_exist;
 	uint32_t *ptimer_id;
-	uint64_t fid_spooler;
 	uint32_t *pmessage_flags;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -473,7 +472,7 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 			return ecError;
 		return ecSuccess;
 	}
-	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
+	eid_t fid_spooler(1, PRIVATE_FID_SPOOLER_QUEUE);
 	if (!exmdb_client->is_msg_present(plogon->get_dir(), fid_spooler,
 	    message_id, &b_exist))
 		return ecError;
@@ -517,7 +516,6 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	uint64_t new_id;
 	uint64_t parent_id;
 	uint64_t folder_id;
-	uint64_t fid_spooler;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -532,7 +530,7 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 		return ecAccessDenied;
 	if (lock_stat != LOCK_STAT_1STFINISHED)
 		return ecSuccess;
-	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
+	eid_t fid_spooler(1, PRIVATE_FID_SPOOLER_QUEUE);
 	auto dir = plogon->get_dir();
 	if (!exmdb_client->is_msg_present(dir, fid_spooler, message_id, &b_exist))
 		return ecError;
@@ -684,7 +682,7 @@ ec_error_t rop_gettransportfolder(uint64_t *pfolder_id, LOGMAP *plogmap,
 		return ecNullObject;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	*pfolder_id = rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX);
+	*pfolder_id = eid_t(1, PRIVATE_FID_OUTBOX);
 	return ecSuccess;
 }
 

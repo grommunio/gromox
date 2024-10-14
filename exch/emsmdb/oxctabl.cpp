@@ -922,7 +922,6 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
 	uint32_t permission;
-	uint64_t fid_deferred;
 	PROBLEM_ARRAY problems;
 	RESTRICTION restriction;
 	TPROPVAL_ARRAY propvals;
@@ -934,7 +933,7 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 		return ecError;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	fid_deferred = rop_util_make_eid_ex(1, PRIVATE_FID_DEFERRED_ACTION);
+	auto fid_deferred = eid_t(1, PRIVATE_FID_DEFERRED_ACTION);
 	auto dir = plogon->get_dir();
 	auto username = plogon->eff_user();
 	if (username != nullptr) {

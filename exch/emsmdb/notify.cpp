@@ -102,8 +102,8 @@ static ec_error_t cvt_new_mail(notify_response &n,
     const DB_NOTIFY &x, BOOL b_unicode)
 {
 	n.nflags       = fnevNewMail | NF_BY_MESSAGE;
-	n.folder_id    = rop_util_make_eid_ex(1, x.folder_id);
-	n.message_id   = rop_util_make_eid_ex(1, x.message_id);
+	n.folder_id    = eid_t(1, x.folder_id);
+	n.message_id   = eid_t(1, x.message_id);
 	n.msg_flags    = x.message_flags;
 	n.unicode_flag = !!b_unicode;
 	n.msg_class    = strdup(x.pmessage_class.c_str());
@@ -129,7 +129,7 @@ static ec_error_t cvt_fld_created(notify_response &n,
 {
 	n.nflags    = fnevObjectCreated;
 	n.folder_id = rop_util_nfid_to_eid(x.folder_id);
-	n.parent_id = rop_util_make_eid_ex(1, x.parent_id);
+	n.parent_id = eid_t(1, x.parent_id);
 	return copy_tags(n, x.proptags);
 }
 
@@ -137,8 +137,8 @@ static ec_error_t cvt_msg_created(notify_response &n,
     const DB_NOTIFY &x)
 {
 	n.nflags     = fnevObjectCreated | NF_BY_MESSAGE;
-	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
-	n.message_id = rop_util_make_eid_ex(1, x.message_id);
+	n.folder_id  = eid_t(1, x.folder_id);
+	n.message_id = eid_t(1, x.message_id);
 	return copy_tags(n, x.proptags);
 }
 
@@ -146,9 +146,9 @@ static ec_error_t cvt_link_created(notify_response &n,
     const DB_NOTIFY &x)
 {
 	n.nflags     = fnevObjectCreated | NF_BY_SEARCH | NF_BY_MESSAGE;
-	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
-	n.message_id = rop_util_make_eid_ex(1, x.message_id);
-	n.parent_id  = rop_util_make_eid_ex(1, x.parent_id);
+	n.folder_id  = eid_t(1, x.folder_id);
+	n.message_id = eid_t(1, x.message_id);
+	n.parent_id  = eid_t(1, x.parent_id);
 	return copy_tags(n, x.proptags);
 }
 
@@ -157,7 +157,7 @@ static ec_error_t cvt_fld_deleted(notify_response &n,
 {
 	n.nflags    = fnevObjectDeleted;
 	n.folder_id = rop_util_nfid_to_eid(x.folder_id);
-	n.parent_id = rop_util_make_eid_ex(1, x.parent_id);
+	n.parent_id = eid_t(1, x.parent_id);
 	return ecSuccess;
 }
 
@@ -165,8 +165,8 @@ static ec_error_t cvt_msg_deleted(notify_response &n,
     const DB_NOTIFY &x)
 {
 	n.nflags     = fnevObjectDeleted | NF_BY_MESSAGE;
-	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
-	n.message_id = rop_util_make_eid_ex(1, x.message_id);
+	n.folder_id  = eid_t(1, x.folder_id);
+	n.message_id = eid_t(1, x.message_id);
 	return ecSuccess;
 }
 
@@ -174,9 +174,9 @@ static ec_error_t cvt_link_deleted(notify_response &n,
     const DB_NOTIFY &x)
 {
 	n.nflags     = fnevObjectDeleted | NF_BY_SEARCH | NF_BY_MESSAGE;
-	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
-	n.message_id = rop_util_make_eid_ex(1, x.message_id);
-	n.parent_id  = rop_util_make_eid_ex(1, x.parent_id);
+	n.folder_id  = eid_t(1, x.folder_id);
+	n.message_id = eid_t(1, x.message_id);
+	n.parent_id  = eid_t(1, x.parent_id);
 	return ecSuccess;
 }
 
@@ -200,8 +200,8 @@ static ec_error_t cvt_msg_modified(notify_response &n,
     const DB_NOTIFY &x)
 {
 	n.nflags     = fnevObjectModified | NF_BY_MESSAGE;
-	n.folder_id  = rop_util_make_eid_ex(1, x.folder_id);
-	n.message_id = rop_util_make_eid_ex(1, x.message_id);
+	n.folder_id  = eid_t(1, x.folder_id);
+	n.message_id = eid_t(1, x.message_id);
 	return copy_tags(n, x.proptags);
 }
 
@@ -210,9 +210,9 @@ static ec_error_t cvt_fld_mvcp(notify_response &n, uint8_t nflags,
 {
 	n.nflags        = nflags;
 	n.folder_id     = rop_util_nfid_to_eid(x.folder_id);
-	n.parent_id     = rop_util_make_eid_ex(1, x.parent_id);
+	n.parent_id     = eid_t(1, x.parent_id);
 	n.old_folder_id = rop_util_nfid_to_eid(x.old_folder_id);
-	n.old_parent_id = rop_util_make_eid_ex(1, x.old_parent_id);
+	n.old_parent_id = eid_t(1, x.old_parent_id);
 	return ecSuccess;
 }
 
@@ -220,10 +220,10 @@ static ec_error_t cvt_msg_mvcp(notify_response &n, uint8_t nflags,
     const DB_NOTIFY &x)
 {
 	n.nflags         = nflags | NF_BY_MESSAGE;
-	n.folder_id      = rop_util_make_eid_ex(1, x.folder_id);
-	n.message_id     = rop_util_make_eid_ex(1, x.message_id);
-	n.old_folder_id  = rop_util_make_eid_ex(1, x.old_folder_id);
-	n.old_message_id = rop_util_make_eid_ex(1, x.old_message_id);
+	n.folder_id      = eid_t(1, x.folder_id);
+	n.message_id     = eid_t(1, x.message_id);
+	n.old_folder_id  = eid_t(1, x.old_folder_id);
+	n.old_message_id = eid_t(1, x.old_message_id);
 	return ecSuccess;
 }
 
@@ -231,7 +231,7 @@ static ec_error_t cvt_fld_search_completed(notify_response &n,
     const DB_NOTIFY &x)
 {
 	n.nflags    = fnevSearchComplete;
-	n.folder_id = rop_util_make_eid_ex(1, x.folder_id);
+	n.folder_id = eid_t(1, x.folder_id);
 	return ecSuccess;
 }
 
@@ -272,11 +272,11 @@ static ec_error_t cvt_ctrow_added(notify_response &n,
 {
 	n.nflags          = fnevTableModified | NF_BY_MESSAGE;
 	n.table_event     = TABLE_EVENT_ROW_ADDED;
-	n.row_folder_id   = rop_util_make_eid_ex(1, x.row_folder_id);
+	n.row_folder_id   = eid_t(1, x.row_folder_id);
 	n.row_message_id  = rop_util_nfid_to_eid2(x.row_message_id);
 	n.row_instance    = x.row_instance;
 	n.after_folder_id = x.after_folder_id == 0 ? eid_t(0) :
-	                    rop_util_make_eid_ex(1, x.after_folder_id);
+	                    eid_t(1, x.after_folder_id);
 	n.after_row_id    = x.after_row_id == 0 ? eid_t(0) :
 	                    rop_util_nfid_to_eid2(x.after_row_id);
 	n.after_instance  = x.after_instance;
@@ -288,11 +288,11 @@ static ec_error_t cvt_srchrow_added(notify_response &n,
 {
 	n.nflags          = fnevTableModified | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.table_event     = TABLE_EVENT_ROW_ADDED;
-	n.row_folder_id   = rop_util_make_eid_ex(1, x.row_folder_id);
+	n.row_folder_id   = eid_t(1, x.row_folder_id);
 	n.row_message_id  = rop_util_nfid_to_eid2(x.row_message_id);
 	n.row_instance    = x.row_instance;
 	n.after_folder_id = x.after_folder_id == 0 ? eid_t(0) :
-	                    rop_util_make_eid_ex(1, x.after_folder_id);
+	                    eid_t(1, x.after_folder_id);
 	n.after_row_id    = x.after_row_id == 0 ? eid_t(0) :
 	                    rop_util_nfid_to_eid2(x.after_row_id);
 	n.after_instance  = x.after_instance;
@@ -313,7 +313,7 @@ static ec_error_t cvt_ctrow_deleted(notify_response &n,
 {
 	n.nflags         = fnevTableModified | NF_BY_MESSAGE;
 	n.table_event    = TABLE_EVENT_ROW_DELETED;
-	n.row_folder_id  = rop_util_make_eid_ex(1, x.row_folder_id);
+	n.row_folder_id  = eid_t(1, x.row_folder_id);
 	n.row_message_id = rop_util_nfid_to_eid2(x.row_message_id);
 	n.row_instance   = x.row_instance;
 	return ecSuccess;
@@ -324,7 +324,7 @@ static ec_error_t cvt_srchrow_deleted(notify_response &n,
 {
 	n.nflags         = fnevTableModified | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.table_event    = TABLE_EVENT_ROW_DELETED;
-	n.row_folder_id  = rop_util_make_eid_ex(1, x.row_folder_id);
+	n.row_folder_id  = eid_t(1, x.row_folder_id);
 	n.row_message_id = rop_util_nfid_to_eid2(x.row_message_id);
 	n.row_instance   = x.row_instance;
 	return ecSuccess;
@@ -346,11 +346,11 @@ static ec_error_t cvt_ctrow_modified(notify_response &n,
 {
 	n.nflags          = fnevTableModified | NF_BY_MESSAGE;
 	n.table_event     = TABLE_EVENT_ROW_MODIFIED;
-	n.row_folder_id   = rop_util_make_eid_ex(1, x.row_folder_id);
+	n.row_folder_id   = eid_t(1, x.row_folder_id);
 	n.row_message_id  = rop_util_nfid_to_eid2(x.row_message_id);
 	n.row_instance    = x.row_instance;
 	n.after_folder_id = x.after_folder_id == 0 ? eid_t(0) :
-	                    rop_util_make_eid_ex(1, x.after_folder_id);
+	                    eid_t(1, x.after_folder_id);
 	n.after_row_id    = x.after_row_id == 0 ? eid_t(0) :
 	                    rop_util_nfid_to_eid2(x.after_row_id);
 	n.after_instance  = x.after_instance;
@@ -362,11 +362,11 @@ static ec_error_t cvt_srchrow_modified(notify_response &n,
 {
 	n.nflags          = fnevTableModified | NF_BY_SEARCH | NF_BY_MESSAGE;
 	n.table_event     = TABLE_EVENT_ROW_MODIFIED;
-	n.row_folder_id   = rop_util_make_eid_ex(1, x.row_folder_id);
+	n.row_folder_id   = eid_t(1, x.row_folder_id);
 	n.row_message_id  = rop_util_nfid_to_eid2(x.row_message_id);
 	n.row_instance    = x.row_instance;
 	n.after_folder_id = x.after_folder_id == 0 ? eid_t(0) :
-	                    rop_util_make_eid_ex(1, x.after_folder_id);
+	                    eid_t(1, x.after_folder_id);
 	n.after_row_id    = x.after_row_id == 0 ? eid_t(0) :
 	                    rop_util_nfid_to_eid2(x.after_row_id);
 	n.after_instance  = x.after_instance;

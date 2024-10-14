@@ -42,8 +42,7 @@ std::unique_ptr<folder_object> folder_object::create(logon_object *plogon,
 
 static bool toplevel(uint64_t f)
 {
-	return f == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
-	       f == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
+	return f == eid_t(1, PRIVATE_FID_ROOT) || f == eid_t(1, PRIVATE_FID_INBOX);
 }
 
 ec_error_t folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
@@ -217,7 +216,7 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 		            *static_cast<uint64_t *>(pvalue));
 		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_PARENT_SOURCE_KEY:
-		if (pfolder->folder_id == rop_util_make_eid_ex(1,
+		if (pfolder->folder_id == eid_t(1,
 		    pfolder->plogon->is_private() ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT)) {
 			*outvalue = deconst(&fake_bin);
 			return ecSuccess;
@@ -253,43 +252,43 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
-					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
+		            eid_t(1, PRIVATE_FID_DRAFT));
 		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_CONTACT_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
-					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
+		            eid_t(1, PRIVATE_FID_CONTACTS));
 		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_APPOINTMENT_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
-					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
+		            eid_t(1, PRIVATE_FID_CALENDAR));
 		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_JOURNAL_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
-					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
+		            eid_t(1, PRIVATE_FID_JOURNAL));
 		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_NOTE_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
-					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
+		            eid_t(1, PRIVATE_FID_NOTES));
 		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_IPM_TASK_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
-					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
+		            eid_t(1, PRIVATE_FID_TASKS));
 		return *outvalue != nullptr ? ecSuccess : ecError;
 	case PR_REM_ONLINE_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		if (!exmdb_client->get_folder_property(dir,
-		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    CP_ACP, eid_t(1, PRIVATE_FID_INBOX),
 		    PR_REM_ONLINE_ENTRYID, &pvalue))
 			return ecRpcFailed;
 		if (pvalue == nullptr)
@@ -300,7 +299,7 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		if (!exmdb_client->get_folder_property(dir,
-		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    CP_ACP, eid_t(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS, &pvalue))
 			return ecNotFound;
 		if (NULL != pvalue) {
@@ -318,27 +317,27 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 			return ecServerOOM;
 		}
 		pbin = cu_fid_to_entryid(*pfolder->plogon,
-				rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
+		       eid_t(1, PRIVATE_FID_CONFLICTS));
 		if (pbin == nullptr)
 			return ecError;
 		ba->pbin[0] = *pbin;
 		pbin = cu_fid_to_entryid(*pfolder->plogon,
-				rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
+		       eid_t(1, PRIVATE_FID_SYNC_ISSUES));
 		if (pbin == nullptr)
 			return ecError;
 		ba->pbin[1] = *pbin;
 		pbin = cu_fid_to_entryid(*pfolder->plogon,
-				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
+		       eid_t(1, PRIVATE_FID_LOCAL_FAILURES));
 		if (pbin == nullptr)
 			return ecError;
 		ba->pbin[2] = *pbin;
 		pbin = cu_fid_to_entryid(*pfolder->plogon,
-				rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
+		       eid_t(1, PRIVATE_FID_SERVER_FAILURES));
 		if (pbin == nullptr)
 			return ecError;
 		ba->pbin[3] = *pbin;
 		pbin = cu_fid_to_entryid(*pfolder->plogon,
-				rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
+		       eid_t(1, PRIVATE_FID_JUNK));
 		if (pbin == nullptr)
 			return ecError;
 		ba->pbin[4] = *pbin;
@@ -348,7 +347,7 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		if (!exmdb_client->get_folder_property(dir,
-		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    CP_ACP, eid_t(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS_EX, &pvalue))
 			return ecRpcFailed;
 		if (NULL != pvalue) {
@@ -360,9 +359,9 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 		if (*outvalue == nullptr)
 			return ecServerOOM;
 		const PERSISTDATA pd[] = {
-			{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
-			{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST))},
-			{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS))},
+			{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->plogon, eid_t(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
+			{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->plogon, eid_t(1, PRIVATE_FID_IMCONTACTLIST))},
+			{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->plogon, eid_t(1, PRIVATE_FID_QUICKCONTACTS))},
 		};
 		if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
 		    ext_push.p_persistdata_a(pd) != pack_result::ok)
@@ -378,7 +377,7 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return ecNotFound;
 		if (!exmdb_client->get_folder_property(dir,
-		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+		    CP_ACP, eid_t(1, PRIVATE_FID_INBOX),
 		    PR_FREEBUSY_ENTRYIDS, &pvalue))
 			return ecRpcFailed;
 		if (NULL != pvalue) {
@@ -402,7 +401,7 @@ static ec_error_t folder_object_get_calculated_property(const folder_object *pfo
 		ba->pbin[2].cb = 0;
 		ba->pbin[2].pb = nullptr;
 		pbin = cu_fid_to_entryid(*pfolder->plogon,
-				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
+		       eid_t(1, PRIVATE_FID_LOCAL_FREEBUSY));
 		if (pbin == nullptr)
 			return ecError;
 		ba->pbin[3] = *pbin;

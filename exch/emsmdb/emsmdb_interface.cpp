@@ -886,13 +886,8 @@ static bool emsmdb_interface_merge_hierarchy_row_modified(const DB_NOTIFY *pmodi
 static bool emsmdb_interface_merge_message_modified(const DB_NOTIFY *pmodified_message,
     uint32_t obj_handle, uint8_t logon_id, const emsmdb_session::notify_list_t &nvec)
 {
-	uint64_t folder_id;
-	uint64_t message_id;
-	
-	folder_id = rop_util_make_eid_ex(
-		1, pmodified_message->folder_id);
-	message_id = rop_util_make_eid_ex(
-		1, pmodified_message->message_id);
+	eid_t folder_id(1, pmodified_message->folder_id);
+	eid_t message_id(1, pmodified_message->message_id);
 	for (auto &pnotify : nvec) {
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;

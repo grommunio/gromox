@@ -115,19 +115,19 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	if (flag != nullptr && *flag != 0)
 		*presponse_flags |= RESPONSE_FLAG_OOF;
 	
-	pfolder_id[0]  = rop_util_make_eid_ex(1, PRIVATE_FID_ROOT);
-	pfolder_id[1]  = rop_util_make_eid_ex(1, PRIVATE_FID_DEFERRED_ACTION);
-	pfolder_id[2]  = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
-	pfolder_id[3]  = rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE);
-	pfolder_id[4]  = rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
-	pfolder_id[5]  = rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX);
-	pfolder_id[6]  = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
-	pfolder_id[7]  = rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS);
-	pfolder_id[8]  = rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS);
-	pfolder_id[9]  = rop_util_make_eid_ex(1, PRIVATE_FID_SCHEDULE);
-	pfolder_id[10] = rop_util_make_eid_ex(1, PRIVATE_FID_FINDER);
-	pfolder_id[11] = rop_util_make_eid_ex(1, PRIVATE_FID_VIEWS);
-	pfolder_id[12] = rop_util_make_eid_ex(1, PRIVATE_FID_SHORTCUTS);
+	pfolder_id[0]  = eid_t(1, PRIVATE_FID_ROOT);
+	pfolder_id[1]  = eid_t(1, PRIVATE_FID_DEFERRED_ACTION);
+	pfolder_id[2]  = eid_t(1, PRIVATE_FID_SPOOLER_QUEUE);
+	pfolder_id[3]  = eid_t(1, PRIVATE_FID_IPMSUBTREE);
+	pfolder_id[4]  = eid_t(1, PRIVATE_FID_INBOX);
+	pfolder_id[5]  = eid_t(1, PRIVATE_FID_OUTBOX);
+	pfolder_id[6]  = eid_t(1, PRIVATE_FID_SENT_ITEMS);
+	pfolder_id[7]  = eid_t(1, PRIVATE_FID_DELETED_ITEMS);
+	pfolder_id[8]  = eid_t(1, PRIVATE_FID_COMMON_VIEWS);
+	pfolder_id[9]  = eid_t(1, PRIVATE_FID_SCHEDULE);
+	pfolder_id[10] = eid_t(1, PRIVATE_FID_FINDER);
+	pfolder_id[11] = eid_t(1, PRIVATE_FID_VIEWS);
+	pfolder_id[12] = eid_t(1, PRIVATE_FID_SHORTCUTS);
 	
 	auto cur_time = time(nullptr);
 	ptm = gmtime_r(&cur_time, &tmp_tm);
@@ -195,10 +195,10 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 		return ecError;
 	/* like EXCHANGE 2013 or later, we only
 		return four folder_ids to client */
-	pfolder_id[0]  = rop_util_make_eid_ex(1, PUBLIC_FID_ROOT);
-	pfolder_id[1]  = rop_util_make_eid_ex(1, PUBLIC_FID_IPMSUBTREE);
-	pfolder_id[2]  = rop_util_make_eid_ex(1, PUBLIC_FID_NONIPMSUBTREE);
-	pfolder_id[3]  = rop_util_make_eid_ex(1, PUBLIC_FID_EFORMSREGISTRY);
+	pfolder_id[0]  = eid_t(1, PUBLIC_FID_ROOT);
+	pfolder_id[1]  = eid_t(1, PUBLIC_FID_IPMSUBTREE);
+	pfolder_id[2]  = eid_t(1, PUBLIC_FID_NONIPMSUBTREE);
+	pfolder_id[3]  = eid_t(1, PUBLIC_FID_EFORMSREGISTRY);
 	pfolder_id[4]  = 0; /* Free/Busy data */
 	pfolder_id[5]  = 0; /* Offline Address Book data */
 	pfolder_id[6]  = 0; /* EForms Registry for the user's locale */
