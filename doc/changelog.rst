@@ -1,3 +1,13 @@
+Development 2.34.15 (2024-10-14)
+================================
+
+Fixes:
+
+* alias_resolve: resolve nullptr deref crash
+* ews: resolve nullptr deref crash
+* mapi_lib: fix out-of-bounds access in PROBLEM_ARRAY::transform
+
+
 Gromox 2.34 (2024-10-08)
 ========================
 
