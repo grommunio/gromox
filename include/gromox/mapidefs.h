@@ -846,9 +846,14 @@ enum {
 
 /* cf. glossary.rst "Internal Identifier" */
 struct eid_t {
+	static constexpr uint64_t GCV_MASK = 0xFFFFFFFFFFFF;
 	eid_t() = default;
 	constexpr eid_t(uint64_t v) : m_value(v) {}
+	constexpr eid_t(uint16_t r, uint64_t v) : m_value(__builtin_bswap64(v & GCV_MASK) | r) {}
 	constexpr operator uint64_t() const { return m_value; }
+	constexpr uint64_t gcv() const { return __builtin_bswap64(m_value) & GCV_MASK; }
+	constexpr uint16_t replid() const { return m_value & 0xFFFF; }
+	constexpr uint64_t raw() const { return m_value; }
 	void operator=(uint64_t) = delete;
 	uint64_t m_value;
 };
