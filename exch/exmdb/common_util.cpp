@@ -3999,12 +3999,15 @@ BOOL cu_get_folder_permission(sqlite3 *psqlite, uint64_t folder_id,
 		auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return FALSE;
+		bool group_match = false;
 		while (pstmt1.step() == SQLITE_ROW) {
 			if (common_util_check_mlist_include(pstmt1.col_text(0), username)) {
-				*ppermission = sqlite3_column_int64(pstmt1, 1);
-				return TRUE;
+				*ppermission |= pstmt1.col_int64(1);
+				group_match = true;
 			}
 		}
+		if (group_match)
+			return TRUE;
 		pstmt1.finalize();
 		sqlite3_reset(pstmt);
 		sqlite3_bind_text(pstmt, 1, "default", -1, SQLITE_STATIC);
