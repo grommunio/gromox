@@ -300,14 +300,15 @@ Internal Identifier
 	aggregate. Total size: 8 octets. IIDs have no particular order. On the
 	wire, replid is LSB-first, but GLOBCNT is MSB-first. MS-OXCDATA
 	specifies IIDs as an aggregate, while MS-OXCROPS specifies them as
-	64-bit integers. Software like Gromox and the MAPI Inspector For
-	Fiddler indeed read/write IIDs from/to network as one leuint64 rather
-	than as one leuint16 and a beuint48. This causes the logical value to
-	have odd bit order too, e.g. the byte sequence ``01 00 00 00 00 00 00
-	0d`` (replid 1, folder 0xd) is 0xd00000000000001 when printed in gdb,
-	and functions like ``rop_util_get_gc_value`` are needed to make sense
-	of it. The type ``eid_t`` is being introduced in source code to markup
-	the places where this weird uint64 is in use.
+	64-bit integers. Gromox, MAPI Inspector For Fiddler, but also Exchange
+	Server indeed read/write IIDs from/to network as one leuint64 rather
+	than as one leuint16 and a beuint48 (this artifact is visible in the
+	PidTagCn value of an object). This causes the logical value to have odd
+	bit order too, e.g. the byte sequence ``01 00 00 00 00 00 00 0d``
+	(replid 1, folder 0xd) is 0xd00000000000001 when printed in MFCMAPI.
+	Functions like ``rop_util_get_gc_value`` are needed to make sense of
+	it. The type ``eid_t`` is being introduced in source code to markup the
+	places where this weird uint64 is in use.
 
 Folder Identifier, FID
 	Name for *internal identifier* when talking about a folder object. The
