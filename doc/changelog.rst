@@ -1,11 +1,17 @@
-Development 2.34.15 (2024-10-14)
-================================
+Gromox 2.35 92024-10-15)
+========================
 
 Fixes:
 
 * alias_resolve: resolve nullptr deref crash
 * ews: resolve nullptr deref crash
 * mapi_lib: fix out-of-bounds access in PROBLEM_ARRAY::transform
+* mapi_lib: rop_util_get_gc_value used the wrong mask, which caused
+  "Change commit failed because the object was changed separately"
+
+Changes:
+
+* exmdb: let PR_ACCESS include permissions from all group memberships
 
 
 Gromox 2.34 (2024-10-08)
