@@ -34,7 +34,7 @@ uint16_t rop_util_get_replid(eid_t eid)
  */
 uint64_t rop_util_get_gc_value(eid_t eid)
 {
-	return __builtin_bswap64(eid.m_value) & 0xFFFFFFFF;
+	return __builtin_bswap64(eid.m_value) & eid_t::GCV_MASK;
 }
 
 /**
