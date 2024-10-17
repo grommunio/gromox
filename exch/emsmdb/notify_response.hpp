@@ -10,7 +10,10 @@ struct logon_object;
 
 struct notify_response : public rop_response {
 	static notify_response *create(uint32_t, uint8_t);
+	notify_response() = default;
+	NOMOVE(notify_response);
 	~notify_response();
+	void clear();
 	ec_error_t cvt_from_dbnotify(BOOL b_cache, const DB_NOTIFY &);
 	void ctrow_event_to_change();
 

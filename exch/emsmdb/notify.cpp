@@ -70,9 +70,27 @@ notify_response *notify_response::create(uint32_t handle, uint8_t logon_id) try
 
 notify_response::~notify_response()
 {
-	if (proptags.pproptag != nullptr)
+	clear();
+}
+
+void notify_response::clear()
+{
+	handle = logon_id = unicode_flag = 0;
+	msg_flags = nflags = table_event = 0;
+	row_folder_id = row_message_id = 0;
+	after_folder_id = after_row_id = 0;
+	row_instance = after_instance = 0;
+	folder_id = old_folder_id = 0;
+	message_id = old_message_id = 0;
+	parent_id = old_parent_id = 0;
+	total_count = unread_count = 0;
+	if (proptags.pproptag != nullptr) {
 		free(proptags.pproptag);
+		proptags.pproptag = nullptr;
+	}
 	free(msg_class);
+	msg_class = nullptr;
+	row_data = nullptr;
 }
 
 static ec_error_t cvt_new_mail(notify_response &n,
@@ -419,7 +437,7 @@ void notify_response::ctrow_event_to_change()
 {
 	auto saved_handle = handle;
 	auto saved_logon  = logon_id;
-	*this       = {};
+	clear();
 	handle      = saved_handle;
 	logon_id    = saved_logon;
 	nflags      = NF_TABLE_MODIFIED | NF_BY_MESSAGE;
