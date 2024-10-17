@@ -1696,7 +1696,6 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
 	char sys_name[1024];
-	char sys_portion[1024];
 	char converted_name[1024];
 
 	if (!pcontext->is_authed())
@@ -1722,25 +1721,23 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 		sys_name[len] = '\0';
 	}
 	for (size_t i = 0; i <= len; ++i) {
-		if (sys_name[i] != '/' && sys_name[i] != '\0') {
-			sys_portion[i] = sys_name[i];
+		if (sys_name[i] != '/' && sys_name[i] != '\0')
 			continue;
-		}
-		sys_portion[i] = '\0';
-		if (std::find(folder_list.cbegin(), folder_list.cend(), sys_portion) !=
+		sys_name[i] = '\0';
+		if (std::find(folder_list.cbegin(), folder_list.cend(), sys_name) !=
 		    folder_list.cend()) {
-			sys_portion[i] = sys_name[i];
+			sys_name[i] = '/';
 			continue;
 		}
 		if (!imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang,
-		    sys_portion, converted_name))
+		    sys_name, converted_name))
 			return 1800;
 		ssr = system_services_make_folder(pcontext->maildir,
 		      converted_name, &errnum);
 		ret = m2icode(ssr, errnum);
 		if (ret != 0)
 			return ret;
-		sys_portion[i] = sys_name[i];
+		sys_name[i] = '/';
 	}
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, NULL);
