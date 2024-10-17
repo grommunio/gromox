@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <atomic>
 #include <cerrno>
 #include <csignal>
@@ -13,6 +15,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <fmt/core.h>
 #include <libHX/io.h>
 #include <libHX/socket.h>
 #include <libHX/string.h>
@@ -50,10 +53,8 @@ static void *evpx_scanwork(void *);
 static int read_line(int sockd, char *buff, int length);
 static int connect_event();
 static void broadcast_event(const char *event);
-
-static void broadcast_select(const char *username, const char *folder);
-
-static void broadcast_unselect(const char *username, const char *folder);
+static void broadcast_select(const char *username, const std::string &folder);
+static void broadcast_unselect(const char *username, const std::string &folder);
 
 BOOL SVC_event_proxy(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
@@ -208,20 +209,18 @@ static void *evpx_scanwork(void *param)
 	return NULL;
 }
 
-static void broadcast_select(const char *username, const char *folder)
+static void broadcast_select(const char *username, const std::string &folder) try
 {
-	char buff[512];
-	
-	snprintf(buff, 512, "SELECT %s %s", username, folder);
-	broadcast_event(buff);
+	broadcast_event(fmt::format("SELECT {} {}", username, folder).c_str());
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2415: ENOMEM");
 }
 
-static void broadcast_unselect(const char *username, const char *folder)
+static void broadcast_unselect(const char *username, const std::string &folder) try
 {
-	char buff[512];
-	
-	snprintf(buff, 512, "UNSELECT %s %s", username, folder);
-	broadcast_event(buff);
+	broadcast_event(fmt::format("UNSELECT {} {} ", username, folder).c_str());
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2416: ENOMEM");
 }
 
 static void broadcast_event(const char *event)

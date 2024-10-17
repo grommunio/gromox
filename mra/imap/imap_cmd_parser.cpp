@@ -1573,7 +1573,7 @@ static int m2icode(int r, int e)
 /**
  * Get a listing of all mails in the folder to build the uid<->seqid mapping.
  */
-int content_array::refresh(imap_context &ctx, const char *folder,
+int content_array::refresh(imap_context &ctx, const std::string &folder,
     bool fresh_numbers)
 {
 	XARRAY xa;
@@ -1623,7 +1623,7 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	if (iproto_stat::select == pcontext->proto_stat) {
 		imap_parser_remove_select(pcontext);
 		pcontext->proto_stat = iproto_stat::auth;
-		pcontext->selected_folder[0] = '\0';
+		pcontext->selected_folder.clear();
 	}
 	
 	uint32_t uidvalid = 0, uidnext = 0;
@@ -1635,7 +1635,7 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	ret = pcontext->contents.refresh(*pcontext, sys_name, true);
 	if (ret != 0)
 		return ret;
-	strcpy(pcontext->selected_folder, sys_name);
+	pcontext->selected_folder = sys_name;
 	pcontext->proto_stat = iproto_stat::select;
 	pcontext->b_readonly = readonly;
 	imap_parser_add_select(pcontext);
@@ -2630,7 +2630,7 @@ int imap_cmd_parser_unselect(int argc, char **argv, imap_context *pcontext)
 		return 1805;
 	imap_parser_remove_select(pcontext);
 	pcontext->proto_stat = iproto_stat::auth;
-	pcontext->selected_folder[0] = '\0';
+	pcontext->selected_folder.clear();
 	return 1718;
 }
 
@@ -3273,14 +3273,14 @@ void imap_cmd_parser_clsfld(imap_context *pcontext) try
 {
 	int errnum, result, i;
 	BOOL b_deleted;
-	char prev_selected[sizeof(pcontext->selected_folder)];
+	std::string prev_selected;
 	
-	if (*pcontext->selected_folder == '\0')
+	if (pcontext->selected_folder.empty())
 		return;
 	imap_parser_remove_select(pcontext);
 	pcontext->proto_stat = iproto_stat::auth;
-	strcpy(prev_selected, pcontext->selected_folder);
-	pcontext->selected_folder[0] = '\0';
+	prev_selected = std::move(pcontext->selected_folder);
+	pcontext->selected_folder.clear();
 	if (pcontext->b_readonly)
 		return;
 	XARRAY xarray;

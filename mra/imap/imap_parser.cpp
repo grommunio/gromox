@@ -1134,7 +1134,7 @@ static std::vector<imap_context *> *sh_query(const char *x)
  */
 
 void imap_parser_bcast_touch(const imap_context *current, const char *username,
-    const char *folder)
+    const std::string &folder)
 {
 	char buff[1024];
 
@@ -1146,10 +1146,10 @@ void imap_parser_bcast_touch(const imap_context *current, const char *username,
 		return;
 	for (auto other : *plist)
 		if (current != other &&
-		    strcmp(folder, other->selected_folder) == 0)
+		    folder == other->selected_folder)
 			other->async_change_mask |= REPORT_NEWMAIL;
 	hl_hold.unlock();
-	snprintf(buff, 1024, "FOLDER-TOUCH %s %s", username, folder);
+	snprintf(buff, 1024, "FOLDER-TOUCH %s %s", username, folder.c_str());
 	system_services_broadcast_event(buff);
 }
 
@@ -1164,7 +1164,7 @@ static void imap_parser_event_touch(const char *username, const char *folder)
 	if (plist == nullptr)
 		return;
 	for (auto other : *plist)
-		if (strcmp(folder, other->selected_folder) == 0)
+		if (folder == other->selected_folder)
 			other->async_change_mask |= REPORT_NEWMAIL;
 }
 
@@ -1180,7 +1180,7 @@ void imap_parser_bcast_flags(const imap_context &current, uint32_t uid) try
 		return;
 	for (auto other : *plist) {
 		if (&current == other ||
-		    strcmp(current.selected_folder, other->selected_folder) != 0)
+		    current.selected_folder != other->selected_folder)
 			continue;
 		other->f_flags.emplace(uid);
 		other->async_change_mask |= REPORT_FLAGS;
@@ -1204,7 +1204,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	if (plist == nullptr)
 		return;
 	for (auto other : *plist) {
-		if (strcmp(folder, other->selected_folder) != 0)
+		if (folder != other->selected_folder)
 			continue;
 		other->f_flags.emplace(uid);
 		other->async_change_mask |= REPORT_FLAGS;
@@ -1226,7 +1226,7 @@ void imap_parser_bcast_expunge(const imap_context &current,
 	if (ctx_list == nullptr)
 		return;
 	for (auto &other : *ctx_list) {
-		if (strcmp(current.selected_folder, other->selected_folder) != 0)
+		if (current.selected_folder != other->selected_folder)
 			continue;
 		for (auto p : exp_list)
 			other->f_expunged_uids.emplace_back(p->uid);
@@ -1256,7 +1256,7 @@ void imap_parser_event_expunge(const char *user, const char *folder, unsigned in
 	if (ctx_list == nullptr)
 		return;
 	for (auto other : *ctx_list) {
-		if (strcmp(folder, other->selected_folder) != 0)
+		if (folder != other->selected_folder)
 			continue;
 		other->f_expunged_uids.emplace_back(uid);
 		other->async_change_mask |= REPORT_EXPUNGE;
@@ -1675,7 +1675,7 @@ void imap_parser_remove_select(imap_context *pcontext)
 			pcontext->f_flags.clear();
 			pcontext->f_expunged_uids.clear();
 			for (auto pcontext1 : *plist) {
-				if (0 == strcmp(pcontext->selected_folder, pcontext1->selected_folder)) {
+				if (pcontext->selected_folder == pcontext1->selected_folder) {
 					should_remove = false;
 					break;
 				}
@@ -1722,7 +1722,7 @@ static void *imps_scanwork(void *argp)
 		}
 		hl_hold.unlock();
 		for (const auto &e : temp_file) {
-			system_services_broadcast_select(e.user.c_str(), e.folder.c_str());
+			system_services_broadcast_select(e.user.c_str(), e.folder);
 			system_services_ping_mailbox(e.dir.c_str(), &err_num);
 		}
 	}
