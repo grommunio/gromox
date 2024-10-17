@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 /*
  *  user config resource file, which provide some interface for 
  *  programmer to set and get the configuration dynamically
@@ -116,6 +118,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1923, "NO Unable to read message file"},
 	{1924, "NO DELETE subfolders first"},
 	{1925, "NO [NONEXISTENT] Folder does not exist"},
+	{1926, "NO CREATE: folder already exists"},
 	{2000 | MIDB_E_UNKNOWN_COMMAND, "midb: unknown command"},
 	{2000 | MIDB_E_PARAMETER_ERROR, "midb: command parameter error"},
 	{2000 | MIDB_E_HASHTABLE_FULL, "Unable to read midb.sqlite, see midb logs"},

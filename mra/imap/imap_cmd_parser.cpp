@@ -1734,6 +1734,8 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 	sys_name = argv[2]; // Go back to non-hexencoded string
 	if (sys_name.size() > 0 && sys_name.back() == '/')
 		sys_name.pop_back();
+	if (std::find(folder_list.cbegin(), folder_list.cend(), sys_name) != folder_list.cend())
+		return 1926;
 	auto len = sys_name.size();
 	for (size_t i = 0; i <= len; ++i) {
 		if (sys_name[i] != '/' && sys_name[i] != '\0')
