@@ -212,6 +212,11 @@ static inline bool special_folder(const char *name)
 	return false;
 }
 
+static inline bool special_folder(const std::string &s)
+{
+	return special_folder(s.c_str());
+}
+
 /**
  * @list:    rangeset to inspect
  * @num:     number to test for
@@ -1142,8 +1147,8 @@ static const char *foldername_get(const char *lang, unsigned int fid)
 /**
  * See sysfolder_to_imapfolder for some notes.
  */
-static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
-	const char *lang, const char *imap_folder, char *sys_folder)
+static BOOL imap_cmd_parser_imapfolder_to_sysfolder(const char *lang,
+    const char *imap_folder, std::string &sys_folder) try
 {
 	char *ptoken;
 	char temp_name[512], left_frag[512], converted_name[512];
@@ -1180,15 +1185,16 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 	if (NULL != ptoken) {
 		len = gx_snprintf(converted_name, std::size(converted_name),
 		      "%s%s", left_frag, ptoken);
-		encode_hex_binary(converted_name,
-			strlen(converted_name), sys_folder, 1024);
+		sys_folder = bin2hex(converted_name, strlen(converted_name));
 	} else if (special_folder(left_frag)) {
-		strcpy(sys_folder, left_frag);
+		sys_folder = left_frag;
 	} else {
-		encode_hex_binary(left_frag,
-			strlen(left_frag), sys_folder, 1024);
+		sys_folder = bin2hex(left_frag, strlen(left_frag));
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2418: ENOMEM");
+	return false;
 }
 
 /**
@@ -1209,30 +1215,39 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
  * folder name. The name shown for the wastebasket in IMAP thus does not
  * necessarily coincide with the name seen in MAPI.
  */
-static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
-	const char *lang, const char *sys_folder, char *imap_folder)
+static BOOL imap_cmd_parser_sysfolder_to_imapfolder(const char *lang,
+    const char *sys_folder, std::string &imap_folder) try
 {
 	char *ptoken;
 	char temp_name[512], left_frag[512], converted_name[512];
 	
 	if (0 == strcmp("inbox", sys_folder)) {
-		strcpy(imap_folder, "INBOX");
+		imap_folder = "INBOX";
 		return TRUE;
-	} else if (0 == strcmp("draft", sys_folder)) {
+	}
+	if (0 == strcmp("draft", sys_folder)) {
 		auto s = foldername_get(lang, PRIVATE_FID_DRAFT);
-		utf8_to_mutf7(s, strlen(s), imap_folder, 1024);
+		imap_folder.resize(utf8_to_mb_len(s));
+		utf8_to_mutf7(s, strlen(s), imap_folder.data(), imap_folder.size());
+		imap_folder.resize(strlen(imap_folder.c_str()));
 		return TRUE;
 	} else if (0 == strcmp("sent", sys_folder)) {
 		auto s = foldername_get(lang, PRIVATE_FID_SENT_ITEMS);
-		utf8_to_mutf7(s, strlen(s), imap_folder, 1024);
+		imap_folder.resize(utf8_to_mb_len(s));
+		utf8_to_mutf7(s, strlen(s), imap_folder.data(), imap_folder.size());
+		imap_folder.resize(strlen(imap_folder.c_str()));
 		return TRUE;
 	} else if (0 == strcmp("trash", sys_folder)) {
 		auto s = foldername_get(lang, PRIVATE_FID_DELETED_ITEMS);
-		utf8_to_mutf7(s, strlen(s), imap_folder, 1024);
+		imap_folder.resize(utf8_to_mb_len(s));
+		utf8_to_mutf7(s, strlen(s), imap_folder.data(), imap_folder.size());
+		imap_folder.resize(strlen(imap_folder.c_str()));
 		return TRUE;
 	} else if (0 == strcmp("junk", sys_folder)) {
 		auto s = foldername_get(lang, PRIVATE_FID_JUNK);
-		utf8_to_mutf7(s, strlen(s), imap_folder, 1024);
+		imap_folder.resize(utf8_to_mb_len(s));
+		utf8_to_mutf7(s, strlen(s), imap_folder.data(), imap_folder.size());
+		imap_folder.resize(strlen(imap_folder.c_str()));
 		return TRUE;
 	}
 	if (!decode_hex_binary(sys_folder, temp_name, std::size(temp_name)))
@@ -1258,20 +1273,25 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 		snprintf(converted_name, 512, "%s%s", left_frag, ptoken);
 	else
 		strcpy(converted_name, left_frag);
+	imap_folder.resize(utf8_to_mb_len(converted_name));
 	if (utf8_to_mutf7(converted_name, strlen(converted_name),
-	    imap_folder, 1024) <= 0)
+	    imap_folder.data(), imap_folder.size()) <= 0)
 		return FALSE;
+	imap_folder.resize(strlen(imap_folder.c_str()));
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2417: ENOMEM");
+	return false;
 }
 
 static void imap_cmd_parser_convert_folderlist(const char *lang,
    std::vector<std::string> &pfile) try
 {
-	char converted_name[1024];
+	std::string o;
 	
 	for (auto &e : pfile)
-		if (imap_cmd_parser_sysfolder_to_imapfolder(lang, e.c_str(), converted_name))
-			e = converted_name;
+		if (imap_cmd_parser_sysfolder_to_imapfolder(lang, e.c_str(), o))
+			e = std::move(o);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1814: ENOMEM");
 }
@@ -1613,7 +1633,7 @@ static int imap_cmd_parser_selex(int argc, char **argv,
     imap_context *pcontext, bool readonly) try
 {
 	int errnum;
-	char sys_name[1024];
+	std::string sys_name;
     
 	if (!pcontext->is_authed())
 		return 1804;
@@ -1641,10 +1661,8 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	imap_parser_add_select(pcontext);
 
 	/* Effectively canonicalize(d) argv[2] */
-	char buff[1024];
-	if (!imap_cmd_parser_sysfolder_to_imapfolder(pcontext->lang, sys_name, buff))
+	if (!imap_cmd_parser_sysfolder_to_imapfolder(pcontext->lang, sys_name.c_str(), sys_name))
 		return 1800;
-	gx_strlcpy(sys_name, buff, std::size(sys_name));
 
 	auto buf = fmt::format(
 		"* {} EXISTS\r\n"
@@ -1695,8 +1713,7 @@ static void writefolderlines(std::vector<std::string> &file) try
 int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
-	char sys_name[1024];
-	char converted_name[1024];
+	std::string sys_name, converted_name;
 
 	if (!pcontext->is_authed())
 		return 1804;
@@ -1714,12 +1731,10 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 		return ret;
 	writefolderlines(folder_list);
 	imap_cmd_parser_convert_folderlist(pcontext->lang, folder_list);
-	strcpy(sys_name, argv[2]);
-	auto len = strlen(sys_name);
-	if (len > 0 && sys_name[len-1] == '/') {
-		len --;
-		sys_name[len] = '\0';
-	}
+	sys_name = argv[2]; // Go back to non-hexencoded string
+	if (sys_name.size() > 0 && sys_name.back() == '/')
+		sys_name.pop_back();
+	auto len = sys_name.size();
 	for (size_t i = 0; i <= len; ++i) {
 		if (sys_name[i] != '/' && sys_name[i] != '\0')
 			continue;
@@ -1730,7 +1745,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 			continue;
 		}
 		if (!imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang,
-		    sys_name, converted_name))
+		    sys_name.c_str(), converted_name))
 			return 1800;
 		ssr = system_services_make_folder(pcontext->maildir,
 		      converted_name, &errnum);
@@ -1747,7 +1762,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
-	char encoded_name[1024];
+	std::string encoded_name;
 
 	if (!pcontext->is_authed())
 		return 1804;
@@ -1787,8 +1802,7 @@ int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
 int imap_cmd_parser_rename(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
-	char encoded_name[1024];
-	char encoded_name1[1024];
+	std::string encoded_name, encoded_name1;
 
 	if (!pcontext->is_authed())
 		return 1804;
@@ -1814,7 +1828,7 @@ int imap_cmd_parser_rename(int argc, char **argv, imap_context *pcontext)
 int imap_cmd_parser_subscribe(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
-	char sys_name[1024];
+	std::string sys_name;
 
 	if (!pcontext->is_authed())
 		return 1804;
@@ -1834,7 +1848,7 @@ int imap_cmd_parser_subscribe(int argc, char **argv, imap_context *pcontext)
 int imap_cmd_parser_unsubscribe(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
-	char sys_name[1024];
+	std::string sys_name;
 
 	if (!pcontext->is_authed())
 		return 1804;
@@ -1918,15 +1932,15 @@ int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
 			return 1922;
 	}
 	for (unsigned int i = 0; i < 4; ++i) {
-		char sys_name[1024];
+		std::string sys_name;
 		imap_cmd_parser_sysfolder_to_imapfolder(pcontext->lang, g_folder_list[i], sys_name);
-		if (imap_cmd_parser_wildcard_match(sys_name, search_pattern.c_str())) {
+		if (imap_cmd_parser_wildcard_match(sys_name.c_str(), search_pattern.c_str())) {
 			std::string buf;
 			if (filter_special) {
 				buf = fmt::format("* LIST ({}) \"/\" {}\r\n",
 				      g_xproperty_list[i], quote_encode(sys_name));
 			} else {
-				auto pdir = folder_tree.match(sys_name);
+				auto pdir = folder_tree.match(sys_name.c_str());
 				auto have = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
 				buf = fmt::format("* LIST ({}{}\\Has{}Children) \"/\" {}\r\n",
 				      return_special ? g_xproperty_list[i] : "",
@@ -2004,11 +2018,11 @@ int imap_cmd_parser_xlist(int argc, char **argv, imap_context *pcontext) try
 			return 1922;
 	}
 	for (unsigned int i = 0; i < 4; ++i) {
-		char sys_name[1024];
+		std::string sys_name;
 		imap_cmd_parser_sysfolder_to_imapfolder(
 			pcontext->lang, g_folder_list[i], sys_name);
-		if (imap_cmd_parser_wildcard_match(sys_name, search_pattern.c_str())) {
-			auto pdir = folder_tree.match(sys_name);
+		if (imap_cmd_parser_wildcard_match(sys_name.c_str(), search_pattern.c_str())) {
+			auto pdir = folder_tree.match(sys_name.c_str());
 			auto have = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
 			auto buf  = fmt::format("* XLIST ({} \\Has{}Children) \"/\" {}\r\n",
 			            g_xproperty_list[i], have ? "" : "No",
@@ -2108,7 +2122,7 @@ int imap_cmd_parser_status(int argc, char **argv, imap_context *pcontext) try
 	BOOL b_first;
 	int temp_argc;
 	char *temp_argv[16];
-	char sys_name[1024];
+	std::string sys_name;
     
 	if (!pcontext->is_authed())
 		return 1804;
@@ -2176,7 +2190,7 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	char* temp_argv[5];
 	char *str_received = nullptr, *flags_string = nullptr;
 	char flag_buff[16];
-	char sys_name[1024];
+	std::string sys_name;
 	
 	if (!pcontext->is_authed())
 		return 1804;
@@ -2322,7 +2336,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv,
 	char *str_received = nullptr, *flags_string = nullptr;
 	char* temp_argv[5];
 	char str_flags[128];
-	char sys_name[1024];
+	std::string sys_name;
 	
 	if (!pcontext->is_authed())
 		return 1804 | DISPATCH_BREAK;
@@ -2850,7 +2864,7 @@ int imap_cmd_parser_copy(int argc, char **argv, imap_context *pcontext) try
 	BOOL b_first;
 	BOOL b_copied;
 	int i, j;
-	char sys_name[1024];
+	std::string sys_name;
 	imap_seq_list list_uid;
     
 	if (pcontext->proto_stat != iproto_stat::select)
@@ -3107,7 +3121,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, imap_context *pcontext) try
 	BOOL b_first;
 	BOOL b_copied;
 	int i, j;
-	char sys_name[1024];
+	std::string sys_name;
 	imap_seq_list list_seq;
 	
 	if (pcontext->proto_stat != iproto_stat::select)

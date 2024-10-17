@@ -82,17 +82,17 @@ static ssize_t read_line(int sockd, char *buff, size_t length);
 static int connect_midb(const char *host, uint16_t port);
 static int list_mail(const char *path, const std::string &folder, std::vector<MSG_UNIT> &, int *num, uint64_t *size);
 static int delete_mail(const char *path, const std::string &folder, const std::vector<MSG_UNIT *> &);
-static int get_mail_uid(const char *path, const char *, const std::string &mid, unsigned int *uid);
-static int summary_folder(const char *path, const char *, size_t *exists, size_t *recent, size_t *unseen, uint32_t *uidvalid, uint32_t *uidnext, int *perrno);
+static int get_mail_uid(const char *path, const std::string &folder, const std::string &mid, unsigned int *uid);
+static int summary_folder(const char *path, const std::string &folder, size_t *exists, size_t *recent, size_t *unseen, uint32_t *uidvalid, uint32_t *uidnext, int *perrno);
 static int make_folder(const char *path, const std::string &folder, int *perrno);
 static int remove_folder(const char *path, const std::string &folder, int *perrno);
 static int ping_mailbox(const char *path, int *perrno);
-static int rename_folder(const char *path, const std::string &src_name, const char *dst_name, int *perrno);
+static int rename_folder(const char *path, const std::string &src_name, const std::string &dst_name, int *perrno);
 static int subscribe_folder(const char *path, const std::string &folder, int *perrno);
 static int unsubscribe_folder(const char *path, const std::string &folder, int *perrno);
 static int enum_folders(const char *path, std::vector<std::string> &, int *perrno);
 static int enum_subscriptions(const char *path, std::vector<std::string> &, int *perrno);
-static int insert_mail(const char *path, const char *, const char *file_name, const char *flags_string, long time_stamp, int *perrno);
+static int insert_mail(const char *path, const std::string &folder, const char *file_name, const char *flags_string, long time_stamp, int *perrno);
 static int remove_mail(const char *path, const std::string &folder, const std::vector<MITEM *> &, int *perrno);
 static int list_deleted(const char *path, const std::string &folder, XARRAY *, int *perrno);
 static int fetch_simple_uid(const char *path, const std::string &folder, const imap_seq_list &, XARRAY *, int *perrno);
@@ -100,7 +100,7 @@ static int fetch_detail_uid(const char *path, const std::string &folder, const i
 static int set_mail_flags(const char *path, const std::string &folder, const std::string &mid, int flag_bits, int *perrno);
 static int unset_mail_flags(const char *path, const std::string &folder, const std::string &mid, int flag_bits, int *perrno);
 static int get_mail_flags(const char *path, const std::string &folder, const std::string &mid, int *pflag_bits, int *perrno);
-static int copy_mail(const char *path, const std::string &src_folder, const std::string &src_mid, const char *dst_folder, std::string &dst_mid, int *perrno);
+static int copy_mail(const char *path, const std::string &src_folder, const std::string &src_mid, const std::string &dst_folder, std::string &dst_mid, int *perrno);
 static int imap_search(const char *path, const std::string &folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);
 static int imap_search_uid(const char *path, const std::string &folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);
 static BOOL check_full(const char *path);
@@ -662,7 +662,7 @@ static int imap_search_uid(const char *path, const std::string &folder,
 	return MIDB_LOCAL_ENOMEM;
 }
 
-static int get_mail_uid(const char *path, const char *folder,
+static int get_mail_uid(const char *path, const std::string &folder,
     const std::string &mid_string, unsigned int *puid)
 {
 	char buff[1024];
@@ -671,7 +671,7 @@ static int get_mail_uid(const char *path, const char *folder,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, std::size(buff), "P-UNID %s %s %s\r\n",
-	              path, folder, mid_string.c_str());
+	              path, folder.c_str(), mid_string.c_str());
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -686,7 +686,7 @@ static int get_mail_uid(const char *path, const char *folder,
 	return MIDB_RDWR_ERROR;
 }
 
-static int summary_folder(const char *path, const char *folder, size_t *pexists,
+static int summary_folder(const char *path, const std::string &folder, size_t *pexists,
     size_t *precent, size_t *punseen, uint32_t *puidvalid, uint32_t *puidnext,
     int *perrno)
 {
@@ -698,7 +698,7 @@ static int summary_folder(const char *path, const char *folder, size_t *pexists,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, std::size(buff), "P-FDDT %s %s\r\n",
-	              path, folder);
+	              path, folder.c_str());
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -799,7 +799,7 @@ static int ping_mailbox(const char *path, int *perrno)
 }
 
 static int rename_folder(const char *path, const std::string &src_name,
-    const char *dst_name, int *perrno)
+    const std::string &dst_name, int *perrno)
 {
 	char buff[1024];
 
@@ -807,7 +807,7 @@ static int rename_folder(const char *path, const std::string &src_name,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, std::size(buff), "M-RENF %s %s %s\r\n",
-	              path, src_name.c_str(), dst_name);
+	              path, src_name.c_str(), dst_name.c_str());
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -1064,7 +1064,7 @@ static int enum_subscriptions(const char *path, std::vector<std::string> &pfile,
 	return MIDB_LOCAL_ENOMEM;
 }
 
-static int insert_mail(const char *path, const char *folder,
+static int insert_mail(const char *path, const std::string &folder,
     const char *file_name, const char *flags_string, long time_stamp,
     int *perrno)
 {
@@ -1074,7 +1074,7 @@ static int insert_mail(const char *path, const char *folder,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, std::size(buff), "M-INST %s %s %s %s %ld\r\n",
-				path, folder, file_name, flags_string, time_stamp);
+	              path, folder.c_str(), file_name, flags_string, time_stamp);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -1706,7 +1706,7 @@ static int get_mail_flags(const char *path, const std::string &folder,
 }
 	
 static int copy_mail(const char *path, const std::string &src_folder,
-    const std::string &mid_string, const char *dst_folder,
+    const std::string &mid_string, const std::string &dst_folder,
     std::string &dst_mid, int *perrno) try
 {
 	char buff[1024];
@@ -1715,7 +1715,7 @@ static int copy_mail(const char *path, const std::string &src_folder,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, std::size(buff), "M-COPY %s %s %s %s\r\n",
-	              path, src_folder.c_str(), mid_string.c_str(), dst_folder);
+	              path, src_folder.c_str(), mid_string.c_str(), dst_folder.c_str());
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
