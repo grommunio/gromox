@@ -27,7 +27,8 @@ static int t_2209(const char *dir)
 	const TPROPVAL_ARRAY pvals = {std::size(pvd), deconst(pvd)};
 	TPROPVAL_ARRAY qvals = {0, deconst(qvd)};
 	std::vector<uint16_t> original_indices;
-	PROBLEM_ARRAY problems{};
+	PROPERTY_PROBLEM probbuf[std::size(pvd)];
+	PROBLEM_ARRAY problems = {std::size(probbuf), probbuf};
 
 	for (size_t i = 0; i < pvals.count; ++i) {
 		const auto &pv = pvals.ppropval[i];
