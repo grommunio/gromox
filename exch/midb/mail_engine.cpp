@@ -182,7 +182,7 @@ template<typename T> static inline bool
 array_find_str(const T &kwlist, const char *s)
 {
 	for (const auto kw : kwlist)
-		if (strcmp(s, kw) == 0)
+		if (strcasecmp(s, kw) == 0)
 			return true;
 	return false;
 }
@@ -337,13 +337,13 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 				end_pos - begin_pos + 1, &encode_string);
 			auto tmp_len = strlen(encode_string.title);
 			std::unique_ptr<char[]> tmp_string;
-			if (0 == strcmp(encode_string.encoding, "base64")) {
+			if (strcasecmp(encode_string.encoding, "base64") == 0) {
 				size_t decode_len = 0;
 				decode64(encode_string.title, tmp_len,
 				         temp_buff, std::size(temp_buff), &decode_len);
 				temp_buff[decode_len] = '\0';
 				tmp_string = mail_engine_ct_to_utf8(encode_string.charset, temp_buff);
-			} else if (0 == strcmp(encode_string.encoding, "quoted-printable")){
+			} else if (strcasecmp(encode_string.encoding, "quoted-printable") == 0) {
 				auto decode_len = qp_decode_ex(temp_buff, std::size(temp_buff),
 				                  encode_string.title, tmp_len);
 				if (decode_len < 0)
@@ -1332,7 +1332,7 @@ static std::optional<std::vector<int>> mail_engine_ct_match(const char *charset,
 static uint64_t me_get_folder_id_raw(IDB_ITEM *pidb, std::string_view name)
 {
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT "
-	             "folder_id FROM folders WHERE name=?");
+	             "folder_id FROM folders WHERE name=? COLLATE NOCASE LIMIT 1");
 	if (pstmt == nullptr)
 		return 0;
 	pstmt.bind_text(1, name);
@@ -1858,7 +1858,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 					parent_fid, folder_id);
 				gx_sql_exec(pidb->psqlite, qstr.c_str());
 			}
-			if (strcmp(encoded_name.c_str(), pstmt1.col_text(3)) != 0) {
+			if (strcasecmp(encoded_name.c_str(), pstmt1.col_text(3)) != 0) {
 				auto ust = gx_sql_prep(pidb->psqlite, "UPDATE folders SET name=? "
 				           "WHERE folder_id=?");
 				if (ust == nullptr ||
@@ -2455,7 +2455,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id,"
-	             " parent_fid FROM folders WHERE name=?");
+	             " parent_fid FROM folders WHERE name=? COLLATE NOCASE");
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
 	pstmt.bind_text(1, decoded_name);

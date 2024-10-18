@@ -497,6 +497,20 @@ static constexpr char tbl_midb_folders_0[] =
 "  sort_field INTEGER DEFAULT 0);"
 "CREATE INDEX parent_fid_index ON folders(parent_fid);";
 
+static constexpr char tbl_midb_folders_2[] =
+"CREATE TABLE folders ("
+"  folder_id INTEGER PRIMARY KEY,"
+"  parent_fid INTEGER NOT NULL,"
+"  commit_max INTEGER NOT NULL,"
+"  name TEXT NOT NULL COLLATE NOCASE UNIQUE,"
+"  uidnext INTEGER DEFAULT 0,"
+"  unsub INTEGER DEFAULT 0,"
+"  sort_field INTEGER DEFAULT 0);"
+"CREATE INDEX parent_fid_index2 ON folders(parent_fid);";
+
+static constexpr char tbl_midb_folders_move2[] =
+"INSERT INTO folders SELECT folder_id, parent_fid, commit_max, name, uidnext, unsub, sort_field FROM u0";
+
 static constexpr char tbl_midb_msgs_0[] =
 "CREATE TABLE messages ("
 "  message_id INTEGER PRIMARY KEY,"
@@ -550,7 +564,7 @@ static constexpr tbl_init tbl_midb_init_0[] = {
 
 static constexpr tbl_init tbl_midb_init_top[] = {
 	{"configurations", tbl_config_1},
-	{"folders", tbl_midb_folders_0},
+	{"folders", tbl_midb_folders_2},
 	{"messages", tbl_midb_msgs_0},
 	{"mapping", tbl_midb_mapping_0},
 	TABLE_END,
@@ -602,6 +616,7 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 
 static constexpr tblite_upgradefn tbl_midb_upgrade_list[] = {
 	{1, nullptr, "configurations", tbl_config_1, tbl_config_move1},
+	{2, nullptr, "folders", tbl_midb_folders_2, tbl_midb_folders_move2},
 	TABLE_END,
 };
 

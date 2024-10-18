@@ -129,7 +129,7 @@ void dir_tree::load_from_memfile(const std::vector<enum_folder_t> &pfile) try
 			if (NULL != pnode) {
 				do {
 					auto pdir = static_cast<DIR_NODE *>(pnode->pdata);
-					if (strcmp(pdir->name, ptr1) == 0)
+					if (strcasecmp(pdir->name, ptr1) == 0)
 						break;
 				} while ((pnode = pnode->get_sibling()) != nullptr);
 			}
@@ -187,9 +187,9 @@ DIR_NODE *dir_tree::match(const char *path)
 			return NULL;
 		do {
 			pdir = static_cast<DIR_NODE *>(pnode->pdata);
-			if (strcmp(pdir->name, ptr1) == 0)
+			if (strcasecmp(pdir->name, ptr1) == 0)
 				break;
-			if (level == 0 && strcmp(pdir->name, "INBOX") == 0 &&
+			if (level == 0 && strcasecmp(pdir->name, "INBOX") == 0 &&
 			    strcasecmp(ptr1, "inbox") == 0)
 				break;
 		} while ((pnode = pnode->get_sibling()) != nullptr);
@@ -1618,7 +1618,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 	if (sys_name.size() > 0 && sys_name.back() == '/')
 		sys_name.pop_back();
 	if (std::any_of(folder_list.cbegin(), folder_list.cend(),
-	    [&](const enum_folder_t &e) { return strcmp(e.second.c_str(), sys_name.c_str()) == 0; }))
+	    [&](const enum_folder_t &e) { return strcasecmp(e.second.c_str(), sys_name.c_str()) == 0; }))
 		return 1926;
 	auto len = sys_name.size();
 	for (size_t i = 0; i <= len; ++i) {
@@ -1626,7 +1626,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 			continue;
 		sys_name[i] = '\0';
 		if (std::any_of(folder_list.cbegin(), folder_list.cend(),
-		    [&](const enum_folder_t &e) { return strcmp(e.second.c_str(), sys_name.c_str()) == 0; })) {
+		    [&](const enum_folder_t &e) { return strcasecmp(e.second.c_str(), sys_name.c_str()) == 0; })) {
 			sys_name[i] = '/';
 			continue;
 		}
