@@ -1800,9 +1800,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 	uint64_t parent_fid;
 	uint64_t commit_max;
 	char sql_string[1280];
-	PROPTAG_ARRAY proptags;
 	char encoded_name[1024];
-	uint32_t proptag_buff[6];
 	
 	dir = common_util_get_maildir();
 	mlog(LV_NOTICE, "Running sync_mailbox for %s", dir);
@@ -1814,14 +1812,11 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 	    NULL, TABLE_FLAG_DEPTH|TABLE_FLAG_NONOTIFICATIONS,
 	    NULL, &table_id, &row_count))
 		return FALSE;	
-	proptags.count = 6;
-	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PidTagFolderId;
-	proptag_buff[1] = PidTagParentFolderId;
-	proptag_buff[2] = PR_ATTR_HIDDEN;
-	proptag_buff[3] = PR_CONTAINER_CLASS;
-	proptag_buff[4] = PR_DISPLAY_NAME;
-	proptag_buff[5] = PR_LOCAL_COMMIT_TIME_MAX;
+
+	static constexpr proptag_t proptag_buff[] =
+		{PidTagFolderId, PidTagParentFolderId, PR_ATTR_HIDDEN,
+		PR_CONTAINER_CLASS, PR_DISPLAY_NAME, PR_LOCAL_COMMIT_TIME_MAX};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client::query_table(dir, NULL,
 	    CP_ACP, table_id, &proptags, 0, row_count, &rows)) {
 		exmdb_client::unload_table(dir, table_id);
@@ -2222,14 +2217,10 @@ static void *midbme_scanwork(void *param)
 static int mail_engine_mckfl(int argc, char **argv, int sockd)
 {
 	uint64_t quota;
-	PROPTAG_ARRAY proptags;
+	static constexpr proptag_t tmp_proptags[] = {PR_PROHIBIT_RECEIVE_QUOTA, PR_MESSAGE_SIZE_EXTENDED};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptags), deconst(tmp_proptags)};
 	TPROPVAL_ARRAY propvals;
-	uint32_t tmp_proptags[2];
 	
-	proptags.count = 2;
-	proptags.pproptag = tmp_proptags;
-	tmp_proptags[0] = PR_PROHIBIT_RECEIVE_QUOTA;
-	tmp_proptags[1] = PR_MESSAGE_SIZE_EXTENDED;
 	if (!exmdb_client::get_store_properties(argv[1], CP_ACP,
 	    &proptags, &propvals))
 		return MIDB_E_MDB_GETSTOREPROPS;
@@ -2673,8 +2664,6 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	uint64_t folder_id2;
 	uint64_t change_num;
 	char temp_name[256];
-	uint32_t tmp_proptag;
-	PROPTAG_ARRAY proptags;
 	char decoded_name[512];
 	PROBLEM_ARRAY problems;
 	char encoded_name[1024];
@@ -2745,11 +2734,11 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		if (errcode != ecSuccess)
 			return MIDB_E_MDB_PARTIAL;
 	}
-	proptags.count = 1;
-	proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PR_PREDECESSOR_CHANGE_LIST;
+
 	if (!exmdb_client::allocate_cn(argv[1], &change_num))
 		return MIDB_E_MDB_ALLOCID;
+	static constexpr proptag_t tmp_proptag[] = {PR_PREDECESSOR_CHANGE_LIST};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 	if (!exmdb_client::get_folder_properties(argv[1], CP_ACP,
 	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
 		return MIDB_E_MDB_GETFOLDERPROPS;
@@ -3359,9 +3348,7 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 {
 	uint64_t read_cn;
 	uint64_t message_id;
-	uint32_t tmp_proptag;
 	char sql_string[1024];
-	PROPTAG_ARRAY proptags;
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
 
@@ -3387,9 +3374,8 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	if (NULL != strchr(argv[4], 'U')) {
-		proptags.count = 1;
-		proptags.pproptag = &tmp_proptag;
-		tmp_proptag = PR_MESSAGE_FLAGS;
+		static constexpr proptag_t tmp_proptag[] = {PR_MESSAGE_FLAGS};
+		static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 		if (!exmdb_client::get_message_properties(argv[1], NULL,
 		    CP_ACP, rop_util_make_eid_ex(1, message_id),
 		    &proptags, &propvals) || propvals.count == 0)
@@ -3444,9 +3430,7 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 {
 	uint64_t read_cn;
 	uint64_t message_id;
-	uint32_t tmp_proptag;
 	char sql_string[1024];
-	PROPTAG_ARRAY proptags;
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
 
@@ -3472,9 +3456,8 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	if (NULL != strchr(argv[4], 'U')) {
-		proptags.count = 1;
-		proptags.pproptag = &tmp_proptag;
-		tmp_proptag = PR_MESSAGE_FLAGS;
+		static constexpr proptag_t tmp_proptag[] = {PR_MESSAGE_FLAGS};
+		static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 		if (!exmdb_client::get_message_properties(argv[1], nullptr,
 		    CP_ACP, rop_util_make_eid_ex(1, message_id),
 		    &proptags, &propvals) || propvals.count == 0)
@@ -3798,16 +3781,12 @@ static void mail_engine_add_notification_message(
 	char flags_buff[16];
 	char mid_string[128];
 	char sql_string[1024];
-	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
-	uint32_t tmp_proptags[4];
-	
-	proptags.count = 4;
-	proptags.pproptag = tmp_proptags;
-	tmp_proptags[0] = PR_MESSAGE_DELIVERY_TIME;
-	tmp_proptags[1] = PR_LAST_MODIFICATION_TIME;
-	tmp_proptags[2] = PidTagMidString;
-	tmp_proptags[3] = PR_MESSAGE_FLAGS;
+
+	static constexpr proptag_t tmp_proptags[] =
+		{PR_MESSAGE_DELIVERY_TIME, PR_LAST_MODIFICATION_TIME,
+		PidTagMidString, PR_MESSAGE_FLAGS};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptags), deconst(tmp_proptags)};
 	if (!exmdb_client::get_message_properties(common_util_get_maildir(),
 	    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
 	    &proptags, &propvals))
@@ -3908,10 +3887,8 @@ static BOOL mail_engine_add_notification_folder(
 {
 	char sql_string[1280];
 	char decoded_name[512];
-	PROPTAG_ARRAY proptags;
 	char encoded_name[1024];
 	TPROPVAL_ARRAY propvals;
-	uint32_t tmp_proptags[4];
 	
 	if (auto x = spfid_to_name(parent_id)) {
 		gx_strlcpy(decoded_name, x, std::size(decoded_name));
@@ -3925,12 +3902,11 @@ static BOOL mail_engine_add_notification_folder(
 		    decoded_name, std::size(decoded_name)))
 			return FALSE;
 	}
-	proptags.count = 4;
-	proptags.pproptag = tmp_proptags;
-	tmp_proptags[0] = PR_DISPLAY_NAME;
-	tmp_proptags[1] = PR_LOCAL_COMMIT_TIME_MAX;
-	tmp_proptags[2] = PR_CONTAINER_CLASS;
-	tmp_proptags[3] = PR_ATTR_HIDDEN;
+
+	static constexpr proptag_t tmp_proptags[] =
+		{PR_DISPLAY_NAME, PR_LOCAL_COMMIT_TIME_MAX, PR_CONTAINER_CLASS,
+		PR_ATTR_HIDDEN};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptags), deconst(tmp_proptags)};
 	bool b_waited = false;
  REQUERY_FOLDER:
 	if (!exmdb_client::get_folder_properties(common_util_get_maildir(), CP_ACP,
@@ -4025,10 +4001,8 @@ static void mail_engine_update_subfolders_name(IDB_ITEM *pidb,
 static void mail_engine_move_notification_folder(
 	IDB_ITEM *pidb, uint64_t parent_id, uint64_t folder_id)
 {
-	uint32_t tmp_proptag;
 	char sql_string[1280];
 	char decoded_name[512];
-	PROPTAG_ARRAY proptags;
 	char encoded_name[1024];
 	TPROPVAL_ARRAY propvals;
 	
@@ -4057,9 +4031,8 @@ static void mail_engine_move_notification_folder(
 			return;
 		pstmt.finalize();
 	}
-	proptags.count = 1;
-	proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PR_DISPLAY_NAME;
+	static constexpr proptag_t tmp_proptag[] = {PR_DISPLAY_NAME};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 	if (!exmdb_client::get_folder_properties(common_util_get_maildir(), CP_ACP,
 	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
 		return;		
@@ -4093,10 +4066,8 @@ static void mail_engine_modify_notification_folder(
 	IDB_ITEM *pidb, uint64_t folder_id)
 {
 	char *pdisplayname;
-	uint32_t tmp_proptag;
 	char sql_string[1280];
 	char decoded_name[512];
-	PROPTAG_ARRAY proptags;
 	char encoded_name[1024];
 	TPROPVAL_ARRAY propvals;
 	
@@ -4110,9 +4081,9 @@ static void mail_engine_modify_notification_folder(
 	    decoded_name, std::size(decoded_name)))
 		return;
 	pstmt.finalize();
-	proptags.count = 1;
-	proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PR_DISPLAY_NAME;
+
+	static constexpr proptag_t tmp_proptag[] = {PR_DISPLAY_NAME};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 	if (!exmdb_client::get_folder_properties(common_util_get_maildir(), CP_ACP,
 	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
 		return;		
@@ -4149,15 +4120,10 @@ static void mail_engine_modify_notification_message(
 	IDB_ITEM *pidb, uint64_t folder_id, uint64_t message_id)
 {
 	char sql_string[256];
-	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
-	uint32_t tmp_proptags[3];
-	
-	proptags.count = 3;
-	proptags.pproptag = tmp_proptags;
-	tmp_proptags[0] = PR_MESSAGE_FLAGS;
-	tmp_proptags[1] = PR_LAST_MODIFICATION_TIME;
-	tmp_proptags[2] = PidTagMidString;
+
+	static constexpr proptag_t tmp_proptags[] = {PR_MESSAGE_FLAGS, PR_LAST_MODIFICATION_TIME, PidTagMidString};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptags), deconst(tmp_proptags)};
 	if (!exmdb_client::get_message_properties(common_util_get_maildir(),
 	    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
 	    &proptags, &propvals))
