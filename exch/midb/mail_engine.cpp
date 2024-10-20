@@ -1757,18 +1757,12 @@ static inline bool ipf_note(const char *c)
 static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
     bool force_resync = false) try
 {
-	BOOL b_new;
-	TARRAY_SET rows;
-	uint32_t table_id;
-	uint32_t row_count;
-	char sql_string[1280];
-	char encoded_name[1024];
-	
 	auto dir = common_util_get_maildir();
 	mlog(LV_NOTICE, "Running sync_mailbox for %s", dir);
 	auto cl_err = make_scope_exit([&]() {
 		mlog(LV_NOTICE, "sync_mailbox aborted for %s", dir);
 	});
+	unsigned int table_id = 0, row_count = 0;
 	if (!exmdb_client::load_hierarchy_table(dir,
 	    rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
 	    NULL, TABLE_FLAG_DEPTH|TABLE_FLAG_NONOTIFICATIONS,
@@ -1779,6 +1773,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 		{PidTagFolderId, PidTagParentFolderId, PR_ATTR_HIDDEN,
 		PR_CONTAINER_CLASS, PR_DISPLAY_NAME, PR_LOCAL_COMMIT_TIME_MAX};
 	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
+	TARRAY_SET rows{};
 	if (!exmdb_client::query_table(dir, NULL,
 	    CP_ACP, table_id, &proptags, 0, row_count, &rows)) {
 		exmdb_client::unload_table(dir, table_id);
@@ -1860,10 +1855,13 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 		}
 		const auto &parent_fid = entry.parent_fid;
 		const auto &commit_max = entry.commit_max;
+		char encoded_name[1024];
 		if (!mail_engine_get_encoded_name(syncfolderlist, folder_id, encoded_name))
 			continue;
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, folder_id);
+
+		bool b_new = false;
 		if (pstmt1.step() != SQLITE_ROW) {
 			sqlite3_reset(pstmt2);
 			sqlite3_bind_int64(pstmt2, 1, folder_id);
@@ -1878,26 +1876,28 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 				/* step() will already log */
 				return false;
 			}
-			b_new = TRUE;
+			b_new = true;
 		} else {
 			if (gx_sql_col_uint64(pstmt1, 1) != parent_fid) {
+				char sql_string[1280];
 				snprintf(sql_string, std::size(sql_string), "UPDATE folders SET "
 					"parent_fid=%llu WHERE folder_id=%llu",
 					LLU{parent_fid}, LLU{folder_id});
 				gx_sql_exec(pidb->psqlite, sql_string);
 			}
 			if (strcmp(encoded_name, pstmt1.col_text(3)) != 0) {
+				char sql_string[1280];
 				snprintf(sql_string, std::size(sql_string), "UPDATE folders SET name='%s' "
 				        "WHERE folder_id=%llu", encoded_name, LLU{folder_id});
 				gx_sql_exec(pidb->psqlite, sql_string);
 			}
 			if (gx_sql_col_uint64(pstmt1, 2) == commit_max && !force_resync)
 				continue;	
-			b_new = FALSE;
 		}
 		if (!mail_engine_sync_contents(pidb, folder_id))
 			return false;
 		if (!b_new) {
+			char sql_string[1280];
 			snprintf(sql_string, std::size(sql_string), "UPDATE folders SET commit_max=%llu"
 			        " WHERE folder_id=%llu", LLU{commit_max}, LLU{folder_id});
 			gx_sql_exec(pidb->psqlite, sql_string);
@@ -1910,6 +1910,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 	 * Step 3: Loop over all folders in midb.sqlite3 and see if some
 	 * are gone (synchronize deletions).
 	 */
+	char sql_string[1280];
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM folders");
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
