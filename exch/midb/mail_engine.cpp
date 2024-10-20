@@ -1692,6 +1692,12 @@ static const char *spfid_to_name(unsigned int z)
 	}
 }
 
+/**
+ * @pstmt:        prepared statement for lookup of folder names
+ *                (re-uses in-memory copy of folder list)
+ * @folder_id:    inspect this folder
+ * @encoded_name: folder path; encoded for use within midb
+ */
 static BOOL mail_engine_get_encoded_name(const syncfolder_list &map,
     uint64_t folder_id, char *encoded_name) try
 {
@@ -1780,7 +1786,12 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 	}
 	exmdb_client::unload_table(dir, table_id);
 
-	/* funnel everything into an indexed structure */
+	/*
+	 * Step 1: Avoid making too many exmdb requests and just take a
+	 * "snapshot" of the entire folder list for faster lookup. The folder
+	 * list remains "flat" in the sense that we remember PR_DISPLAY_NAME
+	 * and not PR_FOLDER_PATH.
+	 */
 	syncfolder_list syncfolderlist;
 	for (size_t i = 0; i < rows.count; ++i) {
 		auto num = rows.pparray[i]->get<const uint64_t>(PidTagFolderId);
@@ -1829,7 +1840,10 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 	if (ret != SQLITE_OK)
 		/* ignore */;
 
-	/* start populating midb.sqlite3 */
+	/*
+	 * Step 2: Now iterate over the in-memory folder list and synchronize
+	 * contents from exmdb to midb.
+	 */
 	auto pstmt1 = gx_sql_prep(pidb->psqlite, "SELECT folder_id, parent_fid, "
 	              "commit_max, name FROM folders WHERE folder_id=?");
 	if (pstmt1 == nullptr)
@@ -1892,7 +1906,10 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 	pstmt1.finalize();
 	pstmt2.finalize();
 
-	/* Delete outdated midb.sqlite3 folders */
+	/*
+	 * Step 3: Loop over all folders in midb.sqlite3 and see if some
+	 * are gone (synchronize deletions).
+	 */
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM folders");
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
