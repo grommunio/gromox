@@ -2002,22 +2002,22 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 		if (b_changed && !exmdb_client::set_message_read_state(pstore->get_dir(),
 		    username, message_id, tmp_byte, &read_cn))
 			return ecError;
-		if (b_notify) {
-			if (!exmdb_client::get_message_brief(pstore->get_dir(),
-			    pinfo->cpid, message_id, &pbrief))
-				return ecError;
-			if (pbrief != nullptr)
-				common_util_notify_receipt(pstore->get_account(),
-					NOTIFY_RECEIPT_READ, pbrief);
-			propvals.count = 2;
-			propvals.ppropval = propval_buff;
-			propval_buff[0].proptag = PR_READ_RECEIPT_REQUESTED;
-			propval_buff[0].pvalue = deconst(&fake_false);
-			propval_buff[1].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
-			propval_buff[1].pvalue = deconst(&fake_false);
-			exmdb_client::set_message_properties(pstore->get_dir(), username,
-				CP_ACP, message_id, &propvals, &problems);
-		}
+		if (!b_notify)
+			continue;
+		if (!exmdb_client::get_message_brief(pstore->get_dir(),
+		    pinfo->cpid, message_id, &pbrief))
+			return ecError;
+		if (pbrief != nullptr)
+			common_util_notify_receipt(pstore->get_account(),
+				NOTIFY_RECEIPT_READ, pbrief);
+		propvals.count = 2;
+		propvals.ppropval = propval_buff;
+		propval_buff[0].proptag = PR_READ_RECEIPT_REQUESTED;
+		propval_buff[0].pvalue = deconst(&fake_false);
+		propval_buff[1].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
+		propval_buff[1].pvalue = deconst(&fake_false);
+		exmdb_client::set_message_properties(pstore->get_dir(), username,
+			CP_ACP, message_id, &propvals, &problems);
 	}
 	return ecSuccess;
 }
