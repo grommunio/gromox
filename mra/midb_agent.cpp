@@ -103,7 +103,6 @@ static int get_mail_flags(const char *path, const std::string &folder, const std
 static int copy_mail(const char *path, const std::string &src_folder, const std::string &src_mid, const std::string &dst_folder, std::string &dst_mid, int *perrno);
 static int imap_search(const char *path, const std::string &folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);
 static int imap_search_uid(const char *path, const std::string &folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);
-static BOOL check_full(const char *path);
 
 static constexpr unsigned int POLLIN_SET =
 	POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR | POLLNVAL;
