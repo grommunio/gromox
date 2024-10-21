@@ -416,6 +416,11 @@ E(3288, "could not initialize recipient list: out of memory");
 E(3289, "could not create recipient: out of memory");
 E(3290, "missing e-mail address for recipient");
 E(3291, "failed to set recipient: out of memory");
+E(3292, "erroneous TIMEZONEDEFINITION");
+E(3293, "Timezone definition too large");
+E(3294, "Failed to generate timezone definition");
+inline std::string E3295(int year) {return fmt::format("E-3295: No active rule for year {} in the timezone definition", year);}
+
 
 #undef E
 }

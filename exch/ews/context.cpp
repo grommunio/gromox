@@ -310,6 +310,77 @@ void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 	recur_pat.enddate = rop_util_unix_to_rtime(enddate);
 }
 
+/**
+ * @brief Return the active timezone definition rule for a given year
+ *
+ * @param tzdef
+ * @param year
+ * @return TZRULE*
+ */
+TZRULE* active_rule_for_year(const TIMEZONEDEFINITION* tzdef, const int year)
+{
+	for(auto i = tzdef->crules - 1; i >= 0; --i)
+	{
+		if(((tzdef->prules[i].flags & TZRULE_FLAG_EFFECTIVE_TZREG) &&
+		     tzdef->prules[i].year <= year) ||
+		    tzdef->prules[i].year == year)
+			return &tzdef->prules[i];
+	}
+	return nullptr;
+}
+
+/**
+ * @brief Calculate the start of daylight saving oder standard time
+ *
+ * @param year
+ * @param ruledate
+ * @return time_t
+ */
+time_t mktime_dststd_start(const int year, const SYSTEMTIME* ruledate)
+{
+	struct tm tempTm;
+	tempTm.tm_year = year;
+	tempTm.tm_mon = ruledate->month - 1;
+	tempTm.tm_mday = ical_get_dayofmonth(year + 1900, ruledate->month, ruledate->day == 5 ? -1 : ruledate->day, ruledate->dayofweek);
+	tempTm.tm_hour = ruledate->hour;
+	tempTm.tm_min = ruledate->minute;
+	tempTm.tm_sec = ruledate->second;
+	tempTm.tm_isdst = 0;
+	return mktime(&tempTm);
+}
+
+/**
+ * @brief Calculate the offset from UTC from the timezone definition
+ *
+ * @param tzdef
+ * @param startTime
+ */
+int64_t offset_from_tz(const TIMEZONEDEFINITION* tzdef, const time_t startTime)
+{
+	int64_t offset = 0;
+	struct tm startDateUtc;
+	gmtime_r(&startTime, &startDateUtc);
+	int startDateYear = startDateUtc.tm_year + 1900;
+	TZRULE *rule = active_rule_for_year(tzdef, startDateYear);
+	if(rule == nullptr)
+		throw EWSError::TimeZone(E3295(startDateYear));
+
+	offset = rule->bias;
+	if(rule->standarddate.month != 0 && rule->daylightdate.month != 0)
+	{
+		time_t stdStartTime = mktime_dststd_start(startDateUtc.tm_year, &rule->standarddate);
+		time_t dstStartTime = mktime_dststd_start(startDateUtc.tm_year, &rule->daylightdate);
+		auto utcStartTime = startTime + offset * 60;
+
+		if((dstStartTime <= stdStartTime && utcStartTime >= dstStartTime && utcStartTime < stdStartTime) || // northern hemisphere dst
+			(dstStartTime > stdStartTime && (utcStartTime < stdStartTime || utcStartTime > dstStartTime))) // southern hemisphere dst
+		{
+			offset += rule->daylightbias;
+		}
+	}
+	return offset;
+}
+
 } // Anonymous namespace
 
 namespace detail
@@ -1680,17 +1751,15 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	// TODO: goid
 	if(!item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Appointment")});
+	int64_t startOffset = 0, endOffset = 0;
+	time_t startTime = 0, endTime = 0;
 	if(item.Start) {
-		auto start = EWSContext::construct<uint64_t>(item.Start.value().toNT());
-		shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
-		shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
-		shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
+		startTime = clock::to_time_t(item.Start.value().time);
+		startOffset = std::chrono::duration_cast<std::chrono::minutes>(item.Start.value().offset).count();
 	}
 	if(item.End) {
-		auto end = EWSContext::construct<uint64_t>(item.End.value().toNT());
-		shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
-		shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
-		shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
+		endTime = clock::to_time_t(item.End.value().time);
+		endOffset = std::chrono::duration_cast<std::chrono::minutes>(item.Start.value().offset).count();
 	}
 	// TODO handle no start and/or end times
 
@@ -1886,6 +1955,53 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		shape.write(NtClipEnd, TAGGED_PROPVAL{PT_SYSTIME, clipend});
 	}
 	shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(isrecurring)});
+
+	uint32_t tag;
+	if((tag = shape.tag(NtCalendarTimeZone)))
+	{
+		const TAGGED_PROPVAL* caltz = shape.writes(NtCalendarTimeZone);
+		if(caltz)
+		{
+			auto buf = ianatz_to_tzdef(static_cast<char*>(caltz->pvalue));
+			if(buf != nullptr)
+			{
+				size_t len = buf->size();
+				if(len > std::numeric_limits<uint32_t>::max())
+					throw InputError(E3293);
+				BINARY* temp_bin = construct<BINARY>(BINARY{uint32_t(buf->size()),
+					{reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
+				shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
+					TAGGED_PROPVAL{PT_BINARY, temp_bin});
+				shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
+					TAGGED_PROPVAL{PT_BINARY, temp_bin});
+
+				// If the offsets of start or end times are not set, probably
+				// the client didn't send the offset information in date tags.
+				// Try to get the offset from the timezone definition.
+				if(startOffset == 0 || endOffset == 0)
+				{
+					EXT_PULL ext_pull;
+					TIMEZONEDEFINITION tzdef;
+					ext_pull.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+					if(ext_pull.g_tzdef(&tzdef) != EXT_ERR_SUCCESS)
+						throw EWS::DispatchError(E3294);
+					startOffset = endOffset = offset_from_tz(&tzdef, startTime);
+				}
+				item.Start.value().offset = std::chrono::minutes(startOffset);
+				item.End.value().offset = std::chrono::minutes(endOffset);
+			}
+		}
+	}
+	// The named prop tags are not available in the shape at this point, so set
+	// values of them at the end.
+	auto start = EWSContext::construct<uint64_t>(rop_util_unix_to_nttime(startTime + startOffset * 60));
+	shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
+	shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
+	shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
+	auto end = EWSContext::construct<uint64_t>(rop_util_unix_to_nttime(endTime + endOffset * 60));
+	shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
+	shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
+	shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
 }
 
 /**
