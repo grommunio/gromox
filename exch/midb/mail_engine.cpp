@@ -2156,36 +2156,6 @@ static void *midbme_scanwork(void *param)
 }
 
 /*
- * Is the mailbox full?
- * Request:
- * 	M-CKFL <store-dir>
- * Response:
- * 	TRUE <0|1>
- */
-static int mail_engine_mckfl(int argc, char **argv, int sockd)
-{
-	uint64_t quota;
-	static constexpr proptag_t tmp_proptags[] = {PR_PROHIBIT_RECEIVE_QUOTA, PR_MESSAGE_SIZE_EXTENDED};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptags), deconst(tmp_proptags)};
-	TPROPVAL_ARRAY propvals;
-	
-	if (!exmdb_client::get_store_properties(argv[1], CP_ACP,
-	    &proptags, &propvals))
-		return MIDB_E_MDB_GETSTOREPROPS;
-	auto ptotal = propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
-	auto pmax   = propvals.get<uint32_t>(PR_PROHIBIT_RECEIVE_QUOTA);
-	if (NULL != ptotal && NULL != pmax) {
-		quota = *pmax;
-		quota *= 1024;
-		mlog(LV_DEBUG, "D-1682: storesize %llu <=> quota(%xh) %llu bytes",
-			LLU{*ptotal}, PR_PROHIBIT_RECEIVE_QUOTA, LLU{quota});
-		if (*ptotal >= quota)
-			return cmd_write(sockd, "TRUE 1\r\n");
-	}
-	return cmd_write(sockd, "TRUE 0\r\n");
-}
-
-/*
  * Reset the inactivity timer on midb.sqlite.
  * What a stupid command name.
  *
@@ -4143,7 +4113,6 @@ static constexpr struct {
 	{"M-REMF", {mail_engine_mremf, 3}},
 	{"M-RENF", {mail_engine_mrenf, 4}},
 	{"M-ENUM", {mail_engine_menum, 2}},
-	{"M-CKFL", {mail_engine_mckfl, 2}},
 	{"M-PING", {mail_engine_mping, 2}},
 	{"P-UNID", {mail_engine_punid, 4}},
 	{"P-FDDT", {mail_engine_pfddt, 3}},

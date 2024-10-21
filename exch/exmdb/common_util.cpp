@@ -805,7 +805,6 @@ BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
 	if (!cu_get_properties(MAPI_STORE, 0, CP_ACP, psqlite,
 	    &proptags, &propvals))
 		return FALSE;
-	/* Another checking point is in midb, CKFL */
 	auto ptotal = propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	auto qv_kb = propvals.get<uint32_t>(qtag);
 	if (ptotal == nullptr || qv_kb == nullptr)
