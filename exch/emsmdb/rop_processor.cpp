@@ -200,7 +200,7 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	}
 	if (emsmdb_max_obh_per_session > 0 &&
 	    plogitem->phash.size() >= emsmdb_max_obh_per_session) {
-		mlog(LV_NOTICE, "W-2357: \"%s\" accessing \"%s\": limit exchange_emsmdb.cfg:max_obh_per_session (%u) reached",
+		mlog(LV_NOTICE, "W-2357: \"%s\" accessing \"%s\": limit exchange_emsmdb.cfg:emsmdb_max_obh_per_session (%u) reached",
 			eiuser, target, emsmdb_max_obh_per_session);
 		return -EMFILE;
 	}
