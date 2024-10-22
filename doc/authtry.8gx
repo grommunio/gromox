@@ -1,0 +1,36 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2024 grommunio GmbH
+.TH authtry 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+\fBauthtry\fP \(em Diagnostic utility for debugging authentication
+.SH Synopsis
+.PP
+\fBPASS='\fP\fIxyz!\fP\fB' /usr/libexec/gromox/authtry \-u\fP \fIabc@example.com\fP
+.PP
+\fBPASS='\fP\fIxyz!\fP\fB' /usr/libexec/gromox/authtry \-L\fP [\fB\-Z\fP]
+[\fB\-H\fP \fIldap://localhost/\fP] \fB\-u\fP \fIcn=abc,o=example\fP
+.SH Description
+.PP
+\fBauthtry\fP can be used to debug the user authentication procedure without
+having to use gdb to attach to, and pause, a running daemon. The password is to
+be conveyed via an environment variable, PASS. Note that PASS being unset is
+distinct from PASS being the zero-length string; both modes are supported.
+.SH Options
+.TP
+\fB\-H\fP \fIuri\fP
+LDAP server to connect to, in URI form. If not specified, the libldap default
+is used.
+.TP
+\fB\-L\fP
+Bypass the normal user lookup via authmgr(4gx), bypass user metadata lookup in
+MySQL, and only perform an LDAP bind. In this sense, authtry is similar to
+ldapsearch(1), but without performing any search.
+.TP
+\fB\-Z\fP
+Perform LDAP STARTTLS (only meaningful when combined with \-L).
+.TP
+\fB\-u\fP \fIusername/dn\fP
+The Gromox username (usually \fIuser@domain\fP form), or, in case \-H is used,
+an LDAP Distinguished Name.
+.SH See also
+\fBgromox\fP(7)

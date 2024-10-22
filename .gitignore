@@ -86,6 +86,7 @@ Makefile.in
 /tests/*.log
 /tests/*.trs
 /test-suite.log
+/tools/authtry
 /tools/eidprint
 /tools/textmapquery
 /tools/tzdump

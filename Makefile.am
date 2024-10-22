@@ -10,7 +10,7 @@ AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la ${program_plugins}
 noinst_LTLIBRARIES = libphp_mapi.la
-pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/eidprint tools/textmapquery
+pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/authtry tools/eidprint tools/textmapquery
 pkglib_LTLIBRARIES = libmapi4zf.la
 version_sc_SYFLAGS = -Wl,--version-script=${srcdir}/default.sym
 default_SYFLAGS = ${version_sc_SYFLAGS${NO_VSYM}}
@@ -288,6 +288,8 @@ tests_vcard_SOURCES = tests/vcard.cpp
 tests_vcard_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 tests_zendfake_SOURCES = tests/zendfake.cpp
 tests_zendfake_LDADD = libmapi4zf.la
+tools_authtry_SOURCES = tools/authtry.cpp
+tools_authtry_LDADD = ${libHX_LIBS} libgromox_auth.la libgromox_authz.la libgromox_common.la libgxs_mysql_adaptor.la
 tools_eidprint_SOURCES = tools/eidprint.cpp
 tools_eidprint_LDADD = libgromox_common.la libgromox_mapi.la
 tools_textmapquery_SOURCES = tools/textmapquery.cpp
@@ -297,7 +299,7 @@ tools_tzdump_LDADD = ${libHX_LIBS} libgromox_common.la
 
 dist_man_MANS = \
 	doc/alias_resolve.4gx \
-	doc/authmgr.4gx doc/autodiscover.4gx \
+	doc/authmgr.4gx doc/authtry.8gx doc/autodiscover.4gx \
 	doc/cgkrepair.8gx doc/gromox-compress.8 \
 	doc/delivery.8gx doc/delivery-queue.8gx doc/dnsbl_filter.4gx \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
