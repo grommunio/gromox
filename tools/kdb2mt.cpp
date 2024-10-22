@@ -1045,9 +1045,9 @@ static void do_namemap(driver &drv)
 		const GUID &guid;
 		unsigned int lid_min, lid_max, base;
 	} hardmapped_nprops[] = {
-		{PSETID_Address,          0x8000, 0x80EF, 0x80B0},
-		{PSETID_Task,             0x8100, 0x813F, 0x8070},
 		{PSETID_Appointment,      0x8200, 0x826F, 0x8000},
+		{PSETID_Task,             0x8100, 0x813F, 0x8070},
+		{PSETID_Address,          0x8000, 0x80EF, 0x80B0},
 		{PSETID_Common,           0x8500, 0x85FF, 0x81A0},
 		{PSETID_Log,              0x8700, 0x871F, 0x82A0},
 		{PSETID_BusinessCardView, 0x8800, 0x881F, 0x82C0},
