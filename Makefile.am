@@ -12,13 +12,7 @@ lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_email.la libgr
 noinst_LTLIBRARIES = libphp_mapi.la
 pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/eidprint tools/textmapquery
 pkglib_LTLIBRARIES = libmapi4zf.la
-if WITH_GNU_LD
-platform_LDVSC = -Wl,--version-script=
-endif
-if WITH_SUN_LD
-platform_LDVSC = -Wl,-M,
-endif
-version_sc_SYFLAGS = ${platform_LDVSC}${srcdir}/default.sym
+version_sc_SYFLAGS = -Wl,--version-script=${srcdir}/default.sym
 default_SYFLAGS = ${version_sc_SYFLAGS${NO_VSYM}}
 plugin_LDFLAGS = -avoid-version -module
 pamlibdir = ${libdir}/security
