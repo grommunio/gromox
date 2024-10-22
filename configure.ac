@@ -10,8 +10,6 @@ m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 AC_PROG_CXX
 AM_CONDITIONAL([WITH_GNU_LD], [test "$with_gnu_ld" = yes])
-AS_IF([test -n "$LD" && $LD -z help >/dev/null 2>/dev/null],
-	[AC_MSG_ERROR([SUN ld is not supported; use \`configure LD=gld\`])])
 
 saved_CPPFLAGS="$CPPFLAGS"
 saved_CFLAGS="$CFLAGS"
@@ -62,18 +60,24 @@ AC_ARG_WITH([asan], AS_HELP_STRING([--with-asan], [Activate Address Sanitizer]),
 	my_LDFLAGS="$my_LDFLAGS -fsanitize=address"
 	])
 dnl fvis is non-conforming and (rightfully) triggers ubsan warnings;
-dnl hence we disable fvis as a workaround.
+dnl Only attempt visibility/ODR tricks when sanitizers are deactivated
+dnl and when a good linker is available.
 NO_VSYM=""
-AC_ARG_WITH([ubsan], AS_HELP_STRING([--with-ubsan], [Activate Undefined Behavior Sanitizer]),
-	[
+AC_ARG_WITH([ubsan], AS_HELP_STRING([--with-ubsan], [Activate Undefined Behavior Sanitizer]), [
 	my_CFLAGS="$my_CFLAGS -fsanitize=undefined"
 	my_CXXFLAGS="$my_CXXFLAGS -fsanitize=undefined"
 	my_LDFLAGS="$my_CXXFLAGS -fsanitize=undefined"
-	NO_VSYM=1],
-	[
+	NO_VSYM=1
+])
+AS_IF([test -n "$LD" && $LD -z help >/dev/null 2>/dev/null], [
+	with_sun_ld=yes
+	NO_VSYM=1
+], [with_sun_ld=no])
+AS_IF([test -z "$NO_VSYM"], [
 	my_CFLAGS="$my_CFLAGS -fvisibility=hidden"
 	my_CXXFLAGS="$my_CXXFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
-	])
+])
+AM_CONDITIONAL([WITH_SUN_LD], [test "$with_sun_ld" = yes])
 AC_SUBST([NO_VSYM])
 
 
@@ -204,16 +208,27 @@ dnl the "#define iconv_open libiconv_open" macro that some iconv
 dnl implementations have.
 dnl
 iconv_CPPFLAGS=""
+iconv_set=0
 AC_MSG_CHECKING([for library containing iconv_open])
-AC_LINK_IFELSE([AC_LANG_SOURCE([
-	#include <iconv.h>
-	int main() { iconv_open("", ""); return 0; }
-])], [
+for i in "" "-liconv"; do
+	LIBS="$LIBS $i"
+	AC_LINK_IFELSE([AC_LANG_SOURCE([
+		#include <iconv.h>
+		int main() { iconv_open("", ""); return 0; }
+	])], [
+		iconv_LIBS="$i"
+		iconv_set=1
+		break
+	])
+done
+LIBS="$saved_LIBS"
+AS_IF([test "$iconv_set" = 0], [
+	AC_MSG_RESULT([none found])
+	AC_MSG_ERROR([Could not locate a usable iconv_open])
+], [test -z "$iconv_LIBS"], [
 	AC_MSG_RESULT([none required])
-	iconv_LIBS=""
 ], [
-	AC_MSG_RESULT([-liconv])
-	iconv_LIBS="-liconv"
+	AC_MSG_RESULT([$iconv_LIBS])
 ])
 AC_SUBST([iconv_CPPFLAGS])
 AC_SUBST([iconv_LIBS])

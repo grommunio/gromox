@@ -73,9 +73,23 @@ the pre-built Gromox packages.
 The rest of the documentation assumes that Gromox was configured with
 ``--prefix=/usr --sysconfdir=/etc --localstatedir=/var``.
 
-(For FreeBSD/OpenBSD, you may need to pass extra parameters, e.g.
-``CPPFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib
---with-php-config=/usr/local/bin/php-config-8.1`` to configure.)
+FreeBSD/OpenBSD
+---------------
+
+.. code-block::
+
+	./configure CPPFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib --with-php-config=/usr/local/bin/php-config-8.2
+
+Solaris/OmniOSce
+----------------
+
+When OOCE is used, one may need to list some non-standard directories
+for everything to come together:
+
+.. code-block::
+
+	./configure LDFLAGS="-L/opt/ooce/lib/amd64"
+	LD_LIBRARY_PATH=/opt/ooce/lib/amd64:/opt/ooce/mariadb-10.11/lib/amd64 make
 
 ASAN notes
 ----------
