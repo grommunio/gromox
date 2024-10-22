@@ -82,7 +82,7 @@ static void terse_help()
 	fprintf(stderr, "Usage: gromox-exm2eml -u source@mbox.de msgid >dump.eml\n");
 }
 
-static std::vector<static_module> g_dfl_svc_plugins =
+static constexpr static_module g_dfl_svc_plugins[] =
 	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
 
 static constexpr cfg_directive exm2eml_cfg_defaults[] = {
@@ -131,7 +131,7 @@ int main(int argc, char **argv) try
 		fprintf(stderr, "Something went wrong with config files\n");
 		return EXIT_FAILURE;
 	}
-	service_init({g_config_file, std::move(g_dfl_svc_plugins), 1});
+	service_init({g_config_file, g_dfl_svc_plugins, 1});
 	auto cl_1 = make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");

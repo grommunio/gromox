@@ -7,6 +7,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <list>
+#include <span>
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
@@ -53,9 +54,9 @@ static unsigned int g_context_num;
 static thread_local HPM_PLUGIN *g_cur_plugin;
 static std::list<HPM_PLUGIN> g_plugin_list;
 static std::unique_ptr<HPM_CONTEXT[]> g_context_list;
-static std::vector<static_module> g_plugin_names;
+static std::span<const static_module> g_plugin_names;
 
-void hpm_processor_init(int context_num, std::vector<static_module> &&names)
+void hpm_processor_init(int context_num, std::span<const static_module> names)
 {
 	g_context_num = context_num;
 	g_plugin_names = std::move(names);
@@ -64,7 +65,7 @@ void hpm_processor_init(int context_num, std::vector<static_module> &&names)
 static BOOL hpm_processor_register_interface(
 	HPM_INTERFACE *pinterface)
 {
-	auto fn = g_cur_plugin->file_name.c_str();
+	auto fn = g_cur_plugin->file_name;
 	if (NULL == pinterface->preproc) {
 		mlog(LV_ERR, "http_processor: preproc of interface in %s cannot be NULL", fn);
 		return FALSE;
@@ -134,7 +135,7 @@ static void *hpm_processor_queryservice(const char *service, const char *rq,
 	for (const auto &nd : g_cur_plugin->list_reference)
 		if (nd.service_name == service)
 			return nd.service_addr;
-	auto fn = g_cur_plugin->file_name.c_str();
+	auto fn = g_cur_plugin->file_name;
 	ret_addr = service_query(service, fn, ti);
 	if (ret_addr == nullptr)
 		return NULL;
@@ -193,8 +194,7 @@ HPM_PLUGIN::~HPM_PLUGIN()
 {
 	PLUGIN_MAIN func;
 	auto pplugin = this;
-	if (pplugin->file_name.size() > 0)
-		mlog(LV_INFO, "http_processor: unloading %s", pplugin->file_name.c_str());
+	mlog(LV_INFO, "http_processor: unloading %s", pplugin->file_name);
 	func = (PLUGIN_MAIN)pplugin->lib_main;
 	if (func != nullptr && pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
@@ -202,16 +202,15 @@ HPM_PLUGIN::~HPM_PLUGIN()
 
 	/* free the reference list */
 	for (const auto &nd : list_reference)
-		service_release(nd.service_name.c_str(), pplugin->file_name.c_str());
+		service_release(nd.service_name.c_str(), pplugin->file_name);
 }
 
-static int hpm_processor_load_library(static_module &&mod)
+static int hpm_processor_load_library(const static_module &mod)
 {
 	HPM_PLUGIN plug;
 
 	plug.lib_main = mod.efunc;
-	plug.file_name = std::move(mod.path);
-	auto fake_path = plug.file_name.c_str();
+	plug.file_name = mod.path;
 	g_plugin_list.push_back(std::move(plug));
 	g_cur_plugin = &g_plugin_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
@@ -220,7 +219,7 @@ static int hpm_processor_load_library(static_module &&mod)
 	    g_cur_plugin->interface.proc == nullptr ||
 	    g_cur_plugin->interface.retr == nullptr) {
 		mlog(LV_ERR, "http_processor: error executing the plugin's init "
-			"function, or interface not registered in %s", fake_path);
+			"function, or interface not registered in %s", g_cur_plugin->file_name);
 		g_plugin_list.pop_back();
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXECUTEMAIN;
@@ -233,8 +232,8 @@ static int hpm_processor_load_library(static_module &&mod)
 int hpm_processor_run() try
 {
 	g_context_list = std::make_unique<HPM_CONTEXT[]>(g_context_num);
-	for (auto &&i : g_plugin_names) {
-		int ret = hpm_processor_load_library(std::move(i));
+	for (const auto &i : g_plugin_names) {
+		int ret = hpm_processor_load_library(i);
 		if (ret != PLUGIN_LOAD_OK)
 			return -1;
 	}

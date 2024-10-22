@@ -31,7 +31,7 @@
 using namespace gromox;
 
 static std::mutex g_svc_once;
-static std::vector<static_module> g_dfl_svc_plugins = {
+static constexpr static_module g_dfl_svc_plugins[] = {
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
 	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
 	{"libgromox_auth.so/mgr", SVC_authmgr},

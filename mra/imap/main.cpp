@@ -97,7 +97,7 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static std::vector<static_module> g_dfl_svc_plugins = {
+static constexpr static_module g_dfl_svc_plugins[] = {
 	{"libgxs_event_proxy.so", SVC_event_proxy},
 	{"libgxs_event_stub.so", SVC_event_stub},
 	{"libgxs_midb_agent.so", SVC_midb_agent},

@@ -10,6 +10,7 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <span>
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
@@ -121,7 +122,7 @@ static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unordered_map<int, ASYNC_NODE *> g_async_hash;
 static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
-static std::vector<static_module> g_plugin_names;
+static std::span<const static_module> g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
 	/* {8a885d04-1ceb-11c9-9fe8-08002b104860} */
 	{{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8}, {0x08,0x00,0x2b,0x10,0x48,0x60}}, 2};
@@ -130,7 +131,7 @@ static const SYNTAX_ID g_transfer_syntax_ndr64 =
 	/* {71710533-beba-4937-8319-b5dbef9ccc36} */
 	{{0x71710533, 0xbeba, 0x4937, {0x83, 0x19}, {0xb5,0xdb,0xef,0x9c,0xcc,0x36}}, 1};
 
-static int pdu_processor_load_library(static_module &&);
+static int pdu_processor_load_library(const static_module &);
 
 dcerpc_call::dcerpc_call() :
 	pkt(b_bigendian)
@@ -183,7 +184,7 @@ static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type
 
 void pdu_processor_init(int connection_num, const char *netbios_name,
     const char *dns_name, const char *dns_domain, BOOL header_signing,
-    size_t max_request_mem, std::vector<static_module> &&names)
+    size_t max_request_mem, const std::span<const static_module> &names)
 {
 	static constexpr unsigned int connection_ratio = 10;
 	union {
@@ -206,8 +207,8 @@ void pdu_processor_init(int connection_num, const char *netbios_name,
 
 int pdu_processor_run()
 {
-	for (auto &&i : g_plugin_names) {
-		int ret = pdu_processor_load_library(std::move(i));
+	for (const auto &i : g_plugin_names) {
+		int ret = pdu_processor_load_library(i);
 		if (ret != PLUGIN_LOAD_OK)
 			return -1;
 	}
@@ -2895,14 +2896,13 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	PLUGIN_MAIN func;
 	auto pplugin = this;
 	
-	if (pplugin->file_name.size() > 0)
-		mlog(LV_INFO, "pdu_processor: unloading %s", pplugin->file_name.c_str());
+	mlog(LV_INFO, "pdu_processor: unloading %s", pplugin->file_name);
 	func = (PLUGIN_MAIN)pplugin->lib_main;
 	if (func != nullptr && pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
 		func(PLUGIN_FREE, server_funcs);
 	for (const auto &nd : list_reference)
-		service_release(nd.service_name.c_str(), pplugin->file_name.c_str());
+		service_release(nd.service_name.c_str(), pplugin->file_name);
 }
 
 /* this function can also be invoked from hpm_plugins,
@@ -2966,7 +2966,7 @@ static void *pdu_processor_queryservice(const char *service, const char *rq,
 	for (const auto &nd : g_cur_plugin->list_reference)
 		if (nd.service_name == service)
 			return nd.service_addr;
-	auto fn = g_cur_plugin->file_name.c_str();
+	auto fn = g_cur_plugin->file_name;
 	ret_addr = service_query(service, fn, ti);
 	if (ret_addr == nullptr)
 		return NULL;
@@ -2991,13 +2991,12 @@ static void *pdu_processor_queryservice(const char *service, const char *rq,
  *		PLUGIN_FAIL_ALLOCNODE		fail to allocate node for plugin
  *		PLUGIN_FAIL_EXECUTEMAIN		main entry in plugin returns FALSE
  */
-static int pdu_processor_load_library(static_module &&mod)
+static int pdu_processor_load_library(const static_module &mod)
 {
 	PROC_PLUGIN plug;
 
 	plug.lib_main = mod.efunc;
 	plug.file_name = std::move(mod.path);
-	auto fake_path = plug.file_name.c_str();
 	g_plugin_list.push_back(std::move(plug));
 	g_cur_plugin = &g_plugin_list.back();
 	
@@ -3005,7 +3004,7 @@ static int pdu_processor_load_library(static_module &&mod)
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	if (!g_cur_plugin->lib_main(PLUGIN_INIT, server_funcs)) {
 		mlog(LV_ERR, "pdu_processor: error executing the plugin's init "
-			"function in %s", fake_path);
+			"function in %s", g_cur_plugin->file_name);
 		g_plugin_list.pop_back();
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXECUTEMAIN;

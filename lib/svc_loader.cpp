@@ -11,6 +11,7 @@
 #include <cstring>
 #include <list>
 #include <memory>
+#include <span>
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
@@ -59,14 +60,14 @@ struct SVC_PLUG_ENTITY : public gromox::generic_module {
 extern const char version_info_for_memory_dumps[];
 const char version_info_for_memory_dumps[] = "gromox " PACKAGE_VERSION;
 
-static int service_load_library(static_module &&);
+static int service_load_library(const static_module &);
 
 static std::string g_config_dir, g_data_dir;
 static std::list<SVC_PLUG_ENTITY> g_list_plug;
 static std::vector<std::shared_ptr<service_entry>> g_list_service;
 static thread_local SVC_PLUG_ENTITY *g_cur_plug;
 static unsigned int g_context_num;
-static std::vector<static_module> g_plugin_names;
+static std::span<const static_module> g_plugin_names;
 static const char *g_program_identifier;
 static SVC_PLUG_ENTITY g_system_image;
 static std::shared_ptr<config_file> g_config_file;
@@ -79,7 +80,7 @@ void service_init(service_init_param &&parm)
 {
 	g_context_num = parm.context_num;
 	g_config_file = std::move(parm.cfg);
-	g_plugin_names = std::move(parm.plugin_list);
+	g_plugin_names = parm.plugin_list;
 	g_program_identifier = parm.prog_id;
 }
 
@@ -107,8 +108,8 @@ int service_run_early() try
 	g_config_dir = znul(g_config_file->get_value("config_file_path"));
 	g_data_dir = znul(g_config_file->get_value("data_file_path"));
 
-	for (auto &&i : g_plugin_names) {
-		int ret = service_load_library(std::move(i));
+	for (const auto &i : g_plugin_names) {
+		int ret = service_load_library(i);
 		if (ret == PLUGIN_LOAD_OK) {
 			if (g_cur_plug == nullptr)
 				continue;
@@ -137,8 +138,7 @@ int service_run()
 			++it;
 			continue;
 		}
-		mlog(LV_ERR, "service: init of %s not successful",
-		        g_cur_plug->file_name.c_str());
+		mlog(LV_ERR, "service: init of %s not successful", znul(g_cur_plug->file_name));
 		it = g_list_plug.erase(it);
 		g_cur_plug = nullptr;
 		service_stop();
@@ -170,19 +170,18 @@ void service_stop()
  *      PLUGIN_FAIL_ALLOCNODE       fail to allocate memory for a node
  *      PLUGIN_FAIL_EXECUTEMAIN     error executing the plugin's init function
  */
-static int service_load_library(static_module &&mod)
+static int service_load_library(const static_module &mod)
 {
-	auto path = mod.path.c_str();
 	/* check whether the library is already loaded */
 	auto it = std::find_if(g_list_plug.cbegin(), g_list_plug.cend(),
-	          [&](const SVC_PLUG_ENTITY &p) { return p.file_name == mod.path; });
+	          [&](const SVC_PLUG_ENTITY &p) { return p.file_name == znul(mod.path); });
 	if (it != g_list_plug.cend()) {
-		mlog(LV_ERR, "%s: already loaded", path);
+		mlog(LV_ERR, "%s: already loaded", znul(mod.path));
 		return PLUGIN_ALREADY_LOADED;
 	}
 	SVC_PLUG_ENTITY plug;
 	plug.lib_main = mod.efunc;
-	plug.file_name = std::move(mod.path);
+	plug.file_name = mod.path;
 	g_list_plug.push_back(std::move(plug));
 	/*
 	 *  indicate the current lib node when plugin rigisters service
@@ -206,7 +205,7 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 	PLUGIN_MAIN func;
 	auto plib = this;
 	if (plib->ref_count > 0) try {
-		auto tx = "Unbalanced refcount on " + plib->file_name + ", still held by {";
+		auto tx = "Unbalanced refcount on "s + znul(plib->file_name) + ", still held by {";
 		for (auto &&s : plib->ref_holders) {
 			tx += std::move(s);
 			tx += ", ";
@@ -215,11 +214,11 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 		mlog(LV_NOTICE, "%s", tx.c_str());
 		return;
 	} catch (const std::bad_alloc &) {
-		mlog(LV_NOTICE, "Unbalanced refcount on %s + ENOMEM", plib->file_name.c_str());
+		mlog(LV_NOTICE, "Unbalanced refcount on %s + ENOMEM", znul(plib->file_name));
 		return;
 	}
-	if (plib->file_name.size() > 0)
-		mlog(LV_INFO, "service: unloading %s", plib->file_name.c_str());
+	if (plib->file_name != nullptr)
+		mlog(LV_INFO, "service: unloading %s", plib->file_name);
 	func = (PLUGIN_MAIN)plib->lib_main;
 	if (func != nullptr && plib->completed_init)
 		/* notify the plugin that it will be unloaded */

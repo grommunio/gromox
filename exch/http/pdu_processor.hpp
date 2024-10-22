@@ -1,6 +1,7 @@
 #pragma once
 #include <list>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -102,7 +103,7 @@ struct BLOB_NODE {
 	DATA_BLOB blob;
 };
 
-extern void pdu_processor_init(int connection_num, const char *netbios_name, const char *dns_name, const char *dns_domain, BOOL header_signing, size_t max_request_mem, std::vector<gromox::static_module> &&names);
+extern void pdu_processor_init(int connection_num, const char *netbios_name, const char *dns_name, const char *dns_domain, BOOL header_signing, size_t max_request_mem, const std::span<const gromox::static_module> &names);
 extern int pdu_processor_run();
 extern void pdu_processor_stop();
 extern std::unique_ptr<PDU_PROCESSOR> pdu_processor_create(const char *host, uint16_t tcp_port);

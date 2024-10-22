@@ -393,7 +393,7 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
-static std::vector<static_module> g_dfl_svc_plugins =
+static constexpr static_module g_dfl_svc_plugins[] =
 	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
 
 static int main(int argc, char **argv)

@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <span>
 #include <vector>
 #include <gromox/defs.h>
 #include <gromox/plugin.hpp>
@@ -40,11 +41,11 @@ extern void resource_free();
 extern int resource_run();
 extern void resource_stop();
 
-extern void transporter_init(const char *path, std::vector<gromox::static_module> &&names, unsigned int threads_min, unsigned int threads_max, unsigned int free_num, bool ignerr);
+extern void transporter_init(const char *path, const std::span<const gromox::static_module> &names, unsigned int threads_min, unsigned int threads_max, unsigned int free_num, bool ignerr);
 extern int transporter_run();
 extern void transporter_stop();
 extern void transporter_wakeup_one_thread();
-extern int transporter_load_library(gromox::static_module &&);
+extern int transporter_load_library(const gromox::static_module &);
 extern void transporter_trigger_all(enum plugin_op);
 
 extern std::shared_ptr<config_file> g_config_file;

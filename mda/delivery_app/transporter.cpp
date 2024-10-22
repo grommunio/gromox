@@ -12,6 +12,7 @@
 #include <memory>
 #include <mutex>
 #include <pthread.h>
+#include <span>
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
@@ -61,7 +62,7 @@ struct hook_plug_entity {
 	std::vector<hook_service_node> list_reference;
 	std::vector<hook_entry> list_hook;
 	PLUGIN_MAIN lib_main = nullptr;
-	std::string file_name;
+	const char *file_name = nullptr;
 	bool completed_init = false;
 };
 using HOOK_PLUG_ENTITY = hook_plug_entity;
@@ -83,7 +84,7 @@ struct THREAD_DATA {
 static void *transporter_queryservice(const char *service, const char *rq, const std::type_info &);
 
 static char				g_path[256];
-static std::vector<static_module> g_plugin_names;
+static std::span<const static_module> g_plugin_names;
 static std::string g_local_path;
 static HOOK_FUNCTION g_local_hook;
 static unsigned int g_threads_max, g_threads_min, g_free_num;
@@ -159,14 +160,13 @@ static constexpr struct dlfuncs server_funcs = {
 
 hook_plug_entity::~hook_plug_entity()
 {
-	if (file_name.size() > 0)
-		mlog(LV_INFO, "transporter: unloading %s", file_name.c_str());
+	mlog(LV_INFO, "transporter: unloading %s", file_name);
 	if (lib_main != nullptr && completed_init)
 		lib_main(PLUGIN_FREE, server_funcs);
 	g_hook_list.erase(std::remove_if(g_hook_list.begin(), g_hook_list.end(),
 		[this](const hook_entry *e) { return e->plib == this; }), g_hook_list.end());
 	for (const auto &nd : list_reference)
-		service_release(nd.service_name.c_str(), file_name.c_str());
+		service_release(nd.service_name.c_str(), file_name);
 }
 
 /*
@@ -176,12 +176,12 @@ hook_plug_entity::~hook_plug_entity()
  *		threads_num				threads number to be created
  *		free_num				free contexts number for hooks to throw out
  */
-void transporter_init(const char *path, std::vector<static_module> &&names,
+void transporter_init(const char *path, const std::span<const static_module> &names,
     unsigned int threads_min, unsigned int threads_max, unsigned int free_num,
     bool ignerr)
 {
 	gx_strlcpy(g_path, path, std::size(g_path));
-	g_plugin_names = std::move(names);
+	g_plugin_names = names;
 	g_local_path.clear();
 	g_notify_stop = false;
 	g_threads_min = threads_min;
@@ -219,8 +219,8 @@ int transporter_run()
 		g_free_list.push_back(&g_free_ptr[i]);
 	}
 
-	for (auto &&i : g_plugin_names) {
-		int ret = transporter_load_library(std::move(i));
+	for (const auto &i : g_plugin_names) {
+		int ret = transporter_load_library(i);
 		if (ret != PLUGIN_LOAD_OK)
 			return -7;
 	}
@@ -488,13 +488,11 @@ static void *dxp_scanwork(void *arg)
  *		PLUGIN_FAIL_ALLOCNODE		fail to allocate node for plugin
  *		PLUGIN_FAIL_EXECUTEMAIN		main entry in plugin returns FALSE
  */
-int transporter_load_library(static_module &&mod) try
+int transporter_load_library(const static_module &mod) try
 {
-	auto path = mod.path.c_str();
-
 	/* check whether the plugin is same as local or remote plugin */
 	if (g_local_path == mod.path) {
-		mlog(LV_ERR, "transporter: %s is already loaded", path);
+		mlog(LV_ERR, "transporter: %s is already loaded", mod.path);
 		return PLUGIN_ALREADY_LOADED;
 	}
 	
@@ -502,20 +500,19 @@ int transporter_load_library(static_module &&mod) try
 	auto it = std::find_if(g_lib_list.cbegin(), g_lib_list.cend(),
 	          [&](const hook_plug_entity &p) { return p.file_name == mod.path; });
 	if (it != g_lib_list.cend()) {
-		mlog(LV_ERR, "transporter: %s is already loaded", path);
+		mlog(LV_ERR, "transporter: %s is already loaded", mod.path);
 		return PLUGIN_ALREADY_LOADED;
 	}
 
 	hook_plug_entity plug;
 	plug.lib_main = mod.efunc;
-	plug.file_name = std::move(mod.path);
-	path = plug.file_name.c_str();
+	plug.file_name = mod.path;
 	g_lib_list.push_back(std::move(plug));
 	g_cur_lib = &g_lib_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	if (!g_cur_lib->lib_main(PLUGIN_INIT, server_funcs)) {
 		mlog(LV_ERR, "transporter: error executing the plugin's init function "
-                "in %s", path);
+			"in %s", g_cur_lib->file_name);
 		g_cur_lib = NULL;
 		g_lib_list.pop_back();
 		return PLUGIN_FAIL_EXECUTEMAIN;
@@ -538,7 +535,7 @@ static void *transporter_queryservice(const char *service,
 	for (auto &nd : g_cur_lib->list_reference)
 		if (nd.service_name == service)
 			return nd.service_addr;
-	auto fn = g_cur_lib->file_name.c_str();
+	auto fn = g_cur_lib->file_name;
 	auto ret_addr = service_query(service, fn, ti);
     if (NULL == ret_addr) {
         return NULL;

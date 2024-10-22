@@ -125,17 +125,23 @@ struct service_node {
 	std::string service_name;
 };
 
+/**
+ * @path: can be nullptr in case of g_system_image
+ */
 struct GX_EXPORT static_module {
-	std::string path;
-	PLUGIN_MAIN efunc;
+	const char *path = nullptr;
+	PLUGIN_MAIN efunc = nullptr;
 };
 
+/**
+ * @file_name: can be nullptr in case of g_system_image
+ */
 struct GX_EXPORT generic_module {
 	generic_module() = default;
 	generic_module(generic_module &&) noexcept;
 	void operator=(generic_module &&) noexcept = delete;
 
-	std::string file_name;
+	const char *file_name = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
 	bool completed_init = false;
 };

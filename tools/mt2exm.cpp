@@ -47,7 +47,7 @@ static unsigned int g_oexcl = 1, g_repeat_iter = 1;
 static unsigned int g_do_delivery, g_skip_notif, g_skip_rules, g_twostep;
 static unsigned int g_continuous_mode, g_mrautoproc;
 
-static std::vector<static_module> g_dfl_svc_plugins = {
+static constexpr static_module g_dfl_svc_plugins[] = {
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
 	{"libgxs_ruleproc.so", SVC_ruleproc},
 };
@@ -442,7 +442,7 @@ int main(int argc, char **argv) try
 		fprintf(stderr, "mt2exm: -B option has no effect when -D is used\n");
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
-	service_init({nullptr, std::move(g_dfl_svc_plugins), 1});
+	service_init({nullptr, g_dfl_svc_plugins, 1});
 	auto cl_1 = make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");

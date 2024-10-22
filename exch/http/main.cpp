@@ -53,19 +53,19 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static std::vector<static_module> g_dfl_hpm_plugins = {
+static constexpr static_module g_dfl_hpm_plugins[] = {
 	{"libgxh_ews.so", HPM_ews},
 	{"libgxh_mh_emsmdb.so", HPM_mh_emsmdb},
 	{"libgxh_mh_nsp.so", HPM_mh_nsp},
 	{"libgxh_oxdisco.so", HPM_oxdisco},
 	{"libgxh_oab.so", HPM_oab},
 };
-static std::vector<static_module> g_dfl_proc_plugins = {
+static constexpr static_module g_dfl_proc_plugins[] = {
 	{"libgxp_exchange_emsmdb.so", PROC_exchange_emsmdb},
 	{"libgxp_exchange_nsp.so", PROC_exchange_nsp},
 	{"libgxp_exchange_rfr.so", PROC_exchange_rfr},
 };
-static std::vector<static_module> g_dfl_svc_plugins = {
+static constexpr static_module g_dfl_svc_plugins[] = {
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
 	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
 	{"libgromox_auth.so/mgr", SVC_authmgr},
@@ -302,7 +302,8 @@ int main(int argc, char **argv)
 	}
 
 	filedes_limit_bump(gxconfig->get_ll("http_fd_limit"));
-	service_init({g_config_file, g_dfl_svc_plugins, context_num, "http"});
+	service_init({g_config_file, g_dfl_svc_plugins,
+		context_num, "http"});
 	auto cleanup_6 = make_scope_exit(service_stop);
 	if (!service_register_service("ndr_stack_alloc",
 	    reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc),
@@ -332,14 +333,14 @@ int main(int argc, char **argv)
 
 	pdu_processor_init(context_num, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem,
-		std::move(g_dfl_proc_plugins));
+		g_dfl_proc_plugins);
 	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
 	if (0 != pdu_processor_run()) {
 		mlog(LV_ERR, "system: could not start PDU processor");
 		return EXIT_FAILURE;
 	}
 
-	hpm_processor_init(context_num, std::move(g_dfl_hpm_plugins));
+	hpm_processor_init(context_num, g_dfl_hpm_plugins);
 	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
 	if (0 != hpm_processor_run()) {
 		mlog(LV_ERR, "system: could not start HPM processor");
