@@ -1062,7 +1062,7 @@ static void do_namemap(driver &drv)
 	for (const auto &row : hardmapped_nprops) {
 		pn.kind = MNID_ID;
 		pn.guid = row.guid;
-		for (pn.lid = row.lid_min; pn.lid < row.lid_max; ++pn.lid)
+		for (pn.lid = row.lid_min; pn.lid <= row.lid_max; ++pn.lid)
 			static_namedprop_map.emplace(pn.lid - row.lid_min + row.base, std::move(pn));
 	}
 	do_namemap_table(drv);
