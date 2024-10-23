@@ -780,14 +780,14 @@ EWSPlugin::ExmdbInstance::~ExmdbInstance()
  * @param      uname   Name of creating user
  * @param      plugin  Parent plugin
  */
-EWSPlugin::Subscription::Subscription(const char* uname, const EWSPlugin& plugin) :
+EWSPlugin::SubManager::SubManager(const char *uname, const EWSPlugin &plugin) :
 	ews(plugin), username(uname)
 {}
 
 /**
  * @brief      Cancel subscription
  */
-EWSPlugin::Subscription::~Subscription()
+EWSPlugin::SubManager::~SubManager()
 {
 	std::lock_guard ss_lock(ews.subscriptionLock);
 	for(const auto& subKey : subscriptions)
@@ -815,76 +815,83 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 		return;
 	detail::SubscriptionKey subKey = it->second;
 	lock.unlock();
-	sptr<Subscription> sub;
+	sptr<SubManager> mgr;
 	try {
-		sub = std::get<sptr<Subscription>>(cache.get(subKey));
+		mgr = std::get<sptr<SubManager>>(cache.get(subKey));
 	} catch (...) { // Key not found or type error
 	}
-	if(!sub)
+	if (mgr == nullptr)
 		return;
-	lock = std::unique_lock(sub->lock);
+	lock = std::unique_lock(mgr->lock);
 	sTimePoint now(clock::now());
-	auto mkFid = [&](uint64_t fid){return tFolderId(mkFolderEntryId(sub->mailboxInfo, rop_util_make_eid_ex(1, fid)).serialize());};
-	auto mkMid = [&](uint64_t fid, uint64_t mid){return tItemId(mkMessageEntryId(sub->mailboxInfo, rop_util_make_eid_ex(1, fid), rop_util_make_eid_ex(1, mid)).serialize());};
+	auto mkFid = [&](uint64_t fid) {
+		return tFolderId(mkFolderEntryId(mgr->mailboxInfo,
+		       rop_util_make_eid_ex(1, fid)).serialize());
+	};
+	auto mkMid = [&](uint64_t fid, uint64_t mid) {
+		return tItemId(mkMessageEntryId(mgr->mailboxInfo,
+		       rop_util_make_eid_ex(1, fid),
+		       rop_util_make_eid_ex(1, mid)).serialize());
+	};
 	switch(notification->type)
 	{
 	case db_notify_type::new_mail: {
 		const DB_NOTIFY_NEW_MAIL* evt = static_cast<DB_NOTIFY_NEW_MAIL*>(notification->pdata);
-		sub->events.emplace_back(aNewMailEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id)));
+		mgr->events.emplace_back(aNewMailEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id)));
 		break;
 	}
 	case db_notify_type::folder_created: {
 		const DB_NOTIFY_FOLDER_CREATED* evt = static_cast<DB_NOTIFY_FOLDER_CREATED*>(notification->pdata);
-		sub->events.emplace_back(aCreatedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id)));
+		mgr->events.emplace_back(aCreatedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id)));
 		break;
 	}
 	case db_notify_type::message_created: {
 		const DB_NOTIFY_MESSAGE_CREATED* evt = static_cast<DB_NOTIFY_MESSAGE_CREATED*>(notification->pdata);
-		sub->events.emplace_back(aCreatedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id)));
+		mgr->events.emplace_back(aCreatedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id)));
 		break;
 	}
 	case db_notify_type::folder_deleted: {
 		const DB_NOTIFY_FOLDER_DELETED* evt = static_cast<DB_NOTIFY_FOLDER_DELETED*>(notification->pdata);
-		sub->events.emplace_back(aDeletedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id)));
+		mgr->events.emplace_back(aDeletedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id)));
 		break;
 	}
 	case db_notify_type::message_deleted: {
 		const DB_NOTIFY_MESSAGE_DELETED* evt = static_cast<DB_NOTIFY_MESSAGE_DELETED*>(notification->pdata);
-		sub->events.emplace_back(aDeletedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id)));
+		mgr->events.emplace_back(aDeletedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id)));
 		break;
 	}
 	case db_notify_type::folder_modified: {
 		const DB_NOTIFY_FOLDER_MODIFIED* evt = static_cast<DB_NOTIFY_FOLDER_MODIFIED*>(notification->pdata);
-		sub->events.emplace_back(tModifiedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id)));
+		mgr->events.emplace_back(tModifiedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id)));
 		break;
 	}
 	case db_notify_type::message_modified: {
 		const DB_NOTIFY_MESSAGE_MODIFIED* evt = static_cast<DB_NOTIFY_MESSAGE_MODIFIED*>(notification->pdata);
-		sub->events.emplace_back(tModifiedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id)));
+		mgr->events.emplace_back(tModifiedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id)));
 		break;
 	}
 	case db_notify_type::folder_moved: {
 		const DB_NOTIFY_FOLDER_MVCP* evt = static_cast<DB_NOTIFY_FOLDER_MVCP*>(notification->pdata);
-		sub->events.emplace_back(aMovedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id), static_cast<aOldFolderId&&>(mkFid(evt->old_folder_id)),
+		mgr->events.emplace_back(aMovedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id), static_cast<aOldFolderId&&>(mkFid(evt->old_folder_id)),
 		                                     static_cast<aOldFolderId&&>(mkFid(evt->old_parent_id))));
 		break;
 	}
 	case db_notify_type::message_moved: {
 		const DB_NOTIFY_MESSAGE_MVCP* evt = static_cast<DB_NOTIFY_MESSAGE_MVCP*>(notification->pdata);
-		sub->events.emplace_back(aMovedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id),
+		mgr->events.emplace_back(aMovedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id),
 		                                     static_cast<aOldItemId&&>(mkMid(evt->old_folder_id, evt->old_message_id)),
 		                                     static_cast<aOldFolderId&&>(mkFid(evt->old_folder_id))));
 		break;
 	}
 	case db_notify_type::folder_copied: {
 		const DB_NOTIFY_FOLDER_MVCP* evt = static_cast<DB_NOTIFY_FOLDER_MVCP*>(notification->pdata);
-		sub->events.emplace_back(aCopiedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id), static_cast<aOldFolderId&&>(mkFid(evt->old_folder_id)),
+		mgr->events.emplace_back(aCopiedEvent(now, mkFid(evt->folder_id), mkFid(evt->parent_id), static_cast<aOldFolderId&&>(mkFid(evt->old_folder_id)),
 		                                      static_cast<aOldFolderId&&>(mkFid(evt->old_parent_id))));
 		break;
 	}
 	case db_notify_type::message_copied: {
 		const DB_NOTIFY_MESSAGE_MVCP* evt = static_cast<DB_NOTIFY_MESSAGE_MVCP*>(notification->pdata);
-		sub->events.emplace_back(aCopiedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id),
+		mgr->events.emplace_back(aCopiedEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id),
 		                                      static_cast<aOldItemId&&>(mkMid(evt->old_folder_id, evt->old_message_id)),
 		                                      static_cast<aOldFolderId&&>(mkFid(evt->old_folder_id))));
 		break;
@@ -892,10 +899,10 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 	default:
 		break;
 	}
-	if(sub->waitingContext)
+	if (mgr->waitingContext)
 		// Reschedule next wakeup 0.1 seconds. Should be enough to gather related events.
 		// Is still bound to the ObjectCache cleanup cycle and might take significantly longer than that.
-		cache.get(*sub->waitingContext, std::chrono::milliseconds(100));
+		cache.get(*mgr->waitingContext, std::chrono::milliseconds(100));
 } catch(const std::exception& err)
 {mlog(LV_ERR, "[ews#evt] %s:Failed to process notification: %s", err.what(), timestamp().c_str());}
 
@@ -940,13 +947,13 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const s
  */
 bool EWSPlugin::linkSubscription(const Structures::tSubscriptionId& subscriptionId, const EWSContext& ctx) const
 {
-	auto sub = subscription(subscriptionId.ID, subscriptionId.timeout);
-	if(!sub || sub->username != ctx.auth_info().username)
+	auto mgr = get_submgr(subscriptionId.ID, subscriptionId.timeout);
+	if (mgr == nullptr || mgr->username != ctx.auth_info().username)
 		return false;
-	std::lock_guard subLock(sub->lock);
-	if(sub->waitingContext)
-		unlinkSubscription(*sub->waitingContext);
-	sub->waitingContext = ctx.ID();
+	std::lock_guard subLock(mgr->lock);
+	if (mgr->waitingContext)
+		unlinkSubscription(*mgr->waitingContext);
+	mgr->waitingContext = ctx.ID();
 	return true;
 }
 
@@ -985,12 +992,13 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadAttachmentInstance(cons
  *
  * @return Pointer to created subscription
  */
-std::shared_ptr<EWSPlugin::Subscription> EWSPlugin::mksub(const Structures::tSubscriptionId& ID, const char* username) const
+std::shared_ptr<EWSPlugin::SubManager>
+EWSPlugin::make_submgr(const Structures::tSubscriptionId &ID,
+    const char *username) const
 {
-	using ms = std::chrono::milliseconds;
-	auto sub = std::make_shared<Subscription>(username, *this);
-	cache.emplace(ms(ID.timeout*60'000), ID.ID, sub);
-	return sub;
+	auto mgr = std::make_shared<SubManager>(username, *this);
+	cache.emplace(std::chrono::milliseconds(ID.timeout * 60'000), ID.ID, mgr);
+	return mgr;
 }
 
 /**
@@ -1026,11 +1034,11 @@ detail::ExmdbSubscriptionKey EWSPlugin::subscribe(const std::string& maildir, ui
  *
  * @return     Pointer to subscription or nullptr if not found
  */
-std::shared_ptr<EWSPlugin::Subscription>
-EWSPlugin::subscription(detail::SubscriptionKey subscriptionKey,
+std::shared_ptr<EWSPlugin::SubManager>
+EWSPlugin::get_submgr(detail::SubscriptionKey subscriptionKey,
     uint32_t timeout) const try
 {
-	return std::get<sptr<Subscription>>(cache.get(subscriptionKey,
+	return std::get<sptr<SubManager>>(cache.get(subscriptionKey,
 	       std::chrono::milliseconds(timeout * 60'000)));
 } catch (...) { // Key not found or type error
 	return nullptr;
@@ -1082,8 +1090,8 @@ bool EWSPlugin::unsubscribe(detail::SubscriptionKey subscriptionKey,
     const char *username) const try
 {
 	CacheKey key = subscriptionKey;
-	auto subscription = std::get<sptr<Subscription>>(cache.get(key));
-	if(subscription->username != username)
+	auto mgr = std::get<sptr<SubManager>>(cache.get(key));
+	if (mgr->username != username)
 		return false;
 	cache.evict(key);
 	return true;

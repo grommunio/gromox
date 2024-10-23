@@ -139,14 +139,10 @@ public:
 	/**
 	 * @brief      Subscription management struct
 	 */
-	struct Subscription
-	{
-		Subscription(const char*, const EWSPlugin&);
-		Subscription(const Subscription&) = delete;
-		Subscription(Subscription&&) = delete;
-
-		Subscription& operator=(const Subscription&) = delete;
-		Subscription& operator=(Subscription&&) = delete;
+	struct SubManager {
+		SubManager(const char *, const EWSPlugin &);
+		~SubManager();
+		NOMOVE(SubManager);
 
 		const EWSPlugin& ews; ///< Parent plugin
 		std::string username; ///< Name of the user who created the subscription
@@ -155,8 +151,6 @@ public:
 		std::vector<detail::ExmdbSubscriptionKey> subscriptions; ///< Exmdb subscription keys
 		std::list<Structures::sNotificationEvent> events; ///< Events that occured since last check
 		std::optional<int> waitingContext; ///< ID of context waiting for events
-
-		~Subscription();
 	};
 
 	void event(const char*, BOOL, uint32_t, const DB_NOTIFY*) const;
@@ -166,9 +160,9 @@ public:
 	std::shared_ptr<ExmdbInstance> loadMessageInstance(const std::string&, uint64_t, uint64_t) const;
 	Structures::sFolderEntryId mkFolderEntryId(const Structures::sMailboxInfo&, uint64_t) const;
 	Structures::sMessageEntryId mkMessageEntryId(const Structures::sMailboxInfo&, uint64_t, uint64_t) const;
-	std::shared_ptr<Subscription> mksub(const Structures::tSubscriptionId&, const char*) const;
+	std::shared_ptr<SubManager> make_submgr(const Structures::tSubscriptionId &, const char *) const;
 	detail::ExmdbSubscriptionKey subscribe(const std::string&, uint16_t, bool, uint64_t, detail::SubscriptionKey) const;
-	std::shared_ptr<Subscription> subscription(detail::SubscriptionKey, uint32_t) const;
+	std::shared_ptr<SubManager> get_submgr(detail::SubscriptionKey, uint32_t) const;
 	std::string timestamp() const;
 	void unlinkSubscription(int) const;
 	bool unsubscribe(detail::SubscriptionKey, const char*) const;
@@ -207,7 +201,7 @@ private:
 	};
 
 	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey, detail::SubscriptionKey, detail::ContextWakeupKey, detail::EmbeddedInstanceKey>;
-	using CacheObj = std::variant<sptr<ExmdbInstance>, sptr<Subscription>, sptr<WakeupNotify>>;
+	using CacheObj = std::variant<sptr<ExmdbInstance>, sptr<SubManager>, sptr<WakeupNotify>>;
 
 	static const std::unordered_map<std::string, Handler> requestMap;
 

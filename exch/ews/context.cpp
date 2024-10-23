@@ -700,13 +700,13 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
  */
 std::pair<std::list<sNotificationEvent>, bool> EWSContext::getEvents(const tSubscriptionId& subscriptionId) const
 {
-	auto subscription = m_plugin.subscription(subscriptionId.ID, subscriptionId.timeout);
-	if(!subscription)
+	auto mgr = m_plugin.get_submgr(subscriptionId.ID, subscriptionId.timeout);
+	if (mgr == nullptr)
 		throw EWSError::InvalidSubscription(E3202);
-	if(subscription->username != m_auth_info.username)
+	if (mgr->username != m_auth_info.username)
 		throw EWSError::AccessDenied(E3203);
-	std::pair<std::list<sNotificationEvent>, bool> result{{}, subscription->events.size() > 50};
-	auto& evt = subscription->events;
+	std::pair<std::list<sNotificationEvent>, bool> result{{}, mgr->events.size() > 50};
+	auto &evt = mgr->events;
 	if(result.second) {
 		auto it = evt.begin();
 		std::advance(it, 50);
@@ -2135,16 +2135,16 @@ void EWSContext::updated(const std::string& dir, const sFolderSpec& folder) cons
 tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, uint16_t eventMask, bool all, uint32_t timeout) const
 {
 	tSubscriptionId subscriptionId(timeout);
-	auto subscription = m_plugin.mksub(subscriptionId, m_auth_info.username);
+	auto mgr = m_plugin.make_submgr(subscriptionId, m_auth_info.username);
 	if(folderIds.empty()) {
-		subscription->mailboxInfo = getMailboxInfo(m_auth_info.maildir, false);
+		mgr->mailboxInfo = getMailboxInfo(m_auth_info.maildir, false);
 		detail::ExmdbSubscriptionKey key =
 			m_plugin.subscribe(m_auth_info.maildir, eventMask, true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
 		                       subscriptionId.ID);
-		subscription->subscriptions.emplace_back(key);
+		mgr->subscriptions.emplace_back(key);
 		return subscriptionId;
 	}
-	subscription->subscriptions.reserve(folderIds.size());
+	mgr->subscriptions.reserve(folderIds.size());
 	std::string target;
 	std::string maildir;
 	for(const sFolderId& f : folderIds) {
@@ -2154,12 +2154,12 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
 		if(target.empty()) {
 			target = *folderspec.target;
 			maildir = get_maildir(*folderspec.target);
-			subscription->mailboxInfo = getMailboxInfo(maildir, folderspec.location == folderspec.PUBLIC);
+			mgr->mailboxInfo = getMailboxInfo(maildir, folderspec.location == folderspec.PUBLIC);
 		} else if(target != *folderspec.target)
 			throw EWSError::InvalidSubscriptionRequest(E3200);
 		if(!(permissions(maildir, folderspec.folderId) & frightsReadAny))
 			continue; // TODO: proper error handling
-		subscription->subscriptions.emplace_back(m_plugin.subscribe(maildir, eventMask, all, folderspec.folderId,
+		mgr->subscriptions.emplace_back(m_plugin.subscribe(maildir, eventMask, all, folderspec.folderId,
 		                                                            subscriptionId.ID));
 	}
 	return subscriptionId;
