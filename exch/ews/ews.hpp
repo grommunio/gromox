@@ -148,7 +148,7 @@ public:
 		std::string username; ///< Name of the user who created the subscription
 		Structures::sMailboxInfo mailboxInfo; ///< Target mailbox metadata
 		std::mutex lock; ///< I/O mutex
-		std::vector<detail::ExmdbSubscriptionKey> subscriptions; ///< Exmdb subscription keys
+		std::vector<detail::ExmdbSubscriptionKey> inner_subs; ///< Exmdb subscription keys
 		std::list<Structures::sNotificationEvent> events; ///< Events that occured since last check
 		std::optional<int> waitingContext; ///< ID of context waiting for events
 	};
@@ -339,7 +339,7 @@ private:
 		inline explicit NotificationContext(gromox::time_point e) : state(S_INIT), expire(e) {}
 
 		State state;
-		std::vector<Structures::tSubscriptionId> subscriptions;
+		std::vector<Structures::tSubscriptionId> nct_subs;
 		gromox::time_point expire;
 	};
 

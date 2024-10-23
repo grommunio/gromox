@@ -338,7 +338,7 @@ EWSContext::EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t len
 EWSContext::~EWSContext()
 {
 	if(m_notify)
-		for(const tSubscriptionId& sub : m_notify->subscriptions)
+		for (const auto &sub : m_notify->nct_subs)
 			unsubscribe(sub);
 }
 
@@ -1576,7 +1576,7 @@ BINARY EWSContext::serialize(const XID& xid) const
 bool EWSContext::streamEvents(const tSubscriptionId& subscriptionId) const
 {
 	if(m_notify)
-		m_notify->subscriptions.emplace_back(subscriptionId);
+		m_notify->nct_subs.emplace_back(subscriptionId);
 	return m_plugin.linkSubscription(subscriptionId, *this);
 }
 
@@ -2141,10 +2141,10 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
 		detail::ExmdbSubscriptionKey key =
 			m_plugin.subscribe(m_auth_info.maildir, eventMask, true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
 		                       subscriptionId.ID);
-		mgr->subscriptions.emplace_back(key);
+		mgr->inner_subs.emplace_back(key);
 		return subscriptionId;
 	}
-	mgr->subscriptions.reserve(folderIds.size());
+	mgr->inner_subs.reserve(folderIds.size());
 	std::string target;
 	std::string maildir;
 	for(const sFolderId& f : folderIds) {
@@ -2159,8 +2159,8 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
 			throw EWSError::InvalidSubscriptionRequest(E3200);
 		if(!(permissions(maildir, folderspec.folderId) & frightsReadAny))
 			continue; // TODO: proper error handling
-		mgr->subscriptions.emplace_back(m_plugin.subscribe(maildir, eventMask, all, folderspec.folderId,
-		                                                            subscriptionId.ID));
+		mgr->inner_subs.emplace_back(m_plugin.subscribe(maildir,
+			eventMask, all, folderspec.folderId, subscriptionId.ID));
 	}
 	return subscriptionId;
 }

@@ -688,7 +688,7 @@ int EWSContext::notify()
 
 	// S_SLEEP: Just woke up, check for new events and deliver update message
 	bool moreAny = false;
-	for(const tSubscriptionId& subscription : nctx.subscriptions) {
+	for (const auto &subscription : nctx.nct_subs) {
 		try {
 			auto[events, more] = getEvents(subscription);
 			moreAny = moreAny || more;
@@ -704,13 +704,14 @@ int EWSContext::notify()
 		}
 	}
 	for(const tSubscriptionId& subscription : msg.ErrorSubscriptionIds)
-		nctx.subscriptions.erase(std::remove(nctx.subscriptions.begin(), nctx.subscriptions.end(), subscription),
-		                         nctx.subscriptions.end());
+		nctx.nct_subs.erase(std::remove(nctx.nct_subs.begin(), nctx.nct_subs.end(), subscription),
+		                    nctx.nct_subs.end());
 	msg.success();
 	// If there are no more subscriptions to monitor or the stream expired, close it
 	// If there were more events than we could deliver in one message, proceed with the next chunk right away
 	// Otherwise just go back to sleep
-	nctx.state = (nctx.subscriptions.empty() || tp_now() > nctx.expire)? NS::S_CLOSING : moreAny? NS::S_SLEEP : NS::S_WRITE;
+	nctx.state = nctx.nct_subs.empty() || tp_now() > nctx.expire ?
+	             NS::S_CLOSING : moreAny ? NS::S_SLEEP : NS::S_WRITE;
 	if(nctx.state == NS::S_SLEEP)
 		m_plugin.wakeContext(m_ID, m_plugin.event_stream_interval);
 	return flush();
@@ -790,7 +791,7 @@ EWSPlugin::SubManager::SubManager(const char *uname, const EWSPlugin &plugin) :
 EWSPlugin::SubManager::~SubManager()
 {
 	std::lock_guard ss_lock(ews.subscriptionLock);
-	for(const auto& subKey : subscriptions)
+	for (const auto &subKey : inner_subs)
 		ews.unsubscribe(subKey);
 	if(waitingContext)
 		ews.unlinkSubscription(*waitingContext);
