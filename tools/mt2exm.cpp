@@ -413,7 +413,8 @@ static void gi_dump_thru_map(const propididmap_t &map)
 {
 	if (!g_show_props)
 		return;
-	fprintf(stderr, "Named properties, thru-map (%zu entries):\n", map.size());
+	fprintf(stderr, "propid-to-propid map (%zu entries):\n", map.size());
+	fprintf(stderr, "\t# src propid <-> dst propid:\n");
 	for (const auto &[from, to] : map)
 		fprintf(stderr, "\t%04xh <-> %04xh\n", from, to);
 }

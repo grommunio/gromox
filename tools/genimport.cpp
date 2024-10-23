@@ -87,17 +87,17 @@ void gi_dump_name_map(const gi_name_map &map)
 {
 	if (!g_show_props)
 		return;
-	fprintf(stderr, "Named properties (%zu entries):\n", map.size());
-	fprintf(stderr, "\t# PROPID (hex) <-> MAPINAMEID definition:\n");
-	for (const auto &[propid, propname] : map) {
+	fprintf(stderr, "Preamble's named property map (%zu entries):\n", map.size());
+	fprintf(stderr, "\t# proptag (hex) -> MAPINAMEID definition:\n");
+	for (const auto &[proptag, propname] : map) {
 		char g[40];
 		propname.guid.to_str(g, std::size(g), 38);
 		if (propname.kind == MNID_ID)
-			fprintf(stderr, "\t%04xh <-> {MNID_ID, %s, %xh}\n",
-				propid, g, static_cast<unsigned int>(propname.lid));
+			fprintf(stderr, "\t%08xh -> {MNID_ID, %s, %xh}\n",
+				proptag, g, static_cast<unsigned int>(propname.lid));
 		else if (propname.kind == MNID_STRING)
-			fprintf(stderr, "\t%04xh <-> {MNID_STRING, %s, %s}\n",
-				propid, g, propname.name.c_str());
+			fprintf(stderr, "\t%08xh -> {MNID_STRING, %s, %s}\n",
+				proptag, g, propname.name.c_str());
 	}
 }
 
@@ -172,10 +172,13 @@ void gi_name_map_write(const gi_name_map &map)
 		throw std::bad_alloc();
 	if (ep.p_uint64(map.size()) != EXT_ERR_SUCCESS)
 		throw YError("PG-1110");
-	for (const auto &[propid, xn] : map)
-		if (ep.p_uint32(propid) != EXT_ERR_SUCCESS ||
+	for (const auto &[proptag, xn] : map) {
+		static_assert(sizeof(gi_name_map::key_type) == sizeof(uint32_t),
+			"Something is fishy with the definition of gi_name_map");
+		if (ep.p_uint32(proptag) != pack_result::ok ||
 		    ep.p_propname(static_cast<PROPERTY_NAME>(xn)) != EXT_ERR_SUCCESS)
 			throw YError("PG-1111");
+	}
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
 		throw YError("PG-1112: %s", strerror(errno));

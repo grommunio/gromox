@@ -12,7 +12,7 @@ struct namedprop_bimap {
 	public:
 	uint16_t emplace(uint16_t, PROPERTY_XNAME &&);
 
-	gi_name_map fwd;
+	gi_name_map fwd; /* note this is uint32_t -> */
 	std::unordered_map<std::string, uint16_t> rev;
 	uint16_t nextid = 0x8000;
 };
@@ -38,7 +38,7 @@ uint16_t namedprop_bimap::emplace(uint16_t desired_propid, PROPERTY_XNAME &&name
 	auto [iter, newly_added] = rev.emplace(txt, desired_propid);
 	if (!newly_added)
 		return iter->second;
-	fwd.emplace(desired_propid, std::move(name));
+	fwd.emplace(PROP_TAG(PT_UNSPECIFIED, desired_propid), std::move(name));
 	nextid = std::max(nextid, static_cast<uint16_t>(desired_propid + 1));
 	return desired_propid;
 }
