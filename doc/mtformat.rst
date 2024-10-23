@@ -47,9 +47,13 @@ All integers are to be in little-endian form.
 	  Number of entries in the NP map
 	* Repeat *np_entries* times:
 		* ``uint32_t proptag;``
-		  The named property's assigned proptag for the MT stream.
-		  The high 16 bits convey the propid, the low 16 bits can be
-		  ignored.
+		  The named property's assigned proptag for the MT stream. The
+		  high 16 bits convey the propid, the low 16 bits the proptype.
+		  An MT writer may emit PT_UNSPECIFIED for the proptype to
+		  signal that an MT reader shall mask/disregard proptypes
+		  during propid-to-propid remapping. If an MT writer emits any
+		  other proptype, the MT reader should only do propid-to-propid
+		  translations if the proptype matches.
 		* PROPERTY_NAME serialized struct
 
 The remainder of the stream is a set of "instructions" (so to speak) to mt2exm

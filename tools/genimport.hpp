@@ -36,7 +36,7 @@ struct gi_delete : public gromox::stdlib_delete {
 	inline void operator()(TARRAY_SET *x) const { tarray_set_free(x); }
 };
 
-using gi_name_map = std::unordered_map<uint32_t, PROPERTY_XNAME>;
+using gi_name_map = std::unordered_map<gromox::proptag_t, PROPERTY_XNAME>;
 struct namedprop_bimap;
 
 struct parent_desc {
@@ -98,7 +98,7 @@ extern void gi_folder_map_read(const void *, size_t, gi_folder_map_t &);
 extern void gi_folder_map_write(const gi_folder_map_t &);
 extern void gi_name_map_read(const void *, size_t, gi_name_map &);
 extern void gi_name_map_write(const gi_name_map &);
-extern uint16_t gi_resolve_namedprop(const PROPERTY_XNAME &);
+extern gromox::propid_t gi_resolve_namedprop(const PROPERTY_XNAME &);
 extern int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t cn);
 extern int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl, uint64_t *new_fld_id);
 extern int exm_permissions(eid_t, const std::vector<PERMISSION_DATA> &);

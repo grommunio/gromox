@@ -10,16 +10,17 @@
 
 struct namedprop_bimap {
 	public:
-	uint16_t emplace(uint16_t, PROPERTY_XNAME &&);
+	gromox::propid_t emplace(gromox::propid_t, PROPERTY_XNAME &&);
 
-	gi_name_map fwd; /* note this is uint32_t -> */
-	std::unordered_map<std::string, uint16_t> rev;
-	uint16_t nextid = 0x8000;
+	gi_name_map fwd;
+	std::unordered_map<std::string, gromox::propid_t> rev;
+	gromox::propid_t nextid = 0x8000;
 };
 
 static struct namedprop_bimap static_namedprop_map;
 
-uint16_t namedprop_bimap::emplace(uint16_t desired_propid, PROPERTY_XNAME &&name)
+gromox::propid_t namedprop_bimap::emplace(gromox::propid_t desired_propid,
+    PROPERTY_XNAME &&name)
 {
 	if (desired_propid == 0)
 		desired_propid = nextid;
@@ -39,7 +40,7 @@ uint16_t namedprop_bimap::emplace(uint16_t desired_propid, PROPERTY_XNAME &&name
 	if (!newly_added)
 		return iter->second;
 	fwd.emplace(PROP_TAG(PT_UNSPECIFIED, desired_propid), std::move(name));
-	nextid = std::max(nextid, static_cast<uint16_t>(desired_propid + 1));
+	nextid = std::max(nextid, static_cast<gromox::propid_t>(desired_propid + 1));
 	return desired_propid;
 }
 
@@ -55,8 +56,8 @@ static BOOL ee_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) try
 	return false;
 }
 
-static const PROPERTY_XNAME *ee_get_propname(uint16_t) __attribute__((unused));
-static const PROPERTY_XNAME *ee_get_propname(uint16_t propid)
+static const PROPERTY_XNAME *ee_get_propname(gromox::propid_t) __attribute__((unused));
+static const PROPERTY_XNAME *ee_get_propname(gromox::propid_t propid)
 {
 	auto i = static_namedprop_map.fwd.find(propid);
 	return i != static_namedprop_map.fwd.end() ? &i->second : nullptr;
