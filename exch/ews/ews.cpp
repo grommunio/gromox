@@ -790,7 +790,6 @@ EWSPlugin::SubManager::SubManager(const char *uname, const EWSPlugin &plugin) :
  */
 EWSPlugin::SubManager::~SubManager()
 {
-	std::lock_guard ss_lock(ews.subscriptionLock);
 	for (const auto &subKey : inner_subs)
 		ews.unsubscribe(subKey);
 	if(waitingContext)
