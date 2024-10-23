@@ -1026,13 +1026,14 @@ detail::ExmdbSubscriptionKey EWSPlugin::subscribe(const std::string& maildir, ui
  *
  * @return     Pointer to subscription or nullptr if not found
  */
-std::shared_ptr<EWSPlugin::Subscription> EWSPlugin::subscription(detail::SubscriptionKey subscriptionKey, uint32_t timeout) const
+std::shared_ptr<EWSPlugin::Subscription>
+EWSPlugin::subscription(detail::SubscriptionKey subscriptionKey,
+    uint32_t timeout) const try
 {
-	try {
-		return std::get<sptr<Subscription>>(cache.get(subscriptionKey, std::chrono::milliseconds(timeout*60'000)));
-	} catch (...) { // Key not found or type error
-		return nullptr;
-	}
+	return std::get<sptr<Subscription>>(cache.get(subscriptionKey,
+	       std::chrono::milliseconds(timeout * 60'000)));
+} catch (...) { // Key not found or type error
+	return nullptr;
 }
 
 /**
@@ -1040,16 +1041,14 @@ std::shared_ptr<EWSPlugin::Subscription> EWSPlugin::subscription(detail::Subscri
  *
  * @return     string containing the current time
  */
-std::string EWSPlugin::timestamp() const
+std::string EWSPlugin::timestamp() const try
 {
-	try {
-		return timestampFormat.empty()? std::string() :
-		                                fmt::format(fmt::runtime(timestampFormat), std::chrono::system_clock::now());
-	} catch(fmt::format_error& err) {
-		mlog(LV_WARN, "ews: failed to format timestamp according to specification '%s': %s",
-		     timestampFormat.c_str(), err.what());
-		return std::string();
-	}
+	return timestampFormat.empty() ? std::string() :
+	       fmt::format(fmt::runtime(timestampFormat), std::chrono::system_clock::now());
+} catch (const fmt::format_error &err) {
+	mlog(LV_WARN, "ews: failed to format timestamp according to specification '%s': %s",
+	     timestampFormat.c_str(), err.what());
+	return {};
 }
 
 /**
@@ -1079,18 +1078,17 @@ void EWSPlugin::unlinkSubscription(int ctx_id) const
  *
  * @return true if subscription was removed, false otherwise
  */
-bool EWSPlugin::unsubscribe(detail::SubscriptionKey subscriptionKey, const char* username) const
+bool EWSPlugin::unsubscribe(detail::SubscriptionKey subscriptionKey,
+    const char *username) const try
 {
-	try {
-		CacheKey key = subscriptionKey;
-		auto subscription = std::get<sptr<Subscription>>(cache.get(key));
-		if(subscription->username != username)
-			return false;
-		cache.evict(key);
-		return true;
-	} catch (...) { // Key not found or type error
+	CacheKey key = subscriptionKey;
+	auto subscription = std::get<sptr<Subscription>>(cache.get(key));
+	if(subscription->username != username)
 		return false;
-	}
+	cache.evict(key);
+	return true;
+} catch (...) { // Key not found or type error
+	return false;
 }
 
 /**
