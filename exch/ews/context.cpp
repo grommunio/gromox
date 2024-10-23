@@ -2139,7 +2139,7 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
 	if(folderIds.empty()) {
 		subscription->mailboxInfo = getMailboxInfo(m_auth_info.maildir, false);
 		detail::ExmdbSubscriptionKey key =
-			m_plugin.subscribe(m_auth_info.maildir, eventMask, true, rop_util_make_eid_ex(PRIVATE_FID_IPMSUBTREE, 1),
+			m_plugin.subscribe(m_auth_info.maildir, eventMask, true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
 		                       subscriptionId.ID);
 		subscription->subscriptions.emplace_back(key);
 		return subscriptionId;
