@@ -1073,6 +1073,8 @@ tItem::tItem(const tinyxml2::XMLElement* xml) :
 //	XMLINIT(InternetMessageHeaders),
 //	XMLINIT(DateTimeSent),
 //	XMLINIT(DateTimeCreated),
+	XMLINIT(ReminderIsSet),
+	XMLINIT(ReminderMinutesBeforeStart),
 	XMLINIT(DisplayCc),
 	XMLINIT(DisplayTo),
 	XMLINIT(DisplayBcc),

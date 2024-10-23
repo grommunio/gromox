@@ -1998,10 +1998,20 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
 	shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
 	shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
+	shape.write(NtReminderTime, TAGGED_PROPVAL{PT_SYSTIME, start});
 	auto end = EWSContext::construct<uint64_t>(rop_util_unix_to_nttime(endTime + endOffset * 60));
 	shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
 	shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
 	shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
+
+	shape.write(NtReminderSet, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(
+		item.ReminderIsSet && item.ReminderIsSet.value() ? 1 : 0)});
+	uint32_t reminderdelta = 0;
+	if(item.ReminderMinutesBeforeStart)
+		reminderdelta = item.ReminderMinutesBeforeStart.value();
+	shape.write(NtReminderDelta, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(reminderdelta)});
+	shape.write(NtReminderSignalTime, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(
+		rop_util_unix_to_nttime(startTime + (startOffset - reminderdelta) * 60))});
 }
 
 /**
