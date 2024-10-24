@@ -54,6 +54,10 @@ static ssize_t ck_allocated_eids(sqlite3 *db)
 			eids.push_back(objid);
 	}
 	printf(" [%zu issues]", probs);
+	if (!g_do_repair) {
+		printf("\n");
+		return probs;
+	}
 
 	stm = gx_sql_prep(db, "INSERT INTO allocated_eids (range_begin,range_end,allocate_time,is_system) VALUES (?,?,0,1)");
 	if (stm == nullptr)
