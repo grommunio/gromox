@@ -2207,6 +2207,21 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 {
 	if(item.MimeContent)
 		content = toContent(dir, *item.MimeContent);
+	if(item.Body)
+	{
+		auto body = const_cast<char*>(item.Body.value().c_str());
+		if(item.Body.value().BodyType == Enum::Text)
+			shape.write(TAGGED_PROPVAL{PR_BODY, body});
+		else if(item.Body.value().BodyType == Enum::HTML)
+		{
+			size_t bodylen = strlen(body);
+			if(bodylen > std::numeric_limits<uint32_t>::max())
+				throw InputError(E3256);
+			BINARY* html = construct<BINARY>(BINARY{uint32_t(strlen(body)),
+			                                       {reinterpret_cast<uint8_t*>(body)}});
+			shape.write(TAGGED_PROPVAL{PR_HTML, html});
+		}
+	}
 	if(item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst(item.ItemClass->c_str())});
 	if(item.Sensitivity)
