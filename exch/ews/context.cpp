@@ -15,6 +15,7 @@
 #include <gromox/pcl.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/usercvt.hpp>
+#include <gromox/util.hpp>
 
 #include "exceptions.hpp"
 #include "ews.hpp"
@@ -31,6 +32,8 @@ using namespace Structures;
 
 namespace
 {
+static constexpr char EncodedGlobalId_hex[] =
+	"040000008200E00074C5B7101A82E008"; /* s_rgbSPlus */
 
 /**
  * @brief      Convert string to lower case
@@ -379,6 +382,54 @@ int64_t offset_from_tz(const TIMEZONEDEFINITION* tzdef, const time_t startTime)
 		}
 	}
 	return offset;
+}
+
+/**
+ * @brief Get GlobalObjectId(PidLidGlobalObjectId/PidLidCleanGlobalObjectId)
+ *        from UID sent by the client
+ *
+ * @param uid
+ * @param goid_bin
+ */
+void uid_to_goid(const char* uid, BINARY &goid_bin)
+{
+	GLOBALOBJECTID goid;
+	auto uid_len = strlen(uid);
+	EXT_PULL ext_pull;
+	EXT_PUSH ext_push;
+	char tmp_buff[1024];
+	if(strncasecmp(uid, EncodedGlobalId_hex, 32) == 0)
+	{
+		if(!decode_hex_binary(uid, tmp_buff, std::size(tmp_buff)))
+			throw EWSError::CorruptData(E3296(uid));
+		ext_pull.init(tmp_buff, uid_len / 2, EWSContext::alloc, 0);
+		if(ext_pull.g_goid(&goid) != EXT_ERR_SUCCESS)
+			throw EWSError::InternalServerError(E3297(uid));
+		if(ext_pull.m_offset == uid_len / 2 &&
+		    (goid.year < 1601 || goid.year > 4500 ||
+		    goid.month > 12 || goid.month == 0 ||
+		    goid.day > ical_get_monthdays(goid.year, goid.month)))
+			goid.year = goid.month = goid.day = 0;
+	}
+	else
+	{
+		memset(&goid, 0, sizeof(GLOBALOBJECTID));
+		goid.arrayid = EncodedGlobalId;
+		goid.year = goid.month = goid.day = 0;
+		goid.creationtime = 0;
+		goid.data.cb = 12 + uid_len;
+		goid.data.pv = EWSContext::alloc(goid.data.cb);
+		if(goid.data.pv == nullptr)
+			throw EWSError::NotEnoughMemory(E3298);
+		static_assert(sizeof(ThirdPartyGlobalId) == 12);
+		memcpy(goid.data.pb, ThirdPartyGlobalId, 12);
+		memcpy(goid.data.pb + 12, uid, uid_len);
+	}
+	if(!ext_push.init(tmp_buff, 1024, 0) ||
+		ext_push.p_goid(goid) != EXT_ERR_SUCCESS)
+		throw EWSError::InternalServerError(E3299);
+	goid_bin.cb = ext_push.m_offset;
+	goid_bin.pb = ext_push.m_udata;
 }
 
 } // Anonymous namespace
@@ -2012,6 +2063,16 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	shape.write(NtReminderDelta, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(reminderdelta)});
 	shape.write(NtReminderSignalTime, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(
 		rop_util_unix_to_nttime(startTime + (startOffset - reminderdelta) * 60))});
+
+	if(item.UID)
+	{
+		BINARY goid_bin;
+		auto uid = item.UID.value().c_str();
+		uid_to_goid(uid, goid_bin);
+		BINARY* goid = construct<BINARY>(BINARY{goid_bin.cb, {goid_bin.pb}});
+		shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
+		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
+	}
 }
 
 /**

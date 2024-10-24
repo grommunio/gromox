@@ -420,7 +420,10 @@ E(3292, "erroneous TIMEZONEDEFINITION");
 E(3293, "Timezone definition too large");
 E(3294, "Failed to generate timezone definition");
 inline std::string E3295(int year) {return fmt::format("E-3295: No active rule for year {} in the timezone definition", year);}
-
+inline std::string E3296(const char* uid) {return fmt::format("E-3296: decode_hex_binary failed to convert UID {} containing EncodedGlobalId", uid);}
+inline std::string E3297(const char* uid) {return fmt::format("E-3297: Failed to generate goid from UID {}", uid);}
+E(3298, "Failed to allocate memory for goid data");
+E(3299, "Failed to generate goid data");
 
 #undef E
 }

@@ -8,6 +8,7 @@
 
 // Follow the order in mapitags.hpp
 static const PROPERTY_NAME NtGlobalObjectId = {MNID_ID, PSETID_Meeting, PidLidGlobalObjectId, deconst("GlobalObjectId")};
+static const PROPERTY_NAME NtCleanGlobalObjectId = {MNID_ID, PSETID_Meeting, PidLidCleanGlobalObjectId, deconst("CleanGlobalObjectId")};
 static const PROPERTY_NAME NtCategories = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")};
 
 /* PSETID_Address */
