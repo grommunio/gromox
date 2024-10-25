@@ -105,11 +105,138 @@ static int create_search_folder(sqlite3 *sdb, uint64_t fid, uint64_t parent,
 	return ret;
 }
 
+static int mk_storeprops(sqlite3 *psqlite, mapitime_t nt_time)
+{
+	std::pair<uint32_t, uint64_t> storeprops[] = {
+		{PR_CREATION_TIME, nt_time},
+		{PR_OOF_STATE, 0},
+		{PR_MESSAGE_SIZE_EXTENDED, 0},
+		{PR_ASSOC_MESSAGE_SIZE_EXTENDED, 0},
+		{PR_NORMAL_MESSAGE_SIZE_EXTENDED, 0},
+		{},
+	};
+	return mbop_insert_storeprops(psqlite, storeprops);
+}
+
+static int mk_receivefolders(sqlite3 *psqlite, mapitime_t nt_time)
+{
+	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO receive_table VALUES (?, ?, ?)");
+	if (pstmt == nullptr)
+		return EXIT_FAILURE;
+	static constexpr std::pair<const char *, uint64_t> receive_folders[] = {
+		{"", PRIVATE_FID_INBOX}, {"IPC", PRIVATE_FID_ROOT},
+		{"IPM", PRIVATE_FID_INBOX}, {"REPORT.IPM", PRIVATE_FID_INBOX},
+	};
+	for (const auto &e : receive_folders) {
+		sqlite3_bind_text(pstmt, 1, e.first, -1, SQLITE_STATIC);
+		sqlite3_bind_int64(pstmt, 2, e.second);
+		sqlite3_bind_int64(pstmt, 3, nt_time);
+		if (pstmt.step() != SQLITE_DONE) {
+			printf("fail to step sql inserting\n");
+			return EXIT_FAILURE;
+		}
+		sqlite3_reset(pstmt);
+	}
+	return EXIT_SUCCESS;
+}
+
+static int mk_folders(sqlite3 *psqlite, uint32_t user_id)
+{
+	static constexpr struct {
+		uint64_t parent = 0, fid = 0;
+		const char *fldclass = nullptr;
+		BOOL hidden = false;
+	} generic_folders[] = {
+		{0, PRIVATE_FID_ROOT},
+		{PRIVATE_FID_ROOT, PRIVATE_FID_IPMSUBTREE},
+		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_INBOX, "IPF.Note"},
+		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_DRAFT, "IPF.Note"},
+		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_OUTBOX, "IPF.Note"},
+		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_SENT_ITEMS, "IPF.Note"},
+		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_DELETED_ITEMS, "IPF.Note"},
+		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_CONTACTS, "IPF.Contact"},
+		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_CALENDAR, "IPF.Appointment"},
+		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_JOURNAL, "IPF.Journal"},
+		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_NOTES, "IPF.StickyNote"},
+		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_TASKS, "IPF.Task"},
+		{PRIVATE_FID_CONTACTS, PRIVATE_FID_QUICKCONTACTS, "IPF.Contact.MOC.QuickContacts", TRUE},
+		{PRIVATE_FID_CONTACTS, PRIVATE_FID_IMCONTACTLIST, "IPF.Contact.MOC.ImContactList", TRUE},
+		{PRIVATE_FID_CONTACTS, PRIVATE_FID_GALCONTACTS, "IPF.Contact.GalContacts", TRUE},
+		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_JUNK, "IPF.Note"},
+		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS, "IPF.Configuration", TRUE},
+		{PRIVATE_FID_ROOT, PRIVATE_FID_DEFERRED_ACTION},
+		{PRIVATE_FID_ROOT, PRIVATE_FID_COMMON_VIEWS},
+		{PRIVATE_FID_ROOT, PRIVATE_FID_SCHEDULE},
+		{PRIVATE_FID_ROOT, PRIVATE_FID_FINDER},
+		{PRIVATE_FID_ROOT, PRIVATE_FID_VIEWS},
+		{PRIVATE_FID_ROOT, PRIVATE_FID_SHORTCUTS},
+		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_SYNC_ISSUES, "IPF.Note"},
+		{PRIVATE_FID_SYNC_ISSUES, PRIVATE_FID_CONFLICTS, "IPF.Note"},
+		{PRIVATE_FID_SYNC_ISSUES, PRIVATE_FID_LOCAL_FAILURES, "IPF.Note"},
+		{PRIVATE_FID_SYNC_ISSUES, PRIVATE_FID_SERVER_FAILURES, "IPF.Note"},
+		{PRIVATE_FID_ROOT, PRIVATE_FID_LOCAL_FREEBUSY},
+	};
+	for (const auto &e : generic_folders)
+		if (create_generic_folder(psqlite, e.fid,
+		    e.parent, user_id, e.fldclass, e.hidden) != 0)
+			return EXIT_FAILURE;
+	if (create_search_folder(psqlite, PRIVATE_FID_SPOOLER_QUEUE,
+	    PRIVATE_FID_ROOT, user_id) != 0) {
+		printf("fail to create \"spooler queue\" folder\n");
+		return EXIT_FAILURE;
+	}
+	char tmp_sql[1024];
+	snprintf(tmp_sql, std::size(tmp_sql), "INSERT INTO permissions (folder_id, "
+		"username, permission) VALUES (%u, 'default', %u)",
+	        PRIVATE_FID_CALENDAR, frightsFreeBusySimple);
+	gx_sql_exec(psqlite, tmp_sql);
+	snprintf(tmp_sql, std::size(tmp_sql), "INSERT INTO permissions (folder_id, "
+		"username, permission) VALUES (%u, 'default', %u)",
+	        PRIVATE_FID_LOCAL_FREEBUSY, frightsFreeBusySimple);
+	gx_sql_exec(psqlite, tmp_sql);
+	return EXIT_SUCCESS;
+}
+
+static int mk_options(sqlite3 *psqlite)
+{
+	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
+	if (pstmt == nullptr)
+		return EXIT_FAILURE;
+	char tmp_bguid[GUIDSTR_SIZE];
+	GUID::random_new().to_str(tmp_bguid, std::size(tmp_bguid));
+	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAILBOX_GUID);
+	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
+	if (pstmt.step() != SQLITE_DONE) {
+		printf("fail to step sql inserting\n");
+		return EXIT_FAILURE;
+	}
+	sqlite3_reset(pstmt);
+	std::pair<uint32_t, uint64_t> confprops[] = {
+		{CONFIG_ID_CURRENT_EID, 0x100},
+		{CONFIG_ID_MAXIMUM_EID, ALLOCATED_EID_RANGE},
+		{CONFIG_ID_LAST_CHANGE_NUMBER, g_last_cn},
+		{CONFIG_ID_LAST_CID, 0},
+		{CONFIG_ID_LAST_ARTICLE_NUMBER, g_last_art},
+		{CONFIG_ID_SEARCH_STATE, 0},
+		{CONFIG_ID_DEFAULT_PERMISSION, 0},
+		{CONFIG_ID_ANONYMOUS_PERMISSION, 0},
+	};
+	for (const auto &e : confprops) {
+		sqlite3_bind_int64(pstmt, 1, e.first);
+		sqlite3_bind_int64(pstmt, 2, e.second);
+		if (pstmt.step() != SQLITE_DONE) {
+			printf("fail to step sql inserting\n");
+			return EXIT_FAILURE;
+		}
+		sqlite3_reset(pstmt);
+	}
+	return EXIT_SUCCESS;
+}
+
 int main(int argc, char **argv)
 {
 	uint64_t nt_time;
 	sqlite3 *psqlite;
-	char tmp_sql[1024];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
@@ -234,118 +361,17 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	
 	nt_time = rop_util_unix_to_nttime(time(NULL));
-	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO receive_table VALUES (?, ?, ?)");
-	if (pstmt == nullptr)
-		return EXIT_FAILURE;
-	static constexpr std::pair<const char *, uint64_t> receive_folders[] = {
-		{"", PRIVATE_FID_INBOX}, {"IPC", PRIVATE_FID_ROOT},
-		{"IPM", PRIVATE_FID_INBOX}, {"REPORT.IPM", PRIVATE_FID_INBOX},
-	};
-	for (const auto &e : receive_folders) {
-		sqlite3_bind_text(pstmt, 1, e.first, -1, SQLITE_STATIC);
-		sqlite3_bind_int64(pstmt, 2, e.second);
-		sqlite3_bind_int64(pstmt, 3, nt_time);
-		if (pstmt.step() != SQLITE_DONE) {
-			printf("fail to step sql inserting\n");
-			return EXIT_FAILURE;
-		}
-		sqlite3_reset(pstmt);
-	}
-	pstmt.finalize();
-	
-	std::pair<uint32_t, uint64_t> storeprops[] = {
-		{PR_CREATION_TIME, nt_time},
-		{PR_OOF_STATE, 0},
-		{PR_MESSAGE_SIZE_EXTENDED, 0},
-		{PR_ASSOC_MESSAGE_SIZE_EXTENDED, 0},
-		{PR_NORMAL_MESSAGE_SIZE_EXTENDED, 0},
-		{},
-	};
-	ret = mbop_insert_storeprops(psqlite, storeprops);
-	if (ret != 0)
-		return EXIT_FAILURE;
-	static constexpr struct {
-		uint64_t parent = 0, fid = 0;
-		const char *fldclass = nullptr;
-		BOOL hidden = false;
-	} generic_folders[] = {
-		{0, PRIVATE_FID_ROOT},
-		{PRIVATE_FID_ROOT, PRIVATE_FID_IPMSUBTREE},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_INBOX, "IPF.Note"},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_DRAFT, "IPF.Note"},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_OUTBOX, "IPF.Note"},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_SENT_ITEMS, "IPF.Note"},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_DELETED_ITEMS, "IPF.Note"},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_CONTACTS, "IPF.Contact"},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_CALENDAR, "IPF.Appointment"},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_JOURNAL, "IPF.Journal"},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_NOTES, "IPF.StickyNote"},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_TASKS, "IPF.Task"},
-		{PRIVATE_FID_CONTACTS, PRIVATE_FID_QUICKCONTACTS, "IPF.Contact.MOC.QuickContacts", TRUE},
-		{PRIVATE_FID_CONTACTS, PRIVATE_FID_IMCONTACTLIST, "IPF.Contact.MOC.ImContactList", TRUE},
-		{PRIVATE_FID_CONTACTS, PRIVATE_FID_GALCONTACTS, "IPF.Contact.GalContacts", TRUE},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_JUNK, "IPF.Note"},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS, "IPF.Configuration", TRUE},
-		{PRIVATE_FID_ROOT, PRIVATE_FID_DEFERRED_ACTION},
-		{PRIVATE_FID_ROOT, PRIVATE_FID_COMMON_VIEWS},
-		{PRIVATE_FID_ROOT, PRIVATE_FID_SCHEDULE},
-		{PRIVATE_FID_ROOT, PRIVATE_FID_FINDER},
-		{PRIVATE_FID_ROOT, PRIVATE_FID_VIEWS},
-		{PRIVATE_FID_ROOT, PRIVATE_FID_SHORTCUTS},
-		{PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_SYNC_ISSUES, "IPF.Note"},
-		{PRIVATE_FID_SYNC_ISSUES, PRIVATE_FID_CONFLICTS, "IPF.Note"},
-		{PRIVATE_FID_SYNC_ISSUES, PRIVATE_FID_LOCAL_FAILURES, "IPF.Note"},
-		{PRIVATE_FID_SYNC_ISSUES, PRIVATE_FID_SERVER_FAILURES, "IPF.Note"},
-		{PRIVATE_FID_ROOT, PRIVATE_FID_LOCAL_FREEBUSY},
-	};
-	for (const auto &e : generic_folders)
-		if (create_generic_folder(psqlite, e.fid,
-		    e.parent, user_id, e.fldclass, e.hidden) != 0)
-			return EXIT_FAILURE;
-	if (create_search_folder(psqlite, PRIVATE_FID_SPOOLER_QUEUE,
-	    PRIVATE_FID_ROOT, user_id) != 0) {
-		printf("fail to create \"spooler queue\" folder\n");
-		return EXIT_FAILURE;
-	}
-	snprintf(tmp_sql, std::size(tmp_sql), "INSERT INTO permissions (folder_id, "
-		"username, permission) VALUES (%u, 'default', %u)",
-	        PRIVATE_FID_CALENDAR, frightsFreeBusySimple);
-	gx_sql_exec(psqlite, tmp_sql);
-	snprintf(tmp_sql, std::size(tmp_sql), "INSERT INTO permissions (folder_id, "
-		"username, permission) VALUES (%u, 'default', %u)",
-	        PRIVATE_FID_LOCAL_FREEBUSY, frightsFreeBusySimple);
-	gx_sql_exec(psqlite, tmp_sql);
-	pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
-	if (pstmt == nullptr)
-		return EXIT_FAILURE;
-	char tmp_bguid[GUIDSTR_SIZE];
-	GUID::random_new().to_str(tmp_bguid, std::size(tmp_bguid));
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAILBOX_GUID);
-	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
-	if (pstmt.step() != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return EXIT_FAILURE;
-	}
-	sqlite3_reset(pstmt);
-	std::pair<uint32_t, uint64_t> confprops[] = {
-		{CONFIG_ID_CURRENT_EID, 0x100},
-		{CONFIG_ID_MAXIMUM_EID, ALLOCATED_EID_RANGE},
-		{CONFIG_ID_LAST_CHANGE_NUMBER, g_last_cn},
-		{CONFIG_ID_LAST_CID, 0},
-		{CONFIG_ID_LAST_ARTICLE_NUMBER, g_last_art},
-		{CONFIG_ID_SEARCH_STATE, 0},
-		{CONFIG_ID_DEFAULT_PERMISSION, 0},
-		{CONFIG_ID_ANONYMOUS_PERMISSION, 0},
-	};
-	for (const auto &e : confprops) {
-		sqlite3_bind_int64(pstmt, 1, e.first);
-		sqlite3_bind_int64(pstmt, 2, e.second);
-		if (pstmt.step() != SQLITE_DONE) {
-			printf("fail to step sql inserting\n");
-			return EXIT_FAILURE;
-		}
-		sqlite3_reset(pstmt);
-	}
-	pstmt.finalize();
+	ret = mk_receivefolders(psqlite, nt_time);
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	ret = mk_storeprops(psqlite, nt_time);
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	ret = mk_folders(psqlite, user_id);
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	ret = mk_options(psqlite);
+	if (ret != EXIT_SUCCESS)
+		return ret;
 	return sql_transact.commit() == SQLITE_OK ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -64,6 +64,75 @@ static constexpr unsigned int rightsGromoxPubDefault = /* (0x41b/1051) */
 	frightsReadAny | frightsCreate | frightsVisible | frightsEditOwned |
 	frightsDeleteOwned;
 
+static int mk_storeprops(sqlite3 *psqlite, mapitime_t nt_time)
+{
+	std::pair<uint32_t, uint64_t> storeprops[] = {
+		{PR_CREATION_TIME, nt_time},
+		{PR_MESSAGE_SIZE_EXTENDED, 0},
+		{PR_ASSOC_MESSAGE_SIZE_EXTENDED, 0},
+		{PR_NORMAL_MESSAGE_SIZE_EXTENDED, 0},
+		{},
+	};
+	return mbop_insert_storeprops(psqlite, storeprops);
+}
+
+static int mk_folders(sqlite3 *psqlite, uint32_t domain_id)
+{
+	static constexpr struct {
+		uint64_t parent = 0, fid = 0;
+		const char *name = nullptr;
+	} generic_folders[] = {
+		{0, PUBLIC_FID_ROOT, "Root Container"},
+		{PUBLIC_FID_ROOT, PUBLIC_FID_IPMSUBTREE, "IPM_SUBTREE"},
+		{PUBLIC_FID_ROOT, PUBLIC_FID_NONIPMSUBTREE, "NON_IPM_SUBTREE"},
+		{PUBLIC_FID_NONIPMSUBTREE, PUBLIC_FID_EFORMSREGISTRY, "EFORMS REGISTRY"},
+	};
+	for (const auto &e : generic_folders) {
+		if (mbop_create_generic_folder(psqlite, e.fid, e.parent,
+		    domain_id, e.name)) {
+			printf("Failed to create \"%s\" folder\n", e.name);
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
+static int mk_options(sqlite3 *psqlite)
+{
+	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
+	if (pstmt == nullptr)
+		return EXIT_FAILURE;
+	char tmp_bguid[GUIDSTR_SIZE];
+	GUID::random_new().to_str(tmp_bguid, std::size(tmp_bguid));
+	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAILBOX_GUID);
+	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
+	if (pstmt.step() != SQLITE_DONE) {
+		printf("fail to step sql inserting\n");
+		return EXIT_FAILURE;
+	}
+	sqlite3_reset(pstmt);
+	std::pair<uint32_t, uint64_t> confprops[] = {
+		{CONFIG_ID_CURRENT_EID, 0x100},
+		{CONFIG_ID_MAXIMUM_EID, ALLOCATED_EID_RANGE},
+		{CONFIG_ID_LAST_CHANGE_NUMBER, g_last_cn},
+		{CONFIG_ID_LAST_CID, 0},
+		{CONFIG_ID_LAST_ARTICLE_NUMBER, g_last_art},
+		{CONFIG_ID_SEARCH_STATE, 0},
+		{CONFIG_ID_DEFAULT_PERMISSION, rightsGromoxPubDefault},
+		{CONFIG_ID_ANONYMOUS_PERMISSION, 0},
+	};
+	for (const auto &e : confprops) {
+		sqlite3_bind_int64(pstmt, 1, e.first);
+		sqlite3_bind_int64(pstmt, 2, e.second);
+		if (pstmt.step() != SQLITE_DONE) {
+			printf("fail to step sql inserting\n");
+			return EXIT_FAILURE;
+		}
+		sqlite3_reset(pstmt);
+	}
+	return EXIT_SUCCESS;
+}
+
 int main(int argc, char **argv)
 {
 	sqlite3 *psqlite;
@@ -190,65 +259,14 @@ int main(int argc, char **argv)
 	if (ret != 0)
 		return EXIT_FAILURE;
 
-	auto nt_time = rop_util_unix_to_nttime(time(nullptr));
-	std::pair<uint32_t, uint64_t> storeprops[] = {
-		{PR_CREATION_TIME, nt_time},
-		{PR_MESSAGE_SIZE_EXTENDED, 0},
-		{PR_ASSOC_MESSAGE_SIZE_EXTENDED, 0},
-		{PR_NORMAL_MESSAGE_SIZE_EXTENDED, 0},
-		{},
-	};
-	ret = mbop_insert_storeprops(psqlite, storeprops);
+	ret = mk_storeprops(psqlite, rop_util_unix_to_nttime(time(nullptr)));
 	if (ret != 0)
 		return EXIT_FAILURE;
-	static constexpr struct {
-		uint64_t parent = 0, fid = 0;
-		const char *name = nullptr;
-	} generic_folders[] = {
-		{0, PUBLIC_FID_ROOT, "Root Container"},
-		{PUBLIC_FID_ROOT, PUBLIC_FID_IPMSUBTREE, "IPM_SUBTREE"},
-		{PUBLIC_FID_ROOT, PUBLIC_FID_NONIPMSUBTREE, "NON_IPM_SUBTREE"},
-		{PUBLIC_FID_NONIPMSUBTREE, PUBLIC_FID_EFORMSREGISTRY, "EFORMS REGISTRY"},
-	};
-	for (const auto &e : generic_folders) {
-		if (mbop_create_generic_folder(psqlite, e.fid, e.parent,
-		    domain_id, e.name)) {
-			printf("Failed to create \"%s\" folder\n", e.name);
-			return EXIT_FAILURE;
-		}
-	}
-
-	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
-	if (pstmt == nullptr)
-		return EXIT_FAILURE;
-	char tmp_bguid[GUIDSTR_SIZE];
-	GUID::random_new().to_str(tmp_bguid, std::size(tmp_bguid));
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAILBOX_GUID);
-	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
-	if (pstmt.step() != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return EXIT_FAILURE;
-	}
-	sqlite3_reset(pstmt);
-	std::pair<uint32_t, uint64_t> confprops[] = {
-		{CONFIG_ID_CURRENT_EID, 0x100},
-		{CONFIG_ID_MAXIMUM_EID, ALLOCATED_EID_RANGE},
-		{CONFIG_ID_LAST_CHANGE_NUMBER, g_last_cn},
-		{CONFIG_ID_LAST_CID, 0},
-		{CONFIG_ID_LAST_ARTICLE_NUMBER, g_last_art},
-		{CONFIG_ID_SEARCH_STATE, 0},
-		{CONFIG_ID_DEFAULT_PERMISSION, rightsGromoxPubDefault},
-		{CONFIG_ID_ANONYMOUS_PERMISSION, 0},
-	};
-	for (const auto &e : confprops) {
-		sqlite3_bind_int64(pstmt, 1, e.first);
-		sqlite3_bind_int64(pstmt, 2, e.second);
-		if (pstmt.step() != SQLITE_DONE) {
-			printf("fail to step sql inserting\n");
-			return EXIT_FAILURE;
-		}
-		sqlite3_reset(pstmt);
-	}
-	pstmt.finalize();
+	ret = mk_folders(psqlite, domain_id);
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	ret = mk_options(psqlite);
+	if (ret != EXIT_SUCCESS)
+		return ret;
 	return sql_transact.commit() == SQLITE_OK ? EXIT_SUCCESS : EXIT_FAILURE;
 }
