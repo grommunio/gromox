@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
+#include <cassert>
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -15,6 +16,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <fmt/core.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
@@ -197,7 +199,7 @@ static int mk_folders(sqlite3 *psqlite, uint32_t user_id)
 	return EXIT_SUCCESS;
 }
 
-static int mk_options(sqlite3 *psqlite)
+static int mk_options(sqlite3 *psqlite, time_t ux_time)
 {
 	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
 	if (pstmt == nullptr)
@@ -230,12 +232,15 @@ static int mk_options(sqlite3 *psqlite)
 		}
 		sqlite3_reset(pstmt);
 	}
+	assert(confprops[1].first == CONFIG_ID_MAXIMUM_EID);
+	if (gx_sql_exec(psqlite, fmt::format("INSERT INTO allocated_eids VALUES ({}, {}, {}, 1)",
+	    1, confprops[1].second, ux_time).c_str()) != SQLITE_OK)
+		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }
 
 int main(int argc, char **argv)
 {
-	uint64_t nt_time;
 	sqlite3 *psqlite;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -360,7 +365,8 @@ int main(int argc, char **argv)
 	if (ret != 0)
 		return EXIT_FAILURE;
 	
-	nt_time = rop_util_unix_to_nttime(time(NULL));
+	auto ux_time = time(nullptr);
+	auto nt_time = rop_util_unix_to_nttime(ux_time);
 	ret = mk_receivefolders(psqlite, nt_time);
 	if (ret != EXIT_SUCCESS)
 		return ret;
@@ -370,7 +376,7 @@ int main(int argc, char **argv)
 	ret = mk_folders(psqlite, user_id);
 	if (ret != EXIT_SUCCESS)
 		return ret;
-	ret = mk_options(psqlite);
+	ret = mk_options(psqlite, ux_time);
 	if (ret != EXIT_SUCCESS)
 		return ret;
 	return sql_transact.commit() == SQLITE_OK ? EXIT_SUCCESS : EXIT_FAILURE;

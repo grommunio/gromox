@@ -21,15 +21,11 @@ static ssize_t ck_allocated_eids(sqlite3 *db)
 {
 	auto xt = gx_sql_begin(db, g_do_repair ? txn_mode::write : txn_mode::read);
 	std::vector<uint64_t> eids;
-	/*
-	 * Databases before Gromox ?? do not have the initial
-	 * system range (0..64K) in allocated_eids.
-	 */
-	auto stm = gx_sql_prep(db, fmt::format("SELECT f.folder_id "
+
+	auto stm = gx_sql_prep(db, "SELECT f.folder_id "
 		"FROM folders AS f LEFT JOIN allocated_eids AS a "
 		"ON a.range_begin <= f.folder_id AND f.folder_id < a.range_end "
-		"WHERE f.folder_id >= {} AND a.range_begin IS NULL",
-		static_cast<unsigned int>(PRIVATE_FID_CUSTOM)).c_str());
+		"WHERE f.folder_id > 0 AND a.range_begin IS NULL");
 	if (stm == nullptr)
 		return -1;
 	ssize_t probs = 0;
@@ -43,7 +39,7 @@ static ssize_t ck_allocated_eids(sqlite3 *db)
 
 	stm = gx_sql_prep(db, "SELECT m.message_id FROM messages AS m "
 		"LEFT JOIN allocated_eids AS a ON a.range_begin <= m.message_id "
-		"AND m.message_id < a.range_end WHERE m.message_id >= 0x10000 "
+		"AND m.message_id < a.range_end WHERE m.message_id > 0 "
 		"AND a.range_begin IS NULL");
 	if (stm == nullptr)
 		return -1;
