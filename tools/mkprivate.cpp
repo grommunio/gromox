@@ -233,7 +233,7 @@ static int mk_options(sqlite3 *psqlite, time_t ux_time)
 	 */
 	std::pair<uint32_t, uint64_t> confprops[] = {
 		{CONFIG_ID_CURRENT_EID, CUSTOM_EID_BEGIN},
-		{CONFIG_ID_MAXIMUM_EID, ALLOCATED_EID_RANGE},
+		{CONFIG_ID_MAXIMUM_EID, ALLOCATED_EID_RANGE - 1},
 		{CONFIG_ID_LAST_CHANGE_NUMBER, g_last_cn},
 		{CONFIG_ID_LAST_CID, 0},
 		{CONFIG_ID_LAST_ARTICLE_NUMBER, g_last_art},

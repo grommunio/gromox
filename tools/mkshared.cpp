@@ -35,7 +35,7 @@
 using namespace gromox;
 
 /* See common_util_allocate_eid() for notes on cur_eid/last_cn. */
-static uint64_t g_cur_eid = ALLOCATED_EID_RANGE + 1;
+static uint64_t g_cur_eid = ALLOCATED_EID_RANGE;
 uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
 uint32_t g_last_art;
 
