@@ -160,7 +160,6 @@ static constexpr struct HXoption g_options_table[] = {
 
 int main(int argc, char **argv)
 {
-	fprintf(stderr, "NOTE: This utility may be integrated into gromox-mbop before the end of the development phase. Expect the command \"gromox-mbck\" to go away.\n");
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (argc < 2) {

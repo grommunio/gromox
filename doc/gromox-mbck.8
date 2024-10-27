@@ -5,8 +5,13 @@
 \fBgromox\-mbck\fP [\fB\-p\fP] x.sqlite
 .SH Description
 mbck can be used to check one or more mailboxes for problems, and optionally
-repairing them. Since Gromox 2.30, the utility can be run while the mailbox is
-in active use by gromox\-http.
+repairing them.
+.PP
+It is technically safe to run gromox\-mbck while gromox\-http has a mailbox
+open, provided Gromox is version >= 2.30. HOWEVER, gromox\-http (still as of
+Gromox 2.36) does not anticipate databases being write-locked by another
+process, and signals an operational error to the caller. For example, mail
+cannot be delivered to the mailbox while mbck is running in repair/write mode.
 .SH Options
 .TP
 \fB\-p\fP
