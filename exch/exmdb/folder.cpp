@@ -244,6 +244,21 @@ BOOL exmdb_server::get_folder_by_name(const char *dir,
 	return TRUE;
 }
 
+/**
+ * Implementations are free in their EID assignment. The following describes
+ * the choices made, not requirements.
+ *
+ * Creating a folder through EXRPC can reserve an ALLOCATE_EID_RANGE-sized block
+ * of EIDs to facilitate the idset locality of message IDs. If the caller of
+ * this EXRPC has not preselected an EID for the folder, an EID will be taken
+ * from that reservation block.
+ *
+ * PRIVATE_FID_DRAFTS  fid 0xe       msgs  0x40002.. 0x50000
+ * "1st Other Folder"  fid 0x1d0001  msgs 0x1d0002..0x1d2711
+ * "2nd Other Folder"  fid 0x1d2711  msgs 0x1d2712..0x1d4e21
+ *
+ * The folder's own EID plays no role in locality considerations.
+ */
 BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
     TPROPVAL_ARRAY *pproperties, uint64_t *pfolder_id, ec_error_t *errcode)
 {

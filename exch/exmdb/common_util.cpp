@@ -262,6 +262,11 @@ STRING_ARRAY *common_util_convert_copy_string_array(BOOL to_utf8,
 	return parray1;
 }
 
+/**
+ * Note the different semantics between CN and EIDs. For CN, we record the
+ * last assigned cn, whereas for EIDs, the next usable EID is recorded.
+ * This is the reason for ++g_last_cn but cur_eid++.
+ */
 BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 {
 	uint64_t cur_eid;
@@ -313,6 +318,9 @@ BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 	return TRUE;
 }
 
+/**
+ * See common_util_allocate_eid() for notes!
+ */
 BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t *peid)
 {
@@ -351,6 +359,9 @@ BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 	return TRUE;
 }
 
+/**
+ * See common_util_allocate_eid() for notes!
+ */
 ec_error_t cu_allocate_cn(sqlite3 *psqlite, uint64_t *pcn)
 {
 	char sql_string[128];

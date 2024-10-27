@@ -213,6 +213,24 @@ static int mk_options(sqlite3 *psqlite, time_t ux_time)
 		return EXIT_FAILURE;
 	}
 	sqlite3_reset(pstmt);
+	/*
+	 * By now, we have already created some built-in folders,
+	 * given them message reservation ranges,
+	 * and used some CNs already.
+	 *
+	 * - EIDs 1 .. 0x1d (PRIVATE_FID_UNASSIGNED_START-1) are used for folders
+	 * - EIDs 0x10001 .. 0x170000 are reserved for folders' messages
+	 * - g_cur_eid is 0x170001
+	 * - CNs 1 .. 0x1d are used
+	 * - g_last_cn is 0x1d
+	 *
+	 * The region 0x1e .. 0xff is not used.
+	 *
+	 * The region 0x100 .. 0x10000 is free for use, and that is what we
+	 * enter for CONFIG_ID_*_EID instead of g_last_eid. Once this region is
+	 * used up, exmdb will automatically jump and continue at e.g.
+	 * 0x170001.
+	 */
 	std::pair<uint32_t, uint64_t> confprops[] = {
 		{CONFIG_ID_CURRENT_EID, 0x100},
 		{CONFIG_ID_MAXIMUM_EID, ALLOCATED_EID_RANGE},

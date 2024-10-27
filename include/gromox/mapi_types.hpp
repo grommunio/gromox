@@ -425,7 +425,12 @@ enum notif_type : unsigned int {
 #define TABLE_EVENT_RESTRICTION_CHANGED				0x0007
 
 enum {
-	/* List of permanent (not removable) folders */
+	/*
+	 * The following folders are referenced in e.g. the ropLogon response.
+	 * Assigning them a well-known EID and considering them to be permanent
+	 * (non-deletable) allows for convenient construction of their EID
+	 * without having to do lengthy lookups in the mailbox.
+	 */
 	PRIVATE_FID_ROOT = 0x01,
 	PRIVATE_FID_DEFERRED_ACTION = 0x02,
 	PRIVATE_FID_SPOOLER_QUEUE = 0x03,
