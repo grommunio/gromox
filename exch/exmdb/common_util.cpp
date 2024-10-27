@@ -269,8 +269,6 @@ STRING_ARRAY *common_util_convert_copy_string_array(BOOL to_utf8,
  */
 BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 {
-	uint64_t cur_eid;
-	uint64_t max_eid;
 	char sql_string[128];
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT config_value "
@@ -279,24 +277,24 @@ BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
-	cur_eid = sqlite3_column_int64(pstmt, 0);
+	auto cur_eid = pstmt.col_uint64(0);
 	pstmt.finalize();
-	*peid = cur_eid + 1;
 	snprintf(sql_string, std::size(sql_string), "SELECT config_value "
 				"FROM configurations WHERE config_id=%u",
 				CONFIG_ID_MAXIMUM_EID);
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
-	max_eid = sqlite3_column_int64(pstmt, 0);
+	auto max_eid = pstmt.col_uint64(0);
 	pstmt.finalize();
 	if (cur_eid >= max_eid) {
 		pstmt = gx_sql_prep(psqlite, "SELECT MAX(range_end) FROM allocated_eids");
 		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			return FALSE;
-		cur_eid = sqlite3_column_int64(pstmt, 0);
-		max_eid = cur_eid + ALLOCATED_EID_RANGE;
+		cur_eid = pstmt.col_uint64(0); /* e.g. 0x1ffff */
 		pstmt.finalize();
+		max_eid = cur_eid + ALLOCATED_EID_RANGE; /* becomes 0x2ffff */
+		cur_eid++; /* becomes 0x20000 */
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO allocated_eids"
 			" VALUES (%llu, %llu, %lld, 1)",
 		        LLU{cur_eid + 1}, LLU{max_eid}, LLD{time(nullptr)});
@@ -307,9 +305,9 @@ BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 			LLU{max_eid}, CONFIG_ID_MAXIMUM_EID);
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-	} else {
-		cur_eid ++;
 	}
+	/* hand out e.g. 0x20000, set db to indicate nextid=0x20001 */
+	*peid = cur_eid++;
 	snprintf(sql_string, std::size(sql_string), "UPDATE configurations SET"
 		" config_value=%llu WHERE config_id=%u",
 		LLU{cur_eid}, CONFIG_ID_CURRENT_EID);
