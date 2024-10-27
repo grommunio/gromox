@@ -2188,14 +2188,12 @@ ec_error_t zs_deletefolder(GUID hsession,
 	if (b_private != pstore->b_private || account_id != pstore->account_id)
 		return ecInvalidParam;
 	if (pstore->b_private) {
-		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
+		if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
-		}
 	} else {
 		if (1 == rop_util_get_replid(folder_id) &&
-			rop_util_get_gc_value(folder_id) < PUBLIC_FID_CUSTOM) {
+		    rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
-		}
 	}
 	const char *username = nullptr;
 	if (!pstore->owner_mode()) {
@@ -4595,7 +4593,7 @@ ec_error_t zs_importfolder(GUID hsession,
 		within public mailbox is not supported */
 		if (!pstore->b_private)
 			return ecNotSupported;
-		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM)
+		if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 		if (!pstore->owner_mode()) {
 			if (!exmdb_client::get_folder_perm(pstore->get_dir(),

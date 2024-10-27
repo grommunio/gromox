@@ -823,8 +823,7 @@ static BOOL folder_empty_folder(db_conn_ptr &pdb, cpid_t cpid,
 			*pb_partial = TRUE;
 			continue;
 		}
-		if ((b_private && fid_val < PRIVATE_FID_CUSTOM) ||
-		    (!b_private && fid_val < PUBLIC_FID_CUSTOM)) {
+		if (fid_val < CUSTOM_EID_BEGIN) {
 			*pb_partial = TRUE;
 			continue;
 		}
@@ -861,13 +860,13 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		return false;
 	BOOL b_search = false;
 	auto fid_val = rop_util_get_gc_value(folder_id);
+	if (fid_val < CUSTOM_EID_BEGIN) {
+		*pb_result = FALSE;
+		return TRUE;
+	}
 	if (exmdb_server::is_private()) {
 		if (!g_exmdb_pvt_folder_softdel)
 			b_hard = TRUE;
-		if (fid_val < PRIVATE_FID_CUSTOM) {
-			*pb_result = FALSE;
-			return TRUE;
-		}
 		snprintf(sql_string, std::size(sql_string), "SELECT is_search FROM"
 		          " folders WHERE folder_id=%llu", LLU{fid_val});
 		auto pstmt = pdb->prep(sql_string);
@@ -880,9 +879,6 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		}
 		if (pstmt.col_int64(0) != 0)
 			b_search = b_hard = TRUE;
-	} else if (fid_val < PUBLIC_FID_CUSTOM) {
-		*pb_result = FALSE;
-		return TRUE;
 	}
 
 	db_conn::NOTIFQ notifq;
@@ -1622,18 +1618,9 @@ BOOL exmdb_server::movecopy_folder(const char *dir, cpid_t cpid, BOOL b_guest,
 	auto dst_val = rop_util_get_gc_value(dst_fid);
 	auto parent_val = rop_util_get_gc_value(src_pid);
 	*errcode = ecError;
-	if (!b_copy) {
-		if (exmdb_server::is_private()) {
-			if (src_val < PRIVATE_FID_CUSTOM) {
-				*errcode = ecAccessDenied;
-				return TRUE;
-			}
-		} else {
-			if (src_val < PUBLIC_FID_CUSTOM) {
-				*errcode = ecAccessDenied;
-				return TRUE;
-			}
-		}
+	if (!b_copy && src_val < CUSTOM_EID_BEGIN) {
+		*errcode = ecAccessDenied;
+		return TRUE;
 	}
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)

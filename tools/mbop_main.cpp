@@ -430,8 +430,8 @@ static int main(int argc, char **argv)
 		fprintf(stderr, "No folder name translations for locale \"%s\" available.\n", g_language);
 		return EXIT_SUCCESS;
 	}
-	unsigned int start_gcv = g_public_folder ? PUBLIC_FID_ROOT : PRIVATE_FID_ROOT;
-	unsigned int end_gcv   = g_public_folder ? PUBLIC_FID_CUSTOM : PRIVATE_FID_CUSTOM;
+	unsigned int start_gcv = 1;
+	unsigned int end_gcv   = g_public_folder ? PUBLIC_FID_UNASSIGNED_START : PRIVATE_FID_UNASSIGNED_START;
 	for (unsigned int gcv = start_gcv; gcv < end_gcv; ++gcv) {
 		auto new_name = folder_namedb_get(lang, gcv);
 		if (new_name == nullptr)

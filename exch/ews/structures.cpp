@@ -681,7 +681,9 @@ sFolderSpec::sFolderSpec(const std::string &t, uint64_t fid) :
  * @return     true if the folder is distinguished, false otherwise
  */
 bool sFolderSpec::isDistinguished() const
-{return rop_util_get_gc_value(folderId) < (location == PUBLIC? PUBLIC_FID_CUSTOM : PRIVATE_FID_CUSTOM);}
+{
+	return rop_util_get_gc_value(folderId) < CUSTOM_EID_BEGIN;
+}
 
 /**
  * @brief     Trim target specification according to location

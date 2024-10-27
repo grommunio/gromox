@@ -1197,7 +1197,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		within public mailbox is not supported */
 		if (!plogon->is_private())
 			return ecNotSupported;
-		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM)
+		if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 		if (plogon->logon_mode != logon_mode::owner) {
 			if (!exmdb_client::get_folder_perm(dir,

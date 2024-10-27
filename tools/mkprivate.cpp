@@ -224,7 +224,7 @@ static int mk_options(sqlite3 *psqlite, time_t ux_time)
 	 * - CNs 1 .. 0x1d are used
 	 * - g_last_cn is 0x1d
 	 *
-	 * The region 0x1e .. 0xff is not used.
+	 * The region 0x1e .. 0xff is set aside for built-in folders.
 	 *
 	 * The region 0x100 .. 0x10000 is free for use, and that is what we
 	 * enter for CONFIG_ID_*_EID instead of g_last_eid. Once this region is
@@ -232,7 +232,7 @@ static int mk_options(sqlite3 *psqlite, time_t ux_time)
 	 * 0x170001.
 	 */
 	std::pair<uint32_t, uint64_t> confprops[] = {
-		{CONFIG_ID_CURRENT_EID, 0x100},
+		{CONFIG_ID_CURRENT_EID, CUSTOM_EID_BEGIN},
 		{CONFIG_ID_MAXIMUM_EID, ALLOCATED_EID_RANGE},
 		{CONFIG_ID_LAST_CHANGE_NUMBER, g_last_cn},
 		{CONFIG_ID_LAST_CID, 0},

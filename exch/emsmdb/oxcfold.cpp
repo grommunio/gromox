@@ -287,11 +287,11 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	if (plogon == nullptr)
 		return ecError;
 	 if (plogon->is_private()) {
-		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM)
+		if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 	} else {
 		if (rop_util_get_replid(folder_id) == 1 &&
-		    rop_util_get_gc_value(folder_id) < PUBLIC_FID_CUSTOM)
+		    rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -542,8 +542,7 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 			return ecInvalidParam;
 		strcpy(new_name, pnew_name);
 	}
-	if (rop_util_get_gc_value(folder_id) <
-	    (plogon->is_private() ? PRIVATE_FID_CUSTOM : PUBLIC_FID_CUSTOM))
+	if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 		return ecAccessDenied;
 	auto dir = plogon->get_dir();
 	auto rpc_user = znul(get_rpc_info().username);
