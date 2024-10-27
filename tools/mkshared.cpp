@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
@@ -35,7 +35,7 @@
 using namespace gromox;
 
 /* See common_util_allocate_eid() for notes on cur_eid/last_cn. */
-static uint64_t g_last_eid = ALLOCATED_EID_RANGE;
+static uint64_t g_cur_eid = ALLOCATED_EID_RANGE + 1;
 uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
 uint32_t g_last_art;
 
@@ -294,9 +294,9 @@ int mbop_create_generic_folder(sqlite3 *sdb, uint64_t folder_id,
     uint64_t parent_id, int user_id, const char *dispname,
     const char *cont_cls, bool hidden)
 {
-	auto cur_eid = g_last_eid + 1;
-	g_last_eid += ALLOCATED_EID_RANGE;
-	auto max_eid = g_last_eid;
+	auto cur_eid = g_cur_eid;
+	g_cur_eid += ALLOCATED_EID_RANGE;
+	auto max_eid = g_cur_eid - 1;
 	auto qstr = fmt::format("INSERT INTO allocated_eids VALUES ({}, {}, {}, 1)",
 	            cur_eid, max_eid, time(nullptr));
 	if (gx_sql_exec(sdb, qstr.c_str()) != SQLITE_OK)
