@@ -335,6 +335,17 @@ static constexpr char tbl_replguidmap_14[] =
 "REPLACE INTO replguidmap (replid) VALUES (5);"
 "DELETE FROM replguidmap WHERE replid=5;";
 
+static constexpr char tbl_fixsyseidalloc_15[] =
+"INSERT INTO allocated_eids (range_begin,range_end,allocate_time,is_system) "
+"VALUES ((SELECT MAX(range_end)+1 FROM allocated_eids), "
+"(SELECT MAX(range_end)+0x10000 FROM allocated_eids),UNIXEPOCH(),1)";
+
+static constexpr char tbl_fixsyseidalloc_16[] =
+"UPDATE configurations SET config_value=(SELECT MAX(range_begin) FROM allocated_eids) WHERE config_id=2"; // CONIFG_ID_CURRENT_EID
+
+static constexpr char tbl_fixsyseidalloc_17[] =
+"UPDATE configurations SET config_value=(SELECT MAX(range_end) FROM allocated_eids) WHERE config_id=3"; // CONIFG_ID_MAXIMUM_EID
+
 static constexpr char tbl_pub_folders_0[] =
 "CREATE TABLE folders ("
 "  folder_id INTEGER PRIMARY KEY,"
@@ -567,6 +578,9 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{11, tbl_pvt_autoreply_ts_11},
 	{12, "CREATE UNIQUE INDEX namedprop_unique ON named_properties(name_string)"},
 	{14, tbl_replguidmap_14},
+	{15, tbl_fixsyseidalloc_15},
+	{16, tbl_fixsyseidalloc_16},
+	{17, tbl_fixsyseidalloc_17},
 	/* advance schema numbers in lockstep with public stores */
 	TABLE_END,
 };
@@ -579,6 +593,9 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 	{5, nullptr, "recipients_properties", tbl_rcptprops_5, tbl_rcptprops_move5},
 	{6, nullptr, "attachment_properties", tbl_atxprops_6, tbl_atxprops_move6},
 	{14, tbl_replguidmap_14},
+	{15, tbl_fixsyseidalloc_15},
+	{16, tbl_fixsyseidalloc_16},
+	{17, tbl_fixsyseidalloc_17},
 	/* advance schema numbers in lockstep with private stores */
 	TABLE_END,
 };
