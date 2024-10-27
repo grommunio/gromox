@@ -324,8 +324,6 @@ BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t *peid)
 {
-	uint64_t cur_eid;
-	uint64_t max_eid;
 	char sql_string[128];
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT cur_eid, max_eid "
@@ -333,24 +331,25 @@ BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
-	*peid = sqlite3_column_int64(pstmt, 0);
-	max_eid = sqlite3_column_int64(pstmt, 1);
+	auto cur_eid = pstmt.col_uint64(0);
+	auto max_eid = pstmt.col_uint64(1);
 	pstmt.finalize();
-	cur_eid = *peid + 1;
-	if (cur_eid > max_eid) {
+	if (cur_eid >= max_eid) {
 		pstmt = gx_sql_prep(psqlite, "SELECT MAX(range_end) FROM allocated_eids");
 		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			return FALSE;
-		*peid = sqlite3_column_int64(pstmt, 0);
+		cur_eid = pstmt.col_uint64(0); /* e.g. 0x1ffff */
 		pstmt.finalize();
-		max_eid = *peid + ALLOCATED_EID_RANGE;
-		cur_eid = *peid + 1;
+		max_eid = cur_eid + ALLOCATED_EID_RANGE; /* becomes 0x2ffff */
+		++cur_eid; /* becomes 0x20000 */
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO allocated_eids"
 			" VALUES (%llu, %llu, %llu, 1)", LLU{cur_eid},
 			LLU{max_eid}, LLD{time(nullptr)});
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
+	/* hand out e.g. 0x20000, set db to indicate nextid=0x20001 */
+	*peid = cur_eid++;
 	snprintf(sql_string, std::size(sql_string), "UPDATE folders SET cur_eid=%llu,"
 		" max_eid=%llu WHERE folder_id=%llu", LLU{cur_eid},
 		LLU{max_eid}, LLU{folder_id});
