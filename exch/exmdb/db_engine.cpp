@@ -99,6 +99,7 @@ static std::condition_variable g_waken_cond;
 static std::unordered_map<std::string, db_base> g_hash_table;
 /* List of queued searchcriteria, and list of searchcriteria evaluated right now */
 static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
+static std::optional<std::counting_semaphore<1>> g_autoupg_limiter;
 unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 unsigned long long g_exmdb_search_pacing_time = 2000000000;
 unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
@@ -167,6 +168,15 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	}
 	if (current >= recent)
 		return 0;
+
+	/*
+	 * db_engine is prone to starting way too many threads. Until that is
+	 * fixed, here is a limiter over a cpu-intensive operation as a
+	 * workaround.
+	 */
+	g_autoupg_limiter->acquire();
+	auto cl_0 = make_scope_exit([]() { g_autoupg_limiter->release(); });
+
 	auto c = is_pvt ? 'V' : 'B';
 	mlog(LV_NOTICE, "dbop_sqlite: %s: current schema E%c-%d; upgrading to E%c-%d.",
 		filedesc, c, current, c, recent);
@@ -822,6 +832,7 @@ void db_engine_init(size_t table_size, int cache_interval, unsigned int threads_
 	g_cache_interval = std::chrono::seconds{cache_interval};
 	g_threads_num = threads_num;
 	g_thread_ids.reserve(g_threads_num);
+	g_autoupg_limiter.emplace(threads_num);
 }
 
 int db_engine_run()
