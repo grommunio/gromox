@@ -887,8 +887,11 @@ void db_engine_stop()
 	}
 	g_thread_ids.clear();
 	{ /* silence cov-scan, take locks even in single-thread scenarios */
+		auto t_start = tp_now();
 		std::lock_guard lk(g_hash_lock);
 		g_hash_table.clear();
+		mlog(LV_INFO, "Database shutdown took %llu ms",
+			LLU(std::chrono::duration_cast<std::chrono::milliseconds>(tp_now() - t_start).count()));
 	}
 	{
 		std::lock_guard lk(g_list_lock);
