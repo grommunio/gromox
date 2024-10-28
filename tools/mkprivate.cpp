@@ -364,6 +364,8 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
+	if (gx_sql_exec(psqlite, "PRAGMA journal_mode=WAL") != SQLITE_OK)
+		return EXIT_FAILURE;
 	if (opt_integ)
 		return dbop_sqlite_integcheck(psqlite, LV_ERR) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 	unsigned int flags = 0;
