@@ -230,8 +230,9 @@ int main(int argc, char **argv)
 	auto cl_0 = make_scope_exit(sqlite3_shutdown);
 	if (opt_upgrade)
 		return mbop_upgrade(temp_path.c_str(), sqlite_kind::pub);
-	if (sqlite3_open_v2(temp_path.c_str(), &psqlite,
-	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK) {
+	unsigned int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX;
+	if (sqlite3_open_v2(temp_path.c_str(), &psqlite, flags,
+	    nullptr) != SQLITE_OK) {
 		printf("fail to create store database\n");
 		return EXIT_FAILURE;
 	}
@@ -240,7 +241,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	if (opt_integ)
 		return dbop_sqlite_integcheck(psqlite, LV_ERR) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
-	unsigned int flags = 0;
+	flags = 0;
 	if (opt_upgrade) {
 		auto ret = dbop_sqlite_upgrade(psqlite, temp_path.c_str(),
 		           sqlite_kind::pub, flags);
