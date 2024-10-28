@@ -32,6 +32,7 @@
 #include <gromox/tie.hpp>
 #include "mkshared.hpp"
 
+using namespace std::string_literals;
 using namespace gromox;
 
 /* See common_util_allocate_eid() for notes on cur_eid/last_cn. */
@@ -206,7 +207,16 @@ int mbop_truncate_chown(const char *tool, const char *file, bool force_overwrite
 	unsigned int flags = O_RDWR | O_CREAT | O_EXCL;
 	if (force_overwrite) {
 		flags &= ~O_EXCL;
-		flags |= O_TRUNC;
+		/*
+		 * Must not use O_TRUNC: if mkprivate were to O_TRUNC the db
+		 * file, the inode number would be kept, mkprivate would find
+		 * exchange.sqlite3-wal which matches, and then fail to do any
+		 * transactions. (It would also make a still-running http quite
+		 * unhappy.) So really just unreference everything.
+		 */
+		unlink(file);
+		unlink((file + "-shm"s).c_str());
+		unlink((file + "-wal"s).c_str());
 	}
 	auto fd = open(file, flags, S_IRUSR | S_IWUSR | S_IWGRP | S_IRGRP);
 	if (fd >= 0) {
