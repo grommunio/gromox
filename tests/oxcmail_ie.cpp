@@ -159,6 +159,24 @@ static BOOL ie_get_propids(const ie_name_entry *map, size_t mapsize,
 	return TRUE;
 }
 
+static int excess_attachment()
+{
+	static char data[] = "Content-Type: message/rfc822\n";
+	MAIL m;
+	assert(m.load_from_str_move(data, strlen(data)));
+	mptr mc(oxcmail_import(nullptr, "UTC", &m, g_alloc, ee_get_propids));
+	assert(mc != nullptr);
+	auto atl = mc->children.pattachments;
+	assert(atl != nullptr);
+	assert(atl->count == 1);
+	auto atx = atl->pplist[0];
+	assert(atx != nullptr);
+	assert(atx->pembedded != nullptr);
+	atl = atx->pembedded->children.pattachments;
+	assert(atl == nullptr || atl->count == 0);
+	return 0;
+}
+
 static int select_parts_1()
 {
 	/*
@@ -431,6 +449,7 @@ int main()
 		fprintf(stderr, "oxcmail_init: unspecified error\n");
 		return EXIT_FAILURE;
 	}
+	excess_attachment();
 	select_parts_1();
 	select_parts_2();
 	select_parts_3();

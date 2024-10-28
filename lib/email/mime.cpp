@@ -80,13 +80,12 @@ bool MIME::load_from_str_move(MIME *pmime_parent, char *in_buff, size_t length) 
 	
 	pmime->clear();
 	if (0 == length) {
-		/* in case of NULL content, we think such MIME
-		 * is a NULL application/octet-stream
-		 */
+		/* No content: syntactically same as implied plaintext */
 		pmime->head_touched = FALSE;
 		pmime->content_begin = NULL;
 		pmime->content_length = 0;
 		pmime->mime_type = mime_type::single;
+		strcpy(pmime->content_type, "text/plain");
 		return true;
 	}
 	while (current_offset <= length) {
