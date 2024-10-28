@@ -34,6 +34,8 @@ get\-photo: retrieve user image from store and print to stdout
 get\-websettings, get\-websettings\-persistent, get\-websettings\-recipients:
 retrieve settings for grommunio-web
 .IP \(bu 4
+ping: cause a mailbox's sqlite files to be opened
+.IP \(bu 4
 purge\-datafiles: remove orphaned attachments/content files from disk
 .IP \(bu 4
 purge\-softdelete: remove soft-deleted items from a folder
@@ -194,6 +196,9 @@ a summary will be shown there.
 \fBget\-websettings\-recipients >\fP\fIautocomplete.json\fP
 .SS Description
 Reads various grommunio-web settings from the store and dumps it to stdout.
+.SH ping
+Any EXRPC causes the respective mailbox to be loaded from the filesystem,
+and ping_store is just a practical no-op.
 .SH purge\-datafiles
 The "purge\-datafiles" RPC makes exmdb_provider remove attachment and content
 files from disk that are no longer referenced by any message.

@@ -547,7 +547,7 @@ static int help()
 	fprintf(stderr, "Commands:\n\tclear-photo clear-profile clear-rwz delmsg "
 		"emptyfld get-freebusy get-photo get-websettings "
 		"get-websettings-persistent "
-		"get-websettings-recipients "
+		"get-websettings-recipients ping "
 		"purge-datafiles purge-softdelete recalc-sizes set-locale "
 		"set-photo set-websettings set-websettings-persistent "
 		"set-websettings-recipients unload vacuum\n");
@@ -608,6 +608,8 @@ static int main(int argc, char **argv)
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (strcmp(argv[0], "purge-datafiles") == 0)
 		ok = exmdb_client::purge_datafiles(g_storedir);
+	else if (strcmp(argv[0], "ping") == 0)
+		ok = exmdb_client::ping_store(g_storedir);
 	else if (strcmp(argv[0], "unload") == 0)
 		ok = exmdb_client::unload_store(g_storedir);
 	else if (strcmp(argv[0], "vacuum") == 0)
