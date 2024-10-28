@@ -139,6 +139,7 @@ struct db_base {
 	void handle_spares(sqlite3 *, sqlite3 *);
 
 	void open(const char* dir);
+	void drop_all();
 	void get_dbs(const char *dir, sqlite3 *&main, sqlite3 *&eph);
 
 private:

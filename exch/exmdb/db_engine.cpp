@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <future>
 #include <list>
 #include <mutex>
 #include <optional>
@@ -529,6 +530,15 @@ db_base::~db_base()
 	tables.table_list.clear();
 }
 
+void db_base::drop_all()
+{
+	instance_list.clear();
+	dynamic_list.clear();
+	tables.table_list.clear();
+	mx_sqlite_eph.clear();
+	mx_sqlite.clear();
+}
+
 /**
  * Check if this db_base object is ripe for deletion.
  */
@@ -888,7 +898,22 @@ void db_engine_stop()
 	g_thread_ids.clear();
 	{ /* silence cov-scan, take locks even in single-thread scenarios */
 		auto t_start = tp_now();
-		std::lock_guard lk(g_hash_lock);
+		size_t conc = std::min(std::thread::hardware_concurrency(), g_threads_num);
+		std::vector<std::future<void>> futs;
+		auto iter = g_hash_table.begin();
+		for (size_t tid = 0; tid < conc; ++tid) {
+			if (iter == g_hash_table.end())
+				break;
+			futs.emplace_back(std::async([](size_t tid, decltype(g_hash_table)::iterator iter, size_t skip) -> void {
+				while (iter != g_hash_table.end()) {
+					iter->second.drop_all();
+					for (size_t i = 0; i < skip && iter != g_hash_table.end(); ++i)
+						++iter;
+				}
+			}, tid, iter, conc));
+			++iter;
+		}
+		futs.clear();
 		g_hash_table.clear();
 		mlog(LV_INFO, "Database shutdown took %llu ms",
 			LLU(std::chrono::duration_cast<std::chrono::milliseconds>(tp_now() - t_start).count()));
