@@ -28,7 +28,11 @@ Default: \fI(empty)\fP
 The usual config file location is /etc/gromox/exmdb_provider.cfg.
 .TP
 \fBcache_interval\fP
+The inactivity timer after which a mailbox's sqlite files are closed.
+.br
 Default: \fI2 hours\fP
+.br
+Lower limit: 1s
 .TP
 \fBdbg_synthesize_content\fP
 When this directive is set to 1, missing content files will not be regarded as
