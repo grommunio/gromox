@@ -196,6 +196,9 @@ number of outbound connections for receiving notification RPCs.
 Default: \fI4\fP
 .TP
 \fBpopulating_threads_num\fP
+The number of threads to spawn that will work on asynchronous search folder
+population.
+.br
 Default: \fI4\fP
 .TP
 \fBrpc_proxy_connection_num\fP

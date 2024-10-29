@@ -67,7 +67,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"max_rule_number", "1000", CFG_SIZE, "1", "2000"},
 	{"max_store_message_count", "0", CFG_SIZE},
 	{"notify_stub_threads_num", "4", CFG_SIZE, "0"},
-	{"populating_threads_num", "50", CFG_SIZE, "1", "50"},
+	{"populating_threads_num", "4", CFG_SIZE, "1", "50"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "0"},
 	{"sqlite_debug", "0"},
 	{"sqlite_busy_timeout", "60s", CFG_TIME_NS, "0s", "1h"},
