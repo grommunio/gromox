@@ -37,15 +37,16 @@ configuration files.
 Default: \fI/etc/gromox/event:/etc/gromox\fP
 .TP
 \fBevent_hosts_allow\fP
-A space-separated list of individual IPv6 or v4-mapped IPv6 host addresses that
-are allowed to converse with the event service. No networks and no CIDR
-notations are permitted. This option deprecates the /etc/gromox/event_acl.txt
-file used in earlier versions.
+A space-separated list of individual host addresses that are allowed to
+converse with the event service. The addresses must conform to gromox(7) \sc
+"Host addresses". No networks and no CIDR notations are permitted. This option
+deprecates the /etc/gromox/event_acl.txt file used before Gromox 2.8.
 .br
 Default: \fI::1\fP
 .TP
 \fBevent_listen_ip\fP
-An IPv6 address (or v4-mapped address) for exposing the event service on.
+The IPv6 socket address for exposing the event service on. The address must
+conform to gromox(7) \sc "Host addresses".
 .br
 Default: \fI::1\fP
 .TP

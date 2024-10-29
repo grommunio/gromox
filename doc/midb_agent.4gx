@@ -39,7 +39,8 @@ Initial prefix to match a user's exmdb home directory on. The pattern should
 almost always end in a '/' character, otherwise a prefix of "/home" is able to
 match a userdir of "/home2/username" as well, which may be undesired.
 .IP \(bu 4
-The IPv6 (or v4-mapped) address of the midb server to use for this prefix.
+The IPv6 address of the midb server to connect to for all requests involving
+this prefix. The address must conform to gromox(7) \sc "Host addresses".
 .IP \(bu 4
 The port number.
 .PP

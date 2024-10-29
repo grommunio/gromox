@@ -195,7 +195,8 @@ A portion of the store path to match on
 .IP \(bu 4
 The type of store ("private" or "public")
 .IP \(bu 4
-An IPv6 address (or v4-mapped address) of the server running exmdb_provider(4gx)
+The IPv6 socket address of the server running exmdb_provider(4gx). The address
+must conform to gromox(7) \sc "Host addresses".
 .IP \(bu 4
 The TCP port number of the server
 .SH Files

@@ -347,6 +347,13 @@ system, but can be shared through network filesystems provided that file
 locking is properly implemented in the filesystem driver. Normal file
 mechanisms can be used to backup or transfer the database to another Gromox
 host.
+.SH Host addresses
+Gromox exclusively uses the AF_INET6 socket family with the Berkeley/BSD/POSIX
+socket API. What this means is that, whenever an IP address is logged, it will
+have the form specified in RFC 4291 §2.2/§2.5.5. Furthermore, whenever some
+configuration file directive (field) requires an IP address (i.e. you cannot or
+do not want to use a hostname), the RFC 4291 form \fBmust\fP be used for both
+IPv6 and IPv4.
 .SH Listening sockets
 .IP \(bu 4
 /run/gromox/zcore.sock \(em zcore(8gx)
