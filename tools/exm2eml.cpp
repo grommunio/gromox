@@ -164,6 +164,8 @@ int main(int argc, char **argv) try
 	gi_setup_early(g_username);
 	if (gi_setup() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
+	if (gi_startup_client() != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 	auto cl_5 = make_scope_exit(gi_shutdown);
 
 	MESSAGE_CONTENT *ctnt = nullptr;

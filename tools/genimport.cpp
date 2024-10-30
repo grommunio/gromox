@@ -531,8 +531,6 @@ static void gi_free(void *) {}
 
 int gi_setup_from_dir()
 {
-	exmdb_local_rules_execute = reinterpret_cast<decltype(exmdb_local_rules_execute)>(service_query("rules_execute",
-	                            "system", typeid(*exmdb_local_rules_execute)));
 	auto sqh = sql_login();
 	if (sqh == nullptr)
 		return EXIT_FAILURE;
@@ -550,16 +548,11 @@ int gi_setup_from_dir()
 		        g_storedir, strerror(-ret));
 		return EXIT_FAILURE;
 	}
-	exmdb_rpc_alloc = gi_alloc;
-	exmdb_rpc_free = gi_free;
-	exmdb_client_init(1, 0);
-	return exmdb_client_run(PKGSYSCONFDIR);
+	return EXIT_SUCCESS;
 }
 
 int gi_setup()
 {
-	exmdb_local_rules_execute = reinterpret_cast<decltype(exmdb_local_rules_execute)>(service_query("rules_execute",
-	                            "system", typeid(*exmdb_local_rules_execute)));
 	auto sqh = sql_login();
 	if (sqh == nullptr)
 		return EXIT_FAILURE;
@@ -576,10 +569,7 @@ int gi_setup()
 		return EXIT_FAILURE;
 	}
 	g_storedir = g_storedir_s.c_str();
-	exmdb_rpc_alloc = gi_alloc;
-	exmdb_rpc_free = gi_free;
-	exmdb_client_init(1, 0);
-	return exmdb_client_run(PKGSYSCONFDIR);
+	return EXIT_SUCCESS;
 }
 
 namespace {
@@ -663,6 +653,16 @@ eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 		fid = *newfid;
 	}
 	return fid;
+}
+
+int gi_startup_client(unsigned int maxconn)
+{
+	exmdb_local_rules_execute = reinterpret_cast<decltype(exmdb_local_rules_execute)>(service_query("rules_execute",
+	                            "system", typeid(*exmdb_local_rules_execute)));
+	exmdb_rpc_alloc = gi_alloc;
+	exmdb_rpc_free = gi_free;
+	exmdb_client_init(maxconn, 0);
+	return exmdb_client_run(PKGSYSCONFDIR);
 }
 
 void gi_shutdown()

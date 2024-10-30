@@ -847,6 +847,8 @@ int main(int argc, char **argv)
 		if (gi_setup_from_dir() != EXIT_SUCCESS)
 			return EXIT_FAILURE;
 	}
+	if (gi_startup_client() != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 	auto cl_1 = make_scope_exit(gi_shutdown);
 
 	int ret = EXIT_FAILURE;
