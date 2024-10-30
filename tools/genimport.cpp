@@ -531,6 +531,8 @@ static void gi_free(void *) {}
 
 int gi_setup_from_dir()
 {
+	exmdb_local_rules_execute = reinterpret_cast<decltype(exmdb_local_rules_execute)>(service_query("rules_execute",
+	                            "system", typeid(*exmdb_local_rules_execute)));
 	auto sqh = sql_login();
 	if (sqh == nullptr)
 		return EXIT_FAILURE;
