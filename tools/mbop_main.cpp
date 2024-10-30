@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #include <vector>
 #include <libHX/io.h>
@@ -538,12 +539,10 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static int help()
+static int main2(int, char **);
+
+static void command_overview()
 {
-	fprintf(stderr, "Usage: gromox-mbop [global-options] command [command-options] [command-args...]\n");
-	fprintf(stderr, "Global options:\n");
-	fprintf(stderr, "\t-?                           Global help (this text)\n");
-	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
 	fprintf(stderr, "Commands:\n\tclear-photo clear-profile clear-rwz delmsg "
 		"echo-username "
 		"emptyfld get-freebusy get-photo get-websettings "
@@ -552,6 +551,15 @@ static int help()
 		"purge-datafiles purge-softdelete recalc-sizes set-locale "
 		"set-photo set-websettings set-websettings-persistent "
 		"set-websettings-recipients unload vacuum\n");
+}
+
+static int help()
+{
+	fprintf(stderr, "Usage: gromox-mbop [global-options] command [command-options] [command-args...]\n");
+	fprintf(stderr, "Global options:\n");
+	fprintf(stderr, "\t-?                           Global help (this text)\n");
+	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
+	command_overview();
 	fprintf(stderr, "Command options:\n");
 	fprintf(stderr, "\t-?                           Call up option help for subcommand\n");
 	return EXIT_FAILURE;
@@ -609,7 +617,10 @@ static int main(int argc, char **argv)
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (strcmp(argv[0], "purge-datafiles") == 0)
 		ok = exmdb_client::purge_datafiles(g_storedir);
-	else if (strcmp(argv[0], "ping") == 0)
+	else if (strcmp(argv[0], "echo-username") == 0) {
+		printf("%s\n", g_dstuser.c_str());
+		ok = true;
+	} else if (strcmp(argv[0], "ping") == 0)
 		ok = exmdb_client::ping_store(g_storedir);
 	else if (strcmp(argv[0], "unload") == 0)
 		ok = exmdb_client::unload_store(g_storedir);
@@ -623,6 +634,52 @@ static int main(int argc, char **argv)
 		fprintf(stderr, "%s: the operation failed\n", argv[0]);
 		return EXIT_FAILURE;
 	}
+	return EXIT_SUCCESS;
+}
+
+}
+
+namespace for_all_wrap {
+
+static constexpr HXoption g_options_table[] = {
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
+static int help()
+{
+	fprintf(stderr, "Usage: for-all-users [-t threads] command [args...]\n");
+	global::command_overview();
+	return EXIT_FAILURE;
+}
+
+static int main(int argc, char **argv)
+{
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	if (global::g_arg_username != nullptr || global::g_arg_userdir != nullptr) {
+		fprintf(stderr, "Cannot use -d/-u with for-all-users\n");
+		return EXIT_FAILURE;
+	}
+	--argc;
+	++argv;
+	if (argc == 0)
+		return help();
+	gi_user_list_t ul;
+	if (gi_get_users(ul) != 0)
+		return EXIT_FAILURE;
+	auto ret = gi_startup_client();
+	if (ret != 0)
+		return ret;
+	for (auto &&[username, maildir] : ul) {
+		g_dstuser = std::move(username);
+		g_storedir_s = std::move(maildir);
+		g_storedir = g_storedir_s.c_str();
+		global::main2(argc, argv);
+	}
+	gi_shutdown();
 	return EXIT_SUCCESS;
 }
 
@@ -820,8 +877,6 @@ static errno_t clear_rwz()
 	return 0;
 }
 
-static int main2(int, char **);
-
 static int single_user_wrap(int argc, char **argv)
 {
 	using namespace global;
@@ -859,8 +914,13 @@ int main(int argc, char **argv)
 	++argv;
 	if (argc == 0)
 		return global::help();
-	return single_user_wrap(argc, argv);
+	if (strcmp(argv[0], "for-all-users") == 0)
+		return for_all_wrap::main(argc, argv);
+	else
+		return single_user_wrap(argc, argv);
 }
+
+namespace global {
 
 static int main2(int argc, char **argv)
 {
@@ -912,4 +972,6 @@ static int main2(int argc, char **argv)
 			fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
 	}
 	return !!ret;
+}
+
 }

@@ -81,13 +81,14 @@ using gi_folder_map_t = std::unordered_map<uint32_t, tgt_folder>;
 using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>;
 using propname_array_ptr = std::unique_ptr<PROPNAME_ARRAY, gi_delete>;
 using tarray_set_ptr = std::unique_ptr<TARRAY_SET, gi_delete>;
+using gi_user_list_t = std::vector<std::pair<std::string, std::string>>;
 
 enum {
 	DELIVERY_TWOSTEP = 0x8000U,
 	DELIVERY_MRAUTOPROC = 0x10000U,
 };
 
-extern std::string g_dstuser;
+extern std::string g_dstuser, g_storedir_s;
 extern const char *g_storedir;
 extern unsigned int g_user_id, g_wet_run;
 extern unsigned int g_public_folder, g_verbose_create;
@@ -109,3 +110,4 @@ extern int gi_setup_from_dir(const char *);
 extern int gi_startup_client(unsigned int maxconn = 1);
 extern eid_t gi_lookup_eid_by_name(const char *dir, const char *name);
 extern void gi_shutdown();
+extern int gi_get_users(gi_user_list_t &out);

@@ -1,11 +1,11 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
 .TH gromox\-mbop 8 "" "Gromox" "Gromox admin reference"
 .SH Name
 gromox\-mbop \(em Mailbox operations utility
 .SH Synopsis
-\fBgromox\-mbop\fP {\fB\-d\fP \fImbox\fP|\fB\-u\fP
-[\fIrecipient\fP]\fB@domain.example\fP} \fIcommand\fP [command-args...]
+\fBgromox\-mbop\fP [\fB\-d\fP \fImbox\fP|\fB\-u\fP
+[\fIrecipient\fP]\fB@domain.example\fP] \fIcommand\fP [command-args...]
 .SH Global options
 .TP
 \fB\-d\fP \fI/var/lib/gromox/user/1/2\fP
@@ -25,7 +25,11 @@ clear\-rwz: delete IPM.RuleOrganizer FAI messages from the inbox
 .IP \(bu 4
 delmsg: issue "delete_message" RPCs for a mailbox
 .IP \(bu 4
+echo\-username: return username (diagnostic for use with for\-all\-users)
+.IP \(bu 4
 emptyfld: remove objects from folders
+.IP \(bu 4
+for\-all\-users: iterate over all users
 .IP \(bu 4
 get\-freebusy: test FB schedule lookups
 .IP \(bu 4
@@ -161,6 +165,14 @@ gromox\-mbop \-u a@b.de emptyfld \-\-soft \-\-nuke\-folders DELETED
 .IP \(bu 4
 Timed deletion of trash:
 gromox\-mbop \-u abc@example.com emptyfld \-Rt 1week \-\-soft DELETED
+.SH for\-all\-users
+.SS Synopsis
+\fBfor\-all\-users\fP \fIcommand\fP [command-args...]
+.SS Description
+Pseudoaction for running one of the other subcommand (e.g. ping.)
+.SS Examples
+.IP \(bu 4
+Get all usernames: gromox\-mbop for\-all\-users echo\-username
 .SH get\-freebusy
 .SS Synopsis
 \fBget\-freebusy\fP [\fB\-a\fP \fIstart_time\fP] [\fB\-b\fP \fIend_time\fP]
