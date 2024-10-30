@@ -517,15 +517,6 @@ static int sql_dir_to_user(MYSQL *sqh, const char *dir,
 	return -ENOMEM;
 }
 
-void gi_setup_early(const char *username)
-{
-	if (*username == '@') {
-		g_public_folder = true;
-		++username;
-	}
-	g_dstuser = username;
-}
-
 static void *gi_alloc(size_t z) { return g_alloc_mgr.alloc(z); }
 static void gi_free(void *) {}
 
@@ -551,8 +542,13 @@ int gi_setup_from_dir()
 	return EXIT_SUCCESS;
 }
 
-int gi_setup()
+int gi_setup_from_user(const char *username)
 {
+	if (*username == '@') {
+		g_public_folder = true;
+		++username;
+	}
+	g_dstuser = username;
 	auto sqh = sql_login();
 	if (sqh == nullptr)
 		return EXIT_FAILURE;

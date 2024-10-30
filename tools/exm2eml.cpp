@@ -161,8 +161,7 @@ int main(int argc, char **argv) try
 	}
 	MAIL imail;
 
-	gi_setup_early(g_username);
-	if (gi_setup() != EXIT_SUCCESS)
+	if (gi_setup_from_user(g_username) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	if (gi_startup_client() != EXIT_SUCCESS)
 		return EXIT_FAILURE;

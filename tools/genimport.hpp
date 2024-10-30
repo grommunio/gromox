@@ -104,8 +104,7 @@ extern int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_
 extern int exm_permissions(eid_t, const std::vector<PERMISSION_DATA> &);
 extern int exm_deliver_msg(const char *target, MESSAGE_CONTENT *, unsigned int flags = 0);
 extern int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *);
-extern void gi_setup_early(const char *dstmbox);
-extern int gi_setup();
+extern int gi_setup_from_user(const char *);
 extern int gi_setup_from_dir();
 extern int gi_startup_client(unsigned int maxconn = 1);
 extern eid_t gi_lookup_eid_by_name(const char *dir, const char *name);

@@ -152,8 +152,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Usage: cgkrepair -e primary_mailaddr\n");
 		return EXIT_FAILURE;
 	}
-	gi_setup_early(g_primail);
-	if (gi_setup() != EXIT_SUCCESS)
+	if (gi_setup_from_user(g_primail) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	if (gi_startup_client() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
