@@ -520,12 +520,12 @@ static int sql_dir_to_user(MYSQL *sqh, const char *dir,
 static void *gi_alloc(size_t z) { return g_alloc_mgr.alloc(z); }
 static void gi_free(void *) {}
 
-int gi_setup_from_dir()
+int gi_setup_from_dir(const char *dir)
 {
 	auto sqh = sql_login();
 	if (sqh == nullptr)
 		return EXIT_FAILURE;
-	g_storedir_s = g_storedir;
+	g_storedir_s = dir;
 	for (auto z = g_storedir_s.size(); z > 1 && g_storedir_s[z-1] == '/'; --z)
 		g_storedir_s[z-1] = '\0';
 	g_storedir = g_storedir_s.c_str();

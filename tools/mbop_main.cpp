@@ -842,8 +842,7 @@ int main(int argc, char **argv)
 		if (gi_setup_from_user(g_arg_username) != EXIT_SUCCESS)
 			return EXIT_FAILURE;
 	} else if (g_arg_userdir != nullptr) {
-		g_storedir = g_arg_userdir;
-		if (gi_setup_from_dir() != EXIT_SUCCESS)
+		if (gi_setup_from_dir(g_arg_userdir) != EXIT_SUCCESS)
 			return EXIT_FAILURE;
 	}
 	if (gi_startup_client() != EXIT_SUCCESS)
