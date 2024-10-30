@@ -820,19 +820,11 @@ static errno_t clear_rwz()
 	return 0;
 }
 
-int main(int argc, char **argv)
+static int main2(int, char **);
+
+static int single_user_wrap(int argc, char **argv)
 {
 	using namespace global;
-
-	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(global::g_options_table, argv, &argc, &argv,
-	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
-	--argc;
-	++argv;
-	if (argc == 0)
-		return global::help();
 	if (g_arg_username != nullptr && g_arg_userdir != nullptr) {
 		fprintf(stderr, "Only one of -d and -u must be specified before the subcommand.\n");
 		return EXIT_FAILURE;
@@ -848,10 +840,30 @@ int main(int argc, char **argv)
 		if (gi_setup_from_dir(g_arg_userdir) != EXIT_SUCCESS)
 			return EXIT_FAILURE;
 	}
-	if (gi_startup_client() != EXIT_SUCCESS)
-		return EXIT_FAILURE;
-	auto cl_1 = make_scope_exit(gi_shutdown);
 
+	auto ret = gi_startup_client();
+	if (ret == EXIT_SUCCESS)
+		ret = main2(argc, argv);
+	gi_shutdown();
+	return ret;
+}
+
+int main(int argc, char **argv)
+{
+	setvbuf(stdout, nullptr, _IOLBF, 0);
+	if (HX_getopt5(global::g_options_table, argv, &argc, &argv,
+	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	--argc;
+	++argv;
+	if (argc == 0)
+		return global::help();
+	return single_user_wrap(argc, argv);
+}
+
+static int main2(int argc, char **argv)
+{
 	int ret = EXIT_FAILURE;
 	if (strcmp(argv[0], "delmsg") == 0) {
 		ret = delmsg::main(argc, argv);
