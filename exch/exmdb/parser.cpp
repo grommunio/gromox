@@ -153,10 +153,6 @@ static BOOL exmdb_parser_dispatch2(const exreq *prequest, std::unique_ptr<exresp
 static BOOL exmdb_parser_dispatch(const exreq *prequest, std::unique_ptr<exresp> &presponse)
 {
 	auto tstart = tp_now();
-	if (*prequest->dir != '\0' && access(prequest->dir, R_OK | X_OK) < 0)
-		mlog(LV_DEBUG, "exrpc %s access(\"%s\"): %s",
-			exmdb_rpc_idtoname(prequest->call_id),
-		       prequest->dir, strerror(errno));
 	exmdb_server::set_dir(prequest->dir);
 	auto ret = exmdb_parser_dispatch2(prequest, presponse);
 	if (ret)
