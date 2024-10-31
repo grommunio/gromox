@@ -353,7 +353,7 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 	                   fmt::format("{}/tables.sqlite3", dir);
 	int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX;
 	flags |= type == DB_MAIN? 0 : SQLITE_OPEN_CREATE;
-	sqlite3* db;
+	sqlite3 *db = nullptr;
 	if (access(path.c_str(), W_OK) != 0 && errno != ENOENT)
 		mlog(LV_ERR, "E-1734: %s is not writable (%s), there may be more errors later",
 			path.c_str(), strerror(errno));
@@ -3943,6 +3943,8 @@ void db_conn::cancel_batch_mode(db_base &dbase)
 
 void db_close::operator()(sqlite3 *x) const
 {
-	mlog(LV_INFO, "I-1762: exmdb: closing %s", znul(sqlite3_db_filename(x, nullptr)));
+	auto z = sqlite3_db_filename(x, nullptr);
+	if (z != nullptr)
+		mlog(LV_INFO, "I-1762: exmdb: closing %s", z);
 	sqlite3_close_v2(x);
 }
