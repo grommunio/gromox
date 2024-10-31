@@ -11,7 +11,7 @@ global:
 	extern "C++" {
 		std::*::_S_*;
 	};
-	_ZG*;
+	_ZGV*;
 	_ZT*;
 local:
 	*;
