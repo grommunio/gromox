@@ -167,12 +167,16 @@ Timed deletion of trash:
 gromox\-mbop \-u abc@example.com emptyfld \-Rt 1week \-\-soft DELETED
 .SH for\-all\-users
 .SS Synopsis
-\fBfor\-all\-users\fP \fIcommand\fP [command-args...]
+\fBfor\-all\-users\fP [\fB\-t\fP \fIthreads\fP] \fIcommand\fP [command-args...]
+.SS Options
+.TP
+\fB\-t\fP \fIthreads\fP
+Maximum parallel execution factor. (Experimental, not implemented for all
+actions.) 0 means autodetect.
+.br
+Default: \fI1\fP
 .SS Description
-Pseudoaction for running one of the other subcommand (e.g. ping.)
-.SS Examples
-.IP \(bu 4
-Get all usernames: gromox\-mbop for\-all\-users echo\-username
+Pseudoaction for running one of the other subcommand (e.g. ping, unload.)
 .SH get\-freebusy
 .SS Synopsis
 \fBget\-freebusy\fP [\fB\-a\fP \fIstart_time\fP] [\fB\-b\fP \fIend_time\fP]

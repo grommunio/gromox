@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <future>
+#include <semaphore>
 #include <string>
 #include <thread>
 #include <unistd.h>
@@ -641,7 +643,9 @@ static int main(int argc, char **argv)
 
 namespace for_all_wrap {
 
+static unsigned int g_numthreads = 1;
 static constexpr HXoption g_options_table[] = {
+	{{}, 't', HXTYPE_UINT, &g_numthreads, {}, {}, {}, "Maximum concurrency for execution", "INTEGER"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -662,6 +666,8 @@ static int main(int argc, char **argv)
 	if (global::g_arg_username != nullptr || global::g_arg_userdir != nullptr) {
 		fprintf(stderr, "Cannot use -d/-u with for-all-users\n");
 		return EXIT_FAILURE;
+	} else if (g_numthreads == 0) {
+		g_numthreads = std::thread::hardware_concurrency();
 	}
 	--argc;
 	++argv;
@@ -670,17 +676,49 @@ static int main(int argc, char **argv)
 	gi_user_list_t ul;
 	if (gi_get_users(ul) != 0)
 		return EXIT_FAILURE;
-	auto ret = gi_startup_client();
+	auto ret = gi_startup_client(g_numthreads);
 	if (ret != 0)
 		return ret;
-	for (auto &&[username, maildir] : ul) {
-		g_dstuser = std::move(username);
-		g_storedir_s = std::move(maildir);
-		g_storedir = g_storedir_s.c_str();
-		global::main2(argc, argv);
+	ret = EXIT_SUCCESS;
+	using Sem = std::counting_semaphore<1>;
+	std::vector<std::future<void>> futs;
+	Sem sem(g_numthreads);
+	if (strcmp(argv[0], "ping") == 0) {
+		for (auto &&[username, maildir] : ul) {
+			sem.acquire();
+			futs.emplace_back(std::async([](std::string *maildir, Sem *sem) {
+				exmdb_client::ping_store(maildir->c_str());
+				sem->release();
+			}, &maildir, &sem));
+		}
+	} else if (strcmp(argv[0], "unload") == 0) {
+		for (auto &&[username, maildir] : ul) {
+			sem.acquire();
+			futs.emplace_back(std::async([](std::string *maildir, Sem *sem) {
+				exmdb_client::unload_store(maildir->c_str());
+				sem->release();
+			}, &maildir, &sem));
+		}
+	} else if (strcmp(argv[0], "vacuum") == 0) {
+		for (auto &&[username, maildir] : ul) {
+			sem.acquire();
+			futs.emplace_back(std::async([](std::string *maildir, Sem *sem) {
+				exmdb_client::vacuum(maildir->c_str());
+				sem->release();
+			}, &maildir, &sem));
+		}
+	} else {
+		for (auto &&[username, maildir] : ul) {
+			// main2 is not thread-safe (global state), can't parallelize
+			g_dstuser = std::move(username);
+			g_storedir_s = std::move(maildir);
+			g_storedir = g_storedir_s.c_str();
+			global::main2(argc, argv);
+		}
 	}
+	futs.clear();
 	gi_shutdown();
-	return EXIT_SUCCESS;
+	return ret;
 }
 
 }
