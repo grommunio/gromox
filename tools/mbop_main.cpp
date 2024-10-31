@@ -545,6 +545,7 @@ static int help()
 	fprintf(stderr, "\t-?                           Global help (this text)\n");
 	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
 	fprintf(stderr, "Commands:\n\tclear-photo clear-profile clear-rwz delmsg "
+		"echo-username "
 		"emptyfld get-freebusy get-photo get-websettings "
 		"get-websettings-persistent "
 		"get-websettings-recipients ping "
@@ -890,6 +891,9 @@ int main(int argc, char **argv)
 		ret = set_locale::main(argc, argv);
 	} else if (strcmp(argv[0], "get-freebusy") == 0 || strcmp(argv[0], "gfb") == 0) {
 		ret = getfreebusy::main(argc, argv);
+	} else if (strcmp(argv[0], "echo-username") == 0) {
+		printf("%s\n", g_dstuser.c_str());
+		ret = EXIT_SUCCESS;
 	} else {
 		ret = simple_rpc::main(argc, argv);
 		if (ret == -EINVAL)
