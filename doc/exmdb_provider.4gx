@@ -212,6 +212,8 @@ silent, since our queries ought to never fail.)
 Default: \fI0\fP
 .TP
 \fBtable_size\fP
+Maximum number of concurrently active mailboxes.
+.br
 Default: \fI5000\fP
 .TP
 \fBx500_org_name\fP

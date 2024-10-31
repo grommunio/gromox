@@ -208,7 +208,7 @@ db_conn_ptr db_engine_get_db(const char *path)
 	}
 	if (g_hash_table.size() >= g_table_size) {
 		hhold.unlock();
-		mlog(LV_ERR, "E-1297: too many sqlite files referenced at once (exmdb_provider.cfg:table_size=%zu)", g_table_size);
+		mlog(LV_ERR, "E-1297: Reached the maximum number of concurrently active users/mailboxes (exmdb_provider.cfg:table_size=%zu)", g_table_size);
 		return std::nullopt;
 	}
 	try {
@@ -343,7 +343,6 @@ db_base::db_base() :
  */
 db_handle db_base::get_db(const char* dir, DB_TYPE type)
 {
-	const char* name = type == DB_MAIN? "MAIN" : "EPH";
 	auto& spares = type == DB_MAIN? mx_sqlite : mx_sqlite_eph;
 	if(!spares.empty()) {
 		db_handle handle = std::move(spares.back());
@@ -361,7 +360,8 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 	int ret = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
 	db_handle hdb(db); /* automatically close connection if something goes wrong */
 	if(ret != SQLITE_OK) {
-		mlog(LV_ERR, "E-1350: sqlite_open_v2 %s: %s (%d)", name, sqlite3_errstr(ret), ret);
+		mlog(LV_ERR, "E-1350: sqlite_open_v2(%s): %s (%d)",
+			path.c_str(), sqlite3_errstr(ret), ret);
 		return nullptr;
 	}
 	if((ret = gx_sql_exec(db, "PRAGMA foreign_keys=ON")) != SQLITE_OK) {
@@ -406,7 +406,7 @@ void db_base::open(const char* dir)
 
 	db_handle hdb(get_db(dir, DB_MAIN));
 	if (!hdb)
-		throw std::runtime_error(fmt::format("E-1434: sqlite3_open {} failed", dir));
+		throw std::runtime_error(fmt::format("E-1434: get_db({}) failed", dir));
 	ret = db_engine_autoupgrade(hdb.get(), dir);
 	if(ret != 0)
 		throw std::runtime_error(fmt::format("E-2105: autoupgrade {}: {}", dir, ret));
