@@ -117,7 +117,6 @@ struct db_base {
 
 	db_base();
 	~db_base();
-	NOMOVE(db_base);
 
 	mutable std::shared_mutex giant_lock;
 	std::atomic<int> reference;
