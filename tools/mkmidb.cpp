@@ -162,8 +162,8 @@ int main(int argc, char **argv)
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	if (opt_integ)
 		return dbop_sqlite_integcheck(psqlite, LV_ERR) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
-	unsigned int flags = 0;
 	if (opt_upgrade) {
+		unsigned int flags = opt_integ ? DBOP_INTEGCHECK : 0;
 		auto ret = dbop_sqlite_upgrade(psqlite, temp_path.c_str(),
 		           sqlite_kind::midb, flags | DBOP_VERBOSE);
 		if (ret != 0) {
@@ -175,6 +175,7 @@ int main(int argc, char **argv)
 	auto sql_transact = gx_sql_begin(psqlite, txn_mode::write);
 	if (!sql_transact)
 		return EXIT_FAILURE;
+	unsigned int flags = 0;
 	if (opt_create_old)
 		flags |= DBOP_SCHEMA_0;
 	if (opt_verbose)

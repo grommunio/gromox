@@ -733,12 +733,16 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 	if (entry->v == 0)
 		/* Already recent */
 		return 0;
-	auto errors = dbop_sqlite_integcheck(db, LV_ERR);
-	if (errors != 0) {
-		mlog(LV_ERR, "Upgrade of %s not started because of %zd integrity problems"
-			" <https://docs.grommunio.com/kb/sqlite.html>",
-			filedesc, errors);
-		return -EIO;
+	if (flags & DBOP_INTEGCHECK) {
+		if (flags & DBOP_VERBOSE)
+			mlog(LV_NOTICE, "dbop_sqlite: integrity check on %s", filedesc);
+		auto errors = dbop_sqlite_integcheck(db, LV_ERR);
+		if (errors != 0) {
+			mlog(LV_ERR, "Upgrade of %s not started because of %zd integrity problems"
+				" <https://docs.grommunio.com/kb/sqlite.html>",
+				filedesc, errors);
+			return -EIO;
+		}
 	}
 
 	if (gx_sql_exec(db, "PRAGMA foreign_keys=OFF") != SQLITE_OK ||

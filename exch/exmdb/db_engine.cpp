@@ -182,7 +182,7 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	mlog(LV_NOTICE, "dbop_sqlite: %s: current schema E%c-%d; upgrading to E%c-%d.",
 		filedesc, c, current, c, recent);
 	auto start = tp_now();
-	auto ret = dbop_sqlite_upgrade(db, filedesc, kind, DBOP_VERBOSE);
+	auto ret = dbop_sqlite_upgrade(db, filedesc, kind, DBOP_VERBOSE | DBOP_INTEGCHECK);
 	if (ret != 0) {
 		mlog(LV_ERR, "dbop_sqlite upgrade %s: %s",
 		        filedesc, strerror(-ret));

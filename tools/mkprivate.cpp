@@ -356,8 +356,10 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	auto cl_0 = make_scope_exit(sqlite3_shutdown);
-	if (opt_upgrade)
-		return mbop_upgrade(temp_path.c_str(), sqlite_kind::pvt);
+	if (opt_upgrade) {
+		unsigned int flags = opt_integ ? DBOP_INTEGCHECK : 0;
+		return mbop_upgrade(temp_path.c_str(), sqlite_kind::pvt, flags | DBOP_VERBOSE);
+	}
 	unsigned int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX;
 	if (sqlite3_open_v2(temp_path.c_str(), &psqlite, flags,
 	    nullptr) != SQLITE_OK) {

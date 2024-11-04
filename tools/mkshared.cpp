@@ -391,7 +391,7 @@ static char kind_to_char(sqlite_kind k)
 	}
 }
 
-int mbop_upgrade(const char *file, sqlite_kind kind)
+int mbop_upgrade(const char *file, sqlite_kind kind, unsigned int dbop_flags)
 {
 	sqlite3 *db = nullptr;
 	auto ret = sqlite3_open_v2(file, &db, SQLITE_OPEN_READWRITE, nullptr);
@@ -410,7 +410,7 @@ int mbop_upgrade(const char *file, sqlite_kind kind)
 	fprintf(stderr, "This version of Gromox (%s) can perform upgrades to: E%c-%d\n",
 		PACKAGE_VERSION, c, recent);
 	fprintf(stderr, "%s is on schema version: E%c-%d\n", file, c, current);
-	ret = dbop_sqlite_upgrade(db, file, kind, DBOP_VERBOSE);
+	ret = dbop_sqlite_upgrade(db, file, kind, dbop_flags);
 	if (ret != 0) {
 		fprintf(stderr, "dbop_sqlite_upgrade: %s\n", strerror(-ret));
 		return EXIT_FAILURE;

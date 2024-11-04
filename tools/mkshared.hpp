@@ -15,7 +15,7 @@ extern int mbop_insert_storeprops(sqlite3 *, const std::pair<uint32_t, uint64_t>
 extern int mbop_slurp(const char *, const char *, std::string &);
 extern int mbop_create_generic_folder(sqlite3 *, uint64_t fid, uint64_t parent, int secid, const char *dispname, const char *cont_cls = nullptr, bool hidden = false);
 extern int mbop_create_search_folder(sqlite3 *, uint64_t fid, uint64_t parent, int secid, const char *dispname);
-extern int mbop_upgrade(const char *, gromox::sqlite_kind);
+extern int mbop_upgrade(const char *, gromox::sqlite_kind, unsigned int dbop_flags);
 
 extern uint64_t g_last_cn;
 extern uint32_t g_last_art;

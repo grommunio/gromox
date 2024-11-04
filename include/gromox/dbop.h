@@ -14,6 +14,7 @@ enum class sqlite_kind {
 enum {
 	DBOP_VERBOSE = 0x1,
 	DBOP_SCHEMA_0 = 0x2,
+	DBOP_INTEGCHECK = 0x4,
 };
 
 /* Database schema mainteanance for user database */
