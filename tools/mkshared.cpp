@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -404,8 +407,9 @@ int mbop_upgrade(const char *file, sqlite_kind kind)
 		return EXIT_FAILURE;
 	}
 	auto c = kind_to_char(kind);
-	fprintf(stderr, "[dbop_sqlite]: Current schema E%c-%d. Update available: E%c-%d.\n",
-		c, current, c, recent);
+	fprintf(stderr, "This version of Gromox (%s) can perform upgrades to: E%c-%d\n",
+		PACKAGE_VERSION, c, recent);
+	fprintf(stderr, "%s is on schema version: E%c-%d\n", file, c, current);
 	ret = dbop_sqlite_upgrade(db, file, kind, DBOP_VERBOSE);
 	if (ret != 0) {
 		fprintf(stderr, "dbop_sqlite_upgrade: %s\n", strerror(-ret));
