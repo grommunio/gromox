@@ -337,7 +337,7 @@ TZRULE* active_rule_for_year(const TIMEZONEDEFINITION* tzdef, const int year)
  * @param ruledate
  * @return time_t
  */
-time_t mktime_dststd_start(const int year, const SYSTEMTIME* ruledate)
+time_t timegm_dststd_start(const int year, const SYSTEMTIME* ruledate)
 {
 	struct tm tempTm;
 	tempTm.tm_year = year;
@@ -347,7 +347,7 @@ time_t mktime_dststd_start(const int year, const SYSTEMTIME* ruledate)
 	tempTm.tm_min = ruledate->minute;
 	tempTm.tm_sec = ruledate->second;
 	tempTm.tm_isdst = 0;
-	return mktime(&tempTm);
+	return timegm(&tempTm);
 }
 
 /**
@@ -369,8 +369,9 @@ int64_t offset_from_tz(const TIMEZONEDEFINITION* tzdef, const time_t startTime)
 	offset = rule->bias;
 	if(rule->standarddate.month != 0 && rule->daylightdate.month != 0)
 	{
-		time_t stdStartTime = mktime_dststd_start(startDateUtc.tm_year, &rule->standarddate);
-		time_t dstStartTime = mktime_dststd_start(startDateUtc.tm_year, &rule->daylightdate);
+		// convert all times to UTC for comparison
+		time_t stdStartTime = timegm_dststd_start(startDateUtc.tm_year, &rule->standarddate) + offset * 60;
+		time_t dstStartTime = timegm_dststd_start(startDateUtc.tm_year, &rule->daylightdate) + offset * 60;
 		auto utcStartTime = startTime + offset * 60;
 
 		if((dstStartTime <= stdStartTime && utcStartTime >= dstStartTime && utcStartTime < stdStartTime) || // northern hemisphere dst
