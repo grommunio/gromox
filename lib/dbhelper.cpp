@@ -72,15 +72,6 @@ int xtransaction::commit()
 		return SQLITE_OK;
 	auto ret = gx_sql_exec(m_db, "COMMIT TRANSACTION");
 	if (ret == SQLITE_BUSY)
-		mlog(LV_NOTICE, "Something external has a query running "
-			"(stop doing that!) on this sqlite db that blocks us "
-			"from writing the changes amassed in a transaction.");
-	size_t count = 10;
-	while (ret == SQLITE_BUSY && count-- > 0) {
-		sleep(1);
-		ret = gx_sql_exec(m_db, "COMMIT TRANSACTION");
-	}
-	if (ret == SQLITE_BUSY)
 		/*
 		 * As most callers have nothing else to do, they themselves
 		 * return from their frame, triggering ~xtransaction and a
