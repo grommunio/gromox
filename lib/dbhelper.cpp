@@ -12,6 +12,8 @@
 
 namespace gromox {
 
+static std::unordered_map<std::string, std::string> active_xa;
+static std::mutex active_xa_lock;
 unsigned int gx_sqlite_debug, gx_force_write_txn, gx_sql_deep_backtrace;
 
 static bool write_statement(const char *q)
@@ -28,11 +30,18 @@ xstmt gx_sql_prep(sqlite3 *db, const char *query)
 	if (gx_sqlite_debug >= 1)
 		mlog(LV_DEBUG, "> sqlite3_prep(%s, %s)", znul(sqlite3_db_filename(db, nullptr)), query);
 	auto state = sqlite3_txn_state(db, "main");
-	if (state == SQLITE_TXN_READ && write_statement(query))
-		mlog(LV_ERR, "> sqlite3_prep(%s) inside a readonly TXN", query);
+	if (state == SQLITE_TXN_READ && write_statement(query)) {
+		auto fn = sqlite3_db_filename(db, nullptr);
+		if (fn == nullptr || *fn == '\0')
+			fn = ":memory:";
+		auto it = active_xa.find(fn);
+		mlog(LV_ERR, "sqlite_prep(%s): ro held by [%s], rw at [%s]", query,
+			it != active_xa.end() ? it->second.c_str() : "unknown",
+			simple_backtrace().c_str());
+	}
 	int ret = sqlite3_prepare_v2(db, query, -1, &out.m_ptr, nullptr);
 	if (ret != SQLITE_OK)
-		mlog(LV_ERR, "sqlite3_prepare_v2(%s) \"%s\": %s (%d)",
+		mlog(LV_ERR, "sqlite_prep(%s) \"%s\": %s (%d)",
 			znul(sqlite3_db_filename(db, nullptr)),
 		        query, sqlite3_errstr(ret), ret);
 	return out;
@@ -45,9 +54,6 @@ xtransaction &xtransaction::operator=(xtransaction &&o) noexcept
 	o.m_db = nullptr;
 	return *this;
 }
-
-static std::unordered_map<std::string, std::string> active_xa;
-static std::mutex active_xa_lock;
 
 xtransaction::~xtransaction()
 {
@@ -176,8 +182,15 @@ int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 	if (gx_sqlite_debug >= 1)
 		mlog(LV_DEBUG, "> sqlite3_exec(%s, %s)", znul(sqlite3_db_filename(db, nullptr)), query);
 	auto state = sqlite3_txn_state(db, "main");
-	if (state == SQLITE_TXN_READ && write_statement(query))
-		mlog(LV_ERR, "> sqlite3_exec(%s) inside a readonly TXN", query);
+	if (state == SQLITE_TXN_READ && write_statement(query)) {
+		auto fn = sqlite3_db_filename(db, nullptr);
+		if (fn == nullptr || *fn == '\0')
+			fn = ":memory:";
+		auto it = active_xa.find(fn);
+		mlog(LV_ERR, "sqlite_exec(%s): ro held by [%s], rw at [%s]", query,
+			it != active_xa.end() ? it->second.c_str() : "unknown",
+			simple_backtrace().c_str());
+	}
 	auto ret = sqlite3_exec(db, query, nullptr, nullptr, &estr);
 	if (ret == SQLITE_OK)
 		return ret;
