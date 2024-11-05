@@ -20,6 +20,12 @@ with exclusive locking).
 .br
 Default: \fIno\fP
 .TP
+\fBexmdb_deep_backtrace\fP
+(Developer option.) Record and report transaction problems with a multi-level
+backtrace instead of a single-level location indicator.
+.br
+Default: \fIno\fP
+.TP
 \fBexmdb_ics_log_file\fP
 Log ICS/synchronization requests (and their results) to this file.
 .br

@@ -105,5 +105,6 @@ static inline uint64_t gx_sql_col_uint64(sqlite3_stmt *s, int c)
 }
 
 extern GX_EXPORT unsigned int gx_sqlite_debug, gx_force_write_txn;
+extern GX_EXPORT unsigned int gx_sql_deep_backtrace;
 
 }

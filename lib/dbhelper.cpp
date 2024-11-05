@@ -12,7 +12,7 @@
 
 namespace gromox {
 
-unsigned int gx_sqlite_debug, gx_force_write_txn;
+unsigned int gx_sqlite_debug, gx_force_write_txn, gx_sql_deep_backtrace;
 
 static bool write_statement(const char *q)
 {
@@ -100,7 +100,10 @@ xtransaction gx_sql_begin3(const std::string &pos, sqlite3 *db, txn_mode mode)
 		auto fn = sqlite3_db_filename(db, nullptr);
 		if (fn != nullptr && *fn != '\0') {
 			std::unique_lock lk(active_xa_lock);
-			active_xa[fn] = pos;
+			if (gx_sql_deep_backtrace)
+				active_xa[fn] = simple_backtrace();
+			else
+				active_xa[fn] = pos;
 		}
 		return xtransaction(db);
 	}
@@ -112,7 +115,7 @@ xtransaction gx_sql_begin3(const std::string &pos, sqlite3 *db, txn_mode mode)
 		auto it = active_xa.find(fn);
 		mlog(LV_ERR, "sqlite_busy on %s: held by %s, take from %s", znul(fn),
 			it != active_xa.end() ? it->second.c_str() : "unknown",
-			pos.c_str());
+			gx_sql_deep_backtrace ? simple_backtrace().c_str() : pos.c_str());
 	}
 	return xtransaction(nullptr);
 }
