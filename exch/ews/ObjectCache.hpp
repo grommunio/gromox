@@ -175,11 +175,13 @@ Object ObjectCache<Key, Object>::get(const Key& key, std::chrono::milliseconds l
  * @param      key       Object key
  */
 template<class Key, class Object>
-void ObjectCache<Key, Object>::evict(const Key& key)
+void ObjectCache<Key, Object>::evict(const Key &key) try
 {
 	typename decltype(objects)::node_type del; // delete object after releasing lock to avoid deadlocks
 	auto guard = std::lock_guard(objectLock);
 	del = objects.extract(key);
+} catch (const std::bad_variant_access &) {
+	/* Shut up cov-scan. Getting here is contrived and mostly theoretical. */
 }
 
 /**
