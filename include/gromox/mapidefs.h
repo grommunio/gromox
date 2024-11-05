@@ -1590,6 +1590,7 @@ extern GX_EXPORT const FLATUID
 	muidECSAB, muidZCSAB, EncodedGlobalId, IID_IStorage,
 	IID_IStream, IID_IMessage, IID_IExchangeExportChanges,
 	IID_IExchangeImportContentsChanges, IID_IExchangeImportHierarchyChanges;
+extern GX_EXPORT const char EncodedGlobalId_hex[];
 extern GX_EXPORT const GUID
 	GUID_NULL, PSETID_Address, PSETID_Appointment,
 	PSETID_BusinessCardView, PSETID_CalendarAssistant, PSETID_Common,

@@ -20,7 +20,6 @@
 #undef assert
 #define assert(x) do { if (!(x)) { printf("%s failed\n", #x); return EXIT_FAILURE; } } while (false)
 using namespace gromox;
-#define s_rgbSPlus "040000008200E00074C5B7101A82E008"
 
 static int t_utf7()
 {
@@ -35,19 +34,20 @@ static int t_utf7()
 
 static int t_extpp()
 {
-	auto s = hex2bin(s_rgbSPlus "000000009b2dbdb2255659027cf33d2a183706db6bc9240adbd249557c96f6783dcc06d8f9c48b1f");
+	std::string encid(reinterpret_cast<const char *>(EncodedGlobalId.ab), std::size(EncodedGlobalId.ab));
+	auto s = encid + hex2bin("000000009b2dbdb2255659027cf33d2a183706db6bc9240adbd249557c96f6783dcc06d8f9c48b1f");
 	EXT_PULL ep;
 	ep.init(s.data(), s.size(), zalloc, 0);
 	GLOBALOBJECTID goid;
 	auto ret = ep.g_goid(&goid);
 	assert(ret == EXT_ERR_SUCCESS && goid.unparsed);
 #define s_date "0000000066b5d6b711d901010000000000000000"
-	s = hex2bin(s_rgbSPlus s_date "01000000ffff");
+	s = encid + hex2bin(s_date "01000000ffff");
 	ep.init(s.data(), s.size(), zalloc, 0);
 	assert(ep.g_goid(&goid) == EXT_ERR_SUCCESS);
 	assert((!goid.unparsed && goid.data.cb == 1) ||
 	       (goid.unparsed && goid.data.cb == 6));
-	s = hex2bin(s_rgbSPlus s_date "02000000ff");
+	s = encid + hex2bin(s_date "02000000ff");
 	ep.init(s.data(), s.size(), zalloc, 0);
 	assert(ep.g_goid(&goid) == EXT_ERR_SUCCESS);
 	assert(goid.unparsed && goid.data.cb == 5);

@@ -32,8 +32,6 @@ using namespace Structures;
 
 namespace
 {
-static constexpr char EncodedGlobalId_hex[] =
-	"040000008200E00074C5B7101A82E008"; /* s_rgbSPlus */
 
 /**
  * @brief      Convert string to lower case

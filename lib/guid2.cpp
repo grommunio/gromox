@@ -94,8 +94,10 @@ const FLATUID muidZCSAB =
 const FLATUID EncodedGlobalId =
 	/* MS-OXCICAL v13 §2.1.3.1.1.20.26 pg 67 */
 	/* {00000004-0082-00e0-74c5-b7101a82e008}, 040000008200e00074c5b8101a82e008 */
+	/* s_rgbSPlus */
 	{0x04, 0x00, 0x00, 0x00, 0x82, 0x00, 0xE0, 0x00,
 	0x74, 0xC5, 0xB7, 0x10, 0x1A, 0x82, 0xE0, 0x08};
+const char EncodedGlobalId_hex[] = "040000008200E00074C5B7101A82E008";
 const FLATUID IID_IStorage =
 	/* {0000000b-0000-0000-c000-000000000046} */
 	{0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

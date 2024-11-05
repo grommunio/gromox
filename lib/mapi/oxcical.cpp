@@ -48,8 +48,6 @@ static constexpr char
 	PidNameKeywords[] = "Keywords",
 	PidNameLocationUrl[] = "urn:schemas:calendar:locationurl";
 static constexpr size_t namemap_limit = 0x1000;
-static constexpr char EncodedGlobalId_hex[] =
-	"040000008200E00074C5B7101A82E008"; /* s_rgbSPlus */
 static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 static constexpr char fmt_date[] = "%04d%02d%02d",
 	fmt_datetimelcl[] = "%04d%02d%02dT%02d%02d%02d",  /* needs buf[16] */
