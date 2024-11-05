@@ -8,6 +8,7 @@
 
 // Follow the order in mapitags.hpp
 static const PROPERTY_NAME NtGlobalObjectId = {MNID_ID, PSETID_Meeting, PidLidGlobalObjectId, deconst("GlobalObjectId")};
+static const PROPERTY_NAME NtCleanGlobalObjectId = {MNID_ID, PSETID_Meeting, PidLidCleanGlobalObjectId, deconst("CleanGlobalObjectId")};
 static const PROPERTY_NAME NtCategories = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")};
 
 /* PSETID_Address */
@@ -58,6 +59,8 @@ static const PROPERTY_NAME NtRecurrenceType = {MNID_ID, PSETID_Appointment, PidL
 static const PROPERTY_NAME NtClipStart = {MNID_ID, PSETID_Appointment, PidLidClipStart, deconst("ClipStart")};
 static const PROPERTY_NAME NtClipEnd = {MNID_ID, PSETID_Appointment, PidLidClipEnd, deconst("ClipEnd")};
 static const PROPERTY_NAME NtAppointmentNotAllowPropose = {MNID_ID, PSETID_Appointment, PidLidAppointmentNotAllowPropose, deconst("AppointmentNotAllowPropose")};
+static const PROPERTY_NAME NtAppointmentTimeZoneDefinitionStartDisplay = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionStartDisplay, deconst("AppointmentTimeZoneDefinitionStartDisplay")};
+static const PROPERTY_NAME NtAppointmentTimeZoneDefinitionEndDisplay = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionEndDisplay, deconst("AppointmentTimeZoneDefinitionEndDisplay")};
 
 /* PSETID_Common */
 static const PROPERTY_NAME NtReminderDelta = {MNID_ID, PSETID_Common, PidLidReminderDelta, nullptr};
@@ -68,3 +71,8 @@ static const PROPERTY_NAME NtCommonEnd = {MNID_ID, PSETID_Common, PidLidCommonEn
 static const PROPERTY_NAME NtMileage = {MNID_ID, PSETID_Common, PidLidMileage, nullptr};
 static const PROPERTY_NAME NtBilling = {MNID_ID, PSETID_Common, PidLidBilling, nullptr};
 static const PROPERTY_NAME NtCompanies = {MNID_ID, PSETID_Common, PidLidCompanies, nullptr};
+static const PROPERTY_NAME NtReminderSignalTime = {MNID_ID, PSETID_Common, PidLidReminderSignalTime, deconst("ReminderSignalTime")};
+
+
+/* EWS_Mac_PropertySetId {A7B529B5-4B75-47A7-A24F-20743D6C55CD} */
+static const PROPERTY_NAME NtCalendarTimeZone = {MNID_STRING, EWS_Mac_PropertySetId, 0, deconst("CalendarTimeZone")};

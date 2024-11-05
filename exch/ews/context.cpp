@@ -15,6 +15,7 @@
 #include <gromox/pcl.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/usercvt.hpp>
+#include <gromox/util.hpp>
 
 #include "exceptions.hpp"
 #include "ews.hpp"
@@ -31,6 +32,8 @@ using namespace Structures;
 
 namespace
 {
+static constexpr char EncodedGlobalId_hex[] =
+	"040000008200E00074C5B7101A82E008"; /* s_rgbSPlus */
 
 /**
  * @brief      Convert string to lower case
@@ -308,6 +311,125 @@ void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 		break;
 	}
 	recur_pat.enddate = rop_util_unix_to_rtime(enddate);
+}
+
+/**
+ * @brief Return the active timezone definition rule for a given year
+ *
+ * @param tzdef
+ * @param year
+ * @return TZRULE*
+ */
+TZRULE* active_rule_for_year(const TIMEZONEDEFINITION* tzdef, const int year)
+{
+	for(auto i = tzdef->crules - 1; i >= 0; --i)
+	{
+		if(((tzdef->prules[i].flags & TZRULE_FLAG_EFFECTIVE_TZREG) &&
+		     tzdef->prules[i].year <= year) ||
+		    tzdef->prules[i].year == year)
+			return &tzdef->prules[i];
+	}
+	return nullptr;
+}
+
+/**
+ * @brief Calculate the start of daylight saving oder standard time
+ *
+ * @param year
+ * @param ruledate
+ * @return time_t
+ */
+time_t mktime_dststd_start(const int year, const SYSTEMTIME* ruledate)
+{
+	struct tm tempTm;
+	tempTm.tm_year = year;
+	tempTm.tm_mon = ruledate->month - 1;
+	tempTm.tm_mday = ical_get_dayofmonth(year + 1900, ruledate->month, ruledate->day == 5 ? -1 : ruledate->day, ruledate->dayofweek);
+	tempTm.tm_hour = ruledate->hour;
+	tempTm.tm_min = ruledate->minute;
+	tempTm.tm_sec = ruledate->second;
+	tempTm.tm_isdst = 0;
+	return mktime(&tempTm);
+}
+
+/**
+ * @brief Calculate the offset from UTC from the timezone definition
+ *
+ * @param tzdef
+ * @param startTime
+ */
+int64_t offset_from_tz(const TIMEZONEDEFINITION* tzdef, const time_t startTime)
+{
+	int64_t offset = 0;
+	struct tm startDateUtc;
+	gmtime_r(&startTime, &startDateUtc);
+	int startDateYear = startDateUtc.tm_year + 1900;
+	TZRULE *rule = active_rule_for_year(tzdef, startDateYear);
+	if(rule == nullptr)
+		throw EWSError::TimeZone(E3295(startDateYear));
+
+	offset = rule->bias;
+	if(rule->standarddate.month != 0 && rule->daylightdate.month != 0)
+	{
+		time_t stdStartTime = mktime_dststd_start(startDateUtc.tm_year, &rule->standarddate);
+		time_t dstStartTime = mktime_dststd_start(startDateUtc.tm_year, &rule->daylightdate);
+		auto utcStartTime = startTime + offset * 60;
+
+		if((dstStartTime <= stdStartTime && utcStartTime >= dstStartTime && utcStartTime < stdStartTime) || // northern hemisphere dst
+			(dstStartTime > stdStartTime && (utcStartTime < stdStartTime || utcStartTime > dstStartTime))) // southern hemisphere dst
+		{
+			offset += rule->daylightbias;
+		}
+	}
+	return offset;
+}
+
+/**
+ * @brief Get GlobalObjectId(PidLidGlobalObjectId/PidLidCleanGlobalObjectId)
+ *        from UID sent by the client
+ *
+ * @param uid
+ * @param goid_bin
+ */
+void uid_to_goid(const char* uid, BINARY &goid_bin)
+{
+	GLOBALOBJECTID goid;
+	auto uid_len = strlen(uid);
+	EXT_PULL ext_pull;
+	EXT_PUSH ext_push;
+	char tmp_buff[1024];
+	if(strncasecmp(uid, EncodedGlobalId_hex, 32) == 0)
+	{
+		if(!decode_hex_binary(uid, tmp_buff, std::size(tmp_buff)))
+			throw EWSError::CorruptData(E3296(uid));
+		ext_pull.init(tmp_buff, uid_len / 2, EWSContext::alloc, 0);
+		if(ext_pull.g_goid(&goid) != EXT_ERR_SUCCESS)
+			throw EWSError::InternalServerError(E3297(uid));
+		if(ext_pull.m_offset == uid_len / 2 &&
+		    (goid.year < 1601 || goid.year > 4500 ||
+		    goid.month > 12 || goid.month == 0 ||
+		    goid.day > ical_get_monthdays(goid.year, goid.month)))
+			goid.year = goid.month = goid.day = 0;
+	}
+	else
+	{
+		memset(&goid, 0, sizeof(GLOBALOBJECTID));
+		goid.arrayid = EncodedGlobalId;
+		goid.year = goid.month = goid.day = 0;
+		goid.creationtime = 0;
+		goid.data.cb = 12 + uid_len;
+		goid.data.pv = EWSContext::alloc(goid.data.cb);
+		if(goid.data.pv == nullptr)
+			throw EWSError::NotEnoughMemory(E3298);
+		static_assert(sizeof(ThirdPartyGlobalId) == 12);
+		memcpy(goid.data.pb, ThirdPartyGlobalId, 12);
+		memcpy(goid.data.pb + 12, uid, uid_len);
+	}
+	if(!ext_push.init(tmp_buff, 1024, 0) ||
+		ext_push.p_goid(goid) != EXT_ERR_SUCCESS)
+		throw EWSError::InternalServerError(E3299);
+	goid_bin.cb = ext_push.m_offset;
+	goid_bin.pb = ext_push.m_udata;
 }
 
 } // Anonymous namespace
@@ -1680,17 +1802,15 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	// TODO: goid
 	if(!item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Appointment")});
+	int64_t startOffset = 0, endOffset = 0;
+	time_t startTime = 0, endTime = 0;
 	if(item.Start) {
-		auto start = EWSContext::construct<uint64_t>(item.Start.value().toNT());
-		shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
-		shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
-		shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
+		startTime = clock::to_time_t(item.Start.value().time);
+		startOffset = std::chrono::duration_cast<std::chrono::minutes>(item.Start.value().offset).count();
 	}
 	if(item.End) {
-		auto end = EWSContext::construct<uint64_t>(item.End.value().toNT());
-		shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
-		shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
-		shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
+		endTime = clock::to_time_t(item.End.value().time);
+		endOffset = std::chrono::duration_cast<std::chrono::minutes>(item.Start.value().offset).count();
 	}
 	// TODO handle no start and/or end times
 
@@ -1886,6 +2006,73 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		shape.write(NtClipEnd, TAGGED_PROPVAL{PT_SYSTIME, clipend});
 	}
 	shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(isrecurring)});
+
+	uint32_t tag;
+	if((tag = shape.tag(NtCalendarTimeZone)))
+	{
+		const TAGGED_PROPVAL* caltz = shape.writes(NtCalendarTimeZone);
+		if(caltz)
+		{
+			auto buf = ianatz_to_tzdef(static_cast<char*>(caltz->pvalue));
+			if(buf != nullptr)
+			{
+				size_t len = buf->size();
+				if(len > std::numeric_limits<uint32_t>::max())
+					throw InputError(E3293);
+				BINARY* temp_bin = construct<BINARY>(BINARY{uint32_t(buf->size()),
+					{reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
+				shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
+					TAGGED_PROPVAL{PT_BINARY, temp_bin});
+				shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
+					TAGGED_PROPVAL{PT_BINARY, temp_bin});
+
+				// If the offsets of start or end times are not set, probably
+				// the client didn't send the offset information in date tags.
+				// Try to get the offset from the timezone definition.
+				if(startOffset == 0 || endOffset == 0)
+				{
+					EXT_PULL ext_pull;
+					TIMEZONEDEFINITION tzdef;
+					ext_pull.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+					if(ext_pull.g_tzdef(&tzdef) != EXT_ERR_SUCCESS)
+						throw EWS::DispatchError(E3294);
+					startOffset = endOffset = offset_from_tz(&tzdef, startTime);
+				}
+				item.Start.value().offset = std::chrono::minutes(startOffset);
+				item.End.value().offset = std::chrono::minutes(endOffset);
+			}
+		}
+	}
+	// The named prop tags are not available in the shape at this point, so set
+	// values of them at the end.
+	auto start = EWSContext::construct<uint64_t>(rop_util_unix_to_nttime(startTime + startOffset * 60));
+	shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
+	shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
+	shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
+	shape.write(NtReminderTime, TAGGED_PROPVAL{PT_SYSTIME, start});
+	auto end = EWSContext::construct<uint64_t>(rop_util_unix_to_nttime(endTime + endOffset * 60));
+	shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
+	shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
+	shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
+
+	shape.write(NtReminderSet, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(
+		item.ReminderIsSet && item.ReminderIsSet.value() ? 1 : 0)});
+	uint32_t reminderdelta = 0;
+	if(item.ReminderMinutesBeforeStart)
+		reminderdelta = item.ReminderMinutesBeforeStart.value();
+	shape.write(NtReminderDelta, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(reminderdelta)});
+	shape.write(NtReminderSignalTime, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(
+		rop_util_unix_to_nttime(startTime + (startOffset - reminderdelta) * 60))});
+
+	if(item.UID)
+	{
+		BINARY goid_bin;
+		auto uid = item.UID.value().c_str();
+		uid_to_goid(uid, goid_bin);
+		BINARY* goid = construct<BINARY>(BINARY{goid_bin.cb, {goid_bin.pb}});
+		shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
+		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
+	}
 }
 
 /**
@@ -2020,6 +2207,21 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 {
 	if(item.MimeContent)
 		content = toContent(dir, *item.MimeContent);
+	if(item.Body)
+	{
+		auto body = const_cast<char*>(item.Body.value().c_str());
+		if(item.Body.value().BodyType == Enum::Text)
+			shape.write(TAGGED_PROPVAL{PR_BODY, body});
+		else if(item.Body.value().BodyType == Enum::HTML)
+		{
+			size_t bodylen = strlen(body);
+			if(bodylen > std::numeric_limits<uint32_t>::max())
+				throw InputError(E3256);
+			BINARY* html = construct<BINARY>(BINARY{uint32_t(strlen(body)),
+			                                       {reinterpret_cast<uint8_t*>(body)}});
+			shape.write(TAGGED_PROPVAL{PR_HTML, html});
+		}
+	}
 	if(item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst(item.ItemClass->c_str())});
 	if(item.Sensitivity)

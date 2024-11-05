@@ -1284,6 +1284,7 @@ struct tChangeDescription
 
 	static void convBool(uint32_t, const tinyxml2::XMLElement*, sShape&);
 	static void convDate(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	static void convDate(const PROPERTY_NAME&, const tinyxml2::XMLElement*, sShape&);
 	static void convText(uint32_t, const tinyxml2::XMLElement*, sShape&);
 	static void convText(const PROPERTY_NAME&, const tinyxml2::XMLElement*, sShape&);
 	template<typename ET, typename PT=uint32_t>

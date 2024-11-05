@@ -667,6 +667,7 @@ std::string guid2name(const FLATUID le)
 	GN(PS_PUBLIC_STRINGS);
 	GN(gx_dbguid_store_private);
 	GN(gx_dbguid_store_public);
+	GN(EWS_Mac_PropertySetId);
 #undef FN
 #undef GN
 	char txt[39];
