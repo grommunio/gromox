@@ -197,9 +197,10 @@ int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 	else if (ret == SQLITE_CONSTRAINT && (flags & SQLEXEC_SILENT_CONSTRAINT))
 		;
 	else
-		mlog(LV_ERR, "sqlite3_exec(%s) \"%s\": %s (%d)",
+		mlog(LV_ERR, "sqlite3_exec(%s) \"%s\": %s (%d) at [%s]",
 			znul(sqlite3_db_filename(db, nullptr)), query,
-		        estr != nullptr ? estr : sqlite3_errstr(ret), ret);
+		        estr != nullptr ? estr : sqlite3_errstr(ret), ret,
+		        simple_backtrace().c_str());
 	sqlite3_free(estr);
 	return ret;
 }
