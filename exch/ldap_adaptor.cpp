@@ -235,7 +235,7 @@ static BOOL ldaplogin_dpool(const char *username, const char *password)
 
 BOOL ldap_adaptor_login3(const char *user, const char *pass, const sql_meta_result &m)
 {
-	if (*pass == '\0')
+	if (*znul(pass) == '\0')
 		return false;
 	bool pooling_enabled = g_conn_pool.capacity() > 0;
 	if (m.ldap_uri.empty() && pooling_enabled)
