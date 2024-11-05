@@ -104,13 +104,15 @@ xtransaction gx_sql_begin3(const std::string &pos, sqlite3 *db, txn_mode mode)
 		}
 		return xtransaction(db);
 	}
-	if (ret == SQLITE_BUSY && mode == txn_mode::write) {
+	if ((ret == SQLITE_BUSY && mode == txn_mode::write) ||
+	    (ret != 0 && sqlite3_txn_state(db, "main") > SQLITE_TXN_NONE)) {
 		auto fn = sqlite3_db_filename(db, nullptr);
 		if (fn == nullptr || *fn == '\0')
 			fn = ":memory:";
 		auto it = active_xa.find(fn);
-		mlog(LV_ERR, "sqlite_busy on %s: write txn held by %s", znul(fn),
-			it != active_xa.end() ? it->second.c_str() : "unknown");
+		mlog(LV_ERR, "sqlite_busy on %s: held by %s, take from %s", znul(fn),
+			it != active_xa.end() ? it->second.c_str() : "unknown",
+			pos.c_str());
 	}
 	return xtransaction(nullptr);
 }
