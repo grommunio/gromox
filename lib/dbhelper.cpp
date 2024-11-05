@@ -94,6 +94,9 @@ xtransaction gx_sql_begin3(const std::string &pos, sqlite3 *db, txn_mode mode)
 		mode = txn_mode::write;
 	auto ret = gx_sql_exec(db, mode == txn_mode::write ? "BEGIN IMMEDIATE" : "BEGIN");
 	if (ret == SQLITE_OK) {
+		if (mode == txn_mode::read)
+			/* switch txn_state from TXN_NONE to TXN_READ */
+			sqlite3_exec(db, "SELECT COUNT(*) FROM configurations", nullptr, nullptr, nullptr);
 		auto fn = sqlite3_db_filename(db, nullptr);
 		if (fn != nullptr && *fn != '\0') {
 			std::unique_lock lk(active_xa_lock);
