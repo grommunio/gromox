@@ -116,6 +116,7 @@ extern GX_EXPORT void mlog_init(const char *ident, const char *file, unsigned in
 extern GX_EXPORT void mlog(unsigned int level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 extern GX_EXPORT int ssllog(const char *s, size_t len, void *);
 extern GX_EXPORT int pthread_create4(pthread_t *, std::nullptr_t, void *(*)(void *), void * = nullptr) noexcept;
+extern GX_EXPORT std::string simple_backtrace();
 extern GX_EXPORT int class_match_prefix(const char *h, const char *n);
 extern GX_EXPORT int class_match_suffix(const char *h, const char *n);
 extern GX_EXPORT void replace_unsafe_basename(char *);

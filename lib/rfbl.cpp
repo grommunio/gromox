@@ -38,6 +38,9 @@
 #ifdef HAVE_SYSLOG_H
 #	include <syslog.h>
 #endif
+#ifdef __GLIBC__
+#	include <execinfo.h>
+#endif
 #include <netinet/in.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
@@ -1818,6 +1821,27 @@ int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *ss)
 		return 0;
 	}
 	return -1;
+}
+
+std::string simple_backtrace()
+{
+	std::string out;
+	/* Tried ILT's libbacktrace, but in practice it takes 500 ms per backtrace */
+#ifdef __GLIBC__
+	void *frame_ptrs[128];
+	int num = backtrace(frame_ptrs, std::size(frame_ptrs));
+	if (num == 0)
+		return out;
+	std::unique_ptr<char *[], stdlib_delete> names(backtrace_symbols(frame_ptrs, num));
+	if (names == nullptr)
+		return out;
+	try {
+		for (int i = 0; i < num; ++i)
+			out += "<"s + znul(HX_basename(names[i])) + ">";
+	} catch (...) {
+	}
+#endif
+	return out;
 }
 
 }
