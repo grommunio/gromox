@@ -56,13 +56,13 @@ xtransaction::~xtransaction()
 
 void xtransaction::teardown()
 {
-	if (m_db != nullptr) {
-		gx_sql_exec(m_db, "ROLLBACK");
-		auto fn = sqlite3_db_filename(m_db, nullptr);
-		if (fn != nullptr && *fn != '\0') {
-			std::unique_lock lk(active_xa_lock);
-			active_xa.erase(fn);
-		}
+	if (m_db == nullptr)
+		return;
+	gx_sql_exec(m_db, "ROLLBACK");
+	auto fn = sqlite3_db_filename(m_db, nullptr);
+	if (fn != nullptr && *fn != '\0') {
+		std::unique_lock lk(active_xa_lock);
+		active_xa.erase(fn);
 	}
 }
 
