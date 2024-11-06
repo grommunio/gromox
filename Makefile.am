@@ -428,7 +428,7 @@ dldcheck.stamp: dldcheck ${dldcheck_files}
 tarball:
 	tmpdir=$$(mktemp -dtu); \
 	mkdir $$tmpdir && \
-	pushd ${top_srcdir} && git archive --prefix=${PACKAGE_NAME}-${PACKAGE_VERSION}/ HEAD | tar -C $$tmpdir -x && popd; \
-	pushd $$tmpdir/${PACKAGE_NAME}-${PACKAGE_VERSION} && autoreconf -fi && rm -Rf autom4te*.cache && popd; \
+	(cd ${top_srcdir} && git archive --prefix=${PACKAGE_NAME}-${PACKAGE_VERSION}/ HEAD | tar -C $$tmpdir -x); \
+	(cd $$tmpdir/${PACKAGE_NAME}-${PACKAGE_VERSION} && autoreconf -fi && rm -Rf autom4te*.cache); \
 	tar --use=zstd -C $$tmpdir -cf ${PACKAGE_NAME}-${PACKAGE_VERSION}.tar.zst --owner=root --group=root ${PACKAGE_NAME}-${PACKAGE_VERSION}/; \
 	rm -Rf $$tmpdir
