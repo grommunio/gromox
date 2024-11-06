@@ -43,7 +43,7 @@ static constexpr cfg_directive exmdb_gromox_cfg_defaults[] = {
 };
 
 static constexpr cfg_directive exmdb_cfg_defaults[] = {
-	{"cache_interval", "2h", CFG_TIME, "1s"},
+	{"cache_interval", "15min", CFG_TIME, "1s"},
 	{"dbg_synthesize_content", "0"},
 	{"enable_dam", "1", CFG_BOOL},
 	{"exmdb_body_autosynthesis", "1", CFG_BOOL},
