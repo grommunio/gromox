@@ -1,4 +1,44 @@
-Gromox 2.35 92024-10-15)
+Gromox 2.36 (2024-11-06)
+========================
+
+Fixes:
+
+* ews: fix an ABA locking problem when EWS unsubscribe actions were processed
+* genimport: fix a data juggling issue that led to mt2exm printing ``proptag …
+  from input stream has no named property info``
+* mbck: do not attempt to repair allocated_eids if repair mode was not
+  selected, fixing mbck printing ``sqlite3_prep(INSERT INTO allocated_eids) …
+  inside a readonly TXN``.
+* exmdb: fix an issue where creating new messages-embedded-in-messages could
+  lead to ``sqlite3_exec(… INSERT INTO messages … VALUES (65536, …): UNIQUE
+  constraint failed: messages.message_id (19)``, for msgids very close to the
+  end of the block
+* mkprivate et al: fix an issue where force-overwriting databases would print
+  ``database is locked``
+* oxcmail: during conversion from RFC5322 to MAPI form, avoid generating a
+  zero-length attachment for a zero-length mail
+
+Enhancements:
+
+* mbop: new commands "ping", "for-all-users", "echo-username"
+* exmdb: faster process shutdown through parallelized closing of sqlite files
+* exmdb: better location diagnostics for RO-RO transactions, for RW-in-RO,
+  and ROLLBACK issues
+
+Changes:
+
+* exmdb: the default value for exmdb_provider.cfg:cache_interval (time until
+  inactive sqlite files are closed) was reduced from 2h to 15min to curb system
+  resource use
+* exmdb: the default value for exmdb_provider.cfg:populating_threads_num
+  (asynchronous search folder population threads) from 50 to 4 to curb system
+  resource use
+* exmdb: deactivate implicit integrity check when upgrading a mailbox's
+  database schema, it takes too much time
+* (Integrity checks can still be done offline with ``mkprivate -U --integ``)
+
+
+Gromox 2.35 (2024-10-15)
 ========================
 
 Fixes:
