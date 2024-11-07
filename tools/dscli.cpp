@@ -121,6 +121,22 @@ static bool oxd_validate_url(CURL *ch, const tinyxml2::XMLElement *elem,
 	return true;
 }
 
+static bool oxd_is_autoconf_response(const std::string &xml_in)
+{
+	/* https://wiki.mozilla.org/Thunderbird:Autoconfiguration:ConfigFileFormat */
+	tinyxml2::XMLDocument doc;
+	auto ret = doc.Parse(xml_in.c_str(), xml_in.size());
+	if (ret != tinyxml2::XML_SUCCESS)
+		return false;
+	auto node = doc.RootElement();
+	if (node == nullptr)
+		return false;
+	auto name = node->Name();
+	if (name == nullptr || strcasecmp(name, "clientConfig") != 0)
+		return false;
+	return true;
+}
+
 static bool oxd_is_autodiscover_response(const std::string &xml_in,
     tinyxml2::XMLDocument &doc)
 {
@@ -397,9 +413,13 @@ static int tb_main(const char *email)
 	if (g_verbose) {
 		fprintf(stderr, "* Response body:\n");
 		printf("%s\n", xml_response.c_str());
-	} else {
-		fprintf(stderr, "Request performed OK; use -v to show response.\n");
 	}
+	if (!oxd_is_autoconf_response(xml_response)) {
+		if (!g_verbose)
+			fprintf(stderr, "* No usable response; use -v option for verbose results.\n");
+		return EXIT_FAILURE;
+	}
+	fprintf(stderr, "* Response has validated\n");
 	return EXIT_SUCCESS;
 }
 
