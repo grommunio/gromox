@@ -51,13 +51,7 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-#ifdef HAVE_NS
-static void dnssrv_missing(const char *dom)
-{
-	fprintf(stderr, "%sDNS SRV entry \"_autodiscover._tcp.%s\" is missing!%s\n",
-	        g_tty ? "\e[1;33m" : "", dom, g_tty ? "\e[0m" : "" /* ]] */);
-}
-#else
+#ifndef HAVE_NS
 static void dnssrv_notbuilt()
 {
 	fprintf(stderr, "%sThis version was not built with DNS SRV analysis.%s\n",
@@ -312,7 +306,6 @@ static std::string autodisc_url()
 				fprintf(stderr, "Followed SRV: %s -> %s\n", dom, url.c_str());
 				return url;
 			}
-			dnssrv_missing(dom);
 #else
 			dnssrv_notbuilt();
 #endif
