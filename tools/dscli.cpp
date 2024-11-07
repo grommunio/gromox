@@ -350,9 +350,6 @@ static CURLcode setopts_base(CURL *ch, std::string &output_buffer)
 	ret = curl_easy_setopt(ch, CURLOPT_USERAGENT, g_user_agent);
 	if (ret != CURLE_OK)
 		return ret;
-	ret = curl_easy_setopt(ch, CURLOPT_URL, autodisc_url().c_str());
-	if (ret != CURLE_OK)
-		return ret;
 	return CURLE_OK;
 }
 
@@ -453,20 +450,25 @@ int main(int argc, char **argv)
 		fprintf(stderr, "curl_easy_setopt(): %s\n", curl_easy_strerror(result));
 		return EXIT_FAILURE;
 	}
+	auto url = autodisc_url();
+	result = curl_easy_setopt(ch, CURLOPT_URL, url.c_str());
+	if (result != CURLE_OK)
+		return EXIT_FAILURE;
 	if (g_verbose)
 		fprintf(stderr, "* Request body:\n%s\n\n", xml_request->CStr());
 	result = curl_easy_perform(ch);
 	if (result != CURLE_OK) {
-		fprintf(stderr, "curl_easy_perform(): %s\n", curl_easy_strerror(result));
+		fprintf(stderr, "curl_easy_perform <%s>: %s\n",
+			url.c_str(), curl_easy_strerror(result));
 		return EXIT_FAILURE;
 	}
-	int status = 0;
+	long status = 0;
 	result = curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &status);
-	if (result != CURLE_OK) {
-		fprintf(stderr, "curl_easy_perform(): HTTP %d\n", status);
+	if (result != CURLE_OK || status >= 400) {
+		fprintf(stderr, "curl_easy_perform <%s>: HTTP %ld\n",
+			url.c_str(), status);
 		return EXIT_FAILURE;
 	}
-	int status;
 	if (g_verbose) {
 		fprintf(stderr, "* Response body:\n");
 		printf("%s\n", xml_response.c_str());
