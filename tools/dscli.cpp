@@ -400,10 +400,12 @@ static int tb_main(const char *email)
 		fprintf(stderr, "curl_easy_perform(): %s\n", curl_easy_strerror(result));
 		return EXIT_FAILURE;
 	}
-	if (g_verbose)
-		printf("* Response body:\n%s\n", xml_response.c_str());
-	else
-		printf("Request performed OK; use -v to show response.\n");
+	if (g_verbose) {
+		fprintf(stderr, "* Response body:\n");
+		printf("%s\n", xml_response.c_str());
+	} else {
+		fprintf(stderr, "Request performed OK; use -v to show response.\n");
+	}
 	return EXIT_SUCCESS;
 }
 
@@ -452,14 +454,16 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	if (g_verbose)
-		printf("* Request body:\n%s\n\n", xml_request->CStr());
+		fprintf(stderr, "* Request body:\n%s\n\n", xml_request->CStr());
 	result = curl_easy_perform(ch);
 	if (result != CURLE_OK) {
 		fprintf(stderr, "curl_easy_perform(): %s\n", curl_easy_strerror(result));
 		return EXIT_FAILURE;
 	}
-	if (g_verbose)
-		printf("* Response body:\n%s\n", xml_response.c_str());
+	if (g_verbose) {
+		fprintf(stderr, "* Response body:\n");
+		printf("%s\n", xml_response.c_str());
+	}
 	auto ret = oxd_validate_response(xml_response);
 	if (!ret) {
 		if (!g_verbose)

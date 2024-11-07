@@ -36,7 +36,10 @@ Use a distinct username for authentication.
 Default: inherit from \-e option
 .TP
 \fB\-v\fP
-Be verbose and dump the HTTP/XML request/responses.
+Be verbose. Log messages are emitted to stderr, the HTTP/XML request is emitted
+to stderr, and the HTTP/XML response (if any) is emitted to standard output.
+(These choices allow the output XML to be fed to e.g. xmllint for
+pretty-printing).
 .TP
 \fB\-x\fP \fI/o=1234578/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=username\fP
 LegacyDN field to send along in the request.
