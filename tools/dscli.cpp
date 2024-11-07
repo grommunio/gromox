@@ -460,6 +460,13 @@ int main(int argc, char **argv)
 		fprintf(stderr, "curl_easy_perform(): %s\n", curl_easy_strerror(result));
 		return EXIT_FAILURE;
 	}
+	int status = 0;
+	result = curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &status);
+	if (result != CURLE_OK) {
+		fprintf(stderr, "curl_easy_perform(): HTTP %d\n", status);
+		return EXIT_FAILURE;
+	}
+	int status;
 	if (g_verbose) {
 		fprintf(stderr, "* Response body:\n");
 		printf("%s\n", xml_response.c_str());
