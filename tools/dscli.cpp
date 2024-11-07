@@ -55,7 +55,7 @@ static constexpr HXoption g_options_table[] = {
 static void dnssrv_notbuilt()
 {
 	fprintf(stderr, "%sThis version was not built with DNS SRV analysis.%s\n",
-	        g_tty ? "\e[1;31m" : "", g_tty ? "\e[0m" : "");
+	        g_tty ? "\e[1;33m" : "", g_tty ? "\e[0m" : "");
 }
 #endif
 
@@ -121,35 +121,29 @@ static bool oxd_validate_url(CURL *ch, const tinyxml2::XMLElement *elem,
 	return true;
 }
 
-static bool oxd_validate_response(const std::string &xml_in)
+static bool oxd_is_autodiscover_response(const std::string &xml_in,
+    tinyxml2::XMLDocument &doc)
 {
-	tinyxml2::XMLDocument doc;
 	auto ret = doc.Parse(xml_in.c_str(), xml_in.size());
-	if (ret != tinyxml2::XML_SUCCESS) {
-		fprintf(stderr, "Failed to xmlparse response\n");
+	if (ret != tinyxml2::XML_SUCCESS)
 		return false;
-	}
 	auto node = doc.RootElement();
-	if (node == nullptr) {
-		fprintf(stderr, "No Autodiscover root element\n");
+	if (node == nullptr)
 		return false;
-	}
 	auto name = node->Name();
-	if (name == nullptr || strcasecmp(name, "Autodiscover") != 0) {
-		fprintf(stderr, "No Autodiscover root element\n");
+	if (name == nullptr || strcasecmp(name, "Autodiscover") != 0)
 		return false;
-	}
 	node = node->FirstChildElement("Response");
-	if (node == nullptr) {
-		fprintf(stderr, "No Response element\n");
+	if (node == nullptr)
 		return false;
-	}
 	node = node->FirstChildElement("Account");
-	if (node == nullptr) {
-		fprintf(stderr, "No Account element\n");
+	if (node == nullptr)
 		return false;
-	}
+	return true;
+}
 
+static bool oxd_validate_response(const tinyxml2::XMLDocument &doc)
+{
 	std::unique_ptr<CURL, curl_del> chp(curl_easy_init());
 	if (chp == nullptr) {
 		perror("curl_easy_init: ENOMEM\n");
@@ -168,8 +162,9 @@ static bool oxd_validate_response(const std::string &xml_in)
 
 	std::unordered_set<std::string> seen_urls;
 	bool ok = true;
-	for (node = node->FirstChildElement(); node != nullptr; node = node->NextSiblingElement()) {
-		name = node->Name();
+	for (auto node = doc.RootElement()->FirstChildElement(); node != nullptr;
+	     node = node->NextSiblingElement()) {
+		auto name = node->Name();
 		if (name == nullptr || strcasecmp(name, "Protocol") != 0)
 			continue;
 		for (const char *s : {"OOFUrl", "OABUrl", "ASUrl", "EwsUrl", "EmwsUrl", "EcpUrl"}) {
@@ -278,41 +273,41 @@ static std::string domain_to_oxsrv(const char *dom)
 }
 #endif
 
-static std::string autodisc_url()
+static std::vector<std::string> autodisc_url()
 {
 #define xmlpath "/Autodiscover/Autodiscover.xml"
 #define tbac_path "/.well-known/autoconfig/mail/config-v1.1.xml"
 	if (g_disc_url != nullptr)
-		return g_disc_url;
+		return {g_disc_url};
 	if (g_disc_host != nullptr) {
 		if (g_tb_mode)
-			return "https://"s + g_disc_host + tbac_path + "?emailaddress=" + g_emailaddr;
-		return "https://"s + g_disc_host + xmlpath;
+			return {"https://"s + g_disc_host + tbac_path "?emailaddress=" + g_emailaddr};
+		return {"https://"s + g_disc_host + xmlpath};
 	}
 	if (g_emailaddr != nullptr) {
 		auto p = strchr(g_emailaddr, '@');
 		if (p != nullptr) {
 			auto dom = p + 1;
-#ifdef HAVE_NS
 			/*
 			 * In the future, TB may look at _imap._tcp, but who
 			 * knows when that is going to happen.
 			 */
 			if (g_tb_mode)
-				return "https://"s + dom + tbac_path + "?emailaddress=" + g_emailaddr;
+				return {"https://"s + dom + tbac_path "?emailaddress=" + g_emailaddr};
+			std::vector<std::string> out;
+			out.emplace_back("https://"s + dom + xmlpath);
+			out.emplace_back("https://autodiscover."s + dom + xmlpath);
+#ifdef HAVE_NS
 			auto srv = domain_to_oxsrv(dom);
-			if (!srv.empty()) {
-				auto url = "https://" + srv + xmlpath;
-				fprintf(stderr, "Followed SRV: %s -> %s\n", dom, url.c_str());
-				return url;
-			}
+			if (!srv.empty())
+				out.emplace_back("https://"s + srv + xmlpath);
 #else
 			dnssrv_notbuilt();
 #endif
-			return "https://autodiscover."s + dom + xmlpath;
+			return out;
 		}
 	}
-	return "https://localhost/" xmlpath;
+	return {"https://localhost/" xmlpath};
 #undef xmlpath
 }
 
@@ -384,11 +379,13 @@ static CURLcode setopts_oxd(CURL *ch, const char *password, curl_slist *hdrs,
 static int tb_main(const char *email)
 {
 	std::string xml_response;
+	auto ds_urls = autodisc_url();
+	assert(!ds_urls.empty());
 	std::unique_ptr<CURL, curl_del> chp(curl_easy_init());
 	auto ch = chp.get();
 	auto result = setopts_base(ch, xml_response);
 	if (result != CURLE_OK ||
-	    (result = curl_easy_setopt(ch, CURLOPT_URL, autodisc_url().c_str()))) {
+	    (result = curl_easy_setopt(ch, CURLOPT_URL, ds_urls[0].c_str()))) {
 		fprintf(stderr, "curl_easy_setopt(): %s\n", curl_easy_strerror(result));
 		return EXIT_FAILURE;
 	}
@@ -442,6 +439,7 @@ int main(int argc, char **argv)
 
 	auto xml_request = oxd_make_request(g_emailaddr, g_legacydn);
 	std::string xml_response;
+	tinyxml2::XMLDocument xd_response;
 	std::unique_ptr<CURL, curl_del> chp(curl_easy_init());
 	std::unique_ptr<curl_slist, curl_del> hdrs(curl_slist_append(nullptr, "Content-Type: text/xml"));
 	auto ch = chp.get();
@@ -450,33 +448,42 @@ int main(int argc, char **argv)
 		fprintf(stderr, "curl_easy_setopt(): %s\n", curl_easy_strerror(result));
 		return EXIT_FAILURE;
 	}
-	auto url = autodisc_url();
-	result = curl_easy_setopt(ch, CURLOPT_URL, url.c_str());
-	if (result != CURLE_OK)
-		return EXIT_FAILURE;
 	if (g_verbose)
 		fprintf(stderr, "* Request body:\n%s\n\n", xml_request->CStr());
-	result = curl_easy_perform(ch);
-	if (result != CURLE_OK) {
-		fprintf(stderr, "curl_easy_perform <%s>: %s\n",
-			url.c_str(), curl_easy_strerror(result));
-		return EXIT_FAILURE;
-	}
-	long status = 0;
-	result = curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &status);
-	if (result != CURLE_OK || status >= 400) {
-		fprintf(stderr, "curl_easy_perform <%s>: HTTP %ld\n",
-			url.c_str(), status);
-		return EXIT_FAILURE;
+	for (const auto &url : autodisc_url()) {
+		fprintf(stderr, "* Trying %s\n", url.c_str());
+		result = curl_easy_setopt(ch, CURLOPT_URL, url.c_str());
+		if (result != CURLE_OK)
+			return result;
+		result = curl_easy_perform(ch);
+		if (result != CURLE_OK) {
+			fprintf(stderr, "curl_easy_perform <%s>: %s\n", url.c_str(), curl_easy_strerror(result));
+			return EXIT_FAILURE;
+		}
+		long status = 0;
+		result = curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &status);
+		if (result != CURLE_OK || status >= 400)
+			fprintf(stderr, "curl_easy_perform <%s>: HTTP %ld\n",
+				url.c_str(), status);
+		else if (oxd_is_autodiscover_response(xml_response, xd_response))
+			break;
+		if (g_verbose)
+			fprintf(stderr, "* Response body:\n%s\n", xml_response.c_str());
+		xml_response.clear();
 	}
 	if (g_verbose) {
 		fprintf(stderr, "* Response body:\n");
 		printf("%s\n", xml_response.c_str());
 	}
-	auto ret = oxd_validate_response(xml_response);
+	if (xml_response.empty()) {
+		if (!g_verbose)
+			fprintf(stderr, "* No usable response; use -v option for verbose results.\n");
+		return EXIT_FAILURE;
+	}
+	auto ret = oxd_validate_response(xd_response);
 	if (!ret) {
 		if (!g_verbose)
-			fprintf(stderr, "* Use -v option for verbose results.\n");
+			fprintf(stderr, "* use -v option for verbose results.\n");
 		return EXIT_FAILURE;
 	}
 	fprintf(stderr, "* Response has validated\n");

@@ -81,11 +81,11 @@ working.
 .SH gromox-dscli behavior
 The gromox-dscli command-line utility uses this order:
 .IP 1. 4
-DNS SRV as per the above
-.IP 2. 4
 HTTP POST to example.com as per the above
-.IP 3. 4
+.IP 2. 4
 HTTP POST to autodiscover.example.com as per the above
+.IP 3. 4
+DNS SRV as per the above
 .SH Configuration directives (gromox.cfg)
 The following directives are recognized when they appear in
 /etc/gromox/gromox.cfg.
