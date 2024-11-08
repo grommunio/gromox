@@ -517,11 +517,14 @@ static BOOL icsdownctx_object_extract_msgctntinfo(MESSAGE_CONTENT *pmsgctnt,
 	pchgheader->emplace_back(PR_SOURCE_KEY, bin);
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_SOURCE_KEY);
 	
-	auto ts = pmsgctnt->proplist.get<const uint64_t>(PR_LAST_MODIFICATION_TIME);
-	uint64_t now = rop_util_unix_to_nttime(time(nullptr));
-	if (ts == nullptr)
+	auto ts = pmsgctnt->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
+	if (ts == nullptr) {
+		ts = cu_alloc<uint64_t>();
+		if (ts == nullptr)
+			return false;
 		/* Faking it seems to work */
-		ts = &now;
+		*ts = rop_util_unix_to_nttime(time(nullptr));
+	}
 	pchgheader->emplace_back(PR_LAST_MODIFICATION_TIME, ts);
 	
 	bin = pmsgctnt->proplist.get<BINARY>(PR_CHANGE_KEY);
