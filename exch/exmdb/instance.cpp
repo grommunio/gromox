@@ -655,9 +655,11 @@ void *instance_read_cid_content(const char *cid, uint32_t *plen, uint32_t tag) t
 	errno = gx_decompress_file(cu_cid_path(nullptr, cid, 1).c_str(), dxbin,
 	        common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
 	if (errno == 0) {
+		if (dxbin.cb < 4)
+			return nullptr;
 		if (plen != nullptr)
-			*plen = dxbin.cb;
-		return dxbin.pv;
+			*plen = dxbin.cb - 4;
+		return dxbin.pb + 4;
 	} else if (errno != ENOENT) {
 		return nullptr;
 	}
