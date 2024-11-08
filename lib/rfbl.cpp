@@ -1331,14 +1331,13 @@ errno_t gx_decompress_file(const char *infile, BINARY &outbin,
 	if (static_cast<unsigned long long>(sb.st_size) < inbufsize)
 		inbufsize = sb.st_size;
 	auto inbuf = std::make_unique<char[]>(inbufsize);
-	auto rdret = read(fd.get(), inbuf.get(), inbufsize);
-	if (rdret < 0)
-		return errno;
 #if defined(HAVE_POSIX_FADVISE)
 	if (posix_fadvise(fd.get(), 0, sb.st_size, POSIX_FADV_SEQUENTIAL) != 0)
 		/* ignore */;
 #endif
-
+	auto rdret = read(fd.get(), inbuf.get(), inbufsize);
+	if (rdret < 0)
+		return errno;
 	auto outsize = ZSTD_getFrameContentSize(inbuf.get(), rdret);
 	if (outsize == ZSTD_CONTENTSIZE_ERROR)
 		return EIO;
