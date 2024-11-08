@@ -46,6 +46,7 @@ Makefile.in
 /gromox-mailq
 /gromox-mbck
 /gromox-mbop
+/gromox-mbsize
 /gromox-mkmidb
 /gromox-mkprivate
 /gromox-mkpublic

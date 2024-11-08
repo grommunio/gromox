@@ -54,7 +54,7 @@ svc_plugins = \
 	libgxs_midb_agent.la \
 	libgxs_timer_agent.la \
 	libgxs_mysql_adaptor.la libgxs_ruleproc.la
-sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbck gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
+sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbck gromox-mbop gromox-mbsize gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
 if HAVE_ESEDB
 sbin_PROGRAMS += gromox-edb2mt
 endif
@@ -218,6 +218,8 @@ gromox_mbck_SOURCES = tools/mbck.cpp
 gromox_mbck_LDADD = ${libHX_LIBS} ${fmt_LIBS} ${sqlite_LIBS} libgromox_common.la
 gromox_mbop_SOURCES = tools/genimport.cpp tools/genimport.hpp tools/mbop_main.cpp
 gromox_mbop_LDADD = ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
+gromox_mbsize_SOURCES = tools/mbsize.cpp
+gromox_mbsize_LDADD = ${sqlite_LIBS} libgromox_common.la
 gromox_mkmidb_SOURCES = tools/mkmidb.cpp tools/mkshared.cpp tools/mkshared.hpp
 gromox_mkmidb_LDADD = ${fmt_LIBS} ${libHX_LIBS} ${mysql_LIBS} ${libssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_dbop.la libgromox_mapi.la
 gromox_mkprivate_SOURCES = tools/mkprivate.cpp tools/mkshared.cpp tools/mkshared.hpp
@@ -315,6 +317,7 @@ dist_man_MANS = \
 	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 doc/gromox-exm2eml.8 \
 	doc/gromox-exm2ical.8 doc/gromox-exm2mt.8 doc/gromox-exm2vcf.8 \
 	doc/gromox-kdb2mt.8 doc/gromox-mailq.8 doc/gromox-mbop.8 \
+	doc/gromox-mbsize.8 \
 	doc/gromox-mkmidb.8 doc/gromox-mkprivate.8 doc/gromox-mkpublic.8 \
 	doc/gromox-mt2exm.8 doc/gromox-selinux.5 \
 	doc/gromox-snapshot.8 doc/http.8gx \

@@ -1,0 +1,73 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2024 grommunio GmbH
+.TH gromox\-mbsize 8 "" "Gromox" "Gromox admin reference"
+.SH Name
+gromox\-mbsize \(em Mailbox size analysis
+.SH Synopsis
+\fBgromox\-mbsize\fP \fIdirectory\fP
+.SH Description
+Shows a detailed view of how a mailbox size translates to on-disk usage.
+Explanation of the columns/rows follows.
+.PP
+Apparent size: This is the exact size of the object, or simply the sum
+of sizes of objects.
+.PP
+On FS: This is the space that is used on the filesystem, and is subject
+to fs block sizes. Details about this behavior may be found on
+<https://en.wikipedia.org/wiki/Block_(data_storage)>. As a result,
+the on-disk size may be larger than the apparent size.
+.PP
+RFC5322/Mbox: For the sake of IMAP, RFC5322 copies of messages and some
+metadata is retained.
+.PP
+RFC5322 Received: Applies to messages received via delivery(8gx).
+.PP
+RFC5322 Sent: Applies to any other message.
+.PP
+Body analysis: A set of 4 MAPI properties that usually get stored as files on
+disk rather than inside the sqlite database: PR_BODY, PR_HTML,
+PR_RTF_COMPRESSED and PR_INTERNET_TRANSPORT_HEADERS. In gromox\-mbsize, these
+are considered "body".
+.PP
+Attachment analysis: What it says. Not all MIME parts are or stay an
+attachment; for example, calendar items/meeting requests are usually converted
+to MAPI objects.
+.PP
+Missing items/Apparent: The number of MAPI properties/attachments which have a
+dangling reference into the filesystem.
+.PP
+Missing items/FS: The on-disk number of files that seem to be absent. This
+number can be lower than Apparent due to internal data deduplication that is
+transparent to MAPI/exmdb clients.
+.PP
+Informational content: The logical amount of data that is represented by those
+four MAPI properties / by MAPI attachments.
+.PP
+After deduplication: The logical amount of unique bodies/attachments.
+.PP
+Dedup ratio/gains: For the "body" group, there are usually little gains to be
+observed in practice; bodies are just very unique. Messages like "test" are
+ironically the ones that benefit. Attachments dedup a little better, owing to
+many people sending/receiving redundant information, such as company logos.
+.PP
+After compression: Besides deduplication, Gromox can also compress before data
+goes to disk. This is also the final form and so there is an apparent and an
+on-disk value. The on-disk value may be higher due to aforementioned filesystem
+block sizing.
+.PP
+File compress ratio/gains: The earnings going from Dedup to Compressed.
+.PP
+IFC compress ratio/gains: The earnings going from Informational Content to
+Compressed.
+.PP
+MAPI reported sizes: The PR_MESSAGE_SIZE property of a store, folder, message,
+and the PR_ATTACH_SIZE property of an attachment, all give a close
+approximation to the amount of data needed to transfer the object(s) over a
+MAPI connection.
+.PP
+NTS deviation: how much the Network Transfer Size is off from the on-disk size.
+.PP
+Provisioning factor: The ratio between on-disk usage and the logical mailbox
+size reported inside MUAs.
+.SH See also
+\fBgromox\fP(7)
