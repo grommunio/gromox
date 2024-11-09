@@ -167,12 +167,13 @@ Timed deletion of trash:
 gromox\-mbop \-u abc@example.com emptyfld \-Rt 1week \-\-soft DELETED
 .SH for\-all\-users
 .SS Synopsis
-\fBfor\-all\-users\fP [\fB\-t\fP \fIthreads\fP] \fIcommand\fP [command-args...]
+\fBfor\-all\-users\fP [\fB\-j\fP \fIjobs\fP] \fIcommand\fP [command-args...]
 .SS Options
 .TP
-\fB\-t\fP \fIthreads\fP
-Maximum parallel execution factor. (Experimental, not implemented for all
-actions.) 0 means autodetect.
+\fB\-j\fP \fIjobs\fP
+Maximum parallel execution factor. (Experimental.) 0 means autosizing. Only
+ping/vacuum/unload support this, and the option is otherwise ignored. Use
+external tools like parallel(1) or make(1) for guaranteed parallelization.
 .br
 Default: \fI1\fP
 .SS Description

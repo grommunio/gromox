@@ -648,14 +648,14 @@ namespace for_all_wrap {
 
 static unsigned int g_numthreads = 1;
 static constexpr HXoption g_options_table[] = {
-	{{}, 't', HXTYPE_UINT, &g_numthreads, {}, {}, {}, "Maximum concurrency for execution", "INTEGER"},
+	{{}, 'j', HXTYPE_UINT, &g_numthreads, {}, {}, {}, "Maximum concurrency for execution", "INTEGER"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
 static int help()
 {
-	fprintf(stderr, "Usage: for-all-users [-t threads] command [args...]\n");
+	fprintf(stderr, "Usage: for-all-users [-j jobs] command [args...]\n");
 	global::command_overview();
 	return EXIT_PARAM;
 }
