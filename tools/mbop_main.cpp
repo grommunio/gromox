@@ -630,8 +630,10 @@ static int main(int argc, char **argv)
 		ok = exmdb_client::vacuum(g_storedir);
 	else if (strcmp(argv[0], "recalc-sizes") == 0)
 		ok = recalc_sizes(g_storedir);
-	else
-		return -EINVAL;
+	else {
+		fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
+		return EXIT_FAILURE;
+	}
 	if (!ok) {
 		fprintf(stderr, "%s: the operation failed\n", argv[0]);
 		return EXIT_FAILURE;
@@ -1006,8 +1008,6 @@ static int main2(int argc, char **argv)
 		ret = EXIT_SUCCESS;
 	} else {
 		ret = simple_rpc::main(argc, argv);
-		if (ret == -EINVAL)
-			fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
 	}
 	return !!ret;
 }
