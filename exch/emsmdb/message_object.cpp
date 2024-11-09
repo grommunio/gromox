@@ -218,7 +218,7 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 		return ENOMEM;
 	*importance = IMPORTANCE_NORMAL;
 	propvals.emplace_back(PR_IMPORTANCE, importance);
-	propvals.emplace_back(PR_DEF_POST_MSGCLASS, "IPM.Note");
+	propvals.emplace_back(PR_MESSAGE_CLASS, "IPM.Note");
 	
 	auto sens = cu_alloc<uint32_t>();
 	if (sens == nullptr)
