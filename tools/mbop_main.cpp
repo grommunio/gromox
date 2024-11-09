@@ -30,6 +30,7 @@ using namespace gromox;
 using LLU = unsigned long long;
 namespace exmdb_client = exmdb_client_remote;
 
+static constexpr int EXIT_PARAM = 2;
 static constexpr HXoption empty_options_table[] = {
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -51,7 +52,7 @@ static constexpr HXoption g_options_table[] = {
 static int help()
 {
 	fprintf(stderr, "Usage: gromox-mbop -u a@b.de delmsg -f folder_id message_id[,...]\n");
-	return EXIT_FAILURE;
+	return EXIT_PARAM;
 }
 
 }
@@ -79,7 +80,7 @@ static int main(int argc, char **argv)
 {
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_folderstr != nullptr) {
 		char *end = nullptr;
@@ -280,7 +281,7 @@ static int main(int argc, char **argv)
 {
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_del_flags & DEL_FOLDERS && g_recurse) {
 		fprintf(stderr, "Combining -R and --nuke-folders is unreasonable: when you nuke folders, you cannot recurse into them anymore.\n");
@@ -360,7 +361,7 @@ static int main(int argc, char **argv)
 {
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (argc < 2)
 		fprintf(stderr, "mbop/purge: No folders specified, no action taken.\n");
@@ -403,11 +404,11 @@ static int main(int argc, char **argv)
 {
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_language == nullptr) {
 		fprintf(stderr, "You need to specify the -l option\n");
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	}
 	textmaps_init();
 	service_init({nullptr, g_dfl_svc_plugins, 1});
@@ -498,13 +499,13 @@ static int main(int argc, char **argv)
 {
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	time_t start_time = -1, end_time = -1;
 	if (g_start_txt != nullptr && xmktime(g_start_txt, &start_time) < 0)
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	if (g_end_txt != nullptr && xmktime(g_end_txt, &end_time) < 0)
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	std::vector<freebusy_event> fbout;
 	if (!get_freebusy(g_requestor, g_storedir, start_time, end_time, fbout)) {
 		fprintf(stderr, "get_freebusy call not successful\n");
@@ -564,7 +565,7 @@ static int help()
 	command_overview();
 	fprintf(stderr, "Command options:\n");
 	fprintf(stderr, "\t-?                           Call up option help for subcommand\n");
-	return EXIT_FAILURE;
+	return EXIT_PARAM;
 }
 
 } /* namespace global */
@@ -615,7 +616,7 @@ static int main(int argc, char **argv)
 	bool ok = false;
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (strcmp(argv[0], "purge-datafiles") == 0)
 		ok = exmdb_client::purge_datafiles(g_storedir);
@@ -632,7 +633,7 @@ static int main(int argc, char **argv)
 		ok = recalc_sizes(g_storedir);
 	else {
 		fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	}
 	if (!ok) {
 		fprintf(stderr, "%s: the operation failed\n", argv[0]);
@@ -656,18 +657,18 @@ static int help()
 {
 	fprintf(stderr, "Usage: for-all-users [-t threads] command [args...]\n");
 	global::command_overview();
-	return EXIT_FAILURE;
+	return EXIT_PARAM;
 }
 
 static int main(int argc, char **argv)
 {
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (global::g_arg_username != nullptr || global::g_arg_userdir != nullptr) {
 		fprintf(stderr, "Cannot use -d/-u with for-all-users\n");
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	} else if (g_numthreads == 0) {
 		g_numthreads = std::thread::hardware_concurrency();
 	}
@@ -746,7 +747,7 @@ static int delstoreprop(int argc, char **argv, const GUID &guid,
 {
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	uint16_t propid = 0;
@@ -807,7 +808,7 @@ static int showstoreprop(int argc, char **argv, const GUID guid,
 {
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	uint16_t propid = 0;
@@ -859,7 +860,7 @@ static int setstoreprop(int argc, char **argv, const GUID guid,
 {
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	uint16_t propid = 0;
@@ -948,7 +949,7 @@ int main(int argc, char **argv)
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt5(global::g_options_table, argv, &argc, &argv,
 	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
+		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	--argc;
 	++argv;
