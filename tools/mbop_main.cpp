@@ -739,7 +739,7 @@ static errno_t resolvename(const GUID &guid, const char *name, bool create,
 	return 0;
 }
 
-static errno_t delstoreprop(int argc, char **argv, const GUID &guid,
+static int delstoreprop(int argc, char **argv, const GUID &guid,
     const char *name, uint16_t type)
 {
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
@@ -750,18 +750,18 @@ static errno_t delstoreprop(int argc, char **argv, const GUID &guid,
 	uint16_t propid = 0;
 	auto err = resolvename(guid, name, false, &propid);
 	if (err == ENOENT)
-		return 0;
+		return EXIT_SUCCESS;
 	else if (err != 0)
-		return err;
+		return EXIT_FAILURE;
 	uint32_t proptag = PROP_TAG(type, propid);
 	const PROPTAG_ARRAY tags = {1, &proptag};
 	if (!exmdb_client::remove_store_properties(g_storedir, &tags))
-		return EINVAL;
+		return EXIT_FAILURE;
 	if (strcmp(name, "zcore_profsect") == 0)
 		unlink((g_storedir + "/config/zarafa.dat"s).c_str());
 	else if (strcmp(name, "photo") == 0)
 		unlink((g_storedir + "/config/portrait.jpg"s).c_str());
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 static errno_t showstoreprop(uint32_t proptag)
@@ -800,7 +800,7 @@ static errno_t showstoreprop(uint32_t proptag)
 	}
 }
 
-static errno_t showstoreprop(int argc, char **argv, const GUID guid,
+static int showstoreprop(int argc, char **argv, const GUID guid,
     const char *name, uint16_t proptype)
 {
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
@@ -811,9 +811,9 @@ static errno_t showstoreprop(int argc, char **argv, const GUID guid,
 	uint16_t propid = 0;
 	auto err = resolvename(guid, name, false, &propid);
 	if (err == ENOENT)
-		return 0;
+		return EXIT_SUCCESS;
 	else if (err != 0)
-		return err;
+		return EXIT_FAILURE;
 	return showstoreprop(PROP_TAG(proptype, propid));
 }
 
@@ -852,7 +852,7 @@ static errno_t setstoreprop(uint32_t proptag)
 	return 0;
 }
 
-static errno_t setstoreprop(int argc, char **argv, const GUID guid,
+static int setstoreprop(int argc, char **argv, const GUID guid,
     const char *name, uint16_t proptype)
 {
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
@@ -864,10 +864,10 @@ static errno_t setstoreprop(int argc, char **argv, const GUID guid,
 	auto err = resolvename(guid, name, true, &propid);
 	if (err == ENOENT) {
 		fprintf(stderr, "namedprop %s not found\n", name);
-		return EIO;
+		return EXIT_FAILURE;
 	} else if (err != 0) {
 		fprintf(stderr, "%s\n", strerror(-err));
-		return err;
+		return EXIT_FAILURE;
 	}
 	return setstoreprop(PROP_TAG(proptype, propid));
 }
