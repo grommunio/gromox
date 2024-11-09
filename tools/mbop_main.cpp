@@ -687,6 +687,9 @@ static int main(int argc, char **argv)
 	std::vector<std::future<void>> futs;
 	Sem sem(g_numthreads);
 	if (strcmp(argv[0], "ping") == 0) {
+		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
+		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+			return EXIT_PARAM;
 		for (auto &&[username, maildir] : ul) {
 			sem.acquire();
 			futs.emplace_back(std::async([](std::string *maildir, Sem *sem) {
@@ -695,6 +698,9 @@ static int main(int argc, char **argv)
 			}, &maildir, &sem));
 		}
 	} else if (strcmp(argv[0], "unload") == 0) {
+		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
+		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+			return EXIT_PARAM;
 		for (auto &&[username, maildir] : ul) {
 			sem.acquire();
 			futs.emplace_back(std::async([](std::string *maildir, Sem *sem) {
@@ -703,6 +709,9 @@ static int main(int argc, char **argv)
 			}, &maildir, &sem));
 		}
 	} else if (strcmp(argv[0], "vacuum") == 0) {
+		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
+		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+			return EXIT_PARAM;
 		for (auto &&[username, maildir] : ul) {
 			sem.acquire();
 			futs.emplace_back(std::async([](std::string *maildir, Sem *sem) {
@@ -716,7 +725,9 @@ static int main(int argc, char **argv)
 			g_dstuser = std::move(username);
 			g_storedir_s = std::move(maildir);
 			g_storedir = g_storedir_s.c_str();
-			global::main2(argc, argv);
+			ret = global::main2(argc, argv);
+			if (ret == EXIT_PARAM)
+				break;
 		}
 	}
 	futs.clear();
@@ -1010,7 +1021,7 @@ static int main2(int argc, char **argv)
 	} else {
 		ret = simple_rpc::main(argc, argv);
 	}
-	return !!ret;
+	return ret;
 }
 
 }
