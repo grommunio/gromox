@@ -1835,7 +1835,8 @@ std::string simple_backtrace()
 	if (names == nullptr)
 		return out;
 	try {
-		for (int i = 0; i < num; ++i)
+		/* Frame 0 is simple_backtrace itself, skip it */
+		for (int i = 1; i < num; ++i)
 			out += "<"s + znul(HX_basename(names[i])) + ">";
 	} catch (...) {
 	}
