@@ -564,8 +564,8 @@ BOOL exmdb_server::recalc_store_size(const char *dir, uint32_t flags)
 	auto comp = [&](proptag_t tag, const char *wh) {
 		char query[240];
 		gx_snprintf(query, std::size(query), "REPLACE INTO store_properties "
-			"(proptag,propval) VALUES (%u, (SELECT SUM(message_size) "
-			"FROM messages WHERE %s))",
+			"(proptag,propval) VALUES (%u, (SELECT COALESCE((SELECT SUM(message_size) "
+			"FROM messages WHERE %s), 0)))",
 			tag, wh);
 		gx_sql_exec(idb, query);
 	};
