@@ -17,6 +17,7 @@
 #include <mutex>
 #include <optional>
 #include <pthread.h>
+#include <semaphore>
 #include <string>
 #include <thread>
 #include <unistd.h>
