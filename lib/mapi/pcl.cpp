@@ -31,9 +31,8 @@ static void pcl_push_xid(BINARY &bin, uint8_t size, const XID &xid)
 
 static uint8_t pcl_pull_sized_xid(const BINARY *pbin, uint16_t offset, XID *pxid)
 {	
-	if (pbin->cb <= offset) {
+	if (pbin->cb <= offset)
 		return 0;
-	}
 	pxid->size = pbin->pb[offset];
 	if (pxid->size < 17 || pxid->size > 24 ||
 	    offset + 1U + pxid->size > pbin->cb)
@@ -104,9 +103,8 @@ BINARY *PCL::serialize() const
 		pcl_push_sized_xid(tmp_bin, xid);
 	}
 	auto pbin = gromox::me_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->cb = tmp_bin.cb;
 	if (0 == tmp_bin.cb) {
 		pbin->pb = NULL;
@@ -133,9 +131,8 @@ bool PCL::deserialize(const BINARY *pbin)
 		if (!ppcl->append(xid))
 			return false;
 		offset += offset1;
-		if (pbin->cb == offset) {
+		if (pbin->cb == offset)
 			return true;
-		}
 	}
 	return false;
 }
@@ -144,11 +141,10 @@ static bool pcl_check_included(const PCL &pcl, const XID &xid)
 {
 	for (const auto &node : pcl) {
 		auto cmp_ret = memcmp(&node.guid, &xid.guid, sizeof(GUID));
-		if (cmp_ret < 0) {
+		if (cmp_ret < 0)
 			continue;
-		} else if (cmp_ret > 0) {
+		else if (cmp_ret > 0)
 			return false;
-		}
 		if (node.size != xid.size)
 			return false;
 		if (pcl_convert_local_id(node) >= pcl_convert_local_id(xid))
