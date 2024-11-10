@@ -45,9 +45,9 @@ static constexpr cfg_directive snapshot_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
+#ifdef __linux__
 static errno_t reflink_supported(const std::string &src, const std::string &dst)
 {
-#ifdef __linux__
 	gromox::tmpfile stf, dtf;
 	wrapfd sfd(stf.open_anon(src.c_str(), O_RDWR, 0600));
 	if (sfd.get() < 0)
@@ -59,10 +59,9 @@ static errno_t reflink_supported(const std::string &src, const std::string &dst)
 	if (ioctl(dfd.get(), ficlone, sfd.get()) != 0)
 		return errno;
 	return 0;
-#else
 	return EOPNOTSUPP;
-#endif
 }
+#endif
 
 static enum snapshot_mode
 snapshot_type(const std::string &root, const std::string &grpdir)
