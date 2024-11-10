@@ -44,13 +44,16 @@ using propmap_t  = std::multimap<unsigned int, std::pair<unsigned int, std::stri
 mysql_adaptor_init_param g_parm;
 struct sqlconnpool g_sqlconn_pool;
 
-const char *crypt_estar(const char *a, const char *b)
+#ifdef __OpenBSD__
+#else
+static const char *crypt_estar(const char *a, const char *b)
 {
 	auto r = crypt(a, b);
 	return r != nullptr ? r : "*0";
 }
+#endif
 
-const char *crypt_wrapper(const char *pw)
+const char *sql_crypt_newhash(const char *pw)
 {
 #if defined(__OpenBSD__)
 	static char ret[_PASSWORD_LEN];
@@ -69,6 +72,15 @@ const char *crypt_wrapper(const char *pw)
 		return ret;
 	salt[1] = '1';
 	return crypt_estar(pw, salt);
+#endif
+}
+
+bool sql_crypt_verify(const char *p, const char *enc)
+{
+#ifdef __OpenBSD__
+	return crypt_checkpass(p, enc) == 0;
+#else
+	return strcmp(crypt_estar(p, enc), enc) == 0;
 #endif
 }
 
