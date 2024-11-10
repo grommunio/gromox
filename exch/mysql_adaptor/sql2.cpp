@@ -172,7 +172,7 @@ static bool aliasmap_load(sqlconn &conn, const char *query, aliasmap_t &out)
 {
 	if (!conn.query(query))
 		return false;
-	DB_RESULT res = mysql_store_result(conn.get());
+	auto res = conn.store_result();
 	if (res == nullptr)
 		return false;
 	DB_ROW row;
@@ -199,7 +199,7 @@ static bool propmap_load(sqlconn &conn, const char *query, propmap_t &out)
 {
 	if (!conn.query(query))
 		return false;
-	DB_RESULT res = mysql_store_result(conn.get());
+	auto res = conn.store_result();
 	if (res == nullptr)
 		return false;
 	DB_ROW row;
@@ -220,7 +220,7 @@ static int userlist_parse(sqlconn &conn, const char *query,
 {
 	if (!conn.query(query))
 		return false;
-	DB_RESULT result = mysql_store_result(conn.get());
+	auto result = conn.store_result();
 	if (result == nullptr)
 		return false;
 
@@ -348,7 +348,7 @@ errno_t mysql_adaptor_scndstore_hints(unsigned int pri,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (*conn == nullptr || !conn->query(query))
 		return EIO;
-	DB_RESULT result = mysql_store_result(conn->get());
+	auto result = conn->store_result();
 	if (result == nullptr)
 		return ENOMEM;
 	DB_ROW row;
@@ -376,7 +376,7 @@ static int mysql_adaptor_domain_list_query(const char *domain) try
 	auto conn = g_sqlconn_pool.get_wait();
 	if (*conn == nullptr || !conn->query(query))
 		return -EIO;
-	DB_RESULT res = mysql_store_result(conn->get());
+	auto res = conn->store_result();
 	if (res == nullptr)
 		return -ENOMEM;
 	return res.fetch_row() != nullptr;
@@ -403,7 +403,7 @@ static errno_t mysql_adaptor_homeserver(const char *entity, bool is_pvt,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return EIO;
-	DB_RESULT res = mysql_store_result(conn->get());
+	auto res = conn->store_result();
 	if (res == nullptr)
 		return ENOMEM;
 	conn.finish();
@@ -429,7 +429,7 @@ void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
 	            "WHERE u.domain_id > 0 AND up.proptag IS NULL";
 	auto conn = g_sqlconn_pool.get_wait();
 	if (conn->query(qstr)) {
-		DB_RESULT res = mysql_store_result(conn->get());
+		auto res = conn->store_result();
 		if (res != nullptr && res.num_rows() > 0)
 			mlog(LV_ERR, "mysql_adaptor: "
 			        "There are %zu users with no PR_DISPLAY_TYPE_EX set, "
@@ -512,7 +512,7 @@ bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::strin
 	auto conn = g_sqlconn_pool.get_wait();
 	auto qstr = fmt::format("SELECT aliasname FROM aliases WHERE mainname='{}'", temp_name);
 	DB_RESULT res;
-	if(!conn->query(qstr.c_str()) || !(res = mysql_store_result(conn->get())))
+	if (!conn->query(qstr.c_str()) || !(res = conn->store_result()))
 		return false;
 
 	aliases.clear();
@@ -550,7 +550,7 @@ bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARRAY &pro
 
 	auto conn = g_sqlconn_pool.get_wait();
 	DB_RESULT res;
-	if(!conn->query(qstr.c_str()) || !(res = mysql_store_result(conn->get())))
+	if (!conn->query(qstr.c_str()) || !(res = conn->store_result()))
 		return false;
 
 	for(DB_ROW row = res.fetch_row(); row; row = res.fetch_row())

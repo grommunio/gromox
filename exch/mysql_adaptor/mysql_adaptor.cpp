@@ -107,7 +107,7 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return EIO;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr) {
 		mres.errstr = "Could not store SQL result";
 		return ENOMEM;
@@ -237,7 +237,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	if (pmyres.num_rows() != 1)
@@ -280,7 +280,7 @@ BOOL mysql_adaptor_get_username_from_id(unsigned int user_id,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -305,7 +305,7 @@ BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *puser_
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -346,7 +346,7 @@ bool mysql_adaptor_get_user_displayname(const char *username,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -386,7 +386,7 @@ BOOL mysql_adaptor_get_user_privilege_bits(const char *username,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -450,7 +450,7 @@ bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t dsi
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -471,7 +471,7 @@ bool mysql_adaptor_get_homedir_by_id(unsigned int domain_id, char *homedir,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -494,7 +494,7 @@ BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, unsigned int *pdomai
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -527,7 +527,7 @@ BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -565,7 +565,7 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -589,7 +589,7 @@ BOOL mysql_adaptor_get_org_domains(unsigned int org_id,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -612,7 +612,7 @@ BOOL mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &dinfo) tr
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -639,7 +639,7 @@ BOOL mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_i
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -666,7 +666,7 @@ BOOL mysql_adaptor_get_domain_groups(unsigned int domain_id,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -706,7 +706,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	if (pmyres.num_rows() != 1)
@@ -722,7 +722,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		       std::to_string(id) + " AND username='"s + temp_account + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn->get());
+		pmyres = conn->store_result();
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() > 0)
@@ -732,7 +732,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='"s + temp_name + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn->get());
+		pmyres = conn->store_result();
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() != 1)
@@ -743,7 +743,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		       " AND username='" + temp_account + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn->get());
+		pmyres = conn->store_result();
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() > 0)
@@ -754,7 +754,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		qstr = "SELECT id FROM domains WHERE domainname='"s + pencode_domain + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn->get());
+		pmyres = conn->store_result();
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() != 1)
@@ -765,7 +765,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		       " AND username='" + temp_account + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn->get());
+		pmyres = conn->store_result();
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() > 0)
@@ -810,7 +810,7 @@ BOOL mysql_adaptor_check_same_org2(const char *domainname1,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
@@ -865,7 +865,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn->query(qstr.c_str()))
 		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
+	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
 		return false;
 	if (pmyres.num_rows() != 1) {
@@ -896,7 +896,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 		qstr = "SELECT username FROM specifieds WHERE list_id=" + std::to_string(id);
 		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn->get());
+		pmyres = conn->store_result();
 		if (pmyres == nullptr)
 			return false;
 		rows = pmyres.num_rows();
@@ -923,7 +923,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 		qstr = "SELECT username FROM associations WHERE list_id=" + std::to_string(id);
 		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn->get());
+		pmyres = conn->store_result();
 		if (pmyres == nullptr)
 			return false;
 		rows = pmyres.num_rows();
@@ -951,7 +951,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='"s + temp_name + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn->get());
+		pmyres = conn->store_result();
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() != 1) {
@@ -964,7 +964,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 		       JOIN_WITH_DISPLAYTYPE " WHERE u.group_id=" + std::to_string(group_id);
 		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn->get());
+		pmyres = conn->store_result();
 		if (pmyres == nullptr)
 			return false;
 		rows = pmyres.num_rows();
@@ -1000,7 +1000,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 		qstr = "SELECT id FROM domains WHERE domainname='"s + pencode_domain + "'";
 		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn->get());
+		pmyres = conn->store_result();
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() != 1) {
@@ -1013,7 +1013,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 		       JOIN_WITH_DISPLAYTYPE " WHERE u.domain_id=" + std::to_string(domain_id);
 		if (!conn->query(qstr.c_str()))
 			return false;
-		pmyres = mysql_store_result(conn->get());
+		pmyres = conn->store_result();
 		if (pmyres == nullptr)
 			return false;
 		rows = pmyres.num_rows();

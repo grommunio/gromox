@@ -3,6 +3,7 @@
 #include <mysql.h>
 #include <string>
 #include <vector>
+#include <gromox/database_mysql.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/resource_pool.hpp>
 
@@ -25,6 +26,7 @@ class sqlconn final {
 	bool operator!=(std::nullptr_t) const { return m_conn != nullptr; }
 	MYSQL *get() const { return m_conn; }
 	bool query(const char *);
+	gromox::DB_RESULT store_result() { return mysql_store_result(m_conn); }
 
 	protected:
 	MYSQL *m_conn = nullptr;
