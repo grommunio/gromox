@@ -151,13 +151,21 @@ static object_map db_read_usecount(sqlite3 *db, mapi_object_type type)
 	return m;
 }
 
+static bool digits_only(const char *s)
+{
+	for (; *s != '\0'; ++s)
+		if (!HX_isdigit(*s))
+			return false;
+	return true;
+}
+
 static object_stat file_detail(const char *dir, const std::string &obj_id)
 {
 	object_stat info;
 	auto cid = dir + "/cid/"s;
 	struct stat sb;
 	auto path = cid + obj_id;
-	if (std::all_of(obj_id.cbegin(), obj_id.cend(), HX_isdigit)) {
+	if (digits_only(obj_id.c_str())) {
 		if (stat(path.c_str(), &sb) == 0) {
 			info.format = 0;
 			info.refs   = 1;
