@@ -9,7 +9,9 @@
 #include <fcntl.h>
 #include <memory>
 #include <pthread.h>
+#include <sched.h>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #ifdef __GLIBC__
 #	include <execinfo.h>
@@ -69,6 +71,21 @@ errno_t filedes_limit_bump(size_t max)
 	mlog(LV_NOTICE, "system: maximum file descriptors: %zu",
 		static_cast<size_t>(rl.rlim_cur));
 	return 0;
+}
+
+/**
+ * Give an approximate limit of how many threads make sense to run under the
+ * current conditions.
+ */
+unsigned int gx_concurrency()
+{
+#if defined(__linux__) && defined(__GLIBC__)
+	cpu_set_t set;
+	CPU_ZERO_S(sizeof(set), &set);
+	if (sched_getaffinity(0, sizeof(set), &set) == 0)
+		return CPU_COUNT_S(sizeof(set), &set);
+#endif
+	return std::thread::hardware_concurrency();
 }
 
 unsigned long gx_gettid()

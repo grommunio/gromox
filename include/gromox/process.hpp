@@ -24,6 +24,7 @@ static constexpr char RUNNING_IDENTITY[] = "gromox";
 #endif
 
 extern GX_EXPORT errno_t filedes_limit_bump(size_t);
+extern GX_EXPORT unsigned int gx_concurrency();
 extern GX_EXPORT unsigned long gx_gettid();
 extern GX_EXPORT void gx_reexec_record(int);
 extern GX_EXPORT int pthread_create4(pthread_t *, std::nullptr_t, void *(*)(void *), void * = nullptr) noexcept;

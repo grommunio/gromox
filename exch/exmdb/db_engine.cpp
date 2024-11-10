@@ -900,7 +900,7 @@ void db_engine_stop()
 	g_thread_ids.clear();
 	{ /* silence cov-scan, take locks even in single-thread scenarios */
 		auto t_start = tp_now();
-		size_t conc = std::min(std::thread::hardware_concurrency(), g_threads_num);
+		size_t conc = std::min(gx_concurrency(), g_threads_num);
 		std::vector<std::future<void>> futs;
 		auto iter = g_hash_table.begin();
 		for (size_t tid = 0; tid < conc; ++tid) {

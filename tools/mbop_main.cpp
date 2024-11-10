@@ -9,7 +9,6 @@
 #include <future>
 #include <semaphore>
 #include <string>
-#include <thread>
 #include <unistd.h>
 #include <vector>
 #include <libHX/io.h>
@@ -19,6 +18,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/freebusy.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/process.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
@@ -670,7 +670,7 @@ static int main(int argc, char **argv)
 		fprintf(stderr, "Cannot use -d/-u with for-all-users\n");
 		return EXIT_PARAM;
 	} else if (g_numthreads == 0) {
-		g_numthreads = std::thread::hardware_concurrency();
+		g_numthreads = gx_concurrency();
 	}
 	--argc;
 	++argv;
