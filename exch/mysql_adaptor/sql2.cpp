@@ -113,6 +113,14 @@ sqlconn &sqlconn::operator=(sqlconn &&o) noexcept
 	return *this;
 }
 
+std::string sqlconn::quote(std::string_view sv)
+{
+	std::string out;
+	out.resize(sv.size() * 2);
+	out.resize(mysql_real_escape_string(m_conn, out.data(), sv.data(), sv.size()));
+	return out;
+}
+
 bool sqlconn::query(std::string_view qv)
 {
 	if (m_conn == nullptr) {
@@ -372,12 +380,10 @@ errno_t mysql_adaptor_scndstore_hints(unsigned int pri,
 
 static int mysql_adaptor_domain_list_query(const char *domain) try
 {
-	char qdom[UDOM_SIZE*2];
-	mysql_adaptor_encode_squote(domain, qdom);
-	char query[576];
-	snprintf(query, std::size(query), "SELECT 1 FROM domains WHERE domain_status=0 AND domainname='%s'", qdom);
 	auto conn = g_sqlconn_pool.get_wait();
-	if (*conn == nullptr || !conn->query(query))
+	auto qstr = "SELECT 1 FROM domains WHERE domain_status=0 AND domainname='" +
+	            conn->quote(domain) + "'";
+	if (!conn->query(qstr))
 		return -EIO;
 	auto res = conn->store_result();
 	if (res == nullptr)
@@ -391,19 +397,18 @@ static int mysql_adaptor_domain_list_query(const char *domain) try
 static errno_t mysql_adaptor_homeserver(const char *entity, bool is_pvt,
     std::pair<std::string, std::string> &servers) try
 {
-	char qent[UADDR_SIZE*2];
-	mysql_adaptor_encode_squote(entity, qent);
-	std::string qstr = is_pvt ?
+	auto conn = g_sqlconn_pool.get_wait();
+	auto qent = conn->quote(entity);
+	auto qstr = is_pvt ?
 	            "SELECT sv.hostname, sv.extname FROM users AS u "
 	            "LEFT JOIN servers AS sv ON u.homeserver=sv.id "
 	            "LEFT JOIN altnames AS alt ON u.id=alt.user_id "
-	            "AND alt.altname='"s + qent + "' "
-	            "WHERE u.username='"s + qent + "' OR "
-	            "alt.altname='"s + qent + "' LIMIT 2" :
+	            "AND alt.altname='" + qent + "' "
+	            "WHERE u.username='" + qent + "' OR "
+	            "alt.altname='" + qent + "' LIMIT 2" :
 	            "SELECT sv.hostname, sv.extname FROM domains AS d "
 	            "LEFT JOIN servers AS sv ON d.homeserver=sv.id "
-	            "WHERE d.domainname='"s + qent + "' LIMIT 2";
-	auto conn = g_sqlconn_pool.get_wait();
+	            "WHERE d.domainname='" + qent + "' LIMIT 2";
 	if (!conn->query(qstr))
 		return EIO;
 	auto res = conn->store_result();
@@ -509,11 +514,9 @@ bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::strin
 {
 	if (!str_isascii(username))
 		return true;
-	char temp_name[UADDR_SIZE*2];
-	mysql_adaptor_encode_squote(username, temp_name);
-
 	auto conn = g_sqlconn_pool.get_wait();
-	auto qstr = fmt::format("SELECT aliasname FROM aliases WHERE mainname='{}'", temp_name);
+	auto qstr = "SELECT aliasname FROM aliases WHERE mainname='" +
+	            conn->quote(username) + "'";
 	DB_RESULT res;
 	if (!conn->query(qstr) || !(res = conn->store_result()))
 		return false;
@@ -543,15 +546,11 @@ bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARRAY &pro
 {
 	if (!str_isascii(username))
 		return true; /* same as 0 rows */
-	char temp_name[UADDR_SIZE*2];
-	mysql_adaptor_encode_squote(username, temp_name);
-
-	auto qstr = fmt::format("SELECT u.id, p.proptag, p.propval_bin, p.propval_str "
-	                        "FROM users AS u "
-	                        "INNER JOIN user_properties AS p ON u.id=p.user_id "
-	                        "WHERE u.username='{}'", temp_name);
-
 	auto conn = g_sqlconn_pool.get_wait();
+	auto qstr = "SELECT u.id, p.proptag, p.propval_bin, p.propval_str "
+	            "FROM users AS u "
+	            "INNER JOIN user_properties AS p ON u.id=p.user_id "
+	            "WHERE u.username='" + conn->quote(username) + "'";
 	DB_RESULT res;
 	if (!conn->query(qstr) || !(res = conn->store_result()))
 		return false;

@@ -25,6 +25,7 @@ class sqlconn final {
 	bool operator==(std::nullptr_t) const { return m_conn == nullptr; }
 	bool operator!=(std::nullptr_t) const { return m_conn != nullptr; }
 	MYSQL *get() const { return m_conn; }
+	std::string quote(std::string_view);
 	bool query(std::string_view);
 	gromox::DB_RESULT store_result() { return mysql_store_result(m_conn); }
 

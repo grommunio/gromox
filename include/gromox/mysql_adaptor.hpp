@@ -128,7 +128,6 @@ BOOL mysql_adaptor_check_mlist_include(
 	const char *mlist_name, const char *account);
 extern BOOL mysql_adaptor_check_same_org2(const char *domainname1, const char *domainname2);
 extern BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from, int *presult, std::vector<std::string> &);
-extern void mysql_adaptor_encode_squote(const char *in, char *out);
 extern gromox::errno_t mysql_adaptor_get_homeserver(const char *ent, bool is_pvt, std::pair<std::string, std::string> &);
 
 /**

@@ -70,41 +70,39 @@ void mysql_adaptor_stop()
 errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
     sql_meta_result &mres) try
 {
-	char temp_name[UADDR_SIZE*2];
-
-	mysql_adaptor_encode_squote(username, temp_name);
-	auto qstr = fmt::format(
-		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
-		"u.privilege_bits, u.maildir, u.lang, u.externid, "
-		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
-		"u.username, u.timezone FROM users AS u " JOIN_WITH_DISPLAYTYPE
-		" LEFT JOIN domains AS d ON u.domain_id=d.id"
-		" LEFT JOIN orgs ON d.org_id=orgs.id"
-		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.org_id AND op1.key='ldap_uri'"
-		" LEFT JOIN orgparam AS op2 ON orgs.id=op2.org_id AND op2.key='ldap_binddn'"
-		" LEFT JOIN orgparam AS op3 ON orgs.id=op3.org_id AND op3.key='ldap_bindpw'"
-		" LEFT JOIN orgparam AS op4 ON orgs.id=op4.org_id AND op4.key='ldap_basedn'"
-		" LEFT JOIN orgparam AS op5 ON orgs.id=op5.org_id AND op5.key='ldap_mail_attr'"
-		" LEFT JOIN orgparam AS op6 ON orgs.id=op6.org_id AND op6.key='ldap_start_tls'"
-		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='{0}'"
-		" WHERE {1} LIMIT 2) UNION"
-		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
-		"u.privilege_bits, u.maildir, u.lang, u.externid, "
-		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
-		"u.username, u.timezone FROM users AS u " JOIN_WITH_DISPLAYTYPE
-		" LEFT JOIN domains AS d ON u.domain_id=d.id"
-		" LEFT JOIN orgs ON d.org_id=orgs.id"
-		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.org_id AND op1.key='ldap_uri'"
-		" LEFT JOIN orgparam AS op2 ON orgs.id=op2.org_id AND op2.key='ldap_binddn'"
-		" LEFT JOIN orgparam AS op3 ON orgs.id=op3.org_id AND op3.key='ldap_bindpw'"
-		" LEFT JOIN orgparam AS op4 ON orgs.id=op4.org_id AND op4.key='ldap_basedn'"
-		" LEFT JOIN orgparam AS op5 ON orgs.id=op5.org_id AND op5.key='ldap_mail_attr'"
-		" LEFT JOIN orgparam AS op6 ON orgs.id=op6.org_id AND op6.key='ldap_start_tls'"
-		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='{0}'"
-		" WHERE alt.altname='{0}' LIMIT 2) LIMIT 2",
-		temp_name,
-		str_isascii(temp_name) ? ("u.username='"s + temp_name + "'") : "0"s);
 	auto conn = g_sqlconn_pool.get_wait();
+	auto q_user = conn->quote(username);
+	std::string q_where = str_isascii(username) ?
+	                      ("u.username='" + q_user + "'") : "0"s;
+	auto qstr =
+		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
+		"u.privilege_bits, u.maildir, u.lang, u.externid, "
+		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
+		"u.username, u.timezone FROM users AS u " JOIN_WITH_DISPLAYTYPE
+		" LEFT JOIN domains AS d ON u.domain_id=d.id"
+		" LEFT JOIN orgs ON d.org_id=orgs.id"
+		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.org_id AND op1.key='ldap_uri'"
+		" LEFT JOIN orgparam AS op2 ON orgs.id=op2.org_id AND op2.key='ldap_binddn'"
+		" LEFT JOIN orgparam AS op3 ON orgs.id=op3.org_id AND op3.key='ldap_bindpw'"
+		" LEFT JOIN orgparam AS op4 ON orgs.id=op4.org_id AND op4.key='ldap_basedn'"
+		" LEFT JOIN orgparam AS op5 ON orgs.id=op5.org_id AND op5.key='ldap_mail_attr'"
+		" LEFT JOIN orgparam AS op6 ON orgs.id=op6.org_id AND op6.key='ldap_start_tls'"
+		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='" +
+		q_user + "' WHERE " + q_where + " LIMIT 2) UNION"
+		"(SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
+		"u.privilege_bits, u.maildir, u.lang, u.externid, "
+		"op1.value, op2.value, op3.value, op4.value, op5.value, op6.value, "
+		"u.username, u.timezone FROM users AS u " JOIN_WITH_DISPLAYTYPE
+		" LEFT JOIN domains AS d ON u.domain_id=d.id"
+		" LEFT JOIN orgs ON d.org_id=orgs.id"
+		" LEFT JOIN orgparam AS op1 ON orgs.id=op1.org_id AND op1.key='ldap_uri'"
+		" LEFT JOIN orgparam AS op2 ON orgs.id=op2.org_id AND op2.key='ldap_binddn'"
+		" LEFT JOIN orgparam AS op3 ON orgs.id=op3.org_id AND op3.key='ldap_bindpw'"
+		" LEFT JOIN orgparam AS op4 ON orgs.id=op4.org_id AND op4.key='ldap_basedn'"
+		" LEFT JOIN orgparam AS op5 ON orgs.id=op5.org_id AND op5.key='ldap_mail_attr'"
+		" LEFT JOIN orgparam AS op6 ON orgs.id=op6.org_id AND op6.key='ldap_start_tls'"
+		" LEFT JOIN altnames AS alt ON u.id=alt.user_id AND alt.altname='" + q_user + "'"
+		" WHERE alt.altname='" + q_user + "' LIMIT 2) LIMIT 2";
 	if (!conn->query(qstr))
 		return EIO;
 	auto pmyres = conn->store_result();
@@ -181,11 +179,9 @@ static BOOL firsttime_password(const char *username, const char *password,
 	encrypt_passwd = znul(crypt_wrapper(password));
 	cr_hold.unlock();
 
-	char temp_name[UADDR_SIZE*2];
-	mysql_adaptor_encode_squote(username, temp_name);
-	auto qstr = "UPDATE users SET password='"s + encrypt_passwd +
-	            "' WHERE username='" + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
+	auto qstr = "UPDATE users SET password='"s + conn->quote(encrypt_passwd) +
+	            "' WHERE username='" + conn->quote(username) + "'";
 	if (!conn->query(qstr))
 		return false;
 	return TRUE;
@@ -226,15 +222,14 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 {
 	if (!str_isascii(username))
 		return false;
-	char temp_name[UADDR_SIZE*2];
 	char encrypt_passwd[40];
 
-	mysql_adaptor_encode_squote(username, temp_name);
+	auto conn = g_sqlconn_pool.get_wait();
+	auto q_user = conn->quote(username);
 	auto qstr =
 		"SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
 		"u.privilege_bits FROM users AS u " JOIN_WITH_DISPLAYTYPE
-		" WHERE u.username='"s + temp_name + "' LIMIT 2";
-	auto conn = g_sqlconn_pool.get_wait();
+		" WHERE u.username='" + q_user + "' LIMIT 2";
 	if (!conn->query(qstr))
 		return false;
 	auto pmyres = conn->store_result();
@@ -263,8 +258,8 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 		return FALSE;
 	gx_strlcpy(encrypt_passwd, crypt_wrapper(new_password), std::size(encrypt_passwd));
 	cr_hold.unlock();
-	qstr = "UPDATE users SET password='"s + encrypt_passwd +
-	       "' WHERE username='" + temp_name + "'";
+	qstr = "UPDATE users SET password='" + conn->quote(encrypt_passwd) +
+	       "' WHERE username='" + q_user + "'";
 	if (!conn->query(qstr))
 		return false;
 	return TRUE;
@@ -296,13 +291,11 @@ BOOL mysql_adaptor_get_username_from_id(unsigned int user_id,
 
 BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *puser_id) try
 {
-	char temp_dir[512];
-
-	mysql_adaptor_encode_squote(maildir, temp_dir);
+	auto conn = g_sqlconn_pool.get_wait();
 	auto qstr =
 		"SELECT u.id FROM users AS u " JOIN_WITH_DISPLAYTYPE
-		" WHERE u.maildir='"s + temp_dir + "' AND dt.propval_str IN (0,7,8) LIMIT 2";
-	auto conn = g_sqlconn_pool.get_wait();
+		" WHERE u.maildir='" + conn->quote(maildir) +
+		"' AND dt.propval_str IN (0,7,8) LIMIT 2";
 	if (!conn->query(qstr))
 		return false;
 	auto pmyres = conn->store_result();
@@ -324,9 +317,8 @@ bool mysql_adaptor_get_user_displayname(const char *username,
 {
 	if (!str_isascii(username))
 		return false;
-	char temp_name[UADDR_SIZE*2];
-
-	mysql_adaptor_encode_squote(username, temp_name);
+	auto conn = g_sqlconn_pool.get_wait();
+	auto q_user = conn->quote(username);
 	auto qstr = fmt::format(
 		"(SELECT u2.propval_str AS real_name, "
 		"u3.propval_str AS nickname, dt.propval_str AS dtypx FROM users AS u "
@@ -342,8 +334,7 @@ bool mysql_adaptor_get_user_displayname(const char *username,
 		"LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=978255903 " /* PR_NICKNAME */
 		JOIN_ALTNAMES " "
 		"WHERE alt.altname='{0}' LIMIT 2) LIMIT 2",
-		temp_name);
-	auto conn = g_sqlconn_pool.get_wait();
+		q_user);
 	if (!conn->query(qstr))
 		return false;
 	auto pmyres = conn->store_result();
@@ -372,9 +363,8 @@ BOOL mysql_adaptor_get_user_privilege_bits(const char *username,
 {
 	if (!str_isascii(username))
 		return false;
-	char temp_name[UADDR_SIZE*2];
-
-	mysql_adaptor_encode_squote(username, temp_name);
+	auto conn = g_sqlconn_pool.get_wait();
+	auto q_user = conn->quote(username);
 	auto qstr = fmt::format(
 		"(SELECT privilege_bits FROM users AS u "
 		JOIN_ALTNAMES " "
@@ -382,8 +372,7 @@ BOOL mysql_adaptor_get_user_privilege_bits(const char *username,
 		"(SELECT privilege_bits FROM users AS u "
 		JOIN_ALTNAMES " "
 		"WHERE alt.altname='{0}' LIMIT 2) LIMIT 2",
-		temp_name);
-	auto conn = g_sqlconn_pool.get_wait();
+		q_user);
 	if (!conn->query(qstr))
 		return false;
 	auto pmyres = conn->store_result();
@@ -404,13 +393,9 @@ BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang) try
 {
 	if (!str_isascii(username))
 		return false;
-	char temp_name[UADDR_SIZE*2];
-	std::string fq_string;
-
-	mysql_adaptor_encode_squote(username, temp_name);
-	auto qstr = "UPDATE users set lang='"s + lang +
-		    "' WHERE username='" + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
+	auto qstr = "UPDATE users set lang='" + conn->quote(lang) +
+		    "' WHERE username='" + conn->quote(username) + "'";
 	if (!conn->query(qstr))
 		return false;
 	return TRUE;
@@ -423,14 +408,9 @@ BOOL mysql_adaptor_set_timezone(const char *username, const char *zone) try
 {
 	if (!str_isascii(username))
 		return false;
-	char temp_name[UADDR_SIZE*2];
-	char temp_zone[128];
-
-	mysql_adaptor_encode_squote(username, temp_name);
-	mysql_adaptor_encode_squote(zone, temp_zone);
-	auto qstr = "UPDATE users set timezone='"s + temp_zone +
-	            "' WHERE username='" + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
+	auto qstr = "UPDATE users set timezone='" + conn->quote(zone) +
+	            "' WHERE username='" + conn->quote(username) + "'";
 	if (!conn->query(qstr))
 		return false;
 	return TRUE;
@@ -443,11 +423,9 @@ bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t dsi
 {
 	if (!str_isascii(domainname))
 		return false;
-	char temp_name[UDOM_SIZE*2];
-
-	mysql_adaptor_encode_squote(domainname, temp_name);
-	auto qstr = "SELECT homedir, domain_status FROM domains WHERE domainname='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
+	auto qstr = "SELECT homedir, domain_status FROM domains WHERE domainname='" +
+	            conn->quote(domainname) + "'";
 	if (!conn->query(qstr))
 		return false;
 	auto pmyres = conn->store_result();
@@ -487,11 +465,9 @@ bool mysql_adaptor_get_homedir_by_id(unsigned int domain_id, char *homedir,
 
 BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, unsigned int *pdomain_id) try
 {
-	char temp_dir[512];
-
-	mysql_adaptor_encode_squote(homedir, temp_dir);
-	auto qstr = "SELECT id FROM domains WHERE homedir='"s + temp_dir + "'";
 	auto conn = g_sqlconn_pool.get_wait();
+	auto qstr = "SELECT id FROM domains WHERE homedir='" +
+	            conn->quote(homedir) + "'";
 	if (!conn->query(qstr))
 		return false;
 	auto pmyres = conn->store_result();
@@ -513,9 +489,8 @@ BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
 {
 	if (!str_isascii(username))
 		return false;
-	char temp_name[UADDR_SIZE*2];
-
-	mysql_adaptor_encode_squote(username, temp_name);
+	auto conn = g_sqlconn_pool.get_wait();
+	auto q_user = conn->quote(username);
 	auto qstr = fmt::format(
 		"(SELECT u.id, u.domain_id, dt.propval_str AS dtypx"
 		" FROM users AS u " JOIN_WITH_DISPLAYTYPE " " JOIN_ALTNAMES
@@ -523,8 +498,7 @@ BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
 		" (SELECT u.id, u.domain_id, dt.propval_str AS dtypx"
 		" FROM users AS u " JOIN_WITH_DISPLAYTYPE " " JOIN_ALTNAMES
 		" WHERE alt.altname='{0}' LIMIT 2) LIMIT 2",
-		temp_name);
-	auto conn = g_sqlconn_pool.get_wait();
+		q_user);
 	if (!conn->query(qstr))
 		return false;
 	auto pmyres = conn->store_result();
@@ -554,15 +528,11 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 {
 	if (!str_isascii(domainname))
 		return false;
-	char temp_name[UDOM_SIZE*2];
-
-	mysql_adaptor_encode_squote(domainname, temp_name);
-	auto qstr = fmt::format(
+	auto conn = g_sqlconn_pool.get_wait();
+	auto qstr =
 		"SELECT d.id, d.org_id FROM domains AS d "
 		"LEFT JOIN users AS u ON d.id=u.domain_id "
-		"WHERE domainname='{0}' LIMIT 1",
-		temp_name);
-	auto conn = g_sqlconn_pool.get_wait();
+		"WHERE domainname='" + conn->quote(domainname) + "' LIMIT 1";
 	if (!conn->query(qstr))
 		return false;
 	auto pmyres = conn->store_result();
@@ -690,20 +660,13 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 {
 	if (!str_isascii(mlist_name) || !str_isascii(account))
 		return false;
-	BOOL b_result;
-	char temp_name[UADDR_SIZE*2];
-	char *pencode_domain;
-	char temp_account[512];
-
-	if (NULL == strchr(mlist_name, '@')) {
-		return FALSE;
-	}
-
-	mysql_adaptor_encode_squote(mlist_name, temp_name);
-	pencode_domain = strchr(temp_name, '@') + 1;
-	mysql_adaptor_encode_squote(account, temp_account);
-	auto qstr = "SELECT id, list_type FROM mlists WHERE listname='"s + temp_name + "'";
 	auto conn = g_sqlconn_pool.get_wait();
+	auto q_mlist = conn->quote(mlist_name);
+	const char *pencode_domain = strchr(q_mlist.c_str(), '@');
+	if (pencode_domain == nullptr)
+		return false;
+	++pencode_domain;
+	auto qstr = "SELECT id, list_type FROM mlists WHERE listname='" + q_mlist + "'";
 	if (!conn->query(qstr))
 		return false;
 	auto pmyres = conn->store_result();
@@ -715,11 +678,12 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 	auto myrow = pmyres.fetch_row();
 	unsigned int id = strtoul(myrow[0], nullptr, 0);
 	auto type = static_cast<mlist_type>(strtoul(myrow[1], nullptr, 0));
-	b_result = FALSE;
+	BOOL b_result = false;
 	switch (type) {
 	case mlist_type::normal:
 		qstr = "SELECT username FROM associations WHERE list_id=" +
-		       std::to_string(id) + " AND username='"s + temp_account + "'";
+		       std::to_string(id) + " AND username='" +
+		       conn->quote(account) + "'";
 		if (!conn->query(qstr))
 			return false;
 		pmyres = conn->store_result();
@@ -729,7 +693,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 			b_result = TRUE;
 		return b_result;
 	case mlist_type::group: {
-		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='"s + temp_name + "'";
+		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='" + q_mlist + "'";
 		if (!conn->query(qstr))
 			return false;
 		pmyres = conn->store_result();
@@ -739,8 +703,9 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 			return FALSE;
 		myrow = pmyres.fetch_row();
 		unsigned int group_id = strtoul(myrow[0], nullptr, 0);
-		qstr = "SELECT username FROM users WHERE group_id=" + std::to_string(group_id) +
-		       " AND username='" + temp_account + "'";
+		qstr = "SELECT username FROM users WHERE group_id=" +
+		       std::to_string(group_id) + " AND username='" +
+		       conn->quote(account) + "'";
 		if (!conn->query(qstr))
 			return false;
 		pmyres = conn->store_result();
@@ -761,8 +726,9 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 			return FALSE;
 		myrow = pmyres.fetch_row();
 		unsigned int domain_id = strtoul(myrow[0], nullptr, 0);
-		qstr = "SELECT username FROM users WHERE domain_id=" + std::to_string(domain_id) +
-		       " AND username='" + temp_account + "'";
+		qstr = "SELECT username FROM users WHERE domain_id=" +
+		       std::to_string(domain_id) + " AND username='" +
+		       conn->quote(account) + "'";
 		if (!conn->query(qstr))
 			return false;
 		pmyres = conn->store_result();
@@ -783,17 +749,6 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 	return false;
 }
 
-void mysql_adaptor_encode_squote(const char *in, char *out)
-{
-	size_t len = strlen(in), j = 0;
-	for (size_t i = 0; i < len; ++i, ++j) {
-		if (in[i] == '\'' || in[i] == '\\')
-			out[j++] = '\\';
-		out[j] = in[i];
-	}
-	out[j] = '\0';
-}
-
 BOOL mysql_adaptor_check_same_org2(const char *domainname1,
     const char *domainname2) try
 {
@@ -801,13 +756,10 @@ BOOL mysql_adaptor_check_same_org2(const char *domainname1,
 		return TRUE;
 	if (!str_isascii(domainname1) || !str_isascii(domainname2))
 		return false;
-	char temp_name1[UDOM_SIZE*2], temp_name2[UDOM_SIZE*2];
-
-	mysql_adaptor_encode_squote(domainname1, temp_name1);
-	mysql_adaptor_encode_squote(domainname2, temp_name2);
-	auto qstr = "SELECT org_id FROM domains WHERE domainname='"s + temp_name1 +
-	            "' OR domainname='" + temp_name2 + "'";
 	auto conn = g_sqlconn_pool.get_wait();
+	auto qstr = "SELECT org_id FROM domains WHERE domainname='" +
+	            conn->quote(domainname1) + "' OR domainname='" +
+	            conn->quote(domainname2) + "'";
 	if (!conn->query(qstr))
 		return false;
 	auto pmyres = conn->store_result();
@@ -841,8 +793,6 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 		return false;
 	int i, rows;
 	BOOL b_chkintl;
-	char *pencode_domain;
-	char temp_name[UADDR_SIZE*2];
 
 	*presult = MLIST_RESULT_NONE;
 	const char *pdomain = strchr(username, '@');
@@ -857,12 +807,15 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 	}
 
 	pfrom_domain++;
-	mysql_adaptor_encode_squote(username, temp_name);
-	pencode_domain = strchr(temp_name, '@') + 1;
+	auto conn = g_sqlconn_pool.get_wait();
+	auto q_user = conn->quote(username);
+	auto pencode_domain = strchr(q_user.c_str(), '@');
+	if (pencode_domain == nullptr)
+		return TRUE;
+	++pencode_domain;
 
 	auto qstr = "SELECT id, list_type, list_privilege FROM mlists "
-	            "WHERE listname='"s + temp_name + "'";
-	auto conn = g_sqlconn_pool.get_wait();
+	            "WHERE listname='" + q_user + "'";
 	if (!conn->query(qstr))
 		return false;
 	auto pmyres = conn->store_result();
@@ -948,7 +901,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 	case mlist_type::group: {
-		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='"s + temp_name + "'";
+		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='" + q_user + "'";
 		if (!conn->query(qstr))
 			return false;
 		pmyres = conn->store_result();
