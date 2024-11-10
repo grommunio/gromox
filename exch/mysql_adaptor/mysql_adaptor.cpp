@@ -172,32 +172,6 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 	return EIO;
 }
 
-static BOOL firsttime_password(const char *username, const char *password,
-    std::string &encrypt_passwd)
-{
-	std::unique_lock cr_hold(g_crypt_lock);
-	encrypt_passwd = znul(crypt_wrapper(password));
-	cr_hold.unlock();
-
-	auto conn = g_sqlconn_pool.get_wait();
-	auto qstr = "UPDATE users SET password='"s + conn->quote(encrypt_passwd) +
-	            "' WHERE username='" + conn->quote(username) + "'";
-	if (!conn->query(qstr))
-		return false;
-	return TRUE;
-}
-
-static BOOL verify_password(const char *username, const char *password,
-    const char *encrypt_passwd, std::string &errstr)
-{
-	std::unique_lock cr_hold(g_crypt_lock);
-	if (strcmp(crypt_estar(password, encrypt_passwd), encrypt_passwd) == 0)
-		return TRUE;
-	cr_hold.unlock();
-	errstr = "Incorrect password";
-	return FALSE;
-}
-
 BOOL mysql_adaptor_login2(const char *username, const char *password,
     std::string &encrypt_passwd, std::string &errstr) try
 {
@@ -205,13 +179,24 @@ BOOL mysql_adaptor_login2(const char *username, const char *password,
 		errstr = "Incorrect password";
 		return false;
 	}
-	BOOL ret;
-	if (g_parm.enable_firsttimepw && encrypt_passwd.empty())
-		ret = firsttime_password(username, password, encrypt_passwd);
-	else
-		ret = verify_password(username, password,
-		      encrypt_passwd.c_str(), errstr);
-	return ret;
+	if (g_parm.enable_firsttimepw && encrypt_passwd.empty()) {
+		std::unique_lock cr_hold(g_crypt_lock);
+		encrypt_passwd = znul(crypt_wrapper(password));
+		cr_hold.unlock();
+		auto conn = g_sqlconn_pool.get_wait();
+		auto qstr = "UPDATE users SET password='"s + conn->quote(encrypt_passwd) +
+			    "' WHERE username='" + conn->quote(username) + "'";
+		if (conn->query(qstr))
+			return TRUE;
+		errstr = "Password update failed";
+	} else {
+		std::unique_lock cr_hold(g_crypt_lock);
+		if (strcmp(crypt_estar(password, encrypt_passwd.c_str()),
+		    encrypt_passwd.c_str()) == 0)
+			return TRUE;
+		errstr = "Incorrect password";
+	}
+	return false;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1702: ENOMEM");
 	return false;
