@@ -113,25 +113,27 @@ sqlconn &sqlconn::operator=(sqlconn &&o) noexcept
 	return *this;
 }
 
-bool sqlconn::query(const char *q)
+bool sqlconn::query(std::string_view qv)
 {
 	if (m_conn == nullptr) {
 		m_conn = sql_make_conn();
 		if (m_conn == nullptr)
 			return false;
-		if (mysql_query(m_conn, q) == 0)
+		if (mysql_real_query(m_conn, qv.data(), qv.size()) == 0)
 			return true;
-		mlog(LV_ERR, "mysql_adaptor: Query \"%s\" failed: %s", q, mysql_error(m_conn));
+		mlog(LV_ERR, "mysql_adaptor: Query \"%.*s\" failed: %s",
+			static_cast<int>(qv.size()), qv.data(), mysql_error(m_conn));
 		return false;
 	}
-	auto ret = mysql_query(m_conn, q);
+	auto ret = mysql_real_query(m_conn, qv.data(), qv.size());
 	if (ret == 0)
 		return true;
 	auto sev = connection_severed(mysql_errno(m_conn));
 	auto ers = mysql_error(m_conn);
 	if (!sev) {
 		/* Problem with query itself, connection likely good */
-		mlog(LV_ERR, "mysql_adaptor: Query \"%s\" failed: %s", q, ers);
+		mlog(LV_ERR, "mysql_adaptor: Query \"%.*s\" failed: %s",
+			static_cast<int>(qv.size()), qv.data(), ers);
 		return false;
 	}
 	m_conn = sql_make_conn();
@@ -139,10 +141,11 @@ bool sqlconn::query(const char *q)
 		mlog(LV_ERR, "mysql_adaptor: %s, and immediate reconnect unsuccessful: %s", ers, mysql_error(m_conn));
 		return false;
 	}
-	ret = mysql_query(m_conn, q);
+	ret = mysql_real_query(m_conn, qv.data(), qv.size());
 	if (ret == 0)
 		return true;
-	mlog(LV_ERR, "mysql_adaptor: Query \"%s\" failed: %s", q, mysql_error(m_conn));
+	mlog(LV_ERR, "mysql_adaptor: Query \"%.*s\" failed: %s",
+		static_cast<int>(qv.size()), qv.data(), mysql_error(m_conn));
 	return false;
 }
 
@@ -401,7 +404,7 @@ static errno_t mysql_adaptor_homeserver(const char *entity, bool is_pvt,
 	            "LEFT JOIN servers AS sv ON d.homeserver=sv.id "
 	            "WHERE d.domainname='"s + qent + "' LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn->query(qstr.c_str()))
+	if (!conn->query(qstr))
 		return EIO;
 	auto res = conn->store_result();
 	if (res == nullptr)
@@ -512,7 +515,7 @@ bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::strin
 	auto conn = g_sqlconn_pool.get_wait();
 	auto qstr = fmt::format("SELECT aliasname FROM aliases WHERE mainname='{}'", temp_name);
 	DB_RESULT res;
-	if (!conn->query(qstr.c_str()) || !(res = conn->store_result()))
+	if (!conn->query(qstr) || !(res = conn->store_result()))
 		return false;
 
 	aliases.clear();
@@ -550,7 +553,7 @@ bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARRAY &pro
 
 	auto conn = g_sqlconn_pool.get_wait();
 	DB_RESULT res;
-	if (!conn->query(qstr.c_str()) || !(res = conn->store_result()))
+	if (!conn->query(qstr) || !(res = conn->store_result()))
 		return false;
 
 	for(DB_ROW row = res.fetch_row(); row; row = res.fetch_row())
