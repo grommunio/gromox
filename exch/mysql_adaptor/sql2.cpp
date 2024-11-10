@@ -15,6 +15,12 @@
 #include <typeinfo>
 #include <utility>
 #include <vector>
+#if defined(HAVE_CRYPT_H)
+#	include <crypt.h>
+#endif
+#ifdef __OpenBSD__
+#	include <pwd.h>
+#endif
 #include <fmt/core.h>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
@@ -37,6 +43,34 @@ using aliasmap_t = std::multimap<std::string, std::string, std::less<>>;
 using propmap_t  = std::multimap<unsigned int, std::pair<unsigned int, std::string>>;
 mysql_adaptor_init_param g_parm;
 struct sqlconnpool g_sqlconn_pool;
+
+const char *crypt_estar(const char *a, const char *b)
+{
+	auto r = crypt(a, b);
+	return r != nullptr ? r : "*0";
+}
+
+const char *crypt_wrapper(const char *pw)
+{
+#if defined(__OpenBSD__)
+	static char ret[_PASSWORD_LEN];
+	if (crypt_newhash(pw, "bcrypt", ret, sizeof(ret)) != 0)
+		return "*0";
+	return ret;
+#else
+	static char crypt_salt[65]=
+	    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./";
+	char salt[21] = "$6$";
+	randstring(salt + 3, 16, crypt_salt);
+	salt[19] = '$';
+	salt[20] = '\0';
+	auto ret = crypt_estar(pw, salt);
+	if (ret[0] == '$')
+		return ret;
+	salt[1] = '1';
+	return crypt_estar(pw, salt);
+#endif
+}
 
 static bool connection_severed(int e)
 {

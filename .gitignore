@@ -73,7 +73,6 @@ Makefile.in
 /tests/bdump
 /tests/bodyconv
 /tests/compress
-/tests/cryptest
 /tests/epv_unpack
 /tests/exrpctest
 /tests/gxl-383

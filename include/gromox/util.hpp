@@ -62,8 +62,6 @@ extern GX_EXPORT ssize_t utf8_to_utf16le(const char *src, void *dst, size_t len)
 extern GX_EXPORT BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len);
 extern GX_EXPORT char *search_string(const char *haystack, const char *needle,
     size_t haystacklen);
-extern GX_EXPORT const char *crypt_estar(const char *, const char *);
-extern GX_EXPORT const char *crypt_wrapper(const char *);
 extern GX_EXPORT int wildcard_match(const char *data, const char *mask, BOOL icase);
 extern GX_EXPORT void randstring(char *out, size_t len, const char *pool = nullptr);
 extern GX_EXPORT int encode64(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);

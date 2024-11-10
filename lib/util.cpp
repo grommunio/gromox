@@ -7,9 +7,6 @@
 #	include "config.h"
 #endif
 #include <algorithm>
-#if defined(HAVE_CRYPT_H)
-#	include <crypt.h>
-#endif
 #include <cerrno>
 #include <chrono>
 #include <climits>
@@ -30,8 +27,6 @@
 #include <gromox/util.hpp>
 #if defined(__linux__)
 #	include <sys/random.h>
-#elif defined(__OpenBSD__)
-#	include <pwd.h>
 #endif
 
 using namespace gromox;
@@ -437,35 +432,6 @@ char* search_string(const char *haystack, const char *needle,
 	}
 	return NULL;
 }
-
-const char *crypt_estar(const char *a, const char *b)
-{
-	auto r = crypt(a, b);
-	return r != nullptr ? r : "*0";
-}
-
-const char *crypt_wrapper(const char *pw)
-{
-#if defined(__OpenBSD__)
-	static char ret[_PASSWORD_LEN];
-	if (crypt_newhash(pw, "bcrypt", ret, sizeof(ret)) != 0)
-		return "*0";
-	return ret;
-#else
-	static char crypt_salt[65]=
-	    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./";
-	char salt[21] = "$6$";
-	randstring(salt + 3, 16, crypt_salt);
-	salt[19] = '$';
-	salt[20] = '\0';
-	auto ret = crypt_estar(pw, salt);
-	if (ret[0] == '$')
-		return ret;
-	salt[1] = '1';
-	return crypt_estar(pw, salt);
-#endif
-}
-
 
 #define WILDS '*'  /* matches 0 or more characters (including spaces) */
 #define WILDQ '?'  /* matches ecactly one character */

@@ -37,9 +37,12 @@ struct sqlconnpool final : public gromox::resource_pool<sqlconn> {
 	resource_pool::token get_wait();
 };
 
+extern const char *crypt_estar(const char *, const char *);
+extern const char *crypt_wrapper(const char *);
 extern gromox::errno_t mysql_adaptor_scndstore_hints(unsigned int, std::vector<sql_user> &);
 extern bool mysql_adaptor_reload_config(const char *path, const char *hostid, const char *progid);
 extern bool db_upgrade_check();
 extern MYSQL *sql_make_conn();
+
 extern struct mysql_adaptor_init_param g_parm;
 extern sqlconnpool g_sqlconn_pool;
