@@ -49,7 +49,7 @@ struct Cleaner
 } // Anonymous namespace
 
 
-XMLError ExplicitConvert<EWS::time_point>::deserialize(const tinyxml2::XMLElement* xml, EWS::time_point value)
+XMLError ExplicitConvert<EWS::time_point>::deserialize(const tinyxml2::XMLElement *xml, EWS::time_point &value)
 {
 	const char* data = xml->GetText();
 	if(!data)

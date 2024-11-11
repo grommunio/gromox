@@ -165,7 +165,7 @@ struct ExplicitConvert<EWS::time_point>
 {
 	static constexpr uint8_t value = EC_IN | EC_OUT;
 
-	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement*, EWS::time_point);
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement *, EWS::time_point &);
 
 	static void serialize(time_point value, SetterFunc setter)
 	{
