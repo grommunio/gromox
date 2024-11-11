@@ -1289,8 +1289,6 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 			else
 				itime_daylight.year = itime.year;
 		}
-		if (b_standard && b_daylight)
-			break;
 	}
 	if (!b_standard && !b_daylight)
 		return NULL;
