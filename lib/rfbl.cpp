@@ -50,8 +50,17 @@
 #endif
 #include <sys/stat.h>
 #include <sys/un.h>
+#include <sys/wait.h>
 #if defined(HAVE_SYS_XATTR_H)
 #	include <sys/xattr.h>
+#endif
+#ifdef __sun
+#	include <sys/lwp.h>
+#endif
+#ifdef __FreeBSD__
+#	include <sys/thr.h>
+#	include <sys/types.h>
+#	include <sys/sysctl.h>
 #endif
 #include <json/reader.h>
 #include <json/writer.h>
@@ -60,11 +69,6 @@
 #include <libHX/io.h>
 #include <libHX/proc.h>
 #include <libHX/string.h>
-#include <sys/wait.h>
-#ifdef __FreeBSD__
-#	include <sys/types.h>
-#	include <sys/sysctl.h>
-#endif
 #include <vmime/charset.hpp>
 #include <gromox/archive.hpp>
 #include <gromox/atomic.hpp>
@@ -1636,6 +1640,11 @@ unsigned long gx_gettid()
 	return syscall(SYS_gettid);
 #elif defined(__OpenBSD__)
 	return getthrid();
+#elif defined(__FreeBSD__)
+	long z = 0;
+	return thr_self(&z) == 0 ? z : (unsigned long)pthread_self();
+#elif defined(__sun)
+	return _lwp_self();
 #else
 	return (unsigned long)pthread_self();
 #endif
