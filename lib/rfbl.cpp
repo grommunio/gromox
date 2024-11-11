@@ -900,7 +900,9 @@ errno_t switch_user_exec(const CONFIG_FILE &cf, char *const *argv)
 	auto user = cf.get_value("running_identity");
 	if (user == nullptr)
 		user = RUNNING_IDENTITY;
-	switch (HXproc_switch_user(user, nullptr)) {
+	auto su_ret = HXproc_switch_user(user, nullptr);
+	int se = errno;
+	switch (su_ret) {
 	case HXPROC_SU_NOOP: {
 		auto ret = gx_reexec(nullptr);
 		if (ret != 0)
@@ -920,22 +922,26 @@ errno_t switch_user_exec(const CONFIG_FILE &cf, char *const *argv)
 		return 0;
 	}
 	case HXPROC_USER_NOT_FOUND:
-		mlog(LV_ERR, "No such user \"%s\": %s", user, strerror(errno));
+		se = errno;
+		mlog(LV_ERR, "No such user \"%s\": %s", user, strerror(se));
 		break;
 	case HXPROC_GROUP_NOT_FOUND:
 		mlog(LV_ERR, "Group lookup failed/Can't happen");
 		break;
 	case HXPROC_SETUID_FAILED:
-		mlog(LV_ERR, "setuid to \"%s\" failed: %s", user, strerror(errno));
+		se = errno;
+		mlog(LV_ERR, "setuid to \"%s\" failed: %s", user, strerror(se));
 		break;
 	case HXPROC_SETGID_FAILED:
-		mlog(LV_ERR, "setgid to groupof(\"%s\") failed: %s", user, strerror(errno));
+		se = errno;
+		mlog(LV_ERR, "setgid to groupof(\"%s\") failed: %s", user, strerror(se));
 		break;
 	case HXPROC_INITGROUPS_FAILED:
-		mlog(LV_ERR, "initgroups for \"%s\" failed: %s", user, strerror(errno));
+		se = errno;
+		mlog(LV_ERR, "initgroups for \"%s\" failed: %s", user, strerror(se));
 		break;
 	}
-	return errno;
+	return se;
 }
 
 int setup_sigalrm()
