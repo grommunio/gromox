@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
 // SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
@@ -45,15 +48,22 @@ mysql_adaptor_init_param g_parm;
 struct sqlconnpool g_sqlconn_pool;
 
 #ifdef __OpenBSD__
-#else
-static const char *crypt_estar(const char *a, const char *b)
+#elif defined(__sun)
+static std::string crypt_estar(const char *a, const char *b)
 {
-	auto r = crypt(a, b);
+	auto r = crypt(a, b); /* uses thread-local storage */
+	return r != nullptr ? r : "*0";
+}
+#else
+static std::string crypt_estar(const char *a, const char *b)
+{
+	struct crypt_data cd{};
+	auto r = crypt_r(a, b, &cd);
 	return r != nullptr ? r : "*0";
 }
 #endif
 
-const char *sql_crypt_newhash(const char *pw)
+std::string sql_crypt_newhash(const char *pw)
 {
 #if defined(__OpenBSD__)
 	static char ret[_PASSWORD_LEN];
@@ -80,7 +90,7 @@ bool sql_crypt_verify(const char *p, const char *enc)
 #ifdef __OpenBSD__
 	return crypt_checkpass(p, enc) == 0;
 #else
-	return strcmp(crypt_estar(p, enc), enc) == 0;
+	return crypt_estar(p, enc) == enc;
 #endif
 }
 

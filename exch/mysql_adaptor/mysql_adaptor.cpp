@@ -6,7 +6,6 @@
 #include <cstring>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <mysql.h>
 #include <set>
 #include <string>
@@ -50,8 +49,6 @@ using namespace std::string_literals;
 using namespace gromox;
 DECLARE_SVC_API(mysql_adaptor, );
 using namespace mysql_adaptor;
-
-static std::mutex g_crypt_lock;
 
 int mysql_adaptor_run()
 {
@@ -177,25 +174,21 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
  * @encrypt_passwd: the previously stored password, encoded
  */
 BOOL mysql_adaptor_login2(const char *username, const char *password,
-    std::string &encrypt_passwd, std::string &errstr) try
+    const std::string &encrypt_passwd, std::string &errstr) try
 {
 	if (!str_isascii(username)) {
 		errstr = "Incorrect password";
 		return false;
 	}
 	if (g_parm.enable_firsttimepw && encrypt_passwd.empty()) {
-		/* reusing encrypt_passwd as scratch space */
-		std::unique_lock cr_hold(g_crypt_lock);
-		encrypt_passwd = znul(sql_crypt_newhash(password));
-		cr_hold.unlock();
+		auto encp = sql_crypt_newhash(password);
 		auto conn = g_sqlconn_pool.get_wait();
-		auto qstr = "UPDATE users SET password='"s + conn->quote(encrypt_passwd) +
+		auto qstr = "UPDATE users SET password='"s + conn->quote(encp) +
 			    "' WHERE username='" + conn->quote(username) + "'";
 		if (conn->query(qstr))
 			return TRUE;
 		errstr = "Password update failed";
 	} else {
-		std::unique_lock cr_hold(g_crypt_lock);
 		if (sql_crypt_verify(password, encrypt_passwd.c_str()))
 			return TRUE;
 		errstr = "Incorrect password";
@@ -241,12 +234,10 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	strncpy(encrypt_passwd, myrow[0], sizeof(encrypt_passwd));
 	encrypt_passwd[sizeof(encrypt_passwd) - 1] = '\0';
 
-	std::unique_lock cr_hold(g_crypt_lock);
 	if (encrypt_passwd[0] != '\0' &&
 	    !sql_crypt_verify(password, encrypt_passwd))
 		return FALSE;
-	gx_strlcpy(encrypt_passwd, sql_crypt_newhash(new_password), std::size(encrypt_passwd));
-	cr_hold.unlock();
+	gx_strlcpy(encrypt_passwd, sql_crypt_newhash(new_password).c_str(), std::size(encrypt_passwd));
 	qstr = "UPDATE users SET password='" + conn->quote(encrypt_passwd) +
 	       "' WHERE username='" + q_user + "'";
 	if (!conn->query(qstr))
