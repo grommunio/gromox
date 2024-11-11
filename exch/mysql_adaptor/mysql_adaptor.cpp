@@ -204,7 +204,6 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 {
 	if (!str_isascii(username))
 		return false;
-	char encrypt_passwd[40];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	auto q_user = conn->quote(username);
@@ -231,14 +230,9 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	if (!(strtoul(myrow[3], nullptr, 0) & USER_PRIVILEGE_CHGPASSWD))
 		return FALSE;
 
-	strncpy(encrypt_passwd, myrow[0], sizeof(encrypt_passwd));
-	encrypt_passwd[sizeof(encrypt_passwd) - 1] = '\0';
-
-	if (encrypt_passwd[0] != '\0' &&
-	    !sql_crypt_verify(password, encrypt_passwd))
+	if (*znul(myrow[0]) != '\0' && !sql_crypt_verify(password, myrow[0]))
 		return FALSE;
-	gx_strlcpy(encrypt_passwd, sql_crypt_newhash(new_password).c_str(), std::size(encrypt_passwd));
-	qstr = "UPDATE users SET password='" + conn->quote(encrypt_passwd) +
+	qstr = "UPDATE users SET password='" + conn->quote(sql_crypt_newhash(new_password)) +
 	       "' WHERE username='" + q_user + "'";
 	if (!conn->query(qstr))
 		return false;
