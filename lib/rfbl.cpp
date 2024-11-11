@@ -1576,8 +1576,9 @@ errno_t filedes_limit_bump(size_t max)
 {
 	struct rlimit rl;
 	if (getrlimit(RLIMIT_NOFILE, &rl) != 0) {
-		mlog(LV_ERR, "getrlimit: %s", strerror(errno));
-		return EXIT_FAILURE;
+		int se = errno;
+		mlog(LV_ERR, "getrlimit: %s", strerror(se));
+		return se;
 	}
 	if (max == 0)
 		max = rl.rlim_max;
@@ -1585,14 +1586,16 @@ errno_t filedes_limit_bump(size_t max)
 		rl.rlim_cur = max;
 		rl.rlim_max = max;
 		if (setrlimit(RLIMIT_NOFILE, &rl) != 0) {
+			int se = errno;
 			mlog(LV_WARN, "setrlimit RLIMIT_NOFILE %zu: %s",
-				max, strerror(errno));
-			return errno;
+				max, strerror(se));
+			return se;
 		}
 	}
 	if (getrlimit(RLIMIT_NOFILE, &rl) != 0) {
-		mlog(LV_ERR, "getrlimit: %s", strerror(errno));
-		return EXIT_FAILURE;
+		int se = errno;
+		mlog(LV_ERR, "getrlimit: %s", strerror(se));
+		return se;
 	}
 	mlog(LV_NOTICE, "system: maximum file descriptors: %zu",
 		static_cast<size_t>(rl.rlim_cur));
