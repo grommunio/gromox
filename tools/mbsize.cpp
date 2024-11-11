@@ -93,7 +93,11 @@ static struct rfc_stat rfc_count(const std::string &dirname)
 		return out;
 	auto dfd = dirfd(dh.get());
 	if (fstat(dfd, &sb) == 0)
-		out.dirs = sb;
+		/*
+		 * du --app really ignores directories, cf.
+		 * coreutils:/src/system.h:usable_st_size.
+		 */
+		out.dirs.pad += ustat{sb}.pad;
 
 	const struct dirent *de;
 	while ((de = readdir(dh.get())) != nullptr) {

@@ -7,7 +7,11 @@ gromox\-mbsize \(em Mailbox size analysis
 \fBgromox\-mbsize\fP \fIdirectory\fP
 .SH Description
 Shows a detailed view of how a mailbox size translates to on-disk usage.
-Explanation of the columns/rows follows.
+Explanation of the columns/rows follows. The reported numbers may slightly
+deviate from what du(1) would output, as mbsize does not count e.g. the config/
+directory, tmp/ directory, sqlite auxiliary files, any other unreferenced
+attachments (cf. gromox\-mbop(8) for the purge\-datafiles command), and other
+stuff left there by outside actions.
 .PP
 Apparent size: This is the exact size of the object, or simply the sum
 of sizes of objects.
