@@ -13,17 +13,6 @@
 #define FILE_BLOCK_SIZE 0x100
 #define STREAM_BLOCK_SIZE 0x10000
 
-#if defined(__OpenBSD__)
-#include <pthread.h>
-#include <pthread_np.h>
-static inline int _pthread_setname_np(pthread_t thread, const char *name)
-{
-	pthread_set_name_np(thread, name);
-	return 0;
-}
-#define pthread_setname_np _pthread_setname_np
-#endif
-
 enum {
 	QP_MIME_HEADER = 1U << 0,
 };
@@ -97,7 +86,6 @@ template<typename T> std::string bin2hex(const T &x) { return bin2hex(&x, sizeof
 extern GX_EXPORT std::string hex2bin(std::string_view, hex2bin_mode = HEX2BIN_EMPTY);
 extern GX_EXPORT void rfc1123_dstring(char *, size_t, time_t = 0);
 extern GX_EXPORT void rfc1123_dstring(char *, size_t, const struct tm &);
-extern GX_EXPORT int setup_sigalrm();
 extern GX_EXPORT size_t qp_encoded_size_estimate(const char *, size_t);
 extern GX_EXPORT void safe_memset(void *, uint8_t, size_t);
 extern GX_EXPORT unsigned int newline_size(const char *, size_t);
@@ -113,13 +101,10 @@ extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, uint
 extern GX_EXPORT void mlog_init(const char *ident, const char *file, unsigned int level);
 extern GX_EXPORT void mlog(unsigned int level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 extern GX_EXPORT int ssllog(const char *s, size_t len, void *);
-extern GX_EXPORT int pthread_create4(pthread_t *, std::nullptr_t, void *(*)(void *), void * = nullptr) noexcept;
-extern GX_EXPORT std::string simple_backtrace();
 extern GX_EXPORT int class_match_prefix(const char *h, const char *n);
 extern GX_EXPORT int class_match_suffix(const char *h, const char *n);
 extern GX_EXPORT void replace_unsafe_basename(char *);
 extern GX_EXPORT size_t utf8_printable_prefix(const void *, size_t);
-extern GX_EXPORT errno_t filedes_limit_bump(size_t);
 extern GX_EXPORT uint64_t apptime_to_nttime_approx(double);
 extern GX_EXPORT std::string gx_utf8_to_punycode(const char *);
 extern GX_EXPORT bool str_isascii(const char *);

@@ -16,6 +16,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/pcl.hpp>
+#include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include "common_util.hpp"

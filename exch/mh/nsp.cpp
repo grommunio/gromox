@@ -23,6 +23,7 @@
 #include <gromox/cookie_parser.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/hpm_common.h>
+#include <gromox/process.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "mh_common.hpp"

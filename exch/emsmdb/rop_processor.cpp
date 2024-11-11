@@ -17,6 +17,7 @@
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/proc_common.h>
+#include <gromox/process.hpp>
 #include <gromox/util.hpp>
 #include "attachment_object.hpp"
 #include "common_util.hpp"

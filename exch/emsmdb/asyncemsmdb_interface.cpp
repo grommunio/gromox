@@ -18,6 +18,7 @@
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/proc_common.h>
+#include <gromox/process.hpp>
 #include <gromox/util.hpp>
 #include "asyncemsmdb_interface.hpp"
 #include "common_util.hpp"

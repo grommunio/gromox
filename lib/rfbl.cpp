@@ -10,7 +10,6 @@
 #include <climits>
 #include <clocale>
 #include <cmath>
-#include <csignal>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -21,11 +20,9 @@
 #include <fcntl.h>
 #include <iconv.h>
 #include <istream>
-#include <list>
 #include <memory>
 #include <mutex>
 #include <netdb.h>
-#include <pthread.h>
 #include <spawn.h>
 #include <sstream>
 #include <streambuf>
@@ -38,29 +35,14 @@
 #ifdef HAVE_SYSLOG_H
 #	include <syslog.h>
 #endif
-#ifdef __GLIBC__
-#	include <execinfo.h>
-#endif
 #include <netinet/in.h>
 #include <sys/mman.h>
-#include <sys/resource.h>
 #include <sys/socket.h>
-#if defined(__linux__) && defined(__GLIBC__) && __GLIBC__ == 2 && __GLIBC_MINOR__ < 30
-#	include <sys/syscall.h>
-#endif
 #include <sys/stat.h>
 #include <sys/un.h>
 #include <sys/wait.h>
 #if defined(HAVE_SYS_XATTR_H)
 #	include <sys/xattr.h>
-#endif
-#ifdef __sun
-#	include <sys/lwp.h>
-#endif
-#ifdef __FreeBSD__
-#	include <sys/thr.h>
-#	include <sys/types.h>
-#	include <sys/sysctl.h>
 #endif
 #include <json/reader.h>
 #include <json/writer.h>
@@ -81,6 +63,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mapierr.hpp>
 #include <gromox/paths.h>
+#include <gromox/process.hpp>
 #include <gromox/range_set.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
@@ -107,7 +90,6 @@ static unsigned int g_max_loglevel = LV_NOTICE;
 static std::mutex g_log_mutex;
 static std::unique_ptr<FILE, file_deleter> g_logfp;
 static bool g_log_tty, g_log_syslog;
-static int gx_reexec_top_fd = -1;
 
 static const char *mapi_errname(unsigned int e)
 {
@@ -805,154 +787,9 @@ void startup_banner(const char *prog)
 	fprintf(stderr, "\n");
 }
 
-void gx_reexec_record(int new_fd)
-{
-	if (getenv("GX_REEXEC_DONE") != nullptr)
-		return;
-	for (int fd = gx_reexec_top_fd; fd <= new_fd; ++fd) {
-		unsigned int flags = 0;
-		socklen_t fz = sizeof(flags);
-		if (fd < 0 || getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN,
-		    &flags, &fz) != 0 || !flags)
-			continue;
-		flags = fcntl(fd, F_GETFD, 0) & ~FD_CLOEXEC;
-		if (fcntl(fd, F_SETFD, flags) != 0)
-			/* ignore */;
-	}
-	if (new_fd > gx_reexec_top_fd)
-		gx_reexec_top_fd = new_fd;
-}
-
-/**
- * Upon setuid, tasks are restricted in their dumping (cf. linux/kernel/cred.c
- * in commit_creds, calling set_dumpable). To restore the dump flag, one could
- * use prctl, but re-executing the process has the benefit that the application
- * completely re-runs as unprivileged user from the start and can catch e.g.
- * file access errors that would occur before gx_reexec, and we can be sure
- * that privileged informationed does not escape into a dump.
- */
-static errno_t gx_reexec(const char *const *argv) try
-{
-	auto s = getenv("GX_REEXEC_DONE");
-	if (s != nullptr || argv == nullptr) {
-		if (chdir("/") < 0)
-			mlog(LV_ERR, "E-5312: chdir /: %s", strerror(errno));
-		unsetenv("GX_REEXEC_DONE");
-		unsetenv("HX_LISTEN_TOP_FD");
-		unsetenv("LISTEN_FDS");
-		return 0;
-	}
-	if (gx_reexec_top_fd >= 0)
-		setenv("HX_LISTEN_TOP_FD", std::to_string(gx_reexec_top_fd + 1).c_str(), true);
-	setenv("GX_REEXEC_DONE", "1", true);
-
-#if defined(__linux__)
-	hxmc_t *resolved = nullptr;
-	auto ret = HX_readlink(&resolved, "/proc/self/exe");
-	if (ret == -ENOENT) {
-		mlog(LV_NOTICE, "reexec: readlink /proc/self/exe: %s; continuing without reexec-after-setuid, coredumps may be disabled", strerror(-ret));
-		return 0;
-	} else if (ret < 0) {
-		mlog(LV_ERR, "reexec: readlink /proc/self/exe: %s", strerror(-ret));
-		return -ret;
-	}
-	mlog(LV_INFO, "Reexecing %s", resolved);
-	execv(resolved, const_cast<char **>(argv));
-	int saved_errno = errno;
-	perror("execv");
-	HXmc_free(resolved);
-	return saved_errno;
-#elif defined(__FreeBSD__)
-	std::string tgt;
-	tgt.resize(64);
-	int oid[] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
-	while (true) {
-		size_t z = tgt.size();
-		auto ret = sysctl(oid, std::size(oid), tgt.data(), &z,
-		           nullptr, 0);
-		if (ret == 0) {
-			tgt.resize(z);
-			break;
-		}
-		if (errno != ENOMEM)
-			return errno;
-		tgt.resize(tgt.size() * 2);
-	}
-	mlog(LV_INFO, "Reexecing %s", tgt.c_str());
-	execv(tgt.c_str(), const_cast<char **>(argv));
-	int saved_errno = errno;
-	perror("execv");
-	return saved_errno;
-#else
-	/* Since none of our programs modify argv[0], executing the same should just work */
-	mlog(LV_INFO, "Reexecing %s", argv[0]);
-	execv(argv[0], const_cast<char **>(argv));
-	int saved_errno = errno;
-	perror("execv");
-	return saved_errno;
-#endif
-} catch (const std::bad_alloc &) {
-	return ENOMEM;
-}
-
 errno_t switch_user_exec(const CONFIG_FILE &cf, char *const *argv)
 {
-	auto user = cf.get_value("running_identity");
-	if (user == nullptr)
-		user = RUNNING_IDENTITY;
-	auto su_ret = HXproc_switch_user(user, nullptr);
-	int se = errno;
-	switch (su_ret) {
-	case HXPROC_SU_NOOP: {
-		auto ret = gx_reexec(nullptr);
-		if (ret != 0)
-			return ret;
-		auto m = umask(07777);
-		m = (m & ~0070) | ((m & 0700) >> 3); /* copy user bits to group bits */
-		umask(m);
-		return 0;
-	}
-	case HXPROC_SU_SUCCESS: {
-		auto ret = gx_reexec(const_cast<const char *const *>(argv));
-		if (ret != 0)
-			return ret;
-		auto m = umask(07777);
-		m = (m & ~0070) | ((m & 0700) >> 3);
-		umask(m);
-		return 0;
-	}
-	case HXPROC_USER_NOT_FOUND:
-		se = errno;
-		mlog(LV_ERR, "No such user \"%s\": %s", user, strerror(se));
-		break;
-	case HXPROC_GROUP_NOT_FOUND:
-		mlog(LV_ERR, "Group lookup failed/Can't happen");
-		break;
-	case HXPROC_SETUID_FAILED:
-		se = errno;
-		mlog(LV_ERR, "setuid to \"%s\" failed: %s", user, strerror(se));
-		break;
-	case HXPROC_SETGID_FAILED:
-		se = errno;
-		mlog(LV_ERR, "setgid to groupof(\"%s\") failed: %s", user, strerror(se));
-		break;
-	case HXPROC_INITGROUPS_FAILED:
-		se = errno;
-		mlog(LV_ERR, "initgroups for \"%s\" failed: %s", user, strerror(se));
-		break;
-	}
-	return se;
-}
-
-int setup_sigalrm()
-{
-	struct sigaction act;
-	sigaction(SIGALRM, nullptr, &act);
-	if (act.sa_handler != SIG_DFL)
-		return 0;
-	sigemptyset(&act.sa_mask);
-	act.sa_handler = [](int) {};
-	return sigaction(SIGALRM, &act, nullptr);
+	return switch_user_exec(cf.get_value("running_identity"), argv);
 }
 
 void safe_memset(void *p, uint8_t c, size_t z)
@@ -1578,36 +1415,6 @@ size_t utf8_printable_prefix(const void *vinput, size_t max)
 	return p - begin;
 }
 
-errno_t filedes_limit_bump(size_t max)
-{
-	struct rlimit rl;
-	if (getrlimit(RLIMIT_NOFILE, &rl) != 0) {
-		int se = errno;
-		mlog(LV_ERR, "getrlimit: %s", strerror(se));
-		return se;
-	}
-	if (max == 0)
-		max = rl.rlim_max;
-	if (static_cast<size_t>(rl.rlim_cur) < max) {
-		rl.rlim_cur = max;
-		rl.rlim_max = max;
-		if (setrlimit(RLIMIT_NOFILE, &rl) != 0) {
-			int se = errno;
-			mlog(LV_WARN, "setrlimit RLIMIT_NOFILE %zu: %s",
-				max, strerror(se));
-			return se;
-		}
-	}
-	if (getrlimit(RLIMIT_NOFILE, &rl) != 0) {
-		int se = errno;
-		mlog(LV_ERR, "getrlimit: %s", strerror(se));
-		return se;
-	}
-	mlog(LV_NOTICE, "system: maximum file descriptors: %zu",
-		static_cast<size_t>(rl.rlim_cur));
-	return 0;
-}
-
 std::string iconvtext(const char *src, size_t src_size,
     const char *from, const char *to)
 {
@@ -1639,24 +1446,6 @@ std::string iconvtext(const char *src, size_t src_size,
 		out.append(buffer, sizeof(buffer) - dst_size);
 	}
 	return out;
-}
-
-unsigned long gx_gettid()
-{
-#if defined(__linux__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 30))
-	return gettid();
-#elif defined(__linux__)
-	return syscall(SYS_gettid);
-#elif defined(__OpenBSD__)
-	return getthrid();
-#elif defined(__FreeBSD__)
-	long z = 0;
-	return thr_self(&z) == 0 ? z : (unsigned long)pthread_self();
-#elif defined(__sun)
-	return _lwp_self();
-#else
-	return (unsigned long)pthread_self();
-#endif
 }
 
 std::string base64_encode(const std::string_view &x)
@@ -1838,28 +1627,6 @@ int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *ss)
 		return 0;
 	}
 	return -1;
-}
-
-std::string simple_backtrace()
-{
-	std::string out;
-	/* Tried ILT's libbacktrace, but in practice it takes 500 ms per backtrace */
-#ifdef __GLIBC__
-	void *frame_ptrs[128];
-	int num = backtrace(frame_ptrs, std::size(frame_ptrs));
-	if (num == 0)
-		return out;
-	std::unique_ptr<char *[], stdlib_delete> names(backtrace_symbols(frame_ptrs, num));
-	if (names == nullptr)
-		return out;
-	try {
-		/* Frame 0 is simple_backtrace itself, skip it */
-		for (int i = 1; i < num; ++i)
-			out += "<"s + znul(HX_basename(names[i])) + ">";
-	} catch (...) {
-	}
-#endif
-	return out;
 }
 
 }

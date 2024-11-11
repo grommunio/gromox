@@ -33,6 +33,7 @@
 #include <gromox/generic_connection.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/paths.h>
+#include <gromox/process.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 

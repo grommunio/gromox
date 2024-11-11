@@ -34,6 +34,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
+#include <gromox/process.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>

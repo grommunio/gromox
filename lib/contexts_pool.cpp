@@ -20,6 +20,7 @@
 #include <gromox/atomic.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/defs.h>
+#include <gromox/process.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 

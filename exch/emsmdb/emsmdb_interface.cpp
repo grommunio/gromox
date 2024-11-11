@@ -22,6 +22,7 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
+#include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>

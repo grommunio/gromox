@@ -28,6 +28,7 @@
 #include <gromox/hook_common.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
+#include <gromox/process.hpp>
 #include <gromox/plugin.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>

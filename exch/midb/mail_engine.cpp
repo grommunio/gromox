@@ -42,6 +42,7 @@
 #include <gromox/midb.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/oxcmail.hpp>
+#include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/safeint.hpp>
 #include <gromox/scope.hpp>

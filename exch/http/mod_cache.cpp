@@ -31,6 +31,7 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
+#include <gromox/process.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "http_parser.hpp"

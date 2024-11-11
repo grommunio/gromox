@@ -25,6 +25,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/hpm_common.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/process.hpp>
 #include <gromox/rpc_types.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>

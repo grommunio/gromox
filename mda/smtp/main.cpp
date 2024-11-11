@@ -32,6 +32,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
+#include <gromox/process.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/threads_pool.hpp>

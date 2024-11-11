@@ -36,6 +36,7 @@
 #include <gromox/exmdb_server.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/process.hpp>
 #include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>

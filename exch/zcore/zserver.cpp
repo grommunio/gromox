@@ -26,6 +26,7 @@
 #include <gromox/freebusy.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/safeint.hpp>
 #include <gromox/scope.hpp>

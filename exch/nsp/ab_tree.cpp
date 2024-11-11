@@ -35,6 +35,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/proc_common.h>
+#include <gromox/process.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>

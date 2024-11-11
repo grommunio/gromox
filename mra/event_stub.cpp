@@ -20,6 +20,7 @@
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/fileio.h>
+#include <gromox/process.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #define MAX_CMD_LENGTH			64*1024

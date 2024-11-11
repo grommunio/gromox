@@ -33,6 +33,7 @@
 #include <gromox/exmdb_server.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/process.hpp>
 #include <gromox/util.hpp>
 #include "notification_agent.hpp"
 #include "parser.hpp"

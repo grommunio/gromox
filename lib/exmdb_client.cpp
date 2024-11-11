@@ -24,6 +24,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
+#include <gromox/process.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #ifndef AI_V4MAPPED

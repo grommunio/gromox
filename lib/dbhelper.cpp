@@ -8,6 +8,7 @@
 #include <string>
 #include <unistd.h>
 #include <gromox/database.h>
+#include <gromox/process.hpp>
 #include <gromox/util.hpp>
 
 namespace gromox {

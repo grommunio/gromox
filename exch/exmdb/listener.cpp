@@ -25,6 +25,7 @@
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/list_file.hpp>
+#include <gromox/process.hpp>
 #include <gromox/util.hpp>
 #include "listener.hpp"
 #include "parser.hpp"

@@ -32,6 +32,7 @@
 #include <gromox/json.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/msg_unit.hpp>
+#include <gromox/process.hpp>
 #include <gromox/range_set.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>

@@ -22,6 +22,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/midb.hpp>
+#include <gromox/process.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "cmd_parser.hpp"

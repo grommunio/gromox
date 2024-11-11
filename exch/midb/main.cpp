@@ -36,6 +36,7 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
+#include <gromox/process.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>

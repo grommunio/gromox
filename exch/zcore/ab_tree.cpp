@@ -36,6 +36,7 @@
 #include <gromox/gab.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/process.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>

@@ -33,6 +33,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
+#include <gromox/process.hpp>
 #include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>

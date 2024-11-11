@@ -30,6 +30,7 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/pcl.hpp>
+#include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
@@ -56,12 +57,12 @@ void adjust_rights(int fd)
 	}
 	auto sp = getpwnam(RUNNING_IDENTITY);
 	if (sp == nullptr)
-		fprintf(stderr, "No \"" RUNNING_IDENTITY "\" user in system. Not changing UID of mailbox.\n");
+		fprintf(stderr, "No \"%s\" user in system. Not changing UID of mailbox.\n", RUNNING_IDENTITY);
 	else
 		uid = sp->pw_uid;
 	auto gr = getgrnam(RUNNING_IDENTITY);
 	if (gr == nullptr) {
-		fprintf(stderr, "No \"" RUNNING_IDENTITY "\" group in system. Not changing GID of mailbox.\n");
+		fprintf(stderr, "No \"%s\" group in system. Not changing GID of mailbox.\n", RUNNING_IDENTITY);
 		mode &= FMODE_PRIVATE;
 	} else {
 		gid = gr->gr_gid;

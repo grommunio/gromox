@@ -21,6 +21,7 @@
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
+#include <gromox/process.hpp>
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
 
