@@ -295,10 +295,10 @@ static void vcard_unescape_string(char *pstring)
 	}
 }
 
-static bool vcard_std_keyword(const char *name)
+static bool vcard_single_value(const char *name)
 {
 	static constexpr char keywords[][8] = {
-		"ORG", "UID", "KEY", "ADDR", "NOTE", "LOGO", "ROLE", "LABEL",
+		"UID", "KEY", "ADDR", "NOTE", "LOGO", "ROLE", "LABEL",
 		"PHOTO", "SOUND", "TITLE", "PRODID", "VERSION",
 	};
 	for (const char *k : keywords)
@@ -348,7 +348,7 @@ ec_error_t vcard_load_multi_from_str_move(char *in_buff,
 		auto pvline = &pvcard->append_line(vcard_retrieve_tag(tmp_item.ptag));
 		if (tmp_item.pvalue == nullptr)
 			continue;
-		if (!vcard_std_keyword(pvline->name())) {
+		if (!vcard_single_value(pvline->name())) {
 			vcard_retrieve_value(pvline, tmp_item.pvalue);
 			continue;
 		}
