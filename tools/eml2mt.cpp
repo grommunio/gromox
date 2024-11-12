@@ -23,6 +23,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/tnef.hpp>
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
 #include "genimport.hpp"
@@ -39,6 +40,7 @@ enum {
 	IMPORT_ICAL,
 	IMPORT_VCARD,
 	IMPORT_MBOX,
+	IMPORT_TNEF,
 };
 
 static unsigned int g_import_mode = IMPORT_MAIL;
@@ -51,6 +53,7 @@ static constexpr HXoption g_options_table[] = {
 	{"mail", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_MAIL, "Treat input as Internet Mail"},
 	{"mbox", 0, HXTYPE_VAL, &g_import_mode, {}, {}, IMPORT_MBOX, "Treat input as Unix mbox"},
 	{"oneoff", 0, HXTYPE_NONE, &g_oneoff, nullptr, nullptr, 0, "Resolve addresses to ONEOFF rather than EX addresses"},
+	{"tnef", 0, HXTYPE_VAL, &g_import_mode, {}, {}, IMPORT_TNEF, "Treat input as TNEF"},
 	{"vcard", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_VCARD, "Treat input as vCard"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -257,6 +260,25 @@ static errno_t do_vcard(const char *file, std::vector<message_ptr> &mv)
 	return 0;
 }
 
+static errno_t do_tnef(const char *file, std::vector<message_ptr> &mv)
+{
+	size_t slurp_size = 0;
+	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(file, &slurp_size));
+	if (slurp_data == nullptr) {
+		fprintf(stderr, "tnef: could not open \"%s\": %s\n",
+		        file, strerror(errno));
+		return EIO;
+	}
+	message_content_ptr mc(tnef_deserialize(slurp_data.get(), slurp_size,
+		zalloc, ee_get_propids, oxcmail_username_to_entryid));
+	if (mc == nullptr) {
+		fprintf(stderr, "tnef: %s: import rejected\n", file);
+		return EIO;
+	}
+	mv.emplace_back(std::move(mc));
+	return 0;
+}
+
 static constexpr cfg_directive delivery_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
@@ -270,6 +292,8 @@ int main(int argc, char **argv) try
 		g_import_mode = IMPORT_ICAL;
 	} else if (strcmp(bn, "gromox-vcf2mt") == 0) {
 		g_import_mode = IMPORT_VCARD;
+	} else if (strcmp(bn, "gromox-tnef2mt") == 0) {
+		g_import_mode = IMPORT_TNEF;
 	} else {
 		fprintf(stderr, "Invocation of this utility as \"%s\" not recognized\n", argv[0]);
 		return EXIT_FAILURE;
@@ -346,6 +370,9 @@ int main(int argc, char **argv) try
 				continue;
 		} else if (g_import_mode == IMPORT_VCARD) {
 			if (do_vcard(argv[i], msgs) != 0)
+				continue;
+		} else if (g_import_mode == IMPORT_TNEF) {
+			if (do_tnef(argv[i], msgs) != 0)
 				continue;
 		}
 	}

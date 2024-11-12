@@ -64,7 +64,7 @@ endif
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
-dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-exm2ical tools/gromox-exm2mt tools/gromox-exm2vcf tools/gromox-ical2mt tools/gromox-mbox2mt tools/gromox-vcf2mt
+dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-exm2ical tools/gromox-exm2mt tools/gromox-exm2vcf tools/gromox-ical2mt tools/gromox-mbox2mt tools/gromox-tnef2mt tools/gromox-vcf2mt
 dist_pkglibexec_SCRIPTS = tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 

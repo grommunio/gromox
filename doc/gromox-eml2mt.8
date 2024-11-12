@@ -2,14 +2,15 @@
 .\" SPDX-FileCopyrightText: 2022 grommunio GmbH
 .TH gromox\-eml2mt 8 "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-eml2mt \(em Utility for analysis/importing RFC5322 Internet Mail
-messages, RFC 5545 iCalendar objects and RFC6350 vCard objects
+gromox\-eml2mt \(em Utility for analysis/importing various formats
 .SH Synopsis
 \fBgromox\-eml2mt\fP [\fB\-Ppt\fP] \fIfile.eml\fP[...]
 .PP
-\fBgromox\-mbox2mt\fP [\fB\-Ppt\fP] \fIfile.vcf\fP[...]
-.PP
 \fBgromox\-ical2mt\fP [\fB\-Ppt\fP] \fIfile.ics\fP[...]
+.PP
+\fBgromox\-mbox2mt\fP [\fB\-Ppt\fP] \fIfile.mbox\fP[...]
+.PP
+\fBgromox\-tnef2mt\fP [\fB\-Ppt\fP] \fIfile.tnef\fP[...]
 .PP
 \fBgromox\-vcf2mt\fP [\fB\-Ppt\fP] \fIfile.vcf\fP[...]
 .SH Description
@@ -26,6 +27,8 @@ calendaring and scheduling objects (.ics).
 .PP
 When called as gromox\-vcf2mt, the input is treated as RFC4770/6530-formatted
 vCard objects (.vcf).
+.PP
+When called as gromox\-tnef2mt, the input is treated as a MS-OXTNEF object.
 .PP
 eml2mt will resolve email addresses to Gromox objects already, so the emitted
 data stream should be consumed by an mt2exm invocation on the \fIsame\fP Gromox
@@ -47,14 +50,19 @@ Treat all file arguments as Unix mboxes. This is the default if the program was
 invoked as gromox\-mbox2mt. Messages remain unanchored, and you can use the
 mt2exm \-B option.
 .TP
-\fB\-\-vcard\fP
-Treat all file arguments as vCard input. This is the default if the program was
-invoked as gromox\-vcf2mt. Messages will be anchored to the contacts folder.
-.TP
 \fB\-\-oneoff\fP
 Do not resolve email addresses to EX addresses, but to ONEOFF instead. This
 way, streams created by eml2mt can be imported into \fIother\fP Gromox
 clusters that do not have the same user set.
+.TP
+\fB\-\-tnef\fP
+Treat all file arguments as Transport Neutral Encapsulation Format objects.
+This is the default if the program was invoked as gromox\-tnef2mt. Messages
+remain unanchored, and you can use the mt2exm \-B option.
+.TP
+\fB\-\-vcard\fP
+Treat all file arguments as vCard input. This is the default if the program was
+invoked as gromox\-vcf2mt. Messages will be anchored to the contacts folder.
 .TP
 \fB\-P\fP
 Enable super-pedantic mode when parsing VCARDs and reject everything that is

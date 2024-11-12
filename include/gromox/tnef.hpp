@@ -4,9 +4,6 @@
 
 struct message_content;
 
-extern void tnef_init_library();
-extern message_content *tnef_deserialize(const void *buf,
-	uint32_t length, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
-	USERNAME_TO_ENTRYID username_to_entryid);
-extern BINARY *tnef_serialize(const message_content *,
-	EXT_BUFFER_ALLOC alloc, GET_PROPNAME get_propname);
+extern GX_EXPORT void tnef_init_library();
+extern GX_EXPORT message_content *tnef_deserialize(const void *buf, uint32_t len, EXT_BUFFER_ALLOC, GET_PROPIDS, USERNAME_TO_ENTRYID);
+extern GX_EXPORT BINARY *tnef_serialize(const message_content *, EXT_BUFFER_ALLOC, GET_PROPNAME);
