@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -76,12 +77,15 @@ struct ifc_stat {
 using db_handle = std::unique_ptr<sqlite3, deleter>;
 using object_map = std::unordered_map<std::string, object_stat>;
 
-static double ratio(double a, double b) { return a / b; }
+static double ratio(double a, double b) { return b == 0 ? NAN : a / b; }
 
 static double ratio_sav(double old, double nu)
 {
-	auto x = 1 - nu / old;
-	return x * 100;
+	if (old == nu)
+		return 0;
+	else if (old == 0)
+		return -INFINITY;
+	return 100 * (1 - nu / old);
 }
 
 static struct rfc_stat rfc_count(const std::string &dirname)
