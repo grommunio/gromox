@@ -434,12 +434,10 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			auto pvvalue = pvline->m_values.cbegin();
 			if (pvvalue == pvline->m_values.cend())
 				continue;
-			{
-				if (pvvalue->m_subvals.size() > 0 &&
-				    !pvvalue->m_subvals[0].empty() &&
-				    pmsg->proplist.set(PR_COMPANY_NAME, pvvalue->m_subvals[0].c_str()) != 0)
-					return imp_null;
-			}
+			if (pvvalue->m_subvals.size() > 0 &&
+			    !pvvalue->m_subvals[0].empty() &&
+			    pmsg->proplist.set(PR_COMPANY_NAME, pvvalue->m_subvals[0].c_str()) != 0)
+				return imp_null;
 			++pvvalue;
 			if (pvvalue != pvline->m_values.cend()) {
 				if (pvvalue->m_subvals.size() > 0 &&
@@ -812,9 +810,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_BODY);
-	if (pvalue != nullptr) {
+	if (pvalue != nullptr)
 		vcard.append_line("NOTE", pvalue);
-	}
 	
 	auto &org_line = vcard.append_line("ORG");
 	pvalue = pmsg->proplist.get<char>(PR_COMPANY_NAME);
