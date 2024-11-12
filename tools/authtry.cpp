@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 		return direct_ldap(g_ldap_uri, g_auth_user, password);
 
 	auto cfg = config_file_prg(nullptr, "http.cfg", no_defaults);
-	service_init({cfg, g_dfl_svc_plugins, 0, "authtest"});
+	service_init({std::move(cfg), g_dfl_svc_plugins, 0, "authtest"});
 	auto cl_1 = make_scope_exit(service_stop);
 	if (service_run_early() != 0) {
 		fprintf(stderr, "service_run_early failed\n");
