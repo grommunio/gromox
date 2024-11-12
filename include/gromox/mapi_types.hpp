@@ -469,6 +469,9 @@ enum {
 	PUBLIC_FID_UNASSIGNED_START = 0x05,
 
 	CUSTOM_EID_BEGIN = 0x100,
+
+	/* Indicator for loose mail objects during import/export */
+	MAILBOX_FID_UNANCHORED = 0xffffffffffffffffULL,
 };
 
 #define RSF_ELID_HEADER								0x0002

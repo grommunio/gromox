@@ -1240,7 +1240,7 @@ static errno_t do_file(const char *filename) try
 		return 0;
 	}
 
-	auto pd = parent_desc::as_folder(~0ULL);
+	auto pd = parent_desc::as_folder(MAILBOX_FID_UNANCHORED);
 	pd.names = &static_namedprop_map;
 	for (const auto nid : g_only_objs) {
 		if (libpff_file_get_item_by_identifier(file.get(), nid,

@@ -616,7 +616,7 @@ static errno_t do_file(const char *filename) try
 	return ECANCELED;
 #if 0
 
-	auto parent = parent_desc::as_folder(~0ULL);
+	auto parent = parent_desc::as_folder(MAILBOX_FID_UNANCHORED);
 	if (g_show_tree)
 		gi_print(0, *ctnt, ee_get_propname);
 	EXT_PUSH ep;

@@ -189,12 +189,12 @@ static int mk_folders(sqlite3 *psqlite, uint32_t user_id)
 	}
 	char tmp_sql[1024];
 	snprintf(tmp_sql, std::size(tmp_sql), "INSERT INTO permissions (folder_id, "
-		"username, permission) VALUES (%u, 'default', %u)",
-	        PRIVATE_FID_CALENDAR, frightsFreeBusySimple);
+		"username, permission) VALUES (%llu, 'default', %u)",
+		static_cast<unsigned long long>(PRIVATE_FID_CALENDAR), frightsFreeBusySimple);
 	gx_sql_exec(psqlite, tmp_sql);
 	snprintf(tmp_sql, std::size(tmp_sql), "INSERT INTO permissions (folder_id, "
-		"username, permission) VALUES (%u, 'default', %u)",
-	        PRIVATE_FID_LOCAL_FREEBUSY, frightsFreeBusySimple);
+		"username, permission) VALUES (%llu, 'default', %u)",
+		static_cast<unsigned long long>(PRIVATE_FID_LOCAL_FREEBUSY), frightsFreeBusySimple);
 	gx_sql_exec(psqlite, tmp_sql);
 	return EXIT_SUCCESS;
 }

@@ -1400,7 +1400,7 @@ static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 	if (g_only_objs.size() == 0)
 		return do_item(*drv, 0, {}, *drv->get_store_item());
 
-	auto pd = parent_desc::as_folder(~0ULL);
+	auto pd = parent_desc::as_folder(MAILBOX_FID_UNANCHORED);
 	for (const auto hid : g_only_objs) {
 		auto item = kdb_item::load_hid_base(*drv, hid);
 		auto ret = do_item(*drv, 0, pd, *item);

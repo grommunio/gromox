@@ -78,10 +78,10 @@ static constexpr HXoption g_options_table[] = {
 static void filter_folder_map(gi_folder_map_t &fmap)
 {
 	if (!g_public_folder)
-		fmap.emplace(~0ULL, tgt_folder{false, g_anchor_folder != 0 ?
+		fmap.emplace(MAILBOX_FID_UNANCHORED, tgt_folder{false, g_anchor_folder != 0 ?
 			g_anchor_folder : PRIVATE_FID_DRAFT, ""});
 	else
-		fmap.emplace(~0ULL, tgt_folder{false, PUBLIC_FID_IPMSUBTREE, ""});
+		fmap.emplace(MAILBOX_FID_UNANCHORED, tgt_folder{false, PUBLIC_FID_IPMSUBTREE, ""});
 	for (auto &p : fmap)
 		p.second.fid_to = rop_util_make_eid_ex(1, p.second.fid_to);
 }

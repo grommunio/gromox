@@ -257,7 +257,7 @@ int main(int argc, char **argv) try
 		if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
 		    ep.p_uint32(msg_id) != EXT_ERR_SUCCESS ||
 		    ep.p_uint32(static_cast<uint32_t>(0)) != EXT_ERR_SUCCESS ||
-		    ep.p_uint64(~0ULL) != EXT_ERR_SUCCESS ||
+		    ep.p_uint64(MAILBOX_FID_UNANCHORED) != EXT_ERR_SUCCESS ||
 		    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS) {
 			fprintf(stderr, "E-2005\n");
 			return EXIT_FAILURE;

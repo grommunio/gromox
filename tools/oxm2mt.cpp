@@ -552,7 +552,7 @@ static errno_t do_file(const char *filename) try
 	gi_dump_name_map(static_namedprop_map.fwd);
 	gi_name_map_write(static_namedprop_map.fwd);
 
-	auto parent = parent_desc::as_folder(~0ULL);
+	auto parent = parent_desc::as_folder(MAILBOX_FID_UNANCHORED);
 	if (g_show_tree)
 		gi_print(0, *ctnt, ee_get_propname);
 	EXT_PUSH ep;
