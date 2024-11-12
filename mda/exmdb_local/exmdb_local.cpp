@@ -263,7 +263,7 @@ static void* exmdb_local_alloc(size_t size)
 static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
     PROPID_ARRAY *ppropids)
 {
-	return exmdb_client_remote::get_named_propids(g_storedir, false,
+	return exmdb_client_remote::get_named_propids(g_storedir, true,
 	       ppropnames, ppropids);
 }
 
