@@ -915,15 +915,10 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 /* only be called under content sync */
 static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 {
-	BINARY *pbin1;
-	BINARY *pbin2;
-	TPROPVAL_ARRAY proplist;
+	BINARY *pbin1 = nullptr, *pbin2 = nullptr;
 	TAGGED_PROPVAL tmp_propvals[2];
+	TPROPVAL_ARRAY proplist = {0, tmp_propvals};
 	
-	proplist.count = 0;
-	proplist.ppropval = tmp_propvals;
-	pbin1 = NULL;
-	pbin2 = NULL;
 	if (pctx->pdeleted_messages->count > 0) {
 		idset xset(idset::type::id_loose);
 		for (auto mid : *pctx->pdeleted_messages)

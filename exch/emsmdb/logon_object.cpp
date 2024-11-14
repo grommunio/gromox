@@ -189,9 +189,6 @@ BOOL logon_object::get_named_propids(BOOL b_create,
     const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids) try
 {
 	auto &propids = *ppropids;
-	int i;
-	PROPID_ARRAY tmp_propids;
-	PROPNAME_ARRAY tmp_propnames;
 	
 	if (0 == ppropnames->count) {
 		ppropids->clear();
@@ -200,13 +197,13 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 	auto pindex_map = cu_alloc<int>(ppropnames->count);
 	if (pindex_map == nullptr)
 		return FALSE;
+	PROPID_ARRAY tmp_propids;
 	propids.resize(ppropnames->count);
-	tmp_propnames.count = 0;
-	tmp_propnames.ppropname = cu_alloc<PROPERTY_NAME>(ppropnames->count);
+	PROPNAME_ARRAY tmp_propnames = {0, cu_alloc<PROPERTY_NAME>(ppropnames->count)};
 	if (tmp_propnames.ppropname == nullptr)
 		return FALSE;
 	auto plogon = this;
-	for (i=0; i<ppropnames->count; i++) {
+	for (unsigned int i = 0; i < ppropnames->count; ++i) {
 		if (ppropnames->ppropname[i].guid == PS_MAPI) {
 			propids[i] = ppropnames->ppropname[i].kind == MNID_ID ?
 			             ppropnames->ppropname[i].lid : 0;
@@ -234,7 +231,7 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 	    &tmp_propnames, &tmp_propids) ||
 	    tmp_propids.size() != tmp_propnames.size())
 		return FALSE;	
-	for (i=0; i<ppropnames->count; i++) {
+	for (unsigned int i = 0; i < ppropnames->count; ++i) {
 		if (pindex_map[i] >= 0)
 			continue;
 		propids[i] = tmp_propids[-pindex_map[i]-1];
@@ -621,8 +618,6 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals) const
 {
-	PROPTAG_ARRAY tmp_proptags;
-	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError, invalid_code = ecInvalidParam;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -631,8 +626,7 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
@@ -652,6 +646,8 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
+
+	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client::get_store_properties(plogon->dir,
 	    pinfo->cpid, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
@@ -667,9 +663,6 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems) try
 {
-	PROBLEM_ARRAY tmp_problems;
-	TPROPVAL_ARRAY tmp_propvals;
-	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
 		return FALSE;
@@ -677,8 +670,7 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
+	TPROPVAL_ARRAY tmp_propvals = {0, cu_alloc<TAGGED_PROPVAL>(ppropvals->count)};
 	if (tmp_propvals.ppropval == nullptr)
 		return FALSE;
 	std::vector<uint16_t> poriginal_indices;
@@ -694,6 +686,7 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	}
 	if (tmp_propvals.count == 0)
 		return TRUE;
+	PROBLEM_ARRAY tmp_problems;
 	if (!exmdb_client::set_store_properties(plogon->dir,
 	    pinfo->cpid, &tmp_propvals, &tmp_problems))
 		return FALSE;	
@@ -710,14 +703,11 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems)
 {
-	PROPTAG_ARRAY tmp_proptags;
-	
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	auto plogon = this;

@@ -193,8 +193,6 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 {
 	auto pmessage = this;
 	EXT_PUSH ext_push;
-	PROBLEM_ARRAY problems;
-	TPROPVAL_ARRAY propvals;
 	
 	if (!pmessage->b_new)
 		return EINVAL;
@@ -202,97 +200,57 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 	if (pinfo == nullptr)
 		return ESRCH;
 	auto rpc_info = get_rpc_info();
-	propvals.count = 0;
-	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(20);
-	if (propvals.ppropval == nullptr)
-		return ENOMEM;
 	
-	auto msgcpid = cu_alloc<uint32_t>();
-	if (msgcpid == nullptr)
-		return ENOMEM;
-	*msgcpid = static_cast<uint32_t>(new_cpid);
-	propvals.emplace_back(PR_MESSAGE_CODEPAGE, msgcpid);
-	
-	auto importance = cu_alloc<uint32_t>();
-	if (importance == nullptr)
-		return ENOMEM;
-	*importance = IMPORTANCE_NORMAL;
-	propvals.emplace_back(PR_IMPORTANCE, importance);
-	propvals.emplace_back(PR_MESSAGE_CLASS, "IPM.Note");
-	
-	auto sens = cu_alloc<uint32_t>();
-	if (sens == nullptr)
-		return ENOMEM;
-	*sens = SENSITIVITY_NONE;
-	propvals.emplace_back(PR_SENSITIVITY, sens);
-	for (auto t : {PR_ORIGINAL_DISPLAY_TO, PR_ORIGINAL_DISPLAY_CC, PR_ORIGINAL_DISPLAY_BCC})
-		propvals.emplace_back(t, "");
-	
-	auto msgflags = cu_alloc<uint32_t>();
-	if (msgflags == nullptr)
-		return ENOMEM;
-	*msgflags = MSGFLAG_UNSENT | MSGFLAG_UNMODIFIED;
-	propvals.emplace_back(PR_MESSAGE_FLAGS, msgflags);
-	
-	auto readflag = cu_alloc<uint8_t>();
-	if (readflag == nullptr)
-		return ENOMEM;
-	*readflag = 0;
-	propvals.emplace_back(PR_READ, readflag);
-	
-	auto assocflag = cu_alloc<uint8_t>();
-	if (assocflag == nullptr)
-		return ENOMEM;
-	*assocflag = fai;
-	propvals.emplace_back(PR_ASSOCIATED, assocflag);
-	
-	auto trustsender = cu_alloc<uint32_t>();
-	if (trustsender == nullptr)
-		return ENOMEM;
-	*trustsender = 1;
-	propvals.emplace_back(PR_TRUST_SENDER, trustsender);
-	
-	auto modtime = cu_alloc<uint64_t>();
-	if (modtime == nullptr)
-		return ENOMEM;
-	*modtime = rop_util_current_nttime();
-	propvals.emplace_back(PR_CREATION_TIME, modtime);
-	
+	auto msgcpid = static_cast<uint32_t>(new_cpid);
+	uint32_t importance = IMPORTANCE_NORMAL, sens = SENSITIVITY_NONE;
+	uint32_t msgflags = MSGFLAG_UNSENT | MSGFLAG_UNMODIFIED;
+	uint8_t readflag = 0, assocflag = fai;
+	uint32_t trustsender = 1;
+	auto modtime = rop_util_current_nttime();
 	auto search_key = common_util_guid_to_binary(GUID::random_new());
 	if (search_key == nullptr)
 		return ENOMEM;
-	propvals.emplace_back(PR_SEARCH_KEY, search_key);
-	
-	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_LOCALE_ID;
-	auto msglcid = cu_alloc<uint32_t>();
-	if (msglcid == nullptr)
-		return ENOMEM;
-	*msglcid = pinfo->lcid_string;
-	if (*msglcid == 0)
-		*msglcid = 0x409; /* en-US */
-	propvals.emplace_back(PR_MESSAGE_LOCALE_ID, msglcid);
-	propvals.emplace_back(PR_LOCALE_ID, msglcid);
+	uint32_t msglcid = pinfo->lcid_string;
+	if (msglcid == 0)
+		msglcid = 0x409; /* en-US */
 	
 	static constexpr size_t dispnamesize = 1024;
-	auto dispname = cu_alloc<char>(1024);
+	auto dispname = cu_alloc<char>(dispnamesize);
 	if (dispname == nullptr)
 		return ENOMEM;
 	if (!common_util_get_user_displayname(rpc_info.username,
 	    dispname, dispnamesize) || *dispname == '\0')
 		gx_strlcpy(dispname, rpc_info.username, dispnamesize);
-	propvals.emplace_back(PR_CREATOR_NAME, dispname);
-	
 	auto abk_eid = common_util_username_to_addressbook_entryid(rpc_info.username);
 	if (abk_eid == nullptr)
 		return ENOMEM;
-	propvals.emplace_back(PR_CREATOR_ENTRYID, abk_eid);
-
 	char id_string[UADDR_SIZE+2];
 	auto ret = make_inet_msgid(id_string, std::size(id_string), 0x4554);
 	if (ret != 0)
 		return ret;
-	propvals.emplace_back(PR_INTERNET_MESSAGE_ID, id_string);
-	
+
+	const TAGGED_PROPVAL propbuff[] = {
+		{PR_MESSAGE_CODEPAGE, &msgcpid},
+		{PR_IMPORTANCE, &importance},
+		{PR_MESSAGE_CLASS, deconst("IPM.Note")},
+		{PR_SENSITIVITY, &sens},
+		{PR_ORIGINAL_DISPLAY_TO, deconst("")},
+		{PR_ORIGINAL_DISPLAY_CC, deconst("")},
+		{PR_ORIGINAL_DISPLAY_BCC, deconst("")},
+		{PR_MESSAGE_FLAGS, &msgflags},
+		{PR_READ, &readflag},
+		{PR_ASSOCIATED, &assocflag},
+		{PR_TRUST_SENDER, &trustsender},
+		{PR_CREATION_TIME, &modtime},
+		{PR_SEARCH_KEY, search_key},
+		{PR_MESSAGE_LOCALE_ID, &msglcid},
+		{PR_LOCALE_ID, &msglcid},
+		{PR_CREATOR_NAME, dispname},
+		{PR_CREATOR_ENTRYID, abk_eid},
+		{PR_INTERNET_MESSAGE_ID, id_string},
+	};
+	const TPROPVAL_ARRAY propvals = {std::size(propbuff), deconst(propbuff)};
+	PROBLEM_ARRAY problems;
 	if (!exmdb_client::set_instance_properties(pmessage->plogon->get_dir(),
 	    pmessage->instance_id, &propvals, &problems))
 		return EIO;
@@ -353,14 +311,10 @@ static ec_error_t message_object_save2(message_object *pmessage, bool b_fai,
 			if (!exmdb_client::set_message_instance_conflict(dir,
 			    pmessage->instance_id, pmsgctnt))
 				return ecRpcFailed;
-			auto tmp_status = *mstatus | MSGSTATUS_IN_CONFLICT;
-			TAGGED_PROPVAL tmp_propval;
-			TPROPVAL_ARRAY tmp_propvals;
+			uint32_t tmp_status = *mstatus | MSGSTATUS_IN_CONFLICT;
+			const TAGGED_PROPVAL propbuff[] = {PR_MSG_STATUS, &tmp_status};
+			const TPROPVAL_ARRAY tmp_propvals = {std::size(propbuff), deconst(propbuff)};
 			PROBLEM_ARRAY tmp_problems;
-			tmp_propval.proptag = PR_MSG_STATUS;
-			tmp_propval.pvalue = &tmp_status;
-			tmp_propvals.count = 1;
-			tmp_propvals.ppropval = &tmp_propval;
 			if (!message_object_set_properties_internal(pmessage,
 			    false, &tmp_propvals, &tmp_problems))
 				return ecRpcFailed;
@@ -369,13 +323,9 @@ static ec_error_t message_object_save2(message_object *pmessage, bool b_fai,
 	pbin_pcl = common_util_pcl_merge(pbin_pcl, pbin_pcl1);
 	if (pbin_pcl == nullptr)
 		return ecRpcFailed;
-	TAGGED_PROPVAL tmp_propval;
-	TPROPVAL_ARRAY tmp_propvals;
+	const TAGGED_PROPVAL propbuff[] = {PR_PREDECESSOR_CHANGE_LIST, pbin_pcl};
+	const TPROPVAL_ARRAY tmp_propvals = {std::size(propbuff), deconst(propbuff)};
 	PROBLEM_ARRAY tmp_problems;
-	tmp_propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
-	tmp_propval.pvalue = pbin_pcl;
-	tmp_propvals.count = 1;
-	tmp_propvals.ppropval = &tmp_propval;
 	if (!message_object_set_properties_internal(pmessage,
 	    false, &tmp_propvals, &tmp_problems))
 		return ecRpcFailed;
@@ -421,9 +371,7 @@ ec_error_t message_object::save()
 	if (!flush_streams())
 		return ecRpcFailed;
 	
-	TPROPVAL_ARRAY tmp_propvals;
-	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8);
+	TPROPVAL_ARRAY tmp_propvals = {0, cu_alloc<TAGGED_PROPVAL>(6)};
 	if (tmp_propvals.ppropval == nullptr)
 		return ecServerOOM;
 	
@@ -472,9 +420,7 @@ ec_error_t message_object::save()
 		modification's check when the  rop_savechangesmessage
 		is called, it is not used by ICS.
 	*/
-	TAGGED_PROPVAL tmp_propval;
-	tmp_propval.proptag = PidTagChangeNumber;
-	tmp_propval.pvalue = &pmessage->change_num;
+	const TAGGED_PROPVAL tmp_propval = {PidTagChangeNumber, &pmessage->change_num};
 	if (!exmdb_client::set_instance_property(dir,
 	    pmessage->instance_id, &tmp_propval, &result))
 		return ecRpcFailed;
@@ -561,9 +507,7 @@ ec_error_t message_object::save()
  SAVE_FULL_CHANGE:
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
-	INDEX_ARRAY tmp_indices;
-	tmp_indices.count = 0;
-	tmp_indices.pproptag = NULL;
+	INDEX_ARRAY tmp_indices{};
 	if (!exmdb_client::save_change_indices(dir,
 	    pmessage->message_id, pmessage->change_num, &tmp_indices,
 	    static_cast<PROPTAG_ARRAY *>(&tmp_indices)))
@@ -970,16 +914,13 @@ BOOL message_object::get_properties(uint32_t size_limit,
     const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals) const
 {
 	auto pmessage = this;
-	PROPTAG_ARRAY tmp_proptags;
-	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError;
 	static const uint32_t lcid_default = 0x409; /* en-US */
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
@@ -1003,6 +944,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	auto dir = plogon->get_dir();
+	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client::get_instance_properties(dir,
 	    size_limit, pmessage->instance_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
