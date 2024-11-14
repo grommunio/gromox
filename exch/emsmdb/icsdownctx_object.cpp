@@ -381,9 +381,9 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (bv == nullptr)
 				return FALSE;
 			const PERSISTDATA pd[] = {
-				{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
-				{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST))},
-				{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS))},
+				{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
+				{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST))},
+				{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS))},
 			};
 			if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
 			    ext_push.p_persistdata_a(pd) != pack_result::ok)

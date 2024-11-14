@@ -159,11 +159,11 @@ static pack_result ext_push_persistdata(EXT_PUSH &x, const PERSISTDATA &r)
 		TRY(x.p_uint16(4));
 		return x.p_uint32(0);
 	} else if (r.element_id == RSF_ELID_ENTRYID) {
-		uint16_t z = std::min(r.pentry_id->cb, static_cast<uint32_t>(UINT16_MAX - 2));
+		uint16_t z = std::min(r.entryid.size(), static_cast<size_t>(UINT16_MAX - 2));
 		TRY(x.p_uint16(2 + z));
 		TRY(x.p_uint16(r.element_id));
 		TRY(x.p_uint16(z));
-		return x.p_bytes(r.pentry_id->pv, z);
+		return x.p_bytes(r.entryid.c_str(), z);
 	}
 	return pack_result::bad_switch;
 }

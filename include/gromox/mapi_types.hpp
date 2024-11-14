@@ -491,7 +491,7 @@ enum {
 
 struct PERSISTDATA {
 	uint16_t persist_id = 0, element_id = 0;
-	BINARY *pentry_id = nullptr;
+	std::string entryid;
 };
 
 /* aggregated permissions for delegation */

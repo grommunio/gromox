@@ -207,7 +207,8 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 	return pbin;
 }
 
-BINARY *cu_fid_to_entryid(const logon_object *plogon, uint64_t folder_id)
+static void *cu_fid_to_entryid_1(const logon_object *plogon,
+    uint64_t folder_id, void *output, size_t *outmax)
 {
 	BINARY tmp_bin;
 	EXT_PUSH ext_push;
@@ -225,15 +226,40 @@ BINARY *cu_fid_to_entryid(const logon_object *plogon, uint64_t folder_id)
 	tmp_entryid.global_counter = rop_util_get_gc_array(folder_id);
 	tmp_entryid.pad[0] = 0;
 	tmp_entryid.pad[1] = 0;
+	if (!ext_push.init(output, *outmax, 0) ||
+	    ext_push.p_folder_eid(tmp_entryid) != pack_result::ok)
+		return nullptr;
+	*outmax = ext_push.m_offset;
+	return output;
+}
+
+BINARY *cu_fid_to_entryid(const logon_object *plogon, uint64_t folder_id)
+{
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
-	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	size_t z = 256;
+	pbin->pv = common_util_alloc(z);
+	if (pbin->pv == nullptr ||
+	    cu_fid_to_entryid_1(plogon, folder_id, pbin->pv, &z) == nullptr)
 		return NULL;	
-	pbin->cb = ext_push.m_offset;
+	pbin->cb = z;
 	return pbin;
+}
+
+/* The caller can check for .size() < 4 to detect errors */
+std::string cu_fid_to_entryid_s(const logon_object *plogon, uint64_t folder_id) try
+{
+	std::string out;
+	size_t z = 256;
+	out.resize(z);
+	if (cu_fid_to_entryid_1(plogon, folder_id, out.data(), &z) == nullptr)
+		return {};
+	out.resize(z);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2246: ENOMEM");
+	return {};
 }
 
 BINARY *cu_fid_to_sk(const logon_object *plogon, uint64_t folder_id)
