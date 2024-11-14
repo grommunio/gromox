@@ -122,21 +122,12 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
     uint8_t logon_id,  uint32_t hin, uint32_t *phout)
 {
 	void *pvalue;
-	uint64_t tmp_id;
 	ems_objtype object_type;
-	BINARY *pentryid;
-	uint32_t tmp_type;
-	uint64_t last_time;
 	uint64_t parent_id;
 	uint64_t folder_id;
 	uint64_t change_num;
-	uint32_t permission;
 	char folder_name[256];
 	char folder_comment[1024];
-	TPROPVAL_ARRAY tmp_propvals;
-	PERMISSION_DATA permission_row;
-	TAGGED_PROPVAL propval_buff[10];
-	
 	
 	switch (folder_type) {
 	case FOLDER_GENERIC:
@@ -174,6 +165,7 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	}
 	auto username = plogon->eff_user();
 	if (username != STORE_OWNER_GRANTED) {
+		uint32_t permission = 0;
 		if (!exmdb_client::get_folder_perm(plogon->get_dir(),
 		    pparent->folder_id, username, &permission))
 			return ecError;
@@ -194,29 +186,25 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		parent_id = pparent->folder_id;
 		if (!exmdb_client::allocate_cn(plogon->get_dir(), &change_num))
 			return ecError;
-		tmp_type = folder_type;
-		last_time = rop_util_current_nttime();
-		tmp_propvals.count = 9;
-		tmp_propvals.ppropval = propval_buff;
-		propval_buff[0].proptag = PidTagParentFolderId;
-		propval_buff[0].pvalue = &parent_id;
-		propval_buff[1].proptag = PR_FOLDER_TYPE;
-		propval_buff[1].pvalue = &tmp_type;
-		propval_buff[2].proptag = PR_DISPLAY_NAME;
-		propval_buff[2].pvalue = folder_name;
-		propval_buff[3].proptag = PR_COMMENT;
-		propval_buff[3].pvalue = folder_comment;
-		propval_buff[4].proptag = PR_CREATION_TIME;
-		propval_buff[4].pvalue = &last_time;
-		propval_buff[5].proptag = PR_LAST_MODIFICATION_TIME;
-		propval_buff[5].pvalue = &last_time;
-		propval_buff[6].proptag = PidTagChangeNumber;
-		propval_buff[6].pvalue = &change_num;
-		propval_buff[7].proptag = PR_CHANGE_KEY;
+		uint32_t tmp_type = folder_type;
+		auto last_time = rop_util_current_nttime();
+		TAGGED_PROPVAL propval_buff[] = {
+			{PidTagParentFolderId, &parent_id},
+			{PR_FOLDER_TYPE, &tmp_type},
+			{PR_DISPLAY_NAME, folder_name},
+			{PR_COMMENT, folder_comment},
+			{PR_CREATION_TIME, &last_time},
+			{PR_LAST_MODIFICATION_TIME, &last_time},
+			{PidTagChangeNumber, &change_num},
+			{PR_CHANGE_KEY, nullptr},
+			{PR_PREDECESSOR_CHANGE_LIST, nullptr},
+		};
+		const TPROPVAL_ARRAY tmp_propvals =
+			{std::size(propval_buff), deconst(propval_buff)};
+		/* PR_CHANGE_KEY */
 		propval_buff[7].pvalue = cu_xid_to_bin({plogon->guid(), change_num});
 		if (propval_buff[7].pvalue == nullptr)
 			return ecServerOOM;
-		propval_buff[8].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		propval_buff[8].pvalue = common_util_pcl_append(
 		                         NULL, static_cast<BINARY *>(propval_buff[7].pvalue));
 		if (propval_buff[8].pvalue == nullptr)
@@ -231,20 +219,18 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		if (folder_id == 0)
 			return ecError;
 		if (username != STORE_OWNER_GRANTED) {
-			pentryid = common_util_username_to_addressbook_entryid(username);
+			auto pentryid = common_util_username_to_addressbook_entryid(username);
 			if (pentryid == nullptr)
 				return ecServerOOM;
-			tmp_id = 1;
-			permission = rightsGromox7;
-			permission_row.flags = ROW_ADD;
-			permission_row.propvals.count = 3;
-			permission_row.propvals.ppropval = propval_buff;
-			propval_buff[0].proptag = PR_ENTRYID;
-			propval_buff[0].pvalue = pentryid;
-			propval_buff[1].proptag = PR_MEMBER_ID;
-			propval_buff[1].pvalue = &tmp_id;
-			propval_buff[2].proptag = PR_MEMBER_RIGHTS;
-			propval_buff[2].pvalue = &permission;
+			uint64_t tmp_id = 1;
+			uint32_t permission = rightsGromox7;
+			const TAGGED_PROPVAL propval_buff2[] = {
+				{PR_ENTRYID, pentryid},
+				{PR_MEMBER_ID, &tmp_id},
+				{PR_MEMBER_RIGHTS, &permission},
+			};
+			const PERMISSION_DATA permission_row =
+				{ROW_ADD, {std::size(propval_buff2), deconst(propval_buff2)}};
 			if (!exmdb_client::update_folder_permission(plogon->get_dir(),
 			    folder_id, false, 1, &permission_row))
 				return ecError;
@@ -457,7 +443,6 @@ ec_error_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
     uint8_t want_asynchronous, uint8_t want_copy, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
-	EID_ARRAY ids;
 	BOOL b_partial;
 	ems_objtype object_type;
 	uint32_t permission;
@@ -482,8 +467,6 @@ ec_error_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	ids.count = pmessage_ids->count;
-	ids.pids = pmessage_ids->pll;
 	BOOL b_copy = want_copy == 0 ? false : TRUE;
 	auto rpc_user = znul(get_rpc_info().username);
 	auto eff_user = plogon->eff_user();
@@ -496,6 +479,7 @@ ec_error_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 			return ecAccessDenied;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
+	const EID_ARRAY ids = {pmessage_ids->count, pmessage_ids->pll};
 	if (!exmdb_client::movecopy_messages(plogon->get_dir(), pinfo->cpid,
 	    b_guest, rpc_user, psrc_folder->folder_id, pdst_folder->folder_id,
 	    b_copy, &ids, &b_partial))
@@ -508,16 +492,8 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
     uint64_t folder_id, const char *pnew_name, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
-	BOOL b_cycle;
 	ems_objtype object_type;
-	BINARY *pbin_pcl;
-	uint64_t nt_time;
 	char new_name[128];
-	uint32_t permission;
-	uint64_t change_num;
-	PROBLEM_ARRAY problems;
-	TPROPVAL_ARRAY propvals;
-	TAGGED_PROPVAL propval_buff[4];
 	
 	*ppartial_completion = 1;
 	auto psrc_parent = rop_proc_get_obj<folder_object>(plogmap, logon_id, hsrc, &object_type);
@@ -549,6 +525,7 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	auto eff_user = plogon->eff_user();
 	BOOL b_guest  = eff_user != STORE_OWNER_GRANTED ? TRUE : false;
 	if (b_guest) {
+		uint32_t permission = 0;
 		if (!exmdb_client::get_folder_perm(dir,
 		    folder_id, eff_user, &permission))
 			return ecError;
@@ -560,6 +537,10 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 		if (!(permission & (frightsOwner | frightsCreateSubfolder)))
 			return ecAccessDenied;
 	}
+
+	BOOL b_cycle = false;
+	uint64_t change_num;
+	BINARY *pbin_pcl;
 	if (!exmdb_client::is_descendant_folder(dir, folder_id,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
@@ -585,18 +566,17 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 		return ecError;
 	if (err == ecDuplicateName)
 		return err;
+
 	*ppartial_completion = err != ecSuccess;
-	nt_time = rop_util_current_nttime();
-	propvals.count = 4;
-	propvals.ppropval = propval_buff;
-	propval_buff[0].proptag = PidTagChangeNumber;
-	propval_buff[0].pvalue = &change_num;
-	propval_buff[1].proptag = PR_CHANGE_KEY;
-	propval_buff[1].pvalue = pbin_changekey;
-	propval_buff[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
-	propval_buff[2].pvalue = pbin_pcl;
-	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
-	propval_buff[3].pvalue = &nt_time;
+	auto nt_time = rop_util_current_nttime();
+	const TAGGED_PROPVAL propval_buff[] = {
+		{PidTagChangeNumber, &change_num},
+		{PR_CHANGE_KEY, pbin_changekey},
+		{PR_PREDECESSOR_CHANGE_LIST, pbin_pcl},
+		{PR_LAST_MODIFICATION_TIME, &nt_time},
+	};
+	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
+	PROBLEM_ARRAY problems;
 	if (!exmdb_client::set_folder_properties(dir, CP_ACP,
 	    folder_id, &propvals, &problems))
 		return ecError;
@@ -726,13 +706,11 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_owner;
-	EID_ARRAY ids;
 	BOOL b_partial;
 	BOOL b_partial1;
 	ems_objtype object_type;
 	uint32_t permission;
 	MESSAGE_CONTENT *pbrief;
-	TPROPVAL_ARRAY tmp_propvals;
 	
 	*ppartial_completion = 1;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -758,8 +736,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 	else
 		return ecAccessDenied;
 	if (0 == notify_non_read) {
-		ids.count = pmessage_ids->count;
-		ids.pids = pmessage_ids->pll;
+		const EID_ARRAY ids = {pmessage_ids->count, pmessage_ids->pll};
 		if (!exmdb_client::delete_messages(dir, pinfo->cpid,
 		    username, pfolder->folder_id, &ids, b_hard, &b_partial))
 			return ecError;
@@ -767,8 +744,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		return ecSuccess;
 	}
 	b_partial = FALSE;
-	ids.count = 0;
-	ids.pids = cu_alloc<uint64_t>(pmessage_ids->count);
+	EID_ARRAY ids = {0, cu_alloc<uint64_t>(pmessage_ids->count)};
 	if (ids.pids == nullptr)
 		return ecError;
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
@@ -783,6 +759,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		}
 		static constexpr proptag_t proptag_buff[] = {PR_NON_RECEIPT_NOTIFICATION_REQUESTED, PR_READ};
 		static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
+		TPROPVAL_ARRAY tmp_propvals;
 		if (!exmdb_client::get_message_properties(dir, nullptr, CP_ACP,
 		    pmessage_ids->pll[i], &tmp_proptags, &tmp_propvals))
 			return ecError;

@@ -991,20 +991,13 @@ static bool mo_has_open_streams(message_object *pmessage, uint32_t proptag)
 static BOOL message_object_set_properties_internal(message_object *pmessage,
     BOOL b_check, const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems) try
 {
-	uint8_t tmp_bytes[3];
-	PROBLEM_ARRAY tmp_problems;
-	TPROPVAL_ARRAY tmp_propvals;
-	TPROPVAL_ARRAY tmp_propvals1;
-	TAGGED_PROPVAL propval_buff[3];
-	
 	if (!(pmessage->open_flags & MAPI_MODIFY))
 		return FALSE;
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
+	TPROPVAL_ARRAY tmp_propvals = {0, cu_alloc<TAGGED_PROPVAL>(ppropvals->count)};
 	if (tmp_propvals.ppropval == nullptr)
 		return FALSE;
 
@@ -1032,17 +1025,18 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 					continue;
 				}
 			} else if (pv.proptag == PR_MESSAGE_FLAGS) {
-				tmp_propvals1.count = 3;
-				tmp_propvals1.ppropval = propval_buff;
-				propval_buff[0].proptag = PR_READ;
-				propval_buff[0].pvalue = &tmp_bytes[0];
-				propval_buff[1].proptag = PR_READ_RECEIPT_REQUESTED;
-				propval_buff[1].pvalue = &tmp_bytes[1];
-				propval_buff[2].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
-				propval_buff[2].pvalue = &tmp_bytes[2];
-				tmp_bytes[0] = !!(*static_cast<uint32_t *>(pv.pvalue) & MSGFLAG_READ);
-				tmp_bytes[1] = !!(*static_cast<uint32_t *>(pv.pvalue) & MSGFLAG_RN_PENDING);
-				tmp_bytes[2] = !!(*static_cast<uint32_t *>(pv.pvalue) & MSGFLAG_NRN_PENDING);
+				uint8_t tb[] = {
+					!!(*static_cast<uint32_t *>(pv.pvalue) & MSGFLAG_READ),
+					!!(*static_cast<uint32_t *>(pv.pvalue) & MSGFLAG_RN_PENDING),
+					!!(*static_cast<uint32_t *>(pv.pvalue) & MSGFLAG_NRN_PENDING),
+				};
+				const TAGGED_PROPVAL propval_buff[] = {
+					{PR_READ, &tb[0]},
+					{PR_READ_RECEIPT_REQUESTED, &tb[1]},
+					{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &tb[2]},
+				};
+				const TPROPVAL_ARRAY tmp_propvals1 = {std::size(propval_buff), deconst(propval_buff)};
+				PROBLEM_ARRAY tmp_problems;
 				if (!exmdb_client::set_instance_properties(dir,
 				    pmessage->instance_id, &tmp_propvals1,
 				    &tmp_problems))
@@ -1054,6 +1048,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	}
 	if (tmp_propvals.count == 0)
 		return TRUE;
+	PROBLEM_ARRAY tmp_problems;
 	if (!exmdb_client::set_instance_properties(dir,
 	    pmessage->instance_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
@@ -1092,8 +1087,6 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems) try
 {
 	auto pmessage = this;
-	PROBLEM_ARRAY tmp_problems;
-	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!(pmessage->open_flags & MAPI_MODIFY))
 		return FALSE;
@@ -1101,8 +1094,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	std::vector<uint16_t> poriginal_indices;
@@ -1131,6 +1123,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
+	PROBLEM_ARRAY tmp_problems;
 	if (!exmdb_client::remove_instance_properties(pmessage->plogon->get_dir(),
 	    pmessage->instance_id, &tmp_proptags, &tmp_problems))
 		return FALSE;	
@@ -1247,12 +1240,8 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	uint32_t result;
 	uint64_t read_cn;
 	uint8_t tmp_byte;
-	PROBLEM_ARRAY problems;
-	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pbrief;
-	TPROPVAL_ARRAY propvals;
 	static constexpr uint8_t fake_false = 0;
-	TAGGED_PROPVAL propval_buff[2];
 	
 	auto rpc_info = get_rpc_info();
 	auto username = pmessage->plogon->is_private() ? nullptr : rpc_info.username;
@@ -1333,8 +1322,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		if (!(*v & MSGFLAG_UNMODIFIED))
 			return TRUE;
 		*v &= ~MSGFLAG_UNMODIFIED;
-		propval.proptag = PR_MESSAGE_FLAGS;
-		propval.pvalue = v;
+		const TAGGED_PROPVAL propval = {PR_MESSAGE_FLAGS, v};
 		if (!exmdb_client::set_instance_property(dir,
 		    pmessage->instance_id, &propval, &result))
 			return FALSE;
@@ -1349,8 +1337,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		if (!exmdb_client::set_message_read_state(dir,
 		    username, pmessage->message_id, tmp_byte, &read_cn))
 			return FALSE;
-		propval.proptag = PR_READ;
-		propval.pvalue = &tmp_byte;
+		const TAGGED_PROPVAL propval = {PR_READ, &tmp_byte};
 		if (!exmdb_client::set_instance_property(dir,
 		    pmessage->instance_id, &propval, &result))
 			return FALSE;	
@@ -1365,12 +1352,12 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	if (pbrief != nullptr)
 		common_util_notify_receipt(pmessage->plogon->get_account(),
 			NOTIFY_RECEIPT_READ, pbrief);
-	propvals.count = 2;
-	propvals.ppropval = propval_buff;
-	propval_buff[0].proptag = PR_READ_RECEIPT_REQUESTED;
-	propval_buff[0].pvalue  = deconst(&fake_false);
-	propval_buff[1].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
-	propval_buff[1].pvalue  = deconst(&fake_false);
+	const TAGGED_PROPVAL propval_buff[] = {
+		{PR_READ_RECEIPT_REQUESTED, deconst(&fake_false)},
+		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&fake_false)},
+	};
+	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
+	PROBLEM_ARRAY problems;
 	exmdb_client::set_instance_properties(dir,
 		pmessage->instance_id, &propvals, &problems);
 	exmdb_client::set_message_properties(dir,
