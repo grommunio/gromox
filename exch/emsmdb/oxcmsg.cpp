@@ -522,20 +522,15 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 	uint64_t message_id, uint8_t read_flag)
 {
 	void *pvalue;
-	BOOL b_notify;
-	BOOL b_changed;
 	uint64_t read_cn;
 	uint8_t tmp_byte;
 	PROBLEM_ARRAY problems;
 	MESSAGE_CONTENT *pbrief;
-	TPROPVAL_ARRAY propvals;
 	static constexpr uint8_t fake_false = 0;
-	TAGGED_PROPVAL propval_buff[2];
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto username = plogon->readstate_user();
-	b_notify = FALSE;
-	b_changed = FALSE;
+	BOOL b_notify = false, b_changed = false;
 	auto dir = plogon->get_dir();
 
 	read_flag &= ~rfReserved;
@@ -609,12 +604,11 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 	if (pbrief != nullptr)
 		common_util_notify_receipt(plogon->get_account(),
 			NOTIFY_RECEIPT_READ, pbrief);
-	propvals.count = 2;
-	propvals.ppropval = propval_buff;
-	propval_buff[0].proptag = PR_READ_RECEIPT_REQUESTED;
-	propval_buff[0].pvalue = deconst(&fake_false);
-	propval_buff[1].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
-	propval_buff[1].pvalue = deconst(&fake_false);
+	const TAGGED_PROPVAL propval_buff[] = {
+		{PR_READ_RECEIPT_REQUESTED, deconst(&fake_false)},
+		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&fake_false)},
+	};
+	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
 	exmdb_client::set_message_properties(dir, username,
 		CP_ACP, message_id, &propvals, &problems);
 	return TRUE;
@@ -641,14 +635,11 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 	if (pmessage_ids->count == 0) {
 		/* OXCMSG is missing documentation */
 		static constexpr uint8_t fake_false = false;
-		RESTRICTION_PROPERTY res_prop;
-		RESTRICTION res_top;
-		res_prop.relop = read_flags & rfClearReadFlag ? RELOP_NE : RELOP_EQ;
-		res_prop.proptag = PR_READ;
-		res_prop.propval.proptag = PR_READ;
-		res_prop.propval.pvalue = deconst(&fake_false);
-		res_top.rt = RES_PROPERTY;
-		res_top.pres = &res_prop;
+		const RESTRICTION_PROPERTY res_prop = {
+			read_flags & rfClearReadFlag ? RELOP_NE : RELOP_EQ,
+			PR_READ, {PR_READ, deconst(&fake_false)}
+		};
+		const RESTRICTION res_top = {RES_PROPERTY, deconst(&res_prop)};
 		uint32_t table_id = 0, row_count = 0;
 		auto username = plogon->readstate_user();
 		if (!exmdb_client::load_content_table(plogon->dir, CP_ACP,

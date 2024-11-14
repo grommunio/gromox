@@ -80,16 +80,14 @@ static std::unique_ptr<FOLDER_CONTENT>
 oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
     bool b_fai, bool b_normal, bool b_sub)
 {
-	uint32_t table_id;
-	uint32_t row_count;
 	TARRAY_SET tmp_set;
-	uint32_t permission;
 	EID_ARRAY *pmessage_ids;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	auto username = plogon->eff_user();
 	
 	if (username != STORE_OWNER_GRANTED) {
+		uint32_t permission = 0;
 		if (!exmdb_client::get_folder_perm(plogon->get_dir(),
 		    folder_id, username, &permission))
 			return NULL;	
@@ -131,6 +129,7 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	if (!b_sub)
 		return pfldctnt;
 
+	uint32_t table_id = 0, row_count = 0;
 	if (!exmdb_client::load_hierarchy_table(plogon->get_dir(),
 	    folder_id, username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
 	    &table_id, &row_count))
@@ -161,7 +160,6 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 {
 	ems_objtype object_type;
 	int root_element;
-	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (flags & ~FAST_DEST_CONFIG_FLAG_MOVE)
 		return ecInvalidParam;
@@ -209,8 +207,10 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 			PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
 		static constexpr PROPTAG_ARRAY tmp_proptags =
 			{std::size(proptag_buff), deconst(proptag_buff)};
+		TPROPVAL_ARRAY tmp_propvals;
 		if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
 			return ecError;
+
 		auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
 		uint64_t max_quota = ULLONG_MAX;
 		if (num != nullptr) {
@@ -369,8 +369,6 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 {
 	BOOL b_owner;
 	ems_objtype object_type;
-	EID_ARRAY *pmids;
-	uint32_t permission;
 	
 	if (!send_options_ok(send_options))
 		return ecInvalidParam;
@@ -386,6 +384,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 		return ecNotSupported;
 	auto username = plogon->eff_user();
 	if (username != STORE_OWNER_GRANTED) {
+		uint32_t permission = 0;
 		if (!exmdb_client::get_folder_perm(plogon->get_dir(),
 		    pfolder->folder_id, username, &permission))
 			return ecError;
@@ -399,7 +398,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 			}
 		}
 	}
-	pmids = eid_array_init();
+	auto pmids = eid_array_init();
 	if (pmids == nullptr)
 		return ecServerOOM;
 	if (!eid_array_batch_append(pmids, pmessage_ids->count,
