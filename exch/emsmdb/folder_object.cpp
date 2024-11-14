@@ -452,12 +452,10 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		ppropvals->count += tmp_propvals.count;
 	}
 	if (pproptags->has(PR_SOURCE_KEY) && !ppropvals->has(PR_SOURCE_KEY)) {
-		auto &pv = ppropvals->ppropval[ppropvals->count];
-		pv.proptag = PR_SOURCE_KEY;
-		pv.pvalue = cu_fid_to_sk(pfolder->plogon, pfolder->folder_id);
-		if (pv.pvalue == nullptr)
+		auto v = cu_fid_to_sk(pfolder->plogon, pfolder->folder_id);
+		if (v == nullptr)
 			return FALSE;
-		ppropvals->count ++;
+		ppropvals->emplace_back(PR_SOURCE_KEY, v);
 	}
 	return TRUE;	
 }

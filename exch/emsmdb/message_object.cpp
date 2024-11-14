@@ -1015,34 +1015,26 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	}
 	if (pmessage->pembedding == nullptr && pproptags->has(PR_SOURCE_KEY) &&
 	    !ppropvals->has(PR_SOURCE_KEY)) {
-		auto &pv = ppropvals->ppropval[ppropvals->count];
-		pv.proptag = PR_SOURCE_KEY;
-		pv.pvalue = cu_mid_to_sk(pmessage->plogon, pmessage->message_id);
-		if (pv.pvalue == nullptr)
+		auto v = cu_mid_to_sk(pmessage->plogon, pmessage->message_id);
+		if (v == nullptr)
 			return FALSE;
-		ppropvals->count ++;
+		ppropvals->emplace_back(PR_SOURCE_KEY, v);
 	}
 	if (pproptags->has(PR_MESSAGE_LOCALE_ID) &&
 	    !ppropvals->has(PR_MESSAGE_LOCALE_ID)) {
 		void *pvalue = nullptr;
-		auto &pv = ppropvals->ppropval[ppropvals->count];
-		pv.proptag = PR_MESSAGE_LOCALE_ID;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (exmdb_client::get_instance_property(dir,
 		    pmessage->instance_id, PR_INTERNET_CPID, &pvalue) &&
 		    pvalue != nullptr && pinfo->cpid == *static_cast<uint32_t *>(pvalue))
-			pv.pvalue = &pinfo->lcid_string;
+			pvalue = &pinfo->lcid_string;
 		else
-			pv.pvalue = deconst(&lcid_default);
-		ppropvals->count ++;
+			pvalue = deconst(&lcid_default);
+		ppropvals->emplace_back(PR_MESSAGE_LOCALE_ID, pvalue);
 	}
 	if (pproptags->has(PR_MESSAGE_CODEPAGE) &&
-	    !ppropvals->has(PR_MESSAGE_CODEPAGE)) {
-		auto &pv = ppropvals->ppropval[ppropvals->count];
-		pv.proptag = PR_MESSAGE_CODEPAGE;
-		pv.pvalue  = deconst(&pmessage->cpid);
-		ppropvals->count ++;
-	}
+	    !ppropvals->has(PR_MESSAGE_CODEPAGE))
+		ppropvals->emplace_back(PR_MESSAGE_CODEPAGE, &pmessage->cpid);
 	return TRUE;	
 }
 

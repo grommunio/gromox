@@ -176,10 +176,7 @@ static int instance_get_body_unspec(MESSAGE_CONTENT *mc, TPROPVAL_ARRAY *pval)
 		return -1;
 	tpv->type   = unicode_body ? PT_UNICODE : PT_STRING8;
 	tpv->pvalue = bin->pv;
-	auto &pv    = pval->ppropval[pval->count];
-	pv.proptag  = CHANGE_PROP_TYPE(PR_BODY, PT_UNSPECIFIED);
-	pv.pvalue   = tpv;
-	++pval->count;
+	pval->emplace_back(CHANGE_PROP_TYPE(PR_BODY, PT_UNSPECIFIED), tpv);
 	return 1;
 }
 
@@ -201,11 +198,7 @@ static int instance_get_body_utf8(MESSAGE_CONTENT *mc, cpid_t cpid,
 		ret = instance_conv_textfromhigher(mc, bin);
 	if (ret <= 0)
 		return ret;
-
-	auto &pv   = pval->ppropval[pval->count];
-	pv.proptag = PR_BODY_W;
-	pv.pvalue  = bin->pc;
-	++pval->count;
+	pval->emplace_back(PR_BODY_W, bin->pc);
 	return 1;
 }
 
@@ -233,11 +226,7 @@ static int instance_get_body_8bit(MESSAGE_CONTENT *mc, cpid_t cpid,
 	}
 	if (ret <= 0)
 		return ret;
-
-	auto &pv   = pval->ppropval[pval->count];
-	pv.proptag = PR_BODY_A;
-	pv.pvalue  = bin->pc;
-	++pval->count;
+	pval->emplace_back(PR_BODY_A, bin->pc);
 	return 1;
 }
 
@@ -254,10 +243,7 @@ static int instance_get_html(MESSAGE_CONTENT *mc, cpid_t cpid,
 	}
 	if (ret <= 0)
 		return ret;
-	auto &pv   = pval->ppropval[pval->count];
-	pv.proptag = PR_HTML;
-	pv.pvalue  = bin;
-	++pval->count;
+	pval->emplace_back(PR_HTML, bin);
 	return 1;
 }
 
@@ -289,10 +275,7 @@ static int instance_get_rtfcp(MESSAGE_CONTENT *mc, cpid_t cpid,
 		ret = instance_conv_rtfcpfromlower(mc, cpid, bin);
 	if (ret <= 0)
 		return ret;
-	auto &pv   = pval->ppropval[pval->count];
-	pv.proptag = PR_RTF_COMPRESSED;
-	pv.pvalue  = bin;
-	++pval->count;
+	pval->emplace_back(PR_RTF_COMPRESSED, bin);
 	return 1;
 }
 
