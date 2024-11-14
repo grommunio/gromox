@@ -147,3 +147,30 @@ pack_result EXT_PUSH::p_fbevent(const freebusy_event &r)
 	}
 	return pack_result::ok;
 }
+
+static pack_result ext_push_persistdata(EXT_PUSH &x, const PERSISTDATA &r)
+{
+	TRY(x.p_uint16(r.persist_id));
+	if (r.persist_id == PERSIST_SENTINEL)
+		return x.p_uint16(0);
+	if (r.element_id == RSF_ELID_HEADER) {
+		TRY(x.p_uint16(8));
+		TRY(x.p_uint16(r.element_id));
+		TRY(x.p_uint16(4));
+		return x.p_uint32(0);
+	} else if (r.element_id == RSF_ELID_ENTRYID) {
+		uint16_t z = std::min(r.pentry_id->cb, static_cast<uint32_t>(UINT16_MAX - 2));
+		TRY(x.p_uint16(2 + z));
+		TRY(x.p_uint16(r.element_id));
+		TRY(x.p_uint16(z));
+		return x.p_bytes(r.pentry_id->pv, z);
+	}
+	return pack_result::bad_switch;
+}
+
+pack_result EXT_PUSH::p_persistdata_a(std::span<const PERSISTDATA> pdlist)
+{
+	for (const auto &pd : pdlist)
+		TRY(ext_push_persistdata(*this, pd));
+	return ext_push_persistdata(*this, {PERSIST_SENTINEL, ELEMENT_SENTINEL});
+}

@@ -478,11 +478,6 @@ enum {
 #define RSF_ELID_ENTRYID							0x0001
 #define ELEMENT_SENTINEL							0x0000
 
-struct PERSISTELEMENT {
-	uint16_t element_id;
-	BINARY *pentry_id;
-};
-
 #define RSF_PID_RSS_SUBSCRIPTION					0x8001
 #define RSF_PID_SEND_AND_TRACK						0x8002
 #define RSF_PID_TODO_SEARCH							0x8004
@@ -495,14 +490,8 @@ struct PERSISTELEMENT {
 #define PERSIST_SENTINEL							0x0000
 
 struct PERSISTDATA {
-	uint16_t persist_id;
-	PERSISTELEMENT element;
-};
-
-struct PERSISTDATA_ARRAY {
-	uint8_t count;
-	PERSISTDATA **ppitems;
-	I_BEGIN_END(ppitems, count);
+	uint16_t persist_id = 0, element_id = 0;
+	BINARY *pentry_id = nullptr;
 };
 
 /* aggregated permissions for delegation */

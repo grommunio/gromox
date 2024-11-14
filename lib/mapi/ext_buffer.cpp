@@ -3171,50 +3171,6 @@ pack_result EXT_PUSH::p_oneoff_eid(const ONEOFF_ENTRYID &r)
 	}
 }
 
-static pack_result ext_buffer_push_persistelement(EXT_PUSH *pext,
-    const PERSISTELEMENT *r)
-{
-	TRY(pext->p_uint16(r->element_id));
-	switch (r->element_id) {
-	case RSF_ELID_HEADER:
-		TRY(pext->p_uint16(4));
-		return pext->p_uint32(0);
-	case RSF_ELID_ENTRYID:
-		return pext->p_bin(*r->pentry_id);
-	default:
-		return EXT_ERR_BAD_SWITCH;
-	}
-}
-
-static pack_result ext_buffer_push_persistdata(EXT_PUSH *pext, const PERSISTDATA *r)
-{
-	auto &ext = *pext;
-	TRY(pext->p_uint16(r->persist_id));
-	if (r->persist_id == PERSIST_SENTINEL)
-		return pext->p_uint16(0);
-	uint32_t offset = ext.m_offset;
-	TRY(pext->advance(sizeof(uint16_t)));
-	TRY(ext_buffer_push_persistelement(pext, &r->element));
-	uint16_t tmp_size = ext.m_offset - (offset + sizeof(uint16_t));
-	uint32_t offset1 = ext.m_offset;
-	ext.m_offset = offset;
-	TRY(pext->p_uint16(tmp_size));
-	ext.m_offset = offset1;
-	return EXT_ERR_SUCCESS;
-}
-
-pack_result EXT_PUSH::p_persistdata_a(const PERSISTDATA_ARRAY &r)
-{
-	PERSISTDATA last_data;
-	
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(ext_buffer_push_persistdata(this, r.ppitems[i]));
-	last_data.persist_id = PERSIST_SENTINEL;
-	last_data.element.element_id = ELEMENT_SENTINEL;
-	last_data.element.pentry_id = NULL;
-	return ext_buffer_push_persistdata(this, &last_data);
-}
-
 pack_result EXT_PUSH::p_eid_a(const EID_ARRAY &r)
 {
 	TRY(p_uint32(r.count));

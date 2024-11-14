@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
@@ -96,7 +97,7 @@ struct MODIFYRECIPIENT_ROW;
 struct NAMEDPROPERTY_INFO;
 struct OPENRECIPIENT_ROW;
 struct PERMISSION_DATA;
-struct PERSISTDATA_ARRAY;
+struct PERSISTDATA;
 struct PROBLEM_ARRAY;
 struct PROPERTY_ROW;
 struct READRECIPIENT_ROW;
@@ -306,7 +307,7 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_rule_data(const RULE_DATA &);
 	pack_result p_abk_eid(const EMSAB_ENTRYID &);
 	pack_result p_oneoff_eid(const ONEOFF_ENTRYID &);
-	pack_result p_persistdata_a(const PERSISTDATA_ARRAY &);
+	pack_result p_persistdata_a(std::span<const PERSISTDATA>);
 	pack_result p_eid_a(const EID_ARRAY &);
 	pack_result p_systime(const SYSTEMTIME &);
 	pack_result p_tzstruct(const TIMEZONESTRUCT &);
