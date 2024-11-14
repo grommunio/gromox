@@ -92,12 +92,8 @@ static uint32_t fastupctx_object_get_last_message_instance(fastupctx_object *pct
 static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
     uint64_t parent_id, TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
 {
-	uint64_t tmp_id;
 	uint32_t tmp_type;
 	uint64_t change_num;
-	uint32_t permission;
-	PERMISSION_DATA permission_row;
-	TAGGED_PROPVAL propval_buff[10];
 	
 	static constexpr uint32_t tags[] = {
 		PR_ACCESS, PR_ACCESS_LEVEL, PR_ADDRESS_BOOK_ENTRYID,
@@ -147,21 +143,20 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	auto username = pctx->pstream->plogon->eff_user();
 	if (username == STORE_OWNER_GRANTED)
 		return TRUE;
+
 	/* Make some ACLs so this user can access later what they have just created. */
 	auto pentryid = common_util_username_to_addressbook_entryid(username);
 	if (pentryid == nullptr)
 		return TRUE;
-	tmp_id = 1;
-	permission = rightsGromox7;
-	permission_row.flags = ROW_ADD;
-	permission_row.propvals.count = 3;
-	permission_row.propvals.ppropval = propval_buff;
-	propval_buff[0].proptag = PR_ENTRYID;
-	propval_buff[0].pvalue = pentryid;
-	propval_buff[1].proptag = PR_MEMBER_ID;
-	propval_buff[1].pvalue = &tmp_id;
-	propval_buff[2].proptag = PR_MEMBER_RIGHTS;
-	propval_buff[2].pvalue = &permission;
+	uint64_t tmp_id = 1;
+	uint32_t permission = rightsGromox7;
+	const TAGGED_PROPVAL propval_buff[] = {
+		{PR_ENTRYID, pentryid},
+		{PR_MEMBER_ID, &tmp_id},
+		{PR_MEMBER_RIGHTS, &permission},
+	};
+	const PERMISSION_DATA permission_row =
+		{ROW_ADD, {std::size(propval_buff), deconst(propval_buff)}};
 	exmdb_client::update_folder_permission(dir,
 		*pfolder_id, FALSE, 1, &permission_row);
 	return TRUE;
@@ -230,7 +225,6 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 	TARRAY_SET *prcpts;
 	uint64_t folder_id;
 	uint32_t instance_id;
-	TARRAY_SET tmp_rcpts;
 	fxup_marker_node new_mark{}, *pmarker = &new_mark;
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
 	TPROPVAL_ARRAY *pproplist, *prcpt = nullptr;
@@ -413,8 +407,7 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 			return ecRpcFailed;
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
-			tmp_rcpts.count = 1;
-			tmp_rcpts.pparray = &m_props;
+			const TARRAY_SET tmp_rcpts = {1, &m_props};
 			if (!exmdb_client::update_message_instance_rcpts(dir,
 			    pnode->instance_id, &tmp_rcpts))
 				return ecRpcFailed;
@@ -709,17 +702,13 @@ ec_error_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 			       ecSuccess : ecRpcFailed;
 		case ROOT_ELEMENT_MESSAGECONTENT: {
 			auto msg = static_cast<message_object *>(pctx->pobject);
-			TPROPVAL_ARRAY av;
-			av.count = 1;
-			av.ppropval = deconst(ppropval);
+			const TPROPVAL_ARRAY av = {1, deconst(ppropval)};
 			PROBLEM_ARRAY pa;
 			return msg->set_properties(&av, &pa) == TRUE ? ecSuccess : ecRpcFailed;
 		}
 		case ROOT_ELEMENT_ATTACHMENTCONTENT: {
 			auto atx = static_cast<attachment_object *>(pctx->pobject);
-			TPROPVAL_ARRAY av;
-			av.count = 1;
-			av.ppropval = deconst(ppropval);
+			const TPROPVAL_ARRAY av = {1, deconst(ppropval)};
 			PROBLEM_ARRAY pa;
 			return atx->set_properties(&av, &pa) == TRUE ? ecSuccess : ecRpcFailed;
 		}

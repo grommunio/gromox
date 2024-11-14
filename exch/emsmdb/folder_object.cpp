@@ -393,8 +393,6 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals) const
 {
-	PROPTAG_ARRAY tmp_proptags;
-	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -403,8 +401,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
@@ -421,6 +418,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
+	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client::get_folder_properties(pfolder->plogon->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
@@ -442,12 +440,9 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems) try
 {
-	uint16_t count;
 	BINARY *pbin_pcl;
 	uint64_t last_time;
 	uint64_t change_num;
-	PROBLEM_ARRAY tmp_problems;
-	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
@@ -456,9 +451,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	tmp_propvals.count = 0;
-	count = ppropvals->count + 4;
-	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(count);
+	TPROPVAL_ARRAY tmp_propvals = {0, cu_alloc<TAGGED_PROPVAL>(ppropvals->count + 4)};
 	if (tmp_propvals.ppropval == nullptr)
 		return FALSE;
 	std::vector<uint16_t> poriginal_indices;
@@ -494,6 +487,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	tmp_propvals.emplace_back(PR_PREDECESSOR_CHANGE_LIST, pbin_pcl);
 	tmp_propvals.emplace_back(PR_LAST_MODIFICATION_TIME, &last_time);
 	
+	PROBLEM_ARRAY tmp_problems;
 	if (!exmdb_client::set_folder_properties(pfolder->plogon->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
@@ -510,20 +504,13 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems)
 {
-	BINARY *pbin_pcl;
-	uint64_t last_time;
 	uint64_t change_num;
-	PROBLEM_ARRAY tmp_problems;
-	PROPTAG_ARRAY tmp_proptags;
-	TPROPVAL_ARRAY tmp_propvals;
-	TAGGED_PROPVAL propval_buff[4];
 	
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	auto pfolder = this;
@@ -540,29 +527,29 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	if (!exmdb_client::remove_folder_properties(dir,
 	    pfolder->folder_id, &tmp_proptags))
 		return FALSE;	
-	tmp_propvals.count = 4;
-	tmp_propvals.ppropval = propval_buff;
+
+	BINARY *pbin_pcl = nullptr;
 	if (!exmdb_client::allocate_cn(dir, &change_num))
 		return TRUE;
 	if (!exmdb_client::get_folder_property(dir,
 	    CP_ACP, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)))
 		return FALSE;
-	propval_buff[0].proptag = PidTagChangeNumber;
-	propval_buff[0].pvalue = &change_num;
 	auto pbin_changekey = cu_xid_to_bin({pfolder->plogon->guid(), change_num});
 	if (pbin_changekey == nullptr)
 		return FALSE;
 	pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
 	if (pbin_pcl == nullptr)
 		return FALSE;
-	last_time = rop_util_current_nttime();
-	propval_buff[1].proptag = PR_CHANGE_KEY;
-	propval_buff[1].pvalue = pbin_changekey;
-	propval_buff[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
-	propval_buff[2].pvalue = pbin_pcl;
-	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
-	propval_buff[3].pvalue = &last_time;
+	auto last_time = rop_util_current_nttime();
+	const TAGGED_PROPVAL propval_buff[] = {
+		{PidTagChangeNumber, &change_num},
+		{PR_CHANGE_KEY, pbin_changekey},
+		{PR_PREDECESSOR_CHANGE_LIST, pbin_pcl},
+		{PR_LAST_MODIFICATION_TIME, &last_time},
+	};
+	const TPROPVAL_ARRAY tmp_propvals = {std::size(propval_buff), deconst(propval_buff)};
+	PROBLEM_ARRAY tmp_problems;
 	exmdb_client::set_folder_properties(dir, CP_ACP,
 		pfolder->folder_id, &tmp_propvals, &tmp_problems);
 	return TRUE;

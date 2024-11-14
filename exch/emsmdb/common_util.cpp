@@ -896,7 +896,6 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 	TPROPVAL_ARRAY *ppropvals)
 {
 	static constexpr uint8_t persist_true = true, persist_false = false;
-	PROPTAG_ARRAY tmp_columns;
 	BOOL b_unicode = (prow->flags & RECIPIENT_ROW_FLAG_UNICODE) ? TRUE : false;
 	
 	cu_set_propval(ppropvals, PR_RESPONSIBILITY, (prow->flags & RECIPIENT_ROW_FLAG_RESPONSIBLE) ? &persist_true : &persist_false);
@@ -947,8 +946,8 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 		/* we do not support other address types */
 		return FALSE;
 	}
-	tmp_columns.count = prow->count;
-	tmp_columns.pproptag = pcolumns->pproptag;
+
+	const PROPTAG_ARRAY tmp_columns = {prow->count, pcolumns->pproptag};
 	if (!common_util_row_to_propvals(&prow->properties, &tmp_columns, ppropvals))
 		return FALSE;	
 	auto str = ppropvals->get<const char>(PR_DISPLAY_NAME);
@@ -1277,20 +1276,17 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	uint32_t *pgroup_id;
 	uint64_t change_num;
 	PROBLEM_ARRAY tmp_problems;
-	TPROPVAL_ARRAY tmp_propvals;
-	TAGGED_PROPVAL propval_buff[2];
 	auto dir = plogon->get_dir();
 	
 	if (!exmdb_client::allocate_cn(dir, &change_num))
 		return FALSE;	
-	tmp_propvals.count = 2;
-	tmp_propvals.ppropval = propval_buff;
-	propval_buff[0].proptag = PidTagChangeNumber;
-	propval_buff[0].pvalue = &change_num;
-	propval_buff[1].proptag = PR_CHANGE_KEY;
-	propval_buff[1].pvalue = cu_xid_to_bin({plogon->guid(), change_num});
+	const TAGGED_PROPVAL propval_buff[] = {
+		{PidTagChangeNumber, &change_num},
+		{PR_CHANGE_KEY, cu_xid_to_bin({plogon->guid(), change_num})},
+	};
 	if (propval_buff[1].pvalue == nullptr)
 		return FALSE;
+	const TPROPVAL_ARRAY tmp_propvals = {std::size(propval_buff), deconst(propval_buff)};
 	if (!exmdb_client::set_message_properties(dir, nullptr, CP_ACP,
 	    message_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
@@ -1430,7 +1426,6 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 	MAIL imail;
 	void *pvalue;
 	BOOL b_result;
-	EID_ARRAY ids;
 	BOOL b_partial;
 	uint64_t new_id;
 	uint64_t folder_id;
@@ -1564,12 +1559,13 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 		        LLU{rop_util_get_gc_value(message_id)});
 		return ecWarnWithErrors;
 	}
-	ids.count = 1;
-	ids.pids = &message_id;
+
 	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
 	if (ptarget == nullptr ||
 	    !cu_entryid_to_fid(plogon, ptarget, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
+
+	const EID_ARRAY ids = {1, &message_id};
 	if (!exmdb_client::movecopy_messages(dir, cpid,
 	    false, STORE_OWNER_GRANTED, parent_id, folder_id, false,
 	    &ids, &b_partial)) {

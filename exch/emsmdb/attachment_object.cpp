@@ -56,29 +56,18 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 BOOL attachment_object::init_attachment()
 {
 	auto pattachment = this;
-	PROBLEM_ARRAY problems;
-	TPROPVAL_ARRAY propvals;
-	
 	if (!pattachment->b_new)
 		return FALSE;
-	propvals.count = 0;
-	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(4);
-	if (propvals.ppropval == nullptr)
-		return FALSE;
-	
-	propvals.emplace_back(PR_ATTACH_NUM, &pattachment->attachment_num);
-	auto rendpos = cu_alloc<uint32_t>();
-	if (rendpos == nullptr)
-		return FALSE;
-	*rendpos = indet_rendering_pos;
-	propvals.emplace_back(PR_RENDERING_POSITION, rendpos);
-	
-	auto modtime = cu_alloc<uint64_t>();
-	if (modtime == nullptr)
-		return FALSE;
-	*modtime = rop_util_current_nttime();
-	propvals.emplace_back(PR_CREATION_TIME, modtime);
-	propvals.emplace_back(PR_LAST_MODIFICATION_TIME, modtime);
+	uint32_t rendpos = indet_rendering_pos;
+	auto modtime = rop_util_current_nttime();
+	const TAGGED_PROPVAL propbuf[] = {
+		{PR_ATTACH_NUM, &pattachment->attachment_num},
+		{PR_RENDERING_POSITION, &rendpos},
+		{PR_CREATION_TIME, &modtime},
+		{PR_LAST_MODIFICATION_TIME, &modtime},
+	};
+	const TPROPVAL_ARRAY propvals = {std::size(propbuf), deconst(propbuf)};
+	PROBLEM_ARRAY problems;
 	return exmdb_client::set_instance_properties(pattachment->pparent->plogon->get_dir(),
 	       pattachment->instance_id, &propvals, &problems);
 }
@@ -99,22 +88,19 @@ void attachment_object::set_open_flags(uint8_t f)
 ec_error_t attachment_object::save()
 {
 	auto pattachment = this;
-	uint64_t nt_time;
-	PROBLEM_ARRAY tmp_problems;
-	TAGGED_PROPVAL tmp_propval;
-	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (!b_touched && !b_new)
 		return ecSuccess;
-	tmp_propvals.count = 1;
-	tmp_propvals.ppropval = &tmp_propval;
 	if (!flush_streams())
 		return ecRpcFailed;
-	tmp_propval.proptag = PR_LAST_MODIFICATION_TIME;
-	nt_time = rop_util_current_nttime();
-	tmp_propval.pvalue = &nt_time;
+
+	auto nt_time = rop_util_current_nttime();
+	const TAGGED_PROPVAL propbuf[] = {{PR_LAST_MODIFICATION_TIME, &nt_time}};
+	const TPROPVAL_ARRAY tmp_propvals = {std::size(propbuf), deconst(propbuf)};
+	PROBLEM_ARRAY tmp_problems;
 	if (!set_properties(&tmp_propvals, &tmp_problems))
 		return ecRpcFailed;
+
 	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::flush_instance(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, &e_result) || e_result != ecSuccess)
@@ -269,15 +255,12 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
     const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals) const
 {
 	auto pattachment = this;
-	PROPTAG_ARRAY tmp_proptags;
-	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError;
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
@@ -300,6 +283,7 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
+	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client::get_instance_properties(pattachment->pparent->plogon->get_dir(),
 	    size_limit, pattachment->instance_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
@@ -324,15 +308,12 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems) try
 {
 	auto pattachment = this;
-	PROBLEM_ARRAY tmp_problems;
-	TPROPVAL_ARRAY tmp_propvals;
 	
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
+	TPROPVAL_ARRAY tmp_propvals = {0, cu_alloc<TAGGED_PROPVAL>(ppropvals->count)};
 	if (tmp_propvals.ppropval == nullptr)
 		return FALSE;
 	std::vector<uint16_t> poriginal_indices;
@@ -348,6 +329,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	}
 	if (tmp_propvals.count == 0)
 		return TRUE;
+	PROBLEM_ARRAY tmp_problems;
 	if (!exmdb_client::set_instance_properties(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
@@ -373,15 +355,12 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems) try
 {
 	auto pattachment = this;
-	PROBLEM_ARRAY tmp_problems;
-	PROPTAG_ARRAY tmp_proptags;
 	
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	std::vector<uint16_t> poriginal_indices;
@@ -397,6 +376,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
+	PROBLEM_ARRAY tmp_problems;
 	if (!exmdb_client::remove_instance_properties(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, &tmp_proptags, &tmp_problems))
 		return FALSE;	
