@@ -259,8 +259,9 @@ BOOL exmdb_server::get_folder_by_name(const char *dir,
  * The folder's own EID plays no role in locality considerations.
  */
 BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
-    TPROPVAL_ARRAY *pproperties, uint64_t *pfolder_id, ec_error_t *errcode)
+    const TPROPVAL_ARRAY *inputset, uint64_t *pfolder_id, ec_error_t *errcode)
 {
+	TPROPVAL_ARRAY wset = *inputset, *pproperties = &wset;
 	BOOL b_result;
 	uint32_t type = 0, parent_type = 0;
 	uint64_t tmp_fid = 0, folder_id = 0;
@@ -483,7 +484,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 }
 
 BOOL exmdb_server::create_folder_v1(const char *dir, cpid_t cpid,
-    TPROPVAL_ARRAY *props, uint64_t *newfid)
+    const TPROPVAL_ARRAY *props, uint64_t *newfid)
 {
 	ec_error_t err = ecSuccess;
 	auto ret = create_folder(dir, cpid, props, newfid, &err);
