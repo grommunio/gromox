@@ -214,7 +214,6 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_proplist;
 	static constexpr uint8_t fake_byte = 0;
-	PERSISTDATA_ARRAY persistdatas;
 	TPROPVAL_ARRAY *pproplist_deletions;
 	
 	if (pctx->sync_type != SYNC_TYPE_HIERARCHY)
@@ -381,33 +380,15 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			auto bv = cu_alloc<BINARY>();
 			if (bv == nullptr)
 				return FALSE;
-			persistdatas.count = 3;
-			persistdatas.ppitems = cu_alloc<PERSISTDATA *>(persistdatas.count);
-			if (persistdatas.ppitems == nullptr)
-				return FALSE;
-			auto ppersistdata = cu_alloc<PERSISTDATA>(persistdatas.count);
-			if (ppersistdata == nullptr)
-				return FALSE;
-			persistdatas.ppitems[0] = ppersistdata;
-			persistdatas.ppitems[0]->persist_id = RSF_PID_CONV_ACTIONS;
-			persistdatas.ppitems[0]->element.element_id = RSF_ELID_ENTRYID;
-			persistdatas.ppitems[0]->element.pentry_id =
-				cu_fid_to_entryid(pctx->pstream->plogon,
-				rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS));
-			persistdatas.ppitems[1] = ppersistdata + 1;
-			persistdatas.ppitems[1]->persist_id = RSF_PID_BUDDYLIST_PDLS;
-			persistdatas.ppitems[1]->element.element_id = RSF_ELID_ENTRYID;
-			persistdatas.ppitems[1]->element.pentry_id =
-				cu_fid_to_entryid(pctx->pstream->plogon,
-				rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST));
-			persistdatas.ppitems[2] = ppersistdata + 2;
-			persistdatas.ppitems[2]->persist_id = RSF_PID_BUDDYLIST_CONTACTS;
-			persistdatas.ppitems[2]->element.element_id = RSF_ELID_ENTRYID;
-			persistdatas.ppitems[2]->element.pentry_id =
-				cu_fid_to_entryid(pctx->pstream->plogon,
-				rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS));
+			const PERSISTDATA pd[] = {
+				{RSF_PID_CONV_ACTIONS, {RSF_ELID_ENTRYID, cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))}},
+				{RSF_PID_BUDDYLIST_PDLS, {RSF_ELID_ENTRYID, cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST))}},
+				{RSF_PID_BUDDYLIST_CONTACTS, {RSF_ELID_ENTRYID, cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS))}},
+			};
+			const PERSISTDATA *const pd_ptrs[] = {&pd[0], &pd[1], &pd[2]};
+			const PERSISTDATA_ARRAY ptr_arr = {std::size(pd_ptrs), const_cast<PERSISTDATA **>(pd_ptrs)};
 			if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
-			    ext_push.p_persistdata_a(persistdatas) != EXT_ERR_SUCCESS)
+			    ext_push.p_persistdata_a(ptr_arr) != pack_result::ok)
 				return false;
 			bv->cb = ext_push.m_offset;
 			bv->pv = common_util_alloc(bv->cb);
