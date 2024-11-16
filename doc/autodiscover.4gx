@@ -107,9 +107,11 @@ finely control emission in case of clients other than Outlook.
 Default: \fIyes\fP
 .TP
 \fBoxdisco_exonym\fP
-Globally valid name pointing to the Autodiscover server.
+Globally valid name pointing to a default mailbox server in the Gromox server
+forest. (Since AutoDiscover nodes are also mailbox nodes, the exonym should
+simply be: this server's hostname).
 .br
-Default: (same value as host_id)
+Default: (inherited from http.cfg:host_id, which defaults to the system FQDN)
 .TP
 \fBoxdisco_pretty_response\fP
 A debugging knob to make the module emit indented XML responses.
