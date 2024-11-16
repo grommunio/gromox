@@ -9,83 +9,9 @@ responder)
 A client would make a HTTP request to the /Autodiscover/Autodiscover.xml
 endpoint, which is handled by the Gromox oxdisco plugin.
 .PP
-The Autodiscover response contains a HTTP server (generally the HTTP home
-server) and the designated choice for protocol framing. A client uses this to
-set up the EMSMDB MAPI service within a MAPI profile. Because the HTTP home
-server is then known, Autodiscover is not used again when making a connection
-to the message store service. However, the Address Book always issues
-Autodiscover requests. (In other words, removing the DNS entry for the
-Autodiscover server after a profile is set up would break the address book, but
-not the message store.)
-.SH URL derivation
-Autodiscover (DS) clients can locate an Autodiscover server using a number of
-methods. MS-OXDISCO \(sc 3.1.5 specifies the following order, and that clients
-should do all of them:
-.IP 1. 4
-Query a "well-known LDAP server" (in other words, the ActiveDirectory server if
-a client is a Windows Domain member) for Service Connection Points (SCP), which
-contains AutoDiscover server names.
-.IP 2. 4
-String construction based on the user's e-mail address; for user@example.com,
-retrieval of
-\fBhttps://\fP\fIexample.com\fP\fB/autodiscover/autodiscover.xml\fP using the
-HTTP POST method.
-.IP 3. 4
-Retrieval of
-\fBhttps://autodiscover.\fP\fIexample.com\fP\fB/autodiscover/autodiscover.xml\fP
-using the HTTP POST method.
-.IP 4. 4
-Lookup of any DNS SRV resource records for "_autodiscover._tcp.example.com",
-and if found, using it to retrieve
-\fBhttps://\fP\fIsrv-result-name\fP\fB/autodiscover/autodiscover.xml\fP.
-.IP 5. 4
-Retrieval of
-\fBhttps://autodiscover.\fP\fIexample.com\fP\fB/autodiscover/autodiscover.xml\fP
-using the HTTP GET method, following any HTTP 302 response.
-.SH Outlook behavior
-Outlook uses the following actions:
-.IP 1. 4
-DNS TXT query for the domain; if there is an entry with e.g. ``MS=ms66406244``,
-retrieves https://outlook.office365.com/autodiscover/autodiscover.xml.
-.IP 2. 4
-LDAP/SCP (only if joined to a Windows Domain)
-.IP 3. 4
-HTTP POST to example.com as per the above
-.IP 4. 4
-HTTP POST to autodiscover.example.com as per the above
-.IP 5. 4
-DNS SRV resolution as per the above
-.IP 6. 4
-Something referred to as "local mechanism"
-.IP 7. 4
-Redirect check/HTTP GET to autodiscover.example.com as per the above
-.PP
-Under some circumstances, Outlook's evaluation order may be different; we have
-observed {O365, SCP, POST, POST, Local, Redirect, Redirect, SRV} as well.
-.PP
-Their AutoDiscovery implementation treats a non-responsive server
-(firewall DROP policy, or TCP RST) the same as a 404 Not Found response.
-.PP
-Furthermore, there is a bug in Outlook or the Windows HTTP libraries which
-erroneously presents a warning dialog whenever the hostname obtained through
-resolution of an SRV record does not match the domain name. Redirection is
-however the central idea of an SRV record and, as far as security
-considerations go, is no more significant than following a CNAME-typed
-autodiscover.example.com record.
-.PP
-To force using a particular Autodiscover server in Windows, such as when Gromox
-is run in a development environment with a fake domain,
-c:\\windows\\system32\\drivers\\etc\\hosts can be populated with a static entry
-for \fBautodiscover.\fP\fIexample.com\fP to get that particular scenario
-working.
-.SH gromox-dscli behavior
-The gromox-dscli command-line utility uses this order:
-.IP 1. 4
-HTTP POST to example.com as per the above
-.IP 2. 4
-HTTP POST to autodiscover.example.com as per the above
-.IP 3. 4
-DNS SRV as per the above
+The Autodiscover response contains the home server name and protocol options
+(MAPI-RPC-HTTP, MAPIHTTP, IMAP, etc.). A client uses this to set up the mailbox
+with MAPI services (like ``MSEMS`` or ``INTERSTOR``) within a MAPI profile.
 .SH Configuration directives (gromox.cfg)
 The following directives are recognized when they appear in
 /etc/gromox/gromox.cfg.
@@ -169,4 +95,4 @@ MS-OXDISCO: Autodiscover HTTP Service Protocol
 .IP \(bu 4
 MS-OXDSCLI: Autodiscover Publishing and Lookup Protocol
 .SH See also
-\fBgromox\fP(7)
+\fBgromox\fP(7), \fBautodiscover\fP(7)
