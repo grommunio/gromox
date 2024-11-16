@@ -338,7 +338,7 @@ static constexpr char tbl_replguidmap_14[] =
 static constexpr char tbl_fixsyseidalloc_15[] =
 "INSERT INTO allocated_eids (range_begin,range_end,allocate_time,is_system) "
 "VALUES ((SELECT MAX(range_end)+1 FROM allocated_eids), "
-"(SELECT MAX(range_end)+0x10000 FROM allocated_eids),UNIXEPOCH(),1)";
+"(SELECT MAX(range_end)+0x10000 FROM allocated_eids),0,1)";
 
 static constexpr char tbl_fixsyseidalloc_16[] =
 "UPDATE configurations SET config_value=(SELECT MAX(range_begin) FROM allocated_eids) WHERE config_id=2"; // CONIFG_ID_CURRENT_EID
