@@ -434,7 +434,7 @@ errno_t mysql_adaptor_scndstore_hints(unsigned int pri,
 	return ENOMEM;
 }
 
-static int mysql_adaptor_domain_list_query(const char *domain) try
+int mysql_adaptor_domain_list_query(const char *domain) try
 {
 	auto conn = g_sqlconn_pool.get_wait();
 	auto qstr = "SELECT 1 FROM domains WHERE domain_status=0 AND domainname='" +

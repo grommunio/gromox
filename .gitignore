@@ -80,6 +80,7 @@ Makefile.in
 /tests/lzxpress
 /tests/oxcmail_ie
 /tests/ucvttest
+/tests/udb
 /tests/utiltest
 /tests/vcard
 /tests/zendfake

@@ -129,6 +129,8 @@ BOOL mysql_adaptor_check_mlist_include(
 extern BOOL mysql_adaptor_check_same_org2(const char *domainname1, const char *domainname2);
 extern BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from, int *presult, std::vector<std::string> &);
 extern gromox::errno_t mysql_adaptor_get_homeserver(const char *ent, bool is_pvt, std::pair<std::string, std::string> &);
+extern gromox::errno_t mysql_adaptor_scndstore_hints(unsigned int pri, std::vector<sql_user> &hints);
+extern int mysql_adaptor_domain_list_query(const char *dom);
 
 /**
  * Determines whether an arbitrary actor can generally open/read the primary
