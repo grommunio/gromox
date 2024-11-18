@@ -8,13 +8,7 @@ alias_resolve is a component of the delivery agent which rewrites the Envelope
 FROM and RCPT fields of incoming messages, trimming extensions, resolving
 aliases to the primary email address, resolving contact objects where they
 occur, and expanding mailing lists to their members.
-.SH Configuration directives
-alias_resolve(4gx) reads /etc/gromox/mysql_adaptor.cfg for \fBmysql_host\fP,
-\fBmysql_port\fP, \fBmysql_username\fP, \fBmysql_password\fP,
-\fBmysql_dbname\fP and \fBmysql_rdwr_timeout\fP. Confer with mysql_adaptor(4gx)
-for details.
-.PP
-alias_resolve(4gx) reads /etc/gromox/gromox.cfg:
+.SH Configuration directives (gromox.cfg)
 .TP
 \fBlda_alias_cache_lifetime\fP
 Interval between refreshes of the alias and contact object cache.
@@ -26,6 +20,11 @@ The set of characters that separate an email address into localpart and
 extension. This mirrors the "recipient_delimiter" directive from postconf(5).
 .br
 Default: (empty)
+.SH Configuration directives (mysql_adaptor.cfg)
+alias_resolve(4gx) reads /etc/gromox/mysql_adaptor.cfg for \fBmysql_host\fP,
+\fBmysql_port\fP, \fBmysql_username\fP, \fBmysql_password\fP,
+\fBmysql_dbname\fP and \fBmysql_rdwr_timeout\fP. Confer with mysql_adaptor(4gx)
+for details.
 .SH Signals
 When the plugin is reloaded (i.e. SIGHUP is sent to delivery(8gx)), the alias
 cache is refreshed as well, resetting the timer for the next refresh.
