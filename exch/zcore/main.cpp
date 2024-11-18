@@ -61,7 +61,6 @@ E(get_domain_info)
 E(get_domain_users)
 E(get_group_users)
 E(get_homedir)
-E(get_mlist_ids)
 E(get_mlist_memb)
 E(get_org_domains)
 E(get_user_displayname)
@@ -193,7 +192,6 @@ static int system_services_run()
 	E(system_services_get_domain_groups, "get_domain_groups");
 	E(system_services_get_group_users, "get_group_users");
 	E(system_services_get_domain_users, "get_domain_users");
-	E(system_services_get_mlist_ids, "get_mlist_ids");
 	E(system_services_get_mlist_memb, "get_mlist_memb");
 	E(system_services_check_same_org, "check_same_org");
 	E(system_services_setpasswd, "set_password");
@@ -222,7 +220,6 @@ static void system_services_stop()
 	E("get_domain_groups");
 	E("get_group_users");
 	E("get_domain_users");
-	E("get_mlist_ids");
 	E("get_mlist_memb");
 	E("check_same_org");
 	E("set_password");

@@ -663,7 +663,6 @@ BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data)
 	E(get_id_from_homedir, "get_id_from_homedir");
 	E(get_user_ids, "get_user_ids");
 	E(get_domain_ids, "get_domain_ids");
-	E(get_mlist_ids, "get_mlist_ids");
 	E(get_org_domains, "get_org_domains");
 	E(get_domain_info, "get_domain_info");
 	E(check_same_org, "check_same_org");

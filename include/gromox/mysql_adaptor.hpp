@@ -118,7 +118,6 @@ extern bool mysql_adaptor_get_homedir_by_id(unsigned int domain_id, char *homedi
 extern BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, unsigned int *domain_id);
 extern BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *user_id, unsigned int *domain_id, enum display_type *);
 extern BOOL mysql_adaptor_get_domain_ids(const char *domainname, unsigned int *domain_id, unsigned int *org_id);
-extern BOOL mysql_adaptor_get_mlist_ids(unsigned int user_id, unsigned int *group_id, unsigned int *domain_id);
 extern BOOL mysql_adaptor_get_org_domains(unsigned int org_id, std::vector<unsigned int> &);
 extern BOOL mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &);
 extern BOOL mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_id2);

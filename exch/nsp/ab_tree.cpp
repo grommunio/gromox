@@ -91,7 +91,6 @@ static decltype(mysql_adaptor_get_domain_info) *get_domain_info;
 static decltype(mysql_adaptor_get_domain_groups) *get_domain_groups;
 static decltype(mysql_adaptor_get_group_users) *get_group_users;
 static decltype(mysql_adaptor_get_domain_users) *get_domain_users;
-static decltype(mysql_adaptor_get_mlist_ids) *get_mlist_ids;
 
 static void *nspab_scanwork(void *);
 
@@ -192,7 +191,6 @@ int ab_tree_run()
 	E(get_domain_groups, "get_domain_groups");
 	E(get_group_users, "get_group_users");
 	E(get_domain_users, "get_domain_users");
-	E(get_mlist_ids, "get_mlist_ids");
 #undef E
 	g_notify_stop = false;
 	auto ret = pthread_create4(&g_scan_id, nullptr, nspab_scanwork, nullptr);

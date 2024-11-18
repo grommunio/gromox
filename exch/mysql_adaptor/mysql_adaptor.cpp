@@ -582,33 +582,6 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 	return false;
 }
 
-BOOL mysql_adaptor_get_mlist_ids(unsigned int user_id, unsigned int *pgroup_id,
-    unsigned int *pdomain_id) try
-{
-	auto qstr = "SELECT dt.propval_str AS dtypx, u.domain_id, u.group_id "
-	            "FROM users AS u " JOIN_WITH_DISPLAYTYPE
-	            " WHERE id=" + std::to_string(user_id);
-	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn->query(qstr.c_str()))
-		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
-	if (pmyres == nullptr)
-		return false;
-	conn.finish();
-	if (pmyres.num_rows() != 1)
-		return FALSE;
-	auto myrow = pmyres.fetch_row();
-	if (myrow == nullptr || myrow[0] == nullptr ||
-	    static_cast<enum display_type>(strtoul(myrow[0], nullptr, 0)) != DT_DISTLIST)
-		return FALSE;
-	*pdomain_id = strtoul(myrow[1], nullptr, 0);
-	*pgroup_id  = strtoul(myrow[2], nullptr, 0);
-	return TRUE;
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "%s: %s", "E-1721", e.what());
-	return false;
-}
-
 BOOL mysql_adaptor_get_org_domains(unsigned int org_id,
     std::vector<unsigned int> &pfile) try
 {
