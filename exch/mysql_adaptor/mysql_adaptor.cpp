@@ -848,19 +848,16 @@ static std::string strip_ext(std::string user, const char *delim)
 }
 
 /* only used by delivery-queue; who can receive mail? */
-bool mysql_adaptor_check_user(const char *user_raw, const char *delim,
-    char *path, size_t dsize) try
+bool mysql_adaptor_check_user(const char *user_raw, const char *delim) try
 {
 	if (!str_isascii(user_raw))
 		return false;
 	char temp_name[UADDR_SIZE*2];
 
-	if (path != nullptr)
-		*path = '\0';
 	auto username = strip_ext(user_raw, delim);
 	mysql_adaptor_encode_squote(username.c_str(), temp_name);
 	auto qstr =
-		"SELECT DISTINCT u.address_status, u.maildir FROM users AS u "
+		"SELECT DISTINCT u.address_status FROM users AS u "
 		"LEFT JOIN aliases AS a ON u.username=a.mainname "
 		"WHERE u.username='"s + temp_name + "' OR a.aliasname='" +
 		temp_name + "'";
@@ -878,8 +875,6 @@ bool mysql_adaptor_check_user(const char *user_raw, const char *delim,
 		return false;
 	}
 	auto myrow = pmyres.fetch_row();
-	if (path != nullptr)
-		gx_strlcpy(path, myrow[1], dsize);
 	return afuser_store_canrecv(strtoul(myrow[0], nullptr, 0));
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1731", e.what());

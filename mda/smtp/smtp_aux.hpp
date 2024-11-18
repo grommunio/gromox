@@ -41,4 +41,4 @@ enum{
 
 };
 
-extern bool (*system_services_check_user)(const char *, const char *, char *, size_t);
+extern bool (*system_services_check_user)(const char *, const char *);
