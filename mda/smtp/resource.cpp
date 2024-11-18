@@ -92,6 +92,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{534, "554 RCPT <forward-address> is in the blacklist"},
 	{535, "554 Temporary authentication failure"},
 	{536, "554 Message is infected by virus"},
+	{537, "450 System error"},
 };
 
 static std::unordered_map<unsigned int, std::string> g_def_code_table;

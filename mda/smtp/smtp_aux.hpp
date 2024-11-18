@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <memory>
 #include <gromox/common_types.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/plugin.hpp>
 #define FLUSHING_INVALID_FD -1
 
@@ -41,4 +42,4 @@ enum{
 
 };
 
-extern bool (*system_services_check_user)(const char *, const char *);
+extern decltype(mysql_adaptor_meta) *system_services_meta;

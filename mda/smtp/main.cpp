@@ -42,7 +42,7 @@
 using namespace gromox;
 
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
-E(check_user)
+E(meta)
 #undef E
 
 gromox::atomic_bool g_notify_stop;
@@ -136,15 +136,14 @@ static int system_services_run()
 	} \
 } while (false)
 
-	E(system_services_check_user, "check_user");
+	E(system_services_meta, "mysql_auth_meta");
 	return 0;
 #undef E
 }
 
 static void system_services_stop()
 {
-	service_release("ip_filter_judge", "system");
-	service_release("check_user", "system");
+	service_release("mysql_auth_meta", "system");
 }
 
 static void *smls_thrwork(void *arg)

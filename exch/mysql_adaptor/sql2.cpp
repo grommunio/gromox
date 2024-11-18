@@ -671,7 +671,6 @@ BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data)
 	E(get_domain_users, "get_domain_users");
 	E(check_mlist_include, "check_mlist_include");
 	E(check_same_org2, "check_same_org2");
-	E(check_user, "check_user");
 	E(get_mlist_memb, "get_mlist_memb");
 	E(get_user_aliases, "get_user_aliases");
 	E(get_user_properties, "get_user_properties");
