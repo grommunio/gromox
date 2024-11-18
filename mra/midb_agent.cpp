@@ -100,7 +100,6 @@ static int get_mail_flags(const char *path, const char *folder, const std::strin
 static int copy_mail(const char *path, const char *src_folder, const std::string &src_mid, const char *dst_folder, std::string &dst_mid, int *perrno);
 static int imap_search(const char *path, const char *folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);
 static int imap_search_uid(const char *path, const char *folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);
-static BOOL check_full(const char *path);
 
 static constexpr unsigned int POLLIN_SET =
 	POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR | POLLNVAL;
@@ -216,8 +215,7 @@ BOOL SVC_midb_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 		    !E(fetch_simple_uid) || !E(fetch_detail_uid) ||
 		    !E(set_mail_flags) ||
 		    !E(unset_mail_flags) || !E(get_mail_flags) ||
-		    !E(copy_mail) || !E(imap_search) || !E(imap_search_uid) ||
-		    !E(check_full)) {
+		    !E(copy_mail) || !E(imap_search) || !E(imap_search_uid)) {
 			printf("[midb_agent]: failed to register services\n");
 			return FALSE;
 		}
@@ -1750,47 +1748,6 @@ static ssize_t read_line(int sockd, char *buff, size_t length)
 		}
 		if (length == offset)
 			return -ENOBUFS;
-	}
-}
-
-static BOOL check_full(const char *path)
-{
-	int offset;
-	int read_len;
-	char buff[1024];
-
-	auto pback = get_connection(path);
-	if (pback == nullptr)
-		return TRUE;
-	auto length = gx_snprintf(buff, std::size(buff), "M-CKFL %s\r\n", path);
-	if (write(pback->sockd, buff, length) != length)
-		return TRUE;
-
-	offset = 0;
-	while (true) {
-		struct pollfd pfd = {pback->sockd};
-		pfd.events = POLLIN_SET;
-		if (poll(&pfd, 1, SOCKET_TIMEOUT * 1000) <= 0)
-			return TRUE;
-		read_len = read(pback->sockd, buff + offset, 1024 - offset);
-		if (read_len <= 0)
-			return TRUE;
-		offset += read_len;
-		if (offset >= 2 && '\r' == buff[offset - 2] &&
-			'\n' == buff[offset - 1]) {
-			if (8 == offset && 0 == strncasecmp("TRUE ", buff, 5)) {
-				time(&pback->last_time);
-				pback.reset();
-				return buff[5] == '1' ? false : TRUE;
-			} else if (offset > 8 && 0 == strncasecmp("FALSE ", buff, 6)) {
-				time(&pback->last_time);
-				pback.reset();
-				return TRUE;
-			}
-			return TRUE;
-		}
-		if (offset == 1024)
-			return TRUE;
 	}
 }
 
