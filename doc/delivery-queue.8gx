@@ -35,6 +35,12 @@ should be used.
 .br
 Default: \fI0\fP
 .TP
+\fBlda_recipient_delimiter\fP
+The set of characters that separate an email address into localpart and
+extension. This mirrors the "recipient_delimiter" directive from postconf(5).
+.br
+Default: (empty)
+.TP
 \fBlda_support_haproxy\fP
 This directive sets the expectation for incoming connections to carry haproxy's
 "PROXY" protocol extension version 2 (2), or no such header (0). When a
