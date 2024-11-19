@@ -1003,21 +1003,33 @@ void mlog_init(const char *ident, const char *filename, unsigned int max_level,
     const char *user)
 {
 	g_max_loglevel = max_level;
-	if (filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0)
-		g_logfp.reset();
-	g_log_syslog = filename != nullptr && strcmp(filename, "syslog") == 0;
-	g_log_tty    = isatty(STDERR_FILENO);
-	if (g_logfp == nullptr && getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
-		g_log_syslog = true;
-	if (g_log_syslog) {
+	bool for_syslog = false, for_tty = false;
+	if (filename == nullptr || *filename == '\0') {
+		if (isatty(STDERR_FILENO))
+			for_tty = true;
+		else if (getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
+			for_syslog = true;
+	} else if (strcmp(filename, "syslog") == 0) {
+		for_syslog = true;
+	} else if (strcmp(filename, "-") == 0) {
+		for_tty = true;
+	}
+	if (for_syslog) {
 		openlog(ident, LOG_PID, LOG_MAIL);
 		setlogmask((1 << (max_level + 2)) - 1);
+		g_log_syslog = true;
+		g_log_tty = false;
+		g_logfp.reset();
 		return;
 	}
-	if (g_logfp == nullptr) {
+	if (for_tty) {
+		g_log_tty = true;
+		g_log_syslog = false;
+		g_logfp.reset();
 		setvbuf(stderr, nullptr, _IOLBF, 0);
 		return;
 	}
+	g_log_tty = g_log_syslog = false;
 	if (user != nullptr) {
 		auto fd = open(filename, O_RDWR | O_CREAT | O_EXCL, FMODE_PRIVATE);
 		if (fd >= 0) {
@@ -1032,6 +1044,8 @@ void mlog_init(const char *ident, const char *filename, unsigned int max_level,
 	std::lock_guard hold(g_log_mutex);
 	g_logfp.reset(fopen(filename, "a"));
 	if (g_logfp == nullptr) {
+		g_log_tty = true;
+		g_log_syslog = false;
 		mlog(LV_ERR, "Could not open %s for writing: %s. Using stderr.",
 		        filename, strerror(errno));
 		setvbuf(stderr, nullptr, _IOLBF, 0);
