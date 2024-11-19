@@ -7,13 +7,14 @@
 #include <sqlite3.h>
 #include <string>
 #include <unistd.h>
+#include <fmt/core.h>
 #include <gromox/database.h>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>
 
 namespace gromox {
 
-static std::unordered_map<std::string, std::string> active_xa;
+static std::unordered_map<std::string, std::string> active_xa; /* which callchain obtained RW */
 static std::mutex active_xa_lock;
 unsigned int gx_sqlite_debug, gx_force_write_txn, gx_sql_deep_backtrace;
 
@@ -60,18 +61,27 @@ void xtransaction::teardown()
 {
 	if (m_db == nullptr)
 		return;
-	gx_sql_exec(m_db, "ROLLBACK");
-	auto fn = sqlite3_db_filename(m_db, nullptr);
-	if (fn != nullptr && *fn != '\0') {
+	if (sqlite3_txn_state(m_db, "main") == SQLITE_TXN_WRITE) {
+		std::string fn = znul(sqlite3_db_filename(m_db, nullptr));
+		if (fn.empty())
+			fn = fmt::format("{}", static_cast<void *>(m_db));
 		std::unique_lock lk(active_xa_lock);
 		active_xa.erase(fn);
 	}
+	gx_sql_exec(m_db, "ROLLBACK");
 }
 
 int xtransaction::commit()
 {
 	if (m_db == nullptr)
 		return SQLITE_OK;
+	if (sqlite3_txn_state(m_db, "main") == SQLITE_TXN_WRITE) {
+		std::string fn = znul(sqlite3_db_filename(m_db, nullptr));
+		if (fn.empty())
+			fn = fmt::format("{}", static_cast<void *>(m_db));
+		std::unique_lock lk(active_xa_lock);
+		active_xa.erase(fn);
+	}
 	auto ret = gx_sql_exec(m_db, "COMMIT TRANSACTION");
 	if (ret == SQLITE_BUSY)
 		/*
@@ -81,11 +91,6 @@ int xtransaction::commit()
 		 */
 		return ret;
 
-	auto fn = sqlite3_db_filename(m_db, nullptr);
-	if (fn != nullptr && *fn != '\0') {
-		std::unique_lock lk(active_xa_lock);
-		active_xa.erase(fn);
-	}
 	m_db = nullptr;
 	return ret;
 }
@@ -96,26 +101,25 @@ xtransaction gx_sql_begin3(const std::string &pos, sqlite3 *db, txn_mode mode)
 		mode = txn_mode::write;
 	auto ret = gx_sql_exec(db, mode == txn_mode::write ? "BEGIN IMMEDIATE" : "BEGIN");
 	if (ret == SQLITE_OK) {
-		if (mode == txn_mode::read)
+		if (mode == txn_mode::read) {
 			/* switch txn_state from TXN_NONE to TXN_READ */
 			sqlite3_exec(db, "SELECT COUNT(*) FROM configurations", nullptr, nullptr, nullptr);
-		auto fn = sqlite3_db_filename(db, nullptr);
-		if (fn != nullptr && *fn != '\0') {
+		} else if (mode == txn_mode::write) {
+			std::string fn = znul(sqlite3_db_filename(db, nullptr));
+			if (fn.empty())
+				fn = fmt::format("{}", static_cast<void *>(db));
 			std::unique_lock lk(active_xa_lock);
-			if (gx_sql_deep_backtrace)
-				active_xa[fn] = simple_backtrace();
-			else
-				active_xa[fn] = pos;
+			active_xa[fn] = gx_sql_deep_backtrace ? simple_backtrace() : pos;
 		}
 		return xtransaction(db);
 	}
 	if ((ret == SQLITE_BUSY && mode == txn_mode::write) ||
 	    (ret != 0 && sqlite3_txn_state(db, "main") > SQLITE_TXN_NONE)) {
-		auto fn = sqlite3_db_filename(db, nullptr);
-		if (fn == nullptr || *fn == '\0')
-			fn = ":memory:";
+		std::string fn = znul(sqlite3_db_filename(db, nullptr));
+		if (fn.empty())
+			fn = fmt::format("{}", static_cast<void *>(db));
 		auto it = active_xa.find(fn);
-		mlog(LV_ERR, "sqlite_busy on %s: held by %s, take from %s", znul(fn),
+		mlog(LV_ERR, "sqlite_busy on %s: held by %s, take from %s", fn.c_str(),
 			it != active_xa.end() ? it->second.c_str() : "unknown",
 			gx_sql_deep_backtrace ? simple_backtrace().c_str() : pos.c_str());
 	}
