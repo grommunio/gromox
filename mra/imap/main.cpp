@@ -160,7 +160,8 @@ static bool imap_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
 		fprintf(stderr, "config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
-	mlog_init("gromox-imap", cfg->get_value("imap_log_file"), cfg->get_ll("imap_log_level"));
+	mlog_init("gromox-imap", cfg->get_value("imap_log_file"),
+		cfg->get_ll("imap_log_level"), cfg->get_value("running_identity"));
 	g_imapcmd_debug = cfg->get_ll("imap_cmd_debug");
 	g_rfc9051_enable = cfg->get_ll("imap_rfc9051");
 

@@ -136,7 +136,8 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> xcfg = nullptr,
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
-	mlog_init("gromox-http", cfg->get_value("http_log_file"), cfg->get_ll("http_log_level"));
+	mlog_init("gromox-http", cfg->get_value("http_log_file"),
+		cfg->get_ll("http_log_level"), cfg->get_value("running_identity"));
 	g_http_debug = cfg->get_ll("http_debug");
 	g_enforce_auth = cfg->get_ll("http_enforce_auth");
 	g_msrpc_debug = cfg->get_ll("msrpc_debug");

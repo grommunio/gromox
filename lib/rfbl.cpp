@@ -23,6 +23,7 @@
 #include <memory>
 #include <mutex>
 #include <netdb.h>
+#include <pwd.h>
 #include <spawn.h>
 #include <sstream>
 #include <streambuf>
@@ -998,7 +999,8 @@ errno_t tmpfile::link_to(const char *newpath)
 	return 0;
 }
 
-void mlog_init(const char *ident, const char *filename, unsigned int max_level)
+void mlog_init(const char *ident, const char *filename, unsigned int max_level,
+    const char *user)
 {
 	g_max_loglevel = max_level;
 	if (filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0)
@@ -1015,6 +1017,17 @@ void mlog_init(const char *ident, const char *filename, unsigned int max_level)
 	if (g_logfp == nullptr) {
 		setvbuf(stderr, nullptr, _IOLBF, 0);
 		return;
+	}
+	if (user != nullptr) {
+		auto fd = open(filename, O_RDWR | O_CREAT | O_EXCL, FMODE_PRIVATE);
+		if (fd >= 0) {
+			char buf[256];
+			struct passwd pwd{}, *result = nullptr;
+			if (getpwnam_r(user, &pwd, buf, std::size(buf), &result) == 0 &&
+			    result != nullptr)
+				fchown(fd, result->pw_uid, result->pw_gid);
+			close(fd);
+		}
 	}
 	std::lock_guard hold(g_log_mutex);
 	g_logfp.reset(fopen(filename, "a"));

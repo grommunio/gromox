@@ -232,7 +232,9 @@ int main(int argc, char **argv)
 	if (pconfig == nullptr)
 		return EXIT_FAILURE;
 
-	mlog_init("gromox-timer", pconfig->get_value("timer_log_file"), pconfig->get_ll("timer_log_level"));
+	mlog_init("gromox-timer", pconfig->get_value("timer_log_file"),
+		pconfig->get_ll("timer_log_level"),
+		pconfig->get_value("running_identity"));
 	g_list_path = pconfig->get_value("timer_state_path");
 	uint16_t listen_port = pconfig->get_ll("timer_listen_port");
 	auto listen_ip = pconfig->get_value("timer_listen_ip");

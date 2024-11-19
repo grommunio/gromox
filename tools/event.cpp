@@ -207,7 +207,9 @@ int main(int argc, char **argv)
 	if (pconfig == nullptr)
 		return EXIT_FAILURE;
 
-	mlog_init("gromox-event", pconfig->get_value("event_log_file"), pconfig->get_ll("event_log_level"));
+	mlog_init("gromox-event", pconfig->get_value("event_log_file"),
+		pconfig->get_ll("event_log_level"),
+		pconfig->get_value("running_identity"));
 	auto listen_ip = pconfig->get_value("event_listen_ip");
 	uint16_t listen_port = pconfig->get_ll("event_listen_port");
 	printf("[system]: listen address is [%s]:%hu\n",
