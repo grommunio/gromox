@@ -1065,19 +1065,22 @@ void mlog(unsigned int level, const char *fmt, ...)
 		va_end(args);
 		return;
 	} else if (g_logfp == nullptr) {
-		if (g_log_tty)
-			fprintf(stderr,
-				level <= LV_ERR ? "\e[1;31m" :
-				level <= LV_WARN ? "\e[31m" :
-				level <= LV_NOTICE ? "\e[1;37m" :
-				level == LV_DEBUG ? "\e[1;30m" : "");
+		if (g_log_tty) {
+			auto c = level <= LV_ERR ? "\e[1;31m" :
+				 level <= LV_WARN ? "\e[31m" :
+				 level <= LV_NOTICE ? "\e[1;37m" :
+				 level == LV_DEBUG ? "\e[1;30m" : "";
+			if (*c != '\0')
+				fputs(c, stderr);
+		}
 #if 0
 		fprintf(stderr, "[%f] ", std::chrono::duration<double>(tp_now() - decltype(tp_now()){}).count());
 #endif
 		vfprintf(stderr, fmt, args);
 		if (g_log_tty)
-			fprintf(stderr, "\e[0m");
-		fputc('\n', stderr);
+			fputs("\e[0m\n", stderr);
+		else
+			fputc('\n', stderr);
 		va_end(args);
 		return;
 	}
