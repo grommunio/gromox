@@ -1,3 +1,40 @@
+Gromox 2.37 (2024-11-20)
+========================
+
+Fixes:
+
+* exmdb: fix garbage being returned to clients when reading v1z files from cid/
+* exmdb: stop an SQL error from appearing when `gromox-mbop recalc-sizes`
+  is used on an empty store
+* oxcical: evaluate all, instead of just two, STANDARD/DAYLIGHT tzprops for
+  determining the relevant DST timezone
+* ews: fix time elements, e.g. in OOF settings, always having value 1970-01-01
+* email_lib: on vCard ingestion, treat ORG lines as the structured field that
+  they are specified as, rather than as one text value
+* exmdb_local: autovivify new named properties on delivery, fixing log message
+  ``D-1220: cu_set_properties called with PR_NULL`` when ingesting a vCard
+  message into an empty store via SMTP/LMTP
+* dbop_sqlite: avoid use of the ``UNIXEPOCH`` function since it is not
+  available in AlmaLinux 9
+* lib: add missing chown call on newly-created logfiles to account for
+  subsequent privilege separation
+
+Enhancements:
+
+* dscli: evaluate not just one AutoDiscover URL but multiple as the specifation
+  asks for
+* mbop: stop printing the help text multiple times when the "for-all-users"
+  subcommand was used but options were rejected
+* gromox-mbsize: new debug utility for mailbox size analysis
+* gromox-tnef2mt: add support for importing standalone TNEF files
+
+Changes:
+
+* stderr being a tty previously overruled daemons' log_file
+  directive such as http.cfg:``http_log_file=/somewhere.log``. This has now
+  changed and http_log_file has precedence over any tty-ness of stderr.
+
+
 Gromox 2.36 (2024-11-06)
 ========================
 
