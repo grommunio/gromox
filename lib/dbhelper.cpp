@@ -31,15 +31,10 @@ xstmt gx_sql_prep(sqlite3 *db, const char *query)
 	if (gx_sqlite_debug >= 1)
 		mlog(LV_DEBUG, "> sqlite3_prep(%s, %s)", znul(sqlite3_db_filename(db, nullptr)), query);
 	auto state = sqlite3_txn_state(db, "main");
-	if (state == SQLITE_TXN_READ && write_statement(query)) {
-		auto fn = sqlite3_db_filename(db, nullptr);
-		if (fn == nullptr || *fn == '\0')
-			fn = ":memory:";
-		auto it = active_xa.find(fn);
-		mlog(LV_ERR, "sqlite_prep(%s): ro held by [%s], rw at [%s]", query,
-			it != active_xa.end() ? it->second.c_str() : "unknown",
-			simple_backtrace().c_str());
-	}
+	if (state == SQLITE_TXN_READ && write_statement(query))
+		mlog(LV_ERR, "sqlite_prep(%s) \"%s\": illegal ro->rw switch at [%s]",
+			znul(sqlite3_db_filename(db, nullptr)),
+			query, simple_backtrace().c_str());
 	int ret = sqlite3_prepare_v2(db, query, -1, &out.m_ptr, nullptr);
 	if (ret != SQLITE_OK)
 		mlog(LV_ERR, "sqlite_prep(%s) \"%s\": %s (%d)",
@@ -183,15 +178,10 @@ int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 	if (gx_sqlite_debug >= 1)
 		mlog(LV_DEBUG, "> sqlite3_exec(%s, %s)", znul(sqlite3_db_filename(db, nullptr)), query);
 	auto state = sqlite3_txn_state(db, "main");
-	if (state == SQLITE_TXN_READ && write_statement(query)) {
-		auto fn = sqlite3_db_filename(db, nullptr);
-		if (fn == nullptr || *fn == '\0')
-			fn = ":memory:";
-		auto it = active_xa.find(fn);
-		mlog(LV_ERR, "sqlite_exec(%s): ro held by [%s], rw at [%s]", query,
-			it != active_xa.end() ? it->second.c_str() : "unknown",
-			simple_backtrace().c_str());
-	}
+	if (state == SQLITE_TXN_READ && write_statement(query))
+		mlog(LV_ERR, "sqlite_prep(%s) \"%s\": illegal ro->rw switch at [%s]",
+			znul(sqlite3_db_filename(db, nullptr)),
+			query, simple_backtrace().c_str());
 	auto ret = sqlite3_exec(db, query, nullptr, nullptr, &estr);
 	if (ret == SQLITE_OK)
 		return ret;
