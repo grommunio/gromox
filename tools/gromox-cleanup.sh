@@ -30,10 +30,8 @@ function log {
 
         if [ "${level}" == "ERROR" ]; then
                 SCRIPT_GOOD=false
-                echo "ERROR: ${log_line}" >> "${LOG_FILE}"
                 (>&2 echo -e "$log_line")
         else
-                echo "${log_line}" >> "${LOG_FILE}"
                 echo "${log_line}"
         fi
 }
@@ -44,7 +42,7 @@ function cleanup {
                 if [ "$SOFTDELETE_TIMESTAMP" != "" ]; then
                         log "Purging soft deletions for ${maildir}"
                         start_time=${SECONDS}
-                        "${BIN_DIR}/gromox-mbop" -d "${maildir}" purge-softdelete -r -t "$SOFTDELETE_TIMESTAMP" IPM_SUBTREE >> "${LOG_FILE}" 2>&1
+                        "${BIN_DIR}/gromox-mbop" -d "${maildir}" purge-softdelete -r -t "$SOFTDELETE_TIMESTAMP" IPM_SUBTREE
                         if [ $? -eq 0 ]; then
                                 log "Operation took $((${SECONDS}-${start_time})) for ${maildir}"
                         else
@@ -53,7 +51,7 @@ function cleanup {
                 fi
                 log "Purging datafiles for ${maildir}"
                 start_time=${SECONDS}
-                "${BIN_DIR}/gromox-mbop" -d "${maildir}" purge-datafiles >> "${LOG_FILE}" 2>&1
+                "${BIN_DIR}/gromox-mbop" -d "${maildir}" purge-datafiles
                 if [ $? -eq 0 ]; then
                         log "Operation took $((${SECONDS}-${start_time}))  for ${maildir}"
                 else
@@ -68,18 +66,5 @@ trap TrapQuit TERM EXIT HUP QUIT
 set -o pipefail
 set -o errtrace
 SCRIPT_GOOD=true
-
-## Default log file
-
-SCRIPT_NAME=$(basename "$0")
-if [ -w /var/log ]; then
-        LOG_FILE="/var/log/${SCRIPT_NAME}.log"
-elif ([ "${HOME}" != "" ] && [ -w "${HOME}" ]); then
-        LOG_FILE="${HOME}/${SCRIPT_NAME}.log"
-elif [ -w . ]; then
-        LOG_FILE="./${SCRIPT_NAME}.log"
-else
-        LOG_FILE="/tmp/${SCRIPT_NAME}.log"
-fi
 
 cleanup
