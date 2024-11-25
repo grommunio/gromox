@@ -1,0 +1,18 @@
+[Unit]
+Description=Grommunio Mailbox Maintenance / Cleanup
+Documentation=man:gromox-mbop(8)
+
+[Service]
+Environment=SOFTDELETE_TIMESTAMP=30d20h
+ProtectSystem=full
+ProtectHome=true
+PrivateDevices=true
+ProtectHostname=true
+ProtectClock=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictRealtime=true
+Type=oneshot
+ExecStart=/usr/sbin/grommunio-cleanup
