@@ -1,0 +1,12 @@
+[Unit]
+Description=Grommunio Mailbox Maintenance / Cleanup
+Documentation=man:gromox-mbop(8)
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+AccuracySec=15m
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target
