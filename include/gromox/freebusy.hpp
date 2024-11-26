@@ -38,6 +38,7 @@ struct freebusy_tags
 		apptrecur = 0, apptsubtype = 0, private_flag = 0, apptstateflags = 0,
 		clipend = 0, location = 0, reminderset = 0, globalobjectid = 0,
 		timezonestruct = 0;
+	bool init_ok = false;
 };
 
 extern GX_EXPORT bool get_freebusy(const char *, const char *, time_t, time_t, std::vector<freebusy_event> &);

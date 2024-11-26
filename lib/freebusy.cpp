@@ -54,6 +54,7 @@ freebusy_tags::freebusy_tags(const char *dir)
 		reminderset    = PROP_TAG(PT_BOOLEAN, ids[10]);
 		globalobjectid = PROP_TAG(PT_BINARY,  ids[11]);
 		timezonestruct = PROP_TAG(PT_BINARY,  ids[12]);
+		init_ok = true;
 	}
 }
 
@@ -318,6 +319,8 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 	}
 
 	freebusy_tags ptag(dir);
+	if (!ptag.init_ok)
+		return false;
 	auto start_nttime = rop_util_unix_to_nttime(start_time);
 	auto end_nttime   = rop_util_unix_to_nttime(end_time);
 	bool detailed     = permission & (frightsFreeBusyDetailed | frightsReadAny);
