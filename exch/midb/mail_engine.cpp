@@ -96,7 +96,16 @@ struct syncfolder_entry {
 	uint64_t parent_fid = 0, commit_max = 0;;
 	std::string display_name;
 };
+
+struct syncmessage_entry {
+	uint64_t mod_time = 0, recv_time = 0;
+	uint32_t msg_flags = 0;
+	bool has_midstr = false;
+	std::string midstr;
+};
+
 using syncfolder_list = std::unordered_map<uint64_t /* folder_id */, syncfolder_entry>;
+using syncmessage_list = std::unordered_map<uint64_t /* message_id */, syncmessage_entry>;
 
 struct ct_node;
 using CONDITION_TREE = std::vector<ct_node>;
@@ -1517,7 +1526,6 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 {
 	const char *dir;
 	TARRAY_SET rows;
-	sqlite3 *psqlite;
 	uint32_t uidnext;
 	uint32_t uidnext1;
 	char sql_string[1024];
@@ -1553,27 +1561,8 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 	uidnext = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	uidnext1 = uidnext;
-	if (sqlite3_open_v2(":memory:", &psqlite, SQLITE_OPEN_READWRITE |
-	    SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
-		return FALSE;
-	{
-	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	auto sql_transact = gx_sql_begin(psqlite, txn_mode::write);
-	if (!sql_transact)
-		return false;
-	snprintf(sql_string, std::size(sql_string), "CREATE TABLE messages "
-			"(message_id INTEGER PRIMARY KEY,"
-			"mid_string TEXT,"
-			"mod_time INTEGER,"
-			"message_flags INTEGER,"
-			"received INTEGER)");
-	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
-		return FALSE;
-	pstmt = gx_sql_prep(psqlite, "INSERT INTO messages (message_id,"
-	        " mid_string, mod_time, message_flags, received) VALUES "
-	        "(?, ?, ?, ?, ?)");
-	if (pstmt == nullptr)
-		return FALSE;
+
+	syncmessage_list syncmessagelist;
 	for (size_t i = 0; i < rows.count; ++i) {
 		auto num = rows.pparray[i]->get<const uint64_t>(PidTagMid);
 		if (num == nullptr)
@@ -1587,33 +1576,14 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		auto mod_time = rows.pparray[i]->get<uint64_t>(PR_LAST_MODIFICATION_TIME);
 		auto recv_time = rows.pparray[i]->get<uint64_t>(PR_MESSAGE_DELIVERY_TIME);
 		auto midstr = rows.pparray[i]->get<const char>(PidTagMidString);
-		sqlite3_reset(pstmt);
-		sqlite3_bind_int64(pstmt, 1, message_id);
-		if (midstr == nullptr)
-			sqlite3_bind_null(pstmt, 2);
-		else
-			sqlite3_bind_text(pstmt, 2, midstr, -1, SQLITE_STATIC);
-		sqlite3_bind_int64(pstmt, 3, mod_time != nullptr ? *mod_time : 0);
-		sqlite3_bind_int64(pstmt, 4, *flags);
-		sqlite3_bind_int64(pstmt, 5, recv_time != nullptr ? *recv_time : 0);
-		if (pstmt.step() != SQLITE_DONE)
-			return FALSE;
+		syncmessagelist.emplace(message_id, syncmessage_entry{
+			mod_time != nullptr ? *mod_time : 0,
+			recv_time != nullptr ? *recv_time : 0,
+			*flags, midstr != nullptr, znul(midstr)
+		});
 	}
-	pstmt.finalize();
-	if (sql_transact.commit() != SQLITE_OK)
-		return false;
 
-	pstmt = gx_sql_prep(psqlite, "SELECT COUNT(*) FROM messages");
-	size_t totalmsgs = 0, procmsgs = 0;
-	if (pstmt != nullptr && pstmt.step() == SQLITE_ROW)
-		totalmsgs = sqlite3_column_int64(pstmt, 0);
-
-	snprintf(sql_string, std::size(sql_string), "SELECT message_id, "
-		"mid_string, mod_time, message_flags, received"
-		" FROM messages");
-	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
+	size_t totalmsgs = syncmessagelist.size(), procmsgs = 0;
 	auto pstmt1 = gx_sql_prep(pidb->psqlite, "SELECT message_id, mid_string,"
 	              " mod_time, unsent, read FROM messages WHERE message_id=?");
 	if (pstmt1 == nullptr)
@@ -1629,26 +1599,23 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 	              " SET unsent=?, read=? WHERE message_id=?");
 	if (stm_upd_msg == nullptr)
 		return FALSE;
-	while (pstmt.step() == SQLITE_ROW) {
-		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
+	for (const auto &[message_id, entry] : syncmessagelist) {
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		if (pstmt1.step() != SQLITE_ROW)
 			mail_engine_insert_message(
 				pstmt2, &uidnext, message_id,
-				pstmt.col_text(1),
-				sqlite3_column_int64(pstmt, 3),
-				sqlite3_column_int64(pstmt, 4),
-				sqlite3_column_int64(pstmt, 2));
+				entry.has_midstr ? entry.midstr.c_str() : nullptr,
+				entry.msg_flags, entry.recv_time, entry.mod_time);
 		else
 			mail_engine_sync_message(pidb,
 				pstmt2, stm_upd_msg, &uidnext, message_id,
-				sqlite3_column_int64(pstmt, 4),
-				pstmt.col_text(1),
+				entry.recv_time,
+				entry.has_midstr ? entry.midstr.c_str() : nullptr,
 				pstmt1.col_text(1),
-				sqlite3_column_int64(pstmt, 2),
+				entry.mod_time,
 				sqlite3_column_int64(pstmt1, 2),
-				sqlite3_column_int64(pstmt, 3),
+				entry.msg_flags,
 				sqlite3_column_int64(pstmt1, 3),
 				sqlite3_column_int64(pstmt1, 4));
 		if (++procmsgs % 512 == 0)
@@ -1659,7 +1626,6 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		/* display final value */
 			mlog(LV_NOTICE, "sync_contents %s fld %llu progress: %zu/%zu",
 			        dir, LLU{folder_id}, procmsgs, totalmsgs);
-	pstmt.finalize();
 	pstmt1.finalize();
 	pstmt2.finalize();
 	stm_upd_msg.finalize();
@@ -1668,21 +1634,14 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	pstmt1 = gx_sql_prep(psqlite, "SELECT message_id"
-	         " FROM messages WHERE message_id=?");
-	if (pstmt1 == nullptr)
-		return FALSE;
 
 	std::vector<uint64_t> temp_list;
 	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
-		sqlite3_reset(pstmt1);
-		sqlite3_bind_int64(pstmt1, 1, message_id);
-		if (pstmt1.step() != SQLITE_ROW)
+		if (syncmessagelist.find(message_id) == syncmessagelist.cend())
 			temp_list.push_back(message_id);
 	}
 	pstmt.finalize();
-	pstmt1.finalize();
 	if (temp_list.size() > 0) {
 		pstmt = gx_sql_prep(pidb->psqlite, "DELETE "
 		        "FROM messages WHERE message_id=?");
@@ -1701,7 +1660,6 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		        "WHERE folder_id=%llu", uidnext, LLU{folder_id});
 		if (gx_sql_exec(pidb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-	}
 	}
 	snprintf(sql_string, std::size(sql_string), "UPDATE folders SET sort_field=%d "
 	        "WHERE folder_id=%llu", FIELD_NONE, LLU{folder_id});
