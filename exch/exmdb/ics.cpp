@@ -254,14 +254,14 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		auto chg_eid = rop_util_make_eid_ex(1, change_num);
 		if (b_fai) {
 			if (pgiven->contains(msg_eid) &&
-			    const_cast<idset *>(pseen_fai)->contains(chg_eid))
+			    pseen_fai->contains(chg_eid))
 				continue;
 		} else if (pgiven->contains(msg_eid) &&
-		    const_cast<idset *>(pseen)->contains(chg_eid)) {
+		    pseen->contains(chg_eid)) {
 			if (pread == nullptr)
 				continue;
 			if (read_cn == 0 ||
-			    const_cast<idset *>(pread)->contains(rop_util_make_eid_ex(1, read_cn)))
+			    pread->contains(rop_util_make_eid_ex(1, read_cn)))
 				continue;
 			int read_state;
 			if (b_private) {
@@ -607,8 +607,8 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 			return FALSE;
 		if (change_num > *plast_cn)
 			*plast_cn = change_num;
-		if (const_cast<idset *>(pgiven)->contains(rop_util_make_eid_ex(1, fid_val)) &&
-		    const_cast<idset *>(pseen)->contains(rop_util_make_eid_ex(1, change_num)))
+		if (pgiven->contains(rop_util_make_eid_ex(1, fid_val)) &&
+		    pseen->contains(rop_util_make_eid_ex(1, change_num)))
 			continue;
 		sqlite3_reset(stm_insert_chg);
 		sqlite3_bind_int64(stm_insert_chg, 1, fid_val);
