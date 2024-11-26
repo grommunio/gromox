@@ -1857,11 +1857,21 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 
 	/* syncfolderlist is now complete and can be used to construct pathnames */
 
-	/* start populating midb.sqlite3 */
 	{
 	auto pidb_transact = gx_sql_begin(pidb->psqlite, txn_mode::write);
 	if (!pidb_transact)
 		return false;
+
+	/*
+	 * rename all folders to temporary names so that there
+	 * is no conflict when adding any new folders' names
+	 * (name column is set to UNIQUE)
+	 */
+	auto ret = gx_sql_exec(pidb->psqlite, "UPDATE folders SET name=CONCAT('t',ROWID)");
+	if (ret != SQLITE_OK)
+		/* ignore */;
+
+	/* start populating midb.sqlite3 */
 	auto pstmt1 = gx_sql_prep(pidb->psqlite, "SELECT folder_id, parent_fid, "
 	              "commit_max, name FROM folders WHERE folder_id=?");
 	if (pstmt1 == nullptr)
