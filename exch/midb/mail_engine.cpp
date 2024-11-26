@@ -92,6 +92,12 @@ enum class midb_conj {
 
 namespace {
 
+struct syncfolder_entry {
+	uint64_t parent_fid = 0, commit_max = 0;;
+	std::string display_name;
+};
+using syncfolder_list = std::unordered_map<uint64_t /* folder_id */, syncfolder_entry>;
+
 struct ct_node;
 using CONDITION_TREE = std::vector<ct_node>;
 struct ct_node {
@@ -1728,7 +1734,7 @@ static const char *spfid_to_name(unsigned int z)
 	}
 }
 
-static BOOL mail_engine_get_encoded_name(xstmt &pstmt,
+static BOOL mail_engine_get_encoded_name(const syncfolder_list &map,
     uint64_t folder_id, char *encoded_name) try
 {
 	char temp_name[512];
@@ -1740,12 +1746,11 @@ static BOOL mail_engine_get_encoded_name(xstmt &pstmt,
 
 	std::vector<std::string> temp_list;
 	do {
-		sqlite3_reset(pstmt);
-		sqlite3_bind_int64(pstmt, 1, folder_id);
-		if (pstmt.step() != SQLITE_ROW)
+		auto it = map.find(folder_id);
+		if (it == map.cend())
 			return FALSE;
-		folder_id = sqlite3_column_int64(pstmt, 0);
-		temp_list.emplace_back(pstmt.col_text(1));
+		folder_id = it->second.parent_fid;
+		temp_list.emplace_back(it->second.display_name);
 	} while (PRIVATE_FID_IPMSUBTREE != folder_id);
 	std::reverse(temp_list.begin(), temp_list.end());
 	size_t offset = 0;
@@ -1767,20 +1772,16 @@ static BOOL mail_engine_get_encoded_name(xstmt &pstmt,
 	return false;
 }
 
-static uint64_t mail_engine_get_top_folder_id(
-	sqlite3_stmt *pstmt, uint64_t folder_id)
+static uint64_t mail_engine_get_top_folder_id(const syncfolder_list &map,
+    uint64_t folder_id)
 {
-	uint64_t parent_fid;
-	
 	while (true) {
-		sqlite3_reset(pstmt);
-		sqlite3_bind_int64(pstmt, 1, folder_id);
-		if (gx_sql_step(pstmt) != SQLITE_ROW)
+		auto it = map.find(folder_id);
+		if (it == map.cend())
 			return 0;
-		parent_fid = sqlite3_column_int64(pstmt, 0);
-		if (parent_fid == PRIVATE_FID_IPMSUBTREE)
+		if (it->second.parent_fid == PRIVATE_FID_IPMSUBTREE)
 			return folder_id;
-		folder_id = parent_fid;
+		folder_id = it->second.parent_fid;
 	}
 }
 
@@ -1793,17 +1794,13 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
     bool force_resync = false) try
 {
 	BOOL b_new;
-	const char *dir;
 	TARRAY_SET rows;
-	sqlite3 *psqlite;
 	uint32_t table_id;
 	uint32_t row_count;
-	uint64_t parent_fid;
-	uint64_t commit_max;
 	char sql_string[1280];
 	char encoded_name[1024];
 	
-	dir = common_util_get_maildir();
+	auto dir = common_util_get_maildir();
 	mlog(LV_NOTICE, "Running sync_mailbox for %s", dir);
 	auto cl_err = make_scope_exit([&]() {
 		mlog(LV_NOTICE, "sync_mailbox aborted for %s", dir);
@@ -1824,25 +1821,9 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 		return FALSE;
 	}
 	exmdb_client::unload_table(dir, table_id);
-	if (sqlite3_open_v2(":memory:", &psqlite, SQLITE_OPEN_READWRITE |
-	    SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
-		return FALSE;
-	{
-	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	auto sql_transact = gx_sql_begin(psqlite, txn_mode::write);
-	if (!sql_transact)
-		return false;
-	snprintf(sql_string, std::size(sql_string), "CREATE TABLE folders "
-			"(folder_id INTEGER PRIMARY KEY,"
-			"parent_fid INTEGER,"
-			"display_name TEXT,"
-			"commit_max INTEGER)");
-	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
-		return FALSE;
-	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO folders (folder_id, "
-	             "parent_fid, display_name, commit_max) VALUES (?, ?, ?, ?)");
-	if (pstmt == nullptr)
-		return FALSE;
+
+	/* funnel everything into an indexed structure */
+	syncfolder_list syncfolderlist;
 	for (size_t i = 0; i < rows.count; ++i) {
 		auto num = rows.pparray[i]->get<const uint64_t>(PidTagFolderId);
 		if (num == nullptr)
@@ -1859,34 +1840,27 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 			        dir, LLU{folder_id});
 			continue;
 		}
-		sqlite3_reset(pstmt);
-		sqlite3_bind_int64(pstmt, 1, folder_id);
 		num = rows.pparray[i]->get<uint64_t>(PidTagParentFolderId);
 		if (num == nullptr)
 			continue;
-		parent_fid = rop_util_get_gc_value(*num);
-		sqlite3_bind_int64(pstmt, 2, parent_fid);
+		auto parent_fid = rop_util_get_gc_value(*num);
 		auto str = spfid_to_name(folder_id);
 		if (str == nullptr) {
 			str = rows.pparray[i]->get<char>(PR_DISPLAY_NAME);
 			if (str == nullptr || strlen(str) >= 256)
 				continue;
 		}
-		sqlite3_bind_text(pstmt, 3, str, -1, SQLITE_STATIC);
 		num = rows.pparray[i]->get<uint64_t>(PR_LOCAL_COMMIT_TIME_MAX);
-		sqlite3_bind_int64(pstmt, 4, num != nullptr ? *num : 0);
-		if (pstmt.step() != SQLITE_DONE)
-			return FALSE;
+		mapitime_t commit_max = num != nullptr ? *num : 0;
+		syncfolderlist.emplace(folder_id, syncfolder_entry{parent_fid, commit_max, str});
 	}
-	pstmt.finalize();
-	if (sql_transact.commit() != SQLITE_OK)
-		return false;
+
+	/* syncfolderlist is now complete and can be used to construct pathnames */
+
+	/* start populating midb.sqlite3 */
+	{
 	auto pidb_transact = gx_sql_begin(pidb->psqlite, txn_mode::write);
 	if (!pidb_transact)
-		return false;
-	pstmt = gx_sql_prep(psqlite, "SELECT folder_id, "
-	        "parent_fid, commit_max FROM folders");
-	if (pstmt == nullptr)
 		return false;
 	auto pstmt1 = gx_sql_prep(pidb->psqlite, "SELECT folder_id, parent_fid, "
 	              "commit_max, name FROM folders WHERE folder_id=?");
@@ -1896,20 +1870,15 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 				"parent_fid, commit_max, name) VALUES (?, ?, ?, ?)");
 	if (pstmt2 == nullptr)
 		return false;
-	auto mem_sel_fld = gx_sql_prep(psqlite, "SELECT parent_fid, "
-		"display_name FROM folders WHERE folder_id=?");
-	if (mem_sel_fld == nullptr)
-		return false;
-	while (pstmt.step() == SQLITE_ROW) {
-		uint64_t folder_id = sqlite3_column_int64(pstmt, 0);
-		switch (mail_engine_get_top_folder_id(mem_sel_fld, folder_id)) {
+	for (const auto &[folder_id, entry] : syncfolderlist) {
+		switch (mail_engine_get_top_folder_id(syncfolderlist, folder_id)) {
 		case PRIVATE_FID_OUTBOX:
 		case PRIVATE_FID_SYNC_ISSUES:
 			continue;			
 		}
-		parent_fid = sqlite3_column_int64(pstmt, 1);
-		commit_max = sqlite3_column_int64(pstmt, 2);
-		if (!mail_engine_get_encoded_name(mem_sel_fld, folder_id, encoded_name))
+		const auto &parent_fid = entry.parent_fid;
+		const auto &commit_max = entry.commit_max;
+		if (!mail_engine_get_encoded_name(syncfolderlist, folder_id, encoded_name))
 			continue;
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, folder_id);
@@ -1952,29 +1921,22 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 			gx_sql_exec(pidb->psqlite, sql_string);
 		}
 	}
-	pstmt.finalize();
 	pstmt1.finalize();
 	pstmt2.finalize();
-	mem_sel_fld.finalize();
+
+	/* Delete outdated midb.sqlite3 folders */
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM folders");
-	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
-		return false;
-	pstmt1 = gx_sql_prep(psqlite, "SELECT "
-	         "folder_id FROM folders WHERE folder_id=?");
-	if (pstmt1 == nullptr)
 		return false;
 
 	std::vector<uint64_t> temp_list;
 	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t folder_id = sqlite3_column_int64(pstmt, 0);
-		sqlite3_reset(pstmt1);
-		sqlite3_bind_int64(pstmt1, 1, folder_id);
-		if (pstmt1.step() != SQLITE_ROW)
+		if (syncfolderlist.find(folder_id) == syncfolderlist.cend())
 			temp_list.push_back(folder_id);
 	}
 	pstmt.finalize();
-	pstmt1.finalize();
 	if (temp_list.size() > 0) {
 		pstmt = gx_sql_prep(pidb->psqlite, "DELETE"
 		        " FROM folders WHERE folder_id=?");
