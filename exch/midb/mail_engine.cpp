@@ -147,7 +147,7 @@ struct IDB_ITEM {
 	time_t last_time = 0, load_time = 0;
 	uint32_t sub_id = 0;
 	std::atomic<int> reference{0};
-	std::timed_mutex lock;
+	std::timed_mutex giant_lock;
 };
 
 struct idb_item_del {
@@ -1944,11 +1944,11 @@ static IDB_REF mail_engine_peek_idb(const char *path)
 	auto pidb = &it->second;
 	pidb->reference ++;
 	hhold.unlock();
-	pidb->lock.lock();
+	pidb->giant_lock.lock();
 	if (pidb->psqlite != nullptr)
 		return IDB_REF(pidb);
 	pidb->last_time = 0;
-	pidb->lock.unlock();
+	pidb->giant_lock.unlock();
 	hhold.lock();
 	pidb->reference --;
 	hhold.unlock();
@@ -2043,7 +2043,7 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 	}
 	pidb->reference ++;
 	hhold.unlock();
-	if (!pidb->lock.try_lock_for(DB_LOCK_TIMEOUT)) {
+	if (!pidb->giant_lock.try_lock_for(DB_LOCK_TIMEOUT)) {
 		hhold.lock();
 		pidb->reference --;
 		hhold.unlock();
@@ -2054,7 +2054,7 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 		mail_engine_sync_mailbox(pidb, force_resync);
 	} else if (pidb->psqlite == nullptr) {
 		pidb->last_time = 0;
-		pidb->lock.unlock();
+		pidb->giant_lock.unlock();
 		hhold.lock();
 		pidb->reference--;
 		hhold.unlock();
@@ -2067,7 +2067,7 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 void idb_item_del::operator()(IDB_ITEM *pidb)
 {
 	pidb->last_time = time(nullptr);
-	pidb->lock.unlock();
+	pidb->giant_lock.unlock();
 	std::lock_guard hhold(g_hash_lock);
 	pidb->reference --;
 }
