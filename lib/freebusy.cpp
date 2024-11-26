@@ -19,6 +19,20 @@
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 
+namespace {
+
+struct freebusy_tags {
+	freebusy_tags(const char *);
+
+	uint32_t apptstartwhole = 0, apptendwhole = 0, busystatus = 0, recurring = 0,
+		apptrecur = 0, apptsubtype = 0, private_flag = 0, apptstateflags = 0,
+		clipend = 0, location = 0, reminderset = 0, globalobjectid = 0,
+		timezonestruct = 0;
+	bool init_ok = false;
+};
+
+}
+
 freebusy_tags::freebusy_tags(const char *dir)
 {
 	static const PROPERTY_NAME propname_buff[] = {
