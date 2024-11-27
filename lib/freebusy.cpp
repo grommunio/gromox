@@ -391,9 +391,9 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 
 	uint32_t proptag_buff[] = {
 		ptag.apptstartwhole, ptag.apptendwhole, ptag.busystatus,
-		ptag.recurring, ptag.apptrecur, ptag.apptsubtype, ptag.private_flag,
+		ptag.recurring, ptag.apptsubtype, ptag.private_flag,
 		ptag.apptstateflags, ptag.location, ptag.reminderset,
-		ptag.globalobjectid, ptag.timezonestruct, PR_SUBJECT,
+		PR_SUBJECT, PidTagMid,
 	};
 	const PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	TARRAY_SET rows;
@@ -402,8 +402,14 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 		return false;
 
 	for (size_t i = 0; i < rows.count; ++i) {
+		message_content *ctnt = nullptr;
+		auto msgid = rows.pparray[i]->get<const uint64_t>(PidTagMid);
+		if (msgid == nullptr)
+			continue;
+		if (!exmdb_client::read_message(dir, nullptr, CP_ACP, *msgid, &ctnt))
+			continue;
 		std::string uid_buf;
-		if (!goid_to_icaluid(rows.pparray[i]->get<BINARY>(ptag.globalobjectid), uid_buf))
+		if (!goid_to_icaluid(ctnt->proplist.get<BINARY>(ptag.globalobjectid), uid_buf))
 			continue;
 		auto ts = rows.pparray[i]->get<const uint64_t>(ptag.apptstartwhole);
 		if (ts == nullptr)
@@ -434,7 +440,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 		// recurring appointments
 		EXT_PULL ext_pull;
 		std::optional<ical_component> tzcom;
-		auto bin = rows.pparray[i]->get<BINARY>(ptag.timezonestruct);
+		auto bin = ctnt->proplist.get<BINARY>(ptag.timezonestruct);
 		if (bin != nullptr) {
 			TIMEZONESTRUCT tz;
 			ext_pull.init(bin->pb, bin->cb, exmdb_rpc_alloc, EXT_FLAG_UTF16);
@@ -445,7 +451,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 				continue;
 		}
 
-		bin = rows.pparray[i]->get<BINARY>(ptag.apptrecur);
+		bin = ctnt->proplist.get<BINARY>(ptag.apptrecur);
 		if (bin == nullptr)
 			continue;
 		APPOINTMENT_RECUR_PAT apprecurr;
