@@ -485,7 +485,7 @@ static int xmktime(const char *str, time_t *out)
 	if (end == nullptr || *end == '\0')
 		/* looks like we've got outselves a unixts */
 		return 0;
-	struct tm tm;
+	struct tm tm{};
 	end = strptime(str, "%FT%T", &tm);
 	if (end != nullptr && *end != '\0') {
 		fprintf(stderr, "\"%s\" not understood, error at \"%s\". Required format is \"2024-01-01T00:00:00\" [always local system time] or unixtime.\n", g_start_txt, end);
