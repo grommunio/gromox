@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
 // This file is part of Gromox.
+#include <cstdint>
+#include <type_traits>
 #include <vector>
 #include <fmt/core.h>
 #include <fmt/format.h>
@@ -335,8 +337,10 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 	freebusy_tags ptag(dir);
 	if (!ptag.init_ok)
 		return false;
-	auto start_nttime = rop_util_unix_to_nttime(start_time);
-	auto end_nttime   = rop_util_unix_to_nttime(end_time);
+	auto start_nttime = rop_util_unix_to_nttime(start_time < 0 ? 0 : start_time);
+	auto end_nttime   = end_time < 0 ?
+	                    SYSTEMTIME::maxyear * 31557600ULL * 10000000 :
+	                    rop_util_unix_to_nttime(end_time);
 	bool detailed     = permission & (frightsFreeBusyDetailed | frightsReadAny);
 	static constexpr uint8_t fixed_true = 1;
 
