@@ -232,9 +232,9 @@ constexpr size_t typeWidth(uint16_t type)
  * M  (1 bit): (0x00000002) The event occurs on Monday.
  * Su (1 bit): (0x00000001) The event occurs on Sunday.
  * unused (3 bytes): These bits are not used. MUST be zero and MUST be ignored.
- * Nth Day of month: (bits M, Tu, W, Th, F, SA, Su are set) - only PATTERNTYPE_MONTHNTH
- * Nth Weekday of month: (bits M, Tu, W, Th, F are set) - only PATTERNTYPE_MONTHNTH
- * Nth Weekend of month: (bits Sa, Su are set) - only PATTERNTYPE_MONTHNTH
+ * Nth Day of month: (bits M, Tu, W, Th, F, SA, Su are set) - only rptMonthNth
+ * Nth Weekday of month: (bits M, Tu, W, Th, F are set) - only rptMonthNth
+ * Nth Weekend of month: (bits Sa, Su are set) - only rptMonthNth
  */
 void daysofweek_to_str(const uint32_t& weekrecur, std::string& daysofweek)
 {
@@ -298,23 +298,21 @@ tRecurrencePattern get_recurrence_pattern(const RECURRENCE_PATTERN& recur_pat)
 	std::string daysofweek("");
 	switch (recur_pat.patterntype)
 	{
-	case PATTERNTYPE_DAY:
+	case rptMinute:
 		if(recur_pat.slidingflag)
 			return tDailyRegeneratingPattern(recur_pat.period / 1440);
 		return tDailyRecurrencePattern(recur_pat.period / 1440);
-	case PATTERNTYPE_WEEK:
-	{
+	case rptWeek: {
 		daysofweek_to_str(recur_pat.pts.weekrecur, daysofweek);
 		if(recur_pat.slidingflag)
 			return tWeeklyRegeneratingPattern(recur_pat.period);
 		return tWeeklyRecurrencePattern(recur_pat.period, daysofweek,
 				Enum::DayOfWeekType(static_cast<uint8_t>(recur_pat.firstdow)));
 	}
-	case PATTERNTYPE_MONTH:
-	case PATTERNTYPE_MONTHEND:
-	case PATTERNTYPE_HJMONTH:
-	case PATTERNTYPE_HJMONTHEND:
-	{
+	case rptMonth:
+	case rptMonthEnd:
+	case rptHjMonth:
+	case rptHjMonthEnd: {
 		ical_get_itime_from_yearday(1601,
 			recur_pat.firstdatetime / 1440 + 1, &itime);
 		if(recur_pat.period % 12 != 0)
@@ -329,9 +327,8 @@ tRecurrencePattern get_recurrence_pattern(const RECURRENCE_PATTERN& recur_pat)
 		return tAbsoluteYearlyRecurrencePattern(recur_pat.pts.dayofmonth,
 				Enum::MonthNamesType(static_cast<uint8_t>(itime.month - 1)));
 	}
-	case PATTERNTYPE_MONTHNTH:
-	case PATTERNTYPE_HJMONTHNTH:
-	{
+	case rptMonthNth:
+	case rptHjMonthNth: {
 		ical_get_itime_from_yearday(1601,
 			recur_pat.firstdatetime / 1440 + 1, &itime);
 		daysofweek_to_str(recur_pat.pts.weekrecur, daysofweek);
@@ -365,9 +362,9 @@ tRecurrenceRange get_recurrence_range(const RECURRENCE_PATTERN& recur_pat)
 	auto startdate = rop_util_rtime_to_unix2(recur_pat.startdate);
 	switch (recur_pat.endtype)
 	{
-	case ENDTYPE_AFTER_N_OCCURRENCES:
+	case IDC_RCEV_PAT_ERB_AFTERNOCCUR:
 		return tNumberedRecurrenceRange(startdate, recur_pat.occurrencecount);
-	case ENDTYPE_AFTER_DATE:
+	case IDC_RCEV_PAT_ERB_END:
 		return tEndDateRecurrenceRange(startdate,
 			rop_util_rtime_to_unix2(recur_pat.enddate));
 	default:

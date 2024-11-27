@@ -148,11 +148,11 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 	ical_line line("RRULE");
 
 	switch (rpat.patterntype) {
-	case PATTERNTYPE_DAY:
+	case rptMinute:
 		line.append_value("FREQ", "DAILY");
 		line.append_value("INTERVAL", fmt::format("{}", rpat.period / 1440));
 		break;
-	case PATTERNTYPE_WEEK: {
+	case rptWeek: {
 		line.append_value("FREQ", "WEEKLY");
 		line.append_value("INTERVAL", fmt::format("{}", rpat.period));
 		auto &val = line.append_value("BYDAY");
@@ -161,8 +161,8 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 				val.append_subval(weekday_to_str(wd));
 		break;
 	}
-	case PATTERNTYPE_MONTH:
-	case PATTERNTYPE_HJMONTH: {
+	case rptMonth:
+	case rptHjMonth: {
 		auto monthly  = rpat.period % 12 != 0;
 		auto interval = rpat.period;
 		line.append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
@@ -177,8 +177,8 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 		line.append_value("BYMONTH", fmt::format("{}", itime.month));
 		break;
 	}
-	case PATTERNTYPE_MONTHNTH:
-	case PATTERNTYPE_HJMONTHNTH: {
+	case rptMonthNth:
+	case rptHjMonthNth: {
 		auto monthly  = rpat.period % 12 != 0;
 		auto interval = rpat.period;
 		line.append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
@@ -200,14 +200,14 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 	default:
 		return false;
 	}
-	if (rpat.endtype == ENDTYPE_AFTER_N_OCCURRENCES) {
+	if (rpat.endtype == IDC_RCEV_PAT_ERB_AFTERNOCCUR) {
 		line.append_value("COUNT", fmt::format("{}", rpat.occurrencecount));
-	} else if (rpat.endtype == ENDTYPE_AFTER_DATE) {
+	} else if (rpat.endtype == IDC_RCEV_PAT_ERB_END) {
 		auto ut = rop_util_rtime_to_unix(rpat.enddate + apr.starttimeoffset);
 		ical_utc_to_datetime(tzcom, ut, &itime);
 		line.append_value("UNTIL", fmt::format("{}Z", itime));
 	}
-	if (rpat.patterntype == PATTERNTYPE_WEEK) {
+	if (rpat.patterntype == rptWeek) {
 		auto wd = weekday_to_str(rpat.firstdow);
 		if (wd == nullptr)
 			return false;

@@ -1491,10 +1491,19 @@ enum { /* for SetSearchCriteria */
 };
 
 enum { /* for APPOINTMENT_RECUR_PAT::recurfrequency */
-	RECURFREQUENCY_DAILY = 0x200a,
-	RECURFREQUENCY_WEEKLY,
-	RECURFREQUENCY_MONTHLY,
-	RECURFREQUENCY_YEARLY,
+	IDC_RCEV_PAT_ORB_DAILY   = 0x200a,
+	IDC_RCEV_PAT_ORB_WEEKLY  = 0x200b,
+	IDC_RCEV_PAT_ORB_MONTHLY = 0x200c,
+	IDC_RCEV_PAT_ORB_YEARLY  = 0x200d,
+};
+
+enum { /* for APPOINTMENT_RECUR_PAT::endtype */
+	IDC_RCEV_PAT_ERB_END         = 0x2021,
+	IDC_RCEV_PAT_ERB_AFTERNOCCUR = 0x2022,
+	IDC_RCEV_PAT_ERB_NOEND       = 0x2023,
+	IDC_RCEV_PAT_ERB_NOEND1      = 0xFFFFFFFF,
+
+	/* MS-OXOCAL v21 p.39: "should be 0x2023 but can be 0xffffffff" */
 };
 
 enum { /* for PidLidRecurrenceType */

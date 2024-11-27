@@ -361,7 +361,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 	apr->recur_pat.startdate = rop_util_unix_to_rtime(tmp_time);
 	if (irrule.endless()) {
  SET_INFINITE:
-		apr->recur_pat.endtype = ENDTYPE_NEVER_END;
+		apr->recur_pat.endtype = IDC_RCEV_PAT_ERB_NOEND;
 		apr->recur_pat.occurrencecount = 10;
 		apr->recur_pat.enddate = ENDDATE_MISSING;
 	} else {
@@ -378,10 +378,10 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 			itime = itime1;
 		}
 		if (irrule.total_count != 0) {
-			apr->recur_pat.endtype = ENDTYPE_AFTER_N_OCCURRENCES;
+			apr->recur_pat.endtype = IDC_RCEV_PAT_ERB_AFTERNOCCUR;
 			apr->recur_pat.occurrencecount = irrule.total_count;
 		} else {
-			apr->recur_pat.endtype = ENDTYPE_AFTER_DATE;
+			apr->recur_pat.endtype = IDC_RCEV_PAT_ERB_END;
 			apr->recur_pat.occurrencecount = irrule.sequence();
 		}
 		if (b_exceptional)
@@ -404,18 +404,18 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 		    piline->get_subval_list("BYMONTH") != nullptr ||
 		    piline->get_subval_list("BYSETPOS") != nullptr)
 			return false;
-		apr->recur_pat.recurfrequency = RECURFREQUENCY_DAILY;
+		apr->recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_DAILY;
 		if (irrule.interval > 999)
 			return false;
 		apr->recur_pat.period = irrule.interval * 1440;
 		apr->recur_pat.firstdatetime = apr->recur_pat.startdate % apr->recur_pat.period;
-		patterntype = PATTERNTYPE_DAY;
+		patterntype = rptMinute;
 		break;
 	case ical_frequency::week:
 		if (piline->get_subval_list("BYMONTH") != nullptr ||
 		    piline->get_subval_list("BYSETPOS") != nullptr)
 			return false;
-		apr->recur_pat.recurfrequency = RECURFREQUENCY_WEEKLY;
+		apr->recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_WEEKLY;
 		if (irrule.interval > 99)
 			return false;
 		apr->recur_pat.period = irrule.interval;
@@ -427,7 +427,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 		ical_itime_to_utc(nullptr, itime, &tmp_time);
 		apr->recur_pat.firstdatetime = rop_util_unix_to_rtime(tmp_time) %
 			(10080 * irrule.interval);
-		patterntype = PATTERNTYPE_WEEK;
+		patterntype = rptWeek;
 		if (irrule.test_bymask(rrule_by::day)) {
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.weekrecur = 0;
@@ -445,7 +445,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 	case ical_frequency::month:
 		if (piline->get_subval_list("BYMONTH") != nullptr)
 			return false;
-		apr->recur_pat.recurfrequency = RECURFREQUENCY_MONTHLY;
+		apr->recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_MONTHLY;
 		if (irrule.interval > 99)
 			return false;
 		apr->recur_pat.period = irrule.interval;
@@ -463,7 +463,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 		apr->recur_pat.firstdatetime = itime.delta_day(itime1) * 1440;
 		if (irrule.test_bymask(rrule_by::day) &&
 		    irrule.test_bymask(rrule_by::setpos)) {
-			patterntype = PATTERNTYPE_MONTHNTH;
+			patterntype = rptMonthNth;
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.monthnth.weekrecur = 0;
 			for (const auto &pnv2 : *psubval_list) {
@@ -485,7 +485,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 			    !irrule.test_bymask(rrule_by::setpos))
 				return false;
 			int tmp_int;
-			patterntype = PATTERNTYPE_MONTH;
+			patterntype = rptMonth;
 			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
 			if (pvalue == nullptr) {
 				ical_utc_to_datetime(&tzcom, start_time, &itime);
@@ -501,7 +501,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 		}
 		break;
 	case ical_frequency::year:
-		apr->recur_pat.recurfrequency = RECURFREQUENCY_YEARLY;
+		apr->recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_YEARLY;
 		if (irrule.interval > 8)
 			return false;
 		apr->recur_pat.period = 12 * irrule.interval;
@@ -521,7 +521,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 		    irrule.test_bymask(rrule_by::month)) {
 			if (irrule.test_bymask(rrule_by::monthday))
 				return false;
-			patterntype = PATTERNTYPE_MONTHNTH;
+			patterntype = rptMonthNth;
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.monthnth.weekrecur = 0;
 			for (const auto &pnv2 : *psubval_list) {
@@ -542,7 +542,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 			    irrule.test_bymask(rrule_by::setpos))
 				return false;
 			int tmp_int;
-			patterntype = PATTERNTYPE_MONTH;
+			patterntype = rptMonth;
 			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
 			if (pvalue == nullptr) {
 				ical_utc_to_datetime(&tzcom, start_time, &itime);
@@ -559,11 +559,11 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 		break;
 	}
 	if (calendartype == CAL_HIJRI) {
-		if (PATTERNTYPE_MONTH == patterntype) {
-			patterntype = PATTERNTYPE_HJMONTH;
+		if (patterntype == rptMonth) {
+			patterntype  = rptHjMonth;
 			calendartype = CAL_DEFAULT;
-		} else if (PATTERNTYPE_MONTHNTH == patterntype) {
-			patterntype = PATTERNTYPE_HJMONTHNTH;
+		} else if (patterntype == rptMonthNth) {
+			patterntype  = rptHjMonthNth;
 			calendartype = CAL_DEFAULT;
 		}
 	}
@@ -1519,11 +1519,11 @@ static bool oxcical_parse_disallow_counter(const ical_component &main_event,
 static uint32_t aptrecur_to_recurtype(const APPOINTMENT_RECUR_PAT &apr)
 {
 	switch (apr.recur_pat.recurfrequency) {
-	case RECURFREQUENCY_DAILY: return rectypeDaily;
-	case RECURFREQUENCY_WEEKLY: return rectypeWeekly;
-	case RECURFREQUENCY_MONTHLY: return rectypeMonthly;
-	case RECURFREQUENCY_YEARLY: return rectypeYearly;
-	default: return rectypeNone;
+	case IDC_RCEV_PAT_ORB_DAILY:   return rectypeDaily;
+	case IDC_RCEV_PAT_ORB_WEEKLY:  return rectypeWeekly;
+	case IDC_RCEV_PAT_ORB_MONTHLY: return rectypeMonthly;
+	case IDC_RCEV_PAT_ORB_YEARLY:  return rectypeYearly;
+	default:                       return rectypeNone;
 	}
 }
 
@@ -1557,8 +1557,8 @@ static bool oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 		return false;
 	++*plast_propid;
 	auto nt_time = rop_util_rtime_to_nttime(
-		apr->recur_pat.endtype == ENDTYPE_NEVER_END ||
-		apr->recur_pat.endtype == ENDTYPE_NEVER_END1 ?
+		apr->recur_pat.endtype == IDC_RCEV_PAT_ERB_NOEND ||
+		apr->recur_pat.endtype == IDC_RCEV_PAT_ERB_NOEND1 ?
 		ENDDATE_MISSING : apr->recur_pat.enddate);
 	propname = {MNID_ID, PSETID_Appointment, PidLidClipEnd};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -2820,8 +2820,8 @@ static bool oxcical_export_rrule(const ical_component *ptz_component,
 	switch (apr->recur_pat.calendartype) {
 	case CAL_DEFAULT:
 		switch (apr->recur_pat.patterntype) {
-		case PATTERNTYPE_HJMONTH:
-		case PATTERNTYPE_HJMONTHNTH:
+		case rptHjMonth:
+		case rptHjMonthNth:
 			str_tag = "X-MICROSOFT-RRULE";
 			break;
 		default:
@@ -2858,11 +2858,11 @@ static bool oxcical_export_rrule(const ical_component *ptz_component,
 		return false;
 	auto piline = &pcomponent.append_line(str_tag);
 	switch (apr->recur_pat.patterntype) {
-	case PATTERNTYPE_DAY:
+	case rptMinute:
 		piline->append_value("FREQ", "DAILY");
 		piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period / 1440));
 		break;
-	case PATTERNTYPE_WEEK: {
+	case rptWeek: {
 		piline->append_value("FREQ", "WEEKLY");
 		piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period));
 		auto &pivalue = piline->append_value("BYDAY");
@@ -2871,8 +2871,8 @@ static bool oxcical_export_rrule(const ical_component *ptz_component,
 				pivalue.append_subval(weekday_to_str(wd));
 		break;
 	}
-	case PATTERNTYPE_MONTH:
-	case PATTERNTYPE_HJMONTH: {
+	case rptMonth:
+	case rptHjMonth: {
 		auto monthly = apr->recur_pat.period % 12 != 0;
 		piline->append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
 		if (monthly) {
@@ -2892,8 +2892,8 @@ static bool oxcical_export_rrule(const ical_component *ptz_component,
 		}
 		break;
 	}
-	case PATTERNTYPE_MONTHNTH:
-	case PATTERNTYPE_HJMONTHNTH: {
+	case rptMonthNth:
+	case rptHjMonthNth: {
 		auto monthly = apr->recur_pat.period % 12 != 0;
 		piline->append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
 		if (monthly) {
@@ -2923,11 +2923,9 @@ static bool oxcical_export_rrule(const ical_component *ptz_component,
 	default:
 		return false;
 	}
-	if (ENDTYPE_AFTER_N_OCCURRENCES ==
-		apr->recur_pat.endtype) {
+	if (apr->recur_pat.endtype == IDC_RCEV_PAT_ERB_AFTERNOCCUR) {
 		piline->append_value("COUNT", std::to_string(apr->recur_pat.occurrencecount));
-	} else if (ENDTYPE_AFTER_DATE ==
-		apr->recur_pat.endtype) {
+	} else if (apr->recur_pat.endtype == IDC_RCEV_PAT_ERB_END) {
 		auto unix_time = rop_util_rtime_to_unix(apr->recur_pat.enddate + apr->starttimeoffset);
 		ical_utc_to_datetime(nullptr, unix_time, &itime);
 		if (!ical_itime_to_utc(ptz_component, itime, &unix_time))
@@ -2937,7 +2935,7 @@ static bool oxcical_export_rrule(const ical_component *ptz_component,
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		piline->append_value("UNTIL", tmp_buff);
 	}
-	if (PATTERNTYPE_WEEK == apr->recur_pat.patterntype) {
+	if (apr->recur_pat.patterntype == rptWeek) {
 		auto wd = weekday_to_str(apr->recur_pat.firstdow);
 		if (wd == nullptr)
 			return false;
@@ -2978,8 +2976,8 @@ static bool oxcical_export_exdate(const char *tzid, bool b_date,
 	ical_line *piline;
 
 	if (apr->recur_pat.calendartype != CAL_DEFAULT ||
-	    apr->recur_pat.patterntype == PATTERNTYPE_HJMONTH ||
-	    apr->recur_pat.patterntype == PATTERNTYPE_HJMONTHNTH)
+	    apr->recur_pat.patterntype == rptHjMonth ||
+	    apr->recur_pat.patterntype == rptHjMonthNth)
 		piline = &pcomponent.append_line("X-MICROSOFT-EXDATE");
 	else
 		piline = &pcomponent.append_line("EXDATE");
@@ -3500,12 +3498,9 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			str = it != std::end(cal_scale_names) &&
 			      it->first == apprecurr.recur_pat.calendartype ?
 			      it->second : nullptr;
-			if (PATTERNTYPE_HJMONTH ==
-				apprecurr.recur_pat.patterntype ||
-				PATTERNTYPE_HJMONTHNTH ==
-				apprecurr.recur_pat.patterntype) {
+			if (apprecurr.recur_pat.patterntype == rptHjMonth ||
+			    apprecurr.recur_pat.patterntype == rptHjMonthNth)
 				str = "Hijri";
-			}
 			if (str != nullptr)
 				pical.append_line("X-MICROSOFT-CALSCALE", str);
 		}

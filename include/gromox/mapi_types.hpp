@@ -568,24 +568,26 @@ struct TIMEZONEDEFINITION {
 	TZRULE *prules;
 };
 
-#define PATTERNTYPE_DAY								0x0000
-#define PATTERNTYPE_WEEK							0x0001
-#define PATTERNTYPE_MONTH							0x0002
-#define PATTERNTYPE_MONTHNTH						0x0003
-#define PATTERNTYPE_MONTHEND						0x0004
-#define PATTERNTYPE_HJMONTH							0x000A
-#define PATTERNTYPE_HJMONTHNTH						0x000B
-#define PATTERNTYPE_HJMONTHEND						0x000C
+enum {
+	rptMinute     = 0x0,
+	rptWeek       = 0x1,
+	rptMonth      = 0x2,
+	rptMonthNth   = 0x3,
+	rptMonthEnd   = 0x4,
+	rptHjMonth    = 0xa,
+	rptHjMonthNth = 0xb,
+	rptHjMonthEnd = 0xc,
+};
 
 namespace week_recur_bit {
 static constexpr unsigned int
-	sun = 1U << 0,
-	mon = 1U << 1,
-	tue = 1U << 2,
-	wed = 1U << 3,
-	thu = 1U << 4,
-	fri = 1U << 5,
-	sat = 1U << 6;
+	sun = 1U << 0, /* rdfSun */
+	mon = 1U << 1, /* rdfMon */
+	tue = 1U << 2, /* rdfTue */
+	wed = 1U << 3, /* rdfWed */
+	thu = 1U << 4, /* rdfThu */
+	fri = 1U << 5, /* rdfFri */
+	sat = 1U << 6; /* rdfSat */
 }
 
 #define RECURRENCENUM_FIRST							0x00000001
@@ -600,11 +602,6 @@ union PATTERNTYPE_SPECIFIC {
 		uint32_t weekrecur, recurnum;
 	} monthnth;
 };
-
-#define ENDTYPE_AFTER_DATE							0x00002021
-#define ENDTYPE_AFTER_N_OCCURRENCES					0x00002022
-#define ENDTYPE_NEVER_END							0x00002023
-#define ENDTYPE_NEVER_END1							0xFFFFFFFF
 
 #define FIRSTDOW_SUNDAY								0x00000000
 #define FIRSTDOW_MONDAY								0x00000001

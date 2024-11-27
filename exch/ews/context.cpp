@@ -117,9 +117,9 @@ void writeProp(sShape& shape, const std::optional<std::string>& value, const PRO
  * M  (1 bit): (0x00000002) The event occurs on Monday.
  * Su (1 bit): (0x00000001) The event occurs on Sunday.
  * unused (3 bytes): These bits are not used. MUST be zero and MUST be ignored.
- * Nth Day of month: (bits M, Tu, W, Th, F, SA, Su are set) - only PATTERNTYPE_MONTHNTH
- * Nth Weekday of month: (bits M, Tu, W, Th, F are set) - only PATTERNTYPE_MONTHNTH
- * Nth Weekend of month: (bits Sa, Su are set) - only PATTERNTYPE_MONTHNTH
+ * Nth Day of month: (bits M, Tu, W, Th, F, SA, Su are set) - only rptMonthNth
+ * Nth Weekday of month: (bits M, Tu, W, Th, F are set) - only rptMonthNth
+ * Nth Weekend of month: (bits Sa, Su are set) - only rptMonthNth
  */
 void daysofweek_to_pts(const std::string& daysOfWeek, uint32_t& weekrecur)
 {
@@ -168,10 +168,10 @@ void daysofweek_to_pts(const std::string& daysOfWeek, uint32_t& weekrecur)
 void calc_firstdatetime(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 {
 	switch(recur_pat.patterntype) {
-	case PATTERNTYPE_DAY:
+	case rptMinute:
 		recur_pat.firstdatetime = recur_pat.startdate % recur_pat.period;
 		break;
-	case PATTERNTYPE_WEEK: {
+	case rptWeek: {
 		// determine the first day of the week in which the first event occurrs
 		auto startdate = rop_util_rtime_to_unix(recur_pat.startdate);
 		if(gmtime_r(&startdate, tmp_tm) == nullptr)
@@ -181,8 +181,8 @@ void calc_firstdatetime(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 		recur_pat.firstdatetime = weekstart % (10080 * recur_pat.period);
 		break;
 	}
-	case PATTERNTYPE_MONTH:
-	case PATTERNTYPE_MONTHNTH: {
+	case rptMonth:
+	case rptMonthNth: {
 		recur_pat.firstdatetime = 0;
 		int fdt = ((((12 % recur_pat.period) * ((tmp_tm->tm_year + 299) % recur_pat.period)) % recur_pat.period) + tmp_tm->tm_mon) % recur_pat.period;
 			for (int i = 0; i < fdt; ++i)
@@ -223,13 +223,12 @@ void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 	// always at least one occurrence left)
 	uint32_t forwardcount = 0;
 	switch(recur_pat.recurfrequency) {
-	case RECURFREQUENCY_DAILY:
-		if(recur_pat.patterntype == PATTERNTYPE_DAY)
+	case IDC_RCEV_PAT_ORB_DAILY:
+		if (recur_pat.patterntype == rptMinute)
 			// occurrencecount - 1 because the first day already counts
 			enddate += recur_pat.period * 60 * (recur_pat.occurrencecount - 1);
 		break;
-	case RECURFREQUENCY_WEEKLY:
-	{
+	case IDC_RCEV_PAT_ORB_WEEKLY: {
 		uint8_t daycount = calc_daycount(recur_pat.pts.weekrecur);
 		if(daycount == 0)
 			throw EWSError::CalendarInvalidRecurrence(E3282);
@@ -251,8 +250,8 @@ void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 		}
 		break;
 	}
-	case RECURFREQUENCY_MONTHLY:
-	case RECURFREQUENCY_YEARLY:
+	case IDC_RCEV_PAT_ORB_MONTHLY:
+	case IDC_RCEV_PAT_ORB_YEARLY:
 		forwardcount = (recur_pat.occurrencecount - 1) * recur_pat.period;
 		auto curyear = tmp_tm->tm_year + 1900;
 		auto curmonth = tmp_tm->tm_mon;
@@ -274,7 +273,7 @@ void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 		++tmp_tm->tm_mon;
 
 		switch(recur_pat.patterntype) {
-		case PATTERNTYPE_MONTH:
+		case rptMonth:
 			// compensation between 28 and 31
 			if (recur_pat.pts.dayofmonth >= 28 &&
 					recur_pat.pts.dayofmonth <= 31 &&
@@ -285,7 +284,7 @@ void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 					enddate += (ical_get_monthdays(tmp_tm->tm_year, tmp_tm->tm_mon) - tmp_tm->tm_mday) * 86400;
 			}
 			break;
-		case PATTERNTYPE_MONTHNTH:
+		case rptMonthNth:
 			if(recur_pat.pts.monthnth.recurnum == 5)
 				// Set date on the last day of the last month
 				enddate += (ical_get_monthdays(tmp_tm->tm_year, tmp_tm->tm_mon) - tmp_tm->tm_mday) * 86400;
@@ -1875,8 +1874,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			auto interval = std::get<tDailyRecurrencePattern>(rp).Interval;
 			if(interval < 1 || interval > 999)
 				throw EWSError::CalendarInvalidRecurrence(E3266);
-			apr.recur_pat.recurfrequency = RECURFREQUENCY_DAILY;
-			apr.recur_pat.patterntype = PATTERNTYPE_DAY;
+			apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_DAILY;
+			apr.recur_pat.patterntype = rptMinute;
 			apr.recur_pat.period = interval * 1440;
 			rectype = rectypeDaily;
 		}
@@ -1898,8 +1897,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 
 			// every weekday has daily frequency and weekly pattern type
 			apr.recur_pat.recurfrequency = apr.recur_pat.pts.weekrecur != 0x3E ?
-				RECURFREQUENCY_WEEKLY : RECURFREQUENCY_DAILY;
-			apr.recur_pat.patterntype = PATTERNTYPE_WEEK;
+				IDC_RCEV_PAT_ORB_WEEKLY : IDC_RCEV_PAT_ORB_DAILY;
+			apr.recur_pat.patterntype = rptWeek;
 			apr.recur_pat.period = interval;
 			apr.recur_pat.firstdow = firstdow;
 			rectype = rectypeWeekly;
@@ -1918,8 +1917,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			if(dayOfWeekIndex > 4)
 				throw EWSError::CalendarInvalidRecurrence(E3272);
 
-			apr.recur_pat.recurfrequency = RECURFREQUENCY_MONTHLY;
-			apr.recur_pat.patterntype = PATTERNTYPE_MONTHNTH;
+			apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_MONTHLY;
+			apr.recur_pat.patterntype = rptMonthNth;
 			apr.recur_pat.period = interval;
 			apr.recur_pat.pts.monthnth.recurnum = static_cast<uint8_t>(dayOfWeekIndex) + 1;
 			rectype = rectypeMonthly;
@@ -1928,8 +1927,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			auto interval = std::get<tAbsoluteMonthlyRecurrencePattern>(rp).Interval;
 			if(interval < 1 || interval > 99)
 				throw EWSError::CalendarInvalidRecurrence(E3273);
-			apr.recur_pat.recurfrequency = RECURFREQUENCY_MONTHLY;
-			apr.recur_pat.patterntype = PATTERNTYPE_MONTH;
+			apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_MONTHLY;
+			apr.recur_pat.patterntype = rptMonth;
 			apr.recur_pat.period = interval;
 			apr.recur_pat.pts.dayofmonth = std::get<tAbsoluteMonthlyRecurrencePattern>(rp).DayOfMonth;
 			if(apr.recur_pat.pts.dayofmonth < 1 || apr.recur_pat.pts.dayofmonth > 31)
@@ -1944,8 +1943,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 				throw EWSError::CalendarInvalidRecurrence(E3275);
 			auto dayOfWeekIndex = std::get<tRelativeYearlyRecurrencePattern>(rp).DayOfWeekIndex.index();
 			auto month = std::get<tRelativeYearlyRecurrencePattern>(rp).Month.index();
-			apr.recur_pat.recurfrequency = RECURFREQUENCY_YEARLY;
-			apr.recur_pat.patterntype = PATTERNTYPE_MONTHNTH;
+			apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_YEARLY;
+			apr.recur_pat.patterntype = rptMonthNth;
 			apr.recur_pat.period = 12;
 			apr.recur_pat.pts.monthnth.recurnum = static_cast<uint8_t>(dayOfWeekIndex) + 1;
 			rectype = rectypeYearly;
@@ -1953,8 +1952,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		}
 		else if(std::holds_alternative<tAbsoluteYearlyRecurrencePattern>(rp)) {
 			auto month = std::get<tAbsoluteYearlyRecurrencePattern>(rp).Month.index();
-			apr.recur_pat.recurfrequency = RECURFREQUENCY_YEARLY;
-			apr.recur_pat.patterntype = PATTERNTYPE_MONTH;
+			apr.recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_YEARLY;
+			apr.recur_pat.patterntype = rptMonth;
 			apr.recur_pat.period = 12;
 			apr.recur_pat.pts.dayofmonth = std::get<tAbsoluteYearlyRecurrencePattern>(rp).DayOfMonth;
 			if(apr.recur_pat.pts.dayofmonth < 1 || apr.recur_pat.pts.dayofmonth > 31)
@@ -1967,19 +1966,19 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 
 		calc_firstdatetime(apr.recur_pat, &startdate_tm);
 		if(std::holds_alternative<tNoEndRecurrenceRange>(rr)) {
-			apr.recur_pat.endtype = ENDTYPE_NEVER_END;
+			apr.recur_pat.endtype = IDC_RCEV_PAT_ERB_NOEND;
 			apr.recur_pat.occurrencecount = 0xA; // value for a recurring series with no end date
 			apr.recur_pat.enddate = ENDDATE_MISSING;
 		}
 		else if(std::holds_alternative<tEndDateRecurrenceRange>(rr)) {
-			apr.recur_pat.endtype = ENDTYPE_AFTER_DATE;
+			apr.recur_pat.endtype = IDC_RCEV_PAT_ERB_END;
 			apr.recur_pat.occurrencecount = 0xA; // TODO count occurrences, but this field doesn't really matter
 			auto ed = std::get<tEndDateRecurrenceRange>(rr).EndDate;
 			auto enddate = clock::to_time_t(ed);
 			apr.recur_pat.enddate = rop_util_unix_to_rtime(enddate);
 		}
 		else if(std::holds_alternative<tNumberedRecurrenceRange>(rr)) {
-			apr.recur_pat.endtype = ENDTYPE_AFTER_N_OCCURRENCES;
+			apr.recur_pat.endtype = IDC_RCEV_PAT_ERB_AFTERNOCCUR;
 			apr.recur_pat.occurrencecount = std::get<tNumberedRecurrenceRange>(rr).NumberOfOccurrences;
 			calc_enddate(apr.recur_pat, &startdate_tm);
 		}

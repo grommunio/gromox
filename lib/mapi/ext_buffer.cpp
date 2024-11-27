@@ -1781,18 +1781,18 @@ static pack_result ext_buffer_pull_patterntypespecific(EXT_PULL *pext,
     uint16_t patterntype, PATTERNTYPE_SPECIFIC *r)
 {
 	switch (patterntype) {
-	case PATTERNTYPE_DAY:
+	case rptMinute:
 		/* do nothing */
 		return EXT_ERR_SUCCESS;
-	case PATTERNTYPE_WEEK:
+	case rptWeek:
 		return pext->g_uint32(&r->weekrecur);
-	case PATTERNTYPE_MONTH:
-	case PATTERNTYPE_MONTHEND:
-	case PATTERNTYPE_HJMONTH:
-	case PATTERNTYPE_HJMONTHEND:
+	case rptMonth:
+	case rptMonthEnd:
+	case rptHjMonth:
+	case rptHjMonthEnd:
 		return pext->g_uint32(&r->dayofmonth);
-	case PATTERNTYPE_MONTHNTH:
-	case PATTERNTYPE_HJMONTHNTH:
+	case rptMonthNth:
+	case rptHjMonthNth:
 		TRY(pext->g_uint32(&r->monthnth.weekrecur));
 		return pext->g_uint32(&r->monthnth.recurnum);
 	default:
@@ -3287,18 +3287,18 @@ static pack_result ext_buffer_push_patterntypespecific(EXT_PUSH *pext,
     uint16_t patterntype, const PATTERNTYPE_SPECIFIC *r)
 {
 	switch (patterntype) {
-	case PATTERNTYPE_DAY:
+	case rptMinute:
 		/* do nothing */
 		return EXT_ERR_SUCCESS;
-	case PATTERNTYPE_WEEK:
+	case rptWeek:
 		return pext->p_uint32(r->weekrecur);
-	case PATTERNTYPE_MONTH:
-	case PATTERNTYPE_MONTHEND:
-	case PATTERNTYPE_HJMONTH:
-	case PATTERNTYPE_HJMONTHEND:
+	case rptMonth:
+	case rptMonthEnd:
+	case rptHjMonth:
+	case rptHjMonthEnd:
 		return pext->p_uint32(r->dayofmonth);
-	case PATTERNTYPE_MONTHNTH:
-	case PATTERNTYPE_HJMONTHNTH:
+	case rptMonthNth:
+	case rptHjMonthNth:
 		TRY(pext->p_uint32(r->monthnth.weekrecur));
 		return pext->p_uint32(r->monthnth.recurnum);
 	default:
