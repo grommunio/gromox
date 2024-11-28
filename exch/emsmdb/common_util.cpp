@@ -1420,7 +1420,8 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 	return ecServerOOM;
 }
 
-ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_submit)
+ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
+    bool b_submit) try
 {
 	uint64_t message_id = msg->get_id();
 	MAIL imail;
@@ -1433,18 +1434,17 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto dir = plogon->get_dir();
+	auto log_id = dir + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
 	cpid_t cpid = pinfo == nullptr ? static_cast<cpid_t>(1252) : pinfo->cpid;
 	if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr) {
-		mlog2(LV_ERR, "E-1289: Cannot get parent folder_id of mid:%llu",
-		        LLU{rop_util_get_gc_value(message_id)});
+		mlog2(LV_ERR, "E-1289: exrpc get_message_property %s failed", log_id.c_str());
 		return ecNotFound;
 	}
 	auto parent_id = *static_cast<uint64_t *>(pvalue);
 	if (!exmdb_client::read_message(dir, nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr) {
-		mlog2(LV_ERR, "E-1288: Failed to read mid:%llu from exmdb",
-		        LLU{rop_util_get_gc_value(message_id)});
+		mlog2(LV_ERR, "E-1288: exrpc read_message %s failed", log_id.c_str());
 		return ecRpcFailed;
 	}
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
@@ -1459,15 +1459,13 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 	}
 	auto message_flags = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (message_flags == nullptr) {
-		mlog2(LV_ERR, "E-1287: Failed to get message_flag of mid:%llu",
-		        LLU{rop_util_get_gc_value(message_id)});
+		mlog2(LV_ERR, "E-1287: no PR_MESSAGE_FLAGS in %s", log_id.c_str());
 		return ecError;
 	}
 	bool b_resend = *message_flags & MSGFLAG_RESEND;
 	const tarray_set *prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
-		mlog2(LV_ERR, "E-1286: Missing recipients for message mid:%llu",
-		        LLU{rop_util_get_gc_value(message_id)});
+		mlog2(LV_ERR, "E-1286: Tried to send %s but message has 0 recipients", log_id.c_str());
 		return MAPI_E_NO_RECIPIENTS;
 	}
 
@@ -1478,17 +1476,15 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 			return ret;
 	}
 	if (rcpt_list.size() == 0) {
-		mlog2(LV_ERR, "E-1282: Empty converted recipients list while sending mid:%llu",
-		        LLU{rop_util_get_gc_value(message_id)});
+		mlog2(LV_ERR, "E-1282: Empty converted recipients list attempting to send %s", log_id.c_str());
 		return MAPI_E_NO_RECIPIENTS;
 	}
 	auto body_type = get_override_format(*pmsgctnt);
 	common_util_set_dir(dir);
 	/* try to avoid TNEF message */
-	if (!oxcmail_export(pmsgctnt, false, body_type, &imail,
+	if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type, &imail,
 	    common_util_alloc, common_util_get_propids, common_util_get_propname)) {
-		mlog2(LV_ERR, "E-1281: Failed to export to RFC5322 mail while sending mid:%llu",
-		        LLU{rop_util_get_gc_value(message_id)});
+		mlog2(LV_ERR, "E-1281: oxcmail_export %s failed", log_id.c_str());
 		return ecError;	
 	}
 
@@ -1515,8 +1511,8 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 
 	auto ret = ems_send_mail(&imail, plogon->get_account(), rcpt_list);
 	if (ret != ecSuccess) {
-		mlog2(LV_ERR, "E-1280: Failed to send mid:%llu via SMTP: %s",
-		        LLU{rop_util_get_gc_value(message_id)}, mapi_strerror(ret));
+		mlog2(LV_ERR, "E-1280: failed to send %s via SMTP: %s",
+			log_id.c_str(), mapi_strerror(ret));
 		return ret;
 	}
 	imail.clear();
@@ -1533,19 +1529,16 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 	if (NULL != ptarget) {
 		if (!cu_entryid_to_mid(plogon,
 		    ptarget, &folder_id, &new_id)) {
-			mlog2(LV_WARN, "W-1279: Failed to retrieve target entryid while sending mid:%llu",
-			        LLU{rop_util_get_gc_value(message_id)});
+			mlog2(LV_WARN, "W-1279: PR_TARGET_ENTRYID inconvertible in %s", log_id.c_str());
 			return ecWarnWithErrors;	
 		}
 		if (!exmdb_client::clear_submit(dir, message_id, false)) {
-			mlog2(LV_WARN, "W-1278: Failed to clear submit flag while sending mid:%llu",
-			        LLU{rop_util_get_gc_value(message_id)});
+			mlog2(LV_WARN, "W-1278: exrpc clear_submit %s failed", log_id.c_str());
 			return ecWarnWithErrors;
 		}
 		if (!exmdb_client::movecopy_message(dir, cpid, message_id,
 		    folder_id, new_id, TRUE, &b_result)) {
-			mlog2(LV_WARN, "W-1277: Failed to move to target folder while sending mid:%llu",
-			        LLU{rop_util_get_gc_value(message_id)});
+			mlog2(LV_WARN, "W-1277: exrpc movecopy_message %s failed", log_id.c_str());
 			return ecWarnWithErrors;
 		}
 		return ecSuccess;
@@ -1555,8 +1548,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 		return ecSuccess;
 	}
 	if (!exmdb_client::clear_submit(dir, message_id, false)) {
-		mlog2(LV_WARN, "W-1276: Failed to clear submit flag while sending mid:%llu",
-		        LLU{rop_util_get_gc_value(message_id)});
+		mlog2(LV_WARN, "W-1276: exrpc clear_submit %s failed", log_id.c_str());
 		return ecWarnWithErrors;
 	}
 
@@ -1569,11 +1561,13 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 	if (!exmdb_client::movecopy_messages(dir, cpid,
 	    false, STORE_OWNER_GRANTED, parent_id, folder_id, false,
 	    &ids, &b_partial)) {
-		mlog2(LV_WARN, "W-1275: Failed to move to \"Sent\" folder while sending mid:%llu",
-		        LLU{rop_util_get_gc_value(message_id)});
+		mlog2(LV_WARN, "W-1275: exrpc movecopy_message %s failed", log_id.c_str());
 		return ecWarnWithErrors;
 	}
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2553: ENOMEM");
+	return ecServerOOM;
 }
 
 void common_util_init(const char *org_name, unsigned int max_rcpt,

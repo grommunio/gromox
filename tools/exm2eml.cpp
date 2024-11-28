@@ -167,6 +167,7 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	auto cl_5 = make_scope_exit(gi_shutdown);
 
+	std::string log_id;
 	MESSAGE_CONTENT *ctnt = nullptr;
 	uint64_t msg_id = 0;
 	if (strchr(argv[1], ':') != nullptr) {
@@ -176,6 +177,7 @@ int main(int argc, char **argv) try
 			fprintf(stderr, "Unparsable: \"%s\"\n", argv[1]);
 			return EXIT_FAILURE;
 		}
+		log_id = argv[1];
 		msg_id = strtoull(sep + 1, nullptr, 0);
 		uint32_t inst_id = 0;
 		ctnt = message_content_init();
@@ -195,6 +197,7 @@ int main(int argc, char **argv) try
 		}
 	} else {
 		msg_id = strtoull(argv[1], nullptr, 0);
+		log_id = g_storedir_s + ":m" + std::to_string(msg_id);
 		if (!exmdb_client_remote::read_message(g_storedir, nullptr, CP_UTF8,
 		    rop_util_make_eid_ex(1, msg_id), &ctnt)) {
 			fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
@@ -211,7 +214,7 @@ int main(int argc, char **argv) try
 		gi_print(0, *ctnt);
 	}
 	if (g_export_mode == EXPORT_MAIL) {
-		if (!oxcmail_export(ctnt, false, oxcmail_body::plain_and_html,
+		if (!oxcmail_export(ctnt, log_id.c_str(), false, oxcmail_body::plain_and_html,
 		    &imail, zalloc, cu_get_propids,
 		    cu_get_propname)) {
 			fprintf(stderr, "oxcmail_export failed for an unspecified reason.\n");
@@ -269,7 +272,8 @@ int main(int argc, char **argv) try
 			throw YError("PG-1018: %s", strerror(errno));
 	} else if (g_export_mode == EXPORT_ICAL) {
 		ical ic;
-		if (!oxcical_export(ctnt, ic, g_config_file->get_value("x500_org_name"),
+		if (!oxcical_export(ctnt, log_id.c_str(), ic,
+		    g_config_file->get_value("x500_org_name"),
 		    zalloc, cu_get_propids, oxcmail_id2user)) {
 			fprintf(stderr, "oxcical_export failed for an unspecified reason.\n");
 			return EXIT_FAILURE;
@@ -283,13 +287,13 @@ int main(int argc, char **argv) try
 		fputs(buf.c_str(), stdout);
 	} else if (g_export_mode == EXPORT_VCARD) {
 		vcard vc;
-		if (!oxvcard_export(ctnt, vc, cu_get_propids)) {
-			fprintf(stderr, "oxvcard_export failed for an unspecified reason.\n");
+		if (!oxvcard_export(ctnt, log_id.c_str(), vc, cu_get_propids)) {
+			fprintf(stderr, "oxvcard_export %s failed for an unspecified reason.\n", log_id.c_str());
 			return EXIT_FAILURE;
 		}
 		auto buf = std::make_unique<char[]>(VCARD_MAX_BUFFER_LEN);
 		if (!vc.serialize(buf.get(), VCARD_MAX_BUFFER_LEN)) {
-			fprintf(stderr, "vcard::serialize failed for an unspecified reason.\n");
+			fprintf(stderr, "vcard::serialize %s failed for an unspecified reason.\n", log_id.c_str());
 			return EXIT_FAILURE;
 		}
 		fputs(buf.get(), stdout);

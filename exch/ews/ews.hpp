@@ -285,7 +285,7 @@ public:
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
-	void send(const std::string&, const MESSAGE_CONTENT&) const;
+	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &) const;
 	BINARY serialize(const XID&) const;
 	bool streamEvents(const Structures::tSubscriptionId&) const;
 	MCONT_PTR toContent(const std::string&, std::string&) const;

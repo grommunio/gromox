@@ -1166,8 +1166,9 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
 		auto getPropName = [&](uint16_t id, PROPERTY_NAME** name)
 		                   {*name = getPropertyName(dir, id); return TRUE;};
-		if (!oxcmail_export(content, false, oxcmail_body::plain_and_html, &mail,
-		                   alloc, getPropIds, getPropName))
+		auto log_id = dir + ":m" + std::to_string(mid);
+		if (!oxcmail_export(content, log_id.c_str(), false,
+		    oxcmail_body::plain_and_html, &mail, alloc, getPropIds, getPropName))
 			throw EWSError::ItemCorrupt(E3072);
 		auto mailLen = mail.get_length();
 		if(mailLen < 0)
@@ -1645,7 +1646,8 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
  * @param     dir      Home directory the message is associtated with
  * @param     content  Message content
  */
-void EWSContext::send(const std::string& dir, const MESSAGE_CONTENT& content) const
+void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
+    const MESSAGE_CONTENT &content) const
 {
 	if(!content.children.prcpts)
 		throw EWSError::MissingRecipients(E3115);
@@ -1654,8 +1656,11 @@ void EWSContext::send(const std::string& dir, const MESSAGE_CONTENT& content) co
 		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
 	auto getPropName = [&](uint16_t id, PROPERTY_NAME** name)
 					   {*name = getPropertyName(dir, id); return TRUE;};
-	if (!oxcmail_export(&content, false, oxcmail_body::plain_and_html,
-	    &mail, alloc, getPropIds,getPropName))
+	std::string log_id;
+	if (log_msg_id != 0)
+		log_id = dir + ":m" + std::to_string(log_msg_id);
+	if (!oxcmail_export(&content, log_id.c_str(), false,
+	    oxcmail_body::plain_and_html, &mail, alloc, getPropIds, getPropName))
 		throw EWSError::ItemCorrupt(E3116);
 	std::vector<std::string> rcpts;
 	rcpts.reserve(content.children.prcpts->count);

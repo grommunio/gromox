@@ -3365,8 +3365,9 @@ static std::string oxcical_export_valarm(const MESSAGE_CONTENT &msg,
 }
 
 static std::string oxcical_export_internal(const char *method, const char *tzid,
-    const MESSAGE_CONTENT *pmsg, ical &pical, const char *org_name,
-    cvt_id2user id2user, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
+    const MESSAGE_CONTENT *pmsg, const char *log_id, ical &pical,
+    const char *org_name, cvt_id2user id2user, EXT_BUFFER_ALLOC alloc,
+    GET_PROPIDS get_propids) try
 {
 	const PROPERTY_NAME namequeries[] = {
 		{MNID_ID, PSETID_Appointment, PidLidAppointmentCounterProposal},
@@ -3744,7 +3745,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			if (!pembedded->proplist.has(proptag_xrt))
 				continue;
 			auto estr = oxcical_export_internal(method, tzid,
-			      pembedded, pical, org_name,
+			      pembedded, log_id, pical, org_name,
 			      id2user, alloc, get_propids);
 			if (estr.size() > 0)
 				return estr;
@@ -3757,11 +3758,11 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 }
 #undef E_2201
 
-bool oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
+bool oxcical_export(const MESSAGE_CONTENT *pmsg, const char *log_id, ical &pical,
     const char *org_name, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
     cvt_id2user id2user)
 {
-	auto err = oxcical_export_internal(nullptr, nullptr, pmsg, pical,
+	auto err = oxcical_export_internal(nullptr, nullptr, pmsg, log_id, pical,
 	           org_name, std::move(id2user), alloc, std::move(get_propids));
 	if (err.size() > 0) {
 		mlog(LV_ERR, "%s", err.c_str());

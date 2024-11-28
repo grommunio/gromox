@@ -2454,8 +2454,8 @@ static bool cu_rcpt_to_list(const TPROPVAL_ARRAY &props,
 }
 
 static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
-	uint32_t action_flavor, uint32_t template_message_id,
-	GUID template_guid, BOOL *pb_result)
+    uint32_t action_flavor, uint32_t template_message_id, GUID template_guid,
+    BOOL *pb_result) try
 {
 	void *pvalue;
 	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
@@ -2558,10 +2558,10 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 		cu_set_propval(&pmsgctnt->proplist, PR_BODY, content_buff.c_str());
 	}
 	g_sqlite_for_oxcmail = rp.sqlite;
+	auto log_id = rp.ev_to + ":m"s + std::to_string(rop_util_get_gc_value(template_message_id));
 	MAIL imail;
-	if (!oxcmail_export(pmsgctnt, false, oxcmail_body::plain_and_html,
-	    &imail, common_util_alloc,
-	    message_get_propids, message_get_propname)) {
+	if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, oxcmail_body::plain_and_html,
+	    &imail, common_util_alloc, message_get_propids, message_get_propname)) {
 		g_sqlite_for_oxcmail = nullptr;
 		return FALSE;
 	}
@@ -2582,6 +2582,9 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 		mlog(LV_ERR, "E-1188: ems_send_mail: %s", mapi_strerror(ret));
 	*pb_result = TRUE;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2551: ENOMEM");
+	return false;
 }
 
 static ec_error_t message_bounce_message(const char *from_address,
@@ -2646,7 +2649,7 @@ template<typename T> static bool msg_rcpt_blocks_to_list(const T &fwd,
 }
 
 static ec_error_t message_forward_message(const rulexec_in &rp,
-    uint32_t action_flavor, std::vector<std::string> &&rcpt_list)
+    uint32_t action_flavor, std::vector<std::string> &&rcpt_list) try
 {
 	int offset;
 	char tmp_path[256];
@@ -2695,7 +2698,8 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		auto body_type = get_override_format(*pmsgctnt);
 		/* try to avoid TNEF message */
 		g_sqlite_for_oxcmail = rp.sqlite;
-		if (!oxcmail_export(pmsgctnt, false, body_type,
+		auto log_id = rp.ev_to + ":m"s + std::to_string(rop_util_get_gc_value(rp.message_id));
+		if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type,
 		    &imail, common_util_alloc,
 		    message_get_propids, message_get_propname)) {
 			g_sqlite_for_oxcmail = nullptr;
@@ -2761,6 +2765,9 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 	if (ret != ecSuccess)
 		mlog(LV_ERR, "E-1186: ems_send_mail: %s", mapi_strerror(ret));
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2550: ENOMEM");
+	return ecServerOOM;
 }
 
 static BOOL message_make_dam(const rulexec_in &rp,

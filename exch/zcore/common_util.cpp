@@ -1220,7 +1220,7 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 	return ecServerOOM;
 }
 
-BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
+BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit) try
 {
 	uint64_t message_id = msg->get_id();
 	void *pvalue;
@@ -1260,9 +1260,9 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 	const tarray_set *prcpts = pmsgctnt->children.prcpts;
 	if (prcpts == nullptr)
 		return FALSE;
+	auto log_id = pstore->get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
 	if (prcpts->count == 0)
-		mlog(LV_INFO, "I-1504: Store %s attempted to send message %llxh to 0 recipients",
-		        pstore->get_account(), LLU{message_id});
+		mlog(LV_INFO, "I-1504: Tried to send %s but message has 0 recipients", log_id.c_str());
 
 	std::vector<std::string> rcpt_list;
 	for (auto &rcpt : *prcpts)
@@ -1275,7 +1275,7 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 		common_util_set_dir(pstore->get_dir());
 		/* try to avoid TNEF message */
 		MAIL imail;
-		if (!oxcmail_export(pmsgctnt, false, body_type,
+		if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type,
 		    &imail, common_util_alloc, common_util_get_propids,
 		    common_util_get_propname))
 			return FALSE;	
@@ -1303,7 +1303,8 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 		auto ret = cu_send_mail(imail, g_smtp_url.c_str(),
 		           pstore->get_account(), rcpt_list);
 		if (ret != ecSuccess) {
-			mlog(LV_ERR, "E-1194: cu_send_mail: %s", mapi_strerror(ret));
+			mlog(LV_ERR, "E-1194: failed to send %s via SMTP: %s",
+				log_id.c_str(), mapi_strerror(ret));
 			return FALSE;
 		}
 	}
@@ -1337,6 +1338,9 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
 	return exmdb_client::movecopy_messages(pstore->get_dir(), cpid, false,
 	       STORE_OWNER_GRANTED, parent_id, folder_id, false, &ids, &b_partial);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2549: ENOMEM");
+	return false;
 }
 
 void common_util_notify_receipt(const char *username, int type,
@@ -1787,7 +1791,8 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 	return ecSuccess;
 }
 
-BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id, BINARY *peml_bin)
+BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id,
+    BINARY *peml_bin) try
 {
 	int size;
 	void *ptr;
@@ -1812,8 +1817,9 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id, BINAR
 	auto body_type = get_override_format(*pmsgctnt);
 	common_util_set_dir(pstore->get_dir());
 	/* try to avoid TNEF message */
+	auto log_id = pstore->get_dir() + ":i"s + std::to_string(inst_id);
 	MAIL imail;
-	if (!oxcmail_export(pmsgctnt, false, body_type, &imail,
+	if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type, &imail,
 	    common_util_alloc, common_util_get_propids, common_util_get_propname))
 		return FALSE;	
 	auto mail_len = imail.get_length();
@@ -1835,6 +1841,9 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id, BINAR
 		size = STREAM_BLOCK_SIZE;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2548: ENOMEM");
+	return false;
 }
 
 static void zc_unwrap_smime(MAIL &ma) try
@@ -1904,19 +1913,22 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	
 	auto pinfo = zs_get_info();
 	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
-	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
+	auto dir = pstore->get_dir();
+	if (!exmdb_client::read_message(dir, nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
-	common_util_set_dir(pstore->get_dir());
-	if (!oxcical_export(pmsgctnt, ical, g_org_name,
+	common_util_set_dir(dir);
+	auto log_id = dir + ":m"s + std::to_string(message_id);
+	if (!oxcical_export(pmsgctnt, log_id.c_str(), ical, g_org_name,
 	    common_util_alloc, common_util_get_propids, cu_id2user)) {
-		mlog(LV_DEBUG, "D-2202: oxcical_export %s:%llxh failed",
-			pstore->get_dir(), LLU{message_id});
+		mlog(LV_ERR, "E-2202: oxcical_export %s failed", log_id.c_str());
 		return FALSE;
 	}
 	std::string tmp_buff;
-	if (ical.serialize(tmp_buff) != ecSuccess)
+	if (ical.serialize(tmp_buff) != ecSuccess) {
+		mlog(LV_ERR, "E-2552: ical_serialize %s failed", log_id.c_str());
 		return FALSE;	
+	}
 	pical_bin->cb = tmp_buff.size();
 	pical_bin->pc = common_util_dup(tmp_buff.c_str());
 	return pical_bin->pc != nullptr ? TRUE : FALSE;
@@ -1985,8 +1997,9 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
 	common_util_set_dir(pstore->get_dir());
+	auto log_id = pstore->get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
 	vcard vcard;
-	if (!oxvcard_export(pmsgctnt, vcard, common_util_get_propids))
+	if (!oxvcard_export(pmsgctnt, log_id.c_str(), vcard, common_util_get_propids))
 		return FALSE;
 	pvcf_bin->pv = common_util_alloc(VCARD_MAX_BUFFER_LEN);
 	if (pvcf_bin->pv == nullptr)

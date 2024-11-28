@@ -259,7 +259,7 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		if(persist)
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
 		if(send)
-			ctx.send(dir, *content);
+			ctx.send(dir, 0, *content);
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
@@ -1457,7 +1457,7 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 		    ctx.effectiveUser(folder), CP_ACP, meid.messageId(),
 		    &content) || content == nullptr)
 			throw EWSError::ItemNotFound(E3143);
-		ctx.send(dir, *content);
+		ctx.send(dir, rop_util_get_gc_value(meid.messageId()), *content);
 
 		if(request.SaveItemToFolder)
 			ctx.create(dir, folder, *content);

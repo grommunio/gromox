@@ -3801,6 +3801,7 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
 }
 
 static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
+    const char *log_id,
     BOOL b_inline, MIME_SKELETON *pskeleton, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, GET_PROPNAME get_propname, MIME *pmime)
 {
@@ -3927,7 +3928,8 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	
 	{
 	vcard vcard;
-	if (b_vcard && oxvcard_export(pattachment->pembedded, vcard, get_propids)) {
+	if (b_vcard && oxvcard_export(pattachment->pembedded,
+	    log_id, vcard, get_propids)) {
 		std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(VCARD_MAX_BUFFER_LEN));
 		if (pbuff != nullptr && vcard.serialize(pbuff.get(),
 		    VCARD_MAX_BUFFER_LEN)) {
@@ -3942,7 +3944,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	if (NULL != pattachment->pembedded) {
 		auto b_tnef = pskeleton->mail_type == oxcmail_type::tnef;
 		MAIL imail;
-		if (!oxcmail_export(pattachment->pembedded,
+		if (!oxcmail_export(pattachment->pembedded, log_id,
 		    b_tnef ? TRUE : false, pskeleton->body_type, &imail,
 		    alloc, std::move(get_propids), std::move(get_propname)))
 			return FALSE;
@@ -4031,8 +4033,8 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 }
 
 #define exp_false xlog_bool(__func__, __LINE__)
-BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
-    enum oxcmail_body body_type,
+BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
+    BOOL b_tnef, enum oxcmail_body body_type,
     MAIL *pmail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
     GET_PROPNAME get_propname) try
 {
@@ -4259,9 +4261,9 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	}
 	
 	if (NULL != pcalendar) {
-		if (!oxcical_export(pmsg, ical, g_oxcmail_org_name, alloc,
+		if (!oxcical_export(pmsg, log_id, ical, g_oxcmail_org_name, alloc,
 		    get_propids, oxcmail_id2user)) {
-			mlog(LV_WARN, "W-2186: oxcical_export failed for an unspecified reason");
+			mlog(LV_WARN, "W-2186: oxcical_export %s failed (unspecified reason)", log_id);
 			return exp_false;
 		}
 		tmp_method[0] = '\0';
@@ -4324,7 +4326,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 			if (pmime == nullptr)
 				return exp_false;
 			if (!oxcmail_export_attachment(mime_skeleton.pattachments->pplist[i],
-			    TRUE, &mime_skeleton, alloc, get_propids,
+			    log_id, TRUE, &mime_skeleton, alloc, get_propids,
 			    get_propname, pmime))
 				return exp_false;
 		}
@@ -4353,7 +4355,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		}
 		if (pmime == nullptr)
 			return exp_false;
-		if (!oxcmail_export_attachment(pattachment,
+		if (!oxcmail_export_attachment(pattachment, log_id,
 		    b_inline, &mime_skeleton, alloc, get_propids,
 		    get_propname, pmime))
 			return exp_false;

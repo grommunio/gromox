@@ -715,10 +715,10 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 #undef imp_null
 
 #define exp_false xlog_bool(__func__, __LINE__)
-BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids) try
+BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
+    vcard &vcard, GET_PROPIDS get_propids) try
 {
 	const char *pvalue;
-	STRING_ARRAY *saval = nullptr;
 	size_t out_len;
 	uint16_t propid;
 	uint32_t proptag;
@@ -886,7 +886,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	
 	propid = PROP_ID(g_categories_proptag);
 	proptag = PROP_TAG(PROP_TYPE(g_categories_proptag), propids[propid - 0x8000]);
-	saval = pmsg->proplist.get<STRING_ARRAY>(proptag);
+	auto saval = pmsg->proplist.get<const STRING_ARRAY>(proptag);
 	if (saval != nullptr) {
 		auto &cat_line = vcard.append_line("CATEGORIES");
 		auto &val = cat_line.append_value();

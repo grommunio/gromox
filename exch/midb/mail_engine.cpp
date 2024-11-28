@@ -1422,12 +1422,12 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 				dir, LLU{message_id});
 			return;
 		}
+		auto log_id = dir + ":m"s + std::to_string(message_id);
 		MAIL imail;
-		if (!oxcmail_export(pmsgctnt, false, oxcmail_body::plain_and_html,
-		    &imail, common_util_alloc,
+		if (!oxcmail_export(pmsgctnt, log_id.c_str(), false,
+		    oxcmail_body::plain_and_html, &imail, common_util_alloc,
 		    common_util_get_propids, common_util_get_propname)) {
-			mlog(LV_ERR, "E-1222: oxcmail_export of msg %s:%llu failed",
-				dir, static_cast<unsigned long long>(message_id));
+			mlog(LV_ERR, "E-1222: oxcmail_export %s failed", log_id.c_str());
 			common_util_switch_allocator();
 			return;
 		}

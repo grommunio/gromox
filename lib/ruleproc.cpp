@@ -1069,7 +1069,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 
 	MAIL imail;
 	rp_storedir = par.cur.dirc();
-	if (!oxcmail_export(rsp_ctnt.get(), false, oxcmail_body::plain_and_html,
+	if (!oxcmail_export(rsp_ctnt.get(), "-", false, oxcmail_body::plain_and_html,
 	    &imail, cu_alloc, cu_get_propids, cu_get_propname)) {
 		mlog(LV_ERR, "mr_send_response: oxcmail_export failed for an unspecified reason.\n");
 		return ecError;

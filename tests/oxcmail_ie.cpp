@@ -379,7 +379,7 @@ static void ical_export_1()
 	const MESSAGE_CONTENT msgctnt = {{std::size(props), deconst(props)}};
 	ical icalout;
 	fprintf(stderr, "=== ical_export_1\n");
-	if (!oxcical_export(&msgctnt, icalout, "x500org", malloc, get_propids, nullptr)) {
+	if (!oxcical_export(&msgctnt, "-", icalout, "x500org", malloc, get_propids, nullptr)) {
 		fprintf(stderr, "oxcical_export failed\n");
 		return;
 	}
@@ -423,7 +423,7 @@ static void ical_export_2()
 	fprintf(stderr, "=== ical_export_2\n");
 	const MESSAGE_CONTENT msgctnt = {{std::size(props), deconst(props)}};
 	ical icalout;
-	if (!oxcical_export(&msgctnt, icalout, "x500org", malloc, get_propids, nullptr)) {
+	if (!oxcical_export(&msgctnt, "-", icalout, "x500org", malloc, get_propids, nullptr)) {
 		fprintf(stderr, "oxcical_export failed\n");
 		return;
 	}
