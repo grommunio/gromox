@@ -2474,20 +2474,8 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd) try
  */
 static int mail_engine_mrenf(int argc, char **argv, int sockd)
 {
-	char *ptoken;
-	char *ptoken1;
-	uint64_t nt_time;
-	uint64_t parent_id;
-	uint64_t folder_id;
-	uint64_t folder_id1;
-	uint64_t folder_id2;
-	uint64_t change_num;
-	char temp_name[256];
 	char decoded_name[512];
-	PROBLEM_ARRAY problems;
 	char encoded_name[1024];
-	TPROPVAL_ARRAY propvals;
-	TAGGED_PROPVAL propval_buff[5];
 
 	if (strlen(argv[3]) >= 1024 || strcmp(argv[2], argv[3]) == 0)
 		return MIDB_E_PARAMETER_ERROR;
@@ -2508,14 +2496,16 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	sqlite3_bind_text(pstmt, 1, argv[2], -1, SQLITE_STATIC);
 	if (pstmt.step() != SQLITE_ROW)
 		return MIDB_E_SQLUNEXP;
-	folder_id = sqlite3_column_int64(pstmt, 0);
-	parent_id = sqlite3_column_int64(pstmt, 1);
+	auto folder_id = pstmt.col_uint64(0);
+	auto parent_id = pstmt.col_uint64(1);
 	pstmt.finalize();
 	if (mail_engine_get_folder_id(pidb.get(), argv[3]) != 0)
 		return MIDB_E_FOLDER_EXISTS;
-	ptoken = decoded_name;
-	folder_id1 = PRIVATE_FID_IPMSUBTREE;
+
+	char *ptoken = decoded_name, *ptoken1;
+	uint64_t folder_id1 = PRIVATE_FID_IPMSUBTREE;
 	while ((ptoken1 = strchr(ptoken, '/')) != NULL) {
+		char temp_name[256];
 		if (static_cast<size_t>(ptoken1 - ptoken) >= sizeof(temp_name))
 			return MIDB_E_PARAMETER_ERROR;
 		memcpy(temp_name, ptoken, ptoken1 - ptoken);
@@ -2526,7 +2516,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		} else {
 			encode_hex_binary(decoded_name, ptoken1 - decoded_name,
 				encoded_name, 1024);
-			folder_id2 = mail_engine_get_folder_id(pidb.get(), encoded_name);
+			auto folder_id2 = mail_engine_get_folder_id(pidb.get(), encoded_name);
 			if (0 == folder_id2) {
 				if (!common_util_create_folder(argv[1],
 				    user_id, rop_util_make_eid_ex(1, folder_id1),
@@ -2554,36 +2544,35 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 			return MIDB_E_MDB_PARTIAL;
 	}
 
+	uint64_t change_num = 0;
 	if (!exmdb_client::allocate_cn(argv[1], &change_num))
 		return MIDB_E_MDB_ALLOCID;
 	static constexpr proptag_t tmp_proptag[] = {PR_PREDECESSOR_CHANGE_LIST};
 	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
+	TPROPVAL_ARRAY propvals;
 	if (!exmdb_client::get_folder_properties(argv[1], CP_ACP,
 	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
 		return MIDB_E_MDB_GETFOLDERPROPS;
 	auto pbin1 = propvals.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
-	propvals.count = parent_id == folder_id1 ? 5 : 4;
-	propvals.ppropval = propval_buff;
-	propval_buff[0].proptag = PidTagChangeNumber;
-	propval_buff[0].pvalue = &change_num;
+
+	auto nt_time = rop_util_current_nttime();
+	TAGGED_PROPVAL propval_buff[5];
+	TPROPVAL_ARRAY pset = {0, propval_buff};
+	pset.emplace_back(PidTagChangeNumber, &change_num);
 	auto pbin = cu_xid_to_bin({rop_util_make_user_guid(user_id), change_num});
 	if (pbin == nullptr)
 		return MIDB_E_NO_MEMORY;
-	propval_buff[1].proptag = PR_CHANGE_KEY;
-	propval_buff[1].pvalue = pbin;
-	propval_buff[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
-	propval_buff[2].pvalue = common_util_pcl_append(pbin1, pbin);
+	pset.emplace_back(PR_CHANGE_KEY, pbin);
+	pset.emplace_back(PR_PREDECESSOR_CHANGE_LIST, common_util_pcl_append(pbin1, pbin));
 	if (propval_buff[2].pvalue == nullptr)
 		return MIDB_E_NO_MEMORY;
-	nt_time = rop_util_current_nttime();
-	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
-	propval_buff[3].pvalue = &nt_time;
-	if (parent_id == folder_id1) {
-		propval_buff[4].proptag = PR_DISPLAY_NAME;
-		propval_buff[4].pvalue = ptoken;
-	}
+	pset.emplace_back(PR_LAST_MODIFICATION_TIME, &nt_time);
+	if (parent_id == folder_id1)
+		pset.emplace_back(PR_DISPLAY_NAME, ptoken);
+
+	PROBLEM_ARRAY problems;
 	if (!exmdb_client::set_folder_properties(argv[1], CP_ACP,
-	    rop_util_make_eid_ex(1, folder_id), &propvals, &problems))
+	    rop_util_make_eid_ex(1, folder_id), &pset, &problems))
 		return MIDB_E_MDB_SETFOLDERPROPS;
 	return cmd_write(sockd, "TRUE\r\n");
 }
