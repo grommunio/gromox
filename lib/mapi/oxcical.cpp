@@ -3552,17 +3552,21 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		if (ptz_component == nullptr) {
 			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzstruct]));
 			tzid = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_tzdesc]));
-			if (bin != nullptr && tzid != nullptr) {
+			if (tzid != nullptr && *tzid == '\0')
+				tzid = nullptr;
+			if (bin != nullptr && bin->cb > 0 && tzid != nullptr) {
 				EXT_PULL ext_pull;
 				TIMEZONESTRUCT tz_struct;
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
-				if (ext_pull.g_tzstruct(&tz_struct) != EXT_ERR_SUCCESS)
-					return "E-2205: PidLidTimeZoneDescription contents not recognized";
-				ptz_component = oxcical_export_timezone(
-						pical, year - 1, tzid, &tz_struct);
-				if (ptz_component == nullptr)
-					return "E-2206: export_timezone returned an unspecified error";
+				if (ext_pull.g_tzstruct(&tz_struct) != EXT_ERR_SUCCESS) {
+					mlog(LV_ERR, "E-2205: %s: PidLidTimeZoneStruct contents not recognized so TZ won't be exported", log_id);
+				} else {
+					ptz_component = oxcical_export_timezone(
+							pical, year - 1, tzid, &tz_struct);
+					if (ptz_component == nullptr)
+						mlog(LV_ERR, "E-2206: %s: export_timezone returned an unspecified error and won't be exported", log_id);
+				}
 			}
 		}
 	}
