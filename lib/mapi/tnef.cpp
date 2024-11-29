@@ -171,7 +171,7 @@ struct tnef_push : public EXT_PUSH {
 
 static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 static const uint8_t g_pad_bytes[3]{};
-static BOOL tnef_serialize_internal(tnef_push &, BOOL b_embedded, const MESSAGE_CONTENT *);
+static BOOL tnef_serialize_internal(tnef_push &, const char *log_id, BOOL b_embedded, const MESSAGE_CONTENT *);
 
 bool TNEF_PROPLIST::emplace_back(uint32_t tag, const void *d, GET_PROPNAME gpn)
 {
@@ -1693,7 +1693,7 @@ pack_result tnef_push::p_propval(const TNEF_PROPVAL &rr)
 		uint32_t offset = ext.m_offset;
 		TRY(pext->advance(sizeof(uint32_t)));
 		TRY(pext->p_guid(IID_IMessage));
-		if (!tnef_serialize_internal(*this, TRUE,
+		if (!tnef_serialize_internal(*this, "-", TRUE,
 		    static_cast<MESSAGE_CONTENT *>(bv->pv)))
 			return EXT_ERR_FORMAT;
 		uint32_t offset1 = ext.m_offset;
@@ -2028,8 +2028,8 @@ static bool serialize_rcpt(tnef_push &ep, const MESSAGE_CONTENT &msg,
 	return false;
 }
 
-static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
-	const MESSAGE_CONTENT *pmsg)
+static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
+    BOOL b_embedded, const MESSAGE_CONTENT *pmsg)
 {
 	auto pext = &ext;
 	auto alloc = ext.tnef_alloc;
@@ -2051,7 +2051,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 	/* ATTRIBUTE_ID_OEMCODEPAGE */
 	auto num = pmsg->proplist.get<const uint32_t>(PR_INTERNET_CPID);
 	if (num == nullptr) {
-		mlog(LV_DEBUG, "tnef: cannot find PR_INTERNET_CPID");
+		mlog(LV_ERR, "I-2547: %s: no PR_INTERNET_CPID set for TNEF", log_id);
 	} else {
 		uint32_t tmp_cpids[] = {*num, 0};
 		tmp_larray = {2, tmp_cpids};
@@ -2428,7 +2428,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 }
 
 /* must convert some properties into ansi code before call this function */
-BINARY* tnef_serialize(const MESSAGE_CONTENT *pmsg,
+BINARY *tnef_serialize(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	EXT_BUFFER_ALLOC alloc, GET_PROPNAME get_propname)
 {
 	tnef_push ext_push;
@@ -2437,7 +2437,7 @@ BINARY* tnef_serialize(const MESSAGE_CONTENT *pmsg,
 		return NULL;
 	ext_push.tnef_alloc = alloc;
 	ext_push.tnef_getpropname = std::move(get_propname);
-	if (!tnef_serialize_internal(ext_push, false, pmsg))
+	if (!tnef_serialize_internal(ext_push, log_id, false, pmsg))
 		return NULL;
 	auto pbin = me_alloc<BINARY>();
 	if (pbin == nullptr)
