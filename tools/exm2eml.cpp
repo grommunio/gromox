@@ -23,6 +23,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/tnef.hpp>
 #include <gromox/vcard.hpp>
 #include "genimport.hpp"
 #include "exch/midb/system_services.hpp"
@@ -36,6 +37,7 @@ enum {
 	EXPORT_ICAL,
 	EXPORT_VCARD,
 	EXPORT_GXMT,
+	EXPORT_TNEF,
 };
 
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
@@ -53,6 +55,7 @@ static constexpr HXoption g_options_table[] = {
 	{"ical", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_ICAL, "Export as calendar object"},
 	{"mail", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_MAIL, "Export as RFC5322 mail"},
 	{"mt", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_GXMT, "Export as Gromox mailbox transfer format"},
+	{"tnef", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_TNEF, "Export as TNEF object"},
 	{"vcard", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_VCARD, "Export as vCard object"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -103,6 +106,8 @@ int main(int argc, char **argv) try
 		g_export_mode = EXPORT_ICAL;
 	} else if (strcmp(bn, "gromox-exm2vcf") == 0) {
 		g_export_mode = EXPORT_VCARD;
+	} else if (strcmp(bn, "gromox-exm2tnef") == 0) {
+		g_export_mode = EXPORT_TNEF;
 	} else {
 		fprintf(stderr, "Invocation of this utility as \"%s\" not recognized\n", argv[0]);
 		return EXIT_FAILURE;
@@ -117,8 +122,9 @@ int main(int argc, char **argv) try
 		terse_help();
 		return EXIT_FAILURE;
 	}
-	if (g_export_mode == EXPORT_GXMT && isatty(STDOUT_FILENO)) {
-		fprintf(stderr, "Refusing to output the binary Mailbox Transfer Data Stream to a terminal.\n"
+	if ((g_export_mode == EXPORT_GXMT || g_export_mode == EXPORT_TNEF) &&
+	    isatty(STDOUT_FILENO)) {
+		fprintf(stderr, "Refusing to output binary streams to a terminal.\n"
 			"You probably wanted to redirect output into a file or pipe.\n");
 		return EXIT_FAILURE;
 	}
@@ -297,6 +303,17 @@ int main(int argc, char **argv) try
 			return EXIT_FAILURE;
 		}
 		fputs(buf.get(), stdout);
+	} else if (g_export_mode == EXPORT_TNEF) {
+		auto bin = tnef_serialize(ctnt, log_id.c_str(), zalloc, cu_get_propname);
+		if (bin == nullptr) {
+			fprintf(stderr, "tnef_serialize failed for an unspecified reason.\n");
+			return EXIT_FAILURE;
+		}
+		auto ret = write(STDOUT_FILENO, bin->pv, bin->cb);
+		if (ret < 0 || static_cast<size_t>(ret) != bin->cb) {
+			fprintf(stderr, "write: %s\n", strerror(errno));
+			return EXIT_FAILURE;
+		}
 	}
 	return EXIT_SUCCESS;
 } catch (const std::exception &e) {
