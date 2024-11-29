@@ -1215,6 +1215,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	}
 	if (ext_pull.g_attr(&attribute) != EXT_ERR_SUCCESS)
 		return NULL;
+	/* The order of attributes is fixated; see MS-OXTNEF v14 §2.1.3.2. */
 	if (ATTRIBUTE_ID_OEMCODEPAGE != attribute.attr_id) {
 		mlog(LV_DEBUG, "tnef: cannot find idOEMCodePage");
 		return NULL;
@@ -2048,17 +2049,13 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 	if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_TNEFVERSION,
 	    &tmp_larray) != EXT_ERR_SUCCESS)
 		return FALSE;
-	/* ATTRIBUTE_ID_OEMCODEPAGE */
+	/* ATTRIBUTE_ID_OEMCODEPAGE mandatory as per MS-OXTNEF v14 §2.1.3.2 */
 	auto num = pmsg->proplist.get<const uint32_t>(PR_INTERNET_CPID);
-	if (num == nullptr) {
-		mlog(LV_ERR, "I-2547: %s: no PR_INTERNET_CPID set for TNEF", log_id);
-	} else {
-		uint32_t tmp_cpids[] = {*num, 0};
-		tmp_larray = {2, tmp_cpids};
-		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_OEMCODEPAGE,
-		    &tmp_larray) != EXT_ERR_SUCCESS)
-			return FALSE;
-	}
+	uint32_t tmp_cpids[] = {num != nullptr ? *num : CP_ACP, 0};
+	tmp_larray = {2, tmp_cpids};
+	if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_OEMCODEPAGE,
+	    &tmp_larray) != EXT_ERR_SUCCESS)
+		return FALSE;
 	/* ATTRIBUTE_ID_MESSAGESTATUS */
 	if (b_embedded) {
 		tmp_byte = 0;
