@@ -754,9 +754,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	pvalue = pmsg->proplist.get<char>(PR_DISPLAY_NAME);
 	if (pvalue == nullptr)
 		pvalue = pmsg->proplist.get<char>(PR_NORMALIZED_SUBJECT);
-	if (pvalue != nullptr) {
+	if (pvalue != nullptr)
 		vcard.append_line("FN", pvalue);
-	}
 	
 	auto &n_line = vcard.append_line("N");
 	for (size_t i = 0; i < std::size(g_n_proptags); ++i) {
@@ -767,9 +766,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_NICKNAME);
-	if (pvalue != nullptr) {
+	if (pvalue != nullptr)
 		vcard.append_line("NICKNAME", pvalue);
-	}
 	
 	for (size_t i = 0; i < std::size(g_email_proptags); ++i) {
 		propid = PROP_ID(g_email_proptags[i]);
@@ -780,9 +778,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 		auto &email_line = vcard.append_line("EMAIL");
 		auto &type_param = email_line.append_param("TYPE");
 		type_param.append_paramval("INTERNET");
-		if (i == 0) {
+		if (i == 0)
 			type_param.append_paramval("PREF");
-		}
 		email_line.append_value(pvalue);
 	}
 	
@@ -893,15 +890,13 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	if (saval != nullptr) {
 		auto &cat_line = vcard.append_line("CATEGORIES");
 		auto &val = cat_line.append_value();
-		for (size_t i = 0; i < saval->count; ++i) {
+		for (size_t i = 0; i < saval->count; ++i)
 			val.append_subval(saval->ppstr[i]);
-		}
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_PROFESSION);
-	if (pvalue != nullptr) {
+	if (pvalue != nullptr)
 		vcard.append_line("ROLE", pvalue);
-	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_PERSONAL_HOME_PAGE);
 	if (NULL != pvalue) {
@@ -920,9 +915,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	propid = PROP_ID(g_bcd_proptag);
 	proptag = PROP_TAG(PROP_TYPE(g_bcd_proptag), propids[propid - 0x8000]);
 	pvalue = pmsg->proplist.get<char>(proptag);
-	if (pvalue != nullptr) {
+	if (pvalue != nullptr)
 		vcard.append_line("X-MS-OL-DESIGN", pvalue);
-	}
 	
 	saval = pmsg->proplist.get<STRING_ARRAY>(PR_CHILDRENS_NAMES);
 	if (saval != nullptr)
@@ -974,24 +968,21 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 		vcarduid = "uuid:" + bin2hex(&guid, sizeof(guid));
 		pvalue = vcarduid.c_str();
 	}
-	if (pvalue != nullptr) {
+	if (pvalue != nullptr)
 		vcard.append_line("UID", pvalue);
-	}
 
 	propid = PROP_ID(g_fbl_proptag);
 	proptag = PROP_TAG(PROP_TYPE(g_fbl_proptag), propids[propid - 0x8000]);
 	pvalue = pmsg->proplist.get<char>(proptag);
-	if (pvalue != nullptr) {
+	if (pvalue != nullptr)
 		vcard.append_line("FBURL", pvalue);
-	}
 	
 	saval = pmsg->proplist.get<STRING_ARRAY>(PR_HOBBIES);
 	if (NULL != pvalue) {
 		auto &int_line = vcard.append_line("X-MS-INTERESTS");
 		auto &val = int_line.append_value();
-		for (size_t i = 0; i < saval->count; ++i) {
+		for (size_t i = 0; i < saval->count; ++i)
 			val.append_subval(saval->ppstr[i]);
-		}
 	}
 	
 	auto ba = pmsg->proplist.get<const BINARY_ARRAY>(PR_USER_X509_CERTIFICATE);
