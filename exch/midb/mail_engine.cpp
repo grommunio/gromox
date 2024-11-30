@@ -2588,11 +2588,6 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
  */
 static int mail_engine_mmakf(int argc, char **argv, int sockd)
 {
-	char *ptoken;
-	char *ptoken1;
-	uint64_t folder_id1;
-	uint64_t folder_id2;
-	char temp_name[256];
 	char decoded_name[512];
 	char encoded_name[1024];
 
@@ -2606,9 +2601,11 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 		return MIDB_E_SSGETID;
 	if (mail_engine_get_folder_id(pidb.get(), argv[2]) != 0)
 		return MIDB_E_FOLDER_EXISTS;
-	ptoken = decoded_name;
-	folder_id1 = PRIVATE_FID_IPMSUBTREE;
+
+	char *ptoken = decoded_name, *ptoken1;
+	uint64_t folder_id1 = PRIVATE_FID_IPMSUBTREE;
 	while ((ptoken1 = strchr(ptoken, '/')) != NULL) {
+		char temp_name[256];
 		if (static_cast<size_t>(ptoken1 - ptoken) >= sizeof(temp_name))
 			return MIDB_E_PARAMETER_ERROR;
 		memcpy(temp_name, ptoken, ptoken1 - ptoken);
@@ -2619,7 +2616,7 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 		} else {
 			encode_hex_binary(decoded_name, ptoken1 - decoded_name,
 				encoded_name, 1024);
-			folder_id2 = mail_engine_get_folder_id(pidb.get(), encoded_name);
+			auto folder_id2 = mail_engine_get_folder_id(pidb.get(), encoded_name);
 			if (0 == folder_id2) {
 				if (!common_util_create_folder(argv[1],
 				    user_id, rop_util_make_eid_ex(1, folder_id1),
@@ -2633,9 +2630,10 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 		ptoken = ptoken1 + 1;
 	}
 	pidb.reset();
+	uint64_t new_fid = 0;
 	if (!common_util_create_folder(argv[1],
 	    user_id, rop_util_make_eid_ex(1, folder_id1),
-	    ptoken, &folder_id2) || folder_id2 == 0)
+	    ptoken, &new_fid) || new_fid == 0)
 		return MIDB_E_CREATEFOLDER;
 	return cmd_write(sockd, "TRUE\r\n");
 }
