@@ -2181,36 +2181,30 @@ static int mail_engine_mping(int argc, char **argv, int sockd)
  * 	TRUE <#folders>
  * 	<folder-name>  // repeat x #folders
  */
-static int mail_engine_menum(int argc, char **argv, int sockd)
+static int mail_engine_menum(int argc, char **argv, int sockd) try
 {
-	int count;
-	int offset;
-	int temp_len;
-	char sql_string[1024];
-	char temp_buff[256*1024];
-	
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
-	snprintf(sql_string, std::size(sql_string), "SELECT folder_id, name FROM folders");
-	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id, name FROM folders");
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	temp_len = 32;
-	count = 0;
+	size_t count = 0;
+	std::string rsp;
+	rsp.reserve(65536);
 	while (pstmt.step() == SQLITE_ROW) {
 		if (spfid_to_name(sqlite3_column_int64(pstmt, 0)) != nullptr)
 			continue;
-		temp_len += gx_snprintf(temp_buff + temp_len,
-		            std::size(temp_buff) - temp_len, "%s\r\n",
-					sqlite3_column_text(pstmt, 1));
+		rsp += pstmt.col_text(1) + "\r\n"s;
 		count ++;
 	}
 	pstmt.finalize();
 	pidb.reset();
-	offset = gx_snprintf(temp_buff, 32, "TRUE %d\r\n", count);
-	memmove(temp_buff + 32 - offset, temp_buff, offset);
-	return cmd_write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
+	rsp.insert(0, "TRUE " + std::to_string(count) + "\r\n");
+	return cmd_write(sockd, rsp.c_str(), rsp.size());
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2531: ENOMEM");
+	return MIDB_E_NO_MEMORY;
 }
 
 /*
@@ -2817,32 +2811,26 @@ static int mail_engine_punsf(int argc, char **argv, int sockd)
  * 	TRUE <#folders>
  * 	<folder-name>  // repeat x #folders
  */
-static int mail_engine_psubl(int argc, char **argv, int sockd)
+static int mail_engine_psubl(int argc, char **argv, int sockd) try
 {
-	int count;
-	int offset;
-	int temp_len;
-	char sql_string[1024];
-	char temp_buff[256*1024];
-	
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
-	snprintf(sql_string, std::size(sql_string), "SELECT name FROM folders WHERE unsub=0");
-	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT name FROM folders WHERE unsub=0");
 	if (pstmt == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
-	count = 0;
-	temp_len = 32;
+	size_t count = 0;
+	std::string rsp;
+	rsp.reserve(65536);
 	for (; pstmt.step() == SQLITE_ROW; ++count)
-		temp_len += gx_snprintf(temp_buff + temp_len,
-		            std::size(temp_buff) - temp_len,  "%s\r\n",
-					sqlite3_column_text(pstmt, 0));
+		rsp += pstmt.col_text(0) + "\r\n"s;
 	pstmt.finalize();
 	pidb.reset();
-	offset = gx_snprintf(temp_buff, 32, "TRUE %d\r\n", count);
-	memmove(temp_buff + 32 - offset, temp_buff, offset);
-	return cmd_write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
+	rsp.insert(0, "TRUE " + std::to_string(count) + "\r\n");
+	return cmd_write(sockd, rsp.c_str(), rsp.size());
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2532: ENOMEM");
+	return MIDB_E_NO_MEMORY;
 }
 
 namespace {
@@ -2904,9 +2892,6 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
 static int mail_engine_psimu(int argc, char **argv, int sockd) try
 {
 	int total_mail = 0;
-	char temp_line[1024];
-	char sql_string[1024];
-	char temp_buff[256*1024];
 	
 	seq_node::value_type first = strtol(argv[3], nullptr, 0), last = strtol(argv[4], nullptr, 0);
 	if (first < 1 && first != SEQ_STAR)
@@ -2921,32 +2906,34 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
+
+	std::string qstr;
 	if (first == SEQ_STAR && last == SEQ_STAR)
 		/* "MAX:MAX" */
-		snprintf(sql_string, std::size(sql_string), "SELECT 0, mid_string, uid, "
-		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
-		         "FROM messages WHERE folder_id=%llu "
-		         "ORDER BY uid DESC LIMIT 1", LLU{folder_id});
+		qstr = "SELECT 0, mid_string, uid, replied, unsent, flagged,"
+		       " deleted, read, recent, forwarded, size"
+		       " FROM messages WHERE folder_id=" + std::to_string(folder_id) +
+		       " ORDER BY uid DESC LIMIT 1";
 	else if (first == SEQ_STAR)
 		/* "MAX:99" */
-		snprintf(sql_string, std::size(sql_string), "SELECT 0, mid_string, uid, "
-		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
-		         "FROM messages WHERE folder_id=%llu AND uid<=%u ORDER BY uid DESC LIMIT 1",
-		         LLU{folder_id}, last);
+		qstr = fmt::format("SELECT 0, mid_string, uid, replied, unsent, "
+		       "flagged, deleted, read, recent, forwarded, size "
+		       "FROM messages WHERE folder_id={} AND uid<={} "
+		       "ORDER BY uid DESC LIMIT 1", folder_id, last);
 	else if (last == SEQ_STAR)
 		/* "99:MAX" */
-		snprintf(sql_string, std::size(sql_string), "SELECT 0, mid_string, uid, "
-		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
-		         "FROM messages WHERE folder_id=%llu AND uid>=%u ORDER BY uid",
-		         LLU{folder_id}, first);
+		qstr = fmt::format("SELECT 0, mid_string, uid, replied, unsent, "
+		       "flagged, deleted, read, recent, forwarded, size "
+		       "FROM messages WHERE folder_id={} AND uid>={} ORDER BY uid",
+		       folder_id, first);
 	else
-		snprintf(sql_string, std::size(sql_string), "SELECT 0, mid_string, uid, "
-		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
-		         "FROM messages WHERE folder_id=%llu AND uid>=%u AND uid<=%u "
-		         "ORDER BY uid", LLU{folder_id}, first, last);
+		qstr = fmt::format("SELECT 0, mid_string, uid, replied, unsent, "
+		       "flagged, deleted, read, recent, forwarded, size "
+		       "FROM messages WHERE folder_id={} AND uid>={} AND uid<={} "
+		       "ORDER BY uid", folder_id, first, last);
 
 	std::vector<simu_node> temp_list;
-	auto iret = simu_query(pidb.get(), sql_string, total_mail, temp_list);
+	auto iret = simu_query(pidb.get(), qstr.c_str(), total_mail, temp_list);
 	if (iret != 0)
 		return iret;
 	if (temp_list.size() == 0 && (first == SEQ_STAR || last == SEQ_STAR)) {
@@ -2955,31 +2942,30 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 		 * the last message in the mailbox, even if 559 is higher than
 		 * any assigned UID value".
 		 */
-		snprintf(sql_string, std::size(sql_string), "SELECT 0, mid_string, uid, "
-		         "replied, unsent, flagged, deleted, read, recent, forwarded, size"
-		         " FROM messages WHERE folder_id=%llu ORDER BY uid DESC LIMIT 1",
-		         LLU{folder_id});
-		iret = simu_query(pidb.get(), sql_string, total_mail, temp_list);
+		qstr = "SELECT 0, mid_string, uid, replied, unsent, flagged,"
+		       " deleted, read, recent, forwarded, size"
+		       " FROM messages WHERE folder_id=" + std::to_string(folder_id) +
+		       " ORDER BY uid DESC LIMIT 1";
+		iret = simu_query(pidb.get(), qstr.c_str(), total_mail, temp_list);
 		if (iret != 0)
 			return iret;
 	}
 
-	auto temp_len = snprintf(temp_buff, std::size(temp_buff),
-	                "TRUE %zu\r\n", temp_list.size());
+	std::string rsp;
+	rsp.reserve(65536);
+	rsp += "TRUE " + std::to_string(temp_list.size()) + "\r\n";
 	for (const auto &sn : temp_list) {
-		auto buff_len = gx_snprintf(temp_line, std::size(temp_line), "- %s %u %s %u\r\n",
-		                sn.mid_string.c_str(), sn.uid, sn.flags.c_str(), sn.size);
-		if (256*1024 - temp_len < buff_len) {
-			auto ret = cmd_write(sockd, temp_buff, temp_len);
-			if (ret != 0)
-				return ret;
-			temp_len = 0;
-		}
-		memcpy(temp_buff + temp_len, temp_line, buff_len);
-		temp_len += buff_len;
+		rsp += fmt::format("- {} {} {} {}\r\n", sn.mid_string, sn.uid,
+		       sn.flags, sn.size);
+		if (rsp.size() < rsp.capacity() / 2)
+			continue;
+		auto ret = cmd_write(sockd, rsp.c_str(), rsp.size());
+		if (ret != 0)
+			return ret;
+		rsp.clear();
 	}
 	pidb.reset();
-	return cmd_write(sockd, temp_buff, temp_len);
+	return cmd_write(sockd, rsp.c_str(), rsp.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1204: ENOMEM");
 	return MIDB_E_NO_MEMORY;
@@ -2993,54 +2979,49 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
  * 	TRUE <#messages>
  * 	- <mid> <uid>  // repeat x #messages
  */
-static int mail_engine_pdell(int argc, char **argv, int sockd)
+static int mail_engine_pdell(int argc, char **argv, int sockd) try
 {
-	int length;
-	int temp_len;
-	uint32_t uid;
-	char temp_line[1024];
-	char sql_string[1024];
-	char temp_buff[256*1024];
-	
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	snprintf(sql_string, std::size(sql_string), "SELECT count(message_id) FROM "
-		"messages WHERE folder_id=%llu AND deleted=1", LLU{folder_id});
-	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	auto qstr = "SELECT count(message_id) FROM messages WHERE folder_id=" +
+	            std::to_string(folder_id) + " AND deleted=1";
+	auto pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
 	if (pstmt.step() != SQLITE_ROW)
 		return MIDB_E_NO_FOLDER;
-	length = sqlite3_column_int64(pstmt, 0);
+	size_t length = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	snprintf(sql_string, std::size(sql_string),
-	         "SELECT mid_string, uid FROM messages WHERE folder_id=%llu AND deleted=1 ORDER BY uid",
-	         LLU{folder_id});
-	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	qstr = "SELECT mid_string, uid FROM messages WHERE folder_id=" +
+	       std::to_string(folder_id) + " AND deleted=1 ORDER BY uid";
+	pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	temp_len = sprintf(temp_buff, "TRUE %d\r\n", length);
+
+	std::string rsp;
+	rsp.reserve(65536);
+	rsp += "TRUE " + std::to_string(length) + "\r\n";
 	while (pstmt.step() == SQLITE_ROW) {
 		auto mid_string = pstmt.col_text(0);
-		uid = sqlite3_column_int64(pstmt, 1);
-		auto buff_len = gx_snprintf(temp_line, std::size(temp_line),
-		                "- %s %u\r\n", mid_string, uid);
-		if (256*1024 - temp_len < buff_len) {
-			auto ret = cmd_write(sockd, temp_buff, temp_len);
-			if (ret != 0)
-				return ret;
-			temp_len = 0;
-		}
-		memcpy(temp_buff + temp_len, temp_line, buff_len);
-		temp_len += buff_len;
+		uint32_t uid = pstmt.col_uint64(1);
+		rsp += fmt::format("- {} {}\r\n", mid_string, uid);
+		if (rsp.size() < rsp.capacity() / 2)
+			continue;
+		auto ret = cmd_write(sockd, rsp.c_str(), rsp.size());
+		if (ret != 0)
+			return ret;
+		rsp.clear();
 	}
 	pstmt.finalize();
 	pidb.reset();
-	return cmd_write(sockd, temp_buff, temp_len);
+	return cmd_write(sockd, rsp.c_str(), rsp.size());
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2533: ENOMEM");
+	return MIDB_E_NO_MEMORY;
 }
 
 static int dtlu_query(IDB_ITEM *pidb, const char *sql_string,
@@ -3363,7 +3344,7 @@ static int mail_engine_pgflg(int argc, char **argv, int sockd) try
  * Response:
  * 	TRUE <uid>...
  */
-static int mail_engine_psrhl(int argc, char **argv, int sockd)
+static int mail_engine_psrhl(int argc, char **argv, int sockd) try
 {
 	char *parg;
 	int tmp_argc;
@@ -3372,7 +3353,6 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	char temp_path[256];
 	char* tmp_argv[1024];
 	char tmp_buff[16*1024];
-	char list_buff[256*1024];
 	
 	auto tmp_len = strlen(argv[4]);
 	if (tmp_len >= sizeof(tmp_buff) ||
@@ -3411,21 +3391,23 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 		return MIDB_E_MNG_CTMATCH;
 	}
 	sqlite3_close(psqlite);
-	tmp_len = 4;
-	strcpy(list_buff, "TRUE");
+
+	std::string rsp = "TRUE";
+	rsp.reserve(65536);
 	for (auto result : *presult) {
-		tmp_len += gx_snprintf(list_buff + tmp_len,
-		           std::size(list_buff) - tmp_len, " %d", result);
-		if (tmp_len >= 255*1024) {
-			ret = cmd_write(sockd, list_buff, tmp_len);
-			if (ret != 0)
-				return ret;
-			tmp_len = 0;
-		}
-    }
-	list_buff[tmp_len++] = '\r';
-	list_buff[tmp_len++] = '\n';
-	return cmd_write(sockd, list_buff, tmp_len);
+		rsp += " " + std::to_string(result);
+		if (rsp.size() < rsp.capacity() / 2)
+			continue;
+		ret = cmd_write(sockd, rsp.c_str(), rsp.size());
+		if (ret != 0)
+			return ret;
+		rsp.clear();
+	}
+	rsp += "\r\n";
+	return cmd_write(sockd, rsp.c_str(), rsp.size());
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2534: ENOMEM");
+	return MIDB_E_NO_MEMORY;
 }
 
 /*
@@ -3440,7 +3422,7 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
  * 	TRUE <uid-list>
  * uid-list: space-separated IDs
  */
-static int mail_engine_psrhu(int argc, char **argv, int sockd)
+static int mail_engine_psrhu(int argc, char **argv, int sockd) try
 {
 	char *parg;
 	int tmp_argc;
@@ -3449,7 +3431,6 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	char temp_path[256];
 	char* tmp_argv[1024];
 	char tmp_buff[16*1024];
-	char list_buff[256*1024];
 	
 	auto tmp_len = strlen(argv[4]);
 	if (tmp_len >= sizeof(tmp_buff) ||
@@ -3488,21 +3469,23 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 		return MIDB_E_MNG_CTMATCH;
 	}
 	sqlite3_close(psqlite);
-	tmp_len = 4;
-	strcpy(list_buff, "TRUE");
+
+	std::string rsp = "TRUE";
+	rsp.reserve(65536);
 	for (auto result : *presult) {
-		tmp_len += gx_snprintf(list_buff + tmp_len,
-		           std::size(list_buff) - tmp_len, " %d", result);
-		if (tmp_len >= 255*1024) {
-			ret = cmd_write(sockd, list_buff, tmp_len);
-			if (ret != 0)
-				return ret;
-			tmp_len = 0;
-		}
+		rsp += " " + std::to_string(result);
+		if (rsp.size() < rsp.capacity() / 2)
+			continue;
+		ret = cmd_write(sockd, rsp.c_str(), rsp.size());
+		if (ret != 0)
+			return ret;
+		rsp.clear();
     }
-	list_buff[tmp_len++] = '\r';
-	list_buff[tmp_len++] = '\n';
-	return cmd_write(sockd, list_buff, tmp_len);
+	rsp += "\r\n";
+	return cmd_write(sockd, rsp.c_str(), rsp.size());
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2535: ENOMEM");
+	return MIDB_E_NO_MEMORY;
 }
 
 /*
