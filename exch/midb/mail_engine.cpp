@@ -2193,8 +2193,6 @@ static int mail_engine_menum(int argc, char **argv, int sockd) try
 	std::string rsp;
 	rsp.reserve(65536);
 	while (pstmt.step() == SQLITE_ROW) {
-		if (spfid_to_name(sqlite3_column_int64(pstmt, 0)) != nullptr)
-			continue;
 		rsp += std::to_string(pstmt.col_uint64(0)) + " " + pstmt.col_text(1) + "\r\n"s;
 		count ++;
 	}
