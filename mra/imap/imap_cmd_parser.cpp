@@ -1678,10 +1678,6 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	pcontext->b_readonly = readonly;
 	imap_parser_add_select(pcontext);
 
-	/* Effectively canonicalize(d) argv[2] */
-	if (!imap_cmd_parser_sysfolder_to_imapfolder(pcontext->lang, sys_name.c_str(), sys_name))
-		return 1800;
-
 	auto buf = fmt::format(
 		"* {} EXISTS\r\n"
 		"* {} RECENT\r\n"
@@ -1700,7 +1696,7 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	buf += fmt::format("* OK [UIDVALIDITY {}] UIDs valid\r\n"
 	       "* OK [UIDNEXT {}] predicted next UID\r\n", uidvalid, uidnext);
 	if (g_rfc9051_enable)
-		buf += fmt::format("* LIST () \"/\" {}\r\n", quote_encode(sys_name));
+		buf += fmt::format("* LIST () \"/\" {}\r\n", quote_encode(argv[2]));
 	buf += fmt::format("{} OK [{}] {} completed\r\n",
 		argv[0], s_readonly, s_command);
 	imap_parser_safe_write(pcontext, buf.c_str(), buf.size());
