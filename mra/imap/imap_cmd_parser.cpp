@@ -1968,13 +1968,6 @@ int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
 		auto sys_name = enf_entry.second;
 		if (!imap_cmd_parser_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
-		if (filter_special) {
-			auto buf = fmt::format("* LIST () \"/\" {}\r\n",
-			           quote_encode(sys_name));
-			if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
-				return 1922;
-			continue;
-		}
 		auto pdir = folder_tree.match(sys_name.c_str());
 		auto have = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
 		auto buf = fmt::format("* LIST (\\Has{}Children) \"/\" {}\r\n",
