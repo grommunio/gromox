@@ -81,19 +81,18 @@ enum {
 
 struct builtin_folder {
 	uint64_t fid;
-	const char *name;
+	const char *name, *use_flags;
 };
 
 }
 
-static constexpr const builtin_folder g_folder_list[] = {
-	{PRIVATE_FID_DRAFT, "draft"},
-	{PRIVATE_FID_SENT_ITEMS, "sent"},
-	{PRIVATE_FID_DELETED_ITEMS, "trash"},
-	{PRIVATE_FID_JUNK, "junk"},
-};
 /* RFC 6154 says \Junk, but Thunderbird evaluates \Spam */
-static constexpr const char *g_xproperty_list[] = {"\\Drafts", "\\Sent", "\\Trash", "\\Junk \\Spam"};
+static constexpr const builtin_folder g_folder_list[] = {
+	{PRIVATE_FID_DRAFT, "draft", "\\Drafts"},
+	{PRIVATE_FID_SENT_ITEMS, "sent", "\\Sent"},
+	{PRIVATE_FID_DELETED_ITEMS, "trash", "\\Trash"},
+	{PRIVATE_FID_JUNK, "junk", "\\Junk \\Spam"},
+};
 
 void dir_tree::load_from_memfile(const std::vector<enum_folder_t> &pfile) try
 {
@@ -1945,19 +1944,19 @@ int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
 		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
 			return 1922;
 	}
-	for (unsigned int i = 0; i < 4; ++i) {
+	for (unsigned int i = 0; i < std::size(g_folder_list); ++i) {
 		std::string sys_name;
 		imap_cmd_parser_sysfolder_to_imapfolder(pcontext->lang, g_folder_list[i].name, sys_name);
 		if (imap_cmd_parser_wildcard_match(sys_name.c_str(), search_pattern.c_str())) {
 			std::string buf;
 			if (filter_special) {
 				buf = fmt::format("* LIST ({}) \"/\" {}\r\n",
-				      g_xproperty_list[i], quote_encode(sys_name));
+				      g_folder_list[i].use_flags, quote_encode(sys_name));
 			} else {
 				auto pdir = folder_tree.match(sys_name.c_str());
 				auto have = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
 				buf = fmt::format("* LIST ({}{}\\Has{}Children) \"/\" {}\r\n",
-				      return_special ? g_xproperty_list[i] : "",
+				      return_special ? g_folder_list[i].use_flags : "",
 				      return_special ? " " : "",
 				      have ? "" : "No", quote_encode(sys_name));
 			}
@@ -2040,7 +2039,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, imap_context *pcontext) try
 			auto pdir = folder_tree.match(sys_name.c_str());
 			auto have = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
 			auto buf  = fmt::format("* XLIST ({} \\Has{}Children) \"/\" {}\r\n",
-			            g_xproperty_list[i], have ? "" : "No",
+			            g_folder_list[i].use_flags, have ? "" : "No",
 			            quote_encode(sys_name));
 			if (pcontext->stream.write(buf.c_str(), buf.size()) != 0)
 				return 1922;
