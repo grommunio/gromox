@@ -65,7 +65,7 @@ struct dir_tree {
 	~dir_tree();
 	NOMOVE(dir_tree);
 
-	void load_from_memfile(const std::vector<std::string> &);
+	void load_from_memfile(const std::vector<enum_folder_t> &);
 	DIR_NODE *match(const char *path);
 	static DIR_NODE *get_child(DIR_NODE *);
 
@@ -79,13 +79,23 @@ enum {
 	TYPE_WILDP
 };
 
+struct builtin_folder {
+	uint64_t fid;
+	const char *name;
+};
+
 }
 
-static constexpr const char *g_folder_list[] = {"draft", "sent", "trash", "junk"};
+static constexpr const builtin_folder g_folder_list[] = {
+	{PRIVATE_FID_DRAFT, "draft"},
+	{PRIVATE_FID_SENT_ITEMS, "sent"},
+	{PRIVATE_FID_DELETED_ITEMS, "trash"},
+	{PRIVATE_FID_JUNK, "junk"},
+};
 /* RFC 6154 says \Junk, but Thunderbird evaluates \Spam */
 static constexpr const char *g_xproperty_list[] = {"\\Drafts", "\\Sent", "\\Trash", "\\Junk \\Spam"};
 
-void dir_tree::load_from_memfile(const std::vector<std::string> &pfile) try
+void dir_tree::load_from_memfile(const std::vector<enum_folder_t> &pfile) try
 {
 	auto ptree = this;
 	char *ptr1, *ptr2;
@@ -103,7 +113,7 @@ void dir_tree::load_from_memfile(const std::vector<std::string> &pfile) try
 	}
 
 	for (const auto &pfile_path : pfile) {
-		gx_strlcpy(temp_path, pfile_path.c_str(), std::size(temp_path));
+		gx_strlcpy(temp_path, pfile_path.second.c_str(), std::size(temp_path));
 		auto len = strlen(temp_path);
 		pnode = proot;
 		if (len == 0 || temp_path[len-1] != '/') {
@@ -206,8 +216,8 @@ static inline bool special_folder(const char *name)
 {
 	if (strcasecmp(name, "inbox") == 0)
 		return true;
-	for (auto s : g_folder_list)
-		if (strcmp(name, s) == 0)
+	for (const auto &s : g_folder_list)
+		if (strcmp(name, s.name) == 0)
 			return true;
 	return false;
 }
@@ -1286,13 +1296,13 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(const char *lang,
 }
 
 static void imap_cmd_parser_convert_folderlist(const char *lang,
-   std::vector<std::string> &pfile) try
+   std::vector<enum_folder_t> &pfile) try
 {
 	std::string o;
 	
 	for (auto &e : pfile)
-		if (imap_cmd_parser_sysfolder_to_imapfolder(lang, e.c_str(), o))
-			e = std::move(o);
+		if (imap_cmd_parser_sysfolder_to_imapfolder(lang, e.second.c_str(), o))
+			e.second = std::move(o);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1814: ENOMEM");
 }
@@ -1702,11 +1712,11 @@ int imap_cmd_parser_examine(int argc, char **argv, imap_context *pcontext)
 	return imap_cmd_parser_selex(argc, argv, pcontext, true);
 }
 
-static void writefolderlines(std::vector<std::string> &file) try
+static void writefolderlines(std::vector<enum_folder_t> &file) try
 {
-	file.emplace_back("inbox");
-	for (auto folder : g_folder_list)
-		file.emplace_back(folder);
+	file.emplace_back(PRIVATE_FID_INBOX, "inbox");
+	for (const auto &e : g_folder_list)
+		file.emplace_back(e.fid, e.name);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1813: ENOMEM");
 }
@@ -1725,7 +1735,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 		return 1910;
 	if (special_folder(sys_name))
 		return 1911;
-	std::vector<std::string> folder_list;
+	std::vector<enum_folder_t> folder_list;
 	auto ssr = system_services_enum_folders(pcontext->maildir, folder_list, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -1735,15 +1745,16 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 	sys_name = argv[2]; // Go back to non-hexencoded string
 	if (sys_name.size() > 0 && sys_name.back() == '/')
 		sys_name.pop_back();
-	if (std::find(folder_list.cbegin(), folder_list.cend(), sys_name) != folder_list.cend())
+	if (std::any_of(folder_list.cbegin(), folder_list.cend(),
+	    [&](const enum_folder_t &e) { return strcmp(e.second.c_str(), sys_name.c_str()) == 0; }))
 		return 1926;
 	auto len = sys_name.size();
 	for (size_t i = 0; i <= len; ++i) {
 		if (sys_name[i] != '/' && sys_name[i] != '\0')
 			continue;
 		sys_name[i] = '\0';
-		if (std::find(folder_list.cbegin(), folder_list.cend(), sys_name) !=
-		    folder_list.cend()) {
+		if (std::any_of(folder_list.cbegin(), folder_list.cend(),
+		    [&](const enum_folder_t &e) { return strcmp(e.second.c_str(), sys_name.c_str()) == 0; })) {
 			sys_name[i] = '/';
 			continue;
 		}
@@ -1776,7 +1787,7 @@ int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
 		return 1913;
 
 	{
-		std::vector<std::string> folder_list;
+		std::vector<enum_folder_t> folder_list;
 		auto ssr = system_services_enum_folders(pcontext->maildir,
 			   folder_list, &errnum);
 		auto ret = m2icode(ssr, errnum);
@@ -1908,7 +1919,7 @@ int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
 	}
 
 	auto search_pattern = std::string(reference) + mboxname;
-	std::vector<std::string> folder_list;
+	std::vector<enum_folder_t> folder_list;
 	if (!filter_special) {
 		auto ssr = system_services_enum_folders(pcontext->maildir,
 		           folder_list, &errnum);
@@ -1936,7 +1947,7 @@ int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
 	}
 	for (unsigned int i = 0; i < 4; ++i) {
 		std::string sys_name;
-		imap_cmd_parser_sysfolder_to_imapfolder(pcontext->lang, g_folder_list[i], sys_name);
+		imap_cmd_parser_sysfolder_to_imapfolder(pcontext->lang, g_folder_list[i].name, sys_name);
 		if (imap_cmd_parser_wildcard_match(sys_name.c_str(), search_pattern.c_str())) {
 			std::string buf;
 			if (filter_special) {
@@ -1954,7 +1965,8 @@ int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
 				return 1922;
 		}
 	}
-	for (const auto &sys_name : folder_list) {
+	for (const auto &enf_entry : folder_list) {
+		auto sys_name = enf_entry.second;
 		if (!imap_cmd_parser_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
 		if (filter_special) {
@@ -1997,7 +2009,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, imap_context *pcontext) try
 		return 1800;
 	std::string search_pattern = argv[2];
 	search_pattern += *argv[3] == '\0' ? "*" : argv[3];
-	std::vector<std::string> folder_list;
+	std::vector<enum_folder_t> folder_list;
 	auto ssr = system_services_enum_folders(pcontext->maildir,
 	           folder_list, &errnum);
 	auto ret = m2icode(ssr, errnum);
@@ -2023,7 +2035,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, imap_context *pcontext) try
 	for (unsigned int i = 0; i < 4; ++i) {
 		std::string sys_name;
 		imap_cmd_parser_sysfolder_to_imapfolder(
-			pcontext->lang, g_folder_list[i], sys_name);
+			pcontext->lang, g_folder_list[i].name, sys_name);
 		if (imap_cmd_parser_wildcard_match(sys_name.c_str(), search_pattern.c_str())) {
 			auto pdir = folder_tree.match(sys_name.c_str());
 			auto have = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
@@ -2034,7 +2046,8 @@ int imap_cmd_parser_xlist(int argc, char **argv, imap_context *pcontext) try
 				return 1922;
 		}
 	}
-	for (const auto &sys_name : folder_list) {
+	for (const auto &fentry : folder_list) {
+		const auto &sys_name = fentry.second;
 		if (!imap_cmd_parser_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
 		auto pdir = folder_tree.match(sys_name.c_str());
@@ -2078,14 +2091,14 @@ int imap_cmd_parser_lsub(int argc, char **argv, imap_context *pcontext) try
 		return DISPATCH_CONTINUE;
 	}
 	auto search_pattern = std::string(argv[2]) + argv[3];
-	std::vector<std::string> sub_list;
+	std::vector<enum_folder_t> sub_list;
 	auto ssr = system_services_enum_subscriptions(pcontext->maildir,
 	           sub_list, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
 	imap_cmd_parser_convert_folderlist(pcontext->lang, sub_list);
-	std::vector<std::string> folder_list;
+	std::vector<enum_folder_t> folder_list;
 	system_services_enum_folders(pcontext->maildir, folder_list, &errnum);
 	writefolderlines(folder_list);
 	imap_cmd_parser_convert_folderlist(pcontext->lang, folder_list);
@@ -2094,7 +2107,8 @@ int imap_cmd_parser_lsub(int argc, char **argv, imap_context *pcontext) try
 	folder_list.clear();
 	pcontext->stream.clear();
 
-	for (const auto &sys_name : sub_list) {
+	for (const auto &fentry : sub_list) {
+		const auto &sys_name = fentry.second;
 		if (!imap_cmd_parser_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
 		auto pdir = folder_tree.match(sys_name.c_str());

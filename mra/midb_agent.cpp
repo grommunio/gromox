@@ -78,6 +78,8 @@ struct BACK_SVR {
 
 }
 
+using enum_folder_t = std::pair<uint64_t, std::string>;
+
 static void *midbag_scanwork(void *);
 static ssize_t read_line(int sockd, char *buff, size_t length);
 static int connect_midb(const char *host, uint16_t port);
@@ -91,8 +93,8 @@ static int ping_mailbox(const char *path, int *perrno);
 static int rename_folder(const char *path, const std::string &src_name, const std::string &dst_name, int *perrno);
 static int subscribe_folder(const char *path, const std::string &folder, int *perrno);
 static int unsubscribe_folder(const char *path, const std::string &folder, int *perrno);
-static int enum_folders(const char *path, std::vector<std::string> &, int *perrno);
-static int enum_subscriptions(const char *path, std::vector<std::string> &, int *perrno);
+static int enum_folders(const char *path, std::vector<enum_folder_t> &, int *perrno);
+static int enum_subscriptions(const char *path, std::vector<enum_folder_t> &, int *perrno);
 static int insert_mail(const char *path, const std::string &folder, const char *file_name, const char *flags_string, long time_stamp, int *perrno);
 static int remove_mail(const char *path, const std::string &folder, const std::vector<MITEM *> &, int *perrno);
 static int list_deleted(const char *path, const std::string &folder, XARRAY *, int *perrno);
@@ -868,7 +870,7 @@ static int unsubscribe_folder(const char *path, const std::string &folder, int *
 	return MIDB_RDWR_ERROR;
 }
 
-static int enum_folders(const char *path, std::vector<std::string> &pfile,
+static int enum_folders(const char *path, std::vector<enum_folder_t> &pfile,
     int *perrno) try
 {
 	int i;
@@ -937,10 +939,10 @@ static int enum_folders(const char *path, std::vector<std::string> &pfile,
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 				temp_line[line_pos] = '\0';
 				char *end = nullptr;
-				strtoul(temp_line, &end, 0);
+				uint64_t fid = strtoul(temp_line, &end, 0);
 				while (HX_isspace(*end))
 					++end;
-				pfile.emplace_back(end);
+				pfile.emplace_back(fid, end);
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
 				temp_line[line_pos++] = buff[i];
@@ -970,7 +972,7 @@ static int enum_folders(const char *path, std::vector<std::string> &pfile,
 	return MIDB_LOCAL_ENOMEM;
 }
 
-static int enum_subscriptions(const char *path, std::vector<std::string> &pfile,
+static int enum_subscriptions(const char *path, std::vector<enum_folder_t> &pfile,
     int *perrno) try
 {
 	int i;
@@ -1039,10 +1041,10 @@ static int enum_subscriptions(const char *path, std::vector<std::string> &pfile,
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 				temp_line[line_pos] = '\0';
 				char *end = nullptr;
-				strtoul(temp_line, &end, 0);
+				uint64_t fid = strtoul(temp_line, &end, 0);
 				while (HX_isspace(*end))
 					++end;
-				pfile.emplace_back(end);
+				pfile.emplace_back(fid, end);
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
 				temp_line[line_pos++] = buff[i];

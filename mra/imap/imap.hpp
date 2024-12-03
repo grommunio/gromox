@@ -132,6 +132,8 @@ struct imap_context final : public schedule_context {
 	bool synchronizing_literal = true;
 };
 
+using enum_folder_t = std::pair<uint64_t, std::string>;
+
 extern void imap_parser_init(int context_num, int average_num, size_t cache_size, gromox::time_duration timeout, gromox::time_duration autologout_time, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int imap_parser_run();
 extern tproc_status imap_parser_process(schedule_context *);
@@ -215,8 +217,8 @@ extern int (*system_services_rename_folder)(const char *, const std::string &, c
 extern int (*system_services_ping_mailbox)(const char *, int *);
 extern int (*system_services_subscribe_folder)(const char *, const std::string &, int *);
 extern int (*system_services_unsubscribe_folder)(const char *, const std::string &, int *);
-extern int (*system_services_enum_folders)(const char *, std::vector<std::string> &, int *);
-extern int (*system_services_enum_subscriptions)(const char *, std::vector<std::string> &, int *);
+extern int (*system_services_enum_folders)(const char *, std::vector<enum_folder_t> &, int *);
+extern int (*system_services_enum_subscriptions)(const char *, std::vector<enum_folder_t> &, int *);
 extern int (*system_services_insert_mail)(const char *, const std::string &fld, const char *, const char *, long, int *);
 extern int (*system_services_remove_mail)(const char *, const std::string &fld, const std::vector<MITEM *> &, int *);
 extern int (*system_services_list_deleted)(const char *, const std::string &fld, XARRAY *, int *err);
