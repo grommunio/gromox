@@ -271,8 +271,9 @@ static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
 	b_macro = FALSE;
 	plist.emplace_back("UID");
 	for (int i = 0; i < tmp_argc; ++i) {
-		if (std::find_if(plist.cbegin(), plist.cend(),
-		    [&](const std::string &e) { return strcasecmp(e.c_str(), argv[i]) == 0; }) != plist.cend())
+		if (std::any_of(plist.cbegin(), plist.cend(),
+		    [&](const std::string &e) { return strcasecmp(e.c_str(), argv[i]) == 0; }))
+			/* weed out duplicates */
 			continue;
 		if (0 == strcasecmp(argv[i], "ALL") ||
 			0 == strcasecmp(argv[i], "FAST") ||
@@ -3014,8 +3015,8 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv,
 	if (!imap_cmd_parser_parse_fetch_args(list_data, &b_detail,
 	    &b_data, argv[4], tmp_argv, std::size(tmp_argv)))
 		return 1800;
-	if (std::find_if(list_data.cbegin(), list_data.cend(),
-	    [](const std::string &e) { return strcasecmp(e.c_str(), "UID") == 0; }) == list_data.cend())
+	if (std::none_of(list_data.cbegin(), list_data.cend(),
+	    [](const std::string &e) { return strcasecmp(e.c_str(), "UID") == 0; }))
 		list_data.emplace_back("UID");
 	XARRAY xarray;
 	auto ssr = b_detail ?

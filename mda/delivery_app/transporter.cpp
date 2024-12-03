@@ -498,9 +498,8 @@ int transporter_load_library(const static_module &mod) try
 	}
 	
     /* check whether the library is already loaded */
-	auto it = std::find_if(g_lib_list.cbegin(), g_lib_list.cend(),
-	          [&](const hook_plug_entity &p) { return p.file_name == mod.path; });
-	if (it != g_lib_list.cend()) {
+	if (std::any_of(g_lib_list.cbegin(), g_lib_list.cend(),
+	    [&](const hook_plug_entity &p) { return p.file_name == mod.path; })) {
 		mlog(LV_ERR, "transporter: %s is already loaded", mod.path);
 		return PLUGIN_ALREADY_LOADED;
 	}
@@ -699,9 +698,8 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
     }
 
     /* check if the hook is already registered in hook list */
-	if (std::find_if(g_hook_list.cbegin(), g_hook_list.cend(),
-	    [&](const hook_entry *e) { return e->hook_addr == func; }) !=
-	    g_hook_list.cend())
+	if (std::any_of(g_hook_list.cbegin(), g_hook_list.cend(),
+	    [&](const hook_entry *e) { return e->hook_addr == func; }))
 		return false;
     /* check if there's empty hook in the list */
 	g_cur_lib->list_hook.emplace_back(hook_entry{func, g_cur_lib});

@@ -265,9 +265,9 @@ static ical_line ical_retrieve_tag(char *ptag)
 
 static bool ical_check_base64(ical_line *piline)
 {
-	return std::find_if(piline->param_list.cbegin(), piline->param_list.cend(),
-	       [](const auto &e) { return strcasecmp(e.name.c_str(), "ENCODING") == 0; }) !=
-	       piline->param_list.cend();
+	const auto &y = piline->param_list;
+	return std::any_of(y.cbegin(), y.cend(),
+	       [](const auto &e) { return strcasecmp(e.name.c_str(), "ENCODING") == 0; });
 }
 
 static BOOL ical_retrieve_value(ical_line *piline, char *pvalue) try

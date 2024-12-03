@@ -2832,15 +2832,14 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 		return FALSE;
 	}
 	auto &lst = pendpoint->interface_list;
-	auto ix = std::find_if(lst.cbegin(), lst.cend(),
-	          interface_eq(pinterface->uuid, pinterface->version));
-	if (ix != lst.cend()) {
+	if (std::any_of(lst.cbegin(), lst.cend(),
+	    interface_eq(pinterface->uuid, pinterface->version))) {
 		mlog(LV_ERR, "pdu_processor: interface already exists under "
 		       "endpoint [%s]:%hu", pendpoint->host, pendpoint->tcp_port);
 		return FALSE;
 	}
 	try {
-		pendpoint->interface_list.emplace_back(*pinterface);
+		lst.emplace_back(*pinterface);
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1576: ENOMEM");
 		return false;

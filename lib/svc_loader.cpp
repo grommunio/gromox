@@ -173,9 +173,8 @@ void service_stop()
 static int service_load_library(const static_module &mod)
 {
 	/* check whether the library is already loaded */
-	auto it = std::find_if(g_list_plug.cbegin(), g_list_plug.cend(),
-	          [&](const SVC_PLUG_ENTITY &p) { return p.file_name == znul(mod.path); });
-	if (it != g_list_plug.cend()) {
+	if (std::any_of(g_list_plug.cbegin(), g_list_plug.cend(),
+	    [&](const SVC_PLUG_ENTITY &p) { return p.file_name == znul(mod.path); })) {
 		mlog(LV_ERR, "%s: already loaded", znul(mod.path));
 		return PLUGIN_ALREADY_LOADED;
 	}
@@ -248,9 +247,8 @@ BOOL service_register_service(const char *func_name, void *addr,
 		plug = &g_system_image;
 
 	/* check if the service is already registered in service list */
-	auto it = std::find_if(g_list_service.begin(), g_list_service.end(),
-	          [&](const std::shared_ptr<service_entry> &e) { return e->service_name == func_name; });
-	if (it != g_list_service.end())
+	if (std::any_of(g_list_service.begin(), g_list_service.end(),
+	    [&](const std::shared_ptr<service_entry> &e) { return e->service_name == func_name; }))
 		return FALSE;
 	auto e = std::make_shared<service_entry>();
 	e->service_name = func_name;
