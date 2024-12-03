@@ -1234,41 +1234,23 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(const char *lang,
  * necessarily coincide with the name seen in MAPI.
  */
 static BOOL imap_cmd_parser_sysfolder_to_imapfolder(const char *lang,
-    const char *sys_folder, std::string &imap_folder) try
+    const enum_folder_t &sys_folder, std::string &imap_folder) try
 {
 	char *ptoken;
 	char temp_name[512], left_frag[512], converted_name[512];
 	
-	if (0 == strcmp("inbox", sys_folder)) {
+	if (sys_folder.first == PRIVATE_FID_INBOX) {
 		imap_folder = "INBOX";
 		return TRUE;
 	}
-	if (0 == strcmp("draft", sys_folder)) {
-		auto s = foldername_get(lang, PRIVATE_FID_DRAFT);
-		imap_folder.resize(utf8_to_mb_len(s));
-		utf8_to_mutf7(s, strlen(s), imap_folder.data(), imap_folder.size());
-		imap_folder.resize(strlen(imap_folder.c_str()));
-		return TRUE;
-	} else if (0 == strcmp("sent", sys_folder)) {
-		auto s = foldername_get(lang, PRIVATE_FID_SENT_ITEMS);
-		imap_folder.resize(utf8_to_mb_len(s));
-		utf8_to_mutf7(s, strlen(s), imap_folder.data(), imap_folder.size());
-		imap_folder.resize(strlen(imap_folder.c_str()));
-		return TRUE;
-	} else if (0 == strcmp("trash", sys_folder)) {
-		auto s = foldername_get(lang, PRIVATE_FID_DELETED_ITEMS);
-		imap_folder.resize(utf8_to_mb_len(s));
-		utf8_to_mutf7(s, strlen(s), imap_folder.data(), imap_folder.size());
-		imap_folder.resize(strlen(imap_folder.c_str()));
-		return TRUE;
-	} else if (0 == strcmp("junk", sys_folder)) {
-		auto s = foldername_get(lang, PRIVATE_FID_JUNK);
+	auto s = sys_folder.first < CUSTOM_EID_BEGIN ? foldername_get(lang, sys_folder.first) : nullptr;
+	if (s != nullptr) {
 		imap_folder.resize(utf8_to_mb_len(s));
 		utf8_to_mutf7(s, strlen(s), imap_folder.data(), imap_folder.size());
 		imap_folder.resize(strlen(imap_folder.c_str()));
 		return TRUE;
 	}
-	if (!decode_hex_binary(sys_folder, temp_name, std::size(temp_name)))
+	if (!decode_hex_binary(sys_folder.second.c_str(), temp_name, std::size(temp_name)))
 		return FALSE;
 	ptoken = strchr(temp_name, '/');
 	if (NULL == ptoken) {
@@ -1308,7 +1290,7 @@ static void imap_cmd_parser_convert_folderlist(const char *lang,
 	std::string o;
 	
 	for (auto &e : pfile)
-		if (imap_cmd_parser_sysfolder_to_imapfolder(lang, e.second.c_str(), o))
+		if (imap_cmd_parser_sysfolder_to_imapfolder(lang, e, o))
 			e.second = std::move(o);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1814: ENOMEM");
