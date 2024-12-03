@@ -1670,28 +1670,6 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 	return false;
 }
 
-static unsigned int spname_to_fid(const char *s)
-{
-	if (strcasecmp(s, "inbox") == 0) return PRIVATE_FID_INBOX;
-	if (strcasecmp(s, "draft") == 0) return PRIVATE_FID_DRAFT;
-	if (strcasecmp(s, "sent") == 0) return PRIVATE_FID_SENT_ITEMS;
-	if (strcasecmp(s, "trash") == 0) return PRIVATE_FID_DELETED_ITEMS;
-	if (strcasecmp(s, "junk") == 0) return PRIVATE_FID_JUNK;
-	return 0;
-}
-
-static const char *spfid_to_name(unsigned int z)
-{
-	switch (z) {
-	case PRIVATE_FID_INBOX: return "inbox";
-	case PRIVATE_FID_DRAFT: return "draft";
-	case PRIVATE_FID_SENT_ITEMS: return "sent";
-	case PRIVATE_FID_DELETED_ITEMS: return "trash";
-	case PRIVATE_FID_JUNK: return "junk";
-	default: return nullptr;
-	}
-}
-
 /**
  * @pstmt:        prepared statement for lookup of folder names
  *                (re-uses in-memory copy of folder list)
@@ -1702,12 +1680,6 @@ static BOOL mail_engine_get_encoded_name(const syncfolder_list &map,
     uint64_t folder_id, char *encoded_name) try
 {
 	char temp_name[512];
-
-	if (auto x = spfid_to_name(folder_id)) {
-		strcpy(encoded_name, x);
-		return TRUE;
-	}
-
 	std::vector<std::string> temp_list;
 	do {
 		auto it = map.find(folder_id);
@@ -1808,15 +1780,20 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 		if (num == nullptr)
 			continue;
 		auto parent_fid = rop_util_get_gc_value(*num);
-		auto str = spfid_to_name(folder_id);
-		if (str == nullptr) {
-			str = rows.pparray[i]->get<char>(PR_DISPLAY_NAME);
+		num = rows.pparray[i]->get<uint64_t>(PR_LOCAL_COMMIT_TIME_MAX);
+		syncfolder_entry entry = {parent_fid, num != nullptr ? *num : 0};
+		if (folder_id == PRIVATE_FID_INBOX) {
+			entry.display_name = "INBOX";
+		} else {
+			auto str = rows.pparray[i]->get<char>(PR_DISPLAY_NAME);
 			if (str == nullptr || strlen(str) >= 256)
 				continue;
+			entry.display_name = str;
+			if (parent_fid == PRIVATE_FID_IPMSUBTREE &&
+			    strncasecmp(str, "inbox", 5) == 0)
+				entry.display_name += "."s + std::to_string(folder_id);
 		}
-		num = rows.pparray[i]->get<uint64_t>(PR_LOCAL_COMMIT_TIME_MAX);
-		mapitime_t commit_max = num != nullptr ? *num : 0;
-		syncfolderlist.emplace(folder_id, syncfolder_entry{parent_fid, commit_max, str});
+		syncfolderlist.emplace(folder_id, std::move(entry));
 	}
 
 	/* syncfolderlist is now complete and can be used to construct pathnames */
@@ -2226,8 +2203,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	
 	uint8_t b_unsent = strchr(argv[4], 'U') != nullptr;
 	uint8_t b_read = strchr(argv[4], 'S') != nullptr;
-	if (strcmp(argv[2], "draft") == 0)
-		b_unsent = 1;
 	sprintf(temp_path, "%s/eml/%s", argv[1], argv[3]);
 	size_t slurp_size = 0;
 	std::unique_ptr<char[], stdlib_delete> pbuff(HX_slurp_file(temp_path, &slurp_size));
@@ -2259,6 +2234,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
+	else if (folder_id == PRIVATE_FID_DRAFT)
+		b_unsent = true;
 	unsigned int user_id = 0;
 	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
@@ -2473,10 +2450,10 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 
 	if (strlen(argv[3]) >= 1024 || strcmp(argv[2], argv[3]) == 0)
 		return MIDB_E_PARAMETER_ERROR;
-	if (spname_to_fid(argv[2]) != 0)
-		return MIDB_E_PARAMETER_ERROR;
 	if (!decode_hex_binary(argv[3], decoded_name, std::size(decoded_name)))
 		return MIDB_E_PARAMETER_ERROR;
+	if (strcasecmp(decoded_name, "INBOX") == 0)
+		return MIDB_E_NOTPERMITTED;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -2504,10 +2481,6 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 			return MIDB_E_PARAMETER_ERROR;
 		memcpy(temp_name, ptoken, ptoken1 - ptoken);
 		temp_name[ptoken1 - ptoken] = '\0';
-		auto next_fid = spname_to_fid(temp_name);
-		if (next_fid != 0) {
-			folder_id1 = next_fid;
-		} else {
 			encode_hex_binary(decoded_name, ptoken1 - decoded_name,
 				encoded_name, 1024);
 			auto folder_id2 = mail_engine_get_folder_id(pidb.get(), encoded_name);
@@ -2520,7 +2493,6 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 			} else {
 				folder_id1 = folder_id2;
 			}
-		}
 		ptoken = ptoken1 + 1;
 	}
 	pidb.reset();
@@ -2605,10 +2577,6 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 			return MIDB_E_PARAMETER_ERROR;
 		memcpy(temp_name, ptoken, ptoken1 - ptoken);
 		temp_name[ptoken1 - ptoken] = '\0';
-		auto next_fid = spname_to_fid(temp_name);
-		if (next_fid != 0) {
-			folder_id1 = next_fid;
-		} else {
 			encode_hex_binary(decoded_name, ptoken1 - decoded_name,
 				encoded_name, 1024);
 			auto folder_id2 = mail_engine_get_folder_id(pidb.get(), encoded_name);
@@ -2621,7 +2589,6 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 			} else {
 				folder_id1 = folder_id2;
 			}
-		}
 		ptoken = ptoken1 + 1;
 	}
 	pidb.reset();
@@ -2646,8 +2613,6 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 	BOOL b_result;
 	BOOL b_partial;
 	
-	if (spname_to_fid(argv[2]) != 0)
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -2657,6 +2622,8 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 		return cmd_write(sockd, "TRUE\r\n");
 	}
 	pidb.reset();
+	if (folder_id < CUSTOM_EID_BEGIN)
+		return MIDB_E_NOTPERMITTED;
 	folder_id = rop_util_make_eid_ex(1, folder_id);
 	if (!exmdb_client::empty_folder(argv[1], CP_ACP, nullptr, folder_id,
 	    DELETE_HARD_DELETE | DEL_MESSAGES | DEL_ASSOCIATED, &b_partial) || b_partial ||
@@ -3672,9 +3639,7 @@ static BOOL mail_engine_add_notification_folder(IDB_ITEM *pidb,
 {
 	char decoded_name[512];
 	
-	if (auto x = spfid_to_name(parent_id)) {
-		gx_strlcpy(decoded_name, x, std::size(decoded_name));
-	} else if (parent_id == PRIVATE_FID_IPMSUBTREE) {
+	if (parent_id == PRIVATE_FID_IPMSUBTREE) {
 	} else {
 		auto qstr = fmt::format("SELECT name FROM"
 		           " folders WHERE folder_id={}", parent_id);
@@ -3801,9 +3766,7 @@ static void mail_engine_move_notification_folder(IDB_ITEM *pidb,
 	}
 	pstmt.finalize();
 	char decoded_name[512], encoded_name[1024];
-	if (auto x = spfid_to_name(parent_id)) {
-		gx_strlcpy(decoded_name, x, std::size(decoded_name));
-	} else if (parent_id == PRIVATE_FID_IPMSUBTREE) {
+	if (parent_id == PRIVATE_FID_IPMSUBTREE) {
 	} else {
 		qstr = fmt::format("SELECT name FROM folders WHERE folder_id={}", parent_id);
 		pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
@@ -3853,15 +3816,16 @@ static void mail_engine_move_notification_folder(IDB_ITEM *pidb,
 static void mail_engine_modify_notification_folder(IDB_ITEM *pidb,
     uint64_t folder_id) try
 {
-	if (spfid_to_name(folder_id) != nullptr || folder_id == PRIVATE_FID_IPMSUBTREE)
+	if (folder_id == PRIVATE_FID_IPMSUBTREE || folder_id == PRIVATE_FID_INBOX)
 		return;
 	char decoded_name[512], encoded_name[1024];
-	auto qstr = fmt::format("SELECT name FROM folders WHERE folder_id={}", folder_id);
+	auto qstr = fmt::format("SELECT name, parent_fid FROM folders WHERE folder_id={}", folder_id);
 	auto pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW ||
 	    !decode_hex_binary(pstmt.col_text(0),
 	    decoded_name, std::size(decoded_name)))
 		return;
+	uint64_t parent_fid = pstmt.col_uint64(1);
 	pstmt.finalize();
 
 	static constexpr proptag_t tmp_proptag[] = {PR_DISPLAY_NAME};
@@ -3874,25 +3838,19 @@ static void mail_engine_modify_notification_folder(IDB_ITEM *pidb,
 	if (str == nullptr)
 		return;
 	auto pdisplayname = strrchr(decoded_name, '/');
-	if (pdisplayname == nullptr)
-		pdisplayname = decoded_name;
-	else
-		pdisplayname ++;
-
-	if (strcmp(pdisplayname, str) == 0)
-		return;
-	auto tmp_len = strlen(str);
-	if (tmp_len >= 256)
-		return;
-	if (pdisplayname == decoded_name) {
-		memcpy(decoded_name, str, tmp_len);
-	} else {
-		if (pdisplayname - decoded_name + tmp_len >= 512)
+	std::string new_path;
+	if (pdisplayname == nullptr) {
+		if (strcmp(decoded_name, str) == 0)
 			return;
-		strcpy(pdisplayname, str);
-		tmp_len = strlen(decoded_name);
+		new_path = str;
+	} else {
+		if (strcmp(pdisplayname + 1, str) == 0)
+			return;
+		new_path = std::string(decoded_name, pdisplayname - decoded_name + 1) + str;
 	}
-	encode_hex_binary(decoded_name, tmp_len, encoded_name, 1024);
+	if (parent_fid == PRIVATE_FID_IPMSUBTREE && strncasecmp(str, "inbox", 5) == 0)
+		new_path += "." + std::to_string(folder_id);
+	encode_hex_binary(new_path.c_str(), new_path.size(), encoded_name, std::size(encoded_name));
 	auto xact = gx_sql_begin(pidb->psqlite, txn_mode::write);
 	if (!xact)
 		return;
@@ -3904,7 +3862,7 @@ static void mail_engine_modify_notification_folder(IDB_ITEM *pidb,
 	    ust.step() != SQLITE_DONE)
 		/* ignore */;
 	ust.finalize();
-	mail_engine_update_subfolders_name(pidb, folder_id, decoded_name);
+	mail_engine_update_subfolders_name(pidb, folder_id, new_path.c_str());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2423: ENOMEM");
 }

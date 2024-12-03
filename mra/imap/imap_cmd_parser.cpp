@@ -81,7 +81,7 @@ enum {
 
 struct builtin_folder {
 	uint64_t fid;
-	const char *name, *use_flags;
+	const char *use_flags;
 };
 
 }
@@ -89,11 +89,11 @@ struct builtin_folder {
 /* RFC 6154 does not document \Inbox, but Thunderbird evaluates it. */
 /* RFC 6154 says \Junk, but Thunderbird evaluates \Spam */
 static constexpr const builtin_folder g_folder_list[] = {
-	{PRIVATE_FID_INBOX, "inbox", "\\Inbox"},
-	{PRIVATE_FID_DRAFT, "draft", "\\Drafts"},
-	{PRIVATE_FID_SENT_ITEMS, "sent", "\\Sent"},
-	{PRIVATE_FID_DELETED_ITEMS, "trash", "\\Trash"},
-	{PRIVATE_FID_JUNK, "junk", "\\Junk \\Spam"},
+	{PRIVATE_FID_INBOX, "\\Inbox"},
+	{PRIVATE_FID_DRAFT, "\\Drafts"},
+	{PRIVATE_FID_SENT_ITEMS, "\\Sent"},
+	{PRIVATE_FID_DELETED_ITEMS, "\\Trash"},
+	{PRIVATE_FID_JUNK, "\\Junk \\Spam"},
 };
 
 void dir_tree::load_from_memfile(const std::vector<enum_folder_t> &pfile) try
@@ -219,19 +219,6 @@ static const builtin_folder *special_folder(uint64_t fid)
 		if (fid == s.fid)
 			return &s;
 	return nullptr;
-}
-
-static const builtin_folder *special_folder(const char *name)
-{
-	for (const auto &s : g_folder_list)
-		if (strcmp(name, s.name) == 0)
-			return &s;
-	return nullptr;
-}
-
-static const builtin_folder *special_folder(const std::string &s)
-{
-	return special_folder(s.c_str());
 }
 
 /**
@@ -1160,90 +1147,37 @@ static BOOL imap_cmd_parser_wildcard_match(const char *folder, const char *mask)
 static BOOL imap_cmd_parser_imapfolder_to_sysfolder(const char *imap_folder,
     std::string &sys_folder) try
 {
-	char *ptoken;
-	char temp_name[512], left_frag[512], converted_name[512];
-	
-	if (mutf7_to_utf8(imap_folder, strlen(imap_folder), temp_name, 512) < 0)
+	std::string t;
+	t.resize(strlen(imap_folder));
+	if (mutf7_to_utf8(imap_folder, strlen(imap_folder), t.data(), t.size() + 1) < 0)
 		return FALSE;
-	auto len = strlen(temp_name);
-	if (len > 0 && temp_name[len-1] == '/') {
-		len --;
-		temp_name[len] = '\0';
-	}
-	
-	ptoken = strchr(temp_name, '/');
-	if (NULL == ptoken) {
-		gx_strlcpy(left_frag, temp_name, std::size(left_frag));
-	} else {
-		memcpy(left_frag, temp_name, ptoken - temp_name);
-		left_frag[ptoken - temp_name] = '\0';
-	}
-	if (strcasecmp(left_frag, "INBOX") == 0)
-		strcpy(left_frag, "inbox");
-	if (NULL != ptoken) {
-		len = gx_snprintf(converted_name, std::size(converted_name),
-		      "%s%s", left_frag, ptoken);
-		sys_folder = bin2hex(converted_name, strlen(converted_name));
-	} else if (special_folder(left_frag)) {
-		sys_folder = left_frag;
-	} else {
-		sys_folder = bin2hex(left_frag, strlen(left_frag));
-	}
+	t.resize(strlen(t.c_str()));
+	if (t.size() > 0 && t.back() == '/')
+		t.pop_back();
+	if (strncasecmp(t.c_str(), "inbox", 5) == 0 &&
+	    (t[5] == '\0' || t[5] == '/'))
+		memcpy(t.data(), "INBOX", 5);
+	sys_folder = bin2hex(t.c_str(), t.size());
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2418: ENOMEM");
 	return false;
 }
 
-/**
- * What makes the inbox folder special for...
- * ...Gromox: PRIVATE_FID_INBOX defines the inbox folder
- * ...Outlook: not special (at best, its presence in the receive folder table)
- * ...MIDB: the fixed name "inbox" specifies the inbox
- * ...IMAP: the fixed name "INBOX" specifies the inbox
- *
- * What makes the wastebasket/sent/etc. folder special for...
- * ...Gromox: PRIVATE_FID_WASTEBASKET defines the wastebasket folder
- * ...Outlook: PR_IPM_WASTEBASKET_ENTRYID specifies the wastebasket
- * ...MIDB: the fixed name "trash" specifies the wastebasket
- * ...IMAP: not special
- *
- * Because the MIDB protocol uses a fixed identifier and the actual folder name
- * is "lost" in the protocol (similar to "INBOX" in IMAP), we re-synthesize the
- * folder name. The name shown for the wastebasket in IMAP thus does not
- * necessarily coincide with the name seen in MAPI.
- */
-static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
-    const enum_folder_t &sys_folder, std::string &imap_folder) try
+static BOOL imap_cmd_parser_sysfolder_to_imapfolder(const enum_folder_t &sys_folder,
+    std::string &imap_folder) try
 {
-	char *ptoken;
-	char temp_name[512], left_frag[512], converted_name[512];
-	
 	if (sys_folder.first == PRIVATE_FID_INBOX) {
 		imap_folder = "INBOX";
 		return TRUE;
-	} else if (auto s = special_folder(sys_folder.first)) {
-		imap_folder = s->name;
-		return TRUE;
 	}
-	if (!decode_hex_binary(sys_folder.second.c_str(), temp_name, std::size(temp_name)))
+	std::string t;
+	t.resize(sys_folder.second.size());
+	if (!decode_hex_binary(sys_folder.second.c_str(), t.data(), t.size() + 1))
 		return FALSE;
-	ptoken = strchr(temp_name, '/');
-	if (NULL == ptoken) {
-		gx_strlcpy(left_frag, temp_name, std::size(left_frag));
-	} else {
-		memcpy(left_frag, temp_name, ptoken - temp_name);
-		left_frag[ptoken - temp_name] = '\0';
-	}
-	if (strcmp(left_frag, "inbox") == 0)
-		strcpy(left_frag, "INBOX");
-	if (ptoken != nullptr)
-		snprintf(converted_name, 512, "%s%s", left_frag, ptoken);
-	else
-		strcpy(converted_name, left_frag);
-	imap_folder.resize(utf8_to_mb_len(converted_name));
-	if (utf8_to_mutf7(converted_name, strlen(converted_name),
-	    imap_folder.data(), imap_folder.size()) <= 0)
+	t.resize(strlen(t.c_str()));
+	imap_folder.resize(utf8_to_mb_len(t.c_str()));
+	if (utf8_to_mutf7(t.c_str(), t.size(), imap_folder.data(), imap_folder.size() + 1) <= 0)
 		return FALSE;
 	imap_folder.resize(strlen(imap_folder.c_str()));
 	return TRUE;
@@ -1676,8 +1610,6 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 		return 1800;
 	if (strpbrk(argv[2], "%*?") != nullptr)
 		return 1910;
-	if (special_folder(sys_name))
-		return 1911;
 	std::vector<enum_folder_t> folder_list;
 	auto ssr = system_services_enum_folders(pcontext->maildir, folder_list, &errnum);
 	auto ret = m2icode(ssr, errnum);
@@ -1724,8 +1656,6 @@ int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], encoded_name))
 		return 1800;
-	if (special_folder(encoded_name))
-		return 1913;
 
 	{
 		std::vector<enum_folder_t> folder_list;
@@ -1737,7 +1667,6 @@ int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
 		imap_cmd_parser_convert_folderlist(folder_list);
 		dir_tree folder_tree;
 		folder_tree.load_from_memfile(std::move(folder_list));
-		//XXX Junk* may newly match Junk now
 		auto dh = folder_tree.match(argv[2]);
 		if (dh == nullptr)
 			return 1925;
@@ -1770,8 +1699,6 @@ int imap_cmd_parser_rename(int argc, char **argv, imap_context *pcontext)
 		return 1800;
 	if (strpbrk(argv[3], "%*?") != nullptr)
 		return 1910;
-	if (special_folder(encoded_name) || special_folder(encoded_name1))
-		return 1914;
 	auto ssr = system_services_rename_folder(pcontext->maildir,
 	           encoded_name, encoded_name1, &errnum);
 	auto ret = m2icode(ssr, errnum);

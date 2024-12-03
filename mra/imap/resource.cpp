@@ -155,6 +155,8 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{2000 | MIDB_E_SQLPREP, "sqlite3_prepare failed"},
 	{2000 | MIDB_E_SQLUNEXP, "Unexpected return code from lastrow sqlite3_step"},
 	{2000 | MIDB_E_SSGETID, "User unresolvable"},
+	{2000 | MIDB_E_ACCESS_DENIED, "Access denied"},
+	{2000 | MIDB_E_NOTPERMITTED, "Operation not permitted"},
 };
 
 static std::unordered_map<unsigned int, std::string> g_def_code_table;
