@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/socket.h>
 #include <libHX/string.h>
@@ -935,7 +936,11 @@ static int enum_folders(const char *path, std::vector<std::string> &pfile,
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 				temp_line[line_pos] = '\0';
-				pfile.emplace_back(temp_line);
+				char *end = nullptr;
+				strtoul(temp_line, &end, 0);
+				while (HX_isspace(*end))
+					++end;
+				pfile.emplace_back(end);
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
 				temp_line[line_pos++] = buff[i];
@@ -1033,7 +1038,11 @@ static int enum_subscriptions(const char *path, std::vector<std::string> &pfile,
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 				temp_line[line_pos] = '\0';
-				pfile.emplace_back(temp_line);
+				char *end = nullptr;
+				strtoul(temp_line, &end, 0);
+				while (HX_isspace(*end))
+					++end;
+				pfile.emplace_back(end);
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
 				temp_line[line_pos++] = buff[i];

@@ -2179,7 +2179,7 @@ static int mail_engine_mping(int argc, char **argv, int sockd)
  * 	M-ENUM <store-dir>
  * Response:
  * 	TRUE <#folders>
- * 	<folder-name>  // repeat x #folders
+ * 	<folder-id> <folder-name>  // repeat x #folders
  */
 static int mail_engine_menum(int argc, char **argv, int sockd) try
 {
@@ -2195,7 +2195,7 @@ static int mail_engine_menum(int argc, char **argv, int sockd) try
 	while (pstmt.step() == SQLITE_ROW) {
 		if (spfid_to_name(sqlite3_column_int64(pstmt, 0)) != nullptr)
 			continue;
-		rsp += pstmt.col_text(1) + "\r\n"s;
+		rsp += std::to_string(pstmt.col_uint64(0)) + " " + pstmt.col_text(1) + "\r\n"s;
 		count ++;
 	}
 	pstmt.finalize();
@@ -2809,21 +2809,21 @@ static int mail_engine_punsf(int argc, char **argv, int sockd)
  * 	P-SUBL <store-dir>
  * Response:
  * 	TRUE <#folders>
- * 	<folder-name>  // repeat x #folders
+ * 	<folder-id> <folder-name>  // repeat x #folders
  */
 static int mail_engine_psubl(int argc, char **argv, int sockd) try
 {
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
-	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT name FROM folders WHERE unsub=0");
+	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id, name FROM folders WHERE unsub=0");
 	if (pstmt == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
 	size_t count = 0;
 	std::string rsp;
 	rsp.reserve(65536);
 	for (; pstmt.step() == SQLITE_ROW; ++count)
-		rsp += pstmt.col_text(0) + "\r\n"s;
+		rsp += std::to_string(pstmt.col_uint64(0)) + " " + pstmt.col_text(1) + "\r\n"s;
 	pstmt.finalize();
 	pidb.reset();
 	rsp.insert(0, "TRUE " + std::to_string(count) + "\r\n");
