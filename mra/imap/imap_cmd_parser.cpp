@@ -86,8 +86,10 @@ struct builtin_folder {
 
 }
 
+/* RFC 6154 does not document \Inbox, but Thunderbird evaluates it. */
 /* RFC 6154 says \Junk, but Thunderbird evaluates \Spam */
 static constexpr const builtin_folder g_folder_list[] = {
+	{PRIVATE_FID_INBOX, "inbox", "\\Inbox"},
 	{PRIVATE_FID_DRAFT, "draft", "\\Drafts"},
 	{PRIVATE_FID_SENT_ITEMS, "sent", "\\Sent"},
 	{PRIVATE_FID_DELETED_ITEMS, "trash", "\\Trash"},
@@ -213,8 +215,6 @@ dir_tree::~dir_tree()
 
 static inline bool special_folder(const char *name)
 {
-	if (strcasecmp(name, "inbox") == 0)
-		return true;
 	for (const auto &s : g_folder_list)
 		if (strcmp(name, s.name) == 0)
 			return true;
@@ -1713,7 +1713,6 @@ int imap_cmd_parser_examine(int argc, char **argv, imap_context *pcontext)
 
 static void writefolderlines(std::vector<enum_folder_t> &file) try
 {
-	file.emplace_back(PRIVATE_FID_INBOX, "inbox");
 	for (const auto &e : g_folder_list)
 		file.emplace_back(e.fid, e.name);
 } catch (const std::bad_alloc &) {
@@ -1931,19 +1930,6 @@ int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
 	dir_tree folder_tree;
 	folder_tree.load_from_memfile(folder_list);
 	pcontext->stream.clear();
-	if (imap_cmd_parser_wildcard_match("INBOX", search_pattern.c_str())) {
-		std::string buf;
-		if (filter_special) {
-			buf = "* LIST (\\Inbox) \"/\" \"INBOX\"\r\n";
-		} else {
-			auto pdir = folder_tree.match("INBOX");
-			auto have = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
-			buf = fmt::format("* LIST ({}\\Has{}Children) \"/\" \"INBOX\"\r\n",
-			      return_special ? "\\Inbox " : "", have ? "" : "No");
-		}
-		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
-			return 1922;
-	}
 	for (unsigned int i = 0; i < std::size(g_folder_list); ++i) {
 		std::string sys_name;
 		imap_cmd_parser_sysfolder_to_imapfolder(pcontext->lang, g_folder_list[i].name, sys_name);
@@ -2012,19 +1998,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, imap_context *pcontext) try
 	folder_tree.load_from_memfile(folder_list);
 	pcontext->stream.clear();
 
-	if (imap_cmd_parser_wildcard_match("INBOX", search_pattern.c_str())) {
-		auto pdir = folder_tree.match("INBOX");
-		auto have = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
-		/*
-		 * RFC 6154 does not document \Inbox, but Thunderbird
-		 * evaluates it.
-		 */
-		auto buf = fmt::format("* XLIST (\\Inbox \\Has{}Children) \"/\" \"INBOX\"\r\n",
-		           have ? "" : "No");
-		if (pcontext->stream.write(buf.c_str(), buf.size()) != 0)
-			return 1922;
-	}
-	for (unsigned int i = 0; i < 4; ++i) {
+	for (unsigned int i = 0; i < std::size(g_folder_list); ++i) {
 		std::string sys_name;
 		imap_cmd_parser_sysfolder_to_imapfolder(
 			pcontext->lang, g_folder_list[i].name, sys_name);
