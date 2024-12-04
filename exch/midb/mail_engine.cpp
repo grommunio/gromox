@@ -1329,7 +1329,7 @@ static std::optional<std::vector<int>> mail_engine_ct_match(const char *charset,
 	return {};
 }
 
-static uint64_t mail_engine_get_folder_id(IDB_ITEM *pidb, std::string_view name)
+static uint64_t me_get_folder_id_raw(IDB_ITEM *pidb, std::string_view name)
 {
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT "
 	             "folder_id FROM folders WHERE name=?");
@@ -1338,6 +1338,11 @@ static uint64_t mail_engine_get_folder_id(IDB_ITEM *pidb, std::string_view name)
 	pstmt.bind_text(1, name);
 	return pstmt.step() != SQLITE_ROW ? 0 :
 	       sqlite3_column_int64(pstmt, 0);
+}
+
+static uint64_t mail_engine_get_folder_id(IDB_ITEM *pidb, std::string_view name)
+{
+	return me_get_folder_id_raw(pidb, base64_decode(name));
 }
 
 static void mail_engine_extract_digest_fields(const Json::Value &digest, char *subject,
@@ -1677,9 +1682,8 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
  * @encoded_name: folder path; encoded for use within midb
  */
 static BOOL mail_engine_get_encoded_name(const syncfolder_list &map,
-    uint64_t folder_id, char *encoded_name) try
+    uint64_t folder_id, std::string &encoded_name) try
 {
-	char temp_name[512];
 	std::vector<std::string> temp_list;
 	do {
 		auto it = map.find(folder_id);
@@ -1689,19 +1693,12 @@ static BOOL mail_engine_get_encoded_name(const syncfolder_list &map,
 		temp_list.emplace_back(it->second.display_name);
 	} while (PRIVATE_FID_IPMSUBTREE != folder_id);
 	std::reverse(temp_list.begin(), temp_list.end());
-	size_t offset = 0;
-	for (const auto &name : temp_list) {
-		auto length = name.size();
-		if (length >= 256)
-			return FALSE;
-		if (offset != 0)
-			temp_name[offset++] = '/';
-		if (offset + length >= 512)
-			return FALSE;
-		memcpy(&temp_name[offset], name.c_str(), length);
-		offset += length;
+	encoded_name.clear();
+	for (auto &&name : temp_list) {
+		if (!encoded_name.empty())
+			encoded_name += '/';
+		encoded_name += std::move(name);
 	}
-	encode_hex_binary(temp_name, offset, encoded_name, 1024);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1207: ENOMEM");
@@ -1832,7 +1829,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 		}
 		const auto &parent_fid = entry.parent_fid;
 		const auto &commit_max = entry.commit_max;
-		char encoded_name[1024];
+		std::string encoded_name;
 		if (!mail_engine_get_encoded_name(syncfolderlist, folder_id, encoded_name))
 			continue;
 		sqlite3_reset(pstmt1);
@@ -1844,7 +1841,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 			sqlite3_bind_int64(pstmt2, 1, folder_id);
 			sqlite3_bind_int64(pstmt2, 2, parent_fid);
 			sqlite3_bind_int64(pstmt2, 3, commit_max);
-			sqlite3_bind_text(pstmt2, 4, encoded_name, -1, SQLITE_STATIC);
+			pstmt2.bind_text(4, encoded_name);
 			auto rx = pstmt2.step();
 			if (rx == SQLITE_CONSTRAINT) {
 				mlog(LV_ERR, "E-1224: XXX: Not implemented: midb is unable to cope with folder deletions that occurred while midb was not connected to exmdb");
@@ -1861,7 +1858,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 					parent_fid, folder_id);
 				gx_sql_exec(pidb->psqlite, qstr.c_str());
 			}
-			if (strcmp(encoded_name, pstmt1.col_text(3)) != 0) {
+			if (strcmp(encoded_name.c_str(), pstmt1.col_text(3)) != 0) {
 				auto ust = gx_sql_prep(pidb->psqlite, "UPDATE folders SET name=? "
 				           "WHERE folder_id=?");
 				if (ust == nullptr ||
@@ -2169,7 +2166,8 @@ static int mail_engine_menum(int argc, char **argv, int sockd) try
 	std::string rsp;
 	rsp.reserve(65536);
 	while (pstmt.step() == SQLITE_ROW) {
-		rsp += std::to_string(pstmt.col_uint64(0)) + " " + pstmt.col_text(1) + "\r\n"s;
+		rsp += std::to_string(pstmt.col_uint64(0)) + " " +
+		       base64_encode(pstmt.col_text(1)) + "\r\n"s;
 		count ++;
 	}
 	pstmt.finalize();
@@ -2445,15 +2443,11 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd) try
  */
 static int mail_engine_mrenf(int argc, char **argv, int sockd)
 {
-	char decoded_name[512];
-	char encoded_name[1024];
-
 	if (strlen(argv[3]) >= 1024 || strcmp(argv[2], argv[3]) == 0)
 		return MIDB_E_PARAMETER_ERROR;
-	if (!decode_hex_binary(argv[3], decoded_name, std::size(decoded_name)))
+	auto decoded_name = base64_decode(argv[2]);
+	if (decoded_name.empty())
 		return MIDB_E_PARAMETER_ERROR;
-	if (strcasecmp(decoded_name, "INBOX") == 0)
-		return MIDB_E_NOTPERMITTED;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -2464,30 +2458,27 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	             " parent_fid FROM folders WHERE name=?");
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	sqlite3_bind_text(pstmt, 1, argv[2], -1, SQLITE_STATIC);
+	pstmt.bind_text(1, decoded_name);
 	if (pstmt.step() != SQLITE_ROW)
 		return MIDB_E_SQLUNEXP;
 	auto folder_id = pstmt.col_uint64(0);
+	if (folder_id == PRIVATE_FID_INBOX)
+		return MIDB_E_NOTPERMITTED;
 	auto parent_id = pstmt.col_uint64(1);
 	pstmt.finalize();
 	if (mail_engine_get_folder_id(pidb.get(), argv[3]) != 0)
 		return MIDB_E_FOLDER_EXISTS;
 
-	char *ptoken = decoded_name, *ptoken1;
+	const char *ptoken = decoded_name.c_str(), *ptoken1;
 	uint64_t folder_id1 = PRIVATE_FID_IPMSUBTREE;
 	while ((ptoken1 = strchr(ptoken, '/')) != NULL) {
-		char temp_name[256];
-		if (static_cast<size_t>(ptoken1 - ptoken) >= sizeof(temp_name))
-			return MIDB_E_PARAMETER_ERROR;
-		memcpy(temp_name, ptoken, ptoken1 - ptoken);
-		temp_name[ptoken1 - ptoken] = '\0';
-			encode_hex_binary(decoded_name, ptoken1 - decoded_name,
-				encoded_name, 1024);
-			auto folder_id2 = mail_engine_get_folder_id(pidb.get(), encoded_name);
+		std::string temp_name(ptoken, ptoken1 - ptoken);
+		auto parent_name = std::string_view(decoded_name.c_str(), ptoken1 - decoded_name.c_str());
+		auto folder_id2 = me_get_folder_id_raw(pidb.get(), parent_name);
 			if (0 == folder_id2) {
 				if (!common_util_create_folder(argv[1],
 				    user_id, rop_util_make_eid_ex(1, folder_id1),
-				    temp_name, &folder_id2))
+				    temp_name.c_str(), &folder_id2))
 					return MIDB_E_CREATEFOLDER;
 				folder_id1 = rop_util_get_gc_value(folder_id2);
 			} else {
@@ -2555,35 +2546,28 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
  */
 static int mail_engine_mmakf(int argc, char **argv, int sockd)
 {
-	char decoded_name[512];
-	char encoded_name[1024];
-
-	if (!decode_hex_binary(argv[2], decoded_name, std::size(decoded_name)))
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
 	unsigned int user_id = 0;
 	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
-	if (mail_engine_get_folder_id(pidb.get(), argv[2]) != 0)
+	auto decoded_name = base64_decode(argv[2]);
+	if (decoded_name.empty())
+		return MIDB_E_PARAMETER_ERROR;
+	if (me_get_folder_id_raw(pidb.get(), decoded_name) != 0)
 		return MIDB_E_FOLDER_EXISTS;
 
-	char *ptoken = decoded_name, *ptoken1;
+	const char *ptoken = decoded_name.c_str(), *ptoken1;
 	uint64_t folder_id1 = PRIVATE_FID_IPMSUBTREE;
 	while ((ptoken1 = strchr(ptoken, '/')) != NULL) {
-		char temp_name[256];
-		if (static_cast<size_t>(ptoken1 - ptoken) >= sizeof(temp_name))
-			return MIDB_E_PARAMETER_ERROR;
-		memcpy(temp_name, ptoken, ptoken1 - ptoken);
-		temp_name[ptoken1 - ptoken] = '\0';
-			encode_hex_binary(decoded_name, ptoken1 - decoded_name,
-				encoded_name, 1024);
-			auto folder_id2 = mail_engine_get_folder_id(pidb.get(), encoded_name);
+		std::string temp_name(ptoken, ptoken1 - ptoken);
+		auto parent_name = std::string_view(decoded_name.c_str(), ptoken1 - decoded_name.c_str());
+		auto folder_id2 = mail_engine_get_folder_id(pidb.get(), parent_name);
 			if (0 == folder_id2) {
 				if (!common_util_create_folder(argv[1],
 				    user_id, rop_util_make_eid_ex(1, folder_id1),
-				    temp_name, &folder_id2))
+				    temp_name.c_str(), &folder_id2))
 					return MIDB_E_CREATEFOLDER;
 				folder_id1 = rop_util_get_gc_value(folder_id2);
 			} else {
@@ -2683,6 +2667,9 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	char temp_buff[1024];
 	char sql_string[1024];
 	
+	auto decoded_name = base64_decode(argv[2]);
+	if (decoded_name.empty())
+		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -2690,7 +2677,7 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	             " uidnext FROM folders WHERE name=?");
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	sqlite3_bind_text(pstmt, 1, argv[2], -1, SQLITE_STATIC);
+	pstmt.bind_text(1, decoded_name);
 	if (pstmt.step() != SQLITE_ROW)
 		return MIDB_E_NO_FOLDER;
 	auto folder_id = pstmt.col_uint64(0);
@@ -3637,17 +3624,16 @@ static void mail_engine_delete_notification_message(IDB_ITEM *pidb,
 static BOOL mail_engine_add_notification_folder(IDB_ITEM *pidb,
     uint64_t parent_id, uint64_t folder_id) try
 {
-	char decoded_name[512];
-	
+	std::string decoded_name;
+
 	if (parent_id == PRIVATE_FID_IPMSUBTREE) {
 	} else {
 		auto qstr = fmt::format("SELECT name FROM"
 		           " folders WHERE folder_id={}", parent_id);
 		auto pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
-		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW ||
-		    !decode_hex_binary(pstmt.col_text(0),
-		    decoded_name, std::size(decoded_name)))
+		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			return FALSE;
+		decoded_name = pstmt.col_text(0);
 	}
 
 	static constexpr proptag_t tmp_proptags[] =
@@ -3685,19 +3671,15 @@ static BOOL mail_engine_add_notification_folder(IDB_ITEM *pidb,
 	if (parent_id == PRIVATE_FID_IPMSUBTREE) {
 		temp_name.assign(str, tmp_len);
 	} else {
-		if (tmp_len + strlen(decoded_name) >= 511)
-			return FALSE;
-		temp_name = decoded_name + "/"s + str;
+		temp_name = std::move(decoded_name) + "/"s + str;
 	}
-	char encoded_name[1024];
-	encode_hex_binary(temp_name.c_str(), temp_name.size(), encoded_name, std::size(encoded_name));
 	auto stm = gx_sql_prep(pidb->psqlite, "INSERT INTO folders (folder_id, parent_fid, "
 	           "commit_max, name) VALUES (?, ?, ?, ?)");
 	if (stm == nullptr ||
 	    stm.bind_int64(1, folder_id) != SQLITE_OK ||
 	    stm.bind_int64(2, parent_id) != SQLITE_OK ||
 	    stm.bind_int64(3, commit_max) != SQLITE_OK ||
-	    stm.bind_text(4, encoded_name) != SQLITE_OK ||
+	    stm.bind_text(4, temp_name) != SQLITE_OK ||
 	    stm.step() != SQLITE_DONE)
 		return FALSE;
 	return TRUE;
@@ -3716,7 +3698,7 @@ static void mail_engine_delete_notification_folder(IDB_ITEM *pidb,
 }
 
 static void mail_engine_update_subfolders_name(IDB_ITEM *pidb,
-    uint64_t parent_id, const char *parent_name) try
+    uint64_t parent_id, const std::string &parent_name) try
 {
 	auto qstr = fmt::format("SELECT folder_id, name"
 	            " FROM folders WHERE parent_fid={}", parent_id);
@@ -3725,20 +3707,13 @@ static void mail_engine_update_subfolders_name(IDB_ITEM *pidb,
 		return;	
 	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t folder_id = pstmt.col_int64(0);
-		char decoded_name[512], encoded_name[1024], temp_name[512];
-
-		if (!decode_hex_binary(pstmt.col_text(1),
-		    decoded_name, std::size(decoded_name)))
+		auto ptoken = strrchr(pstmt.col_text(1), '/');
+		if (ptoken == nullptr)
 			continue;
-		auto ptoken = strrchr(decoded_name, '/');
-		if (ptoken == nullptr ||
-		    strlen(ptoken) + strlen(parent_name) >= 512)
-			continue;
-		auto tmp_len = snprintf(temp_name, sizeof(temp_name), "%s%s", parent_name, ptoken);
-		encode_hex_binary(temp_name, tmp_len, encoded_name, 1024);
+		auto temp_name = parent_name + ptoken;
 		auto ust = gx_sql_prep(pidb->psqlite, "UPDATE folders SET name=? WHERE folder_id=?");
 		if (ust != nullptr) {
-			if (ust.bind_text(1, encoded_name) != SQLITE_OK ||
+			if (ust.bind_text(1, temp_name) != SQLITE_OK ||
 			    ust.bind_int64(2, folder_id) != SQLITE_OK ||
 			    ust.step() != SQLITE_DONE)
 				/* ignore */;
@@ -3765,15 +3740,15 @@ static void mail_engine_move_notification_folder(IDB_ITEM *pidb,
 		return;
 	}
 	pstmt.finalize();
-	char decoded_name[512], encoded_name[1024];
+
+	std::string decoded_name;
 	if (parent_id == PRIVATE_FID_IPMSUBTREE) {
 	} else {
 		qstr = fmt::format("SELECT name FROM folders WHERE folder_id={}", parent_id);
 		pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
-		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW ||
-		    !decode_hex_binary(pstmt.col_text(0),
-		    decoded_name, std::size(decoded_name)))
+		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			return;
+		decoded_name = pstmt.col_text(0);
 		pstmt.finalize();
 	}
 	static constexpr proptag_t tmp_proptag[] = {PR_DISPLAY_NAME};
@@ -3793,22 +3768,19 @@ static void mail_engine_move_notification_folder(IDB_ITEM *pidb,
 	if (parent_id == PRIVATE_FID_IPMSUBTREE) {
 		temp_name.assign(str, tmp_len);
 	} else {
-		if (tmp_len + strlen(decoded_name) >= 511)
-			return;
-		temp_name = decoded_name + "/"s + str;
+		temp_name = std::move(decoded_name) + "/"s + str;
 	}
-	encode_hex_binary(temp_name.c_str(), temp_name.size(), encoded_name, std::size(encoded_name));
 	auto ust = gx_sql_prep(pidb->psqlite,
 	           "UPDATE folders SET parent_fid=?, name=? WHERE folder_id=?");
 	if (ust != nullptr) {
 		if (ust.bind_int64(1, parent_id) != SQLITE_OK ||
-		    ust.bind_text(2, encoded_name) != SQLITE_OK ||
+		    ust.bind_text(2, temp_name) != SQLITE_OK ||
 		    ust.bind_int64(3, folder_id) != SQLITE_OK ||
 		    ust.step() != SQLITE_DONE)
 			/* ignore */;
 		ust.finalize();
 	}
-	mail_engine_update_subfolders_name(pidb, folder_id, temp_name.c_str());
+	mail_engine_update_subfolders_name(pidb, folder_id, temp_name);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1478: ENOMEM");
 }
@@ -3818,13 +3790,11 @@ static void mail_engine_modify_notification_folder(IDB_ITEM *pidb,
 {
 	if (folder_id == PRIVATE_FID_IPMSUBTREE || folder_id == PRIVATE_FID_INBOX)
 		return;
-	char decoded_name[512], encoded_name[1024];
 	auto qstr = fmt::format("SELECT name, parent_fid FROM folders WHERE folder_id={}", folder_id);
 	auto pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
-	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW ||
-	    !decode_hex_binary(pstmt.col_text(0),
-	    decoded_name, std::size(decoded_name)))
+	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return;
+	std::string decoded_name = pstmt.col_text(0);
 	uint64_t parent_fid = pstmt.col_uint64(1);
 	pstmt.finalize();
 
@@ -3837,32 +3807,31 @@ static void mail_engine_modify_notification_folder(IDB_ITEM *pidb,
 	auto str = propvals.get<const char>(PR_DISPLAY_NAME);
 	if (str == nullptr)
 		return;
-	auto pdisplayname = strrchr(decoded_name, '/');
+	auto pdisplayname = strrchr(decoded_name.c_str(), '/');
 	std::string new_path;
 	if (pdisplayname == nullptr) {
-		if (strcmp(decoded_name, str) == 0)
+		if (strcmp(decoded_name.c_str(), str) == 0)
 			return;
 		new_path = str;
 	} else {
 		if (strcmp(pdisplayname + 1, str) == 0)
 			return;
-		new_path = std::string(decoded_name, pdisplayname - decoded_name + 1) + str;
+		new_path = std::string(decoded_name, pdisplayname - decoded_name.c_str() + 1) + str;
 	}
 	if (parent_fid == PRIVATE_FID_IPMSUBTREE && strncasecmp(str, "inbox", 5) == 0)
 		new_path += "." + std::to_string(folder_id);
-	encode_hex_binary(new_path.c_str(), new_path.size(), encoded_name, std::size(encoded_name));
 	auto xact = gx_sql_begin(pidb->psqlite, txn_mode::write);
 	if (!xact)
 		return;
 	auto ust = gx_sql_prep(pidb->psqlite, "UPDATE folders SET name=? "
 	           "WHERE folder_id=?");
 	if (ust == nullptr ||
-	    ust.bind_text(1, encoded_name) != SQLITE_OK ||
+	    ust.bind_text(1, new_path) != SQLITE_OK ||
 	    ust.bind_int64(2, folder_id) != SQLITE_OK ||
 	    ust.step() != SQLITE_DONE)
 		/* ignore */;
 	ust.finalize();
-	mail_engine_update_subfolders_name(pidb, folder_id, new_path.c_str());
+	mail_engine_update_subfolders_name(pidb, folder_id, new_path);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2423: ENOMEM");
 }

@@ -1157,7 +1157,7 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(const char *imap_folder,
 	if (strncasecmp(t.c_str(), "inbox", 5) == 0 &&
 	    (t[5] == '\0' || t[5] == '/'))
 		memcpy(t.data(), "INBOX", 5);
-	sys_folder = bin2hex(t.c_str(), t.size());
+	sys_folder = base64_encode(t);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2418: ENOMEM");
@@ -1171,11 +1171,9 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(const enum_folder_t &sys_fol
 		imap_folder = "INBOX";
 		return TRUE;
 	}
-	std::string t;
-	t.resize(sys_folder.second.size());
-	if (!decode_hex_binary(sys_folder.second.c_str(), t.data(), t.size() + 1))
+	auto t = base64_decode(sys_folder.second);
+	if (t.empty())
 		return FALSE;
-	t.resize(strlen(t.c_str()));
 	imap_folder.resize(utf8_to_mb_len(t.c_str()));
 	if (utf8_to_mutf7(t.c_str(), t.size(), imap_folder.data(), imap_folder.size() + 1) <= 0)
 		return FALSE;
@@ -1616,7 +1614,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 	if (ret != 0)
 		return ret;
 	imap_cmd_parser_convert_folderlist(folder_list);
-	sys_name = argv[2]; // Go back to non-hexencoded string
+	sys_name = argv[2]; // Go back to non-encoded string
 	if (sys_name.size() > 0 && sys_name.back() == '/')
 		sys_name.pop_back();
 	if (std::any_of(folder_list.cbegin(), folder_list.cend(),
