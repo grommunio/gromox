@@ -29,6 +29,9 @@ static int t_utf7()
 	printf("%s -> %s\n", a, buf);
 	utf8_to_mutf7(b, strlen(b), buf, std::size(buf));
 	printf("%s -> %s\n", b, buf);
+	assert(mutf7_to_utf8("INBOX", 5, buf, 6) == 5);
+	assert(mutf7_to_utf8("INBOX2", 6, buf, 6) < 0);
+	assert(mutf7_to_utf8("", 0, buf, 6) == 0);
 	return EXIT_SUCCESS;
 }
 

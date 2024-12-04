@@ -578,11 +578,9 @@ static const char B64Chars[64] = {
  */
 int mutf7_to_utf8(const char *u7, size_t u7len, char *u8, size_t u8len)
 {
-  char *u8end;
   int b, ch, k;
-
 	auto p = u8;
-  u8end = u8 + u8len - 1;
+  char *u8end = u8 + u8len;
 
   for (; u7len&&p<u8end; u7++, u7len--)
   {
