@@ -257,7 +257,7 @@ int mbop_insert_namedprops(sqlite3 *sdb, const char *datadir)
 			return -EIO;
 		}
 		stm.bind_int64(1, propid);
-		stm.bind_text(2, name.c_str());
+		stm.bind_text(2, name);
 		auto ret = stm.step();
 		if (ret != SQLITE_DONE) {
 			fprintf(stderr, "insert_namedprop/sqlite3_step \"%s\": %s\n",

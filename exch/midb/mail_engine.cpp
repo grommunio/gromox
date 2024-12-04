@@ -1329,13 +1329,13 @@ static std::optional<std::vector<int>> mail_engine_ct_match(const char *charset,
 	return {};
 }
 
-static uint64_t mail_engine_get_folder_id(IDB_ITEM *pidb, const char *name)
+static uint64_t mail_engine_get_folder_id(IDB_ITEM *pidb, std::string_view name)
 {
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT "
 	             "folder_id FROM folders WHERE name=?");
 	if (pstmt == nullptr)
 		return 0;
-	sqlite3_bind_text(pstmt, 1, name, -1, SQLITE_STATIC);
+	pstmt.bind_text(1, name);
 	return pstmt.step() != SQLITE_ROW ? 0 :
 	       sqlite3_column_int64(pstmt, 0);
 }

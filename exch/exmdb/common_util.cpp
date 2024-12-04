@@ -2720,7 +2720,7 @@ void common_util_set_message_read(sqlite3 *psqlite,
 }
 
 static BOOL cu_update_object_cid(sqlite3 *psqlite, mapi_object_type table_type,
-    uint64_t object_id, uint32_t proptag, const char *cid)
+    uint64_t object_id, uint32_t proptag, std::string_view cid)
 {
 	char sql_string[256];
 	
@@ -2735,7 +2735,7 @@ static BOOL cu_update_object_cid(sqlite3 *psqlite, mapi_object_type table_type,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	sqlite3_bind_text(pstmt, 1, cid, -1, SQLITE_STATIC);
+	pstmt.bind_text(1, cid);
 	return pstmt.step() == SQLITE_DONE ? TRUE : false;
 }
 
@@ -3001,7 +3001,7 @@ static BOOL common_util_set_message_body(sqlite3 *psqlite, cpid_t cpid,
 	std::string cid, path;
 	if (cu_cid_writeout(dir, static_cast<const char *>(pvalue), cid, path) != 0)
 		return false;
-	if (!cu_update_object_cid(psqlite, MAPI_MESSAGE, message_id, proptag, cid.c_str()))
+	if (!cu_update_object_cid(psqlite, MAPI_MESSAGE, message_id, proptag, cid))
 		return TRUE;
 	return TRUE;
 }
@@ -3028,7 +3028,7 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, mapi_object_type table_typ
 	if (cu_cid_writeout(dir, std::string_view(bv->pc, bv->cb), cid, path) != 0)
 		return false;
 	if (!cu_update_object_cid(psqlite, table_type, message_id,
-	    ppropval->proptag, cid.c_str()))
+	    ppropval->proptag, cid))
 		return FALSE;
 	return TRUE;
 }
@@ -4700,7 +4700,7 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 		if (mid_string.empty())
 			sqlite3_bind_null(pstmt, 1);
 		else
-			sqlite3_bind_text(pstmt, 1, mid_string.c_str(), -1, SQLITE_STATIC);
+			pstmt.bind_text(1, mid_string);
 		if (pstmt.step() != SQLITE_DONE)
 			return FALSE;
 		pstmt.finalize();
@@ -4896,7 +4896,7 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite, BOOL b_create,
 			propids[i] = 0;
 			continue;
 		}
-		sqlite3_bind_text(pstmt, 1, name_string.c_str(), -1, SQLITE_STATIC);
+		pstmt.bind_text(1, name_string);
 		if (pstmt.step() == SQLITE_ROW) {
 			propids[i] = pstmt.col_int64(0);
 			sqlite3_reset(pstmt);
@@ -4904,7 +4904,7 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite, BOOL b_create,
 		}
 		sqlite3_reset(pstmt);
 		if (b_create) {
-			sqlite3_bind_text(pstmt1, 1, name_string.c_str(), -1, SQLITE_STATIC);
+			pstmt1.bind_text(1, name_string);
 			if (pstmt1.step() != SQLITE_DONE)
 				return FALSE;
 			propids[i] = sqlite3_last_insert_rowid(psqlite);
