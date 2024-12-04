@@ -1154,19 +1154,11 @@ static BOOL imap_cmd_parser_wildcard_match(const char *folder, const char *mask)
 	}
 }
 
-static const char *foldername_get(const char *lang, unsigned int fid)
-{
-	lang = folder_namedb_resolve(lang);
-	if (lang == nullptr)
-		lang = "en";
-	return folder_namedb_get(lang, fid);
-}
-
 /**
  * See sysfolder_to_imapfolder for some notes.
  */
-static BOOL imap_cmd_parser_imapfolder_to_sysfolder(const char *lang,
-    const char *imap_folder, std::string &sys_folder) try
+static BOOL imap_cmd_parser_imapfolder_to_sysfolder(const char *imap_folder,
+    std::string &sys_folder) try
 {
 	char *ptoken;
 	char temp_name[512], left_frag[512], converted_name[512];
@@ -1188,18 +1180,6 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(const char *lang,
 	}
 	if (strcasecmp(left_frag, "INBOX") == 0)
 		strcpy(left_frag, "inbox");
-	else if (auto s = foldername_get(lang, PRIVATE_FID_DRAFT);
-	    s != nullptr && strcmp(left_frag, s) == 0)
-		gx_strlcpy(left_frag, "draft", std::size(left_frag));
-	else if (s = foldername_get(lang, PRIVATE_FID_SENT_ITEMS);
-	    s != nullptr && strcmp(left_frag, s) == 0)
-		gx_strlcpy(left_frag, "sent", std::size(left_frag));
-	else if (s = foldername_get(lang, PRIVATE_FID_DELETED_ITEMS);
-	    s != nullptr && strcmp(left_frag, s) == 0)
-		gx_strlcpy(left_frag, "trash", std::size(left_frag));
-	else if (s = foldername_get(lang, PRIVATE_FID_JUNK);
-	    s != nullptr && strcmp(left_frag, s) == 0)
-		gx_strlcpy(left_frag, "junk", std::size(left_frag));
 	if (NULL != ptoken) {
 		len = gx_snprintf(converted_name, std::size(converted_name),
 		      "%s%s", left_frag, ptoken);
@@ -1233,7 +1213,7 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(const char *lang,
  * folder name. The name shown for the wastebasket in IMAP thus does not
  * necessarily coincide with the name seen in MAPI.
  */
-static BOOL imap_cmd_parser_sysfolder_to_imapfolder(const char *lang,
+static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
     const enum_folder_t &sys_folder, std::string &imap_folder) try
 {
 	char *ptoken;
@@ -1242,12 +1222,8 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(const char *lang,
 	if (sys_folder.first == PRIVATE_FID_INBOX) {
 		imap_folder = "INBOX";
 		return TRUE;
-	}
-	auto s = sys_folder.first < CUSTOM_EID_BEGIN ? foldername_get(lang, sys_folder.first) : nullptr;
-	if (s != nullptr) {
-		imap_folder.resize(utf8_to_mb_len(s));
-		utf8_to_mutf7(s, strlen(s), imap_folder.data(), imap_folder.size());
-		imap_folder.resize(strlen(imap_folder.c_str()));
+	} else if (auto s = special_folder(sys_folder.first)) {
+		imap_folder = s->name;
 		return TRUE;
 	}
 	if (!decode_hex_binary(sys_folder.second.c_str(), temp_name, std::size(temp_name)))
@@ -1261,14 +1237,6 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(const char *lang,
 	}
 	if (strcmp(left_frag, "inbox") == 0)
 		strcpy(left_frag, "INBOX");
-	else if (strcmp(left_frag, "draft") == 0)
-		gx_strlcpy(left_frag, znul(foldername_get(lang, PRIVATE_FID_DRAFT)), std::size(left_frag));
-	else if (strcmp(left_frag, "sent") == 0)
-		gx_strlcpy(left_frag, znul(foldername_get(lang, PRIVATE_FID_SENT_ITEMS)), std::size(left_frag));
-	else if (strcmp(left_frag, "trash") == 0)
-		gx_strlcpy(left_frag, znul(foldername_get(lang, PRIVATE_FID_DELETED_ITEMS)), std::size(left_frag));
-	else if (strcmp(left_frag, "junk") == 0)
-		gx_strlcpy(left_frag, znul(foldername_get(lang, PRIVATE_FID_JUNK)), std::size(left_frag));
 	if (ptoken != nullptr)
 		snprintf(converted_name, 512, "%s%s", left_frag, ptoken);
 	else
@@ -1284,13 +1252,12 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(const char *lang,
 	return false;
 }
 
-static void imap_cmd_parser_convert_folderlist(const char *lang,
-   std::vector<enum_folder_t> &pfile) try
+static void imap_cmd_parser_convert_folderlist(std::vector<enum_folder_t> &pfile) try
 {
 	std::string o;
 	
 	for (auto &e : pfile)
-		if (imap_cmd_parser_sysfolder_to_imapfolder(lang, e, o))
+		if (imap_cmd_parser_sysfolder_to_imapfolder(e, o))
 			e.second = std::move(o);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1814: ENOMEM");
@@ -1466,12 +1433,12 @@ static int imap_cmd_parser_password2(int argc, char **argv,
 	}
 	gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
 	gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
-	gx_strlcpy(pcontext->lang, mres.lang.c_str(), std::size(pcontext->lang));
 	if (*pcontext->maildir == '\0')
 		return 1902 | DISPATCH_TAG;
-	if (*pcontext->lang == '\0')
-		gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("default_lang")), sizeof(pcontext->lang));
-	gx_strlcpy(pcontext->defcharset, resource_get_default_charset(pcontext->lang), std::size(pcontext->defcharset));
+	if (mres.lang.empty())
+		mres.lang = znul(g_config_file->get_value("default_lang"));
+	gx_strlcpy(pcontext->defcharset, resource_get_default_charset(mres.lang.c_str()),
+		std::size(pcontext->defcharset));
 	pcontext->proto_stat = iproto_stat::auth;
 	imap_parser_log_info(pcontext, LV_DEBUG, "LOGIN ok");
 	char caps[128];
@@ -1545,12 +1512,12 @@ int imap_cmd_parser_login(int argc, char **argv, imap_context *pcontext)
 	}
 	gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
 	gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
-	gx_strlcpy(pcontext->lang, mres.lang.c_str(), std::size(pcontext->lang));
 	if (*pcontext->maildir == '\0')
 		return 1902;
-	if (*pcontext->lang == '\0')
-		gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("default_lang")), sizeof(pcontext->lang));
-	gx_strlcpy(pcontext->defcharset, resource_get_default_charset(pcontext->lang), std::size(pcontext->defcharset));
+	if (mres.lang.empty())
+		mres.lang = znul(g_config_file->get_value("default_lang"));
+	gx_strlcpy(pcontext->defcharset, resource_get_default_charset(mres.lang.c_str()),
+		std::size(pcontext->defcharset));
 	pcontext->proto_stat = iproto_stat::auth;
 	imap_parser_log_info(pcontext, LV_DEBUG, "LOGIN ok");
 	return 1705;
@@ -1638,7 +1605,7 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], sys_name))
+	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
 	if (iproto_stat::select == pcontext->proto_stat) {
 		imap_parser_remove_select(pcontext);
@@ -1705,7 +1672,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], sys_name))
+	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
 	if (strpbrk(argv[2], "%*?") != nullptr)
 		return 1910;
@@ -1716,7 +1683,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
-	imap_cmd_parser_convert_folderlist(pcontext->lang, folder_list);
+	imap_cmd_parser_convert_folderlist(folder_list);
 	sys_name = argv[2]; // Go back to non-hexencoded string
 	if (sys_name.size() > 0 && sys_name.back() == '/')
 		sys_name.pop_back();
@@ -1733,8 +1700,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 			sys_name[i] = '/';
 			continue;
 		}
-		if (!imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang,
-		    sys_name.c_str(), converted_name))
+		if (!imap_cmd_parser_imapfolder_to_sysfolder(sys_name.c_str(), converted_name))
 			return 1800;
 		ssr = system_services_make_folder(pcontext->maildir,
 		      converted_name, &errnum);
@@ -1756,7 +1722,7 @@ int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], encoded_name))
+	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], encoded_name))
 		return 1800;
 	if (special_folder(encoded_name))
 		return 1913;
@@ -1768,7 +1734,7 @@ int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
 		auto ret = m2icode(ssr, errnum);
 		if (ret != 0)
 			return ret;
-		imap_cmd_parser_convert_folderlist(pcontext->lang, folder_list);
+		imap_cmd_parser_convert_folderlist(folder_list);
 		dir_tree folder_tree;
 		folder_tree.load_from_memfile(std::move(folder_list));
 		//XXX Junk* may newly match Junk now
@@ -1797,9 +1763,10 @@ int imap_cmd_parser_rename(int argc, char **argv, imap_context *pcontext)
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 4 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024
-		|| 0 == strlen(argv[3]) || strlen(argv[3]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], encoded_name) ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[3], encoded_name1))
+		|| 0 == strlen(argv[3]) || strlen(argv[3]) >= 1024)
+		return 1800;
+	if (!imap_cmd_parser_imapfolder_to_sysfolder(argv[2], encoded_name) ||
+	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[3], encoded_name1))
 		return 1800;
 	if (strpbrk(argv[3], "%*?") != nullptr)
 		return 1910;
@@ -1823,7 +1790,7 @@ int imap_cmd_parser_subscribe(int argc, char **argv, imap_context *pcontext)
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], sys_name))
+	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
 	auto ssr = system_services_subscribe_folder(pcontext->maildir,
 	           sys_name, &errnum);
@@ -1843,7 +1810,7 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, imap_context *pcontext)
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], sys_name))
+	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
 	auto ssr = system_services_unsubscribe_folder(pcontext->maildir,
 	           sys_name, &errnum);
@@ -1902,7 +1869,7 @@ int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
 	if (ret != 0)
 		return ret;
 
-	imap_cmd_parser_convert_folderlist(pcontext->lang, folder_list);
+	imap_cmd_parser_convert_folderlist(folder_list);
 	dir_tree folder_tree;
 	folder_tree.load_from_memfile(folder_list);
 	pcontext->stream.clear();
@@ -1955,7 +1922,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, imap_context *pcontext) try
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
-	imap_cmd_parser_convert_folderlist(pcontext->lang, folder_list);
+	imap_cmd_parser_convert_folderlist(folder_list);
 	dir_tree folder_tree;
 	folder_tree.load_from_memfile(folder_list);
 	pcontext->stream.clear();
@@ -2015,10 +1982,10 @@ int imap_cmd_parser_lsub(int argc, char **argv, imap_context *pcontext) try
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
-	imap_cmd_parser_convert_folderlist(pcontext->lang, sub_list);
+	imap_cmd_parser_convert_folderlist(sub_list);
 	std::vector<enum_folder_t> folder_list;
 	system_services_enum_folders(pcontext->maildir, folder_list, &errnum);
-	imap_cmd_parser_convert_folderlist(pcontext->lang, folder_list);
+	imap_cmd_parser_convert_folderlist(folder_list);
 	dir_tree folder_tree;
 	folder_tree.load_from_memfile(folder_list);
 	folder_list.clear();
@@ -2061,7 +2028,7 @@ int imap_cmd_parser_status(int argc, char **argv, imap_context *pcontext) try
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 4 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], sys_name) ||
+	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name) ||
 	    argv[3][0] != '(' || argv[3][strlen(argv[3])-1] != ')')
 		return 1800;
 	temp_argc = parse_imap_args(argv[3] + 1,
@@ -2129,7 +2096,7 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 4 || argc > 6 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], sys_name))
+	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
 	b_answered = FALSE;
 	b_flagged = FALSE;
@@ -2275,7 +2242,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv,
 	if (!pcontext->is_authed())
 		return 1804 | DISPATCH_BREAK;
 	if (argc < 3 || argc > 5 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], sys_name))
+	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800 | DISPATCH_BREAK;
 	if (5 == argc) {
 		flags_string = argv[3];
@@ -2805,7 +2772,7 @@ int imap_cmd_parser_copy(int argc, char **argv, imap_context *pcontext) try
 		return 1805;
 	if (argc < 4 || parse_imap_seqx(*pcontext, argv[2], list_uid) != 0 ||
 	    strlen(argv[3]) == 0 || strlen(argv[3]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[3], sys_name))
+	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[3], sys_name))
 		return 1800;
 	XARRAY xarray;
 	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
@@ -3062,7 +3029,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, imap_context *pcontext) try
 		return 1805;
 	if (argc < 5 || parse_imap_seq(list_seq, argv[3]) != 0 ||
 	    strlen(argv[4]) == 0 || strlen(argv[4]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[4], sys_name))
+	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[4], sys_name))
 		return 1800;
 	XARRAY xarray;
 	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
