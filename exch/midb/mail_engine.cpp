@@ -3893,6 +3893,9 @@ static void mail_engine_modify_notification_folder(IDB_ITEM *pidb,
 		tmp_len = strlen(decoded_name);
 	}
 	encode_hex_binary(decoded_name, tmp_len, encoded_name, 1024);
+	auto xact = gx_sql_begin(pidb->psqlite, txn_mode::write);
+	if (!xact)
+		return;
 	auto ust = gx_sql_prep(pidb->psqlite, "UPDATE folders SET name=? "
 	           "WHERE folder_id=?");
 	if (ust == nullptr ||
@@ -3900,6 +3903,7 @@ static void mail_engine_modify_notification_folder(IDB_ITEM *pidb,
 	    ust.bind_int64(2, folder_id) != SQLITE_OK ||
 	    ust.step() != SQLITE_DONE)
 		/* ignore */;
+	ust.finalize();
 	mail_engine_update_subfolders_name(pidb, folder_id, decoded_name);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2423: ENOMEM");
