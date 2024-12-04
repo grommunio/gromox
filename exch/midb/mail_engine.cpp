@@ -2155,9 +2155,8 @@ static void *midbme_scanwork(void *param)
 	return nullptr;
 }
 
-/*
+/**
  * Reset the inactivity timer on midb.sqlite.
- * What a stupid command name.
  *
  * Request:
  * 	M-PING <store-dir>
@@ -2205,7 +2204,7 @@ static int mail_engine_menum(int argc, char **argv, int sockd) try
 	return MIDB_E_NO_MEMORY;
 }
 
-/*
+/**
  * Insert mail into exmdb and midb.sqlite.
  *
  * (Placement of eml/ in the filesystem needs to be done by midb user like
@@ -2337,8 +2336,9 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	return MIDB_E_NO_MEMORY;
 }
 
-/*
+/**
  * Mail deletion from exmdb and midb.sqlite
+ *
  * Request:
  * 	M-DELE <store-dir> <folder-name> <mid>...
  * Response:
@@ -2384,8 +2384,9 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	return cmd_write(sockd, "TRUE\r\n");
 }
 
-/*
+/**
  * Duplicate a message.
+ *
  * Request:
  * 	M-COPY <store-dir> <src-folder-name> <src-mid> <dst-folder-name>
  * Response:
@@ -2457,8 +2458,9 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd) try
 	return MIDB_E_NO_MEMORY;
 }
 
-/*
+/**
  * Rename a folder.
+ *
  * Request:
  * 	M-RENF <store-dir> <old-folder-name> <new-folder-name>
  * Response:
@@ -2569,8 +2571,9 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	return cmd_write(sockd, "TRUE\r\n");
 }
 
-/*
+/**
  * Create a folder.
+ *
  * Request:
  * 	M-MAKF <store-dir> <folder-path>
  * folder-path: this specifies both the parent where to anchor at,
@@ -2630,10 +2633,11 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	return cmd_write(sockd, "TRUE\r\n");
 }
 
-/*
+/**
  * Remove a folder.
+ *
  * Request:
- * 	M-RENF <store-dir> <folder-name>
+ * 	M-REMF <store-dir> <folder-name>
  * Response:
  * 	TRUE
  */
@@ -2664,8 +2668,9 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 	return cmd_write(sockd, "TRUE\r\n");
 }
 
-/*
+/**
  * Lookup UID for a message.
+ *
  * Request:
  * 	P-UNID <store-dir> <folder-name> <mid>
  * Response:
@@ -2698,8 +2703,9 @@ static int mail_engine_punid(int argc, char **argv, int sockd)
 	return cmd_write(sockd, temp_buff, temp_len);
 }
 
-/*
+/**
  * Folder summary
+ *
  * Request:
  * 	P-FDDT <store-dir> <folder-name>
  * Response:
@@ -2753,8 +2759,9 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	return cmd_write(sockd, temp_buff, temp_len);
 }
 
-/*
+/**
  * Subscribe to a folder.
+ *
  * Request:
  * 	P-SUBF <store-dir> <folder-name>
  * Response:
@@ -2777,8 +2784,9 @@ static int mail_engine_psubf(int argc, char **argv, int sockd)
 	return cmd_write(sockd, "TRUE\r\n");
 }
 
-/*
+/**
  * Unsubscribe from a folder.
+ *
  * Request:
  * 	P-UNSF <store-dir> <folder-name>
  * Response:
@@ -2801,8 +2809,9 @@ static int mail_engine_punsf(int argc, char **argv, int sockd)
 	return cmd_write(sockd, "TRUE\r\n");
 }
 
-/*
+/**
  * List folders subscribed to.
+ *
  * Request:
  * 	P-SUBL <store-dir>
  * Response:
@@ -2878,6 +2887,7 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
 
 /**
  * Give summary of messages present in folder (via IMAP UID)
+ *
  * Request:
  * 	P-SIMU <store-dir> <folder-name> <uid(min)> <uid(max)>
  * Response:
@@ -2969,8 +2979,9 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	return MIDB_E_NO_MEMORY;
 }
 
-/*
+/**
  * List \Deleted-flagged mails
+ *
  * Request:
  * 	P-DELL <dir> <folder-name>
  * Response:
@@ -3033,10 +3044,11 @@ static int dtlu_query(IDB_ITEM *pidb, const char *sql_string,
 	return 0;
 }
 
-/*
+/**
  * Fetch detail (via IMAP UID)
+ *
  * Request:
- * 	P-DTLU <store-dir> <folder> <1-based imapuid(min)> <1-based imapuid(max)>
+ * 	P-DTLU <store-dir> <folder-name> <1-based imapuid(min)> <1-based imapuid(max)>
  * Response:
  * 	TRUE <#messages>
  * 	- <digest>  // repeat x #messages
@@ -3119,12 +3131,12 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	return MIDB_E_NO_MEMORY;
 }
 
-/*
+/**
  * Set flags on message. For (S)een and (U)nsent, exmdb is contacted(!), which
  * is different from GFLG.
  *
  * Request:
- * 	P-SFLG <store-dir> <folder> <mid> <flags>
+ * 	P-SFLG <store-dir> <folder-name> <mid> <flags>
  * Response:
  * 	TRUE
  */
@@ -3202,11 +3214,11 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 	return cmd_write(sockd, "TRUE\r\n");
 }
 
-/*
+/**
  * Remove flags on message. Flags (S)een and (U)nsent trigger contact to exmdb.
  *
  * Request:
- * 	P-RFLG <store-dir> <folder> <mid> <flags>
+ * 	P-RFLG <store-dir> <folder-name> <mid> <flags>
  * Response:
  * 	TRUE
  */
@@ -3284,13 +3296,13 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 	return cmd_write(sockd, "TRUE\r\n");
 }
 
-/*
+/**
  * Get flags on message from midb.sqlite without contacting exmdb.
  * You better hope that the change notification socket is working,
  * because otherwise changes from SFLG/RFLG won't be visible.
  *
  * Request:
- * 	P-GFLG <store-dir> <folder> <mid>
+ * 	P-GFLG <store-dir> <folder-name> <mid>
  * Response:
  * 	TRUE <flags>
  *
@@ -3331,11 +3343,11 @@ static int mail_engine_pgflg(int argc, char **argv, int sockd) try
 	return MIDB_E_NO_MEMORY;
 }
 
-/*
+/**
  * Search and list messages
  *
  * Request:
- * 	P-SRHL <store-dir> <folder> <charset> <condition-tree-spec>
+ * 	P-SRHL <store-dir> <folder-name> <charset> <condition-tree-spec>
  * ct-spec: \0 terminated list of \0-terminated strings
  * ct-spec e.g. "UNDELETED\x00\x00"
  * ct-spec max elems 1024
@@ -3408,11 +3420,11 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd) try
 	return MIDB_E_NO_MEMORY;
 }
 
-/*
+/**
  * Search by UIDs
  *
  * Request:
- * 	P-SRHU <store-dir> <folder> <charset> <uid-list>
+ * 	P-SRHU <store-dir> <folder-name> <charset> <uid-list>
  * uid-list: \0 terminated list of \0-terminated UIDs
  * uid-list e.g. "1\x00""2\x00\x00"
  * uid-list max elem 1024
@@ -3486,8 +3498,9 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd) try
 	return MIDB_E_NO_MEMORY;
 }
 
-/*
+/**
  * Unload a midb database. (For diagnostic purposes.)
+ *
  * Request:
  * 	X-UNLD <store-dir>
  * Response:
@@ -3508,8 +3521,9 @@ static int mail_engine_xunld(int argc, char **argv, int sockd)
 	return cmd_write(sockd, "TRUE 1\r\n");
 }
 
-/*
+/**
  * Force-resynchronize a mailbox.
+ *
  * Request:
  * 	X-RSYM <store-dir>
  * Response:
@@ -3528,8 +3542,9 @@ static int mail_engine_xrsym(int argc, char **argv, int sockd)
 	}
 }
 
-/*
+/**
  * Force-resynchronize a folder
+ *
  * Request:
  * 	X-RSYF <store-dir> <exmdb-folder-id-gc-value>
  * Response:
