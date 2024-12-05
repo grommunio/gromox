@@ -437,6 +437,8 @@ errno_t mysql_adaptor_scndstore_hints(unsigned int pri,
 int mysql_adaptor_domain_list_query(const char *domain) try
 {
 	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return -EIO;
 	auto qstr = "SELECT 1 FROM domains WHERE domain_status=0 AND domainname='" +
 	            conn->quote(domain) + "'";
 	if (!conn->query(qstr))
@@ -454,6 +456,8 @@ static errno_t mysql_adaptor_homeserver(const char *entity, bool is_pvt,
     std::pair<std::string, std::string> &servers) try
 {
 	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return EIO;
 	auto qent = conn->quote(entity);
 	auto qstr = is_pvt ?
 	            "SELECT sv.hostname, sv.extname FROM users AS u "
@@ -492,6 +496,10 @@ void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
 	            "AS up ON u.id=up.user_id AND up.proptag=0x39050003 "
 	            "WHERE u.domain_id > 0 AND up.proptag IS NULL";
 	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn) {
+		mlog(LV_ERR, "SQL connections are unobtainium");
+		return;
+	}
 	if (conn->query(qstr)) {
 		auto res = conn->store_result();
 		if (res != nullptr && res.num_rows() > 0)
@@ -571,6 +579,8 @@ bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::strin
 	if (!str_isascii(username))
 		return true;
 	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return false;
 	auto qstr = "SELECT aliasname FROM aliases WHERE mainname='" +
 	            conn->quote(username) + "'";
 	DB_RESULT res;
@@ -603,6 +613,8 @@ bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARRAY &pro
 	if (!str_isascii(username))
 		return true; /* same as 0 rows */
 	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return false;
 	auto qstr = "SELECT u.id, p.proptag, p.propval_bin, p.propval_str "
 	            "FROM users AS u "
 	            "INNER JOIN user_properties AS p ON u.id=p.user_id "
