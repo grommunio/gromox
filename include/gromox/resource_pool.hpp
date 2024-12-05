@@ -39,6 +39,7 @@ template<typename Tp> class resource_pool {
 			if (m_holder.size() > 0)
 				finish();
 		}
+		inline bool operator!() const { return !m_holder.front(); }
 		inline Tp &operator*() { return m_holder.front(); }
 		inline const Tp &operator*() const { return m_holder.front(); }
 		inline Tp *operator->() { return &m_holder.front(); }

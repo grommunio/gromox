@@ -130,7 +130,7 @@ static bool db_upgrade_check_2(MYSQL *conn)
 bool db_upgrade_check()
 {
 	auto conn = g_sqlconn_pool.get_wait();
-	if (*conn == nullptr)
+	if (!conn)
 		return false;
 	return db_upgrade_check_2(conn->get());
 }
@@ -216,7 +216,7 @@ bool sqlconn::query(std::string_view qv)
 resource_pool<sqlconn>::token sqlconnpool::get_wait()
 {
 	auto c = resource_pool::get_wait();
-	if (*c == nullptr)
+	if (!c)
 		*c = sql_make_conn();
 	return c;
 }
@@ -333,7 +333,7 @@ int mysql_adaptor_get_domain_users(unsigned int domain_id,
 	char query[430];
 
 	auto conn = g_sqlconn_pool.get_wait();
-	if (*conn == nullptr)
+	if (!conn)
 		return false;
 	gx_snprintf(query, std::size(query),
 	         "SELECT u.username, a.aliasname FROM users AS u "
@@ -369,7 +369,7 @@ int mysql_adaptor_get_group_users(unsigned int group_id,
 	char query[491];
 
 	auto conn = g_sqlconn_pool.get_wait();
-	if (*conn == nullptr)
+	if (!conn)
 		return false;
 	snprintf(query, std::size(query),
 	         "SELECT u.username, a.aliasname FROM users AS u "
@@ -413,7 +413,7 @@ errno_t mysql_adaptor_scndstore_hints(unsigned int pri,
 	         "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=0x3001001f "
 	         "WHERE s.`primary`=%u", pri);
 	auto conn = g_sqlconn_pool.get_wait();
-	if (*conn == nullptr || !conn->query(query))
+	if (!conn || !conn->query(query))
 		return EIO;
 	auto result = conn->store_result();
 	if (result == nullptr)
