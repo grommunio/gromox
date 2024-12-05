@@ -34,6 +34,7 @@ class sqlconn final {
 };
 
 struct sqlconnpool final : public gromox::resource_pool<sqlconn> {
+	template<typename... T> void get(T &&...) = delete;
 	resource_pool::token get_wait();
 };
 
