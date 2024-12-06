@@ -1834,8 +1834,9 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		time_t until_time;
 		if (!ical_parse_until(ptz_component, pvalue, &until_time))
 			return false;
-		if (until_time <= start_time)
+		if (until_time < start_time)
 			return false;
+		/* until==start can happen with a recurrent series with one occurrence */
 		pirrule->b_until = true;
 		ical_utc_to_datetime(ptz_component,
 			until_time, &pirrule->until_itime);
