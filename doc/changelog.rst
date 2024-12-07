@@ -1,3 +1,32 @@
+Gromox 2.38 (2024-12-07)
+========================
+
+Fixes:
+
+* oxcical: ignore zero-length PidLidTimeZoneStruct on export rather than
+  failing the operation
+* freebusy: process events with recurrence patterns > 510 bytes
+* mbop-get-freeubsy: respect the absence of start_time,end_time (-a/-b)
+  parameters
+* mapi_lib: support TNEF export of messages without PR_INTERNET_CPID
+* email_lib: no longer reject import of time-based recurrent series (`RRULE`
+  line with `UNTIL` specifier) with a single occurrence
+
+Enhancements:
+
+* midb: deal with folder changes that occurr during times when midb is not
+  running
+* exm2eml: add TNEF file export support
+
+Behavioral changes:
+
+* imap: reject creating extant folder
+* midb: change M-COPY from a read-write cycle to server-side copy,
+  thereby preserving mail headers from now on
+* midb/imapd: folder names are now treated case-sensitive, just like MAPI did
+  it already
+
+
 Gromox 2.37 (2024-11-20)
 ========================
 
