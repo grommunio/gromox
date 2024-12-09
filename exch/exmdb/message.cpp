@@ -1584,8 +1584,6 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
     MESSAGE_CONTENT *dst)
 {
 	EXT_PUSH ext_push;
-	static constexpr uint32_t fake_int32 = 0;
-	static uint32_t fake_flags = MSGFLAG_UNMODIFIED; /* modified by cu_set_properties */
 	auto &sprop = src->proplist;
 	auto &dprop = dst->proplist;
 	
@@ -1611,10 +1609,18 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 		auto &sp = sprop.ppropval[i];
 		dprop.emplace_back(sp.proptag, sp.pvalue);
 	}
-	dprop.emplace_back(PR_MSG_STATUS, &fake_int32);
+	auto v32 = cu_alloc<uint32_t>();
+	if (v32 == nullptr)
+		return ecServerOOM;
+	*v32 = 0;
+	dprop.emplace_back(PR_MSG_STATUS, v32);
 	auto msgfl = sprop.get<uint32_t>(PR_MESSAGE_FLAGS);
 	if (msgfl == nullptr) {
-		dprop.emplace_back(PR_MESSAGE_FLAGS, &fake_flags);
+		v32 = cu_alloc<uint32_t>();
+		if (v32 == nullptr)
+			return ecServerOOM;
+		*v32 = MSGFLAG_UNMODIFIED; /* modified by cu_set_properties */
+		dprop.emplace_back(PR_MESSAGE_FLAGS, v32);
 		if (!sprop.has(PR_READ)) {
 			auto x = cu_alloc<uint8_t>();
 			if (x == nullptr)
