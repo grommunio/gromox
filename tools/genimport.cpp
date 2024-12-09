@@ -393,12 +393,6 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 		return -ENOMEM;
 	}
 	auto props = &ctnt->proplist;
-	if (!props->has(PR_LAST_MODIFICATION_TIME)) {
-		auto last_time = rop_util_current_nttime();
-		auto ret = props->set(PR_LAST_MODIFICATION_TIME, &last_time);
-		if (ret != 0)
-			return ret;
-	}
 	int ret;
 	if ((ret = props->set(PidTagMid, &msg_id)) != 0 ||
 	    (ret = props->set(PidTagChangeNumber, &change_num)) != 0 ||
