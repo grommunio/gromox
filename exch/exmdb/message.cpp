@@ -1588,8 +1588,8 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 	auto &dprop = dst->proplist;
 	
 	dprop.count = 0;
-	/* 13 in this function, and at least 2 more in the caller.. */
-	dprop.ppropval = cu_alloc<TAGGED_PROPVAL>(sprop.count + 20);
+	/* 14 in this function, and at least 2 more in the caller.. */
+	dprop.ppropval = cu_alloc<TAGGED_PROPVAL>(sprop.count + 21);
 	if (dprop.ppropval == nullptr)
 		return ecServerOOM;
 	for (unsigned int i = 0; i < sprop.count; ++i) {
@@ -1696,6 +1696,13 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 			pvalue = sprop.get<BINARY>(PR_SENT_REPRESENTING_ENTRYID);
 		if (pvalue != nullptr)
 			dprop.emplace_back(PR_LAST_MODIFIER_ENTRYID, pvalue);
+	}
+	if (!sprop.has(PR_LAST_MODIFICATION_TIME)) {
+		auto v = cu_alloc<mapitime_t>();
+		if (v == nullptr)
+			return ecServerOOM;
+		*v = rop_util_current_nttime();
+		dprop.emplace_back(PR_LAST_MODIFICATION_TIME, v);
 	}
 	auto old_cvindex = sprop.get<BINARY>(PR_CONVERSATION_INDEX);
 	auto new_cvid = cu_alloc<BINARY>();

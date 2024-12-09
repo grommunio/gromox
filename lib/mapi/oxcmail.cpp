@@ -2550,8 +2550,8 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	} else {
 		mime_enum.nttime_stamp = *ts;
 	}
-	if (pmsg->proplist.set(PR_CREATION_TIME, &mime_enum.nttime_stamp) != 0 ||
-	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &mime_enum.nttime_stamp) != 0)
+	if (pmsg->proplist.set(PR_CREATION_TIME, &mime_enum.nttime_stamp) != 0 
+/*	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &mime_enum.nttime_stamp) != 0 */)
 		return imp_null;
 
 	auto head_ct = phead->content_type;
