@@ -1801,11 +1801,11 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 		return false;
 
 	/*
-	 * rename all folders to temporary names so that there
+	 * "rename" all folders to NULL temporarily so that there
 	 * is no conflict when adding any new folders' names
 	 * (name column is set to UNIQUE)
 	 */
-	auto ret = gx_sql_exec(pidb->psqlite, "UPDATE folders SET name=CONCAT('t',ROWID)");
+	auto ret = gx_sql_exec(pidb->psqlite, "UPDATE folders SET name=NULL");
 	if (ret != SQLITE_OK)
 		/* ignore */;
 
@@ -1858,7 +1858,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 					parent_fid, folder_id);
 				gx_sql_exec(pidb->psqlite, qstr.c_str());
 			}
-			if (strcasecmp(encoded_name.c_str(), pstmt1.col_text(3)) != 0) {
+			if (strcasecmp(encoded_name.c_str(), znul(pstmt1.col_text(3))) != 0) {
 				auto ust = gx_sql_prep(pidb->psqlite, "UPDATE folders SET name=? "
 				           "WHERE folder_id=?");
 				if (ust == nullptr ||
@@ -2167,7 +2167,7 @@ static int mail_engine_menum(int argc, char **argv, int sockd) try
 	rsp.reserve(65536);
 	while (pstmt.step() == SQLITE_ROW) {
 		rsp += std::to_string(pstmt.col_uint64(0)) + " " +
-		       base64_encode(pstmt.col_text(1)) + "\r\n"s;
+		       base64_encode(znul(pstmt.col_text(1))) + "\r\n"s;
 		count ++;
 	}
 	pstmt.finalize();
@@ -2784,7 +2784,8 @@ static int mail_engine_psubl(int argc, char **argv, int sockd) try
 	std::string rsp;
 	rsp.reserve(65536);
 	for (; pstmt.step() == SQLITE_ROW; ++count)
-		rsp += std::to_string(pstmt.col_uint64(0)) + " " + pstmt.col_text(1) + "\r\n"s;
+		rsp += std::to_string(pstmt.col_uint64(0)) + " " +
+		       znul(pstmt.col_text(1)) + "\r\n"s;
 	pstmt.finalize();
 	pidb.reset();
 	rsp.insert(0, "TRUE " + std::to_string(count) + "\r\n");
@@ -3633,7 +3634,7 @@ static BOOL mail_engine_add_notification_folder(IDB_ITEM *pidb,
 		auto pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
 		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			return FALSE;
-		decoded_name = pstmt.col_text(0);
+		decoded_name = znul(pstmt.col_text(0));
 	}
 
 	static constexpr proptag_t tmp_proptags[] =
@@ -3707,7 +3708,7 @@ static void mail_engine_update_subfolders_name(IDB_ITEM *pidb,
 		return;	
 	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t folder_id = pstmt.col_int64(0);
-		auto ptoken = strrchr(pstmt.col_text(1), '/');
+		auto ptoken = strrchr(znul(pstmt.col_text(1)), '/');
 		if (ptoken == nullptr)
 			continue;
 		auto temp_name = parent_name + ptoken;
@@ -3748,7 +3749,7 @@ static void mail_engine_move_notification_folder(IDB_ITEM *pidb,
 		pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
 		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			return;
-		decoded_name = pstmt.col_text(0);
+		decoded_name = znul(pstmt.col_text(0));
 		pstmt.finalize();
 	}
 	static constexpr proptag_t tmp_proptag[] = {PR_DISPLAY_NAME};
@@ -3794,7 +3795,7 @@ static void mail_engine_modify_notification_folder(IDB_ITEM *pidb,
 	auto pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return;
-	std::string decoded_name = pstmt.col_text(0);
+	std::string decoded_name = znul(pstmt.col_text(0));
 	uint64_t parent_fid = pstmt.col_uint64(1);
 	pstmt.finalize();
 
