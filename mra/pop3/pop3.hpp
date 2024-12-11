@@ -104,8 +104,8 @@ extern bool (*system_services_judge_user)(const char *);
 extern void (*system_services_ban_user)(const char *, int);
 extern authmgr_login_t system_services_auth_login;
 extern gromox::errno_t (*system_services_auth_meta)(const char *username, unsigned int wantpriv, sql_meta_result &out);
-extern int (*system_services_list_mail)(const char *, const char *, std::vector<gromox::MSG_UNIT> &, int *num, uint64_t *size);
-extern int (*system_services_delete_mail)(const char *, const char *, const std::vector<gromox::MSG_UNIT *> &);
+extern int (*system_services_list_mail)(const char *, const std::string &, std::vector<gromox::MSG_UNIT> &, int *num, uint64_t *size);
+extern int (*system_services_delete_mail)(const char *, const std::string &, const std::vector<gromox::MSG_UNIT *> &);
 extern void (*system_services_broadcast_event)(const char *);
 
 extern uint16_t g_listener_ssl_port;
