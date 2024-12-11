@@ -869,7 +869,8 @@ static void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *pnode,
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	if (pabnode->node_type != abnode_type::mlist &&
 	    pabnode->node_type != abnode_type::remote) {
-		mail_address[0] = '\0';
+		if (mail_address != nullptr)
+			mail_address[0] = '\0';
 		*plist_privilege = 0;
 		return;
 	}
@@ -891,14 +892,18 @@ static void ab_tree_get_company_info(const SIMPLE_TREE_NODE *pnode,
 	if (pabnode->node_type == abnode_type::remote) {
 		pbase = ab_tree_get_base(-pabnode->id);
 		if (pbase == nullptr) {
-			str_name[0] = '\0';
-			str_address[0] = '\0';
+			if (str_name != nullptr)
+				str_name[0] = '\0';
+			if (str_address != nullptr)
+				str_address[0] = '\0';
 			return;
 		}
 		auto iter = pbase->phash.find(pabnode->minid);
 		if (iter == pbase->phash.end()) {
-			str_name[0] = '\0';
-			str_address[0] = '\0';
+			if (str_name != nullptr)
+				str_name[0] = '\0';
+			if (str_address != nullptr)
+				str_address[0] = '\0';
 			return;
 		}
 		pabnode = iter->second;
