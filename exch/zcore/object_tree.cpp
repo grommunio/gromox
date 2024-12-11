@@ -15,6 +15,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "common_util.hpp"
@@ -396,9 +397,9 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 			gx_strlcpy(account, pinfo->get_username(), std::size(account));
 		} else {
 			sql_meta_result mres;
-			if (!system_services_get_username_from_id(account_id,
+			if (!mysql_adaptor_get_username_from_id(account_id,
 			    account, std::size(account)) ||
-			    system_services_meta(account, WANTPRIV_METAONLY, mres) != 0)
+			    mysql_adaptor_meta(account, WANTPRIV_METAONLY, mres) != 0)
 				return ecZNullObject;
 			gx_strlcpy(dir, mres.maildir.c_str(), std::size(dir));
 		}

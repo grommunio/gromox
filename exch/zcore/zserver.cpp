@@ -26,6 +26,7 @@
 #include <gromox/freebusy.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/safeint.hpp>
@@ -669,9 +670,9 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 		g_user_table.erase(iter);
 	}
 	tl_hold.unlock();
-	if (!system_services_get_user_ids(username, &user_id, nullptr, nullptr) ||
-	    !system_services_get_homedir(pdomain, homedir, std::size(homedir)) ||
-	    !system_services_get_domain_ids(pdomain, &domain_id, &org_id))
+	if (!mysql_adaptor_get_user_ids(username, &user_id, nullptr, nullptr) ||
+	    !mysql_adaptor_get_homedir(pdomain, homedir, std::size(homedir)) ||
+	    !mysql_adaptor_get_domain_ids(pdomain, &domain_id, &org_id))
 		return ecError;
 	assert(!mres.maildir.empty());
 
@@ -766,11 +767,11 @@ ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
 	EXT_PUSH ext_push;
 	EMSAB_ENTRYID tmp_entryid;
 	
-	if (!system_services_get_user_displayname(username, dispname.data(), dispname.size()) ||
-	    !system_services_get_user_privilege_bits(username, pprivilege_bits))
+	if (!mysql_adaptor_get_user_displayname(username, dispname.data(), dispname.size()) ||
+	    !mysql_adaptor_get_user_privilege_bits(username, pprivilege_bits))
 		return ecNotFound;
 	auto err = cvt_username_to_essdn(username, g_org_name,
-	           system_services_get_user_ids, system_services_get_domain_ids,
+	           mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 	           essdn);
 	if (err != ecSuccess)
 		return err;
@@ -1223,7 +1224,7 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
 		if (!common_util_essdn_to_ids(essdn, &domain_id, &user_id))
 			return ecNotFound;
 		if (domain_id != pinfo->domain_id &&
-		    !system_services_check_same_org(domain_id, pinfo->domain_id))
+		    !mysql_adaptor_check_same_org(domain_id, pinfo->domain_id))
 			base_id = -domain_id;
 		auto minid = ab_tree_make_minid(minid_type::address, user_id);
 		auto userobj = user_object::create(base_id, minid);
@@ -1458,11 +1459,11 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 		*phobject = pinfo->ptree->get_store_handle(TRUE, user_id);
 		return zh_error(*phobject);
 	}
-	if (!system_services_get_username_from_id(user_id,
+	if (!mysql_adaptor_get_username_from_id(user_id,
 	    username, std::size(username)))
 		return ecError;
 	sql_meta_result mres;
-	if (system_services_meta(username, WANTPRIV_METAONLY, mres) != 0)
+	if (mysql_adaptor_meta(username, WANTPRIV_METAONLY, mres) != 0)
 		return ecError;
 	uint32_t permission = rightsNone;
 	if (!exmdb_client::get_mbox_perm(mres.maildir.c_str(),
@@ -2377,8 +2378,8 @@ ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 	} else {
 		username = mailbox_dn;
 		auto err = cvt_username_to_essdn(mailbox_dn, g_org_name,
-		           system_services_get_user_ids,
-		           system_services_get_domain_ids, essdn);
+		           mysql_adaptor_get_user_ids,
+		           mysql_adaptor_get_domain_ids, essdn);
 		if (err != ecSuccess)
 			return err;
 		mailbox_dn = essdn.c_str();
@@ -2432,7 +2433,7 @@ ec_error_t zs_entryidfromsourcekey(GUID hsession, uint32_t hstore,
 		} else {
 			if (pmessage_key != nullptr)
 				return ecInvalidParam;
-			if (!system_services_check_same_org(domain_id, pstore->account_id))
+			if (!mysql_adaptor_check_same_org(domain_id, pstore->account_id))
 				return ecInvalidParam;
 			ec_error_t ret = ecSuccess;
 			if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
@@ -3215,7 +3216,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 					return ecServerOOM;
 				es_result.clear();
 				common_util_set_propvals(prcpt, &tmp_propval);
-				if (!system_services_get_user_displayname(tmp_buff,
+				if (!mysql_adaptor_get_user_displayname(tmp_buff,
 				    tmp_buff, std::size(tmp_buff)))
 					continue;	
 				tmp_propval.proptag = PR_DISPLAY_NAME;
@@ -3277,11 +3278,11 @@ static ec_error_t rectify_message(message_object *pmessage,
 	sender_dispname.resize(256);
 	repr_dispname.resize(256);
 	auto err = cvt_username_to_essdn(account, g_org_name,
-	           system_services_get_user_ids,
-	           system_services_get_domain_ids, sender_essdn);
+	           mysql_adaptor_get_user_ids,
+	           mysql_adaptor_get_domain_ids, sender_essdn);
 	if (err != ecSuccess)
 		return err;
-	if (!system_services_get_user_displayname(account,
+	if (!mysql_adaptor_get_user_displayname(account,
 	    sender_dispname.data(), sender_dispname.size()))
 		return ecError;
 	sender_dispname.resize(strlen(sender_dispname.c_str()));
@@ -3295,11 +3296,11 @@ static ec_error_t rectify_message(message_object *pmessage,
 	sender_srch.pv = deconst(sender_skb.c_str());
 	if (0 != strcasecmp(account, representing_username)) {
 		err = cvt_username_to_essdn(representing_username,
-		      g_org_name, system_services_get_user_ids,
-		      system_services_get_domain_ids, repr_essdn);
+		      g_org_name, mysql_adaptor_get_user_ids,
+		      mysql_adaptor_get_domain_ids, repr_essdn);
 		if (err != ecSuccess)
 			return err;
-		if (!system_services_get_user_displayname(representing_username,
+		if (!mysql_adaptor_get_user_displayname(representing_username,
 		    repr_dispname.data(), repr_dispname.size()))
 			return ecError;
 		repr_dispname.resize(strlen(repr_dispname.c_str()));
@@ -4501,7 +4502,7 @@ ec_error_t zs_importfolder(GUID hsession,
 			auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 			if (domain_id == -1)
 				return ecInvalidParam;
-			if (!system_services_check_same_org(domain_id, pstore->account_id))
+			if (!mysql_adaptor_check_same_org(domain_id, pstore->account_id))
 				return ecInvalidParam;
 			ec_error_t ret = ecSuccess;
 			if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
@@ -4693,7 +4694,7 @@ ec_error_t zs_importdeletion(GUID hsession,
 				auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 				if (domain_id == -1)
 					return ecInvalidParam;
-				if (!system_services_check_same_org(domain_id,
+				if (!mysql_adaptor_check_same_org(domain_id,
 				    pstore->account_id))
 					return ecInvalidParam;
 				ec_error_t ret = ecSuccess;
@@ -5091,7 +5092,7 @@ ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
 	sql_meta_result mres;
 	if (cvt_entryid_to_smtpaddr(&entryid, g_org_name,
 	    cu_id2user, username) != ecSuccess ||
-	    system_services_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
+	    mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecSuccess;
 	return get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
 	       starttime, endtime, *fb_data) ? ecSuccess : ecError;
@@ -5107,7 +5108,7 @@ ec_error_t zs_getuserfreebusyical(GUID hsession, BINARY entryid,
 	sql_meta_result mres;
 	if (cvt_entryid_to_smtpaddr(&entryid, g_org_name,
 	    cu_id2user, username) != ecSuccess ||
-	    system_services_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
+	    mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecSuccess;
 	std::vector<freebusy_event> fb_data;
 	if (!get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
@@ -5120,7 +5121,7 @@ ec_error_t zs_getuserfreebusyical(GUID hsession, BINARY entryid,
 ec_error_t zs_setpasswd(const char *username,
 	const char *passwd, const char *new_passwd)
 {
-	return system_services_setpasswd(username, passwd, new_passwd) ?
+	return mysql_adaptor_setpasswd(username, passwd, new_passwd) ?
 	       ecSuccess : ecAccessDenied;
 }
 
