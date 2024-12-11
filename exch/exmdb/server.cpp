@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <memory>
 #include <vector>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include "db_engine.hpp"
@@ -99,10 +102,10 @@ int get_account_id()
 	auto pctx = g_env_key.get();
 	if (pctx->account_id < 0) {
 		if (pctx->b_private) {
-			if (common_util_get_id_from_maildir(pctx->dir, &account_id))
+			if (mysql_adaptor_get_id_from_maildir(pctx->dir, &account_id))
 				pctx->account_id = account_id;	
 		} else {
-			if (common_util_get_id_from_homedir(pctx->dir, &account_id))
+			if (mysql_adaptor_get_id_from_homedir(pctx->dir, &account_id))
 				pctx->account_id = account_id;	
 		}
 	}

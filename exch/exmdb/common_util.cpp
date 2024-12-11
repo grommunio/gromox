@@ -41,6 +41,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
@@ -85,20 +86,7 @@ thread_local sqlite3 *g_sqlite_for_oxcmail;
 unsigned int g_max_rule_num, g_max_extrule_num;
 unsigned int g_cid_compression = 0; /* disabled(0), specific_level(n) */
 
-#define E(s) decltype(common_util_ ## s) common_util_ ## s;
-E(get_username_from_id)
-E(get_user_displayname)
-E(check_mlist_include)
-E(meta)
-E(get_homedir)
-E(get_homedir_by_id)
-E(get_user_ids)
-E(get_domain_ids)
-E(get_id_from_maildir)
-E(get_id_from_homedir)
-E(get_handle)
-E(get_domain_info)
-#undef E
+decltype(common_util_get_handle) common_util_get_handle;
 decltype(ems_send_mail) ems_send_mail;
 decltype(ems_send_vmail) ems_send_vmail;
 
@@ -111,7 +99,7 @@ static void *gp_fetch(sqlite3 *, sqlite3_stmt *, uint16_t, cpid_t);
 ec_error_t cu_id2user(int id, std::string &user) try
 {
 	char ubuf[UADDR_SIZE];
-	if (!common_util_get_username_from_id(id, ubuf, std::size(ubuf)))
+	if (!mysql_adaptor_get_username_from_id(id, ubuf, std::size(ubuf)))
 		return ecError;
 	user = ubuf;
 	return ecSuccess;
@@ -3861,7 +3849,7 @@ bool cu_get_permission_property(int64_t member_id,
 			return TRUE;
 		}
 		*ppvalue = common_util_dup(proptag == PR_SMTP_ADDRESS ||
-		           !common_util_get_user_displayname(pusername,
+		           !mysql_adaptor_get_user_displayname(pusername,
 		           display_name, std::size(display_name)) ||
 		           display_name[0] == '\0'?
 		               pusername : display_name);
@@ -3919,7 +3907,7 @@ BINARY* common_util_to_private_folder_entryid(
 		return nullptr;
 	memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
 	unsigned int user_id = 0;
-	if (!common_util_get_user_ids(username, &user_id, nullptr, nullptr))
+	if (!mysql_adaptor_get_user_ids(username, &user_id, nullptr, nullptr))
 		return nullptr;
 	tmp_entryid.database_guid = rop_util_make_user_guid(user_id);
 	tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
@@ -3950,7 +3938,7 @@ BINARY* common_util_to_private_message_entryid(
 		return nullptr;
 	memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
 	unsigned int user_id = 0;
-	if (!common_util_get_user_ids(username, &user_id, nullptr, nullptr))
+	if (!mysql_adaptor_get_user_ids(username, &user_id, nullptr, nullptr))
 		return nullptr;
 	tmp_entryid.folder_database_guid = rop_util_make_user_guid(user_id);
 	tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
@@ -3998,7 +3986,7 @@ BOOL cu_get_folder_permission(sqlite3 *psqlite, uint64_t folder_id,
 			return FALSE;
 		bool group_match = false;
 		while (pstmt1.step() == SQLITE_ROW) {
-			if (common_util_check_mlist_include(pstmt1.col_text(0), username)) {
+			if (mysql_adaptor_check_mlist_include(pstmt1.col_text(0), username)) {
 				*ppermission |= pstmt1.col_int64(1);
 				group_match = true;
 			}
@@ -4036,7 +4024,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	std::string eidbuf;
 	
 	if (cvt_username_to_abkeid(username, g_exmdb_org_name, DT_MAILUSER,
-	    common_util_get_user_ids, common_util_get_domain_ids,
+	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 	    eidbuf) != ecSuccess)
 		return NULL;
 	auto pbin = cu_alloc<BINARY>();
