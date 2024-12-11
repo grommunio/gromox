@@ -2469,13 +2469,14 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	if (mail_engine_get_folder_id(pidb.get(), argv[3]) != 0)
 		return MIDB_E_FOLDER_EXISTS;
 
+	/* cf. mmakf for example */
 	const char *ptoken = decoded_name.c_str(), *ptoken1;
 	uint64_t folder_id1 = PRIVATE_FID_IPMSUBTREE;
 	while ((ptoken1 = strchr(ptoken, '/')) != NULL) {
-		std::string temp_name(ptoken, ptoken1 - ptoken);
 		auto parent_name = std::string_view(decoded_name.c_str(), ptoken1 - decoded_name.c_str());
 		auto folder_id2 = me_get_folder_id_raw(pidb.get(), parent_name);
 			if (0 == folder_id2) {
+				std::string temp_name(ptoken, ptoken1 - ptoken);
 				if (!common_util_create_folder(argv[1],
 				    user_id, rop_util_make_eid_ex(1, folder_id1),
 				    temp_name.c_str(), &folder_id2))
@@ -2558,13 +2559,19 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	if (me_get_folder_id_raw(pidb.get(), decoded_name) != 0)
 		return MIDB_E_FOLDER_EXISTS;
 
+	/*
+	 * Example:
+	 * @decoded_name := A/B/C/D/E (input)
+	 * @parent_name   = stepwise A, A/B, A/B/C, A/B/C/D  (path/level where to operate)
+	 * @temp_name     = stepwise A, B, C, D              (parent name)
+	 */
 	const char *ptoken = decoded_name.c_str(), *ptoken1;
 	uint64_t folder_id1 = PRIVATE_FID_IPMSUBTREE;
 	while ((ptoken1 = strchr(ptoken, '/')) != NULL) {
-		std::string temp_name(ptoken, ptoken1 - ptoken);
 		auto parent_name = std::string_view(decoded_name.c_str(), ptoken1 - decoded_name.c_str());
-		auto folder_id2 = mail_engine_get_folder_id(pidb.get(), parent_name);
+		auto folder_id2 = me_get_folder_id_raw(pidb.get(), parent_name);
 			if (0 == folder_id2) {
+				std::string temp_name(ptoken, ptoken1 - ptoken);
 				if (!common_util_create_folder(argv[1],
 				    user_id, rop_util_make_eid_ex(1, folder_id1),
 				    temp_name.c_str(), &folder_id2))
