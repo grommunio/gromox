@@ -11,6 +11,7 @@
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/eid_array.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
@@ -1379,7 +1380,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	request.UnresolvedEntry = gx_utf8_to_punycode(unres);
 
 	TPROPVAL_ARRAY userProps{};
-	if(!ctx.plugin().mysql.get_user_properties(request.UnresolvedEntry.c_str(), userProps))
+	if (!mysql_adaptor_get_user_properties(request.UnresolvedEntry.c_str(), userProps))
 		throw DispatchError(E3067);
 	if(!userProps.count) {
 		data.ResponseMessages.emplace_back(EWSError::NameResolutionNoResults(E3259));
@@ -1400,7 +1401,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	tpropval_array_free_internal(&userProps);
 
 	std::vector<std::string> aliases;
-	if(!ctx.plugin().mysql.get_user_aliases(request.UnresolvedEntry.c_str(), aliases))
+	if (!mysql_adaptor_get_user_aliases(request.UnresolvedEntry.c_str(), aliases))
 		throw DispatchError(E3068);
 	if (aliases.size() > 0) {
 		aliases.resize(min(aliases.size(), static_cast<size_t>(3)));

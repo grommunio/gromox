@@ -13,7 +13,6 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/hpm_common.h>
 #include <gromox/http.hpp>
-#include <gromox/mysql_adaptor.hpp>
 #include <gromox/mapi_types.hpp>
 #include <include/gromox/pcl.hpp>
 
@@ -96,22 +95,6 @@ public:
 	static BOOL preproc(int);
 
 	bool logEnabled(const std::string_view&) const;
-
-	struct _mysql {
-		_mysql();
-
-		decltype(mysql_adaptor_get_domain_ids)* get_domain_ids;
-		decltype(mysql_adaptor_get_domain_info)* get_domain_info;
-		decltype(mysql_adaptor_get_homedir)* get_homedir;
-		decltype(mysql_adaptor_get_id_from_homedir)* get_id_from_homedir;
-		decltype(mysql_adaptor_get_id_from_maildir)* get_id_from_maildir;
-		decltype(mysql_adaptor_get_user_aliases) *get_user_aliases;
-		decltype(mysql_adaptor_get_user_displayname) *get_user_displayname;
-		decltype(mysql_adaptor_get_user_ids) *get_user_ids;
-		decltype(mysql_adaptor_get_user_properties) *get_user_properties;
-		decltype(mysql_adaptor_get_username_from_id)* get_username_from_id;
-		decltype(mysql_adaptor_meta) *meta;
-	} mysql; ///< mysql adaptor function pointers
 
 	struct _exmdb {
 		_exmdb();
