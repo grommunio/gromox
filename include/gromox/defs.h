@@ -121,19 +121,19 @@ struct stdlib_delete {
 	inline void operator()(void *x) const { free(x); }
 };
 template<typename T> static inline T *me_alloc() {
-	static_assert(std::is_trivial_v<T> && std::is_trivially_destructible_v<T>);
+	static_assert(std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(malloc(sizeof(T)));
 }
 template<typename T> static inline T *me_alloc(size_t elem) {
-	static_assert(std::is_trivial_v<T> && std::is_trivially_destructible_v<T>);
+	static_assert(std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(malloc(sizeof(T) * elem));
 }
 template<typename T> static inline T *re_alloc(void *x) {
-	static_assert(std::is_trivial_v<T> && std::is_trivially_destructible_v<T>);
+	static_assert(std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(realloc(x, sizeof(T)));
 }
 template<typename T> static inline T *re_alloc(void *x, size_t elem) {
-	static_assert(std::is_trivial_v<T> && std::is_trivially_destructible_v<T>);
+	static_assert(std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(realloc(x, sizeof(T) * elem));
 }
 static inline const char *snul(const std::string &s) { return s.size() != 0 ? s.c_str() : nullptr; }
