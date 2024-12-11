@@ -46,17 +46,6 @@ class OxdiscoPlugin {
 	std::pair<unsigned int, std::string> access_ok(int, const char *, const char *);
 	static BOOL preproc(int);
 
-	struct _mysql {
-		_mysql();
-
-		decltype(mysql_adaptor_get_user_displayname) *get_user_displayname;
-		decltype(mysql_adaptor_get_user_ids) *get_user_ids;
-		decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
-		decltype(mysql_adaptor_scndstore_hints) *scndstore_hints;
-		decltype(mysql_adaptor_get_homeserver) *get_homeserver;
-		decltype(mysql_adaptor_meta) *meta;
-	} mysql; // mysql adaptor function pointers
-
 	struct _exmdb {
 		_exmdb();
 		#define EXMIDL(n, p) EXMIDL_RETTYPE (*n) p;
@@ -261,9 +250,9 @@ std::pair<unsigned int, std::string> OxdiscoPlugin::access_ok(int ctx_id,
 	    strncasecmp(target, public_folder_email, 19) == 0)
 		return {ok_code, {}};
 	unsigned int auth_user_id = 0, auth_domain_id = 0;
-	mysql.get_user_ids(actor, &auth_user_id, &auth_domain_id, nullptr);
+	mysql_adaptor_get_user_ids(actor, &auth_user_id, &auth_domain_id, nullptr);
 	std::vector<sql_user> hints;
-	auto err = mysql.scndstore_hints(auth_user_id, hints);
+	auto err = mysql_adaptor_scndstore_hints(auth_user_id, hints);
 	if (err != 0) {
 		mlog(LV_ERR, "oxdisco: error retrieving secondary store hints: %s", strerror(err));
 		return {server_error_code, server_error_msg};
@@ -272,7 +261,7 @@ std::pair<unsigned int, std::string> OxdiscoPlugin::access_ok(int ctx_id,
 	    [&](const sql_user &u) { return strcasecmp(u.username.c_str(), target) == 0; }))
 		return {ok_code, {}};
 	sql_meta_result mres;
-	err = mysql.meta(target, WANTPRIV_METAONLY, mres);
+	err = mysql_adaptor_meta(target, WANTPRIV_METAONLY, mres);
 	if (err != 0) {
 		mlog(LV_ERR, "oxdisco: cannot retrieve usermeta for %s: %s",
 			target, strerror(err));
@@ -343,7 +332,7 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 
 	sql_meta_result mres{};
 	if (strncasecmp(email, public_folder_email, 19) != 0) {
-		auto err = mysql.meta(email, WANTPRIV_METAONLY, mres);
+		auto err = mysql_adaptor_meta(email, WANTPRIV_METAONLY, mres);
 		if (err != 0) {
 			mlog(LV_DEBUG, "oxdisco: unknown mailbox \"%s\": %s", email, strerror(err));
 			return die(ctx_id, 404, "Not Found");
@@ -641,7 +630,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	++domain;
 	bool is_private = strncasecmp(email, public_folder_email, 19) != 0;
 	std::pair<std::string, std::string> homesrv_buf;
-	if (mysql.get_homeserver(is_private ? email : domain,
+	if (mysql_adaptor_get_homeserver(is_private ? email : domain,
 	    is_private, homesrv_buf) != 0) {
 		mlog(LV_ERR, "oxdisco: no homeserver for \"%s\", does that user even exist?!",
 			is_private ? email : domain);
@@ -654,14 +643,14 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	std::string DisplayName, essdn, serverdn, mdbdn, mailboxid;
 	unsigned int user_id = 0, domain_id = 0;
 	if (is_private) {
-		if (!mysql.get_user_displayname(email, buf.get(), 4096)) {
+		if (!mysql_adaptor_get_user_displayname(email, buf.get(), 4096)) {
 			mlog(LV_ERR, "oxdisco: could not obtain PR_DISPLAY_NAME for \"%s\"", email);
 			return -1;
 		}
 		DisplayName = buf.get();
-		mysql.get_user_ids(email, &user_id, &domain_id, nullptr);
+		mysql_adaptor_get_user_ids(email, &user_id, &domain_id, nullptr);
 		if (cvt_username_to_essdn(email, x500_org_name.c_str(),
-		    mysql.get_user_ids, mysql.get_domain_ids,
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn) != ecSuccess)
 			return -1;
 		auto err = cvt_username_to_mailboxid(email, user_id, mailboxid);
@@ -677,7 +666,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	else {
 		DisplayName = public_folder;
 		if (cvt_username_to_essdn(email, x500_org_name.c_str(),
-		    mysql.get_user_ids, mysql.get_domain_ids,
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn) != ecSuccess)
 			return -1;
 		auto err = cvt_username_to_mailboxid(domain, domain_id, mailboxid);
@@ -717,7 +706,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 
 	std::vector<sql_user> hints;
 	if (is_private && strcasecmp(authuser, email) == 0) {
-		auto err = mysql.scndstore_hints(user_id, hints);
+		auto err = mysql_adaptor_scndstore_hints(user_id, hints);
 		if (err != 0) {
 			mlog(LV_ERR, "oxdisco: error retrieving secondary store hints: %s", strerror(err));
 			return -1;
@@ -858,7 +847,7 @@ int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email) const
 
 	auto resp_user = add_child(resp, "User");
 	auto buf = std::make_unique<char[]>(4096);
-	if (!mysql.get_user_displayname(email, buf.get(), 4096))
+	if (!mysql_adaptor_get_user_displayname(email, buf.get(), 4096))
 		return -1;
 	add_child(resp_user, "DisplayName", buf.get());
 	add_child(resp_user, "EMailAddress", email);
@@ -871,7 +860,7 @@ int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email) const
 	++domain;
 	bool is_private = strncasecmp(email, public_folder_email, 19) != 0;
 	std::pair<std::string, std::string> homesrv_buf;
-	if (mysql.get_homeserver(is_private ? email : domain,
+	if (mysql_adaptor_get_homeserver(is_private ? email : domain,
 	    is_private, homesrv_buf) != 0)
 		return -1;
 	const char *homesrv = homesrv_buf.second.c_str();
@@ -1050,25 +1039,6 @@ std::string OxdiscoPlugin::get_redirect_addr(const char *email) const
 	std::string username = s_email.substr(0, s_email.find('@') - 1);
 	std::string redirect_addr = username + "@" + RedirectAddr;
 	return redirect_addr;
-}
-
-/**
- * @brief      Initialize mysql adaptor function pointers
- */
-OxdiscoPlugin::_mysql::_mysql()
-{
-#define getService(f) \
-	if (query_service2(# f, f) == nullptr) \
-		throw std::runtime_error("oxdisco: failed to get the \""# f"\" service")
-	getService(get_user_displayname);
-	getService(get_user_ids);
-	getService(get_domain_ids);
-	getService(scndstore_hints);
-	getService(get_homeserver);
-	query_service2("mysql_auth_meta", meta);
-	if (meta == nullptr)
-		throw std::runtime_error("oxdisco: failed to get the \"meta\" symbol");
-#undef getService
 }
 
 OxdiscoPlugin::_exmdb::_exmdb()
