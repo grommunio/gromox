@@ -32,6 +32,7 @@
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/proc_common.h>
@@ -64,17 +65,6 @@ static char g_submit_command[1024];
 static constexpr char EMSMDB_UA[] = PACKAGE_NAME "-emsmdb " PACKAGE_VERSION;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
-E(get_homedir)
-E(get_user_displayname)
-E(check_mlist_include)
-E(meta)
-E(get_username_from_id)
-E(get_user_ids)
-E(get_domain_ids)
-E(check_same_org)
-E(get_homedir_by_id)
-E(get_id_from_maildir)
-E(get_id_from_homedir)
 E(add_timer)
 E(cancel_timer)
 #undef E
@@ -193,7 +183,7 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 	std::string eidbuf;
 	
 	if (cvt_username_to_abkeid(username, g_emsmdb_org_name, DT_MAILUSER,
-	    common_util_get_user_ids, common_util_get_domain_ids,
+	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 	    eidbuf) != ecSuccess)
 		return NULL;
 	auto pbin = cu_alloc<BINARY>();
@@ -527,7 +517,7 @@ ec_error_t replguid_to_replid(const logon_object &logon,
 	} else if (memcmp(reinterpret_cast<const char *>(&guid) + 4,
 	    reinterpret_cast<const char *>(&gx_dbguid_store_public) + 4, 12) == 0) {
 		auto dom_id = rop_util_get_domain_id(guid);
-		if (!common_util_check_same_org(dom_id, logon.domain_id))
+		if (!mysql_adaptor_check_same_org(dom_id, logon.domain_id))
 			return ecInvalidParam;
 	}
 	ec_error_t ret = ecSuccess;
@@ -1259,8 +1249,8 @@ void common_util_notify_receipt(const char *username, int type,
 	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	vmime::shared_ptr<vmime::message> imail;
-	if (!exch_bouncer_make(common_util_get_user_displayname,
-	    common_util_meta, username, pbrief, bounce_type, imail))
+	if (!exch_bouncer_make(mysql_adaptor_get_user_displayname,
+	    mysql_adaptor_meta, username, pbrief, bounce_type, imail))
 		return;
 	auto ret = ems_send_vmail(std::move(imail), username, rcpt_list);
 	if (ret != ecSuccess)
@@ -1593,24 +1583,12 @@ int common_util_run()
 		return -1; \
 	} \
 } while (false)
-
-	E(common_util_get_username_from_id, "get_username_from_id");
-	E(common_util_get_homedir, "get_homedir");
-	E(common_util_get_user_displayname, "get_user_displayname");
-	E(common_util_check_mlist_include, "check_mlist_include");
-	E(common_util_meta, "mysql_auth_meta");
-	E(common_util_get_user_ids, "get_user_ids");
-	E(common_util_get_domain_ids, "get_domain_ids");
-	E(common_util_check_same_org, "check_same_org");
-	E(common_util_get_homedir_by_id, "get_homedir_by_id");
-	E(common_util_get_id_from_maildir, "get_id_from_maildir");
-	E(common_util_get_id_from_homedir, "get_id_from_homedir");
 	E(common_util_add_timer, "add_timer");
 	E(common_util_cancel_timer, "cancel_timer");
 #undef E
 
-	if (!oxcmail_init_library(g_emsmdb_org_name, common_util_get_user_ids,
-	    common_util_get_domain_ids, common_util_get_username_from_id)) {
+	if (!oxcmail_init_library(g_emsmdb_org_name, mysql_adaptor_get_user_ids,
+	    mysql_adaptor_get_domain_ids, mysql_adaptor_get_username_from_id)) {
 		mlog(LV_ERR, "emsmdb: failed to init oxcmail library");
 		return -2;
 	}
@@ -1641,7 +1619,7 @@ static void mlog2(unsigned int level, const char *format, ...)
 ec_error_t cu_id2user(int id, std::string &user) try
 {
 	char ubuf[UADDR_SIZE];
-	if (!common_util_get_username_from_id(id, ubuf, std::size(ubuf)))
+	if (!mysql_adaptor_get_username_from_id(id, ubuf, std::size(ubuf)))
 		return ecError;
 	user = ubuf;
 	return ecSuccess;

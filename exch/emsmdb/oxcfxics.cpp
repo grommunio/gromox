@@ -11,6 +11,7 @@
 #include <gromox/eid_array.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
@@ -1104,7 +1105,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 			if (domain_id == -1)
 				return ecInvalidParam;
-			if (!common_util_check_same_org(domain_id, plogon->account_id))
+			if (!mysql_adaptor_check_same_org(domain_id, plogon->account_id))
 				return ecInvalidParam;
 			ec_error_t ret = ecSuccess;
 			if (!exmdb_client::get_mapping_replid(dir,
@@ -1326,7 +1327,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 				auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 				if (domain_id == -1)
 					return ecInvalidParam;
-				if (!common_util_check_same_org(domain_id,
+				if (!mysql_adaptor_check_same_org(domain_id,
 				    plogon->account_id))
 					return ecInvalidParam;
 				ec_error_t ret = ecSuccess;

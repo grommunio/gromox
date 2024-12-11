@@ -13,6 +13,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/proptag_array.hpp>
@@ -218,7 +219,7 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 	auto dispname = cu_alloc<char>(dispnamesize);
 	if (dispname == nullptr)
 		return ENOMEM;
-	if (!common_util_get_user_displayname(rpc_info.username,
+	if (!mysql_adaptor_get_user_displayname(rpc_info.username,
 	    dispname, dispnamesize) || *dispname == '\0')
 		gx_strlcpy(dispname, rpc_info.username, dispnamesize);
 	auto abk_eid = common_util_username_to_addressbook_entryid(rpc_info.username);
@@ -388,7 +389,7 @@ ec_error_t message_object::save()
 		auto dispname = cu_alloc<char>(1024);
 		if (dispname == nullptr)
 			return ecServerOOM;
-		if (!common_util_get_user_displayname(rpc_info.username,
+		if (!mysql_adaptor_get_user_displayname(rpc_info.username,
 		    dispname, dsize) || *dispname == '\0')
 			gx_strlcpy(dispname, rpc_info.username, dsize);
 		tmp_propvals.emplace_back(PR_LAST_MODIFIER_NAME, dispname);
