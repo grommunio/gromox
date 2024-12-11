@@ -452,7 +452,7 @@ int mysql_adaptor_domain_list_query(const char *domain) try
 	return -ENOMEM;
 }
 
-static errno_t mysql_adaptor_homeserver(const char *entity, bool is_pvt,
+errno_t mysql_adaptor_get_homeserver(const char *entity, bool is_pvt,
     std::pair<std::string, std::string> &servers) try
 {
 	auto conn = g_sqlconn_pool.get_wait();
@@ -746,7 +746,7 @@ BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data)
 	E(get_user_properties, "get_user_properties");
 	E(scndstore_hints, "scndstore_hints");
 	E(domain_list_query, "domain_list_query");
-	E(homeserver, "get_homeserver");
+	E(get_homeserver, "get_homeserver");
 #undef E
 	return TRUE;
 }
