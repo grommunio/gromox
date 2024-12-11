@@ -1599,12 +1599,10 @@ int imap_cmd_parser_examine(int argc, char **argv, imap_context *pcontext)
 int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
-	std::string sys_name, converted_name;
 
 	if (!pcontext->is_authed())
 		return 1804;
-	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
+	if (argc < 3 || strlen(argv[2]) == 0)
 		return 1800;
 	if (strpbrk(argv[2], "%*?") != nullptr)
 		return 1910;
@@ -1614,7 +1612,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 	if (ret != 0)
 		return ret;
 	imap_cmd_parser_convert_folderlist(folder_list);
-	sys_name = argv[2]; // Go back to non-encoded string
+	std::string sys_name = argv[2]; // Go back to non-encoded string
 	if (sys_name.size() > 0 && sys_name.back() == '/')
 		sys_name.pop_back();
 	if (std::any_of(folder_list.cbegin(), folder_list.cend(),
@@ -1630,6 +1628,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 			sys_name[i] = '/';
 			continue;
 		}
+		std::string converted_name;
 		if (!imap_cmd_parser_imapfolder_to_sysfolder(sys_name.c_str(), converted_name))
 			return 1800;
 		ssr = midb_agent::make_folder(pcontext->maildir,
