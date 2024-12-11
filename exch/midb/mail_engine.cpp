@@ -3833,6 +3833,8 @@ static void mail_engine_modify_notification_folder(IDB_ITEM *pidb,
 		/* ignore */;
 	ust.finalize();
 	mail_engine_update_subfolders_name(pidb, folder_id, new_path);
+	if (xact.commit() != SQLITE_OK)
+		/* already logged, ignore */;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2423: ENOMEM");
 }
