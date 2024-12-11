@@ -18,6 +18,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/ical.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -27,7 +28,6 @@
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
 #include "genimport.hpp"
-#include "exch/midb/system_services.hpp"
 #include "staticnpmap.cpp"
 
 using namespace std::string_literals;
@@ -69,7 +69,6 @@ static constexpr cfg_directive eml2mt_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 GET_USER_IDS system_services_get_user_ids;
 GET_DOMAIN_IDS system_services_get_domain_ids;
 std::shared_ptr<CONFIG_FILE> g_config_file;
@@ -322,28 +321,17 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	}
 
-#define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))); \
-	if ((f) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
-		return -1; \
-	} \
-} while (false)
-	E(system_services_get_username_from_id, "get_username_from_id");
-	auto cl_1 = make_scope_exit([]() { service_release("get_username_from_id", "system"); });
-	E(system_services_get_user_ids, "get_user_ids");
-	E(system_services_get_domain_ids, "get_domain_ids");
 	if (g_oneoff) {
 		system_services_get_user_ids = [](const char *, unsigned int *, unsigned int *, display_type *) -> BOOL { return false; };
 		system_services_get_domain_ids = [](const char *, unsigned int *, unsigned int *) -> BOOL { return false; };
+	} else {
+		system_services_get_user_ids   = mysql_adaptor_get_user_ids;
+		system_services_get_domain_ids = mysql_adaptor_get_domain_ids;
 	}
-	auto cl_2 = make_scope_exit([]() { service_release("get_user_ids", "system"); });
-	auto cl_3 = make_scope_exit([]() { service_release("get_domain_ids", "system"); });
-#undef E
 
 	if (!oxcmail_init_library(g_config_file->get_value("x500_org_name"),
-	    system_services_get_user_ids, system_services_get_domain_ids,
-	    system_services_get_username_from_id)) {
+	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
+	    mysql_adaptor_get_username_from_id)) {
 		fprintf(stderr, "oxcmail_init: unspecified error\n");
 		return EXIT_FAILURE;
 	}
