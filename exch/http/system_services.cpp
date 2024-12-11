@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdio>
 #include <gromox/authmgr.hpp>
 #include <gromox/defs.h>
@@ -12,7 +14,6 @@ decltype(system_services_judge_ip) system_services_judge_ip;
 bool (*system_services_judge_user)(const char *);
 void (*system_services_ban_user)(const char *, int);
 decltype(system_services_auth_login) system_services_auth_login;
-decltype(system_services_auth_meta) system_services_auth_meta;
 
 int system_services_run()
 {
@@ -28,7 +29,6 @@ int system_services_run()
 	E(system_services_judge_user, "user_filter_judge");
 	E(system_services_ban_user, "user_filter_ban");
 	E(system_services_auth_login, "auth_login_gen");
-	E(system_services_auth_meta, "mysql_auth_meta");
 	return 0;
 #undef E
 }
@@ -39,5 +39,4 @@ void system_services_stop()
 	service_release("user_filter_judge", "system");
 	service_release("user_filter_ban", "system");
 	service_release("auth_login_gen", "system");
-	service_release("mysql_auth_meta", "system");
 }
