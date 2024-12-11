@@ -140,7 +140,6 @@ struct rxparam {
 }
 
 unsigned int g_ruleproc_debug;
-static bool (*rp_getuserprops)(const char *, TPROPVAL_ARRAY &);
 static std::string rp_smtp_url;
 static thread_local alloc_context rp_alloc_ctx;
 static thread_local const char *rp_storedir;
@@ -875,7 +874,7 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 static ec_error_t mr_get_policy(const char *ev_to, mr_policy &pol)
 {
 	TPROPVAL_ARRAY uprop{};
-	if (!rp_getuserprops(ev_to, uprop))
+	if (!mysql_adaptor_get_user_properties(ev_to, uprop))
 		return ecError;
 	auto flag = uprop.get<const uint8_t>(PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS);
 	pol.decline_overlap = flag != nullptr && *flag != 0;
@@ -1278,8 +1277,6 @@ BOOL SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 	LINK_SVC_API(param);
-	if (query_service2("get_user_properties", rp_getuserprops) == nullptr)
-		return false;
 	if (!register_service("rules_execute", exmdb_local_rules_execute))
 		return false;
 	auto cfg = config_file_prg(nullptr, "gromox.cfg", rp_config_defaults);
