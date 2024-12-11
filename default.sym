@@ -13,6 +13,10 @@ global:
 	};
 	_ZGV*;
 	_ZT*;
+
+	extern "C++" {
+		midb_agent::*;
+	};
 local:
 	*;
 };

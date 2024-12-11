@@ -33,6 +33,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/midb_agent.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/process.hpp>
 #include <gromox/safeint.hpp>
@@ -41,7 +42,6 @@
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
 #include "imap.hpp"
-#include "../midb_agent.hpp"
 #if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \
     (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
 #	define OLD_SSL 1
@@ -1323,7 +1323,7 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream)
 		auto item = pcontext->contents.get_itemx(uid);
 		if (item == nullptr)
 			continue;
-		if (system_services_get_flags(pcontext->maildir,
+		if (midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, item->mid, &flag_bits,
 		    &err) != MIDB_RESULT_OK)
 			continue;
@@ -1723,7 +1723,7 @@ static void *imps_scanwork(void *argp)
 		hl_hold.unlock();
 		for (const auto &e : temp_file) {
 			system_services_broadcast_select(e.user.c_str(), e.folder);
-			system_services_ping_mailbox(e.dir.c_str(), &err_num);
+			midb_agent::ping_mailbox(e.dir.c_str(), &err_num);
 		}
 	}
 	return nullptr;

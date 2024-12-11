@@ -34,6 +34,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/midb.hpp>
+#include <gromox/midb_agent.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/range_set.hpp>
 #include <gromox/simple_tree.hpp>
@@ -41,7 +42,6 @@
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
 #include "imap.hpp"
-#include "../midb_agent.hpp"
 #define MAX_DIGLEN		256*1024
 
 /*
@@ -862,7 +862,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 			            mjson.get_mail_length());
 			if (!pcontext->b_readonly &&
 			    !(pitem->flag_bits & FLAG_SEEN)) {
-				system_services_set_flags(pcontext->maildir,
+				midb_agent::set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
@@ -897,7 +897,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 				            std::size(buff) - buff_len, "RFC822.TEXT NIL");
 			if (!pcontext->b_readonly &&
 			    !(pitem->flag_bits & FLAG_SEEN)) {
-				system_services_set_flags(pcontext->maildir,
+				midb_agent::set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
@@ -985,7 +985,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 			if (!pcontext->b_readonly &&
 			    !(pitem->flag_bits & FLAG_SEEN) &&
 			    strncasecmp(kw, "BODY[", 5) == 0) {
-				system_services_set_flags(pcontext->maildir,
+				midb_agent::set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
@@ -999,7 +999,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 	if (!pcontext->b_readonly && pitem->flag_bits & FLAG_RECENT) {
 		pitem->flag_bits &= ~FLAG_RECENT;
 		if (!(pitem->flag_bits & FLAG_SEEN)) {
-			system_services_unset_flags(pcontext->maildir,
+			midb_agent::unset_flags(pcontext->maildir,
 				pcontext->selected_folder, pitem->mid, FLAG_RECENT, &errnum);
 			imap_parser_bcast_flags(*pcontext, pitem->uid);
 		}
@@ -1021,10 +1021,10 @@ static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
 	string_length = 0;
 	if (0 == strcasecmp(cmd, "FLAGS") ||
 		0 == strcasecmp(cmd, "FLAGS.SILENT")) {
-		system_services_unset_flags(pcontext->maildir,
+		midb_agent::unset_flags(pcontext->maildir,
 			pcontext->selected_folder, mid, FLAG_ANSWERED|
 			FLAG_FLAGGED|FLAG_DELETED|FLAG_SEEN|FLAG_DRAFT|FLAG_RECENT, &errnum);
-		system_services_set_flags(pcontext->maildir,
+		midb_agent::set_flags(pcontext->maildir,
 			pcontext->selected_folder, mid, flag_bits, &errnum);
 		if (0 == strcasecmp(cmd, "FLAGS")) {
 			imap_cmd_parser_convert_flags_string(flag_bits, flags_string);
@@ -1039,10 +1039,10 @@ static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
 		}
 	} else if (0 == strcasecmp(cmd, "+FLAGS") ||
 		0 == strcasecmp(cmd, "+FLAGS.SILENT")) {
-		system_services_set_flags(pcontext->maildir,
+		midb_agent::set_flags(pcontext->maildir,
 		pcontext->selected_folder, mid, flag_bits, &errnum);
 		if (0 == strcasecmp(cmd, "+FLAGS") && 
-			MIDB_RESULT_OK == system_services_get_flags(pcontext->maildir,
+			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
 			imap_cmd_parser_convert_flags_string(flag_bits, flags_string);
 			if (uid != 0)
@@ -1056,10 +1056,10 @@ static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
 		}
 	} else if (0 == strcasecmp(cmd, "-FLAGS") ||
 		0 == strcasecmp(cmd, "-FLAGS.SILENT")) {
-		system_services_unset_flags(pcontext->maildir,
+		midb_agent::unset_flags(pcontext->maildir,
 			pcontext->selected_folder, mid, flag_bits, &errnum);
 		if (0 == strcasecmp(cmd, "-FLAGS") &&
-			MIDB_RESULT_OK == system_services_get_flags(pcontext->maildir,
+			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
 			imap_cmd_parser_convert_flags_string(flag_bits, flags_string);
 			if (uid != 0)
@@ -1499,7 +1499,7 @@ int content_array::refresh(imap_context &ctx, const std::string &folder,
 	int errnum = 0;
 	imap_seq_list all_seq;
 	all_seq.insert(1, SEQ_STAR);
-	auto ssr = system_services_fetch_simple_uid(ctx.maildir, folder,
+	auto ssr = midb_agent::fetch_simple_uid(ctx.maildir, folder,
 	           all_seq, &xa, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -1546,7 +1546,7 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	}
 	
 	uint32_t uidvalid = 0, uidnext = 0;
-	auto ssr = system_services_summary_folder(pcontext->maildir, sys_name,
+	auto ssr = midb_agent::summary_folder(pcontext->maildir, sys_name,
 	           nullptr, nullptr, nullptr, &uidvalid, &uidnext, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -1609,7 +1609,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 	if (strpbrk(argv[2], "%*?") != nullptr)
 		return 1910;
 	std::vector<enum_folder_t> folder_list;
-	auto ssr = system_services_enum_folders(pcontext->maildir, folder_list, &errnum);
+	auto ssr = midb_agent::enum_folders(pcontext->maildir, folder_list, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
@@ -1632,7 +1632,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 		}
 		if (!imap_cmd_parser_imapfolder_to_sysfolder(sys_name.c_str(), converted_name))
 			return 1800;
-		ssr = system_services_make_folder(pcontext->maildir,
+		ssr = midb_agent::make_folder(pcontext->maildir,
 		      converted_name, &errnum);
 		ret = m2icode(ssr, errnum);
 		if (ret != 0)
@@ -1657,7 +1657,7 @@ int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
 
 	{
 		std::vector<enum_folder_t> folder_list;
-		auto ssr = system_services_enum_folders(pcontext->maildir,
+		auto ssr = midb_agent::enum_folders(pcontext->maildir,
 			   folder_list, &errnum);
 		auto ret = m2icode(ssr, errnum);
 		if (ret != 0)
@@ -1672,7 +1672,7 @@ int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
 			return 1924;
 	}
 
-	auto ssr = system_services_remove_folder(pcontext->maildir,
+	auto ssr = midb_agent::remove_folder(pcontext->maildir,
 	           encoded_name, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -1697,7 +1697,7 @@ int imap_cmd_parser_rename(int argc, char **argv, imap_context *pcontext)
 		return 1800;
 	if (strpbrk(argv[3], "%*?") != nullptr)
 		return 1910;
-	auto ssr = system_services_rename_folder(pcontext->maildir,
+	auto ssr = midb_agent::rename_folder(pcontext->maildir,
 	           encoded_name, encoded_name1, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -1717,7 +1717,7 @@ int imap_cmd_parser_subscribe(int argc, char **argv, imap_context *pcontext)
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
-	auto ssr = system_services_subscribe_folder(pcontext->maildir,
+	auto ssr = midb_agent::subscribe_folder(pcontext->maildir,
 	           sys_name, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -1737,7 +1737,7 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, imap_context *pcontext)
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
-	auto ssr = system_services_unsubscribe_folder(pcontext->maildir,
+	auto ssr = midb_agent::unsubscribe_folder(pcontext->maildir,
 	           sys_name, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -1788,7 +1788,7 @@ int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
 
 	auto search_pattern = std::string(reference) + mboxname;
 	std::vector<enum_folder_t> folder_list;
-	auto ssr = system_services_enum_folders(pcontext->maildir,
+	auto ssr = midb_agent::enum_folders(pcontext->maildir,
 	           folder_list, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -1842,7 +1842,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, imap_context *pcontext) try
 	std::string search_pattern = argv[2];
 	search_pattern += *argv[3] == '\0' ? "*" : argv[3];
 	std::vector<enum_folder_t> folder_list;
-	auto ssr = system_services_enum_folders(pcontext->maildir,
+	auto ssr = midb_agent::enum_folders(pcontext->maildir,
 	           folder_list, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -1902,14 +1902,14 @@ int imap_cmd_parser_lsub(int argc, char **argv, imap_context *pcontext) try
 	}
 	auto search_pattern = std::string(argv[2]) + argv[3];
 	std::vector<enum_folder_t> sub_list;
-	auto ssr = system_services_enum_subscriptions(pcontext->maildir,
+	auto ssr = midb_agent::enum_subscriptions(pcontext->maildir,
 	           sub_list, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
 	imap_cmd_parser_convert_folderlist(sub_list);
 	std::vector<enum_folder_t> folder_list;
-	system_services_enum_folders(pcontext->maildir, folder_list, &errnum);
+	midb_agent::enum_folders(pcontext->maildir, folder_list, &errnum);
 	imap_cmd_parser_convert_folderlist(folder_list);
 	dir_tree folder_tree;
 	folder_tree.load_from_memfile(folder_list);
@@ -1963,7 +1963,7 @@ int imap_cmd_parser_status(int argc, char **argv, imap_context *pcontext) try
 
 	size_t exists = 0, recent = 0, unseen = 0;
 	uint32_t uidvalid = 0, uidnext = 0;
-	auto ssr = system_services_summary_folder(pcontext->maildir, sys_name,
+	auto ssr = midb_agent::summary_folder(pcontext->maildir, sys_name,
 	           &exists, &recent, &unseen, &uidvalid, &uidnext, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -2109,7 +2109,7 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	}
 	imail.clear();
 
-	auto ssr = system_services_insert_mail(pcontext->maildir, sys_name,
+	auto ssr = midb_agent::insert_mail(pcontext->maildir, sys_name,
 	           mid_string.c_str(), flag_buff, tmp_time, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -2125,10 +2125,10 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	for (i=0; i<10; i++) {
 		// wait for midb's actions showing up... woah terrible
 		uint32_t uidvalid = 0;
-		if (system_services_summary_folder(pcontext->maildir,
+		if (midb_agent::summary_folder(pcontext->maildir,
 		    sys_name, nullptr, nullptr, nullptr, &uidvalid, nullptr,
 		    &errnum) == MIDB_RESULT_OK &&
-		    system_services_get_uid(pcontext->maildir, sys_name,
+		    midb_agent::get_uid(pcontext->maildir, sys_name,
 		    mid_string.c_str(), &uid) == MIDB_RESULT_OK) {
 			buf = fmt::format("{} {} [APPENDUID {} {}] {}",
 			      argv[0], imap_reply_str, uidvalid,
@@ -2331,7 +2331,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	}
 	imail.clear();
 	pbuff.reset();
-	auto ssr = system_services_insert_mail(pcontext->maildir, sys_name,
+	auto ssr = midb_agent::insert_mail(pcontext->maildir, sys_name,
 	           pcontext->mid.c_str(), flag_buff, tmp_time, &errnum);
 	auto cmid = std::move(pcontext->mid);
 	pcontext->unlink_file(); /* homedir/tmp/XX */
@@ -2348,10 +2348,10 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	std::string buf;
 	for (i=0; i<10; i++) {
 		uint32_t uidvalid = 0;
-		if (system_services_summary_folder(pcontext->maildir,
+		if (midb_agent::summary_folder(pcontext->maildir,
 		    sys_name, nullptr, nullptr, nullptr, &uidvalid,
 		    nullptr, &errnum) == MIDB_RESULT_OK &&
-		    system_services_get_uid(pcontext->maildir, sys_name,
+		    midb_agent::get_uid(pcontext->maildir, sys_name,
 		    cmid.c_str(), &uid) == MIDB_RESULT_OK) {
 			buf = fmt::format("{} {} [APPENDUID {} {}] {}",
 			      pcontext->tag_string, imap_reply_str, uidvalid,
@@ -2406,7 +2406,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, imap_context *pcontext) try
 	if (pcontext->b_readonly)
 		return 1806;
 	XARRAY xarray;
-	auto ssr = system_services_list_deleted(pcontext->maildir,
+	auto ssr = midb_agent::list_deleted(pcontext->maildir,
 	           pcontext->selected_folder, &xarray, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -2426,7 +2426,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, imap_context *pcontext) try
 			continue;
 		exp_list.push_back(pitem);
 	}
-	ssr = system_services_remove_mail(pcontext->maildir,
+	ssr = midb_agent::remove_mail(pcontext->maildir,
 	      pcontext->selected_folder, exp_list, &errnum);
 	ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -2480,7 +2480,7 @@ int imap_cmd_parser_search(int argc, char **argv, imap_context *pcontext)
 	if (argc < 3 || argc > 1024)
 		return 1800;
 	std::string buff;
-	auto ssr = system_services_search(pcontext->maildir,
+	auto ssr = midb_agent::search(pcontext->maildir,
 	           pcontext->selected_folder, pcontext->defcharset,
 	            argc - 2, &argv[2], buff, &errnum);
 	buff.insert(0, "* SEARCH ");
@@ -2573,7 +2573,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, imap_context *pcontext)
 		return 1800;
 	XARRAY xarray;
 	auto ssr = b_detail ?
-	           system_services_fetch_detail_uid(pcontext->maildir,
+	           midb_agent::fetch_detail_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_uid, &xarray, &errnum) :
 	           fetch_trivial_uid(*pcontext, list_uid, xarray);
 	auto result = m2icode(ssr, errnum);
@@ -2664,7 +2664,7 @@ int imap_cmd_parser_store(int argc, char **argv, imap_context *pcontext)
 			return 1807;
 	}
 	XARRAY xarray;
-	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
+	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_uid, &xarray, &errnum);
 	auto result = m2icode(ssr, errnum);
 	if (result != 0)
@@ -2700,13 +2700,13 @@ int imap_cmd_parser_copy(int argc, char **argv, imap_context *pcontext) try
 	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[3], sys_name))
 		return 1800;
 	XARRAY xarray;
-	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
+	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_uid, &xarray, &errnum);
 	auto result = m2icode(ssr, errnum);
 	if (result != 0)
 		return result;
 	uint32_t uidvalidity = 0;
-	if (system_services_summary_folder(pcontext->maildir,
+	if (midb_agent::summary_folder(pcontext->maildir,
 	    sys_name, nullptr, nullptr, nullptr, &uidvalidity, nullptr,
 	    &errnum) != MIDB_RESULT_OK)
 		uidvalidity = 0;
@@ -2719,7 +2719,7 @@ int imap_cmd_parser_copy(int argc, char **argv, imap_context *pcontext) try
 		pitem = pcontext->contents.get_itemx(pitem->uid);
 		if (pitem == nullptr)
 			continue;
-		if (system_services_copy_mail(pcontext->maildir,
+		if (midb_agent::copy_mail(pcontext->maildir,
 		    pcontext->selected_folder, pitem->mid, sys_name,
 		    pitem->mid, &errnum) != MIDB_RESULT_OK) {
 			b_copied = FALSE;
@@ -2728,7 +2728,7 @@ int imap_cmd_parser_copy(int argc, char **argv, imap_context *pcontext) try
 		if (uidvalidity == 0)
 			continue;
 		for (j = 0; j < 10; j++) {
-			if (system_services_get_uid(pcontext->maildir,
+			if (midb_agent::get_uid(pcontext->maildir,
 			    sys_name, pitem->mid, &uid) != MIDB_RESULT_OK) {
 				usleep(500000);
 				continue;
@@ -2754,7 +2754,7 @@ int imap_cmd_parser_copy(int argc, char **argv, imap_context *pcontext) try
 				continue;
 			exp_list.push_back(pitem);
 		}
-		system_services_remove_mail(pcontext->maildir,
+		midb_agent::remove_mail(pcontext->maildir,
 			sys_name, exp_list, &errnum);
 	}
 	pcontext->stream.clear();
@@ -2795,7 +2795,7 @@ int imap_cmd_parser_uid_search(int argc, char **argv,
 	if (argc < 3 || argc > 1024)
 		return 1800;
 	std::string buff;
-	auto ssr = system_services_search_uid(pcontext->maildir,
+	auto ssr = midb_agent::search_uid(pcontext->maildir,
 	           pcontext->selected_folder, pcontext->defcharset,
 	           argc - 3, &argv[3], buff, &errnum);
 	buff.insert(0, "* SEARCH ");
@@ -2843,9 +2843,9 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv,
 		list_data.emplace_back("UID");
 	XARRAY xarray;
 	auto ssr = b_detail ?
-	           system_services_fetch_detail_uid(pcontext->maildir,
+	           midb_agent::fetch_detail_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_seq, &xarray, &errnum) :
-	           system_services_fetch_simple_uid(pcontext->maildir,
+	           midb_agent::fetch_simple_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_seq, &xarray, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -2921,7 +2921,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, imap_context *pcontext)
 			return 1807;
 	}
 	XARRAY xarray;
-	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
+	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_seq, &xarray, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -2957,13 +2957,13 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, imap_context *pcontext) try
 	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[4], sys_name))
 		return 1800;
 	XARRAY xarray;
-	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
+	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_seq, &xarray, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
 	uint32_t uidvalidity = 0;
-	if (system_services_summary_folder(pcontext->maildir,
+	if (midb_agent::summary_folder(pcontext->maildir,
 	    sys_name, nullptr, nullptr, nullptr, &uidvalidity,
 	    nullptr, &errnum) != MIDB_RESULT_OK)
 		uidvalidity = 0;
@@ -2973,7 +2973,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, imap_context *pcontext) try
 	std::string uid_string;
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
-		if (system_services_copy_mail(pcontext->maildir,
+		if (midb_agent::copy_mail(pcontext->maildir,
 		    pcontext->selected_folder, pitem->mid, sys_name,
 		    pitem->mid, &errnum) != MIDB_RESULT_OK) {
 			b_copied = FALSE;
@@ -2982,7 +2982,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, imap_context *pcontext) try
 		if (uidvalidity == 0)
 			continue;
 		for (j = 0; j < 10; j++) {
-			if (system_services_get_uid(pcontext->maildir,
+			if (midb_agent::get_uid(pcontext->maildir,
 			    sys_name, pitem->mid, &uid) != MIDB_RESULT_OK) {
 				usleep(500000);
 				continue;
@@ -3005,7 +3005,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, imap_context *pcontext) try
 				continue;
 			exp_list.push_back(pitem);
 		}
-		system_services_remove_mail(pcontext->maildir,
+		midb_agent::remove_mail(pcontext->maildir,
 			sys_name, exp_list, &errnum);
 	}
 	pcontext->stream.clear();
@@ -3050,7 +3050,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv,
 	if (argc < 4 || parse_imap_seq(list_seq, argv[3]) != 0)
 		return 1800;
 	XARRAY xarray;
-	auto ssr = system_services_list_deleted(pcontext->maildir,
+	auto ssr = midb_agent::list_deleted(pcontext->maildir,
 	           pcontext->selected_folder, &xarray, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -3070,7 +3070,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv,
 			continue;
 		exp_list.push_back(pitem);
 	}
-	ssr = system_services_remove_mail(pcontext->maildir,
+	ssr = midb_agent::remove_mail(pcontext->maildir,
 	      pcontext->selected_folder, exp_list, &errnum);
 	ret = m2icode(ssr, errnum);
 	if (ret != 0)
@@ -3121,7 +3121,7 @@ void imap_cmd_parser_clsfld(imap_context *pcontext) try
 	if (pcontext->b_readonly)
 		return;
 	XARRAY xarray;
-	result = system_services_list_deleted(pcontext->maildir,
+	result = midb_agent::list_deleted(pcontext->maildir,
 	         prev_selected, &xarray, &errnum);
 	std::string buf;
 	switch(result) {
@@ -3159,7 +3159,7 @@ void imap_cmd_parser_clsfld(imap_context *pcontext) try
 			continue;
 		exp_list.push_back(pitem);
 	}
-	result = system_services_remove_mail(pcontext->maildir,
+	result = midb_agent::remove_mail(pcontext->maildir,
 	         prev_selected, exp_list, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:

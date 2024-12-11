@@ -9,7 +9,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
-#include <gromox/msg_unit.hpp>
+#include <gromox/midb_agent.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
@@ -56,8 +56,8 @@ struct pop3_context final : public schedule_context {
 	 * modified (specifically: only append). We also want O(1) random
 	 * access in @array. Therefore, deque is used.
 	 */
-	std::vector<gromox::MSG_UNIT> msg_array; /* mailbox message list */
-	std::vector<gromox::MSG_UNIT *> delmsg_list;
+	std::vector<MSG_UNIT> msg_array; /* mailbox message list */
+	std::vector<MSG_UNIT *> delmsg_list;
 	BOOL is_login = false; /* if user is logged in */
 	BOOL is_stls = false; /* if last command is STLS */
 	int auth_times = 0;
@@ -104,8 +104,6 @@ extern bool (*system_services_judge_user)(const char *);
 extern void (*system_services_ban_user)(const char *, int);
 extern authmgr_login_t system_services_auth_login;
 extern gromox::errno_t (*system_services_auth_meta)(const char *username, unsigned int wantpriv, sql_meta_result &out);
-extern int (*system_services_list_mail)(const char *, const std::string &, std::vector<gromox::MSG_UNIT> &, int *num, uint64_t *size);
-extern int (*system_services_delete_mail)(const char *, const std::string &, const std::vector<gromox::MSG_UNIT *> &);
 extern void (*system_services_broadcast_event)(const char *);
 
 extern uint16_t g_listener_ssl_port;

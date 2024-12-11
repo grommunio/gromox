@@ -25,9 +25,9 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/midb_agent.hpp>
 #include <gromox/util.hpp>
 #include "pop3.hpp"
-#include "../midb_agent.hpp"
 
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
@@ -159,7 +159,7 @@ int pop3_cmd_handler_pass(std::vector<std::string> &&argv, pop3_context *pcontex
 	if (*pcontext->maildir == '\0')
 		return 1715;
 
-	switch (system_services_list_mail(pcontext->maildir, "inbox",
+	switch (midb_agent::list_mail(pcontext->maildir, "inbox",
 		pcontext->msg_array, &pcontext->total_mail,
 		&pcontext->total_size)) {
 	case MIDB_RESULT_OK:
@@ -399,7 +399,7 @@ int pop3_cmd_handler_quit(std::vector<std::string> &&argv, pop3_context *pcontex
 	if (argv.size() != 1)
 		return 1704;
 	if (pcontext->is_login && pcontext->delmsg_list.size() > 0) {
-		switch (system_services_delete_mail(pcontext->maildir, "inbox",
+		switch (midb_agent::delete_mail(pcontext->maildir, "inbox",
 			pcontext->delmsg_list)) {
 		case MIDB_RESULT_OK:
 			break;
