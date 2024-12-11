@@ -713,40 +713,5 @@ BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data)
 		mlog(LV_ERR, "mysql_adaptor: failed to startup");
 		return false;
 	}
-#define E(f, s) do { \
-	if (!register_service((s), mysql_adaptor_ ## f)) { \
-		mlog(LV_ERR, "mysql_adaptor: failed to register the \"%s\" service", (s)); \
-		return false; \
-	} \
-} while (false)
-	E(meta, "mysql_auth_meta");
-	E(login2, "mysql_auth_login2");
-	E(setpasswd, "set_password");
-	E(get_username_from_id, "get_username_from_id");
-	E(get_id_from_maildir, "get_id_from_maildir");
-	E(get_user_displayname, "get_user_displayname");
-	E(get_user_privilege_bits, "get_user_privilege_bits");
-	E(set_user_lang, "set_user_lang");
-	E(set_timezone, "set_timezone");
-	E(get_homedir, "get_homedir");
-	E(get_homedir_by_id, "get_homedir_by_id");
-	E(get_id_from_homedir, "get_id_from_homedir");
-	E(get_user_ids, "get_user_ids");
-	E(get_domain_ids, "get_domain_ids");
-	E(get_org_domains, "get_org_domains");
-	E(get_domain_info, "get_domain_info");
-	E(check_same_org, "check_same_org");
-	E(get_domain_groups, "get_domain_groups");
-	E(get_group_users, "get_group_users");
-	E(get_domain_users, "get_domain_users");
-	E(check_mlist_include, "check_mlist_include");
-	E(check_same_org2, "check_same_org2");
-	E(get_mlist_memb, "get_mlist_memb");
-	E(get_user_aliases, "get_user_aliases");
-	E(get_user_properties, "get_user_properties");
-	E(scndstore_hints, "scndstore_hints");
-	E(domain_list_query, "domain_list_query");
-	E(get_homeserver, "get_homeserver");
-#undef E
 	return TRUE;
 }

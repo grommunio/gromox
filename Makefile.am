@@ -181,7 +181,7 @@ libgxs_mysql_adaptor_la_LIBADD = -lpthread ${crypt_LIBS} ${libHX_LIBS} ${fmt_LIB
 EXTRA_libgxs_mysql_adaptor_la_DEPENDENCIES = default.sym
 libgxs_ruleproc_la_SOURCES = lib/ruleproc.cpp
 libgxs_ruleproc_la_LDFLAGS = ${default_SYFLAGS}
-libgxs_ruleproc_la_LIBADD = ${vmime_LIBS} libgromox_common.la libgromox_exrpc.la
+libgxs_ruleproc_la_LIBADD = ${vmime_LIBS} libgromox_common.la libgromox_exrpc.la libgxs_mysql_adaptor.la
 EXTRA_libgxs_ruleproc_la_DEPENDENCIES = ${default_SYM}
 
 cgkrepair_SOURCES = tools/cgkrepair.cpp tools/genimport.cpp tools/genimport.hpp
