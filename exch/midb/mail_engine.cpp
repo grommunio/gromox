@@ -2792,7 +2792,7 @@ static int mail_engine_psubl(int argc, char **argv, int sockd) try
 	rsp.reserve(65536);
 	for (; pstmt.step() == SQLITE_ROW; ++count)
 		rsp += std::to_string(pstmt.col_uint64(0)) + " " +
-		       znul(pstmt.col_text(1)) + "\r\n"s;
+		       base64_encode(znul(pstmt.col_text(1))) + "\r\n"s;
 	pstmt.finalize();
 	pidb.reset();
 	rsp.insert(0, "TRUE " + std::to_string(count) + "\r\n");
@@ -3618,7 +3618,7 @@ static void mail_engine_delete_notification_message(IDB_ITEM *pidb,
 	    gx_sql_col_uint64(pstmt, 0) != folder_id)
 		return;
 	system_services_broadcast_event(fmt::format("MESSAGE-EXPUNGE {} {} {}",
-		username, folder_name, pstmt.col_uint64(1)).c_str());
+		username, base64_encode(folder_name), pstmt.col_uint64(1)).c_str());
 	pstmt.finalize();
 	qstr = fmt::format("DELETE FROM messages WHERE message_id={}", message_id);
 	gx_sql_exec(pidb->psqlite, qstr.c_str());
@@ -4010,7 +4010,7 @@ static void mail_engine_notification_proc(const char *dir,
 			return;
 		std::string name = znul(stm.col_text(0));
 		stm.finalize();
-		qstr = fmt::format("FOLDER-TOUCH {} {}", pidb->username, name);
+		qstr = fmt::format("FOLDER-TOUCH {} {}", pidb->username, base64_encode(name));
 		system_services_broadcast_event(qstr.c_str());
 	}
 } catch (const std::bad_alloc &) {
