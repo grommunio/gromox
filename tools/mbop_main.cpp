@@ -544,7 +544,7 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static int main2(int, char **);
+static int cmd_parser(int, char **);
 
 static void command_overview()
 {
@@ -735,11 +735,11 @@ static int main(int argc, char **argv)
 		}
 	} else {
 		for (auto &&[username, maildir] : ul) {
-			// main2 is not thread-safe (global state), can't parallelize
+			/* cmd_parser is not thread-safe (global state), cannot parallelize */
 			g_dstuser = std::move(username);
 			g_storedir_s = std::move(maildir);
 			g_storedir = g_storedir_s.c_str();
-			ret = global::main2(argc, argv);
+			ret = global::cmd_parser(argc, argv);
 			if (ret == EXIT_PARAM)
 				return ret;
 			else if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
@@ -964,7 +964,7 @@ static int single_user_wrap(int argc, char **argv)
 
 	auto ret = gi_startup_client();
 	if (ret == EXIT_SUCCESS)
-		ret = main2(argc, argv);
+		ret = cmd_parser(argc, argv);
 	gi_shutdown();
 	return ret;
 }
@@ -988,9 +988,49 @@ int main(int argc, char **argv)
 
 namespace global {
 
-static int main2(int argc, char **argv)
+static int parens_parser(int argc, char **argv)
 {
-	if (strcmp(argv[0], "delmsg") == 0)
+	unsigned int qcount = 0;
+	int start = 0;
+
+	for (int scanpos = 0; scanpos < argc; ++scanpos) {
+		if (strcmp(argv[scanpos], "(") == 0) {
+			++qcount;
+			if (start == 0)
+				start = scanpos + 1;
+		} else if (strcmp(argv[scanpos], ")") == 0) {
+			if (qcount == 0) {
+				fprintf(stderr, "Unbalanced parenthesis\n");
+				return EXIT_FAILURE;
+			}
+			--qcount;
+			if (qcount == 0) {
+				std::vector<char *> args(&argv[start], &argv[scanpos]);
+				args.push_back(nullptr);
+				auto ret = cmd_parser(std::min(static_cast<size_t>(INT_MAX), args.size() - 1), &args[0]);
+				if (ret != EXIT_SUCCESS && !g_continuous_mode)
+					return ret;
+				start = 0;
+			}
+		} else if (qcount == 0) {
+			fprintf(stderr, "Expected parenthesis; got \"%s\"\n", argv[scanpos]);
+			return EXIT_FAILURE;
+		}
+	}
+	if (qcount != 0) {
+		fprintf(stderr, "Unbalanced parenthesis\n");
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+static int cmd_parser(int argc, char **argv)
+{
+	if (argc == 0)
+		return EXIT_FAILURE;
+	if (strcmp(argv[0], "(") == 0)
+		return parens_parser(argc, argv);
+	else if (strcmp(argv[0], "delmsg") == 0)
 		return delmsg::main(argc, argv);
 	else if (strcmp(argv[0], "emptyfld") == 0)
 		return emptyfld::main(argc, argv);

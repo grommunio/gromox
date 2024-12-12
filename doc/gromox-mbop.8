@@ -21,6 +21,9 @@ store of a domain, leave out the local part, i.e. use
 \fB@\fP\fIexample.com\fP.)
 .SH Commands
 .IP \(bu 4
+\fB(\fP command1 c1args \fB) (\fP command2 c2args \fB)\fP: command
+concatenation
+.IP \(bu 4
 clear\-photo: delete user picture
 .IP \(bu 4
 clear\-profile: delete user's PHP-MAPI profile
@@ -182,6 +185,10 @@ external tools like parallel(1) or make(1) for guaranteed parallelization.
 Default: \fI1\fP
 .SS Description
 Pseudoaction for running one of the other subcommand (e.g. ping, unload.)
+.SS Examples
+.IP \(bu 4
+Command concatenation: gromox\-mbop for\-all\-users \\( purge\-softdelete -r /
+\\) \\( purge\-datafiles \\)
 .SH get\-freebusy
 .SS Synopsis
 \fBget\-freebusy\fP [\fB\-a\fP \fIstart_time\fP] [\fB\-b\fP \fIend_time\fP]
