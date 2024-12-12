@@ -8,6 +8,10 @@ gromox\-mbop \(em Mailbox operations utility
 [\fIrecipient\fP]\fB@domain.example\fP] \fIcommand\fP [command-args...]
 .SH Global options
 .TP
+\fB\-c\fP
+Continuous operation mode. If a command in a series (e.g. with for\-all\-users)
+fails, do not stop.
+.TP
 \fB\-d\fP \fI/var/lib/gromox/user/1/2\fP
 Lookup the mailbox parameters from the associated filesystem location.
 .TP

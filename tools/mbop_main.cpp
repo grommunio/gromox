@@ -535,7 +535,9 @@ static int main(int argc, char **argv)
 namespace global {
 
 static char *g_arg_username, *g_arg_userdir;
+static unsigned int g_continuous_mode;
 static constexpr HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_NONE, &g_continuous_mode, {}, {}, {}, "Do not stop on errors"},
 	{nullptr, 'd', HXTYPE_STRING, &g_arg_userdir, nullptr, nullptr, 0, "Directory of the mailbox", "DIR"},
 	{nullptr, 'u', HXTYPE_STRING, &g_arg_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
 	HXOPT_AUTOHELP,
@@ -561,6 +563,7 @@ static int help()
 	fprintf(stderr, "Usage: gromox-mbop [global-options] command [command-options] [command-args...]\n");
 	fprintf(stderr, "Global options:\n");
 	fprintf(stderr, "\t-?                           Global help (this text)\n");
+	fprintf(stderr, "\t-c                           Continus operation mode\n");
 	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
 	command_overview();
 	fprintf(stderr, "Command options:\n");
@@ -682,20 +685,25 @@ static int main(int argc, char **argv)
 	auto ret = gi_startup_client(g_numthreads);
 	if (ret != 0)
 		return ret;
+	auto cl_1 = make_scope_exit(gi_shutdown);
 	ret = EXIT_SUCCESS;
 	using Sem = std::counting_semaphore<1>;
 	std::vector<std::future<void>> futs;
 	Sem sem(g_numthreads);
+
 	if (strcmp(argv[0], "ping") == 0) {
 		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
 		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 			return EXIT_PARAM;
 		for (auto &&[username, maildir] : ul) {
 			sem.acquire();
-			futs.emplace_back(std::async([](std::string *maildir, Sem *sem) {
-				exmdb_client::ping_store(maildir->c_str());
+			if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
+				break;
+			futs.emplace_back(std::async([](std::string *maildir, Sem *sem, int *ret) {
+				if (!exmdb_client::ping_store(maildir->c_str()))
+					*ret = EXIT_FAILURE;
 				sem->release();
-			}, &maildir, &sem));
+			}, &maildir, &sem, &ret));
 		}
 	} else if (strcmp(argv[0], "unload") == 0) {
 		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
@@ -703,10 +711,13 @@ static int main(int argc, char **argv)
 			return EXIT_PARAM;
 		for (auto &&[username, maildir] : ul) {
 			sem.acquire();
-			futs.emplace_back(std::async([](std::string *maildir, Sem *sem) {
-				exmdb_client::unload_store(maildir->c_str());
+			if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
+				return ret;
+			futs.emplace_back(std::async([](std::string *maildir, Sem *sem, int *ret) {
+				if (!exmdb_client::unload_store(maildir->c_str()))
+					*ret = EXIT_FAILURE;
 				sem->release();
-			}, &maildir, &sem));
+			}, &maildir, &sem, &ret));
 		}
 	} else if (strcmp(argv[0], "vacuum") == 0) {
 		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
@@ -714,10 +725,13 @@ static int main(int argc, char **argv)
 			return EXIT_PARAM;
 		for (auto &&[username, maildir] : ul) {
 			sem.acquire();
-			futs.emplace_back(std::async([](std::string *maildir, Sem *sem) {
-				exmdb_client::vacuum(maildir->c_str());
+			if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
+				return ret;
+			futs.emplace_back(std::async([](std::string *maildir, Sem *sem, int *ret) {
+				if (!exmdb_client::vacuum(maildir->c_str()))
+					*ret = EXIT_FAILURE;
 				sem->release();
-			}, &maildir, &sem));
+			}, &maildir, &sem, &ret));
 		}
 	} else {
 		for (auto &&[username, maildir] : ul) {
@@ -727,11 +741,11 @@ static int main(int argc, char **argv)
 			g_storedir = g_storedir_s.c_str();
 			ret = global::main2(argc, argv);
 			if (ret == EXIT_PARAM)
-				break;
+				return ret;
+			else if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
+				return ret;
 		}
 	}
-	futs.clear();
-	gi_shutdown();
 	return ret;
 }
 
