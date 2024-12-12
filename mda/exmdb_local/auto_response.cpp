@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -15,6 +17,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
 
@@ -54,14 +57,14 @@ void auto_response_reply(const char *user_home,
 	if (0 == strcasecmp(ptoken, ptoken1)) {
 		b_internal = TRUE;
 	} else {
-		auto lcldom = exmdb_local_check_domain(ptoken + 1);
+		auto lcldom = mysql_adaptor_domain_list_query(ptoken + 1);
 		if (lcldom < 0) {
-			mlog(LV_ERR, "auto_response: check_domain: %s",
+			mlog(LV_ERR, "auto_response: domain_list_query: %s",
 			        strerror(-lcldom));
 			return;
 		}
 		b_internal = lcldom < 1 ? false :
-		             exmdb_local_check_same_org2(ptoken + 1, ptoken1 + 1);
+		             mysql_adaptor_check_same_org2(ptoken + 1, ptoken1 + 1);
 	}
 	
 	snprintf(temp_path, 256, "%s/config/autoreply.cfg", user_home);

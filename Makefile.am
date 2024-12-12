@@ -105,11 +105,11 @@ delivery_queue_SOURCES = mda/message_enqueue.cpp mda/smtp/flusher.cpp mda/smtp/m
 delivery_queue_LDADD = -lpthread ${libcrypto_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_auth.la libgromox_authz.la libgromox_common.la libgromox_epoll.la libgxs_mysql_adaptor.la
 libgxm_alias_resolve_la_SOURCES = mda/alias_resolve.cpp mda/mdabounce.cpp mda/mdabounce.hpp lib/bounce_mda.cpp
 libgxm_alias_resolve_la_LDFLAGS = ${default_SYFLAGS}
-libgxm_alias_resolve_la_LIBADD = -lpthread ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_email.la
+libgxm_alias_resolve_la_LIBADD = -lpthread ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_email.la libgxs_mysql_adaptor.la
 EXTRA_libgxm_alias_resolve_la_DEPENDENCIES = default.sym
 libgxm_exmdb_local_la_SOURCES = lib/bounce_mda.cpp mda/exmdb_local/auto_response.cpp mda/exmdb_local/bounce_audit.cpp mda/exmdb_local/bounce_producer.cpp mda/exmdb_local/cache_queue.cpp mda/exmdb_local/exmdb_local.cpp mda/exmdb_local/exmdb_local.hpp
 libgxm_exmdb_local_la_LDFLAGS = ${default_SYFLAGS}
-libgxm_exmdb_local_la_LIBADD = -lpthread ${libHX_LIBS} ${jsoncpp_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
+libgxm_exmdb_local_la_LIBADD = -lpthread ${libHX_LIBS} ${jsoncpp_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
 EXTRA_libgxm_exmdb_local_la_DEPENDENCIES = default.sym
 
 pop3_SOURCES = mra/midb_agent.hpp mra/pop3/main.cpp mra/pop3/pop3.hpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// This file is part of Gromox.
 /* collection of functions for handling the smtp command
  */ 
 #include <cstdio>
@@ -10,6 +12,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/util.hpp>
 #include "smtp_aux.hpp"
 #include "smtp_cmd_handler.hpp"
@@ -203,7 +206,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 	snprintf(buff, std::size(buff), "%.*s@%s", static_cast<int>(local_len),
 		email_addr.local_part, email_addr.domain);
 	sql_meta_result mres;
-	auto err = system_services_meta(buff, WANTPRIV_METAONLY, mres);
+	auto err = mysql_adaptor_meta(buff, WANTPRIV_METAONLY, mres);
 	if (err == ENOENT) {
 		/* 550 invalid user - <email_addr> */
 		smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);

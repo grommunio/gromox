@@ -58,7 +58,6 @@ static std::mutex xa_alias_lock;
 static std::thread xa_thread;
 static mysql_adaptor_init_param g_parm;
 static std::chrono::seconds g_cache_lifetime;
-static decltype(mysql_adaptor_get_mlist_memb) *get_mlist_memb;
 static std::string g_rcpt_delimiter;
 
 static MYSQL *sql_make_conn()
@@ -235,7 +234,7 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 
 		std::vector<std::string> exp_result;
 		int gmm_result = 0;
-		if (!get_mlist_memb(todo[i].c_str(), ctx->ctrl.from, &gmm_result, exp_result))
+		if (!mysql_adaptor_get_mlist_memb(todo[i].c_str(), ctx->ctrl.from, &gmm_result, exp_result))
 			gmm_result = ML_NONE;
 		switch (gmm_result) {
 		case ML_NONE:
@@ -346,11 +345,6 @@ BOOL HOOK_alias_resolve(enum plugin_op reason, const struct dlfuncs &data)
 		return TRUE;
 	LINK_HOOK_API(data);
 	textmaps_init();
-	query_service2("get_mlist_memb", get_mlist_memb);
-	if (get_mlist_memb == nullptr) {
-		mlog(LV_ERR, "mlist_expand: failed to get service \"get_mlist_memb\"");
-		return FALSE;
-	}
 	if (mlex_bounce_init(get_config_path(), get_data_path(),
 	    "mlist_bounce") != 0) {
 		mlog(LV_ERR, "mlist_expand: failed to run bounce producer");
