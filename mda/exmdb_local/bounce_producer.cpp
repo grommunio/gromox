@@ -23,6 +23,7 @@
 #include <gromox/dsn.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -51,8 +52,8 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 	auto pdomain = strchr(from, '@');
 	if (NULL != pdomain) {
 		pdomain ++;
-		if (exmdb_local_check_domain(pdomain) >= 1 &&
-		    exmdb_local_meta(from, WANTPRIV_METAONLY, mres) == 0)
+		if (mysql_adaptor_domain_list_query(pdomain) >= 1 &&
+		    mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0)
 			charset = lang_to_charset(mres.lang.c_str());
 	}
 	rfc1123_dstring(date_buff, std::size(date_buff), original_time);

@@ -38,23 +38,9 @@ using namespace gromox;
 DECLARE_HOOK_API(alias_resolve, extern);
 using namespace alias_resolve;
 
-int (*bounce_producer_check_domain)(const char *domainname);
-static decltype(mysql_adaptor_meta) *bounce_producer_meta;
-
 int mlex_bounce_init(const char *cfg_path,
     const char *data_path, const char *bounce_grp)
 {
-#define E(f, s) do { \
-	query_service2(s, f); \
-	if ((f) == nullptr) { \
-		mlog(LV_ERR, "mlist_expand: failed to get the \"%s\" service", (s)); \
-		return -1; \
-	} \
-} while (false)
-
-	E(bounce_producer_check_domain, "domain_list_query");
-	E(bounce_producer_meta, "mysql_auth_meta");
-#undef E
 	return bounce_gen_init(cfg_path, data_path, bounce_grp) == 0 ? 0 : -1;
 }
 
@@ -75,13 +61,13 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	auto pdomain = strchr(from, '@');
 	if (NULL != pdomain) {
 		pdomain ++;
-		auto lcldom = bounce_producer_check_domain(pdomain);
+		auto lcldom = mysql_adaptor_domain_list_query(pdomain);
 		if (lcldom < 0) {
-			mlog(LV_ERR, "bounce_producer: check_domain: %s",
+			mlog(LV_ERR, "bounce_producer: domain_list_query: %s",
 			        strerror(-lcldom));
 			return false;
 		}
-		if (lcldom > 0 && bounce_producer_meta(from,
+		if (lcldom > 0 && mysql_adaptor_meta(from,
 		    WANTPRIV_METAONLY, mres) == 0)
 			charset = lang_to_charset(mres.lang.c_str());
 	}
