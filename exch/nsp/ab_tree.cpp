@@ -87,12 +87,6 @@ static char g_nsp_org_name[256];
 static std::unordered_map<int, AB_BASE> g_base_hash;
 static std::mutex g_base_lock;
 
-static decltype(mysql_adaptor_get_org_domains) *get_org_domains;
-static decltype(mysql_adaptor_get_domain_info) *get_domain_info;
-static decltype(mysql_adaptor_get_domain_groups) *get_domain_groups;
-static decltype(mysql_adaptor_get_group_users) *get_group_users;
-static decltype(mysql_adaptor_get_domain_users) *get_domain_users;
-
 static void *nspab_scanwork(void *);
 
 static uint32_t ab_tree_make_minid(minid_type type, uint32_t value)
@@ -179,20 +173,6 @@ void ab_tree_init(const char *org_name, size_t base_size, int cache_interval)
 
 int ab_tree_run()
 {
-#define E(f, s) do { \
-	query_service2(s, f); \
-	if ((f) == nullptr) { \
-		mlog(LV_ERR, "nsp: failed to get the \"%s\" service", (s)); \
-		return -1; \
-	} \
-} while (false)
-
-	E(get_org_domains, "get_org_domains");
-	E(get_domain_info, "get_domain_info");
-	E(get_domain_groups, "get_domain_groups");
-	E(get_group_users, "get_group_users");
-	E(get_domain_users, "get_domain_users");
-#undef E
 	g_notify_stop = false;
 	auto ret = pthread_create4(&g_scan_id, nullptr, nspab_scanwork, nullptr);
 	if (ret != 0) {
@@ -292,7 +272,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	int rows;
 	sql_domain dinfo;
 	
-	if (!get_domain_info(domain_id, dinfo))
+	if (!mysql_adaptor_get_domain_info(domain_id, dinfo))
 		return FALSE;
 	auto abnode_uq = ab_tree_get_abnode();
 	auto pabnode = abnode_uq.get();
@@ -315,7 +295,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		return false;
 
 	std::vector<sql_group> file_group;
-	if (!get_domain_groups(domain_id, file_group))
+	if (!mysql_adaptor_get_domain_groups(domain_id, file_group))
 		return FALSE;
 	for (auto &&grp : file_group) {
 		abnode_uq = ab_tree_get_abnode();
@@ -337,7 +317,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			return false;
 		
 		std::vector<sql_user> file_user;
-		rows = get_group_users(grp_id, file_user);
+		rows = mysql_adaptor_get_group_users(grp_id, file_user);
 		if (rows == -1)
 			return FALSE;
 		else if (rows == 0)
@@ -371,7 +351,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	}
 	
 	std::vector<sql_user> file_user;
-	rows = get_domain_users(domain_id, file_user);
+	rows = mysql_adaptor_get_domain_users(domain_id, file_user);
 	if (rows == -1)
 		return FALSE;
 	else if (rows == 0)
@@ -420,7 +400,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 	
 	if (pbase->base_id > 0) {
 		std::vector<unsigned int> temp_file;
-		if (!get_org_domains(pbase->base_id, temp_file))
+		if (!mysql_adaptor_get_org_domains(pbase->base_id, temp_file))
 			return FALSE;
 		for (auto domain_id : temp_file) {
 			domain_node dnode(domain_id);
