@@ -990,52 +990,51 @@ namespace global {
 
 static int main2(int argc, char **argv)
 {
-	int ret = EXIT_FAILURE;
-	if (strcmp(argv[0], "delmsg") == 0) {
-		ret = delmsg::main(argc, argv);
-	} else if (strcmp(argv[0], "emptyfld") == 0) {
-		ret = emptyfld::main(argc, argv);
-	} else if (strcmp(argv[0], "clear-photo") == 0) {
-		ret = delstoreprop(argc, argv, PSETID_Gromox, "photo", PT_BINARY);
-	} else if (strcmp(argv[0], "clear-profile") == 0) {
-		ret = delstoreprop(argc, argv, PSETID_Gromox, "zcore_profsect", PT_BINARY);
+	if (strcmp(argv[0], "delmsg") == 0)
+		return delmsg::main(argc, argv);
+	else if (strcmp(argv[0], "emptyfld") == 0)
+		return emptyfld::main(argc, argv);
+	else if (strcmp(argv[0], "clear-photo") == 0)
+		return delstoreprop(argc, argv, PSETID_Gromox, "photo", PT_BINARY);
+	else if (strcmp(argv[0], "clear-rwz") == 0)
+		return clear_rwz();
+	else if (strcmp(argv[0], "get-photo") == 0)
+		return showstoreprop(argc, argv, PSETID_Gromox, "photo", PT_BINARY);
+	else if (strcmp(argv[0], "set-photo") == 0)
+		return setstoreprop(argc, argv, PSETID_Gromox, "photo", PT_BINARY);
+	else if (strcmp(argv[0], "get-websettings") == 0)
+		return showstoreprop(argc, argv, PSETID_Gromox, "websettings", PT_UNICODE);
+	else if (strcmp(argv[0], "set-websettings") == 0)
+		return setstoreprop(argc, argv, PSETID_Gromox, "websettings", PT_UNICODE);
+	else if (strcmp(argv[0], "get-websettings-persistent") == 0)
+		return showstoreprop(argc, argv, PSETID_Gromox, "websettings_persistent", PT_UNICODE);
+	else if (strcmp(argv[0], "set-websettings-persistent") == 0)
+		return setstoreprop(argc, argv, PSETID_Gromox, "websettings_persistent", PT_UNICODE);
+	else if (strcmp(argv[0], "get-websettings-recipients") == 0)
+		return showstoreprop(argc, argv, PSETID_Gromox, "websettings_recipienthistory", PT_UNICODE);
+	else if (strcmp(argv[0], "set-websettings-recipients") == 0)
+		return setstoreprop(argc, argv, PSETID_Gromox, "websettings_recipienthistory", PT_UNICODE);
+	else if (strcmp(argv[0], "purge-softdelete") == 0)
+		return purgesoftdel::main(argc, argv);
+	else if (strcmp(argv[0], "set-locale") == 0)
+		return set_locale::main(argc, argv);
+	else if (strcmp(argv[0], "get-freebusy") == 0 || strcmp(argv[0], "gfb") == 0)
+		return getfreebusy::main(argc, argv);
+
+	if (strcmp(argv[0], "clear-profile") == 0) {
+		auto ret = delstoreprop(argc, argv, PSETID_Gromox, "zcore_profsect", PT_BINARY);
 		if (ret == 0)
-			ret = delstoreprop(argc, argv, PSETID_Gromox, "websettings", PT_UNICODE);
+			return delstoreprop(argc, argv, PSETID_Gromox, "websettings", PT_UNICODE);
 		if (ret == 0)
-			ret = delstoreprop(argc, argv, PSETID_Gromox, "websettings_persistent", PT_UNICODE);
+			return delstoreprop(argc, argv, PSETID_Gromox, "websettings_persistent", PT_UNICODE);
 		if (ret == 0)
-			ret = delstoreprop(argc, argv, PSETID_Gromox, "websettings_recipienthistory", PT_UNICODE);
-	} else if (strcmp(argv[0], "clear-rwz") == 0) {
-		ret = clear_rwz();
-	} else if (strcmp(argv[0], "get-photo") == 0) {
-		ret = showstoreprop(argc, argv, PSETID_Gromox, "photo", PT_BINARY);
-	} else if (strcmp(argv[0], "set-photo") == 0) {
-		ret = setstoreprop(argc, argv, PSETID_Gromox, "photo", PT_BINARY);
-	} else if (strcmp(argv[0], "get-websettings") == 0) {
-		ret = showstoreprop(argc, argv, PSETID_Gromox, "websettings", PT_UNICODE);
-	} else if (strcmp(argv[0], "set-websettings") == 0) {
-		ret = setstoreprop(argc, argv, PSETID_Gromox, "websettings", PT_UNICODE);
-	} else if (strcmp(argv[0], "get-websettings-persistent") == 0) {
-		ret = showstoreprop(argc, argv, PSETID_Gromox, "websettings_persistent", PT_UNICODE);
-	} else if (strcmp(argv[0], "set-websettings-persistent") == 0) {
-		ret = setstoreprop(argc, argv, PSETID_Gromox, "websettings_persistent", PT_UNICODE);
-	} else if (strcmp(argv[0], "get-websettings-recipients") == 0) {
-		ret = showstoreprop(argc, argv, PSETID_Gromox, "websettings_recipienthistory", PT_UNICODE);
-	} else if (strcmp(argv[0], "set-websettings-recipients") == 0) {
-		ret = setstoreprop(argc, argv, PSETID_Gromox, "websettings_recipienthistory", PT_UNICODE);
-	} else if (strcmp(argv[0], "purge-softdelete") == 0) {
-		ret = purgesoftdel::main(argc, argv);
-	} else if (strcmp(argv[0], "set-locale") == 0) {
-		ret = set_locale::main(argc, argv);
-	} else if (strcmp(argv[0], "get-freebusy") == 0 || strcmp(argv[0], "gfb") == 0) {
-		ret = getfreebusy::main(argc, argv);
+			return delstoreprop(argc, argv, PSETID_Gromox, "websettings_recipienthistory", PT_UNICODE);
+		return ret;
 	} else if (strcmp(argv[0], "echo-username") == 0) {
 		printf("%s\n", g_dstuser.c_str());
-		ret = EXIT_SUCCESS;
-	} else {
-		ret = simple_rpc::main(argc, argv);
+		return EXIT_SUCCESS;
 	}
-	return ret;
+	return simple_rpc::main(argc, argv);
 }
 
 }
