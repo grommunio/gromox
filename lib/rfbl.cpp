@@ -1659,6 +1659,30 @@ int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *ss)
 	return -1;
 }
 
+errno_t canonical_hostname(std::string &out) try
+{
+	char buf[UDOM_SIZE];
+	if (gethostname(buf, std::size(buf)) != 0)
+		return errno;
+	if (strchr(buf, '.') != nullptr) {
+		out = buf;
+		return 0;
+	}
+	static constexpr struct addrinfo hints = {AI_CANONNAME};
+	struct addrinfo *aires = nullptr;
+	mlog(LV_DEBUG, "my_hostname: canonicalization of hostname \"%s\"...", buf);
+	auto err = getaddrinfo(buf, nullptr, &hints, &aires);
+	if (err != 0) {
+		mlog(LV_ERR, "getaddrinfo %s: %s", buf, gai_strerror(err));
+		return EINVAL;
+	}
+	auto cl_0 = make_scope_exit([&]() { freeaddrinfo(aires); });
+	out = aires->ai_canonname;
+	return 0;
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try

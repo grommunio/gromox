@@ -3663,12 +3663,13 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 	auto pdsn_fields = dsn.get_message_fields();
 	auto str = pmsg->proplist.get<const char>(PidTagReportingMessageTransferAgent);
 	if (str == nullptr) {
-		char tmp_buff[5+UDOM_SIZE+1];
-		strcpy(tmp_buff, "dns; ");
-		gethostname(tmp_buff + 5, sizeof(tmp_buff) - 5);
-		tmp_buff[std::size(tmp_buff)-1] = '\0';
-		if (!dsn.append_field(pdsn_fields, "Reporting-MTA", tmp_buff))
-			return FALSE;
+		std::string hn;
+		auto ret = canonical_hostname(hn);
+		if (ret == 0) {
+			hn.insert(0, "dsn; ");
+			if (!dsn.append_field(pdsn_fields, "Reporting-MTA", hn))
+				return FALSE;
+		}
 	} else {
 		if (!dsn.append_field(pdsn_fields, "Reporting-MTA", str))
 			return FALSE;

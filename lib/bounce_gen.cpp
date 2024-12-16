@@ -92,22 +92,13 @@ errno_t bounce_gen_init(const char *cfgdir, const char *datadir,
 	}
 	g_bounce_postmaster = str;
 	if (str[strlen(str)-1] == '@') {
-		char buf[UDOM_SIZE];
-		if (gethostname(buf, std::size(buf)) != 0) {
-			mlog(LV_ERR, "gethostname: %s", strerror(errno));
+		std::string hn;
+		auto ret = canonical_hostname(hn);
+		if (ret != 0) {
+			mlog(LV_ERR, "canonical_hostname: %s", strerror(ret));
 			return EINVAL;
 		}
-		static constexpr struct addrinfo hints = {AI_CANONNAME};
-		struct addrinfo *aires = nullptr;
-		mlog(LV_DEBUG, "bounce_gen: group %s: DNS lookup for \"%s\"...",
-			bounce_grp, buf);
-		auto err = getaddrinfo(buf, nullptr, &hints, &aires);
-		if (err != 0) {
-			mlog(LV_ERR, "getaddrinfo %s: %s", buf, gai_strerror(err));
-			return EINVAL;
-		}
-		auto cl_0 = make_scope_exit([&]() { freeaddrinfo(aires); });
-		g_bounce_postmaster += aires->ai_canonname;
+		g_bounce_postmaster += std::move(hn);
 		mlog(LV_INFO, "bounce_gen: postmaster set to <%s>", g_bounce_postmaster.c_str());
 	}
 
