@@ -9,6 +9,7 @@
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
@@ -63,10 +64,10 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	nt_time = rop_util_current_nttime();
 	tmp_level = -1;
 	if (cvt_username_to_essdn(account, g_emsmdb_org_name,
-	    common_util_get_user_ids, common_util_get_domain_ids,
+	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 	    sender_essdn) != ecSuccess)
 		return ecRpcFailed;
-	if (!common_util_get_user_displayname(account, sender_dispname.data(),
+	if (!mysql_adaptor_get_user_displayname(account, sender_dispname.data(),
 	    sender_dispname.size()))
 		return ecRpcFailed;
 	HX_strupper(sender_essdn.data());
@@ -83,9 +84,9 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		repr_essdn = sender_essdn;
 		repr_dispname = sender_dispname;
 	} else if (cvt_username_to_essdn(representing_username,
-	    g_emsmdb_org_name, common_util_get_user_ids,
-	    common_util_get_domain_ids, repr_essdn) == ecSuccess) {
-		if (!common_util_get_user_displayname(representing_username,
+	    g_emsmdb_org_name, mysql_adaptor_get_user_ids,
+	    mysql_adaptor_get_domain_ids, repr_essdn) == ecSuccess) {
+		if (!mysql_adaptor_get_user_displayname(representing_username,
 		    repr_dispname.data(), repr_dispname.size()))
 			return ecRpcFailed;
 		HX_strupper(repr_essdn.data());
@@ -203,7 +204,7 @@ static int oxomsg_test_perm(const char *account, const char *maildir, bool send_
 	}
 	for (const auto &deleg : delegate_list)
 		if (strcasecmp(deleg.c_str(), account) == 0 ||
-		    common_util_check_mlist_include(deleg.c_str(), account))
+		    mysql_adaptor_check_mlist_include(deleg.c_str(), account))
 			return 1;
 	return 0;
 } catch (const std::bad_alloc &) {
@@ -220,7 +221,7 @@ static repr_grant oxomsg_get_perm(const char *account, const char *repr)
 	if (strcasecmp(account, repr) == 0)
 		return repr_grant::send_as;
 	sql_meta_result mres;
-	if (common_util_meta(repr, WANTPRIV_METAONLY, mres) != 0)
+	if (mysql_adaptor_meta(repr, WANTPRIV_METAONLY, mres) != 0)
 		return repr_grant::error;
 	auto repdir = mres.maildir.c_str();
 	auto ret = oxomsg_test_perm(account, repdir, true);

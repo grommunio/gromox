@@ -22,112 +22,88 @@ static constexpr HXoption g_options_table[] = {
 static constexpr static_module g_dfl_svc_plugins[] =
 	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
 
-#define E(name, symbol) \
-	auto fp_ ## name = reinterpret_cast<decltype(&mysql_adaptor_ ## name)>(service_query((symbol), "system", typeid(mysql_adaptor_ ## name))); \
-	if ((fp_ ## name) == nullptr) { \
-		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (symbol)); \
-		return -1; \
-	} \
-	auto cl_ ## name = make_scope_exit([&]() { service_release((symbol), "system"); });
-
 static int t_private()
 {
-	E(meta, "mysql_auth_meta");
 	sql_meta_result mres;
-	auto err = fp_meta(g_username, 0, mres);
+	auto err = mysql_adaptor_meta(g_username, 0, mres);
 	printf("meta: %s\n", err == 0 ? "OK" : strerror(errno));
 
-	E(login2, "mysql_auth_login2");
 	auto pass = znul(getenv("PASS"));
 	std::string errstr;
-	if (fp_login2(g_username, pass, mres.enc_passwd, errstr))
+	if (mysql_adaptor_login2(g_username, pass, mres.enc_passwd, errstr))
 		printf("login2: OK\n");
 	else
 		printf("login2: %s\n", errstr.c_str());
 
-	E(setpasswd, "set_password");
-	printf("setpasswd: %s\n", fp_setpasswd(g_username, pass, pass) ? "OK" : "failed");
+	printf("setpasswd: %s\n", mysql_adaptor_setpasswd(g_username, pass, pass) ? "OK" : "failed");
 
-	E(get_username_from_id, "get_username_from_id");
 	char buf[UADDR_SIZE];
-	if (!fp_get_username_from_id(mres.user_id, buf, std::size(buf)))
+	if (!mysql_adaptor_get_username_from_id(mres.user_id, buf, std::size(buf)))
 		printf("get_username_from_id: failed\n");
 	else
 		printf("get_username_from_id: OK %s\n", buf);
 
-	E(get_id_from_maildir, "get_id_from_maildir");
 	unsigned int id = 0;
-	if (!fp_get_id_from_maildir(mres.maildir.c_str(), &id))
+	if (!mysql_adaptor_get_id_from_maildir(mres.maildir.c_str(), &id))
 		printf("get_id_from_maildir: failed\n");
 	else if (id != mres.user_id)
 		printf("get_id_from_maildir: userid switch %u->%u\n", mres.user_id, id);
 	else
 		printf("get_id_from_maildir: OK\n");
 
-	E(get_user_ids, "get_user_ids");
 	unsigned int orgid = 0;
 	enum display_type dtypx{};
-	if (!fp_get_user_ids(g_username, &id, &orgid, &dtypx))
+	if (!mysql_adaptor_get_user_ids(g_username, &id, &orgid, &dtypx))
 		printf("get_user_ids: failed\n");
 	else if (id != mres.user_id)
 		printf("get_user_ids: exp %u got %u\n", mres.user_id, id);
 	else
 		printf("get_user_ids: OK\n");
 
-	E(get_user_displayname, "get_user_displayname");
-	if (fp_get_user_displayname(g_username, buf, std::size(buf)))
+	if (mysql_adaptor_get_user_displayname(g_username, buf, std::size(buf)))
 		printf("get_user_displayname: OK %s\n", buf);
 	else
 		printf("get_user_displayname: failed\n");
 
-	E(get_user_privilege_bits, "get_user_privilege_bits");
 	uint32_t priv = 0;
-	if (fp_get_user_privilege_bits(g_username, &priv))
+	if (mysql_adaptor_get_user_privilege_bits(g_username, &priv))
 		printf("get_user_priv: OK 0x%x\n", priv);
 	else
 		printf("get_user_priv: failed\n");
 
-	E(set_user_lang, "set_user_lang");
-	printf("set_user_lang: %s\n", fp_set_user_lang(g_username, "en") ? "OK" : "failed");
+	printf("set_user_lang: %s\n", mysql_adaptor_set_user_lang(g_username, "en") ? "OK" : "failed");
 
-	E(set_timezone, "set_timezone");
-	printf("set_timezone: %s\n", fp_set_timezone(g_username, GROMOX_FALLBACK_TIMEZONE) ? "OK" : "failed");
+	printf("set_timezone: %s\n", mysql_adaptor_set_timezone(g_username, GROMOX_FALLBACK_TIMEZONE) ? "OK" : "failed");
 
-	E(check_mlist_include, "check_mlist_include");
-	printf("check_mlist_include: %s\n", fp_check_mlist_include(g_username, g_username) ? "self-ref" : "not incl");
+	printf("check_mlist_include: %s\n", mysql_adaptor_check_mlist_include(g_username, g_username) ? "self-ref" : "not incl");
 
-	E(get_mlist_memb, "get_mlist_memb");
 	int result = 0;
 	std::vector<std::string> vs;
-	if (!fp_get_mlist_memb(g_username, g_username, &result, vs))
+	if (!mysql_adaptor_get_mlist_memb(g_username, g_username, &result, vs))
 		printf("get_mlist_memb: failed\n");
 	else
 		printf("get_mlist_memb: OK (result code %u) (%zu entries)\n", result, vs.size());
 
-	E(get_user_aliases, "get_user_aliases");
-	if (!fp_get_user_aliases(g_username, vs))
+	if (!mysql_adaptor_get_user_aliases(g_username, vs))
 		printf("get_user_aliases: failed\n");
 	else
 		printf("get_user_aliases: OK (%zu aliases)\n", vs.size());
 
-	E(get_user_properties, "get_user_properties");
 	TPROPVAL_ARRAY tpa{};
-	if (!fp_get_user_properties(g_username, tpa))
+	if (!mysql_adaptor_get_user_properties(g_username, tpa))
 		printf("get_user_properties: failed\n");
 	else
 		printf("get_user_properties: OK (%u props)\n", tpa.count);
 
-	E(scndstore_hints, "scndstore_hints");
 	std::vector<sql_user> vu;
-	err = fp_scndstore_hints(mres.user_id, vu);
+	err = mysql_adaptor_scndstore_hints(mres.user_id, vu);
 	if (err != 0)
 		printf("scndstore_hints: %s\n", strerror(err));
 	else
 		printf("scndstore_hints: OK (%zu stores)\n", vu.size());
 
-	E(get_homeserver, "get_homeserver");
 	std::pair<std::string, std::string> pairing;
-	err = fp_get_homeserver(g_username, true, pairing);
+	err = mysql_adaptor_get_homeserver(g_username, true, pairing);
 	if (err != 0)
 		printf("get_homeserver: %s\n", strerror(err));
 	else
@@ -141,73 +117,61 @@ static int t_public()
 {
 	char buf[UDOM_SIZE];
 
-	E(get_homedir, "get_homedir");
-	if (!fp_get_homedir(g_domain, buf, std::size(buf)))
+	if (!mysql_adaptor_get_homedir(g_domain, buf, std::size(buf)))
 		printf("get_homedir: failed\n");
 	else
 		printf("get_homedir: OK %s\n", buf);
 
-	E(get_domain_ids, "get_domain_ids");
 	unsigned int domid = 0, orgid = 0;
-	if (!fp_get_domain_ids(g_domain, &domid, &orgid))
+	if (!mysql_adaptor_get_domain_ids(g_domain, &domid, &orgid))
 		printf("get_domain_ids: failed\n");
 	else
 		printf("get_domain_ids: OK %u\n", domid);
 
-	E(get_homedir_by_id, "get_homedir_by_id");
-	if (!fp_get_homedir_by_id(domid, buf, std::size(buf)))
+	if (!mysql_adaptor_get_homedir_by_id(domid, buf, std::size(buf)))
 		printf("get_homedir_by_id: failed\n");
 	else
 		printf("get_homedir_by_id: OK %s\n", buf);
 
-	E(get_id_from_homedir, "get_id_from_homedir");
 	unsigned int id = 0;
-	if (!fp_get_id_from_homedir(buf, &id))
+	if (!mysql_adaptor_get_id_from_homedir(buf, &id))
 		printf("get_id_from_homedir: failed\n");
 	else if (id != domid)
 		printf("get_id_from_homedir: exp %u got %u\n", domid, id);
 	else
 		printf("get_id_from_homedir: OK\n");
 
-	E(get_org_domains, "get_org_domains");
 	std::vector<unsigned int> vi;
-	if (!fp_get_org_domains(orgid, vi))
+	if (!mysql_adaptor_get_org_domains(orgid, vi))
 		printf("get_org_domains: failed\n");
 	else
 		printf("get_org_domains: OK (%zu domains)\n", vi.size());
 
-	E(get_domain_info, "get_domain_info");
 	sql_domain dominfo;
-	printf("get_domain_info: %s\n", fp_get_domain_info(domid, dominfo) ? "OK" : "failed");
+	printf("get_domain_info: %s\n", mysql_adaptor_get_domain_info(domid, dominfo) ? "OK" : "failed");
 
-	E(check_same_org, "check_same_org");
-	printf("check_same_org: %s\n", fp_check_same_org(orgid, orgid) ? "OK" : "failed");
+	printf("check_same_org: %s\n", mysql_adaptor_check_same_org(orgid, orgid) ? "OK" : "failed");
 
-	E(get_domain_groups, "get_domain_groups");
 	std::vector<sql_group> vg;
-	if (!fp_get_domain_groups(domid, vg))
+	if (!mysql_adaptor_get_domain_groups(domid, vg))
 		printf("get_domain_groups: failed\n");
 	else
 		printf("get_domain_groups: OK (%zu groupd)\n", vg.size());
 
-	E(get_group_users, "get_group_users");
 	std::vector<sql_user> vu;
-	if (!fp_get_group_users(1, vu))
+	if (!mysql_adaptor_get_group_users(1, vu))
 		printf("get_group_users (grp 1): failed\n");
 	else
 		printf("get_group_users (grp 1): OK (%zu users)\n", vu.size());
 
-	E(get_domain_users, "get_domain_users");
-	if (!fp_get_domain_users(domid, vu))
+	if (!mysql_adaptor_get_domain_users(domid, vu))
 		printf("get_domain_users: failed\n");
 	else
 		printf("get_domain_users: OK (%zu users)\n", vu.size());
 
-	E(check_same_org2, "check_same_org2");
-	printf("check_same_org2: %s\n", fp_check_same_org2(g_domain, g_domain) ? "OK" : "failed");
+	printf("check_same_org2: %s\n", mysql_adaptor_check_same_org2(g_domain, g_domain) ? "OK" : "failed");
 
-	E(domain_list_query, "domain_list_query"); // "is locally handled?"
-	printf("domain_list_query: %s\n", fp_domain_list_query(g_domain) ? "OK" : "no");
+	printf("domain_list_query: %s\n", mysql_adaptor_domain_list_query(g_domain) ? "OK" : "no");
 	return -1;
 }
 /*

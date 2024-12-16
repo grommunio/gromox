@@ -26,6 +26,7 @@
 #include <gromox/json.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
@@ -44,11 +45,6 @@ static thread_local const char *g_storedir;
 static char g_default_charset[32];
 static std::atomic<int> g_sequence_id;
 
-int (*exmdb_local_check_domain)(const char *domainname);
-
-decltype(exmdb_local_meta) exmdb_local_meta;
-BOOL (*exmdb_local_check_same_org2)(
-	const char *domainname1, const char *domainname2);
 static GET_USER_IDS exmdb_local_get_user_ids;
 static GET_DOMAIN_IDS exmdb_local_get_domain_ids;
 static BOOL (*exmdb_local_get_username)(unsigned int, char *, size_t);
@@ -81,9 +77,6 @@ int exmdb_local_run() try
 	} \
 } while (false)
 
-	E(exmdb_local_check_domain, "domain_list_query");
-	E(exmdb_local_meta, "mysql_auth_meta");
-	E(exmdb_local_check_same_org2, "check_same_org2");
 	E(exmdb_local_get_user_ids, "get_user_ids");
 	E(exmdb_local_get_domain_ids, "get_domain_ids");
 	E(exmdb_local_get_username, "get_username_from_id");
@@ -118,7 +111,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			continue;
 		}
 		pdomain ++;
-		auto lcldom = exmdb_local_check_domain(pdomain);
+		auto lcldom = mysql_adaptor_domain_list_query(pdomain);
 		if (lcldom < 0)
 			continue;
 		if (lcldom == 0) {
@@ -291,7 +284,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	BOOL b_bounce_delivered = false;
 	sql_meta_result mres{};
 
-	if (exmdb_local_meta(address, WANTPRIV_METAONLY, mres) != 0) {
+	if (mysql_adaptor_meta(address, WANTPRIV_METAONLY, mres) != 0) {
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail"
 			"to get user information from data source!");
 		return delivery_status::temp_fail;

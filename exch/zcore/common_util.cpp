@@ -31,6 +31,7 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/process.hpp>
@@ -204,7 +205,7 @@ repr_grant cu_get_delegate_perm_AA(const char *account, const char *repr)
 	if (strcasecmp(account, repr) == 0)
 		return repr_grant::send_as;
 	sql_meta_result mres;
-	if (system_services_meta(repr, WANTPRIV_METAONLY, mres) != 0)
+	if (mysql_adaptor_meta(repr, WANTPRIV_METAONLY, mres) != 0)
 		return repr_grant::error;
 	return cu_get_delegate_perm_MD(account, mres.maildir.c_str());
 }
@@ -336,8 +337,8 @@ void common_util_init(const char *org_name, const char *default_charset,
 
 int common_util_run(const char *data_path)
 {
-	if (!oxcmail_init_library(g_org_name, system_services_get_user_ids,
-	    system_services_get_domain_ids, system_services_get_username_from_id)) {
+	if (!oxcmail_init_library(g_org_name, mysql_adaptor_get_user_ids,
+	    mysql_adaptor_get_domain_ids, mysql_adaptor_get_username_from_id)) {
 		mlog(LV_ERR, "common_util: failed to init oxcmail library");
 		return -2;
 	}
@@ -630,7 +631,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	std::string eidbuf;
 	
 	if (cvt_username_to_abkeid(username, g_org_name, DT_MAILUSER,
-	    system_services_get_user_ids, system_services_get_domain_ids,
+	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 	    eidbuf) != ecSuccess)
 		return NULL;
 	auto pbin = cu_alloc<BINARY>();
@@ -674,7 +675,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 	ONEOFF_ENTRYID oneoff_entry;
 	enum display_type dtypx = DT_MAILUSER;
 	
-	if (system_services_get_user_ids(username, &user_id, &domain_id, &dtypx)) {
+	if (mysql_adaptor_get_user_ids(username, &user_id, &domain_id, &dtypx)) {
 		gx_strlcpy(tmp_name, username, std::size(tmp_name));
 		pdomain = strchr(tmp_name, '@');
 		if (pdomain == nullptr)
@@ -1353,8 +1354,8 @@ void common_util_notify_receipt(const char *username, int type,
 	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	vmime::shared_ptr<vmime::message> imail;
-	if (!exch_bouncer_make(system_services_get_user_displayname,
-	    system_services_meta, username, pbrief, bounce_type, imail))
+	if (!exch_bouncer_make(mysql_adaptor_get_user_displayname,
+	    mysql_adaptor_meta, username, pbrief, bounce_type, imail))
 		return;
 	imail->getHeader()->getField("X-Mailer")->setValue(vmime::text(ZCORE_UA));
 	auto ret = cu_send_vmail(std::move(imail), g_smtp_url.c_str(),
@@ -1464,7 +1465,7 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 		store_entryid.wrapped_provider_uid = g_muidStorePrivate;
 		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
 		if (cvt_username_to_essdn(pstore->get_account(), g_org_name,
-		    system_services_get_user_ids, system_services_get_domain_ids,
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn) != ecSuccess)
 			return NULL;	
 	} else {
@@ -1472,7 +1473,7 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_PUBLIC;
 		auto pinfo = zs_get_info();
 		if (cvt_username_to_essdn(pinfo->get_username(), g_org_name,
-		    system_services_get_user_ids, system_services_get_domain_ids,
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn) != ecSuccess)
 			return NULL;	
 	}
@@ -1894,7 +1895,7 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 	else
 		strcpy(charset, g_default_charset);
 	sql_meta_result mres;
-	auto tmzone = system_services_meta(pinfo->get_username(),
+	auto tmzone = mysql_adaptor_meta(pinfo->get_username(),
 	              WANTPRIV_METAONLY, mres) == 0 ?
 	              mres.timezone.c_str() : nullptr;
 	if (*znul(tmzone) == '\0')
@@ -1942,7 +1943,7 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 	ical ical;
 	auto pinfo = zs_get_info();
 	sql_meta_result mres;
-	auto tmzone = system_services_meta(pinfo->get_username(),
+	auto tmzone = mysql_adaptor_meta(pinfo->get_username(),
 	              WANTPRIV_METAONLY, mres) == 0 ?
 	              mres.timezone.c_str() : nullptr;
 	if (*znul(tmzone) == '\0')
@@ -1967,7 +1968,7 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 {
 	auto info = zs_get_info();
 	sql_meta_result mres;
-	auto tmzone = system_services_meta(info->get_username(),
+	auto tmzone = mysql_adaptor_meta(info->get_username(),
 	              WANTPRIV_METAONLY, mres) == 0 ?
 	              mres.timezone.c_str() : nullptr;
 	if (*znul(tmzone) == '\0')
@@ -2112,7 +2113,7 @@ errno_t cu_write_storenamedprop(const char *dir, const GUID &guid,
 ec_error_t cu_id2user(int id, std::string &user) try
 {
 	char ubuf[UADDR_SIZE];
-	if (!system_services_get_username_from_id(id, ubuf, std::size(ubuf)))
+	if (!mysql_adaptor_get_username_from_id(id, ubuf, std::size(ubuf)))
 		return ecError;
 	user = ubuf;
 	return ecSuccess;

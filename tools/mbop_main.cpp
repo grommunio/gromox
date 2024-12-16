@@ -417,14 +417,7 @@ static int main(int argc, char **argv)
 		fprintf(stderr, "service_run: failed\n");
 		return EXIT_FAILURE;
 	}
-	decltype(mysql_adaptor_set_user_lang) *sul;
-	sul = reinterpret_cast<decltype(sul)>(service_query("set_user_lang", "system", typeid(*sul)));
-	if (sul == nullptr) {
-		fprintf(stderr, "no set_user_lang function in mysql_adaptor\n");
-		return EXIT_FAILURE;
-	}
-	auto cl_1 = make_scope_exit([]() { service_release("set_user_lang", "system"); });
-	if (!sul(g_dstuser.c_str(), g_language)) {
+	if (!mysql_adaptor_set_user_lang(g_dstuser.c_str(), g_language)) {
 		fprintf(stderr, "Update of UI language rejected\n");
 		return EXIT_FAILURE;
 	}

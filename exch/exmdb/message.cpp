@@ -32,6 +32,7 @@
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
@@ -1655,7 +1656,7 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 		cid_string[32] = '@';
 		cid_string[33] = '\0';
 		char account[UDOM_SIZE]{};
-		if (!common_util_get_username_from_id(exmdb_server::get_account_id(),
+		if (!mysql_adaptor_get_username_from_id(exmdb_server::get_account_id(),
 		    account, std::size(account)))
 			gx_strlcpy(account, "localhost", std::size(account));
 		const char *pc = strchr(account, '@'); /* CONST-STRCHR-MARKER */
@@ -3080,7 +3081,7 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
 		auto err = cvt_username_to_essdn(rp.ev_to, g_exmdb_org_name,
-		           common_util_get_user_ids, common_util_get_domain_ids,
+		           mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		           essdn_buff);
 		if (err != ecSuccess)
 			return err;
@@ -3092,7 +3093,7 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ENTRYID, pvalue);
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ADDRTYPE, "EX");
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, &essdn_buff[3]);
-		if (common_util_get_user_displayname(rp.ev_to, display_name,
+		if (mysql_adaptor_get_user_displayname(rp.ev_to, display_name,
 		    std::size(display_name)))
 			cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_NAME, display_name);
 		searchkey_bin.cb = essdn_buff.size() + 1;
@@ -3110,7 +3111,7 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 		 exmdb_server::get_dir(), mid_string1);
 	for (const auto &eaddr : rcpt_list) {
 		sql_meta_result mres;
-		if (common_util_meta(eaddr.c_str(), WANTPRIV_METAONLY, mres) != 0)
+		if (mysql_adaptor_meta(eaddr.c_str(), WANTPRIV_METAONLY, mres) != 0)
 			continue;
 		auto maildir = mres.maildir.c_str();
 		if (*maildir == '\0') {
@@ -3381,7 +3382,7 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
 		auto err = cvt_username_to_essdn(rp.ev_to, g_exmdb_org_name,
-		           common_util_get_user_ids, common_util_get_domain_ids,
+		           mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		           essdn_buff);
 		if (err != ecSuccess)
 			return err;
@@ -3393,7 +3394,7 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ENTRYID, pvalue);
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ADDRTYPE, "EX");
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, &essdn_buff[3]);
-		if (common_util_get_user_displayname(rp.ev_to, display_name,
+		if (mysql_adaptor_get_user_displayname(rp.ev_to, display_name,
 		    std::size(display_name)))
 			cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_NAME, display_name);
 		searchkey_bin.cb = essdn_buff.size() + 1;
@@ -3411,7 +3412,7 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 	         exmdb_server::get_dir(), mid_string1);
 	for (const auto &eaddr : rcpt_list) {
 		sql_meta_result mres;
-		if (common_util_meta(eaddr.c_str(), WANTPRIV_METAONLY, mres) != 0)
+		if (mysql_adaptor_meta(eaddr.c_str(), WANTPRIV_METAONLY, mres) != 0)
 			continue;
 		auto maildir = mres.maildir.c_str();
 		auto mid_string = std::to_string(time(nullptr)) + "." +
@@ -3636,12 +3637,12 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	char mid_string[128], display_name[1024], account[UDOM_SIZE];
 
 	if (exmdb_server::is_private()) {
-		if (!common_util_get_username_from_id(exmdb_server::get_account_id(),
+		if (!mysql_adaptor_get_username_from_id(exmdb_server::get_account_id(),
 		    account, std::size(account)))
 			return false;
 	} else {
 		sql_domain dinfo;
-		if (!common_util_get_domain_info(exmdb_server::get_account_id(), dinfo))
+		if (!mysql_adaptor_get_domain_info(exmdb_server::get_account_id(), dinfo))
 			return false;
 		gx_strlcpy(account, dinfo.name.c_str(), std::size(account));
 	}
@@ -3682,7 +3683,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		if (pentryid == nullptr)
 			return FALSE;	
 		if (cvt_username_to_essdn(account, g_exmdb_org_name,
-		    common_util_get_user_ids, common_util_get_domain_ids,
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn_buff) != ecSuccess)
 			return FALSE;
 		HX_strupper(essdn_buff.data());
@@ -3690,7 +3691,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_ENTRYID, pentryid);
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_ADDRTYPE, "EX");
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_EMAIL_ADDRESS, &essdn_buff[3]);
-		if (common_util_get_user_displayname(account, display_name,
+		if (mysql_adaptor_get_user_displayname(account, display_name,
 		    std::size(display_name)))
 			cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_NAME, display_name);
 		else
@@ -3946,7 +3947,7 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 	}
 	seen_list seen{{fid_val}};
 	char account[UDOM_SIZE];
-	if (!common_util_get_username_from_id(exmdb_server::get_account_id(),
+	if (!mysql_adaptor_get_username_from_id(exmdb_server::get_account_id(),
 	    account, std::size(account)))
 		return false;
 	auto ec = message_rule_new_message({ENVELOPE_FROM_NULL, account, cpid, false,

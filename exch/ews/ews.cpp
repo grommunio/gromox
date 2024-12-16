@@ -422,30 +422,6 @@ EWSPlugin::EWSPlugin()
 EWSPlugin::~EWSPlugin()
 {teardown = true;}
 
-/**
- * @brief      Initialize mysql adaptor function pointers
- */
-EWSPlugin::_mysql::_mysql()
-{
-#define getService(f) \
-	if (query_service2(# f, f) == nullptr) \
-		throw std::runtime_error("[ews]: failed to get the \""# f"\" service")
-
-	getService(get_domain_ids);
-	getService(get_domain_info);
-	getService(get_homedir);
-	getService(get_id_from_homedir);
-	getService(get_id_from_maildir);
-	getService(get_user_aliases);
-	getService(get_user_displayname);
-	getService(get_user_ids);
-	getService(get_user_properties);
-	getService(get_username_from_id);
-	if (query_service2("mysql_auth_meta", meta) == nullptr)
-		throw std::runtime_error("[ews]: failed to get the \"mysql_auth_meta\" service");
-#undef getService
-}
-
 EWSPlugin::_exmdb::_exmdb()
 {
 #define EXMIDL(n, p) do { \

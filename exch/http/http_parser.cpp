@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 /* http parser is a module, which first read data from socket, parses rpc over http and
    relay the stream to pdu processor. it also process other http request
@@ -49,6 +49,7 @@
 #include <gromox/hpm_common.h>
 #include <gromox/http.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
@@ -820,7 +821,7 @@ static void ntlm_stop(struct HXproc &pi)
 static int htp_auth_finalize(http_context &ctx, const char *user)
 {
 	sql_meta_result mres;
-	auto err = system_services_auth_meta(user, 0, mres);
+	auto err = mysql_adaptor_meta(user, 0, mres);
 	if (err != 0) {
 		mlog(LV_DEBUG, "ntlm/krb auth success on \"%s\", but not found in Gromox", user);
 		return 0;

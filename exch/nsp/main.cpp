@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -139,10 +141,6 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 			return FALSE;
 		}
 		nsp_interface_init(b_check);
-		if (0 != nsp_interface_run()) {
-			mlog(LV_ERR, "nsp: failed to run nsp interface");
-			return FALSE;
-		}
 		return TRUE;
 	}
 	case PLUGIN_FREE:

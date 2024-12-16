@@ -9,6 +9,7 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
@@ -54,7 +55,6 @@ static pack_result exchange_rfr_ndr_pull(int op, NDR_PULL *, void **in);
 static int exchange_rfr_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
 static pack_result exchange_rfr_ndr_push(int op, NDR_PUSH *, void *out);
 
-static BOOL (*get_user_ids)(const char *, unsigned int *, unsigned int *, enum display_type *);
 static DCERPC_ENDPOINT *ep_6001, *ep_6002;
 
 static constexpr DCERPC_INTERFACE interface = {
@@ -75,11 +75,6 @@ BOOL PROC_exchange_rfr(enum plugin_op reason, const struct dlfuncs &ppdata)
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_PROC_API(ppdata);
-		query_service1(get_user_ids);
-		if (get_user_ids == nullptr) {
-			mlog(LV_ERR, "rfr: failed to get service \"get_user_ids\"");
-			return FALSE;
-		}
 		ep_6001 = register_endpoint("*", 6001);
 		if (ep_6001 == nullptr) {
 			mlog(LV_ERR, "rfr: failed to register endpoint with port 6001");
@@ -111,7 +106,7 @@ static ec_error_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 	
 	auto rpc_info = get_rpc_info();
 	unsigned int user_id = 0;
-	if (!get_user_ids(rpc_info.username, &user_id, nullptr, nullptr))
+	if (!mysql_adaptor_get_user_ids(rpc_info.username, &user_id, nullptr, nullptr))
 		return ecError;
 	memset(username, 0, sizeof(username));
 	gx_strlcpy(username, rpc_info.username, std::size(username));

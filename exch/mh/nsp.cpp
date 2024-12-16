@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <csignal>
@@ -23,6 +23,7 @@
 #include <gromox/cookie_parser.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/hpm_common.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/process.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
@@ -104,8 +105,6 @@ enum ReqIndex : size_t
 };
 
 static constexpr int AVERAGE_SESSION_PER_CONTEXT = 10;
-
-static BOOL (*get_user_ids)(const char *, unsigned int *, unsigned int *, enum display_type *);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -227,8 +226,6 @@ static constexpr struct cfg_directive mhnsp_gxcfg_deflt[] = {
 MhNspPlugin::MhNspPlugin(const struct dlfuncs &ppdata)
 {
 	LINK_HPM_API(ppdata)
-	if (!query_service1(get_user_ids))
-		throw std::runtime_error("[mh_nsp]: failed to get \"get_user_ids\" service\n");
 	if (!query_service1(nsp_interface_bind) ||
 	    !query_service1(nsp_interface_compare_mids) ||
 	    !query_service1(nsp_interface_dntomid) ||
@@ -393,7 +390,7 @@ ec_error_t MhNspContext::getaddressbookurl(std::string *dest) try
 
 	if (dest == nullptr)
 		dest = &std::get<getaddressbookurl_response>(response).server_url;
-	get_user_ids(auth_info.username, &user_id, nullptr, nullptr);
+	mysql_adaptor_get_user_ids(auth_info.username, &user_id, nullptr, nullptr);
 	memset(username1, 0, std::size(username1));
 	gx_strlcpy(username1, auth_info.username, std::size(username1));
 	auto token = strchr(username1, '@');

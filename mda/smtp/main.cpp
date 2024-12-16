@@ -42,10 +42,6 @@
 
 using namespace gromox;
 
-#define E(s) decltype(system_services_ ## s) system_services_ ## s;
-E(meta)
-#undef E
-
 gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 std::string g_rcpt_delimiter;
@@ -125,26 +121,6 @@ static bool dq_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
 	if (g_haproxy_level > 0)
 		mlog(LV_NOTICE, "All incoming connections must be HAPROXY type %u", g_haproxy_level);
 	return true;
-}
-
-static int system_services_run()
-{
-#define E(f, s) do { \
-	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(decltype(*(f))))); \
-	if ((f) == nullptr) { \
-		mlog(LV_ERR, "system_services: failed to get the \"%s\" service", (s)); \
-		return -1; \
-	} \
-} while (false)
-
-	E(system_services_meta, "mysql_auth_meta");
-	return 0;
-#undef E
-}
-
-static void system_services_stop()
-{
-	service_release("mysql_auth_meta", "system");
 }
 
 static void *smls_thrwork(void *arg)
@@ -450,12 +426,6 @@ int main(int argc, char **argv)
 	
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
-	if (0 != system_services_run()) { 
-		mlog(LV_ERR, "system: failed to start system service");
-		return EXIT_FAILURE;
-	}
-	auto cleanup_8 = make_scope_exit(system_services_stop);
-
 	smtp_parser_init(scfg);
 	if (0 != smtp_parser_run()) { 
 		mlog(LV_ERR, "system: failed to start SMTP parser");

@@ -41,6 +41,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/midb.hpp>
 #include <gromox/mjson.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
@@ -2013,8 +2014,8 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 		try {
 			unsigned int user_id = 0;
 			pidb->username.resize(UADDR_SIZE);
-			if (!system_services_get_id_from_maildir(path, &user_id) ||
-			    !system_services_get_username_from_id(user_id, pidb->username.data(), pidb->username.size())) {
+			if (!mysql_adaptor_get_id_from_maildir(path, &user_id) ||
+			    !mysql_adaptor_get_username_from_id(user_id, pidb->username.data(), pidb->username.size())) {
 				g_hash_table.erase(xp.first);
 				mlog(LV_ERR, "E-2400: user for path %s not found", path);
 				return {};
@@ -2235,10 +2236,10 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	else if (folder_id == PRIVATE_FID_DRAFT)
 		b_unsent = true;
 	unsigned int user_id = 0;
-	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
+	if (!mysql_adaptor_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
 	sql_meta_result mres;
-	auto mret = system_services_meta(pidb->username.c_str(),
+	auto mret = mysql_adaptor_meta(pidb->username.c_str(),
 	            WANTPRIV_METAONLY, mres);
 	auto charset = mret == 0 ? lang_to_charset(mres.lang.c_str()) : nullptr;
 	if (*znul(charset) == '\0')
@@ -2336,7 +2337,7 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
 	unsigned int user_id = 0;
-	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
+	if (!mysql_adaptor_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT message_id,"
 	             " folder_id FROM messages WHERE mid_string=?");
@@ -2452,7 +2453,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
 	unsigned int user_id = 0;
-	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
+	if (!mysql_adaptor_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id,"
 	             " parent_fid FROM folders WHERE name=? COLLATE NOCASE");
@@ -2551,7 +2552,7 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
 	unsigned int user_id = 0;
-	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
+	if (!mysql_adaptor_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
 	auto decoded_name = base64_decode(argv[2]);
 	if (decoded_name.empty())
@@ -4064,8 +4065,8 @@ int mail_engine_run()
 	if (sqlite3_config(SQLITE_CONFIG_MEMSTATUS, 0) != SQLITE_OK)
 		mlog(LV_WARN, "mail_engine: failed to close"
 			" memory statistic for sqlite engine");
-	if (!oxcmail_init_library(g_org_name, system_services_get_user_ids,
-	    system_services_get_domain_ids, system_services_get_username_from_id)) {
+	if (!oxcmail_init_library(g_org_name, mysql_adaptor_get_user_ids,
+	    mysql_adaptor_get_domain_ids, mysql_adaptor_get_username_from_id)) {
 		mlog(LV_ERR, "mail_engine: failed to init oxcmail library");
 		return -1;
 	}

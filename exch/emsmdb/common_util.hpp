@@ -7,7 +7,6 @@
 #include <vector>
 #include <vmime/message.hpp>
 #include <gromox/mapi_types.hpp>
-#include <gromox/mysql_adaptor.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #define NOTIFY_RECEIPT_READ							1
@@ -92,20 +91,6 @@ extern ec_error_t cu_send_message(logon_object *, message_object *, bool submit)
 extern ec_error_t cu_id2user(int, std::string &);
 extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, message_content *, const char *bounce_type, MAIL *);
 
-#define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
-E(check_mlist_include)
-E(check_same_org)
-E(get_domain_ids)
-E(get_homedir)
-E(get_homedir_by_id)
-E(get_id_from_homedir)
-E(get_id_from_maildir)
-E(get_homedir)
-E(get_user_displayname)
-E(get_user_ids)
-E(meta)
-E(get_username_from_id)
-#undef E
 extern int (*common_util_add_timer)(const char *command, int interval);
 extern BOOL (*common_util_cancel_timer)(int timer_id);
 

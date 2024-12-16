@@ -2,7 +2,6 @@
 #include <ctime>
 #include <gromox/common_types.hpp>
 #include <gromox/hook_common.h>
-#include <gromox/mysql_adaptor.hpp>
 
 enum class delivery_status {
 	ok, no_user, mailbox_full, perm_fail, temp_fail, bounce_sent,
@@ -16,10 +15,6 @@ extern void bounce_audit_init(int audit_num, int audit_interval);
 extern BOOL bounce_audit_check(const char *audit_string);
 
 extern bool exml_bouncer_make(const char *from, const char *rcpt, MAIL *orig, time_t orig_time, const char *bounce_type, MAIL *cur);
-
-extern int (*exmdb_local_check_domain)(const char *domainname);
-extern decltype(mysql_adaptor_meta) *exmdb_local_meta;
-extern BOOL (*exmdb_local_check_same_org2)(const char *domainname1, const char *domainname2);
 
 extern void cache_queue_init(const char *path, int scan_interval, int retrying_times);
 extern int cache_queue_run();

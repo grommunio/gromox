@@ -25,6 +25,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/msgchg_grouping.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
@@ -612,7 +613,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;
 		if (!pstore->b_private)
 			snprintf(dispname, dsize, "Public Folders - %s", pstore->account);
-		else if (!system_services_get_user_displayname(pstore->account,
+		else if (!mysql_adaptor_get_user_displayname(pstore->account,
 		    dispname, dsize))
 			gx_strlcpy(dispname, pstore->account, dsize);
 		return TRUE;
@@ -625,7 +626,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		*ppvalue = dispname;
 		if (*ppvalue == nullptr)
 			return FALSE;
-		if (!system_services_get_user_displayname(pstore->account,
+		if (!mysql_adaptor_get_user_displayname(pstore->account,
 		    dispname, dsize))
 			return FALSE;	
 		auto temp_len = strlen(dispname);
@@ -698,8 +699,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		std::string essdn;
 		if (cvt_username_to_essdn(pstore->b_private ? pstore->account :
 		    account_to_domain(pstore->account), g_org_name,
-		    system_services_get_user_ids,
-		    system_services_get_domain_ids, essdn) != ecSuccess)
+		    mysql_adaptor_get_user_ids,
+		    mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
 			return FALSE;
 		auto tstr = cu_alloc<char>(essdn.size() + 1);
 		*ppvalue = tstr;
@@ -726,7 +727,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_MAILBOX_OWNER_NAME: {
 		if (!pstore->b_private)
 			return FALSE;
-		if (!system_services_get_user_displayname(pstore->account,
+		if (!mysql_adaptor_get_user_displayname(pstore->account,
 		    temp_buff, std::size(temp_buff)))
 			return FALSE;	
 		if ('\0' == temp_buff[0]) {
@@ -959,7 +960,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (!pstore->b_private)
 			return FALSE;
 		sql_meta_result mres;
-		if (system_services_meta(pstore->account, WANTPRIV_METAONLY, mres) != 0)
+		if (mysql_adaptor_meta(pstore->account, WANTPRIV_METAONLY, mres) != 0)
 			return FALSE;	
 		if (mres.lang.size() > 0)
 			mres.lang += ".UTF-8";
@@ -970,7 +971,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (!pstore->b_private)
 			return FALSE;
 		sql_meta_result mres;
-		auto tmzone = system_services_meta(pstore->account, WANTPRIV_METAONLY, mres) == 0 ?
+		auto tmzone = mysql_adaptor_meta(pstore->account, WANTPRIV_METAONLY, mres) == 0 ?
 		              mres.timezone.c_str() : nullptr;
 		if (*znul(tmzone) == '\0') {
 			*ppvalue = deconst(common_util_get_default_timezone());
@@ -1295,7 +1296,7 @@ static void set_store_lang(store_object *store, const char *locale)
 	p = strchr(mloc, '@');
 	if (p != nullptr)
 		*p = '\0';
-	system_services_set_user_lang(store->account, mloc);
+	mysql_adaptor_set_user_lang(store->account, mloc);
 }
 
 /*
@@ -1329,7 +1330,7 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 			continue;
 		case PR_EC_USER_TIMEZONE:
 			if (pstore->b_private)
-				system_services_set_timezone(pstore->account,
+				mysql_adaptor_set_timezone(pstore->account,
 					static_cast<char *>(pv.pvalue));
 			continue;
 		case PR_EMS_AB_THUMBNAIL_PHOTO: {

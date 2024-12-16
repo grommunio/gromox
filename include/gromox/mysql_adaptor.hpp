@@ -97,40 +97,37 @@ struct sql_class {
 	std::string name;
 };
 
-extern void mysql_adaptor_init(mysql_adaptor_init_param &&);
-extern int mysql_adaptor_run();
-extern void mysql_adaptor_stop();
-extern gromox::errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv, sql_meta_result &out);
-extern BOOL mysql_adaptor_login2(const char *username, const char *password, const std::string &enc_passwd, std::string &errstr);
-BOOL mysql_adaptor_setpasswd(const char *username,
-	const char *password, const char *new_password);
-extern BOOL mysql_adaptor_get_username_from_id(unsigned int user_id, char *username, size_t);
-extern BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *user_id);
-extern bool mysql_adaptor_get_user_displayname(const char *username, char *dispname, size_t);
-extern bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::string>&);
-extern bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARRAY&);
-BOOL mysql_adaptor_get_user_privilege_bits(
-	const char *username, uint32_t *pprivilege_bits);
-BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang);
-BOOL mysql_adaptor_set_timezone(const char *username, const char *timezone);
-extern bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t);
-extern bool mysql_adaptor_get_homedir_by_id(unsigned int domain_id, char *homedir, size_t);
-extern BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, unsigned int *domain_id);
-extern BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *user_id, unsigned int *domain_id, enum display_type *);
-extern BOOL mysql_adaptor_get_domain_ids(const char *domainname, unsigned int *domain_id, unsigned int *org_id);
-extern BOOL mysql_adaptor_get_org_domains(unsigned int org_id, std::vector<unsigned int> &);
-extern BOOL mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &);
-extern BOOL mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_id2);
-extern BOOL mysql_adaptor_get_domain_groups(unsigned int domain_id, std::vector<sql_group> &);
-extern int mysql_adaptor_get_group_users(unsigned int group_id, std::vector<sql_user> &);
-extern int mysql_adaptor_get_domain_users(unsigned int domain_id, std::vector<sql_user> &);
-BOOL mysql_adaptor_check_mlist_include(
-	const char *mlist_name, const char *account);
-extern BOOL mysql_adaptor_check_same_org2(const char *domainname1, const char *domainname2);
-extern BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from, int *presult, std::vector<std::string> &);
-extern gromox::errno_t mysql_adaptor_get_homeserver(const char *ent, bool is_pvt, std::pair<std::string, std::string> &);
-extern gromox::errno_t mysql_adaptor_scndstore_hints(unsigned int pri, std::vector<sql_user> &hints);
-extern int mysql_adaptor_domain_list_query(const char *dom);
+extern GX_EXPORT void mysql_adaptor_init(mysql_adaptor_init_param &&);
+extern GX_EXPORT int mysql_adaptor_run();
+extern GX_EXPORT void mysql_adaptor_stop();
+extern GX_EXPORT gromox::errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv, sql_meta_result &out);
+extern GX_EXPORT BOOL mysql_adaptor_login2(const char *username, const char *password, const std::string &enc_passwd, std::string &errstr);
+extern GX_EXPORT BOOL mysql_adaptor_setpasswd(const char *username, const char *password, const char *new_password);
+extern GX_EXPORT BOOL mysql_adaptor_get_username_from_id(unsigned int user_id, char *username, size_t);
+extern GX_EXPORT BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *user_id);
+extern GX_EXPORT bool mysql_adaptor_get_user_displayname(const char *username, char *dispname, size_t);
+extern GX_EXPORT bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::string>&);
+extern GX_EXPORT bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARRAY&);
+extern GX_EXPORT BOOL mysql_adaptor_get_user_privilege_bits(const char *username, uint32_t *pprivilege_bits);
+extern GX_EXPORT BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang);
+extern GX_EXPORT BOOL mysql_adaptor_set_timezone(const char *username, const char *timezone);
+extern GX_EXPORT bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t);
+extern GX_EXPORT bool mysql_adaptor_get_homedir_by_id(unsigned int domain_id, char *homedir, size_t);
+extern GX_EXPORT BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, unsigned int *domain_id);
+extern GX_EXPORT BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *user_id, unsigned int *domain_id, enum display_type *);
+extern GX_EXPORT BOOL mysql_adaptor_get_domain_ids(const char *domainname, unsigned int *domain_id, unsigned int *org_id);
+extern GX_EXPORT BOOL mysql_adaptor_get_org_domains(unsigned int org_id, std::vector<unsigned int> &);
+extern GX_EXPORT BOOL mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &);
+extern GX_EXPORT BOOL mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_id2);
+extern GX_EXPORT BOOL mysql_adaptor_get_domain_groups(unsigned int domain_id, std::vector<sql_group> &);
+extern GX_EXPORT int mysql_adaptor_get_group_users(unsigned int group_id, std::vector<sql_user> &);
+extern GX_EXPORT int mysql_adaptor_get_domain_users(unsigned int domain_id, std::vector<sql_user> &);
+extern GX_EXPORT BOOL mysql_adaptor_check_mlist_include(const char *mlist_name, const char *account);
+extern GX_EXPORT BOOL mysql_adaptor_check_same_org2(const char *domainname1, const char *domainname2);
+extern GX_EXPORT BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from, int *presult, std::vector<std::string> &);
+extern GX_EXPORT gromox::errno_t mysql_adaptor_get_homeserver(const char *ent, bool is_pvt, std::pair<std::string, std::string> &);
+extern GX_EXPORT gromox::errno_t mysql_adaptor_scndstore_hints(unsigned int pri, std::vector<sql_user> &hints);
+extern GX_EXPORT int mysql_adaptor_domain_list_query(const char *dom);
 
 /**
  * Determines whether an arbitrary actor can generally open/read the primary

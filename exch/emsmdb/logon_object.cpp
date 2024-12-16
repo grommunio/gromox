@@ -15,6 +15,7 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/msgchg_grouping.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
@@ -442,7 +443,7 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		*ppvalue = dispname;
 		if (*ppvalue == nullptr)
 			return FALSE;
-		if (!common_util_get_user_displayname(plogon->account, dispname, UADDR_SIZE))
+		if (!mysql_adaptor_get_user_displayname(plogon->account, dispname, UADDR_SIZE))
 			return FALSE;	
 		auto temp_len = strlen(dispname);
 		for (size_t i = 0; i < temp_len; ++i) {
@@ -476,7 +477,7 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		std::string essdn;
 		if (cvt_username_to_essdn(plogon->is_private() ? plogon->account :
 		    account_to_domain(plogon->account), g_emsmdb_org_name,
-		    common_util_get_user_ids, common_util_get_domain_ids,
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn) != ecSuccess)
 			return false;
 		auto tstr = cu_alloc<char>(essdn.size() + 1);
@@ -509,7 +510,7 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 	case PR_MAILBOX_OWNER_NAME:
 		if (!plogon->is_private())
 			return FALSE;
-		if (!common_util_get_user_displayname(plogon->account,
+		if (!mysql_adaptor_get_user_displayname(plogon->account,
 		    temp_buff, std::size(temp_buff)))
 			return FALSE;	
 		if ('\0' == temp_buff[0]) {
@@ -529,7 +530,7 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 	case PR_MAILBOX_OWNER_NAME_A: {
 		if (!plogon->is_private())
 			return FALSE;
-		if (!common_util_get_user_displayname(plogon->account,
+		if (!mysql_adaptor_get_user_displayname(plogon->account,
 		    temp_buff, std::size(temp_buff)))
 			return FALSE;	
 		auto temp_len = utf8_to_mb_len(temp_buff);
