@@ -156,7 +156,6 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> xcfg = nullptr,
 
 int main(int argc, char **argv)
 {
-	char temp_buff[256];
 	int retcode = EXIT_FAILURE;
 	char host_name[UDOM_SIZE], *ptoken;
 	const char *dns_name, *dns_domain, *netbios_name;
@@ -193,13 +192,12 @@ int main(int argc, char **argv)
 
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
-		memset(temp_buff, 0, std::size(temp_buff));
-		gethostname(temp_buff, std::size(temp_buff));
-		temp_buff[std::size(temp_buff)-1] = '\0';
-		g_config_file->set_value("host_id", temp_buff);
-		str_val = temp_buff;
-		if (strchr(str_val, '.') == nullptr)
-			mlog(LV_NOTICE, "System hostname \"%s\" has no dot, which may point to a misconfiguration", str_val);
+		std::string hn;
+		auto ret = canonical_hostname(hn);
+		if (ret != 0)
+			return EXIT_FAILURE;
+		g_config_file->set_value("host_id", hn.c_str());
+		str_val = g_config_file->get_value("host_id");
 	}
 	mlog(LV_INFO, "system: host ID is \"%s\"", str_val);
 	gx_strlcpy(host_name, str_val, std::size(host_name));
@@ -238,6 +236,7 @@ int main(int argc, char **argv)
 		thread_init_num);
 
 	unsigned int context_aver_mem = g_config_file->get_ll("context_average_mem") / (64 * 1024);
+	char temp_buff[256];
 	HX_unit_size(temp_buff, std::size(temp_buff), context_aver_mem * 64 * 1024, 1024, 0);
 	mlog(LV_INFO, "http: context average memory is %s", temp_buff);
 	

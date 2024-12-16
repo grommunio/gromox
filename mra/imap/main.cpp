@@ -410,11 +410,12 @@ int main(int argc, char **argv)
 	uint16_t listen_tls_port = g_config_file->get_ll("imap_listen_tls_port");
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
-		memset(temp_buff, 0, std::size(temp_buff));
-		gethostname(temp_buff, std::size(temp_buff));
-		temp_buff[std::size(temp_buff)-1] = '\0';
-		g_config_file->set_value("host_id", temp_buff);
-		str_val = temp_buff;
+		std::string hn;
+		auto ret = canonical_hostname(hn);
+		if (ret != 0)
+			return EXIT_FAILURE;
+		g_config_file->set_value("host_id", hn.c_str());
+		str_val = g_config_file->get_value("host_id");
 	}
 	printf("[system]: host ID is %s\n", str_val);
 	

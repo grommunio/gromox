@@ -25,7 +25,7 @@ struct GX_EXPORT DSN {
 	}
 	std::vector<dsn_field> *get_message_fields() { return &message_fields; }
 	std::vector<dsn_field> *new_rcpt_fields();
-	static bool append_field(std::vector<dsn_field> *, const char *tag, const char *value);
+	static bool append_field(std::vector<dsn_field> *, std::string_view tag, std::string_view value);
 	bool enum_rcpts_fields(RCPTS_FIELDS_ENUM, void *) const;
 	static bool enum_fields(const std::vector<dsn_field> &, DSN_FIELDS_ENUM, void *);
 	bool serialize(char *out, size_t maxlen) const;

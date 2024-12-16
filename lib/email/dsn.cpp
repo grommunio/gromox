@@ -53,10 +53,10 @@ std::vector<dsn_field> *DSN::new_rcpt_fields() try
 	return nullptr;
 }
 
-bool DSN::append_field(std::vector<dsn_field> *pfields, const char *tag,
-    const char *value) try
+bool DSN::append_field(std::vector<dsn_field> *pfields, std::string_view tag,
+    std::string_view value) try
 {
-	pfields->push_back(dsn_field{tag, value});
+	pfields->emplace_back(std::string(tag), std::string(value));
 	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1212: ENOMEM");
