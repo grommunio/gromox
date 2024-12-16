@@ -103,7 +103,7 @@ static std::shared_ptr<alias_map> xa_refresh_aliases(MYSQL *conn) try
 	DB_RESULT res = mysql_store_result(conn);
 	DB_ROW row;
 	while ((row = res.fetch_row()) != nullptr)
-		if (row[0] != nullptr && row[1] != nullptr)
+		if (row[0] != nullptr && *row[0] != '\0' && row[1] != nullptr && *row[1] != '\0')
 			newmap.emplace(row[0], row[1]);
 	auto n_aliases = newmap.size();
 
@@ -118,7 +118,7 @@ static std::shared_ptr<alias_map> xa_refresh_aliases(MYSQL *conn) try
 		return nullptr;
 	res = mysql_store_result(conn);
 	while ((row = res.fetch_row()) != nullptr)
-		if (row[0] != nullptr && row[1] != nullptr)
+		if (row[0] != nullptr && *row[0] != '\0' && row[1] != nullptr && *row[1] != '\0')
 			newmap.emplace(row[0], row[1]);
 	auto n_contacts = newmap.size() - n_aliases;
 	mlog(LV_INFO, "I-1612: refreshed alias_resolve map with %zu aliases and %zu contact objects",
