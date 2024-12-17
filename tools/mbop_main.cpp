@@ -397,8 +397,6 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
-static constexpr static_module g_dfl_svc_plugins[] =
-	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
 
 static int main(int argc, char **argv)
 {
@@ -411,12 +409,6 @@ static int main(int argc, char **argv)
 		return EXIT_PARAM;
 	}
 	textmaps_init();
-	service_init({nullptr, g_dfl_svc_plugins, 1});
-	auto cl_0 = make_scope_exit(service_stop);
-	if (service_run_early() != 0 || service_run() != 0) {
-		fprintf(stderr, "service_run: failed\n");
-		return EXIT_FAILURE;
-	}
 	if (!mysql_adaptor_set_user_lang(g_dstuser.c_str(), g_language)) {
 		fprintf(stderr, "Update of UI language rejected\n");
 		return EXIT_FAILURE;
@@ -640,7 +632,7 @@ static int main(int argc, char **argv)
 
 }
 
-namespace for_all_wrap {
+namespace foreach_wrap {
 
 static unsigned int g_numthreads = 1;
 static constexpr HXoption g_options_table[] = {
@@ -651,9 +643,74 @@ static constexpr HXoption g_options_table[] = {
 
 static int help()
 {
-	fprintf(stderr, "Usage: for-all-users [-j jobs] command [args...]\n");
+	fprintf(stderr, "Usage: foreach[.filter]* [-j jobs] command [args...]\n");
+	fprintf(stderr, " filter := secobj | user | mlist | sharedmb | contact |\n");
+	fprintf(stderr, "           active | susp | deleted | mb\n");
 	global::command_overview();
 	return EXIT_PARAM;
+}
+
+static int filter_users(const char *mode, std::vector<sql_user> &ul)
+{
+	struct dtypx_nomatch {
+		unsigned int m_flags = 0;
+		constexpr dtypx_nomatch(unsigned int flags) : m_flags(flags) {}
+		constexpr bool operator()(const sql_user &u) const { return (u.dtypx & DTE_MASK_LOCAL) != m_flags; };
+	};
+	struct adst_nomatch {
+		unsigned int m_value = 0;
+		constexpr adst_nomatch(unsigned int v) : m_value(v) {}
+		constexpr bool operator()(const sql_user &u) const { return (u.addr_status & AF_USER__MASK) != m_value; };
+	};
+
+	if (strcmp(mode, "for-all-users") == 0)
+		return 0;
+	if (strncmp(mode, "foreach.", 8) != 0) {
+		mlog(LV_ERR, "Unknown command: %s", mode);
+		return -1;
+	}
+	std::string this_server;
+	auto err = canonical_hostname(this_server);
+	if (err != 0) {
+		mlog(LV_ERR, "canonical_hostname: %s", strerror(err));
+		return err;
+	}
+
+	const char *dot = "";
+	for (mode += 8; dot != nullptr; mode = dot + 1) {
+		dot = strchr(mode, '.');
+		auto filter = dot != nullptr ? std::string_view{mode, static_cast<size_t>(dot - mode)} :
+		              std::string_view{mode};
+		if (filter == "secobj")
+			continue;
+		else if (filter == "user")
+			std::erase_if(ul, dtypx_nomatch(DT_MAILUSER));
+		else if (filter == "dl")
+			std::erase_if(ul, dtypx_nomatch(DT_DISTLIST));
+		else if (filter == "room")
+			std::erase_if(ul, dtypx_nomatch(DT_ROOM));
+		else if (filter == "equipment")
+			std::erase_if(ul, dtypx_nomatch(DT_EQUIPMENT));
+		else if (filter == "sharedmb")
+			std::erase_if(ul, adst_nomatch(AF_USER_SHAREDMBOX));
+		else if (filter == "contact")
+			std::erase_if(ul, [](const sql_user &u) { return (u.addr_status & AF_USER__MASK) != AF_USER_CONTACT || (u.dtypx & DTE_MASK_LOCAL) != DT_REMOTE_MAILUSER; });
+		else if (filter == "active")
+			std::erase_if(ul, adst_nomatch(AF_USER_NORMAL));
+		else if (filter == "susp")
+			std::erase_if(ul, adst_nomatch(AF_USER_SUSPENDED));
+		else if (filter == "deleted")
+			std::erase_if(ul, adst_nomatch(AF_USER_DELETED));
+		else if (filter == "mb")
+			std::erase_if(ul, [](const sql_user &u) { return u.maildir.empty(); });
+		else if (filter == "here")
+			std::erase_if(ul, [&](const sql_user &u) { return strcasecmp(u.homeserver.c_str(), this_server.c_str()) != 0; });
+		else {
+			mlog(LV_ERR, "Unknown filter: %.*s", static_cast<int>(filter.size()), filter.data());
+			return -1;
+		}
+	}
+	return 0;
 }
 
 static int main(int argc, char **argv)
@@ -663,17 +720,19 @@ static int main(int argc, char **argv)
 		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (global::g_arg_username != nullptr || global::g_arg_userdir != nullptr) {
-		fprintf(stderr, "Cannot use -d/-u with for-all-users\n");
+		fprintf(stderr, "Cannot use -d/-u with foreach.*\n");
 		return EXIT_PARAM;
 	} else if (g_numthreads == 0) {
 		g_numthreads = gx_concurrency();
 	}
+	auto fe_mode = argv[0];
 	--argc;
 	++argv;
 	if (argc == 0)
 		return help();
-	gi_user_list_t ul;
-	if (gi_get_users(ul) != 0)
+
+	std::vector<sql_user> ul;
+	if (mysql_adaptor_mbop_userlist(ul) != 0 || filter_users(fe_mode, ul) != 0)
 		return EXIT_FAILURE;
 	auto ret = gi_startup_client(g_numthreads);
 	if (ret != 0)
@@ -688,49 +747,49 @@ static int main(int argc, char **argv)
 		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
 		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 			return EXIT_PARAM;
-		for (auto &&[username, maildir] : ul) {
+		for (const auto &user : ul) {
 			sem.acquire();
 			if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
 				break;
-			futs.emplace_back(std::async([](std::string *maildir, Sem *sem, int *ret) {
+			futs.emplace_back(std::async([](const std::string *maildir, Sem *sem, int *ret) {
 				if (!exmdb_client::ping_store(maildir->c_str()))
 					*ret = EXIT_FAILURE;
 				sem->release();
-			}, &maildir, &sem, &ret));
+			}, &user.maildir, &sem, &ret));
 		}
 	} else if (strcmp(argv[0], "unload") == 0) {
 		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
 		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 			return EXIT_PARAM;
-		for (auto &&[username, maildir] : ul) {
+		for (const auto &user : ul) {
 			sem.acquire();
 			if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
 				return ret;
-			futs.emplace_back(std::async([](std::string *maildir, Sem *sem, int *ret) {
+			futs.emplace_back(std::async([](const std::string *maildir, Sem *sem, int *ret) {
 				if (!exmdb_client::unload_store(maildir->c_str()))
 					*ret = EXIT_FAILURE;
 				sem->release();
-			}, &maildir, &sem, &ret));
+			}, &user.maildir, &sem, &ret));
 		}
 	} else if (strcmp(argv[0], "vacuum") == 0) {
 		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
 		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 			return EXIT_PARAM;
-		for (auto &&[username, maildir] : ul) {
+		for (const auto &user : ul) {
 			sem.acquire();
 			if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
 				return ret;
-			futs.emplace_back(std::async([](std::string *maildir, Sem *sem, int *ret) {
+			futs.emplace_back(std::async([](const std::string *maildir, Sem *sem, int *ret) {
 				if (!exmdb_client::vacuum(maildir->c_str()))
 					*ret = EXIT_FAILURE;
 				sem->release();
-			}, &maildir, &sem, &ret));
+			}, &user.maildir, &sem, &ret));
 		}
 	} else {
-		for (auto &&[username, maildir] : ul) {
+		for (auto &&user : ul) {
 			/* cmd_parser is not thread-safe (global state), cannot parallelize */
-			g_dstuser = std::move(username);
-			g_storedir_s = std::move(maildir);
+			g_dstuser = std::move(user.username);
+			g_storedir_s = std::move(user.maildir);
 			g_storedir = g_storedir_s.c_str();
 			ret = global::cmd_parser(argc, argv);
 			if (ret == EXIT_PARAM)
@@ -962,6 +1021,9 @@ static int single_user_wrap(int argc, char **argv)
 	return ret;
 }
 
+static constexpr static_module g_dfl_svc_plugins[] =
+	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
+
 int main(int argc, char **argv)
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -973,8 +1035,15 @@ int main(int argc, char **argv)
 	++argv;
 	if (argc == 0)
 		return global::help();
-	if (strcmp(argv[0], "for-all-users") == 0)
-		return for_all_wrap::main(argc, argv);
+	service_init({nullptr, g_dfl_svc_plugins, 1});
+	auto cl_1 = make_scope_exit(service_stop);
+	if (service_run_early() != 0 || service_run() != 0) {
+		fprintf(stderr, "service_run: failed\n");
+		return EXIT_FAILURE;
+	}
+	if (strncmp(argv[0], "foreach.", 8) == 0 ||
+	    strncmp(argv[0], "for-all-", 8) == 0)
+		return foreach_wrap::main(argc, argv);
 	else
 		return single_user_wrap(argc, argv);
 }

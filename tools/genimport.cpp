@@ -561,29 +561,6 @@ int gi_setup_from_user(const char *username)
 	return EXIT_SUCCESS;
 }
 
-int gi_get_users(gi_user_list_t &out) try
-{
-	auto sqh = sql_login();
-	if (sqh == nullptr)
-		return -1;
-	if (mysql_query(sqh.get(), "SELECT username, maildir FROM users") != 0) {
-		fprintf(stderr, "exm: mysql_query: %s\n", mysql_error(sqh.get()));
-		return -1;
-	}
-	DB_RESULT result = mysql_store_result(sqh.get());
-	if (result == nullptr) {
-		fprintf(stderr, "exm: mysql_store: %s\n", mysql_error(sqh.get()));
-		return -1;
-	}
-	DB_ROW row;
-	while ((row = result.fetch_row()) != nullptr)
-		if (row[0] != nullptr && row[1] != nullptr)
-			out.emplace_back(row[0], row[1]);
-	return 0;
-} catch (const std::bad_alloc &) {
-	return -1;
-}
-
 namespace {
 
 static constexpr std::pair<const char *, uint8_t> fld_special_names[] = {
