@@ -71,18 +71,22 @@ enum { /* for PR_ATTR_HIDDEN_*GROMOX* */
 };
 
 /**
- * @dtex:	%DT_* type as specified for PR_DISPLAY_TYPE_EX.
- * @hidden:	hide bits for the address book
+ * @dtypx:      %DT_* type as specified for PR_DISPLAY_TYPE_EX
+ * @hidden:     hide bits for the address book
  * @list_type:	mlist_type value; only interpret field when
  * 		addr_type==ADDRESS_TYPE_MLIST.
+ *
+ * Whether the fields are filled or not depends on the mysql_adaptor_get*()
+ * function you are using.
  */
 struct sql_user {
 	enum display_type dtypx = DT_MAILUSER;
 	unsigned int id = 0;
+	unsigned int addr_status = AF_USER_DELETED;
 	enum mlist_type list_type = mlist_type::normal;
 	uint32_t hidden = 0;
 	unsigned int list_priv = 0;
-	std::string username, maildir;
+	std::string username, homeserver, maildir;
 	std::vector<std::string> aliases; /* email addresses */
 	std::map<unsigned int, std::string> propvals;
 };
@@ -128,6 +132,7 @@ extern GX_EXPORT BOOL mysql_adaptor_get_mlist_memb(const char *username, const c
 extern GX_EXPORT gromox::errno_t mysql_adaptor_get_homeserver(const char *ent, bool is_pvt, std::pair<std::string, std::string> &);
 extern GX_EXPORT gromox::errno_t mysql_adaptor_scndstore_hints(unsigned int pri, std::vector<sql_user> &hints);
 extern GX_EXPORT int mysql_adaptor_domain_list_query(const char *dom);
+extern GX_EXPORT int mysql_adaptor_mbop_userlist(std::vector<sql_user> &);
 
 /**
  * Determines whether an arbitrary actor can generally open/read the primary

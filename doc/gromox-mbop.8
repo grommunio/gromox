@@ -9,7 +9,7 @@ gromox\-mbop \(em Mailbox operations utility
 .SH Global options
 .TP
 \fB\-c\fP
-Continuous operation mode. If a command in a series (e.g. with for\-all\-users)
+Continuous operation mode. If a command in a series (e.g. with foreach.*)
 fails, do not stop.
 .TP
 \fB\-d\fP \fI/var/lib/gromox/user/1/2\fP
@@ -32,11 +32,11 @@ clear\-rwz: delete IPM.RuleOrganizer FAI messages from the inbox
 .IP \(bu 4
 delmsg: issue "delete_message" RPCs for a mailbox
 .IP \(bu 4
-echo\-username: return username (diagnostic for use with for\-all\-users)
+echo\-username: return username (for use with foreach.*)
 .IP \(bu 4
 emptyfld: remove objects from folders
 .IP \(bu 4
-for\-all\-users: iterate over all users
+foreach.*: iterate over security objects
 .IP \(bu 4
 get\-freebusy: test FB schedule lookups
 .IP \(bu 4
@@ -172,9 +172,38 @@ gromox\-mbop \-u a@b.de emptyfld \-\-soft \-\-nuke\-folders DELETED
 .IP \(bu 4
 Timed deletion of trash:
 gromox\-mbop \-u abc@example.com emptyfld \-Rt 1week \-\-soft DELETED
-.SH for\-all\-users
+.SH foreach.*
 .SS Synopsis
-\fBfor\-all\-users\fP [\fB\-j\fP \fIjobs\fP] \fIcommand\fP [command-args...]
+\fBforeach.\fP\fIfilter\fP[\fB\.\fP\fIfilter\fP]* [\fB\-j\fP \fIjobs\fP]
+\fIcommand\fP [command-args...]
+.SS Description
+Iterates over security objects and executes one of the other commands
+repeatedly. Filter specifications limit the types of security objects.
+.SS Filters
+.IP \(bu 4
+secobj: limit to objects that can be used in ACLs
+.IP \(bu 4
+user: regular users
+.IP \(bu 4
+dl: distribution lists
+.IP \(bu 4
+sharedmb: shared mailboxes
+.IP \(bu 4
+room: room objects
+.IP \(bu 4
+equipment: equipment objects
+.IP \(bu 4
+contact: GAB contact objects
+.IP \(bu 4
+active: active entities
+.IP \(bu 4
+susp: entities marked as "suspended"
+.IP \(bu 4
+deleted: entities marked as "deleted"
+.IP \(bu 4
+mb: entity has a mailbox directory defined
+.IP \(bu 4
+here: entity has current server as homeserver
 .SS Options
 .TP
 \fB\-j\fP \fIjobs\fP
@@ -187,7 +216,7 @@ Default: \fI1\fP
 Pseudoaction for running one of the other subcommand (e.g. ping, unload.)
 .SS Examples
 .IP \(bu 4
-Command concatenation: gromox\-mbop for\-all\-users \\( purge\-softdelete -r /
+Command concatenation: gromox\-mbop foreach.mb.local \\( purge\-softdelete -r /
 \\) \\( purge\-datafiles \\)
 .SH get\-freebusy
 .SS Synopsis

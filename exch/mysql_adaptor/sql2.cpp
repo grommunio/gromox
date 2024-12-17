@@ -715,3 +715,33 @@ BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data)
 	}
 	return TRUE;
 }
+
+int mysql_adaptor_mbop_userlist(std::vector<sql_user> &out) try
+{
+	auto qstr = "SELECT u.id, u.username, u.address_status, u.maildir, "
+	            "dt.propval_str AS dtypx, sv.hostname "
+	            "FROM users AS u " JOIN_WITH_DISPLAYTYPE
+	            "LEFT JOIN servers AS sv ON u.homeserver=sv.id";
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn || !conn->query(qstr)) {
+		mlog(LV_ERR, "Error obtaining user list");
+		return ENOMEM;
+	}
+	auto result = conn->store_result();
+	if (result == nullptr)
+		return ENOMEM;
+	std::vector<sql_user> gv(result.num_rows());
+	for (size_t i = 0; i < gv.size(); ++i) {
+		auto row = result.fetch_row();
+		gv[i].id = strtoul(row[0], nullptr, 0);
+		gv[i].username = row[1];
+		gv[i].addr_status = strtoul(row[2], nullptr, 0);
+		gv[i].maildir = znul(row[3]);
+		gv[i].dtypx = static_cast<enum display_type>(strtoul(row[4], nullptr, 0));
+		gv[i].homeserver = znul(row[5]);
+	}
+	out = std::move(gv);
+	return 0;
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
+}
