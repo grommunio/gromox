@@ -30,7 +30,8 @@ phplib_LTLIBRARIES = mapi.la
 endif
 dist_sysusers_DATA = system/sysusers-gromox.conf
 dist_tmpfiles_DATA = system/tmpfiles-gromox.conf
-dist_unit_DATA = system/gromox-delivery.service \
+dist_unit_DATA = system/gromox-cleaner.service system/gromox-cleaner.timer \
+	system/gromox-delivery.service \
 	system/gromox-delivery-queue.service system/gromox-event.service \
 	system/gromox-http.service system/gromox-imap.service \
 	system/gromox-midb.service system/gromox-pop3.service \
@@ -312,7 +313,8 @@ dist_man_MANS = \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
 	doc/gromox.7 doc/gromox.cfg.5 doc/gromox-abktconv.8 \
-	doc/gromox-abktpull.8 doc/gromox-dbop.8 doc/gromox-dscli.8 \
+	doc/gromox-abktpull.8 doc/gromox-cleaner.service.8 \
+	doc/gromox-dbop.8 doc/gromox-dscli.8 \
 	doc/gromox-e2ghelper.8 \
 	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 doc/gromox-exm2eml.8 \
 	doc/gromox-exm2ical.8 doc/gromox-exm2mt.8 doc/gromox-exm2tnef.8 \
