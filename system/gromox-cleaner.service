@@ -1,0 +1,14 @@
+[Unit]
+Description=Gromox mailbox cleaner
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/gromox-mbop foreach.here.mb ( purge-softdelete -d 30d -r / ) ( purge-datafiles )
+PrivateDevices=yes
+PrivateNetwork=yes
+PrivateUsers=no
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+MemoryDenyWriteExecute=yes
+SystemCallFilter=@default @file-system @basic-io @system-service

@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodic purge of softdeleted items in Gromox mailboxes
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+WakeSystem=no
+
+[Install]
+WantedBy=timers.target
