@@ -63,7 +63,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	static constexpr proptag_t tags1[] = {
 		PR_ACCESS, PR_RIGHTS, PR_PARENT_ENTRYID, PR_PARENT_SOURCE_KEY,
-		PR_SOURCE_KEY,
+		PR_SOURCE_KEY, PR_CORRELATION_ID,
 	};
 	for (auto t : tags1)
 		pproptags->emplace_back(t);
@@ -102,6 +102,7 @@ bool folder_object::is_readonly_prop(proptag_t proptag) const
 	case PR_FOLDER_CHILD_COUNT:
 	case PR_FOLDER_FLAGS:
 	case PidTagFolderId:
+	case PR_CORRELATION_ID:
 	case PR_FOLDER_TYPE:
 	case PR_HAS_RULES:
 	case PR_HIERARCHY_CHANGE_NUM:
@@ -175,6 +176,16 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 		if (*outvalue == nullptr)
 			return FALSE;
 		*v = pfolder->folder_id;
+		return TRUE;
+	}
+	case PR_CORRELATION_ID: {
+		auto v = cu_alloc<GUID>();
+		*outvalue = v;
+		if (*outvalue == nullptr)
+			return false;
+		v->time_low = pfolder->plogon->account_id;
+		v->time_mid = v->time_hi_and_version = 0;
+		memcpy(&v->clock_seq, &pfolder->folder_id, sizeof(uint64_t));
 		return TRUE;
 	}
 	case PR_RIGHTS: {
