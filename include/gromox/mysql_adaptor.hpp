@@ -50,6 +50,8 @@ struct mysql_adaptor_init_param {
 
 struct sql_domain {
 	std::string name, title, address;
+
+	std::weak_ordering operator<=>(const sql_domain&) const;
 };
 
 /**
@@ -90,6 +92,8 @@ struct sql_user {
 	std::string username, homeserver, maildir;
 	std::vector<std::string> aliases; /* email addresses */
 	std::map<unsigned int, std::string> propvals;
+
+	std::weak_ordering operator<=>(const sql_user &o) const;
 };
 
 struct sql_group {

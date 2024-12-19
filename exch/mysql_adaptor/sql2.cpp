@@ -751,3 +751,33 @@ int mysql_adaptor_mbop_userlist(std::vector<sql_user> &out) try
 } catch (const std::bad_alloc &) {
 	return ENOMEM;
 }
+
+/**
+ * @brief     Compare domains based on (case-insensitive) domain name
+ *
+ * @param     o   Other domain
+ *
+ * @return    Result of lexicographic comparison
+ */
+std::weak_ordering sql_domain::operator<=>(const sql_domain& o) const {
+	auto r = strcasecmp(name.c_str(), o.name.c_str());
+	return r < 0? std::weak_ordering::less : r == 0? std::weak_ordering::equivalent : std::weak_ordering::greater;
+}
+
+/**
+ * @brief     Compare users based on (case-insensitive) display name
+ *
+ * Missing display names are substituted with the username.
+ *
+ * @param     Other user
+ *
+ * @return    Result of lexicographic comparison
+ */
+std::weak_ordering sql_user::operator<=>(const sql_user &o) const {
+	auto i = propvals.find(PR_DISPLAY_NAME);
+	auto name_this = i != propvals.end() ? i->second.c_str() : username.c_str();
+	i = o.propvals.find(PR_DISPLAY_NAME);
+	auto name_other = i != o.propvals.end() ? i->second.c_str() : o.username.c_str();
+	auto r = strcasecmp(name_this, name_other);
+	return r == 0? std::weak_ordering::equivalent : r < 0 ? std::weak_ordering::less : std::weak_ordering::greater;
+}
