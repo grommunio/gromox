@@ -2,13 +2,16 @@
 Description=Gromox mailbox cleaner
 
 [Service]
-Type=oneshot
-ExecStart=/usr/sbin/gromox-mbop foreach.here.mb ( purge-softdelete -d 30d -r / ) ( purge-datafiles )
+# Fallback if EnvironmentFile hasn't got any value
+Environment=PURGETIME=30d
+EnvironmentFile=/etc/gromox/cleaner.cfg
+ExecStart=/usr/sbin/gromox-mbop foreach.here.mb ( purge-softdelete -d ${PURGETIME} -r / ) ( purge-datafiles )
+MemoryDenyWriteExecute=yes
 PrivateDevices=yes
 PrivateNetwork=yes
 PrivateUsers=no
-ProtectKernelTunables=yes
-ProtectKernelModules=yes
 ProtectControlGroups=yes
-MemoryDenyWriteExecute=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
 SystemCallFilter=@default @file-system @basic-io @system-service
+Type=oneshot
