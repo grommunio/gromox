@@ -83,6 +83,7 @@ struct sql_user {
 	enum display_type dtypx = DT_MAILUSER;
 	unsigned int id = 0;
 	unsigned int addr_status = AF_USER_DELETED;
+	unsigned int domain_id = 0;
 	enum mlist_type list_type = mlist_type::normal;
 	uint32_t hidden = 0;
 	unsigned int list_priv = 0, homeserver_id = 0;

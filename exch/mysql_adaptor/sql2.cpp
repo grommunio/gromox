@@ -283,7 +283,7 @@ static bool propmap_load(sqlconn &conn, const char *query, propmap_t &out)
 }
 
 static int userlist_parse(sqlconn &conn, const char *query,
-    aliasmap_t &amap, propmap_t &pmap, std::vector<sql_user> &pfile)
+    aliasmap_t &amap, propmap_t &pmap, std::vector<sql_user> &pfile, unsigned int domain_id=0)
 {
 	if (!conn.query(query))
 		return false;
@@ -294,6 +294,7 @@ static int userlist_parse(sqlconn &conn, const char *query,
 	for (size_t i = 0; i < result.num_rows(); ++i) {
 		auto row = result.fetch_row();
 		sql_user u;
+		u.domain_id = domain_id;
 		u.dtypx = DT_MAILUSER;
 		if (row[2] != nullptr)
 			u.dtypx = static_cast<enum display_type>(strtoul(row[2], nullptr, 0));
@@ -357,7 +358,7 @@ int mysql_adaptor_get_domain_users(unsigned int domain_id,
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
 	         "LEFT JOIN `groups` AS `gr` ON `u`.`username`=`gr`.`groupname` "
 	         "WHERE u.domain_id=%u AND u.group_id=0", domain_id);
-	return userlist_parse(*conn, query, amap, pmap, pfile);
+	return userlist_parse(*conn, query, amap, pmap, pfile, domain_id);
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "mysql_adaptor: %s %s", __func__, e.what());
 	return false;
