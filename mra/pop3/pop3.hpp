@@ -103,7 +103,6 @@ extern bool (*system_services_judge_ip)(const char *host, std::string &reason);
 extern bool (*system_services_judge_user)(const char *);
 extern void (*system_services_ban_user)(const char *, int);
 extern authmgr_login_t system_services_auth_login;
-extern gromox::errno_t (*system_services_auth_meta)(const char *username, unsigned int wantpriv, sql_meta_result &out);
 extern void (*system_services_broadcast_event)(const char *);
 
 extern uint16_t g_listener_ssl_port;

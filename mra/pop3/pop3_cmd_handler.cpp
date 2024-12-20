@@ -26,6 +26,7 @@
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/midb_agent.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/util.hpp>
 #include "pop3.hpp"
 
@@ -138,7 +139,7 @@ int pop3_cmd_handler_pass(std::vector<std::string> &&argv, pop3_context *pcontex
 	if (target_mbox == nullptr) {
 		mres = std::move(mres_auth);
 	} else {
-		if (system_services_auth_meta(target_mbox, WANTPRIV_METAONLY, mres) != 0)
+		if (mysql_adaptor_meta(target_mbox, WANTPRIV_METAONLY, mres) != 0)
 			return 1715 | DISPATCH_CONTINUE;
 		if (!store_owner_over(mres_auth.username.c_str(), mres.username.c_str(),
 		    mres.maildir.c_str())) {

@@ -49,7 +49,6 @@ E(judge_ip)
 E(judge_user)
 E(ban_user)
 E(auth_login)
-E(auth_meta)
 E(install_event_stub)
 E(broadcast_event)
 E(broadcast_select)
@@ -170,7 +169,6 @@ static int system_services_run()
 	E(system_services_judge_user, "user_filter_judge");
 	E(system_services_ban_user, "user_filter_ban");
 	E(system_services_auth_login, "auth_login_gen");
-	E(system_services_auth_meta, "mysql_auth_meta");
 	E(system_services_install_event_stub, "install_event_stub");
 	E(system_services_broadcast_event, "broadcast_event");
 	E(system_services_broadcast_select, "broadcast_select");
@@ -184,7 +182,6 @@ static void system_services_stop()
 	service_release("ip_filter_judge", "system");
 	service_release("user_filter_judge", "system");
 	service_release("user_filter_ban", "system");
-	service_release("mysql_auth_meta", "system");
 	service_release("auth_login_gen", "system");
 	service_release("install_event_stub", "system");
 	service_release("broadcast_event", "system");
