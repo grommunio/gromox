@@ -160,7 +160,7 @@ int pop3_cmd_handler_pass(std::vector<std::string> &&argv, pop3_context *pcontex
 	if (*pcontext->maildir == '\0')
 		return 1715;
 
-	switch (midb_agent::list_mail(pcontext->maildir, "inbox",
+	switch (midb_agent::list_mail(pcontext->maildir, base64_encode("INBOX"),
 		pcontext->msg_array, &pcontext->total_mail,
 		&pcontext->total_size)) {
 	case MIDB_RESULT_OK:
