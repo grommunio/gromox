@@ -1220,7 +1220,7 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
 			return ecError;
 		*pmapi_type = zs_objtype::abcont;
 		*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {*pmapi_type, std::move(contobj)});
-	} else if (address_type == DT_DISTLIST || address_type == DT_MAILUSER) {
+	} else if (address_type == DT_DISTLIST || address_type == DT_MAILUSER || address_type == DT_REMOTE_MAILUSER) {
 		if (!common_util_essdn_to_ids(essdn, &domain_id, &user_id))
 			return ecNotFound;
 		if (domain_id != pinfo->domain_id &&
