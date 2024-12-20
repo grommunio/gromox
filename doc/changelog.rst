@@ -1,3 +1,18 @@
+Snapshot 2.38.37
+================
+
+Fixes:
+
+* midb: resolve protocol mismatches with imap, pop3; resolves rejection of
+  IMAP CREATE, POP3 PASS commands
+
+Enhancements:
+
+* When using import tools, no longer overwrite PR_LAST_MODIFICATION_TIME with
+  the current time; retain the original timestamp if one exists.
+* mbop: new foreach.* command group which replaces for-all-users
+
+
 Gromox 2.38 (2024-12-07)
 ========================
 
