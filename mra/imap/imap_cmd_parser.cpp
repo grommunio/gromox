@@ -36,6 +36,7 @@
 #include <gromox/midb.hpp>
 #include <gromox/midb_agent.hpp>
 #include <gromox/mjson.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/range_set.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/textmaps.hpp>
@@ -1351,7 +1352,7 @@ static int imap_cmd_parser_password2(int argc, char **argv,
 	if (target_mbox == nullptr) {
 		mres = std::move(mres_auth);
 	} else {
-		if (system_services_auth_meta(target_mbox, WANTPRIV_METAONLY, mres) != 0)
+		if (mysql_adaptor_meta(target_mbox, WANTPRIV_METAONLY, mres) != 0)
 			return 1902 | DISPATCH_CONTINUE | DISPATCH_TAG;
 		if (!store_owner_over(mres_auth.username.c_str(), mres.username.c_str(),
 		    mres.maildir.c_str())) {
@@ -1430,7 +1431,7 @@ int imap_cmd_parser_login(int argc, char **argv, imap_context *pcontext)
 	if (target_mbox == nullptr) {
 		mres = std::move(mres_auth);
 	} else {
-		if (system_services_auth_meta(target_mbox, WANTPRIV_METAONLY, mres) != 0)
+		if (mysql_adaptor_meta(target_mbox, WANTPRIV_METAONLY, mres) != 0)
 			return 1902 | DISPATCH_CONTINUE | DISPATCH_TAG;
 		if (!store_owner_over(mres_auth.username.c_str(), mres.username.c_str(),
 		    mres.maildir.c_str())) {

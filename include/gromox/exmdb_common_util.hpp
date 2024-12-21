@@ -9,7 +9,6 @@
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
-#include <gromox/mysql_adaptor.hpp>
 #include <gromox/svc_common.h>
 #define MAXIMUM_PROPNAME_NUMBER								0x7000
 #define MAX_DIGLEN											256*1024
@@ -43,19 +42,7 @@ enum {
 struct MAIL;
 
 namespace exmdb {
-#define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
-E(get_username_from_id)
-E(check_mlist_include)
-E(get_user_ids)
-E(get_domain_ids)
-E(get_homedir_by_id)
-E(get_id_from_homedir)
-E(get_id_from_maildir)
-E(get_homedir)
-E(get_user_displayname)
-E(meta)
-E(get_domain_info)
-#undef E
+
 extern ec_error_t (*ems_send_mail)(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
 extern ec_error_t (*ems_send_vmail)(vmime::shared_ptr<vmime::message>, const char *sender, const std::vector<std::string> &rcpts);
 extern const GUID *(*common_util_get_handle)();

@@ -24,6 +24,7 @@
 #include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/usercvt.hpp>
@@ -77,8 +78,8 @@ BOOL exmdb_server::store_eid_to_user(const char *, const STORE_ENTRYID *store_ei
 		return false;
 	if (store_eid->wrapped_provider_uid == g_muidStorePrivate) {
 		sql_meta_result mres;
-		if (!common_util_get_user_ids(store_eid->pserver_name, &uid, &domid, &dt) ||
-		    common_util_meta(store_eid->pserver_name, WANTPRIV_METAONLY, mres) != 0)
+		if (!mysql_adaptor_get_user_ids(store_eid->pserver_name, &uid, &domid, &dt) ||
+		    mysql_adaptor_meta(store_eid->pserver_name, WANTPRIV_METAONLY, mres) != 0)
 			return false;
 		*maildir = common_util_dup(mres.maildir.c_str());
 	} else if (store_eid->wrapped_provider_uid == g_muidStorePublic) {
@@ -86,8 +87,8 @@ BOOL exmdb_server::store_eid_to_user(const char *, const STORE_ENTRYID *store_ei
 		char md[256];
 		if (cvt_essdn_to_username(store_eid->pmailbox_dn,
 		    g_exmdb_org_name, cu_id2user, es_result) != ecSuccess ||
-		    !common_util_get_user_ids(es_result.c_str(), &uid, &domid, &dt) ||
-		    !common_util_get_homedir_by_id(domid, md, std::size(md)))
+		    !mysql_adaptor_get_user_ids(es_result.c_str(), &uid, &domid, &dt) ||
+		    !mysql_adaptor_get_homedir_by_id(domid, md, std::size(md)))
 			return false;
 		*maildir = common_util_dup(md);
 	} else {

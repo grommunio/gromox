@@ -21,6 +21,7 @@
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
@@ -594,7 +595,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *puser_dn,
 		return ecUnknownUser;
 	if (strcasecmp(username.c_str(), rpc_info.username) != 0)
 		return ecAccessDenied;
-	if (!common_util_get_user_displayname(username.c_str(), temp_buff, std::size(temp_buff)) ||
+	if (!mysql_adaptor_get_user_displayname(username.c_str(), temp_buff, std::size(temp_buff)) ||
 	    common_util_mb_from_utf8(cpid, temp_buff, pdisplayname, 1024) < 0)
 		return ecRpcFailed;
 	if (*pdisplayname == '\0')

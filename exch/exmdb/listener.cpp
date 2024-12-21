@@ -41,14 +41,7 @@ static pthread_t g_listener_id;
 
 static void *sockaccept_thread(void *param)
 {
-	while (NULL == common_util_get_user_displayname ||
-		NULL == common_util_check_mlist_include ||
-	    common_util_meta == nullptr ||
-	    common_util_get_homedir == nullptr ||
-	    common_util_get_homedir_by_id == nullptr ||
-	    common_util_get_user_ids == nullptr ||
-		NULL == common_util_get_domain_ids ||
-	    ems_send_mail == nullptr || ems_send_vmail == nullptr) {
+	while (ems_send_mail == nullptr || ems_send_vmail == nullptr) {
 		if (g_notify_stop)
 			break;
 		sleep(1);	

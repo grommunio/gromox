@@ -276,7 +276,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	AB_NODE *pabnode;
 	sql_domain dinfo;
 	
-	if (!system_services_get_domain_info(domain_id, dinfo))
+	if (!mysql_adaptor_get_domain_info(domain_id, dinfo))
 		return FALSE;
 	pabnode = ab_tree_get_abnode();
 	if (pabnode == nullptr)
@@ -298,7 +298,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		return false;
 
 	std::vector<sql_group> file_group;
-	if (!system_services_get_domain_groups(domain_id, file_group))
+	if (!mysql_adaptor_get_domain_groups(domain_id, file_group))
 		return FALSE;
 	for (auto &&grp : file_group) {
 		pabnode = ab_tree_get_abnode();
@@ -319,7 +319,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			return false;
 		
 		std::vector<sql_user> file_user;
-		rows = system_services_get_group_users(grp_id, file_user);
+		rows = mysql_adaptor_get_group_users(grp_id, file_user);
 		if (rows == -1)
 			return FALSE;
 		else if (rows == 0)
@@ -362,7 +362,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	}
 
 	std::vector<sql_user> file_user;
-	rows = system_services_get_domain_users(domain_id, file_user);
+	rows = mysql_adaptor_get_domain_users(domain_id, file_user);
 	if (rows == -1)
 		return FALSE;
 	else if (rows == 0)
@@ -411,7 +411,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 	
 	if (pbase->base_id > 0) {
 		std::vector<unsigned int> temp_file;
-		if (!system_services_get_org_domains(pbase->base_id, temp_file))
+		if (!mysql_adaptor_get_org_domains(pbase->base_id, temp_file))
 			return FALSE;
 		for (auto domain_id : temp_file) {
 			domain_node dnode(domain_id);

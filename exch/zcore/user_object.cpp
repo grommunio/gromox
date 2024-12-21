@@ -6,6 +6,7 @@
 #include <memory>
 #include <libHX/string.h>
 #include <gromox/ab_tree.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "ab_tree.hpp"
@@ -118,7 +119,7 @@ bool user_object::valid()
 	if (pnode != nullptr)
 		return true;
 	if (ab_tree_get_minid_type(puser->minid) != minid_type::address ||
-	    !system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
+	    !mysql_adaptor_get_username_from_id(ab_tree_get_minid_value(puser->minid),
 	    username, std::size(username)))
 		return FALSE;
 	return true;
@@ -167,7 +168,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		ppropvals->emplace_back(PR_ADDRTYPE, "EX");
 	if (!wx_name ||
 	    ab_tree_get_minid_type(puser->minid) != minid_type::address ||
-	    !system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
+	    !mysql_adaptor_get_username_from_id(ab_tree_get_minid_value(puser->minid),
 	    username, std::size(username)))
 		return TRUE;
 	if (w_smtp) {
@@ -184,14 +185,14 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	std::string essdn;
 	if (w_email && cvt_username_to_essdn(username, g_org_name,
-	    system_services_get_user_ids, system_services_get_domain_ids,
+	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 	    essdn) == ecSuccess) {
 		auto s = common_util_dup(essdn.c_str());
 		if (s == nullptr)
 			return FALSE;
 		ppropvals->emplace_back(PR_EMAIL_ADDRESS, s);
 	}
-	if (w_dname && system_services_get_user_displayname(username,
+	if (w_dname && mysql_adaptor_get_user_displayname(username,
 	    tmp_buff, std::size(tmp_buff))) {
 		if (*tmp_buff == '\0')
 			strcpy(tmp_buff, username);
@@ -212,18 +213,18 @@ ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 	if (node == nullptr)
 		return ecSuccess;
 	char mlistaddr[UADDR_SIZE]{};
-	if (!system_services_get_username_from_id(ab_tree_get_minid_value(minid),
+	if (!mysql_adaptor_get_username_from_id(ab_tree_get_minid_value(minid),
 	    mlistaddr, std::size(mlistaddr)))
 		return ecSuccess;
 	std::vector<std::string> member_list;
 	int ret = 0;
-	if (!system_services_get_mlist_memb(mlistaddr, mlistaddr, &ret, member_list))
+	if (!mysql_adaptor_get_mlist_memb(mlistaddr, mlistaddr, &ret, member_list))
 		return ecSuccess;
 	m_members.clear();
 	auto info = zs_get_info();
 	for (const auto &memb : member_list) {
 		unsigned int user_id = 0;
-		if (!system_services_get_user_ids(memb.c_str(), &user_id, nullptr, nullptr))
+		if (!mysql_adaptor_get_user_ids(memb.c_str(), &user_id, nullptr, nullptr))
 			continue;
 		auto mid = ab_tree_make_minid(minid_type::address, user_id);
 		node = ab_tree_minid_to_node(base.get(), mid);

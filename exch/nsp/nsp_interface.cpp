@@ -61,10 +61,6 @@ enum {
 
 unsigned int g_nsp_trace;
 static BOOL g_session_check;
-static decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
-static decltype(mysql_adaptor_get_user_ids) *get_user_ids;
-static decltype(mysql_adaptor_meta) *get_meta;
-static decltype(mysql_adaptor_get_mlist_memb) *get_mlist_memb;
 static gromox::archive abkt_archive;
 
 static void nsp_trace(const char *func, bool is_exit, const STAT *s,
@@ -540,24 +536,6 @@ void nsp_interface_init(BOOL b_check)
 		mlog(LV_ERR, "Could not read %s: %s. Addressbook dialogs have not been loaded.", pk, strerror(err));
 }
 
-int nsp_interface_run()
-{
-#define E(f, s) do { \
-	query_service2(s, f); \
-	if ((f) == nullptr) { \
-		mlog(LV_ERR, "nsp: failed to get the \"%s\" service", (s)); \
-		return -1; \
-	} \
-} while (false)
-
-	E(get_domain_ids, "get_domain_ids");
-	E(get_meta, "mysql_auth_meta");
-	E(get_user_ids, "get_user_ids");
-	E(get_mlist_memb, "get_mlist_memb");
-	return 0;
-#undef E
-}
-
 int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
     FLATUID *pserver_guid, NSPI_HANDLE *phandle)
 {
@@ -583,7 +561,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 	}
 	pdomain ++;
 	unsigned int domain_id = 0, org_id = 0;
-	if (!get_domain_ids(pdomain, &domain_id, &org_id)) {
+	if (!mysql_adaptor_get_domain_ids(pdomain, &domain_id, &org_id)) {
 		mlog(LV_WARN, "W-2176: could not satisfy nsp_bind request for domain %s: not found", pdomain);
 		phandle->handle_type = HANDLE_EXCHANGE_NSP;
 		memset(&phandle->guid, 0, sizeof(GUID));
@@ -1305,13 +1283,13 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			return ecNotFound;
 		std::vector<std::string> member_list;
 		int ret = 0;
-		if (!get_mlist_memb(mlistaddr, mlistaddr, &ret, member_list))
+		if (!mysql_adaptor_get_mlist_memb(mlistaddr, mlistaddr, &ret, member_list))
 			return ecError;
 		for (const auto &memb : member_list) {
 			if (outmids->cvalues > requested)
 				break;
 			unsigned int user_id = 0;
-			if (!get_user_ids(memb.c_str(), &user_id, nullptr, nullptr))
+			if (!mysql_adaptor_get_user_ids(memb.c_str(), &user_id, nullptr, nullptr))
 				continue;
 			pnode = ab_tree_uid_to_node(pbase.get(), user_id);
 			if (pnode == nullptr ||
@@ -1333,14 +1311,14 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		sql_meta_result mres;
 		auto temp_buff = ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS);
 		if (temp_buff == nullptr ||
-		    get_meta(temp_buff, WANTPRIV_METAONLY, mres) != 0)
+		    mysql_adaptor_meta(temp_buff, WANTPRIV_METAONLY, mres) != 0)
 			return ecError;
 		auto delegate_list = delegates_for(mres.maildir.c_str());
 		for (const auto &deleg : delegate_list) {
 			if (outmids->cvalues > requested)
 				break;
 			unsigned int user_id = 0;
-			if (!get_user_ids(deleg.c_str(), &user_id, nullptr, nullptr))
+			if (!mysql_adaptor_get_user_ids(deleg.c_str(), &user_id, nullptr, nullptr))
 				continue;
 			pnode = ab_tree_uid_to_node(pbase.get(), user_id);
 			if (pnode == nullptr ||
@@ -2090,7 +2068,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	if (username == nullptr || strcasecmp(username, rpc_info.username) != 0)
 		return ecAccessDenied;
 	sql_meta_result mres;
-	if (get_meta(username, WANTPRIV_METAONLY, mres) != 0)
+	if (mysql_adaptor_meta(username, WANTPRIV_METAONLY, mres) != 0)
 		return ecError;
 
 	auto tmp_list = delegates_for(mres.maildir.c_str());

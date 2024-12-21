@@ -11,6 +11,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/scope.hpp>
@@ -621,9 +622,9 @@ uint32_t EWSContext::getAccountId(const std::string& name, bool isDomain) const
 	display_type unused2;
 	BOOL res;
 	if(isDomain)
-		res = m_plugin.mysql.get_domain_ids(name.c_str(), &accountId, &unused1);
+		res = mysql_adaptor_get_domain_ids(name.c_str(), &accountId, &unused1);
 	else
-		res = m_plugin.mysql.get_user_ids(name.c_str(), &accountId, &unused1, &unused2);
+		res = mysql_adaptor_get_user_ids(name.c_str(), &accountId, &unused1, &unused2);
 	if(!res)
 		throw EWSError::CannotFindUser(E3113(isDomain? "domain" : "user", name));
 	return accountId;
@@ -720,7 +721,7 @@ std::string EWSContext::essdn_to_username(const std::string& essdn) const
 {
 	auto id2u = [&](int id, std::string &user) -> ec_error_t {
 		char buf[UADDR_SIZE];
-		if (!m_plugin.mysql.get_username_from_id(id, buf, std::size(buf)))
+		if (!mysql_adaptor_get_username_from_id(id, buf, std::size(buf)))
 			throw DispatchError(E3002);
 		user = buf;
 		return ecSuccess;
@@ -756,7 +757,7 @@ void EWSContext::experimental(const char* name) const
 std::string EWSContext::get_maildir(const std::string& username) const
 {
 	sql_meta_result mres;
-	if (m_plugin.mysql.meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
+	if (mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		throw EWSError::CannotFindUser(E3007);
 	return std::move(mres.maildir);
 }
@@ -780,7 +781,7 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 	}
 	if(RoutingType == "smtp") {
 		sql_meta_result mres;
-		if (m_plugin.mysql.meta(Address.c_str(), WANTPRIV_METAONLY, mres) != 0)
+		if (mysql_adaptor_meta(Address.c_str(), WANTPRIV_METAONLY, mres) != 0)
 			throw EWSError::CannotFindUser(E3125);
 		return std::move(mres.maildir);
 	} else
@@ -803,12 +804,12 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
 		target = at+1;
 	if (isPublic) {
 		char targetDir[256];
-		if (!m_plugin.mysql.get_homedir(target, targetDir, std::size(targetDir)))
+		if (!mysql_adaptor_get_homedir(target, targetDir, std::size(targetDir)))
 			throw EWSError::CannotFindUser(E3126);
 		return targetDir;
 	}
 	sql_meta_result mres;
-	if (m_plugin.mysql.meta(target, WANTPRIV_METAONLY, mres) != 0)
+	if (mysql_adaptor_meta(target, WANTPRIV_METAONLY, mres) != 0)
 		throw EWSError::CannotFindUser(E3126);
 	return std::move(mres.maildir);
 }
@@ -986,7 +987,7 @@ GUID EWSContext::getMailboxGuid(const std::string& dir) const
 sMailboxInfo EWSContext::getMailboxInfo(const std::string& dir, bool isDomain) const
 {
 	sMailboxInfo mbinfo{getMailboxGuid(dir), 0, isDomain};
-	auto getId = isDomain? m_plugin.mysql.get_id_from_homedir : m_plugin.mysql.get_id_from_maildir;
+	auto getId = isDomain? mysql_adaptor_get_id_from_homedir : mysql_adaptor_get_id_from_maildir;
 	if(!getId(dir.c_str(), &mbinfo.accountId))
 		throw EWSError::CannotFindUser(E3192(isDomain? "domain" : "user", dir));
 	return mbinfo;
@@ -1587,14 +1588,14 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 	if(eid.isPrivate())
 	{
 		char temp[UADDR_SIZE];
-		if(!m_plugin.mysql.get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
+		if(!mysql_adaptor_get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
 			throw EWSError::CannotFindUser(E3026);
 		folderSpec.target = temp;
 	}
 	else
 	{
 		sql_domain domaininfo;
-		if(!m_plugin.mysql.get_domain_info(eid.accountId(), domaininfo))
+		if(!mysql_adaptor_get_domain_info(eid.accountId(), domaininfo))
 			throw EWSError::CannotFindUser(E3027);
 		folderSpec.target = domaininfo.name;
 	}
@@ -1626,14 +1627,14 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 	if(eid.isPrivate())
 	{
 		char temp[UADDR_SIZE];
-		if(!m_plugin.mysql.get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
+		if(!mysql_adaptor_get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
 			throw EWSError::CannotFindUser(E3075);
 		folderSpec.target = temp;
 	}
 	else
 	{
 		sql_domain domaininfo;
-		if(!m_plugin.mysql.get_domain_info(eid.accountId(), domaininfo))
+		if(!mysql_adaptor_get_domain_info(eid.accountId(), domaininfo))
 			throw EWSError::CannotFindUser(E3076);
 		folderSpec.target = domaininfo.name;
 	}
@@ -2430,7 +2431,7 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFICATION_TIME, construct<uint64_t>(localCommitTime)});
 
 	char displayName[1024];
-	if(!m_plugin.mysql.get_user_displayname(m_auth_info.username, displayName, std::size(displayName)) || !*displayName)
+	if(!mysql_adaptor_get_user_displayname(m_auth_info.username, displayName, std::size(displayName)) || !*displayName)
 		shape.write(TAGGED_PROPVAL{PR_LAST_MODIFIER_NAME, strcpy(alloc<char>(strlen(displayName)+1), displayName)});
 	else
 		shape.write(TAGGED_PROPVAL{PR_LAST_MODIFIER_NAME, const_cast<char*>(m_auth_info.username)});
@@ -2440,8 +2441,8 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	EXT_PUSH wAbEid;
 	std::string essdn;
 	auto err = cvt_username_to_essdn(m_auth_info.username,
-	           m_plugin.x500_org_name.c_str(), m_plugin.mysql.get_user_ids,
-	           m_plugin.mysql.get_domain_ids, essdn);
+	           m_plugin.x500_org_name.c_str(), mysql_adaptor_get_user_ids,
+	           mysql_adaptor_get_domain_ids, essdn);
 	if (err != ecSuccess)
 		throw DispatchError(E3085);
 	HX_strupper(essdn.data());

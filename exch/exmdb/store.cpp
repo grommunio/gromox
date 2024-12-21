@@ -14,6 +14,7 @@
 #include <gromox/exmdb_server.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
@@ -272,7 +273,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
 		auto ben = pstmt.col_text(0);
-		if (!common_util_check_mlist_include(ben, username))
+		if (!mysql_adaptor_check_mlist_include(ben, username))
 			continue;
 		auto perm = pstmt.col_uint64(1);
 		auto fid  = pstmt.col_uint64(2);
@@ -291,7 +292,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 		mlog(LV_ERR, "E-2050: %s: %s", dlg_path.c_str(), strerror(ret));
 	for (const auto &d : delegate_list) {
 		if (strcasecmp(d.c_str(), username) == 0 ||
-		    common_util_check_mlist_include(d.c_str(), username)) {
+		    mysql_adaptor_check_mlist_include(d.c_str(), username)) {
 			*ppermission |= frightsGromoxSendAs;
 			break;
 		}

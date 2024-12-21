@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -54,8 +54,6 @@ struct sslfree2 : public sslfree {
 };
 }
 
-static decltype(mysql_adaptor_meta) *fptr_mysql_meta;
-static decltype(mysql_adaptor_login2) *fptr_mysql_login;
 static decltype(ldap_adaptor_login3) *fptr_ldap_login;
 static unsigned int am_choice = A_EXTERNID_LDAP;
 
@@ -159,7 +157,7 @@ static bool login_token(const char *token,
 		mres.errstr = "Token did not validate";
 		return false;
 	}
-	auto err = fptr_mysql_meta(ex_user.c_str(), wantpriv, mres);
+	auto err = mysql_adaptor_meta(ex_user.c_str(), wantpriv, mres);
 	if (err != 0 && mres.errstr.empty()) {
 		mres.errstr = "meta: "s + strerror(err);
 		return false;
@@ -235,7 +233,7 @@ static bool login_gen(const char *username, const char *password,
     unsigned int wantpriv, sql_meta_result &mres) try
 {
 	bool auth = false;
-	auto err = fptr_mysql_meta(username, wantpriv, mres);
+	auto err = mysql_adaptor_meta(username, wantpriv, mres);
 	if (err != 0 || mres.have_xid == 0xFF)
 		sleep(1);
 	else if (am_choice == A_DENY_ALL)
@@ -247,7 +245,7 @@ static bool login_gen(const char *username, const char *password,
 	else if (am_choice == A_EXTERNID_PAM && mres.have_xid > 0)
 		auth = login_pam(mres.username.c_str(), password, mres);
 	else if (am_choice == A_EXTERNID_LDAP)
-		auth = fptr_mysql_login(mres.username.c_str(), password,
+		auth = mysql_adaptor_login2(mres.username.c_str(), password,
 		       mres.enc_passwd, mres.errstr);
 	auth = auth && err == 0;
 	if (!auth && mres.errstr.empty())
@@ -300,13 +298,6 @@ static bool authmgr_init()
 {
 	if (!authmgr_reload())
 		return false;
-	query_service2("mysql_auth_meta", fptr_mysql_meta);
-	query_service2("mysql_auth_login2", fptr_mysql_login);
-	if (fptr_mysql_meta == nullptr ||
-	    fptr_mysql_login == nullptr) {
-		mlog(LV_ERR, "authmgr: mysql_adaptor plugin not loaded yet");
-		return false;
-	}
 	if (!register_service("auth_login_gen", login_gen)) {
 		mlog(LV_ERR, "authmgr: failed to register auth services");
 		return false;

@@ -3,7 +3,6 @@
 #include "nsp_types.hpp"
 
 void nsp_interface_init(BOOL b_check);
-extern int nsp_interface_run();
 extern int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *, FLATUID *server_guid, NSPI_HANDLE *);
 uint32_t nsp_interface_unbind(NSPI_HANDLE *phandle, uint32_t reserved);
 int nsp_interface_update_stat(NSPI_HANDLE handle, uint32_t reserved,

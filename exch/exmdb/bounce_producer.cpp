@@ -19,6 +19,7 @@
 #include <gromox/bounce_gen.hpp>
 #include <gromox/database.h>
 #include <gromox/exmdb_common_util.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/textmaps.hpp>
@@ -61,7 +62,7 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	char date_buff[128];
 
 	sql_meta_result mres;
-	auto charset = common_util_meta(from, WANTPRIV_METAONLY, mres) == 0 ?
+	auto charset = mysql_adaptor_meta(from, WANTPRIV_METAONLY, mres) == 0 ?
 	               lang_to_charset(mres.lang.c_str()) : nullptr;
 	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,

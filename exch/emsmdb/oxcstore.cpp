@@ -5,6 +5,7 @@
 #include <ctime>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
@@ -40,7 +41,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	if (ret != ecSuccess)
 		return ret;
 	unsigned int user_id = 0, dom_id = 0;
-	if (!common_util_get_user_ids(username.c_str(), &user_id, &dom_id, nullptr))
+	if (!mysql_adaptor_get_user_ids(username.c_str(), &user_id, &dom_id, nullptr))
 		return ecUnknownUser;
 	if (open_flags & LOGON_OPEN_FLAG_ALTERNATE_SERVER) {
 		std::string serverdn;
@@ -56,7 +57,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		if (open_flags & LOGON_OPEN_FLAG_USE_ADMIN_PRIVILEGE)
 			return ecLoginPerm;
 		sql_meta_result mres;
-		if (common_util_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
+		if (mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 			return ecError;
 		maildir = std::move(mres.maildir);
 		if (!exmdb_client::get_mbox_perm(maildir.c_str(),
@@ -170,7 +171,7 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 		return ecUnknownUser;
 	pdomain ++;
 	unsigned int domain_id = 0, org_id = 0;
-	if (!common_util_get_domain_ids(pdomain, &domain_id, &org_id))
+	if (!mysql_adaptor_get_domain_ids(pdomain, &domain_id, &org_id))
 		return ecUnknownUser;
 	if (NULL != pessdn) {
 		auto pdomain1 = cvt_serverdn_to_domain(pessdn, g_emsmdb_org_name);
@@ -178,7 +179,7 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 			if (org_id == 0)
 				return ecLoginFailure;
 			unsigned int domain_id1 = 0, org_id1 = 0;
-			if (!common_util_get_domain_ids(pdomain1, &domain_id1, &org_id1))
+			if (!mysql_adaptor_get_domain_ids(pdomain1, &domain_id1, &org_id1))
 				return ecError;
 			if (org_id != org_id1)
 				return ecLoginFailure;
@@ -186,7 +187,7 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 			pdomain = pdomain1;
 		}
 	}
-	if (!common_util_get_homedir_by_id(domain_id, homedir, std::size(homedir)))
+	if (!mysql_adaptor_get_homedir_by_id(domain_id, homedir, std::size(homedir)))
 		return ecError;
 	/* like EXCHANGE 2013 or later, we only
 		return four folder_ids to client */
@@ -351,7 +352,7 @@ ec_error_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 		return ecServerOOM;
 	auto username = get_rpc_info().username;
 	unsigned int user_id = 0;
-	if (!common_util_get_user_ids(username, &user_id, nullptr, nullptr))
+	if (!mysql_adaptor_get_user_ids(username, &user_id, nullptr, nullptr))
 		return ecUnknownUser;
 	std::string serverdn;
 	auto err = cvt_username_to_serverdn(username,
