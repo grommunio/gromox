@@ -37,7 +37,7 @@ dist_unit_DATA = system/gromox-delivery.service \
 	system/gromox-snapshot.service system/gromox-snapshot.timer \
 	system/gromox-timer.service system/gromox-zcore.service
 
-program_plugins = libgromox_auth.la libgromox_authz.la ${mta_plugins} ${hpm_plugins} ${proc_plugins} ${svc_plugins}
+program_plugins = libgxs_mysql_adaptor.la libgromox_auth.la libgromox_authz.la ${mta_plugins} ${hpm_plugins} ${proc_plugins} ${svc_plugins}
 mta_plugins = \
 	libgxm_alias_resolve.la \
 	libgxm_exmdb_local.la
@@ -53,7 +53,7 @@ svc_plugins = \
 	libgxs_event_stub.la \
 	libgxs_midb_agent.la \
 	libgxs_timer_agent.la \
-	libgxs_mysql_adaptor.la libgxs_ruleproc.la
+	libgxs_ruleproc.la
 sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbck gromox-mbop gromox-mbsize gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
 if HAVE_ESEDB
 sbin_PROGRAMS += gromox-edb2mt
