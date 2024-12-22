@@ -89,6 +89,9 @@ When Outlook is active, it is possible to Ctrl-MouseBtn3 (right click) on the
 status tray icon to call up a context menu, from which "Test Email
 Autoconfiguration..." can be selected to debug AutoDiscover requests and
 responses from the Windows side.
+.SH Exchange notes
+In EXC, MH can be toggled on/off via an EAC Shell command:
+`Set-OrganizationConfig -MapiHttpEnable $false` (or $true).
 .SH Normative references
 .IP \(bu 4
 MS-OXDISCO: Autodiscover HTTP Service Protocol
