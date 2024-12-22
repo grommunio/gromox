@@ -114,14 +114,32 @@ AutoDiscoverDomain, SRV, Local, Redirect. Secondary order observed: TXT, LDAP,
 RootDomain, AutoDiscoverDomain, Local, Redirect, SRV.
 .PP
 Individual probes can be disabled via Windows Registry in
+.IP \(bu 4
 HKEY_CURRENT_USER\\Software\\Microsoft\\Office\\16.0\\Outlook\\AutoDiscover
+.PP
 and/or
+.IP \(bu 4
 HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\Office\\16.0\\Outlook\\AutoDiscover,
-by setting one or more of ExcludeLastKnownGoodURL=DWORD:1,
-ExcludeExplicitO365Endpoint=DWORD:1, EnableOffice365ConfigService=DWORD:0,
-ExcludeScpLookup=DWORD:1, ExcludeHttpsRootDomain=DWORD:1,
-ExcludeHttpsAutoDiscoverDomain=DWORD:1, ExcludeSrvRecord=DWORD:1,
-ExcludeHttpRedirect=DWORD:1 as desired. For Group Policy ADMX template and ADML
+.PP
+by setting one or more of
+.IP \(bu 4
+ExcludeLastKnownGoodURL=DWORD:1
+.IP \(bu 4
+ExcludeExplicitO365Endpoint=DWORD:1
+.IP \(bu 4
+EnableOffice365ConfigService=DWORD:0
+.IP \(bu 4
+ExcludeScpLookup=DWORD:1
+.IP \(bu 4
+ExcludeHttpsRootDomain=DWORD:1
+.IP \(bu 4
+ExcludeHttpsAutoDiscoverDomain=DWORD:1
+.IP \(bu 4
+ExcludeSrvRecord=DWORD:1
+.IP \(bu 4
+ExcludeHttpRedirect=DWORD:1
+.PP
+as desired. For the Group Policy editor, ADMX template and ADML
 language packs are available from
 <https://www.microsoft.com/en-us/download/details.aspx?id=49030>.
 .PP
