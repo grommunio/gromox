@@ -1,5 +1,7 @@
 [Unit]
 Description=Gromox mailbox cleaner
+Requisite=gromox-http.service
+After=gromox-http.service
 
 [Service]
 # Fallback if EnvironmentFile hasn't got any value
