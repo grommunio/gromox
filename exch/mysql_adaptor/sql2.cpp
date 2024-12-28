@@ -731,14 +731,18 @@ int mysql_adaptor_mbop_userlist(std::vector<sql_user> &out) try
 	if (result == nullptr)
 		return ENOMEM;
 	std::vector<sql_user> gv(result.num_rows());
-	for (size_t i = 0; i < gv.size(); ++i) {
+	for (size_t i = 0; i < gv.size(); ) {
 		auto row = result.fetch_row();
 		gv[i].id = strtoul(row[0], nullptr, 0);
 		gv[i].username = row[1];
 		gv[i].addr_status = strtoul(row[2], nullptr, 0);
 		gv[i].maildir = znul(row[3]);
-		gv[i].dtypx = static_cast<enum display_type>(strtoul(row[4], nullptr, 0));
-		gv[i].homeserver = znul(row[5]);
+		if (row[4] == nullptr) {
+			gv.pop_back();
+			continue;
+		}
+		gv[i].dtypx = static_cast<enum display_type>(strtoul(znul(row[4]), nullptr, 0));
+		gv[i++].homeserver = znul(row[5]);
 	}
 	out = std::move(gv);
 	return 0;
