@@ -37,7 +37,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		return ecInvalidParam;
 	std::string username;
 	auto ret = cvt_essdn_to_username(pessdn, g_emsmdb_org_name,
-	           cu_id2user, username);
+	           mysql_adaptor_userid_to_name, username);
 	if (ret != ecSuccess)
 		return ret;
 	unsigned int user_id = 0, dom_id = 0;

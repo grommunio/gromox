@@ -104,11 +104,6 @@ static bool gp_prepare_mvstr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xs
 static bool gp_prepare_default(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static void *gp_fetch(sqlite3 *, sqlite3_stmt *, uint16_t, cpid_t, GP_RESULT &);
 
-ec_error_t cu_id2user(int id, std::string &user)
-{
-	return mysql_adaptor_userid_to_name(id, user);
-}
-
 ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *data)
 {
 	for (unsigned int i = 0; i < parray->count; ++i) {
@@ -4689,7 +4684,7 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 	}
 	std::string es_result;
 	auto ret = cvt_essdn_to_username(ab_entryid.px500dn, g_exmdb_org_name,
-	           cu_id2user, es_result);
+	           mysql_adaptor_userid_to_name, es_result);
 	if (ret != ecSuccess) {
 		*pb_owner = false;
 		return TRUE;

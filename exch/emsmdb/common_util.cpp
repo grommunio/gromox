@@ -1565,7 +1565,7 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 	std::string es_result;
 	if (addrtype != nullptr) {
 		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
-		           g_emsmdb_org_name, cu_id2user, es_result);
+		           g_emsmdb_org_name, mysql_adaptor_userid_to_name, es_result);
 		if (ret == ecSuccess) {
 			list.emplace_back(std::move(es_result));
 			return ecSuccess;
@@ -1574,7 +1574,7 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 		}
 	}
 	auto ret = cvt_entryid_to_smtpaddr(props.get<const BINARY>(PR_ENTRYID),
-	           g_emsmdb_org_name, cu_id2user, es_result);
+	           g_emsmdb_org_name, mysql_adaptor_userid_to_name, es_result);
 	if (ret == ecSuccess)
 		list.emplace_back(std::move(es_result));
 	if (ret == ecNullObject || ret == ecUnknownUser)
@@ -1788,11 +1788,6 @@ static void mlog2(unsigned int level, const char *format, ...)
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	mlog(level, "user=%s host=[%s]  %s",
 		rpc_info.username, rpc_info.client_addr, log_buf);
-}
-
-ec_error_t cu_id2user(int id, std::string &user)
-{
-	return mysql_adaptor_userid_to_name(id, user);
 }
 
 }

@@ -92,7 +92,6 @@ extern BOOL common_util_save_message_ics(logon_object *plogon, uint64_t msg_id, 
 extern ec_error_t ems_send_mail(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
 extern ec_error_t ems_send_vmail(vmime::shared_ptr<vmime::message>, const char *sender, const std::vector<std::string> &rcpts);
 extern ec_error_t cu_send_message(logon_object *, message_object *, bool submit);
-extern ec_error_t cu_id2user(int, std::string &);
 extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, message_content *, const char *bounce_type, MAIL *);
 
 extern int (*common_util_add_timer)(const char *command, int interval);

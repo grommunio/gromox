@@ -13,6 +13,7 @@
 #include <gromox/exmdb_server.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
@@ -2049,7 +2050,7 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
 	const char *username = nullptr;
 	if (bin != nullptr) {
 		if (cvt_entryid_to_smtpaddr(bin, g_exmdb_org_name,
-		    cu_id2user, ustg) != ecSuccess)
+		    mysql_adaptor_userid_to_name, ustg) != ecSuccess)
 			return true;
 		username = ustg.c_str();
 	} else {

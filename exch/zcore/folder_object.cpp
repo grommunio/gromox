@@ -18,6 +18,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
@@ -713,7 +714,7 @@ static int folder_object_flush_delegates(int fd,
 		std::string address_buff;
 		if (ptype != nullptr) {
 			auto ret = cvt_genaddr_to_smtpaddr(ptype, paddress,
-			           g_org_name, cu_id2user, address_buff);
+			           g_org_name, mysql_adaptor_userid_to_name, address_buff);
 			if (ret == ecSuccess)
 				/* ok */;
 			else if (ret != ecNullObject)
@@ -721,7 +722,7 @@ static int folder_object_flush_delegates(int fd,
 		}
 		if (address_buff.empty() && pentryid != nullptr) {
 			auto ret = cvt_entryid_to_smtpaddr(pentryid, g_org_name,
-			           cu_id2user, address_buff);
+			           mysql_adaptor_userid_to_name, address_buff);
 			if (ret == ecSuccess)
 				/* ok */;
 			else if (ret != ecNullObject)

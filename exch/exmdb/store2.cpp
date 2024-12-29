@@ -87,7 +87,7 @@ BOOL exmdb_server::store_eid_to_user(const char *, const STORE_ENTRYID *store_ei
 		std::string es_result;
 		char md[256];
 		if (cvt_essdn_to_username(store_eid->pmailbox_dn,
-		    g_exmdb_org_name, cu_id2user, es_result) != ecSuccess ||
+		    g_exmdb_org_name, mysql_adaptor_userid_to_name, es_result) != ecSuccess ||
 		    !mysql_adaptor_get_user_ids(es_result.c_str(), &uid, &domid, &dt) ||
 		    !mysql_adaptor_get_homedir_by_id(domid, md, std::size(md)))
 			return false;

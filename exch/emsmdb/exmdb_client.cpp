@@ -8,6 +8,7 @@
 #include <string>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
@@ -211,7 +212,7 @@ BOOL exmdb_client_shm::is_message_owner(const char *dir, uint64_t message_id,
 	}
 	std::string es_result;
 	if (cvt_essdn_to_username(ab_entryid.px500dn, g_emsmdb_org_name,
-	    cu_id2user, es_result) != ecSuccess) {
+	    mysql_adaptor_userid_to_name, es_result) != ecSuccess) {
 		*pb_owner = false;
 		return TRUE;
 	}

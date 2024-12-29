@@ -262,7 +262,7 @@ int main(int argc, char **argv) try
 		ical ic;
 		if (!oxcical_export(ctnt, log_id.c_str(), ic,
 		    g_config_file->get_value("x500_org_name"),
-		    zalloc, cu_get_propids, oxcmail_id2user)) {
+		    zalloc, cu_get_propids, mysql_adaptor_userid_to_name)) {
 			fprintf(stderr, "oxcical_export failed for an unspecified reason.\n");
 			return EXIT_FAILURE;
 		}

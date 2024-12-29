@@ -155,11 +155,6 @@ static GET_USER_IDS oxcmail_get_user_ids;
 static GET_DOMAIN_IDS oxcmail_get_domain_ids;
 static GET_USERNAME oxcmail_get_username;
 
-ec_error_t oxcmail_id2user(int id, std::string &user)
-{
-	return oxcmail_get_username(id, user);
-}
-
 static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 {
 	/* Avoid uninitialized read when the copy/transfer is made */
@@ -2908,7 +2903,7 @@ static BOOL oxcmail_export_addresses(const TARRAY_SET &rcpt_list,
 			mb->setName(vmime::text(pdisplay_name, vmime::charsets::UTF_8));
 		std::string username;
 		if (oxcmail_get_smtp_address(rcpt, &tags_self,
-		    g_oxcmail_org_name, oxcmail_id2user, username))
+		    g_oxcmail_org_name, oxcmail_get_username, username))
 			mb->setEmail(username);
 		mblist.appendMailbox(mb);
 	}
@@ -2974,7 +2969,7 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 		mb.setName(vmime::text(pvalue, vmime::charsets::UTF_8));
 	std::string address;
 	if (oxcmail_get_smtp_address(pmsg->proplist, &tags, g_oxcmail_org_name,
-	    oxcmail_id2user, address)) {
+	    oxcmail_get_username, address)) {
 		mb.setEmail(address);
 		return true;
 	}
@@ -4266,7 +4261,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	
 	if (NULL != pcalendar) {
 		if (!oxcical_export(pmsg, log_id, ical, g_oxcmail_org_name, alloc,
-		    get_propids, oxcmail_id2user)) {
+		    get_propids, oxcmail_get_username)) {
 			mlog(LV_WARN, "W-2186: oxcical_export %s failed (unspecified reason)", log_id);
 			return exp_false;
 		}
@@ -4302,7 +4297,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 			return exp_false;
 		if (!oxcmail_export_dsn(pmsg, mime_skeleton.charset,
 		    mime_skeleton.pmessage_class, g_oxcmail_org_name,
-		    oxcmail_id2user, tmp_buff, sizeof(tmp_buff)))
+		    oxcmail_get_username, tmp_buff, sizeof(tmp_buff)))
 			return exp_false;
 		if (!pmime->write_content(tmp_buff, strlen(tmp_buff),
 		    mime_encoding::none))

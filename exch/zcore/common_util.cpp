@@ -131,7 +131,7 @@ bool cu_extract_delegate(message_object *pmessage, std::string &username)
 	auto emaddr   = tmp_propvals.get<const char>(PR_EMAIL_ADDRESS);
 	if (addrtype != nullptr) {
 		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, g_org_name,
-		           cu_id2user, username);
+		           mysql_adaptor_userid_to_name, username);
 		if (ret == ecSuccess)
 			return true;
 		else if (ret != ecNullObject)
@@ -143,7 +143,7 @@ bool cu_extract_delegate(message_object *pmessage, std::string &username)
 		return TRUE;
 	}
 	auto ret = cvt_entryid_to_smtpaddr(tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID),
-		   g_org_name, cu_id2user, username);
+		   g_org_name, mysql_adaptor_userid_to_name, username);
 	if (ret == ecSuccess)
 		return TRUE;
 	if (ret == ecNullObject) {
@@ -1105,7 +1105,7 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 	std::string es_result;
 	if (addrtype != nullptr) {
 		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, g_org_name,
-		           cu_id2user, es_result);
+		           mysql_adaptor_userid_to_name, es_result);
 		if (ret == ecSuccess) {
 			list.emplace_back(std::move(es_result));
 			return ecSuccess;
@@ -1114,7 +1114,7 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 		}
 	}
 	auto ret = cvt_entryid_to_smtpaddr(props.get<const BINARY>(PR_ENTRYID),
-	           g_org_name, cu_id2user, es_result);
+	           g_org_name, mysql_adaptor_userid_to_name, es_result);
 	if (ret == ecSuccess)
 		list.emplace_back(std::move(es_result));
 	if (ret == ecNullObject || ret == ecUnknownUser)
@@ -1855,7 +1855,7 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	common_util_set_dir(dir);
 	auto log_id = dir + ":m"s + std::to_string(message_id);
 	if (!oxcical_export(pmsgctnt, log_id.c_str(), ical, g_org_name,
-	    common_util_alloc, common_util_get_propids, cu_id2user)) {
+	    common_util_alloc, common_util_get_propids, mysql_adaptor_userid_to_name)) {
 		mlog(LV_ERR, "E-2202: oxcical_export %s failed", log_id.c_str());
 		return FALSE;
 	}
@@ -2042,11 +2042,6 @@ errno_t cu_write_storenamedprop(const char *dir, const GUID &guid,
 	if (!exmdb_client->set_store_properties(dir, CP_ACP, &values, &prob))
 		return EINVAL;
 	return 0;
-}
-
-ec_error_t cu_id2user(int id, std::string &user)
-{
-	return mysql_adaptor_userid_to_name(id, user);
 }
 
 ec_error_t cu_fbdata_to_ical(const char *user, const char *fbuser,

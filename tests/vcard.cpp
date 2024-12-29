@@ -245,7 +245,7 @@ static int t_ical_dt()
 			return EXIT_FAILURE;
 		}
 		ical = {};
-		auto id2user = [](int, std::string &) -> ec_error_t { return ecNotFound; };
+		auto id2user = [](unsigned int, std::string &) -> ec_error_t { return ecNotFound; };
 		if (!oxcical_export(mc.get(), "-", ical, "x500", zalloc, ee_get_propids, id2user)) {
 			fprintf(stderr, "oxcical_export unsuccessful\n");
 			return EXIT_FAILURE;

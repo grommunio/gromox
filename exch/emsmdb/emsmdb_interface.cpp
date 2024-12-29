@@ -583,7 +583,7 @@ ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *pus
 		return ecAccessDenied;
 	std::string username;
 	auto ret = cvt_essdn_to_username(puser_dn, g_emsmdb_org_name,
-	           cu_id2user, username);
+	           mysql_adaptor_userid_to_name, username);
 	if (ret != ecSuccess)
 		return ecRpcFailed;
 	if (*username.c_str() == '\0')

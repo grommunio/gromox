@@ -287,7 +287,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 					continue;
 				if (0 == strcasecmp(paddress_type, "EX")) {
 					if (cvt_essdn_to_username(paddress, g_org_name,
-					    cu_id2user, username) != ecSuccess)
+					    mysql_adaptor_userid_to_name, username) != ecSuccess)
 						continue;
 				} else if (0 == strcasecmp(paddress_type, "SMTP")) {
 					try {

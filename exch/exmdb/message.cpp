@@ -2444,7 +2444,7 @@ static bool cu_rcpt_to_list(const TPROPVAL_ARRAY &props,
 	if (addrtype != nullptr) {
 		std::string es_result;
 		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
-		           g_exmdb_org_name, cu_id2user, es_result);
+		           g_exmdb_org_name, mysql_adaptor_userid_to_name, es_result);
 		if (ret == ecSuccess) {
 			list.emplace_back(std::move(es_result));
 			return true;
@@ -2457,7 +2457,7 @@ static bool cu_rcpt_to_list(const TPROPVAL_ARRAY &props,
 		return false;
 	std::string es_result;
 	auto ret = cvt_entryid_to_smtpaddr(entryid, g_exmdb_org_name,
-	           cu_id2user, es_result);
+	           mysql_adaptor_userid_to_name, es_result);
 	if (ret == ecSuccess)
 		list.emplace_back(std::move(es_result));
 	return ret == ecSuccess;

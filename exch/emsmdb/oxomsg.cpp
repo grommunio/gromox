@@ -159,7 +159,7 @@ static bool oxomsg_extract_delegate(message_object *pmessage,
 	auto emaddr   = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 	if (addrtype != nullptr) {
 		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
-		           g_emsmdb_org_name, cu_id2user, username);
+		           g_emsmdb_org_name, mysql_adaptor_userid_to_name, username);
 		if (ret == ecSuccess)
 			return true;
 		else if (ret != ecNullObject)
@@ -171,7 +171,7 @@ static bool oxomsg_extract_delegate(message_object *pmessage,
 		return TRUE;
 	}
 	auto ret = cvt_entryid_to_smtpaddr(tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID),
-	           g_emsmdb_org_name, cu_id2user, username);
+	           g_emsmdb_org_name, mysql_adaptor_userid_to_name, username);
 	if (ret == ecSuccess)
 		return TRUE;
 	if (ret == ecNullObject) {

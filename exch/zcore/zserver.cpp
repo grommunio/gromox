@@ -2283,7 +2283,7 @@ ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 	
 	if (0 == strncasecmp(mailbox_dn, "/o=", 3)) {
 		auto ret = cvt_essdn_to_username(mailbox_dn, g_org_name,
-		           cu_id2user, username);
+		           mysql_adaptor_userid_to_name, username);
 		if (ret == ecUnknownUser)
 			return ecNotFound;
 		else if (ret != ecSuccess)
@@ -3108,7 +3108,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
 				std::string es_result;
 				auto ret = cvt_essdn_to_username(ab_entryid.px500dn,
-				           g_org_name, cu_id2user, es_result);
+				           g_org_name, mysql_adaptor_userid_to_name, es_result);
 				if (ret != ecSuccess)
 					continue;
 				dupval = common_util_dup(es_result);
@@ -4980,7 +4980,7 @@ ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
 	std::string username;
 	sql_meta_result mres;
 	if (cvt_entryid_to_smtpaddr(&entryid, g_org_name,
-	    cu_id2user, username) != ecSuccess ||
+	    mysql_adaptor_userid_to_name, username) != ecSuccess ||
 	    mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecSuccess;
 	return get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
@@ -4996,7 +4996,7 @@ ec_error_t zs_getuserfreebusyical(GUID hsession, BINARY entryid,
 	std::string username;
 	sql_meta_result mres;
 	if (cvt_entryid_to_smtpaddr(&entryid, g_org_name,
-	    cu_id2user, username) != ecSuccess ||
+	    mysql_adaptor_userid_to_name, username) != ecSuccess ||
 	    mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecSuccess;
 	std::vector<freebusy_event> fb_data;
@@ -5067,7 +5067,7 @@ ec_error_t zs_linkmessage(GUID hsession,
 ec_error_t zs_essdn_to_username(const char *essdn, char **username)
 {
 	std::string es_result;
-	auto ret = cvt_essdn_to_username(essdn, g_org_name, cu_id2user, es_result);
+	auto ret = cvt_essdn_to_username(essdn, g_org_name, mysql_adaptor_userid_to_name, es_result);
 	if (ret != ecSuccess)
 		return ret;
 	*username = common_util_dup(es_result);
