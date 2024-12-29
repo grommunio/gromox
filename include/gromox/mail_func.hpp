@@ -1,6 +1,3 @@
-/*
- * Email Address Kids Lib Header
- */
 #pragma once
 #include <cstdint>
 #include <ctime>
@@ -42,6 +39,8 @@ struct GX_EXPORT ENCODE_STRING {
     char title[1024];
 };
 
+using GET_USERNAME = ec_error_t (*)(unsigned int, std::string &);
+
 struct MAIL;
 extern GX_EXPORT BOOL parse_uri(const char *uri_buff, char *parsed_uri);
 extern GX_EXPORT size_t parse_mime_field(const char *, size_t, MIME_FIELD *);
@@ -66,6 +65,7 @@ extern GX_EXPORT ssize_t rtfcp_uncompressed_size(const BINARY *);
 
 namespace gromox {
 
+extern GX_EXPORT ec_error_t cu_rcpt_to_list(const TPROPVAL_ARRAY &, const char *org, std::vector<std::string> &outlist, GET_USERNAME, bool resend);
 extern GX_EXPORT ec_error_t cu_send_mail(MAIL &, const char *smtp_url, const char *sender, const std::vector<std::string> &rcpt);
 extern GX_EXPORT ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message>, const char *smtp_url, const char *sender, const std::vector<std::string> &rcpt);
 

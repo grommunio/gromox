@@ -1532,59 +1532,6 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
 	return false;
 }
 
-static bool mapi_p1(const TPROPVAL_ARRAY &props)
-{
-	auto t = props.get<const uint32_t>(PR_RECIPIENT_TYPE);
-	return t != nullptr && *t & MAPI_P1;
-}
-
-#if 0
-static bool xp_is_in_charge(const TPROPVAL_ARRAY &props)
-{
-	auto v = props.get<const uint32_t>(PR_RESPONSIBILITY);
-	return v == nullptr || *v != 0;
-}
-#endif
-
-static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
-    std::vector<std::string> &list, bool resend) try
-{
-	if (resend && !mapi_p1(props))
-		return ecSuccess;
-	/*
-	if (!b_submit && xp_is_in_charge(rcpt))
-		return ecSuccess;
-	*/
-	auto str = props.get<const char>(PR_SMTP_ADDRESS);
-	if (str != nullptr && *str != '\0') {
-		list.emplace_back(str);
-		return ecSuccess;
-	}
-	auto addrtype = props.get<const char>(PR_ADDRTYPE);
-	auto emaddr   = props.get<const char>(PR_EMAIL_ADDRESS);
-	std::string es_result;
-	if (addrtype != nullptr) {
-		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
-		           g_emsmdb_org_name, mysql_adaptor_userid_to_name, es_result);
-		if (ret == ecSuccess) {
-			list.emplace_back(std::move(es_result));
-			return ecSuccess;
-		} else if (ret != ecNullObject) {
-			return ret;
-		}
-	}
-	auto ret = cvt_entryid_to_smtpaddr(props.get<const BINARY>(PR_ENTRYID),
-	           g_emsmdb_org_name, mysql_adaptor_userid_to_name, es_result);
-	if (ret == ecSuccess)
-		list.emplace_back(std::move(es_result));
-	if (ret == ecNullObject || ret == ecUnknownUser)
-		return ecInvalidRecips;
-	return ret;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1123: ENOMEM");
-	return ecServerOOM;
-}
-
 ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
     bool b_submit) try
 {
@@ -1636,7 +1583,8 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 
 	std::vector<std::string> rcpt_list;
 	for (const auto &rcpt : *prcpts) {
-		auto ret = cu_rcpt_to_list(message_id, rcpt, rcpt_list, b_resend);
+		auto ret = cu_rcpt_to_list(rcpt, g_emsmdb_org_name, rcpt_list,
+		           mysql_adaptor_userid_to_name, b_resend);
 		if (ret != ecSuccess)
 			return ret;
 	}

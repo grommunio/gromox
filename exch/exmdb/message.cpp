@@ -2431,41 +2431,6 @@ static BOOL message_get_propname(propid_t propid,
 	return false;
 }
 
-static bool cu_rcpt_to_list(const TPROPVAL_ARRAY &props,
-    std::vector<std::string> &list) try
-{
-	auto str = props.get<const char>(PR_SMTP_ADDRESS);
-	if (str != nullptr) {
-		list.emplace_back(str);
-		return true;
-	}
-	auto addrtype = props.get<const char>(PR_ADDRTYPE);
-	auto emaddr   = props.get<const char>(PR_EMAIL_ADDRESS);
-	if (addrtype != nullptr) {
-		std::string es_result;
-		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
-		           g_exmdb_org_name, mysql_adaptor_userid_to_name, es_result);
-		if (ret == ecSuccess) {
-			list.emplace_back(std::move(es_result));
-			return true;
-		} else if (ret != ecNullObject) {
-			return false;
-		}
-	}
-	auto entryid = props.get<const BINARY>(PR_ENTRYID);
-	if (entryid == nullptr)
-		return false;
-	std::string es_result;
-	auto ret = cvt_entryid_to_smtpaddr(entryid, g_exmdb_org_name,
-	           mysql_adaptor_userid_to_name, es_result);
-	if (ret == ecSuccess)
-		list.emplace_back(std::move(es_result));
-	return ret == ecSuccess;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2036: ENOMEM");
-	return false;
-}
-
 static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
     uint32_t action_flavor, uint32_t template_message_id, GUID template_guid,
     BOOL *pb_result) try
@@ -2589,7 +2554,8 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	std::vector<std::string> rcpt_list;
 	for (auto &r : *pmsgctnt->children.prcpts) {
 		TPROPVAL_ARRAY pv = {r.count, r.ppropval};
-		if (!cu_rcpt_to_list(std::move(pv), rcpt_list))
+		if (cu_rcpt_to_list(std::move(pv), g_exmdb_org_name, rcpt_list,
+		    mysql_adaptor_userid_to_name, false) != ecSuccess)
 			return false;
 	}
 	auto ret = ems_send_mail(&imail, rp.ev_to, rcpt_list);
@@ -2657,7 +2623,8 @@ template<typename T> static bool msg_rcpt_blocks_to_list(const T &fwd,
 		TPROPVAL_ARRAY pv;
 		pv.count = rcptprops.count;
 		pv.ppropval = rcptprops.ppropval;
-		if (!cu_rcpt_to_list(std::move(pv), rcpt_list))
+		if (cu_rcpt_to_list(std::move(pv), g_exmdb_org_name, rcpt_list,
+		    mysql_adaptor_userid_to_name, false) != ecSuccess)
 			return false;
 	}
 	return true;

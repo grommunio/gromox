@@ -14,8 +14,60 @@
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapierr.hpp>
+#include <gromox/usercvt.hpp>
 
 namespace gromox {
+
+static bool mapi_p1(const TPROPVAL_ARRAY &props)
+{
+	auto t = props.get<const uint32_t>(PR_RECIPIENT_TYPE);
+	return t != nullptr && *t & MAPI_P1;
+}
+
+#if 0
+static bool xp_is_in_charge(const TPROPVAL_ARRAY &props)
+{
+	auto v = props.get<const uint32_t>(PR_RESPONSIBILITY);
+	return v == nullptr || *v != 0;
+}
+#endif
+
+ec_error_t cu_rcpt_to_list(const TPROPVAL_ARRAY &props, const char *org_name,
+    std::vector<std::string> &list, GET_USERNAME id2user, bool resend) try
+{
+	if (resend && !mapi_p1(props))
+		return ecSuccess;
+	/*
+	if (!b_submit && xp_is_in_charge(rcpt))
+		return ecSuccess;
+	*/
+	auto str = props.get<const char>(PR_SMTP_ADDRESS);
+	if (str != nullptr && *str != '\0') {
+		list.emplace_back(str);
+		return ecSuccess;
+	}
+	auto addrtype = props.get<const char>(PR_ADDRTYPE);
+	auto emaddr   = props.get<const char>(PR_EMAIL_ADDRESS);
+	std::string es_result;
+	if (addrtype != nullptr) {
+		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, org_name,
+		           id2user, es_result);
+		if (ret == ecSuccess) {
+			list.emplace_back(std::move(es_result));
+			return ecSuccess;
+		} else if (ret != ecNullObject) {
+			return ret;
+		}
+	}
+	auto ret = cvt_entryid_to_smtpaddr(props.get<const BINARY>(PR_ENTRYID),
+	           org_name, id2user, es_result);
+	if (ret == ecSuccess)
+		list.emplace_back(std::move(es_result));
+	return ret == ecNullObject || ret == ecUnknownUser ? ecInvalidRecips : ret;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1122: ENOMEM");
+	return ecServerOOM;
+}
 
 ec_error_t cu_send_mail(MAIL &mail, const char *smtp_url, const char *sender,
     const std::vector<std::string> &rcpt_list) try
