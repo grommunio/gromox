@@ -1655,13 +1655,12 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 		encode_hex_binary(&ctid, sizeof(ctid), cid_string, 33);
 		cid_string[32] = '@';
 		cid_string[33] = '\0';
-		char account[UDOM_SIZE]{};
-		if (!mysql_adaptor_get_username_from_id(exmdb_server::get_account_id(),
-		    account, std::size(account)))
-			gx_strlcpy(account, "localhost", std::size(account));
-		const char *pc = strchr(account, '@'); /* CONST-STRCHR-MARKER */
+		std::string account;
+		if (mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), account) != ecSuccess)
+			account = "localhost";
+		const char *pc = strchr(account.c_str(), '@'); /* CONST-STRCHR-MARKER */
 		if (pc == nullptr)
-			pc = account;
+			pc = account.c_str();
 		else
 			++pc;
 		HX_strlcat(cid_string, pc, std::size(cid_string));
@@ -3634,17 +3633,17 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	uint64_t fid_val;
 	char tmp_path[256];
 	BINARY searchkey_bin;
-	char mid_string[128], display_name[1024], account[UDOM_SIZE];
+	char mid_string[128], display_name[1024];
+	std::string account;
 
 	if (exmdb_server::is_private()) {
-		if (!mysql_adaptor_get_username_from_id(exmdb_server::get_account_id(),
-		    account, std::size(account)))
+		if (mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), account) != ecSuccess)
 			return false;
 	} else {
 		sql_domain dinfo;
 		if (!mysql_adaptor_get_domain_info(exmdb_server::get_account_id(), dinfo))
 			return false;
-		gx_strlcpy(account, dinfo.name.c_str(), std::size(account));
+		account = std::move(dinfo.name);
 	}
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -3679,10 +3678,10 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 			return FALSE;
 		memcpy(tmp_msg.proplist.ppropval, pmsg->proplist.ppropval,
 					sizeof(TAGGED_PROPVAL)*pmsg->proplist.count);
-		auto pentryid = common_util_username_to_addressbook_entryid(account);
+		auto pentryid = common_util_username_to_addressbook_entryid(account.c_str());
 		if (pentryid == nullptr)
 			return FALSE;	
-		if (cvt_username_to_essdn(account, g_exmdb_org_name,
+		if (cvt_username_to_essdn(account.c_str(), g_exmdb_org_name,
 		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn_buff) != ecSuccess)
 			return FALSE;
@@ -3691,7 +3690,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_ENTRYID, pentryid);
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_ADDRTYPE, "EX");
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_EMAIL_ADDRESS, &essdn_buff[3]);
-		if (mysql_adaptor_get_user_displayname(account, display_name,
+		if (mysql_adaptor_get_user_displayname(account.c_str(), display_name,
 		    std::size(display_name)))
 			cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_NAME, display_name);
 		else
@@ -3707,7 +3706,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 				cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_NAME, display_name);
 			cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_SEARCH_KEY, &searchkey_bin);
 		}
-		auto rcpt_type = detect_rcpt_type(account, pmsg->children.prcpts);
+		auto rcpt_type = detect_rcpt_type(account.c_str(), pmsg->children.prcpts);
 		if (rcpt_type != MAPI_BCC)
 			cu_set_propval(&tmp_msg.proplist, rcpt_type == MAPI_TO ?
 				PR_MESSAGE_TO_ME : PR_MESSAGE_CC_ME, &fake_true);
@@ -3756,11 +3755,11 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 				return FALSE;
 		}
 	}
-	mlog(LV_DEBUG, "to=%s from=%s fid=%llu delivery mid=%llu (%s)", account,
+	mlog(LV_DEBUG, "to=%s from=%s fid=%llu delivery mid=%llu (%s)", account.c_str(),
 		znul(from_address), LLU{fid_val}, LLU{message_id},
 		partial ? " (partial only)" : "");
 	if (dlflags & DELIVERY_DO_RULES) {
-		auto ec = message_rule_new_message({from_address, account, cpid, b_oof,
+		auto ec = message_rule_new_message({from_address, account.c_str(), cpid, b_oof,
 		          pdb->psqlite, fid_val, message_id, std::move(digest)}, seen);
 		if (ec != ecSuccess)
 			return FALSE;
@@ -3946,11 +3945,10 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 		}
 	}
 	seen_list seen{{fid_val}};
-	char account[UDOM_SIZE];
-	if (!mysql_adaptor_get_username_from_id(exmdb_server::get_account_id(),
-	    account, std::size(account)))
+	std::string account;
+	if (mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), account) != ecSuccess)
 		return false;
-	auto ec = message_rule_new_message({ENVELOPE_FROM_NULL, account, cpid, false,
+	auto ec = message_rule_new_message({ENVELOPE_FROM_NULL, account.c_str(), cpid, false,
 	          pdb->psqlite, fid_val, mid_val, std::move(digest)}, seen);
 	if (ec != ecSuccess)
 		return FALSE;

@@ -96,15 +96,9 @@ static bool gp_prepare_mvstr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xs
 static bool gp_prepare_default(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static void *gp_fetch(sqlite3 *, sqlite3_stmt *, uint16_t, cpid_t);
 
-ec_error_t cu_id2user(int id, std::string &user) try
+ec_error_t cu_id2user(int id, std::string &user)
 {
-	char ubuf[UADDR_SIZE];
-	if (!mysql_adaptor_get_username_from_id(id, ubuf, std::size(ubuf)))
-		return ecError;
-	user = ubuf;
-	return ecSuccess;
-} catch (const std::bad_alloc &) {
-	return ecServerOOM;
+	return mysql_adaptor_userid_to_name(id, user) ? ecSuccess : ecError;
 }
 
 void cu_set_propval(TPROPVAL_ARRAY *parray, uint32_t tag, const void *data)

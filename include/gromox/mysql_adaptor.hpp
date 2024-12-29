@@ -112,7 +112,7 @@ extern GX_EXPORT void mysql_adaptor_stop();
 extern GX_EXPORT gromox::errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv, sql_meta_result &out);
 extern GX_EXPORT BOOL mysql_adaptor_login2(const char *username, const char *password, const std::string &enc_passwd, std::string &errstr);
 extern GX_EXPORT BOOL mysql_adaptor_setpasswd(const char *username, const char *password, const char *new_password);
-extern GX_EXPORT BOOL mysql_adaptor_get_username_from_id(unsigned int user_id, char *username, size_t);
+extern GX_EXPORT ec_error_t mysql_adaptor_userid_to_name(unsigned int user_id, std::string &username);
 extern GX_EXPORT BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *user_id);
 extern GX_EXPORT bool mysql_adaptor_get_user_displayname(const char *username, char *dispname, size_t);
 extern GX_EXPORT bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::string>&);

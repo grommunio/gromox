@@ -37,11 +37,12 @@ static int t_private()
 
 	printf("setpasswd: %s\n", mysql_adaptor_setpasswd(g_username, pass, pass) ? "OK" : "failed");
 
-	char buf[UADDR_SIZE];
-	if (!mysql_adaptor_get_username_from_id(mres.user_id, buf, std::size(buf)))
-		printf("get_username_from_id: failed\n");
+	std::string ubuf;
+	auto ret = mysql_adaptor_userid_to_name(mres.user_id, ubuf);
+	if (ret != ecSuccess)
+		printf("get_username_from_id: %s\n", mapi_strerror(ret));
 	else
-		printf("get_username_from_id: OK %s\n", buf);
+		printf("get_username_from_id: OK %s\n", ubuf.c_str());
 
 	unsigned int id = 0;
 	if (!mysql_adaptor_get_id_from_maildir(mres.maildir.c_str(), &id))
@@ -60,6 +61,7 @@ static int t_private()
 	else
 		printf("get_user_ids: OK\n");
 
+	char buf[UADDR_SIZE];
 	if (mysql_adaptor_get_user_displayname(g_username, buf, std::size(buf)))
 		printf("get_user_displayname: OK %s\n", buf);
 	else

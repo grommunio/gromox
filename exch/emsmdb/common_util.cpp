@@ -1588,7 +1588,7 @@ int common_util_run()
 #undef E
 
 	if (!oxcmail_init_library(g_emsmdb_org_name, mysql_adaptor_get_user_ids,
-	    mysql_adaptor_get_domain_ids, mysql_adaptor_get_username_from_id)) {
+	    mysql_adaptor_get_domain_ids, mysql_adaptor_userid_to_name)) {
 		mlog(LV_ERR, "emsmdb: failed to init oxcmail library");
 		return -2;
 	}
@@ -1616,15 +1616,9 @@ static void mlog2(unsigned int level, const char *format, ...)
 		rpc_info.username, rpc_info.client_ip, log_buf);
 }
 
-ec_error_t cu_id2user(int id, std::string &user) try
+ec_error_t cu_id2user(int id, std::string &user)
 {
-	char ubuf[UADDR_SIZE];
-	if (!mysql_adaptor_get_username_from_id(id, ubuf, std::size(ubuf)))
-		return ecError;
-	user = ubuf;
-	return ecSuccess;
-} catch (const std::bad_alloc &) {
-	return ecServerOOM;
+	return mysql_adaptor_userid_to_name(id, user);
 }
 
 }

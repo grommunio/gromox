@@ -338,7 +338,7 @@ void common_util_init(const char *org_name, const char *default_charset,
 int common_util_run(const char *data_path)
 {
 	if (!oxcmail_init_library(g_org_name, mysql_adaptor_get_user_ids,
-	    mysql_adaptor_get_domain_ids, mysql_adaptor_get_username_from_id)) {
+	    mysql_adaptor_get_domain_ids, mysql_adaptor_userid_to_name)) {
 		mlog(LV_ERR, "common_util: failed to init oxcmail library");
 		return -2;
 	}
@@ -2092,15 +2092,9 @@ errno_t cu_write_storenamedprop(const char *dir, const GUID &guid,
 	return 0;
 }
 
-ec_error_t cu_id2user(int id, std::string &user) try
+ec_error_t cu_id2user(int id, std::string &user)
 {
-	char ubuf[UADDR_SIZE];
-	if (!mysql_adaptor_get_username_from_id(id, ubuf, std::size(ubuf)))
-		return ecError;
-	user = ubuf;
-	return ecSuccess;
-} catch (const std::bad_alloc &) {
-	return ecServerOOM;
+	return mysql_adaptor_userid_to_name(id, user);
 }
 
 ec_error_t cu_fbdata_to_ical(const char *user, const char *fbuser,

@@ -1936,19 +1936,11 @@ static IDB_REF me_get_idb(const char *path, bool force_resync = false)
 		/* Delete obsolete field (old midb versions cannot use the db then however) */
 		// gx_sql_exec(pidb->psqlite, "DELETE FROM configurations WHERE config_id=1");
 
-		try {
-			unsigned int user_id = 0;
-			pidb->username.resize(UADDR_SIZE);
-			if (!mysql_adaptor_get_id_from_maildir(path, &user_id) ||
-			    !mysql_adaptor_get_username_from_id(user_id, pidb->username.data(), pidb->username.size())) {
-				g_hash_table.erase(xp.first);
-				mlog(LV_ERR, "E-2400: user for path %s not found", path);
-				return {};
-			}
-			pidb->username.resize(strlen(pidb->username.c_str()));
-		} catch (const std::bad_alloc &) {
+		unsigned int user_id = 0;
+		if (!mysql_adaptor_get_id_from_maildir(path, &user_id) ||
+		    mysql_adaptor_userid_to_name(user_id, pidb->username) != ecSuccess) {
 			g_hash_table.erase(xp.first);
-			mlog(LV_ERR, "E-2401: ENOMEM");
+			mlog(LV_ERR, "E-2400: user for path %s not found", path);
 			return {};
 		}
 		b_load = TRUE;
@@ -4109,7 +4101,7 @@ int me_run()
 		mlog(LV_WARN, "mail_engine: failed to close"
 			" memory statistic for sqlite engine");
 	if (!oxcmail_init_library(g_org_name, mysql_adaptor_get_user_ids,
-	    mysql_adaptor_get_domain_ids, mysql_adaptor_get_username_from_id)) {
+	    mysql_adaptor_get_domain_ids, mysql_adaptor_userid_to_name)) {
 		mlog(LV_ERR, "mail_engine: failed to init oxcmail library");
 		return -1;
 	}

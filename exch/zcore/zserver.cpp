@@ -1438,7 +1438,6 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 {
 	int user_id;
 	EXT_PULL ext_pull;
-	char username[UADDR_SIZE];
 	STORE_ENTRYID store_entryid = {};
 	
 	ext_pull.init(entryid.pb, entryid.cb, common_util_alloc, EXT_FLAG_UTF16);
@@ -1458,11 +1457,12 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 		*phobject = pinfo->ptree->get_store_handle(TRUE, user_id);
 		return zh_error(*phobject);
 	}
-	if (!mysql_adaptor_get_username_from_id(user_id,
-	    username, std::size(username)))
-		return ecError;
+	std::string username;
+	auto ret = mysql_adaptor_userid_to_name(user_id, username);
+	if (ret != ecSuccess)
+		return ret;
 	sql_meta_result mres;
-	if (mysql_adaptor_meta(username, WANTPRIV_METAONLY, mres) != 0)
+	if (mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecError;
 	uint32_t permission = rightsNone;
 	if (!exmdb_client::get_mbox_perm(mres.maildir.c_str(),
@@ -1471,11 +1471,11 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 	if (permission == rightsNone) {
 		if (g_zrpc_debug >= 1)
 			mlog(LV_ERR, "openstore: \"%s\" has no rights to access \"%s\"",
-				pinfo->get_username(), username);
+				pinfo->get_username(), username.c_str());
 		return ecLoginPerm;
 	} else if (g_zrpc_debug >= 2) {
 		mlog(LV_DEBUG, "openstore: \"%s\" granted access to \"%s\"",
-			pinfo->get_username(), username);
+			pinfo->get_username(), username.c_str());
 	}
 	if (permission & frightsGromoxStoreOwner) try {
 		std::lock_guard lk(pinfo->eowner_lock);

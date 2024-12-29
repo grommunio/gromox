@@ -443,9 +443,9 @@ int main()
 {
 	auto ee_get_user_ids = [](const char *, unsigned int *, unsigned int *, enum display_type *) -> BOOL { return false; };
 	auto ee_get_domain_ids = [](const char *, unsigned int *, unsigned int *) -> BOOL { return false; };
-	auto ee_get_username_from_id = [](unsigned int, char *, size_t) -> BOOL { return false; };
+	auto ee_userid_to_name = [](unsigned int, std::string &) -> ec_error_t { return ecNotFound; };
 	g_show_tree = g_show_props = true;
-	if (!oxcmail_init_library("x500", ee_get_user_ids, ee_get_domain_ids, ee_get_username_from_id)) {
+	if (!oxcmail_init_library("x500", ee_get_user_ids, ee_get_domain_ids, ee_userid_to_name)) {
 		fprintf(stderr, "oxcmail_init: unspecified error\n");
 		return EXIT_FAILURE;
 	}

@@ -155,15 +155,9 @@ static GET_USER_IDS oxcmail_get_user_ids;
 static GET_DOMAIN_IDS oxcmail_get_domain_ids;
 static GET_USERNAME oxcmail_get_username;
 
-ec_error_t oxcmail_id2user(int id, std::string &user) try
+ec_error_t oxcmail_id2user(int id, std::string &user)
 {
-	char ubuf[UADDR_SIZE];
-	if (!oxcmail_get_username(id, ubuf, std::size(ubuf)))
-		return ecError;
-	user = ubuf;
-	return ecSuccess;
-} catch (const std::bad_alloc &) {
-	return ecMAPIOOM;
+	return oxcmail_get_username(id, user);
 }
 
 static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try

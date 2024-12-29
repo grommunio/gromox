@@ -719,16 +719,9 @@ PROPERTY_NAME* EWSContext::getPropertyName(const std::string& dir, uint16_t id) 
  */
 std::string EWSContext::essdn_to_username(const std::string& essdn) const
 {
-	auto id2u = [&](int id, std::string &user) -> ec_error_t {
-		char buf[UADDR_SIZE];
-		if (!mysql_adaptor_get_username_from_id(id, buf, std::size(buf)))
-			throw DispatchError(E3002);
-		user = buf;
-		return ecSuccess;
-	};
 	std::string username;
 	auto err = gromox::cvt_essdn_to_username(essdn.c_str(),
-	           m_plugin.x500_org_name.c_str(), id2u, username);
+	           m_plugin.x500_org_name.c_str(), mysql_adaptor_userid_to_name, username);
 	if (err == ecSuccess)
 		return username;
 	if (err == ecUnknownUser)
@@ -1587,10 +1580,10 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 	folderSpec.folderId = rop_util_make_eid_ex(1, rop_util_gc_to_value(eid.global_counter));
 	if(eid.isPrivate())
 	{
-		char temp[UADDR_SIZE];
-		if(!mysql_adaptor_get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
+		std::string ubuf;
+		if (mysql_adaptor_userid_to_name(eid.accountId(), ubuf) != ecSuccess)
 			throw EWSError::CannotFindUser(E3026);
-		folderSpec.target = temp;
+		folderSpec.target = std::move(ubuf);
 	}
 	else
 	{
@@ -1626,10 +1619,10 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 	folderSpec.folderId = rop_util_make_eid_ex(1, eid.folderId());
 	if(eid.isPrivate())
 	{
-		char temp[UADDR_SIZE];
-		if(!mysql_adaptor_get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
+		std::string ubuf;
+		if (mysql_adaptor_userid_to_name(eid.accountId(), ubuf) != ecSuccess)
 			throw EWSError::CannotFindUser(E3075);
-		folderSpec.target = temp;
+		folderSpec.target = std::move(ubuf);
 	}
 	else
 	{

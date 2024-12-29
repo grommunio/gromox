@@ -369,11 +369,11 @@ void OBJECT_TREE::touch_profile_sec()
 	object_tree_write_root(prootobj);
 }
 
-uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
+uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id) try
 {
 	auto pobjtree = this;
 	char dir[256];
-	char account[UADDR_SIZE];
+	std::string account;
 	
 	auto pnode = pobjtree->tree.get_root();
 	if (pnode == nullptr)
@@ -394,12 +394,11 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 	if (b_private) {
 		if (account_id == pinfo->user_id) {
 			gx_strlcpy(dir, pinfo->get_maildir(), std::size(dir));
-			gx_strlcpy(account, pinfo->get_username(), std::size(account));
+			account = pinfo->get_username();
 		} else {
 			sql_meta_result mres;
-			if (!mysql_adaptor_get_username_from_id(account_id,
-			    account, std::size(account)) ||
-			    mysql_adaptor_meta(account, WANTPRIV_METAONLY, mres) != 0)
+			if (mysql_adaptor_userid_to_name(account_id, account) != ecSuccess ||
+			    mysql_adaptor_meta(account.c_str(), WANTPRIV_METAONLY, mres) != 0)
 				return ecZNullObject;
 			gx_strlcpy(dir, mres.maildir.c_str(), std::size(dir));
 		}
@@ -410,11 +409,12 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 		auto pdomain = strchr(pinfo->get_username(), '@');
 		if (pdomain == nullptr)
 			return ecZNullObject;
-		pdomain ++;
-		gx_strlcpy(account, pdomain, std::size(account));
+		account = ++pdomain;
 	}
-	auto pstore = store_object::create(b_private, account_id, account, dir);
+	auto pstore = store_object::create(b_private, account_id, account.c_str(), dir);
 	if (pstore == nullptr)
 		return ecMAPIOOM;
 	return add_object_handle(ROOT_HANDLE, {zs_objtype::store, std::move(pstore)});
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
 }

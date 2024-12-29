@@ -67,7 +67,7 @@ void exmdb_local_init(const char *org_name, const char *default_charset)
 int exmdb_local_run() try
 {
 	if (!oxcmail_init_library(g_org_name, mysql_adaptor_get_user_ids,
-	    mysql_adaptor_get_domain_ids, mysql_adaptor_get_username_from_id)) {
+	    mysql_adaptor_get_domain_ids, mysql_adaptor_userid_to_name)) {
 		mlog(LV_ERR, "exmdb_local: failed to init oxcmail library");
 		return -2;
 	}

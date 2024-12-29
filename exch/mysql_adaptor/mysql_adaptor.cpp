@@ -249,27 +249,29 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	return false;
 }
 
-BOOL mysql_adaptor_get_username_from_id(unsigned int user_id,
-    char *username, size_t ulen) try
+ec_error_t mysql_adaptor_userid_to_name(unsigned int user_id,
+    std::string &username) try
 {
 	auto qstr = "SELECT username FROM users WHERE id=" + std::to_string(user_id);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn)
-		return false;
+		return ecRpcFailed;
 	if (!conn->query(qstr))
-		return false;
+		return ecRpcFailed;
 	auto pmyres = conn->store_result();
 	if (pmyres == nullptr)
-		return false;
+		return ecServerOOM;
 	conn.finish();
 	if (pmyres.num_rows() != 1)
-		return FALSE;
+		return ecNotFound;
 	auto myrow = pmyres.fetch_row();
-	gx_strlcpy(username, myrow[0], ulen);
-	return TRUE;
-} catch (const std::exception &e) {
+	if (myrow == nullptr || myrow[0] == nullptr)
+		return ecNotFound;
+	username = myrow[0];
+	return ecSuccess;
+} catch (const std::bad_alloc &e) {
 	mlog(LV_ERR, "%s: %s", "E-1704", e.what());
-	return false;
+	return ecServerOOM;
 }
 
 BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *puser_id) try

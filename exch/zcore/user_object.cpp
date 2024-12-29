@@ -110,7 +110,6 @@ std::unique_ptr<user_object> user_object::create(int base_id, uint32_t minid)
 bool user_object::valid()
 {
 	auto puser = this;
-	char username[UADDR_SIZE];
 	auto pbase = ab_tree::AB.get(puser->base_id);
 	if (!pbase)
 		return FALSE;
@@ -118,9 +117,10 @@ bool user_object::valid()
 		return true;
 	pbase.reset();
 	ab_tree::minid mid(puser->minid);
+	std::string username;
 	if (mid.type() != ab_tree::minid::Type::address ||
-	    !mysql_adaptor_get_username_from_id(mid.value(),
-	    username, std::size(username)))
+	    !mysql_adaptor_userid_to_name(mid.value(),
+	    username))
 		return FALSE;
 	return true;
 }
@@ -129,7 +129,6 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	auto puser = this;
-	char username[UADDR_SIZE];
 	char tmp_buff[1024];
 	static constexpr auto fake_type = static_cast<uint32_t>(MAPI_MAILUSER);
 	
@@ -162,25 +161,26 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		ppropvals->emplace_back(PR_OBJECT_TYPE, &fake_type);
 	if (w_atype)
 		ppropvals->emplace_back(PR_ADDRTYPE, "EX");
+	std::string username;
 	if (!wx_name ||
 	    node.mid.type() != ab_tree::minid::Type::address ||
-	    !mysql_adaptor_get_username_from_id(node.mid.value(),
-	    username, std::size(username)))
+	    !mysql_adaptor_userid_to_name(node.mid.value(),
+	    username))
 		return TRUE;
 	if (w_smtp) {
-		auto s = common_util_dup(username);
+		auto s = common_util_dup(username.c_str());
 		if (s == nullptr)
 			return FALSE;
 		ppropvals->emplace_back(PR_SMTP_ADDRESS, s);
 	}
 	if (w_acct) {
-		auto s = common_util_dup(username);
+		auto s = common_util_dup(username.c_str());
 		if (s == nullptr)
 			return FALSE;
 		ppropvals->emplace_back(PR_ACCOUNT, s);
 	}
 	std::string essdn;
-	if (w_email && cvt_username_to_essdn(username, g_org_name,
+	if (w_email && cvt_username_to_essdn(username.c_str(), g_org_name,
 	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 	    essdn) == ecSuccess) {
 		auto s = common_util_dup(essdn.c_str());
@@ -188,11 +188,9 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			return FALSE;
 		ppropvals->emplace_back(PR_EMAIL_ADDRESS, s);
 	}
-	if (w_dname && mysql_adaptor_get_user_displayname(username,
+	if (w_dname && mysql_adaptor_get_user_displayname(username.c_str(),
 	    tmp_buff, std::size(tmp_buff))) {
-		if (*tmp_buff == '\0')
-			strcpy(tmp_buff, username);
-		auto s = common_util_dup(tmp_buff);
+		auto s = common_util_dup(*tmp_buff != '\0' ? tmp_buff : username.c_str());
 		if (s == nullptr)
 			return FALSE;
 		ppropvals->emplace_back(PR_DISPLAY_NAME, s);
@@ -208,13 +206,13 @@ ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 	ab_tree::ab_node node(base, minid);
 	if (!node.exists())
 		return ecSuccess;
-	char mlistaddr[UADDR_SIZE]{};
-	if (!mysql_adaptor_get_username_from_id(node.mid.value(),
-	    mlistaddr, std::size(mlistaddr)))
+	std::string mlistaddr;
+	if (!mysql_adaptor_userid_to_name(node.mid.value(),
+	    mlistaddr))
 		return ecSuccess;
 	std::vector<std::string> member_list;
 	int ret = 0;
-	if (!mysql_adaptor_get_mlist_memb(mlistaddr, mlistaddr, &ret, member_list))
+	if (!mysql_adaptor_get_mlist_memb(mlistaddr.c_str(), mlistaddr.c_str(), &ret, member_list))
 		return ecSuccess;
 	m_members.clear();
 	for (const auto &memb : member_list) {

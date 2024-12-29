@@ -331,7 +331,7 @@ int main(int argc, char **argv) try
 
 	if (!oxcmail_init_library(g_config_file->get_value("x500_org_name"),
 	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
-	    mysql_adaptor_get_username_from_id)) {
+	    mysql_adaptor_userid_to_name)) {
 		fprintf(stderr, "oxcmail_init: unspecified error\n");
 		return EXIT_FAILURE;
 	}
