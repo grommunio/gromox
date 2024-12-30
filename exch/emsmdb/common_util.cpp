@@ -1569,12 +1569,8 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
 	}
-	auto message_flags = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
-	if (message_flags == nullptr) {
-		mlog2(LV_ERR, "E-1287: no PR_MESSAGE_FLAGS in %s", log_id.c_str());
-		return ecError;
-	}
-	bool b_resend = *message_flags & MSGFLAG_RESEND;
+	auto num = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	bool b_resend = num != nullptr && *num & MSGFLAG_RESEND;
 	const tarray_set *prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
 		mlog2(LV_ERR, "E-1286: Tried to send %s but message has 0 recipients", log_id.c_str());

@@ -1107,9 +1107,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		pmsgctnt->proplist.ppropval = ppropval;
 	}
 	auto num = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
-	if (num == nullptr)
-		return ecError;
-	bool b_resend = *num & MSGFLAG_RESEND;
+	bool b_resend = num != nullptr && *num & MSGFLAG_RESEND;
 	const tarray_set *prcpts = pmsgctnt->children.prcpts;
 	if (prcpts == nullptr)
 		return MAPI_E_NO_RECIPIENTS;
