@@ -142,7 +142,7 @@ BOOL common_util_load_file(const char *path, BINARY *pbin);
 extern BOOL common_util_convert_to_zrule_data(store_object *, TPROPVAL_ARRAY *);
 extern ec_error_t cu_remote_copy_message(store_object *s0, uint64_t message_id, store_object *s1, uint64_t folder_id1);
 extern ec_error_t cu_remote_copy_folder(store_object *s0, uint64_t folder_id, store_object *s1, uint64_t folder_id1, const char *new_name);
-extern BOOL cu_send_message(store_object *, message_object *, BOOL submit);
+extern ec_error_t cu_send_message(store_object *, message_object *, bool submit);
 extern BOOL common_util_message_to_rfc822(store_object *, uint64_t inst_id, BINARY *eml);
 extern message_content *cu_rfc822_to_message(store_object *, unsigned int mxf_flags, BINARY *eml);
 extern BOOL common_util_message_to_ical(store_object *, uint64_t msg_id, BINARY *ical);

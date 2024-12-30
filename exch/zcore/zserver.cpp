@@ -3362,10 +3362,11 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 			return ecSuccess;
 		}
 	}
-	if (!cu_send_message(pstore, pmessage, TRUE)) {
+	auto ret = cu_send_message(pstore, pmessage, TRUE);
+	if (ret != ecSuccess) {
 		exmdb_client->clear_submit(pstore->get_dir(),
 			pmessage->get_id(), b_unsent);
-		return ecRpcFailed;
+		return ret;
 	}
 	if (!b_delete)
 		pmessage->reload();

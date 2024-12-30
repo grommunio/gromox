@@ -1072,7 +1072,8 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
 	return false;
 }
 
-BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit) try
+ec_error_t cu_send_message(store_object *pstore, message_object *msg,
+    bool b_submit) try
 {
 	uint64_t message_id = msg->get_id();
 	void *pvalue;
@@ -1090,15 +1091,15 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit) t
 	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
 	if (!exmdb_client_get_message_property(pstore->get_dir(), nullptr, CP_ACP,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr)
-		return FALSE;
+		return ecNotFound;
 	auto parent_id = *static_cast<uint64_t *>(pvalue);
 	if (!exmdb_client->read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
-		return FALSE;
+		return ecRpcFailed;
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (ppropval == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
@@ -1107,20 +1108,22 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit) t
 	}
 	auto num = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (num == nullptr)
-		return FALSE;
+		return ecError;
 	bool b_resend = *num & MSGFLAG_RESEND;
 	const tarray_set *prcpts = pmsgctnt->children.prcpts;
 	if (prcpts == nullptr)
-		return FALSE;
+		return MAPI_E_NO_RECIPIENTS;
 	auto log_id = pstore->get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
 	if (prcpts->count == 0)
 		mlog(LV_INFO, "I-1504: Tried to send %s but message has 0 recipients", log_id.c_str());
 
 	std::vector<std::string> rcpt_list;
-	for (auto &rcpt : *prcpts)
-		if (cu_rcpt_to_list(rcpt, g_org_name, rcpt_list,
-		    mysql_adaptor_userid_to_name, b_resend) != ecSuccess)
-			return false;
+	for (auto &rcpt : *prcpts) {
+		auto ret = cu_rcpt_to_list(rcpt, g_org_name, rcpt_list,
+		           mysql_adaptor_userid_to_name, b_resend);
+		if (ret != ecSuccess)
+			return ret;
+	}
 
 	if (rcpt_list.size() > 0) {
 		auto body_type = get_override_format(*pmsgctnt);
@@ -1130,7 +1133,7 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit) t
 		if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type,
 		    &imail, common_util_alloc, common_util_get_propids,
 		    common_util_get_propname))
-			return FALSE;	
+			return ecError;
 
 		imail.set_header("X-Mailer", ZCORE_UA);
 		if (zcore_backfill_transporthdr) {
@@ -1157,7 +1160,7 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit) t
 		if (ret != ecSuccess) {
 			mlog(LV_ERR, "E-1194: failed to send %s via SMTP: %s",
 				log_id.c_str(), mapi_strerror(ret));
-			return FALSE;
+			return ret;
 		}
 	}
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
@@ -1167,32 +1170,34 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit) t
 	if (NULL != ptarget) {
 		if (!cu_entryid_to_mid(*ptarget,
 		    &b_private, &account_id, &folder_id, &new_id))
-			return FALSE;	
+			return ecWarnWithErrors;
 		if (!exmdb_client->clear_submit(pstore->get_dir(), message_id, false))
-			return FALSE;
+			return ecWarnWithErrors;
 		if (!exmdb_client->movecopy_message(pstore->get_dir(), cpid,
 		    message_id, folder_id, new_id, TRUE, &b_result))
-			return FALSE;
-		return TRUE;
+			return ecWarnWithErrors;
+		return ecSuccess;
 	} else if (b_delete) {
 		exmdb_client_delete_message(pstore->get_dir(),
 			pstore->account_id, cpid, parent_id, message_id,
 			TRUE, &b_result);
-		return TRUE;
+		return ecSuccess;
 	}
 	if (!exmdb_client->clear_submit(pstore->get_dir(), message_id, false))
-		return FALSE;
+		return ecWarnWithErrors;
 	ids.count = 1;
 	ids.pids = &message_id;
 	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
 	if (ptarget == nullptr || !cu_entryid_to_fid(*ptarget,
 	    &b_private, &account_id, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
-	return exmdb_client->movecopy_messages(pstore->get_dir(), cpid, false,
-	       STORE_OWNER_GRANTED, parent_id, folder_id, false, &ids, &b_partial);
+	if (!exmdb_client->movecopy_messages(pstore->get_dir(), cpid, false,
+	    STORE_OWNER_GRANTED, parent_id, folder_id, false, &ids, &b_partial))
+		return ecWarnWithErrors;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2549: ENOMEM");
-	return false;
+	return ecServerOOM;
 }
 
 void common_util_notify_receipt(const char *username, int type,
