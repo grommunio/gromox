@@ -409,6 +409,14 @@ static size_t vcard_serialize_string(char *pbuff,
 			if (line_offset >= 0)
 				line_offset += 2;
 			continue;
+		} else if (string[i] == '\n') {
+			if (offset + 1 >= max_length)
+				return max_length;
+			pbuff[offset++] = '\\';
+			pbuff[offset++] = 'n';
+			if (line_offset >= 0)
+				line_offset += 2;
+			continue;
 		}
 		pbuff[offset++] = string[i];
 		if (line_offset >= 0)
