@@ -1572,7 +1572,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	auto num = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	bool b_resend = num != nullptr && *num & MSGFLAG_RESEND;
 	const tarray_set *prcpts = pmsgctnt->children.prcpts;
-	if (NULL == prcpts) {
+	if (prcpts == nullptr || prcpts->count == 0) {
 		mlog2(LV_ERR, "E-1286: Tried to send %s but message has 0 recipients", log_id.c_str());
 		return MAPI_E_NO_RECIPIENTS;
 	}
@@ -1585,6 +1585,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 			return ret;
 	}
 	if (rcpt_list.size() == 0) {
+		/* What would EXC do? */
 		mlog2(LV_ERR, "E-1282: Empty converted recipients list attempting to send %s", log_id.c_str());
 		return MAPI_E_NO_RECIPIENTS;
 	}

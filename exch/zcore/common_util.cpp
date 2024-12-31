@@ -1078,7 +1078,6 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	uint64_t message_id = msg->get_id();
 	void *pvalue;
 	BOOL b_result;
-	EID_ARRAY ids;
 	BOOL b_private;
 	BOOL b_partial;
 	int account_id;
@@ -1108,13 +1107,12 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	}
 	auto num = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	bool b_resend = num != nullptr && *num & MSGFLAG_RESEND;
-	const tarray_set *prcpts = pmsgctnt->children.prcpts;
-	if (prcpts == nullptr)
-		return MAPI_E_NO_RECIPIENTS;
 	auto log_id = pstore->get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
-	if (prcpts->count == 0)
-		mlog(LV_INFO, "I-1504: Tried to send %s but message has 0 recipients", log_id.c_str());
-
+	const tarray_set *prcpts = pmsgctnt->children.prcpts;
+	if (prcpts == nullptr || prcpts->count == 0) {
+		mlog(LV_ERR, "E-1504: Tried to send %s but message has 0 recipients", log_id.c_str());
+		return MAPI_E_NO_RECIPIENTS;
+	}
 	std::vector<std::string> rcpt_list;
 	for (auto &rcpt : *prcpts) {
 		auto ret = cu_rcpt_to_list(rcpt, g_org_name, rcpt_list,
@@ -1122,45 +1120,49 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		if (ret != ecSuccess)
 			return ret;
 	}
+	if (rcpt_list.size() == 0) {
+		mlog(LV_ERR, "E-1750: Empty converted recipients list attempting to send %s", log_id.c_str());
+		return MAPI_E_NO_RECIPIENTS;
+	}
 
-	if (rcpt_list.size() > 0) {
-		auto body_type = get_override_format(*pmsgctnt);
-		common_util_set_dir(pstore->get_dir());
-		/* try to avoid TNEF message */
-		MAIL imail;
-		if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type,
-		    &imail, common_util_alloc, common_util_get_propids,
-		    common_util_get_propname))
-			return ecError;
+	auto body_type = get_override_format(*pmsgctnt);
+	common_util_set_dir(pstore->get_dir());
+	/* try to avoid TNEF message */
+	MAIL imail;
+	if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type,
+	    &imail, common_util_alloc, common_util_get_propids,
+	    common_util_get_propname))
+		return ecError;
 
-		imail.set_header("X-Mailer", ZCORE_UA);
-		if (zcore_backfill_transporthdr) {
-			std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import(nullptr,
-				"UTC", &imail, common_util_alloc, common_util_get_propids));
-			if (rmsg != nullptr) {
-				for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
-					auto th = rmsg->proplist.get<const char>(tag);
-					if (th == nullptr)
-						continue;
-					TAGGED_PROPVAL tp  = {tag, deconst(th)};
-					TPROPVAL_ARRAY tpa = {1, &tp};
-					if (!msg->set_properties(&tpa))
-						break;
-					/* Unclear if permitted to save (specs say nothing) */
-					msg->save();
+	imail.set_header("X-Mailer", ZCORE_UA);
+	if (zcore_backfill_transporthdr) {
+		std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import(nullptr,
+			"UTC", &imail, common_util_alloc, common_util_get_propids));
+		if (rmsg != nullptr) {
+			for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
+				auto th = rmsg->proplist.get<const char>(tag);
+				if (th == nullptr)
+					continue;
+				TAGGED_PROPVAL tp  = {tag, deconst(th)};
+				TPROPVAL_ARRAY tpa = {1, &tp};
+				if (!msg->set_properties(&tpa))
 					break;
-				}
+				/* Unclear if permitted to save (specs say nothing) */
+				msg->save();
+				break;
 			}
 		}
-
-		auto ret = cu_send_mail(imail, g_smtp_url.c_str(),
-		           pstore->get_account(), rcpt_list);
-		if (ret != ecSuccess) {
-			mlog(LV_ERR, "E-1194: failed to send %s via SMTP: %s",
-				log_id.c_str(), mapi_strerror(ret));
-			return ret;
-		}
 	}
+
+	auto ret = cu_send_mail(imail, g_smtp_url.c_str(),
+		   pstore->get_account(), rcpt_list);
+	if (ret != ecSuccess) {
+		mlog(LV_ERR, "E-1194: failed to send %s via SMTP: %s",
+			log_id.c_str(), mapi_strerror(ret));
+		return ret;
+	}
+	imail.clear();
+
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
@@ -1183,12 +1185,12 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	}
 	if (!exmdb_client->clear_submit(pstore->get_dir(), message_id, false))
 		return ecWarnWithErrors;
-	ids.count = 1;
-	ids.pids = &message_id;
 	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
 	if (ptarget == nullptr || !cu_entryid_to_fid(*ptarget,
 	    &b_private, &account_id, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
+
+	const EID_ARRAY ids = {1, &message_id};
 	if (!exmdb_client->movecopy_messages(pstore->get_dir(), cpid, false,
 	    STORE_OWNER_GRANTED, parent_id, folder_id, false, &ids, &b_partial))
 		return ecWarnWithErrors;
