@@ -534,7 +534,7 @@ static int cmd_parser(int, char **);
 static void command_overview()
 {
 	fprintf(stderr, "Commands:\n\tclear-photo clear-profile clear-rwz delmsg "
-		"echo-username "
+		"echo-maildir echo-username "
 		"emptyfld get-freebusy get-photo get-websettings "
 		"get-websettings-persistent "
 		"get-websettings-recipients ping "
@@ -609,6 +609,9 @@ static int main(int argc, char **argv)
 	if (strcmp(argv[0], "purge-datafiles") == 0)
 		ok = exmdb_client::purge_datafiles(g_storedir);
 	else if (strcmp(argv[0], "echo-username") == 0) {
+		printf("%s\n", g_storedir);
+		ok = true;
+	} else if (strcmp(argv[0], "echo-username") == 0) {
 		printf("%s\n", g_dstuser.c_str());
 		ok = true;
 	} else if (strcmp(argv[0], "ping") == 0)
@@ -1132,6 +1135,9 @@ static int cmd_parser(int argc, char **argv)
 		if (ret == 0)
 			return delstoreprop(argc, argv, PSETID_Gromox, "websettings_recipienthistory", PT_UNICODE);
 		return ret;
+	} else if (strcmp(argv[0], "echo-maildir") == 0) {
+		printf("%s\n", g_storedir);
+		return EXIT_SUCCESS;
 	} else if (strcmp(argv[0], "echo-username") == 0) {
 		printf("%s\n", g_dstuser.c_str());
 		return EXIT_SUCCESS;
