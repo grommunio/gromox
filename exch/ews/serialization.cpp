@@ -1472,7 +1472,8 @@ void mConvertIdResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 {
 	mResponseMessageType::serialize(xml);
 	tinyxml2::XMLElement* altid = XMLDUMPM(AlternateId);
-	altid->SetAttribute("xsi:type", "t:AlternateIdType");
+	if (altid != nullptr)
+		altid->SetAttribute("xsi:type", "t:AlternateIdType");
 }
 
 mCopyFolderRequest::mCopyFolderRequest(const tinyxml2::XMLElement* xml) :
