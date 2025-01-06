@@ -6,7 +6,8 @@ exchange_rfr \(em http(8gx) processing plugin for the Address Book Name
 Service Provider Interface Referral Protocol.
 .SH Description
 exchange_rfr is a processing plugin for http(8gx) which handles the Address
-Book Name Service Provider Interface Referral Protocol.
+Book Name Service Provider Interface Referral Protocol, also referred to as
+the Directory Service Referral Interface (RFRI).
 .SH Configuration directives
 This plugin has no directives and therefore no config file.
 .SH Normative references
