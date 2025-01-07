@@ -28,12 +28,23 @@ jobs:
       with:
         repository: jengelh/libHX
         path: libHX
+    - name: cpucores
+      run: |
+        echo "lspcu-all: $(lscpu -a -p |grep -c -v '^#')"
+        echo "lspcu-online: $(lscpu -b -p |grep -c -v '^#')"
+        echo "lspcu-offline: $(lscpu -c -p |grep -c -v '^#')"
+        echo "nproc: $(nproc)"
+        echo "nproc-all: $(nproc --all)"
+        echo "proc-cpuinfo: $(grep -c '^processor' /proc/cpuinfo)"
+        echo "MAKEFLAGS-x-2: -j$(($(nproc)*2))"
     - name: buildall
       run: |
-        lscpu -b --online --parse | grep -v '^#' | wc -l >/tmp/ncpus
-        pushd vmime && cmake . -DVMIME_SENDMAIL_PATH:STRING="/usr/sbin/sendmail" -DVMIME_BUILD_SAMPLES:BOOL=OFF -DVMIME_HAVE_TLS_SUPPORT:BOOL=ON -DVMIME_BUILD_STATIC_LIBRARY:BOOL=OFF && make "-j$(cat /tmp/ncpus)" && sudo make install && popd
-        pushd libHX && ./qconf && make "-j$(cat /tmp/ncpus)" && sudo make install && popd
+        #export MAKEFLAGS="-j$(($(nproc)*2))"
+        export MAKEFLAGS="-j$(nproc)"
+        echo "MAKEFLAGS: $MAKEFLAGS"
+        pushd vmime && cmake . -DVMIME_SENDMAIL_PATH:STRING="/usr/sbin/sendmail" -DVMIME_BUILD_SAMPLES:BOOL=OFF -DVMIME_HAVE_TLS_SUPPORT:BOOL=ON -DVMIME_BUILD_STATIC_LIBRARY:BOOL=OFF && make && sudo make install && popd
+        pushd libHX && ./qconf && make && sudo make install && popd
         ./qconf
-        LD_LIBRARY_PATH=/usr/local/lib make "-j$(cat /tmp/ncpus)"
+        LD_LIBRARY_PATH=/usr/local/lib make
         LD_LIBRARY_PATH=/usr/local/lib make install DESTDIR="$PWD/rt" && rm -Rf rt
         make distclean
