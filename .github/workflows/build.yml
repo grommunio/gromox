@@ -9,7 +9,9 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on:
+      - ubuntu-24.04
+      - ubuntu-22.04
     steps:
     - name: install-deps
       uses: awalsh128/cache-apt-pkgs-action@latest
