@@ -9,9 +9,11 @@ on:
 
 jobs:
   build:
-    runs-on:
-      - ubuntu-24.04
-      - ubuntu-22.04
+    #runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner: [ ubuntu-22.04 ]
     steps:
     - name: install-deps
       uses: awalsh128/cache-apt-pkgs-action@latest
@@ -30,7 +32,7 @@ jobs:
       with:
         repository: jengelh/libHX
         path: libHX
-    - name: cpucores
+    - name: cpucores-and-stuff
       run: |
         echo "lspcu-all: $(lscpu -a -p |grep -c -v '^#')"
         echo "lspcu-online: $(lscpu -b -p |grep -c -v '^#')"
@@ -38,6 +40,7 @@ jobs:
         echo "nproc: $(nproc)"
         echo "nproc-all: $(nproc --all)"
         echo "proc-cpuinfo: $(grep -c '^processor' /proc/cpuinfo)"
+        echo "MAKEFLAGS: -j$(nproc)"
         echo "MAKEFLAGS-x-2: -j$(($(nproc)*2))"
     - name: buildall
       run: |
