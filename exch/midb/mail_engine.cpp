@@ -1383,8 +1383,7 @@ static void me_extract_digest_fields(const Json::Value &digest, char *subject,
 }
 
 static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
-    uint64_t message_id, std::string mid_string, uint32_t message_flags,
-    uint64_t received_time, uint64_t mod_time) try
+    uint64_t message_id, syncmessage_entry e) try
 {
 	size_t size;
 	char from[UADDR_SIZE], rcpt[UADDR_SIZE];
@@ -1393,16 +1392,16 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 	
 	auto dir = cu_get_maildir();
 	std::string djson;
-	if (mid_string.size() > 0) {
-		auto ext_path = make_ext_path(dir, mid_string);
+	if (e.midstr.size() > 0) {
+		auto ext_path = make_ext_path(dir, e.midstr);
 		size_t slurp_size = 0;
 		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(ext_path.c_str(), &slurp_size));
 		if (slurp_data == nullptr)
-			mid_string.clear();
+			e.midstr.clear();
 		else
 			djson.assign(slurp_data.get(), slurp_size);
 	}
-	if (mid_string.empty()) {
+	if (e.midstr.empty()) {
 		if (!cu_switch_allocator())
 			return;
 		if (!exmdb_client::read_message(dir, nullptr, CP_ACP,
@@ -1433,8 +1432,8 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 			return;
 		digest["file"] = "";
 		djson = json_to_str(digest);
-		mid_string = std::to_string(time(nullptr)) + "." + std::to_string(++g_sequence_id) + ".midb";
-		auto ext_path = make_ext_path(dir, mid_string);
+		e.midstr = std::to_string(time(nullptr)) + "." + std::to_string(++g_sequence_id) + ".midb";
+		auto ext_path = make_ext_path(dir, e.midstr);
 		wrapfd fd = open(ext_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() < 0) {
 			mlog(LV_ERR, "E-1770: open %s for write: %s", ext_path.c_str(), strerror(errno));
@@ -1445,7 +1444,7 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 			mlog(LV_ERR, "E-1134: write %s: %s", ext_path.c_str(), strerror(errno));
 			return;
 		}
-		auto eml_path = make_eml_path(dir, mid_string);
+		auto eml_path = make_eml_path(dir, e.midstr);
 		fd = open(eml_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() < 0) {
 			mlog(LV_ERR, "E-1771: open %s for write: %s", eml_path.c_str(), strerror(errno));
@@ -1460,8 +1459,8 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 		}
 	}
 	(*puidnext) ++;
-	auto b_unsent = !!(message_flags & MSGFLAG_UNSENT);
-	auto b_read   = !!(message_flags & MSGFLAG_READ);
+	bool b_unsent = e.msg_flags & MSGFLAG_UNSENT;
+	bool b_read   = e.msg_flags & MSGFLAG_READ;
 	Json::Value digest;
 	if (!json_from_str(djson.c_str(), digest))
 		return;
@@ -1471,8 +1470,8 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 		std::size(rcpt), &size);
 	stm_insert.reset();
 	stm_insert.bind_int64(1, message_id);
-	stm_insert.bind_text(2, mid_string);
-	stm_insert.bind_int64(3, mod_time);
+	stm_insert.bind_text(2, e.midstr.c_str());
+	stm_insert.bind_int64(3, e.mod_time);
 	stm_insert.bind_int64(4, *puidnext);
 	stm_insert.bind_int64(5, b_unsent);
 	stm_insert.bind_int64(6, b_read);
@@ -1480,7 +1479,7 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 	stm_insert.bind_text(8, from);
 	stm_insert.bind_text(9, rcpt);
 	stm_insert.bind_int64(10, size);
-	stm_insert.bind_int64(11, received_time);
+	stm_insert.bind_int64(11, e.recv_time);
 	if (stm_insert.step() != SQLITE_DONE)
 		mlog(LV_ERR, "E-2075: sqlite_step not finished");
 } catch (const std::bad_alloc &) {
@@ -1512,8 +1511,7 @@ static void me_sync_message(IDB_ITEM *pidb, xstmt &stm_insert,
 	if (gx_sql_exec(pidb->psqlite, sql_string) != SQLITE_OK)
 		return;	
 	/* e.midstr is known to be empty */
-	me_insert_message(stm_insert, puidnext, message_id, e.midstr,
-		e.msg_flags, e.recv_time, e.mod_time);
+	me_insert_message(stm_insert, puidnext, message_id, e);
 }
 
 static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
@@ -1597,8 +1595,7 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		stm_select_msg.bind_int64(1, message_id);
 		if (stm_select_msg.step() != SQLITE_ROW) {
 			me_insert_message(stm_insert_msg, &uidnext, message_id,
-				entry.midstr, entry.msg_flags, entry.recv_time,
-				entry.mod_time);
+				entry);
 		} else {
 			auto old_mtime  = stm_select_msg.col_int64(2);
 			bool old_unsent = stm_select_msg.col_int64(3);
@@ -3568,8 +3565,9 @@ static void notif_msg_added(IDB_ITEM *pidb,
 	pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
 	if (pstmt == nullptr)
 		return;	
-	me_insert_message(pstmt, &uidnext, message_id, znul(str),
-		message_flags, received_time, mod_time);
+	me_insert_message(pstmt, &uidnext, message_id,
+		syncmessage_entry{mod_time, received_time, message_flags,
+		znul(str)});
 	pstmt.finalize();
 	if (flags_buff.find('F') != flags_buff.npos) {
 		qstr = fmt::format("UPDATE messages SET "
