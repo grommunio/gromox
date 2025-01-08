@@ -201,14 +201,15 @@ static std::string make_midb_path(const char *d)
 	return d + "/exmdb/midb.sqlite3"s;
 }
 
-static std::string make_eml_path(const char *d, const char *m)
+static std::string make_eml_path(const char *d, std::string_view m)
 {
-	return d + "/eml/"s + m;
+	/* P2591r5 only for C++26 */
+	return (d + "/eml/"s) += m;
 }
 
-static std::string make_ext_path(const char *d, const char *m)
+static std::string make_ext_path(const char *d, std::string_view m)
 {
-	return d + "/ext/"s + m;
+	return (d + "/ext/"s) += m;
 }
 
 static std::unique_ptr<char[]> me_ct_to_utf8(const char *charset,
@@ -1382,27 +1383,26 @@ static void me_extract_digest_fields(const Json::Value &digest, char *subject,
 }
 
 static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
-    uint64_t message_id, const char *mid_string, uint32_t message_flags,
+    uint64_t message_id, std::string mid_string, uint32_t message_flags,
     uint64_t received_time, uint64_t mod_time) try
 {
 	size_t size;
 	char from[UADDR_SIZE], rcpt[UADDR_SIZE];
 	char subject[1024];
-	char mid_string1[128];
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto dir = cu_get_maildir();
 	std::string djson;
-	if (NULL != mid_string) {
+	if (mid_string.size() > 0) {
 		auto ext_path = make_ext_path(dir, mid_string);
 		size_t slurp_size = 0;
 		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(ext_path.c_str(), &slurp_size));
 		if (slurp_data == nullptr)
-			mid_string = nullptr;
+			mid_string.clear();
 		else
 			djson.assign(slurp_data.get(), slurp_size);
 	}
-	if (mid_string == nullptr) {
+	if (mid_string.empty()) {
 		if (!cu_switch_allocator())
 			return;
 		if (!exmdb_client::read_message(dir, nullptr, CP_ACP,
@@ -1433,10 +1433,8 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 			return;
 		digest["file"] = "";
 		djson = json_to_str(digest);
-		snprintf(mid_string1, std::size(mid_string1), "%lld.%u.midb",
-		         static_cast<long long>(time(nullptr)), ++g_sequence_id);
-		mid_string = mid_string1;
-		auto ext_path = make_ext_path(dir, mid_string1);
+		mid_string = std::to_string(time(nullptr)) + "." + std::to_string(++g_sequence_id) + ".midb";
+		auto ext_path = make_ext_path(dir, mid_string);
 		wrapfd fd = open(ext_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() < 0) {
 			mlog(LV_ERR, "E-1770: open %s for write: %s", ext_path.c_str(), strerror(errno));
@@ -1447,7 +1445,7 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 			mlog(LV_ERR, "E-1134: write %s: %s", ext_path.c_str(), strerror(errno));
 			return;
 		}
-		auto eml_path = make_eml_path(dir, mid_string1);
+		auto eml_path = make_eml_path(dir, mid_string);
 		fd = open(eml_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() < 0) {
 			mlog(LV_ERR, "E-1771: open %s for write: %s", eml_path.c_str(), strerror(errno));
@@ -1513,8 +1511,9 @@ static void me_sync_message(IDB_ITEM *pidb, xstmt &stm_insert,
 	        " WHERE message_id=%llu", LLU{message_id});
 	if (gx_sql_exec(pidb->psqlite, sql_string) != SQLITE_OK)
 		return;	
-	me_insert_message(stm_insert, puidnext, message_id,
-			nullptr, e.msg_flags, e.recv_time, e.mod_time);
+	/* e.midstr is known to be empty */
+	me_insert_message(stm_insert, puidnext, message_id, e.midstr,
+		e.msg_flags, e.recv_time, e.mod_time);
 }
 
 static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
@@ -1598,8 +1597,8 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		stm_select_msg.bind_int64(1, message_id);
 		if (stm_select_msg.step() != SQLITE_ROW) {
 			me_insert_message(stm_insert_msg, &uidnext, message_id,
-				entry.midstr.size() > 0 ? entry.midstr.c_str() : nullptr,
-				entry.msg_flags, entry.recv_time, entry.mod_time);
+				entry.midstr, entry.msg_flags, entry.recv_time,
+				entry.mod_time);
 		} else {
 			auto old_mtime  = stm_select_msg.col_int64(2);
 			bool old_unsent = stm_select_msg.col_int64(3);
@@ -3569,7 +3568,7 @@ static void notif_msg_added(IDB_ITEM *pidb,
 	pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
 	if (pstmt == nullptr)
 		return;	
-	me_insert_message(pstmt, &uidnext, message_id, str,
+	me_insert_message(pstmt, &uidnext, message_id, znul(str),
 		message_flags, received_time, mod_time);
 	pstmt.finalize();
 	if (flags_buff.find('F') != flags_buff.npos) {
