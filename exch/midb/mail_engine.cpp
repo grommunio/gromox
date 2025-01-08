@@ -101,7 +101,6 @@ struct syncfolder_entry {
 struct syncmessage_entry {
 	uint64_t mod_time = 0, recv_time = 0;
 	uint32_t msg_flags = 0;
-	bool has_midstr = false;
 	std::string midstr;
 };
 
@@ -1497,7 +1496,7 @@ static void me_sync_message(IDB_ITEM *pidb, xstmt &stm_insert,
 {
 	char sql_string[256];
 	
-	if (e.has_midstr || e.mod_time <= old_mtime) {
+	if (e.midstr.size() > 0 || e.mod_time <= old_mtime) {
 		auto new_unsent = !!(e.msg_flags & MSGFLAG_UNSENT);
 		auto new_read   = !!(e.msg_flags & MSGFLAG_READ);
 		if (old_unsent != new_unsent || old_read != new_read) {
@@ -1574,7 +1573,7 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		syncmessagelist.emplace(message_id, syncmessage_entry{
 			mod_time != nullptr ? *mod_time : 0,
 			recv_time != nullptr ? *recv_time : 0,
-			*flags, midstr != nullptr, znul(midstr)
+			*flags, znul(midstr)
 		});
 	}
 
@@ -1599,7 +1598,7 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		stm_select_msg.bind_int64(1, message_id);
 		if (stm_select_msg.step() != SQLITE_ROW) {
 			me_insert_message(stm_insert_msg, &uidnext, message_id,
-				entry.has_midstr ? entry.midstr.c_str() : nullptr,
+				entry.midstr.size() > 0 ? entry.midstr.c_str() : nullptr,
 				entry.msg_flags, entry.recv_time, entry.mod_time);
 		} else {
 			auto old_mtime  = stm_select_msg.col_int64(2);
