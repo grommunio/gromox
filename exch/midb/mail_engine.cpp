@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -1488,15 +1488,14 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 
 static void me_sync_message(IDB_ITEM *pidb, xstmt &stm_insert,
     xstmt &stm_update, uint32_t *puidnext, uint64_t message_id,
-    uint64_t received_time, const char *mid_string,
-    const char *old_midstr, uint64_t mod_time, uint64_t old_mtime,
-    uint32_t message_flags, bool old_unsent, bool old_read)
+    const syncmessage_entry &e, uint64_t old_mtime,
+    bool old_unsent, bool old_read)
 {
 	char sql_string[256];
 	
-	if (mid_string != nullptr || mod_time <= old_mtime) {
-		auto new_unsent = !!(message_flags & MSGFLAG_UNSENT);
-		auto new_read   = !!(message_flags & MSGFLAG_READ);
+	if (e.has_midstr || e.mod_time <= old_mtime) {
+		auto new_unsent = !!(e.msg_flags & MSGFLAG_UNSENT);
+		auto new_read   = !!(e.msg_flags & MSGFLAG_READ);
 		if (old_unsent != new_unsent || old_read != new_read) {
 			stm_update.reset();
 			stm_update.bind_int64(1, new_unsent);
@@ -1512,7 +1511,7 @@ static void me_sync_message(IDB_ITEM *pidb, xstmt &stm_insert,
 	if (gx_sql_exec(pidb->psqlite, sql_string) != SQLITE_OK)
 		return;	
 	me_insert_message(stm_insert, puidnext, message_id,
-			NULL, message_flags, received_time, mod_time);
+			nullptr, e.msg_flags, e.recv_time, e.mod_time);
 }
 
 static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
@@ -1599,16 +1598,12 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 				entry.has_midstr ? entry.midstr.c_str() : nullptr,
 				entry.msg_flags, entry.recv_time, entry.mod_time);
 		} else {
-			auto old_midstr = stm_select_msg.col_text(1);
 			auto old_mtime  = stm_select_msg.col_int64(2);
 			bool old_unsent = stm_select_msg.col_int64(3);
 			bool old_read   = stm_select_msg.col_int64(4);
 			me_sync_message(pidb,
 				stm_insert_msg, stm_upd_msg, &uidnext, message_id,
-				entry.recv_time,
-				entry.has_midstr ? entry.midstr.c_str() : nullptr,
-				old_midstr, entry.mod_time, old_mtime,
-				entry.msg_flags, old_unsent, old_read);
+				entry, old_mtime, old_unsent, old_read);
 		}
 		if (++procmsgs % 512 == 0)
 			mlog(LV_NOTICE, "sync_contents %s fld %llu progress: %zu/%zu",
