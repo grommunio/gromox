@@ -137,13 +137,13 @@ static bool midb_reload_config(std::shared_ptr<config_file> gxconfig = nullptr,
 
 static void buildenv(const remote_svr &)
 {
-	common_util_build_environment("");
+	cu_build_environment("");
 }
 
 static void event_proc(const char *dir, BOOL thing,
     uint32_t notify_id, const DB_NOTIFY *notify)
 {
-	common_util_set_maildir(dir);
+	cu_set_maildir(dir);
 	exmdb_client_event_proc(dir, thing, notify_id, notify);
 }
 
@@ -151,7 +151,7 @@ static int exmdb_client_run_front(const char *dir)
 {
 	return exmdb_client_run(dir, EXMDB_CLIENT_SKIP_PUBLIC |
 	       EXMDB_CLIENT_SKIP_REMOTE | EXMDB_CLIENT_ASYNC_CONNECT, buildenv,
-	       common_util_free_environment, event_proc);
+	       cu_free_environment, event_proc);
 }
 
 void exmdb_client_register_proc(void *pproc)
@@ -275,7 +275,7 @@ int main(int argc, char **argv)
 	char temp_buff[45];
 	std::shared_ptr<CONFIG_FILE> pconfig;
 	
-	exmdb_rpc_alloc = common_util_alloc;
+	exmdb_rpc_alloc = cu_alloc_bytes;
 	exmdb_rpc_free = [](void *) {};
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
@@ -336,9 +336,9 @@ int main(int argc, char **argv)
 	auto cl_6 = make_scope_exit(exmdb_client_stop);
 	listener_init(listen_ip, listen_port);
 	auto cl_3 = make_scope_exit(listener_stop);
-	mail_engine_init(g_config_file->get_value("default_charset"),
+	me_init(g_config_file->get_value("default_charset"),
 		g_config_file->get_value("x500_org_name"), table_size);
-	auto cl_5 = make_scope_exit(mail_engine_stop);
+	auto cl_5 = make_scope_exit(me_stop);
 
 	cmd_parser_init(threads_num, SOCKET_TIMEOUT, cmd_debug);
 	auto cl_4 = make_scope_exit(cmd_parser_stop);
@@ -370,7 +370,7 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start command parser");
 		return EXIT_FAILURE;
 	}
-	if (0 != mail_engine_run()) {
+	if (me_run() != 0) {
 		mlog(LV_ERR, "system: failed to start mail engine");
 		return EXIT_FAILURE;
 	}
