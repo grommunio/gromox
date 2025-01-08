@@ -1374,7 +1374,7 @@ static void me_extract_digest_fields(const Json::Value &digest, char *subject,
 		*psize = strtoull(temp_buff, nullptr, 0);
 }
 
-static void me_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
+static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
     uint64_t message_id, const char *mid_string, uint32_t message_flags,
     uint64_t received_time, uint64_t mod_time) try
 {
@@ -1468,41 +1468,41 @@ static void me_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 	me_extract_digest_fields(digest, subject,
 		std::size(subject), from, std::size(from), rcpt,
 		std::size(rcpt), &size);
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, message_id);
-	sqlite3_bind_text(pstmt, 2, mid_string, -1, SQLITE_STATIC);
-	sqlite3_bind_int64(pstmt, 3, mod_time);
-	sqlite3_bind_int64(pstmt, 4, *puidnext);
-	sqlite3_bind_int64(pstmt, 5, b_unsent);
-	sqlite3_bind_int64(pstmt, 6, b_read);
-	sqlite3_bind_text(pstmt, 7, subject, -1, SQLITE_STATIC);
-	sqlite3_bind_text(pstmt, 8, from, -1, SQLITE_STATIC);
-	sqlite3_bind_text(pstmt, 9, rcpt, -1, SQLITE_STATIC);
-	sqlite3_bind_int64(pstmt, 10, size);
-	sqlite3_bind_int64(pstmt, 11, received_time);
-	if (gx_sql_step(pstmt) != SQLITE_DONE)
+	stm_insert.reset();
+	stm_insert.bind_int64(1, message_id);
+	stm_insert.bind_text(2, mid_string);
+	stm_insert.bind_int64(3, mod_time);
+	stm_insert.bind_int64(4, *puidnext);
+	stm_insert.bind_int64(5, b_unsent);
+	stm_insert.bind_int64(6, b_read);
+	stm_insert.bind_text(7, subject);
+	stm_insert.bind_text(8, from);
+	stm_insert.bind_text(9, rcpt);
+	stm_insert.bind_int64(10, size);
+	stm_insert.bind_int64(11, received_time);
+	if (stm_insert.step() != SQLITE_DONE)
 		mlog(LV_ERR, "E-2075: sqlite_step not finished");
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1137: ENOMEM");
 }
 
-static void me_sync_message(IDB_ITEM *pidb,
-	sqlite3_stmt *pstmt, sqlite3_stmt *pstmt1, uint32_t *puidnext,
-	uint64_t message_id, uint64_t received_time, const char *mid_string,
-	const char *mid_string1, uint64_t mod_time, uint64_t mod_time1,
-	uint32_t message_flags, uint8_t b_unsent, uint8_t b_read)
+static void me_sync_message(IDB_ITEM *pidb, xstmt &stm_insert,
+    xstmt &stm_update, uint32_t *puidnext, uint64_t message_id,
+    uint64_t received_time, const char *mid_string,
+    const char *old_midstr, uint64_t mod_time, uint64_t old_mtime,
+    uint32_t message_flags, bool old_unsent, bool old_read)
 {
 	char sql_string[256];
 	
-	if (NULL != mid_string || mod_time <= mod_time1) {
-		auto b_unsent1 = !!(message_flags & MSGFLAG_UNSENT);
-		auto b_read1   = !!(message_flags & MSGFLAG_READ);
-		if (b_unsent != b_unsent1 || b_read != b_read1) {
-			sqlite3_reset(pstmt1);
-			sqlite3_bind_int64(pstmt1, 1, b_unsent1);
-			sqlite3_bind_int64(pstmt1, 2, b_read1);
-			sqlite3_bind_int64(pstmt1, 3, message_id);
-			if (gx_sql_step(pstmt1) != SQLITE_DONE)
+	if (mid_string != nullptr || mod_time <= old_mtime) {
+		auto new_unsent = !!(message_flags & MSGFLAG_UNSENT);
+		auto new_read   = !!(message_flags & MSGFLAG_READ);
+		if (old_unsent != new_unsent || old_read != new_read) {
+			stm_update.reset();
+			stm_update.bind_int64(1, new_unsent);
+			stm_update.bind_int64(2, new_read);
+			stm_update.bind_int64(3, message_id);
+			if (stm_update.step() != SQLITE_DONE)
 				return;
 		}
 		return;
@@ -1511,7 +1511,7 @@ static void me_sync_message(IDB_ITEM *pidb,
 	        " WHERE message_id=%llu", LLU{message_id});
 	if (gx_sql_exec(pidb->psqlite, sql_string) != SQLITE_OK)
 		return;	
-	me_insert_message(pstmt, puidnext, message_id,
+	me_insert_message(stm_insert, puidnext, message_id,
 			NULL, message_flags, received_time, mod_time);
 }
 
@@ -1576,39 +1576,40 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 	}
 
 	size_t totalmsgs = syncmessagelist.size(), procmsgs = 0;
-	auto pstmt1 = gx_sql_prep(pidb->psqlite, "SELECT message_id, mid_string,"
-	              " mod_time, unsent, read FROM messages WHERE message_id=?");
-	if (pstmt1 == nullptr)
+	auto stm_select_msg = gx_sql_prep(pidb->psqlite, "SELECT message_id, mid_string,"
+	                      " mod_time, unsent, read FROM messages WHERE message_id=?");
+	if (stm_select_msg == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO messages (message_id, "
 		"folder_id, mid_string, mod_time, uid, unsent, read, subject,"
 		" sender, rcpt, size, received) VALUES (?, %llu, ?, ?, ?, ?, "
 		"?, ?, ?, ?, ?, ?)", LLU{folder_id});
-	auto pstmt2 = gx_sql_prep(pidb->psqlite, sql_string);
-	if (pstmt2 == nullptr)
+	auto stm_insert_msg = gx_sql_prep(pidb->psqlite, sql_string);
+	if (stm_insert_msg == nullptr)
 		return FALSE;
 	auto stm_upd_msg = gx_sql_prep(pidb->psqlite, "UPDATE messages"
 	              " SET unsent=?, read=? WHERE message_id=?");
 	if (stm_upd_msg == nullptr)
 		return FALSE;
 	for (const auto &[message_id, entry] : syncmessagelist) {
-		sqlite3_reset(pstmt1);
-		sqlite3_bind_int64(pstmt1, 1, message_id);
-		if (pstmt1.step() != SQLITE_ROW)
-			me_insert_message(pstmt2, &uidnext, message_id,
+		stm_select_msg.reset();
+		stm_select_msg.bind_int64(1, message_id);
+		if (stm_select_msg.step() != SQLITE_ROW) {
+			me_insert_message(stm_insert_msg, &uidnext, message_id,
 				entry.has_midstr ? entry.midstr.c_str() : nullptr,
 				entry.msg_flags, entry.recv_time, entry.mod_time);
-		else
+		} else {
+			auto old_midstr = stm_select_msg.col_text(1);
+			auto old_mtime  = stm_select_msg.col_int64(2);
+			bool old_unsent = stm_select_msg.col_int64(3);
+			bool old_read   = stm_select_msg.col_int64(4);
 			me_sync_message(pidb,
-				pstmt2, stm_upd_msg, &uidnext, message_id,
+				stm_insert_msg, stm_upd_msg, &uidnext, message_id,
 				entry.recv_time,
 				entry.has_midstr ? entry.midstr.c_str() : nullptr,
-				pstmt1.col_text(1),
-				entry.mod_time,
-				sqlite3_column_int64(pstmt1, 2),
-				entry.msg_flags,
-				sqlite3_column_int64(pstmt1, 3),
-				sqlite3_column_int64(pstmt1, 4));
+				old_midstr, entry.mod_time, old_mtime,
+				entry.msg_flags, old_unsent, old_read);
+		}
 		if (++procmsgs % 512 == 0)
 			mlog(LV_NOTICE, "sync_contents %s fld %llu progress: %zu/%zu",
 			        dir, LLU{folder_id}, procmsgs, totalmsgs);
@@ -1617,8 +1618,8 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		/* display final value */
 			mlog(LV_NOTICE, "sync_contents %s fld %llu progress: %zu/%zu",
 			        dir, LLU{folder_id}, procmsgs, totalmsgs);
-	pstmt1.finalize();
-	pstmt2.finalize();
+	stm_select_msg.finalize();
+	stm_insert_msg.finalize();
 	stm_upd_msg.finalize();
 	snprintf(sql_string, std::size(sql_string), "SELECT message_id FROM "
 	          "messages WHERE folder_id=%llu", LLU{folder_id});
@@ -1798,13 +1799,13 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 	 * Step 2: Now iterate over the in-memory folder list and synchronize
 	 * contents from exmdb to midb.
 	 */
-	auto pstmt1 = gx_sql_prep(pidb->psqlite, "SELECT folder_id, parent_fid, "
+	auto stm_select = gx_sql_prep(pidb->psqlite, "SELECT folder_id, parent_fid, "
 	              "commit_max, name FROM folders WHERE folder_id=?");
-	if (pstmt1 == nullptr)
+	if (stm_select == nullptr)
 		return false;
-	auto pstmt2 = gx_sql_prep(pidb->psqlite, "INSERT INTO folders (folder_id, "
-				"parent_fid, commit_max, name) VALUES (?, ?, ?, ?)");
-	if (pstmt2 == nullptr)
+	auto stm_insert = gx_sql_prep(pidb->psqlite, "INSERT INTO folders (folder_id, "
+	                  "parent_fid, commit_max, name) VALUES (?, ?, ?, ?)");
+	if (stm_insert == nullptr)
 		return false;
 	for (const auto &[folder_id, entry] : syncfolderlist) {
 		switch (me_get_top_folder_id(syncfolderlist, folder_id)) {
@@ -1817,17 +1818,17 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 		std::string encoded_name;
 		if (!me_get_encoded_name(syncfolderlist, folder_id, encoded_name))
 			continue;
-		sqlite3_reset(pstmt1);
-		sqlite3_bind_int64(pstmt1, 1, folder_id);
+		stm_select.reset();
+		stm_select.bind_int64(1, folder_id);
 
 		bool b_new = false;
-		if (pstmt1.step() != SQLITE_ROW) {
-			sqlite3_reset(pstmt2);
-			sqlite3_bind_int64(pstmt2, 1, folder_id);
-			sqlite3_bind_int64(pstmt2, 2, parent_fid);
-			sqlite3_bind_int64(pstmt2, 3, commit_max);
-			pstmt2.bind_text(4, encoded_name);
-			auto rx = pstmt2.step();
+		if (stm_select.step() != SQLITE_ROW) {
+			stm_insert.reset();
+			stm_insert.bind_int64(1, folder_id);
+			stm_insert.bind_int64(2, parent_fid);
+			stm_insert.bind_int64(3, commit_max);
+			stm_insert.bind_text(4, encoded_name);
+			auto rx = stm_insert.step();
 			if (rx == SQLITE_CONSTRAINT) {
 				mlog(LV_ERR, "E-1224: XXX: Not implemented: midb is unable to cope with folder deletions that occurred while midb was not connected to exmdb");
 				return false;
@@ -1837,13 +1838,13 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 			}
 			b_new = true;
 		} else {
-			if (gx_sql_col_uint64(pstmt1, 1) != parent_fid) {
+			if (stm_select.col_uint64(1) != parent_fid) {
 				auto qstr = fmt::format("UPDATE folders SET "
 					"parent_fid={} WHERE folder_id={}",
 					parent_fid, folder_id);
 				gx_sql_exec(pidb->psqlite, qstr.c_str());
 			}
-			if (strcasecmp(encoded_name.c_str(), znul(pstmt1.col_text(3))) != 0) {
+			if (strcasecmp(encoded_name.c_str(), znul(stm_select.col_text(3))) != 0) {
 				auto ust = gx_sql_prep(pidb->psqlite, "UPDATE folders SET name=? "
 				           "WHERE folder_id=?");
 				if (ust == nullptr ||
@@ -1852,7 +1853,7 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 				    ust.step() != SQLITE_DONE)
 					/* ignore */;
 			}
-			if (gx_sql_col_uint64(pstmt1, 2) == commit_max && !force_resync)
+			if (stm_select.col_uint64(2) == commit_max && !force_resync)
 				continue;	
 		}
 		if (!me_sync_contents(pidb, folder_id))
@@ -1863,8 +1864,8 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 			gx_sql_exec(pidb->psqlite, qstr.c_str());
 		}
 	}
-	pstmt1.finalize();
-	pstmt2.finalize();
+	stm_select.finalize();
+	stm_insert.finalize();
 
 	/*
 	 * Step 3: Loop over all folders in midb.sqlite3 and see if some
