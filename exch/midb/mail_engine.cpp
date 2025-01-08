@@ -197,6 +197,21 @@ array_find_istr(const T &kwlist, const char *s)
 	return false;
 }
 
+static std::string make_midb_path(const char *d)
+{
+	return d + "/exmdb/midb.sqlite3"s;
+}
+
+static std::string make_eml_path(const char *d, const char *m)
+{
+	return d + "/eml/"s + m;
+}
+
+static std::string make_ext_path(const char *d, const char *m)
+{
+	return d + "/ext/"s + m;
+}
+
 static std::unique_ptr<char[]> me_ct_to_utf8(const char *charset,
     const char *string) try
 {
@@ -232,24 +247,20 @@ static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
     Json::Value &digest) try
 {
 	size_t size;
-	char temp_path[256];
-	
-	snprintf(temp_path, 256, "%s/ext/%s",
-		cu_get_maildir(), mid_string);
+	auto ext_path = make_ext_path(cu_get_maildir(), mid_string);
 	size_t slurp_size = 0;
-	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(temp_path, &slurp_size));
+	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(ext_path.c_str(), &slurp_size));
 	if (slurp_data != nullptr) {
 		if (!json_from_str(slurp_data.get(), digest))
 			return 0;
 	} else if (errno != ENOENT) {
-		mlog(LV_ERR, "E-2139: read %s: %s", temp_path, strerror(errno));
+		mlog(LV_ERR, "E-2139: read %s: %s", ext_path.c_str(), strerror(errno));
 		return 0;
 	} else {
-		snprintf(temp_path, 256, "%s/eml/%s",
-			cu_get_maildir(), mid_string);
-		slurp_data.reset(HX_slurp_file(temp_path, &slurp_size));
+		auto eml_path = make_eml_path(cu_get_maildir(), mid_string);
+		slurp_data.reset(HX_slurp_file(eml_path.c_str(), &slurp_size));
 		if (slurp_data == nullptr) {
-			mlog(LV_ERR, "E-1252: %s: %s", temp_path, strerror(errno));
+			mlog(LV_ERR, "E-1252: %s: %s", eml_path.c_str(), strerror(errno));
 			return 0;
 		}
 		MAIL imail;
@@ -261,15 +272,13 @@ static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
 		imail.clear();
 		digest["file"] = "";
 		auto djson = json_to_str(digest);
-		snprintf(temp_path, 256, "%s/ext/%s",
-			cu_get_maildir(), mid_string);
-		wrapfd fd = open(temp_path, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
+		wrapfd fd = open(ext_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() >= 0) {
 			if (HXio_fullwrite(fd.get(), djson.c_str(), djson.size()) < 0 ||
 			    fd.close_wr() != 0)
-				mlog(LV_ERR, "E-2082: write %s: %s", temp_path, strerror(errno));
+				mlog(LV_ERR, "E-2082: write %s: %s", ext_path.c_str(), strerror(errno));
 		} else {
-			mlog(LV_ERR, "E-2138: open %s for write: %s", temp_path, strerror(errno));
+			mlog(LV_ERR, "E-2138: open %s for write: %s", ext_path.c_str(), strerror(errno));
 		}
 	}
 	auto pstmt = gx_sql_prep(psqlite, "SELECT uid, recent, read,"
@@ -641,10 +650,9 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			}
 			case midb_cond::header:
-				snprintf(temp_buff1, 256, "%s/eml/%s",
-					cu_get_maildir(), mid_string);
 				b_result1 = me_ct_search_head(charset,
-					temp_buff1, ptree_node->ct_headers[0],
+					make_eml_path(cu_get_maildir(), mid_string).c_str(),
+					ptree_node->ct_headers[0],
 					ptree_node->ct_headers[1]);
 				break;
 			case midb_cond::id:
@@ -1381,19 +1389,15 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 	size_t size;
 	char from[UADDR_SIZE], rcpt[UADDR_SIZE];
 	char subject[1024];
-	char temp_path[256];
-	char temp_path1[256];
 	char mid_string1[128];
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	temp_path[0] = '\0';
-	temp_path1[0] = '\0';
 	auto dir = cu_get_maildir();
 	std::string djson;
 	if (NULL != mid_string) {
-		sprintf(temp_path, "%s/ext/%s", dir, mid_string);
+		auto ext_path = make_ext_path(dir, mid_string);
 		size_t slurp_size = 0;
-		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(temp_path, &slurp_size));
+		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(ext_path.c_str(), &slurp_size));
 		if (slurp_data == nullptr)
 			mid_string = nullptr;
 		else
@@ -1433,28 +1437,28 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 		snprintf(mid_string1, std::size(mid_string1), "%lld.%u.midb",
 		         static_cast<long long>(time(nullptr)), ++g_sequence_id);
 		mid_string = mid_string1;
-		sprintf(temp_path, "%s/ext/%s", dir, mid_string1);
-		wrapfd fd = open(temp_path, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
+		auto ext_path = make_ext_path(dir, mid_string1);
+		wrapfd fd = open(ext_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() < 0) {
-			mlog(LV_ERR, "E-1770: open %s for write: %s", temp_path, strerror(errno));
+			mlog(LV_ERR, "E-1770: open %s for write: %s", ext_path.c_str(), strerror(errno));
 			return;
 		}
 		if (HXio_fullwrite(fd.get(), djson.c_str(), djson.size()) < 0 ||
 		    fd.close_wr() != 0) {
-			mlog(LV_ERR, "E-1134: write %s: %s", temp_path, strerror(errno));
+			mlog(LV_ERR, "E-1134: write %s: %s", ext_path.c_str(), strerror(errno));
 			return;
 		}
-		sprintf(temp_path1, "%s/eml/%s", dir, mid_string1);
-		fd = open(temp_path1, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
+		auto eml_path = make_eml_path(dir, mid_string1);
+		fd = open(eml_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() < 0) {
-			mlog(LV_ERR, "E-1771: open %s for write: %s", temp_path, strerror(errno));
+			mlog(LV_ERR, "E-1771: open %s for write: %s", eml_path.c_str(), strerror(errno));
 			return;
 		}
 		auto err = imail.to_fd(fd.get());
 		if (err == 0)
 			err = fd.close_wr();
 		if (err != 0) {
-			mlog(LV_ERR, "E-1772: to_file %s failed: %s", temp_path, strerror(err));
+			mlog(LV_ERR, "E-1772: to_file %s failed: %s", eml_path.c_str(), strerror(err));
 			return;
 		}
 	}
@@ -1954,7 +1958,6 @@ static int me_autoupgrade(sqlite3 *db, const char *filedesc)
 static IDB_REF me_get_idb(const char *path, bool force_resync = false)
 {
 	BOOL b_load;
-	char temp_path[256];
 	
 	b_load = FALSE;
 	std::unique_lock hhold(g_hash_lock);
@@ -1962,8 +1965,10 @@ static IDB_REF me_get_idb(const char *path, bool force_resync = false)
 		mlog(LV_WARN, "W-1295: too many sqlites referenced at once (midb.cfg:table_size=%zu)", g_table_size);
 		return {};
 	}
+	std::string midb_path;
 	decltype(g_hash_table.try_emplace(path)) xp;
 	try {
+		midb_path = make_midb_path(path);
 		xp = g_hash_table.try_emplace(path);
 	} catch (const std::bad_alloc &) {
 		hhold.unlock();
@@ -1972,14 +1977,15 @@ static IDB_REF me_get_idb(const char *path, bool force_resync = false)
 	}
 	auto pidb = &xp.first->second;
 	if (xp.second) {
-		sprintf(temp_path, "%s/exmdb/midb.sqlite3", path);
-		auto ret = sqlite3_open_v2(temp_path, &pidb->psqlite, SQLITE_OPEN_READWRITE, nullptr);
+		auto ret = sqlite3_open_v2(midb_path.c_str(), &pidb->psqlite,
+		           SQLITE_OPEN_READWRITE, nullptr);
 		if (ret != SQLITE_OK) {
 			g_hash_table.erase(xp.first);
-			mlog(LV_ERR, "E-1438: sqlite3_open %s: %s", temp_path, sqlite3_errstr(ret));
+			mlog(LV_ERR, "E-1438: sqlite3_open %s: %s",
+				midb_path.c_str(), sqlite3_errstr(ret));
 			return {};
 		}
-		ret = me_autoupgrade(pidb->psqlite, temp_path);
+		ret = me_autoupgrade(pidb->psqlite, midb_path.c_str());
 		if (ret != 0) {
 			sqlite3_close(pidb->psqlite);
 			pidb->psqlite = nullptr;
@@ -2175,18 +2181,17 @@ static int me_minst(int argc, char **argv, int sockd) try
 {
 	size_t mess_len;
 	uint32_t tmp_flags;
-	char temp_path[256];
 	uint64_t change_num;
 	uint64_t message_id;
 	char sql_string[1024];
 	
 	uint8_t b_unsent = strchr(argv[4], 'U') != nullptr;
 	uint8_t b_read = strchr(argv[4], 'S') != nullptr;
-	sprintf(temp_path, "%s/eml/%s", argv[1], argv[3]);
+	auto eml_path = make_eml_path(argv[1], argv[3]);
 	size_t slurp_size = 0;
-	std::unique_ptr<char[], stdlib_delete> pbuff(HX_slurp_file(temp_path, &slurp_size));
+	std::unique_ptr<char[], stdlib_delete> pbuff(HX_slurp_file(eml_path.c_str(), &slurp_size));
 	if (pbuff == nullptr) {
-		mlog(LV_ERR, "E-2071: read %s: %s", temp_path, strerror(errno));
+		mlog(LV_ERR, "E-2071: read %s: %s", eml_path.c_str(), strerror(errno));
 		return errno == ENOMEM ? MIDB_E_NO_MEMORY : MIDB_E_DISK_ERROR;
 	}
 
@@ -2198,15 +2203,16 @@ static int me_minst(int argc, char **argv, int sockd) try
 		return MIDB_E_IMAIL_DIGEST;
 	digest["file"] = "";
 	auto djson = json_to_str(digest);
-	sprintf(temp_path, "%s/ext/%s", argv[1], argv[3]);
-	wrapfd fd = open(temp_path, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
+	auto ext_path = make_ext_path(argv[1], argv[3]);
+	wrapfd fd = open(ext_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 	if (fd.get() < 0) {
-		mlog(LV_ERR, "E-2073: Opening %s for writing failed: %s", temp_path, strerror(errno));
+		mlog(LV_ERR, "E-2073: Opening %s for writing failed: %s",
+			ext_path.c_str(), strerror(errno));
 		return MIDB_E_DISK_ERROR;
 	}
 	if (HXio_fullwrite(fd.get(), djson.data(), djson.size()) < 0 ||
 	    fd.close_wr() != 0)
-		mlog(LV_ERR, "E-2085: write %s: %s", temp_path, strerror(errno));
+		mlog(LV_ERR, "E-2085: write %s: %s", ext_path.c_str(), strerror(errno));
 	auto pidb = me_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3303,7 +3309,6 @@ static int me_psrhl(int argc, char **argv, int sockd) try
 	int tmp_argc;
 	sqlite3 *psqlite;
 	size_t decode_len;
-	char temp_path[256];
 	char* tmp_argv[1024];
 	char tmp_buff[16*1024];
 	
@@ -3332,10 +3337,10 @@ static int me_psrhl(int argc, char **argv, int sockd) try
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
 	pidb.reset();
-	sprintf(temp_path, "%s/exmdb/midb.sqlite3", argv[1]);
-	auto ret = sqlite3_open_v2(temp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+	auto midb_path = make_midb_path(argv[1]);
+	auto ret = sqlite3_open_v2(midb_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
-		mlog(LV_ERR, "E-1439: sqlite3_open %s: %s", temp_path, sqlite3_errstr(ret));
+		mlog(LV_ERR, "E-1439: sqlite3_open %s: %s", midb_path.c_str(), sqlite3_errstr(ret));
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	auto presult = me_ct_match(argv[3], psqlite, folder_id, ptree.get(), false);
@@ -3381,7 +3386,6 @@ static int me_psrhu(int argc, char **argv, int sockd) try
 	int tmp_argc;
 	sqlite3 *psqlite;
 	size_t decode_len;
-	char temp_path[256];
 	char* tmp_argv[1024];
 	char tmp_buff[16*1024];
 	
@@ -3410,10 +3414,10 @@ static int me_psrhu(int argc, char **argv, int sockd) try
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
 	pidb.reset();
-	sprintf(temp_path, "%s/exmdb/midb.sqlite3", argv[1]);
-	auto ret = sqlite3_open_v2(temp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+	auto midb_path = make_midb_path(argv[1]);
+	auto ret = sqlite3_open_v2(midb_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
-		mlog(LV_ERR, "E-1505: sqlite3_open %s: %s", temp_path, sqlite3_errstr(ret));
+		mlog(LV_ERR, "E-1505: sqlite3_open %s: %s", midb_path.c_str(), sqlite3_errstr(ret));
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	auto presult = me_ct_match(argv[3], psqlite, folder_id, ptree.get(), TRUE);
