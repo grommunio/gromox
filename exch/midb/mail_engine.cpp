@@ -3075,6 +3075,27 @@ static int me_pdtlu(int argc, char **argv, int sockd) try
 	return MIDB_E_NO_MEMORY;
 }
 
+static std::string flags_rn(sqlite3 *db, uint64_t gcv)
+{
+	auto qstr = "SELECT replied,unsent,flagged,forwarded,deleted,read,recent "
+	            "FROM messages WHERE message_id=" + std::to_string(gcv);
+	auto stm = gx_sql_prep(db, qstr.c_str());
+	std::string out = "TRUE -\r\n";
+	if (stm == nullptr || stm.step() != SQLITE_ROW)
+		return out;
+	out.resize(6);
+	out.back() = '(';
+	if (stm.col_uint64(0)) out += midb_flag::answered;
+	if (stm.col_uint64(1)) out += midb_flag::unsent;
+	if (stm.col_uint64(2)) out += midb_flag::flagged;
+	if (stm.col_uint64(3)) out += midb_flag::forwarded;
+	if (stm.col_uint64(4)) out += midb_flag::deleted;
+	if (stm.col_uint64(5)) out += midb_flag::seen;
+	if (stm.col_uint64(6)) out += midb_flag::recent;
+	out += ")\r\n";
+	return out;
+}
+
 /**
  * Set flags on message. For (S)een and (U)nsent, exmdb is contacted(!), which
  * is different from GFLG.
@@ -3153,8 +3174,9 @@ static int me_psflg(int argc, char **argv, int sockd) try
 	if (set_seen && !exmdb_client::set_message_read_state(argv[1], nullptr,
 	    rop_util_make_eid_ex(1, message_id), 1, &read_cn))
 		return MIDB_E_MDB_SETMSGRD;
+	auto new_flags = flags_rn(pidb->psqlite, message_id);
 	pidb.reset();
-	return cmd_write(sockd, "TRUE\r\n");
+	return cmd_write(sockd, new_flags.c_str(), new_flags.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1751: ENOMEM");
 	return MIDB_E_NO_MEMORY;
@@ -3233,8 +3255,9 @@ static int me_prflg(int argc, char **argv, int sockd) try
 	if (set_seen && !exmdb_client::set_message_read_state(argv[1], nullptr,
 	    rop_util_make_eid_ex(1, message_id), 0, &read_cn))
 		return MIDB_E_MDB_SETMSGRD;
+	auto new_flags = flags_rn(pidb->psqlite, message_id);
 	pidb.reset();
-	return cmd_write(sockd, "TRUE\r\n");
+	return cmd_write(sockd, new_flags.c_str(), new_flags.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1750: ENOMEM");
 	return MIDB_E_NO_MEMORY;
