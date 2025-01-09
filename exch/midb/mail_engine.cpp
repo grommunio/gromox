@@ -3125,6 +3125,7 @@ static int me_psflg(int argc, char **argv, int sockd) try
 	if (set_flagged)   qstr += "flagged=1,";
 	if (set_forwarded) qstr += "forwarded=1,";
 	if (set_deleted)   qstr += "deleted=1,";
+	if (set_seen)      qstr += "read=1,";
 	if (set_recent)    qstr += "recent=1,";
 	if (qstr.back() == ',') {
 		qstr.pop_back();
@@ -3204,6 +3205,7 @@ static int me_prflg(int argc, char **argv, int sockd) try
 	if (set_flagged)   qstr += "flagged=0,";
 	if (set_forwarded) qstr += "forwarded=0,";
 	if (set_deleted)   qstr += "deleted=0,";
+	if (set_seen)      qstr += "read=0,";
 	if (set_recent)    qstr += "recent=0,";
 	if (qstr.back() == ',') {
 		qstr.pop_back();
