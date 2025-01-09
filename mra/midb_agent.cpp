@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
@@ -34,6 +34,7 @@
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
 #include <gromox/list_file.hpp>
+#include <gromox/midb.hpp>
 #include <gromox/midb_agent.hpp>
 #include <gromox/process.hpp>
 #include <gromox/range_set.hpp>
@@ -1119,17 +1120,17 @@ int remove_mail(const char *path, const std::string &folder,
 static unsigned int s_to_flagbits(const char *s)
 {
 	unsigned int fl = 0;
-	if (strchr(s, 'A') != nullptr)
+	if (strchr(s, midb_flag::answered) != nullptr)
 		fl |= FLAG_ANSWERED;
-	if (strchr(s, 'U') != nullptr)
+	if (strchr(s, midb_flag::unsent) != nullptr)
 		fl |= FLAG_DRAFT;
-	if (strchr(s, 'F') != nullptr)
+	if (strchr(s, midb_flag::flagged) != nullptr)
 		fl |= FLAG_FLAGGED;
-	if (strchr(s, 'D') != nullptr)
+	if (strchr(s, midb_flag::deleted) != nullptr)
 		fl |= FLAG_DELETED;
-	if (strchr(s, 'S') != nullptr)
+	if (strchr(s, midb_flag::seen) != nullptr)
 		fl |= FLAG_SEEN;
-	if (strchr(s, 'R') != nullptr)
+	if (strchr(s, midb_flag::recent) != nullptr)
 		fl |= FLAG_RECENT;
 	return fl;
 }
@@ -1576,17 +1577,17 @@ int set_flags(const char *path, const std::string &folder,
 	flags_string[0] = '(';
 	int length = 1;
 	if (flag_bits & FLAG_ANSWERED)
-		flags_string[length++] = 'A';
+		flags_string[length++] = midb_flag::answered;
 	if (flag_bits & FLAG_DRAFT)
-		flags_string[length++] = 'U';
+		flags_string[length++] = midb_flag::unsent;
 	if (flag_bits & FLAG_FLAGGED)
-		flags_string[length++] = 'F';
+		flags_string[length++] = midb_flag::flagged;
 	if (flag_bits & FLAG_DELETED)
-		flags_string[length++] = 'D';
+		flags_string[length++] = midb_flag::deleted;
 	if (flag_bits & FLAG_SEEN)
-		flags_string[length++] = 'S';
+		flags_string[length++] = midb_flag::seen;
 	if (flag_bits & FLAG_RECENT)
-		flags_string[length++] = 'R';
+		flags_string[length++] = midb_flag::recent;
 	flags_string[length++] = ')';
 	flags_string[length] = '\0';
 	length = gx_snprintf(buff, std::size(buff), "P-SFLG %s %s %s %s\r\n",
@@ -1618,17 +1619,17 @@ int unset_flags(const char *path, const std::string &folder,
 	flags_string[0] = '(';
 	int length = 1;
 	if (flag_bits & FLAG_ANSWERED)
-		flags_string[length++] = 'A';
+		flags_string[length++] = midb_flag::answered;
 	if (flag_bits & FLAG_DRAFT)
-		flags_string[length++] = 'U';
+		flags_string[length++] = midb_flag::unsent;
 	if (flag_bits & FLAG_FLAGGED)
-		flags_string[length++] = 'F';
+		flags_string[length++] = midb_flag::flagged;
 	if (flag_bits & FLAG_DELETED)
-		flags_string[length++] = 'D';
+		flags_string[length++] = midb_flag::deleted;
 	if (flag_bits & FLAG_SEEN)
-		flags_string[length++] = 'S';
+		flags_string[length++] = midb_flag::seen;
 	if (flag_bits & FLAG_RECENT)
-		flags_string[length++] = 'R';
+		flags_string[length++] = midb_flag::recent;
 	flags_string[length++] = ')';
 	flags_string[length] = '\0';
 	length = gx_snprintf(buff, std::size(buff), "P-RFLG %s %s %s %s\r\n",

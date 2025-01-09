@@ -2180,8 +2180,8 @@ static int me_minst(int argc, char **argv, int sockd) try
 	uint64_t message_id;
 	char sql_string[1024];
 	
-	uint8_t b_unsent = strchr(argv[4], 'U') != nullptr;
-	uint8_t b_read = strchr(argv[4], 'S') != nullptr;
+	uint8_t b_unsent = strchr(argv[4], midb_flag::unsent) != nullptr;
+	uint8_t b_read = strchr(argv[4], midb_flag::seen) != nullptr;
 	auto eml_path = make_eml_path(argv[1], argv[3]);
 	size_t slurp_size = 0;
 	std::unique_ptr<char[], stdlib_delete> pbuff(HX_slurp_file(eml_path.c_str(), &slurp_size));
@@ -2806,19 +2806,19 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
 		sn.uid = pstmt.col_int64(2);
 		sn.flags = "(";
 		if (pstmt.col_int64(3) != 0)
-			sn.flags += 'A';
+			sn.flags += midb_flag::answered;
 		if (pstmt.col_int64(4) != 0)
-			sn.flags += 'U';
+			sn.flags += midb_flag::unsent;
 		if (pstmt.col_int64(5) != 0)
-			sn.flags += 'F';
+			sn.flags += midb_flag::flagged;
 		if (pstmt.col_int64(6) != 0)
-			sn.flags += 'D';
+			sn.flags += midb_flag::deleted;
 		if (pstmt.col_int64(7) != 0)
-			sn.flags += 'S';
+			sn.flags += midb_flag::seen;
 		if (pstmt.col_int64(8) != 0)
-			sn.flags += 'R';
+			sn.flags += midb_flag::recent;
 		if (pstmt.col_int64(9) != 0)
-			sn.flags += 'W';
+			sn.flags += midb_flag::forwarded;
 		sn.flags += ')';
 		sn.size = pstmt.col_uint64(10);
 		temp_list.push_back(std::move(sn));
@@ -3108,12 +3108,12 @@ static int me_psflg(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MESSAGE;
 	message_id = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	if (NULL != strchr(argv[4], 'A')) {
+	if (strchr(argv[4], midb_flag::answered) != nullptr) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET replied=1"
 		        " WHERE message_id=%llu", LLU{message_id});
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
-	if (NULL != strchr(argv[4], 'U')) {
+	if (strchr(argv[4], midb_flag::unsent) != nullptr) {
 		static constexpr proptag_t tmp_proptag[] = {PR_MESSAGE_FLAGS};
 		static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 		if (!exmdb_client::get_message_properties(argv[1], NULL,
@@ -3130,26 +3130,26 @@ static int me_psflg(int argc, char **argv, int sockd)
 				return MIDB_E_MDB_SETMSGPROPS;
 		}
 	}
-	if (NULL != strchr(argv[4], 'F')) {
+	if (strchr(argv[4], midb_flag::flagged) != nullptr) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET flagged=1"
 		        " WHERE message_id=%llu", LLU{message_id});
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
-	if (NULL != strchr(argv[4], 'W')) {
+	if (strchr(argv[4], midb_flag::forwarded) != nullptr) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET forwarded=1"
 		        " WHERE message_id=%llu", LLU{message_id});
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
-	if (NULL != strchr(argv[4], 'D')) {
+	if (strchr(argv[4], midb_flag::deleted) != nullptr) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET deleted=1"
 		        " WHERE message_id=%llu", LLU{message_id});
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
-	if (strchr(argv[4], 'S') != nullptr &&
+	if (strchr(argv[4], midb_flag::seen) != nullptr &&
 	    !exmdb_client::set_message_read_state(argv[1], nullptr,
 	    rop_util_make_eid_ex(1, message_id), 1, &read_cn))
 		return MIDB_E_MDB_SETMSGRD;
-	if (NULL != strchr(argv[4], 'R')) {
+	if (strchr(argv[4], midb_flag::recent) != nullptr) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET recent=1"
 		        " WHERE message_id=%llu", LLU{message_id});
 		gx_sql_exec(pidb->psqlite, sql_string);
@@ -3190,12 +3190,12 @@ static int me_prflg(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MESSAGE;
 	message_id = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	if (NULL != strchr(argv[4], 'A')) {
+	if (NULL != strchr(argv[4], midb_flag::answered)) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET replied=0"
 		        " WHERE message_id=%llu", LLU{message_id});
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
-	if (NULL != strchr(argv[4], 'U')) {
+	if (strchr(argv[4], midb_flag::unsent) != nullptr) {
 		static constexpr proptag_t tmp_proptag[] = {PR_MESSAGE_FLAGS};
 		static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 		if (!exmdb_client::get_message_properties(argv[1], nullptr,
@@ -3212,26 +3212,26 @@ static int me_prflg(int argc, char **argv, int sockd)
 				return MIDB_E_MDB_SETMSGPROPS;
 		}
 	}
-	if (NULL != strchr(argv[4], 'F')) {
+	if (strchr(argv[4], midb_flag::flagged) != nullptr) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET flagged=0"
 		        " WHERE message_id=%llu", LLU{message_id});
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
-	if (NULL != strchr(argv[4], 'W')) {
+	if (strchr(argv[4], midb_flag::forwarded) != nullptr) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET forwarded=0"
 		        " WHERE message_id=%llu", LLU{message_id});
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
-	if (NULL != strchr(argv[4], 'D')) {
+	if (strchr(argv[4], midb_flag::deleted) != nullptr) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET deleted=0"
 		        " WHERE message_id=%llu", LLU{message_id});
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
-	if (strchr(argv[4], 'S') != nullptr &&
+	if (strchr(argv[4], midb_flag::seen) != nullptr &&
 	    !exmdb_client::set_message_read_state(argv[1], nullptr,
 	    rop_util_make_eid_ex(1, message_id), 0, &read_cn))
 		return MIDB_E_MDB_SETMSGRD;
-	if (NULL != strchr(argv[4], 'R')) {
+	if (strchr(argv[4], midb_flag::recent) != nullptr) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET recent=0"
 		        " WHERE message_id=%llu", LLU{message_id});
 		gx_sql_exec(pidb->psqlite, sql_string);
@@ -3271,13 +3271,13 @@ static int me_pgflg(int argc, char **argv, int sockd) try
 	    gx_sql_col_uint64(pstmt, 0) != folder_id)
 		return MIDB_E_NO_MESSAGE;
 	std::string ans = "TRUE (";
-	if (pstmt.col_int64(5) != 0) ans += 'A';
-	if (pstmt.col_int64(3) != 0) ans += 'U';
-	if (pstmt.col_int64(4) != 0) ans += 'F';
-	if (pstmt.col_int64(6) != 0) ans += 'W';
-	if (pstmt.col_int64(7) != 0) ans += 'D';
-	if (pstmt.col_int64(2) != 0) ans += 'S';
-	if (pstmt.col_int64(1) != 0) ans += 'R';
+	if (pstmt.col_int64(5) != 0) ans += midb_flag::answered;
+	if (pstmt.col_int64(3) != 0) ans += midb_flag::unsent;
+	if (pstmt.col_int64(4) != 0) ans += midb_flag::flagged;
+	if (pstmt.col_int64(6) != 0) ans += midb_flag::forwarded;
+	if (pstmt.col_int64(7) != 0) ans += midb_flag::deleted;
+	if (pstmt.col_int64(2) != 0) ans += midb_flag::seen;
+	if (pstmt.col_int64(1) != 0) ans += midb_flag::recent;
 	pstmt.finalize();
 	pidb.reset();
 	ans += ")\r\n";
@@ -3569,17 +3569,17 @@ static void notif_msg_added(IDB_ITEM *pidb,
 		syncmessage_entry{mod_time, received_time, message_flags,
 		znul(str)});
 	pstmt.finalize();
-	if (flags_buff.find('F') != flags_buff.npos) {
+	if (flags_buff.find(midb_flag::flagged) != flags_buff.npos) {
 		qstr = fmt::format("UPDATE messages SET "
 		       "flagged=1 WHERE message_id={}", message_id);
 		gx_sql_exec(pidb->psqlite, qstr.c_str());
 	}
-	if (flags_buff.find('A') != flags_buff.npos) {
+	if (flags_buff.find(midb_flag::answered) != flags_buff.npos) {
 		qstr = fmt::format("UPDATE messages SET "
 		       "replied=1 WHERE message_id={}", message_id);
 		gx_sql_exec(pidb->psqlite, qstr.c_str());
 	}
-	if (flags_buff.find('W') != flags_buff.npos) {
+	if (flags_buff.find(midb_flag::forwarded) != flags_buff.npos) {
 		qstr = fmt::format("UPDATE messages SET "
 		       "forwarded=1 WHERE message_id={}", message_id);
 		gx_sql_exec(pidb->psqlite, qstr.c_str());

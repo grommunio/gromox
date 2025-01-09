@@ -40,3 +40,13 @@ enum {
 	MIDB_E_ACCESS_DENIED,
 	MIDB_E_NOTPERMITTED,
 };
+
+enum midb_flag : char {
+	answered = 'A',
+	deleted = 'D',
+	flagged = 'F',
+	recent = 'R',
+	seen = 'S',
+	unsent = 'U',
+	forwarded = 'W',
+};
