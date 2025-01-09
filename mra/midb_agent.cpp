@@ -1117,21 +1117,15 @@ int remove_mail(const char *path, const std::string &folder,
 	return MIDB_RDWR_ERROR;
 }
 
-static unsigned int s_to_flagbits(const char *s)
+static unsigned int s_to_flagbits(std::string_view s)
 {
 	unsigned int fl = 0;
-	if (strchr(s, midb_flag::answered) != nullptr)
-		fl |= FLAG_ANSWERED;
-	if (strchr(s, midb_flag::unsent) != nullptr)
-		fl |= FLAG_DRAFT;
-	if (strchr(s, midb_flag::flagged) != nullptr)
-		fl |= FLAG_FLAGGED;
-	if (strchr(s, midb_flag::deleted) != nullptr)
-		fl |= FLAG_DELETED;
-	if (strchr(s, midb_flag::seen) != nullptr)
-		fl |= FLAG_SEEN;
-	if (strchr(s, midb_flag::recent) != nullptr)
-		fl |= FLAG_RECENT;
+	if (s.find(midb_flag::answered) != s.npos) fl |= FLAG_ANSWERED;
+	if (s.find(midb_flag::unsent) != s.npos)   fl |= FLAG_DRAFT;
+	if (s.find(midb_flag::flagged) != s.npos)  fl |= FLAG_FLAGGED;
+	if (s.find(midb_flag::deleted) != s.npos)  fl |= FLAG_DELETED;
+	if (s.find(midb_flag::seen) != s.npos)     fl |= FLAG_SEEN;
+	if (s.find(midb_flag::recent) != s.npos)   fl |= FLAG_RECENT;
 	return fl;
 }
 
