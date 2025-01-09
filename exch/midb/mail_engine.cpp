@@ -102,7 +102,7 @@ struct syncmessage_entry {
 	uint64_t mod_time = 0, recv_time = 0;
 	uint32_t msg_flags = 0;
 	std::string midstr;
-	bool flagged = false;
+	bool answered = false, forwarded = false, flagged = false;
 };
 
 using syncfolder_list = std::unordered_map<uint64_t /* folder_id */, syncfolder_entry>;
@@ -1483,8 +1483,12 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 	stm_insert.bind_int64(11, e.recv_time);
 	if (stm_insert.step() != SQLITE_DONE)
 		mlog(LV_ERR, "E-2075: sqlite_step not finished");
-	auto qstr = "UPDATE messages SET flagged=" + std::to_string(e.flagged) +
-	            " WHERE message_id=" + std::to_string(message_id);
+	auto qstr = "UPDATE messages SET flagged=" + std::to_string(e.flagged);
+	if (e.answered)
+		qstr += ", replied=1";
+	if (e.forwarded)
+		qstr += ", forwarded=1";
+	qstr += " WHERE message_id=" + std::to_string(message_id);
 	gx_sql_exec(db, qstr.c_str());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1137: ENOMEM");
@@ -1539,6 +1543,7 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		static constexpr uint32_t proptags_0[] = {
 			PidTagMid, PR_MESSAGE_FLAGS, PR_LAST_MODIFICATION_TIME,
 			PR_MESSAGE_DELIVERY_TIME, PidTagMidString, PR_FLAG_STATUS,
+			PR_ICON_INDEX,
 		};
 		static constexpr PROPTAG_ARRAY proptags_1 = {std::size(proptags_0), deconst(proptags_0)};
 		if (!exmdb_client::query_table(dir, nullptr, CP_ACP, table_id,
@@ -1573,10 +1578,13 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		auto midstr = rows.pparray[i]->get<const char>(PidTagMidString);
 		auto num = rows.pparray[i]->get<const uint32_t>(PR_FLAG_STATUS);
 		bool flagged = num != nullptr && *num == followupFlagged;
+		num = rows.pparray[i]->get<const uint32_t>(PR_ICON_INDEX);
+		bool answered = num != nullptr && *num == MAIL_ICON_REPLIED;
+		bool forwarded = num != nullptr && *num == MAIL_ICON_FORWARDED;
 		syncmessagelist.emplace(message_id, syncmessage_entry{
 			mod_time != nullptr ? *mod_time : 0,
 			recv_time != nullptr ? *recv_time : 0,
-			*flags, znul(midstr), flagged});
+			*flags, znul(midstr), answered, forwarded, flagged});
 	}
 
 	size_t totalmsgs = syncmessagelist.size(), procmsgs = 0;
@@ -3176,6 +3184,15 @@ static int me_psflg(int argc, char **argv, int sockd) try
 				return MIDB_E_MDB_SETMSGPROPS;
 		}
 	}
+	if (set_answered || set_forwarded) {
+		const uint32_t val = set_answered ? MAIL_ICON_REPLIED : MAIL_ICON_FORWARDED;
+		const TAGGED_PROPVAL tp[] = {{PR_ICON_INDEX, deconst(&val)}};
+		const TPROPVAL_ARRAY ta = {std::size(tp), deconst(tp)};
+		if (!exmdb_client::set_message_properties(argv[1],
+		    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
+		    &ta, &problems))
+			return MIDB_E_MDB_SETMSGPROPS;
+	}
 	if (set_flagged) {
 		static constexpr uint32_t val = followupFlagged, icon = olRedFlagIcon;
 		static constexpr TAGGED_PROPVAL tp[] = {
@@ -3267,6 +3284,21 @@ static int me_prflg(int argc, char **argv, int sockd) try
 			    nullptr, CP_ACP, rop_util_make_eid_ex(1, message_id),
 			    &propvals, &problems))
 				return MIDB_E_MDB_SETMSGPROPS;
+		}
+	}
+	if (set_answered || set_forwarded) {
+		static constexpr proptag_t proptags_1[] = {PR_ICON_INDEX};
+		static constexpr PROPTAG_ARRAY proptags = {std::size(proptags_1), deconst(proptags_1)};
+		TPROPVAL_ARRAY propvals{};
+		if (exmdb_client::get_message_properties(argv[1], nullptr,
+		    CP_ACP, rop_util_make_eid_ex(1, message_id),
+		    &proptags, &propvals)) {
+			uint32_t testfor = set_answered ? MAIL_ICON_REPLIED : MAIL_ICON_FORWARDED;
+			auto icon = propvals.get<const uint32_t>(PR_ICON_INDEX);
+			if (icon != nullptr && *icon == testfor)
+				if (!exmdb_client::remove_message_properties(argv[1], CP_ACP,
+				    rop_util_make_eid_ex(1, message_id), &proptags))
+					/* ignore */;
 		}
 	}
 	if (set_flagged) {
@@ -3575,6 +3607,9 @@ static void notif_msg_added(IDB_ITEM *pidb,
 	auto message_flags = num != nullptr ? *num : 0;
 	num = propvals.get<const uint32_t>(PR_FLAG_STATUS);
 	bool b_flagged = num != nullptr && *num == followupFlagged;
+	num = propvals.get<const uint32_t>(PR_ICON_INDEX);
+	bool set_answered = num != nullptr && *num == MAIL_ICON_REPLIED;
+	bool set_forwarded = num != nullptr && *num == MAIL_ICON_FORWARDED;
 
 	std::string flags_buff;
 	char mid_string[128];
@@ -3618,18 +3653,7 @@ static void notif_msg_added(IDB_ITEM *pidb,
 		return;	
 	me_insert_message(pstmt, &uidnext, message_id, pidb->psqlite,
 		syncmessage_entry{mod_time, received_time, message_flags,
-		znul(str), b_flagged});
-	pstmt.finalize();
-	if (flags_buff.find(midb_flag::answered) != flags_buff.npos) {
-		qstr = fmt::format("UPDATE messages SET "
-		       "replied=1 WHERE message_id={}", message_id);
-		gx_sql_exec(pidb->psqlite, qstr.c_str());
-	}
-	if (flags_buff.find(midb_flag::forwarded) != flags_buff.npos) {
-		qstr = fmt::format("UPDATE messages SET "
-		       "forwarded=1 WHERE message_id={}", message_id);
-		gx_sql_exec(pidb->psqlite, qstr.c_str());
-	}
+		znul(str), set_answered, set_forwarded, b_flagged});
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2418: ENOMEM");
 }
@@ -3878,7 +3902,7 @@ static void notif_msg_modified(IDB_ITEM *pidb,
 	TPROPVAL_ARRAY propvals;
 	static constexpr proptag_t tmp_proptags[] = {
 		PR_MESSAGE_FLAGS, PR_LAST_MODIFICATION_TIME, PidTagMidString,
-		PR_FLAG_STATUS,
+		PR_FLAG_STATUS, PR_ICON_INDEX,
 	};
 	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptags), deconst(tmp_proptags)};
 	if (!exmdb_client::get_message_properties(cu_get_maildir(),
@@ -3889,13 +3913,21 @@ static void notif_msg_modified(IDB_ITEM *pidb,
 	auto message_flags = num != nullptr ? *num : 0;
 	num = propvals.get<const uint32_t>(PR_FLAG_STATUS);
 	bool b_flagged = num != nullptr && *num == followupFlagged;
+	num = propvals.get<const uint32_t>(PR_ICON_INDEX);
+	bool set_answered = num != nullptr && *num == MAIL_ICON_REPLIED;
+	bool set_forwarded = num != nullptr && *num == MAIL_ICON_FORWARDED;
 	auto str = propvals.get<const char>(PidTagMidString);
 	if (str != nullptr) {
  UPDATE_MESSAGE_FLAGS:
 		auto b_unsent = !!(message_flags & MSGFLAG_UNSENT);
 		auto b_read   = !!(message_flags & MSGFLAG_READ);
-		auto qstr = fmt::format("UPDATE messages SET read={}, unsent={}, flagged={}"
-		            " WHERE message_id={}", b_read, b_unsent, b_flagged, message_id);
+		auto qstr = fmt::format("UPDATE messages SET read={}, unsent={}, flagged={}",
+		            b_read, b_unsent, b_flagged);
+		if (set_answered)
+			qstr += ", replied=1";
+		if (set_forwarded)
+			qstr += ", forwarded=1";
+		qstr += " WHERE message_id=" + std::to_string(message_id);
 		gx_sql_exec(pidb->psqlite, qstr.c_str());
 		return;
 	}
