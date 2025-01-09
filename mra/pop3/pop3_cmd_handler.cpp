@@ -400,7 +400,7 @@ int cmdh_quit(std::vector<std::string> &&argv, pop3_context *pcontext)
 	if (argv.size() != 1)
 		return 1704;
 	if (pcontext->is_login && pcontext->delmsg_list.size() > 0) {
-		switch (midb_agent::delete_mail(pcontext->maildir, "inbox",
+		switch (midb_agent::delete_mail(pcontext->maildir, base64_encode("INBOX"),
 			pcontext->delmsg_list)) {
 		case MIDB_RESULT_OK:
 			break;
@@ -410,7 +410,7 @@ int cmdh_quit(std::vector<std::string> &&argv, pop3_context *pcontext)
 			pop3_parser_log_info(pcontext, LV_WARN, "failed RW I/O with midb server");
 			return 1721 | DISPATCH_SHOULD_CLOSE;
 		case MIDB_RESULT_ERROR:
-			pop3_parser_log_info(pcontext, LV_WARN, "failed to execute delete command on midb server!");
+			pop3_parser_log_info(pcontext, LV_WARN, "failed to execute delete command on midb server");
 			return 1722 | DISPATCH_SHOULD_CLOSE;
 		case MIDB_LOCAL_ENOMEM:
 			return 1728 | DISPATCH_SHOULD_CLOSE;
