@@ -7,14 +7,18 @@ on:
   pull_request:
     branches: [ "master" ]
 
+# Github.com breaks "ubuntu-latest" every now and then:
+# (echo we are going to change latest from 22 to 24; exit 1)
+# Stupid! We know it's a moving target.
+#
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - name: install-deps
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        packages: autoconf automake autotools-dev binutils cmake g++ gettext libbfio-dev libcurl4-openssl-dev libfmt-dev libgnutls28-dev libgsasl7-dev libjsoncpp-dev libldap2-dev libmariadb-dev libpam0g-dev libolecf-dev libpff-dev libsqlite3-dev libssl-dev libtinyxml2-dev libtool libxml2-dev libxxhash-dev libzstd-dev make m4 openssl php-dev pkg-config sed systemd uuid-dev zlib1g-dev
+        packages: autoconf automake autotools-dev binutils cmake g++ gettext libbfio-dev libcurl4-openssl-dev libfmt-dev libgnutls28-dev libgsasl-dev libjsoncpp-dev libldap2-dev libmariadb-dev libpam0g-dev libolecf-dev libpff-dev libsqlite3-dev libssl-dev libtinyxml2-dev libtool libxml2-dev libxxhash-dev libzstd-dev make m4 openssl php-dev pkg-config sed systemd uuid-dev zlib1g-dev
         version: 1.2
     - name: clone-gromox
       uses: actions/checkout@v3
@@ -30,10 +34,10 @@ jobs:
         path: libHX
     - name: buildall
       run: |
-        lscpu -b --online --parse | grep -v '^#' | wc -l >/tmp/ncpus
-        pushd vmime && cmake . -DVMIME_SENDMAIL_PATH:STRING="/usr/sbin/sendmail" -DVMIME_BUILD_SAMPLES:BOOL=OFF -DVMIME_HAVE_TLS_SUPPORT:BOOL=ON -DVMIME_BUILD_STATIC_LIBRARY:BOOL=OFF && make "-j$(cat /tmp/ncpus)" && sudo make install && popd
-        pushd libHX && ./qconf && make "-j$(cat /tmp/ncpus)" && sudo make install && popd
+        set -e
+        pushd vmime && cmake . -DVMIME_SENDMAIL_PATH:STRING="/usr/sbin/sendmail" -DVMIME_BUILD_SAMPLES:BOOL=OFF -DVMIME_HAVE_TLS_SUPPORT:BOOL=ON -DVMIME_BUILD_STATIC_LIBRARY:BOOL=OFF && make "-j$(nproc)" && sudo make install && popd
+        pushd libHX && ./qconf && make "-j$(nproc)" && sudo make install && popd
         ./qconf
-        LD_LIBRARY_PATH=/usr/local/lib make "-j$(cat /tmp/ncpus)"
+        LD_LIBRARY_PATH=/usr/local/lib make "-j$(nproc)"
         LD_LIBRARY_PATH=/usr/local/lib make install DESTDIR="$PWD/rt" && rm -Rf rt
         make distclean
