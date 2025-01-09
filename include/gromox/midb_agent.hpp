@@ -50,9 +50,9 @@ extern GX_EXPORT int remove_mail(const char *path, const std::string &folder, co
 extern GX_EXPORT int list_deleted(const char *path, const std::string &folder, XARRAY *, int *perrno);
 extern GX_EXPORT int fetch_simple_uid(const char *path, const std::string &folder, const gromox::imap_seq_list &, XARRAY *, int *perrno);
 extern GX_EXPORT int fetch_detail_uid(const char *path, const std::string &folder, const gromox::imap_seq_list &, XARRAY *, int *perrno);
-extern GX_EXPORT int set_flags(const char *path, const std::string &folder, const std::string &mid, int flag_bits, int *perrno);
-extern GX_EXPORT int unset_flags(const char *path, const std::string &folder, const std::string &mid, int flag_bits, int *perrno);
-extern GX_EXPORT int get_flags(const char *path, const std::string &folder, const std::string &mid, int *pflag_bits, int *perrno);
+extern GX_EXPORT int set_flags(const char *path, const std::string &folder, const std::string &mid, unsigned int flag_bits, unsigned int *new_bits, int *perrno);
+extern GX_EXPORT int unset_flags(const char *path, const std::string &folder, const std::string &mid, unsigned int flag_bits, unsigned int *new_bits, int *perrno);
+extern GX_EXPORT int get_flags(const char *path, const std::string &folder, const std::string &mid, unsigned int *pflag_bits, int *perrno);
 extern GX_EXPORT int copy_mail(const char *path, const std::string &src_folder, const std::string &src_mid, const std::string &dst_folder, std::string &dst_mid, int *perrno);
 extern GX_EXPORT int search(const char *path, const std::string &folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);
 extern GX_EXPORT int search_uid(const char *path, const std::string &folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);

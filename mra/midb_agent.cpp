@@ -1571,7 +1571,8 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 }
 
 int set_flags(const char *path, const std::string &folder,
-    const std::string &mid_string, int flag_bits, int *perrno)
+    const std::string &mid_string, unsigned int flag_bits,
+    unsigned int *new_bits, int *perrno)
 {
 	char buff[1024];
 	auto pback = get_connection(path);
@@ -1585,6 +1586,25 @@ int set_flags(const char *path, const std::string &folder,
 		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
+		if (new_bits != nullptr)
+			*new_bits = ~0U;
+		if (buff[5] == '\r' || buff[5] == '\n')
+			return MIDB_RESULT_OK;
+		auto ptr = &buff[5];
+		if (!HX_isspace(*ptr))
+			return MIDB_RDWR_ERROR;
+		while (HX_isspace(*ptr))
+			++ptr;
+		if (*ptr == '-')
+			return MIDB_RESULT_OK;
+		if (*ptr != '(')
+			return MIDB_RDWR_ERROR;
+		auto bg = ptr + 1;
+		ptr = strchr(bg, ')');
+		if (ptr == nullptr)
+			return MIDB_RDWR_ERROR;
+		if (new_bits != nullptr)
+			*new_bits = s_to_flagbits(std::string_view(bg, ptr - bg));
 		return MIDB_RESULT_OK;
 	} else if (0 == strncmp(buff, "FALSE ", 6)) {
 		pback.reset();
@@ -1595,7 +1615,8 @@ int set_flags(const char *path, const std::string &folder,
 }
 	
 int unset_flags(const char *path, const std::string &folder,
-    const std::string &mid_string, int flag_bits, int *perrno)
+    const std::string &mid_string, unsigned int flag_bits,
+    unsigned int *new_bits, int *perrno)
 {
 	char buff[1024];
 	auto pback = get_connection(path);
@@ -1609,6 +1630,25 @@ int unset_flags(const char *path, const std::string &folder,
 		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
+		if (new_bits != nullptr)
+			*new_bits = -1;
+		if (buff[5] == '\r' || buff[5] == '\n')
+			return MIDB_RESULT_OK;
+		auto ptr = &buff[5];
+		if (!HX_isspace(*ptr))
+			return MIDB_RDWR_ERROR;
+		while (HX_isspace(*ptr))
+			++ptr;
+		if (*ptr == '-')
+			return MIDB_RESULT_OK;
+		if (*ptr != '(')
+			return MIDB_RDWR_ERROR;
+		auto bg = ptr + 1;
+		ptr = strchr(bg, ')');
+		if (ptr == nullptr)
+			return MIDB_RDWR_ERROR;
+		if (new_bits != nullptr)
+			*new_bits = s_to_flagbits(std::string_view(bg, ptr - bg));
 		return MIDB_RESULT_OK;
 	} else if (0 == strncmp(buff, "FALSE ", 6)) {
 		pback.reset();
@@ -1619,7 +1659,7 @@ int unset_flags(const char *path, const std::string &folder,
 }
 	
 int get_flags(const char *path, const std::string &folder,
-    const std::string &mid_string, int *pflag_bits, int *perrno)
+    const std::string &mid_string, unsigned int *pflag_bits, int *perrno)
 {
 	char buff[1024];
 
