@@ -38,7 +38,7 @@ template<typename T> static inline T *sa_get_item(std::vector<T> &arr, size_t id
 	return idx < arr.size() ? &arr[idx] : nullptr;
 }
 
-int pop3_cmd_handler_capa(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_capa(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	char buff[256];
 
@@ -59,7 +59,7 @@ int pop3_cmd_handler_capa(std::vector<std::string> &&argv, pop3_context *pcontex
 	return DISPATCH_CONTINUE;
 }
 
-int pop3_cmd_handler_stls(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_stls(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	if (pcontext->connection.ssl != nullptr)
 		return 1703;
@@ -71,7 +71,7 @@ int pop3_cmd_handler_stls(std::vector<std::string> &&argv, pop3_context *pcontex
 	return 1724;
 }
 
-int pop3_cmd_handler_user(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_user(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char buff[1024];
@@ -110,7 +110,7 @@ static bool store_owner_over(const char *actor, const char *mbox, const char *mb
 	return ok;
 }
 
-int pop3_cmd_handler_pass(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_pass(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	if (argv.size() < 2)
 		return 1704;
@@ -191,7 +191,7 @@ int pop3_cmd_handler_pass(std::vector<std::string> &&argv, pop3_context *pcontex
 	return 1700;
 }
 
-int pop3_cmd_handler_stat(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_stat(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char temp_buff[1024];
@@ -207,7 +207,7 @@ int pop3_cmd_handler_stat(std::vector<std::string> &&argv, pop3_context *pcontex
     return DISPATCH_CONTINUE;    
 }
 
-int pop3_cmd_handler_uidl(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_uidl(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char temp_buff[1024];
@@ -254,7 +254,7 @@ int pop3_cmd_handler_uidl(std::vector<std::string> &&argv, pop3_context *pcontex
 	return 1707;
 }
 
-int pop3_cmd_handler_list(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_list(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char temp_buff[1024];
@@ -300,7 +300,7 @@ int pop3_cmd_handler_list(std::vector<std::string> &&argv, pop3_context *pcontex
 	return 1707;
 }
 
-int pop3_cmd_handler_retr(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_retr(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	if (argv.size() < 2)
 		return 1704;
@@ -339,7 +339,7 @@ int pop3_cmd_handler_retr(std::vector<std::string> &&argv, pop3_context *pcontex
 	return DISPATCH_DATA;
 }
 
-int pop3_cmd_handler_dele(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_dele(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	if (argv.size() < 2)
 		return 1704;
@@ -360,7 +360,7 @@ int pop3_cmd_handler_dele(std::vector<std::string> &&argv, pop3_context *pcontex
 	return 1700;
 }
 
-int pop3_cmd_handler_top(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_top(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	if (argv.size() < 2)
 		return 1704;
@@ -392,7 +392,7 @@ int pop3_cmd_handler_top(std::vector<std::string> &&argv, pop3_context *pcontext
 	return DISPATCH_DATA;
 }
 
-int pop3_cmd_handler_quit(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_quit(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char temp_buff[1024];
@@ -441,7 +441,7 @@ int pop3_cmd_handler_quit(std::vector<std::string> &&argv, pop3_context *pcontex
 	
 }
 
-int pop3_cmd_handler_rset(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_rset(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	if (argv.size() != 1)
 		return 1704;
@@ -451,14 +451,14 @@ int pop3_cmd_handler_rset(std::vector<std::string> &&argv, pop3_context *pcontex
 	return 1700;
 }    
 
-int pop3_cmd_handler_noop(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_noop(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
 	if (argv.size() != 1)
 		return 1704;
 	return 1700;
 }
 
-int pop3_cmd_handler_else(std::vector<std::string> &&argv, pop3_context *pcontext)
+int cmdh_else(std::vector<std::string> &&argv, pop3_context *pcontext)
 {
     /* command not implement*/
 	return 1703;

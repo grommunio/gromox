@@ -560,19 +560,19 @@ static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
     pop3_context *ctx) try
 {
 	static constexpr std::pair<const char *, pophnd *> proc[] = {
-		{"CAPA", pop3_cmd_handler_capa},
-		{"DELE", pop3_cmd_handler_dele},
-		{"LIST", pop3_cmd_handler_list},
-		{"NOOP", pop3_cmd_handler_noop},
-		{"PASS", pop3_cmd_handler_pass},
-		{"QUIT", pop3_cmd_handler_quit},
-		{"RETR", pop3_cmd_handler_retr},
-		{"RSET", pop3_cmd_handler_rset},
-		{"STAT", pop3_cmd_handler_stat},
-		{"STLS", pop3_cmd_handler_stls},
-		{"TOP", pop3_cmd_handler_top},
-		{"UIDL", pop3_cmd_handler_uidl},
-		{"USER", pop3_cmd_handler_user},
+		{"CAPA", cmdh_capa},
+		{"DELE", cmdh_dele},
+		{"LIST", cmdh_list},
+		{"NOOP", cmdh_noop},
+		{"PASS", cmdh_pass},
+		{"QUIT", cmdh_quit},
+		{"RETR", cmdh_retr},
+		{"RSET", cmdh_rset},
+		{"STAT", cmdh_stat},
+		{"STLS", cmdh_stls},
+		{"TOP", cmdh_top},
+		{"UIDL", cmdh_uidl},
+		{"USER", cmdh_user},
 	};
 	auto argv = gx_split(std::string_view(cmd_line, line_length), ' ');
 	if (argv.size() < 1)
@@ -581,7 +581,7 @@ static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 	auto it = std::lower_bound(std::begin(proc), std::end(proc), argv[0].c_str(), scmp);
 	if (it != std::end(proc) && strcasecmp(argv[0].c_str(), it->first) == 0)
 		return it->second(std::move(argv), ctx);
-	return pop3_cmd_handler_else(std::move(argv), ctx);
+	return cmdh_else(std::move(argv), ctx);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1248: ENOMEM");
 	return 1730;
