@@ -1129,6 +1129,18 @@ static unsigned int s_to_flagbits(std::string_view s)
 	return fl;
 }
 
+static std::string flagbits_to_s(unsigned int v)
+{
+	std::string s;
+	if (v & FLAG_ANSWERED) s += midb_flag::answered;
+	if (v & FLAG_DRAFT)    s += midb_flag::unsent;
+	if (v & FLAG_FLAGGED)  s += midb_flag::flagged;
+	if (v & FLAG_DELETED)  s += midb_flag::deleted;
+	if (v & FLAG_SEEN)     s += midb_flag::seen;
+	if (v & FLAG_RECENT)   s += midb_flag::recent;
+	return s;
+}
+
 static bool get_digest_string(const Json::Value &jv, const char *tag, std::string &buff)
 {
 	if (jv.type() != Json::ValueType::objectValue || !jv.isMember(tag))
@@ -1562,30 +1574,12 @@ int set_flags(const char *path, const std::string &folder,
     const std::string &mid_string, int flag_bits, int *perrno)
 {
 	char buff[1024];
-	char flags_string[16];
-
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-
-	flags_string[0] = '(';
-	int length = 1;
-	if (flag_bits & FLAG_ANSWERED)
-		flags_string[length++] = midb_flag::answered;
-	if (flag_bits & FLAG_DRAFT)
-		flags_string[length++] = midb_flag::unsent;
-	if (flag_bits & FLAG_FLAGGED)
-		flags_string[length++] = midb_flag::flagged;
-	if (flag_bits & FLAG_DELETED)
-		flags_string[length++] = midb_flag::deleted;
-	if (flag_bits & FLAG_SEEN)
-		flags_string[length++] = midb_flag::seen;
-	if (flag_bits & FLAG_RECENT)
-		flags_string[length++] = midb_flag::recent;
-	flags_string[length++] = ')';
-	flags_string[length] = '\0';
-	length = gx_snprintf(buff, std::size(buff), "P-SFLG %s %s %s %s\r\n",
-	         path, folder.c_str(), mid_string.c_str(), flags_string);
+	auto flags_string = flagbits_to_s(flag_bits);
+	auto length = gx_snprintf(buff, std::size(buff), "P-SFLG %s %s %s (%s)\r\n",
+	              path, folder.c_str(), mid_string.c_str(), flags_string.c_str());
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -1604,30 +1598,12 @@ int unset_flags(const char *path, const std::string &folder,
     const std::string &mid_string, int flag_bits, int *perrno)
 {
 	char buff[1024];
-	char flags_string[16];
-
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-
-	flags_string[0] = '(';
-	int length = 1;
-	if (flag_bits & FLAG_ANSWERED)
-		flags_string[length++] = midb_flag::answered;
-	if (flag_bits & FLAG_DRAFT)
-		flags_string[length++] = midb_flag::unsent;
-	if (flag_bits & FLAG_FLAGGED)
-		flags_string[length++] = midb_flag::flagged;
-	if (flag_bits & FLAG_DELETED)
-		flags_string[length++] = midb_flag::deleted;
-	if (flag_bits & FLAG_SEEN)
-		flags_string[length++] = midb_flag::seen;
-	if (flag_bits & FLAG_RECENT)
-		flags_string[length++] = midb_flag::recent;
-	flags_string[length++] = ')';
-	flags_string[length] = '\0';
-	length = gx_snprintf(buff, std::size(buff), "P-RFLG %s %s %s %s\r\n",
-	         path, folder.c_str(), mid_string.c_str(), flags_string);
+	auto flags_string = flagbits_to_s(flag_bits);
+	auto length = gx_snprintf(buff, std::size(buff), "P-RFLG %s %s %s (%s)\r\n",
+	              path, folder.c_str(), mid_string.c_str(), flags_string.c_str());
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
