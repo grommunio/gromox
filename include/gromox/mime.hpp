@@ -53,6 +53,7 @@ struct GX_EXPORT MIME {
 	MIME *get_sibling();
 	const MIME *get_sibling() const;
 	inline size_t get_children_num() const { return stree.get_children_num(); }
+	inline MAIL *get_mail_ptr() const { return reinterpret_cast<MAIL *>(const_cast<char *>(content_begin)); }
 
 	SIMPLE_TREE_NODE stree{};
 	enum mime_type mime_type = mime_type::none;

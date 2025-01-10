@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2020-2025 grommunio GmbH
+// This file is part of Gromox.
 /*
  * normally, MIME object does'n maintain its own content buffer, it just take
  * the reference of a mail object buffer, mark the begin, end and the content
@@ -772,7 +774,7 @@ bool MIME::serialize(STREAM *pstream) const
 		if (pmime->content_begin == nullptr)
 			/* well that's not supposed to happen */
 			pstream->write("\r\n", 2);
-		else if (!reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(pstream))
+		else if (!pmime->get_mail_ptr()->serialize(pstream))
 			return false;
 		return true;
 	}
@@ -1004,7 +1006,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	
 	/* content is an email object */
 	if (pmime->mime_type == mime_type::single_obj) {
-		auto mail_len = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
+		auto mail_len = pmime->get_mail_ptr()->get_length();
 		if (mail_len <= 0) {
 			mlog(LV_DEBUG, "Failed to get mail length in %s", __PRETTY_FUNCTION__);
 			*plength = 0;
@@ -1015,7 +1017,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 			return false;
 		}
 		STREAM tmp_stream;
-		if (!reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(&tmp_stream)) {
+		if (!pmime->get_mail_ptr()->serialize(&tmp_stream)) {
 			*plength = 0;
 			return false;
 		}
@@ -1135,7 +1137,7 @@ ssize_t MIME::get_length() const
 		return std::min(mime_len, static_cast<size_t>(SSIZE_MAX));
 	} else if (pmime->mime_type == mime_type::single_obj) {
 		if (NULL != pmime->content_begin) {
-			auto mgl = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
+			auto mgl = pmime->get_mail_ptr()->get_length();
 			if (mgl < 0)
 				return -1;
 			mime_len += mgl;
@@ -1309,7 +1311,7 @@ static int make_digest_single(const MIME *pmime, const char *id_string,
 			*poffset += pmime->content_length;
 			content_len = pmime->content_length;
 		} else if (pmime->mime_type == mime_type::single_obj) {
-			auto mgl = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
+			auto mgl = pmime->get_mail_ptr()->get_length();
 			if (mgl < 0)
 				return -1;
 			*poffset += mgl;
@@ -1458,7 +1460,7 @@ int MIME::make_structure_digest(const char *id_string, size_t *poffset,
 		*poffset += pmime->content_length;
 		return 0;
 	}
-	auto mgl = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
+	auto mgl = pmime->get_mail_ptr()->get_length();
 	if (mgl < 0)
 		return -1;
 	*poffset += mgl;
