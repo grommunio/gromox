@@ -2194,7 +2194,7 @@ static const MIME *oxcmail_parse_dsn(const MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		return NULL;
 
 	DSN dsn;
-	if (!dsn.load_from_str_move(tmp_buff, content_len))
+	if (!dsn.load_from_str(tmp_buff, content_len))
 		return NULL;
 	dsn_info.action_severity = -1;
 	dsn.enum_rcpts_fields(oxcmail_enum_dsn_action_fields,
@@ -2310,7 +2310,7 @@ static const MIME *oxcmail_parse_mdn(const MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		return NULL;
 
 	DSN dsn;
-	if (!dsn.load_from_str_move(tmp_buff, content_len) ||
+	if (!dsn.load_from_str(tmp_buff, content_len) ||
 	    !dsn.enum_fields(*dsn.get_message_fields(), oxcmail_enum_mdn, pmsg))
 		return NULL;
 	dsn.clear();
