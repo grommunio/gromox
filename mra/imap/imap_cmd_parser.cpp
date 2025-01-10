@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 /* 
  * collection of functions for handling the imap command
@@ -2062,9 +2062,6 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 				return 1800;
 		}
 	}
-	MAIL imail;
-	if (!imail.load_from_str(argv[argc-1], strlen(argv[argc-1])))
-		return 1908;
 	strcpy(flag_buff, "(");
 	if (b_seen)
 		strcat(flag_buff, "S");
@@ -2089,24 +2086,21 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	mid_string += "."s + znul(g_config_file->get_value("host_id"));
 	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, mid_string);
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
-	errno_t err = 0;
-	if (fd.get() < 0)
-		err = errno;
-	else
-		err = imail.to_fd(fd.get());
-	if (err != 0) {
+	if (fd.get() < 0) {
 		mlog(LV_ERR, "E-1763: write to %s failed: %s",
-			eml_path.c_str(), strerror(err));
+			eml_path.c_str(), strerror(errno));
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1370: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
 		return 1909;
 	}
-	if (fd.close_wr() < 0) {
+	auto eml_size = strlen(argv[argc-1]);
+	auto wrret = HXio_fullwrite(fd.get(), argv[argc-1], eml_size);
+	if (wrret < 0 || static_cast<size_t>(wrret) != eml_size ||
+	    fd.close_wr() < 0) {
 		mlog(LV_WARN, "E-2395: write %s: %s", eml_path.c_str(), strerror(errno));
 		return 1909;
 	}
-	imail.clear();
 
 	auto ssr = midb_agent::insert_mail(pcontext->maildir, sys_name,
 	           mid_string.c_str(), flag_buff, tmp_time, &errnum);
@@ -2272,13 +2266,6 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	pcontext->close_fd();
 	uint32_t mfd_len = 0;
 	memcpy(&mfd_len, pbuff.get(), sizeof(mfd_len));
-	MAIL imail;
-	if (!imail.load_from_str(&pbuff[mfd_len], node_stat.st_size - mfd_len)) {
-		imail.clear();
-		pbuff.reset();
-		pcontext->unlink_file();
-		return 1909 | DISPATCH_TAG;
-	}
 	auto str_name = pbuff.get() + sizeof(uint32_t);
 	name_len = strlen(str_name);
 	str_flags = str_name + name_len + 1;
@@ -2308,15 +2295,9 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 		time(&tmp_time);
 	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, pcontext->mid);
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
-	errno_t err = 0;
-	if (fd.get() < 0)
-		err = errno;
-	else
-		err = imail.to_fd(fd.get());
-	if (err != 0) {
+	if (fd.get() < 0) {
 		mlog(LV_ERR, "E-1764: write to %s failed: %s",
-			eml_path.c_str(), strerror(err));
-		imail.clear();
+			eml_path.c_str(), strerror(errno));
 		pbuff.reset();
 		pcontext->unlink_file();
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
@@ -2324,11 +2305,14 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 			        eml_path.c_str(), strerror(errno));
 		return 1909 | DISPATCH_TAG;
 	}
-	if (fd.close_wr() < 0) {
+
+	size_t eml_size = node_stat.st_size - mfd_len;
+	auto wrret = HXio_fullwrite(fd.get(), &pbuff[mfd_len], eml_size);
+	if (wrret < 0 || static_cast<size_t>(wrret) != eml_size ||
+	   fd.close_wr() < 0) {
 		mlog(LV_WARN, "E-2016: write %s: %s", eml_path.c_str(), strerror(errno));
 		return 1909 | DISPATCH_TAG;
 	}
-	imail.clear();
 	pbuff.reset();
 	auto ssr = midb_agent::insert_mail(pcontext->maildir, sys_name,
 	           pcontext->mid.c_str(), flag_buff, tmp_time, &errnum);
