@@ -111,7 +111,8 @@ Any other input is treated as a notification item and is not interpreted by
 event(8gx) beyond checking the number of fields:
 .SS FOLDER-TOUCH
 The notification "FOLDER\-TOUCH <username> <folder>" informs listeners that the
-folder metadata has changed and warrants being reloaded.
+folder metadata has changed and warrants being reloaded. This is also how the
+arrival of new messages is conveyed.
 .SS MESSAGE-FLAG
 The notification "MESSAGE\-FLAG <username> <folder> <messageid>" informs
 listeners that the message metadata has changed and warrants being reloaded.
