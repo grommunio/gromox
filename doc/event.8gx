@@ -116,6 +116,10 @@ arrival of new messages is conveyed.
 .SS MESSAGE-FLAG
 The notification "MESSAGE\-FLAG <username> <folder> <messageid>" informs
 listeners that the message metadata has changed and warrants being reloaded.
+(This operation is no longer recognized since Gromox 2.17-26-g10564f3e7.)
+.SS MESSAGE-UFLAG
+The notification "MESSAGE\-UFLAG <username> <folder> <imapuid>" informs
+listeners that the message metadata has changed and warrants being reloaded.
 .SS MESSAGE-EXPUNGE
 The notification "MESSAGE\-EXPUNGE <username> <folder> <messageid>" informs
 listeners that the message was deleted.
