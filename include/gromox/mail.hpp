@@ -19,7 +19,7 @@ struct GX_EXPORT MAIL {
 	MAIL &operator=(MAIL &&);
 
 	void clear();
-	bool load_from_str_move(char *in_buff, size_t length);
+	bool load_from_str(const char *in_buff, size_t length);
 	bool serialize(STREAM *) const;
 	gromox::errno_t to_fd(int) const;
 	gromox::errno_t to_str(std::string &) const;

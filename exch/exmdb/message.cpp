@@ -2693,7 +2693,7 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return ecError;
 		imail.clear();
-		if (!imail.load_from_str_move(pbuff.get(), node_stat.st_size))
+		if (!imail.load_from_str(pbuff.get(), node_stat.st_size))
 			return ecError;
 		auto pmime = imail.get_head();
 		if (pmime == nullptr)

@@ -1659,7 +1659,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 		if (!pmime->read_content(pcontent.get(), &content_len))
 			return;
 		MAIL mail;
-		if (mail.load_from_str_move(pcontent.get(), content_len)) {
+		if (mail.load_from_str(pcontent.get(), content_len)) {
 			pattachment->proplist.erase(PR_ATTACH_LONG_FILENAME);
 			pattachment->proplist.erase(PR_ATTACH_LONG_FILENAME_A);
 			pattachment->proplist.erase(PR_ATTACH_EXTENSION);
@@ -3997,7 +3997,7 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 	if (sec == nullptr)
 		return false;
 	char buf[512];
-	if (!sec->load_from_str_move(nullptr, hdrs->pc, hdrs->cb))
+	if (!sec->load_from_str(nullptr, hdrs->pc, hdrs->cb))
 		return false;
 	if (!sec->get_field("Content-Type", buf, std::size(buf)))
 		return false;

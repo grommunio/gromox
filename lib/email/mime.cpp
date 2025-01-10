@@ -68,7 +68,7 @@ MIME::~MIME()
  *		TRUE				OK to parse mime buffer
  *		FALSE				fail to parse mime buffer, there's error inside
  */
-bool MIME::load_from_str_move(MIME *pmime_parent, char *in_buff, size_t length) try
+bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length) try
 {
 	auto pmime = this;
 	size_t current_offset = 0;
@@ -270,10 +270,10 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		content_begin = content_buf.get();
 		if (pmime->content_begin == nullptr)
 			return false;
-		memcpy(content_begin, pcontent, length);
+		memcpy(content_buf.get(), pcontent, length);
 		pmime->content_length = length;
 		if (added_crlf) {
-			memcpy(pmime->content_begin + length, "\r\n", 2);
+			memcpy(&content_buf[length], "\r\n", 2);
 			pmime->content_length += 2;
 		}
 		return true;
@@ -293,7 +293,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 			memcpy(&pbuff[length], "\r\n", 2);
 			length += 2;
 		}
-		memcpy(content_begin, pbuff.get(), length);
+		memcpy(content_buf.get(), pbuff.get(), length);
 		pmime->content_length = length;
 		pmime->set_field("Content-Transfer-Encoding", "quoted-printable");
 		return true;
@@ -304,7 +304,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		content_begin = content_buf.get();
 		if (pmime->content_begin == nullptr)
 			return false;
-		encode64_ex(pcontent, length, pmime->content_begin, buff_length,
+		encode64_ex(pcontent, length, content_buf.get(), buff_length,
 				&pmime->content_length);
 		pmime->set_field("Content-Transfer-Encoding", "base64");
 		return true;
@@ -1527,7 +1527,6 @@ static bool mime_parse_multiple(MIME *pmime)
 {
 	BOOL b_match;
 	int boundary_len;
-	char *ptr, *begin, *end;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime) {
@@ -1540,9 +1539,9 @@ static bool mime_parse_multiple(MIME *pmime)
 	boundary_len = strlen(pmime->boundary_string);
 	if (boundary_len <= 2)
 		return false;
-	begin = strchr(pmime->boundary_string, '"');
+	const char *begin = strchr(pmime->boundary_string, '"');
 	if (NULL != begin) {
-		end = strchr(begin + 1, '"');
+		const char *end = strchr(begin + 1, '"');
 		if (end == nullptr)
 			return false;
 		boundary_len = end - begin - 1;
@@ -1552,7 +1551,8 @@ static bool mime_parse_multiple(MIME *pmime)
 	pmime->boundary_len = boundary_len;
 	
 	begin = pmime->content_begin;
-	end = begin + pmime->content_length - boundary_len;
+	auto end = begin + pmime->content_length - boundary_len;
+	auto ptr = begin;
 	for (ptr=begin; ptr < end; ptr++) {
 		if (ptr[0] != '-' || ptr[1] != '-' ||
 		    strncmp(pmime->boundary_string, ptr + 2, boundary_len) != 0)

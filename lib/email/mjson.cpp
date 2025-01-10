@@ -980,7 +980,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 	
 	MJSON temp_mjson;
 	MAIL imail;
-	if (!imail.load_from_str_move(pbuff.get(), length)) {
+	if (!imail.load_from_str(pbuff.get(), length)) {
 		pbuild->build_result = FALSE;
 		return;
 	}

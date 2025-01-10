@@ -265,7 +265,7 @@ static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
 			return 0;
 		}
 		MAIL imail;
-		if (!imail.load_from_str_move(slurp_data.get(), slurp_size))
+		if (!imail.load_from_str(slurp_data.get(), slurp_size))
 			return 0;
 		slurp_data.reset();
 		if (imail.make_digest(&size, digest) <= 0)
@@ -2204,7 +2204,7 @@ static int me_minst(int argc, char **argv, int sockd) try
 	}
 
 	MAIL imail;
-	if (!imail.load_from_str_move(pbuff.get(), slurp_size))
+	if (!imail.load_from_str(pbuff.get(), slurp_size))
 		return MIDB_E_IMAIL_RETRIEVE;
 	Json::Value digest;
 	if (imail.make_digest(&mess_len, digest) <= 0)

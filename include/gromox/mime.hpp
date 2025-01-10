@@ -25,7 +25,7 @@ struct GX_EXPORT MIME {
 	} catch (const std::bad_alloc &) {
 		return nullptr;
 	}
-	bool load_from_str_move(MIME *parent, char *in_buf, size_t len);
+	bool load_from_str(MIME *parent, const char *in_buf, size_t len);
 	void clear();
 	bool write_content(const char *content, size_t len, enum mime_encoding);
 	bool write_mail(MAIL *);
@@ -63,9 +63,9 @@ struct GX_EXPORT MIME {
 	/* For @f_other_fields, we want (need?) some container that retains insertion order. */
 	std::vector<MIME_FIELD> f_other_fields;
 	BOOL head_touched = false;
-	char *head_begin = nullptr;
+	const char *head_begin = nullptr;
 	std::unique_ptr<char[], gromox::stdlib_delete> content_buf;
-	char *content_begin = nullptr;
+	const char *content_begin = nullptr;
 	size_t head_length = 0, content_length = 0;
-	char *first_boundary = nullptr, *last_boundary = nullptr;
+	const char *first_boundary = nullptr, *last_boundary = nullptr;
 };

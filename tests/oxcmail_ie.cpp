@@ -163,7 +163,7 @@ static int excess_attachment()
 {
 	static char data[] = "Content-Type: message/rfc822\n";
 	MAIL m;
-	assert(m.load_from_str_move(data, strlen(data)));
+	assert(m.load_from_str(data, strlen(data)));
 	mptr mc(oxcmail_import(nullptr, "UTC", &m, g_alloc, ee_get_propids));
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
@@ -189,7 +189,7 @@ static int select_parts_1()
 	            appl_html1 + appl_zip + appl_html2 +
 	            appl_mixed_footer + appl_alt_footer;
 	MAIL m;
-	assert(m.load_from_str_move(data.data(), data.size()));
+	assert(m.load_from_str(data.data(), data.size()));
 	mptr mc(oxcmail_import(nullptr, "UTC", &m, g_alloc, ee_get_propids));
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
@@ -215,7 +215,7 @@ static int select_parts_2()
 	auto data = std::string(appl_header) + appl_plain + appl_mixed +
 	            appl_html1 + appl_zip + appl_mixed_footer + appl_alt_footer;
 	MAIL m;
-	assert(m.load_from_str_move(data.data(), data.size()));
+	assert(m.load_from_str(data.data(), data.size()));
 	mptr mc(oxcmail_import(nullptr, "UTC", &m, g_alloc, ee_get_propids));
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
@@ -278,7 +278,7 @@ static int select_parts_3()
 		"--_007D--\r\n";
 
 	MAIL m;
-	assert(m.load_from_str_move(data, std::size(data)));
+	assert(m.load_from_str(data, std::size(data)));
 	mptr mc(oxcmail_import(nullptr, "UTC", &m, g_alloc, ee_get_propids));
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
@@ -301,7 +301,7 @@ static int select_parts_4()
 {
 	fprintf(stderr, "== T4\n");
 	MAIL m;
-	assert(m.load_from_str_move(data_4, std::size(data_4)));
+	assert(m.load_from_str(data_4, std::size(data_4)));
 	mptr mc(oxcmail_import("us-ascii", "UTC", &m, g_alloc, ee_get_propids));
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
@@ -334,7 +334,7 @@ static int select_parts_5()
 {
 	fprintf(stderr, "== T5\n");
 	MAIL m;
-	assert(m.load_from_str_move(data_5, std::size(data_5)));
+	assert(m.load_from_str(data_5, std::size(data_5)));
 	mptr mc(oxcmail_import(nullptr, "UTC", &m, g_alloc, ee_get_propids));
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;

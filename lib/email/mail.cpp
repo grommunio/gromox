@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstring>
@@ -23,7 +23,7 @@ enum {
 	TAG_NUM
 };
 
-static bool mail_retrieve_to_mime(MAIL *, MIME *parent, char *begin, char *end);
+static bool mail_retrieve_to_mime(MAIL *, MIME *parent, const char *begin, const char *end);
 static void mail_enum_text_mime_charset(const MIME *, void *);
 static void mail_enum_html_charset(const MIME *, void *);
 
@@ -49,7 +49,7 @@ void MAIL::clear()
  *		TRUE				OK
  *		FALSE				fail
  */
-bool MAIL::load_from_str_move(char *in_buff, size_t length)
+bool MAIL::load_from_str(const char *in_buff, size_t length)
 {
 	auto pmail = this;
 
@@ -66,7 +66,7 @@ bool MAIL::load_from_str_move(char *in_buff, size_t length)
 		mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 		return false;
 	}
-	if (!pmime->load_from_str_move(nullptr, in_buff, length))
+	if (!pmime->load_from_str(nullptr, in_buff, length))
 		return false;
 
 	if (pmime->mime_type == mime_type::none) {
@@ -89,7 +89,7 @@ bool MAIL::load_from_str_move(char *in_buff, size_t length)
 		mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 		return false;
 	}
-	if (!pmime->load_from_str_move(nullptr, in_buff, length))
+	if (!pmime->load_from_str(nullptr, in_buff, length))
 		return false;
 	pmime->mime_type = mime_type::single;
 	pmail->tree.set_root(std::move(mime_uq));
@@ -108,14 +108,12 @@ bool MAIL::load_from_str_move(char *in_buff, size_t length)
  *		FALSE				fail
  */
 static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
-	char *ptr_begin, char *ptr_end)
+    const char *ptr_begin, const char *ptr_end)
 {
 	std::unique_ptr<MIME> mime_uq;
-	MIME *pmime, *pmime_last;
-	char *ptr, *ptr_last;
+	MIME *pmime, *pmime_last = nullptr;
+	const char *ptr, *ptr_last = ptr_begin;
 
-	ptr_last = ptr_begin;
-	pmime_last = NULL;
 	for (ptr = ptr_begin; ptr < ptr_end; ++ptr) {
 		if (ptr[0] != '-' || ptr[1] != '-' ||
 		    strncmp(&ptr[2], pmime_parent->boundary_string,
@@ -131,7 +129,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 			return false;
 		}
-		if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr - ptr_last))
+		if (!pmime->load_from_str(pmime_parent, ptr_last, ptr - ptr_last))
 			return false;
 		if (pmime->mime_type == mime_type::none) {
 			mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
@@ -171,7 +169,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 		return false;
 	}
-	if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr_end - ptr_last))
+	if (!pmime->load_from_str(pmime_parent, ptr_last, ptr_end - ptr_last))
 		return false;
 	if (pmime->mime_type == mime_type::none) {
 		mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
@@ -633,7 +631,7 @@ bool MAIL::dup(MAIL *pmail_dst)
 		size = STREAM_BLOCK_SIZE;
 	}
 	tmp_stream.clear();
-	if (!pmail_dst->load_from_str_move(pbuff, offset)) {
+	if (!pmail_dst->load_from_str(pbuff, offset)) {
 		free(pbuff);
 		return false;
 	} else {

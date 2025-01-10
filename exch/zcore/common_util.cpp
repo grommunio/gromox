@@ -1871,7 +1871,7 @@ static void zc_unwrap_smime(MAIL &ma) try
 		return;
 	written_so_far += len;
 	MAIL m2;
-	if (!m2.load_from_str_move(ctbuf.get(), written_so_far))
+	if (!m2.load_from_str(ctbuf.get(), written_so_far))
 		return;
 	m2.buffer = ctbuf.release();
 	ma = std::move(m2);
@@ -1885,7 +1885,7 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 	char charset[32];
 	auto pinfo = zs_get_info();
 	MAIL imail;
-	if (!imail.load_from_str_move(peml_bin->pc, peml_bin->cb))
+	if (!imail.load_from_str(peml_bin->pc, peml_bin->cb))
 		return NULL;
 	if (mxf_flags & MXF_UNWRAP_SMIME_CLEARSIGNED)
 		zc_unwrap_smime(imail);

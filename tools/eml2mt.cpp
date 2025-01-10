@@ -86,7 +86,7 @@ static std::unique_ptr<MESSAGE_CONTENT, mc_delete>
 do_mail(const char *file, char *data, size_t dsize)
 {
 	MAIL imail;
-	if (!imail.load_from_str_move(data, dsize)) {
+	if (!imail.load_from_str(data, dsize)) {
 		fprintf(stderr, "Unable to parse %s\n", file);
 		return nullptr;
 	}

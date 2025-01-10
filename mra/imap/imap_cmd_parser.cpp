@@ -2065,7 +2065,7 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 		}
 	}
 	MAIL imail;
-	if (!imail.load_from_str_move(argv[argc-1], strlen(argv[argc-1])))
+	if (!imail.load_from_str(argv[argc-1], strlen(argv[argc-1])))
 		return 1908;
 	strcpy(flag_buff, "(");
 	if (b_seen)
@@ -2275,7 +2275,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	uint32_t mfd_len = 0;
 	memcpy(&mfd_len, pbuff.get(), sizeof(mfd_len));
 	MAIL imail;
-	if (!imail.load_from_str_move(&pbuff[mfd_len], node_stat.st_size - mfd_len)) {
+	if (!imail.load_from_str(&pbuff[mfd_len], node_stat.st_size - mfd_len)) {
 		imail.clear();
 		pbuff.reset();
 		pcontext->unlink_file();

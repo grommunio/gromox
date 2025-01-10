@@ -387,7 +387,7 @@ static void *dxp_thrwork(void *arg)
 		} else {
 			cannot_served_times = 0;
 			pcontext = &pthr_data->mctx;
-			if (!pcontext->mail.load_from_str_move(static_cast<char *>(pmessage->mail_begin),
+			if (!pcontext->mail.load_from_str(static_cast<char *>(pmessage->mail_begin),
 			    pmessage->mail_length)) {
 				mlog(LV_ERR, "QID %d: Failed to "
 					"load into mail object", pmessage->flush_ID);

@@ -1722,7 +1722,7 @@ bool EWSContext::streamEvents(const tSubscriptionId& subscriptionId) const
 EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, std::string& mimeContent) const
 {
 	MAIL mail;
-	if(!mail.load_from_str_move(reinterpret_cast<char*>(mimeContent.data()), mimeContent.size()))
+	if (!mail.load_from_str(mimeContent.data(), mimeContent.size()))
 		throw EWSError::ItemCorrupt(E3123);
 	auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
 	{*ids = getNamedPropIds(dir, *names, true); return TRUE;};
