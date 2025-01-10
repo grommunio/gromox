@@ -3896,8 +3896,8 @@ static void notif_folder_modified(IDB_ITEM *pidb,
 	mlog(LV_ERR, "E-2423: ENOMEM");
 }
 
-static void notif_msg_modified(IDB_ITEM *pidb,
-    uint64_t folder_id, uint64_t message_id) try
+static void notif_msg_modified(IDB_ITEM *pidb, uint64_t folder_id,
+    const std::string &folder_name, uint64_t message_id) try
 {
 	TPROPVAL_ARRAY propvals;
 	static constexpr proptag_t tmp_proptags[] = {
@@ -3929,6 +3929,12 @@ static void notif_msg_modified(IDB_ITEM *pidb,
 			qstr += ", forwarded=1";
 		qstr += " WHERE message_id=" + std::to_string(message_id);
 		gx_sql_exec(pidb->psqlite, qstr.c_str());
+		qstr = "SELECT uid FROM messages WHERE message_id=" + std::to_string(message_id);
+		auto stm = gx_sql_prep(pidb->psqlite, qstr.c_str());
+		if (stm != nullptr && stm.step() == SQLITE_ROW)
+			system_services_broadcast_event(fmt::format("MESSAGE-UFLAG {} {} {}",
+				pidb->username, base64_encode(folder_name),
+				stm.col_uint64(0)).c_str());
 		return;
 	}
 	auto ts = propvals.get<const uint64_t>(PR_LAST_MODIFICATION_TIME);
@@ -3960,6 +3966,7 @@ static void notif_handler(const char *dir,
 	if (pidb == nullptr || pidb->sub_id != notify_id)
 		return;
 	uint64_t parent_id = 0, folder_id = 0, message_id = 0;
+
 	switch (pdb_notify->type) {
 	case db_notify_type::new_mail: {
 		auto n = static_cast<const DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
@@ -4016,7 +4023,6 @@ static void notif_handler(const char *dir,
 		auto n = static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata);
 		message_id = n->message_id;
 		folder_id = n->folder_id;
-		notif_msg_modified(pidb.get(), folder_id, message_id);
 		break;
 	}
 	case db_notify_type::folder_moved: {
@@ -4063,17 +4069,25 @@ static void notif_handler(const char *dir,
 		break;
 	}
 
-	/* Broadcast a FOLDER-TOUCH event */
+	std::string folder_name;
 	if (folder_id != 0) {
-		auto qstr = fmt::format("SELECT name FROM folders WHERE folder_id={}", folder_id);
+		auto qstr = "SELECT name FROM folders WHERE folder_id=" + std::to_string(folder_id);
 		auto stm = gx_sql_prep(pidb->psqlite, qstr.c_str());
-		if (stm == nullptr || stm.step() != SQLITE_ROW)
-			return;
-		std::string name = znul(stm.col_text(0));
-		stm.finalize();
-		qstr = fmt::format("FOLDER-TOUCH {} {}", pidb->username, base64_encode(name));
-		system_services_broadcast_event(qstr.c_str());
+		if (stm != nullptr && stm.step() == SQLITE_ROW)
+			folder_name = znul(stm.col_text(0));
 	}
+
+	switch (pdb_notify->type) {
+	case db_notify_type::message_modified:
+		notif_msg_modified(pidb.get(), folder_id, folder_name, message_id);
+		break;
+	default:
+		break;
+	}
+
+	/* Broadcast a FOLDER-TOUCH event */
+	auto qstr = fmt::format("FOLDER-TOUCH {} {}", pidb->username, base64_encode(folder_name));
+	system_services_broadcast_event(qstr.c_str());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2346: ENOMEM");
 }
