@@ -7,30 +7,26 @@
 #include <gromox/element_data.hpp>
 #define MAX_DIGLEN											256*1024
 
-BOOL common_util_build_environment(const char *maildir);
-extern void common_util_free_environment();
-void* common_util_alloc(size_t size);
+extern BOOL cu_build_environment(const char *maildir);
+extern void cu_free_environment();
+extern void *cu_alloc_bytes(size_t size);
 template<typename T> T *cu_alloc()
 {
 	static_assert(std::is_trivially_destructible_v<T>);
-	return static_cast<T *>(common_util_alloc(sizeof(T)));
+	return static_cast<T *>(cu_alloc_bytes(sizeof(T)));
 }
 template<typename T> T *cu_alloc(size_t elem)
 {
 	static_assert(std::is_trivially_destructible_v<T>);
-	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
+	return static_cast<T *>(cu_alloc_bytes(sizeof(T) * elem));
 }
-extern BOOL common_util_switch_allocator();
-void common_util_set_maildir(const char *maildir);
-extern const char* common_util_get_maildir();
-char* common_util_dup(const char *pstr);
+extern BOOL cu_switch_allocator();
+extern void cu_set_maildir(const char *maildir);
+extern const char *cu_get_maildir();
+extern char *cu_dup(const char *pstr);
 extern BINARY *cu_xid_to_bin(const XID &);
-BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
-	const BINARY *pchange_key);
-BOOL common_util_create_folder(const char *dir, int user_id,
-	uint64_t parent_id, const char *folder_name, uint64_t *pfolder_id);
-BOOL common_util_get_propids(const PROPNAME_ARRAY *ppropnames,
-	PROPID_ARRAY *ppropids);
-extern BOOL common_util_get_propids_create(const PROPNAME_ARRAY *, PROPID_ARRAY *);
-BOOL common_util_get_propname(
-	uint16_t propid, PROPERTY_NAME **pppropname);
+extern BINARY *cu_pcl_append(const BINARY *pcl, const BINARY *change_key);
+extern BOOL cu_create_folder(const char *dir, int user_id, uint64_t parent_id, const char *folder_name, uint64_t *folder_id);
+extern BOOL cu_get_propids(const PROPNAME_ARRAY *, PROPID_ARRAY *);
+extern BOOL cu_get_propids_create(const PROPNAME_ARRAY *, PROPID_ARRAY *);
+extern BOOL cu_get_propname(gromox::propid_t, PROPERTY_NAME **);

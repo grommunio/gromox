@@ -308,6 +308,21 @@ enum { /* for PR_FLAG_STATUS */
 	followupFlagged = 0x2U,
 };
 
+enum { /* for PR_FOLLOWUP_ICON */
+	olNoFlagIcon = 0,
+	olPurpleFlagIcon,
+	olOrangeFlagIcon,
+	olGreenFlagIcon,
+	olYellowFlagIcon,
+	olBlueFlagIcon,
+	olRedFlagIcon,
+};
+
+enum { /* for PR_ICON_INDEX */
+	MAIL_ICON_REPLIED = 0x105,
+	MAIL_ICON_FORWARDED = 0x106,
+};
+
 enum mapi_importance {
 	IMPORTANCE_LOW = 0,
 	IMPORTANCE_NORMAL = 1,

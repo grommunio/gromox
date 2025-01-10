@@ -197,10 +197,10 @@ static std::pair<bool, int> midcp_exec1(int argc, char **argv, MIDB_CONNECTION *
 		return {false, MIDB_E_PARAMETER_ERROR};
 	if (argc >= 3 && strlen(argv[1]) >= 1024)
 		return {false, MIDB_E_PARAMETER_ERROR};
-	if (!common_util_build_environment(argv[1]))
+	if (!cu_build_environment(argv[1]))
 		return {false, 0};
 	auto err = info.func(argc, argv, conn->sockd);
-	common_util_free_environment();
+	cu_free_environment();
 	if (err == 0)
 		return {true, 0};
 	return {false, err};

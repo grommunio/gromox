@@ -355,7 +355,7 @@ enum {
 	// PR_LAST_VERB_EXECUTION_TIME = PROP_TAG(PT_SYSTIME, 0x1082), /* PidTagLastVerbExecutionTime */
 	PR_FLAG_STATUS = PROP_TAG(PT_LONG, 0x1090), /* PidTagFlagStatus */
 	PR_FLAG_COMPLETE_TIME = PROP_TAG(PT_SYSTIME, 0x1091), /* PidTagFlagCompleteTime */
-	// PR_FOLLOWUP_ICON = PROP_TAG(PT_LONG, 0x1095), /* PidTagFollowupIcon */
+	PR_FOLLOWUP_ICON = PROP_TAG(PT_LONG, 0x1095), /* PidTagFollowupIcon */
 	// PR_BLOCK_STATUS = PROP_TAG(PT_LONG, 0x1096), /* PidTagBlockStatus */
 	// PR_ITEM_TMPFLAGS = PROP_TAG(PT_LONG, 0x1097), /* PidTagItemTemporaryflags */
 	// PR_CONFLICT_ITEMS = PROP_TAG(PT_MV_BINARY, 0x1098), /* PidTagConflictItems */

@@ -1293,7 +1293,6 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream)
 	if (pcontext->async_change_mask == 0)
 		return;
 	int err;
-	int flag_bits;
 	bool b_first;
 	char buff[1024];
 	decltype(pcontext->f_expunged_uids) f_expunged;
@@ -1323,6 +1322,7 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream)
 		auto item = pcontext->contents.get_itemx(uid);
 		if (item == nullptr)
 			continue;
+		unsigned int flag_bits = 0;
 		if (midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, item->mid, &flag_bits,
 		    &err) != MIDB_RESULT_OK)

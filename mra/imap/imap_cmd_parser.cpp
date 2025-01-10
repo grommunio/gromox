@@ -865,7 +865,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 			    !(pitem->flag_bits & FLAG_SEEN)) {
 				midb_agent::set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
-					FLAG_SEEN, &errnum);
+					FLAG_SEEN, nullptr, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
 				imap_parser_bcast_flags(*pcontext, pitem->uid);
 			}
@@ -900,7 +900,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 			    !(pitem->flag_bits & FLAG_SEEN)) {
 				midb_agent::set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
-					FLAG_SEEN, &errnum);
+					FLAG_SEEN, nullptr, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
 				imap_parser_bcast_flags(*pcontext, pitem->uid);
 			}
@@ -988,7 +988,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 			    strncasecmp(kw, "BODY[", 5) == 0) {
 				midb_agent::set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
-					FLAG_SEEN, &errnum);
+					FLAG_SEEN, nullptr, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
 				imap_parser_bcast_flags(*pcontext, pitem->uid);
 			}
@@ -1001,7 +1001,8 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 		pitem->flag_bits &= ~FLAG_RECENT;
 		if (!(pitem->flag_bits & FLAG_SEEN)) {
 			midb_agent::unset_flags(pcontext->maildir,
-				pcontext->selected_folder, pitem->mid, FLAG_RECENT, &errnum);
+				pcontext->selected_folder, pitem->mid,
+				FLAG_RECENT, nullptr, &errnum);
 			imap_parser_bcast_flags(*pcontext, pitem->uid);
 		}
 	}
@@ -1012,7 +1013,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 }
 
 static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
-    int id, unsigned int uid, int flag_bits, imap_context *pcontext)
+    int id, unsigned int uid, unsigned int flag_bits, imap_context *pcontext)
 {
 	int errnum;
 	char buff[1024];
@@ -1022,11 +1023,11 @@ static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
 	string_length = 0;
 	if (0 == strcasecmp(cmd, "FLAGS") ||
 		0 == strcasecmp(cmd, "FLAGS.SILENT")) {
-		midb_agent::unset_flags(pcontext->maildir,
-			pcontext->selected_folder, mid, FLAG_ANSWERED|
-			FLAG_FLAGGED|FLAG_DELETED|FLAG_SEEN|FLAG_DRAFT|FLAG_RECENT, &errnum);
-		midb_agent::set_flags(pcontext->maildir,
-			pcontext->selected_folder, mid, flag_bits, &errnum);
+		midb_agent::unset_flags(pcontext->maildir, pcontext->selected_folder,
+			mid, FLAG_ANSWERED | FLAG_FLAGGED | FLAG_DELETED |
+			FLAG_SEEN | FLAG_DRAFT | FLAG_RECENT, nullptr, &errnum);
+		midb_agent::set_flags(pcontext->maildir, pcontext->selected_folder,
+			mid, flag_bits, nullptr, &errnum);
 		if (0 == strcasecmp(cmd, "FLAGS")) {
 			imap_cmd_parser_convert_flags_string(flag_bits, flags_string);
 			if (uid != 0)
@@ -1040,8 +1041,8 @@ static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
 		}
 	} else if (0 == strcasecmp(cmd, "+FLAGS") ||
 		0 == strcasecmp(cmd, "+FLAGS.SILENT")) {
-		midb_agent::set_flags(pcontext->maildir,
-		pcontext->selected_folder, mid, flag_bits, &errnum);
+		midb_agent::set_flags(pcontext->maildir, pcontext->selected_folder,
+			mid, flag_bits, nullptr, &errnum);
 		if (0 == strcasecmp(cmd, "+FLAGS") && 
 			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
@@ -1057,8 +1058,8 @@ static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
 		}
 	} else if (0 == strcasecmp(cmd, "-FLAGS") ||
 		0 == strcasecmp(cmd, "-FLAGS.SILENT")) {
-		midb_agent::unset_flags(pcontext->maildir,
-			pcontext->selected_folder, mid, flag_bits, &errnum);
+		midb_agent::unset_flags(pcontext->maildir, pcontext->selected_folder,
+			mid, flag_bits, nullptr, &errnum);
 		if (0 == strcasecmp(cmd, "-FLAGS") &&
 			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {

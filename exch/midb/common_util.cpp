@@ -36,7 +36,7 @@ using COMMAND_CONTEXT = cmd_context;
 static thread_local std::unique_ptr<cmd_context> g_ctx_key;
 static thread_local unsigned int g_ctx_refcount;
 
-BOOL common_util_build_environment(const char *maildir) try
+BOOL cu_build_environment(const char *maildir) try
 {
 	/*
 	 * cu_build_env is already called by midb, and then it _may_ occur
@@ -58,7 +58,7 @@ BOOL common_util_build_environment(const char *maildir) try
 	return false;
 }
 
-void common_util_free_environment()
+void cu_free_environment()
 {
 	if (--g_ctx_refcount > 0)
 		return;
@@ -69,7 +69,7 @@ void common_util_free_environment()
 	g_ctx_key.reset();
 }
 
-void* common_util_alloc(size_t size)
+void *cu_alloc_bytes(size_t size)
 {
 	auto pctx = g_ctx_key.get();
 	if (NULL == pctx) {
@@ -80,7 +80,7 @@ void* common_util_alloc(size_t size)
 	       pctx->alloc_ctx.alloc(size);
 }
 
-BOOL common_util_switch_allocator()
+BOOL cu_switch_allocator()
 {
 	auto pctx = g_ctx_key.get();
 	if (NULL == pctx) {
@@ -94,7 +94,7 @@ BOOL common_util_switch_allocator()
 	return TRUE;
 }
 
-void common_util_set_maildir(const char *maildir)
+void cu_set_maildir(const char *maildir)
 {
 	auto pctx = g_ctx_key.get();
 	if (pctx == nullptr)
@@ -103,7 +103,7 @@ void common_util_set_maildir(const char *maildir)
 		gx_strlcpy(pctx->maildir, maildir, std::size(pctx->maildir));
 }
 
-const char* common_util_get_maildir()
+const char *cu_get_maildir()
 {
 	auto pctx = g_ctx_key.get();
 	if (pctx != nullptr)
@@ -112,12 +112,12 @@ const char* common_util_get_maildir()
 	return NULL;
 }
 
-char* common_util_dup(const char *pstr)
+char *cu_dup(const char *pstr)
 {
 	int len;
 
 	len = strlen(pstr) + 1;
-	auto pstr1 = static_cast<char *>(common_util_alloc(len));
+	auto pstr1 = static_cast<char *>(cu_alloc_bytes(len));
 	if (pstr1 == nullptr)
 		return NULL;
 	memcpy(pstr1, pstr, len);
@@ -131,7 +131,7 @@ BINARY *cu_xid_to_bin(const XID &xid)
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(24);
+	pbin->pv = cu_alloc_bytes(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
 	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
 		return NULL;
@@ -139,18 +139,17 @@ BINARY *cu_xid_to_bin(const XID &xid)
 	return pbin;
 }
 
-static BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
+static BOOL cu_binary_to_xid(const BINARY *pbin, XID *pxid)
 {
 	EXT_PULL ext_pull;
 
 	if (pbin->cb < 17 || pbin->cb > 24)
 		return FALSE;
-	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, cu_alloc_bytes, 0);
 	return ext_pull.g_xid(pbin->cb, pxid) == EXT_ERR_SUCCESS ? TRUE : false;
 }
 
-BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
-	const BINARY *pchange_key)
+BINARY *cu_pcl_append(const BINARY *pbin_pcl, const BINARY *pchange_key)
 {
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
@@ -160,7 +159,7 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 		return nullptr;
 	XID xid;
 	xid.size = pchange_key->cb;
-	if (!common_util_binary_to_xid(pchange_key, &xid))
+	if (!cu_binary_to_xid(pchange_key, &xid))
 		return NULL;
 	if (!ppcl.append(xid))
 		return NULL;
@@ -169,7 +168,7 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	if (ptmp_bin == nullptr)
 		return NULL;
 	pbin->cb = ptmp_bin->cb;
-	pbin->pv = common_util_alloc(ptmp_bin->cb);
+	pbin->pv = cu_alloc_bytes(ptmp_bin->cb);
 	if (pbin->pv == nullptr) {
 		rop_util_free_binary(ptmp_bin);
 		return NULL;
@@ -179,7 +178,7 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	return pbin;
 }
 
-BOOL common_util_create_folder(const char *dir, int user_id,
+BOOL cu_create_folder(const char *dir, int user_id,
 	uint64_t parent_id, const char *folder_name, uint64_t *pfolder_id)
 {
 	BINARY *pbin;
@@ -238,27 +237,24 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	return *pfolder_id != 0 ? TRUE : false;
 }
 
-BOOL common_util_get_propids(const PROPNAME_ARRAY *ppropnames,
-	PROPID_ARRAY *ppropids)
+BOOL cu_get_propids(const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids)
 {
-	return exmdb_client::get_named_propids(
-		common_util_get_maildir(), FALSE,
+	return exmdb_client::get_named_propids(cu_get_maildir(), false,
 		ppropnames, ppropids);
 }
 
-BOOL common_util_get_propids_create(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
+BOOL cu_get_propids_create(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 {
-	return exmdb_client::get_named_propids(common_util_get_maildir(),
+	return exmdb_client::get_named_propids(cu_get_maildir(),
 	       TRUE, names, ids);
 }
 
-BOOL common_util_get_propname(uint16_t propid, PROPERTY_NAME **pppropname) try
+BOOL cu_get_propname(uint16_t propid, PROPERTY_NAME **pppropname) try
 {
 	PROPNAME_ARRAY propnames;
 	
-	if (!exmdb_client::get_named_propnames(
-	    common_util_get_maildir(), {propid}, &propnames) ||
-	    propnames.size() != 1)
+	if (!exmdb_client::get_named_propnames(cu_get_maildir(),
+	    {propid}, &propnames) || propnames.size() != 1)
 		return FALSE;	
 	*pppropname = propnames.ppropname;
 	return TRUE;

@@ -83,40 +83,47 @@ connection to the event daemon starts out in Enqueue Mode, and this is the only
 mode from which commands can be issued.
 .PP
 "FALSE" may be emitted by the server if there is a syntax error.
-.PP
+.SS ID
 The command "ID <res_id>" declares the particular connection to be a notification
 sender. res_id is generally the hostname and the PID. The server always
 responds with "TRUE". (The connection stays in Enqueue Mode.)
-.PP
+.SS LISTEN
 The command "LISTEN <res_id>" declares the particular connection to be a
 notification receiver. res_id follows the same pattern. The server responds
 with "TRUE" and the connection state changes to the Dequeue Mode (see below).
-.PP
+.SS SELECT
 The command "SELECT <username> <folder>" subscribes those connections that have
 registered \fBas a listener for res_id\fP to notifications. (This means that a
 process wishing to use event_stub(4gx) to listen for notifications strictly
 requires loading event_proxy(4gx) too, and, in essence, use two connections to
 event(8gx).) The server responds with "FALSE" if no listener exists, or "TRUE"
 on success.
-.PP
+.SS UNSELECT
 The command "UNSELECT <username> <folder>" unsubscribes those connections that
 had registered as a listener for res_id. The server always responds with
 "TRUE".
-.PP
-Auxiliary self-explanatory commands available are: "QUIT" and "PING".
-.PP
+.SS QUIT
+Terminate the connection.
+.SS PING
+Reset inactivity timer on connection.
+.SS Partially parsed commands
 Any other input is treated as a notification item and is not interpreted by
 event(8gx) beyond checking the number of fields:
-.PP
-The notification "FOLDER-TOUCH <username> <folder>" informs listeners that the
-folder metadata has changed and warrants being reloaded.
-.PP
-The notification "MESSAGE-FLAG <username> <folder> <messageid>" informs
+.SS FOLDER-TOUCH
+The notification "FOLDER\-TOUCH <username> <folder>" informs listeners that the
+folder metadata has changed and warrants being reloaded. This is also how the
+arrival of new messages is conveyed.
+.SS MESSAGE-FLAG
+The notification "MESSAGE\-FLAG <username> <folder> <messageid>" informs
 listeners that the message metadata has changed and warrants being reloaded.
-.PP
-The notification "MESSAGE-EXPUNGE <username> <folder> <messageid>" informs
+(This operation is no longer recognized since Gromox 2.17-26-g10564f3e7.)
+.SS MESSAGE-UFLAG
+The notification "MESSAGE\-UFLAG <username> <folder> <imapuid>" informs
+listeners that the message metadata has changed and warrants being reloaded.
+.SS MESSAGE-EXPUNGE
+The notification "MESSAGE\-EXPUNGE <username> <folder> <messageid>" informs
 listeners that the message was deleted.
-.PP
+.SS Client behavior
 Clients in Dequeue Mode will receive notifications. Each notification line
 received by the client needs to be acknowledged with a "TRUE" response. It is
 not possible to exit Dequeue Mode; connection termination is the only way out.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
@@ -34,6 +34,7 @@
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
 #include <gromox/list_file.hpp>
+#include <gromox/midb.hpp>
 #include <gromox/midb_agent.hpp>
 #include <gromox/process.hpp>
 #include <gromox/range_set.hpp>
@@ -1116,22 +1117,28 @@ int remove_mail(const char *path, const std::string &folder,
 	return MIDB_RDWR_ERROR;
 }
 
-static unsigned int s_to_flagbits(const char *s)
+static unsigned int s_to_flagbits(std::string_view s)
 {
 	unsigned int fl = 0;
-	if (strchr(s, 'A') != nullptr)
-		fl |= FLAG_ANSWERED;
-	if (strchr(s, 'U') != nullptr)
-		fl |= FLAG_DRAFT;
-	if (strchr(s, 'F') != nullptr)
-		fl |= FLAG_FLAGGED;
-	if (strchr(s, 'D') != nullptr)
-		fl |= FLAG_DELETED;
-	if (strchr(s, 'S') != nullptr)
-		fl |= FLAG_SEEN;
-	if (strchr(s, 'R') != nullptr)
-		fl |= FLAG_RECENT;
+	if (s.find(midb_flag::answered) != s.npos) fl |= FLAG_ANSWERED;
+	if (s.find(midb_flag::unsent) != s.npos)   fl |= FLAG_DRAFT;
+	if (s.find(midb_flag::flagged) != s.npos)  fl |= FLAG_FLAGGED;
+	if (s.find(midb_flag::deleted) != s.npos)  fl |= FLAG_DELETED;
+	if (s.find(midb_flag::seen) != s.npos)     fl |= FLAG_SEEN;
+	if (s.find(midb_flag::recent) != s.npos)   fl |= FLAG_RECENT;
 	return fl;
+}
+
+static std::string flagbits_to_s(unsigned int v)
+{
+	std::string s;
+	if (v & FLAG_ANSWERED) s += midb_flag::answered;
+	if (v & FLAG_DRAFT)    s += midb_flag::unsent;
+	if (v & FLAG_FLAGGED)  s += midb_flag::flagged;
+	if (v & FLAG_DELETED)  s += midb_flag::deleted;
+	if (v & FLAG_SEEN)     s += midb_flag::seen;
+	if (v & FLAG_RECENT)   s += midb_flag::recent;
+	return s;
 }
 
 static bool get_digest_string(const Json::Value &jv, const char *tag, std::string &buff)
@@ -1564,38 +1571,40 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 }
 
 int set_flags(const char *path, const std::string &folder,
-    const std::string &mid_string, int flag_bits, int *perrno)
+    const std::string &mid_string, unsigned int flag_bits,
+    unsigned int *new_bits, int *perrno)
 {
 	char buff[1024];
-	char flags_string[16];
-
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-
-	flags_string[0] = '(';
-	int length = 1;
-	if (flag_bits & FLAG_ANSWERED)
-		flags_string[length++] = 'A';
-	if (flag_bits & FLAG_DRAFT)
-		flags_string[length++] = 'U';
-	if (flag_bits & FLAG_FLAGGED)
-		flags_string[length++] = 'F';
-	if (flag_bits & FLAG_DELETED)
-		flags_string[length++] = 'D';
-	if (flag_bits & FLAG_SEEN)
-		flags_string[length++] = 'S';
-	if (flag_bits & FLAG_RECENT)
-		flags_string[length++] = 'R';
-	flags_string[length++] = ')';
-	flags_string[length] = '\0';
-	length = gx_snprintf(buff, std::size(buff), "P-SFLG %s %s %s %s\r\n",
-	         path, folder.c_str(), mid_string.c_str(), flags_string);
+	auto flags_string = flagbits_to_s(flag_bits);
+	auto length = gx_snprintf(buff, std::size(buff), "P-SFLG %s %s %s (%s)\r\n",
+	              path, folder.c_str(), mid_string.c_str(), flags_string.c_str());
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
+		if (new_bits != nullptr)
+			*new_bits = ~0U;
+		if (buff[5] == '\r' || buff[5] == '\n')
+			return MIDB_RESULT_OK;
+		auto ptr = &buff[5];
+		if (!HX_isspace(*ptr))
+			return MIDB_RDWR_ERROR;
+		while (HX_isspace(*ptr))
+			++ptr;
+		if (*ptr == '-')
+			return MIDB_RESULT_OK;
+		if (*ptr != '(')
+			return MIDB_RDWR_ERROR;
+		auto bg = ptr + 1;
+		ptr = strchr(bg, ')');
+		if (ptr == nullptr)
+			return MIDB_RDWR_ERROR;
+		if (new_bits != nullptr)
+			*new_bits = s_to_flagbits(std::string_view(bg, ptr - bg));
 		return MIDB_RESULT_OK;
 	} else if (0 == strncmp(buff, "FALSE ", 6)) {
 		pback.reset();
@@ -1606,38 +1615,40 @@ int set_flags(const char *path, const std::string &folder,
 }
 	
 int unset_flags(const char *path, const std::string &folder,
-    const std::string &mid_string, int flag_bits, int *perrno)
+    const std::string &mid_string, unsigned int flag_bits,
+    unsigned int *new_bits, int *perrno)
 {
 	char buff[1024];
-	char flags_string[16];
-
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-
-	flags_string[0] = '(';
-	int length = 1;
-	if (flag_bits & FLAG_ANSWERED)
-		flags_string[length++] = 'A';
-	if (flag_bits & FLAG_DRAFT)
-		flags_string[length++] = 'U';
-	if (flag_bits & FLAG_FLAGGED)
-		flags_string[length++] = 'F';
-	if (flag_bits & FLAG_DELETED)
-		flags_string[length++] = 'D';
-	if (flag_bits & FLAG_SEEN)
-		flags_string[length++] = 'S';
-	if (flag_bits & FLAG_RECENT)
-		flags_string[length++] = 'R';
-	flags_string[length++] = ')';
-	flags_string[length] = '\0';
-	length = gx_snprintf(buff, std::size(buff), "P-RFLG %s %s %s %s\r\n",
-	         path, folder.c_str(), mid_string.c_str(), flags_string);
+	auto flags_string = flagbits_to_s(flag_bits);
+	auto length = gx_snprintf(buff, std::size(buff), "P-RFLG %s %s %s (%s)\r\n",
+	              path, folder.c_str(), mid_string.c_str(), flags_string.c_str());
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
+		if (new_bits != nullptr)
+			*new_bits = -1;
+		if (buff[5] == '\r' || buff[5] == '\n')
+			return MIDB_RESULT_OK;
+		auto ptr = &buff[5];
+		if (!HX_isspace(*ptr))
+			return MIDB_RDWR_ERROR;
+		while (HX_isspace(*ptr))
+			++ptr;
+		if (*ptr == '-')
+			return MIDB_RESULT_OK;
+		if (*ptr != '(')
+			return MIDB_RDWR_ERROR;
+		auto bg = ptr + 1;
+		ptr = strchr(bg, ')');
+		if (ptr == nullptr)
+			return MIDB_RDWR_ERROR;
+		if (new_bits != nullptr)
+			*new_bits = s_to_flagbits(std::string_view(bg, ptr - bg));
 		return MIDB_RESULT_OK;
 	} else if (0 == strncmp(buff, "FALSE ", 6)) {
 		pback.reset();
@@ -1648,7 +1659,7 @@ int unset_flags(const char *path, const std::string &folder,
 }
 	
 int get_flags(const char *path, const std::string &folder,
-    const std::string &mid_string, int *pflag_bits, int *perrno)
+    const std::string &mid_string, unsigned int *pflag_bits, int *perrno)
 {
 	char buff[1024];
 
