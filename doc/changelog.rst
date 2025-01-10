@@ -1,10 +1,15 @@
-Snapshot 2.38.37
+Snapshot 2.38.76
 ================
 
 Fixes:
 
 * midb: resolve protocol mismatches with imap, pop3; resolves rejection of
   IMAP CREATE, POP3 PASS commands
+* midb: synchronize "Answered", "Forwarded" and "Flagged" flags between
+  MAPI and midb
+* midb: pass message flag modification notifications
+  (answered/forwarded/flagged/read/etc.) to imapd
+
 
 Enhancements:
 
