@@ -56,7 +56,6 @@ struct GX_EXPORT MJSON {
 	BOOL rfc822_build(const char *storage_path) const;
 	BOOL rfc822_get(MJSON *other_pjson, const char *storage_path, const char *id, char *mjson_id, char *mime_id) const;
 	int rfc822_fetch(const char *storage_path, const char *cset, BOOL ext, std::string &out) const;
-	int seek_fd(const char *id, int whence);
 	const char *get_mail_filename() const { return filename.c_str(); }
 	const char *get_mail_received() const { return received.c_str(); }
 	const char *get_mail_messageid() const { return msgid.c_str(); }

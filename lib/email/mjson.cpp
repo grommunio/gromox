@@ -167,47 +167,6 @@ BOOL MJSON::load_from_json(const Json::Value &root) try
 	return false;
 }
 
-/*
- *	get file description of mail file and seek pointer to location
- *	@param
- *		pjson [in]			indicate the mjson object
- *		id [in]				id string of mime
- *		whence				MJSON_MIME_HEAD
- *							MJSON_MIME_CONTENT
- */
-int MJSON::seek_fd(const char *id, int whence)
-{
-	auto pjson = this;
-	if (pjson->path.empty())
-		return -1;
-	if (whence != MJSON_MIME_HEAD && whence != MJSON_MIME_CONTENT)
-		return -1;
-	auto pmime = pjson->get_mime(id);
-	if (pmime == nullptr)
-		return -1;
-	
-	if (-1 == pjson->message_fd) {
-		try {
-			auto temp_path = std::string(pjson->path) + "/" + pjson->filename;
-			pjson->message_fd = open(temp_path.c_str(), O_RDONLY);
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1476: ENOMEM");
-		}
-		if (pjson->message_fd == -1)
-			return -1;
-	}
-	
-	switch (whence) {
-	case MJSON_MIME_HEAD:
-		lseek(pjson->message_fd, pmime->head, SEEK_SET);
-		break;
-	case MJSON_MIME_CONTENT:
-		lseek(pjson->message_fd, pmime->begin, SEEK_SET);
-		break;
-	}
-	return pjson->message_fd;
-}
-
 const MJSON_MIME *MJSON::get_mime(const char *id) const
 {
 	return m_root.has_value() ? m_root->find_by_id(id) : nullptr;
