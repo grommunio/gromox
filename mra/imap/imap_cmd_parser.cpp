@@ -251,18 +251,7 @@ static std::string quote_encode(const std::string &u7)
 static BOOL icp_parse_fetch_args(mdi_list &plist,
     BOOL *pb_detail, BOOL *pb_data, char *string, char **argv, int argc) try
 {
-	int count;
-	char *ptr;
-	char *ptr1;
-	char *pend;
-	int result;
-	BOOL b_macro;
 	int tmp_argc;
-	char *last_ptr;
-	char buff[1024];
-	char temp_buff[1024];
-	char* tmp_argv1[128];
-
 	if ('(' == string[0]) {
 		if (string[strlen(string)-1] != ')')
 			return FALSE;
@@ -273,7 +262,8 @@ static BOOL icp_parse_fetch_args(mdi_list &plist,
 	}
 	if (tmp_argc < 1)
 		return FALSE;
-	b_macro = FALSE;
+
+	bool b_macro = false;
 	plist.emplace_back("UID");
 	for (int i = 0; i < tmp_argc; ++i) {
 		if (std::any_of(plist.cbegin(), plist.cend(),
@@ -298,11 +288,11 @@ static BOOL icp_parse_fetch_args(mdi_list &plist,
 			plist.emplace_back(argv[i]);
 		} else if (0 == strncasecmp(argv[i], "BODY[", 5) ||
 			0 == strncasecmp(argv[i], "BODY.PEEK[", 10)) {
-			pend = strchr(argv[i], ']');
+			const char *pend = strchr(argv[i], ']');
 			if (pend == nullptr)
 				return FALSE;
-			ptr = strchr(argv[i], '[') + 1;
-			last_ptr = ptr;
+			const char *ptr = strchr(argv[i], '[') + 1;
+			const char *last_ptr = ptr;
 			if (strncasecmp(ptr, "MIME", 4) == 0)
 				return FALSE;
 			while (']' != *ptr) {
@@ -323,6 +313,7 @@ static BOOL icp_parse_fetch_args(mdi_list &plist,
 			size_t len = pend - last_ptr;
 			if ((len == 0 && *last_ptr == '.') || len >= 1024)
 				return FALSE;
+			char buff[1024], temp_buff[1024], *tmp_argv1[128];
 			memcpy(buff, last_ptr, len);
 			buff[len] = '\0';
 			if (0 != len &&
@@ -336,6 +327,7 @@ static BOOL icp_parse_fetch_args(mdi_list &plist,
 						return FALSE;
 			} else if (0 == strncasecmp(buff, "HEADER.FIELDS ", 14)) {
 				memcpy(temp_buff, buff + 14, strlen(buff) - 14);
+				int result;
 				if ('(' == buff[14]) {
 					if (buff[strlen(buff)-1] != ')')
 						return FALSE;
@@ -349,6 +341,7 @@ static BOOL icp_parse_fetch_args(mdi_list &plist,
 					return FALSE;
 			} else if (0 == strncasecmp(buff, "HEADER.FIELDS.NOT ", 18)) {
 				memcpy(temp_buff, buff + 18, strlen(buff) - 18);
+				int result;
 				if ('(' == buff[18]) {
 					if (buff[strlen(buff)-1] != ')')
 						return FALSE;
@@ -362,13 +355,13 @@ static BOOL icp_parse_fetch_args(mdi_list &plist,
 					return FALSE;
 			}
 			ptr = pend + 1;
-			ptr1 = NULL;
+			const char *ptr1 = nullptr;
 			if ('\0' != *ptr) {
 				pend = strchr(ptr + 1, '>');
 				if (*ptr != '<' || pend == nullptr || pend[1] != '\0')
 					return FALSE;
 				ptr ++;
-				count = 0;
+				size_t count = 0;
 				last_ptr = ptr;
 				while ('>' != *ptr) {
 					if (HX_isdigit(*ptr)) {
@@ -444,12 +437,9 @@ static BOOL icp_parse_fetch_args(mdi_list &plist,
 
 static void icp_convert_flags_string(int flag_bits, char *flags_string)
 {
-	int len;
-	BOOL b_first;
-	
 	flags_string[0] = '(';
-	b_first = FALSE;
-	len = 1;
+	bool b_first = false;
+	int len = 1;
 	if (flag_bits & FLAG_RECENT) {
 		len += sprintf(flags_string + len, "\\Recent");
 		b_first = TRUE;
@@ -498,13 +488,6 @@ static int icp_match_field(const char *cmd_tag, const char *file_path,
     const char *tags, size_t offset1, ssize_t length1, char *value,
     size_t val_len) try
 {
-	BOOL b_hit;
-	int tmp_argc, i;
-	char* tmp_argv[128];
-	char buff[128*1024];
-	char temp_buff[1024];
-	MIME_FIELD mime_field;
-
 	auto pbody = strchr(cmd_tag, '[');
 	if (length > 128 * 1024)
 		return -1;
@@ -513,6 +496,9 @@ static int icp_match_field(const char *cmd_tag, const char *file_path,
 		return -1;
 	if (lseek(fd.get(), offset, SEEK_SET) < 0)
 		mlog(LV_ERR, "E-1431: lseek: %s", strerror(errno));
+
+	char temp_buff[1024], *tmp_argv[128];
+	int tmp_argc;
 	gx_strlcpy(temp_buff, tags, std::size(temp_buff));
 	if (tags[0] == '(')
 		tmp_argc = parse_imap_args(temp_buff + 1,
@@ -521,16 +507,20 @@ static int icp_match_field(const char *cmd_tag, const char *file_path,
 		tmp_argc = parse_imap_args(temp_buff,
 			strlen(tags), tmp_argv, sizeof(tmp_argv));
 
+	char buff[128*1024];
 	auto ret = read(fd.get(), buff, length);
 	if (ret < 0 || static_cast<size_t>(ret) != length)
 		return -1;
 	fd.close_rd();
+
 	size_t len, buff_len = 0;
 	std::string buff1;
+	bool b_hit = false;
+	MIME_FIELD mime_field;
 	while ((len = parse_mime_field(buff + buff_len, length - buff_len,
 	       &mime_field)) != 0) {
 		b_hit = FALSE;
-		for (i=0; i<tmp_argc; i++) {
+		for (int i = 0; i < tmp_argc; ++i) {
 			if (strcasecmp(tmp_argv[i], mime_field.name.c_str()) != 0)
 				continue;
 			if (!b_not) {
@@ -1077,17 +1067,16 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 
 static BOOL icp_convert_imaptime(const char *str_time, time_t *ptime)
 {
-	int factor;
 	time_t tmp_time;
 	char tmp_buff[3];
-	struct tm tmp_tm;
-	
-	memset(&tmp_tm, 0, sizeof(tmp_tm));
+	struct tm tmp_tm{};
 	auto str_zone = strptime(str_time, "%d-%b-%Y %T ", &tmp_tm);
 	if (str_zone == nullptr)
 		return FALSE;
 	if (strlen(str_zone) < 5)
 		return FALSE;
+
+	int factor;
 	if (*str_zone == '-')
 		factor = 1;
 	else if (*str_zone == '+')
@@ -2029,7 +2018,8 @@ int icp_status(int argc, char **argv, imap_context &ctx) try
 
 int icp_append(int argc, char **argv, imap_context &ctx) try
 {
-	auto pcontext = &ctx;
+	if (!ctx.is_authed())
+		return 1804;
 	unsigned int uid;
 	int errnum, i;
 	int temp_argc;
@@ -2037,8 +2027,6 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 	char *str_received = nullptr, *flags_string = nullptr;
 	std::string sys_name;
 	
-	if (!pcontext->is_authed())
-		return 1804;
 	if (argc < 4 || argc > 6 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !icp_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
@@ -2046,16 +2034,10 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 		flags_string = argv[3];
 		str_received = argv[4];
 	} else if (5 == argc) {
-		if ('(' == argv[3][0]) {
+		if (argv[3][0] == '(')
 			flags_string = argv[3];
-			str_received = NULL;
-		} else {
+		else
 			str_received = argv[3];
-			flags_string = NULL;
-		}
-	} else if (4 == argc) {
-		flags_string = NULL;
-		str_received = NULL;
 	} 
 	std::string flag_buff = "()";
 	if (NULL != flags_string) {
@@ -2088,6 +2070,7 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 			     imap_parser_get_sequence_ID());
 	}
 	mid_string += "."s + znul(g_config_file->get_value("host_id"));
+	auto pcontext = &ctx;
 	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, mid_string);
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	if (fd.get() < 0) {
@@ -2155,14 +2138,13 @@ static inline bool is_flag_name(const char *flag)
 
 static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
 {
-	auto pcontext = &ctx;
+	if (!ctx.is_authed())
+		return 1804 | DISPATCH_BREAK;
 	char *str_received = nullptr, *flags_string = nullptr;
 	char* temp_argv[5];
 	char str_flags[128];
 	std::string sys_name;
 	
-	if (!pcontext->is_authed())
-		return 1804 | DISPATCH_BREAK;
 	if (argc < 3 || argc > 5 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !icp_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800 | DISPATCH_BREAK;
@@ -2170,16 +2152,10 @@ static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
 		flags_string = argv[3];
 		str_received = argv[4];
 	} else if (4 == argc) {
-		if ('(' == argv[3][0]) {
+		if (argv[3][0] == '(')
 			flags_string = argv[3];
-			str_received = NULL;
-		} else {
+		else
 			str_received = argv[3];
-			flags_string = NULL;
-		}
-	} else if (3 == argc) {
-		flags_string = NULL;
-		str_received = NULL;
 	}
 	if (NULL != flags_string) {
 		gx_strlcpy(str_flags, flags_string, std::size(str_flags));
@@ -2195,6 +2171,7 @@ static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
 			if (!is_flag_name(temp_argv[i]))
 				return 1800 | DISPATCH_BREAK;
 	}
+	auto pcontext = &ctx;
 	pcontext->mid = fmt::format("{}.{}.{}",
 	                time(nullptr), imap_parser_get_sequence_ID(),
 	                znul(g_config_file->get_value("host_id")));
@@ -2234,17 +2211,7 @@ int icp_append_begin(int argc, char **argv, imap_context &ctx)
 static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
-	int i;
-	unsigned int uid;
-	int errnum;
-	int name_len;
-	int flags_len;
-	char *str_flags;
-	time_t tmp_time;
-	char *str_internal;
-	char sys_name[1024];
 	struct stat node_stat;
-	
 	if (0 != fstat(pcontext->message_fd, &node_stat)) {
 		pcontext->close_and_unlink();
 		return 1909 | DISPATCH_TAG;
@@ -2260,17 +2227,17 @@ static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 	pcontext->close_fd();
 	uint32_t mfd_len = 0;
 	memcpy(&mfd_len, pbuff.get(), sizeof(mfd_len));
-	auto str_name = pbuff.get() + sizeof(uint32_t);
-	name_len = strlen(str_name);
-	str_flags = str_name + name_len + 1;
-	flags_len = strlen(str_flags);
-	str_internal = str_flags + flags_len + 1;
-	gx_strlcpy(sys_name, str_name, std::size(sys_name));
+	const char *sys_name = pbuff.get() + sizeof(uint32_t);
+	size_t name_len = strlen(sys_name);
+	const char *str_flags = sys_name + name_len + 1;
+	size_t flags_len = strlen(str_flags);
+	const char *str_internal = str_flags + flags_len + 1;
 	auto flag_buff = flagbits_to_s(
 	                 strcasestr(str_flags, "\\Seen") != nullptr,
 	                 strcasestr(str_flags, "\\Answered") != nullptr,
 	                 strcasestr(str_flags, "\\Flagged") != nullptr,
 	                 strcasestr(str_flags, "\\Draft") != nullptr);
+	time_t tmp_time = 0;
 	if (str_internal[0] == '\0' ||
 	    !icp_convert_imaptime(str_internal, &tmp_time))
 		time(&tmp_time);
@@ -2295,6 +2262,8 @@ static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 		return 1909 | DISPATCH_TAG;
 	}
 	pbuff.reset();
+
+	int errnum;
 	auto ssr = midb_agent::insert_mail(pcontext->maildir, sys_name,
 	           pcontext->mid.c_str(), flag_buff.c_str(), tmp_time, &errnum);
 	auto cmid = std::move(pcontext->mid);
@@ -2310,8 +2279,10 @@ static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 	auto imap_reply_str = resource_get_imap_code(1715, 1);
 	auto imap_reply_str1 = resource_get_imap_code(1715, 2);
 	std::string buf;
+	unsigned int i;
 	for (i=0; i<10; i++) {
 		uint32_t uidvalid = 0;
+		unsigned int uid = 0;
 		if (midb_agent::summary_folder(pcontext->maildir,
 		    sys_name, nullptr, nullptr, nullptr, &uidvalid,
 		    nullptr, &errnum) == MIDB_RESULT_OK &&
@@ -2364,13 +2335,12 @@ static bool zero_uid_bit(const MITEM &i)
 int icp_expunge(int argc, char **argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
-	int errnum;
-	
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
 	if (pcontext->b_readonly)
 		return 1806;
 	XARRAY xarray;
+	int errnum;
 	auto ssr = midb_agent::list_deleted(pcontext->maildir,
 	           pcontext->selected_folder, &xarray, &errnum);
 	auto ret = m2icode(ssr, errnum);
