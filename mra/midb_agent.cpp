@@ -1516,8 +1516,9 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 				if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
-					pspace = search_string(temp_line, " ", 16);
-					temp_len = line_pos - (pspace + 1 - temp_line);
+					pspace = strchr(temp_line, ' ');
+					temp_len = pspace == nullptr ? 0 :
+					           line_pos - (pspace + 1 - temp_line);
 					MITEM mitem;
 					if (pspace == nullptr ||
 					    !json_from_str(std::string_view(&pspace[1], temp_len), mitem.digest)) {
