@@ -1195,6 +1195,17 @@ static void imap_cmd_parser_convert_folderlist(std::vector<enum_folder_t> &pfile
 	mlog(LV_ERR, "E-1814: ENOMEM");
 }
 
+static std::string flagbits_to_s(bool seen, bool answ, bool flagged, bool draft)
+{
+	std::string s = "(";
+	if (seen)    s += 'S';
+	if (answ)    s += 'A';
+	if (flagged) s += 'F';
+	if (draft)   s += 'U';
+	s += ')';
+	return s;
+}
+
 int imap_cmd_parser_capability(int argc, char **argv,
     imap_context *pcontext) try
 {
@@ -2007,14 +2018,9 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 {
 	unsigned int uid;
 	int errnum, i;
-	BOOL b_seen;
-	BOOL b_draft;
 	int temp_argc;
-	BOOL b_flagged;
-	BOOL b_answered;
 	char* temp_argv[5];
 	char *str_received = nullptr, *flags_string = nullptr;
-	char flag_buff[16];
 	std::string sys_name;
 	
 	if (!pcontext->is_authed())
@@ -2022,10 +2028,6 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	if (argc < 4 || argc > 6 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
-	b_answered = FALSE;
-	b_flagged = FALSE;
-	b_seen = FALSE;
-	b_draft = FALSE;
 	if (6 == argc) {
 		flags_string = argv[3];
 		str_received = argv[4];
@@ -2041,6 +2043,7 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 		flags_string = NULL;
 		str_received = NULL;
 	} 
+	std::string flag_buff = "()";
 	if (NULL != flags_string) {
 		if (flags_string[0] != '(' ||
 		    flags_string[strlen(flags_string)-1] != ')')
@@ -2049,29 +2052,16 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 		            temp_argv, sizeof(temp_argv));
 		if (temp_argc == -1)
 			return 1800;
-		for (i=0; i<temp_argc; i++) {
-			if (strcasecmp(temp_argv[i], "\\Answered") == 0)
-				b_answered = TRUE;
-			else if (strcasecmp(temp_argv[i], "\\Flagged") == 0)
-				b_flagged = TRUE;
-			else if (strcasecmp(temp_argv[i], "\\Seen") == 0)
-				b_seen = TRUE;
-			else if (strcasecmp(temp_argv[i], "\\Draft") == 0)
-				b_draft = TRUE;
-			else
-				return 1800;
-		}
+		flag_buff = flagbits_to_s(
+		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
+		            [](const char *s) { return strcasecmp(s, "\\Answered") == 0; }),
+		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
+		            [](const char *s) { return strcasecmp(s, "\\Flagged") == 0; }),
+		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
+		            [](const char *s) { return strcasecmp(s, "\\Seen") == 0; }),
+		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
+		            [](const char *s) { return strcasecmp(s, "\\Draft") == 0; }));
 	}
-	strcpy(flag_buff, "(");
-	if (b_seen)
-		strcat(flag_buff, "S");
-	if (b_answered)
-		strcat(flag_buff, "A");
-	if (b_flagged)
-		strcat(flag_buff, "F");
-	if (b_draft)
-		strcat(flag_buff, "U");
-	strcat(flag_buff, ")");
 	std::string mid_string;
 	time_t tmp_time = time(nullptr);
 	if (str_received != nullptr &&
@@ -2103,7 +2093,7 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	}
 
 	auto ssr = midb_agent::insert_mail(pcontext->maildir, sys_name,
-	           mid_string.c_str(), flag_buff, tmp_time, &errnum);
+	           mid_string.c_str(), flag_buff.c_str(), tmp_time, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
@@ -2234,23 +2224,14 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	int i;
 	unsigned int uid;
 	int errnum;
-	BOOL b_seen;
-	BOOL b_draft;
 	int name_len;
 	int flags_len;
-	BOOL b_flagged;
-	BOOL b_answered;
 	char *str_flags;
 	time_t tmp_time;
 	char *str_internal;
-	char flag_buff[16];
 	char sys_name[1024];
 	struct stat node_stat;
 	
-	b_answered = FALSE;
-	b_flagged = FALSE;
-	b_seen = FALSE;
-	b_draft = FALSE;
 	if (0 != fstat(pcontext->message_fd, &node_stat)) {
 		pcontext->close_and_unlink();
 		return 1909 | DISPATCH_TAG;
@@ -2272,24 +2253,11 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	flags_len = strlen(str_flags);
 	str_internal = str_flags + flags_len + 1;
 	gx_strlcpy(sys_name, str_name, std::size(sys_name));
-	if (search_string(str_flags, "\\Seen", flags_len) != nullptr)
-		b_seen = TRUE;
-	if (search_string(str_flags, "\\Answered", flags_len) != nullptr)
-		b_answered = TRUE;
-	if (search_string(str_flags, "\\Flagged", flags_len) != nullptr)
-		b_flagged = TRUE;
-	if (search_string(str_flags, "\\Draft", flags_len) != nullptr)
-		b_draft = TRUE;
-	strcpy(flag_buff, "(");
-	if (b_seen)
-		strcat(flag_buff, "S");
-	if (b_answered)
-		strcat(flag_buff, "A");
-	if (b_flagged)
-		strcat(flag_buff, "F");
-	if (b_draft)
-		strcat(flag_buff, "U");
-	strcat(flag_buff, ")");
+	auto flag_buff = flagbits_to_s(
+	                 search_string(str_flags, "\\Seen", flags_len) != nullptr,
+	                 search_string(str_flags, "\\Answered", flags_len) != nullptr,
+	                 search_string(str_flags, "\\Flagged", flags_len) != nullptr,
+	                 search_string(str_flags, "\\Draft", flags_len) != nullptr);
 	if (str_internal[0] == '\0' ||
 	    !imap_cmd_parser_convert_imaptime(str_internal, &tmp_time))
 		time(&tmp_time);
@@ -2315,7 +2283,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	}
 	pbuff.reset();
 	auto ssr = midb_agent::insert_mail(pcontext->maildir, sys_name,
-	           pcontext->mid.c_str(), flag_buff, tmp_time, &errnum);
+	           pcontext->mid.c_str(), flag_buff.c_str(), tmp_time, &errnum);
 	auto cmid = std::move(pcontext->mid);
 	pcontext->unlink_file(); /* homedir/tmp/XX */
 	auto ret = m2icode(ssr, errnum);
