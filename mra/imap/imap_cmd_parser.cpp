@@ -248,7 +248,7 @@ static std::string quote_encode(const std::string &u7)
 	return quote_encode(u7.c_str());
 }
 
-static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
+static BOOL icp_parse_fetch_args(mdi_list &plist,
     BOOL *pb_detail, BOOL *pb_data, char *string, char **argv, int argc) try
 {
 	int count;
@@ -442,7 +442,7 @@ static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
 	return false;
 }
 
-static void imap_cmd_parser_convert_flags_string(int flag_bits, char *flags_string)
+static void icp_convert_flags_string(int flag_bits, char *flags_string)
 {
 	int len;
 	BOOL b_first;
@@ -493,8 +493,8 @@ static void imap_cmd_parser_convert_flags_string(int flag_bits, char *flags_stri
 	flags_string[len + 1] = '\0';
 }
 
-static int imap_cmd_parser_match_field(const char *cmd_tag,
-	const char *file_path, size_t offset, size_t length, BOOL b_not,
+static int icp_match_field(const char *cmd_tag, const char *file_path,
+    size_t offset, size_t length, BOOL b_not,
     const char *tags, size_t offset1, ssize_t length1, char *value,
     size_t val_len) try
 {
@@ -707,7 +707,7 @@ static int pstruct_else(imap_context *pcontext, MJSON *pjson,
 	auto b_not = strncasecmp(&data_item[1], "HEADER.FIELDS ", 14) != 0;
 	data_item += b_not ? 19 : 15;
 	auto pmime = pjson->get_mime(temp_id);
-	int len, buff_len = 0;
+	int buff_len = 0;
 	if (pmime == nullptr) {
 		buff_len += gx_snprintf(buff + buff_len,
 			    max_len - buff_len, "BODY%s NIL", pbody);
@@ -716,11 +716,10 @@ static int pstruct_else(imap_context *pcontext, MJSON *pjson,
 	std::string eml_path = storage_path == nullptr ?
 		std::string(pcontext->maildir) + "/eml/" + pjson->get_mail_filename() :
 		std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + storage_path + "/" + pjson->get_mail_filename();
-	len = imap_cmd_parser_match_field(cmd_tag.c_str(), eml_path.c_str(),
-	      pmime->get_head_offset(),
-	      pmime->get_head_length(),
-	      b_not, data_item, offset, length, buff + buff_len,
-	      max_len - buff_len);
+	int len = icp_match_field(cmd_tag.c_str(), eml_path.c_str(),
+	          pmime->get_head_offset(), pmime->get_head_length(),
+	          b_not, data_item, offset, length, buff + buff_len,
+	          max_len - buff_len);
 	if (len == -1)
 		buff_len += gx_snprintf(buff + buff_len,
 			    max_len - buff_len, "BODY%s NIL", pbody);
@@ -729,7 +728,7 @@ static int pstruct_else(imap_context *pcontext, MJSON *pjson,
 	return buff_len;
 }
 
-static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
+static int icp_print_structure(imap_context *pcontext, MJSON *pjson,
     const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path) try
@@ -757,7 +756,7 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 	return -1;
 }
 
-static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
+static int icp_process_fetch_item(imap_context *pcontext,
     BOOL b_data, MITEM *pitem, int item_id, mdi_list &pitem_list) try
 {
 	int errnum;
@@ -841,8 +840,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 				buff_len += len;
 		} else if (strcasecmp(kw, "FLAGS") == 0) {
 			char flags_string[128];
-			imap_cmd_parser_convert_flags_string(
-				pitem->flag_bits, flags_string);
+			icp_convert_flags_string(pitem->flag_bits, flags_string);
 			buff_len += gx_snprintf(buff + buff_len,
 			            std::size(buff) - buff_len, "FLAGS %s", flags_string);
 		} else if (strcasecmp(kw, "INTERNALDATE") == 0) {
@@ -956,24 +954,24 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 					char mjson_id[64], final_id[64];
 					if (mjson.rfc822_get(&temp_mjson, rfc_path.c_str(),
 					    temp_id, mjson_id, final_id))
-						len = imap_cmd_parser_print_structure(
+						len = icp_print_structure(
 						      pcontext, &temp_mjson, kwss.c_str(),
 							buff + buff_len, MAX_DIGLEN - buff_len,
 							pbody, final_id, ptr, offset, length,
 						      mjson.get_mail_filename());
 					else
-						len = imap_cmd_parser_print_structure(pcontext,
+						len = icp_print_structure(pcontext,
 						      &mjson, kwss.c_str(),
 						      buff + buff_len, MAX_DIGLEN - buff_len,
 						      pbody, temp_id, ptr, offset, length, nullptr);
 				} else {
-					len = imap_cmd_parser_print_structure(pcontext,
+					len = icp_print_structure(pcontext,
 					      &mjson, kwss,
 					      buff + buff_len, MAX_DIGLEN - buff_len,
 					      pbody, temp_id, ptr, offset, length, nullptr);
 				}
 			} else {
-				len = imap_cmd_parser_print_structure(pcontext,
+				len = icp_print_structure(pcontext,
 				      &mjson, kwss,
 				      buff + buff_len, MAX_DIGLEN - buff_len,
 				      pbody, temp_id, ptr, offset, length, nullptr);
@@ -1010,7 +1008,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 	return 1918;
 }
 
-static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
+static void icp_store_flags(const char *cmd, const std::string &mid,
     int id, unsigned int uid, unsigned int flag_bits, imap_context *pcontext)
 {
 	int errnum;
@@ -1027,7 +1025,7 @@ static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
 		midb_agent::set_flags(pcontext->maildir, pcontext->selected_folder,
 			mid, flag_bits, nullptr, &errnum);
 		if (0 == strcasecmp(cmd, "FLAGS")) {
-			imap_cmd_parser_convert_flags_string(flag_bits, flags_string);
+			icp_convert_flags_string(flag_bits, flags_string);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
@@ -1044,7 +1042,7 @@ static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
 		if (0 == strcasecmp(cmd, "+FLAGS") && 
 			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
-			imap_cmd_parser_convert_flags_string(flag_bits, flags_string);
+			icp_convert_flags_string(flag_bits, flags_string);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
@@ -1061,7 +1059,7 @@ static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
 		if (0 == strcasecmp(cmd, "-FLAGS") &&
 			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
-			imap_cmd_parser_convert_flags_string(flag_bits, flags_string);
+			icp_convert_flags_string(flag_bits, flags_string);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
@@ -1076,7 +1074,7 @@ static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
 		imap_parser_safe_write(pcontext, buff, string_length);
 }
 
-static BOOL imap_cmd_parser_convert_imaptime(const char *str_time, time_t *ptime)
+static BOOL icp_convert_imaptime(const char *str_time, time_t *ptime)
 {
 	int factor;
 	time_t tmp_time;
@@ -1116,7 +1114,7 @@ static BOOL imap_cmd_parser_convert_imaptime(const char *str_time, time_t *ptime
 	return TRUE;
 }
 
-static BOOL imap_cmd_parser_wildcard_match(const char *folder, const char *mask)
+static BOOL icp_wildcard_match(const char *folder, const char *mask)
 {
 	while (true) {
 		if (*folder == '\0' && *mask == '\0')
@@ -1132,7 +1130,7 @@ static BOOL imap_cmd_parser_wildcard_match(const char *folder, const char *mask)
 		auto span = *mask == '*' ? strlen(folder) : strcspn(folder, "/");
 		++mask;
 		while (true) {
-			if (imap_cmd_parser_wildcard_match(&folder[span], mask))
+			if (icp_wildcard_match(&folder[span], mask))
 				return true;
 			if (span-- == 0)
 				break;
@@ -1144,7 +1142,7 @@ static BOOL imap_cmd_parser_wildcard_match(const char *folder, const char *mask)
 /**
  * See sysfolder_to_imapfolder for some notes.
  */
-static BOOL imap_cmd_parser_imapfolder_to_sysfolder(const char *imap_folder,
+static BOOL icp_imapfolder_to_sysfolder(const char *imap_folder,
     std::string &sys_folder) try
 {
 	std::string t;
@@ -1164,7 +1162,7 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(const char *imap_folder,
 	return false;
 }
 
-static BOOL imap_cmd_parser_sysfolder_to_imapfolder(const enum_folder_t &sys_folder,
+static BOOL icp_sysfolder_to_imapfolder(const enum_folder_t &sys_folder,
     std::string &imap_folder) try
 {
 	if (sys_folder.first == PRIVATE_FID_INBOX) {
@@ -1184,12 +1182,12 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(const enum_folder_t &sys_fol
 	return false;
 }
 
-static void imap_cmd_parser_convert_folderlist(std::vector<enum_folder_t> &pfile) try
+static void icp_convert_folderlist(std::vector<enum_folder_t> &pfile) try
 {
 	std::string o;
 	
 	for (auto &e : pfile)
-		if (imap_cmd_parser_sysfolder_to_imapfolder(e, o))
+		if (icp_sysfolder_to_imapfolder(e, o))
 			e.second = std::move(o);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1814: ENOMEM");
@@ -1206,8 +1204,7 @@ static std::string flagbits_to_s(bool seen, bool answ, bool flagged, bool draft)
 	return s;
 }
 
-int imap_cmd_parser_capability(int argc, char **argv,
-    imap_context *pcontext) try
+int icp_capability(int argc, char **argv, imap_context *pcontext) try
 {
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, NULL);
@@ -1222,7 +1219,7 @@ int imap_cmd_parser_capability(int argc, char **argv,
 	return 1918;
 }
 
-int imap_cmd_parser_id(int argc, char **argv, imap_context *pcontext) try
+int icp_id(int argc, char **argv, imap_context *pcontext) try
 {
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, NULL);
@@ -1240,14 +1237,14 @@ int imap_cmd_parser_id(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int imap_cmd_parser_noop(int argc, char **argv, imap_context *pcontext)
+int icp_noop(int argc, char **argv, imap_context *pcontext)
 {
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, NULL);
 	return 1702;
 }
 
-int imap_cmd_parser_logout(int argc, char **argv, imap_context *ctx) try
+int icp_logout(int argc, char **argv, imap_context *ctx) try
 {
 	/* IMAP_CODE_2160001: BYE logging out */
 	/* IMAP_CODE_2170003: OK LOGOUT completed */
@@ -1259,7 +1256,7 @@ int imap_cmd_parser_logout(int argc, char **argv, imap_context *ctx) try
 	return 1918;
 }
 
-int imap_cmd_parser_starttls(int argc, char **argv, imap_context *pcontext)
+int icp_starttls(int argc, char **argv, imap_context *pcontext)
 {
 	if (pcontext->connection.ssl != nullptr)
 		return 1800;
@@ -1271,7 +1268,7 @@ int imap_cmd_parser_starttls(int argc, char **argv, imap_context *pcontext)
 	return 1704;
 }
 
-int imap_cmd_parser_authenticate(int argc, char **argv, imap_context *pcontext)
+int icp_authenticate(int argc, char **argv, imap_context *pcontext)
 {
 	if (g_support_tls && g_force_tls && pcontext->connection.ssl == nullptr)
 		return 1802;
@@ -1286,7 +1283,7 @@ int imap_cmd_parser_authenticate(int argc, char **argv, imap_context *pcontext)
     return DISPATCH_CONTINUE;
 }
 
-static int imap_cmd_parser_username2(int argc, char **argv, imap_context *pcontext)
+static int icp_username2(int argc, char **argv, imap_context *pcontext)
 {
 	size_t temp_len;
 	
@@ -1302,10 +1299,9 @@ static int imap_cmd_parser_username2(int argc, char **argv, imap_context *pconte
     return DISPATCH_CONTINUE;
 }
 
-int imap_cmd_parser_username(int argc, char **argv, imap_context *ctx)
+int icp_username(int argc, char **argv, imap_context *ctx)
 {
-	return imap_cmd_parser_dval(argc, argv, ctx,
-	       imap_cmd_parser_username2(argc, argv, ctx));
+	return icp_dval(argc, argv, ctx, icp_username2(argc, argv, ctx));
 }
 
 static inline const char *tag_or_bug(const char *s)
@@ -1327,8 +1323,7 @@ static bool store_owner_over(const char *actor, const char *mbox, const char *mb
 	return ok;
 }
 
-static int imap_cmd_parser_password2(int argc, char **argv,
-    imap_context *pcontext) try
+static int icp_password2(int argc, char **argv, imap_context *pcontext) try
 {
 	size_t temp_len;
 	char temp_password[256];
@@ -1394,13 +1389,12 @@ static int imap_cmd_parser_password2(int argc, char **argv,
 	return 1918;
 }
 
-int imap_cmd_parser_password(int argc, char **argv, imap_context *ctx)
+int icp_password(int argc, char **argv, imap_context *ctx)
 {
-	return imap_cmd_parser_dval(argc, argv, ctx,
-	       imap_cmd_parser_password2(argc, argv, ctx));
+	return icp_dval(argc, argv, ctx, icp_password2(argc, argv, ctx));
 }
 
-int imap_cmd_parser_login(int argc, char **argv, imap_context *pcontext)
+int icp_login(int argc, char **argv, imap_context *pcontext)
 {
 	char temp_password[256];
     
@@ -1466,7 +1460,7 @@ int imap_cmd_parser_login(int argc, char **argv, imap_context *pcontext)
 	return 1705;
 }
 
-int imap_cmd_parser_idle(int argc, char **argv, imap_context *pcontext)
+int icp_idle(int argc, char **argv, imap_context *pcontext)
 {
 	if (!pcontext->is_authed())
 		return 1804;
@@ -1539,7 +1533,7 @@ int content_array::refresh(imap_context &ctx, const std::string &folder,
 	return 0;
 }
 
-static int imap_cmd_parser_selex(int argc, char **argv,
+static int icp_selex(int argc, char **argv,
     imap_context *pcontext, bool readonly) try
 {
 	int errnum;
@@ -1548,7 +1542,7 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
 	if (iproto_stat::select == pcontext->proto_stat) {
 		imap_parser_remove_select(pcontext);
@@ -1597,17 +1591,17 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	return 1915;
 }
 
-int imap_cmd_parser_select(int argc, char **argv, imap_context *pcontext)
+int icp_select(int argc, char **argv, imap_context *pcontext)
 {
-	return imap_cmd_parser_selex(argc, argv, pcontext, false);
+	return icp_selex(argc, argv, pcontext, false);
 }
 
-int imap_cmd_parser_examine(int argc, char **argv, imap_context *pcontext)
+int icp_examine(int argc, char **argv, imap_context *pcontext)
 {
-	return imap_cmd_parser_selex(argc, argv, pcontext, true);
+	return icp_selex(argc, argv, pcontext, true);
 }
 
-int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
+int icp_create(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
 
@@ -1622,7 +1616,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
-	imap_cmd_parser_convert_folderlist(folder_list);
+	icp_convert_folderlist(folder_list);
 	std::string sys_name = argv[2]; // Go back to non-encoded string
 	if (sys_name.size() > 0 && sys_name.back() == '/')
 		sys_name.pop_back();
@@ -1640,7 +1634,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 			continue;
 		}
 		std::string converted_name;
-		if (!imap_cmd_parser_imapfolder_to_sysfolder(sys_name.c_str(), converted_name))
+		if (!icp_imapfolder_to_sysfolder(sys_name.c_str(), converted_name))
 			return 1800;
 		ssr = midb_agent::make_folder(pcontext->maildir,
 		      converted_name, &errnum);
@@ -1654,7 +1648,7 @@ int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 	return 1706;
 }
 
-int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
+int icp_delete(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
 	std::string encoded_name;
@@ -1662,7 +1656,7 @@ int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], encoded_name))
+	    !icp_imapfolder_to_sysfolder(argv[2], encoded_name))
 		return 1800;
 
 	{
@@ -1672,7 +1666,7 @@ int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
 		auto ret = m2icode(ssr, errnum);
 		if (ret != 0)
 			return ret;
-		imap_cmd_parser_convert_folderlist(folder_list);
+		icp_convert_folderlist(folder_list);
 		dir_tree folder_tree;
 		folder_tree.load_from_memfile(std::move(folder_list));
 		auto dh = folder_tree.match(argv[2]);
@@ -1692,7 +1686,7 @@ int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
 	return 1707;
 }
 
-int imap_cmd_parser_rename(int argc, char **argv, imap_context *pcontext)
+int icp_rename(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
 	std::string encoded_name, encoded_name1;
@@ -1702,8 +1696,8 @@ int imap_cmd_parser_rename(int argc, char **argv, imap_context *pcontext)
 	if (argc < 4 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024
 		|| 0 == strlen(argv[3]) || strlen(argv[3]) >= 1024)
 		return 1800;
-	if (!imap_cmd_parser_imapfolder_to_sysfolder(argv[2], encoded_name) ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[3], encoded_name1))
+	if (!icp_imapfolder_to_sysfolder(argv[2], encoded_name) ||
+	    !icp_imapfolder_to_sysfolder(argv[3], encoded_name1))
 		return 1800;
 	if (strpbrk(argv[3], "%*?") != nullptr)
 		return 1910;
@@ -1717,7 +1711,7 @@ int imap_cmd_parser_rename(int argc, char **argv, imap_context *pcontext)
 	return 1708;
 }
 
-int imap_cmd_parser_subscribe(int argc, char **argv, imap_context *pcontext)
+int icp_subscribe(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
 	std::string sys_name;
@@ -1725,7 +1719,7 @@ int imap_cmd_parser_subscribe(int argc, char **argv, imap_context *pcontext)
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
 	auto ssr = midb_agent::subscribe_folder(pcontext->maildir,
 	           sys_name, &errnum);
@@ -1737,7 +1731,7 @@ int imap_cmd_parser_subscribe(int argc, char **argv, imap_context *pcontext)
 	return 1709;
 }
 
-int imap_cmd_parser_unsubscribe(int argc, char **argv, imap_context *pcontext)
+int icp_unsubscribe(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
 	std::string sys_name;
@@ -1745,7 +1739,7 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, imap_context *pcontext)
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 3 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
 	auto ssr = midb_agent::unsubscribe_folder(pcontext->maildir,
 	           sys_name, &errnum);
@@ -1757,7 +1751,7 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, imap_context *pcontext)
 	return 1710;
 }
 
-int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
+int icp_list(int argc, char **argv, imap_context *pcontext) try
 {
 	int errnum;
 	
@@ -1804,7 +1798,7 @@ int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
 	if (ret != 0)
 		return ret;
 
-	imap_cmd_parser_convert_folderlist(folder_list);
+	icp_convert_folderlist(folder_list);
 	dir_tree folder_tree;
 	folder_tree.load_from_memfile(folder_list);
 	pcontext->stream.clear();
@@ -1813,7 +1807,7 @@ int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
 		auto special = special_folder(enf_entry.first);
 		if (filter_special && !special)
 			continue;
-		if (!imap_cmd_parser_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
+		if (!icp_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
 		auto pdir = folder_tree.match(sys_name.c_str());
 		auto have_cld = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
@@ -1839,7 +1833,7 @@ int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
 	return 1915;
 }
 
-int imap_cmd_parser_xlist(int argc, char **argv, imap_context *pcontext) try
+int icp_xlist(int argc, char **argv, imap_context *pcontext) try
 {
 	int errnum;
 	
@@ -1857,14 +1851,14 @@ int imap_cmd_parser_xlist(int argc, char **argv, imap_context *pcontext) try
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
-	imap_cmd_parser_convert_folderlist(folder_list);
+	icp_convert_folderlist(folder_list);
 	dir_tree folder_tree;
 	folder_tree.load_from_memfile(folder_list);
 	pcontext->stream.clear();
 
 	for (const auto &fentry : folder_list) {
 		const auto &sys_name = fentry.second;
-		if (!imap_cmd_parser_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
+		if (!icp_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
 		auto special = special_folder(fentry.first);
 		auto pdir = folder_tree.match(sys_name.c_str());
@@ -1891,7 +1885,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, imap_context *pcontext) try
 	return 1915;
 }
 
-int imap_cmd_parser_lsub(int argc, char **argv, imap_context *pcontext) try
+int icp_lsub(int argc, char **argv, imap_context *pcontext) try
 {
 	int errnum;
 	
@@ -1917,10 +1911,10 @@ int imap_cmd_parser_lsub(int argc, char **argv, imap_context *pcontext) try
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
-	imap_cmd_parser_convert_folderlist(sub_list);
+	icp_convert_folderlist(sub_list);
 	std::vector<enum_folder_t> folder_list;
 	midb_agent::enum_folders(pcontext->maildir, folder_list, &errnum);
-	imap_cmd_parser_convert_folderlist(folder_list);
+	icp_convert_folderlist(folder_list);
 	dir_tree folder_tree;
 	folder_tree.load_from_memfile(folder_list);
 	folder_list.clear();
@@ -1928,7 +1922,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, imap_context *pcontext) try
 
 	for (const auto &fentry : sub_list) {
 		const auto &sys_name = fentry.second;
-		if (!imap_cmd_parser_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
+		if (!icp_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
 		auto pdir = folder_tree.match(sys_name.c_str());
 		auto have = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
@@ -1951,7 +1945,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, imap_context *pcontext) try
 	return 1915;
 }
 
-int imap_cmd_parser_status(int argc, char **argv, imap_context *pcontext) try
+int icp_status(int argc, char **argv, imap_context *pcontext) try
 {
 	int i;
 	int errnum;
@@ -1963,7 +1957,7 @@ int imap_cmd_parser_status(int argc, char **argv, imap_context *pcontext) try
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 4 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name) ||
+	    !icp_imapfolder_to_sysfolder(argv[2], sys_name) ||
 	    argv[3][0] != '(' || argv[3][strlen(argv[3])-1] != ')')
 		return 1800;
 	temp_argc = parse_imap_args(argv[3] + 1,
@@ -2014,7 +2008,7 @@ int imap_cmd_parser_status(int argc, char **argv, imap_context *pcontext) try
 	return 1915;
 }
 
-int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
+int icp_append(int argc, char **argv, imap_context *pcontext) try
 {
 	unsigned int uid;
 	int errnum, i;
@@ -2026,7 +2020,7 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc < 4 || argc > 6 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800;
 	if (6 == argc) {
 		flags_string = argv[3];
@@ -2065,7 +2059,7 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	std::string mid_string;
 	time_t tmp_time = time(nullptr);
 	if (str_received != nullptr &&
-	    imap_cmd_parser_convert_imaptime(str_received, &tmp_time)) {
+	    icp_convert_imaptime(str_received, &tmp_time)) {
 		char txt[GUIDSTR_SIZE];
 		GUID::random_new().to_str(txt, std::size(txt), 32);
 		mid_string = fmt::format("{}.g{}", tmp_time, txt);
@@ -2139,8 +2133,7 @@ static inline bool is_flag_name(const char *flag)
 	return false;
 }
 
-static int imap_cmd_parser_append_begin2(int argc, char **argv,
-    imap_context *pcontext) try
+static int icp_append_begin2(int argc, char **argv, imap_context *pcontext) try
 {
 	char *str_received = nullptr, *flags_string = nullptr;
 	char* temp_argv[5];
@@ -2150,7 +2143,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv,
 	if (!pcontext->is_authed())
 		return 1804 | DISPATCH_BREAK;
 	if (argc < 3 || argc > 5 || strlen(argv[2]) == 0 || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[2], sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[2], sys_name))
 		return 1800 | DISPATCH_BREAK;
 	if (5 == argc) {
 		flags_string = argv[3];
@@ -2212,14 +2205,12 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv,
 	return 1918 | DISPATCH_BREAK;
 }
 
-int imap_cmd_parser_append_begin(int argc, char **argv, imap_context *ctx)
+int icp_append_begin(int argc, char **argv, imap_context *ctx)
 {
-	return imap_cmd_parser_dval(argc, argv, ctx,
-	       imap_cmd_parser_append_begin2(argc, argv, ctx));
+	return icp_dval(argc, argv, ctx, icp_append_begin2(argc, argv, ctx));
 }
 
-static int imap_cmd_parser_append_end2(int argc, char **argv,
-    imap_context *pcontext) try
+static int icp_append_end2(int argc, char **argv, imap_context *pcontext) try
 {
 	int i;
 	unsigned int uid;
@@ -2259,7 +2250,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	                 strcasestr(str_flags, "\\Flagged") != nullptr,
 	                 strcasestr(str_flags, "\\Draft") != nullptr);
 	if (str_internal[0] == '\0' ||
-	    !imap_cmd_parser_convert_imaptime(str_internal, &tmp_time))
+	    !icp_convert_imaptime(str_internal, &tmp_time))
 		time(&tmp_time);
 	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, pcontext->mid);
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
@@ -2321,13 +2312,12 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	return 1918;
 }
 
-int imap_cmd_parser_append_end(int argc, char **argv, imap_context *ctx)
+int icp_append_end(int argc, char **argv, imap_context *ctx)
 {
-	return imap_cmd_parser_dval(argc, argv, ctx,
-	       imap_cmd_parser_append_end2(argc, argv, ctx));
+	return icp_dval(argc, argv, ctx, icp_append_end2(argc, argv, ctx));
 }
 
-int imap_cmd_parser_check(int argc, char **argv, imap_context *pcontext)
+int icp_check(int argc, char **argv, imap_context *pcontext)
 {
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
@@ -2335,11 +2325,11 @@ int imap_cmd_parser_check(int argc, char **argv, imap_context *pcontext)
 	return 1716;
 }
 
-int imap_cmd_parser_close(int argc, char **argv, imap_context *pcontext)
+int icp_close(int argc, char **argv, imap_context *pcontext)
 {
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
-	imap_cmd_parser_clsfld(pcontext);
+	icp_clsfld(pcontext);
 	return 1717;
 }
 
@@ -2348,7 +2338,7 @@ static bool zero_uid_bit(const MITEM &i)
 	return i.uid == 0 || !(i.flag_bits & FLAG_DELETED);
 }
 
-int imap_cmd_parser_expunge(int argc, char **argv, imap_context *pcontext) try
+int icp_expunge(int argc, char **argv, imap_context *pcontext) try
 {
 	int errnum;
 	
@@ -2412,7 +2402,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int imap_cmd_parser_unselect(int argc, char **argv, imap_context *pcontext)
+int icp_unselect(int argc, char **argv, imap_context *pcontext)
 {
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
@@ -2422,7 +2412,7 @@ int imap_cmd_parser_unselect(int argc, char **argv, imap_context *pcontext)
 	return 1718;
 }
 
-int imap_cmd_parser_search(int argc, char **argv, imap_context *pcontext)
+int icp_search(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
 	
@@ -2506,7 +2496,7 @@ static int fetch_trivial_uid(imap_context &ctx, const imap_seq_list &range_list,
 	return MIDB_LOCAL_ENOMEM;
 }
 
-int imap_cmd_parser_fetch(int argc, char **argv, imap_context *pcontext)
+int icp_fetch(int argc, char **argv, imap_context *pcontext)
 {
 	int i, num, errnum = 0;
 	BOOL b_data;
@@ -2519,7 +2509,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, imap_context *pcontext)
 		return 1805;
 	if (argc < 4 || parse_imap_seqx(*pcontext, argv[2], list_uid) != 0)
 		return 1800;
-	if (!imap_cmd_parser_parse_fetch_args(list_data, &b_detail,
+	if (!icp_parse_fetch_args(list_data, &b_detail,
 	    &b_data, argv[3], tmp_argv, std::size(tmp_argv)))
 		return 1800;
 	XARRAY xarray;
@@ -2541,7 +2531,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, imap_context *pcontext)
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
 		if (ct_item == nullptr)
 			continue;
-		result = imap_cmd_parser_process_fetch_item(pcontext, b_data,
+		result = icp_process_fetch_item(pcontext, b_data,
 		         pitem, ct_item->id, list_data);
 		if (result != 0)
 			return result;
@@ -2573,7 +2563,7 @@ static bool store_flagkeyword(const char *str)
 	return false;
 }
 
-int imap_cmd_parser_store(int argc, char **argv, imap_context *pcontext)
+int icp_store(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum, i;
 	int flag_bits;
@@ -2626,7 +2616,7 @@ int imap_cmd_parser_store(int argc, char **argv, imap_context *pcontext)
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
 		if (ct_item == nullptr)
 			continue;
-		imap_cmd_parser_store_flags(argv[3], pitem->mid,
+		icp_store_flags(argv[3], pitem->mid,
 			ct_item->id, 0, flag_bits, pcontext);
 		imap_parser_bcast_flags(*pcontext, pitem->uid);
 	}
@@ -2634,7 +2624,7 @@ int imap_cmd_parser_store(int argc, char **argv, imap_context *pcontext)
 	return 1721;
 }
 
-int imap_cmd_parser_copy(int argc, char **argv, imap_context *pcontext) try
+int icp_copy(int argc, char **argv, imap_context *pcontext) try
 {
 	unsigned int uid;
 	int errnum;
@@ -2648,7 +2638,7 @@ int imap_cmd_parser_copy(int argc, char **argv, imap_context *pcontext) try
 		return 1805;
 	if (argc < 4 || parse_imap_seqx(*pcontext, argv[2], list_uid) != 0 ||
 	    strlen(argv[3]) == 0 || strlen(argv[3]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[3], sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[3], sys_name))
 		return 1800;
 	XARRAY xarray;
 	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
@@ -2736,8 +2726,7 @@ int imap_cmd_parser_copy(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int imap_cmd_parser_uid_search(int argc, char **argv,
-    imap_context *pcontext) try
+int icp_uid_search(int argc, char **argv, imap_context *pcontext) try
 {
 	int errnum;
 	
@@ -2770,8 +2759,7 @@ int imap_cmd_parser_uid_search(int argc, char **argv,
 	return 1918;
 }
 
-int imap_cmd_parser_uid_fetch(int argc, char **argv,
-    imap_context *pcontext) try
+int icp_uid_fetch(int argc, char **argv, imap_context *pcontext) try
 {
 	int num;
 	int errnum;
@@ -2786,7 +2774,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv,
 		return 1805;
 	if (argc < 5 || parse_imap_seq(list_seq, argv[3]) != 0)
 		return 1800;
-	if (!imap_cmd_parser_parse_fetch_args(list_data, &b_detail,
+	if (!icp_parse_fetch_args(list_data, &b_detail,
 	    &b_data, argv[4], tmp_argv, std::size(tmp_argv)))
 		return 1800;
 	if (std::none_of(list_data.cbegin(), list_data.cend(),
@@ -2808,7 +2796,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv,
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
 		if (ct_item == nullptr)
 			continue;
-		ret = imap_cmd_parser_process_fetch_item(pcontext, b_data,
+		ret = icp_process_fetch_item(pcontext, b_data,
 		      pitem, ct_item->id, list_data);
 		if (ret != 0)
 			return ret;
@@ -2832,7 +2820,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv,
 	return 1918;
 }
 
-int imap_cmd_parser_uid_store(int argc, char **argv, imap_context *pcontext)
+int icp_uid_store(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum, i, flag_bits, temp_argc;
 	char *temp_argv[8];
@@ -2883,7 +2871,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, imap_context *pcontext)
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
 		if (ct_item == nullptr)
 			continue;
-		imap_cmd_parser_store_flags(argv[4], pitem->mid,
+		icp_store_flags(argv[4], pitem->mid,
 			ct_item->id, pitem->uid, flag_bits, pcontext);
 		imap_parser_bcast_flags(*pcontext, pitem->uid);
 	}
@@ -2891,7 +2879,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, imap_context *pcontext)
 	return 1724;
 }
 
-int imap_cmd_parser_uid_copy(int argc, char **argv, imap_context *pcontext) try
+int icp_uid_copy(int argc, char **argv, imap_context *pcontext) try
 {
 	unsigned int uid;
 	int errnum;
@@ -2905,7 +2893,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, imap_context *pcontext) try
 		return 1805;
 	if (argc < 5 || parse_imap_seq(list_seq, argv[3]) != 0 ||
 	    strlen(argv[4]) == 0 || strlen(argv[4]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(argv[4], sys_name))
+	    !icp_imapfolder_to_sysfolder(argv[4], sys_name))
 		return 1800;
 	XARRAY xarray;
 	auto ssr = midb_agent::fetch_simple_uid(pcontext->maildir,
@@ -2987,8 +2975,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int imap_cmd_parser_uid_expunge(int argc, char **argv,
-    imap_context *pcontext) try
+int icp_uid_expunge(int argc, char **argv, imap_context *pcontext) try
 {
 	int errnum;
 	int max_uid;
@@ -3057,7 +3044,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv,
 	return 1918;
 }
 
-void imap_cmd_parser_clsfld(imap_context *pcontext) try
+void icp_clsfld(imap_context *pcontext) try
 {
 	int errnum, result, i;
 	BOOL b_deleted;
@@ -3161,8 +3148,7 @@ void imap_cmd_parser_clsfld(imap_context *pcontext) try
  * (imap_cmd_parser.h), "unpacks" it, possibly sends a response line to the
  * client before yielding the unpacked dispatch action.
  */
-int imap_cmd_parser_dval(int argc, char **argv, imap_context *ctx,
-    unsigned int ret)
+int icp_dval(int argc, char **argv, imap_context *ctx, unsigned int ret)
 {
 	auto code = ret & DISPATCH_VALMASK;
 	if (code == 0)

@@ -501,7 +501,7 @@ static tproc_status ps_literal_processing(imap_context *pcontext)
 			    argv, std::size(argv));
 		if (argc >= 3 && 0 == strcasecmp(argv[1], "APPEND")) {
 			/* Special handling for APPEND with potentially huge literals */
-			switch (imap_cmd_parser_append_begin(argc, argv, pcontext)) {
+			switch (icp_append_begin(argc, argv, pcontext)) {
 			case DISPATCH_CONTINUE: {
 				ctx.current_len = &ctx.read_buffer[ctx.read_offset] - &ctx.literal_ptr[nl_len];
 				if (pcontext->current_len < 0) {
@@ -597,13 +597,13 @@ static tproc_status ps_cmd_processing(imap_context *pcontext)
 		if (iproto_stat::username == pcontext->proto_stat) {
 			argv[0] = pcontext->command_buffer;
 			argv[1] = nullptr;
-			imap_cmd_parser_username(1, argv, pcontext);
+			icp_username(1, argv, pcontext);
 			pcontext->command_len = 0;
 			return tproc_status::literal_processing;
 		} else if (iproto_stat::password == pcontext->proto_stat) {
 			argv[0] = pcontext->command_buffer;
 			argv[1] = nullptr;
-			if (imap_cmd_parser_password(1, argv, pcontext) == DISPATCH_SHOULD_CLOSE)
+			if (icp_password(1, argv, pcontext) == DISPATCH_SHOULD_CLOSE)
 				return ps_end_processing(pcontext);
 			pcontext->command_len = 0;
 			safe_memset(pcontext->command_buffer, 0, std::size(pcontext->command_buffer));
@@ -622,7 +622,7 @@ static tproc_status ps_cmd_processing(imap_context *pcontext)
 				pcontext->connection.write(" ", 1);
 				pcontext->connection.write(imap_reply_str, string_length);
 			} else {
-				imap_cmd_parser_append_end(argc, argv, pcontext);
+				icp_append_end(argc, argv, pcontext);
 			}
 			pcontext->sched_stat = isched_stat::rdcmd;
 			pcontext->literal_ptr = nullptr;
@@ -1379,40 +1379,40 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv,
 {
 	char reply_buff[1024];
 	static constexpr std::pair<const char *, int (*)(int, char **, imap_context *)> proc[] = {
-		{"APPEND", imap_cmd_parser_append},
-		{"AUTHENTICATE", imap_cmd_parser_authenticate},
-		{"CAPABILITY", imap_cmd_parser_capability},
-		{"CHECK", imap_cmd_parser_check},
-		{"CLOSE", imap_cmd_parser_close},
-		{"COPY", imap_cmd_parser_copy},
-		{"CREATE", imap_cmd_parser_create},
-		{"DELETE", imap_cmd_parser_delete},
-		{"EXAMINE", imap_cmd_parser_examine},
-		{"EXPUNGE", imap_cmd_parser_expunge},
-		{"FETCH", imap_cmd_parser_fetch},
-		{"ID", imap_cmd_parser_id},
-		{"IDLE", imap_cmd_parser_idle},
-		{"LIST", imap_cmd_parser_list},
-		{"LOGIN", imap_cmd_parser_login},
-		{"LOGOUT", imap_cmd_parser_logout},
-		{"LSUB", imap_cmd_parser_lsub},
-		{"NOOP", imap_cmd_parser_noop},
-		{"RENAME", imap_cmd_parser_rename},
-		{"SEARCH", imap_cmd_parser_search},
-		{"SELECT", imap_cmd_parser_select},
-		{"STARTTLS", imap_cmd_parser_starttls},
-		{"STATUS", imap_cmd_parser_status},
-		{"STORE", imap_cmd_parser_store},
-		{"SUBSCRIBE", imap_cmd_parser_subscribe},
-		{"UNSELECT", imap_cmd_parser_unselect},
-		{"UNSUBSCRIBE", imap_cmd_parser_unsubscribe},
-		{"XLIST", imap_cmd_parser_xlist},
+		{"APPEND", icp_append},
+		{"AUTHENTICATE", icp_authenticate},
+		{"CAPABILITY", icp_capability},
+		{"CHECK", icp_check},
+		{"CLOSE", icp_close},
+		{"COPY", icp_copy},
+		{"CREATE", icp_create},
+		{"DELETE", icp_delete},
+		{"EXAMINE", icp_examine},
+		{"EXPUNGE", icp_expunge},
+		{"FETCH", icp_fetch},
+		{"ID", icp_id},
+		{"IDLE", icp_idle},
+		{"LIST", icp_list},
+		{"LOGIN", icp_login},
+		{"LOGOUT", icp_logout},
+		{"LSUB", icp_lsub},
+		{"NOOP", icp_noop},
+		{"RENAME", icp_rename},
+		{"SEARCH", icp_search},
+		{"SELECT", icp_select},
+		{"STARTTLS", icp_starttls},
+		{"STATUS", icp_status},
+		{"STORE", icp_store},
+		{"SUBSCRIBE", icp_subscribe},
+		{"UNSELECT", icp_unselect},
+		{"UNSUBSCRIBE", icp_unsubscribe},
+		{"XLIST", icp_xlist},
 	}, proc_uid[] = {
-		{"COPY", imap_cmd_parser_uid_copy},
-		{"EXPUNGE", imap_cmd_parser_uid_expunge},
-		{"FETCH", imap_cmd_parser_uid_fetch},
-		{"SEARCH", imap_cmd_parser_uid_search},
-		{"STORE", imap_cmd_parser_uid_store},
+		{"COPY", icp_uid_copy},
+		{"EXPUNGE", icp_uid_expunge},
+		{"FETCH", icp_uid_fetch},
+		{"SEARCH", icp_uid_search},
+		{"STORE", icp_uid_store},
 	};
 
 	auto scmp = [](decltype(*proc) &p, const char *cmd) { return strcasecmp(p.first, cmd) < 0; };
@@ -1460,9 +1460,9 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context *ctx) tr
 			fprintf(stderr, ": ret=%xh code=%u\n", ret, code);
 		}
 	}
-	return imap_cmd_parser_dval(argc, argv, ctx, ret);
+	return icp_dval(argc, argv, ctx, ret);
 } catch (const std::bad_alloc &) {
-	return imap_cmd_parser_dval(argc, argv, ctx, 1915);
+	return icp_dval(argc, argv, ctx, 1915);
 }
 
 imap_context::imap_context()
