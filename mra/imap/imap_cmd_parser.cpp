@@ -423,7 +423,7 @@ static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
 			*pb_detail = TRUE;
 		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
-			if (search_string(kw, "FIELDS", strlen(kw)) == nullptr)
+			if (strcasestr(kw, "FIELDS") == nullptr)
 				*pb_data = TRUE;
 			*pb_detail = TRUE;
 		}
@@ -2254,10 +2254,10 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	str_internal = str_flags + flags_len + 1;
 	gx_strlcpy(sys_name, str_name, std::size(sys_name));
 	auto flag_buff = flagbits_to_s(
-	                 search_string(str_flags, "\\Seen", flags_len) != nullptr,
-	                 search_string(str_flags, "\\Answered", flags_len) != nullptr,
-	                 search_string(str_flags, "\\Flagged", flags_len) != nullptr,
-	                 search_string(str_flags, "\\Draft", flags_len) != nullptr);
+	                 strcasestr(str_flags, "\\Seen") != nullptr,
+	                 strcasestr(str_flags, "\\Answered") != nullptr,
+	                 strcasestr(str_flags, "\\Flagged") != nullptr,
+	                 strcasestr(str_flags, "\\Draft") != nullptr);
 	if (str_internal[0] == '\0' ||
 	    !imap_cmd_parser_convert_imaptime(str_internal, &tmp_time))
 		time(&tmp_time);

@@ -1181,22 +1181,19 @@ bool MIME::get_filename(std::string &file_name) const
 	static constexpr size_t fnsize = 1024;
 	char cdname[fnsize];
 	auto pmime = this;
-	char *pend;
-	char *pbegin;
 	
 	if (pmime->get_content_param("name", file_name)) {
 		;
 	} else if (pmime->get_field("Content-Disposition", cdname, fnsize)) {
-		auto tmp_len = strlen(cdname);
-		pbegin = search_string(cdname, "filename=", tmp_len);
+		const char *pbegin = strcasestr(cdname, "filename=");
 		if (pbegin == nullptr)
 			return false;
 		pbegin += 9;
-		pend = strchr(pbegin, ';');
+		const char *pend = strchr(pbegin, ';');
 		if (pend == nullptr)
-			pend = cdname + tmp_len;
-		tmp_len = pend - pbegin;
-		file_name.assign(pbegin, tmp_len);
+			file_name.assign(pbegin);
+		else
+			file_name.assign(pbegin, pend - pbegin);
 	} else {
 		return false;
 	}

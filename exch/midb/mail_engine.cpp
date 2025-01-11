@@ -410,8 +410,7 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 		if ('\0' != filename[0]) {
 			auto rs = me_ct_decode_mime(penum->charset, filename);
 			if (rs != nullptr &&
-			    search_string(rs.get(), penum->keyword,
-			    strlen(rs.get())) != nullptr)
+			    strcasestr(rs.get(), penum->keyword) != nullptr)
 				penum->b_result = TRUE;
 		}
 	}
@@ -442,8 +441,7 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	charset = pmime->get_charset();
 	auto rs = me_ct_to_utf8(*charset != '\0' ?
 	          charset : penum->charset, &pbuff[length]);
-	if (rs != nullptr && search_string(rs.get(), penum->keyword,
-	    strlen(rs.get())) != nullptr)
+	if (rs != nullptr && strcasestr(rs.get(), penum->keyword) != nullptr)
 		penum->b_result = TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1970: ENOMEM");
@@ -600,9 +598,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					break;
 				temp_buff1[temp_len] = '\0';
 				auto rs = me_ct_decode_mime(charset, temp_buff1);
-				if (rs != nullptr &&
-				    search_string(rs.get(), ptree_node->ct_keyword,
-				    strlen(rs.get())) != nullptr)
+				if (rs != nullptr && strcasestr(rs.get(),
+				    ptree_node->ct_keyword) != nullptr)
 					b_result1 = true;
 				break;
 			}
@@ -645,9 +642,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					break;
 				temp_buff1[temp_len] = '\0';
 				auto rs = me_ct_decode_mime(charset, temp_buff1);
-				if (rs != nullptr &&
-				    search_string(rs.get(), ptree_node->ct_keyword,
-				    strlen(rs.get())) != nullptr)
+				if (rs != nullptr && strcasestr(rs.get(),
+				    ptree_node->ct_keyword) != nullptr)
 					b_result1 = true;
 				break;
 			}
@@ -785,9 +781,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					break;
 				temp_buff1[temp_len] = '\0';
 				auto rs = me_ct_decode_mime(charset, temp_buff1);
-				if (rs != nullptr &&
-				    search_string(rs.get(), ptree_node->ct_keyword,
-				    strlen(rs.get())) != nullptr)
+				if (rs != nullptr && strcasestr(rs.get(),
+				    ptree_node->ct_keyword) != nullptr)
 					b_result1 = true;
 				break;
 			}
@@ -802,9 +797,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				    temp_buff1, std::size(temp_buff1), &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
 					auto rs = me_ct_decode_mime(charset, temp_buff1);
-					if (rs != nullptr &&
-					    search_string(rs.get(), ptree_node->ct_keyword,
-					    strlen(rs.get())) != nullptr)
+					if (rs != nullptr && strcasestr(rs.get(),
+					    ptree_node->ct_keyword) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
@@ -814,9 +808,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				    temp_buff1, std::size(temp_buff1), &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
 					auto rs = me_ct_decode_mime(charset, temp_buff1);
-					if (rs != nullptr &&
-					    search_string(rs.get(), ptree_node->ct_keyword,
-					    strlen(rs.get())) != nullptr)
+					if (rs != nullptr && strcasestr(rs.get(),
+					    ptree_node->ct_keyword) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
@@ -826,9 +819,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				    temp_buff1, std::size(temp_buff1), &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
 					auto rs = me_ct_decode_mime(charset, temp_buff1);
-					if (rs != nullptr &&
-					    search_string(rs.get(), ptree_node->ct_keyword,
-					    strlen(rs.get())) != nullptr)
+					if (rs != nullptr && strcasestr(rs.get(),
+					    ptree_node->ct_keyword) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
@@ -838,9 +830,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				    temp_buff1, std::size(temp_buff1), &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
 					auto rs = me_ct_decode_mime(charset, temp_buff1);
-					if (rs != nullptr &&
-					    search_string(rs.get(), ptree_node->ct_keyword,
-					    strlen(rs.get())) != nullptr)
+					if (rs != nullptr && strcasestr(rs.get(),
+					    ptree_node->ct_keyword) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
@@ -872,9 +863,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					break;
 				temp_buff1[temp_len] = '\0';
 				auto rs = me_ct_decode_mime(charset, temp_buff1);
-				if (rs != nullptr &&
-				    search_string(rs.get(), ptree_node->ct_keyword,
-				    strlen(rs.get())) != nullptr)
+				if (rs != nullptr && strcasestr(rs.get(),
+				    ptree_node->ct_keyword) != nullptr)
 					b_result1 = true;
 				break;
 			}
