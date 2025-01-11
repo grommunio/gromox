@@ -561,7 +561,7 @@ static int icp_match_field(const char *cmd_tag, const char *file_path,
 	return -1;
 }
 
-static int pstruct_null(imap_context *pcontext, MJSON *pjson,
+static int pstruct_null(MJSON *pjson,
     const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path)
@@ -610,7 +610,7 @@ static int pstruct_null(imap_context *pcontext, MJSON *pjson,
 	return buff_len;
 }
 
-static int pstruct_mime(imap_context *pcontext, MJSON *pjson,
+static int pstruct_mime(MJSON *pjson,
     const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path)
@@ -655,7 +655,7 @@ static int pstruct_mime(imap_context *pcontext, MJSON *pjson,
 	return buff_len;
 }
 
-static int pstruct_text(imap_context *pcontext, MJSON *pjson,
+static int pstruct_text(MJSON *pjson,
     const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path)
@@ -699,11 +699,12 @@ static int pstruct_text(imap_context *pcontext, MJSON *pjson,
 	return buff_len;
 }
 
-static int pstruct_else(imap_context *pcontext, MJSON *pjson,
+static int pstruct_else(imap_context &ctx, MJSON *pjson,
     const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path)
 {
+	auto pcontext = &ctx;
 	auto b_not = strncasecmp(&data_item[1], "HEADER.FIELDS ", 14) != 0;
 	data_item += b_not ? 19 : 15;
 	auto pmime = pjson->get_mime(temp_id);
@@ -728,20 +729,20 @@ static int pstruct_else(imap_context *pcontext, MJSON *pjson,
 	return buff_len;
 }
 
-static int icp_print_structure(imap_context *pcontext, MJSON *pjson,
+static int icp_print_structure(imap_context &ctx, MJSON *pjson,
     const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path) try
 {
 	if (data_item == nullptr)
-		return pstruct_null(pcontext, pjson, cmd_tag, buff, max_len,
+		return pstruct_null(pjson, cmd_tag, buff, max_len,
 		       pbody, temp_id, data_item, offset, length, storage_path);
 	if (strcasecmp(&data_item[1], "MIME") == 0 ||
 	    strcasecmp(&data_item[1], "HEADER") == 0)
-		return pstruct_mime(pcontext, pjson, cmd_tag, buff, max_len,
+		return pstruct_mime(pjson, cmd_tag, buff, max_len,
 		       pbody, temp_id, data_item, offset, length, storage_path);
 	if (strcasecmp(&data_item[1], "TEXT") == 0)
-		return pstruct_text(pcontext, pjson, cmd_tag, buff, max_len,
+		return pstruct_text(pjson, cmd_tag, buff, max_len,
 		       pbody, temp_id, data_item, offset, length, storage_path);
 	if (strcmp(temp_id, "") != 0) {
 		int buff_len = 0;
@@ -749,16 +750,17 @@ static int icp_print_structure(imap_context *pcontext, MJSON *pjson,
 			    max_len - buff_len, "BODY%s NIL", pbody);
 		return buff_len;
 	}
-	return pstruct_else(pcontext, pjson, cmd_tag, buff, max_len, pbody,
+	return pstruct_else(ctx, pjson, cmd_tag, buff, max_len, pbody,
 	       temp_id, data_item, offset, length, storage_path);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1465: ENOMEM");
 	return -1;
 }
 
-static int icp_process_fetch_item(imap_context *pcontext,
+static int icp_process_fetch_item(imap_context &ctx,
     BOOL b_data, MITEM *pitem, int item_id, mdi_list &pitem_list) try
 {
+	auto pcontext = &ctx;
 	int errnum;
 	MJSON mjson;
 	char buff[MAX_DIGLEN];
@@ -954,25 +956,23 @@ static int icp_process_fetch_item(imap_context *pcontext,
 					char mjson_id[64], final_id[64];
 					if (mjson.rfc822_get(&temp_mjson, rfc_path.c_str(),
 					    temp_id, mjson_id, final_id))
-						len = icp_print_structure(
-						      pcontext, &temp_mjson, kwss.c_str(),
+						len = icp_print_structure(ctx,
+						      &temp_mjson, kwss.c_str(),
 							buff + buff_len, MAX_DIGLEN - buff_len,
 							pbody, final_id, ptr, offset, length,
 						      mjson.get_mail_filename());
 					else
-						len = icp_print_structure(pcontext,
+						len = icp_print_structure(ctx,
 						      &mjson, kwss.c_str(),
 						      buff + buff_len, MAX_DIGLEN - buff_len,
 						      pbody, temp_id, ptr, offset, length, nullptr);
 				} else {
-					len = icp_print_structure(pcontext,
-					      &mjson, kwss,
+					len = icp_print_structure(ctx, &mjson, kwss,
 					      buff + buff_len, MAX_DIGLEN - buff_len,
 					      pbody, temp_id, ptr, offset, length, nullptr);
 				}
 			} else {
-				len = icp_print_structure(pcontext,
-				      &mjson, kwss,
+				len = icp_print_structure(ctx, &mjson, kwss,
 				      buff + buff_len, MAX_DIGLEN - buff_len,
 				      pbody, temp_id, ptr, offset, length, nullptr);
 			}
@@ -1009,8 +1009,9 @@ static int icp_process_fetch_item(imap_context *pcontext,
 }
 
 static void icp_store_flags(const char *cmd, const std::string &mid,
-    int id, unsigned int uid, unsigned int flag_bits, imap_context *pcontext)
+    int id, unsigned int uid, unsigned int flag_bits, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	int errnum;
 	char buff[1024];
 	int string_length;
@@ -1204,8 +1205,9 @@ static std::string flagbits_to_s(bool seen, bool answ, bool flagged, bool draft)
 	return s;
 }
 
-int icp_capability(int argc, char **argv, imap_context *pcontext) try
+int icp_capability(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, NULL);
 	/* IMAP_CODE_2170001: OK CAPABILITY completed */
@@ -1219,8 +1221,9 @@ int icp_capability(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int icp_id(int argc, char **argv, imap_context *pcontext) try
+int icp_id(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, NULL);
 	std::string buf;
@@ -1237,27 +1240,29 @@ int icp_id(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int icp_noop(int argc, char **argv, imap_context *pcontext)
+int icp_noop(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, NULL);
 	return 1702;
 }
 
-int icp_logout(int argc, char **argv, imap_context *ctx) try
+int icp_logout(int argc, char **argv, imap_context &ctx) try
 {
 	/* IMAP_CODE_2160001: BYE logging out */
 	/* IMAP_CODE_2170003: OK LOGOUT completed */
 	auto buf = "* "s + resource_get_imap_code(1601, 1) +
 	           argv[0] + " " + resource_get_imap_code(1703, 1);
-	imap_parser_safe_write(ctx, buf.c_str(), buf.size());
+	imap_parser_safe_write(&ctx, buf.c_str(), buf.size());
 	return DISPATCH_SHOULD_CLOSE;
 } catch (const std::bad_alloc &) {
 	return 1918;
 }
 
-int icp_starttls(int argc, char **argv, imap_context *pcontext)
+int icp_starttls(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	if (pcontext->connection.ssl != nullptr)
 		return 1800;
 	if (!g_support_tls)
@@ -1268,8 +1273,9 @@ int icp_starttls(int argc, char **argv, imap_context *pcontext)
 	return 1704;
 }
 
-int icp_authenticate(int argc, char **argv, imap_context *pcontext)
+int icp_authenticate(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	if (g_support_tls && g_force_tls && pcontext->connection.ssl == nullptr)
 		return 1802;
 	if (argc != 3 || strcasecmp(argv[2], "LOGIN") != 0)
@@ -1283,8 +1289,9 @@ int icp_authenticate(int argc, char **argv, imap_context *pcontext)
     return DISPATCH_CONTINUE;
 }
 
-static int icp_username2(int argc, char **argv, imap_context *pcontext)
+static int icp_username2(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	size_t temp_len;
 	
 	if (decode64_ex(argv[0], strlen(argv[0]),
@@ -1299,7 +1306,7 @@ static int icp_username2(int argc, char **argv, imap_context *pcontext)
     return DISPATCH_CONTINUE;
 }
 
-int icp_username(int argc, char **argv, imap_context *ctx)
+int icp_username(int argc, char **argv, imap_context &ctx)
 {
 	return icp_dval(argc, argv, ctx, icp_username2(argc, argv, ctx));
 }
@@ -1323,8 +1330,9 @@ static bool store_owner_over(const char *actor, const char *mbox, const char *mb
 	return ok;
 }
 
-static int icp_password2(int argc, char **argv, imap_context *pcontext) try
+static int icp_password2(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	size_t temp_len;
 	char temp_password[256];
 	
@@ -1389,13 +1397,14 @@ static int icp_password2(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int icp_password(int argc, char **argv, imap_context *ctx)
+int icp_password(int argc, char **argv, imap_context &ctx)
 {
 	return icp_dval(argc, argv, ctx, icp_password2(argc, argv, ctx));
 }
 
-int icp_login(int argc, char **argv, imap_context *pcontext)
+int icp_login(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	char temp_password[256];
     
 	if (g_support_tls && g_force_tls && pcontext->connection.ssl == nullptr)
@@ -1460,8 +1469,9 @@ int icp_login(int argc, char **argv, imap_context *pcontext)
 	return 1705;
 }
 
-int icp_idle(int argc, char **argv, imap_context *pcontext)
+int icp_idle(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	if (!pcontext->is_authed())
 		return 1804;
 	if (argc != 2)
@@ -1533,9 +1543,9 @@ int content_array::refresh(imap_context &ctx, const std::string &folder,
 	return 0;
 }
 
-static int icp_selex(int argc, char **argv,
-    imap_context *pcontext, bool readonly) try
+static int icp_selex(int argc, char **argv, imap_context &ctx, bool readonly) try
 {
+	auto pcontext = &ctx;
 	int errnum;
 	std::string sys_name;
     
@@ -1591,18 +1601,19 @@ static int icp_selex(int argc, char **argv,
 	return 1915;
 }
 
-int icp_select(int argc, char **argv, imap_context *pcontext)
+int icp_select(int argc, char **argv, imap_context &ctx)
 {
-	return icp_selex(argc, argv, pcontext, false);
+	return icp_selex(argc, argv, ctx, false);
 }
 
-int icp_examine(int argc, char **argv, imap_context *pcontext)
+int icp_examine(int argc, char **argv, imap_context &ctx)
 {
-	return icp_selex(argc, argv, pcontext, true);
+	return icp_selex(argc, argv, ctx, true);
 }
 
-int icp_create(int argc, char **argv, imap_context *pcontext)
+int icp_create(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	int errnum;
 
 	if (!pcontext->is_authed())
@@ -1648,8 +1659,9 @@ int icp_create(int argc, char **argv, imap_context *pcontext)
 	return 1706;
 }
 
-int icp_delete(int argc, char **argv, imap_context *pcontext)
+int icp_delete(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	int errnum;
 	std::string encoded_name;
 
@@ -1686,8 +1698,9 @@ int icp_delete(int argc, char **argv, imap_context *pcontext)
 	return 1707;
 }
 
-int icp_rename(int argc, char **argv, imap_context *pcontext)
+int icp_rename(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	int errnum;
 	std::string encoded_name, encoded_name1;
 
@@ -1711,8 +1724,9 @@ int icp_rename(int argc, char **argv, imap_context *pcontext)
 	return 1708;
 }
 
-int icp_subscribe(int argc, char **argv, imap_context *pcontext)
+int icp_subscribe(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	int errnum;
 	std::string sys_name;
 
@@ -1731,8 +1745,9 @@ int icp_subscribe(int argc, char **argv, imap_context *pcontext)
 	return 1709;
 }
 
-int icp_unsubscribe(int argc, char **argv, imap_context *pcontext)
+int icp_unsubscribe(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	int errnum;
 	std::string sys_name;
 
@@ -1751,8 +1766,9 @@ int icp_unsubscribe(int argc, char **argv, imap_context *pcontext)
 	return 1710;
 }
 
-int icp_list(int argc, char **argv, imap_context *pcontext) try
+int icp_list(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	int errnum;
 	
 	if (!pcontext->is_authed())
@@ -1833,8 +1849,9 @@ int icp_list(int argc, char **argv, imap_context *pcontext) try
 	return 1915;
 }
 
-int icp_xlist(int argc, char **argv, imap_context *pcontext) try
+int icp_xlist(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	int errnum;
 	
 	if (!pcontext->is_authed())
@@ -1885,8 +1902,9 @@ int icp_xlist(int argc, char **argv, imap_context *pcontext) try
 	return 1915;
 }
 
-int icp_lsub(int argc, char **argv, imap_context *pcontext) try
+int icp_lsub(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	int errnum;
 	
 	if (!pcontext->is_authed())
@@ -1945,8 +1963,9 @@ int icp_lsub(int argc, char **argv, imap_context *pcontext) try
 	return 1915;
 }
 
-int icp_status(int argc, char **argv, imap_context *pcontext) try
+int icp_status(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	int i;
 	int errnum;
 	BOOL b_first;
@@ -2008,8 +2027,9 @@ int icp_status(int argc, char **argv, imap_context *pcontext) try
 	return 1915;
 }
 
-int icp_append(int argc, char **argv, imap_context *pcontext) try
+int icp_append(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	unsigned int uid;
 	int errnum, i;
 	int temp_argc;
@@ -2133,8 +2153,9 @@ static inline bool is_flag_name(const char *flag)
 	return false;
 }
 
-static int icp_append_begin2(int argc, char **argv, imap_context *pcontext) try
+static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	char *str_received = nullptr, *flags_string = nullptr;
 	char* temp_argv[5];
 	char str_flags[128];
@@ -2205,13 +2226,14 @@ static int icp_append_begin2(int argc, char **argv, imap_context *pcontext) try
 	return 1918 | DISPATCH_BREAK;
 }
 
-int icp_append_begin(int argc, char **argv, imap_context *ctx)
+int icp_append_begin(int argc, char **argv, imap_context &ctx)
 {
 	return icp_dval(argc, argv, ctx, icp_append_begin2(argc, argv, ctx));
 }
 
-static int icp_append_end2(int argc, char **argv, imap_context *pcontext) try
+static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	int i;
 	unsigned int uid;
 	int errnum;
@@ -2312,24 +2334,25 @@ static int icp_append_end2(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int icp_append_end(int argc, char **argv, imap_context *ctx)
+int icp_append_end(int argc, char **argv, imap_context &ctx)
 {
 	return icp_dval(argc, argv, ctx, icp_append_end2(argc, argv, ctx));
 }
 
-int icp_check(int argc, char **argv, imap_context *pcontext)
+int icp_check(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
 	imap_parser_echo_modify(pcontext, NULL);
 	return 1716;
 }
 
-int icp_close(int argc, char **argv, imap_context *pcontext)
+int icp_close(int argc, char **argv, imap_context &ctx)
 {
-	if (pcontext->proto_stat != iproto_stat::select)
+	if (ctx.proto_stat != iproto_stat::select)
 		return 1805;
-	icp_clsfld(pcontext);
+	icp_clsfld(ctx);
 	return 1717;
 }
 
@@ -2338,8 +2361,9 @@ static bool zero_uid_bit(const MITEM &i)
 	return i.uid == 0 || !(i.flag_bits & FLAG_DELETED);
 }
 
-int icp_expunge(int argc, char **argv, imap_context *pcontext) try
+int icp_expunge(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	int errnum;
 	
 	if (pcontext->proto_stat != iproto_stat::select)
@@ -2402,8 +2426,9 @@ int icp_expunge(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int icp_unselect(int argc, char **argv, imap_context *pcontext)
+int icp_unselect(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
 	imap_parser_remove_select(pcontext);
@@ -2412,8 +2437,9 @@ int icp_unselect(int argc, char **argv, imap_context *pcontext)
 	return 1718;
 }
 
-int icp_search(int argc, char **argv, imap_context *pcontext)
+int icp_search(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	int errnum;
 	
 	if (pcontext->proto_stat != iproto_stat::select)
@@ -2496,8 +2522,9 @@ static int fetch_trivial_uid(imap_context &ctx, const imap_seq_list &range_list,
 	return MIDB_LOCAL_ENOMEM;
 }
 
-int icp_fetch(int argc, char **argv, imap_context *pcontext)
+int icp_fetch(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	int i, num, errnum = 0;
 	BOOL b_data;
 	BOOL b_detail;
@@ -2531,7 +2558,7 @@ int icp_fetch(int argc, char **argv, imap_context *pcontext)
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
 		if (ct_item == nullptr)
 			continue;
-		result = icp_process_fetch_item(pcontext, b_data,
+		result = icp_process_fetch_item(ctx, b_data,
 		         pitem, ct_item->id, list_data);
 		if (result != 0)
 			return result;
@@ -2563,8 +2590,9 @@ static bool store_flagkeyword(const char *str)
 	return false;
 }
 
-int icp_store(int argc, char **argv, imap_context *pcontext)
+int icp_store(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	int errnum, i;
 	int flag_bits;
 	int temp_argc;
@@ -2617,15 +2645,16 @@ int icp_store(int argc, char **argv, imap_context *pcontext)
 		if (ct_item == nullptr)
 			continue;
 		icp_store_flags(argv[3], pitem->mid,
-			ct_item->id, 0, flag_bits, pcontext);
+			ct_item->id, 0, flag_bits, ctx);
 		imap_parser_bcast_flags(*pcontext, pitem->uid);
 	}
 	imap_parser_echo_modify(pcontext, NULL);
 	return 1721;
 }
 
-int icp_copy(int argc, char **argv, imap_context *pcontext) try
+int icp_copy(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	unsigned int uid;
 	int errnum;
 	BOOL b_first;
@@ -2726,8 +2755,9 @@ int icp_copy(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int icp_uid_search(int argc, char **argv, imap_context *pcontext) try
+int icp_uid_search(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	int errnum;
 	
 	if (pcontext->proto_stat != iproto_stat::select)
@@ -2759,8 +2789,9 @@ int icp_uid_search(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int icp_uid_fetch(int argc, char **argv, imap_context *pcontext) try
+int icp_uid_fetch(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	int num;
 	int errnum;
 	int i;
@@ -2796,7 +2827,7 @@ int icp_uid_fetch(int argc, char **argv, imap_context *pcontext) try
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
 		if (ct_item == nullptr)
 			continue;
-		ret = icp_process_fetch_item(pcontext, b_data,
+		ret = icp_process_fetch_item(ctx, b_data,
 		      pitem, ct_item->id, list_data);
 		if (ret != 0)
 			return ret;
@@ -2820,8 +2851,9 @@ int icp_uid_fetch(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int icp_uid_store(int argc, char **argv, imap_context *pcontext)
+int icp_uid_store(int argc, char **argv, imap_context &ctx)
 {
+	auto pcontext = &ctx;
 	int errnum, i, flag_bits, temp_argc;
 	char *temp_argv[8];
 	imap_seq_list list_seq;
@@ -2872,15 +2904,16 @@ int icp_uid_store(int argc, char **argv, imap_context *pcontext)
 		if (ct_item == nullptr)
 			continue;
 		icp_store_flags(argv[4], pitem->mid,
-			ct_item->id, pitem->uid, flag_bits, pcontext);
+			ct_item->id, pitem->uid, flag_bits, ctx);
 		imap_parser_bcast_flags(*pcontext, pitem->uid);
 	}
 	imap_parser_echo_modify(pcontext, NULL);
 	return 1724;
 }
 
-int icp_uid_copy(int argc, char **argv, imap_context *pcontext) try
+int icp_uid_copy(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	unsigned int uid;
 	int errnum;
 	BOOL b_first;
@@ -2975,8 +3008,9 @@ int icp_uid_copy(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int icp_uid_expunge(int argc, char **argv, imap_context *pcontext) try
+int icp_uid_expunge(int argc, char **argv, imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	int errnum;
 	int max_uid;
 	imap_seq_list list_seq;
@@ -3044,8 +3078,9 @@ int icp_uid_expunge(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-void icp_clsfld(imap_context *pcontext) try
+void icp_clsfld(imap_context &ctx) try
 {
+	auto pcontext = &ctx;
 	int errnum, result, i;
 	BOOL b_deleted;
 	std::string prev_selected;
@@ -3148,7 +3183,7 @@ void icp_clsfld(imap_context *pcontext) try
  * (imap_cmd_parser.h), "unpacks" it, possibly sends a response line to the
  * client before yielding the unpacked dispatch action.
  */
-int icp_dval(int argc, char **argv, imap_context *ctx, unsigned int ret)
+int icp_dval(int argc, char **argv, imap_context &ctx, unsigned int ret)
 {
 	auto code = ret & DISPATCH_VALMASK;
 	if (code == 0)
@@ -3159,12 +3194,12 @@ int icp_dval(int argc, char **argv, imap_context *ctx, unsigned int ret)
 		code = 1907;
 	auto str = resource_get_imap_code(code, 1);
 	char buff[1024];
-	const char *tag = (ret & DISPATCH_TAG) ? tag_or_bug(ctx->tag_string) :
+	const char *tag = (ret & DISPATCH_TAG) ? tag_or_bug(ctx.tag_string) :
 	                  argc == 0 ? "*" : tag_or_bug(argv[0]);
 	if (trycreate && strncmp(str, "NO ", 3) == 0)
 		str += 2; /* avoid double NO */
 	auto len = gx_snprintf(buff, std::size(buff), "%s%s %s%s", tag,
 	      trycreate ? " NO [TRYCREATE]" : "", str, znul(estr));
-	imap_parser_safe_write(ctx, buff, len);
+	imap_parser_safe_write(&ctx, buff, len);
 	return ret & DISPATCH_ACTMASK;
 }
