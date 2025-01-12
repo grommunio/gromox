@@ -63,10 +63,11 @@ int main()
 	if (!json_from_str(tdata1, json))
 		return EXIT_FAILURE;
 	MJSON m;
-	if (!m.load_from_json(json, "/tmp")) {
+	if (!m.load_from_json(json)) {
 		fprintf(stderr, "retrieve failed\n");
 		return EXIT_FAILURE;
 	}
+	m.path = "/tmp";
 	m.enum_mime(enx, nullptr);
 	if (t_digest() != EXIT_SUCCESS)
 		return EXIT_FAILURE;

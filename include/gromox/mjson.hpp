@@ -36,7 +36,7 @@ struct GX_EXPORT MJSON {
 	NOMOVE(MJSON);
 
 	void clear();
-	BOOL load_from_json(const Json::Value &, const char *path);
+	BOOL load_from_json(const Json::Value &);
 	int fetch_structure(const char *charset, BOOL ext, char *buf, int len);
 	int fetch_envelope(const char *charset, char *buf, int len);
 	bool has_rfc822_part() const;

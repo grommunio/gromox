@@ -576,8 +576,9 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				MJSON temp_mjson;
 				snprintf(temp_buff, 256, "%s/eml",
 						cu_get_maildir());
-				if (!temp_mjson.load_from_json(digest, temp_buff))
+				if (!temp_mjson.load_from_json(digest))
 					break;
+				temp_mjson.path = temp_buff;
 				keyword_enum.pjson = &temp_mjson;
 				keyword_enum.b_result = FALSE;
 				keyword_enum.charset = charset;
@@ -847,8 +848,9 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				MJSON temp_mjson;
 				snprintf(temp_buff, 256, "%s/eml",
 						cu_get_maildir());
-				if (!temp_mjson.load_from_json(digest, temp_buff))
+				if (!temp_mjson.load_from_json(digest))
 					break;
+				temp_mjson.path = temp_buff;
 				keyword_enum.pjson = &temp_mjson;
 				keyword_enum.b_result = FALSE;
 				keyword_enum.charset = charset;

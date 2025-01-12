@@ -766,10 +766,9 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 	
 	if (pitem->flag_bits & FLAG_LOADED) {
 		auto eml_path = std::string(pcontext->maildir) + "/eml";
-		if (eml_path.size() == 0)
+		if (eml_path.size() == 0 || !mjson.load_from_json(pitem->digest))
 			return 1923;
-		if (!mjson.load_from_json(pitem->digest, eml_path.c_str()))
-			return 1923;
+		mjson.path = eml_path;
 	}
 
 	BOOL b_first = FALSE;

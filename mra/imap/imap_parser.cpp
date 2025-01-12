@@ -34,7 +34,6 @@
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/midb_agent.hpp>
-#include <gromox/mjson.hpp>
 #include <gromox/process.hpp>
 #include <gromox/safeint.hpp>
 #include <gromox/scope.hpp>

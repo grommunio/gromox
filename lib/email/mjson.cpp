@@ -117,18 +117,7 @@ MJSON::~MJSON()
 	stree.clear();
 }
 
-/*
- *	retrieve mjson object from mail digest string
- *	@param
- *		pjson [in]			indicate the mjson object
- *		digest_buff[in]		mail digest string buffer
- *		length				string buffer length
- *		path [in]			mail file path, can be NULL.
- *                          if you want to build rfc822
- *                          or seek file descriptor in
- *                          message, path cannot be NULL.
- */
-BOOL MJSON::load_from_json(const Json::Value &root, const char *inpath) try
+BOOL MJSON::load_from_json(const Json::Value &root) try
 {
 	auto pjson = this;
 	BOOL b_none;
@@ -180,8 +169,6 @@ BOOL MJSON::load_from_json(const Json::Value &root, const char *inpath) try
 	});
 	if (b_none)
 		return FALSE;
-	if (inpath != nullptr)
-		pjson->path = inpath;
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2743: ENOMEM");
@@ -563,8 +550,9 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			if (!json_from_str({slurp_data.get(), slurp_size}, digest))
 				goto RFC822_FAILURE;
 			MJSON temp_mjson;
-			if (!temp_mjson.load_from_json(digest, storage_path))
+			if (!temp_mjson.load_from_json(digest))
 				goto RFC822_FAILURE;
+			temp_mjson.path = storage_path;
 			buff[offset] = ' ';
 			envl_len = temp_mjson.fetch_envelope(charset,
 						buff + offset + 1, length - offset - 1);
@@ -1039,7 +1027,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 		pbuild->build_result = FALSE;
 		return;
 	}
-	if (!temp_mjson.load_from_json(digest, pbuild->storage_path)) {
+	if (!temp_mjson.load_from_json(digest)) {
 		if (remove(dgt_path) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1377: remove %s: %s", dgt_path, strerror(errno));
 		if (remove(msg_path) < 0 && errno != ENOENT)
@@ -1047,6 +1035,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 		pbuild->build_result = FALSE;
 		return;
 	}
+	temp_mjson.path = pbuild->storage_path;
 	
 	if (pbuild->depth >= MAX_RFC822_DEPTH || !temp_mjson.has_rfc822_part())
 		return;
@@ -1128,8 +1117,9 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 		pjson->clear();
 		Json::Value digest;
 		if (!json_from_str({slurp_data.get(), slurp_size}, digest) ||
-		    !pjson->load_from_json(digest, temp_path))
+		    !pjson->load_from_json(digest))
 			return false;
+		pjson->path = temp_path;
 		strcpy(mime_id, pdot + 1);
 		return TRUE;
 	}
