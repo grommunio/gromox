@@ -4,7 +4,7 @@ Requisite=gromox-http.service
 After=gromox-http.service
 
 [Service]
-# Fallback if EnvironmentFile hasn't got any value
+# Fallback if EnvironmentFile hasn't got any value.
 Environment=softdelete_purgetime="30d" cleaner_here=
 EnvironmentFile=/etc/gromox/gromox.cfg
 ExecStart=/usr/sbin/gromox-mbop foreach.mb"${cleaner_here}" purge-softdelete -t "${softdelete_purgetime}" -r /
