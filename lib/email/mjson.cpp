@@ -895,10 +895,10 @@ static void mjson_emum_rfc822(MJSON_MIME *pmime, void *param)
 		*pb_found = TRUE;
 }
 
-BOOL MJSON::rfc822_check()
+bool MJSON::has_rfc822_part() const
 {
 	BOOL b_found = false;
-	enum_mime(mjson_emum_rfc822, &b_found);
+	const_cast<MJSON *>(this)->enum_mime(mjson_emum_rfc822, &b_found);
 	return b_found;
 }
 
@@ -1048,7 +1048,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 		return;
 	}
 	
-	if (pbuild->depth >= MAX_RFC822_DEPTH || !temp_mjson.rfc822_check())
+	if (pbuild->depth >= MAX_RFC822_DEPTH || !temp_mjson.has_rfc822_part())
 		return;
 	BUILD_PARAM build_param;
 	build_param.filename = temp_mjson.get_mail_filename();
@@ -1074,7 +1074,7 @@ BOOL MJSON::rfc822_build(const char *storage_path)
 	auto pjson = this;
 	char temp_path[256];
 	
-	if (!rfc822_check())
+	if (!has_rfc822_part())
 		return FALSE;
 	if (pjson->path.empty())
 		return FALSE;
@@ -1105,7 +1105,7 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 	char temp_path[256];
 	struct stat node_stat;
 
-	if (!rfc822_check())
+	if (!has_rfc822_part())
 		return FALSE;
 	snprintf(temp_path, std::size(temp_path), "%s/%s", storage_path,
 	         pjson_base->get_mail_filename());
@@ -1152,7 +1152,7 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 		return -1;
 	}
 #endif
-	if (!rfc822_check())
+	if (!has_rfc822_part())
 		return FALSE;
 	snprintf(temp_path, std::size(temp_path), "%s/%s", storage_path,
 	         pjson->get_mail_filename());

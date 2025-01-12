@@ -785,7 +785,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 		if (strcasecmp(kw, "BODY") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            std::size(buff) - buff_len, "BODY ");
-			if (mjson.rfc822_check()) {
+			if (mjson.has_rfc822_part()) {
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() <= 0 ||
 				    !mjson.rfc822_build(rfc_path.c_str()))
@@ -809,7 +809,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 		} else if (strcasecmp(kw, "BODYSTRUCTURE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            std::size(buff) - buff_len, "BODYSTRUCTURE ");
-			if (mjson.rfc822_check()) {
+			if (mjson.has_rfc822_part()) {
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() <= 0 ||
 				    !mjson.rfc822_build(rfc_path.c_str()))
@@ -949,8 +949,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 				temp_id = "";
 			else
 				temp_id = temp_buff;
-			if (0 != strcmp(temp_id, "") &&
-			    mjson.rfc822_check()) {
+			if (*temp_id != '\0' && mjson.has_rfc822_part()) {
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() > 0 &&
 				    mjson.rfc822_build(rfc_path.c_str())) {
