@@ -31,6 +31,7 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <vmime/header.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
@@ -450,39 +451,24 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 static bool me_ct_search_head(const char *charset,
 	const char *file_path, const char *tag, const char *value)
 {
-	FILE * fp;
-	bool stat_head = false;
-	size_t head_offset = 0, offset = 0, len;
-	MIME_FIELD mime_field;
-	char head_buff[64*1024];
-	
-	fp = fopen(file_path, "r");
-	if (fp == nullptr)
-		return false;
-	while (NULL != fgets(head_buff + head_offset,
-		64*1024 - head_offset, fp)) {
-		len = strlen(head_buff + head_offset);
-		head_offset += len;
-		
-		if (head_offset >= 64*1024 - 1)
-			break;
-		if (2 == len && 0 == strcmp("\r\n", head_buff + head_offset - 2)) {
-			stat_head = true;
-			break;
-		}
-	}
-	fclose(fp);
-	if (!stat_head)
+	size_t slurp_size = 0;
+	std::unique_ptr<char[], stdlib_delete> ct(HX_slurp_file(file_path, &slurp_size));
+	if (ct == nullptr)
 		return false;
 
-	while ((len = parse_mime_field(head_buff + offset,
-	       head_offset - offset, &mime_field)) != 0) {
-		offset += len;
-		if (strcasecmp(tag, mime_field.name.c_str()) != 0)
+	vmime::parsingContext vpctx;
+	vpctx.setInternationalizedEmailSupport(true); /* RFC 6532 */
+	vmime::header hdr;
+	hdr.parse(vpctx, std::string(ct.get(), slurp_size));
+
+	for (const auto &hf : hdr.getFieldList()) {
+		auto hk = hf->getName();
+		if (strcasecmp(hk.c_str(), tag) != 0)
 			continue;
-		auto rs = me_ct_decode_mime(charset, mime_field.value.c_str());
-		if (rs != nullptr &&
-		    search_string(rs.get(), value, strlen(rs.get())))
+		vmime::text txt;
+		txt.parse(hf->getValue()->generate());
+		auto tdec = txt.getConvertedText(vmime::charsets::UTF_8);
+		if (strcasestr(tdec.c_str(), value) != nullptr)
 			return true;
 	}
 	return false;
