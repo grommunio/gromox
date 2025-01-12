@@ -40,6 +40,10 @@ struct stream_block {
 
 struct GX_EXPORT STREAM {
 	STREAM();
+	STREAM(const STREAM &) = default;
+	STREAM(STREAM &&) = delete;
+	STREAM &operator=(const STREAM &) = default;
+	STREAM &operator=(STREAM &&);
 
 	int has_newline() const { return line_result; }
 	unsigned int readline(char **);

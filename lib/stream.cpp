@@ -37,6 +37,24 @@ STREAM::STREAM() : list(std::make_shared<std::list<stream_block>>())
 	pstream->pnode_rd = pstream->pnode_wr;
 }
 
+STREAM &STREAM::operator=(STREAM &&o)
+{
+	clear();
+	std::swap(pnode_rd, o.pnode_rd);
+	std::swap(pnode_wr, o.pnode_wr);
+	std::swap(line_result, o.line_result);
+	std::swap(eom_result, o.eom_result);
+	std::swap(rd_block_pos, o.rd_block_pos);
+	std::swap(wr_block_pos, o.wr_block_pos);
+	std::swap(rd_total_pos, o.rd_total_pos);
+	std::swap(wr_total_pos, o.wr_total_pos);
+	std::swap(last_eom_parse, o.last_eom_parse);
+	std::swap(block_line_parse, o.block_line_parse);
+	std::swap(block_line_pos, o.block_line_pos);
+	std::swap(list, o.list);
+	return *this;
+}
+
 /*
  *	  retrieve pointer of the line following the read pointer
  *	  @param
