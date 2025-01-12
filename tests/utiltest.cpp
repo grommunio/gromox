@@ -476,6 +476,17 @@ static int t_bin2cstr()
 	return EXIT_SUCCESS;
 }
 
+static int t_string()
+{
+	auto p = search_string("foobar", "oba", 3);
+	assert(p == nullptr);
+	p = search_string("foobar", "foo", 3);
+	assert(p != nullptr);
+	p = search_string("", "foo", 0);
+	assert(p == nullptr);
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_utf7() != 0)
@@ -530,6 +541,9 @@ static int runner()
 	if (ret != 0)
 		return ret;
 	ret = t_bin2cstr();
+	if (ret != 0)
+		return ret;
+	ret = t_string();
 	if (ret != 0)
 		return ret;
 	return EXIT_SUCCESS;

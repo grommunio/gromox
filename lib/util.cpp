@@ -411,24 +411,15 @@ BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len)
 char* search_string(const char *haystack, const char *needle,
 	size_t haystacklen)
 {
-	char *p;
-	size_t plen;
-	size_t len = strlen(needle);
-
 	if (*needle == '\0')	/* everything matches empty string */
 	return (char *) haystack;
-
-	plen = haystacklen;
-	p = (char *) haystack;
-	while (1) {
-		if (plen <= 0)
-			return NULL;
+	size_t len = strlen(needle);
+	if (len > haystacklen)
+		return nullptr; /* can never find this */
+	auto hend = haystack + haystacklen - len;
+	for (auto p = const_cast<char *>(haystack); p <= hend; ++p)
 		if (strncasecmp(p, needle, len) == 0)
 			return (p);
-		p++;
-		plen--;
-
-	}
 	return NULL;
 }
 
