@@ -101,7 +101,8 @@ struct imap_context final : public schedule_context {
 	void close_and_unlink();
 
 	GENERIC_CONNECTION connection;
-	std::string mid, file_path;
+	std::string mid, append_folder, append_flags, file_path;
+	time_t append_time = 0;
 	int message_fd = -1, open_mode = 0;
 	iproto_stat proto_stat = iproto_stat::none;
 	isched_stat sched_stat = isched_stat::none;

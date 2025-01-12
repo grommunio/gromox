@@ -2181,20 +2181,15 @@ static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
 	wrapfd fd = open(pcontext->file_path.c_str(), pcontext->open_mode, FMODE_PRIVATE);
 	if (fd.get() < 0)
 		return 1909 | DISPATCH_BREAK;
-	std::string buf;
-	buf.resize(sizeof(uint32_t));
-	buf += sys_name;
-	buf += '\0';
-	if (flags_string != nullptr)
-		buf += str_flags;
-	buf += '\0';
-	if (str_received != nullptr)
-		buf += str_received;
-	buf += '\0';
-	cpu_to_le32p(buf.data(), buf.size());
-	auto ret = HXio_fullwrite(fd.get(), buf.c_str(), buf.size());
-	if (ret < 0 || static_cast<size_t>(ret) != buf.size())
-		return DISPATCH_BREAK;
+	ctx.append_folder = sys_name;
+	ctx.append_flags  = flagbits_to_s(
+	                    strcasestr(str_flags, "\\Seen") != nullptr,
+	                    strcasestr(str_flags, "\\Answered") != nullptr,
+	                    strcasestr(str_flags, "\\Flagged") != nullptr,
+	                    strcasestr(str_flags, "\\Draft") != nullptr);
+	if (str_received == nullptr || *str_received == '\0' ||
+	    !icp_convert_imaptime(str_received, &ctx.append_time))
+		ctx.append_time = time(nullptr);
 	pcontext->message_fd = fd.release();
 	gx_strlcpy(pcontext->tag_string, argv[0], std::size(pcontext->tag_string));
 	pcontext->stream.clear();
@@ -2225,22 +2220,6 @@ static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 		return 1909 | DISPATCH_TAG;
 	}
 	pcontext->close_fd();
-	uint32_t mfd_len = 0;
-	memcpy(&mfd_len, pbuff.get(), sizeof(mfd_len));
-	const char *sys_name = pbuff.get() + sizeof(uint32_t);
-	size_t name_len = strlen(sys_name);
-	const char *str_flags = sys_name + name_len + 1;
-	size_t flags_len = strlen(str_flags);
-	const char *str_internal = str_flags + flags_len + 1;
-	auto flag_buff = flagbits_to_s(
-	                 strcasestr(str_flags, "\\Seen") != nullptr,
-	                 strcasestr(str_flags, "\\Answered") != nullptr,
-	                 strcasestr(str_flags, "\\Flagged") != nullptr,
-	                 strcasestr(str_flags, "\\Draft") != nullptr);
-	time_t tmp_time = 0;
-	if (str_internal[0] == '\0' ||
-	    !icp_convert_imaptime(str_internal, &tmp_time))
-		time(&tmp_time);
 	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, pcontext->mid);
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	if (fd.get() < 0) {
@@ -2254,8 +2233,8 @@ static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 		return 1909 | DISPATCH_TAG;
 	}
 
-	size_t eml_size = node_stat.st_size - mfd_len;
-	auto wrret = HXio_fullwrite(fd.get(), &pbuff[mfd_len], eml_size);
+	size_t eml_size = node_stat.st_size;
+	auto wrret = HXio_fullwrite(fd.get(), pbuff.get(), eml_size);
 	if (wrret < 0 || static_cast<size_t>(wrret) != eml_size ||
 	   fd.close_wr() < 0) {
 		mlog(LV_WARN, "E-2016: write %s: %s", eml_path.c_str(), strerror(errno));
@@ -2264,8 +2243,10 @@ static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 	pbuff.reset();
 
 	int errnum;
+	auto sys_name = ctx.append_folder.c_str();
 	auto ssr = midb_agent::insert_mail(pcontext->maildir, sys_name,
-	           pcontext->mid.c_str(), flag_buff.c_str(), tmp_time, &errnum);
+	           pcontext->mid.c_str(), ctx.append_flags.c_str(),
+	           ctx.append_time, &errnum);
 	auto cmid = std::move(pcontext->mid);
 	pcontext->unlink_file(); /* homedir/tmp/XX */
 	auto ret = m2icode(ssr, errnum);
