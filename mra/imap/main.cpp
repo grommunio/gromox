@@ -99,7 +99,6 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/imap:" PKGSYSCONFDIR},
 	{"context_average_mem", "128K", CFG_SIZE, "128K"},
 	{"context_average_mitem", "64K", CFG_SIZE, "1"},
-	{"context_max_mem", "2M", CFG_SIZE},
 	{"context_num", "400", CFG_SIZE},
 	{"data_file_path", PKGDATADIR "/imap:" PKGDATADIR},
 	{"default_lang", "en"},
@@ -446,16 +445,6 @@ int main(int argc, char **argv)
 	HX_unit_size(temp_buff, std::size(temp_buff), context_aver_mem * 64 * 1024, 1024, 0);
 	printf("[imap]: context average memory is %s\n", temp_buff);
  
-	unsigned int context_max_mem = g_config_file->get_ll("context_max_mem") / (64 * 1024);
-	if (context_max_mem < context_aver_mem) {
-		context_max_mem = context_aver_mem;
-		HX_unit_size(temp_buff, std::size(temp_buff), context_max_mem * 64 * 1024, 1024, 0);
-		g_config_file->set_value("context_max_mem", temp_buff);
-	} 
-	context_max_mem *= 64*1024;
-	HX_unit_size(temp_buff, std::size(temp_buff), context_max_mem, 1024, 0);
-	printf("[imap]: context maximum memory is %s\n", temp_buff);
- 
 	unsigned int context_aver_mitem = g_config_file->get_ll("context_average_mitem");
 	printf("[imap]: context average mitem number is %d\n", context_aver_mitem);
 	
@@ -535,7 +524,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	auto cleanup_8 = make_scope_exit(system_services_stop);
-	imap_parser_init(context_num, context_aver_mitem, context_max_mem,
+	imap_parser_init(context_num, context_aver_mitem,
 		imap_conn_timeout, autologout_time, imap_auth_times,
 		block_interval_auth, imap_support_tls, imap_force_tls,
 		certificate_path, cb_passwd, private_key_path);  

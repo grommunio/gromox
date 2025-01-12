@@ -67,7 +67,7 @@ int g_max_auth_times, g_block_auth_fail;
 bool g_support_tls, g_force_tls;
 static std::atomic<int> g_sequence_id;
 static int g_average_num;
-static size_t g_context_num, g_cache_size;
+static size_t g_context_num;
 static time_duration g_timeout, g_autologout_time;
 static pthread_t g_thr_id;
 static pthread_t g_scan_id;
@@ -81,14 +81,13 @@ static std::string g_certificate_path, g_private_key_path, g_certificate_passwd;
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 
-void imap_parser_init(int context_num, int average_num, size_t cache_size,
+void imap_parser_init(int context_num, int average_num,
     time_duration timeout, time_duration autologout_time, int max_auth_times,
     int block_auth_fail, bool support_tls, bool force_tls,
 	const char *certificate_path, const char *cb_passwd, const char *key_path)
 {
 	g_context_num           = context_num;
 	g_average_num           = average_num;
-	g_cache_size            = cache_size;
 	g_timeout               = timeout;
 	g_autologout_time       = autologout_time;
 	g_max_auth_times        = max_auth_times;
@@ -243,7 +242,6 @@ void imap_parser_stop()
 	}
 	g_sleeping_list.clear();
     g_context_num		= 0;
-	g_cache_size	    = 0;
 	g_autologout_time   = std::chrono::seconds(0);
 	g_timeout           = std::chrono::seconds(INT32_MAX);
 	g_block_auth_fail   = 0;
@@ -747,19 +745,8 @@ static tproc_status ps_stat_appending(imap_context &ctx)
 		pcontext->stream.fwd_write_ptr(read_len);
 		pcontext->current_len += read_len;
 	}
-
-	auto total_len = pcontext->stream.get_total_length();
-	if (total_len >= g_cache_size ||
-	    pcontext->literal_len == pcontext->current_len) {
-		if (pcontext->stream.dump(pcontext->message_fd) != STREAM_DUMP_OK) {
-			imap_parser_log_info(pcontext, LV_WARN, "failed to flush mail from memory into file");
-			/* IMAP_CODE_2180010: BAD internal error: fail to dump stream object */
-			size_t string_length = 0;
-			auto imap_reply_str = resource_get_imap_code(1810, 1, &string_length);
-			return ps_end_processing(pcontext, imap_reply_str, string_length);
-		}
-		pcontext->stream.clear();
-	}
+	if (ctx.literal_len == ctx.current_len)
+		ctx.append_stream = std::move(ctx.stream);
 	if (pcontext->sched_stat != isched_stat::appended)
 		return tproc_status::cont;
 	pcontext->literal_ptr = nullptr;

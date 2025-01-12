@@ -2175,12 +2175,7 @@ static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
 	pcontext->mid = fmt::format("{}.{}.{}",
 	                time(nullptr), imap_parser_get_sequence_ID(),
 	                znul(g_config_file->get_value("host_id")));
-	pcontext->open_mode = O_CREAT | O_RDWR | O_TRUNC;
-	pcontext->file_path = fmt::format("{}/tmp/{}",
-	                      pcontext->maildir, pcontext->mid);
-	wrapfd fd = open(pcontext->file_path.c_str(), pcontext->open_mode, FMODE_PRIVATE);
-	if (fd.get() < 0)
-		return 1909 | DISPATCH_BREAK;
+	ctx.append_stream.clear();
 	ctx.append_folder = sys_name;
 	ctx.append_flags  = flagbits_to_s(
 	                    strcasestr(str_flags, "\\Seen") != nullptr,
@@ -2190,7 +2185,6 @@ static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
 	if (str_received == nullptr || *str_received == '\0' ||
 	    !icp_convert_imaptime(str_received, &ctx.append_time))
 		ctx.append_time = time(nullptr);
-	pcontext->message_fd = fd.release();
 	gx_strlcpy(pcontext->tag_string, argv[0], std::size(pcontext->tag_string));
 	pcontext->stream.clear();
 	return DISPATCH_CONTINUE;
@@ -2206,41 +2200,23 @@ int icp_append_begin(int argc, char **argv, imap_context &ctx)
 static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
-	struct stat node_stat;
-	if (0 != fstat(pcontext->message_fd, &node_stat)) {
-		pcontext->close_and_unlink();
-		return 1909 | DISPATCH_TAG;
-	}
-	lseek(pcontext->message_fd, 0, SEEK_SET);
-	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(((node_stat.st_size - 1) / (64 * 1024) + 1) * 64 * 1024));
-	if (pbuff == nullptr || read(pcontext->message_fd, pbuff.get(),
-	    node_stat.st_size) != node_stat.st_size) {
-		pbuff.reset();
-		pcontext->close_and_unlink();
-		return 1909 | DISPATCH_TAG;
-	}
-	pcontext->close_fd();
 	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, pcontext->mid);
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	if (fd.get() < 0) {
 		mlog(LV_ERR, "E-1764: write to %s failed: %s",
 			eml_path.c_str(), strerror(errno));
-		pbuff.reset();
-		pcontext->unlink_file();
-		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1346: remove %s: %s",
-			        eml_path.c_str(), strerror(errno));
+		ctx.append_stream.clear();
 		return 1909 | DISPATCH_TAG;
-	}
-
-	size_t eml_size = node_stat.st_size;
-	auto wrret = HXio_fullwrite(fd.get(), pbuff.get(), eml_size);
-	if (wrret < 0 || static_cast<size_t>(wrret) != eml_size ||
-	   fd.close_wr() < 0) {
+	} else if (ctx.append_stream.dump(fd.get()) != STREAM_DUMP_OK) {
+		mlog(LV_WARN, "E-1346: write %s: %s", eml_path.c_str(), strerror(errno));
+		ctx.append_stream.clear();
+		return 1909 | DISPATCH_TAG;
+	} else if (fd.close_wr() < 0) {
 		mlog(LV_WARN, "E-2016: write %s: %s", eml_path.c_str(), strerror(errno));
+		ctx.append_stream.clear();
 		return 1909 | DISPATCH_TAG;
 	}
-	pbuff.reset();
+	ctx.append_stream.clear();
 
 	int errnum;
 	auto sys_name = ctx.append_folder.c_str();
@@ -2248,7 +2224,7 @@ static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 	           pcontext->mid.c_str(), ctx.append_flags.c_str(),
 	           ctx.append_time, &errnum);
 	auto cmid = std::move(pcontext->mid);
-	pcontext->unlink_file(); /* homedir/tmp/XX */
+	pcontext->mid.clear();
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret | DISPATCH_TAG;
