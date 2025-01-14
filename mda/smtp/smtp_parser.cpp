@@ -545,7 +545,7 @@ static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 	static constexpr struct {
 		char cmd[9];
 		unsigned int len;
-		int (*func)(const char *, int, smtp_context *);
+		int (*func)(std::string_view, smtp_context &);
 	} proc[] = {
 		{"AUTH", 4, cmdh_auth},
 		{"DATA", 4, cmdh_data},
@@ -564,22 +564,23 @@ static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 		/* 500 syntax error - line too long */
 		return 502;
 	}
+	std::string_view cmdz(cmd_line, line_length);
 	if (g_param.cmd_prot & HT_LMTP) {
 		if (strncasecmp(cmd_line, "LHLO", 4) == 0)
-			return cmdh_lhlo(cmd_line, line_length, pcontext);
+			return cmdh_lhlo(cmdz, *pcontext);
 	}
 	if (g_param.cmd_prot & HT_SMTP) {
 		if (strncasecmp(cmd_line, "HELO", 4) == 0)
-			return cmdh_helo(cmd_line, line_length, pcontext);
+			return cmdh_helo(cmdz, *pcontext);
 		if (strncasecmp(cmd_line, "EHLO", 4) == 0)
-			return cmdh_ehlo(cmd_line, line_length, pcontext);
+			return cmdh_ehlo(cmdz, *pcontext);
 	}
 	auto scmp = [](decltype(*proc) &p, const char *line) { return strncasecmp(p.cmd, line, p.len) < 0; };
 	auto it = std::lower_bound(std::begin(proc), std::end(proc), cmd_line, scmp);
 	if (it != std::end(proc) && strncasecmp(cmd_line, it->cmd, it->len) == 0 &&
 	    (cmd_line[it->len] == '\0' || HX_isspace(cmd_line[it->len])))
-		return it->func(cmd_line, line_length, pcontext);
-	return cmdh_else(cmd_line, line_length, pcontext);
+		return it->func(cmdz, *pcontext);
+	return cmdh_else(cmdz, *pcontext);
 }
 
 static int smtp_parser_dispatch_cmd(const char *cmd, int len, SMTP_CONTEXT *ctx)

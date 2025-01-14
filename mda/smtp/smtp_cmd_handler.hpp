@@ -11,34 +11,18 @@ enum{
 };
 
 struct smtp_context;
-using SMTP_CONTEXT = smtp_context;
-
-int cmdh_helo(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext);
-extern int cmdh_lhlo(const char *line, int len, SMTP_CONTEXT *);
-int cmdh_ehlo(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext);
-int cmdh_starttls(const char *cmd_line, int line_length,
-	SMTP_CONTEXT *pcontext);
-int cmdh_auth(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext);
-int cmdh_mail(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext);
-int cmdh_rcpt(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext);
-int cmdh_data(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext);
-int cmdh_quit(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext);
-int cmdh_rset(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext);
-int cmdh_noop(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext);
-int cmdh_help(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext);
-int cmdh_vrfy(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext);
-int cmdh_etrn(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext);
-int cmdh_else(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext);
+extern int cmdh_helo(std::string_view, smtp_context &);
+extern int cmdh_lhlo(std::string_view, smtp_context &);
+extern int cmdh_ehlo(std::string_view, smtp_context &);
+extern int cmdh_starttls(std::string_view, smtp_context &);
+extern int cmdh_auth(std::string_view, smtp_context &);
+extern int cmdh_mail(std::string_view, smtp_context &);
+extern int cmdh_rcpt(std::string_view, smtp_context &);
+extern int cmdh_data(std::string_view, smtp_context &);
+extern int cmdh_quit(std::string_view, smtp_context &);
+extern int cmdh_rset(std::string_view, smtp_context &);
+extern int cmdh_noop(std::string_view, smtp_context &);
+extern int cmdh_help(std::string_view, smtp_context &);
+extern int cmdh_vrfy(std::string_view, smtp_context &);
+extern int cmdh_etrn(std::string_view, smtp_context &);
+extern int cmdh_else(std::string_view, smtp_context &);
