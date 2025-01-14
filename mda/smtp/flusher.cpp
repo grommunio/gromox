@@ -15,8 +15,8 @@
 #include <libHX/string.h>
 #include <sys/types.h>
 #include <utility>
-#include "smtp_aux.hpp"
-#include "smtp_parser.hpp"
+#include "aux.hpp"
+#include "parser.hpp"
 #define FLUSHER_VERSION     0x00000001
 #define MAX_CIRCLE_NUMBER   0x7FFFFFFF
 

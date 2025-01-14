@@ -14,9 +14,9 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/util.hpp>
-#include "smtp_aux.hpp"
-#include "smtp_cmd_handler.hpp"
-#include "smtp_parser.hpp"
+#include "aux.hpp"
+#include "cmd.hpp"
+#include "parser.hpp"
 
 using namespace gromox;
 

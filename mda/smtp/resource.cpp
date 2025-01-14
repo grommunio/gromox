@@ -16,7 +16,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include "smtp_aux.hpp"
+#include "aux.hpp"
 #define MAX_FILE_LINE_LEN       1024
 
 using namespace gromox;
