@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 /* pop3 parser is a module, which first read data from socket, parses the pop3 
  * commands and then do the corresponding action. 
  */ 
+#include <algorithm>
 #include <cerrno>
 #include <chrono>
 #include <cstdarg>
@@ -196,7 +197,8 @@ time_point pop3_parser_get_context_timestamp(const schedule_context *ctx)
 
 tproc_status pop3_parser_process(schedule_context *vcontext)
 {
-	auto pcontext = static_cast<pop3_context *>(vcontext);
+	auto &ctx = *static_cast<pop3_context *>(vcontext);
+	auto pcontext = &ctx;
 	int read_len;
 	int ssl_errno;
 	const char *host_ID;
@@ -413,10 +415,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 	
  ERROR_TRANSPROT:
 	pcontext->connection.write("\r\n.\r\n", 5);
-	if (pcontext->message_fd != -1) {
-		close(pcontext->message_fd);
-		pcontext->message_fd = -1;
-	}
+	ctx.wrdat_content.reset();
 	pcontext->stream.clear();
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
@@ -424,10 +423,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 	return tproc_status::cont;
 
  END_TRANSPORT:
-	if (pcontext->message_fd != -1) {
-		close(pcontext->message_fd);
-		pcontext->message_fd = -1;
-	}
+	ctx.wrdat_content.reset();
 	pcontext->connection.reset();
 	pop3_parser_context_clear(pcontext);
 	return tproc_status::close;
@@ -436,17 +432,15 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 
 int pop3_parser_retrieve(pop3_context *pcontext)
 {
+	auto &ctx = *pcontext;
 	unsigned int size, line_length;
-	int read_len;
 	BOOL b_stop;
 	char line_buff[MAX_LINE_LENGTH + 3];
 	
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
-		
-	if (-1 == pcontext->message_fd) {
+	if (ctx.wrdat_content == nullptr)
 		return POP3_RETRIEVE_TERM;
-	}
 
 	STREAM temp_stream;
 	while (temp_stream.get_total_length() < g_retrieving_size) {
@@ -456,16 +450,13 @@ int pop3_parser_retrieve(pop3_context *pcontext)
 			pop3_parser_log_info(pcontext, LV_WARN, "out of memory");
 			return POP3_RETRIEVE_ERROR;
 		}
-		read_len = read(pcontext->message_fd, pbuff, size);
-		if (read_len < 0) {
-			pop3_parser_log_info(pcontext, LV_WARN, "failed to read message file");
-			return POP3_RETRIEVE_ERROR;
-		} else if (0 == read_len) {
-			close(pcontext->message_fd);
-			pcontext->message_fd = -1;
+		size = std::min(static_cast<size_t>(size), ctx.wrdat_size - ctx.wrdat_offset);
+		memcpy(pbuff, &ctx.wrdat_content[ctx.wrdat_offset], size);
+		ctx.wrdat_offset += size;
+		temp_stream.fwd_write_ptr(size);
+		if (ctx.wrdat_offset >= ctx.wrdat_size) {
+			ctx.wrdat_content.reset();
 			break;
-		} else {
-			temp_stream.fwd_write_ptr(read_len);
 		}
 	}
 	b_stop = FALSE;
@@ -477,16 +468,14 @@ int pop3_parser_retrieve(pop3_context *pcontext)
 		default:
 			break;
 		case scopy_result::end:
-			if (-1 == pcontext->message_fd) {
+			if (ctx.wrdat_content == nullptr)
 				pcontext->stream.write(".\r\n", 3);
-			}
 			b_stop = TRUE;
 			break;
 		case scopy_result::term:
 			pcontext->stream.write(line_buff, line_length);
-			if (-1 == pcontext->message_fd) {
+			if (ctx.wrdat_content == nullptr)
 				pcontext->stream.write("\r\n.\r\n", 5);
-			}
 			b_stop = TRUE;
 			break;
 		case scopy_result::ok:
@@ -513,10 +502,7 @@ int pop3_parser_retrieve(pop3_context *pcontext)
 				break;
 			}
 			pcontext->stream.write(".\r\n", 3);
-			if (-1 != pcontext->message_fd) {
-				close(pcontext->message_fd);
-				pcontext->message_fd = -1;
-			}
+			ctx.wrdat_content.reset();
 			b_stop = TRUE;
 			break;
 		}
@@ -616,7 +602,7 @@ static void pop3_parser_context_clear(pop3_context *pcontext)
         return;
     }
 	pcontext->connection.reset();
-	pcontext->message_fd = -1;
+	pcontext->wrdat_content.reset();
 	pcontext->delmsg_list.clear();
 	pcontext->msg_array.clear();
 	pcontext->stream.clear();
@@ -636,15 +622,6 @@ static void pop3_parser_context_clear(pop3_context *pcontext)
 	pcontext->auth_times = 0;
 	memset(pcontext->username, '\0', std::size(pcontext->username));
 	memset(pcontext->maildir, '\0', std::size(pcontext->maildir));
-}
-
-pop3_context::~pop3_context()
-{
-	auto pcontext = this;
-	pcontext->msg_array.clear();
-	if (-1 != pcontext->message_fd) {
-		close(pcontext->message_fd);
-	}
 }
 
 void pop3_parser_log_info(pop3_context *ctx, int level, const char *format, ...)

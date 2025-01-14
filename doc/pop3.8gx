@@ -71,6 +71,8 @@ Lower clamp is 256.
 Default: \fI1024\fP
 .TP
 \fBcontext_max_mem\fP
+Network buffer per client.
+.br
 Default: \fI2M\fP
 .TP
 \fBcontext_num\fP

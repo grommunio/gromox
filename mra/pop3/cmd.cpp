@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 /* 
  * collection of functions for handling the pop3 command
@@ -14,6 +14,7 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -30,6 +31,7 @@
 #include <gromox/util.hpp>
 #include "pop3.hpp"
 
+using namespace std::string_literals;
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 
@@ -307,6 +309,7 @@ int cmdh_retr(std::vector<std::string> &&argv, pop3_context *pcontext)
 	if (!pcontext->is_login)
 		return 1708;
 	
+	auto &ctx = *pcontext;
 	int n = strtol(argv[1].c_str(), nullptr, 0);
 	pcontext->cur_line = -1;
 	pcontext->until_line = 0x7FFFFFFF;
@@ -314,17 +317,20 @@ int cmdh_retr(std::vector<std::string> &&argv, pop3_context *pcontext)
 		return 1707;
 	auto punit = sa_get_item(pcontext->msg_array, n - 1);
 	std::string eml_path;
-	pcontext->message_fd = -1;
+	errno_t saved_errno = 0;
+	ctx.wrdat_content.reset();
+	ctx.wrdat_offset = 0;
 	try {
-		eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
-		pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
+		eml_path = pcontext->maildir + "/eml/"s + punit->file_name;
+		ctx.wrdat_content.reset(HX_slurp_file(eml_path.c_str(), &ctx.wrdat_size));
+		saved_errno = errno;
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1469: ENOMEM");
 	}
-	if (-1 == pcontext->message_fd) {
+	if (ctx.wrdat_content == nullptr) {
 		pop3_parser_log_info(pcontext, LV_WARN,
 			"failed to open message %s: %s",
-			eml_path.c_str(), strerror(errno));
+			eml_path.c_str(), strerror(saved_errno));
 		return 1709;
 	}
 	pcontext->stream.clear();
@@ -367,20 +373,23 @@ int cmdh_top(std::vector<std::string> &&argv, pop3_context *pcontext)
 	if (!pcontext->is_login)
 		return 1708;
 	
+	auto &ctx = *pcontext;
 	int n = strtol(argv[1].c_str(), nullptr, 0);
 	pcontext->until_line = argv.size() >= 3 ? strtol(argv[2].c_str(), nullptr, 0) : 0x7FFFFFFF;
 	pcontext->cur_line = -1;
 	if (n <= 0 || static_cast<size_t>(n) > pcontext->msg_array.size())
 		return 1707;
 	auto punit = &pcontext->msg_array.at(n - 1);
-	pcontext->message_fd = -1;
+	std::string eml_path;
+	ctx.wrdat_content.reset();
+	ctx.wrdat_offset = 0;
 	try {
-		auto eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
-		pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
+		eml_path = pcontext->maildir + "/eml/"s + punit->file_name;
+		ctx.wrdat_content.reset(HX_slurp_file(eml_path.c_str(), &ctx.wrdat_size));
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1470: ENOMEM");
 	}
-	if (pcontext->message_fd == -1)
+	if (ctx.wrdat_content == nullptr)
 		return 1709;
 	pcontext->stream.clear();
 	if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
