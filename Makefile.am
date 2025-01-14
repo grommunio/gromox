@@ -110,9 +110,9 @@ libgxm_exmdb_local_la_LDFLAGS = ${default_SYFLAGS}
 libgxm_exmdb_local_la_LIBADD = -lpthread ${libHX_LIBS} ${jsoncpp_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
 EXTRA_libgxm_exmdb_local_la_DEPENDENCIES = default.sym
 
-pop3_SOURCES = mra/midb_agent.hpp mra/pop3/main.cpp mra/pop3/pop3.hpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp
+pop3_SOURCES = mra/midb_agent.hpp mra/pop3/cmd.cpp mra/pop3/main.cpp mra/pop3/parser.cpp mra/pop3/pop3.hpp mra/pop3/resource.cpp
 pop3_LDADD = -lpthread ${libcrypto_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_auth.la libgromox_authz.la libgromox_common.la libgromox_epoll.la libgromox_exrpc.la libgxs_event_proxy.la libgxs_midb_agent.la libgxs_mysql_adaptor.la
-imap_SOURCES = mra/midb_agent.hpp mra/imap/imap.hpp mra/imap/imap_cmd_parser.cpp mra/imap/imap_parser.cpp mra/imap/main.cpp mra/imap/resource.cpp
+imap_SOURCES = mra/midb_agent.hpp mra/imap/cmd.cpp mra/imap/imap.hpp mra/imap/main.cpp mra/imap/parser.cpp mra/imap/resource.cpp
 imap_LDADD = -lpthread ${libcrypto_LIBS} ${fmt_LIBS} ${libHX_LIBS} ${jsoncpp_LIBS} ${libssl_LIBS} libgromox_auth.la libgromox_authz.la libgromox_common.la libgromox_epoll.la libgromox_exrpc.la libgromox_mapi.la libgxs_event_proxy.la libgxs_event_stub.la libgxs_midb_agent.la libgxs_mysql_adaptor.la
 libgxs_event_proxy_la_SOURCES = mra/event_proxy.cpp
 libgxs_event_proxy_la_LDFLAGS = ${default_SYFLAGS}
