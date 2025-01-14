@@ -37,7 +37,8 @@ void select_parts(const MIME *part, MIME_ENUM_PARAM &info, unsigned int level) t
 {
 	char dispo[32];
 	if (part->get_field("Content-Disposition", dispo, std::size(dispo)) &&
-	    strcasecmp(dispo, "attachment") == 0)
+	    strncasecmp(dispo, "attachment", 10) == 0 &&
+	    (dispo[10] == '\0' || dispo[10] == ';'))
 		return;
 	if (part->mime_type == mime_type::single) {
 		if (strcasecmp(part->content_type, "text/plain") == 0) {
