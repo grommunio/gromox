@@ -20,11 +20,10 @@
 
 using namespace gromox;
 
-static BOOL smtp_cmd_handler_check_onlycmd(const char *cmd_line,
+static BOOL cmdh_check_onlycmd(const char *cmd_line,
     int line_length, SMTP_CONTEXT *pcontext);
 
-int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+int cmdh_helo(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
 	pcontext->command_protocol = HT_SMTP;
 	if (line_length >= 5 && line_length <= UDOM_SIZE - 1 + 5) {
@@ -45,8 +44,7 @@ int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
 	return 205;
 }    
 
-static int smtp_cmd_handler_xhlo(const char *cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+static int cmdh_xhlo(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
 	size_t string_length = 0;
     char buff[1024];
@@ -87,22 +85,19 @@ static int smtp_cmd_handler_xhlo(const char *cmd_line, int line_length,
     return DISPATCH_CONTINUE;
 }
 
-int smtp_cmd_handler_lhlo(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+int cmdh_lhlo(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
 	pcontext->command_protocol = HT_LMTP;
-	return smtp_cmd_handler_xhlo(cmd_line, line_length, pcontext);
+	return cmdh_xhlo(cmd_line, line_length, pcontext);
 }
 
-int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+int cmdh_ehlo(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
 	pcontext->command_protocol = HT_SMTP;
-	return smtp_cmd_handler_xhlo(cmd_line, line_length, pcontext);
+	return cmdh_xhlo(cmd_line, line_length, pcontext);
 }
 
-int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,
-	SMTP_CONTEXT *pcontext)
+int cmdh_starttls(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
 	if (pcontext->connection.ssl != nullptr)
 		return 506;
@@ -114,8 +109,7 @@ int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,
 	return 210;
 }
 
-int smtp_cmd_handler_auth(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+int cmdh_auth(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
 	if (g_param.support_starttls && g_param.force_starttls &&
 	    pcontext->connection.ssl == nullptr)
@@ -124,8 +118,7 @@ int smtp_cmd_handler_auth(const char* cmd_line, int line_length,
 	return 506;
 }
 
-int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+int cmdh_mail(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
 	size_t string_length = 0;
     const char *smtp_reply_str, *smtp_reply_str2;
@@ -171,8 +164,7 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
 	return 507;
 }
 
-int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext) try
+int cmdh_rcpt(const char *cmd_line, int line_length, smtp_context *pcontext) try
 {
 	size_t string_length = 0;
     const char*smtp_reply_str, *smtp_reply_str2;
@@ -236,8 +228,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 	return 416; /* ENOMEM */
 }
 
-int smtp_cmd_handler_data(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+int cmdh_data(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
 	size_t string_length = 0;
     const char* smtp_reply_str;
@@ -250,7 +241,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 		 * we happen to fulfill RFC 2033 §4.2 requirements here.
 		 */
 		return 509;
-	if (!smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext))
+	if (!cmdh_check_onlycmd(cmd_line,line_length,pcontext))
 		return DISPATCH_CONTINUE;
 	if (g_param.support_starttls && g_param.force_starttls &&
 	    pcontext->connection.ssl == nullptr)
@@ -301,13 +292,12 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 	return DISPATCH_BREAK;
 }    
 
-int smtp_cmd_handler_quit(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+int cmdh_quit(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
 	size_t string_length = 0;
     char buff[1024];
     
-	if (!smtp_cmd_handler_check_onlycmd(cmd_line, line_length, pcontext))
+	if (!cmdh_check_onlycmd(cmd_line, line_length, pcontext))
 		return DISPATCH_CONTINUE;
     /* 221 <domain> Good-bye */
 	sprintf(buff, "%s%s%s",
@@ -318,10 +308,9 @@ int smtp_cmd_handler_quit(const char* cmd_line, int line_length,
     return DISPATCH_SHOULD_CLOSE;
 }
 
-int smtp_cmd_handler_rset(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+int cmdh_rset(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
-	if (!smtp_cmd_handler_check_onlycmd(cmd_line, line_length, pcontext))
+	if (!cmdh_check_onlycmd(cmd_line, line_length, pcontext))
 		return DISPATCH_CONTINUE;
     pcontext->last_cmd = T_RSET_CMD;
 	pcontext->menv.clear();
@@ -329,20 +318,18 @@ int smtp_cmd_handler_rset(const char* cmd_line, int line_length,
 	return 205;
 }    
 
-int smtp_cmd_handler_noop(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+int cmdh_noop(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
-	if (!smtp_cmd_handler_check_onlycmd(cmd_line, line_length, pcontext))
+	if (!cmdh_check_onlycmd(cmd_line, line_length, pcontext))
 		return DISPATCH_CONTINUE;
 	/* Caution: no need to mark the last_cmd */
     /* 250 OK */
 	return 205;
 }
 
-int smtp_cmd_handler_help(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+int cmdh_help(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
-	if (!smtp_cmd_handler_check_onlycmd(cmd_line, line_length, pcontext))
+	if (!cmdh_check_onlycmd(cmd_line, line_length, pcontext))
 		return DISPATCH_CONTINUE;
 	if (g_param.support_starttls && g_param.force_starttls &&
 	    pcontext->connection.ssl == nullptr)
@@ -351,10 +338,9 @@ int smtp_cmd_handler_help(const char* cmd_line, int line_length,
 	return 201;
 }        
 
-int smtp_cmd_handler_vrfy(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+int cmdh_vrfy(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
-	if (!smtp_cmd_handler_check_onlycmd(cmd_line, line_length, pcontext))
+	if (!cmdh_check_onlycmd(cmd_line, line_length, pcontext))
 		return DISPATCH_CONTINUE;
 	if (g_param.support_starttls && g_param.force_starttls &&
 	    pcontext->connection.ssl == nullptr)
@@ -363,21 +349,19 @@ int smtp_cmd_handler_vrfy(const char* cmd_line, int line_length,
 	return 209;
 }    
 
-int smtp_cmd_handler_etrn(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+int cmdh_etrn(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
 	/* command not implement*/
 	return 506;
 }
 
-int smtp_cmd_handler_else(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+int cmdh_else(const char *cmd_line, int line_length, smtp_context *pcontext)
 {
     /* command not implement*/
 	return 506;
 }
 
-static BOOL smtp_cmd_handler_check_onlycmd(const char *cmd_line,
+static BOOL cmdh_check_onlycmd(const char *cmd_line,
     int line_length, SMTP_CONTEXT *pcontext)
 {
 	for (ssize_t i = 4; i < line_length; ++i) {
