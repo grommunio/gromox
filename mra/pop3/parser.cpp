@@ -415,7 +415,8 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 	
  ERROR_TRANSPROT:
 	pcontext->connection.write("\r\n.\r\n", 5);
-	ctx.wrdat_content.reset();
+	ctx.wrdat_active = false;
+	ctx.wrdat_content.clear();
 	pcontext->stream.clear();
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
@@ -423,7 +424,8 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 	return tproc_status::cont;
 
  END_TRANSPORT:
-	ctx.wrdat_content.reset();
+	ctx.wrdat_active = false;
+	ctx.wrdat_content.clear();
 	pcontext->connection.reset();
 	pop3_parser_context_clear(pcontext);
 	return tproc_status::close;
@@ -439,7 +441,7 @@ int pop3_parser_retrieve(pop3_context *pcontext)
 	
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
-	if (ctx.wrdat_content == nullptr)
+	if (!ctx.wrdat_active)
 		return POP3_RETRIEVE_TERM;
 
 	STREAM temp_stream;
@@ -450,12 +452,13 @@ int pop3_parser_retrieve(pop3_context *pcontext)
 			pop3_parser_log_info(pcontext, LV_WARN, "out of memory");
 			return POP3_RETRIEVE_ERROR;
 		}
-		size = std::min(static_cast<size_t>(size), ctx.wrdat_size - ctx.wrdat_offset);
+		size = std::min(static_cast<size_t>(size), ctx.wrdat_content.size() - ctx.wrdat_offset);
 		memcpy(pbuff, &ctx.wrdat_content[ctx.wrdat_offset], size);
 		ctx.wrdat_offset += size;
 		temp_stream.fwd_write_ptr(size);
-		if (ctx.wrdat_offset >= ctx.wrdat_size) {
-			ctx.wrdat_content.reset();
+		if (ctx.wrdat_offset >= ctx.wrdat_content.size()) {
+			ctx.wrdat_active = false;
+			ctx.wrdat_content.clear();
 			break;
 		}
 	}
@@ -468,13 +471,13 @@ int pop3_parser_retrieve(pop3_context *pcontext)
 		default:
 			break;
 		case scopy_result::end:
-			if (ctx.wrdat_content == nullptr)
+			if (!ctx.wrdat_active)
 				pcontext->stream.write(".\r\n", 3);
 			b_stop = TRUE;
 			break;
 		case scopy_result::term:
 			pcontext->stream.write(line_buff, line_length);
-			if (ctx.wrdat_content == nullptr)
+			if (!ctx.wrdat_active)
 				pcontext->stream.write("\r\n.\r\n", 5);
 			b_stop = TRUE;
 			break;
@@ -502,7 +505,8 @@ int pop3_parser_retrieve(pop3_context *pcontext)
 				break;
 			}
 			pcontext->stream.write(".\r\n", 3);
-			ctx.wrdat_content.reset();
+			ctx.wrdat_active = false;
+			ctx.wrdat_content.clear();
 			b_stop = TRUE;
 			break;
 		}
@@ -601,8 +605,10 @@ static void pop3_parser_context_clear(pop3_context *pcontext)
     if (NULL == pcontext) {
         return;
     }
+	auto &ctx = *pcontext;
 	pcontext->connection.reset();
-	pcontext->wrdat_content.reset();
+	ctx.wrdat_active = false;
+	ctx.wrdat_content.clear();
 	pcontext->delmsg_list.clear();
 	pcontext->msg_array.clear();
 	pcontext->stream.clear();

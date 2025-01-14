@@ -22,12 +22,12 @@
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/config_file.hpp>
-#include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/midb_agent.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "pop3.hpp"
 
@@ -317,22 +317,16 @@ int cmdh_retr(std::vector<std::string> &&argv, pop3_context *pcontext)
 		return 1707;
 	auto punit = sa_get_item(pcontext->msg_array, n - 1);
 	std::string eml_path;
-	errno_t saved_errno = 0;
-	ctx.wrdat_content.reset();
-	ctx.wrdat_offset = 0;
-	try {
-		eml_path = pcontext->maildir + "/eml/"s + punit->file_name;
-		ctx.wrdat_content.reset(HX_slurp_file(eml_path.c_str(), &ctx.wrdat_size));
-		saved_errno = errno;
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1469: ENOMEM");
-	}
-	if (ctx.wrdat_content == nullptr) {
-		pop3_parser_log_info(pcontext, LV_WARN,
-			"failed to open message %s: %s",
-			eml_path.c_str(), strerror(saved_errno));
+	ctx.wrdat_active = false;
+	ctx.wrdat_content.clear();
+	if (!exmdb_client::imapfile_read(ctx.maildir, "eml", punit->file_name,
+	    &ctx.wrdat_content)) {
+		mlog(LV_ERR, "E-1469: imapfile_read %s/eml/%s failed",
+			ctx.maildir, punit->file_name.c_str());
 		return 1709;
 	}
+	ctx.wrdat_active = true;
+	ctx.wrdat_offset = 0;
 	pcontext->stream.clear();
 	if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
 		return 1729;
@@ -381,16 +375,15 @@ int cmdh_top(std::vector<std::string> &&argv, pop3_context *pcontext)
 		return 1707;
 	auto punit = &pcontext->msg_array.at(n - 1);
 	std::string eml_path;
-	ctx.wrdat_content.reset();
-	ctx.wrdat_offset = 0;
-	try {
-		eml_path = pcontext->maildir + "/eml/"s + punit->file_name;
-		ctx.wrdat_content.reset(HX_slurp_file(eml_path.c_str(), &ctx.wrdat_size));
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1470: ENOMEM");
-	}
-	if (ctx.wrdat_content == nullptr)
+	ctx.wrdat_active = false;
+	ctx.wrdat_content.clear();
+	xrpc_build_env();
+	auto cl_0 = make_scope_exit(xrpc_free_env);
+	if (!exmdb_client::imapfile_read(ctx.maildir, "eml", punit->file_name,
+	    &ctx.wrdat_content))
 		return 1709;
+	ctx.wrdat_active = true;
+	ctx.wrdat_offset = 0;
 	pcontext->stream.clear();
 	if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
 		return 1729;
