@@ -1,19 +1,22 @@
 #pragma once
 #include <memory>
+#include <optional>
 #include <string>
+#include <vector>
 #include <json/value.h>
-#include <gromox/simple_tree.hpp>
 #include <gromox/util.hpp>
 
 struct MJSON_MIME;
 using MJSON_MIME_ENUM = void (*)(MJSON_MIME *, void *);
 
 struct GX_EXPORT MJSON_MIME {
-	SIMPLE_TREE_NODE stree{};
+	std::vector<MJSON_MIME> children;
 	enum mime_type mime_type = mime_type::none;
 	std::string id, ctype, encoding, charset, filename, cid, cntl, cntdspn;
 	size_t head = 0, begin = 0, length = 0;
 
+	bool contains_none_type() const;
+	const MJSON_MIME *find_by_id(const char *) const;
 	inline enum mime_type get_mtype() const { return mime_type; }
 	inline const char *get_ctype() const { return ctype.c_str(); }
 	inline const char *get_charset() const { return charset.c_str(); }
@@ -28,6 +31,11 @@ struct GX_EXPORT MJSON_MIME {
 	inline size_t get_entire_length() const { return get_head_length() + get_content_length(); }
 	inline size_t get_head_offset() const { return head; }
 	inline size_t get_content_offset() const { return begin; }
+	template<typename F, typename... Args> void exec(F &&func, Args &&...args) {
+		func(this, std::forward<Args>(args)...);
+		for (auto &c : children)
+			c.exec(func, std::forward<Args>(args)...);
+	}
 };
 
 struct GX_EXPORT MJSON {
@@ -44,14 +52,17 @@ struct GX_EXPORT MJSON {
 	BOOL rfc822_get(MJSON *other_pjson, const char *storage_path, const char *id, char *mjson_id, char *mime_id) const;
 	int rfc822_fetch(const char *storage_path, const char *cset, BOOL ext, std::string &out) const;
 	int seek_fd(const char *id, int whence);
-	void enum_mime(MJSON_MIME_ENUM, void *);
+	template<typename... Args> void enum_mime(Args &&...args) {
+		if (m_root.has_value())
+			m_root->exec(std::forward<Args>(args)...);
+	}
 	const char *get_mail_filename() const { return filename.c_str(); }
 	const char *get_mail_received() const { return received.c_str(); }
 	const char *get_mail_messageid() const { return msgid.c_str(); }
 	size_t get_mail_length() const { return size; }
 	const MJSON_MIME *get_mime(const char *id) const;
 
-	SIMPLE_TREE stree{};
+	std::optional<MJSON_MIME> m_root;
 	bool read = false, replied = false, forwarded = false, unsent = false;
 	bool flag = false;
 	unsigned int priority = 0, uid = 0;

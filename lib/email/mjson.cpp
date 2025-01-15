@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -50,7 +52,6 @@ struct BUILD_PARAM {
 
 }
 
-static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode);
 static bool mjson_parse_array(MJSON *, const Json::Value &, unsigned int type);
 static BOOL mjson_record_node(MJSON *, const Json::Value &, unsigned int type);
 static int mjson_fetch_mime_structure(const MJSON_MIME *,
@@ -62,6 +63,28 @@ static void mjson_emum_rfc822(MJSON_MIME *, void *);
 static void mjson_enum_build(MJSON_MIME *, void *);
 static int mjson_rfc822_fetch_internal(const MJSON *, const char *storage_path, const char *cset, BOOL b_ext, std::string &out);
 
+bool MJSON_MIME::contains_none_type() const
+{
+	if (mime_type == mime_type::none)
+		return true;
+	for (const auto &c : children)
+		if (c.contains_none_type())
+			return true;
+	return false;
+}
+
+const MJSON_MIME *MJSON_MIME::find_by_id(const char *key) const
+{
+	if (strcmp(get_id(), key) == 0)
+		return this;
+	for (auto &c : children) {
+		auto r = c.find_by_id(key);
+		if (r != nullptr)
+			return r;
+	}
+	return nullptr;
+}
+
 /*
  *	clear the mjson mime nodes from the tree and
  *  the head information of mail
@@ -71,9 +94,7 @@ static int mjson_rfc822_fetch_internal(const MJSON *, const char *storage_path, 
 void MJSON::clear()
 {
 	auto pjson = this;
-	auto pnode = pjson->stree.get_root();
-	if (pnode != nullptr)
-		pjson->stree.destroy_node(pnode, mjson_enum_delete);
+	m_root.reset();
 	if (-1 != pjson->message_fd) {
 		close(pjson->message_fd);
 		pjson->message_fd = -1;
@@ -102,34 +123,15 @@ void MJSON::clear()
 	pjson->size = 0;
 }
 
-static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pnode) {
-		mlog(LV_DEBUG, "mail: NULL pointer in mjson_enum_delete");
-		return;
-	}
-#endif
-	delete static_cast<MJSON_MIME *>(pnode->pdata);
-}
-
 MJSON::~MJSON()
 {
-	clear();
-	stree.clear();
+	if (message_fd >= 0)
+		::close(message_fd);
 }
 
 BOOL MJSON::load_from_json(const Json::Value &root) try
 {
 	auto pjson = this;
-	BOOL b_none;
-	
-#ifdef _DEBUG_UMTA
-	if (digest_buff == nullptr) {
-		mlog(LV_DEBUG, "mail: NULL pointer in mjson_retrieve");
-		return FALSE;
-	}
-#endif
 	clear();
 	{
 		pjson->filename     = root["file"].asString();
@@ -160,39 +162,10 @@ BOOL MJSON::load_from_json(const Json::Value &root) try
 			return false;
 		pjson->size         = root["size"].asUInt();
 	}
-	auto pnode = pjson->stree.get_root();
-	if (pnode == nullptr)
-		return FALSE;
-	/* check for NONE mime in tree */
-	b_none = FALSE;
-	simple_tree_enum_from_node(pnode, [&](const tree_node *nd, unsigned int) {
-		if (static_cast<MJSON_MIME *>(nd->pdata)->mime_type == mime_type::none)
-			b_none = TRUE;
-	});
-	if (b_none)
-		return FALSE;
-	return TRUE;
+	return m_root.has_value() && !m_root->contains_none_type();
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2743: ENOMEM");
 	return false;
-}
-
-void MJSON::enum_mime(MJSON_MIME_ENUM enum_func, void *param)
-{
-	auto pjson = this;
-#ifdef _DEBUG_UMTA
-	if (enum_func == nullptr) {
-        mlog(LV_DEBUG, "mail: NULL pointer in mjson_enum_mime");
-        return;
-    }
-#endif
-	auto r = pjson->stree.get_root();
-	if (r == nullptr)
-		return;
-	simple_tree_enum_from_node(r, [&](tree_node *stn, unsigned int) {
-		auto m = containerof(stn, MJSON_MIME, stree);
-		enum_func(m, param);
-	});
 }
 
 /*
@@ -236,28 +209,13 @@ int MJSON::seek_fd(const char *id, int whence)
 	return pjson->message_fd;
 }
 
-/*
- *	get mime from mjson object
- *	@param
- *		pmime [in]			indicate the mime object
- */
 const MJSON_MIME *MJSON::get_mime(const char *id) const
 {
-	ENUM_PARAM enum_param = {id};
-	simple_tree_enum_from_node(stree.get_root(), [&](const tree_node *nd, unsigned int) {
-		if (enum_param.pmime != nullptr)
-			return;
-		auto m = static_cast<const MJSON_MIME *>(nd->pdata);
-		if (strcmp(m->get_id(), enum_param.id) == 0)
-			enum_param.pmime = m;
-	});
-	return enum_param.pmime;
+	return m_root.has_value() ? m_root->find_by_id(id) : nullptr;
 }
 
 static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int type) try
 {
-	int j, last_pos = 0;
-	char temp_buff[64];
 	MJSON_MIME temp_mime;
 	temp_mime.mime_type = type == TYPE_STRUCTURE ? mime_type::multiple : mime_type::single;
 
@@ -279,73 +237,36 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 	/* for some MUA such as Foxmail, use application/octet-stream
 	   as the Content-Type, so make the revision for these mimes
 	*/
-	auto temp_len = temp_mime.filename.size();
 	if (class_match_suffix(temp_mime.filename.c_str(), ".eml") == 0 &&
 	    !temp_mime.ctype_is_rfc822())
 		temp_mime.ctype = "message/rfc822";
-	auto pnode = pjson->stree.get_root();
-	if (NULL == pnode) {
-		auto pmime = std::make_unique<MJSON_MIME>();
-		pmime->stree.pdata = pmime.get();
-		pmime->mime_type = mime_type::none;
-		pjson->stree.set_root(std::move(pmime));
-	}
-	pnode = pjson->stree.get_root();
-	if (pnode == nullptr)
-		return FALSE;
-	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
+
 	if (temp_mime.id.empty()) {
-		if (pmime->get_mtype() != mime_type::none)
-			return FALSE;
-		temp_mime.stree = pmime->stree;
-		*pmime = std::move(temp_mime);
+		if (pjson->m_root.has_value())
+			return false; /* collision */
+		pjson->m_root.emplace(std::move(m));
 		return TRUE;
 	}
-	temp_len = strlen(temp_mime.id.c_str());
-	memcpy(temp_buff, temp_mime.id.c_str(), temp_len + 1);
-	last_pos = 0;
-	for (size_t i = 0; i <= temp_len; ++i) {
-		if (temp_buff[i] != '.' && temp_buff[i] != '\0')
-			continue;
-		temp_buff[i] = '\0';
-		int offset = strtol(temp_buff + last_pos, nullptr, 0);
-		pnode = pmime->stree.get_child();
-		if (NULL == pnode) {
-			pnode = &pmime->stree;
-			auto pmime_uq = std::make_unique<MJSON_MIME>();
-			pmime = pmime_uq.get();
-			pmime->stree.pdata = pmime;
-			pmime->mime_type = mime_type::none;
-			if (!pjson->stree.add_child(pnode, std::move(pmime_uq),
-			    SIMPLE_TREE_ADD_LAST))
-				return FALSE;
-		} else {
-			pmime = static_cast<MJSON_MIME *>(pnode->pdata);
-		}
-
-		for (j = 1; j < offset; j++) {
-			pnode = pmime->stree.get_sibling();
-			if (pnode != nullptr) {
-				pmime = static_cast<MJSON_MIME *>(pnode->pdata);
-				continue;
-			}
-			pnode = &pmime->stree;
-			auto pmime_uq = std::make_unique<MJSON_MIME>();
-			pmime = pmime_uq.get();
-			pmime->stree.pdata = pmime;
-			pmime->mime_type = mime_type::none;
-			if (!pjson->stree.insert_sibling(pnode, std::move(pmime_uq),
-			    SIMPLE_TREE_INSERT_AFTER))
-				return FALSE;
-		}
-		last_pos = i + 1;
+	auto pmime = &*pjson->m_root;
+	auto part_ptr = temp_mime.id.c_str();
+	while (true) {
+		char *end;
+		unsigned int offset = strtoul(part_ptr, &end, 10);
+		if (end == part_ptr)
+			return false;
+		if (*end != '\0' && *end != '.')
+			return false;
+		if (offset < 1)
+			return false;
+		if (pmime->children.size() < offset)
+			pmime->children.resize(offset);
+		pmime->children[--offset] = std::move(m);
+		pmime = &pmime->children[offset];
+		if (*end == '\0')
+			return true;
+		part_ptr = end + 1;
 	}
-
-	if (pmime->get_mtype() != mime_type::none)
-		return FALSE;
-	temp_mime.stree = pmime->stree;
-	*pmime = std::move(temp_mime);
-	return TRUE;
+	return false;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2062: ENOMEM");
 	return false;
@@ -372,12 +293,9 @@ static bool mjson_parse_array(MJSON *m, const Json::Value &jv, unsigned int type
 
 int MJSON::fetch_structure(const char *cset, BOOL b_ext, std::string &buf) const try
 {
-	auto pjson = this;
-	auto pnode = pjson->stree.get_root();
-	if (pnode == nullptr)
+	if (!m_root.has_value())
 		return -1;
-	auto pmime = static_cast<const MJSON_MIME *>(pnode->pdata);
-	return mjson_fetch_mime_structure(pmime, nullptr, nullptr, cset,
+	return mjson_fetch_mime_structure(&*m_root, nullptr, nullptr, cset,
 	       charset.c_str(), b_ext, buf);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2061: ENOMEM");
@@ -394,7 +312,6 @@ static int mjson_fetch_mime_structure(const MJSON_MIME *pmime,
 		return -1;
 	}
 #endif
- FETCH_STRUCTURE_LOOP:
 	auto ctype = pmime->ctype;
 	HX_strupper(ctype.data());
 	auto pos = ctype.find('/');
@@ -535,13 +452,11 @@ static int mjson_fetch_mime_structure(const MJSON_MIME *pmime,
 		buf += ')';
 	} else if (pmime->get_mtype() == mime_type::multiple) {
 		buf += '(';
-		auto pnode = pmime->stree.get_child();
-		if (pnode == nullptr)
-			return -1;
-		if (mjson_fetch_mime_structure(static_cast<const MJSON_MIME *>(pnode->pdata),
-		    storage_path, msg_filename, charset, email_charset,
-		    b_ext, buf) != 0)
-			return -1;
+		for (auto &c : pmime->children)
+			if (mjson_fetch_mime_structure(&c,
+			    storage_path, msg_filename, charset, email_charset,
+			    b_ext, buf) != 0)
+				return -1;
 		if (psubtype.empty())
 			buf += " NIL";
 		else
@@ -551,12 +466,6 @@ static int mjson_fetch_mime_structure(const MJSON_MIME *pmime,
 		buf += ')';
 	} else {
 		return -1;
-	}
-
-	auto pnode = pmime->stree.get_sibling();
-	if (NULL != pnode) {
-		pmime = static_cast<MJSON_MIME *>(pnode->pdata);
-		goto FETCH_STRUCTURE_LOOP;
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
@@ -906,11 +815,9 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 	auto temp_path = storage_path + "/"s + get_mail_filename();
 	if (stat(temp_path.c_str(), &node_stat) != 0 || !S_ISDIR(node_stat.st_mode))
 		return -1;
-	auto pnode = pjson->stree.get_root();
-	if (pnode == nullptr)
+	if (!m_root.has_value())
 		return -1;
-	auto pmime = static_cast<const MJSON_MIME *>(pnode->pdata);
-	return mjson_fetch_mime_structure(pmime, temp_path.c_str(), "", cset,
+	return mjson_fetch_mime_structure(&*m_root, temp_path.c_str(), "", cset,
 	       pjson->charset.c_str(), b_ext, buf);
 }
 
@@ -923,11 +830,9 @@ static int mjson_rfc822_fetch_internal(const MJSON *pjson, const char *storage_p
 		return -1;
 	}
 #endif
-	auto pnode = pjson->stree.get_root();
-	if (pnode == nullptr)
+	if (!pjson->m_root.has_value())
 		return -1;
-	auto pmime = static_cast<const MJSON_MIME *>(pnode->pdata);
-	return mjson_fetch_mime_structure(pmime, storage_path,
+	return mjson_fetch_mime_structure(&*pjson->m_root, storage_path,
 	       pjson->get_mail_filename(), charset,
 	       pjson->charset.c_str(), b_ext, buf);
 }
