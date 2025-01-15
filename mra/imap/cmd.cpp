@@ -605,7 +605,6 @@ static int pstruct_mime(MJSON *pjson,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path)
 {
-	MJSON_MIME *pmime = nullptr;
 	int buff_len = 0;
 	if ((strcasecmp(&data_item[1], "MIME") == 0 && *temp_id == '\0') ||
 	    (strcasecmp(&data_item[1], "HEADER") == 0 && *temp_id != '\0')) {
@@ -613,7 +612,7 @@ static int pstruct_mime(MJSON *pjson,
 			max_len - buff_len, "BODY%s NIL", pbody);
 		return buff_len;
 	}
-	pmime = pjson->get_mime(temp_id);
+	auto pmime = pjson->get_mime(temp_id);
 	if (pmime == nullptr) {
 		buff_len += gx_snprintf(buff + buff_len,
 			    max_len - buff_len, "BODY%s NIL", pbody);
@@ -650,14 +649,13 @@ static int pstruct_text(MJSON *pjson,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path)
 {
-	MJSON_MIME *pmime = nullptr;
 	int buff_len = 0;
 	if (*temp_id != '\0') {
 		buff_len += gx_snprintf(buff + buff_len,
 			    max_len - buff_len, "BODY%s NIL", pbody);
 		return buff_len;
 	}
-	pmime = pjson->get_mime(temp_id);
+	auto pmime = pjson->get_mime(temp_id);
 	if (pmime == nullptr) {
 		buff_len += gx_snprintf(buff + buff_len,
 			    max_len - buff_len, "BODY%s NIL", pbody);

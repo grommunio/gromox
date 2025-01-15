@@ -35,7 +35,7 @@ namespace {
 
 struct ENUM_PARAM {
 	const char *id;
-	MJSON_MIME *pmime;
+	const MJSON_MIME *pmime;
 };
 
 struct BUILD_PARAM {
@@ -50,14 +50,14 @@ struct BUILD_PARAM {
 static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode);
 static bool mjson_parse_array(MJSON *, const Json::Value &, unsigned int type);
 static BOOL mjson_record_node(MJSON *, const Json::Value &, unsigned int type);
-static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
+static int mjson_fetch_mime_structure(const MJSON_MIME *,
 	const char *storage_path, const char *msg_filename, const char* charset,
 	const char *email_charset, BOOL b_ext, char *buff, int length);
 static int mjson_convert_address(const char *address, const char *charset, char *buff, int length);
 static void mjson_add_backslash(const char *astring, char *out_string);
 static void mjson_emum_rfc822(MJSON_MIME *, void *);
 static void mjson_enum_build(MJSON_MIME *, void *);
-static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
+static int mjson_rfc822_fetch_internal(const MJSON *, const char *storage_path,
 	const char *charset, BOOL b_ext, char *buff, int length);
 
 /*
@@ -239,13 +239,13 @@ int MJSON::seek_fd(const char *id, int whence)
  *	@param
  *		pmime [in]			indicate the mime object
  */
-MJSON_MIME *MJSON::get_mime(const char *id)
+const MJSON_MIME *MJSON::get_mime(const char *id) const
 {
 	ENUM_PARAM enum_param = {id};
 	simple_tree_enum_from_node(stree.get_root(), [&](const tree_node *nd, unsigned int) {
 		if (enum_param.pmime != nullptr)
 			return;
-		auto m = static_cast<MJSON_MIME *>(nd->pdata);
+		auto m = static_cast<const MJSON_MIME *>(nd->pdata);
 		if (strcmp(m->get_id(), enum_param.id) == 0)
 			enum_param.pmime = m;
 	});
@@ -369,7 +369,7 @@ static bool mjson_parse_array(MJSON *m, const Json::Value &jv, unsigned int type
 }
 
 int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
-    int length) try
+    int length) const try
 {
 	auto pjson = this;
 
@@ -382,7 +382,7 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
 	auto pnode = pjson->stree.get_root();
 	if (pnode == nullptr)
 		return -1;
-	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
+	auto pmime = static_cast<const MJSON_MIME *>(pnode->pdata);
 	auto ret_len = mjson_fetch_mime_structure(pmime, nullptr, nullptr, cset,
 	               pjson->charset.c_str(), b_ext, buff, length);
 	if (ret_len == -1)
@@ -394,7 +394,7 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
 	return -1;
 }
 
-static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
+static int mjson_fetch_mime_structure(const MJSON_MIME *pmime,
     const char *storage_path, const char *msg_filename, const char *charset,
     const char *email_charset, BOOL b_ext, char *buff, int length) try
 {
@@ -611,7 +611,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		auto pnode = pmime->stree.get_child();
 		if (pnode == nullptr)
 			return -1;
-		auto ret_len = mjson_fetch_mime_structure(static_cast<MJSON_MIME *>(pnode->pdata),
+		auto ret_len = mjson_fetch_mime_structure(static_cast<const MJSON_MIME *>(pnode->pdata),
 					storage_path, msg_filename, charset, email_charset,
 					b_ext, buff + offset, length - offset);
 		if (ret_len == -1)
@@ -694,7 +694,7 @@ static int mjson_convert_address(const char *address, const char *charset,
 	return offset >= length ? -1 : offset;
 }
 
-int MJSON::fetch_envelope(const char *cset, char *buff, int length)
+int MJSON::fetch_envelope(const char *cset, char *buff, int length) const
 {
 	auto pjson = this;
 	int offset, tmp_len, last_pos;
@@ -880,8 +880,9 @@ static void mjson_add_backslash(const char *astring, char *out_string)
 	}
 }
 
-static void mjson_emum_rfc822(MJSON_MIME *pmime, void *param)
+static void mjson_emum_rfc822(MJSON_MIME *input_mime, void *param)
 {
+	const MJSON_MIME *pmime = input_mime;
 	auto pb_found = static_cast<BOOL *>(param);
 	if (!*pb_found && pmime->ctype_is_rfc822())
 		*pb_found = TRUE;
@@ -894,8 +895,9 @@ bool MJSON::has_rfc822_part() const
 	return b_found;
 }
 
-static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
+static void mjson_enum_build(MJSON_MIME *input_mime, void *param) try
 {
+	const MJSON_MIME *pmime = input_mime;
 	auto pbuild = static_cast<BUILD_PARAM *>(param);
 	size_t length1;
 	char msg_path[256];
@@ -1062,7 +1064,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 	mlog(LV_ERR, "E-1138: ENOMEM");
 }
 
-BOOL MJSON::rfc822_build(const char *storage_path)
+BOOL MJSON::rfc822_build(const char *storage_path) const
 {
 	auto pjson = this;
 	char temp_path[256];
@@ -1084,14 +1086,14 @@ BOOL MJSON::rfc822_build(const char *storage_path)
 	build_param.storage_path = temp_path;
 	build_param.depth = 1;
 	build_param.build_result = TRUE;
-	pjson->enum_mime(mjson_enum_build, &build_param);
+	const_cast<MJSON *>(pjson)->enum_mime(mjson_enum_build, &build_param);
 	if (!build_param.build_result)
 		rmdir(temp_path);
 	return build_param.build_result;
 }
 
 BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
-    char *mjson_id, char *mime_id) try
+    char *mjson_id, char *mime_id) const try
 {
 	auto pjson_base = this;
 	char *pdot;
@@ -1134,7 +1136,7 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 }
 	
 int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
-    BOOL b_ext, char *buff, int length)
+    BOOL b_ext, char *buff, int length) const
 {
 	auto pjson = this;
 	char temp_path[256];
@@ -1155,7 +1157,7 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 	auto pnode = pjson->stree.get_root();
 	if (pnode == nullptr)
 		return -1;
-	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
+	auto pmime = static_cast<const MJSON_MIME *>(pnode->pdata);
 	auto ret_len = mjson_fetch_mime_structure(pmime, temp_path, "", cset,
 	               pjson->charset.c_str(), b_ext, buff, length);
 	if (ret_len == -1)
@@ -1164,7 +1166,7 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 	return ret_len;
 }
 
-static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
+static int mjson_rfc822_fetch_internal(const MJSON *pjson, const char *storage_path,
 	const char *charset, BOOL b_ext, char *buff, int length)
 {
 #ifdef _DEBUG_UMTA
@@ -1176,7 +1178,7 @@ static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	auto pnode = pjson->stree.get_root();
 	if (pnode == nullptr)
 		return -1;
-	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
+	auto pmime = static_cast<const MJSON_MIME *>(pnode->pdata);
 	auto ret_len = mjson_fetch_mime_structure(pmime, storage_path,
 	               pjson->get_mail_filename(), charset,
 	               pjson->charset.c_str(), b_ext, buff, length);
