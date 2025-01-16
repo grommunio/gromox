@@ -707,7 +707,10 @@ static int filter_users(const char *mode, std::vector<sql_user> &ul)
 		else if (filter == "mb")
 			std::erase_if(ul, [](const sql_user &u) { return u.maildir.empty(); });
 		else if (filter == "here")
-			std::erase_if(ul, [&](const sql_user &u) { return strcasecmp(u.homeserver.c_str(), this_server.c_str()) != 0; });
+			std::erase_if(ul, [&](const sql_user &u) {
+				return u.homeserver_id > 0 &&
+				       strcasecmp(u.homeserver.c_str(), this_server.c_str()) != 0;
+			});
 		else {
 			mlog(LV_ERR, "Unknown filter: %.*s", static_cast<int>(filter.size()), filter.data());
 			return -1;

@@ -85,7 +85,7 @@ struct sql_user {
 	unsigned int addr_status = AF_USER_DELETED;
 	enum mlist_type list_type = mlist_type::normal;
 	uint32_t hidden = 0;
-	unsigned int list_priv = 0;
+	unsigned int list_priv = 0, homeserver_id = 0;
 	std::string username, homeserver, maildir;
 	std::vector<std::string> aliases; /* email addresses */
 	std::map<unsigned int, std::string> propvals;

@@ -719,7 +719,7 @@ BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data)
 int mysql_adaptor_mbop_userlist(std::vector<sql_user> &out) try
 {
 	auto qstr = "SELECT u.id, u.username, u.address_status, u.maildir, "
-	            "dt.propval_str AS dtypx, sv.hostname "
+	            "dt.propval_str AS dtypx, sv.hostname, u.homeserver "
 	            "FROM users AS u " JOIN_WITH_DISPLAYTYPE
 	            "LEFT JOIN servers AS sv ON u.homeserver=sv.id";
 	auto conn = g_sqlconn_pool.get_wait();
@@ -742,6 +742,7 @@ int mysql_adaptor_mbop_userlist(std::vector<sql_user> &out) try
 			continue;
 		}
 		gv[i].dtypx = static_cast<enum display_type>(strtoul(znul(row[4]), nullptr, 0));
+		gv[i].homeserver_id = strtoul(row[6], nullptr, 0);
 		gv[i++].homeserver = znul(row[5]);
 	}
 	out = std::move(gv);
