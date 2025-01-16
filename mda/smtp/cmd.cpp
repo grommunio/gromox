@@ -162,8 +162,7 @@ int cmdh_mail(std::string_view cmd_line, smtp_context &ctx)
             T_MAIL_CMD == pcontext->last_cmd ||
             T_END_MAIL == pcontext->last_cmd) {
             pcontext->last_cmd = T_MAIL_CMD;
-			snprintf(pcontext->menv.from, std::size(pcontext->menv.from), "%s@%s",
-                email_addr.local_part, email_addr.domain);
+			gx_strlcpy(ctx.menv.from, email_addr.addr, std::size(ctx.menv.from));
             /* 250 OK */
 			return 205;
 	}

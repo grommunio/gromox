@@ -506,7 +506,6 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 	BINARY tmp_bin;
 	uint8_t pad_len;
 	EXT_PUSH ext_push;
-	char tmp_buff[UADDR_SIZE];
 	EMAIL_ADDR email_addr;
 	ONEOFF_ENTRYID tmp_entry;
 	auto bin_buff = std::make_unique<uint8_t[]>(256 * 1024);
@@ -524,7 +523,10 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 	tmp_entry.version = 0;
 	tmp_entry.pdisplay_name = email_addr.display_name;
 	tmp_entry.paddress_type = deconst("SMTP");
-	tmp_entry.pmail_address = tmp_buff;
+	tmp_entry.pmail_address = email_addr.addr;
+	/* Ensure the fields are a classic array and thus do not change address */
+	static_assert(std::size(email_addr.display_name) > 0);
+	static_assert(std::size(email_addr.addr) > 0);
 
 	vmime::mailboxList mblist;
 	std::string names;
@@ -536,8 +538,6 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 		email_addr.set(*mb);
 		if (!email_addr.has_addr())
 			continue;
-		snprintf(tmp_buff, std::size(tmp_buff), "%s@%s",
-			 email_addr.local_part, email_addr.domain);
 		if (names.size() > 0)
 			names += ';';
 		if (*email_addr.display_name != '\0') {
@@ -545,7 +545,7 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 			names += email_addr.display_name;
 			names.erase(std::remove(names.begin() + oldsize, names.end(), ';'), names.end());
 		} else {
-			names += tmp_buff;
+			names += email_addr.addr;
 		}
 
 		uint32_t offset1 = ext_push.m_offset;
