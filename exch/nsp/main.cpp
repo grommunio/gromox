@@ -6,13 +6,13 @@
 #include <cstring>
 #include <string>
 #include <libHX/string.h>
+#include <gromox/ab_tree.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "ab_tree.hpp"
 #include "common_util.hpp"
 #include "nsp_interface.hpp"
 #include "nsp_ndr.hpp"
@@ -60,7 +60,6 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	BOOL b_check;
 	const char *org_name;
-	int table_size;
 	int cache_interval;
 	char temp_buff[45];
 	
@@ -80,8 +79,6 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 			return false;
 		org_name = pfile->get_value("X500_ORG_NAME");
 		mlog(LV_INFO, "nsp: x500 org name is \"%s\"", org_name);
-		table_size = pfile->get_ll("hash_table_size");
-		mlog(LV_INFO, "nsp: hash table size is %d", table_size);
 		cache_interval = pfile->get_ll("cache_interval");
 		HX_unit_seconds(temp_buff, std::size(temp_buff), cache_interval, 0);
 		mlog(LV_INFO, "nsp: address book tree item"
@@ -89,7 +86,7 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 		b_check = pfile->get_ll("session_check");
 		if (b_check)
 			mlog(LV_INFO, "nsp: bind session will be checked");
-		ab_tree_init(org_name, table_size, cache_interval);
+		ab_tree::AB.init(org_name, cache_interval);
 
 		query_service2("exmdb_client_get_named_propids", get_named_propids);
 		query_service2("exmdb_client_get_store_properties", get_store_properties);
@@ -136,7 +133,7 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_ERR, "nsp: failed to run common util");
 			return FALSE;
 		}
-		if (0 != ab_tree_run()) {
+		if (!ab_tree::AB.run()) {
 			mlog(LV_ERR, "nsp: failed to run address book tree");
 			return FALSE;
 		}
@@ -144,13 +141,13 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		ab_tree_stop();
+		ab_tree::AB.stop();
 		unregister_interface(ep_6004, &interface);
 		unregister_interface(ep_6001, &interface);
 		return TRUE;
 	case PLUGIN_RELOAD:
 		exch_nsp_reload(nullptr);
-		ab_tree_invalidate_cache();
+		ab_tree::AB.invalidate_cache();
 		return TRUE;
 	default:
 		return TRUE;

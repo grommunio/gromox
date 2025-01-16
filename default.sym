@@ -17,6 +17,7 @@ global:
 	extern "C++" {
 		midb_agent::*;
 		mysql_adaptor_*;
+		sql_user::*;
 	};
 local:
 	*;

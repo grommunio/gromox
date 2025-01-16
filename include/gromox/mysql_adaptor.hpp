@@ -81,7 +81,7 @@ enum { /* for PR_ATTR_HIDDEN_*GROMOX* */
  * Whether the fields are filled or not depends on the mysql_adaptor_get*()
  * function you are using.
  */
-struct sql_user {
+struct GX_EXPORT sql_user {
 	enum display_type dtypx = DT_MAILUSER;
 	unsigned int id = 0;
 	unsigned int addr_status = AF_USER_DELETED;
