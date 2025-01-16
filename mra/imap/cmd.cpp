@@ -485,8 +485,7 @@ static void icp_convert_flags_string(int flag_bits, char *flags_string)
 
 static int icp_match_field(const char *cmd_tag, const char *file_path,
     size_t offset, size_t length, BOOL b_not,
-    const char *tags, size_t offset1, ssize_t length1, char *value,
-    size_t val_len) try
+    const char *tags, size_t offset1, ssize_t length1, std::string &value) try
 {
 	auto pbody = strchr(cmd_tag, '[');
 	if (length > 128 * 1024)
@@ -537,26 +536,25 @@ static int icp_match_field(const char *cmd_tag, const char *file_path,
 	const auto len1 = buff1.size();
 	if (length1 == -1)
 		length1 = len1;
-	int l2;
 	if (offset1 >= len1) {
-		l2 = gx_snprintf(value, val_len, "BODY%s NIL", pbody);
+		value += "BODY"s + pbody + " NIL";
 	} else {
 		if (offset1 + length1 > len1)
 			length1 = len1 - offset1;
-		l2 = gx_snprintf(value, val_len,
-		     "BODY%s {%zd}\r\n%s", pbody, length1, &buff1[offset1]);
+		value += "BODY"s + pbody;
+		value += " {" + std::to_string(length1) + "}\r\n";
+		value += std::string_view(buff1).substr(offset1);
 	}
-	return l2 >= 0 && static_cast<size_t>(l2) >= val_len - 1 ? -1 : l2;
+	return 0;
 } catch (const std::bad_alloc &) {
 	return -1;
 }
 
 static int pstruct_null(MJSON *pjson,
-    const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
+    const std::string &cmd_tag, std::string &buf, const char *pbody,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path)
 {
-	int buff_len = 0;
 	auto pmime = pjson->get_mime(temp_id);
 	/* Non-[MIME-IMB] messages, and non-multipart
 	   [MIME-IMB] messages with no encapsulated
@@ -565,9 +563,8 @@ static int pstruct_null(MJSON *pjson,
 	if (pmime == nullptr && strcmp(temp_id, "1") == 0)
 		pmime = pjson->get_mime("");
 	if (pmime == nullptr) {
-		buff_len += gx_snprintf(buff + buff_len,
-			max_len - buff_len, "BODY%s NIL", pbody);
-		return buff_len;
+		buf += "BODY"s + pbody + " NIL";
+		return 0;
 	}
 	size_t part_length = 0, temp_len = 0;
 	if (0 == strcmp(temp_id, "")) {
@@ -580,115 +577,96 @@ static int pstruct_null(MJSON *pjson,
 	if (length == -1)
 		length = part_length;
 	if (offset >= part_length) {
-		buff_len += gx_snprintf(buff + buff_len,
-			max_len - buff_len, "BODY%s NIL", pbody);
-		return buff_len;
+		buf += "BODY"s + pbody + " NIL";
+		return 0;
 	}
 	if (offset + length > part_length)
 		length = part_length - offset;
 	if (storage_path == nullptr)
-		buff_len += gx_snprintf(buff + buff_len, max_len - buff_len,
-			    "BODY%s <<{file}%s|%zd|%zd\r\n", pbody,
-			    pjson->get_mail_filename(),
-				temp_len + offset, length);
+		buf += fmt::format("BODY{} <<{{file}}{}|{}|{}\r\n",
+		       pbody, pjson->get_mail_filename(),
+		       temp_len + offset, length);
 	else
-		buff_len += gx_snprintf(buff + buff_len, max_len - buff_len,
-			    "BODY%s <<{rfc822}%s/%s|%zd|%zd\r\n",
-			    pbody, storage_path,
-			    pjson->get_mail_filename(),
-					temp_len + offset, length);
-	return buff_len;
+		buf += fmt::format("BODY{} <<{{rfc822}}{}/{}|{}|{}\r\n",
+		       pbody, storage_path,
+		       pjson->get_mail_filename(),
+		       temp_len + offset, length);
+	return 0;
 }
 
 static int pstruct_mime(MJSON *pjson,
-    const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
+    const std::string &cmd_tag, std::string &buf, const char *pbody,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path)
 {
-	int buff_len = 0;
 	if ((strcasecmp(&data_item[1], "MIME") == 0 && *temp_id == '\0') ||
 	    (strcasecmp(&data_item[1], "HEADER") == 0 && *temp_id != '\0')) {
-		buff_len += gx_snprintf(buff + buff_len,
-			max_len - buff_len, "BODY%s NIL", pbody);
-		return buff_len;
+		buf += "BODY"s + pbody + " NIL";
+		return 0;
 	}
 	auto pmime = pjson->get_mime(temp_id);
 	if (pmime == nullptr) {
-		buff_len += gx_snprintf(buff + buff_len,
-			    max_len - buff_len, "BODY%s NIL", pbody);
-		return buff_len;
+		buf += "BODY"s + pbody + " NIL";
+		return 0;
 	}
 	size_t head_length = pmime->get_head_length();
 	if (length == -1)
 		length = head_length;
 	if (offset >= head_length) {
-		buff_len += gx_snprintf(buff + buff_len,
-			    max_len - buff_len, "BODY%s NIL", pbody);
-		return buff_len;
+		buf += "BODY"s + pbody + " NIL";
+		return 0;
 	}
 	if (offset + length > head_length)
 		length = head_length - offset;
 	if (storage_path == nullptr)
-		buff_len += gx_snprintf(
-			    buff + buff_len, max_len - buff_len,
-			    "BODY%s <<{file}%s|%zd|%zd\r\n",
-			    pbody, pjson->get_mail_filename(),
-			    pmime->get_head_offset() + offset, length);
+		buf += fmt::format("BODY{} <<{{file}}{}|{}|{}\r\n",
+		       pbody, pjson->get_mail_filename(),
+		       pmime->get_head_offset() + offset, length);
 	else
-		buff_len += gx_snprintf(
-			    buff + buff_len, max_len - buff_len,
-			    "BODY%s <<{rfc822}%s/%s|%zd|%zd\r\n",
-			    pbody, storage_path,
-			    pjson->get_mail_filename(),
-			    pmime->get_head_offset() + offset, length);
-	return buff_len;
+		buf += fmt::format("BODY{} <<{{rfc822}}{}/{}|{}|{}\r\n",
+		       pbody, storage_path,
+		       pjson->get_mail_filename(),
+		       pmime->get_head_offset() + offset, length);
+	return 0;
 }
 
 static int pstruct_text(MJSON *pjson,
-    const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
+    const std::string &cmd_tag, std::string &buf, const char *pbody,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path)
 {
-	int buff_len = 0;
 	if (*temp_id != '\0') {
-		buff_len += gx_snprintf(buff + buff_len,
-			    max_len - buff_len, "BODY%s NIL", pbody);
-		return buff_len;
+		buf += "BODY"s + pbody + " NIL";
+		return 0;
 	}
 	auto pmime = pjson->get_mime(temp_id);
 	if (pmime == nullptr) {
-		buff_len += gx_snprintf(buff + buff_len,
-			    max_len - buff_len, "BODY%s NIL", pbody);
-		return buff_len;
+		buf += "BODY"s + pbody + " NIL";
+		return 0;
 	}
 	size_t ct_length = pmime->get_content_length();
 	if (length == -1)
 		length = ct_length;
 	if (offset >= ct_length) {
-		buff_len += gx_snprintf(buff + buff_len,
-			    max_len - buff_len, "BODY%s NIL", pbody);
-		return buff_len;
+		buf += "BODY"s + pbody + " NIL";
+		return 0;
 	}
 	if (offset + length > ct_length)
 		length = ct_length - offset;
 	if (storage_path == nullptr)
-		buff_len += gx_snprintf(
-			    buff + buff_len, max_len - buff_len,
-			    "BODY%s <<{file}%s|%zd|%zd\r\n",
-			    pbody, pjson->get_mail_filename(),
-			    pmime->get_content_offset() + offset, length);
+		buf += fmt::format("BODY{} <<{{file}}{}|{}|{}\r\n",
+		       pbody, pjson->get_mail_filename(),
+		       pmime->get_content_offset() + offset, length);
 	else
-		buff_len += gx_snprintf(
-			    buff + buff_len, max_len - buff_len,
-			    "BODY%s <<{rfc822}%s/%s|%zd|%zd\r\n",
-			    pbody, storage_path,
-			    pjson->get_mail_filename(),
-			    pmime->get_content_offset() + offset, length);
-	return buff_len;
+		buf += fmt::format("BODY{} <<{{rfc822}}{}|{}|{}\r\n",
+		       pbody, storage_path,
+		       pjson->get_mail_filename(),
+		       pmime->get_content_offset() + offset, length);
+	return 0;
 }
 
 static int pstruct_else(imap_context &ctx, MJSON *pjson,
-    const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
+    const std::string &cmd_tag, std::string &buf, const char *pbody,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path)
 {
@@ -696,49 +674,44 @@ static int pstruct_else(imap_context &ctx, MJSON *pjson,
 	auto b_not = strncasecmp(&data_item[1], "HEADER.FIELDS ", 14) != 0;
 	data_item += b_not ? 19 : 15;
 	auto pmime = pjson->get_mime(temp_id);
-	int buff_len = 0;
 	if (pmime == nullptr) {
-		buff_len += gx_snprintf(buff + buff_len,
-			    max_len - buff_len, "BODY%s NIL", pbody);
-		return buff_len;
+		buf += "BODY"s + pbody + " NIL";
+		return 0;
 	}
 	std::string eml_path = storage_path == nullptr ?
 		std::string(pcontext->maildir) + "/eml/" + pjson->get_mail_filename() :
 		std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + storage_path + "/" + pjson->get_mail_filename();
+	std::string b2;
 	int len = icp_match_field(cmd_tag.c_str(), eml_path.c_str(),
 	          pmime->get_head_offset(), pmime->get_head_length(),
-	          b_not, data_item, offset, length, buff + buff_len,
-	          max_len - buff_len);
+	          b_not, data_item, offset, length, b2);
 	if (len == -1)
-		buff_len += gx_snprintf(buff + buff_len,
-			    max_len - buff_len, "BODY%s NIL", pbody);
+		buf += "BODY"s + pbody + " NIL";
 	else
-		buff_len += len;
-	return buff_len;
+		buf += std::move(b2);
+	return 0;
 }
 
 static int icp_print_structure(imap_context &ctx, MJSON *pjson,
-    const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
+    const std::string &cmd_tag, std::string &buf, const char *pbody,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path) try
 {
 	if (data_item == nullptr)
-		return pstruct_null(pjson, cmd_tag, buff, max_len,
+		return pstruct_null(pjson, cmd_tag, buf,
 		       pbody, temp_id, data_item, offset, length, storage_path);
 	if (strcasecmp(&data_item[1], "MIME") == 0 ||
 	    strcasecmp(&data_item[1], "HEADER") == 0)
-		return pstruct_mime(pjson, cmd_tag, buff, max_len,
+		return pstruct_mime(pjson, cmd_tag, buf,
 		       pbody, temp_id, data_item, offset, length, storage_path);
 	if (strcasecmp(&data_item[1], "TEXT") == 0)
-		return pstruct_text(pjson, cmd_tag, buff, max_len,
+		return pstruct_text(pjson, cmd_tag, buf,
 		       pbody, temp_id, data_item, offset, length, storage_path);
 	if (strcmp(temp_id, "") != 0) {
-		int buff_len = 0;
-		buff_len += gx_snprintf(buff + buff_len,
-			    max_len - buff_len, "BODY%s NIL", pbody);
-		return buff_len;
+		buf += "BODY"s + pbody + " NIL";
+		return 0;
 	}
-	return pstruct_else(ctx, pjson, cmd_tag, buff, max_len, pbody,
+	return pstruct_else(ctx, pjson, cmd_tag, buf, pbody,
 	       temp_id, data_item, offset, length, storage_path);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1465: ENOMEM");
@@ -751,7 +724,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 	auto pcontext = &ctx;
 	int errnum;
 	MJSON mjson;
-	char buff[MAX_DIGLEN];
+	std::string buf;
 	
 	if (pitem->flag_bits & FLAG_LOADED) {
 		auto eml_path = std::string(pcontext->maildir) + "/eml";
@@ -761,18 +734,15 @@ static int icp_process_fetch_item(imap_context &ctx,
 	}
 
 	BOOL b_first = FALSE;
-	int buff_len = 0;
-	buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
-	            "* %d FETCH (", item_id);
+	buf = "* " + std::to_string(item_id) + " FETCH (";
 	for (auto &kwss : pitem_list) {
 		if (!b_first)
 			b_first = TRUE;
 		else
-			buff[buff_len++] = ' ';
+			buf += ' ';
 		auto kw = kwss.data();
 		if (strcasecmp(kw, "BODY") == 0) {
-			buff_len += gx_snprintf(buff + buff_len,
-			            std::size(buff) - buff_len, "BODY ");
+			buf += "BODY ";
 			if (mjson.has_rfc822_part()) {
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() <= 0 ||
@@ -783,23 +753,19 @@ static int icp_process_fetch_item(imap_context &ctx,
 				           pcontext->defcharset, false, b2);
 				if (len == -1)
 					goto FETCH_BODY_SIMPLE;
-				buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
-				            "%s", b2.c_str());
+				buf += std::move(b2);
 			} else {
  FETCH_BODY_SIMPLE:
 				std::string b2;
 				auto len = mjson.fetch_structure(pcontext->defcharset,
 				           false, b2);
 				if (len == -1)
-					buff_len += gx_snprintf(buff + buff_len,
-					            std::size(buff) - buff_len, "NIL");
+					buf += "NIL";
 				else
-					buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
-						    "%s", b2.c_str());
+					buf += std::move(b2);
 			}
 		} else if (strcasecmp(kw, "BODYSTRUCTURE") == 0) {
-			buff_len += gx_snprintf(buff + buff_len,
-			            std::size(buff) - buff_len, "BODYSTRUCTURE ");
+			buf += "BODYSTRUCTURE ";
 			if (mjson.has_rfc822_part()) {
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() <= 0 ||
@@ -810,36 +776,30 @@ static int icp_process_fetch_item(imap_context &ctx,
 				           pcontext->defcharset, TRUE, b2);
 				if (len == -1)
 					goto FETCH_BODYSTRUCTURE_SIMPLE;
-				buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
-					    "%s", b2.c_str());
+				buf += std::move(b2);
 			} else {
  FETCH_BODYSTRUCTURE_SIMPLE:
 				std::string b2;
 				auto len = mjson.fetch_structure(pcontext->defcharset,
 				           TRUE, b2);
 				if (len == -1)
-					buff_len += gx_snprintf(buff + buff_len,
-					            std::size(buff) - buff_len, "NIL");
+					buf += "NIL";
 				else
-					buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
-						    "%s", b2.c_str());
+					buf += std::move(b2);
 			}
 		} else if (strcasecmp(kw, "ENVELOPE") == 0) {
-			buff_len += gx_snprintf(buff + buff_len,
-			            std::size(buff) - buff_len, "ENVELOPE ");
+			buf += "ENVELOPE ";
 			std::string b2;
 			auto len = mjson.fetch_envelope(pcontext->defcharset, b2);
 			if (len == -1)
-				buff_len += gx_snprintf(buff + buff_len,
-				            std::size(buff) - buff_len, "NIL");
+				buf += "NIL";
 			else
-				buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
-					    "%s", b2.c_str());
+				buf += std::move(b2);
 		} else if (strcasecmp(kw, "FLAGS") == 0) {
 			char flags_string[128];
 			icp_convert_flags_string(pitem->flag_bits, flags_string);
-			buff_len += gx_snprintf(buff + buff_len,
-			            std::size(buff) - buff_len, "FLAGS %s", flags_string);
+			buf += "FLAGS ";
+			buf += flags_string;
 		} else if (strcasecmp(kw, "INTERNALDATE") == 0) {
 			time_t tmp_time;
 			struct tm tmp_tm;
@@ -848,13 +808,13 @@ static int icp_process_fetch_item(imap_context &ctx,
 				tmp_time = strtol(mjson.get_mail_filename(), nullptr, 0);
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			localtime_r(&tmp_time, &tmp_tm);
-			buff_len += strftime(buff + buff_len, MAX_DIGLEN - buff_len,
-							"INTERNALDATE \"%d-%b-%Y %T %z\"", &tmp_tm);
+			char b2[80];
+			strftime(b2, std::size(b2), "INTERNALDATE \"%d-%b-%Y %T %z\"", &tmp_tm);
+			buf += b2;
 		} else if (strcasecmp(kw, "RFC822") == 0) {
-			buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
-			            "RFC822 <<{file}%s|0|%zd\r\n",
-			            mjson.get_mail_filename(),
-			            mjson.get_mail_length());
+			buf += fmt::format("RFC822 <<{{file}}{}|0|{}\r\n",
+			       mjson.get_mail_filename(),
+			       mjson.get_mail_length());
 			if (!pcontext->b_readonly &&
 			    !(pitem->flag_bits & FLAG_SEEN)) {
 				midb_agent::set_flags(pcontext->maildir,
@@ -866,30 +826,24 @@ static int icp_process_fetch_item(imap_context &ctx,
 		} else if (strcasecmp(kw, "RFC822.HEADER") == 0) {
 			auto pmime = mjson.get_mime("");
 			if (pmime != nullptr)
-				buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
-				            "RFC822.HEADER <<{file}%s|0|%zd\r\n",
-				            mjson.get_mail_filename(),
-				            pmime->get_head_length());
+				buf += fmt::format("RFC822.HEADER <<{{file}}{}|0|{}\r\n",
+				       mjson.get_mail_filename(),
+				       pmime->get_head_length());
 			else
-				buff_len += gx_snprintf(buff + buff_len,
-				            std::size(buff) - buff_len, "RFC822.HEADER NIL");
+				buf += "RFC822.HEADER NIL";
 		} else if (strcasecmp(kw, "RFC822.SIZE") == 0) {
-			buff_len += gx_snprintf(buff + buff_len,
-			            std::size(buff) - buff_len,
-			            "RFC822.SIZE %zd", mjson.get_mail_length());
+			buf += "RFC822.SIZE ";
+			buf += std::to_string(mjson.get_mail_length());
 		} else if (strcasecmp(kw, "RFC822.TEXT") == 0) {
 			auto pmime = mjson.get_mime("");
 			size_t ct_length = pmime != nullptr ? pmime->get_content_length() : 0;
 			if (pmime != nullptr)
-				buff_len += gx_snprintf(buff + buff_len,
-				            std::size(buff) - buff_len,
-				            "RFC822.TEXT <<{file}%s|%zd|%zd\r\n",
-				            mjson.get_mail_filename(),
-				            pmime->get_content_offset(),
-				            ct_length);
+				buf += fmt::format("RFC822.TEXT <<{{file}}{}|{}|{}\r\n",
+				       mjson.get_mail_filename(),
+				       pmime->get_content_offset(),
+				       ct_length);
 			else
-				buff_len += gx_snprintf(buff + buff_len,
-				            std::size(buff) - buff_len, "RFC822.TEXT NIL");
+				buf += "RFC822.TEXT NIL";
 			if (!pcontext->b_readonly &&
 			    !(pitem->flag_bits & FLAG_SEEN)) {
 				midb_agent::set_flags(pcontext->maildir,
@@ -899,8 +853,8 @@ static int icp_process_fetch_item(imap_context &ctx,
 				imap_parser_bcast_flags(*pcontext, pitem->uid);
 			}
 		} else if (strcasecmp(kw, "UID") == 0) {
-			buff_len += gx_snprintf(buff + buff_len,
-			            std::size(buff) - buff_len, "UID %d", pitem->uid);
+			buf += "UID ";
+			buf += std::to_string(pitem->uid);
 		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
 			auto pbody = strchr(kw, '[');
@@ -952,28 +906,23 @@ static int icp_process_fetch_item(imap_context &ctx,
 					if (mjson.rfc822_get(&temp_mjson, rfc_path.c_str(),
 					    temp_id, mjson_id, final_id))
 						len = icp_print_structure(ctx,
-						      &temp_mjson, kwss.c_str(),
-							buff + buff_len, MAX_DIGLEN - buff_len,
+						      &temp_mjson, kwss.c_str(), buf,
 							pbody, final_id, ptr, offset, length,
 						      mjson.get_mail_filename());
 					else
 						len = icp_print_structure(ctx,
-						      &mjson, kwss.c_str(),
-						      buff + buff_len, MAX_DIGLEN - buff_len,
+						      &mjson, kwss.c_str(), buf,
 						      pbody, temp_id, ptr, offset, length, nullptr);
 				} else {
-					len = icp_print_structure(ctx, &mjson, kwss,
-					      buff + buff_len, MAX_DIGLEN - buff_len,
+					len = icp_print_structure(ctx, &mjson, kwss, buf,
 					      pbody, temp_id, ptr, offset, length, nullptr);
 				}
 			} else {
-				len = icp_print_structure(ctx, &mjson, kwss,
-				      buff + buff_len, MAX_DIGLEN - buff_len,
+				len = icp_print_structure(ctx, &mjson, kwss, buf,
 				      pbody, temp_id, ptr, offset, length, nullptr);
 			}
 			if (len < 0)
 				return 1918;
-			buff_len += len;
 			if (!pcontext->b_readonly &&
 			    !(pitem->flag_bits & FLAG_SEEN) &&
 			    strncasecmp(kw, "BODY[", 5) == 0) {
@@ -985,8 +934,8 @@ static int icp_process_fetch_item(imap_context &ctx,
 			}
 		}
 	}
-	buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len, ")\r\n");
-	if (pcontext->stream.write(buff, buff_len) != STREAM_WRITE_OK)
+	buf += ")\r\n";
+	if (pcontext->stream.write(buf.data(), buf.size()) != STREAM_WRITE_OK)
 		return 1922;
 	if (!pcontext->b_readonly && pitem->flag_bits & FLAG_RECENT) {
 		pitem->flag_bits &= ~FLAG_RECENT;
