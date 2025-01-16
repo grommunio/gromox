@@ -140,7 +140,8 @@ SQL database
 ------------
 
 A MariaDB/MySQL database is used to store (and replicate, if so needed later)
-users, groups and other objects like distribution lists. The default database
+users and other objects like groups/distribution lists, organizations, etc.
+The default database
 name Gromox's mysql_adaptor plugin will use is ``email``, hence you would
 create that as a blank database. The default database access users is root with
 no password, which fits the default installation of MariaDB too. Any deviations
