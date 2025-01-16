@@ -593,7 +593,7 @@ static int pstruct_null(MJSON *pjson,
 				temp_len + offset, length);
 	else
 		buff_len += gx_snprintf(buff + buff_len, max_len - buff_len,
-			    "BODY%s <<(rfc822}%s/%s|%zd|%zd\r\n",
+			    "BODY%s <<{rfc822}%s/%s|%zd|%zd\r\n",
 			    pbody, storage_path,
 			    pjson->get_mail_filename(),
 					temp_len + offset, length);
