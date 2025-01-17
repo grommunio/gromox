@@ -16,7 +16,7 @@ the value to \fIsendmail://localhost\fP. smtp:// is unqueued(!), and if the
 SMTP server is offline, submissions will be rejected (and mails stick around in
 Outbox or whatever folder they were submitted from).
 .br
-Default: \fIsmtp://%3a%3a1:25/\fP
+Default: \fIsendmail://localhost\fP
 .SH Configuration directives (ews.cfg)
 The following directives are recognized when they appear in etc/gromox/ews.cfg.
 .TP

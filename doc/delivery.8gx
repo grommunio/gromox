@@ -40,7 +40,7 @@ The SMTP server to use for outgoing mails. To use the local maildrop queue, set
 the value to \fIsendmail://localhost\fP. smtp:// is unqueued(!), and if the
 SMTP server is offline, submissions cannot be carried out.
 .br
-Default: \fIsmtp://%3a%3a1:25/\fP
+Default: \fIsendmail://localhost\fP
 .SH Configuration directives (delivery.cfg)
 The following directives are recognized when reading from
 /etc/gromox/delivery.cfg, or when the \fB\-c\fP option is used to specify a
