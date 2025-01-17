@@ -1006,6 +1006,9 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return false;
 		auto info = zs_get_info();
 		*v = info->privbits;
+		if (!(*v & USER_PRIVILEGE_DETAIL1))
+			*v |= USER_PRIVILEGE_DETAIL1 | USER_PRIVILEGE_WEB |
+			      USER_PRIVILEGE_EAS | USER_PRIVILEGE_DAV;
 		*ppvalue = v;
 		return TRUE;
 	}
