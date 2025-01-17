@@ -32,7 +32,7 @@
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include "http_parser.hpp"
-#include "mod_fastcgi.hpp"
+#include "fastcgi.hpp"
 #include "resource.hpp"
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return false; } while (false)

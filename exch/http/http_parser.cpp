@@ -55,9 +55,9 @@
 #include <gromox/util.hpp>
 #include "hpm_processor.hpp"
 #include "http_parser.hpp"
-#include "mod_cache.hpp"
-#include "mod_fastcgi.hpp"
-#include "mod_rewrite.hpp"
+#include "cache.hpp"
+#include "fastcgi.hpp"
+#include "rewrite.hpp"
 #include "pdu_ndr.hpp"
 #include "resource.hpp"
 #include "system_services.hpp"

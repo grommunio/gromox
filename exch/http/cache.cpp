@@ -35,7 +35,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "http_parser.hpp"
-#include "mod_cache.hpp"
+#include "cache.hpp"
 #include "resource.hpp"
 #include "system_services.hpp"
 #define BOUNDARY_STRING				"00000000000000000001"

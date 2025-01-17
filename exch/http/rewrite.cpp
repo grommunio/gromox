@@ -15,7 +15,7 @@
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
 #include "http_parser.hpp"
-#include "mod_rewrite.hpp"
+#include "rewrite.hpp"
 #define MAX_LINE					16*1024
 
 using namespace gromox;

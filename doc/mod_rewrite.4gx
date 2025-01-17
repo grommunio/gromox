@@ -2,13 +2,15 @@
 .\" SPDX-FileCopyrightText: 2021 grommunio GmbH
 .TH mod_rewrite 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-mod_rewrite \(em http(8gx) processing plugin for altering HTTP request URIs
+mod_rewrite \(em http(8gx) component for altering HTTP request URIs
 before processing
 .SH Description
 mod_rewrite can alter request URIs. It runs before any of the other built-in or
 HTTP processing modules.
+.PP
+mod_rewrite is built into http(8gx) and not a separate module/plugin.
 .SH Configuration directives
-This (built-in) plugin shares \fBhttp.cfg\fP. See http(8gx).
+This component shares \fBhttp.cfg\fP. See http(8gx).
 .SH Rewrite map
 The filemap that specifies which URIs to handle is \fBrewrite.txt\fP,
 which is searched for in \fIconfig_file_path\fP. The usual location is
