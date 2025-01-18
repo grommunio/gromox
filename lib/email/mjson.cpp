@@ -416,9 +416,7 @@ static int mjson_fetch_mime_structure(const MJSON_MIME *pmime,
 	auto ctype = pmime->ctype;
 	HX_strupper(ctype.data());
 	auto psubtype = strchr(ctype.data(), '/');
-	if (psubtype == nullptr)
-		psubtype = deconst("NIL");
-	else
+	if (psubtype != nullptr)
 		*psubtype++ = '\0';
 	
 	if (pmime->get_mtype() == mime_type::single ||
@@ -427,8 +425,12 @@ static int mjson_fetch_mime_structure(const MJSON_MIME *pmime,
 		 * Note: Do not add a space before opening parenthesis under
 		 * any circumstances (even if offset>0).
 		 */
-		offset += gx_snprintf(buff + offset, length - offset,
-		          "(\"%s\" \"%s\"", ctype.c_str(), psubtype);
+		if (psubtype == nullptr)
+			offset += gx_snprintf(buff + offset, length - offset,
+			          "(\"%s\" NIL", ctype.c_str());
+		else
+			offset += gx_snprintf(buff + offset, length - offset,
+			          "(\"%s\" \"%s\"", ctype.c_str(), psubtype);
 		if (*pmime->get_charset() != '\0' || *pmime->get_filename() != '\0') {
 			buff[offset++] = ' ';
 			buff[offset++] = '(';
@@ -617,8 +619,10 @@ static int mjson_fetch_mime_structure(const MJSON_MIME *pmime,
 		if (ret_len == -1)
 			return -1;
 		offset += ret_len;
-		offset += gx_snprintf(buff + offset, length - offset,
-					" \"%s\"", psubtype);
+		if (psubtype == nullptr)
+			offset += gx_snprintf(buff + offset, length - offset, " NIL");
+		else
+			offset += gx_snprintf(buff + offset, length - offset, " \"%s\"", psubtype);
 		if (b_ext) {
 			memcpy(buff + offset, " NIL NIL NIL", 12);
 			offset += 12;
