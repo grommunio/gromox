@@ -2,12 +2,26 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include <json/value.h>
 #include <gromox/util.hpp>
 
 struct MJSON_MIME;
 using MJSON_MIME_ENUM = void (*)(MJSON_MIME *, void *);
+
+struct GX_EXPORT mjson_io {
+	std::unordered_map<std::string, std::string> m_cache;
+	using c_iter = decltype(m_cache)::const_iterator;
+
+	bool exists(const std::string &path) const;
+	c_iter find(const std::string &path);
+	void place(const std::string &path, std::string &&ctnt);
+	void clear() { m_cache.clear(); }
+	bool valid(c_iter it) const { return it != m_cache.cend(); }
+	bool invalid(c_iter it) const { return it == m_cache.cend(); }
+	static std::string substr(c_iter it, size_t of, size_t ln);
+};
 
 struct GX_EXPORT MJSON_MIME {
 	std::vector<MJSON_MIME> children;
@@ -50,12 +64,12 @@ struct GX_EXPORT MJSON {
 
 	void clear();
 	BOOL load_from_json(const Json::Value &);
-	int fetch_structure(const char *cset, BOOL ext, std::string &out) const;
+	int fetch_structure(mjson_io &, const char *cset, BOOL ext, std::string &out) const;
 	int fetch_envelope(const char *cset, std::string &out) const;
 	bool has_rfc822_part() const;
-	BOOL rfc822_build(const char *storage_path) const;
-	BOOL rfc822_get(MJSON *other_pjson, const char *storage_path, const char *id, char *mjson_id, char *mime_id) const;
-	int rfc822_fetch(const char *storage_path, const char *cset, BOOL ext, std::string &out) const;
+	BOOL rfc822_build(mjson_io &, const char *storage_path) const;
+	BOOL rfc822_get(mjson_io &, MJSON *other_pjson, const char *storage_path, const char *id, char *mjson_id, char *mime_id) const;
+	int rfc822_fetch(mjson_io &, const char *storage_path, const char *cset, BOOL ext, std::string &out) const;
 	const char *get_mail_filename() const { return filename.c_str(); }
 	const char *get_mail_received() const { return received.c_str(); }
 	const char *get_mail_messageid() const { return msgid.c_str(); }

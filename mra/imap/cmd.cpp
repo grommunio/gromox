@@ -483,18 +483,17 @@ static void icp_convert_flags_string(int flag_bits, char *flags_string)
 	flags_string[len + 1] = '\0';
 }
 
-static int icp_match_field(const char *cmd_tag, const char *file_path,
-    size_t offset, size_t length, BOOL b_not,
+static int icp_match_field(mjson_io &io, const char *cmd_tag,
+    const char *file_path, size_t offset, size_t length, BOOL b_not,
     const char *tags, size_t offset1, ssize_t length1, std::string &value) try
 {
 	auto pbody = strchr(cmd_tag, '[');
 	if (length > 128 * 1024)
 		return -1;
-	wrapfd fd = open(file_path, O_RDONLY);
-	if (fd.get() < 0)
+	auto fd = io.find(file_path);
+	if (io.invalid(fd))
 		return -1;
-	if (lseek(fd.get(), offset, SEEK_SET) < 0)
-		mlog(LV_ERR, "E-1431: lseek: %s", strerror(errno));
+	auto buff = io.substr(fd, offset, length);
 
 	char temp_buff[1024], *tmp_argv[128];
 	int tmp_argc;
@@ -506,17 +505,11 @@ static int icp_match_field(const char *cmd_tag, const char *file_path,
 		tmp_argc = parse_imap_args(temp_buff,
 			strlen(tags), tmp_argv, sizeof(tmp_argv));
 
-	char buff[128*1024];
-	auto ret = read(fd.get(), buff, length);
-	if (ret < 0 || static_cast<size_t>(ret) != length)
-		return -1;
-	fd.close_rd();
-
 	size_t len, buff_len = 0;
 	std::string buff1;
 	bool b_hit = false;
 	MIME_FIELD mime_field;
-	while ((len = parse_mime_field(buff + buff_len, length - buff_len,
+	while ((len = parse_mime_field(&buff[buff_len], length - buff_len,
 	       &mime_field)) != 0) {
 		b_hit = FALSE;
 		for (int i = 0; i < tmp_argc; ++i) {
@@ -670,7 +663,6 @@ static int pstruct_else(imap_context &ctx, MJSON *pjson,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path)
 {
-	auto pcontext = &ctx;
 	auto b_not = strncasecmp(&data_item[1], "HEADER.FIELDS ", 14) != 0;
 	data_item += b_not ? 19 : 15;
 	auto pmime = pjson->get_mime(temp_id);
@@ -678,11 +670,20 @@ static int pstruct_else(imap_context &ctx, MJSON *pjson,
 		buf += "BODY"s + pbody + " NIL";
 		return 0;
 	}
-	std::string eml_path = storage_path == nullptr ?
-		std::string(pcontext->maildir) + "/eml/" + pjson->get_mail_filename() :
-		std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + storage_path + "/" + pjson->get_mail_filename();
+	std::string eml_path;
+	if (storage_path == nullptr) {
+		eml_path = ctx.maildir + "/eml/"s + pjson->get_mail_filename();
+		if (!ctx.io_actor.exists(eml_path)) {
+			size_t z = 0;
+			std::unique_ptr<char[], stdlib_delete> d(HX_slurp_file(eml_path.c_str(), &z));
+			if (d != nullptr)
+				ctx.io_actor.place(eml_path, std::string(d.get(), z));
+		}
+	} else {
+		eml_path = ctx.maildir + "/tmp/imap.rfc822/"s + storage_path + "/" + pjson->get_mail_filename();
+	}
 	std::string b2;
-	int len = icp_match_field(cmd_tag.c_str(), eml_path.c_str(),
+	int len = icp_match_field(ctx.io_actor, cmd_tag.c_str(), eml_path.c_str(),
 	          pmime->get_head_offset(), pmime->get_head_length(),
 	          b_not, data_item, offset, length, b2);
 	if (len == -1)
@@ -728,9 +729,16 @@ static int icp_process_fetch_item(imap_context &ctx,
 	
 	if (pitem->flag_bits & FLAG_LOADED) {
 		auto eml_path = std::string(pcontext->maildir) + "/eml";
-		if (eml_path.size() == 0 || !mjson.load_from_json(pitem->digest))
+		if (!mjson.load_from_json(pitem->digest))
 			return 1923;
 		mjson.path = eml_path;
+		auto eml_file = eml_path + "/"s + pitem->mid;
+		if (!ctx.io_actor.exists(eml_file)) {
+			size_t z = 0;
+			std::unique_ptr<char[], stdlib_delete> d(HX_slurp_file(eml_file.c_str(), &z));
+			if (d != nullptr)
+				ctx.io_actor.place(eml_file, std::string(d.get(), z));
+		}
 	}
 
 	BOOL b_first = FALSE;
@@ -746,10 +754,10 @@ static int icp_process_fetch_item(imap_context &ctx,
 			if (mjson.has_rfc822_part()) {
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() <= 0 ||
-				    !mjson.rfc822_build(rfc_path.c_str()))
+				    !mjson.rfc822_build(ctx.io_actor, rfc_path.c_str()))
 					goto FETCH_BODY_SIMPLE;
 				std::string b2;
-				auto len = mjson.rfc822_fetch(rfc_path.c_str(),
+				auto len = mjson.rfc822_fetch(ctx.io_actor, rfc_path.c_str(),
 				           pcontext->defcharset, false, b2);
 				if (len == -1)
 					goto FETCH_BODY_SIMPLE;
@@ -757,8 +765,8 @@ static int icp_process_fetch_item(imap_context &ctx,
 			} else {
  FETCH_BODY_SIMPLE:
 				std::string b2;
-				auto len = mjson.fetch_structure(pcontext->defcharset,
-				           false, b2);
+				auto len = mjson.fetch_structure(ctx.io_actor,
+				           ctx.defcharset, false, b2);
 				if (len == -1)
 					buf += "NIL";
 				else
@@ -769,10 +777,10 @@ static int icp_process_fetch_item(imap_context &ctx,
 			if (mjson.has_rfc822_part()) {
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() <= 0 ||
-				    !mjson.rfc822_build(rfc_path.c_str()))
+				    !mjson.rfc822_build(ctx.io_actor, rfc_path.c_str()))
 					goto FETCH_BODYSTRUCTURE_SIMPLE;
 				std::string b2;
-				auto len = mjson.rfc822_fetch(rfc_path.c_str(),
+				auto len = mjson.rfc822_fetch(ctx.io_actor, rfc_path.c_str(),
 				           pcontext->defcharset, TRUE, b2);
 				if (len == -1)
 					goto FETCH_BODYSTRUCTURE_SIMPLE;
@@ -780,8 +788,8 @@ static int icp_process_fetch_item(imap_context &ctx,
 			} else {
  FETCH_BODYSTRUCTURE_SIMPLE:
 				std::string b2;
-				auto len = mjson.fetch_structure(pcontext->defcharset,
-				           TRUE, b2);
+				auto len = mjson.fetch_structure(ctx.io_actor,
+				           ctx.defcharset, TRUE, b2);
 				if (len == -1)
 					buf += "NIL";
 				else
@@ -900,10 +908,11 @@ static int icp_process_fetch_item(imap_context &ctx,
 			if (*temp_id != '\0' && mjson.has_rfc822_part()) {
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() > 0 &&
-				    mjson.rfc822_build(rfc_path.c_str())) {
+				    mjson.rfc822_build(ctx.io_actor, rfc_path.c_str())) {
 					MJSON temp_mjson;
 					char mjson_id[64], final_id[64];
-					if (mjson.rfc822_get(&temp_mjson, rfc_path.c_str(),
+					if (mjson.rfc822_get(ctx.io_actor,
+					    &temp_mjson, rfc_path.c_str(),
 					    temp_id, mjson_id, final_id))
 						len = icp_print_structure(ctx,
 						      &temp_mjson, kwss.c_str(), buf,

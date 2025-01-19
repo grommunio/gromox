@@ -13,6 +13,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
+#include <gromox/mjson.hpp>
 #include <gromox/range_set.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/stream.hpp>
@@ -124,6 +125,7 @@ struct imap_context final : public schedule_context {
 	int literal_len = 0, current_len = 0;
 	STREAM stream; /* stream for writing to imap client */
 	STREAM append_stream;
+	mjson_io io_actor;
 	int auth_times = 0;
 	char username[UADDR_SIZE]{}, maildir[256]{}, defcharset[32]{};
 	bool synchronizing_literal = true;

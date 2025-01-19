@@ -979,10 +979,11 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 				ctx.wrdat_content = {};
 				try {
 					auto eml_path = ctx.maildir + "/eml/"s + (last_line + 8);
-					size_t z = 0;
-					std::unique_ptr<char[], stdlib_delete> d(HX_slurp_file(eml_path.c_str(), &z));
-					ctx.wrdat_content.assign(d.get(), z);
-					ctx.wrdat_active = true;
+					auto fd = ctx.io_actor.find(eml_path);
+					if (ctx.io_actor.valid(fd)) {
+						ctx.wrdat_content = fd->second;
+						ctx.wrdat_active = true;
+					}
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1466: ENOMEM");
 				}
@@ -1029,10 +1030,11 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 				ctx.wrdat_content = {};
 				try {
 					auto eml_path = pcontext->maildir + "/tmp/imap.rfc822/"s + (last_line + 10);
-					size_t z = 0;
-					std::unique_ptr<char[], stdlib_delete> d(HX_slurp_file(eml_path.c_str(), &z));
-					ctx.wrdat_content.assign(d.get(), z);
-					ctx.wrdat_active = true;
+					auto fd = ctx.io_actor.find(eml_path);
+					if (ctx.io_actor.valid(fd)) {
+						ctx.wrdat_content = fd->second;
+						ctx.wrdat_active = true;
+					}
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1467: ENOMEM");
 				}
