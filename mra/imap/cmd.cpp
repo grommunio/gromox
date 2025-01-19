@@ -778,21 +778,24 @@ static int icp_process_fetch_item(imap_context &ctx,
 				if (rfc_path.size() <= 0 ||
 				    !mjson.rfc822_build(rfc_path.c_str()))
 					goto FETCH_BODY_SIMPLE;
+				std::string b2;
 				auto len = mjson.rfc822_fetch(rfc_path.c_str(),
-				           pcontext->defcharset,
-					FALSE, buff + buff_len, MAX_DIGLEN - buff_len);
+				           pcontext->defcharset, false, b2);
 				if (len == -1)
 					goto FETCH_BODY_SIMPLE;
-				buff_len += len;
+				buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
+				            "%s", b2.c_str());
 			} else {
  FETCH_BODY_SIMPLE:
+				std::string b2;
 				auto len = mjson.fetch_structure(pcontext->defcharset,
-					FALSE, buff + buff_len, MAX_DIGLEN - buff_len);
+				           false, b2);
 				if (len == -1)
 					buff_len += gx_snprintf(buff + buff_len,
 					            std::size(buff) - buff_len, "NIL");
 				else
-					buff_len += len;
+					buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
+						    "%s", b2.c_str());
 			}
 		} else if (strcasecmp(kw, "BODYSTRUCTURE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
@@ -802,32 +805,36 @@ static int icp_process_fetch_item(imap_context &ctx,
 				if (rfc_path.size() <= 0 ||
 				    !mjson.rfc822_build(rfc_path.c_str()))
 					goto FETCH_BODYSTRUCTURE_SIMPLE;
+				std::string b2;
 				auto len = mjson.rfc822_fetch(rfc_path.c_str(),
-				           pcontext->defcharset,
-					TRUE, buff + buff_len, MAX_DIGLEN - buff_len);
+				           pcontext->defcharset, TRUE, b2);
 				if (len == -1)
 					goto FETCH_BODYSTRUCTURE_SIMPLE;
-				buff_len += len;
+				buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
+					    "%s", b2.c_str());
 			} else {
  FETCH_BODYSTRUCTURE_SIMPLE:
+				std::string b2;
 				auto len = mjson.fetch_structure(pcontext->defcharset,
-					TRUE, buff + buff_len, MAX_DIGLEN - buff_len);
+				           TRUE, b2);
 				if (len == -1)
 					buff_len += gx_snprintf(buff + buff_len,
 					            std::size(buff) - buff_len, "NIL");
 				else
-					buff_len += len;
+					buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
+						    "%s", b2.c_str());
 			}
 		} else if (strcasecmp(kw, "ENVELOPE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            std::size(buff) - buff_len, "ENVELOPE ");
-			auto len = mjson.fetch_envelope(pcontext->defcharset,
-				buff + buff_len, MAX_DIGLEN - buff_len);
+			std::string b2;
+			auto len = mjson.fetch_envelope(pcontext->defcharset, b2);
 			if (len == -1)
 				buff_len += gx_snprintf(buff + buff_len,
 				            std::size(buff) - buff_len, "NIL");
 			else
-				buff_len += len;
+				buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
+					    "%s", b2.c_str());
 		} else if (strcasecmp(kw, "FLAGS") == 0) {
 			char flags_string[128];
 			icp_convert_flags_string(pitem->flag_bits, flags_string);
