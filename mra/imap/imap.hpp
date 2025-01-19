@@ -100,11 +100,12 @@ struct imap_context final : public schedule_context {
 	isched_stat sched_stat = isched_stat::none;
 	char *write_buff = nullptr;
 	size_t write_length = 0, write_offset = 0;
-	size_t wrdat_size = 0, wrdat_offset = 0;
+	size_t wrdat_offset = 0;
 	time_t selected_time = 0;
 	std::string selected_folder;
 	content_array contents;
-	std::unique_ptr<char[], gromox::stdlib_delete> wrdat_content;
+	std::string wrdat_content;
+	bool wrdat_active = false;
 	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
 	std::atomic<unsigned int> async_change_mask{0};
 	/*
