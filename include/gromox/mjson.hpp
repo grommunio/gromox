@@ -36,6 +36,11 @@ struct GX_EXPORT MJSON_MIME {
 		for (auto &c : children)
 			c.exec(func, std::forward<Args>(args)...);
 	}
+	template<typename F, typename... Args> void exec(F &&func, Args &&...args) const {
+		func(this, std::forward<Args>(args)...);
+		for (auto &c : children)
+			c.exec(func, std::forward<Args>(args)...);
+	}
 };
 
 struct GX_EXPORT MJSON {
@@ -52,10 +57,6 @@ struct GX_EXPORT MJSON {
 	BOOL rfc822_get(MJSON *other_pjson, const char *storage_path, const char *id, char *mjson_id, char *mime_id) const;
 	int rfc822_fetch(const char *storage_path, const char *cset, BOOL ext, std::string &out) const;
 	int seek_fd(const char *id, int whence);
-	template<typename... Args> void enum_mime(Args &&...args) {
-		if (m_root.has_value())
-			m_root->exec(std::forward<Args>(args)...);
-	}
 	const char *get_mail_filename() const { return filename.c_str(); }
 	const char *get_mail_received() const { return received.c_str(); }
 	const char *get_mail_messageid() const { return msgid.c_str(); }
@@ -70,6 +71,15 @@ struct GX_EXPORT MJSON {
 	size_t size = 0;
 	std::string path, filename, charset, msgid, from, sender, reply, to, cc;
 	std::string inreply, subject, received, date, ref, notification;
+
+	template<typename... Args> void enum_mime(Args &&...args) {
+		if (m_root.has_value())
+			m_root->exec(std::forward<Args>(args)...);
+	}
+	template<typename... Args> void enum_mime(Args &&...args) const {
+		if (m_root.has_value())
+			m_root->exec(std::forward<Args>(args)...);
+	}
 };
 
 enum {

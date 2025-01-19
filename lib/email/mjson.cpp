@@ -59,8 +59,7 @@ static int mjson_fetch_mime_structure(const MJSON_MIME *,
 	const char *email_charset, BOOL b_ext, std::string &out);
 static std::string mjson_cvt_addr(const EMAIL_ADDR &);
 static std::string mjson_add_backslash(const char *);
-static void mjson_emum_rfc822(MJSON_MIME *, void *);
-static void mjson_enum_build(MJSON_MIME *, void *);
+static void mjson_enum_build(const MJSON_MIME *, BUILD_PARAM *);
 static int mjson_rfc822_fetch_internal(const MJSON *, const char *storage_path, const char *cset, BOOL b_ext, std::string &out);
 
 bool MJSON_MIME::contains_none_type() const
@@ -557,25 +556,18 @@ static std::string mjson_add_backslash(const char *s)
 	return q.get();
 }
 
-static void mjson_emum_rfc822(MJSON_MIME *input_mime, void *param)
-{
-	const MJSON_MIME *pmime = input_mime;
-	auto pb_found = static_cast<BOOL *>(param);
-	if (!*pb_found && pmime->ctype_is_rfc822())
-		*pb_found = TRUE;
-}
-
 bool MJSON::has_rfc822_part() const
 {
-	BOOL b_found = false;
-	const_cast<MJSON *>(this)->enum_mime(mjson_emum_rfc822, &b_found);
+	bool b_found = false;
+	enum_mime([](const MJSON_MIME *m, bool &found) {
+		if (!found && m->ctype_is_rfc822())
+			found = true;
+		}, b_found);
 	return b_found;
 }
 
-static void mjson_enum_build(MJSON_MIME *input_mime, void *param) try
+static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) try
 {
-	const MJSON_MIME *pmime = input_mime;
-	auto pbuild = static_cast<BUILD_PARAM *>(param);
 	size_t length1;
 	
 	if (!pbuild->build_result || pbuild->depth > MAX_RFC822_DEPTH ||
@@ -749,7 +741,7 @@ BOOL MJSON::rfc822_build(const char *storage_path) const
 	build_param.storage_path = temp_path.c_str();
 	build_param.depth = 1;
 	build_param.build_result = TRUE;
-	const_cast<MJSON *>(pjson)->enum_mime(mjson_enum_build, &build_param);
+	pjson->enum_mime(mjson_enum_build, &build_param);
 	if (!build_param.build_result)
 		rmdir(temp_path.c_str());
 	return build_param.build_result;
