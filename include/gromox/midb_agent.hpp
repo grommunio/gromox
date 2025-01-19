@@ -62,7 +62,7 @@ extern GX_EXPORT int set_flags(const char *path, const std::string &folder, cons
 extern GX_EXPORT int unset_flags(const char *path, const std::string &folder, const std::string &mid, unsigned int flag_bits, unsigned int *new_bits, int *perrno);
 extern GX_EXPORT int get_flags(const char *path, const std::string &folder, const std::string &mid, unsigned int *pflag_bits, int *perrno);
 extern GX_EXPORT int copy_mail(const char *path, const std::string &src_folder, const std::string &src_mid, const std::string &dst_folder, std::string &dst_mid, int *perrno);
-extern GX_EXPORT int search(const char *path, const std::string &folder, const char *charset, std::span<char *> argv, std::string &ret_buff, int *perrno);
-extern GX_EXPORT int search_uid(const char *path, const std::string &folder, const char *charset, std::span<char *> argv, std::string &ret_buff, int *perrno);
+extern GX_EXPORT int search(const char *path, const std::string &folder, const char *charset, std::span<std::string> argv, std::string &ret_buff, int *perrno);
+extern GX_EXPORT int search_uid(const char *path, const std::string &folder, const char *charset, std::span<std::string> argv, std::string &ret_buff, int *perrno);
 
 }

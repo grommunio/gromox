@@ -49,7 +49,7 @@ extern GX_EXPORT void parse_field_value(const char *in_buff, long buff_len, char
 extern GX_EXPORT void parse_mime_encode_string(const char *in, long inlen, ENCODE_STRING *);
 extern GX_EXPORT int mutf7_to_utf8(const char *u7, size_t u7len, char *u8, size_t u8len);
 extern GX_EXPORT int utf8_to_mutf7(const char *u8, size_t u8len, char *u7, size_t u7len);
-extern GX_EXPORT int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax);
+extern GX_EXPORT int parse_imap_args(char *cmd, int inlen, std::vector<std::string> &);
 extern GX_EXPORT BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime);
 extern GX_EXPORT bool mime_string_to_utf8(std::string_view in, std::string &out);
 extern GX_EXPORT void enriched_to_html(const char *enriched_txt,

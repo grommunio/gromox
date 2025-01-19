@@ -888,8 +888,8 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 	return false;
 }
 
-static int me_ct_compile_criteria(std::span<char *> argv,
-    size_t offset, char **argv_out)
+static int me_ct_compile_criteria(std::span<std::string> argv,
+    size_t i, std::vector<std::string> &argv_out)
 {
 	static constexpr const char *kwlist1[] =
 		{"ALL", "ANSWERED", "DELETED", "DRAFT", "FLAGGED", "NEW",
@@ -899,25 +899,22 @@ static int me_ct_compile_criteria(std::span<char *> argv,
 		{"BCC", "BEFORE", "BODY", "CC", "FROM", "KEYWORD", "LARGER",
 		"ON", "SENTBEFORE", "SENTON", "SENTSINCE", "SINCE", "SMALLER",
 		"SUBJECT", "TEXT", "TO", "UID", "UNKEYWORD"};
-	int tmp_argc;
-	int tmp_argc1;
 	
-	auto i = offset;
 	if (argv.size() < i + 1)
 		return -1;
-	auto keyword = argv[i];
-	argv_out[0] = keyword;
+	auto keyword = argv[i].c_str();
+	argv_out.emplace_back(argv[i]);
 	if (strcasecmp(keyword, "OR") == 0) {
 		i ++;
 		if (argv.size() < i + 1)
 			return -1;
-		tmp_argc = me_ct_compile_criteria(argv, i, &argv_out[1]);
+		auto tmp_argc = me_ct_compile_criteria(argv, i, argv_out);
 		if (tmp_argc == -1)
 			return -1;
 		i += tmp_argc;
 		if (argv.size() < i + 1)
 			return -1;
-		tmp_argc1 = me_ct_compile_criteria(argv, i, &argv_out[1+tmp_argc]);
+		auto tmp_argc1 = me_ct_compile_criteria(argv, i, argv_out);
 		if (tmp_argc1 == -1)
 			return -1;
 		return tmp_argc + tmp_argc1 + 1;
@@ -927,23 +924,23 @@ static int me_ct_compile_criteria(std::span<char *> argv,
 		i ++;
 		if (argv.size() < i + 1)
 			return -1;
-		argv_out[1] = argv[i];
+		argv_out.emplace_back(argv[i]);
 		return 2;
 	} else if (strcasecmp(keyword, "HEADER") == 0) {
 		i ++;
 		if (argv.size() < i + 1)
 			return -1;
-		argv_out[1] = argv[i];
+		argv_out.emplace_back(argv[i]);
 		i++;
 		if (argv.size() < i + 1)
 			return -1;
-		argv_out[2] = argv[i];
+		argv_out.emplace_back(argv[i]);
 		return 3;
 	} else if (strcasecmp(keyword, "NOT") == 0) {
 		i ++;
 		if (argv.size() < i + 1)
 			return -1;
-		tmp_argc = me_ct_compile_criteria(argv, i, &argv_out[1]);
+		auto tmp_argc = me_ct_compile_criteria(argv, i, argv_out);
 		if (-1 == tmp_argc)
 			return -1;
 		return tmp_argc + 1;
@@ -997,7 +994,7 @@ static enum midb_cond cond_str_to_cond(const char *s)
 }
 
 static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
-    std::span<char *> argv) try
+    std::span<std::string> argv) try
 {
 	static constexpr const char *kwlist1[] =
 		{"BCC", "BODY", "CC", "FROM", "KEYWORD", "SUBJECT", "TEXT",
@@ -1008,13 +1005,13 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 		{"ALL", "ANSWERED", "DELETED", "DRAFT", "FLAGGED", "NEW",
 		"OLD", "RECENT", "SEEN", "UNANSWERED", "UNDELETED", "UNDRAFT",
 		"UNFLAGGED", "UNSEEN"};
-	int len, tmp_argc, tmp_argc1;
+	int len;
 	struct tm tmp_tm;
-	char* tmp_argv[256];
+	std::vector<std::string> tmp_argv;
 	auto plist = std::make_optional<CONDITION_TREE>();
 
 	for (size_t i = 0; i < argv.size(); ++i) {
-		auto &keyword = argv[i];
+		auto keyword = argv[i].data();
 		ct_node ctn, *ptree_node = &ctn;
 		if (strcasecmp(keyword, "NOT") == 0) {
 			ptree_node->conjunction = midb_conj::c_not;
@@ -1047,26 +1044,26 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 		} else if (keyword[0] == '(') {
 			len = strlen(keyword);
 			keyword[len-1] = '\0';
-			tmp_argc = parse_imap_args(&keyword[1], len - 2, tmp_argv, sizeof(tmp_argv));
+			auto tmp_argc = parse_imap_args(&keyword[1], len - 2, tmp_argv);
 			if (tmp_argc == -1)
 				return {};
-			ptree_node->pbranch = me_ct_build_internal(charset, {tmp_argv, size_t(tmp_argc)});
+			ptree_node->pbranch = me_ct_build_internal(charset, tmp_argv);
 			if (!ptree_node->pbranch.has_value())
 				return {};
 		} else if (strcasecmp(keyword, "OR") == 0) {
 			i ++;
 			if (i + 1 > argv.size())
 				return {};
-			tmp_argc = me_ct_compile_criteria(argv, i, tmp_argv);
+			auto tmp_argc = me_ct_compile_criteria(argv, i, tmp_argv);
 			if (tmp_argc == -1)
 				return {};
 			i += tmp_argc;
 			if (i + 1 > argv.size())
 				return {};
-			tmp_argc1 = me_ct_compile_criteria(argv, i, &tmp_argv[tmp_argc]);
+			auto tmp_argc1 = me_ct_compile_criteria(argv, i, tmp_argv);
 			if (tmp_argc1 == -1)
 				return {};
-			auto plist1 = me_ct_build_internal(charset, {tmp_argv, size_t(tmp_argc + tmp_argc1)});
+			auto plist1 = me_ct_build_internal(charset, tmp_argv);
 			if (!plist1.has_value())
 				return {};
 			if (plist1->size() != 2)
@@ -1118,13 +1115,13 @@ static std::optional<CONDITION_TREE> me_ct_build_internal(const char *charset,
 	return {};
 }
 
-static std::optional<CONDITION_TREE> me_ct_build(std::span<char *> argv)
+static std::optional<CONDITION_TREE> me_ct_build(std::span<std::string> argv)
 {
-	if (strcasecmp(argv[0], "CHARSET") != 0)
+	if (strcasecmp(argv[0].c_str(), "CHARSET") != 0)
 		return me_ct_build_internal("UTF-8", argv);
 	if (argv.size() < 3)
 		return {};
-	return me_ct_build_internal(argv[1], argv.subspan(2));
+	return me_ct_build_internal(argv[1].c_str(), argv.subspan(2));
 }
 
 static bool ct_hint_seq(const imap_seq_list &list,
@@ -3308,28 +3305,24 @@ static int me_pgflg(std::span<char *> argv, int sockd) try
 static int me_psrhl(std::span<char *> argv, int sockd) try
 {
 	char *parg;
-	int tmp_argc;
 	sqlite3 *psqlite;
 	size_t decode_len;
-	char* tmp_argv[1024];
+	std::vector<std::string> tmp_argv;
 	char tmp_buff[16*1024];
 	
 	auto tmp_len = strlen(argv[4]);
 	if (tmp_len >= sizeof(tmp_buff) ||
 	    decode64(argv[4], tmp_len, tmp_buff, std::size(tmp_buff), &decode_len) != 0)
 		return MIDB_E_PARAMETER_ERROR;
-	tmp_argc = 0;
 	parg = tmp_buff;
 	while (*parg != '\0' && parg - tmp_buff >= 0 &&
-	       static_cast<size_t>(parg - tmp_buff) < decode_len &&
-	       static_cast<size_t>(tmp_argc) < sizeof(tmp_argv)) {
-		tmp_argv[tmp_argc] = parg;
+	       static_cast<size_t>(parg - tmp_buff) < decode_len) {
+		tmp_argv.emplace_back(parg);
 		parg += strlen(parg) + 1;
-		tmp_argc ++;
 	}
-	if (tmp_argc == 0)
+	if (tmp_argv.size() == 0)
 		return MIDB_E_PARAMETER_ERROR;
-	auto ptree = me_ct_build({tmp_argv, size_t(tmp_argc)});
+	auto ptree = me_ct_build(tmp_argv);
 	if (!ptree.has_value())
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = me_get_idb(argv[1]);
@@ -3386,28 +3379,24 @@ static int me_psrhl(std::span<char *> argv, int sockd) try
 static int me_psrhu(std::span<char *> argv, int sockd) try
 {
 	char *parg;
-	int tmp_argc;
 	sqlite3 *psqlite;
 	size_t decode_len;
-	char* tmp_argv[1024];
+	std::vector<std::string> tmp_argv;
 	char tmp_buff[16*1024];
 	
 	auto tmp_len = strlen(argv[4]);
 	if (tmp_len >= sizeof(tmp_buff) ||
 	    decode64(argv[4], tmp_len, tmp_buff, std::size(tmp_buff), &decode_len) != 0)
 		return MIDB_E_PARAMETER_ERROR;
-	tmp_argc = 0;
 	parg = tmp_buff;
 	while (*parg != '\0' && parg - tmp_buff >= 0 &&
-	       static_cast<size_t>(parg - tmp_buff) < decode_len &&
-	       static_cast<size_t>(tmp_argc) < sizeof(tmp_argv)) {
-		tmp_argv[tmp_argc] = parg;
+	       static_cast<size_t>(parg - tmp_buff) < decode_len) {
+		tmp_argv.emplace_back(parg);
 		parg += strlen(parg) + 1;
-		tmp_argc ++;
 	}
-	if (tmp_argc == 0)
+	if (tmp_argv.size() == 0)
 		return MIDB_E_PARAMETER_ERROR;
-	auto ptree = me_ct_build({tmp_argv, size_t(tmp_argc)});
+	auto ptree = me_ct_build(tmp_argv);
 	if (!ptree.has_value())
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = me_get_idb(argv[1]);

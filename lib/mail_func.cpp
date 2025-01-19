@@ -788,9 +788,8 @@ int utf8_to_mutf7(const char *u8, size_t u8len, char *u7, size_t u7len)
   return p - buf;
 }
 
-int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
+int parse_imap_args(char *cmdline, int cmdlen, std::vector<std::string> &argv) try
 {
-	int argc;
 	char *ptr;
 	int b_count = 0, s_count = 0;
 	BOOL is_quoted;
@@ -803,7 +802,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 	cmdline[cmdlen++] = ' ';
 	ptr = cmdline;
 	/* Build the argv list */
-	argc = 0;
+	argv.clear();
 	last_bracket = NULL;
 	last_square = NULL;
 	last_space = cmdline;
@@ -818,7 +817,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 	 * `* APPEND fld content` from `* APPEND fld datestring` and will
 	 * create a message with datestring as content.
 	 */
-	while (ptr - cmdline < cmdlen && argc < argmax - 1) {
+	while (ptr - cmdline < cmdlen) {
 		/*
 		 * After any memmove, we must immediately reevaluate *ptr,
 		 * because we may have introduced the same kind of control char
@@ -834,7 +833,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 				ptr += length;
 				continue;
 			} else {
-				argv[0] = NULL;
+				argv.clear();
 				return -1;
 			}
 		}
@@ -883,12 +882,12 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 			if (ptr == last_space && !is_quoted) {
 				last_space ++;
 			} else {
-				argv[argc] = last_space;
 				*ptr = '\0';
-				if (!is_quoted && strcasecmp(argv[argc], "NIL") == 0)
-					*argv[argc] = '\0';
+				if (!is_quoted && strcasecmp(last_space, "NIL") == 0)
+					argv.emplace_back();
+				else
+					argv.emplace_back(last_space);
 				last_space = ptr + 1;
-				argc ++;
 				is_quoted = FALSE;
 			}
 		}
@@ -896,11 +895,13 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 	}
 	/* only one quote is found, error */
 	if (last_quote != nullptr || last_bracket != nullptr || last_square != nullptr) {
-		argv[0] = NULL;
+		argv.clear();
 		return -1;
 	}
-	argv[argc] = NULL;
-	return argc;
+	return argv.size();
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1756: ENOMEM");
+	return -1;
 }
 
 BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)

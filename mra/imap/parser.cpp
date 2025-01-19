@@ -59,7 +59,7 @@ static void *imps_scanwork(void *);
 static void imap_parser_event_proc(char *event);
 static void imap_parser_event_touch(const char *user, const char *folder);
 static void imap_parser_event_flag(const char *username, const char *folder, uint32_t uid);
-static int imap_parser_dispatch_cmd(std::span<char *> argv, imap_context &);
+static int imap_parser_dispatch_cmd(std::span<std::string> argv, imap_context &);
 static void imap_parser_context_clear(imap_context *);
 static int imap_parser_wrdat_retrieve(imap_context &);
 
@@ -498,12 +498,11 @@ static tproc_status ps_literal_processing(imap_context &ctx)
 		memcpy(&ctx.command_buffer[ctx.command_len],
 		       pcontext->read_buffer, i);
 		pcontext->command_len += i;
-		char *argv[128];
-		auto argc = parse_imap_args(pcontext->command_buffer, pcontext->command_len,
-			    argv, std::size(argv));
-		if (argc >= 3 && 0 == strcasecmp(argv[1], "APPEND")) {
+		std::vector<std::string> argv;
+		auto argc = parse_imap_args(pcontext->command_buffer, pcontext->command_len, argv);
+		if (argc >= 3 && strcasecmp(argv[1].c_str(), "APPEND") == 0) {
 			/* Special handling for APPEND with potentially huge literals */
-			switch (icp_long_append_begin({argv, size_t(argc)}, ctx)) {
+			switch (icp_long_append_begin(argv, ctx)) {
 			case DISPATCH_CONTINUE: {
 				ctx.current_len = &ctx.read_buffer[ctx.read_offset] - &ctx.literal_ptr[nl_len];
 				if (pcontext->current_len < 0) {
@@ -622,7 +621,6 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 		else
 			pcontext->read_offset = 0;
 
-		char *argv[128];
 		if (iproto_stat::username == pcontext->proto_stat) {
 			icp_username(pcontext->command_buffer, ctx);
 			pcontext->command_len = 0;
@@ -635,8 +633,9 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 			return tproc_status::literal_processing;
 		}
 
+		std::vector<std::string> argv;
 		auto argc = parse_imap_args(pcontext->command_buffer,
-			    pcontext->command_len, argv, std::size(argv));
+			    pcontext->command_len, argv);
 		/* XXX: what if... argc < 0? */
 
 		if (pcontext->sched_stat == isched_stat::appended) {
@@ -650,7 +649,7 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 				pcontext->connection.write(" ", 1);
 				pcontext->connection.write(imap_reply_str, string_length);
 			} else {
-				icp_long_append_end({argv, size_t(argc)}, ctx);
+				icp_long_append_end(argv, ctx);
 			}
 			pcontext->sched_stat = isched_stat::rdcmd;
 			pcontext->literal_ptr = nullptr;
@@ -662,7 +661,7 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 		if (pcontext->sched_stat == isched_stat::idling) {
 			size_t string_length = 0;
 			const char *imap_reply_str = nullptr;
-			if (1 != argc || 0 != strcasecmp(argv[0], "DONE")) {
+			if (argc != 1 || strcasecmp(argv[0].c_str(), "DONE") != 0) {
 				/* IMAP_CODE_2180018: BAD expected DONE */
 				imap_reply_str = resource_get_imap_code(1818, 1,
 				                 &string_length);
@@ -679,14 +678,14 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 			return tproc_status::literal_processing;
 		}
 
-		if (argc < 2 || strlen(argv[0]) >= 32) {
+		if (argc < 2 || strlen(argv[0].c_str()) >= 32) {
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-			if (argc <= 0 || strlen(argv[0]) >= 32) {
+			if (argc <= 0 || argv[0].size() >= 32) {
 				pcontext->connection.write("* ", 2);
 				pcontext->connection.write(imap_reply_str, string_length);
 			} else {
-				pcontext->connection.write(argv[0], strlen(argv[0]));
+				pcontext->connection.write(argv[0].c_str(), argv[0].size());
 				pcontext->connection.write(" ", 1);
 				pcontext->connection.write(imap_reply_str, string_length);
 			}
@@ -694,7 +693,7 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 			return tproc_status::literal_checking;
 		}
 
-		switch (imap_parser_dispatch_cmd({argv, size_t(argc)}, ctx)) {
+		switch (imap_parser_dispatch_cmd(argv, ctx)) {
 		case DISPATCH_CONTINUE:
 			pcontext->command_len = 0;
 			return tproc_status::literal_processing;
@@ -1398,13 +1397,13 @@ SCHEDULE_CONTEXT **imap_parser_get_contexts_list()
 	return g_context_list2.data();
 }
 
-static int imap_parser_dispatch_cmd2(std::span<char *> argv,
+static int imap_parser_dispatch_cmd2(std::span<std::string> argv,
     imap_context &ctx)
 {
 	assert(argv.size() >= 2);
 	auto pcontext = &ctx;
 	char reply_buff[1024];
-	static constexpr std::pair<const char *, int (*)(std::span<char *>, imap_context &)> proc[] = {
+	static constexpr std::pair<const char *, int (*)(std::span<std::string>, imap_context &)> proc[] = {
 		{"APPEND", icp_append},
 		{"AUTHENTICATE", icp_authenticate},
 		{"CAPABILITY", icp_capability},
@@ -1442,23 +1441,23 @@ static int imap_parser_dispatch_cmd2(std::span<char *> argv,
 	};
 
 	auto scmp = [](decltype(*proc) &p, const char *cmd) { return strcasecmp(p.first, cmd) < 0; };
-	if (strcasecmp(argv[1], "UID") == 0) {
-		auto it = std::lower_bound(std::begin(proc_uid), std::end(proc_uid), argv[2], scmp);
-		if (it != std::end(proc_uid) && strcasecmp(argv[2], it->first) == 0)
+	if (strcasecmp(argv[1].c_str(), "UID") == 0) {
+		auto it = std::lower_bound(std::begin(proc_uid), std::end(proc_uid), argv[2].c_str(), scmp);
+		if (it != std::end(proc_uid) && strcasecmp(argv[2].c_str(), it->first) == 0)
 			return it->second(argv, *pcontext);
 	} else {
-		auto it = std::lower_bound(std::begin(proc), std::end(proc), argv[1], scmp);
-		if (it != std::end(proc) && strcasecmp(argv[1], it->first) == 0)
+		auto it = std::lower_bound(std::begin(proc), std::end(proc), argv[1].c_str(), scmp);
+		if (it != std::end(proc) && strcasecmp(argv[1].c_str(), it->first) == 0)
 			return it->second(argv, *pcontext);
 	}
 
 	auto imap_reply_str = resource_get_imap_code(1800, 1);
-	auto string_length = gx_snprintf(reply_buff, std::size(reply_buff), "%s %s", argv[0], imap_reply_str);
+	auto string_length = gx_snprintf(reply_buff, std::size(reply_buff), "%s %s", argv[0].c_str(), imap_reply_str);
 	pcontext->connection.write(reply_buff, string_length);
 	return DISPATCH_CONTINUE;
 }
 
-static int imap_parser_dispatch_cmd(std::span<char *> argv, imap_context &ctx) try
+static int imap_parser_dispatch_cmd(std::span<std::string> argv, imap_context &ctx) try
 {
 	assert(argv.size() >= 2);
 	/*
@@ -1490,9 +1489,9 @@ static int imap_parser_dispatch_cmd(std::span<char *> argv, imap_context &ctx) t
 			fprintf(stderr, ": ret=%xh code=%u\n", ret, code);
 		}
 	}
-	return icp_dval(argv[0], ctx, ret);
+	return icp_dval(argv[0].c_str(), ctx, ret);
 } catch (const std::bad_alloc &) {
-	return icp_dval(argv[0], ctx, 1915);
+	return icp_dval(argv[0].c_str(), ctx, 1915);
 }
 
 imap_context::imap_context()
