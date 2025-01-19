@@ -1153,11 +1153,11 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 	}
 #endif
 	if (!has_rfc822_part())
-		return FALSE;
+		return -1;
 	snprintf(temp_path, std::size(temp_path), "%s/%s", storage_path,
 	         pjson->get_mail_filename());
 	if (stat(temp_path, &node_stat) != 0 || !S_ISDIR(node_stat.st_mode))
-		return FALSE;
+		return -1;
 	auto pnode = pjson->stree.get_root();
 	if (pnode == nullptr)
 		return -1;
