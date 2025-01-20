@@ -38,6 +38,7 @@
 #include <gromox/mjson.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/range_set.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -674,10 +675,10 @@ static int pstruct_else(imap_context &ctx, MJSON *pjson,
 	if (storage_path == nullptr) {
 		eml_path = ctx.maildir + "/eml/"s + pjson->get_mail_filename();
 		if (!ctx.io_actor.exists(eml_path)) {
-			size_t z = 0;
-			std::unique_ptr<char[], stdlib_delete> d(HX_slurp_file(eml_path.c_str(), &z));
-			if (d != nullptr)
-				ctx.io_actor.place(eml_path, std::string(d.get(), z));
+			std::string content;
+			if (exmdb_client::imapfile_read(ctx.maildir, "eml",
+			    pjson->get_mail_filename(), &content))
+				ctx.io_actor.place(eml_path, std::move(content));
 		}
 	} else {
 		eml_path = ctx.maildir + "/tmp/imap.rfc822/"s + storage_path + "/" + pjson->get_mail_filename();
@@ -734,10 +735,9 @@ static int icp_process_fetch_item(imap_context &ctx,
 		mjson.path = eml_path;
 		auto eml_file = eml_path + "/"s + pitem->mid;
 		if (!ctx.io_actor.exists(eml_file)) {
-			size_t z = 0;
-			std::unique_ptr<char[], stdlib_delete> d(HX_slurp_file(eml_file.c_str(), &z));
-			if (d != nullptr)
-				ctx.io_actor.place(eml_file, std::string(d.get(), z));
+			std::string content;
+			if (exmdb_client::imapfile_read(ctx.maildir, "eml", pitem->mid, &content))
+				ctx.io_actor.place(eml_file, std::move(content));
 		}
 	}
 
@@ -2034,21 +2034,11 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 	}
 	mid_string += "."s + znul(g_config_file->get_value("host_id"));
 	auto pcontext = &ctx;
-	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, mid_string);
-	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
-	if (fd.get() < 0) {
-		mlog(LV_ERR, "E-1763: write to %s failed: %s",
-			eml_path.c_str(), strerror(errno));
-		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1370: remove %s: %s",
-			        eml_path.c_str(), strerror(errno));
-		return 1909;
-	}
-	auto eml_size = strlen(argv[argc-1]);
-	auto wrret = HXio_fullwrite(fd.get(), argv[argc-1], eml_size);
-	if (wrret < 0 || static_cast<size_t>(wrret) != eml_size ||
-	    fd.close_wr() < 0) {
-		mlog(LV_WARN, "E-2395: write %s: %s", eml_path.c_str(), strerror(errno));
+	imrpc_build_env();
+	auto cl_0 = make_scope_exit(imrpc_free_env);
+	if (!exmdb_client::imapfile_write(ctx.maildir, "eml",
+	    mid_string, argv[argc-1])) {
+		mlog(LV_ERR, "E-1763: write %s/eml/%s failed", ctx.maildir, mid_string.c_str());
 		return 1909;
 	}
 
@@ -2057,7 +2047,7 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
-	imap_parser_log_info(pcontext, LV_DEBUG, "message %s is appended OK", eml_path.c_str());
+	imap_parser_log_info(pcontext, LV_DEBUG, "message %s is appended OK", mid_string.c_str());
 	imap_parser_bcast_touch(nullptr, pcontext->username, pcontext->selected_folder);
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, NULL);
@@ -2163,23 +2153,22 @@ int icp_append_begin(int argc, char **argv, imap_context &ctx)
 static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
-	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, pcontext->mid);
-	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
-	if (fd.get() < 0) {
-		mlog(LV_ERR, "E-1764: write to %s failed: %s",
-			eml_path.c_str(), strerror(errno));
-		ctx.append_stream.clear();
-		return 1909 | DISPATCH_TAG;
-	} else if (ctx.append_stream.dump(fd.get()) != STREAM_DUMP_OK) {
-		mlog(LV_WARN, "E-1346: write %s: %s", eml_path.c_str(), strerror(errno));
-		ctx.append_stream.clear();
-		return 1909 | DISPATCH_TAG;
-	} else if (fd.close_wr() < 0) {
-		mlog(LV_WARN, "E-2016: write %s: %s", eml_path.c_str(), strerror(errno));
-		ctx.append_stream.clear();
+	std::string content;
+	void *strb;
+	unsigned int strb_size = STREAM_BLOCK_SIZE;
+	ctx.append_stream.reset_reading();
+	while ((strb = ctx.append_stream.get_read_buf(&strb_size)) != nullptr) {
+		content.append(static_cast<char *>(strb), strb_size);
+		strb_size = STREAM_BLOCK_SIZE;
+	}
+	imrpc_build_env();
+	auto cl_0 = make_scope_exit(imrpc_free_env);
+	if (!exmdb_client::imapfile_write(ctx.maildir, "eml",
+	    ctx.mid, content)) {
+		mlog(LV_ERR, "E-1764: write to %s/eml/%s failed",
+			pcontext->maildir, pcontext->mid.c_str());
 		return 1909 | DISPATCH_TAG;
 	}
-	ctx.append_stream.clear();
 
 	int errnum;
 	auto sys_name = ctx.append_folder.c_str();
@@ -2191,7 +2180,7 @@ static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret | DISPATCH_TAG;
-	imap_parser_log_info(pcontext, LV_DEBUG, "message %s is appended OK", eml_path.c_str());
+	imap_parser_log_info(pcontext, LV_DEBUG, "message %s is appended OK", cmid.c_str());
 	imap_parser_bcast_touch(nullptr, pcontext->username, pcontext->selected_folder);
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, NULL);
@@ -2272,6 +2261,8 @@ int icp_expunge(int argc, char **argv, imap_context &ctx) try
 		return 1726;
 	}
 	std::vector<MITEM *> exp_list;
+	imrpc_build_env();
+	auto cl_0 = make_scope_exit(imrpc_free_env);
 	for (size_t i = 0; i < num; ++i) {
 		auto pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem))
@@ -2295,11 +2286,12 @@ int icp_expunge(int argc, char **argv, imap_context &ctx) try
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
 		if (ct_item == nullptr)
 			continue;
-		auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
-		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-2030: remove %s: %s",
-				eml_path.c_str(), strerror(errno));
-		imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted", eml_path.c_str());
+		if (!exmdb_client::imapfile_delete(ctx.maildir, "eml", pitem->mid))
+			mlog(LV_WARN, "W-2030: remove %s/eml/%s failed",
+				ctx.maildir, pitem->mid.c_str());
+		else
+			imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted",
+				pitem->mid.c_str());
 	}
 	if (!exp_list.empty())
 		imap_parser_bcast_expunge(*pcontext, exp_list);
@@ -2439,6 +2431,8 @@ int icp_fetch(int argc, char **argv, imap_context &ctx)
 		return result;
 	pcontext->stream.clear();
 	num = xarray.get_capacity();
+	imrpc_build_env();
+	auto cl_0 = make_scope_exit(imrpc_free_env);
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
 		/*
@@ -2712,6 +2706,8 @@ int icp_uid_fetch(int argc, char **argv, imap_context &ctx) try
 		return ret;
 	pcontext->stream.clear();
 	num = xarray.get_capacity();
+	imrpc_build_env();
+	auto cl_0 = make_scope_exit(imrpc_free_env);
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
@@ -2925,6 +2921,8 @@ int icp_uid_expunge(int argc, char **argv, imap_context &ctx) try
 	auto pitem = xarray.get_item(num - 1);
 	max_uid = pitem->uid;
 	std::vector<MITEM *> exp_list;
+	imrpc_build_env();
+	auto cl_0 = make_scope_exit(imrpc_free_env);
 	for (size_t i = 0; i < num; ++i) {
 		pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem) ||
@@ -2947,11 +2945,12 @@ int icp_uid_expunge(int argc, char **argv, imap_context &ctx) try
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
 		if (ct_item == nullptr)
 			continue;
-		auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
-		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-2086: remove %s: %s",
-				eml_path.c_str(), strerror(errno));
-		imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted", eml_path.c_str());
+		if (!exmdb_client::imapfile_delete(ctx.maildir, "eml", pitem->mid))
+			mlog(LV_WARN, "W-2086: remove %s/eml/%s failed",
+				ctx.maildir, pitem->mid.c_str());
+		else
+			imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted",
+				pitem->mid.c_str());
 	}
 	if (!exp_list.empty())
 		imap_parser_bcast_expunge(*pcontext, exp_list);
@@ -3025,19 +3024,23 @@ void icp_clsfld(imap_context &ctx) try
 	result = midb_agent::remove_mail(pcontext->maildir,
 	         prev_selected, exp_list, &errnum);
 	switch(result) {
-	case MIDB_RESULT_OK:
+	case MIDB_RESULT_OK: {
+		imrpc_build_env();
+		auto cl_0 = make_scope_exit(imrpc_free_env);
 		for (i = 0; i < num; ++i) {
 			auto pitem = xarray.get_item(i);
 			if (zero_uid_bit(*pitem))
 				continue;
-			auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, pitem->mid);
-			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-2087: remove %s: %s",
-				        eml_path.c_str(), strerror(errno));
-			imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted", eml_path.c_str());
+			if (!exmdb_client::imapfile_delete(ctx.maildir, "eml", pitem->mid))
+				mlog(LV_WARN, "W-2087: remove %s/eml/%s failed",
+				        ctx.maildir, pitem->mid.c_str());
+			else
+				imap_parser_log_info(pcontext, LV_DEBUG,
+					"message %s has been deleted", pitem->mid.c_str());
 			b_deleted = TRUE;
 		}
 		break;
+	}
 	case MIDB_NO_SERVER:
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
