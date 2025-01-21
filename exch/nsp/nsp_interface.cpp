@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -589,6 +589,8 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 
 uint32_t nsp_interface_unbind(NSPI_HANDLE *phandle, uint32_t reserved)
 {
+	if (g_nsp_trace > 0)
+		fprintf(stderr, "Entering %s\n", __func__);
 	memset(phandle, 0, sizeof(NSPI_HANDLE));
 	return MAPI_E_UNBINDSUCCESS;
 }
@@ -1488,6 +1490,8 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
     const STRINGS_ARRAY *pnames, MID_ARRAY **ppoutmids)
 {
+	if (g_nsp_trace > 0)
+		fprintf(stderr, "Entering %s\n", __func__);
 	int base_id;
 	
 	*ppoutmids = nullptr;
@@ -1513,6 +1517,9 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 		auto ptnode = ab_tree_dn_to_node(pbase.get(), pnames->ppstr[i]);
 		if (ptnode != nullptr)
 			outmids->pproptag[i] = ab_tree_get_node_minid(ptnode);
+		if (g_nsp_trace >= 2)
+			fprintf(stderr, "\t[%zu] %s -> %08x\n", i,
+				znul(pnames->ppstr[i]), outmids->pproptag[i]);
 	}
 	*ppoutmids = outmids;
 	return ecSuccess;
@@ -1600,6 +1607,8 @@ static int nsp_interface_get_default_proptags(abnode_type node_type,
 int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
     uint32_t mid, cpid_t codepage, LPROPTAG_ARRAY **tags)
 {
+	if (g_nsp_trace > 0)
+		fprintf(stderr, "Entering %s\n", __func__);
 	int base_id;
 	char temp_buff[1024];
 	PROPERTY_VALUE prop_val;
@@ -1656,6 +1665,12 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 		return ecServerOOM;
 	}
 	memcpy((*tags)->pproptag, ctags.data(), sizeof(uint32_t) * ctags.size());
+	if (g_nsp_trace >= 2) {
+		fprintf(stderr, "Leaving %s\n\ttags[%zu]={", __func__, ctags.size());
+		for (auto value : ctags)
+			fprintf(stderr, "%x,", value);
+		fprintf(stderr, "}\n");
+	}
 	return ecSuccess;
 }
 
@@ -1677,6 +1692,16 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (base_id == 0 || handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
+	if (g_nsp_trace >= 2) {
+		if (pproptags == nullptr) {
+			fprintf(stderr, "\ttags=null\n");
+		} else {
+			fprintf(stderr, "\ttags[%u]={", pproptags->cvalues);
+			for (size_t i = 0; i < pproptags->cvalues; ++i)
+				fprintf(stderr, "%xh,", pproptags->pproptag[i]);
+			fprintf(stderr, "}\n");
+		}
+	}
 	BOOL b_unicode = pstat->codepage == CP_WINUNICODE ? TRUE : false;
 	if (b_unicode && pproptags != nullptr)
 		for (size_t i = 0; i < pproptags->cvalues; ++i)
@@ -1737,6 +1762,12 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			ab_tree_get_node_type(pnode1), b_unicode, nt);
 		if (result != ecSuccess)
 			return result;
+		if (g_nsp_trace >= 2) {
+			fprintf(stderr, "\tdefault tags[%u]={", pproptags->cvalues);
+			for (size_t i = 0; i < pproptags->cvalues; ++i)
+				fprintf(stderr, "%xh,", pproptags->pproptag[i]);
+			fprintf(stderr, "}\n");
+		}
 	} else if (pproptags->cvalues > 100) {
 		return ecTableTooBig;
 	}
@@ -2046,6 +2077,9 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
     uint32_t proptag, uint32_t mid, const BINARY_ARRAY *pentry_ids) try
 {
+	if (g_nsp_trace > 0)
+		fprintf(stderr, "Entering %s {flags=%xh,proptag=%xh,mid=%xh}\n",
+			__func__, flags, proptag, mid);
 	int base_id;
 	
 	if (mid == 0)
@@ -2127,6 +2161,8 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	uint32_t flags, LPROPTAG_ARRAY **ppcolumns)
 {
+	if (g_nsp_trace > 0)
+		fprintf(stderr, "Entering %s {flags=%xh}\n", __func__, flags);
 	*ppcolumns = nullptr;
 	LPROPTAG_ARRAY *pcolumns;
 	BOOL b_unicode = (flags & NspiUnicodeProptypes) ? TRUE : false;
@@ -2421,6 +2457,9 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
     uint32_t type, const char *dn, cpid_t codepage, uint32_t locale_id,
     NSP_PROPROW **ppdata)
 {
+	if (g_nsp_trace > 0)
+		fprintf(stderr, "Entering %s {flags=%xh,type=%xh,dn=%s,cpid=%u,lcid=%u}\n",
+			__func__, flags, type, znul(dn), codepage, locale_id);
 	*ppdata = nullptr;
 	if ((flags & (TI_TEMPLATE | TI_SCRIPT)) != TI_TEMPLATE)
 		return ecNotSupported;
