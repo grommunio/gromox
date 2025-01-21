@@ -2204,7 +2204,7 @@ static int me_minst(int argc, char **argv, int sockd) try
 		return MIDB_E_HASHTABLE_FULL;
 	auto folder_id = me_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
-		return MIDB_E_NO_FOLDER;
+		return MIDB_E_NO_FOLDER_TRYCREATE;
 	else if (folder_id == PRIVATE_FID_DRAFT)
 		b_unsent = true;
 	unsigned int user_id = 0;
@@ -2352,7 +2352,7 @@ static int me_mcopy(int argc, char **argv, int sockd) try
 		return MIDB_E_NO_FOLDER;
 	auto dst_fid = me_get_folder_id(pidb.get(), argv[4]);
 	if (dst_fid == 0)
-		return MIDB_E_NO_FOLDER;
+		return MIDB_E_NO_FOLDER_TRYCREATE;
 	/* Match this column list to ctm_field */
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT message_id, mod_time, "
 	             "uid, recent, read, unsent, flagged, replied, forwarded,"
@@ -2418,7 +2418,8 @@ static int me_mrenf(int argc, char **argv, int sockd)
 {
 	if (strlen(argv[3]) >= 1024 || strcmp(argv[2], argv[3]) == 0)
 		return MIDB_E_PARAMETER_ERROR;
-	auto decoded_name = base64_decode(argv[2]);
+	auto decod2 = base64_decode(argv[2]);
+	auto decoded_name = base64_decode(argv[3]);
 	if (decoded_name.empty())
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = me_get_idb(argv[1]);
@@ -2431,9 +2432,15 @@ static int me_mrenf(int argc, char **argv, int sockd)
 	             " parent_fid FROM folders WHERE name=? COLLATE NOCASE");
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	pstmt.bind_text(1, decoded_name);
+	pstmt.bind_text(1, decod2);
 	if (pstmt.step() != SQLITE_ROW)
-		return MIDB_E_SQLUNEXP;
+		return MIDB_E_NO_FOLDER;
+	/*
+	 * Forbid renaming from "INBOX" to something else. Technically it is
+	 * permitted by IMAP, but the semantics are completely different from a
+	 * rename (it is no longer a rename but a group move) and not
+	 * implemented.
+	 */
 	auto folder_id = pstmt.col_uint64(0);
 	if (folder_id == PRIVATE_FID_INBOX)
 		return MIDB_E_NOTPERMITTED;
@@ -2659,7 +2666,7 @@ static int me_pfddt(int argc, char **argv, int sockd)
 		return MIDB_E_SQLPREP;
 	pstmt.bind_text(1, decoded_name);
 	if (pstmt.step() != SQLITE_ROW)
-		return MIDB_E_NO_FOLDER;
+		return MIDB_E_NO_FOLDER_TRYCREATE;
 	auto folder_id = pstmt.col_uint64(0);
 	auto uidnext = pstmt.col_uint64(1);
 	pstmt.finalize();
@@ -2710,7 +2717,7 @@ static int me_psubf(int argc, char **argv, int sockd)
 		return MIDB_E_HASHTABLE_FULL;
 	auto folder_id = me_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
-		return MIDB_E_NO_FOLDER;
+		return MIDB_E_NO_FOLDER_TRYCREATE;
 	snprintf(sql_string, std::size(sql_string), "UPDATE folders SET unsub=0"
 	        " WHERE folder_id=%llu", LLU{folder_id});
 	gx_sql_exec(pidb->psqlite, sql_string);
@@ -2848,7 +2855,7 @@ static int me_psimu(int argc, char **argv, int sockd) try
 		return MIDB_E_HASHTABLE_FULL;
 	auto folder_id = me_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
-		return MIDB_E_NO_FOLDER;
+		return MIDB_E_NO_FOLDER_TRYCREATE;
 
 	std::string qstr;
 	if (first == SEQ_STAR && last == SEQ_STAR)

@@ -3113,7 +3113,7 @@ int icp_dval(int argc, char **argv, imap_context &ctx, unsigned int ret)
 	auto code = ret & DISPATCH_VALMASK;
 	if (code == 0)
 		return ret & DISPATCH_ACTMASK;
-	bool trycreate = code == MIDB_E_NO_FOLDER;
+	bool trycreate = code == MIDB_E_NO_FOLDER_TRYCREATE;
 	auto estr = (ret & DISPATCH_MIDB) ? resource_get_error_string(code) : nullptr;
 	if (ret & DISPATCH_MIDB)
 		code = 1907;

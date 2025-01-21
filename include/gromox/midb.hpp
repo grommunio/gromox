@@ -39,6 +39,7 @@ enum {
 	MIDB_E_SSGETID,
 	MIDB_E_ACCESS_DENIED,
 	MIDB_E_NOTPERMITTED,
+	MIDB_E_NO_FOLDER_TRYCREATE,
 };
 
 enum midb_flag : char {
