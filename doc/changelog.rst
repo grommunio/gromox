@@ -1,5 +1,5 @@
-Snapshot 2.38.76
-================
+Gromox 2.39 (2025-01-21)
+========================
 
 Fixes:
 
@@ -9,13 +9,20 @@ Fixes:
   MAPI and midb
 * midb: pass message flag modification notifications
   (answered/forwarded/flagged/read/etc.) to imapd
-
+* midb: stop producing the TRYCREATE response for every command
+  (e.g. message deletion will not succeed even if a non-existing folder is
+  created, because the message will obviously not be in an empty folder)
 
 Enhancements:
 
 * When using import tools, no longer overwrite PR_LAST_MODIFICATION_TIME with
   the current time; retain the original timestamp if one exists.
 * mbop: new foreach.* command group which replaces for-all-users
+
+Behavioral changes:
+
+* The default value for the ``outgoing_smtp_url`` config directive changed
+  to ``sendmail://`` (using postdrop rather than direct SMTP contact).
 
 
 Gromox 2.38 (2024-12-07)

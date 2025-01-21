@@ -1,4 +1,4 @@
-AC_INIT([gromox], [2.38])
+AC_INIT([gromox], [2.39])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
 AC_PREFIX_DEFAULT([/usr])
@@ -144,26 +144,7 @@ PKG_CHECK_MODULES([libxxhash], [libxxhash >= 0.7], [have_xxhash=1], [have_xxhash
 PKG_CHECK_MODULES([libzstd], [libzstd >= 1.4])
 PKG_CHECK_MODULES([sqlite], [sqlite3])
 PKG_CHECK_MODULES([tinyxml2], [tinyxml2 >= 8])
-PKG_CHECK_MODULES([vmime], [vmime >= 0.9.2])
-AC_MSG_CHECKING([for vmime >= 0.9.2+git160])
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([
-	#include <string>
-	#include <vmime/net/transport.hpp>
-	#include <vmime/utility/inputStreamStringAdapter.hpp>
-	int main() {
-		using namespace vmime;
-		using namespace vmime::net;
-		std::string ct;
-		utility::inputStreamStringAdapter ad(ct);
-		mailbox mb;
-		transport *xp;
-		utility::progressListener *pr;
-		xp->send(mb, mailboxList{}, ad, ct.size(), pr, mb, transport::sendOptions{});
-	}
-])], [AC_MSG_RESULT([yes])], [
-	AC_MSG_RESULT([no])
-	AC_MSG_ERROR([vmime is still too old. See doc/install.rst.])
-])
+PKG_CHECK_MODULES([vmime], [wmime >= 1])
 PKG_CHECK_MODULES([zlib], [zlib])
 dnl Linux-PAM only gained a .pc file in v1.5.1-41-gb4f0e2e1 (2021)
 have_pamheader=""

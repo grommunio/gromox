@@ -16,7 +16,6 @@ dependencies are needed:
 * jsoncpp
 * libHX >= 4.19
 * libiconv (OpenBSD)
-* libvmime >= 0.9.2+git160 (commit c6904bd7cf03f6cca92cf0d15aec02e7850e0276)
 * libxml2 (we use this for HTML parsing)
 * libzstd >= 1.4
 * MariaDB Connector/C or mariadb-client or compatible API
@@ -27,6 +26,7 @@ dependencies are needed:
 * perl5
 * SQLite3
 * tinyxml2 >= 8 (we use this for all things XML)
+* wmime <https://github.com/grommunio/wmime/>
 * zlib
 
 Optional deps:
@@ -91,6 +91,14 @@ for everything to come together:
 
 	./configure LDFLAGS="-L/opt/ooce/lib/amd64"
 	LD_LIBRARY_PATH=/opt/ooce/lib/amd64:/opt/ooce/mariadb-10.11/lib/amd64 make
+
+wmime notes
+-----------
+
+If instead of wmime you want to use vmime, provided it is new enough, you can
+do so with:
+
+	./configure wmime_CFLAGS="$(pkg-config vmime --cflags)" wmime_LIBS="$(pkg-config vmime --libs)"
 
 ASAN notes
 ----------
