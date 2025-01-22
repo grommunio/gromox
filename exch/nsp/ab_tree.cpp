@@ -1057,6 +1057,13 @@ ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node, cpid_t codepage,
 	case PT_OBJECT:
 		prop->value.l = strtol(it->second.c_str(), nullptr, 0);
 		return ecSuccess;
+	case PT_FLOAT:
+		prop->value.flt = strtod(it->second.c_str(), nullptr);
+		return ecSuccess;
+	case PT_DOUBLE:
+	case PT_APPTIME:
+		prop->value.dbl = strtod(it->second.c_str(), nullptr);
+		return ecSuccess;
 	case PT_I8:
 	case PT_CURRENCY:
 		prop->value.ll = strtoll(it->second.c_str(), nullptr, 0);

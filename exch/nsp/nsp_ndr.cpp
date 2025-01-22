@@ -789,6 +789,13 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL *pndr,
 		case PT_LONG:
 			TRY(pndr->g_uint32(&r->l));
 			break;
+		case PT_FLOAT:
+			TRY(pndr->g_float(&r->flt));
+			break;
+		case PT_DOUBLE:
+		case PT_APPTIME:
+			TRY(pndr->g_double(&r->dbl));
+			break;
 		case PT_BOOLEAN:
 			TRY(pndr->g_uint8(&r->b));
 			break;
@@ -946,6 +953,13 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
 		case PT_LONG:
 			TRY(pndr->p_uint32(r->l));
 			break;
+		case PT_FLOAT:
+			TRY(pndr->p_float(r->flt));
+			break;
+		case PT_DOUBLE:
+		case PT_APPTIME:
+			TRY(pndr->p_double(r->dbl));
+			break;
 		case PT_BOOLEAN:
 			TRY(pndr->p_uint8(r->b));
 			break;
@@ -1013,6 +1027,9 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
 	case PT_NULL:
 	case PT_SHORT:
 	case PT_LONG:
+	case PT_FLOAT:
+	case PT_DOUBLE:
+	case PT_APPTIME:
 	case PT_OBJECT:
 	case PT_BOOLEAN:
 	case PT_I8:
@@ -1113,11 +1130,12 @@ static pack_result nsp_ndr_push_property_value(NDR_PUSH *pndr,
 		PROPERTY_VALUE s{};
 		/*
 		 * Despite being specified by DCERPC or implemented in e.g.
-		 * samba/openchange, it is unclear if the MAPI_E_NETWORK_ERROR
-		 * observed in MFCMAPI is due to mis-serialization, or because
-		 * emsmdb32.dll just does not support these proptypes over RPC.
+		 * samba/openchange, it seems like emsmdb32.dll just does not
+		 * support these over RPC.
 		 */
 		switch (PROP_TYPE(r->proptag)) {
+		case PT_FLOAT:
+		case PT_DOUBLE:
 		case PT_I8:
 		case PT_CURRENCY:
 			s.proptag = PR_NULL;

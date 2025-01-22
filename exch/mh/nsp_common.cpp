@@ -70,6 +70,13 @@ static BOOL cu_propval_to_valunion(uint16_t type, const void *x, PROP_VAL_UNION 
 	case PT_LONG:
 		u.l = *static_cast<const uint32_t *>(x);
 		return TRUE;
+	case PT_FLOAT:
+		u.flt = *static_cast<const float *>(x);
+		return TRUE;
+	case PT_DOUBLE:
+	case PT_APPTIME:
+		u.dbl = *static_cast<const double *>(x);
+		return TRUE;
 	case PT_OBJECT:
 		memset(&u, 0, sizeof(u));
 		return TRUE;
@@ -159,6 +166,13 @@ static BOOL cu_valunion_to_propval(uint16_t type, const PROP_VAL_UNION *u, void 
 	case PT_LONG:
 	case PT_OBJECT:
 		value = deconst(&u->l);
+		break;
+	case PT_FLOAT:
+		value = deconst(&u->flt);
+		break;
+	case PT_DOUBLE:
+	case PT_APPTIME:
+		value = deconst(&u->dbl);
 		break;
 	case PT_BOOLEAN:
 		value = deconst(&u->b);

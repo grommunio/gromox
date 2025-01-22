@@ -51,6 +51,8 @@ union PROP_VAL_UNION {
 	uint16_t s; /* NSPI only, not in OXNSPI */
 	uint32_t l;
 	uint64_t ll; /* unspecced */
+	float flt; /* unspecced */
+	double dbl; /* unspecced */
 	uint8_t b;
 	char *pstr;
 	void *pv;

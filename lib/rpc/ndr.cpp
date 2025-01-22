@@ -167,6 +167,32 @@ pack_result NDR_PULL::g_uint64(uint64_t *v)
 	return NDR_ERR_SUCCESS;
 }
 
+pack_result NDR_PULL::g_float(float *v)
+{
+	auto pndr = this;
+	TRY(pndr->align(4));
+	if (pndr->data_size < 4 || pndr->offset + 4 > pndr->data_size)
+		return NDR_ERR_BUFSIZE;
+	auto r = &pndr->data[pndr->offset];
+	memcpy(v, r, 4);
+	static_assert(sizeof(float) == 4);
+	pndr->offset += 4;
+	return NDR_ERR_SUCCESS;
+}
+
+pack_result NDR_PULL::g_double(double *v)
+{
+	auto pndr = this;
+	TRY(pndr->align(8));
+	if (pndr->data_size < 8 || pndr->offset + 8 > pndr->data_size)
+		return NDR_ERR_BUFSIZE;
+	auto r = &pndr->data[pndr->offset];
+	memcpy(v, r, 8);
+	static_assert(sizeof(double) == 8);
+	pndr->offset += 8;
+	return NDR_ERR_SUCCESS;
+}
+
 pack_result NDR_PULL::g_ulong(uint32_t *v)
 {
 	auto pndr = this;
@@ -423,6 +449,30 @@ pack_result NDR_PUSH::p_uint64(uint64_t v)
 		return NDR_ERR_BUFSIZE;
 	auto r = &pndr->data[pndr->offset];
 	NDR_BE(pndr) ? cpu_to_be64p(r, v) : cpu_to_le64p(r, v);
+	pndr->offset += 8;
+	return NDR_ERR_SUCCESS;
+}
+
+pack_result NDR_PUSH::p_float(float v)
+{
+	auto pndr = this;
+	TRY(pndr->align(4));
+	if (!ndr_push_check_overflow(pndr, 4))
+		return NDR_ERR_BUFSIZE;
+	auto r = &pndr->data[pndr->offset];
+	memcpy(r, &v, 4);
+	pndr->offset += 4;
+	return NDR_ERR_SUCCESS;
+}
+
+pack_result NDR_PUSH::p_double(double v)
+{
+	auto pndr = this;
+	TRY(pndr->align(8));
+	if (!ndr_push_check_overflow(pndr, 8))
+		return NDR_ERR_BUFSIZE;
+	auto r = &pndr->data[pndr->offset];
+	memcpy(r, &v, 8);
 	pndr->offset += 8;
 	return NDR_ERR_SUCCESS;
 }
