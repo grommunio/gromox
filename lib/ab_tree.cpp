@@ -15,8 +15,11 @@
 namespace gromox::ab_tree
 {
 
-ab AB;
+ab AB; ///< Global address book management object
 
+/**
+ * @brief      Extract base ID from GUID
+ */
 int32_t ab::base_id(const GUID& guid)
 {
 	int32_t id;
@@ -24,12 +27,24 @@ int32_t ab::base_id(const GUID& guid)
 	return id;
 }
 
+/**
+ * @brief      Remove base from registry, causing it to reload on next access
+ */
 void ab::drop(int32_t id)
 {
 	std::unique_lock lock(m_lock);
 	m_base_hash.erase(id);
 }
 
+/**
+ * @brief      Initialize address book
+ *
+ * Initializes address book with given parameters. Only effective on first
+ * call, any further calls will have no effect.
+ *
+ * @param      org               x500 organization name
+ * @param      cache_interval    Lifespan of ab_tree in seconds
+ */
 void ab::init(std::string_view org, int cache_interval)
 {
 	std::unique_lock ul(m_lock);
@@ -41,12 +56,22 @@ void ab::init(std::string_view org, int cache_interval)
 	m_essdn_rcpts_prefix = fmt::format("/o={}/" EAG_RCPTS "/cn=", m_org_name);
 }
 
+/**
+ * @brief      Drop all loaded address books
+ */
 void ab::invalidate_cache()
 {
 	std::unique_lock lock(m_lock);
 	m_base_hash.clear();
 }
 
+/**
+ * @brief      Get base with given ID, load if necessary
+ *
+ * @param      base_id   Base ID (negative for domains, positive for organizations)
+ *
+ * @return     Pointer to address book object
+ */
 ab::const_base_ref ab::get(int32_t base_id)
 {
 	std::unique_lock lock(m_lock);
@@ -73,6 +98,11 @@ ab::const_base_ref ab::get(int32_t base_id)
 	return std::const_pointer_cast<const ab_base>(it->second);
 }
 
+/**
+ * @brief      Register address book consumer
+ *
+ * @return     true if successful, false on error
+ */
 bool ab::run() try
 {
 	if (running++)
@@ -84,6 +114,9 @@ bool ab::run() try
 	return false;
 }
 
+/**
+ * @brief      Unregister address book consumer
+ */
 void ab::stop()
 {
 	if (--running)
@@ -92,6 +125,11 @@ void ab::stop()
 	worker.join();
 }
 
+/**
+ * @brief      Worker thread
+ *
+ * Cleans up expired address books
+ */
 void ab::work()
 {
 	std::chrono::seconds wait_time;
@@ -120,6 +158,11 @@ void ab::work()
 
 const std::vector<std::string> ab_base::vs_empty{};
 
+/**
+ * @brief      Initialize base and lock until loaded
+ *
+ * @param      id    Base ID
+ */
 ab_base::ab_base(int32_t id) : m_base_id(id)
 {
 	m_guid = GUID::random_new();
@@ -127,12 +170,22 @@ ab_base::ab_base(int32_t id) : m_base_id(id)
 	m_lock.lock(); // unlocked after load
 }
 
+/**
+ * @brief      Wait until the base unlocks after loading
+ *
+ * @return     whether base is ready
+ */
 bool ab_base::await_load() const
 {
 	std::lock_guard guard(m_lock);
 	return m_status == Status::LIVING;
 }
 
+/**
+ * @brief       Load address book from database and unlock
+ *
+ * @return      Whether loading was successful
+ */
 bool ab_base::load()
 {
 	std::lock_guard lock(m_lock, std::adopt_lock);
@@ -175,18 +228,41 @@ bool ab_base::load()
 ///////////////////////////////////////////////////////////////////////////////
 // ab_base informational member functions
 
+/**
+ * @brief      Get list of node aliases
+ *
+ * @param      mid   Minid of the node
+ *
+ * @return     List of aliases or empty list if node is not a user
+ */
 const std::vector<std::string> &ab_base::aliases(minid mid) const
 {
 	const sql_user *user = fetch_user(mid);
 	return user ? user->aliases : vs_empty;
 }
 
+/**
+ * @brief      Get minid of node by index
+ *
+ * @param      idx   Index of the node
+ *
+ * @return     Minid of the node or empty minid on invalid index
+ */
 minid ab_base::at(uint32_t idx) const
 {
 	return idx < domains.size() ? minid(minid::domain, domains[idx].id) :
 	       idx - domains.size() < m_users.size() ? minid(minid::address, m_users[idx-domains.size()].id) : minid();
 }
 
+/**
+ * @brief      Write company info to target strings
+ *
+ * @param      mid           Mid of the node
+ * @param      str_name      String to write company name to, or nullptr to ignore
+ * @param      str_address   String to write company address to, or nullptr to ignore
+ *
+ * @return     true if successful, false otherwise
+ */
 bool ab_base::company_info(minid mid, std::string *str_name, std::string *str_address) const
 {
 	const sql_user *user = fetch_user(mid);
@@ -202,6 +278,17 @@ bool ab_base::company_info(minid mid, std::string *str_name, std::string *str_ad
 	return true;
 }
 
+/**
+ * @brief      Retrieve displayname
+ *
+ * For domain nodes, return domain name.
+ * For user nodes, try to fetch the display name property, if it not exists,
+ * default to the base part of the e-mail address (up to the '@')
+ *
+ * @param      mid   Mid of the node
+ *
+ * @return     Display name of the node
+ */
 std::string ab_base::displayname(minid mid) const
 {
 	const sql_user *user = fetch_user(mid);
@@ -218,6 +305,14 @@ std::string ab_base::displayname(minid mid) const
 	return std::string();
 }
 
+/**
+ * @brief      Generate essdn for user node
+ *
+ * @param      mid       Mid of the node
+ * @param      essdn     String to write essdn to
+ *
+ * @return     false if node is not a user node, true otherwise
+ */
 bool ab_base::dn(minid mid, std::string& essdn) const
 {
 	const sql_user *user = fetch_user(mid);
@@ -228,6 +323,13 @@ bool ab_base::dn(minid mid, std::string& essdn) const
 	return cvt_username_to_essdn(username, AB.org_name().c_str(), user->id, domain->id, essdn) == ecSuccess;
 }
 
+/**
+ * @brief      Get display type of node
+ *
+ * @param      mid   Mid of the node
+ *
+ * @return     DT_CONTAINER for domains, display type property for users
+ */
 uint32_t ab_base::dtyp(minid mid) const
 {
 	const sql_user *user = fetch_user(mid);
@@ -236,6 +338,13 @@ uint32_t ab_base::dtyp(minid mid) const
 	return user->dtypx;
 }
 
+/**
+ * @brief      Get extended display type of node
+ *
+ * @param      mid   Mid of the node
+ *
+ * @return     Empty container if not a user, display type property otherwise
+ */
 std::optional<uint32_t> ab_base::dtypx(minid mid) const
 {
 	const sql_user *user = fetch_user(mid);
@@ -250,6 +359,9 @@ std::optional<uint32_t> ab_base::dtypx(minid mid) const
 	return (user->dtypx & DTE_MASK_LOCAL) | DTE_FLAG_ACL_CAPABLE;
 }
 
+/**
+ * @brief      Print address book to stderr
+ */
 void ab_base::dump() const
 {
 	fmt::print(stderr, "AB Base {}#{}\n", m_base_id < 0? "D" : "O", abs(m_base_id));
@@ -285,6 +397,13 @@ void ab_base::dump() const
 	}
 }
 
+/**
+ * @brief      Convert display type to entry ID type
+ *
+ * @param      dt    Display type
+ *
+ * @return     Entry ID type
+ */
 display_type ab_base::dtypx_to_etyp(display_type dt)
 {
 	dt = static_cast<display_type>(dt & DTE_MASK_LOCAL);
@@ -299,6 +418,13 @@ display_type ab_base::dtypx_to_etyp(display_type dt)
 	}
 }
 
+/**
+ * @brief      Get entry ID type of node
+ *
+ * @param      mid   Mid of the node
+ *
+ * @return     Entry ID type of the node
+ */
 uint32_t ab_base::etyp(minid mid) const
 {
 	const sql_user *user = fetch_user(mid);
@@ -307,11 +433,27 @@ uint32_t ab_base::etyp(minid mid) const
 	return dtypx_to_etyp(user->dtypx);
 }
 
+/**
+ * @brief      Check whether node exists
+ *
+ * @param      mid   Mid of the node
+ *
+ * @return     true if the minid is valid and points to an object, false otherwise
+ */
 bool ab_base::exists(minid mid) const
 {
 	return mid.valid() && (fetch_user(mid) || fetch_domain(mid));
 }
 
+/**
+ * @brief      Fetch property of user node
+ *
+ * @param      mid   Mid of the node
+ * @param      tag   Property tag ID to fetch
+ * @param      prop  String to write the property value to
+ *
+ * @return     Exchange error code indicating success or failure
+ */
 ec_error_t ab_base::fetch_prop(minid mid, uint32_t tag, std::string &prop) const
 {
 	const sql_user *user = fetch_user(mid);
@@ -324,6 +466,15 @@ ec_error_t ab_base::fetch_prop(minid mid, uint32_t tag, std::string &prop) const
 	return ecSuccess;
 }
 
+/**
+ * @brief      Fetch list of properties of user node
+ *
+ * @param      mid       Mid of the node
+ * @param      tags      List of property tag IDs to fetch
+ * @param      props     Tag ID to value mapping for found properties
+ *
+ * @return     true if user object was found, false otherwise
+ */
 bool ab_base::fetch_props(minid mid, const PROPTAG_ARRAY &tags, std::unordered_map<uint32_t, std::string> &props) const
 {
 	const sql_user *user = fetch_user(mid);
@@ -338,17 +489,43 @@ bool ab_base::fetch_props(minid mid, const PROPTAG_ARRAY &tags, std::unordered_m
 	return true;
 }
 
+/**
+ * @brief      Extract minid from node GUID
+ *
+ * No checks are performed whether the resulting minid is valid.
+ * Use exists() to check whether the minid is usable.
+ *
+ * @param      guid  GUID of the node
+ *
+ * @return     Node minid
+ */
 minid ab_base::from_guid(const GUID &guid)
 {
 	return guid.time_low;
 }
 
+/**
+ * @brief      Get total number of children of the node
+ *
+ * Equivalent to children(), since the maximum tree depth is currently 1.
+ *
+ * @param      mid   Mid of the node
+ *
+ * @return     Number of users of a domain node, ot 0 for user nodes
+ */
 uint32_t ab_base::get_leaves_num(minid mid) const
 {
 	auto domain = fetch_domain(mid);
 	return domain ? uint32_t(domain->userref.size()) : 0;
 }
 
+/**
+ * @brief      Generate node GUID
+ *
+ * @param      mid   Mid of the node
+ *
+ * @return     Node GUID
+ */
 GUID ab_base::guid(minid mid)
 {
 	GUID g{};
@@ -356,24 +533,56 @@ GUID ab_base::guid(minid mid)
 	return g;
 }
 
+/**
+ * @brief      Get the number of direct child nodes
+ *
+ * @param      mid   Mid of the node
+ *
+ * @return     Number of users of a domain node or 0 for user nodes
+ */
 size_t ab_base::children(minid mid) const
 {
 	const ab_domain *domain = fetch_domain(mid);
 	return domain ? domain->userref.size() : 0;
 }
 
+/**
+ * @brief      Get the hidden property of a node
+ *
+ * @param      mid   Mid of the node
+ *
+ * @return    Bitmask of hidden flags for user nodes or 0 for domain nodes
+ */
 uint32_t ab_base::hidden(minid mid) const
 {
 	const sql_user *user = fetch_user(mid);
 	return user ? user->hidden : 0;
 }
 
+/**
+ * @brief      Get node mdbdn
+ *
+ * @param      mid   Mid of the node
+ * @param      dn    String to write the dn to
+ *
+ * @return     Exchange error code indicating success or failure
+ */
 ec_error_t ab_base::mdbdn(minid mid, std::string &dn) const
 {
 	auto username = znul(user_info(mid, userinfo::mail_address));
 	return cvt_username_to_mdbdn(username, AB.org_name().c_str(), mid.value(), dn);
 }
 
+/**
+ * @brief      Get mailing list info
+ *
+ * @param      mid           Mid of the node
+ * @param      mail_address  String to write mail address to, or nullptr to ignore
+ * @param      create_day    String to write create day to, or nullptr to ignore
+ * @param      privilege     Integer to store list privilege in, or nullptr to ignore
+ *
+ * @return     true if user was found, false otherwise
+ */
 bool ab_base::mlist_info(minid mid, std::string *mail_address, std::string *create_day, int *privilege) const
 {
 	const sql_user *user = fetch_user(mid);
@@ -393,6 +602,14 @@ bool ab_base::mlist_info(minid mid, std::string *mail_address, std::string *crea
 	return true;
 }
 
+/**
+ * @brief      Get list of properties of a user
+ *
+ * @param      mid   Mid of the node
+ * @param      tags  Integer list to write tag IDs to
+ *
+ * @return     Exchange error code indicating success or failure
+ */
 ec_error_t ab_base::proplist(minid mid, std::vector<uint32_t> &tags) const
 {
 	const sql_user *user = fetch_user(mid);
@@ -403,6 +620,16 @@ ec_error_t ab_base::proplist(minid mid, std::vector<uint32_t> &tags) const
 	return ecSuccess;
 }
 
+/**
+ * @brief      Retrieve minid from dn
+ *
+ * No checks are performed whether the resulting minid is valid.
+ * Use exists() to check whether the minid is usable.
+ *
+ * @param      dn    Dn of the user
+ *
+ * @return     Minid of the user node
+ */
 minid ab_base::resolve(const char* dn) const
 {
 	const std::string &server_prefix = AB.essdn_server_prefix();
@@ -416,6 +643,13 @@ minid ab_base::resolve(const char* dn) const
 	return minid(minid::address, id);
 }
 
+/**
+ * @brief      Get address book node type
+ *
+ * @param      mid   Mid of the node
+ *
+ * @return     Node type
+ */
 abnode_type ab_base::type(minid mid) const
 {
 	const sql_user *user = fetch_user(mid);
@@ -427,6 +661,14 @@ abnode_type ab_base::type(minid mid) const
 	return abnode_type::remote;
 }
 
+/**
+ * @brief     Get user info of the node
+ *
+ * @param      mid   Mid of the node
+ * @param      ui    Type of user info to query
+ *
+ * @return     nullptr if not a user node, empty string if not found, info otherwise
+ */
 const char *ab_base::user_info(minid mid, userinfo ui) const
 {
 	const sql_user *user = fetch_user(mid);
@@ -455,6 +697,13 @@ const char *ab_base::user_info(minid mid, userinfo ui) const
 ///////////////////////////////////////////////////////////////////////////////
 // ab_base private helper member functions
 
+/**
+ * @brief      Get domain object from minid
+ *
+ * @param      mid   Mid of the node
+ *
+ * @return     Domain object or nullptr if not found
+ */
 const ab_domain *ab_base::fetch_domain(minid mid) const
 {
 	if (mid.type() != minid::domain)
@@ -466,6 +715,13 @@ const ab_domain *ab_base::fetch_domain(minid mid) const
 	return idx >= domains.size() ? nullptr : &domains[idx];
 }
 
+/**
+ * @brief      Get user object from minid
+ *
+ * @param      mid   Mid of the node
+ *
+ * @return     User object or nullptr if not found
+ */
 const sql_user *ab_base::fetch_user(minid mid) const
 {
 	if (mid.type() != minid::address)
@@ -477,6 +733,13 @@ const sql_user *ab_base::fetch_user(minid mid) const
 	return idx >= m_users.size() ? nullptr : &m_users[idx];
 }
 
+/**
+ * @brief      Get iterator to node
+ *
+ * @param      mid   Mid of the node
+ *
+ * @return     Iterator to node or end() if not found
+ */
 ab_base::iterator ab_base::find(minid mid) const
 {
 	auto it = minid_idx_map.find(mid);
@@ -486,6 +749,13 @@ ab_base::iterator ab_base::find(minid mid) const
 	       iterator(this, m_users.begin() + it->second);
 }
 
+/**
+ * @brief      Find domain by id
+ *
+ * @param      id    Domain ID
+ *
+ * @return     Domain object or nullptr if not found
+ */
 const ab_domain *ab_base::find_domain(uint32_t id) const
 {
 	for (auto &domain : domains)
@@ -497,6 +767,13 @@ const ab_domain *ab_base::find_domain(uint32_t id) const
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ab_base::iterator member functions
 
+/**
+ * @brief      Move iterator
+ *
+ * @param      offset    Distance to move the iterator
+ *
+ * @return     *this
+ */
 ab_base::iterator &ab_base::iterator::operator+=(difference_type offset)
 {
 	if (offset == 0)
@@ -522,6 +799,11 @@ ab_base::iterator &ab_base::iterator::operator+=(difference_type offset)
 	return *this;
 }
 
+/**
+ * @brief      Get absolute iterator position
+ *
+ * @return     Distance to begin()
+ */
 size_t ab_base::iterator::pos() const
 {
 	return it.index() == 0 ? std::distance(m_base->domains.cbegin(), std::get<0>(it)) :

@@ -74,6 +74,14 @@ enum class userinfo {
 	store_path,
 };
 
+/**
+ * @brief      Minimal entry ID ofaddress book entries
+ *
+ * Wrapper for 32 bit unsigned integer to encode type information (high bits)
+ * and ID (low bits) of an entry.
+ * The ID of the (user or domain) object is used with an offset of 0x10, since
+ * the lower minid values are reserved for special purposes.
+ */
 struct minid
 {
 	enum Type : uint32_t {
@@ -97,33 +105,51 @@ struct minid
 	static constexpr uint32_t RESOLVED = 0x0000002;
 
 	constexpr minid(uint32_t i = 0) : id(i) {}
+	/**
+	 * @brief      Construct minid from type and ID
+	 *
+	 * @param      t     Minid type
+	 * @param      v     Object ID (offset is applied automatically)
+	 */
 	constexpr minid(Type t, uint32_t v) : id((uint32_t(t) << TYPEOFFSET) | ((v + 0x10) & VALMASK)) {}
 	constexpr operator uint32_t() const { return id; }
 
-	constexpr Type type() const { return Type(id >> TYPEOFFSET); }
-	constexpr uint32_t value() const { return (id & VALMASK) - 0x10; }
+	constexpr Type type() const { return Type(id >> TYPEOFFSET); } ///< Extract type from minid
+	constexpr uint32_t value() const { return (id & VALMASK) - 0x10; } ///< Extract object ID from minid
 
-	constexpr bool valid() const { return id >= 0x10; }
+	constexpr bool valid() const { return id >= 0x10; } ///< Check if object ID is valid
 
-	uint32_t id;
+	uint32_t id; ///< Minid value
 };
 
+/**
+ * @brief      Address book domain node
+ */
 struct ab_domain
 {
 	uint32_t id;
 	sql_domain info;
-	///< List of minids of contained objects
-	std::vector<minid> userref;
+	std::vector<minid> userref; ///< List of minids of contained objects
 };
 
+/**
+ * @brief      Address book base
+ *
+ * Contains all domain and user nodes from an organization an provides a common
+ * interface to access node properties.
+ */
 class ab_base
 {
 	public:
-	/// iterator class to allow iterating over user and domain minids
+	/**
+	 * @brief     Address book iterator
+	 *
+	 * Random access iterator providing read-only access to all minids from
+	 * the address book.
+	 */
 	class iterator
 	{
 		public:
-		using it_t = decltype(ab_domain::userref)::const_iterator;
 		using iterator_category = std::random_access_iterator_tag;
 		using difference_type = ssize_t;
 		using value_type = const minid;
@@ -162,15 +188,16 @@ class ab_base
 
 		const ab_base *m_base = nullptr;
 		std::variant<domain_it, user_it> it;
-		minid mid;
+		minid mid; ///< cached minid to allow returning references and pointers
 	};
 
-	enum class Status : uint8_t { CONSTRUCTING, LIVING, DESTRUCTING };
+	enum class Status : uint8_t { CONSTRUCTING, LIVING };
 
 	explicit ab_base(int32_t id);
 
 	bool await_load() const;
 	bool load();
+	/// Get time since the base was loaded
 	inline std::chrono::seconds age() const { return std::chrono::duration_cast<std::chrono::seconds>(gromox::tp_now() - m_load_time); }
 
 	minid at(uint32_t) const;
@@ -195,18 +222,17 @@ class ab_base
 	bool mlist_info(minid, std::string *, std::string *, int *) const;
 	ec_error_t proplist(minid, std::vector<uint32_t> &) const;
 	minid resolve(const char *) const;
-	minid resolve(uint32_t) const;
 	inline size_t size() const { return m_users.size() + domains.size(); }
 	abnode_type type(minid) const;
 	inline size_t users() const { return m_users.size(); }
 	const char *user_info(minid, userinfo) const;
 
-	inline iterator begin() const { return iterator(this, domains.cbegin()); }
-	inline iterator end() const { return iterator(this, m_users.cend()); }
-	inline iterator dbegin() const { return iterator(this, domains.cbegin()); }
-	inline iterator dend() const { return iterator(this, m_users.cbegin()); }
-	inline iterator ubegin() const { return iterator(this, m_users.cbegin()); }
-	inline iterator uend() const { return iterator(this, m_users.cend()); }
+	inline iterator begin() const { return iterator(this, domains.cbegin()); } ///< Iterator to beginning of address book
+	inline iterator end() const { return iterator(this, m_users.cend()); } ///< Iterator to end of address book
+	inline iterator dbegin() const { return iterator(this, domains.cbegin()); } ///< Iterator to beginning of domain list
+	inline iterator dend() const { return iterator(this, m_users.cbegin()); } ///< Iterator to end of domain list
+	inline iterator ubegin() const { return iterator(this, m_users.cbegin()); } ///< Iterator to beginning of user list
+	inline iterator uend() const { return iterator(this, m_users.cend()); } ///< Iterator to end of user list
 	iterator find(minid) const;
 
 	static minid from_guid(const GUID &);
@@ -216,13 +242,11 @@ class ab_base
 	private:
 	const ab_domain *find_domain(uint32_t) const;
 
-	void load_tree(int domain_id);
-
 	static const std::vector<std::string> vs_empty; ///< used to return empty alias list in case of invalid minid
 
-	GUID m_guid;
-	gromox::time_point m_load_time{};
-	/*
+	GUID m_guid; ///< GUID of the base
+	gromox::time_point m_load_time{}; ///< Load time
+	/**
 	 * base_id==0: not permitted (contains e.g. the AAPI administrator)
 	 * base_id >0: Base is for an organization (multiple domains)
 	 * base_id <0: Base is for one domain (base_id == -domain_id);
@@ -236,6 +260,11 @@ class ab_base
 	std::atomic<Status> m_status{Status::CONSTRUCTING};
 };
 
+/**
+ * @brief      Central address book class
+ *
+ * Manages ab_bases. There should only exist one instance.
+ */
 extern class ab
 {
 	public:
@@ -274,9 +303,22 @@ extern class ab
 	void work();
 } AB;
 
+/**
+ * @brief      Node proxy, bundling minid with ab_base
+ *
+ * Provides easy access to a specific node in an ab_tree.
+ */
 struct ab_node
 {
 	private:
+	/**
+	 * @brief      Forward call to base with mid member as first argument
+	 *
+	 * @param      func    Pointer to ab_base member function
+	 * @param      args    Function arguments
+	 *
+	 * @return     Return value from base function
+	 */
 	template<typename Func, typename... Args>
 	inline typename std::invoke_result_t<Func, ab_base, Args...> call(Func func, Args &&...args) const
 	{ return (base->*func)(std::forward<Args>(args)...); }
