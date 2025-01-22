@@ -5,18 +5,6 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/rpc_types.hpp>
 
-#define NDR_ERR_SUCCESS pack_result::success
-#define NDR_ERR_FAILURE pack_result::failure
-#define NDR_ERR_CHARCNV pack_result::charconv
-#define NDR_ERR_BUFSIZE pack_result::bufsize
-#define NDR_ERR_ALLOC pack_result::alloc
-#define NDR_ERR_NDR64 pack_result::ndr64
-#define NDR_ERR_PADDING pack_result::padding
-#define NDR_ERR_RANGE pack_result::range
-#define NDR_ERR_ARRAY_SIZE pack_result::array_size
-#define NDR_ERR_BAD_SWITCH pack_result::bad_switch
-#define NDR_ERR_IPV6ADDRESS pack_result::ipv6addr
-
 #define NDR_FLAG_BIGENDIAN				(1<<0)
 #define NDR_FLAG_NOALIGN				(1<<1)
 /* set if relative pointers should *not* be marshalled in reverse order */

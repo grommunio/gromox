@@ -12,7 +12,7 @@
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
 using namespace gromox;
 DECLARE_PROC_API(,);
@@ -157,14 +157,14 @@ static pack_result exchange_rfr_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
 	case RfrGetNewDSA:
 		prfr = ndr_stack_anew<RFRGETNEWDSA_IN>(NDR_STACK_IN);
 		if (prfr == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		memset(prfr, 0, sizeof(RFRGETNEWDSA_IN));
 		TRY(pndr->g_uint32(&prfr->flags));
 		TRY(pndr->g_ulong(&size));
 		TRY(pndr->g_ulong(&offset));
 		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size || length > 1024)
-			return NDR_ERR_ARRAY_SIZE;
+			return pack_result::array_size;
 		TRY(pndr->check_str(length, sizeof(uint8_t)));
 		TRY(pndr->g_str(prfr->puserdn, length));
 		TRY(pndr->g_genptr(&ptr));
@@ -175,7 +175,7 @@ static pack_result exchange_rfr_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
 				TRY(pndr->g_ulong(&offset));
 				TRY(pndr->g_ulong(&length));
 				if (offset != 0 || length > size || length > 256)
-					return NDR_ERR_ARRAY_SIZE;
+					return pack_result::array_size;
 				TRY(pndr->check_str(length, sizeof(uint8_t)));
 				TRY(pndr->g_str(prfr->punused, length));
 			} else {
@@ -192,7 +192,7 @@ static pack_result exchange_rfr_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
 				TRY(pndr->g_ulong(&offset));
 				TRY(pndr->g_ulong(&length));
 				if (offset != 0 || length > size || length > 256)
-					return NDR_ERR_ARRAY_SIZE;
+					return pack_result::array_size;
 				TRY(pndr->check_str(length, sizeof(uint8_t)));
 				TRY(pndr->g_str(prfr->pserver, length));
 			} else {
@@ -202,27 +202,27 @@ static pack_result exchange_rfr_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
 			prfr->pserver[0] = '\0';
 		}
 		*ppin = prfr;
-		return NDR_ERR_SUCCESS;
+		return pack_result::ok;
 	case RfrGetFQDNFromServerDN:
 		prfr_dn = ndr_stack_anew<RFRGETFQDNFROMLEGACYDN_IN>(NDR_STACK_IN);
 		if (prfr_dn == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		memset(prfr_dn, 0, sizeof(RFRGETFQDNFROMLEGACYDN_IN));
 		TRY(pndr->g_uint32(&prfr_dn->flags));
 		TRY(pndr->g_uint32(&prfr_dn->cb));
 		if (prfr_dn->cb < 10 || prfr_dn->cb > 1024)
-			return NDR_ERR_RANGE;
+			return pack_result::range;
 		TRY(pndr->g_ulong(&size));
 		TRY(pndr->g_ulong(&offset));
 		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size || length > 1024)
-			return NDR_ERR_ARRAY_SIZE;
+			return pack_result::array_size;
 		TRY(pndr->check_str(length, sizeof(uint8_t)));
 		TRY(pndr->g_str(prfr_dn->mbserverdn, length));
 		*ppin = prfr_dn;
-		return NDR_ERR_SUCCESS;
+		return pack_result::ok;
 	default:
-		return NDR_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 }
 
@@ -303,5 +303,5 @@ static pack_result exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 		return pndr->p_uint32(prfr_dn->result);
 	}
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }

@@ -491,7 +491,7 @@ static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
 	if (!(ppkt->drep[0] & DCERPC_DREP_LE))
 		flags = NDR_FLAG_BIGENDIAN;
 	ndr.init(ptrailer->pb, ptrailer->cb, flags);
-	if (ndr.advance(data_and_pad) != NDR_ERR_SUCCESS)
+	if (ndr.advance(data_and_pad) != pack_result::ok)
 		return FALSE;
 	if (pdu_ndr_pull_dcerpc_auth(&ndr, pauth) != pack_result::success)
 		return FALSE;
@@ -608,15 +608,12 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 	NDR_PUSH ndr;
 	ndr.init(pdata.get(), DCERPC_BASE_MARSHALL_SIZE, flags);
 	ppkt->auth_length = pauth_info != nullptr ? pauth_info->credentials.cb : 0;
-	if (NDR_ERR_SUCCESS != pdu_ndr_push_ncacnpkt(&ndr, ppkt)) {
+	if (pdu_ndr_push_ncacnpkt(&ndr, ppkt) != pack_result::ok)
 		return FALSE;
-	}
-
 	if (NULL != pauth_info) {
 		pauth_info->auth_pad_length = 0;
-		if (NDR_ERR_SUCCESS != pdu_ndr_push_dcerpc_auth(&ndr, pauth_info)) {
+		if (pdu_ndr_push_dcerpc_auth(&ndr, pauth_info) != pack_result::ok)
 			return FALSE;
-		}
 	}
 	
 	pblob->pb = pdata.release(); /* ndr.data */
@@ -1305,7 +1302,7 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	const auto &response = *static_cast<dcerpc_response *>(ppkt->payload);
 	pauth_ctx->auth_info.auth_pad_length =
 		(16 - (response.stub_and_verifier.cb & 15)) & 15;
-	if (ndr.p_zero(pauth_ctx->auth_info.auth_pad_length) != NDR_ERR_SUCCESS)
+	if (ndr.p_zero(pauth_ctx->auth_info.auth_pad_length) != pack_result::ok)
 		return FALSE;
 
 	payload_length = response.stub_and_verifier.cb +
@@ -1729,8 +1726,8 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	pcall->pcontext	= pcontext;
 	
 	/* unmarshaling the NDR in param data */
-	if (NDR_ERR_SUCCESS != pcontext->pinterface->ndr_pull(
-		prequest->opnum, &ndr_pull, &pin)) {
+	if (pcontext->pinterface->ndr_pull(prequest->opnum,
+	    &ndr_pull, &pin) != pack_result::ok) {
 		pdu_processor_free_stack_root(pstack_root);
 		mlog(LV_DEBUG, "pdu_processor: pull fail on RPC call %u on %s",
 			prequest->opnum, pcontext->pinterface->name);
@@ -2347,7 +2344,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 		return PDU_PROCESSOR_ERROR;
 	}
 	pcall->b_bigendian = b_bigendian;
-	if (NDR_ERR_SUCCESS != pdu_ndr_pull_ncacnpkt(&ndr, &pcall->pkt)) {
+	if (pdu_ndr_pull_ncacnpkt(&ndr, &pcall->pkt) != pack_result::ok) {
 		delete pcall;
 		return PDU_PROCESSOR_ERROR;
 	}
@@ -2598,7 +2595,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	}
 	pcall->pprocessor = pprocessor;
 	pcall->b_bigendian = b_bigendian;
-	if (NDR_ERR_SUCCESS != pdu_ndr_pull_ncacnpkt(&ndr, &pcall->pkt)) {
+	if (pdu_ndr_pull_ncacnpkt(&ndr, &pcall->pkt) != pack_result::ok) {
 		delete pcall;
 		return PDU_PROCESSOR_ERROR;
 	}

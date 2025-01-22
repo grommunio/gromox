@@ -11,7 +11,7 @@
 #include "nsp_ndr.hpp"
 #define FLAG_HEADER			0x1
 #define FLAG_CONTENT		0x2
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
 using namespace gromox;
 
@@ -113,16 +113,16 @@ static pack_result nsp_ndr_pull_proptag_array(NDR_PULL *pndr, LPROPTAG_ARRAY *r)
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint32(&r->cvalues));
 	if (r->cvalues > 100001)
-		return NDR_ERR_RANGE;
+		return pack_result::range;
 	TRY(pndr->g_ulong(&offset));
 	TRY(pndr->g_ulong(&length));
 	if (offset != 0 || length > size)
-		return NDR_ERR_ARRAY_SIZE;
+		return pack_result::array_size;
 	if (size != r->cvalues + 1 || length != r->cvalues)
-		return NDR_ERR_ARRAY_SIZE;
+		return pack_result::array_size;
 	r->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, size);
 	if (r->pproptag == nullptr)
-		return NDR_ERR_ALLOC;
+		return pack_result::alloc;
 	for (size_t cnt = 0; cnt < length; ++cnt)
 		TRY(pndr->g_uint32(&r->pproptag[cnt]));
 	return pndr->trailer_align(4);
@@ -151,7 +151,7 @@ static pack_result nsp_ndr_pull_property_name(NDR_PULL *pndr,
 		if (0 != ptr) {
 			r->pguid = ndr_stack_anew<FLATUID>(NDR_STACK_IN);
 			if (r->pguid == nullptr)
-				return NDR_ERR_ALLOC;
+				return pack_result::alloc;
 		} else {
 			r->pguid = NULL;
 		}
@@ -162,7 +162,7 @@ static pack_result nsp_ndr_pull_property_name(NDR_PULL *pndr,
 	
 	if (flag & FLAG_CONTENT && r->pguid != nullptr)
 		TRY(nsp_ndr_pull_flatuid(pndr, r->pguid));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_string_array(NDR_PULL *pndr,
@@ -180,20 +180,20 @@ static pack_result nsp_ndr_pull_string_array(NDR_PULL *pndr,
 		TRY(pndr->align(5));
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000)
-			return NDR_ERR_RANGE;
+			return pack_result::range;
 		TRY(pndr->g_genptr(&ptr));
 		r->ppstr = ptr != 0 ? reinterpret_cast<char **>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r->ppstr == nullptr)
-		return NDR_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(pndr->g_ulong(&size));
 	if (size != r->count)
-		return NDR_ERR_ARRAY_SIZE;
+		return pack_result::array_size;
 	r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 	if (r->ppstr == nullptr)
-		return NDR_ERR_ALLOC;
+		return pack_result::alloc;
 	for (cnt = 0; cnt < size; cnt++) {
 		TRY(pndr->g_genptr(&ptr));
 		r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
@@ -205,14 +205,14 @@ static pack_result nsp_ndr_pull_string_array(NDR_PULL *pndr,
 		TRY(pndr->g_ulong(&offset));
 		TRY(pndr->g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
-			return NDR_ERR_ARRAY_SIZE;
+			return pack_result::array_size;
 		TRY(pndr->check_str(length1, sizeof(uint8_t)));
 		r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, length1 + 1);
 		if (r->ppstr[cnt] == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(pndr->g_str(r->ppstr[cnt], length1));
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_string_array(NDR_PUSH *pndr,
@@ -241,7 +241,7 @@ static pack_result nsp_ndr_push_string_array(NDR_PUSH *pndr,
 		TRY(pndr->p_ulong(length));
 		TRY(pndr->p_str(r->ppstr[cnt], length));
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_strings_array(NDR_PULL *pndr,
@@ -258,12 +258,12 @@ static pack_result nsp_ndr_pull_strings_array(NDR_PULL *pndr,
 		TRY(pndr->align(5));
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000)
-			return NDR_ERR_RANGE;
+			return pack_result::range;
 		if (r->count != size)
-			return NDR_ERR_ARRAY_SIZE;
+			return pack_result::array_size;
 		r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 		if (r->ppstr == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		for (size_t cnt = 0; cnt < size; ++cnt) {
 			TRY(pndr->g_genptr(&ptr));
 			r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
@@ -280,14 +280,14 @@ static pack_result nsp_ndr_pull_strings_array(NDR_PULL *pndr,
 		TRY(pndr->g_ulong(&offset));
 		TRY(pndr->g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
-			return NDR_ERR_ARRAY_SIZE;
+			return pack_result::array_size;
 		TRY(pndr->check_str(length1, sizeof(uint8_t)));
 		r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, length1 + 1);
 		if (r->ppstr[cnt] == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(pndr->g_str(r->ppstr[cnt], length1));
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_wstring_array(NDR_PULL *pndr,
@@ -305,20 +305,20 @@ static pack_result nsp_ndr_pull_wstring_array(NDR_PULL *pndr,
 		TRY(pndr->align(5));
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000)
-			return NDR_ERR_RANGE;
+			return pack_result::range;
 		TRY(pndr->g_genptr(&ptr));
 		r->ppstr = ptr != 0 ? reinterpret_cast<char **>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r->ppstr == nullptr)
-		return NDR_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(pndr->g_ulong(&size));
 	if (size != r->count)
-		return NDR_ERR_ARRAY_SIZE;
+		return pack_result::array_size;
 	r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 	if (r->ppstr == nullptr)
-		return NDR_ERR_ALLOC;
+		return pack_result::alloc;
 	for (cnt = 0; cnt < size; cnt++) {
 		TRY(pndr->g_genptr(&ptr));
 		r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
@@ -330,24 +330,24 @@ static pack_result nsp_ndr_pull_wstring_array(NDR_PULL *pndr,
 		TRY(pndr->g_ulong(&offset));
 		TRY(pndr->g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
-			return NDR_ERR_ARRAY_SIZE;
+			return pack_result::array_size;
 		TRY(pndr->check_str(length1, sizeof(uint16_t)));
 		std::unique_ptr<char[]> pwstring;
 		try {
 			pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length1 + 1);
 		} catch (const std::bad_alloc &) {
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		TRY(pndr->g_str(pwstring.get(), sizeof(uint16_t) * length1));
 		r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1);
 		if (r->ppstr[cnt] == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		if (!nsp_ndr_to_utf8(pndr->flags, pwstring.get(),
 		    sizeof(uint16_t) * length1, r->ppstr[cnt],
 		    2 * sizeof(uint16_t) * length1))
-			return NDR_ERR_CHARCNV;
+			return pack_result::charconv;
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_wstring_array(NDR_PUSH *pndr,
@@ -373,19 +373,19 @@ static pack_result nsp_ndr_push_wstring_array(NDR_PUSH *pndr,
 		try {
 			pwstring = std::make_unique<char[]>(length);
 		} catch (const std::bad_alloc &) {
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		auto z = nsp_ndr_to_utf16(pndr->flags,
 		         r->ppstr[cnt], pwstring.get(), length);
 		if (z < 0)
-			return NDR_ERR_CHARCNV;
+			return pack_result::charconv;
 		length = z;
 		TRY(pndr->p_ulong(length / sizeof(uint16_t)));
 		TRY(pndr->p_ulong(0));
 		TRY(pndr->p_ulong(length / sizeof(uint16_t)));
 		TRY(pndr->p_str(pwstring.get(), length));
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL *pndr,
@@ -403,16 +403,16 @@ static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL *pndr,
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000) {
 			r->count = 0;
-			return NDR_ERR_RANGE;
+			return pack_result::range;
 		}
 		if (r->count != size) {
 			r->count = 0;
-			return NDR_ERR_ARRAY_SIZE;
+			return pack_result::array_size;
 		}
 		r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 		if (r->ppstr == nullptr) {
 			r->count = 0;
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		for (size_t cnt = 0; cnt < size; ++cnt) {
 			TRY(pndr->g_genptr(&ptr));
@@ -430,24 +430,24 @@ static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL *pndr,
 		TRY(pndr->g_ulong(&offset));
 		TRY(pndr->g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
-			return NDR_ERR_ARRAY_SIZE;
+			return pack_result::array_size;
 		TRY(pndr->check_str(length1, sizeof(uint16_t)));
 		std::unique_ptr<char[]> pwstring;
 		try {
 			pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length1 + 1);
 		} catch (const std::bad_alloc &) {
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		TRY(pndr->g_str(pwstring.get(), sizeof(uint16_t) * length1));
 		r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1);
 		if (r->ppstr[cnt] == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		if (!nsp_ndr_to_utf8(pndr->flags, pwstring.get(),
 		    sizeof(uint16_t) * length1, r->ppstr[cnt],
 		    2 * sizeof(uint16_t) * length1))
-			return NDR_ERR_CHARCNV;
+			return pack_result::charconv;
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_binary(NDR_PULL *pndr, unsigned int flag, BINARY *r)
@@ -460,7 +460,7 @@ static pack_result nsp_ndr_pull_binary(NDR_PULL *pndr, unsigned int flag, BINARY
 		TRY(pndr->g_uint32(&r->cb));
 		if (r->cb > 2097152) {
 			r->cb = 0;
-			return NDR_ERR_RANGE;
+			return pack_result::range;
 		}
 		TRY(pndr->g_genptr(&ptr));
 		r->pb = ptr != 0 ? reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(ptr)) : nullptr;
@@ -472,15 +472,15 @@ static pack_result nsp_ndr_pull_binary(NDR_PULL *pndr, unsigned int flag, BINARY
 	TRY(pndr->g_ulong(&size));
 	if (size != r->cb) {
 		r->cb = 0;
-		return NDR_ERR_ARRAY_SIZE;
+		return pack_result::array_size;
 	}
 	r->pb = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (NULL == r->pb) {
 		r->cb = 0;
-		return NDR_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	TRY(pndr->g_uint8_a(r->pb, size));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_binary(NDR_PUSH *pndr, unsigned int flag, const BINARY *r)
@@ -496,7 +496,7 @@ static pack_result nsp_ndr_push_binary(NDR_PUSH *pndr, unsigned int flag, const 
 		return EXT_ERR_SUCCESS;
 	TRY(pndr->p_ulong(r->cb));
 	TRY(pndr->p_uint8_a(r->pb, r->cb));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_filetime(NDR_PULL *pndr, FILETIME *r)
@@ -525,7 +525,7 @@ static pack_result nsp_ndr_pull_short_array(NDR_PULL *pndr,
 		TRY(pndr->align(5));
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000)
-			return NDR_ERR_RANGE;
+			return pack_result::range;
 		TRY(pndr->g_genptr(&ptr));
 		r->ps = ptr != 0 ? reinterpret_cast<uint16_t *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
@@ -535,13 +535,13 @@ static pack_result nsp_ndr_pull_short_array(NDR_PULL *pndr,
 		return EXT_ERR_SUCCESS;
 	TRY(pndr->g_ulong(&size));
 	if (size != r->count)
-		return NDR_ERR_ARRAY_SIZE;
+		return pack_result::array_size;
 	r->ps = ndr_stack_anew<uint16_t>(NDR_STACK_IN, size);
 	if (r->ps == nullptr)
-		return NDR_ERR_ALLOC;
+		return pack_result::alloc;
 	for (size_t cnt = 0; cnt < size; ++cnt)
 		TRY(pndr->g_uint16(&r->ps[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_short_array(NDR_PUSH *pndr,
@@ -559,7 +559,7 @@ static pack_result nsp_ndr_push_short_array(NDR_PUSH *pndr,
 	TRY(pndr->p_ulong(r->count));
 	for (size_t cnt = 0; cnt < r->count; ++cnt)
 		TRY(pndr->p_uint16(r->ps[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_long_array(NDR_PULL *pndr,
@@ -572,7 +572,7 @@ static pack_result nsp_ndr_pull_long_array(NDR_PULL *pndr,
 		TRY(pndr->align(5));
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000)
-			return NDR_ERR_RANGE;
+			return pack_result::range;
 		TRY(pndr->g_genptr(&ptr));
 		r->pl = ptr != 0 ? reinterpret_cast<uint32_t *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
@@ -582,13 +582,13 @@ static pack_result nsp_ndr_pull_long_array(NDR_PULL *pndr,
 		return EXT_ERR_SUCCESS;
 	TRY(pndr->g_ulong(&size));
 	if (size != r->count)
-		return NDR_ERR_ARRAY_SIZE;
+		return pack_result::array_size;
 	r->pl = ndr_stack_anew<uint32_t>(NDR_STACK_IN, size);
 	if (r->pl == nullptr)
-		return NDR_ERR_ALLOC;
+		return pack_result::alloc;
 	for (size_t cnt = 0; cnt < size; ++cnt)
 		TRY(pndr->g_uint32(&r->pl[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_long_array(NDR_PUSH *pndr,
@@ -606,7 +606,7 @@ static pack_result nsp_ndr_push_long_array(NDR_PUSH *pndr,
 	TRY(pndr->p_ulong(r->count));
 	for (size_t cnt = 0; cnt < r->count; ++cnt)
 		TRY(pndr->p_uint32(r->pl[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_binary_array(NDR_PULL *pndr,
@@ -619,7 +619,7 @@ static pack_result nsp_ndr_pull_binary_array(NDR_PULL *pndr,
 		TRY(pndr->align(5));
 		TRY(pndr->g_uint32(&r->count));
 		if (r->count > 100000)
-			return NDR_ERR_RANGE;
+			return pack_result::range;
 		TRY(pndr->g_genptr(&ptr));
 		r->pbin = ptr != 0 ? reinterpret_cast<BINARY *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
@@ -629,15 +629,15 @@ static pack_result nsp_ndr_pull_binary_array(NDR_PULL *pndr,
 		return EXT_ERR_SUCCESS;
 	TRY(pndr->g_ulong(&size));
 	if (size != r->count)
-		return NDR_ERR_ARRAY_SIZE;
+		return pack_result::array_size;
 	r->pbin = ndr_stack_anew<BINARY>(NDR_STACK_IN, size);
 	if (r->pbin == nullptr)
-		return NDR_ERR_ALLOC;
+		return pack_result::alloc;
 	for (size_t cnt = 0; cnt < size; ++cnt)
 		TRY(nsp_ndr_pull_binary(pndr, FLAG_HEADER, &r->pbin[cnt]));
 	for (size_t cnt = 0; cnt < size; ++cnt)
 		TRY(nsp_ndr_pull_binary(pndr, FLAG_CONTENT, &r->pbin[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_binary_array(NDR_PUSH *pndr,
@@ -657,7 +657,7 @@ static pack_result nsp_ndr_push_binary_array(NDR_PUSH *pndr,
 		TRY(nsp_ndr_push_binary(pndr, FLAG_HEADER, &r->pbin[cnt]));
 	for (size_t cnt = 0; cnt < r->count; ++cnt)
 		TRY(nsp_ndr_push_binary(pndr, FLAG_CONTENT, &r->pbin[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_flatuid_array(NDR_PULL *pndr,
@@ -670,7 +670,7 @@ static pack_result nsp_ndr_pull_flatuid_array(NDR_PULL *pndr,
 		TRY(pndr->align(5));
 		TRY(pndr->g_uint32(&r->cvalues));
 		if (r->cvalues > 100000)
-			return NDR_ERR_RANGE;
+			return pack_result::range;
 		TRY(pndr->g_genptr(&ptr));
 		r->ppguid = ptr != 0 ? reinterpret_cast<FLATUID **>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
@@ -680,16 +680,16 @@ static pack_result nsp_ndr_pull_flatuid_array(NDR_PULL *pndr,
 		return EXT_ERR_SUCCESS;
 	TRY(pndr->g_ulong(&size));
 	if (size != r->cvalues)
-		return NDR_ERR_ARRAY_SIZE;
+		return pack_result::array_size;
 	r->ppguid = ndr_stack_anew<FLATUID *>(NDR_STACK_IN, size);
 	if (r->ppguid == nullptr)
-		return NDR_ERR_ALLOC;
+		return pack_result::alloc;
 	for (size_t cnt = 0; cnt < size; ++cnt) {
 		TRY(pndr->g_genptr(&ptr));
 		if (0 != ptr) {
 			r->ppguid[cnt] = ndr_stack_anew<FLATUID>(NDR_STACK_IN);
 			if (r->ppguid[cnt] == nullptr)
-				return NDR_ERR_ALLOC;
+				return pack_result::alloc;
 		} else {
 			r->ppguid[cnt] = NULL;
 		}
@@ -697,7 +697,7 @@ static pack_result nsp_ndr_pull_flatuid_array(NDR_PULL *pndr,
 	for (size_t cnt = 0; cnt < size; ++cnt)
 		if (r->ppguid[cnt] != nullptr)
 			TRY(nsp_ndr_pull_flatuid(pndr, r->ppguid[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_flatuid_array(NDR_PUSH *pndr,
@@ -718,7 +718,7 @@ static pack_result nsp_ndr_push_flatuid_array(NDR_PUSH *pndr,
 	for (size_t cnt = 0; cnt < r->cvalues; ++cnt)
 		if (r->ppguid[cnt] != nullptr)
 			TRY(nsp_ndr_push_flatuid(pndr, r->ppguid[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_filetime_array(NDR_PULL *pndr,
@@ -731,7 +731,7 @@ static pack_result nsp_ndr_pull_filetime_array(NDR_PULL *pndr,
 		TRY(pndr->align(5));
 		TRY(pndr->g_uint32(&r->cvalues));
 		if (r->cvalues > 100000)
-			return NDR_ERR_RANGE;
+			return pack_result::range;
 		TRY(pndr->g_genptr(&ptr));
 		r->pftime = ptr != 0 ? reinterpret_cast<FILETIME *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
@@ -740,13 +740,13 @@ static pack_result nsp_ndr_pull_filetime_array(NDR_PULL *pndr,
 		return EXT_ERR_SUCCESS;
 	TRY(pndr->g_ulong(&size));
 	if (size != r->cvalues)
-		return NDR_ERR_ARRAY_SIZE;
+		return pack_result::array_size;
 	r->pftime = ndr_stack_anew<FILETIME>(NDR_STACK_IN, size);
 	if (r->pftime == nullptr)
-		return NDR_ERR_ALLOC;
+		return pack_result::alloc;
 	for (size_t cnt = 0; cnt < size; ++cnt)
 		TRY(nsp_ndr_pull_filetime(pndr, &r->pftime[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_filetime_array(NDR_PUSH *pndr,
@@ -764,7 +764,7 @@ static pack_result nsp_ndr_push_filetime_array(NDR_PUSH *pndr,
 	TRY(pndr->p_ulong(r->cvalues));
 	for (size_t cnt = 0; cnt < r->cvalues; ++cnt)
 		TRY(nsp_ndr_push_filetime(pndr, &r->pftime[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL *pndr,
@@ -847,7 +847,7 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL *pndr,
 			break;
 		default:
 			mlog(LV_ERR, "E-1910: nsp_ndr type %xh unhandled", *ptype);
-			return NDR_ERR_BAD_SWITCH;
+			return pack_result::bad_switch;
 		}
 	}
 	
@@ -869,11 +869,11 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL *pndr,
 		TRY(pndr->g_ulong(&offset));
 		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size)
-			return NDR_ERR_ARRAY_SIZE;
+			return pack_result::array_size;
 		TRY(pndr->check_str(length, sizeof(uint8_t)));
 		r->pstr = ndr_stack_anew<char>(NDR_STACK_IN, length + 1);
 		if (r->pstr == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(pndr->g_str(r->pstr, length));
 		break;
 	case PT_UNICODE: {
@@ -883,22 +883,22 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL *pndr,
 		TRY(pndr->g_ulong(&offset));
 		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size)
-			return NDR_ERR_ARRAY_SIZE;
+			return pack_result::array_size;
 		TRY(pndr->check_str(length, sizeof(uint16_t)));
 		std::unique_ptr<char[]> pwstring;
 		try {
 			pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length + 1);
 		} catch (const std::bad_alloc &) {
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		TRY(pndr->g_str(pwstring.get(), sizeof(uint16_t) * length));
 		r->pstr = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length);
 		if (r->pstr == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		if (!nsp_ndr_to_utf8(pndr->flags, pwstring.get(),
 		    sizeof(uint16_t) * length, r->pstr,
 		    2 * sizeof(uint16_t) * length))
-			return NDR_ERR_CHARCNV;
+			return pack_result::charconv;
 		break;
 	}
 	case PT_BINARY:
@@ -931,9 +931,9 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL *pndr,
 		break;
 	default:
 		mlog(LV_ERR, "E-1911: nsp_ndr type %xh unhandled", *ptype);
-		return NDR_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 /* This is for RPCH-based NSP only; mh_nsp is serialized elsewhere */
@@ -1017,7 +1017,7 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
 		default:
 			/* see also E-1759 for mh_nsp */
 			mlog(LV_ERR, "E-1912: nsp_ndr type %xh unhandled", type);
-			return NDR_ERR_BAD_SWITCH;
+			return pack_result::bad_switch;
 		}
 	}
 	
@@ -1054,11 +1054,11 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
 		try {
 			pwstring = std::make_unique<char[]>(2 * length);
 		} catch (const std::bad_alloc &) {
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		auto z = nsp_ndr_to_utf16(pndr->flags, r->pstr, pwstring.get(), 2 * length);
 		if (z < 0)
-			return NDR_ERR_CHARCNV;
+			return pack_result::charconv;
 		length = z;
 		TRY(pndr->p_ulong(length / sizeof(uint16_t)));
 		TRY(pndr->p_ulong(0));
@@ -1096,9 +1096,9 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
 		break;
 	default:
 		mlog(LV_ERR, "E-1913: nsp_ndr type %xh unhandled", type);
-		return NDR_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_property_value(NDR_PULL *pndr,
@@ -1111,7 +1111,7 @@ static pack_result nsp_ndr_pull_property_value(NDR_PULL *pndr,
 		TRY(pndr->g_uint32(&r->reserved));
 		TRY(nsp_ndr_pull_prop_val_union(pndr, FLAG_HEADER, &type, &r->value));
 		if (PROP_TYPE(r->proptag) != type)
-			return NDR_ERR_BAD_SWITCH;
+			return pack_result::bad_switch;
 		TRY(pndr->trailer_align(5));
 	}
 	
@@ -1119,7 +1119,7 @@ static pack_result nsp_ndr_pull_property_value(NDR_PULL *pndr,
 		return EXT_ERR_SUCCESS;
 	uint32_t type = PROP_TYPE(r->proptag);
 	TRY(nsp_ndr_pull_prop_val_union(pndr, FLAG_CONTENT, &type, &r->value));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 	
 }
 
@@ -1152,7 +1152,7 @@ static pack_result nsp_ndr_push_property_value(NDR_PUSH *pndr,
 	}
 	if (flag & FLAG_CONTENT)
 		TRY(nsp_ndr_push_prop_val_union(pndr, FLAG_CONTENT, PROP_TYPE(r->proptag), &r->value));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_property_row(NDR_PULL *pndr,
@@ -1166,7 +1166,7 @@ static pack_result nsp_ndr_pull_property_row(NDR_PULL *pndr,
 		TRY(pndr->g_uint32(&r->reserved));
 		TRY(pndr->g_uint32(&r->cvalues));
 		if (r->cvalues > 100000)
-			return NDR_ERR_RANGE;
+			return pack_result::range;
 		TRY(pndr->g_genptr(&ptr));
 		r->pprops = ptr != 0 ? reinterpret_cast<PROPERTY_VALUE *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
@@ -1176,15 +1176,15 @@ static pack_result nsp_ndr_pull_property_row(NDR_PULL *pndr,
 		return EXT_ERR_SUCCESS;
 	TRY(pndr->g_ulong(&size));
 	if (size != r->cvalues)
-		return NDR_ERR_ARRAY_SIZE;
+		return pack_result::array_size;
 	r->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_IN, size);
 	if (r->pprops == nullptr)
-		return NDR_ERR_ALLOC;
+		return pack_result::alloc;
 	for (size_t cnt = 0; cnt < size; ++cnt)
 		TRY(nsp_ndr_pull_property_value(pndr, FLAG_HEADER, &r->pprops[cnt]));
 	for (size_t cnt = 0; cnt < size; ++cnt)
 		TRY(nsp_ndr_pull_property_value(pndr, FLAG_CONTENT, &r->pprops[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_property_row(NDR_PUSH *pndr,
@@ -1205,7 +1205,7 @@ static pack_result nsp_ndr_push_property_row(NDR_PUSH *pndr,
 		TRY(nsp_ndr_push_property_value(pndr, FLAG_HEADER, &r->pprops[cnt]));
 	for (size_t cnt = 0; cnt < r->cvalues; ++cnt)
 		TRY(nsp_ndr_push_property_value(pndr, FLAG_CONTENT, &r->pprops[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_proprow_set(NDR_PUSH *pndr,
@@ -1222,7 +1222,7 @@ static pack_result nsp_ndr_push_proprow_set(NDR_PUSH *pndr,
 	if (flag & FLAG_CONTENT)
 		for (size_t cnt = 0; cnt < r->crows; ++cnt)
 			TRY(nsp_ndr_push_property_row(pndr, FLAG_CONTENT, &r->prows[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr,
@@ -1235,7 +1235,7 @@ static pack_result nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr,
 		TRY(pndr->align(5));
 		TRY(pndr->g_uint32(&r->cres));
 		if (r->cres > 100000)
-			return NDR_ERR_RANGE;
+			return pack_result::range;
 		TRY(pndr->g_genptr(&ptr));
 		r->pres = ptr != 0 ? reinterpret_cast<NSPRES *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(pndr->trailer_align(5));
@@ -1245,15 +1245,15 @@ static pack_result nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr,
 		return EXT_ERR_SUCCESS;
 	TRY(pndr->g_ulong(&size));
 	if (size != r->cres)
-		return NDR_ERR_ARRAY_SIZE;
+		return pack_result::array_size;
 	r->pres = ndr_stack_anew<NSPRES>(NDR_STACK_IN, size);
 	if (r->pres == nullptr)
-		return NDR_ERR_ALLOC;
+		return pack_result::alloc;
 	for (size_t cnt = 0; cnt < size; ++cnt)
 		TRY(nsp_ndr_pull_restriction(pndr, FLAG_HEADER, &r->pres[cnt]));
 	for (size_t cnt = 0; cnt < size; ++cnt)
 		TRY(nsp_ndr_pull_restriction(pndr, FLAG_CONTENT, &r->pres[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_restriction_and_or(NDR_PUSH *pndr,
@@ -1273,7 +1273,7 @@ static pack_result nsp_ndr_push_restriction_and_or(NDR_PUSH *pndr,
 		TRY(nsp_ndr_push_restriction(pndr, FLAG_HEADER, &r->pres[cnt]));
 	for (size_t cnt = 0; cnt < r->cres; ++cnt)
 		TRY(nsp_ndr_push_restriction(pndr, FLAG_CONTENT, &r->pres[cnt]));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_restriction_not(NDR_PULL *pndr,
@@ -1287,7 +1287,7 @@ static pack_result nsp_ndr_pull_restriction_not(NDR_PULL *pndr,
 		if (0 != ptr) {
 			r->pres = ndr_stack_anew<NSPRES>(NDR_STACK_IN);
 			if (r->pres == nullptr)
-				return NDR_ERR_ALLOC;
+				return pack_result::alloc;
 		} else {
 			r->pres = NULL;
 		}
@@ -1296,7 +1296,7 @@ static pack_result nsp_ndr_pull_restriction_not(NDR_PULL *pndr,
 	
 	if (flag & FLAG_CONTENT && r->pres != nullptr)
 		TRY(nsp_ndr_pull_restriction(pndr, FLAG_HEADER | FLAG_CONTENT, r->pres));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_restriction_not(NDR_PUSH *pndr,
@@ -1309,7 +1309,7 @@ static pack_result nsp_ndr_push_restriction_not(NDR_PUSH *pndr,
 	}
 	if (flag & FLAG_CONTENT && r->pres != nullptr)
 		TRY(nsp_ndr_push_restriction(pndr, FLAG_HEADER | FLAG_CONTENT, r->pres));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_restriction_content(NDR_PULL *pndr,
@@ -1325,7 +1325,7 @@ static pack_result nsp_ndr_pull_restriction_content(NDR_PULL *pndr,
 		if (0 != ptr) {
 			r->pprop = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_IN);
 			if (r->pprop == nullptr)
-				return NDR_ERR_ALLOC;
+				return pack_result::alloc;
 		} else {
 			r->pprop = NULL;
 		}
@@ -1334,7 +1334,7 @@ static pack_result nsp_ndr_pull_restriction_content(NDR_PULL *pndr,
 	
 	if (flag & FLAG_CONTENT && r->pprop != nullptr)
 		TRY(nsp_ndr_pull_property_value(pndr, FLAG_HEADER | FLAG_CONTENT, r->pprop));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_restriction_content(NDR_PUSH *pndr,
@@ -1349,7 +1349,7 @@ static pack_result nsp_ndr_push_restriction_content(NDR_PUSH *pndr,
 	}
 	if (flag & FLAG_CONTENT && r->pprop != nullptr)
 		TRY(nsp_ndr_push_property_value(pndr, FLAG_HEADER | FLAG_CONTENT, r->pprop));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_restriction_property(NDR_PULL *pndr,
@@ -1367,7 +1367,7 @@ static pack_result nsp_ndr_pull_restriction_property(NDR_PULL *pndr,
 		if (0 != ptr) {
 			r->pprop = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_IN);
 			if (r->pprop == nullptr)
-				return NDR_ERR_ALLOC;
+				return pack_result::alloc;
 		} else {
 			r->pprop = NULL;
 		}
@@ -1376,7 +1376,7 @@ static pack_result nsp_ndr_pull_restriction_property(NDR_PULL *pndr,
 	
 	if (flag & FLAG_CONTENT && r->pprop != nullptr)
 		TRY(nsp_ndr_pull_property_value(pndr, FLAG_HEADER | FLAG_CONTENT, r->pprop));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_restriction_property(NDR_PUSH *pndr,
@@ -1391,7 +1391,7 @@ static pack_result nsp_ndr_push_restriction_property(NDR_PUSH *pndr,
 	}
 	if (flag & FLAG_CONTENT && r->pprop != nullptr)
 		TRY(nsp_ndr_push_property_value(pndr, FLAG_HEADER | FLAG_CONTENT, r->pprop));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_restriction_propcompare(NDR_PULL *pndr,
@@ -1404,7 +1404,7 @@ static pack_result nsp_ndr_pull_restriction_propcompare(NDR_PULL *pndr,
 	TRY(pndr->g_uint32(&r->proptag1));
 	TRY(pndr->g_uint32(&r->proptag2));
 	TRY(pndr->trailer_align(4));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_restriction_propcompare(NDR_PUSH *pndr,
@@ -1415,7 +1415,7 @@ static pack_result nsp_ndr_push_restriction_propcompare(NDR_PUSH *pndr,
 	TRY(pndr->p_uint32(r->proptag1));
 	TRY(pndr->p_uint32(r->proptag2));
 	TRY(pndr->trailer_align(4));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_restriction_bitmask(NDR_PULL *pndr, NSPRES_BITMASK *r)
@@ -1427,8 +1427,7 @@ static pack_result nsp_ndr_pull_restriction_bitmask(NDR_PULL *pndr, NSPRES_BITMA
 	TRY(pndr->g_uint32(&r->proptag));
 	TRY(pndr->g_uint32(&r->mask));
 	TRY(pndr->trailer_align(4));
-	
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_restriction_bitmask(NDR_PUSH *pndr,
@@ -1439,7 +1438,7 @@ static pack_result nsp_ndr_push_restriction_bitmask(NDR_PUSH *pndr,
 	TRY(pndr->p_uint32(r->proptag));
 	TRY(pndr->p_uint32(r->mask));
 	TRY(pndr->trailer_align(4));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_restriction_size(NDR_PULL *pndr, NSPRES_SIZE *r)
@@ -1451,7 +1450,7 @@ static pack_result nsp_ndr_pull_restriction_size(NDR_PULL *pndr, NSPRES_SIZE *r)
 	TRY(pndr->g_uint32(&r->proptag));
 	TRY(pndr->g_uint32(&r->cb));
 	TRY(pndr->trailer_align(4));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_restriction_size(NDR_PUSH *pndr, const NSPRES_SIZE *r)
@@ -1461,7 +1460,7 @@ static pack_result nsp_ndr_push_restriction_size(NDR_PUSH *pndr, const NSPRES_SI
 	TRY(pndr->p_uint32(r->proptag));
 	TRY(pndr->p_uint32(r->cb));
 	TRY(pndr->trailer_align(4));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_restriction_exist(NDR_PULL *pndr, NSPRES_EXIST *r)
@@ -1471,7 +1470,7 @@ static pack_result nsp_ndr_pull_restriction_exist(NDR_PULL *pndr, NSPRES_EXIST *
 	TRY(pndr->g_uint32(&r->proptag));
 	TRY(pndr->g_uint32(&r->reserved2));
 	TRY(pndr->trailer_align(4));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_restriction_exist(NDR_PUSH *pndr, const NSPRES_EXIST *r)
@@ -1481,7 +1480,7 @@ static pack_result nsp_ndr_push_restriction_exist(NDR_PUSH *pndr, const NSPRES_E
 	TRY(pndr->p_uint32(r->proptag));
 	TRY(pndr->p_uint32(r->reserved2));
 	TRY(pndr->trailer_align(4));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_restriction_sub(NDR_PULL *pndr,
@@ -1496,7 +1495,7 @@ static pack_result nsp_ndr_pull_restriction_sub(NDR_PULL *pndr,
 		if (0 != ptr) {
 			r->pres = ndr_stack_anew<NSPRES>(NDR_STACK_IN);
 			if (r->pres == nullptr)
-				return NDR_ERR_ALLOC;
+				return pack_result::alloc;
 		} else {
 			r->pres = NULL;
 		}
@@ -1505,7 +1504,7 @@ static pack_result nsp_ndr_pull_restriction_sub(NDR_PULL *pndr,
 	
 	if (flag & FLAG_CONTENT && r->pres != nullptr)
 		TRY(nsp_ndr_pull_restriction(pndr, FLAG_HEADER | FLAG_CONTENT, r->pres));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_restriction_sub(NDR_PUSH *pndr,
@@ -1520,7 +1519,7 @@ static pack_result nsp_ndr_push_restriction_sub(NDR_PUSH *pndr,
 	
 	if (flag & FLAG_CONTENT && r->pres != nullptr)
 		TRY(nsp_ndr_push_restriction(pndr, FLAG_HEADER | FLAG_CONTENT, r->pres));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_restriction_union(NDR_PULL *pndr,
@@ -1564,7 +1563,7 @@ static pack_result nsp_ndr_pull_restriction_union(NDR_PULL *pndr,
 		default:
 			mlog(LV_ERR, "E-1914: nsp_ndr type %xh unhandled",
 				static_cast<unsigned int>(*ptype));
-			return NDR_ERR_BAD_SWITCH;
+			return pack_result::bad_switch;
 		}
 	}
 	
@@ -1595,9 +1594,9 @@ static pack_result nsp_ndr_pull_restriction_union(NDR_PULL *pndr,
 	default:
 		mlog(LV_ERR, "E-1915: nsp_ndr type %xh unhandled",
 			static_cast<unsigned int>(*ptype));
-		return NDR_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_restriction_union(NDR_PUSH *pndr,
@@ -1639,7 +1638,7 @@ static pack_result nsp_ndr_push_restriction_union(NDR_PUSH *pndr,
 		default:
 			mlog(LV_ERR, "E-1916: nsp_ndr type %xh unhandled",
 				static_cast<unsigned int>(type));
-			return NDR_ERR_BAD_SWITCH;
+			return pack_result::bad_switch;
 		}
 	}
 	
@@ -1670,9 +1669,9 @@ static pack_result nsp_ndr_push_restriction_union(NDR_PUSH *pndr,
 	default:
 		mlog(LV_ERR, "E-1917: nsp_ndr type %xh unhandled",
 			static_cast<unsigned int>(type));
-		return NDR_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_restriction(NDR_PULL *pndr,
@@ -1686,7 +1685,7 @@ static pack_result nsp_ndr_pull_restriction(NDR_PULL *pndr,
 		r->res_type = static_cast<mapi_rtype>(rt);
 		TRY(nsp_ndr_pull_restriction_union(pndr, FLAG_HEADER, &type, &r->res));
 		if (r->res_type != type)
-			return NDR_ERR_BAD_SWITCH;
+			return pack_result::bad_switch;
 		TRY(pndr->trailer_align(4));
 	}
 	
@@ -1698,7 +1697,7 @@ static pack_result nsp_ndr_pull_restriction(NDR_PULL *pndr,
 		mlog(LV_WARN, "D-1689: encountered NSP restriction with two rtypes "
 			"(%xh,%xh)", static_cast<uint8_t>(r->res_type),
 			static_cast<uint8_t>(type));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_restriction(NDR_PUSH *pndr,
@@ -1712,13 +1711,12 @@ static pack_result nsp_ndr_push_restriction(NDR_PUSH *pndr,
 	}
 	if (flag & FLAG_CONTENT)
 		TRY(nsp_ndr_push_restriction_union(pndr, FLAG_CONTENT, r->res_type, &r->res));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_nspibind(NDR_PULL *pndr, NSPIBIND_IN *r)
 {
 	uint32_t ptr;
-	
 
 	TRY(pndr->g_uint32(&r->flags));
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
@@ -1726,13 +1724,12 @@ static pack_result nsp_ndr_pull_nspibind(NDR_PULL *pndr, NSPIBIND_IN *r)
 	if (0 != ptr) {
 		r->pserver_guid = ndr_stack_anew<FLATUID>(NDR_STACK_IN);
 		if (r->pserver_guid == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(nsp_ndr_pull_flatuid(pndr, r->pserver_guid));
 	} else {
 		r->pserver_guid = NULL;
 	}
-	
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_nspibind(NDR_PUSH *pndr, const NSPIBIND_OUT *r)
@@ -1742,21 +1739,21 @@ static pack_result nsp_ndr_push_nspibind(NDR_PUSH *pndr, const NSPIBIND_OUT *r)
 		TRY(nsp_ndr_push_flatuid(pndr, r->pserver_guid));
 	TRY(pndr->p_ctx_handle(r->handle));
 	TRY(pndr->p_uint32(r->result));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_nspiunbind(NDR_PULL *pndr, NSPIUNBIND_IN *r)
 {
 	TRY(pndr->g_ctx_handle(&r->handle));
 	TRY(pndr->g_uint32(&r->reserved));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_nspiunbind(NDR_PUSH *pndr, const NSPIUNBIND_OUT *r)
 {
 	TRY(pndr->p_ctx_handle(r->handle));
 	TRY(pndr->p_uint32(r->result));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_nspiupdatestat(NDR_PULL *pndr, NSPIUPDATESTAT_IN *r)
@@ -1770,13 +1767,12 @@ static pack_result nsp_ndr_pull_nspiupdatestat(NDR_PULL *pndr, NSPIUPDATESTAT_IN
 	if (0 != ptr) {
 		r->pdelta = ndr_stack_anew<int32_t>(NDR_STACK_IN);
 		if (r->pdelta == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(pndr->g_int32(r->pdelta));
 	} else {
 		r->pdelta = NULL;
 	}
-	
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_nspiupdatestat(NDR_PUSH *pndr,
@@ -1787,7 +1783,7 @@ static pack_result nsp_ndr_push_nspiupdatestat(NDR_PUSH *pndr,
 	if (r->pdelta != nullptr)
 		TRY(pndr->p_int32(*r->pdelta));
 	TRY(pndr->p_uint32(r->result));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_nspiqueryrows(NDR_PULL *pndr, NSPIQUERYROWS_IN *r)
@@ -1801,15 +1797,15 @@ static pack_result nsp_ndr_pull_nspiqueryrows(NDR_PULL *pndr, NSPIQUERYROWS_IN *
 	TRY(nsp_ndr_pull_stat(pndr, &r->stat));
 	TRY(pndr->g_uint32(&r->table_count));
 	if (r->table_count > 100000)
-		return NDR_ERR_RANGE;
+		return pack_result::range;
 	TRY(pndr->g_genptr(&ptr));
 	if (0 != ptr) {
 		TRY(pndr->g_ulong(&size));
 		if (size != r->table_count)
-			return NDR_ERR_ARRAY_SIZE;
+			return pack_result::array_size;
 		r->ptable = ndr_stack_anew<uint32_t>(NDR_STACK_IN, size);
 		if (r->ptable == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		for (size_t cnt = 0; cnt < size; ++cnt)
 			TRY(pndr->g_uint32(&r->ptable[cnt]));
 	} else {
@@ -1820,12 +1816,12 @@ static pack_result nsp_ndr_pull_nspiqueryrows(NDR_PULL *pndr, NSPIQUERYROWS_IN *
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(nsp_ndr_pull_proptag_array(pndr, r->pproptags));
 	} else {
 		r->pproptags = NULL;
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_nspiqueryrows(NDR_PUSH *pndr,
@@ -1836,7 +1832,7 @@ static pack_result nsp_ndr_push_nspiqueryrows(NDR_PUSH *pndr,
 	if (r->prows != nullptr)
 		TRY(nsp_ndr_push_proprow_set(pndr, FLAG_HEADER|FLAG_CONTENT, r->prows));
 	TRY(pndr->p_uint32(r->result));
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_pull_nspiseekentries(NDR_PULL *pndr, NSPISEEKENTRIES_IN *r)
@@ -1851,7 +1847,7 @@ static pack_result nsp_ndr_pull_nspiseekentries(NDR_PULL *pndr, NSPISEEKENTRIES_
 	if (0 != ptr) {
 		r->ptable = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->ptable == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(nsp_ndr_pull_proptag_array(pndr, r->ptable));
 	} else {
 		r->ptable = NULL;
@@ -1860,12 +1856,12 @@ static pack_result nsp_ndr_pull_nspiseekentries(NDR_PULL *pndr, NSPISEEKENTRIES_
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(nsp_ndr_pull_proptag_array(pndr, r->pproptags));
 	} else {
 		r->pproptags = NULL;
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_nspiseekentries(NDR_PUSH *pndr,
@@ -1889,7 +1885,7 @@ static pack_result nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN
 	if (0 != ptr) {
 		r->preserved = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->preserved == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(nsp_ndr_pull_proptag_array(pndr, r->preserved));
 	} else {
 		r->preserved = NULL;
@@ -1899,7 +1895,7 @@ static pack_result nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN
 	if (0 != ptr) {
 		r->pfilter = ndr_stack_anew<NSPRES>(NDR_STACK_IN);
 		if (r->pfilter == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(nsp_ndr_pull_restriction(pndr, FLAG_HEADER|FLAG_CONTENT, r->pfilter));
 	} else {
 		r->pfilter = NULL;
@@ -1908,7 +1904,7 @@ static pack_result nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN
 	if (0 != ptr) {
 		r->ppropname = ndr_stack_anew<NSP_PROPNAME>(NDR_STACK_IN);
 		if (r->ppropname == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(nsp_ndr_pull_property_name(pndr, FLAG_HEADER|FLAG_CONTENT, r->ppropname));
 	} else {
 		r->ppropname = NULL;
@@ -1919,12 +1915,12 @@ static pack_result nsp_ndr_pull_nspigetmatches(NDR_PULL *pndr, NSPIGETMATCHES_IN
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(nsp_ndr_pull_proptag_array(pndr, r->pproptags));
 	} else {
 		r->pproptags = NULL;
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_nspigetmatches(NDR_PUSH *pndr,
@@ -1953,12 +1949,12 @@ static pack_result nsp_ndr_pull_nspiresortrestriction(NDR_PULL *pndr,
 	if (0 != ptr) {
 		r->poutmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->poutmids == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(nsp_ndr_pull_proptag_array(pndr, r->poutmids));
 	} else {
 		r->poutmids = NULL;
 	}
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_nspiresortrestriction(NDR_PUSH *pndr,
@@ -2017,13 +2013,12 @@ static pack_result nsp_ndr_pull_nspigetprops(NDR_PULL *pndr, NSPIGETPROPS_IN *r)
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(nsp_ndr_pull_proptag_array(pndr, r->pproptags));
 	} else {
 		r->pproptags = NULL;
 	}
-
-	return NDR_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push_nspigetprops(NDR_PUSH *pndr,
@@ -2062,7 +2057,7 @@ static pack_result nsp_ndr_pull_nspimodprops(NDR_PULL *pndr, NSPIMODPROPS_IN *r)
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(nsp_ndr_pull_proptag_array(pndr, r->pproptags));
 	} else {
 		r->pproptags = NULL;
@@ -2113,11 +2108,11 @@ static pack_result nsp_ndr_pull_nspigettemplateinfo(NDR_PULL *pndr,
 		TRY(pndr->g_ulong(&offset));
 		TRY(pndr->g_ulong(&length));
 		if (offset != 0 || length > size)
-			return NDR_ERR_ARRAY_SIZE;
+			return pack_result::array_size;
 		TRY(pndr->check_str(length, sizeof(uint8_t)));
 		r->pdn = ndr_stack_anew<char>(NDR_STACK_IN, length + 1);
 		if (r->pdn == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(pndr->g_str(r->pdn, length));
 	} else {
 		r->pdn = NULL;
@@ -2179,7 +2174,7 @@ static pack_result nsp_ndr_pull_nspiresolvenames(NDR_PULL *pndr, NSPIRESOLVENAME
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(nsp_ndr_pull_proptag_array(pndr, r->pproptags));
 	} else {
 		r->pproptags = NULL;
@@ -2211,7 +2206,7 @@ static pack_result nsp_ndr_pull_nspiresolvenamesw(NDR_PULL *pndr, NSPIRESOLVENAM
 	if (0 != ptr) {
 		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (r->pproptags == nullptr)
-			return NDR_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(nsp_ndr_pull_proptag_array(pndr, r->pproptags));
 	} else {
 		r->pproptags = NULL;
@@ -2261,7 +2256,7 @@ pack_result exchange_nsp_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 	H(nspiResolveNames, nspiresolvenames, NSPIRESOLVENAMES);
 	H(nspiResolveNamesW, nspiresolvenamesw, NSPIRESOLVENAMESW);
 	default:
-		return NDR_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 #undef H
 }
@@ -2289,7 +2284,7 @@ pack_result exchange_nsp_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 	H(nspiResolveNames, nspiresolvenames, NSPIRESOLVENAMES);
 	H(nspiResolveNamesW, nspiresolvenamesw, NSPIRESOLVENAMESW);
 	default:
-		return NDR_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 #undef H
 }

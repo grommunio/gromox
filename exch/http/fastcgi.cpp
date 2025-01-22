@@ -283,7 +283,7 @@ static pack_result mod_fastcgi_push_align_record(NDR_PUSH *pndr)
 	uint8_t padding_len;
 	
 	if (!(pndr->offset & 7))
-		return NDR_ERR_SUCCESS;
+		return pack_result::ok;
 	padding_len = 8 - (pndr->offset & 7);
 	pndr->data[6] = padding_len;
 	return pndr->p_zero(padding_len);
@@ -297,7 +297,7 @@ static pack_result mod_fastcgi_push_params_end(NDR_PUSH *pndr)
 	offset = pndr->offset;
 	len = offset - 8;
 	if (len > 0xFFFF)
-		return NDR_ERR_FAILURE;
+		return pack_result::failure;
 	pndr->offset = 4;
 	TRY(pndr->p_uint16(len));
 	pndr->offset = offset;
@@ -630,7 +630,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 	uint8_t ndr_buff[65800];
 	
 	ndr_push.init(tmp_buff, 16, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
-	if (mod_fastcgi_push_begin_request(&ndr_push) != NDR_ERR_SUCCESS ||
+	if (mod_fastcgi_push_begin_request(&ndr_push) != pack_result::ok ||
 	    ndr_push.offset != 16)
 		return FALSE;
 	ndr_length = sizeof(ndr_buff);
@@ -653,8 +653,8 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 		return FALSE;
 	}
 	ndr_push.init(tmp_buff, 8, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
-	if (NDR_ERR_SUCCESS != mod_fastcgi_push_params_begin(&ndr_push) ||
-		NDR_ERR_SUCCESS != mod_fastcgi_push_params_end(&ndr_push) ||
+	if (mod_fastcgi_push_params_begin(&ndr_push) != pack_result::ok ||
+	    mod_fastcgi_push_params_end(&ndr_push) != pack_result::ok ||
 		8 != ndr_push.offset || 8 != write(cli_sockd, tmp_buff, 8)) {
 		close(cli_sockd);
 		phttp->log(LV_ERR, "Failed to write record to fastcgi back-end %s", sk_path);
@@ -673,8 +673,8 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 				rq.content_len -= tmp_len;
 			}
 			ndr_push.init(ndr_buff, sizeof(ndr_buff), NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
-			if (NDR_ERR_SUCCESS != mod_fastcgi_push_stdin(
-				&ndr_push, pbuff, tmp_len)) {
+			if (mod_fastcgi_push_stdin(&ndr_push, pbuff,
+			    tmp_len) != pack_result::ok) {
 				close(cli_sockd);
 				phttp->log(LV_DEBUG, "failed to "
 					"push stdin record for mod_fastcgi");
@@ -707,8 +707,8 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 				break;
 			}
 			ndr_push.init(ndr_buff, sizeof(ndr_buff), NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
-			if (NDR_ERR_SUCCESS != mod_fastcgi_push_stdin(
-				&ndr_push, tmp_buff, tmp_len)) {
+			if (mod_fastcgi_push_stdin(&ndr_push, tmp_buff,
+			    tmp_len) != pack_result::ok) {
 				close(cli_sockd);
 				phttp->log(LV_DEBUG, "failed to "
 					"push stdin record for mod_fastcgi");
@@ -727,8 +727,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 	}
  END_OF_STDIN:
 	ndr_push.init(ndr_buff, sizeof(ndr_buff), NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
-	if (NDR_ERR_SUCCESS != mod_fastcgi_push_stdin(
-		&ndr_push, NULL, 0)) {
+	if (mod_fastcgi_push_stdin(&ndr_push, nullptr, 0) != pack_result::ok) {
 		close(cli_sockd);
 		phttp->log(LV_DEBUG, "failed to push "
 			"last empty stdin record for mod_fastcgi");
@@ -839,8 +838,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			return FALSE;	
 		}
 		ndr_pull.init(header_buff, 8, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
-		if (NDR_ERR_SUCCESS != mod_fastcgi_pull_record_header(
-			&ndr_pull, &header)) {
+		if (mod_fastcgi_pull_record_header(&ndr_pull, &header) != pack_result::ok) {
 			phttp->log(LV_DEBUG, "failed to "
 				"pull record header in mod_fastcgi");
 			mod_fastcgi_insert_ctx(phttp);
@@ -866,7 +864,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			}
 			ndr_pull.init(tmp_buff, tmp_len, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 			if (mod_fastcgi_pull_end_request(&ndr_pull,
-			    header.padding_len, &end_request) != NDR_ERR_SUCCESS)
+			    header.padding_len, &end_request) != pack_result::ok)
 				phttp->log(LV_DEBUG, "failed to"
 					" pull record body in mod_fastcgi");
 			else
@@ -892,8 +890,8 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			}
 			ndr_pull.init(tmp_buff, tmp_len, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 			std_stream.length = header.content_len;
-			if (NDR_ERR_SUCCESS != mod_fastcgi_pull_stdstream(
-				&ndr_pull, header.padding_len, &std_stream)) {
+			if (mod_fastcgi_pull_stdstream(&ndr_pull, header.padding_len,
+			    &std_stream) != pack_result::ok) {
 				phttp->log(LV_DEBUG, "failed to"
 					" pull record body in mod_fastcgi");
 				mod_fastcgi_insert_ctx(phttp);
