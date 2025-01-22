@@ -1650,7 +1650,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 
 	/* Copy out */
 	(*tags)->cvalues = ctags.size();
-	(*tags)->pproptag = ndr_stack_anew<uint32_t>(ctags.size());
+	(*tags)->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, ctags.size());
 	if ((*tags)->pproptag == nullptr) {
 		*tags = nullptr;
 		return ecServerOOM;
