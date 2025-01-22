@@ -38,7 +38,7 @@ enum class pack_result {
  * 			(else, 16-bit)
  * %EXT_FLAG_TBLLMT:	limit packed rep strings to 255 characters
  * 			(GetContentsTable / GetHierarchyTable)
- * %EXT_FLAG_ABK:	packed rep includes extra set/unset flags
+ * %EXT_FLAG_ABK:	MH-NSP serialization mode
  * %EXT_FLAG_ZCORE:	unpacked rep uses zcore types for rule element pointers
  * %EXT_FLAG_DYNAMIC:   buffer is managed by EXT_PUSH [private flag]
  *

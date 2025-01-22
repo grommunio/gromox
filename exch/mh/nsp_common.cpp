@@ -1,7 +1,9 @@
 #include <cstring>
 #include <gromox/hpm_common.h>
+#include <gromox/util.hpp>
 #include "nsp_common.hpp"
 DECLARE_HPM_API(mh_nsp, extern);
+using namespace gromox;
 using namespace mh_nsp;
 
 void *cu_alloc1(size_t size)
@@ -67,6 +69,9 @@ static BOOL cu_propval_to_valunion(uint16_t type, const void *x, PROP_VAL_UNION 
 		return TRUE;
 	case PT_LONG:
 		u.l = *static_cast<const uint32_t *>(x);
+		return TRUE;
+	case PT_OBJECT:
+		memset(&u, 0, sizeof(u));
 		return TRUE;
 	case PT_BOOLEAN:
 		u.b = *static_cast<const uint8_t *>(x);
@@ -148,6 +153,7 @@ static BOOL cu_valunion_to_propval(uint16_t type, const PROP_VAL_UNION *u, void 
 		value = deconst(&u->s);
 		break;
 	case PT_LONG:
+	case PT_OBJECT:
 		value = deconst(&u->l);
 		break;
 	case PT_BOOLEAN:
@@ -199,6 +205,8 @@ static BOOL cu_valunion_to_propval(uint16_t type, const PROP_VAL_UNION *u, void 
 			return false;
 		break;
 	default:
+		/* also see E-1912 for RPC-based NSP */
+		mlog(LV_ERR, "E-1759: nsp_ndr type %xh unhandled", type);
 		return false;
 	}
 	*value_out = value;

@@ -1054,6 +1054,7 @@ ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node, cpid_t codepage,
 		prop->value.s = strtol(it->second.c_str(), nullptr, 0);
 		return ecSuccess;
 	case PT_LONG:
+	case PT_OBJECT:
 		prop->value.l = strtol(it->second.c_str(), nullptr, 0);
 		return ecSuccess;
 	case PT_I8:

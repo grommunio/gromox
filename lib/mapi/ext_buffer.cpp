@@ -1042,6 +1042,9 @@ pack_result EXT_PULL::g_propval(uint16_t type, void **ppval)
 	CASE(PT_SRESTRICTION, RESTRICTION, g_restriction);
 	CASE(PT_ACTIONS, RULE_ACTIONS, g_rule_actions);
 	case PT_OBJECT:
+		if (m_flags & EXT_FLAG_ABK)
+			return pack_result::ok;
+		[[fallthrough]]; /* odd cases like PR_ATTACH_DATA_OBJ during ICS? */
 	CASE(PT_BINARY, BINARY, g_bin);
 	CASE(PT_MV_SHORT, SHORT_ARRAY, g_uint16_a);
 	CASE(PT_MV_LONG, LONG_ARRAY, g_uint32_a);
@@ -2785,6 +2788,9 @@ pack_result EXT_PUSH::p_propval(uint16_t type, const void *pval)
 	CASE(PT_SRESTRICTION, RESTRICTION, p_restriction);
 	CASE(PT_ACTIONS, RULE_ACTIONS, p_rule_actions);
 	case PT_OBJECT:
+		if (m_flags & EXT_FLAG_ABK)
+			return pack_result::ok;
+		[[fallthrough]];
 	CASE(PT_BINARY, BINARY, p_bin);
 	CASE(PT_MV_SHORT, SHORT_ARRAY, p_uint16_a);
 	CASE(PT_MV_LONG, LONG_ARRAY, p_uint32_a);

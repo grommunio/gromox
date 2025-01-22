@@ -783,8 +783,10 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL *pndr,
 		case PT_SHORT:
 			TRY(pndr->g_uint16(&r->s));
 			break;
-		case PT_LONG:
 		case PT_OBJECT:
+			fprintf(stderr, "%s stealing 32bit int\n", __func__);
+			[[fallthrough]];
+		case PT_LONG:
 			TRY(pndr->g_uint32(&r->l));
 			break;
 		case PT_BOOLEAN:
@@ -923,6 +925,7 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL *pndr,
 	return NDR_ERR_SUCCESS;
 }
 
+/* This is for RPCH-based NSP only; mh_nsp is serialized elsewhere */
 static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
     unsigned int flag, uint32_t type, const PROP_VAL_UNION *r)
 {
@@ -937,11 +940,17 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
 			TRY(pndr->p_uint16(r->s));
 			break;
 		case PT_LONG:
-		case PT_OBJECT:
 			TRY(pndr->p_uint32(r->l));
 			break;
 		case PT_BOOLEAN:
 			TRY(pndr->p_uint8(r->b));
+			break;
+		case PT_OBJECT:
+			/*
+			 * In rpc-nsp, PT_OBJECT is followed by uint32 ([MS-NSPI] §2.2.1);
+			 * but in mh_nsp, it is followed by nothing.
+			 */
+			TRY(pndr->p_uint32(0));
 			break;
 		case PT_STRING8:
 		case PT_UNICODE:
@@ -984,6 +993,7 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
 			TRY(pndr->p_uint32(r->reserved));
 			break;
 		default:
+			/* see also E-1759 for mh_nsp */
 			mlog(LV_ERR, "E-1912: nsp_ndr type %xh unhandled", type);
 			return NDR_ERR_BAD_SWITCH;
 		}
