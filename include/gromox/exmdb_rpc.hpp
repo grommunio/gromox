@@ -167,6 +167,9 @@ enum class exmdb_callid : uint8_t {
 	movecopy_folder = 0x8b,
 	create_folder = 0x8c,
 	write_message_v2 = 0x8d,
+	imapfile_read = 0x8e,
+	imapfile_write = 0x8f,
+	imapfile_delete = 0x90,
 	/* update exch/exmdb_provider/names.cpp:exmdb_rpc_idtoname! */
 };
 
@@ -852,6 +855,16 @@ struct exreq_recalc_store_size final : public exreq {
 	uint32_t flags = 0;
 };
 
+struct exreq_imapfile_read final : public exreq {
+	std::string type, mid;
+};
+
+struct exreq_imapfile_write final : public exreq {
+	std::string type, mid, data;
+};
+
+using exreq_imapfile_delete = exreq_imapfile_read;
+
 struct exresp {
 	exresp() = default; /* Prevent use of direct-init-list */
 	virtual ~exresp() = default;
@@ -1295,6 +1308,10 @@ struct exresp_write_message_v2 final : public exresp {
 	ec_error_t e_result{};
 };
 
+struct exresp_imapfile_read final : public exresp {
+	std::string data;
+};
+
 using exreq_ping_store = exreq;
 using exreq_get_all_named_propids = exreq;
 using exreq_get_store_all_proptags = exreq;
@@ -1339,6 +1356,8 @@ using exresp_recalc_store_size = exresp;
 using exresp_flush_instance = exresp_error;
 using exresp_write_message = exresp_error;
 using exresp_movecopy_folder = exresp_error;
+using exresp_imapfile_write = exresp;
+using exresp_imapfile_delete = exresp;
 
 struct DB_NOTIFY_DATAGRAM {
 	char *dir = nullptr;

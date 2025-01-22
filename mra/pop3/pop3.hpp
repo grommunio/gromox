@@ -36,16 +36,17 @@ class config_file;
 
 struct pop3_context final : public schedule_context {
 	pop3_context() = default;
-	~pop3_context();
 	NOMOVE(pop3_context);
 
 	GENERIC_CONNECTION connection;
 	char read_buffer[1024]{};
 	size_t read_offset{};
 	char *write_buff = nullptr;
-	size_t write_length = 0, write_offset = 0;
+	std::string wrdat_content;
+	size_t write_length = 0, write_offset = 0, wrdat_offset = 0;
+	bool wrdat_active = false;
 	BOOL data_stat = false, list_stat = false;
-	int until_line = 0x7FFFFFFF, cur_line = -1, message_fd = -1;
+	int until_line = 0x7FFFFFFF, cur_line = -1;
 	STREAM stream; /* stream accepted from pop3 client */
 	int total_mail = 0;
 	uint64_t total_size = 0;

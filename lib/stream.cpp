@@ -699,31 +699,6 @@ unsigned int STREAM::peek_buffer(char *pbuff, unsigned int size) const
 }
 
 /*
- *	dump content in stream into file
- *	@param
- *		pstream [in]			stream object
- *		fd						file descriptor
- *	@return
- *		STREAM_DUMP_FAIL		fail
- *		STREAM_DUMP_OK			OK
- */
-int STREAM::dump(int fd)
-{
-	void *pbuff;
-	unsigned int size = STREAM_BLOCK_SIZE;
-
-	reset_reading();
-	while ((pbuff = get_read_buf(&size)) != nullptr) {
-		auto wr_result = ::write(fd, pbuff, size);
-		if (wr_result < 0 || static_cast<size_t>(wr_result) != size)
-			return STREAM_DUMP_FAIL;
-		size = STREAM_BLOCK_SIZE;
-	}
-	return STREAM_DUMP_OK;
-}
-
-
-/*
  *	  forward the reading pointer.
  *	  @param
  *		  pstream [in]	  indicate the stream object

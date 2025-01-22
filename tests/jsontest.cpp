@@ -10,7 +10,7 @@
 
 using namespace gromox;
 
-static void enx(MJSON_MIME *mi, void *q)
+static void enx(const MJSON_MIME *mi, void *q)
 {
 	printf("this=%p type=%u id=%s\n", mi,
 	       static_cast<unsigned int>(mi->mime_type), mi->get_id());
@@ -68,7 +68,7 @@ int main()
 		return EXIT_FAILURE;
 	}
 	m.path = "/tmp";
-	m.enum_mime(enx, nullptr);
+	const_cast<const MJSON &>(m).enum_mime(enx, nullptr);
 	if (t_digest() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;

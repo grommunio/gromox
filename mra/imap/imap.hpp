@@ -13,6 +13,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
+#include <gromox/mjson.hpp>
 #include <gromox/range_set.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/stream.hpp>
@@ -79,9 +80,6 @@ struct content_array final : public XARRAY {
 
 /**
  * @mid:        midstr
- * @open_mode:  controls unlinking of @file_path upon destruction
- * @file_path:  absolute path in filesystem, built from midstr
- * @message_fd:	feckin descriptor
  * @b_modify:	flag indicating that other clients concurrently modified the mailbox
  * 		(@f_flags, @f_expunged_uids is filled with changes)
  * @contents:	current mapping of seqid -> mid/uid for the currently selected folder
@@ -92,25 +90,23 @@ struct content_array final : public XARRAY {
  */
 struct imap_context final : public schedule_context {
 	imap_context();
-	~imap_context();
 	NOMOVE(imap_context);
 	/* a.k.a. is_login in pop3 */
 	inline bool is_authed() const { return proto_stat >= iproto_stat::auth; }
-	void close_fd();
-	void unlink_file();
-	void close_and_unlink();
 
 	GENERIC_CONNECTION connection;
-	std::string mid, append_folder, append_flags, file_path;
+	std::string mid, append_folder, append_flags;
 	time_t append_time = 0;
-	int message_fd = -1, open_mode = 0;
 	iproto_stat proto_stat = iproto_stat::none;
 	isched_stat sched_stat = isched_stat::none;
 	char *write_buff = nullptr;
 	size_t write_length = 0, write_offset = 0;
+	size_t wrdat_offset = 0;
 	time_t selected_time = 0;
 	std::string selected_folder;
 	content_array contents;
+	std::string wrdat_content;
+	bool wrdat_active = false;
 	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
 	std::atomic<unsigned int> async_change_mask{0};
 	/*
@@ -129,6 +125,7 @@ struct imap_context final : public schedule_context {
 	int literal_len = 0, current_len = 0;
 	STREAM stream; /* stream for writing to imap client */
 	STREAM append_stream;
+	mjson_io io_actor;
 	int auth_times = 0;
 	char username[UADDR_SIZE]{}, maildir[256]{}, defcharset[32]{};
 	bool synchronizing_literal = true;

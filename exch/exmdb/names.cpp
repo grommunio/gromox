@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2020 grommunio GmbH
+// SPDX-FileCopyrightText: 2025 grommunio GmbH
 // This file is part of Gromox.
 #include <gromox/defs.h>
 #include <gromox/exmdb_common_util.hpp>
@@ -151,6 +151,9 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(movecopy_folder),
 	E(create_folder),
 	E(write_message_v2),
+	E(imapfile_read),
+	E(imapfile_write),
+	E(imapfile_delete),
 };
 #undef E
 
@@ -159,7 +162,7 @@ namespace exmdb {
 const char *exmdb_rpc_idtoname(exmdb_callid i)
 {
 	auto j = static_cast<uint8_t>(i);
-	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::write_message_v2) + 1);
+	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::imapfile_delete) + 1);
 	auto s = j < std::size(exmdb_rpc_names) ? exmdb_rpc_names[j] : nullptr;
 	return znul(s);
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #define _GNU_SOURCE 1 /* AT_* */
 #include <algorithm>
@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 #include <fmt/core.h>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/database.h>
@@ -605,4 +606,57 @@ BOOL exmdb_server::recalc_store_size(const char *dir, uint32_t flags)
 	 * should keep a rolling number for folders too?
 	 */
 	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
+}
+
+static bool imapfile_type_ok(const std::string &s)
+{
+	return s == "eml" || s == "ext" || s == "tmp/imap.rfc822";
+}
+
+BOOL exmdb_server::imapfile_read(const char *dir, const std::string &type,
+    const std::string &mid, std::string *data)
+{
+	if (!imapfile_type_ok(type) || mid.find('/') != mid.npos)
+		return false;
+	size_t slurp_size = 0;
+	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file((dir + "/"s + type + "/" + mid).c_str(), &slurp_size));
+	if (slurp_data == nullptr)
+		return false;
+	data->assign(slurp_data.get(), slurp_size);
+	return TRUE;
+}
+
+BOOL exmdb_server::imapfile_write(const char *dir, const std::string &type,
+    const std::string &mid, const std::string &data)
+{
+	if (!imapfile_type_ok(type) || mid.find('/') != mid.npos)
+		return false;
+	gromox::tmpfile tf;
+	auto fd = tf.open_linkable(dir, O_WRONLY, FMODE_PRIVATE);
+	if (fd < 0)
+		return false;
+	auto wrret = HXio_fullwrite(fd, data.data(), data.size());
+	if (wrret < 0 || static_cast<size_t>(wrret) != data.size())
+		return false;
+	auto tgt = fmt::format("{}/{}/{}", dir, type, mid);
+	auto err = tf.link_to(tgt.c_str());
+	if (err != 0) {
+		mlog(LV_ERR, "E-1752: link_to %s: %s", tgt.c_str(), strerror(errno));
+		return false;
+	}
+	return TRUE;
+}
+
+BOOL exmdb_server::imapfile_delete(const char *dir, const std::string &type,
+    const std::string &mid)
+{
+	if (!imapfile_type_ok(type) || mid.find('/') != mid.npos)
+		return false;
+	auto fn = dir + "/"s + type + "/" + mid;
+	if (remove(fn.c_str()) < 0 && errno != ENOENT) {
+		mlog(LV_WARN, "W-1370: remove %s: %s",
+			fn.c_str(), strerror(errno));
+		return false;
+	}
+	return TRUE;
 }

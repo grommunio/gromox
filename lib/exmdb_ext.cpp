@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -2244,6 +2244,39 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_recalc_store_size &d)
 	return x.p_uint32(d.flags);
 }
 
+static pack_result exmdb_pull(EXT_PULL &x, exreq_imapfile_read &d)
+{
+	TRY(x.g_str(&d.type));
+	return x.g_str(&d.mid);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_imapfile_read &d)
+{
+	TRY(x.p_str(d.type));
+	return x.p_str(d.mid);
+}
+
+static pack_result exmdb_pull(EXT_PULL &x, exreq_imapfile_write &d) try
+{
+	TRY(x.g_str(&d.type));
+	TRY(x.g_str(&d.mid));
+	uint32_t z = 0;
+	TRY(x.g_uint32(&z));
+	d.data.resize(z);
+	return x.g_bytes(d.data.data(), z);
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_imapfile_write &d)
+{
+	TRY(x.p_str(d.type));
+	TRY(x.p_str(d.mid));
+	auto z = std::min(static_cast<size_t>(UINT32_MAX), d.data.size());
+	TRY(x.p_uint32(z));
+	return x.p_bytes(d.data.data(), z);
+}
+
 #define RQ_WITH_ARGS \
 	E(get_named_propids) \
 	E(get_named_propnames) \
@@ -2367,7 +2400,10 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_recalc_store_size &d)
 	E(autoreply_tsquery) \
 	E(autoreply_tsupdate) \
 	E(recalc_store_size) \
-	E(write_message_v2)
+	E(write_message_v2) \
+	E(imapfile_read) \
+	E(imapfile_write) \
+	E(imapfile_delete)
 
 /**
  * This uses *& because we do not know which request type we are going to get
@@ -3649,6 +3685,23 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_write_message_v2 &d)
 	return x.p_uint32(d.e_result);
 }
 
+static pack_result exmdb_pull(EXT_PULL &x, exresp_imapfile_read &d) try
+{
+	uint32_t z;
+	TRY(x.g_uint32(&z));
+	d.data.resize(z);
+	return x.g_bytes(d.data.data(), z);
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_imapfile_read &d)
+{
+	auto z = std::min(static_cast<size_t>(UINT32_MAX), d.data.size());
+	TRY(x.p_uint32(z));
+	return x.p_bytes(d.data.data(), d.data.size());
+}
+
 #define RSP_WITHOUT_ARGS \
 	E(ping_store) \
 	E(remove_store_properties) \
@@ -3681,7 +3734,9 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_write_message_v2 &d)
 	E(purge_softdelete) \
 	E(purge_datafiles) \
 	E(autoreply_tsupdate) \
-	E(recalc_store_size)
+	E(recalc_store_size) \
+	E(imapfile_write) \
+	E(imapfile_delete)
 #define RSP_WITH_ARGS \
 	E(get_all_named_propids) \
 	E(get_named_propids) \
@@ -3781,7 +3836,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_write_message_v2 &d)
 	E(get_public_folder_unread_count) \
 	E(store_eid_to_user) \
 	E(autoreply_tsquery) \
-	E(write_message_v2)
+	E(write_message_v2) \
+	E(imapfile_read)
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
 /*

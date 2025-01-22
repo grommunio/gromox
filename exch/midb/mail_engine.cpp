@@ -203,17 +203,6 @@ static std::string make_midb_path(const char *d)
 	return d + "/exmdb/midb.sqlite3"s;
 }
 
-static std::string make_eml_path(const char *d, std::string_view m)
-{
-	/* P2591r5 only for C++26 */
-	return (d + "/eml/"s) += m;
-}
-
-static std::string make_ext_path(const char *d, std::string_view m)
-{
-	return (d + "/ext/"s) += m;
-}
-
 static std::unique_ptr<char[]> me_ct_to_utf8(const char *charset,
     const char *string) try
 {
@@ -248,39 +237,26 @@ static std::unique_ptr<char[]> me_ct_to_utf8(const char *charset,
 static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
     Json::Value &digest) try
 {
-	size_t size;
-	auto ext_path = make_ext_path(cu_get_maildir(), mid_string);
-	size_t slurp_size = 0;
-	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(ext_path.c_str(), &slurp_size));
-	if (slurp_data != nullptr) {
-		if (!json_from_str(slurp_data.get(), digest))
+	auto dir = cu_get_maildir();
+	std::string slurp_data;
+	if (exmdb_client::imapfile_read(dir, "ext", mid_string, &slurp_data)) {
+		if (!json_from_str(slurp_data.c_str(), digest))
 			return 0;
-	} else if (errno != ENOENT) {
-		mlog(LV_ERR, "E-2139: read %s: %s", ext_path.c_str(), strerror(errno));
-		return 0;
 	} else {
-		auto eml_path = make_eml_path(cu_get_maildir(), mid_string);
-		slurp_data.reset(HX_slurp_file(eml_path.c_str(), &slurp_size));
-		if (slurp_data == nullptr) {
-			mlog(LV_ERR, "E-1252: %s: %s", eml_path.c_str(), strerror(errno));
+		if (!exmdb_client::imapfile_read(dir, "eml", mid_string, &slurp_data))
 			return 0;
-		}
 		MAIL imail;
-		if (!imail.load_from_str(slurp_data.get(), slurp_size))
+		if (!imail.load_from_str(slurp_data.c_str(), slurp_data.size()))
 			return 0;
-		slurp_data.reset();
+		size_t size = 0;
 		if (imail.make_digest(&size, digest) <= 0)
 			return 0;
-		imail.clear();
 		digest["file"] = "";
 		auto djson = json_to_str(digest);
-		wrapfd fd = open(ext_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
-		if (fd.get() >= 0) {
-			if (HXio_fullwrite(fd.get(), djson.c_str(), djson.size()) < 0 ||
-			    fd.close_wr() != 0)
-				mlog(LV_ERR, "E-2082: write %s: %s", ext_path.c_str(), strerror(errno));
-		} else {
-			mlog(LV_ERR, "E-2138: open %s for write: %s", ext_path.c_str(), strerror(errno));
+		if (!exmdb_client::imapfile_write(dir, "ext", mid_string, djson)) {
+			mlog(LV_ERR, "E-1754: imapfile_write %s/ext/%s did not complete",
+				dir, mid_string);
+			return 0;
 		}
 	}
 	auto pstmt = gx_sql_prep(psqlite, "SELECT uid, recent, read,"
@@ -396,10 +372,6 @@ static std::unique_ptr<char[]> me_ct_decode_mime(const char *charset,
 static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 {
 	auto penum = static_cast<KEYWORD_ENUM *>(param);
-	size_t temp_len;
-	const char *charset;
-	const char *filename;
-	
 	if (penum->b_result)
 		return;
 	if (pmime->get_mtype() != mime_type::single &&
@@ -407,7 +379,7 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 		return;
 
 	if (strncmp(pmime->get_ctype(), "text/", 5) != 0) {
-		filename = pmime->get_filename();
+		auto filename = pmime->get_filename();
 		if ('\0' != filename[0]) {
 			auto rs = me_ct_decode_mime(penum->charset, filename);
 			if (rs != nullptr &&
@@ -415,51 +387,41 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 				penum->b_result = TRUE;
 		}
 	}
-	auto length = pmime->get_content_length();
-	auto pbuff = std::make_unique<char[]>(2 * length + 1);
-	auto fd = penum->pjson->seek_fd(pmime->get_id(), MJSON_MIME_CONTENT);
-	if (fd == -1)
+	std::string content;
+	if (!exmdb_client::imapfile_read(cu_get_maildir(), "eml",
+	    penum->pjson->filename, &content))
 		return;
-	auto read_len = HXio_fullread(fd, pbuff.get(), length);
-	if (read_len < 0 || static_cast<size_t>(read_len) != length)
-		return;
+	std::string_view ctview(content.data() + pmime->begin,
+	                 std::min(content.size(), pmime->get_content_length()));
 	if (strcasecmp(pmime->get_encoding(), "base64") == 0) {
-		if (decode64_ex(pbuff.get(), length, &pbuff[length],
-		    length, &temp_len) != 0)
-			return;
-		pbuff[length + temp_len] = '\0';
+		content = base64_decode(ctview);
 	} else if (strcasecmp(pmime->get_encoding(), "quoted-printable") == 0) {
-		auto xl = qp_decode_ex(&pbuff[length], length, pbuff.get(), length);
+		auto xl = qp_decode_ex(&content[0], content.size(), content.c_str(), content.size());
 		if (xl < 0)
 			return;
-		temp_len = xl;
-		pbuff[length + temp_len] = '\0';
-	} else {
-		memcpy(&pbuff[length], pbuff.get(), length);
-		pbuff[2*length] = '\0';
+		content.resize(xl);
 	}
 
-	charset = pmime->get_charset();
+	auto charset = pmime->get_charset();
 	auto rs = me_ct_to_utf8(*charset != '\0' ?
-	          charset : penum->charset, &pbuff[length]);
+	          charset : penum->charset, content.c_str());
 	if (rs != nullptr && strcasestr(rs.get(), penum->keyword) != nullptr)
 		penum->b_result = TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1970: ENOMEM");
 }
 
-static bool me_ct_search_head(const char *charset,
-	const char *file_path, const char *tag, const char *value)
+static bool me_ct_search_head(const char *charset, const char *mid_string,
+    const char *tag, const char *value)
 {
-	size_t slurp_size = 0;
-	std::unique_ptr<char[], stdlib_delete> ct(HX_slurp_file(file_path, &slurp_size));
-	if (ct == nullptr)
+	std::string content;
+	if (!exmdb_client::imapfile_read(cu_get_maildir(), "eml",
+	    mid_string, &content))
 		return false;
-
 	vmime::parsingContext vpctx;
 	vpctx.setInternationalizedEmailSupport(true); /* RFC 6532 */
 	vmime::header hdr;
-	hdr.parse(vpctx, std::string(ct.get(), slurp_size));
+	hdr.parse(vpctx, content);
 
 	for (const auto &hf : hdr.getFieldList()) {
 		auto hk = hf->getName();
@@ -634,8 +596,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				break;
 			}
 			case midb_cond::header:
-				b_result1 = me_ct_search_head(charset,
-					make_eml_path(cu_get_maildir(), mid_string).c_str(),
+				b_result1 = me_ct_search_head(charset, mid_string,
 					ptree_node->ct_headers[0],
 					ptree_node->ct_headers[1]);
 				break;
@@ -1371,15 +1332,9 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 	
 	auto dir = cu_get_maildir();
 	std::string djson;
-	if (e.midstr.size() > 0) {
-		auto ext_path = make_ext_path(dir, e.midstr);
-		size_t slurp_size = 0;
-		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(ext_path.c_str(), &slurp_size));
-		if (slurp_data == nullptr)
-			e.midstr.clear();
-		else
-			djson.assign(slurp_data.get(), slurp_size);
-	}
+	if (e.midstr.size() > 0 &&
+	    !exmdb_client::imapfile_read(dir, "ext", e.midstr, &djson))
+		e.midstr.clear();
 	if (e.midstr.empty()) {
 		if (!cu_switch_allocator())
 			return;
@@ -1412,28 +1367,18 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 		digest["file"] = "";
 		djson = json_to_str(digest);
 		e.midstr = std::to_string(time(nullptr)) + "." + std::to_string(++g_sequence_id) + ".midb";
-		auto ext_path = make_ext_path(dir, e.midstr);
-		wrapfd fd = open(ext_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
-		if (fd.get() < 0) {
-			mlog(LV_ERR, "E-1770: open %s for write: %s", ext_path.c_str(), strerror(errno));
+		if (!exmdb_client::imapfile_write(dir, "ext", e.midstr, djson)) {
+			mlog(LV_ERR, "E-1770: imapfile_write %s/ext/%s incomplete", dir, e.midstr.c_str());
 			return;
 		}
-		if (HXio_fullwrite(fd.get(), djson.c_str(), djson.size()) < 0 ||
-		    fd.close_wr() != 0) {
-			mlog(LV_ERR, "E-1134: write %s: %s", ext_path.c_str(), strerror(errno));
-			return;
-		}
-		auto eml_path = make_eml_path(dir, e.midstr);
-		fd = open(eml_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
-		if (fd.get() < 0) {
-			mlog(LV_ERR, "E-1771: open %s for write: %s", eml_path.c_str(), strerror(errno));
-			return;
-		}
-		auto err = imail.to_fd(fd.get());
-		if (err == 0)
-			err = fd.close_wr();
+		std::string emlcontent;
+		auto err = imail.to_str(emlcontent);
 		if (err != 0) {
-			mlog(LV_ERR, "E-1772: to_file %s failed: %s", eml_path.c_str(), strerror(err));
+			mlog(LV_ERR, "E-1771: imail.to_string failed: %s", strerror(err));
+			return;
+		}
+		if (!exmdb_client::imapfile_write(dir, "eml", e.midstr, emlcontent)) {
+			mlog(LV_ERR, "E-1772: imapfile_write %s/eml/%s failed", dir, e.midstr.c_str());
 			return;
 		}
 	}
@@ -2173,32 +2118,24 @@ static int me_minst(int argc, char **argv, int sockd) try
 	
 	uint8_t b_unsent = strchr(argv[4], midb_flag::unsent) != nullptr;
 	uint8_t b_read = strchr(argv[4], midb_flag::seen) != nullptr;
-	auto eml_path = make_eml_path(argv[1], argv[3]);
-	size_t slurp_size = 0;
-	std::unique_ptr<char[], stdlib_delete> pbuff(HX_slurp_file(eml_path.c_str(), &slurp_size));
-	if (pbuff == nullptr) {
-		mlog(LV_ERR, "E-2071: read %s: %s", eml_path.c_str(), strerror(errno));
-		return errno == ENOMEM ? MIDB_E_NO_MEMORY : MIDB_E_DISK_ERROR;
+	std::string pbuff;
+	if (!exmdb_client::imapfile_read(argv[1], "eml", argv[3], &pbuff)) {
+		mlog(LV_ERR, "E-2071: imapfile_read %s/eml/%s failed", argv[1], argv[3]);
+		return MIDB_E_DISK_ERROR;
 	}
 
 	MAIL imail;
-	if (!imail.load_from_str(pbuff.get(), slurp_size))
+	if (!imail.load_from_str(pbuff.c_str(), pbuff.size()))
 		return MIDB_E_IMAIL_RETRIEVE;
 	Json::Value digest;
 	if (imail.make_digest(&mess_len, digest) <= 0)
 		return MIDB_E_IMAIL_DIGEST;
 	digest["file"] = "";
 	auto djson = json_to_str(digest);
-	auto ext_path = make_ext_path(argv[1], argv[3]);
-	wrapfd fd = open(ext_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
-	if (fd.get() < 0) {
-		mlog(LV_ERR, "E-2073: Opening %s for writing failed: %s",
-			ext_path.c_str(), strerror(errno));
+	if (!exmdb_client::imapfile_write(argv[1], "ext", argv[3], djson)) {
+		mlog(LV_ERR, "E-2073: imapfile_write %s/ext/%s failed", argv[1], argv[3]);
 		return MIDB_E_DISK_ERROR;
 	}
-	if (HXio_fullwrite(fd.get(), djson.data(), djson.size()) < 0 ||
-	    fd.close_wr() != 0)
-		mlog(LV_ERR, "E-2085: write %s: %s", ext_path.c_str(), strerror(errno));
 	auto pidb = me_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -2222,7 +2159,7 @@ static int me_minst(int argc, char **argv, int sockd) try
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                cu_alloc_bytes, cu_get_propids_create);
 	imail.clear();
-	pbuff.reset();
+	pbuff.clear();
 	if (pmsgctnt == nullptr)
 		return MIDB_E_OXCMAIL_IMPORT;
 	auto cl_msg = make_scope_exit([&]() { message_content_free(pmsgctnt); });
