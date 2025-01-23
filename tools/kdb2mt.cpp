@@ -110,6 +110,8 @@ struct ace_list final {
 	inline const std::vector<PERMISSION_DATA> &get_perms() const { return m_rows; }
 	auto begin() const { return m_rows.cbegin(); }
 	auto end() const { return m_rows.cend(); }
+	auto cbegin() const { return m_rows.cbegin(); }
+	auto cend() const { return m_rows.cend(); }
 
 	private:
 	std::list<std::string> m_strs;

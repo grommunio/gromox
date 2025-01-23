@@ -14,6 +14,10 @@ struct GX_EXPORT attachment_list {
 	attachment_list *dup() const;
 	gromox::deref_iterator<attachment_content> begin() { return pplist; }
 	gromox::deref_iterator<attachment_content> end() { return pplist + count; }
+	gromox::const_deref_iterator<attachment_content> begin() const { return pplist; }
+	gromox::const_deref_iterator<attachment_content> end() const { return pplist + count; }
+	gromox::const_deref_iterator<attachment_content> cbegin() const { return pplist; }
+	gromox::const_deref_iterator<attachment_content> cend() const { return pplist + count; }
 
 	uint16_t count;
 	attachment_content **pplist;
