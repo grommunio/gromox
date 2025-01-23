@@ -37,8 +37,7 @@ bool DSN::load_from_str(const char *in_buff, size_t length)
 		current_offset += parsed_length;
 		if (parsed_length == 0)
 			break;
-		if (!DSN::append_field(pfields, mime_field.name.c_str(),
-		    mime_field.value.c_str())) {
+		if (!DSN::append_field(pfields, mime_field.name, mime_field.value)) {
 			clear();
 			return false;
 		}
@@ -83,28 +82,18 @@ bool DSN::enum_fields(const std::vector<dsn_field> &pfields,
 	return true;
 }
 
-bool DSN::serialize(char *out_buff, size_t max_length) const
+ec_error_t DSN::serialize(std::string &out) const try
 {
-	size_t offset;
-
-	offset = 0;
+	out.clear();
 	for (const auto &f : message_fields)
-		offset += gx_snprintf(out_buff + offset, max_length - offset,
-		          "%s: %s\r\n", f.tag.c_str(), f.value.c_str());
-	if (offset + 2 >= max_length - 1)
-		return false;
-	out_buff[offset++] = '\r';
-	out_buff[offset++] = '\n';
-	out_buff[offset] = '\0';
+		out += f.tag + ": " + f.value + "\r\n";
+	out += "\r\n";
 	for (const auto &r : rcpts_fields) {
 		for (const auto &f : r.fields)
-			offset += gx_snprintf(out_buff + offset, max_length - offset,
-			          "%s: %s\r\n", f.tag.c_str(), f.value.c_str());
-		if (offset + 2 >= max_length - 1)
-			return false;
-		out_buff[offset++] = '\r';
-		out_buff[offset++] = '\n';
-		out_buff[offset] = '\0';
+			out += f.tag + ": " + f.value + "\r\n";
+		out += "\r\n";
 	}
-	return true;
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
 }

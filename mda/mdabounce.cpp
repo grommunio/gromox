@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -152,14 +152,17 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	dsn.append_field(pdsn_fields, "Action", "failed");
 	dsn.append_field(pdsn_fields, "Status", "5.0.0");
 	dsn.append_field(pdsn_fields, "Remote-MTA", mta.c_str());
-	char original_ptr[256*1024];
-	if (dsn.serialize(original_ptr, std::size(original_ptr))) {
-		pmime = pmail->add_child(phead, MIME_ADD_LAST);
-		if (NULL != pmime) {
-			pmime->set_content_type("message/delivery-status");
-			pmime->write_content(original_ptr,
-				strlen(original_ptr), mime_encoding::none);
-		}
+
+	std::string ct;
+	auto err = dsn.serialize(ct);
+	if (err != ecSuccess) {
+		mlog(LV_ERR, "E-1763: %s", mapi_strerror(err));
+		return false;
+	}
+	pmime = pmail->add_child(phead, MIME_ADD_LAST);
+	if (NULL != pmime) {
+		pmime->set_content_type("message/delivery-status");
+		pmime->write_content(ct.c_str(), ct.size(), mime_encoding::none);
 	}
 	return true;
 } catch (const std::bad_alloc &) {

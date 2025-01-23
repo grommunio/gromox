@@ -3492,9 +3492,8 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 
 static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
     const char *pmessage_class, const char *org,
-    cvt_id2user id2user, char *pdsn_content, int max_length) try
+    cvt_id2user id2user, std::string &dsn_content) try
 {
-	char action[16];
 	static constexpr const char status_strings1[][6] =
 		{"5.4.0", "5.1.0", "5.6.5", "5.6.5", "5.2.0", "5.3.0", "4.4.3"};
 	static constexpr const char status_strings2[][6] =
@@ -3524,18 +3523,17 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 			return FALSE;
 	}
 	
+	std::string action;
 	if (class_match_suffix(pmessage_class, ".DR") == 0)
-		strcpy(action, "delivered");
+		action = "delivered";
 	else if (class_match_suffix(pmessage_class, ".Expanded.DR") == 0)
-		strcpy(action, "expanded");
+		action = "expanded";
 	else if (class_match_suffix(pmessage_class, ".Relayed.DR") == 0)
-		strcpy(action, "relayed");
+		action = "relayed";
 	else if (class_match_suffix(pmessage_class, ".Delayed.DR") == 0)
-		strcpy(action, "delayed");
+		action = "delayed";
 	else if (class_match_suffix(pmessage_class, ".NDR") == 0)
-		strcpy(action, "failed");
-	else
-		*action = '\0';
+		action = "failed";
 	if (pmsg->children.prcpts == nullptr)
 		goto SERIALIZE_DSN;
 	for (const auto &rcpt : *pmsg->children.prcpts) {
@@ -3547,7 +3545,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 			username.clear();
 		if (!dsn.append_field(pdsn_fields, "Final-Recipient", username.c_str()))
 			return FALSE;
-		if (*action != '\0' &&
+		if (action.size() > 0 &&
 		    !dsn.append_field(pdsn_fields, "Action", action))
 			return FALSE;
 		auto num = rcpt.get<const uint32_t>(PR_NDR_DIAG_CODE);
@@ -3578,14 +3576,18 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 			return FALSE;
 	}
  SERIALIZE_DSN:
-	return dsn.serialize(pdsn_content, max_length);
+	auto err = dsn.serialize(dsn_content);
+	if (err == ecSuccess)
+		return TRUE;
+	mlog(LV_ERR, "E-1761: %s", mapi_strerror(err));
+	return false;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
 static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
-    const char *pmessage_class, char *pmdn_content, int max_length) try
+    const char *pmessage_class, std::string &mdn_content) try
 {
 	int tmp_len;
 	size_t base64_len;
@@ -3645,7 +3647,11 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
 	if (pdisplay_name != nullptr &&
 	    !dsn.append_field(pdsn_fields, "X-Display-Name", enc_text(pdisplay_name)))
 		return FALSE;
-	return dsn.serialize(pmdn_content, max_length);
+	auto err = dsn.serialize(mdn_content);
+	if (err == ecSuccess)
+		return TRUE;
+	mlog(LV_ERR, "E-1762: %s", mapi_strerror(err));
+	return false;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
@@ -4144,11 +4150,13 @@ bool oxcmail_converter::do_export(const message_content &imsg,
 			return exp_false;
 		if (!pmime->set_content_type("message/delivery-status"))
 			return exp_false;
+
+		std::string content;
 		if (!oxcmail_export_dsn(pmsg, skel.charset,
 		    skel.pmessage_class, g_oxcmail_org_name,
-		    oxcmail_get_username, tmp_buff.get(), tmp_buff_size))
+		    oxcmail_get_username, content))
 			return exp_false;
-		if (!pmime->write_content(tmp_buff.get(), strlen(tmp_buff.get()),
+		if (!pmime->write_content(content.c_str(), content.size(),
 		    mime_encoding::none))
 			return exp_false;
 	} else if (skel.mail_type == oxcmail_type::mdn) {
@@ -4160,10 +4168,12 @@ bool oxcmail_converter::do_export(const message_content &imsg,
 			return exp_false;
 		if (!pmime->set_content_type("message/disposition-notification"))
 			return exp_false;
+
+		std::string content;
 		if (!oxcmail_export_mdn(pmsg, skel.charset,
-		    skel.pmessage_class, tmp_buff.get(), tmp_buff_size))
+		    skel.pmessage_class, content))
 			return exp_false;
-		if (!pmime->write_content(tmp_buff.get(), strlen(tmp_buff.get()),
+		if (!pmime->write_content(content.c_str(), content.size(),
 		    mime_encoding::none))
 			return exp_false;
 	}
