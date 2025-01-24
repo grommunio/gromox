@@ -31,6 +31,22 @@ static constexpr char tdata1[] =
 	"{\"id\":\"2\",\"ctype\":\"text/html\",\"encoding\":\"base64\",\"head\":1007,\"begin\":1088,\"length\":186,\"charset\":\"utf-8\"}],"
 	"\"size\":1322}";
 
+static constexpr char tdata2[] =
+	"{\"charset\":\"UTF-8\",\"date\":\"\",\"file\":\"\",\"flag\":0,"
+	"\"forwarded\":0,\"from\":\"\",\"inreply\":\"\",\"mimes\":["
+	"{\"begin\":1564,\"charset\":\"UTF-8\",\"ctype\":\"text/plain\",\"encoding\":\"8bit\",\"head\":1473,\"id\":\"1\",\"length\":1647},"
+	"{\"begin\":3452,\"charset\":\"UTF-8\",\"ctype\":\"text/html\",\"encoding\":\"8bit\",\"head\":3377,\"id\":\"2.1\",\"length\":5109},"
+	"{\"begin\":8822,\"cid\":\"\",\"cntdspn\":\"inline\",\"ctype\":\"image/png\",\"encoding\":\"base64\",\"filename\":\"\",\"head\":8601,\"id\":\"2.2\",\"length\":112058},"
+	"{\"begin\":121141,\"cid\":\"\",\"cntdspn\":\"inline\",\"ctype\":\"image/png\",\"encoding\":\"base64\",\"filename\":\"\",\"head\":120920,\"id\":\"2.3\",\"length\":99078},"
+	"{\"begin\":220480,\"cid\":\"\",\"cntdspn\":\"inline\",\"ctype\":\"image/png\",\"encoding\":\"base64\",\"filename\":\"\",\"head\":220259,\"id\":\"2.4\",\"length\":130052},"
+	"{\"begin\":350793,\"cid\":\"\",\"cntdspn\":\"inline\",\"ctype\":\"image/png\",\"encoding\":\"base64\",\"filename\":\"\",\"head\":350572,\"id\":\"2.5\",\"length\":136990}"
+	"],\"msgid\":\"\",\"priority\":3,\"read\":0,\"received\":\"\","
+	"\"recent\":1,\"ref\":\"\",\"replied\":0,\"size\":487869,\"structure\":["
+	"{\"begin\":1387,\"ctype\":\"multipart/alternative\",\"head\":0,\"id\":\"\",\"length\":486482},"
+	"{\"begin\":3337,\"ctype\":\"multipart/related\",\"head\":3251,\"id\":\"2\",\"length\":484490}"
+	"],\"subject\":\"\","
+	"\"to\":\"\",\"uid\":0,\"unsent\":0}";
+
 static int t_digest()
 {
 	static char line[] = "{\"foo\": \"bar\", \"OH\": \"NO\", \"bar\": \"result\", \"xy\": 15}";
@@ -74,7 +90,13 @@ static int t_extparse(const char *s)
 
 int main()
 {
+	MJSON_MIME m1, m2;
+	m1.mime_type = mime_type::single;
+	m2 = std::move(m1);
+
 	if (t_extparse(tdata1) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (t_extparse(tdata2) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	if (t_digest() != EXIT_SUCCESS)
 		return EXIT_FAILURE;

@@ -245,10 +245,12 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 			return false;
 		if (pmime->children.size() < offset)
 			pmime->children.resize(offset);
-		pmime->children[--offset] = std::move(m);
-		pmime = &pmime->children[offset];
-		if (*end == '\0')
+		--offset;
+		if (*end == '\0') {
+			pmime->children[offset] = std::move(m);
 			return true;
+		}
+		pmime = &pmime->children[offset];
 		part_ptr = end + 1;
 	}
 	return false;
