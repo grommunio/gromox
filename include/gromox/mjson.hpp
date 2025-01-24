@@ -58,9 +58,6 @@ struct GX_EXPORT MJSON_MIME {
 };
 
 struct GX_EXPORT MJSON {
-	MJSON() = default;
-	NOMOVE(MJSON);
-
 	void clear();
 	BOOL load_from_json(const Json::Value &);
 	int fetch_structure(mjson_io &, const char *cset, BOOL ext, std::string &out) const;
