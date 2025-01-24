@@ -57,10 +57,10 @@ static int t_digest()
 	return EXIT_SUCCESS;
 }
 
-int main()
+static int t_extparse(const char *s)
 {
 	Json::Value json;
-	if (!json_from_str(tdata1, json))
+	if (!json_from_str(s, json))
 		return EXIT_FAILURE;
 	MJSON m;
 	if (!m.load_from_json(json)) {
@@ -69,6 +69,13 @@ int main()
 	}
 	m.path = "/tmp";
 	const_cast<const MJSON &>(m).enum_mime(enx, nullptr);
+	return EXIT_SUCCESS;
+}
+
+int main()
+{
+	if (t_extparse(tdata1) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 	if (t_digest() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
