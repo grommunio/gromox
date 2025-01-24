@@ -59,7 +59,6 @@ struct GX_EXPORT MJSON_MIME {
 
 struct GX_EXPORT MJSON {
 	MJSON() = default;
-	~MJSON();
 	NOMOVE(MJSON);
 
 	void clear();
@@ -80,7 +79,6 @@ struct GX_EXPORT MJSON {
 	bool read = false, replied = false, forwarded = false, unsent = false;
 	bool flag = false;
 	unsigned int priority = 0, uid = 0;
-	int message_fd = -1;
 	size_t size = 0;
 	std::string path, filename, charset, msgid, from, sender, reply, to, cc;
 	std::string inreply, subject, received, date, ref, notification;

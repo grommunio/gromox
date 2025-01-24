@@ -121,10 +121,6 @@ void MJSON::clear()
 {
 	auto pjson = this;
 	m_root.reset();
-	if (-1 != pjson->message_fd) {
-		close(pjson->message_fd);
-		pjson->message_fd = -1;
-	}
 	pjson->uid = 0;
 	pjson->path.clear();
 	pjson->filename.clear();
@@ -147,12 +143,6 @@ void MJSON::clear()
 	pjson->priority = 0;
 	pjson->notification.clear();
 	pjson->size = 0;
-}
-
-MJSON::~MJSON()
-{
-	if (message_fd >= 0)
-		::close(message_fd);
 }
 
 BOOL MJSON::load_from_json(const Json::Value &root) try
