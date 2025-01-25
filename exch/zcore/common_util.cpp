@@ -1847,7 +1847,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 	return false;
 }
 
-static void zc_unwrap_smime(MAIL &ma) try
+static void zc_unwrap_clearsigned(MAIL &ma) try
 {
 	auto part = ma.get_head();
 	if (part == nullptr ||
@@ -1856,25 +1856,7 @@ static void zc_unwrap_smime(MAIL &ma) try
 	part = part->get_child();
 	if (part == nullptr)
 		return;
-	auto partlen = part->get_length();
-	if (partlen < 0)
-		return;
-	size_t len = partlen;
-	std::unique_ptr<char[], stdlib_delete> ctbuf(me_alloc<char>(len));
-	if (ctbuf == nullptr)
-		throw std::bad_alloc();
-	if (!part->read_head(ctbuf.get(), &len))
-		return;
-	size_t written_so_far = len;
-	len = partlen - len;
-	if (!part->read_content(&ctbuf[written_so_far], &len))
-		return;
-	written_so_far += len;
-	MAIL m2;
-	if (!m2.load_from_str(ctbuf.get(), written_so_far))
-		return;
-	m2.buffer = ctbuf.release();
-	ma = std::move(m2);
+	ma.load_from_str(part->head_begin, part->content_begin + part->content_length - part->head_begin);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1996: ENOMEM");
 }
@@ -1888,7 +1870,7 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 	if (!imail.load_from_str(peml_bin->pc, peml_bin->cb))
 		return NULL;
 	if (mxf_flags & MXF_UNWRAP_SMIME_CLEARSIGNED)
-		zc_unwrap_smime(imail);
+		zc_unwrap_clearsigned(imail);
 	auto c = lang_to_charset(pinfo->get_lang());
 	if (c != nullptr && *c != '\0')
 		gx_strlcpy(charset, c, std::size(charset));

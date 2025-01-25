@@ -972,6 +972,10 @@ bool MIME::read_head(char *out_buff, size_t *plength) const
  * The buffer is filled exactly: *plength is updated with the bytes that were
  * written, and it is unspecified whether a final \0 is generated. (In any
  * case, the returned length never includes \0.)
+ *
+ * read_content will unpack the Content-Transfer-Encoding.
+ * If you do not want that, do not exercise read_content, but use
+ * pmime->content_begin directly.
  */
 bool MIME::read_content(char *out_buff, size_t *plength) const try
 {
