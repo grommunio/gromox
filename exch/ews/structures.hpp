@@ -452,9 +452,11 @@ struct sTimePoint
 
 	static sTimePoint fromNT(uint64_t);
 	uint64_t toNT() const;
+	bool needCalcOffset() const;
 
 	time_point time{};
 	std::chrono::minutes offset = std::chrono::minutes(0);
+	bool calcOffset = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

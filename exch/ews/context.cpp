@@ -1813,13 +1813,16 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Appointment")});
 	int64_t startOffset = 0, endOffset = 0;
 	time_t startTime = 0, endTime = 0;
+	bool calcStartOffset, calcEndOffset = false;
 	if(item.Start) {
 		startTime = clock::to_time_t(item.Start.value().time);
 		startOffset = std::chrono::duration_cast<std::chrono::minutes>(item.Start.value().offset).count();
+		calcStartOffset = item.Start.value().needCalcOffset();
 	}
 	if(item.End) {
 		endTime = clock::to_time_t(item.End.value().time);
 		endOffset = std::chrono::duration_cast<std::chrono::minutes>(item.Start.value().offset).count();
+		calcEndOffset = item.Start.value().needCalcOffset();
 	}
 	// TODO handle no start and/or end times
 
@@ -2035,17 +2038,20 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 				shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
 					TAGGED_PROPVAL{PT_BINARY, temp_bin});
 
-				// If the offsets of start or end times are not set, probably
-				// the client didn't send the offset information in date tags.
-				// Try to get the offset from the timezone definition.
-				if(startOffset == 0 || endOffset == 0)
+				// If the offsets of start or end times are 0 and
+				// the client didn't send the offset information in date tags,
+				// try to get the offset from the timezone definition.
+				if((startOffset == 0 && calcStartOffset) || (endOffset == 0 && calcEndOffset))
 				{
 					EXT_PULL ext_pull;
 					TIMEZONEDEFINITION tzdef;
 					ext_pull.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
 					if(ext_pull.g_tzdef(&tzdef) != EXT_ERR_SUCCESS)
 						throw EWS::DispatchError(E3294);
-					startOffset = endOffset = offset_from_tz(&tzdef, startTime);
+					if(calcStartOffset)
+						startOffset = offset_from_tz(&tzdef, startTime);
+					if(calcEndOffset)
+						endOffset = offset_from_tz(&tzdef, endTime);
 				}
 				item.Start.value().offset = std::chrono::minutes(startOffset);
 				item.End.value().offset = std::chrono::minutes(endOffset);
