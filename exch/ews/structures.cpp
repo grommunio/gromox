@@ -1235,7 +1235,7 @@ sTimePoint::sTimePoint(const char* dtstr)
 		throw EWSError::ValueOutOfRange(E3152);
 	time = clock::from_time_t(timestamp);
 	time += std::chrono::duration_cast<time_point::duration>(std::chrono::duration<double>(seconds));
-	offset = std::chrono::minutes(60*tz_hour+(tz_hour < 0? -tz_min : tz_min));
+	offset = std::chrono::minutes(60 * (-tz_hour) + (tz_hour > 0 ? -tz_min : tz_min));
 	if(strlen(dtstr) == 19)
 		calcOffset = true;
 }
