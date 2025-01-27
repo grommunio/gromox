@@ -1204,16 +1204,15 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
 			memcpy(tmp_buff, essdn + 36, 2);
 			tmp_buff[2] = '\0';
 			guid.node[5] = strtol(tmp_buff, NULL, 16);
-			auto pbase = ab_tree_get_base(base_id);
-			if (pbase == nullptr)
+			auto pbase = ab_tree::AB.get(base_id);
+			if (!pbase)
 				return ecError;
-			auto pnode = ab_tree_guid_to_node(pbase.get(), guid);
-			if (pnode == nullptr)
+			ab_tree::ab_node node(pbase, ab_tree::minid(guid));
+			if (!node.exists())
 				return ecNotFound;
-			auto minid = ab_tree_get_node_minid(pnode);
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;
-			container_id.abtree_id.minid = minid;
+			container_id.abtree_id.minid = node.mid;
 		}
 		auto contobj = container_object::create(type, container_id);
 		if (contobj == nullptr)
@@ -1226,7 +1225,7 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
 		if (domain_id != pinfo->domain_id &&
 		    !mysql_adaptor_check_same_org(domain_id, pinfo->domain_id))
 			base_id = -domain_id;
-		auto minid = ab_tree_make_minid(minid_type::address, user_id);
+		auto minid = ab_tree::minid(ab_tree::minid::address, user_id);
 		auto userobj = user_object::create(base_id, minid);
 		if (userobj == nullptr)
 			return ecError;
@@ -1278,10 +1277,10 @@ ec_error_t zs_resolvename(GUID hsession,
 	if (pinfo == nullptr)
 		return ecError;
 	int base_id = pinfo->org_id == 0 ? -pinfo->domain_id : pinfo->org_id;
-	auto pbase = ab_tree_get_base(base_id);
-	if (pbase == nullptr)
+	auto pbase = ab_tree::AB.get(base_id);
+	if (!pbase)
 		return ecError;
-	stn_list_t result_list;
+	std::vector<ab_tree::minid> result_list;
 	for (size_t i = 0; i < pcond_set->count; ++i) {
 		auto pstring = pcond_set->pparray[i]->get<const char>(PR_DISPLAY_NAME);
 		if (NULL == pstring) {
@@ -1291,8 +1290,8 @@ ec_error_t zs_resolvename(GUID hsession,
 		}
 		std::string idn_deco = gx_utf8_to_punycode(pstring);
 		pstring = idn_deco.c_str();
-		stn_list_t temp_list;
-		if (!ab_tree_resolvename(pbase.get(), pinfo->cpid, pstring, temp_list))
+		std::vector<ab_tree::minid> temp_list;
+		if (!ab_tree_resolvename(pbase.get(), pstring, temp_list))
 			return ecError;
 		switch (temp_list.size()) {
 		case 0:
@@ -1320,10 +1319,10 @@ ec_error_t zs_resolvename(GUID hsession,
 	if (presult_set->pparray == nullptr)
 		return ecError;
 	container_object_get_user_table_all_proptags(&proptags);
-	for (auto ptr : result_list) {
+	for (auto mid : result_list) {
 		presult_set->pparray[presult_set->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == presult_set->pparray[presult_set->count] ||
-		    !ab_tree_fetch_node_properties(ptr,
+		    !ab_tree_fetch_node_properties({pbase, mid},
 		    &proptags, presult_set->pparray[presult_set->count]))
 			return ecError;
 		presult_set->count ++;

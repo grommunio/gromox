@@ -111,15 +111,15 @@ bool user_object::valid()
 {
 	auto puser = this;
 	char username[UADDR_SIZE];
-	auto pbase = ab_tree_get_base(puser->base_id);
-	if (pbase == nullptr)
+	auto pbase = ab_tree::AB.get(puser->base_id);
+	if (!pbase)
 		return FALSE;
-	auto pnode = ab_tree_minid_to_node(pbase.get(), puser->minid);
-	pbase.reset();
-	if (pnode != nullptr)
+	if (pbase->exists(puser->minid))
 		return true;
-	if (ab_tree_get_minid_type(puser->minid) != minid_type::address ||
-	    !mysql_adaptor_get_username_from_id(ab_tree_get_minid_value(puser->minid),
+	pbase.reset();
+	ab_tree::minid mid(puser->minid);
+	if (mid.type() != ab_tree::minid::Type::address ||
+	    !mysql_adaptor_get_username_from_id(mid.value(),
 	    username, std::size(username)))
 		return FALSE;
 	return true;
@@ -133,16 +133,12 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	char tmp_buff[1024];
 	static constexpr auto fake_type = static_cast<uint32_t>(MAPI_MAILUSER);
 	
-	auto pbase = ab_tree_get_base(puser->base_id);
-	if (pbase == nullptr)
+	auto pbase = ab_tree::AB.get(puser->base_id);
+	if (!pbase)
 		return FALSE;
-	auto pnode = ab_tree_minid_to_node(pbase.get(), puser->minid);
-	if (pnode != nullptr) {
-		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-		if (ppropvals->ppropval == nullptr)
-			return FALSE;
-		return ab_tree_fetch_node_properties(pnode, pproptags, ppropvals);
-	}
+	ab_tree::ab_node node(pbase, puser->minid);
+	if (pbase->exists(puser->minid))
+		return ab_tree_fetch_node_properties(node, pproptags, ppropvals);
 	pbase.reset();
 	/* if user is hidden from addressbook tree, we simply
 		return the necessary information to the caller */
@@ -167,8 +163,8 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (w_atype)
 		ppropvals->emplace_back(PR_ADDRTYPE, "EX");
 	if (!wx_name ||
-	    ab_tree_get_minid_type(puser->minid) != minid_type::address ||
-	    !mysql_adaptor_get_username_from_id(ab_tree_get_minid_value(puser->minid),
+	    node.mid.type() != ab_tree::minid::Type::address ||
+	    !mysql_adaptor_get_username_from_id(node.mid.value(),
 	    username, std::size(username)))
 		return TRUE;
 	if (w_smtp) {
@@ -206,14 +202,14 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 
 ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 {
-	auto base = ab_tree_get_base(base_id);
+	auto base = ab_tree::AB.get(base_id);
 	if (base == nullptr)
 		return ecSuccess;
-	auto node = ab_tree_minid_to_node(base.get(), minid);
-	if (node == nullptr)
+	ab_tree::ab_node node(base, minid);
+	if (!node.exists())
 		return ecSuccess;
 	char mlistaddr[UADDR_SIZE]{};
-	if (!mysql_adaptor_get_username_from_id(ab_tree_get_minid_value(minid),
+	if (!mysql_adaptor_get_username_from_id(node.mid.value(),
 	    mlistaddr, std::size(mlistaddr)))
 		return ecSuccess;
 	std::vector<std::string> member_list;
@@ -221,16 +217,15 @@ ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 	if (!mysql_adaptor_get_mlist_memb(mlistaddr, mlistaddr, &ret, member_list))
 		return ecSuccess;
 	m_members.clear();
-	auto info = zs_get_info();
 	for (const auto &memb : member_list) {
 		unsigned int user_id = 0;
 		if (!mysql_adaptor_get_user_ids(memb.c_str(), &user_id, nullptr, nullptr))
 			continue;
-		auto mid = ab_tree_make_minid(minid_type::address, user_id);
-		node = ab_tree_minid_to_node(base.get(), mid);
+		auto mid = ab_tree::minid(ab_tree::minid::address, user_id);
+		node = {base, mid};
 		LONG_ARRAY unused{};
-		if (node == nullptr ||
-		    !ab_tree_match_minids(base.get(), mid, info->cpid, res, &unused))
+		if (!node.exists() ||
+		    !ab_tree_match_minids(base.get(), mid, res, &unused))
 			continue;
 		free(unused.pl);
 		m_members.push_back(mid);
@@ -274,13 +269,13 @@ ec_error_t user_object::query_member_table(const PROPTAG_ARRAY *proptags,
 		set->pparray = nullptr;
 		return ecSuccess;
 	}
-	auto base = ab_tree_get_base(base_id);
+	auto base = ab_tree::AB.get(base_id);
 	if (base == nullptr)
 		return ecNotFound;
 	for (size_t i = first_pos; i < first_pos + row_count &&
 	     i < m_members.size(); ++i) {
-		auto node = ab_tree_minid_to_node(base.get(), m_members[i]);
-		if (node == nullptr)
+		ab_tree::ab_node node(base, m_members[i]);
+		if (!node.exists())
 			continue;
 		set->pparray[set->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (set->pparray[set->count] == nullptr)

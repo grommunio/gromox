@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <vmime/utility/url.hpp>
+#include <gromox/ab_tree.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/authmgr.hpp>
 #include <gromox/bounce_gen.hpp>
@@ -41,7 +42,6 @@
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "ab_tree.hpp"
 #include "bounce_producer.hpp"
 #include "common_util.hpp"
 #include "exmdb_client.hpp"
@@ -287,8 +287,8 @@ int main(int argc, char **argv)
 	mlog(LV_INFO, "system: address book tree item"
 		" cache interval is %s", temp_buff);
 
-	ab_tree_init(g_config_file->get_value("x500_org_name"), table_size, cache_interval);
-	auto cl_5 = make_scope_exit(ab_tree_stop);
+	ab_tree::AB.init(g_config_file->get_value("x500_org_name"), cache_interval);
+	auto cl_5 = make_scope_exit([]{ab_tree::AB.stop();});
 
 	auto max_rcpt = pconfig->get_ll("max_rcpt_num");
 	mlog(LV_INFO, "system: maximum rcpt number is %lld", max_rcpt);
@@ -395,7 +395,7 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start msgchg grouping");
 		return EXIT_FAILURE;
 	}
-	if (0 != ab_tree_run()) {
+	if (!ab_tree::AB.run()) {
 		mlog(LV_ERR, "system: failed to start address book tree");
 		return EXIT_FAILURE;
 	}
@@ -421,7 +421,7 @@ int main(int argc, char **argv)
 		if (g_hup_signalled.exchange(false)) {
 			zcore_reload_config();
 			service_trigger_all(PLUGIN_RELOAD);
-			ab_tree_invalidate_cache();
+			ab_tree::AB.invalidate_cache();
 		}
 	}
 	return EXIT_SUCCESS;

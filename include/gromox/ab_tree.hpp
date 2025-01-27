@@ -51,6 +51,11 @@ namespace gromox::ab_tree {
 
 class ab_base;
 
+static constexpr uint32_t CF_RECIPIENTS = 0x1;
+static constexpr uint32_t CF_SUBCONTAINERS = 0x2;
+static constexpr uint32_t CF_UNMODIFIABLE = 0x8;
+static constexpr uint32_t CF_ALL = CF_RECIPIENTS | CF_SUBCONTAINERS | CF_UNMODIFIABLE;
+
 enum class abnode_type : uint8_t {
 	remote = 0,
 	user = 1, /* person, room, equipment */
@@ -103,6 +108,13 @@ struct minid
 	static constexpr uint32_t UNRESOLVED = 0x00000000;
 	static constexpr uint32_t AMBIGUOUS = 0x0000001;
 	static constexpr uint32_t RESOLVED = 0x0000002;
+
+	// Special container IDs used by zcore
+	static constexpr uint32_t SC_ROOT = 0xC;
+	static constexpr uint32_t SC_EMPTY = 0xD;
+	static constexpr uint32_t SC_PROVIDER = 0xE;
+	static constexpr uint32_t SC_GAL= 0xF;
+
 
 	constexpr minid(uint32_t i = 0) : id(i) {}
 	constexpr explicit minid(const GUID &guid) : id(guid.time_low) {}
@@ -327,6 +339,7 @@ struct ab_node
 	public:
 	ab_node() = default;
 	constexpr ab_node(const ab::const_base_ref &br, minid m) : base(br.get()), mid(m) {}
+	constexpr ab_node(const ab_base *b, minid m) : base(b), mid(m) {}
 	constexpr ab_node(const ab_base::iterator &it) : base(it.base()), mid(*it) {}
 
 	const ab_base *base = nullptr;
@@ -349,7 +362,6 @@ struct ab_node
 	WRAP(fetch_prop)
 	WRAP(fetch_user)
 	WRAP(get_leaves_num)
-	WRAP(hidden)
 	WRAP(mdbdn)
 	WRAP(mlist_info)
 	WRAP(proplist)
@@ -359,6 +371,7 @@ struct ab_node
 	#undef WRAP
 
 	inline GUID guid() const { return GUID(mid); }
+	inline uint32_t hidden() const { return base->hidden(mid); }
 	inline bool valid() const { return base && base->exists(mid); }
 
 	using iterator = decltype(ab_domain::userref)::const_iterator;
