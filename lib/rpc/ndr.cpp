@@ -145,6 +145,16 @@ pack_result NDR_PULL::g_uint32(uint32_t *v)
 	return NDR_ERR_SUCCESS;
 }
 
+pack_result NDR_PULL::g_uint32_x2(uint64_t *v)
+{
+	TRY(align(4));
+	uint32_t lo, hi;
+	TRY(g_uint32(&lo));
+	TRY(g_uint32(&hi));
+	*v = (static_cast<uint64_t>(hi) << 32) | lo;
+	return trailer_align(4);
+}
+
 pack_result NDR_PULL::g_uint64(uint64_t *v)
 {
 	auto pndr = this;
@@ -394,6 +404,14 @@ pack_result NDR_PUSH::p_uint32(uint32_t v)
 	NDR_BE(pndr) ? cpu_to_be32p(r, v) : cpu_to_le32p(r, v);
 	pndr->offset += 4;
 	return NDR_ERR_SUCCESS;
+}
+
+pack_result NDR_PUSH::p_uint32_x2(uint64_t v)
+{
+	TRY(align(4));
+	TRY(p_uint32(v));
+	TRY(p_uint32(v >> 32));
+	return trailer_align(4);
 }
 
 pack_result NDR_PUSH::p_uint64(uint64_t v)

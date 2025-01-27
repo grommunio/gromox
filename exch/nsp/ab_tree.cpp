@@ -1058,7 +1058,8 @@ ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node, cpid_t codepage,
 		prop->value.l = strtol(it->second.c_str(), nullptr, 0);
 		return ecSuccess;
 	case PT_I8:
-		prop->value.l = strtoll(it->second.c_str(), nullptr, 0);
+	case PT_CURRENCY:
+		prop->value.ll = strtoll(it->second.c_str(), nullptr, 0);
 		return ecSuccess;
 	case PT_SYSTIME:
 		common_util_day_to_filetime(it->second.c_str(), &prop->value.ftime);

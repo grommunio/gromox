@@ -53,6 +53,7 @@ struct GX_EXPORT NDR_PULL {
 	pack_result g_uint16(uint16_t *);
 	pack_result g_int32(int32_t *);
 	pack_result g_uint32(uint32_t *);
+	pack_result g_uint32_x2(uint64_t *);
 	pack_result g_uint64(uint64_t *);
 	pack_result g_ulong(uint32_t *);
 	pack_result g_uint8_a(uint8_t *v, uint32_t z);
@@ -78,6 +79,7 @@ struct GX_EXPORT NDR_PUSH {
 	pack_result p_uint8(uint8_t);
 	pack_result p_uint16(uint16_t);
 	pack_result p_uint32(uint32_t);
+	pack_result p_uint32_x2(uint64_t);
 	pack_result p_int32(int32_t v) { return p_uint32(v); }
 	pack_result p_uint64(uint64_t);
 	pack_result p_ulong(uint32_t);

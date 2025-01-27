@@ -792,6 +792,10 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL *pndr,
 		case PT_BOOLEAN:
 			TRY(pndr->g_uint8(&r->b));
 			break;
+		case PT_I8:
+		case PT_CURRENCY:
+			TRY(pndr->g_uint32_x2(&r->ll));
+			break;
 		case PT_STRING8:
 		case PT_UNICODE:
 			TRY(pndr->g_genptr(&ptr));
@@ -952,6 +956,10 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
 			 */
 			TRY(pndr->p_uint32(0));
 			break;
+		case PT_I8:
+		case PT_CURRENCY:
+			TRY(pndr->p_uint32_x2(r->ll));
+			break;
 		case PT_STRING8:
 		case PT_UNICODE:
 			TRY(pndr->p_unique_ptr(r->pstr));
@@ -1007,6 +1015,8 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
 	case PT_LONG:
 	case PT_OBJECT:
 	case PT_BOOLEAN:
+	case PT_I8:
+	case PT_CURRENCY:
 	case PT_SYSTIME:
 	case PT_ERROR:
 		break;
@@ -1100,6 +1110,22 @@ static pack_result nsp_ndr_push_property_value(NDR_PUSH *pndr,
     unsigned int flag, const PROPERTY_VALUE *r)
 {
 	if (flag & FLAG_HEADER) {
+		PROPERTY_VALUE s{};
+		/*
+		 * Despite being specified by DCERPC or implemented in e.g.
+		 * samba/openchange, it is unclear if the MAPI_E_NETWORK_ERROR
+		 * observed in MFCMAPI is due to mis-serialization, or because
+		 * emsmdb32.dll just does not support these proptypes over RPC.
+		 */
+		switch (PROP_TYPE(r->proptag)) {
+		case PT_I8:
+		case PT_CURRENCY:
+			s.proptag = PR_NULL;
+			r = &s;
+			break;
+		default:
+			break;
+		}
 		TRY(pndr->align(5));
 		TRY(pndr->p_uint32(r->proptag));
 		TRY(pndr->p_uint32(r->reserved));

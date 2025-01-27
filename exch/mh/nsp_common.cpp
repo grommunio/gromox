@@ -76,6 +76,10 @@ static BOOL cu_propval_to_valunion(uint16_t type, const void *x, PROP_VAL_UNION 
 	case PT_BOOLEAN:
 		u.b = *static_cast<const uint8_t *>(x);
 		return TRUE;
+	case PT_I8:
+	case PT_CURRENCY:
+		u.ll = *static_cast<const uint64_t *>(x);
+		return TRUE;
 	case PT_STRING8:
 	case PT_UNICODE:
 		u.pstr = deconst(static_cast<const char *>(x));
@@ -158,6 +162,10 @@ static BOOL cu_valunion_to_propval(uint16_t type, const PROP_VAL_UNION *u, void 
 		break;
 	case PT_BOOLEAN:
 		value = deconst(&u->b);
+		break;
+	case PT_I8:
+	case PT_CURRENCY:
+		value = deconst(&u->ll);
 		break;
 	case PT_STRING8:
 	case PT_UNICODE:
