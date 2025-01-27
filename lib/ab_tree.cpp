@@ -316,8 +316,13 @@ std::string ab_base::displayname(minid mid) const
 bool ab_base::dn(minid mid, std::string& essdn) const
 {
 	const sql_user *user = fetch_user(mid);
-	if (!user)
-		return false;
+	if(!user) {
+		char guid_str[33];
+		GUID(mid).to_str(guid_str, std::size(guid_str));
+		essdn = "/guid=";
+		essdn += guid_str;
+		return true;
+	}
 	auto username = user_info(mid, userinfo::mail_address);
 	const ab_domain *domain = find_domain(user->domain_id);
 	return cvt_username_to_essdn(username, AB.org_name().c_str(), user->id, domain->id, essdn) == ecSuccess;
