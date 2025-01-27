@@ -490,21 +490,6 @@ bool ab_base::fetch_props(minid mid, const PROPTAG_ARRAY &tags, std::unordered_m
 }
 
 /**
- * @brief      Extract minid from node GUID
- *
- * No checks are performed whether the resulting minid is valid.
- * Use exists() to check whether the minid is usable.
- *
- * @param      guid  GUID of the node
- *
- * @return     Node minid
- */
-minid ab_base::from_guid(const GUID &guid)
-{
-	return guid.time_low;
-}
-
-/**
  * @brief      Get total number of children of the node
  *
  * Equivalent to children(), since the maximum tree depth is currently 1.
@@ -520,20 +505,6 @@ uint32_t ab_base::get_leaves_num(minid mid) const
 }
 
 /**
- * @brief      Generate node GUID
- *
- * @param      mid   Mid of the node
- *
- * @return     Node GUID
- */
-GUID ab_base::guid(minid mid)
-{
-	GUID g{};
-	g.time_low = mid;
-	return g;
-}
-
-/**
  * @brief      Get the number of direct child nodes
  *
  * @param      mid   Mid of the node
@@ -544,6 +515,17 @@ size_t ab_base::children(minid mid) const
 {
 	const ab_domain *domain = fetch_domain(mid);
 	return domain ? domain->userref.size() : 0;
+}
+
+/**
+ * @brief      Count number of users hidden from GAL
+ *
+ * @return     Number of users with AB_HIDE_FROM_GAL flag set
+ */
+size_t ab_base::hidden() const
+{
+	return uint32_t(std::count_if(m_users.begin(), m_users.end(),
+	                              [](const sql_user& u) {return u.hidden & AB_HIDE_FROM_GAL;}));
 }
 
 /**

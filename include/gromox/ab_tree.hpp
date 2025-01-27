@@ -105,6 +105,7 @@ struct minid
 	static constexpr uint32_t RESOLVED = 0x0000002;
 
 	constexpr minid(uint32_t i = 0) : id(i) {}
+	constexpr explicit minid(const GUID &guid) : id(guid.time_low) {}
 	/**
 	 * @brief      Construct minid from type and ID
 	 *
@@ -113,6 +114,7 @@ struct minid
 	 */
 	constexpr minid(Type t, uint32_t v) : id((uint32_t(t) << TYPEOFFSET) | ((v + 0x10) & VALMASK)) {}
 	constexpr operator uint32_t() const { return id; }
+	constexpr explicit operator GUID() const { return GUID{id, 0, 0, {0, 0}, {0, 0, 0, 0, 0, 0}}; }
 
 	constexpr Type type() const { return Type(id >> TYPEOFFSET); } ///< Extract type from minid
 	constexpr uint32_t value() const { return (id & VALMASK) - 0x10; } ///< Extract object ID from minid
@@ -217,6 +219,7 @@ class ab_base
 	const sql_user *fetch_user(minid) const;
 	uint32_t get_leaves_num(minid) const;
 	inline const GUID &guid() const { return m_guid; }
+	size_t hidden() const;
 	uint32_t hidden(minid) const;
 	ec_error_t mdbdn(minid, std::string &) const;
 	bool mlist_info(minid, std::string *, std::string *, int *) const;
@@ -235,8 +238,6 @@ class ab_base
 	inline iterator uend() const { return iterator(this, m_users.cend()); } ///< Iterator to end of user list
 	iterator find(minid) const;
 
-	static minid from_guid(const GUID &);
-	static GUID guid(minid);
 	static display_type dtypx_to_etyp(display_type);
 
 	private:
@@ -357,7 +358,7 @@ struct ab_node
 
 	#undef WRAP
 
-	inline GUID guid() const { return ab_base::guid(mid); }
+	inline GUID guid() const { return GUID(mid); }
 	inline bool valid() const { return base && base->exists(mid); }
 
 	using iterator = decltype(ab_domain::userref)::const_iterator;
