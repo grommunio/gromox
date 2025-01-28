@@ -639,7 +639,7 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 			read_flags & rfClearReadFlag ? RELOP_NE : RELOP_EQ,
 			PR_READ, {PR_READ, deconst(&fake_false)}
 		};
-		const RESTRICTION res_top = {RES_PROPERTY, deconst(&res_prop)};
+		const RESTRICTION res_top = {RES_PROPERTY, {deconst(&res_prop)}};
 		uint32_t table_id = 0, row_count = 0;
 		auto username = plogon->readstate_user();
 		if (!exmdb_client::load_content_table(plogon->dir, CP_ACP,
