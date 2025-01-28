@@ -131,9 +131,7 @@ struct ExplicitConvert<std::string>
 	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement *xml, std::string &value)
 	{
 		const char* data = xml->GetText();
-		if(!data)
-			return tinyxml2::XML_NO_TEXT_NODE;
-		value = data;
+		value = data ? data : std::string("");
 		return tinyxml2::XML_SUCCESS;
 	}
 

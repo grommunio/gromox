@@ -82,8 +82,6 @@ static void *midbag_scanwork(void *);
 static ssize_t read_line(int sockd, char *buff, size_t length);
 static int connect_midb(const char *host, uint16_t port);
 
-static constexpr unsigned int POLLIN_SET =
-	POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR | POLLNVAL;
 std::atomic<size_t> g_midb_command_buffer_size{256 * 1024};
 static int g_conn_num;
 static gromox::atomic_bool g_notify_stop;

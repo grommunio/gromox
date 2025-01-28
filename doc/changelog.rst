@@ -1,3 +1,20 @@
+Gromox 2.40 (2025-01-28)
+========================
+
+Fixes:
+
+* zcore: avoid unwrapping Content-Transfer-Encoding twice for
+  clearsigned S/MIME
+* ews: calculate timezone offsets for local time only
+* ews: deserialize no-content XML tags as empty strings rather than as absence
+  of the element
+
+Enhancements:
+
+* imap, pop3: multi-server capability, replacing direct disk I/O by network
+  RPCs to the exmdb storage backend
+
+
 Gromox 2.39 (2025-01-21)
 ========================
 

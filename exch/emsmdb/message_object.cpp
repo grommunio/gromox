@@ -313,7 +313,7 @@ static ec_error_t message_object_save2(message_object *pmessage, bool b_fai,
 			    pmessage->instance_id, pmsgctnt))
 				return ecRpcFailed;
 			uint32_t tmp_status = *mstatus | MSGSTATUS_IN_CONFLICT;
-			const TAGGED_PROPVAL propbuff[] = {PR_MSG_STATUS, &tmp_status};
+			const TAGGED_PROPVAL propbuff[] = {{PR_MSG_STATUS, &tmp_status}};
 			const TPROPVAL_ARRAY tmp_propvals = {std::size(propbuff), deconst(propbuff)};
 			PROBLEM_ARRAY tmp_problems;
 			if (!message_object_set_properties_internal(pmessage,
@@ -324,7 +324,7 @@ static ec_error_t message_object_save2(message_object *pmessage, bool b_fai,
 	pbin_pcl = common_util_pcl_merge(pbin_pcl, pbin_pcl1);
 	if (pbin_pcl == nullptr)
 		return ecRpcFailed;
-	const TAGGED_PROPVAL propbuff[] = {PR_PREDECESSOR_CHANGE_LIST, pbin_pcl};
+	const TAGGED_PROPVAL propbuff[] = {{PR_PREDECESSOR_CHANGE_LIST, pbin_pcl}};
 	const TPROPVAL_ARRAY tmp_propvals = {std::size(propbuff), deconst(propbuff)};
 	PROBLEM_ARRAY tmp_problems;
 	if (!message_object_set_properties_internal(pmessage,
