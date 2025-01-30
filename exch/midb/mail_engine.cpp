@@ -396,7 +396,7 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	if (strcasecmp(pmime->get_encoding(), "base64") == 0) {
 		content = base64_decode(ctview);
 	} else if (strcasecmp(pmime->get_encoding(), "quoted-printable") == 0) {
-		auto xl = qp_decode_ex(&content[0], content.size(), content.c_str(), content.size());
+		auto xl = qp_decode_ex(&content[0], content.size(), ctview.data(), ctview.size());
 		if (xl < 0)
 			return;
 		content.resize(xl);
