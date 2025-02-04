@@ -986,7 +986,12 @@ tFieldURI::tFieldURI(const XMLElement* xml) :
 {}
 
 void tFlagType::serialize(XMLElement* xml) const
-{XMLDUMPT(FlagStatus);}
+{
+	XMLDUMPT(FlagStatus);
+	XMLDUMPT(StartDate);
+	XMLDUMPT(DueDate);
+	XMLDUMPT(CompleteDate);
+}
 
 tFolderChange::tFolderChange(const tinyxml2::XMLElement* xml) :
 	VXMLINIT(folderId),
