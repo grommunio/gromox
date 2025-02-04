@@ -1023,6 +1023,7 @@ struct tFlagType : public NS_EWS_Types
 	static constexpr char NAME[] = "Flag";
 
 	tFlagType(const tinyxml2::XMLElement*);
+	tFlagType() = default;
 
 	Enum::FlagStatusType FlagStatus;
 	std::optional<time_point> StartDate;
