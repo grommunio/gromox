@@ -1422,8 +1422,6 @@ static void me_sync_message(IDB_ITEM *pidb, xstmt &stm_insert,
     const syncmessage_entry &e, uint64_t old_mtime,
     bool old_unsent, bool old_read)
 {
-	char sql_string[256];
-	
 	if (e.midstr.size() > 0 || e.mod_time <= old_mtime) {
 		auto new_unsent = !!(e.msg_flags & MSGFLAG_UNSENT);
 		auto new_read   = !!(e.msg_flags & MSGFLAG_READ);
@@ -1437,9 +1435,19 @@ static void me_sync_message(IDB_ITEM *pidb, xstmt &stm_insert,
 		}
 		return;
 	}
-	snprintf(sql_string, std::size(sql_string), "DELETE FROM messages"
-	        " WHERE message_id=%llu", LLU{message_id});
-	if (gx_sql_exec(pidb->psqlite, sql_string) != SQLITE_OK)
+	auto qstr = fmt::format("SELECT m.uid, f.name FROM messages AS m "
+	            "INNER JOIN folders AS f ON m.folder_id=f.folder_id "
+	            "WHERE m.message_id={}", message_id);
+	auto stm = gx_sql_prep(pidb->psqlite, qstr.c_str());
+	if (stm != nullptr && stm.step() == SQLITE_ROW) {
+		/* me_insert_message will assign a new IMAPUID, so kill the old one */
+		auto folder_name = stm.col_text(1);
+		system_services_broadcast_event(fmt::format("MESSAGE-EXPUNGE {} {} {}",
+			pidb->username, base64_encode(folder_name), stm.col_uint64(0)).c_str());
+	}
+	stm.finalize();
+	qstr = fmt::format("DELETE FROM messages WHERE message_id={}", message_id);
+	if (gx_sql_exec(pidb->psqlite, qstr.c_str()) != SQLITE_OK)
 		return;	
 	/* e.midstr is known to be empty */
 	me_insert_message(stm_insert, puidnext, message_id, pidb->psqlite, e);
@@ -3591,11 +3599,12 @@ static void notif_msg_deleted(IDB_ITEM *pidb,
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW ||
 	    gx_sql_col_uint64(pstmt, 0) != folder_id)
 		return;
-	system_services_broadcast_event(fmt::format("MESSAGE-EXPUNGE {} {} {}",
-		username, base64_encode(folder_name), pstmt.col_uint64(1)).c_str());
+	auto uid = pstmt.col_uint64(1);
 	pstmt.finalize();
 	qstr = fmt::format("DELETE FROM messages WHERE message_id={}", message_id);
 	gx_sql_exec(pidb->psqlite, qstr.c_str());
+	system_services_broadcast_event(fmt::format("MESSAGE-EXPUNGE {} {} {}",
+		username, base64_encode(folder_name), uid).c_str());
 	qstr = fmt::format("UPDATE folders SET sort_field={} "
 	       "WHERE folder_id={}", static_cast<int>(FIELD_NONE), folder_id);
 	gx_sql_exec(pidb->psqlite, qstr.c_str());
@@ -3862,8 +3871,9 @@ static void notif_msg_modified(IDB_ITEM *pidb, uint64_t folder_id,
 	}
 	auto ts = propvals.get<const uint64_t>(PR_LAST_MODIFICATION_TIME);
 	auto mod_time = ts != nullptr ? *ts : 0;
-	auto qstr = fmt::format("SELECT mod_time FROM"
-	            " messages WHERE message_id={}", message_id);
+	auto qstr = fmt::format("SELECT m.mod_time, m.uid FROM messages AS m "
+	            "LEFT JOIN folders AS f ON m.folder_id=f.folder_id "
+	            "WHERE m.message_id={}", message_id);
 	auto pstmt = gx_sql_prep(pidb->psqlite, qstr.c_str());
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return;
@@ -3871,10 +3881,13 @@ static void notif_msg_modified(IDB_ITEM *pidb, uint64_t folder_id,
 		pstmt.finalize();
 		goto UPDATE_MESSAGE_FLAGS;
 	}
+	uint32_t uid = pstmt.col_uint64(1);
 	pstmt.finalize();
 	qstr = fmt::format("DELETE FROM messages WHERE message_id={}", message_id);
 	if (gx_sql_exec(pidb->psqlite, qstr.c_str()) != SQLITE_OK)
 		return;	
+	system_services_broadcast_event(fmt::format("MESSAGE-EXPUNGE {} {} {}",
+		pidb->username, base64_encode(folder_name), uid).c_str());
 	return notif_msg_added(pidb, folder_id, message_id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2424: ENOMEM");
