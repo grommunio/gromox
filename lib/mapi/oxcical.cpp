@@ -603,6 +603,10 @@ static bool oxcical_parse_tzdisplay(bool b_dtstart, const ical_component &tzcom,
 	tz_definition.prules = rules_buff;
 	if (!oxcical_parse_tzdefinition(tzcom, &tz_definition))
 		return false;
+	if (tz_definition.crules == 0) {
+		mlog(LV_DEBUG, "Rejecting conversion of iCal to MAPI object: no sensible TZ rules found (e.g. RFC 5545 §3.6.5 VTIMEZONE without STANDARD/DAYLIGHT not permitted)");
+		return false;
+	}
 	tmp_bin.pb = bin_buff;
 	tmp_bin.cb = 0;
 	if (!oxcical_tzdefinition_to_binary(&tz_definition,

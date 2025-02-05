@@ -986,7 +986,12 @@ tFieldURI::tFieldURI(const XMLElement* xml) :
 {}
 
 void tFlagType::serialize(XMLElement* xml) const
-{XMLDUMPT(FlagStatus);}
+{
+	XMLDUMPT(FlagStatus);
+	XMLDUMPT(StartDate);
+	XMLDUMPT(DueDate);
+	XMLDUMPT(CompleteDate);
+}
 
 tFolderChange::tFolderChange(const tinyxml2::XMLElement* xml) :
 	VXMLINIT(folderId),
@@ -1051,6 +1056,13 @@ void tInternetMessageHeader::serialize(tinyxml2::XMLElement* xml) const
 	xml->SetText(content.c_str());
 }
 
+tFlagType::tFlagType(const tinyxml2::XMLElement* xml) :
+	XMLINIT(FlagStatus),
+	XMLINIT(StartDate),
+	XMLINIT(DueDate),
+	XMLINIT(CompleteDate)
+{}
+
 tItem::tItem(const tinyxml2::XMLElement* xml) :
 	XMLINIT(MimeContent),
 //	XMLINIT(ItemId),
@@ -1082,9 +1094,9 @@ tItem::tItem(const tinyxml2::XMLElement* xml) :
 //	XMLINIT(Culture),
 //	XMLINIT(LastModifiedName),
 //	XMLINIT(LastModifiedTime),
-	XMLINIT(IsAssociated)
+	XMLINIT(IsAssociated),
 //	XMLINIT(ConversationId),
-//	XMLINIT(Flag)
+	XMLINIT(Flag)
 {
 	for(const tinyxml2::XMLElement* xp = xml->FirstChildElement("ExtendedProperty"); xp; xp = xp->NextSiblingElement("ExtendedProperty"))
 		ExtendedProperty.emplace_back(xp);

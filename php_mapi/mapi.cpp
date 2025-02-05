@@ -24,6 +24,7 @@
 #include <cstring>
 #include "ext/standard/info.h"
 #include "Zend/zend_exceptions.h"
+#include "Zend/zend_builtin_functions.h"
 #include <sys/wait.h>
 #include "ext.hpp"
 #if PHP_MAJOR_VERSION >= 8
@@ -168,6 +169,24 @@ static int le_mapi_msgstore;
 static int le_mapi_property;
 static int le_mapi_session;
 static int le_mapi_table;
+
+#if defined(PHP_VERSION_ID) && PHP_VERSION_ID >= 80100
+static void print_backtrace() __attribute__((unused));
+
+/* Emit to the main FPM error log where we are in a .php file */
+static void print_backtrace()
+{
+	zend_long options = 0;
+	zend_long limit = 0;
+	zval backtrace;
+	zend_fetch_debug_backtrace(&backtrace, 0, options, limit);
+	ZEND_ASSERT(Z_TYPE(backtrace) == IS_ARRAY);
+	zend_string *str = zend_trace_to_string(Z_ARRVAL(backtrace), /* include_main */ true);
+	fprintf(stderr, "%.*s\n", static_cast<int>(ZSTR_LEN(str)), ZSTR_VAL(str));
+	zend_string_release(str);
+	zval_ptr_dtor(&backtrace);
+}
+#endif
 
 static zend_bool stream_object_set_length(
 	STREAM_OBJECT *pstream, uint32_t length)

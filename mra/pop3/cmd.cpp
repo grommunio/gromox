@@ -319,6 +319,8 @@ int cmdh_retr(std::vector<std::string> &&argv, pop3_context *pcontext)
 	std::string eml_path;
 	ctx.wrdat_active = false;
 	ctx.wrdat_content.clear();
+	xrpc_build_env();
+	auto cl_0 = make_scope_exit(xrpc_free_env);
 	if (!exmdb_client::imapfile_read(ctx.maildir, "eml", punit->file_name,
 	    &ctx.wrdat_content)) {
 		mlog(LV_ERR, "E-1469: imapfile_read %s/eml/%s failed",

@@ -1018,13 +1018,17 @@ struct tFindItemParent : public tFindResponsePagingAttributes
 /**
  * Types.xsd:2436
  */
-struct tFlagType
+struct tFlagType : public NS_EWS_Types
 {
+	static constexpr char NAME[] = "Flag";
+
+	tFlagType(const tinyxml2::XMLElement*);
+	tFlagType() = default;
+
 	Enum::FlagStatusType FlagStatus;
-	//<xs:element name="FlagStatus" type="t:FlagStatusType" minOccurs="1" maxOccurs="1"/>
-	//<xs:element name="StartDate" type="xs:dateTime" minOccurs="0" />
-	//<xs:element name="DueDate" type="xs:dateTime" minOccurs="0" />
-	//<xs:element name="CompleteDate" type="xs:dateTime" minOccurs="0" />
+	std::optional<time_point> StartDate;
+	std::optional<time_point> DueDate;
+	std::optional<time_point> CompleteDate;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

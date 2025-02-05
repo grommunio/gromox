@@ -3025,6 +3025,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"item:DateTimeReceived", PR_MESSAGE_DELIVERY_TIME},
 	{"item:DateTimeSent", PR_CLIENT_SUBMIT_TIME},
 	{"item:DisplayTo", PR_DISPLAY_TO},
+	{"item:Flag", PR_FLAG_STATUS},
 	{"item:HasAttachments", PR_HASATTACH},
 	{"item:Importance", PR_IMPORTANCE},
 	{"item:InReplyTo", PR_IN_REPLY_TO_ID},
@@ -3081,6 +3082,9 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"contacts:FileAs", {NtFileAs, PT_UNICODE}},
 	{"contacts:PostalAddressIndex", {NtPostalAddressIndex, PT_LONG}},
 	{"item:Categories", {NtCategories, PT_MV_UNICODE}},
+	{"item:Flag", {NtTaskDateCompleted, PT_SYSTIME}},
+	{"item:Flag", {NtTaskDueDate, PT_SYSTIME}},
+	{"item:Flag", {NtTaskStartDate, PT_SYSTIME}},
 	{"item:ReminderDueBy", {NtReminderTime, PT_SYSTIME}},
 	{"item:ReminderIsSet", {NtReminderSet, PT_BOOLEAN}},
 	{"item:ReminderMinutesBeforeStart", {NtReminderDelta, PT_LONG}},
@@ -3469,6 +3473,17 @@ void tItem::update(const sShape& shape)
 		ReminderDueBy.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
 	fromProp(shape.get(NtReminderSet), ReminderIsSet);
 	fromProp(shape.get(NtReminderDelta), ReminderMinutesBeforeStart);
+	if((v32 = shape.get<uint32_t>(PR_FLAG_STATUS))) {
+		defaulted(Flag).FlagStatus = *v32 == followupComplete ? Enum::Complete : Enum::Flagged;
+		if((prop = shape.get(NtTaskDateCompleted)))
+			defaulted(Flag).CompleteDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+		if((prop = shape.get(NtTaskDueDate)))
+			defaulted(Flag).DueDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+		if((prop = shape.get(NtTaskStartDate)))
+			defaulted(Flag).StartDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+	}
+	else
+		defaulted(Flag).FlagStatus = Enum::NotFlagged;
 
 	shape.putExtended(ExtendedProperty);
 };
