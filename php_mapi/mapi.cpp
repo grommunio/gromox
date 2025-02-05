@@ -170,8 +170,10 @@ static int le_mapi_property;
 static int le_mapi_session;
 static int le_mapi_table;
 
-/* Emit to the main FPM error log where we are in a .php file */
+#if defined(PHP_VERSION_ID) && PHP_VERSION_ID >= 80100
 static void print_backtrace() __attribute__((unused));
+
+/* Emit to the main FPM error log where we are in a .php file */
 static void print_backtrace()
 {
 	zend_long options = 0;
@@ -184,6 +186,7 @@ static void print_backtrace()
 	zend_string_release(str);
 	zval_ptr_dtor(&backtrace);
 }
+#endif
 
 static zend_bool stream_object_set_length(
 	STREAM_OBJECT *pstream, uint32_t length)
