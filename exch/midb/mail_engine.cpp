@@ -3513,7 +3513,8 @@ static void notif_msg_added(IDB_ITEM *pidb,
 {
 	static constexpr proptag_t tmp_proptags[] =
 		{PR_MESSAGE_DELIVERY_TIME, PR_LAST_MODIFICATION_TIME,
-		PidTagMidString, PR_MESSAGE_FLAGS};
+		PidTagMidString, PR_MESSAGE_FLAGS, PR_FLAG_STATUS,
+		PR_ICON_INDEX};
 	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptags), deconst(tmp_proptags)};
 	TPROPVAL_ARRAY propvals;
 	if (!exmdb_client::get_message_properties(cu_get_maildir(),
