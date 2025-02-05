@@ -144,10 +144,10 @@ struct IDB_ITEM {
 	NOMOVE(IDB_ITEM);
 
 	sqlite3 *psqlite = nullptr;
-	/* client reference count, item can be flushed into file system only count is 0 */
 	std::string username;
 	time_t last_time = 0, load_time = 0;
 	uint32_t sub_id = 0;
+	/* client reference count, item can be flushed into file system only count is 0 */
 	std::atomic<int> reference{0};
 	std::timed_mutex giant_lock;
 };
@@ -3894,6 +3894,9 @@ static void notif_handler(const char *dir,
 		auto n = static_cast<const DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
 		folder_id = n->folder_id;
 		message_id = n->message_id;
+		if (g_cmd_debug >= 2)
+			mlog(LV_DEBUG, "midb-async: %s new-mail f%llu:m%llu",
+				dir, LLU{folder_id}, LLU{message_id});
 		notif_msg_added(pidb.get(), folder_id, message_id);
 		break;
 	}
@@ -3901,6 +3904,9 @@ static void notif_handler(const char *dir,
 		auto n = static_cast<const DB_NOTIFY_FOLDER_CREATED *>(pdb_notify->pdata);
 		folder_id = n->folder_id;
 		parent_id = n->parent_id;
+		if (g_cmd_debug >= 2)
+			mlog(LV_DEBUG, "midb-async: %s fld-add f%llu",
+				dir, LLU{folder_id});
 		notif_folder_added(pidb.get(), parent_id, folder_id);
 		break;
 	}
@@ -3908,12 +3914,18 @@ static void notif_handler(const char *dir,
 		auto n = static_cast<const DB_NOTIFY_MESSAGE_CREATED *>(pdb_notify->pdata);
 		folder_id = n->folder_id;
 		message_id = n->message_id;
+		if (g_cmd_debug >= 2)
+			mlog(LV_DEBUG, "midb-async: %s msg-add f%llu:m%llu",
+				dir, LLU{folder_id}, LLU{message_id});
 		notif_msg_added(pidb.get(), folder_id, message_id);
 		break;
 	}
 	case db_notify_type::folder_deleted: {
 		auto n = static_cast<const DB_NOTIFY_FOLDER_DELETED *>(pdb_notify->pdata);
 		folder_id = n->folder_id;
+		if (g_cmd_debug >= 2)
+			mlog(LV_DEBUG, "midb-async: %s fld-del f%llu",
+				dir, LLU{folder_id});
 		notif_folder_deleted(pidb.get(), folder_id);
 		break;
 	}
@@ -3921,6 +3933,9 @@ static void notif_handler(const char *dir,
 		auto n = static_cast<const DB_NOTIFY_MESSAGE_DELETED *>(pdb_notify->pdata);
 		folder_id = n->folder_id;
 		message_id = n->message_id;
+		if (g_cmd_debug >= 2)
+			mlog(LV_DEBUG, "midb-async: %s msg-del f%llu:m%llu",
+				dir, LLU{folder_id}, LLU{message_id});
 
 		auto qstr = fmt::format("SELECT name FROM folders WHERE folder_id={}", folder_id);
 		auto stm = gx_sql_prep(pidb->psqlite, qstr.c_str());
@@ -3938,6 +3953,9 @@ static void notif_handler(const char *dir,
 	case db_notify_type::folder_modified: {
 		auto n = static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata);
 		folder_id = n->folder_id;
+		if (g_cmd_debug >= 2)
+			mlog(LV_DEBUG, "midb-async: %s fld-mod f%llu",
+				dir, LLU{folder_id});
 		notif_folder_modified(pidb.get(), folder_id);
 		break;
 	}
@@ -3945,12 +3963,18 @@ static void notif_handler(const char *dir,
 		auto n = static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata);
 		message_id = n->message_id;
 		folder_id = n->folder_id;
+		if (g_cmd_debug >= 2)
+			mlog(LV_DEBUG, "midb-async: %s msg-mod f%llu:m%llu",
+				dir, LLU{folder_id}, LLU{message_id});
 		break;
 	}
 	case db_notify_type::folder_moved: {
 		auto n = static_cast<const DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
 		folder_id = n->folder_id;
 		parent_id = n->parent_id;
+		if (g_cmd_debug >= 2)
+			mlog(LV_DEBUG, "midb-async: %s fld-mov f%llu to new parent f%llu",
+				dir, LLU{folder_id}, LLU{parent_id});
 		notif_folder_moved(pidb.get(), parent_id, folder_id);
 		break;
 	}
@@ -3958,6 +3982,9 @@ static void notif_handler(const char *dir,
 		auto n = static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
 		folder_id = n->old_folder_id;
 		message_id = n->old_message_id;
+		if (g_cmd_debug >= 2)
+			mlog(LV_DEBUG, "midb-async: %s msg-mov m%llu to new parent f%llu",
+				dir, LLU{message_id}, LLU{folder_id});
 
 		auto qstr = fmt::format("SELECT name FROM folders WHERE folder_id={}", folder_id);
 		auto stm = gx_sql_prep(pidb->psqlite, qstr.c_str());
@@ -3976,6 +4003,9 @@ static void notif_handler(const char *dir,
 		auto n = static_cast<const DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
 		folder_id = n->folder_id;
 		parent_id = n->parent_id;
+		if (g_cmd_debug >= 2)
+			mlog(LV_DEBUG, "midb-async: %s fld-copy f%llu parent=f%llu",
+				dir, LLU{folder_id}, LLU{parent_id});
 		if (notif_folder_added(pidb.get(), parent_id, folder_id))
 			me_sync_contents(pidb.get(), folder_id);
 		break;
@@ -3984,6 +4014,9 @@ static void notif_handler(const char *dir,
 		auto n = static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
 		folder_id = n->folder_id;
 		message_id = n->message_id;
+		if (g_cmd_debug >= 2)
+			mlog(LV_DEBUG, "midb-async: %s msg-copy m%llu to folder f%llu",
+				dir, LLU{message_id}, LLU{folder_id});
 		notif_msg_added(pidb.get(), folder_id, message_id);
 		break;
 	}
