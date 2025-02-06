@@ -1033,7 +1033,7 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH *pndr,
 		TRY(nsp_ndr_push_binary(pndr, FLAG_CONTENT, &r->bin));
 		break;
 	case PT_CLSID:
-		if (r->pguid == nullptr)
+		if (r->pguid != nullptr)
 			TRY(nsp_ndr_push_flatuid(pndr, r->pguid));
 		break;
 	case PT_MV_SHORT:
