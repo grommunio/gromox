@@ -103,7 +103,7 @@ static void emsmdb_report_one_ses(HANDLE_DATA &h, report_stats &st)
 	size_t pn = 0;
 	{
 		std::lock_guard lk_occupied(h.notify_lock);
-		pn = double_list_get_nodes_num(&h.notify_list);
+		pn = h.notify_list.size();
 	}
 	mlog(LV_INFO, "%-3u  %-32s  %-32s  %-4u %-4u %3zu",
 		h.cxr, bin2hex(h.guid).c_str(), h.username,
@@ -213,7 +213,7 @@ bool emsmdb_interface_notifications_pending(const ACXH &acxh)
 	if (phandle == nullptr)
 		return false;
 	std::lock_guard lk_occupied(phandle->notify_lock);
-	return double_list_get_nodes_num(&phandle->notify_list) > 0;
+	return !phandle->notify_list.empty();
 }
 
 /* called by moh_emsmdb module */
@@ -230,17 +230,10 @@ void emsmdb_interface_touch_handle(const CXH &cxh)
 
 HANDLE_DATA::HANDLE_DATA() :
 	guid(GUID::random_new()), last_time(tp_now())
-{
-	double_list_init(&notify_list);
-}
+{}
 
 HANDLE_DATA::~HANDLE_DATA()
 {
-	DOUBLE_LIST_NODE *pnode;
-	while ((pnode = double_list_pop_front(&notify_list)) != nullptr) {
-		delete static_cast<notify_response *>(pnode->pdata);
-		free(pnode);
-	}
 	if (cxr == NO_CXR)
 		return;
 	std::lock_guard lk(g_cxr_lock);
@@ -633,7 +626,7 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 	bool b_wakeup = false;
 	{
 		std::lock_guard lk_occupied(phandle->notify_lock);
-		b_wakeup = double_list_get_nodes_num(&phandle->notify_list) > 0;
+		b_wakeup = !phandle->notify_list.empty();
 	}
 	lk_processing.unlock();
 	phandle.reset();
@@ -850,16 +843,11 @@ void emsmdb_interface_remove_subscription_notify(const char *dir, uint32_t sub_i
 	mlog(LV_WARN, "%s: ENOMEM", __func__);
 }
 
-static BOOL emsmdb_interface_merge_content_row_deleted(
-	uint32_t obj_handle, uint8_t logon_id, DOUBLE_LIST *pnotify_list)
+static bool emsmdb_interface_merge_content_row_deleted(uint32_t obj_handle,
+    uint8_t logon_id, HANDLE_DATA::notify_list_t &nvec)
 {
-	int count;
-	DOUBLE_LIST_NODE *pnode;
-	
-	count = 1;
-	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
-		pnode=double_list_get_after(pnotify_list, pnode)) {
-		auto pnotify = static_cast<notify_response *>(pnode->pdata);
+	size_t count = 1;
+	for (auto &pnotify : nvec) {
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
 		if (!(pnotify->nflags & fnevTableModified))
@@ -877,46 +865,39 @@ static BOOL emsmdb_interface_merge_content_row_deleted(
 	return FALSE;
 }
 
-static BOOL emsmdb_interface_merge_hierarchy_row_modified(
-	const DB_NOTIFY *pmodified_row,
-	uint32_t obj_handle, uint8_t logon_id, DOUBLE_LIST *pnotify_list)
+static bool emsmdb_interface_merge_hierarchy_row_modified(const DB_NOTIFY *pmodified_row,
+    uint32_t obj_handle, uint8_t logon_id, HANDLE_DATA::notify_list_t &nvec)
 {
-	DOUBLE_LIST_NODE *pnode;
 	auto row_folder_id = rop_util_nfid_to_eid(pmodified_row->row_folder_id);
 	
-	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
-		pnode=double_list_get_after(pnotify_list, pnode)) {
-		auto pnotify = static_cast<notify_response *>(pnode->pdata);
+	for (auto it = nvec.begin(); it != nvec.end(); ++it) {
+		auto &pnotify = *it;
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
 		if (!(pnotify->nflags & fnevTableModified))
 			continue;
 		if (pnotify->table_event == TABLE_EVENT_ROW_MODIFIED &&
 		    pnotify->row_folder_id == row_folder_id) {
-			double_list_remove(pnotify_list, pnode);
-			double_list_append_as_tail(pnotify_list, pnode);
+			/* move to back */
+			//nvec.splice(nvec.end(), nvec, it); /* for list<> */
+			std::rotate(it, it + 1, nvec.end()); /* for vector<> */
 			return TRUE;
 		}
 	}
 	return FALSE;
 }
 
-static BOOL emsmdb_interface_merge_message_modified(
-	const DB_NOTIFY *pmodified_message,
-	uint32_t obj_handle, uint8_t logon_id,
-	DOUBLE_LIST *pnotify_list)
+static bool emsmdb_interface_merge_message_modified(const DB_NOTIFY *pmodified_message,
+    uint32_t obj_handle, uint8_t logon_id, const HANDLE_DATA::notify_list_t &nvec)
 {
 	uint64_t folder_id;
 	uint64_t message_id;
-	DOUBLE_LIST_NODE *pnode;
 	
 	folder_id = rop_util_make_eid_ex(
 		1, pmodified_message->folder_id);
 	message_id = rop_util_make_eid_ex(
 		1, pmodified_message->message_id);
-	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
-		pnode=double_list_get_after(pnotify_list, pnode)) {
-		auto pnotify = static_cast<notify_response *>(pnode->pdata);
+	for (auto &pnotify : nvec) {
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
 		if (pnotify->nflags == (fnevObjectModified | NF_BY_MESSAGE) &&
@@ -928,17 +909,12 @@ static BOOL emsmdb_interface_merge_message_modified(
 	return FALSE;
 }
 
-static BOOL emsmdb_interface_merge_folder_modified(
-	const DB_NOTIFY *pmodified_folder,
-	uint32_t obj_handle, uint8_t logon_id,
-	DOUBLE_LIST *pnotify_list)
+static bool emsmdb_interface_merge_folder_modified(const DB_NOTIFY *pmodified_folder,
+    uint32_t obj_handle, uint8_t logon_id, const HANDLE_DATA::notify_list_t &nvec)
 {
-	DOUBLE_LIST_NODE *pnode;
 	auto folder_id = rop_util_nfid_to_eid(pmodified_folder->folder_id);
 	
-	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
-		pnode=double_list_get_after(pnotify_list, pnode)) {
-		auto pnotify = static_cast<notify_response *>(pnode->pdata);
+	for (auto &pnotify : nvec) {
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
 		if (pnotify->nflags == fnevObjectModified &&
@@ -955,7 +931,6 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	CXH cxh;
 	uint8_t logon_id;
 	uint32_t obj_handle;
-	DOUBLE_LIST_NODE *pnode;
 	
 	cxh.handle_type = HANDLE_EXCHANGE_EMSMDB;
 	if (!b_table) {
@@ -979,12 +954,12 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	std::unique_lock lk_occupied(phandle->notify_lock);
 	switch (pdb_notify->type) {
 	case db_notify_type::cttbl_row_deleted:
-		if (!emsmdb_interface_merge_content_row_deleted(obj_handle, logon_id, &phandle->notify_list))
+		if (!emsmdb_interface_merge_content_row_deleted(obj_handle, logon_id, phandle->notify_list))
 			break;
 		return;
 	case db_notify_type::hiertbl_row_modified:
 		if (!emsmdb_interface_merge_hierarchy_row_modified(pdb_notify,
-		    obj_handle, logon_id, &phandle->notify_list))
+		    obj_handle, logon_id, phandle->notify_list))
 			break;
 		cxr = phandle->cxr;
 		username = phandle->username;
@@ -994,47 +969,38 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		return;
 	case db_notify_type::message_modified:
 		if (!emsmdb_interface_merge_message_modified(pdb_notify,
-		    obj_handle, logon_id, &phandle->notify_list))
+		    obj_handle, logon_id, phandle->notify_list))
 			break;
 		return;
 	case db_notify_type::folder_modified:
 		if (!emsmdb_interface_merge_folder_modified(pdb_notify,
-		    obj_handle, logon_id, &phandle->notify_list))
+		    obj_handle, logon_id, phandle->notify_list))
 			break;
 		return;
 	default:
 		break;
 	}
-	auto notifnum = double_list_get_nodes_num(&phandle->notify_list);
+	auto notifnum = phandle->notify_list.size();
 	if (notifnum >= ems_max_pending_sesnotif) {
 		mlog(LV_WARN, "W-2305: EMS session %s reached maximum of %zu pending notifications",
 			bin2hex(phandle->guid).c_str(), ems_max_pending_sesnotif);
 		return;
 	}
 	ems_high_pending_sesnotif = std::max(ems_high_pending_sesnotif, notifnum);
-	pnode = me_alloc<DOUBLE_LIST_NODE>();
-	if (NULL == pnode) {
-		return;
-	}
 	auto nfr = notify_response::create(obj_handle, logon_id);
-	if (nfr == nullptr) {
-		free(pnode);
+	if (nfr == nullptr)
 		return;
-	}
-	pnode->pdata = nfr;
 	nfr->rop_id = ropNotify;
 	nfr->hindex = 0; /* ignore by system */
 	nfr->result = ecSuccess; /* ignore by system */
 	BOOL b_cache = phandle->info.client_mode == CLIENT_MODE_CACHED ? TRUE : false;
 	if (nfr->cvt_from_dbnotify(b_cache, *pdb_notify) == ecSuccess) {
-		double_list_append_as_tail(&phandle->notify_list, pnode);
+		phandle->notify_list.emplace_back(std::move(nfr));
 		lk_occupied.unlock();
 		phandle.reset();
 	} else {
 		lk_occupied.unlock();
 		phandle.reset();
-		delete nfr;
-		free(pnode);
 	}
 	asyncemsmdb_interface_wakeup(std::move(username), cxr);
 } catch (const std::bad_alloc &) {

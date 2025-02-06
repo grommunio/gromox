@@ -1,9 +1,11 @@
 #pragma once
 #include <atomic>
 #include <cstdint>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 #include <gromox/clock.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/mapi_types.hpp>
@@ -33,6 +35,8 @@ struct emsmdb_info {
 	std::atomic<int> upctx_ref{0};
 };
 
+struct notify_response;
+
 struct HANDLE_DATA {
 	HANDLE_DATA();
 	~HANDLE_DATA();
@@ -52,7 +56,8 @@ struct HANDLE_DATA {
 	uint16_t rop_left = 0; /* size left in rop response buffer */
 	emsmdb_info info;
 
-	DOUBLE_LIST notify_list{};
+	using notify_list_t = std::vector<std::unique_ptr<notify_response>>;
+	notify_list_t notify_list;
 	std::mutex notify_lock; /* protects notify_list */
 	std::mutex processing_lock; /* rpc_ext2 serial execution */
 };
@@ -71,6 +76,7 @@ extern void emsmdb_interface_touch_handle(const CXH &);
 extern std::shared_ptr<HANDLE_DATA> emsmdb_interface_get_handle_data_SP();
 extern const GUID *emsmdb_interface_get_handle();
 extern emsmdb_info *emsmdb_interface_get_emsmdb_info();
+
 BOOL emsmdb_interface_get_cxr(uint16_t *pcxr);
 extern BOOL emsmdb_interface_alloc_handle_number(uint32_t *num);
 BOOL emsmdb_interface_get_cxh(CXH *pcxh);

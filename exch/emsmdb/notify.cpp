@@ -60,9 +60,10 @@ subscription_object::~subscription_object()
 	emsmdb_interface_remove_subscription_notify(psub->plogon->get_dir(), psub->sub_id);
 }
 
-notify_response *notify_response::create(uint32_t handle, uint8_t logon_id) try
+std::unique_ptr<notify_response>
+notify_response::create(uint32_t handle, uint8_t logon_id) try
 {
-	auto r = new notify_response{};
+	auto r = std::make_unique<notify_response>();
 	r->handle = handle;
 	r->logon_id = logon_id;
 	return r;

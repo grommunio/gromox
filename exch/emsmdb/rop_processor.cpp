@@ -435,18 +435,17 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	if (!b_notify || b_icsup)
 		goto MAKE_RPC_EXT;
 	while (true) {
-		DOUBLE_LIST_NODE *pnode = nullptr;
+		std::unique_ptr<notify_response> pnotify;
 		{
 			auto emsh = emsmdb_interface_get_handle_data_SP();
 			if (emsh == nullptr)
 				return ecRpcFailed;
 			std::lock_guard lk_occupied(emsh->notify_lock);
-			pnode = double_list_pop_front(&emsh->notify_list);
+			if (emsh->notify_list.empty())
+				break;
+			pnotify = pop_front_v(emsh->notify_list);
 		}
-		if (pnode == nullptr)
-			break;
 		uint32_t last_offset = ext_push.m_offset;
-		auto pnotify = static_cast<notify_response *>(pnode->pdata);
 		ems_objtype type;
 		auto pobject = rop_processor_get_object(&pemsmdb_info->logmap, pnotify->logon_id, pnotify->handle, &type);
 		if (NULL != pobject) {
@@ -457,7 +456,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				auto tbl = static_cast<table_object *>(pobject);
 				auto pcolumns = tbl->get_columns();
 				if (!ext_push1.init(ext_buff1.get(), ext_buff_size, EXT_FLAG_UTF16))
-					goto NEXT_NOTIFY;
+					continue;
 				if (pnotify->nflags & NF_BY_MESSAGE) {
 					if (tbl->read_row(pnotify->row_message_id,
 					    pnotify->row_instance,
@@ -473,7 +472,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				}
 				if (!cu_propvals_to_row(&propvals, *pcolumns, &tmp_row) ||
 				    ext_push1.p_proprow(*pcolumns, tmp_row) != pack_result::ok)
-					goto NEXT_NOTIFY;
+					continue;
 				tmp_bin.cb = ext_push1.m_offset;
 				tmp_bin.pb = ext_push1.m_udata;
 				pnotify->row_data = &tmp_bin;
@@ -485,7 +484,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 					if (emsh == nullptr)
 						goto NEXT_NOTIFY;
 					std::lock_guard lk_occupied(emsh->notify_lock);
-					double_list_insert_as_head(&emsh->notify_list, pnode);
+					emsh->notify_list.emplace_back(std::move(pnotify));
 				}
 				emsmdb_interface_get_cxr(&tmp_pending.session_index);
 				auto status = rop_ext_push(ext_push, tmp_pending);
@@ -495,8 +494,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			}
 		}
  NEXT_NOTIFY:
-		delete static_cast<notify_response *>(pnode->pdata);
-		free(pnode);
+		;
 	}
 	
  MAKE_RPC_EXT:

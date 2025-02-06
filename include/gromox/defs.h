@@ -220,6 +220,18 @@ template<typename Container, typename Pred> void erase_first_if(Container &c, Pr
 	}
 }
 
+template<typename Container> void pop_front(Container &c)
+{
+	c.erase(c.begin());
+}
+
+template<typename Container> auto pop_front_v(Container &c) -> decltype(auto)
+{
+	auto v = std::move(c.front());
+	pop_front(c);
+	return v;
+}
+
 template<typename T> struct deref_iterator {
 	T **ptr = nullptr;
 	constexpr deref_iterator(T **p = nullptr) : ptr(p) {}
