@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cerrno>
@@ -159,7 +159,7 @@ static int gx_ldap_bind(ldap_ptr &ld, const char *dn, struct berval *bv)
 }
 
 static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
-    char **attrs, LDAPMessage **msg)
+    char **attrs, ldap_msg &msg)
 {
 	if (ld == nullptr)
 		ld = make_conn(g_ldap_host, g_bind_user.c_str(),
@@ -167,7 +167,7 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
 	if (ld == nullptr)
 		return LDAP_SERVER_DOWN;
 	auto ret = ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
-	           filter, attrs, true, nullptr, nullptr, nullptr, 1, msg);
+	           filter, attrs, true, nullptr, nullptr, nullptr, 1, &unique_tie(msg));
 	if (ret == LDAP_LOCAL_ERROR && g_edir_workaround)
 		/* try full reconnect */;
 	else if (ret != LDAP_SERVER_DOWN)
@@ -177,7 +177,7 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
 	if (ld == nullptr)
 		return ret;
 	return ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
-	       filter, attrs, true, nullptr, nullptr, nullptr, 1, msg);
+	       filter, attrs, true, nullptr, nullptr, nullptr, 1, &~unique_tie(msg));
 }
 
 static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
@@ -190,7 +190,7 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 	auto filter = attr + "="s + quoted;
 	auto ret = gx_ldap_search(tok_meta,
 	           base_dn.size() > 0 ? base_dn.c_str() : nullptr,
-	           filter.c_str(), const_cast<char **>(no_attrs), &unique_tie(msg));
+	           filter.c_str(), const_cast<char **>(no_attrs), msg);
 	auto act_base = base_dn.size() > 0 ? base_dn.c_str() : "(ldap.conf->BASE)";
 	if (ret != LDAP_SUCCESS && ret != LDAP_SIZELIMIT_EXCEEDED) {
 		mlog(LV_ERR, "ldap_adaptor: error during search in base \"%s\" for \"%s\": %s",
