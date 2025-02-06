@@ -377,13 +377,8 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 	nsub_node sub, *pnsub = &sub;
 	pnsub->sub_id = last_id + 1;
 	auto remote_id = exmdb_server::get_remote_id();
-	if (NULL == remote_id) {
-		pnsub->remote_id = NULL;
-	} else {
-		pnsub->remote_id = strdup(remote_id);
-		if (pnsub->remote_id == nullptr)
-			return FALSE;
-	}
+	if (remote_id != nullptr)
+		sub.remote_id.emplace(remote_id);
 	pnsub->notification_type = notification_type;
 	pnsub->b_whole = b_whole;
 	if (0 == folder_id) {
