@@ -29,6 +29,7 @@ DECLARE_SVC_API(,);
 
 namespace {
 struct ldapfree {
+	void operator()(char *s) const { ldap_memfree(s); }
 	void operator()(LDAP *ld) const { ldap_unbind_ext_s(ld, nullptr, nullptr); }
 	void operator()(LDAPMessage *m) const { ldap_msgfree(m); }
 };
@@ -212,17 +213,17 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 	auto firstmsg = ldap_first_message(tok_meta.get(), msg.get());
 	if (firstmsg == nullptr)
 		return FALSE;
-	auto dn = ldap_get_dn(tok_meta.get(), firstmsg);
+	std::unique_ptr<char[], ldapfree> dn(ldap_get_dn(tok_meta.get(), firstmsg));
 	if (dn == nullptr)
 		return FALSE;
 
 	struct berval bv;
 	bv.bv_val = deconst(znul(password));
 	bv.bv_len = password != nullptr ? strlen(password) : 0;
-	ret = gx_ldap_bind(tok_bind, dn, &bv);
+	ret = gx_ldap_bind(tok_bind, dn.get(), &bv);
 	if (ret == LDAP_SUCCESS)
 		return TRUE;
-	mlog(LV_ERR, "ldap_adaptor: ldap_simple_bind \"%s\": %s", dn, ldap_err2string(ret));
+	mlog(LV_ERR, "ldap_adaptor: ldap_simple_bind \"%s\": %s", dn.get(), ldap_err2string(ret));
 	return FALSE;
 }
 
