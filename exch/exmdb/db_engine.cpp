@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -712,6 +712,11 @@ POPULATING_NODE::~POPULATING_NODE()
 	free(folder_ids.pll);
 }
 
+/**
+ * Construct pseudo-packets for different clients based on who is watching
+ * @folder_id/@message_id. The output ID_ARRAYS is referencing db data, so
+ * watch your lifetimes. (The ID_ARRAYS object must not outlive @db).
+ */
 static db_conn::ID_ARRAYS db_engine_classify_id_array(const db_base &db,
     unsigned int bits, uint64_t folder_id, uint64_t message_id) try
 {
@@ -720,8 +725,10 @@ static db_conn::ID_ARRAYS db_engine_classify_id_array(const db_base &db,
 		if (!(sub.notification_type & bits))
 			continue;
 		if (sub.b_whole || (sub.folder_id == folder_id &&
-		    sub.message_id == message_id))
-			out[sub.remote_id].push_back(sub.sub_id);
+		    sub.message_id == message_id)) {
+			auto rid = sub.remote_id.has_value() ? sub.remote_id->c_str() : nullptr;
+			out[rid].push_back(sub.sub_id);
+		}
 	}
 	return out;
 } catch (const std::bad_alloc &) {
@@ -3845,8 +3852,10 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 				continue;
 		}
 		if (pnsub->b_whole || (pnsub->folder_id == old_fid &&
-		    pnsub->message_id == old_mid))
-			recv_list[pnsub->remote_id].push_back(pnsub->sub_id);
+		    pnsub->message_id == old_mid)) {
+			auto rid = sub.remote_id.has_value() ? sub.remote_id->c_str() : nullptr;
+			recv_list[rid].push_back(pnsub->sub_id);
+		}
 	}
 	if (recv_list.size() > 0) {
 		datagram.dir = deconst(dir);
@@ -3896,8 +3905,10 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 		}
 		if (pnsub->b_whole ||
 		    (pnsub->folder_id == folder_id && pnsub->message_id == 0) ||
-		    (pnsub->folder_id == old_fid && pnsub->message_id == 0))
-			recv_list[pnsub->remote_id].push_back(pnsub->sub_id);
+		    (pnsub->folder_id == old_fid && pnsub->message_id == 0)) {
+			auto rid = sub.remote_id.has_value() ? sub.remote_id->c_str() : nullptr;
+			recv_list[rid].push_back(pnsub->sub_id);
+		}
 	}
 	if (recv_list.size() > 0) {
 		datagram.dir = deconst(dir);

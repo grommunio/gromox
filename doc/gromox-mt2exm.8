@@ -1,8 +1,8 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
 .TH gromox\-mt2exm 8 "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-mt2exm \(em Utility for importing various mail items
+gromox\-mt2exm \(em Utility for importing various mail items into Gromox
 .SH Synopsis
 \fBgromox\-mt2exm\fP [...] [\fB\-Dcpt\fP] \fB-u\fP
 [\fIlocalpart\fP]\fB@\fP\fIdomain.example\fP
@@ -15,17 +15,19 @@ Gromox mail store.
 There is no cross-check for already-imported messages at this time. Messages
 from the input stream will always generate new messages in the target mailbox.
 .PP
-Note that messages are always owned by the store they are in. Especially if
+Note that messages are always owned by the store they are in. Note that, when
 importing to a public store, you may need to set some additional permissions on
 that public store's folders so that a particular user is able to modify
-messages.
+messages after they have been imported. (All import/export utilites use
+superuser access and need no permissions.)
 .SH Options
 .TP
 \fB\-B\fP \fIname\fP
-For unanchored messages (such as produced by the \-\-only\-obj option of
-gromox\-pff2mt and gromox\-kdb2mt), place them in this specific folder. The
-accepted names are documented in the gromox\-mbop(8) manpage under section
-"Folder specification".
+Place unanchored messages (loose objects that do not request placement in any
+particular folder) in the folder specified by \-B. The accepted names are
+documented in the gromox\-mbop(8) manpage under section "Folder specification".
+Unanchored messages can be produced by e.g. gromox\-eml2mt, gromox\-tnef2mt,
+gromox\-pff2mt \-\-only\-obj, gromox\-kdb2mt \-\-only\-obj.
 .br
 Default: \fIdraft\fP
 .TP

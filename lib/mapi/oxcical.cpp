@@ -2334,9 +2334,12 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			b_alarm = true;
 			piline = palarm_component->get_line("TRIGGER");
 			const char *pvalue = nullptr;
+			long duration;
 			if (piline == nullptr ||
 			    (pvalue = piline->get_first_subvalue()) == nullptr) {
 				alarmdelta = dfl_alarm_offset(b_allday);
+			} else if (pvalue != nullptr && ical_parse_duration(pvalue, &duration)) {
+				alarmdelta = labs(duration) / 60;
 			} else {
 				pvalue1 = piline->get_first_paramval("RELATED");
 				if (pvalue1 == nullptr) {
@@ -2347,7 +2350,6 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 					            llabs(start_time - tmp_time) / 60 :
 					            dfl_alarm_offset(b_allday);
 				} else {
-					long duration;
 					alarmdelta = strcasecmp(pvalue1, "START") == 0 &&
 					            ical_parse_duration(pvalue, &duration) ?
 					            labs(duration) / 60 :

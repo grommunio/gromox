@@ -31,7 +31,7 @@ OpenBSD)
 	"$topdir/configure" --sysconfdir=/etc --localstatedir=/var $libdir \
 		CFLAGS="-O0 -g" CXXFLAGS="-O0 -g" "$@"
 	set +x
-	ncpus=$(lscpu -b --parse=cpu 2>/dev/null | grep -Ec '[0-9]' || :)
+	ncpus=$(nproc)
 	;;
 esac
 if [ "$ncpus" != "0" ]; then

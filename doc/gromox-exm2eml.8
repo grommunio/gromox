@@ -2,7 +2,7 @@
 .\" SPDX-FileCopyrightText: 2024 grommunio GmbH
 .TH gromox\-exm2eml 8 "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-exm2eml \(em Utility to export messages to various formats
+gromox\-exm2eml \(em Utility to export Gromox messages to various formats
 .SH Synopsis
 \fBgromox\-exm2eml \-u\fP \fIuser@domain.example\fP
 [\fIfolder_id\fP\fB:\fP]\fImessage_id\fP
@@ -39,7 +39,8 @@ Default: 1
 Show properties in detail (enhances \fB\-t\fP).
 .TP
 \fB\-t\fP
-Show a diagnostic tree view of the source data as it is being read.
+As the source message is read, print a diagnostic tree view of the MAPI
+properties to stderr.
 .TP
 \fB\-u\fP [\fIuser\fP]\fB@\fIdomin.example\fP
 Source mail store from which to load the message from. For the public folder of

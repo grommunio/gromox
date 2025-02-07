@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cerrno>
@@ -29,6 +29,7 @@ DECLARE_SVC_API(,);
 
 namespace {
 struct ldapfree {
+	void operator()(char *s) const { ldap_memfree(s); }
 	void operator()(LDAP *ld) const { ldap_unbind_ext_s(ld, nullptr, nullptr); }
 	void operator()(LDAPMessage *m) const { ldap_msgfree(m); }
 };
@@ -159,7 +160,7 @@ static int gx_ldap_bind(ldap_ptr &ld, const char *dn, struct berval *bv)
 }
 
 static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
-    char **attrs, LDAPMessage **msg)
+    char **attrs, ldap_msg &msg)
 {
 	if (ld == nullptr)
 		ld = make_conn(g_ldap_host, g_bind_user.c_str(),
@@ -167,7 +168,7 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
 	if (ld == nullptr)
 		return LDAP_SERVER_DOWN;
 	auto ret = ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
-	           filter, attrs, true, nullptr, nullptr, nullptr, 1, msg);
+	           filter, attrs, true, nullptr, nullptr, nullptr, 1, &unique_tie(msg));
 	if (ret == LDAP_LOCAL_ERROR && g_edir_workaround)
 		/* try full reconnect */;
 	else if (ret != LDAP_SERVER_DOWN)
@@ -177,7 +178,7 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
 	if (ld == nullptr)
 		return ret;
 	return ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
-	       filter, attrs, true, nullptr, nullptr, nullptr, 1, msg);
+	       filter, attrs, true, nullptr, nullptr, nullptr, 1, &~unique_tie(msg));
 }
 
 static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
@@ -190,7 +191,7 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 	auto filter = attr + "="s + quoted;
 	auto ret = gx_ldap_search(tok_meta,
 	           base_dn.size() > 0 ? base_dn.c_str() : nullptr,
-	           filter.c_str(), const_cast<char **>(no_attrs), &unique_tie(msg));
+	           filter.c_str(), const_cast<char **>(no_attrs), msg);
 	auto act_base = base_dn.size() > 0 ? base_dn.c_str() : "(ldap.conf->BASE)";
 	if (ret != LDAP_SUCCESS && ret != LDAP_SIZELIMIT_EXCEEDED) {
 		mlog(LV_ERR, "ldap_adaptor: error during search in base \"%s\" for \"%s\": %s",
@@ -212,17 +213,17 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 	auto firstmsg = ldap_first_message(tok_meta.get(), msg.get());
 	if (firstmsg == nullptr)
 		return FALSE;
-	auto dn = ldap_get_dn(tok_meta.get(), firstmsg);
+	std::unique_ptr<char[], ldapfree> dn(ldap_get_dn(tok_meta.get(), firstmsg));
 	if (dn == nullptr)
 		return FALSE;
 
 	struct berval bv;
 	bv.bv_val = deconst(znul(password));
 	bv.bv_len = password != nullptr ? strlen(password) : 0;
-	ret = gx_ldap_bind(tok_bind, dn, &bv);
+	ret = gx_ldap_bind(tok_bind, dn.get(), &bv);
 	if (ret == LDAP_SUCCESS)
 		return TRUE;
-	mlog(LV_ERR, "ldap_adaptor: ldap_simple_bind \"%s\": %s", dn, ldap_err2string(ret));
+	mlog(LV_ERR, "ldap_adaptor: ldap_simple_bind \"%s\": %s", dn.get(), ldap_err2string(ret));
 	return FALSE;
 }
 

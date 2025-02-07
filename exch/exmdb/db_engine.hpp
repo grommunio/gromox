@@ -68,7 +68,7 @@ struct table_node {
 };
 
 struct nsub_node {
-	char *remote_id = nullptr;
+	std::optional<std::string> remote_id;
 	uint32_t sub_id = 0;
 	uint8_t notification_type = 0;
 	BOOL b_whole = false;
@@ -167,6 +167,7 @@ struct db_conn {
 			       strcasecmp(a, b) < 0;
 		}
 	};
+	/* remote_id => subscription ids */
 	using ID_ARRAYS = std::map<const char *, std::vector<uint32_t>, xless>;
 	/* As long as any NOTIFQ object is alive, dbase should be held at least read-locked. */
 	using NOTIFQ = std::vector<std::pair<DB_NOTIFY_DATAGRAM, ID_ARRAYS>>;

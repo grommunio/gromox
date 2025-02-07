@@ -186,8 +186,9 @@ BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 	return TRUE;
 }
 
-BOOL emsmdb_interface_check_notify(ACXH *pacxh)
+bool emsmdb_interface_notifications_pending(ACXH &acxh)
 {
+	auto pacxh = &acxh;
 	if (pacxh->handle_type != HANDLE_EXCHANGE_ASYNCEMSMDB)
 		return FALSE;
 	std::lock_guard gl_hold(g_lock);
@@ -195,7 +196,7 @@ BOOL emsmdb_interface_check_notify(ACXH *pacxh)
 	if (iter == g_handle_hash.end())
 		return false;
 	auto phandle = &iter->second;
-	return double_list_get_nodes_num(&phandle->notify_list) > 0 ? TRUE : false;
+	return double_list_get_nodes_num(&phandle->notify_list) > 0;
 }
 
 /* called by moh_emsmdb module */
