@@ -9,7 +9,7 @@
 #include <memory>
 #include <new>
 #include <libHX/option.h>
-#include <gromox/exmdb_rpc.hpp>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/scope.hpp>
 #include "genimport.hpp"
 

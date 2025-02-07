@@ -22,7 +22,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/config_file.hpp>
-#include <gromox/exmdb_rpc.hpp>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/midb_agent.hpp>

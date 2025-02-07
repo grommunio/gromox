@@ -16,7 +16,7 @@
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
 #include <gromox/endian.hpp>
-#include <gromox/exmdb_rpc.hpp>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>

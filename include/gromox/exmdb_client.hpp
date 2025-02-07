@@ -7,7 +7,13 @@
 #include <pthread.h>
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
+#include <gromox/element_data.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/list_file.hpp>
+#include <gromox/mapi_types.hpp>
+#include <gromox/mapidefs.h>
+#include <gromox/mapierr.hpp>
 
 struct DB_NOTIFY;
 struct exreq;
@@ -82,3 +88,12 @@ extern GX_EXPORT bool exmdb_client_is_local(const char *pfx, BOOL *pvt);
 extern GX_EXPORT BOOL exmdb_client_do_rpc(const exreq *, exresp *);
 
 }
+
+class GX_EXPORT exmdb_client_remote {
+	public:
+#define IDLOUT
+#define EXMIDL(n, p) static EXMIDL_RETTYPE n p;
+#include <gromox/exmdb_idef.hpp>
+#undef EXMIDL
+#undef IDLOUT
+};
