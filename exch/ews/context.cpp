@@ -1813,7 +1813,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Appointment")});
 	int64_t startOffset = 0, endOffset = 0;
 	time_t startTime = 0, endTime = 0;
-	bool calcStartOffset, calcEndOffset = false;
+	bool calcStartOffset = false, calcEndOffset = false;
 	if(item.Start) {
 		startTime = clock::to_time_t(item.Start.value().time);
 		startOffset = std::chrono::duration_cast<std::chrono::minutes>(item.Start.value().offset).count();
