@@ -49,17 +49,17 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 	res_prop.proptag = PR_ASSOCIATED;
 	res_prop.propval.proptag = res_prop.proptag;
 	res_prop.propval.pvalue = &tmp_associated;
-	if (!exmdb_client::load_content_table(plogon->get_dir(), CP_ACP, folder_id,
+	if (!exmdb_client->load_content_table(plogon->get_dir(), CP_ACP, folder_id,
 	    username, TABLE_FLAG_NONOTIFICATIONS, &restriction, nullptr,
 	    &table_id, &row_count))
 		return NULL;	
 	uint32_t tmp_proptag = PidTagMid;
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
-	if (!exmdb_client::query_table(plogon->get_dir(), nullptr, CP_ACP,
+	if (!exmdb_client->query_table(plogon->get_dir(), nullptr, CP_ACP,
 	    table_id, &proptags, 0, row_count, &tmp_set))
 		return NULL;	
-	exmdb_client::unload_table(plogon->get_dir(), table_id);
+	exmdb_client->unload_table(plogon->get_dir(), table_id);
 	pmessage_ids = eid_array_init();
 	if (pmessage_ids == nullptr)
 		return NULL;
@@ -89,7 +89,7 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	
 	if (username != STORE_OWNER_GRANTED) {
 		uint32_t permission = 0;
-		if (!exmdb_client::get_folder_perm(plogon->get_dir(),
+		if (!exmdb_client->get_folder_perm(plogon->get_dir(),
 		    folder_id, username, &permission))
 			return NULL;	
 		if (!(permission & (frightsReadAny | frightsOwner)))
@@ -98,11 +98,11 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	auto pfldctnt = folder_content_init();
 	if (pfldctnt == nullptr)
 		return NULL;
-	if (!exmdb_client::get_folder_all_proptags(plogon->get_dir(),
+	if (!exmdb_client->get_folder_all_proptags(plogon->get_dir(),
 	    folder_id, &tmp_proptags))
 		return NULL;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (!exmdb_client::get_folder_properties(plogon->get_dir(), pinfo->cpid,
+	if (!exmdb_client->get_folder_properties(plogon->get_dir(), pinfo->cpid,
 	    folder_id, &tmp_proptags, &tmp_propvals))
 		return NULL;
 	auto pproplist = pfldctnt->get_proplist();
@@ -131,17 +131,17 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 		return pfldctnt;
 
 	uint32_t table_id = 0, row_count = 0;
-	if (!exmdb_client::load_hierarchy_table(plogon->get_dir(),
+	if (!exmdb_client->load_hierarchy_table(plogon->get_dir(),
 	    folder_id, username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
 	    &table_id, &row_count))
 		return NULL;
 	uint32_t tmp_proptag = PidTagFolderId;
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &tmp_proptag;
-	if (!exmdb_client::query_table(plogon->get_dir(), nullptr, CP_ACP,
+	if (!exmdb_client->query_table(plogon->get_dir(), nullptr, CP_ACP,
 	    table_id, &tmp_proptags, 0, row_count, &tmp_set))
 		return NULL;
-	exmdb_client::unload_table(plogon->get_dir(), table_id);
+	exmdb_client->unload_table(plogon->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PidTagFolderId);
 		if (pfolder_id == nullptr)
@@ -386,12 +386,12 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 	auto username = plogon->eff_user();
 	if (username != STORE_OWNER_GRANTED) {
 		uint32_t permission = 0;
-		if (!exmdb_client::get_folder_perm(plogon->get_dir(),
+		if (!exmdb_client->get_folder_perm(plogon->get_dir(),
 		    pfolder->folder_id, username, &permission))
 			return ecError;
 		if (!(permission & (frightsReadAny | frightsOwner))) {
 			for (size_t i = 0; i < pmessage_ids->count; ++i) {
-				if (!exmdb_client::is_message_owner(plogon->get_dir(),
+				if (!exmdb_client->is_message_owner(plogon->get_dir(),
 				    pmessage_ids->pll[i], username, &b_owner))
 					return ecError;
 				if (!b_owner)
@@ -480,7 +480,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	case ems_objtype::message:
 		if (!static_cast<message_object *>(pobject)->flush_streams())
 			return ecError;
-		if (!exmdb_client::read_message_instance(plogon->get_dir(),
+		if (!exmdb_client->read_message_instance(plogon->get_dir(),
 		    static_cast<message_object *>(pobject)->get_instance_id(), &msgctnt))
 			return ecError;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
@@ -507,7 +507,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	case ems_objtype::attach:
 		if (!static_cast<attachment_object *>(pobject)->flush_streams())
 			return ecError;
-		if (!exmdb_client::read_attachment_instance(plogon->get_dir(),
+		if (!exmdb_client->read_attachment_instance(plogon->get_dir(),
 		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
 			return ecError;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
@@ -594,7 +594,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	case ems_objtype::message:
 		if (!static_cast<message_object *>(pobject)->flush_streams())
 			return ecError;
-		if (!exmdb_client::read_message_instance(plogon->get_dir(),
+		if (!exmdb_client->read_message_instance(plogon->get_dir(),
 		    static_cast<message_object *>(pobject)->get_instance_id(), &msgctnt))
 			return ecError;
 		for (unsigned int i = 0; i < msgctnt.proplist.count; ) {
@@ -619,7 +619,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	case ems_objtype::attach:
 		if (!static_cast<attachment_object *>(pobject)->flush_streams())
 			return ecError;
-		if (!exmdb_client::read_attachment_instance(plogon->get_dir(),
+		if (!exmdb_client->read_attachment_instance(plogon->get_dir(),
 		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
 			return ecError;
 		for (unsigned int i = 0; i < attctnt.proplist.count; ) {
@@ -675,7 +675,7 @@ ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 		return ecNullObject;
 	auto username = plogon->eff_user();
 	if (sync_type == SYNC_TYPE_CONTENTS && username != STORE_OWNER_GRANTED) {
-		if (!exmdb_client::get_folder_perm(plogon->get_dir(),
+		if (!exmdb_client->get_folder_perm(plogon->get_dir(),
 		    pfolder->folder_id, username, &permission))
 			return ecError;
 		if (!(permission & (frightsOwner | frightsReadAny)))
@@ -744,7 +744,7 @@ static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
 
 	if (username != STORE_OWNER_GRANTED) {
 		uint32_t permission = 0;
-		if (!exmdb_client::get_folder_perm(dir,
+		if (!exmdb_client->get_folder_perm(dir,
 		    folder_id, username, &permission))
 			return ecError;
 		if (!(permission & frightsCreate))
@@ -759,7 +759,7 @@ static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
 	}
 
 	uint64_t message_id = 0;
-	if (!exmdb_client::allocate_message_id(dir, folder_id, &message_id))
+	if (!exmdb_client->allocate_message_id(dir, folder_id, &message_id))
 		return ecError;
 	auto info = emsmdb_interface_get_emsmdb_info();
 	auto msg = message_object::create(logon, TRUE, info->cpid, message_id,
@@ -769,7 +769,7 @@ static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
 
 	/* Retain PCL and assign a new CN */
 	uint64_t change_num;
-	if (!exmdb_client::allocate_cn(dir, &change_num))
+	if (!exmdb_client->allocate_cn(dir, &change_num))
 		return ecError;
 	auto new_ck = cu_xid_to_bin({logon->guid(), change_num});
 	if (new_ck == nullptr)
@@ -789,7 +789,7 @@ static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
 	nupropd[1].pvalue = new_pcl;
 	const TPROPVAL_ARRAY nuprops = {std::size(nupropd), deconst(nupropd)};
 	PROBLEM_ARRAY problems{};
-	if (!exmdb_client::set_instance_properties(dir,
+	if (!exmdb_client->set_instance_properties(dir,
 	    msg->get_instance_id(), &nuprops, &problems))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(logmap, logon_id, hnd_in,
@@ -854,13 +854,13 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 		       pmessage_id, hin, phout);
 	auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 	auto dir = plogon->get_dir();
-	if (!exmdb_client::is_msg_present(dir, folder_id, message_id, &b_exist))
+	if (!exmdb_client->is_msg_present(dir, folder_id, message_id, &b_exist))
 		return ecError;
 	BOOL b_new = !b_exist ? TRUE : false;
 	*pmessage_id = 0;
 	auto username = plogon->eff_user();
 	if (username != STORE_OWNER_GRANTED) {
-		if (!exmdb_client::get_folder_perm(dir,
+		if (!exmdb_client->get_folder_perm(dir,
 		    folder_id, username, &permission))
 			return ecError;
 		if (b_new) {
@@ -874,7 +874,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 		} else if (permission & frightsOwner) {
 			tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ|MAPI_ACCESS_DELETE;
 		} else {
-			if (!exmdb_client::is_message_owner(dir,
+			if (!exmdb_client->is_message_owner(dir,
 			    message_id, username, &b_owner))
 				return ecError;
 			if (b_owner || (permission & frightsReadAny))
@@ -890,7 +890,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 	}
 	if (!b_new) {
-		if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
+		if (!exmdb_client->get_message_property(dir, nullptr, CP_ACP,
 		    message_id, PR_ASSOCIATED, &pvalue))
 			return ecError;
 		bool orig_is_fai = pvb_enabled(pvalue);
@@ -926,7 +926,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 		}
 	}
 	if (!b_new) {
-		if (!exmdb_client::clear_message_instance(dir,
+		if (!exmdb_client->clear_message_instance(dir,
 		    pmessage->get_instance_id()))
 			return ecError;
 	} else {
@@ -936,7 +936,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	}
 	tmp_propvals.count = 3;
 	tmp_propvals.ppropval = ppropvals->ppropval + 1;
-	if (!exmdb_client::set_instance_properties(dir,
+	if (!exmdb_client->set_instance_properties(dir,
 	    pmessage->get_instance_id(), &tmp_propvals, &tmp_problems))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
@@ -975,7 +975,7 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 	if (eff_user != STORE_OWNER_GRANTED) {
 		auto pfolder = pctx->get_parent_object();
 		folder_id = pfolder->folder_id;
-		if (!exmdb_client::get_folder_perm(dir,
+		if (!exmdb_client->get_folder_perm(dir,
 		    folder_id, eff_user, &permission))
 			return ecError;
 		if (permission & frightsReadAny)
@@ -990,7 +990,7 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 			continue;
 		auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		if (eff_user != STORE_OWNER_GRANTED) {
-			if (!exmdb_client::is_message_owner(dir,
+			if (!exmdb_client->is_message_owner(dir,
 			    message_id, eff_user, &b_owner))
 				return ecError;
 			if (!b_owner)
@@ -999,7 +999,7 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 		static constexpr proptag_t proptag_buff[] = {PR_ASSOCIATED, PR_READ};
 		static constexpr PROPTAG_ARRAY tmp_proptags =
 			{std::size(proptag_buff), deconst(proptag_buff)};
-		if (!exmdb_client::get_message_properties(dir, nullptr, CP_ACP,
+		if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
 		    message_id, &tmp_proptags, &tmp_propvals))
 			return ecError;
 		auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
@@ -1008,7 +1008,7 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 		flag = tmp_propvals.get<uint8_t>(PR_READ);
 		if ((flag == nullptr || *flag == 0) == (pread_stat[i].mark_as_read == 0))
 			continue;
-		if (!exmdb_client::set_message_read_state(dir, rds_user,
+		if (!exmdb_client->set_message_read_state(dir, rds_user,
 		    message_id, pread_stat[i].mark_as_read, &read_cn))
 			return ecError;
 		pctx->pstate->pread->append(read_cn);
@@ -1063,7 +1063,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	if (static_cast<BINARY *>(phichyvals->ppropval[0].pvalue)->cb == 0) {
 		parent_type = pfolder->type;
 		parent_id1 = pfolder->folder_id;
-		if (!exmdb_client::is_folder_present(dir,
+		if (!exmdb_client->is_folder_present(dir,
 		    parent_id1, &b_exist))
 			return ecError;
 		if (!b_exist)
@@ -1080,7 +1080,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (tmp_guid != tmp_xid.guid)
 			return ecInvalidParam;
 		parent_id1 = rop_util_make_eid(1, tmp_xid.local_to_gc());
-		if (!exmdb_client::get_folder_property(dir, CP_ACP,
+		if (!exmdb_client->get_folder_property(dir, CP_ACP,
 		    parent_id1, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
 		if (pvalue == nullptr)
@@ -1108,7 +1108,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			if (!mysql_adaptor_check_same_org(domain_id, plogon->account_id))
 				return ecInvalidParam;
 			ec_error_t ret = ecSuccess;
-			if (!exmdb_client::get_mapping_replid(dir,
+			if (!exmdb_client->get_mapping_replid(dir,
 			    tmp_xid.guid, &replid, &ret))
 				return ecError;
 			if (ret != ecSuccess)
@@ -1118,24 +1118,24 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		}
 	}
-	if (!exmdb_client::is_folder_present(dir, folder_id, &b_exist))
+	if (!exmdb_client->is_folder_present(dir, folder_id, &b_exist))
 		return ecError;
 	*pfolder_id = 0;
 	auto username = plogon->eff_user();
 	if (!b_exist) {
 		if (username != STORE_OWNER_GRANTED) {
-			if (!exmdb_client::get_folder_perm(dir,
+			if (!exmdb_client->get_folder_perm(dir,
 			    parent_id1, username, &permission))
 				return ecError;
 			if (!(permission & frightsCreateSubfolder))
 				return ecAccessDenied;
 		}
-		if (!exmdb_client::get_folder_by_name(dir, parent_id1,
+		if (!exmdb_client->get_folder_by_name(dir, parent_id1,
 		    static_cast<char *>(phichyvals->ppropval[5].pvalue), &tmp_fid))
 			return ecError;
 		if (tmp_fid != 0)
 			return ecDuplicateName;
-		if (!exmdb_client::allocate_cn(dir, &change_num))
+		if (!exmdb_client->allocate_cn(dir, &change_num))
 			return ecError;
 		tmp_propvals.count = 0;
 		tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8 + ppropvals->count);
@@ -1156,7 +1156,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		ec_error_t ret = ecSuccess;
-		if (!exmdb_client::create_folder(dir, pinfo->cpid,
+		if (!exmdb_client->create_folder(dir, pinfo->cpid,
 		    &tmp_propvals, &tmp_fid, &ret))
 			return ecError;
 		if (ret != ecSuccess)
@@ -1166,7 +1166,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		pctx->pstate->pseen->append(change_num);
 		return ecSuccess;
 	}
-	if (!exmdb_client::get_folder_property(dir, CP_ACP,
+	if (!exmdb_client->get_folder_property(dir, CP_ACP,
 	    folder_id, PR_PREDECESSOR_CHANGE_LIST, &pvalue) ||
 	    pvalue == nullptr)
 		return ecError;
@@ -1176,13 +1176,13 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	if (result & PCL_INCLUDE)
 		return SYNC_E_IGNORE;
 	if (username != STORE_OWNER_GRANTED) {
-		if (!exmdb_client::get_folder_perm(dir,
+		if (!exmdb_client->get_folder_perm(dir,
 		    folder_id, username, &permission))
 			return ecError;
 		if (!(permission & frightsOwner))
 			return ecAccessDenied;
 	}
-	if (!exmdb_client::get_folder_property(dir, CP_ACP, folder_id,
+	if (!exmdb_client->get_folder_property(dir, CP_ACP, folder_id,
 	    PidTagParentFolderId, &pvalue) || pvalue == nullptr)
 		return ecError;
 	auto parent_id = *static_cast<uint64_t *>(pvalue);
@@ -1194,7 +1194,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 		if (plogon->logon_mode != logon_mode::owner) {
-			if (!exmdb_client::get_folder_perm(dir,
+			if (!exmdb_client->get_folder_perm(dir,
 			    parent_id1, rpc_info.username, &permission))
 				return ecError;
 			if (!(permission & frightsCreateSubfolder))
@@ -1205,7 +1205,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		ec_error_t err = ecSuccess;
-		if (!exmdb_client::movecopy_folder(dir, pinfo->cpid, b_guest,
+		if (!exmdb_client->movecopy_folder(dir, pinfo->cpid, b_guest,
 		    rpc_info.username, parent_id, folder_id, parent_id1,
 		    static_cast<char *>(phichyvals->ppropval[5].pvalue), false,
 		    &err))
@@ -1213,7 +1213,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (err != ecSuccess)
 			return err;
 	}
-	if (!exmdb_client::allocate_cn(dir, &change_num))
+	if (!exmdb_client->allocate_cn(dir, &change_num))
 		return ecError;
 	tmp_propvals.count = 0;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5 + ppropvals->count);
@@ -1233,7 +1233,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	for (unsigned int i = 0; i < ppropvals->count; ++i)
 		tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (!exmdb_client::set_folder_properties(dir,
+	if (!exmdb_client->set_folder_properties(dir,
 	    pinfo->cpid, folder_id, &tmp_propvals, &tmp_problems))
 		return ecError;
 	pctx->pstate->pseen->append(change_num);
@@ -1280,7 +1280,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	auto username = plogon->eff_user();
 	if (username != STORE_OWNER_GRANTED &&
 	    sync_type == SYNC_TYPE_CONTENTS &&
-	    !exmdb_client::get_folder_perm(dir,
+	    !exmdb_client->get_folder_perm(dir,
 	    folder_id, username, &permission)) {
 		if (permission & (frightsOwner | frightsDeleteAny))
 			username = NULL;
@@ -1331,7 +1331,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 				    plogon->account_id))
 					return ecInvalidParam;
 				ec_error_t ret = ecSuccess;
-				if (!exmdb_client::get_mapping_replid(dir,
+				if (!exmdb_client->get_mapping_replid(dir,
 				    tmp_xid.guid, &replid, &ret))
 					return ecError;
 				if (ret != ecSuccess)
@@ -1342,10 +1342,10 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {
-			if (!exmdb_client::is_msg_present(dir,
+			if (!exmdb_client->is_msg_present(dir,
 			    folder_id, eid, &b_exist))
 				return ecError;
-		} else if (!exmdb_client::is_folder_present(dir,
+		} else if (!exmdb_client->is_folder_present(dir,
 		    eid, &b_exist)) {
 			return ecError;
 		}
@@ -1353,12 +1353,12 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 			continue;
 		if (username != STORE_OWNER_GRANTED) {
 			if (SYNC_TYPE_CONTENTS == sync_type) {
-				if (!exmdb_client::is_message_owner(dir,
+				if (!exmdb_client->is_message_owner(dir,
 				    eid, username, &b_owner))
 					return ecError;
 				if (!b_owner)
 					return ecAccessDenied;
-			} else if (!exmdb_client::get_folder_perm(dir,
+			} else if (!exmdb_client->get_folder_perm(dir,
 			    eid, username, &permission) && !(permission & frightsOwner)) {
 				return ecAccessDenied;
 			}
@@ -1369,7 +1369,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 			unsigned int empty_flags = DEL_MESSAGES | DEL_ASSOCIATED | DEL_FOLDERS;
 			empty_flags |= b_hard ? DELETE_HARD_DELETE : 0;
 			if (plogon->is_private()) {
-				if (!exmdb_client::get_folder_property(dir,
+				if (!exmdb_client->get_folder_property(dir,
 				    CP_ACP, eid, PR_FOLDER_TYPE, &pvalue))
 					return ecError;
 				if (pvalue == nullptr)
@@ -1377,18 +1377,18 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 				if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 					goto DELETE_FOLDER;
 			}
-			if (!exmdb_client::empty_folder(dir,
+			if (!exmdb_client->empty_folder(dir,
 			    pinfo->cpid, username, eid, empty_flags,
 			    &b_partial) || b_partial)
 				return ecError;
  DELETE_FOLDER:
-			if (!exmdb_client::delete_folder(dir,
+			if (!exmdb_client->delete_folder(dir,
 			    pinfo->cpid, eid, b_hard, &b_result) || !b_result)
 				return ecError;
 		}
 	}
 	if (sync_type == SYNC_TYPE_CONTENTS && message_ids.count > 0 &&
-	    (!exmdb_client::delete_messages(dir, pinfo->cpid, nullptr,
+	    (!exmdb_client->delete_messages(dir, pinfo->cpid, nullptr,
 	    folder_id, &message_ids, b_hard, &b_partial) || b_partial))
 		return ecError;
 	return ecSuccess;
@@ -1442,7 +1442,7 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	auto src_mid = rop_util_make_eid(1, xid_src.local_to_gc());
 	auto dst_mid = rop_util_make_eid(1, xid_dst.local_to_gc());
 	auto dir = plogon->get_dir();
-	if (!exmdb_client::is_msg_present(dir, src_fid, src_mid, &b_exist))
+	if (!exmdb_client->is_msg_present(dir, src_fid, src_mid, &b_exist))
 		return ecError;
 	/*
 	 * No client would normally try to move an entity they have not seen
@@ -1455,13 +1455,13 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 		return SYNC_E_OBJECT_DELETED;
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != logon_mode::owner) {
-		if (!exmdb_client::get_folder_perm(dir,
+		if (!exmdb_client->get_folder_perm(dir,
 		    src_fid, rpc_info.username, &permission))
 			return ecError;
 		if (permission & frightsDeleteAny) {
 			/* do nothing */
 		} else if (permission & frightsDeleteOwned) {
-			if (!exmdb_client::is_message_owner(dir,
+			if (!exmdb_client->is_message_owner(dir,
 			    src_mid, rpc_info.username, &b_owner))
 				return ecError;
 			if (!b_owner)
@@ -1469,19 +1469,19 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 		} else {
 			return ecAccessDenied;
 		}
-		if (!exmdb_client::get_folder_perm(dir,
+		if (!exmdb_client->get_folder_perm(dir,
 		    folder_id, rpc_info.username, &permission))
 			return ecError;
 		if (!(permission & frightsCreate))
 			return ecAccessDenied;
 	}
-	if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
+	if (!exmdb_client->get_message_property(dir, nullptr, CP_ACP,
 	    src_mid, PR_ASSOCIATED, &pvalue))
 		return ecError;
 	if (pvalue == nullptr)
 		return ecNotFound;
 	BOOL b_fai = *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
-	if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
+	if (!exmdb_client->get_message_property(dir, nullptr, CP_ACP,
 	    src_mid, PR_PREDECESSOR_CHANGE_LIST, &pvalue))
 		return ecError;
 	if (pvalue == nullptr)
@@ -1490,17 +1490,17 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 		return ecError;
 	BOOL b_newer = result == PCL_INCLUDED ? TRUE : false;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (!exmdb_client::movecopy_message(dir, pinfo->cpid, src_mid,
+	if (!exmdb_client->movecopy_message(dir, pinfo->cpid, src_mid,
 	    folder_id, dst_mid, TRUE, &b_result) || !b_result)
 		return ecError;
 	if (b_newer) {
 		uint32_t result_unused;
 		tmp_propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propval.pvalue = pvalue;
-		exmdb_client::set_message_property(dir, nullptr,
+		exmdb_client->set_message_property(dir, nullptr,
 			CP_ACP, dst_mid, &tmp_propval, &result_unused);
 	}
-	if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
+	if (!exmdb_client->get_message_property(dir, nullptr, CP_ACP,
 	    dst_mid, PidTagChangeNumber, &pvalue) || pvalue == nullptr)
 		return ecError;
 	auto &s = b_fai ? pctx->pstate->pseen_fai : pctx->pstate->pseen;
@@ -1642,7 +1642,7 @@ ec_error_t rop_getlocalreplicaids(uint32_t count, GUID *pguid,
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
 		return ecError;
-	if (!exmdb_client::allocate_ids(plogon->get_dir(), count, &begin_eid))
+	if (!exmdb_client->allocate_ids(plogon->get_dir(), count, &begin_eid))
 		return ecError;
 	/* allocate too many eids within an interval */
 	if (begin_eid == 0)

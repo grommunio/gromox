@@ -324,7 +324,7 @@ static void *emsrop_scanwork(void *param)
 			dirs.push_back(pair.first);
 		hl_hold.unlock();
 		while (dirs.size() > 0) {
-			exmdb_client::ping_store(dirs.back().c_str());
+			exmdb_client->ping_store(dirs.back().c_str());
 			dirs.pop_back();
 		}
 	} catch (const std::bad_alloc &) {

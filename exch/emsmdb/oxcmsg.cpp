@@ -57,16 +57,16 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 		return ecNullObject;
 	if (object_type != ems_objtype::logon && object_type != ems_objtype::folder)
 		return ecNotSupported;
-	if (!exmdb_client::is_msg_present(plogon->get_dir(), folder_id,
+	if (!exmdb_client->is_msg_present(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
 		return ecError;
 	if (!b_exist)
 		return ecNotFound;
-	if (!exmdb_client::get_message_property(plogon->get_dir(), nullptr,
+	if (!exmdb_client->get_message_property(plogon->get_dir(), nullptr,
 	    CP_ACP, message_id, PidTagFolderId, &pvalue) || pvalue == nullptr)
 		return ecError;
 	folder_id = *static_cast<uint64_t *>(pvalue);
-	if (!exmdb_client::is_msg_deleted(plogon->get_dir(), message_id, &b_del))
+	if (!exmdb_client->is_msg_deleted(plogon->get_dir(), message_id, &b_del))
 		return ecError;
 	if (b_del && !(open_mode_flags & OPEN_MODE_FLAG_OPENSOFTDELETE))
 		return ecNotFound;
@@ -77,7 +77,7 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
-	if (!exmdb_client::get_folder_perm(plogon->get_dir(), folder_id,
+	if (!exmdb_client->get_folder_perm(plogon->get_dir(), folder_id,
 	    rpc_user, &permission))
 		return ecError;
 	if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
@@ -86,7 +86,7 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
-	if (!exmdb_client::is_message_owner(plogon->get_dir(), message_id,
+	if (!exmdb_client->is_message_owner(plogon->get_dir(), message_id,
 	    rpc_user, &b_owner))
 		return ecError;
 	if (b_owner || (permission & frightsReadAny))
@@ -188,7 +188,7 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 		return ecNotSupported;
 	auto eff_user = plogon->eff_user();
 	if (eff_user != STORE_OWNER_GRANTED) {
-		if (!exmdb_client::get_folder_perm(plogon->get_dir(),
+		if (!exmdb_client->get_folder_perm(plogon->get_dir(),
 		    folder_id, eff_user, &permission))
 			return ecError;
 		if (!(permission & (frightsOwner | frightsCreate)))
@@ -226,7 +226,7 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	*ppmessage_id = cu_alloc<uint64_t>();
 	if (*ppmessage_id == nullptr)
 		return ecServerOOM;
-	if (!exmdb_client::allocate_message_id(plogon->get_dir(),
+	if (!exmdb_client->allocate_message_id(plogon->get_dir(),
 	    folder_id, *ppmessage_id))
 		return ecError;
 	auto pmessage = message_object::create(plogon, TRUE, cpid,
@@ -477,7 +477,7 @@ ec_error_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
 	/* we do not check permission because it's maybe
 		not an important property for the message.
 		also, we don't know the message location */
-	if (!exmdb_client::get_message_property(plogon->get_dir(), nullptr,
+	if (!exmdb_client->get_message_property(plogon->get_dir(), nullptr,
 	    CP_ACP, message_id, PR_MSG_STATUS, &pvalue))
 		return ecError;
 	if (pvalue == nullptr)
@@ -490,7 +490,7 @@ ec_error_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
 	*pmessage_status = new_status;
 	propval.proptag = PR_MSG_STATUS;
 	propval.pvalue = &new_status;
-	if (!exmdb_client::set_message_property(plogon->get_dir(), nullptr,
+	if (!exmdb_client->set_message_property(plogon->get_dir(), nullptr,
 	    CP_ACP, message_id, &propval, &result))
 		return ecError;
 	return static_cast<ec_error_t>(result);
@@ -509,7 +509,7 @@ ec_error_t rop_getmessagestatus(uint64_t message_id, uint32_t *pmessage_status,
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
-	if (!exmdb_client::get_message_property(plogon->get_dir(), nullptr,
+	if (!exmdb_client->get_message_property(plogon->get_dir(), nullptr,
 	    CP_ACP, message_id, PR_MSG_STATUS, &pvalue))
 		return ecError;
 	if (pvalue == nullptr)
@@ -537,7 +537,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 	switch (read_flag) {
 	case rfDefault:
 	case rfSuppressReceipt:
-		if (!exmdb_client::get_message_property(dir, username, CP_ACP,
+		if (!exmdb_client->get_message_property(dir, username, CP_ACP,
 		    message_id, PR_READ, &pvalue))
 			return FALSE;	
 		if (pvb_enabled(pvalue))
@@ -546,7 +546,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		b_changed = TRUE;
 		if (read_flag != rfDefault)
 			break;
-		if (!exmdb_client::get_message_property(dir,
+		if (!exmdb_client->get_message_property(dir,
 		    username, CP_ACP, message_id,
 		    PR_READ_RECEIPT_REQUESTED, &pvalue))
 			return FALSE;
@@ -555,7 +555,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		break;
 	case rfClearReadFlag:
 	case rfClearReadFlag | rfSuppressReceipt:
-		if (!exmdb_client::get_message_property(dir, username, CP_ACP,
+		if (!exmdb_client->get_message_property(dir, username, CP_ACP,
 		    message_id, PR_READ, &pvalue))
 			return FALSE;
 		if (!pvb_enabled(pvalue))
@@ -564,7 +564,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		b_changed = TRUE;
 		break;
 	case rfGenerateReceiptOnly:
-		if (!exmdb_client::get_message_property(dir, username, CP_ACP,
+		if (!exmdb_client->get_message_property(dir, username, CP_ACP,
 		    message_id, PR_READ_RECEIPT_REQUESTED, &pvalue))
 			return FALSE;
 		if (pvb_enabled(pvalue))
@@ -574,32 +574,32 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 	case rfClearNotifyUnread:
 	case rfClearNotifyRead | rfClearNotifyUnread:
 		if (read_flag & rfClearNotifyRead &&
-		    exmdb_client::get_message_property(dir, username, CP_ACP,
+		    exmdb_client->get_message_property(dir, username, CP_ACP,
 		    message_id, PR_READ_RECEIPT_REQUESTED, &pvalue) &&
 		    pvb_enabled(pvalue) &&
-		    !exmdb_client::remove_message_property(dir,
+		    !exmdb_client->remove_message_property(dir,
 		    pinfo->cpid, message_id, PR_READ_RECEIPT_REQUESTED))
 			return FALSE;
 		if (read_flag & rfClearNotifyUnread &&
-		    exmdb_client::get_message_property(dir,
+		    exmdb_client->get_message_property(dir,
 		    username, CP_ACP, message_id,
 		    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &pvalue) &&
 		    pvb_enabled(pvalue) &&
-		    !exmdb_client::remove_message_property(dir, pinfo->cpid,
+		    !exmdb_client->remove_message_property(dir, pinfo->cpid,
 		    message_id, PR_NON_RECEIPT_NOTIFICATION_REQUESTED))
 			return FALSE;
-		if (!exmdb_client::mark_modified(dir, message_id))
+		if (!exmdb_client->mark_modified(dir, message_id))
 			return FALSE;	
 		return TRUE;
 	default:
 		return TRUE;
 	}
-	if (b_changed && !exmdb_client::set_message_read_state(dir,
+	if (b_changed && !exmdb_client->set_message_read_state(dir,
 	    username, message_id, tmp_byte, &read_cn))
 		return FALSE;
 	if (!b_notify)
 		return TRUE;
-	if (!exmdb_client::get_message_brief(dir, pinfo->cpid, message_id, &pbrief))
+	if (!exmdb_client->get_message_brief(dir, pinfo->cpid, message_id, &pbrief))
 		return FALSE;	
 	if (pbrief != nullptr)
 		common_util_notify_receipt(plogon->get_account(),
@@ -609,7 +609,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, deconst(&fake_false)},
 	};
 	const TPROPVAL_ARRAY propvals = {std::size(propval_buff), deconst(propval_buff)};
-	exmdb_client::set_message_properties(dir, username,
+	exmdb_client->set_message_properties(dir, username,
 		CP_ACP, message_id, &propvals, &problems);
 	return TRUE;
 }
@@ -642,19 +642,19 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 		const RESTRICTION res_top = {RES_PROPERTY, {deconst(&res_prop)}};
 		uint32_t table_id = 0, row_count = 0;
 		auto username = plogon->readstate_user();
-		if (!exmdb_client::load_content_table(plogon->dir, CP_ACP,
+		if (!exmdb_client->load_content_table(plogon->dir, CP_ACP,
 		    fld->folder_id, username, TABLE_FLAG_NONOTIFICATIONS,
 		    &res_top, nullptr, &table_id, &row_count))
 			return ecError;
 		static constexpr uint32_t one_proptag = PidTagMid;
 		static constexpr PROPTAG_ARRAY proptags = {1, deconst(&one_proptag)};
 		TARRAY_SET result_set;
-		if (!exmdb_client::query_table(plogon->dir, username,
+		if (!exmdb_client->query_table(plogon->dir, username,
 		    CP_ACP, table_id, &proptags, 0, row_count, &result_set)) {
-			exmdb_client::unload_table(plogon->dir, table_id);
+			exmdb_client->unload_table(plogon->dir, table_id);
 			return ecError;
 		}
-		exmdb_client::unload_table(plogon->dir, table_id);
+		exmdb_client->unload_table(plogon->dir, table_id);
 		if (result_set.count > 0) {
 			alt_msgs.pll = cu_alloc<uint64_t>(result_set.count);
 			if (alt_msgs.pll == nullptr)

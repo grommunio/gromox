@@ -120,7 +120,7 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	if (pproplist->set(PidTagParentFolderId, &parent_id) != 0)
 		return FALSE;
 	auto dir = pctx->pstream->plogon->get_dir();
-	if (!exmdb_client::allocate_cn(dir, &change_num))
+	if (!exmdb_client->allocate_cn(dir, &change_num))
 		return FALSE;
 	if (pproplist->set(PidTagChangeNumber, &change_num) != 0)
 		return FALSE;
@@ -137,7 +137,7 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	ec_error_t err = ecSuccess;
-	if (!exmdb_client::create_folder(dir, pinfo->cpid, pproplist,
+	if (!exmdb_client->create_folder(dir, pinfo->cpid, pproplist,
 	    pfolder_id, &err) || err != ecSuccess || *pfolder_id == 0)
 		return FALSE;
 	auto username = pctx->pstream->plogon->eff_user();
@@ -157,7 +157,7 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	};
 	const PERMISSION_DATA permission_row =
 		{ROW_ADD, {std::size(propval_buff), deconst(propval_buff)}};
-	exmdb_client::update_folder_permission(dir,
+	exmdb_client->update_folder_permission(dir,
 		*pfolder_id, FALSE, 1, &permission_row);
 	return TRUE;
 }
@@ -167,7 +167,7 @@ static BOOL fastupctx_object_empty_folder(fastupctx_object *pctx,
 {
 	BOOL b_partial;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (!exmdb_client::empty_folder(pctx->pstream->plogon->get_dir(),
+	if (!exmdb_client->empty_folder(pctx->pstream->plogon->get_dir(),
 	    pinfo->cpid, pctx->pstream->plogon->eff_user(),
 	    folder_id, flags | DELETE_HARD_DELETE,
 	    &b_partial))
@@ -194,7 +194,7 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 		pproplist->erase(t);
 	auto plogon = pctx->pstream->plogon;
 	auto dir = plogon->get_dir();
-	if (!exmdb_client::allocate_cn(dir, &change_num))
+	if (!exmdb_client->allocate_cn(dir, &change_num))
 		return ecRpcFailed;
 	if (pproplist->set(PidTagChangeNumber, &change_num) != 0)
 		return ecRpcFailed;
@@ -211,7 +211,7 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 		return ecRpcFailed;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::write_message(dir, pinfo->cpid, folder_id,
+	if (!exmdb_client->write_message(dir, pinfo->cpid, folder_id,
 	    pctx->m_content, &e_result) || e_result != ecSuccess)
 		return e_result;
 	return ecSuccess;
@@ -408,7 +408,7 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			const TARRAY_SET tmp_rcpts = {1, &m_props};
-			if (!exmdb_client::update_message_instance_rcpts(dir,
+			if (!exmdb_client->update_message_instance_rcpts(dir,
 			    pnode->instance_id, &tmp_rcpts))
 				return ecRpcFailed;
 			tpropval_array_free(m_props);
@@ -436,7 +436,7 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			instance_id = fastupctx_object_get_last_message_instance(pctx);
-			if (!exmdb_client::create_attachment_instance(dir,
+			if (!exmdb_client->create_attachment_instance(dir,
 			    instance_id, &tmp_id, &tmp_num) || tmp_id == 0)
 				return ecRpcFailed;
 		} else {
@@ -462,10 +462,10 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			ec_error_t e_result = ecRpcFailed;
-			if (!exmdb_client::flush_instance(dir, pnode->instance_id,
+			if (!exmdb_client->flush_instance(dir, pnode->instance_id,
 			    &e_result) || e_result != ecSuccess)
 				return e_result;
-			if (!exmdb_client::unload_instance(dir, pnode->instance_id))
+			if (!exmdb_client->unload_instance(dir, pnode->instance_id))
 				return ecRpcFailed;
 		}
 		pctx->marker_stack.erase(pnode);
@@ -481,15 +481,15 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 					return ecRpcFailed;
 			}
 			instance_id = fastupctx_object_get_last_attachment_instance(pctx);
-			if (!exmdb_client::load_embedded_instance(dir,
+			if (!exmdb_client->load_embedded_instance(dir,
 			    false, instance_id, &tmp_id))
 				return ecRpcFailed;
 			if (0 == tmp_id) {
-				if (!exmdb_client::load_embedded_instance(dir,
+				if (!exmdb_client->load_embedded_instance(dir,
 				    TRUE, instance_id, &tmp_id) || tmp_id == 0)
 					return ecRpcFailed;
 			} else {
-				if (!exmdb_client::clear_message_instance(dir,
+				if (!exmdb_client->clear_message_instance(dir,
 				    instance_id))
 					return ecRpcFailed;
 			}
@@ -526,10 +526,10 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			ec_error_t e_result = ecRpcFailed;
-			if (!exmdb_client::flush_instance(dir, pnode->instance_id,
+			if (!exmdb_client->flush_instance(dir, pnode->instance_id,
 			    &e_result) || e_result != ecSuccess)
 				return e_result;
-			if (!exmdb_client::unload_instance(dir, pnode->instance_id))
+			if (!exmdb_client->unload_instance(dir, pnode->instance_id))
 				return ecRpcFailed;
 		}
 		pctx->marker_stack.erase(pnode);
@@ -564,7 +564,7 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 			case 0:
 				instance_id =
 					fastupctx_object_get_last_message_instance(pctx);
-				if (!exmdb_client::empty_message_instance_rcpts(dir,
+				if (!exmdb_client->empty_message_instance_rcpts(dir,
 				    instance_id))
 					return FALSE;	
 			case STARTEMBED:
@@ -593,7 +593,7 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 		case ROOT_ELEMENT_MESSAGECONTENT:
 			switch (last_marker) {
 			case 0:
-				if (!exmdb_client::empty_message_instance_attachments(dir,
+				if (!exmdb_client->empty_message_instance_attachments(dir,
 				    fastupctx_object_get_last_message_instance(pctx)))
 					return FALSE;
 				break;
@@ -727,7 +727,7 @@ ec_error_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 	case NEWATTACH:
 		if (pctx->root_element == ROOT_ELEMENT_ATTACHMENTCONTENT ||
 		    pctx->root_element == ROOT_ELEMENT_MESSAGECONTENT)
-			return exmdb_client::set_instance_property(pctx->pstream->plogon->get_dir(),
+			return exmdb_client->set_instance_property(pctx->pstream->plogon->get_dir(),
 			       pnode->instance_id, ppropval, &b_result) == TRUE ?
 			       ecSuccess : ecRpcFailed;
 		return pnode->props->set(*ppropval) == 0 ? ecSuccess : ecRpcFailed;

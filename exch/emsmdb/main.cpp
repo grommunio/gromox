@@ -239,7 +239,7 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_ERR, "emsmdb: failed to run common util");
 			return FALSE;
 		}
-		if (exmdb_client::run() != 0) {
+		if (exmdb_client->run() != 0) {
 			mlog(LV_ERR, "emsmdb: failed to run exmdb client");
 			return FALSE;
 		}

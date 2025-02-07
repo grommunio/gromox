@@ -36,7 +36,7 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 	pattachment->open_flags = open_flags;
 	auto dir = pparent->plogon->get_dir();
 	if (ATTACHMENT_NUM_INVALID == attachment_num) {
-		if (!exmdb_client::create_attachment_instance(dir,
+		if (!exmdb_client->create_attachment_instance(dir,
 		    pparent->instance_id, &pattachment->instance_id,
 		    &pattachment->attachment_num))
 			return NULL;
@@ -45,7 +45,7 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 			return NULL;	
 		pattachment->b_new = TRUE;
 	} else {
-		if (!exmdb_client::load_attachment_instance(dir,
+		if (!exmdb_client->load_attachment_instance(dir,
 		    pparent->instance_id, attachment_num, &pattachment->instance_id))
 			return NULL;
 		pattachment->attachment_num = attachment_num;
@@ -68,7 +68,7 @@ BOOL attachment_object::init_attachment()
 	};
 	const TPROPVAL_ARRAY propvals = {std::size(propbuf), deconst(propbuf)};
 	PROBLEM_ARRAY problems;
-	return exmdb_client::set_instance_properties(pattachment->pparent->plogon->get_dir(),
+	return exmdb_client->set_instance_properties(pattachment->pparent->plogon->get_dir(),
 	       pattachment->instance_id, &propvals, &problems);
 }
 
@@ -76,7 +76,7 @@ attachment_object::~attachment_object()
 {
 	auto pattachment = this;
 	if (pattachment->instance_id != 0)
-		exmdb_client::unload_instance(pattachment->pparent->plogon->get_dir(),
+		exmdb_client->unload_instance(pattachment->pparent->plogon->get_dir(),
 			pattachment->instance_id);
 }
 
@@ -102,7 +102,7 @@ ec_error_t attachment_object::save()
 		return ecRpcFailed;
 
 	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::flush_instance(pattachment->pparent->plogon->get_dir(),
+	if (!exmdb_client->flush_instance(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, &e_result) || e_result != ecSuccess)
 		return e_result;
 	pattachment->b_new = FALSE;
@@ -140,7 +140,7 @@ BOOL attachment_object::commit_stream_object(stream_object *pstream)
 		it = stream_list.erase(it);
 		tmp_propval.proptag = pstream->get_proptag();
 		tmp_propval.pvalue  = deconst(pstream->get_content());
-		return exmdb_client::set_instance_property(pattachment->pparent->plogon->get_dir(),
+		return exmdb_client->set_instance_property(pattachment->pparent->plogon->get_dir(),
 		       pattachment->instance_id, &tmp_propval, &result) ? TRUE : false;
 	}
 	return TRUE;
@@ -156,7 +156,7 @@ BOOL attachment_object::flush_streams()
 		auto pstream = stream_list.front();
 		tmp_propval.proptag = pstream->get_proptag();
 		tmp_propval.pvalue  = deconst(pstream->get_content());
-		if (!exmdb_client::set_instance_property(pattachment->pparent->plogon->get_dir(),
+		if (!exmdb_client->set_instance_property(pattachment->pparent->plogon->get_dir(),
 		    pattachment->instance_id, &tmp_propval, &result))
 			return FALSE;
 		stream_list.erase(stream_list.begin());
@@ -170,7 +170,7 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	auto pattachment = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (!exmdb_client::get_instance_all_proptags(pattachment->pparent->plogon->get_dir(),
+	if (!exmdb_client->get_instance_all_proptags(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, &tmp_proptags))
 		return FALSE;	
 	auto nodes_num = stream_list.size() + 1;
@@ -284,7 +284,7 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	TPROPVAL_ARRAY tmp_propvals;
-	if (!exmdb_client::get_instance_properties(pattachment->pparent->plogon->get_dir(),
+	if (!exmdb_client->get_instance_properties(pattachment->pparent->plogon->get_dir(),
 	    size_limit, pattachment->instance_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count == 0)
@@ -330,7 +330,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	if (tmp_propvals.count == 0)
 		return TRUE;
 	PROBLEM_ARRAY tmp_problems;
-	if (!exmdb_client::set_instance_properties(pattachment->pparent->plogon->get_dir(),
+	if (!exmdb_client->set_instance_properties(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
 	if (0 == tmp_problems.count) {
@@ -377,7 +377,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	PROBLEM_ARRAY tmp_problems;
-	if (!exmdb_client::remove_instance_properties(pattachment->pparent->plogon->get_dir(),
+	if (!exmdb_client->remove_instance_properties(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, &tmp_proptags, &tmp_problems))
 		return FALSE;	
 	if (0 == tmp_problems.count) {
@@ -407,14 +407,14 @@ BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
 	ATTACHMENT_CONTENT attctnt;
 	
 	auto dstdir = pparent->plogon->get_dir();
-	if (!exmdb_client::is_descendant_instance(dstdir,
+	if (!exmdb_client->is_descendant_instance(dstdir,
 	    pattachment_src->instance_id, pattachment->instance_id, pb_cycle))
 		return FALSE;	
 	if (*pb_cycle)
 		return TRUE;
 	if (!pattachment_src->flush_streams())
 		return FALSE;
-	if (!exmdb_client::read_attachment_instance(pattachment_src->pparent->plogon->get_dir(),
+	if (!exmdb_client->read_attachment_instance(pattachment_src->pparent->plogon->get_dir(),
 	    pattachment_src->instance_id, &attctnt))
 		return FALSE;
 	common_util_remove_propvals(&attctnt.proplist, PR_ATTACH_NUM);
@@ -429,7 +429,7 @@ BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
 	}
 	if (pexcluded_proptags->has(PR_ATTACH_DATA_OBJ))
 		attctnt.pembedded = NULL;
-	if (!exmdb_client::write_attachment_instance(dstdir,
+	if (!exmdb_client->write_attachment_instance(dstdir,
 	    pattachment->instance_id, &attctnt, b_force, pproblems))
 		return FALSE;	
 	pattachment->b_touched = TRUE;

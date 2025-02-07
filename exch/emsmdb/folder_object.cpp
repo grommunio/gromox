@@ -50,7 +50,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	auto pfolder = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (!exmdb_client::get_folder_all_proptags(pfolder->plogon->get_dir(),
+	if (!exmdb_client->get_folder_all_proptags(pfolder->plogon->get_dir(),
 	    pfolder->folder_id, &tmp_proptags))
 		return FALSE;		
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 15);
@@ -160,7 +160,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 		if (*outvalue == nullptr)
 			return FALSE;
 		auto rpc_info = get_rpc_info();
-		return exmdb_client::get_public_folder_unread_count(dir,
+		return exmdb_client->get_public_folder_unread_count(dir,
 		       rpc_info.username, pfolder->folder_id, v);
 	}
 	case PR_ACCESS:
@@ -184,7 +184,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 			*v = rightsAll | frightsContact;
 			return TRUE;
 		}
-		if (!exmdb_client::get_folder_perm(dir,
+		if (!exmdb_client->get_folder_perm(dir,
 		    pfolder->folder_id, eff_user, v))
 			return FALSE;
 		return TRUE;
@@ -193,7 +193,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 		*outvalue = cu_fid_to_entryid(pfolder->plogon, pfolder->folder_id);
 		return TRUE;
 	case PR_PARENT_ENTRYID:
-		if (!exmdb_client::get_folder_property(dir,
+		if (!exmdb_client->get_folder_property(dir,
 		    CP_ACP, pfolder->folder_id, PidTagParentFolderId,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
@@ -206,11 +206,11 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 			*outvalue = deconst(&fake_bin);
 			return TRUE;
 		}
-		if (!exmdb_client::get_folder_property(dir,
+		if (!exmdb_client->get_folder_property(dir,
 		    CP_ACP, pfolder->folder_id, PidTagParentFolderId,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		if (!exmdb_client::get_folder_property(dir,
+		if (!exmdb_client->get_folder_property(dir,
 		    CP_ACP, *static_cast<uint64_t *>(pvalue), PR_SOURCE_KEY,
 		    outvalue))
 			return FALSE;
@@ -268,7 +268,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 	case PR_REM_ONLINE_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return FALSE;
-		if (!exmdb_client::get_folder_property(dir,
+		if (!exmdb_client->get_folder_property(dir,
 		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_REM_ONLINE_ENTRYID, &pvalue) || pvalue == nullptr)
 			return FALSE;
@@ -277,7 +277,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 	case PR_ADDITIONAL_REN_ENTRYIDS: {
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return FALSE;	
-		if (!exmdb_client::get_folder_property(dir,
+		if (!exmdb_client->get_folder_property(dir,
 		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS, &pvalue))
 			return FALSE;
@@ -325,7 +325,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 	case PR_ADDITIONAL_REN_ENTRYIDS_EX: {
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return FALSE;
-		if (!exmdb_client::get_folder_property(dir,
+		if (!exmdb_client->get_folder_property(dir,
 		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS_EX, &pvalue))
 			return FALSE;
@@ -355,7 +355,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 	case PR_FREEBUSY_ENTRYIDS: {
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return FALSE;
-		if (!exmdb_client::get_folder_property(dir,
+		if (!exmdb_client->get_folder_property(dir,
 		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_FREEBUSY_ENTRYIDS, &pvalue))
 			return FALSE;
@@ -419,7 +419,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	TPROPVAL_ARRAY tmp_propvals;
-	if (!exmdb_client::get_folder_properties(pfolder->plogon->get_dir(),
+	if (!exmdb_client->get_folder_properties(pfolder->plogon->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count > 0) {
@@ -468,11 +468,11 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	if (tmp_propvals.count == 0)
 		return TRUE;
 	auto dir = plogon->get_dir();
-	if (!exmdb_client::allocate_cn(dir, &change_num))
+	if (!exmdb_client->allocate_cn(dir, &change_num))
 		return FALSE;
 	tmp_propvals.emplace_back(PidTagChangeNumber, &change_num);
 	
-	if (!exmdb_client::get_folder_property(dir,
+	if (!exmdb_client->get_folder_property(dir,
 	    CP_ACP, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)))
 		return FALSE;
@@ -488,7 +488,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	tmp_propvals.emplace_back(PR_LAST_MODIFICATION_TIME, &last_time);
 	
 	PROBLEM_ARRAY tmp_problems;
-	if (!exmdb_client::set_folder_properties(pfolder->plogon->get_dir(),
+	if (!exmdb_client->set_folder_properties(pfolder->plogon->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
 	if (tmp_problems.count == 0)
@@ -524,14 +524,14 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	auto dir = plogon->get_dir();
-	if (!exmdb_client::remove_folder_properties(dir,
+	if (!exmdb_client->remove_folder_properties(dir,
 	    pfolder->folder_id, &tmp_proptags))
 		return FALSE;	
 
 	BINARY *pbin_pcl = nullptr;
-	if (!exmdb_client::allocate_cn(dir, &change_num))
+	if (!exmdb_client->allocate_cn(dir, &change_num))
 		return TRUE;
-	if (!exmdb_client::get_folder_property(dir,
+	if (!exmdb_client->get_folder_property(dir,
 	    CP_ACP, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)))
 		return FALSE;
@@ -550,7 +550,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	};
 	const TPROPVAL_ARRAY tmp_propvals = {std::size(propval_buff), deconst(propval_buff)};
 	PROBLEM_ARRAY tmp_problems;
-	exmdb_client::set_folder_properties(dir, CP_ACP,
+	exmdb_client->set_folder_properties(dir, CP_ACP,
 		pfolder->folder_id, &tmp_propvals, &tmp_problems);
 	return TRUE;
 }

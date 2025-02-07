@@ -60,7 +60,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		if (mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 			return ecError;
 		maildir = std::move(mres.maildir);
-		if (!exmdb_client::get_mbox_perm(maildir.c_str(),
+		if (!exmdb_client->get_mbox_perm(maildir.c_str(),
 		    rpc_info.username, &permission))
 			return ecError;
 		if (permission == rightsNone)
@@ -89,7 +89,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		{PR_STORE_RECORD_KEY, PR_OOF_STATE};
 	static constexpr PROPTAG_ARRAY proptags =
 		{std::size(proptag_buff), deconst(proptag_buff)};
-	if (!exmdb_client::get_store_properties(maildir.c_str(), CP_ACP,
+	if (!exmdb_client->get_store_properties(maildir.c_str(), CP_ACP,
 	    &proptags, &propvals))
 		return ecError;
 	auto bin = propvals.get<const BINARY>(PR_STORE_RECORD_KEY);
@@ -206,7 +206,7 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	pfolder_id[12] = 0;
 	
 	
-	if (!exmdb_client::get_store_property(homedir, CP_ACP,
+	if (!exmdb_client->get_store_property(homedir, CP_ACP,
 	    PR_STORE_RECORD_KEY, &pvalue))
 		return ecError;
 	if (pvalue == nullptr)
@@ -246,7 +246,7 @@ ec_error_t rop_getreceivefolder(const char *pstr_class, uint64_t *pfolder_id,
 		return ecNotSupported;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	if (!exmdb_client::get_folder_by_class(plogon->get_dir(), pstr_class,
+	if (!exmdb_client->get_folder_by_class(plogon->get_dir(), pstr_class,
 	    pfolder_id, ppstr_explicit))
 		return ecError;
 	return ecSuccess;
@@ -275,7 +275,7 @@ ec_error_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 	if (!plogon->is_private())
 		return ecNotSupported;
 	if (0 != folder_id) {
-		if (!exmdb_client::get_folder_property(plogon->get_dir(),
+		if (!exmdb_client->get_folder_property(plogon->get_dir(),
 		    CP_ACP, folder_id, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
 		if (pvalue == nullptr)
@@ -285,7 +285,7 @@ ec_error_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 	}
 	if (plogon->logon_mode != logon_mode::owner)
 		return ecAccessDenied;
-	if (!exmdb_client::set_folder_by_class(plogon->get_dir(),
+	if (!exmdb_client->set_folder_by_class(plogon->get_dir(),
 	    folder_id, pstr_class, &b_result))
 		return ecError;
 	if (!b_result)
@@ -310,7 +310,7 @@ ec_error_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
 		return ecNotSupported;
 	if (!plogon->is_private())
 		return ecNotSupported;
-	if (!exmdb_client::get_folder_class_table(plogon->get_dir(), &class_table))
+	if (!exmdb_client->get_folder_class_table(plogon->get_dir(), &class_table))
 		return ecError;
 	if (class_table.count == 0)
 		return ecNoReceiveFolder;

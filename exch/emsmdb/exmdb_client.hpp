@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <optional>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
@@ -29,4 +30,4 @@ class GX_EXPORT exmdb_client_shm final {
 #undef IDLOUT
 };
 
-using exmdb_client = exmdb_client_shm;
+extern std::optional<exmdb_client_shm> exmdb_client;

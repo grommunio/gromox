@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail_func.hpp>
@@ -15,6 +16,8 @@
 #include "exmdb_client.hpp"
 
 using namespace gromox;
+
+std::optional<exmdb_client_shm> exmdb_client{std::in_place_t{}};
 
 #define EXMIDL(n, p) decltype(exmdb_client_shm::n) exmdb_client_shm::n;
 #define IDLOUT
@@ -66,7 +69,7 @@ BOOL exmdb_client_shm::get_named_propid(const char *dir, BOOL b_create,
 {
 	PROPID_ARRAY tmp_propids;
 	const PROPNAME_ARRAY tmp_propnames = {1, deconst(ppropname)};
-	if (!exmdb_client::get_named_propids(dir, b_create,
+	if (!exmdb_client->get_named_propids(dir, b_create,
 	    &tmp_propnames, &tmp_propids) || tmp_propids.size() != 1)
 		return FALSE;	
 	*ppropid = tmp_propids[0];
@@ -78,7 +81,7 @@ BOOL exmdb_client_shm::get_named_propname(const char *dir, uint16_t propid,
 {
 	PROPNAME_ARRAY tmp_propnames;
 	
-	if (!exmdb_client::get_named_propnames(dir, {propid}, &tmp_propnames) ||
+	if (!exmdb_client->get_named_propnames(dir, {propid}, &tmp_propnames) ||
 	    tmp_propnames.size() != 1)
 		return FALSE;	
 	*ppropname = *tmp_propnames.ppropname;
@@ -93,7 +96,7 @@ BOOL exmdb_client_shm::get_store_property(const char *dir, cpid_t cpid,
 {
 	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	TPROPVAL_ARRAY tmp_propvals;
-	if (!exmdb_client::get_store_properties(dir, cpid,
+	if (!exmdb_client->get_store_properties(dir, cpid,
 	    &tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
@@ -105,7 +108,7 @@ BOOL exmdb_client_shm::get_folder_property(const char *dir, cpid_t cpid,
 {
 	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	TPROPVAL_ARRAY tmp_propvals;
-	if (!exmdb_client::get_folder_properties(dir, cpid, folder_id,
+	if (!exmdb_client->get_folder_properties(dir, cpid, folder_id,
 	    &tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
@@ -117,7 +120,7 @@ BOOL exmdb_client_shm::delete_message(const char *dir, int account_id, cpid_t cp
 {
 	BOOL b_partial;
 	const EID_ARRAY message_ids = {1, &message_id};
-	if (!exmdb_client::delete_messages(dir, cpid, nullptr, folder_id,
+	if (!exmdb_client->delete_messages(dir, cpid, nullptr, folder_id,
 	    &message_ids, b_hard, &b_partial))
 		return FALSE;	
 	*pb_done = !b_partial;
@@ -129,7 +132,7 @@ BOOL exmdb_client_shm::get_instance_property(const char *dir, uint32_t instance_
 {
 	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	TPROPVAL_ARRAY tmp_propvals;
-	if (!exmdb_client::get_instance_properties(dir, 0, instance_id,
+	if (!exmdb_client->get_instance_properties(dir, 0, instance_id,
 	    &tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
@@ -141,7 +144,7 @@ BOOL exmdb_client_shm::set_instance_property(const char *dir, uint32_t instance_
 {
 	PROBLEM_ARRAY tmp_problems;
 	const TPROPVAL_ARRAY tmp_propvals = {1, deconst(ppropval)};
-	if (!exmdb_client::set_instance_properties(dir, instance_id,
+	if (!exmdb_client->set_instance_properties(dir, instance_id,
 	    &tmp_propvals, &tmp_problems))
 		return FALSE;	
 	*presult = tmp_problems.count == 0 ? 0 : tmp_problems.pproblem->err;
@@ -153,7 +156,7 @@ BOOL exmdb_client_shm::remove_instance_property(const char *dir, uint32_t instan
 {
 	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	PROBLEM_ARRAY tmp_problems;
-	if (!exmdb_client::remove_instance_properties(dir, instance_id,
+	if (!exmdb_client->remove_instance_properties(dir, instance_id,
 	    &tmp_proptags, &tmp_problems))
 		return FALSE;	
 	*presult = tmp_problems.count == 0 ? 0 : tmp_problems.pproblem->err;
@@ -165,7 +168,7 @@ BOOL exmdb_client_shm::get_message_property(const char *dir, const char *usernam
 {
 	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	TPROPVAL_ARRAY tmp_propvals;
-	if (!exmdb_client::get_message_properties(dir, username, cpid,
+	if (!exmdb_client->get_message_properties(dir, username, cpid,
 	    message_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
@@ -178,7 +181,7 @@ BOOL exmdb_client_shm::set_message_property(const char *dir, const char *usernam
 {
 	PROBLEM_ARRAY tmp_problems;
 	const TPROPVAL_ARRAY tmp_propvals = {1, deconst(ppropval)};
-	if (!exmdb_client::set_message_properties(dir, username, cpid,
+	if (!exmdb_client->set_message_properties(dir, username, cpid,
 	    message_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
 	*presult = tmp_problems.count == 0 ? 0 : tmp_problems.pproblem->err;
@@ -189,7 +192,7 @@ BOOL exmdb_client_shm::remove_message_property(const char *dir, cpid_t cpid,
     uint64_t message_id, uint32_t proptag)
 {
 	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
-	return exmdb_client::remove_message_properties(dir, cpid,
+	return exmdb_client->remove_message_properties(dir, cpid,
 	       message_id, &tmp_proptags);
 }
 
@@ -199,7 +202,7 @@ BOOL exmdb_client_shm::is_message_owner(const char *dir, uint64_t message_id,
 	BINARY *pbin;
 	EMSAB_ENTRYID ab_entryid;
 	
-	if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
+	if (!exmdb_client->get_message_property(dir, nullptr, CP_ACP,
 	    message_id, PR_CREATOR_ENTRYID, reinterpret_cast<void **>(&pbin)))
 		return FALSE;
 	if (NULL == pbin) {

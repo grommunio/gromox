@@ -521,7 +521,7 @@ ec_error_t replguid_to_replid(const logon_object &logon,
 			return ecInvalidParam;
 	}
 	ec_error_t ret = ecSuccess;
-	if (!exmdb_client::get_mapping_replid(logon.get_dir(),
+	if (!exmdb_client->get_mapping_replid(logon.get_dir(),
 	    guid, &replid, &ret))
 		return ecError;
 	return ret;
@@ -553,7 +553,7 @@ ec_error_t replid_to_replguid(const logon_object &logon, uint16_t replid,
 		guid = exc_replid4;
 	else if (replid == 5)
 		guid = logon.mailbox_guid;
-	else if (!exmdb_client::get_mapping_guid(dir, replid, &b_found, &guid))
+	else if (!exmdb_client->get_mapping_guid(dir, replid, &b_found, &guid))
 		return ecError;
 	else if (!b_found)
 		return ecNotFound;
@@ -1268,7 +1268,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	PROBLEM_ARRAY tmp_problems;
 	auto dir = plogon->get_dir();
 	
-	if (!exmdb_client::allocate_cn(dir, &change_num))
+	if (!exmdb_client->allocate_cn(dir, &change_num))
 		return FALSE;	
 	const TAGGED_PROPVAL propval_buff[] = {
 		{PidTagChangeNumber, &change_num},
@@ -1277,17 +1277,17 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	if (propval_buff[1].pvalue == nullptr)
 		return FALSE;
 	const TPROPVAL_ARRAY tmp_propvals = {std::size(propval_buff), deconst(propval_buff)};
-	if (!exmdb_client::set_message_properties(dir, nullptr, CP_ACP,
+	if (!exmdb_client->set_message_properties(dir, nullptr, CP_ACP,
 	    message_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
-	if (!exmdb_client::get_message_group_id(dir, message_id, &pgroup_id))
+	if (!exmdb_client->get_message_group_id(dir, message_id, &pgroup_id))
 		return FALSE;	
 	const property_groupinfo *pgpinfo;
 	if (NULL == pgroup_id) {
 		pgpinfo = plogon->get_last_property_groupinfo();
 		if (pgpinfo == nullptr)
 			return FALSE;
-		if (!exmdb_client::set_message_group_id(dir,
+		if (!exmdb_client->set_message_group_id(dir,
 		    message_id, pgpinfo->group_id))
 			return FALSE;	
 	}  else {
@@ -1322,7 +1322,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 		}
 		
 	}
-	return exmdb_client::save_change_indices(dir, message_id,
+	return exmdb_client->save_change_indices(dir, message_id,
 	       change_num, pindices.get(), pungroup_proptags.get());
 }
 
@@ -1340,7 +1340,7 @@ static BOOL common_util_get_propids(
 	const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids)
 {
-	return exmdb_client::get_named_propids(common_util_get_dir(), false,
+	return exmdb_client->get_named_propids(common_util_get_dir(), false,
 	       ppropnames, ppropids);
 }
 
@@ -1349,7 +1349,7 @@ static BOOL common_util_get_propname(
 {
 	PROPNAME_ARRAY propnames;
 	
-	if (!exmdb_client::get_named_propnames(common_util_get_dir(),
+	if (!exmdb_client->get_named_propnames(common_util_get_dir(),
 	    {propid}, &propnames) || propnames.size() != 1)
 		return FALSE;
 	*pppropname = propnames.ppropname;
@@ -1426,13 +1426,13 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	auto dir = plogon->get_dir();
 	auto log_id = dir + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
 	cpid_t cpid = pinfo == nullptr ? static_cast<cpid_t>(1252) : pinfo->cpid;
-	if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
+	if (!exmdb_client->get_message_property(dir, nullptr, CP_ACP,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr) {
 		mlog2(LV_ERR, "E-1289: exrpc get_message_property %s failed", log_id.c_str());
 		return ecNotFound;
 	}
 	auto parent_id = *static_cast<uint64_t *>(pvalue);
-	if (!exmdb_client::read_message(dir, nullptr, cpid,
+	if (!exmdb_client->read_message(dir, nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr) {
 		mlog2(LV_ERR, "E-1288: exrpc read_message %s failed", log_id.c_str());
 		return ecRpcFailed;
@@ -1522,22 +1522,22 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 			mlog2(LV_WARN, "W-1279: PR_TARGET_ENTRYID inconvertible in %s", log_id.c_str());
 			return ecWarnWithErrors;	
 		}
-		if (!exmdb_client::clear_submit(dir, message_id, false)) {
+		if (!exmdb_client->clear_submit(dir, message_id, false)) {
 			mlog2(LV_WARN, "W-1278: exrpc clear_submit %s failed", log_id.c_str());
 			return ecWarnWithErrors;
 		}
-		if (!exmdb_client::movecopy_message(dir, cpid, message_id,
+		if (!exmdb_client->movecopy_message(dir, cpid, message_id,
 		    folder_id, new_id, TRUE, &b_result)) {
 			mlog2(LV_WARN, "W-1277: exrpc movecopy_message %s failed", log_id.c_str());
 			return ecWarnWithErrors;
 		}
 		return ecSuccess;
 	} else if (b_delete) {
-		exmdb_client::delete_message(dir, plogon->account_id, cpid,
+		exmdb_client->delete_message(dir, plogon->account_id, cpid,
 			parent_id, message_id, TRUE, &b_result);
 		return ecSuccess;
 	}
-	if (!exmdb_client::clear_submit(dir, message_id, false)) {
+	if (!exmdb_client->clear_submit(dir, message_id, false)) {
 		mlog2(LV_WARN, "W-1276: exrpc clear_submit %s failed", log_id.c_str());
 		return ecWarnWithErrors;
 	}
@@ -1548,7 +1548,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
 
 	const EID_ARRAY ids = {1, &message_id};
-	if (!exmdb_client::movecopy_messages(dir, cpid,
+	if (!exmdb_client->movecopy_messages(dir, cpid,
 	    false, STORE_OWNER_GRANTED, parent_id, folder_id, false,
 	    &ids, &b_partial)) {
 		mlog2(LV_WARN, "W-1275: exrpc movecopy_message %s failed", log_id.c_str());

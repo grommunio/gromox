@@ -108,7 +108,7 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 	auto pseen     = (pctx->sync_flags & SYNC_NORMAL) ? pctx->pstate->pseen.get() : nullptr;
 	BOOL b_ordered = (pctx->extra_flags & SYNC_EXTRA_FLAG_ORDERBYDELIVERYTIME) ? TRUE : false;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (!exmdb_client::get_content_sync(pctx->pstream->plogon->get_dir(),
+	if (!exmdb_client->get_content_sync(pctx->pstream->plogon->get_dir(),
 	    pctx->pfolder->folder_id, pctx->pstream->plogon->readstate_user(),
 	    pctx->pstate->pgiven.get(), pseen, pseen_fai, pread,
 	    pinfo->cpid, pctx->prestriction, b_ordered,
@@ -219,7 +219,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	if (pctx->sync_type != SYNC_TYPE_HIERARCHY)
 		return FALSE;
 	auto dir = pctx->pstream->plogon->get_dir();
-	if (!exmdb_client::get_hierarchy_sync(dir,
+	if (!exmdb_client->get_hierarchy_sync(dir,
 	    pctx->pfolder->folder_id, pctx->pstream->plogon->eff_user(),
 	    pctx->pstate->pgiven.get(),
 	    pctx->pstate->pseen.get(), &fldchgs, &last_changenum, &given_folders,
@@ -296,7 +296,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				tmp_bin.pb = NULL;
 				psk = &tmp_bin;
 			} else {
-				if (!exmdb_client::get_folder_property(dir,
+				if (!exmdb_client->get_folder_property(dir,
 				    CP_ACP, parent_fid, PR_SOURCE_KEY, &psk))
 					return FALSE;	
 				if (psk == nullptr) {
@@ -743,7 +743,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto dir = pctx->pstream->plogon->get_dir();
-	if (!exmdb_client::read_message(dir, pctx->pstream->plogon->readstate_user(),
+	if (!exmdb_client->read_message(dir, pctx->pstream->plogon->readstate_user(),
 	    pinfo->cpid, message_id, &pmsgctnt))
 		return FALSE;
 	if (NULL == pmsgctnt) {
@@ -768,7 +768,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	}
 	if (*pstatus & MSGSTATUS_IN_CONFLICT) {
 		if (!(pctx->sync_flags & SYNC_NO_FOREIGN_KEYS)) {
-			if (!exmdb_client::get_folder_property(dir,
+			if (!exmdb_client->get_folder_property(dir,
 			    CP_ACP, folder_id, PR_SOURCE_KEY, &pvalue))
 				return FALSE;	
 			if (pvalue == nullptr)
@@ -831,7 +831,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 	pmsgctnt->proplist.ppropval = ppropval;
 	if (!(pctx->sync_flags & SYNC_NO_FOREIGN_KEYS)) {
-		if (!exmdb_client::get_folder_property(dir,
+		if (!exmdb_client->get_folder_property(dir,
 		    CP_ACP, folder_id, PR_SOURCE_KEY, &pvalue))
 			return FALSE;	
 		if (NULL == pvalue) {
@@ -867,7 +867,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		b_full = TRUE;
 	} else {
 		/* Downloaded && Normal message */
-		if (!exmdb_client::get_message_group_id(dir,
+		if (!exmdb_client->get_message_group_id(dir,
 		    message_id, &pgroup_id))
 			return FALSE;
 		if (!(pctx->send_options & SEND_OPTIONS_PARTIAL) ||
@@ -877,7 +877,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		} else {
 			if (!pctx->pstate->pseen->get_repl_first_max(1, &last_cn))
 				return false;
-			if (!exmdb_client::get_change_indices(dir,
+			if (!exmdb_client->get_change_indices(dir,
 			    message_id, last_cn, &indices, &proptags))
 				return FALSE;	
 			if (0 == indices.count && 0 == proptags.count) {

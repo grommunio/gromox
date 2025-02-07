@@ -33,7 +33,7 @@ static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 {
 	auto dir = ptable->plogon->get_dir();
 	if (ptable->m_loaded && ptable->m_table_id != 0) {
-		exmdb_client::unload_table(dir, ptable->m_table_id);
+		exmdb_client->unload_table(dir, ptable->m_table_id);
 		if (ptable->rop_id == ropGetContentsTable ||
 		    ptable->rop_id == ropGetHierarchyTable)
 			emsmdb_interface_remove_table_notify(dir, ptable->m_table_id);
@@ -64,7 +64,7 @@ BOOL table_object::load()
 	switch (ptable->rop_id) {
 	case ropGetHierarchyTable: {
 		auto username = ptable->plogon->eff_user();
-		if (!exmdb_client::load_hierarchy_table(ptable->plogon->get_dir(),
+		if (!exmdb_client->load_hierarchy_table(ptable->plogon->get_dir(),
 		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    username, ptable->table_flags, m_restriction,
 		    &table_id, &row_num))
@@ -79,7 +79,7 @@ BOOL table_object::load()
 		auto rds_user = ptable->plogon->readstate_user();
 		if (eff_user != STORE_OWNER_GRANTED) {
 			if (ptable->plogon->is_private()) {
-				if (!exmdb_client::get_folder_perm(
+				if (!exmdb_client->get_folder_perm(
 				    ptable->plogon->get_dir(),
 				    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 				    eff_user, &permission))
@@ -88,7 +88,7 @@ BOOL table_object::load()
 					rds_user = nullptr;
 			}
 		}
-		if (!exmdb_client::load_content_table(ptable->plogon->get_dir(),
+		if (!exmdb_client->load_content_table(ptable->plogon->get_dir(),
 		    pinfo->cpid, static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    rds_user, ptable->table_flags, m_restriction,
 		    m_sorts, &table_id, &row_num))
@@ -96,14 +96,14 @@ BOOL table_object::load()
 		break;
 	}
 	case ropGetPermissionsTable:
-		if (!exmdb_client::load_permission_table(ptable->plogon->get_dir(),
+		if (!exmdb_client->load_permission_table(ptable->plogon->get_dir(),
 		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    ptable->table_flags | PERMISSIONS_TABLE_FLAG_ROPFILTER,
 		    &table_id, &row_num))
 			return FALSE;
 		break;
 	case ropGetRulesTable:
-		if (!exmdb_client::load_rule_table(ptable->plogon->get_dir(),
+		if (!exmdb_client->load_rule_table(ptable->plogon->get_dir(),
 		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    ptable->table_flags, m_restriction, &table_id, &row_num))
 			return FALSE;
@@ -147,7 +147,7 @@ BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count,
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return static_cast<message_object *>(ptable->pparent_obj)->query_attachment_table(
 		       m_columns, m_position, row_needed, pset);
-	return exmdb_client::query_table(ptable->plogon->get_dir(),
+	return exmdb_client->query_table(ptable->plogon->get_dir(),
 	       ptable->plogon->readstate_user(),
 	       pinfo->cpid, m_table_id, m_columns,
 	       m_position, row_needed, pset);
@@ -257,7 +257,7 @@ BOOL table_object::create_bookmark(uint32_t *pindex) try
 	uint32_t row_type;
 	uint32_t inst_num;
 	
-	if (!exmdb_client::mark_table(ptable->plogon->get_dir(), m_table_id,
+	if (!exmdb_client->mark_table(ptable->plogon->get_dir(), m_table_id,
 	    m_position, &inst_id, &inst_num, &row_type))
 		return FALSE;
 	bookmark_list.push_back(bookmark_node{bookmark_index, row_type,
@@ -280,7 +280,7 @@ BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 	          [&](const bookmark_node &bn) { return bn.index == index; });
 	if (bm == bookmark_list.end())
 		return FALSE;
-	if (!exmdb_client::locate_table(ptable->plogon->get_dir(),
+	if (!exmdb_client->locate_table(ptable->plogon->get_dir(),
 	    m_table_id, bm->inst_id, bm->inst_num, &tmp_position, &tmp_type))
 		return FALSE;
 	*pb_exist = FALSE;
@@ -331,7 +331,7 @@ BOOL table_object::get_all_columns(PROPTAG_ARRAY *pcolumns) const
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return static_cast<message_object *>(ptable->pparent_obj)->
 		       get_attachment_table_all_proptags(pcolumns);
-	return exmdb_client::get_table_all_proptags(ptable->plogon->get_dir(),
+	return exmdb_client->get_table_all_proptags(ptable->plogon->get_dir(),
 	       m_table_id, pcolumns);
 }
 
@@ -342,7 +342,7 @@ BOOL table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
 	if (m_columns == nullptr)
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	return exmdb_client::match_table(ptable->plogon->get_dir(),
+	return exmdb_client->match_table(ptable->plogon->get_dir(),
 	       ptable->plogon->readstate_user(),
 	       pinfo->cpid, m_table_id, b_forward, m_position,
 	       pres, m_columns, pposition, ppropvals);
@@ -355,7 +355,7 @@ BOOL table_object::read_row(uint64_t inst_id, uint32_t inst_num,
 	if (m_columns == nullptr)
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	return exmdb_client::read_table_row(ptable->plogon->get_dir(),
+	return exmdb_client->read_table_row(ptable->plogon->get_dir(),
 	       ptable->plogon->readstate_user(),
 	       pinfo->cpid, m_table_id, m_columns,
 	       inst_id, inst_num, ppropvals);
@@ -364,21 +364,21 @@ BOOL table_object::read_row(uint64_t inst_id, uint32_t inst_num,
 BOOL table_object::expand(uint64_t inst_id, BOOL *pb_found, int32_t *pposition,
     uint32_t *prow_count) const
 {
-	return exmdb_client::expand_table(plogon->get_dir(),
+	return exmdb_client->expand_table(plogon->get_dir(),
 	       m_table_id, inst_id, pb_found, pposition, prow_count);
 }
 
 BOOL table_object::collapse(uint64_t inst_id, BOOL *pb_found,
     int32_t *pposition, uint32_t *prow_count) const
 {
-	return exmdb_client::collapse_table(plogon->get_dir(),
+	return exmdb_client->collapse_table(plogon->get_dir(),
 	       m_table_id, inst_id, pb_found, pposition, prow_count);
 }
 
 BOOL table_object::store_state(uint64_t inst_id, uint32_t inst_num,
     uint32_t *pstate_id) const
 {
-	return exmdb_client::store_table_state(plogon->get_dir(),
+	return exmdb_client->store_table_state(plogon->get_dir(),
 	       m_table_id, inst_id, inst_num, pstate_id);
 }
 
@@ -391,13 +391,13 @@ BOOL table_object::restore_state(uint32_t state_id, uint32_t *pindex)
 	uint32_t new_position;
 	auto ptable = this;
 	
-	if (!exmdb_client::mark_table(ptable->plogon->get_dir(),
+	if (!exmdb_client->mark_table(ptable->plogon->get_dir(),
 	    m_table_id, m_position, &inst_id, &inst_num, &tmp_type))
 		return FALSE;
-	if (!exmdb_client::restore_table_state(ptable->plogon->get_dir(),
+	if (!exmdb_client->restore_table_state(ptable->plogon->get_dir(),
 	    m_table_id, state_id, &position))
 		return FALSE;	
-	if (!exmdb_client::locate_table(ptable->plogon->get_dir(),
+	if (!exmdb_client->locate_table(ptable->plogon->get_dir(),
 	    m_table_id, inst_id, inst_num,
 	    reinterpret_cast<int32_t *>(&new_position), &tmp_type))
 		return FALSE;

@@ -740,14 +740,14 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 	}
 	auto eff_user = plogon->eff_user();
 	if (eff_user != STORE_OWNER_GRANTED) {
-		if (!exmdb_client::get_folder_perm(plogon->get_dir(),
+		if (!exmdb_client->get_folder_perm(plogon->get_dir(),
 		    pfolder->folder_id, eff_user, &permission))
 			return ecError;
 		if (!(permission & frightsOwner))
 			return ecAccessDenied;
 	}
 	if (MODIFY_PERMISSIONS_FLAG_REPLACEROWS & flags) {
-		if (!exmdb_client::empty_folder_permission(plogon->get_dir(),
+		if (!exmdb_client->empty_folder_permission(plogon->get_dir(),
 		    pfolder->folder_id))
 			return ecError;
 	}
@@ -763,7 +763,7 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 			 */
 			*deconst(v) &= rightsMaxROP; // mutable
 	}
-	if (!exmdb_client::update_folder_permission(plogon->get_dir(),
+	if (!exmdb_client->update_folder_permission(plogon->get_dir(),
 	    folder_id, b_freebusy, count, prow))
 		return ecError;
 	return ecSuccess;
@@ -785,7 +785,7 @@ ec_error_t rop_getpermissionstable(uint8_t flags, LOGMAP *plogmap,
 		return ecNotSupported;
 	auto eff_user = plogon->eff_user();
 	if (eff_user != STORE_OWNER_GRANTED) {
-		if (!exmdb_client::get_folder_perm(plogon->get_dir(),
+		if (!exmdb_client->get_folder_perm(plogon->get_dir(),
 		    pfolder->folder_id, eff_user, &permission))
 			return ecError;
 		if (!(permission & (frightsOwner | frightsVisible)))
@@ -826,7 +826,7 @@ ec_error_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 	auto dir = plogon->get_dir();
 	auto username = plogon->eff_user();
 	if (username != nullptr) {
-		if (!exmdb_client::get_folder_perm(dir,
+		if (!exmdb_client->get_folder_perm(dir,
 		    pfolder->folder_id, username, &permission))
 			return ecError;
 		if (!(permission & frightsOwner))
@@ -836,7 +836,7 @@ ec_error_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 		for (unsigned int i = 0; i < count; ++i)
 			if (prow[i].flags != ROW_ADD)
 				return ecInvalidParam;
-		if (!exmdb_client::empty_folder_rule(dir, pfolder->folder_id))
+		if (!exmdb_client->empty_folder_rule(dir, pfolder->folder_id))
 			return ecError;
 	}
 	for (unsigned int i = 0; i < count; ++i)
@@ -844,7 +844,7 @@ ec_error_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 			if (!common_util_convert_tagged_propval(TRUE,
 			    &prow[i].propvals.ppropval[j]))
 				return ecError;
-	if (!exmdb_client::update_folder_rule(dir,
+	if (!exmdb_client->update_folder_rule(dir,
 	    pfolder->folder_id, count, prow, &b_exceed))
 		return ecError;
 	if (b_exceed)
@@ -905,7 +905,7 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	auto dir = plogon->get_dir();
 	auto username = plogon->eff_user();
 	if (username != nullptr) {
-		if (!exmdb_client::get_folder_perm(dir,
+		if (!exmdb_client->get_folder_perm(dir,
 		    fid_deferred, username, &permission))
 			return ecError;
 		if (!(permission & frightsEditAny))
@@ -918,7 +918,7 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	res_property.proptag = PR_DAM_ORIG_MSG_SVREID;
 	res_property.propval.proptag = res_property.proptag;
 	res_property.propval.pvalue = deconst(pserver_entry_id);
-	if (!exmdb_client::load_content_table(dir, CP_ACP, fid_deferred,
+	if (!exmdb_client->load_content_table(dir, CP_ACP, fid_deferred,
 	    nullptr, TABLE_FLAG_NONOTIFICATIONS, &restriction, nullptr,
 	    &table_id, &row_count))
 		return ecError;
@@ -926,10 +926,10 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	uint32_t tmp_proptag = PidTagMid;
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
-	if (!exmdb_client::query_table(dir, nullptr, CP_ACP,
+	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
 	    table_id, &proptags, 0, row_count, &tmp_set))
 		return ecError;
-	exmdb_client::unload_table(dir, table_id);
+	exmdb_client->unload_table(dir, table_id);
 
 	propvals.count = 2;
 	propvals.ppropval = propval_buff;
@@ -943,7 +943,7 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
 		if (pmid == nullptr)
 			continue;
-		exmdb_client::set_message_properties(dir, nullptr, CP_ACP,
+		exmdb_client->set_message_properties(dir, nullptr, CP_ACP,
 			*pmid, &propvals, &problems);
 	}
 	return ecSuccess;

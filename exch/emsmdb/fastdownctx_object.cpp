@@ -328,7 +328,7 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 			MESSAGE_CONTENT *pmsgctnt = nullptr;
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
 			auto dir = pctx->pstream->plogon->get_dir();
-			if (!exmdb_client::read_message(dir, pctx->pstream->plogon->readstate_user(),
+			if (!exmdb_client->read_message(dir, pctx->pstream->plogon->readstate_user(),
 			    pinfo->cpid, param, &pmsgctnt))
 				return FALSE;
 			if (pmsgctnt == nullptr)
