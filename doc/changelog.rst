@@ -1,3 +1,33 @@
+Gromox 2.41 (2025-02-07)
+========================
+
+Fixes:
+
+* ldap_adaptor: plug two memory leaks
+* exmdb: plug a memory leak related to subscription destruction
+* oxcical: do process TRIGGER duration value type for reminders
+* midb: resolve flakey update of flagged/replied/forwarded status
+* midb: when a MAPI message has changed and requires a new IMAPUID,
+  convey the expunge of the old IMAPUID much sooner to IMAP clients
+* pop3: resolve a NULL deref/crash during RETR command
+* imap: restore SEARCH command looking at right portion of a QP-encoded message
+
+Enhancements:
+
+* ews: send flag status to clients
+* imap: include username for IMAP actions when imap_cmd_debug logging is
+  activated
+* midb, imap: print asynchronous notification events when imap_cmd_debug>=2
+* oxcical: invalid iCal timezone inputs are now logged when
+  <daemon>_log_level=6 (debug)
+
+Behavioral changes:
+
+* mkprivate: new message stores now have `frightsVisible` set on the calendar
+  folder, because grommunio-web is picky about the existence of the calendar
+  folder even if obtaining just freebusy blocks.
+
+
 Gromox 2.40 (2025-01-28)
 ========================
 
