@@ -1380,10 +1380,11 @@ extern GX_EXPORT void *(*exmdb_rpc_alloc)(size_t);
 extern GX_EXPORT void (*exmdb_rpc_free)(void *);
 extern GX_EXPORT unsigned int g_ruleproc_debug;
 
-namespace exmdb_client_remote {
+class GX_EXPORT exmdb_client_remote {
+	public:
 #define IDLOUT
-#define EXMIDL(n, p) extern GX_EXPORT EXMIDL_RETTYPE n p;
+#define EXMIDL(n, p) static EXMIDL_RETTYPE n p;
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
 #undef IDLOUT
-}
+};

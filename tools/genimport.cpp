@@ -42,7 +42,7 @@ using namespace std::string_literals;
 using namespace gromox;
 using namespace gi_dump;
 using LLU = unsigned long long;
-namespace exmdb_client = exmdb_client_remote;
+using exmdb_client = exmdb_client_remote;
 
 std::string g_dstuser, g_storedir_s;
 const char *g_storedir;

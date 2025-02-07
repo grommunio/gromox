@@ -10,7 +10,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 
-namespace exmdb_client = exmdb_client_remote;
+using exmdb_client = exmdb_client_remote;
 using namespace gromox;
 
 static uint32_t propid_elist(const char *dir)

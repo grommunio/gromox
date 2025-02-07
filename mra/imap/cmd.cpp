@@ -56,7 +56,7 @@
 
 using namespace std::string_literals;
 using namespace gromox;
-namespace exmdb_client = exmdb_client_remote;
+using exmdb_client = exmdb_client_remote;
 using LLU = unsigned long long;
 using mdi_list = std::vector<std::string>; /* message data item (RFC 3501 §6.4.5) */
 

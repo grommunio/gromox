@@ -28,7 +28,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 using LLU = unsigned long long;
-namespace exmdb_client = exmdb_client_remote;
+using exmdb_client = exmdb_client_remote;
 
 static constexpr int EXIT_PARAM = 2;
 static constexpr HXoption empty_options_table[] = {

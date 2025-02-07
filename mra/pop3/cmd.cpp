@@ -33,7 +33,7 @@
 
 using namespace std::string_literals;
 using namespace gromox;
-namespace exmdb_client = exmdb_client_remote;
+using exmdb_client = exmdb_client_remote;
 
 template<typename T> static inline T *sa_get_item(std::vector<T> &arr, size_t idx)
 {

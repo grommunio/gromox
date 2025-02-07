@@ -31,7 +31,7 @@
 #include <gromox/rop_util.hpp>
 
 using namespace gromox;
-namespace exmdb_client = exmdb_client_remote;
+using exmdb_client = exmdb_client_remote;
 DECLARE_SVC_API(,);
 
 namespace {

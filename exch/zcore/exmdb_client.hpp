@@ -6,7 +6,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/mapi_types.hpp>
 
-namespace exmdb_client = exmdb_client_remote;
+using exmdb_client = exmdb_client_remote;
 
 extern int exmdb_client_run_front(const char *);
 BOOL exmdb_client_get_named_propid(const char *dir,

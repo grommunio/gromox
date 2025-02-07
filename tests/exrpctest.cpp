@@ -12,7 +12,7 @@
 #include <gromox/util.hpp>
 
 using namespace gromox;
-namespace exmdb_client = exmdb_client_remote;
+using exmdb_client = exmdb_client_remote;
 
 static alloc_context g_alloc_mgr;
 
