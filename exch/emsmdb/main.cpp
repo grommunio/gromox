@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -266,6 +268,7 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 		emsmdb_interface_stop();
 		rop_processor_stop();
 		asyncemsmdb_interface_free();
+		exmdb_client.reset();
 		return TRUE;
 	default:
 		return TRUE;

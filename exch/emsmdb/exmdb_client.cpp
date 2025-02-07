@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -18,12 +18,6 @@
 using namespace gromox;
 
 std::optional<exmdb_client_shm> exmdb_client{std::in_place_t{}};
-
-#define EXMIDL(n, p) decltype(exmdb_client_shm::n) exmdb_client_shm::n;
-#define IDLOUT
-#include <gromox/exmdb_idef.hpp>
-#undef EXMIDL
-#undef IDLOUT
 
 int exmdb_client_shm::run()
 {
