@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -222,7 +222,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 	if (pcontainer->contents.prow_set != nullptr)
 		return TRUE;
 	auto pinfo = zs_get_info();
-	if (!exmdb_client::load_content_table(pinfo->get_maildir(),
+	if (!exmdb_client->load_content_table(pinfo->get_maildir(),
 	    pinfo->cpid, pcontainer->id.exmdb_id.folder_id, nullptr, 0,
 	    nullptr, nullptr, &table_id, &row_num))
 		return FALSE;
@@ -250,7 +250,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 		proptags.pproptag[proptags.count++] = PR_CREATION_TIME;
 		proptags.pproptag[proptags.count++] = PR_MESSAGE_CLASS;
 		proptags.pproptag[proptags.count++] = PidTagMid;
-		if (!exmdb_client::query_table(pinfo->get_maildir(), nullptr,
+		if (!exmdb_client->query_table(pinfo->get_maildir(), nullptr,
 		    pinfo->cpid, table_id, &proptags, 0, row_num, &tmp_set))
 			return FALSE;
 		pparent_entryid = zcsab_prepend(cu_fid_to_entryid(pstore,
@@ -260,7 +260,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 	} else {
 		tmp_set.count = 0;
 	}
-	exmdb_client::unload_table(pinfo->get_maildir(), table_id);
+	exmdb_client->unload_table(pinfo->get_maildir(), table_id);
 	pcontainer->contents.prow_set = tarray_set_init();
 	if (pcontainer->contents.prow_set == nullptr)
 		return FALSE;
@@ -573,7 +573,7 @@ BOOL container_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	
 	if (pcontainer->type != CONTAINER_TYPE_ABTREE) {
 		auto pinfo = zs_get_info();
-		if (!exmdb_client::get_folder_properties(pinfo->get_maildir(),
+		if (!exmdb_client->get_folder_properties(pinfo->get_maildir(),
 		    pinfo->cpid, pcontainer->id.exmdb_id.folder_id,
 		    container_object_get_folder_proptags(), &tmp_propvals))
 			return FALSE;
@@ -657,16 +657,16 @@ static BOOL container_object_query_folder_hierarchy(
 	TPROPVAL_ARRAY **pparray;
 	
 	auto pinfo = zs_get_info();
-	if (!exmdb_client::load_hierarchy_table(pinfo->get_maildir(),
+	if (!exmdb_client->load_hierarchy_table(pinfo->get_maildir(),
 	    folder_id, nullptr, TABLE_FLAG_DEPTH, nullptr, &table_id, &row_num))
 		return FALSE;
 	if (row_num == 0)
 		tmp_set.count = 0;
-	else if (!exmdb_client::query_table(pinfo->get_maildir(), nullptr,
+	else if (!exmdb_client->query_table(pinfo->get_maildir(), nullptr,
 	    pinfo->cpid, table_id, container_object_get_folder_proptags(),
 	    0, row_num, &tmp_set))
 		return FALSE;
-	exmdb_client::unload_table(pinfo->get_maildir(), table_id);
+	exmdb_client->unload_table(pinfo->get_maildir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto pbool = tmp_set.pparray[i]->get<const uint8_t>(PR_ATTR_HIDDEN);
 		if (pbool != nullptr && *pbool != 0)
@@ -739,7 +739,7 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 			if (tmp_set.pparray[tmp_set.count] == nullptr)
 				return FALSE;
 			auto pinfo = zs_get_info();
-			if (!exmdb_client::get_folder_properties(pinfo->get_maildir(),
+			if (!exmdb_client->get_folder_properties(pinfo->get_maildir(),
 				pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
 				container_object_get_folder_proptags(), &tmp_propvals)) {
 				return FALSE;

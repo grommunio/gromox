@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #define _GNU_SOURCE 1
 #include <algorithm>
@@ -42,7 +42,6 @@ using namespace std::string_literals;
 using namespace gromox;
 using namespace gi_dump;
 using LLU = unsigned long long;
-using exmdb_client = exmdb_client_remote;
 
 std::string g_dstuser, g_storedir_s;
 const char *g_storedir;
@@ -193,7 +192,7 @@ uint16_t gi_resolve_namedprop(const PROPERTY_XNAME &xpn_req)
 	pna_req.ppropname = &pn_req;
 
 	PROPID_ARRAY pid_rsp{};
-	if (!exmdb_client::get_named_propids(g_storedir, TRUE, &pna_req, &pid_rsp))
+	if (!exmdb_client->get_named_propids(g_storedir, TRUE, &pna_req, &pid_rsp))
 		throw YError("PF-1047: request to server for propname mapping failed");
 	if (pid_rsp.size() != 1)
 		throw YError("PF-1048");
@@ -243,7 +242,7 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
     uint64_t *new_fld_id)
 {
 	uint64_t change_num = 0;
-	if (!exmdb_client::allocate_cn(g_storedir, &change_num)) {
+	if (!exmdb_client->allocate_cn(g_storedir, &change_num)) {
 		fprintf(stderr, "exm: allocate_cn(fld) RPC failed\n");
 		return -EIO;
 	}
@@ -261,7 +260,7 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 	}
 	auto dn = props->get<const char>(PR_DISPLAY_NAME);
 	if (!o_excl && dn != nullptr) {
-		if (!exmdb_client::get_folder_by_name(g_storedir,
+		if (!exmdb_client->get_folder_by_name(g_storedir,
 		    parent_fld, dn, new_fld_id)) {
 			fprintf(stderr, "exm: get_folder_by_name \"%s\" RPC/network failed\n", dn);
 			return -EIO;
@@ -272,7 +271,7 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 	if (dn == nullptr)
 		dn = "";
 	ec_error_t err = ecSuccess;
-	if (!exmdb_client::create_folder(g_storedir, CP_ACP, props, new_fld_id, &err)) {
+	if (!exmdb_client->create_folder(g_storedir, CP_ACP, props, new_fld_id, &err)) {
 		fprintf(stderr, "exm: create_folder_by_properties \"%s\" RPC failed\n", dn);
 		return -EIO;
 	} else if (err != ecSuccess) {
@@ -294,7 +293,7 @@ int exm_permissions(eid_t fid, const std::vector<PERMISSION_DATA> &perms)
 {
 	if (perms.size() == 0)
 		return 0;
-	if (!exmdb_client::update_folder_permission(g_storedir, fid, false,
+	if (!exmdb_client->update_folder_permission(g_storedir, fid, false,
 	    perms.size(), perms.data())) {
 		fprintf(stderr, "exm: update_folder_perm(%llxh) RPC failed\n", LLU{fid});
 		return -EIO;
@@ -312,7 +311,7 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct, unsigned int mode)
 	uint32_t r32 = 0;
 	if (mode & DELIVERY_TWOSTEP)
 		mode &= ~(DELIVERY_DO_RULES | DELIVERY_DO_NOTIF);
-	if (!exmdb_client::deliver_message(g_storedir, ENVELOPE_FROM_NULL,
+	if (!exmdb_client->deliver_message(g_storedir, ENVELOPE_FROM_NULL,
 	    target, CP_ACP, mode, ct, "", &folder_id, &msg_id, &r32)) {
 		fprintf(stderr, "exm: deliver_message RPC failed: code %u\n",
 		        r32);
@@ -362,10 +361,10 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct, unsigned int mode)
 int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 {
 	uint64_t msg_id = 0, change_num = 0;
-	if (!exmdb_client::allocate_message_id(g_storedir, parent_fld, &msg_id)) {
+	if (!exmdb_client->allocate_message_id(g_storedir, parent_fld, &msg_id)) {
 		fprintf(stderr, "exm: allocate_message_id RPC failed (timeout?)\n");
 		return -EIO;
-	} else if (!exmdb_client::allocate_cn(g_storedir, &change_num)) {
+	} else if (!exmdb_client->allocate_cn(g_storedir, &change_num)) {
 		fprintf(stderr, "exm: allocate_cn(msg) RPC failed\n");
 		return -EIO;
 	}
@@ -402,7 +401,7 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 		return ret;
 	}
 	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::write_message(g_storedir, CP_UTF8, parent_fld, ctnt,
+	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld, ctnt,
 	    &e_result)) {
 		fprintf(stderr, "exm: write_message RPC failed\n");
 		return -EIO;
@@ -615,17 +614,17 @@ eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 		RESTRICTION_AND_OR rst_1  = {std::size(rst_2), rst_2};
 		RESTRICTION rst           = {RES_AND, {&rst_1}};
 		uint32_t table_id = 0, rowcount = 0;
-		if (!exmdb_client::load_hierarchy_table(dir, fid, nullptr,
+		if (!exmdb_client->load_hierarchy_table(dir, fid, nullptr,
 		    0, &rst, &table_id, &rowcount)) {
 			mlog(LV_ERR, "load_hierarchy_table RPC rejected");
 			return 0;
 		}
-		auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(dir, table_id); });
+		auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 
 		static constexpr uint32_t qtags[] = {PidTagFolderId};
 		static constexpr PROPTAG_ARRAY qtaginfo = {std::size(qtags), deconst(qtags)};
 		tarray_set rowset;
-		if (!exmdb_client::query_table(dir, nullptr, CP_ACP, table_id,
+		if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
 		    &qtaginfo, 0, rowcount, &rowset)) {
 			mlog(LV_ERR, "query_table RPC rejected");
 			return 0;

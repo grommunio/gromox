@@ -33,7 +33,6 @@
 
 using namespace std::string_literals;
 using namespace gromox;
-using exmdb_client = exmdb_client_remote;
 
 template<typename T> static inline T *sa_get_item(std::vector<T> &arr, size_t idx)
 {
@@ -106,7 +105,7 @@ static bool store_owner_over(const char *actor, const char *mbox, const char *mb
 		return true; /* Silly way of logging in to your own mailbox but ok */
 	uint32_t perms = 0;
 	xrpc_build_env();
-	auto ok = exmdb_client::get_mbox_perm(mboxdir, actor, &perms) &&
+	auto ok = exmdb_client->get_mbox_perm(mboxdir, actor, &perms) &&
 	          perms & frightsGromoxStoreOwner;
 	xrpc_free_env();
 	return ok;
@@ -321,7 +320,7 @@ int cmdh_retr(std::vector<std::string> &&argv, pop3_context *pcontext)
 	ctx.wrdat_content.clear();
 	xrpc_build_env();
 	auto cl_0 = make_scope_exit(xrpc_free_env);
-	if (!exmdb_client::imapfile_read(ctx.maildir, "eml", punit->file_name,
+	if (!exmdb_client->imapfile_read(ctx.maildir, "eml", punit->file_name,
 	    &ctx.wrdat_content)) {
 		mlog(LV_ERR, "E-1469: imapfile_read %s/eml/%s failed",
 			ctx.maildir, punit->file_name.c_str());
@@ -381,7 +380,7 @@ int cmdh_top(std::vector<std::string> &&argv, pop3_context *pcontext)
 	ctx.wrdat_content.clear();
 	xrpc_build_env();
 	auto cl_0 = make_scope_exit(xrpc_free_env);
-	if (!exmdb_client::imapfile_read(ctx.maildir, "eml", punit->file_name,
+	if (!exmdb_client->imapfile_read(ctx.maildir, "eml", punit->file_name,
 	    &ctx.wrdat_content))
 		return 1709;
 	ctx.wrdat_active = true;

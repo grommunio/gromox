@@ -4,6 +4,7 @@
 #include <ctime>
 #include <list>
 #include <mutex>
+#include <optional>
 #include <pthread.h>
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
@@ -87,8 +88,6 @@ extern GX_EXPORT int exmdb_client_run(const char *dir, unsigned int fl = EXMDB_C
 extern GX_EXPORT bool exmdb_client_is_local(const char *pfx, BOOL *pvt);
 extern GX_EXPORT BOOL exmdb_client_do_rpc(const exreq *, exresp *);
 
-}
-
 class GX_EXPORT exmdb_client_remote {
 	public:
 #define IDLOUT
@@ -97,3 +96,7 @@ class GX_EXPORT exmdb_client_remote {
 #undef EXMIDL
 #undef IDLOUT
 };
+
+extern GX_EXPORT std::optional<exmdb_client_remote> exmdb_client;
+
+}

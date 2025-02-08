@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -28,7 +28,6 @@
 using namespace std::string_literals;
 using namespace gromox;
 using LLU = unsigned long long;
-using exmdb_client = exmdb_client_remote;
 
 static constexpr int EXIT_PARAM = 2;
 static constexpr HXoption empty_options_table[] = {
@@ -63,7 +62,7 @@ static void delcount(eid_t fid, uint32_t *delc, uint32_t *fldc)
 	static constexpr PROPTAG_ARRAY taghdr = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY props;
 	*delc = *fldc = 0;
-	if (!exmdb_client::get_folder_properties(g_storedir, CP_ACP, fid,
+	if (!exmdb_client->get_folder_properties(g_storedir, CP_ACP, fid,
 	    &taghdr, &props)) {
 		fprintf(stderr, "delcount: get_folder_properties failed\n");
 		return;
@@ -109,7 +108,7 @@ static int main(int argc, char **argv)
 	BOOL partial = false;
 	uint32_t prev_delc, prev_fldc, curr_delc, curr_fldc;
 	delcount(g_folderid, &prev_delc, &prev_fldc);
-	if (!exmdb_client::delete_messages(g_storedir, CP_UTF8, nullptr,
+	if (!exmdb_client->delete_messages(g_storedir, CP_UTF8, nullptr,
 	    g_folderid, &ea, !g_soft, &partial)) {
 		printf("RPC was rejected.\n");
 		return EXIT_FAILURE;
@@ -152,7 +151,7 @@ static int generic_del(eid_t fid, const std::vector<uint64_t> &chosen)
 	EID_ARRAY ea;
 	ea.count = chosen.size();
 	ea.pids  = deconst(chosen.data());
-	if (!exmdb_client::delete_messages(g_storedir, CP_ACP, nullptr, fid,
+	if (!exmdb_client->delete_messages(g_storedir, CP_ACP, nullptr, fid,
 	    &ea, false, &partial_complete)) {
 		fprintf(stderr, "fid 0x%llx delete_messages failed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
@@ -170,16 +169,16 @@ static int select_mids_by_time(eid_t fid, unsigned int tbl_flags,
 	RESTRICTION rst_c[2] = {{RES_EXIST, {deconst(&rst_a)}}, {RES_PROPERTY, {deconst(&rst_b)}}};
 	RESTRICTION_AND_OR rst_d = {std::size(rst_c), deconst(rst_c)};
 	RESTRICTION rst_e = {RES_AND, {deconst(&rst_d)}};
-	if (!exmdb_client::load_content_table(g_storedir, CP_ACP, fid, nullptr,
+	if (!exmdb_client->load_content_table(g_storedir, CP_ACP, fid, nullptr,
 	    tbl_flags, &rst_e, nullptr, &table_id, &row_count)) {
 		fprintf(stderr, "fid 0x%llx load_content_table failed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
 	}
-	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(g_storedir, table_id); });
+	auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(g_storedir, table_id); });
 	static constexpr uint32_t mtags[] = {PidTagMid};
 	static constexpr PROPTAG_ARRAY mtaghdr = {std::size(mtags), deconst(mtags)};
 	tarray_set rowset{};
-	if (!exmdb_client::query_table(g_storedir, nullptr, CP_ACP, table_id,
+	if (!exmdb_client->query_table(g_storedir, nullptr, CP_ACP, table_id,
 	    &mtaghdr, 0, row_count, &rowset)) {
 		fprintf(stderr, "fid 0x%llx query_table failed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
@@ -225,21 +224,21 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 		return EXIT_SUCCESS;
 
 	uint32_t table_id = 0, row_count = 0;
-	if (!exmdb_client::load_hierarchy_table(g_storedir, fid,
+	if (!exmdb_client->load_hierarchy_table(g_storedir, fid,
 	    nullptr, 0, nullptr, &table_id, &row_count)) {
 		fprintf(stderr, "fid 0x%llx load_content_table failed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = make_scope_exit([=]() { exmdb_client::unload_table(g_storedir, table_id); });
+	auto cl_1 = make_scope_exit([=]() { exmdb_client->unload_table(g_storedir, table_id); });
 	static constexpr uint32_t ftags[] = {PidTagFolderId};
 	static constexpr PROPTAG_ARRAY ftaghdr = {std::size(ftags), deconst(ftags)};
 	tarray_set rowset{};
-	if (!exmdb_client::query_table(g_storedir, nullptr, CP_ACP, table_id,
+	if (!exmdb_client->query_table(g_storedir, nullptr, CP_ACP, table_id,
 	    &ftaghdr, 0, row_count, &rowset)) {
 		fprintf(stderr, "fid 0x%llx query_table failed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
 	}
-	exmdb_client::unload_table(g_storedir, table_id);
+	exmdb_client->unload_table(g_storedir, table_id);
 	for (const auto &row : rowset) {
 		auto p = row.get<const eid_t>(PidTagFolderId);
 		if (p != nullptr)
@@ -252,7 +251,7 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 	static constexpr uint32_t ftags2[] = {PR_CONTENT_COUNT, PR_ASSOC_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT};
 	static constexpr PROPTAG_ARRAY ftaghdr2 = {std::size(ftags2), deconst(ftags2)};
 	TPROPVAL_ARRAY props{};
-	if (!exmdb_client::get_folder_properties(g_storedir, CP_ACP, fid, &ftaghdr2, &props)) {
+	if (!exmdb_client->get_folder_properties(g_storedir, CP_ACP, fid, &ftaghdr2, &props)) {
 		fprintf(stderr, "fid 0x%llx get_folder_props failed\n", LLU{fid});
 		return EXIT_FAILURE;
 	}
@@ -265,7 +264,7 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 	if (n1 != 0 || n2 != 0 || n3 != 0)
 		return EXIT_SUCCESS;
 	BOOL b_result = false;
-	if (!exmdb_client::delete_folder(g_storedir, CP_ACP, fid,
+	if (!exmdb_client->delete_folder(g_storedir, CP_ACP, fid,
 	    g_del_flags & DELETE_HARD_DELETE, &b_result)) {
 		fprintf(stderr, "fid 0x%llx delete_folder RPC rejected/malformed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
@@ -327,7 +326,7 @@ static int main(int argc, char **argv)
 		}
 		uint32_t prev_delc, prev_fldc, curr_delc, curr_fldc;
 		delcount(eid, &prev_delc, &prev_fldc);
-		auto ok = exmdb_client::empty_folder(g_storedir, CP_UTF8, nullptr,
+		auto ok = exmdb_client->empty_folder(g_storedir, CP_UTF8, nullptr,
 		          eid, g_del_flags, &partial);
 		if (!ok) {
 			fprintf(stderr, "empty_folder(%s) failed\n", *argv);
@@ -375,7 +374,7 @@ static int main(int argc, char **argv)
 			return EXIT_FAILURE;
 		}
 		unsigned int flags = g_recursive ? DEL_FOLDERS : 0;
-		auto ok = exmdb_client::purge_softdelete(g_storedir, nullptr,
+		auto ok = exmdb_client->purge_softdelete(g_storedir, nullptr,
 		          eid, flags, age);
 		if (!ok) {
 			fprintf(stderr, "purge_softdel %s failed\n", *argv);
@@ -430,7 +429,7 @@ static int main(int argc, char **argv)
 			static constexpr uint32_t tags[] = {PR_DISPLAY_NAME};
 			static constexpr PROPTAG_ARRAY taghdr = {std::size(tags), deconst(tags)};
 			TPROPVAL_ARRAY props{};
-			if (!exmdb_client::get_folder_properties(g_storedir,
+			if (!exmdb_client->get_folder_properties(g_storedir,
 			    CP_ACP, folder_id, &taghdr, &props)) {
 				fprintf(stderr, "get_folder_props failed\n");
 				return EXIT_FAILURE;
@@ -441,7 +440,7 @@ static int main(int argc, char **argv)
 		TAGGED_PROPVAL tp = {PR_DISPLAY_NAME, deconst(new_name)};
 		const TPROPVAL_ARRAY new_props = {1, &tp};
 		PROBLEM_ARRAY probs{};
-		if (!exmdb_client::set_folder_properties(g_storedir, CP_ACP,
+		if (!exmdb_client->set_folder_properties(g_storedir, CP_ACP,
 		    folder_id, &new_props, &probs)) {
 			fprintf(stderr, "set_folder_props failed\n");
 			return EXIT_FAILURE;
@@ -578,7 +577,7 @@ static bool recalc_sizes(const char *dir)
 	};
 	static constexpr PROPTAG_ARRAY tags1 = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY vals;
-	auto ok = exmdb_client::get_store_properties(dir, CP_ACP, &tags1, &vals);
+	auto ok = exmdb_client->get_store_properties(dir, CP_ACP, &tags1, &vals);
 	if (!ok)
 		return false;
 	using LLU = unsigned long long;
@@ -586,10 +585,10 @@ static bool recalc_sizes(const char *dir)
 	       LLU{inul(vals.get<uint64_t>(tags[0]))},
 	       LLU{inul(vals.get<uint64_t>(tags[1]))},
 	       LLU{inul(vals.get<uint64_t>(tags[2]))});
-	ok = exmdb_client::recalc_store_size(g_storedir, 0);
+	ok = exmdb_client->recalc_store_size(g_storedir, 0);
 	if (!ok)
 		return false;
-	ok = exmdb_client::get_store_properties(g_storedir, CP_ACP, &tags1, &vals);
+	ok = exmdb_client->get_store_properties(g_storedir, CP_ACP, &tags1, &vals);
 	if (!ok)
 		return false;
 	printf("New: %llu bytes (%llu normal, %llu FAI)\n",
@@ -607,7 +606,7 @@ static int main(int argc, char **argv)
 		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (strcmp(argv[0], "purge-datafiles") == 0)
-		ok = exmdb_client::purge_datafiles(g_storedir);
+		ok = exmdb_client->purge_datafiles(g_storedir);
 	else if (strcmp(argv[0], "echo-username") == 0) {
 		printf("%s\n", g_storedir);
 		ok = true;
@@ -615,11 +614,11 @@ static int main(int argc, char **argv)
 		printf("%s\n", g_dstuser.c_str());
 		ok = true;
 	} else if (strcmp(argv[0], "ping") == 0)
-		ok = exmdb_client::ping_store(g_storedir);
+		ok = exmdb_client->ping_store(g_storedir);
 	else if (strcmp(argv[0], "unload") == 0)
-		ok = exmdb_client::unload_store(g_storedir);
+		ok = exmdb_client->unload_store(g_storedir);
 	else if (strcmp(argv[0], "vacuum") == 0)
-		ok = exmdb_client::vacuum(g_storedir);
+		ok = exmdb_client->vacuum(g_storedir);
 	else if (strcmp(argv[0], "recalc-sizes") == 0)
 		ok = recalc_sizes(g_storedir);
 	else {
@@ -758,7 +757,7 @@ static int main(int argc, char **argv)
 			if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
 				break;
 			futs.emplace_back(std::async([](const std::string *maildir, Sem *sem, int *ret) {
-				if (!exmdb_client::ping_store(maildir->c_str()))
+				if (!exmdb_client->ping_store(maildir->c_str()))
 					*ret = EXIT_FAILURE;
 				sem->release();
 			}, &user.maildir, &sem, &ret));
@@ -772,7 +771,7 @@ static int main(int argc, char **argv)
 			if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
 				return ret;
 			futs.emplace_back(std::async([](const std::string *maildir, Sem *sem, int *ret) {
-				if (!exmdb_client::unload_store(maildir->c_str()))
+				if (!exmdb_client->unload_store(maildir->c_str()))
 					*ret = EXIT_FAILURE;
 				sem->release();
 			}, &user.maildir, &sem, &ret));
@@ -786,7 +785,7 @@ static int main(int argc, char **argv)
 			if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
 				return ret;
 			futs.emplace_back(std::async([](const std::string *maildir, Sem *sem, int *ret) {
-				if (!exmdb_client::vacuum(maildir->c_str()))
+				if (!exmdb_client->vacuum(maildir->c_str()))
 					*ret = EXIT_FAILURE;
 				sem->release();
 			}, &user.maildir, &sem, &ret));
@@ -815,7 +814,7 @@ static errno_t resolvename(const GUID &guid, const char *name, bool create,
 	const PROPERTY_NAME xn = {MNID_STRING, guid, 0, deconst(name)};
 	const PROPNAME_ARRAY name_req = {1, deconst(&xn)};
 	PROPID_ARRAY name_rsp{};
-	if (!exmdb_client::get_named_propids(g_storedir, create, &name_req, &name_rsp))
+	if (!exmdb_client->get_named_propids(g_storedir, create, &name_req, &name_rsp))
 		return EINVAL;
 	if (name_rsp.size() != name_req.size())
 		return EINVAL;
@@ -841,7 +840,7 @@ static int delstoreprop(int argc, char **argv, const GUID &guid,
 		return EXIT_FAILURE;
 	uint32_t proptag = PROP_TAG(type, propid);
 	const PROPTAG_ARRAY tags = {1, &proptag};
-	if (!exmdb_client::remove_store_properties(g_storedir, &tags))
+	if (!exmdb_client->remove_store_properties(g_storedir, &tags))
 		return EXIT_FAILURE;
 	if (strcmp(name, "zcore_profsect") == 0)
 		unlink((g_storedir + "/config/zarafa.dat"s).c_str());
@@ -854,7 +853,7 @@ static errno_t showstoreprop(uint32_t proptag)
 {
 	const PROPTAG_ARRAY tags = {1, &proptag};
 	TPROPVAL_ARRAY vals{};
-	if (!exmdb_client::get_store_properties(g_storedir, CP_ACP, &tags, &vals))
+	if (!exmdb_client->get_store_properties(g_storedir, CP_ACP, &tags, &vals))
 		return EINVAL;
 	switch (PROP_TYPE(proptag)) {
 	case PT_BINARY: {
@@ -928,7 +927,7 @@ static errno_t setstoreprop(uint32_t proptag)
 	}
 	const TPROPVAL_ARRAY tprop_arr = {1, deconst(&pv)};
 	PROBLEM_ARRAY prob{};
-	if (!exmdb_client::set_store_properties(g_storedir, CP_ACP, &tprop_arr, &prob)) {
+	if (!exmdb_client->set_store_properties(g_storedir, CP_ACP, &tprop_arr, &prob)) {
 		mlog(LV_ERR, "set_store_prop RPC unsuccessful");
 		return EIO;
 	} else if (prob.count > 0) {
@@ -967,11 +966,11 @@ static errno_t clear_rwz()
 	static constexpr RESTRICTION_AND_OR rst_d = {std::size(rst_c), deconst(rst_c)};
 	static constexpr RESTRICTION rst_e = {RES_AND, {deconst(&rst_d)}};
 	uint32_t table_id = 0, rowcount = 0;
-	if (!exmdb_client::load_content_table(g_storedir, CP_ACP, inbox,
+	if (!exmdb_client->load_content_table(g_storedir, CP_ACP, inbox,
 	    nullptr, TABLE_FLAG_ASSOCIATED, &rst_e, nullptr,
 	    &table_id, &rowcount))
 		return EIO;
-	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(g_storedir, table_id); });
+	auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(g_storedir, table_id); });
 	if (rowcount == 0) {
 		printf("0 messages cleared\n");
 		return 0;
@@ -980,7 +979,7 @@ static errno_t clear_rwz()
 	static constexpr uint32_t qtags1[] = {PidTagMid};
 	static constexpr PROPTAG_ARRAY qtags = {std::size(qtags1), deconst(qtags1)};
 	TARRAY_SET rowset{};
-	if (!exmdb_client::query_table(g_storedir, nullptr, CP_ACP, table_id,
+	if (!exmdb_client->query_table(g_storedir, nullptr, CP_ACP, table_id,
 	    &qtags, 0, rowcount, &rowset))
 		return EIO;
 	std::vector<uint64_t> ids;
@@ -995,7 +994,7 @@ static errno_t clear_rwz()
 	ea_info.pids  = ids.data();
 	BOOL partial = false;
 	printf("Deleting %u messages...\n", ea_info.count);
-	if (!exmdb_client::delete_messages(g_storedir, CP_ACP, nullptr, inbox,
+	if (!exmdb_client->delete_messages(g_storedir, CP_ACP, nullptr, inbox,
 	    &ea_info, 1, &partial))
 		return EIO;
 	return 0;

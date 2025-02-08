@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <gromox/eid_array.hpp>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/proptag_array.hpp>
@@ -17,6 +18,8 @@
 #include "objects.hpp"
 #include "store_object.hpp"
 #include "zserver.hpp"
+
+using gromox::exmdb_client;
 
 std::unique_ptr<icsdownctx_object>
 icsdownctx_object::create(folder_object *pfolder, uint8_t sync_type)
@@ -67,7 +70,7 @@ BOOL icsdownctx_object::make_content(const BINARY &pstate_bin,
 	auto pseen_fai = (sync_flags & SYNC_ASSOCIATED) ? pctx->pstate->pseen_fai.get() : nullptr;
 	auto pseen     = (sync_flags & SYNC_NORMAL)     ? pctx->pstate->pseen.get()     : nullptr;
 	auto username = pctx->pstore->b_private ? nullptr : pinfo->get_username();
-	if (!exmdb_client::get_content_sync(pctx->pstore->get_dir(),
+	if (!exmdb_client->get_content_sync(pctx->pstore->get_dir(),
 	    pctx->folder_id, username, pctx->pstate->pgiven.get(), pseen, pseen_fai,
 	    pread, pinfo->cpid, prestriction, TRUE, &count_fai, &total_fai,
 	    &count_normal, &total_normal, &updated_messages, &chg_messages,
@@ -143,7 +146,7 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY &state,
 		return FALSE;
 	auto pinfo = zs_get_info();
 	auto username = pctx->pstore->owner_mode() ? nullptr : pinfo->get_username();
-	if (!exmdb_client::get_hierarchy_sync(pctx->pstore->get_dir(),
+	if (!exmdb_client->get_hierarchy_sync(pctx->pstore->get_dir(),
 	    pctx->folder_id, username, pctx->pstate->pgiven.get(),
 	    pctx->pstate->pseen.get(), &fldchgs, &pctx->last_changenum,
 	    &given_folders, &deleted_folders))
@@ -308,7 +311,7 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 		{PidTagParentFolderId, PR_DISPLAY_NAME, PR_CONTAINER_CLASS,
 		PR_ATTR_HIDDEN, PR_EXTENDED_FOLDER_FLAGS, PidTagChangeNumber};
 	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-	if (!exmdb_client::get_folder_properties(pctx->pstore->get_dir(), CP_ACP,
+	if (!exmdb_client->get_folder_properties(pctx->pstore->get_dir(), CP_ACP,
 	    fid, &proptags, &tmp_propvals))
 		return FALSE;
 	auto lnum = tmp_propvals.get<const uint64_t>(PidTagChangeNumber);

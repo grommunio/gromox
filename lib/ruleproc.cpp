@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -31,7 +31,6 @@
 #include <gromox/rop_util.hpp>
 
 using namespace gromox;
-using exmdb_client = exmdb_client_remote;
 DECLARE_SVC_API(,);
 
 namespace {
@@ -151,7 +150,7 @@ static void *cu_alloc(size_t z)
 
 static BOOL cu_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 {
-	return exmdb_client::get_named_propids(rp_storedir, false, names, ids);
+	return exmdb_client->get_named_propids(rp_storedir, false, names, ids);
 }
 
 static BOOL cu_get_propname(uint16_t propid, PROPERTY_NAME **name) try
@@ -272,7 +271,7 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 		src_id_vec.push_back(id);
 	PROPNAME_ARRAY src_name_arr{};
 	auto cl_0 = make_scope_exit([&]() { rx_delete_local(src_name_arr); });
-	if (!exmdb_client::get_named_propnames(par.cur.dirc(),
+	if (!exmdb_client->get_named_propnames(par.cur.dirc(),
 	    src_id_vec, &src_name_arr)) {
 		mlog(LV_DEBUG, "ruleproc: get_named_propnames(%s) failed",
 			par.cur.dirc());
@@ -282,7 +281,7 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 		mlog(LV_ERR, "ruleproc: np(src) counts are fishy");
 		return ecError;
 	}
-	if (!exmdb_client::get_named_propids(newdir, TRUE,
+	if (!exmdb_client->get_named_propids(newdir, TRUE,
 	    &src_name_arr, &dst_id_arr)) {
 		mlog(LV_DEBUG, "ruleproc: get_named_propids(%s) failed", newdir);
 		return ecRpcFailed;
@@ -300,7 +299,7 @@ ec_error_t rxparam::is_oof(bool *oof) const
 	static constexpr uint32_t tags[] = {PR_OOF_STATE};
 	static constexpr PROPTAG_ARRAY pt = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY props{};
-	if (!exmdb_client::get_store_properties(cur.dirc(), CP_UTF8, &pt, &props))
+	if (!exmdb_client->get_store_properties(cur.dirc(), CP_UTF8, &pt, &props))
 		return ecError;
 	auto flag = props.get<uint8_t>(PR_OOF_STATE);
 	*oof = flag != nullptr ? *flag : 0;
@@ -327,17 +326,17 @@ ec_error_t rxparam::load_std_rules(bool oof,
 	RESTRICTION rst_8         = {RES_AND, {&rst_7}};
 
 	auto dir = cur.dirc();
-	if (!exmdb_client::load_rule_table(dir, cur.fid, 0, &rst_8,
+	if (!exmdb_client->load_rule_table(dir, cur.fid, 0, &rst_8,
 	    &table_id, &row_count))
 		return ecError;
-	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(dir, table_id); });
+	auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 	static constexpr uint32_t tags[] = {
 		PR_RULE_STATE, PR_RULE_ID, PR_RULE_SEQUENCE, PR_RULE_NAME,
 		PR_RULE_PROVIDER, PR_RULE_CONDITION, PR_RULE_ACTIONS,
 	};
 	const PROPTAG_ARRAY ptags = {std::size(tags), deconst(tags)};
 	tarray_set output_rows{};
-	if (!exmdb_client::query_table(dir, nullptr, CP_ACP, table_id, &ptags,
+	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id, &ptags,
 	    0, row_count, &output_rows))
 		return ecError;
 
@@ -387,10 +386,10 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 	static constexpr SORT_ORDER sort_spec[] = {{PT_LONG, PROP_ID(PR_RULE_MSG_SEQUENCE), TABLE_SORT_ASCEND}};
 	static constexpr SORTORDER_SET sort_order = {std::size(sort_spec), 0, 0, deconst(sort_spec)};
 	auto dir = cur.dirc();
-	if (!exmdb_client::load_content_table(dir, CP_ACP, cur.fid, nullptr,
+	if (!exmdb_client->load_content_table(dir, CP_ACP, cur.fid, nullptr,
 	    TABLE_FLAG_ASSOCIATED, &rst_10, &sort_order, &table_id, &row_count))
 		return ecError;
-	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(dir, table_id); });
+	auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 
 	static constexpr uint32_t tags[] = {
 		PR_RULE_MSG_STATE, PidTagMid, PR_RULE_MSG_SEQUENCE,
@@ -402,7 +401,7 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 	const PROPTAG_ARRAY ptags = {std::size(tags), deconst(tags)};
 	const PROPTAG_ARRAY ptags2 = {std::size(tags2), deconst(tags2)};
 	tarray_set output_rows{};
-	if (!exmdb_client::query_table(dir, nullptr, CP_ACP, table_id, &ptags,
+	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id, &ptags,
 	    0, row_count, &output_rows))
 		return ecError;
 
@@ -424,7 +423,7 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 		rule.name = znul(row->get<const char>(PR_RULE_MSG_NAME));
 		rule.provider = znul(row->get<const char>(PR_RULE_MSG_PROVIDER));
 		TPROPVAL_ARRAY vals2{};
-		if (!exmdb_client::get_message_properties(dir, nullptr, CP_ACP,
+		if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
 		    *mid, &ptags2, &vals2))
 			continue;
 		auto cond = vals2.get<const BINARY>(PR_EXTENDED_RULE_MSG_CONDITION);
@@ -602,7 +601,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 		return ecNotFound;
 	unsigned int user_id = 0, domain_id = 0;
 	char *newdir = nullptr;
-	if (!exmdb_client::store_eid_to_user(par.cur.dirc(), &other_store,
+	if (!exmdb_client->store_eid_to_user(par.cur.dirc(), &other_store,
 	    &newdir, &user_id, &domain_id))
 		return ecRpcFailed;
 	if (newdir == nullptr)
@@ -637,7 +636,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	 * Envelope-To INBOX folder, we know the execution is finite.
 	 */
 	uint32_t permission = 0;
-	if (!exmdb_client::get_folder_perm(newdir, dst_fid, par.ev_to, &permission))
+	if (!exmdb_client->get_folder_perm(newdir, dst_fid, par.ev_to, &permission))
 		return ecRpcFailed;
 	if (!(permission & (frightsOwner | frightsCreate)))
 		return ecAccessDenied;
@@ -649,8 +648,8 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	auto err = rx_npid_replace(par, *dst, newdir);
 	if (err != ecSuccess)
 		return err;
-	if (!exmdb_client::allocate_message_id(newdir, dst_fid, &dst_mid) ||
-	    !exmdb_client::allocate_cn(newdir, &dst_cn))
+	if (!exmdb_client->allocate_message_id(newdir, dst_fid, &dst_mid) ||
+	    !exmdb_client->allocate_cn(newdir, &dst_cn))
 		return ecRpcFailed;
 	XID zxid{tgt_public ? rop_util_make_domain_guid(domain_id) :
 	         rop_util_make_user_guid(user_id), dst_cn};
@@ -685,7 +684,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 
 	/* Writeout */
 	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client::write_message(newdir, CP_UTF8, dst_fid,
+	if (!exmdb_client->write_message(newdir, CP_UTF8, dst_fid,
 	    dst.get(), &e_result)) {
 		mlog(LV_DEBUG, "ruleproc: write_message failed");
 		return ecRpcFailed;
@@ -703,7 +702,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	del_mids.count = 1;
 	del_mids.pids = reinterpret_cast<uint64_t *>(&par.cur.mid);
 	BOOL partial = false;
-	if (!exmdb_client::delete_messages(par.cur.dirc(), CP_UTF8, nullptr,
+	if (!exmdb_client->delete_messages(par.cur.dirc(), CP_UTF8, nullptr,
 	    par.cur.fid, &del_mids, true, &partial))
 		mlog(LV_ERR, "ruleproc: OP_MOVE del_msg %s:%llxh failed",
 			par.cur.dirc(), LLU{rop_util_get_gc_value(par.cur.mid)});
@@ -726,9 +725,9 @@ static ec_error_t op_copy(rxparam &par, const rule_node &rule,
 		return ecNotFound;
 	uint64_t dst_mid = 0;
 	BOOL result = false;
-	if (!exmdb_client::allocate_message_id(par.cur.dirc(), dst_fid, &dst_mid))
+	if (!exmdb_client->allocate_message_id(par.cur.dirc(), dst_fid, &dst_mid))
 		return ecRpcFailed;
-	if (!exmdb_client::movecopy_message(par.cur.dirc(), CP_ACP, par.cur.mid,
+	if (!exmdb_client->movecopy_message(par.cur.dirc(), CP_ACP, par.cur.mid,
 	    dst_fid, dst_mid, act_type == OP_MOVE ? TRUE : false, &result))
 		return ecRpcFailed;
 	if (act_type == OP_MOVE) {
@@ -760,7 +759,7 @@ static ec_error_t op_tag(rxparam &par, const rule_node &rule,
 	if (setval == nullptr)
 		return ecSuccess;
 	uint64_t change_num = 0, modtime = 0;
-	if (!exmdb_client::allocate_cn(par.cur.dirc(), &change_num))
+	if (!exmdb_client->allocate_cn(par.cur.dirc(), &change_num))
 		return ecRpcFailed;
 	auto change_key = xid_to_bin({GUID{}, change_num});
 	if (change_key == nullptr)
@@ -776,7 +775,7 @@ static ec_error_t op_tag(rxparam &par, const rule_node &rule,
 	if (valdata[1].pvalue == nullptr)
 		return ecServerOOM;
 	PROBLEM_ARRAY problems{};
-	if (!exmdb_client::set_message_properties(par.cur.dirc(),
+	if (!exmdb_client->set_message_properties(par.cur.dirc(),
 	    nullptr, CP_ACP, par.cur.mid, &valhdr, &problems))
 		return ecRpcFailed;
 	return ecSuccess;
@@ -786,7 +785,7 @@ static ec_error_t op_read(rxparam &par, const rule_node &rule)
 {
 	uint64_t cn = 0;
 	/* XXX: this RPC cannot cope with nullptr username on public stores */
-	if (!exmdb_client::set_message_read_state(par.cur.dirc(),
+	if (!exmdb_client->set_message_read_state(par.cur.dirc(),
 	    nullptr, par.cur.mid, true, &cn))
 		return ecRpcFailed;
 	return ecSuccess;
@@ -915,7 +914,7 @@ static ec_error_t mr_mark_done(rxparam &par)
 		return ecServerOOM;
 	uint64_t cal_mid = par.cur.mid, cal_cn = 0;
 	ec_error_t err = ecSuccess;
-	if (!exmdb_client::write_message_v2(par.cur.dir.c_str(), CP_ACP,
+	if (!exmdb_client->write_message_v2(par.cur.dir.c_str(), CP_ACP,
 	    par.cur.fid, par.ctnt.get(), &cal_mid, &cal_cn, &err))
 		return ecRpcFailed;
 	return err;
@@ -948,7 +947,7 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 		return ecError;
 	uint64_t cal_mid = 0, cal_cn = 0;
 	ec_error_t err = ecSuccess;
-	if (!exmdb_client::write_message_v2(par.cur.dir.c_str(), CP_ACP,
+	if (!exmdb_client->write_message_v2(par.cur.dir.c_str(), CP_ACP,
 	    cal_fid, msg.get(), &cal_mid, &cal_cn, &err))
 		return ecRpcFailed;
 	return err;
@@ -1184,7 +1183,7 @@ static ec_error_t mr_start(rxparam &par, const mr_policy &policy)
 	static_assert(std::size(rq_propname1) == l_is_silent + 1);
 	const PROPNAME_ARRAY rq_propname = {std::size(rq_propname1), deconst(rq_propname1)};
 	PROPID_ARRAY propids;
-	if (!exmdb_client::get_named_propids(par.cur.dir.c_str(), false,
+	if (!exmdb_client->get_named_propids(par.cur.dir.c_str(), false,
 	    &rq_propname, &propids) || propids.size() != rq_propname.size())
 		return ecError;
 
@@ -1218,7 +1217,7 @@ ec_error_t rxparam::run()
 	 */
 	std::sort(rule_list.begin(), rule_list.end());
 
-	if (!exmdb_client::read_message(cur.dirc(), nullptr, CP_ACP,
+	if (!exmdb_client->read_message(cur.dirc(), nullptr, CP_ACP,
 	    cur.mid, &unique_tie(ctnt)))
 		return ecError;
 	if (ctnt == nullptr)
@@ -1233,7 +1232,7 @@ ec_error_t rxparam::run()
 	if (del) {
 		const EID_ARRAY ids = {1, reinterpret_cast<uint64_t *>(&cur.mid)};
 		BOOL partial;
-		if (!exmdb_client::delete_messages(cur.dirc(), CP_ACP, nullptr,
+		if (!exmdb_client->delete_messages(cur.dirc(), CP_ACP, nullptr,
 		    cur.fid, &ids, true/*hard*/, &partial))
 			mlog(LV_DEBUG, "ruleproc: deletion unsuccessful");
 		return ecSuccess;
@@ -1249,7 +1248,7 @@ ec_error_t rxparam::run()
 			return err;
 	}
 
-	if (!exmdb_client::notify_new_mail(cur.dirc(), cur.fid, cur.mid))
+	if (!exmdb_client->notify_new_mail(cur.dirc(), cur.fid, cur.mid))
 		mlog(LV_ERR, "ruleproc: newmail notification unsuccessful");
 	return ecSuccess;
 }

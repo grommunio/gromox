@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <climits>
@@ -240,7 +240,7 @@ static void *zcorezs_scanwork(void *param)
 		tl_hold.unlock();
 		for (const auto &dir : maildir_list) {
 			common_util_build_environment();
-			exmdb_client::ping_store(dir.c_str());
+			exmdb_client->ping_store(dir.c_str());
 			common_util_free_environment();
 		}
 		maildir_list.clear();
@@ -337,7 +337,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		pnew_mail->parentid = *pbin;
 		static constexpr proptag_t proptag_buff[] = {PR_MESSAGE_CLASS, PR_MESSAGE_FLAGS};
 		static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-		if (!exmdb_client::get_message_properties(dir, nullptr, CP_ACP,
+		if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
 		    message_id, &proptags, &propvals))
 			return;
 		auto str = propvals.get<char>(PR_MESSAGE_CLASS);
@@ -1014,7 +1014,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			return ecInvalidParam;
 	}
 	if (0 != message_id) {
-		if (!exmdb_client::is_msg_deleted(pstore->get_dir(),
+		if (!exmdb_client->is_msg_deleted(pstore->get_dir(),
 		    message_id, &b_del))
 			return ecError;
 		if (b_del && !(flags & SHOW_SOFT_DELETES))
@@ -1034,13 +1034,13 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			return zh_error(*phobject);
 		*pmapi_type = zs_objtype::message;
 	} else {
-		if (!exmdb_client::is_folder_present(pstore->get_dir(),
+		if (!exmdb_client->is_folder_present(pstore->get_dir(),
 		    folder_id, &b_exist))
 			return ecError;
 		if (!b_exist)
 			return ecNotFound;
 		if (!pstore->b_private) {
-			if (!exmdb_client::is_folder_deleted(pstore->get_dir(),
+			if (!exmdb_client->is_folder_deleted(pstore->get_dir(),
 			    folder_id, &b_del))
 				return ecError;
 			if (b_del && !(flags & SHOW_SOFT_DELETES))
@@ -1053,7 +1053,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		if (pstore->owner_mode()) {
 			tag_access = MAPI_ACCESS_AllSix;
 		} else {
-			if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 			    folder_id, pinfo->get_username(), &permission))
 				return ecError;
 			if (permission == rightsNone) {
@@ -1372,7 +1372,7 @@ ec_error_t zs_modifypermissions(GUID hsession,
 		return ecNotSupported;
 	if (!pfolder->pstore->owner_mode()) {
 		uint32_t permission = 0;
-		if (!exmdb_client::get_folder_perm(pfolder->pstore->get_dir(),
+		if (!exmdb_client->get_folder_perm(pfolder->pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsOwner))
@@ -1400,7 +1400,7 @@ ec_error_t zs_modifyrules(GUID hsession, uint32_t hfolder, uint32_t flags,
 				return ecInvalidParam;
 	if (!pfolder->pstore->owner_mode()) {
 		uint32_t permission = 0;
-		if (!exmdb_client::get_folder_perm(pfolder->pstore->get_dir(),
+		if (!exmdb_client->get_folder_perm(pfolder->pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsOwner))
@@ -1465,7 +1465,7 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 	if (mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecError;
 	uint32_t permission = rightsNone;
-	if (!exmdb_client::get_mbox_perm(mres.maildir.c_str(),
+	if (!exmdb_client->get_mbox_perm(mres.maildir.c_str(),
 	    pinfo->get_username(), &permission))
 		return ecError;
 	if (permission == rightsNone) {
@@ -1556,7 +1556,7 @@ ec_error_t zs_loadcontenttable(GUID hsession,
 		auto folder = static_cast<folder_object *>(pobject);
 		pstore = folder->pstore;
 		if (!pstore->owner_mode()) {
-			if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 			    folder->folder_id, pinfo->get_username(), &permission))
 				return ecNotFound;
 			if (!(permission & (frightsReadAny | frightsOwner)))
@@ -1642,7 +1642,7 @@ ec_error_t zs_createmessage(GUID hsession,
 	if (zh_error(hstore))
 		return zh_error(hstore);
 	if (!pstore->owner_mode()) {
-		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+		if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & (frightsOwner | frightsCreate)))
@@ -1673,7 +1673,7 @@ ec_error_t zs_createmessage(GUID hsession,
 		total_mail += *num;
 	if (total_mail > g_max_message)
 		return ecQuotaExceeded;
-	if (!exmdb_client::allocate_message_id(pstore->get_dir(),
+	if (!exmdb_client->allocate_message_id(pstore->get_dir(),
 	    folder_id, &message_id))
 		return ecError;
 	auto pmessage = message_object::create(pstore, TRUE,
@@ -1719,7 +1719,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	auto pstore = pfolder->pstore;
 	const char *username = nullptr;
 	if (!pstore->owner_mode()) {
-		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+		if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (permission & (frightsDeleteAny | frightsOwner))
@@ -1745,7 +1745,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	}
 	BOOL b_hard = (flags & DELETE_HARD_DELETE) ? TRUE : false;
 	if (!notify_non_read) {
-		if (!exmdb_client::delete_messages(pstore->get_dir(),
+		if (!exmdb_client->delete_messages(pstore->get_dir(),
 		    pinfo->cpid, username, pfolder->folder_id, &ids, b_hard,
 		    &b_partial))
 			return ecError;
@@ -1767,7 +1767,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 			{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, PR_READ};
 		static constexpr PROPTAG_ARRAY tmp_proptags =
 			{std::size(proptag_buff), deconst(proptag_buff)};
-		if (!exmdb_client::get_message_properties(pstore->get_dir(),
+		if (!exmdb_client->get_message_properties(pstore->get_dir(),
 		    nullptr, CP_ACP, i_eid, &tmp_proptags, &tmp_propvals))
 			return ecError;
 		pbrief = NULL;
@@ -1775,7 +1775,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 		if (flag != nullptr && *flag != 0) {
 			flag = tmp_propvals.get<uint8_t>(PR_READ);
 			if ((flag == nullptr || *flag == 0) &&
-			    !exmdb_client::get_message_brief(pstore->get_dir(),
+			    !exmdb_client->get_message_brief(pstore->get_dir(),
 			    pinfo->cpid, i_eid, &pbrief))
 				return ecError;
 		}
@@ -1784,7 +1784,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 			common_util_notify_receipt(pstore->get_account(),
 				NOTIFY_RECEIPT_NON_READ, pbrief);
 	}
-	return exmdb_client::delete_messages(pstore->get_dir(), pinfo->cpid,
+	return exmdb_client->delete_messages(pstore->get_dir(), pinfo->cpid,
 	       username, pfolder->folder_id, &ids1, b_hard, &b_partial) ?
 	       ecSuccess : ecError;
 }
@@ -1824,7 +1824,7 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 		if (!b_copy) {
 			b_guest = FALSE;
 			if (!src_store->owner_mode()) {
-				if (!exmdb_client::get_folder_perm(src_store->get_dir(),
+				if (!exmdb_client->get_folder_perm(src_store->get_dir(),
 				    psrc_folder->folder_id, pinfo->get_username(), &permission))
 					return ecError;
 				if (permission & frightsDeleteAny)
@@ -1836,7 +1836,7 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 			}
 		}
 		if (!dst_store->owner_mode()) {
-			if (!exmdb_client::get_folder_perm(dst_store->get_dir(),
+			if (!exmdb_client->get_folder_perm(dst_store->get_dir(),
 			    pdst_folder->folder_id, pinfo->get_username(), &permission))
 				return ecError;
 			if (!(permission & frightsCreate))
@@ -1885,7 +1885,7 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 		ids.pids[ids.count++] = message_id;
 	}
 	if (!src_store->owner_mode()) {
-		if (!exmdb_client::get_folder_perm(src_store->get_dir(),
+		if (!exmdb_client->get_folder_perm(src_store->get_dir(),
 		    pdst_folder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsCreate))
@@ -1894,7 +1894,7 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 	} else {
 		b_guest = FALSE;
 	}
-	return exmdb_client::movecopy_messages(src_store->get_dir(),
+	return exmdb_client->movecopy_messages(src_store->get_dir(),
 	       pinfo->cpid, b_guest, pinfo->get_username(),
 	       psrc_folder->folder_id, pdst_folder->folder_id, b_copy, &ids,
 	       &b_partial) ? ecSuccess : ecError;
@@ -1942,19 +1942,19 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 		res_prop.proptag = PR_READ;
 		res_prop.propval.proptag = PR_READ;
 		res_prop.propval.pvalue = deconst(&fake_false);
-		if (!exmdb_client::load_content_table(pstore->get_dir(), CP_ACP,
+		if (!exmdb_client->load_content_table(pstore->get_dir(), CP_ACP,
 		    pfolder->folder_id, username, TABLE_FLAG_NONOTIFICATIONS,
 		    &restriction, nullptr, &table_id, &row_count))
 			return ecError;
 
 		static constexpr proptag_t tmp_proptag[] = {PR_ENTRYID};
 		static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
-		if (!exmdb_client::query_table(pstore->get_dir(), username,
+		if (!exmdb_client->query_table(pstore->get_dir(), username,
 		    CP_ACP, table_id, &proptags, 0, row_count, &tmp_set)) {
-			exmdb_client::unload_table(pstore->get_dir(), table_id);
+			exmdb_client->unload_table(pstore->get_dir(), table_id);
 			return ecError;
 		}
-		exmdb_client::unload_table(pstore->get_dir(), table_id);
+		exmdb_client->unload_table(pstore->get_dir(), table_id);
 		if (tmp_set.count > 0) {
 			tmp_bins.count = 0;
 			tmp_bins.pbin = cu_alloc<BINARY>(tmp_set.count);
@@ -2001,12 +2001,12 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 					b_notify = TRUE;
 			}
 		}
-		if (b_changed && !exmdb_client::set_message_read_state(pstore->get_dir(),
+		if (b_changed && !exmdb_client->set_message_read_state(pstore->get_dir(),
 		    username, message_id, tmp_byte, &read_cn))
 			return ecError;
 		if (!b_notify)
 			continue;
-		if (!exmdb_client::get_message_brief(pstore->get_dir(),
+		if (!exmdb_client->get_message_brief(pstore->get_dir(),
 		    pinfo->cpid, message_id, &pbrief))
 			return ecError;
 		if (pbrief != nullptr)
@@ -2018,7 +2018,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 		propval_buff[0].pvalue = deconst(&fake_false);
 		propval_buff[1].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 		propval_buff[1].pvalue = deconst(&fake_false);
-		exmdb_client::set_message_properties(pstore->get_dir(), username,
+		exmdb_client->set_message_properties(pstore->get_dir(), username,
 			CP_ACP, message_id, &propvals, &problems);
 	}
 	return ecSuccess;
@@ -2058,13 +2058,13 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 	if (!pstore->b_private && folder_type == FOLDER_SEARCH)
 		return ecNotSupported;
 	if (!pstore->owner_mode()) {
-		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+		if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 		    pparent->folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & (frightsOwner | frightsCreateSubfolder)))
 			return ecAccessDenied;
 	}
-	if (!exmdb_client::get_folder_by_name(pstore->get_dir(),
+	if (!exmdb_client->get_folder_by_name(pstore->get_dir(),
 	    pparent->folder_id, folder_name, &folder_id))
 		return ecError;
 	if (0 != folder_id) {
@@ -2076,7 +2076,7 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 			return ecDuplicateName;
 	} else {
 		parent_id = pparent->folder_id;
-		if (!exmdb_client::allocate_cn(pstore->get_dir(), &change_num))
+		if (!exmdb_client->allocate_cn(pstore->get_dir(), &change_num))
 			return ecError;
 		tmp_type = folder_type;
 		last_time = rop_util_current_nttime();
@@ -2105,7 +2105,7 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 		if (propval_buff[8].pvalue == nullptr)
 			return ecError;
 		ec_error_t err = ecSuccess;
-		if (!exmdb_client::create_folder(pstore->get_dir(), pinfo->cpid,
+		if (!exmdb_client->create_folder(pstore->get_dir(), pinfo->cpid,
 		    &tmp_propvals, &folder_id, &err))
 			return ecError;
 		if (err != ecSuccess)
@@ -2127,7 +2127,7 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 			propval_buff[1].pvalue = &tmp_id;
 			propval_buff[2].proptag = PR_MEMBER_RIGHTS;
 			propval_buff[2].pvalue = &permission;
-			if (!exmdb_client::update_folder_permission(pstore->get_dir(),
+			if (!exmdb_client->update_folder_permission(pstore->get_dir(),
 			    folder_id, false, 1, &permission_row))
 				return ecError;
 		}
@@ -2188,14 +2188,14 @@ ec_error_t zs_deletefolder(GUID hsession,
 	}
 	const char *username = nullptr;
 	if (!pstore->owner_mode()) {
-		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+		if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsOwner))
 			return ecAccessDenied;
 		username = pinfo->get_username();
 	}
-	if (!exmdb_client::is_folder_present(pstore->get_dir(),
+	if (!exmdb_client->is_folder_present(pstore->get_dir(),
 	    pfolder->folder_id, &b_exist))
 		return ecError;
 	if (!b_exist)
@@ -2217,7 +2217,7 @@ ec_error_t zs_deletefolder(GUID hsession,
 			goto DELETE_FOLDER;
 	}
 	if (flags & (DEL_FOLDERS | DEL_MESSAGES | DEL_ASSOCIATED)) {
-		if (!exmdb_client::empty_folder(pstore->get_dir(), pinfo->cpid,
+		if (!exmdb_client->empty_folder(pstore->get_dir(), pinfo->cpid,
 		    username, folder_id, flags, &b_partial))
 			return ecError;
 		if (b_partial)
@@ -2225,7 +2225,7 @@ ec_error_t zs_deletefolder(GUID hsession,
 			return ecSuccess;
 	}
  DELETE_FOLDER:
-	return exmdb_client::delete_folder(pstore->get_dir(), pinfo->cpid,
+	return exmdb_client->delete_folder(pstore->get_dir(), pinfo->cpid,
 	       folder_id, (flags & DELETE_HARD_DELETE) ? TRUE : false, &b_done) ?
 	       ecSuccess : ecError;
 }
@@ -2255,14 +2255,14 @@ ec_error_t zs_emptyfolder(GUID hsession, uint32_t hfolder, uint32_t flags)
 	}
 	const char *username = nullptr;
 	if (!pstore->owner_mode()) {
-		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+		if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & (frightsDeleteAny | frightsDeleteOwned)))
 			return ecAccessDenied;
 		username = pinfo->get_username();
 	}
-	return exmdb_client::empty_folder(pstore->get_dir(),
+	return exmdb_client->empty_folder(pstore->get_dir(),
 	       pinfo->cpid, username, pfolder->folder_id,
 	       flags | DEL_MESSAGES | DEL_FOLDERS, &b_partial) ? ecSuccess : ecError;
 }
@@ -2309,12 +2309,12 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 	BOOL b_guest = false;
 	const char *username = nullptr;
 	if (!src_store->owner_mode()) {
-		if (!exmdb_client::get_folder_perm(src_store->get_dir(),
+		if (!exmdb_client->get_folder_perm(src_store->get_dir(),
 		    folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsReadAny))
 			return ecAccessDenied;
-		if (!exmdb_client::get_folder_perm(src_store->get_dir(),
+		if (!exmdb_client->get_folder_perm(src_store->get_dir(),
 		    pdst_folder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & (frightsOwner | frightsCreateSubfolder)))
@@ -2324,7 +2324,7 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 	}
 	if (src_store != dst_store) {
 		if (!b_copy && !src_store->owner_mode()) {
-			if (!exmdb_client::get_folder_perm(src_store->get_dir(),
+			if (!exmdb_client->get_folder_perm(src_store->get_dir(),
 			    psrc_parent->folder_id, pinfo->get_username(), &permission))
 				return ecError;
 			if (!(permission & frightsOwner))
@@ -2335,26 +2335,26 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 		if (ret != ecSuccess)
 			return ret;
 		if (!b_copy) {
-			if (!exmdb_client::empty_folder(src_store->get_dir(),
+			if (!exmdb_client->empty_folder(src_store->get_dir(),
 			    pinfo->cpid, username, folder_id,
 			    DEL_MESSAGES | DEL_ASSOCIATED | DEL_FOLDERS, &b_partial))
 				return ecError;
 			if (b_partial)
 				/* failure occurs, stop deleting folder */
 				return ecSuccess;
-			if (!exmdb_client::delete_folder(src_store->get_dir(),
+			if (!exmdb_client->delete_folder(src_store->get_dir(),
 			    pinfo->cpid, folder_id, false, &b_done))
 				return ecError;
 		}
 		return ecSuccess;
 	}
-	if (!exmdb_client::is_descendant_folder(src_store->get_dir(), folder_id,
+	if (!exmdb_client->is_descendant_folder(src_store->get_dir(), folder_id,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
 	if (b_cycle)
 		return ecRootFolder;
 	ec_error_t err = ecSuccess;
-	if (!exmdb_client::movecopy_folder(src_store->get_dir(), pinfo->cpid,
+	if (!exmdb_client->movecopy_folder(src_store->get_dir(), pinfo->cpid,
 	    b_guest, pinfo->get_username(), psrc_parent->folder_id, folder_id,
 	    pdst_folder->folder_id, new_name, b_copy, &err))
 		return ecError;
@@ -2435,7 +2435,7 @@ ec_error_t zs_entryidfromsourcekey(GUID hsession, uint32_t hstore,
 			if (!mysql_adaptor_check_same_org(domain_id, pstore->account_id))
 				return ecInvalidParam;
 			ec_error_t ret = ecSuccess;
-			if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
+			if (!exmdb_client->get_mapping_replid(pstore->get_dir(),
 			    tmp_xid.guid, &replid, &ret))
 				return ecError;
 			if (ret != ecSuccess)
@@ -2511,7 +2511,7 @@ ec_error_t zs_storeadvise(GUID hsession, uint32_t hstore,
 		if (b_private != pstore->b_private || account_id != pstore->account_id)
 			return ecInvalidParam;
 	}
-	if (!exmdb_client::subscribe_notification(pstore->get_dir(),
+	if (!exmdb_client->subscribe_notification(pstore->get_dir(),
 	    event_mask, TRUE, folder_id, message_id, psub_id))
 		return ecError;
 	gx_strlcpy(dir, pstore->get_dir(), std::size(dir));
@@ -2519,7 +2519,7 @@ ec_error_t zs_storeadvise(GUID hsession, uint32_t hstore,
 	std::unique_lock nl_hold(g_notify_lock);
 	if (g_notify_table.size() == g_table_size) {
 		nl_hold.unlock();
-		exmdb_client::unsubscribe_notification(dir, *psub_id);
+		exmdb_client->unsubscribe_notification(dir, *psub_id);
 		return ecError;
 	}
 	try {
@@ -2527,7 +2527,7 @@ ec_error_t zs_storeadvise(GUID hsession, uint32_t hstore,
 		g_notify_table.try_emplace(std::move(tmp_buf), hsession, hstore);
 	} catch (const std::bad_alloc &) {
 		nl_hold.unlock();
-		exmdb_client::unsubscribe_notification(dir, *psub_id);
+		exmdb_client->unsubscribe_notification(dir, *psub_id);
 		return ecError;
 	}
 	return ecSuccess;
@@ -2547,7 +2547,7 @@ ec_error_t zs_unadvise(GUID hsession, uint32_t hstore,
 		return ecNotSupported;
 	std::string dir = pstore->get_dir();
 	pinfo.reset();
-	exmdb_client::unsubscribe_notification(dir.c_str(), sub_id);
+	exmdb_client->unsubscribe_notification(dir.c_str(), sub_id);
 	auto tmp_buf = std::to_string(sub_id) + "|"s + std::move(dir);
 	std::unique_lock nl_hold(g_notify_lock);
 	g_notify_table.erase(std::move(tmp_buf));
@@ -3089,7 +3089,7 @@ ec_error_t zs_getreceivefolder(GUID hsession,
 	if (!pstore->b_private)
 		return ecNotSupported;
 	std::string temp_class;
-	if (!exmdb_client::get_folder_by_class(pstore->get_dir(), pstrclass,
+	if (!exmdb_client->get_folder_by_class(pstore->get_dir(), pstrclass,
 	    &folder_id, &temp_class))
 		return ecError;
 	pbin = cu_fid_to_entryid(pstore, folder_id);
@@ -3362,7 +3362,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		return ecNotSupported;
 	if (!pstore->owner_mode()) {
 		uint32_t permission = 0;
-		if (!exmdb_client::get_mbox_perm(pstore->get_dir(),
+		if (!exmdb_client->get_mbox_perm(pstore->get_dir(),
 		    pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsGromoxSendAs))
@@ -3450,7 +3450,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 	flag = tmp_propvals.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
 	if (!(message_flags & MSGFLAG_SUBMITTED)) {
-		if (!exmdb_client::try_mark_submit(pstore->get_dir(),
+		if (!exmdb_client->try_mark_submit(pstore->get_dir(),
 		    pmessage->get_id(), &b_marked))
 			return ecError;
 		if (!b_marked)
@@ -3464,18 +3464,18 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 			timer_id = system_services_add_timer(
 					command_buff, deferred_time);
 			if (0 == timer_id) {
-				exmdb_client::clear_submit(pstore->get_dir(),
+				exmdb_client->clear_submit(pstore->get_dir(),
 					pmessage->get_id(), b_unsent);
 				return ecError;
 			}
-			exmdb_client::set_message_timer(pstore->get_dir(),
+			exmdb_client->set_message_timer(pstore->get_dir(),
 				pmessage->get_id(), timer_id);
 			pmessage->reload();
 			return ecSuccess;
 		}
 	}
 	if (!cu_send_message(pstore, pmessage, TRUE)) {
-		exmdb_client::clear_submit(pstore->get_dir(),
+		exmdb_client->clear_submit(pstore->get_dir(),
 			pmessage->get_id(), b_unsent);
 		return ecRpcFailed;
 	}
@@ -3603,7 +3603,7 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 		auto folder = static_cast<folder_object *>(pobject);
 		auto pstore = folder->pstore;
 		if (!pstore->owner_mode()) {
-			if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 			    folder->folder_id, pinfo->get_username(), &permission))
 				return ecError;
 			if (!(permission & frightsOwner))
@@ -3764,7 +3764,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		auto folder = static_cast<folder_object *>(pobject);
 		auto pstore = folder->pstore;
 		if (!pstore->owner_mode()) {
-			if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 			    folder->folder_id, pinfo->get_username(), &permission))
 				return ecError;
 			if (!(permission & frightsOwner))
@@ -3943,7 +3943,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 			return ecNotSupported;
 		const char *username = nullptr;
 		if (!pstore->owner_mode()) {
-			if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 			    folder->folder_id, pinfo->get_username(), &permission))
 				return ecError;
 			if (permission & frightsOwner) {
@@ -3953,7 +3953,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 					return ecAccessDenied;
 				username = pinfo->get_username();
 			}
-			if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 			    fdst->folder_id, pinfo->get_username(), &permission))
 				return ecError;
 			if (!(permission & frightsOwner))
@@ -3961,7 +3961,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		}
 		BOOL b_sub;
 		if (!pexclude_proptags->has(PR_CONTAINER_HIERARCHY)) {
-			if (!exmdb_client::is_descendant_folder(pstore->get_dir(),
+			if (!exmdb_client->is_descendant_folder(pstore->get_dir(),
 			    folder->folder_id, fdst->folder_id, &b_cycle))
 				return ecError;
 			if (b_cycle)
@@ -3993,7 +3993,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 			return ecError;
 		if (b_sub || b_normal || b_fai) {
 			BOOL b_guest = username == STORE_OWNER_GRANTED ? false : TRUE;
-			if (!exmdb_client::copy_folder_internal(pstore->get_dir(),
+			if (!exmdb_client->copy_folder_internal(pstore->get_dir(),
 			    pinfo->cpid, b_guest, pinfo->get_username(),
 			    folder->folder_id, b_normal, b_fai, b_sub,
 			    fdst->folder_id, &b_collid, &b_partial))
@@ -4341,14 +4341,14 @@ ec_error_t zs_importmessage(GUID hsession, uint32_t hctx,
 		if (tmp_guid != tmp_xid.guid)
 			return ecInvalidParam;
 		message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
-		if (!exmdb_client::is_msg_present(pstore->get_dir(), folder_id,
+		if (!exmdb_client->is_msg_present(pstore->get_dir(), folder_id,
 		    message_id, &b_exist))
 			return ecError;
 		if (!b_exist)
 			return ecNotFound;
 	}
 	if (!pstore->owner_mode()) {
-		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+		if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 		    folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (b_new) {
@@ -4386,7 +4386,7 @@ ec_error_t zs_importmessage(GUID hsession, uint32_t hctx,
 		if (b_fai != orig_is_fai)
 			return ecInvalidParam;
 	} else {
-		if (!exmdb_client::allocate_message_id(pstore->get_dir(),
+		if (!exmdb_client->allocate_message_id(pstore->get_dir(),
 		    folder_id, &message_id))
 			return ecError;
 	}
@@ -4458,7 +4458,7 @@ ec_error_t zs_importfolder(GUID hsession,
 		return ecNotSupported;
 	if (static_cast<BINARY *>(pproplist->ppropval[0].pvalue)->cb == 0) {
 		parent_id1 = pctx->get_parent_folder_id();
-		if (!exmdb_client::is_folder_present(pstore->get_dir(),
+		if (!exmdb_client->is_folder_present(pstore->get_dir(),
 		    parent_id1, &b_exist))
 			return ecError;
 		if (!b_exist)
@@ -4504,7 +4504,7 @@ ec_error_t zs_importfolder(GUID hsession,
 			if (!mysql_adaptor_check_same_org(domain_id, pstore->account_id))
 				return ecInvalidParam;
 			ec_error_t ret = ecSuccess;
-			if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
+			if (!exmdb_client->get_mapping_replid(pstore->get_dir(),
 			    tmp_xid.guid, &replid, &ret))
 				return ecError;
 			if (ret != ecSuccess)
@@ -4514,23 +4514,23 @@ ec_error_t zs_importfolder(GUID hsession,
 			folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		}
 	}
-	if (!exmdb_client::is_folder_present(pstore->get_dir(), folder_id, &b_exist))
+	if (!exmdb_client->is_folder_present(pstore->get_dir(), folder_id, &b_exist))
 		return ecError;
 	if (!b_exist) {
 		if (!pstore->owner_mode()) {
-			if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 			    parent_id1, pinfo->get_username(), &permission))
 				return ecError;
 			if (!(permission & frightsCreateSubfolder))
 				return ecAccessDenied;
 		}
-		if (!exmdb_client::get_folder_by_name(pstore->get_dir(),
+		if (!exmdb_client->get_folder_by_name(pstore->get_dir(),
 		    parent_id1, static_cast<char *>(pproplist->ppropval[3].pvalue),
 		    &tmp_fid))
 			return ecError;
 		if (tmp_fid != 0)
 			return ecDuplicateName;
-		if (!exmdb_client::allocate_cn(pstore->get_dir(), &change_num))
+		if (!exmdb_client->allocate_cn(pstore->get_dir(), &change_num))
 			return ecError;
 		tmp_propvals.count = 0;
 		tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8 + ppropvals->count);
@@ -4555,7 +4555,7 @@ ec_error_t zs_importfolder(GUID hsession,
 			tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &tmp_type;
 		}
 		ec_error_t err = ecSuccess;
-		if (!exmdb_client::create_folder(pstore->get_dir(), pinfo->cpid,
+		if (!exmdb_client->create_folder(pstore->get_dir(), pinfo->cpid,
 		    &tmp_propvals, &tmp_fid, &err))
 			return ecError;
 		if (err != ecSuccess)
@@ -4566,7 +4566,7 @@ ec_error_t zs_importfolder(GUID hsession,
 		return ecSuccess;
 	}
 	if (!pstore->owner_mode()) {
-		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+		if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 		    folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsOwner))
@@ -4584,7 +4584,7 @@ ec_error_t zs_importfolder(GUID hsession,
 		if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 			return ecAccessDenied;
 		if (!pstore->owner_mode()) {
-			if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 			    parent_id1, pinfo->get_username(), &permission))
 				return ecError;
 			if (!(permission & frightsCreateSubfolder))
@@ -4594,7 +4594,7 @@ ec_error_t zs_importfolder(GUID hsession,
 			b_guest = FALSE;
 		}
 		ec_error_t err = ecSuccess;
-		if (!exmdb_client::movecopy_folder(pstore->get_dir(),
+		if (!exmdb_client->movecopy_folder(pstore->get_dir(),
 		    pinfo->cpid, b_guest, pinfo->get_username(), parent_id,
 		    folder_id, parent_id1,
 		    static_cast<char *>(pproplist->ppropval[3].pvalue), false,
@@ -4603,7 +4603,7 @@ ec_error_t zs_importfolder(GUID hsession,
 		if (err != ecSuccess)
 			return err;
 	}
-	if (!exmdb_client::allocate_cn(pstore->get_dir(), &change_num))
+	if (!exmdb_client->allocate_cn(pstore->get_dir(), &change_num))
 		return ecError;
 	tmp_propvals.count = 0;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5 + ppropvals->count);
@@ -4618,7 +4618,7 @@ ec_error_t zs_importfolder(GUID hsession,
 	tmp_propvals.count = 3;
 	for (size_t i = 0; i < ppropvals->count; ++i)
 		tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
-	if (!exmdb_client::set_folder_properties(pstore->get_dir(),
+	if (!exmdb_client->set_folder_properties(pstore->get_dir(),
 	    pinfo->cpid, folder_id, &tmp_propvals, &tmp_problems))
 		return ecError;
 	pctx->pstate->pseen->append(change_num);
@@ -4659,7 +4659,7 @@ ec_error_t zs_importdeletion(GUID hsession,
 	if (pstore->owner_mode()) {
 		username = NULL;
 	} else if (sync_type == SYNC_TYPE_CONTENTS &&
-	    !exmdb_client::get_folder_perm(pstore->get_dir(),
+	    !exmdb_client->get_folder_perm(pstore->get_dir(),
 	    folder_id, pinfo->get_username(), &permission)) {
 		if (permission & (frightsOwner | frightsDeleteAny))
 			username = NULL;
@@ -4697,7 +4697,7 @@ ec_error_t zs_importdeletion(GUID hsession,
 				    pstore->account_id))
 					return ecInvalidParam;
 				ec_error_t ret = ecSuccess;
-				if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
+				if (!exmdb_client->get_mapping_replid(pstore->get_dir(),
 				    tmp_xid.guid, &replid, &ret))
 					return ecError;
 				if (ret != ecSuccess)
@@ -4708,11 +4708,11 @@ ec_error_t zs_importdeletion(GUID hsession,
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {
-			if (!exmdb_client::is_msg_present(pstore->get_dir(),
+			if (!exmdb_client->is_msg_present(pstore->get_dir(),
 			    folder_id, eid, &b_exist))
 				return ecError;
 		} else {
-			if (!exmdb_client::is_folder_present(pstore->get_dir(),
+			if (!exmdb_client->is_folder_present(pstore->get_dir(),
 			    eid, &b_exist))
 				return ecError;
 		}
@@ -4725,7 +4725,7 @@ ec_error_t zs_importdeletion(GUID hsession,
 					return ecError;
 				if (!b_owner)
 					return ecAccessDenied;
-			} else if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+			} else if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 			    eid, username, &permission) && !(permission & frightsOwner)) {
 				return ecAccessDenied;
 			}
@@ -4745,19 +4745,19 @@ ec_error_t zs_importdeletion(GUID hsession,
 			{
 			unsigned int f = b_hard ? DELETE_HARD_DELETE : 0;
 			f |= DEL_MESSAGES | DEL_ASSOCIATED | DEL_FOLDERS;
-			if (!exmdb_client::empty_folder(pstore->get_dir(),
+			if (!exmdb_client->empty_folder(pstore->get_dir(),
 			    pinfo->cpid, username, eid, f, &b_partial) ||
 			    b_partial)
 				return ecError;
 			}
  DELETE_FOLDER:
-			if (!exmdb_client::delete_folder(pstore->get_dir(),
+			if (!exmdb_client->delete_folder(pstore->get_dir(),
 			    pinfo->cpid, eid, b_hard, &b_result) || !b_result)
 				return ecError;
 		}
 	}
 	if (sync_type == SYNC_TYPE_CONTENTS && message_ids.count > 0 &&
-	    (!exmdb_client::delete_messages(pstore->get_dir(), pinfo->cpid,
+	    (!exmdb_client->delete_messages(pstore->get_dir(), pinfo->cpid,
 	    nullptr, folder_id, &message_ids, b_hard, &b_partial) || b_partial))
 		return ecError;
 	return ecSuccess;
@@ -4788,7 +4788,7 @@ ec_error_t zs_importreadstates(GUID hsession,
 	const char *username = nullptr;
 	if (!pstore->owner_mode()) {
 		folder_id = pctx->get_parent_folder_id();
-		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+		if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 		    folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsReadAny))
@@ -4812,7 +4812,7 @@ ec_error_t zs_importreadstates(GUID hsession,
 		}
 		static constexpr proptag_t proptag_buff[] = {PR_ASSOCIATED, PR_READ};
 		static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-		if (!exmdb_client::get_message_properties(pstore->get_dir(),
+		if (!exmdb_client->get_message_properties(pstore->get_dir(),
 		    nullptr, CP_ACP, message_id, &tmp_proptags, &tmp_propvals))
 			return ecError;
 		auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
@@ -4822,7 +4822,7 @@ ec_error_t zs_importreadstates(GUID hsession,
 		if ((flag != nullptr && *flag != 0) == mark_as_read)
 			/* Already set to the value we want it to be */
 			continue;
-		if (!exmdb_client::set_message_read_state(pstore->get_dir(),
+		if (!exmdb_client->set_message_read_state(pstore->get_dir(),
 		    pstore->b_private ? nullptr : pinfo->get_username(),
 		    message_id, mark_as_read, &read_cn))
 			return ecError;
@@ -4849,7 +4849,7 @@ ec_error_t zs_getsearchcriteria(GUID hsession,
 	auto pstore = pfolder->pstore;
 	if (pfolder->type != FOLDER_SEARCH)
 		return ecNotSearchFolder;
-	if (!exmdb_client::get_search_criteria(pstore->get_dir(),
+	if (!exmdb_client->get_search_criteria(pstore->get_dir(),
 	    pfolder->folder_id, psearch_stat, pprestriction, &folder_ids))
 		return ecError;
 	pfolder_array->count = folder_ids.count;
@@ -4898,14 +4898,14 @@ ec_error_t zs_setsearchcriteria(GUID hsession, uint32_t hfolder, uint32_t flags,
 	if (!pstore->b_private)
 		return ecNotSupported;
 	if (!pstore->owner_mode()) {
-		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+		if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsOwner))
 			return ecAccessDenied;
 	}
 	if (NULL == prestriction || 0 == pfolder_array->count) {
-		if (!exmdb_client::get_search_criteria(pstore->get_dir(),
+		if (!exmdb_client->get_search_criteria(pstore->get_dir(),
 		    pfolder->folder_id, &search_status, nullptr, nullptr))
 			return ecError;
 		if (search_status == SEARCH_STATUS_NOT_INITIALIZED)
@@ -4925,14 +4925,14 @@ ec_error_t zs_setsearchcriteria(GUID hsession, uint32_t hfolder, uint32_t flags,
 		if (!b_private || db_id != pstore->account_id)
 			return ecSearchFolderScopeViolation;
 		if (!pstore->owner_mode()) {
-			if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
 			    folder_ids.pll[i], pinfo->get_username(), &permission))
 				return ecError;
 			if (!(permission & (frightsOwner | frightsReadAny)))
 				return ecAccessDenied;
 		}
 	}
-	if (!exmdb_client::set_search_criteria(pstore->get_dir(), pinfo->cpid,
+	if (!exmdb_client->set_search_criteria(pstore->get_dir(), pinfo->cpid,
 	    pfolder->folder_id, flags, prestriction, &folder_ids, &b_result))
 		return ecError;
 	return b_result ? ecSuccess : ecSearchFolderScopeViolation;
@@ -5161,7 +5161,7 @@ ec_error_t zs_linkmessage(GUID hsession,
 		return ecError;
 	if (!pstore->owner_mode()) {
 		uint32_t permission = rightsNone;
-		if (!exmdb_client::get_folder_perm(pstore->get_dir(), folder_id,
+		if (!exmdb_client->get_folder_perm(pstore->get_dir(), folder_id,
 		    pinfo->get_username(), &permission))
 			return ecError;
 		if (!(permission & frightsCreate))
@@ -5170,7 +5170,7 @@ ec_error_t zs_linkmessage(GUID hsession,
 	gx_strlcpy(maildir, pstore->get_dir(), std::size(maildir));
 	auto cpid = pinfo->cpid;
 	pinfo.reset();
-	return exmdb_client::link_message(maildir, cpid, folder_id, message_id,
+	return exmdb_client->link_message(maildir, cpid, folder_id, message_id,
 	       &b_result) && b_result ? ecSuccess : ecError;
 }
 

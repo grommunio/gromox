@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
@@ -13,7 +13,6 @@
 #include <gromox/scope.hpp>
 #include "genimport.hpp"
 
-using exmdb_client = exmdb_client_remote;
 using namespace gromox;
 static constexpr cpid_t codepage = CP_UTF8;
 static unsigned int g_dry_run;
@@ -66,7 +65,7 @@ static int repair_folder(uint64_t fid)
 	if (props == nullptr)
 		return -ENOMEM;
 	uint64_t change_num = 0;
-	if (!exmdb_client::allocate_cn(g_storedir, &change_num)) {
+	if (!exmdb_client->allocate_cn(g_storedir, &change_num)) {
 		fprintf(stderr, "exm: allocate_cn(fld) RPC failed\n");
 		return -EIO;
 	}
@@ -74,7 +73,7 @@ static int repair_folder(uint64_t fid)
 	if (ret < 0)
 		return ret;
 	PROBLEM_ARRAY problems;
-	if (!exmdb_client::set_folder_properties(g_storedir,
+	if (!exmdb_client->set_folder_properties(g_storedir,
 	    codepage, fid, props.get(), &problems)) {
 		fprintf(stderr, "exm: set_folder_properties RPC failed\n");
 		return -EIO;
@@ -95,19 +94,19 @@ static int repair_mbox()
 	 * This does not return the root entry itself, just its subordinates.
 	 * Might want to refine later.
 	 */
-	if (!exmdb_client::load_hierarchy_table(g_storedir, root_fld,
+	if (!exmdb_client->load_hierarchy_table(g_storedir, root_fld,
 	    nullptr, TABLE_FLAG_DEPTH | TABLE_FLAG_NONOTIFICATIONS,
 	    nullptr, &table_id, &row_num)) {
 		fprintf(stderr, "exm: load_hierarchy_table RPC failed\n");
 		return -EIO;
 	}
 	TARRAY_SET tset{};
-	if (!exmdb_client::query_table(g_storedir, nullptr, codepage, table_id,
+	if (!exmdb_client->query_table(g_storedir, nullptr, codepage, table_id,
 	    &ptags, 0, row_num, &tset)) {
 		fprintf(stderr, "exm: query_table RPC failed\n");
 		return -EIO;
 	}
-	exmdb_client::unload_table(g_storedir, table_id);
+	exmdb_client->unload_table(g_storedir, table_id);
 
 	printf("Hierarchy discovery: %u folders\n", tset.count);
 	for (size_t i = 0; i < tset.count; ++i) {

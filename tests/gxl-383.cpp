@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -10,7 +10,6 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 
-using exmdb_client = exmdb_client_remote;
 using namespace gromox;
 
 static uint32_t propid_elist(const char *dir)
@@ -19,7 +18,7 @@ static uint32_t propid_elist(const char *dir)
 	const PROPNAME_ARRAY pna = {1, deconst(&pn)};
 	PROPID_ARRAY pia{};
 
-	if (!exmdb_client::get_named_propids(dir, false, &pna, &pia))
+	if (!exmdb_client->get_named_propids(dir, false, &pna, &pia))
 		return 0;
 	if (pia.size() != 1)
 		return 0;
@@ -39,15 +38,15 @@ static int askfor(const char *dir, uint64_t folder_id, uint32_t elist_tag,
 
 	fprintf(stderr, "\e[7m*** Requesting %xh, sort_orders %u ***\e[0m\n", elist_tag, sort_count);
 	unsigned int table_id = 0, row_count = 0;
-	if (!exmdb_client::load_content_table(dir, CP_UTF8, folder_id, nullptr,
+	if (!exmdb_client->load_content_table(dir, CP_UTF8, folder_id, nullptr,
 	    0, nullptr, sort_set.count > 0 ? &sort_set : nullptr,
 	    &table_id, &row_count)) {
 		fprintf(stderr, "LCT failed\n");
 		return -1;
 	}
-	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(dir, table_id); });
+	auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 	TARRAY_SET rowset{};
-	if (!exmdb_client::query_table(dir, nullptr, CP_UTF8, table_id, &tagarr,
+	if (!exmdb_client->query_table(dir, nullptr, CP_UTF8, table_id, &tagarr,
 	    0, 25, &rowset)) {
 		printf("QueryTable failed\n");
 		return -1;

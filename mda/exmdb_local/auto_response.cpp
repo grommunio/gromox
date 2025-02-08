@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -24,7 +24,6 @@
 using namespace gromox;
 DECLARE_HOOK_API(exmdb_local, extern);
 using namespace exmdb_local;
-using exmdb_client = exmdb_client_remote;
 unsigned int autoreply_silence_window;
 
 void auto_response_reply(const char *user_home,
@@ -102,7 +101,7 @@ void auto_response_reply(const char *user_home,
 	}
 
 	uint64_t tdiff;
-	if (exmdb_client::autoreply_tsquery(user_home, rcpt,
+	if (exmdb_client->autoreply_tsquery(user_home, rcpt,
 	    autoreply_silence_window, &tdiff) && tdiff < autoreply_silence_window)
 		/* Autoreply already sent */
 		return;
@@ -205,7 +204,7 @@ void auto_response_reply(const char *user_home,
 		return;
 	}
 	enqueue_context(pcontext);
-	exmdb_client::autoreply_tsupdate(user_home, rcpt);
+	exmdb_client->autoreply_tsupdate(user_home, rcpt);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1081: ENOMEM");
 }

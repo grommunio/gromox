@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
@@ -12,7 +12,6 @@
 #include <gromox/util.hpp>
 
 using namespace gromox;
-using exmdb_client = exmdb_client_remote;
 
 static alloc_context g_alloc_mgr;
 
@@ -44,7 +43,7 @@ static int t_2209(const char *dir)
 	qvals.emplace_back(PR_PREDECESSOR_CHANGE_LIST, &v_binzero);
 	qvals.emplace_back(PROP_TAG(PT_I8, 0), &v_zero);
 
-	if (!exmdb_client::set_folder_properties(dir, CP_UTF8,
+	if (!exmdb_client->set_folder_properties(dir, CP_UTF8,
 	    rop_util_make_eid_ex(1, PRIVATE_FID_ROOT), &qvals, &problems)) {
 		mlog(LV_ERR, "set_folder_properties failed unexpectedly");
 		return EXIT_FAILURE;
@@ -68,7 +67,7 @@ int main(int argc, char **argv)
 	unsigned int user_id = 0, domain_id = 0;
 
 	printf("req 1\n");
-	if (!exmdb_client::store_eid_to_user(g_storedir, &other_store, &newdir,
+	if (!exmdb_client->store_eid_to_user(g_storedir, &other_store, &newdir,
 	    &user_id, &domain_id))
 		mlog(LV_DEBUG, "store_eid_to_user failed as expected");
 	else
@@ -79,7 +78,7 @@ int main(int argc, char **argv)
 	static constexpr uint32_t tags[] = {PR_STORE_RECORD_KEY};
 	static constexpr PROPTAG_ARRAY ptags = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY props{};
-	if (!exmdb_client::get_store_properties(g_storedir, CP_UTF8, &ptags, &props))
+	if (!exmdb_client->get_store_properties(g_storedir, CP_UTF8, &ptags, &props))
 		mlog(LV_ERR, "get_store_properties failed unexpectedly");
 
 	return t_2209(g_storedir);

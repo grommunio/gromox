@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -56,7 +56,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	auto pfolder = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (!exmdb_client::get_folder_all_proptags(pfolder->pstore->get_dir(),
+	if (!exmdb_client->get_folder_all_proptags(pfolder->pstore->get_dir(),
 	    pfolder->folder_id, &tmp_proptags))
 		return FALSE;		
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 30);
@@ -177,7 +177,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		if (*ppvalue == nullptr)
 			return FALSE;
 		auto pinfo = zs_get_info();
-		return exmdb_client::get_public_folder_unread_count(pfolder->pstore->get_dir(),
+		return exmdb_client->get_public_folder_unread_count(pfolder->pstore->get_dir(),
 		       pinfo->get_username(), pfolder->folder_id,
 		       static_cast<uint32_t *>(*ppvalue));
 	}
@@ -196,7 +196,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			return TRUE;
 		}
 		auto pinfo = zs_get_info();
-		return exmdb_client::get_folder_perm(pfolder->pstore->get_dir(),
+		return exmdb_client->get_folder_perm(pfolder->pstore->get_dir(),
 		       pfolder->folder_id, pinfo->get_username(),
 		       static_cast<uint32_t *>(*ppvalue));
 	}
@@ -450,7 +450,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	auto pinfo = zs_get_info();
-	if (!exmdb_client::get_folder_properties(pfolder->pstore->get_dir(),
+	if (!exmdb_client->get_folder_properties(pfolder->pstore->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;
 	if (tmp_propvals.count == 0)
@@ -481,7 +481,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 			sizeof(TAGGED_PROPVAL)*ppropvals->count);
 	tmp_propvals.count = ppropvals->count;
 	auto pfolder = this;
-	if (!exmdb_client::allocate_cn(pfolder->pstore->get_dir(), &change_num))
+	if (!exmdb_client->allocate_cn(pfolder->pstore->get_dir(), &change_num))
 		return FALSE;
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &change_num;
@@ -503,7 +503,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &last_time;
 	auto pinfo = zs_get_info();
-	if (!exmdb_client::set_folder_properties(pfolder->pstore->get_dir(),
+	if (!exmdb_client->set_folder_properties(pfolder->pstore->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
 	return TRUE;
@@ -532,12 +532,12 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
-	if (!exmdb_client::remove_folder_properties(pfolder->pstore->get_dir(),
+	if (!exmdb_client->remove_folder_properties(pfolder->pstore->get_dir(),
 	    pfolder->folder_id, &tmp_proptags))
 		return FALSE;	
 	tmp_propvals.count = 4;
 	tmp_propvals.ppropval = propval_buff;
-	if (!exmdb_client::allocate_cn(pfolder->pstore->get_dir(), &change_num))
+	if (!exmdb_client->allocate_cn(pfolder->pstore->get_dir(), &change_num))
 		return TRUE;
 	if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 	    CP_ACP, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
@@ -558,7 +558,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	propval_buff[2].pvalue = pbin_pcl;
 	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[3].pvalue = &last_time;
-	exmdb_client::set_folder_properties(pfolder->pstore->get_dir(), CP_ACP,
+	exmdb_client->set_folder_properties(pfolder->pstore->get_dir(), CP_ACP,
 		pfolder->folder_id, &tmp_propvals, &tmp_problems);
 	return TRUE;
 }
@@ -576,16 +576,16 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 	uint32_t flags = pfolder->pstore->b_private &&
 	                 rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_CALENDAR ?
 		         PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY : 0;
-	if (!exmdb_client::load_permission_table(dir,
+	if (!exmdb_client->load_permission_table(dir,
 		pfolder->folder_id, flags, &table_id, &row_num)) {
 		return FALSE;
 	}
-	if (!exmdb_client::query_table(dir, nullptr, CP_ACP,
+	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
 		table_id, &proptags, 0, row_num, &permission_set)) {
-		exmdb_client::unload_table(dir, table_id);
+		exmdb_client->unload_table(dir, table_id);
 		return FALSE;
 	}
-	exmdb_client::unload_table(dir, table_id);
+	exmdb_client->unload_table(dir, table_id);
 	pperm_set->count = 0;
 	pperm_set->prows = cu_alloc<PERMISSION_ROW>(permission_set.count);
 	if (pperm_set->prows == nullptr)
@@ -615,17 +615,17 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 	
 	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();
-	if (!exmdb_client::load_permission_table(dir,
+	if (!exmdb_client->load_permission_table(dir,
 	    pfolder->folder_id, 0, &table_id, &row_num))
 		return FALSE;
 	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_ID};
 	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-	if (!exmdb_client::query_table(dir, nullptr, CP_ACP,
+	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
 		table_id, &proptags, 0, row_num, &permission_set)) {
-		exmdb_client::unload_table(dir, table_id);
+		exmdb_client->unload_table(dir, table_id);
 		return FALSE;
 	}
-	exmdb_client::unload_table(dir, table_id);
+	exmdb_client->unload_table(dir, table_id);
 	pperm_data = cu_alloc<PERMISSION_DATA>(pperm_set->count);
 	if (pperm_data == nullptr)
 		return FALSE;
@@ -697,7 +697,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 	BOOL b_freebusy = pfolder->pstore->b_private &&
 	                  rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_CALENDAR ?
 	                  TRUE : false;
-	return exmdb_client::update_folder_permission(dir,
+	return exmdb_client->update_folder_permission(dir,
 		pfolder->folder_id, b_freebusy, count, pperm_data);
 }
 
@@ -755,7 +755,7 @@ BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 	auto pfolder = this;
 	
 	if (flags & MODIFY_RULES_FLAG_REPLACE &&
-	    !exmdb_client::empty_folder_rule(pfolder->pstore->get_dir(), pfolder->folder_id))
+	    !exmdb_client->empty_folder_rule(pfolder->pstore->get_dir(), pfolder->folder_id))
 		return FALSE;	
 	b_delegate = FALSE;
 	for (auto &rule : *plist) {
@@ -794,7 +794,7 @@ BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 			mlog(LV_ERR, "E-2350: link %s %s: %s", fd.m_path.c_str(),
 				dlg_path.c_str(), strerror(errno));
 	}
-	return exmdb_client::update_folder_rule(pfolder->pstore->get_dir(),
+	return exmdb_client->update_folder_rule(pfolder->pstore->get_dir(),
 		pfolder->folder_id, plist->count,
 		plist->prule, &b_exceed);
 } catch (const std::bad_alloc &) {

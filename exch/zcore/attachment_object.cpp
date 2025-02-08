@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <climits>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <gromox/defs.h>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
@@ -11,6 +14,8 @@
 #include "exmdb_client.hpp"
 #include "objects.hpp"
 #include "store_object.hpp"
+
+using gromox::exmdb_client;
 
 static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 
@@ -25,7 +30,7 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 	pattachment->pparent = pparent;
 	pattachment->b_writable = pparent->b_writable;
 	if (ATTACHMENT_NUM_INVALID == attachment_num) {
-		if (!exmdb_client::create_attachment_instance(pparent->pstore->get_dir(),
+		if (!exmdb_client->create_attachment_instance(pparent->pstore->get_dir(),
 		    pparent->instance_id, &pattachment->instance_id,
 		    &pattachment->attachment_num))
 			return NULL;
@@ -34,7 +39,7 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 			return NULL;	
 		pattachment->b_new = TRUE;
 	} else {
-		if (!exmdb_client::load_attachment_instance(pparent->pstore->get_dir(),
+		if (!exmdb_client->load_attachment_instance(pparent->pstore->get_dir(),
 		    pparent->instance_id, attachment_num, &pattachment->instance_id))
 			return NULL;
 		pattachment->attachment_num = attachment_num;
@@ -72,7 +77,7 @@ BOOL attachment_object::init_attachment()
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
-	return exmdb_client::set_instance_properties(pattachment->pparent->pstore->get_dir(),
+	return exmdb_client->set_instance_properties(pattachment->pparent->pstore->get_dir(),
 	       pattachment->instance_id, &propvals, &problems);
 }
 
@@ -80,7 +85,7 @@ attachment_object::~attachment_object()
 {
 	auto pattachment = this;
 	if (instance_id != 0)
-		exmdb_client::unload_instance(pattachment->pparent->pstore->get_dir(),
+		exmdb_client->unload_instance(pattachment->pparent->pstore->get_dir(),
 			pattachment->instance_id);
 }
 
@@ -101,7 +106,7 @@ ec_error_t attachment_object::save()
 	if (!set_properties(&tmp_propvals))
 		return ecError;
 	ec_error_t e_result = ecError;
-	if (!exmdb_client::flush_instance(pattachment->pparent->pstore->get_dir(),
+	if (!exmdb_client->flush_instance(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, &e_result) || e_result != ecSuccess)
 		return e_result;
 	pattachment->b_new = FALSE;
@@ -116,7 +121,7 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	auto pattachment = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (!exmdb_client::get_instance_all_proptags(pattachment->pparent->pstore->get_dir(),
+	if (!exmdb_client->get_instance_all_proptags(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, &tmp_proptags))
 		return FALSE;	
 	pproptags->count = tmp_proptags.count;
@@ -217,7 +222,7 @@ BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
-	if (!exmdb_client::get_instance_properties(pattachment->pparent->pstore->get_dir(),
+	if (!exmdb_client->get_instance_properties(pattachment->pparent->pstore->get_dir(),
 	    0, pattachment->instance_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count == 0)
@@ -247,7 +252,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	}
 	if (tmp_propvals.count == 0)
 		return TRUE;
-	if (!exmdb_client::set_instance_properties(pattachment->pparent->pstore->get_dir(),
+	if (!exmdb_client->set_instance_properties(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
 	if (tmp_problems.count < tmp_propvals.count)
@@ -273,7 +278,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
-	if (!exmdb_client::remove_instance_properties(pattachment->pparent->pstore->get_dir(),
+	if (!exmdb_client->remove_instance_properties(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, &tmp_proptags, &tmp_problems))
 		return FALSE;	
 	if (tmp_problems.count < tmp_proptags.count)
@@ -292,12 +297,12 @@ BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
 	*pb_cycle = false;
 	if (strcmp(pparent->pstore->get_dir(),
 	    pattachment_src->pparent->pstore->get_dir()) == 0 &&
-	    !exmdb_client::is_descendant_instance(pattachment->pparent->pstore->get_dir(),
+	    !exmdb_client->is_descendant_instance(pattachment->pparent->pstore->get_dir(),
 	    pattachment_src->instance_id, pattachment->instance_id, pb_cycle))
 		return FALSE;	
 	if (*pb_cycle)
 		return TRUE;
-	if (!exmdb_client::read_attachment_instance(pattachment_src->pparent->pstore->get_dir(),
+	if (!exmdb_client->read_attachment_instance(pattachment_src->pparent->pstore->get_dir(),
 	    pattachment_src->instance_id, &attctnt))
 		return FALSE;
 	common_util_remove_propvals(&attctnt.proplist, PR_ATTACH_NUM);
@@ -312,7 +317,7 @@ BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
 	}
 	if (pexcluded_proptags->has(PR_ATTACH_DATA_OBJ))
 		attctnt.pembedded = NULL;
-	if (!exmdb_client::write_attachment_instance(pattachment->pparent->pstore->get_dir(),
+	if (!exmdb_client->write_attachment_instance(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, &attctnt, b_force, &tmp_problems))
 		return FALSE;	
 	pattachment->b_touched = TRUE;

@@ -56,7 +56,6 @@
 
 using namespace std::string_literals;
 using namespace gromox;
-using exmdb_client = exmdb_client_remote;
 using LLU = unsigned long long;
 using mdi_list = std::vector<std::string>; /* message data item (RFC 3501 §6.4.5) */
 
@@ -676,7 +675,7 @@ static int pstruct_else(imap_context &ctx, MJSON *pjson,
 		eml_path = ctx.maildir + "/eml/"s + pjson->get_mail_filename();
 		if (!ctx.io_actor.exists(eml_path)) {
 			std::string content;
-			if (exmdb_client::imapfile_read(ctx.maildir, "eml",
+			if (exmdb_client->imapfile_read(ctx.maildir, "eml",
 			    pjson->get_mail_filename(), &content))
 				ctx.io_actor.place(eml_path, std::move(content));
 		}
@@ -738,7 +737,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 		auto eml_file = eml_path + "/"s + pitem->mid;
 		if (!ctx.io_actor.exists(eml_file)) {
 			std::string content;
-			if (exmdb_client::imapfile_read(ctx.maildir, "eml", pitem->mid, &content))
+			if (exmdb_client->imapfile_read(ctx.maildir, "eml", pitem->mid, &content))
 				ctx.io_actor.place(eml_file, std::move(content));
 		}
 	}
@@ -1278,7 +1277,7 @@ static bool store_owner_over(const char *actor, const char *mbox, const char *mb
 		return true; /* Silly way of logging in to your own mailbox but ok */
 	uint32_t perms = 0;
 	imrpc_build_env();
-	auto ok = exmdb_client::get_mbox_perm(mboxdir, actor, &perms) &&
+	auto ok = exmdb_client->get_mbox_perm(mboxdir, actor, &perms) &&
 	          perms & frightsGromoxStoreOwner;
 	imrpc_free_env();
 	return ok;
@@ -2038,7 +2037,7 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 	auto pcontext = &ctx;
 	imrpc_build_env();
 	auto cl_0 = make_scope_exit(imrpc_free_env);
-	if (!exmdb_client::imapfile_write(ctx.maildir, "eml",
+	if (!exmdb_client->imapfile_write(ctx.maildir, "eml",
 	    mid_string, argv[argc-1])) {
 		mlog(LV_ERR, "E-1763: write %s/eml/%s failed", ctx.maildir, mid_string.c_str());
 		return 1909;
@@ -2165,7 +2164,7 @@ static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 	}
 	imrpc_build_env();
 	auto cl_0 = make_scope_exit(imrpc_free_env);
-	if (!exmdb_client::imapfile_write(ctx.maildir, "eml",
+	if (!exmdb_client->imapfile_write(ctx.maildir, "eml",
 	    ctx.mid, content)) {
 		mlog(LV_ERR, "E-1764: write to %s/eml/%s failed",
 			pcontext->maildir, pcontext->mid.c_str());
@@ -2288,7 +2287,7 @@ int icp_expunge(int argc, char **argv, imap_context &ctx) try
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
 		if (ct_item == nullptr)
 			continue;
-		if (!exmdb_client::imapfile_delete(ctx.maildir, "eml", pitem->mid))
+		if (!exmdb_client->imapfile_delete(ctx.maildir, "eml", pitem->mid))
 			mlog(LV_WARN, "W-2030: remove %s/eml/%s failed",
 				ctx.maildir, pitem->mid.c_str());
 		else
@@ -2947,7 +2946,7 @@ int icp_uid_expunge(int argc, char **argv, imap_context &ctx) try
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
 		if (ct_item == nullptr)
 			continue;
-		if (!exmdb_client::imapfile_delete(ctx.maildir, "eml", pitem->mid))
+		if (!exmdb_client->imapfile_delete(ctx.maildir, "eml", pitem->mid))
 			mlog(LV_WARN, "W-2086: remove %s/eml/%s failed",
 				ctx.maildir, pitem->mid.c_str());
 		else
@@ -3033,7 +3032,7 @@ void icp_clsfld(imap_context &ctx) try
 			auto pitem = xarray.get_item(i);
 			if (zero_uid_bit(*pitem))
 				continue;
-			if (!exmdb_client::imapfile_delete(ctx.maildir, "eml", pitem->mid))
+			if (!exmdb_client->imapfile_delete(ctx.maildir, "eml", pitem->mid))
 				mlog(LV_WARN, "W-2087: remove %s/eml/%s failed",
 				        ctx.maildir, pitem->mid.c_str());
 			else

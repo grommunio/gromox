@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -83,7 +83,7 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	const PROPTAG_ARRAY proptags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY propvals;
 	
-	if (!exmdb_client::get_store_properties(dir, CP_ACP,
+	if (!exmdb_client->get_store_properties(dir, CP_ACP,
 	    &proptags, &propvals)) {
 		mlog(LV_ERR, "get_store_properties %s: failed", dir);
 		return NULL;	
@@ -128,7 +128,7 @@ bool store_object::owner_mode() const
 		return true;
 	lk.unlock();
 	uint32_t perm = rightsNone;
-	if (!exmdb_client::get_mbox_perm(pstore->dir, pinfo->get_username(), &perm))
+	if (!exmdb_client->get_mbox_perm(pstore->dir, pinfo->get_username(), &perm))
 		return false;
 	if (!(perm & frightsGromoxStoreOwner))
 		return false;
@@ -185,7 +185,7 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY &propids,
 	}
 	if (tmp_propids.empty())
 		return TRUE;
-	if (!exmdb_client::get_named_propnames(
+	if (!exmdb_client->get_named_propnames(
 	    pstore->dir, tmp_propids, &tmp_propnames) ||
 	    tmp_propnames.size() != tmp_propids.size())
 		return FALSE;	
@@ -275,7 +275,7 @@ BOOL store_object::get_named_propids(BOOL b_create,
 	}
 	if (tmp_propnames.count == 0)
 		return TRUE;
-	if (!exmdb_client::get_named_propids(pstore->dir,
+	if (!exmdb_client->get_named_propids(pstore->dir,
 	    b_create, &tmp_propnames, &tmp_propids) ||
 	    tmp_propids.size() != tmp_propnames.size())
 		return FALSE;	
@@ -410,7 +410,7 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	auto pstore = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (!exmdb_client::get_store_all_proptags(pstore->dir, &tmp_proptags))
+	if (!exmdb_client->get_store_all_proptags(pstore->dir, &tmp_proptags))
 		return FALSE;	
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 56);
 	if (pproptags->pproptag == nullptr)
@@ -661,7 +661,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			*acval = MAPI_ACCESS_AllSix;
 			return TRUE;
 		}
-		if (!exmdb_client::get_mbox_perm(pstore->dir,
+		if (!exmdb_client->get_mbox_perm(pstore->dir,
 		    pinfo->get_username(), &permission))
 			return FALSE;
 		permission &= ~frightsGromoxStoreOwner;
@@ -686,7 +686,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		}
 		auto pinfo = zs_get_info();
 		if (pstore->b_private) {
-			if (!exmdb_client::get_mbox_perm(pstore->dir,
+			if (!exmdb_client->get_mbox_perm(pstore->dir,
 			    pinfo->get_username(), &permission))
 				return FALSE;
 			*static_cast<uint32_t *>(*ppvalue) &= ~(frightsGromoxSendAs | frightsGromoxStoreOwner);
@@ -1064,7 +1064,7 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		if (tmp_proptags.count == 0)
 			return TRUE;
 	}
-	if (!exmdb_client::get_store_properties(
+	if (!exmdb_client->get_store_properties(
 		pstore->dir, pinfo->cpid, &tmp_proptags,
 	    &tmp_propvals))
 		return FALSE;	
@@ -1234,7 +1234,7 @@ static BOOL store_object_set_folder_name(store_object *pstore,
 	tmp_propvals.count = 5;
 	tmp_propvals.ppropval[0].proptag = PR_DISPLAY_NAME;
 	tmp_propvals.ppropval[0].pvalue = deconst(pdisplayname);
-	if (!exmdb_client::allocate_cn(pstore->dir, &change_num))
+	if (!exmdb_client->allocate_cn(pstore->dir, &change_num))
 		return FALSE;
 	tmp_propvals.ppropval[1].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[1].pvalue = &change_num;
@@ -1254,7 +1254,7 @@ static BOOL store_object_set_folder_name(store_object *pstore,
 	tmp_propvals.ppropval[3].pvalue = pbin_pcl;
 	tmp_propvals.ppropval[4].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[4].pvalue = &last_time;
-	return exmdb_client::set_folder_properties(pstore->dir, CP_ACP,
+	return exmdb_client->set_folder_properties(pstore->dir, CP_ACP,
 	       folder_id, &tmp_propvals, &tmp_problems);
 }
 
@@ -1410,15 +1410,15 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
 	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	
-	if (!exmdb_client::load_permission_table(
+	if (!exmdb_client->load_permission_table(
 	    pstore->dir, folder_id, 0, &table_id, &row_num))
 		return FALSE;
-	if (!exmdb_client::query_table(pstore->dir, nullptr, CP_ACP, table_id,
+	if (!exmdb_client->query_table(pstore->dir, nullptr, CP_ACP, table_id,
 	    &proptags, 0, row_num, &permission_set)) {
-		exmdb_client::unload_table(pstore->dir, table_id);
+		exmdb_client->unload_table(pstore->dir, table_id);
 		return FALSE;
 	}
-	exmdb_client::unload_table(pstore->dir, table_id);
+	exmdb_client->unload_table(pstore->dir, table_id);
 	max_count = (pperm_set->count/100)*100;
 	for (size_t i = 0; i < permission_set.count; ++i) {
 		if (max_count == pperm_set->count) {
@@ -1464,13 +1464,13 @@ BOOL store_object::get_permissions(PERMISSION_SET *pperm_set)
 	uint64_t folder_id = rop_util_make_eid_ex(1, pstore->b_private ?
 	                     PRIVATE_FID_IPMSUBTREE : PUBLIC_FID_IPMSUBTREE);
 	
-	if (!exmdb_client::load_hierarchy_table(
+	if (!exmdb_client->load_hierarchy_table(
 		pstore->dir, folder_id, NULL, TABLE_FLAG_DEPTH,
 	    NULL, &table_id, &row_num))
 		return FALSE;
 	static constexpr proptag_t tmp_proptag[] = {PidTagFolderId};
 	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
-	if (!exmdb_client::query_table(pstore->dir, nullptr, CP_ACP, table_id,
+	if (!exmdb_client->query_table(pstore->dir, nullptr, CP_ACP, table_id,
 	    &proptags, 0, row_num, &tmp_set))
 		return FALSE;
 	pperm_set->count = 0;

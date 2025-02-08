@@ -33,6 +33,8 @@
 
 namespace gromox {
 
+std::optional<exmdb_client_remote> exmdb_client{std::in_place_t{}};
+
 static int mdcl_rpc_timeout = -1;
 static constexpr unsigned int mdcl_ping_timeout = 2;
 static_assert(SOCKET_TIMEOUT >= mdcl_ping_timeout);

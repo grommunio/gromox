@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <type_traits>
@@ -19,7 +19,6 @@
 #include <gromox/util.hpp>
 
 using namespace gromox;
-using exmdb_client = exmdb_client_remote;
 
 namespace {
 
@@ -55,7 +54,7 @@ freebusy_tags::freebusy_tags(const char *dir)
 
 	const PROPNAME_ARRAY propnames = {std::size(propname_buff), deconst(propname_buff)};
 	PROPID_ARRAY ids;
-	if (exmdb_client::get_named_propids(dir, false, &propnames, &ids) &&
+	if (exmdb_client->get_named_propids(dir, false, &propnames, &ids) &&
 	    ids.size() == propnames.size()) {
 		apptstartwhole = PROP_TAG(PT_SYSTIME, ids[0]);
 		apptendwhole   = PROP_TAG(PT_SYSTIME, ids[1]);
@@ -326,7 +325,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 	auto cal_eid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
 
 	if (username != nullptr) {
-		if (!exmdb_client::get_folder_perm(dir, cal_eid, username, &permission))
+		if (!exmdb_client->get_folder_perm(dir, cal_eid, username, &permission))
 			return false;
 		if (!(permission & (frightsFreeBusySimple | frightsFreeBusyDetailed | frightsReadAny)))
 			return false;
@@ -383,11 +382,11 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 	RESTRICTION rst_26          = {RES_OR, {&rst_25}};
 
 	uint32_t table_id = 0, row_count = 0;
-	if (!exmdb_client::load_content_table(dir, CP_ACP, cal_eid, nullptr,
+	if (!exmdb_client->load_content_table(dir, CP_ACP, cal_eid, nullptr,
 	    TABLE_FLAG_NONOTIFICATIONS, &rst_26, nullptr, &table_id, &row_count))
 		return false;
 
-	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(dir, table_id);});
+	auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id);});
 
 	uint32_t proptag_buff[] = {
 		ptag.apptstartwhole, ptag.apptendwhole, ptag.busystatus,
@@ -397,7 +396,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 	};
 	const PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	TARRAY_SET rows;
-	if (!exmdb_client::query_table(dir, nullptr, CP_ACP, table_id,
+	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
 	    &proptags, 0, row_count, &rows))
 		return false;
 
@@ -406,7 +405,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 		auto msgid = rows.pparray[i]->get<const uint64_t>(PidTagMid);
 		if (msgid == nullptr)
 			continue;
-		if (!exmdb_client::read_message(dir, nullptr, CP_ACP, *msgid, &ctnt))
+		if (!exmdb_client->read_message(dir, nullptr, CP_ACP, *msgid, &ctnt))
 			continue;
 		std::string uid_buf;
 		if (!goid_to_icaluid(ctnt->proplist.get<BINARY>(ptag.globalobjectid), uid_buf))
@@ -485,7 +484,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 	}
 
 	cl_0.release();
-	if (!exmdb_client::unload_table(dir, table_id))
+	if (!exmdb_client->unload_table(dir, table_id))
 		return false;
 
 	return true;

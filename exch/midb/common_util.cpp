@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
@@ -190,7 +190,7 @@ BOOL cu_create_folder(const char *dir, int user_id,
 	TPROPVAL_ARRAY tmp_propvals;
 	TAGGED_PROPVAL propval_buff[9];
 	
-	if (!exmdb_client::allocate_cn(dir, &change_num))
+	if (!exmdb_client->allocate_cn(dir, &change_num))
 		return FALSE;
 	uint32_t tmp_type = FOLDER_GENERIC;
 	last_time = rop_util_unix_to_nttime(time(NULL));
@@ -228,7 +228,7 @@ BOOL cu_create_folder(const char *dir, int user_id,
 	propval_buff[8].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval_buff[8].pvalue = pbin;
 	ec_error_t err = ecSuccess;
-	if (!exmdb_client::create_folder(dir, CP_ACP, &tmp_propvals,
+	if (!exmdb_client->create_folder(dir, CP_ACP, &tmp_propvals,
 	    pfolder_id, &err) || err != ecSuccess) {
 		rop_util_free_binary(pbin);
 		return FALSE;
@@ -239,13 +239,13 @@ BOOL cu_create_folder(const char *dir, int user_id,
 
 BOOL cu_get_propids(const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids)
 {
-	return exmdb_client::get_named_propids(cu_get_maildir(), false,
+	return exmdb_client->get_named_propids(cu_get_maildir(), false,
 		ppropnames, ppropids);
 }
 
 BOOL cu_get_propids_create(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 {
-	return exmdb_client::get_named_propids(cu_get_maildir(),
+	return exmdb_client->get_named_propids(cu_get_maildir(),
 	       TRUE, names, ids);
 }
 
@@ -253,7 +253,7 @@ BOOL cu_get_propname(uint16_t propid, PROPERTY_NAME **pppropname) try
 {
 	PROPNAME_ARRAY propnames;
 	
-	if (!exmdb_client::get_named_propnames(cu_get_maildir(),
+	if (!exmdb_client->get_named_propnames(cu_get_maildir(),
 	    {propid}, &propnames) || propnames.size() != 1)
 		return FALSE;	
 	*pppropname = propnames.ppropname;
