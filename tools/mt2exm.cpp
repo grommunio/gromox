@@ -178,7 +178,7 @@ static void exm_adjust_namedprops(TPROPVAL_ARRAY &props)
 		if (name_iter == g_src_name_map.end())
 			name_iter = g_src_name_map.find(CHANGE_PROP_TYPE(old_tag, PT_UNSPECIFIED));
 		if (name_iter == g_src_name_map.end()) {
-			fprintf(stderr, "mt2exm: proptag %xh from input stream has no named property info.\n", old_tag);
+			fprintf(stderr, "mt2exm: broken input stream does not specify namedpropinfo for tag %xh.\n", old_tag);
 			continue;
 		}
 		auto new_id = gi_resolve_namedprop(name_iter->second);
