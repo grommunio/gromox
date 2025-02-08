@@ -25,6 +25,15 @@
 #include <gromox/util.hpp>
 #include "genimport.hpp"
 
+/*
+ * Override HX_getopt_help_cb because it calls exit(0), which is really bad for
+ * a library to do. The more so when you have a static deinitialization order
+ * fiasco going on.
+ */
+#define MBOP_AUTOHELP \
+	{"help", '?', HXTYPE_XHELP, {}, {}, mbop_help_cb, 0, "Show this help message"}, \
+	{"usage", 0, HXTYPE_NONE, {}, {}, mbop_usage_cb, 0, "Display brief usage message"}
+
 using namespace std::string_literals;
 using namespace gromox;
 using LLU = unsigned long long;
@@ -36,6 +45,20 @@ static constexpr HXoption empty_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
+static bool g_exit_after_optparse;
+
+static void mbop_help_cb(const struct HXoptcb *cbi)
+{
+	HX_getopt_help(cbi, stdout);
+	g_exit_after_optparse = true;
+}
+
+static void mbop_usage_cb(const struct HXoptcb *cbi)
+{
+	HX_getopt_usage(cbi, stdout);
+	g_exit_after_optparse = true;
+}
+
 namespace delmsg {
 
 static char *g_folderstr;
@@ -45,7 +68,7 @@ static unsigned int g_soft;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'f', HXTYPE_STRING, &g_folderstr, nullptr, nullptr, 0, "Folder ID"},
 	{"soft", 0, HXTYPE_NONE, &g_soft, nullptr, nullptr, 0, "Soft-delete"},
-	HXOPT_AUTOHELP,
+	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
@@ -79,7 +102,7 @@ namespace delmsg {
 static int main(int argc, char **argv)
 {
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_folderstr != nullptr) {
@@ -142,7 +165,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'a', HXTYPE_NONE, {}, {}, opt_a, 0, "Include associated messages in deletion"},
 	{nullptr, 't', HXTYPE_STRING, &g_time_str, {}, {}, 0, "Messages need to be older than...", "TIMESPEC"},
 	{"soft",    0, HXTYPE_NONE, {}, {}, opt_s, 0, "Soft-delete (experimental)"},
-	HXOPT_AUTOHELP,
+	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
@@ -280,7 +303,7 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 static int main(int argc, char **argv)
 {
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_del_flags & DEL_FOLDERS && g_recurse) {
@@ -353,14 +376,14 @@ static const char *g_age_str;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'r', HXTYPE_NONE, &g_recursive, nullptr, nullptr, 0, "Process folders recursively"},
 	{nullptr, 't', HXTYPE_STRING, &g_age_str, nullptr, nullptr, 0, "Messages need to be older than...", "TIMESPEC"},
-	HXOPT_AUTOHELP,
+	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
 static int main(int argc, char **argv)
 {
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (argc < 2)
@@ -394,14 +417,14 @@ static unsigned int g_verbose;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'l', HXTYPE_STRING, &g_language, {}, {}, 0, "XPG/POSIX-style locale code (e.g. ja_JP)", "CODE"},
 	{nullptr, 'v', HXTYPE_NONE, &g_verbose, {}, {}, 0, "Verbose mode"},
-	HXOPT_AUTOHELP,
+	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
 static int main(int argc, char **argv)
 {
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
 	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_language == nullptr) {
@@ -459,7 +482,7 @@ static constexpr struct HXoption g_options_table[] = {
 	{nullptr, 'a', HXTYPE_STRING, &g_start_txt, {}, {}, 0, "Start time"},
 	{nullptr, 'b', HXTYPE_STRING, &g_end_txt, {}, {}, 0, "End time"},
 	{nullptr, 'x', HXTYPE_STRING, &g_requestor, {}, {}, 0, "Requestor account name (not the same as -d/-u)"},
-	HXOPT_AUTOHELP,
+	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
@@ -483,7 +506,7 @@ static int xmktime(const char *str, time_t *out)
 static int main(int argc, char **argv)
 {
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	time_t start_time = -1, end_time = -1;
@@ -525,7 +548,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_NONE, &g_continuous_mode, {}, {}, {}, "Do not stop on errors"},
 	{nullptr, 'd', HXTYPE_STRING, &g_arg_userdir, nullptr, nullptr, 0, "Directory of the mailbox", "DIR"},
 	{nullptr, 'u', HXTYPE_STRING, &g_arg_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
-	HXOPT_AUTOHELP,
+	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
@@ -561,7 +584,7 @@ static int help()
 namespace simple_rpc {
 
 static constexpr HXoption g_options_table[] = {
-	HXOPT_AUTOHELP,
+	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
@@ -603,7 +626,7 @@ static int main(int argc, char **argv)
 {
 	bool ok = false;
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (strcmp(argv[0], "purge-datafiles") == 0)
@@ -640,7 +663,7 @@ namespace foreach_wrap {
 static unsigned int g_numthreads = 1;
 static constexpr HXoption g_options_table[] = {
 	{{}, 'j', HXTYPE_UINT, &g_numthreads, {}, {}, {}, "Maximum concurrency for execution", "INTEGER"},
-	HXOPT_AUTOHELP,
+	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
@@ -722,7 +745,8 @@ static int filter_users(const char *mode, std::vector<sql_user> &ul)
 static int main(int argc, char **argv)
 {
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
+	    g_exit_after_optparse)
 		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (global::g_arg_username != nullptr || global::g_arg_userdir != nullptr) {
@@ -751,7 +775,8 @@ static int main(int argc, char **argv)
 
 	if (strcmp(argv[0], "ping") == 0) {
 		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
-		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
+		    g_exit_after_optparse)
 			return EXIT_PARAM;
 		for (const auto &user : ul) {
 			sem.acquire();
@@ -765,7 +790,8 @@ static int main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "unload") == 0) {
 		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
-		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
+		    g_exit_after_optparse)
 			return EXIT_PARAM;
 		for (const auto &user : ul) {
 			sem.acquire();
@@ -779,7 +805,8 @@ static int main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "vacuum") == 0) {
 		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
-		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
+		    g_exit_after_optparse)
 			return EXIT_PARAM;
 		for (const auto &user : ul) {
 			sem.acquire();
@@ -829,7 +856,7 @@ static int delstoreprop(int argc, char **argv, const GUID &guid,
     const char *name, uint16_t type)
 {
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
 	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 
@@ -890,7 +917,7 @@ static int showstoreprop(int argc, char **argv, const GUID guid,
     const char *name, uint16_t proptype)
 {
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
 	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 
@@ -942,7 +969,7 @@ static int setstoreprop(int argc, char **argv, const GUID guid,
     const char *name, uint16_t proptype)
 {
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
 	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
 
@@ -1034,7 +1061,8 @@ int main(int argc, char **argv)
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt5(global::g_options_table, argv, &argc, &argv,
-	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
+	    g_exit_after_optparse)
 		return EXIT_PARAM;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
 	--argc;
