@@ -649,13 +649,13 @@ int gi_startup_client(unsigned int maxconn)
 	                            "system", typeid(*exmdb_local_rules_execute)));
 	exmdb_rpc_alloc = gi_alloc;
 	exmdb_rpc_free = gi_free;
-	exmdb_client_init(maxconn, 0);
+	exmdb_client.emplace(maxconn, 0);
 	return exmdb_client_run(PKGSYSCONFDIR);
 }
 
 void gi_shutdown()
 {
 	g_alloc_mgr.clear();
-	exmdb_client_stop();
+	exmdb_client.reset();
 	service_release("rules_execute", "system");
 }

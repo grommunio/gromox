@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <csignal>
@@ -370,8 +370,8 @@ int main(int argc, char **argv)
 
 	zserver_init(table_size, cache_interval, ping_interval);
 	auto cl_7 = make_scope_exit(zserver_stop);
-	exmdb_client_init(proxy_num, stub_num);
-	auto cl_8 = make_scope_exit(exmdb_client_stop);
+	exmdb_client.emplace(proxy_num, stub_num);
+	auto cl_8 = make_scope_exit([]() { exmdb_client.reset(); });
 	/* parser after zserver: dependency on session table */
 	/* parser after service: dependency on mysql_adaptor */
 	rpc_parser_init(threads_num);

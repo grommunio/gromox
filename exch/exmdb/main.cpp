@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdio>
@@ -206,7 +206,7 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		} else {
 			exmdb_parser_init(max_threads, max_routers);
 		}
-		exmdb_client_init(connection_num, threads_num);
+		exmdb_client.emplace(connection_num, threads_num);
 		
 		if (bounce_gen_init(get_config_path(), get_data_path(),
 		    "mail_bounce") != 0) {
@@ -248,7 +248,7 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		exmdb_client_stop();
+		exmdb_client.reset();
 		exmdb_listener_stop();
 		exmdb_parser_stop();
 		db_engine_stop();

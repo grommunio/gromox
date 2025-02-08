@@ -68,7 +68,7 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 
-	exmdb_client_init(1, 0);
+	exmdb_client.emplace(1, 0);
 	exmdb_client_run(PKGSYSCONFDIR);
 
 	auto dir = argv[1];

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -332,8 +332,8 @@ int main(int argc, char **argv)
 	service_init({g_config_file, g_dfl_svc_plugins, threads_num});
 	auto cl_0 = make_scope_exit(service_stop);
 	
-	exmdb_client_init(proxy_num, stub_num);
-	auto cl_6 = make_scope_exit(exmdb_client_stop);
+	exmdb_client.emplace(proxy_num, stub_num);
+	auto cl_6 = make_scope_exit([]() { exmdb_client.reset(); });
 	listener_init(listen_ip, listen_port);
 	auto cl_3 = make_scope_exit(listener_stop);
 	me_init(g_config_file->get_value("default_charset"),

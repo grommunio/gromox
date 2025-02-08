@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
@@ -33,7 +33,7 @@
 
 namespace gromox {
 
-std::optional<exmdb_client_remote> exmdb_client{std::in_place_t{}};
+std::optional<exmdb_client_remote> exmdb_client;
 
 static int mdcl_rpc_timeout = -1;
 static constexpr unsigned int mdcl_ping_timeout = 2;
@@ -83,7 +83,8 @@ static constexpr cfg_directive exmdb_client_dflt[] = {
 	CFG_TABLE_END,
 };
 
-void exmdb_client_init(unsigned int conn_max, unsigned int notify_threads_max)
+exmdb_client_remote::exmdb_client_remote(unsigned int conn_max,
+    unsigned int notify_threads_max)
 {
 	auto cfg = config_file_initd("gromox.cfg", PKGSYSCONFDIR, exmdb_client_dflt);
 	if (cfg == nullptr) {
@@ -105,7 +106,7 @@ void exmdb_client_init(unsigned int conn_max, unsigned int notify_threads_max)
 	GUID::machine_id().to_str(mdcl_remote_id + z, std::size(mdcl_remote_id) - z, 32);
 }
 
-void exmdb_client_stop()
+exmdb_client_remote::~exmdb_client_remote()
 {
 	if (mdcl_conn_max != 0 && !mdcl_notify_stop) {
 		mdcl_notify_stop = true;
@@ -550,8 +551,8 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 int main(int argc, const char **argv)
 {
 	setup_sigalrm();
-	exmdb_client_init(2, 0);
-	auto cl_0 = make_scope_exit(exmdb_client_stop);
+	exmdb_client.emplace(2, 0);
+	auto cl_0 = make_scope_exit([]() { exmdb_client.reset(); });
 	auto ret = exmdb_client_run(PKGSYSCONFDIR);
 	if (ret != 0)
 		return EXIT_FAILURE;
@@ -590,7 +591,7 @@ int main(int argc, const char **argv)
 #ifdef TEST2
 int main()
 {
-	exmdb_client_init(2, 0);
+	exmdb_client.emplace(2, 0);
 	exmdb_client_run(PKGSYSCONFDIR);
 	{
 		auto fc = exmdb_client_get_connection("/var/lib/gromox/user/test@grammm.com");

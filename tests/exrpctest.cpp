@@ -56,8 +56,8 @@ int main(int argc, char **argv)
 {
 	exmdb_rpc_alloc = [](size_t z) { return g_alloc_mgr.alloc(z); };
 	exmdb_rpc_free = [](void *) {};
-	exmdb_client_init(1, 0);
-	auto cl_0 = make_scope_exit(exmdb_client_stop);
+	exmdb_client.emplace(1, 0);
+	auto cl_0 = make_scope_exit([]() { exmdb_client.reset(); });
 	if (exmdb_client_run(PKGSYSCONFDIR) != 0)
 		return EXIT_FAILURE;
 
