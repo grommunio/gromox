@@ -73,6 +73,7 @@ Makefile.in
 /tests/bdump
 /tests/bodyconv
 /tests/compress
+/tests/dnsbl_check
 /tests/epv_unpack
 /tests/exrpctest
 /tests/gxl-383

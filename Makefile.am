@@ -79,7 +79,7 @@ libgromox_auth_la_LIBADD = ${libcrypto_LIBS} ${libHX_LIBS} ${jsoncpp_LIBS} ${lib
 EXTRA_libgromox_auth_la_DEPENDENCIES = default.sym
 libgromox_authz_la_SOURCES = exch/dnsbl_filter.cpp exch/user_filter.cpp
 libgromox_authz_la_LDFLAGS = ${default_SYFLAGS}
-libgromox_authz_la_LIBADD = -lpthread ${ldns_LIBS} ${libHX_LIBS} ${resolv_LIBS} libgromox_common.la
+libgromox_authz_la_LIBADD = -lpthread ${cares_LIBS} ${ldns_LIBS} ${libHX_LIBS} ${resolv_LIBS} libgromox_common.la
 EXTRA_libgromox_authz_la_DEPENDENCIES = default.sym
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS}
 libgromox_common_la_SOURCES = lib/bounce_gen.cpp lib/cookie_parser.cpp lib/cryptoutil.cpp lib/dbhelper.cpp lib/double_list.cpp lib/fopen.cpp lib/guid2.cpp lib/list_file.cpp lib/mail_func.cpp lib/oxoabkt.cpp lib/process.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/stream.cpp lib/svc_loader.cpp lib/textmaps.cpp lib/util.cpp lib/wintz.cpp lib/mapi/ext_buffer.cpp lib/mapi/ext_buffer2.cpp
@@ -258,7 +258,7 @@ endif
 mapi_la_LIBADD = libphp_mapi.la
 EXTRA_mapi_la_DEPENDENCIES = default.sym
 
-noinst_PROGRAMS = dldcheck tests/bdump tests/bodyconv tests/compress tests/exrpctest tests/gxl-383 tests/jsontest tests/lzxpress tests/oxcmail_ie tests/ucvttest tests/udb tests/utiltest tests/vcard tests/zendfake tools/tzdump
+noinst_PROGRAMS = dldcheck tests/bdump tests/bodyconv tests/compress tests/dnsbl_check tests/exrpctest tests/gxl-383 tests/jsontest tests/lzxpress tests/oxcmail_ie tests/ucvttest tests/udb tests/utiltest tests/vcard tests/zendfake tools/tzdump
 if HAVE_ESEDB
 noinst_PROGRAMS += tests/epv_unpack
 endif
@@ -273,6 +273,8 @@ tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tests_compress_SOURCES = tests/compress.cpp
 tests_compress_LDADD = libgromox_common.la
+tests_dnsbl_check_SOURCES = tests/dnsbl_check.cpp
+tests_dnsbl_check_LDADD = libgromox_authz.la libgromox_common.la
 tests_epv_unpack_SOURCES = tests/epv_unpack.cpp tools/edb_pack.cpp tools/edb_pack.hpp
 tests_epv_unpack_LDADD = ${libesedb_LIBS} ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tests_exrpctest_SOURCES = tests/exrpctest.cpp

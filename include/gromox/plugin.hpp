@@ -4,6 +4,7 @@
 #pragma once
 #include <string>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 
 /* enumeration for indicate the ation of plugin_main function */
 enum plugin_op {
