@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_set>
 #include <unistd.h>
@@ -17,7 +18,10 @@
 #include <libHX/option.h>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
-#ifdef HAVE_LDNS
+#if defined(HAVE_CARES)
+#	include <ares.h>
+#	define HAVE_NS 1
+#elif defined(HAVE_LDNS)
 #	include <ldns/ldns.h>
 #	define HAVE_NS 1
 #elif defined(HAVE_RES_NQUERYDOMAIN)
@@ -207,7 +211,63 @@ static size_t oxd_write(char *ptr, size_t size, size_t nemb, void *udata)
 	return size * nemb;
 }
 
-#ifdef HAVE_LDNS
+#if defined(HAVE_CARES)
+static void ares_cb(void *arg, ares_status_t status, size_t timeouts, const ares_dns_record_t *rsp) try
+{
+	if (status != ARES_SUCCESS || rsp == nullptr)
+		return;
+	auto &target = *static_cast<std::string *>(arg);
+	for (size_t i = 0; i < ares_dns_record_rr_cnt(rsp, ARES_SECTION_ANSWER); ++i) {
+		auto rr = ares_dns_record_rr_get_const(rsp, ARES_SECTION_ANSWER, i);
+		auto rtype = ares_dns_rr_get_type(rr);
+		if (rtype != ARES_REC_TYPE_SRV)
+			continue;
+		size_t keycnt = 0;
+		auto keys = ares_dns_rr_get_keys(rtype, &keycnt);
+		if (keycnt < 4 ||
+		    ares_dns_rr_key_datatype(keys[2]) != ARES_DATATYPE_U16 ||
+		    ares_dns_rr_key_datatype(keys[3]) != ARES_DATATYPE_NAME)
+			continue;
+		target = ares_dns_rr_get_str(rr, keys[3]);
+		if (target.size() > 0 && target.back() == '.')
+			target.pop_back();
+		target += ":" + std::to_string(ares_dns_rr_get_u16(rr, keys[2]));
+		break;
+	}
+} catch (const std::bad_alloc &) {
+}
+
+static std::string domain_to_oxsrv(const char *dom)
+{
+	std::string target;
+	auto status = ares_library_init(ARES_LIB_INIT_ALL);
+	if (status != ARES_SUCCESS)
+		return target;
+	auto cl_0 = make_scope_exit(ares_library_cleanup);
+	ares_channel_t *channel = nullptr;
+	auto cl_1 = make_scope_exit([&]() { ares_destroy(channel); });
+	ares_options opts{};
+	opts.evsys = ARES_EVSYS_DEFAULT;
+	status = ares_init_options(&channel, &opts, ARES_OPT_EVENT_THREAD);
+	if (status != ARES_SUCCESS)
+		return target;
+	ares_dns_record_t *req = nullptr;
+	auto cl_2 = make_scope_exit([&]() { ares_dns_record_destroy(req); });
+	status = ares_dns_record_create(&req, 0, ARES_FLAG_RD,
+	         ARES_OPCODE_QUERY, ARES_RCODE_NOERROR);
+	if (status != ARES_SUCCESS)
+		return target;
+	status = ares_dns_record_query_add(req, ("_autodiscover._tcp."s + dom).c_str(),
+	         ARES_REC_TYPE_SRV, ARES_CLASS_IN);
+	if (status != ARES_SUCCESS)
+		return target;
+	status = ares_send_dnsrec(channel, req, ares_cb, &target, nullptr);
+	if (status != ARES_SUCCESS)
+		return target;
+	ares_queue_wait_empty(channel, -1);
+	return target;
+}
+#elif defined(HAVE_LDNS)
 static std::string domain_to_oxsrv(const char *dom)
 {
 	auto dname = ldns_dname_new_frm_str(("_autodiscover._tcp."s + dom).c_str());
@@ -233,7 +293,7 @@ static std::string domain_to_oxsrv(const char *dom)
 	auto rrlist = ldns_pkt_answer(pkt);
 	if (rrlist == nullptr)
 		return {};
-	auto rr = ldns_rr_list_rr(rrlist, 0);
+
 	if (rr == nullptr)
 		return {};
 	if (ldns_rr_get_type(rr) != LDNS_RR_TYPE_SRV)

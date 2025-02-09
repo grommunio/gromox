@@ -113,6 +113,7 @@ dl_LIBS=""
 libldap_LIBS=""
 pam_LIBS=""
 resolv_LIBS=""
+AH_TEMPLATE([HAVE_CARES], [])
 AH_TEMPLATE([HAVE_ESEDB], [])
 AH_TEMPLATE([HAVE_GSSAPI], [])
 AH_TEMPLATE([HAVE_LDNS], [])
@@ -183,7 +184,9 @@ AC_LINK_IFELSE(
 )
 LIBS="$saved_LIBS"
 AS_IF([test "$have_res_nq" = 0], [
-	PKG_CHECK_MODULES([ldns], [ldns], [AC_DEFINE([HAVE_LDNS], [1])], [:])
+	PKG_CHECK_MODULES([cares], [libcares], [AC_DEFINE([HAVE_CARES], [1])], [
+		PKG_CHECK_MODULES([ldns], [ldns], [AC_DEFINE([HAVE_LDNS], [1])], [:])
+	])
 ])
 
 AC_SUBST([crypt_LIBS])

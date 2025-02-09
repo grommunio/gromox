@@ -33,6 +33,7 @@ Optional deps:
 
 * A resolver library
   * libc/libresolv with interface "res_nquery" & "ns_initparse" functions
+  * c-ares
   * LDNS (Unbound)
 * libbacktrace <https://github.com/ianlancetaylor/libbacktrace>
 * libesedb
