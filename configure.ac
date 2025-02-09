@@ -212,7 +212,10 @@ done
 LIBS="$saved_LIBS"
 AS_IF([test "$iconv_set" = 0], [
 	AC_MSG_RESULT([none found])
-	AC_MSG_ERROR([Could not locate a usable iconv_open])
+	AS_CASE([$host_os],
+		[openbsd*|freebsd*], [AC_MSG_ERROR([Could not locate a usable iconv_open; you may need to pass CPPFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib])],
+		[*], [AC_MSG_ERROR([Could not locate a usable iconv_open])]
+	)
 ], [test -z "$iconv_LIBS"], [
 	AC_MSG_RESULT([none required])
 ], [
