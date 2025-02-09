@@ -334,10 +334,6 @@ BOOL SVC_ldap_adaptor(enum plugin_op reason, const struct dlfuncs &ppdata) try
 	LINK_SVC_API(ppdata);
 	if (!le_ldap_plugin->load())
 		return false;
-	if (!register_service("ldap_auth_login3", ldap_adaptor_login3)) {
-		mlog(LV_ERR, "ldap_adaptor: failed to register services");
-		return false;
-	}
 	return TRUE;
 } catch (...) {
 	return false;

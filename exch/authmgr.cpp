@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -54,7 +54,6 @@ struct sslfree2 : public sslfree {
 };
 }
 
-static decltype(ldap_adaptor_login3) *fptr_ldap_login;
 static unsigned int am_choice = A_EXTERNID_LDAP;
 
 static std::unique_ptr<EVP_PKEY, sslfree2>
@@ -241,7 +240,7 @@ static bool login_gen(const char *username, const char *password,
 	else if (am_choice == A_ALLOW_ALL)
 		auth = true;
 	else if (am_choice == A_EXTERNID_LDAP && mres.have_xid > 0)
-		auth = fptr_ldap_login(mres.username.c_str(), password, mres);
+		auth = ldap_adaptor_login3(mres.username.c_str(), password, mres);
 	else if (am_choice == A_EXTERNID_PAM && mres.have_xid > 0)
 		auth = login_pam(mres.username.c_str(), password, mres);
 	else if (am_choice == A_EXTERNID_LDAP)
@@ -282,14 +281,6 @@ static bool authmgr_reload()
 		am_choice = A_EXTERNID_LDAP;
 	} else if (strcmp(val, "pam") == 0) {
 		am_choice = A_EXTERNID_PAM;
-	}
-
-	if (fptr_ldap_login == nullptr) {
-		query_service2("ldap_auth_login3", fptr_ldap_login);
-		if (fptr_ldap_login == nullptr) {
-			mlog(LV_ERR, "authmgr: ldap_adaptor plugin not loaded yet");
-			return false;
-		}
 	}
 	return true;
 }
