@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -322,8 +322,8 @@ int main(int argc, char **argv) try
 	}
 
 	if (g_oneoff) {
-		system_services_get_user_ids = [](const char *, unsigned int *, unsigned int *, display_type *) -> BOOL { return false; };
-		system_services_get_domain_ids = [](const char *, unsigned int *, unsigned int *) -> BOOL { return false; };
+		system_services_get_user_ids = [](const char *, unsigned int *, unsigned int *, display_type *) -> bool { return false; };
+		system_services_get_domain_ids = [](const char *, unsigned int *, unsigned int *) -> bool { return false; };
 	} else {
 		system_services_get_user_ids   = mysql_adaptor_get_user_ids;
 		system_services_get_domain_ids = mysql_adaptor_get_domain_ids;

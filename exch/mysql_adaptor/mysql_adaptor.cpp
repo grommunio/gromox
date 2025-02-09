@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdio>
@@ -176,7 +176,7 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
  * @password:       just-entered password, plain
  * @encrypt_passwd: the previously stored password, encoded
  */
-BOOL mysql_adaptor_login2(const char *username, const char *password,
+bool mysql_adaptor_login2(const char *username, const char *password,
     const std::string &encrypt_passwd, std::string &errstr) try
 {
 	if (!str_isascii(username)) {
@@ -191,11 +191,11 @@ BOOL mysql_adaptor_login2(const char *username, const char *password,
 		auto qstr = "UPDATE users SET password='"s + conn->quote(encp) +
 			    "' WHERE username='" + conn->quote(username) + "'";
 		if (conn->query(qstr))
-			return TRUE;
+			return true;
 		errstr = "Password update failed";
 	} else {
 		if (sql_crypt_verify(password, encrypt_passwd.c_str()))
-			return TRUE;
+			return true;
 		errstr = "Incorrect password";
 	}
 	return false;
@@ -204,7 +204,7 @@ BOOL mysql_adaptor_login2(const char *username, const char *password,
 	return false;
 }
 
-BOOL mysql_adaptor_setpasswd(const char *username,
+bool mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password) try
 {
 	if (!str_isascii(username))
@@ -224,26 +224,26 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	if (pmyres == nullptr)
 		return false;
 	if (pmyres.num_rows() != 1)
-		return FALSE;
+		return false;
 	auto myrow = pmyres.fetch_row();
 	auto dtypx = DT_MAILUSER;
 	if (myrow[1] != nullptr)
 		dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
 	if (dtypx != DT_MAILUSER)
-		return FALSE;
+		return false;
 	auto address_status = strtoul(myrow[2], nullptr, 0);
 	if (address_status != 0)
-		return FALSE;
+		return false;
 	if (!(strtoul(myrow[3], nullptr, 0) & USER_PRIVILEGE_CHGPASSWD))
-		return FALSE;
+		return false;
 
 	if (*znul(myrow[0]) != '\0' && !sql_crypt_verify(password, myrow[0]))
-		return FALSE;
+		return false;
 	qstr = "UPDATE users SET password='" + conn->quote(sql_crypt_newhash(new_password)) +
 	       "' WHERE username='" + q_user + "'";
 	if (!conn->query(qstr))
 		return false;
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1703", e.what());
 	return false;
@@ -274,7 +274,7 @@ ec_error_t mysql_adaptor_userid_to_name(unsigned int user_id,
 	return ecServerOOM;
 }
 
-BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *puser_id) try
+bool mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *puser_id) try
 {
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn)
@@ -290,10 +290,10 @@ BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *puser_
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 1)
-		return FALSE;
+		return false;
 	auto myrow = pmyres.fetch_row();
 	*puser_id = strtoul(myrow[0], nullptr, 0);
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1706", e.what());
 	return false;
@@ -347,7 +347,7 @@ bool mysql_adaptor_get_user_displayname(const char *username,
 	return false;
 }
 
-BOOL mysql_adaptor_get_user_privilege_bits(const char *username,
+bool mysql_adaptor_get_user_privilege_bits(const char *username,
     uint32_t *pprivilege_bits) try
 {
 	if (!str_isascii(username))
@@ -371,16 +371,16 @@ BOOL mysql_adaptor_get_user_privilege_bits(const char *username,
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 1)
-		return FALSE;
+		return false;
 	auto myrow = pmyres.fetch_row();
 	*pprivilege_bits = strtoul(myrow[0], nullptr, 0);
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1708", e.what());
 	return false;
 }
 
-BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang) try
+bool mysql_adaptor_set_user_lang(const char *username, const char *lang) try
 {
 	if (!str_isascii(username))
 		return false;
@@ -391,13 +391,13 @@ BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang) try
 		    "' WHERE username='" + conn->quote(username) + "'";
 	if (!conn->query(qstr))
 		return false;
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1710", e.what());
 	return false;
 }
 
-BOOL mysql_adaptor_set_timezone(const char *username, const char *zone) try
+bool mysql_adaptor_set_timezone(const char *username, const char *zone) try
 {
 	if (!str_isascii(username))
 		return false;
@@ -408,7 +408,7 @@ BOOL mysql_adaptor_set_timezone(const char *username, const char *zone) try
 	            "' WHERE username='" + conn->quote(username) + "'";
 	if (!conn->query(qstr))
 		return false;
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1713", e.what());
 	return false;
@@ -462,7 +462,7 @@ bool mysql_adaptor_get_homedir_by_id(unsigned int domain_id, char *homedir,
 	return false;
 }
 
-BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, unsigned int *pdomain_id) try
+bool mysql_adaptor_get_id_from_homedir(const char *homedir, unsigned int *pdomain_id) try
 {
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn)
@@ -476,16 +476,16 @@ BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, unsigned int *pdomai
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 1)
-		return FALSE;
+		return false;
 	auto myrow = pmyres.fetch_row();
 	*pdomain_id = strtoul(myrow[0], nullptr, 0);
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1718", e.what());
 	return false;
 }
 
-BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
+bool mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
     unsigned int *pdomain_id, enum display_type *dtypx) try
 {
 	if (!str_isascii(username))
@@ -509,7 +509,7 @@ BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 1)
-		return FALSE;
+		return false;
 	auto myrow = pmyres.fetch_row();
 	if (puser_id != nullptr)
 		*puser_id = strtoul(myrow[0], nullptr, 0);
@@ -520,13 +520,13 @@ BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
 		if (myrow[2] != nullptr)
 			*dtypx = static_cast<enum display_type>(strtoul(myrow[2], nullptr, 0));
 	}
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1719", e.what());
 	return false;
 }
 
-BOOL mysql_adaptor_get_domain_ids(const char *domainname,
+bool mysql_adaptor_get_domain_ids(const char *domainname,
     unsigned int *pdomain_id, unsigned int *porg_id) try
 {
 	if (!str_isascii(domainname))
@@ -545,19 +545,19 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 1)
-		return FALSE;
+		return false;
 	auto myrow = pmyres.fetch_row();
 	if (pdomain_id != nullptr)
 		*pdomain_id = strtoul(myrow[0], nullptr, 0);
 	if (porg_id != nullptr)
 		*porg_id = strtoul(myrow[1], nullptr, 0);
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1720", e.what());
 	return false;
 }
 
-BOOL mysql_adaptor_get_org_domains(unsigned int org_id,
+bool mysql_adaptor_get_org_domains(unsigned int org_id,
     std::vector<unsigned int> &pfile) try
 {
 	auto qstr = "SELECT id FROM domains WHERE org_id=" + std::to_string(org_id);
@@ -576,13 +576,13 @@ BOOL mysql_adaptor_get_org_domains(unsigned int org_id,
 		auto myrow = pmyres.fetch_row();
 		pfile[i] = strtoul(myrow[0], nullptr, 0);
 	}
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1722", e.what());
 	return false;
 }
 
-BOOL mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &dinfo) try
+bool mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &dinfo) try
 {
 	auto qstr = "SELECT domainname, title, address, homedir "
 	            "FROM domains WHERE id=" + std::to_string(domain_id);
@@ -596,23 +596,23 @@ BOOL mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &dinfo) tr
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 1)
-		return FALSE;
+		return false;
 	auto myrow = pmyres.fetch_row();
 	if (myrow == nullptr)
 		return false;
 	dinfo.name = myrow[0];
 	dinfo.title = myrow[1];
 	dinfo.address = myrow[2];
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1723", e.what());
 	return false;
 }
 
-BOOL mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_id2) try
+bool mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_id2) try
 {
 	if (domain_id1 == domain_id2)
-		return TRUE;
+		return true;
 	auto qstr = "SELECT org_id FROM domains WHERE id=" + std::to_string(domain_id1) +
 	            " OR id=" + std::to_string(domain_id2);
 	auto conn = g_sqlconn_pool.get_wait();
@@ -625,21 +625,21 @@ BOOL mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_i
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 2)
-		return FALSE;
+		return false;
 	auto myrow = pmyres.fetch_row();
 	auto org_id1 = strtoul(myrow[0], nullptr, 0);
 	myrow = pmyres.fetch_row();
 	auto org_id2 = strtoul(myrow[0], nullptr, 0);
 	if (0 == org_id1 || 0 == org_id2 || org_id1 != org_id2) {
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1724", e.what());
 	return false;
 }
 
-BOOL mysql_adaptor_get_domain_groups(unsigned int domain_id,
+bool mysql_adaptor_get_domain_groups(unsigned int domain_id,
     std::vector<sql_group> &pfile) try
 {
 	auto qstr = "SELECT `id`, `groupname`, `title` FROM `groups` "
@@ -662,13 +662,13 @@ BOOL mysql_adaptor_get_domain_groups(unsigned int domain_id,
 		gv[i].title = myrow[2];
 	}
 	pfile = std::move(gv);
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1725", e.what());
 	return false;
 }
 
-BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
+bool mysql_adaptor_check_mlist_include(const char *mlist_name,
     const char *account) try
 {
 	if (!str_isascii(mlist_name) || !str_isascii(account))
@@ -688,12 +688,12 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 	if (pmyres == nullptr)
 		return false;
 	if (pmyres.num_rows() != 1)
-		return FALSE;
+		return false;
 
 	auto myrow = pmyres.fetch_row();
 	unsigned int id = strtoul(myrow[0], nullptr, 0);
 	auto type = static_cast<mlist_type>(strtoul(myrow[1], nullptr, 0));
-	BOOL b_result = false;
+	bool b_result = false;
 	switch (type) {
 	case mlist_type::normal:
 		qstr = "SELECT username FROM associations WHERE list_id=" +
@@ -705,7 +705,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() > 0)
-			b_result = TRUE;
+			b_result = true;
 		return b_result;
 	case mlist_type::group: {
 		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='" + q_mlist + "'";
@@ -715,7 +715,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() != 1)
-			return FALSE;
+			return false;
 		myrow = pmyres.fetch_row();
 		unsigned int group_id = strtoul(myrow[0], nullptr, 0);
 		qstr = "SELECT username FROM users WHERE group_id=" +
@@ -727,7 +727,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() > 0)
-			b_result = TRUE;
+			b_result = true;
 		return b_result;
 	}
 	case mlist_type::domain: {
@@ -738,7 +738,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() != 1)
-			return FALSE;
+			return false;
 		myrow = pmyres.fetch_row();
 		unsigned int domain_id = strtoul(myrow[0], nullptr, 0);
 		qstr = "SELECT username FROM users WHERE domain_id=" +
@@ -750,25 +750,25 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		if (pmyres == nullptr)
 			return false;
 		if (pmyres.num_rows() > 0)
-			b_result = TRUE;
+			b_result = true;
 		return b_result;
 	}
 	case mlist_type::dyngroup: {
 		return false;
 	}
 	default:
-		return FALSE;
+		return false;
 	}
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1729", e.what());
 	return false;
 }
 
-BOOL mysql_adaptor_check_same_org2(const char *domainname1,
+bool mysql_adaptor_check_same_org2(const char *domainname1,
     const char *domainname2) try
 {
 	if (strcasecmp(domainname1, domainname2) == 0)
-		return TRUE;
+		return true;
 	if (!str_isascii(domainname1) || !str_isascii(domainname2))
 		return false;
 	auto conn = g_sqlconn_pool.get_wait();
@@ -784,15 +784,15 @@ BOOL mysql_adaptor_check_same_org2(const char *domainname1,
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 2)
-		return FALSE;
+		return false;
 	auto myrow = pmyres.fetch_row();
 	auto org_id1 = strtoul(myrow[0], nullptr, 0);
 	myrow = pmyres.fetch_row();
 	auto org_id2 = strtoul(myrow[0], nullptr, 0);
 	if (0 == org_id1 || 0 == org_id2 || org_id1 != org_id2) {
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1730", e.what());
 	return false;
@@ -803,24 +803,24 @@ BOOL mysql_adaptor_check_same_org2(const char *domainname1,
  * @from:	From address
  * @pfile:	Output array - append, NO truncate
  */
-BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
+bool mysql_adaptor_get_mlist_memb(const char *username, const char *from,
     int *presult, std::vector<std::string> &pfile) try
 {
 	if (!str_isascii(username))
 		return false;
 	int i, rows;
-	BOOL b_chkintl;
+	bool b_chkintl;
 
 	*presult = MLIST_RESULT_NONE;
 	const char *pdomain = strchr(username, '@');
 	if (NULL == pdomain) {
-		return TRUE;
+		return true;
 	}
 
 	pdomain++;
 	const char *pfrom_domain = strchr(from, '@');
 	if (NULL == pfrom_domain) {
-		return TRUE;
+		return true;
 	}
 
 	pfrom_domain++;
@@ -830,7 +830,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 	auto q_user = conn->quote(username);
 	auto pencode_domain = strchr(q_user.c_str(), '@');
 	if (pencode_domain == nullptr)
-		return TRUE;
+		return true;
 	++pencode_domain;
 
 	auto qstr = "SELECT id, list_type, list_privilege FROM mlists "
@@ -842,7 +842,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 		return false;
 	if (pmyres.num_rows() != 1) {
 		*presult = MLIST_RESULT_NONE;
-		return TRUE;
+		return true;
 	}
 	auto myrow = pmyres.fetch_row();
 	unsigned int id = strtoul(myrow[0], nullptr, 0);
@@ -852,17 +852,17 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 	switch (privilege) {
 	case mlist_priv::all:
 	case mlist_priv::outgoing:
-		b_chkintl = FALSE;
+		b_chkintl = false;
 		break;
 	case mlist_priv::internal:
-		b_chkintl = TRUE;
+		b_chkintl = true;
 		break;
 	case mlist_priv::domain:
 		if (0 != strcasecmp(pdomain, pfrom_domain)) {
 			*presult = MLIST_RESULT_PRIVIL_DOMAIN;
-			return TRUE;
+			return true;
 		}
-		b_chkintl = FALSE;
+		b_chkintl = false;
 		break;
 	case mlist_priv::specified:
 		qstr = "SELECT username FROM specifieds WHERE list_id=" + std::to_string(id);
@@ -881,13 +881,13 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 		}
 		if (i == rows) {
 			*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
-			return TRUE;
+			return true;
 		}
-		b_chkintl = FALSE;
+		b_chkintl = false;
 		break;
 	default:
 		*presult = MLIST_RESULT_NONE;
-		return TRUE;
+		return true;
 	}
 
 	switch (type) {
@@ -903,14 +903,14 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 			for (i = 0; i < rows; i++) {
 				myrow = pmyres.fetch_row();
 				if (0 == strcasecmp(myrow[0], from)) {
-					b_chkintl = FALSE;
+					b_chkintl = false;
 					break;
 				}
 			}
 		}
 		if (b_chkintl) {
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
-			return TRUE;
+			return true;
 		}
 		mysql_data_seek(pmyres.get(), 0);
 		for (i = 0; i < rows; i++) {
@@ -918,7 +918,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 			pfile.push_back(myrow[0]);
 		}
 		*presult = MLIST_RESULT_OK;
-		return TRUE;
+		return true;
 	case mlist_type::group: {
 		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='" + q_user + "'";
 		if (!conn->query(qstr))
@@ -928,7 +928,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 			return false;
 		if (pmyres.num_rows() != 1) {
 			*presult = MLIST_RESULT_NONE;
-			return TRUE;
+			return true;
 		}
 		myrow = pmyres.fetch_row();
 		unsigned int group_id = strtoul(myrow[0], nullptr, 0);
@@ -947,14 +947,14 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 				if (myrow[1] != nullptr)
 					dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
 				if (dtypx == DT_MAILUSER && strcasecmp(myrow[0], from) == 0) {
-					b_chkintl = FALSE;
+					b_chkintl = false;
 					break;
 				}
 			}
 		}
 		if (b_chkintl) {
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
-			return TRUE;
+			return true;
 		}
 		mysql_data_seek(pmyres.get(), 0);
 		for (i = 0; i < rows; i++) {
@@ -966,7 +966,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 				pfile.push_back(myrow[0]);
 		}
 		*presult = MLIST_RESULT_OK;
-		return TRUE;
+		return true;
 	}
 	case mlist_type::domain: {
 		qstr = "SELECT id FROM domains WHERE domainname='"s + pencode_domain + "'";
@@ -977,7 +977,7 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 			return false;
 		if (pmyres.num_rows() != 1) {
 			*presult = MLIST_RESULT_NONE;
-			return TRUE;
+			return true;
 		}
 		myrow = pmyres.fetch_row();
 		unsigned int domain_id = strtoul(myrow[0], nullptr, 0);
@@ -996,14 +996,14 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 				if (myrow[1] != nullptr)
 					dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
 				if (dtypx == DT_MAILUSER && strcasecmp(myrow[0], from) == 0) {
-					b_chkintl = FALSE;
+					b_chkintl = false;
 					break;
 				}
 			}
 		}
 		if (b_chkintl) {
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
-			return TRUE;
+			return true;
 		}
 		mysql_data_seek(pmyres.get(), 0);
 		for (i = 0; i < rows; i++) {
@@ -1015,15 +1015,15 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 				pfile.push_back(myrow[0]);
 		}
 		*presult = MLIST_RESULT_OK;
-		return TRUE;
+		return true;
 	}
 	case mlist_type::dyngroup: {
 		*presult = MLIST_RESULT_OK;
-		return TRUE;
+		return true;
 	}
 	default:
 		*presult = MLIST_RESULT_NONE;
-		return TRUE;
+		return true;
 	}
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1732", e.what());

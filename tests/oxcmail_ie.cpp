@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -146,7 +146,7 @@ static char data_5[] =
 	"///2\r\n"
 	"--0--\r\n";
 
-static BOOL ie_get_propids(const ie_name_entry *map, size_t mapsize,
+static bool ie_get_propids(const ie_name_entry *map, size_t mapsize,
     const PROPNAME_ARRAY *pna, PROPID_ARRAY *idp)
 {
 	auto &id = *idp;
@@ -441,8 +441,8 @@ static void ical_export_2()
 
 int main()
 {
-	auto ee_get_user_ids = [](const char *, unsigned int *, unsigned int *, enum display_type *) -> BOOL { return false; };
-	auto ee_get_domain_ids = [](const char *, unsigned int *, unsigned int *) -> BOOL { return false; };
+	auto ee_get_user_ids = [](const char *, unsigned int *, unsigned int *, enum display_type *) -> bool { return false; };
+	auto ee_get_domain_ids = [](const char *, unsigned int *, unsigned int *) -> bool { return false; };
 	auto ee_userid_to_name = [](unsigned int, std::string &) -> ec_error_t { return ecNotFound; };
 	g_show_tree = g_show_props = true;
 	if (!oxcmail_init_library("x500", ee_get_user_ids, ee_get_domain_ids, ee_userid_to_name)) {
