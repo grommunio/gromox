@@ -21,9 +21,6 @@
 #if defined(HAVE_CARES)
 #	include <ares.h>
 #	define HAVE_NS 1
-#elif defined(HAVE_LDNS)
-#	include <ldns/ldns.h>
-#	define HAVE_NS 1
 #elif defined(HAVE_RES_NQUERYDOMAIN)
 #	include <netdb.h>
 #	include <resolv.h>
@@ -266,52 +263,6 @@ static std::string domain_to_oxsrv(const char *dom)
 		return target;
 	ares_queue_wait_empty(channel, -1);
 	return target;
-}
-#elif defined(HAVE_LDNS)
-static std::string domain_to_oxsrv(const char *dom)
-{
-	auto dname = ldns_dname_new_frm_str(("_autodiscover._tcp."s + dom).c_str());
-	if (dname == nullptr) {
-		fprintf(stderr, "E-1261: ENOMEM");
-		return {};
-	}
-	ldns_resolver *rsv = nullptr;
-	auto status = ldns_resolver_new_frm_file(&rsv, nullptr);
-	if (status != LDNS_STATUS_OK) {
-		fprintf(stderr, "E-1262: ENOMEM");
-		return {};
-	}
-	auto cl_0 = make_scope_exit([&]() { ldns_resolver_deep_free(rsv); });
-	ldns_pkt *pkt = nullptr;
-	status = ldns_resolver_query_status(&pkt, rsv, dname, LDNS_RR_TYPE_SRV,
-	         LDNS_RR_CLASS_IN, LDNS_RD);
-	if (status != LDNS_STATUS_OK) {
-		fprintf(stderr, "SERVFAIL");
-		return {};
-	}
-	auto cl_1 = make_scope_exit([&]() { ldns_pkt_free(pkt); });
-	auto rrlist = ldns_pkt_answer(pkt);
-	if (rrlist == nullptr)
-		return {};
-
-	if (rr == nullptr)
-		return {};
-	if (ldns_rr_get_type(rr) != LDNS_RR_TYPE_SRV)
-		return {};
-	auto port   = ldns_rr_rdf(rr, 2);
-	auto target = ldns_rr_rdf(rr, 3);
-	if (port == nullptr || ldns_rdf_get_type(port) != LDNS_RDF_TYPE_INT16 ||
-	    target == nullptr || ldns_rdf_get_type(target) != LDNS_RDF_TYPE_DNAME)
-		return {};
-	auto tgbuf = ldns_rdf2str(target);
-	if (tgbuf == nullptr)
-		return {};
-	auto cl_2 = make_scope_exit([&]() { free(tgbuf); });
-	std::string tgstr = tgbuf;
-	if (tgstr.size() > 0 && tgstr.back() == '.')
-		tgstr.pop_back();
-	tgstr += ":" + std::to_string(ldns_rdf2native_int16(port));
-	return tgstr;
 }
 #elif defined(HAVE_RES_NQUERYDOMAIN)
 static std::string domain_to_oxsrv(const char *dom)
