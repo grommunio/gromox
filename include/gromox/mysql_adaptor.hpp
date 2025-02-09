@@ -106,9 +106,6 @@ struct sql_class {
 	std::string name;
 };
 
-extern GX_EXPORT void mysql_adaptor_init(mysql_adaptor_init_param &&);
-extern GX_EXPORT int mysql_adaptor_run();
-extern GX_EXPORT void mysql_adaptor_stop();
 extern GX_EXPORT gromox::errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv, sql_meta_result &out);
 extern GX_EXPORT bool mysql_adaptor_login2(const char *username, const char *password, const std::string &enc_passwd, std::string &errstr);
 extern GX_EXPORT bool mysql_adaptor_setpasswd(const char *username, const char *password, const char *new_password);

@@ -50,7 +50,7 @@ using namespace gromox;
 DECLARE_SVC_API(mysql_adaptor, );
 using namespace mysql_adaptor;
 
-int mysql_adaptor_run()
+int mysql_plugin::run()
 {
 	if (g_parm.schema_upgrade == SSU_NOT_ME)
 		return 0;
@@ -59,12 +59,7 @@ int mysql_adaptor_run()
 	return 0;
 }
 
-void mysql_adaptor_stop()
-{
-	g_sqlconn_pool.clear();
-}
-
-errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
+errno_t mysql_plugin::meta(const char *username, unsigned int wantpriv,
     sql_meta_result &mres) try
 {
 	auto conn = g_sqlconn_pool.get_wait();
@@ -176,7 +171,7 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
  * @password:       just-entered password, plain
  * @encrypt_passwd: the previously stored password, encoded
  */
-bool mysql_adaptor_login2(const char *username, const char *password,
+bool mysql_plugin::login2(const char *username, const char *password,
     const std::string &encrypt_passwd, std::string &errstr) try
 {
 	if (!str_isascii(username)) {
@@ -204,8 +199,8 @@ bool mysql_adaptor_login2(const char *username, const char *password,
 	return false;
 }
 
-bool mysql_adaptor_setpasswd(const char *username,
-	const char *password, const char *new_password) try
+bool mysql_plugin::setpasswd(const char *username,
+    const char *password, const char *new_password) try
 {
 	if (!str_isascii(username))
 		return false;
@@ -249,7 +244,7 @@ bool mysql_adaptor_setpasswd(const char *username,
 	return false;
 }
 
-ec_error_t mysql_adaptor_userid_to_name(unsigned int user_id,
+ec_error_t mysql_plugin::userid_to_name(unsigned int user_id,
     std::string &username) try
 {
 	auto qstr = "SELECT username FROM users WHERE id=" + std::to_string(user_id);
@@ -274,7 +269,8 @@ ec_error_t mysql_adaptor_userid_to_name(unsigned int user_id,
 	return ecServerOOM;
 }
 
-bool mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *puser_id) try
+bool mysql_plugin::get_id_from_maildir(const char *maildir,
+    unsigned int *puser_id) try
 {
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn)
@@ -299,7 +295,7 @@ bool mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *puser_
 	return false;
 }
 
-bool mysql_adaptor_get_user_displayname(const char *username,
+bool mysql_plugin::get_user_displayname(const char *username,
     char *pdisplayname, size_t dsize) try
 {
 	if (!str_isascii(username))
@@ -347,7 +343,7 @@ bool mysql_adaptor_get_user_displayname(const char *username,
 	return false;
 }
 
-bool mysql_adaptor_get_user_privilege_bits(const char *username,
+bool mysql_plugin::get_user_privbits(const char *username,
     uint32_t *pprivilege_bits) try
 {
 	if (!str_isascii(username))
@@ -380,7 +376,7 @@ bool mysql_adaptor_get_user_privilege_bits(const char *username,
 	return false;
 }
 
-bool mysql_adaptor_set_user_lang(const char *username, const char *lang) try
+bool mysql_plugin::set_user_lang(const char *username, const char *lang) try
 {
 	if (!str_isascii(username))
 		return false;
@@ -397,7 +393,7 @@ bool mysql_adaptor_set_user_lang(const char *username, const char *lang) try
 	return false;
 }
 
-bool mysql_adaptor_set_timezone(const char *username, const char *zone) try
+bool mysql_plugin::set_timezone(const char *username, const char *zone) try
 {
 	if (!str_isascii(username))
 		return false;
@@ -414,7 +410,7 @@ bool mysql_adaptor_set_timezone(const char *username, const char *zone) try
 	return false;
 }
 
-bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t dsize) try
+bool mysql_plugin::get_homedir(const char *domainname, char *homedir, size_t dsize) try
 {
 	if (!str_isascii(domainname))
 		return false;
@@ -439,7 +435,7 @@ bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t dsi
 	return false;
 }
 
-bool mysql_adaptor_get_homedir_by_id(unsigned int domain_id, char *homedir,
+bool mysql_plugin::get_homedir_by_id(unsigned int domain_id, char *homedir,
     size_t dsize) try
 {
 	auto qstr = "SELECT homedir FROM domains WHERE id=" + std::to_string(domain_id);
@@ -462,7 +458,7 @@ bool mysql_adaptor_get_homedir_by_id(unsigned int domain_id, char *homedir,
 	return false;
 }
 
-bool mysql_adaptor_get_id_from_homedir(const char *homedir, unsigned int *pdomain_id) try
+bool mysql_plugin::get_id_from_homedir(const char *homedir, unsigned int *pdomain_id) try
 {
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn)
@@ -485,7 +481,7 @@ bool mysql_adaptor_get_id_from_homedir(const char *homedir, unsigned int *pdomai
 	return false;
 }
 
-bool mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
+bool mysql_plugin::get_user_ids(const char *username, unsigned int *puser_id,
     unsigned int *pdomain_id, enum display_type *dtypx) try
 {
 	if (!str_isascii(username))
@@ -526,7 +522,7 @@ bool mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
 	return false;
 }
 
-bool mysql_adaptor_get_domain_ids(const char *domainname,
+bool mysql_plugin::get_domain_ids(const char *domainname,
     unsigned int *pdomain_id, unsigned int *porg_id) try
 {
 	if (!str_isascii(domainname))
@@ -557,7 +553,7 @@ bool mysql_adaptor_get_domain_ids(const char *domainname,
 	return false;
 }
 
-bool mysql_adaptor_get_org_domains(unsigned int org_id,
+bool mysql_plugin::get_org_domains(unsigned int org_id,
     std::vector<unsigned int> &pfile) try
 {
 	auto qstr = "SELECT id FROM domains WHERE org_id=" + std::to_string(org_id);
@@ -582,7 +578,7 @@ bool mysql_adaptor_get_org_domains(unsigned int org_id,
 	return false;
 }
 
-bool mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &dinfo) try
+bool mysql_plugin::get_domain_info(unsigned int domain_id, sql_domain &dinfo) try
 {
 	auto qstr = "SELECT domainname, title, address, homedir "
 	            "FROM domains WHERE id=" + std::to_string(domain_id);
@@ -609,7 +605,7 @@ bool mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &dinfo) tr
 	return false;
 }
 
-bool mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_id2) try
+bool mysql_plugin::check_same_org(unsigned int domain_id1, unsigned int domain_id2) try
 {
 	if (domain_id1 == domain_id2)
 		return true;
@@ -639,7 +635,7 @@ bool mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_i
 	return false;
 }
 
-bool mysql_adaptor_get_domain_groups(unsigned int domain_id,
+bool mysql_plugin::get_domain_groups(unsigned int domain_id,
     std::vector<sql_group> &pfile) try
 {
 	auto qstr = "SELECT `id`, `groupname`, `title` FROM `groups` "
@@ -668,7 +664,7 @@ bool mysql_adaptor_get_domain_groups(unsigned int domain_id,
 	return false;
 }
 
-bool mysql_adaptor_check_mlist_include(const char *mlist_name,
+bool mysql_plugin::check_mlist_include(const char *mlist_name,
     const char *account) try
 {
 	if (!str_isascii(mlist_name) || !str_isascii(account))
@@ -764,7 +760,7 @@ bool mysql_adaptor_check_mlist_include(const char *mlist_name,
 	return false;
 }
 
-bool mysql_adaptor_check_same_org2(const char *domainname1,
+bool mysql_plugin::check_same_org2(const char *domainname1,
     const char *domainname2) try
 {
 	if (strcasecmp(domainname1, domainname2) == 0)
@@ -803,7 +799,7 @@ bool mysql_adaptor_check_same_org2(const char *domainname1,
  * @from:	From address
  * @pfile:	Output array - append, NO truncate
  */
-bool mysql_adaptor_get_mlist_memb(const char *username, const char *from,
+bool mysql_plugin::get_mlist_memb(const char *username, const char *from,
     int *presult, std::vector<std::string> &pfile) try
 {
 	if (!str_isascii(username))

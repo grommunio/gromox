@@ -13,6 +13,7 @@
 #include <errmsg.h>
 #include <map>
 #include <mysql.h>
+#include <optional>
 #include <set>
 #include <string>
 #include <typeinfo>
@@ -40,12 +41,11 @@
 using namespace std::string_literals;
 DECLARE_SVC_API(mysql_adaptor, extern);
 using namespace mysql_adaptor;
-
 using namespace gromox;
 using aliasmap_t = std::multimap<std::string, std::string, std::less<>>;
 using propmap_t  = std::multimap<unsigned int, std::pair<unsigned int, std::string>>;
-mysql_adaptor_init_param g_parm;
-struct sqlconnpool g_sqlconn_pool;
+
+std::optional<mysql_plugin> le_mysql_plugin;
 
 #ifdef __OpenBSD__
 #elif defined(__sun)
@@ -104,7 +104,7 @@ static bool connection_severed(int e)
 	return e == CR_SERVER_LOST || e == CR_SERVER_GONE_ERROR;
 }
 
-static bool db_upgrade_check_2(MYSQL *conn)
+bool mysql_plugin::db_upgrade_check_2(MYSQL *conn)
 {
 	auto recent = dbop_mysql_recentversion();
 	auto current = dbop_mysql_schemaversion(conn);
@@ -127,7 +127,7 @@ static bool db_upgrade_check_2(MYSQL *conn)
 	return dbop_mysql_upgrade(conn) == EXIT_SUCCESS;
 }
 
-bool db_upgrade_check()
+bool mysql_plugin::db_upgrade_check()
 {
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn)
@@ -135,7 +135,7 @@ bool db_upgrade_check()
 	return db_upgrade_check_2(conn->get());
 }
 
-MYSQL *sql_make_conn()
+MYSQL *mysql_plugin::sql_make_conn()
 {
 	MYSQL *conn = mysql_init(nullptr);
 	if (conn == nullptr)
@@ -180,7 +180,7 @@ std::string sqlconn::quote(std::string_view sv)
 bool sqlconn::query(std::string_view qv)
 {
 	if (m_conn == nullptr) {
-		m_conn = sql_make_conn();
+		m_conn = le_mysql_plugin->sql_make_conn();
 		if (m_conn == nullptr)
 			return false;
 		if (mysql_real_query(m_conn, qv.data(), qv.size()) == 0)
@@ -200,7 +200,7 @@ bool sqlconn::query(std::string_view qv)
 			static_cast<int>(qv.size()), qv.data(), ers);
 		return false;
 	}
-	m_conn = sql_make_conn();
+	m_conn = le_mysql_plugin->sql_make_conn();
 	if (m_conn == nullptr) {
 		mlog(LV_ERR, "mysql_adaptor: %s, and immediate reconnect unsuccessful: %s", ers, mysql_error(m_conn));
 		return false;
@@ -217,7 +217,7 @@ resource_pool<sqlconn>::token sqlconnpool::get_wait()
 {
 	auto c = resource_pool::get_wait();
 	if (!c)
-		*c = sql_make_conn();
+		*c = le_mysql_plugin->sql_make_conn();
 	return c;
 }
 
@@ -328,7 +328,7 @@ static int userlist_parse(sqlconn &conn, const char *query,
 	return pfile.size();
 }
 
-int mysql_adaptor_get_domain_users(unsigned int domain_id,
+int mysql_plugin::get_domain_users(unsigned int domain_id,
     std::vector<sql_user> &pfile) try
 {
 	char query[430];
@@ -364,7 +364,7 @@ int mysql_adaptor_get_domain_users(unsigned int domain_id,
 	return false;
 }
 
-int mysql_adaptor_get_group_users(unsigned int group_id,
+int mysql_plugin::get_group_users(unsigned int group_id,
     std::vector<sql_user> &pfile) try
 {
 	char query[491];
@@ -403,7 +403,7 @@ int mysql_adaptor_get_group_users(unsigned int group_id,
 	return false;
 }
 
-errno_t mysql_adaptor_scndstore_hints(unsigned int pri,
+errno_t mysql_plugin::scndstore_hints(unsigned int pri,
     std::vector<sql_user> &hints) try
 {
 	char query[233];
@@ -435,7 +435,7 @@ errno_t mysql_adaptor_scndstore_hints(unsigned int pri,
 	return ENOMEM;
 }
 
-int mysql_adaptor_domain_list_query(const char *domain) try
+int mysql_plugin::domain_list_query(const char *domain) try
 {
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn)
@@ -453,7 +453,7 @@ int mysql_adaptor_domain_list_query(const char *domain) try
 	return -ENOMEM;
 }
 
-errno_t mysql_adaptor_get_homeserver(const char *entity, bool is_pvt,
+errno_t mysql_plugin::get_homeserver(const char *entity, bool is_pvt,
     std::pair<std::string, std::string> &servers) try
 {
 	auto conn = g_sqlconn_pool.get_wait();
@@ -487,7 +487,7 @@ errno_t mysql_adaptor_get_homeserver(const char *entity, bool is_pvt,
 	return -ENOMEM;
 }
 
-void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
+void mysql_plugin::init(mysql_adaptor_init_param &&parm)
 {
 	g_parm = std::move(parm);
 	g_sqlconn_pool.resize(g_parm.conn_num);
@@ -523,7 +523,7 @@ static constexpr cfg_directive mysql_adaptor_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> &&cfg)
+bool mysql_plugin::reload_config(std::shared_ptr<config_file> &&cfg)
 {
 	if (cfg == nullptr)
 		cfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
@@ -563,7 +563,7 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> &&cfg)
 		par.schema_upgrade = SSU_AUTOUPGRADE;
 
 	par.enable_firsttimepw = cfg->get_ll("enable_firsttime_password");
-	mysql_adaptor_init(std::move(par));
+	init(std::move(par));
 	return true;
 }
 
@@ -575,7 +575,8 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> &&cfg)
  *
  * @return     true if successful, false otherwise
  */
-bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::string>& aliases) try
+bool mysql_plugin::get_user_aliases(const char *username,
+    std::vector<std::string> &aliases) try
 {
 	if (!str_isascii(username))
 		return true;
@@ -609,7 +610,8 @@ bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::strin
  *
  * @return     true if successful, false otherwise
  */
-bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARRAY &properties) try
+bool mysql_plugin::get_user_props(const char *username,
+    TPROPVAL_ARRAY &properties) try
 {
 	if (!str_isascii(username))
 		return true; /* same as 0 rows */
@@ -688,18 +690,20 @@ bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARRAY &pro
 	return false;
 }
 
-BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data)
+BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data) try
 {
 	if (reason == PLUGIN_FREE) {
-		mysql_adaptor_stop();
+		le_mysql_plugin.reset();
 		return TRUE;
 	} else if (reason == PLUGIN_RELOAD) {
-		mysql_adaptor_reload_config(nullptr);
+		if (le_mysql_plugin.has_value())
+			le_mysql_plugin->reload_config(nullptr);
 		return TRUE;
 	} else if (reason != PLUGIN_INIT) {
 		return TRUE;
 	}
 
+	le_mysql_plugin.emplace();
 	LINK_SVC_API(data);
 	auto cfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
 	           mysql_adaptor_cfg_defaults);
@@ -708,16 +712,18 @@ BOOL SVC_mysql_adaptor(enum plugin_op reason, const struct dlfuncs &data)
 		       strerror(errno));
 		return false;
 	}
-	if (!mysql_adaptor_reload_config(std::move(cfg)))
+	if (!le_mysql_plugin->reload_config(std::move(cfg)))
 		return false;
-	if (mysql_adaptor_run() != 0) {
+	if (le_mysql_plugin->run() != 0) {
 		mlog(LV_ERR, "mysql_adaptor: failed to startup");
 		return false;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
-int mysql_adaptor_mbop_userlist(std::vector<sql_user> &out) try
+int mysql_plugin::mbop_userlist(std::vector<sql_user> &out) try
 {
 	auto qstr = "SELECT u.id, u.username, u.address_status, u.maildir, "
 	            "dt.propval_str AS dtypx, sv.hostname, u.homeserver "
@@ -780,4 +786,151 @@ std::weak_ordering sql_user::operator<=>(const sql_user &o) const {
 	auto name_other = i != o.propvals.end() ? i->second.c_str() : o.username.c_str();
 	auto r = strcasecmp(name_this, name_other);
 	return r == 0? std::weak_ordering::equivalent : r < 0 ? std::weak_ordering::less : std::weak_ordering::greater;
+}
+
+errno_t mysql_adaptor_meta(const char *u, unsigned int p, sql_meta_result &r)
+{
+	return le_mysql_plugin->meta(u, p, r);
+}
+
+bool mysql_adaptor_login2(const char *u, const char *p, const std::string &w, std::string &e)
+{
+	return le_mysql_plugin->login2(u, p, w, e);
+}
+
+bool mysql_adaptor_setpasswd(const char *u, const char *p, const char *n)
+{
+	return le_mysql_plugin->setpasswd(u, p, n);
+}
+
+ec_error_t mysql_adaptor_userid_to_name(unsigned int id, std::string &name)
+{
+	return le_mysql_plugin->userid_to_name(id, name);
+}
+
+bool mysql_adaptor_get_id_from_maildir(const char *dir, unsigned int *id)
+{
+	return le_mysql_plugin->get_id_from_maildir(dir, id);
+}
+
+bool mysql_adaptor_get_user_displayname(const char *u, char *dn, size_t x)
+{
+	return le_mysql_plugin->get_user_displayname(u, dn, x);
+}
+
+bool mysql_adaptor_get_user_aliases(const char *u, std::vector<std::string> &a)
+{
+	return le_mysql_plugin->get_user_aliases(u, a);
+}
+
+bool mysql_adaptor_get_user_properties(const char *u, TPROPVAL_ARRAY &p)
+{
+	return le_mysql_plugin->get_user_props(u, p);
+}
+
+bool mysql_adaptor_get_user_privilege_bits(const char *u, uint32_t *b)
+{
+	return le_mysql_plugin->get_user_privbits(u, b);
+}
+
+bool mysql_adaptor_set_user_lang(const char *u, const char *l)
+{
+	return le_mysql_plugin->set_user_lang(u, l);
+}
+
+bool mysql_adaptor_set_timezone(const char *u, const char *z)
+{
+	return le_mysql_plugin->set_timezone(u, z);
+}
+
+bool mysql_adaptor_get_homedir(const char *dom, char *dir, size_t z)
+{
+	return le_mysql_plugin->get_homedir(dom, dir, z);
+}
+
+bool mysql_adaptor_get_homedir_by_id(unsigned int dom, char *dir, size_t z)
+{
+	return le_mysql_plugin->get_homedir_by_id(dom, dir, z);
+}
+
+bool mysql_adaptor_get_id_from_homedir(const char *dir, unsigned int *id)
+{
+	return le_mysql_plugin->get_id_from_homedir(dir, id);
+}
+
+bool mysql_adaptor_get_user_ids(const char *u, unsigned int *i, unsigned int *d, enum display_type *t)
+{
+	return le_mysql_plugin->get_user_ids(u, i, d, t);
+}
+
+bool mysql_adaptor_get_domain_ids(const char *d, unsigned int *i, unsigned int *w)
+{
+	return le_mysql_plugin->get_domain_ids(d, i, w);
+}
+
+bool mysql_adaptor_get_org_domains(unsigned int org, std::vector<unsigned int> &v)
+{
+	return le_mysql_plugin->get_org_domains(org, v);
+}
+
+bool mysql_adaptor_get_domain_info(unsigned int id, sql_domain &d)
+{
+	return le_mysql_plugin->get_domain_info(id, d);
+}
+
+bool mysql_adaptor_check_same_org(unsigned int a, unsigned int b)
+{
+	return le_mysql_plugin->check_same_org(a, b);
+}
+
+bool mysql_adaptor_get_domain_groups(unsigned int id, std::vector<sql_group> &v)
+{
+	return le_mysql_plugin->get_domain_groups(id, v);
+}
+
+int mysql_adaptor_get_group_users(unsigned int id, std::vector<sql_user> &v)
+{
+	return le_mysql_plugin->get_group_users(id, v);
+}
+
+int mysql_adaptor_get_domain_users(unsigned int id, std::vector<sql_user> &v)
+{
+	return le_mysql_plugin->get_domain_users(id, v);
+}
+
+bool mysql_adaptor_check_mlist_include(const char *m, const char *a)
+{
+	return le_mysql_plugin->check_mlist_include(m, a);
+}
+
+bool mysql_adaptor_check_same_org2(const char *a, const char *b)
+{
+	return le_mysql_plugin->check_same_org2(a, b);
+}
+
+bool mysql_adaptor_get_mlist_memb(const char *u, const char *f, int *r,
+    std::vector<std::string> &v)
+{
+	return le_mysql_plugin->get_mlist_memb(u, f, r, v);
+}
+
+gromox::errno_t mysql_adaptor_get_homeserver(const char *e, bool p,
+    std::pair<std::string, std::string> &v)
+{
+	return le_mysql_plugin->get_homeserver(e, p, v);
+}
+
+gromox::errno_t mysql_adaptor_scndstore_hints(unsigned int pri, std::vector<sql_user> &hints)
+{
+	return le_mysql_plugin->scndstore_hints(pri, hints);
+}
+
+int mysql_adaptor_domain_list_query(const char *dom)
+{
+	return le_mysql_plugin->domain_list_query(dom);
+}
+
+int mysql_adaptor_mbop_userlist(std::vector<sql_user> &v)
+{
+	return le_mysql_plugin->mbop_userlist(v);
 }

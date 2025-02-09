@@ -26,7 +26,6 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/usercvt.hpp>
-#include "mysql_adaptor/sql2.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;

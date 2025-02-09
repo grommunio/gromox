@@ -14,6 +14,10 @@ enum {
 	SUB_TYPE_EQUIPMENT,
 };
 
+struct config_file;
+
+namespace gromox {
+
 class sqlconn final {
 	public:
 	sqlconn() = default;
@@ -38,12 +42,51 @@ struct sqlconnpool final : public gromox::resource_pool<sqlconn> {
 	resource_pool::token get_wait();
 };
 
+struct mysql_plugin final {
+	public:
+	void init(mysql_adaptor_init_param &&);
+	int run();
+	bool reload_config(std::shared_ptr<config_file> &&);
+	bool db_upgrade_check_2(MYSQL *);
+	bool db_upgrade_check();
+	MYSQL *sql_make_conn();
+
+	gromox::errno_t meta(const char *username, unsigned int wantpriv, sql_meta_result &out);
+	bool login2(const char *username, const char *password, const std::string &enc_passwd, std::string &errstr);
+	bool setpasswd(const char *username, const char *password, const char *new_password);
+	ec_error_t userid_to_name(unsigned int user_id, std::string &username);
+	bool get_id_from_maildir(const char *maildir, unsigned int *user_id);
+	bool get_user_displayname(const char *username, char *dispname, size_t);
+	bool get_user_aliases(const char *username, std::vector<std::string>&);
+	bool get_user_props(const char *username, TPROPVAL_ARRAY&);
+	bool get_user_privbits(const char *username, uint32_t *pprivilege_bits);
+	bool set_user_lang(const char *username, const char *lang);
+	bool set_timezone(const char *username, const char *timezone);
+	bool get_homedir(const char *domainname, char *homedir, size_t);
+	bool get_homedir_by_id(unsigned int domain_id, char *homedir, size_t);
+	bool get_id_from_homedir(const char *homedir, unsigned int *domain_id);
+	bool get_user_ids(const char *username, unsigned int *user_id, unsigned int *domain_id, enum display_type *);
+	bool get_domain_ids(const char *domainname, unsigned int *domain_id, unsigned int *org_id);
+	bool get_org_domains(unsigned int org_id, std::vector<unsigned int> &);
+	bool get_domain_info(unsigned int domain_id, sql_domain &);
+	bool check_same_org(unsigned int domain_id1, unsigned int domain_id2);
+	bool get_domain_groups(unsigned int domain_id, std::vector<sql_group> &);
+	int get_group_users(unsigned int group_id, std::vector<sql_user> &);
+	int get_domain_users(unsigned int domain_id, std::vector<sql_user> &);
+	bool check_mlist_include(const char *mlist_name, const char *account);
+	bool check_same_org2(const char *domainname1, const char *domainname2);
+	bool get_mlist_memb(const char *username, const char *from, int *presult, std::vector<std::string> &);
+	gromox::errno_t get_homeserver(const char *ent, bool is_pvt, std::pair<std::string, std::string> &);
+	gromox::errno_t scndstore_hints(unsigned int pri, std::vector<sql_user> &hints);
+	int domain_list_query(const char *dom);
+	int mbop_userlist(std::vector<sql_user> &);
+
+	protected:
+	mysql_adaptor_init_param g_parm;
+	sqlconnpool g_sqlconn_pool;
+};
+
+}
+
 extern std::string sql_crypt_newhash(const char *);
 extern bool sql_crypt_verify(const char *, const char *);
-extern gromox::errno_t mysql_adaptor_scndstore_hints(unsigned int, std::vector<sql_user> &);
-extern bool mysql_adaptor_reload_config(const char *path, const char *hostid, const char *progid);
-extern bool db_upgrade_check();
-extern MYSQL *sql_make_conn();
-
-extern struct mysql_adaptor_init_param g_parm;
-extern sqlconnpool g_sqlconn_pool;
