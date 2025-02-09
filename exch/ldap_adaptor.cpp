@@ -39,17 +39,31 @@ using ldap_msg = std::unique_ptr<LDAPMessage, ldapfree>;
 using ldap_ptr = std::unique_ptr<LDAP, ldapfree>;
 
 namespace {
+
 struct twoconn {
 	ldap_ptr meta, bind;
 };
+
+struct ldap_plugin final {
+	public:
+	bool load();
+	int gx_ldap_bind(ldap_ptr &, const char *, struct berval *);
+	int gx_ldap_search(ldap_ptr &, const char *, const char *, char **, ldap_msg &);
+	bool ldaplogin_host(ldap_ptr &, ldap_ptr &, const char *, const char *, const char *, const std::string &);
+	bool ldaplogin_dpool(const char *, const char *);
+	bool login3(const char *, const char *, const sql_meta_result &);
+
+	protected:
+	std::string g_ldap_host, g_search_base, g_mail_attr;
+	std::string g_bind_user, g_bind_pass;
+	bool g_use_tls;
+	unsigned int g_edir_workaround; /* server sends garbage sometimes */
+	resource_pool<twoconn> g_conn_pool;
+};
+
 }
 
-static std::string g_ldap_host, g_search_base, g_mail_attr;
-static std::string g_bind_user, g_bind_pass;
-static bool g_use_tls;
-static unsigned int g_edir_workaround; /* server sends garbage sometimes */
-static resource_pool<twoconn> g_conn_pool;
-
+static std::optional<ldap_plugin> le_ldap_plugin;
 static constexpr const char *no_attrs[] = {nullptr};
 static constexpr cfg_directive ldap_adaptor_cfg_defaults[] = {
 	{"data_connections", "4", CFG_SIZE, "1"},
@@ -140,7 +154,7 @@ static ldap_ptr make_conn(const std::string &uri, const char *bind_user,
 
 static constexpr bool AVOID_BIND = false, DO_BIND = true;
 
-static int gx_ldap_bind(ldap_ptr &ld, const char *dn, struct berval *bv)
+int ldap_plugin::gx_ldap_bind(ldap_ptr &ld, const char *dn, struct berval *bv)
 {
 	if (ld == nullptr)
 		ld = make_conn(g_ldap_host, nullptr, nullptr, g_use_tls, AVOID_BIND);
@@ -159,7 +173,7 @@ static int gx_ldap_bind(ldap_ptr &ld, const char *dn, struct berval *bv)
 	       nullptr, nullptr, nullptr);
 }
 
-static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
+int ldap_plugin::gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
     char **attrs, ldap_msg &msg)
 {
 	if (ld == nullptr)
@@ -181,7 +195,7 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
 	       filter, attrs, true, nullptr, nullptr, nullptr, 1, &~unique_tie(msg));
 }
 
-static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
+bool ldap_plugin::ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
     const char *attr, const char *username, const char *password,
     const std::string &base_dn)
 {
@@ -227,14 +241,14 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 	return FALSE;
 }
 
-static BOOL ldaplogin_dpool(const char *username, const char *password)
+bool ldap_plugin::ldaplogin_dpool(const char *username, const char *password)
 {
 	auto tok = g_conn_pool.get_wait();
 	return ldaplogin_host(tok->meta, tok->bind, g_mail_attr.c_str(),
 	       username, password, g_search_base);
 }
 
-BOOL ldap_adaptor_login3(const char *user, const char *pass, const sql_meta_result &m)
+bool ldap_plugin::login3(const char *user, const char *pass, const sql_meta_result &m)
 {
 	if (*znul(pass) == '\0')
 		return false;
@@ -262,7 +276,13 @@ BOOL ldap_adaptor_login3(const char *user, const char *pass, const sql_meta_resu
 	return ldaplogin_host(conn, conn, attr, user, pass, m.ldap_basedn);
 }
 
-static bool ldap_adaptor_load() try
+BOOL ldap_adaptor_login3(const char *user, const char *pass,
+    const sql_meta_result &m)
+{
+	return le_ldap_plugin->login3(user, pass, m) ? TRUE : false;
+}
+
+bool ldap_plugin::load() try
 {
 	auto pfile = config_file_initd("ldap_adaptor.cfg", get_config_path(),
 	             ldap_adaptor_cfg_defaults);
@@ -300,17 +320,19 @@ static bool ldap_adaptor_load() try
 BOOL SVC_ldap_adaptor(enum plugin_op reason, const struct dlfuncs &ppdata) try
 {
 	if (reason == PLUGIN_FREE) {
-		g_conn_pool.clear();
+		le_ldap_plugin.reset();
 		return TRUE;
 	} else if (reason == PLUGIN_RELOAD) {
-		ldap_adaptor_load();
+		if (le_ldap_plugin.has_value())
+			le_ldap_plugin->load();
 		return TRUE;
 	}
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 
+	le_ldap_plugin.emplace();
 	LINK_SVC_API(ppdata);
-	if (!ldap_adaptor_load())
+	if (!le_ldap_plugin->load())
 		return false;
 	if (!register_service("ldap_auth_login3", ldap_adaptor_login3)) {
 		mlog(LV_ERR, "ldap_adaptor: failed to register services");
