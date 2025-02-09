@@ -17,8 +17,6 @@
 #include <gromox/util.hpp>
 #if defined(HAVE_CARES)
 #	include <ares.h>
-#elif defined(HAVE_LDNS)
-#	include <ldns/ldns.h>
 #elif defined(HAVE_RES_NQUERYDOMAIN)
 #	include <netdb.h>
 #	include <resolv.h>
@@ -145,74 +143,6 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 	status = ares_send_dnsrec(channel, req, ares_cb_txt, &reason, nullptr);
 	if (status == ARES_SUCCESS)
 		ares_queue_wait_empty(channel, -1);
-	return false;
-#elif defined(HAVE_LDNS)
-	auto dname = ldns_dname_new_frm_str(dotrep.c_str());
-	if (dname == nullptr) {
-		mlog(LV_ERR, "E-1251: ENOMEM");
-		return false;
-	}
-	ldns_resolver *rsv = nullptr;
-	auto status = ldns_resolver_new_frm_file(&rsv, nullptr);
-	if (status != LDNS_STATUS_OK) {
-		mlog(LV_ERR, "E-1250: ENOMEM");
-		return false;
-	}
-	auto cl_0 = make_scope_exit([&]() { ldns_resolver_deep_free(rsv); });
-	ldns_pkt *pkt = nullptr;
-	status = ldns_resolver_query_status(&pkt, rsv, dname, LDNS_RR_TYPE_A,
-	         LDNS_RR_CLASS_IN, LDNS_RD);
-	if (status != LDNS_STATUS_OK)
-		/* probably SERVFAIL */
-		return true;
-
-	auto cl_0a = make_scope_exit([&]() {
-		if (pkt != nullptr)
-			ldns_pkt_free(pkt);
-	});
-	/* NXDOMAIN represented as 0-sized list */
-	auto rrlist = ldns_pkt_answer(pkt);
-	if (rrlist == nullptr) {
-		mlog(LV_DEBUG, "E-1744: no packet");
-		return false;
-	}
-	if (ldns_rr_list_rr_count(rrlist) == 0)
-		return true;
-	ldns_pkt_free(pkt);
-	pkt = nullptr;
-
-	/* In blocklist */
-	reason = "Host in blocklist (no reason text available)";
-	status = ldns_resolver_query_status(&pkt, rsv, dname, LDNS_RR_TYPE_TXT,
-	         LDNS_RR_CLASS_IN, LDNS_RD);
-	if (status != LDNS_STATUS_OK)
-		return false;
-
-	rrlist = ldns_pkt_answer(pkt);
-	if (rrlist == nullptr) {
-		mlog(LV_DEBUG, "E-1255: no packet");
-		return false;
-	}
-	size_t i = 0;
-	for (ldns_rr *rr; (rr = ldns_rr_list_rr(rrlist, i)) != nullptr; ++i) {
-		if (ldns_rr_get_type(rr) != LDNS_RR_TYPE_TXT)
-			continue;
-		auto rdf = ldns_rr_rdf(rr, 0);
-		if (rdf == nullptr)
-			continue;
-		auto str = ldns_rdf2str(rdf);
-		if (str == nullptr) {
-			mlog(LV_ERR, "E-1256: ENOMEM");
-			return false;
-		}
-		auto cl_2 = make_scope_exit([&]() { free(str); });
-		if (i == 0)
-			/* Overwrite filler string "no reason" */
-			reason = str;
-		else
-			reason += str;
-		reason += "; ";
-	}
 	return false;
 #elif defined(HAVE_RES_NQUERYDOMAIN)
 	/* BIND8-like API in glibc */
