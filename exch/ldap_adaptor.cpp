@@ -1,6 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
+
+/*
+ * openldap uses some global state, and an ELF Global Destructor function to
+ * get rid of it; but there is no particular guaranteed order among global
+ * destructors, and libasan's reporting can run ahead of libldap deallocating
+ * its state.
+ *
+ * [ASAN] Direct leak of 15 byte(s) in 3 object(s) allocated from:
+ *   #0 malloc (/usr/lib64/libasan.so.8+0xf72b7) (BuildId: 4ee117fa2a132af1da9f17a0a5fe1f888398d50f)
+ *   #1 ber_memalloc_x /usr/src/debug/openldap2-2.4.46-0.x86_64/libraries/liblber/memory.c:228
+ *   #2 ber_strdup_x /usr/src/debug/openldap2-2.4.46-0.x86_64/libraries/liblber/memory.c:638
+ *   #3 ldap_int_initialize /usr/src/debug/openldap2-2.4.46-0.x86_64/libraries/libldap_r/init.c:682
+ *   #4 ldap_create /usr/src/debug/openldap2-2.4.46-0.x86_64/libraries/libldap_r/open.c:108
+ *   #5 ldap_initialize /usr/src/debug/openldap2-2.4.46-0.x86_64/libraries/libldap_r/open.c:240
+ */
+
 #include <cassert>
 #include <cerrno>
 #include <climits>

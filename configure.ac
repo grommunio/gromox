@@ -126,7 +126,6 @@ PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 1.4.0], [], [
 PKG_CHECK_MODULES([gss], [krb5-gssapi], [
 	AC_DEFINE([HAVE_GSSAPI], [1])
 ], [:])
-PKG_CHECK_MODULES([ldns], [ldns], [AC_DEFINE([HAVE_LDNS], [1])], [:])
 PKG_CHECK_MODULES([libHX], [libHX >= 4.19])
 PKG_CHECK_MODULES([libcrypto], [libcrypto])
 PKG_CHECK_MODULES([libcurl], [libcurl])
@@ -175,10 +174,18 @@ AC_LINK_IFELSE(
 	[
 		AC_MSG_RESULT([yes])
 		AC_DEFINE([HAVE_RES_NQUERYDOMAIN], [1])
+		have_res_nq=1
 	],
-	[AC_MSG_RESULT([no])]
+	[
+		AC_MSG_RESULT([no])
+		have_res_nq=0
+	]
 )
 LIBS="$saved_LIBS"
+AS_IF([test "$have_res_nq" = 0], [
+	PKG_CHECK_MODULES([ldns], [ldns], [AC_DEFINE([HAVE_LDNS], [1])], [:])
+])
+
 AC_SUBST([crypt_LIBS])
 AC_SUBST([dl_LIBS])
 AC_SUBST([pam_LIBS])
@@ -205,7 +212,10 @@ done
 LIBS="$saved_LIBS"
 AS_IF([test "$iconv_set" = 0], [
 	AC_MSG_RESULT([none found])
-	AC_MSG_ERROR([Could not locate a usable iconv_open])
+	AS_CASE([$host_os],
+		[openbsd*|freebsd*], [AC_MSG_ERROR([Could not locate a usable iconv_open; you may need to pass CPPFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib])],
+		[*], [AC_MSG_ERROR([Could not locate a usable iconv_open])]
+	)
 ], [test -z "$iconv_LIBS"], [
 	AC_MSG_RESULT([none required])
 ], [
