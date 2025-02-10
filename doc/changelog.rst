@@ -1,3 +1,28 @@
+Development 2.41.61
+===================
+
+Fixes:
+
+* exmdb_local: plug memory leak resulting from RPC execution
+* alias_resolve: plug memory leak resulting from GAB refreshes
+* alias_resolve: avoid unnecessary GAB refresh on shutdown
+
+Enhancements:
+
+* nsp: a few more RPCs now emit log messages under nsp_trace=2
+* mh_nsp: support transfer of additional undocumented property types
+
+Behavioral changes:
+
+* New internal addressbook implementation backing the NSPI-provided and
+  Zcore-provided AB functionality.
+
+Packaging changes:
+
+* dscli: DNS resolution via LDNS/libldns (desirable for linux-musl and BSDs)
+  was replaced by c-ares/libcares.
+
+
 Gromox 2.41 (2025-02-07)
 ========================
 
