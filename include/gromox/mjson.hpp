@@ -46,14 +46,14 @@ struct GX_EXPORT MJSON_MIME {
 	inline size_t get_head_offset() const { return head; }
 	inline size_t get_content_offset() const { return begin; }
 	template<typename F, typename... Args> void exec(F &&func, Args &&...args) {
-		func(this, std::forward<Args>(args)...);
+		func(this, args...);
 		for (auto &c : children)
-			c.exec(func, std::forward<Args>(args)...);
+			c.exec(func, args...);
 	}
 	template<typename F, typename... Args> void exec(F &&func, Args &&...args) const {
-		func(this, std::forward<Args>(args)...);
+		func(this, args...);
 		for (auto &c : children)
-			c.exec(func, std::forward<Args>(args)...);
+			c.exec(func, args...);
 	}
 };
 
