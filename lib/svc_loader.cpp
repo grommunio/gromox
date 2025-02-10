@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -11,6 +11,7 @@
 #include <cstring>
 #include <list>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <typeinfo>
@@ -55,28 +56,45 @@ struct SVC_PLUG_ENTITY : public gromox::generic_module {
 	std::vector<std::string> ref_holders;
 };
 
+struct svc_mgr final {
+	public:
+	svc_mgr(service_init_param &&);
+	~svc_mgr();
+	int run_early();
+	int run();
+	BOOL symreg(const char *, void *, const std::type_info &);
+	void *symget(const char *, const char *, const std::type_info &);
+	void symput(const char *, const char *);
+	void trigger_all(enum plugin_op);
+
+	public:
+	std::string g_config_dir, g_data_dir;
+	unsigned int g_context_num;
+	const char *g_program_identifier;
+	std::shared_ptr<config_file> g_config_file;
+
+	protected:
+	int load_library(const static_module &);
+
+	std::list<SVC_PLUG_ENTITY> g_list_plug;
+	std::vector<std::shared_ptr<service_entry>> g_list_service;
+	std::span<const static_module> g_plugin_names;
+	SVC_PLUG_ENTITY g_system_image;
+};
+
 }
 
 extern const char version_info_for_memory_dumps[];
 const char version_info_for_memory_dumps[] = "gromox " PACKAGE_VERSION;
 
-static int service_load_library(const static_module &);
-
-static std::string g_config_dir, g_data_dir;
-static std::list<SVC_PLUG_ENTITY> g_list_plug;
-static std::vector<std::shared_ptr<service_entry>> g_list_service;
+static std::optional<svc_mgr> le_svc_mgr;
 static thread_local SVC_PLUG_ENTITY *g_cur_plug;
-static unsigned int g_context_num;
-static std::span<const static_module> g_plugin_names;
-static const char *g_program_identifier;
-static SVC_PLUG_ENTITY g_system_image;
-static std::shared_ptr<config_file> g_config_file;
 
 /*
  *  init the service module with the path specified where
  *  we can load the .svc plug-in
  */
-void service_init(service_init_param &&parm)
+svc_mgr::svc_mgr(service_init_param &&parm)
 {
 	g_context_num = parm.context_num;
 	g_config_file = std::move(parm.cfg);
@@ -88,17 +106,17 @@ void service_init(service_init_param &&parm)
 static constexpr struct dlfuncs server_funcs = {
 	/* .symget = */ service_query,
 	/* .symreg = */ service_register_service,
-	/* .get_config_path = */ []() { return g_config_dir.c_str(); },
-	/* .get_data_path = */ []() { return g_data_dir.c_str(); },
-	/* .get_context_num = */ []() { return g_context_num; },
+	/* .get_config_path = */ []() { return le_svc_mgr->g_config_dir.c_str(); },
+	/* .get_data_path = */ []() { return le_svc_mgr->g_data_dir.c_str(); },
+	/* .get_context_num = */ []() { return le_svc_mgr->g_context_num; },
 	/* .get_host_ID = */ []() {
-                        auto r = g_config_file->get_value("host_id");
+                        auto r = le_svc_mgr->g_config_file->get_value("host_id");
                         return r != nullptr ? r : "localhost";
 	},
-	/* .get_prog_id = */ []() { return g_program_identifier; },
+	/* .get_prog_id = */ []() { return le_svc_mgr->g_program_identifier; },
 };
 
-int service_run_early() try
+int svc_mgr::run_early() try
 {
 	if (g_config_file == nullptr) {
 		g_config_file = std::make_shared<config_file>();
@@ -109,7 +127,7 @@ int service_run_early() try
 	g_data_dir = znul(g_config_file->get_value("data_file_path"));
 
 	for (const auto &i : g_plugin_names) {
-		int ret = service_load_library(i);
+		int ret = load_library(i);
 		if (ret == PLUGIN_LOAD_OK) {
 			if (g_cur_plug == nullptr)
 				continue;
@@ -128,7 +146,7 @@ int service_run_early() try
 	return PLUGIN_FAIL_EXECUTEMAIN;
 }
 
-int service_run()
+int svc_mgr::run()
 {
 	for (auto it = g_list_plug.begin(); it != g_list_plug.end(); ) {
 		g_cur_plug = &*it;
@@ -147,7 +165,7 @@ int service_run()
 	return 0;
 }
 
-void service_stop()
+svc_mgr::~svc_mgr()
 {
 	while (!g_list_plug.empty())
 		/*
@@ -170,7 +188,7 @@ void service_stop()
  *      PLUGIN_FAIL_ALLOCNODE       fail to allocate memory for a node
  *      PLUGIN_FAIL_EXECUTEMAIN     error executing the plugin's init function
  */
-static int service_load_library(const static_module &mod)
+int svc_mgr::load_library(const static_module &mod)
 {
 	/* check whether the library is already loaded */
 	if (std::any_of(g_list_plug.cbegin(), g_list_plug.cend(),
@@ -236,7 +254,7 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
  * @addr:	function address
  * @ti:		typeinfo for function
  */
-BOOL service_register_service(const char *func_name, void *addr,
+BOOL svc_mgr::symreg(const char *func_name, void *addr,
     const std::type_info &ti) try
 {
 	if (func_name == nullptr)
@@ -274,7 +292,8 @@ BOOL service_register_service(const char *func_name, void *addr,
  * @module:		name of requesting module
  * @ti:			typeinfo for cross-checking expectations
  */
-void *service_query(const char *service_name, const char *module, const std::type_info &ti)
+void *svc_mgr::symget(const char *service_name, const char *module,
+    const std::type_info &ti)
 {
 	/* first find out the service node in global service list */
 	auto node = std::find_if(g_list_service.begin(), g_list_service.end(),
@@ -315,7 +334,7 @@ void *service_query(const char *service_name, const char *module, const std::typ
  * @service_name:	symbol name
  * @module:		name of requesting module
  */
-void service_release(const char *service_name, const char *module)
+void svc_mgr::symput(const char *service_name, const char *module)
 {
 	auto node = std::find_if(g_list_service.begin(), g_list_service.end(),
 	            [&](const std::shared_ptr<service_entry> &e) { return e->service_name == service_name; });
@@ -339,7 +358,7 @@ void service_release(const char *service_name, const char *module)
 		rh.erase(i);
 }
 
-void service_trigger_all(enum plugin_op ev)
+void svc_mgr::trigger_all(enum plugin_op ev)
 {
 	for (auto &p : g_list_plug) {
 		g_cur_plug = &p;
@@ -354,4 +373,45 @@ generic_module::generic_module(generic_module &&o) noexcept :
 	completed_init(std::move(o.completed_init))
 {
 	o.completed_init = false;
+}
+
+void service_init(service_init_param &&parm)
+{
+	le_svc_mgr.emplace(std::move(parm));
+}
+
+void service_stop()
+{
+	le_svc_mgr.reset();
+}
+
+int service_run_early()
+{
+	return le_svc_mgr->run_early();
+}
+
+int service_run()
+{
+	return le_svc_mgr->run();
+}
+
+BOOL service_register_service(const char *fun, void *addr,
+    const std::type_info &ti)
+{
+	return le_svc_mgr->symreg(fun, addr, ti);
+}
+
+void *service_query(const char *fun, const char *caller, const std::type_info &ti)
+{
+	return le_svc_mgr->symget(fun, caller, ti);
+}
+
+void service_release(const char *fun, const char *caller)
+{
+	return le_svc_mgr->symput(fun, caller);
+}
+
+void service_trigger_all(enum plugin_op ev)
+{
+	return le_svc_mgr->trigger_all(ev);
 }
