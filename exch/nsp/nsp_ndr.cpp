@@ -1126,8 +1126,8 @@ static pack_result nsp_ndr_pull_property_value(NDR_PULL *pndr,
 static pack_result nsp_ndr_push_property_value(NDR_PUSH *pndr,
     unsigned int flag, const PROPERTY_VALUE *r)
 {
+	PROPERTY_VALUE s{};
 	if (flag & FLAG_HEADER) {
-		PROPERTY_VALUE s{};
 		/*
 		 * Despite being specified by DCERPC or implemented in e.g.
 		 * samba/openchange, it seems like emsmdb32.dll just does not
