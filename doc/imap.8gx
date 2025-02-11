@@ -136,7 +136,10 @@ Default: (unset)
 \fBimap_cmd_debug\fP
 Log every incoming IMAP command and the return code of the operation in a
 minimal fashion to stderr. Level 1 emits commands that have failed execution,
-level 2 emits all commands.
+level 2 emits all commands. (The response text is \fBnot\fP sent to the log,
+because of size. Deep analysis can be done with socat/telnet/tcpdump; shallow
+analysis for end-users is possible with the protocol-compliant error-reporting
+MUA "Alpine" <https://alpineapp.email/>.)
 .br
 Default: \fI0\fP
 .TP
