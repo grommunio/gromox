@@ -1903,6 +1903,21 @@ void tChangeDescription::convBool(uint32_t tag, const XMLElement* v, sShape& sha
 }
 
 /**
+ * @brief      Property conversion function for boolean fields
+ *
+ * @param      name   Tag name
+ * @param      v      XML value node
+ * @param      shape  Shape to store property in
+ */
+void tChangeDescription::convBool(const PROPERTY_NAME &name,
+    const XMLElement *v, sShape& shape)
+{
+	uint32_t tag = shape.tag(name);
+	if (tag)
+		convBool(tag, v, shape);
+}
+
+/**
  * @brief      Property conversion function for datetime fields
  *
  * @param      tag    Tag ID
