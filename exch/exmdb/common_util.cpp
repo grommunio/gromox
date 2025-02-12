@@ -72,6 +72,8 @@ class fhash {
 	std::string cid;
 };
 
+enum GP_RESULT { GP_ADV, GP_UNHANDLED, GP_SKIP, GP_ERR };
+
 }
 
 static unsigned int g_max_msg, g_cid_use_xxhash = 1;
@@ -94,7 +96,7 @@ static bool cu_eval_subobj_restriction(sqlite3 *, cpid_t, uint64_t msgid, uint32
 static bool gp_prepare_anystr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static bool gp_prepare_mvstr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static bool gp_prepare_default(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
-static void *gp_fetch(sqlite3 *, sqlite3_stmt *, uint16_t, cpid_t);
+static void *gp_fetch(sqlite3 *, sqlite3_stmt *, uint16_t, cpid_t, GP_RESULT &);
 
 ec_error_t cu_id2user(int id, std::string &user) try
 {
@@ -1645,10 +1647,6 @@ BOOL cu_get_property(mapi_object_type table_type, uint64_t id,
 	return TRUE;
 }
 
-namespace {
-enum GP_RESULT { GP_ADV, GP_UNHANDLED, GP_SKIP, GP_ERR };
-}
-
 static BINARY *cu_get_replmap(sqlite3 *db)
 {
 	/*
@@ -2181,9 +2179,13 @@ BOOL cu_get_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			}
 			continue; /* SKIP or UNHANDLED */
 		}
-		auto pvalue = gp_fetch(psqlite, pstmt, proptype, cpid);
-		if (pvalue == nullptr)
+		GP_RESULT gpr = GP_ERR;
+		auto pvalue = gp_fetch(psqlite, pstmt, proptype, cpid, gpr);
+		if (pvalue == nullptr) {
+			if (gpr == GP_SKIP)
+				continue;
 			return false;
+		}
 		ppropvals->emplace_back(tag, pvalue);
 	}
 	return TRUE;
@@ -2407,10 +2409,10 @@ static bool gp_prepare_default(sqlite3 *psqlite, mapi_object_type table_type,
  * advancing here).
  */
 static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
-    uint16_t proptype, cpid_t cpid)
+    uint16_t proptype, cpid_t cpid, GP_RESULT &gpr)
 {
 	EXT_PULL ext_pull;
-	void *pvalue;
+	void *pvalue = nullptr;
 	switch (proptype) {
 	case PT_UNSPECIFIED: {
 		auto ptyped = cu_alloc<TYPED_PROPVAL>();
@@ -2548,7 +2550,11 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 			common_util_alloc, 0);
 		if (ext_pull.g_uint16_a(v) != EXT_ERR_SUCCESS)
 			return nullptr;
-		return v;
+		if (v->count > 0)
+			return v;
+		/* Zero-length MV upsets OL Cached Mode syncer */
+		gpr = GP_SKIP;
+		return nullptr;
 	}
 	case PT_MV_LONG: {
 		auto v = cu_alloc<LONG_ARRAY>();
@@ -2559,7 +2565,10 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 			common_util_alloc, 0);
 		if (ext_pull.g_uint32_a(v) != EXT_ERR_SUCCESS)
 			return nullptr;
-		return v;
+		if (v->count > 0)
+			return v;
+		gpr = GP_SKIP;
+		return nullptr;
 	}
 	case PT_MV_CURRENCY:
 	case PT_MV_I8:
@@ -2572,7 +2581,10 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 			common_util_alloc, 0);
 		if (ext_pull.g_uint64_a(v) != EXT_ERR_SUCCESS)
 			return nullptr;
-		return v;
+		if (v->count > 0)
+			return v;
+		gpr = GP_SKIP;
+		return nullptr;
 	}
 	case PT_MV_FLOAT: {
 		auto ar = cu_alloc<FLOAT_ARRAY>();
@@ -2581,7 +2593,10 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		ext_pull.init(sqlite3_column_blob(pstmt, 0), sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
 		if (ext_pull.g_float_a(ar) != EXT_ERR_SUCCESS)
 			return nullptr;
-		return ar;
+		if (ar->count > 0)
+			return ar;
+		gpr = GP_SKIP;
+		return nullptr;
 	}
 	case PT_MV_DOUBLE:
 	case PT_MV_APPTIME: {
@@ -2591,7 +2606,10 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		ext_pull.init(sqlite3_column_blob(pstmt, 0), sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
 		if (ext_pull.g_double_a(ar) != EXT_ERR_SUCCESS)
 			return nullptr;
-		return ar;
+		if (ar->count > 0)
+			return ar;
+		gpr = GP_SKIP;
+		return nullptr;
 	}
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
@@ -2603,6 +2621,10 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 			common_util_alloc, 0);
 		if (ext_pull.g_wstr_a(sa) != EXT_ERR_SUCCESS)
 			return nullptr;
+		if (sa->count == 0) {
+			gpr = GP_SKIP;
+			return nullptr;
+		}
 		if (proptype != PT_MV_STRING8)
 			return sa;
 		for (size_t j = 0; j < sa->count; ++j) {
@@ -2622,7 +2644,10 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 			common_util_alloc, 0);
 		if (ext_pull.g_guid_a(v) != EXT_ERR_SUCCESS)
 			return nullptr;
-		return v;
+		if (v->count > 0)
+			return v;
+		gpr = GP_SKIP;
+		return nullptr;
 	}
 	case PT_MV_BINARY: {
 		auto v = cu_alloc<BINARY_ARRAY>();
@@ -2633,7 +2658,10 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 			common_util_alloc, 0);
 		if (ext_pull.g_bin_a(v) != EXT_ERR_SUCCESS)
 			return nullptr;
-		return v;
+		if (v->count > 0)
+			return v;
+		gpr = GP_SKIP;
+		return nullptr;
 	}
 	default:
 		assert(false);
