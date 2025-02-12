@@ -529,20 +529,20 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	fprintf(fh.get(), " rst=");
 	if (prestriction != nullptr)
 		fprintf(fh.get(), "%s", prestriction->repr().c_str());
-	fprintf(fh.get(), " Out: Msg+FAI=%u+%u upd={",
-		*pnormal_count, *pfai_count);
+	fprintf(fh.get(), " Out: Msg+FAI=%u+%u upd[%u]={",
+		*pnormal_count, *pfai_count, pupdated_mids->count);
 	for (unsigned long long mid : *pupdated_mids)
 		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\nchg={");
+	fprintf(fh.get(), "}\nchg[%u]={", pchg_mids->count);
 	for (unsigned long long mid : *pchg_mids)
 		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\ngiven={");
+	fprintf(fh.get(), "}\ngiven[%u]={", pgiven_mids->count);
 	for (unsigned long long mid : *pgiven_mids)
 		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\ndel={");
+	fprintf(fh.get(), "}\ndel[%u]={", pdeleted_mids->count);
 	for (unsigned long long mid : *pdeleted_mids)
 		fprintf(fh.get(), "%llxh,", mid);
-	fprintf(fh.get(), "}\nnolonger={");
+	fprintf(fh.get(), "}\nnolonger[%u]={", pnolonger_mids->count);
 	for (unsigned long long mid : *pnolonger_mids)
 		fprintf(fh.get(), "%llxh,", mid);
 	fprintf(fh.get(), "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
