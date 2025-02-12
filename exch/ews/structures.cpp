@@ -1786,6 +1786,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"GivenName", {[](auto&&... args){convText(PR_GIVEN_NAME, args...);}}},
 	{"Importance", {[](auto&&... args){convEnumIndex<Enum::ImportanceChoicesType>(PR_IMPORTANCE, args...);}}},
 	{"Initials", {[](auto&&... args){convText(PR_INITIALS, args...);}}},
+	{"IsAllDayEvent", {[](auto &&...args) { convBool(NtAppointmentSubType, args...); }}},
 	{"IsDeliveryReceiptRequested", {[](auto&&... args){convBool(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED, args...);}}},
 	{"IsRead", {[](auto&&... args){convBool(PR_READ, args...);}}},
 	{"IsReadReceiptRequested", {[](auto&&... args){convBool(PR_READ_RECEIPT_REQUESTED, args...);}}},
