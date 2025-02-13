@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
 #include <cerrno>
@@ -40,7 +40,7 @@ using namespace exmdb_local;
 
 static bool g_lda_twostep, g_lda_mrautoproc;
 static char g_org_name[256];
-static thread_local ALLOC_CONTEXT *g_alloc_key;
+static thread_local alloc_context g_alloc_ctx;
 static thread_local const char *g_storedir;
 static char g_default_charset[32];
 static std::atomic<int> g_sequence_id;
@@ -217,6 +217,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 				"failed to put message into cache queue");
 			break;
 		}
+		g_alloc_ctx.clear();
 	}
 	if (had_error)
 		return hook_result::proc_error;
@@ -231,10 +232,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 
 static void* exmdb_local_alloc(size_t size)
 {
-	auto pctx = g_alloc_key;
-	if (pctx == nullptr)
-		return NULL;
-	return pctx->alloc(size);
+	return g_alloc_ctx.alloc(size);
 }
 
 static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
@@ -332,14 +330,11 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	}
 	digest["file"] = std::move(mid_string);
 	auto djson = json_to_str(digest);
-	alloc_context alloc_ctx;
-	g_alloc_key = &alloc_ctx;
 	g_storedir = mres.maildir.c_str();
 	auto pmsg = oxcmail_import(charset, tmzone, pmail, exmdb_local_alloc,
 	            exmdb_local_get_propids);
 	g_storedir = nullptr;
 	if (NULL == pmsg) {
-		g_alloc_key = nullptr;
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1388: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
@@ -347,7 +342,6 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 			"to convert rfc5322 into MAPI message object");
 		return delivery_status::perm_fail;
 	}
-	g_alloc_key = nullptr;
 	lq_report(pcontext->ctrl.queue_ID, 0, "before_delivery", pmsg);
 
 	nt_time = rop_util_current_nttime();
@@ -552,6 +546,8 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(cache_path, cache_interval, retrying_times);
 		exmdb_client.emplace(conn_num, 0);
+		exmdb_rpc_alloc = exmdb_local_alloc;
+		exmdb_rpc_free  = [](void *) {};
 		exmdb_local_init(org_name, charset);
 
 		if (bounce_gen_init(get_config_path(), get_data_path(),
