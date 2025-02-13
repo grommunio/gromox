@@ -780,8 +780,29 @@ void rfc1123_dstring(char *buf, size_t z, time_t ts)
 		*buf = '\0';
 }
 
+static std::string banner_for_core;
+
 void startup_banner(const char *prog)
 {
+	/*
+	 * Readonly data like string literals is not replicated in coredumps;
+	 * copy them to a writable memory region.
+	 */
+	auto &bfc = banner_for_core;
+	size_t z_osrel = 0, z_arch = 0;
+	std::unique_ptr<char[], stdlib_delete> osrel(HX_slurp_file("/etc/os-release", &z_osrel));
+	std::unique_ptr<char[], stdlib_delete> arch(HX_slurp_file("/proc/sys/kernel/arch", &z_arch));
+	bfc = "#PROG-ID\n"s + prog + " " + PACKAGE_VERSION + "\n#OSREL\n";
+	if (osrel != nullptr) {
+		bfc.append(osrel.get(), z_osrel);
+		bfc += '\n';
+	}
+	bfc += "#ARCH\n";
+	if (arch != nullptr) {
+		bfc.append(arch.get(), z_arch);
+		bfc += '\n';
+	}
+
 	fprintf(stderr, "\n");
 	mlog(LV_NOTICE, "%s %s (pid %ld uid %ld)", prog, PACKAGE_VERSION,
 	        static_cast<long>(getpid()), static_cast<long>(getuid()));
