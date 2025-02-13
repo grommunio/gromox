@@ -177,6 +177,13 @@ std::string sqlconn::quote(std::string_view sv)
 	return out;
 }
 
+/**
+ * Notes to self:
+ *
+ * CR_COMMANDS_OUT_OF_SYNC comes about when the programmer forgets to call
+ * store_result(), which can happen if if(conn->query(..)) check is erroneously
+ * inverted for example.
+ */
 bool sqlconn::query(std::string_view qv)
 {
 	if (m_conn == nullptr) {
@@ -758,6 +765,66 @@ int mysql_plugin::mbop_userlist(std::vector<sql_user> &out) try
 	return ENOMEM;
 }
 
+errno_t mysql_plugin::mda_alias_list(sql_alias_map &newmap, size_t &n_aliases) try
+{
+	auto qstr = "SELECT aliasname, mainname FROM aliases";
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return ENOMEM;
+	if (!conn->query(qstr))
+		return EAGAIN;
+	auto result = conn->store_result();
+	if (result == nullptr)
+		return EAGAIN;
+	DB_ROW row;
+	while ((row = result.fetch_row()) != nullptr)
+		if (row[0] != nullptr && *row[0] != '\0' && row[1] != nullptr && *row[1] != '\0')
+			newmap.emplace(row[0], row[1]);
+	n_aliases = newmap.size();
+
+	qstr =  "select u.username, uv.propval_str "
+		"from users as u inner join user_properties as up "
+		// require PR_DISPLAY_TYPE(_EX)==DT_REMOTE_MAILUSER
+		"on u.id=up.user_id and up.proptag=0x39050003 and up.propval_str=6 "
+		"inner join user_properties as uv "
+		// extract PR_SMTP_ADDRESS
+		"on u.id=uv.user_id and uv.proptag=0x39fe001f";
+	if (!conn->query(qstr))
+		return EAGAIN;
+	result = conn->store_result();
+	if (result == nullptr)
+		return EAGAIN;
+	while ((row = result.fetch_row()) != nullptr)
+		if (row[0] != nullptr && *row[0] != '\0' && row[1] != nullptr && *row[1] != '\0')
+			newmap.emplace(row[0], row[1]);
+	return 0;
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
+}
+
+errno_t mysql_plugin::mda_domain_list(sql_domain_set &newdom) try
+{
+	auto qstr = "SELECT username FROM users UNION SELECT aliasname FROM aliases";
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return ENOMEM;
+	if (!conn->query(qstr))
+		return EAGAIN;
+	auto result = conn->store_result();
+	DB_ROW row;
+	while ((row = result.fetch_row()) != nullptr) {
+		if (row[0] == nullptr)
+			continue;
+		auto p = strchr(row[0], '@');
+		if (p == nullptr)
+			continue;
+		newdom.emplace(&p[1]);
+	}
+	return 0;
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
+}
+
 /**
  * @brief     Compare domains based on (case-insensitive) domain name
  *
@@ -933,4 +1000,14 @@ int mysql_adaptor_domain_list_query(const char *dom)
 int mysql_adaptor_mbop_userlist(std::vector<sql_user> &v)
 {
 	return le_mysql_plugin->mbop_userlist(v);
+}
+
+errno_t mysql_adaptor_mda_alias_list(sql_alias_map &v, size_t &a)
+{
+	return le_mysql_plugin->mda_alias_list(v, a);
+}
+
+errno_t mysql_adaptor_mda_domain_list(sql_domain_set &v)
+{
+	return le_mysql_plugin->mda_domain_list(v);
 }

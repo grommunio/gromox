@@ -80,6 +80,8 @@ struct mysql_plugin final {
 	gromox::errno_t scndstore_hints(unsigned int pri, std::vector<sql_user> &hints);
 	int domain_list_query(const char *dom);
 	int mbop_userlist(std::vector<sql_user> &);
+	gromox::errno_t mda_alias_list(gromox::sql_alias_map &, size_t &);
+	gromox::errno_t mda_domain_list(gromox::sql_domain_set &);
 
 	protected:
 	mysql_adaptor_init_param g_parm;

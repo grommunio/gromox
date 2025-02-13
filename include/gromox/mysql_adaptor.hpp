@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 #include <gromox/authmgr.hpp>
@@ -106,6 +107,13 @@ struct sql_class {
 	std::string name;
 };
 
+namespace gromox {
+
+using sql_alias_map = std::map<std::string, std::string, std::less<>>;
+using sql_domain_set = std::set<std::string>;
+
+}
+
 extern GX_EXPORT gromox::errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv, sql_meta_result &out);
 extern GX_EXPORT bool mysql_adaptor_login2(const char *username, const char *password, const std::string &enc_passwd, std::string &errstr);
 extern GX_EXPORT bool mysql_adaptor_setpasswd(const char *username, const char *password, const char *new_password);
@@ -135,6 +143,8 @@ extern GX_EXPORT gromox::errno_t mysql_adaptor_get_homeserver(const char *ent, b
 extern GX_EXPORT gromox::errno_t mysql_adaptor_scndstore_hints(unsigned int pri, std::vector<sql_user> &hints);
 extern GX_EXPORT int mysql_adaptor_domain_list_query(const char *dom);
 extern GX_EXPORT int mysql_adaptor_mbop_userlist(std::vector<sql_user> &);
+extern GX_EXPORT gromox::errno_t mysql_adaptor_mda_alias_list(gromox::sql_alias_map &, size_t &);
+extern GX_EXPORT gromox::errno_t mysql_adaptor_mda_domain_list(gromox::sql_domain_set &);
 
 /**
  * Determines whether an arbitrary actor can generally open/read the primary
