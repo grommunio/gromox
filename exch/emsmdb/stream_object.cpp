@@ -253,7 +253,7 @@ BOOL stream_object::copy(stream_object *pstream_src, uint32_t *plength)
 	if (pstream_dst->seek_ptr + *plength > pstream_dst->max_length)
 		*plength = pstream_dst->max_length - pstream_dst->seek_ptr;
 	if (pstream_dst->seek_ptr + *plength > pstream_dst->content_bin.cb &&
-	    !pstream_dst->set_length(pstream_dst->seek_ptr + *plength))
+	    pstream_dst->set_length(pstream_dst->seek_ptr + *plength) != ecSuccess)
 		return FALSE;
 	memcpy(pstream_dst->content_bin.pb +
 		pstream_dst->seek_ptr,
