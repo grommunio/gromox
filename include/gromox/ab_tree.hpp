@@ -1,5 +1,5 @@
 #pragma once
-
+#include <algorithm>
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
@@ -9,7 +9,7 @@
 #include <thread>
 #include <type_traits>
 #include <unordered_map>
-
+#include <variant>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/clock.hpp>
 
@@ -44,7 +44,7 @@ struct minid;
 
 template<> struct std::hash<gromox::ab_tree::minid>
 {
-	constexpr size_t operator()(gromox::ab_tree::minid minid) const;
+	inline size_t operator()(gromox::ab_tree::minid minid) const;
 };
 
 namespace gromox::ab_tree {
@@ -338,9 +338,9 @@ struct ab_node
 
 	public:
 	ab_node() = default;
-	constexpr ab_node(const ab::const_base_ref &br, minid m) : base(br.get()), mid(m) {}
-	constexpr ab_node(const ab_base *b, minid m) : base(b), mid(m) {}
-	constexpr ab_node(const ab_base::iterator &it) : base(it.base()), mid(*it) {}
+	ab_node(const ab::const_base_ref &br, minid m) : base(br.get()), mid(m) {}
+	ab_node(const ab_base *b, minid m) : base(b), mid(m) {}
+	ab_node(const ab_base::iterator &it) : base(it.base()), mid(*it) {}
 
 	const ab_base *base = nullptr;
 	minid mid{};
@@ -384,4 +384,4 @@ struct ab_node
 
 } // namespace gromox::ab_tree
 
-constexpr size_t std::hash<gromox::ab_tree::minid>::operator()(gromox::ab_tree::minid minid) const { return std::hash<uint32_t>()(minid); }
+inline size_t std::hash<gromox::ab_tree::minid>::operator()(gromox::ab_tree::minid minid) const { return std::hash<uint32_t>()(minid); }
