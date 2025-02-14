@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
 #include <chrono>
@@ -8,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <mysql.h>
 #include <set>
 #include <string>
 #include <thread>
@@ -60,27 +61,25 @@ static mysql_adaptor_init_param g_parm;
 static std::chrono::seconds g_cache_lifetime;
 static std::string g_rcpt_delimiter;
 
-static MYSQL *sql_make_conn()
+static std::unique_ptr<MYSQL, mysql_delete> sql_make_conn()
 {
-	auto conn = mysql_init(nullptr);
+	std::unique_ptr<MYSQL, mysql_delete> conn(mysql_init(nullptr));
 	if (conn == nullptr)
 		return nullptr;
 	if (g_parm.timeout > 0) {
-		mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &g_parm.timeout);
-		mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &g_parm.timeout);
+		mysql_options(conn.get(), MYSQL_OPT_READ_TIMEOUT, &g_parm.timeout);
+		mysql_options(conn.get(), MYSQL_OPT_WRITE_TIMEOUT, &g_parm.timeout);
 	}
-	if (mysql_real_connect(conn, g_parm.host.c_str(), g_parm.user.c_str(),
+	if (mysql_real_connect(conn.get(), g_parm.host.c_str(), g_parm.user.c_str(),
 	    g_parm.pass.size() != 0 ? g_parm.pass.c_str() : nullptr,
 	    g_parm.dbname.c_str(), g_parm.port, nullptr, 0) == nullptr) {
 		mlog(LV_ERR, "alias_resolve: Failed to connect to mysql server: %s",
-		       mysql_error(conn));
-		mysql_close(conn);
+		       mysql_error(conn.get()));
 		return nullptr;
 	}
-	if (mysql_set_character_set(conn, "utf8mb4") != 0) {
+	if (mysql_set_character_set(conn.get(), "utf8mb4") != 0) {
 		mlog(LV_ERR, "alias_resolve: \"utf8mb4\" not available: %s",
-		        mysql_error(conn));
-		mysql_close(conn);
+		        mysql_error(conn.get()));
 		return nullptr;
 	}
 	return conn;
@@ -153,8 +152,8 @@ static std::shared_ptr<domain_set> xa_refresh_domains(MYSQL *conn) try
 static void xa_refresh_once()
 {
 	auto conn = sql_make_conn();
-	auto newmap = xa_refresh_aliases(conn);
-	auto newdom = xa_refresh_domains(conn);
+	auto newmap = xa_refresh_aliases(conn.get());
+	auto newdom = xa_refresh_domains(conn.get());
 	std::unique_lock lk(xa_alias_lock);
 	if (newmap != nullptr)
 		xa_alias_map = std::move(newmap);
