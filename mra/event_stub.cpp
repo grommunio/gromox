@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// This file is part of Gromox.
 #include <cerrno>
 #include <csignal>
 #include <cstdint>
@@ -6,10 +8,12 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <list>
 #include <poll.h>
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <vector>
 #include <libHX/io.h>
 #include <libHX/socket.h>
 #include <libHX/string.h>
@@ -18,7 +22,6 @@
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
-#include <gromox/double_list.hpp>
 #include <gromox/fileio.h>
 #include <gromox/process.hpp>
 #include <gromox/svc_common.h>
@@ -31,9 +34,12 @@ DECLARE_SVC_API(,);
 namespace {
 
 struct BACK_CONN {
-    DOUBLE_LIST_NODE node;
-	pthread_t thr_id;
-    int sockd;
+	BACK_CONN(unsigned int);
+	NOMOVE(BACK_CONN); /* thread will have a pointer to BACK_CONN */
+	~BACK_CONN();
+
+	pthread_t thr_id{};
+	int sockd = -1;
 };
 
 }
@@ -43,7 +49,7 @@ using EVENT_STUB_FUNC = void (*)(char *);
 static gromox::atomic_bool g_notify_stop;
 static char g_event_ip[40];
 static uint16_t g_event_port;
-static DOUBLE_LIST g_back_list;
+static std::list<BACK_CONN> g_back_list;
 static EVENT_STUB_FUNC g_event_stub_func;
 
 static void *evst_thrwork(void *);
@@ -51,17 +57,35 @@ static int read_line(int sockd, char *buff, int length);
 static int connect_event();
 static void install_event_stub(EVENT_STUB_FUNC event_stub_func);
 
+BACK_CONN::BACK_CONN(unsigned int i)
+{
+	auto ret = pthread_create4(&thr_id, nullptr, evst_thrwork, this);
+	if (ret != 0)
+		throw ret;
+	char buf[32];
+	snprintf(buf, std::size(buf), "evstub/%u", i);
+	pthread_setname_np(thr_id, buf);
+}
+
+BACK_CONN::~BACK_CONN()
+{
+	if (sockd >= 0)
+		close(sockd);
+	if (!pthread_equal(thr_id, {})) {
+		pthread_kill(thr_id, SIGALRM);
+		pthread_join(thr_id, nullptr);
+	}
+}
+
 BOOL SVC_event_stub(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
 	int i, conn_num;
-	DOUBLE_LIST_NODE *pnode;
 	
 	switch(reason) {
 	case PLUGIN_INIT: {
 		LINK_SVC_API(ppdata);
 		g_notify_stop = true;
 		g_event_stub_func = NULL;
-		double_list_init(&g_back_list);
 		auto pfile = config_file_initd("event_stub.cfg",
 		             get_config_path(), nullptr);
 		if (NULL == pfile) {
@@ -96,36 +120,16 @@ BOOL SVC_event_stub(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 		g_notify_stop = false;
 		int ret = 0;
-		for (i=0; i<conn_num; i++) {
-			auto pback = me_alloc<BACK_CONN>();
-			if (NULL != pback) {
-		        pback->node.pdata = pback;
-				pback->sockd = -1;
-				ret = pthread_create4(&pback->thr_id, nullptr, evst_thrwork, pback);
-				if (ret != 0) {
-					free(pback);
-					break;
-				}
-				char buf[32];
-				snprintf(buf, sizeof(buf), "event_stub/%u", i);
-				pthread_setname_np(pback->thr_id, buf);
-				double_list_append_as_tail(&g_back_list, &pback->node);
-			}
+		for (i = 0; i < conn_num; ++i) try {
+			g_back_list.emplace_back(i);
+		} catch (int x) {
+			ret = x;
+			break;
 		}
 
 		if (i < conn_num) {
 			g_notify_stop = true;
-			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
-				auto pback = static_cast<BACK_CONN *>(pnode->pdata);
-				if (-1 != pback->sockd) {
-					close(pback->sockd);
-					pback->sockd = -1;
-				}
-				pthread_kill(pback->thr_id, SIGALRM);
-				pthread_join(pback->thr_id, NULL);
-				free(pback);
-			}
-			double_list_free(&g_back_list);
+			g_back_list.clear();
 			printf("[event_stub]: failed to create stub thread: %s\n", strerror(ret));
 			return FALSE;
 		}
@@ -135,15 +139,8 @@ BOOL SVC_event_stub(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		if (!g_notify_stop) {
-			g_notify_stop = true;
-			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
-				auto pback = static_cast<BACK_CONN *>(pnode->pdata);
-				pthread_kill(pback->thr_id, SIGALRM);
-				pthread_join(pback->thr_id, nullptr);
-			}
-		}
-		double_list_free(&g_back_list);
+		g_notify_stop = true;
+		g_back_list.clear();
 		g_event_stub_func = NULL;
 		return TRUE;
 	default:
