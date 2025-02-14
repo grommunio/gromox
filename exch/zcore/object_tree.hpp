@@ -8,7 +8,14 @@
 
 static inline ec_error_t zh_error(uint32_t h)
 {
-	return h < 0x80000000 ? ecSuccess : static_cast<ec_error_t>(h);
+	if (h >= 0x80000000)
+		return static_cast<ec_error_t>(h);
+	return ecSuccess;
+}
+
+static inline bool zh_is_error(uint32_t h)
+{
+	return h >= 0x80000000;
 }
 
 struct object_node {

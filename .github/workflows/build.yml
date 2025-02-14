@@ -40,4 +40,6 @@ jobs:
         ./qconf
         LD_LIBRARY_PATH=/usr/local/lib make "-j$(nproc)"
         LD_LIBRARY_PATH=/usr/local/lib make install DESTDIR="$PWD/rt" && rm -Rf rt
+        make clean
+        LD_LIBRARY_PATH=/usr/local/lib make "-j$(nproc)" CPPFLAGS=-DCOMPILE_DIAG
         make distclean

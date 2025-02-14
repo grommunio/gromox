@@ -14,7 +14,12 @@
  *
  * -- Changes here should be reflected in lib/errno.cpp.
  */
-enum ec_error_t {
+#ifdef COMPILE_DIAG
+enum ec_error_t_ll
+#else
+enum ec_error_t
+#endif
+{
 	ecSuccess = 0, // ecNone
 	MAPI_E_UNBINDSUCCESS = 1, /* NSPI */
 	// MAPI_E_USER_ABORT = 0x1,
@@ -429,3 +434,19 @@ enum ec_error_t {
 	ecZNullObject = 0xfffffc00,
 	ecZOutOfHandles = 0xfffffc04,
 };
+
+#ifdef COMPILE_DIAG
+struct ec_error_t {
+	constexpr ec_error_t() = default;
+	constexpr ec_error_t(uint32_t x) : m_value(static_cast<ec_error_t_ll>(x)) {}
+	constexpr ec_error_t(ec_error_t_ll x) : m_value(x) {}
+	constexpr ec_error_t(int) = delete;
+	constexpr bool operator==(ec_error_t_ll x) const { return m_value == x; }
+	constexpr bool operator!=(ec_error_t_ll x) const { return m_value != x; }
+	constexpr operator bool() const = delete;
+	constexpr void operator!() const = delete;
+	constexpr operator uint32_t() const { return m_value; }
+	private:
+	ec_error_t_ll m_value = ecSuccess;
+};
+#endif

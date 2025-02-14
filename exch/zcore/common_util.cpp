@@ -1215,7 +1215,9 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 	           g_org_name, cu_id2user, es_result);
 	if (ret == ecSuccess)
 		list.emplace_back(std::move(es_result));
-	return ret == ecNullObject || ret == ecUnknownUser ? ecInvalidRecips : ret;
+	if (ret == ecNullObject || ret == ecUnknownUser)
+		return ecInvalidRecips;
+	return ret;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1122: ENOMEM");
 	return ecServerOOM;
@@ -1361,7 +1363,7 @@ void common_util_notify_receipt(const char *username, int type,
 	auto ret = cu_send_vmail(std::move(imail), g_smtp_url.c_str(),
 	           username, rcpt_list);
 	if (ret != ecSuccess)
-		mlog(LV_ERR, "E-1193: cu_send_mail: %xh", ret);
+		mlog(LV_ERR, "E-1193: cu_send_mail: %xh", static_cast<unsigned int>(ret));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2038: ENOMEM");
 }

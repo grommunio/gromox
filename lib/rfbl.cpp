@@ -194,7 +194,12 @@ const char *mapi_errname_r(unsigned int e, char *b, size_t bz)
 const char *mapi_strerror(ec_error_t e)
 {
 	// STG = storage
-	switch (e) {
+#ifdef COMPILE_DIAG
+	switch (static_cast<uint32_t>(e))
+#else
+	switch (e)
+#endif
+{
 #define E(v, s) case v: return s;
 	E(ecSuccess, "The operation succeeded")
 	E(ecUnknownUser, "User is unknown to the system")

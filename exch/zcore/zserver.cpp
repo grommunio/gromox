@@ -842,7 +842,7 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 		    &b_private, &account_id, &folder_id))
 			break;
 		auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
-		if (zh_error(handle))
+		if (zh_is_error(handle))
 			return zh_error(handle);
 		pinfo.reset();
 		return zs_openstoreentry(hsession,
@@ -854,7 +854,7 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 		    &b_private, &account_id, &folder_id, &message_id))
 			break;
 		auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
-		if (zh_error(handle))
+		if (zh_is_error(handle))
 			return zh_error(handle);
 		pinfo.reset();
 		return zs_openstoreentry(hsession,
@@ -1030,7 +1030,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		if (pmessage == nullptr)
 			return ecError;
 		*phobject = pinfo->ptree->add_object_handle(hobject, {zs_objtype::message, std::move(pmessage)});
-		if (zh_error(*phobject))
+		if (zh_is_error(*phobject))
 			return zh_error(*phobject);
 		*pmapi_type = zs_objtype::message;
 	} else {
@@ -1084,7 +1084,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		if (pfolder == nullptr)
 			return ecError;
 		*phobject = pinfo->ptree->add_object_handle(hobject, {zs_objtype::folder, std::move(pfolder)});
-		if (zh_error(*phobject))
+		if (zh_is_error(*phobject))
 			return zh_error(*phobject);
 		*pmapi_type = zs_objtype::folder;
 	}
@@ -1126,7 +1126,7 @@ ec_error_t zs_openabentry(GUID hsession,
 			return ecError;
 		*pmapi_type = zs_objtype::abcont;
 		*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {*pmapi_type, std::move(contobj)});
-		if (zh_error(*phobject))
+		if (zh_is_error(*phobject))
 			return zh_error(*phobject);
 		return ecSuccess;
 	}
@@ -1237,7 +1237,7 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
 	} else {
 		return ecInvalidParam;
 	}
-	if (zh_error(*phobject))
+	if (zh_is_error(*phobject))
 		return zh_error(*phobject);
 	return ecSuccess;
 }
@@ -1639,7 +1639,7 @@ ec_error_t zs_createmessage(GUID hsession,
 	auto folder_id = pfolder->folder_id;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
-	if (zh_error(hstore))
+	if (zh_is_error(hstore))
 		return zh_error(hstore);
 	if (!pstore->owner_mode()) {
 		if (!exmdb_client->get_folder_perm(pstore->get_dir(),
@@ -2142,7 +2142,7 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 			because the caller normally will not keep the
 			handle of parent folder */
 		auto hstore = pinfo->ptree->get_store_handle(TRUE, pstore->account_id);
-		if (zh_error(hstore))
+		if (zh_is_error(hstore))
 			return zh_error(hstore);
 		*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::folder, std::move(pfolder)});
 	} else {
@@ -3826,7 +3826,7 @@ ec_error_t zs_openembedded(GUID hsession,
 		return ecNotSupported;
 	auto pstore = pattachment->get_store();
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
-	if (zh_error(hstore))
+	if (zh_is_error(hstore))
 		return zh_error(hstore);
 	auto b_writable = pattachment->writable();
 	auto tag_access = pattachment->get_tag_access();
@@ -4073,7 +4073,7 @@ ec_error_t zs_hierarchysync(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
-	if (zh_error(hstore))
+	if (zh_is_error(hstore))
 		return zh_error(hstore);
 	auto pctx = icsdownctx_object::create(pfolder, SYNC_TYPE_HIERARCHY);
 	if (pctx == nullptr)
@@ -4095,7 +4095,7 @@ ec_error_t zs_contentsync(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
-	if (zh_error(hstore))
+	if (zh_is_error(hstore))
 		return zh_error(hstore);
 	auto pctx = icsdownctx_object::create(pfolder, SYNC_TYPE_CONTENTS);
 	if (pctx == nullptr)
@@ -4229,7 +4229,7 @@ ec_error_t zs_hierarchyimport(GUID hsession,
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
-	if (zh_error(hstore))
+	if (zh_is_error(hstore))
 		return zh_error(hstore);
 	auto pctx = icsupctx_object::create(pfolder, SYNC_TYPE_HIERARCHY);
 	if (pctx == nullptr)
@@ -4251,7 +4251,7 @@ ec_error_t zs_contentimport(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
-	if (zh_error(hstore))
+	if (zh_is_error(hstore))
 		return zh_error(hstore);
 	auto pctx = icsupctx_object::create(pfolder, SYNC_TYPE_CONTENTS);
 	if (pctx == nullptr)
@@ -5152,7 +5152,7 @@ ec_error_t zs_linkmessage(GUID hsession,
 	if (pinfo == nullptr)
 		return ecError;
 	auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
-	if (zh_error(handle))
+	if (zh_is_error(handle))
 		return zh_error(handle);
 	if (pinfo->user_id < 0)
 		return ecAccessDenied;

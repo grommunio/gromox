@@ -263,7 +263,7 @@ std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 	if (prootobj == nullptr)
 		return NULL;
 	auto handle = pobjtree->add_object_handle(-1, {zs_objtype::root, std::move(prootobj)});
-	if (zh_error(handle))
+	if (zh_is_error(handle))
 		return nullptr;
 	return pobjtree;
 }
