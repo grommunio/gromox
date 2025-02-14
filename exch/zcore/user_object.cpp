@@ -119,8 +119,7 @@ bool user_object::valid()
 	ab_tree::minid mid(puser->minid);
 	std::string username;
 	if (mid.type() != ab_tree::minid::Type::address ||
-	    !mysql_adaptor_userid_to_name(mid.value(),
-	    username))
+	    mysql_adaptor_userid_to_name(mid.value(), username) != ecSuccess)
 		return FALSE;
 	return true;
 }
@@ -164,8 +163,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	std::string username;
 	if (!wx_name ||
 	    node.mid.type() != ab_tree::minid::Type::address ||
-	    !mysql_adaptor_userid_to_name(node.mid.value(),
-	    username))
+	    mysql_adaptor_userid_to_name(node.mid.value(), username) != ecSuccess)
 		return TRUE;
 	if (w_smtp) {
 		auto s = common_util_dup(username.c_str());
@@ -207,8 +205,7 @@ ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 	if (!node.exists())
 		return ecSuccess;
 	std::string mlistaddr;
-	if (!mysql_adaptor_userid_to_name(node.mid.value(),
-	    mlistaddr))
+	if (mysql_adaptor_userid_to_name(node.mid.value(), mlistaddr) != ecSuccess)
 		return ecSuccess;
 	std::vector<std::string> member_list;
 	int ret = 0;
