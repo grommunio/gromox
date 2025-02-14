@@ -82,6 +82,8 @@ static void xa_refresh_thread()
 			std::unique_lock slp_hold(slp_mtx);
 			xa_thread_wake.wait_for(slp_hold, g_cache_lifetime);
 		}
+		if (xa_notify_stop)
+			break;
 		xa_refresh_once();
 	}
 }
