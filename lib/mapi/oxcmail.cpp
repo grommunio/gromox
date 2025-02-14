@@ -2065,8 +2065,8 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields,
 	auto dtypx = DT_MAILUSER;
 	std::string essdn, skb;
 	if (!oxcmail_get_user_ids(f_info.final_recipient, nullptr, nullptr, &dtypx) ||
-	    !cvt_username_to_essdn(f_info.final_recipient, g_oxcmail_org_name,
-	    oxcmail_get_user_ids, oxcmail_get_domain_ids, essdn)) {
+	    cvt_username_to_essdn(f_info.final_recipient, g_oxcmail_org_name,
+	    oxcmail_get_user_ids, oxcmail_get_domain_ids, essdn) != ecSuccess) {
 		dtypx = DT_MAILUSER;
 		skb = "SMTP:"s + f_info.final_recipient;
 		if (pproplist->set(PR_ADDRTYPE, "SMTP") != 0 ||
