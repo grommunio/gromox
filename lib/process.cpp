@@ -224,15 +224,24 @@ int pthread_create4(pthread_t *t, std::nullptr_t, void *(*f)(void *), void *a) n
 	return ret;
 }
 
-int setup_sigalrm()
+/**
+ * Make a few common signals non-fatal.
+ */
+int setup_signal_defaults()
 {
-	struct sigaction act;
-	sigaction(SIGALRM, nullptr, &act);
-	if (act.sa_handler != SIG_DFL)
-		return 0;
-	sigemptyset(&act.sa_mask);
-	act.sa_handler = [](int) {};
-	return sigaction(SIGALRM, &act, nullptr);
+	static int tab[] = {SIGALRM, SIGUSR1, SIGUSR2};
+	for (auto signum : tab) {
+		struct sigaction act;
+		auto ret = sigaction(signum, nullptr, &act);
+		if (ret < 0 || act.sa_handler != SIG_DFL)
+			continue;
+		sigemptyset(&act.sa_mask);
+		act.sa_handler = [](int) {};
+		ret = sigaction(signum, &act, nullptr);
+		if (ret != 0)
+			mlog(LV_ERR, "sigaction (%u): %s", signum, strerror(errno));
+	}
+	return 0;
 }
 
 std::string simple_backtrace()

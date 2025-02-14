@@ -287,7 +287,7 @@ void contexts_pool_init(SCHEDULE_CONTEXT **pcontexts, unsigned int context_num,
     time_point (*get_timestamp)(const schedule_context *),
     unsigned int contexts_per_thr, time_duration timeout)
 {
-	setup_sigalrm();
+	setup_signal_defaults();
 	g_context_ptr = pcontexts;
 	g_context_num = context_num;
 	contexts_pool_get_context_socket = get_socket;

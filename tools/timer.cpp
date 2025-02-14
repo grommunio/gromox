@@ -359,7 +359,7 @@ int main(int argc, char **argv)
 	
 	pthread_setname_np(thr_accept_id, "accept");
 	time(&last_cltime);
-	setup_sigalrm();
+	setup_signal_defaults();
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESTART;
 	sigaction(SIGINT, &sact, nullptr);

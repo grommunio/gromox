@@ -308,7 +308,7 @@ int main(int argc, char **argv)
 		pthread_join(scan_thr, nullptr);
 	});
 	pthread_setname_np(scan_thr, "scan");
-	setup_sigalrm();
+	setup_signal_defaults();
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);

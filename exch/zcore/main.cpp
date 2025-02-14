@@ -251,7 +251,7 @@ int main(int argc, char **argv)
 	startup_banner("gromox-zcore");
 	if (opt_show_version)
 		return EXIT_SUCCESS;
-	setup_sigalrm();
+	setup_signal_defaults();
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
 	sact.sa_handler = [](int) { g_hup_signalled = true; };

@@ -97,7 +97,7 @@ exmdb_client_remote::exmdb_client_remote(unsigned int conn_max,
 		if (mdcl_rpc_timeout > 0)
 			mdcl_rpc_timeout *= 1000;
 	}
-	setup_sigalrm();
+	setup_signal_defaults();
 	mdcl_notify_stop = true;
 	mdcl_conn_max = conn_max;
 	mdcl_threads_max = notify_threads_max;
@@ -550,7 +550,7 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 #ifdef TEST1
 int main(int argc, const char **argv)
 {
-	setup_sigalrm();
+	setup_signal_defaults();
 	exmdb_client.emplace(2, 0);
 	auto cl_0 = make_scope_exit([]() { exmdb_client.reset(); });
 	auto ret = exmdb_client_run(PKGSYSCONFDIR);

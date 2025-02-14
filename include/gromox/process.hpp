@@ -28,7 +28,7 @@ extern GX_EXPORT unsigned int gx_concurrency();
 extern GX_EXPORT unsigned long gx_gettid();
 extern GX_EXPORT void gx_reexec_record(int);
 extern GX_EXPORT int pthread_create4(pthread_t *, std::nullptr_t, void *(*)(void *), void * = nullptr) noexcept;
-extern GX_EXPORT int setup_sigalrm();
+extern GX_EXPORT int setup_signal_defaults();
 extern GX_EXPORT std::string simple_backtrace();
 extern GX_EXPORT errno_t switch_user_exec(const char *user, char *const *argv);
 

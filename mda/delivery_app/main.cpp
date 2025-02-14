@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 
 	startup_banner("gromox-delivery");
-	setup_sigalrm();
+	setup_signal_defaults();
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
 	sact.sa_handler = [](int) { g_hup_signalled = true; };

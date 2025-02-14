@@ -51,7 +51,7 @@ void threads_pool_init(unsigned int init_pool_num,
 {
 	unsigned int contexts_max_num, contexts_per_thr;
 
-	gromox::setup_sigalrm();
+	gromox::setup_signal_defaults();
 	g_threads_pool_min_num = init_pool_num;
 	threads_pool_process_func = process_func;
 	/* Caution: Threads pool should be initialized
