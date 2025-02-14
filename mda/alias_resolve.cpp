@@ -12,7 +12,9 @@
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
+#include <gromox/atomic.hpp>
 #include <gromox/bounce_gen.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
 #include <gromox/hook_common.h>
@@ -35,7 +37,7 @@ enum {
 DECLARE_HOOK_API(alias_resolve, );
 using namespace alias_resolve;
 
-static std::atomic<bool> xa_notify_stop{false};
+static std::atomic<bool> xa_notify_stop{false}, xa_reload_signalled{false};
 static std::condition_variable xa_thread_wake;
 static sql_alias_map xa_empty_alias_map;
 static sql_domain_set xa_empty_domain_set;
@@ -77,14 +79,20 @@ static void xa_refresh_once()
 static void xa_refresh_thread()
 {
 	std::mutex slp_mtx;
+	auto next = tp_now() + g_cache_lifetime;
+
 	while (!xa_notify_stop) {
 		{
 			std::unique_lock slp_hold(slp_mtx);
-			xa_thread_wake.wait_for(slp_hold, g_cache_lifetime);
+			xa_thread_wake.wait_until(slp_hold, next);
 		}
 		if (xa_notify_stop)
 			break;
+		auto now = tp_now();
+		if (now < next && !xa_reload_signalled.exchange(false))
+			continue;
 		xa_refresh_once();
+		next = now + g_cache_lifetime;
 	}
 }
 
@@ -216,6 +224,7 @@ BOOL HOOK_alias_resolve(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_RELOAD) {
 		xa_reload_config(nullptr);
+		xa_reload_signalled = true;
 		xa_thread_wake.notify_one();
 		return TRUE;
 	}
