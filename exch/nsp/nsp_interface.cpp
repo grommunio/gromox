@@ -1679,7 +1679,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 }
 
 int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
-    const STAT *pstat, uint32_t mid1, uint32_t mid2, uint32_t *cmp)
+    const STAT *pstat, uint32_t mid1, uint32_t mid2, int32_t *cmp)
 {
 	nsp_trace(__func__, 0, pstat);
 	

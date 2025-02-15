@@ -685,7 +685,7 @@ pack_result nsp_ext_push::p_nsp_response(const unbind_response &rsp)
 pack_result nsp_ext_push::p_nsp_response(const comparemids_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
-	TRY(p_uint32(rsp.cmp));
+	TRY(p_int32(rsp.cmp));
 	TRY(p_uint32(rsp.result));
 	return p_uint32(0);
 }

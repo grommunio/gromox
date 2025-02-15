@@ -58,7 +58,9 @@ struct comparemids_request {
 };
 
 struct comparemids_response {
-	uint32_t status = 0, cmp = 0, result = 0;
+	uint32_t status = 0;
+	int32_t cmp = 0;
+	uint32_t result = 0;
 };
 
 struct dntomid_request {

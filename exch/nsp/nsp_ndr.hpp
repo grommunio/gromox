@@ -166,7 +166,7 @@ struct NSPICOMPAREMIDS_IN {
 };
 
 struct NSPICOMPAREMIDS_OUT {
-	uint32_t cmp;
+	int32_t cmp;
 	uint32_t result;
 };
 
