@@ -166,8 +166,8 @@ struct NSPICOMPAREMIDS_IN {
 };
 
 struct NSPICOMPAREMIDS_OUT {
+	uint32_t cmp;
 	uint32_t result;
-	uint32_t result1;
 };
 
 struct NSPIMODPROPS_IN {

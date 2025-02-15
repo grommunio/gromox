@@ -54,7 +54,7 @@ uint32_t nsp_bridge_run(GUID& session_guid, const bind_request& request, bind_re
 uint32_t nsp_bridge_run(const GUID& session_guid, const comparemids_request& request, comparemids_response& response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_compare_mids(ses, request.reserved, request.stat, request.mid1, request.mid2, &response.result1);
+	return nsp_interface_compare_mids(ses, request.reserved, request.stat, request.mid1, request.mid2, &response.cmp);
 }
 
 uint32_t nsp_bridge_run(const GUID& session_guid, const dntomid_request& request, dntomid_response& response)

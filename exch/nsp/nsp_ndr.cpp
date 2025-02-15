@@ -2042,8 +2042,8 @@ static pack_result nsp_ndr_pull_nspicomparemids(NDR_PULL *pndr, NSPICOMPAREMIDS_
 static pack_result nsp_ndr_push_nspicomparemids(NDR_PUSH *pndr,
     const NSPICOMPAREMIDS_OUT *r)
 {
-	TRY(pndr->p_uint32(r->result));
-	return pndr->p_uint32(r->result1);
+	TRY(pndr->p_uint32(r->cmp));
+	return pndr->p_uint32(r->result);
 }
 
 static pack_result nsp_ndr_pull_nspimodprops(NDR_PULL *pndr, NSPIMODPROPS_IN *r)

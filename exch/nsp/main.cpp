@@ -290,9 +290,9 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		if (out == nullptr)
 			return DISPATCH_FAIL;
 		*ppout = out;
-		out->result1 = nsp_interface_compare_mids(in->handle,
-		               in->reserved, &in->stat, in->mid1, in->mid2,
-		               &out->result);
+		out->result = nsp_interface_compare_mids(in->handle,
+		              in->reserved, &in->stat, in->mid1, in->mid2,
+		              &out->cmp);
 		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
