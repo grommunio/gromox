@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <fstream>
@@ -1611,7 +1611,7 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 			ec_error_t error;
 			if (!ctx.plugin().exmdb.write_message(dir.c_str(),
 			    CP_ACP, parentFolder.folderId, content.get(),
-			    &error) || error)
+			    &error) || error != ecSuccess)
 				throw EWSError::ItemSave(E3255);
 		} else {
 			TPROPVAL_ARRAY props = shape.write();

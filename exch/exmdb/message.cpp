@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -2720,7 +2720,7 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		}
 		g_sqlite_for_oxcmail = nullptr;
 	}
-	int ret = ecSuccess;
+	ec_error_t ret = ecSuccess;
 	if (action_flavor & FWD_AS_ATTACHMENT) {
 		MAIL imail1;
 		auto pmime = imail1.add_head();

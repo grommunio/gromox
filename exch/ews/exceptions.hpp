@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
 // This file is part of Gromox.
 
 #pragma once
@@ -242,7 +242,7 @@ inline std::string E3113(const char* type, const std::string& name) {return fmt:
 inline std::string E3114(const std::string& RoutingType) {return "E-3114: unrecognized RoutingType '"+RoutingType+"'";}
 E(3115, "missing recipients");
 E(3116, "failed to export message");
-inline std::string E3117(int code) {return fmt::format("E-3117: failed to send mail ({})", code);}
+inline std::string E3117(ec_error_t code) { return fmt::format("E-3117: failed to send mail ({})", mapi_strerror(code)); }
 E(3118, "failed to allocate message ID");
 E(3119, "failed to allocate change number");
 E(3120, "failed to generate change key");

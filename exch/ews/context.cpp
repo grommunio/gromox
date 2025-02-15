@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
@@ -566,7 +566,7 @@ sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, cons
 	if(!messageId)
 		throw DispatchError(E3112);
 	if (!m_plugin.exmdb.write_message(dir.c_str(), CP_ACP, parent.folderId,
-	    &content, &error) || error)
+	    &content, &error) || error != ecSuccess)
 		throw EWSError::ItemSave(E3254);
 
 	sShape retshape = sShape(tItemResponseShape());

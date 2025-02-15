@@ -100,7 +100,7 @@ static void *gp_fetch(sqlite3 *, sqlite3_stmt *, uint16_t, cpid_t, GP_RESULT &);
 
 ec_error_t cu_id2user(int id, std::string &user)
 {
-	return mysql_adaptor_userid_to_name(id, user) ? ecSuccess : ecError;
+	return mysql_adaptor_userid_to_name(id, user);
 }
 
 void cu_set_propval(TPROPVAL_ARRAY *parray, uint32_t tag, const void *data)
