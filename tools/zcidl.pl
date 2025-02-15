@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 # SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+# This file is part of Gromox.
 use Getopt::Long;
 use strict;
 use warnings;
@@ -49,7 +51,7 @@ while (<STDIN>) {
 		next;
 	}
 
-	print "uint32_t zclient_$func($rbsig)\n{\n";
+	print "ec_error_t zclient_$func($rbsig)\n{\n";
 	print "\tzcreq_$func q{};\n\tzcresp_$func r{};\n\n";
 	print "\tq.call_id = zcore_callid::$func;\n";
 	for (@$iargs) {

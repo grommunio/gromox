@@ -14,11 +14,11 @@
 struct zcreq;
 struct zcresp;
 extern zend_bool zclient_do_rpc(const zcreq *, zcresp *);
-extern uint32_t zclient_setpropval(GUID hsession, uint32_t hobject, uint32_t proptag, const void *pvalue);
-extern uint32_t zclient_getpropval(GUID hsession, uint32_t hobject, uint32_t proptag, void **ppvalue);
+extern ec_error_t zclient_setpropval(GUID ses, uint32_t obj, gromox::proptag_t, const void *);
+extern ec_error_t zclient_getpropval(GUID ses, uint32_t obj, gromox::proptag_t, void **);
 
 #define IDLOUT
-#define ZCIDL(n, p) extern uint32_t zclient_ ## n p;
+#define ZCIDL(n, p) extern ec_error_t zclient_ ## n p;
 /* When calling these functions, none of the IDLOUT parameters may be NULL */
 ZCIDL(logon, (const char *username, const char *password, const char *rhost, uint32_t flags, IDLOUT GUID *hsession))
 ZCIDL(uinfo, (const char *username, IDLOUT BINARY *entryid, char **pdisplay_name, char **px500dn, uint32_t *privilege_bits))
