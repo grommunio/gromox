@@ -905,6 +905,9 @@ tproc_status imap_parser_process(schedule_context *vctx)
 			ret = ps_stat_wrlst(ctx);
 		else
 			ret = ps_end_processing(&ctx);
+
+		if (ctx.sched_stat != isched_stat::wrdat)
+			ctx.io_actor.clear();
 	}
 	return ret;
 }
