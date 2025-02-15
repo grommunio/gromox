@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
@@ -926,7 +929,7 @@ pack_result nsp_ext_push::p_nsp_response(const updatestat_response &rsp)
 pack_result nsp_ext_push::p_nsp_response(const getmailboxurl_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
-	TRY(p_uint32(rsp.result));
+	TRY(p_err32(rsp.result));
 	TRY(p_wstr(rsp.server_url.c_str()));
 	return p_uint32(0);
 }
@@ -934,7 +937,7 @@ pack_result nsp_ext_push::p_nsp_response(const getmailboxurl_response &rsp)
 pack_result nsp_ext_push::p_nsp_response(const getaddressbookurl_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
-	TRY(p_uint32(rsp.result));
+	TRY(p_err32(rsp.result));
 	TRY(p_wstr(rsp.server_url.c_str()));
 	return p_uint32(0);
 }

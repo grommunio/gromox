@@ -42,7 +42,7 @@ struct ECDOASYNCWAITEX_IN {
 
 struct ECDOASYNCWAITEX_OUT {
 	uint32_t flags_out;
-	int32_t result;
+	ec_error_t result;
 };
 
 struct ECDODISCONNECT_IN {
@@ -51,7 +51,7 @@ struct ECDODISCONNECT_IN {
 
 struct ECDODISCONNECT_OUT {
 	CXH cxh;
-	int32_t result;
+	ec_error_t result;
 };
 
 struct ECRREGISTERPUSHNOTIFICATION_IN {
@@ -67,7 +67,7 @@ struct ECRREGISTERPUSHNOTIFICATION_IN {
 struct ECRREGISTERPUSHNOTIFICATION_OUT {
 	CXH cxh;
 	uint32_t hnotification;
-	int32_t result;
+	ec_error_t result;
 };
 
 struct ECDOCONNECTEX_IN {
@@ -100,7 +100,7 @@ struct ECDOCONNECTEX_OUT {
 	uint32_t timestamp;
 	uint8_t pauxout[0x1008];
 	uint32_t cb_auxout;
-	int32_t result;
+	ec_error_t result;
 };
 
 struct ECDORPCEXT2_IN {
@@ -122,7 +122,7 @@ struct ECDORPCEXT2_OUT {
 	uint8_t pauxout[0x1008];
 	uint32_t cb_auxout;
 	uint32_t trans_time;
-	int32_t result;
+	ec_error_t result;
 };
 
 struct ECDOASYNCCONNECTEX_IN {
@@ -131,7 +131,7 @@ struct ECDOASYNCCONNECTEX_IN {
 
 struct ECDOASYNCCONNECTEX_OUT {
 	ACXH acxh;
-	int32_t result;
+	ec_error_t result;
 };
 
 extern pack_result asyncemsmdb_ndr_pull(int op, NDR_PULL *, void **in);

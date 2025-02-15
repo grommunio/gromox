@@ -21,7 +21,7 @@ struct rop_response {
 	uint8_t rop_id = 0;
 	// meaning dependent on rop_id (OutputHandleIndex, InputHandleIndex, ..)
 	uint8_t hindex = 0;
-	uint32_t result = 0;
+	ec_error_t result = ecSuccess;
 };
 using ROP_RESPONSE = rop_response;
 

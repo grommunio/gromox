@@ -32,7 +32,7 @@ struct NSPIBIND_IN {
 struct NSPIBIND_OUT {
 	FLATUID *pserver_guid;
 	NSPI_HANDLE handle;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIUNBIND_IN {
@@ -42,7 +42,7 @@ struct NSPIUNBIND_IN {
 
 struct NSPIUNBIND_OUT {
 	NSPI_HANDLE handle;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIUPDATESTAT_IN {
@@ -55,7 +55,7 @@ struct NSPIUPDATESTAT_IN {
 struct NSPIUPDATESTAT_OUT {
 	STAT stat;
 	int32_t *pdelta;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIQUERYROWS_IN {
@@ -71,7 +71,7 @@ struct NSPIQUERYROWS_IN {
 struct NSPIQUERYROWS_OUT {
 	STAT stat;
 	NSP_ROWSET *prows;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPISEEKENTRIES_IN {
@@ -86,7 +86,7 @@ struct NSPISEEKENTRIES_IN {
 struct NSPISEEKENTRIES_OUT {
 	STAT stat;
 	NSP_ROWSET *prows;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIGETMATCHES_IN {
@@ -105,7 +105,7 @@ struct NSPIGETMATCHES_OUT {
 	STAT stat;
 	LPROPTAG_ARRAY *poutmids;
 	NSP_ROWSET *prows;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIRESORTRESTRICTION_IN {
@@ -119,7 +119,7 @@ struct NSPIRESORTRESTRICTION_IN {
 struct NSPIRESORTRESTRICTION_OUT {
 	STAT stat;
 	LPROPTAG_ARRAY *poutmids;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIDNTOMID_IN {
@@ -130,7 +130,7 @@ struct NSPIDNTOMID_IN {
 
 struct NSPIDNTOMID_OUT {
 	LPROPTAG_ARRAY *poutmids;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIGETPROPLIST_IN {
@@ -142,7 +142,7 @@ struct NSPIGETPROPLIST_IN {
 
 struct NSPIGETPROPLIST_OUT {
 	LPROPTAG_ARRAY *pproptags;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIGETPROPS_IN {
@@ -154,7 +154,7 @@ struct NSPIGETPROPS_IN {
 
 struct NSPIGETPROPS_OUT {
 	NSP_PROPROW *prows;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPICOMPAREMIDS_IN {
@@ -167,7 +167,7 @@ struct NSPICOMPAREMIDS_IN {
 
 struct NSPICOMPAREMIDS_OUT {
 	int32_t cmp;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIMODPROPS_IN {
@@ -179,7 +179,7 @@ struct NSPIMODPROPS_IN {
 };
 
 struct NSPIMODPROPS_OUT {
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIGETSPECIALTABLE_IN {
@@ -192,7 +192,7 @@ struct NSPIGETSPECIALTABLE_IN {
 struct NSPIGETSPECIALTABLE_OUT {
 	uint32_t version;
 	NSP_ROWSET *prows;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIGETTEMPLATEINFO_IN {
@@ -206,7 +206,7 @@ struct NSPIGETTEMPLATEINFO_IN {
 
 struct NSPIGETTEMPLATEINFO_OUT {
 	NSP_PROPROW *pdata;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIMODLINKATT_IN {
@@ -218,7 +218,7 @@ struct NSPIMODLINKATT_IN {
 };
 
 struct NSPIMODLINKATT_OUT {
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIQUERYCOLUMNS_IN {
@@ -229,7 +229,7 @@ struct NSPIQUERYCOLUMNS_IN {
 
 struct NSPIQUERYCOLUMNS_OUT {
 	LPROPTAG_ARRAY *pcolumns;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIRESOLVENAMES_IN {
@@ -243,7 +243,7 @@ struct NSPIRESOLVENAMES_IN {
 struct NSPIRESOLVENAMES_OUT {
 	LPROPTAG_ARRAY *pmids;
 	NSP_ROWSET *prows;
-	uint32_t result;
+	ec_error_t result;
 };
 
 struct NSPIRESOLVENAMESW_IN {
@@ -257,7 +257,7 @@ struct NSPIRESOLVENAMESW_IN {
 struct NSPIRESOLVENAMESW_OUT {
 	LPROPTAG_ARRAY *pmids;
 	NSP_ROWSET *prows;
-	uint32_t result;
+	ec_error_t result;
 };
 
 extern pack_result exchange_nsp_ndr_pull(int op, NDR_PULL *, void **in);

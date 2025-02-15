@@ -35,9 +35,9 @@ using namespace gromox;
 DECLARE_PROC_API(emsmdb, );
 using namespace emsmdb;
 
-static int exchange_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
+static int exchange_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, ec_error_t *);
 static void exchange_emsmdb_unbind(uint64_t handle);
-static int exchange_async_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
+static int exchange_async_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, ec_error_t *);
 static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 
 static DCERPC_ENDPOINT *ep_6001;
@@ -276,7 +276,7 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 }
 
 static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
-    uint64_t handle, void *pin, void **ppout, uint32_t *ecode)
+    uint64_t handle, void *pin, void **ppout, ec_error_t *ecode)
 {
 	switch (opnum) {
 	case ecDoDisconnect: {
@@ -307,7 +307,7 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		*ppout = ndr_stack_anew<int32_t>(NDR_STACK_OUT);
 		if (*ppout == nullptr)
 			return DISPATCH_FAIL;
-		*static_cast<int32_t *>(*ppout) = emsmdb_interface_dummy_rpc(handle);
+		*static_cast<int32_t *>(*ppout) = static_cast<uint32_t>(emsmdb_interface_dummy_rpc(handle));
 		return DISPATCH_SUCCESS;
 	case ecDoConnectEx: {
 		auto in  = static_cast<ECDOCONNECTEX_IN *>(pin);
@@ -366,8 +366,9 @@ static void exchange_emsmdb_unbind(uint64_t handle)
 	emsmdb_interface_unbind_rpc_handle(handle);
 }
 
-static int exchange_async_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
-    uint64_t handle, void *pin, void **ppout, uint32_t *ecode)
+static int exchange_async_emsmdb_dispatch(unsigned int opnum,
+    const GUID *pobject, uint64_t handle, void *pin, void **ppout,
+    ec_error_t *ecode)
 {
 	int result;
 	uint32_t async_id;

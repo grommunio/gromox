@@ -38,7 +38,8 @@ struct bind_request {
 };
 
 struct bind_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	GUID server_guid{};
 };
 
@@ -48,7 +49,8 @@ struct unbind_request {
 };
 
 struct unbind_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 };
 
 struct comparemids_request {
@@ -60,7 +62,7 @@ struct comparemids_request {
 struct comparemids_response {
 	uint32_t status = 0;
 	int32_t cmp = 0;
-	uint32_t result = 0;
+	ec_error_t result = ecSuccess;
 };
 
 struct dntomid_request {
@@ -70,7 +72,8 @@ struct dntomid_request {
 };
 
 struct dntomid_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	MID_ARRAY *outmids = nullptr;
 };
 
@@ -85,7 +88,8 @@ struct getmatches_request {
 };
 
 struct getmatches_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	STAT *stat = nullptr;
 	MID_ARRAY *mids = nullptr;
 	nsp_rowset2 column_rows{};
@@ -98,7 +102,8 @@ struct getproplist_request {
 };
 
 struct getproplist_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	LPROPTAG_ARRAY *proptags = nullptr;
 };
 
@@ -110,7 +115,8 @@ struct getprops_request {
 };
 
 struct getprops_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	cpid_t codepage = CP_ACP;
 	LTPROPVAL_ARRAY *row = nullptr;
 };
@@ -123,7 +129,8 @@ struct getspecialtable_request {
 };
 
 struct getspecialtable_response {
-	uint32_t status = 0, result = 0, count = 0;
+	uint32_t status = 0, count = 0;
+	ec_error_t result = ecSuccess;
 	cpid_t codepage = CP_ACP;
 	uint32_t *version = nullptr;
 	LTPROPVAL_ARRAY *row = nullptr;
@@ -138,7 +145,8 @@ struct gettemplateinfo_request {
 };
 
 struct gettemplateinfo_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	cpid_t codepage = CP_ACP;
 	LTPROPVAL_ARRAY *row = nullptr;
 };
@@ -150,7 +158,8 @@ struct modlinkatt_request {
 };
 
 struct modlinkatt_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 };
 
 struct modprops_request {
@@ -162,7 +171,8 @@ struct modprops_request {
 };
 
 struct modprops_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 };
 
 struct queryrows_request {
@@ -174,7 +184,8 @@ struct queryrows_request {
 };
 
 struct queryrows_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	STAT *stat = nullptr;
 	nsp_rowset2 column_rows{};
 };
@@ -185,7 +196,8 @@ struct querycolumns_request {
 };
 
 struct querycolumns_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	LPROPTAG_ARRAY *columns = nullptr;
 };
 
@@ -198,7 +210,8 @@ struct resolvenames_request {
 };
 
 struct resolvenames_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	cpid_t codepage = CP_UTF16;
 	MID_ARRAY *mids = nullptr;
 	nsp_rowset2 column_rows{};
@@ -212,7 +225,8 @@ struct resortrestriction_request {
 };
 
 struct resortrestriction_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	STAT *stat = nullptr;
 	MID_ARRAY *outmids = nullptr;
 };
@@ -227,7 +241,8 @@ struct seekentries_request {
 };
 
 struct seekentries_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	STAT *stat = nullptr;
 	nsp_rowset2 column_rows{};
 };
@@ -240,7 +255,8 @@ struct updatestat_request {
 };
 
 struct updatestat_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	STAT *stat = nullptr;
 	int32_t *delta = nullptr;
 };
@@ -252,7 +268,8 @@ struct getmailboxurl_request {
 };
 
 struct getmailboxurl_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	std::string server_url;
 };
 
@@ -263,7 +280,8 @@ struct getaddressbookurl_request {
 };
 
 struct getaddressbookurl_response {
-	uint32_t status = 0, result = 0;
+	uint32_t status = 0;
+	ec_error_t result = ecSuccess;
 	std::string server_url;
 };
 

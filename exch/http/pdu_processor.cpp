@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -1742,7 +1742,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	handle |= pcall->pcontext->context_id;
 	*pb_async = false;
 	/* call the dispatch function */
-	uint32_t ecode = 0;
+	ec_error_t ecode = ecSuccess;
 	auto ret = pcontext->pinterface->dispatch(prequest->opnum,
 	           pobject, handle, pin, &pout, &ecode);
 	bool dbg = g_msrpc_debug >= 2;

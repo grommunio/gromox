@@ -357,7 +357,7 @@ ec_error_t message_object::save()
 		if (!pmessage->b_new) {
 			auto ret = message_object_save2(pmessage, b_fai,
 			           pbin_pcl, rpc_info.username);
-			if (ret != 0)
+			if (ret != ecSuccess)
 				return ret;
 		}
 	} else if (0 != pmessage->message_id) {

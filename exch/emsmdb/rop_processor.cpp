@@ -423,9 +423,9 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		g_last_rop_dir = nullptr;
 		auto result = rop_dispatch(*req, rsp, prop_buff->phandles, prop_buff->hnum);
 		bool dbg = g_rop_debug >= 2;
-		if (g_rop_debug >= 1 && result != 0)
+		if (g_rop_debug >= 1 && result != ecSuccess)
 			dbg = true;
-		if (g_rop_debug >= 1 && rsp != nullptr && rsp->result != 0)
+		if (g_rop_debug >= 1 && rsp != nullptr && rsp->result != ecSuccess)
 			dbg = true;
 		if (dbg) {
 			char e1[32], e2[32];
@@ -442,7 +442,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 					rop_idtoname(req->rop_id),
 					mapi_errname_r(result, e1, std::size(e1)));
 		}
-		switch (result) {
+		switch (static_cast<uint32_t>(result)) {
 		case ecSuccess:
 			/* disable compression when RopReadStream
 				RopFastTransferSourceGetBuffer success.
@@ -597,7 +597,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	tmp_cb = *pcb_out;
 	auto result = rop_processor_execute_and_push(pout, &tmp_cb, &rop_buff,
 	              TRUE, response_list);
-	if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
+	if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != ecSuccess))
 		mlog(LV_DEBUG, "rop_proc_ex+push() EC = %xh", static_cast<unsigned int>(result));
 	if (result != ecSuccess)
 		return result;
@@ -657,8 +657,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
 			         &tmp_cb, &rop_buff, false, response_list);
-			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
-				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", result);
+			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != ecSuccess))
+				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", static_cast<unsigned int>(result));
 			if (result != ecSuccess)
 				break;
 			if (response_list.empty())
@@ -682,8 +682,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
 			         &tmp_cb, &rop_buff, false, response_list);
-			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
-				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", result);
+			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != ecSuccess))
+				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", static_cast<unsigned int>(result));
 			if (result != ecSuccess)
 				break;
 			if (response_list.empty())
@@ -708,8 +708,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
 			         &tmp_cb, &rop_buff, false, response_list);
-			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
-				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", result);
+			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != ecSuccess))
+				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", static_cast<unsigned int>(result));
 			if (result != ecSuccess)
 				break;
 			if (response_list.empty())

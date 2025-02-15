@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <algorithm>
@@ -517,7 +517,7 @@ static void emsmdb_interface_encode_version(BOOL high_bit,
  * 		CONNECT_USE_ADMIN_PRIVILEGE = 0x1U,
  * 		CONNECT_IGNORE_NO_PF = 0x8000U,
  */
-int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *puser_dn,
+ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *puser_dn,
     uint32_t flags, uint32_t con_mode, uint32_t limit, cpid_t cpid,
     uint32_t lcid_string, uint32_t lcid_sort, uint32_t cxr_link, uint16_t cnvt_cps,
 	uint32_t *pmax_polls, uint32_t *pmax_retry, uint32_t *pretry_delay,
@@ -634,13 +634,12 @@ static bool enable_rop_chaining(uint16_t v[4])
 	       (v[0] == 16 && v[2] >= 10000);
 }
 
-int emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
+ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 	const uint8_t *pin, uint32_t cb_in, uint8_t *pout, uint32_t *pcb_out,
 	const uint8_t *pauxin, uint32_t cb_auxin, uint8_t *pauxout,
 	uint32_t *pcb_auxout, uint32_t *ptrans_time)
 {
 	auto pcxh = &cxh;
-	int result;
 	uint16_t cxr;
 	char username[UADDR_SIZE];
 	HANDLE_DATA *phandle;
@@ -696,7 +695,7 @@ int emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 		input_flags &= ~GROMOX_READSTREAM_NOCHAIN;
 	else
 		input_flags |= GROMOX_READSTREAM_NOCHAIN;
-	result = rop_processor_proc(input_flags, pin, cb_in, pout, pcb_out);
+	auto result = rop_processor_proc(input_flags, pin, cb_in, pout, pcb_out);
 	gx_strlcpy(username, phandle->username, std::size(username));
 	cxr = phandle->cxr;
 	BOOL b_wakeup = double_list_get_nodes_num(&phandle->notify_list) == 0 ? false : TRUE;
@@ -712,7 +711,7 @@ int emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 	return ecSuccess;
 }
 	
-int emsmdb_interface_async_connect_ex(CXH cxh, ACXH *pacxh)
+ec_error_t emsmdb_interface_async_connect_ex(CXH cxh, ACXH *pacxh)
 {
 	pacxh->handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
 	pacxh->guid = cxh.guid;
@@ -1121,7 +1120,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	pnode->pdata = nfr;
 	nfr->rop_id = ropNotify;
 	nfr->hindex = 0; /* ignore by system */
-	nfr->result = 0; /* ignore by system */
+	nfr->result = ecSuccess; /* ignore by system */
 	BOOL b_cache = phandle->info.client_mode == CLIENT_MODE_CACHED ? TRUE : false;
 	if (nfr->cvt_from_dbnotify(b_cache, *pdb_notify) == ecSuccess) {
 		double_list_append_as_tail(&phandle->notify_list, pnode);

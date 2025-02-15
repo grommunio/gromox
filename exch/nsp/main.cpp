@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdio>
@@ -20,7 +20,7 @@
 using namespace gromox;
 DECLARE_PROC_API(nsp, );
 
-static int exchange_nsp_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
+static int exchange_nsp_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, ec_error_t *);
 static void exchange_nsp_unbind(uint64_t handle);
 
 static DCERPC_ENDPOINT *ep_6001, *ep_6004;
@@ -155,7 +155,7 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 }
 
 static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
-    uint64_t handle, void *pin, void **ppout, uint32_t *ecode)
+    uint64_t handle, void *pin, void **ppout, ec_error_t *ecode)
 {
 	
 	switch (opnum) {

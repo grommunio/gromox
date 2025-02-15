@@ -4,9 +4,6 @@
 #include <gromox/rpc_types.hpp>
 #define MOD_FLAG_DELETE						0x000000001
 
-#define MAPI_E_UNBINDSUCCESS 0x000000001
-#define MAPI_E_FAILONEPROVIDER 0x8004011D
-
 using NSPI_HANDLE = CONTEXT_HANDLE;
 
 struct STAT {

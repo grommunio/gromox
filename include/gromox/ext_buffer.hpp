@@ -241,6 +241,7 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_int16(int16_t v) { return p_uint16(v); }
 	pack_result p_uint32(uint32_t);
 	pack_result p_int32(int32_t v) { return p_uint32(v); }
+	pack_result p_err32(ec_error_t v) { return p_uint32(static_cast<uint32_t>(v)); }
 	pack_result p_uint64(uint64_t);
 	pack_result p_int64(int64_t v) { return p_uint64(v); }
 	pack_result p_float(float);

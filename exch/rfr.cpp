@@ -52,7 +52,7 @@ struct RFRGETFQDNFROMLEGACYDN_OUT {
 }
 
 static pack_result exchange_rfr_ndr_pull(int op, NDR_PULL *, void **in);
-static int exchange_rfr_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
+static int exchange_rfr_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, ec_error_t *);
 static pack_result exchange_rfr_ndr_push(int op, NDR_PUSH *, void *out);
 
 static DCERPC_ENDPOINT *ep_6001, *ep_6002;
@@ -227,7 +227,7 @@ static pack_result exchange_rfr_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
 }
 
 static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
-    uint64_t handle, void *pin, void **ppout, uint32_t *ecode)
+    uint64_t handle, void *pin, void **ppout, ec_error_t *ecode)
 {
 	RFRGETNEWDSA_OUT *prfr_out;
 	RFRGETFQDNFROMLEGACYDN_OUT *prfr_dn_out;

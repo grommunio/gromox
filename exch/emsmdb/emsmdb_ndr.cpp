@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2025 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
 #include <gromox/ndr.hpp>
@@ -17,7 +19,7 @@ static pack_result asyncemsmdb_ndr_push_ecdoasyncwaitex(NDR_PUSH *pndr,
 	const ECDOASYNCWAITEX_OUT *r)
 {
 	TRY(pndr->p_uint32(r->flags_out));
-	return pndr->p_int32(r->result);
+	return pndr->p_err32(r->result);
 }
 
 pack_result asyncemsmdb_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)
@@ -52,7 +54,7 @@ static pack_result emsmdb_ndr_push_ecdodisconnect(NDR_PUSH *pndr,
 	const ECDODISCONNECT_OUT *r)
 {
 	TRY(pndr->p_ctx_handle(r->cxh));
-	return pndr->p_int32(r->result);
+	return pndr->p_err32(r->result);
 }
 
 static pack_result emsmdb_ndr_pull_ecrregisterpushnotification(NDR_PULL *pndr,
@@ -87,7 +89,7 @@ static pack_result emsmdb_ndr_push_ecrregisterpushnotification(NDR_PUSH *pndr,
 {
 	TRY(pndr->p_ctx_handle(r->cxh));
 	TRY(pndr->p_uint32(r->hnotification));
-	return pndr->p_int32(r->result);
+	return pndr->p_err32(r->result);
 }
 
 static pack_result emsmdb_ndr_push_ecdummyrpc(NDR_PUSH *pndr, int32_t *r)
@@ -173,7 +175,7 @@ static pack_result emsmdb_ndr_push_ecdoconnectex(NDR_PUSH *pndr,
 	TRY(pndr->p_ulong(r->cb_auxout));
 	TRY(pndr->p_uint8_a(r->pauxout, r->cb_auxout));
 	TRY(pndr->p_uint32(r->cb_auxout));
-	return pndr->p_int32(r->result);
+	return pndr->p_err32(r->result);
 }
 
 static pack_result emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r)
@@ -238,7 +240,7 @@ static pack_result emsmdb_ndr_push_ecdorpcext2(NDR_PUSH *pndr, const ECDORPCEXT2
 	TRY(pndr->p_uint8_a(r->pauxout, r->cb_auxout));
 	TRY(pndr->p_uint32(r->cb_auxout));
 	TRY(pndr->p_uint32(r->trans_time));
-	return pndr->p_int32(r->result);
+	return pndr->p_err32(r->result);
 }
 
 static pack_result emsmdb_ndr_pull_ecdoasyncconnectex(NDR_PULL *pndr,
@@ -251,7 +253,7 @@ static pack_result emsmdb_ndr_push_ecdoasyncconnectex(NDR_PUSH *pndr,
 	const ECDOASYNCCONNECTEX_OUT *r)
 {
 	TRY(pndr->p_ctx_handle(r->acxh));
-	return pndr->p_int32(r->result);
+	return pndr->p_err32(r->result);
 }
 
 pack_result emsmdb_ndr_pull(int opnum, NDR_PULL *pndr, void **ppin)

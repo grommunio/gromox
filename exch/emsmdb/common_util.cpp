@@ -1404,7 +1404,9 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 	           g_emsmdb_org_name, cu_id2user, es_result);
 	if (ret == ecSuccess)
 		list.emplace_back(std::move(es_result));
-	return ret == ecNullObject || ret == ecUnknownUser ? ecInvalidRecips : ret;
+	if (ret == ecNullObject || ret == ecUnknownUser)
+		return ecInvalidRecips;
+	return ret;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1123: ENOMEM");
 	return ecServerOOM;

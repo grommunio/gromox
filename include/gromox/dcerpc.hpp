@@ -29,7 +29,7 @@ struct DCERPC_INTERFACE {
 	/* the ndr_pull function for the chosen interface. */
 	pack_result (*ndr_pull)(int opnum, NDR_PULL* pndr, void **ppin) = nullptr;
 	/* the dispatch function for the chosen interface. */
-	int (*dispatch)(unsigned int op, const GUID *, uint64_t handle, void *in, void **out, uint32_t *ecode) = nullptr;
+	int (*dispatch)(unsigned int op, const GUID *, uint64_t handle, void *in, void **out, ec_error_t *) = nullptr;
 	/* the ndr_push function for the chosen interface. */
 	pack_result (*ndr_push)(int opnum, NDR_PUSH *pndr, void *pout) = nullptr;
 	/* the unbind function for the chosen interface */
