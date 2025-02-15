@@ -50,12 +50,6 @@ static std::unordered_set<std::shared_ptr<EXMDB_CONNECTION>> g_connection_list;
 static std::mutex g_router_lock, g_connection_lock;
 unsigned int g_enable_dam;
 
-EXMDB_CONNECTION::~EXMDB_CONNECTION()
-{
-	if (sockd >= 0)
-		close(sockd);
-}
-
 ROUTER_CONNECTION::~ROUTER_CONNECTION()
 {
 	if (sockd >= 0)

@@ -5,8 +5,6 @@
 #include <gromox/generic_connection.hpp>
 
 struct midb_conn : public generic_connection {
-	~midb_conn();
-
 	DOUBLE_LIST_NODE node{};
 	BOOL is_selecting = false;
 	pthread_t thr_id{};
