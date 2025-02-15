@@ -15,7 +15,7 @@ namespace {
 struct env_context {
 	alloc_context alloc_ctx;
 	const char *dir = nullptr;
-	int account_id = 0;
+	unsigned int account_id = 0;
 	bool b_local = false, b_private = false;
 };
 
@@ -37,7 +37,7 @@ void build_env(unsigned int flags, const char *dir) try
 	pctx->b_local = flags & EM_LOCAL;
 	pctx->b_private = flags & EM_PRIVATE;
 	pctx->dir = dir;
-	pctx->account_id = -1;
+	pctx->account_id = 0;
 	g_env_key = std::move(pctx);
 } catch (const std::bad_alloc &) {
 	gromox::mlog(LV_ERR, "E-2390: ENOMEM!");
@@ -96,11 +96,11 @@ void set_dir(const char *dir)
 	g_env_key->dir = dir;
 }
 
-int get_account_id()
+unsigned int get_account_id()
 {
 	unsigned int account_id = 0;
 	auto pctx = g_env_key.get();
-	if (pctx->account_id < 0) {
+	if (pctx->account_id == 0) {
 		if (pctx->b_private) {
 			if (mysql_adaptor_get_id_from_maildir(pctx->dir, &account_id))
 				pctx->account_id = account_id;	

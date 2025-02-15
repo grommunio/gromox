@@ -1105,8 +1105,6 @@ static BINARY *cu_fid_to_entryid(sqlite3 *psqlite, uint64_t folder_id)
 	FOLDER_ENTRYID tmp_entryid;
 	
 	auto account_id = exmdb_server::get_account_id();
-	if (account_id < 0)
-		return NULL;
 	tmp_entryid.flags = 0;
 	if (exmdb_server::is_private()) {
 		auto pbin = common_util_get_mailbox_guid(psqlite);
@@ -1150,8 +1148,6 @@ static BINARY *cu_mid_to_entryid(sqlite3 *psqlite, uint64_t message_id)
 	if (!common_util_get_message_parent_folder(psqlite, message_id, &folder_id))
 		return NULL;	
 	auto account_id = exmdb_server::get_account_id();
-	if (account_id < 0)
-		return NULL;
 	tmp_entryid.flags = 0;
 	if (exmdb_server::is_private()) {
 		auto pbin = common_util_get_mailbox_guid(psqlite);

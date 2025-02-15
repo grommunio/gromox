@@ -939,7 +939,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM folders"
 			" WHERE folder_id=%llu", LLU{fid_val});
 	} else { /* softdel */
-		int account_id = get_account_id();
+		auto account_id = get_account_id();
 		auto nt_time = rop_util_current_nttime();
 		uint64_t change_num = 0;
 		void *pvalue = nullptr;

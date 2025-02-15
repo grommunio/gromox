@@ -23,7 +23,7 @@ extern ALLOC_CONTEXT *get_alloc_context();
 extern bool is_private();
 extern const char *get_dir();
 extern void set_dir(const char *);
-extern int get_account_id();
+extern unsigned int get_account_id();
 extern const GUID *get_handle();
 
 /*
