@@ -9,6 +9,7 @@
 #endif
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -868,6 +869,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
 			auto pbody = strchr(kw, '[');
+			assert(pbody != nullptr);
 			auto pend = strchr(pbody + 1, ']');
 			if (pend == nullptr)
 				return 1800;
