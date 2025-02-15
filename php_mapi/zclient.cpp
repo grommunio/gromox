@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include "php.h"
 #include <libHX/string.h>
@@ -138,8 +138,8 @@ zend_bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 	return 1;
 }
 
-uint32_t zclient_setpropval(GUID hsession, uint32_t hobject, uint32_t proptag,
-    const void *pvalue)
+ec_error_t zclient_setpropval(GUID hsession, uint32_t hobject,
+    gromox::proptag_t proptag, const void *pvalue)
 {
 	TAGGED_PROPVAL propval;
 	TPROPVAL_ARRAY propvals;
@@ -151,8 +151,8 @@ uint32_t zclient_setpropval(GUID hsession, uint32_t hobject, uint32_t proptag,
 	return zclient_setpropvals(hsession, hobject, &propvals);
 }
 
-uint32_t zclient_getpropval(GUID hsession, uint32_t hobject, uint32_t proptag,
-    void **ppvalue)
+ec_error_t zclient_getpropval(GUID hsession, uint32_t hobject,
+    gromox::proptag_t proptag, void **ppvalue)
 {
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;

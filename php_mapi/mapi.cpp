@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -37,7 +37,7 @@
 
 ZEND_BEGIN_MODULE_GLOBALS(mapi)
 	/* this is the global hresult value, used in *every* php mapi function */
-	unsigned long hr;
+	ec_error_t hr;
 	/* This is a reference to the MAPI exception class */
 	zend_class_entry *exception_ce;
 	zend_bool exceptions_enabled;
@@ -64,7 +64,7 @@ ZEND_END_MODULE_GLOBALS(mapi)
 	do { \
 		MAPI_G(hr) = (rv); \
 		if (MAPI_G(exceptions_enabled)) \
-			zend_throw_exception(MAPI_G(exception_ce), mapi_strerror(MAPI_G(hr)), MAPI_G(hr)); \
+			zend_throw_exception(MAPI_G(exception_ce), mapi_strerror(MAPI_G(hr)), static_cast<uint32_t>(MAPI_G(hr))); \
 		RETVAL_FALSE; \
 		return; \
 	} while (false)
@@ -299,7 +299,7 @@ static void stream_object_free(STREAM_OBJECT *pstream)
 	efree(pstream);
 }
 
-static uint32_t stream_object_commit(STREAM_OBJECT *pstream)
+static ec_error_t stream_object_commit(STREAM_OBJECT *pstream)
 {
 	if (pstream->hsession == GUID_NULL || pstream->hparent == 0 || pstream->proptag == 0)
 		return ecInvalidParam;
@@ -336,7 +336,7 @@ static void notif_sink_free(NOTIF_SINK *psink)
 	efree(psink);
 }
 
-static uint32_t notif_sink_timedwait(NOTIF_SINK *psink,
+static ec_error_t notif_sink_timedwait(NOTIF_SINK *psink,
 	uint32_t timeval, ZNOTIFICATION_ARRAY *pnotifications)
 {
 	if (0 == psink->count) {
@@ -491,7 +491,7 @@ static PHP_RINIT_FUNCTION(mapi)
 	zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
 	zstrplus str_user(zend_string_init(ZEND_STRL("REMOTE_USER"), 0));
 
-	MAPI_G(hr) = 0;
+	MAPI_G(hr) = ecSuccess;
 	MAPI_G(exception_ce) = NULL;
 	MAPI_G(exceptions_enabled) = 0;
 	auto server_vars = zend_hash_find(&EG(symbol_table), str_server.get());
@@ -540,7 +540,7 @@ static ZEND_FUNCTION(mapi_load_mapidefs)
 
 static ZEND_FUNCTION(mapi_last_hresult)
 {
-	RETURN_LONG(MAPI_G(hr));
+	RETURN_LONG(static_cast<uint32_t>(MAPI_G(hr)));
 }
 
 static ZEND_FUNCTION(mapi_prop_type)
@@ -1396,7 +1396,7 @@ static ZEND_FUNCTION(mapi_msgstore_getarchiveentryid)
 	MAPI_G(hr) = ecNotFound;
 	if (MAPI_G(exceptions_enabled))
 		zend_throw_exception(MAPI_G(exception_ce),
-			"MAPI error ", MAPI_G(hr));
+			"MAPI error ", static_cast<uint32_t>(MAPI_G(hr)));
 	RETVAL_FALSE;
 }
 
@@ -1532,7 +1532,7 @@ static ZEND_FUNCTION(mapi_sink_create)
 		RETVAL_FALSE;
 		if (MAPI_G(exceptions_enabled))
 			zend_throw_exception(MAPI_G(exception_ce),
-				"MAPI error ", MAPI_G(hr));
+				"MAPI error ", static_cast<uint32_t>(MAPI_G(hr)));
 	} else {
 		MAPI_G(hr) = ecSuccess;
 		RETVAL_RG(psink, le_mapi_advisesink);
@@ -2106,7 +2106,6 @@ static ZEND_FUNCTION(mapi_stream_setsize)
 static ZEND_FUNCTION(mapi_stream_commit)
 {
 	ZCL_MEMORY;
-	uint32_t result;
 	zval *pzresource;
 	STREAM_OBJECT *pstream;
 	
@@ -2114,7 +2113,7 @@ static ZEND_FUNCTION(mapi_stream_commit)
 		"r", &pzresource) == FAILURE || NULL == pzresource)
 		pthrow(ecInvalidParam);
 	ZEND_FETCH_RESOURCE(pstream, pzresource, le_stream);
-	result = stream_object_commit(pstream);
+	auto result = stream_object_commit(pstream);
 	if (result != ecSuccess)
 		pthrow(result);
 	RETVAL_TRUE;
@@ -3509,7 +3508,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagemove)
 	MAPI_G(hr) = NotImplemented;
 	if (MAPI_G(exceptions_enabled))
 		zend_throw_exception(MAPI_G(exception_ce),
-			"MAPI error ", MAPI_G(hr));
+			"MAPI error ", static_cast<uint32_t>(MAPI_G(hr)));
 	RETVAL_FALSE;
 }
 
@@ -4001,7 +4000,7 @@ static ZEND_FUNCTION(kc_session_restore)
 	}
 	auto result = zclient_checksession(hsession);
 	if (result != ecSuccess) {
-		RETVAL_LONG(result);
+		RETVAL_LONG(static_cast<uint32_t>(result));
 		return;
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
@@ -4132,7 +4131,7 @@ static ZEND_FUNCTION(mapi_strerror)
 		RETVAL_FALSE;
 		return;
 	}
-	auto s = mapi_strerror(code);
+	auto s = mapi_strerror(static_cast<ec_error_t>(static_cast<uint32_t>(code)));
 	if (s == nullptr)
 		RETVAL_FALSE;
 	else
