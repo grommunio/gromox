@@ -245,7 +245,8 @@ static errno_t do_vcard(const char *file, std::vector<message_ptr> &mv)
 	std::vector<vcard> cardvec;
 	auto ret = vcard_load_multi_from_str_move(slurp_data.get(), cardvec);
 	if (ret != ecSuccess) {
-		fprintf(stderr, "vcard_parse %s unsuccessful (ecode=%xh)\n", file, ret);
+		fprintf(stderr, "vcard_parse %s unsuccessful (ecode=%xh)\n",
+			file, static_cast<unsigned int>(ret));
 		return EIO;
 	}
 	for (const auto &card : cardvec) {

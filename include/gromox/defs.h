@@ -84,7 +84,7 @@ enum cpid_t : uint32_t {
 };
 
 extern GX_EXPORT const char *mapi_errname_r(unsigned int, char *, size_t);
-extern GX_EXPORT const char *mapi_strerror(unsigned int);
+extern GX_EXPORT const char *mapi_strerror(ec_error_t);
 
 template<typename T> constexpr T *deconst(const T *x) { return const_cast<T *>(x); }
 #undef roundup /* you naughty glibc */

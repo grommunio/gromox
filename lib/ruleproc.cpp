@@ -800,7 +800,9 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
 	case OP_MOVE:
 	case OP_COPY: {
 		auto mc = static_cast<MOVECOPY_ACTION *>(act.pdata);
-		return mc != nullptr ? op_copy(par, rule, *mc, act.type) : ecSuccess;
+		if (mc == nullptr)
+			return ecSuccess;
+		return op_copy(par, rule, *mc, act.type);
 	}
 	case OP_MARK_AS_READ:
 		return op_read(par, rule);

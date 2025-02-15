@@ -2571,7 +2571,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_get_mapping_replid &d)
 static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_mapping_replid &d)
 {
 	TRY(x.p_uint16(d.replid));
-	return x.p_uint32(d.e_result);
+	return x.p_err32(d.e_result);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_get_store_all_proptags &d)
@@ -3225,7 +3225,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_error &d)
 
 static pack_result exmdb_push(EXT_PUSH &x, const exresp_error &d)
 {
-	return x.p_uint32(d.e_result);
+	return x.p_err32(d.e_result);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_get_instance_all_proptags &d)

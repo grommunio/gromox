@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -191,11 +191,11 @@ const char *mapi_errname_r(unsigned int e, char *b, size_t bz)
 	return b;
 }
 
-const char *mapi_strerror(unsigned int e)
+const char *mapi_strerror(ec_error_t e)
 {
 	// STG = storage
-#define E(v, s) case v: return s;
 	switch (e) {
+#define E(v, s) case v: return s;
 	E(ecSuccess, "The operation succeeded")
 	E(ecUnknownUser, "User is unknown to the system")
 	E(ecServerOOM, "Server could not allocate memory")
@@ -278,7 +278,7 @@ const char *mapi_strerror(unsigned int e)
 	E(ecZOutOfHandles, "Too many object handles open")
 	default: {
 		thread_local char xbuf[40];
-		snprintf(xbuf, sizeof(xbuf), "Unknown MAPI error code %xh", e);
+		snprintf(xbuf, sizeof(xbuf), "Unknown MAPI error code %xh", static_cast<uint32_t>(e));
 		return xbuf;
 	}
 	}
