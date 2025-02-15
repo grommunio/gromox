@@ -655,9 +655,9 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 			PR_SENT_REPRESENTING_SEARCH_KEY, PR_PROVIDER_SUBMIT_TIME};
 		static constexpr PROPTAG_ARRAY proptags =
 			{std::size(proptag_buff), deconst(proptag_buff)};
-		if (!pmessage->get_properties(0, &proptags, *pppropvals))
+		if (!pmessage->get_properties(0, &proptags, *pppropvals)) {
 			*pppropvals = NULL;
-		if (!(**pppropvals).has(PR_PROVIDER_SUBMIT_TIME)) {
+		} else if (!(**pppropvals).has(PR_PROVIDER_SUBMIT_TIME)) {
 			auto nt = cu_alloc<uint64_t>();
 			if (nt != nullptr) {
 				*nt = rop_util_current_nttime();
