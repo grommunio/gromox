@@ -1694,7 +1694,8 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 		auto it2 = base->find(mid2);
 		if (it1 == base->end() || it2 == base->end())
 			return ecError;
-		*cmp = it2.pos() - it1.pos();
+		auto dx = it2.pos() <=> it1.pos();
+		*cmp = dx == 0 ? 0 : dx < 0 ? -1 : 1;
 	} else {
 		ab_tree::ab_node node(base, pstat->container_id);
 		if (!node.exists() || !node.children())
@@ -1703,7 +1704,8 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 		auto it2 = std::find(node.begin(), node.end(), mid2);
 		if (it1 == node.end() || it2 == node.end())
 			return ecError;
-		*cmp = std::distance(it1, it2);
+		auto dx = std::distance(it1, it2);
+		*cmp = dx == 0 ? 0 : dx < 0 ? -1 : 1;
 	}
 	nsp_trace(__func__, 1, pstat);
 	return ecSuccess;
