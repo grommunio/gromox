@@ -72,12 +72,9 @@ struct FIFO {
 
 struct qsock : public generic_connection {
 	ssize_t sk_write(const std::string_view &);
-	void sk_close();
 };
 
 struct ENQUEUE_NODE : public qsock {
-	~ENQUEUE_NODE() { sk_close(); }
-
 	int offset = 0;
 	char res_id[272]{};
 	char buffer[MAX_CMD_LENGTH]{};
@@ -175,14 +172,6 @@ ssize_t qsock::sk_write(const std::string_view &sv)
 		sockd = -1;
 	}
 	return ret;
-}
-
-void qsock::sk_close()
-{
-	if (sockd < 0)
-		return;
-	close(sockd);
-	sockd = -1;
 }
 
 int main(int argc, char **argv)
