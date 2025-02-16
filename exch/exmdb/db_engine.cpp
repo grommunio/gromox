@@ -925,6 +925,7 @@ void db_engine_stop()
 			++iter;
 		}
 		futs.clear();
+		std::lock_guard lk(g_hash_lock);
 		g_hash_table.clear();
 		mlog(LV_INFO, "Database shutdown took %llu ms",
 			LLU(std::chrono::duration_cast<std::chrono::milliseconds>(tp_now() - t_start).count()));
