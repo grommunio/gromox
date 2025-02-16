@@ -640,7 +640,7 @@ static void *ev_deqwork(void *param)
 	std::unique_lock dq_hold(g_dequeue_lock);
 	if (g_dequeue_list1.size() == 0)
 		goto NEXT_LOOP;
-	auto pdequeue = g_dequeue_list1.front();
+	/*shared_ptr*/ auto pdequeue = g_dequeue_list1.front();
 	g_dequeue_list1.erase(g_dequeue_list1.begin());
 	dq_hold.unlock();
 	
@@ -671,10 +671,6 @@ static void *ev_deqwork(void *param)
 					auto it = std::find(phost->list.begin(), phost->list.end(), pdequeue);
 					if (it != phost->list.end())
 						phost->list.erase(it);
-					hl_hold.unlock();
-					close(pdequeue->sockd);
-					pdequeue->sockd = -1;
-					pdequeue->fifo.clear();
 					goto NEXT_LOOP;
 				}
 				last_time = cur_time;
@@ -693,10 +689,6 @@ static void *ev_deqwork(void *param)
 			auto it = std::find(phost->list.begin(), phost->list.end(), pdequeue);
 			if (it != phost->list.end())
 				phost->list.erase(it);
-			hl_hold.unlock();
-			close(pdequeue->sockd);
-			pdequeue->sockd = -1;
-			pdequeue->fifo.clear();
 			goto NEXT_LOOP;
 		}
 		
