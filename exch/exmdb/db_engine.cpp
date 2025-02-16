@@ -777,7 +777,11 @@ static void *sf_popul_thread(void *param)
 		g_populating_list_active.splice(g_populating_list_active.end(), g_populating_list, g_populating_list.begin());
 		auto psearch = std::prev(g_populating_list_active.end());
 		lhold.unlock();
-		auto cl_0 = make_scope_exit([&]() { g_populating_list_active.erase(psearch); });
+		auto cl_0 = make_scope_exit([&]() {
+			lhold.lock();
+			g_populating_list_active.erase(psearch);
+			lhold.unlock();
+		});
 		auto pfolder_ids = eid_array_init();
 		if (pfolder_ids == nullptr)
 			goto NEXT_SEARCH;	
