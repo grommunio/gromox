@@ -105,8 +105,9 @@ static std::vector<std::string> g_acl_list;
 static std::list<ENQUEUE_NODE> g_enqueue_list, g_enqueue_list1;
 static std::vector<std::shared_ptr<DEQUEUE_NODE>> g_dequeue_list1;
 static std::list<HOST_NODE> g_host_list;
-static std::mutex g_enqueue_lock, g_dequeue_lock, g_host_lock;
-static std::mutex g_enqueue_cond_mutex, g_dequeue_cond_mutex;
+static std::mutex g_enqueue_lock /*(g_enqueue_list0/1)*/;
+static std::mutex g_dequeue_lock /*(g_dequeue_list0/1)*/;
+static std::mutex g_host_lock /*(g_host_list)*/;
 static std::condition_variable g_enqueue_waken_cond, g_dequeue_waken_cond;
 static char *opt_config_file;
 static unsigned int opt_show_version;
@@ -585,14 +586,10 @@ static void q_else(eq_iter_t eq_node)
 static void *ev_enqwork(void *param)
 {
  NEXT_LOOP:
+	std::unique_lock eq_hold(g_enqueue_lock);
+	g_enqueue_waken_cond.wait(eq_hold, []() { return g_notify_stop || g_enqueue_list1.size() > 0; });
 	if (g_notify_stop)
 		return nullptr;
-	std::unique_lock cm_hold(g_enqueue_cond_mutex);
-	g_enqueue_waken_cond.wait(cm_hold);
-	cm_hold.unlock();
-	if (g_notify_stop)
-		return nullptr;
-	eq_lock_t eq_hold(g_enqueue_lock);
 	if (g_enqueue_list1.size() == 0)
 		goto NEXT_LOOP;
 	auto eq_node = g_enqueue_list1.begin();
@@ -632,12 +629,10 @@ static void *ev_enqwork(void *param)
 static void *ev_deqwork(void *param)
 {
  NEXT_LOOP:
-	std::unique_lock dc_hold(g_dequeue_cond_mutex);
-	g_dequeue_waken_cond.wait(dc_hold);
-	dc_hold.unlock();
+	std::unique_lock dq_hold(g_dequeue_lock);
+	g_dequeue_waken_cond.wait(dq_hold, []() { return g_notify_stop || g_dequeue_list1.size() > 0; });
 	if (g_notify_stop)
 		return nullptr;
-	std::unique_lock dq_hold(g_dequeue_lock);
 	if (g_dequeue_list1.size() == 0)
 		goto NEXT_LOOP;
 	/*shared_ptr*/ auto pdequeue = g_dequeue_list1.front();
