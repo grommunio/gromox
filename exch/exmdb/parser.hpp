@@ -12,7 +12,6 @@
 class EXMDB_CONNECTION : public GENERIC_CONNECTION {
 	public:
 	EXMDB_CONNECTION() = default;
-	~EXMDB_CONNECTION();
 	NOMOVE(EXMDB_CONNECTION);
 
 	gromox::atomic_bool b_stop{false};

@@ -122,12 +122,6 @@ void cmd_parser_stop()
 	g_connlist_idle.clear();
 }
 
-midb_conn::~midb_conn()
-{
-	if (sockd >= 0)
-		close(sockd);
-}
-
 void cmd_parser_register_command(const char *command, const midb_cmd &info)
 {
 	auto r = g_cmd_entry.emplace(command, info);

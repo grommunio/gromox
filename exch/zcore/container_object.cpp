@@ -506,7 +506,7 @@ static BOOL container_object_fetch_folder_properties(
 		}
 		case PR_CONTAINER_FLAGS: {
 			auto count = ppropvals->get<uint32_t>(PR_SUBFOLDERS);
-			auto b_sub = count != nullptr || *count > 0;
+			auto b_sub = count != nullptr && *count > 0;
 			auto pvalue = cu_alloc<uint32_t>();
 			if (pvalue == nullptr)
 				return FALSE;
