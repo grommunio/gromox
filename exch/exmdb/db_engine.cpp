@@ -97,7 +97,7 @@ static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
 static pthread_t g_scan_tid;
 static gromox::time_duration g_cache_interval; /* maximum living interval in table */
 static std::vector<pthread_t> g_thread_ids;
-static std::mutex g_list_lock, g_hash_lock, g_cond_mutex;
+static std::mutex g_list_lock, g_hash_lock;
 static std::condition_variable g_waken_cond;
 static std::unordered_map<std::string, db_base> g_hash_table;
 /* List of queued searchcriteria, and list of searchcriteria evaluated right now */
@@ -767,13 +767,11 @@ static void *sf_popul_thread(void *param)
 		/* ignore */;
 	
 	while (!g_notify_stop) {
-		std::unique_lock chold(g_cond_mutex);
-		g_waken_cond.wait(chold);
-		chold.unlock();
  NEXT_SEARCH:
+		std::unique_lock lhold(g_list_lock);
+		g_waken_cond.wait(lhold, []() { return g_notify_stop || g_populating_list.size() > 0; });
 		if (g_notify_stop)
 			break;
-		std::unique_lock lhold(g_list_lock);
 		if (g_populating_list.size() == 0)
 			continue;
 		g_populating_list_active.splice(g_populating_list_active.end(), g_populating_list, g_populating_list.begin());
