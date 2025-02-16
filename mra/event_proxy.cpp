@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
 #include <cerrno>
@@ -143,14 +143,13 @@ BOOL SVC_event_proxy(enum plugin_op reason, const struct dlfuncs &ppdata)
 static void *evpx_scanwork(void *param)
 {
 	int tv_msec;
-	time_t now_time;
 	char temp_buff[1024];
 	struct pollfd pfd_read;
 	std::list<BACK_CONN> temp_list;
 	
 	while (!g_notify_stop) {
 		std::unique_lock bl_hold(g_back_lock);
-		time(&now_time);
+		auto now_time = time(nullptr);
 		auto tail = g_back_list.size() > 0 ? &g_back_list.back() : nullptr;
 		while (g_back_list.size() > 0) {
 			auto pback = &g_back_list.front();
@@ -178,7 +177,7 @@ static void *evpx_scanwork(void *param)
 				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
 				bl_hold.unlock();
 			} else {
-				time(&pback->last_time);
+				pback->last_time = time(nullptr);
 				bl_hold.lock();
 				g_back_list.splice(g_back_list.end(), temp_list, temp_list.begin());
 				bl_hold.unlock();
@@ -194,7 +193,7 @@ static void *evpx_scanwork(void *param)
 			auto pback = &temp_list.front();
 			pback->sockd = connect_event();
 			if (-1 != pback->sockd) {
-				time(&pback->last_time);
+				pback->last_time = time(nullptr);
 				bl_hold.lock();
 				g_back_list.splice(g_back_list.end(), temp_list, temp_list.begin());
 				bl_hold.unlock();
@@ -243,7 +242,7 @@ static void broadcast_event(const char *event)
 		g_lost_list.splice(g_lost_list.end(), std::move(hold));
 		return;
 	}
-	time(&pback->last_time);
+	pback->last_time = time(nullptr);
 	bl_hold.lock();
 	g_back_list.splice(g_back_list.end(), std::move(hold));
 }

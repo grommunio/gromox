@@ -210,7 +210,6 @@ BOOL SVC_midb_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 static void *midbag_scanwork(void *param)
 {
-	time_t now_time;
 	int tv_msec;
 	char temp_buff[1024];
 	struct pollfd pfd_read;
@@ -218,7 +217,7 @@ static void *midbag_scanwork(void *param)
 
 	while (!g_notify_stop) {
 		std::unique_lock sv_hold(g_server_lock);
-		time(&now_time);
+		auto now_time = time(nullptr);
 		for (auto &srv : g_server_list) {
 			auto tail = srv.conn_list.size() > 0 ? &srv.conn_list.back() : nullptr;
 			while (srv.conn_list.size() > 0) {
@@ -247,7 +246,7 @@ static void *midbag_scanwork(void *param)
 				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
 				sv_hold.unlock();
 			} else {
-				time(&pback->last_time);
+				pback->last_time = time(nullptr);
 				sv_hold.lock();
 				pback->psvr->conn_list.splice(pback->psvr->conn_list.end(), temp_list, temp_list.begin());
 				sv_hold.unlock();
@@ -264,7 +263,7 @@ static void *midbag_scanwork(void *param)
 			pback->sockd = connect_midb(pback->psvr->ip_addr,
 							pback->psvr->port);
 			if (-1 != pback->sockd) {
-				time(&pback->last_time);
+				pback->last_time = time(nullptr);
 				sv_hold.lock();
 				pback->psvr->conn_list.splice(pback->psvr->conn_list.end(), temp_list, temp_list.begin());
 				sv_hold.unlock();

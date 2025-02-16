@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 /*
  * imap parser is a module, which first read data from socket, parses the imap
@@ -1586,7 +1586,7 @@ void imap_parser_add_select(imap_context *pcontext)
 
 	gx_strlcpy(temp_string, pcontext->username, std::size(temp_string));
 	HX_strlower(temp_string);
-	time(&pcontext->selected_time);
+	pcontext->selected_time = time(nullptr);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = sh_query(temp_string);
 	if (plist == nullptr) {
@@ -1644,7 +1644,6 @@ static void *imps_scanwork(void *argp)
 	};
 	int i = 0;
 	int err_num;
-	time_t cur_time;
 
 	while (!g_notify_stop) {
 		i ++;
@@ -1655,7 +1654,7 @@ static void *imps_scanwork(void *argp)
 		i = 0;
 		std::vector<bk> temp_file;
 		std::unique_lock hl_hold(g_hash_lock);
-		time(&cur_time);
+		auto cur_time = time(nullptr);
 		for (const auto &xpair : g_select_hash) {
 			auto plist = &xpair.second;
 			for (auto pcontext : *plist) {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -323,7 +323,6 @@ int main(int argc, char **argv)
 static void *ev_scanwork(void *param)
 {
 	int i = 0;
-	time_t cur_time;
 	
 	while (!g_notify_stop) {
 		if (i < SCAN_INTERVAL) {
@@ -333,7 +332,7 @@ static void *ev_scanwork(void *param)
 		}
 		i = 0;
 		std::unique_lock hl_hold(g_host_lock);
-		time(&cur_time);
+		auto cur_time = time(nullptr);
 		auto ptail = g_host_list.size() > 0 ? &g_host_list.back() : nullptr;
 		while (g_host_list.size() > 0) {
 			std::list<HOST_NODE> tmp_list;
@@ -441,7 +440,7 @@ static int q_listen(eq_iter_t eq_node, std::unique_lock<std::mutex> &eq_hold)
 	} else {
 		phost = &*host_it;
 	}
-	time(&phost->last_time);
+	phost->last_time = time(nullptr);
 	try {
 		phost->list.push_back(pdequeue);
 	} catch (const std::bad_alloc &) {
@@ -643,9 +642,6 @@ static void *ev_enqwork(void *param)
 
 static void *ev_deqwork(void *param)
 {
-	time_t cur_time;
-	time_t last_time;
-	
  NEXT_LOOP:
 	std::unique_lock dc_hold(g_dequeue_cond_mutex);
 	g_dequeue_waken_cond.wait(dc_hold);
@@ -659,7 +655,7 @@ static void *ev_deqwork(void *param)
 	g_dequeue_list1.erase(g_dequeue_list1.begin());
 	dq_hold.unlock();
 	
-	time(&last_time);
+	auto last_time = time(nullptr);
 	std::unique_lock hl_hold(g_host_lock);
 	auto phost = std::find_if(g_host_list.begin(), g_host_list.end(),
 	             [&](const HOST_NODE &h) { return strcmp(h.res_id, pdequeue->res_id) == 0; });
@@ -676,7 +672,7 @@ static void *ev_deqwork(void *param)
 		dq_hold.lock();
 		auto buff = pdequeue->fifo.pop_front();
 		dq_hold.unlock();
-		time(&cur_time);
+		auto cur_time = time(nullptr);
 		
 		if (!buff.has_value()) {
 			if (cur_time - last_time >= SOCKET_TIMEOUT - 3) {

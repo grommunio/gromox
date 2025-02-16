@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
@@ -207,8 +207,6 @@ static TIMER *put_timer(TIMER &&ptimer)
 
 int main(int argc, char **argv)
 {
-	time_t cur_time;
-	time_t last_cltime;
 	pthread_t thr_accept_id{};
 	std::vector<pthread_t> thr_ids;
 
@@ -277,8 +275,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	time(&cur_time);
-
+	auto cur_time = time(nullptr);
 	for (size_t i = 0; i < item_num; ++i) {
 		if (pitem[i].tid > g_last_tid)
 			g_last_tid = pitem[i].tid;
@@ -358,7 +355,7 @@ int main(int argc, char **argv)
 	});
 	
 	pthread_setname_np(thr_accept_id, "accept");
-	time(&last_cltime);
+	auto last_cltime = time(nullptr);
 	setup_signal_defaults();
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESTART;
@@ -368,7 +365,7 @@ int main(int argc, char **argv)
 
 	while (!g_notify_stop) {
 		std::unique_lock li_hold(g_list_lock);
-		time(&cur_time);
+		cur_time = time(nullptr);
 		for (auto ptimer = g_exec_list.begin(); ptimer != g_exec_list.end(); ) {
 			if (ptimer->exec_time > cur_time)
 				break;
