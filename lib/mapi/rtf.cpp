@@ -1687,9 +1687,7 @@ int rtf_reader::cmd_fs(SIMPLE_TREE_NODE *pword, int align,
 	if (!have_param)
 		return CMD_RESULT_CONTINUE;
 	num /= 2;
-	if (!astk_pushx(ATTR_FONTSIZE, num))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_FONTSIZE, num) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_field(SIMPLE_TREE_NODE *pword,
@@ -1771,9 +1769,7 @@ int rtf_reader::cmd_f(SIMPLE_TREE_NODE *pword, int align,
 	auto pentry = lookup_font(num);
 	if (pentry == nullptr || strcasestr(pentry->name, "symbol") != nullptr)
 		return CMD_RESULT_CONTINUE;
-	if (!astk_pushx(ATTR_FONTFACE, num))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_FONTFACE, num) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_deff(SIMPLE_TREE_NODE *pword,
@@ -1823,65 +1819,49 @@ int rtf_reader::cmd_tab(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_plain(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_popx_all())
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_popx_all() ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_fnil(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_FONTFACE, -1))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_FONTFACE, -1) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_froman(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_FONTFACE, -2))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_FONTFACE, -2) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_fswiss(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_FONTFACE, -3))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_FONTFACE, -3) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_fmodern(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_FONTFACE, -4))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_FONTFACE, -4) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_fscript(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_FONTFACE, -5))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_FONTFACE, -5) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_fdecor(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_FONTFACE, -6))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_FONTFACE, -6) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_ftech(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_FONTFACE, -7))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_FONTFACE, -7) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_expand(SIMPLE_TREE_NODE *pword,
@@ -2055,9 +2035,8 @@ int rtf_reader::cmd_par(SIMPLE_TREE_NODE *pword, int align,
 {
 	auto preader = this;
 	if (preader->have_fromhtml) {
-		if (preader->ext_push.p_bytes("\r\n", 2) != EXT_ERR_SUCCESS)
-			return CMD_RESULT_ERROR;
-		return CMD_RESULT_CONTINUE;
+		return preader->ext_push.p_bytes("\r\n", 2) == pack_result::ok ?
+		       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 	}
 	if (preader->ext_push.p_bytes(TAG_LINE_BREAK,
 	    sizeof(TAG_LINE_BREAK) - 1) != EXT_ERR_SUCCESS)
@@ -2093,9 +2072,7 @@ int rtf_reader::cmd_intbl(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	preader->coming_pars_tabular ++;
-	if (check_for_table())
-		return CMD_RESULT_CONTINUE;
-	return CMD_RESULT_ERROR;
+	return check_for_table() ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_ulnone(SIMPLE_TREE_NODE *pword,
@@ -2122,89 +2099,67 @@ int rtf_reader::cmd_ul(SIMPLE_TREE_NODE *pword, int align,
 {
 	if (b_param && num == 0)
 		return cmd_ulnone(pword, align, b_param, num);
-	if (!astk_pushx(ATTR_UNDERLINE, 0))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_UNDERLINE, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_uld(SIMPLE_TREE_NODE *pword, int align,
     bool b_param, int num)
 {
-	if (!astk_pushx(ATTR_DOUBLE_UL, 0))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_DOUBLE_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_uldb(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_DOT_UL, 0))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_DOT_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_uldash(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_DASH_UL, 0))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_DASH_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_uldashd(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_DOT_DASH_UL, 0))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_DOT_DASH_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_uldashdd(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_2DOT_DASH_UL, 0))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_2DOT_DASH_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_ulw(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_WORD_UL, 0))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_WORD_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_ulth(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_THICK_UL, 0))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_THICK_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_ulthd(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_THICK_UL, 0))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_THICK_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_ulthdash(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_THICK_UL, 0))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_THICK_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_ulwave(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_WAVE_UL, 0))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_WAVE_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_strike(SIMPLE_TREE_NODE *pword,
@@ -2276,9 +2231,7 @@ int rtf_reader::cmd_u(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_uc(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	if (!astk_pushx(ATTR_UBYTES, num))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_pushx(ATTR_UBYTES, num) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_dn(SIMPLE_TREE_NODE *pword, int align,
@@ -2297,9 +2250,8 @@ int rtf_reader::cmd_dn(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_nosupersub(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!astk_popx(ATTR_SUPER) || !astk_popx(ATTR_SUB))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	return astk_popx(ATTR_SUPER) && astk_popx(ATTR_SUB) ?
+	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_super(SIMPLE_TREE_NODE *pword,
@@ -2544,35 +2496,13 @@ int rtf_reader::cmd_wmetafile(SIMPLE_TREE_NODE *pword,
 	if (!preader->is_within_picture || !have_param)
 		return CMD_RESULT_CONTINUE;
 	preader->picture_wmf_type = num;
-	switch (num) {
-	case 1:
-		preader->picture_wmf_str = "MM_TEXT";
-		break;
-	case 2:
-		preader->picture_wmf_str = "MM_LOMETRIC";
-		break;
-	case 3:
-		preader->picture_wmf_str = "MM_HIMETRIC";
-		break;
-	case 4:
-		preader->picture_wmf_str = "MM_LOENGLISH";
-		break;
-	case 5:
-		preader->picture_wmf_str = "MM_HIENGLISH";
-		break;
-	case 6:
-		preader->picture_wmf_str = "MM_TWIPS";
-		break;
-	case 7:
-		preader->picture_wmf_str = "MM_ISOTROPIC";
-		break;
-	case 8:
-		preader->picture_wmf_str = "MM_ANISOTROPIC";
-		break;
-	default:
-		preader->picture_wmf_str = "default:MM_TEXT";
-		break;
-	}
+	static const char *pws[] = {
+		"default:MM_TEXT", "MM_TEXT", "MM_LOMETRIC", "MM_HIMETRIC",
+		"MM_LOENGLISH", "MM_HIENGLISH", "MM_TWIPS", "MM_ISOTROPIC",
+		"MM_ANISOTROPIC"
+	};
+	preader->picture_wmf_str = num >= 0 && static_cast<size_t>(num) < std::size(pws) ?
+	                           pws[num] : pws[0];
 	return CMD_RESULT_CONTINUE;
 }
 
