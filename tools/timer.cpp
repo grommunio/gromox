@@ -461,18 +461,19 @@ static void execute_timer(TIMER *ptimer)
 		fprintf(stderr, "write to timerlist: %s\n", strerror(errno));
 }
 
-static void *tmr_thrwork(void *param)
+enum { X_STOP, X_LOOP };
+
+static int tmr_thrwork_1()
 {
 	int temp_len;
 	char *pspace, temp_line[1024];
 	
- NEXT_LOOP:
 	std::unique_lock co_hold(g_connection_lock);
 	g_waken_cond.wait(co_hold, []() { return g_notify_stop || g_connection_list1.size() > 0; });
 	if (g_notify_stop)
-		return nullptr;
+		return X_STOP;
 	if (g_connection_list1.size() == 0)
-		goto NEXT_LOOP;
+		return X_LOOP;
 	g_connection_list.splice(g_connection_list.end(), g_connection_list1, g_connection_list1.begin());
 	auto pconnection = std::prev(g_connection_list.end());
 	co_hold.unlock();
@@ -481,8 +482,7 @@ static void *tmr_thrwork(void *param)
 		if (!read_mark(&*pconnection)) {
 			co_hold.lock();
 			g_connection_list.erase(pconnection);
-			co_hold.unlock();
-			goto NEXT_LOOP;
+			return X_LOOP;
 		}
 
 		if (0 == strncasecmp(pconnection->line, "CANCEL ", 7)) {
@@ -549,15 +549,20 @@ static void *tmr_thrwork(void *param)
 			close(pconnection->sockd);
 			co_hold.lock();
 			g_connection_list.erase(pconnection);
-			co_hold.unlock();
-			goto NEXT_LOOP;
+			return X_LOOP;
 		} else if (0 == strcasecmp(pconnection->line, "PING")) {
 			pconnection->sk_write("TRUE\r\n");
 		} else {
 			pconnection->sk_write("FALSE\r\n");
 		}
 	}
-	return NULL;
+}
+
+static void *tmr_thrwork(void *param)
+{
+	while (tmr_thrwork_1() != X_STOP)
+		;
+	return nullptr;
 }
 
 static BOOL read_mark(CONNECTION_NODE *pconnection)
