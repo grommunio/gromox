@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -1063,7 +1063,7 @@ static void do_namemap(driver &drv)
 		pn.kind = MNID_ID;
 		pn.guid = row.guid;
 		for (pn.lid = row.lid_min; pn.lid <= row.lid_max; ++pn.lid)
-			static_namedprop_map.emplace(pn.lid - row.lid_min + row.base, std::move(pn));
+			static_namedprop_map.emplace(pn.lid - row.lid_min + row.base, PROPERTY_XNAME(pn));
 	}
 	do_namemap_table(drv);
 }
