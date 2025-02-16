@@ -224,6 +224,24 @@ struct rtf_reader {
 	~rtf_reader();
 	NOMOVE(rtf_reader);
 
+	bool riconv_open(const char *);
+	bool riconv_flush();
+	bool process_info_group(SIMPLE_TREE_NODE *);
+	int convert_group_node(SIMPLE_TREE_NODE *);
+	bool express_attr_begin(int, int);
+	bool express_attr_end(int, int);
+	bool astk_express_all();
+	bool astk_pushx(int, int);
+	bool astk_popx(int);
+	bool astk_popx_all();
+	bool astk_find_popx(int);
+	bool start_body();
+	bool start_text();
+	bool start_par(int);
+	bool begin_table();
+	bool end_table();
+	bool check_for_table();
+
 	CMD_PROC_FN cmd_ansi, cmd_ansicpg, cmd_b, cmd_bullet, cmd_caps, cmd_cb,
 	cmd_cf, cmd_colortbl, cmd_continue, cmd_deff, cmd_dn, cmd_emboss,
 	cmd_emdash, cmd_emfblip, cmd_endash, cmd_engrave, cmd_expand, cmd_f,
@@ -280,8 +298,6 @@ enum {
 	CMD_RESULT_HYPERLINKED
 };
 
-static bool rtf_starting_body(RTF_READER *preader);
-static bool rtf_starting_text(RTF_READER *preader);
 static CMD_PROC_FUNC rtf_find_cmd_function(const char *);
 
 static constexpr cpid_t CP_UNSET = static_cast<cpid_t>(-1);
@@ -312,8 +328,9 @@ static int rtf_decode_hex_char(const char *in)
 	return retval;
 }
 
-static bool rtf_iconv_open(RTF_READER *preader, const char *fromcode)
+bool rtf_reader::riconv_open(const char *fromcode)
 {
+	auto preader = this;
 	if (*fromcode == '\0' || strcasecmp(preader->current_encoding, fromcode) == 0)
 		return true;
 	if ((iconv_t)-1 != preader->conv_id) {
@@ -363,19 +380,20 @@ static bool rtf_escape_output(RTF_READER *preader, char *string)
 	return true;
 }
 
-static bool rtf_flush_iconv_cache(RTF_READER *preader)
+bool rtf_reader::riconv_flush()
 {
 	char *out_buff;
 	size_t out_size;
+	auto preader = this;
 	
 	if (preader->iconv_push.m_offset == 0)
 		return true;
 	if ((iconv_t)-1 == preader->conv_id) {
 		if ('\0' == preader->default_encoding[0]) {
-			if (!rtf_iconv_open(preader, "windows-1252"))
+			if (!riconv_open("windows-1252"))
 				return false;
 		} else {
-			if (!rtf_iconv_open(preader, preader->default_encoding))
+			if (!riconv_open(preader->default_encoding))
 				return false;
 		}
 	}
@@ -576,8 +594,9 @@ static bool rtf_express_end_fontsize(RTF_READER *preader, int size)
 	return true;
 }
 
-static bool rtf_express_attr_begin(RTF_READER *preader, int attr, int param)
+bool rtf_reader::express_attr_begin(int attr, int param)
 {
+	auto preader = this;
 	int tmp_len;
 	const char *encoding;
 	const FONTENTRY *pentry;
@@ -619,7 +638,7 @@ static bool rtf_express_attr_begin(RTF_READER *preader, int attr, int param)
 		}
 		if (!preader->have_fromhtml)
 			QRF(preader->ext_push.p_bytes(tmp_buff, tmp_len));
-		if (!rtf_iconv_open(preader, encoding))
+		if (!riconv_open(encoding))
 			return false;
 		return true;
 	case ATTR_FOREGROUND:
@@ -676,7 +695,7 @@ static bool rtf_express_attr_begin(RTF_READER *preader, int attr, int param)
 		return true;
 	case ATTR_HTMLTAG:
 		preader->is_within_htmltag = true;
-		if (!rtf_iconv_open(preader, preader->default_encoding))
+		if (!riconv_open(preader->default_encoding))
 			return false;
 		break;
 	}
@@ -698,8 +717,9 @@ static const int *rtf_stack_list_find_attr(const RTF_READER *preader, int attr)
 	return NULL;
 }
 
-static bool rtf_express_attr_end(RTF_READER *preader, int attr, int param)
+bool rtf_reader::express_attr_end(int attr, int param)
 {
+	auto preader = this;
 	const char *encoding;
 	
 	switch (attr) {
@@ -738,7 +758,7 @@ static bool rtf_express_attr_end(RTF_READER *preader, int attr, int param)
 			const FONTENTRY *pentry = rtf_lookup_font(preader, *pparam);
 			encoding = pentry != nullptr ? pentry->encoding : preader->default_encoding;
 		}
-		if (!rtf_iconv_open(preader, encoding))
+		if (!riconv_open(encoding))
 			return false;
 		return true;
 	}
@@ -792,22 +812,24 @@ static bool rtf_express_attr_end(RTF_READER *preader, int attr, int param)
 	return true;
 }
 
-static bool rtf_attrstack_express_all(RTF_READER *preader)
+bool rtf_reader::astk_express_all()
 {
+	auto preader = this;
 	if (preader->attr_stack_list.empty()) {
 		mlog(LV_DEBUG, "rtf: no stack to express all attribute from");
 		return true;
 	}
 	auto pattrstack = &*preader->attr_stack_list.crbegin();
 	for (int i = 0; i <= pattrstack->tos; ++i)
-		if (!rtf_express_attr_begin(preader, pattrstack->attr_stack[i],
+		if (!express_attr_begin(pattrstack->attr_stack[i],
 		    pattrstack->attr_params[i]))
 			return false;
 	return true;
 }
 
-static bool rtf_attrstack_push_express(RTF_READER *preader, int attr, int param)
+bool rtf_reader::astk_pushx(int attr, int param)
 {
+	auto preader = this;
 	if (preader->attr_stack_list.empty()) {
 		mlog(LV_DEBUG, "rtf: cannot find stack node for pushing attribute");
 		return false;
@@ -817,23 +839,23 @@ static bool rtf_attrstack_push_express(RTF_READER *preader, int attr, int param)
 		mlog(LV_DEBUG, "rtf: too many attributes");
 		return false;
 	}
-	if (!rtf_starting_body(preader) || !rtf_starting_text(preader))
+	if (!start_body() || !start_text())
 		return false;
 	pattrstack->tos ++;
 	pattrstack->attr_stack[pattrstack->tos] = attr;
 	pattrstack->attr_params[pattrstack->tos] = param;
-	return rtf_express_attr_begin(preader, attr, param);
+	return express_attr_begin(attr, param);
 }
 
-static bool rtf_attrstack_pop_express(RTF_READER *preader, int attr)
+bool rtf_reader::astk_popx(int attr)
 {
+	auto preader = this;
 	if (preader->attr_stack_list.empty())
 		return true;
 	auto pattrstack = preader->attr_stack_list.rbegin();
 	if (pattrstack->tos < 0 || pattrstack->attr_stack[pattrstack->tos] != attr)
 		return true;
-	if (!rtf_express_attr_end(preader, attr,
-	    pattrstack->attr_params[pattrstack->tos]))
+	if (!express_attr_end(attr, pattrstack->attr_params[pattrstack->tos]))
 		return false;
 	pattrstack->tos--;
 	return true;
@@ -849,21 +871,22 @@ static int rtf_attrstack_peek(const RTF_READER *preader)
 	return pattrstack->tos >= 0 ? pattrstack->attr_stack[pattrstack->tos] : ATTR_NONE;
 }
 
-static bool rtf_attrstack_pop_express_all(RTF_READER *preader)
+bool rtf_reader::astk_popx_all()
 {
+	auto preader = this;
 	if (preader->attr_stack_list.empty())
 		return true;
 	auto pattrstack = &*preader->attr_stack_list.rbegin();
 	for (; pattrstack->tos>=0; pattrstack->tos--)
-		if (!rtf_express_attr_end(preader,
-		    pattrstack->attr_stack[pattrstack->tos],
+		if (!express_attr_end(pattrstack->attr_stack[pattrstack->tos],
 		    pattrstack->attr_params[pattrstack->tos]))
 			return false;
 	return true;
 }
 
-static bool rtf_attrstack_find_pop_express(RTF_READER *preader, int attr)
+bool rtf_reader::astk_find_popx(int attr)
 {
+	auto preader = this;
 	int i;
 	
 	if (preader->attr_stack_list.empty()) {
@@ -883,7 +906,7 @@ static bool rtf_attrstack_find_pop_express(RTF_READER *preader, int attr)
 		return true;
 	}
 	for (i=pattrstack->tos; i>=0; i--) {
-		if (!rtf_express_attr_end(preader, pattrstack->attr_stack[i],
+		if (!express_attr_end(pattrstack->attr_stack[i],
 		    pattrstack->attr_params[i]))
 			return false;
 		if (pattrstack->attr_stack[i] == attr) {
@@ -898,7 +921,7 @@ static bool rtf_attrstack_find_pop_express(RTF_READER *preader, int attr)
 		}
 	}
 	for (; i <= pattrstack->tos; ++i)
-		if (!rtf_express_attr_begin(preader, pattrstack->attr_stack[i],
+		if (!express_attr_begin(pattrstack->attr_stack[i],
 		    pattrstack->attr_params[i]))
 			return false;
 	return true;
@@ -1178,8 +1201,9 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 	return true;
 }
 
-static bool rtf_starting_body(RTF_READER *preader)
+bool rtf_reader::start_body()
 {
+	auto preader = this;
 	if (preader->have_printed_body)
 		return true;
 	preader->is_within_header = false;
@@ -1191,8 +1215,9 @@ static bool rtf_starting_body(RTF_READER *preader)
 	return true;
 }
 
-static bool rtf_starting_text(RTF_READER *preader)
+bool rtf_reader::start_text()
 {
+	auto preader = this;
 	if (!preader->is_within_table)
 		return true;
 	if (!preader->b_printed_row_begin) {
@@ -1203,7 +1228,7 @@ static bool rtf_starting_text(RTF_READER *preader)
 	}
 	if (!preader->b_printed_cell_begin) {
 		QRF(preader->ext_push.p_bytes(TAG_TABLE_CELL_BEGIN, sizeof(TAG_TABLE_CELL_BEGIN) - 1));
-		if (!rtf_attrstack_express_all(preader))
+		if (!astk_express_all())
 			return false;
 		preader->b_printed_cell_begin = true;
 		preader->b_printed_cell_end = false;
@@ -1211,10 +1236,11 @@ static bool rtf_starting_text(RTF_READER *preader)
 	return true;
 }
 
-static bool rtf_starting_paragraph_align(RTF_READER *preader, int align)
+bool rtf_reader::start_par(int align)
 {
+	auto preader = this;
 	if (preader->is_within_header && align != ALIGN_LEFT &&
-	    !rtf_starting_body(preader))
+	    !start_body())
 		return false;
 	switch (align) {
 	case ALIGN_CENTER:
@@ -1250,15 +1276,16 @@ static bool rtf_ending_paragraph_align(RTF_READER *preader, int align)
 	return true;
 }
 
-static bool rtf_begin_table(RTF_READER *preader) try
+bool rtf_reader::begin_table() try
 {
+	auto preader = this;
 	preader->is_within_table = true;
 	preader->b_printed_row_begin = false;
 	preader->b_printed_cell_begin = false;
 	preader->b_printed_row_end = false;
 	preader->b_printed_cell_end = false;
 	preader->attr_stack_list.emplace_back();
-	if (!rtf_starting_body(preader))
+	if (!start_body())
 		return false;
 	QRF(preader->ext_push.p_bytes(TAG_TABLE_BEGIN, sizeof(TAG_TABLE_BEGIN) - 1));
 	return true;
@@ -1266,12 +1293,13 @@ static bool rtf_begin_table(RTF_READER *preader) try
 	return false;
 }
 
-static bool rtf_end_table(RTF_READER *preader)
+bool rtf_reader::end_table()
 {
+	auto preader = this;
 	if (!preader->is_within_table)
 		return true;
 	if (!preader->b_printed_cell_end) {
-		if (!rtf_attrstack_pop_express_all(preader))
+		if (!astk_popx_all())
 			return false;
 		QRF(preader->ext_push.p_bytes(TAG_TABLE_CELL_END, sizeof(TAG_TABLE_CELL_END) - 1));
 	}
@@ -1286,12 +1314,13 @@ static bool rtf_end_table(RTF_READER *preader)
 	return true;
 }
 
-static bool rtf_check_for_table(RTF_READER *preader)
+bool rtf_reader::check_for_table()
 {
+	auto preader = this;
 	if (preader->coming_pars_tabular == 0 && preader->is_within_table)
-		return rtf_end_table(preader);
+		return end_table();
 	else if (preader->coming_pars_tabular != 0 && !preader->is_within_table)
-		return rtf_begin_table(preader);
+		return begin_table();
 	return true;
 }
 
@@ -1474,8 +1503,9 @@ static bool rtf_word_output_date(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 	return true;
 }
 
-static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
+bool rtf_reader::process_info_group(SIMPLE_TREE_NODE *pword)
 {
+	auto preader = this;
 	int ch;
 
 	for (; pword != nullptr; pword = pword->get_sibling()) {
@@ -1491,7 +1521,7 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 				if (pword2->pdata == nullptr)
 					continue;
 				if (pword2->cdata[0] != '\\') {
-					if (!rtf_flush_iconv_cache(preader))
+					if (!riconv_flush())
 						return false;
 					if (!rtf_escape_output(preader, pword2->cdata))
 						return false;
@@ -1500,7 +1530,7 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 					QRF(preader->iconv_push.p_uint8(ch));
 				}
 			}
-			if (!rtf_flush_iconv_cache(preader))
+			if (!riconv_flush())
 				return false;
 			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_TITLE_END, sizeof(TAG_DOCUMENT_TITLE_END) - 1));
 		} else if (strcmp(pchild->cdata, "\\author") == 0) {
@@ -1510,7 +1540,7 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 				if (pword2->pdata == nullptr)
 					continue;
 				if (pword2->cdata[0] != '\\') {
-					if (!rtf_flush_iconv_cache(preader))
+					if (!riconv_flush())
 						return false;
 					if (!rtf_escape_output(preader, pword2->cdata))
 						return false;
@@ -1519,7 +1549,7 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 					QRF(preader->iconv_push.p_uint8(ch));
 				}
 			}
-			if (!rtf_flush_iconv_cache(preader))
+			if (!riconv_flush())
 				return false;
 			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_AUTHOR_END, sizeof(TAG_DOCUMENT_AUTHOR_END) - 1));
 		} else if (strcmp(pchild->cdata, "\\creatim") == 0) {
@@ -1604,8 +1634,7 @@ int rtf_reader::cmd_cf(SIMPLE_TREE_NODE *pword, int align,
 	auto preader = this;
 	if (!have_param || num < 0 || num >= preader->total_colors)
 		mlog(LV_DEBUG, "rtf: font color change to %xh is invalid", num);
-	else if (!rtf_attrstack_push_express(preader, ATTR_FOREGROUND,
-	    preader->color_table[num]))
+	else if (!astk_pushx(ATTR_FOREGROUND, color_table[num]))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -1616,8 +1645,7 @@ int rtf_reader::cmd_cb(SIMPLE_TREE_NODE *pword, int align,
 	auto preader = this;
 	if (!have_param || num < 0 || num >= preader->total_colors)
 		mlog(LV_DEBUG, "rtf: font color change attempted is invalid");
-	else if (!rtf_attrstack_push_express(preader, ATTR_BACKGROUND,
-	    preader->color_table[num]))
+	else if (!astk_pushx(ATTR_BACKGROUND, color_table[num]))
 			return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -1628,8 +1656,7 @@ int rtf_reader::cmd_fs(SIMPLE_TREE_NODE *pword, int align,
 	if (!have_param)
 		return CMD_RESULT_CONTINUE;
 	num /= 2;
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_FONTSIZE, num))
+	if (!astk_pushx(ATTR_FONTSIZE, num))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -1664,8 +1691,7 @@ int rtf_reader::cmd_field(SIMPLE_TREE_NODE *pword,
 					pword4 = pword4->get_sibling();
 				if (NULL != pword4 && NULL != pword4->pdata) {
 					int ch = strtol(pword4->cdata, nullptr, 0);
-					if (!rtf_attrstack_push_express(preader,
-					    ATTR_FONTFACE, -7))
+					if (!astk_pushx(ATTR_FONTFACE, -7))
 						return CMD_RESULT_ERROR;
 					tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
 					          TAG_UNISYMBOL_PRINT, ch);
@@ -1715,7 +1741,7 @@ int rtf_reader::cmd_f(SIMPLE_TREE_NODE *pword, int align,
 	const FONTENTRY *pentry = rtf_lookup_font(preader, num);
 	if (pentry == nullptr || strcasestr(pentry->name, "symbol") != nullptr)
 		return CMD_RESULT_CONTINUE;
-	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, num))
+	if (!astk_pushx(ATTR_FONTFACE, num))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -1736,8 +1762,7 @@ int rtf_reader::cmd_highlight(SIMPLE_TREE_NODE *pword,
 	if (!have_param || num < 0 || num >= preader->total_colors)
 		mlog(LV_DEBUG, "rtf: font background "
 			"color change attempted is invalid");
-	else if (!rtf_attrstack_push_express(preader, ATTR_BACKGROUND,
-	    preader->color_table[num]))
+	else if (!astk_pushx(ATTR_BACKGROUND, color_table[num]))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -1768,8 +1793,7 @@ int rtf_reader::cmd_tab(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_plain(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_pop_express_all(preader))
+	if (!astk_popx_all())
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -1777,8 +1801,7 @@ int rtf_reader::cmd_plain(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_fnil(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -1))
+	if (!astk_pushx(ATTR_FONTFACE, -1))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -1786,8 +1809,7 @@ int rtf_reader::cmd_fnil(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_froman(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -2))
+	if (!astk_pushx(ATTR_FONTFACE, -2))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -1795,8 +1817,7 @@ int rtf_reader::cmd_froman(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_fswiss(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -3))
+	if (!astk_pushx(ATTR_FONTFACE, -3))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -1804,8 +1825,7 @@ int rtf_reader::cmd_fswiss(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_fmodern(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -4))
+	if (!astk_pushx(ATTR_FONTFACE, -4))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -1813,8 +1833,7 @@ int rtf_reader::cmd_fmodern(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_fscript(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -5))
+	if (!astk_pushx(ATTR_FONTFACE, -5))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -1822,8 +1841,7 @@ int rtf_reader::cmd_fscript(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_fdecor(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -6))
+	if (!astk_pushx(ATTR_FONTFACE, -6))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -1831,8 +1849,7 @@ int rtf_reader::cmd_fdecor(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_ftech(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_FONTFACE, -7))
+	if (!astk_pushx(ATTR_FONTFACE, -7))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -1842,12 +1859,11 @@ int rtf_reader::cmd_expand(SIMPLE_TREE_NODE *pword,
 {
 	if (!have_param)
 		return CMD_RESULT_CONTINUE;
-	auto preader = this;
 	if (0 == num) {
-		if (!rtf_attrstack_pop_express(preader, ATTR_EXPAND))
+		if (!astk_popx(ATTR_EXPAND))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_EXPAND, num / 4))
+		if (!astk_pushx(ATTR_EXPAND, num / 4))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -1856,12 +1872,11 @@ int rtf_reader::cmd_expand(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_emboss(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_find_pop_express(preader, ATTR_EMBOSS))
+		if (!astk_find_popx(ATTR_EMBOSS))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_EMBOSS, num))
+		if (!astk_pushx(ATTR_EMBOSS, num))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -1870,12 +1885,11 @@ int rtf_reader::cmd_emboss(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_engrave(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_pop_express(preader, ATTR_ENGRAVE))
+		if (!astk_popx(ATTR_ENGRAVE))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_ENGRAVE, num))
+		if (!astk_pushx(ATTR_ENGRAVE, num))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -1884,12 +1898,11 @@ int rtf_reader::cmd_engrave(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_caps(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_pop_express(preader, ATTR_CAPS))
+		if (!astk_popx(ATTR_CAPS))
 			return CMD_RESULT_ERROR;
 	} else { 
-		if (!rtf_attrstack_push_express(preader, ATTR_CAPS, 0))
+		if (!astk_pushx(ATTR_CAPS, 0))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -1898,12 +1911,11 @@ int rtf_reader::cmd_caps(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_scaps(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_pop_express(preader, ATTR_SMALLCAPS))
+		if (!astk_popx(ATTR_SMALLCAPS))
 			return CMD_RESULT_ERROR;
 	} else { 
-		if (!rtf_attrstack_push_express(preader, ATTR_SMALLCAPS, 0))
+		if (!astk_pushx(ATTR_SMALLCAPS, 0))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -2051,9 +2063,9 @@ int rtf_reader::cmd_intbl(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	preader->coming_pars_tabular ++;
-	if (!rtf_check_for_table(preader))
-		return CMD_RESULT_ERROR;
-	return CMD_RESULT_CONTINUE;
+	if (check_for_table())
+		return CMD_RESULT_CONTINUE;
+	return CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_ulnone(SIMPLE_TREE_NODE *pword,
@@ -2069,7 +2081,7 @@ int rtf_reader::cmd_ulnone(SIMPLE_TREE_NODE *pword,
 		    ATTR_2DOT_DASH_UL == attr || ATTR_WORD_UL == attr ||
 			ATTR_WAVE_UL == attr || ATTR_THICK_UL == attr ||
 		    ATTR_DOUBLE_UL == attr) {
-			if (!rtf_attrstack_pop_express(preader, attr))
+			if (!astk_popx(attr))
 				break;
 		} else {
 			break;
@@ -2083,8 +2095,7 @@ int rtf_reader::cmd_ul(SIMPLE_TREE_NODE *pword, int align,
 {
 	if (b_param && num == 0)
 		return cmd_ulnone(pword, align, b_param, num);
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_UNDERLINE, 0))
+	if (!astk_pushx(ATTR_UNDERLINE, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2092,8 +2103,7 @@ int rtf_reader::cmd_ul(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_uld(SIMPLE_TREE_NODE *pword, int align,
     bool b_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_DOUBLE_UL, 0))
+	if (!astk_pushx(ATTR_DOUBLE_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2101,8 +2111,7 @@ int rtf_reader::cmd_uld(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_uldb(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_DOT_UL, 0))
+	if (!astk_pushx(ATTR_DOT_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2110,8 +2119,7 @@ int rtf_reader::cmd_uldb(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_uldash(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_DASH_UL, 0))
+	if (!astk_pushx(ATTR_DASH_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2119,8 +2127,7 @@ int rtf_reader::cmd_uldash(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_uldashd(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_DOT_DASH_UL, 0))
+	if (!astk_pushx(ATTR_DOT_DASH_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2128,8 +2135,7 @@ int rtf_reader::cmd_uldashd(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_uldashdd(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_2DOT_DASH_UL, 0))
+	if (!astk_pushx(ATTR_2DOT_DASH_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2137,8 +2143,7 @@ int rtf_reader::cmd_uldashdd(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_ulw(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_WORD_UL, 0))
+	if (!astk_pushx(ATTR_WORD_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2146,8 +2151,7 @@ int rtf_reader::cmd_ulw(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_ulth(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_THICK_UL, 0))
+	if (!astk_pushx(ATTR_THICK_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2155,8 +2159,7 @@ int rtf_reader::cmd_ulth(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_ulthd(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_THICK_UL, 0))
+	if (!astk_pushx(ATTR_THICK_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2164,8 +2167,7 @@ int rtf_reader::cmd_ulthd(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_ulthdash(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_THICK_UL, 0))
+	if (!astk_pushx(ATTR_THICK_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2173,8 +2175,7 @@ int rtf_reader::cmd_ulthdash(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_ulwave(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_WAVE_UL, 0))
+	if (!astk_pushx(ATTR_WAVE_UL, 0))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2182,12 +2183,11 @@ int rtf_reader::cmd_ulwave(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_strike(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_pop_express(preader, ATTR_STRIKE))
+		if (!astk_popx(ATTR_STRIKE))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_STRIKE, 0))
+		if (!astk_pushx(ATTR_STRIKE, 0))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -2196,12 +2196,11 @@ int rtf_reader::cmd_strike(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_strikedl(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_pop_express(preader, ATTR_DBL_STRIKE))
+		if (!astk_popx(ATTR_DBL_STRIKE))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_DBL_STRIKE, 0))
+		if (!astk_pushx(ATTR_DBL_STRIKE, 0))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -2210,12 +2209,11 @@ int rtf_reader::cmd_strikedl(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_striked(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_pop_express(preader, ATTR_DBL_STRIKE))
+		if (!astk_popx(ATTR_DBL_STRIKE))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_DBL_STRIKE, 0))
+		if (!astk_pushx(ATTR_DBL_STRIKE, 0))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -2224,12 +2222,11 @@ int rtf_reader::cmd_striked(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_up(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param || num == 0) { // XXX
-		if (!rtf_attrstack_pop_express(preader, ATTR_SUPER))
+		if (!astk_popx(ATTR_SUPER))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_SUPER, 0))
+		if (!astk_pushx(ATTR_SUPER, 0))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -2252,8 +2249,7 @@ int rtf_reader::cmd_u(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_uc(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_UBYTES, num))
+	if (!astk_pushx(ATTR_UBYTES, num))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2261,12 +2257,11 @@ int rtf_reader::cmd_uc(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_dn(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_pop_express(preader, ATTR_SUB))
+		if (!astk_popx(ATTR_SUB))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_SUB, 0))
+		if (!astk_pushx(ATTR_SUB, 0))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -2275,9 +2270,7 @@ int rtf_reader::cmd_dn(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_nosupersub(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!rtf_attrstack_pop_express(preader, ATTR_SUPER) ||
-	    !rtf_attrstack_pop_express(preader, ATTR_SUB))
+	if (!astk_popx(ATTR_SUPER) || !astk_popx(ATTR_SUB))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2285,12 +2278,11 @@ int rtf_reader::cmd_nosupersub(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_super(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_pop_express(preader, ATTR_SUPER))
+		if (!astk_popx(ATTR_SUPER))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_SUPER, 0))
+		if (!astk_pushx(ATTR_SUPER, 0))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -2299,12 +2291,11 @@ int rtf_reader::cmd_super(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_sub(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_pop_express(preader, ATTR_SUB))
+		if (!astk_popx(ATTR_SUB))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_SUB, 0))
+		if (!astk_pushx(ATTR_SUB, 0))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -2313,12 +2304,11 @@ int rtf_reader::cmd_sub(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_shad(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_pop_express(preader, ATTR_SHADOW))
+		if (!astk_popx(ATTR_SHADOW))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_SHADOW, 0))
+		if (!astk_pushx(ATTR_SHADOW, 0))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -2327,12 +2317,11 @@ int rtf_reader::cmd_shad(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_b(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_find_pop_express(preader, ATTR_BOLD))
+		if (!astk_find_popx(ATTR_BOLD))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_BOLD, 0))
+		if (!astk_pushx(ATTR_BOLD, 0))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -2341,12 +2330,11 @@ int rtf_reader::cmd_b(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_i(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_find_pop_express(preader, ATTR_ITALIC))
+		if (!astk_find_popx(ATTR_ITALIC))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_ITALIC, 0))
+		if (!astk_pushx(ATTR_ITALIC, 0))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -2365,12 +2353,11 @@ int rtf_reader::cmd_sect(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_outl(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
 	if (have_param && num == 0) {
-		if (!rtf_attrstack_pop_express(preader, ATTR_OUTLINE))
+		if (!astk_popx(ATTR_OUTLINE))
 			return CMD_RESULT_ERROR;
 	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_OUTLINE, 0))
+		if (!astk_pushx(ATTR_OUTLINE, 0))
 			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
@@ -2465,10 +2452,9 @@ int rtf_reader::cmd_maybe_ignore(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_info(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
 	auto pword1 = pword->get_sibling();
 	if (pword1 != nullptr)
-		rtf_process_info_group(preader, pword1);
+		process_info_group(pword1);
 	return CMD_RESULT_IGNORE_REST;
 }
 
@@ -2476,7 +2462,7 @@ int rtf_reader::cmd_pict(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	auto preader = this;
-	if (!rtf_attrstack_push_express(preader, ATTR_PICT, 0))
+	if (!astk_pushx(ATTR_PICT, 0))
 		return CMD_RESULT_ERROR;
 	preader->picture_width = 0;
 	preader->picture_height = 0;
@@ -2598,7 +2584,7 @@ int rtf_reader::cmd_htmltag(SIMPLE_TREE_NODE *pword,
 	if (!preader->have_fromhtml)
 		return CMD_RESULT_IGNORE_REST;
 	if (!preader->is_within_htmltag)
-		if (!rtf_attrstack_push_express(preader, ATTR_HTMLTAG, 0))
+		if (!astk_pushx(ATTR_HTMLTAG, 0))
 			return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2676,7 +2662,7 @@ static errno_t push_da_pic(RTF_READER *reader, EXT_PUSH &picture_push,
 	return 0;
 }
 
-static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
+int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 {
 	int ch;
 	int num;
@@ -2696,8 +2682,9 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 		mlog(LV_DEBUG, "rtf: max group depth reached");
 		return -ELOOP;
 	}
-	if (!rtf_check_for_table(preader))
+	if (!check_for_table())
 		return -EINVAL;
+	auto preader = this;
 	try {
 		preader->attr_stack_list.emplace_back();
 	} catch (const std::bad_alloc &) {
@@ -2718,22 +2705,21 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				}
 			}
 			if (strncmp(pnode->cdata, "\\'", 2) != 0 &&
-			    !rtf_flush_iconv_cache(preader))
+			    !riconv_flush())
 				return -EINVAL;
 			auto string = pnode->cdata;
 			if (*string == ' ' && preader->is_within_header) {
 				/* do nothing  */
 			} else if ('\\' != string[0]) {
-				if (!rtf_starting_body(preader) ||
-				    !rtf_starting_text(preader))
+				if (!start_body() || !start_text())
 					return -EINVAL;
 				if (!b_paragraph_begun) {
-					if (!rtf_starting_paragraph_align(preader, paragraph_align))
+					if (!start_par(paragraph_align))
 						return -EINVAL;
 					b_paragraph_begun = true;
 				}
 				if (preader->is_within_picture) {
-					if (!rtf_starting_body(preader))
+					if (!start_body())
 						return -EINVAL;
 					if (!b_picture_push) {
 						pictype_to(preader->picture_type, img_ctype, pext);
@@ -2774,7 +2760,7 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 					paragraph_align = ALIGN_CENTER;
 				} else if (0 == strcmp("pard", string)) {
 					/* clear out all font attributes */
-					rtf_attrstack_pop_express_all(preader);
+					astk_popx_all();
 					if (preader->coming_pars_tabular != 0)
 						preader->coming_pars_tabular --;
 					/* clear out all paragraph attributes */
@@ -2787,9 +2773,9 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 					if (!preader->b_printed_cell_begin) {
 						if (preader->ext_push.p_bytes(TAG_TABLE_CELL_BEGIN, sizeof(TAG_TABLE_CELL_BEGIN) - 1) != EXT_ERR_SUCCESS)
 							return -ENOBUFS;
-						rtf_attrstack_express_all(preader);
+						astk_express_all();
 					}
-					rtf_attrstack_pop_express_all(preader);
+					astk_popx_all();
 					if (preader->ext_push.p_bytes(TAG_TABLE_CELL_END, sizeof(TAG_TABLE_CELL_END) - 1) != EXT_ERR_SUCCESS)
 						return -ENOBUFS;
 					preader->b_printed_cell_begin = false;
@@ -2841,12 +2827,12 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 		} else {
 			auto pchild = pnode->get_child();
 			if (!b_paragraph_begun) {
-				if (!rtf_starting_paragraph_align(preader, paragraph_align))
+				if (!start_par(paragraph_align))
 					return -EINVAL;
 				b_paragraph_begun = true;
 			}
 			if (NULL != pchild)  {
-				auto ret = rtf_convert_group_node(preader, pchild);
+				auto ret = convert_group_node(pchild);
 				if (ret != 0)
 					return -EINVAL;
 			}
@@ -2863,12 +2849,12 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 		}
 		preader->is_within_picture = false;
 	}
-	if (!rtf_flush_iconv_cache(preader))
+	if (!riconv_flush())
 		return -EINVAL;
 	if (b_hyperlinked && preader->ext_push.p_bytes(TAG_HYPERLINK_END,
 	    sizeof(TAG_HYPERLINK_END) - 1) != EXT_ERR_SUCCESS)
 		return -EINVAL;
-	if (!is_cell_group && !rtf_attrstack_pop_express_all(preader))
+	if (!is_cell_group && !astk_popx_all())
 		return -EINVAL;
 	if (b_paragraph_begun && !rtf_ending_paragraph_align(preader, paragraph_align))
 		return -EINVAL;
@@ -2907,8 +2893,8 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 		          TAG_HTML_CHARSET, charset);
 		QRF(reader.ext_push.p_bytes(tmp_buff, tmp_len));
 	}
-	auto ret = rtf_convert_group_node(&reader, proot);
-	if (ret != 0 || !rtf_end_table(&reader))
+	auto ret = reader.convert_group_node(proot);
+	if (ret != 0 || !reader.end_table())
 		return false;
 	if (!reader.have_fromhtml) {
 		QRF(reader.ext_push.p_bytes(TAG_BODY_END, sizeof(TAG_BODY_END) - 1));
