@@ -81,7 +81,7 @@ static std::string g_list_path;
 static std::vector<std::string> g_acl_list;
 static std::list<CONNECTION_NODE> g_connection_list, g_connection_list1;
 static std::list<TIMER> g_exec_list;
-static std::mutex g_list_lock, g_connection_lock, g_cond_mutex;
+static std::mutex g_list_lock /*(g_exec_list)*/, g_connection_lock /*(g_connection_list0/1)*/;
 static std::condition_variable g_waken_cond;
 static char *opt_config_file;
 static unsigned int opt_show_version;
@@ -467,14 +467,10 @@ static void *tmr_thrwork(void *param)
 	char *pspace, temp_line[1024];
 	
  NEXT_LOOP:
-	if (g_notify_stop)
-		return nullptr;
-	std::unique_lock cm_hold(g_cond_mutex);
-	g_waken_cond.wait(cm_hold);
-	cm_hold.unlock();
-	if (g_notify_stop)
-		return nullptr;
 	std::unique_lock co_hold(g_connection_lock);
+	g_waken_cond.wait(co_hold, []() { return g_notify_stop || g_connection_list1.size() > 0; });
+	if (g_notify_stop)
+		return nullptr;
 	if (g_connection_list1.size() == 0)
 		goto NEXT_LOOP;
 	g_connection_list.splice(g_connection_list.end(), g_connection_list1, g_connection_list1.begin());
