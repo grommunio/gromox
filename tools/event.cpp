@@ -653,14 +653,14 @@ static void *ev_deqwork(void *param)
 	hl_hold.unlock();
 	
 	while (!g_notify_stop) {
-		dc_hold.lock();
-		pdequeue->waken_cond.wait_for(dc_hold, std::chrono::seconds(1));
-		dc_hold.unlock();
+		std::unique_lock pdc_hold(pdequeue->cond_mutex);
+		pdequeue->waken_cond.wait_for(pdc_hold, std::chrono::seconds(1));
+		pdc_hold.unlock();
 		if (g_notify_stop)
 			break;
-		dq_hold.lock();
+		std::unique_lock fifo_hold(pdequeue->lock);
 		auto buff = pdequeue->fifo.pop_front();
-		dq_hold.unlock();
+		fifo_hold.unlock();
 		auto cur_time = time(nullptr);
 		
 		if (!buff.has_value()) {
