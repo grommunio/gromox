@@ -1951,6 +1951,7 @@ struct tCalendarItem : public tItem
 	void serialize(tinyxml2::XMLElement*) const;
 
 	bool mapNamedProperty(const TAGGED_PROPVAL&, const sNamedPropertyMap&);
+	static void setDatetimeFields(sShape&);
 
 	//<!-- iCalendar properties -->
 	std::optional<std::string> UID;

@@ -1642,6 +1642,37 @@ void tCalendarItem::update(const sShape& shape)
 		fromProp(shape.get(PR_LOCAL_COMMIT_TIME), DateTimeStamp);
 }
 
+/**
+ * @brief      Set calendar item's datetime fields from written properties
+ *             depending on their values
+ *
+ * @param      shape   Shape to update with generated fields
+ */
+void tCalendarItem::setDatetimeFields(sShape& shape)
+{
+	uint32_t tag;
+	for(auto& prop : {NtCommonStart, NtCommonEnd})
+	{
+		if((tag = shape.tag(prop)))
+		{
+			const TAGGED_PROPVAL* propval = shape.writes(prop);
+			if(propval)
+				switch(prop.lid)
+				{
+				case PidLidCommonStart:
+					shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, propval->pvalue});
+					shape.write(TAGGED_PROPVAL{PR_START_DATE, propval->pvalue});
+					break;
+				case PidLidCommonEnd:
+					shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, propval->pvalue});
+					shape.write(TAGGED_PROPVAL{PR_END_DATE, propval->pvalue});
+					break;
+				}
+		}
+	}
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 
 tCalendarEvent::tCalendarEvent(const freebusy_event& fb_event) :
@@ -1781,6 +1812,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"CompanyName", {[](auto&&... args){convText(PR_COMPANY_NAME, args...);}}},
 	{"Department", {[](auto&&... args){convText(PR_DEPARTMENT_NAME, args...);}}},
 	{"DisplayName", {[](auto&&... args){convText(PR_DISPLAY_NAME, args...);}}},
+	{"End", {[](auto&&... args){convDate(NtCommonEnd, args...);}}},
 	{"FileAs", {[](auto&&... args){convText(NtFileAs, args...);}}},
 	{"Generation", {[](auto&&... args){convText(PR_GENERATION, args...);}}},
 	{"GivenName", {[](auto&&... args){convText(PR_GIVEN_NAME, args...);}}},
@@ -1802,6 +1834,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"Subject", {[](auto&&... args){convText(PR_SUBJECT, args...);}}},
 	{"Surname", {[](auto&&... args){convText(PR_SURNAME, args...);}}},
 	{"SpouseName", {[](auto&&... args){convText(PR_SPOUSE_NAME, args...);}}},
+	{"Start", {[](auto&&... args){convDate(NtCommonStart, args...);}}},
 	{"WeddingAnniversary", {[](auto&&... args){convDate(PR_WEDDING_ANNIVERSARY, args...);}}},
 }};
 
@@ -2999,10 +3032,12 @@ SORTORDER_SET* tFieldOrder::build(const std::vector<tFieldOrder>& sorts, const s
 
 decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"calendar:DateTimeStamp", PR_CREATION_TIME},
+	{"calendar:End", PR_END_DATE},
 	{"calendar:IsResponseRequested", PR_RESPONSE_REQUESTED},
 	{"calendar:Organizer", PR_SENDER_ADDRTYPE},
 	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
 	{"calendar:Organizer", PR_SENDER_NAME},
+	{"calendar:Start", PR_START_DATE},
 	{"contacts:AssistantName", PR_ASSISTANT},
 	{"contacts:Birthday", PR_BIRTHDAY},
 	{"contacts:BusinessHomePage", PR_BUSINESS_HOME_PAGE},
@@ -3080,6 +3115,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:AppointmentReplyTime", {NtAppointmentReplyTime, PT_SYSTIME}},
 	{"calendar:AppointmentState", {NtAppointmentStateFlags, PT_LONG}},
 	{"calendar:AppointmentSequenceNumber", {NtAppointmentSequence, PT_LONG}},
+	{"calendar:End", {NtAppointmentEndWhole, PT_SYSTIME}},
 	{"calendar:End", {NtCommonEnd, PT_SYSTIME}},
 	{"calendar:IsAllDayEvent", {NtAppointmentSubType, PT_BOOLEAN}},
 	{"calendar:IsCancelled", {NtAppointmentStateFlags, PT_LONG}},
@@ -3091,6 +3127,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:MyResponseType", {NtResponseStatus, PT_LONG}},
 	{"calendar:Recurrence", {NtAppointmentRecur, PT_BINARY}},
 	{"calendar:DeletedOccurrences", {NtAppointmentRecur, PT_BINARY}},
+	{"calendar:Start", {NtAppointmentStartWhole, PT_SYSTIME}},
 	{"calendar:Start", {NtCommonStart, PT_SYSTIME}},
 	{"calendar:UID", {NtGlobalObjectId, PT_BINARY}},
 	{"calendar:RecurrenceId", {NtExceptionReplaceTime, PT_SYSTIME}},

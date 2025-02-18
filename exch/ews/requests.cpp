@@ -1593,6 +1593,7 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 				std::get<tSetItemField>(update).put(shape);
 		}
 		tContact::genFields(shape);
+		tCalendarItem::setDatetimeFields(shape);
 		const char* username = ctx.effectiveUser(parentFolder);
 		ctx.updated(dir, mid, shape);
 		mUpdateItemResponseMessage msg;
