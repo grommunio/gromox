@@ -199,6 +199,8 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 		return TRUE;
 	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44]))
 		return TRUE;
+	if (strncasecmp(uri, "/mail/config-v1.1.xml", 21) == 0 && brkp(uri[21]))
+		return TRUE;
 	if (strncasecmp(uri, "/autodiscover/autodiscover.json", 31) == 0 && brkp(uri[31]))
 		return TRUE;
 	return false;
@@ -301,6 +303,11 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 		if (uri[44] == '/' || uri[44] == '\0')
 			return resp_autocfg(ctx_id, auth_info.username);
 		auto username = extract_qparam(&uri[45], "emailaddress");
+		return resp_autocfg(ctx_id, username.c_str());
+	} else if (strncasecmp(uri, "/mail/config-v1.1.xml", 21) == 0 && brkp(uri[21])) {
+		if (uri[21] == '/' || uri[21] == '\0')
+			return resp_autocfg(ctx_id, auth_info.username);
+		auto username = extract_qparam(&uri[22], "emailaddress");
 		return resp_autocfg(ctx_id, username.c_str());
 	} else if (strncasecmp(uri, "/autodiscover/autodiscover.json", 31) == 0 && brkp(uri[31])) {
 		return resp_json(ctx_id, uri);
