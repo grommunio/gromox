@@ -1250,7 +1250,7 @@ sTimePoint sTimePoint::fromNT(uint64_t timestamp)
  * @brief     Convert time point to NT timestamp
  */
 uint64_t sTimePoint::toNT() const
-{return rop_util_unix_to_nttime(time-offset);}
+{return rop_util_unix_to_nttime(time+offset);}
 
 /**
  * @brief     Whether it's necessary to calculate the offset from timezone
