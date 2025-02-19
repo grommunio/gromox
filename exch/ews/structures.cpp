@@ -1986,6 +1986,8 @@ void tChangeDescription::convDate(uint32_t tag, const XMLElement* v, sShape& sha
 	if(!text)
 		throw EWSError::InvalidExtendedPropertyValue(E3257);
 	shape.write(mkProp(tag, sTimePoint(text).toNT()));
+	if(strlen(text) == 19)
+		shape.offsetProps.emplace_back(tag);
 }
 
 /**

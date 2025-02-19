@@ -389,6 +389,8 @@ public:
 	std::optional<std::string> mimeContent; ///< MimeContent to write
 	const tinyxml2::XMLElement* permissionSet = nullptr; ///< PermissionSet for update
 	const tinyxml2::XMLElement* calendarPermissionSet = nullptr; ///< CalendarPermissionSet for update
+	std::vector<uint32_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
+
 };
 
 /**
