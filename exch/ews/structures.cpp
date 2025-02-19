@@ -1651,6 +1651,28 @@ void tCalendarItem::update(const sShape& shape)
 void tCalendarItem::setDatetimeFields(sShape& shape)
 {
 	uint32_t tag;
+	if((tag = shape.tag(NtCalendarTimeZone)))
+	{
+		std::optional<std::string> calTimezone;
+		fromProp(shape.writes(NtCalendarTimeZone), calTimezone);
+		if(calTimezone.has_value())
+		{
+			auto buf = ianatz_to_tzdef(calTimezone.value().c_str());
+			if (buf != nullptr)
+			{
+				size_t len = buf->size();
+				if(len > std::numeric_limits<uint32_t>::max())
+					throw InputError(E3293);
+				BINARY* tmp_bin = EWSContext::construct<BINARY>(BINARY{uint32_t(buf->size()),
+					{reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
+				shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
+					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
+				shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
+					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
+			}
+		}
+	}
+
 	for(auto& prop : {NtCommonStart, NtCommonEnd})
 	{
 		if((tag = shape.tag(prop)))
