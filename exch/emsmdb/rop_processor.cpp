@@ -15,6 +15,7 @@
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include <gromox/proc_common.h>
 #include <gromox/process.hpp>
@@ -51,6 +52,11 @@ unsigned int emsmdb_max_obh_per_session = 500;
 unsigned int emsmdb_max_cxh_per_user = 100;
 unsigned int emsmdb_pvt_folder_softdel, emsmdb_rop_chaining;
 uint16_t server_normal_version[4];
+
+template<typename D, typename R> static unsigned long msec(std::chrono::duration<D, R> d)
+{
+	return std::chrono::duration_cast<std::chrono::microseconds>(d).count();
+}
 
 object_node::object_node(object_node &&o) noexcept :
 	handle(std::move(o.handle)),
@@ -421,6 +427,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		 */
 		std::unique_ptr<rop_response> rsp;
 		g_last_rop_dir = nullptr;
+		auto dispatch_start = tp_now();
 		auto result = rop_dispatch(*req, rsp, prop_buff->phandles, prop_buff->hnum);
 		bool dbg = g_rop_debug >= 2;
 		if (g_rop_debug >= 1 && result != ecSuccess)
@@ -431,15 +438,15 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			char e1[32], e2[32];
 			auto rpd = g_last_rop_dir != nullptr ? g_last_rop_dir : ".";
 			if (rsp != nullptr)
-				mlog(LV_DEBUG, "[%zu/%zu] %s %s EC=%s RS=%s",
+				mlog(LV_DEBUG, "[%zu/%zu] %s %s %luµs EC=%s RS=%s",
 					++rop_idx, rop_num, rpd,
-					rop_idtoname(req->rop_id),
+					rop_idtoname(req->rop_id), msec(tp_now() - dispatch_start),
 					mapi_errname_r(result, e1, std::size(e1)),
 					mapi_errname_r(rsp->result, e2, std::size(e2)));
 			else
-				mlog(LV_DEBUG, "[%zu/%zu] %s %s EC=%s RS=none",
+				mlog(LV_DEBUG, "[%zu/%zu] %s %s %luµs EC=%s RS=none",
 					++rop_idx, rop_num, rpd,
-					rop_idtoname(req->rop_id),
+					rop_idtoname(req->rop_id), msec(tp_now() - dispatch_start),
 					mapi_errname_r(result, e1, std::size(e1)));
 		}
 		switch (static_cast<uint32_t>(result)) {
@@ -568,6 +575,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	uint32_t cb_in, uint8_t *pout, uint32_t *pcb_out)
 {
+	auto rlog_start = tp_now();
 	uint32_t tmp_cb;
 	uint32_t offset;
 	EXT_PULL ext_pull;
@@ -598,7 +606,9 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	auto result = rop_processor_execute_and_push(pout, &tmp_cb, &rop_buff,
 	              TRUE, response_list);
 	if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != ecSuccess))
-		mlog(LV_DEBUG, "rop_proc_ex+push() EC = %xh", static_cast<unsigned int>(result));
+		mlog(LV_DEBUG, "rop_proc_ex+push() %luµs EC=%xh",
+			msec(tp_now() - rlog_start),
+			static_cast<unsigned int>(result));
 	if (result != ecSuccess)
 		return result;
 	offset = tmp_cb;
@@ -658,7 +668,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			result = rop_processor_execute_and_push(pout + offset,
 			         &tmp_cb, &rop_buff, false, response_list);
 			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != ecSuccess))
-				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", static_cast<unsigned int>(result));
+				mlog(LV_DEBUG, "rop_proc_ex+chain() %luµs EC=%xh",
+					msec(tp_now() - rlog_start), result);
 			if (result != ecSuccess)
 				break;
 			if (response_list.empty())
@@ -683,7 +694,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			result = rop_processor_execute_and_push(pout + offset,
 			         &tmp_cb, &rop_buff, false, response_list);
 			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != ecSuccess))
-				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", static_cast<unsigned int>(result));
+				mlog(LV_DEBUG, "rop_proc_ex+chain() %luµs EC=%xh",
+					msec(tp_now() - rlog_start), result);
 			if (result != ecSuccess)
 				break;
 			if (response_list.empty())
@@ -709,7 +721,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			result = rop_processor_execute_and_push(pout + offset,
 			         &tmp_cb, &rop_buff, false, response_list);
 			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != ecSuccess))
-				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", static_cast<unsigned int>(result));
+				mlog(LV_DEBUG, "rop_proc_ex+chain() %luµs EC=%xh",
+					msec(tp_now() - rlog_start), result);
 			if (result != ecSuccess)
 				break;
 			if (response_list.empty())
