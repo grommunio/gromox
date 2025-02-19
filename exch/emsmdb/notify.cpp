@@ -70,7 +70,9 @@ notify_response *notify_response::create(uint32_t handle, uint8_t logon_id) try
 
 notify_response::~notify_response()
 {
-	clear();
+	if (proptags.pproptag != nullptr)
+		free(proptags.pproptag);
+	free(msg_class);
 }
 
 void notify_response::clear()
