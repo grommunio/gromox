@@ -43,7 +43,7 @@ enum sql_schema_upgrade : uint8_t {
 };
 
 struct mysql_adaptor_init_param {
-	std::string host, user, pass, dbname;
+	std::string host, user, pass, dbname, certfile, keyfile;
 	int port = 0, conn_num = 0, timeout = 0;
 	enum sql_schema_upgrade schema_upgrade = SSU_NOT_ENABLED;
 	bool enable_firsttimepw = false;

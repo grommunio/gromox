@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -144,6 +144,10 @@ MYSQL *mysql_plugin::sql_make_conn()
 		mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &g_parm.timeout);
 		mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &g_parm.timeout);
 	}
+	if (!g_parm.certfile.empty())
+		mysql_options(conn, MYSQL_OPT_SSL_CERT, g_parm.certfile.c_str());
+	if (!g_parm.keyfile.empty())
+		mysql_options(conn, MYSQL_OPT_SSL_KEY, g_parm.keyfile.c_str());
 	if (mysql_real_connect(conn, g_parm.host.c_str(), g_parm.user.c_str(),
 	    g_parm.pass.size() != 0 ? g_parm.pass.c_str() : nullptr,
 	    g_parm.dbname.c_str(), g_parm.port, nullptr, 0) == nullptr) {
@@ -526,6 +530,8 @@ static constexpr cfg_directive mysql_adaptor_cfg_defaults[] = {
 	{"mysql_password", ""},
 	{"mysql_port", "3306"},
 	{"mysql_rdwr_timeout", "0", CFG_TIME},
+	{"mysql_tls_cert", ""},
+	{"mysql_tls_key", ""},
 	{"mysql_username", "root"},
 	CFG_TABLE_END,
 };
@@ -546,6 +552,8 @@ bool mysql_plugin::reload_config(std::shared_ptr<config_file> &&cfg)
 	par.port = cfg->get_ll("mysql_port");
 	par.user = cfg->get_value("mysql_username");
 	par.pass = cfg->get_value("mysql_password");
+	par.certfile = cfg->get_value("mysql_tls_cert");
+	par.keyfile  = cfg->get_value("mysql_tls_key");
 	auto p2 = cfg->get_value("mysql_password_mode_id107");
 	if (p2 != nullptr)
 		par.pass = zstd_decompress(base64_decode(p2));

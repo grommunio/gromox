@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 .TH mysql_adaptor 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 mysql_adaptor \(em MySQL/MariaDB connector for user metadata and authentication
@@ -46,6 +46,12 @@ This sets the MYSQL_OPT_READ_TIMEOUT and MYSQL_OPT_WRITE_TIMEOUT option values
 on the MySQL connection.
 .br
 Default: \fI0\fP (no timeout)
+.TP
+\fBmysql_tls_cert\fP
+The path name of the client public key certificate file.
+.TP
+\fBmysql_tls_key\fP
+The path name of the client private key file.
 .TP
 \fBmysql_username\fP
 Default: \fIroot\fP
