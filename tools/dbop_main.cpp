@@ -24,12 +24,12 @@ enum {
 };
 
 static char *opt_config_file;
-static unsigned int g_action;
+static unsigned int g_do_create, g_do_upgrade, g_do_create0;
 
 static struct HXoption g_options_table[] = {
-	{nullptr, 'C', HXTYPE_VAL, &g_action, nullptr, nullptr, OP_CREATE_RECENT, "Create MySQL database tables"},
-	{nullptr, 'U', HXTYPE_VAL, &g_action, nullptr, nullptr, OP_UPGRADE, "Upgrade MySQL database tables"},
-	{"create-old", 0, HXTYPE_VAL, &g_action, nullptr, nullptr, OP_CREATE_ZERO, "Create MySQL database tables version 0"},
+	{nullptr, 'C', HXTYPE_NONE, &g_do_create, {}, {}, {}, "Create MySQL database tables"},
+	{nullptr, 'U', HXTYPE_NONE, &g_do_upgrade, {}, {}, {}, "Upgrade MySQL database tables"},
+	{"create-old", 0, HXTYPE_NONE, &g_do_create0, {}, {}, {}, "Create MySQL database tables version 0"},
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -41,6 +41,10 @@ int main(int argc, char **argv)
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	if (g_do_create + g_do_upgrade + g_do_create0) {
+		fprintf(stderr, "-C/-U/--create-old are mutually exclusive. Decide already!\n");
+		return EXIT_SUCCESS;
+	}
 
 	std::shared_ptr<CONFIG_FILE> pconfig;
 	if (opt_config_file == nullptr) {
@@ -88,11 +92,11 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	int ret = EXIT_FAILURE;
-	if (g_action == OP_CREATE_ZERO)
+	if (g_do_create0)
 		ret = dbop_mysql_create_0(pmysql.get());
-	else if (g_action == OP_CREATE_RECENT)
+	else if (g_do_create)
 		ret = dbop_mysql_create_top(pmysql.get());
-	else if (g_action == OP_UPGRADE)
+	else if (g_do_upgrade)
 		ret = dbop_mysql_upgrade(pmysql.get());
 	else
 		fprintf(stderr, "No action selected\n");
