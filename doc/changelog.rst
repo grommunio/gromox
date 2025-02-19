@@ -1,5 +1,5 @@
-Development 2.41.61
-===================
+Gromox 2.42 (2025-02-19)
+========================
 
 Fixes:
 
@@ -11,6 +11,7 @@ Enhancements:
 
 * nsp: a few more RPCs now emit log messages under nsp_trace=2
 * mh_nsp: support transfer of additional undocumented property types
+* oxdisco: recognize /mail/config-v1.1.xml URI
 
 Behavioral changes:
 
