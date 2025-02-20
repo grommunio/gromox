@@ -48,10 +48,15 @@ on the MySQL connection.
 Default: \fI0\fP (no timeout)
 .TP
 \fBmysql_tls_cert\fP
-The path name of the client public key certificate file.
+The path name of an optional client public key certificate file for
+authentication.
+.br
+Default: (empty)
 .TP
 \fBmysql_tls_key\fP
-The path name of the client private key file.
+The path name of an optional client private key file for authentication.
+.br
+Default: (empty)
 .TP
 \fBmysql_username\fP
 Default: \fIroot\fP
