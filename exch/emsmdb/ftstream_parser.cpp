@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
@@ -235,6 +235,7 @@ static BOOL ftstream_parser_read_svreid(fxstream_parser *pstream,
 				return FALSE;
 			pstream->offset += psvreid->pbin->cb;
 		}
+		return TRUE;
 	}
 	if (len != 21)
 		return FALSE;
