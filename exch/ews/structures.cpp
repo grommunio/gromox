@@ -1651,6 +1651,10 @@ void tCalendarItem::update(const sShape& shape)
 void tCalendarItem::setDatetimeFields(sShape& shape)
 {
 	uint32_t tag;
+	int64_t startOffset = 0, endOffset = 0;
+	std::optional<uint64_t> startTime = 0, endTime = 0;
+	fromProp(shape.writes(NtCommonStart), startTime);
+	fromProp(shape.writes(NtCommonEnd), endTime);
 	if((tag = shape.tag(NtCalendarTimeZone)))
 	{
 		std::optional<std::string> calTimezone;
@@ -1669,6 +1673,16 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
 				shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
 					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
+				EXT_PULL ext_pull;
+				TIMEZONEDEFINITION tzdef;
+				ext_pull.init(buf->data(), buf->size(), EWSContext::alloc, EXT_FLAG_UTF16);
+				if(ext_pull.g_tzdef(&tzdef) != EXT_ERR_SUCCESS)
+					throw EWSError::InternalServerError(E3294);
+				auto& op = shape.offsetProps;
+				if((tag = shape.tag(NtCommonStart)) && startTime.has_value() && std::find(op.begin(), op.end(), tag) != op.end())
+					offset_from_tz(&tzdef, rop_util_nttime_to_unix(startTime.value()), startOffset);
+				if((tag = shape.tag(NtCommonEnd)) && endTime.has_value() && std::find(op.begin(), op.end(), tag) != op.end())
+					offset_from_tz(&tzdef, rop_util_nttime_to_unix(endTime.value()), endOffset);
 			}
 		}
 	}
@@ -1677,19 +1691,25 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 	{
 		if((tag = shape.tag(prop)))
 		{
-			const TAGGED_PROPVAL* propval = shape.writes(prop);
-			if(propval)
-				switch(prop.lid)
-				{
-				case PidLidCommonStart:
-					shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, propval->pvalue});
-					shape.write(TAGGED_PROPVAL{PR_START_DATE, propval->pvalue});
-					break;
-				case PidLidCommonEnd:
-					shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, propval->pvalue});
-					shape.write(TAGGED_PROPVAL{PR_END_DATE, propval->pvalue});
-					break;
-				}
+			switch(prop.lid)
+			{
+			case PidLidCommonStart:
+			{
+				auto start = EWSContext::construct<uint64_t>(startTime.value() + startOffset * 600000000);
+				shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
+				shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
+				shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
+				break;
+			}
+			case PidLidCommonEnd:
+			{
+				auto end = EWSContext::construct<uint64_t>(endTime.value() + endOffset * 600000000);
+				shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
+				shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
+				shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
+				break;
+			}
+			}
 		}
 	}
 }
