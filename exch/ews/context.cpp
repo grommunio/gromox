@@ -312,78 +312,6 @@ void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 }
 
 /**
- * @brief Return the active timezone definition rule for a given year
- *
- * @param tzdef
- * @param year
- * @return TZRULE*
- */
-TZRULE* active_rule_for_year(const TIMEZONEDEFINITION* tzdef, const int year)
-{
-	for(auto i = tzdef->crules - 1; i >= 0; --i)
-	{
-		if(((tzdef->prules[i].flags & TZRULE_FLAG_EFFECTIVE_TZREG) &&
-		     tzdef->prules[i].year <= year) ||
-		    tzdef->prules[i].year == year)
-			return &tzdef->prules[i];
-	}
-	return nullptr;
-}
-
-/**
- * @brief Calculate the start of daylight saving oder standard time
- *
- * @param year
- * @param ruledate
- * @return time_t
- */
-time_t timegm_dststd_start(const int year, const SYSTEMTIME* ruledate)
-{
-	struct tm tempTm;
-	tempTm.tm_year = year;
-	tempTm.tm_mon = ruledate->month - 1;
-	tempTm.tm_mday = ical_get_dayofmonth(year + 1900, ruledate->month, ruledate->day == 5 ? -1 : ruledate->day, ruledate->dayofweek);
-	tempTm.tm_hour = ruledate->hour;
-	tempTm.tm_min = ruledate->minute;
-	tempTm.tm_sec = ruledate->second;
-	tempTm.tm_isdst = 0;
-	return timegm(&tempTm);
-}
-
-/**
- * @brief Calculate the offset from UTC from the timezone definition
- *
- * @param tzdef
- * @param startTime
- */
-int64_t offset_from_tz(const TIMEZONEDEFINITION* tzdef, const time_t startTime)
-{
-	int64_t offset = 0;
-	struct tm startDateUtc;
-	gmtime_r(&startTime, &startDateUtc);
-	int startDateYear = startDateUtc.tm_year + 1900;
-	TZRULE *rule = active_rule_for_year(tzdef, startDateYear);
-	if(rule == nullptr)
-		throw EWSError::TimeZone(E3295(startDateYear));
-
-	offset = rule->bias;
-	if(rule->standarddate.month != 0 && rule->daylightdate.month != 0)
-	{
-		// convert all times to UTC for comparison
-		time_t stdStartTime = timegm_dststd_start(startDateUtc.tm_year, &rule->standarddate) + offset * 60;
-		time_t dstStartTime = timegm_dststd_start(startDateUtc.tm_year, &rule->daylightdate) + offset * 60;
-		auto utcStartTime = startTime + offset * 60;
-
-		if((dstStartTime <= stdStartTime && utcStartTime >= dstStartTime && utcStartTime < stdStartTime) || // northern hemisphere dst
-			(dstStartTime > stdStartTime && (utcStartTime < stdStartTime || utcStartTime > dstStartTime))) // southern hemisphere dst
-		{
-			offset += rule->daylightbias;
-		}
-	}
-	return offset;
-}
-
-/**
  * @brief Get GlobalObjectId(PidLidGlobalObjectId/PidLidCleanGlobalObjectId)
  *        from UID sent by the client
  *
@@ -2041,10 +1969,10 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 					ext_pull.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
 					if(ext_pull.g_tzdef(&tzdef) != EXT_ERR_SUCCESS)
 						throw EWS::DispatchError(E3294);
-					if(calcStartOffset)
-						startOffset = offset_from_tz(&tzdef, startTime);
-					if(calcEndOffset)
-						endOffset = offset_from_tz(&tzdef, endTime);
+					if(calcStartOffset && !offset_from_tz(&tzdef, startTime, startOffset))
+						throw EWSError::TimeZone(E3300);
+					if(calcEndOffset && !offset_from_tz(&tzdef, endTime, endOffset))
+						throw EWSError::TimeZone(E3300);
 				}
 				item.Start.value().offset = std::chrono::minutes(startOffset);
 				item.End.value().offset = std::chrono::minutes(endOffset);

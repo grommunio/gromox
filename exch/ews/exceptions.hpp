@@ -424,6 +424,7 @@ inline std::string E3296(const char* uid) {return fmt::format("E-3296: decode_he
 inline std::string E3297(const char* uid) {return fmt::format("E-3297: Failed to generate goid from UID {}", uid);}
 E(3298, "Failed to allocate memory for goid data");
 E(3299, "Failed to generate goid data");
+E(3300, "Failed to get offset from the timezone definition");
 
 #undef E
 }
