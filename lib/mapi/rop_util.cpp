@@ -6,6 +6,7 @@
 #include <cstring>
 #include <ctime>
 #include <gromox/endian.hpp>
+#include <gromox/ical.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/pcl.hpp>
@@ -284,6 +285,60 @@ errno_t make_inet_msgid(char *id, size_t bufsize, uint32_t lcid)
 			id[ofs] = '_';
 	}
 	return 0;
+}
+
+/**
+ * Return the active timezone definition rule for a given year
+ */
+const TZRULE *active_rule_for_year(const TIMEZONEDEFINITION *tzdef, int year)
+{
+	for (auto i = tzdef->crules - 1; i >= 0; --i)
+		if ((tzdef->prules[i].flags & TZRULE_FLAG_EFFECTIVE_TZREG &&
+		    tzdef->prules[i].year <= year) ||
+		    tzdef->prules[i].year == year)
+			return &tzdef->prules[i];
+	return nullptr;
+}
+
+/**
+ * Calculate the start of daylight saving or standard time
+ */
+time_t timegm_dststd_start(const int year, const SYSTEMTIME *ruledate)
+{
+	struct tm tempTm;
+	tempTm.tm_year = year;
+	tempTm.tm_mon = ruledate->month - 1;
+	tempTm.tm_mday = ical_get_dayofmonth(year + 1900, ruledate->month, ruledate->day == 5 ? -1 : ruledate->day, ruledate->dayofweek);
+	tempTm.tm_hour = ruledate->hour;
+	tempTm.tm_min = ruledate->minute;
+	tempTm.tm_sec = ruledate->second;
+	tempTm.tm_isdst = 0;
+	return timegm(&tempTm);
+}
+
+/**
+ * Calculate the offset from UTC from the timezone definition
+ */
+bool offset_from_tz(const TIMEZONEDEFINITION *tzdef, time_t start_time, int64_t &offset)
+{
+	struct tm start_date;
+	gmtime_r(&start_time, &start_date);
+	auto rule = active_rule_for_year(tzdef, start_date.tm_year + 1900);
+	if (rule == nullptr)
+		return false;
+
+	offset = rule->bias;
+	if (rule->standarddate.month != 0 && rule->daylightdate.month != 0) {
+		/* Convert all times to UTC for comparison */
+		time_t std_start = timegm_dststd_start(start_date.tm_year, &rule->standarddate) + offset * 60;
+		time_t dst_start = timegm_dststd_start(start_date.tm_year, &rule->daylightdate) + offset * 60;
+		start_time += offset * 60;
+
+		if ((dst_start <= std_start && start_time >= dst_start && start_time < std_start) || /* northern hemisphere DST */
+		    (dst_start > std_start && (start_time < std_start || start_time > dst_start))) /* southern hemisphere DST */
+			offset += rule->daylightbias;
+	}
+	return true;
 }
 
 }
