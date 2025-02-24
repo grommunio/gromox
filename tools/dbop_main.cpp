@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
-	if (g_do_create + g_do_upgrade + g_do_create0) {
+	if (g_do_create + g_do_upgrade + g_do_create0 > 1) {
 		fprintf(stderr, "-C/-U/--create-old are mutually exclusive. Decide already!\n");
 		return EXIT_SUCCESS;
 	}
