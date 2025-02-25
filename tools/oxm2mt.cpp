@@ -92,7 +92,7 @@ static bin_ptr slurp_stream(libolecf_item_t *stream)
 		throw std::bad_alloc();
 	buf->cb = strm_size;
 	buf->pb = me_alloc<uint8_t>(strm_size);
-	if (buf->pb == nullptr)
+	if (buf->cb > 0 && buf->pb == nullptr)
 		throw std::bad_alloc();
 	for (size_t ofs = 0; ofs < strm_size; ) {
 		auto ret = libolecf_stream_read_buffer(stream, &buf->pb[ofs],

@@ -133,7 +133,7 @@ void *propval_dup(uint16_t type, const void *pvi)
 			return preturn;
 		}
 		preturn->pv = malloc(psrc->cb);
-		if (preturn->pv == nullptr) {
+		if (psrc->cb > 0 && preturn->pv == nullptr) {
 			free(preturn);
 			return NULL;
 		}

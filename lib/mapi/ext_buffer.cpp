@@ -141,6 +141,8 @@ pack_result EXT_PULL::g_bool(BOOL *v)
 
 pack_result EXT_PULL::g_bytes(void *data, uint32_t n)
 {
+	if (n == 0)
+		return pack_result::ok;
 	if (m_data_size < n || m_offset + n > m_data_size)
 		return EXT_ERR_BUFSIZE;
 	memcpy(data, &m_udata[m_offset], n);
@@ -777,7 +779,7 @@ pack_result EXT_PULL::g_svreid(SVREID *r)
 			return EXT_ERR_ALLOC;
 		r->pbin->cb = length > 0 ? length - 1 : 0;
 		r->pbin->pv = m_alloc(r->pbin->cb);
-		if (r->pbin->pv == nullptr) {
+		if (r->pbin->cb > 0 && r->pbin->pv == nullptr) {
 			r->pbin->cb = 0;
 			return EXT_ERR_ALLOC;
 		}
