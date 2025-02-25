@@ -72,6 +72,8 @@ static constexpr char
 	S_NP_ENTRIES[] = "__substg1.0_00030102",
 	S_NP_STRINGS[] = "__substg1.0_00040102";
 
+static errno_t do_message(libolecf_item_t *, MESSAGE_CONTENT &, mapi_object_type);
+
 static YError az_error(const char *prefix, const oxm_error_ptr &err)
 {
 	char buf[160];
@@ -179,6 +181,10 @@ static int ptesv_to_prop(const struct pte &pte, const char *cset,
 		if (blob->cb < sizeof(GUID))
 			return -EIO;
 		return proplist.set(pte.proptag, blob->pv);
+	case PT_OBJECT:
+		if (pte.v_ui4 != 0xffffffff)
+			throw YError(fmt::format("Unsupported PTE with proptag {:08x}", pte.proptag));
+		return proplist.set(pte.proptag, blob.get());
 	default:
 		if (pte.v_ui4 != blob->cb)
 			return -EIO;
@@ -370,13 +376,13 @@ static int do_attachs(libolecf_item_t *msg_dir, unsigned int natx,
 	for (size_t i = 0; i < natx; ++i) {
 		auto file = fmt::format("__attach_version1.0_#{:08X}", i);
 		oxm_error_ptr err;
-		oxm_item_ptr rcpt_dir;
+		oxm_item_ptr atx_dir;
 
 		if (libolecf_item_get_sub_item_by_utf8_path(msg_dir,
 		    reinterpret_cast<const uint8_t *>(file.c_str()), file.size(),
-		    &unique_tie(rcpt_dir), &unique_tie(err)) < 1)
+		    &unique_tie(atx_dir), &unique_tie(err)) < 1)
 			throw az_error("PO-1020", err);
-		auto propstrm = slurp_stream(rcpt_dir.get(), S_PROPFILE);
+		auto propstrm = slurp_stream(atx_dir.get(), S_PROPFILE);
 		EXT_PULL ep;
 		ep.init(propstrm->pv, propstrm->cb, malloc, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 		if (ep.advance(8) != EXT_ERR_SUCCESS)
@@ -384,12 +390,34 @@ static int do_attachs(libolecf_item_t *msg_dir, unsigned int natx,
 		tpropval_array_ptr props(tpropval_array_init());
 		if (props == nullptr)
 			throw std::bad_alloc();
-		auto ret = parse_propstrm(ep, cset, rcpt_dir.get(), *props);
+		auto ret = parse_propstrm(ep, cset, atx_dir.get(), *props);
 		if (ret < 0)
 			return -ret;
 		attachment_content_ptr atc(attachment_content_init());
 		std::swap(atc->proplist.count, props->count);
 		std::swap(atc->proplist.ppropval, props->ppropval);
+		if (atc->proplist.has(PR_ATTACH_DATA_OBJ)) {
+			atc->proplist.erase(PR_ATTACH_DATA_OBJ);
+			file = "__substg1.0_3701000D";
+			oxm_item_ptr msg_item;
+			if (libolecf_item_get_sub_item_by_utf8_path(atx_dir.get(),
+			    reinterpret_cast<const uint8_t *>(file.c_str()), file.size(),
+			    &unique_tie(msg_item), &unique_tie(err)) < 1)
+				throw az_error("PO-1021", err);
+			std::unique_ptr<message_content, mc_delete> ctnt(message_content_init());
+			if (ctnt == nullptr)
+				throw std::bad_alloc();
+			ctnt->children.pattachments = attachment_list_init();
+			if (ctnt->children.pattachments == nullptr)
+				throw std::bad_alloc();
+			ctnt->children.prcpts = tarray_set_init();
+			if (ctnt->children.prcpts == nullptr)
+				throw std::bad_alloc();
+			ret = do_message(msg_item.get(), *ctnt, MAPI_MESSAGE);
+			if (ret != 0)
+				return ret;
+			atc->pembedded = ctnt.release();
+		}
 		if (!atxlist.append_internal(atc.get()))
 			throw std::bad_alloc();
 		atc.release();
@@ -397,7 +425,7 @@ static int do_attachs(libolecf_item_t *msg_dir, unsigned int natx,
 	return 0;
 }
 
-static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt)
+static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt, mapi_object_type parent_type)
 {
 	/* MS-OXMSG v16 §2.4 */
 	auto propstrm = slurp_stream(msg_dir, S_PROPFILE);
@@ -410,7 +438,7 @@ static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt)
 		return EIO;
 	if (ep.g_uint32(&atx_count) != EXT_ERR_SUCCESS)
 		return EIO;
-	if (ep.advance(8) != EXT_ERR_SUCCESS)
+	if (parent_type == MAPI_FOLDER && ep.advance(8) != EXT_ERR_SUCCESS)
 		return EIO;
 	auto cpid = parse_propstrm_to_cpid(ep);
 	if (cpid < 0)
@@ -531,7 +559,7 @@ static errno_t do_file(const char *filename) try
 	ctnt->children.prcpts = tarray_set_init();
 	if (ctnt->children.prcpts == nullptr)
 		throw std::bad_alloc();
-	auto ret = do_message(root.get(), *ctnt);
+	auto ret = do_message(root.get(), *ctnt, MAPI_FOLDER);
 	if (ret != 0)
 		return ret;
 
