@@ -119,12 +119,10 @@ using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, rx_delete>;
 struct rxparam {
 	/**
 	 * @store_owner, @store_dir, @store_acctid: because EXRPCs APIs are terribly designed
+	 * @ctnt: owned by whatever alloc_context exmdb_client was fed with
 	 */
-	struct deleter {
-		void operator()(message_content *x) const { message_content_free(x); }
-	};
-
 	rxparam(message_node &&in);
+	NOMOVE(rxparam);
 	ec_error_t run();
 	ec_error_t is_oof(bool *out) const;
 	ec_error_t load_std_rules(bool oof, std::vector<rule_node> &out) const;
@@ -132,7 +130,7 @@ struct rxparam {
 
 	const char *ev_from = nullptr, *ev_to = nullptr;
 	message_node cur;
-	message_content_ptr ctnt;
+	message_content *ctnt = nullptr;
 	bool del = false, exit = false, do_autoproc = true;
 };
 
@@ -824,7 +822,7 @@ static ec_error_t op_process(rxparam &par, const rule_node &rule)
 	if (rule.cond != nullptr) {
 		if (g_ruleproc_debug)
 			mlog(LV_DEBUG, "Rule_Condition %s", rule.cond->repr().c_str());
-		if (!rx_eval_props(par.ctnt.get(), par.ctnt->proplist, *rule.cond))
+		if (!rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond))
 			return ecSuccess;
 	}
 	if (rule.state & ST_EXIT_LEVEL)
@@ -860,7 +858,7 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
 		return ecSuccess;
 	if (rule.cond != nullptr &&
-	    !rx_eval_props(par.ctnt.get(), par.ctnt->proplist, *rule.cond))
+	    !rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond))
 		return ecSuccess;
 	if (rule.state & ST_EXIT_LEVEL)
 		par.exit = true;
@@ -917,7 +915,7 @@ static ec_error_t mr_mark_done(rxparam &par)
 	uint64_t cal_mid = par.cur.mid, cal_cn = 0;
 	ec_error_t err = ecSuccess;
 	if (!exmdb_client->write_message_v2(par.cur.dir.c_str(), CP_ACP,
-	    par.cur.fid, par.ctnt.get(), &cal_mid, &cal_cn, &err))
+	    par.cur.fid, par.ctnt, &cal_mid, &cal_cn, &err))
 		return ecRpcFailed;
 	return err;
 }
@@ -1220,7 +1218,7 @@ ec_error_t rxparam::run()
 	std::sort(rule_list.begin(), rule_list.end());
 
 	if (!exmdb_client->read_message(cur.dirc(), nullptr, CP_ACP,
-	    cur.mid, &unique_tie(ctnt)))
+	    cur.mid, &ctnt))
 		return ecError;
 	if (ctnt == nullptr)
 		return ecNotFound;
