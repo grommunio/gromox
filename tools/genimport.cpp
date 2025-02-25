@@ -659,3 +659,20 @@ void gi_shutdown()
 	exmdb_client.reset();
 	service_release("rules_execute", "system");
 }
+
+/**
+ * @idx:	zero-based index for selecting attachment
+ */
+errno_t gi_decapsulate_attachment(message_content_ptr &ctnt, unsigned int idx)
+{
+	auto &atxlist = *ctnt->children.pattachments;
+	if (idx >= atxlist.count || atxlist.pplist[idx])
+		return ENOENT;
+	auto &ebptr = atxlist.pplist[idx]->pembedded;
+	if (ebptr == nullptr)
+		return ENOENT;
+	auto embed = std::move(ebptr);
+	ebptr = nullptr;
+	ctnt.reset(embed);
+	return 0;
+}

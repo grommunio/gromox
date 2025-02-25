@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -58,9 +58,12 @@ using bin_ptr       = std::unique_ptr<BINARY, bin_del>;
 
 }
 
+static unsigned int g_attach_decap;
+
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
+	{"decap", 0, HXTYPE_UINT, &g_attach_decap, {}, {}, {}, "Decapsulate embedded message (1-based index)", "IDX"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -562,6 +565,13 @@ static errno_t do_file(const char *filename) try
 	auto ret = do_message(root.get(), *ctnt, MAPI_FOLDER);
 	if (ret != 0)
 		return ret;
+	if (g_attach_decap > 0) {
+		ret = gi_decapsulate_attachment(ctnt, g_attach_decap - 1);
+		if (ret == ENOENT)
+			fprintf(stderr, "Attachment #%u is not an embedded message\n", g_attach_decap);
+		if (ret != 0)
+			return ret;
+	}
 
 	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
 		throw YError("PG-1014: %s", strerror(errno));
