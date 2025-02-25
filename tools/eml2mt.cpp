@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -44,11 +45,12 @@ enum {
 };
 
 static unsigned int g_import_mode = IMPORT_MAIL;
-static unsigned int g_oneoff;
+static unsigned int g_oneoff, g_attach_decap;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'P', HXTYPE_NONE, &g_oxvcard_pedantic, nullptr, nullptr, 0, "Enable pedantic import mode"},
 	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
+	{"decap", 0, HXTYPE_UINT, &g_attach_decap, {}, {}, {}, "Decapsulate embedded message (1-based index)", "IDX"},
 	{"ical", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_ICAL, "Treat input as iCalendar"},
 	{"mail", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_MAIL, "Treat input as Internet Mail"},
 	{"mbox", 0, HXTYPE_VAL, &g_import_mode, {}, {}, IMPORT_MBOX, "Treat input as Unix mbox"},
@@ -364,6 +366,17 @@ int main(int argc, char **argv) try
 			if (do_tnef(argv[i], msgs) != 0)
 				continue;
 		}
+	}
+	if (g_attach_decap > 0) {
+		auto osize = msgs.size();
+		for (auto &msg : msgs) {
+			auto ret = gi_decapsulate_attachment(msg, g_attach_decap - 1);
+			if (ret != 0)
+				msg.reset();
+		}
+		std::erase_if(msgs, [](const message_ptr &x) { return x == nullptr; });
+		fprintf(stderr, "Attachment decapsulation filter: %zu MAPI messages have been turned into %zu\n",
+			osize, msgs.size());
 	}
 
 	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)

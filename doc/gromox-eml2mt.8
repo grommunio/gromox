@@ -35,6 +35,11 @@ data stream should be consumed by an mt2exm invocation on the \fIsame\fP Gromox
 cluster.
 .SH Options
 .TP
+\fB\-\-decap\fP=\fIn\fP
+Once a MAPI message object is constructed, select attachment number \fIn\fP's
+embedded message as the "top-level" message and discard the rest of the outer
+message. \fIn\fP is 1-based.
+.TP
 \fB\-\-ical\fP
 Treat all file arguments as iCalendar input. This is the default if the program
 was invoked as gromox\-ical2mt. Messages will be anchored to the calendar
