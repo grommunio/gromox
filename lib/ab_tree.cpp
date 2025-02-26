@@ -619,13 +619,18 @@ ec_error_t ab_base::proplist(minid mid, std::vector<uint32_t> &tags) const
  */
 minid ab_base::resolve(const char* dn) const
 {
+	auto z = strlen(dn);
 	const std::string &server_prefix = AB.essdn_server_prefix();
-	if (strncasecmp(dn, server_prefix.c_str(), AB.essdn_server_prefix().size()) == 0 && strlen(dn) >= server_prefix.size() + 60) {
+	if (strncasecmp(dn, server_prefix.c_str(), server_prefix.size()) == 0 &&
+	    z >= server_prefix.size() + 60) {
 		/* Reason for 60: see DN format in ab_tree_get_mdbdn */
 		auto id = decode_hex_int(dn + server_prefix.size() + 60);
 		return minid(minid::address, id);
 	}
-	const std::string rcpts_prefix = AB.essdn_rcpts_prefix();
+	const std::string &rcpts_prefix = AB.essdn_rcpts_prefix();
+	if (strncasecmp(dn, rcpts_prefix.c_str(), rcpts_prefix.size()) != 0 ||
+	    z < rcpts_prefix.size() + 8)
+		return {};
 	auto id = decode_hex_int(dn + rcpts_prefix.size() + 8);
 	return minid(minid::address, id);
 }
