@@ -20,8 +20,6 @@
 
 #define MAX_TIMES_NOT_SERVED			100
 
-#define MAX_NOT_EMPTY_TIMES				10
-
 using namespace gromox;
 
 namespace {
@@ -258,27 +256,21 @@ void threads_pool_wakeup_all_threads()
  */
 static void *tpol_scanwork(void *pparam)
 {
-	int not_empty_times;
-
-	not_empty_times = 0;
 	while (!g_notify_stop) {
-		sleep(1);
 		if (contexts_pool_get_param(CUR_SCHEDULING_CONTEXTS) <= 1) {
-			not_empty_times = 0;
+			sleep(1);
 			continue;
 		}
-		not_empty_times++;
-		if (not_empty_times < MAX_NOT_EMPTY_TIMES)
+		if (g_threads_pool_cur_thr_num >= g_threads_pool_max_num) {
+			sleep(1);
 			continue;
+		}
 		std::lock_guard tpd_hold(g_threads_pool_data_lock);
-		if (g_threads_pool_cur_thr_num >= g_threads_pool_max_num)
-			continue;
 		THR_DATA *pdata;
 		try {
 			pdata = new THR_DATA;
 		} catch (const std::bad_alloc &) {
 			mlog(LV_DEBUG, "E-2368: ENOMEM");
-			not_empty_times = 0;
 			continue;
 		}
 		pdata->node.pdata = pdata;
@@ -288,14 +280,14 @@ static void *tpol_scanwork(void *pparam)
 		if (ret != 0) {
 			mlog(LV_WARN, "W-1445: failed to increase pool threads: %s", strerror(ret));
 			delete pdata;
-			not_empty_times = 0;
+			sleep(1);
 			continue;
 		}
 		pthread_setname_np(pdata->id, "ep_pool/+");
 		double_list_append_as_tail(
 			&g_threads_data_list, &pdata->node);
 		g_threads_pool_cur_thr_num++;
-		not_empty_times = 0;
+		usleep(500);
 	}
 	return nullptr;
 }
