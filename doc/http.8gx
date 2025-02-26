@@ -165,7 +165,8 @@ terminated.
 Default: \fI3 minutes\fP
 .TP
 \fBhttp_debug\fP
-If set to \fB1\fP, prints all incoming and outgoing HTTP traffic to stderr.
+If set to \fB1\fP, prints all incoming and outgoing HTTP traffic to stderr (not
+http_log_file!).
 .br
 Default: \fI0\fP
 .TP
