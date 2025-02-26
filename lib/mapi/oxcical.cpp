@@ -2223,7 +2223,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			    &apr.recur_pat.modifiedinstancecount, modified_dates))
 				return "E-2720";
 			if (apr.recur_pat.modifiedinstancecount < apr.recur_pat.deletedinstancecount)
-				return "E-2721";
+				return "E-2721: ical object did not meet condition recur_pat.modifiedinstancecount < recur_pat.deletedinstancecount";
 			apr.exceptioncount = apr.recur_pat.modifiedinstancecount;
 			for (size_t i = 0; i < apr.exceptioncount; ++i) {
 				memset(exceptions + i, 0, sizeof(EXCEPTIONINFO));
@@ -2242,7 +2242,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 		if (pevent_list.size() > 1) {
 			pattachments = attachment_list_init();
 			if (pattachments == nullptr)
-				return "E-2722";
+				return "E-2722: ENOMEM";
 			pmsg->set_attachments_internal(pattachments);
 		}
 		for (auto event : pevent_list) {
@@ -2253,11 +2253,11 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 				return "E-2723: ENOMEM";
 			if (!pattachments->append_internal(pattachment)) {
 				attachment_content_free(pattachment);
-				return "E-2724";
+				return "E-2724: ENOMEM";
 			}
 			auto pembedded = message_content_init();
 			if (pembedded == nullptr)
-				return "E-2725";
+				return "E-2725: ENOMEM";
 			pattachment->set_embedded_internal(pembedded);
 			if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}") != 0)
 				return "E-2726";
