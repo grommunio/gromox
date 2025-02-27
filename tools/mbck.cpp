@@ -119,7 +119,7 @@ static ssize_t ck_indices_present(sqlite3 *db)
 	ssize_t pr = 0;
 	printf("%s:", __func__);
 	for (const auto e : names) {
-		auto e2 = strchr(e, '.');
+		const char *e2 = strchr(e, '.'); /* CONST-STRCHR-MARKER */
 		if (e2 == nullptr)
 			e2 = e;
 		auto stm = gx_sql_prep(db, fmt::format("PRAGMA index_list({})", ++e2).c_str());
