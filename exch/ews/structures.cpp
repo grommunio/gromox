@@ -2677,14 +2677,14 @@ void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t ty
 	case PT_SHORT:{
 		int temp;
 		XMLError res = constantNode->QueryIntAttribute("Value", &temp);
-		if(res != XML_SUCCESS || temp & ~0xFFFF)
+		if (res != XML_SUCCESS || temp < SHRT_MIN || temp > USHRT_MAX)
 			throw EWSError::InvalidRestriction(E3235(value));
-		*static_cast<uint16_t *>(dest) = temp;
+		*static_cast<int16_t *>(dest) = temp;
 		break;
 	}
 	case PT_ERROR:
 	case PT_LONG:
-		if(constantNode->QueryUnsignedAttribute("Value", static_cast<uint32_t*>(dest)) != XML_SUCCESS)
+		if (constantNode->QueryIntAttribute("Value", static_cast<int32_t *>(dest)) != XML_SUCCESS)
 			throw EWSError::InvalidRestriction(E3236(value));
 		break;
 	case PT_FLOAT:
@@ -2702,7 +2702,7 @@ void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t ty
 		break;
 	case PT_CURRENCY:
 	case PT_I8:
-		if(constantNode->QueryUnsigned64Attribute("Value", static_cast<uint64_t*>(dest)) != XML_SUCCESS)
+		if (constantNode->QueryInt64Attribute("Value", static_cast<int64_t *>(dest)) != XML_SUCCESS)
 			throw EWSError::InvalidRestriction(E3240(value));
 		break;
 	case PT_SYSTIME:
@@ -2904,14 +2904,15 @@ void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* 
 	case PT_SHORT:{
 		int temp;
 		XMLError res = xml->QueryIntText(&temp);
-		if(res != XML_SUCCESS || temp & ~0xFFFF)
+		if (res != XML_SUCCESS || temp < SHRT_MIN || temp > USHRT_MAX)
+			/* be flexible, allow both signed and unsigned range */
 			throw EWSError::InvalidExtendedPropertyValue(E3101(content? content : "(nil)"));
-		*static_cast<uint16_t *>(dest) = temp;
+		*static_cast<int16_t *>(dest) = temp;
 		break;
 	}
 	case PT_ERROR:
 	case PT_LONG:
-		if(xml->QueryUnsignedText(static_cast<uint32_t*>(dest)) != XML_SUCCESS)
+		if (xml->QueryIntText(static_cast<int32_t *>(dest)) != XML_SUCCESS)
 			throw EWSError::InvalidExtendedPropertyValue(E3102(content? content : "(nil)"));
 		break;
 	case PT_FLOAT:
@@ -2929,7 +2930,7 @@ void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* 
 		break;
 	case PT_CURRENCY:
 	case PT_I8:
-		if(xml->QueryUnsigned64Text(static_cast<uint64_t*>(dest)) != XML_SUCCESS)
+		if (xml->QueryInt64Text(static_cast<int64_t *>(dest)) != XML_SUCCESS)
 			throw EWSError::InvalidExtendedPropertyValue(E3106(content? content : "(nil)"));
 		break;
 	case PT_SYSTIME:
@@ -3002,15 +3003,15 @@ void tExtendedProperty::serialize(const void* data, uint16_t type, XMLElement* x
 	case PT_BOOLEAN:
 		return xml->SetText(bool(*(reinterpret_cast<const uint8_t*>(data))));
 	case PT_SHORT:
-		return xml->SetText(*(reinterpret_cast<const uint16_t*>(data)));
+		return xml->SetText(*reinterpret_cast<const int16_t *>(data));
 	case PT_LONG:
 	case PT_ERROR:
-		return xml->SetText(*(reinterpret_cast<const uint32_t*>(data)));
+		return xml->SetText(*reinterpret_cast<const int32_t *>(data));
 	case PT_I8:
 	case PT_CURRENCY:
-		return xml->SetText(*(reinterpret_cast<const uint64_t*>(data)));
+		return xml->SetText(*reinterpret_cast<const int64_t *>(data));
 	case PT_SYSTIME:
-		return sTimePoint::fromNT(*reinterpret_cast<const uint64_t*>(data)).serialize(xml);
+		return sTimePoint::fromNT(*reinterpret_cast<const int64_t *>(data)).serialize(xml);
 	case PT_FLOAT:
 		return xml->SetText(*(reinterpret_cast<const float*>(data)));
 	case PT_DOUBLE:
