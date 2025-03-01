@@ -48,14 +48,14 @@ namespace
 std::string hexDecode(const std::string& hex)
 {
 	static auto charVal = [](int c) {
-		return (c >= '0' && c <= '9') ? c - '0' : (c >= 'a' && c <= 'f') ? c - 'a' + 10 : throw InputError(E3249(char(c)));
+		return (c >= '0' && c <= '9') ? c - '0' : (c >= 'a' && c <= 'f') ? c - 'a' + 10 : throw InputError(E3249(static_cast<char>(c)));
 	};
 	if(hex.size() % 2)
 		throw InputError(E3250);
 	std::string bin(hex.size()/2, 0);
 	auto it = hex.begin();
 	for(char& out : bin)
-		out = char(charVal(tolower(*it++)) << 4 | charVal(tolower(*it++)));
+		out = static_cast<char>(charVal(tolower(*it++)) << 4 | charVal(tolower(*it++)));
 	return bin;
 }
 

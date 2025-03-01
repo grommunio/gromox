@@ -241,7 +241,7 @@ void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 		if(gmtime_r(&enddate, tmp_tm) == nullptr)
 			throw EWSError::CalendarInvalidRecurrence(E3262);
 		for(int j = 1; restocc > 0; ++j) {
-			if((tmp_tm->tm_wday + j) % 7 == (int) recur_pat.firstdow)
+			if ((tmp_tm->tm_wday + j) % 7 == static_cast<int>(recur_pat.firstdow))
 				enddate += (recur_pat.period - 1) * 604800;
 			// If this is a matching day, one occurrence less to process
 			if(recur_pat.pts.weekrecur & (1 << ((tmp_tm->tm_wday + j) % 7)))
@@ -277,8 +277,8 @@ void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 		case rptMonth:
 			// compensation between 28 and 31
 			if (recur_pat.pts.dayofmonth >= 28 &&
-					recur_pat.pts.dayofmonth <= 31 &&
-					tmp_tm->tm_mday < (int)recur_pat.pts.dayofmonth) {
+			    recur_pat.pts.dayofmonth <= 31 &&
+			    tmp_tm->tm_mday < static_cast<int>(recur_pat.pts.dayofmonth)) {
 				if (tmp_tm->tm_mday < 28)
 					enddate -= tmp_tm->tm_mday * 86400;
 				else
@@ -1959,7 +1959,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 				size_t len = buf->size();
 				if(len > std::numeric_limits<uint32_t>::max())
 					throw InputError(E3293);
-				BINARY* temp_bin = construct<BINARY>(BINARY{uint32_t(buf->size()),
+				BINARY *temp_bin = construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
 					{reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
 				shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
 					TAGGED_PROPVAL{PT_BINARY, temp_bin});
@@ -2160,7 +2160,7 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 			size_t bodylen = strlen(body);
 			if(bodylen > std::numeric_limits<uint32_t>::max())
 				throw InputError(E3256);
-			BINARY* html = construct<BINARY>(BINARY{uint32_t(strlen(body)),
+			BINARY *html = construct<BINARY>(BINARY{static_cast<uint32_t>(strlen(body)),
 			                                       {reinterpret_cast<uint8_t*>(body)}});
 			shape.write(TAGGED_PROPVAL{PR_HTML, html});
 		}
@@ -2424,7 +2424,8 @@ void EWSContext::writePermissions(const std::string& dir, uint64_t fid, const st
 		const auto& exmdb = m_plugin.exmdb;
 		if(!exmdb.empty_folder_permission(dir.c_str(), fid))
 			throw EWSError::FolderSave(E3286);
-		if(!exmdb.update_folder_permission(dir.c_str(), fid, false, uint16_t(memberCount), perms.data()))
+		if (!exmdb.update_folder_permission(dir.c_str(), fid, false,
+		    static_cast<uint16_t>(memberCount), perms.data()))
 			throw EWSError::FolderSave(E3287);
 }
 

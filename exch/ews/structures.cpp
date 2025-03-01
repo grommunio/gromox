@@ -1673,7 +1673,7 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 				size_t len = buf->size();
 				if(len > std::numeric_limits<uint32_t>::max())
 					throw InputError(E3293);
-				BINARY* tmp_bin = EWSContext::construct<BINARY>(BINARY{uint32_t(buf->size()),
+				BINARY *tmp_bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
 					{reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
 				shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
 					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
@@ -1963,7 +1963,7 @@ void tChangeDescription::convBody(const tinyxml2::XMLElement* xml, sShape& shape
 		size_t len = strlen(text);
 		if(len > std::numeric_limits<uint32_t>::max())
 			throw InputError(E3256);
-		BINARY* html = EWSContext::construct<BINARY>(BINARY{uint32_t(strlen(text)),
+		BINARY *html = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(strlen(text)),
 		                                                    {reinterpret_cast<uint8_t*>(const_cast<char*>(text))}});
 		shape.write(TAGGED_PROPVAL{PR_HTML, html});
 	}
