@@ -319,7 +319,8 @@ tBaseFolderType::tBaseFolderType(const XMLElement* xml) :
 	XMLINIT(FolderClass),
 	XMLINIT(DisplayName)
 {
-	for(const tinyxml2::XMLElement* xp = xml->FirstChildElement("ExtendedProperty"); xp; xp = xp->NextSiblingElement("ExtendedProperty"))
+	for (const tinyxml2::XMLElement *xp = xml->FirstChildElement("ExtendedProperty");
+	     xp != nullptr; xp = xp->NextSiblingElement("ExtendedProperty"))
 		ExtendedProperty.emplace_back(xp);
 }
 
@@ -1100,7 +1101,8 @@ tItem::tItem(const tinyxml2::XMLElement* xml) :
 //	XMLINIT(ConversationId),
 	XMLINIT(Flag)
 {
-	for(const tinyxml2::XMLElement* xp = xml->FirstChildElement("ExtendedProperty"); xp; xp = xp->NextSiblingElement("ExtendedProperty"))
+	for (const tinyxml2::XMLElement *xp = xml->FirstChildElement("ExtendedProperty");
+	     xp != nullptr; xp = xp->NextSiblingElement("ExtendedProperty"))
 		ExtendedProperty.emplace_back(xp);
 }
 
@@ -1294,7 +1296,8 @@ tSerializableTimeZone::tSerializableTimeZone(const tinyxml2::XMLElement* xml) :
 
 tSetFolderField::tSetFolderField(const tinyxml2::XMLElement* xml) : tChangeDescription(xml)
 {
-	for(const tinyxml2::XMLElement* child = xml->FirstChildElement(); child; child = child->NextSiblingElement())
+	for (const tinyxml2::XMLElement *child = xml->FirstChildElement();
+	     child != nullptr; child = child->NextSiblingElement())
 		if(std::binary_search(folderTypes.begin(), folderTypes.end(), child->Name(),
 		                      [](const char* s1, const char* s2){return strcmp(s1, s2) < 0;})) {
 			folder = child;
@@ -1306,7 +1309,8 @@ tSetFolderField::tSetFolderField(const tinyxml2::XMLElement* xml) : tChangeDescr
 
 tSetItemField::tSetItemField(const tinyxml2::XMLElement* xml) : tChangeDescription(xml)
 {
-	for(const tinyxml2::XMLElement* child = xml->FirstChildElement(); child; child = child->NextSiblingElement())
+	for (const tinyxml2::XMLElement *child = xml->FirstChildElement();
+	     child != nullptr; child = child->NextSiblingElement())
 		if(std::binary_search(itemTypes.begin(), itemTypes.end(), child->Name(),
 		                      [](const char* s1, const char* s2){return strcmp(s1, s2) < 0;})) {
 			item = child;

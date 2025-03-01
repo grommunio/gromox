@@ -2099,11 +2099,13 @@ void tChangeDescription::convText(const PROPERTY_NAME& name, const XMLElement* v
 void tChangeDescription::convStrArray(uint32_t tag, const XMLElement* v, sShape& shape)
 {
 	uint32_t count = 0;
-	for(const XMLElement* s = v->FirstChildElement("String"); s; s = s->NextSiblingElement("String"))
+	for (const XMLElement *s = v->FirstChildElement("String"); s != nullptr;
+	     s = s->NextSiblingElement("String"))
 		++count;
 	STRING_ARRAY* categories = EWSContext::construct<STRING_ARRAY>(STRING_ARRAY{count, EWSContext::alloc<char*>(count)});
 	char** dest = categories->ppstr;
-	for(const XMLElement* s = v->FirstChildElement("String"); s; s = s->NextSiblingElement("String"))
+	for (const XMLElement *s = v->FirstChildElement("String"); s != nullptr;
+	     s = s->NextSiblingElement("String"))
 		strcpy(*dest++ = EWSContext::alloc<char>(strlen(s->GetText()) + 1), s->GetText());
 	shape.write(TAGGED_PROPVAL{tag, categories});
 }
@@ -2572,10 +2574,12 @@ void tRestriction::build_andor(RESTRICTION& dst, const tinyxml2::XMLElement* src
 	dst.rt = strcmp(src->Name(), "And")? mapi_rtype::r_or : mapi_rtype::r_and;
 	dst.andor = EWSContext::alloc<RESTRICTION_AND_OR>();
 	dst.andor->count = 0;
-	for(const tinyxml2::XMLElement* child = src->FirstChildElement(); child; child = child->NextSiblingElement())
+	for (const tinyxml2::XMLElement *child = src->FirstChildElement();
+	     child != nullptr; child = child->NextSiblingElement())
 		++dst.andor->count;
 	RESTRICTION* res = dst.andor->pres = EWSContext::alloc<RESTRICTION>(dst.andor->count);
-	for(const tinyxml2::XMLElement* child = src->FirstChildElement(); child; child = child->NextSiblingElement())
+	for (const tinyxml2::XMLElement *child = src->FirstChildElement();
+	     child != nullptr; child = child->NextSiblingElement())
 		deserialize(*res++, child, getId);
 }
 
@@ -2892,7 +2896,8 @@ void tExtendedProperty::deserializeMV(const XMLElement* xml, uint16_t type, T* C
 {
 	C* container = static_cast<C*>(propval.pvalue);
 	container->count = 0;
-	for(const XMLElement* child = xml->FirstChildElement("Value"); child; child = child->NextSiblingElement("Value"))
+	for (const XMLElement *child = xml->FirstChildElement("Value");
+	     child != nullptr; child = child->NextSiblingElement("Value"))
 		++container->count;
 	container->*values = EWSContext::alloc<T>(container->count);
 	const XMLElement* child = xml->FirstChildElement("Value");
@@ -4126,7 +4131,8 @@ void tSetItemField::put(sShape& shape) const
 		}
 		const tinyxml2::XMLElement* value = item;
 		// The value is contained in the lower most text node. The XML path is ignored.
-		for(const tinyxml2::XMLElement* temp= item->FirstChildElement(); temp; temp = temp->FirstChildElement())
+		for (const tinyxml2::XMLElement *temp= item->FirstChildElement();
+		     temp != nullptr; temp = temp->FirstChildElement())
 			value = temp;
 		const char*	text = value->GetText(); // Life time of the XML node exceeds shape, no need to copy value
 		shape.write(TAGGED_PROPVAL{tag, const_cast<char *>(znul(text))});

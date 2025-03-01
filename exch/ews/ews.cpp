@@ -163,7 +163,8 @@ struct EWSPlugin::DebugCtx
 EWSPlugin::DebugCtx::DebugCtx(const std::string_view& opts)
 {
 	size_t start = 0;
-	for(size_t end = opts.find(',', start); start != std::string_view::npos; end = opts.find(',', start))
+	for (size_t end = opts.find(',', start); start != opts.npos;
+	     end = opts.find(',', start))
 	{
 		std::string_view opt = opts.substr(start, end - start);
 		start = end + (end != std::string_view::npos);
@@ -532,7 +533,8 @@ void EWSPlugin::loadConfig()
 	{
 		invertFilter = *logFilter == '!';
 		logFilter += invertFilter;
-		for(const char* sep = strchr(logFilter, ','); sep != nullptr; logFilter = ++sep, sep = strchr(sep, ','))
+		for (const char *sep = strchr(logFilter, ','); sep != nullptr;
+		    logFilter = ++sep, sep = strchr(sep, ','))
 			logFilters.emplace_back(std::string_view(logFilter, sep - logFilter));
 		if(*logFilter)
 			logFilters.emplace_back(logFilter);

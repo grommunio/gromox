@@ -463,10 +463,12 @@ static T fromXMLNodeList(const tinyxml2::XMLElement* child)
 	T values;
 	size_t count = 1;
 	const char* name = getName<BaseType_t<T>>();
-	for(const tinyxml2::XMLElement* entry = child->FirstChildElement(name); entry; entry=entry->NextSiblingElement(name))
+	for (const tinyxml2::XMLElement *entry = child->FirstChildElement(name);
+	     entry != nullptr; entry = entry->NextSiblingElement(name))
 		++count;
 	values.reserve(count);
-	for(const tinyxml2::XMLElement* entry = child->FirstChildElement(name); entry; entry=entry->NextSiblingElement(name))
+	for (const tinyxml2::XMLElement *entry = child->FirstChildElement(name);
+	     entry != nullptr; entry = entry->NextSiblingElement(name))
 		values.emplace_back(fromXMLNodeDispatch<BaseType_t<T>>(entry));
 	return values;
 }

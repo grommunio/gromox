@@ -75,7 +75,8 @@ void Envelope::clean(XMLElement* element)
 	const char* prefix = strchr(element->Name(), ':');
 	if(prefix)
 		element->SetName(prefix + 1);
-	for(XMLElement* child = element->FirstChildElement(); child; child = child->NextSiblingElement())
+	for (XMLElement *child = element->FirstChildElement(); child != nullptr;
+	     child = child->NextSiblingElement())
 		clean(child);
 }
 
