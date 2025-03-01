@@ -351,7 +351,8 @@ tBaseItemId::tBaseItemId(const XMLElement* xml) :
 void tBaseItemId::serialize(XMLElement* xml) const
 {
 	IdType t = type;
-	if(t == ID_UNKNOWN)  // try to guess from entry id size, if that fails, someone forgot to mark the correct type
+	if (t == ID_UNKNOWN)
+		/* try to guess from entry id size, if that fails, someone forgot to mark the correct type */
 		t = Id.size() == 46? ID_FOLDER : Id.size() == 70? ID_ITEM : throw DispatchError(E3212);
 	Id.append(1, t);
 	XMLDUMPA(Id);

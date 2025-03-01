@@ -625,7 +625,8 @@ int EWSContext::notify()
 	if(!m_notify || m_notify->state == NS::S_CLOSED)
 		return HPM_RETRIEVE_DONE;
 	NotificationContext& nctx = *m_notify;
-	if(nctx.state == NS::S_WRITE) { // Just wrote something -> got to sleep and set a wake up timer
+	if (nctx.state == NS::S_WRITE) {
+		/* Just wrote something -> got to sleep and set a wake up timer */
 		nctx.state = NS::S_SLEEP;
 		m_plugin.wakeContext(m_ID, m_plugin.event_stream_interval);
 		return HPM_RETRIEVE_WAIT;
@@ -635,7 +636,8 @@ int EWSContext::notify()
 	bool logResponse = m_log && m_plugin.response_logging >= 2;
 	auto loglevel = m_code == http_status::ok? LV_DEBUG : LV_ERR;
 
-	if(nctx.state == NS::S_INIT) { // First call after initialization -> write context data
+	if (nctx.state == NS::S_INIT) {
+		/* First call after initialization -> write context data */
 		m_response.doc.Print(&printer);
 		writeheader(m_ID, m_code, 0);
 		writecontent(m_ID, to_sv(printer), logResponse, loglevel);
@@ -656,7 +658,8 @@ int EWSContext::notify()
 		return HPM_RETRIEVE_WRITE;
 	};
 
-	if(nctx.state == NS::S_CLOSING) { // Someone closed the stream -> write good bye letter and die
+	if (nctx.state == NS::S_CLOSING) {
+		/* Someone closed the stream -> write good bye letter and die */
 		msg.ConnectionStatus = Enum::Closed;
 		msg.success();
 		nctx.state = NS::S_CLOSED;

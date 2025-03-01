@@ -1016,7 +1016,8 @@ void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWS
 		if(!dstAccess)
 			throw EWSError::AccessDenied(E3167);
 		sFolderSpec folder = ctx.resolveFolder(folderId);
-		if(folder.location != dstFolder.location) // Attempt to move to a different store
+		if (folder.location != dstFolder.location)
+			/* Attempt to move to a different store */
 			throw EWSError::CrossMailboxMoveCopy(E3168);
 		folder.folderId = ctx.moveCopyFolder(dir, folder, dstFolder.folderId, accountId, request.copy);
 		auto& msg = std::visit([&](auto& d) -> mFolderInfoResponseMessage&

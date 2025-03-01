@@ -914,9 +914,11 @@ const TAGGED_PROPVAL* sShape::writes(const PROPERTY_NAME& name) const
 	if(it == names.end())
 		return nullptr;
 	size_t index = std::distance(names.begin(), it);
-	if(namedCache.size() == names.size())  // Named property IDs have not yet been retrieved
+	if (namedCache.size() == names.size())
+		/* Named property IDs have not yet been retrieved */
 		return &namedCache[index];
-	if(namedTags.size() == names.size())  // Named property IDS vae been retrieved
+	if (namedTags.size() == names.size())
+		/* Named property IDS vae been retrieved */
 		return writes(namedTags[index]);
 	return nullptr;
 }
@@ -1156,7 +1158,8 @@ void sSyncState::init(const std::string& data64)
 			if (!seen_fai.deserialize(*static_cast<const BINARY *>(pv.pvalue)))
 				throw EWSError::InvalidSyncStateData(E3056);
 			break;
-		case MetaTagReadOffset: //PR_READ, but with long type -> number of read states already delivered
+		case MetaTagReadOffset:
+			/* PR_READ, but with long type -> number of read states already delivered */
 			readOffset = *static_cast<uint32_t *>(pv.pvalue);
 			break;
 		}
@@ -1366,7 +1369,8 @@ sFolder tBaseFolderType::create(const sShape& shape)
  */
 tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, IdType t) : type(t)
 {
-	Id.reserve(fEntryID.size() + 1); // Extra byte is appended for encoding during serialization, prevent reallocation
+	/* Extra byte is appended for encoding during serialization, prevent reallocation */
+	Id.reserve(fEntryID.size() + 1);
 	Id = fEntryID;
 	if(type == ID_GUESS) {
 		switch(Id.size()) {
@@ -1396,7 +1400,8 @@ tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, IdType t) : type(t)
 std::string tBaseItemId::serializeId() const
 {
 	IdType t = type;
-	if(t == ID_UNKNOWN)  // try to guess from entry id size, if that fails, someone forgot to mark the correct type
+	if (t == ID_UNKNOWN)
+		/* try to guess from entry id size, if that fails, someone forgot to mark the correct type */
 		t = Id.size() == 46? ID_FOLDER : Id.size() == 70? ID_ITEM : throw DispatchError(E3212);
 	std::string data;
 	data.reserve(Id.size()+1);
@@ -2556,7 +2561,8 @@ void tRestriction::deserialize(RESTRICTION& dst, const tinyxml2::XMLElement* src
 		build_not(dst, src, getId);
 	else try {
 		build_compare(dst, src, relop(Enum::RestrictionRelop(name).index()), getId);
-	} catch(EnumError&) { // The name of the node could not be mapped to a relop
+	} catch (EnumError &) {
+		/* The name of the node could not be mapped to a relop */
 		throw EWSError::InvalidRestriction(E3220(name));
 	}
 }
@@ -2581,7 +2587,8 @@ void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* s
 		throw EWSError::InvalidRestriction(E3221);
 	void* constantData = loadConstant(cmptarget, PROP_TYPE(tag));
 	dst.rt = constantData? mapi_rtype::property : mapi_rtype::propcmp;
-	if(constantData) {// Constant found and loaded -> compare to static data
+	if (constantData) {
+		/* Constant found and loaded -> compare to static data */
 		dst.prop = EWSContext::construct<RESTRICTION_PROPERTY>();
 		dst.prop->relop = op;
 		dst.prop->proptag = tag;
@@ -4112,7 +4119,8 @@ void tSetItemField::put(sShape& shape) const
 		if(!tag) {
 			mlog(LV_WARN, "ews: failed to resolve indexed property %s/%s", uri.FieldURI.c_str(), uri.FieldIndex.c_str());
 			return;
-		} else if(PROP_TYPE(tag) != PT_UNICODE) { // All currently known indexed fields are text
+		} else if (PROP_TYPE(tag) != PT_UNICODE) {
+			/* All currently known indexed fields are text */
 			mlog(LV_WARN, "ews: unsupported indexed property type for %s/%s", uri.FieldURI.c_str(), uri.FieldIndex.c_str());
 			return;
 		}
