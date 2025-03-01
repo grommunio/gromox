@@ -133,7 +133,7 @@ template<> struct ExplicitConvert<std::string> {
 
 	static void serialize(const std::string &value, SetterFunc setter)
 	{
-		if(value.length())
+		if (value.length())
 			setter(value.c_str());
 	}
 };
@@ -177,7 +177,7 @@ struct ExplicitConvert<gromox::EWS::Structures::StrEnum<Cs...>> {
 	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement *xml, T &value)
 	{
 		const char* data = xml->GetText();
-		if(!data)
+		if (!data)
 			return tinyxml2::XML_NO_TEXT_NODE;
 		try {
 			value = data;
@@ -406,9 +406,9 @@ static T fromXMLNode(const tinyxml2::XMLElement* child)
 	using gromox::EWS::Exceptions::DeserializationError;
 	BaseType_t<T> val;
 	tinyxml2::XMLError err = ExplicitConvert<BaseType_t<T>>::deserialize(child, val);
-	if(err == tinyxml2::XML_NO_TEXT_NODE)
+	if (err == tinyxml2::XML_NO_TEXT_NODE)
 		throw DeserializationError(Exceptions::E3043(child->Name()));
-	else if(err == tinyxml2::XML_CAN_NOT_CONVERT_TEXT)
+	else if (err == tinyxml2::XML_CAN_NOT_CONVERT_TEXT)
 		throw DeserializationError(Exceptions::E3044(child->Name(), child->GetText(), typeid(BaseType_t<T>).name()));
 	return val;
 }
@@ -478,7 +478,7 @@ static T fromXMLNodeVariant(const tinyxml2::XMLElement* child)
 	} else {
 		using Contained = std::variant_alternative_t<I, T>;
 		const char* tname = getName<Contained>();
-		if(tname == nullptr || !strcmp(tname, child->Name()))
+		if (tname == nullptr || !strcmp(tname, child->Name()))
 			return T(std::in_place_index_t<I>(), fromXMLNodeDispatch<Contained>(child));
 		return fromXMLNodeVariant<T, I + 1>(child);
 	}
@@ -507,7 +507,7 @@ T fromXMLNodeVariantFind(const tinyxml2::XMLElement* parent)
 		using Contained = std::variant_alternative_t<I, T>;
 		const char* tname = getName<Contained>();
 		const tinyxml2::XMLElement* child;
-		if(!tname || !(child = parent->FirstChildElement(tname)))
+		if (!tname || !(child = parent->FirstChildElement(tname)))
 			return fromXMLNodeVariantFind<T, I + 1>(parent);
 		return T(std::in_place_index_t<I>(), fromXMLNodeDispatch<Contained>(child));
 	}
@@ -553,7 +553,7 @@ static T fromXMLNode(const tinyxml2::XMLElement* xml, const char* name)
 	const tinyxml2::XMLElement* child = xml->FirstChildElement(name);
 	if constexpr(BaseType<T>::container == OPTIONAL)
 	    return fromXMLNodeOpt<T>(child);
-	else if(!child)
+	else if (!child)
 		throw DeserializationError(Exceptions::E3046(name? name : "<unknown>", xml->Name()));
 	else
 		return fromXMLNodeDispatch<T>(child);
@@ -588,7 +588,7 @@ static T fromXMLAttr(const tinyxml2::XMLElement* xml, const char* name)
 	if constexpr (explicit_convert<T>(EC_IN)) {
 		BaseType_t<T> val;
 		tinyxml2::XMLError err = ExplicitConvert<BaseType_t<T>>::deserialize(attr, val);
-		if(err == tinyxml2::XML_WRONG_ATTRIBUTE_TYPE)
+		if (err == tinyxml2::XML_WRONG_ATTRIBUTE_TYPE)
 			throw DeserializationError(Exceptions::E3048(name, attr->Value(), xml->Name(), typeid(BaseType_t<T>).name()));
 		return val;
 	} else {
@@ -647,7 +647,7 @@ static void toXMLNodeList(tinyxml2::XMLElement* xml, const T& value)
 	for (const BT &element : value) {
 		const char* name = getName(element, "x");
 		const char* ns = getNSPrefix(element);
-		if(ns)
+		if (ns)
 			toXMLNode<BT>(xml, fmt::format("{}{}", ns, name).c_str(), element);
 		else
 			toXMLNode<BT>(xml, name, element);
@@ -702,10 +702,10 @@ template<typename T>
 static tinyxml2::XMLElement* toXMLNode(tinyxml2::XMLElement* parent, const char* name, const T& value)
 {
 	if constexpr(BaseType<T>::container == OPTIONAL)
-		if(!value)
+		if (!value)
 			return nullptr;
 	tinyxml2::XMLElement* xml;
-	if constexpr (BaseType<T>::container == VARIANT){
+	if constexpr (BaseType<T>::container == VARIANT) {
 		name = getName(value, name);
 		const char* ns = getNSPrefix(value);
 		xml = parent->InsertNewChildElement(ns? fmt::format("{}{}", ns, name).c_str() : name);
@@ -730,7 +730,7 @@ static void toXMLAttr(tinyxml2::XMLElement* parent, const char* name, const T& v
 {
 	static_assert(BaseType<T>::container != LIST, "Cannot store list in attribute");
 	if constexpr (BaseType<T>::container == OPTIONAL) {
-		if(!value)
+		if (!value)
 			return;
 		return toXMLAttr(parent, name, *value);
 	} else if constexpr (explicit_convert<T>(EC_OUT)) {

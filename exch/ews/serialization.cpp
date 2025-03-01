@@ -50,7 +50,7 @@ struct Cleaner {
 XMLError ExplicitConvert<EWS::time_point>::deserialize(const tinyxml2::XMLElement *xml, EWS::time_point &value)
 {
 	const char* data = xml->GetText();
-	if(!data)
+	if (!data)
 		return tinyxml2::XML_NO_TEXT_NODE;
 	tm t{};
 	double seconds = 0;
@@ -107,7 +107,7 @@ void sOccurrenceId::serialize(XMLElement* xml) const
 sBase64Binary::sBase64Binary(const XMLElement* xml)
 {
 	const char* data = xml->GetText();
-	if(!data)
+	if (!data)
 		throw DeserializationError(E3034(xml->Name()));
 	assign(base64_decode(data));
 }
@@ -230,9 +230,9 @@ std::string sSyncState::serialize()
 sTime::sTime(const XMLElement* xml)
 {
 	const char* data = xml->GetText();
-	if(!data)
+	if (!data)
 		throw DeserializationError(E3041(xml->Name()));
-	if(sscanf(data, "%02hhu:%02hhu:%02hhu", &hour, &minute, &second) != 3)
+	if (sscanf(data, "%02hhu:%02hhu:%02hhu", &hour, &minute, &second) != 3)
 		throw DeserializationError(E3042(xml->Name(), xml->GetText()));
 }
 
@@ -252,7 +252,7 @@ void sTimePoint::serialize(XMLElement* xml) const
 	unsigned long long fsec = std::chrono::duration_cast<std::chrono::nanoseconds>(frac).count();
 	int off = -static_cast<int>(offset.count());
 	std::string dtstr = fmt::format("{:%FT%T}", t);
-	if(fsec)
+	if (fsec)
 		dtstr += fmt::format(".{:09}", fsec);
 	dtstr += off ? fmt::format("{:+03}{:02}", off / 60, abs(off) % 60) : "Z";
 	xml->SetText(dtstr.c_str());
@@ -335,7 +335,7 @@ void tBaseFolderType::serialize(XMLElement* xml) const
 	XMLDUMPT(TotalCount);
 	XMLDUMPT(ChildFolderCount);
 	XMLDUMPT(EffectiveRights);
-	for(const tExtendedProperty& ep : ExtendedProperty)
+	for (const tExtendedProperty &ep : ExtendedProperty)
 		toXMLNode(xml, "t:ExtendedProperty", ep);
 }
 
@@ -626,7 +626,7 @@ void tNotification::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPT(SubscriptionId);
 	XMLDUMPT(MoreEvents);
-	for(const auto& event : events)
+	for (const auto &event : events)
 		XMLDUMPT(event);
 }
 
@@ -952,7 +952,7 @@ tExtendedFieldURI::tExtendedFieldURI(const tinyxml2::XMLElement* xml) :
 void tExtendedFieldURI::serialize(XMLElement* xml) const
 {
 	XMLDUMPA(PropertyType);
-	if(PropertyTag)
+	if (PropertyTag)
 		xml->SetAttribute("PropertyTag", fmt::format("0x{:x}", *PropertyTag).c_str());
 	XMLDUMPA(PropertyId);
 	XMLDUMPA(PropertySetId);
@@ -968,11 +968,11 @@ tExtendedProperty::tExtendedProperty(const XMLElement* xml) :
 	uint16_t type = ExtendedFieldURI.type();
 	propval.proptag = ExtendedFieldURI.tag()? ExtendedFieldURI.tag() : type;
 	bool ismv = type & MV_FLAG;
-	if(value && values)
+	if (value && values)
 		throw InputError(E3094);
-	if(ismv && !values)
+	if (ismv && !values)
 		throw InputError(E3095);
-	if(!ismv && !value)
+	if (!ismv && !value)
 		throw InputError(E3096);
 	deserialize(ismv? values : value, type);
 }
@@ -980,7 +980,7 @@ tExtendedProperty::tExtendedProperty(const XMLElement* xml) :
 void tExtendedProperty::serialize(XMLElement* xml) const
 {
 	const void* data = propval.pvalue;
-	if(!data)
+	if (!data)
 		return;
 	XMLDUMPT(ExtendedFieldURI);
 	bool ismv = propval.proptag & MV_FLAG;
@@ -1047,7 +1047,7 @@ void tGroupedItems::serialize(tinyxml2::XMLElement* xml) const
 
 tGuid::tGuid(const XMLAttribute* xml)
 {
-	if(!from_str(xml->Value()))
+	if (!from_str(xml->Value()))
 		throw DeserializationError(E3063);
 }
 
@@ -1118,7 +1118,7 @@ tItem::tItem(const tinyxml2::XMLElement* xml) :
 void tItem::serialize(XMLElement* xml) const
 {
 	auto mc = XMLDUMPT(MimeContent);
-	if(mc)
+	if (mc)
 		mc->SetAttribute("CharacterSet", "UTF-8");
 	XMLDUMPT(ItemId);
 	XMLDUMPT(ParentFolderId);
@@ -1153,7 +1153,7 @@ void tItem::serialize(XMLElement* xml) const
 	XMLDUMPT(IsAssociated);
 	XMLDUMPT(ConversationId);
 	XMLDUMPT(Flag);
-	for(const tExtendedProperty& ep : ExtendedProperty)
+	for (const tExtendedProperty &ep : ExtendedProperty)
 		toXMLNode(xml, "t:ExtendedProperty", ep);
 }
 
@@ -1309,12 +1309,12 @@ tSetFolderField::tSetFolderField(const tinyxml2::XMLElement* xml) : tChangeDescr
 {
 	for (const tinyxml2::XMLElement *child = xml->FirstChildElement();
 	     child != nullptr; child = child->NextSiblingElement())
-		if(std::binary_search(folderTypes.begin(), folderTypes.end(), child->Name(),
+		if (std::binary_search(folderTypes.begin(), folderTypes.end(), child->Name(),
 		                      [](const char* s1, const char* s2){return strcmp(s1, s2) < 0;})) {
 			folder = child;
 			break;
 		}
-	if(!folder)
+	if (!folder)
 		throw InputError(E3177);
 }
 
@@ -1322,12 +1322,12 @@ tSetItemField::tSetItemField(const tinyxml2::XMLElement* xml) : tChangeDescripti
 {
 	for (const tinyxml2::XMLElement *child = xml->FirstChildElement();
 	     child != nullptr; child = child->NextSiblingElement())
-		if(std::binary_search(itemTypes.begin(), itemTypes.end(), child->Name(),
+		if (std::binary_search(itemTypes.begin(), itemTypes.end(), child->Name(),
 		                      [](const char* s1, const char* s2){return strcmp(s1, s2) < 0;})) {
 			item = child;
 			break;
 		}
-	if(!item)
+	if (!item)
 		throw InputError(E3097);
 }
 
@@ -1363,7 +1363,7 @@ void tSmtpDomain::serialize(XMLElement* xml) const
  */
 constexpr void tSubscriptionId::encode(uint32_t v, char*& d)
 {
-	for(uint32_t offset = 0; offset < 31; offset += 6)
+	for (uint32_t offset = 0; offset < 31; offset += 6)
 		*d++ = b64[(v & (0x3fu << offset)) >> offset];
 }
 
@@ -1379,7 +1379,7 @@ constexpr void tSubscriptionId::encode(uint32_t v, char*& d)
 constexpr uint32_t tSubscriptionId::decode(const uint8_t*& s)
 {
 	uint32_t res = 0;
-	for(uint32_t offset = 0; offset < 6; ++s, ++offset)
+	for (uint32_t offset = 0; offset < 6; ++s, ++offset)
 		res |= *s < 128 && i64[*s] >= 0 ? (i64[*s] << offset * 6) : throw DeserializationError(E3112);
 	return res;
 }
@@ -1388,7 +1388,7 @@ tSubscriptionId::tSubscriptionId(const tinyxml2::XMLElement* xml)
 {
 	const char* data = xml->GetText();
 	size_t len;
-	if(!data || (len = strlen(data)) != 12)
+	if (!data || (len = strlen(data)) != 12)
 		throw DeserializationError(E3201);
 	const uint8_t* d = reinterpret_cast<const uint8_t*>(data);
 	ID = decode(d);

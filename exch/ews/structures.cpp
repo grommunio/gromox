@@ -93,9 +93,9 @@ T& defaulted(std::optional<T>& container, Args&&... args)
 template<typename T, typename PT=PropType<T>, std::enable_if_t<!std::is_same_v<PT, void>, bool> = true>
 void fromProp(const TAGGED_PROPVAL* prop, std::optional<T>& target)
 {
-	if(!prop)
+	if (!prop)
 		return;
-	if constexpr(std::is_pointer_v<PT>)
+	if constexpr (std::is_pointer_v<PT>)
 		target.emplace(static_cast<PT>(prop->pvalue));
 	else
 		target.emplace(*static_cast<const PT*>(prop->pvalue));
@@ -113,9 +113,9 @@ void fromProp(const TAGGED_PROPVAL* prop, std::optional<T>& target)
 template<typename T, typename PT=PropType<T>, std::enable_if_t<!std::is_same_v<PT, void>, bool> = true>
 void fromProp(const TAGGED_PROPVAL* prop, T& target)
 {
-	if(!prop)
+	if (!prop)
 		return;
-	if constexpr(std::is_pointer_v<PT>)
+	if constexpr (std::is_pointer_v<PT>)
 		target = static_cast<PT>(prop->pvalue);
 	else
 		target = *static_cast<const PT*>(prop->pvalue);
@@ -129,7 +129,7 @@ void fromProp(const TAGGED_PROPVAL* prop, T& target)
  */
 void fromProp(const TAGGED_PROPVAL* prop, std::optional<sTimePoint>& target)
 {
-	if(prop)
+	if (prop)
 		target.emplace(sTimePoint::fromNT(*static_cast<const uint64_t*>(prop->pvalue)));
 }
 
@@ -165,7 +165,7 @@ constexpr size_t max_count()
 template<class C, typename T>
 inline C mkArray(const std::vector<T>& data)
 {
-	if(data.size() > max_count<C>())
+	if (data.size() > max_count<C>())
 		throw DispatchError(E3099);
 	return C{count_t<C>(data.size()), deconst(data.data())};
 }
@@ -251,11 +251,11 @@ void daysofweek_to_str(const uint32_t& weekrecur, std::string& daysofweek)
 	case 0x41:
 		daysofweek.append(Enum::WeekendDay); return;
 	}
-	for(uint8_t wd = 0; wd < 7; ++wd)
-		if(weekrecur & (1 << wd))
+	for (uint8_t wd = 0; wd < 7; ++wd)
+		if (weekrecur & (1 << wd))
 			daysofweek.append(Enum::DayOfWeekType::Choices[wd]).append(" ");
 	// remove trailing space
-	if(!daysofweek.empty() && std::isspace(daysofweek.back()))
+	if (!daysofweek.empty() && std::isspace(daysofweek.back()))
 		daysofweek.pop_back();
 }
 
@@ -303,12 +303,12 @@ tRecurrencePattern get_recurrence_pattern(const RECURRENCE_PATTERN& recur_pat)
 	std::string daysofweek;
 	switch (recur_pat.patterntype) {
 	case rptMinute:
-		if(recur_pat.slidingflag)
+		if (recur_pat.slidingflag)
 			return tDailyRegeneratingPattern(recur_pat.period / 1440);
 		return tDailyRecurrencePattern(recur_pat.period / 1440);
 	case rptWeek: {
 		daysofweek_to_str(recur_pat.pts.weekrecur, daysofweek);
-		if(recur_pat.slidingflag)
+		if (recur_pat.slidingflag)
 			return tWeeklyRegeneratingPattern(recur_pat.period);
 		return tWeeklyRecurrencePattern(recur_pat.period, daysofweek,
 				Enum::DayOfWeekType(static_cast<uint8_t>(recur_pat.firstdow)));
@@ -320,12 +320,12 @@ tRecurrencePattern get_recurrence_pattern(const RECURRENCE_PATTERN& recur_pat)
 		ical_get_itime_from_yearday(1601,
 			recur_pat.firstdatetime / 1440 + 1, &itime);
 		if (recur_pat.period % 12 != 0) {
-			if(recur_pat.slidingflag)
+			if (recur_pat.slidingflag)
 				return tMonthlyRegeneratingPattern(recur_pat.period);
 			return tAbsoluteMonthlyRecurrencePattern(recur_pat.period,
 				recur_pat.pts.dayofmonth);
 		}
-		if(recur_pat.slidingflag)
+		if (recur_pat.slidingflag)
 			return tYearlyRegeneratingPattern(recur_pat.period);
 		return tAbsoluteYearlyRecurrencePattern(recur_pat.pts.dayofmonth,
 				Enum::MonthNamesType(static_cast<uint8_t>(itime.month - 1)));
@@ -338,12 +338,12 @@ tRecurrencePattern get_recurrence_pattern(const RECURRENCE_PATTERN& recur_pat)
 		Enum::DayOfWeekIndexType dayofweekindex(static_cast<uint8_t>(
 			recur_pat.pts.monthnth.recurnum - 1));
 		if (recur_pat.period % 12 != 0) {
-			if(recur_pat.slidingflag)
+			if (recur_pat.slidingflag)
 				return tMonthlyRegeneratingPattern(recur_pat.period);
 			return tRelativeMonthlyRecurrencePattern(recur_pat.period,
 					daysofweek, dayofweekindex);
 		}
-		if(recur_pat.slidingflag)
+		if (recur_pat.slidingflag)
 			return tYearlyRegeneratingPattern(recur_pat.period);
 		return tRelativeYearlyRecurrencePattern(daysofweek, dayofweekindex,
 				Enum::MonthNamesType(static_cast<uint8_t>(itime.month - 1)));
@@ -423,7 +423,7 @@ sBase64Binary::sBase64Binary(const BINARY *bin) : std::string(*bin)
  */
 sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
 {
-	if(PROP_TYPE(tp.proptag) != PT_BINARY)
+	if (PROP_TYPE(tp.proptag) != PT_BINARY)
 		throw DispatchError(E3049);
 	assign(*static_cast<const BINARY *>(tp.pvalue));
 }
@@ -460,7 +460,7 @@ sAttachmentId::sAttachmentId(const TAGGED_PROPVAL& tp, uint32_t num) : sMessageE
 sAttachmentId::sAttachmentId(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
-	if(size > std::numeric_limits<uint32_t>::max())
+	if (size > std::numeric_limits<uint32_t>::max())
 		throw EWSError::InvalidAttachmentId(E3081);
 	ext_pull.init(data, size, EWSContext::alloc, 0);
 	TRY(ext_pull.g_msg_eid(this), E3146, "ErrorInvalidAttachmentId");
@@ -479,7 +479,7 @@ sOccurrenceId::sOccurrenceId(const TAGGED_PROPVAL& tp, uint32_t bd) : sMessageEn
 sOccurrenceId::sOccurrenceId(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
-	if(size > std::numeric_limits<uint32_t>::max())
+	if (size > std::numeric_limits<uint32_t>::max())
 		throw EWSError::InvalidOccurrenceId(E3205);
 	ext_pull.init(data, size, EWSContext::alloc, 0);
 	TRY(ext_pull.g_msg_eid(this), E3206, "ErrorInvalidOccurrenceId");
@@ -506,7 +506,7 @@ sFolderEntryId::sFolderEntryId(const void* data, uint64_t size)
 void sFolderEntryId::init(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
-	if(size >	std::numeric_limits<uint32_t>::max())
+	if (size > std::numeric_limits<uint32_t>::max())
 		throw EWSError::InvalidFolderId(E3050);
 	ext_pull.init(data, size, EWSContext::alloc, 0);
 	TRY(ext_pull.g_folder_eid(this), E3148, "ErrorInvalidFolderId");
@@ -558,7 +558,7 @@ sMessageEntryId::sMessageEntryId(const void* data, uint64_t size)
  */
 sMessageEntryId::sMessageEntryId(const TAGGED_PROPVAL& tp)
 {
-	if(PROP_TYPE(tp.proptag) != PT_BINARY)
+	if (PROP_TYPE(tp.proptag) != PT_BINARY)
 		throw DispatchError(E3082);
 	const BINARY* bin = static_cast<const BINARY*>(tp.pvalue);
 	init(bin->pv, bin->cb);
@@ -573,7 +573,7 @@ sMessageEntryId::sMessageEntryId(const TAGGED_PROPVAL& tp)
 void sMessageEntryId::init(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
-	if(size >	std::numeric_limits<uint32_t>::max())
+	if (size > std::numeric_limits<uint32_t>::max())
 		throw EWSError::InvalidId(E3050);
 	ext_pull.init(data, size, EWSContext::alloc, 0);
 	TRY(ext_pull.g_msg_eid(this), E3149, "ErrorInvalidId");
@@ -674,11 +674,11 @@ sFolderSpec::sFolderSpec(const tDistinguishedFolderId& folder)
 {
 	auto it = std::find_if(distNameInfo.begin(), distNameInfo.end(),
 	                       [&folder](const auto& elem){return folder.Id == elem.name;});
-	if(it == distNameInfo.end())
+	if (it == distNameInfo.end())
 		throw EWSError::FolderNotFound(E3051(folder.Id));
 	folderId = rop_util_make_eid_ex(1, it->id);
 	location = it->isPrivate? PRIVATE : PUBLIC;
-	if(folder.Mailbox)
+	if (folder.Mailbox)
 		target = folder.Mailbox->EmailAddress;
 }
 
@@ -704,10 +704,10 @@ bool sFolderSpec::isDistinguished() const
  */
 sFolderSpec& sFolderSpec::normalize()
 {
-	if(location != PUBLIC || !target)
+	if (location != PUBLIC || !target)
 		return *this;
 	size_t at = target->find('@');
-	if(at == std::string::npos)
+	if (at == std::string::npos)
 		return *this;
 	target->erase(0, at + 1);
 	return *this;
@@ -748,10 +748,10 @@ sShape::sShape(const tItemResponseShape& shape)
  */
 sShape::sShape(const tFolderChange& changes)
 {
-	for(const auto& change : changes.Updates) {
-		if(std::holds_alternative<tSetFolderField>(change))
+	for (const auto &change : changes.Updates) {
+		if (std::holds_alternative<tSetFolderField>(change))
 			std::get<tSetFolderField>(change).fieldURI.tags(*this);
-		else if(std::holds_alternative<tDeleteFolderField>(change))
+		else if (std::holds_alternative<tDeleteFolderField>(change))
 			std::get<tDeleteFolderField>(change).fieldURI.tags(*this, false);
 		else
 			mlog(LV_WARN, "[ews] AppendToFolderField not implemented - ignoring");
@@ -765,10 +765,10 @@ sShape::sShape(const tFolderChange& changes)
  */
 sShape::sShape(const tItemChange& changes)
 {
-	for(const auto& change : changes.Updates) {
-		if(std::holds_alternative<tSetItemField>(change))
+	for (const auto &change : changes.Updates) {
+		if (std::holds_alternative<tSetItemField>(change))
 			std::get<tSetItemField>(change).fieldURI.tags(*this);
-		else if(std::holds_alternative<tDeleteItemField>(change))
+		else if (std::holds_alternative<tDeleteItemField>(change))
 			std::get<tDeleteItemField>(change).fieldURI.tags(*this, false);
 		else
 			mlog(LV_WARN, "[ews] AppendToItemField not implemented - ignoring");
@@ -800,7 +800,7 @@ sShape::sShape(const TPROPVAL_ARRAY& tp)
 sShape& sShape::add(uint32_t tag, uint8_t flags)
 {
 	auto it = props.find(tag);
-	if(it == props.end()) {
+	if (it == props.end()) {
 		if (flags & FL_RM)
 			dTags.emplace_back(tag);
 		else
@@ -871,7 +871,7 @@ void sShape::write(const TAGGED_PROPVAL& tp)
 	*prop = tp;
 	props[tp.proptag].prop = prop; */
 	auto it = std::find_if(wProps.begin(), wProps.end(), [&](const TAGGED_PROPVAL& t){return t.proptag == tp.proptag;});
-	if(it == wProps.end())
+	if (it == wProps.end())
 		wProps.emplace_back(tp);
 	else
 		*it = tp;
@@ -889,7 +889,7 @@ void sShape::write(const TAGGED_PROPVAL& tp)
 void sShape::write(const PROPERTY_NAME& name, const TAGGED_PROPVAL& tp)
 {
 	auto it = std::find(names.begin(), names.end(), name);
-	if(it == names.end()) {
+	if (it == names.end()) {
 		namedTags.emplace_back(tp.proptag);
 		nameMeta.emplace_back(0);
 		names.emplace_back(name);
@@ -934,7 +934,7 @@ const TAGGED_PROPVAL* sShape::writes(uint32_t tag) const
 const TAGGED_PROPVAL* sShape::writes(const PROPERTY_NAME& name) const
 {
 	auto it = std::find_if(names.begin(), names.end(), [&](const PROPERTY_NAME& n){return n == name;});
-	if(it == names.end())
+	if (it == names.end())
 		return nullptr;
 	size_t index = std::distance(names.begin(), it);
 	if (namedCache.size() == names.size())
@@ -953,7 +953,7 @@ const TAGGED_PROPVAL* sShape::writes(const PROPERTY_NAME& name) const
  */
 void sShape::clean()
 {
-	for(auto& entry : props)
+	for (auto &entry : props)
 		entry.second.prop = nullptr;
 }
 
@@ -968,7 +968,7 @@ void sShape::clean()
 const TAGGED_PROPVAL* sShape::get(uint32_t tag, uint8_t mask) const
 {
 	auto it = props.find(tag);
-	if(it == props.end() || (mask != FL_ANY && !(it->second.flags & mask)))
+	if (it == props.end() || (mask != FL_ANY && !(it->second.flags & mask)))
 		return nullptr;
 	return it->second.prop;
 }
@@ -984,7 +984,7 @@ const TAGGED_PROPVAL* sShape::get(uint32_t tag, uint8_t mask) const
 const TAGGED_PROPVAL* sShape::get(const PROPERTY_NAME& name, uint8_t mask) const
 {
 	auto it = std::find(names.begin(), names.end(), name);
-	if(it == names.end())
+	if (it == names.end())
 		return nullptr;
 	auto index = std::distance(names.begin(), it);
 	return get(namedTags[index], mask);
@@ -1019,7 +1019,7 @@ template<typename T> const T* sShape::get(uint32_t tag, uint8_t mask) const
 template<typename T> const T* sShape::get(const PROPERTY_NAME& name, uint8_t mask) const
 {
 	auto it = std::find(names.begin(), names.end(), name);
-	if(it == names.end())
+	if (it == names.end())
 		return nullptr;
 	auto index = std::distance(names.begin(), it);
 	return get<T>(namedTags[index], mask);
@@ -1049,9 +1049,9 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 	if (ids.size() != names.size()) // Abort if sizes do not match
 		return false;
 	size_t namedAdd = 0, namedRm = 0;
-	for(uint32_t tag : namedTags) {//Remove all named tags
+	for (uint32_t tag : namedTags) {//Remove all named tags
 		auto it = props.find(tag);
-		if(it == props.end())
+		if (it == props.end())
 			continue;
 		if (it->second.flags & FL_RM)
 			++namedRm;
@@ -1059,14 +1059,14 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 			++namedAdd;
 		props.erase(it);
 	}
-	if(tags.size() >= namedAdd)
+	if (tags.size() >= namedAdd)
 		tags.resize(tags.size()-namedAdd);
-	if(dTags.size() >=namedRm)
+	if (dTags.size() >=namedRm)
 		dTags.resize(dTags.size()-namedRm);//Truncate named IDs
-	for(size_t index = 0; index < names.size(); ++index) { //Add named IDs
+	for (size_t index = 0; index < names.size(); ++index) { //Add named IDs
 		uint32_t tag = PROP_TAG(PROP_TYPE(namedTags[index]), ids[index]);
 		namedTags[index] = tag;
-		if(!PROP_ID(tag))
+		if (!PROP_ID(tag))
 			continue;
 		if (nameMeta[index] & FL_RM) {
 			dTags.emplace_back(tag);
@@ -1075,9 +1075,9 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 			tags.emplace_back(tag);
 		}
 	}
-	if(namedCache.size() == namedTags.size()) {
-		for(size_t index = 0; index < namedTags.size(); ++index)
-			if(namedCache[index].proptag)
+	if (namedCache.size() == namedTags.size()) {
+		for (size_t index = 0; index < namedTags.size(); ++index)
+			if (namedCache[index].proptag)
 				write(names[index], TAGGED_PROPVAL{namedTags[index], namedCache[index].pvalue});
 		namedCache.clear();
 	}
@@ -1112,8 +1112,8 @@ PROPTAG_ARRAY sShape::proptags() const
  */
 void sShape::putExtended(std::vector<tExtendedProperty>& extprops) const
 {
-	for(const auto& prop : props)
-		if(prop.second.flags & FL_EXT && prop.second.prop)
+	for (const auto &prop : props)
+		if (prop.second.flags & FL_EXT && prop.second.prop)
 			extprops.emplace_back(*prop.second.prop, prop.second.name? *prop.second.name : NONAME);
 }
 
@@ -1160,9 +1160,9 @@ void sSyncState::init(const std::string& data64)
 	given.clear();
 	read.clear();
 	seen_fai.clear();
-	if(data.size() <= 16)
+	if (data.size() <= 16)
 		return;
-	if(data.size() > std::numeric_limits<uint32_t>::max())
+	if (data.size() > std::numeric_limits<uint32_t>::max())
 		throw EWSError::InvalidSyncStateData(E3052);
 	ext_pull.init(data.data(), data.size(), EWSContext::alloc, EXT_FLAG_WCOUNT);
 	if (ext_pull.g_tpropval_a(&propvals) != pack_result::ok)
@@ -1198,7 +1198,7 @@ void sSyncState::init(const std::string& data64)
  */
 void sSyncState::convert()
 {
-	if(!given.convert() || !seen.convert() || !read.convert() || !seen_fai.convert())
+	if (!given.convert() || !seen.convert() || !read.convert() || !seen_fai.convert())
 			throw DispatchError(E3064);
 }
 
@@ -1216,7 +1216,7 @@ void sSyncState::update(const EID_ARRAY& given_fids, const EID_ARRAY& deleted_fi
 		if (!given.append(pid))
 			throw DispatchError(E3057);
 	seen.clear();
-	if(lastCn && !seen.append_range(1, 1, rop_util_get_gc_value(lastCn)))
+	if (lastCn && !seen.append_range(1, 1, rop_util_get_gc_value(lastCn)))
 		throw DispatchError(E3058);
 }
 
@@ -1256,7 +1256,7 @@ sTimePoint::sTimePoint(time_point tp, const tSerializableTimeZone& tz) :
  */
 sTimePoint::sTimePoint(const char* dtstr)
 {
-	if(!dtstr)
+	if (!dtstr)
 		throw EWSError::SchemaValidation(E3150);
 	tm t{};
 	double seconds = 0;
@@ -1274,7 +1274,7 @@ sTimePoint::sTimePoint(const char* dtstr)
 	time = clock::from_time_t(timestamp);
 	time += std::chrono::duration_cast<time_point::duration>(std::chrono::duration<double>(seconds));
 	offset = std::chrono::minutes(60 * (-tz_hour) + (tz_hour > 0 ? -tz_min : tz_min));
-	if(strlen(dtstr) == 19)
+	if (strlen(dtstr) == 19)
 		calcOffset = true;
 }
 
@@ -1323,14 +1323,14 @@ tAttachment::tAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
 	fromProp(props.find(PR_ATTACH_SIZE), Size);
 	fromProp(props.find(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
 	auto flags = props.get<const uint32_t>(PR_ATTACH_FLAGS);
-	if(flags)
+	if (flags)
 		IsInline = *flags & ATT_MHTML_REF;
 }
 
 sAttachment tAttachment::create(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
 {
 	const TAGGED_PROPVAL* prop = props.find(PR_ATTACH_METHOD);
-	if(prop)
+	if (prop)
 		switch(*static_cast<const uint32_t*>(prop->pvalue)) {
 		case ATTACH_EMBEDDED_MSG:
 			return sAttachment(std::in_place_type_t<tItemAttachment>(), aid, props);
@@ -1352,7 +1352,7 @@ tBaseFolderType::tBaseFolderType(const sShape& shape)
 	fromProp(shape.get(PR_DISPLAY_NAME), DisplayName);
 	fromProp(shape.get(PR_ENTRYID), defaulted(FolderId).Id);
 	fromProp(shape.get(PR_FOLDER_CHILD_COUNT), ChildFolderCount);
-	if((prop = shape.get(PR_PARENT_ENTRYID)))
+	if ((prop = shape.get(PR_PARENT_ENTRYID)))
 		fromProp(prop, defaulted(ParentFolderId).Id);
 	shape.putExtended(ExtendedProperty);
 }
@@ -1403,7 +1403,7 @@ tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, IdType t) : type(t)
 	/* Extra byte is appended for encoding during serialization, prevent reallocation */
 	Id.reserve(fEntryID.size() + 1);
 	Id = fEntryID;
-	if(type == ID_GUESS) {
+	if (type == ID_GUESS) {
 		switch(Id.size()) {
 		case 46: // Size of folder entry ids
 			type = ID_FOLDER; break;
@@ -1487,7 +1487,7 @@ void tBasePagingType::update(tFindResponsePagingAttributes&, uint32_t, uint32_t)
 uint16_t tBaseSubscriptionRequest::eventMask() const
 {
 	uint16_t res = 0;
-	for(auto event : EventTypes)
+	for (auto event : EventTypes)
 		switch(event.index()) {
 		case 0: // CopiedEvent
 			res |= NF_OBJECT_COPIED; break;
@@ -1521,14 +1521,14 @@ void tTask::update(const sShape& shape)
 		const STRING_ARRAY* companies = static_cast<const STRING_ARRAY*>(prop->pvalue);
 		Companies.emplace(companies->count);
 		char** src = companies->ppstr;
-		for(std::string& dest : *Companies)
+		for (std::string &dest : *Companies)
 			dest = *src++;
 	}
-	if((prop = shape.get(NtTaskDateCompleted)))
+	if ((prop = shape.get(NtTaskDateCompleted)))
 		CompleteDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
-	if((prop = shape.get(NtTaskDueDate)))
+	if ((prop = shape.get(NtTaskDueDate)))
 		DueDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
-	if((prop = shape.get(NtTaskStartDate)))
+	if ((prop = shape.get(NtTaskStartDate)))
 		StartDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
 	fromProp(shape.get(NtTaskComplete), IsComplete);
 	fromProp(shape.get(NtTaskFRecurring), IsRecurring);
@@ -1569,11 +1569,11 @@ void tCalendarItem::update(const sShape& shape)
 	tItem::update(shape);
 	fromProp(shape.get(PR_RESPONSE_REQUESTED), IsResponseRequested);
 	const TAGGED_PROPVAL* prop;
-	if((prop = shape.get(PR_SENDER_ADDRTYPE)))
+	if ((prop = shape.get(PR_SENDER_ADDRTYPE)))
 		fromProp(prop, defaulted(Organizer).Mailbox.RoutingType);
-	if((prop = shape.get(PR_SENDER_EMAIL_ADDRESS)))
+	if ((prop = shape.get(PR_SENDER_EMAIL_ADDRESS)))
 		fromProp(prop, defaulted(Organizer).Mailbox.EmailAddress);
-	if((prop = shape.get(PR_SENDER_NAME)))
+	if ((prop = shape.get(PR_SENDER_NAME)))
 		fromProp(prop, defaulted(Organizer).Mailbox.Name);
 
 	if ((prop = shape.get(NtAppointmentNotAllowPropose)))
@@ -1582,7 +1582,7 @@ void tCalendarItem::update(const sShape& shape)
 	if ((prop = shape.get(NtAppointmentRecur))) {
 		CalendarItemType.emplace(Enum::RecurringMaster);
 		const BINARY* recurData = static_cast<BINARY*>(prop->pvalue);
-		if(recurData->cb > 0) {
+		if (recurData->cb > 0) {
 			APPOINTMENT_RECUR_PAT apprecurr = getAppointmentRecurPattern(recurData);
 
 			auto& rec = Recurrence.emplace();
@@ -1596,9 +1596,9 @@ void tCalendarItem::update(const sShape& shape)
 				std::vector<tDeletedOccurrenceInfoType> delOccs;
 				auto entryid_propval = shape.get(PR_ENTRYID);
 				process_occurrences(entryid_propval, apprecurr, modOccs, delOccs);
-				if(modOccs.size() > 0)
+				if (modOccs.size() > 0)
 					ModifiedOccurrences.emplace(modOccs);
-				if(delOccs.size() > 0)
+				if (delOccs.size() > 0)
 					DeletedOccurrences.emplace(delOccs);
 			}
 		}
@@ -1663,7 +1663,7 @@ void tCalendarItem::update(const sShape& shape)
 
 	if ((prop = shape.get(NtGlobalObjectId))) {
 		const BINARY* goid = static_cast<BINARY*>(prop->pvalue);
-		if(goid->cb > 0) {
+		if (goid->cb > 0) {
 			std::string uid(goid->cb * 2 + 1, 0);
 			encode_hex_binary(goid->pb, goid->cb, uid.data(), static_cast<int>(uid.size()));
 			UID.emplace(std::move(uid));
@@ -1671,10 +1671,10 @@ void tCalendarItem::update(const sShape& shape)
 	}
 
 	// TODO: check if we should use some other property for RecurrenceId
-	if((prop = shape.get(NtExceptionReplaceTime)))
+	if ((prop = shape.get(NtExceptionReplaceTime)))
 		RecurrenceId.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
 
-	if((prop = shape.get(PR_CREATION_TIME)))
+	if ((prop = shape.get(PR_CREATION_TIME)))
 		fromProp(prop, DateTimeStamp);
 	else
 		fromProp(shape.get(PR_LOCAL_COMMIT_TIME), DateTimeStamp);
@@ -1700,7 +1700,7 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 			auto buf = ianatz_to_tzdef(calTimezone.value().c_str());
 			if (buf != nullptr) {
 				size_t len = buf->size();
-				if(len > std::numeric_limits<uint32_t>::max())
+				if (len > std::numeric_limits<uint32_t>::max())
 					throw InputError(E3293);
 				BINARY *tmp_bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
 					{reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
@@ -1714,9 +1714,13 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 				if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
 					throw EWSError::InternalServerError(E3294);
 				auto& op = shape.offsetProps;
-				if((tag = shape.tag(NtCommonStart)) && startTime.has_value() && std::find(op.begin(), op.end(), tag) != op.end())
+				if ((tag = shape.tag(NtCommonStart)) &&
+				    startTime.has_value() &&
+				    std::find(op.begin(), op.end(), tag) != op.end())
 					offset_from_tz(&tzdef, rop_util_nttime_to_unix(startTime.value()), startOffset);
-				if((tag = shape.tag(NtCommonEnd)) && endTime.has_value() && std::find(op.begin(), op.end(), tag) != op.end())
+				if ((tag = shape.tag(NtCommonEnd)) &&
+				    endTime.has_value() &&
+				    std::find(op.begin(), op.end(), tag) != op.end())
 					offset_from_tz(&tzdef, rop_util_nttime_to_unix(endTime.value()), endOffset);
 			}
 		}
@@ -1930,9 +1934,9 @@ const tChangeDescription::Field* tChangeDescription::find(const char* type, cons
 	const Field *specific = nullptr, *general = nullptr;
 	auto matches = fields.equal_range(name);
 	for (auto it = matches.first; it != matches.second; ++it) {
-		if(!it->second.type)
+		if (!it->second.type)
 			general = &it->second;
-		else if(!strcmp(it->second.type, type))
+		else if (!strcmp(it->second.type, type))
 			specific = &it->second;
 	}
 	return specific? specific : general;
@@ -1965,7 +1969,7 @@ TAGGED_PROPVAL tChangeDescription::mkProp(uint32_t tag, const T& val)
 void tChangeDescription::convProp(const char* type, const char* name, const tinyxml2::XMLElement* value, sShape& shape)
 {
 	const Field* field = find(type, name);
-	if(!field) {
+	if (!field) {
 		mlog(LV_WARN, "ews: no conversion for %s::%s", type, name);
 		return;
 	}
@@ -2005,7 +2009,7 @@ void tChangeDescription::convBody(const tinyxml2::XMLElement* xml, sShape& shape
 void tChangeDescription::convBool(uint32_t tag, const XMLElement* v, sShape& shape)
 {
 	bool value;
-	if(v->QueryBoolText(&value))
+	if (v->QueryBoolText(&value))
 		throw EWSError::InvalidExtendedPropertyValue(E3100(v->GetText()? v->GetText() : "(nil)"));
 	shape.write(mkProp(tag, static_cast<uint8_t>(value ? TRUE : false)));
 }
@@ -2035,10 +2039,10 @@ void tChangeDescription::convBool(const PROPERTY_NAME &name,
 void tChangeDescription::convDate(uint32_t tag, const XMLElement* v, sShape& shape)
 {
 	const char* text = v->GetText();
-	if(!text)
+	if (!text)
 		throw EWSError::InvalidExtendedPropertyValue(E3257);
 	shape.write(mkProp(tag, sTimePoint(text).toNT()));
-	if(strlen(text) == 19)
+	if (strlen(text) == 19)
 		shape.offsetProps.emplace_back(tag);
 }
 
@@ -2052,7 +2056,7 @@ void tChangeDescription::convDate(uint32_t tag, const XMLElement* v, sShape& sha
 void tChangeDescription::convDate(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
 {
 	uint32_t tag = shape.tag(name);
-	if(tag)
+	if (tag)
 		convDate(tag, v, shape);
 }
 
@@ -2115,7 +2119,7 @@ void tChangeDescription::convText(uint32_t tag, const XMLElement* v, sShape& sha
 void tChangeDescription::convText(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
 {
 	uint32_t tag = shape.tag(name);
-	if(tag)
+	if (tag)
 		convText(tag, v, shape);
 }
 
@@ -2136,7 +2140,7 @@ void tChangeDescription::convStrArray(uint32_t tag, const XMLElement* v, sShape&
 void tChangeDescription::convStrArray(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
 {
 	uint32_t tag = shape.tag(name);
-	if(tag)
+	if (tag)
 		convStrArray(tag, v, shape);
 }
 
@@ -2157,45 +2161,45 @@ void tContact::genFields(sShape& shape)
 	std::optional<std::string> street, city, state, country, postal;
 
 	uint32_t tag;
-	if((tag = shape.tag(NtBusinessAddress)) && !shape.writes(tag)) {
+	if ((tag = shape.tag(NtBusinessAddress)) && !shape.writes(tag)) {
 		fromProp(shape.writes(NtBusinessAddressStreet), street);
 		fromProp(shape.writes(NtBusinessAddressCity), city);
 		fromProp(shape.writes(NtBusinessAddressState), state);
 		fromProp(shape.writes(NtBusinessAddressCountry), country);
 		fromProp(shape.writes(NtBusinessAddressPostalCode), postal);
-		if(street || city || state || country || postal) {
+		if (street || city || state || country || postal) {
 			std::string addr = mkAddress(street, city, state, postal, country);
 			shape.write(TAGGED_PROPVAL{tag, EWSContext::cpystr(addr)});
 			street.reset(), city.reset(), state.reset(), country.reset(), postal.reset();
 		}
 	}
-	if((tag = shape.tag(NtHomeAddress)) && !shape.writes(tag)) {
+	if ((tag = shape.tag(NtHomeAddress)) && !shape.writes(tag)) {
 		fromProp(shape.writes(PR_HOME_ADDRESS_STREET), street);
 		fromProp(shape.writes(PR_HOME_ADDRESS_CITY), city);
 		fromProp(shape.writes(PR_HOME_ADDRESS_STATE_OR_PROVINCE), state);
 		fromProp(shape.writes(PR_HOME_ADDRESS_COUNTRY), country);
 		fromProp(shape.writes(PR_HOME_ADDRESS_POSTAL_CODE), postal);
-		if(street || city || state || country || postal) {
+		if (street || city || state || country || postal) {
 			std::string addr = mkAddress(street, city, state, postal, country);
 			shape.write(TAGGED_PROPVAL{tag, EWSContext::cpystr(addr)});
 			street.reset(), city.reset(), state.reset(), country.reset(), postal.reset();
 		}
 	}
-	if((tag = shape.tag(NtOtherAddress)) && !shape.writes(tag)) {
+	if ((tag = shape.tag(NtOtherAddress)) && !shape.writes(tag)) {
 		fromProp(shape.writes(PR_OTHER_ADDRESS_STREET), street);
 		fromProp(shape.writes(PR_OTHER_ADDRESS_CITY), city);
 		fromProp(shape.writes(PR_OTHER_ADDRESS_STATE_OR_PROVINCE), state);
 		fromProp(shape.writes(PR_OTHER_ADDRESS_COUNTRY), country);
 		fromProp(shape.writes(PR_OTHER_ADDRESS_POSTAL_CODE), postal);
-		if(street || city || state || country || postal) {
+		if (street || city || state || country || postal) {
 			std::string addr = mkAddress(street, city, state, postal, country);
 			shape.write(TAGGED_PROPVAL{tag, EWSContext::cpystr(addr)});
 		}
 	}
 
-	if((tag = shape.tag(NtFileAs)) && !shape.writes(tag)) {
+	if ((tag = shape.tag(NtFileAs)) && !shape.writes(tag)) {
 		const TAGGED_PROPVAL* displayName = shape.writes(PR_DISPLAY_NAME);
-		if(displayName)
+		if (displayName)
 			shape.write(TAGGED_PROPVAL{tag, displayName->pvalue});
 	}
 }
@@ -2236,119 +2240,119 @@ void tContact::update(const sShape& shape)
 	fromProp(shape.get(PR_WEDDING_ANNIVERSARY), WeddingAnniversary);
 	fromProp(shape.get(NtFileAs), FileAs);
 	const char* val;
-	if((val = shape.get<char>(PR_BUSINESS_TELEPHONE_NUMBER)))
+	if ((val = shape.get<char>(PR_BUSINESS_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::BusinessPhone));
-	if((val = shape.get<char>(PR_HOME_TELEPHONE_NUMBER)))
+	if ((val = shape.get<char>(PR_HOME_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::HomePhone));
-	if((val = shape.get<char>(PR_PRIMARY_TELEPHONE_NUMBER)))
+	if ((val = shape.get<char>(PR_PRIMARY_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::PrimaryPhone));
-	if((val = shape.get<char>(PR_BUSINESS2_TELEPHONE_NUMBER)))
+	if ((val = shape.get<char>(PR_BUSINESS2_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::BusinessPhone2));
-	if((val = shape.get<char>(PR_MOBILE_TELEPHONE_NUMBER)))
+	if ((val = shape.get<char>(PR_MOBILE_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::MobilePhone));
-	if((val = shape.get<char>(PR_PAGER_TELEPHONE_NUMBER)))
+	if ((val = shape.get<char>(PR_PAGER_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::Pager));
-	if((val = shape.get<char>(PR_BUSINESS_FAX_NUMBER)))
+	if ((val = shape.get<char>(PR_BUSINESS_FAX_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::BusinessFax));
-	if((val = shape.get<char>(PR_ASSISTANT_TELEPHONE_NUMBER)))
+	if ((val = shape.get<char>(PR_ASSISTANT_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::AssistantPhone));
-	if((val = shape.get<char>(PR_HOME2_TELEPHONE_NUMBER)))
+	if ((val = shape.get<char>(PR_HOME2_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::HomePhone2));
-	if((val = shape.get<char>(PR_COMPANY_MAIN_PHONE_NUMBER)))
+	if ((val = shape.get<char>(PR_COMPANY_MAIN_PHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::CompanyMainPhone));
-	if((val = shape.get<char>(PR_HOME_FAX_NUMBER)))
+	if ((val = shape.get<char>(PR_HOME_FAX_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::HomeFax));
-	if((val = shape.get<char>(PR_OTHER_TELEPHONE_NUMBER)))
+	if ((val = shape.get<char>(PR_OTHER_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::OtherTelephone));
-	if((val = shape.get<char>(PR_CALLBACK_TELEPHONE_NUMBER)))
+	if ((val = shape.get<char>(PR_CALLBACK_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::Callback));
-	if((val = shape.get<char>(PR_RADIO_TELEPHONE_NUMBER)))
+	if ((val = shape.get<char>(PR_RADIO_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::RadioPhone));
 
 	std::optional<tPhysicalAddressDictionaryEntry> bAddr, hAddr, oAddr; // "Business", "Home", and "Other" address
-	if((val = shape.get<char>(NtBusinessAddressCity)))
+	if ((val = shape.get<char>(NtBusinessAddressCity)))
 		defaulted(bAddr, Enum::Business).City = val;
-	if((val = shape.get<char>(NtBusinessAddressCountry)))
+	if ((val = shape.get<char>(NtBusinessAddressCountry)))
 		defaulted(bAddr, Enum::Business).CountryOrRegion = val;
-	if((val = shape.get<char>(NtBusinessAddressPostalCode)))
+	if ((val = shape.get<char>(NtBusinessAddressPostalCode)))
 		defaulted(bAddr, Enum::Business).PostalCode = val;
-	if((val = shape.get<char>(NtBusinessAddressState)))
+	if ((val = shape.get<char>(NtBusinessAddressState)))
 		defaulted(bAddr, Enum::Business).State = val;
-	if((val = shape.get<char>(NtBusinessAddressStreet)))
+	if ((val = shape.get<char>(NtBusinessAddressStreet)))
 		defaulted(bAddr, Enum::Business).Street = val;
-	if((val = shape.get<char>(PR_HOME_ADDRESS_CITY)))
+	if ((val = shape.get<char>(PR_HOME_ADDRESS_CITY)))
 		defaulted(hAddr, Enum::Home).City = val;
-	if((val = shape.get<char>(PR_HOME_ADDRESS_COUNTRY)))
+	if ((val = shape.get<char>(PR_HOME_ADDRESS_COUNTRY)))
 		defaulted(hAddr, Enum::Home).CountryOrRegion = val;
-	if((val = shape.get<char>(PR_HOME_ADDRESS_POSTAL_CODE)))
+	if ((val = shape.get<char>(PR_HOME_ADDRESS_POSTAL_CODE)))
 		defaulted(hAddr, Enum::Home).PostalCode = val;
-	if((val = shape.get<char>(PR_HOME_ADDRESS_STATE_OR_PROVINCE)))
+	if ((val = shape.get<char>(PR_HOME_ADDRESS_STATE_OR_PROVINCE)))
 		defaulted(hAddr, Enum::Home).State = val;
-	if((val = shape.get<char>(PR_HOME_ADDRESS_STREET)))
+	if ((val = shape.get<char>(PR_HOME_ADDRESS_STREET)))
 		defaulted(hAddr, Enum::Home).Street = val;
-	if((val = shape.get<char>(PR_OTHER_ADDRESS_CITY)))
+	if ((val = shape.get<char>(PR_OTHER_ADDRESS_CITY)))
 		defaulted(oAddr, Enum::Other).City = val;
-	if((val = shape.get<char>(PR_OTHER_ADDRESS_COUNTRY)))
+	if ((val = shape.get<char>(PR_OTHER_ADDRESS_COUNTRY)))
 		defaulted(oAddr, Enum::Other).CountryOrRegion = val;
-	if((val = shape.get<char>(PR_OTHER_ADDRESS_POSTAL_CODE)))
+	if ((val = shape.get<char>(PR_OTHER_ADDRESS_POSTAL_CODE)))
 		defaulted(oAddr, Enum::Other).PostalCode = val;
-	if((val = shape.get<char>(PR_OTHER_ADDRESS_STATE_OR_PROVINCE)))
+	if ((val = shape.get<char>(PR_OTHER_ADDRESS_STATE_OR_PROVINCE)))
 		defaulted(oAddr, Enum::Other).State = val;
-	if((val = shape.get<char>(PR_OTHER_ADDRESS_STREET)))
+	if ((val = shape.get<char>(PR_OTHER_ADDRESS_STREET)))
 		defaulted(oAddr, Enum::Other).Street = val;
-	if(bAddr || hAddr || oAddr) {
+	if (bAddr || hAddr || oAddr) {
 		PhysicalAddresses.emplace().reserve(bAddr.has_value()+hAddr.has_value()+oAddr.has_value());
-		if(bAddr)
+		if (bAddr)
 			PhysicalAddresses->emplace_back(std::move(*bAddr));
-		if(hAddr)
+		if (hAddr)
 			PhysicalAddresses->emplace_back(std::move(*hAddr));
-		if(oAddr)
+		if (oAddr)
 			PhysicalAddresses->emplace_back(std::move(*oAddr));
 	}
 
 	const TAGGED_PROPVAL* prop;
-	if((prop = shape.get(PR_DISPLAY_NAME_PREFIX)))
+	if ((prop = shape.get(PR_DISPLAY_NAME_PREFIX)))
 		fromProp(prop, defaulted(CompleteName).Title);
-	if((prop = shape.get(PR_GIVEN_NAME))){
+	if ((prop = shape.get(PR_GIVEN_NAME))) {
 		fromProp(prop, GivenName);
 		fromProp(prop, defaulted(CompleteName).FirstName);
 	}
-	if((prop = shape.get(PR_MIDDLE_NAME))){
+	if ((prop = shape.get(PR_MIDDLE_NAME))) {
 		fromProp(prop, MiddleName);
 		fromProp(prop, defaulted(CompleteName).MiddleName);
 	}
-	if((prop = shape.get(PR_SURNAME))){
+	if ((prop = shape.get(PR_SURNAME))) {
 		fromProp(prop, Surname);
 		fromProp(prop, defaulted(CompleteName).LastName);
 	}
-	if((prop = shape.get(PR_GENERATION))) {
+	if ((prop = shape.get(PR_GENERATION))) {
 		fromProp(prop, Generation);
 		fromProp(prop, defaulted(CompleteName).Suffix);
 	}
-	if((prop = shape.get(PR_INITIALS))){
+	if ((prop = shape.get(PR_INITIALS))) {
 		fromProp(prop, Initials);
 		fromProp(prop, defaulted(CompleteName).Initials);
 	}
-	if((prop = shape.get(PR_DISPLAY_NAME))){
+	if ((prop = shape.get(PR_DISPLAY_NAME))) {
 		fromProp(prop, DisplayName);
 		fromProp(prop, defaulted(CompleteName).FullName);
 	}
-	if((prop = shape.get(PR_NICKNAME))){
+	if ((prop = shape.get(PR_NICKNAME))) {
 		fromProp(prop, Nickname);
 		fromProp(prop, defaulted(CompleteName).Nickname);
 	}
-	if((prop = shape.get(PR_CHILDRENS_NAMES))) {
+	if ((prop = shape.get(PR_CHILDRENS_NAMES))) {
 		const STRING_ARRAY* names = static_cast<const STRING_ARRAY*>(prop->pvalue);
 		Children.emplace(names->begin(), names->end());
 	}
 
-	if((prop = shape.get(NtEmailAddress1)))
+	if ((prop = shape.get(NtEmailAddress1)))
 		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress1);
-	if((prop = shape.get(NtEmailAddress2)))
+	if ((prop = shape.get(NtEmailAddress2)))
 		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress2);
-	if((prop = shape.get(NtEmailAddress3)))
+	if ((prop = shape.get(NtEmailAddress3)))
 		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress3);
-	if((prop = shape.get(NtPostalAddressIndex)))
+	if ((prop = shape.get(NtPostalAddressIndex)))
 		PostalAddressIndex.emplace(*static_cast<uint32_t*>(prop->pvalue));
 }
 
@@ -2473,11 +2477,11 @@ tExtendedFieldURI::tExtendedFieldURI(uint32_t tag) :
 tEmailAddressType::tEmailAddressType(const TPROPVAL_ARRAY& tps)
 {
 	const char* data;
-	if((data = tps.get<const char>(PR_DISPLAY_NAME)))
+	if ((data = tps.get<const char>(PR_DISPLAY_NAME)))
 		Name = data;
-	if((data = tps.get<const char>(PR_EMAIL_ADDRESS)))
+	if ((data = tps.get<const char>(PR_EMAIL_ADDRESS)))
 		EmailAddress = data;
-	if((data = tps.get<const char>(PR_ADDRTYPE)))
+	if ((data = tps.get<const char>(PR_ADDRTYPE)))
 		RoutingType = data;
 }
 
@@ -2489,12 +2493,12 @@ tEmailAddressType::tEmailAddressType(const TPROPVAL_ARRAY& tps)
  */
 void tEmailAddressType::mkRecipient(TPROPVAL_ARRAY* rcpt, uint32_t type) const
 {
-	if(rcpt == nullptr)
+	if (rcpt == nullptr)
 		throw EWSError::NotEnoughMemory(E3289);
-	if(!EmailAddress)
+	if (!EmailAddress)
 		throw EWSError::InvalidRecipients(E3290);
 	const char* displayname = Name? Name->c_str() : EmailAddress->c_str();
-	if(rcpt->set(PR_DISPLAY_NAME, displayname) ||
+	if (rcpt->set(PR_DISPLAY_NAME, displayname) ||
 	   rcpt->set(PR_TRANSMITABLE_DISPLAY_NAME, displayname) ||
 	   rcpt->set(PR_ADDRTYPE, RoutingType? RoutingType->c_str() : "SMTP") ||
 	   rcpt->set(PR_EMAIL_ADDRESS, EmailAddress->c_str()) ||
@@ -2505,11 +2509,11 @@ void tEmailAddressType::mkRecipient(TPROPVAL_ARRAY* rcpt, uint32_t type) const
 tAttendee::tAttendee(const TPROPVAL_ARRAY& tps)
 {
 	const char* data;
-	if((data = tps.get<const char>(PR_DISPLAY_NAME)))
+	if ((data = tps.get<const char>(PR_DISPLAY_NAME)))
 		Mailbox.Name = data;
-	if((data = tps.get<const char>(PR_EMAIL_ADDRESS)))
+	if ((data = tps.get<const char>(PR_EMAIL_ADDRESS)))
 		Mailbox.EmailAddress = data;
-	if((data = tps.get<const char>(PR_ADDRTYPE)))
+	if ((data = tps.get<const char>(PR_ADDRTYPE)))
 		Mailbox.RoutingType = data;
 }
 
@@ -2540,7 +2544,7 @@ tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(std::string phone,
  */
 RESTRICTION* tRestriction::all(RESTRICTION* r1, RESTRICTION* r2)
 {
-	if(!r1 || !r2)
+	if (!r1 || !r2)
 		return r1? r1 : r2;
 	RESTRICTION* res = EWSContext::construct<RESTRICTION>();
 	res->rt = mapi_rtype::r_and;
@@ -2566,7 +2570,7 @@ RESTRICTION* tRestriction::all(RESTRICTION* r1, RESTRICTION* r2)
  */
 RESTRICTION* tRestriction::build(const sGetNameId& getId) const
 {
-	if(!source)
+	if (!source)
 		return nullptr;
 	RESTRICTION* restriction = EWSContext::alloc<RESTRICTION>();
 	deserialize(*restriction, source, getId);
@@ -2612,7 +2616,7 @@ void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* s
 {
 	uint32_t tag = getTag(src, getId);
 	const tinyxml2::XMLElement* cmptarget = src->FirstChildElement("FieldURIOrConstant");
-	if(!cmptarget)
+	if (!cmptarget)
 		throw EWSError::InvalidRestriction(E3221);
 	void* constantData = loadConstant(cmptarget, PROP_TYPE(tag));
 	dst.rt = constantData? mapi_rtype::property : mapi_rtype::propcmp;
@@ -2627,7 +2631,7 @@ void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* s
 		dst.pcmp->relop = op;
 		dst.pcmp->proptag1 = tag;
 		dst.pcmp->proptag2 = getTag(cmptarget, getId);
-		if(!dst.pcmp->comparable())
+		if (!dst.pcmp->comparable())
 			throw EWSError::InvalidRestriction(E3223(dst.pcmp->proptag1, dst.pcmp->proptag2));
 	}
 }
@@ -2636,39 +2640,39 @@ void tRestriction::build_contains(RESTRICTION& dst, const tinyxml2::XMLElement* 
 {
 	dst.rt = mapi_rtype::content;
 	dst.cont = EWSContext::construct<RESTRICTION_CONTENT>();
-	if(!(dst.cont->propval.proptag = dst.cont->proptag = getTag(src, getId)))
+	if (!(dst.cont->propval.proptag = dst.cont->proptag = getTag(src, getId)))
 		throw EWSError::InvalidRestriction(E3224);
-	if(!dst.cont->comparable())
+	if (!dst.cont->comparable())
 			throw EWSError::InvalidRestriction(E3225);
-	if(!(dst.cont->propval.pvalue = loadConstant(src, PROP_TYPE(dst.cont->proptag))))
+	if (!(dst.cont->propval.pvalue = loadConstant(src, PROP_TYPE(dst.cont->proptag))))
 		throw EWSError::InvalidRestriction(E3226);
 	const char* mode = src->Attribute("ContainmentMode");
-	if(!mode || !strcmp(mode, "FullString"))
+	if (!mode || !strcmp(mode, "FullString"))
 		dst.cont->fuzzy_level = FL_FULLSTRING;
-	else if(!strcmp(mode, "Prefixed"))
+	else if (!strcmp(mode, "Prefixed"))
 		dst.cont->fuzzy_level = FL_PREFIX;
-	else if(!strcmp(mode, "Substring"))
+	else if (!strcmp(mode, "Substring"))
 		dst.cont->fuzzy_level = FL_SUBSTRING;
-	else if(!strcmp(mode, "PrefixOnWords"))
+	else if (!strcmp(mode, "PrefixOnWords"))
 		dst.cont->fuzzy_level = FL_PREFIX_ON_ANY_WORD;
-	else if(!strcmp(mode, "ExactPhrase"))
+	else if (!strcmp(mode, "ExactPhrase"))
 		dst.cont->fuzzy_level = FL_PHRASE_MATCH;
 	else
 		throw EWSError::InvalidRestriction(E3227(mode));
 	const char* comp = src->Attribute("ContainmentComparison");
-	if(!comp || !strcmp(comp, "Exact"))
+	if (!comp || !strcmp(comp, "Exact"))
 		;
-	else if(!strcmp(comp, "IgnoreCase"))
+	else if (!strcmp(comp, "IgnoreCase"))
 		dst.cont->fuzzy_level |= FL_IGNORECASE;
-	else if(!strcmp(comp, "IgnoreNonSpacingCharacters"))
+	else if (!strcmp(comp, "IgnoreNonSpacingCharacters"))
 		dst.cont->fuzzy_level |= FL_IGNORENONSPACE;
-	else if(!strcmp(comp, "Loose"))
+	else if (!strcmp(comp, "Loose"))
 		dst.cont->fuzzy_level |= FL_LOOSE;
-	else if(!strcmp(comp, "LooseAndIgnoreCase"))
+	else if (!strcmp(comp, "LooseAndIgnoreCase"))
 		dst.cont->fuzzy_level |= FL_LOOSE | FL_IGNORECASE;
-	else if(!strcmp(comp, "LooseAndIgnoreNonSpace"))
+	else if (!strcmp(comp, "LooseAndIgnoreNonSpace"))
 		dst.cont->fuzzy_level |= FL_LOOSE | FL_IGNORENONSPACE;
-	else if(!strcmp(comp, "IgnoreCaseAndNoneSpacingCharacters"))
+	else if (!strcmp(comp, "IgnoreCaseAndNoneSpacingCharacters"))
 		dst.cont->fuzzy_level |= FL_LOOSE | FL_IGNORECASE | FL_IGNORENONSPACE;
 	else
 		throw EWSError::InvalidRestriction(E3228(comp));
@@ -2679,12 +2683,12 @@ void tRestriction::build_excludes(RESTRICTION& dst, const tinyxml2::XMLElement* 
 	dst.rt = mapi_rtype::bitmask;
 	dst.bm = EWSContext::construct<RESTRICTION_BITMASK>();
 	dst.bm->bitmask_relop = bm_relop::nez;
-	if(!(dst.bm->proptag = getTag(src, getId)))
+	if (!(dst.bm->proptag = getTag(src, getId)))
 		throw EWSError::InvalidRestriction(E3229);
-	if(!dst.bm->comparable())
+	if (!dst.bm->comparable())
 		throw EWSError::InvalidRestriction(E3230(tExtendedFieldURI::typeName(PROP_TYPE(dst.bm->proptag)), dst.bm->proptag));
 	const tinyxml2::XMLElement* bitmask = src->FirstChildElement("BitMask");
-	if(!bitmask)
+	if (!bitmask)
 		throw EWSError::InvalidRestriction(E3231);
 	dst.bm->mask = bitmask->UnsignedAttribute("Value");
 }
@@ -2693,14 +2697,14 @@ void tRestriction::build_exists(RESTRICTION& dst, const tinyxml2::XMLElement* sr
 {
 	dst.rt = mapi_rtype::exist;
 	dst.exist = EWSContext::construct<RESTRICTION_EXIST>();
-	if(!(dst.exist->proptag = getTag(src, getId)))
+	if (!(dst.exist->proptag = getTag(src, getId)))
 		throw EWSError::InvalidRestriction(E3232);
 }
 
 void tRestriction::build_not(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
 	const tinyxml2::XMLElement* child = src->FirstChildElement();
-	if(!child)
+	if (!child)
 		throw EWSError::InvalidRestriction(E3233);
 	dst.rt = mapi_rtype::r_not;
 	dst.xnot = EWSContext::construct<RESTRICTION_NOT>();
@@ -2710,10 +2714,10 @@ void tRestriction::build_not(RESTRICTION& dst, const tinyxml2::XMLElement* src, 
 void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t type)
 {
 	const tinyxml2::XMLElement* constantNode = parent->FirstChildElement("Constant");
-	if(!constantNode)
+	if (!constantNode)
 		return nullptr;
 	const char* value = constantNode->Attribute("Value");
-	if(!value)
+	if (!value)
 		throw EWSError::InvalidRestriction(E3234);
 	size_t allocSize = typeWidth(type);
 	void* dest = allocSize? EWSContext::alloc(allocSize) : nullptr;
@@ -2732,16 +2736,16 @@ void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t ty
 			throw EWSError::InvalidRestriction(E3236(value));
 		break;
 	case PT_FLOAT:
-		if(constantNode->QueryFloatAttribute("Value", static_cast<float*>(dest)) != XML_SUCCESS)
+		if (constantNode->QueryFloatAttribute("Value", static_cast<float*>(dest)) != XML_SUCCESS)
 			throw EWSError::InvalidRestriction(E3237(value));
 		break;
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		if(constantNode->QueryDoubleAttribute("Value", static_cast<double*>(dest)) != XML_SUCCESS)
+		if (constantNode->QueryDoubleAttribute("Value", static_cast<double*>(dest)) != XML_SUCCESS)
 			throw EWSError::InvalidRestriction(E3238(value));
 		break;
 	case PT_BOOLEAN:
-		if(constantNode->QueryBoolAttribute("Value", static_cast<bool*>(dest)) != XML_SUCCESS)
+		if (constantNode->QueryBoolAttribute("Value", static_cast<bool*>(dest)) != XML_SUCCESS)
 			throw EWSError::InvalidRestriction(E3239(value));
 		break;
 	case PT_CURRENCY:
@@ -2774,14 +2778,14 @@ tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propnam
     PropertyType(typeName(type)),
     PropertySetId(propname.guid)
 {
-	if(propname.kind == MNID_ID)
+	if (propname.kind == MNID_ID)
 		PropertyId = propname.lid;
-	else if(propname.kind == MNID_STRING)
+	else if (propname.kind == MNID_STRING)
 		PropertyName = propname.pname;
 
 	auto it = std::find_if(std::begin(propsetIds), std::end(propsetIds),
 	                       [&](const auto& propsetId){ return propsetId->compare(propname.guid) == 0; });
-	if(it != std::end(propsetIds))
+	if (it != std::end(propsetIds))
 		DistinguishedPropertySetId = Enum::DistinguishedPropertySetType(static_cast<uint8_t>(std::distance(std::begin(propsetIds), it)));
 }
 
@@ -2817,14 +2821,14 @@ uint32_t tExtendedFieldURI::tag(const sGetNameId& getId) const
 PROPERTY_NAME tExtendedFieldURI::name() const
 {
 	static constexpr PROPERTY_NAME NONAME{KIND_NONE, {}, 0, nullptr};
-	if(!PropertySetId && !DistinguishedPropertySetId)
+	if (!PropertySetId && !DistinguishedPropertySetId)
 		return NONAME;
 	PROPERTY_NAME name{};
 	name.guid = PropertySetId? *PropertySetId : *propsetIds[DistinguishedPropertySetId->index()];
-	if(PropertyName) {
+	if (PropertyName) {
 		name.kind = MNID_STRING;
 		name.pname = deconst(PropertyName->c_str());
-	} else if(PropertyId) {
+	} else if (PropertyId) {
 		name.kind = MNID_ID;
 		name.lid = *PropertyId;
 	} else {
@@ -2841,9 +2845,9 @@ PROPERTY_NAME tExtendedFieldURI::name() const
  */
 void tExtendedFieldURI::tags(sShape& shape, bool add) const
 {
-	if(PropertyTag)
+	if (PropertyTag)
 		shape.add(tag(), add? sShape::FL_EXT : sShape::FL_RM);
-	else if((PropertySetId || DistinguishedPropertySetId) && (PropertyName || PropertyId))
+	else if ((PropertySetId || DistinguishedPropertySetId) && (PropertyName || PropertyId))
 		shape.add(name(), type(), add? sShape::FL_EXT : sShape::FL_RM);
 	else
 		throw InputError(E3061);
@@ -2858,7 +2862,7 @@ uint16_t tExtendedFieldURI::type() const
 {
 	static auto compval = [](const TMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
 	auto type = std::lower_bound(typeMap.begin(), typeMap.end(), PropertyType.c_str(), compval);
-	if(type == typeMap.end() || strcmp(type->first, PropertyType.c_str()))
+	if (type == typeMap.end() || strcmp(type->first, PropertyType.c_str()))
 		throw InputError(E3059(PropertyType));
 	return type->second;
 }
@@ -2946,7 +2950,7 @@ void tExtendedProperty::deserializeMV(const XMLElement* xml, uint16_t type, T* C
 void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* dest)
 {
 	size_t allocSize = typeWidth(type);
-	if(!dest)
+	if (!dest)
 		propval.pvalue = dest = allocSize? EWSContext::alloc(allocSize) : nullptr;
 	const char* content = xml->GetText();
 	switch(type) {
@@ -2965,16 +2969,16 @@ void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* 
 			throw EWSError::InvalidExtendedPropertyValue(E3102(content? content : "(nil)"));
 		break;
 	case PT_FLOAT:
-		if(xml->QueryFloatText(static_cast<float*>(dest)) != XML_SUCCESS)
+		if (xml->QueryFloatText(static_cast<float*>(dest)) != XML_SUCCESS)
 			throw EWSError::InvalidExtendedPropertyValue(E3103(content? content : "(nil)"));
 		break;
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		if(xml->QueryDoubleText(static_cast<double*>(dest)) != XML_SUCCESS)
+		if (xml->QueryDoubleText(static_cast<double*>(dest)) != XML_SUCCESS)
 			throw EWSError::InvalidExtendedPropertyValue(E3104(content? content : "(nil)"));
 		break;
 	case PT_BOOLEAN:
-		if(xml->QueryBoolText(static_cast<bool*>(dest)) != XML_SUCCESS)
+		if (xml->QueryBoolText(static_cast<bool*>(dest)) != XML_SUCCESS)
 			throw EWSError::InvalidExtendedPropertyValue(E3105(content? content : "(nil)"));
 		break;
 	case PT_CURRENCY:
@@ -2988,7 +2992,7 @@ void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* 
 	case PT_UNICODE: {
 		auto src = znul(xml->GetText());
 		size_t len = strlen(src);
-		if(!dest)
+		if (!dest)
 			propval.pvalue = dest = EWSContext::alloc(len + 1);
 		else
 			dest = *static_cast<char**>(dest) = EWSContext::alloc<char>(len + 1);
@@ -3032,7 +3036,7 @@ inline void tExtendedProperty::serializeMV(const void* data, uint16_t type, XMLE
 {
 	const C* content = static_cast<const C*>(data);
 	for (T *val = content->*value; val < content->*value + content->count; ++val) {
-		if constexpr(std::is_same_v<T, char*>)
+		if constexpr (std::is_same_v<T, char*>)
 			serialize(*val, type&~MV_FLAG, xml->InsertNewChildElement("t:Value"));
 		else
 			serialize(val, type&~MV_FLAG, xml->InsertNewChildElement("t:Value"));
@@ -3104,16 +3108,16 @@ void tExtendedProperty::serialize(const void* data, uint16_t type, XMLElement* x
  */
 SORTORDER_SET* tFieldOrder::build(const std::vector<tFieldOrder>& sorts, const sGetNameId& getId)
 {
-	if(sorts.empty())
+	if (sorts.empty())
 		return nullptr;
-	if(sorts.size() > std::numeric_limits<decltype(SORTORDER_SET::count)>::max())
+	if (sorts.size() > std::numeric_limits<decltype(SORTORDER_SET::count)>::max())
 		throw InputError(E3247);
 	SORTORDER_SET* sset = EWSContext::construct<SORTORDER_SET>();
 	sset->count = sorts.size();
 	sset->ccategories = sset->cexpanded = 0;
 	sset->psort = EWSContext::alloc<SORT_ORDER>(sset->count);
 	SORT_ORDER* current = sset->psort;
-	for(const tFieldOrder& sort : sorts) {
+	for (const tFieldOrder& sort : sorts) {
 		uint32_t tag = sort.fieldURI.tag(getId);
 		current->type = PROP_TYPE(tag);
 		current->propid = PROP_ID(tag);
@@ -3283,22 +3287,22 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 void tFieldURI::tags(sShape& shape, bool add) const
 {
 	auto tags = tagMap.equal_range(FieldURI);
-	for(auto it = tags.first; it != tags.second; ++it)
+	for (auto it = tags.first; it != tags.second; ++it)
 		shape.add(it->second, add? sShape::FL_FIELD : sShape::FL_RM);
 	bool found = tags.first != tags.second;
 
 	auto names = nameMap.equal_range(FieldURI);
-	for(auto it = names.first; it != names.second; ++it)
+	for (auto it = names.first; it != names.second; ++it)
 		shape.add(it->second.first, it->second.second, add? sShape::FL_FIELD : sShape::FL_RM);
 	found |= names.first != names.second;
 
 	static auto compval = [](const SMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
 	auto specials = std::lower_bound(specialMap.begin(), specialMap.end(), FieldURI.c_str(), compval);
-	if(specials != specialMap.end() && specials->first == FieldURI) {
+	if (specials != specialMap.end() && specials->first == FieldURI) {
 		shape.special |= specials->second;
 		found = true;
 	}
-	if(!found)
+	if (!found)
 		mlog(LV_NOTICE, "ews: unknown field URI '%s' (ignored)", FieldURI.c_str());
 }
 
@@ -3315,7 +3319,7 @@ void tFieldURI::tags(sShape& shape, bool add) const
 uint32_t tFieldURI::tag(const sGetNameId& getId) const
 {
 	auto tags = tagMap.equal_range(FieldURI);
-	if(tags.first != tagMap.end())
+	if (tags.first != tagMap.end())
 		return tags.first->second;
 	auto names = nameMap.equal_range(FieldURI);
 	return names.first == nameMap.end()? 0 : PROP_TAG(names.first->second.second, getId(names.first->second.first));
@@ -3326,7 +3330,7 @@ uint32_t tFieldURI::tag(const sGetNameId& getId) const
 tFileAttachment::tFileAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props) : tAttachment(aid, props)
 {
 	const TAGGED_PROPVAL *tp = props.find(PR_ATTACH_DATA_BIN);
-	if(tp) {
+	if (tp) {
 		Content.emplace(*tp);
 		Size = Content->size();
 	}
@@ -3341,16 +3345,16 @@ tFileAttachment::tFileAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY&
  */
 void tFolderResponseShape::tags(sShape& shape) const
 {
-	for(uint32_t tag : tagsStructural)
+	for (uint32_t tag : tagsStructural)
 		shape.add(tag);
 	size_t baseShape = BaseShape.index();
-	for(uint32_t tag : tagsIdOnly)
+	for (uint32_t tag : tagsIdOnly)
 		shape.add(tag, sShape::FL_FIELD);
-	if(baseShape >= 1)
-		for(uint32_t tag : tagsDefault)
+	if (baseShape >= 1)
+		for (uint32_t tag : tagsDefault)
 			shape.add(tag, sShape::FL_FIELD);
-	if(AdditionalProperties)
-		for(const auto& additional : *AdditionalProperties)
+	if (AdditionalProperties)
+		for (const auto& additional : *AdditionalProperties)
 			additional.tags(shape);
 }
 
@@ -3470,12 +3474,12 @@ void tIndexedFieldURI::tags(sShape& shape, bool add) const
 	{return std::tie(v1.first.first, v1.first.second) < std::tie(v2.FieldURI, v2.FieldIndex);};
 
 	auto tagIt = std::lower_bound(tagMap.begin(), tagMap.end(), *this, compval);
-	if(tagIt != tagMap.end() && tagIt->first.first == FieldURI && tagIt->first.second == FieldIndex)
+	if (tagIt != tagMap.end() && tagIt->first.first == FieldURI && tagIt->first.second == FieldIndex)
 		shape.add(tagIt->second, add? sShape::FL_FIELD : sShape::FL_RM);
 
 	// Additional
 	auto names = std::lower_bound(nameMap.begin(), nameMap.end(), *this, compval);
-	while(names != nameMap.end() && names->first.first == FieldURI && names->first.second == FieldIndex) {
+	while (names != nameMap.end() && names->first.first == FieldURI && names->first.second == FieldIndex) {
 		shape.add(names->second.first, names->second.second, add? sShape::FL_FIELD : sShape::FL_RM);
 		++names;
 	}
@@ -3497,11 +3501,11 @@ uint32_t tIndexedFieldURI::tag(const sGetNameId& getId) const
 	{return std::tie(v1.first.first, v1.first.second) < std::tie(v2.FieldURI, v2.FieldIndex);};
 
 	auto tagIt = std::lower_bound(tagMap.begin(), tagMap.end(), *this, compval);
-	if(tagIt != tagMap.end() && tagIt->first.first == FieldURI && tagIt->first.second == FieldIndex)
+	if (tagIt != tagMap.end() && tagIt->first.first == FieldURI && tagIt->first.second == FieldIndex)
 		return tagIt->second;
 
 	auto names = std::lower_bound(nameMap.begin(), nameMap.end(), *this, compval);
-	if(names != nameMap.end() && names->first.first == FieldURI && names->first.second == FieldIndex) {
+	if (names != nameMap.end() && names->first.first == FieldURI && names->first.second == FieldIndex) {
 		uint16_t tagid =  getId(names->second.first);
 		return tagid? PROP_TAG(names->second.second, tagid) : 0;
 	}
@@ -3565,11 +3569,11 @@ void tItem::update(const sShape& shape)
 	const TAGGED_PROPVAL* prop;
 	fromProp(shape.get(PR_ASSOCIATED), IsAssociated);
 	const TAGGED_PROPVAL *bodyText = shape.get(PR_BODY), *bodyHtml = shape.get(PR_HTML);
-	if(bodyHtml) {
+	if (bodyHtml) {
 		const BINARY* content = reinterpret_cast<const BINARY*>(bodyHtml->pvalue);
 		const cpid_t* cpid = shape.get<cpid_t>(PR_INTERNET_CPID, sShape::FL_ANY);
 		const char* cset;
-		if(cpid && *cpid != CP_UTF8 && (cset = cpid_to_cset(*cpid)))
+		if (cpid && *cpid != CP_UTF8 && (cset = cpid_to_cset(*cpid)))
 			Body.emplace(iconvtext(content->pc, content->cb, cset, "UTF-8"), Enum::HTML);
 		else
 			Body.emplace(std::string_view(content->pc, content->cb), Enum::HTML);
@@ -3579,31 +3583,31 @@ void tItem::update(const sShape& shape)
 		Body.emplace("", Enum::Text);
 	}
 
-	if((prop = shape.get(PR_CHANGE_KEY)))
+	if ((prop = shape.get(PR_CHANGE_KEY)))
 		fromProp(prop, defaulted(ItemId).ChangeKey);
 	fromProp(shape.get(PR_CLIENT_SUBMIT_TIME), DateTimeSent);
-	if((prop = shape.get(PR_CONVERSATION_ID))) {
+	if ((prop = shape.get(PR_CONVERSATION_ID))) {
 		fromProp(prop, defaulted(ConversationId).Id);
 		ConversationId->type = tItemId::ID_GENERIC;
 	}
-	if((prop = shape.get(PR_CREATION_TIME)))
+	if ((prop = shape.get(PR_CREATION_TIME)))
 		fromProp(prop, DateTimeCreated);
 	else
 		fromProp(shape.get(PR_LOCAL_COMMIT_TIME), DateTimeCreated);
 	fromProp(shape.get(PR_DISPLAY_BCC), DisplayBcc);
 	fromProp(shape.get(PR_DISPLAY_CC), DisplayCc);
 	fromProp(shape.get(PR_DISPLAY_TO),DisplayTo);
-	if((prop = shape.get(PR_ENTRYID)))
+	if ((prop = shape.get(PR_ENTRYID)))
 		fromProp(prop, defaulted(ItemId).Id);
 	fromProp(shape.get(PR_HASATTACH), HasAttachments);
-	if((v32 = shape.get<uint32_t>(PR_IMPORTANCE)))
+	if ((v32 = shape.get<uint32_t>(PR_IMPORTANCE)))
 		Importance = *v32 == IMPORTANCE_LOW? Enum::Low : *v32 == IMPORTANCE_HIGH? Enum::High : Enum::Normal;
 	fromProp(shape.get(PR_IN_REPLY_TO_ID), InReplyTo);
 	fromProp(shape.get(PR_LAST_MODIFIER_NAME), LastModifiedName);
 	fromProp(shape.get(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
 	fromProp(shape.get(PR_MESSAGE_CLASS), ItemClass);
 	fromProp(shape.get(PR_MESSAGE_DELIVERY_TIME), DateTimeReceived);
-	if((v32 = shape.get<uint32_t>(PR_MESSAGE_FLAGS))) {
+	if ((v32 = shape.get<uint32_t>(PR_MESSAGE_FLAGS))) {
 		IsSubmitted = *v32 & MSGFLAG_SUBMITTED;
 		IsDraft = *v32 & MSGFLAG_UNSENT;
 		IsFromMe = *v32 & MSGFLAG_FROMME;
@@ -3611,33 +3615,33 @@ void tItem::update(const sShape& shape)
 		IsUnmodified = *v32 & MSGFLAG_UNMODIFIED;
 	}
 	fromProp(shape.get(PR_MESSAGE_SIZE), Size);
-	if((prop = shape.get(PR_PARENT_ENTRYID)))
+	if ((prop = shape.get(PR_PARENT_ENTRYID)))
 		fromProp(prop, defaulted(ParentFolderId).Id);
-	if((v32 = shape.get<uint32_t>(PR_SENSITIVITY)))
+	if ((v32 = shape.get<uint32_t>(PR_SENSITIVITY)))
 		Sensitivity = *v32 == SENSITIVITY_PRIVATE? Enum::Private :
 		              *v32 == SENSITIVITY_COMPANY_CONFIDENTIAL? Enum::Confidential :
 		              *v32 == SENSITIVITY_PERSONAL? Enum::Personal : Enum::Normal;
 	fromProp(shape.get(PR_SUBJECT), Subject);
-	if((prop = shape.get(PR_TRANSPORT_MESSAGE_HEADERS)))
+	if ((prop = shape.get(PR_TRANSPORT_MESSAGE_HEADERS)))
 		InternetMessageHeaders.emplace(tInternetMessageHeader::parse(static_cast<const char*>(prop->pvalue)));
-	if((prop = shape.get(NtCategories)) && PROP_TYPE(prop->proptag) == PT_MV_UNICODE) {
+	if ((prop = shape.get(NtCategories)) && PROP_TYPE(prop->proptag) == PT_MV_UNICODE) {
 		const STRING_ARRAY* categories = static_cast<const STRING_ARRAY*>(prop->pvalue);
 		Categories.emplace(categories->count);
 		char** src = categories->ppstr;
-		for(std::string& dest : *Categories)
+		for (std::string& dest : *Categories)
 			dest = *src++;
 	}
-	if((prop = shape.get(NtReminderTime)))
+	if ((prop = shape.get(NtReminderTime)))
 		ReminderDueBy.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
 	fromProp(shape.get(NtReminderSet), ReminderIsSet);
 	fromProp(shape.get(NtReminderDelta), ReminderMinutesBeforeStart);
-	if((v32 = shape.get<uint32_t>(PR_FLAG_STATUS))) {
+	if ((v32 = shape.get<uint32_t>(PR_FLAG_STATUS))) {
 		defaulted(Flag).FlagStatus = *v32 == followupComplete ? Enum::Complete : Enum::Flagged;
-		if((prop = shape.get(NtTaskDateCompleted)))
+		if ((prop = shape.get(NtTaskDateCompleted)))
 			defaulted(Flag).CompleteDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
-		if((prop = shape.get(NtTaskDueDate)))
+		if ((prop = shape.get(NtTaskDueDate)))
 			defaulted(Flag).DueDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
-		if((prop = shape.get(NtTaskStartDate)))
+		if ((prop = shape.get(NtTaskStartDate)))
 			defaulted(Flag).StartDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
 	} else {
 		defaulted(Flag).FlagStatus = Enum::NotFlagged;
@@ -3649,7 +3653,7 @@ void tItem::update(const sShape& shape)
 sItem tItem::create(const sShape& shape)
 {
 	const char* itemClass = shape.get<char>(PR_MESSAGE_CLASS, sShape::FL_ANY);
-	if(!itemClass)
+	if (!itemClass)
 		return tItem(shape);
 	if (class_match_prefix(itemClass, "IPM.Note") == 0 ||
 	    class_match_prefix(itemClass, "IPM.StickyNote") == 0)
@@ -3687,20 +3691,20 @@ decltype(tItemResponseShape::namedTagsDefault) tItemResponseShape::namedTagsDefa
 void tItemResponseShape::tags(sShape& shape) const
 {
 
-	for(uint32_t tag : tagsStructural)
+	for (uint32_t tag : tagsStructural)
 		shape.add(tag);
-	for(uint32_t tag : tagsIdOnly)
+	for (uint32_t tag : tagsIdOnly)
 		shape.add(tag, sShape::FL_FIELD);
 	std::string_view type = BodyType? *BodyType : Enum::Best;
-	if((IncludeMimeContent && *IncludeMimeContent) || (BodyType && type == Enum::Best))
+	if ((IncludeMimeContent && *IncludeMimeContent) || (BodyType && type == Enum::Best))
 		shape.special |= sShape::MimeContent;
-	if(AdditionalProperties)
-		for(const auto& additional : *AdditionalProperties)
+	if (AdditionalProperties)
+		for (const auto& additional : *AdditionalProperties)
 			additional.tags(shape);
 	if (shape.special & sShape::Body) {
-		if(type == Enum::Best || type == Enum::Text)
+		if (type == Enum::Best || type == Enum::Text)
 			shape.add(PR_BODY, sShape::FL_FIELD);
-		if(type == Enum::Best || type == Enum::HTML)
+		if (type == Enum::Best || type == Enum::HTML)
 			shape.add(PR_HTML, sShape::FL_FIELD).add(PR_INTERNET_CPID);
 		shape.special &= ~sShape::Body;
 	}
@@ -3709,10 +3713,10 @@ void tItemResponseShape::tags(sShape& shape) const
 		shape.special &= ~sShape::MessageFlags;
 	}
 	size_t baseShape = BaseShape.index();
-	if(baseShape >= 1) {
-		for(uint32_t tag : tagsDefault)
+	if (baseShape >= 1) {
+		for (uint32_t tag : tagsDefault)
 			shape.add(tag, sShape::FL_FIELD);
-		for(const auto& named : namedTagsDefault)
+		for (const auto& named : namedTagsDefault)
 			shape.add(*named.first, named.second, sShape::FL_FIELD);
 	}
 }
@@ -3732,31 +3736,31 @@ void tMessage::update(const sShape& shape)
 	fromProp(shape.get(PR_INTERNET_MESSAGE_ID), InternetMessageId);
 	fromProp(shape.get(PR_INTERNET_REFERENCES), References);
 	fromProp(shape.get(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED), IsDeliveryReceiptRequested);
-	if((prop = shape.get(PR_RCVD_REPRESENTING_ADDRTYPE)))
+	if ((prop = shape.get(PR_RCVD_REPRESENTING_ADDRTYPE)))
 		fromProp(prop, defaulted(ReceivedRepresenting).Mailbox.RoutingType);
-	if((prop = shape.get(PR_RCVD_REPRESENTING_EMAIL_ADDRESS)))
+	if ((prop = shape.get(PR_RCVD_REPRESENTING_EMAIL_ADDRESS)))
 		fromProp(prop, defaulted(ReceivedRepresenting).Mailbox.EmailAddress);
-	if((prop = shape.get(PR_RCVD_REPRESENTING_NAME)))
+	if ((prop = shape.get(PR_RCVD_REPRESENTING_NAME)))
 		fromProp(prop, defaulted(ReceivedRepresenting).Mailbox.Name);
 	fromProp(shape.get(PR_READ), IsRead);
 	fromProp(shape.get(PR_READ_RECEIPT_REQUESTED), IsReadReceiptRequested);
-	if((prop = shape.get(PR_RECEIVED_BY_ADDRTYPE)))
+	if ((prop = shape.get(PR_RECEIVED_BY_ADDRTYPE)))
 		fromProp(prop, defaulted(ReceivedBy).Mailbox.RoutingType);
-	if((prop = shape.get(PR_RECEIVED_BY_EMAIL_ADDRESS)))
+	if ((prop = shape.get(PR_RECEIVED_BY_EMAIL_ADDRESS)))
 		fromProp(prop, defaulted(ReceivedBy).Mailbox.EmailAddress);
-	if((prop = shape.get(PR_RECEIVED_BY_NAME)))
+	if ((prop = shape.get(PR_RECEIVED_BY_NAME)))
 		fromProp(prop, defaulted(ReceivedBy).Mailbox.Name);
-	if((prop = shape.get(PR_SENDER_ADDRTYPE)))
+	if ((prop = shape.get(PR_SENDER_ADDRTYPE)))
 		fromProp(prop, defaulted(Sender).Mailbox.RoutingType);
-	if((prop = shape.get(PR_SENDER_EMAIL_ADDRESS)))
+	if ((prop = shape.get(PR_SENDER_EMAIL_ADDRESS)))
 		fromProp(prop, defaulted(Sender).Mailbox.EmailAddress);
-	if((prop = shape.get(PR_SENDER_NAME)))
+	if ((prop = shape.get(PR_SENDER_NAME)))
 		fromProp(prop, defaulted(Sender).Mailbox.Name);
-	if((prop = shape.get(PR_SENT_REPRESENTING_ADDRTYPE)))
+	if ((prop = shape.get(PR_SENT_REPRESENTING_ADDRTYPE)))
 		fromProp(prop, defaulted(From).Mailbox.RoutingType);
-	if((prop = shape.get(PR_SENT_REPRESENTING_EMAIL_ADDRESS)))
+	if ((prop = shape.get(PR_SENT_REPRESENTING_EMAIL_ADDRESS)))
 		fromProp(prop, defaulted(From).Mailbox.EmailAddress);
-	if((prop = shape.get(PR_SENT_REPRESENTING_NAME)))
+	if ((prop = shape.get(PR_SENT_REPRESENTING_NAME)))
 		fromProp(prop, defaulted(From).Mailbox.Name);
 }
 
@@ -3840,7 +3844,7 @@ tBasePermission::tBasePermission(const TPROPVAL_ARRAY& props)
 	}
 	static constexpr uint32_t none = 0;
 	auto rights = props.get<const uint32_t>(PR_MEMBER_RIGHTS);
-	if(!rights)
+	if (!rights)
 		rights = &none;
 	CanCreateItems.emplace(*rights & frightsCreate);
 	CanCreateSubFolders.emplace(*rights & frightsCreateSubfolder);
@@ -3874,16 +3878,16 @@ PERMISSION_DATA tBasePermission::write(uint32_t rights) const
 	updateIf(IsFolderOwner, frightsOwner);
 	updateIf(IsFolderVisible, frightsVisible);
 	updateIf(IsFolderContact, frightsContact);
-	if(EditItems)
+	if (EditItems)
 		rights |= *EditItems == Enum::All? frightsEditAny : *EditItems == Enum::Owned? frightsEditOwned : 0;
-	if(DeleteItems)
+	if (DeleteItems)
 		rights |= *DeleteItems == Enum::All? frightsDeleteAny : *DeleteItems == Enum::Owned? frightsDeleteOwned : 0;
 
 	PERMISSION_DATA perm{UserId.DistinguishedUser? ROW_MODIFY : ROW_ADD,
 		                 TPROPVAL_ARRAY{0, EWSContext::alloc<TAGGED_PROPVAL>(3)}};
 	uint16_t& count = perm.propvals.count;
 	perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_RIGHTS, EWSContext::construct<uint32_t>(rights)};
-	if(UserId.DistinguishedUser) {
+	if (UserId.DistinguishedUser) {
 		const uint32_t *memberId = *UserId.DistinguishedUser == Enum::Anonymous ? &U_ANON : &U_DEFAULT;
 		perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_ID, const_cast<uint32_t*>(memberId)};
 		return perm;
@@ -3907,7 +3911,7 @@ tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePer
 {
 	static constexpr uint32_t none = 0;
 	auto rights = props.get<const uint32_t>(PR_MEMBER_RIGHTS);
-	if(!rights)
+	if (!rights)
 		rights = &none;
 	ReadItems.emplace(*rights & frightsReadAny? Enum::FullDetails :
 	                  *rights & frightsFreeBusyDetailed? Enum::FreeBusyTimeAndSubjectAndLocation :
@@ -3929,7 +3933,7 @@ tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePer
 PERMISSION_DATA tCalendarPermission::write() const
 {
 	uint32_t rights = CalendarPermissionLevel == Enum::Custom? 0 : profileTable[CalendarPermissionLevel.index()];
-	if(ReadItems)
+	if (ReadItems)
 		rights |= *ReadItems == Enum::FullDetails? frightsReadAny : 0;
 	return tBasePermission::write(rights);
 }
@@ -3946,7 +3950,7 @@ tPermission::tPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
 {
 	static constexpr uint32_t none = 0;
 	auto rights = props.get<const uint32_t>(PR_MEMBER_RIGHTS);
-	if(!rights)
+	if (!rights)
 		rights = &none;
 	ReadItems.emplace(*rights & frightsReadAny? Enum::FullDetails : Enum::None);
 	auto it = std::find(profileTable.begin(), profileTable.end(), *rights);
@@ -3965,7 +3969,7 @@ tPermission::tPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
 PERMISSION_DATA tPermission::write() const
 {
 	uint32_t rights = PermissionLevel == Enum::Custom? 0 : profileTable[PermissionLevel.index()];
-	if(ReadItems)
+	if (ReadItems)
 		rights |= *ReadItems == Enum::FullDetails? frightsReadAny : 0;
 	return tBasePermission::write(rights);
 }
@@ -3981,7 +3985,7 @@ PERMISSION_DATA tPermission::write() const
 tPermissionSet::tPermissionSet(const TARRAY_SET& propTable)
 {
 	Permissions.reserve(propTable.count);
-	for(const TPROPVAL_ARRAY& props : propTable)
+	for (const TPROPVAL_ARRAY& props : propTable)
 		Permissions.emplace_back(props);
 }
 
@@ -4010,7 +4014,7 @@ std::vector<PERMISSION_DATA> tPermissionSet::write() const
 tCalendarPermissionSet::tCalendarPermissionSet(const TARRAY_SET& propTable)
 {
 	CalendarPermissions.reserve(propTable.count);
-	for(const TPROPVAL_ARRAY& props : propTable)
+	for (const TPROPVAL_ARRAY& props : propTable)
 		CalendarPermissions.emplace_back(props);
 }
 
@@ -4039,7 +4043,7 @@ std::vector<PERMISSION_DATA> tCalendarPermissionSet::write() const
  */
 std::chrono::minutes tSerializableTimeZone::offset(time_point tp) const
 {
-	if(!hasDst())
+	if (!hasDst())
 		return std::chrono::minutes(Bias);
 	auto temp = clock::to_time_t(tp) - Bias * 60;
 	tm datetime;
@@ -4127,11 +4131,11 @@ bool tSerializableTimeZoneTime::valid() const
 void tSetFolderField::put(sShape& shape) const
 {
 	const XMLElement* child = folder->FirstChildElement();
-	if(!child)
+	if (!child)
 		throw EWSError::InvalidExtendedPropertyValue(E3178);
-	if(!strcmp(child->Name(), "ExtendedProperty")) {
+	if (!strcmp(child->Name(), "ExtendedProperty")) {
 		tExtendedProperty prop(child);
-		if(prop.ExtendedFieldURI.tag())
+		if (prop.ExtendedFieldURI.tag())
 			shape.write(prop.propval);
 		else
 			shape.write(prop.ExtendedFieldURI.name(), prop.propval);
@@ -4150,19 +4154,19 @@ void tSetFolderField::put(sShape& shape) const
 void tSetItemField::put(sShape& shape) const
 {
 	const XMLElement* child = item->FirstChildElement();
-	if(!child)
+	if (!child)
 		throw EWSError::InvalidExtendedPropertyValue(E3108);
-	if(!strcmp(child->Name(), "ExtendedProperty")) {
+	if (!strcmp(child->Name(), "ExtendedProperty")) {
 		tExtendedProperty prop(child);
-		if(prop.ExtendedFieldURI.tag())
+		if (prop.ExtendedFieldURI.tag())
 			shape.write(prop.propval);
 		else
 			shape.write(prop.ExtendedFieldURI.name(), prop.propval);
-	} else if(std::holds_alternative<tIndexedFieldURI>(fieldURI.asVariant())) {
+	} else if (std::holds_alternative<tIndexedFieldURI>(fieldURI.asVariant())) {
 		const tIndexedFieldURI& uri = std::get<tIndexedFieldURI>(fieldURI.asVariant());
 		auto getId = [&shape](const PROPERTY_NAME& name){return PROP_ID(shape.tag(name));};
 		uint32_t tag = uri.tag(getId);
-		if(!tag) {
+		if (!tag) {
 			mlog(LV_WARN, "ews: failed to resolve indexed property %s/%s", uri.FieldURI.c_str(), uri.FieldIndex.c_str());
 			return;
 		} else if (PROP_TYPE(tag) != PT_UNICODE) {

@@ -117,7 +117,7 @@ void writeheader(int ctx_id, http_status code, size_t content_length)
 void writecontent(int ctx_id, const std::string_view& data, bool log, gx_loglevel loglevel)
 {
 	write_response(ctx_id, data.data(), static_cast<int>(data.size()));
-	if(log)
+	if (log)
 		mlog(loglevel, "[ews#%d] Response: %s", ctx_id, data.data());
 }
 
@@ -282,7 +282,7 @@ BOOL EWSPlugin::preproc(int ctx_id)
 http_status EWSPlugin::fault(int ctx_id, http_status code, const std::string_view& content)
 {
 	writeheader(ctx_id, code, content.length());
-	if(content.length())
+	if (content.length())
 		write_response(ctx_id, content.data(), content.length());
 	return code;
 }
@@ -323,22 +323,22 @@ http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
  */
 http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const void* data, uint64_t len) try
 {
-	if(ctx_id < 0 || static_cast<size_t>(ctx_id) >= contexts.size())
+	if (ctx_id < 0 || static_cast<size_t>(ctx_id) >= contexts.size())
 		return fault(ctx_id, http_status::server_error, "Invalid context ID");
 	std::unique_lock<std::mutex> lockProxy;
 	if (debug) {
-		if(debug->flags & DebugCtx::FL_LOCK)
+		if (debug->flags & DebugCtx::FL_LOCK)
 			lockProxy = std::unique_lock<std::mutex>(debug->requestLock);
 		if (debug->flags & DebugCtx::FL_RATELIMIT) {
 			auto now = tp_now();
 			std::this_thread::sleep_for(debug->last - now + debug->minRequestTime);
 			debug->last = now;
 		}
-		if(debug->flags & DebugCtx::FL_LOOP_DETECT) {
+		if (debug->flags & DebugCtx::FL_LOOP_DETECT) {
 			std::lock_guard hashGuard(debug->hashLock);
 			uint64_t hash = FNV()(data, len);
 			size_t count = debug->requestHashes[hash]++;
-			if(count > debug->loopThreshold)
+			if (count > debug->loopThreshold)
 				mlog(LV_WARN, "[ews#%d]%s: Possible loop, request hash has been seen %zu time%s before", ctx_id,
 				     timestamp().c_str(), count, count == 1? "" : "s");
 		}
@@ -350,27 +350,27 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 	           auth_info, static_cast<const char *>(data), len, *this);
 	EWSContext& context = *pc;
 	const XMLElement* request = context.request().body->FirstChildElement();
-	if(!request)
+	if (!request)
 		return fault(ctx_id, http_status::bad_request, "Missing request node");
-	if(request->NextSibling())
+	if (request->NextSibling())
 		mlog(LV_WARN, "[ews#%d]%s Additional request nodes found - ignoring", ctx_id, timestamp().c_str());
-	if(!rpc_new_stack())
+	if (!rpc_new_stack())
 		mlog(LV_WARN, "[ews#%d]%s Failed to allocate stack, exmdb might not work", ctx_id, timestamp().c_str());
 	auto cl0 = make_scope_exit([]{rpc_free_stack();});
 	bool enableLog = logEnabled(request->Name());
-	if(enableLog && request_logging >= 2)
+	if (enableLog && request_logging >= 2)
 		mlog(LV_DEBUG, "[ews#%d]%s Incoming data: %.*s", ctx_id, timestamp().c_str(),
 		     len > INT_MAX ? INT_MAX : static_cast<int>(len), static_cast<const char *>(data));
 
 	XMLElement* responseContainer = context.response().body->InsertNewChildElement(request->Name());
 	responseContainer->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
 	responseContainer->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
-	if(enableLog && request_logging)
+	if (enableLog && request_logging)
 		mlog(LV_DEBUG, "[ews#%d]%s Processing %s", ctx_id, timestamp().c_str(), request->Name());
 	auto handler = requestMap.find(request->Name());
-	if(handler == requestMap.end()) {
+	if (handler == requestMap.end()) {
 		std::string msg = fmt::format("Unknown request '{}'.", request->Name());
-		if(response_logging && enableLog)
+		if (response_logging && enableLog)
 			mlog(LV_WARN, "[ews#%d]%s Done, code 500: unknown request '%s'", ctx_id, timestamp().c_str(), request->Name());
 		return fault(ctx_id, http_status::server_error, SOAP::Envelope::fault("SOAP:Server", msg.c_str()));
 	} else try {
@@ -380,11 +380,11 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 			mlog(LV_WARN, "[ews#%d]%s Error: %s", ctx_id, timestamp().c_str(), err.what());
 		return fault(ctx_id, http_status::server_error, SOAP::Envelope::fault("SOAP:Server", err.what()));
 	} catch (const Exceptions::InputError &err) {
-		if(response_logging && enableLog)
+		if (response_logging && enableLog)
 			mlog(LV_WARN, "[ews#%d]%s Done, code 200, input error: '%s'", ctx_id, timestamp().c_str(), err.what());
 		return fault(ctx_id, http_status::ok, SOAP::Envelope::fault("SOAP:Client", err.what()));
 	} catch (const Exceptions::EWSError &err) {
-		if(response_logging && enableLog)
+		if (response_logging && enableLog)
 			mlog(LV_WARN, "[ews#%d]%s Done, code 200, uncaught ews error: '%s'", ctx_id, timestamp().c_str(), err.what());
 		return fault(ctx_id, http_status::ok, SOAP::Envelope::fault(err.type.c_str(), err.what()));
 	}
@@ -434,7 +434,7 @@ EWSPlugin::_exmdb::_exmdb()
 #undef EXMIDL
 #undef IDLOUT
 	query_service2("exmdb_client_register_proc", register_proc);
-	 if(register_proc == nullptr)
+	 if (register_proc == nullptr)
 		throw std::runtime_error("[ews]: failed to get the \"exmdb_client_register_proc\" service\n");
 }
 
@@ -532,16 +532,16 @@ void EWSPlugin::loadConfig()
 		for (const char *sep = strchr(logFilter, ','); sep != nullptr;
 		    logFilter = ++sep, sep = strchr(sep, ','))
 			logFilters.emplace_back(std::string_view(logFilter, sep - logFilter));
-		if(*logFilter)
+		if (*logFilter)
 			logFilters.emplace_back(logFilter);
 		std::sort(logFilters.begin(), logFilters.end());
 	}
 	timestampFormat += cfg->get_value("ews_log_timestamp"); // Initially contains one space (' ')
-	if(timestampFormat.size() == 1) // If nothing was configured
+	if (timestampFormat.size() == 1) // If nothing was configured
 		timestampFormat.clear();    // Completely disable logging timestamps
 
 	const char* debugOpts = cfg->get_value("ews_debug");
-	if(debugOpts)
+	if (debugOpts)
 		debug = std::make_unique<DebugCtx>(debugOpts);
 }
 
@@ -590,7 +590,7 @@ BOOL HPM_ews(enum plugin_op reason, const struct dlfuncs &data)
 {
 	if (reason == PLUGIN_INIT)
 		return ews_init(data);
-	else if(reason == PLUGIN_FREE)
+	else if (reason == PLUGIN_FREE)
 		g_ews_plugin.reset();
 	return TRUE;
 }
@@ -620,7 +620,7 @@ int EWSContext::notify()
 	using namespace Structures;
 	using NS = NotificationContext::State;
 
-	if(!m_notify || m_notify->state == NS::S_CLOSED)
+	if (!m_notify || m_notify->state == NS::S_CLOSED)
 		return HPM_RETRIEVE_DONE;
 	NotificationContext& nctx = *m_notify;
 	if (nctx.state == NS::S_WRITE) {
@@ -674,13 +674,13 @@ int EWSContext::notify()
 			notification.SubscriptionId = subscription;
 			notification.events = std::move(events);
 			notification.MoreEvents = more;
-			if(notification.events.empty())
+			if (notification.events.empty())
 				notification.events.emplace_back(aStatusEvent());
 		} catch (...) {
 			msg.ErrorSubscriptionIds.emplace_back(subscription);
 		}
 	}
-	for(const tSubscriptionId& subscription : msg.ErrorSubscriptionIds)
+	for (const tSubscriptionId &subscription : msg.ErrorSubscriptionIds)
 		nctx.nct_subs.erase(std::remove(nctx.nct_subs.begin(), nctx.nct_subs.end(), subscription),
 		                    nctx.nct_subs.end());
 	msg.success();
@@ -689,14 +689,14 @@ int EWSContext::notify()
 	// Otherwise just go back to sleep
 	nctx.state = nctx.nct_subs.empty() || tp_now() > nctx.expire ?
 	             NS::S_CLOSING : moreAny ? NS::S_SLEEP : NS::S_WRITE;
-	if(nctx.state == NS::S_SLEEP)
+	if (nctx.state == NS::S_SLEEP)
 		m_plugin.wakeContext(m_ID, m_plugin.event_stream_interval);
 	return flush();
 }
 
 int EWSPlugin::retr(int ctx_id) try
 {
-	if(ctx_id < 0 || static_cast<size_t>(ctx_id) >= contexts.size() || !contexts[ctx_id])
+	if (ctx_id < 0 || static_cast<size_t>(ctx_id) >= contexts.size() || !contexts[ctx_id])
 		return HPM_RETRIEVE_DONE;
 	EWSContext& context = *contexts[ctx_id];
 	switch(context.state()) {
@@ -710,7 +710,7 @@ int EWSPlugin::retr(int ctx_id) try
 		auto loglevel = context.code() == http_status::ok? LV_DEBUG : LV_ERR;
 		writecontent(ctx_id, sv, logResponse, loglevel);
 		context.state(EWSContext::S_DONE);
-		if(context.log() && response_logging)
+		if (context.log() && response_logging)
 			mlog(loglevel, "[ews#%d]%s Done, code %d, %zu bytes, %.3fms",
 				ctx_id, timestamp().c_str(),
 				static_cast<int>(context.code()),
@@ -735,7 +735,7 @@ void EWSPlugin::term(int ctx)
 
 static void ews_event_proc(const char* dir, BOOL table, uint32_t ID, const DB_NOTIFY* notification)
 {
-	if(g_ews_plugin)
+	if (g_ews_plugin)
 		g_ews_plugin->event(dir, table, ID, notification);
 }
 
@@ -771,7 +771,7 @@ EWSPlugin::SubManager::~SubManager()
 {
 	for (const auto &subKey : inner_subs)
 		ews.unsubscribe(subKey);
-	if(waitingContext)
+	if (waitingContext)
 		ews.unlinkSubscription(*waitingContext);
 }
 
@@ -780,7 +780,7 @@ EWSPlugin::SubManager::~SubManager()
  */
 EWSPlugin::WakeupNotify::~WakeupNotify()
 {
-	if(g_ews_plugin && !g_ews_plugin->teardown)
+	if (g_ews_plugin && !g_ews_plugin->teardown)
 		wakeup_context(ID);
 }
 
@@ -790,7 +790,7 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 	detail::ExmdbSubscriptionKey key{dir, ID};
 	std::unique_lock lock(subscriptionLock);
 	auto it = subscriptions.find(key);
-	if(it == subscriptions.end())
+	if (it == subscriptions.end())
 		return;
 	detail::SubscriptionKey subKey = it->second;
 	lock.unlock();
@@ -904,7 +904,7 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const s
 	} catch(const std::out_of_range&) {
 	}
 	uint32_t instanceId;
-	if(!exmdb.load_message_instance(dir.c_str(), "", CP_ACP, false,fid, mid, &instanceId))
+	if (!exmdb.load_message_instance(dir.c_str(), "", CP_ACP, false,fid, mid, &instanceId))
 		throw DispatchError(Exceptions::E3077);
 	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
 	cache.emplace(cache_message_instance_lifetime, mkey, instance);
@@ -957,7 +957,8 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadAttachmentInstance(cons
 	}
 	auto messageInstance = loadMessageInstance(dir, fid, mid);
 	uint32_t instanceId;
-	if(!exmdb.load_attachment_instance(dir.c_str(), messageInstance->instanceId, aid, &instanceId))
+	if (!exmdb.load_attachment_instance(dir.c_str(),
+	    messageInstance->instanceId, aid, &instanceId))
 		throw DispatchError(Exceptions::E3078);
 	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
 	cache.emplace(cache_message_instance_lifetime, akey, instance);
@@ -997,7 +998,8 @@ detail::ExmdbSubscriptionKey EWSPlugin::subscribe(const std::string& maildir, ui
                                                   bool all, uint64_t folderId, gromox::EWS::detail::SubscriptionKey parent) const
 {
 	detail::ExmdbSubscriptionKey key{maildir, 0};
-	if(!exmdb.subscribe_notification(maildir.c_str(), flags, all? TRUE : false, folderId, 0, &key.second))
+	if (!exmdb.subscribe_notification(maildir.c_str(), flags,
+	    all ? TRUE : false, folderId, 0, &key.second))
 		throw DispatchError(Exceptions::E3204);
 	std::lock_guard lock(subscriptionLock);
 	subscriptions.emplace(key, parent);
@@ -1049,7 +1051,7 @@ std::string EWSPlugin::timestamp() const try
 void EWSPlugin::unlinkSubscription(int ctx_id) const
 {
 	auto& pOldCtx = contexts[ctx_id];
-	if(pOldCtx) {
+	if (pOldCtx) {
 		pOldCtx->disableEventStream();
 		cache.evict(ctx_id);
 	}
@@ -1161,7 +1163,7 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadEmbeddedInstance(const 
 	} catch(const std::out_of_range&) {
 	}
 	uint32_t instanceId;
-	if(!exmdb.load_embedded_instance(dir.c_str(), false, aid, &instanceId))
+	if (!exmdb.load_embedded_instance(dir.c_str(), false, aid, &instanceId))
 		throw DispatchError(Exceptions::E3208);
 	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
 	cache.emplace(cache_embedded_instance_lifetime, ekey, instance);

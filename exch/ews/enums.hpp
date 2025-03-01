@@ -45,8 +45,8 @@ template<const char *...Cs> class StrEnum {
 
 	static index_t check(const std::string_view &v)
 	{
-		for(index_t i = 0; i < Choices.size(); ++i)
-			if(v == Choices[i])
+		for (index_t i = 0; i < Choices.size(); ++i)
+			if (v == Choices[i])
 				return i;
 		std::string msg = fmt::format("\"{}\" is not one of ", v);
 		printChoices(msg);
@@ -55,7 +55,7 @@ template<const char *...Cs> class StrEnum {
 
 	static index_t check(index_t value)
 	{
-		if(value < sizeof...(Cs))
+		if (value < sizeof...(Cs))
 			return value;
 		std::string msg = fmt::format("Invalid index {} for enum ", value);
 		printChoices(msg);

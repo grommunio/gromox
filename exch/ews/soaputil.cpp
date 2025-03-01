@@ -51,14 +51,14 @@ Envelope::Envelope(const char* content, size_t nBytes)
 {
 	doc.Parse(content, nBytes);
 	XMLElement* envelope = doc.RootElement();
-	if(!envelope)
+	if (!envelope)
 		throw SOAPError("Invalid XML");
 	clean(envelope);
-	if(envelope->Name() != "Envelope"s)
+	if (envelope->Name() != "Envelope"s)
 		throw SOAPError("Invalid SOAP envelope");
 	header = envelope->FirstChildElement("Header");
 	body = envelope->FirstChildElement("Body");
-	if(!body)
+	if (!body)
 		throw SOAPError("Missing body");
 }
 
@@ -72,7 +72,7 @@ Envelope::Envelope(const char* content, size_t nBytes)
 void Envelope::clean(XMLElement* element)
 {
 	const char* prefix = strchr(element->Name(), ':');
-	if(prefix)
+	if (prefix)
 		element->SetName(prefix + 1);
 	for (XMLElement *child = element->FirstChildElement(); child != nullptr;
 	     child = child->NextSiblingElement())

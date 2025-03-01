@@ -90,7 +90,7 @@ ObjectCache<Key, Object>::~ObjectCache()
 template<class Key, class Object>
 void ObjectCache<Key, Object>::run(std::chrono::milliseconds interval)
 {
-	if(running)
+	if (running)
 		return;
 	running = true;
 	scanThread = std::thread([this, interval](){periodicScan(interval);});
@@ -102,7 +102,7 @@ void ObjectCache<Key, Object>::run(std::chrono::milliseconds interval)
 template<class Key, class Object>
 void ObjectCache<Key, Object>::stop()
 {
-	if(!running)
+	if (!running)
 		return;
 	running = false;
 	notify.notify_all();
@@ -189,8 +189,8 @@ void ObjectCache<Key, Object>::scan()
 	std::vector<typename decltype(objects)::node_type> del; // delete objects after releasing lock to avoid deadlocks
 	auto guard = std::lock_guard(objectLock);
 	auto now = std::chrono::steady_clock::now();
-	for(auto it = objects.begin(); it != objects.end();)
-		if(it->second.expires < now)
+	for (auto it = objects.begin(); it != objects.end(); )
+		if (it->second.expires < now)
 			del.emplace_back(objects.extract(it++));
 		else
 			++it;

@@ -402,7 +402,7 @@ template<typename T>
 inline T* EWSContext::alloc(size_t count)
 {
 	T* res = static_cast<T*>(alloc(sizeof(T)*count));
-	if(!res)
+	if (!res)
 		throw Exceptions::EWSError::NotEnoughMemory(Exceptions::E3129);
 	return res;
 }
