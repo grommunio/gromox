@@ -66,6 +66,8 @@ template<typename T> using PropType	= typename _propType<T>::type;
 template<class C>
 using count_t = decltype(C::count);
 
+static constexpr uint32_t U_DEFAULT = 0, U_ANON = 0xffffffff;
+
 /**
  * @brief     Access contained value, create if empty
  *
@@ -3778,7 +3780,7 @@ tBasePermission::tBasePermission(const TPROPVAL_ARRAY& props)
 	auto memberId = props.get<const uint32_t>(PR_MEMBER_ID);
 	if(memberId && *memberId == 0)
 		UserId.DistinguishedUser = Enum::Default;
-	else if(memberId && *memberId == 0xffffffff)
+	else if (memberId && *memberId == U_ANON)
 		UserId.DistinguishedUser = Enum::Anonymous;
 	else {
 		fromProp(props.find(PR_SMTP_ADDRESS), UserId.PrimarySmtpAddress);
@@ -3825,14 +3827,12 @@ PERMISSION_DATA tBasePermission::write(uint32_t rights) const
 	if(DeleteItems)
 		rights |= *DeleteItems == Enum::All? frightsDeleteAny : *DeleteItems == Enum::Owned? frightsDeleteOwned : 0;
 
-
-	static constexpr uint32_t def = 0, anon = 0xffffffff;
 	PERMISSION_DATA perm{UserId.DistinguishedUser? ROW_MODIFY : ROW_ADD,
 		                 TPROPVAL_ARRAY{0, EWSContext::alloc<TAGGED_PROPVAL>(3)}};
 	uint16_t& count = perm.propvals.count;
 	perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_RIGHTS, EWSContext::construct<uint32_t>(rights)};
 	if(UserId.DistinguishedUser) {
-		const uint32_t* memberId = *UserId.DistinguishedUser == Enum::Anonymous? &anon : &def;
+		const uint32_t *memberId = *UserId.DistinguishedUser == Enum::Anonymous ? &U_ANON : &U_DEFAULT;
 		perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_ID, const_cast<uint32_t*>(memberId)};
 	} else {
 		if(UserId.DisplayName)
