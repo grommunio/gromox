@@ -152,7 +152,7 @@ struct sFolderEntryId : public FOLDER_ENTRYID {
 	uint32_t accountId() const;
 	uint64_t folderId() const;
 	bool isPrivate() const;
-private:
+	private:
 	void init(const void*, uint64_t);
 };
 
@@ -178,7 +178,7 @@ struct sMessageEntryId : public MESSAGE_ENTRYID {
 	bool isPrivate() const;
 
 	sBase64Binary serialize() const;
-private:
+	private:
 	void init(const void*, uint64_t);
 };
 
@@ -231,7 +231,7 @@ struct sFolderSpec {
 	uint64_t folderId=0;
 	enum : uint8_t {AUTO, PRIVATE, PUBLIC} location = AUTO;
 
-private:
+	private:
 	struct DistNameInfo {
 		const char* name;
 		uint64_t id;
@@ -312,7 +312,7 @@ class sShape {
 
 	static constexpr PROPERTY_NAME NONAME{KIND_NONE, {}, 0, nullptr};
 
-public:
+	public:
 	static constexpr uint8_t FL_ANY =   0;
 	static constexpr uint8_t FL_FIELD = 1 << 0; ///< Tag was requested as field
 	static constexpr uint8_t FL_EXT =   1 << 1; ///< Tag was requested as extended attribute
@@ -407,7 +407,7 @@ struct sSyncState {
 	idset seen_fai; ///< Set of seen fai change numbers
 	uint32_t readOffset = 0; ///< Number of read states already delivered
 
-private:
+	private:
 	static constexpr uint32_t MetaTagReadOffset = PROP_TAG(PT_LONG, 0x0e69); //PR_READ, but with long type
 };
 
@@ -852,7 +852,7 @@ struct tExtendedProperty {
 	TAGGED_PROPVAL propval{};
 
 	void serialize(tinyxml2::XMLElement*) const;
-private:
+	private:
 	void serialize(const void*, uint16_t, tinyxml2::XMLElement*) const;
 	void deserialize(const tinyxml2::XMLElement*, uint16_t, void* = nullptr);
 
@@ -886,7 +886,7 @@ struct tBaseFolderType : public NS_EWS_Types {
 	//<xs:element name="ReplicaList" type="t:ArrayOfStringsType" minOccurs="0" />
 
 	static sFolder create(const sShape&);
-protected:
+	protected:
 	tBaseFolderType(const tBaseFolderType&) = default;
 	tBaseFolderType(tBaseFolderType&&) noexcept = default;
 	~tBaseFolderType() = default; ///< Abstract class, only available to derived classes
@@ -2708,7 +2708,7 @@ struct tSubscriptionId {
 
 	inline bool operator==(const tSubscriptionId& other) {return ID == other.ID;}
 
-private:
+	private:
 	static std::atomic<uint32_t> globcnt;
 
 	static constexpr void encode(uint32_t, char*&);
@@ -2815,12 +2815,13 @@ struct tResolution : public tFindResponsePagingAttributes {
  * converted to the gromox RESTRICTION structure.
  */
 class tRestriction {
-public:
+	public:
 	explicit tRestriction(const tinyxml2::XMLElement*);
 
 	RESTRICTION* build(const sGetNameId&) const;
 	static RESTRICTION* all(RESTRICTION*, RESTRICTION*);
-private:
+
+	private:
 	const tinyxml2::XMLElement* source = nullptr;  ///< XMLElement of the contained restriction
 
 	static void build_andor(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);

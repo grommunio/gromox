@@ -54,7 +54,7 @@ class DispatchError : public std::runtime_error {
  * SOAP client or server error.
  */
 class EWSError : public DispatchError {
-public:
+	public:
 	EWSError(const char*, const std::string&);
 
 	std::string type;

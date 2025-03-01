@@ -17,7 +17,7 @@ namespace gromox::EWS::Structures {
  * construction.
  */
 template<const char *...Cs> class StrEnum {
-public:
+	public:
 	using index_t = uint8_t; ///< Index type. Might be expanded if necessary, for now 255 values should be sufficient.
 
 	static_assert(sizeof...(Cs) > 0, "StrEnum must have at least on option");
@@ -62,7 +62,7 @@ public:
 		throw gromox::EWS::Exceptions::EnumError(msg);
 	}
 
-private:
+	private:
 	index_t idx = 0;
 
 	static void printChoices(std::string& dest)

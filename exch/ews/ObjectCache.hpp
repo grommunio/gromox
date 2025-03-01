@@ -25,7 +25,7 @@ namespace gromox::EWS {
  * @tparam     Object  Object type
  */
 template<class Key, class Object> class ObjectCache {
-public:
+	public:
 	using clock_t = std::chrono::steady_clock;
 
 	~ObjectCache();
@@ -39,7 +39,7 @@ public:
 	Object get(const Key&, std::chrono::milliseconds);
 	void evict(const Key&);
 
-private:
+	private:
 	struct Container {
 		template<typename... Args>
 		Container(clock_t::time_point, Args&&...);

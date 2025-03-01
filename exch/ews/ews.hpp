@@ -88,7 +88,7 @@ class EWSContext;
  * @brief      Aggregation of plugin data and functions
  */
 class EWSPlugin {
-public:
+	public:
 	using Handler = void (*)(const tinyxml2::XMLElement *, tinyxml2::XMLElement *, EWSContext &);
 
 	EWSPlugin();
@@ -173,7 +173,7 @@ public:
 	int retr(int);
 	void term(int);
 
-private:
+	private:
 	template<typename T> using sptr = std::shared_ptr<T>;
 
 	struct DebugCtx;
@@ -211,7 +211,7 @@ private:
  * @brief      EWS request context
  */
 class EWSContext {
-public:
+	public:
 	using MCONT_PTR = std::unique_ptr<MESSAGE_CONTENT, detail::Cleaner>; ///< Unique pointer to MESSAGE_CONTENT
 
 	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE, S_STREAM_NOTIFY};
