@@ -18,24 +18,25 @@
 
 #include "enums.hpp"
 
-namespace tinyxml2
-{
+namespace tinyxml2 {
 	class XMLElement;
 	class XMLAttribute;
 }
 
-namespace gromox::EWS
-{
+namespace gromox::EWS {
+
 class EWSContext;
 using clock = std::chrono::system_clock;
 using time_point = clock::time_point;
+
 }
 
 namespace gromox::EWS::Exceptions
-{class EWSError;}
-
-namespace gromox::EWS::Structures
 {
+class EWSError;
+}
+
+namespace gromox::EWS::Structures {
 /// Struct alias shortcut
 #define ALIAS(Base, Name) struct a##Name : public Base {static constexpr char NAME[] = #Name; using Base::Base;}
 
@@ -99,20 +100,17 @@ struct tTasksFolderType;
 /**
  * @brief Base struct (no namespace) for XML namespace information
  */
-struct NSInfo
-{
+struct NSInfo {
 	static constexpr char NS_ABBREV[] = "";
 	static constexpr char NS_URL[] = "";
 };
 
-struct NS_EWS_Messages : public NSInfo
-{
+struct NS_EWS_Messages : public NSInfo {
 	static constexpr char NS_ABBREV[] = "m:";
 	static constexpr char NS_URL[] = "http://schemas.microsoft.com/exchange/services/2006/messages";
 };
 
-struct NS_EWS_Types : public NSInfo
-{
+struct NS_EWS_Types : public NSInfo {
 	static constexpr char NS_ABBREV[] = "t:";
 	static constexpr char NS_URL[] = "http://schemas.microsoft.com/exchange/services/2006/types";
 };
@@ -144,8 +142,7 @@ struct sBase64Binary : public std::string {
  *
  * Provides EWS conversions and access utilities.
  */
-struct sFolderEntryId : public FOLDER_ENTRYID
-{
+struct sFolderEntryId : public FOLDER_ENTRYID {
 	sFolderEntryId() = default;
 	explicit sFolderEntryId(const tinyxml2::XMLAttribute*);
 	sFolderEntryId(const void*, uint64_t);
@@ -169,8 +166,7 @@ using sGetNameId = std::function<uint16_t(const PROPERTY_NAME&)>;
  *
  * Provides EWS conversions and access utilities.
  */
-struct sMessageEntryId : public MESSAGE_ENTRYID
-{
+struct sMessageEntryId : public MESSAGE_ENTRYID {
 	sMessageEntryId() = default;
 	sMessageEntryId(const void*, uint64_t);
 	explicit sMessageEntryId(const TAGGED_PROPVAL&);
@@ -193,8 +189,7 @@ private:
  *
  * @todo
  */
-struct sAttachmentId : public sMessageEntryId
-{
+struct sAttachmentId : public sMessageEntryId {
 	sAttachmentId(const sMessageEntryId&, uint32_t);
 	sAttachmentId(const TAGGED_PROPVAL&, uint32_t);
 	sAttachmentId(const void*, uint64_t);
@@ -209,8 +204,7 @@ struct sAttachmentId : public sMessageEntryId
  *
  * Allows referencing modified occurrences by message entry ID and basedate.
  */
-struct sOccurrenceId : public sMessageEntryId
-{
+struct sOccurrenceId : public sMessageEntryId {
 	sOccurrenceId(const TAGGED_PROPVAL&, uint32_t);
 	sOccurrenceId(const void*, uint64_t);
 
@@ -225,8 +219,7 @@ struct sOccurrenceId : public sMessageEntryId
  * Resolves folder ID and type either from the distinguished name or
  * the folder target string.
  */
-struct sFolderSpec
-{
+struct sFolderSpec {
 	sFolderSpec() = default;
 	explicit sFolderSpec(const tDistinguishedFolderId&);
 	sFolderSpec(const std::string&, uint64_t);
@@ -239,8 +232,7 @@ struct sFolderSpec
 	enum : uint8_t {AUTO, PRIVATE, PUBLIC} location = AUTO;
 
 private:
-	struct DistNameInfo
-	{
+	struct DistNameInfo {
 		const char* name;
 		uint64_t id;
 		bool isPrivate;
@@ -274,8 +266,7 @@ using sItemChangeDescription = std::variant<tAppendToItemField, tSetItemField, t
 /**
  * Mailbox metadata necessary for entry ID generation
  */
-struct sMailboxInfo
-{
+struct sMailboxInfo {
 	GUID mailboxGuid{}; ///< PR_STORE_RECORD_KEY store property
 	uint32_t accountId = 0; ///< MySQL account ID
 	bool isPublic = false; ///< Whether it is a public (domain) store
@@ -285,8 +276,7 @@ using sNamedPropertyMap = std::unordered_map<uint32_t, PROPERTY_NAME>;
 
 using sNotificationEvent = std::variant<aCreatedEvent, aDeletedEvent, tModifiedEvent, aMovedEvent, aCopiedEvent, aNewMailEvent, aStatusEvent/*, aFreeBusyEvent*/>;
 
-class sShape
-{
+class sShape {
 	/**
 	 * @brief     Property metadata
 	 *
@@ -295,8 +285,7 @@ class sShape
 	 * Enables distinction between extended properties and named fields that
 	 * may be requested independently from each other.
 	 */
-	struct PropInfo
-	{
+	struct PropInfo {
 		explicit PropInfo(uint8_t=0, const PROPERTY_NAME* = nullptr);
 		PropInfo(uint8_t, const TAGGED_PROPVAL*);
 
@@ -396,8 +385,7 @@ public:
 /**
  * String class to be used in arrays (i.e. Types.xsd:3852)
  */
-struct sString : public std::string, public NS_EWS_Types
-{
+struct sString : public std::string, public NS_EWS_Types {
 	static constexpr char NAME[] = "String";
 	using std::string::string;
 };
@@ -405,8 +393,7 @@ struct sString : public std::string, public NS_EWS_Types
 /**
  * @brief     Sync state helper class
  */
-struct sSyncState
-{
+struct sSyncState {
 	sSyncState();
 
 	void convert();
@@ -430,8 +417,7 @@ private:
  * Parses a time string in hh:mm:ss format into the hour, minute and second
  * members.
  */
-struct sTime
-{
+struct sTime {
 	sTime(const tinyxml2::XMLElement*);
 
 	uint8_t hour;
@@ -442,8 +428,7 @@ struct sTime
 /**
  * @brief     Timepoint with time zone offset
  */
-struct sTimePoint
-{
+struct sTimePoint {
 	explicit sTimePoint(time_point);
 	sTimePoint(time_point, const tSerializableTimeZone&);
 	explicit sTimePoint(const char*);
@@ -466,8 +451,7 @@ struct sTimePoint
 /**
  * Types.xsd:6659
  */
-struct tAlternateIdBase
-{
+struct tAlternateIdBase {
 	tAlternateIdBase() = default;
 	explicit tAlternateIdBase(Enum::IdFormatType);
 	explicit tAlternateIdBase(const tinyxml2::XMLElement*);
@@ -481,8 +465,7 @@ struct tAlternateIdBase
 /**
  * Types.xsd:6668
  */
-struct tAlternateId : public tAlternateIdBase
-{
+struct tAlternateId : public tAlternateIdBase {
 	static constexpr char NAME[] = "AlternateId";
 
 	explicit tAlternateId(const tinyxml2::XMLElement*);
@@ -497,8 +480,7 @@ struct tAlternateId : public tAlternateIdBase
 /**
  * Types.xsd:6683
  */
-struct tAlternatePublicFolderId : public tAlternateIdBase
-{
+struct tAlternatePublicFolderId : public tAlternateIdBase {
 	static constexpr char NAME[] = "AlternatePublicFolderId";
 
 	explicit tAlternatePublicFolderId(const tinyxml2::XMLElement*);
@@ -511,8 +493,7 @@ struct tAlternatePublicFolderId : public tAlternateIdBase
 /**
  * Types.xsd:6696
  */
-struct tAlternatePublicFolderItemId : public tAlternatePublicFolderId
-{
+struct tAlternatePublicFolderItemId : public tAlternatePublicFolderId {
 	static constexpr char NAME[] = "AlternatePublicFolderItemId";
 
 	explicit tAlternatePublicFolderItemId(const tinyxml2::XMLElement*);
@@ -527,8 +508,7 @@ using sAlternateId = std::variant<tAlternateId, tAlternatePublicFolderId, tAlter
 /**
  * Types.xsd:1611
  */
-struct tAttachment : public NS_EWS_Types
-{
+struct tAttachment : public NS_EWS_Types {
 	explicit tAttachment(const sAttachmentId&, const TPROPVAL_ARRAY&);
 
 	static sAttachment create(const sAttachmentId&, const TPROPVAL_ARRAY&);
@@ -549,8 +529,7 @@ struct tAttachment : public NS_EWS_Types
 /**
  * Types.xsd:2117
  */
-struct tBaseItemId : public NS_EWS_Types
-{
+struct tBaseItemId : public NS_EWS_Types {
 	enum IdType : uint8_t {
 		ID_UNKNOWN, ///< Unspecified
 		ID_GENERIC, ///< Non-entry id, but uses the same tag layout
@@ -576,8 +555,7 @@ struct tBaseItemId : public NS_EWS_Types
 /**
  * Types.xsd:6022
  */
-struct tBaseNotificationEvent : public NS_EWS_Types
-{
+struct tBaseNotificationEvent : public NS_EWS_Types {
 	//<xs:element name="Watermark" type="t:WatermarkType" minOccurs="0" />
 
 	inline void serialize(tinyxml2::XMLElement*) const {}
@@ -590,8 +568,7 @@ ALIAS(tBaseNotificationEvent, StatusEvent);
  *
  * Also provides polymorphic interface for indexed and fractional page view.
  */
-struct tBasePagingType
-{
+struct tBasePagingType {
 	explicit tBasePagingType(const tinyxml2::XMLElement* xml);
 	virtual ~tBasePagingType() = default;
 
@@ -608,8 +585,7 @@ struct tBasePagingType
  * Used slightly different than in the specification, as `Watermark` is
  * omitted and `tStreamingSubscriptionRequest` also derives from this struct.
  */
-struct tBaseSubscriptionRequest
-{
+struct tBaseSubscriptionRequest {
 	explicit tBaseSubscriptionRequest(const tinyxml2::XMLElement*);
 
 	std::optional<std::vector<sFolderId>> FolderIds;
@@ -623,8 +599,7 @@ struct tBaseSubscriptionRequest
 /**
  * Types.xsd:1560
  */
-struct tRequestAttachmentId : public tBaseItemId
-{
+struct tRequestAttachmentId : public tBaseItemId {
 	static constexpr char NAME[] = "AttachmentId";
 
 	using tBaseItemId::tBaseItemId;
@@ -633,8 +608,7 @@ struct tRequestAttachmentId : public tBaseItemId
 /**
  * Types.xsd:1725
  */
-struct tBody : public std::string
-{
+struct tBody : public std::string {
 	template<typename T>
 	inline tBody(T&& content, const char* type) : std::string(std::forward<T>(content)), BodyType(type) {}
 
@@ -649,8 +623,7 @@ struct tBody : public std::string
 /**
  * Types.xsd:6288
  */
-struct tCalendarEventDetails
-{
+struct tCalendarEventDetails {
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::optional<std::string> ID;
@@ -666,8 +639,7 @@ struct tCalendarEventDetails
 /**
  * Types.xsd:6301
  */
-struct tCalendarEvent : public NS_EWS_Types
-{
+struct tCalendarEvent : public NS_EWS_Types {
 	static constexpr char NAME[] = "CalendarEvent";
 
 	tCalendarEvent(const freebusy_event&);
@@ -696,8 +668,7 @@ struct tContactsView final : public tBasePagingType {
  *
  * Types.xsd:6316
  */
-struct tDuration
-{
+struct tDuration {
 	static constexpr char NAME[] = "Duration";
 
 	tDuration() = default;
@@ -713,8 +684,7 @@ struct tDuration
  *
  * Types.xsd:273
  */
-struct tEmailAddressType : public NS_EWS_Types
-{
+struct tEmailAddressType : public NS_EWS_Types {
 	static constexpr char NAME[] = "Mailbox";
 
 	tEmailAddressType() = default;
@@ -736,8 +706,7 @@ struct tEmailAddressType : public NS_EWS_Types
 /**
  * Types.xsd:5359
  */
-struct tEmailAddressDictionaryEntry : public NS_EWS_Types
-{
+struct tEmailAddressDictionaryEntry : public NS_EWS_Types {
 	static constexpr char NAME[] = "Entry";
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -755,8 +724,7 @@ struct tEmailAddressDictionaryEntry : public NS_EWS_Types
 /**
  * Types.xsd
  */
-struct tPhoneNumberDictionaryEntry : public NS_EWS_Types
-{
+struct tPhoneNumberDictionaryEntry : public NS_EWS_Types {
 	static constexpr char NAME[] = "Entry";
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -771,8 +739,7 @@ struct tPhoneNumberDictionaryEntry : public NS_EWS_Types
 /**
  * Types.xsd:6136
  */
-struct tPullSubscriptionRequest : public tBaseSubscriptionRequest
-{
+struct tPullSubscriptionRequest : public tBaseSubscriptionRequest {
 	static constexpr char NAME[] = "PullSubscriptionRequest";
 
 	explicit tPullSubscriptionRequest(const tinyxml2::XMLElement*);
@@ -783,8 +750,7 @@ struct tPullSubscriptionRequest : public tBaseSubscriptionRequest
 /**
  * Types.xsd:1665
  */
-struct tReferenceAttachment : public tAttachment
-{
+struct tReferenceAttachment : public tAttachment {
 	static constexpr char NAME[] = "ReferenceAttachment";
 
 	//tReferenceAttachment(const sAttachmentId&, const TPROPVAL_ARRAY&);
@@ -805,8 +771,7 @@ struct tReferenceAttachment : public tAttachment
 /**
  * Types.xsd:1862
  */
-struct tFolderId : public tBaseItemId
-{
+struct tFolderId : public tBaseItemId {
 	static constexpr char NAME[] = "FolderId";
 
 	using tBaseItemId::tBaseItemId;
@@ -817,8 +782,7 @@ ALIAS(tFolderId, OldFolderId);
 /**
  * Types.xsd:1028
  */
-struct tGuid : public GUID
-{
+struct tGuid : public GUID {
 	explicit tGuid(const tinyxml2::XMLAttribute*);
 	tGuid(const GUID&);
 
@@ -828,8 +792,7 @@ struct tGuid : public GUID
 /**
  * Types.xsd:6874
  */
-struct tEffectiveRights
-{
+struct tEffectiveRights {
 	explicit tEffectiveRights(uint32_t);
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -846,8 +809,7 @@ struct tEffectiveRights
 /**
  * Types.xsd:1142
  */
-struct tExtendedFieldURI
-{
+struct tExtendedFieldURI {
 	using TMEntry = std::pair<const char*, uint16_t>;
 
 	static constexpr char NAME[] = "ExtendedFieldURI";
@@ -882,8 +844,7 @@ struct tExtendedFieldURI
 /**
  * Types.xsd:1196
  */
-struct tExtendedProperty
-{
+struct tExtendedProperty {
 	explicit tExtendedProperty(const tinyxml2::XMLElement*);
 	explicit tExtendedProperty(const TAGGED_PROPVAL&, const PROPERTY_NAME& = PROPERTY_NAME{KIND_NONE, {}, 0, nullptr});
 
@@ -904,8 +865,7 @@ private:
 /**
  * Types.xsd:1981
  */
-struct tBaseFolderType : public NS_EWS_Types
-{
+struct tBaseFolderType : public NS_EWS_Types {
 	explicit tBaseFolderType(const sShape&);
 	explicit tBaseFolderType(const tinyxml2::XMLElement*);
 
@@ -935,8 +895,7 @@ protected:
 /**
  * Types.xsd:
  */
-struct tFieldURI
-{
+struct tFieldURI {
 	using SMEntry = std::pair<const char*, uint64_t>;
 
 	static constexpr char NAME[] = "FieldURI";
@@ -957,8 +916,7 @@ struct tFieldURI
 /**
  * Types.xsd:1654
  */
-struct tFileAttachment : public tAttachment
-{
+struct tFileAttachment : public tAttachment {
 	static constexpr char NAME[] = "FileAttachment";
 
 	tFileAttachment(const sAttachmentId&, const TPROPVAL_ARRAY&);
@@ -973,8 +931,7 @@ struct tFileAttachment : public tAttachment
 /**
  * Types.xsd:1947
  */
-struct tFindResponsePagingAttributes
-{
+struct tFindResponsePagingAttributes {
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::optional<int> IndexedPagingOffset; // Attribute
@@ -987,8 +944,7 @@ struct tFindResponsePagingAttributes
 /**
  * Types.xsd:1973
  */
-struct tFindFolderParent : public tFindResponsePagingAttributes
-{
+struct tFindFolderParent : public tFindResponsePagingAttributes {
 	std::vector<sFolder> Folders;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -997,8 +953,7 @@ struct tFindFolderParent : public tFindResponsePagingAttributes
 /**
  * Types.xsd:5777
  */
-struct tGroupedItems : NS_EWS_Types
-{
+struct tGroupedItems : public NS_EWS_Types {
 	std::string GroupIndex;
 	std::vector<sItem> Items;
 	// <xs:element name="GroupSummary" type="t:GroupSummaryType" minOccurs="0" />
@@ -1009,8 +964,7 @@ struct tGroupedItems : NS_EWS_Types
 /**
  * Types.xsd:2345
  */
-struct tFindItemParent : public tFindResponsePagingAttributes
-{
+struct tFindItemParent : public tFindResponsePagingAttributes {
 	std::vector<sItem> Items;
 	std::vector<tGroupedItems> Groups;
 
@@ -1020,8 +974,7 @@ struct tFindItemParent : public tFindResponsePagingAttributes
 /**
  * Types.xsd:2436
  */
-struct tFlagType : public NS_EWS_Types
-{
+struct tFlagType : public NS_EWS_Types {
 	static constexpr char NAME[] = "Flag";
 
 	tFlagType(const tinyxml2::XMLElement*);
@@ -1052,8 +1005,7 @@ struct tFractionalPageView final : public tBasePagingType {
 /**
  * Types.xsd:1108
  */
-struct tIndexedFieldURI
-{
+struct tIndexedFieldURI {
 	static constexpr char NAME[] = "IndexedFieldURI";
 
 	tIndexedFieldURI(const tinyxml2::XMLElement*);
@@ -1086,8 +1038,7 @@ struct tIndexedPageView final : public tBasePagingType {
 /**
  * Types.xsd:1538
  */
-struct tInternetMessageHeader : NS_EWS_Types
-{
+struct tInternetMessageHeader : public NS_EWS_Types {
 	static constexpr char NAME[] = "InternetMessageHeader";
 
 	tInternetMessageHeader(const std::string_view&, const std::string_view&);
@@ -1103,8 +1054,7 @@ struct tInternetMessageHeader : NS_EWS_Types
 /**
  * Types.xsd:1165
  */
-struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldURI>
-{
+struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldURI> {
 	using Base = std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldURI>;
 
 	explicit tPath(const tinyxml2::XMLElement*);
@@ -1119,8 +1069,7 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
 /**
  * Types.xsd:6722
  */
-struct tUserId
-{
+struct tUserId {
 	tUserId() = default;
 	explicit tUserId(const tinyxml2::XMLElement*);
 
@@ -1136,8 +1085,7 @@ struct tUserId
 /**
  * Types.xsd:6773
  */
-struct tBasePermission : public NS_EWS_Types
-{
+struct tBasePermission : public NS_EWS_Types {
 	explicit tBasePermission(const TPROPVAL_ARRAY&);
 	explicit tBasePermission(const tinyxml2::XMLElement*);
 
@@ -1161,8 +1109,7 @@ struct tBasePermission : public NS_EWS_Types
 /**
  * Types.xsd:6803
  */
-struct tCalendarPermission: public tBasePermission
-{
+struct tCalendarPermission: public tBasePermission {
 	static constexpr char NAME[] = "CalendarPermission";
 
 	explicit tCalendarPermission(const TPROPVAL_ARRAY&);
@@ -1178,8 +1125,7 @@ struct tCalendarPermission: public tBasePermission
 /**
  * Types.xsd:6789
  */
-struct tPermission: public tBasePermission
-{
+struct tPermission: public tBasePermission {
 	static constexpr char NAME[] = "Permission";
 
 	explicit tPermission(const TPROPVAL_ARRAY&);
@@ -1195,8 +1141,7 @@ struct tPermission: public tBasePermission
 /**
  * Types.xsd:6864
  */
-struct tCalendarPermissionSet : NS_EWS_Types
-{
+struct tCalendarPermissionSet : public NS_EWS_Types {
 	explicit tCalendarPermissionSet(const tinyxml2::XMLElement*);
 	explicit tCalendarPermissionSet(const TARRAY_SET&);
 
@@ -1210,8 +1155,7 @@ struct tCalendarPermissionSet : NS_EWS_Types
 /**
  * Types.xsd:6854
  */
-struct tPermissionSet : NS_EWS_Types
-{
+struct tPermissionSet : public NS_EWS_Types {
 	explicit tPermissionSet(const tinyxml2::XMLElement*);
 	explicit tPermissionSet(const TARRAY_SET&);
 
@@ -1225,8 +1169,7 @@ struct tPermissionSet : NS_EWS_Types
 /**
  * Messages.xsd:5992
  */
-struct tFieldOrder
-{
+struct tFieldOrder {
 	explicit tFieldOrder(const tinyxml2::XMLElement*);
 
 	static SORTORDER_SET* build(const std::vector<tFieldOrder>&, const sGetNameId&);
@@ -1238,8 +1181,7 @@ struct tFieldOrder
 /**
  * Types.xsd:2019
  */
-struct tFolderType : public tBaseFolderType
-{
+struct tFolderType : public tBaseFolderType {
 	static constexpr char NAME[] = "Folder";
 
 	using tBaseFolderType::tBaseFolderType; // Construct from XML
@@ -1254,8 +1196,7 @@ struct tFolderType : public tBaseFolderType
 /**
  * Types.xsd:2031
  */
-struct tCalendarFolderType : public tBaseFolderType
-{
+struct tCalendarFolderType : public tBaseFolderType {
 	static constexpr char NAME[] = "CalendarFolder";
 
 	using tBaseFolderType::tBaseFolderType;
@@ -1271,10 +1212,8 @@ struct tCalendarFolderType : public tBaseFolderType
 /**
  * Types.xsd:1386
  */
-struct tChangeDescription
-{
-	struct Field
-	{
+struct tChangeDescription {
+	struct Field {
 		using FieldConv = std::function<void(const tinyxml2::XMLElement*, sShape&)>;
 
 		FieldConv conv;
@@ -1314,8 +1253,7 @@ struct tChangeDescription
  *
  * TODO: implement functionality
  */
-struct tAppendToFolderField : public tChangeDescription
-{
+struct tAppendToFolderField : public tChangeDescription {
 	static constexpr char NAME[] = "AppendToFolderField";
 
 	using tChangeDescription::tChangeDescription;
@@ -1326,8 +1264,7 @@ struct tAppendToFolderField : public tChangeDescription
  *
  * TODO: implement functionality
  */
-struct tAppendToItemField : public tChangeDescription
-{
+struct tAppendToItemField : public tChangeDescription {
 	static constexpr char NAME[] = "AppendToItemField";
 
 	using tChangeDescription::tChangeDescription;
@@ -1336,8 +1273,7 @@ struct tAppendToItemField : public tChangeDescription
 /**
  * Types.xsd:6939
  */
-struct tConflictResults
-{
+struct tConflictResults {
 	int Count = 0;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -1346,8 +1282,7 @@ struct tConflictResults
 /**
  * Types.xsd:2064
  */
-struct tContactsFolderType : public tBaseFolderType
-{
+struct tContactsFolderType : public tBaseFolderType {
 	static constexpr char NAME[] = "ContactsFolder";
 
 	using tBaseFolderType::tBaseFolderType;
@@ -1363,8 +1298,7 @@ struct tContactsFolderType : public tBaseFolderType
 /**
  * Types.xsd:1454
  */
-struct tDeleteFolderField : public tChangeDescription
-{
+struct tDeleteFolderField : public tChangeDescription {
 	static constexpr char NAME[] = "DeleteFolderField";
 
 	using tChangeDescription::tChangeDescription;
@@ -1373,8 +1307,7 @@ struct tDeleteFolderField : public tChangeDescription
 /**
  * Types.xsd:1447
  */
-struct tDeleteItemField : public tChangeDescription
-{
+struct tDeleteItemField : public tChangeDescription {
 	static constexpr char NAME[] = "DeleteItemField";
 
 	using tChangeDescription::tChangeDescription;
@@ -1383,8 +1316,7 @@ struct tDeleteItemField : public tChangeDescription
 /**
  * Types.xsd:2078
  */
-struct tSearchFolderType : public tBaseFolderType
-{
+struct tSearchFolderType : public tBaseFolderType {
 	static constexpr char NAME[] = "SearchFolder";
 
 	using tBaseFolderType::tBaseFolderType;
@@ -1398,8 +1330,7 @@ struct tSearchFolderType : public tBaseFolderType
 /**
  * Types.xsd:2128
  */
-struct tItemId : public tBaseItemId
-{
+struct tItemId : public tBaseItemId {
 	static constexpr char NAME[] = "ItemId";
 
 	using tBaseItemId::tBaseItemId;
@@ -1410,8 +1341,7 @@ ALIAS(tItemId, OldItemId);
 /**
  * Types.xsd:6028
  */
-struct tBaseObjectChangedEvent : public NS_EWS_Types
-{
+struct tBaseObjectChangedEvent : public NS_EWS_Types {
 	tBaseObjectChangedEvent(const sTimePoint&, std::variant<tFolderId, tItemId>&&, tFolderId&&);
 
 	sTimePoint TimeStamp;
@@ -1429,8 +1359,7 @@ ALIAS(tBaseObjectChangedEvent, NewMailEvent);
 /**
  * Types.xsd:6043
  */
-struct tModifiedEvent : public tBaseObjectChangedEvent
-{
+struct tModifiedEvent : public tBaseObjectChangedEvent {
 	static constexpr char NAME[] = "ModifiedEvent";
 
 	using tBaseObjectChangedEvent::tBaseObjectChangedEvent;
@@ -1443,8 +1372,7 @@ struct tModifiedEvent : public tBaseObjectChangedEvent
 /**
  * Types.xsd:6053
  */
-struct tMovedCopiedEvent : public tBaseObjectChangedEvent
-{
+struct tMovedCopiedEvent : public tBaseObjectChangedEvent {
 	tMovedCopiedEvent(const sTimePoint&, std::variant<tFolderId, tItemId>&&, tFolderId&&, std::variant<aOldFolderId, aOldItemId>&&, tFolderId&&);
 
 	std::variant<aOldFolderId, aOldItemId> oldObjectId;
@@ -1459,8 +1387,7 @@ ALIAS(tMovedCopiedEvent, MovedEvent);
 /**
  * Types.xsd:396
  */
-struct tSingleRecipient
-{
+struct tSingleRecipient {
 	tSingleRecipient() = default;
 	explicit tSingleRecipient(const tinyxml2::XMLElement*);
 
@@ -1472,8 +1399,7 @@ struct tSingleRecipient
 /**
  * Types.xsd:4419
  */
-struct tAttendee : public NS_EWS_Types
-{
+struct tAttendee : public NS_EWS_Types {
 	static constexpr char NAME[] = "Attendee";
 
 	tEmailAddressType Mailbox;
@@ -1494,8 +1420,7 @@ struct tRecurrencePatternBase  : public NS_EWS_Types {}; // <xs:complexType name
 /**
  * Types.xsd:4531
  */
-struct tIntervalRecurrencePatternBase : public tRecurrencePatternBase
-{
+struct tIntervalRecurrencePatternBase : public tRecurrencePatternBase {
 	int Interval;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -1508,8 +1433,7 @@ struct tIntervalRecurrencePatternBase : public tRecurrencePatternBase
 /**
  * Types.xsd:4577
  */
-struct tRelativeYearlyRecurrencePattern : public tRecurrencePatternBase
-{
+struct tRelativeYearlyRecurrencePattern : public tRecurrencePatternBase {
 	static constexpr char NAME[] = "RelativeYearlyRecurrence";
 
 	std::string DaysOfWeek;
@@ -1528,8 +1452,7 @@ struct tRelativeYearlyRecurrencePattern : public tRecurrencePatternBase
 /**
  * Types.xsd:4589
  */
-struct tAbsoluteYearlyRecurrencePattern : public tRecurrencePatternBase
-{
+struct tAbsoluteYearlyRecurrencePattern : public tRecurrencePatternBase {
 	static constexpr char NAME[] = "AbsoluteYearlyRecurrence";
 
 	int DayOfMonth;
@@ -1546,8 +1469,7 @@ struct tAbsoluteYearlyRecurrencePattern : public tRecurrencePatternBase
 /**
  * Types.xsd:4600
  */
-struct tRelativeMonthlyRecurrencePattern : public tIntervalRecurrencePatternBase
-{
+struct tRelativeMonthlyRecurrencePattern : public tIntervalRecurrencePatternBase {
 	static constexpr char NAME[] = "RelativeMonthlyRecurrence";
 
 	std::string DaysOfWeek;
@@ -1565,8 +1487,7 @@ struct tRelativeMonthlyRecurrencePattern : public tIntervalRecurrencePatternBase
 /**
  * Types.xsd:4611
  */
-struct tAbsoluteMonthlyRecurrencePattern : public tIntervalRecurrencePatternBase
-{
+struct tAbsoluteMonthlyRecurrencePattern : public tIntervalRecurrencePatternBase {
 	static constexpr char NAME[] = "AbsoluteMonthlyRecurrence";
 	int DayOfMonth;
 
@@ -1582,8 +1503,7 @@ struct tAbsoluteMonthlyRecurrencePattern : public tIntervalRecurrencePatternBase
 /**
  * Types.xsd:4621
  */
-struct tWeeklyRecurrencePattern : public tIntervalRecurrencePatternBase
-{
+struct tWeeklyRecurrencePattern : public tIntervalRecurrencePatternBase {
 	static constexpr char NAME[] = "WeeklyRecurrence";
 
 	std::string DaysOfWeek;
@@ -1601,8 +1521,7 @@ struct tWeeklyRecurrencePattern : public tIntervalRecurrencePatternBase
 /**
  * Types.xsd:4632
  */
-struct tDailyRecurrencePattern : public tIntervalRecurrencePatternBase
-{
+struct tDailyRecurrencePattern : public tIntervalRecurrencePatternBase {
 	static constexpr char NAME[] = "DailyRecurrence";
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -1616,16 +1535,14 @@ struct tDailyRecurrencePattern : public tIntervalRecurrencePatternBase
  * Types.xsd:4545
  * <xs:complexType name="RegeneratingPatternBaseType" abstract="true">
  */
-struct tRegeneratingPatternBase : public tIntervalRecurrencePatternBase
-{
+struct tRegeneratingPatternBase : public tIntervalRecurrencePatternBase {
 	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
 };
 
 /**
  * Types.xsd:4551
  */
-struct tDailyRegeneratingPattern : public tIntervalRecurrencePatternBase
-{
+struct tDailyRegeneratingPattern : public tIntervalRecurrencePatternBase {
 	static constexpr char NAME[] = "DailyRegeneration";
 
 	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
@@ -1634,8 +1551,7 @@ struct tDailyRegeneratingPattern : public tIntervalRecurrencePatternBase
 /**
  * Types.xsd:4551
  */
-struct tWeeklyRegeneratingPattern : public tIntervalRecurrencePatternBase
-{
+struct tWeeklyRegeneratingPattern : public tIntervalRecurrencePatternBase {
 	static constexpr char NAME[] = "WeeklyRegeneration";
 
 	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
@@ -1644,8 +1560,7 @@ struct tWeeklyRegeneratingPattern : public tIntervalRecurrencePatternBase
 /**
  * Types.xsd:4551
  */
-struct tMonthlyRegeneratingPattern : public tIntervalRecurrencePatternBase
-{
+struct tMonthlyRegeneratingPattern : public tIntervalRecurrencePatternBase {
 	static constexpr char NAME[] = "MonthlyRegeneration";
 
 	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
@@ -1654,8 +1569,7 @@ struct tMonthlyRegeneratingPattern : public tIntervalRecurrencePatternBase
 /**
  * Types.xsd:4551
  */
-struct tYearlyRegeneratingPattern : public tIntervalRecurrencePatternBase
-{
+struct tYearlyRegeneratingPattern : public tIntervalRecurrencePatternBase {
 	static constexpr char NAME[] = "YearlyRegeneration";
 
 	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
@@ -1691,8 +1605,7 @@ using tRecurrencePattern = std::variant<
 /**
  * Types.xsd:4814
  */
-struct tRecurrenceRangeBase : public NS_EWS_Types
-{
+struct tRecurrenceRangeBase : public NS_EWS_Types {
 	time_point StartDate{};
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -1705,8 +1618,7 @@ struct tRecurrenceRangeBase : public NS_EWS_Types
 /**
  * Types.xsd:4820
  */
-struct tNoEndRecurrenceRange : public tRecurrenceRangeBase
-{
+struct tNoEndRecurrenceRange : public tRecurrenceRangeBase {
 	static constexpr char NAME[] = "NoEndRecurrence";
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -1720,8 +1632,7 @@ struct tNoEndRecurrenceRange : public tRecurrenceRangeBase
 /**
  * Types.xsd:4826
  */
-struct tEndDateRecurrenceRange : public tRecurrenceRangeBase
-{
+struct tEndDateRecurrenceRange : public tRecurrenceRangeBase {
 	static constexpr char NAME[] = "EndDateRecurrence";
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -1738,8 +1649,7 @@ struct tEndDateRecurrenceRange : public tRecurrenceRangeBase
 /**
  * Types.xsd:4836
  */
-struct tNumberedRecurrenceRange : public tRecurrenceRangeBase
-{
+struct tNumberedRecurrenceRange : public tRecurrenceRangeBase {
 	static constexpr char NAME[] = "NumberedRecurrence";
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -1765,8 +1675,7 @@ using tRecurrenceRange = std::variant<
 /**
  * Types.xsd:4888
  */
-struct tRecurrenceType
-{
+struct tRecurrenceType {
 	tRecurrencePattern RecurrencePattern;
 	tRecurrenceRange RecurrenceRange;
 
@@ -1778,8 +1687,7 @@ struct tRecurrenceType
 /**
  * Types.xsd:4904
  */
-struct tOccurrenceInfoType : public NS_EWS_Types
-{
+struct tOccurrenceInfoType : public NS_EWS_Types {
 	static constexpr char NAME[] = "Occurrence";
 
 	sOccurrenceId ItemId;
@@ -1794,8 +1702,7 @@ struct tOccurrenceInfoType : public NS_EWS_Types
 /**
  * Types.xsd:4919
  */
-struct tDeletedOccurrenceInfoType : public NS_EWS_Types
-{
+struct tDeletedOccurrenceInfoType : public NS_EWS_Types {
 	static constexpr char NAME[] = "DeletedOccurrence";
 
 	time_point Start{};
@@ -1808,8 +1715,7 @@ struct tDeletedOccurrenceInfoType : public NS_EWS_Types
 /**
  * Types.xsd:4895
  */
-struct tTaskRecurrence
-{
+struct tTaskRecurrence {
 	// tTaskRecurrencePattern TaskRecurrencePattern;
 	tRecurrencePattern TaskRecurrencePattern;
 	tRecurrenceRange RecurrenceRange;
@@ -1820,8 +1726,7 @@ struct tTaskRecurrence
 /**
  * Types.xsd:2353
  */
-struct tItem : public NS_EWS_Types
-{
+struct tItem : public NS_EWS_Types {
 	static constexpr char NAME[] = "Item";
 
 	explicit tItem(const sShape&);
@@ -1908,8 +1813,7 @@ struct tItem : public NS_EWS_Types
 /**
  * Types.xsd:4093
  */
-struct tTask : public tItem
-{
+struct tTask : public tItem {
 	static constexpr char NAME[] = "Task";
 
 	explicit tTask(const sShape&);
@@ -1942,8 +1846,7 @@ struct tTask : public tItem
 /**
  * Types.xsd:4933
  */
-struct tCalendarItem : public tItem
-{
+struct tCalendarItem : public tItem {
 	static constexpr char NAME[] = "CalendarItem";
 
 	explicit tCalendarItem(const sShape&);
@@ -2038,8 +1941,7 @@ struct tCalendarView final : public tBasePagingType {
 /**
  * Types.xsd:5317
  */
-struct tCompleteName : public NS_EWS_Types
-{
+struct tCompleteName : public NS_EWS_Types {
 	static constexpr char NAME[] = "CompleteName";
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -2062,8 +1964,7 @@ struct tCompleteName : public NS_EWS_Types
 /**
  * Types.xsd:5379
  */
-struct tPhysicalAddressDictionaryEntry : public NS_EWS_Types
-{
+struct tPhysicalAddressDictionaryEntry : public NS_EWS_Types {
 	static constexpr char NAME[] = "Entry";
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -2084,8 +1985,7 @@ struct tPhysicalAddressDictionaryEntry : public NS_EWS_Types
 /**
  * Types.xsd:5541
  */
-struct tContact : public tItem
-{
+struct tContact : public tItem {
 	static constexpr char NAME[] = "Contact";
 
 	explicit tContact(const sShape&);
@@ -2192,8 +2092,7 @@ struct tContact : public tItem
 /**
  * Types.xsd:1611
  */
-struct tItemAttachment : public tAttachment
-{
+struct tItemAttachment : public tAttachment {
 	static constexpr char NAME[] = "ItemAttachment";
 
 	//tItemAttachment(const sAttachmentId&, const TPROPVAL_ARRAY&);
@@ -2217,8 +2116,7 @@ struct tItemAttachment : public tAttachment
 	//void serialize(tinyxml2::XMLElement*) const;
 };
 
-struct tItemChange
-{
+struct tItemChange {
 	static constexpr char NAME[] = "ItemChange";
 
 	tItemChange(const tinyxml2::XMLElement*);
@@ -2233,8 +2131,7 @@ struct tItemChange
 /**
  * Types.xsd:1287
  */
-struct tItemResponseShape
-{
+struct tItemResponseShape {
 	tItemResponseShape() = default;
 	explicit tItemResponseShape(const tinyxml2::XMLElement*);
 
@@ -2269,8 +2166,7 @@ struct tItemResponseShape
 /**
  * Types.xsd:2089
  */
-struct tTasksFolderType : public tBaseFolderType
-{
+struct tTasksFolderType : public tBaseFolderType {
 	static constexpr char NAME[] = "TasksFolder";
 	using tBaseFolderType::tBaseFolderType;
 };
@@ -2279,8 +2175,7 @@ struct tTasksFolderType : public tBaseFolderType
 /**
  * Types.xsd:6372
  */
-struct tSerializableTimeZoneTime
-{
+struct tSerializableTimeZoneTime {
 	explicit tSerializableTimeZoneTime(const tinyxml2::XMLElement*);
 
 	int32_t Bias;
@@ -2296,8 +2191,7 @@ struct tSerializableTimeZoneTime
 /**
  * Types.xsd:1433
  */
-struct tSetFolderField : public tChangeDescription
-{
+struct tSetFolderField : public tChangeDescription {
 	static constexpr char NAME[] = "SetFolderField";
 
 	explicit tSetFolderField(const tinyxml2::XMLElement*);
@@ -2310,8 +2204,7 @@ struct tSetFolderField : public tChangeDescription
 /**
  * Types.xsd:1409
  */
-struct tSetItemField : public tChangeDescription
-{
+struct tSetItemField : public tChangeDescription {
 	static constexpr char NAME[] = "SetItemField";
 
 	explicit tSetItemField(const tinyxml2::XMLElement*);
@@ -2324,8 +2217,7 @@ struct tSetItemField : public tChangeDescription
 /**
  * Types.xsd:6383
  */
-struct tSerializableTimeZone
-{
+struct tSerializableTimeZone {
 	explicit tSerializableTimeZone(const tinyxml2::XMLElement*);
 
 	int32_t Bias;
@@ -2350,8 +2242,7 @@ using tSyncFolderHierarchyChange = std::variant<tSyncFolderHierarchyCreate, tSyn
  *
  * Types.xsd:6223
  */
-struct tSyncFolderHierarchyCU : public NS_EWS_Types
-{
+struct tSyncFolderHierarchyCU : public NS_EWS_Types {
 	tSyncFolderHierarchyCU(sFolder&&);
 
 	sFolder folder;
@@ -2362,8 +2253,7 @@ struct tSyncFolderHierarchyCU : public NS_EWS_Types
 /**
  * Types.xsd:6223
  */
-struct tSyncFolderHierarchyCreate : public tSyncFolderHierarchyCU
-{
+struct tSyncFolderHierarchyCreate : public tSyncFolderHierarchyCU {
 	using tSyncFolderHierarchyCU::tSyncFolderHierarchyCU;
 
 	static constexpr char NAME[] = "Create";
@@ -2372,8 +2262,7 @@ struct tSyncFolderHierarchyCreate : public tSyncFolderHierarchyCU
 /**
  * Types.xsd:6223
  */
-struct tSyncFolderHierarchyUpdate : public tSyncFolderHierarchyCU
-{
+struct tSyncFolderHierarchyUpdate : public tSyncFolderHierarchyCU {
 	static constexpr char NAME[] = "Update";
 
 	using tSyncFolderHierarchyCU::tSyncFolderHierarchyCU;
@@ -2382,8 +2271,7 @@ struct tSyncFolderHierarchyUpdate : public tSyncFolderHierarchyCU
 /**
  * Types.xsd:6233
  */
-struct tSyncFolderHierarchyDelete : public NS_EWS_Types
-{
+struct tSyncFolderHierarchyDelete : public NS_EWS_Types {
 	static constexpr char NAME[] = "Delete";
 
 	tSyncFolderHierarchyDelete(const sBase64Binary&);
@@ -2396,8 +2284,7 @@ struct tSyncFolderHierarchyDelete : public NS_EWS_Types
 /**
  * Types.xsd:4031
  */
-struct tMessage : public tItem
-{
+struct tMessage : public tItem {
 	static constexpr char NAME[] = "Message";
 
 	explicit tMessage(const sShape&);
@@ -2443,8 +2330,7 @@ struct tMessage : public tItem
 /**
  * Types.xsd:5026
  */
-struct tMeetingMessage : public tMessage
-{
+struct tMeetingMessage : public tMessage {
 	static constexpr char NAME[] = "MeetingMessage";
 
 	using tMessage::tMessage;
@@ -2470,8 +2356,7 @@ struct tMeetingMessage : public tMessage
 /**
  * Types.xsd:5064
  */
-struct tMeetingRequestMessage : public tMeetingMessage
-{
+struct tMeetingRequestMessage : public tMeetingMessage {
 	static constexpr char NAME[] = "MeetingRequest";
 
 	using tMeetingMessage::tMeetingMessage;
@@ -2550,8 +2435,7 @@ struct tMeetingRequestMessage : public tMeetingMessage
 /**
  * Types.xsd:5142
  */
-struct tMeetingResponseMessage : public tMeetingMessage
-{
+struct tMeetingResponseMessage : public tMeetingMessage {
 	static constexpr char NAME[] = "MeetingResponse";
 
 	using tMeetingMessage::tMeetingMessage;
@@ -2569,8 +2453,7 @@ struct tMeetingResponseMessage : public tMeetingMessage
 /**
  * Types.xsd:5159
  */
-struct tMeetingCancellationMessage : public tMeetingMessage
-{
+struct tMeetingCancellationMessage : public tMeetingMessage {
 	static constexpr char NAME[] = "MeetingCancellation";
 
 	using tMeetingMessage::tMeetingMessage;
@@ -2596,24 +2479,24 @@ using tSyncFolderItemsChange = std::variant<tSyncFolderItemsCreate, tSyncFolderI
  *
  * Types.xsd:1634
  */
-struct tSyncFolderItemsCU : public NS_EWS_Types
-{
+struct tSyncFolderItemsCU : public NS_EWS_Types {
 	void serialize(tinyxml2::XMLElement*) const;
 
 	sItem item;
 };
 
-struct tSyncFolderItemsCreate : public tSyncFolderItemsCU
-{static constexpr char NAME[] = "Create";};
+struct tSyncFolderItemsCreate : public tSyncFolderItemsCU {
+	static constexpr char NAME[] = "Create";
+};
 
-struct tSyncFolderItemsUpdate : public tSyncFolderItemsCU
-{static constexpr char NAME[] = "Update";};
+struct tSyncFolderItemsUpdate : public tSyncFolderItemsCU {
+	static constexpr char NAME[] = "Update";
+};
 
 /**
  * Types.xsd:6198
  */
-struct tSyncFolderItemsDelete : public NS_EWS_Types
-{
+struct tSyncFolderItemsDelete : public NS_EWS_Types {
 	static constexpr char NAME[] = "Delete";
 
 	tSyncFolderItemsDelete(const sBase64Binary&);
@@ -2626,8 +2509,7 @@ struct tSyncFolderItemsDelete : public NS_EWS_Types
 /**
  * Types.xsd:6204
  */
-struct tSyncFolderItemsReadFlag : public NS_EWS_Types
-{
+struct tSyncFolderItemsReadFlag : public NS_EWS_Types {
 	static constexpr char NAME[] = "ReadFlagChange";
 
 	tItemId ItemId;
@@ -2639,8 +2521,7 @@ struct tSyncFolderItemsReadFlag : public NS_EWS_Types
 /**
  * Types.xsd:1273
  */
-struct tFolderResponseShape
-{
+struct tFolderResponseShape {
 	tFolderResponseShape() = default;
 	explicit tFolderResponseShape(const tinyxml2::XMLElement*);
 
@@ -2657,8 +2538,7 @@ struct tFolderResponseShape
 /**
  * Types.xsd:6400
  */
-struct tFreeBusyView
-{
+struct tFreeBusyView {
 	tFreeBusyView() = default;
 	tFreeBusyView(const char*, const char*, time_t, time_t);
 
@@ -2673,8 +2553,7 @@ struct tFreeBusyView
 /**
  * Types.xsd:6348
  */
-struct tFreeBusyViewOptions
-{
+struct tFreeBusyViewOptions {
 	tFreeBusyViewOptions(const tinyxml2::XMLElement*);
 
 	tDuration TimeWindow;
@@ -2687,8 +2566,7 @@ struct tFreeBusyViewOptions
  *
  * Types.xsd:6323
  */
-struct tMailbox
-{
+struct tMailbox {
 	static constexpr char NAME[] = "Mailbox";
 
 	explicit tMailbox(const tinyxml2::XMLElement*);
@@ -2701,8 +2579,7 @@ struct tMailbox
 /**
  * Types.xsd:1847
  */
-struct tDistinguishedFolderId
-{
+struct tDistinguishedFolderId {
 	static constexpr char NAME[] = "DistinguishedFolderId";
 
 	explicit tDistinguishedFolderId(const std::string_view&);
@@ -2713,8 +2590,7 @@ struct tDistinguishedFolderId
 	Enum::DistinguishedFolderIdNameType Id; //Attribute
 };
 
-struct tFolderChange
-{
+struct tFolderChange {
 	static constexpr char NAME[] = "FolderChange";
 
 	explicit tFolderChange(const tinyxml2::XMLElement*);
@@ -2726,8 +2602,7 @@ struct tFolderChange
 /**
  * Types.xsd:6409
  */
-struct tMailboxData
-{
+struct tMailboxData {
 	tMailboxData(const tinyxml2::XMLElement*);
 
 	tMailbox Email;
@@ -2738,8 +2613,7 @@ struct tMailboxData
 /**
  * Types.xsd:6987
  */
-struct tMailTips
-{
+struct tMailTips {
 	void serialize(tinyxml2::XMLElement*) const;
 
 	tEmailAddressType RecipientAddress;
@@ -2762,8 +2636,7 @@ struct tMailTips
 /**
  * Types.xsd:6982
  */
-struct tSmtpDomain
-{
+struct tSmtpDomain {
 	static constexpr char NAME[] = "Domain";
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -2777,8 +2650,7 @@ struct tSmtpDomain
  *
  * Unlike the documentation, derives from tBaseSubscriptionRequest.
  */
-struct tStreamingSubscriptionRequest : public tBaseSubscriptionRequest
-{
+struct tStreamingSubscriptionRequest : public tBaseSubscriptionRequest {
 	static constexpr char NAME[] = "StreamingSubscriptionRequest";
 
 	using tBaseSubscriptionRequest::tBaseSubscriptionRequest;
@@ -2787,8 +2659,7 @@ struct tStreamingSubscriptionRequest : public tBaseSubscriptionRequest
 /**
  * Types.xsd:7040
  */
-struct tMailTipsServiceConfiguration
-{
+struct tMailTipsServiceConfiguration {
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::vector<tSmtpDomain> InternalDomains;
@@ -2806,8 +2677,7 @@ struct tMailTipsServiceConfiguration
  *
  * Type.xsd:6538
  */
-struct tReplyBody
-{
+struct tReplyBody {
 	template<typename T> explicit tReplyBody(T &&m) : Message(std::forward<T>(m)) {}
 	explicit tReplyBody(const tinyxml2::XMLElement*);
 
@@ -2823,8 +2693,7 @@ struct tReplyBody
  * While defined only as "NonEmptyStringType" in the speciification, this
  * struct is used to provide additional internal logic.
  */
-struct tSubscriptionId
-{
+struct tSubscriptionId {
 	static constexpr char NAME[] = "SubscriptionId";
 
 	tSubscriptionId() = default;
@@ -2860,8 +2729,7 @@ private:
 /**
  * Types.xsd:6067
  */
-struct tNotification : public NS_EWS_Messages
-{
+struct tNotification : public NS_EWS_Messages {
 	static constexpr char NAME[] = "Notification";
 
 	tSubscriptionId SubscriptionId;
@@ -2875,8 +2743,7 @@ struct tNotification : public NS_EWS_Messages
 /**
  * Types.xsd:6432
  */
-struct tSuggestionsViewOptions
-{
+struct tSuggestionsViewOptions {
 	explicit tSuggestionsViewOptions(const tinyxml2::XMLElement*);
 
 	std::optional<int32_t> GoodThreshold;
@@ -2892,8 +2759,7 @@ struct tSuggestionsViewOptions
 /**
  * Types.xsd:1898
  */
-struct tTargetFolderIdType
-{
+struct tTargetFolderIdType {
 	explicit tTargetFolderIdType(sFolderId&&);
 	explicit tTargetFolderIdType(const tinyxml2::XMLElement*);
 
@@ -2905,8 +2771,7 @@ struct tTargetFolderIdType
  *
  * Types.xsd:6551
  */
-struct tUserOofSettings
-{
+struct tUserOofSettings {
 	static constexpr char NAME[] = "UserOofSettings";
 
 	tUserOofSettings() = default;
@@ -2933,8 +2798,7 @@ struct tUserOofSettings
 /**
  * Types.xsd:4264
  */
-struct tResolution : public tFindResponsePagingAttributes
-{
+struct tResolution : public tFindResponsePagingAttributes {
 	static constexpr char NAME[] = "Resolution";
 
 	tResolution() = default;
@@ -2950,8 +2814,7 @@ struct tResolution : public tFindResponsePagingAttributes
  * Instead of directly mapping the XML data, it is cached to be directly
  * converted to the gromox RESTRICTION structure.
  */
-class tRestriction
-{
+class tRestriction {
 public:
 	explicit tRestriction(const tinyxml2::XMLElement*);
 
@@ -2979,8 +2842,7 @@ private:
  *
  * Messages.xsd:550
  */
-struct mResponseMessageType : public NS_EWS_Messages
-{
+struct mResponseMessageType : public NS_EWS_Messages {
 	mResponseMessageType() = default;
 	explicit mResponseMessageType(const std::string&, const std::optional<std::string>& = std::nullopt,
 	                              const std::optional<std::string>& = std::nullopt);
@@ -3002,8 +2864,7 @@ struct mResponseMessageType : public NS_EWS_Messages
 /**
  * Messages.xsd:861
  */
-struct mBaseMoveCopyFolder
-{
+struct mBaseMoveCopyFolder {
 	mBaseMoveCopyFolder(const tinyxml2::XMLElement*, bool);
 
 	tTargetFolderIdType ToFolderId;
@@ -3015,8 +2876,7 @@ struct mBaseMoveCopyFolder
 /**
  * Messages.xsd:1080
  */
-struct mBaseMoveCopyItem
-{
+struct mBaseMoveCopyItem {
 	mBaseMoveCopyItem(const tinyxml2::XMLElement*, bool);
 
 	tTargetFolderIdType ToFolderId;
@@ -3029,8 +2889,7 @@ struct mBaseMoveCopyItem
 /**
  * Messages.xsd:2265
  */
-struct mConvertIdRequest
-{
+struct mConvertIdRequest {
 	explicit mConvertIdRequest(const tinyxml2::XMLElement*);
 
 	std::vector<sAlternateId> SourceIds;
@@ -3040,8 +2899,7 @@ struct mConvertIdRequest
 /**
  * Messages.xsd:2293
  */
-struct mConvertIdResponseMessage : public mResponseMessageType
-{
+struct mConvertIdResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "ConvertIdResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
@@ -3054,8 +2912,7 @@ struct mConvertIdResponseMessage : public mResponseMessageType
 /**
  * Messages.xsd:2283
  */
-struct mConvertIdResponse
-{
+struct mConvertIdResponse {
 	std::vector<mConvertIdResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3065,8 +2922,7 @@ struct mConvertIdResponse
 /**
  * Messages.xsd:799
  */
-struct mFolderInfoResponseMessage : public mResponseMessageType
-{
+struct mFolderInfoResponseMessage : public mResponseMessageType {
 	using mResponseMessageType::mResponseMessageType;
 
 	std::vector<sFolder> Folders;
@@ -3077,8 +2933,7 @@ struct mFolderInfoResponseMessage : public mResponseMessageType
 /**
  * Messages.xsd:990
  */
-struct mItemInfoResponseMessage : public mResponseMessageType
-{
+struct mItemInfoResponseMessage : public mResponseMessageType {
 	using mResponseMessageType::mResponseMessageType;
 
 	std::vector<sItem> Items;
@@ -3090,22 +2945,21 @@ struct mItemInfoResponseMessage : public mResponseMessageType
 /**
  * Messages.xsd:879
  */
-struct mCopyFolderRequest : public mBaseMoveCopyFolder
-{
+struct mCopyFolderRequest : public mBaseMoveCopyFolder {
 	explicit mCopyFolderRequest(const tinyxml2::XMLElement*);
 };
 
 /**
  * Messages.xsd:580
  */
-struct mCopyFolderResponseMessage : public mFolderInfoResponseMessage
-{using mFolderInfoResponseMessage::mFolderInfoResponseMessage;};
+struct mCopyFolderResponseMessage : public mFolderInfoResponseMessage {
+	using mFolderInfoResponseMessage::mFolderInfoResponseMessage;
+};
 
 /**
  * Messages.xsd:919
  */
-struct mCopyFolderResponse
-{
+struct mCopyFolderResponse {
 	std::vector<mCopyFolderResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3114,13 +2968,11 @@ struct mCopyFolderResponse
 /**
  * Messages.xsd:1099
  */
-struct mCopyItemRequest : public mBaseMoveCopyItem
-{
+struct mCopyItemRequest : public mBaseMoveCopyItem {
 	explicit mCopyItemRequest(const tinyxml2::XMLElement*);
 };
 
-struct mCopyItemResponseMessage : public mItemInfoResponseMessage
-{
+struct mCopyItemResponseMessage : public mItemInfoResponseMessage {
 	static constexpr char NAME[] = "CopyItemResponseMessage";
 
 	using mItemInfoResponseMessage::mItemInfoResponseMessage;
@@ -3129,8 +2981,7 @@ struct mCopyItemResponseMessage : public mItemInfoResponseMessage
 /**
  * Messages.xsd:1529
  */
-struct mCopyItemResponse
-{
+struct mCopyItemResponse {
 	std::vector<mCopyItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3139,8 +2990,7 @@ struct mCopyItemResponse
 /**
  * Messages.xsd:768
  */
-struct mCreateFolderRequest
-{
+struct mCreateFolderRequest {
 	explicit mCreateFolderRequest(const tinyxml2::XMLElement*);
 
 	tTargetFolderIdType ParentFolderId;
@@ -3150,8 +3000,7 @@ struct mCreateFolderRequest
 /**
  * Messages.xsd:575
  */
-struct mCreateFolderResponseMessage : public mFolderInfoResponseMessage
-{
+struct mCreateFolderResponseMessage : public mFolderInfoResponseMessage {
 	static constexpr char NAME[] = "CreateFolderResponseMessage";
 
 	using mFolderInfoResponseMessage::mFolderInfoResponseMessage;
@@ -3160,8 +3009,7 @@ struct mCreateFolderResponseMessage : public mFolderInfoResponseMessage
 /**
  * Messages.xsd:896
  */
-struct mCreateFolderResponse
-{
+struct mCreateFolderResponse {
 	std::vector<mCreateFolderResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3170,8 +3018,7 @@ struct mCreateFolderResponse
 /**
  * Messages.xsd:959
  */
-struct mCreateItemRequest
-{
+struct mCreateItemRequest {
 	explicit mCreateItemRequest(const tinyxml2::XMLElement*);
 
 	std::optional<Enum::MessageDispositionType> MessageDisposition; // Attribute
@@ -3181,8 +3028,7 @@ struct mCreateItemRequest
 	std::vector<sItem> Items;
 };
 
-struct mCreateItemResponseMessage : public mItemInfoResponseMessage
-{
+struct mCreateItemResponseMessage : public mItemInfoResponseMessage {
 	static constexpr char NAME[] = "CreateItemResponseMessage";
 
 	using mItemInfoResponseMessage::mItemInfoResponseMessage;
@@ -3191,8 +3037,7 @@ struct mCreateItemResponseMessage : public mItemInfoResponseMessage
 /**
  * Messages.xsd:990
  */
-struct mCreateItemResponse
-{
+struct mCreateItemResponse {
 	std::vector<mCreateItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3201,8 +3046,7 @@ struct mCreateItemResponse
 /**
  * Messages.xsd:824
  */
-struct mDeleteFolderRequest
-{
+struct mDeleteFolderRequest {
 	explicit mDeleteFolderRequest(const tinyxml2::XMLElement*);
 
 	Enum::DisposalType DeleteType; // Attribute
@@ -3213,8 +3057,7 @@ struct mDeleteFolderRequest
 /**
  * Messages.xsd:573
  */
-struct mDeleteFolderResponseMessage : public mResponseMessageType
-{
+struct mDeleteFolderResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "DeleteFolderResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
@@ -3223,8 +3066,7 @@ struct mDeleteFolderResponseMessage : public mResponseMessageType
 /**
  * Messages.xsd:836
  */
-struct mDeleteFolderResponse
-{
+struct mDeleteFolderResponse {
 	std::vector<mDeleteFolderResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3233,8 +3075,7 @@ struct mDeleteFolderResponse
 /**
  * Messages.xsd:1040
  */
-struct mDeleteItemRequest
-{
+struct mDeleteItemRequest {
 	explicit mDeleteItemRequest(const tinyxml2::XMLElement*);
 
 	Enum::DisposalType DeleteType; // Attribute
@@ -3248,8 +3089,7 @@ struct mDeleteItemRequest
 /**
  * Messages.xsd:1545
  */
-struct mDeleteItemResponseMessage : public mResponseMessageType
-{
+struct mDeleteItemResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "DeleteItemResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
@@ -3258,8 +3098,7 @@ struct mDeleteItemResponseMessage : public mResponseMessageType
 /**
  * Messages.xsd:1537
  */
-struct mDeleteItemResponse
-{
+struct mDeleteItemResponse {
 	std::vector<mDeleteItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3268,8 +3107,7 @@ struct mDeleteItemResponse
 /**
  * Messages.xsd:842
  */
-struct mEmptyFolderRequest
-{
+struct mEmptyFolderRequest {
 	explicit mEmptyFolderRequest(const tinyxml2::XMLElement*);
 
 	Enum::DisposalType DeleteType; // Attribute
@@ -3281,8 +3119,7 @@ struct mEmptyFolderRequest
 /**
  * Messages.xsd:574
  */
-struct mEmptyFolderResponseMessage : public mResponseMessageType
-{
+struct mEmptyFolderResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "EmptyFolderResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
@@ -3291,8 +3128,7 @@ struct mEmptyFolderResponseMessage : public mResponseMessageType
 /**
  * Messages.xsd:855
  */
-struct mEmptyFolderResponse
-{
+struct mEmptyFolderResponse {
 	std::vector<mEmptyFolderResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3301,8 +3137,7 @@ struct mEmptyFolderResponse
 /**
  * Messages.xsd:781
  */
-struct mFindFolderRequest
-{
+struct mFindFolderRequest {
 	explicit mFindFolderRequest(const tinyxml2::XMLElement*);
 
 	tFolderResponseShape FolderShape;
@@ -3316,8 +3151,7 @@ struct mFindFolderRequest
 /**
  * Messages.xsd:809
  */
-struct mFindFolderResponseMessage : public mResponseMessageType
-{
+struct mFindFolderResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "FindFolderResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
@@ -3330,8 +3164,7 @@ struct mFindFolderResponseMessage : public mResponseMessageType
 /**
  * Messages.xsd:818
  */
-struct mFindFolderResponse
-{
+struct mFindFolderResponse {
 	std::vector<mFindFolderResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3340,8 +3173,7 @@ struct mFindFolderResponse
 /**
  * Messages.xsd:1154
  */
-struct mFindItemRequest
-{
+struct mFindItemRequest {
 	explicit mFindItemRequest(const tinyxml2::XMLElement*);
 
 	tItemResponseShape ItemShape;
@@ -3364,8 +3196,7 @@ struct mFindItemRequest
 /**
  * Messages.xsd:1553
  */
-struct mFindItemResponseMessage : mResponseMessageType
-{
+struct mFindItemResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "FindItemResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
@@ -3379,8 +3210,7 @@ struct mFindItemResponseMessage : mResponseMessageType
 /**
  * Messages.xsd:1563
  */
-struct mFindItemResponse
-{
+struct mFindItemResponse {
 	std::vector<mFindItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3389,8 +3219,7 @@ struct mFindItemResponse
 /**
  * Messages.xsd:1482
  */
-struct mGetAttachmentRequest
-{
+struct mGetAttachmentRequest {
 	mGetAttachmentRequest(const tinyxml2::XMLElement*);
 
 	//<xs:element name="AttachmentShape" type="t:AttachmentResponseShapeType" minOccurs="0"/>
@@ -3400,8 +3229,7 @@ struct mGetAttachmentRequest
 /**
  * Messages.xsd:1492
  */
-struct mGetAttachmentResponseMessage : public mResponseMessageType
-{
+struct mGetAttachmentResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "GetAttachmentResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
@@ -3412,8 +3240,7 @@ struct mGetAttachmentResponseMessage : public mResponseMessageType
 	std::vector<sAttachment> Attachments;
 };
 
-struct mGetAttachmentResponse
-{
+struct mGetAttachmentResponse {
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::vector<mGetAttachmentResponseMessage> ResponseMessages;
@@ -3422,8 +3249,7 @@ struct mGetAttachmentResponse
 /**
  * Messages.xsd:2002
  */
-struct mGetEventsRequest
-{
+struct mGetEventsRequest {
 	mGetEventsRequest(const tinyxml2::XMLElement*);
 
 	tSubscriptionId SubscriptionId;
@@ -3433,8 +3259,7 @@ struct mGetEventsRequest
 /**
  * Messages.xsd:2016
  */
-struct mGetEventsResponseMessage : public mResponseMessageType
-{
+struct mGetEventsResponseMessage : public mResponseMessageType {
 	using mResponseMessageType::mResponseMessageType;
 
 	std::optional<tNotification> Notification; // Only optional in case of error message
@@ -3445,8 +3270,7 @@ struct mGetEventsResponseMessage : public mResponseMessageType
 /**
  * Messages.xsd:2025
  */
-struct mGetEventsResponse
-{
+struct mGetEventsResponse {
 	std::vector<mGetEventsResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3455,16 +3279,14 @@ struct mGetEventsResponse
 /**
  * Messages.xsd:692
  */
-struct mGetFolderRequest
-{
+struct mGetFolderRequest {
 	mGetFolderRequest(const tinyxml2::XMLElement*);
 
 	tFolderResponseShape FolderShape;
 	std::vector<sFolderId> FolderIds;
 };
 
-struct mGetFolderResponseMessage : mResponseMessageType
-{
+struct mGetFolderResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "GetFolderResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
@@ -3478,8 +3300,7 @@ struct mGetFolderResponseMessage : mResponseMessageType
 /**
  * Messages.xsd:789
  */
-struct mGetFolderResponse
-{
+struct mGetFolderResponse {
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::vector<mGetFolderResponseMessage> ResponseMessages;
@@ -3490,8 +3311,7 @@ struct mGetFolderResponse
  *
  * Messages.xsg:1742
  */
-struct mGetMailTipsRequest
-{
+struct mGetMailTipsRequest {
 	explicit mGetMailTipsRequest(const tinyxml2::XMLElement*);
 
 	tEmailAddressType SendingAs;
@@ -3502,8 +3322,7 @@ struct mGetMailTipsRequest
 /**
  * Messages.xsd:1776
  */
-struct mMailTipsResponseMessageType : mResponseMessageType
-{
+struct mMailTipsResponseMessageType : public mResponseMessageType {
 	static constexpr char NAME[] = "MailTipsResponseMessageType";
 
 	using mResponseMessageType::success;
@@ -3518,8 +3337,7 @@ struct mMailTipsResponseMessageType : mResponseMessageType
  *
  * Messages.xsg:1760
  */
-struct mGetMailTipsResponse : mResponseMessageType
-{
+struct mGetMailTipsResponse : public mResponseMessageType {
 	using mResponseMessageType::success;
 
 	std::vector<mMailTipsResponseMessageType> ResponseMessages;
@@ -3530,8 +3348,7 @@ struct mGetMailTipsResponse : mResponseMessageType
 /**
  * Messages.xsd:2815
  */
-struct mGetServiceConfigurationRequest
-{
+struct mGetServiceConfigurationRequest {
 	explicit mGetServiceConfigurationRequest(const tinyxml2::XMLElement*);
 
 	std::optional<tEmailAddressType> ActingAs;
@@ -3542,8 +3359,7 @@ struct mGetServiceConfigurationRequest
 /**
  * Messages.xsd:2831
  */
-struct mGetServiceConfigurationResponseMessageType : mResponseMessageType
-{
+struct mGetServiceConfigurationResponseMessageType : public mResponseMessageType {
 	static constexpr char NAME[] = "ServiceConfigurationResponseMessageType";
 
 	using mResponseMessageType::success;
@@ -3560,8 +3376,7 @@ struct mGetServiceConfigurationResponseMessageType : mResponseMessageType
 /**
  * Messages.xsd:2831
  */
-struct mGetServiceConfigurationResponse : mResponseMessageType
-{
+struct mGetServiceConfigurationResponse : public mResponseMessageType {
 	using mResponseMessageType::success;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3572,8 +3387,7 @@ struct mGetServiceConfigurationResponse : mResponseMessageType
 /**
  * Messages.xsd:2033
  */
-struct mGetStreamingEventsRequest
-{
+struct mGetStreamingEventsRequest {
 	explicit mGetStreamingEventsRequest(const tinyxml2::XMLElement*);
 
 	std::vector<tSubscriptionId> SubscriptionIds;
@@ -3583,8 +3397,7 @@ struct mGetStreamingEventsRequest
 /**
  * Messages.xsd:2048
  */
-struct mGetStreamingEventsResponseMessage : public mResponseMessageType
-{
+struct mGetStreamingEventsResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "GetStreamingEventsResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
@@ -3599,8 +3412,7 @@ struct mGetStreamingEventsResponseMessage : public mResponseMessageType
 /**
  * Messages.xsd:2063
  */
-struct mGetStreamingEventsResponse
-{
+struct mGetStreamingEventsResponse {
 	std::vector<mGetStreamingEventsResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3609,8 +3421,7 @@ struct mGetStreamingEventsResponse
 /**
  * Messages.xsd:2204
  */
-struct mGetUserAvailabilityRequest
-{
+struct mGetUserAvailabilityRequest {
 	explicit mGetUserAvailabilityRequest(const tinyxml2::XMLElement*);
 
 	std::optional<tSerializableTimeZone> TimeZone;
@@ -3622,8 +3433,7 @@ struct mGetUserAvailabilityRequest
 /**
  * Messages.xsd:2182
  */
-struct mFreeBusyResponse : public NS_EWS_Messages
-{
+struct mFreeBusyResponse : public NS_EWS_Messages {
 	static constexpr char NAME[] = "FreeBusyResponse";
 
 	mFreeBusyResponse() = default;
@@ -3638,8 +3448,7 @@ struct mFreeBusyResponse : public NS_EWS_Messages
 /**
  * Messages.xsd:3486
  */
-struct mGetAppManifestsRequest
-{
+struct mGetAppManifestsRequest {
 	explicit inline mGetAppManifestsRequest(const tinyxml2::XMLElement*) {} // nothing to do here for now
 
 	//<xs:element name="ApiVersionSupported" type="xs:string" minOccurs="0" maxOccurs="1" />
@@ -3656,8 +3465,7 @@ struct mGetAppManifestsRequest
 /**
  * Messages.xsd:3511
  */
-struct mGetAppManifestsResponse : mResponseMessageType
-{
+struct mGetAppManifestsResponse : public mResponseMessageType {
 	using mResponseMessageType::mResponseMessageType;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3670,8 +3478,7 @@ struct mGetAppManifestsResponse : mResponseMessageType
 /**
  * Messages.xsd:2204
  */
-struct mGetUserAvailabilityResponse
-{
+struct mGetUserAvailabilityResponse {
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::optional<std::vector<mFreeBusyResponse>> FreeBusyResponseArray;
@@ -3681,8 +3488,7 @@ struct mGetUserAvailabilityResponse
 /**
  * Messages.xsd:4116
  */
-struct mGetUserPhotoRequest
-{
+struct mGetUserPhotoRequest {
 	explicit mGetUserPhotoRequest(const tinyxml2::XMLElement*);
 
 	std::string Email;
@@ -3697,8 +3503,7 @@ struct mGetUserPhotoRequest
  * Does not utilize ResponseMessages array indirection,
  * instead contains response data directly.
  */
-struct mGetUserPhotoResponse : public mResponseMessageType
-{
+struct mGetUserPhotoResponse : public mResponseMessageType {
 	using mResponseMessageType::mResponseMessageType;
 
 	bool HasChanged = true; // There is currently no mechanism to determine this, so always return true.
@@ -3712,8 +3517,7 @@ struct mGetUserPhotoResponse : public mResponseMessageType
  *
  * Messages.xsg:2215
  */
-struct mGetUserOofSettingsRequest
-{
+struct mGetUserOofSettingsRequest {
 	explicit mGetUserOofSettingsRequest(const tinyxml2::XMLElement*);
 
 	tMailbox Mailbox;
@@ -3724,8 +3528,7 @@ struct mGetUserOofSettingsRequest
  *
  * Messages.xsd:2228
  */
-struct mGetUserOofSettingsResponse
-{
+struct mGetUserOofSettingsResponse {
 	mResponseMessageType ResponseMessage;
 	std::optional<tUserOofSettings> OofSettings;
 
@@ -3738,16 +3541,14 @@ struct mGetUserOofSettingsResponse
 /**
  * Messages.xsd:873
  */
-struct mMoveFolderRequest : public mBaseMoveCopyFolder
-{
+struct mMoveFolderRequest : public mBaseMoveCopyFolder {
 	explicit mMoveFolderRequest(const tinyxml2::XMLElement*);
 };
 
 /**
  * Messages.xsd:579
  */
-struct mMoveFolderResponseMessage : public mFolderInfoResponseMessage
-{
+struct mMoveFolderResponseMessage : public mFolderInfoResponseMessage {
 	static constexpr char NAME[] = "MoveFolderResponseMessage";
 
 	using mFolderInfoResponseMessage::mFolderInfoResponseMessage;
@@ -3756,8 +3557,7 @@ struct mMoveFolderResponseMessage : public mFolderInfoResponseMessage
 /**
  * Messages.xsd:914
  */
-struct mMoveFolderResponse
-{
+struct mMoveFolderResponse {
 	std::vector<mMoveFolderResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3766,16 +3566,14 @@ struct mMoveFolderResponse
 /**
  * Messages.xsd:1093
  */
-struct mMoveItemRequest : public mBaseMoveCopyItem
-{
+struct mMoveItemRequest : public mBaseMoveCopyItem {
 	explicit mMoveItemRequest(const tinyxml2::XMLElement*);
 };
 
 /**
  * Messages.xsd:597
  */
-struct mMoveItemResponseMessage : public mItemInfoResponseMessage
-{
+struct mMoveItemResponseMessage : public mItemInfoResponseMessage {
 	static constexpr char NAME[] = "MoveItemResponseMessage";
 
 	using mItemInfoResponseMessage::mItemInfoResponseMessage;
@@ -3784,8 +3582,7 @@ struct mMoveItemResponseMessage : public mItemInfoResponseMessage
 /**
  * Messages.xsd:1524
  */
-struct mMoveItemResponse
-{
+struct mMoveItemResponse {
 	std::vector<mMoveItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3796,8 +3593,7 @@ struct mMoveItemResponse
  *
  * Messages.xsd:2239
  */
-struct mSetUserOofSettingsRequest
-{
+struct mSetUserOofSettingsRequest {
 	explicit mSetUserOofSettingsRequest(const tinyxml2::XMLElement*);
 
 	tMailbox Mailbox;
@@ -3809,8 +3605,7 @@ struct mSetUserOofSettingsRequest
  *
  * Messages.xsd:2254
  */
-struct mSetUserOofSettingsResponse
-{
+struct mSetUserOofSettingsResponse {
 	mResponseMessageType ResponseMessage;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3819,8 +3614,7 @@ struct mSetUserOofSettingsResponse
 /**
  * Messages.xsd:2098
  */
-struct mSyncFolderHierarchyRequest
-{
+struct mSyncFolderHierarchyRequest {
 	explicit mSyncFolderHierarchyRequest(const tinyxml2::XMLElement*);
 
 	tFolderResponseShape FolderShape;
@@ -3831,8 +3625,7 @@ struct mSyncFolderHierarchyRequest
 /**
  * Messages.xsd:2111
  */
-struct mSyncFolderHierarchyResponseMessage : mResponseMessageType
-{
+struct mSyncFolderHierarchyResponseMessage : public mResponseMessageType {
 	using mResponseMessageType::mResponseMessageType;
 
 	static constexpr char NAME[] = "SyncFolderHierarchyResponseMessage";
@@ -3847,8 +3640,7 @@ struct mSyncFolderHierarchyResponseMessage : mResponseMessageType
 /**
  * Messages.xsd:2122
  */
-struct mSyncFolderHierarchyResponse
-{
+struct mSyncFolderHierarchyResponse {
 	std::vector<mSyncFolderHierarchyResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3857,8 +3649,7 @@ struct mSyncFolderHierarchyResponse
 /**
  * Messages.xsd:2129
  */
-struct mSyncFolderItemsRequest
-{
+struct mSyncFolderItemsRequest {
 	explicit mSyncFolderItemsRequest(const tinyxml2::XMLElement*);
 
 	tItemResponseShape ItemShape;
@@ -3870,8 +3661,7 @@ struct mSyncFolderItemsRequest
 	//<xs:element name="Ignore" type="t:ArrayOfBaseItemIdsType" minOccurs="0"/>
 };
 
-struct mSyncFolderItemsResponseMessage : mResponseMessageType
-{
+struct mSyncFolderItemsResponseMessage : public mResponseMessageType {
 	using mResponseMessageType::mResponseMessageType;
 
 	static constexpr char NAME[] = "SyncFolderItemsResponseMessage";
@@ -3886,8 +3676,7 @@ struct mSyncFolderItemsResponseMessage : mResponseMessageType
 /**
  * Messages.xsd:2156
  */
-struct mSyncFolderItemsResponse
-{
+struct mSyncFolderItemsResponse {
 	std::vector<mSyncFolderItemsResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3896,8 +3685,7 @@ struct mSyncFolderItemsResponse
 /**
  * Messages.xsd:946
  */
-struct mGetItemRequest
-{
+struct mGetItemRequest {
 	explicit mGetItemRequest(const tinyxml2::XMLElement*);
 
 	tItemResponseShape ItemShape;
@@ -3905,8 +3693,7 @@ struct mGetItemRequest
 
 };
 
-struct mGetItemResponseMessage : mResponseMessageType
-{
+struct mGetItemResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "GetItemResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
@@ -3919,8 +3706,7 @@ struct mGetItemResponseMessage : mResponseMessageType
 /**
  * Messages.xsd:1519
  */
-struct mGetItemResponse
-{
+struct mGetItemResponse {
 	std::vector<mGetItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3929,8 +3715,7 @@ struct mGetItemResponse
 /**
  * Messages.xsd:1676
  */
-struct mResolveNamesRequest
-{
+struct mResolveNamesRequest {
 	explicit mResolveNamesRequest(const tinyxml2::XMLElement*);
 
 	std::optional<std::vector<sFolderId>> ParentFolderIds;
@@ -3944,8 +3729,7 @@ struct mResolveNamesRequest
 /**
  * Messages.xsd:1706
  */
-struct mResolveNamesResponseMessage : mResponseMessageType
-{
+struct mResolveNamesResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "ResolveNamesResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
@@ -3958,8 +3742,7 @@ struct mResolveNamesResponseMessage : mResponseMessageType
 /**
  * Messages.xsd:1694
  */
-struct mResolveNamesResponse
-{
+struct mResolveNamesResponse {
 	std::vector<mResolveNamesResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -3968,8 +3751,7 @@ struct mResolveNamesResponse
 /**
  * Messages.xsd:1121
  */
-struct mSendItemRequest
-{
+struct mSendItemRequest {
 	explicit mSendItemRequest(const tinyxml2::XMLElement*);
 
 	bool SaveItemToFolder;  // Attribute
@@ -3981,8 +3763,7 @@ struct mSendItemRequest
 /**
  * Messages.xsd:572
  */
-struct mSendItemResponseMessage : public mResponseMessageType
-{
+struct mSendItemResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "SendItemResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
@@ -3991,8 +3772,7 @@ struct mSendItemResponseMessage : public mResponseMessageType
 /**
  * Messages.xsd:1136
  */
-struct mSendItemResponse
-{
+struct mSendItemResponse {
 	std::vector<mSendItemResponseMessage> Responses;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -4001,8 +3781,7 @@ struct mSendItemResponse
 /**
  * Messages.xsd:1951
  */
-struct mSubscribeRequest
-{
+struct mSubscribeRequest {
 	static constexpr char NAME[] = "Subscribe";
 
 	explicit mSubscribeRequest(const tinyxml2::XMLElement*);
@@ -4013,8 +3792,7 @@ struct mSubscribeRequest
 /**
  * Messages.xsd:1965
  */
-struct mSubscribeResponseMessage : public mResponseMessageType
-{
+struct mSubscribeResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "SubscribeResponseMessage";
 
 	std::optional<tSubscriptionId> SubscriptionId;
@@ -4026,8 +3804,7 @@ struct mSubscribeResponseMessage : public mResponseMessageType
 /**
  * Messages.xsd:886
  */
-struct mUpdateFolderRequest
-{
+struct mUpdateFolderRequest {
 	explicit mUpdateFolderRequest(const tinyxml2::XMLElement*);
 
 	std::vector<tFolderChange> FolderChanges;
@@ -4036,8 +3813,7 @@ struct mUpdateFolderRequest
 /**
  * Messages.xsd:578
  */
-struct mUpdateFolderResponseMessage : public mFolderInfoResponseMessage
-{
+struct mUpdateFolderResponseMessage : public mFolderInfoResponseMessage {
 	static constexpr char NAME[] = "UpdateFolderResponseMessage";
 
 	using mFolderInfoResponseMessage::mFolderInfoResponseMessage;
@@ -4046,8 +3822,7 @@ struct mUpdateFolderResponseMessage : public mFolderInfoResponseMessage
 /**
  * Messages.xsd:908
  */
-struct mUpdateFolderResponse
-{
+struct mUpdateFolderResponse {
 	std::vector<mUpdateFolderResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -4056,8 +3831,7 @@ struct mUpdateFolderResponse
 /**
  * Messages.xsd:1975
  */
-struct mSubscribeResponse
-{
+struct mSubscribeResponse {
 	std::vector<mSubscribeResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -4066,8 +3840,7 @@ struct mSubscribeResponse
 /**
  * Messages.xsd:1982
  */
-struct mUnsubscribeRequest
-{
+struct mUnsubscribeRequest {
 	mUnsubscribeRequest(const tinyxml2::XMLElement*);
 
 	tSubscriptionId SubscriptionId;
@@ -4076,8 +3849,7 @@ struct mUnsubscribeRequest
 /**
  * Implicitely declared at Messages.xsd:1994
  */
-struct mUnsubscribeResponseMessage : public mResponseMessageType
-{
+struct mUnsubscribeResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "UnsubscribeResponse";
 
 	using mResponseMessageType::mResponseMessageType;
@@ -4086,8 +3858,7 @@ struct mUnsubscribeResponseMessage : public mResponseMessageType
 /**
  * Messages.xsd:1994
  */
-struct mUnsubscribeResponse
-{
+struct mUnsubscribeResponse {
 	std::vector<mUnsubscribeResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -4096,8 +3867,7 @@ struct mUnsubscribeResponse
 /**
  * Messages.xsd:973
  */
-struct mUpdateItemRequest
-{
+struct mUpdateItemRequest {
 	explicit mUpdateItemRequest(const tinyxml2::XMLElement*);
 
 	//<xs:element name="SavedItemFolderId" type="t:TargetFolderIdType" minOccurs="0"/>
@@ -4111,8 +3881,7 @@ struct mUpdateItemRequest
 /**
  * Messages.xsd:1000
  */
-struct mUpdateItemResponseMessage : public mItemInfoResponseMessage
-{
+struct mUpdateItemResponseMessage : public mItemInfoResponseMessage {
 	static constexpr char NAME[] = "UpdateItemResponseMessage";
 
 	using mItemInfoResponseMessage::mItemInfoResponseMessage;
@@ -4122,8 +3891,7 @@ struct mUpdateItemResponseMessage : public mItemInfoResponseMessage
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
-struct mUpdateItemResponse
-{
+struct mUpdateItemResponse {
 	std::vector<mUpdateItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -4132,8 +3900,7 @@ struct mUpdateItemResponse
 /*
  * Types.xsd:7203
  */
-struct tUserConfigurationName
-{
+struct tUserConfigurationName {
 	explicit tUserConfigurationName(const tinyxml2::XMLElement*);
 
 	std::string Name; //Attribute
@@ -4144,8 +3911,7 @@ struct tUserConfigurationName
 /**
  * Messages.xsg:2557
  */
-struct mGetUserConfigurationRequest
-{
+struct mGetUserConfigurationRequest {
 	explicit mGetUserConfigurationRequest(const tinyxml2::XMLElement*);
 
 	tUserConfigurationName UserConfigurationName;
@@ -4155,16 +3921,14 @@ struct mGetUserConfigurationRequest
 /**
  * Messages.xsg:2571
  */
-struct mGetUserConfigurationResponseMessage : public mResponseMessageType
-{
+struct mGetUserConfigurationResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "GetUserConfigurationResponseMessage";
 };
 
 /**
  * Messages.xsg:2581
  */
-struct mGetUserConfigurationResponse
-{
+struct mGetUserConfigurationResponse {
 	std::vector<mGetUserConfigurationResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -4175,8 +3939,7 @@ struct mGetUserConfigurationResponse
  *
  * Messages.xsg:2935
  */
-struct mGetInboxRulesRequest
-{
+struct mGetInboxRulesRequest {
 	explicit mGetInboxRulesRequest(const tinyxml2::XMLElement*);
 
 	std::optional<std::string> MailboxSmtpAddress;
@@ -4187,8 +3950,7 @@ struct mGetInboxRulesRequest
  *
  * Messages.xsg:2959
  */
-struct mGetInboxRulesResponse : mResponseMessageType
-{
+struct mGetInboxRulesResponse : public mResponseMessageType {
 	static constexpr char NAME[] = "GetInboxRulesResponse";
 
 	using mResponseMessageType::success;
