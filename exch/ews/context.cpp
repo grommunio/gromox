@@ -710,8 +710,8 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 		if (mysql_adaptor_meta(Address.c_str(), WANTPRIV_METAONLY, mres) != 0)
 			throw EWSError::CannotFindUser(E3125);
 		return std::move(mres.maildir);
-	} else
-		throw EWSError::InvalidRoutingType(E3006(RoutingType));
+	}
+	throw EWSError::InvalidRoutingType(E3006(RoutingType));
 }
 
 /**
@@ -2494,9 +2494,8 @@ void EWSContext::ext_error(pack_result code, const char* msg, const char* respon
 	default:
 		if(responseCode && msg)
 			throw Exceptions::EWSError(responseCode, msg);
-		else
-			throw DispatchError(code == pack_result::bufsize ? E3145 :
-			      Exceptions::E3028(static_cast<int>(code)));
+		throw DispatchError(code == pack_result::bufsize ? E3145 :
+		      Exceptions::E3028(static_cast<int>(code)));
 	}
 }
 

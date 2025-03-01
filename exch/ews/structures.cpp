@@ -1964,16 +1964,16 @@ void tChangeDescription::convBody(const tinyxml2::XMLElement* xml, sShape& shape
 	const char* bodyType = xml->Attribute("BodyType");
 	Enum::BodyTypeType type = bodyType? bodyType : Enum::Text;
 	auto text = znul(xml->GetText());
-	if(type == Enum::Text)
+	if (type == Enum::Text) {
 		shape.write(TAGGED_PROPVAL{PR_BODY, const_cast<char*>(text)});
-	else {
-		size_t len = strlen(text);
-		if(len > std::numeric_limits<uint32_t>::max())
-			throw InputError(E3256);
-		BINARY *html = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(strlen(text)),
-		                                                    {reinterpret_cast<uint8_t*>(const_cast<char*>(text))}});
-		shape.write(TAGGED_PROPVAL{PR_HTML, html});
+		return;
 	}
+	size_t len = strlen(text);
+	if (len > std::numeric_limits<uint32_t>::max())
+		throw InputError(E3256);
+	BINARY *html = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(strlen(text)),
+	               {reinterpret_cast<uint8_t*>(const_cast<char*>(text))}});
+	shape.write(TAGGED_PROPVAL{PR_HTML, html});
 }
 
 /**
@@ -3841,12 +3841,12 @@ PERMISSION_DATA tBasePermission::write(uint32_t rights) const
 	if(UserId.DistinguishedUser) {
 		const uint32_t *memberId = *UserId.DistinguishedUser == Enum::Anonymous ? &U_ANON : &U_DEFAULT;
 		perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_ID, const_cast<uint32_t*>(memberId)};
-	} else {
-		if(UserId.DisplayName)
-			perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_NAME, EWSContext::cpystr(*UserId.DisplayName)};
-		if(UserId.PrimarySmtpAddress)
-			perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_SMTP_ADDRESS, EWSContext::cpystr(*UserId.PrimarySmtpAddress)};
+		return perm;
 	}
+	if (UserId.DisplayName)
+		perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_NAME, EWSContext::cpystr(*UserId.DisplayName)};
+	if (UserId.PrimarySmtpAddress)
+		perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_SMTP_ADDRESS, EWSContext::cpystr(*UserId.PrimarySmtpAddress)};
 	return perm;
 }
 

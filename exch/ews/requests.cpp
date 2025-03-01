@@ -354,8 +354,8 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 			    meid.messageId(), deletedItems.folderId, newMid,
 			    TRUE, &result) || !result)
 				throw EWSError::MoveCopyFailed(E3133);
-			else
-				data.ResponseMessages.emplace_back().success();
+
+			data.ResponseMessages.emplace_back().success();
 		} else {
 			uint64_t eid = meid.messageId();
 			uint64_t fid = rop_util_make_eid_ex(1, meid.folderId());
@@ -366,8 +366,8 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 			    CP_ACP, ctx.effectiveUser(parent), fid, &eids,
 			    hardDelete, &partial) || partial)
 				throw EWSError::CannotDeleteObject(E3134);
-			else
-				data.ResponseMessages.emplace_back().success();
+
+			data.ResponseMessages.emplace_back().success();
 		}
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
