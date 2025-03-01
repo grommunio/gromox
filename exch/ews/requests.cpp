@@ -646,7 +646,7 @@ void process(mGetEventsRequest&& request, XMLElement* response, const EWSContext
 		if(notification.events.empty())
 			notification.events.emplace_back(aStatusEvent());
 		msg.success();
-	} catch(EWSError& err) {
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -980,7 +980,7 @@ void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& c
 			data.PictureData = photodata;
 		else
 			ctx.code(http_status::not_found);
-	} catch(std::exception& err){
+	} catch (const std::exception &err) {
 		ctx.code(http_status::not_found);
 		mlog(LV_WARN, "[ews#%d] Failed to load user photo: %s", ctx.ID(), err.what());
 	}

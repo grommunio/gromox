@@ -2561,7 +2561,7 @@ void tRestriction::deserialize(RESTRICTION& dst, const tinyxml2::XMLElement* src
 		build_not(dst, src, getId);
 	else try {
 		build_compare(dst, src, relop(Enum::RestrictionRelop(name).index()), getId);
-	} catch (EnumError &) {
+	} catch (const EnumError &) {
 		/* The name of the node could not be mapped to a relop */
 		throw EWSError::InvalidRestriction(E3220(name));
 	}
