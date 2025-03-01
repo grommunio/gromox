@@ -330,7 +330,7 @@ void uid_to_goid(const char* uid, BINARY &goid_bin)
 		if(!decode_hex_binary(uid, tmp_buff, std::size(tmp_buff)))
 			throw EWSError::CorruptData(E3296(uid));
 		ext_pull.init(tmp_buff, uid_len / 2, EWSContext::alloc, 0);
-		if(ext_pull.g_goid(&goid) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_goid(&goid) != pack_result::ok)
 			throw EWSError::InternalServerError(E3297(uid));
 		if(ext_pull.m_offset == uid_len / 2 &&
 		    (goid.year < 1601 || goid.year > 4500 ||
@@ -353,7 +353,7 @@ void uid_to_goid(const char* uid, BINARY &goid_bin)
 		memcpy(goid.data.pb + 12, uid, uid_len);
 	}
 	if(!ext_push.init(tmp_buff, 1024, 0) ||
-		ext_push.p_goid(goid) != EXT_ERR_SUCCESS)
+	    ext_push.p_goid(goid) != pack_result::ok)
 		throw EWSError::InternalServerError(E3299);
 	goid_bin.cb = ext_push.m_offset;
 	goid_bin.pb = ext_push.m_udata;
@@ -1618,7 +1618,8 @@ BINARY EWSContext::serialize(const XID& xid) const
 {
 	uint8_t* buff = alloc<uint8_t>(xid.size);
 	EXT_PUSH ext_push;
-	if(!ext_push.init(buff, xid.size, 0) || ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+	if (!ext_push.init(buff, xid.size, 0) ||
+	   ext_push.p_xid(xid) != pack_result::ok)
 		throw DispatchError(E3120);
 	return BINARY{ext_push.m_offset, {buff}};
 }
@@ -1926,7 +1927,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		EXT_PUSH ext_push;
 
 		if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
-		     ext_push.p_apptrecpat(apr) != EXT_ERR_SUCCESS)
+		    ext_push.p_apptrecpat(apr) != pack_result::ok)
 			throw EWS::DispatchError(E3120);
 		tmp_bin.cb = ext_push.m_offset;
 		tmp_bin.pb = ext_push.m_udata;
@@ -1974,7 +1975,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 					EXT_PULL ext_pull;
 					TIMEZONEDEFINITION tzdef;
 					ext_pull.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
-					if(ext_pull.g_tzdef(&tzdef) != EXT_ERR_SUCCESS)
+					if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
 						throw EWS::DispatchError(E3294);
 					if(calcStartOffset && !offset_from_tz(&tzdef, startTime, startOffset))
 						throw EWSError::TimeZone(E3300);
@@ -2386,7 +2387,8 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 		throw DispatchError(E3085);
 	HX_strupper(essdn.data());
 	EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
-	if(!wAbEid.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) || wAbEid.p_abk_eid(abEid) != EXT_ERR_SUCCESS)
+	if (!wAbEid.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) ||
+	    wAbEid.p_abk_eid(abEid) != pack_result::ok)
 		throw DispatchError(E3085);
 	BINARY* abEidContainer = construct<BINARY>(BINARY{wAbEid.m_offset, {abEidBuff}});
 	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFIER_ENTRYID, abEidContainer});
@@ -2485,14 +2487,14 @@ void EWSContext::ext_error(pack_result code, const char* msg, const char* respon
 {
 	switch(code)
 	{
-	case EXT_ERR_SUCCESS: return;
-	case EXT_ERR_ALLOC: throw Exceptions::EWSError::NotEnoughMemory(msg? msg : E3128);
-	case EXT_ERR_BUFSIZE:
+	case pack_result::ok: return;
+	case pack_result::alloc: throw Exceptions::EWSError::NotEnoughMemory(msg ? msg : E3128);
+	case pack_result::bufsize:
 	default:
 		if(responseCode && msg)
 			throw Exceptions::EWSError(responseCode, msg);
 		else
-			throw DispatchError(code == EXT_ERR_BUFSIZE ? E3145 :
+			throw DispatchError(code == pack_result::bufsize ? E3145 :
 			      Exceptions::E3028(static_cast<int>(code)));
 	}
 }

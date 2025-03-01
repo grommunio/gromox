@@ -265,7 +265,7 @@ APPOINTMENT_RECUR_PAT getAppointmentRecurPattern(const BINARY* recurData)
 	EXT_PULL ext_pull;
 	APPOINTMENT_RECUR_PAT apprecurr;
 	ext_pull.init(recurData->pb, recurData->cb, gromox::zalloc, EXT_FLAG_UTF16);
-	if(ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok)
 		throw InputError(E3109);
 	return apprecurr;
 }
@@ -281,7 +281,7 @@ RECURRENCE_PATTERN getRecurPattern(const BINARY* recurData)
 	EXT_PULL ext_pull;
 	RECURRENCE_PATTERN recurr;
 	ext_pull.init(recurData->pb, recurData->cb, gromox::zalloc, EXT_FLAG_UTF16);
-	if(ext_pull.g_recpat(&recurr) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_recpat(&recurr) != pack_result::ok)
 		throw InputError(E3248);
 	return recurr;
 }
@@ -1134,7 +1134,7 @@ void sSyncState::init(const std::string& data64)
 	if(data.size() > std::numeric_limits<uint32_t>::max())
 		throw EWSError::InvalidSyncStateData(E3052);
 	ext_pull.init(data.data(), data.size(), EWSContext::alloc, EXT_FLAG_WCOUNT);
-	if(ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_tpropval_a(&propvals) != pack_result::ok)
 		return;
 	for (const auto &pv : propvals) {
 		switch (pv.proptag) {
@@ -1682,7 +1682,7 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 				EXT_PULL ext_pull;
 				TIMEZONEDEFINITION tzdef;
 				ext_pull.init(buf->data(), buf->size(), EWSContext::alloc, EXT_FLAG_UTF16);
-				if(ext_pull.g_tzdef(&tzdef) != EXT_ERR_SUCCESS)
+				if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
 					throw EWSError::InternalServerError(E3294);
 				auto& op = shape.offsetProps;
 				if((tag = shape.tag(NtCommonStart)) && startTime.has_value() && std::find(op.begin(), op.end(), tag) != op.end())
