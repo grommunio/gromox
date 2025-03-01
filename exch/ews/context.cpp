@@ -1158,24 +1158,23 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			dir.c_str(), static_cast<unsigned long long>(mid));
 		return;
 	}
-	for (TPROPVAL_ARRAY **tps = rcpts.pparray; tps < &rcpts.pparray[rcpts.count]; ++tps)
-	{
-		uint32_t *recipientType = (*tps)->get<uint32_t>(PR_RECIPIENT_TYPE);
+	for (const auto &rcpt : rcpts) {
+		auto recipientType = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
 		if (!recipientType)
 			continue;
 		switch (*recipientType)
 		{
 		case MAPI_TO:
 			if (special & sShape::ToRecipients)
-				defaulted(message.ToRecipients).emplace_back(**tps);
+				defaulted(message.ToRecipients).emplace_back(rcpt);
 			break;
 		case MAPI_CC:
 			if (special & sShape::CcRecipients)
-				defaulted(message.CcRecipients).emplace_back(**tps);
+				defaulted(message.CcRecipients).emplace_back(rcpt);
 			break;
 		case MAPI_BCC:
 			if (special & sShape::BccRecipients)
-				defaulted(message.BccRecipients).emplace_back(**tps);
+				defaulted(message.BccRecipients).emplace_back(rcpt);
 			break;
 		}
 	}
@@ -1202,24 +1201,23 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			dir.c_str(), static_cast<unsigned long long>(mid));
 		return;
 	}
-	for (TPROPVAL_ARRAY **tps = rcpts.pparray; tps < &rcpts.pparray[rcpts.count]; ++tps)
-	{
-		uint32_t *recipientType = (*tps)->get<uint32_t>(PR_RECIPIENT_TYPE);
+	for (const auto &rcpt : rcpts) {
+		auto recipientType = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
 		if (!recipientType)
 			continue;
 		switch (*recipientType)
 		{
 		case 1: //Required attendee
 			if (special & sShape::RequiredAttendees)
-				defaulted(calItem.RequiredAttendees).emplace_back(**tps);
+				defaulted(calItem.RequiredAttendees).emplace_back(rcpt);
 			break;
 		case 2: //Optional attendee
 			if (special & sShape::OptionalAttendees)
-				defaulted(calItem.OptionalAttendees).emplace_back(**tps);
+				defaulted(calItem.OptionalAttendees).emplace_back(rcpt);
 			break;
 		case 3: //Resource
 			if (special & sShape::Resources)
-				defaulted(calItem.Resources).emplace_back(**tps);
+				defaulted(calItem.Resources).emplace_back(rcpt);
 			break;
 		}
 	}
