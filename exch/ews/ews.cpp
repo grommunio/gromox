@@ -193,7 +193,8 @@ bool EWSPlugin::_exmdb::get_message_property(const char *dir, const char *userna
 
 	if (!get_message_properties(dir, username, cpid, message_id, &tmp_proptags, &propvals))
 		return false;
-	*ppval = propvals.count == 1 && propvals.ppropval->proptag == proptag? propvals.ppropval->pvalue : nullptr;
+	*ppval = propvals.count == 1 && propvals.ppropval->proptag == proptag ?
+	         propvals.ppropval->pvalue : nullptr;
 	return true;
 }
 
@@ -340,7 +341,7 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 			size_t count = debug->requestHashes[hash]++;
 			if (count > debug->loopThreshold)
 				mlog(LV_WARN, "[ews#%d]%s: Possible loop, request hash has been seen %zu time%s before", ctx_id,
-				     timestamp().c_str(), count, count == 1? "" : "s");
+				     timestamp().c_str(), count, count == 1 ? "" : "s");
 		}
 	}
 
@@ -564,8 +565,8 @@ static BOOL ews_init(const struct dlfuncs &apidata)
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &EWSPlugin::preproc;
 	ifc.proc    = [](int ctx, const void *cont, uint64_t len) { return g_ews_plugin->proc(ctx, cont, len); };
-	ifc.retr    = [](int ctx) {return g_ews_plugin? g_ews_plugin->retr(ctx) : HPM_RETRIEVE_DONE;};
-	ifc.term    = [](int ctx) {g_ews_plugin? g_ews_plugin->term(ctx) : void(0);};
+	ifc.retr    = [](int ctx) { return g_ews_plugin ? g_ews_plugin->retr(ctx) : HPM_RETRIEVE_DONE; };
+	ifc.term    = [](int ctx) { if (g_ews_plugin) g_ews_plugin->term(ctx); };
 	if (!register_interface(&ifc))
 		return false;
 	try {
@@ -632,7 +633,7 @@ int EWSContext::notify()
 
 	XMLPrinter printer(nullptr, !m_plugin.pretty_response);
 	bool logResponse = m_log && m_plugin.response_logging >= 2;
-	auto loglevel = m_code == http_status::ok? LV_DEBUG : LV_ERR;
+	auto loglevel = m_code == http_status::ok ? LV_DEBUG : LV_ERR;
 
 	if (nctx.state == NS::S_INIT) {
 		/* First call after initialization -> write context data */
@@ -707,7 +708,7 @@ int EWSPlugin::retr(int ctx_id) try
 		auto sv = to_sv(printer);
 		writeheader(ctx_id, context.code(), sv.size());
 		bool logResponse = context.log() && response_logging >= 2;
-		auto loglevel = context.code() == http_status::ok? LV_DEBUG : LV_ERR;
+		auto loglevel = context.code() == http_status::ok ? LV_DEBUG : LV_ERR;
 		writecontent(ctx_id, sv, logResponse, loglevel);
 		context.state(EWSContext::S_DONE);
 		if (context.log() && response_logging)
@@ -1119,7 +1120,7 @@ gromox::EWS::Structures::sFolderEntryId EWSPlugin::mkFolderEntryId(const Structu
 	Structures::sFolderEntryId feid{};
 	BINARY tmp_bin{0, {.pv = &feid.provider_uid}};
 	rop_util_guid_to_binary(mbinfo.mailboxGuid, &tmp_bin);
-	feid.folder_type = mbinfo.isPublic? EITLT_PUBLIC_FOLDER : EITLT_PRIVATE_FOLDER;
+	feid.folder_type = mbinfo.isPublic ? EITLT_PUBLIC_FOLDER : EITLT_PRIVATE_FOLDER;
 	feid.database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
 	feid.global_counter = rop_util_get_gc_array(fid);
 	return feid;
@@ -1139,7 +1140,7 @@ Structures::sMessageEntryId EWSPlugin::mkMessageEntryId(const Structures::sMailb
 	Structures::sMessageEntryId meid{};
 	BINARY tmp_bin{0, {.pv = &meid.provider_uid}};
 	rop_util_guid_to_binary(mbinfo.mailboxGuid, &tmp_bin);
-	meid.message_type = mbinfo.isPublic? EITLT_PUBLIC_MESSAGE : EITLT_PRIVATE_MESSAGE;
+	meid.message_type = mbinfo.isPublic ? EITLT_PUBLIC_MESSAGE : EITLT_PRIVATE_MESSAGE;
 	meid.folder_database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
 	meid.folder_global_counter = rop_util_get_gc_array(fid);
 	meid.message_database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(mid));

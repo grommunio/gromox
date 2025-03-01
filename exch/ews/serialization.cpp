@@ -66,7 +66,7 @@ XMLError ExplicitConvert<EWS::time_point>::deserialize(const tinyxml2::XMLElemen
 	t.tm_year -= 1900;
 	t.tm_mon -= 1;
 	t.tm_hour -= tz_hour;
-	t.tm_min -= tz_hour < 0? -tz_min : tz_min;
+	t.tm_min -= tz_hour < 0 ? -tz_min : tz_min;
 	auto timestamp = timegm(&t);
 	if (timestamp == static_cast<time_t>(-1))
 		return tinyxml2::XML_CAN_NOT_CONVERT_TEXT;
@@ -347,7 +347,7 @@ tBaseItemId::tBaseItemId(const XMLElement* xml) :
 		return;
 	} else {
 		char t = Id.back();
-		type = (t < 0 || t > ID_OCCURRENCE)? ID_UNKNOWN : IdType(t);
+		type = t < 0 || t > ID_OCCURRENCE ? ID_UNKNOWN : IdType(t);
 		Id.pop_back();
 	}
 }
@@ -357,7 +357,8 @@ void tBaseItemId::serialize(XMLElement* xml) const
 	IdType t = type;
 	if (t == ID_UNKNOWN)
 		/* try to guess from entry id size, if that fails, someone forgot to mark the correct type */
-		t = Id.size() == 46? ID_FOLDER : Id.size() == 70? ID_ITEM : throw DispatchError(E3212);
+		t = Id.size() == 46 ? ID_FOLDER :
+		    Id.size() == 70 ? ID_ITEM : throw DispatchError(E3212);
 	Id.append(1, t);
 	XMLDUMPA(Id);
 	Id.pop_back();
@@ -966,7 +967,7 @@ tExtendedProperty::tExtendedProperty(const XMLElement* xml) :
 	const XMLElement* value = xml->FirstChildElement("Value");
 	const XMLElement* values = xml->FirstChildElement("Values");
 	uint16_t type = ExtendedFieldURI.type();
-	propval.proptag = ExtendedFieldURI.tag()? ExtendedFieldURI.tag() : type;
+	propval.proptag = ExtendedFieldURI.tag() ? ExtendedFieldURI.tag() : type;
 	bool ismv = type & MV_FLAG;
 	if (value && values)
 		throw InputError(E3094);
@@ -974,7 +975,7 @@ tExtendedProperty::tExtendedProperty(const XMLElement* xml) :
 		throw InputError(E3095);
 	if (!ismv && !value)
 		throw InputError(E3096);
-	deserialize(ismv? values : value, type);
+	deserialize(ismv ? values : value, type);
 }
 
 void tExtendedProperty::serialize(XMLElement* xml) const
@@ -984,7 +985,7 @@ void tExtendedProperty::serialize(XMLElement* xml) const
 		return;
 	XMLDUMPT(ExtendedFieldURI);
 	bool ismv = propval.proptag & MV_FLAG;
-	XMLElement* value = xml->InsertNewChildElement(ismv? "t:Values" : "t:Value");
+	auto value = xml->InsertNewChildElement(ismv ? "t:Values" : "t:Value");
 	serialize(data, PROP_TYPE(propval.proptag), value);
 }
 

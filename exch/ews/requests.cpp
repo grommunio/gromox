@@ -166,8 +166,9 @@ void process(mConvertIdRequest&& request, XMLElement* response, EWSContext& ctx)
 			data.ResponseMessages.emplace_back().AlternateId = std::move(aid);
 		} else {
 			std::string dir = ctx.get_maildir(aid.Mailbox);
-			tBaseItemId id(sBase64Binary(aid.Format == Enum::HexEntryId? hexDecode(aid.Id) : base64_decode(aid.Id)),
-				           tBaseItemId::ID_GUESS);
+			tBaseItemId id(sBase64Binary(aid.Format == Enum::HexEntryId ?
+			               hexDecode(aid.Id) : base64_decode(aid.Id)),
+			               tBaseItemId::ID_GUESS);
 			if (id.type == tBaseItemId::ID_UNKNOWN)
 				throw EWSError::CorruptData(E3252);
 			mConvertIdResponseMessage msg;
@@ -357,7 +358,7 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 			uint64_t eid = meid.messageId();
 			uint64_t fid = rop_util_make_eid_ex(1, meid.folderId());
 			EID_ARRAY eids{1, &eid};
-			BOOL hardDelete = request.DeleteType == Enum::HardDelete? TRUE : false;
+			BOOL hardDelete = request.DeleteType == Enum::HardDelete ? TRUE : false;
 			BOOL partial;
 			if (!ctx.plugin().exmdb.delete_messages(dir.c_str(),
 			    CP_ACP, ctx.effectiveUser(parent), fid, &eids,
@@ -390,8 +391,8 @@ void process(mEmptyFolderRequest&& request, XMLElement* response, const EWSConte
 	if (request.DeleteType == Enum::MoveToDeletedItems)
 		throw DispatchError(E3181);
 	uint32_t deleteFlags = DEL_MESSAGES | DEL_ASSOCIATED;
-	deleteFlags |= (request.DeleteType == Enum::HardDelete? DELETE_HARD_DELETE : 0) |
-	               (request.DeleteSubFolders? DEL_FOLDERS : 0);
+	deleteFlags |= (request.DeleteType == Enum::HardDelete ? DELETE_HARD_DELETE : 0) |
+	               (request.DeleteSubFolders ? DEL_FOLDERS : 0);
 	for (const sFolderId &folderId : request.FolderIds) try {
 		sFolderSpec folder = ctx.resolveFolder(folderId);
 		std::string dir = ctx.getDir(folder);
@@ -423,8 +424,8 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 	response->SetName("m:FindFolderResponse");
 
 	sShape shape(request.FolderShape);
-	uint8_t tableFlags = request.Traversal == Enum::Deep? TABLE_FLAG_DEPTH :
-	                     request.Traversal == Enum::SoftDeleted? TABLE_FLAG_SOFTDELETES : 0;
+	uint8_t tableFlags = request.Traversal == Enum::Deep ? TABLE_FLAG_DEPTH :
+	                     request.Traversal == Enum::SoftDeleted ? TABLE_FLAG_SOFTDELETES : 0;
 
 	const RESTRICTION* res = nullptr; // Must be built for every store individually (named properties)
 	std::string lastDir; // Simple restriction caching
@@ -432,10 +433,10 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 	auto& exmdb = ctx.plugin().exmdb;
 	mFindFolderResponse data;
 	data.ResponseMessages.reserve(request.ParentFolderIds.size());
-	tBasePagingType* paging = request.IndexedPageFolderView? &*request.IndexedPageFolderView :
-	                          request.FractionalPageFolderView? &*request.FractionalPageFolderView :
-	                          static_cast<tBasePagingType*>(nullptr);
-	uint32_t maxResults = paging && paging->MaxEntriesReturned? *paging->MaxEntriesReturned : 0;
+	auto paging = request.IndexedPageFolderView ? &*request.IndexedPageFolderView :
+	              request.FractionalPageFolderView ? &*request.FractionalPageFolderView :
+	              static_cast<tBasePagingType *>(nullptr);
+	uint32_t maxResults = paging && paging->MaxEntriesReturned ? *paging->MaxEntriesReturned : 0;
 
 	for (const sFolderId &folderId : request.ParentFolderIds) try {
 		sFolderSpec folder = ctx.resolveFolder(folderId);
@@ -444,7 +445,7 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 			throw EWSError::AccessDenied(E3218);
 		if (dir != lastDir) {
 			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
-			res = request.Restriction? request.Restriction->build(getId) : nullptr;
+			res = request.Restriction ? request.Restriction->build(getId) : nullptr;
 			lastDir = dir;
 		}
 		uint32_t tableId, rowCount;
@@ -460,7 +461,7 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 		ctx.getNamedTags(dir, shape);
 		PROPTAG_ARRAY tags = shape.proptags();
 		TARRAY_SET table;
-		uint32_t offset = paging? paging->offset(rowCount) : 0;
+		uint32_t offset = paging ? paging->offset(rowCount) : 0;
 		uint32_t results = maxResults ? std::min(maxResults, rowCount - offset) : rowCount;
 		exmdb.query_table(dir.c_str(), ctx.auth_info().username, CP_UTF8, tableId, &tags, offset,
 			              results, &table);
@@ -500,9 +501,9 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 	response->SetName("m:FindItemResponse");
 
 	sShape shape(request.ItemShape);
-	uint8_t tableFlags = request.Traversal == Enum::SoftDeleted? TABLE_FLAG_SOFTDELETES :
-	                     request.Traversal == Enum::Associated? TABLE_FLAG_ASSOCIATED :
-	                     request.Traversal == Enum::Shallow? 0 : TABLE_FLAG_DEPTH;
+	uint8_t tableFlags = request.Traversal == Enum::SoftDeleted ? TABLE_FLAG_SOFTDELETES :
+	                     request.Traversal == Enum::Associated ? TABLE_FLAG_ASSOCIATED :
+	                     request.Traversal == Enum::Shallow ? 0 : TABLE_FLAG_DEPTH;
 	const RESTRICTION* res = nullptr; // Must be built for every store individually (named properties)
 	const SORTORDER_SET* sort = nullptr; // Lol same
 	std::string lastDir; // Simple restriction caching
@@ -511,12 +512,12 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 	mFindItemResponse data;
 	data.ResponseMessages.reserve(request.ParentFolderIds.size());
 	// Specified as variant, so as long as at most one is given everything works as expected
-	tBasePagingType* paging = request.IndexedPageItemView? &*request.IndexedPageItemView :
-	                          request.FractionalPageItemView? &*request.FractionalPageItemView :
-	                          request.CalendarView? &*request.CalendarView :
-	                          request.ContactsView? &*request.ContactsView :
-	                          static_cast<tBasePagingType*>(nullptr);
-	uint32_t maxResults = paging && paging->MaxEntriesReturned? *paging->MaxEntriesReturned : 0;
+	auto paging = request.IndexedPageItemView ? &*request.IndexedPageItemView :
+	              request.FractionalPageItemView ? &*request.FractionalPageItemView :
+	              request.CalendarView ? &*request.CalendarView :
+	              request.ContactsView ? &*request.ContactsView :
+	              static_cast<tBasePagingType *>(nullptr);
+	uint32_t maxResults = paging && paging->MaxEntriesReturned ? *paging->MaxEntriesReturned : 0;
 
 	for (const sFolderId &folderId : request.ParentFolderIds) try {
 		sFolderSpec folder = ctx.resolveFolder(folderId);
@@ -525,10 +526,10 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 			throw EWSError::AccessDenied(E3244);
 		if (dir != lastDir) {
 			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
-			RESTRICTION* res1 = request.Restriction? request.Restriction->build(getId) : nullptr;
-			RESTRICTION* res2 = paging? paging->restriction(getId) : nullptr;
+			auto res1 = request.Restriction ? request.Restriction->build(getId) : nullptr;
+			auto res2 = paging ? paging->restriction(getId) : nullptr;
 			res = tRestriction::all(res1, res2);
-			sort = request.SortOrder? tFieldOrder::build(*request.SortOrder, getId) : nullptr;
+			sort = request.SortOrder ? tFieldOrder::build(*request.SortOrder, getId) : nullptr;
 			lastDir = dir;
 		}
 		uint32_t tableId, rowCount;
@@ -543,7 +544,7 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 		ctx.getNamedTags(dir, shape);
 		PROPTAG_ARRAY tags = shape.proptags();
 		TARRAY_SET table;
-		uint32_t offset = paging? paging->offset(rowCount) : 0;
+		uint32_t offset = paging ? paging->offset(rowCount) : 0;
 		uint32_t results = maxResults ? std::min(maxResults, rowCount - offset) : rowCount;
 		exmdb.query_table(dir.c_str(), ctx.auth_info().username, CP_UTF8, tableId, &tags, offset, results, &table);
 		mFindItemResponseMessage msg;
@@ -792,8 +793,9 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 	if (!request.TimeZone)
 		throw EWSError::TimeZone(E3014);
 
-	tDuration& TimeWindow = request.FreeBusyViewOptions? request.FreeBusyViewOptions->TimeWindow :
-	                                                     request.SuggestionsViewOptions->DetailedSuggestionsWindow;
+	tDuration &TimeWindow = request.FreeBusyViewOptions ?
+	                        request.FreeBusyViewOptions->TimeWindow :
+	                        request.SuggestionsViewOptions->DetailedSuggestionsWindow;
 
 	mGetUserAvailabilityResponse data;
 	data.FreeBusyResponseArray.emplace().reserve(request.MailboxDataArray.size());
@@ -919,7 +921,7 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 			data.OofSettings->OofState = "Disabled"; break;
 		}
 		if (allow_external_oof)
-			data.OofSettings->ExternalAudience = external_audience? "Known" : "All";
+			data.OofSettings->ExternalAudience = external_audience ? "Known" : "All";
 		else
 			data.OofSettings->ExternalAudience = "None";
 		auto start_time = configFile->get_value("start_time");
@@ -990,7 +992,7 @@ void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& c
  */
 void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWSContext& ctx)
 {
-	response->SetName(request.copy? "m:CopyFolderResponse" : "m:MoveFolderResponse");
+	response->SetName(request.copy ? "m:CopyFolderResponse" : "m:MoveFolderResponse");
 
 	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
 	std::string dir = ctx.getDir(dstFolder);
@@ -1033,7 +1035,7 @@ void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWS
  */
 void process(const mBaseMoveCopyItem& request, XMLElement* response, const EWSContext& ctx)
 {
-	response->SetName(request.copy? "m:CopyItemResponse" : "m:MoveItemResponse");
+	response->SetName(request.copy ? "m:CopyItemResponse" : "m:MoveItemResponse");
 
 	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
 	std::string dir = ctx.getDir(dstFolder);
@@ -1231,7 +1233,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	uint64_t fai_total, normal_total, last_cn, last_readcn;
 	EID_ARRAY updated_mids, chg_mids, given_mids, deleted_mids, nolonger_mids, read_mids, unread_mids;
 	bool getFai = request.SyncScope && *request.SyncScope == Enum::NormalAndAssociatedItems;
-	idset* pseen_fai = getFai? &syncState.seen : nullptr;
+	auto pseen_fai = getFai ? &syncState.seen : nullptr;
 	if (!exmdb.get_content_sync(dir.c_str(), folder.folderId, ctx.effectiveUser(folder),
 	    &syncState.given, &syncState.seen, pseen_fai, &syncState.read,
 	    CP_ACP, nullptr, TRUE, &fai_count, &fai_total, &normal_count,
@@ -1384,7 +1386,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	mResolveNamesResponseMessage& msg = data.ResponseMessages.emplace_back();
 	auto& resolutionSet = msg.ResolutionSet.emplace();
 	tResolution& resol = resolutionSet.emplace_back();
-	resol.Mailbox.Name = displayName? static_cast<const char*>(displayName->pvalue) : request.UnresolvedEntry;
+	resol.Mailbox.Name = displayName ? static_cast<const char *>(displayName->pvalue) : request.UnresolvedEntry;
 	resol.Mailbox.EmailAddress = request.UnresolvedEntry;
 	resol.Mailbox.RoutingType = "SMTP";
 	resol.Mailbox.MailboxType = Enum::Mailbox; // Currently the only supported
@@ -1428,8 +1430,9 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 		data.serialize(response);
 		return;
 	}
-	sFolderSpec saveFolder = request.SavedItemFolderId? ctx.resolveFolder(request.SavedItemFolderId->folderId) :
-	                                                    sFolderSpec(tDistinguishedFolderId(Enum::sentitems));
+	sFolderSpec saveFolder = request.SavedItemFolderId ?
+		ctx.resolveFolder(request.SavedItemFolderId->folderId) :
+		sFolderSpec(tDistinguishedFolderId(Enum::sentitems));
 	if (request.SavedItemFolderId && !(ctx.permissions(ctx.getDir(saveFolder), saveFolder.folderId) & frightsCreate)) {
 		data.Responses.emplace_back(EWSError::AccessDenied(E3141));
 		data.serialize(response);

@@ -565,7 +565,7 @@ uint32_t EWSContext::getAccountId(const std::string& name, bool isDomain) const
 	else
 		res = mysql_adaptor_get_user_ids(name.c_str(), &accountId, &unused1, &unused2);
 	if (!res)
-		throw EWSError::CannotFindUser(E3113(isDomain? "domain" : "user", name));
+		throw EWSError::CannotFindUser(E3113(isDomain ? "domain" : "user", name));
 	return accountId;
 }
 
@@ -729,9 +729,10 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
  */
 std::string EWSContext::getDir(const sFolderSpec& folder) const
 {
-	const char* target = folder.target? folder.target->c_str() : m_auth_info.username;
-	const char* at = strchr(target, '@');
-	bool isPublic = folder.location == sFolderSpec::AUTO? at == nullptr : folder.location == sFolderSpec::PUBLIC;
+	const char *target = folder.target ? folder.target->c_str() : m_auth_info.username;
+	const char *at = strchr(target, '@');
+	bool isPublic = folder.location == sFolderSpec::AUTO ? at == nullptr :
+	                folder.location == sFolderSpec::PUBLIC;
 	if (isPublic && at)
 		target = at + 1;
 	if (isPublic) {
@@ -919,9 +920,9 @@ GUID EWSContext::getMailboxGuid(const std::string& dir) const
 sMailboxInfo EWSContext::getMailboxInfo(const std::string& dir, bool isDomain) const
 {
 	sMailboxInfo mbinfo{getMailboxGuid(dir), 0, isDomain};
-	auto getId = isDomain? mysql_adaptor_get_id_from_homedir : mysql_adaptor_get_id_from_maildir;
+	auto getId = isDomain ? mysql_adaptor_get_id_from_homedir : mysql_adaptor_get_id_from_maildir;
 	if (!getId(dir.c_str(), &mbinfo.accountId))
-		throw EWSError::CannotFindUser(E3192(isDomain? "domain" : "user", dir));
+		throw EWSError::CannotFindUser(E3192(isDomain ? "domain" : "user", dir));
 	return mbinfo;
 }
 
@@ -1402,7 +1403,7 @@ uint64_t EWSContext::moveCopyItem(const std::string& dir, const sMessageEntryId&
 		throw DispatchError(E3182);
 	BOOL success;
 	if (!m_plugin.exmdb.movecopy_message(dir.c_str(), CP_ACP,
-	    meid.messageId(), newParent, newId, copy? false : TRUE,
+	    meid.messageId(), newParent, newId, copy ? false : TRUE,
 	    &success) || !success)
 		throw EWSError::MoveCopyFailed(E3183);
 	return newId;
@@ -2050,8 +2051,9 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 		shape.write(NtPostalAddressIndex, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(item.PostalAddressIndex->index())});
 	if (item.EmailAddresses)
 		for (const tEmailAddressDictionaryEntry &entry : *item.EmailAddresses) {
-			const PROPERTY_NAME& name = entry.Key == Enum::EmailAddress1? NtEmailAddress1 :
-			                            entry.Key == Enum::EmailAddress2? NtEmailAddress2 : NtEmailAddress3;
+			const PROPERTY_NAME &name = entry.Key == Enum::EmailAddress1 ? NtEmailAddress1 :
+			                            entry.Key == Enum::EmailAddress2 ? NtEmailAddress2 :
+			                            NtEmailAddress3;
 			shape.write(name, TAGGED_PROPVAL{PT_UNICODE, const_cast<char*>(entry.Entry.c_str())});
 		}
 	if (item.PhysicalAddresses)
@@ -2190,9 +2192,9 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape, MCONT_PTR& content) const
 {
 	toContent(dir, static_cast<tItem&>(item), shape, content);
-	size_t recipients = (item.ToRecipients? item.ToRecipients->size() : 0)
-	                    + (item.CcRecipients? item.CcRecipients->size() : 0)
-	                    + (item.BccRecipients? item.BccRecipients->size() : 0);
+	size_t recipients = (item.ToRecipients ? item.ToRecipients->size() : 0) +
+	                    (item.CcRecipients ? item.CcRecipients->size() : 0) +
+	                    (item.BccRecipients ? item.BccRecipients->size() : 0);
 	if (recipients) {
 		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
 			throw EWSError::NotEnoughMemory(E3288);
@@ -2309,7 +2311,8 @@ tSubscriptionId EWSContext::subscribe(const tPullSubscriptionRequest& req) const
 	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
 	if (all && req.FolderIds)
 		throw EWSError::InvalidSubscriptionRequest(E3198);
-	return subscribe(req.FolderIds? *req.FolderIds : std::vector<sFolderId>(), req.eventMask(), all, req.Timeout);
+	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
+	       req.eventMask(), all, req.Timeout);
 }
 
 /**
@@ -2324,7 +2327,8 @@ tSubscriptionId EWSContext::subscribe(const tStreamingSubscriptionRequest& req) 
 	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
 	if (all && req.FolderIds)
 		throw EWSError::InvalidSubscriptionRequest(E3198);
-	return subscribe(req.FolderIds? *req.FolderIds : std::vector<sFolderId>(), req.eventMask(), all, 5);
+	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
+	       req.eventMask(), all, 5);
 }
 
 /**

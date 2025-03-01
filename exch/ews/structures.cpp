@@ -677,7 +677,7 @@ sFolderSpec::sFolderSpec(const tDistinguishedFolderId& folder)
 	if (it == distNameInfo.end())
 		throw EWSError::FolderNotFound(E3051(folder.Id));
 	folderId = rop_util_make_eid_ex(1, it->id);
-	location = it->isPrivate? PRIVATE : PUBLIC;
+	location = it->isPrivate ? PRIVATE : PUBLIC;
 	if (folder.Mailbox)
 		target = folder.Mailbox->EmailAddress;
 }
@@ -921,7 +921,7 @@ TPROPVAL_ARRAY sShape::write() const
 const TAGGED_PROPVAL* sShape::writes(uint32_t tag) const
 {
 	auto it = std::find_if(wProps.begin(), wProps.end(), [=](const TAGGED_PROPVAL& tp){return tp.proptag == tag;});
-	return it != wProps.end()? it.base() : nullptr;
+	return it != wProps.end() ? it.base() : nullptr;
 }
 
 /**
@@ -1003,7 +1003,7 @@ const TAGGED_PROPVAL* sShape::get(const PROPERTY_NAME& name, uint8_t mask) const
 template<typename T> const T* sShape::get(uint32_t tag, uint8_t mask) const
 {
 	const TAGGED_PROPVAL* prop = get(tag, mask);
-	return prop? static_cast<const T*>(prop->pvalue) : nullptr;
+	return prop ? static_cast<const T *>(prop->pvalue) : nullptr;
 }
 
 /**
@@ -1114,7 +1114,8 @@ void sShape::putExtended(std::vector<tExtendedProperty>& extprops) const
 {
 	for (const auto &prop : props)
 		if (prop.second.flags & FL_EXT && prop.second.prop)
-			extprops.emplace_back(*prop.second.prop, prop.second.name? *prop.second.name : NONAME);
+			extprops.emplace_back(*prop.second.prop,
+				prop.second.name ? *prop.second.name : NONAME);
 }
 
 /**
@@ -1127,7 +1128,7 @@ void sShape::putExtended(std::vector<tExtendedProperty>& extprops) const
 uint32_t sShape::tag(const PROPERTY_NAME& name) const
 {
 	auto it = std::find(names.begin(), names.end(), name);
-	return it == names.end()? 0 : namedTags[std::distance(names.begin(), it)];
+	return it == names.end() ? 0 : namedTags[std::distance(names.begin(), it)];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1413,7 +1414,7 @@ tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, IdType t) : type(t)
 		case 71: // Tagged message entry id
 		case 75: { // Tagged attachment or occurence id
 			char temp = Id.back();
-			type = (temp < 0 || temp > ID_OCCURRENCE)? ID_UNKNOWN : IdType(temp);
+			type = temp < 0 || temp > ID_OCCURRENCE ? ID_UNKNOWN : IdType(temp);
 			Id.pop_back();
 			break;
 		}
@@ -1433,7 +1434,8 @@ std::string tBaseItemId::serializeId() const
 	IdType t = type;
 	if (t == ID_UNKNOWN)
 		/* try to guess from entry id size, if that fails, someone forgot to mark the correct type */
-		t = Id.size() == 46? ID_FOLDER : Id.size() == 70? ID_ITEM : throw DispatchError(E3212);
+		t = Id.size() == 46 ? ID_FOLDER :
+		    Id.size() == 70 ? ID_ITEM : throw DispatchError(E3212);
 	std::string data;
 	data.reserve(Id.size()+1);
 	data = Id;
@@ -1797,11 +1799,11 @@ RESTRICTION* tCalendarView::datefilter(const sTimePoint& time, bool isStart, con
 	static const PROPERTY_NAME startName = {MNID_ID, PSETID_Appointment, PidLidAppointmentStartWhole, nullptr},
 		endName = {MNID_ID, PSETID_Appointment, PidLidAppointmentEndWhole, nullptr};
 	// Counterintuitive: isStart == true -> check if end of event is after start, invert for isStart == false
-	const PROPERTY_NAME& tagName = isStart? endName : startName;
+	const PROPERTY_NAME &tagName = isStart ? endName : startName;
 	RESTRICTION* res = EWSContext::construct<RESTRICTION>();
 	res->rt = mapi_rtype::property;
 	res->prop = EWSContext::construct<RESTRICTION_PROPERTY>();
-	res->prop->relop = isStart? relop::ge : relop::le;
+	res->prop->relop = isStart ? relop::ge : relop::le;
 	res->prop->proptag = res->prop->propval.proptag = PROP_TAG(PT_SYSTIME, getId(tagName));
 	res->prop->propval.pvalue = EWSContext::construct<uint64_t>(time.toNT());
 	return res;
@@ -1816,8 +1818,8 @@ RESTRICTION* tCalendarView::datefilter(const sTimePoint& time, bool isStart, con
  */
 RESTRICTION* tCalendarView::restriction(const sGetNameId& getId) const
 {
-	RESTRICTION *startRes = StartDate? datefilter(*StartDate, true, getId) : nullptr;
-	RESTRICTION* endRes = EndDate? datefilter(*EndDate, false, getId) : nullptr;
+	auto startRes = StartDate ? datefilter(*StartDate, true, getId) : nullptr;
+	auto endRes = EndDate ? datefilter(*EndDate, false, getId) : nullptr;
 	return tRestriction::all(startRes, endRes);
 }
 
@@ -1939,7 +1941,7 @@ const tChangeDescription::Field* tChangeDescription::find(const char* type, cons
 		else if (!strcmp(it->second.type, type))
 			specific = &it->second;
 	}
-	return specific? specific : general;
+	return specific ? specific : general;
 }
 
 /**
@@ -1985,7 +1987,7 @@ void tChangeDescription::convProp(const char* type, const char* name, const tiny
 void tChangeDescription::convBody(const tinyxml2::XMLElement* xml, sShape& shape)
 {
 	const char* bodyType = xml->Attribute("BodyType");
-	Enum::BodyTypeType type = bodyType? bodyType : Enum::Text;
+	Enum::BodyTypeType type = bodyType ? bodyType : Enum::Text;
 	auto text = znul(xml->GetText());
 	if (type == Enum::Text) {
 		shape.write(TAGGED_PROPVAL{PR_BODY, const_cast<char*>(text)});
@@ -2010,7 +2012,7 @@ void tChangeDescription::convBool(uint32_t tag, const XMLElement* v, sShape& sha
 {
 	bool value;
 	if (v->QueryBoolText(&value))
-		throw EWSError::InvalidExtendedPropertyValue(E3100(v->GetText()? v->GetText() : "(nil)"));
+		throw EWSError::InvalidExtendedPropertyValue(E3100(v->GetText() ? v->GetText() : "(nil)"));
 	shape.write(mkProp(tag, static_cast<uint8_t>(value ? TRUE : false)));
 }
 
@@ -2219,8 +2221,8 @@ std::string tContact::mkAddress(const std::optional<std::string>& street, const 
                                 const std::optional<std::string>& state, const std::optional<std::string>& postal,
                                 const std::optional<std::string>& country)
 {
-	auto get = [](const std::optional<std::string>& src) {return src? src->c_str() : "";};
-	auto con = [] (bool src, const char* c) {return src? c : "";};
+	auto get = [](const std::optional<std::string> &src) { return src ? src->c_str() : ""; };
+	auto con = [](bool src, const char *c) { return src ? c : ""; };
 	bool lines[] = {bool(street), city || state || postal, bool(country)};
 	return fmt::format(addressTemplate, get(street), con(lines[0] || lines[1], "\n"),
 	                    get(city), con(city && state, " "), get(state), con((city || state) && postal, " "), get(postal),
@@ -2387,8 +2389,8 @@ RESTRICTION* tContactsView::namefilter(const std::string& name, relop op)
  */
 RESTRICTION* tContactsView::restriction(const sGetNameId&) const
 {
-	RESTRICTION *initialRes = InitialName? namefilter(*InitialName, relop::ge) : nullptr;
-	RESTRICTION* finalRes = FinalName? namefilter(*FinalName, relop::le) : nullptr;
+	auto initialRes = InitialName ? namefilter(*InitialName, relop::ge) : nullptr;
+	auto finalRes = FinalName ? namefilter(*FinalName, relop::le) : nullptr;
 	return tRestriction::all(initialRes, finalRes);
 }
 
@@ -2497,10 +2499,10 @@ void tEmailAddressType::mkRecipient(TPROPVAL_ARRAY* rcpt, uint32_t type) const
 		throw EWSError::NotEnoughMemory(E3289);
 	if (!EmailAddress)
 		throw EWSError::InvalidRecipients(E3290);
-	const char* displayname = Name? Name->c_str() : EmailAddress->c_str();
+	auto displayname = Name ? Name->c_str() : EmailAddress->c_str();
 	if (rcpt->set(PR_DISPLAY_NAME, displayname) ||
 	   rcpt->set(PR_TRANSMITABLE_DISPLAY_NAME, displayname) ||
-	   rcpt->set(PR_ADDRTYPE, RoutingType? RoutingType->c_str() : "SMTP") ||
+	   rcpt->set(PR_ADDRTYPE, RoutingType ? RoutingType->c_str() : "SMTP") ||
 	   rcpt->set(PR_EMAIL_ADDRESS, EmailAddress->c_str()) ||
 	   rcpt->set(PR_RECIPIENT_TYPE, &type))
 		throw EWSError::NotEnoughMemory(E3291);
@@ -2545,7 +2547,7 @@ tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(std::string phone,
 RESTRICTION* tRestriction::all(RESTRICTION* r1, RESTRICTION* r2)
 {
 	if (!r1 || !r2)
-		return r1? r1 : r2;
+		return r1 ? r1 : r2;
 	RESTRICTION* res = EWSContext::construct<RESTRICTION>();
 	res->rt = mapi_rtype::r_and;
 	res->andor = EWSContext::construct<RESTRICTION_AND_OR>();
@@ -2600,7 +2602,7 @@ void tRestriction::deserialize(RESTRICTION& dst, const tinyxml2::XMLElement* src
 
 void tRestriction::build_andor(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
-	dst.rt = strcmp(src->Name(), "And")? mapi_rtype::r_or : mapi_rtype::r_and;
+	dst.rt = strcmp(src->Name(), "And") ? mapi_rtype::r_or : mapi_rtype::r_and;
 	dst.andor = EWSContext::alloc<RESTRICTION_AND_OR>();
 	dst.andor->count = 0;
 	for (const tinyxml2::XMLElement *child = src->FirstChildElement();
@@ -2619,7 +2621,7 @@ void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* s
 	if (!cmptarget)
 		throw EWSError::InvalidRestriction(E3221);
 	void* constantData = loadConstant(cmptarget, PROP_TYPE(tag));
-	dst.rt = constantData? mapi_rtype::property : mapi_rtype::propcmp;
+	dst.rt = constantData ? mapi_rtype::property : mapi_rtype::propcmp;
 	if (constantData) {
 		/* Constant found and loaded -> compare to static data */
 		dst.prop = EWSContext::construct<RESTRICTION_PROPERTY>();
@@ -2720,7 +2722,7 @@ void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t ty
 	if (!value)
 		throw EWSError::InvalidRestriction(E3234);
 	size_t allocSize = typeWidth(type);
-	void* dest = allocSize? EWSContext::alloc(allocSize) : nullptr;
+	auto dest = allocSize ? EWSContext::alloc(allocSize) : nullptr;
 	switch(type) {
 	case PT_SHORT:{
 		int temp;
@@ -2810,7 +2812,7 @@ uint32_t tExtendedFieldURI::tag() const
  */
 uint32_t tExtendedFieldURI::tag(const sGetNameId& getId) const
 {
-	return PROP_TAG(type(), PropertyTag? *PropertyTag : getId(name()));
+	return PROP_TAG(type(), PropertyTag ? *PropertyTag : getId(name()));
 }
 
 /**
@@ -2824,7 +2826,7 @@ PROPERTY_NAME tExtendedFieldURI::name() const
 	if (!PropertySetId && !DistinguishedPropertySetId)
 		return NONAME;
 	PROPERTY_NAME name{};
-	name.guid = PropertySetId? *PropertySetId : *propsetIds[DistinguishedPropertySetId->index()];
+	name.guid = PropertySetId ? *PropertySetId : *propsetIds[DistinguishedPropertySetId->index()];
 	if (PropertyName) {
 		name.kind = MNID_STRING;
 		name.pname = deconst(PropertyName->c_str());
@@ -2846,9 +2848,9 @@ PROPERTY_NAME tExtendedFieldURI::name() const
 void tExtendedFieldURI::tags(sShape& shape, bool add) const
 {
 	if (PropertyTag)
-		shape.add(tag(), add? sShape::FL_EXT : sShape::FL_RM);
+		shape.add(tag(), add ? sShape::FL_EXT : sShape::FL_RM);
 	else if ((PropertySetId || DistinguishedPropertySetId) && (PropertyName || PropertyId))
-		shape.add(name(), type(), add? sShape::FL_EXT : sShape::FL_RM);
+		shape.add(name(), type(), add ? sShape::FL_EXT : sShape::FL_RM);
 	else
 		throw InputError(E3061);
 }
@@ -2910,8 +2912,10 @@ const char* tExtendedFieldURI::typeName(uint16_t type)
 ///////////////////////////////////////////////////////////////////////////////
 
 tExtendedProperty::tExtendedProperty(const TAGGED_PROPVAL& tp, const PROPERTY_NAME& pn) :
-	  ExtendedFieldURI(pn.kind == KIND_NONE? tExtendedFieldURI(tp.proptag) : tExtendedFieldURI(PROP_TYPE(tp.proptag), pn)),
-	  propval(tp)
+	ExtendedFieldURI(pn.kind == KIND_NONE ?
+	                 tExtendedFieldURI(tp.proptag) :
+	                 tExtendedFieldURI(PROP_TYPE(tp.proptag), pn)),
+	propval(tp)
 {}
 
 /**
@@ -2951,7 +2955,7 @@ void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* 
 {
 	size_t allocSize = typeWidth(type);
 	if (!dest)
-		propval.pvalue = dest = allocSize? EWSContext::alloc(allocSize) : nullptr;
+		propval.pvalue = dest = allocSize ? EWSContext::alloc(allocSize) : nullptr;
 	const char* content = xml->GetText();
 	switch(type) {
 	case PT_SHORT:{
@@ -2959,32 +2963,32 @@ void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* 
 		XMLError res = xml->QueryIntText(&temp);
 		if (res != XML_SUCCESS || temp < SHRT_MIN || temp > USHRT_MAX)
 			/* be flexible, allow both signed and unsigned range */
-			throw EWSError::InvalidExtendedPropertyValue(E3101(content? content : "(nil)"));
+			throw EWSError::InvalidExtendedPropertyValue(E3101(content ? content : "(nil)"));
 		*static_cast<int16_t *>(dest) = temp;
 		break;
 	}
 	case PT_ERROR:
 	case PT_LONG:
 		if (xml->QueryIntText(static_cast<int32_t *>(dest)) != XML_SUCCESS)
-			throw EWSError::InvalidExtendedPropertyValue(E3102(content? content : "(nil)"));
+			throw EWSError::InvalidExtendedPropertyValue(E3102(content ? content : "(nil)"));
 		break;
 	case PT_FLOAT:
 		if (xml->QueryFloatText(static_cast<float*>(dest)) != XML_SUCCESS)
-			throw EWSError::InvalidExtendedPropertyValue(E3103(content? content : "(nil)"));
+			throw EWSError::InvalidExtendedPropertyValue(E3103(content ? content : "(nil)"));
 		break;
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		if (xml->QueryDoubleText(static_cast<double*>(dest)) != XML_SUCCESS)
-			throw EWSError::InvalidExtendedPropertyValue(E3104(content? content : "(nil)"));
+			throw EWSError::InvalidExtendedPropertyValue(E3104(content ? content : "(nil)"));
 		break;
 	case PT_BOOLEAN:
 		if (xml->QueryBoolText(static_cast<bool*>(dest)) != XML_SUCCESS)
-			throw EWSError::InvalidExtendedPropertyValue(E3105(content? content : "(nil)"));
+			throw EWSError::InvalidExtendedPropertyValue(E3105(content ? content : "(nil)"));
 		break;
 	case PT_CURRENCY:
 	case PT_I8:
 		if (xml->QueryInt64Text(static_cast<int64_t *>(dest)) != XML_SUCCESS)
-			throw EWSError::InvalidExtendedPropertyValue(E3106(content? content : "(nil)"));
+			throw EWSError::InvalidExtendedPropertyValue(E3106(content ? content : "(nil)"));
 		break;
 	case PT_SYSTIME:
 		*static_cast<uint64_t*>(dest) = sTimePoint(xml->GetText()).toNT(); break;
@@ -3288,12 +3292,13 @@ void tFieldURI::tags(sShape& shape, bool add) const
 {
 	auto tags = tagMap.equal_range(FieldURI);
 	for (auto it = tags.first; it != tags.second; ++it)
-		shape.add(it->second, add? sShape::FL_FIELD : sShape::FL_RM);
+		shape.add(it->second, add ? sShape::FL_FIELD : sShape::FL_RM);
 	bool found = tags.first != tags.second;
 
 	auto names = nameMap.equal_range(FieldURI);
 	for (auto it = names.first; it != names.second; ++it)
-		shape.add(it->second.first, it->second.second, add? sShape::FL_FIELD : sShape::FL_RM);
+		shape.add(it->second.first, it->second.second,
+		          add ? sShape::FL_FIELD : sShape::FL_RM);
 	found |= names.first != names.second;
 
 	static auto compval = [](const SMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
@@ -3322,7 +3327,8 @@ uint32_t tFieldURI::tag(const sGetNameId& getId) const
 	if (tags.first != tagMap.end())
 		return tags.first->second;
 	auto names = nameMap.equal_range(FieldURI);
-	return names.first == nameMap.end()? 0 : PROP_TAG(names.first->second.second, getId(names.first->second.first));
+	return names.first == nameMap.end() ? 0 :
+	       PROP_TAG(names.first->second.second, getId(names.first->second.first));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3475,12 +3481,13 @@ void tIndexedFieldURI::tags(sShape& shape, bool add) const
 
 	auto tagIt = std::lower_bound(tagMap.begin(), tagMap.end(), *this, compval);
 	if (tagIt != tagMap.end() && tagIt->first.first == FieldURI && tagIt->first.second == FieldIndex)
-		shape.add(tagIt->second, add? sShape::FL_FIELD : sShape::FL_RM);
+		shape.add(tagIt->second, add ? sShape::FL_FIELD : sShape::FL_RM);
 
 	// Additional
 	auto names = std::lower_bound(nameMap.begin(), nameMap.end(), *this, compval);
 	while (names != nameMap.end() && names->first.first == FieldURI && names->first.second == FieldIndex) {
-		shape.add(names->second.first, names->second.second, add? sShape::FL_FIELD : sShape::FL_RM);
+		shape.add(names->second.first, names->second.second,
+		          add ? sShape::FL_FIELD : sShape::FL_RM);
 		++names;
 	}
 }
@@ -3507,7 +3514,7 @@ uint32_t tIndexedFieldURI::tag(const sGetNameId& getId) const
 	auto names = std::lower_bound(nameMap.begin(), nameMap.end(), *this, compval);
 	if (names != nameMap.end() && names->first.first == FieldURI && names->first.second == FieldIndex) {
 		uint16_t tagid =  getId(names->second.first);
-		return tagid? PROP_TAG(names->second.second, tagid) : 0;
+		return tagid ? PROP_TAG(names->second.second, tagid) : 0;
 	}
 	return 0;
 }
@@ -3601,7 +3608,8 @@ void tItem::update(const sShape& shape)
 		fromProp(prop, defaulted(ItemId).Id);
 	fromProp(shape.get(PR_HASATTACH), HasAttachments);
 	if ((v32 = shape.get<uint32_t>(PR_IMPORTANCE)))
-		Importance = *v32 == IMPORTANCE_LOW? Enum::Low : *v32 == IMPORTANCE_HIGH? Enum::High : Enum::Normal;
+		Importance = *v32 == IMPORTANCE_LOW ? Enum::Low :
+		             *v32 == IMPORTANCE_HIGH ? Enum::High : Enum::Normal;
 	fromProp(shape.get(PR_IN_REPLY_TO_ID), InReplyTo);
 	fromProp(shape.get(PR_LAST_MODIFIER_NAME), LastModifiedName);
 	fromProp(shape.get(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
@@ -3618,9 +3626,9 @@ void tItem::update(const sShape& shape)
 	if ((prop = shape.get(PR_PARENT_ENTRYID)))
 		fromProp(prop, defaulted(ParentFolderId).Id);
 	if ((v32 = shape.get<uint32_t>(PR_SENSITIVITY)))
-		Sensitivity = *v32 == SENSITIVITY_PRIVATE? Enum::Private :
-		              *v32 == SENSITIVITY_COMPANY_CONFIDENTIAL? Enum::Confidential :
-		              *v32 == SENSITIVITY_PERSONAL? Enum::Personal : Enum::Normal;
+		Sensitivity = *v32 == SENSITIVITY_PRIVATE ? Enum::Private :
+		              *v32 == SENSITIVITY_COMPANY_CONFIDENTIAL ? Enum::Confidential :
+		              *v32 == SENSITIVITY_PERSONAL ? Enum::Personal : Enum::Normal;
 	fromProp(shape.get(PR_SUBJECT), Subject);
 	if ((prop = shape.get(PR_TRANSPORT_MESSAGE_HEADERS)))
 		InternetMessageHeaders.emplace(tInternetMessageHeader::parse(static_cast<const char*>(prop->pvalue)));
@@ -3695,7 +3703,7 @@ void tItemResponseShape::tags(sShape& shape) const
 		shape.add(tag);
 	for (uint32_t tag : tagsIdOnly)
 		shape.add(tag, sShape::FL_FIELD);
-	std::string_view type = BodyType? *BodyType : Enum::Best;
+	std::string_view type = BodyType ? *BodyType : Enum::Best;
 	if ((IncludeMimeContent && *IncludeMimeContent) || (BodyType && type == Enum::Best))
 		shape.special |= sShape::MimeContent;
 	if (AdditionalProperties)
@@ -3851,8 +3859,10 @@ tBasePermission::tBasePermission(const TPROPVAL_ARRAY& props)
 	IsFolderOwner.emplace(*rights & frightsOwner);
 	IsFolderVisible.emplace(*rights & frightsVisible);
 	IsFolderContact.emplace(*rights & frightsContact);
-	EditItems.emplace(*rights & frightsEditAny? Enum::All : *rights & frightsEditOwned? Enum::Owned : Enum::None);
-	DeleteItems.emplace(*rights & frightsDeleteAny? Enum::All : *rights & frightsDeleteOwned? Enum::Owned : Enum::None);
+	EditItems.emplace(*rights & frightsEditAny ? Enum::All :
+	                  *rights & frightsEditOwned ? Enum::Owned : Enum::None);
+	DeleteItems.emplace(*rights & frightsDeleteAny ? Enum::All :
+	                    *rights & frightsDeleteOwned ? Enum::Owned : Enum::None);
 }
 
 
@@ -3879,11 +3889,13 @@ PERMISSION_DATA tBasePermission::write(uint32_t rights) const
 	updateIf(IsFolderVisible, frightsVisible);
 	updateIf(IsFolderContact, frightsContact);
 	if (EditItems)
-		rights |= *EditItems == Enum::All? frightsEditAny : *EditItems == Enum::Owned? frightsEditOwned : 0;
+		rights |= *EditItems == Enum::All ? frightsEditAny :
+		          *EditItems == Enum::Owned ? frightsEditOwned : 0;
 	if (DeleteItems)
-		rights |= *DeleteItems == Enum::All? frightsDeleteAny : *DeleteItems == Enum::Owned? frightsDeleteOwned : 0;
+		rights |= *DeleteItems == Enum::All ? frightsDeleteAny :
+		          *DeleteItems == Enum::Owned ? frightsDeleteOwned : 0;
 
-	PERMISSION_DATA perm{UserId.DistinguishedUser? ROW_MODIFY : ROW_ADD,
+	PERMISSION_DATA perm{UserId.DistinguishedUser ? ROW_MODIFY : ROW_ADD,
 		                 TPROPVAL_ARRAY{0, EWSContext::alloc<TAGGED_PROPVAL>(3)}};
 	uint16_t& count = perm.propvals.count;
 	perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_RIGHTS, EWSContext::construct<uint32_t>(rights)};
@@ -3913,9 +3925,9 @@ tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePer
 	auto rights = props.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if (!rights)
 		rights = &none;
-	ReadItems.emplace(*rights & frightsReadAny? Enum::FullDetails :
-	                  *rights & frightsFreeBusyDetailed? Enum::FreeBusyTimeAndSubjectAndLocation :
-	                  *rights & frightsFreeBusySimple? Enum::TimeOnly :Enum::None);
+	ReadItems.emplace(*rights & frightsReadAny ? Enum::FullDetails :
+	                  *rights & frightsFreeBusyDetailed ? Enum::FreeBusyTimeAndSubjectAndLocation :
+	                  *rights & frightsFreeBusySimple ? Enum::TimeOnly :Enum::None);
 	auto it = std::find(profileTable.begin(), profileTable.end(), *rights);
 	size_t index = std::distance(profileTable.begin(), it);
 	if (index < calendarProfiles)
@@ -3932,9 +3944,10 @@ tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePer
  */
 PERMISSION_DATA tCalendarPermission::write() const
 {
-	uint32_t rights = CalendarPermissionLevel == Enum::Custom? 0 : profileTable[CalendarPermissionLevel.index()];
+	uint32_t rights = CalendarPermissionLevel == Enum::Custom ?
+	                  0 : profileTable[CalendarPermissionLevel.index()];
 	if (ReadItems)
-		rights |= *ReadItems == Enum::FullDetails? frightsReadAny : 0;
+		rights |= *ReadItems == Enum::FullDetails ? frightsReadAny : 0;
 	return tBasePermission::write(rights);
 }
 
@@ -3952,7 +3965,7 @@ tPermission::tPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
 	auto rights = props.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if (!rights)
 		rights = &none;
-	ReadItems.emplace(*rights & frightsReadAny? Enum::FullDetails : Enum::None);
+	ReadItems.emplace(*rights & frightsReadAny ? Enum::FullDetails : Enum::None);
 	auto it = std::find(profileTable.begin(), profileTable.end(), *rights);
 	size_t index = std::distance(profileTable.begin(), it);
 	if (index < profiles)
@@ -3968,9 +3981,10 @@ tPermission::tPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
  */
 PERMISSION_DATA tPermission::write() const
 {
-	uint32_t rights = PermissionLevel == Enum::Custom? 0 : profileTable[PermissionLevel.index()];
+	uint32_t rights = PermissionLevel == Enum::Custom ?
+	                  0 : profileTable[PermissionLevel.index()];
 	if (ReadItems)
-		rights |= *ReadItems == Enum::FullDetails? frightsReadAny : 0;
+		rights |= *ReadItems == Enum::FullDetails ? frightsReadAny : 0;
 	return tBasePermission::write(rights);
 }
 
@@ -4050,8 +4064,8 @@ std::chrono::minutes tSerializableTimeZone::offset(time_point tp) const
 	if (gmtime_r(&temp, &datetime) == nullptr)
 		datetime = {};
 
-	auto &first  = StandardTime.Month < DaylightTime.Month? StandardTime : DaylightTime;
-	auto &second = StandardTime.Month < DaylightTime.Month? DaylightTime : StandardTime;
+	auto &first  = StandardTime.Month < DaylightTime.Month ? StandardTime : DaylightTime;
+	auto &second = StandardTime.Month < DaylightTime.Month ? DaylightTime : StandardTime;
 
 	int firstDO    = first.DayOrder == 5 ? -1 : static_cast<int>(first.DayOrder);
 	int secondDO   = second.DayOrder == 5 ? -1 : static_cast<int>(second.DayOrder);

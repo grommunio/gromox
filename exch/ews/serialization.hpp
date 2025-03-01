@@ -554,7 +554,7 @@ static T fromXMLNode(const tinyxml2::XMLElement* xml, const char* name)
 	if constexpr(BaseType<T>::container == OPTIONAL)
 	    return fromXMLNodeOpt<T>(child);
 	else if (!child)
-		throw DeserializationError(Exceptions::E3046(name? name : "<unknown>", xml->Name()));
+		throw DeserializationError(Exceptions::E3046(name ? name : "<unknown>", xml->Name()));
 	else
 		return fromXMLNodeDispatch<T>(child);
 }
@@ -708,7 +708,7 @@ static tinyxml2::XMLElement* toXMLNode(tinyxml2::XMLElement* parent, const char*
 	if constexpr (BaseType<T>::container == VARIANT) {
 		name = getName(value, name);
 		const char* ns = getNSPrefix(value);
-		xml = parent->InsertNewChildElement(ns? fmt::format("{}{}", ns, name).c_str() : name);
+		xml = parent->InsertNewChildElement(ns ? fmt::format("{}{}", ns, name).c_str() : name);
 	} else {
 		xml = parent->InsertNewChildElement(name);
 	}
