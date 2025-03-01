@@ -7,11 +7,11 @@
 #include "structures.hpp"
 #include "ews.hpp"
 
-namespace tinyxml2
-{class XMLElement;}
+namespace tinyxml2 {
+class XMLElement;
+}
 
-namespace gromox::EWS::Requests
-{
+namespace gromox::EWS::Requests {
 
 #define EWSFUNC(in) void process(gromox::EWS::Structures::in&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&)
 #define EWSFUNC_NC(in) void process(gromox::EWS::Structures::in&&, tinyxml2::XMLElement*, gromox::EWS::EWSContext&)

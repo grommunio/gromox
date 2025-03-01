@@ -7,8 +7,7 @@
 #include <string>
 #include <tinyxml2.h>
 
-namespace gromox::EWS::SOAP
-{
+namespace gromox::EWS::SOAP {
 
 static constexpr char NS_SOAP[] = "http://schemas.xmlsoap.org/soap/envelope/";
 static constexpr char NS_XSI[] = "http://www.w3.org/2001/XMLSchema-instance";

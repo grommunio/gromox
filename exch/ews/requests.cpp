@@ -18,8 +18,7 @@
 #include "exceptions.hpp"
 #include "requests.hpp"
 
-namespace gromox::EWS::Requests
-{
+namespace gromox::EWS::Requests {
 
 using std::optional;
 using std::string;
@@ -33,8 +32,7 @@ using namespace tinyxml2;
 ///////////////////////////////////////////////////////////////////////////////
 //Helper functions
 
-namespace
-{
+namespace {
 
 /**
  * @brief      Decode hex string
@@ -105,8 +103,7 @@ optional<string> readMessageBody(const std::string& path) try
 		return std::nullopt;
 	size_t totalLength = ifs.tellg();
 	ifs.seekg(std::ios::beg);
-	while(!ifs.eof())
-	{
+	while (!ifs.eof()) {
 		ifs.ignore(std::numeric_limits<std::streamsize>::max(), '\r');
 		if(ifs.get() == '\n' && ifs.get() == '\r' && ifs.get() == '\n')
 			break;
@@ -165,9 +162,9 @@ void process(mConvertIdRequest&& request, XMLElement* response, EWSContext& ctx)
 		if(!std::holds_alternative<tAlternateId>(sourceId))
 			throw EWSError::InternalServerError(E3251);
 		tAlternateId& aid = std::get<tAlternateId>(sourceId);
-		if(aid.Format == request.DestinationFormat)
+		if (aid.Format == request.DestinationFormat) {
 			data.ResponseMessages.emplace_back().AlternateId = std::move(aid);
-		else {
+		} else {
 			std::string dir = ctx.get_maildir(aid.Mailbox);
 			tBaseItemId id(sBase64Binary(aid.Format == Enum::HexEntryId? hexDecode(aid.Id) : base64_decode(aid.Id)),
 				           tBaseItemId::ID_GUESS);
@@ -248,8 +245,7 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 	bool sendMessages = request.MessageDisposition == Enum::SendOnly || request.MessageDisposition == Enum::SendAndSaveCopy;
 
 	data.ResponseMessages.reserve(request.Items.size());
-	for(sItem& item : request.Items) try
-	{
+	for (sItem& item : request.Items) try {
 		if(!hasAccess)
 			throw EWSError::AccessDenied(E3130);
 
@@ -334,8 +330,7 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 	data.ResponseMessages.reserve(request.ItemIds.size());
 	auto& exmdb = ctx.plugin().exmdb;
 
-	for(const tItemId& itemId : request.ItemIds) try
-	{
+	for (const tItemId &itemId : request.ItemIds) try {
 		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parent = ctx.resolveFolder(meid);
@@ -605,8 +600,7 @@ void process(mGetAttachmentRequest&& request, XMLElement* response, const EWSCon
 
 	mGetAttachmentResponse data;
 	data.ResponseMessages.reserve(request.AttachmentIds.size());
-	for(const tRequestAttachmentId& raid : request.AttachmentIds) try
-	{
+	for (const tRequestAttachmentId &raid : request.AttachmentIds) try {
 		sAttachmentId aid(raid.Id.data(), raid.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(aid);
 		std::string dir = ctx.getDir(parentFolder);
@@ -670,8 +664,7 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 
 	mGetFolderResponse data;
 	data.ResponseMessages.reserve(request.FolderIds.size());
-	for(auto& folderId : request.FolderIds) try
-	{
+	for (auto &folderId : request.FolderIds) try {
 		sFolderSpec folder;
 		folder = ctx.resolveFolder(folderId);
 		if(!folder.target)
@@ -735,8 +728,7 @@ void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSConte
 	mGetMailTipsResponse data;
 	data.ResponseMessages.reserve(request.Recipients.size());
 
-	for(auto& recipient : request.Recipients)
-	{
+	for (auto &recipient : request.Recipients) {
 		mMailTipsResponseMessageType& mailTipsResponseMessage = data.ResponseMessages.emplace_back();
 		tMailTips& mailTips = mailTipsResponseMessage.MailTips.emplace();
 		mailTips.RecipientAddress = std::move(recipient);
@@ -801,15 +793,13 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 
 	mGetUserAvailabilityResponse data;
 	data.FreeBusyResponseArray.emplace().reserve(request.MailboxDataArray.size());
-	for(const tMailboxData& MailboxData : request.MailboxDataArray) try
-	{
+	for (const tMailboxData& MailboxData : request.MailboxDataArray) try {
 		string maildir = ctx.get_maildir(MailboxData.Email);
 		auto start = clock::to_time_t(request.TimeZone->remove(TimeWindow.StartTime));
 		auto end   = clock::to_time_t(request.TimeZone->remove(TimeWindow.EndTime));
 		tFreeBusyView fbv(ctx.auth_info().username, maildir.c_str(), start, end);
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back(std::move(fbv));
-		for(auto& event : *fbr.FreeBusyView->CalendarEventArray)
-		{
+		for (auto &event : *fbr.FreeBusyView->CalendarEventArray) {
 			event.StartTime.offset = request.TimeZone->offset(event.StartTime.time);
 			event.EndTime.offset = request.TimeZone->offset(event.EndTime.time);
 		}
@@ -940,8 +930,7 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 			data.OofSettings->InternalReply.emplace(std::move(reply));
 		if((reply = readMessageBody(maildir+"/config/external-reply")))
 			data.OofSettings->ExternalReply.emplace(std::move(reply));
-	} else
-	{
+	} else {
 		data.OofSettings->OofState = "Disabled";
 		data.OofSettings->ExternalAudience = "None";
 	}
@@ -1162,8 +1151,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	std::string dir = ctx.getDir(folder.normalize());
 
 	mSyncFolderHierarchyResponse data;
-	if(!(ctx.permissions(dir, folder.folderId) & frightsVisible))
-	{
+	if (!(ctx.permissions(dir, folder.folderId) & frightsVisible)) {
 		data.ResponseMessages.emplace_back(EWSError::AccessDenied(E3137));
 		data.serialize(response);
 		return;
@@ -1228,8 +1216,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	std::string dir = ctx.getDir(folder.normalize());
 
 	mSyncFolderItemsResponse data;
-	if(!(ctx.permissions(dir, folder.folderId) & frightsReadAny))
-	{
+	if (!(ctx.permissions(dir, folder.folderId) & frightsReadAny)) {
 		data.ResponseMessages.emplace_back(EWSError::AccessDenied(E3138));
 		data.serialize(response);
 		return;
@@ -1298,17 +1285,16 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 		clipped = clipped || unread_mids.count - skip > maxItems;
 		for (auto mid : unread_mids)
 			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(templId.messageId(mid).serialize()), false});
-		if(!clipped)
-		{
+		if (!clipped) {
 			syncState.seen.clear();
 			syncState.read.clear();
 			if((last_cn && !syncState.seen.append_range(1, 1, rop_util_get_gc_value(last_cn))) ||
 			   (last_readcn && !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn))))
 				throw DispatchError(E3066);
 			syncState.readOffset = 0;
-		}
-		else
+		} else {
 			syncState.readOffset = readSynced + unread_mids.count - skip;
+		}
 		msg.SyncState = syncState.serialize();
 		msg.IncludesLastItemInRange = !clipped;
 		msg.success();
@@ -1349,8 +1335,9 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 		if(itemId.type == tItemId::ID_OCCURRENCE) {
 			sOccurrenceId oid(itemId.Id.data(), itemId.Id.size());
 			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid, oid.basedate, shape));
-		} else
+		} else {
 			msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
+		}
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
@@ -1494,10 +1481,9 @@ void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSCont
 			throw EWSError::AccessDenied(E3174);
 		sShape shape(change);
 		ctx.getNamedTags(dir, shape, true);
-		for(const auto& update : change.Updates) {
+		for (const auto &update : change.Updates)
 			if (std::holds_alternative<tSetFolderField>(update))
 				std::get<tSetFolderField>(update).put(shape);
-		}
 		TPROPVAL_ARRAY props = shape.write();
 		PROPTAG_ARRAY tagsRm = shape.remove();
 		PROBLEM_ARRAY problems;

@@ -8,8 +8,7 @@
 
 #include "exceptions.hpp"
 
-namespace gromox::EWS::Structures
-{
+namespace gromox::EWS::Structures {
 
 /**
  * @brief     String enum
@@ -17,9 +16,7 @@ namespace gromox::EWS::Structures
  * Throws when a non-template value or invalid index is assigned or used for
  * construction.
  */
-template<const char*... Cs>
-class StrEnum
-{
+template<const char *...Cs> class StrEnum {
 public:
 	using index_t = uint8_t; ///< Index type. Might be expanded if necessary, for now 255 values should be sufficient.
 
@@ -85,9 +82,7 @@ private:
 /**
  * @brief     Collection of XML enum types
  */
-struct Enum
-{
-
+struct Enum {
 	//String constants used in enums
 #define STR(NAME) static constexpr char NAME[] = #NAME
 	STR(Accept);

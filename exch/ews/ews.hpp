@@ -21,15 +21,14 @@
 #include "soaputil.hpp"
 #include "structures.hpp"
 
-namespace gromox::EWS::detail
-{
+namespace gromox::EWS::detail {
+
 /**
  * @brief     Generic deleter struct
  *
  * Provides explicit deleters for classes without destructor.
  */
-struct Cleaner
-{
+struct Cleaner {
 	void operator()(BINARY*);
 	void operator()(MESSAGE_CONTENT*);
 };
@@ -55,8 +54,7 @@ using ExmdbSubscriptionKey = std::pair<std::string, uint32_t>;
 using SubscriptionKey = uint32_t;
 using ContextWakeupKey = int;
 
-struct EmbeddedInstanceKey
-{
+struct EmbeddedInstanceKey {
 	std::string dir;
 	uint32_t aid;
 
@@ -66,17 +64,21 @@ struct EmbeddedInstanceKey
 
 } // namespace gromox::EWS::detail
 
-template<> struct std::hash<gromox::EWS::detail::AttachmentInstanceKey>
-{size_t operator()(const gromox::EWS::detail::AttachmentInstanceKey&) const noexcept;};
+template<> struct std::hash<gromox::EWS::detail::AttachmentInstanceKey> {
+	size_t operator()(const gromox::EWS::detail::AttachmentInstanceKey &) const noexcept;
+};
 
-template<> struct std::hash<gromox::EWS::detail::ExmdbSubscriptionKey>
-{size_t operator()(const gromox::EWS::detail::ExmdbSubscriptionKey&) const noexcept;};
+template<> struct std::hash<gromox::EWS::detail::ExmdbSubscriptionKey> {
+	size_t operator()(const gromox::EWS::detail::ExmdbSubscriptionKey &) const noexcept;
+};
 
-template<> struct std::hash<gromox::EWS::detail::MessageInstanceKey>
-{size_t operator()(const gromox::EWS::detail::MessageInstanceKey&) const noexcept;};
+template<> struct std::hash<gromox::EWS::detail::MessageInstanceKey> {
+	size_t operator()(const gromox::EWS::detail::MessageInstanceKey &) const noexcept;
+};
 
-template<> struct std::hash<gromox::EWS::detail::EmbeddedInstanceKey>
-{size_t operator()(const gromox::EWS::detail::EmbeddedInstanceKey&) const noexcept;};
+template<> struct std::hash<gromox::EWS::detail::EmbeddedInstanceKey> {
+	size_t operator()(const gromox::EWS::detail::EmbeddedInstanceKey &) const noexcept;
+};
 
 namespace gromox::EWS {
 
@@ -176,8 +178,7 @@ private:
 
 	struct DebugCtx;
 
-	struct WakeupNotify
-	{
+	struct WakeupNotify {
 		inline explicit WakeupNotify(int id) : ID(id) {}
 		int ID;
 		~WakeupNotify();
@@ -309,8 +310,7 @@ private:
 	const void* getFolderProp(const std::string&, uint64_t, uint32_t) const;
 	const void* getItemProp(const std::string&, uint64_t, uint32_t) const;
 
-	struct NotificationContext
-	{
+	struct NotificationContext {
 		enum State : uint8_t {
 			S_INIT, ///< Just initalized, flush data and wait
 			S_SLEEP, ///< Waiting for next wakeup
@@ -368,7 +368,9 @@ private:
  */
 template<typename T>
 const T* EWSContext::getFolderProp(const std::string& dir, uint64_t mid, uint32_t tag) const
-{return static_cast<const T*>(getFolderProp(dir, mid, tag));}
+{
+	return static_cast<const T *>(getFolderProp(dir, mid, tag));
+}
 
 /**
  * @brief      Get single item property
@@ -383,7 +385,9 @@ const T* EWSContext::getFolderProp(const std::string& dir, uint64_t mid, uint32_
  */
 template<typename T>
 const T* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32_t tag) const
-{return static_cast<const T*>(getItemProp(dir, mid, tag));}
+{
+	return static_cast<const T*>(getItemProp(dir, mid, tag));
+}
 
 /**
  * @brief      Throwing convenience wrapper for alloc

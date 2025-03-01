@@ -23,8 +23,8 @@
 #include "exceptions.hpp"
 #include "structures.hpp"
 
-namespace gromox::EWS::Serialization
-{
+namespace gromox::EWS::Serialization {
+
 using SetterFunc = const std::function<void(const char*)>&;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -56,16 +56,14 @@ static constexpr uint8_t EC_IMP_OUT = 0x4U; ///< Can be exported implicitely by 
  *
  * @tparam     T     Type to convert
  */
-template<typename T>
-struct ExplicitConvert
-{static constexpr uint8_t value = 0;};
+template<typename T> struct ExplicitConvert {
+	static constexpr uint8_t value = 0;
+};
 
 /**
  * @brief      Conversion specialization for boolean
  */
-template<>
-struct ExplicitConvert<bool>
-{
+template<> struct ExplicitConvert<bool> {
 	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
 
 	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, bool& value)
@@ -78,9 +76,7 @@ struct ExplicitConvert<bool>
 /**
  * @brief      Conversion specialization for integer
  */
-template<>
-struct ExplicitConvert<int32_t>
-{
+template<> struct ExplicitConvert<int32_t> {
 	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
 
 	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, int32_t& value)
@@ -93,9 +89,7 @@ struct ExplicitConvert<int32_t>
 /**
  * @brief      Conversion specialization for unsigned integer
  */
-template<>
-struct ExplicitConvert<uint32_t>
-{
+template<> struct ExplicitConvert<uint32_t> {
 	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
 
 	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, uint32_t& value)
@@ -108,9 +102,7 @@ struct ExplicitConvert<uint32_t>
 /**
  * @brief      Conversion specialization for unsigned long integer
  */
-template<>
-struct ExplicitConvert<uint64_t>
-{
+template<> struct ExplicitConvert<uint64_t> {
 	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
 
 	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, uint64_t& value)
@@ -123,9 +115,7 @@ struct ExplicitConvert<uint64_t>
 /**
  * @brief      Conversion specialization for std::string
  */
-template<>
-struct ExplicitConvert<std::string>
-{
+template<> struct ExplicitConvert<std::string> {
 	static constexpr uint8_t value = EC_IN | EC_OUT;
 
 	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement *xml, std::string &value)
@@ -151,16 +141,14 @@ struct ExplicitConvert<std::string>
 /**
  * @brief      Conversion specialization for sString (same as std::string)
  */
-template<>
-struct ExplicitConvert<Structures::sString> : public ExplicitConvert<std::string>
-{};
+template<> struct ExplicitConvert<Structures::sString> :
+    public ExplicitConvert<std::string> {
+};
 
 /**
  * @brief      Conversion specialization for timestamps
  */
-template<>
-struct ExplicitConvert<EWS::time_point>
-{
+template<> struct ExplicitConvert<EWS::time_point> {
 	static constexpr uint8_t value = EC_IN | EC_OUT;
 
 	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement *, EWS::time_point &);
@@ -181,8 +169,7 @@ struct ExplicitConvert<EWS::time_point>
  * @brief      Conversion specialization for StrEnum
  */
 template<const char*... Cs>
-struct ExplicitConvert<gromox::EWS::Structures::StrEnum<Cs...>>
-{
+struct ExplicitConvert<gromox::EWS::Structures::StrEnum<Cs...>> {
 	using T = gromox::EWS::Structures::StrEnum<Cs...>;
 
 	static constexpr uint8_t value = EC_IN | EC_OUT;
@@ -213,9 +200,7 @@ struct ExplicitConvert<gromox::EWS::Structures::StrEnum<Cs...>>
 /**
  * @brief      Conversion specialization for float
  */
-template<>
-struct ExplicitConvert<double>
-{
+template<> struct ExplicitConvert<double> {
 	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
 
 	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, double& value)
@@ -274,9 +259,7 @@ template<typename... Ts> struct BaseType<std::variant<Ts...>> {
 	static constexpr Container container = VARIANT;
 };
 
-
-template<typename T>
-using BaseType_t = typename BaseType<T>::type;
+template<typename T> using BaseType_t = typename BaseType<T>::type;
 
 ///////////////////////////////////////////////////////////////////////////////
 //Name retrieval
@@ -284,9 +267,7 @@ using BaseType_t = typename BaseType<T>::type;
 /**
  * @brief      Check if the type has a `NAME` member
  */
-template<typename T>
-struct HasName
-{
+template<typename T> struct HasName {
 	template<typename C> static uint8_t test(decltype(C::NAME));
 	template<typename C> static uint16_t test(...);
 
@@ -380,7 +361,9 @@ static constexpr const char* getNSPrefix(const T&val)
  */
 template<typename T>
 constexpr bool explicit_convert(uint8_t dir)
-{return ExplicitConvert<BaseType_t<T>>::value & dir;}
+{
+	return ExplicitConvert<BaseType_t<T>>::value & dir;
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -401,7 +384,9 @@ template<typename T> static T fromXMLNodeDispatch(const tinyxml2::XMLElement*);
  */
 template<typename T, std::enable_if_t<!explicit_convert<T>(EC_IN), bool> = true>
 static T fromXMLNode(const tinyxml2::XMLElement* child)
-{return T(child);}
+{
+	return T(child);
+}
 
 /**
  * @brief      Deserialize type from XMLElement
@@ -488,10 +473,9 @@ template<typename T, size_t I=0>
 static T fromXMLNodeVariant(const tinyxml2::XMLElement* child)
 {
 	using namespace std::string_literals;
-	if constexpr(I >= std::variant_size_v<T>)
+	if constexpr (I >= std::variant_size_v<T>) {
 		throw Exceptions::DeserializationError(Exceptions::E3045(child->Name()));
-	else
-	{
+	} else {
 		using Contained = std::variant_alternative_t<I, T>;
 		const char* tname = getName<Contained>();
 		if(tname == nullptr || !strcmp(tname, child->Name()))
@@ -517,9 +501,9 @@ static T fromXMLNodeVariant(const tinyxml2::XMLElement* child)
 template<typename T, size_t I=0>
 T fromXMLNodeVariantFind(const tinyxml2::XMLElement* parent)
 {
-	if constexpr(I >= std::variant_size_v<T>)
+	if constexpr (I >= std::variant_size_v<T>) {
 		throw Exceptions::DeserializationError(Exceptions::E3098);
-	else {
+	} else {
 		using Contained = std::variant_alternative_t<I, T>;
 		const char* tname = getName<Contained>();
 		const tinyxml2::XMLElement* child;
@@ -596,22 +580,20 @@ static T fromXMLAttr(const tinyxml2::XMLElement* xml, const char* name)
 	using namespace std::string_literals;
 	using gromox::EWS::Exceptions::DeserializationError;
 	const tinyxml2::XMLAttribute* attr = xml->FindAttribute(name);
-	if(!attr)
-	{
+	if (!attr) {
 		if constexpr(BaseType<T>::container == OPTIONAL)
 		    return std::nullopt;
 		throw DeserializationError(Exceptions::E3047(name, xml->Name()));
 	}
-	if constexpr(explicit_convert<T>(EC_IN))
-	{
+	if constexpr (explicit_convert<T>(EC_IN)) {
 		BaseType_t<T> val;
 		tinyxml2::XMLError err = ExplicitConvert<BaseType_t<T>>::deserialize(attr, val);
 		if(err == tinyxml2::XML_WRONG_ATTRIBUTE_TYPE)
 			throw DeserializationError(Exceptions::E3048(name, attr->Value(), xml->Name(), typeid(BaseType_t<T>).name()));
 		return val;
-	}
-	else
+	} else {
 		return BaseType_t<T>(attr);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -662,8 +644,7 @@ template<typename T>
 static void toXMLNodeList(tinyxml2::XMLElement* xml, const T& value)
 {
 	using BT = BaseType_t<T>;
-	for(const BT& element : value)
-	{
+	for (const BT &element : value) {
 		const char* name = getName(element, "x");
 		const char* ns = getNSPrefix(element);
 		if(ns)
@@ -724,14 +705,13 @@ static tinyxml2::XMLElement* toXMLNode(tinyxml2::XMLElement* parent, const char*
 		if(!value)
 			return nullptr;
 	tinyxml2::XMLElement* xml;
-	if constexpr(BaseType<T>::container == VARIANT)
-	{
+	if constexpr (BaseType<T>::container == VARIANT){
 		name = getName(value, name);
 		const char* ns = getNSPrefix(value);
 		xml = parent->InsertNewChildElement(ns? fmt::format("{}{}", ns, name).c_str() : name);
-	}
-	else
+	} else {
 		xml = parent->InsertNewChildElement(name);
+	}
 	toXMLNodeDispatch(xml, value);
 	return xml;
 }
@@ -749,25 +729,22 @@ template<typename T>
 static void toXMLAttr(tinyxml2::XMLElement* parent, const char* name, const T& value)
 {
 	static_assert(BaseType<T>::container != LIST, "Cannot store list in attribute");
-	if constexpr(BaseType<T>::container == OPTIONAL)
-	{
+	if constexpr (BaseType<T>::container == OPTIONAL) {
 		if(!value)
 			return;
 		return toXMLAttr(parent, name, *value);
-	}
-	else if constexpr(explicit_convert<T>(EC_OUT))
-	{
+	} else if constexpr (explicit_convert<T>(EC_OUT)) {
 		const BaseType_t<T>* pvalue;
 		if constexpr(BaseType<T>::container == OPTIONAL)
 			pvalue = &value.value();
 		else
 			pvalue = &value;
 		ExplicitConvert<BaseType_t<T>>::serialize(*pvalue, [parent, name](const char* data){parent->SetAttribute(name, data);});
-	}
-	else if constexpr(explicit_convert<T>(EC_IMP_OUT))
+	} else if constexpr(explicit_convert<T>(EC_IMP_OUT)) {
 		parent->SetAttribute(name, value);
-	else
+	} else {
 		parent->SetAttribute(name, value.serialize().c_str());
+	}
 }
 
 }

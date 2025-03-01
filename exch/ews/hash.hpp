@@ -14,8 +14,7 @@
  * Shoult *not* be used as a drop-in replacement for std::hash
  * with standard library types.
  */
-struct FNV
-{
+struct FNV {
 	private:
 	/**
 	 * @brief      Update hash

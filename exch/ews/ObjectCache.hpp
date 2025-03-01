@@ -10,9 +10,7 @@
 #include <thread>
 #include <unordered_map>
 
-namespace gromox::EWS
-{
-
+namespace gromox::EWS {
 
 /**
  * @brief      Timed object cache
@@ -26,9 +24,7 @@ namespace gromox::EWS
  * @tparam     Key     Key type
  * @tparam     Object  Object type
  */
-template<class Key, class Object>
-class ObjectCache
-{
+template<class Key, class Object> class ObjectCache {
 public:
 	using clock_t = std::chrono::steady_clock;
 
@@ -44,8 +40,7 @@ public:
 	void evict(const Key&);
 
 private:
-	struct Container
-	{
+	struct Container {
 		template<typename... Args>
 		Container(clock_t::time_point, Args&&...);
 
@@ -62,7 +57,6 @@ private:
 
 	void scan();
 	void periodicScan(std::chrono::milliseconds);
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -84,7 +78,9 @@ ObjectCache<Key, Object>::Container::Container(clock_t::time_point exp, Args&&..
  */
 template<class Key, class Object>
 ObjectCache<Key, Object>::~ObjectCache()
-{stop();}
+{
+	stop();
+}
 
 /**
  * @brief      Start clean up thread
@@ -210,8 +206,7 @@ void ObjectCache<Key, Object>::periodicScan(std::chrono::milliseconds sleepTime)
 {
 	std::mutex notifyLock;
 	std::unique_lock notifyGuard(notifyLock);
-	while (running)
-	{
+	while (running) {
 		scan();
 		notify.wait_for(notifyGuard, std::chrono::milliseconds(sleepTime));
 	}

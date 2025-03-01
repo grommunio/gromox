@@ -16,8 +16,7 @@ using namespace tinyxml2;
 
 using gromox::EWS::Exceptions::SOAPError;
 
-namespace gromox::EWS::SOAP
-{
+namespace gromox::EWS::SOAP {
 
 /**
  * @brief      Generate empty SOAP Envelope

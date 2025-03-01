@@ -28,8 +28,7 @@
 
 DECLARE_HPM_API(gromox::EWS, );
 
-namespace gromox::EWS::Exceptions
-{
+namespace gromox::EWS::Exceptions {
 
 /**
  * @brief      Initialize EWSError
@@ -48,8 +47,7 @@ using namespace tinyxml2;
 
 using Exceptions::DispatchError;
 
-namespace
-{
+namespace {
 
 /**
  * @brief     Convert replica ID to replica GUID
@@ -132,8 +130,7 @@ void writecontent(int ctx_id, const std::string_view& data, bool log, gx_logleve
  * Will only be present if explicitely requested by the
  * `ews_debug` configuration directive.
  */
-struct EWSPlugin::DebugCtx
-{
+struct EWSPlugin::DebugCtx {
 	static constexpr uint8_t FL_LOCK = 1 << 0;
 	static constexpr uint8_t FL_RATELIMIT = 1 << 1;
 	static constexpr uint8_t FL_LOOP_DETECT = 1 << 2;
@@ -164,28 +161,25 @@ EWSPlugin::DebugCtx::DebugCtx(const std::string_view& opts)
 {
 	size_t start = 0;
 	for (size_t end = opts.find(',', start); start != opts.npos;
-	     end = opts.find(',', start))
-	{
+	     end = opts.find(',', start)) {
 		std::string_view opt = opts.substr(start, end - start);
 		start = end + (end != std::string_view::npos);
-		if(opt == "sequential")
+		if (opt == "sequential") {
 			flags |= FL_LOCK;
-		else if(opt.substr(0, 11) == "rate_limit=")
-		{
+		} else if (opt.substr(0, 11) == "rate_limit=") {
 			unsigned long rateLimit = static_cast<uint32_t>(std::stoul(std::string(opt.substr(11))));
-			if(rateLimit)
-			{
+			if (rateLimit) {
 				flags |= FL_RATELIMIT | FL_LOCK;
 				minRequestTime = std::chrono::nanoseconds(1000000000/rateLimit);
 			}
-		} else if(opt == "loop_detect")
+		} else if (opt == "loop_detect") {
 			flags |= FL_LOOP_DETECT;
-		else if(opt.substr(0, 12) == "loop_detect=") {
+		} else if (opt.substr(0, 12) == "loop_detect=") {
 			flags |= FL_LOOP_DETECT;
 			loopThreshold = static_cast<uint32_t>(std::stoul(std::string(opt.substr(12))));
-		}
-		else
+		} else {
 			mlog(LV_WARN, "[ews] Ignoring unknown debug directive '%s'", std::string(opt).c_str());
+		}
 	}
 }
 
@@ -205,7 +199,9 @@ bool EWSPlugin::_exmdb::get_message_property(const char *dir, const char *userna
 
 
 void* EWSContext::alloc(size_t count)
-{return ndr_stack_alloc(NDR_STACK_IN, count);}
+{
+	return ndr_stack_alloc(NDR_STACK_IN, count);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -222,13 +218,14 @@ void* EWSContext::alloc(size_t count)
  */
 template<typename T>
 static void process(const XMLElement* request, XMLElement* response, EWSContext& context)
-{Requests::process(T(request), response, context);}
+{
+	Requests::process(T(request), response, context);
+}
 
 /**
  * Mapping of request names to handler functions.
  */
-const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap =
-{
+const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap = {
 	{"ConvertId", process<Structures::mConvertIdRequest>},
 	{"CopyFolder", process<Structures::mCopyFolderRequest>},
 	{"CopyItem", process<Structures::mCopyItemRequest>},
@@ -329,12 +326,10 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 	if(ctx_id < 0 || static_cast<size_t>(ctx_id) >= contexts.size())
 		return fault(ctx_id, http_status::server_error, "Invalid context ID");
 	std::unique_lock<std::mutex> lockProxy;
-	if(debug)
-	{
+	if (debug) {
 		if(debug->flags & DebugCtx::FL_LOCK)
 			lockProxy = std::unique_lock<std::mutex>(debug->requestLock);
-		if(debug->flags & DebugCtx::FL_RATELIMIT)
-		{
+		if (debug->flags & DebugCtx::FL_RATELIMIT) {
 			auto now = tp_now();
 			std::this_thread::sleep_for(debug->last - now + debug->minRequestTime);
 			debug->last = now;
@@ -378,8 +373,7 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 		if(response_logging && enableLog)
 			mlog(LV_WARN, "[ews#%d]%s Done, code 500: unknown request '%s'", ctx_id, timestamp().c_str(), request->Name());
 		return fault(ctx_id, http_status::server_error, SOAP::Envelope::fault("SOAP:Server", msg.c_str()));
-	}
-	else try {
+	} else try {
 		handler->second(request, responseContainer, context);
 	} catch (const Exceptions::UnknownRequestError &err) {
 		if ((request_logging || response_logging) && enableLog)
@@ -410,7 +404,9 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
  * @return    true if logging is enabled, false otherwise
  */
 bool EWSPlugin::logEnabled(const std::string_view& requestName) const
-{return std::binary_search(logFilters.begin(), logFilters.end(), requestName) != invertFilter;}
+{
+	return std::binary_search(logFilters.begin(), logFilters.end(), requestName) != invertFilter;
+}
 
 EWSPlugin::EWSPlugin()
 {
@@ -421,7 +417,9 @@ EWSPlugin::EWSPlugin()
 }
 
 EWSPlugin::~EWSPlugin()
-{teardown = true;}
+{
+	teardown = true;
+}
 
 EWSPlugin::_exmdb::_exmdb()
 {
@@ -485,8 +483,7 @@ void EWSPlugin::loadConfig()
 	sscanf(str, "%hu.%hu.%hu.%hu", &ver.server[0], &ver.server[1], &ver.server[2], &ver.server[3]);
 
 	auto cfg = config_file_initd("exmdb_provider.cfg", get_config_path(), x500_defaults);
-	if(!cfg)
-	{
+	if (!cfg) {
 		mlog(LV_INFO, "[ews]: Failed to load config file");
 		return;
 	}
@@ -529,8 +526,7 @@ void EWSPlugin::loadConfig()
 	}
 
 	const char* logFilter = cfg->get_value("ews_log_filter");
-	if(logFilter && strlen(logFilter))
-	{
+	if (logFilter && strlen(logFilter)) {
 		invertFilter = *logFilter == '!';
 		logFilter += invertFilter;
 		for (const char *sep = strchr(logFilter, ','); sep != nullptr;
@@ -680,8 +676,7 @@ int EWSContext::notify()
 			notification.MoreEvents = more;
 			if(notification.events.empty())
 				notification.events.emplace_back(aStatusEvent());
-		}
-		catch(...) {
+		} catch (...) {
 			msg.ErrorSubscriptionIds.emplace_back(subscription);
 		}
 	}
@@ -755,7 +750,9 @@ EWSPlugin::ExmdbInstance::ExmdbInstance(const EWSPlugin& p, const std::string& d
  * @brief     Unload instance
  */
 EWSPlugin::ExmdbInstance::~ExmdbInstance()
-{plugin.exmdb.unload_instance(dir.c_str(), instanceId);}
+{
+	plugin.exmdb.unload_instance(dir.c_str(), instanceId);
+}
 
 /**
  * @brief      Initialize subscription object
@@ -815,8 +812,7 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 		       rop_util_make_eid_ex(1, fid),
 		       rop_util_make_eid_ex(1, mid)).serialize());
 	};
-	switch(notification->type)
-	{
+	switch (notification->type) {
 	case db_notify_type::new_mail: {
 		const DB_NOTIFY_NEW_MAIL* evt = static_cast<DB_NOTIFY_NEW_MAIL*>(notification->pdata);
 		mgr->events.emplace_back(aNewMailEvent(now, mkMid(evt->folder_id, evt->message_id), mkFid(evt->folder_id)));
@@ -885,8 +881,10 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 		// Reschedule next wakeup 0.1 seconds. Should be enough to gather related events.
 		// Is still bound to the ObjectCache cleanup cycle and might take significantly longer than that.
 		cache.get(*mgr->waitingContext, std::chrono::milliseconds(100));
-} catch(const std::exception& err)
-{mlog(LV_ERR, "[ews#evt] %s:Failed to process notification: %s", err.what(), timestamp().c_str());}
+} catch (const std::exception &err) {
+	mlog(LV_ERR, "[ews#evt] %s: Failed to process notification: %s",
+		err.what(), timestamp().c_str());
+}
 
 /**
  * @brief      Load message instance
@@ -1099,7 +1097,9 @@ void EWSPlugin::unsubscribe(const detail::ExmdbSubscriptionKey& key) const
  * @param     timeout  Time until wake up
  */
 void EWSPlugin::wakeContext(int ID, std::chrono::milliseconds timeout) const
-{cache.emplace(timeout, ID, std::make_shared<WakeupNotify>(ID));}
+{
+	cache.emplace(timeout, ID, std::make_shared<WakeupNotify>(ID));
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Util
@@ -1173,16 +1173,26 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadEmbeddedInstance(const 
 
 template<>
 inline uint64_t FNV::operator()(const std::string& str) noexcept
-{return operator()(str.data(), str.size());}
+{
+	return operator()(str.data(), str.size());
+}
 
 size_t std::hash<detail::AttachmentInstanceKey>::operator()(const detail::AttachmentInstanceKey& key) const noexcept
-{return FNV(key.dir, key.mid, key.aid).value;}
+{
+	return FNV(key.dir, key.mid, key.aid).value;
+}
 
 size_t std::hash<detail::MessageInstanceKey>::operator()(const detail::MessageInstanceKey& key) const noexcept
-{return FNV(key.dir, key.mid).value;}
+{
+	return FNV(key.dir, key.mid).value;
+}
 
 size_t std::hash<detail::ExmdbSubscriptionKey>::operator()(const detail::ExmdbSubscriptionKey& key) const noexcept
-{return FNV(key.first, key.second).value;}
+{
+	return FNV(key.first, key.second).value;
+}
 
 size_t std::hash<detail::EmbeddedInstanceKey>::operator()(const detail::EmbeddedInstanceKey& key) const noexcept
-{return FNV(key.dir, key.aid).value;}
+{
+	return FNV(key.dir, key.aid).value;
+}
