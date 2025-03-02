@@ -76,6 +76,13 @@ enum GP_RESULT { GP_ADV, GP_UNHANDLED, GP_SKIP, GP_ERR };
 
 }
 
+/*
+ * The Exchange SDK's C API "struct ENTRYID" is 4 bytes. OL2019 seems to be
+ * fine with just 1-byte blobs, but if not, raise this to 20 bytes (4 for the
+ * flags, 16 for the provider GUID).
+ */
+static constexpr uint8_t empty_entryid[20]{};
+
 static unsigned int g_max_msg, g_cid_use_xxhash = 1;
 static thread_local prepared_statements *g_opt_key;
 static std::atomic<unsigned int> g_sequence_id;
@@ -2066,6 +2073,15 @@ static GP_RESULT gp_msgprop_synth(uint64_t msgid, uint32_t proptag,
 static GP_RESULT gp_rcptprop_synth(uint32_t proptag, TAGGED_PROPVAL &pv)
 {
 	switch (proptag) {
+	case PR_ENTRYID: {
+		auto bin = cu_alloc<BINARY>();
+		pv.pvalue = bin;
+		if (bin == nullptr)
+			return GP_ERR;
+		bin->cb = std::size(empty_entryid);
+		bin->pv = deconst(empty_entryid);
+		return GP_ADV;
+	}
 	case PR_RECIPIENT_TYPE: {
 		auto v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
@@ -2150,6 +2166,12 @@ static GP_RESULT cu_get_properties1(mapi_object_type table_type, uint64_t id,
 	if (pvalue == nullptr)
 		return ret;
 
+	/* Fix up property values */
+	auto bin = static_cast<BINARY *>(pvalue);
+	if (tag == PR_ENTRYID && bin->cb == 0) {
+		bin->cb = std::size(empty_entryid);
+		bin->pv = deconst(empty_entryid);
+	}
 	ppropvals->emplace_back(tag, pvalue);
 	return GP_SKIP; /* emplace_back already did the GP_ADV part */
 }
