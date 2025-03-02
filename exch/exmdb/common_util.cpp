@@ -543,10 +543,6 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 		PR_DISPLAY_CC, PR_DISPLAY_BCC, PR_MESSAGE_CLASS,
 	};
 	static constexpr uint32_t rcpt_tags[] = {
-		/*
-		 * We could also synthesize PR_OBJECT_TYPE, PR_DISPLAY_TYPE,
-		 * though their presence seems to be not strictly necessary.
-		 */
 		PR_RECIPIENT_TYPE, PR_DISPLAY_NAME, PR_ADDRTYPE, PR_EMAIL_ADDRESS,
 	};
 	BOOL b_subject;
@@ -614,11 +610,6 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 	pstmt.finalize();
 	std::sort(tags.begin(), tags.end());
 	tags.erase(coalesce_propid(tags.begin(), tags.end()), tags.end());
-	if (table_type == MAPI_MAILUSER) {
-		auto i = std::find(tags.begin(), tags.end(), PR_ENTRYID);
-		if (i != tags.end())
-			tags.erase(i);
-	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2135: ENOMEM");
