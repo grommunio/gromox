@@ -1945,9 +1945,11 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		if (!common_util_get_message_flags(db, id, false,
 		    reinterpret_cast<uint32_t **>(&pv.pvalue)))
 			return GP_ERR;
+		if (pv.pvalue == nullptr)
+			return GP_SKIP;
 		if (exmdb_pf_read_states == 0 && !exmdb_server::is_private())
 			*static_cast<uint32_t *>(pv.pvalue) |= MSGFLAG_READ;
-		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
+		return GP_ADV;
 	case PR_SUBJECT:
 	case PR_SUBJECT_A:
 		if (!common_util_get_message_subject(db, cpid, id, tag, &pv.pvalue))
