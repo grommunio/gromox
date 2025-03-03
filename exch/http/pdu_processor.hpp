@@ -42,8 +42,8 @@ struct PROC_PLUGIN : public gromox::generic_module {
 };
 
 /* virtual connection to DCE RPC server, actually only data structure of context */
-struct PDU_PROCESSOR {
-	~PDU_PROCESSOR();
+struct pdu_processor {
+	~pdu_processor();
 
 	int async_num = 0;
 	uint32_t assoc_group_id = 0; /* we do not support association mechanism */
@@ -51,6 +51,7 @@ struct PDU_PROCESSOR {
 	DCERPC_ENDPOINT *pendpoint = nullptr;
 	DOUBLE_LIST context_list{}, auth_list{}, fragmented_list{};
 };
+using PDU_PROCESSOR = pdu_processor;
 
 struct DCERPC_AUTH_CONTEXT {
 	DOUBLE_LIST_NODE node{};

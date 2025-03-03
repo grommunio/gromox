@@ -48,6 +48,19 @@ enum class hchannel_type {
 };
 
 struct fastcgi_context;
+struct http_context;
+
+struct virtual_connection {
+	virtual_connection() = default;
+	~virtual_connection();
+
+	std::mutex lock;
+	bool locked = false;
+	std::unique_ptr<pdu_processor> pprocessor;
+	http_context *pcontext_in = nullptr, *pcontext_insucc = nullptr;
+	http_context *pcontext_out = nullptr, *pcontext_outsucc = nullptr;
+};
+using VIRTUAL_CONNECTION = virtual_connection;
 
 struct rpc_channel {
 	rpc_channel();
@@ -60,6 +73,7 @@ struct rpc_channel {
 	std::atomic<uint32_t> available_window{0};
 	uint16_t frag_length = 0;
 	char channel_cookie[GUIDSTR_SIZE]{}, connection_cookie[GUIDSTR_SIZE]{};
+	std::shared_ptr<virtual_connection> vc;
 };
 
 /**

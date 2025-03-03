@@ -81,21 +81,6 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-namespace {
-struct VIRTUAL_CONNECTION {
-	VIRTUAL_CONNECTION() = default;
-	~VIRTUAL_CONNECTION();
-	NOMOVE(VIRTUAL_CONNECTION);
-
-	std::atomic<int> reference{0};
-	std::mutex lock;
-	bool locked = false;
-	std::unique_ptr<PDU_PROCESSOR> pprocessor;
-	HTTP_CONTEXT *pcontext_in = nullptr, *pcontext_insucc = nullptr;
-	HTTP_CONTEXT *pcontext_out = nullptr, *pcontext_outsucc = nullptr;
-};
-}
-
 enum {
 	M_UNSPECIFIED_CONN, M_UNENCRYPTED_CONN, M_TLS_CONN,
 };
@@ -160,25 +145,26 @@ struct http_parser {
 	std::string g_certificate_path, g_private_key_path, g_certificate_passwd;
 	std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 	std::mutex g_vconnection_lock; /* protects g_vconnection_hash */
-	std::unordered_map<std::string, VIRTUAL_CONNECTION> g_vconnection_hash;
+	std::unordered_map<std::string, std::shared_ptr<virtual_connection>> g_vconnection_hash;
 	std::string gss_helper_program;
 };
 
+/* A wrapper for exclusive access to a virtual_connection. */
 class VCONN_REF {
 	public:
 	VCONN_REF() = default;
-	explicit VCONN_REF(VIRTUAL_CONNECTION *p, decltype(http_parser::g_vconnection_hash)::iterator i) :
-		pvconnection(p), m_hold(p->lock), m_iter(std::move(i)) {}
+	explicit VCONN_REF(std::shared_ptr<virtual_connection> p) :
+		pvconnection(std::move(p)), m_hold(pvconnection->lock)
+	{}
 	~VCONN_REF() { put(); }
 	NOMOVE(VCONN_REF);
 	bool operator==(std::nullptr_t) const { return pvconnection == nullptr; }
 	void put();
-	VIRTUAL_CONNECTION *operator->() { return pvconnection; }
+	auto operator->() { return pvconnection.operator->(); }
 
 	private:
-	VIRTUAL_CONNECTION *pvconnection = nullptr;
-	std::unique_lock<std::mutex> m_hold;
-	decltype(http_parser::g_vconnection_hash)::iterator m_iter;
+	std::shared_ptr<virtual_connection> pvconnection;
+	std::optional<std::lock_guard<std::mutex>> m_hold;
 };
 
 }
@@ -271,7 +257,7 @@ static void http_parser_ssl_id(CRYPTO_THREADID* id)
 }
 #endif
 
-VIRTUAL_CONNECTION::~VIRTUAL_CONNECTION()
+virtual_connection::~virtual_connection()
 {
 	if (pprocessor != nullptr)
 		pdu_processor_destroy(std::move(pprocessor));
@@ -395,38 +381,22 @@ time_point http_parser_get_context_timestamp(const schedule_context *ctx)
 VCONN_REF http_parser::get_vconnection(const char *host,
     int port, const char *conn_cookie)
 {
+	std::shared_ptr<virtual_connection> vc;
 	char tmp_buff[384];
-	VIRTUAL_CONNECTION *pvconnection = nullptr;
 	
 	snprintf(tmp_buff, std::size(tmp_buff), "%s:%d:%s", conn_cookie, port, host);
 	HX_strlower(tmp_buff);
 	std::unique_lock vhold(g_vconnection_lock);
 	auto it = g_vconnection_hash.find(tmp_buff);
 	if (it != g_vconnection_hash.end())
-		pvconnection = &it->second;
-	if (pvconnection != nullptr)
-		pvconnection->reference ++;
-	vhold.unlock();
-	if (pvconnection == nullptr)
-		return {};
-	return VCONN_REF(pvconnection, it);
+		return VCONN_REF(it->second);
+	return {};
 }
 
 void VCONN_REF::put()
 {
-	if (pvconnection == nullptr)
-		return;
-	m_hold.unlock();
-	std::unique_lock vc_hold(g_parser->g_vconnection_lock);
-	pvconnection->reference --;
-	if (pvconnection->reference == 0 &&
-	    pvconnection->pcontext_in == nullptr &&
-	    pvconnection->pcontext_out == nullptr) {
-		auto nd = g_parser->g_vconnection_hash.extract(m_iter);
-		vc_hold.unlock();
-		/* end locked region before running ~nd (~VCONN_REF, pdu_processor_destroy) */
-	}
-	pvconnection = nullptr;
+	pvconnection.reset();
+	m_hold.reset();
 }
 
 static char *
@@ -2438,7 +2408,7 @@ bool http_parser_get_password(const char *username, char *password)
 	return true;
 }
 
-BOOL http_context::try_create_vconnection()
+BOOL http_context::try_create_vconnection() try
 {
 	auto pcontext = this;
 	if (channel_type != hchannel_type::in && channel_type != hchannel_type::out)
@@ -2458,41 +2428,35 @@ BOOL http_context::try_create_vconnection()
 		return TRUE;
 	}
 
-	std::unique_lock vc_hold(g_parser->g_vconnection_lock);
-	if (g_parser->g_vconnection_hash.size() >= g_parser->g_context_num + 1) {
-		pcontext->log(LV_DEBUG, "W-1293: vconn hash full");
-		return false;
-	}
-	decltype(g_parser->g_vconnection_hash.try_emplace(""s)) xp;
-	try {
-		auto hash_key = conn_cookie + ":"s +
-				std::to_string(pcontext->port) + ":" +
-				pcontext->host;
-		HX_strlower(hash_key.data());
-		xp = g_parser->g_vconnection_hash.try_emplace(std::move(hash_key));
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1292: ENOMEM");
-		return false;
-	}
-	if (!xp.second) {
-		pcontext->log(LV_DEBUG, "W-1291: vconn suddenly started existing");
-		goto RETRY_QUERY;
-	}
-	auto nc = &xp.first->second;
-	nc->pprocessor = pdu_processor_create(pcontext->host, pcontext->port);
+	auto hash_key = conn_cookie + ":"s + std::to_string(port) + ":" + host;
+	HX_strlower(hash_key.data());
+	auto nc = std::make_shared<virtual_connection>();
+	nc->pprocessor = pdu_processor_create(host, port);
 	if (nc->pprocessor == nullptr) {
-		g_parser->g_vconnection_hash.erase(xp.first);
 		pcontext->log(LV_DEBUG,
 			"fail to create processor on %s:%d",
 			pcontext->host, pcontext->port);
 		return FALSE;
 	}
+
+	std::unique_lock vc_hold(g_parser->g_vconnection_lock);
+	if (g_parser->g_vconnection_hash.size() >= g_parser->g_context_num + 1) {
+		pcontext->log(LV_DEBUG, "W-1293: vconn hash full");
+		return false;
+	}
+	auto xp = g_parser->g_vconnection_hash.try_emplace(std::move(hash_key), nc);
+	if (!xp.second) {
+		pcontext->log(LV_DEBUG, "W-1291: vconn suddenly started existing");
+		goto RETRY_QUERY;
+	}
 	if (pcontext->channel_type == hchannel_type::out)
 		nc->pcontext_out = pcontext;
 	else
 		nc->pcontext_in = pcontext;
-	vc_hold.unlock();
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1292: ENOMEM");
+	return false;
 }
 
 void http_context::set_outchannel_flowcontrol(uint32_t bytes_received,
