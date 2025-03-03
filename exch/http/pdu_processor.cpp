@@ -1482,7 +1482,6 @@ static uint32_t get_next_async_id()
 static uint32_t pdu_processor_apply_async_id()
 {
 	DCERPC_CALL *pcall;
-	HTTP_CONTEXT *pcontext;
 	
 	pcall = pdu_processor_get_call();
 	if (pcall == nullptr)
@@ -1494,12 +1493,13 @@ static uint32_t pdu_processor_apply_async_id()
 		mlog(LV_DEBUG, "pdu_processor: maximum async contexts number of connection reached");
 		return 0;
 	}
-	pcontext = http_parser_get_context();
+	auto pcontext = http_parser_get_context();
 	if (pcontext == nullptr)
 		return 0;
+	auto &ctx = *pcontext;
 	if (pcontext->channel_type != hchannel_type::in)
 		return 0;
-	auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
+	auto pchannel_in = ctx.chan_in();
 	ASYNC_NODE *pasync_node;
 	try {
 		pasync_node = new ASYNC_NODE();
@@ -2315,7 +2315,6 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	NDR_PULL ndr;
 	uint32_t flags;
 	BOOL b_bigendian;
-	HTTP_CONTEXT *pcontext;
 	
 	/* only rts pdu can be processed by this function */
 	if (pbuff[DCERPC_PTYPE_OFFSET] != DCERPC_PKT_RTS)
@@ -2329,9 +2328,10 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	}
 	if (pbuff[DCERPC_PFC_OFFSET] & DCERPC_PFC_FLAG_OBJECT_UUID)
 		flags |= NDR_FLAG_OBJECT_PRESENT;
-	pcontext = http_parser_get_context();
+	auto pcontext = http_parser_get_context();
 	if (pcontext == nullptr)
 		return PDU_PROCESSOR_ERROR;
+	auto &ctx = *pcontext;
 	ndr.init(pbuff, length, flags);
 	DCERPC_CALL *pcall;
 	try {
@@ -2348,7 +2348,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	
 	auto rts = static_cast<const dcerpc_rts *>(pcall->pkt.payload);
 	if (pcontext->channel_type == hchannel_type::out) {
-		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
+		auto pchannel_out = ctx.chan_out();
 		if (length == 76) {
 			if (pchannel_out->channel_stat != hchannel_stat::openstart) {
 				delete pcall;
@@ -2419,7 +2419,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			return PDU_PROCESSOR_OUTPUT;
 		}
 	} else if (pcontext->channel_type == hchannel_type::in) {
-		auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
+		auto pchannel_in = ctx.chan_in();
 		if (length == 104) {
 			if (pchannel_in->channel_stat != hchannel_stat::openstart) {
 				delete pcall;

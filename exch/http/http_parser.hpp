@@ -102,6 +102,8 @@ struct http_context final : public schedule_context {
 	BOOL activate_outrecycling(const char *successor_cookie);
 	void log(int level, const char *format, ...) const __attribute__((format(printf, 3, 4)));
 	void set_keep_alive(gromox::time_duration keepalive);
+	rpc_in_channel *chan_in() { return static_cast<rpc_in_channel *>(pchannel.get()); }
+	rpc_out_channel *chan_out() { return static_cast<rpc_out_channel *>(pchannel.get()); }
 
 	GENERIC_CONNECTION connection;
 	http_request request;
@@ -131,7 +133,7 @@ struct http_context final : public schedule_context {
 	char host[UDOM_SIZE]{};
 	uint16_t port = 0;
 	hchannel_type channel_type = hchannel_type::none;
-	rpc_channel *pchannel = nullptr;
+	std::unique_ptr<rpc_channel> pchannel;
 	struct HXproc ntlm_proc{};
 #ifdef HAVE_GSSAPI
 	gss_cred_id_t m_gss_srv_creds{};
