@@ -3717,11 +3717,13 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		auto addrType = deconst("SMTP");
 		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ADDRTYPE, addrType});
 		shape.write(TAGGED_PROPVAL{PR_SENDER_ADDRTYPE, addrType});
-		auto uint1 = construct<uint32_t>(1);
-		auto uint5 = construct<uint32_t>(5);
-		shape.write(NtMeetingType, TAGGED_PROPVAL{PT_LONG, uint1});
-		shape.write(NtAppointmentStateFlags, TAGGED_PROPVAL{PT_LONG, uint1});
-		shape.write(NtResponseStatus, TAGGED_PROPVAL{PT_LONG, uint5});
+		/* MS-OXOCAL v22.1 §2.2.1.9/10/11 */
+		auto meetType = construct<uint32_t>(mtgRequest);
+		auto apptState = construct<uint32_t>(asfMeeting);
+		auto respStatus = construct<uint32_t>(respNotResponded);
+		shape.write(NtMeetingType, TAGGED_PROPVAL{PT_LONG, meetType});
+		shape.write(NtAppointmentStateFlags, TAGGED_PROPVAL{PT_LONG, apptState});
+		shape.write(NtResponseStatus, TAGGED_PROPVAL{PT_LONG, respStatus});
 		std::string essdn;
 		if (cvt_username_to_essdn(m_auth_info.username, m_plugin.x500_org_name.c_str(),
 		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
