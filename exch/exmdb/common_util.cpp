@@ -76,6 +76,13 @@ enum GP_RESULT { GP_ADV, GP_UNHANDLED, GP_SKIP, GP_ERR };
 
 }
 
+/*
+ * The Exchange SDK's C API "struct ENTRYID" is 4 bytes. OL2019 seems to be
+ * fine with just 1-byte blobs, but if not, raise this to 20 bytes (4 for the
+ * flags, 16 for the provider GUID).
+ */
+static constexpr uint8_t empty_entryid[20]{};
+
 static unsigned int g_max_msg, g_cid_use_xxhash = 1;
 static thread_local prepared_statements *g_opt_key;
 static std::atomic<unsigned int> g_sequence_id;
@@ -543,10 +550,6 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 		PR_DISPLAY_CC, PR_DISPLAY_BCC, PR_MESSAGE_CLASS,
 	};
 	static constexpr uint32_t rcpt_tags[] = {
-		/*
-		 * We could also synthesize PR_OBJECT_TYPE, PR_DISPLAY_TYPE,
-		 * though their presence seems to be not strictly necessary.
-		 */
 		PR_RECIPIENT_TYPE, PR_DISPLAY_NAME, PR_ADDRTYPE, PR_EMAIL_ADDRESS,
 	};
 	BOOL b_subject;
@@ -614,11 +617,6 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 	pstmt.finalize();
 	std::sort(tags.begin(), tags.end());
 	tags.erase(coalesce_propid(tags.begin(), tags.end()), tags.end());
-	if (table_type == MAPI_MAILUSER) {
-		auto i = std::find(tags.begin(), tags.end(), PR_ENTRYID);
-		if (i != tags.end())
-			tags.erase(i);
-	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2135: ENOMEM");
@@ -1945,9 +1943,11 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		if (!common_util_get_message_flags(db, id, false,
 		    reinterpret_cast<uint32_t **>(&pv.pvalue)))
 			return GP_ERR;
+		if (pv.pvalue == nullptr)
+			return GP_SKIP;
 		if (exmdb_pf_read_states == 0 && !exmdb_server::is_private())
 			*static_cast<uint32_t *>(pv.pvalue) |= MSGFLAG_READ;
-		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
+		return GP_ADV;
 	case PR_SUBJECT:
 	case PR_SUBJECT_A:
 		if (!common_util_get_message_subject(db, cpid, id, tag, &pv.pvalue))
@@ -2073,6 +2073,15 @@ static GP_RESULT gp_msgprop_synth(uint64_t msgid, uint32_t proptag,
 static GP_RESULT gp_rcptprop_synth(uint32_t proptag, TAGGED_PROPVAL &pv)
 {
 	switch (proptag) {
+	case PR_ENTRYID: {
+		auto bin = cu_alloc<BINARY>();
+		pv.pvalue = bin;
+		if (bin == nullptr)
+			return GP_ERR;
+		bin->cb = std::size(empty_entryid);
+		bin->pv = deconst(empty_entryid);
+		return GP_ADV;
+	}
 	case PR_RECIPIENT_TYPE: {
 		auto v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
@@ -2116,67 +2125,71 @@ static GP_RESULT gp_fallbackprop(mapi_object_type table_type, uint64_t msgid,
 	return GP_UNHANDLED;
 }
 
-BOOL cu_get_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
+static GP_RESULT cu_get_properties1(mapi_object_type table_type, uint64_t id,
+    cpid_t cpid, sqlite3 *psqlite, proptag_t tag, TPROPVAL_ARRAY *ppropvals)
+{
+	if (PROP_TYPE(tag) == PT_OBJECT &&
+	    (table_type != MAPI_ATTACH || tag != PR_ATTACH_DATA_OBJ))
+		return GP_SKIP;
+
+	/* Computed property (if): generate value */
+	auto &pv = ppropvals->ppropval[ppropvals->count];
+	auto ret = gp_spectableprop(table_type, tag, pv, psqlite, id, cpid);
+	if (ret != GP_UNHANDLED)
+		return ret;
+
+	/* Normal stored property from sqlite */
+	xstmt own_stmt;
+	sqlite3_stmt *pstmt = nullptr;
+	uint16_t proptype = PROP_TYPE(tag);
+	if (proptype == PT_UNSPECIFIED || proptype == PT_STRING8 ||
+	    proptype == PT_UNICODE) {
+		auto bret = gp_prepare_anystr(psqlite, table_type, id, tag, own_stmt, pstmt);
+		if (!bret)
+			return GP_ERR;
+	} else if (proptype == PT_MV_STRING8) {
+		auto bret = gp_prepare_mvstr(psqlite, table_type, id, tag, own_stmt, pstmt);
+		if (!bret)
+			return GP_ERR;
+	} else {
+		auto bret = gp_prepare_default(psqlite, table_type, id, tag, own_stmt, pstmt);
+		if (!bret)
+			return GP_ERR;
+	}
+	if (gx_sql_step(pstmt) != SQLITE_ROW)
+		/* Nothing found: generated a value */
+		return gp_fallbackprop(table_type, id, tag, pv, psqlite);
+
+	/* Transfer from sqlite to memory */
+	ret = GP_ERR;
+	auto pvalue = gp_fetch(psqlite, pstmt, proptype, cpid, ret);
+	if (pvalue == nullptr)
+		return ret;
+
+	/* Fix up property values */
+	auto bin = static_cast<BINARY *>(pvalue);
+	if (tag == PR_ENTRYID && bin->cb == 0) {
+		bin->cb = std::size(empty_entryid);
+		bin->pv = deconst(empty_entryid);
+	}
+	ppropvals->emplace_back(tag, pvalue);
+	return GP_SKIP; /* emplace_back already did the GP_ADV part */
+}
+
+BOOL cu_get_properties(mapi_object_type table_type, uint64_t objid, cpid_t cpid,
     sqlite3 *psqlite, const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
-	sqlite3_stmt *pstmt = nullptr;
-	
 	ppropvals->count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	for (size_t i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
-		if (PROP_TYPE(tag) == PT_OBJECT &&
-		    (table_type != MAPI_ATTACH || tag != PR_ATTACH_DATA_OBJ))
-			continue;
-		/* begin of special properties */
-		auto &pv = ppropvals->ppropval[ppropvals->count];
-		auto ret = gp_spectableprop(table_type, tag,
-		           pv, psqlite, id, cpid);
-		if (ret == GP_ERR)
-			return false;
-		if (ret == GP_SKIP)
-			continue;
-		if (ret == GP_ADV) {
+		auto ret = cu_get_properties1(table_type, objid, cpid, psqlite,
+		           pproptags->pproptag[i], ppropvals);
+		if (ret == GP_ADV)
 			++ppropvals->count;
-			continue;
-		}
-		/* end of special properties */
-		xstmt own_stmt;
-		uint16_t proptype = PROP_TYPE(tag);
-		if (proptype == PT_UNSPECIFIED || proptype == PT_STRING8 ||
-		    proptype == PT_UNICODE) {
-			auto bret = gp_prepare_anystr(psqlite, table_type, id, tag, own_stmt, pstmt);
-			if (!bret)
-				return false;
-		} else if (proptype == PT_MV_STRING8) {
-			auto bret = gp_prepare_mvstr(psqlite, table_type, id, tag, own_stmt, pstmt);
-			if (!bret)
-				return false;
-		} else {
-			auto bret = gp_prepare_default(psqlite, table_type, id, tag, own_stmt, pstmt);
-			if (!bret)
-				return false;
-		}
-		if (gx_sql_step(pstmt) != SQLITE_ROW) {
-			ret = gp_fallbackprop(table_type, id, tag, pv, psqlite);
-			if (ret == GP_ERR)
-				return false;
-			if (ret == GP_ADV) {
-				++ppropvals->count;
-				continue;
-			}
-			continue; /* SKIP or UNHANDLED */
-		}
-		GP_RESULT gpr = GP_ERR;
-		auto pvalue = gp_fetch(psqlite, pstmt, proptype, cpid, gpr);
-		if (pvalue == nullptr) {
-			if (gpr == GP_SKIP)
-				continue;
+		else if (ret == GP_ERR)
 			return false;
-		}
-		ppropvals->emplace_back(tag, pvalue);
 	}
 	return TRUE;
 }
