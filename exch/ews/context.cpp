@@ -2715,11 +2715,12 @@ void EWSContext::applyRecurrence(const std::string &dir, uint64_t mid,
 	}
 
 	/*
-	 * For recurring all-day events, normalize End to exactly one day after
-	 * Start so occurrences do not overlap.
+	 * For all-day events the duration must be a whole number of days.
+	 * Round up to the next day boundary if not.
 	 */
-	if (isAllDay && localEndTime - localStartTime != 86400) {
-		localEndTime = localStartTime + 86400;
+	if (isAllDay && (localEndTime - localStartTime) % 86400 != 0) {
+		auto days = (localEndTime - localStartTime + 86399) / 86400;
+		localEndTime = localStartTime + days * 86400;
 		auto corrected_end = construct<uint64_t>(rop_util_unix_to_nttime(localEndTime));
 		shape.write(TAGGED_PROPVAL{end_tag, corrected_end});
 	}
@@ -3449,13 +3450,14 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		auto localEndTime = clock::to_time_t(item.End.value().time);
 		bool isAllDay = item.IsAllDayEvent && item.IsAllDayEvent.value();
 		/*
-		 * For recurring all-day events, normalize End to exactly one
-		 * day after Start. Clients may send End spanning multiple
-		 * days, but each occurrence should be exactly 24h (XXX:
-		 * timezone change days!) so they do not overlap.
+		 * For all-day events the duration must be a whole number of
+		 * days. Round up to the next day boundary if not. (XXX: what
+		 * about timezone change days that do not have a length of
+		 * 86400s?)
 		 */
-		if (isAllDay) {
-			localEndTime = localStartTime + 86400;
+		if (isAllDay && (localEndTime - localStartTime) % 86400 != 0) {
+			auto days = (localEndTime - localStartTime + 86399) / 86400;
+			localEndTime = localStartTime + days * 86400;
 			endTime = localEndTime;
 		}
 		auto duration = localEndTime - localStartTime;
