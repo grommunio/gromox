@@ -546,7 +546,7 @@ static void rtf_delete_tree_node(SIMPLE_TREE_NODE *pnode)
 	free(pnode);
 }
 
-RTF_READER::~RTF_READER()
+rtf_reader::~rtf_reader()
 {
 	auto preader = this;
 	auto proot = preader->element_tree.get_root();
