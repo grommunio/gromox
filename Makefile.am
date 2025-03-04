@@ -215,7 +215,8 @@ gromox_mailq_SOURCES = tools/mailq.cpp
 gromox_mailq_LDADD = libgromox_common.la
 gromox_mbck_SOURCES = tools/mbck.cpp
 gromox_mbck_LDADD = ${libHX_LIBS} ${fmt_LIBS} ${sqlite_LIBS} libgromox_common.la
-gromox_mbop_SOURCES = tools/genimport.cpp tools/genimport.hpp tools/mbop_main.cpp
+gromox_mbop_SOURCES = tools/genimport.cpp tools/genimport.hpp tools/mbop.hpp tools/mbop.cpp
+EXTRA_DIST = tools/mbop_delmsg.cpp tools/mbop_emptyfld.cpp tools/mbop_foreach.cpp tools/mbop_freebusy.cpp tools/mbop_locale.cpp tools/mbop_main.cpp tools/mbop_purge.cpp
 gromox_mbop_LDADD = ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
 gromox_mbsize_SOURCES = tools/mbsize.cpp
 gromox_mbsize_LDADD = ${sqlite_LIBS} libgromox_common.la
@@ -358,7 +359,7 @@ list_files = data/cpid.txt data/exmdb_list.txt data/folder_names.txt data/lang_c
 pkgdata_DATA = data/abkt.pak data/timezone.pak
 dist_pkgdata_DATA = ${list_files} data/gdbinit data/fpm-gromox.conf.sample data/gromox.ldif data/sqliterc
 toolprogs = tools/defs2php.pl tools/defs2php.sh tools/duplogid tools/enumsort tools/exmidl.pl tools/exmidl.sh tools/includesort tools/mpak.pl tools/mpak.sh tools/proptagsort tools/stackusage tools/warncount tools/zcidl.pl tools/zcidl.sh
-EXTRA_DIST = ${abkt_files} ${tzd_files} ${header_files} ${EXTRA_HEADERS} ${toolprogs} LICENSE.txt README.rst default.sym exch/bounce_exch.cpp exch/php/ews/thumbnail.php exch/php/lib/conf.php exch/php/lib/db.php lib/haproxy.cpp tools/genmails tools/staticnpmap.cpp
+EXTRA_DIST += ${abkt_files} ${tzd_files} ${header_files} ${EXTRA_HEADERS} ${toolprogs} LICENSE.txt README.rst default.sym exch/bounce_exch.cpp exch/php/ews/thumbnail.php exch/php/lib/conf.php exch/php/lib/db.php lib/haproxy.cpp tools/genmails tools/staticnpmap.cpp
 
 data/abkt.pak: ${abkt_files}
 	${AM_V_GEN}${MKDIR_P} data
