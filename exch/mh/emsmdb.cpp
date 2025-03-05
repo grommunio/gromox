@@ -195,12 +195,6 @@ struct MhEmsmdbContext : public MhContext
 		execute_request execute;
 		notificationwait_request notificationwait;
 	} request{};
-	union {
-		connect_response connect;
-		disconnect_response disconnect;
-		execute_response execute;
-		notificationwait_response notificationwait;
-	} response{};
 	ems_pull ext_pull{};
 	ems_push ext_push{};
 };
@@ -422,15 +416,15 @@ BOOL HPM_mh_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 static http_status notification_response(int ID,
     wallclock::time_point start_time, uint32_t result, uint32_t flags_out)
 {
-	decltype(MhEmsmdbContext::response) response;
 	ems_push ext_push;
 	char push_buff[32], chunk_string[32];
 
 	ext_push.init(push_buff, sizeof(push_buff), 0);
-	response.notificationwait.status = 0;
-	response.notificationwait.result = result;
-	response.notificationwait.flags_out = flags_out;
-	ext_push.p_notificationwait_rsp(response.notificationwait);
+	notificationwait_response nw;
+	nw.status = 0;
+	nw.result = result;
+	nw.flags_out = flags_out;
+	ext_push.p_notificationwait_rsp(nw);
 
 	auto ct = render_content(wallclock::now(), start_time);
 	auto tmp_len = sprintf(chunk_string, "%zx\r\n", ct.size() + ext_push.m_offset);
@@ -615,11 +609,12 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	uint16_t cxr;
 	GUID old_guid;
-	ctx.response.connect.status = 0;
 	uint16_t clv[3];
 	parse_xclientapp(ctx.cl_app, ctx.user_agent, clv);
-	ctx.response.connect.result = emsmdb_bridge_connect(ctx.request.connect, ctx.response.connect, cxr, ctx.session_guid, clv);
-	if (ctx.response.connect.result == ecSuccess) {
+	connect_response cr;
+	cr.status = 0;
+	cr.result = emsmdb_bridge_connect(ctx.request.connect, cr, cxr, ctx.session_guid, clv);
+	if (cr.result == ecSuccess) {
 		if (ctx.session != nullptr) {
 			std::unique_lock hl_hold(ses_lock);
 			auto it = sessions.find(ctx.session_string);
@@ -650,7 +645,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 			}
 		}
 	}
-	if (ctx.ext_push.p_connect_rsp(ctx.response.connect) != EXT_ERR_SUCCESS)
+	if (ctx.ext_push.p_connect_rsp(cr) != pack_result::ok)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
 	return std::nullopt;
 }
@@ -659,12 +654,13 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::disconnect(MhEmsmdbContext &ctx)
 {
 	if (ctx.ext_pull.g_disconnect_req(ctx.request.disconnect) != EXT_ERR_SUCCESS)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
-	ctx.response.disconnect.status = 0;
-	ctx.response.disconnect.result = emsmdb_bridge_disconnect(ctx.session_guid);
+	disconnect_response dr;
+	dr.status = 0;
+	dr.result = emsmdb_bridge_disconnect(ctx.session_guid);
 	std::unique_lock hl_hold(ses_lock);
 	removeSession(ctx.session_string);
 	hl_hold.unlock();
-	if (ctx.ext_push.p_disconnect_rsp(ctx.response.disconnect) != EXT_ERR_SUCCESS)
+	if (ctx.ext_push.p_disconnect_rsp(dr) != pack_result::ok)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
 	return std::nullopt;
 }
@@ -673,12 +669,13 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::execute(MhEmsmdbContext &ctx)
 {
 	if (ctx.ext_pull.g_execute_req(ctx.request.execute) != EXT_ERR_SUCCESS)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
-	auto z = std::min(static_cast<size_t>(ctx.request.execute.cb_out), sizeof(ctx.response.execute.out));
-	ctx.response.execute.flags = ctx.request.execute.flags;
-	ctx.response.execute.cb_out = z;
-	ctx.response.execute.status = 0;
-	ctx.response.execute.result = emsmdb_bridge_execute(ctx.session_guid, ctx.request.execute, ctx.response.execute);
-	if (ctx.ext_push.p_execute_rsp(ctx.response.execute) != EXT_ERR_SUCCESS)
+	execute_response xr;
+	auto z = std::min(static_cast<size_t>(ctx.request.execute.cb_out), sizeof(xr.out));
+	xr.flags = ctx.request.execute.flags;
+	xr.cb_out = z;
+	xr.status = 0;
+	xr.result = emsmdb_bridge_execute(ctx.session_guid, ctx.request.execute, xr);
+	if (ctx.ext_push.p_execute_rsp(xr) != pack_result::ok)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
 	return std::nullopt;
 }
