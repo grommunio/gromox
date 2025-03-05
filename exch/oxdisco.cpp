@@ -628,7 +628,6 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	auto resp_user = add_child(resp, "User");
 	add_child(resp_user, "AutoDiscoverSMTPAddress", email);
 
-	auto buf = std::make_unique<char[]>(4096);
 	auto domain = strchr(email, '@');
 	if (domain == nullptr)
 		return -1;
@@ -648,11 +647,10 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	std::string DisplayName, essdn, serverdn, mdbdn, mailboxid;
 	unsigned int user_id = 0, domain_id = 0;
 	if (is_private) {
-		if (!mysql_adaptor_get_user_displayname(email, buf.get(), 4096)) {
+		if (!mysql_adaptor_get_user_displayname(email, DisplayName)) {
 			mlog(LV_ERR, "oxdisco: could not obtain PR_DISPLAY_NAME for \"%s\"", email);
 			return -1;
 		}
-		DisplayName = buf.get();
 		mysql_adaptor_get_user_ids(email, &user_id, &domain_id, nullptr);
 		if (cvt_username_to_essdn(email, x500_org_name.c_str(),
 		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
@@ -851,10 +849,10 @@ int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email) const
 	add_child(resp, "Culture", "en:us");
 
 	auto resp_user = add_child(resp, "User");
-	auto buf = std::make_unique<char[]>(4096);
-	if (!mysql_adaptor_get_user_displayname(email, buf.get(), 4096))
+	std::string dispname;
+	if (!mysql_adaptor_get_user_displayname(email, dispname))
 		return -1;
-	add_child(resp_user, "DisplayName", buf.get());
+	add_child(resp_user, "DisplayName", std::move(dispname));
 	add_child(resp_user, "EMailAddress", email);
 
 	auto resp_act = add_child(resp, "Action");

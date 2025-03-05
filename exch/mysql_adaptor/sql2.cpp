@@ -888,9 +888,9 @@ bool mysql_adaptor_get_id_from_maildir(const char *dir, unsigned int *id)
 	return le_mysql_plugin->get_id_from_maildir(dir, id);
 }
 
-bool mysql_adaptor_get_user_displayname(const char *u, char *dn, size_t x)
+bool mysql_adaptor_get_user_displayname(const char *u, std::string &dn)
 {
-	return le_mysql_plugin->get_user_displayname(u, dn, x);
+	return le_mysql_plugin->get_user_displayname(u, dn);
 }
 
 bool mysql_adaptor_get_user_aliases(const char *u, std::vector<std::string> &a)

@@ -440,23 +440,18 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A: {
 		if (!plogon->is_private())
 			return FALSE;
-		auto dispname = cu_alloc<char>(UADDR_SIZE);
-		*ppvalue = dispname;
-		if (*ppvalue == nullptr)
-			return FALSE;
-		if (!mysql_adaptor_get_user_displayname(plogon->account, dispname, UADDR_SIZE))
+		std::string dispname;
+		if (!mysql_adaptor_get_user_displayname(plogon->account, dispname))
 			return FALSE;	
-		auto temp_len = strlen(dispname);
-		for (size_t i = 0; i < temp_len; ++i) {
-			if (HX_isascii(dispname[i]))
-				continue;
-			gx_strlcpy(dispname, plogon->account, UADDR_SIZE);
-			auto p = strchr(dispname, '@');
-			if (p != nullptr)
-				*p = '\0';
-			break;
-		}
-		return TRUE;
+		const char *atp;
+		if (std::all_of(dispname.cbegin(), dispname.cend(), HX_isascii))
+			*ppvalue = cu_strdup(dispname);
+		else if ((atp = strchr(plogon->account, '@')) != nullptr)
+			*ppvalue = cu_strdup({plogon->account, static_cast<size_t>(atp - plogon->account)});
+		else
+			*ppvalue = cu_strdup(plogon->account);
+		*ppvalue = cu_strdup(dispname);
+		return *ppvalue != nullptr ? TRUE : false;
 	}
 	case PR_CODE_PAGE_ID: {
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -504,26 +499,27 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
-	case PR_MAILBOX_OWNER_NAME:
+	case PR_MAILBOX_OWNER_NAME: {
 		if (!plogon->is_private())
 			return FALSE;
-		if (!mysql_adaptor_get_user_displayname(plogon->account,
-		    temp_buff, std::size(temp_buff)))
+		std::string dispname;
+		if (!mysql_adaptor_get_user_displayname(plogon->account, dispname))
 			return FALSE;	
-		*ppvalue = cu_strdup(*temp_buff == '\0' ? plogon->account : temp_buff);
+		*ppvalue = !dispname.empty() ? cu_strdup(dispname) : cu_strdup(plogon->account);
 		return *ppvalue != nullptr ? TRUE : false;
+	}
 	case PR_MAILBOX_OWNER_NAME_A: {
 		if (!plogon->is_private())
 			return FALSE;
-		if (!mysql_adaptor_get_user_displayname(plogon->account,
-		    temp_buff, std::size(temp_buff)))
+		std::string dispname;
+		if (!mysql_adaptor_get_user_displayname(plogon->account, dispname))
 			return FALSE;	
 		auto temp_len = utf8_to_mb_len(temp_buff);
 		auto tstr = cu_alloc<char>(std::max(temp_len, strlen(plogon->account) + 1));
 		*ppvalue = tstr;
 		if (*ppvalue == nullptr)
 			return FALSE;
-		if (common_util_convert_string(false, temp_buff,
+		if (common_util_convert_string(false, dispname.c_str(),
 		    tstr, temp_len) < 0)
 			return FALSE;	
 		if (*tstr == '\0')

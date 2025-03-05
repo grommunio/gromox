@@ -528,7 +528,6 @@ ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *pus
 {
 	AUX_INFO aux_out;
 	EXT_PUSH ext_push;
-	char temp_buff[1024];
 	uint16_t client_mode;
 	uint16_t client_version[4];
 	AUX_CLIENT_CONTROL aux_control;
@@ -596,10 +595,11 @@ ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *pus
 		return ecUnknownUser;
 	if (strcasecmp(username.c_str(), rpc_info.username) != 0)
 		return ecAccessDenied;
-	if (!mysql_adaptor_get_user_displayname(username.c_str(), temp_buff, std::size(temp_buff)) ||
-	    cu_utf8_to_mb(cpid, temp_buff, pdisplayname, 1024) < 0)
+	std::string uds;
+	if (!mysql_adaptor_get_user_displayname(username.c_str(), uds) ||
+	    cu_utf8_to_mb(cpid, uds.c_str(), pdisplayname, 1024) < 0)
 		return ecRpcFailed;
-	if (*pdisplayname == '\0')
+	if (uds.empty())
 		strcpy(pdisplayname, rpc_info.username);
 	
 	emsmdb_interface_decode_version(pclient_vers, client_version);

@@ -128,7 +128,6 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	auto puser = this;
-	char tmp_buff[1024];
 	static constexpr auto fake_type = static_cast<uint32_t>(MAPI_MAILUSER);
 	
 	auto pbase = ab_tree::AB.get(puser->base_id);
@@ -160,7 +159,8 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		ppropvals->emplace_back(PR_OBJECT_TYPE, &fake_type);
 	if (w_atype)
 		ppropvals->emplace_back(PR_ADDRTYPE, "EX");
-	std::string username;
+
+	std::string username, essdn, dispname;
 	if (!wx_name ||
 	    node.mid.type() != ab_tree::minid::Type::address ||
 	    mysql_adaptor_userid_to_name(node.mid.value(), username) != ecSuccess)
@@ -177,7 +177,6 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			return FALSE;
 		ppropvals->emplace_back(PR_ACCOUNT, s);
 	}
-	std::string essdn;
 	if (w_email && cvt_username_to_essdn(username.c_str(), g_org_name,
 	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 	    essdn) == ecSuccess) {
@@ -186,9 +185,8 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			return FALSE;
 		ppropvals->emplace_back(PR_EMAIL_ADDRESS, s);
 	}
-	if (w_dname && mysql_adaptor_get_user_displayname(username.c_str(),
-	    tmp_buff, std::size(tmp_buff))) {
-		auto s = *tmp_buff != '\0' ? common_util_dup(tmp_buff) : common_util_dup(username);
+	if (w_dname && mysql_adaptor_get_user_displayname(username.c_str(), dispname)) {
+		auto s = common_util_dup(!dispname.empty() ? dispname : username);
 		if (s == nullptr)
 			return FALSE;
 		ppropvals->emplace_back(PR_DISPLAY_NAME, s);

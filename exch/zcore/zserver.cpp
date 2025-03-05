@@ -763,11 +763,10 @@ ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
     char **ppdisplay_name, char **ppx500dn, uint32_t *pprivilege_bits) try
 {
 	std::string essdn, dispname;
-	dispname.resize(1024);
 	EXT_PUSH ext_push;
 	EMSAB_ENTRYID tmp_entryid;
 	
-	if (!mysql_adaptor_get_user_displayname(username, dispname.data(), dispname.size()) ||
+	if (!mysql_adaptor_get_user_displayname(username, dispname) ||
 	    !mysql_adaptor_get_user_privilege_bits(username, pprivilege_bits))
 		return ecNotFound;
 	auto err = cvt_username_to_essdn(username, g_org_name,
@@ -775,7 +774,6 @@ ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
 	           essdn);
 	if (err != ecSuccess)
 		return err;
-	dispname.resize(strlen(dispname.c_str()));
 	tmp_entryid.flags = 0;
 	tmp_entryid.type = DT_MAILUSER;
 	tmp_entryid.px500dn = deconst(essdn.c_str());
@@ -3215,11 +3213,10 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 					return ecServerOOM;
 				es_result.clear();
 				common_util_set_propvals(prcpt, &tmp_propval);
-				if (!mysql_adaptor_get_user_displayname(tmp_buff,
-				    tmp_buff, std::size(tmp_buff)))
+				if (!mysql_adaptor_get_user_displayname(tmp_buff, es_result))
 					continue;	
 				tmp_propval.proptag = PR_DISPLAY_NAME;
-				tmp_propval.pvalue = common_util_dup(tmp_buff);
+				tmp_propval.pvalue = common_util_dup(es_result);
 				if (tmp_propval.pvalue == nullptr)
 					return ecError;
 				common_util_set_propvals(prcpt, &tmp_propval);
@@ -3281,10 +3278,8 @@ static ec_error_t rectify_message(message_object *pmessage,
 	           mysql_adaptor_get_domain_ids, sender_essdn);
 	if (err != ecSuccess)
 		return err;
-	if (!mysql_adaptor_get_user_displayname(account,
-	    sender_dispname.data(), sender_dispname.size()))
+	if (!mysql_adaptor_get_user_displayname(account, sender_dispname))
 		return ecError;
-	sender_dispname.resize(strlen(sender_dispname.c_str()));
 	auto sender_eid = common_util_username_to_addressbook_entryid(account);
 	if (sender_eid == nullptr)
 		return ecError;
@@ -3299,10 +3294,8 @@ static ec_error_t rectify_message(message_object *pmessage,
 		      mysql_adaptor_get_domain_ids, repr_essdn);
 		if (err != ecSuccess)
 			return err;
-		if (!mysql_adaptor_get_user_displayname(representing_username,
-		    repr_dispname.data(), repr_dispname.size()))
+		if (!mysql_adaptor_get_user_displayname(representing_username, repr_dispname))
 			return ecError;
-		repr_dispname.resize(strlen(repr_dispname.c_str()));
 		repr_eid = common_util_username_to_addressbook_entryid(representing_username);
 		if (repr_eid == nullptr)
 			return ecError;

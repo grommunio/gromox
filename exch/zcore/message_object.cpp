@@ -213,15 +213,14 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 	propvals.emplace_back(PR_MESSAGE_LOCALE_ID, msglcid);
 	propvals.emplace_back(PR_LOCALE_ID, msglcid);
 
-	static constexpr size_t dispnamesize = 1024;
-	auto dispname = cu_alloc<char>(1024);
-	if (dispname == nullptr)
-		return ENOMEM;
 	auto pinfo = zs_get_info();
-	if (!mysql_adaptor_get_user_displayname(pinfo->get_username(),
-	    dispname, dispnamesize) || *dispname == '\0')
-		gx_strlcpy(dispname, pinfo->get_username(), dispnamesize);
-	propvals.emplace_back(PR_CREATOR_NAME, dispname);
+	std::string dispname;
+	auto dnptr = mysql_adaptor_get_user_displayname(pinfo->get_username(), dispname) &&
+	             !dispname.empty() ? common_util_dup(dispname) :
+	             common_util_dup(pinfo->get_username());
+	if (dnptr == nullptr)
+		return ENOMEM;
+	propvals.emplace_back(PR_CREATOR_NAME, std::move(dnptr));
 
 	auto abk_eid = common_util_username_to_addressbook_entryid(pinfo->get_username());
 	if (abk_eid == nullptr)
@@ -276,14 +275,13 @@ ec_error_t message_object::save()
 		tmp_propvals.emplace_back(PR_LAST_MODIFICATION_TIME, modtime);
 	
 	if (!pmessage->pchanged_proptags->has(PR_LAST_MODIFIER_NAME)) {
-		static constexpr size_t dispnamesize = 1024;
-		auto dispname = cu_alloc<char>(1024);
-		if (dispname == nullptr)
+		const char *u = pinfo->get_username();
+		std::string dispname;
+		auto v = mysql_adaptor_get_user_displayname(u, dispname) && !dispname.empty() ?
+		         common_util_dup(dispname) : common_util_dup(u);
+		if (v == nullptr)
 			return ecServerOOM;
-		if (!mysql_adaptor_get_user_displayname(pinfo->get_username(),
-		    dispname, dispnamesize) || *dispname == '\0')
-			gx_strlcpy(dispname, pinfo->get_username(), dispnamesize);
-		tmp_propvals.emplace_back(PR_LAST_MODIFIER_NAME, dispname);
+		tmp_propvals.emplace_back(PR_LAST_MODIFIER_NAME, std::move(v));
 	}
 	
 	auto abk_eid = common_util_username_to_addressbook_entryid(pinfo->get_username());

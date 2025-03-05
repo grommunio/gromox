@@ -3052,8 +3052,7 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 		return message_disable_rule(rp.sqlite, false, rule.id);
 	}
 
-	std::string essdn_buff;
-	char display_name[1024];
+	std::string essdn_buff, display_name;
 	BINARY searchkey_bin;
 	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
@@ -3092,9 +3091,8 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ENTRYID, pvalue);
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ADDRTYPE, "EX");
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, &essdn_buff[3]);
-		if (mysql_adaptor_get_user_displayname(rp.ev_to, display_name,
-		    std::size(display_name)))
-			cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_NAME, display_name);
+		if (mysql_adaptor_get_user_displayname(rp.ev_to, display_name))
+			cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_NAME, display_name.c_str());
 		searchkey_bin.cb = essdn_buff.size() + 1;
 		searchkey_bin.pv = deconst(essdn_buff.c_str());
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_SEARCH_KEY, &searchkey_bin);
@@ -3353,8 +3351,7 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 	if (pextfwddlgt->count > MAX_RULE_RECIPIENTS)
 		return message_disable_rule(rp.sqlite, TRUE, rule.id);
 
-	std::string essdn_buff;
-	char display_name[1024];
+	std::string essdn_buff, display_name;
 	BINARY searchkey_bin;
 	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
@@ -3393,9 +3390,8 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ENTRYID, pvalue);
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_ADDRTYPE, "EX");
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, &essdn_buff[3]);
-		if (mysql_adaptor_get_user_displayname(rp.ev_to, display_name,
-		    std::size(display_name)))
-			cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_NAME, display_name);
+		if (mysql_adaptor_get_user_displayname(rp.ev_to, display_name))
+			cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_NAME, display_name.c_str());
 		searchkey_bin.cb = essdn_buff.size() + 1;
 		searchkey_bin.pv = deconst(essdn_buff.c_str());
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_SEARCH_KEY, &searchkey_bin);
@@ -3633,8 +3629,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	uint64_t fid_val;
 	char tmp_path[256];
 	BINARY searchkey_bin;
-	char mid_string[128], display_name[1024];
-	std::string account;
+	char mid_string[128];
+	std::string account, display_name;
 
 	if (exmdb_server::is_private()) {
 		if (mysql_adaptor_userid_to_name(exmdb_server::get_account_id(), account) != ecSuccess)
@@ -3690,11 +3686,10 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_ENTRYID, pentryid);
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_ADDRTYPE, "EX");
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_EMAIL_ADDRESS, &essdn_buff[3]);
-		if (mysql_adaptor_get_user_displayname(account.c_str(), display_name,
-		    std::size(display_name)))
-			cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_NAME, display_name);
+		if (mysql_adaptor_get_user_displayname(account.c_str(), display_name))
+			cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_NAME, display_name.c_str());
 		else
-			display_name[0] = '\0';
+			display_name.clear();
 		searchkey_bin.cb = essdn_buff.size() + 1;
 		searchkey_bin.pv = deconst(essdn_buff.c_str());
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_SEARCH_KEY, &searchkey_bin);
@@ -3702,8 +3697,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 			cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_ENTRYID, pentryid);
 			cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_ADDRTYPE, "EX");
 			cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, &essdn_buff[3]);
-			if (*display_name != '\0')
-				cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_NAME, display_name);
+			if (!display_name.empty())
+				cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_NAME, display_name.c_str());
 			cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_SEARCH_KEY, &searchkey_bin);
 		}
 		auto rcpt_type = detect_rcpt_type(account.c_str(), pmsg->children.prcpts);

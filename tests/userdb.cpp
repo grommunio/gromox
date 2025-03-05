@@ -61,9 +61,9 @@ static int t_private()
 	else
 		printf("get_user_ids: OK\n");
 
-	char buf[UADDR_SIZE];
-	if (mysql_adaptor_get_user_displayname(g_username, buf, std::size(buf)))
-		printf("get_user_displayname: OK %s\n", buf);
+	std::string buf;
+	if (mysql_adaptor_get_user_displayname(g_username, buf))
+		printf("get_user_displayname: OK %s\n", buf.c_str());
 	else
 		printf("get_user_displayname: failed\n");
 

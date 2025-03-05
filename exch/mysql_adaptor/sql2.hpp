@@ -56,7 +56,7 @@ struct mysql_plugin final {
 	bool setpasswd(const char *username, const char *password, const char *new_password);
 	ec_error_t userid_to_name(unsigned int user_id, std::string &username);
 	bool get_id_from_maildir(const char *maildir, unsigned int *user_id);
-	bool get_user_displayname(const char *username, char *dispname, size_t);
+	bool get_user_displayname(const char *username, std::string &);
 	bool get_user_aliases(const char *username, std::vector<std::string>&);
 	bool get_user_props(const char *username, TPROPVAL_ARRAY&);
 	bool get_user_privbits(const char *username, uint32_t *pprivilege_bits);

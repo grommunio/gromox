@@ -54,7 +54,6 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	int32_t tmp_level;
 	BINARY sender_srch, repr_srch;
 	std::string sender_essdn, sender_dispname, repr_essdn, repr_dispname;
-	sender_dispname.resize(256);
 	repr_dispname.resize(256);
 	PROBLEM_ARRAY tmp_problems;
 	
@@ -67,11 +66,9 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 	    sender_essdn) != ecSuccess)
 		return ecRpcFailed;
-	if (!mysql_adaptor_get_user_displayname(account, sender_dispname.data(),
-	    sender_dispname.size()))
+	if (!mysql_adaptor_get_user_displayname(account, sender_dispname))
 		return ecRpcFailed;
 	HX_strupper(sender_essdn.data());
-	sender_dispname.resize(strlen(sender_dispname.c_str()));
 	auto sender_eid = common_util_username_to_addressbook_entryid(account);
 	if (sender_eid == nullptr)
 		return ecRpcFailed;
@@ -86,11 +83,9 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	} else if (cvt_username_to_essdn(representing_username,
 	    g_emsmdb_org_name, mysql_adaptor_get_user_ids,
 	    mysql_adaptor_get_domain_ids, repr_essdn) == ecSuccess) {
-		if (!mysql_adaptor_get_user_displayname(representing_username,
-		    repr_dispname.data(), repr_dispname.size()))
+		if (!mysql_adaptor_get_user_displayname(representing_username, repr_dispname))
 			return ecRpcFailed;
 		HX_strupper(repr_essdn.data());
-		repr_dispname.resize(strlen(repr_dispname.c_str()));
 		repr_eid = common_util_username_to_addressbook_entryid(representing_username);
 		if (repr_eid == nullptr)
 			return ecRpcFailed;

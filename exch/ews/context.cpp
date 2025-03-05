@@ -2354,10 +2354,10 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, construct<uint64_t>(localCommitTime)});
 	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFICATION_TIME, construct<uint64_t>(localCommitTime)});
 
-	char displayName[1024];
+	std::string displayName;
 	if (mysql_adaptor_get_user_displayname(m_auth_info.username,
-	    displayName, std::size(displayName)) && *displayName)
-		shape.write(TAGGED_PROPVAL{PR_LAST_MODIFIER_NAME, strcpy(alloc<char>(strlen(displayName)+1), displayName)});
+	    displayName) && !displayName.empty())
+		shape.write(TAGGED_PROPVAL{PR_LAST_MODIFIER_NAME, strcpy(alloc<char>(displayName.size() + 1), displayName.c_str())});
 	else
 		shape.write(TAGGED_PROPVAL{PR_LAST_MODIFIER_NAME, const_cast<char*>(m_auth_info.username)});
 

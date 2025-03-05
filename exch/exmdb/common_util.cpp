@@ -3775,7 +3775,6 @@ bool cu_get_permission_property(int64_t member_id,
 {
 	char sql_string[128];
 	const char *pusername;
-	char display_name[256];
 	static constexpr BINARY fake_bin{};
 	
 	switch (proptag) {
@@ -3869,7 +3868,7 @@ bool cu_get_permission_property(int64_t member_id,
 		*ppvalue = common_util_username_to_addressbook_entryid(pusername);
 		break;
 	case PR_MEMBER_NAME:
-	case PR_SMTP_ADDRESS:
+	case PR_SMTP_ADDRESS: {
 		pusername = pstmt.col_text(0);
 		if ('\0' == pusername[0]) {
 			*ppvalue = deconst("default");
@@ -3878,16 +3877,17 @@ bool cu_get_permission_property(int64_t member_id,
 			*ppvalue = deconst("anonymous");
 			return TRUE;
 		}
-		*ppvalue = common_util_dup(proptag == PR_SMTP_ADDRESS ||
-		           !mysql_adaptor_get_user_displayname(pusername,
-		           display_name, std::size(display_name)) ||
-		           display_name[0] == '\0'?
-		               pusername : display_name);
+		std::string display_name;
+		*ppvalue = proptag != PR_SMTP_ADDRESS &&
+		           mysql_adaptor_get_user_displayname(pusername, display_name) &&
+		           !display_name.empty() ?
+		           common_util_dup(display_name) : common_util_dup(pusername);
 		if (NULL == *ppvalue) {
 			*ppvalue = NULL;
 			return FALSE;
 		}
 		break;
+	}
 	case PR_MEMBER_RIGHTS: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;

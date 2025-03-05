@@ -21,7 +21,7 @@ namespace {
 
 using namespace std::string_literals;
 using namespace gromox;
-using buff_t = bool (*)(const char *, char *, size_t);
+using buff_t = bool (*)(const char *, std::string &);
 using meta_t = errno_t (*)(const char *, unsigned int, sql_meta_result &);
 
 static bool bounce_producer_make_content(meta_t meta,
@@ -88,11 +88,11 @@ bool exch_bouncer_make(buff_t gudn, meta_t meta,
     const char *username, MESSAGE_CONTENT *pbrief,
     const char *bounce_type, vmime::shared_ptr<vmime::message> &pmail) try
 {
-	char tmp_buff[1024];
+	std::string dispname;
 	vmime::mailbox expeditor, target;
 
-	if (gudn(username, tmp_buff, std::size(tmp_buff)) && *tmp_buff != '\0')
-		expeditor.setName(vmime::text(tmp_buff, vmime::charsets::UTF_8));
+	if (gudn(username, dispname) && !dispname.empty())
+		expeditor.setName(vmime::text(std::move(dispname), vmime::charsets::UTF_8));
 	expeditor.setEmail(username);
 
 	std::string subject, content_buff;

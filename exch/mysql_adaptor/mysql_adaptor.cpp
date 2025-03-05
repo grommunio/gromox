@@ -295,8 +295,7 @@ bool mysql_plugin::get_id_from_maildir(const char *maildir,
 	return false;
 }
 
-bool mysql_plugin::get_user_displayname(const char *username,
-    char *pdisplayname, size_t dsize) try
+bool mysql_plugin::get_user_displayname(const char *username, std::string &out) try
 {
 	if (!str_isascii(username))
 		return false;
@@ -332,11 +331,10 @@ bool mysql_plugin::get_user_displayname(const char *username,
 	auto dtypx = DT_MAILUSER;
 	if (myrow[2] != nullptr)
 		dtypx = static_cast<enum display_type>(strtoul(myrow[2], nullptr, 0));
-	gx_strlcpy(pdisplayname,
-	       dtypx == DT_DISTLIST ? username :
+	out =  dtypx == DT_DISTLIST ? username :
 	       myrow[0] != nullptr && *myrow[0] != '\0' ? myrow[0] :
 	       myrow[1] != nullptr && *myrow[1] != '\0' ? myrow[1] :
-	       username, dsize);
+	       username;
 	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1707", e.what());

@@ -590,7 +590,6 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
     uint32_t proptag, void **ppvalue)
 {
 	uint32_t permission;
-	char temp_buff[1024];
 	
 	switch (proptag) {
 	case PR_MDB_PROVIDER: {
@@ -605,40 +604,32 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		return TRUE;
 	}
 	case PR_DISPLAY_NAME: {
-		static constexpr size_t dsize = UADDR_SIZE + 17;
-		auto dispname = cu_alloc<char>(dsize);
-		*ppvalue = dispname;
+		std::string dispname;
+		if (!pstore->b_private)
+			*ppvalue = common_util_dup("Public Folders - "s + pstore->account);
+		else if (mysql_adaptor_get_user_displayname(pstore->account, dispname))
+			*ppvalue = common_util_dup(dispname);
+		else
+			*ppvalue = common_util_dup(pstore->account);
 		if (*ppvalue == nullptr)
 			return FALSE;
-		if (!pstore->b_private)
-			snprintf(dispname, dsize, "Public Folders - %s", pstore->account);
-		else if (!mysql_adaptor_get_user_displayname(pstore->account,
-		    dispname, dsize))
-			gx_strlcpy(dispname, pstore->account, dsize);
 		return TRUE;
 	}
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE: {
 		if (!pstore->b_private)
 			return FALSE;
-		static constexpr size_t dsize = UADDR_SIZE;
-		auto dispname = cu_alloc<char>(dsize);
-		*ppvalue = dispname;
-		if (*ppvalue == nullptr)
-			return FALSE;
-		if (!mysql_adaptor_get_user_displayname(pstore->account,
-		    dispname, dsize))
+		std::string dispname;
+		if (!mysql_adaptor_get_user_displayname(pstore->account, dispname))
 			return FALSE;	
-		auto temp_len = strlen(dispname);
-		for (size_t i = 0; i < temp_len; ++i) {
-			if (HX_isascii(dispname[i]))
-				continue;
-			gx_strlcpy(dispname, pstore->account, dsize);
-			auto p = strchr(dispname, '@');
-			if (p != nullptr)
-				*p = '\0';
-			break;
-		}
-		return TRUE;
+		const char *atp;
+		if (std::all_of(dispname.cbegin(), dispname.cend(), HX_isascii))
+			*ppvalue = common_util_dup(dispname);
+		else if ((atp = strchr(pstore->account, '@')) != nullptr)
+			*ppvalue = common_util_dup({pstore->account, static_cast<size_t>(atp - pstore->account)});
+		else
+			*ppvalue = common_util_dup(pstore->account);
+		*ppvalue = common_util_dup(dispname);
+		return *ppvalue != nullptr ? TRUE : false;
 	}
 	case PR_DEFAULT_STORE:
 		*ppvalue = cu_alloc<uint8_t>();
@@ -726,23 +717,11 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_MAILBOX_OWNER_NAME: {
 		if (!pstore->b_private)
 			return FALSE;
-		if (!mysql_adaptor_get_user_displayname(pstore->account,
-		    temp_buff, std::size(temp_buff)))
-			return FALSE;	
-		if ('\0' == temp_buff[0]) {
-			auto tstr = cu_alloc<char>(strlen(pstore->account) + 1);
-			*ppvalue = tstr;
-			if (*ppvalue == nullptr)
-				return FALSE;
-			strcpy(tstr, pstore->account);
-			return TRUE;
-		}
-		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
-		*ppvalue = tstr;
-		if (*ppvalue == nullptr)
-			return FALSE;
-		strcpy(tstr, temp_buff);
-		return TRUE;
+		std::string dispname;
+		*ppvalue = mysql_adaptor_get_user_displayname(pstore->account, dispname) &&
+		           !dispname.empty() ?
+		           common_util_dup(dispname) : common_util_dup(pstore->account);
+		return *ppvalue != nullptr ? TRUE : false;
 	}
 	case PR_MAX_SUBMIT_MESSAGE_SIZE: {
 		auto r = cu_alloc<uint32_t>();
