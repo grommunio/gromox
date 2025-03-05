@@ -1522,7 +1522,7 @@ static uint32_t pdu_processor_apply_async_id()
 	if (g_async_hash.size() >= 2 * ctx_num) {
 		as_hold.unlock();
 		delete pasync_node;
-		fprintf(stderr, "E-2045: g_async_hash reached maximum fill level (influenced by http.cfg:context_num,connection_ratio)\n");
+		mlog(LV_ERR, "E-2045: g_async_hash reached maximum fill level (influenced by http.cfg:context_num,connection_ratio)\n");
 		return 0;
 	}
 	try {
@@ -1530,7 +1530,7 @@ static uint32_t pdu_processor_apply_async_id()
 	} catch (const std::bad_alloc &) {
 		as_hold.unlock();
 		delete pasync_node;
-		fprintf(stderr, "E-2044: ENOMEM\n");
+		mlog(LV_ERR, "E-2044: ENOMEM\n");
 		return 0;
 	}
 	pasync_node->async_id = async_id;

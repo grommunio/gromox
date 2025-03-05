@@ -67,7 +67,7 @@ http_status OabPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 		return wr;
 	return write_response(ctx_id, response, strlen(response));
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2092: ENOMEM\n");
+	mlog(LV_ERR, "E-2092: ENOMEM\n");
 	return http_status::none;
 }
 
