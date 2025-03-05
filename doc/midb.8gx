@@ -67,8 +67,9 @@ Default: \fI30minutes\fP
 .TP
 \fBmidb_cmd_debug\fP
 Log every incoming MIDB command and the return code of the operation in a
-minimal fashion to stderr. Level 1 emits commands with a failure return code,
-level 2 emits all commands.
+minimal fashion to stderr (not midb_log_file!). Level 1 emits commands with a
+failure return code, level 2 emits all commands. Logs are written to stderr
+only.
 .br
 Default: \fI0\fP
 .TP
