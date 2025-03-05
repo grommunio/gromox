@@ -98,8 +98,7 @@ struct ECDOCONNECTEX_OUT final : public rpc_response {
 	uint32_t max_retry;
 	uint32_t retry_delay;
 	uint16_t cxr;
-	char pdn_prefix[1024];
-	char pdisplayname[1024];
+	std::string pdn_prefix, pdisplayname;
 	uint16_t pserver_vers[3];
 	uint16_t pbest_vers[3];
 	uint32_t timestamp;

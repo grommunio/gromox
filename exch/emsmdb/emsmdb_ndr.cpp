@@ -145,26 +145,24 @@ static pack_result emsmdb_ndr_pull(NDR_PULL &x, ECDOCONNECTEX_IN *r)
 
 static pack_result emsmdb_ndr_push(NDR_PUSH &x, const ECDOCONNECTEX_OUT &r)
 {
-	uint32_t length;
-	
 	TRY(x.p_ctx_handle(r.cxh));
 	TRY(x.p_uint32(r.max_polls));
 	TRY(x.p_uint32(r.max_retry));
 	TRY(x.p_uint32(r.retry_delay));
 	TRY(x.p_uint16(r.cxr));
-	TRY(x.p_unique_ptr(r.pdn_prefix));
-	length = strlen(r.pdn_prefix) + 1;
+	TRY(x.p_unique_ptr(r.pdn_prefix.c_str()));
+	size_t length = strlen(r.pdn_prefix.c_str()) + 1;
 	TRY(x.p_ulong(length));
 	TRY(x.p_ulong(0));
 	TRY(x.p_ulong(length));
-	TRY(x.p_str(r.pdn_prefix, length));
+	TRY(x.p_str(r.pdn_prefix.c_str(), length));
 
-	TRY(x.p_unique_ptr(r.pdisplayname));
-	length = strlen(r.pdisplayname) + 1;
+	TRY(x.p_unique_ptr(r.pdisplayname.c_str()));
+	length = strlen(r.pdisplayname.c_str()) + 1;
 	TRY(x.p_ulong(length));
 	TRY(x.p_ulong(0));
 	TRY(x.p_ulong(length));
-	TRY(x.p_str(r.pdisplayname, length));
+	TRY(x.p_str(r.pdisplayname.c_str(), length));
 	TRY(x.p_uint16(r.pserver_vers[0]));
 	TRY(x.p_uint16(r.pserver_vers[1]));
 	TRY(x.p_uint16(r.pserver_vers[2]));

@@ -104,7 +104,7 @@ static int (*asyncemsmdb_interface_async_wait)(uint32_t async_id, const ECDOASYN
 static void (*asyncemsmdb_interface_register_active)(void *);
 static void (*asyncemsmdb_interface_remove)(CONTEXT_HANDLE *);
 
-static ec_error_t (*emsmdb_interface_connect_ex)(uint64_t hrpc, CXH *, const char *user_dn, uint32_t flags, uint32_t con_mode, uint32_t limit, cpid_t, uint32_t lcid_string, uint32_t lcid_sort, uint32_t cxr_link, uint16_t cnvt_cps, uint32_t *max_polls, uint32_t *max_retry, uint32_t *retry_delay, uint16_t *cxr, char *dn_prefix, char *dispname, const uint16_t client_vers[3], uint16_t server_vers[3], uint16_t best_vers[3], uint32_t *timestamp, const uint8_t *auxin, uint32_t cb_auxin, uint8_t *auxout, uint32_t *cb_auxout);
+static ec_error_t (*emsmdb_interface_connect_ex)(uint64_t hrpc, CXH *, const char *user_dn, uint32_t flags, uint32_t con_mode, uint32_t limit, cpid_t, uint32_t lcid_string, uint32_t lcid_sort, uint32_t cxr_link, uint16_t cnvt_cps, uint32_t *max_polls, uint32_t *max_retry, uint32_t *retry_delay, uint16_t *cxr, std::string &dn_prefix, std::string &dispname, const uint16_t client_vers[3], uint16_t server_vers[3], uint16_t best_vers[3], uint32_t *timestamp, const uint8_t *auxin, uint32_t cb_auxin, uint8_t *auxout, uint32_t *cb_auxout);
 static ec_error_t (*emsmdb_interface_rpc_ext2)(CONTEXT_HANDLE &, uint32_t *flags, const uint8_t *, uint32_t, uint8_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *, uint32_t *);
 static void (*emsmdb_interface_remove_handle)(const CONTEXT_HANDLE &);
 static void (*emsmdb_interface_touch_handle)(const CONTEXT_HANDLE &);
@@ -124,7 +124,7 @@ struct connect_request {
 
 struct connect_response {
 	uint32_t status, result, max_polls, max_retry, retry_delay;
-	char dn_prefix[1024], displayname[1024];
+	std::string dn_prefix, displayname;
 	uint32_t cb_auxout;
 	uint8_t auxout[0x1008];
 };
@@ -936,8 +936,8 @@ pack_result ems_push::p_connect_rsp(const connect_response &rsp)
 	TRY(p_uint32(rsp.max_polls));
 	TRY(p_uint32(rsp.max_retry));
 	TRY(p_uint32(rsp.retry_delay));
-	TRY(p_str(rsp.dn_prefix));
-	TRY(p_wstr(rsp.displayname));
+	TRY(p_str(rsp.dn_prefix.c_str()));
+	TRY(p_wstr(rsp.displayname.c_str()));
 	TRY(p_uint32(rsp.cb_auxout));
 	if (rsp.cb_auxout == 0)
 		return pack_result::ok;

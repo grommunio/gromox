@@ -518,11 +518,11 @@ static void emsmdb_interface_encode_version(BOOL high_bit,
 ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *puser_dn,
     uint32_t flags, uint32_t con_mode, uint32_t limit, cpid_t cpid,
     uint32_t lcid_string, uint32_t lcid_sort, uint32_t cxr_link, uint16_t cnvt_cps,
-	uint32_t *pmax_polls, uint32_t *pmax_retry, uint32_t *pretry_delay,
-	uint16_t *pcxr, char *pdn_prefix, char *pdisplayname,
-	const uint16_t pclient_vers[3], uint16_t pserver_vers[3],
-	uint16_t pbest_vers[3], uint32_t *ptimestamp, const uint8_t *pauxin,
-	uint32_t cb_auxin, uint8_t *pauxout, uint32_t *pcb_auxout)
+    uint32_t *pmax_polls, uint32_t *pmax_retry, uint32_t *pretry_delay,
+    uint16_t *pcxr, std::string &pdn_prefix, std::string &pdisplayname,
+    const uint16_t pclient_vers[3], uint16_t pserver_vers[3],
+    uint16_t pbest_vers[3], uint32_t *ptimestamp, const uint8_t *pauxin,
+    uint32_t cb_auxin, uint8_t *pauxout, uint32_t *pcb_auxout) try
 {
 	AUX_INFO aux_out;
 	EXT_PUSH ext_push;
@@ -539,7 +539,7 @@ ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *pus
 		*pmax_retry = 0;
 		*pretry_delay = 0;
 		*pcxr = 0;
-		pdisplayname[0] = '\0';
+		pdisplayname.clear();
 		memset(pserver_vers, 0, 3 * sizeof(*pserver_vers));
 		memset(pbest_vers, 0, 3 * sizeof(*pbest_vers));
 		*ptimestamp = 0;
@@ -573,7 +573,7 @@ ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *pus
 	              0 : ext_push.m_offset;
 	aux_out.aux_list.clear();
 	
-	pdn_prefix[0] = '\0';
+	pdn_prefix.clear();
 	rpc_info = get_rpc_info();
 	if (flags & FLAG_PRIVILEGE_ADMIN)
 		return ecLoginPerm;
@@ -593,12 +593,15 @@ ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *pus
 		return ecUnknownUser;
 	if (strcasecmp(username.c_str(), rpc_info.username) != 0)
 		return ecAccessDenied;
+	pdisplayname.resize(1024);
 	std::string uds;
 	if (!mysql_adaptor_get_user_displayname(username.c_str(), uds) ||
-	    cu_utf8_to_mb(cpid, uds.c_str(), pdisplayname, 1024) < 0)
+	    cu_utf8_to_mb(cpid, uds.c_str(), pdisplayname.data(), pdisplayname.size()) < 0)
 		return ecRpcFailed;
 	if (uds.empty())
-		strcpy(pdisplayname, rpc_info.username);
+		pdisplayname = rpc_info.username;
+	else
+		pdisplayname.resize(strlen(pdisplayname.data()));
 	
 	emsmdb_interface_decode_version(pclient_vers, client_version);
 	emsmdb_interface_encode_version(TRUE, server_normal_version, pserver_vers);
@@ -622,6 +625,8 @@ ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *pus
 		return ecLoginFailure;
 	is_success = true;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }
 
 static bool enable_rop_chaining(uint16_t v[4])
