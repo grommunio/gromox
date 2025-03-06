@@ -1,3 +1,29 @@
+Gromox 2.43 (2025-03-06)
+========================
+
+Fixes:
+
+* imap: reduce memory footprint when FETCHing messages
+* imap: resolve shutdown ordering crash
+* exmdb: upgrade 0-length PR_ENTRYIDs to fake 1 byte to soothe Outlook Cached
+  Mode syncer
+* ews: heed MAPI proptype semantics and interpret 0xffffffff as a signed int
+  when serializing to XML (-1 rather than 4294967295)
+* gab: resolve out-of-bounds access in dntomid
+
+Enhancements:
+
+* oxm2mt: support embedded messages
+* oxm2mt: add option to extract just an attachment embedded message
+* eml2mt: add option to extract just an attachment embedded message
+* mysql_adaptor: add TLS connection config directives
+
+Behavioral changes:
+
+* exmdb: launch threads in more rapid succession when there is job queue
+  contention
+
+
 Gromox 2.42 (2025-02-19)
 ========================
 
