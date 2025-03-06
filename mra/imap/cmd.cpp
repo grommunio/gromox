@@ -734,14 +734,18 @@ static int icp_process_fetch_item(imap_context &ctx,
 			mlog(LV_ERR, "E-1921: load_from_json %s/%s oopsied", ctx.maildir, ctx.mid.c_str());
 			return 1923;
 		}
-		mjson.path = eml_path;
-		auto eml_file = eml_path + "/"s + pitem->mid;
+		mjson.path = std::move(eml_path);
+	}
+	auto deferred_eml_load = [&]() {
+		if (!(pitem->flag_bits & FLAG_LOADED))
+			return;
+		auto eml_file = mjson.path + "/"s + pitem->mid;
 		if (!ctx.io_actor.exists(eml_file)) {
 			std::string content;
 			if (exmdb_client->imapfile_read(ctx.maildir, "eml", pitem->mid, &content))
 				ctx.io_actor.place(eml_file, std::move(content));
 		}
-	}
+	};
 
 	BOOL b_first = FALSE;
 	buf = "* " + std::to_string(item_id) + " FETCH (";
@@ -752,6 +756,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 			buf += ' ';
 		auto kw = kwss.data();
 		if (strcasecmp(kw, "BODY") == 0) {
+			deferred_eml_load();
 			buf += "BODY ";
 			if (mjson.has_rfc822_part()) {
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
@@ -775,6 +780,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 					buf += std::move(b2);
 			}
 		} else if (strcasecmp(kw, "BODYSTRUCTURE") == 0) {
+			deferred_eml_load();
 			buf += "BODYSTRUCTURE ";
 			if (mjson.has_rfc822_part()) {
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
@@ -822,6 +828,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 			strftime(b2, std::size(b2), "INTERNALDATE \"%d-%b-%Y %T %z\"", &tmp_tm);
 			buf += b2;
 		} else if (strcasecmp(kw, "RFC822") == 0) {
+			deferred_eml_load();
 			buf += fmt::format("RFC822 <<{{file}}{}|0|{}\r\n",
 			       mjson.get_mail_filename(),
 			       mjson.get_mail_length());
@@ -834,6 +841,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 				imap_parser_bcast_flags(*pcontext, pitem->uid);
 			}
 		} else if (strcasecmp(kw, "RFC822.HEADER") == 0) {
+			deferred_eml_load();
 			auto pmime = mjson.get_mime("");
 			if (pmime != nullptr)
 				buf += fmt::format("RFC822.HEADER <<{{file}}{}|0|{}\r\n",
@@ -845,6 +853,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 			buf += "RFC822.SIZE ";
 			buf += std::to_string(mjson.get_mail_length());
 		} else if (strcasecmp(kw, "RFC822.TEXT") == 0) {
+			deferred_eml_load();
 			auto pmime = mjson.get_mime("");
 			size_t ct_length = pmime != nullptr ? pmime->get_content_length() : 0;
 			if (pmime != nullptr)
@@ -867,6 +876,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 			buf += std::to_string(pitem->uid);
 		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
+			deferred_eml_load();
 			auto pbody = strchr(kw, '[');
 			assert(pbody != nullptr);
 			auto pend = strchr(pbody + 1, ']');
