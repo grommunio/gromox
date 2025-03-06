@@ -15,12 +15,13 @@ struct GX_EXPORT mjson_io {
 	using c_iter = decltype(m_cache)::const_iterator;
 
 	bool exists(const std::string &path) const;
-	c_iter find(const std::string &path);
+	const std::string *get_full(const std::string &path) const;
+	std::optional<std::string> get_substr(const std::string &path, size_t of, size_t ln) const;
+	ssize_t get_size(const std::string &path) const;
 	void place(const std::string &path, std::string &&ctnt);
 	void clear() { m_cache.clear(); }
 	bool valid(c_iter it) const { return it != m_cache.cend(); }
 	bool invalid(c_iter it) const { return it == m_cache.cend(); }
-	static std::string substr(c_iter it, size_t of, size_t ln);
 };
 
 struct GX_EXPORT MJSON_MIME {

@@ -491,10 +491,10 @@ static int icp_match_field(mjson_io &io, const char *cmd_tag,
 	auto pbody = strchr(cmd_tag, '[');
 	if (length > 128 * 1024)
 		return -1;
-	auto fd = io.find(file_path);
-	if (io.invalid(fd))
+	auto eml_content = io.get_substr(file_path, offset, length);
+	if (!eml_content.has_value())
 		return -1;
-	auto buff = io.substr(fd, offset, length);
+	auto &buff = eml_content.value();
 
 	char temp_buff[1024], *tmp_argv[128];
 	int tmp_argc;

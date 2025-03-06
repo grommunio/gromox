@@ -978,9 +978,7 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 				ctx.wrdat_content = nullptr;
 				try {
 					auto eml_path = ctx.maildir + "/eml/"s + (last_line + 8);
-					auto fd = ctx.io_actor.find(eml_path);
-					if (ctx.io_actor.valid(fd))
-						ctx.wrdat_content = &fd->second;
+					ctx.wrdat_content = ctx.io_actor.get_full(eml_path);
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1466: ENOMEM");
 				}
@@ -1024,9 +1022,7 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 				ctx.wrdat_content = nullptr;
 				try {
 					auto eml_path = pcontext->maildir + "/tmp/imap.rfc822/"s + (last_line + 10);
-					auto fd = ctx.io_actor.find(eml_path);
-					if (ctx.io_actor.valid(fd))
-						ctx.wrdat_content = &fd->second;
+					ctx.wrdat_content = ctx.io_actor.get_full(eml_path);
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1467: ENOMEM");
 				}
