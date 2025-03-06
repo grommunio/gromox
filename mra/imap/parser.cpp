@@ -619,8 +619,7 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 		if (pcontext->sched_stat == isched_stat::appended) {
 			if (0 != argc) {
 				/* Clears pcontext->mid; is this wanted here? */
-				ctx.wrdat_active = false;
-				ctx.wrdat_content = {};
+				ctx.wrdat_content = nullptr;
 				size_t string_length = 0;
 				auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
 				pcontext->connection.write(pcontext->tag_string, strlen(pcontext->tag_string));
@@ -785,7 +784,7 @@ static tproc_status ps_stat_wrdat(imap_context &ctx)
 	if (pcontext->write_offset < pcontext->write_length)
 		return tproc_status::cont;
 
-	if (!ctx.wrdat_active) {
+	if (ctx.wrdat_content == nullptr) {
 		pcontext->write_offset = 0;
 		pcontext->write_length = 0;
 		switch (imap_parser_wrdat_retrieve(ctx)) {
@@ -809,15 +808,14 @@ static tproc_status ps_stat_wrdat(imap_context &ctx)
 	auto len = pcontext->literal_len - pcontext->current_len;
 	if (len > 64 * 1024)
 		len = 64 * 1024;
-	memcpy(ctx.write_buff, &ctx.wrdat_content[ctx.wrdat_offset], len);
+	memcpy(ctx.write_buff, &ctx.wrdat_content->operator[](ctx.wrdat_offset), len);
 	ctx.wrdat_offset += len;
 	pcontext->current_len += len;
 	pcontext->write_length = len;
 	pcontext->write_offset = 0;
 	if (pcontext->literal_len != pcontext->current_len)
 		return tproc_status::cont;
-	ctx.wrdat_active = false;
-	ctx.wrdat_content = {};
+	ctx.wrdat_content = nullptr;
 	pcontext->literal_len = 0;
 	pcontext->current_len = 0;
 	if (imap_parser_wrdat_retrieve(ctx) != IMAP_RETRIEVE_ERROR)
@@ -926,8 +924,7 @@ static tproc_status ps_end_processing(imap_context *pcontext,
 		pcontext->proto_stat = iproto_stat::auth;
 		pcontext->selected_folder[0] = '\0';
 	}
-	ctx.wrdat_active = false;
-	ctx.wrdat_content = {};
+	ctx.wrdat_content = nullptr;
 	imap_parser_context_clear(pcontext);
 	return tproc_status::close;
 }
@@ -978,43 +975,38 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 			} else {
 				*ptr = '\0';
 				*ptr1 = '\0';
-				ctx.wrdat_active = false;
-				ctx.wrdat_content = {};
+				ctx.wrdat_content = nullptr;
 				try {
 					auto eml_path = ctx.maildir + "/eml/"s + (last_line + 8);
 					auto fd = ctx.io_actor.find(eml_path);
-					if (ctx.io_actor.valid(fd)) {
-						ctx.wrdat_content = fd->second;
-						ctx.wrdat_active = true;
-					}
+					if (ctx.io_actor.valid(fd))
+						ctx.wrdat_content = &fd->second;
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1466: ENOMEM");
 				}
-				if (!ctx.wrdat_active) {
+				if (ctx.wrdat_content == nullptr) {
 					strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
 					pcontext->write_length += 3;
 				} else {
 					ctx.wrdat_offset = strtoul(&ptr[1], nullptr, 0);
-					if (ctx.wrdat_offset > ctx.wrdat_content.size()) {
+					if (ctx.wrdat_offset > ctx.wrdat_content->size()) {
 						mlog(LV_ERR, "E-1758");
-						ctx.wrdat_active = false;
-						ctx.wrdat_content = {};
+						ctx.wrdat_content = nullptr;
 						return IMAP_RETRIEVE_ERROR;
 					}
 					ctx.literal_len = std::min(static_cast<size_t>(strtoul(&ptr1[1], nullptr, 0)),
-					                  ctx.wrdat_content.size() - ctx.wrdat_offset);
+					                  ctx.wrdat_content->size() - ctx.wrdat_offset);
 					pcontext->current_len = 0;
 					pcontext->write_length += sprintf(&pcontext->write_buff[pcontext->write_length], "{%u}\r\n", pcontext->literal_len);
 					len = MAX_LINE_LENGTH - pcontext->write_length;
 					if (len > pcontext->literal_len)
 						len = pcontext->literal_len;
-					memcpy(&ctx.write_buff[ctx.write_length], &ctx.wrdat_content[ctx.wrdat_offset], len);
+					memcpy(&ctx.write_buff[ctx.write_length], &ctx.wrdat_content->operator[](ctx.wrdat_offset), len);
 					ctx.wrdat_offset += len;
 					pcontext->current_len += len;
 					pcontext->write_length += len;
 					if (pcontext->literal_len == len) {
-						ctx.wrdat_active = false;
-						ctx.wrdat_content = {};
+						ctx.wrdat_content = nullptr;
 						pcontext->literal_len = 0;
 						pcontext->current_len = 0;
 					}
@@ -1029,43 +1021,38 @@ static int imap_parser_wrdat_retrieve(imap_context &ctx)
 			} else {
 				*ptr = '\0';
 				*ptr1 = '\0';
-				ctx.wrdat_active = false;
-				ctx.wrdat_content = {};
+				ctx.wrdat_content = nullptr;
 				try {
 					auto eml_path = pcontext->maildir + "/tmp/imap.rfc822/"s + (last_line + 10);
 					auto fd = ctx.io_actor.find(eml_path);
-					if (ctx.io_actor.valid(fd)) {
-						ctx.wrdat_content = fd->second;
-						ctx.wrdat_active = true;
-					}
+					if (ctx.io_actor.valid(fd))
+						ctx.wrdat_content = &fd->second;
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1467: ENOMEM");
 				}
-				if (!ctx.wrdat_active) {
+				if (ctx.wrdat_content == nullptr) {
 					strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
 					pcontext->write_length += 3;
 				} else {
 					ctx.wrdat_offset = strtoul(&ptr[1], nullptr, 0);
-					if (ctx.wrdat_offset > ctx.wrdat_content.size()) {
+					if (ctx.wrdat_offset > ctx.wrdat_content->size()) {
 						mlog(LV_ERR, "E-1757");
-						ctx.wrdat_active = false;
-						ctx.wrdat_content = {};
+						ctx.wrdat_content = nullptr;
 						return IMAP_RETRIEVE_ERROR;
 					}
 					ctx.literal_len = std::min(static_cast<size_t>(strtoul(&ptr1[1], nullptr, 0)),
-					                  ctx.wrdat_content.size() - ctx.wrdat_offset);
+					                  ctx.wrdat_content->size() - ctx.wrdat_offset);
 					pcontext->current_len = 0;
 					ctx.write_length += sprintf(&ctx.write_buff[ctx.write_length], "{%u}\r\n", ctx.literal_len);
 					len = MAX_LINE_LENGTH - pcontext->write_length;
 					if (len > pcontext->literal_len)
 						len = pcontext->literal_len;
-					memcpy(&ctx.write_buff[ctx.write_length], &ctx.wrdat_content[ctx.wrdat_offset], len);
+					memcpy(&ctx.write_buff[ctx.write_length], &ctx.wrdat_content->operator[](ctx.wrdat_offset), len);
 					ctx.wrdat_offset += len;
 					pcontext->current_len += len;
 					pcontext->write_length += len;
 					if (pcontext->literal_len == len) {
-						ctx.wrdat_active = false;
-						ctx.wrdat_content = {};
+						ctx.wrdat_content = nullptr;
 						pcontext->literal_len = 0;
 						pcontext->current_len = 0;
 					}
@@ -1457,8 +1444,7 @@ static void imap_parser_context_clear(imap_context *pcontext)
 	pcontext->connection.reset();
 	pcontext->proto_stat = iproto_stat::none;
 	pcontext->sched_stat = isched_stat::none;
-	ctx.wrdat_active = false;
-	ctx.wrdat_content = {};
+	ctx.wrdat_content = nullptr;
 	pcontext->mid.clear();
 	pcontext->write_buff = nullptr;
 	pcontext->write_length = 0;

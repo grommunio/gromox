@@ -105,8 +105,7 @@ struct imap_context final : public schedule_context {
 	time_t selected_time = 0;
 	std::string selected_folder;
 	content_array contents;
-	std::string wrdat_content;
-	bool wrdat_active = false;
+	const std::string *wrdat_content = nullptr;
 	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
 	std::atomic<unsigned int> async_change_mask{0};
 	/*
