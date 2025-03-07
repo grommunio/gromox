@@ -534,7 +534,7 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		    temp_buff, std::size(temp_buff)))
 			return FALSE;	
 		auto temp_len = utf8_to_mb_len(temp_buff);
-		auto tstr = cu_alloc<char>(temp_len);
+		auto tstr = cu_alloc<char>(std::max(temp_len, strlen(plogon->account) + 1));
 		*ppvalue = tstr;
 		if (*ppvalue == nullptr)
 			return FALSE;
