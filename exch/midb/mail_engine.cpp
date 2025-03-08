@@ -26,7 +26,6 @@
 #include <unordered_map>
 #include <vector>
 #include <fmt/core.h>
-#include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>

@@ -27,6 +27,7 @@
 #	include <xxhash.h>
 #endif
 #include <fmt/core.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
@@ -2807,7 +2808,7 @@ bool cu_rebuild_subjects(const char *&subj, const char *&pfx, const char *&norm)
 	    strncmp(subj, pfx, strlen(pfx)) == 0) {
 		/* Build PR_NORMALIZED_SUBJECT from PR_SUBJECT-PR_SUBJECT_PREFIX. */
 		auto p = subj + strlen(pfx);
-		while (isspace(static_cast<unsigned char>(*p)))
+		while (HX_isspace(*p))
 			++p;
 		norm = p;
 		return true;

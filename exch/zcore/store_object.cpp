@@ -5,7 +5,6 @@
 #	include "config.h"
 #endif
 #include <algorithm>
-#include <cctype>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -15,6 +14,7 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
+#include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
@@ -630,7 +630,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;	
 		auto temp_len = strlen(dispname);
 		for (size_t i = 0; i < temp_len; ++i) {
-			if (isascii(dispname[i]))
+			if (HX_isascii(dispname[i]))
 				continue;
 			gx_strlcpy(dispname, pstore->account, dsize);
 			auto p = strchr(dispname, '@');

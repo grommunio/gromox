@@ -12,6 +12,7 @@
 #include <iterator>
 #include <set>
 #include <utility>
+#include <libHX/ctype_helper.h>
 #include <vmime/header.hpp>
 #include <vmime/text.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -21,7 +22,6 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
-
 #include "ews.hpp"
 #include "structures.hpp"
 #include "namedtags.hpp"
@@ -255,7 +255,7 @@ void daysofweek_to_str(const uint32_t& weekrecur, std::string& daysofweek)
 		if (weekrecur & (1 << wd))
 			daysofweek.append(Enum::DayOfWeekType::Choices[wd]).append(" ");
 	// remove trailing space
-	if (!daysofweek.empty() && std::isspace(daysofweek.back()))
+	if (!daysofweek.empty() && HX_isspace(daysofweek.back()))
 		daysofweek.pop_back();
 }
 

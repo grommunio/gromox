@@ -16,7 +16,6 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
-#include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/err.h>

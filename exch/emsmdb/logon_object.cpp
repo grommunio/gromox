@@ -11,6 +11,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -447,7 +448,7 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 			return FALSE;	
 		auto temp_len = strlen(dispname);
 		for (size_t i = 0; i < temp_len; ++i) {
-			if (isascii(dispname[i]))
+			if (HX_isascii(dispname[i]))
 				continue;
 			gx_strlcpy(dispname, plogon->account, UADDR_SIZE);
 			auto p = strchr(dispname, '@');

@@ -20,7 +20,6 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
-#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>

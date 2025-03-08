@@ -16,7 +16,6 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
-#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>

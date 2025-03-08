@@ -36,15 +36,6 @@
 #ifdef HAVE_SYSLOG_H
 #	include <syslog.h>
 #endif
-#include <netinet/in.h>
-#include <sys/mman.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/un.h>
-#include <sys/wait.h>
-#if defined(HAVE_SYS_XATTR_H)
-#	include <sys/xattr.h>
-#endif
 #include <json/reader.h>
 #include <json/writer.h>
 #include <libHX/ctype_helper.h>
@@ -54,6 +45,15 @@
 #include <libHX/proc.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
+#include <netinet/in.h>
+#include <sys/mman.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/un.h>
+#include <sys/wait.h>
+#if defined(HAVE_SYS_XATTR_H)
+#	include <sys/xattr.h>
+#endif
 #include <vmime/charset.hpp>
 #include <gromox/archive.hpp>
 #include <gromox/atomic.hpp>
@@ -613,7 +613,7 @@ std::string bin2cstr(const void *vdata, size_t len)
 		case '\\':
 			b[1] = data[i]; break;
 		default: {
-			if (isprint(data[i])) {
+			if (HX_isprint(data[i])) {
 				b[0] = data[i];
 				b[1] = '\0';
 				break;
@@ -680,7 +680,7 @@ std::string bin2txt(const void *vdata, size_t len)
 			b[0] = '\\';
 			b[1] = data[i];
 			b[2] = '\0';
-		} else if (isprint(data[i]) && data[i] != '^') {
+		} else if (HX_isprint(data[i]) && data[i] != '^') {
 			b[0] = data[i];
 			b[1] = '\0';
 		} else {
@@ -1459,7 +1459,7 @@ size_t utf8_printable_prefix(const void *vinput, size_t max)
 	const uint8_t *p = begin;
 	for (uint8_t seg = 0; max > 0 && *p != '\0'; ++p, --seg, --max) {
 		if (seg == 0) {
-			if (iscntrl(*p) && !isspace(*p))
+			if (iscntrl(static_cast<unsigned char>(*p)) && !HX_isspace(*p))
 				break;
 			seg = utf8_byte_num[*p];
 			if (seg == 0)
@@ -1606,7 +1606,7 @@ const std::string_view *archive::find(const std::string &file) const
 bool str_isascii(const char *s)
 {
 	for (; *s != '\0'; ++s)
-		if (!isascii(static_cast<unsigned char>(*s)))
+		if (!HX_isascii(static_cast<unsigned char>(*s)))
 			return false;
 	return true;
 }
@@ -1615,7 +1615,7 @@ bool str_isasciipr(const char *s)
 {
 	for (; *s != '\0'; ++s) {
 		unsigned char c = *s;
-		if (!isascii(c) && !isprint(c))
+		if (!HX_isascii(c) && !HX_isprint(c))
 			return false;
 	}
 	return true;

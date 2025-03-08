@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
 #include <cassert>
-#include <cctype>
 #include <cerrno>
 #include <climits>
 #include <cstdint>
@@ -14,6 +13,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/endian.h>
 #include <libHX/libxml_helper.h>
@@ -368,7 +368,7 @@ static ec_error_t html_write_string(RTF_WRITER *pwriter, const char *string)
 		if (ptr + len > pend) {
 			return ecError;
 		}
-		if (1 == len && isascii(*ptr)) {
+		if (len == 1 && HX_isascii(*ptr)) {
 			if ('\\' == *ptr) {
 				QRF(pwriter->ext_push.p_bytes("\\\\", 2));
 			} else if ('{' == *ptr) {

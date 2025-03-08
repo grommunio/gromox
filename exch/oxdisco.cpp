@@ -17,7 +17,6 @@
 #include <fmt/printf.h>
 #include <json/value.h>
 #include <json/writer.h>
-#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
 #include <gromox/element_data.hpp> /* MESSAGE_CONTENT alias */
