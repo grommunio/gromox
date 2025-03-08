@@ -171,15 +171,13 @@ static int ptesv_to_prop(const struct pte &pte, const char *cset,
 	case PT_STRING8: {
 		if (pte.v_ui4 != blob->cb + 1)
 			return -EIO;
-		auto s = iconvtext(blob->pc, blob->cb, cset, "UTF-8//IGNORE");
-		if (errno != 0)
-			return -errno;
+		auto s = iconvtext(blob->pc, blob->cb, cset, "UTF-8");
 		return ece2nerrno(proplist.set(pte.proptag, s.data()));
 	}
 	case PT_UNICODE: {
 		if (pte.v_ui4 != blob->cb + 2)
 			return -EIO;
-		auto s = iconvtext(blob->pc, blob->cb, "UTF-16", "UTF-8//IGNORE");
+		auto s = iconvtext(blob->pc, blob->cb, "UTF-16", "UTF-8");
 		if (errno != 0)
 			return -errno;
 		return ece2nerrno(proplist.set(pte.proptag, s.data()));
@@ -283,9 +281,9 @@ static int ptemvs_to_prop(const struct pte &pte, const char *cset,
 			throw YError("PO-1017");
 
 		if (PROP_TYPE(pte.proptag) == PT_MV_STRING8)
-			rdbuf = iconvtext(rdbuf.c_str(), strm_size, cset, "UTF-8//IGNORE");
+			rdbuf = iconvtext(rdbuf.c_str(), strm_size, cset, "UTF-8");
 		else
-			rdbuf = iconvtext(rdbuf.c_str(), strm_size, "UTF-16", "UTF-8//IGNORE");
+			rdbuf = iconvtext(rdbuf.c_str(), strm_size, "UTF-16", "UTF-8");
 		if (errno != 0)
 			return -errno;
 		strs[i] = std::move(rdbuf);
@@ -513,7 +511,7 @@ static int npg_read(libolecf_item_t *root)
 			wbuf.resize(len);
 			if (sp.g_bytes(wbuf.data(), len) != pack_result::ok)
 				return -EIO;
-			pn_req.name = iconvtext(wbuf.data(), len, "UTF-16", "UTF-8//IGNORE");
+			pn_req.name = iconvtext(wbuf.data(), len, "UTF-16", "UTF-8");
 			if (errno != 0)
 				return -errno;
 		}

@@ -630,7 +630,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 		} else if (vtype == PT_UNICODE) {
 			fprintf(stderr, "PF-1041: Garbage in string which cannot be represented in UTF-8\n");
 			auto s = iconvtext(reinterpret_cast<char *>(buf.get()), dsize,
-			         "UTF-16", "UTF-8//IGNORE");
+			         "UTF-16", "UTF-8");
 			if (errno != 0)
 				throw YError("PF-1140: "s + strerror(errno));
 			dsize = s.size() + 1;
@@ -639,7 +639,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 		} else if (vtype == PT_STRING8) {
 			fprintf(stderr, "PF-1041: Garbage in string which cannot be represented in UTF-8\n");
 			auto s = iconvtext(reinterpret_cast<char *>(buf.get()), dsize,
-			         g_ascii_charset, "UTF-8//IGNORE");
+			         g_ascii_charset, "UTF-8");
 			if (errno != 0)
 				throw YError("PF-1141: "s + strerror(errno));
 			dsize = s.size() * 3 + 1;

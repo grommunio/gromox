@@ -1583,11 +1583,9 @@ std::string iconvtext(const char *src, size_t src_size,
 		errno = 0;
 		return {reinterpret_cast<const char *>(src), src_size};
 	}
-	auto cs = to + "//IGNORE"s;
-	auto cd = iconv_open(cs.c_str(), from);
+	auto cd = iconv_open(to, from);
 	if (cd == reinterpret_cast<iconv_t>(-1)) {
-		mlog(LV_ERR, "E-2116: iconv_open %s: %s",
-		        cs.c_str(), strerror(errno));
+		mlog(LV_ERR, "E-2116: iconv_open(%s -> %s): %s", from, to, strerror(errno));
 		errno = EINVAL;
 		return {};
 	}
