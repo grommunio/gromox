@@ -1597,15 +1597,14 @@ std::string iconvtext(const char *src, size_t src_size,
 		auto dst = buffer;
 		size_t dst_size = sizeof(buffer);
 		auto ret = iconv(cd, (char**)&src, &src_size, (char**)&dst, &dst_size);
-		if (ret != static_cast<size_t>(-1) || dst_size != sizeof(buffer)) {
+		if (dst_size != sizeof(buffer))
 			out.append(buffer, sizeof(buffer) - dst_size);
+		if (ret != (size_t)-1 || src_size == 0)
 			continue;
-		}
-		if (src_size > 0) {
+		if (errno == EILSEQ || errno == EINVAL) {
 			--src_size;
 			++src;
 		}
-		out.append(buffer, sizeof(buffer) - dst_size);
 	}
 	errno = 0;
 	return out;
