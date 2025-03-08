@@ -25,6 +25,7 @@ struct message_object;
 namespace emsmdb {
 
 void* common_util_alloc(size_t size);
+extern char *cu_strdup(std::string_view);
 template<typename T> T *cu_alloc()
 {
 	static_assert(std::is_trivially_destructible_v<T>);

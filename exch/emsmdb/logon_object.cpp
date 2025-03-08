@@ -481,12 +481,8 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn) != ecSuccess)
 			return false;
-		auto tstr = cu_alloc<char>(essdn.size() + 1);
-		*ppvalue = tstr;
-		if (*ppvalue == nullptr)
-			return FALSE;
-		gx_strlcpy(tstr, essdn.c_str(), essdn.size() + 1);
-		return TRUE;
+		*ppvalue = cu_strdup(essdn);
+		return *ppvalue != nullptr ? TRUE : false;
 	}
 	case PR_EXTENDED_RULE_SIZE_LIMIT: {
 		auto v = cu_alloc<uint32_t>();
@@ -514,20 +510,8 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		if (!mysql_adaptor_get_user_displayname(plogon->account,
 		    temp_buff, std::size(temp_buff)))
 			return FALSE;	
-		if ('\0' == temp_buff[0]) {
-			auto tstr = cu_alloc<char>(strlen(plogon->account) + 1);
-			*ppvalue = tstr;
-			if (*ppvalue == nullptr)
-				return FALSE;
-			strcpy(tstr, plogon->account);
-		} else {
-			auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
-			*ppvalue = tstr;
-			if (*ppvalue == nullptr)
-				return FALSE;
-			strcpy(tstr, temp_buff);
-		}
-		return TRUE;
+		*ppvalue = cu_strdup(*temp_buff == '\0' ? plogon->account : temp_buff);
+		return *ppvalue != nullptr ? TRUE : false;
 	case PR_MAILBOX_OWNER_NAME_A: {
 		if (!plogon->is_private())
 			return FALSE;

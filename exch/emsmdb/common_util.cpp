@@ -75,6 +75,16 @@ void* common_util_alloc(size_t size)
 	return ndr_stack_alloc(NDR_STACK_IN, size);
 }
 
+char *cu_strdup(std::string_view sv)
+{
+	auto out = cu_alloc<char>(sv.size() + 1);
+	if (out != nullptr) {
+		memcpy(out, sv.data(), sv.size());
+		out[sv.size()] = '\0';
+	}
+	return out;
+}
+
 ssize_t cu_utf8_to_mb(cpid_t cpid, const char *src,
     char *dst, size_t len)
 {

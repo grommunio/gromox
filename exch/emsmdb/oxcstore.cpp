@@ -359,10 +359,9 @@ ec_error_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 	           g_emsmdb_org_name, user_id, serverdn);
 	if (err != ecSuccess)
 		return err;
-	pghost->ppservers[0] = cu_alloc<char>(serverdn.size() + 1);
+	pghost->ppservers[0] = cu_strdup(serverdn);
 	if (pghost->ppservers[0] == nullptr)
 		return ecServerOOM;
-	gx_strlcpy(pghost->ppservers[0], serverdn.c_str(), serverdn.size() + 1);
 	return ecSuccess;
 }
 
