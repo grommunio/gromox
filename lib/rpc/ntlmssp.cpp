@@ -9,6 +9,7 @@
 #include <iconv.h>
 #include <memory>
 #include <mutex>
+#include <libHX/endian.h>
 #include <libHX/string.h>
 #include <openssl/evp.h>
 #include <openssl/md4.h>
@@ -16,7 +17,6 @@
 #include <gromox/arcfour.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/ndr.hpp>
 #include <gromox/ntlmssp.hpp>
 #include <gromox/util.hpp>

@@ -7,9 +7,9 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <libHX/endian.h>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/util.hpp>

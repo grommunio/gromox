@@ -2,8 +2,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <libHX/endian.h>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>

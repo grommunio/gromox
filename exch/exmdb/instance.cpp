@@ -16,7 +16,6 @@
 #include <libHX/scope.hpp>
 #include <sys/stat.h>
 #include <gromox/database.h>
-#include <gromox/endian.hpp>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/fileio.h>

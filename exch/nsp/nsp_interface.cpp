@@ -16,13 +16,13 @@
 #include <unordered_set>
 #include <vector>
 #include <fmt/core.h>
+#include <libHX/endian.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/ab_tree.hpp>
 #include <gromox/archive.hpp>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>

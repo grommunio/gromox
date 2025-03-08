@@ -6,9 +6,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <libHX/endian.h>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/ndr.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 #define NDR_BE(pndr) ((pndr->flags & NDR_FLAG_BIGENDIAN) != 0)

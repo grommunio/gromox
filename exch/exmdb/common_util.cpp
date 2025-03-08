@@ -35,7 +35,6 @@
 #include <sys/types.h>
 #include <gromox/database.h>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/ext_buffer.hpp>

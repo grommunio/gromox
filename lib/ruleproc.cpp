@@ -7,17 +7,17 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <libHX/endian.h>
 #include <libHX/scope.hpp>
 #include <vmime/utility/url.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/element_data.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/freebusy.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/freebusy.hpp>
 #include <gromox/mapierr.hpp>
 #include <gromox/mapitags.hpp>
 #include <gromox/mysql_adaptor.hpp>
@@ -28,7 +28,6 @@
 #include <gromox/svc_common.h>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
-#include <gromox/rop_util.hpp>
 
 using namespace gromox;
 DECLARE_SVC_API(,);

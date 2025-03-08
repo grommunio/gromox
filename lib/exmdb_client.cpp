@@ -13,11 +13,11 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <vector>
+#include <libHX/endian.h>
 #include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>

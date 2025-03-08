@@ -11,12 +11,12 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/mysql_adaptor.hpp>

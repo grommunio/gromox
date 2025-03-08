@@ -15,11 +15,11 @@
 #include <utility>
 #include <vector>
 #include <libHX/defs.h>
-#include <libHX/string.h>
+#include <libHX/endian.h>
 #include <libHX/libxml_helper.h>
+#include <libHX/string.h>
 #include <libxml/HTMLparser.h>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>

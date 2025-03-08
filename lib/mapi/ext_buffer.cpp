@@ -8,10 +8,10 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <libHX/endian.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>

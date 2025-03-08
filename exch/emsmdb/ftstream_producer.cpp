@@ -10,9 +10,9 @@
 #include <memory>
 #include <string>
 #include <unistd.h>
+#include <libHX/endian.h>
 #include <sys/stat.h>
 #include <gromox/element_data.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>

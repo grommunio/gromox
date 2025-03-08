@@ -11,10 +11,10 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
+#include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapitags.hpp>
 #include <gromox/paths.h>

@@ -16,6 +16,7 @@
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
+#include <libHX/endian.h>
 #include <libHX/string.h>
 #include <sys/ipc.h>
 #include <sys/mman.h>
@@ -26,7 +27,6 @@
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/flusher_common.h>
 #include <gromox/paths.h>

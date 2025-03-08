@@ -13,13 +13,13 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <libHX/endian.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/bounce_gen.hpp>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>

@@ -10,12 +10,12 @@
 #include <unistd.h>
 #include <vector>
 #include <fmt/core.h>
+#include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/paths.h>
 #include <gromox/textmaps.hpp>

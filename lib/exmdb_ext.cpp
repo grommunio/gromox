@@ -9,8 +9,8 @@
 #include <type_traits>
 #include <unistd.h>
 #include <utility>
+#include <libHX/endian.h>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>

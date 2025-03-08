@@ -18,11 +18,11 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/scope.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>

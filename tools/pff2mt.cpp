@@ -19,12 +19,12 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/clock.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>

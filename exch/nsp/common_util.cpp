@@ -8,10 +8,10 @@
 #include <fcntl.h>
 #include <iconv.h>
 #include <unistd.h>
+#include <libHX/endian.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>

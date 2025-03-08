@@ -5,10 +5,10 @@
 #include <cstring>
 #include <memory>
 #include <string_view>
+#include <libHX/endian.h>
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
 #include <gromox/cryptoutil.hpp>
-#include <gromox/endian.hpp>
 
 namespace gromox {
 

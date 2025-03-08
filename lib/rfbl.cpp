@@ -49,6 +49,7 @@
 #include <json/writer.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
+#include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/proc.h>
 #include <libHX/scope.hpp>
@@ -58,7 +59,6 @@
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/generic_connection.hpp>
 #include <gromox/json.hpp>

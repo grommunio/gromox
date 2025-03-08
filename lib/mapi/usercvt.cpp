@@ -7,9 +7,9 @@
 #include <string>
 #include <utility>
 #include <fmt/core.h>
+#include <libHX/endian.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
-#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapierr.hpp>

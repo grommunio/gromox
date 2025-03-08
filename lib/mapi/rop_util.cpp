@@ -5,9 +5,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <gromox/endian.hpp>
-#include <gromox/ical.hpp>
+#include <libHX/endian.h>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/ical.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>

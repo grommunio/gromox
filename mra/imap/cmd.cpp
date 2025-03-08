@@ -27,7 +27,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>

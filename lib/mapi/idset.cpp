@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
 #include <cassert>
-#include <cstdio>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <optional>
 #include <vector>
-#include <gromox/endian.hpp>
+#include <libHX/endian.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>

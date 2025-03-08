@@ -3,8 +3,8 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
+#include <libHX/endian.h>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/lzxpress.hpp>
 #include <gromox/proc_common.h>

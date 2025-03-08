@@ -15,7 +15,7 @@
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
 #	include <sys/random.h>
 #endif
-#include <gromox/endian.hpp>
+#include <libHX/endian.h>
 #include <gromox/mapidefs.h>
 #include <gromox/util.hpp>
 

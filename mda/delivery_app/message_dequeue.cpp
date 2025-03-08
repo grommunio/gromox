@@ -19,9 +19,10 @@
 #include <mutex>
 #include <pthread.h>
 #include <string>
-#include <unordered_map>
 #include <unistd.h>
+#include <unordered_map>
 #include <vector>
+#include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/ipc.h>
@@ -30,7 +31,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>

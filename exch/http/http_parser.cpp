@@ -29,7 +29,7 @@
 #ifdef HAVE_GSSAPI
 #	include <gssapi/gssapi.h>
 #endif
-#include <sys/wait.h>
+#include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/misc.h>
 #include <libHX/proc.h>
@@ -40,12 +40,12 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/hpm_common.h>
 #include <gromox/http.hpp>
@@ -53,12 +53,12 @@
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include "hpm_processor.hpp"
-#include "http_parser.hpp"
 #include "cache.hpp"
 #include "fastcgi.hpp"
-#include "rewrite.hpp"
+#include "hpm_processor.hpp"
+#include "http_parser.hpp"
 #include "pdu_ndr.hpp"
+#include "rewrite.hpp"
 #include "resource.hpp"
 #include "system_services.hpp"
 #if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \

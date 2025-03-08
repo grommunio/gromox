@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
 // This file is part of Gromox.
-#include <gromox/endian.hpp>
-#include <gromox/util.hpp>
+#include <libHX/endian.h>
 #include <libHX/string.h>
-
+#include <gromox/util.hpp>
 #include "ab_tree.hpp"
 #include "common_util.hpp"
 #include "zserver.hpp"

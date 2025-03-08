@@ -17,12 +17,12 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <libHX/endian.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/config_file.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/svc_loader.hpp>

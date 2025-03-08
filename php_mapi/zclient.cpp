@@ -2,24 +2,24 @@
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include "php.h"
+#include <cerrno>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fcntl.h>
+#include <libHX/endian.h>
 #include <libHX/string.h>
-#include <gromox/endian.hpp>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/un.h>
 #include <gromox/paths.h>
 #include <gromox/zcore_client.hpp>
 #include <gromox/zcore_rpc.hpp>
 #include "ext.hpp"
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/un.h>
-#include <cstring>
-#include <cstdlib>
-#include <cstddef>
-#include <cstdio>
-#include <fcntl.h>
-#include <cerrno>
-#include <cstdint>
 
 static int zclient_connect()
 {

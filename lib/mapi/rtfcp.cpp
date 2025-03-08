@@ -5,8 +5,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <libHX/endian.h>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail_func.hpp>
 #define	RTF_COMPRESSED			0x75465a4c

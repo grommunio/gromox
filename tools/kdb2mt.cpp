@@ -18,15 +18,15 @@
 #include <utility>
 #include <vector>
 #include <zlib.h>
+#include <fmt/core.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
-#include <fmt/core.h>
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>

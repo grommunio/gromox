@@ -34,9 +34,9 @@
  */
 #include <cstdint>
 #include <cstring>
+#include <libHX/endian.h>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
 #include <gromox/lzxpress.hpp>
 #define WINDOWS_SIZE				0x20
 

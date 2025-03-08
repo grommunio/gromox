@@ -4,13 +4,13 @@
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
+#include <libHX/endian.h>
 #include <libHX/string.h>
 #include <gromox/element_data.hpp>
-#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/ical.hpp>
-#include <gromox/mapi_types.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/msgchg_grouping.hpp>
 #include <gromox/paths.h>
 #include <gromox/propval.hpp>
@@ -311,13 +311,13 @@ static int t_cmp_guid()
 	ep.init(buf, sizeof(buf), 0);
 	if (ep.p_guid(PSETID_Address) != pack_result::success)
 		return EXIT_FAILURE;
-	assert((memcmp(&PSETID_Address, buf, sizeof(buf)) != 0) == GX_BIG_ENDIAN);
+	assert(memcmp(&PSETID_Address, "\x04\x20\x06\x00", 4) == 0);
 	static_assert(std::is_same_v<decltype(PSETID_Address), const GUID>);
 
 	ep.init(buf, sizeof(buf), 0);
 	if (ep.p_guid(muidEMSAB) != EXT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	assert(memcmp(&muidEMSAB, buf, sizeof(buf)) == 0);
+	assert(memcmp(&muidEMSAB, "\xDC\xA7\x40\xC8", 4) == 0);
 	static_assert(std::is_same_v<decltype(muidEMSAB), const FLATUID>);
 	return EXIT_SUCCESS;
 }
