@@ -132,7 +132,7 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node& pnode, uint32_t 
 		auto err = pnode.mdbdn(mdbdn);
 		if (err != ecSuccess)
 			return false;
-		auto pvalue = common_util_dup(mdbdn.c_str());
+		auto pvalue = common_util_dup(mdbdn);
 		if (pvalue == nullptr)
 			return FALSE;
 		*ppvalue = pvalue;
@@ -167,7 +167,7 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node& pnode, uint32_t 
 		std::string dn;
 		if (!pnode.dn(dn))
 			return FALSE;
-		auto pvalue = common_util_dup(dn.c_str());
+		auto pvalue = common_util_dup(dn);
 		if (pvalue == nullptr)
 			return FALSE;
 		*ppvalue = pvalue;
@@ -277,7 +277,7 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node& pnode, uint32_t 
 		std::string dn = pnode.displayname();
 		if (dn.empty())
 			return TRUE;
-		auto pvalue = common_util_dup(dn.c_str());
+		auto pvalue = common_util_dup(dn);
 		if (pvalue == nullptr)
 			return FALSE;
 		*ppvalue = pvalue;
@@ -290,7 +290,7 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node& pnode, uint32_t 
 		pnode.company_info(&dn, nullptr);
 		if (dn.empty())
 			return TRUE;
-		auto pvalue = common_util_dup(dn.c_str());
+		auto pvalue = common_util_dup(dn);
 		if (pvalue == nullptr)
 			return TRUE;
 		*ppvalue = pvalue;
@@ -307,7 +307,7 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node& pnode, uint32_t 
 			return TRUE;
 		if (dn.empty())
 			return TRUE;
-		auto pvalue = common_util_dup(dn.c_str());
+		auto pvalue = common_util_dup(dn);
 		if (pvalue == nullptr)
 			return TRUE;
 		*ppvalue = pvalue;

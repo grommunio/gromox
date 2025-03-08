@@ -963,7 +963,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;	
 		if (mres.lang.size() > 0)
 			mres.lang += ".UTF-8";
-		*ppvalue = common_util_dup(mres.lang.c_str());
+		*ppvalue = common_util_dup(mres.lang);
 		return TRUE;
 	}
 	case PR_EC_USER_TIMEZONE: {

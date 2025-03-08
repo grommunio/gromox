@@ -785,8 +785,8 @@ ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
 	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return ecError;
 	pentryid->cb = ext_push.m_offset;
-	*ppdisplay_name = common_util_dup(dispname.c_str());
-	*ppx500dn = common_util_dup(essdn.c_str());
+	*ppdisplay_name = common_util_dup(dispname);
+	*ppx500dn = common_util_dup(essdn);
 	return *ppdisplay_name == nullptr || *ppx500dn == nullptr ?
 	       ecServerOOM : ecSuccess;
 } catch (const std::bad_alloc &) {
@@ -3210,7 +3210,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				           g_org_name, cu_id2user, es_result);
 				if (ret != ecSuccess)
 					continue;
-				tmp_propval.pvalue = common_util_dup(es_result.c_str());
+				tmp_propval.pvalue = common_util_dup(es_result);
 				if (tmp_propval.pvalue == nullptr)
 					return ecServerOOM;
 				es_result.clear();
@@ -5180,6 +5180,6 @@ ec_error_t zs_essdn_to_username(const char *essdn, char **username)
 	auto ret = cvt_essdn_to_username(essdn, g_org_name, cu_id2user, es_result);
 	if (ret != ecSuccess)
 		return ret;
-	*username = common_util_dup(es_result.c_str());
+	*username = common_util_dup(es_result);
 	return ecSuccess;
 }

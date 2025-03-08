@@ -166,13 +166,13 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	    mysql_adaptor_userid_to_name(node.mid.value(), username) != ecSuccess)
 		return TRUE;
 	if (w_smtp) {
-		auto s = common_util_dup(username.c_str());
+		auto s = common_util_dup(username);
 		if (s == nullptr)
 			return FALSE;
 		ppropvals->emplace_back(PR_SMTP_ADDRESS, s);
 	}
 	if (w_acct) {
-		auto s = common_util_dup(username.c_str());
+		auto s = common_util_dup(username);
 		if (s == nullptr)
 			return FALSE;
 		ppropvals->emplace_back(PR_ACCOUNT, s);
@@ -181,14 +181,14 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (w_email && cvt_username_to_essdn(username.c_str(), g_org_name,
 	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 	    essdn) == ecSuccess) {
-		auto s = common_util_dup(essdn.c_str());
+		auto s = common_util_dup(essdn);
 		if (s == nullptr)
 			return FALSE;
 		ppropvals->emplace_back(PR_EMAIL_ADDRESS, s);
 	}
 	if (w_dname && mysql_adaptor_get_user_displayname(username.c_str(),
 	    tmp_buff, std::size(tmp_buff))) {
-		auto s = common_util_dup(*tmp_buff != '\0' ? tmp_buff : username.c_str());
+		auto s = *tmp_buff != '\0' ? common_util_dup(tmp_buff) : common_util_dup(username);
 		if (s == nullptr)
 			return FALSE;
 		ppropvals->emplace_back(PR_DISPLAY_NAME, s);

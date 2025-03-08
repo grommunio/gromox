@@ -392,16 +392,14 @@ int common_util_get_clifd()
 	return -1;
 }
 
-char *common_util_dup(const char *src)
+char *common_util_dup(std::string_view sv)
 {
-	int len;
-	
-	len = strlen(src) + 1;
-	auto dst = cu_alloc<char>(len);
-	if (dst == nullptr)
-		return NULL;
-	memcpy(dst, src, len);
-	return dst;
+	auto out = cu_alloc<char>(sv.size() + 1);
+	if (out != nullptr) {
+		memcpy(out, sv.data(), sv.size());
+		out[sv.size()] = '\0';
+	}
+	return out;
 }
 
 static BINARY *common_util_dup_binary(const BINARY *src)
@@ -1913,7 +1911,7 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 		return FALSE;	
 	}
 	pical_bin->cb = tmp_buff.size();
-	pical_bin->pc = common_util_dup(tmp_buff.c_str());
+	pical_bin->pc = common_util_dup(tmp_buff);
 	return pical_bin->pc != nullptr ? TRUE : FALSE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2183: ENOMEM");
