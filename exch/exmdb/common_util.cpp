@@ -177,16 +177,14 @@ void* common_util_alloc(size_t size)
 	return ndr_stack_alloc(NDR_STACK_IN, size);
 }
 
-char* common_util_dup(const char *pstr)
+char *common_util_dup(std::string_view sv)
 {
-	int len;
-	
-	len = strlen(pstr) + 1;
-	auto pstr1 = cu_alloc<char>(len);
-	if (pstr1 == nullptr)
-		return NULL;
-	memcpy(pstr1, pstr, len);
-	return pstr1;
+	auto out = cu_alloc<char>(sv.size() + 1);
+	if (out != nullptr) {
+		memcpy(out, sv.data(), sv.size());
+		out[sv.size()] = '\0';
+	}
+	return out;
 }
 
 char *common_util_convert_copy(BOOL to_utf8, cpid_t cpid, const char *pstring)
@@ -1448,7 +1446,7 @@ static BOOL common_util_get_message_display_recipients(sqlite3 *psqlite,
 		*ppvalue = deconst(&fake_empty);
 		return TRUE;
 	}
-	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(dr.c_str()) :
+	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(dr) :
 	           common_util_convert_copy(false, cpid, dr.c_str());
 	return *ppvalue != nullptr ? TRUE : false;
 } catch (const std::bad_alloc &) {
@@ -1563,12 +1561,12 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 		   g_dbg_synth_content <= 1 ? "Property/Attachment absent" :
 		   "Filler text for debugging");
 	if (PROP_TYPE(proptag) == PT_UNICODE || PROP_TYPE(proptag) == PT_STRING8)
-		return common_util_dup(str.c_str());
+		return common_util_dup(str);
 	auto bv = cu_alloc<BINARY>();
 	if (bv == nullptr)
 		return nullptr;
 	bv->cb = str.size();
-	bv->pc = common_util_dup(str.c_str());
+	bv->pc = common_util_dup(str);
 	if (bv->pc == nullptr)
 		return nullptr;
 	return bv;
@@ -1806,7 +1804,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 			return GP_ERR;
 		else if (err != ecSuccess)
 			return GP_UNHANDLED;
-		pv.pvalue = common_util_dup(path.c_str());
+		pv.pvalue = common_util_dup(path);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	}
 	default:

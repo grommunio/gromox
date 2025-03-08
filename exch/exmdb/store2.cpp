@@ -82,7 +82,7 @@ BOOL exmdb_server::store_eid_to_user(const char *, const STORE_ENTRYID *store_ei
 		if (!mysql_adaptor_get_user_ids(store_eid->pserver_name, &uid, &domid, &dt) ||
 		    mysql_adaptor_meta(store_eid->pserver_name, WANTPRIV_METAONLY, mres) != 0)
 			return false;
-		*maildir = common_util_dup(mres.maildir.c_str());
+		*maildir = common_util_dup(mres.maildir);
 	} else if (store_eid->wrapped_provider_uid == g_muidStorePublic) {
 		std::string es_result;
 		char md[256];

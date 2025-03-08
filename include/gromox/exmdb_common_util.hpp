@@ -67,7 +67,7 @@ template<typename T> T *cu_alloc(size_t elem)
 	static_assert(std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
 }
-char* common_util_dup(const char *pstr);
+extern char *common_util_dup(std::string_view);
 extern char *common_util_convert_copy(BOOL to_utf8, cpid_t, const char *s);
 extern STRING_ARRAY *common_util_convert_copy_string_array(BOOL to_utf8, cpid_t, const STRING_ARRAY *);
 BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid);

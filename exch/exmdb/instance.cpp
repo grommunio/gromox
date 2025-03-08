@@ -1658,7 +1658,7 @@ static BOOL instance_get_message_display_recipients(const tarray_set *prcpts,
 		*ppvalue = deconst(&fake_empty);
 		return TRUE;
 	}
-	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(dr.c_str()) :
+	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(dr) :
 	           common_util_convert_copy(false, cpid, dr.c_str());
 	return *ppvalue != nullptr ? TRUE : false;
 } catch (const std::bad_alloc &) {
