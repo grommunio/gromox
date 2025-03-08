@@ -84,6 +84,8 @@ static int t_convert()
 	static constexpr char s1[] = "\x41\xe2\x98\x83\xef\xb8\x8f\x42";
 	auto sout = iconvtext(s1, strlen(s1), "utf-8", "iso-8859-1");
 	assert(strcmp(sout.c_str(), "AB") == 0);
+	sout = iconvtext(s1, strlen(s1), "utf-8", "iso-8859-1", ICONVTEXT_TRANSLIT);
+	assert(strcmp(sout.c_str(), "A?B") == 0);
 
 	std::string s2(4095, 'A');
 	s2 += "\xe4";

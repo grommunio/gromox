@@ -391,7 +391,7 @@ bool rtf_reader::riconv_open(const char *fromcode)
 		preader->conv_id = (iconv_t)-1;
 	}
 	auto cs = replace_iconv_charset(fromcode);
-	preader->conv_id = iconv_open("UTF-8//TRANSLIT", cs);
+	preader->conv_id = iconv_open("UTF-8", cs);
 	if ((iconv_t)-1 == preader->conv_id) {
 		mlog(LV_ERR, "E-2114: iconv_open %s: %s", cs, strerror(errno));
 		return false;
@@ -3264,9 +3264,7 @@ ec_error_t rtf_to_html(std::string_view input, const char *charset,
 		buf_out.assign(reader.ext_push.m_cdata, reader.ext_push.m_offset);
 		return ecSuccess;
 	}
-	snprintf(tmp_buff, 128, "%s//TRANSLIT",
-		replace_iconv_charset(charset));
-	buf_out = iconvtext(reader.ext_push.m_cdata, reader.ext_push.m_offset, "UTF-8", tmp_buff);
+	buf_out = iconvtext(reader.ext_push.m_cdata, reader.ext_push.m_offset, "UTF-8", tmp_buff, ICONVTEXT_TRANSLIT);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);

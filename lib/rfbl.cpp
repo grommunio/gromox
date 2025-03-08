@@ -1577,7 +1577,7 @@ size_t utf8_printable_prefix(const void *vinput, size_t max)
  * anyway.
  */
 std::string iconvtext(const char *src, size_t src_size,
-    const char *from, const char *to) try
+    const char *from, const char *to, unsigned int flags) try
 {
 	if (strcasecmp(from, to) == 0) {
 		errno = 0;
@@ -1592,18 +1592,29 @@ std::string iconvtext(const char *src, size_t src_size,
 	auto cleanup = HX::make_scope_exit([&]() { iconv_close(cd); });
 	char buffer[4096];
 	std::string out;
+	bool last_bad = false;
 
 	while (src_size > 0) {
 		auto dst = buffer;
 		size_t dst_size = sizeof(buffer);
+		errno = 0;
 		auto ret = iconv(cd, (char**)&src, &src_size, (char**)&dst, &dst_size);
-		if (dst_size != sizeof(buffer))
+		if (dst_size != sizeof(buffer)) {
+			last_bad = false;
 			out.append(buffer, sizeof(buffer) - dst_size);
-		if (ret != (size_t)-1 || src_size == 0)
+		}
+		if (ret != (size_t)-1 || src_size == 0) {
+			last_bad = false;
 			continue;
+		}
 		if (errno == EILSEQ || errno == EINVAL) {
 			--src_size;
 			++src;
+			if (flags & ICONVTEXT_TRANSLIT) {
+				if (!last_bad)
+					out += '?';
+				last_bad = true;
+			}
 		}
 	}
 	errno = 0;
