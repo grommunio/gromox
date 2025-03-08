@@ -4,9 +4,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/plugin.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 
@@ -188,7 +188,7 @@ int main(int argc, char **argv)
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	service_init({nullptr, g_dfl_svc_plugins, 1});
-	auto cl_1 = make_scope_exit(service_stop);
+	auto cl_1 = HX::make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run failed\n");
 		return EXIT_FAILURE;

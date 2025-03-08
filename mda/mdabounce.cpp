@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <utility>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -28,7 +29,6 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mime.hpp>
 #include <gromox/mysql_adaptor.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "mdabounce.hpp"
@@ -82,7 +82,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	auto fa = HXformat_init();
 	if (fa == nullptr)
 		return false;
-	auto cl_0 = make_scope_exit([&]() { HXformat_free(fa); });
+	auto cl_0 = HX::make_scope_exit([&]() { HXformat_free(fa); });
 	unsigned int immed = HXFORMAT_IMMED;
 	if (HXformat_add(fa, "time", date_buff, HXTYPE_STRING | immed) < 0 ||
 	    HXformat_add(fa, "from", from, HXTYPE_STRING) < 0 ||
@@ -106,7 +106,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	auto aprint_len = HXformat_aprintf(fa, &replaced, &tp.content[tp.body_start]);
 	if (aprint_len < 0)
 		return false;
-	auto cl_1 = make_scope_exit([&]() { HXmc_free(replaced); });
+	auto cl_1 = HX::make_scope_exit([&]() { HXmc_free(replaced); });
 
 	auto phead = pmail->add_head();
 	if (NULL == phead) {

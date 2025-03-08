@@ -16,6 +16,7 @@
 #include <vector>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
@@ -26,7 +27,6 @@
 #include <gromox/oxcmail.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/threads_pool.hpp>
@@ -296,7 +296,7 @@ int main(int argc, char **argv)
 	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");
 	listener_init(g_config_file->get_value("http_listen_addr"),
 		listen_port, listen_tls_port, mss_size);
-	auto cleanup_4 = make_scope_exit(listener_stop);
+	auto cleanup_4 = HX::make_scope_exit(listener_stop);
 	if (0 != listener_run()) {
 		mlog(LV_ERR, "system: failed to start listener");
 		return EXIT_FAILURE;
@@ -305,7 +305,7 @@ int main(int argc, char **argv)
 	filedes_limit_bump(gxconfig->get_ll("http_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins,
 		context_num, "http"});
-	auto cleanup_6 = make_scope_exit(service_stop);
+	auto cleanup_6 = HX::make_scope_exit(service_stop);
 	if (!service_register_service("ndr_stack_alloc",
 	    reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc),
 	    typeid(*pdu_processor_ndr_stack_alloc))) {
@@ -326,7 +326,7 @@ int main(int argc, char **argv)
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	textmaps_init();
-	auto cleanup_8 = make_scope_exit(system_services_stop);
+	auto cleanup_8 = HX::make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) { 
 		mlog(LV_ERR, "system: failed to run system services");
 		return EXIT_FAILURE;
@@ -335,14 +335,14 @@ int main(int argc, char **argv)
 	pdu_processor_init(context_num, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem,
 		g_dfl_proc_plugins);
-	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
+	auto cleanup_12 = HX::make_scope_exit(pdu_processor_stop);
 	if (0 != pdu_processor_run()) {
 		mlog(LV_ERR, "system: could not start PDU processor");
 		return EXIT_FAILURE;
 	}
 
 	hpm_processor_init(context_num, g_dfl_hpm_plugins);
-	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
+	auto cleanup_14 = HX::make_scope_exit(hpm_processor_stop);
 	if (0 != hpm_processor_run()) {
 		mlog(LV_ERR, "system: could not start HPM processor");
 		return EXIT_FAILURE;
@@ -353,14 +353,14 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	mod_fastcgi_init(context_num, fastcgi_exec_timeout); 
-	auto cleanup_18 = make_scope_exit(mod_fastcgi_stop);
+	auto cleanup_18 = HX::make_scope_exit(mod_fastcgi_stop);
 	if (0 != mod_fastcgi_run()) { 
 		mlog(LV_ERR, "system: failed to start mod_fastcgi");
 		return EXIT_FAILURE;
 	}
 
 	mod_cache_init(context_num);
-	auto cleanup_20 = make_scope_exit(mod_cache_stop);
+	auto cleanup_20 = HX::make_scope_exit(mod_cache_stop);
 	if (0 != mod_cache_run()) {
 		mlog(LV_ERR, "system: failed to start mod_cache");
 		return EXIT_FAILURE;
@@ -369,7 +369,7 @@ int main(int argc, char **argv)
 	http_parser_init(context_num, http_conn_timeout,
 		http_auth_times, block_interval_auth, http_support_tls,
 		certificate_path, cb_passwd, private_key_path);
-	auto cleanup_22 = make_scope_exit(http_parser_stop);
+	auto cleanup_22 = HX::make_scope_exit(http_parser_stop);
 	if (0 != http_parser_run()) { 
 		mlog(LV_ERR, "system: failed to start HTTP parser");
 		return EXIT_FAILURE;
@@ -380,14 +380,14 @@ int main(int argc, char **argv)
 		http_parser_get_context_socket,
 		http_parser_get_context_timestamp,
 		thread_charge_num, http_conn_timeout); 
-	auto cleanup_24 = make_scope_exit(contexts_pool_stop);
+	auto cleanup_24 = HX::make_scope_exit(contexts_pool_stop);
 	if (0 != contexts_pool_run()) { 
 		mlog(LV_ERR, "system: failed to start context_pool");
 		return EXIT_FAILURE;
 	}
  
 	threads_pool_init(thread_init_num, http_parser_process);
-	auto cleanup_28 = make_scope_exit(threads_pool_stop);
+	auto cleanup_28 = HX::make_scope_exit(threads_pool_stop);
 	threads_pool_register_event_proc(http_parser_threads_event_proc);
 	if (threads_pool_run("http.cfg:http_thread_init_num") != 0) {
 		mlog(LV_ERR, "system: failed to start thread pool");
@@ -399,7 +399,7 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed listening socket setup");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_29 = make_scope_exit(listener_stop_accept);
+	auto cleanup_29 = HX::make_scope_exit(listener_stop_accept);
 	
 	retcode = EXIT_SUCCESS;
 	mlog(LV_INFO, "system: HTTP daemon is now running");

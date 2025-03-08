@@ -20,6 +20,7 @@
 #include <libHX/io.h>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
@@ -35,7 +36,6 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/threads_pool.hpp>
@@ -493,14 +493,14 @@ int main(int argc, char **argv)
 		printf("[system]: Failed to load resource\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_2 = make_scope_exit(resource_stop);
+	auto cleanup_2 = HX::make_scope_exit(resource_stop);
 	listener_init(g_config_file->get_value("imap_listen_addr"),
 		listen_port, listen_tls_port);
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_4 = make_scope_exit(listener_stop);
+	auto cleanup_4 = HX::make_scope_exit(listener_stop);
 
 	filedes_limit_bump(gxconfig->get_ll("imap_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins, context_num});
@@ -515,7 +515,7 @@ int main(int argc, char **argv)
 		printf("[system]: failed to run service\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_6 = make_scope_exit(service_stop);
+	auto cleanup_6 = HX::make_scope_exit(service_stop);
 	
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
@@ -523,7 +523,7 @@ int main(int argc, char **argv)
 		printf("[system]: failed to run system service\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_8 = make_scope_exit(system_services_stop);
+	auto cleanup_8 = HX::make_scope_exit(system_services_stop);
 	imap_parser_init(context_num, context_aver_mitem,
 		imap_conn_timeout, autologout_time, imap_auth_times,
 		block_interval_auth, imap_support_tls, imap_force_tls,
@@ -533,7 +533,7 @@ int main(int argc, char **argv)
 		printf("[system]: failed to run imap parser\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_12 = make_scope_exit(imap_parser_stop);
+	auto cleanup_12 = HX::make_scope_exit(imap_parser_stop);
 	
 	contexts_pool_init(imap_parser_get_contexts_list(),  
 		context_num,
@@ -545,7 +545,7 @@ int main(int argc, char **argv)
 		printf("[system]: failed to run contexts pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_14 = make_scope_exit(contexts_pool_stop);
+	auto cleanup_14 = HX::make_scope_exit(contexts_pool_stop);
 
 	threads_pool_init(thread_init_num, imap_parser_process);
 	threads_pool_register_event_proc(imap_parser_threads_event_proc);
@@ -553,7 +553,7 @@ int main(int argc, char **argv)
 		printf("[system]: failed to run threads pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_18 = make_scope_exit(threads_pool_stop);
+	auto cleanup_18 = HX::make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */
 	if (listener_trigger_accept() != 0) {
@@ -563,7 +563,7 @@ int main(int argc, char **argv)
 	exmdb_rpc_alloc = imrpc_alloc;
 	exmdb_rpc_free = [](void *) {};
 	exmdb_client.emplace(1, 0);
-	auto cl_0 = make_scope_exit([]() { exmdb_client.reset(); });
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	if (exmdb_client_run(g_config_file->get_value("config_file_path"),
 	    EXMDB_CLIENT_ASYNC_CONNECT, imrpc_build_env1, imrpc_free_env, nullptr) != 0) {
 		mlog(LV_ERR, "Failed to start exmdb_client");

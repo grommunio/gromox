@@ -13,13 +13,13 @@
 #include <vector>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/freebusy.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -103,7 +103,7 @@ static int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_folderstr != nullptr) {
 		char *end = nullptr;
 		uint64_t fid = strtoul(g_folderstr, &end, 0);
@@ -197,7 +197,7 @@ static int select_mids_by_time(eid_t fid, unsigned int tbl_flags,
 		fprintf(stderr, "fid 0x%llx load_content_table failed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
 	}
-	auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(g_storedir, table_id); });
+	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(g_storedir, table_id); });
 	static constexpr uint32_t mtags[] = {PidTagMid};
 	static constexpr PROPTAG_ARRAY mtaghdr = {std::size(mtags), deconst(mtags)};
 	tarray_set rowset{};
@@ -228,7 +228,7 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 	{
 	uint32_t prev_delc, prev_fldc;
 	delcount(fid, &prev_delc, &prev_fldc);
-	auto cl_0 = make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() {
 		uint32_t curr_delc, curr_fldc;
 		delcount(fid, &curr_delc, &curr_fldc);
 		printf("Folder 0x%llx: deleted %d messages\n", LLU{rop_util_get_gc_value(fid)}, curr_delc - prev_delc);
@@ -252,7 +252,7 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 		fprintf(stderr, "fid 0x%llx load_content_table failed\n", LLU{rop_util_get_gc_value(fid)});
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = make_scope_exit([=]() { exmdb_client->unload_table(g_storedir, table_id); });
+	auto cl_1 = HX::make_scope_exit([=]() { exmdb_client->unload_table(g_storedir, table_id); });
 	static constexpr uint32_t ftags[] = {PidTagFolderId};
 	static constexpr PROPTAG_ARRAY ftaghdr = {std::size(ftags), deconst(ftags)};
 	tarray_set rowset{};
@@ -304,7 +304,7 @@ static int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_del_flags & DEL_FOLDERS && g_recurse) {
 		fprintf(stderr, "Combining -R and --nuke-folders is unreasonable: when you nuke folders, you cannot recurse into them anymore.\n");
 		return EXIT_FAILURE;
@@ -384,7 +384,7 @@ static int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (argc < 2)
 		fprintf(stderr, "mbop/purge: No folders specified, no action taken.\n");
 	auto age = rop_util_unix_to_nttime(time(nullptr) - HX_strtoull_sec(znul(g_age_str), nullptr));
@@ -425,7 +425,7 @@ static int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_language == nullptr) {
 		fprintf(stderr, "You need to specify the -l option\n");
 		return EXIT_PARAM;
@@ -507,7 +507,7 @@ static int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	time_t start_time = -1, end_time = -1;
 	if (g_start_txt != nullptr && xmktime(g_start_txt, &start_time) < 0)
 		return EXIT_PARAM;
@@ -627,7 +627,7 @@ static int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (strcmp(argv[0], "purge-datafiles") == 0)
 		ok = exmdb_client->purge_datafiles(g_storedir);
 	else if (strcmp(argv[0], "echo-username") == 0) {
@@ -747,7 +747,7 @@ static int main(int argc, char **argv)
 	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
 	    g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (global::g_arg_username != nullptr || global::g_arg_userdir != nullptr) {
 		fprintf(stderr, "Cannot use -d/-u with foreach.*\n");
 		return EXIT_PARAM;
@@ -766,7 +766,7 @@ static int main(int argc, char **argv)
 	auto ret = gi_startup_client(g_numthreads);
 	if (ret != 0)
 		return ret;
-	auto cl_1 = make_scope_exit(gi_shutdown);
+	auto cl_1 = HX::make_scope_exit(gi_shutdown);
 	ret = EXIT_SUCCESS;
 	using Sem = std::counting_semaphore<1>;
 	std::vector<std::future<void>> futs;
@@ -857,7 +857,7 @@ static int delstoreprop(int argc, char **argv, const GUID &guid,
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	uint16_t propid = 0;
 	auto err = resolvename(guid, name, false, &propid);
@@ -918,7 +918,7 @@ static int showstoreprop(int argc, char **argv, const GUID guid,
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	uint16_t propid = 0;
 	auto err = resolvename(guid, name, false, &propid);
@@ -970,7 +970,7 @@ static int setstoreprop(int argc, char **argv, const GUID guid,
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	uint16_t propid = 0;
 	auto err = resolvename(guid, name, true, &propid);
@@ -997,7 +997,7 @@ static errno_t clear_rwz()
 	    nullptr, TABLE_FLAG_ASSOCIATED, &rst_e, nullptr,
 	    &table_id, &rowcount))
 		return EIO;
-	auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(g_storedir, table_id); });
+	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(g_storedir, table_id); });
 	if (rowcount == 0) {
 		printf("0 messages cleared\n");
 		return 0;
@@ -1063,13 +1063,13 @@ int main(int argc, char **argv)
 	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
 	    g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	--argc;
 	++argv;
 	if (argc == 0)
 		return global::help();
 	service_init({nullptr, g_dfl_svc_plugins, 1});
-	auto cl_1 = make_scope_exit(service_stop);
+	auto cl_1 = HX::make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");
 		return EXIT_FAILURE;

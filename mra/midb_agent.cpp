@@ -22,6 +22,7 @@
 #include <vector>
 #include <libHX/ctype_helper.h>
 #include <libHX/io.h>
+#include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/ioctl.h>
@@ -38,7 +39,6 @@
 #include <gromox/midb_agent.hpp>
 #include <gromox/process.hpp>
 #include <gromox/range_set.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
@@ -349,7 +349,7 @@ int list_mail(const char *path, const std::string &folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto EH = make_scope_exit([&]() { parray.clear(); });
+	auto EH = HX::make_scope_exit([&]() { parray.clear(); });
 	auto length = gx_snprintf(buff, std::size(buff), "P-SIMU %s %s 1 -1\r\n",
 	              path, folder.c_str());
 	if (write(pback->sockd, buff, length) != length)
@@ -1195,7 +1195,7 @@ int list_deleted(const char *path, const std::string &folder, XARRAY *pxarray,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto EH = make_scope_exit([=]() { pxarray->clear(); });
+	auto EH = HX::make_scope_exit([=]() { pxarray->clear(); });
 	auto length = gx_snprintf(buff, std::size(buff), "P-DELL %s %s\r\n",
 	              path, folder.c_str());
 	if (write(pback->sockd, buff, length) != length)
@@ -1457,7 +1457,7 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto EH = make_scope_exit([=]() {
+	auto EH = HX::make_scope_exit([=]() {
 		pxarray->clear();
 	});
 	

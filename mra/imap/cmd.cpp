@@ -22,6 +22,7 @@
 #include <fmt/core.h>
 #include <libHX/io.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -39,7 +40,6 @@
 #include <gromox/mjson.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/range_set.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -2038,7 +2038,7 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 	mid_string += "."s + znul(g_config_file->get_value("host_id"));
 	auto pcontext = &ctx;
 	imrpc_build_env();
-	auto cl_0 = make_scope_exit(imrpc_free_env);
+	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
 	if (!exmdb_client->imapfile_write(ctx.maildir, "eml",
 	    mid_string, argv[argc-1])) {
 		mlog(LV_ERR, "E-1763: write %s/eml/%s failed", ctx.maildir, mid_string.c_str());
@@ -2165,7 +2165,7 @@ static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 		strb_size = STREAM_BLOCK_SIZE;
 	}
 	imrpc_build_env();
-	auto cl_0 = make_scope_exit(imrpc_free_env);
+	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
 	if (!exmdb_client->imapfile_write(ctx.maildir, "eml",
 	    ctx.mid, content)) {
 		mlog(LV_ERR, "E-1764: write to %s/eml/%s failed",
@@ -2265,7 +2265,7 @@ int icp_expunge(int argc, char **argv, imap_context &ctx) try
 	}
 	std::vector<MITEM *> exp_list;
 	imrpc_build_env();
-	auto cl_0 = make_scope_exit(imrpc_free_env);
+	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
 	for (size_t i = 0; i < num; ++i) {
 		auto pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem))
@@ -2435,7 +2435,7 @@ int icp_fetch(int argc, char **argv, imap_context &ctx)
 	pcontext->stream.clear();
 	num = xarray.get_capacity();
 	imrpc_build_env();
-	auto cl_0 = make_scope_exit(imrpc_free_env);
+	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
 		/*
@@ -2710,7 +2710,7 @@ int icp_uid_fetch(int argc, char **argv, imap_context &ctx) try
 	pcontext->stream.clear();
 	num = xarray.get_capacity();
 	imrpc_build_env();
-	auto cl_0 = make_scope_exit(imrpc_free_env);
+	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
@@ -2925,7 +2925,7 @@ int icp_uid_expunge(int argc, char **argv, imap_context &ctx) try
 	max_uid = pitem->uid;
 	std::vector<MITEM *> exp_list;
 	imrpc_build_env();
-	auto cl_0 = make_scope_exit(imrpc_free_env);
+	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
 	for (size_t i = 0; i < num; ++i) {
 		pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem) ||
@@ -3029,7 +3029,7 @@ void icp_clsfld(imap_context &ctx) try
 	switch(result) {
 	case MIDB_RESULT_OK: {
 		imrpc_build_env();
-		auto cl_0 = make_scope_exit(imrpc_free_env);
+		auto cl_0 = HX::make_scope_exit(imrpc_free_env);
 		for (i = 0; i < num; ++i) {
 			auto pitem = xarray.get_item(i);
 			if (zero_uid_bit(*pitem))

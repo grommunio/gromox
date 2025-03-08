@@ -12,9 +12,9 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <libHX/scope.hpp>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
-#include <gromox/scope.hpp>
 
 using namespace gromox;
 
@@ -54,7 +54,7 @@ int main()
 			printf("\n");
 			continue;
 		}
-		auto cl_1 = make_scope_exit([&]() { munmap(fcontent, sb.st_size); });
+		auto cl_1 = HX::make_scope_exit([&]() { munmap(fcontent, sb.st_size); });
 		size_t mail_len = 0;
 		unsigned int flush_id = 0, bound_type = 0;
 		memcpy(&mail_len, fcontent, sizeof(mail_len));

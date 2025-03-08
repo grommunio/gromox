@@ -30,7 +30,6 @@
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
 #include <gromox/plugin.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "delivery.hpp"

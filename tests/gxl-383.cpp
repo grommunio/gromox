@@ -4,11 +4,11 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <libHX/scope.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/paths.h>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 
 using namespace gromox;
 
@@ -44,7 +44,7 @@ static int askfor(const char *dir, uint64_t folder_id, uint32_t elist_tag,
 		fprintf(stderr, "LCT failed\n");
 		return -1;
 	}
-	auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
+	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 	TARRAY_SET rowset{};
 	if (!exmdb_client->query_table(dir, nullptr, CP_UTF8, table_id, &tagarr,
 	    0, 25, &rowset)) {

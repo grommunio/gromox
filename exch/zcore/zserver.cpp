@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <utility>
 #include <libHX/io.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
@@ -30,7 +31,6 @@
 #include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/safeint.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
@@ -5029,7 +5029,7 @@ ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
 	outhandles->pl = cu_alloc<uint32_t>(msgvec.size());
 	if (outhandles->pl == nullptr)
 		return ecServerOOM;
-	auto cl_0 = make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() {
 		for (size_t i = 0; i < outhandles->count; ++i)
 			zs_unloadobject(session, outhandles->pl[i]);
 	});

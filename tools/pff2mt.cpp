@@ -21,6 +21,7 @@
 #include <vector>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/clock.hpp>
 #include <gromox/endian.hpp>
@@ -28,7 +29,6 @@
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
@@ -1276,7 +1276,7 @@ int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_with_hidden < 0)
 		g_with_hidden = !g_splice;
 	if (argc != 2) {

@@ -13,9 +13,9 @@
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/proc.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 using namespace std::string_literals;
@@ -49,7 +49,7 @@ static void cid_read_dir(const char *dir, std::vector<std::string> &files)
 		fprintf(stderr, "%s: %s\n", dir, strerror(errno));
 		return;
 	}
-	auto cl_0 = make_scope_exit([&]() { HXdir_close(dh); });
+	auto cl_0 = HX::make_scope_exit([&]() { HXdir_close(dh); });
 	const char *de;
 	while ((de = HXdir_read(dh)) != nullptr) {
 		if (!digity(de))
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	std::vector<std::string> filelist;
 	if (g_arg_type == ARG_CIDS) {

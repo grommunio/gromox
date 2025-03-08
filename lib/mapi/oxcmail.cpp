@@ -20,6 +20,7 @@
 #include <utility>
 #include <fmt/core.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <vmime/addressList.hpp>
 #include <vmime/constants.hpp>
@@ -35,7 +36,6 @@
 #include <gromox/mapidefs.h>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tnef.hpp>
 #include <gromox/usercvt.hpp>
@@ -2917,7 +2917,7 @@ static bool oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 {
 	EXT_PULL ext_pull;
 	BINARY_ARRAY address_array{};
-	auto cl_0 = make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() {
 		for (unsigned int i = 0; i < address_array.count; ++i)
 			free(address_array.pbin[i].pb);
 		free(address_array.pbin);
@@ -2937,7 +2937,7 @@ static bool oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 	for (size_t i = 0; i < address_array.count; ++i) {
 		EXT_PULL ep2;
 		ONEOFF_ENTRYID oo{};
-		auto cl_1 = make_scope_exit([&]() {
+		auto cl_1 = HX::make_scope_exit([&]() {
 			free(oo.pdisplay_name);
 			free(oo.paddress_type);
 			free(oo.pmail_address);

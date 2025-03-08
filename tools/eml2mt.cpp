@@ -13,6 +13,7 @@
 #include <vector>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
 #include <gromox/endian.hpp>
@@ -22,7 +23,6 @@
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/paths.h>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tnef.hpp>
@@ -197,7 +197,7 @@ static errno_t do_mbox(const char *file, std::vector<message_ptr> &msgvec)
 		fp = extra_fp.get();
 	}
 	hxmc_t *line = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	auto cl_0 = HX::make_scope_exit([&]() { HXmc_free(line); });
 	mbox_rdstate rs{msgvec};
 	rs.filename = file;
 	rs.filename += ":";
@@ -304,7 +304,7 @@ int main(int argc, char **argv) try
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (argc < 2) {
 		terse_help();
 		return EXIT_FAILURE;
@@ -318,7 +318,7 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	}
 	service_init({g_config_file, g_dfl_svc_plugins, 1});
-	auto cl_0 = make_scope_exit(service_stop);
+	auto cl_0 = HX::make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");
 		return EXIT_FAILURE;

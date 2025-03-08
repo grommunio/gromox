@@ -22,7 +22,6 @@
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mime.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;

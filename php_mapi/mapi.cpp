@@ -7,25 +7,25 @@
 #include <climits>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <memory>
+#include <unistd.h>
+#include <libHX/scope.hpp>
+#include <sys/wait.h>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/safeint.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zcore_client.hpp>
 #include <gromox/zcore_rpc.hpp>
 #include "php.h"
-#include <memory>
-#include <unistd.h>
-#include <cstdlib>
-#include <cstring>
 #include "ext/standard/info.h"
 #include "Zend/zend_exceptions.h"
 #include "Zend/zend_builtin_functions.h"
-#include <sys/wait.h>
 #include "ext.hpp"
 #if PHP_MAJOR_VERSION >= 8
 #	include "mapi_arginfo.hpp"
@@ -71,7 +71,7 @@ ZEND_END_MODULE_GLOBALS(mapi)
 
 #define ZCL_MEMORY \
 	palloc_tls_init(); \
-	auto f_memrelease = make_scope_exit(palloc_tls_free);
+	auto f_memrelease = HX::make_scope_exit(palloc_tls_free);
 
 using namespace gromox;
 
@@ -2724,7 +2724,7 @@ static ZEND_FUNCTION(mapi_decompressrtf)
 	auto rtf_blob = sta_malloc<char>(unc_size);
 	if (rtf_blob == nullptr)
 		pthrow(ecMAPIOOM);
-	auto cl_0 = make_scope_exit([&]() { efree(rtf_blob); });
+	auto cl_0 = HX::make_scope_exit([&]() { efree(rtf_blob); });
 	size_t rtf_len = unc_size;
 	if (!rtfcp_uncompress(&rtf_bin, rtf_blob, &rtf_len))
 		pthrow(ecError);

@@ -14,7 +14,6 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapitags.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 namespace gromox {

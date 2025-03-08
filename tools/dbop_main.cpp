@@ -8,11 +8,11 @@
 #include <mysql.h>
 #include <string>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
 #include <gromox/dbop.h>
 #include <gromox/paths.h>
-#include <gromox/scope.hpp>
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_do_create + g_do_upgrade + g_do_create0 > 1) {
 		fprintf(stderr, "-C/-U/--create-old are mutually exclusive. Decide already!\n");
 		return EXIT_SUCCESS;

@@ -21,6 +21,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <fmt/core.h>
 #include <gromox/database_mysql.hpp>
@@ -31,7 +32,6 @@
 #include <gromox/json.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
@@ -1228,7 +1228,7 @@ static std::string slurp_file_gz(const char *file)
 		fprintf(stderr, "gzopen %s: %s\n", file, strerror(errno));
 		return outstr;
 	}
-	auto cl_0 = make_scope_exit([&]() { gzclose(fp); });
+	auto cl_0 = HX::make_scope_exit([&]() { gzclose(fp); });
 	char buf[4096];
 	while (!gzeof(fp)) {
 		auto rd = gzread(fp, buf, std::size(buf));
@@ -1468,7 +1468,7 @@ int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	textmaps_init(PKGDATADIR);

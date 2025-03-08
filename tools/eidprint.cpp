@@ -6,10 +6,10 @@
 #include <cstdio>
 #include <string>
 #include <string_view>
+#include <libHX/scope.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -44,7 +44,7 @@ static void try_emsab(const std::string_view s, unsigned int ind)
 	EMSAB_ENTRYID eid;
 	if (ep.g_abk_eid(&eid) != pack_result::success)
 		return;
-	auto cl_0 = make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() {
 		free(eid.px500dn);
 	});
 	printf("%-*sEX address entry ID\n", lead(ind), "");
@@ -61,7 +61,7 @@ static void try_storewrap(std::string_view s, unsigned int ind)
 	STORE_ENTRYID eid;
 	if (ep.g_store_eid(&eid) != pack_result::success)
 		return;
-	auto cl_0 = make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() {
 		free(eid.pserver_name);
 		free(eid.pmailbox_dn);
 	});
@@ -106,7 +106,7 @@ static void try_storewrap(std::string_view s, unsigned int ind)
 	static constexpr uint32_t MDB_STORE_EID_V3_MAGIC = 0xf43246e9;
 	uint32_t v, size;
 	char *smtp = nullptr;
-	auto cl_1 = make_scope_exit([&]() { free(smtp); });
+	auto cl_1 = HX::make_scope_exit([&]() { free(smtp); });
 	if (ep.g_uint32(&v) != pack_result::ok || v != MDB_STORE_EID_V3_MAGIC ||
 	    ep.g_uint32(&size) != pack_result::ok ||
 	    ep.g_uint32(&v) != pack_result::ok || v != 2 ||

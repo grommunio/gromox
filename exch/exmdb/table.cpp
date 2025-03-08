@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 #include <fmt/core.h>
+#include <libHX/scope.hpp>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/database.h>
@@ -26,7 +27,6 @@
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/sortorder_set.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -220,7 +220,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 		return FALSE;
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	fid_val = rop_util_get_gc_value(folder_id);
 	auto table_id = pdb->next_table_id();
 	auto table_transact = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
@@ -578,7 +578,7 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 		}
 		b_search = pstmt.col_int64(0) != 0;
 	}
-	auto cl_1 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_1 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	uint32_t table_id = *ptable_id != 0 ? *ptable_id : pdb->next_table_id();
 	auto table_transact = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!table_transact)
@@ -621,7 +621,7 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 	sqlite3 *psqlite = nullptr;
 	ptnode->table_id = table_id;
 	auto remote_id = exmdb_server::get_remote_id();
-	auto cl_0 = make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() {
 		pstmt.finalize();
 		pstmt1.finalize();
 		if (psqlite != nullptr)
@@ -1887,7 +1887,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		return TRUE;
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	switch (ptnode->type) {
 	case table_type::hierarchy:
 		return query_hierarchy(std::move(pdb), cpid, table_id,
@@ -2309,7 +2309,7 @@ BOOL exmdb_server::match_table(const char *dir, const char *username,
 	}
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	ppropvals->count = 0;
 	ppropvals->ppropval = NULL;
 	BOOL ret = TRUE;
@@ -2551,7 +2551,7 @@ BOOL exmdb_server::read_table_row(const char *dir, const char *username,
 	}
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_1 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_1 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	ppropvals->count = 0;
 	ppropvals->ppropval = nullptr;
 	if (ptnode->type == table_type::hierarchy)
@@ -3097,7 +3097,7 @@ BOOL exmdb_server::store_table_state(const char *dir,
 		mlog(LV_ERR, "E-1943: open %s: %s", tmp_path, strerror(errno));
 		return false;
 	}
-	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
+	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
 	if (ptnode->psorts != nullptr && ptnode->psorts->ccategories != 0)
 		strcpy(sql_string, "SELECT state_id FROM "
 			"state_info WHERE folder_id=? AND table_flags=? "
@@ -3342,7 +3342,7 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 		mlog(LV_ERR, "E-1437: sqlite3_open %s: %s", tmp_path, sqlite3_errstr(ret));
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
+	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
 	gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
 	gx_sql_exec(psqlite, "PRAGMA synchronous=OFF");
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id, table_flags,"

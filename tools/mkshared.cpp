@@ -20,6 +20,7 @@
 #include <vector>
 #include <fmt/core.h>
 #include <libHX/io.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/config_file.hpp>
@@ -32,7 +33,6 @@
 #include <gromox/pcl.hpp>
 #include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
 #include "mkshared.hpp"
 
@@ -396,7 +396,7 @@ int mbop_upgrade(const char *file, sqlite_kind kind, unsigned int dbop_flags)
 {
 	sqlite3 *db = nullptr;
 	auto ret = sqlite3_open_v2(file, &db, SQLITE_OPEN_READWRITE, nullptr);
-	auto cl_0 = make_scope_exit([&]() { sqlite3_close(db); });
+	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(db); });
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "sqlite3_open_v2: %s\n", sqlite3_errstr(ret));
 		return EXIT_FAILURE;

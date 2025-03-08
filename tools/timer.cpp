@@ -21,6 +21,7 @@
 #include <vector>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
@@ -34,7 +35,6 @@
 #include <gromox/list_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 #define COMMAND_LENGTH		512
@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	gx_reexec_record(sockd);
-	auto cl_0 = make_scope_exit([&]() { close(sockd); });
+	auto cl_0 = HX::make_scope_exit([&]() { close(sockd); });
 	if (switch_user_exec(*pconfig, argv) != 0)
 		return EXIT_FAILURE;
 
@@ -297,10 +297,10 @@ int main(int argc, char **argv)
 		printf("[system]: Failed to open %s: %s\n", g_list_path.c_str(), strerror(errno));
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = make_scope_exit([&]() { close(g_list_fd); });
+	auto cl_1 = HX::make_scope_exit([&]() { close(g_list_fd); });
 
 	thr_ids.reserve(g_threads_num);
-	auto cl_2 = make_scope_exit([&]() {
+	auto cl_2 = HX::make_scope_exit([&]() {
 		/* thread might be waiting at the condvar */
 		g_waken_cond.notify_all();
 		for (auto tid : thr_ids) {
@@ -349,7 +349,7 @@ int main(int argc, char **argv)
 		g_notify_stop = true;
 		return EXIT_FAILURE;
 	}
-	auto cl_3 = make_scope_exit([&]() {
+	auto cl_3 = HX::make_scope_exit([&]() {
 		pthread_kill(thr_accept_id, SIGALRM); /* kick accept() */
 		pthread_join(thr_accept_id, nullptr);
 	});

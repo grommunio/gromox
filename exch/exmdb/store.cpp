@@ -16,7 +16,6 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "db_engine.hpp"
 

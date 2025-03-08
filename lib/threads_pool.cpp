@@ -14,7 +14,6 @@
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 

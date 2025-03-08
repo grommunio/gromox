@@ -13,14 +13,13 @@
 #include <unordered_map>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
+#include <libHX/scope.hpp>
 #include <vmime/utility/url.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/hpm_common.h>
 #include <gromox/paths.h>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
-
 #include "exceptions.hpp"
 #include "hash.hpp"
 #include "requests.hpp"
@@ -357,7 +356,7 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 		mlog(LV_WARN, "[ews#%d]%s Additional request nodes found - ignoring", ctx_id, timestamp().c_str());
 	if (!rpc_new_stack())
 		mlog(LV_WARN, "[ews#%d]%s Failed to allocate stack, exmdb might not work", ctx_id, timestamp().c_str());
-	auto cl0 = make_scope_exit([]{rpc_free_stack();});
+	auto cl0 = HX::make_scope_exit([]{rpc_free_stack();});
 	bool enableLog = logEnabled(request->Name());
 	if (enableLog && request_logging >= 2)
 		mlog(LV_DEBUG, "[ews#%d]%s Incoming data: %.*s", ctx_id, timestamp().c_str(),

@@ -116,7 +116,6 @@ resolv_LIBS=""
 AH_TEMPLATE([HAVE_CARES], [])
 AH_TEMPLATE([HAVE_ESEDB], [])
 AH_TEMPLATE([HAVE_GSSAPI], [])
-AH_TEMPLATE([HAVE_LIBHX4_18], [])
 AH_TEMPLATE([HAVE_XXHASH], [])
 PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([fmt], [fmt >= 8])
@@ -126,7 +125,7 @@ PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 1.4.0], [], [
 PKG_CHECK_MODULES([gss], [krb5-gssapi], [
 	AC_DEFINE([HAVE_GSSAPI], [1])
 ], [:])
-PKG_CHECK_MODULES([libHX], [libHX >= 4.19])
+PKG_CHECK_MODULES([libHX], [libHX >= 4.26])
 PKG_CHECK_MODULES([libcrypto], [libcrypto])
 PKG_CHECK_MODULES([libcurl], [libcurl])
 PKG_CHECK_MODULES([libesedb], [libesedb], [have_esedb=1], [have_esedb=0])

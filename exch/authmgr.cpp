@@ -33,7 +33,6 @@
 #include <gromox/json.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/paths.h>
-#include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>

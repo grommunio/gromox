@@ -16,6 +16,7 @@
 #include <vector>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
@@ -38,7 +39,6 @@
 #include <gromox/oxcmail.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -277,7 +277,7 @@ int main(int argc, char **argv)
 
 	filedes_limit_bump(gxconfig->get_ll("zcore_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins, threads_num});
-	auto cl_0 = make_scope_exit(service_stop);
+	auto cl_0 = HX::make_scope_exit(service_stop);
 	
 	unsigned int table_size = pconfig->get_ll("address_table_size");
 	mlog(LV_INFO, "system: address table size is %d", table_size);
@@ -288,7 +288,7 @@ int main(int argc, char **argv)
 		" cache interval is %s", temp_buff);
 
 	ab_tree::AB.init(g_config_file->get_value("x500_org_name"), cache_interval);
-	auto cl_5 = make_scope_exit([]{ab_tree::AB.stop();});
+	auto cl_5 = HX::make_scope_exit([]{ab_tree::AB.stop();});
 
 	auto max_rcpt = pconfig->get_ll("max_rcpt_num");
 	mlog(LV_INFO, "system: maximum rcpt number is %lld", max_rcpt);
@@ -362,22 +362,22 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start services");
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = make_scope_exit(system_services_stop);
+	auto cl_1 = HX::make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) {
 		mlog(LV_ERR, "system: failed to start system services");
 		return EXIT_FAILURE;
 	}
 
 	zserver_init(table_size, cache_interval, ping_interval);
-	auto cl_7 = make_scope_exit(zserver_stop);
+	auto cl_7 = HX::make_scope_exit(zserver_stop);
 	exmdb_client.emplace(proxy_num, stub_num);
-	auto cl_8 = make_scope_exit([]() { exmdb_client.reset(); });
+	auto cl_8 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	/* parser after zserver: dependency on session table */
 	/* parser after service: dependency on mysql_adaptor */
 	rpc_parser_init(threads_num);
-	auto cl_6 = make_scope_exit(rpc_parser_stop);
+	auto cl_6 = HX::make_scope_exit(rpc_parser_stop);
 	listener_init();
-	auto cl_10 = make_scope_exit(listener_stop);
+	auto cl_10 = HX::make_scope_exit(listener_stop);
 	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
 		mlog(LV_ERR, "system: failed to start listener");
 		return EXIT_FAILURE;

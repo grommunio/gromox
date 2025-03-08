@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <libHX/scope.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/scope.hpp>
 #include "nsp_common.hpp"
 #include "nsp_ops.hpp"
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define SCOPED_ABKFLAG(cls) \
 	auto saved_flags_X1 = (cls).m_flags; \
 	(cls).m_flags |= EXT_FLAG_ABK; \
-	auto cl_flag_X1 = gromox::make_scope_exit([&]() { (cls).m_flags = saved_flags_X1; });
+	auto cl_flag_X1 = HX::make_scope_exit([&]() { (cls).m_flags = saved_flags_X1; });
 #define SCOPED_ABK_DISABLE(cls) \
 	auto saved_flags_X2 = (cls).m_flags; \
 	(cls).m_flags &= ~EXT_FLAG_ABK; \
-	auto cl_flag_X2 = gromox::make_scope_exit([&]() { (cls).m_flags = saved_flags_X2; });
+	auto cl_flag_X2 = HX::make_scope_exit([&]() { (cls).m_flags = saved_flags_X2; });
 
 static pack_result nsp_ext_g_stat(nsp_ext_pull &ext, STAT &s)
 {

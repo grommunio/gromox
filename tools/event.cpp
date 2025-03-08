@@ -28,6 +28,7 @@
 #include <libHX/defs.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
@@ -39,7 +40,6 @@
 #include <gromox/list_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 #define SELECT_INTERVAL			24*60*60
@@ -214,7 +214,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	gx_reexec_record(sockd);
-	auto cl_2 = make_scope_exit([&]() { close(sockd); });
+	auto cl_2 = HX::make_scope_exit([&]() { close(sockd); });
 	if (switch_user_exec(*pconfig, argv) != 0)
 		return EXIT_FAILURE;
 	
@@ -223,7 +223,7 @@ int main(int argc, char **argv)
 	
 	std::vector<pthread_t> tidlist;
 	tidlist.reserve(g_threads_num * 2);
-	auto cl_4 = make_scope_exit([&]() {
+	auto cl_4 = HX::make_scope_exit([&]() {
 		g_enqueue_waken_cond.notify_all();
 		g_dequeue_waken_cond.notify_all();
 		for (auto tid : tidlist) {
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
 		g_notify_stop = true;
 		return EXIT_FAILURE;
 	}
-	auto cl_5 = make_scope_exit([&]() {
+	auto cl_5 = HX::make_scope_exit([&]() {
 		pthread_kill(acc_thr, SIGALRM); /* kick accept() */
 		pthread_join(acc_thr, nullptr);
 	});
@@ -293,7 +293,7 @@ int main(int argc, char **argv)
 		g_notify_stop = true;
 		return EXIT_FAILURE;
 	}
-	auto cl_6 = make_scope_exit([&]() {
+	auto cl_6 = HX::make_scope_exit([&]() {
 		pthread_kill(scan_thr, SIGALRM); /* kick sleep() */
 		pthread_join(scan_thr, nullptr);
 	});

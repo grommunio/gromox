@@ -9,13 +9,13 @@
 #include <string>
 #include <vector>
 #include <libHX/ctype_helper.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/msgchg_grouping.hpp>
 #include <gromox/proptag_array.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 using namespace std::string_literals;
@@ -91,7 +91,7 @@ static errno_t mcg_loadfile(const char *dirs, const char *file, uint32_t group_i
 	auto &index_list = emp_res.first->second;
 	std::vector<tag_entry> *tag_list = nullptr;
 	hxmc_t *line = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	auto cl_0 = HX::make_scope_exit([&]() { HXmc_free(line); });
 	while (HX_getl(&line, fp.get()) != nullptr) {
 		if (strncasecmp(line, "index:", 6) == 0) {
 			auto i = strtoul(&line[6], nullptr, 0);

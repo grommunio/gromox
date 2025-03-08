@@ -7,9 +7,9 @@
 #include <cstring>
 #include <memory>
 #include <libHX/io.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
-#include <gromox/scope.hpp>
 
 using namespace gromox;
 
@@ -21,7 +21,7 @@ static int do_file(FILE *fp)
 		HX_chomp(now_s);
 	printf("From MAILER-DAEMON %s\n", now_s != nullptr ? now_s : "Sat Jan  1 00:00:00 2022");
 	hxmc_t *ln = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HXmc_free(ln); });
+	auto cl_0 = HX::make_scope_exit([&]() { HXmc_free(ln); });
 	while (HX_getl(&ln, fp) != nullptr) {
 		HX_chomp(ln);
 		printf("%s\n", ln);
@@ -52,7 +52,7 @@ static int do_file(const char *filename)
 static int do_filelist()
 {
 	hxmc_t *ln = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HXmc_free(ln); });
+	auto cl_0 = HX::make_scope_exit([&]() { HXmc_free(ln); });
 	while (HX_getl(&ln, stdin) != nullptr){
 		auto ret = do_file(HX_chomp(ln));
 		if (ret != EXIT_SUCCESS)

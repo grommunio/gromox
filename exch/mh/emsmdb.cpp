@@ -18,6 +18,7 @@
 #include <vector>
 #include <fmt/core.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
@@ -27,7 +28,6 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/process.hpp>
 #include <gromox/rpc_types.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "mh_common.hpp"
 
@@ -737,7 +737,7 @@ http_status MhEmsmdbPlugin::process(int context_id, const void *content,
 	}
 	set_context(context_id);
 	rpc_new_stack();
-	auto cleanup_0 = make_scope_exit([&]() { rpc_free_stack(); });
+	auto cleanup_0 = HX::make_scope_exit([&]() { rpc_free_stack(); });
 	auto allocator = [](size_t size) {return ndr_stack_alloc(NDR_STACK_IN, size);};
 	ctx.ext_pull.init(content, static_cast<uint32_t>(length), allocator, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 	if (strcasecmp(ctx.request_value, "Connect") == 0)

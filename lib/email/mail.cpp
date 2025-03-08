@@ -12,7 +12,6 @@
 #include <gromox/json.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;

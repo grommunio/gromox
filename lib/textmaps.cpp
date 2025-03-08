@@ -15,6 +15,7 @@
 #include <utility>
 #include <libHX/ctype_helper.h>
 #include <libHX/io.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
 #include <gromox/fileio.h>
@@ -22,7 +23,6 @@
 #include <gromox/json.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/paths.h>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 
@@ -48,7 +48,7 @@ static void xmap_read(const char *file, const char *dirs,
 		return;
 	}
 	hxmc_t *line = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	auto cl_0 = HX::make_scope_exit([&]() { HXmc_free(line); });
 	while (HX_getl(&line, filp.get()) != nullptr) {
 		char *e = nullptr;
 		auto a = strtoul(line, &e, 0);
@@ -77,7 +77,7 @@ static void smap_read(const char *file, const char *dirs,
 		return;
 	}
 	hxmc_t *line = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	auto cl_0 = HX::make_scope_exit([&]() { HXmc_free(line); });
 	while (HX_getl(&line, filp.get()) != nullptr) {
 		char *value = line;
 		while (!HX_isspace(*value))
@@ -110,7 +110,7 @@ static void folder_namedb_read(const char *file, const char *dirs, folder_name_m
 		return;
 	}
 	hxmc_t *line = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	auto cl_0 = HX::make_scope_exit([&]() { HXmc_free(line); });
 	folder_name_map_t::mapped_type *current_locale = nullptr;
 	while (HX_getl(&line, filp.get()) != nullptr) {
 		HX_chomp(line);
@@ -262,7 +262,7 @@ static void mapitags_read(const char *file, std::unordered_map<uint32_t, std::st
 	if (filp == nullptr)
 		return;
 	hxmc_t *line = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	auto cl_0 = HX::make_scope_exit([&]() { HXmc_free(line); });
 	while (HX_getl(&line, filp.get()) != nullptr) {
 		HX_chomp(line);
 		char *opts = nullptr;

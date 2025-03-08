@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -24,7 +25,6 @@
 #include <gromox/endian.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "hpm_processor.hpp"
@@ -640,7 +640,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code) try
 	fault->pad.pb = deconst(zeros);
 	fault->pad.cb = sizeof(zeros);
 	/* Avoid non-owning pointers from being consumed by ~ncacn_packet */
-	auto cl_0 = make_scope_exit([&]() { *fault = {}; });
+	auto cl_0 = HX::make_scope_exit([&]() { *fault = {}; });
 
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
@@ -1461,7 +1461,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 		response->stub_and_verifier.pb = stub.pb;
 		response->stub_and_verifier.cb = length;
 		/* Avoid non-owning pointers from being consumed by ~ncacn_packet */
-		auto cl_0 = make_scope_exit([&]() { *response = {}; });
+		auto cl_0 = HX::make_scope_exit([&]() { *response = {}; });
 
 		if (!pdu_processor_auth_response(pcall,
 			&pblob_node->blob, sig_size, &pkt)) {
@@ -1712,7 +1712,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	
 	g_call_key = pcall;
 	g_stack_key = pstack_root;
-	auto cl_0 = make_scope_exit([]() {
+	auto cl_0 = HX::make_scope_exit([]() {
 		g_stack_key = nullptr;
 		g_call_key = nullptr;
 	});

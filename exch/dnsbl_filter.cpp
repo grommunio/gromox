@@ -8,11 +8,11 @@
 #include <cstring>
 #include <string>
 #include <arpa/inet.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <gromox/config_file.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #if defined(HAVE_CARES)
@@ -106,14 +106,14 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 
 #if defined(HAVE_CARES)
 	ares_channel_t *channel = nullptr;
-	auto cl_1 = make_scope_exit([&]() { ares_destroy(channel); });
+	auto cl_1 = HX::make_scope_exit([&]() { ares_destroy(channel); });
 	ares_options opts{};
 	opts.evsys = ARES_EVSYS_DEFAULT;
 	auto status = ares_init_options(&channel, &opts, ARES_OPT_EVENT_THREAD);
 	if (status != ARES_SUCCESS)
 		return true;
 	ares_dns_record_t *req = nullptr;
-	auto cl_2 = make_scope_exit([&]() { ares_dns_record_destroy(req); });
+	auto cl_2 = HX::make_scope_exit([&]() { ares_dns_record_destroy(req); });
 	status = ares_dns_record_create(&req, 0, ARES_FLAG_RD,
 	         ARES_OPCODE_QUERY, ARES_RCODE_NOERROR);
 	if (status != ARES_SUCCESS)
@@ -152,7 +152,7 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 		reason = "E-1735: ENOMEM";
 		return false;
 	}
-	auto cl_0 = make_scope_exit([&]() { res_nclose(&state); });
+	auto cl_0 = HX::make_scope_exit([&]() { res_nclose(&state); });
 	/*
 	 * NQD works differently from /usr/bin/host; if there are no
 	 * entries, it will return -1 rather than an empty result list.

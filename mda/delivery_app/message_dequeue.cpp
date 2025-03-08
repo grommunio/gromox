@@ -33,7 +33,6 @@
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "delivery.hpp"
 #define TOKEN_MESSAGE_QUEUE		1

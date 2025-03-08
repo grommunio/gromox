@@ -11,6 +11,7 @@
 #include <memory>
 #include <string_view>
 #include <utility>
+#include <libHX/scope.hpp>
 #include <gromox/eid_array.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
@@ -18,7 +19,6 @@
 #include <gromox/proptag_array.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "common_util.hpp"
 #include "emsmdb_interface.hpp"
@@ -967,7 +967,7 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 {
 	BINARY *pbin1 = nullptr, *pbin2 = nullptr;
-	auto cl_0 = gromox::make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() {
 		if (pbin1 != nullptr)
 			rop_util_free_binary(pbin1);
 		if (pbin2 != nullptr)

@@ -7,12 +7,12 @@
 #include <string>
 #include <utility>
 #include <fmt/core.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapierr.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 
@@ -108,7 +108,7 @@ static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id
     std::string &smtpaddr)
 {
 	EMSAB_ENTRYID eid{};
-	auto cl_0 = make_scope_exit([&]() { free(eid.px500dn); });
+	auto cl_0 = HX::make_scope_exit([&]() { free(eid.px500dn); });
 	if (ser.g_abk_eid(&eid) != pack_result::success)
 		return ecInvalidParam;
 	/*
@@ -130,7 +130,7 @@ ec_error_t cvt_emsab_to_essdn(const BINARY *bin, std::string &essdn) try
 		return ecInvalidParam;
 	EXT_PULL ep;
 	EMSAB_ENTRYID eid{};
-	auto cl_0 = make_scope_exit([&]() { free(eid.px500dn); });
+	auto cl_0 = HX::make_scope_exit([&]() { free(eid.px500dn); });
 	ep.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
 	if (ep.g_abk_eid(&eid) != pack_result::success)
 		return ecInvalidParam;
@@ -144,7 +144,7 @@ static ec_error_t cvt_oneoff_to_smtpaddr(EXT_PULL &ser, const char *org,
     cvt_id2user id2user, std::string &smtpaddr)
 {
 	ONEOFF_ENTRYID eid{};
-	auto cl_0 = make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() {
 		free(eid.pdisplay_name);
 		free(eid.paddress_type);
 		free(eid.pmail_address);

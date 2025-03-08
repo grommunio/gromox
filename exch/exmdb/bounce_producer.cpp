@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <vmime/contentTypeField.hpp>
 #include <vmime/dateTime.hpp>
@@ -20,7 +21,6 @@
 #include <gromox/database.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/mysql_adaptor.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -86,7 +86,7 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	auto fa = HXformat_init();
 	if (fa == nullptr)
 		return false;
-	auto cl_0 = make_scope_exit([&]() { HXformat_free(fa); });
+	auto cl_0 = HX::make_scope_exit([&]() { HXformat_free(fa); });
 	unsigned int immed = HXFORMAT_IMMED;
 	if (HXformat_add(fa, "time", date_buff,
 	    HXTYPE_STRING | immed) < 0 ||
@@ -109,7 +109,7 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	hxmc_t *replaced = nullptr;
 	if (HXformat_aprintf(fa, &replaced, &tp.content[tp.body_start]) < 0)
 		return false;
-	auto cl_1 = make_scope_exit([&]() { HXmc_free(replaced); });
+	auto cl_1 = HX::make_scope_exit([&]() { HXmc_free(replaced); });
 	content = replaced;
 	subject = tp.subject;
 	return TRUE;

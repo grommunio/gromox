@@ -7,12 +7,12 @@
 #include <ldap.h>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <gromox/authmgr.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/paths.h>
 #include <gromox/plugin.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/tie.hpp>
 
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 
 	auto cfg = config_file_prg(nullptr, "http.cfg", no_defaults);
 	service_init({std::move(cfg), g_dfl_svc_plugins, 0, "authtest"});
-	auto cl_1 = make_scope_exit(service_stop);
+	auto cl_1 = HX::make_scope_exit(service_stop);
 	if (service_run_early() != 0) {
 		fprintf(stderr, "service_run_early failed\n");
 		return EXIT_FAILURE;
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "auth_login_gen missing\n");
 		return EXIT_FAILURE;
 	}
-	auto cl_2 = make_scope_exit([&]() { service_release("auth_login_gen", "system"); });
+	auto cl_2 = HX::make_scope_exit([&]() { service_release("auth_login_gen", "system"); });
 	sql_meta_result mres;
 	if (!alogin(g_auth_user, password, WANTPRIV_BASIC, mres)) {
 		fprintf(stderr, "Auth failed: %s\n", mres.errstr.c_str());

@@ -6,13 +6,13 @@
 #include <memory>
 #include <string>
 #include <libHX/defs.h>
+#include <libHX/scope.hpp>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
 
 using namespace gromox;
@@ -71,7 +71,7 @@ static int instance_conv_htmlfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 		return ret;
 	std::string outbuf;
 	auto at = attachment_list_init();
-	auto at_clean = make_scope_exit([&]() { attachment_list_free(at); });
+	auto at_clean = HX::make_scope_exit([&]() { attachment_list_free(at); });
 	if (!rtf_to_html(bin->pc, bin->cb, "utf-8", outbuf, at))
 		return -1;
 	bin->cb = outbuf.size() < UINT32_MAX ? outbuf.size() : UINT32_MAX;

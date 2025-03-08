@@ -13,9 +13,9 @@
 #include <utility>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/paths.h>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 
 using namespace gromox;
@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	textmaps_init(PKGDATADIR);
 	if (g_cpid != CP_ACP && cpid_to_cset(g_cpid) == nullptr) {
 		fprintf(stderr, "Unknown codepage %u\n", g_cpid);

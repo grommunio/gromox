@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <utility>
 #include <libHX/io.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -27,7 +28,6 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/midb_agent.hpp>
 #include <gromox/mysql_adaptor.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "pop3.hpp"
 
@@ -319,7 +319,7 @@ int cmdh_retr(std::vector<std::string> &&argv, pop3_context *pcontext)
 	ctx.wrdat_active = false;
 	ctx.wrdat_content.clear();
 	xrpc_build_env();
-	auto cl_0 = make_scope_exit(xrpc_free_env);
+	auto cl_0 = HX::make_scope_exit(xrpc_free_env);
 	if (!exmdb_client->imapfile_read(ctx.maildir, "eml", punit->file_name,
 	    &ctx.wrdat_content)) {
 		mlog(LV_ERR, "E-1469: imapfile_read %s/eml/%s failed",
@@ -379,7 +379,7 @@ int cmdh_top(std::vector<std::string> &&argv, pop3_context *pcontext)
 	ctx.wrdat_active = false;
 	ctx.wrdat_content.clear();
 	xrpc_build_env();
-	auto cl_0 = make_scope_exit(xrpc_free_env);
+	auto cl_0 = HX::make_scope_exit(xrpc_free_env);
 	if (!exmdb_client->imapfile_read(ctx.maildir, "eml", punit->file_name,
 	    &ctx.wrdat_content))
 		return 1709;

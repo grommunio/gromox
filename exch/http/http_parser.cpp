@@ -33,6 +33,7 @@
 #include <libHX/io.h>
 #include <libHX/misc.h>
 #include <libHX/proc.h>
+#include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
@@ -50,7 +51,6 @@
 #include <gromox/http.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mysql_adaptor.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include "hpm_processor.hpp"
@@ -851,7 +851,7 @@ static int htp_auth_ntlmssp(http_context &ctx, const char *prog,
 		if (prog == nullptr || *prog == '\0')
 			prog = "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp";
 		auto args = HX_split(prog, " ", nullptr, 0);
-		auto cl_0 = make_scope_exit([=]() { HX_zvecfree(args); });
+		auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(args); });
 		pinfo.p_flags = HXPROC_STDIN | HXPROC_STDOUT | HXPROC_STDERR;
 		auto ret = HXproc_run_async(&args[0], &pinfo);
 		if (ret < 0) {
@@ -974,7 +974,7 @@ static int auth_krb(http_context &ctx, const char *input, size_t isize,
 	OM_uint32 status{};
 	gss_name_t gss_srv_name{}, gss_username{};
 	gss_buffer_desc gss_input_buf{}, gss_user_buf{}, gss_output_token{};
-	auto cl_0 = make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() {
 		if (gss_output_token.length != 0)
 			gss_release_buffer(&status, &gss_output_token);
 		if (gss_user_buf.length != 0)

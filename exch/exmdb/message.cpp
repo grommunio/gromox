@@ -16,6 +16,7 @@
 #include <vector>
 #include <fmt/core.h>
 #include <libHX/io.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <openssl/evp.h>
 #include <openssl/md5.h>
@@ -36,7 +37,6 @@
 #include <gromox/oxcmail.hpp>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
@@ -293,7 +293,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 	db_conn::NOTIFQ notifq;
 	if (b_batch)
 		pdb->begin_batch_mode(*dbase);
-	auto cl_0 = make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() {
 		if (b_batch)
 			pdb->cancel_batch_mode(*dbase);
 	});
@@ -505,7 +505,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 	db_conn::NOTIFQ notifq;
 	if (b_batch)
 		pdb->begin_batch_mode(*dbase);
-	auto cl_0 = make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() {
 		if (b_batch)
 			pdb->cancel_batch_mode(*dbase);
 	});
@@ -904,7 +904,7 @@ BOOL exmdb_server::get_message_properties(const char *dir,
 	/* Only one SQL operation, no transaction needed. */
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	return cu_get_properties(MAPI_MESSAGE,
 	       rop_util_get_gc_value(message_id), cpid, pdb->psqlite,
 	       pproptags, ppropvals);
@@ -924,7 +924,7 @@ BOOL exmdb_server::set_message_properties(const char *dir,
 		return FALSE;
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	auto mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!cu_set_properties(MAPI_MESSAGE, mid_val, cpid,
@@ -1001,7 +1001,7 @@ BOOL exmdb_server::set_message_read_state(const char *dir,
 		return false;
 	if (!exmdb_server::is_private()) {
 		exmdb_server::set_public_username(username);
-		auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+		auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 		common_util_set_message_read(pdb->psqlite,
 			mid_val, mark_as_read);
 		char sql_string[128];
@@ -3896,7 +3896,7 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 		return FALSE;
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	auto mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	auto optim = pdb->begin_optim();
@@ -3927,7 +3927,7 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 	auto is_pvt = exmdb_server::is_private();
 	if (!is_pvt)
 		exmdb_server::set_public_username(username);
-	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto mid_val = rop_util_get_gc_value(message_id);
 	if (is_pvt && !common_util_get_mid_string(pdb->psqlite, mid_val, &pmid_string))

@@ -10,11 +10,11 @@
 #include <utility>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/paths.h>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
@@ -379,7 +379,7 @@ static int exm_packet(const void *buf, size_t bufsize)
 		return 0;
 	} else if (obd.mapitype == MAPI_FOLDER) {
 		TPROPVAL_ARRAY props{};
-		auto cl_0 = make_scope_exit([&]() { tpropval_array_free_internal(&props); });
+		auto cl_0 = HX::make_scope_exit([&]() { tpropval_array_free_internal(&props); });
 		if (ep.g_tpropval_a(&props) != EXT_ERR_SUCCESS)
 			throw YError("PG-1118");
 		uint64_t acl_items = 0;
@@ -401,7 +401,7 @@ static int exm_packet(const void *buf, size_t bufsize)
 		return 0;
 	} else if (obd.mapitype == MAPI_MESSAGE) {
 		MESSAGE_CONTENT ctnt{};
-		auto cl_0 = make_scope_exit([&]() { message_content_free_internal(&ctnt); });
+		auto cl_0 = HX::make_scope_exit([&]() { message_content_free_internal(&ctnt); });
 		if (ep.g_msgctnt(&ctnt) != EXT_ERR_SUCCESS)
 			throw YError("PG-1119");
 		return exm_message(obd, ctnt);
@@ -432,7 +432,7 @@ int main(int argc, char **argv) try
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_username == nullptr) {
 		terse_help();
 		return EXIT_FAILURE;
@@ -444,7 +444,7 @@ int main(int argc, char **argv) try
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	service_init({nullptr, g_dfl_svc_plugins, 1});
-	auto cl_1 = make_scope_exit(service_stop);
+	auto cl_1 = HX::make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");
 		return EXIT_FAILURE;
@@ -454,7 +454,7 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	if (gi_startup_client() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = make_scope_exit(gi_shutdown);
+	auto cl_0 = HX::make_scope_exit(gi_shutdown);
 	if (g_anchor_folder_str == nullptr) {
 		g_anchor_folder = PRIVATE_FID_DRAFT;
 	} else {

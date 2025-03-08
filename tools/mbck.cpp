@@ -8,9 +8,9 @@
 #include <vector>
 #include <fmt/core.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <gromox/database.h>
 #include <gromox/mapi_types.hpp>
-#include <gromox/scope.hpp>
 
 using namespace gromox;
 using LLU = unsigned long long;
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 			return EXIT_FAILURE;
 		}
 		printf("== %s ==\n", *argv);
-		auto cl_0 = make_scope_exit([&]() { sqlite3_close(db); });
+		auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(db); });
 		if (gx_sql_exec(db, "PRAGMA foreign_keys=ON") != SQLITE_OK ||
 		    gx_sql_exec(db, "PRAGMA journal_mode=WAL") != SQLITE_OK ||
 		    sqlite3_busy_timeout(db, 60000) != SQLITE_OK)

@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 #include <libHX/misc.h>
+#include <libHX/scope.hpp>
 #include <security/pam_appl.h>
 #include <security/pam_modules.h>
 #include <gromox/authmgr.hpp>
@@ -20,7 +21,6 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
@@ -104,7 +104,7 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		return PAM_AUTH_ERR;
 	if (service_run() != 0)
 		return PAM_AUTH_ERR;
-	auto cleanup_1 = make_scope_exit(service_stop);
+	auto cleanup_1 = HX::make_scope_exit(service_stop);
 
 	unsigned int wantpriv = 0;
 	if (service == nullptr || strcmp(service, "smtp") == 0)

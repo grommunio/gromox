@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <vector>
 #include <libHX/io.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <openssl/err.h>
 #include <sys/socket.h>
@@ -36,7 +37,6 @@
 #include <gromox/midb_agent.hpp>
 #include <gromox/process.hpp>
 #include <gromox/safeint.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
@@ -1412,7 +1412,7 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context &ctx) tr
 {
 	/* cmd2 can/will further tokenize and thus modify argv */
 	std::vector<std::string> argv_copy;
-	auto ac_clean = make_scope_exit([&]() {
+	auto ac_clean = HX::make_scope_exit([&]() {
 		for (size_t i = 0; i < argv_copy.size(); ++i)
 			safe_memset(argv_copy[i].data(), 0, argv_copy[i].size());
 	});

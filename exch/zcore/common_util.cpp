@@ -38,7 +38,6 @@
 #include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>

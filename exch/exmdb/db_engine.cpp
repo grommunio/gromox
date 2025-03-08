@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 #include <fmt/core.h>
+#include <libHX/scope.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/database.h>
@@ -41,7 +42,6 @@
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/sortorder_set.hpp>
 #include <gromox/util.hpp>
 #include "db_engine.hpp"
@@ -178,7 +178,7 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	 * workaround.
 	 */
 	g_autoupg_limiter->acquire();
-	auto cl_0 = make_scope_exit([]() { g_autoupg_limiter->release(); });
+	auto cl_0 = HX::make_scope_exit([]() { g_autoupg_limiter->release(); });
 
 	auto c = is_pvt ? 'V' : 'B';
 	mlog(LV_NOTICE, "dbop_sqlite: %s: current schema E%c-%d; upgrading to E%c-%d.",
@@ -411,7 +411,7 @@ void db_base::get_dbs(const char* dir, sqlite3 *&main, sqlite3 *&eph)
  */
 void db_base::open(const char* dir)
 {
-	auto unlock = make_scope_exit([this] { sqlite_lock.unlock(); --reference; }); /* unlock whenever we're done */
+	auto unlock = HX::make_scope_exit([this] { sqlite_lock.unlock(); --reference; }); /* unlock whenever we're done */
 	auto db_path = fmt::format("{}/tables.sqlite3", dir);
 	auto ret = ::unlink(db_path.c_str());
 	if (ret != 0 && errno != ENOENT)
@@ -629,14 +629,14 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 	auto pmessage_ids = eid_array_init();
 	if (pmessage_ids == nullptr)
 		return FALSE;
-	auto cl_0 = make_scope_exit([&]() { eid_array_free(pmessage_ids); });
+	auto cl_0 = HX::make_scope_exit([&]() { eid_array_free(pmessage_ids); });
 	while (pstmt.step() == SQLITE_ROW)
 		if (!eid_array_append(pmessage_ids,
 		    sqlite3_column_int64(pstmt, 0)))
 			return FALSE;
 	pstmt.finalize();
 	auto t_start = tp_now();
-	auto cl_1 = make_scope_exit([&]() {
+	auto cl_1 = HX::make_scope_exit([&]() {
 		auto t_end = tp_now();
 		auto t_diff = std::chrono::duration<double>(t_end - t_start).count();
 		if (pmessage_ids->count > 0 && t_diff >= 1)
@@ -777,7 +777,7 @@ static void *sf_popul_thread(void *param)
 		g_populating_list_active.splice(g_populating_list_active.end(), g_populating_list, g_populating_list.begin());
 		auto psearch = std::prev(g_populating_list_active.end());
 		lhold.unlock();
-		auto cl_0 = make_scope_exit([&]() {
+		auto cl_0 = HX::make_scope_exit([&]() {
 			lhold.lock();
 			g_populating_list_active.erase(psearch);
 			lhold.unlock();
@@ -785,9 +785,9 @@ static void *sf_popul_thread(void *param)
 		auto pfolder_ids = eid_array_init();
 		if (pfolder_ids == nullptr)
 			goto NEXT_SEARCH;	
-		auto cl_1 = make_scope_exit([&]() { eid_array_free(pfolder_ids); });
+		auto cl_1 = HX::make_scope_exit([&]() { eid_array_free(pfolder_ids); });
 		exmdb_server::build_env(EM_PRIVATE, psearch->dir.c_str());
-		auto cl_2 = make_scope_exit(exmdb_server::free_env);
+		auto cl_2 = HX::make_scope_exit(exmdb_server::free_env);
 		for (size_t i = 0; i < psearch->folder_ids.count; ++i) {
 			if (!eid_array_append(pfolder_ids,
 			    psearch->folder_ids.pll[i]))

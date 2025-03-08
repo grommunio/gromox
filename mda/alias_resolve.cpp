@@ -19,7 +19,6 @@
 #include <gromox/database_mysql.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/mysql_adaptor.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "mdabounce.hpp"

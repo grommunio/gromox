@@ -19,7 +19,6 @@
 #include <gromox/endian.hpp>
 #include <gromox/ndr.hpp>
 #include <gromox/ntlmssp.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 #define MSVAVEOL					0

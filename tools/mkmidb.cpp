@@ -15,6 +15,7 @@
 #include <string>
 #include <unistd.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -25,7 +26,6 @@
 #include <gromox/defs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/paths.h>
-#include <gromox/scope.hpp>
 #include "mkshared.hpp"
 using namespace std::string_literals;
 using namespace gromox;
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (2 != argc) {
 		printf("usage: %s <username>\n", argv[0]);
 		return EXIT_FAILURE;
@@ -153,13 +153,13 @@ int main(int argc, char **argv)
 		printf("Failed to initialize sqlite engine\n");
 		return EXIT_FAILURE;
 	}
-	auto cl_0 = make_scope_exit(sqlite3_shutdown);
+	auto cl_0 = HX::make_scope_exit(sqlite3_shutdown);
 	if (sqlite3_open_v2(temp_path.c_str(), &psqlite,
 	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK) {
 		printf("fail to create store database\n");
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
+	auto cl_1 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
 	if (opt_integ)
 		return dbop_sqlite_integcheck(psqlite, LV_ERR) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 	if (opt_upgrade) {

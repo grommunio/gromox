@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <vmime/addressList.hpp>
 #include <vmime/contentTypeField.hpp>
@@ -14,7 +15,6 @@
 #include <gromox/bounce_gen.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 namespace {
@@ -57,7 +57,7 @@ static bool bounce_producer_make_content(meta_t meta,
 	auto fa = HXformat_init();
 	if (fa == nullptr)
 		return false;
-	auto cl_0 = make_scope_exit([&]() { HXformat_free(fa); });
+	auto cl_0 = HX::make_scope_exit([&]() { HXformat_free(fa); });
 	unsigned int immed = HXFORMAT_IMMED;
 	if (HXformat_add(fa, "time", date_buff,
 	    HXTYPE_STRING | immed) < 0 ||
@@ -78,7 +78,7 @@ static bool bounce_producer_make_content(meta_t meta,
 	hxmc_t *replaced = nullptr;
 	if (HXformat_aprintf(fa, &replaced, &tp.content[tp.body_start]) < 0)
 		return false;
-	auto cl_1 = make_scope_exit([&]() { HXmc_free(replaced); });
+	auto cl_1 = HX::make_scope_exit([&]() { HXmc_free(replaced); });
 	content = replaced;
 	subject = tp.subject;
 	return true;

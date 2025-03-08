@@ -5,19 +5,16 @@
 #include <cctype>
 #include <fmt/core.h>
 #include <sstream>
-
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
-
 #include <gromox/rop_util.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
-
 #include "exceptions.hpp"
 #include "ews.hpp"
 #include "namedtags.hpp"
@@ -980,7 +977,7 @@ TARRAY_SET EWSContext::loadPermissions(const std::string& dir, uint64_t fid) con
 	const auto& exmdb = m_plugin.exmdb;
 	if (!exmdb.load_permission_table(dir.c_str(), fid, 0, &tableId, &rowCount))
 		throw EWSError::ItemCorrupt(E3283);
-	auto unloadTable = make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
+	auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
 	static constexpr uint32_t tags[] = {PR_MEMBER_ID, PR_MEMBER_NAME, PR_MEMBER_RIGHTS, PR_SMTP_ADDRESS};
 	static constexpr PROPTAG_ARRAY proptags = {std::size(tags), deconst(tags)};
 	TARRAY_SET propTable;

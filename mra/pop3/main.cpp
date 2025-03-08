@@ -20,6 +20,7 @@
 #include <libHX/io.h>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
@@ -35,7 +36,6 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
@@ -483,7 +483,7 @@ int main(int argc, char **argv)
 		printf("[system]: Failed to load resource\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_2 = make_scope_exit(resource_stop);
+	auto cleanup_2 = HX::make_scope_exit(resource_stop);
 	uint16_t listen_port = g_config_file->get_ll("pop3_listen_port");
 	listener_init(g_config_file->get_value("pop3_listen_addr"),
 		listen_port, listen_tls_port);
@@ -491,7 +491,7 @@ int main(int argc, char **argv)
 		printf("[system]: fail to start listener\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_4 = make_scope_exit(listener_stop);
+	auto cleanup_4 = HX::make_scope_exit(listener_stop);
 
 	filedes_limit_bump(gxconfig->get_ll("pop3_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins, context_num});
@@ -505,7 +505,7 @@ int main(int argc, char **argv)
 		printf("[system]: failed to run service\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_6 = make_scope_exit(service_stop);
+	auto cleanup_6 = HX::make_scope_exit(service_stop);
 	
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
@@ -513,7 +513,7 @@ int main(int argc, char **argv)
 		printf("[system]: failed to run system service\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_8 = make_scope_exit(system_services_stop);
+	auto cleanup_8 = HX::make_scope_exit(system_services_stop);
 	pop3_parser_init(context_num, context_max_mem, pop3_conn_timeout,
 		pop3_auth_times, block_interval_auth, pop3_support_tls,
 		pop3_force_tls, certificate_path, cb_passwd,
@@ -523,7 +523,7 @@ int main(int argc, char **argv)
 		printf("[system]: failed to run pop3 parser\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_14 = make_scope_exit(pop3_parser_stop);
+	auto cleanup_14 = HX::make_scope_exit(pop3_parser_stop);
 	
 	contexts_pool_init(pop3_parser_get_contexts_list(), context_num,
 		pop3_parser_get_context_socket,
@@ -534,7 +534,7 @@ int main(int argc, char **argv)
 		printf("[system]: failed to run contexts pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_16 = make_scope_exit(contexts_pool_stop);
+	auto cleanup_16 = HX::make_scope_exit(contexts_pool_stop);
 
 	threads_pool_init(thread_init_num, pop3_parser_process);
 	threads_pool_register_event_proc(pop3_parser_threads_event_proc);
@@ -542,7 +542,7 @@ int main(int argc, char **argv)
 		printf("[system]: failed to run threads pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_20 = make_scope_exit(threads_pool_stop);
+	auto cleanup_20 = HX::make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */
 	if (listener_trigger_accept() != 0) {
@@ -553,7 +553,7 @@ int main(int argc, char **argv)
 	exmdb_rpc_alloc = xrpc_alloc;
 	exmdb_rpc_free = [](void *) {};
 	exmdb_client.emplace(1, 0);
-	auto cl_0 = make_scope_exit([]() { exmdb_client.reset(); });
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	if (exmdb_client_run(g_config_file->get_value("config_file_path"),
 	    EXMDB_CLIENT_ASYNC_CONNECT, xrpc_build_env1, xrpc_free_env, nullptr) != 0) {
 		mlog(LV_ERR, "Failed to start exmdb_client");

@@ -4,11 +4,11 @@
 #include <cstdint>
 #include <cstdlib>
 #include <vector>
+#include <libHX/scope.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/paths.h>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 	exmdb_rpc_alloc = [](size_t z) { return g_alloc_mgr.alloc(z); };
 	exmdb_rpc_free = [](void *) {};
 	exmdb_client.emplace(1, 0);
-	auto cl_0 = make_scope_exit([]() { exmdb_client.reset(); });
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	if (exmdb_client_run(PKGSYSCONFDIR) != 0)
 		return EXIT_FAILURE;
 

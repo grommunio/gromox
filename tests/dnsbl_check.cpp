@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
-#include <gromox/scope.hpp>
+#include <libHX/scope.hpp>
 #include <gromox/svc_loader.hpp>
 
 using namespace gromox;
@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	service_init({nullptr, g_dfl_svc_plugins, 1});
-	auto cl_1 = make_scope_exit(service_stop);
+	auto cl_1 = HX::make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");
 		return EXIT_FAILURE;

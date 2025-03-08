@@ -13,6 +13,7 @@
 #include <utility>
 #include <fmt/core.h>
 #include <libHX/defs.h>
+#include <libHX/scope.hpp>
 #include <sys/stat.h>
 #include <gromox/database.h>
 #include <gromox/endian.hpp>
@@ -23,7 +24,6 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "db_engine.hpp"
@@ -363,7 +363,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	}
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
-	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;

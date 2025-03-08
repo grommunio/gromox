@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <libHX/scope.hpp>
 #include <vmime/utility/url.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/element_data.hpp>
@@ -24,7 +25,6 @@
 #include <gromox/pcl.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
@@ -268,7 +268,7 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 	for (auto id : src_id_set)
 		src_id_vec.push_back(id);
 	PROPNAME_ARRAY src_name_arr{};
-	auto cl_0 = make_scope_exit([&]() { rx_delete_local(src_name_arr); });
+	auto cl_0 = HX::make_scope_exit([&]() { rx_delete_local(src_name_arr); });
 	if (!exmdb_client->get_named_propnames(par.cur.dirc(),
 	    src_id_vec, &src_name_arr)) {
 		mlog(LV_DEBUG, "ruleproc: get_named_propnames(%s) failed",
@@ -327,7 +327,7 @@ ec_error_t rxparam::load_std_rules(bool oof,
 	if (!exmdb_client->load_rule_table(dir, cur.fid, 0, &rst_8,
 	    &table_id, &row_count))
 		return ecError;
-	auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
+	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 	static constexpr uint32_t tags[] = {
 		PR_RULE_STATE, PR_RULE_ID, PR_RULE_SEQUENCE, PR_RULE_NAME,
 		PR_RULE_PROVIDER, PR_RULE_CONDITION, PR_RULE_ACTIONS,
@@ -387,7 +387,7 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 	if (!exmdb_client->load_content_table(dir, CP_ACP, cur.fid, nullptr,
 	    TABLE_FLAG_ASSOCIATED, &rst_10, &sort_order, &table_id, &row_count))
 		return ecError;
-	auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
+	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 
 	static constexpr uint32_t tags[] = {
 		PR_RULE_MSG_STATE, PidTagMid, PR_RULE_MSG_SEQUENCE,

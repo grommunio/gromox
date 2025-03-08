@@ -7,13 +7,12 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <tinyxml2.h>
-
+#include <libHX/scope.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/eid_array.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "exceptions.hpp"
 #include "requests.hpp"
@@ -453,7 +452,7 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 		if (!exmdb.load_hierarchy_table(dir.c_str(), folder.folderId,
 		    username, tableFlags, res, &tableId, &rowCount))
 			throw EWSError::FolderPropertyRequestFailed(E3219);
-		auto unloadTable = make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
+		auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
 		if (!rowCount) {
 			data.ResponseMessages.emplace_back().success();
 			continue;
@@ -536,7 +535,7 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 		if (!exmdb.load_content_table(dir.c_str(), CP_UTF8, folder.folderId,
 		    "", tableFlags, res, sort, &tableId, &rowCount))
 			throw EWSError::ItemPropertyRequestFailed(E3245);
-		auto unloadTable = make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
+		auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
 		if (!rowCount) {
 			data.ResponseMessages.emplace_back().success();
 			continue;

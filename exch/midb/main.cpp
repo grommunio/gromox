@@ -20,6 +20,7 @@
 #include <libHX/io.h>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
@@ -37,7 +38,6 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -330,18 +330,18 @@ int main(int argc, char **argv)
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
 	unsigned int cmd_debug = pconfig->get_ll("midb_cmd_debug");
 	service_init({g_config_file, g_dfl_svc_plugins, threads_num});
-	auto cl_0 = make_scope_exit(service_stop);
+	auto cl_0 = HX::make_scope_exit(service_stop);
 	
 	exmdb_client.emplace(proxy_num, stub_num);
-	auto cl_6 = make_scope_exit([]() { exmdb_client.reset(); });
+	auto cl_6 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	listener_init(listen_ip, listen_port);
-	auto cl_3 = make_scope_exit(listener_stop);
+	auto cl_3 = HX::make_scope_exit(listener_stop);
 	me_init(g_config_file->get_value("default_charset"),
 		g_config_file->get_value("x500_org_name"), table_size);
-	auto cl_5 = make_scope_exit(me_stop);
+	auto cl_5 = HX::make_scope_exit(me_stop);
 
 	cmd_parser_init(threads_num, SOCKET_TIMEOUT, cmd_debug);
-	auto cl_4 = make_scope_exit(cmd_parser_stop);
+	auto cl_4 = HX::make_scope_exit(cmd_parser_stop);
 
 	if (service_run_early() != 0) {
 		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
@@ -361,7 +361,7 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start services");
 		return EXIT_FAILURE;
 	}
-	auto cl_1 = make_scope_exit(system_services_stop);
+	auto cl_1 = HX::make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) {
 		mlog(LV_ERR, "system: failed to start system services");
 		return EXIT_FAILURE;

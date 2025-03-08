@@ -32,7 +32,6 @@
 #include <gromox/proc_common.h>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "common_util.hpp"

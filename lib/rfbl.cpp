@@ -51,6 +51,7 @@
 #include <libHX/defs.h>
 #include <libHX/io.h>
 #include <libHX/proc.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <vmime/charset.hpp>
 #include <gromox/archive.hpp>
@@ -66,7 +67,6 @@
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
 #include <gromox/range_set.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
@@ -402,7 +402,7 @@ pid_t popenfd(const char *const *argv, int *fdinp, int *fdoutp,
 	auto ret = posix_spawn_file_actions_init(&fa);
 	if (ret != 0)
 		return -ret;
-	auto cl2 = make_scope_exit([&]() { posix_spawn_file_actions_destroy(&fa); });
+	auto cl2 = HX::make_scope_exit([&]() { posix_spawn_file_actions_destroy(&fa); });
 
 	/* Close child-unused ends of the pipes; move child-used ends to fd 0-2. */
 	if (fdinp != nullptr) {
@@ -508,16 +508,16 @@ int feed_w3m(const void *inbuf, size_t len, std::string &outbuf) try
 	std::unique_ptr<FILE, file_deleter> fp(fopen(filename.c_str(), "w"));
 	if (fp == nullptr || fwrite(inbuf, len, 1, fp.get()) != 1)
 		return -1;
-	auto cl1 = make_scope_exit([&]() { unlink(filename.c_str()); });
+	auto cl1 = HX::make_scope_exit([&]() { unlink(filename.c_str()); });
 	fp.reset();
 	int fout = -1;
-	auto cl2 = make_scope_exit([&]() { if (fout != -1) close(fout); });
+	auto cl2 = HX::make_scope_exit([&]() { if (fout != -1) close(fout); });
 	const char *const argv[] = {"w3m", "-dump", filename.c_str(), nullptr};
 	auto pid = popenfd(argv, nullptr, &fout, nullptr, const_cast<const char *const *>(environ));
 	if (pid < 0)
 		return -1;
 	int status = 0;
-	auto cl3 = make_scope_exit([&]() { waitpid(pid, &status, 0); });
+	auto cl3 = HX::make_scope_exit([&]() { waitpid(pid, &status, 0); });
 	outbuf = std::string();
 	ssize_t ret;
 	char fbuf[4096];
@@ -1155,7 +1155,7 @@ std::string zstd_decompress(std::string_view x)
 	auto strm = ZSTD_createDStream();
 	if (strm == nullptr)
 		throw std::bad_alloc();
-	auto cl_0 = make_scope_exit([&]() { ZSTD_freeDStream(strm); });
+	auto cl_0 = HX::make_scope_exit([&]() { ZSTD_freeDStream(strm); });
 	ZSTD_initDStream(strm);
 	ZSTD_inBuffer xds = {x.data(), x.size()};
 	auto ffsize = ZSTD_getFrameContentSize(x.data(), x.size());
@@ -1227,7 +1227,7 @@ errno_t gx_decompress_file(const char *infile, BINARY &outbin,
 	auto strm = ZSTD_createDStream();
 	if (strm == nullptr)
 		throw std::bad_alloc();
-	auto cl_0 = make_scope_exit([&]() { ZSTD_freeDStream(strm); });
+	auto cl_0 = HX::make_scope_exit([&]() { ZSTD_freeDStream(strm); });
 	ZSTD_initDStream(strm);
 
 	size_t inbufsize = ZSTD_DStreamInSize();
@@ -1310,7 +1310,7 @@ errno_t gx_compress_tofd(std::string_view inbuf, int fd, uint8_t complvl)
 #endif
 
 	auto strm = ZSTD_createCStream();
-	auto cl_0 = make_scope_exit([&]() { ZSTD_freeCStream(strm); });
+	auto cl_0 = HX::make_scope_exit([&]() { ZSTD_freeCStream(strm); });
 	ZSTD_initCStream(strm, complvl == 0 ? ZSTD_minCLevel() : complvl);
 	ZSTD_CCtx_setParameter(strm, ZSTD_c_checksumFlag, 1);
 	ZSTD_CCtx_setPledgedSrcSize(strm, inbuf.size());
@@ -1483,7 +1483,7 @@ std::string iconvtext(const char *src, size_t src_size,
 		        cs.c_str(), strerror(errno));
 		return "UNKNOWN_CHARSET";
 	}
-	auto cleanup = make_scope_exit([&]() { iconv_close(cd); });
+	auto cleanup = HX::make_scope_exit([&]() { iconv_close(cd); });
 	char buffer[4096];
 	std::string out;
 
@@ -1702,7 +1702,7 @@ errno_t canonical_hostname(std::string &out) try
 		mlog(LV_ERR, "getaddrinfo %s: %s", buf, gai_strerror(err));
 		return EINVAL;
 	}
-	auto cl_0 = make_scope_exit([&]() { freeaddrinfo(aires); });
+	auto cl_0 = HX::make_scope_exit([&]() { freeaddrinfo(aires); });
 	out = aires->ai_canonname;
 	return 0;
 } catch (const std::bad_alloc &) {
@@ -1866,7 +1866,7 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
 	if (fh == nullptr)
 		return nullptr;
 	hxmc_t *line = nullptr;
-	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	auto cl_0 = HX::make_scope_exit([&]() { HXmc_free(line); });
 	while (HX_getl(&line, fh.get()) != nullptr) {
 		HX_chomp(line);
 		HX_strrtrim(line);

@@ -20,6 +20,7 @@
 #include <libHX/io.h>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
@@ -33,7 +34,6 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
@@ -302,7 +302,7 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to load resources");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_2 = make_scope_exit(resource_stop);
+	auto cleanup_2 = HX::make_scope_exit(resource_stop);
 
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
@@ -409,7 +409,7 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start listener");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_4 = make_scope_exit(listener_stop);
+	auto cleanup_4 = HX::make_scope_exit(listener_stop);
 
 	filedes_limit_bump(gxconfig->get_ll("lda_fd_limit"));
 	service_init({g_config_file, g_dfl_svc_plugins, scfg.context_num});
@@ -423,7 +423,7 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start services");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_6 = make_scope_exit(service_stop);
+	auto cleanup_6 = HX::make_scope_exit(service_stop);
 	
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
@@ -432,7 +432,7 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start SMTP parser");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_16 = make_scope_exit(smtp_parser_stop);
+	auto cleanup_16 = HX::make_scope_exit(smtp_parser_stop);
 	
 	contexts_pool_init(smtp_parser_get_contexts_list(), scfg.context_num,
 		smtp_parser_get_context_socket,
@@ -443,14 +443,14 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start context pool");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_18 = make_scope_exit(contexts_pool_stop);
+	auto cleanup_18 = HX::make_scope_exit(contexts_pool_stop);
 
 	flusher_init(scfg.context_num);
 	if (0 != flusher_run()) {
 		mlog(LV_ERR, "system: failed to start flusher");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_20 = make_scope_exit(flusher_stop);
+	auto cleanup_20 = HX::make_scope_exit(flusher_stop);
 
 	threads_pool_init(thread_init_num, smtp_parser_process);
 	threads_pool_register_event_proc(smtp_parser_threads_event_proc);
@@ -458,7 +458,7 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to run thread pool");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_26 = make_scope_exit(threads_pool_stop);
+	auto cleanup_26 = HX::make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */
 	if (listener_trigger_accept() != 0) {

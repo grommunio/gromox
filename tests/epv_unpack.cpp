@@ -13,10 +13,10 @@
 #include <unistd.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #ifdef HAVE_ESEDB
 #	include <libesedb.h>
 #endif
-#include <gromox/scope.hpp>
 #include "../tools/edb_pack.hpp"
 
 using namespace gromox;
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	if (argc < 2) {
 		terse_help();

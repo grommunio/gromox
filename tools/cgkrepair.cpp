@@ -9,8 +9,8 @@
 #include <memory>
 #include <new>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <gromox/exmdb_client.hpp>
-#include <gromox/scope.hpp>
 #include "genimport.hpp"
 
 using namespace gromox;
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_primail == nullptr) {
 		fprintf(stderr, "Usage: cgkrepair -e primary_mailaddr\n");
 		return EXIT_FAILURE;
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	if (gi_startup_client() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_1 = make_scope_exit(gi_shutdown);
+	auto cl_1 = HX::make_scope_exit(gi_shutdown);
 	auto ret = repair_mbox();
 	if (ret == -ENOMEM) {
 		fprintf(stderr, "Insufficient system memory.\n");

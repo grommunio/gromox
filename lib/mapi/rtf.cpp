@@ -12,12 +12,12 @@
 #include <vector>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -2871,7 +2871,7 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 		        tmp_buff, strerror(errno));
 		return false;
 	}
-	auto cl_0 = make_scope_exit([&]() { iconv_close(conv_id); });
+	auto cl_0 = HX::make_scope_exit([&]() { iconv_close(conv_id); });
 	auto pin = reader.ext_push.m_cdata;
 	/* Assumption for 3x is that no codepage maps to points beyond BMP */
 	size_t out_len = 3 * reader.ext_push.m_offset;

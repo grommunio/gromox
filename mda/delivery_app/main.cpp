@@ -13,6 +13,7 @@
 #include <vector>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/types.h>
@@ -22,7 +23,6 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "delivery.hpp"
@@ -195,7 +195,7 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start services");
 		return EXIT_FAILURE;
     }
-	auto cleanup_4 = make_scope_exit(service_stop);
+	auto cleanup_4 = HX::make_scope_exit(service_stop);
 
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
@@ -210,11 +210,11 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to start message dequeue");
 		return EXIT_FAILURE;
     }
-	auto cleanup_8 = make_scope_exit(message_dequeue_stop);
+	auto cleanup_8 = HX::make_scope_exit(message_dequeue_stop);
 
 	transporter_init(PKGLIBDIR, g_dfl_mpc_plugins, threads_min, threads_max,
 		free_contexts, false);
-	auto cleanup_12 = make_scope_exit(transporter_stop);
+	auto cleanup_12 = HX::make_scope_exit(transporter_stop);
     if (0 != transporter_run()) { 
 		mlog(LV_ERR, "system: failed to start transporter");
 		return EXIT_FAILURE;

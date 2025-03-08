@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
@@ -25,7 +26,6 @@
 #include <gromox/proc_common.h>
 #include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
@@ -534,7 +534,7 @@ ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *pus
 	AUX_CLIENT_CONTROL aux_control;
 	bool is_success = false;
 
-	auto cl_0 = make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() {
 		if (is_success)
 			return;
 		memset(pcxh, 0, sizeof(CXH));

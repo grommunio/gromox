@@ -16,7 +16,6 @@
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "common_util.hpp"
 #include "object_tree.hpp"

@@ -17,6 +17,7 @@
 #include <variant>
 #include <fmt/core.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
@@ -25,7 +26,6 @@
 #include <gromox/hpm_common.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "mh_common.hpp"
 #include "nsp_bridge.hpp"
@@ -631,7 +631,7 @@ http_status MhNspPlugin::process(int context_id, const void *content,
 		return result.value();
 	set_context(context_id);
 	rpc_new_stack();
-	auto cleanup_0 = make_scope_exit([&]() { rpc_free_stack(); });
+	auto cleanup_0 = HX::make_scope_exit([&]() { rpc_free_stack(); });
 
 	ctx.ext_pull.init(content, length, cu_alloc1, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 	HX_strlower(ctx.request_value);

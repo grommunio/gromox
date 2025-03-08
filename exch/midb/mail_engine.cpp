@@ -28,6 +28,7 @@
 #include <fmt/core.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/io.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -47,7 +48,6 @@
 #include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/safeint.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "cmd_parser.hpp"
@@ -1470,7 +1470,7 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		    rop_util_make_eid_ex(1, folder_id), nullptr, TABLE_FLAG_NONOTIFICATIONS,
 		    nullptr, nullptr, &table_id, &row_count))
 			return false;
-		auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
+		auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 		static constexpr uint32_t proptags_0[] = {
 			PidTagMid, PR_MESSAGE_FLAGS, PR_LAST_MODIFICATION_TIME,
 			PR_MESSAGE_DELIVERY_TIME, PidTagMidString, PR_FLAG_STATUS,
@@ -1652,7 +1652,7 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 {
 	auto dir = cu_get_maildir();
 	mlog(LV_NOTICE, "Running sync_mailbox for %s", dir);
-	auto cl_err = make_scope_exit([&]() {
+	auto cl_err = HX::make_scope_exit([&]() {
 		mlog(LV_NOTICE, "sync_mailbox aborted for %s", dir);
 	});
 	unsigned int table_id = 0, row_count = 0;
@@ -2162,7 +2162,7 @@ static int me_minst(int argc, char **argv, int sockd) try
 	pbuff.clear();
 	if (pmsgctnt == nullptr)
 		return MIDB_E_OXCMAIL_IMPORT;
-	auto cl_msg = make_scope_exit([&]() { message_content_free(pmsgctnt); });
+	auto cl_msg = HX::make_scope_exit([&]() { message_content_free(pmsgctnt); });
 	auto nt_time = rop_util_unix_to_nttime(strtol(argv[5], nullptr, 0));
 	if (pmsgctnt->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
 		return MIDB_E_NO_MEMORY;

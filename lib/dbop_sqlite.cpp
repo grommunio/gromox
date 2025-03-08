@@ -8,7 +8,6 @@
 #include <fmt/core.h>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 /*

@@ -13,12 +13,12 @@
 #include <utility>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapitags.hpp>
 #include <gromox/paths.h>
 #include <gromox/propval.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
@@ -374,7 +374,7 @@ static void do_propblob(TPROPVAL_ARRAY &props, const std::string &blob)
 		return;
 	}
 	TPROPVAL_ARRAY new_props;
-	auto cl_0 = make_scope_exit([&]() { free(new_props.ppropval); });
+	auto cl_0 = HX::make_scope_exit([&]() { free(new_props.ppropval); });
 	edb_pull ep;
 	ep.init(blob.data(), blob.size(), malloc, EXT_FLAG_UTF16);
 	if (ep.g_edb_propval_a(&new_props) != pack_result::success)
@@ -664,7 +664,7 @@ int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (argc != 2) {
 		terse_help();
 		return EXIT_FAILURE;

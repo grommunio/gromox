@@ -14,7 +14,7 @@ dependencies are needed:
 * cURL library
 * fmt >= 8
 * jsoncpp
-* libHX >= 4.19
+* libHX >= 4.26
 * libiconv (OpenBSD)
 * libxml2 (we use this for HTML parsing)
 * libzstd >= 1.4

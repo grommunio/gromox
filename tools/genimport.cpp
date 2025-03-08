@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 #include <libHX/io.h>
+#include <libHX/scope.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
 #include <gromox/endian.hpp>
@@ -31,7 +32,6 @@
 #include <gromox/paths.h>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
@@ -619,7 +619,7 @@ eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 			mlog(LV_ERR, "load_hierarchy_table RPC rejected");
 			return 0;
 		}
-		auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
+		auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 
 		static constexpr uint32_t qtags[] = {PidTagFolderId};
 		static constexpr PROPTAG_ARRAY qtaginfo = {std::size(qtags), deconst(qtags)};

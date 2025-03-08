@@ -17,8 +17,8 @@
 #include <memory>
 #include <spawn.h>
 #include <libHX/option.h>
+#include <libHX/scope.hpp>
 #include <sys/wait.h>
-#include <gromox/scope.hpp>
 #include "genimport.hpp"
 
 extern "C" {
@@ -50,7 +50,7 @@ int main(int argc, char **argv) try
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = gromox::make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	int pfd[2] = {-1, -1};
 	if (pipe(pfd) < 0) {
 		perror("pipe");

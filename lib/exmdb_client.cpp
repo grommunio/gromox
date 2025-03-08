@@ -13,6 +13,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <vector>
+#include <libHX/scope.hpp>
 #include <libHX/socket.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
@@ -25,7 +26,6 @@
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #ifndef AI_V4MAPPED
 #	define AI_V4MAPPED 0
@@ -150,7 +150,7 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 			        srv.host.c_str(), srv.port, strerror(-sockd));
 	        return -2;
 	}
-	auto cl_sock = make_scope_exit([&]() { close(sockd); });
+	auto cl_sock = HX::make_scope_exit([&]() { close(sockd); });
 	exreq_connect rqc;
 	exreq_listen_notification rql;
 	if (!b_listen) {
@@ -178,7 +178,7 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	bin.pb = nullptr;
 	if (mdcl_build_env != nullptr)
 		mdcl_build_env(srv);
-	auto cl_0 = make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
+	auto cl_0 = HX::make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
 	if (!exmdb_client_read_socket(sockd, bin, mdcl_rpc_timeout) ||
 	    bin.pb == nullptr)
 		return -1;
@@ -293,7 +293,7 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 	bin.cb = buff_len;
 	bin.pb = buff;
 	mdcl_build_env(*agent.pserver);
-	auto cl_0 = make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
+	auto cl_0 = HX::make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
 	DB_NOTIFY_DATAGRAM notify;
 	auto resp_code = exmdb_ext_pull_db_notify(&bin, &notify) == EXT_ERR_SUCCESS ?
 	                 exmdb_response::success : exmdb_response::pull_error;
@@ -552,7 +552,7 @@ int main(int argc, const char **argv)
 {
 	setup_signal_defaults();
 	exmdb_client.emplace(2, 0);
-	auto cl_0 = make_scope_exit([]() { exmdb_client.reset(); });
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	auto ret = exmdb_client_run(PKGSYSCONFDIR);
 	if (ret != 0)
 		return EXIT_FAILURE;

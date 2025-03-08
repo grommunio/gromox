@@ -16,7 +16,7 @@
 #include <tinyxml2.h>
 #include <curl/curl.h>
 #include <libHX/option.h>
-#include <gromox/scope.hpp>
+#include <libHX/scope.hpp>
 #include <gromox/util.hpp>
 #if defined(HAVE_CARES)
 #	include <ares.h>
@@ -240,16 +240,16 @@ static std::string domain_to_oxsrv(const char *dom)
 	auto status = ares_library_init(ARES_LIB_INIT_ALL);
 	if (status != ARES_SUCCESS)
 		return target;
-	auto cl_0 = make_scope_exit(ares_library_cleanup);
+	auto cl_0 = HX::make_scope_exit(ares_library_cleanup);
 	ares_channel_t *channel = nullptr;
-	auto cl_1 = make_scope_exit([&]() { ares_destroy(channel); });
+	auto cl_1 = HX::make_scope_exit([&]() { ares_destroy(channel); });
 	ares_options opts{};
 	opts.evsys = ARES_EVSYS_DEFAULT;
 	status = ares_init_options(&channel, &opts, ARES_OPT_EVENT_THREAD);
 	if (status != ARES_SUCCESS)
 		return target;
 	ares_dns_record_t *req = nullptr;
-	auto cl_2 = make_scope_exit([&]() { ares_dns_record_destroy(req); });
+	auto cl_2 = HX::make_scope_exit([&]() { ares_dns_record_destroy(req); });
 	status = ares_dns_record_create(&req, 0, ARES_FLAG_RD,
 	         ARES_OPCODE_QUERY, ARES_RCODE_NOERROR);
 	if (status != ARES_SUCCESS)
@@ -272,7 +272,7 @@ static std::string domain_to_oxsrv(const char *dom)
 
 	if (res_ninit(&state) != 0)
 		throw std::bad_alloc();
-	auto cl_0 = make_scope_exit([&]() { res_nclose(&state); });
+	auto cl_0 = HX::make_scope_exit([&]() { res_nclose(&state); });
 	auto ret = res_nquerydomain(&state, "_autodiscover._tcp", dom, ns_c_in,
 	           ns_t_srv, rsp, std::size(rsp));
 	if (ret <= 0)
@@ -442,8 +442,8 @@ int main(int argc, char **argv)
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = make_scope_exit([=]() { HX_zvecfree(argv); });
-	auto cl_args = make_scope_exit([]() {
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
+	auto cl_args = HX::make_scope_exit([]() {
 		free(g_disc_host);
 		free(g_disc_url);
 		free(g_emailaddr);

@@ -10,6 +10,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
@@ -17,7 +18,6 @@
 #include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tnef.hpp>
 #include <gromox/util.hpp>
@@ -1232,7 +1232,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	auto pmsg = message_content_init();
 	if (pmsg == nullptr)
 		return NULL;
-	auto cl_0 = make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() {
 		if (pmsg != nullptr)
 			message_content_free(pmsg);
 	});

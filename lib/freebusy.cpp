@@ -6,6 +6,7 @@
 #include <vector>
 #include <fmt/core.h>
 #include <fmt/format.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
@@ -15,7 +16,6 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -286,7 +286,7 @@ static int goid_to_icaluid2(BINARY *gobj, std::string &uid_buf)
 	}
 
 	EXT_PULL ext_pull;
-	auto cl_0 = make_scope_exit([&]() { free(ngid.data.pc); });
+	auto cl_0 = HX::make_scope_exit([&]() { free(ngid.data.pc); });
 	ext_pull.init(gobj->pb, gobj->cb, malloc, 0);
 	if (ext_pull.g_goid(&ngid) != EXT_ERR_SUCCESS)
 		return -EIO;
@@ -386,7 +386,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 	    TABLE_FLAG_NONOTIFICATIONS, &rst_26, nullptr, &table_id, &row_count))
 		return false;
 
-	auto cl_0 = make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id);});
+	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id);});
 
 	uint32_t proptag_buff[] = {
 		ptag.apptstartwhole, ptag.apptendwhole, ptag.busystatus,
