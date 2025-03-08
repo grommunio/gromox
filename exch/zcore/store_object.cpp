@@ -631,7 +631,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;	
 		auto temp_len = strlen(dispname);
 		for (size_t i = 0; i < temp_len; ++i) {
-			if (!isascii(dispname[i]))
+			if (isascii(dispname[i]))
 				continue;
 			gx_strlcpy(dispname, pstore->account, dsize);
 			auto p = strchr(dispname, '@');
