@@ -1471,6 +1471,11 @@ size_t utf8_printable_prefix(const void *vinput, size_t max)
 	return p - begin;
 }
 
+/**
+ * Callers might expect to see std::bad_alloc, so for now, let such exception
+ * escape without conversion to ENOMEM. Callers should ideally check for ENOMEM
+ * anyway.
+ */
 std::string iconvtext(const char *src, size_t src_size,
     const char *from, const char *to)
 {
@@ -1481,7 +1486,8 @@ std::string iconvtext(const char *src, size_t src_size,
 	if (cd == reinterpret_cast<iconv_t>(-1)) {
 		mlog(LV_ERR, "E-2116: iconv_open %s: %s",
 		        cs.c_str(), strerror(errno));
-		return "UNKNOWN_CHARSET";
+		errno = EINVAL;
+		return {};
 	}
 	auto cleanup = HX::make_scope_exit([&]() { iconv_close(cd); });
 	char buffer[4096];
@@ -1501,6 +1507,7 @@ std::string iconvtext(const char *src, size_t src_size,
 		}
 		out.append(buffer, sizeof(buffer) - dst_size);
 	}
+	errno = 0;
 	return out;
 }
 

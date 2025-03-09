@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -645,6 +645,8 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 			fprintf(stderr, "PF-1041: Garbage in string which cannot be represented in UTF-8\n");
 			auto s = iconvtext(reinterpret_cast<char *>(buf.get()), dsize,
 			         "UTF-16", "UTF-8//IGNORE");
+			if (errno != 0)
+				throw YError("PF-1140: "s + strerror(errno));
 			dsize = s.size() + 1;
 			buf = std::make_unique<uint8_t[]>(dsize);
 			memcpy(buf.get(), s.data(), dsize);
@@ -652,6 +654,8 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 			fprintf(stderr, "PF-1041: Garbage in string which cannot be represented in UTF-8\n");
 			auto s = iconvtext(reinterpret_cast<char *>(buf.get()), dsize,
 			         g_ascii_charset, "UTF-8//IGNORE");
+			if (errno != 0)
+				throw YError("PF-1141: "s + strerror(errno));
 			dsize = s.size() * 3 + 1;
 			buf = std::make_unique<uint8_t[]>(dsize);
 			memcpy(buf.get(), s.data(), dsize);

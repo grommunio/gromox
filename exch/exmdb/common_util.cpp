@@ -2766,6 +2766,8 @@ static int subj_pfxlen(const char *s) try
 {
 	/* Note we do not recognize NFD/NKFD. Oh well. */
 	auto ustr  = iconvtext(s, strlen(s), "UTF-8", "wchar_t");
+	if (errno != 0)
+		return -1;
 	auto units = ustr.size() / sizeof(wchar_t);
 	wchar_t uc[6]{};
 	if (units > std::size(uc))

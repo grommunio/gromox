@@ -170,12 +170,16 @@ static int ptesv_to_prop(const struct pte &pte, const char *cset,
 		if (pte.v_ui4 != blob->cb + 1)
 			return -EIO;
 		auto s = iconvtext(blob->pc, blob->cb, cset, "UTF-8//IGNORE");
+		if (errno != 0)
+			return -errno;
 		return proplist.set(pte.proptag, s.data());
 	}
 	case PT_UNICODE: {
 		if (pte.v_ui4 != blob->cb + 2)
 			return -EIO;
 		auto s = iconvtext(blob->pc, blob->cb, "UTF-16", "UTF-8//IGNORE");
+		if (errno != 0)
+			return -errno;
 		return proplist.set(pte.proptag, s.data());
 	}
 	case PT_BINARY:
@@ -280,6 +284,8 @@ static int ptemvs_to_prop(const struct pte &pte, const char *cset,
 			rdbuf = iconvtext(rdbuf.c_str(), strm_size, cset, "UTF-8//IGNORE");
 		else
 			rdbuf = iconvtext(rdbuf.c_str(), strm_size, "UTF-16", "UTF-8//IGNORE");
+		if (errno != 0)
+			return -errno;
 		strs[i] = std::move(rdbuf);
 	}
 	for (uint32_t i = 0; i < sa.count; ++i)
@@ -507,6 +513,8 @@ static int npg_read(libolecf_item_t *root)
 			if (sp.g_bytes(wbuf.data(), len) != EXT_ERR_SUCCESS)
 				return -EIO;
 			pn_req.name = iconvtext(wbuf.data(), len, "UTF-16", "UTF-8//IGNORE");
+			if (errno != 0)
+				return -errno;
 		}
 		if (guididx == 1) {
 			pn_req.guid = PS_MAPI;

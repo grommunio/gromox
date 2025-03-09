@@ -131,8 +131,13 @@ static pack_result abkt_read_row(EXT_PULL &bin, Json::Value &jrow,
 		} else {
 			TRY(bin.g_str(&text));
 			auto cset = cpid_to_cset(cpid);
-			if (cset != nullptr)
+			if (cset != nullptr) {
 				text = iconvtext(text.c_str(), text.size(), cset, "UTF-8");
+				if (errno == ENOMEM)
+					return pack_result::alloc;
+				else if (errno != 0)
+					return pack_result::failure;
+			}
 		}
 		bin.m_offset = saved_offset;
 	}
@@ -204,8 +209,13 @@ static pack_result abkt_write_row(Json::Value &jrow, EXT_PUSH &bin,
 	bin.m_offset = auxofs;
 	if (cpid != CP_ACP) {
 		auto cset = cpid_to_cset(cpid);
-		if (cset != nullptr)
+		if (cset != nullptr) {
 			text = iconvtext(text.data(), text.size(), "UTF-8", cset);
+			if (errno == ENOMEM)
+				return pack_result::alloc;
+			else if (errno != 0)
+				return pack_result::failure;
+		}
 		TRY(bin.p_str(text.c_str()));
 	} else {
 		TRY(bin.p_wstr(text.c_str()));

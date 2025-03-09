@@ -1098,6 +1098,12 @@ ec_error_t html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
 	cset = replace_iconv_charset(cset);
 	auto buffer = iconvtext(static_cast<const char *>(pbuff_in),
 	              length, cset, "UTF-8");
+	if (errno == ENOMEM)
+		return ecMAPIOOM;
+	else if (errno == EINVAL)
+		return ecInvalidParam;
+	else
+		return ecError;
 	auto ret = html_init_writer(&writer);
 	if (ret != ecSuccess)
 		return ret;
