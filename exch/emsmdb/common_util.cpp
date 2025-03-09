@@ -86,76 +86,42 @@ char *cu_strdup(std::string_view sv)
 	return out;
 }
 
-ssize_t cu_utf8_to_mb(cpid_t cpid, const char *src,
-    char *dst, size_t len)
+static const char *cu_resolve_cpid(cpid_t cpid)
 {
-	size_t in_len;
-	size_t out_len;
-	iconv_t conv_id;
-	char temp_charset[256];
-	
-	auto charset = cpid_to_cset(cpid);
-	if (charset == nullptr)
-		return -1;
-	sprintf(temp_charset, "%s//IGNORE",
-		replace_iconv_charset(charset));
-	conv_id = iconv_open(temp_charset, "UTF-8");
-	if (conv_id == (iconv_t)-1)
-		return -1;
-	auto pin = deconst(src);
-	auto pout = dst;
-	in_len = strlen(src) + 1;
-	memset(dst, 0, len);
-	out_len = len;
-	iconv(conv_id, &pin, &in_len, &pout, &len);
-	iconv_close(conv_id);
-	return out_len - len;
+	if (cpid == CP_OEMCP) {
+		/* only valid when invoked under rop environment */
+		auto e = emsmdb_interface_get_emsmdb_info();
+		if (e == nullptr)
+			return nullptr;
+		cpid = e->cpid;
+	}
+	return cpid_to_cset(cpid);
 }
 
-ssize_t cu_mb_to_utf8(cpid_t cpid, const char *src,
-    char *dst, size_t len)
+std::string cu_cvt_str(std::string_view sv, cpid_t cpid, bool to_utf8) try
 {
-	size_t in_len;
-	size_t out_len;
-	iconv_t conv_id;
-
-	cpid_cstr_compatible(cpid);
-	auto charset = cpid_to_cset(cpid);
-	if (charset == nullptr)
-		return -1;
-	conv_id = iconv_open("UTF-8//IGNORE",
-		replace_iconv_charset(charset));
-	if (conv_id == (iconv_t)-1)
-		return -1;
-	auto pin = deconst(src);
-	auto pout = dst;
-	in_len = strlen(src) + 1;
-	memset(dst, 0, len);
-	out_len = len;
-	iconv(conv_id, &pin, &in_len, &pout, &len);	
-	iconv_close(conv_id);
-	return out_len - len;
+	auto cset = cu_resolve_cpid(cpid);
+	if (cset == nullptr) {
+		errno = EINVAL;
+		return {};
+	}
+	return iconvtext(sv.data(), sv.size(), to_utf8 ? cset : "UTF-8",
+	       to_utf8 ? "UTF-8" : cset);
+} catch (const std::bad_alloc &) {
+	errno = ENOMEM;
+	return {};
 }
 
-static char *common_util_dup_mb_to_utf8(cpid_t cpid, const char *src)
+char *cu_mb_to_utf8_dup(cpid_t cpid, std::string_view sv)
 {
-	cpid_cstr_compatible(cpid);
-	auto len = mb_to_utf8_len(src);
-	auto pdst = cu_alloc<char>(len);
-	if (pdst == nullptr)
-		return NULL;
-	return cu_mb_to_utf8(cpid, src, pdst, len) >= 0 ? pdst : nullptr;
+	auto cvt = cu_cvt_str(std::move(sv), cpid, true);
+	return errno == 0 ? cu_strdup(cvt) : nullptr;
 }
 
-/* only for being invoked under rop environment */
-ssize_t common_util_convert_string(bool to_utf8, const char *src,
-    char *dst, size_t len)
+char *cu_utf8_to_mb_dup(cpid_t cpid, std::string_view sv)
 {
-	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (pinfo == nullptr)
-		return -1;
-	return to_utf8 ? cu_mb_to_utf8(pinfo->cpid, src, dst, len) :
-	       cu_utf8_to_mb(pinfo->cpid, src, dst, len);
+	auto cvt = cu_cvt_str(std::move(sv), cpid, false);
+	return errno == 0 ? cu_strdup(cvt) : nullptr;
 }
 
 void common_util_obfuscate_data(uint8_t *data, uint32_t size)
@@ -871,26 +837,18 @@ BOOL common_util_convert_unspecified(cpid_t cpid,
 	if (b_unicode) {
 		if (ptyped->type != PT_STRING8)
 			return TRUE;
-		auto tmp_len = mb_to_utf8_len(static_cast<char *>(ptyped->pvalue));
-		auto pvalue = common_util_alloc(tmp_len);
+		auto pvalue = cu_mb_to_utf8_dup(cpid, static_cast<char *>(ptyped->pvalue));
 		if (pvalue == nullptr)
 			return FALSE;
-		if (cu_mb_to_utf8(cpid, static_cast<char *>(ptyped->pvalue),
-		    static_cast<char *>(pvalue), tmp_len) < 0)
-			return FALSE;	
-		ptyped->pvalue = pvalue;
+		ptyped->pvalue = std::move(pvalue);
 		return TRUE;
 	}
 	if (ptyped->type != PT_UNICODE)
 		return TRUE;
-	auto tmp_len = utf8_to_mb_len(static_cast<char *>(ptyped->pvalue));
-	auto pvalue = common_util_alloc(tmp_len);
+	auto pvalue = cu_utf8_to_mb_dup(cpid, static_cast<char *>(ptyped->pvalue));
 	if (pvalue == nullptr)
 		return FALSE;
-	if (cu_utf8_to_mb(cpid, static_cast<char *>(ptyped->pvalue),
-	    static_cast<char *>(pvalue), tmp_len) < 0)
-		return FALSE;
-	ptyped->pvalue = pvalue;
+	ptyped->pvalue = std::move(pvalue);
 	return TRUE;
 }
 
@@ -970,13 +928,13 @@ static BOOL common_util_propvals_to_recipient(cpid_t cpid,
 	if (NULL == prow->ptransmittable_name) {
 		auto name = ppropvals->get<const char>(PR_TRANSMITABLE_DISPLAY_NAME_A);
 		if (name != nullptr)
-			prow->ptransmittable_name = common_util_dup_mb_to_utf8(cpid, name);
+			prow->ptransmittable_name = cu_mb_to_utf8_dup(cpid, name);
 	}
 	prow->pdisplay_name = ppropvals->get<char>(PR_DISPLAY_NAME);
 	if (NULL == prow->pdisplay_name) {
 		auto name = ppropvals->get<const char>(PR_DISPLAY_NAME_A);
 		if (name != nullptr)
-			prow->pdisplay_name = common_util_dup_mb_to_utf8(cpid, name);
+			prow->pdisplay_name = cu_mb_to_utf8_dup(cpid, name);
 	}
 	if (NULL != prow->ptransmittable_name && NULL != prow->pdisplay_name &&
 		0 == strcasecmp(prow->pdisplay_name, prow->ptransmittable_name)) {
@@ -991,7 +949,7 @@ static BOOL common_util_propvals_to_recipient(cpid_t cpid,
 	if (NULL == prow->psimple_name) {
 		auto name = ppropvals->get<const char>(PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A);
 		if (name != nullptr)
-			prow->psimple_name = common_util_dup_mb_to_utf8(cpid, name);
+			prow->psimple_name = cu_mb_to_utf8_dup(cpid, name);
 	}
 	if (prow->psimple_name != nullptr)
 		prow->flags |= RECIPIENT_ROW_FLAG_SIMPLE;
@@ -1054,7 +1012,7 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 		if (b_unicode) {
 			pvalue = prow->ptransmittable_name;
 		} else {
-			pvalue = common_util_dup_mb_to_utf8(cpid, prow->ptransmittable_name);
+			pvalue = cu_mb_to_utf8_dup(cpid, prow->ptransmittable_name);
 			if (pvalue == nullptr)
 				return FALSE;
 		}
@@ -1064,17 +1022,16 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 	}
 	if (NULL != prow->pdisplay_name) {
 		auto pvalue = b_unicode ? prow->pdisplay_name :
-		              common_util_dup_mb_to_utf8(cpid, prow->pdisplay_name);
-		if (pvalue != nullptr && cu_set_propval(ppropvals,
-		    PR_DISPLAY_NAME, pvalue) != ecSuccess)
-			return false;
+		              cu_mb_to_utf8_dup(cpid, prow->pdisplay_name);
+		if (pvalue != nullptr)
+			cu_set_propval(ppropvals, PR_DISPLAY_NAME, pvalue);
 	}
 	if (NULL != prow->pmail_address) {
 		void *pvalue;
 		if (b_unicode) {
 			pvalue = prow->pmail_address;
 		} else {
-			pvalue = common_util_dup_mb_to_utf8(cpid, prow->pmail_address);
+			pvalue = cu_mb_to_utf8_dup(cpid, prow->pmail_address);
 			if (pvalue == nullptr)
 				return FALSE;
 		}
@@ -1192,27 +1149,19 @@ BOOL common_util_convert_tagged_propval(
 	if (to_unicode) {
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_STRING8: {
-			auto len = mb_to_utf8_len(static_cast<char *>(ppropval->pvalue));
-			auto pstring = cu_alloc<char>(len);
+			auto pstring = cu_mb_to_utf8_dup(CP_OEMCP, static_cast<char *>(ppropval->pvalue));
 			if (pstring == nullptr)
 				return FALSE;
-			if (common_util_convert_string(true,
-			    static_cast<char *>(ppropval->pvalue), pstring, len) < 0)
-				return FALSE;	
-			ppropval->pvalue = pstring;
+			ppropval->pvalue = std::move(pstring);
 			common_util_convert_proptag(TRUE, &ppropval->proptag);
 			break;
 		}
 		case PT_MV_STRING8: {
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
 			for (auto &entry : *sa) {
-				auto len = mb_to_utf8_len(entry);
-				auto pstring = cu_alloc<char>(len);
-				if (pstring == nullptr)
+				entry = cu_mb_to_utf8_dup(CP_OEMCP, entry);
+				if (entry == nullptr)
 					return FALSE;
-				if (common_util_convert_string(true, entry, pstring, len) < 0)
-					return FALSE;	
-				entry = pstring;
 			}
 			common_util_convert_proptag(TRUE, &ppropval->proptag);
 			break;
@@ -1231,27 +1180,19 @@ BOOL common_util_convert_tagged_propval(
 	} else {
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_UNICODE: {
-			auto len = utf8_to_mb_len(static_cast<char *>(ppropval->pvalue));
-			auto pstring = cu_alloc<char>(len);
+			auto pstring = cu_utf8_to_mb_dup(CP_OEMCP, static_cast<char *>(ppropval->pvalue));
 			if (pstring == nullptr)
 				return FALSE;
-			if (common_util_convert_string(false,
-			    static_cast<char *>(ppropval->pvalue), pstring, len) < 0)
-				return FALSE;	
-			ppropval->pvalue = pstring;
+			ppropval->pvalue = std::move(pstring);
 			common_util_convert_proptag(FALSE, &ppropval->proptag);
 			break;
 		}
 		case PT_MV_UNICODE: {
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
 			for (auto &entry : *sa) {
-				auto len = utf8_to_mb_len(entry);
-				auto pstring = cu_alloc<char>(len);
-				if (pstring == nullptr)
+				entry = cu_utf8_to_mb_dup(CP_OEMCP, entry);
+				if (entry == nullptr)
 					return FALSE;
-				if (common_util_convert_string(false, entry, pstring, len) < 0)
-					return FALSE;	
-				entry = pstring;
 			}
 			common_util_convert_proptag(FALSE, &ppropval->proptag);
 			break;

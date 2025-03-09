@@ -35,9 +35,11 @@ template<typename T> T *cu_alloc(size_t elem)
 	static_assert(std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
 }
-extern ssize_t cu_utf8_to_mb(cpid_t cpid, const char *src, char *dst, size_t len);
-extern ssize_t cu_mb_to_utf8(cpid_t cpid, const char *src, char *dst, size_t len);
-extern ssize_t common_util_convert_string(bool to_utf8, const char *src, char *dst, size_t len);
+extern std::string cu_cvt_str(std::string_view, cpid_t, bool dir);
+static inline std::string cu_mb_to_utf8(cpid_t cpid, std::string_view sv) { return cu_cvt_str(std::move(sv), cpid, true); }
+static inline std::string cu_utf8_to_mb(cpid_t cpid, std::string_view sv) { return cu_cvt_str(std::move(sv), cpid, false); }
+extern char *cu_mb_to_utf8_dup(cpid_t, std::string_view);
+extern char *cu_utf8_to_mb_dup(cpid_t, std::string_view);
 void common_util_obfuscate_data(uint8_t *data, uint32_t size);
 BOOL common_util_essdn_to_public(const char *pessdn, char *domainname);
 extern BINARY *cu_username_to_oneoff(const char *username, const char *dispname);

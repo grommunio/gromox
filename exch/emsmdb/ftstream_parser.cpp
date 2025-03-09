@@ -754,16 +754,13 @@ ec_error_t fxstream_parser::process(fastupctx_object &upctx)
 			}
 			auto proptype = PROP_TYPE(propval.proptag);
 			if (proptype & FXICS_CODEPAGE_FLAG) {
-				auto codepage = proptype & ~FXICS_CODEPAGE_FLAG;
-				auto len = mb_to_utf8_len(static_cast<char *>(propval.pvalue));
-				auto pvalue = common_util_alloc(len);
-				if (pvalue == nullptr || cu_mb_to_utf8(static_cast<cpid_t>(codepage),
-				    static_cast<char *>(propval.pvalue),
-				    static_cast<char *>(pvalue), len) <= 0) {
+				auto cpid = static_cast<cpid_t>(proptype & ~FXICS_CODEPAGE_FLAG);
+				auto cvt_name = cu_mb_to_utf8_dup(cpid, static_cast<char *>(propval.pvalue));
+				if (cvt_name == nullptr) {
 					propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PT_STRING8);
 				} else {
 					propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PT_UNICODE);
-					propval.pvalue = pvalue;
+					propval.pvalue = std::move(cvt_name);
 				}
 			}
 			auto err = upctx.record_propval(&propval);

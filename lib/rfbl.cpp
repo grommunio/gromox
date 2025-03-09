@@ -1577,7 +1577,7 @@ size_t utf8_printable_prefix(const void *vinput, size_t max)
  * anyway.
  */
 std::string iconvtext(const char *src, size_t src_size,
-    const char *from, const char *to)
+    const char *from, const char *to) try
 {
 	if (strcasecmp(from, to) == 0) {
 		errno = 0;
@@ -1611,6 +1611,9 @@ std::string iconvtext(const char *src, size_t src_size,
 	}
 	errno = 0;
 	return out;
+} catch (const std::bad_alloc &) {
+	errno = ENOMEM;
+	return {};
 }
 
 std::string base64_encode(const std::string_view &x)

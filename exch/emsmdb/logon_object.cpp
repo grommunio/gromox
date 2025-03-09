@@ -478,17 +478,9 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		std::string dispname;
 		if (!mysql_adaptor_get_user_displayname(plogon->account, dispname))
 			return FALSE;	
-		auto temp_len = utf8_to_mb_len(dispname.c_str());
-		auto tstr = cu_alloc<char>(std::max(temp_len, strlen(plogon->account) + 1));
-		*ppvalue = tstr;
-		if (*ppvalue == nullptr)
-			return FALSE;
-		if (common_util_convert_string(false, dispname.c_str(),
-		    tstr, temp_len) < 0)
-			return FALSE;	
-		if (*tstr == '\0')
-			strcpy(tstr, plogon->account);
-		return TRUE;
+		*ppvalue = !dispname.empty() ? cu_utf8_to_mb_dup(CP_OEMCP, dispname) :
+		           cu_utf8_to_mb_dup(CP_OEMCP, plogon->account);
+		return *ppvalue != nullptr ? TRUE : false;
 	}
 	case PR_MAX_SUBMIT_MESSAGE_SIZE: {
 		auto v = cu_alloc<uint32_t>();

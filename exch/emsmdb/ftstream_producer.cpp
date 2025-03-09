@@ -323,14 +323,9 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 			if (proptype == PT_STRING8) {
 				proptype = PT_UNICODE;
 				write_type = PT_UNICODE;
-				auto len = mb_to_utf8_len(static_cast<const char *>(pvalue));
-				auto cvstr = cu_alloc<char>(len);
-				if (cvstr == nullptr)
+				pvalue = cu_mb_to_utf8_dup(CP_OEMCP, static_cast<char *>(ppropval->pvalue));
+				if (pvalue == nullptr)
 					return FALSE;
-				if (common_util_convert_string(true,
-				    static_cast<const char *>(pvalue), cvstr, len) <= 0)
-					*cvstr = '\0';
-				pvalue = cvstr;
 			}
 		} else if (pstream->string_option & STRING_OPTION_CPID) {
 			if (proptype == PT_STRING8) {
@@ -345,14 +340,9 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 			if (proptype == PT_UNICODE) {
 				proptype = PT_STRING8;
 				write_type = PT_STRING8;
-				auto len = utf8_to_mb_len(static_cast<const char *>(pvalue));
-				auto cvstr = cu_alloc<char>(len);
-				if (cvstr == nullptr)
+				pvalue = cu_utf8_to_mb_dup(CP_OEMCP, static_cast<char *>(ppropval->pvalue));
+				if (pvalue == nullptr)
 					return FALSE;
-				if (common_util_convert_string(false,
-				    static_cast<const char *>(pvalue), cvstr, len) <= 0)
-					*cvstr = '\0';	
-				pvalue = cvstr;
 			}
 		}
 	}

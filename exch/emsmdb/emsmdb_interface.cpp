@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cassert>
 #include <algorithm>
+#include <cerrno>
 #include <chrono>
 #include <climits>
 #include <csignal>
@@ -593,16 +594,21 @@ ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *pus
 		return ecUnknownUser;
 	if (strcasecmp(username.c_str(), rpc_info.username) != 0)
 		return ecAccessDenied;
-	pdisplayname.resize(1024);
 	std::string uds;
-	if (!mysql_adaptor_get_user_displayname(username.c_str(), uds) ||
-	    cu_utf8_to_mb(cpid, uds.c_str(), pdisplayname.data(), pdisplayname.size()) < 0)
+	if (!mysql_adaptor_get_user_displayname(username.c_str(), uds))
 		return ecRpcFailed;
-	if (uds.empty())
+	pdisplayname.clear();
+	if (!uds.empty()) {
+		auto uds_cvt = cu_utf8_to_mb(cpid, uds);
+		if (errno == ENOMEM)
+			return ecServerOOM;
+		else if (errno != 0)
+			return ecRpcFailed;
+		pdisplayname = std::move(uds_cvt);
+	}
+	if (pdisplayname.empty())
 		pdisplayname = rpc_info.username;
-	else
-		pdisplayname.resize(strlen(pdisplayname.data()));
-	
+
 	emsmdb_interface_decode_version(pclient_vers, client_version);
 	emsmdb_interface_encode_version(TRUE, server_normal_version, pserver_vers);
 	pbest_vers[0] = pclient_vers[0];

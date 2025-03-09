@@ -131,8 +131,6 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	uint64_t parent_id;
 	uint64_t folder_id;
 	uint64_t change_num;
-	char folder_name[256];
-	char folder_comment[1024];
 	
 	switch (folder_type) {
 	case FOLDER_GENERIC:
@@ -155,18 +153,21 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		return ecError;
 	if (!plogon->is_private() && folder_type == FOLDER_SEARCH)
 		return ecNotSupported;
+
+	std::string cvt_folder_name, cvt_folder_comment;
 	if (0 == use_unicode) {
-		if (common_util_convert_string(true, pfolder_name,
-		    folder_name, sizeof(folder_name)) < 0)
+		cvt_folder_name = cu_mb_to_utf8(CP_OEMCP, pfolder_name);
+		if (errno == EINVAL)
 			return ecInvalidParam;
-		if (common_util_convert_string(true, pfolder_comment,
-		    folder_comment, sizeof(folder_comment)) < 0)
+		else if (errno == ENOMEM)
+			return ecServerOOM;
+		pfolder_name = cvt_folder_name.c_str();
+		cvt_folder_comment = cu_mb_to_utf8(CP_OEMCP, pfolder_comment);
+		if (errno == EINVAL)
 			return ecInvalidParam;
-	} else {
-		if (strlen(pfolder_name) >= sizeof(folder_name))
-			return ecInvalidParam;
-		strcpy(folder_name, pfolder_name);
-		gx_strlcpy(folder_comment, pfolder_comment, std::size(folder_comment));
+		else if (errno == ENOMEM)
+			return ecServerOOM;
+		pfolder_comment = cvt_folder_comment.c_str();
 	}
 	auto username = plogon->eff_user();
 	if (username != STORE_OWNER_GRANTED) {
@@ -178,7 +179,7 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 			return ecAccessDenied;
 	}
 	if (!exmdb_client->get_folder_by_name(plogon->get_dir(),
-	    pparent->folder_id, folder_name, &folder_id))
+	    pparent->folder_id, pfolder_name, &folder_id))
 		return ecError;
 	if (0 != folder_id) {
 		if (!exmdb_client->get_folder_property(plogon->get_dir(), CP_ACP,
@@ -196,8 +197,8 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		TAGGED_PROPVAL propval_buff[] = {
 			{PidTagParentFolderId, &parent_id},
 			{PR_FOLDER_TYPE, &tmp_type},
-			{PR_DISPLAY_NAME, folder_name},
-			{PR_COMMENT, folder_comment},
+			{PR_DISPLAY_NAME, deconst(pfolder_name)},
+			{PR_COMMENT, deconst(pfolder_comment)},
 			{PR_CREATION_TIME, &last_time},
 			{PR_LAST_MODIFICATION_TIME, &last_time},
 			{PidTagChangeNumber, &change_num},
@@ -498,7 +499,6 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
 	ems_objtype object_type;
-	char new_name[128];
 	
 	*ppartial_completion = 1;
 	auto psrc_parent = rop_proc_get_obj<folder_object>(plogmap, logon_id, hsrc, &object_type);
@@ -514,15 +514,6 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (0 == use_unicode) {
-		if (common_util_convert_string(true, pnew_name,
-		    new_name, sizeof(new_name)) < 0)
-			return ecInvalidParam;
-	} else {
-		if (strlen(pnew_name) >= sizeof(new_name))
-			return ecInvalidParam;
-		strcpy(new_name, pnew_name);
-	}
 	if (rop_util_get_gc_value(folder_id) < CUSTOM_EID_BEGIN)
 		return ecAccessDenied;
 	auto dir = plogon->get_dir();
@@ -564,9 +555,18 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	if (pbin_pcl == nullptr)
 		return ecError;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
+	std::string new_name;
+	if (!use_unicode) {
+		new_name = cu_mb_to_utf8(pinfo->cpid, pnew_name);
+		if (errno == EINVAL)
+			return ecInvalidParam;
+		else if (errno == ENOMEM)
+			return ecServerOOM;
+		pnew_name = new_name.c_str();
+	}
 	ec_error_t err = ecSuccess;
 	if (!exmdb_client->movecopy_folder(dir, pinfo->cpid, b_guest, rpc_user,
-	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id, new_name,
+	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id, pnew_name,
 	    false, &err))
 		return ecError;
 	if (err == ecDuplicateName)
@@ -595,7 +595,6 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 {
 	BOOL b_cycle;
 	ems_objtype object_type;
-	char new_name[128];
 	uint32_t permission;
 	
 	*ppartial_completion = 1;
@@ -612,15 +611,6 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (0 == use_unicode) {
-		if (common_util_convert_string(true, pnew_name,
-		    new_name, sizeof(new_name)) < 0)
-			return ecInvalidParam;
-	} else {
-		if (strlen(pnew_name) >= sizeof(new_name))
-			return ecInvalidParam;
-		strcpy(new_name, pnew_name);
-	}
 	if (rop_util_get_gc_value(folder_id) ==
 	    (plogon->is_private() ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT))
 		return ecAccessDenied;
@@ -646,9 +636,18 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 	if (b_cycle)
 		return ecRootFolder;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
+	std::string new_name;
+	if (!use_unicode) {
+		new_name = cu_mb_to_utf8(pinfo->cpid, pnew_name);
+		if (errno == EINVAL)
+			return ecInvalidParam;
+		else if (errno == ENOMEM)
+			return ecServerOOM;
+		pnew_name = new_name.c_str();
+	}
 	ec_error_t err = ecSuccess;
 	if (!exmdb_client->movecopy_folder(dir, pinfo->cpid, b_guest, rpc_user,
-	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id, new_name,
+	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id, pnew_name,
 	    TRUE, &err))
 		return ecError;
 	if (err == ecDuplicateName)
