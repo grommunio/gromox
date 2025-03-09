@@ -354,25 +354,8 @@ static bool tpropval_subject_handler(TPROPVAL_ARRAY *ar, const TAGGED_PROPVAL &p
 
 static char *u16convert(const uint8_t *data, size_t inbytes)
 {
-	size_t bytes = inbytes * 3 / 2 + 1;
-	auto outbuf = me_alloc<char>(bytes);
-	if (outbuf == nullptr)
-		return nullptr;
-	auto cd = iconv_open("UTF-8", "UTF-16LE");
-	if (cd == iconv_t(-1)) {
-		free(outbuf);
-		return nullptr;
-	}
-	auto icv_in = reinterpret_cast<char *>(const_cast<uint8_t *>(data));
-	auto icv_out = outbuf;
-	auto icv_obytes = bytes;
-	iconv(cd, &icv_in, &inbytes, &icv_out, &icv_obytes);
-	iconv_close(cd);
-	if (icv_obytes > 0)
-		*icv_out = '\0';
-	else
-		outbuf[bytes-1] = '\0';
-	return outbuf;
+	auto s = iconvtext(reinterpret_cast<const char *>(data), inbytes, "UTF-16LE", "UTF-8");
+	return strndup(s.c_str(), s.size());
 }
 
 static std::unique_ptr<TPROPVAL_ARRAY, gi_delete>
