@@ -100,7 +100,7 @@ static int instance_conv_textfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 		/* instructed to guess, but could not figure it out; guess is on us */
 		ret = CP_UTF8;
 	if (ret != CP_UTF8) {
-		bin->pv = common_util_convert_copy(TRUE, static_cast<cpid_t>(ret), plainbuf.c_str());
+		bin->pv = cu_mb_to_utf8_dup(static_cast<cpid_t>(ret), plainbuf);
 		return bin->pv != nullptr ? 1 : -1;
 	}
 	bin->pv = common_util_alloc(plainbuf.size() + 1);
@@ -117,7 +117,7 @@ static int instance_conv_htmlfromlower(MESSAGE_CONTENT *mc,
 	if (ret == 0) {
 		ret = instance_get_raw(mc, bin, ID_TAG_BODY_STRING8);
 		if (ret > 0) {
-			bin->pc = common_util_convert_copy(true, cpid, bin->pc);
+			bin->pc = cu_mb_to_utf8_dup(cpid, *bin);
 			if (bin->pc == nullptr)
 				return -1;
 		}
@@ -128,7 +128,7 @@ static int instance_conv_htmlfromlower(MESSAGE_CONTENT *mc,
 	auto err = plain_to_html(bin->pc, htmlout);
 	if (err != ecSuccess)
 		return -1;
-	bin->pc = common_util_convert_copy(false, cpid, htmlout.c_str());
+	bin->pc = cu_utf8_to_mb_dup(cpid, htmlout);
 	if (bin->pc == nullptr)
 		return -1;
 	/* instance_get_raw / instance_read_cid_content guaranteed trailing \0 */
@@ -193,7 +193,7 @@ static int instance_get_body_utf8(MESSAGE_CONTENT *mc, cpid_t cpid,
 	if (ret == 0) {
 		ret = instance_get_raw(mc, bin, ID_TAG_BODY_STRING8);
 		if (ret > 0) {
-			bin->pc = common_util_convert_copy(true, cpid, bin->pc);
+			bin->pc = cu_mb_to_utf8_dup(cpid, *bin);
 			if (bin->pc == nullptr)
 				return -1;
 		}
@@ -215,7 +215,7 @@ static int instance_get_body_8bit(MESSAGE_CONTENT *mc, cpid_t cpid,
 	if (ret == 0) {
 		ret = instance_get_raw(mc, bin, ID_TAG_BODY);
 		if (ret > 0) {
-			bin->pc = common_util_convert_copy(false, cpid, bin->pc);
+			bin->pc = cu_utf8_to_mb_dup(cpid, *bin);
 			if (bin->pc == nullptr)
 				return -1;
 		}
@@ -223,7 +223,7 @@ static int instance_get_body_8bit(MESSAGE_CONTENT *mc, cpid_t cpid,
 	if (ret == 0) {
 		ret = instance_conv_textfromhigher(mc, bin);
 		if (ret > 0) {
-			bin->pc = common_util_convert_copy(false, cpid, bin->pc);
+			bin->pc = cu_utf8_to_mb_dup(cpid, *bin);
 			if (bin->pc == nullptr)
 				return -1;
 		}

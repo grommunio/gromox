@@ -1714,7 +1714,7 @@ static BOOL instance_get_message_display_recipients(const tarray_set *prcpts,
 		if (name == nullptr) {
 			name = rcpt.get<char>(PR_DISPLAY_NAME_A);
 			if (name != nullptr)
-				name = common_util_convert_copy(TRUE, cpid, name);
+				name = cu_mb_to_utf8_dup(cpid, name);
 		}
 		if (name == nullptr)
 			name = rcpt.get<char>(PR_SMTP_ADDRESS);
@@ -1729,7 +1729,7 @@ static BOOL instance_get_message_display_recipients(const tarray_set *prcpts,
 		return TRUE;
 	}
 	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(dr) :
-	           common_util_convert_copy(false, cpid, dr.c_str());
+	           cu_utf8_to_mb_dup(cpid, dr);
 	return *ppvalue != nullptr ? TRUE : false;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
@@ -1771,15 +1771,13 @@ static BOOL instance_get_message_subject(TPROPVAL_ARRAY *pproplist,
 	if (NULL == pnormalized_subject) {
 		auto pvalue = pproplist->get<char>(PR_NORMALIZED_SUBJECT_A);
 		if (pvalue != nullptr)
-			pnormalized_subject =
-				common_util_convert_copy(TRUE, cpid, pvalue);
+			pnormalized_subject = cu_mb_to_utf8_dup(cpid, pvalue);
 	}
 	auto psubject_prefix = pproplist->get<const char>(PR_SUBJECT_PREFIX);
 	if (NULL == psubject_prefix) {
 		auto pvalue = pproplist->get<char>(PR_SUBJECT_PREFIX_A);
 		if (pvalue != nullptr)
-			psubject_prefix =
-				common_util_convert_copy(TRUE, cpid, pvalue);
+			psubject_prefix = cu_mb_to_utf8_dup(cpid, pvalue);
 	}
 	if (NULL == pnormalized_subject && NULL == psubject_prefix) {
 		*ppvalue = NULL;
@@ -1795,7 +1793,7 @@ static BOOL instance_get_message_subject(TPROPVAL_ARRAY *pproplist,
 	strcpy(pvalue, psubject_prefix);
 	strcat(pvalue, pnormalized_subject);
 	if (PROP_TYPE(proptag) != PT_UNICODE) {
-		*ppvalue = common_util_convert_copy(FALSE, cpid, pvalue);
+		*ppvalue = cu_utf8_to_mb_dup(cpid, pvalue);
 		return TRUE;
 	}
 	*ppvalue = common_util_dup(pvalue);
@@ -1826,14 +1824,14 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 			auto str = pattachment->proplist.get<const char>(u_tag);
 			if (str != nullptr) {
 				vc.proptag = tag;
-				vc.pvalue = common_util_convert_copy(false, cpid, str);
+				vc.pvalue = cu_utf8_to_mb_dup(cpid, str);
 			}
 		} else if (PROP_TYPE(tag) == PT_UNICODE) {
 			auto u_tag = CHANGE_PROP_TYPE(tag, PT_STRING8);
 			auto str = pattachment->proplist.get<const char>(u_tag);
 			if (str != nullptr) {
 				vc.proptag = tag;
-				vc.pvalue = common_util_convert_copy(TRUE, cpid, str);
+				vc.pvalue = cu_mb_to_utf8_dup(cpid, str);
 			}
 		} else if (PROP_TYPE(tag) == PT_MV_STRING8) {
 			auto u_tag = CHANGE_PROP_TYPE(tag, PT_MV_UNICODE);
@@ -2023,16 +2021,16 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			pvalue = pmsgctnt->proplist.getval(u_tag);
 			if (NULL != pvalue) {
 				vc.proptag = tag;
-				vc.pvalue = common_util_convert_copy(false,
-				            pinstance->cpid, static_cast<char *>(pvalue));
+				vc.pvalue = cu_utf8_to_mb_dup(pinstance->cpid,
+				            static_cast<char *>(pvalue));
 			}
 		} else if (PROP_TYPE(tag) == PT_UNICODE) {
 			auto u_tag = CHANGE_PROP_TYPE(tag, PT_STRING8);
 			pvalue = pmsgctnt->proplist.getval(u_tag);
 			if (NULL != pvalue) {
 				vc.proptag = tag;
-				vc.pvalue = common_util_convert_copy(TRUE,
-				            pinstance->cpid, static_cast<char *>(pvalue));
+				vc.pvalue = cu_mb_to_utf8_dup(pinstance->cpid,
+				            static_cast<char *>(pvalue));
 			}
 		} else if (PROP_TYPE(tag) == PT_MV_STRING8) {
 			auto u_tag = CHANGE_PROP_TYPE(tag, PT_MV_UNICODE);
@@ -2142,8 +2140,8 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			if (pvalue == nullptr)
 				return FALSE;
 			vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS;
-			vc.pvalue = common_util_convert_copy(TRUE,
-				    pinstance->cpid, static_cast<char *>(pvalue));
+			vc.pvalue = cu_mb_to_utf8_dup(pinstance->cpid,
+			            static_cast<char *>(pvalue));
 			if (vc.pvalue != nullptr) {
 				ppropvals->count++;
 				continue;
@@ -2168,8 +2166,8 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			if (pvalue == nullptr)
 				return FALSE;
 			vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
-			vc.pvalue = common_util_convert_copy(false,
-				    pinstance->cpid, static_cast<char *>(pvalue));
+			vc.pvalue = cu_utf8_to_mb_dup(pinstance->cpid,
+			            static_cast<char *>(pvalue));
 			if (vc.pvalue != nullptr) {
 				ppropvals->count++;
 				continue;
@@ -2268,7 +2266,7 @@ static BOOL xns_set_msg_subj(TPROPVAL_ARRAY &msgprop,
 		if (msgprop.set(pfxtag, pfx) != ecSuccess)
 			return false;
 	} else {
-		pfx = common_util_convert_copy(TRUE, cpid, pfx);
+		pfx = cu_mb_to_utf8_dup(cpid, pfx);
 		if (pfx == nullptr)
 			return false;
 		if (msgprop.set(pfxtag, pfx) != ecSuccess)
@@ -2280,8 +2278,8 @@ static BOOL xns_set_msg_subj(TPROPVAL_ARRAY &msgprop,
 		if (msgprop.set(normtag, norm) != ecSuccess)
 			return false;
 	} else {
-		norm = common_util_convert_copy(TRUE, cpid, norm);
-		if (norm == nullptr || msgprop.set(normtag, norm) != ecSuccess)
+		norm = cu_mb_to_utf8_dup(cpid, norm);
+		if (norm == nullptr || msgprop.set(normtag, norm) != 0)
 			return false;
 	}
 	return TRUE;
@@ -2393,8 +2391,8 @@ static BOOL set_xns_props_msg(instance_node *pinstance,
 				propval.pvalue = pproperties->ppropval[i].pvalue;
 				break;
 			}
-			propval.pvalue = common_util_convert_copy(TRUE,
-				pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
+			propval.pvalue = cu_mb_to_utf8_dup(pinstance->cpid,
+			                 static_cast<char *>(pproperties->ppropval[i].pvalue));
 			if (propval.pvalue == nullptr)
 				return FALSE;
 			break;
@@ -2482,8 +2480,8 @@ static BOOL set_xns_props_atx(instance_node *pinstance,
 				propval.pvalue = pproperties->ppropval[i].pvalue;
 				break;
 			}
-			propval.pvalue = common_util_convert_copy(TRUE,
-				pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
+			propval.pvalue = cu_mb_to_utf8_dup(pinstance->cpid,
+			                 static_cast<char *>(pproperties->ppropval[i].pvalue));
 			if (propval.pvalue == nullptr)
 				return FALSE;
 			break;

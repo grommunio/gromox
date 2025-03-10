@@ -1809,7 +1809,7 @@ static BOOL query_perm(db_conn_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 			if (pvalue == nullptr)
 				continue;
 			if (tag == PR_MEMBER_NAME_A)
-				mrow->emplace_back(tag, common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue)));
+				mrow->emplace_back(tag, cu_utf8_to_mb_dup(cpid, static_cast<char *>(pvalue)));
 			else
 				mrow->emplace_back(tag, pvalue);
 		}
@@ -1868,7 +1868,7 @@ static BOOL query_rule(db_conn_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 			if (pvalue == nullptr)
 				continue;
 			if (tag == PR_RULE_NAME_A || tag == PR_RULE_PROVIDER_A)
-				mrow->emplace_back(tag, common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue)));
+				mrow->emplace_back(tag, cu_utf8_to_mb_dup(cpid, static_cast<char *>(pvalue)));
 			else
 				mrow->emplace_back(tag, pvalue);
 		}
@@ -2296,7 +2296,7 @@ static BOOL match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 				continue;
 			if (tag == PR_RULE_NAME_A ||
 			    tag == PR_RULE_PROVIDER_A)
-				ppropvals->emplace_back(tag, common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue)));
+				ppropvals->emplace_back(tag, cu_utf8_to_mb_dup(cpid, static_cast<char *>(pvalue)));
 			else
 				ppropvals->emplace_back(tag, pvalue);
 		}

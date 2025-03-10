@@ -13,7 +13,6 @@
 #include <cstring>
 #include <cwctype>
 #include <fcntl.h>
-#include <iconv.h>
 #include <memory>
 #include <new>
 #include <pthread.h>
@@ -178,43 +177,34 @@ char *common_util_dup(std::string_view sv)
 	return out;
 }
 
-char *common_util_convert_copy(BOOL to_utf8, cpid_t cpid, const char *pstring)
+std::string cu_cvt_str(std::string_view sv, cpid_t cpid, bool to_utf8) try
 {
-	size_t in_len;
-	size_t out_len;
-	iconv_t conv_id;
-	char temp_charset[256];
-	
-	if (to_utf8)
-		cpid_cstr_compatible(cpid);
-	auto charset = cpid_to_cset(cpid);
-	if (charset == nullptr)
-		charset = "windows-1252";
-	in_len = strlen(pstring) + 1;
-	out_len = 2*in_len;
-	auto pstr_out = cu_alloc<char>(out_len);
-	if (pstr_out == nullptr)
-		return NULL;
-	if (to_utf8) {
-		conv_id = iconv_open("UTF-8//IGNORE", charset);
-		if (conv_id == (iconv_t)-1)
-			conv_id = iconv_open("UTF-8//IGNORE", "windows-1252");
-	} else {
-		sprintf(temp_charset, "%s//IGNORE", charset);
-		conv_id = iconv_open(temp_charset, "UTF-8");
-		if (conv_id == (iconv_t)-1)
-			conv_id = iconv_open("windows-1252//IGNORE", "UTF-8");
-	}
-	if (conv_id == (iconv_t)-1) {
-		free(pstr_out);
-		return NULL;
-	}
-	auto pin = deconst(pstring);
-	auto pout = pstr_out;
-	memset(pstr_out, 0, out_len);
-	iconv(conv_id, &pin, &in_len, &pout, &out_len);
-	iconv_close(conv_id);
-	return pstr_out;
+	auto cset = cpid_to_cset(cpid);
+	if (cset == nullptr)
+		cset = "windows-1252";
+	return iconvtext(sv.data(), sv.size(), to_utf8 ? cset : "UTF-8",
+	       to_utf8 ? "UTF-8" : cset); /* sets errno */
+} catch (const std::bad_alloc &) {
+	errno = ENOMEM;
+	return {};
+}
+
+char *cu_cvt_str_dup(std::string_view sv, cpid_t cpid, bool to_utf8)
+{
+	auto cvt = cu_cvt_str(std::move(sv), cpid, to_utf8);
+	return errno == 0 ? common_util_dup(cvt) : nullptr;
+}
+
+char *cu_mb_to_utf8_dup(cpid_t cpid, std::string_view sv)
+{
+	auto cvt = cu_cvt_str(std::move(sv), cpid, true);
+	return errno == 0 ? common_util_dup(cvt) : nullptr;
+}
+
+char *cu_utf8_to_mb_dup(cpid_t cpid, std::string_view sv)
+{
+	auto cvt = cu_cvt_str(std::move(sv), cpid, false);
+	return errno == 0 ? common_util_dup(cvt) : nullptr;
 }
 
 STRING_ARRAY *common_util_convert_copy_string_array(BOOL to_utf8,
@@ -232,8 +222,7 @@ STRING_ARRAY *common_util_convert_copy_string_array(BOOL to_utf8,
 		parray1->ppstr = NULL;
 	}
 	for (size_t i = 0; i < parray->count; ++i) {
-		parray1->ppstr[i] = common_util_convert_copy(
-					to_utf8, cpid, parray->ppstr[i]);
+		parray1->ppstr[i] = cu_cvt_str_dup(parray->ppstr[i], cpid, to_utf8);
 		if (parray1->ppstr[i] == nullptr)
 			return NULL;
 	}
@@ -1346,9 +1335,8 @@ static BOOL common_util_get_message_subject(sqlite3 *psqlite, cpid_t cpid,
 		sqlite3_bind_int64(pstmt, 1, message_id);
 		sqlite3_bind_int64(pstmt, 2, PR_NORMALIZED_SUBJECT_A);
 		if (gx_sql_step(pstmt) == SQLITE_ROW)
-			pnormalized_subject =
-				common_util_convert_copy(TRUE, cpid,
-				S2A(sqlite3_column_text(pstmt, 0)));
+			pnormalized_subject = cu_mb_to_utf8_dup(cpid,
+			                      S2A(sqlite3_column_text(pstmt, 0)));
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, message_id);
@@ -1362,9 +1350,8 @@ static BOOL common_util_get_message_subject(sqlite3 *psqlite, cpid_t cpid,
 		sqlite3_bind_int64(pstmt, 1, message_id);
 		sqlite3_bind_int64(pstmt, 2, PR_SUBJECT_PREFIX_A);
 		if (gx_sql_step(pstmt) == SQLITE_ROW)
-			psubject_prefix =
-				common_util_convert_copy(TRUE, cpid,
-				S2A(sqlite3_column_text(pstmt, 0)));
+			psubject_prefix = cu_mb_to_utf8_dup(cpid,
+			                  S2A(sqlite3_column_text(pstmt, 0)));
 	}
 	own_stmt.finalize();
 	if (pnormalized_subject == nullptr)
@@ -1379,7 +1366,7 @@ static BOOL common_util_get_message_subject(sqlite3 *psqlite, cpid_t cpid,
 	if (PROP_TYPE(proptag) == PT_UNICODE)
 		*ppvalue = common_util_dup(pvalue);
 	else
-		*ppvalue = common_util_convert_copy(FALSE, cpid, pvalue);
+		*ppvalue = cu_utf8_to_mb_dup(cpid, pvalue);
 	return TRUE;
 }
 	
@@ -1437,7 +1424,7 @@ static BOOL common_util_get_message_display_recipients(sqlite3 *psqlite,
 		return TRUE;
 	}
 	*ppvalue = PROP_TYPE(proptag) == PT_UNICODE ? common_util_dup(dr) :
-	           common_util_convert_copy(false, cpid, dr.c_str());
+	           cu_utf8_to_mb_dup(cpid, dr.c_str());
 	return *ppvalue != nullptr ? TRUE : false;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
@@ -1484,8 +1471,7 @@ static void *cu_get_object_text_vx(const char *dir, const char *cid,
 	if (proptag == db_proptag)
 		/* Requested proptag already matches the type found in the DB */
 		return dxbin.pv;
-	return common_util_convert_copy(PROP_TYPE(proptag) == PT_STRING8 ? TRUE : false,
-	       cpid, dxbin.pc);
+	return cu_cvt_str_dup(dxbin, cpid, PROP_TYPE(proptag) == PT_STRING8);
 }
 
 static void *cu_get_object_text(sqlite3 *psqlite,
@@ -1605,8 +1591,7 @@ static void *cu_get_object_text_v0(const char *dir, const char *cid,
 	if (proptag == proptag1)
 		/* Requested proptag already matches the type found in the DB */
 		return pbuff;
-	return common_util_convert_copy(PROP_TYPE(proptag) == PT_STRING8 ? TRUE : false,
-	       cpid, pbuff);
+	return cu_cvt_str_dup(pbuff, cpid, PROP_TYPE(proptag) == PT_STRING8);
 }
 
 BOOL cu_get_property(mapi_object_type table_type, uint64_t id,
@@ -1880,7 +1865,7 @@ static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		auto pstring = static_cast<char *>(common_util_get_message_parent_display(db, id));
 		if (pstring == nullptr)
 			return GP_ERR;
-		pv.pvalue = common_util_convert_copy(false, cpid, pstring);
+		pv.pvalue = cu_utf8_to_mb_dup(cpid, pstring);
 		return pv.pvalue != nullptr ? GP_ADV : GP_UNHANDLED;
 	}
 	case PR_MESSAGE_SIZE: {
@@ -2454,14 +2439,14 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
 			pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
 		else
-			pvalue = common_util_convert_copy(FALSE, cpid,
+			pvalue = cu_utf8_to_mb_dup(cpid,
 				 S2A(sqlite3_column_text(pstmt, 1)));
 		break;
 	case PT_UNICODE:
 		if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
 			pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
 		else
-			pvalue = common_util_convert_copy(TRUE, cpid,
+			pvalue = cu_mb_to_utf8_dup(cpid,
 				 S2A(sqlite3_column_text(pstmt, 1)));
 		break;
 	case PT_FLOAT: {
@@ -2654,7 +2639,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		if (proptype != PT_MV_STRING8)
 			return sa;
 		for (size_t j = 0; j < sa->count; ++j) {
-			auto pstring = common_util_convert_copy(false, cpid, sa->ppstr[j]);
+			auto pstring = cu_utf8_to_mb_dup(cpid, sa->ppstr[j]);
 			if (pstring == nullptr)
 				return nullptr;
 			sa->ppstr[j] = pstring;
@@ -2874,7 +2859,7 @@ static BOOL common_util_set_message_subject(cpid_t cpid, uint64_t message_id,
 		pstmt.bind_int64(1, tag);
 		pstmt.bind_text(2, value);
 	} else if (cpid != CP_ACP) {
-		auto s = common_util_convert_copy(TRUE, cpid, value);
+		auto s = cu_mb_to_utf8_dup(cpid, value);
 		if (s == nullptr)
 			return FALSE;
 		pstmt.bind_int64(1, tag);
@@ -3006,7 +2991,7 @@ static BOOL common_util_set_message_body(sqlite3 *psqlite, cpid_t cpid,
 			pvalue = ppropval->pvalue;
 		} else {
 			proptag = PR_BODY;
-			pvalue = common_util_convert_copy(TRUE, cpid, static_cast<char *>(ppropval->pvalue));
+			pvalue = cu_mb_to_utf8_dup(cpid, static_cast<char *>(ppropval->pvalue));
 			if (pvalue == nullptr)
 				return FALSE;
 		}
@@ -3016,7 +3001,7 @@ static BOOL common_util_set_message_body(sqlite3 *psqlite, cpid_t cpid,
 			pvalue = ppropval->pvalue;
 		} else {
 			proptag = PR_TRANSPORT_MESSAGE_HEADERS;
-			pvalue = common_util_convert_copy(TRUE, cpid, static_cast<char *>(ppropval->pvalue));
+			pvalue = cu_mb_to_utf8_dup(cpid, static_cast<char *>(ppropval->pvalue));
 			if (pvalue == nullptr)
 				return FALSE;
 		}
@@ -3180,8 +3165,8 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case PR_DISPLAY_NAME:
 			case PR_DISPLAY_NAME_A:
 				if (ppropvals->ppropval[i].proptag == PR_DISPLAY_NAME_A) {
-					pstring = common_util_convert_copy(TRUE,
-					          cpid, static_cast<char *>(ppropvals->ppropval[i].pvalue));
+					pstring = cu_mb_to_utf8_dup(cpid,
+					          static_cast<char *>(ppropvals->ppropval[i].pvalue));
 					if (pstring == nullptr)
 						break;
 				} else {
@@ -3370,7 +3355,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		switch (proptype) {
 		case PT_STRING8:
 			if (cpid != CP_ACP) {
-				pstring = common_util_convert_copy(TRUE, cpid,
+				pstring = cu_mb_to_utf8_dup(cpid,
 				          static_cast<char *>(ppropvals->ppropval[i].pvalue));
 				if (pstring == nullptr)
 					return FALSE;
@@ -3520,8 +3505,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 				if (tmp_strings.ppstr == nullptr)
 					return FALSE;
 				for (size_t j = 0; j < tmp_strings.count; ++j) {
-					tmp_strings.ppstr[j] = common_util_convert_copy(
-						TRUE, cpid, arr->ppstr[j]);
+					tmp_strings.ppstr[j] = cu_mb_to_utf8_dup(cpid, arr->ppstr[j]);
 					if (tmp_strings.ppstr[j] == nullptr)
 						return FALSE;
 				}
