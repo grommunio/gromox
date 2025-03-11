@@ -48,9 +48,9 @@ enum {
 
 extern GUID common_util_get_server_guid();
 void common_util_day_to_filetime(const char *str, FILETIME *pftime);
-extern char *cu_strdup(std::string_view, unsigned int);
-extern int cu_utf8_to_mb(cpid_t, const char *src, char *dst, size_t len);
-extern int cu_mb_to_utf8(cpid_t, const char *src, char *dst, size_t len);
+extern char *cu_strdup(std::string_view, unsigned int = NDR_STACK_OUT);
+extern char *cu_utf8_to_mb_dup(cpid_t, std::string_view, unsigned int = NDR_STACK_OUT);
+extern char *cu_mb_to_utf8_dup(cpid_t, std::string_view, unsigned int = NDR_STACK_OUT);
 void common_util_set_ephemeralentryid(uint32_t display_type,
 	uint32_t minid, EPHEMERAL_ENTRYID *pephid);
 extern bool common_util_set_permanententryid(uint32_t display_type, const GUID *in, const char *dn, EMSAB_ENTRYID_manual *out);

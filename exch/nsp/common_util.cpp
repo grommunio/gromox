@@ -6,7 +6,6 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
-#include <iconv.h>
 #include <string>
 #include <unistd.h>
 #include <libHX/endian.h>
@@ -42,59 +41,6 @@ void common_util_day_to_filetime(const char *day, FILETIME *pftime)
 	pftime->high_datetime = file_time >> 32;
 }
 
-int cu_utf8_to_mb(cpid_t codepage, const char *src, char *dst, size_t len)
-{
-	size_t in_len;
-	size_t out_len;
-	iconv_t conv_id;
-	
-	auto charset = cpid_to_cset(codepage);
-	if (charset == nullptr)
-		return -1;
-	conv_id = iconv_open(charset, "UTF-8");
-	if (conv_id == (iconv_t)-1)
-		return -1;
-	auto pin = deconst(src);
-	auto pout = dst;
-	in_len = strlen(src) + 1;
-	memset(dst, 0, len);
-	out_len = len;
-	if (iconv(conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1)) {
-		iconv_close(conv_id);
-		return -1;
-	} else {
-		iconv_close(conv_id);
-		return out_len - len;
-	}
-}
-
-int cu_mb_to_utf8(cpid_t codepage, const char *src, char *dst, size_t len)
-{
-	size_t in_len;
-	size_t out_len;
-	iconv_t conv_id;
-	
-	cpid_cstr_compatible(codepage);
-	auto charset = cpid_to_cset(codepage);
-	if (charset == nullptr)
-		return -1;
-	conv_id = iconv_open("UTF-8", charset);
-	if (conv_id == (iconv_t)-1)
-		return -1;
-	auto pin = deconst(src);
-	auto pout = dst;
-	in_len = strlen(src) + 1;
-	memset(dst, 0, len);
-	out_len = len;
-	if (iconv(conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1)) {
-		iconv_close(conv_id);
-		return -1;
-	} else {
-		iconv_close(conv_id);
-		return out_len - len;
-	}
-}
-
 void common_util_set_ephemeralentryid(uint32_t display_type,
 	uint32_t minid, EPHEMERAL_ENTRYID *pephid)
 {
@@ -111,6 +57,32 @@ char *cu_strdup(std::string_view sv, unsigned int dir)
 		out[sv.size()] = '\0';
 	}
 	return out;
+}
+
+static std::string cu_cvt_str(std::string_view sv, cpid_t cpid, bool to_utf8) try
+{
+	auto cset = cpid_to_cset(cpid);
+	if (cset == nullptr) {
+		errno = EINVAL;
+		return {};
+	}
+	return iconvtext(sv.data(), sv.size(), to_utf8 ? cset : "UTF-8",
+	       to_utf8 ? "UTF-8" : cset);
+} catch (const std::bad_alloc &) {
+	errno = ENOMEM;
+	return {};
+}
+
+char *cu_mb_to_utf8_dup(cpid_t cpid, std::string_view sv, unsigned int ndr)
+{
+	auto cvt = cu_cvt_str(std::move(sv), cpid, true);
+	return errno == 0 ? cu_strdup(cvt, ndr) : nullptr;
+}
+
+char *cu_utf8_to_mb_dup(cpid_t cpid, std::string_view sv, unsigned int ndr)
+{
+	auto cvt = cu_cvt_str(std::move(sv), cpid, false);
+	return errno == 0 ? cu_strdup(cvt, ndr) : nullptr;
 }
 
 bool common_util_set_permanententryid(unsigned int display_type,

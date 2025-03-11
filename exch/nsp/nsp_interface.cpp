@@ -107,6 +107,15 @@ static const BINARY *nsp_photo_rpc(const char *dir)
 	return values.get<const BINARY>(proptag);
 }
 
+static ec_error_t errno2mapi(int e)
+{
+	switch (e) {
+	case ENOMEM: return ecServerOOM;
+	case EINVAL: return ecInvalidParam;
+	default: return ecError;
+	}
+}
+
 /**
  * @prop: Property value output buffer; may be %nullptr if caller is not
  *        interested in the value but merely its existence.
@@ -155,21 +164,14 @@ static ec_error_t nsp_fetchprop(const ab_tree::ab_node &node, cpid_t codepage, u
 	case PT_STRING8: {
 		if (prop == nullptr)
 			return ecSuccess;
-		auto tg = ndr_stack_anew<char>(NDR_STACK_OUT, it->second.size() + 1);
-		if (tg == nullptr)
-			return ecServerOOM;
-		auto ret = cu_utf8_to_mb(codepage, it->second.c_str(), tg, it->second.size());
-		if (ret < 0)
-			return ecError;
-		tg[ret] = '\0';
-		prop->value.pstr = tg;
-		return ecSuccess;
+		prop->value.pstr = cu_utf8_to_mb_dup(codepage, it->second);
+		return prop->value.pstr != nullptr ? ecSuccess : errno2mapi(errno);
 	}
 	case PT_UNICODE: {
 		if (prop == nullptr)
 			return ecSuccess;
 		prop->value.pstr = cu_strdup(it->second, NDR_STACK_OUT);
-		return prop->value.pstr != nullptr ? ecSuccess : ecServerOOM;
+		return prop->value.pstr != nullptr ? ecSuccess : errno2mapi(errno);
 	}
 	case PT_BINARY: {
 		if (prop == nullptr)
@@ -350,21 +352,15 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			return ecNotFound;
 		[[fallthrough]];
 	case PR_DISPLAY_NAME_A:
-	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A: {
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A:
 		/* @codepage is used to select a translation; it's not for charsets */
 		dn = node.displayname();
 		if (dn.empty())
 			return ecNotFound;
 		if (pprop == nullptr)
 			return ecSuccess;
-		auto temp_len = utf8_to_mb_len(dn.c_str());
-		pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
-		if (pprop->value.pstr == nullptr)
-			return ecServerOOM;
-		cu_utf8_to_mb(codepage, dn.c_str(),
-				pprop->value.pstr, temp_len);
-		return ecSuccess;
-	}
+		pprop->value.pstr = cu_utf8_to_mb_dup(codepage, dn);
+		return pprop->value.pstr != nullptr ? ecSuccess : errno2mapi(errno);
 	case PR_COMPANY_NAME:
 		if (!node.company_info(&dn, nullptr))
 			return ecNotFound;
@@ -372,19 +368,13 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			return ecSuccess;
 		pprop->value.pstr = cu_strdup(std::move(dn), NDR_STACK_OUT);
 		return pprop->value.pstr != nullptr ? ecSuccess : ecServerOOM;
-	case PR_COMPANY_NAME_A: {
+	case PR_COMPANY_NAME_A:
 		if (!node.company_info(&dn, nullptr))
 			return ecNotFound;
 		if (pprop == nullptr)
 			return ecSuccess;
-		auto temp_len = utf8_to_mb_len(dn.c_str());
-		pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
-		if (pprop->value.pstr == nullptr)
-			return ecServerOOM;
-		cu_utf8_to_mb(codepage,
-			dn.c_str(), pprop->value.pstr, temp_len);
-		return ecSuccess;
-	}
+		pprop->value.pstr = cu_utf8_to_mb_dup(codepage, dn);
+		return pprop->value.pstr != nullptr ? ecSuccess : errno2mapi(errno);
 	case PR_OFFICE_LOCATION:
 		if (!node.company_info(nullptr, &dn))
 			return ecNotFound;
@@ -392,19 +382,13 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			return ecSuccess;
 		pprop->value.pstr = cu_strdup(std::move(dn), NDR_STACK_OUT);
 		return pprop->value.pstr != nullptr ? ecSuccess : ecServerOOM;
-	case PR_OFFICE_LOCATION_A: {
+	case PR_OFFICE_LOCATION_A:
 		if (!node.company_info(nullptr, &dn))
 			return ecNotFound;
 		if (pprop == nullptr)
 			return ecSuccess;
-		auto temp_len = utf8_to_mb_len(dn.c_str());
-		pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
-		if (pprop->value.pstr == nullptr)
-			return ecServerOOM;
-		cu_utf8_to_mb(codepage, dn.c_str(),
-				pprop->value.pstr, temp_len);
-		return ecSuccess;
-	}
+		pprop->value.pstr = cu_utf8_to_mb_dup(codepage, std::move(dn));
+		return pprop->value.pstr != nullptr ? ecSuccess : errno2mapi(errno);
 	case PR_ACCOUNT:
 	case PR_ACCOUNT_A:
 	case PR_SMTP_ADDRESS:
@@ -1774,19 +1758,17 @@ static bool nsp_interface_build_specialtable(NSP_PROPROW *prow,
 	prow->pprops[4].proptag = b_unicode ? PR_DISPLAY_NAME : PR_DISPLAY_NAME_A;
 	if (NULL == str_dname) {
 		prow->pprops[4].value.pstr = NULL;
-	} else {
-		if (b_unicode) {
-			prow->pprops[4].value.pstr = cu_strdup(str_dname, NDR_STACK_OUT);
-		} else {
-			char tmp_title[1024];
-			auto tmp_len = cu_utf8_to_mb(codepage, str_dname,
-			               tmp_title, std::size(tmp_title));
-			prow->pprops[4].value.pstr = tmp_len != -1 ?
-				cu_strdup(tmp_title, NDR_STACK_OUT) : nullptr;
-		}
-		if (NULL == prow->pprops[4].value.pstr) {
+	} else if (b_unicode) {
+		prow->pprops[4].value.pstr = cu_strdup(str_dname, NDR_STACK_OUT);
+		if (prow->pprops[4].value.pstr == nullptr) {
 			prow->pprops[4].proptag = CHANGE_PROP_TYPE(prow->pprops[4].proptag, PT_ERROR);
-			prow->pprops[4].value.err = ecMAPIOOM;
+			prow->pprops[4].value.err = ecServerOOM;
+		}
+	} else {
+		prow->pprops[4].value.pstr = cu_utf8_to_mb_dup(codepage, str_dname);
+		if (prow->pprops[4].value.pstr == nullptr) {
+			prow->pprops[4].proptag = CHANGE_PROP_TYPE(prow->pprops[4].proptag, PT_ERROR);
+			prow->pprops[4].value.err = errno2mapi(errno);
 		}
 	}
 	
@@ -1978,14 +1960,9 @@ ec_error_t nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
 	for (size_t i = 0; i < pstrs->count; ++i) {
 		if (pstrs->ppstr[i] == nullptr)
 			continue;
-		auto temp_len = mb_to_utf8_len(pstrs->ppstr[i]);
-		auto pstr = ndr_stack_anew<char>(NDR_STACK_IN, temp_len);
-		if (pstr == nullptr)
-			return ecServerOOM;
-		if (cu_mb_to_utf8(pstat->codepage, pstrs->ppstr[i], pstr, temp_len) == -1)
-			pstrs->ppstr[i] = nullptr;
-		else
-			pstrs->ppstr[i] = pstr;
+		pstrs->ppstr[i] = cu_mb_to_utf8_dup(pstat->codepage, pstrs->ppstr[i], NDR_STACK_IN);
+		if (pstrs->ppstr[i] == nullptr)
+			return errno2mapi(errno);
 	}
 	return nsp_interface_resolve_namesw(handle, reserved,
 				pstat, pproptags, pstrs, ppmids, pprows);
