@@ -87,8 +87,7 @@ enum class userinfo {
  * The ID of the (user or domain) object is used with an offset of 0x10, since
  * the lower minid values are reserved for special purposes.
  */
-struct minid
-{
+struct minid {
 	enum Type : uint32_t {
 		address = 0,
 		domain = 1,
@@ -139,8 +138,7 @@ struct minid
 /**
  * @brief      Address book domain node
  */
-struct ab_domain
-{
+struct ab_domain {
 	uint32_t id;
 	sql_domain info;
 	std::vector<minid> userref; ///< List of minids of contained objects
@@ -152,8 +150,7 @@ struct ab_domain
  * Contains all domain and user nodes from an organization an provides a common
  * interface to access node properties.
  */
-class ab_base
-{
+class ab_base {
 	public:
 	/**
 	 * @brief     Address book iterator
@@ -161,8 +158,7 @@ class ab_base
 	 * Random access iterator providing read-only access to all minids from
 	 * the address book.
 	 */
-	class iterator
-	{
+	class iterator 	{
 		public:
 		using iterator_category = std::random_access_iterator_tag;
 		using difference_type = ssize_t;
@@ -278,8 +274,7 @@ class ab_base
  *
  * Manages ab_bases. There should only exist one instance.
  */
-extern class ab
-{
+class ab {
 	public:
 	using base_ref = std::shared_ptr<ab_base>;
 	using const_base_ref = std::shared_ptr<const ab_base>;
@@ -314,15 +309,15 @@ extern class ab
 	std::atomic<int> running = 0; ///< Number of plugins that are using the address book
 
 	void work();
-} AB;
+};
+extern class ab AB;
 
 /**
  * @brief      Node proxy, bundling minid with ab_base
  *
  * Provides easy access to a specific node in an ab_tree.
  */
-struct ab_node
-{
+struct ab_node {
 	private:
 	/**
 	 * @brief      Forward call to base with mid member as first argument
