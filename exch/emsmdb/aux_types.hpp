@@ -53,17 +53,15 @@ enum { /* OXCRPC v23 §2.2.2.2.4 */
 struct AUX_PERF_CLIENTINFO {
 	uint32_t adapter_speed;
 	uint16_t client_id;
-	uint16_t client_ip_size;
-	uint16_t client_ip_mask_size;
-	uint16_t mac_address_size;
+	uint16_t client_addr_size, client_addr_mask_size;
+	uint16_t mac_addr_size;
 	uint16_t client_mode;
 	uint16_t reserved;
 	char *machine_name;
 	char *user_name;
-	uint8_t *client_ip;
-	uint8_t *client_ip_mask;
+	uint8_t *client_addr, *client_addr_mask;
 	char *adapter_name;
-	uint8_t *mac_address;
+	uint8_t *mac_addr;
 };
 
 enum { /* OXCRPC v23 §2.2.2.2.5 */

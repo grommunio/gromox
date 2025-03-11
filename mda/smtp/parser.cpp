@@ -341,7 +341,8 @@ tproc_status smtp_parser_process(schedule_context *vcontext)
 				char buf[256];
 				while ((e = ERR_get_error()) != 0) {
 					ERR_error_string_n(e, buf, std::size(buf));
-					mlog(LV_DEBUG, "SSL_accept [%s]: %s", pcontext->connection.client_ip, buf);
+					mlog(LV_DEBUG, "SSL_accept [%s]: %s",
+						pcontext->connection.client_addr, buf);
 				}
 				pcontext->connection.reset();
 			}
@@ -668,7 +669,7 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 	if (nrcpt > limit)
 		all_rcpts += " + " + std::to_string(nrcpt - limit) + " others";
 	mlog(level, "remote=[%s] from=<%s> to={%s} %s",
-		pcontext->connection.client_ip,
+		pcontext->connection.client_addr,
 		pcontext->menv.from, all_rcpts.c_str(), line_buf.get());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1609: ENOMEM");

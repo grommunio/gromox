@@ -240,7 +240,8 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 			char buf[256];
 			while ((e = ERR_get_error()) != 0) {
 				ERR_error_string_n(e, buf, std::size(buf));
-				mlog(LV_DEBUG, "SSL_accept [%s]: %s", pcontext->connection.client_ip, buf);
+				mlog(LV_DEBUG, "SSL_accept [%s]: %s",
+					pcontext->connection.client_addr, buf);
 			}
 			pcontext->connection.reset();
 			SSL_free(pcontext->connection.ssl);
@@ -581,7 +582,8 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, pop3_context *ctx
 	auto ret = pop3_parser_dispatch_cmd2(line, len, ctx);
 	auto code = ret & DISPATCH_VALMASK;
 	if (g_popcmd_debug >= 2 || (g_popcmd_debug >= 1 && code != 0 && code != 1700)) {
-		fprintf(stderr, "[%s]:%hu ", ctx->connection.client_ip, ctx->connection.client_port);
+		fprintf(stderr, "[%s]:%hu ", ctx->connection.client_addr,
+			ctx->connection.client_port);
 		if (strncasecmp(line, "PASS", 4) == 0)
 			fprintf(stderr, "< PASS ****: ret=%xh code=%u\n", ret, code);
 		else
@@ -639,6 +641,6 @@ void pop3_parser_log_info(pop3_context *ctx, int level, const char *format, ...)
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	const auto &co = ctx->connection;
-	mlog(level, "rhost=[%s]:%hu user=%s %s", co.client_ip, co.client_port,
+	mlog(level, "rhost=[%s]:%hu user=%s %s", co.client_addr, co.client_port,
 		ctx->username, log_buf);
 }

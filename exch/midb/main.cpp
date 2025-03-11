@@ -187,7 +187,7 @@ static void *midls_thrwork(void *param)
 		else if (gco.sockd < 0)
 			continue;
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-		    gco.client_ip) == g_acl_list.cend()) {
+		    gco.client_addr) == g_acl_list.cend()) {
 			if (HXio_fullwrite(gco.sockd, "FALSE Access denied\r\n", 19) < 0)
 				/* ignore */;
 			continue;

@@ -2914,9 +2914,9 @@ static DCERPC_INFO pdu_processor_get_rpc_info()
 	pcall = pdu_processor_get_call();
 	pcontext = http_parser_get_context();
 	if (NULL != pcontext) {
-		info.client_ip = pcontext->connection.client_ip;
+		info.client_addr = pcontext->connection.client_addr;
 		info.client_port = pcontext->connection.client_port;
-		info.server_ip = pcontext->connection.server_ip;
+		info.server_addr = pcontext->connection.server_addr;
 		info.server_port = pcontext->connection.server_port;
 		info.ep_host = pcontext->host;
 		info.ep_port = pcontext->port;

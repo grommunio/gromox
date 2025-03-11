@@ -10,7 +10,7 @@
 
 using namespace gromox;
 
-decltype(system_services_judge_ip) system_services_judge_ip;
+decltype(system_services_judge_addr) system_services_judge_addr;
 bool (*system_services_judge_user)(const char *);
 void (*system_services_ban_user)(const char *, int);
 decltype(system_services_auth_login) system_services_auth_login;
@@ -25,7 +25,7 @@ int system_services_run()
 	} \
 } while (false)
 
-	E(system_services_judge_ip, "ip_filter_judge");
+	E(system_services_judge_addr, "ip_filter_judge");
 	E(system_services_judge_user, "user_filter_judge");
 	E(system_services_ban_user, "user_filter_ban");
 	E(system_services_auth_login, "auth_login_gen");

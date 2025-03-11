@@ -1955,16 +1955,16 @@ generic_connection::generic_connection(generic_connection &&o) :
 	sockd(std::move(o.sockd)), ssl(std::move(o.ssl)),
 	last_timestamp(o.last_timestamp)
 {
-	memcpy(client_ip, o.client_ip, sizeof(client_ip));
-	memcpy(server_ip, o.server_ip, sizeof(server_ip));
+	memcpy(client_addr, o.client_addr, sizeof(client_addr));
+	memcpy(server_addr, o.server_addr, sizeof(server_addr));
 	o.sockd = -1;
 	o.ssl = nullptr;
 }
 
 generic_connection &generic_connection::operator=(generic_connection &&o)
 {
-	memcpy(client_ip, o.client_ip, sizeof(client_ip));
-	memcpy(server_ip, o.server_ip, sizeof(server_ip));
+	memcpy(client_addr, o.client_addr, sizeof(client_addr));
+	memcpy(server_addr, o.server_addr, sizeof(server_addr));
 	client_port = o.client_port;
 	server_port = o.server_port;
 	sockd = std::move(o.sockd);
@@ -1998,7 +1998,7 @@ generic_connection generic_connection::accept(int sv_sock,
 	}
 	char txtport[40];
 	auto ret = getnameinfo(reinterpret_cast<sockaddr *>(&cl_addr), addrlen,
-		   conn.client_ip, sizeof(conn.client_ip), txtport,
+		   conn.client_addr, sizeof(conn.client_addr), txtport,
 		   sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
 	if (ret != 0) {
 		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));
@@ -2014,7 +2014,7 @@ generic_connection generic_connection::accept(int sv_sock,
 		return conn;
 	}
 	ret = getnameinfo(reinterpret_cast<sockaddr *>(&sv_addr), addrlen,
-	      conn.server_ip, sizeof(conn.server_ip), txtport,
+	      conn.server_addr, sizeof(conn.server_addr), txtport,
 	      sizeof(txtport), NI_NUMERICHOST | NI_NUMERICSERV);
 	if (ret != 0) {
 		mlog(LV_WARN, "getnameinfo: %s\n", gai_strerror(ret));

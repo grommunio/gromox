@@ -45,7 +45,7 @@
 using namespace gromox;
 
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
-E(judge_ip)
+E(judge_addr)
 E(judge_user)
 E(ban_user)
 E(auth_login)
@@ -164,7 +164,7 @@ static int system_services_run()
 	} \
 } while (false)
 
-	E(system_services_judge_ip, "ip_filter_judge");
+	E(system_services_judge_addr, "ip_filter_judge");
 	E(system_services_judge_user, "user_filter_judge");
 	E(system_services_ban_user, "user_filter_ban");
 	E(system_services_auth_login, "auth_login_gen");
@@ -218,17 +218,17 @@ static void *imls_thrwork(void *arg)
 		ctx->type = sctx_status::constructing;
 		/* pass the client ipaddr into the ipaddr filter */
 		std::string reason;
-		if (!system_services_judge_ip(conn.client_ip, reason)) {
+		if (!system_services_judge_addr(conn.client_addr, reason)) {
 			/* IMAP_CODE_2180016: BAD access is denied from your IP address <remote_ip> */
 			auto imap_reply_str = resource_get_imap_code(1816, 1);
 			auto imap_reply_str2 = resource_get_imap_code(1816, 2);
 			char buff[1024];
 			auto len = snprintf(buff, std::size(buff), "* %s%s%s",
-			           imap_reply_str, conn.client_ip, imap_reply_str2);
+			           imap_reply_str, conn.client_addr, imap_reply_str2);
 			if (HXio_fullwrite(conn.sockd, buff, len) != len)
 				/* ignore */;
 			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter: %s",
-				conn.client_ip, reason.c_str());
+				conn.client_addr, reason.c_str());
 			/* release the context */
 			contexts_pool_insert(ctx, sctx_status::free);
 			continue;

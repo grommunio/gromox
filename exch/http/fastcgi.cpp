@@ -495,9 +495,9 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	}
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_HOST", phttp->request.f_host.c_str()));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_NAME", phttp->request.f_host.c_str()));
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_ADDR", phttp->connection.server_ip));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_ADDR", phttp->connection.server_addr));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PORT", std::to_string(phttp->connection.server_port).c_str()));
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_ADDR", phttp->connection.client_ip));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_ADDR", phttp->connection.client_addr));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_PORT", std::to_string(phttp->connection.client_port).c_str()));
 	snprintf(tmp_buff, std::size(tmp_buff), "HTTP/%s", phttp->request.version);
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PROTOCOL", tmp_buff));

@@ -216,7 +216,7 @@ int cmdh_rcpt(std::string_view cmd_line, smtp_context &ctx) try
 				smtp_reply_str2);
 		pcontext->connection.write(reason, string_length);
 		mlog(LV_NOTICE, "remote=[%s] from=<%s> to=<%s>  RCPT address is invalid",
-			pcontext->connection.client_ip,
+			pcontext->connection.client_addr,
 			pcontext->menv.from, buff);
 		return DISPATCH_CONTINUE;
 	} else if (err != 0) {
@@ -224,7 +224,7 @@ int cmdh_rcpt(std::string_view cmd_line, smtp_context &ctx) try
 		smtp_reply_str = resource_get_smtp_code(537, 1, &string_length);
 		pcontext->connection.write(smtp_reply_str, string_length);
 		mlog(LV_NOTICE, "remote=[%s] from=<%s> to=<%s>  lookup: %s",
-			pcontext->connection.client_ip,
+			pcontext->connection.client_addr,
 			pcontext->menv.from, buff,
 			strerror(err));
 		return DISPATCH_CONTINUE;

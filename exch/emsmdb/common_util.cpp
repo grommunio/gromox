@@ -1614,7 +1614,7 @@ static void mlog2(unsigned int level, const char *format, ...)
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	mlog(level, "user=%s host=[%s]  %s",
-		rpc_info.username, rpc_info.client_ip, log_buf);
+		rpc_info.username, rpc_info.client_addr, log_buf);
 }
 
 ec_error_t cu_id2user(int id, std::string &user)

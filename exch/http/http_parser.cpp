@@ -138,7 +138,7 @@ static void httpctx_report(const HTTP_CONTEXT &ctx, size_t i)
 	if (cn.sockd < 0)
 		return;
 	mlog(LV_INFO, "%-3zu  %-2d  [%s]:%hu->[%s]:%hu", i, cn.sockd,
-	        cn.client_ip, cn.client_port, cn.server_ip, cn.server_port);
+	        cn.client_addr, cn.client_port, cn.server_addr, cn.server_port);
 	const char *chtyp = "NONE";
 	switch (ctx.channel_type) {
 	using enum hchannel_type;
@@ -554,7 +554,7 @@ static tproc_status htparse_initssl(http_context *pcontext)
 		char buf[256];
 		while ((e = ERR_get_error()) != 0) {
 			ERR_error_string_n(e, buf, std::size(buf));
-			mlog(LV_DEBUG, "SSL_accept [%s]: %s", pcontext->connection.client_ip, buf);
+			mlog(LV_DEBUG, "SSL_accept [%s]: %s", pcontext->connection.client_addr, buf);
 		}
 		return tproc_status::runoff;
 	}
@@ -709,7 +709,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	} else if (g_http_remote_host_hdr.size() > 0 &&
 	    strcasecmp(field_name, g_http_remote_host_hdr.c_str()) == 0) {
 		auto &cn = pcontext->connection;
-		snprintf(cn.client_ip, std::size(cn.client_ip), "%.*s", static_cast<int>(tmp_len), ptoken);
+		snprintf(cn.client_addr, std::size(cn.client_addr), "%.*s", static_cast<int>(tmp_len), ptoken);
 		cn.client_port = 0;
 	} else {
 		if (strcasecmp(field_name, "Connection") == 0 &&
@@ -1307,7 +1307,7 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 		/* met the end of request header */
 		pcontext->sched_stat = hsched_stat::rdbody;
 		if (pcontext->request.f_host.empty())
-			pcontext->request.f_host = pcontext->connection.server_ip;
+			pcontext->request.f_host = pcontext->connection.server_addr;
 		if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 			mlog(LV_ERR, "E-1181: ENOMEM");
 			return http_done(pcontext, http_status::enomem_CL);
@@ -1368,8 +1368,8 @@ static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
 		now_str(tbuf, std::size(tbuf));
 		fprintf(stderr, "\e[1m<< %s [%s]:%hu->[%s]:%hu %zd bytes\e[0m\n",
 		        now_str(tbuf, std::size(tbuf)),
-		        co.client_ip, co.client_port,
-		        co.server_ip, co.server_port, actual_read);
+		        co.client_addr, co.client_port,
+		        co.server_addr, co.server_port, actual_read);
 		auto pfx = utf8_printable_prefix(pbuff, actual_read);
 		if (pfx == static_cast<size_t>(actual_read)) {
 			fflush(stderr);
@@ -1547,8 +1547,8 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 		char tbuf[24];
 		fprintf(stderr, "\e[1m>> %s [%s]:%hu->[%s]:%hu %zd bytes\e[0m\n",
 		        now_str(tbuf, std::size(tbuf)),
-		        co.server_ip, co.server_port,
-		        co.client_ip, co.client_port, written_len);
+		        co.server_addr, co.server_port,
+		        co.client_addr, co.client_port, written_len);
 		auto pfx = utf8_printable_prefix(pcontext->write_buff, written_len);
 		if (pfx == static_cast<size_t>(written_len)) {
 			fflush(stderr);
@@ -2249,10 +2249,10 @@ void http_context::log(int level, const char *format, ...) const
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	
 	if (*username == '\0')
-		mlog(level, "rhost=[%s]:%hu ctxid=%u %s", connection.client_ip,
+		mlog(level, "rhost=[%s]:%hu ctxid=%u %s", connection.client_addr,
 			connection.client_port, context_id, log_buf);
 	else
-		mlog(level, "rhost=[%s]:%hu user=%s %s", connection.client_ip,
+		mlog(level, "rhost=[%s]:%hu user=%s %s", connection.client_addr,
 			connection.client_port, username, log_buf);
 
 }

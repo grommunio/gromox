@@ -88,7 +88,7 @@ extern const char *resource_get_pop3_code(unsigned int code_type, unsigned int n
 extern void xrpc_build_env();
 extern void xrpc_free_env();
 
-extern bool (*system_services_judge_ip)(const char *host, std::string &reason);
+extern bool (*system_services_judge_addr)(const char *host, std::string &reason);
 extern bool (*system_services_judge_user)(const char *);
 extern void (*system_services_ban_user)(const char *, int);
 extern authmgr_login_t system_services_auth_login;

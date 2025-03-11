@@ -9,8 +9,8 @@ struct NDR_PULL;
 struct NDR_PUSH;
 
 struct DCERPC_INFO {
-	const char *client_ip;
-	const char *server_ip; /* http server ip */
+	const char *client_addr;
+	const char *server_addr; /* HTTP server address */
 	const char *ep_host;   /* endpoint host name */
 	uint16_t client_port;
 	uint16_t server_port; /* HTTP server port */

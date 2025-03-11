@@ -154,7 +154,7 @@ static void *htls_thrwork(void *arg)
 		if (NULL == pcontext) {
 			mlog(LV_NOTICE, "Rejecting connection from [%s]:%hu: "
 				"reached %d connections (http.cfg:context_num)",
-				conn.client_ip, conn.client_port,
+				conn.client_addr, conn.client_port,
 				contexts_pool_get_param(MAX_CONTEXTS_NUM));
 			auto len = gx_snprintf(buff, std::size(buff), "HTTP/1.1 503 L-202 Service Unavailable\r\n"
 								"Content-Length: 0\r\n"
@@ -167,7 +167,7 @@ static void *htls_thrwork(void *arg)
 		pcontext->type = sctx_status::constructing;
 		/* pass the client ipaddr into the ipaddr filter */
 		std::string reason;
-		if (!system_services_judge_ip(conn.client_ip, reason)) {
+		if (!system_services_judge_addr(conn.client_addr, reason)) {
 			auto len = gx_snprintf(buff, std::size(buff), "HTTP/1.1 503 L-216 Service Unavailable\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
@@ -175,7 +175,7 @@ static void *htls_thrwork(void *arg)
 			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				mlog(LV_WARN, "W-1983: write: %s", strerror(errno));
 			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter: %s",
-				conn.client_ip, reason.c_str());
+				conn.client_addr, reason.c_str());
 			/* release the context */
 			contexts_pool_insert(pcontext, sctx_status::free);
 			continue;

@@ -201,7 +201,7 @@ extern void imap_parser_event_expunge(const char *user, const char *folder, unsi
 extern void imrpc_build_env();
 extern void imrpc_free_env();
 
-extern bool (*system_services_judge_ip)(const char *host, std::string &reason);
+extern bool (*system_services_judge_addr)(const char *host, std::string &reason);
 extern bool (*system_services_judge_user)(const char *);
 extern void (*system_services_ban_user)(const char *, int);
 extern authmgr_login_t system_services_auth_login;

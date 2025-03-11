@@ -234,11 +234,12 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 			af_type = 0;
 		auto tmp_len = sprintf(tmp_buff, "X-Lasthop: %s\r\nReceived: from %s "
 		          "(%s [%s%s])\r\n\tby %s with %s%s;\r\n\t%s\r\n",
-		          pentity->pconnection->client_ip,
+		          pentity->pconnection->client_addr,
 		          pentity->penvelope->hello_domain,
 		          pentity->penvelope->parsed_domain,
 		          af_type == AF_INET6 ? "IPv6:" : "",
-		          pentity->pconnection->client_ip, g_config_file->get_value("host_id"),
+		          pentity->pconnection->client_addr,
+		          g_config_file->get_value("host_id"),
 		          pentity->command_protocol == HT_LMTP ? "LMTP" : "SMTP",
 		          pentity->pconnection->ssl != nullptr ? "S" : "", /* RFC 3848 */
 		          time_buff);

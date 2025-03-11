@@ -359,7 +359,7 @@ static void *ev_acceptwork(void *param)
 		else if (conn.sockd < 0)
 			continue;
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
-		    conn.client_ip) == g_acl_list.cend()) {
+		    conn.client_addr) == g_acl_list.cend()) {
 			if (HXio_fullwrite(conn.sockd, "FALSE Access denied\r\n", 19) < 0)
 				/* ignore */;
 			continue;

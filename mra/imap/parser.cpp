@@ -331,7 +331,8 @@ static tproc_status ps_stat_stls(imap_context &ctx)
 		char buf[256];
 		while ((e = ERR_get_error()) != 0) {
 			ERR_error_string_n(e, buf, std::size(buf));
-			mlog(LV_DEBUG, "SSL_accept [%s]: %s", pcontext->connection.client_ip, buf);
+			mlog(LV_DEBUG, "SSL_accept [%s]: %s",
+				pcontext->connection.client_addr, buf);
 		}
 		pcontext->connection.reset();
 		pcontext->connection.reset();
@@ -1425,7 +1426,7 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context &ctx) tr
 		 * Can't really hide AUTHENTICATE because the prompts
 		 * and answers are backend-specific.
 		 */
-		fprintf(stderr, "[%s]:%hu %s ", ctx.connection.client_ip,
+		fprintf(stderr, "[%s]:%hu %s ", ctx.connection.client_addr,
 			ctx.connection.client_port, ctx.username);
 		if (strcasecmp(argv[1], "LOGIN") == 0) {
 			fprintf(stderr, "< LOGIN ****: ret=%xh code=%u\n", ret, code);
@@ -1551,7 +1552,7 @@ void imap_parser_log_info(imap_context *ctx, int level, const char *format, ...)
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	const auto &co = ctx->connection;
-	mlog(level, "rhost=[%s]:%hu user=%s %s", co.client_ip, co.client_port,
+	mlog(level, "rhost=[%s]:%hu user=%s %s", co.client_addr, co.client_port,
 		ctx->username, log_buf);
 
 }

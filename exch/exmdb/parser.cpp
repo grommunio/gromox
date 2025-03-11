@@ -195,7 +195,8 @@ static void *request_parser_thread(void *pparam)
 	}
 	try {
 		char txt[52];
-		snprintf(txt, std::size(txt), "exmdb/%s:%hu", pconnection->client_ip, pconnection->client_port);
+		snprintf(txt, std::size(txt), "exmdb/%s:%hu",
+			pconnection->client_addr, pconnection->client_port);
 		pthread_setname_np(pthread_self(), txt);
 		std::unique_lock chold(g_connection_lock);
 		g_connection_list.insert(pconnection);

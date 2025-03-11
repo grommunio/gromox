@@ -34,8 +34,7 @@ struct GX_EXPORT generic_connection {
 		       ::write(sockd, buf, z);
 	}
 
-	char client_ip[40]{}; /* client ip address string */
-	char server_ip[40]{}; /* server ip address */
+	char client_addr[40]{}, server_addr[40]{};
 	uint16_t client_port = 0, server_port = 0;
 	int sockd = -1; /* context's socket file description */
 	SSL *ssl = nullptr;
