@@ -2907,7 +2907,7 @@ PROC_PLUGIN::~PROC_PLUGIN()
 */
 static DCERPC_INFO pdu_processor_get_rpc_info()
 {
-	DCERPC_INFO info{};
+	DCERPC_INFO info;
 	DCERPC_CALL *pcall;
 	HTTP_CONTEXT *pcontext;
 	

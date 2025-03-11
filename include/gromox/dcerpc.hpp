@@ -8,19 +8,22 @@
 struct NDR_PULL;
 struct NDR_PUSH;
 
+/**
+ * Used for proc plugins to det DCERPC information.
+ * Pointee lifetime is bound by the PDU processor object.
+ */
 struct DCERPC_INFO {
-	const char *client_addr;
-	const char *server_addr; /* HTTP server address */
-	const char *ep_host;   /* endpoint host name */
-	uint16_t client_port;
-	uint16_t server_port; /* HTTP server port */
-	uint16_t ep_port; /* endpoint port */
-	BOOL is_login;         /* if client login */
-	const char *username;  /* username of client by http auth */
-	const char *maildir;
-	const char *lang;
+	const char *client_addr = nullptr;
+	const char *server_addr = nullptr; /* HTTP server address */
+	const char *ep_host = nullptr; /* endpoint host name */
+	uint16_t client_port = 0;
+	uint16_t server_port = 0; /* HTTP server port */
+	uint16_t ep_port = 0; /* endpoint port */
+	BOOL is_login = false; /* if client login */
+	const char *username = nullptr; /* username of client by http auth */
+	const char *maildir = nullptr, *lang = nullptr;
 	uint32_t stat_flags;   /* state flags of rpc context */
-}; /* used for proc plugin to get dcerpc information */
+};
 
 struct DCERPC_INTERFACE {
 	char name[128]{};
