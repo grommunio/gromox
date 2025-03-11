@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -7,6 +7,7 @@
 #include <ctime>
 #include <fcntl.h>
 #include <iconv.h>
+#include <string>
 #include <unistd.h>
 #include <libHX/endian.h>
 #include <sys/stat.h>
@@ -102,10 +103,19 @@ void common_util_set_ephemeralentryid(uint32_t display_type,
 	pephid->mid = minid;
 }
 
+char *cu_strdup(std::string_view sv, unsigned int dir)
+{
+	auto out = ndr_stack_anew<char>(dir, sv.size() + 1);
+	if (out != nullptr) {
+		memcpy(out, sv.data(), sv.size());
+		out[sv.size()] = '\0';
+	}
+	return out;
+}
+
 bool common_util_set_permanententryid(unsigned int display_type,
     const GUID *pobj_guid, const char *pdn, EMSAB_ENTRYID_manual *ppermeid)
 {
-	int len;
 	char buff[128];
 	
 	ppermeid->flags = ENTRYID_TYPE_PERMANENT;
@@ -118,18 +128,14 @@ bool common_util_set_permanententryid(unsigned int display_type,
 			memcpy(buff, "/guid=", 6);
 			pobj_guid->to_str(&buff[6], 32);
 			buff[38] = '\0';
-			len = 38;
-			ppermeid->px500dn = ndr_stack_anew<char>(NDR_STACK_OUT, len + 1);
+			ppermeid->px500dn = cu_strdup({buff, 38}, NDR_STACK_OUT);
 			if (ppermeid->px500dn == nullptr)
 				return FALSE;
-			memcpy(ppermeid->px500dn, buff, len + 1);
 		}
 	}  else {
-		len = strlen(pdn);
-		ppermeid->px500dn = ndr_stack_anew<char>(NDR_STACK_OUT, len + 1);
+		ppermeid->px500dn = cu_strdup(pdn, NDR_STACK_OUT);
 		if (ppermeid->px500dn == nullptr)
 			return FALSE;
-		memcpy(ppermeid->px500dn, pdn, len + 1);
 	}
 	return TRUE;
 }

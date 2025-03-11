@@ -153,20 +153,13 @@ static ec_error_t nsp_fetchprop(const ab_tree::ab_node &node, cpid_t codepage, u
 		return ecSuccess;
 	}
 	case PT_UNICODE: {
-		auto tg = ndr_stack_anew<char>(NDR_STACK_OUT, it->second.size() + 1);
-		if (tg == nullptr)
-			return ecServerOOM;
-		strcpy(tg, it->second.c_str());
-		prop->value.pstr = tg;
-		return ecSuccess;
+		prop->value.pstr = cu_strdup(it->second, NDR_STACK_OUT);
+		return prop->value.pstr != nullptr ? ecSuccess : ecServerOOM;
 	}
 	case PT_BINARY: {
 		prop->value.bin.cb = it->second.size();
-		prop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, it->second.size());
-		if (prop->value.bin.pv == nullptr)
-			return ecServerOOM;
-		memcpy(prop->value.bin.pv, it->second.data(), prop->value.bin.cb);
-		return ecSuccess;
+		prop->value.bin.pc = cu_strdup(it->second, NDR_STACK_OUT);
+		return prop->value.bin.pc != nullptr ? ecSuccess : ecServerOOM;
 	}
 	case PT_MV_UNICODE: {
 		auto &x = prop->value.string_array;
@@ -174,12 +167,8 @@ static ec_error_t nsp_fetchprop(const ab_tree::ab_node &node, cpid_t codepage, u
 		x.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT);
 		if (x.ppstr == nullptr)
 			return ecServerOOM;
-		auto tg = ndr_stack_anew<char>(NDR_STACK_OUT, it->second.size() + 1);
-		if (tg == nullptr)
-			return ecServerOOM;
-		strcpy(tg, it->second.c_str());
-		x.ppstr[0] = tg;
-		return ecSuccess;
+		x.ppstr[0] = cu_strdup(it->second, NDR_STACK_OUT);
+		return x.ppstr[0] != nullptr ? ecSuccess : ecServerOOM;
 	}
 	}
 	return ecNotFound;
@@ -210,14 +199,13 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		if (err != ecSuccess)
 			return err;
 		if (NULL == pbuff) {
-			temp_len = mdbdn.size() + 1;
-			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
+			pprop->value.pstr = cu_strdup(std::move(mdbdn), NDR_STACK_OUT);
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
+			gx_strlcpy(pbuff, mdbdn.c_str(), temp_len);
 			pprop->value.pstr = pbuff;
 		}
-		gx_strlcpy(pprop->value.pstr, mdbdn.c_str(), temp_len);
 		return ecSuccess;
 	}
 	case PR_EMS_AB_OBJECT_GUID: {
@@ -245,14 +233,13 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		if (!node.dn(dn))
 			return ecInvalidObject;
 		if (NULL == pbuff) {
-			temp_len = dn.size() + 1;
-			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
+			pprop->value.pstr = cu_strdup(std::move(dn), NDR_STACK_OUT);
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
+			gx_strlcpy(pbuff, dn.c_str(), temp_len);
 			pprop->value.pstr = pbuff;
 		}
-		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
 	case PR_OBJECT_TYPE: {
 		auto t = node_type == ab_tree::abnode_type::mlist ? MAPI_DISTLIST : MAPI_MAILUSER;
@@ -307,14 +294,13 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		if (!node.dn(dn))
 			return ecNotFound;
 		if (NULL == pbuff) {
-			temp_len = dn.size() + 4;
-			pprop->value.bin.pc = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
+			pprop->value.bin.pc = cu_strdup("EX:" + std::move(dn), NDR_STACK_OUT);
 			if (pprop->value.bin.pc == nullptr)
 				return ecServerOOM;
 		} else {
+			snprintf(pbuff, temp_len, "EX:%s", dn.c_str());
 			pprop->value.bin.pc = pbuff;
 		}
-		snprintf(pprop->value.bin.pc, temp_len, "EX:%s", dn.c_str());
 		HX_strupper(pprop->value.bin.pc);
 		pprop->value.bin.cb = strlen(pprop->value.bin.pc) + 1;
 		return ecSuccess;
@@ -339,14 +325,13 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		if (dn.empty())
 			return ecNotFound;
 		if (NULL == pbuff) {
-			temp_len = dn.size() + 1;
-			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
+			pprop->value.pstr = cu_strdup(std::move(dn), NDR_STACK_OUT);
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
+			gx_strlcpy(pbuff, dn.c_str(), temp_len);
 			pprop->value.pstr = pbuff;
 		}
-		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
 	case PR_TRANSMITABLE_DISPLAY_NAME_A:
 		if (node_type != ab_tree::abnode_type::user)
@@ -373,14 +358,13 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		if (!node.company_info(&dn, nullptr))
 			return ecNotFound;
 		if (NULL == pbuff) {
-			temp_len = dn.size() + 1;
-			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
+			pprop->value.pstr = cu_strdup(std::move(dn), NDR_STACK_OUT);
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
+			gx_strlcpy(pbuff, dn.c_str(), temp_len);
 			pprop->value.pstr = pbuff;
 		}
-		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
 	case PR_COMPANY_NAME_A:
 		if (!node.company_info(&dn, nullptr))
@@ -400,14 +384,13 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		if (!node.company_info(nullptr, &dn))
 			return ecNotFound;
 		if (NULL == pbuff) {
-			temp_len = dn.size() + 1;
-			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
+			pprop->value.pstr = cu_strdup(std::move(dn), NDR_STACK_OUT);
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
+			gx_strlcpy(pbuff, dn.c_str(), temp_len);
 			pprop->value.pstr = pbuff;
 		}
-		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
 	case PR_OFFICE_LOCATION_A:
 		if (!node.company_info(nullptr, &dn))
@@ -436,14 +419,13 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		if (dn.empty())
 			return ecNotFound;
 		if (NULL == pbuff) {
-			temp_len = dn.size() + 1;
-			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
+			pprop->value.pstr = cu_strdup(std::move(dn), NDR_STACK_OUT);
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
 			pprop->value.pstr = pbuff;
+			gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		}
-		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
 	case PR_EMS_AB_PROXY_ADDRESSES:
 	case PR_EMS_AB_PROXY_ADDRESSES_A: {
@@ -1403,12 +1385,10 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserve
 		parray[count].minid = pinmids->pproptag[i];
 		if (pstat->cur_rec == pinmids->pproptag[i])
 			b_found = TRUE;
-		std::string temp_buff = node.displayname();
-		parray[count].strv = ndr_stack_alloc(
-			NDR_STACK_IN, temp_buff.size() + 1);
-		if (parray[count].string == nullptr)
+		parray[count].strv = cu_strdup(node.displayname(), NDR_STACK_IN);
+		if (parray[count].strv == nullptr)
 			return ecServerOOM;
-		strcpy(parray[count++].string, temp_buff.c_str());
+		++count;
 	}
 	qsort(parray, count, sizeof(nsp_sort_item), nsp_interface_cmpstring);
 	outmids->cvalues = count;
@@ -1806,21 +1786,13 @@ static bool nsp_interface_build_specialtable(NSP_PROPROW *prow,
 		prow->pprops[4].value.pstr = NULL;
 	} else {
 		if (b_unicode) {
-			auto tmp_len = strlen(str_dname) + 1;
-			prow->pprops[4].value.pv =
-				ndr_stack_alloc(NDR_STACK_OUT, tmp_len);
-			memcpy(prow->pprops[4].value.pstr, str_dname, tmp_len);
+			prow->pprops[4].value.pstr = cu_strdup(str_dname, NDR_STACK_OUT);
 		} else {
 			char tmp_title[1024];
 			auto tmp_len = cu_utf8_to_mb(codepage, str_dname,
 			               tmp_title, std::size(tmp_title));
-			if (-1 == tmp_len) {
-				prow->pprops[4].value.pstr = NULL;
-			} else {
-				prow->pprops[4].value.pv =
-					ndr_stack_alloc(NDR_STACK_OUT, tmp_len);
-				memcpy(prow->pprops[4].value.pstr, tmp_title, tmp_len);
-			}
+			prow->pprops[4].value.pstr = tmp_len != -1 ?
+				cu_strdup(tmp_title, NDR_STACK_OUT) : nullptr;
 		}
 		if (NULL == prow->pprops[4].value.pstr) {
 			prow->pprops[4].proptag = CHANGE_PROP_TYPE(prow->pprops[4].proptag, PT_ERROR);
