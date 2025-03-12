@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
 #include <cstdarg>
@@ -17,6 +19,7 @@
 #include <gromox/arcfour.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/ndr.hpp>
 #include <gromox/ntlmssp.hpp>
 #include <gromox/util.hpp>
@@ -209,69 +212,30 @@ static bool ntlmssp_calc_ntlm2_key(uint8_t subkey[MD5_DIGEST_LENGTH],
 	return true;
 }
 
-static ssize_t ntlmssp_utf8_to_utf16le(const char *src, void *dst, size_t len)
+static std::string ntlmssp_utf8_to_utf16le(std::string_view sv)
 {
-	size_t in_len;
-	size_t out_len;
-	iconv_t conv_id;
-
-	len = std::min(len, static_cast<size_t>(SSIZE_MAX));
-	conv_id = iconv_open("UTF-16LE", "UTF-8");
-	if (conv_id == (iconv_t)-1) {
-		mlog(LV_ERR, "E-2112: iconv_open: %s", strerror(errno));
-		return -1;
-	}
-	auto pin  = deconst(src);
-	auto pout = static_cast<char *>(dst);
-	in_len = strlen(src);
-	memset(dst, 0, len);
-	out_len = len;
-	if (iconv(conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1)) {
-		iconv_close(conv_id);
-		return -1;
-	}
-	iconv_close(conv_id);
-	return out_len - len;
+	return iconvtext(sv.data(), sv.size(), "UTF-8", "UTF-16LE");
 }
 
-static bool ntlmssp_utf16le_to_utf8(const void *src, size_t src_len,
-	char *dst, size_t len)
+static std::string ntlmssp_utf16le_to_utf8(std::string_view sv)
 {
-	char *pin, *pout;
-	iconv_t conv_id;
-
-	conv_id = iconv_open("UTF-8", "UTF-16LE");
-	if (conv_id == (iconv_t)-1) {
-		mlog(LV_ERR, "E-2113: iconv_open: %s", strerror(errno));
-		return false;
-	}
-	pin = (char*)src;
-	pout = dst;
-	memset(dst, 0, len);
-	if (iconv(conv_id, &pin, &src_len, &pout, &len) == static_cast<size_t>(-1)) {
-		iconv_close(conv_id);
-		return false;
-	}
-	iconv_close(conv_id);
-	return true;
+	return iconvtext(sv.data(), sv.size(), "UTF-16LE", "UTF-8");
 }
 
-static bool ntlmssp_md4hash(const char *passwd, void *p16v)
+static bool ntlmssp_md4hash(const char *passwd, void *p16v) try
 {
 	auto p16 = static_cast<uint8_t *>(p16v);
-	char upasswd[256];
-
 	memset(p16, 0, MD4_DIGEST_LENGTH);
-	auto passwd_len = ntlmssp_utf8_to_utf16le(passwd, upasswd, sizeof(upasswd));
-	if (passwd_len < 0)
-		return false;
+	auto upasswd = iconvtext(passwd, strlen(passwd), "UTF-8", "UTF-16LE");
 	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
 	if (ctx == nullptr ||
 	    EVP_DigestInit(ctx.get(), EVP_md4()) <= 0 ||
-	    EVP_DigestUpdate(ctx.get(), upasswd, passwd_len) <= 0 ||
+	    EVP_DigestUpdate(ctx.get(), upasswd.data(), upasswd.size()) <= 0 ||
 	    EVP_DigestFinal(ctx.get(), p16, nullptr) <= 0)
 		return false;
 	return true;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 static bool ntlmssp_deshash(const char *passwd, uint8_t p16[16])
@@ -304,12 +268,12 @@ static bool ntlmssp_deshash(const char *passwd, uint8_t p16[16])
   C = constant ascii string
  */
 static bool ntlmssp_gen_packetv(DATA_BLOB *pblob, const char *format,
-    va_list ap)
+    va_list ap) try
 {
 	int intargs[9]{};
-	uint8_t buffs[9][1024]{};
+	std::string buffs[9];
 	DATA_BLOB blobs[9]{};
-	
+
 	static_assert(std::size(blobs) == std::size(buffs));
 	static_assert(std::size(blobs) == std::size(intargs));
 	if (strlen(format) > std::size(blobs)) {
@@ -321,13 +285,12 @@ static bool ntlmssp_gen_packetv(DATA_BLOB *pblob, const char *format,
 	for (size_t i = 0; format[i] != '\0'; ++i) {
 		switch (format[i]) {
 		case 'U': {
-			auto s = va_arg(ap, char *);
 			head_size += 8;
-			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], std::size(buffs[i]));
-			if (ret < 0)
+			buffs[i] = ntlmssp_utf8_to_utf16le(va_arg(ap, const char *));
+			if (errno != 0)
 				return false;
-			blobs[i].cb = ret;
-			blobs[i].pb = buffs[i];
+			blobs[i].cb = buffs[i].size();
+			blobs[i].pc = buffs[i].data();
 			data_size += blobs[i].cb;
 			break;
 		}
@@ -342,12 +305,11 @@ static bool ntlmssp_gen_packetv(DATA_BLOB *pblob, const char *format,
 		case 'a': {
 			auto j = va_arg(ap, int);
 			intargs[i] = j;
-			auto s = va_arg(ap, char *);
-			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], std::size(buffs[i]));
-			if (ret < 0)
+			buffs[i] = ntlmssp_utf8_to_utf16le(va_arg(ap, const char *));
+			if (errno != 0)
 				return false;
-			blobs[i].cb = ret;
-			blobs[i].pb = buffs[i];
+			blobs[i].cb = buffs[i].size();
+			blobs[i].pc = buffs[i].data();
 			data_size += blobs[i].cb + 4;
 			break;
 		}
@@ -440,6 +402,8 @@ static bool ntlmssp_gen_packetv(DATA_BLOB *pblob, const char *format,
 	}
 	pblob->cb = head_size + data_size;
 	return true;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
@@ -492,9 +456,10 @@ static bool ntlmssp_parse_packetv(const DATA_BLOB blob, const char *format,
 			if (&blob.pb[ptr_ofs] < reinterpret_cast<uint8_t *>(ptr_ofs) ||
 			    &blob.pb[ptr_ofs] < blob.pb)
 				return false;
-			if (!ntlmssp_utf16le_to_utf8(&blob.pb[ptr_ofs],
-			    len1, ps, le32p_to_cpu(ps)))
+			auto str = ntlmssp_utf16le_to_utf8({&blob.pc[ptr_ofs], len1});
+			if (errno != 0)
 				return false;
+			gx_strlcpy(ps, str.c_str(), le32p_to_cpu(ps));
 			break;
 		}
 		case 'A': {
@@ -907,13 +872,10 @@ static bool ntlmssp_check_ntlm1(const DATA_BLOB *pnt_response,
 }
 
 static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
-	const uint8_t *part_passwd, const DATA_BLOB *psec_blob,
-	const char *user, const char *domain, DATA_BLOB *puser_key)
+    const uint8_t *part_passwd, const DATA_BLOB *psec_blob, const char *user,
+    const char *domain, DATA_BLOB *puser_key) try
 {
 	uint8_t kr[16]; /* Finish the encryption of part_passwd. */
-	char user_in[256];
-	char tmp_user[UADDR_SIZE];
-	char domain_in[256];
 	DATA_BLOB client_key;
 	uint8_t value_from_encryption[16];
 
@@ -930,17 +892,19 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 
 	client_key.pb = &pntv2_response->pb[16];
 	client_key.cb = pntv2_response->cb - 16;
-	gx_strlcpy(tmp_user, user, std::size(tmp_user));
-	HX_strupper(tmp_user);
-	auto user_len = ntlmssp_utf8_to_utf16le(tmp_user, user_in, sizeof(user_in));
-	auto domain_len = ntlmssp_utf8_to_utf16le(domain, domain_in, sizeof(domain_in));
-	if (user_len < 0 || domain_len < 0)
+	std::string user_upr = user;
+	HX_strupper(user_upr.data());
+	auto user_in = ntlmssp_utf8_to_utf16le(user_upr);
+	if (errno != 0)
+		return false;
+	auto domain_in = ntlmssp_utf8_to_utf16le(domain);
+	if (errno != 0)
 		return false;
 
 	HMACMD5_CTX hmac_ctx(part_passwd, 16);
 	if (!hmac_ctx.is_valid() ||
-	    !hmac_ctx.update(user_in, user_len) ||
-	    !hmac_ctx.update(domain_in, domain_len) ||
+	    !hmac_ctx.update(user_in.data(), user_in.size()) ||
+	    !hmac_ctx.update(domain_in.data(), domain_in.size()) ||
 	    !hmac_ctx.finish(kr))
 		return false;
 
@@ -961,6 +925,8 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 		return true;
 	}
 	return false;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
@@ -968,9 +934,6 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	const char *user, const char *domain, DATA_BLOB *puser_key)
 {
 	uint8_t kr[16]; /* Finish the encryption of part_passwd. */
-	char user_in[256];
-	char tmp_user[UADDR_SIZE];
-	char domain_in[256];
 	DATA_BLOB client_key;
 	uint8_t value_from_encryption[16];
 	
@@ -987,17 +950,19 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	
 	client_key.pb = &pntv2_response->pb[16];
 	client_key.cb = pntv2_response->cb - 16;
-	gx_strlcpy(tmp_user, user, std::size(tmp_user));
-	HX_strupper(tmp_user);
-	auto user_len = ntlmssp_utf8_to_utf16le(tmp_user, user_in, std::size(user_in));
-	auto domain_len = ntlmssp_utf8_to_utf16le(domain, domain_in, std::size(domain_in));
-	if (user_len < 0 || domain_len < 0)
+	std::string user_upr = user;
+	HX_strupper(user_upr.data());
+	auto user_in = ntlmssp_utf8_to_utf16le(user_upr);
+	if (errno != 0)
+		return false;
+	auto domain_in = ntlmssp_utf8_to_utf16le(domain);
+	if (errno != 0)
 		return false;
 
 	HMACMD5_CTX hmac_ctx(part_passwd, 16);
 	if (!hmac_ctx.is_valid() ||
-	    !hmac_ctx.update(user_in, user_len) ||
-	    !hmac_ctx.update(domain_in, domain_len) ||
+	    !hmac_ctx.update(user_in.data(), user_in.size()) ||
+	    !hmac_ctx.update(domain_in.data(), domain_in.size()) ||
 	    !hmac_ctx.finish(kr))
 		return false;
 
