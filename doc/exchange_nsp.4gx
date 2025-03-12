@@ -32,12 +32,7 @@ Default: (unspecified)
 .SH Notes
 A number of properties are always synthesized by exchange_nsp and
 never read from any storage; this includes key properties such as
-PR_ENTRYID, PR_RECORD_KEY, etc. The following properties need
-mentioning:
-.IP \(bu 4
-PR_DEPARTMENT: This property is synthesized from the department
-that a user has been assigned to (cf. SQL table "users", column
-"group_id", and SQL table "group", column "title").
+PR_ENTRYID, PR_RECORD_KEY, etc.
 .PP
 For user-attached properties that are read from SQL (cf. table
 "user_properties"), exchange_nsp (as well as zcore(8gx)'s AB) only

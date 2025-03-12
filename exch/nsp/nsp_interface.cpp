@@ -398,9 +398,6 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		cu_utf8_to_mb(codepage,
 			dn.c_str(), pprop->value.pstr, temp_len);
 		return ecSuccess;
-	case PR_DEPARTMENT_NAME:
-	case PR_DEPARTMENT_NAME_A:
-		return ecNotFound;
 	case PR_OFFICE_LOCATION:
 		if (!node.company_info(nullptr, &dn))
 			return ecNotFound;

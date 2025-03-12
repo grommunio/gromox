@@ -23,9 +23,12 @@ possibly transformed by the ABP:
 
 * ``PR_CREATION_TIME``: Not read, but synthesized.
 
-* ``PR_DEPARTMENT_NAME``: Not read, but copied from the ``groups.title``
-  column of the user's group_id. ("groups" in SQL refer to departments, a
-  feature to create hierarchies in the address book).
+* ``PR_DEPARTMENT_NAME``: [Before Gromox 2.42] Not read, but copied from the
+  ``groups.title`` column of the user's group_id. ("groups" in SQL refer to
+  departments, a feature to create hierarchies in the address book). [Since
+  Gromox 2.42] Departments were abandoned and reading the property via MAPI
+  yields no value. [Since Gromox 2.44] Special treatment has ceased. MAPI
+  clients now see the same value as it is in SQL.
 
 * ``PR_DISPLAY_TYPE``: Not read, but synthesized based on PR_DISPLAY_TYPE_EX.
 
