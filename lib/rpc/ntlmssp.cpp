@@ -306,26 +306,18 @@ static bool ntlmssp_deshash(const char *passwd, uint8_t p16[16])
 static bool ntlmssp_gen_packetv(DATA_BLOB *pblob, const char *format,
     va_list ap)
 {
-	char *s;
-	int i, j;
-	uint8_t *b;
-	uint32_t length;
 	int intargs[64]{};
 	uint8_t buffs[64][1024]{};
 	DATA_BLOB blobs[64]{};
-	int head_ofs, data_ofs;
-	int head_size, data_size;
 	
 	if (strlen(format) > sizeof(blobs) / sizeof(DATA_BLOB))
 		return false;
-	memset(blobs, 0, sizeof(blobs));
-	head_size = 0;
-	data_size = 0;
+	size_t head_size = 0, data_size = 0;
 	/* first scan the format to work out the header and body size */
-	for (i=0; format[i]; i++) {
+	for (size_t i = 0; format[i] != '\0'; ++i) {
 		switch (format[i]) {
 		case 'U': {
-			s = va_arg(ap, char*);
+			auto s = va_arg(ap, char *);
 			head_size += 8;
 			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], std::size(buffs[i]));
 			if (ret < 0)
@@ -335,17 +327,18 @@ static bool ntlmssp_gen_packetv(DATA_BLOB *pblob, const char *format,
 			data_size += blobs[i].cb;
 			break;
 		}
-		case 'A':
-			s = va_arg(ap, char*);
+		case 'A': {
+			auto s = va_arg(ap, char *);
 			head_size += 8;
 			blobs[i].pc = s;
 			blobs[i].cb = strlen(s);
 			data_size += blobs[i].cb;
 			break;
+		}
 		case 'a': {
-			j = va_arg(ap, int);
+			auto j = va_arg(ap, int);
 			intargs[i] = j;
-			s = va_arg(ap, char*);
+			auto s = va_arg(ap, char *);
 			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], std::size(buffs[i]));
 			if (ret < 0)
 				return false;
@@ -354,30 +347,34 @@ static bool ntlmssp_gen_packetv(DATA_BLOB *pblob, const char *format,
 			data_size += blobs[i].cb + 4;
 			break;
 		}
-		case 'B':
-			b = va_arg(ap, uint8_t*);
+		case 'B': {
+			auto b = va_arg(ap, uint8_t*);
 			head_size += 8;
 			blobs[i].pb = b;
 			blobs[i].cb = va_arg(ap, int);
 			data_size += blobs[i].cb;
 			break;
-		case 'b':
-			b = va_arg(ap, uint8_t*);
+		}
+		case 'b': {
+			auto b = va_arg(ap, uint8_t*);
 			blobs[i].pb = b;
 			blobs[i].cb = va_arg(ap, int);
 			head_size += blobs[i].cb;
 			break;
-		case 'd':
-			j = va_arg(ap, int);
+		}
+		case 'd': {
+			auto j = va_arg(ap, int);
 			intargs[i] = j;
 			head_size += 4;
 			break;
-		case 'C':
-			s = va_arg(ap, char*);
+		}
+		case 'C': {
+			auto s = va_arg(ap, char*);
 			blobs[i].pc = s;
 			blobs[i].cb = strlen(s) + 1;
 			head_size += blobs[i].cb;
 			break;
+		}
 		default:
 			return false;
 		}
@@ -385,15 +382,14 @@ static bool ntlmssp_gen_packetv(DATA_BLOB *pblob, const char *format,
 
 	if (head_size + data_size == 0)
 		return false;
-	head_ofs = 0;
-	data_ofs = head_size;
+	size_t head_ofs = 0, data_ofs = head_size;
 
-	for (i=0; format[i]; i++) {
+	for (size_t i = 0; format[i] != '\0'; ++i) {
 		switch (format[i]) {
 		case 'U':
 		case 'A':
-		case 'B':
-			length = blobs[i].cb;
+		case 'B': {
+			auto length = blobs[i].cb;
 			cpu_to_le16p(&pblob->pb[head_ofs], length);
 			head_ofs += 2;
 			cpu_to_le16p(&pblob->pb[head_ofs], length);
@@ -405,31 +401,35 @@ static bool ntlmssp_gen_packetv(DATA_BLOB *pblob, const char *format,
 				memcpy(&pblob->pb[data_ofs], blobs[i].pb, length);
 			data_ofs += length;
 			break;
-		case 'a':
+		}
+		case 'a': {
 			cpu_to_le16p(&pblob->pb[data_ofs], intargs[i]);
 			data_ofs += 2;
-			length = blobs[i].cb;
+			auto length = blobs[i].cb;
 			cpu_to_le16p(&pblob->pb[data_ofs], length);
 			data_ofs += 2;
 			memcpy(&pblob->pb[data_ofs], blobs[i].pb, length);
 			data_ofs += length;
 			break;
+		}
 		case 'd':
 			cpu_to_le32p(&pblob->pb[head_ofs], intargs[i]);
 			head_ofs += 4;
 			break;
-		case 'b':
-			length = blobs[i].cb;
+		case 'b': {
+			auto length = blobs[i].cb;
 			if (blobs[i].pb != nullptr && length > 0)
 				/* don't follow null blobs... */
 				memcpy(&pblob->pb[head_ofs], blobs[i].pb, length);
 			head_ofs += length;
 			break;
-		case 'C':
-			length = blobs[i].cb;
+		}
+		case 'C': {
+			auto length = blobs[i].cb;
 			memcpy(&pblob->pb[head_ofs], blobs[i].pb, length);
 			head_ofs += length;
 			break;
+		}
 		default:
 			return false;
 		}
@@ -460,26 +460,20 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 static bool ntlmssp_parse_packetv(const DATA_BLOB blob, const char *format,
     va_list ap)
 {
-	int i;
-	char *ps;
-	uint32_t *v;
-	uintptr_t head_ofs = 0, ptr_ofs = 0;
-	DATA_BLOB *pblob;
-	uint16_t len1, len2;
-	
-	for (i=0; format[i]; i++) {
+	size_t head_ofs = 0;
+	for (size_t i = 0; format[i] != '\0'; ++i) {
 		switch (format[i]) {
-		case 'U':
+		case 'U': {
 			if (head_ofs + 8 > blob.cb)
 				return false;
-			len1 = le16p_to_cpu(&blob.pb[head_ofs]);
+			auto len1 = le16p_to_cpu(&blob.pb[head_ofs]);
 			head_ofs += 2;
-			len2 = le16p_to_cpu(&blob.pb[head_ofs]);
+			auto len2 = le16p_to_cpu(&blob.pb[head_ofs]);
 			head_ofs += 2;
-			ptr_ofs = le32p_to_cpu(&blob.pb[head_ofs]);
+			auto ptr_ofs = le32p_to_cpu(&blob.pb[head_ofs]);
 			head_ofs += 4;
 
-			ps = va_arg(ap, char*);
+			auto ps = va_arg(ap, char *);
 			if (0 == len1 && 0 == len2) {
 				ps[0] = '\0';
 				break;
@@ -498,17 +492,18 @@ static bool ntlmssp_parse_packetv(const DATA_BLOB blob, const char *format,
 			    len1, ps, le32p_to_cpu(ps)))
 				return false;
 			break;
-		case 'A':
+		}
+		case 'A': {
 			if (head_ofs + 8 > blob.cb)
 				return false;
-			len1 = le16p_to_cpu(&blob.pb[head_ofs]);
+			auto len1 = le16p_to_cpu(&blob.pb[head_ofs]);
 			head_ofs += 2;
-			len2 = le16p_to_cpu(&blob.pb[head_ofs]);
+			auto len2 = le16p_to_cpu(&blob.pb[head_ofs]);
 			head_ofs += 2;
-			ptr_ofs = le32p_to_cpu(&blob.pb[head_ofs]);
+			auto ptr_ofs = le32p_to_cpu(&blob.pb[head_ofs]);
 			head_ofs += 4;
 
-			ps = va_arg(ap, char*);
+			auto ps = va_arg(ap, char *);
 			/* make sure its in the right format - be strict */
 			if (0 == len1 && 0 == len2) {
 				ps[0] = '\0';
@@ -525,17 +520,18 @@ static bool ntlmssp_parse_packetv(const DATA_BLOB blob, const char *format,
 				ps[len1] = '\0';
 			}
 			break;
-		case 'B':
+		}
+		case 'B': {
 			if (head_ofs + 8 > blob.cb)
 				return false;
-			len1 = le16p_to_cpu(&blob.pb[head_ofs]);
+			auto len1 = le16p_to_cpu(&blob.pb[head_ofs]);
 			head_ofs += 2;
-			len2 = le16p_to_cpu(&blob.pb[head_ofs]);
+			auto len2 = le16p_to_cpu(&blob.pb[head_ofs]);
 			head_ofs += 2;
-			ptr_ofs = le32p_to_cpu(&blob.pb[head_ofs]);
+			auto ptr_ofs = le32p_to_cpu(&blob.pb[head_ofs]);
 			head_ofs += 4;
 
-			pblob = (DATA_BLOB*)va_arg(ap, void*);
+			auto pblob = va_arg(ap, DATA_BLOB *);
 			if (0 == len1 && 0 == len2) {
 				pblob->cb = 0;
 				break;
@@ -550,9 +546,10 @@ static bool ntlmssp_parse_packetv(const DATA_BLOB blob, const char *format,
 			memcpy(pblob->pb, &blob.pb[ptr_ofs], len1);
 			pblob->cb = len1;
 			break;
-		case 'b':
-			pblob = (DATA_BLOB *)va_arg(ap, void*);
-			len1 = va_arg(ap, unsigned int);
+		}
+		case 'b': {
+			auto pblob = va_arg(ap, DATA_BLOB *);
+			auto len1 = va_arg(ap, unsigned int);
 			/* make sure its in the right format - be strict */
 			if (head_ofs + len1 > blob.cb)
 				return false;
@@ -563,16 +560,17 @@ static bool ntlmssp_parse_packetv(const DATA_BLOB blob, const char *format,
 			pblob->cb = len1;
 			head_ofs += len1;
 			break;
-		case 'd':
-			v = va_arg(ap, uint32_t*);
+		}
+		case 'd': {
+			auto v = va_arg(ap, uint32_t *);
 			if (head_ofs + 4 > blob.cb)
 				return false;
 			*v = le32p_to_cpu(&blob.pb[head_ofs]);
 			head_ofs += 4;
 			break;
-		case 'C':
-			ps = va_arg(ap, char*);
-
+		}
+		case 'C': {
+			auto ps = va_arg(ap, char *);
 			if (&blob.pb[head_ofs] < reinterpret_cast<uint8_t *>(head_ofs) ||
 			    &blob.pb[head_ofs] < blob.pb ||
 			    head_ofs + strlen(ps) + 1 > blob.cb)
@@ -581,6 +579,7 @@ static bool ntlmssp_parse_packetv(const DATA_BLOB blob, const char *format,
 				return false;
 			head_ofs += strlen(ps) + 1;
 			break;
+		}
 		}
 	}
 	return true;
