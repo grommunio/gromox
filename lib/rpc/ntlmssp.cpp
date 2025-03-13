@@ -306,12 +306,16 @@ static bool ntlmssp_deshash(const char *passwd, uint8_t p16[16])
 static bool ntlmssp_gen_packetv(DATA_BLOB *pblob, const char *format,
     va_list ap)
 {
-	int intargs[64]{};
-	uint8_t buffs[64][1024]{};
-	DATA_BLOB blobs[64]{};
+	int intargs[9]{};
+	uint8_t buffs[9][1024]{};
+	DATA_BLOB blobs[9]{};
 	
-	if (strlen(format) > sizeof(blobs) / sizeof(DATA_BLOB))
+	static_assert(std::size(blobs) == std::size(buffs));
+	static_assert(std::size(blobs) == std::size(intargs));
+	if (strlen(format) > std::size(blobs)) {
+		mlog(LV_ERR, "E-1753: ntlmssp_gen_packetv cannot handle %zu arguments\n", strlen(format));
 		return false;
+	}
 	size_t head_size = 0, data_size = 0;
 	/* first scan the format to work out the header and body size */
 	for (size_t i = 0; format[i] != '\0'; ++i) {
