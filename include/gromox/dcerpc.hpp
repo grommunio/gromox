@@ -30,11 +30,11 @@ struct DCERPC_INTERFACE {
 	GUID uuid{};
 	uint32_t version = 0;
 	/* the ndr_pull function for the chosen interface. */
-	pack_result (*ndr_pull)(int opnum, NDR_PULL* pndr, void **ppin) = nullptr;
+	pack_result (*ndr_pull)(unsigned int op, NDR_PULL &, void **ppin) = nullptr;
 	/* the dispatch function for the chosen interface. */
 	int (*dispatch)(unsigned int op, const GUID *, uint64_t handle, void *in, void **out, ec_error_t *) = nullptr;
 	/* the ndr_push function for the chosen interface. */
-	pack_result (*ndr_push)(int opnum, NDR_PUSH *pndr, void *pout) = nullptr;
+	pack_result (*ndr_push)(unsigned int op, NDR_PUSH &, const void *pout) = nullptr;
 	/* the unbind function for the chosen interface */
 	void (*unbind)(uint64_t handle) = nullptr;
 	/* the reclaim function for the chosen interface */

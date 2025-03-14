@@ -138,7 +138,7 @@ struct ECDOASYNCCONNECTEX_OUT {
 	ec_error_t result;
 };
 
-extern pack_result asyncemsmdb_ndr_pull(int op, NDR_PULL *, void **in);
-extern pack_result asyncemsmdb_ndr_push(int op, NDR_PUSH *, void *out);
-extern pack_result emsmdb_ndr_pull(int op, NDR_PULL *, void **in);
-extern pack_result emsmdb_ndr_push(int op, NDR_PUSH *, void *out);
+extern pack_result asyncemsmdb_ndr_pull(unsigned int op, NDR_PULL &, void **in);
+extern pack_result asyncemsmdb_ndr_push(unsigned int op, NDR_PUSH &, const void *out);
+extern pack_result emsmdb_ndr_pull(unsigned int op, NDR_PULL &, void **in);
+extern pack_result emsmdb_ndr_push(unsigned int op, NDR_PUSH &, const void *out);

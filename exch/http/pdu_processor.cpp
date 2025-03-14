@@ -1400,7 +1400,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	ndr_push.set_ptrcnt(pcall->ptr_cnt);
 	
 	/* marshaling the NDR out param data */
-	auto ret = pcall->pcontext->pinterface->ndr_push(prequest->opnum, &ndr_push, pout);
+	auto ret = pcall->pcontext->pinterface->ndr_push(prequest->opnum, ndr_push, pout);
 	if (ret != EXT_ERR_SUCCESS) {
 		mlog(LV_ERR, "E-1918: ndr_push failed with result code %u",
 			static_cast<unsigned int>(ret));
@@ -1726,8 +1726,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	pcall->pcontext	= pcontext;
 	
 	/* unmarshaling the NDR in param data */
-	if (pcontext->pinterface->ndr_pull(prequest->opnum,
-	    &ndr_pull, &pin) != pack_result::ok) {
+	if (pcontext->pinterface->ndr_pull(prequest->opnum, ndr_pull, &pin) != pack_result::ok) {
 		pdu_processor_free_stack_root(pstack_root);
 		mlog(LV_DEBUG, "pdu_processor: pull fail on RPC call %u on %s",
 			prequest->opnum, pcontext->pinterface->name);
