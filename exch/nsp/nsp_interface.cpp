@@ -896,7 +896,7 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 }
 
 ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
-    STAT *pstat, PROPERTY_VALUE *ptarget, const MID_ARRAY *ptable,
+    STAT *pstat, const PROPERTY_VALUE *ptarget, const MID_ARRAY *ptable,
     const LPROPTAG_ARRAY *pproptags, NSP_ROWSET **pprows)
 {
 	NSP_PROPROW *prow;

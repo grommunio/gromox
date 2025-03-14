@@ -9,7 +9,7 @@ extern ec_error_t nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *
 extern ec_error_t nsp_interface_unbind(NSPI_HANDLE *, uint32_t);
 extern ec_error_t nsp_interface_update_stat(NSPI_HANDLE, uint32_t, STAT *, int32_t *delta);
 extern ec_error_t nsp_interface_query_rows(NSPI_HANDLE, uint32_t flags, STAT *, uint32_t table_count, uint32_t *table, uint32_t count, const LPROPTAG_ARRAY *, NSP_ROWSET **);
-extern ec_error_t nsp_interface_seek_entries(NSPI_HANDLE, uint32_t, STAT *, PROPERTY_VALUE *target, const MID_ARRAY *table, const LPROPTAG_ARRAY *, NSP_ROWSET **);
+extern ec_error_t nsp_interface_seek_entries(NSPI_HANDLE, uint32_t, STAT *, const PROPERTY_VALUE *target, const MID_ARRAY *table, const LPROPTAG_ARRAY *, NSP_ROWSET **);
 extern ec_error_t nsp_interface_get_matches(NSPI_HANDLE, uint32_t reserved1, STAT *, const MID_ARRAY *, uint32_t reserved2, const NSPRES *filter, const NSP_PROPNAME *, uint32_t requested, MID_ARRAY **outmids, const LPROPTAG_ARRAY *, NSP_ROWSET **);
 extern ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE, uint32_t, STAT *, const MID_ARRAY *in, MID_ARRAY **out);
 extern ec_error_t nsp_interface_dntomid(NSPI_HANDLE, uint32_t, const STRINGS_ARRAY *names, MID_ARRAY **out);
