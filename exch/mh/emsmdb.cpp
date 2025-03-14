@@ -102,7 +102,7 @@ static void (*asyncemsmdb_interface_remove)(CONTEXT_HANDLE *);
 
 static ec_error_t (*emsmdb_interface_connect_ex)(uint64_t hrpc, CXH *, const char *user_dn, uint32_t flags, uint32_t con_mode, uint32_t limit, cpid_t, uint32_t lcid_string, uint32_t lcid_sort, uint32_t cxr_link, uint16_t cnvt_cps, uint32_t *max_polls, uint32_t *max_retry, uint32_t *retry_delay, uint16_t *cxr, char *dn_prefix, char *dispname, const uint16_t client_vers[3], uint16_t server_vers[3], uint16_t best_vers[3], uint32_t *timestamp, const uint8_t *auxin, uint32_t cb_auxin, uint8_t *auxout, uint32_t *cb_auxout);
 static ec_error_t (*emsmdb_interface_rpc_ext2)(CONTEXT_HANDLE &, uint32_t *flags, const uint8_t *, uint32_t, uint8_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *, uint32_t *);
-static ec_error_t (*emsmdb_interface_disconnect)(CONTEXT_HANDLE &);
+static void (*emsmdb_interface_remove_handle)(const CONTEXT_HANDLE &);
 static void (*emsmdb_interface_touch_handle)(const CONTEXT_HANDLE &);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -254,7 +254,7 @@ MhEmsmdbPlugin::MhEmsmdbPlugin(const struct dlfuncs &ppdata)
 	LINK_HPM_API(ppdata)
 	if (!query_service1(emsmdb_interface_connect_ex) ||
 	    !query_service1(emsmdb_interface_rpc_ext2) ||
-	    !query_service1(emsmdb_interface_disconnect) ||
+	    !query_service1(emsmdb_interface_remove_handle) ||
 	    !query_service1(emsmdb_interface_touch_handle) ||
 	    !query_service1(asyncemsmdb_interface_async_wait) ||
 	    !query_service1(asyncemsmdb_interface_register_active) ||
@@ -493,7 +493,11 @@ static uint32_t emsmdb_bridge_execute(const GUID& session_guid, const execute_re
 }
 
 static uint32_t emsmdb_bridge_disconnect(EMSMDB_HANDLE2 ses)
-{return emsmdb_interface_disconnect(ses);}
+{
+	emsmdb_interface_remove_handle(ses);
+	ses = {};
+	return ecSuccess;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Request processing

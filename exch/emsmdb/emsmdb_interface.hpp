@@ -29,7 +29,7 @@ struct emsmdb_info {
 extern void emsmdb_interface_init();
 extern int emsmdb_interface_run();
 extern void emsmdb_interface_stop();
-extern ec_error_t emsmdb_interface_disconnect(CXH &);
+extern void emsmdb_interface_remove_handle(const CXH &);
 extern ec_error_t emsmdb_interface_register_push_notification(CXH *, uint32_t rpc, uint8_t *ctx, uint16_t cb_ctx, uint32_t advise_bits, uint8_t *addr, uint16_t cb_addr, uint32_t *notification);
 extern ec_error_t emsmdb_interface_dummy_rpc(uint64_t hrpc);
 extern ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *, const char *user_dn, uint32_t flags, uint32_t con_mode, uint32_t limit, cpid_t, uint32_t lcid_string, uint32_t lcid_sort, uint32_t cxr_link, uint16_t cnvt_cps, uint32_t *max_polls, uint32_t *max_retry, uint32_t *retry_delay, uint16_t *cxr, char *dn_prefix, char *dispname, const uint16_t client_vers[3], uint16_t server_vers[3], uint16_t best_vers[3], uint32_t *timestamp, const uint8_t *auxin, uint32_t cb_auxin, uint8_t *auxout, uint32_t *cb_auxout);

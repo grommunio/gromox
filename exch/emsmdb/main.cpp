@@ -208,7 +208,7 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 		    !regsvr(asyncemsmdb_interface_register_active) ||
 		    !regsvr(asyncemsmdb_interface_remove) ||
 		    !regsvr(emsmdb_interface_connect_ex) ||
-		    !regsvr(emsmdb_interface_disconnect) ||
+		    !regsvr(emsmdb_interface_remove_handle) ||
 		    !regsvr(emsmdb_interface_rpc_ext2) ||
 		    !regsvr(emsmdb_interface_touch_handle)) {
 			mlog(LV_ERR, "emsmdb: service interface registration failure");
@@ -285,8 +285,9 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		if (out == nullptr)
 			return DISPATCH_FAIL;
 		*ppout = out;
-		out->result = emsmdb_interface_disconnect(in->cxh);
-		out->cxh = in->cxh;
+		emsmdb_interface_remove_handle(in->cxh);
+		out->result = ecSuccess;
+		out->cxh = {};
 		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}

@@ -381,7 +381,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	return TRUE;
 }
 
-static void emsmdb_interface_remove_handle(const CXH &cxh)
+void emsmdb_interface_remove_handle(const CXH &cxh)
 {
 	auto pcxh = &cxh;
 	HANDLE_DATA *phandle;
@@ -458,13 +458,6 @@ void emsmdb_interface_stop()
 		g_user_hash.clear();
 		g_handle_hash.clear();
 	}
-}
-
-ec_error_t emsmdb_interface_disconnect(CXH &cxh)
-{
-	emsmdb_interface_remove_handle(cxh);
-	memset(&cxh, 0, sizeof(CXH));
-	return ecSuccess;
 }
 
 ec_error_t emsmdb_interface_register_push_notification(CXH *pcxh, uint32_t rpc,
