@@ -334,19 +334,6 @@ extern class ab AB;
  * Provides easy access to a specific node in an ab_tree.
  */
 struct ab_node {
-	private:
-	/**
-	 * @brief      Forward call to base with mid member as first argument
-	 *
-	 * @param      func    Pointer to ab_base member function
-	 * @param      args    Function arguments
-	 *
-	 * @return     Return value from base function
-	 */
-	template<typename Func, typename... Args>
-	inline typename std::invoke_result_t<Func, ab_base, Args...> call(Func func, Args &&...args) const
-	{ return (base->*func)(std::forward<Args>(args)...); }
-
 	public:
 	ab_node() = default;
 	ab_node(const ab::const_base_ref &br, minid m) : base(br.get()), mid(m) {}
@@ -359,7 +346,7 @@ struct ab_node {
 	#define WRAP(FUNC) \
 		template<typename... Args> \
 		inline auto FUNC(Args &&...args) const \
-		{ return call(&ab_base::FUNC, mid, std::forward<Args>(args)...); }
+		{ return base->FUNC(mid, std::forward<Args>(args)...); }
 
 	WRAP(aliases)
 	WRAP(children)
