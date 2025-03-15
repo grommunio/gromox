@@ -35,11 +35,11 @@ jobs:
     - name: buildall
       run: |
         set -e
-        pushd vmime && cmake . -DVMIME_SENDMAIL_PATH:STRING="/usr/sbin/sendmail" -DVMIME_BUILD_SAMPLES:BOOL=OFF -DVMIME_HAVE_TLS_SUPPORT:BOOL=ON -DVMIME_BUILD_STATIC_LIBRARY:BOOL=OFF && make "-j$(nproc)" && sudo make install && popd
-        pushd libHX && ./qconf && make "-j$(nproc)" && sudo make install && popd
+        cd vmime && cmake . -DVMIME_SENDMAIL_PATH:STRING="/usr/sbin/sendmail" -DVMIME_BUILD_SAMPLES:BOOL=OFF -DVMIME_HAVE_TLS_SUPPORT:BOOL=ON -DVMIME_BUILD_STATIC_LIBRARY:BOOL=OFF && make "-j$(nproc)" && sudo make install && cd -
+        cd libHX && ./qconf && make "-j$(nproc)" && sudo make install && cd -
         ./qconf
         LD_LIBRARY_PATH=/usr/local/lib make "-j$(nproc)"
         LD_LIBRARY_PATH=/usr/local/lib make install DESTDIR="$PWD/rt" && rm -Rf rt
         make clean
-        LD_LIBRARY_PATH=/usr/local/lib make "-j$(nproc)" CPPFLAGS=-DCOMPILE_DIAG
+        LD_LIBRARY_PATH=/usr/local/lib make "-j$(nproc)" CPPFLAGS="-DCOMPILE_DIAG -D_GLIBCXX_DEBUG"
         make distclean

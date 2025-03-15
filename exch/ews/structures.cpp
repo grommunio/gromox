@@ -921,7 +921,7 @@ TPROPVAL_ARRAY sShape::write() const
 const TAGGED_PROPVAL* sShape::writes(uint32_t tag) const
 {
 	auto it = std::find_if(wProps.begin(), wProps.end(), [=](const TAGGED_PROPVAL& tp){return tp.proptag == tag;});
-	return it != wProps.end() ? it.base() : nullptr;
+	return it != wProps.end() ? &*it : nullptr;
 }
 
 /**
