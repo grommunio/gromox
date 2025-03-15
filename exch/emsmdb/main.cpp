@@ -280,7 +280,7 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 {
 	switch (opnum) {
 	case ecDoDisconnect: {
-		auto in  = static_cast<const ECDOASYNCCONNECTEX_IN *>(pin);
+		auto in  = static_cast<const ECDODISCONNECT_IN *>(pin);
 		auto out = ndr_stack_anew<ECDODISCONNECT_OUT>(NDR_STACK_OUT);
 		if (out == nullptr)
 			return DISPATCH_FAIL;
