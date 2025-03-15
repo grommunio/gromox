@@ -142,13 +142,13 @@ void ab::work()
 		if (worker_queue.empty())
 			wait_time = m_cache_interval;
 		else {
-			auto base = get(worker_queue.front());
-			if (!base || base->age() >= m_cache_interval) {
+			auto root = get(worker_queue.front());
+			if (root == nullptr || root->age() >= m_cache_interval) {
 				drop(worker_queue.front());
 				worker_queue.pop_front();
 				continue;
 			}
-			wait_time = m_cache_interval-base->age();
+			wait_time = m_cache_interval - root->age();
 		}
 		lock_guard.unlock();
 		worker_signal.wait_for(notify_guard, wait_time);
@@ -812,35 +812,35 @@ ab_base::iterator &ab_base::iterator::operator+=(difference_type offset)
 
 	if (it.index() == 0) {
 		auto &i = std::get<0>(it);
-		ssize_t dist = std::distance(i, m_base->m_domains.cend());
+		ssize_t dist = std::distance(i, m_root->m_domains.cend());
 		if (offset < 0 || offset < dist) {
 			i += offset;
 			mid = minid(minid::domain, i->id);
 			return *this;
 		}
 		/* Wrap forwards over to users */
-		auto i2 = m_base->m_users.cbegin() + (offset - dist);
+		auto i2 = m_root->m_users.cbegin() + (offset - dist);
 		it = i2;
-		if (i2 != m_base->m_users.cend())
+		if (i2 != m_root->m_users.cend())
 			mid = minid(minid::address, i2->id);
 		else
 			mid = 0;
 		return *this;
 	} else if (it.index() == 1) {
 		auto &i = std::get<1>(it);
-		ssize_t dist = std::distance(m_base->m_users.cbegin(), i);
+		ssize_t dist = std::distance(m_root->m_users.cbegin(), i);
 		if (offset > 0 || -offset <= dist) {
 			i += offset;
-			if (i != m_base->m_users.cend())
+			if (i != m_root->m_users.cend())
 				mid = minid(minid::address, i->id);
 			else
 				mid = 0;
 			return *this;
 		}
 		/* Wrap backwards over to domains */
-		auto i2 = m_base->m_domains.cend() + (dist + offset);
+		auto i2 = m_root->m_domains.cend() + (dist + offset);
 		it = i2;
-		if (i2 != m_base->m_domains.cend())
+		if (i2 != m_root->m_domains.cend())
 			mid = minid(minid::domain, i2->id);
 		else
 			mid = 0;
@@ -856,8 +856,8 @@ ab_base::iterator &ab_base::iterator::operator+=(difference_type offset)
  */
 size_t ab_base::iterator::pos() const
 {
-	return it.index() == 0 ? std::distance(m_base->m_domains.cbegin(), std::get<0>(it)) :
-	                         std::distance(m_base->m_users.cbegin(), std::get<1>(it)) + m_base->m_domains.size();
+	return it.index() == 0 ? std::distance(m_root->m_domains.cbegin(), std::get<0>(it)) :
+	                         std::distance(m_root->m_users.cbegin(), std::get<1>(it)) + m_root->m_domains.size();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -865,19 +865,19 @@ size_t ab_base::iterator::pos() const
 
 ab_node::iterator ab_node::begin() const
 {
-	const ab_domain *domain = base->fetch_domain(mid);
+	const ab_domain *domain = root->fetch_domain(mid);
 	return domain ? domain->userref.cbegin() : iterator();
 }
 
 ab_node::iterator ab_node::end() const
 {
-	const ab_domain *domain = base->fetch_domain(mid);
+	const ab_domain *domain = root->fetch_domain(mid);
 	return domain ? domain->userref.cend() : iterator();
 }
 
 minid ab_node::operator[](uint32_t idx) const
 {
-	const ab_domain *domain = base->fetch_domain(mid);
+	const ab_domain *domain = root->fetch_domain(mid);
 	return domain && idx < domain->userref.size() ? domain->userref[idx] : minid();
 }
 

@@ -618,7 +618,7 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 		*pout_row = *pcount;
 	} else {
 		auto it = std::find(node.begin(), node.end(), pstat->cur_rec);
-		if (it == node.end() || node.base->hidden(pstat->cur_rec) & AB_HIDE_FROM_AL) {
+		if (it == node.end() || node.root->hidden(pstat->cur_rec) & AB_HIDE_FROM_AL) {
 			/*
 			 * In this case, the position is undefined.
 			 * To avoid problems, we will use the first row.
