@@ -234,7 +234,7 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 	
 	switch (opnum) {
 	case RfrGetNewDSA: {
-		auto prfr_in = static_cast<RFRGETNEWDSA_IN *>(pin);
+		auto prfr_in = static_cast<const RFRGETNEWDSA_IN *>(pin);
 		prfr_out = ndr_stack_anew<RFRGETNEWDSA_OUT>(NDR_STACK_OUT);
 		if (prfr_out == nullptr)
 			return DISPATCH_FAIL;
@@ -248,7 +248,7 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 		return DISPATCH_SUCCESS;
 	}
 	case RfrGetFQDNFromServerDN: {
-		auto prfr_dn_in = static_cast<RFRGETFQDNFROMLEGACYDN_IN *>(pin);
+		auto prfr_dn_in = static_cast<const RFRGETFQDNFROMLEGACYDN_IN *>(pin);
 		prfr_dn_out = ndr_stack_anew<RFRGETFQDNFROMLEGACYDN_OUT>(NDR_STACK_OUT);
 		if (prfr_dn_out == nullptr)
 			return DISPATCH_FAIL;
@@ -273,7 +273,7 @@ static pack_result exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 	
 	switch (opnum) {
 	case RfrGetNewDSA: {
-		auto prfr = static_cast<RFRGETNEWDSA_OUT *>(pout);
+		auto prfr = static_cast<const RFRGETNEWDSA_OUT *>(pout);
 		TRY(pndr->p_unique_ptr(nullptr));
 		if (prfr->pserver.empty()) {
 			TRY(pndr->p_unique_ptr(nullptr));
@@ -289,7 +289,7 @@ static pack_result exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 		return pndr->p_uint32(prfr->result);
 	}
 	case RfrGetFQDNFromServerDN: {
-		auto prfr_dn = static_cast<RFRGETFQDNFROMLEGACYDN_OUT *>(pout);
+		auto prfr_dn = static_cast<const RFRGETFQDNFROMLEGACYDN_OUT *>(pout);
 		if (prfr_dn->serverfqdn.empty()) {
 			TRY(pndr->p_unique_ptr(nullptr));
 		} else {
