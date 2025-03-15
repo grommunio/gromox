@@ -92,9 +92,9 @@ static pack_result emsmdb_ndr_push_ecrregisterpushnotification(NDR_PUSH *pndr,
 	return pndr->p_err32(r->result);
 }
 
-static pack_result emsmdb_ndr_push_ecdummyrpc(NDR_PUSH *pndr, int32_t *r)
+static pack_result emsmdb_ndr_push_ecdummyrpc(NDR_PUSH *pndr, ECDUMMYRPC_OUT *r)
 {
-	return pndr->p_int32(*r);
+	return pndr->p_err32(r->result);
 }
 
 static pack_result emsmdb_ndr_pull_ecdoconnectex(NDR_PULL *pndr, ECDOCONNECTEX_IN *r)
@@ -300,7 +300,7 @@ pack_result emsmdb_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 	case ecRRegisterPushNotification:
 		return emsmdb_ndr_push_ecrregisterpushnotification(pndr, static_cast<ECRREGISTERPUSHNOTIFICATION_OUT *>(pout));
 	case ecDummyRpc:
-		return emsmdb_ndr_push_ecdummyrpc(pndr, static_cast<int32_t *>(pout));
+		return emsmdb_ndr_push_ecdummyrpc(pndr, static_cast<ECDUMMYRPC_OUT *>(pout));
 	case ecDoConnectEx:
 		return emsmdb_ndr_push_ecdoconnectex(pndr, static_cast<ECDOCONNECTEX_OUT *>(pout));
 	case ecDoRpcExt2:

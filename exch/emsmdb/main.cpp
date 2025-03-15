@@ -304,12 +304,15 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		*ecode = out->result;
 		return DISPATCH_SUCCESS;
 	}
-	case ecDummyRpc:
-		*ppout = ndr_stack_anew<int32_t>(NDR_STACK_OUT);
-		if (*ppout == nullptr)
+	case ecDummyRpc: {
+		auto out = ndr_stack_anew<ECDUMMYRPC_OUT>(NDR_STACK_OUT);
+		if (out == nullptr)
 			return DISPATCH_FAIL;
-		*static_cast<int32_t *>(*ppout) = static_cast<uint32_t>(emsmdb_interface_dummy_rpc(handle));
+		*ppout = out;
+		out->result = emsmdb_interface_dummy_rpc(handle);
+		*ecode = out->result;
 		return DISPATCH_SUCCESS;
+	}
 	case ecDoConnectEx: {
 		auto in  = static_cast<ECDOCONNECTEX_IN *>(pin);
 		auto out = ndr_stack_anew<ECDOCONNECTEX_OUT>(NDR_STACK_OUT);

@@ -64,6 +64,10 @@ struct ECRREGISTERPUSHNOTIFICATION_IN {
 	uint16_t cb_addr;
 };
 
+struct ECDUMMYRPC_OUT {
+	ec_error_t result;
+};
+
 struct ECRREGISTERPUSHNOTIFICATION_OUT {
 	CXH cxh;
 	uint32_t hnotification;
