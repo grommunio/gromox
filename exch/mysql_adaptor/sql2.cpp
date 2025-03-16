@@ -685,7 +685,7 @@ bool mysql_plugin::get_user_props(const char *username,
 		}
 		case PT_DOUBLE:
 		case PT_APPTIME: {
-			float converted = strtof(strval, nullptr);
+			double converted = strtod(strval, nullptr);
 			if (properties.set(tag, &converted) != 0)
 				return false;
 			break;
