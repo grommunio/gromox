@@ -547,6 +547,16 @@ int main(int argc, char **argv)
 	}
 	auto cleanup_14 = HX::make_scope_exit(contexts_pool_stop);
 
+	exmdb_rpc_alloc = imrpc_alloc;
+	exmdb_rpc_free = [](void *) {};
+	exmdb_client.emplace(1, 0);
+	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
+	if (exmdb_client_run(g_config_file->get_value("config_file_path"),
+	    EXMDB_CLIENT_ASYNC_CONNECT, imrpc_build_env1, imrpc_free_env, nullptr) != 0) {
+		mlog(LV_ERR, "Failed to start exmdb_client");
+		return EXIT_FAILURE;
+	}
+
 	threads_pool_init(thread_init_num, imap_parser_process);
 	threads_pool_register_event_proc(imap_parser_threads_event_proc);
 	if (threads_pool_run("imap.cfg:imap_thread_init_num") != 0) {
@@ -558,15 +568,6 @@ int main(int argc, char **argv)
 	/* accept the connection */
 	if (listener_trigger_accept() != 0) {
 		printf("[system]: fail trigger accept\n");
-		return EXIT_FAILURE;
-	}
-	exmdb_rpc_alloc = imrpc_alloc;
-	exmdb_rpc_free = [](void *) {};
-	exmdb_client.emplace(1, 0);
-	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
-	if (exmdb_client_run(g_config_file->get_value("config_file_path"),
-	    EXMDB_CLIENT_ASYNC_CONNECT, imrpc_build_env1, imrpc_free_env, nullptr) != 0) {
-		mlog(LV_ERR, "Failed to start exmdb_client");
 		return EXIT_FAILURE;
 	}
 	

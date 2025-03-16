@@ -490,10 +490,10 @@ static int icp_match_field(mjson_io &io, const char *cmd_tag,
 	auto pbody = strchr(cmd_tag, '[');
 	if (length > 128 * 1024)
 		return -1;
-	auto fd = io.find(file_path);
-	if (io.invalid(fd))
+	auto eml_content = io.get_substr(file_path, offset, length);
+	if (!eml_content.has_value())
 		return -1;
-	auto buff = io.substr(fd, offset, length);
+	auto &buff = eml_content.value();
 
 	char temp_buff[1024], *tmp_argv[128];
 	int tmp_argc;
@@ -733,14 +733,18 @@ static int icp_process_fetch_item(imap_context &ctx,
 			mlog(LV_ERR, "E-1921: load_from_json %s/%s oopsied", ctx.maildir, ctx.mid.c_str());
 			return 1923;
 		}
-		mjson.path = eml_path;
-		auto eml_file = eml_path + "/"s + pitem->mid;
+		mjson.path = std::move(eml_path);
+	}
+	auto deferred_eml_load = [&]() {
+		if (!(pitem->flag_bits & FLAG_LOADED))
+			return;
+		auto eml_file = mjson.path + "/"s + pitem->mid;
 		if (!ctx.io_actor.exists(eml_file)) {
 			std::string content;
 			if (exmdb_client->imapfile_read(ctx.maildir, "eml", pitem->mid, &content))
 				ctx.io_actor.place(eml_file, std::move(content));
 		}
-	}
+	};
 
 	BOOL b_first = FALSE;
 	buf = "* " + std::to_string(item_id) + " FETCH (";
@@ -753,6 +757,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 		if (strcasecmp(kw, "BODY") == 0) {
 			buf += "BODY ";
 			if (mjson.has_rfc822_part()) {
+				deferred_eml_load();
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() <= 0 ||
 				    !mjson.rfc822_build(ctx.io_actor, rfc_path.c_str()))
@@ -776,6 +781,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 		} else if (strcasecmp(kw, "BODYSTRUCTURE") == 0) {
 			buf += "BODYSTRUCTURE ";
 			if (mjson.has_rfc822_part()) {
+				deferred_eml_load();
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() <= 0 ||
 				    !mjson.rfc822_build(ctx.io_actor, rfc_path.c_str()))
@@ -908,6 +914,7 @@ static int icp_process_fetch_item(imap_context &ctx,
 			else
 				temp_id = temp_buff;
 			if (*temp_id != '\0' && mjson.has_rfc822_part()) {
+				deferred_eml_load();
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() > 0 &&
 				    mjson.rfc822_build(ctx.io_actor, rfc_path.c_str())) {

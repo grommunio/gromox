@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
+#include <climits>
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
@@ -63,29 +64,35 @@ bool mjson_io::exists(const std::string &path) const
 	return m_cache.find(path) != m_cache.cend();
 }
 
-mjson_io::c_iter mjson_io::find(const std::string &path)
-{
-	auto iter = m_cache.find(path);
-	if (iter != m_cache.cend())
-		return iter;
-	/*
-	 * Not finding the element is not an error; asking for `BODY[2.1.3]`
-	 * will iteratively look for /2.1.3.dgt, /2.1.dgt, /2.dgt.
-	 */
-	return m_cache.cend();
-}
-
 void mjson_io::place(const std::string &path, std::string &&content)
 {
 	m_cache[path] = std::move(content);
 }
 
-std::string mjson_io::substr(mjson_io::c_iter it, size_t of, size_t len)
+const std::string *mjson_io::get_full(const std::string &path) const
 {
-	const auto &str = it->second;
-	if (of <= str.size())
-		return str.substr(of, len);
-	return {};
+	auto iter = m_cache.find(path);
+	return iter != m_cache.end() ? &iter->second : nullptr;
+}
+
+ssize_t mjson_io::get_size(const std::string &path) const
+{
+	auto str = get_full(path);
+	if (str == nullptr)
+		return -1;
+	if (str->size() >= SSIZE_MAX)
+		return SSIZE_MAX;
+	return str->size();
+}
+
+std::optional<std::string> mjson_io::get_substr(const std::string &path,
+    size_t of, size_t len) const
+{
+	std::optional<std::string> r;
+	auto str = get_full(path);
+	if (str == nullptr || of > str->size())
+		return r;
+	return r.emplace(str->substr(of, len));
 }
 
 bool MJSON_MIME::contains_none_type() const
@@ -364,10 +371,8 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 				temp_path = storage_path + "/"s + pmime->get_id();
 			else
 				temp_path = storage_path + "/"s + msg_filename + "." + pmime->get_id();
-			auto fd = io.find(temp_path);
-			buf += io.valid(fd) ?
-			       " " + std::to_string(fd->second.size()) :
-			       " NIL";
+			ssize_t z = io.get_size(temp_path);
+			buf += z >= 0 ? " " + std::to_string(z) : " NIL";
 		} else {
 			buf += " " + std::to_string(pmime->length);
 		}
@@ -386,11 +391,11 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 				temp_path = storage_path + "/"s + msg_filename +
 				            "." + pmime->get_id() + ".dgt";
 
-			auto fd = io.find(temp_path);
-			if (io.invalid(fd))
+			auto eml_content = io.get_full(temp_path);
+			if (eml_content == nullptr)
 				goto RFC822_FAILURE;
 			Json::Value digest;
-			if (!json_from_str(fd->second, digest))
+			if (!json_from_str(*eml_content, digest))
 				goto RFC822_FAILURE;
 			MJSON temp_mjson;
 			if (!temp_mjson.load_from_json(digest))
@@ -559,15 +564,15 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 		dgt_path = msg_path + ".dgt";
 	}
 		
-	auto iter = pbuild->io.find(temp_path);
-	if (pbuild->io.invalid(iter)) {
+	auto eml_content = pbuild->io.get_substr(temp_path, pmime->get_content_offset(),
+	                   pmime->get_content_length());
+	if (!eml_content.has_value()) {
 		pbuild->build_result = FALSE;
 		return;
 	}
-	
-	auto eml = mjson_io::substr(iter, pmime->get_content_offset(), pmime->get_content_length());
+	std::string eml;
 	if (pmime->encoding_is_b()) {
-		eml = base64_decode(eml);
+		eml = base64_decode(*std::move(eml_content));
 	} else if (pmime->encoding_is_q()) {
 		std::string qpout;
 		qpout.resize(eml.size());
@@ -665,12 +670,12 @@ BOOL MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
 		char dgt_path[256];
 		snprintf(dgt_path, std::size(dgt_path), "%s/%s/%s.dgt", storage_path,
 		         pjson_base->get_mail_filename(), mjson_id);
-		auto fd = io.find(dgt_path);
-		if (io.invalid(fd))
+		auto eml_content = io.get_full(dgt_path);
+		if (eml_content == nullptr)
 			continue;
 		pjson->clear();
 		Json::Value digest;
-		if (!json_from_str(fd->second, digest) ||
+		if (!json_from_str(*eml_content, digest) ||
 		    !pjson->load_from_json(digest))
 			return false;
 		pjson->path = temp_path;

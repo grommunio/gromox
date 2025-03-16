@@ -355,7 +355,7 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 		mlog(LV_DEBUG, "[oxdisco] send redirect response");
 	return resp(ctx_id, auth_info.username, email, ars);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1700: ENOMEM\n");
+	mlog(LV_ERR, "E-1700: ENOMEM\n");
 	return die(ctx_id, server_error_code, server_error_msg);
 }
 

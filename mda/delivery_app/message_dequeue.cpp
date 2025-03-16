@@ -366,7 +366,7 @@ static void message_dequeue_load_from_mess(int mess) try
 	message_dequeue_put_to_used(pmessage);
 	h.lock();
 	if (g_mess_hash.size() >= 2 * g_message_units + 1)
-		fprintf(stderr, "E-2043: Too many messages loaded (%zu;"
+		mlog(LV_ERR, "E-2043: Too many messages loaded (%zu;"
 		        " derived from delivery.cfg:dequeue_maximum_mem)\n",
 		        2 * g_message_units);
 	else
