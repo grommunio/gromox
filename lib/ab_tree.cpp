@@ -771,23 +771,42 @@ ab_base::iterator &ab_base::iterator::operator+=(difference_type offset)
 	if (offset == 0)
 		return *this;
 
-	if (it.index() == 0 && offset > 0) {
+	if (it.index() == 0) {
 		auto &i = std::get<0>(it);
 		ssize_t dist = std::distance(i, m_base->domains.cend());
-		if (offset < dist)
+		if (offset < 0 || offset < dist) {
 			i += offset;
+			mid = minid(minid::domain, i->id);
+			return *this;
+		}
+		/* Wrap forwards over to users */
+		auto i2 = m_base->m_users.cbegin() + (offset - dist);
+		it = i2;
+		if (i2 != m_base->m_users.cend())
+			mid = minid(minid::address, i2->id);
 		else
-			it = m_base->m_users.cbegin() + (offset - dist);
-	} else if (it.index() == 1 && offset < 0) {
+			mid = 0;
+		return *this;
+	} else if (it.index() == 1) {
 		auto &i = std::get<1>(it);
 		ssize_t dist = std::distance(m_base->m_users.cbegin(), i);
-		if (-offset <= dist)
+		if (offset > 0 || -offset <= dist) {
 			i += offset;
+			if (i != m_base->m_users.cend())
+				mid = minid(minid::address, i->id);
+			else
+				mid = 0;
+			return *this;
+		}
+		/* Wrap backwards over to domains */
+		auto i2 = m_base->domains.cend() + (dist + offset);
+		it = i2;
+		if (i2 != m_base->domains.cend())
+			mid = minid(minid::domain, i2->id);
 		else
-			it = m_base->domains.cend() + (dist + offset);
-	} else
-		std::visit([=](auto &i) { i += offset; }, it);
-	mid = minid(it.index() == 0 ? minid::domain : minid::address, std::visit([](auto &i) { return i->id; }, it));
+			mid = 0;
+		return *this;
+	}
 	return *this;
 }
 

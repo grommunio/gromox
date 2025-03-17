@@ -167,8 +167,24 @@ class ab_base {
 		using reference = value_type &;
 
 		iterator() = default;
-		template<class It> inline iterator(const ab_base *b, const It &i) : m_base(b), it(i)
-		{ mid = minid(it.index() == 0 ? minid::domain : minid::address, std::visit([](auto &i) { return i->id; }, it)); }
+
+		iterator(const ab_base *b, const std::vector<ab_domain>::const_iterator &i) :
+			m_base(b), it(i)
+		{
+			if (i != m_base->domains.cend())
+				mid = minid(minid::domain, i->id);
+			else
+				mid = 0;
+		}
+
+		iterator(const ab_base *b, const std::vector<sql_user>::const_iterator &i) :
+			m_base(b), it(i)
+		{
+			if (i != m_base->m_users.cend())
+				mid = minid(minid::address, i->id);
+			else
+				mid = 0;
+		}
 
 		constexpr bool operator==(const iterator &other) const = default;
 		constexpr auto operator<=>(const iterator &other) const { return it <=> other.it; }
