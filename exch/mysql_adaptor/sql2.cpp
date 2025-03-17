@@ -375,45 +375,6 @@ int mysql_plugin::get_domain_users(unsigned int domain_id,
 	return false;
 }
 
-int mysql_plugin::get_group_users(unsigned int group_id,
-    std::vector<sql_user> &pfile) try
-{
-	char query[491];
-
-	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn)
-		return false;
-	snprintf(query, std::size(query),
-	         "SELECT u.username, a.aliasname FROM users AS u "
-	         "INNER JOIN aliases AS a ON u.username=a.mainname "
-	         "WHERE u.group_id=%d",
-	         group_id);
-	aliasmap_t amap;
-	aliasmap_load(*conn, query, amap);
-
-	snprintf(query, std::size(query),
-	         "SELECT u.id, p.proptag, p.propval_bin, p.propval_str FROM users AS u "
-	         "INNER JOIN user_properties AS p ON u.group_id=%d AND u.id=p.user_id "
-	         "ORDER BY p.user_id, p.proptag, p.order_id",
-	         group_id);
-	propmap_t pmap;
-	propmap_load(*conn, query, pmap);
-
-	snprintf(query, std::size(query),
-	         "SELECT u.id, u.username, dt.propval_str AS dtypx, u.address_status, "
-	         "u.maildir, z.list_type, z.list_privilege, "
-	         "cl.classname, gr.title FROM users AS u "
-	         JOIN_WITH_DISPLAYTYPE
-	         "LEFT JOIN mlists AS z ON u.username=z.listname "
-	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
-	         "LEFT JOIN `groups` AS `gr` ON `u`.`username`=`gr`.`groupname` "
-	         "WHERE u.group_id=%d", group_id);
-	return userlist_parse(*conn, query, amap, pmap, pfile) >= 0;
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "mysql_adaptor: %s %s", __func__, e.what());
-	return false;
-}
-
 errno_t mysql_plugin::scndstore_hints(unsigned int pri,
     std::vector<sql_user> &hints) try
 {
@@ -961,11 +922,6 @@ bool mysql_adaptor_check_same_org(unsigned int a, unsigned int b)
 bool mysql_adaptor_get_domain_groups(unsigned int id, std::vector<sql_group> &v)
 {
 	return le_mysql_plugin->get_domain_groups(id, v);
-}
-
-int mysql_adaptor_get_group_users(unsigned int id, std::vector<sql_user> &v)
-{
-	return le_mysql_plugin->get_group_users(id, v);
 }
 
 int mysql_adaptor_get_domain_users(unsigned int id, std::vector<sql_user> &v)

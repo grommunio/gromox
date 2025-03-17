@@ -161,11 +161,6 @@ static int t_public()
 		printf("get_domain_groups: OK (%zu groupd)\n", vg.size());
 
 	std::vector<sql_user> vu;
-	if (!mysql_adaptor_get_group_users(1, vu))
-		printf("get_group_users (grp 1): failed\n");
-	else
-		printf("get_group_users (grp 1): OK (%zu users)\n", vu.size());
-
 	if (!mysql_adaptor_get_domain_users(domid, vu))
 		printf("get_domain_users: failed\n");
 	else
@@ -176,8 +171,6 @@ static int t_public()
 	printf("domain_list_query: %s\n", mysql_adaptor_domain_list_query(g_domain) ? "OK" : "no");
 	return -1;
 }
-/*
-*/
 #undef E
 
 int main(int argc, char **argv)

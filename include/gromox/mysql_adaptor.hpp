@@ -134,7 +134,6 @@ extern GX_EXPORT bool mysql_adaptor_get_org_domains(unsigned int org_id, std::ve
 extern GX_EXPORT bool mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &);
 extern GX_EXPORT bool mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_id2);
 extern GX_EXPORT bool mysql_adaptor_get_domain_groups(unsigned int domain_id, std::vector<sql_group> &);
-extern GX_EXPORT int mysql_adaptor_get_group_users(unsigned int group_id, std::vector<sql_user> &);
 extern GX_EXPORT int mysql_adaptor_get_domain_users(unsigned int domain_id, std::vector<sql_user> &);
 extern GX_EXPORT bool mysql_adaptor_check_mlist_include(const char *mlist_name, const char *account);
 extern GX_EXPORT bool mysql_adaptor_check_same_org2(const char *domainname1, const char *domainname2);
