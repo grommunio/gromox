@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -8,7 +8,7 @@
 #include <limits>
 #include <memory>
 #include <string>
-#include <libHX/endian.h>
+#include <libHX/endian_float.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
@@ -107,9 +107,10 @@ pack_result EXT_PULL::g_float(float *v)
 	if (m_data_size < sizeof(float) ||
 	    m_offset + sizeof(float) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &m_udata[m_offset], sizeof(*v));
+	*v = float_le32p_to_cpu(&m_udata[m_offset]);
 	m_offset += sizeof(float);
 	static_assert(std::numeric_limits<float>::is_iec559);
+	static_assert(sizeof(float) == sizeof(uint32_t));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -118,9 +119,10 @@ pack_result EXT_PULL::g_double(double *v)
 	if (m_data_size < sizeof(double) ||
 	    m_offset + sizeof(double) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &m_udata[m_offset], sizeof(*v));
+	*v = float_le64p_to_cpu(&m_udata[m_offset]);
 	m_offset += sizeof(double);
 	static_assert(std::numeric_limits<double>::is_iec559);
+	static_assert(sizeof(double) == sizeof(uint64_t));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2253,17 +2255,16 @@ pack_result EXT_PUSH::p_float(float v)
 {
 	if (!check_ovf(sizeof(float)))
 		return EXT_ERR_BUFSIZE;
-	memcpy(&m_udata[m_offset], &v, sizeof(v));
+	float_cpu_to_le32p(&m_udata[m_offset], v);
 	m_offset += sizeof(float);
 	return EXT_ERR_SUCCESS;
 }
 
 pack_result EXT_PUSH::p_double(double v)
 {
-	static_assert(sizeof(v) == 8 && CHAR_BIT == 8, "");
 	if (!check_ovf(sizeof(double)))
 		return EXT_ERR_BUFSIZE;
-	memcpy(&m_udata[m_offset], &v, sizeof(v));
+	float_cpu_to_le64p(&m_udata[m_offset], v);
 	m_offset += sizeof(double);
 	return EXT_ERR_SUCCESS;
 }

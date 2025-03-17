@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <libHX/endian.h>
+#include <libHX/endian_float.h>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/ndr.hpp>
@@ -174,8 +174,7 @@ pack_result NDR_PULL::g_float(float *v)
 	if (pndr->data_size < 4 || pndr->offset + 4 > pndr->data_size)
 		return pack_result::bufsize;
 	auto r = &pndr->data[pndr->offset];
-	memcpy(v, r, 4);
-	static_assert(sizeof(float) == 4);
+	*v = NDR_BE(pndr) ? float_be32p_to_cpu(r) : float_le32p_to_cpu(r);
 	pndr->offset += 4;
 	return pack_result::ok;
 }
@@ -187,7 +186,7 @@ pack_result NDR_PULL::g_double(double *v)
 	if (pndr->data_size < 8 || pndr->offset + 8 > pndr->data_size)
 		return pack_result::bufsize;
 	auto r = &pndr->data[pndr->offset];
-	memcpy(v, r, 8);
+	*v = NDR_BE(pndr) ? float_be64p_to_cpu(r) : float_le64p_to_cpu(r);
 	static_assert(sizeof(double) == 8);
 	pndr->offset += 8;
 	return pack_result::ok;
@@ -460,7 +459,7 @@ pack_result NDR_PUSH::p_float(float v)
 	if (!ndr_push_check_overflow(pndr, 4))
 		return pack_result::bufsize;
 	auto r = &pndr->data[pndr->offset];
-	memcpy(r, &v, 4);
+	NDR_BE(pndr) ? float_cpu_to_be32p(r, v) : float_cpu_to_le32p(r, v);
 	pndr->offset += 4;
 	return pack_result::ok;
 }
@@ -472,7 +471,7 @@ pack_result NDR_PUSH::p_double(double v)
 	if (!ndr_push_check_overflow(pndr, 8))
 		return pack_result::bufsize;
 	auto r = &pndr->data[pndr->offset];
-	memcpy(r, &v, 8);
+	NDR_BE(pndr) ? float_cpu_to_be64p(r, v) : float_cpu_to_le64p(r, v);
 	pndr->offset += 8;
 	return pack_result::ok;
 }
