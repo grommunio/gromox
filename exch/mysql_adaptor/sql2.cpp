@@ -293,14 +293,14 @@ static bool propmap_load(sqlconn &conn, const char *query, propmap_t &out)
 	return true;
 }
 
-static int userlist_parse(sqlconn &conn, const char *query,
+static ssize_t userlist_parse(sqlconn &conn, const char *query,
     aliasmap_t &amap, propmap_t &pmap, std::vector<sql_user> &pfile, unsigned int domain_id=0)
 {
 	if (!conn.query(query))
-		return false;
+		return -1;
 	auto result = conn.store_result();
 	if (result == nullptr)
-		return false;
+		return -1;
 
 	for (size_t i = 0; i < result.num_rows(); ++i) {
 		auto row = result.fetch_row();
@@ -369,7 +369,7 @@ int mysql_plugin::get_domain_users(unsigned int domain_id,
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
 	         "LEFT JOIN `groups` AS `gr` ON `u`.`username`=`gr`.`groupname` "
 	         "WHERE u.domain_id=%u AND u.group_id=0", domain_id);
-	return userlist_parse(*conn, query, amap, pmap, pfile, domain_id);
+	return userlist_parse(*conn, query, amap, pmap, pfile, domain_id) >= 0;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "mysql_adaptor: %s %s", __func__, e.what());
 	return false;
@@ -408,7 +408,7 @@ int mysql_plugin::get_group_users(unsigned int group_id,
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
 	         "LEFT JOIN `groups` AS `gr` ON `u`.`username`=`gr`.`groupname` "
 	         "WHERE u.group_id=%d", group_id);
-	return userlist_parse(*conn, query, amap, pmap, pfile);
+	return userlist_parse(*conn, query, amap, pmap, pfile) >= 0;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "mysql_adaptor: %s %s", __func__, e.what());
 	return false;
