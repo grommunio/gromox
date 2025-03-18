@@ -4000,7 +4000,8 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 		auto s = fmt::format("[Message is not a valid OXOSMIME message. "
 			 "The attachment object is not of type multipart/signed.]");
 		origmime.write_content(s.c_str(), s.size(), mime_encoding::none);
-		origmime.set_content_type("text/plain");
+		if (!origmime.set_content_type("text/plain"))
+			/* ignore */;
 		return TRUE;
 	}
 	if (buf[16] != '\0' && buf[16] != ';')

@@ -2726,7 +2726,8 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		auto pmime = imail1.add_head();
 		if (pmime == nullptr)
 			return ecServerOOM;
-		pmime->set_content_type("message/rfc822");
+		if (!pmime->set_content_type("message/rfc822"))
+			mlog(LV_WARN, "W-1767: set_content_type not successful, investigate");
 		/*
 		 * OXORULE v21 §2.2.5.1.1 specifies FWD_AS_ATTACHMENT is
 		 * exclusive, so FWD_PRESERVE_SENDER is not evaluated to build

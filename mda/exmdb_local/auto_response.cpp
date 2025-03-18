@@ -187,7 +187,8 @@ void auto_response_reply(const char *user_home,
 		put_context(pcontext);
 		return;
 	}
-	pmime->set_content_type(content_type);
+	if (!pmime->set_content_type(content_type))
+		mlog(LV_WARN, "W-1777: set_content_type unsuccessful");
 	if (*charset != '\0')
 		pmime->set_content_param("charset", charset);
 	pmime->set_field("From", from);
