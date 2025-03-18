@@ -113,6 +113,15 @@ call ``make`` with the sanitizer libs (asan, ubsan or both, depending on
 choice) if they are shared libraries (usually gcc). The command is ``make
 LIBS="-lasan -lubsan"``.
 
+stdlibc++ notes
+---------------
+
+When you build with `-D_GLIBCXX_DEBUG`, C++ libraries whose headers make use of
+types subject to `debug substitution
+<https://gcc.gnu.org/onlinedocs/libstdc++/manual/debug_mode_using.html>`_, in
+other words, wmime and jsoncpp, also need to be built with `-D_GLIBCXX_DEBUG`,
+else one may observe odd crashes.
+
 
 Optional runtime components
 ===========================
