@@ -1686,7 +1686,8 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	    oxcmail_get_content_param(pmime, "site", site_buff) &&
 	    oxcmail_get_content_param(pmime, "directory", dir_buff)) {
 		std::string mode_buff;
-		oxcmail_get_content_param(pmime, "mode", mode_buff);
+		if (oxcmail_get_content_param(pmime, "mode", mode_buff))
+			/* mode_buff.clear() - already empty */;
 		if (strcasecmp(mode_buff.c_str(), "ascii") == 0)
 			mode_buff = ";type=a";
 		else if (strcasecmp(mode_buff.c_str(), "image") == 0)
