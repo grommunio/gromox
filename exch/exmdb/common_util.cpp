@@ -3802,7 +3802,7 @@ bool cu_get_permission_property(int64_t member_id,
 	case PR_MEMBER_ID:
 		if (member_id == MEMBER_ID_DEFAULT ||
 		    member_id == MEMBER_ID_ANONYMOUS) {
-			auto v = cu_alloc<uint64_t>();
+			auto v = cu_alloc<int64_t>();
 			*ppvalue = v;
 			if (v == nullptr)
 				return FALSE;
