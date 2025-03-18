@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
 #include <cerrno>
@@ -761,16 +761,14 @@ static BOOL mod_fastcgi_safe_read(FASTCGI_CONTEXT *pfast_context,
     void *pbuff, int length)
 {
 	int offset;
-	int tv_msec;
 	int read_len;
 	struct pollfd pfd_read;
 	
 	offset = 0;
 	while (true) {
-		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pfast_context->cli_sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (poll(&pfd_read, 1, tv_msec) != 1)
+		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			return FALSE;
 		read_len = read(pfast_context->cli_sockd,
 		           static_cast<char *>(pbuff) + offset,

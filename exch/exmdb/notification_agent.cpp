@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <chrono>
 #include <cstdint>
 #include <ctime>
@@ -45,14 +47,12 @@ void notification_agent_backward_notify(const char *remote_id,
 
 static BOOL notification_agent_read_response(std::shared_ptr<ROUTER_CONNECTION> prouter)
 {
-	int tv_msec;
 	exmdb_response resp_code;
 	struct pollfd pfd_read;
 	
-	tv_msec = SOCKET_TIMEOUT * 1000;
 	pfd_read.fd = prouter->sockd;
 	pfd_read.events = POLLIN|POLLPRI;
-	if (1 != poll(&pfd_read, 1, tv_msec) ||
+	if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1 ||
 		1 != read(prouter->sockd, &resp_code, 1) ||
 	    resp_code != exmdb_response::success)
 		return FALSE;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -171,7 +171,6 @@ static inline void stripslash(char *s)
 
 static void *request_parser_thread(void *pparam)
 {
-	int tv_msec;
 	void *pbuff;
 	int read_len;
 	BOOL b_private;
@@ -224,10 +223,9 @@ static void *request_parser_thread(void *pparam)
 			}
 			continue;
 		}
-		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pconnection->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (poll(&pfd_read, 1, tv_msec) != 1)
+		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			break;
 		if (NULL == pbuff) {
 			read_len = read(pconnection->sockd,

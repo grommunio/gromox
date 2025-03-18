@@ -142,7 +142,6 @@ BOOL SVC_event_proxy(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 static void *evpx_scanwork(void *param)
 {
-	int tv_msec;
 	char temp_buff[1024];
 	struct pollfd pfd_read;
 	std::list<BACK_CONN> temp_list;
@@ -165,11 +164,10 @@ static void *evpx_scanwork(void *param)
 
 		while (temp_list.size() > 0) {
 			auto pback = &temp_list.front();
-			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
 			if (HXio_fullwrite(pback->sockd, "PING\r\n", 6) != 6 ||
-			    poll(&pfd_read, 1, tv_msec) != 1 ||
+			    poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1 ||
 			    read(pback->sockd, temp_buff, 1024) <= 0) {
 				close(pback->sockd);
 				pback->sockd = -1;
@@ -250,18 +248,15 @@ static void broadcast_event(const char *event)
 static int read_line(int sockd, char *buff, int length)
 {
 	int offset;
-	int tv_msec;
 	int read_len;
 	struct pollfd pfd_read;
 
 	offset = 0;
 	while (1) {
-		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (1 != poll(&pfd_read, 1, tv_msec)) {
+		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			return -1;
-		}
 		read_len = read(sockd, buff + offset, length - offset);
 		if (read_len <= 0) {
 			return -1;

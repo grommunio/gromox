@@ -166,7 +166,6 @@ NOTIFY_ITEM::~NOTIFY_ITEM()
 static void *zcorezs_scanwork(void *param)
 {
 	int count;
-	int tv_msec;
 	BINARY tmp_bin;
 	uint8_t tmp_byte;
 	struct pollfd fdpoll;
@@ -251,10 +250,10 @@ static void *zcorezs_scanwork(void *param)
 			/* implied ~sink_node at end of scope */
 			if (rpc_ext_push_response(&response, &tmp_bin) != pack_result::ok)
 				continue;
-			tv_msec = SOCKET_TIMEOUT * 1000;
 			fdpoll.fd = psink_node->clifd;
 			fdpoll.events = POLLOUT|POLLWRBAND;
-			if (tmp_bin.pb != nullptr && poll(&fdpoll, 1, tv_msec) == 1 &&
+			if (tmp_bin.pb != nullptr &&
+			    poll(&fdpoll, 1, SOCKET_TIMEOUT * 1000) == 1 &&
 			    write(psink_node->clifd, tmp_bin.pb, tmp_bin.cb) < 0)
 				/* ignore */;
 			free(tmp_bin.pb);
@@ -278,7 +277,6 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
     const DB_NOTIFY *pdb_notify)
 {
 	int i;
-	int tv_msec;
 	GUID hsession;
 	BINARY tmp_bin;
 	uint32_t hstore;
@@ -567,16 +565,15 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 			response.result  = ecSuccess;
 			response.notifications.count = 1;
 			response.notifications.ppnotification = &pnotification;
-			tv_msec = SOCKET_TIMEOUT * 1000;
 			fdpoll.fd = psink_node->clifd;
 			fdpoll.events = POLLOUT | POLLWRBAND;
 			if (rpc_ext_push_response(&response, &tmp_bin) != pack_result::ok) {
 				auto tmp_byte = zcore_response::push_error;
-				if (poll(&fdpoll, 1, tv_msec) == 1 &&
+				if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1 &&
 				    HXio_fullwrite(psink_node->clifd, &tmp_byte, 1) != 1)
 					/* ignore */;
 			} else {
-				if (poll(&fdpoll, 1, tv_msec) == 1) {
+				if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1) {
 					auto ret = HXio_fullwrite(psink_node->clifd, tmp_bin.pb, tmp_bin.cb);
 					if (ret < 0 || static_cast<size_t>(ret) != tmp_bin.cb)
 						/* ignore */;

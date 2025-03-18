@@ -210,7 +210,6 @@ BOOL SVC_midb_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 static void *midbag_scanwork(void *param)
 {
-	int tv_msec;
 	char temp_buff[1024];
 	struct pollfd pfd_read;
 	std::list<BACK_CONN> temp_list;
@@ -234,11 +233,10 @@ static void *midbag_scanwork(void *param)
 
 		while (temp_list.size() > 0) {
 			auto pback = &temp_list.front();
-			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
 			if (HXio_fullwrite(pback->sockd, "PING\r\n", 6) != 6 ||
-			    poll(&pfd_read, 1, tv_msec) != 1 ||
+			    poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1 ||
 			    read(pback->sockd, temp_buff, 1024) <= 0) {
 				close(pback->sockd);
 				pback->sockd = -1;
@@ -341,7 +339,6 @@ int list_mail(const char *path, const std::string &folder,
 	int last_pos;
 	int read_len;
 	int line_pos;
-	int tv_msec;
 	char temp_line[512];
 	char buff[256*1025];
 	struct pollfd pfd_read;
@@ -361,10 +358,9 @@ int list_mail(const char *path, const std::string &folder,
 	lines = -1;
 	b_fail = FALSE;
 	while (true) {
-		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (poll(&pfd_read, 1, tv_msec) != 1)
+		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			return MIDB_RDWR_ERROR;
 		static_assert(std::size(buff) >= 256*1024 + 1);
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
@@ -837,7 +833,6 @@ int enum_folders(const char *path, std::vector<enum_folder_t> &pfile,
 	int last_pos;
 	int read_len;
 	int line_pos;
-	int tv_msec;
 	char temp_line[512];
 	char buff[256*1025];
 	struct pollfd pfd_read;
@@ -853,10 +848,9 @@ int enum_folders(const char *path, std::vector<enum_folder_t> &pfile,
 	offset = 0;
 	lines = -1;
 	while (true) {
-		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (poll(&pfd_read, 1, tv_msec) != 1)
+		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			return MIDB_RDWR_ERROR;
 		static_assert(std::size(buff) >= 256*1024 + 1);
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
@@ -939,7 +933,6 @@ int enum_subscriptions(const char *path, std::vector<enum_folder_t> &pfile,
 	int last_pos;
 	int read_len;
 	int line_pos;
-	int tv_msec;
 	char temp_line[512];
 	char buff[256*1025];
 	struct pollfd pfd_read;
@@ -955,10 +948,9 @@ int enum_subscriptions(const char *path, std::vector<enum_folder_t> &pfile,
 	offset = 0;
 	lines = -1;
 	while (true) {
-		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (poll(&pfd_read, 1, tv_msec) != 1)
+		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			return MIDB_RDWR_ERROR;
 		static_assert(std::size(buff) >= 256*1024 + 1);
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
@@ -1186,7 +1178,6 @@ int list_deleted(const char *path, const std::string &folder, XARRAY *pxarray,
 	int line_pos;
 	char *pspace;
 	char *pspace1;
-	int tv_msec;
 	char temp_line[512];
 	char buff[256*1025];
 	BOOL b_format_error;
@@ -1206,10 +1197,9 @@ int list_deleted(const char *path, const std::string &folder, XARRAY *pxarray,
 	lines = -1;
 	b_format_error = FALSE;
 	while (true) {
-		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (poll(&pfd_read, 1, tv_msec) != 1)
+		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			return MIDB_RDWR_ERROR;
 		static_assert(std::size(buff) >= 256*1024 + 1);
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
@@ -1309,7 +1299,6 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 	int last_pos;
 	int read_len;
 	int line_pos;
-	int tv_msec;
 	char *pspace;
 	char *pspace1;
 	char *pspace2;
@@ -1334,10 +1323,9 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 		lines = -1;
 		b_format_error = FALSE;
 		while (true) {
-			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
-			if (poll(&pfd_read, 1, tv_msec) != 1)
+			if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 				return MIDB_RDWR_ERROR;
 			read_len = read(pback->sockd, buff + offset, std::size(buff) - 1 - offset);
 			if (read_len <= 0)
@@ -1448,7 +1436,6 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 	int line_pos;
 	int temp_len;
 	char *pspace;
-	int tv_msec;
 	char buff[64*1025];
 	char temp_line[257*1024];
 	BOOL b_format_error;
@@ -1473,10 +1460,9 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 		lines = -1;
 		b_format_error = FALSE;
 		while (true) {
-			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
-			if (poll(&pfd_read, 1, tv_msec) != 1)
+			if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 				return MIDB_RDWR_ERROR;
 			static_assert(std::size(buff) >= 64*1024 + 1);
 			read_len = read(pback->sockd, buff + offset, 64*1024 - offset);
@@ -1719,14 +1705,12 @@ static ssize_t read_line(int sockd, char *buff, size_t length)
 		return 0;
 	size_t offset = 0;
 	--length;
-	int tv_msec;
 	struct pollfd pfd_read;
 
 	while (true) {
-		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (poll(&pfd_read, 1, tv_msec) != 1)
+		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			return -ETIMEDOUT;
 		auto read_len = read(sockd, buff + offset,  length - offset);
 		if (read_len < 0)
@@ -1748,7 +1732,6 @@ static ssize_t read_line(int sockd, char *buff, size_t length)
 
 static int connect_midb(const char *ip_addr, uint16_t port)
 {
-	int tv_msec;
     char temp_buff[1024];
 	struct pollfd pfd_read;
 
@@ -1763,10 +1746,9 @@ static int connect_midb(const char *ip_addr, uint16_t port)
 			        ip_addr, port, strerror(-sockd));
 		return -1;
 	}
-	tv_msec = SOCKET_TIMEOUT * 1000;
 	pfd_read.fd = sockd;
 	pfd_read.events = POLLIN|POLLPRI;
-	if (1 != poll(&pfd_read, 1, tv_msec)) {
+	if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1) {
 		close(sockd);
 		return -1;
 	}

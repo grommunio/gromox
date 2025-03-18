@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <chrono>
 #include <climits>
@@ -103,7 +103,6 @@ static int rpc_parser_dispatch(const zcreq *q0, std::unique_ptr<zcresp> &r0) try
 static void *zcrp_thrwork(void *param)
 {
 	void *pbuff;
-	int tv_msec;
 	int read_len;
 	BINARY tmp_bin;
 	uint32_t offset;
@@ -130,10 +129,9 @@ static void *zcrp_thrwork(void *param)
 	offset = 0;
 	buff_len = 0;
 	
-	tv_msec = SOCKET_TIMEOUT * 1000;
 	fdpoll.fd = clifd;
 	fdpoll.events = POLLIN|POLLPRI;
-	if (1 != poll(&fdpoll, 1, tv_msec)) {
+	if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
 		close(clifd);
 		goto NEXT_CLIFD;
 	}
@@ -146,14 +144,14 @@ static void *zcrp_thrwork(void *param)
 	if (NULL == pbuff) {
 		auto tmp_byte = zcore_response::lack_memory;
 		fdpoll.events = POLLOUT|POLLWRBAND;
-		if (poll(&fdpoll, 1, tv_msec) == 1)
+		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
 			if (write(clifd, &tmp_byte, 1) < 1)
 				/* ignore */;
 		close(clifd);
 		goto NEXT_CLIFD;
 	}
 	while (true) {
-		if (1 != poll(&fdpoll, 1, tv_msec)) {
+		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
 			close(clifd);
 			free(pbuff);
 			goto NEXT_CLIFD;
@@ -177,7 +175,7 @@ static void *zcrp_thrwork(void *param)
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::pull_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
-		if (poll(&fdpoll, 1, tv_msec) == 1)
+		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
 			if (write(clifd, &tmp_byte, 1) < 1)
 				/* ignore */;
 		close(clifd);
@@ -192,7 +190,7 @@ static void *zcrp_thrwork(void *param)
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::dispatch_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
-		if (poll(&fdpoll, 1, tv_msec) == 1)
+		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
 			if (write(clifd, &tmp_byte, 1) < 1)
 				/* ignore */;
 		close(clifd);
@@ -207,7 +205,7 @@ static void *zcrp_thrwork(void *param)
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::push_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
-		if (poll(&fdpoll, 1, tv_msec) == 1)
+		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
 			if (write(clifd, &tmp_byte, 1) < 1)
 				/* ignore */;
 		close(clifd);
@@ -215,7 +213,7 @@ static void *zcrp_thrwork(void *param)
 	}
 	common_util_free_environment();
 	fdpoll.events = POLLOUT|POLLWRBAND;
-	if (poll(&fdpoll, 1, tv_msec) == 1)
+	if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
 		if (write(clifd, tmp_bin.pb, tmp_bin.cb) < 0)
 			/* ignore */;
 	shutdown(clifd, SHUT_WR);

@@ -12,6 +12,7 @@
 #define FMODE_PRIVATE 0660U
 #define FMODE_PUBLIC 0666U
 #define SOCKET_TIMEOUT 60
+#define SOCKET_TIMEOUT_MS 60000U
 #define GX_EXPORT __attribute__((visibility("default")))
 #define NOMOVE(K) \
 	K(K &&) noexcept = delete; \
