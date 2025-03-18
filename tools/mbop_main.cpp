@@ -1159,11 +1159,11 @@ static int cmd_parser(int argc, char **argv)
 	if (strcmp(argv[0], "clear-profile") == 0) {
 		auto ret = delstoreprop(argc, argv, PSETID_Gromox, "zcore_profsect", PT_BINARY);
 		if (ret == 0)
-			return delstoreprop(argc, argv, PSETID_Gromox, "websettings", PT_UNICODE);
+			ret = delstoreprop(argc, argv, PSETID_Gromox, "websettings", PT_UNICODE);
 		if (ret == 0)
-			return delstoreprop(argc, argv, PSETID_Gromox, "websettings_persistent", PT_UNICODE);
+			ret = delstoreprop(argc, argv, PSETID_Gromox, "websettings_persistent", PT_UNICODE);
 		if (ret == 0)
-			return delstoreprop(argc, argv, PSETID_Gromox, "websettings_recipienthistory", PT_UNICODE);
+			ret = delstoreprop(argc, argv, PSETID_Gromox, "websettings_recipienthistory", PT_UNICODE);
 		return ret;
 	} else if (strcmp(argv[0], "echo-maildir") == 0) {
 		printf("%s\n", g_storedir);
