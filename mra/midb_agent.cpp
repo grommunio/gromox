@@ -331,13 +331,7 @@ namespace midb_agent {
 int list_mail(const char *path, const std::string &folder,
     std::vector<MSG_UNIT> &parray, int *pnum, uint64_t *psize)
 {
-	int i;
-	int lines;
-	int count;
-	int offset;
-	BOOL b_fail;
 	int last_pos;
-	int read_len;
 	int line_pos;
 	char temp_line[512];
 	char buff[256*1025];
@@ -353,24 +347,22 @@ int list_mail(const char *path, const std::string &folder,
 		return MIDB_RDWR_ERROR;
 
 	*psize = 0;
-	count = 0;
-	offset = 0;
-	lines = -1;
-	b_fail = FALSE;
+	int count = 0, offset = 0, lines = -1;
+	BOOL b_fail = false;
 	while (true) {
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
 		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			return MIDB_RDWR_ERROR;
 		static_assert(std::size(buff) >= 256*1024 + 1);
-		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
+		int read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0)
 			return MIDB_RDWR_ERROR;
 		offset += read_len;
 		buff[offset] = '\0';
 		
 		if (-1 == lines) {
-			for (i=0; i<offset-1&&i<36; i++) {
+			for (int i = 0; i < offset - 1 && i < 36; ++i) {
 				if (buff[i] != '\r' || buff[i+1] != '\n')
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
@@ -394,7 +386,7 @@ int list_mail(const char *path, const std::string &folder,
 			}
 		}
 
-		for (i=last_pos; i<offset; i++) {
+		for (int i = last_pos; i < offset; ++i) {
 			if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 				count ++;
 				continue;
@@ -464,8 +456,6 @@ static int rw_command(int fd, char *buff, size_t olen, size_t ilen)
 int delete_mail(const char *path, const std::string &folder,
     const std::vector<MSG_UNIT *> &plist)
 {
-	int cmd_len;
-	int temp_len;
 	char buff[128*1025];
 
 	if (plist.size() == 0)
@@ -475,11 +465,11 @@ int delete_mail(const char *path, const std::string &folder,
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, std::size(buff), "M-DELE %s %s",
 	              path, folder.c_str());
-	cmd_len = length;
+	int cmd_len = length;
 	
 	for (auto pmsg : plist) {
 		buff[length++] = ' ';
-		temp_len = pmsg->file_name.size();
+		auto temp_len = pmsg->file_name.size();
 		memcpy(buff + length, pmsg->file_name.c_str(), temp_len);
 		length += temp_len;
 		if (length <= 128 * 1024)
@@ -826,12 +816,7 @@ int unsubscribe_folder(const char *path, const std::string &folder, int *perrno)
 int enum_folders(const char *path, std::vector<enum_folder_t> &pfile,
     int *perrno) try
 {
-	int i;
-	int lines;
-	int count;
-	int offset;
 	int last_pos;
-	int read_len;
 	int line_pos;
 	char temp_line[512];
 	char buff[256*1025];
@@ -844,23 +829,21 @@ int enum_folders(const char *path, std::vector<enum_folder_t> &pfile,
 	if (write(pback->sockd, buff, length) != length)
 		return MIDB_RDWR_ERROR;
 	
-	count = 0;
-	offset = 0;
-	lines = -1;
+	int count = 0, offset = 0, lines = -1;
 	while (true) {
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
 		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			return MIDB_RDWR_ERROR;
 		static_assert(std::size(buff) >= 256*1024 + 1);
-		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
+		int read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0)
 			return MIDB_RDWR_ERROR;
 		offset += read_len;
 		buff[offset] = '\0';
 		
 		if (-1 == lines) {
-			for (i=0; i<offset-1&&i<36; i++) {
+			for (int i = 0; i < offset - 1 && i < 36; ++i) {
 				if (buff[i] != '\r' || buff[i+1] != '\n')
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
@@ -884,7 +867,7 @@ int enum_folders(const char *path, std::vector<enum_folder_t> &pfile,
 			}
 		}
 
-		for (i=last_pos; i<offset; i++) {
+		for (int i = last_pos; i < offset; ++i) {
 			if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
@@ -926,12 +909,7 @@ int enum_folders(const char *path, std::vector<enum_folder_t> &pfile,
 int enum_subscriptions(const char *path, std::vector<enum_folder_t> &pfile,
     int *perrno) try
 {
-	int i;
-	int lines;
-	int count;
-	int offset;
 	int last_pos;
-	int read_len;
 	int line_pos;
 	char temp_line[512];
 	char buff[256*1025];
@@ -944,23 +922,21 @@ int enum_subscriptions(const char *path, std::vector<enum_folder_t> &pfile,
 	if (write(pback->sockd, buff, length) != length)
 		return MIDB_RDWR_ERROR;
 
-	count = 0;
-	offset = 0;
-	lines = -1;
+	int count = 0, offset = 0, lines = -1;
 	while (true) {
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
 		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			return MIDB_RDWR_ERROR;
 		static_assert(std::size(buff) >= 256*1024 + 1);
-		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
+		int read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0)
 			return MIDB_RDWR_ERROR;
 		offset += read_len;
 		buff[offset] = '\0';
 		
 		if (-1 == lines) {
-			for (i=0; i<offset-1&&i<36; i++) {
+			for (int i = 0; i < offset - 1 && i < 36; ++i) {
 				if (buff[i] != '\r' || buff[i+1] != '\n')
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
@@ -984,7 +960,7 @@ int enum_subscriptions(const char *path, std::vector<enum_folder_t> &pfile,
 			}
 		}
 
-		for (i=last_pos; i<offset; i++) {
+		for (int i = last_pos; i < offset; ++i) {
 			if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
@@ -1051,7 +1027,6 @@ int insert_mail(const char *path, const std::string &folder,
 int remove_mail(const char *path, const std::string &folder,
     const std::vector<MITEM *> &plist, int *perrno)
 {
-	int cmd_len;
 	char buff[128*1025];
 
 	if (plist.empty())
@@ -1061,7 +1036,7 @@ int remove_mail(const char *path, const std::string &folder,
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, std::size(buff), "M-DELE %s %s",
 	              path, folder.c_str());
-	cmd_len = length;
+	int cmd_len = length;
 	
 	for (auto pitem : plist) {
 		buff[length++] = ' ';
@@ -1169,18 +1144,12 @@ static unsigned int di_to_flagbits(const Json::Value &jv)
 int list_deleted(const char *path, const std::string &folder, XARRAY *pxarray,
 	int *perrno)
 {
-	int i;
-	int lines;
-	int count;
-	int offset;
 	int last_pos;
-	int read_len;
 	int line_pos;
 	char *pspace;
 	char *pspace1;
 	char temp_line[512];
 	char buff[256*1025];
-	BOOL b_format_error;
 	struct pollfd pfd_read;
 
 	auto pback = get_connection(path);
@@ -1192,24 +1161,22 @@ int list_deleted(const char *path, const std::string &folder, XARRAY *pxarray,
 	if (write(pback->sockd, buff, length) != length)
 		return MIDB_RDWR_ERROR;
 	
-	count = 0;
-	offset = 0;
-	lines = -1;
-	b_format_error = FALSE;
+	int count = 0, offset = 0, lines = -1;
+	BOOL b_format_error = false;
 	while (true) {
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
 		if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 			return MIDB_RDWR_ERROR;
 		static_assert(std::size(buff) >= 256*1024 + 1);
-		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
+		int read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0)
 			return MIDB_RDWR_ERROR;
 		offset += read_len;
 		buff[offset] = '\0';
 		
 		if (-1 == lines) {
-			for (i=0; i<offset-1&&i<36; i++) {
+			for (int i = 0; i < offset - 1 && i < 36; ++i) {
 				if (buff[i] != '\r' || buff[i+1] != '\n')
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
@@ -1233,7 +1200,7 @@ int list_deleted(const char *path, const std::string &folder, XARRAY *pxarray,
 			}
 		}
 
-		for (i=last_pos; i<offset; i++) {
+		for (int i = last_pos; i < offset; ++i) {
 			if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
@@ -1293,18 +1260,13 @@ int list_deleted(const char *path, const std::string &folder, XARRAY *pxarray,
 int fetch_simple_uid(const char *path, const std::string &folder,
     const imap_seq_list &list, XARRAY *pxarray, int *perrno)
 {
-	int lines;
-	int count;
-	int offset;
 	int last_pos;
-	int read_len;
 	int line_pos;
 	char *pspace;
 	char *pspace1;
 	char *pspace2;
 	char buff[1024];
 	char temp_line[1024];
-	BOOL b_format_error;
 	struct pollfd pfd_read;
 
 	auto pback = get_connection(path);
@@ -1318,16 +1280,14 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 		if (write(pback->sockd, buff, length) != length)
 			return MIDB_RDWR_ERROR;
 		
-		count = 0;
-		offset = 0;
-		lines = -1;
-		b_format_error = FALSE;
+		int count = 0, offset = 0, lines = -1;
+		BOOL b_format_error = false;
 		while (true) {
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
 			if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 				return MIDB_RDWR_ERROR;
-			read_len = read(pback->sockd, buff + offset, std::size(buff) - 1 - offset);
+			int read_len = read(pback->sockd, buff + offset, std::size(buff) - 1 - offset);
 			if (read_len <= 0)
 				return MIDB_RDWR_ERROR;
 			offset += read_len;
@@ -1428,17 +1388,11 @@ int fetch_simple_uid(const char *path, const std::string &folder,
 int fetch_detail_uid(const char *path, const std::string &folder,
     const imap_seq_list &list, XARRAY *pxarray, int *perrno) try
 {
-	int lines;
-	int count;
-	int offset;
 	int last_pos;
-	int read_len;
 	int line_pos;
-	int temp_len;
 	char *pspace;
 	char buff[64*1025];
 	char temp_line[257*1024];
-	BOOL b_format_error;
 	struct pollfd pfd_read;
 
 	auto pback = get_connection(path);
@@ -1455,17 +1409,15 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 		if (write(pback->sockd, buff, length) != length)
 			return MIDB_RDWR_ERROR;
 		
-		count = 0;
-		offset = 0;
-		lines = -1;
-		b_format_error = FALSE;
+		int count = 0, offset = 0, lines = -1;
+		BOOL b_format_error = false;
 		while (true) {
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
 			if (poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1)
 				return MIDB_RDWR_ERROR;
 			static_assert(std::size(buff) >= 64*1024 + 1);
-			read_len = read(pback->sockd, buff + offset, 64*1024 - offset);
+			int read_len = read(pback->sockd, buff + offset, 64*1024 - offset);
 			if (read_len <= 0)
 				return MIDB_RDWR_ERROR;
 			offset += read_len;
@@ -1500,7 +1452,7 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 					pspace = strchr(temp_line, ' ');
-					temp_len = pspace == nullptr ? 0 :
+					int temp_len = pspace == nullptr ? 0 :
 					           line_pos - (pspace + 1 - temp_line);
 					MITEM mitem;
 					if (pspace == nullptr ||
