@@ -126,7 +126,7 @@ libgxs_event_stub_la_LIBADD = -lpthread ${libHX_LIBS} libgromox_common.la
 EXTRA_libgxs_event_stub_la_DEPENDENCIES = default.sym
 libgxs_midb_agent_la_SOURCES = mra/midb_agent.cpp mra/midb_agent.hpp
 libgxs_midb_agent_la_LDFLAGS = ${default_SYFLAGS}
-libgxs_midb_agent_la_LIBADD = -lpthread ${libHX_LIBS} libgromox_common.la
+libgxs_midb_agent_la_LIBADD = -lpthread ${fmt_LIBS} ${libHX_LIBS} libgromox_common.la
 EXTRA_libgxs_midb_agent_la_DEPENDENCIES = default.sym
 
 http_SOURCES = exch/http/cache.cpp exch/http/cache.hpp exch/http/fastcgi.cpp exch/http/fastcgi.hpp exch/http/hpm_processor.cpp exch/http/hpm_processor.hpp exch/http/http_parser.cpp exch/http/http_parser.hpp exch/http/listener.cpp exch/http/listener.hpp exch/http/main.cpp exch/http/pdu_ndr.cpp exch/http/pdu_ndr.hpp exch/http/pdu_ndr_ids.hpp exch/http/pdu_processor.cpp exch/http/pdu_processor.hpp exch/http/resource.hpp exch/http/rewrite.cpp exch/http/rewrite.hpp exch/http/system_services.cpp exch/http/system_services.hpp
