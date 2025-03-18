@@ -3985,8 +3985,8 @@ void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb, db_base_wr_ptr &&dbas
 	dbase.reset();
 	pdb.reset();
 	auto dir = exmdb_server::get_dir();
-	while (table_num-- > 0)
-		exmdb_server::reload_content_table(dir, ptable_ids[table_num]);
+	while (table_num > 0)
+		exmdb_server::reload_content_table(dir, ptable_ids[--table_num]);
 }
 
 void db_conn::cancel_batch_mode(db_base &dbase)

@@ -735,8 +735,9 @@ static void transporter_log_info(const CONTROL_INFO &ctrl, int level,
 	unsigned int counter = limit;
 	auto nrcpt = ctrl.rcpt.size();
 	for (const auto &rcpt : ctrl.rcpt) {
-		if (counter-- == 0)
+		if (counter == 0)
 			break;
+		--counter;
 		if (rcpt_buff.size() > 0)
 			rcpt_buff += ' ';
 		rcpt_buff += rcpt;

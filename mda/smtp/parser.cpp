@@ -660,8 +660,9 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 	unsigned int counter = limit;
 	auto nrcpt = pcontext->menv.rcpt_to.size();
 	for (const auto &rcpt : pcontext->menv.rcpt_to) {
-		if (counter-- == 0)
+		if (counter == 0)
 			break;
+		--counter;
 		if (all_rcpts.size() > 0)
 			all_rcpts += ' ';
 		all_rcpts += rcpt;
