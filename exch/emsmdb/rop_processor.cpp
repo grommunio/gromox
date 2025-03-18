@@ -669,7 +669,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			         &tmp_cb, &rop_buff, false, response_list);
 			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != ecSuccess))
 				mlog(LV_DEBUG, "rop_proc_ex+chain() %luµs EC=%xh",
-					msec(tp_now() - rlog_start), result);
+					msec(tp_now() - rlog_start),
+					static_cast<unsigned int>(result));
 			if (result != ecSuccess)
 				break;
 			if (response_list.empty())
@@ -695,7 +696,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			         &tmp_cb, &rop_buff, false, response_list);
 			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != ecSuccess))
 				mlog(LV_DEBUG, "rop_proc_ex+chain() %luµs EC=%xh",
-					msec(tp_now() - rlog_start), result);
+					msec(tp_now() - rlog_start),
+					static_cast<unsigned int>(result));
 			if (result != ecSuccess)
 				break;
 			if (response_list.empty())
@@ -722,7 +724,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			         &tmp_cb, &rop_buff, false, response_list);
 			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != ecSuccess))
 				mlog(LV_DEBUG, "rop_proc_ex+chain() %luµs EC=%xh",
-					msec(tp_now() - rlog_start), result);
+					msec(tp_now() - rlog_start),
+					static_cast<unsigned int>(result));
 			if (result != ecSuccess)
 				break;
 			if (response_list.empty())
