@@ -1084,7 +1084,7 @@ ec_error_t html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
 		return ecMAPIOOM;
 	else if (errno == EINVAL)
 		return ecInvalidParam;
-	else
+	else if (errno != 0)
 		return ecError;
 	auto ret = html_init_writer(&writer);
 	if (ret != ecSuccess)
