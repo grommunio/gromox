@@ -365,19 +365,17 @@ static ec_error_t html_write_string(RTF_WRITER *pwriter, const char *string)
 			++ptr;
 			continue;
 		}
-		if (ptr + len > pend) {
+		if (ptr + len > pend)
 			return ecError;
-		}
 		if (len == 1 && HX_isascii(*ptr)) {
-			if ('\\' == *ptr) {
+			if (*ptr == '\\')
 				QRF(pwriter->ext_push.p_bytes("\\\\", 2));
-			} else if ('{' == *ptr) {
+			else if (*ptr == '{')
 				QRF(pwriter->ext_push.p_bytes("\\{", 2));
-			} else if ('}' == *ptr) {
+			else if (*ptr == '}')
 				QRF(pwriter->ext_push.p_bytes("\\}", 2));
-			} else {
+			else
 				QRF(pwriter->ext_push.p_uint8(*ptr));
-			}
 			ptr += len;
 			continue;
 		}
@@ -516,9 +514,7 @@ static void html_trim_style_value(char *value)
 	int tmp_len;
 	
 	ptr = strchr(value, ',');
-	if (NULL != ptr) {
-		*ptr = '\0';
-	}
+	if (ptr != nullptr)
 	HX_strrtrim(value);
 	tmp_len = strlen(value);
 	if ('"' == value[0] || '\'' == value[0]) {
@@ -553,9 +549,8 @@ static int html_convert_color(const char *value)
 		memcpy(tmp_buff, ptr, ptr1 - ptr);
 		tmp_buff[ptr1 - ptr] = '\0';
 		int tmp_val = strtol(tmp_buff, nullptr, 0);
-		if (tmp_val < 0 || tmp_val > 255) {
+		if (tmp_val < 0 || tmp_val > 255)
 			return -1;
-		}
 		color = tmp_val << 16;
 		ptr = ptr1;
 		ptr1 = strchr(ptr, ',');
@@ -564,9 +559,8 @@ static int html_convert_color(const char *value)
 		memcpy(tmp_buff, ptr, ptr1 - ptr);
 		tmp_buff[ptr1 - ptr] = '\0';
 		tmp_val = strtol(tmp_buff, nullptr, 0);
-		if (tmp_val < 0 || tmp_val > 255) {
+		if (tmp_val < 0 || tmp_val > 255)
 			return -1;
-		}
 		color |= tmp_val << 8;
 		ptr = ptr1;
 		ptr1 = strchr(ptr, ')');
@@ -575,9 +569,8 @@ static int html_convert_color(const char *value)
 		memcpy(tmp_buff, ptr, ptr1 - ptr);
 		tmp_buff[ptr1 - ptr] = '\0';
 		tmp_val = strtol(tmp_buff, nullptr, 0);
-		if (tmp_val < 0 || tmp_val > 255) {
+		if (tmp_val < 0 || tmp_val > 255)
 			return -1;
-		}
 		color |= tmp_val;
 		return color;
 	}
@@ -600,25 +593,21 @@ static bool html_match_style(const char *style_string,
 	const char *ptr1;
 	
 	ptr = strcasestr(style_string, tag);
-	if (NULL == ptr) {
+	if (ptr == nullptr)
 		return false;
-	}
 	ptr += strlen(tag);
 	while (':' != *ptr) {
-		if (' ' != *ptr && '\t' != *ptr) {
+		if (*ptr != ' ' && *ptr != '\t')
 			return false;
-		}
 		ptr ++;
 	}
 	ptr ++;
 	ptr1 = strchr(ptr, ';');
-	if (NULL == ptr1) {
+	if (ptr1 == nullptr)
 		ptr1 = style_string + strlen(style_string);
-	}
 	tmp_len = ptr1 - ptr;
-	if (tmp_len > val_len - 1) {
+	if (tmp_len > val_len - 1)
 		tmp_len = val_len - 1;
-	}
 	memcpy(value, ptr, tmp_len);
 	value[tmp_len] = '\0';
 	HX_strrtrim(value);
@@ -632,9 +621,8 @@ static ec_error_t html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
 	char value[128];
 	
 	auto pattribute = xml_getprop(pelement, "style");
-	if (NULL == pattribute) {
+	if (pattribute == nullptr)
 		return ecSuccess;
-	}
 	if (html_match_style(pattribute,
 		"font-family", value, sizeof(value))) {
 		html_trim_style_value(value);
@@ -663,9 +651,8 @@ static ec_error_t html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
 	if (html_match_style(pattribute,
 		"color", value, sizeof(value))) {
 		color = html_convert_color(value);
-		if (color != -1) {
+		if (color != -1)
 			ERF(html_write_style_color(pwriter, color));
-		}
 	}
 	return ecSuccess;
 }
@@ -832,9 +819,8 @@ static ec_error_t html_write_tr_begin(RTF_WRITER *pwriter, int cell_num)
 	char tmp_buff[256];
 	
 	QRF(pwriter->ext_push.p_bytes("{\\trowd\\trgaph10 ", 16));
-	if (0 == cell_num) {
+	if (cell_num == 0)
 		return ecSuccess;
-	}
 	auto percell = 8503.0 / cell_num;
 	for (i=0; i<cell_num; i++) {
 		length = snprintf(tmp_buff, std::size(tmp_buff), "\\clbrdrt\\brdrw15\\brdrs"
@@ -882,9 +868,8 @@ static ec_error_t html_write_hr(RTF_WRITER *pwriter)
 static ec_error_t html_write_children(RTF_WRITER *pwriter, const xmlNode *pnode)
 {
 	ERF(html_write_style(pwriter, pnode));
-	for (pnode = pnode->children; pnode != nullptr; pnode = pnode->next) {
+	for (pnode = pnode->children; pnode != nullptr; pnode = pnode->next)
 		ERF(html_enum_write(pwriter, pnode));
-	}
 	return ecSuccess;
 }
 
@@ -1049,15 +1034,13 @@ static void html_enum_tables(RTF_WRITER *pwriter, xmlNode *pnode)
 		return;
 	if (lookup_tag(pnode) == htag::font) {
 		auto pattribute = xml_getprop(pnode, "face");
-		if (NULL != pattribute) {
+		if (pattribute != nullptr)
 			html_set_fonttable(pwriter, pattribute);
-		}
 		pattribute = xml_getprop(pnode, "color");
 		if (NULL != pattribute) {
 			color = html_convert_color(pattribute);
-			if (-1 != color) {
+			if (color != -1)
 				html_set_colortable(pwriter, color);
-			}
 		}
 	}
 	auto pattribute = xml_getprop(pnode, "style");
@@ -1070,9 +1053,8 @@ static void html_enum_tables(RTF_WRITER *pwriter, xmlNode *pnode)
 		if (html_match_style(pattribute,
 			"color", value, sizeof(value))) {
 			color = html_convert_color(value);
-			if (-1 != color) {
+			if (color != -1)
 				html_set_colortable(pwriter, color);
-			}
 		}
 	}
 	for (pnode = pnode->children; pnode != nullptr; pnode = pnode->next)
