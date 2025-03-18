@@ -390,7 +390,8 @@ ec_error_t MhNspContext::getaddressbookurl(std::string *dest) try
 
 	if (dest == nullptr)
 		dest = &std::get<getaddressbookurl_response>(response).server_url;
-	mysql_adaptor_get_user_ids(auth_info.username, &user_id, nullptr, nullptr);
+	if (!mysql_adaptor_get_user_ids(auth_info.username, &user_id, nullptr, nullptr))
+		return ecError;
 	memset(username1, 0, std::size(username1));
 	gx_strlcpy(username1, auth_info.username, std::size(username1));
 	auto token = strchr(username1, '@');
