@@ -1,3 +1,20 @@
+Development 2.43.56
+===================
+
+Fixes:
+
+* mysql_adaptor: do not fail organization-level GAL population when a
+  domain belonging to the org has zero members
+* gab: resolve assertion when traversing GAL [new implementation from
+  Gromox 2.42]
+* mysql_adaptor: fix OOB when reading PT_DOUBLE entries from user_properties
+* emsmdb: fix OOB write when computing PR_MAILBOX_OWNER_NAME_A
+* zcore: PR_EMS_AB_DISPLAY_NAME_PRINTABLE of an address book object was filled
+  with the email address even if the user's common name was umlaut-free
+* ews: PR_LAST_MODIFIER_NAME was filled with the email address even if the
+  user's common name was umlaut-free
+
+
 Gromox 2.43 (2025-03-06)
 ========================
 
