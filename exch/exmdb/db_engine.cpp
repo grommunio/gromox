@@ -907,7 +907,14 @@ void db_engine_stop()
 		}
 	}
 	g_thread_ids.clear();
-	{ /* silence cov-scan, take locks even in single-thread scenarios */
+	/*
+	 * This is db_engine_stop. We know we are single threaded and do not
+	 * really need to hold any locks.
+	 *
+	 * And though we are temporarily multithreading again with std::async,
+	 * it is a readonly operation as far as g_hash_table is concerned.
+	 */
+	{
 		auto t_start = tp_now();
 		size_t conc = std::min(gx_concurrency(), g_threads_num);
 		std::vector<std::future<void>> futs;
@@ -925,7 +932,6 @@ void db_engine_stop()
 			++iter;
 		}
 		futs.clear();
-		std::lock_guard lk(g_hash_lock);
 		g_hash_table.clear();
 		mlog(LV_INFO, "Database shutdown took %llu ms",
 			LLU(std::chrono::duration_cast<std::chrono::milliseconds>(tp_now() - t_start).count()));
