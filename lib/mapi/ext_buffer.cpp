@@ -17,6 +17,8 @@
 #include <gromox/mapidefs.h>
 #include <gromox/util.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define CLAMP16(v) ((v) = std::min((v), static_cast<uint16_t>(UINT16_MAX)))
+#define CLAMP32(v) ((v) = std::min((v), static_cast<uint32_t>(UINT32_MAX)))
 
 using namespace gromox;
 
@@ -333,6 +335,7 @@ pack_result EXT_PULL::g_uint16_an(SHORT_ARRAY *r, uint32_t count)
 pack_result EXT_PULL::g_uint16_a(SHORT_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
+	CLAMP32(r->count);
 	return g_uint16_an(r, r->count);
 }
 
@@ -356,6 +359,7 @@ pack_result EXT_PULL::g_uint32_an(LONG_ARRAY *r, uint32_t count)
 pack_result EXT_PULL::g_uint32_a(LONG_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
+	CLAMP32(r->count);
 	return g_uint32_an(r, r->count);
 }
 
@@ -379,6 +383,7 @@ pack_result EXT_PULL::g_uint64_an(LONGLONG_ARRAY *r, uint32_t count)
 pack_result EXT_PULL::g_uint64_a(LONGLONG_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
+	CLAMP32(r->count);
 	return g_uint64_an(r, r->count);
 }
 
@@ -386,6 +391,7 @@ pack_result EXT_PULL::g_uint64_sa(LONGLONG_ARRAY *r)
 {
 	uint16_t count;
 	TRY(g_uint16(&count));
+	CLAMP16(count);
 	return g_uint64_an(r, count);
 }
 
@@ -409,6 +415,7 @@ pack_result EXT_PULL::g_float_an(FLOAT_ARRAY *r, uint32_t count)
 pack_result EXT_PULL::g_float_a(FLOAT_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
+	CLAMP32(r->count);
 	return g_float_an(r, r->count);
 }
 
@@ -432,6 +439,7 @@ pack_result EXT_PULL::g_double_an(DOUBLE_ARRAY *r, uint32_t count)
 pack_result EXT_PULL::g_double_a(DOUBLE_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
+	CLAMP32(r->count);
 	return g_double_an(r, r->count);
 }
 
@@ -442,6 +450,7 @@ pack_result EXT_PULL::g_bin_a(BINARY_ARRAY *r)
 		r->pbin = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP32(r->count);
 	r->pbin = anew<BINARY>(r->count);
 	if (r->pbin == nullptr) {
 		r->count = 0;
@@ -471,6 +480,7 @@ pack_result EXT_PULL::g_str_a(STRING_ARRAY *r)
 		r->ppstr = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP32(r->count);
 	r->ppstr = anew<char *>(r->count);
 	if (r->ppstr == nullptr) {
 		r->count = 0;
@@ -499,6 +509,7 @@ pack_result EXT_PULL::g_wstr_a(STRING_ARRAY *r)
 		r->ppstr = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP32(r->count);
 	r->ppstr = anew<char *>(r->count);
 	if (r->ppstr == nullptr) {
 		r->count = 0;
@@ -540,6 +551,7 @@ pack_result EXT_PULL::g_guid_an(GUID_ARRAY *r, uint32_t count)
 pack_result EXT_PULL::g_guid_a(GUID_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
+	CLAMP32(r->count);
 	return g_guid_an(r, r->count);
 }
 
@@ -547,12 +559,14 @@ static pack_result ext_buffer_pull_restriction_and_or(EXT_PULL *pext,
     RESTRICTION_AND_OR *r)
 {
 	auto &ext = *pext;
-	uint16_t count;
 	
 	if (ext.m_flags & EXT_FLAG_WCOUNT) {
 		TRY(pext->g_uint32(&r->count));
+		CLAMP32(r->count);
 	} else {
+		uint16_t count;
 		TRY(pext->g_uint16(&count));
+		CLAMP16(count);
 		r->count = count;
 	}
 	if (r->count == 0) {
@@ -890,6 +904,7 @@ static pack_result ext_buffer_pull_recipient_block(EXT_PULL *pext, RECIPIENT_BLO
 	TRY(pext->g_uint16(&r->count));
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
+	CLAMP16(r->count);
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (r->ppropval == nullptr) {
 		r->count = 0;
@@ -906,6 +921,7 @@ static pack_result ext_buffer_pull_forwarddelegate_action(EXT_PULL *pext,
 	TRY(pext->g_uint16(&r->count));
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
+	CLAMP16(r->count);
 	r->pblock = pext->anew<RECIPIENT_BLOCK>(r->count);
 	if (r->pblock == nullptr) {
 		r->count = 0;
@@ -992,6 +1008,7 @@ pack_result EXT_PULL::g_rule_actions(RULE_ACTIONS *r)
 	TRY(g_uint16(&r->count));
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
+	CLAMP16(r->count);
 	r->pblock = anew<ACTION_BLOCK>(r->count);
 	if (r->pblock == nullptr) {
 		r->count = 0;
@@ -1100,6 +1117,7 @@ pack_result EXT_PULL::g_proptag_a(PROPTAG_ARRAY *r)
 		r->pproptag = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP16(r->count);
 	r->pproptag = anew<uint32_t>(strange_roundup(r->count, SR_GROW_PROPTAG_ARRAY));
 	if (r->pproptag == nullptr) {
 		r->count = 0;
@@ -1117,6 +1135,7 @@ pack_result EXT_PULL::g_proptag_a(LPROPTAG_ARRAY *r)
 		r->pproptag = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP32(r->cvalues);
 	r->pproptag = anew<uint32_t>(strange_roundup(r->cvalues, SR_GROW_PROPTAG_ARRAY));
 	if (r->pproptag == nullptr) {
 		r->cvalues = 0;
@@ -1157,6 +1176,7 @@ pack_result EXT_PULL::g_propname_a(PROPNAME_ARRAY *r)
 		r->ppropname = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP16(r->count);
 	r->ppropname = anew<PROPERTY_NAME>(r->count);
 	if (r->ppropname == nullptr) {
 		r->count = 0;
@@ -1174,6 +1194,7 @@ pack_result EXT_PULL::g_tpropval_a(TPROPVAL_ARRAY *r)
 		r->ppropval = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP16(r->count);
 	r->ppropval = anew<TAGGED_PROPVAL>(strange_roundup(r->count, SR_GROW_TAGGED_PROPVAL));
 	if (r->ppropval == nullptr) {
 		r->count = 0;
@@ -1191,6 +1212,7 @@ pack_result EXT_PULL::g_tpropval_a(LTPROPVAL_ARRAY *r)
 		r->propval = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP32(r->count);
 	r->propval = anew<TAGGED_PROPVAL>(strange_roundup(r->count, SR_GROW_TAGGED_PROPVAL));
 	if (r->propval == nullptr) {
 		r->count = 0;
@@ -1208,6 +1230,7 @@ pack_result EXT_PULL::g_tarray_set(TARRAY_SET *r)
 		r->pparray = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP32(r->count);
 	r->pparray = anew<TPROPVAL_ARRAY *>(strange_roundup(r->count, SR_GROW_TPROPVAL_ARRAY));
 	if (r->pparray == nullptr) {
 		r->count = 0;
@@ -1232,6 +1255,7 @@ static pack_result ext_buffer_pull_property_problem(EXT_PULL *pext, PROPERTY_PRO
 pack_result EXT_PULL::g_problem_a(PROBLEM_ARRAY *r)
 {
 	TRY(g_uint16(&r->count));
+	CLAMP16(r->count);
 	r->pproblem = anew<PROPERTY_PROBLEM>(r->count);
 	if (r->pproblem == nullptr) {
 		r->count = 0;
@@ -1312,6 +1336,7 @@ static pack_result ext_buffer_pull_ext_recipient_block(EXT_PULL *pext,
 	TRY(pext->g_uint32(&r->count));
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
+	CLAMP32(r->count);
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (r->ppropval == nullptr) {
 		r->count = 0;
@@ -1328,6 +1353,7 @@ static pack_result ext_buffer_pull_ext_forwarddelegate_action(EXT_PULL *pext,
 	TRY(pext->g_uint32(&r->count));
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
+	CLAMP32(r->count);
 	r->pblock = pext->anew<EXT_RECIPIENT_BLOCK>(r->count);
 	if (r->pblock == nullptr) {
 		r->count = 0;
@@ -1396,6 +1422,7 @@ pack_result EXT_PULL::g_ext_rule_actions(EXT_RULE_ACTIONS *r)
 	TRY(g_uint32(&r->count));
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
+	CLAMP32(r->count);
 	r->pblock = anew<EXT_ACTION_BLOCK>(r->count);
 	if (r->pblock == nullptr) {
 		r->count = 0;
@@ -1416,6 +1443,7 @@ pack_result EXT_PULL::g_namedprop_info(NAMEDPROPERTY_INFO *r)
 		r->ppropname = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP16(r->count);
 	r->ppropid = anew<uint16_t>(r->count);
 	if (r->ppropid == nullptr) {
 		r->count = 0;
@@ -1503,6 +1531,7 @@ pack_result EXT_PULL::g_sortorder(SORT_ORDER *r)
 pack_result EXT_PULL::g_sortorder_set(SORTORDER_SET *r)
 {
 	TRY(g_uint16(&r->count));
+	CLAMP16(r->count);
 	TRY(g_uint16(&r->ccategories));
 	TRY(g_uint16(&r->cexpanded));
 	if (r->count == 0 || r->ccategories > r->count || r->cexpanded > r->ccategories)
@@ -1674,6 +1703,7 @@ pack_result EXT_PULL::g_flatentry_a(BINARY_ARRAY *r)
 	uint8_t pad_len;
 	
 	TRY(g_uint32(&r->count));
+	CLAMP32(r->count);
 	r->pbin = anew<BINARY>(r->count);
 	if (r->pbin == nullptr) {
 		r->count = 0;
@@ -1701,6 +1731,7 @@ pack_result EXT_PULL::g_eid_a(EID_ARRAY *r)
 		r->pids = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+	CLAMP32(r->count);
 	r->pids = anew<uint64_t>(r->count);
 	if (r->pids == nullptr) {
 		r->count = 0;
@@ -1774,6 +1805,7 @@ pack_result EXT_PULL::g_tzdef(TIMEZONEDEFINITION *r)
 		return EXT_ERR_ALLOC;
 	strcpy(r->keyname, tmp_buff1);
 	TRY(g_uint16(&r->crules));
+	CLAMP16(r->crules);
 	r->prules = anew<TZRULE>(r->crules);
 	if (r->prules == nullptr) {
 		r->crules = 0;
@@ -1899,6 +1931,7 @@ static pack_result ext_buffer_pull_extendedexception(EXT_PULL *pext,
 	}
 	if (overrideflags & ARO_SUBJECT) {
 		TRY(pext->g_uint16(&tmp_len));
+		CLAMP16(tmp_len);
 		tmp_len *= 2;
 		std::unique_ptr<char[]> pbuff;
 		try {
@@ -1919,6 +1952,7 @@ static pack_result ext_buffer_pull_extendedexception(EXT_PULL *pext,
 	}
 	if (overrideflags & ARO_LOCATION) {
 		TRY(pext->g_uint16(&tmp_len));
+		CLAMP16(tmp_len);
 		tmp_len *= 2;
 		std::unique_ptr<char[]> pbuff;
 		try {
@@ -1968,6 +2002,7 @@ pack_result EXT_PULL::g_recpat(RECURRENCE_PATTERN *r)
 	TRY(g_uint32(&r->occurrencecount));
 	TRY(g_uint32(&r->firstdow));
 	TRY(g_uint32(&r->deletedinstancecount));
+	CLAMP32(r->deletedinstancecount);
 	if (r->deletedinstancecount == 0) {
 		r->pdeletedinstancedates = NULL;
 	} else {
@@ -1980,6 +2015,7 @@ pack_result EXT_PULL::g_recpat(RECURRENCE_PATTERN *r)
 	for (size_t i = 0; i < r->deletedinstancecount; ++i)
 		TRY(g_uint32(&r->pdeletedinstancedates[i]));
 	TRY(g_uint32(&r->modifiedinstancecount));
+	CLAMP32(r->modifiedinstancecount);
 	if (r->modifiedinstancecount == 0) {
 		r->pmodifiedinstancedates = NULL;
 	} else {
@@ -2003,6 +2039,7 @@ pack_result EXT_PULL::g_apptrecpat(APPOINTMENT_RECUR_PAT *r)
 	TRY(g_uint32(&r->starttimeoffset));
 	TRY(g_uint32(&r->endtimeoffset));
 	TRY(g_uint16(&r->exceptioncount));
+	CLAMP16(r->exceptioncount);
 	if (r->exceptioncount == 0) {
 		r->pexceptioninfo = NULL;
 		r->pextendedexception = NULL;
@@ -2088,6 +2125,7 @@ static pack_result ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LI
 	uint8_t tmp_byte;
 	
 	TRY(pext->g_uint16(&r->count));
+	CLAMP16(r->count);
 	r->pplist = pext->anew<ATTACHMENT_CONTENT *>(strange_roundup(r->count, SR_GROW_ATTACHMENT_CONTENT));
 	if (r->pplist == nullptr) {
 		r->count = 0;
