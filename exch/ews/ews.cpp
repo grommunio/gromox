@@ -458,12 +458,11 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 	{"ews_request_logging", "0"},
 	{"ews_response_logging", "0"},
 	{"ews_schema_version", "V2017_07_11"},
-	{"smtp_server_ip", "::1", CFG_DEPRECATED},
-	{"smtp_server_port", "25", CFG_DEPRECATED},
 	CFG_TABLE_END,
 };
 
 static constexpr struct cfg_directive ews_gxcfg_deflt[] = {
+	{"outgoing_smtp_url", "sendmail://localhost"},
 	{"reported_server_version", "15.00.0847.4040"},
 	CFG_TABLE_END,
 };
@@ -505,24 +504,12 @@ void EWSPlugin::loadConfig()
 	ver.schema = cfg->get_value("ews_schema_version");
 
 	str = gxcfg->get_value("outgoing_smtp_url");
-	if (str != nullptr) {
-		try {
-			smtp_url = vmime::utility::url(str);
-		} catch (const vmime::exceptions::malformed_url &e) {
-			mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
-				str, e.what());
-			return;
-		}
-	} else {
-		str = cfg->get_value("smtp_server_ip");
-		uint16_t port = cfg->get_ll("smtp_server_port");
-		try {
-			smtp_url = vmime::utility::url("smtp", str, port);
-		} catch (const vmime::exceptions::malformed_url &e) {
-			mlog(LV_ERR, "Malformed outgoing SMTP: [%s]:%hu: %s",
-				str, port, e.what());
-			return;
-		}
+	try {
+		smtp_url = vmime::utility::url(str);
+	} catch (const vmime::exceptions::malformed_url &e) {
+		mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
+			str, e.what());
+		return;
 	}
 
 	const char* logFilter = cfg->get_value("ews_log_filter");

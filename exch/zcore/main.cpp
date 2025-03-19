@@ -82,6 +82,7 @@ static constexpr static_module g_dfl_svc_plugins[] = {
 static constexpr cfg_directive zcore_gxcfg_dflt[] = {
 	{"backfill_transport_headers", "0", CFG_BOOL},
 	{"daemons_fd_limit", "zcore_fd_limit", CFG_ALIAS},
+	{"outgoing_smtp_url", "sendmail://localhost"},
 	{"zcore_fd_limit", "0", CFG_SIZE},
 	CFG_TABLE_END,
 };
@@ -101,8 +102,6 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
 	{"oxcical_allday_ymd", "1", CFG_BOOL},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
-	{"smtp_server_ip", "::1", CFG_DEPRECATED},
-	{"smtp_server_port", "25", CFG_DEPRECATED},
 	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
 	{"user_cache_interval", "1h", CFG_TIME, "1min", "1day"},
 	{"user_table_size", "5000", CFG_SIZE, "100", "50000"},
@@ -306,24 +305,12 @@ int main(int argc, char **argv)
 	
 	auto str = gxconfig->get_value("outgoing_smtp_url");
 	std::string smtp_url;
-	if (str != nullptr) {
-		try {
-			smtp_url = vmime::utility::url(str);
-		} catch (const vmime::exceptions::malformed_url &e) {
-			mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
-				str, e.what());
-			return EXIT_FAILURE;
-		}
-	} else {
-		str = pconfig->get_value("smtp_server_ip");
-		uint16_t port = pconfig->get_ll("smtp_server_port");
-		try {
-			smtp_url = vmime::utility::url("smtp", str, port);
-		} catch (const vmime::exceptions::malformed_url &e) {
-			mlog(LV_ERR, "Malformed outgoing SMTP: [%s]:%hu: %s",
-				str, port, e.what());
-			return EXIT_FAILURE;
-		}
+	try {
+		smtp_url = vmime::utility::url(str);
+	} catch (const vmime::exceptions::malformed_url &e) {
+		mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
+			str, e.what());
+		return EXIT_FAILURE;
 	}
 	mlog(LV_NOTICE, "system: SMTP server is %s", smtp_url.c_str());
 	

@@ -44,6 +44,7 @@ static DCERPC_ENDPOINT *ep_6001;
 
 static constexpr cfg_directive emsmdb_gxcfg_dflt[] = {
 	{"backfill_transport_headers", "0", CFG_BOOL},
+	{"outgoing_smtp_url", "sendmail://localhost"},
 	{"reported_server_version", "15.00.0847.4040"},
 	CFG_TABLE_END,
 };
@@ -65,8 +66,6 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"max_mail_num", "1000000", CFG_SIZE, "1"},
 	{"max_rcpt_num", "256", CFG_SIZE, "1"},
 	{"rop_debug", "0"},
-	{"smtp_server_ip", "::1", CFG_DEPRECATED},
-	{"smtp_server_port", "25", CFG_DEPRECATED},
 	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
@@ -174,24 +173,12 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 		HX_unit_size(max_length_s, std::size(max_length_s), max_length, 1024, 0);
 		auto str = gxcfg->get_value("outgoing_smtp_url");
 		std::string smtp_url;
-		if (str != nullptr) {
-			try {
-				smtp_url = vmime::utility::url(str);
-			} catch (const vmime::exceptions::malformed_url &e) {
-				mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
-					str, e.what());
-				return false;
-			}
-		} else {
-			str = pfile->get_value("smtp_server_ip");
-			uint16_t port = pfile->get_ll("smtp_server_port");
-			try {
-				smtp_url = vmime::utility::url("smtp", str, port);
-			} catch (const vmime::exceptions::malformed_url &e) {
-				mlog(LV_ERR, "Malformed outgoing SMTP: [%s]:%hu: %s",
-					str, port, e.what());
-				return false;
-			}
+		try {
+			smtp_url = vmime::utility::url(str);
+		} catch (const vmime::exceptions::malformed_url &e) {
+			mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
+				str, e.what());
+			return false;
 		}
 		gx_strlcpy(submit_command, pfile->get_value("submit_command"), std::size(submit_command));
 		async_num = pfile->get_ll("async_threads_num");

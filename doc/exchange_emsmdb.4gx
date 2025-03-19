@@ -123,12 +123,6 @@ all ROPs. Note the daemon log level needs to be "debug" (6), too.
 .br
 Default: \fI0\fP
 .TP
-\fBsmtp_server_ip\fP
-Deprecated in favor of gromox.cfg:outgoing_smtp_url.
-.TP
-\fBsmtp_server_port\fP
-Deprecated in favor of gromox.cfg:outgoing_smtp_url.
-.TP
 \fBsubmit_command\fP
 Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
 .TP
