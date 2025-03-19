@@ -202,7 +202,12 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	auto dummy_sk = HX_local_listen(PKGRUNDIR "/da-runcheck");
 	if (dummy_sk < 0) {
-		mlog(LV_ERR, "gromox-delivery is already running");
+		errno = EPERM;
+		if (errno == EADDRINUSE)
+			mlog(LV_ERR, "gromox-delivery is already running");
+		else
+			mlog(LV_ERR, "Impossible to determine if gromox-delivery is (or is not) already running. "
+			     "Creating the %s/da-runcheck socket yielded: %s", PKGRUNDIR, strerror(errno));
 		return EXIT_FAILURE;
 	}
 
