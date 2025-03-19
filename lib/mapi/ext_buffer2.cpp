@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <limits>
 #include <string>
 #include <vector>
@@ -43,6 +44,7 @@ using namespace gromox;
 	{ \
 		C count; \
 		TRY(g_ ## c(&count)); \
+		count = std::min(count, std::numeric_limits<C>::max()); \
 		return g_ ## t ## _an(r, count); \
 	}
 
@@ -69,6 +71,7 @@ pack_result EXT_PULL::g_propid_a(std::vector<uint16_t> *a)
 {
 	uint16_t count;
 	TRY(g_uint16(&count));
+	count = std::min(count, std::numeric_limits<uint16_t>::max());
 	return g_uint16_an(a, count);
 }
 
@@ -119,6 +122,7 @@ pack_result EXT_PULL::g_fb_a(std::vector<freebusy_event> *r) try
 		r->clear();
 		return pack_result::success;
 	}
+	count = std::min(count, std::numeric_limits<uint32_t>::max());
 	r->resize(count);
 	for (size_t i = 0; i < count; ++i)
 		TRY(g_fb(&(*r)[i]));
