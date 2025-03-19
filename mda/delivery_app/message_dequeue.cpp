@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 /*
  *  mail queue have three parts, tape, mess, message queue.when a mail
@@ -136,6 +136,7 @@ static BOOL message_dequeue_check()
 static void message_dequeue_collect_resource()
 {
 	g_message_ptr.reset();
+	std::lock_guard lk(g_hash_mutex);
 	g_mess_hash.clear();
 }
 
