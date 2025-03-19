@@ -214,7 +214,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	}
 	uint64_t mess_len = 0;
 	if (NULL == pentity->pflusher->flush_ptr) {
-		fp = fopen(name.c_str(), "w");
+		fp = fopen(name.c_str(), "wx");
 		/* check if the file is created successfully */
 		if (fp == nullptr)
 			return FALSE;
