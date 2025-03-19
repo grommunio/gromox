@@ -281,7 +281,10 @@ void http_parser_stop()
 {
 	g_context_list2.clear();
 	g_context_list.reset();
-	g_vconnection_hash.clear();
+	{
+		std::lock_guard lk(g_vconnection_lock); /* shut up cov-scan */
+		g_vconnection_hash.clear();
+	}
 	if (g_support_tls && g_ssl_ctx != nullptr) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;
