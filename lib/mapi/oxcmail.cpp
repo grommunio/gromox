@@ -2008,7 +2008,6 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields,
 	char *ptoken1;
 	char *ptoken2;
 	DSN_FILEDS_INFO f_info;
-	char display_name[512];
 	
 	auto pinfo = static_cast<const DSN_ENUM_INFO *>(pparam);
 	f_info.final_recipient[0] = '\0';
@@ -2057,6 +2056,8 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields,
 	uint32_t tmp_int32 = MAPI_TO;
 	if (pproplist->set(PR_RECIPIENT_TYPE, &tmp_int32) != 0)
 		return false;
+
+	char display_name[512]{};
 	if (f_info.x_display_name != nullptr &&
 	    strlen(f_info.x_display_name) < 256 &&
 	    mime_string_to_utf8("utf-8", f_info.x_display_name, display_name,
