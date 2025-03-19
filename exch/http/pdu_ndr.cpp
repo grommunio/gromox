@@ -91,6 +91,7 @@ static pack_result pdu_ndr_pull_dcerpc_bind_nak(NDR_PULL *pndr, DCERPC_BIND_NAK 
 	
 	if (DECRPC_BIND_REASON_VERSION_NOT_SUPPORTED == r->reject_reason) {
 		TRY(pndr->g_uint32(&r->num_versions));
+		r->num_versions = std::min(r->num_versions, static_cast<uint32_t>(UINT8_MAX)); /* C706 p. 592 */
 		if (r->num_versions > 0) {
 			r->versions = me_alloc<uint32_t>(r->num_versions);
 			if (NULL == r->versions) {
