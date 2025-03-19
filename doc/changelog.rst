@@ -1,5 +1,5 @@
-Development 2.43.56
-===================
+Gromox 2.44 (2025-03-19)
+========================
 
 Fixes:
 
@@ -13,6 +13,14 @@ Fixes:
   with the email address even if the user's common name was umlaut-free
 * ews: PR_LAST_MODIFIER_NAME was filled with the email address even if the
   user's common name was umlaut-free
+* mbop: make clear-profile nuke all profile parts again
+* The documented default value `outgoing_smtp_url=sendmail://localhost`
+  is now in effect.
+
+Behavioral changes:
+
+* Recognition for the `smtp_server_ip` config directive has been removed.
+  Users must upgrade to `outgoing_smtp_url` (added in Gromox 2.21).
 
 
 Gromox 2.43 (2025-03-06)
