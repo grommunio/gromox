@@ -54,6 +54,7 @@ static constexpr static_module g_dfl_svc_plugins[] = {
 static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"daemons_fd_limit", "lda_fd_limit", CFG_ALIAS},
 	{"lda_fd_limit", "0", CFG_SIZE},
+	{"outgoing_smtp_url", "sendmail://localhost"},
 	CFG_TABLE_END,
 };
 
