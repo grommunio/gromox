@@ -118,6 +118,7 @@ xtransaction gx_sql_begin3(const std::string &pos, sqlite3 *db, txn_mode mode)
 		std::string fn = znul(sqlite3_db_filename(db, nullptr));
 		if (fn.empty())
 			fn = fmt::format("{}", static_cast<void *>(db));
+		std::unique_lock lk(active_xa_lock);
 		auto it = active_xa.find(fn);
 		mlog(LV_ERR, "sqlite_busy on %s: held by %s, take from %s", fn.c_str(),
 			it != active_xa.end() ? it->second.c_str() : "unknown",
