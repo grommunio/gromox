@@ -59,7 +59,6 @@ static errno_t reflink_supported(const std::string &src, const std::string &dst)
 	if (ioctl(dfd.get(), ficlone, sfd.get()) != 0)
 		return errno;
 	return 0;
-	return EOPNOTSUPP;
 }
 #endif
 
