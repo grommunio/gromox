@@ -715,7 +715,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	if (!props.has(PR_LAST_MODIFICATION_TIME)) {
 		auto last_time = rop_util_current_nttime();
 		auto err = cu_set_propval(props, PR_LAST_MODIFICATION_TIME, &last_time);
-		if (err != 0)
+		if (err != ecSuccess)
 			return err;
 	}
 	err = cu_set_propval(props, PidTagMid, &dst_mid);
