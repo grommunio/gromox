@@ -3197,7 +3197,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				tmp_propval.proptag = PR_EMAIL_ADDRESS;
 				tmp_propval.pvalue = common_util_dup(ab_entryid.px500dn);
 				if (tmp_propval.pvalue == nullptr)
-					return ecError;
+					return ecServerOOM;
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PR_SMTP_ADDRESS;
 				std::string es_result;
@@ -3215,7 +3215,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				tmp_propval.proptag = PR_DISPLAY_NAME;
 				tmp_propval.pvalue = common_util_dup(es_result);
 				if (tmp_propval.pvalue == nullptr)
-					return ecError;
+					return ecServerOOM;
 				common_util_set_propvals(prcpt, &tmp_propval);
 				continue;
 			}
@@ -3237,7 +3237,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				tmp_propval.pvalue = common_util_dup(
 						oneoff_entry.pmail_address);
 				if (tmp_propval.pvalue == nullptr)
-					return ecError;
+					return ecServerOOM;
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PR_SMTP_ADDRESS;
 				common_util_set_propvals(prcpt, &tmp_propval);
@@ -3245,7 +3245,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				tmp_propval.pvalue = common_util_dup(
 						oneoff_entry.pdisplay_name);
 				if (tmp_propval.pvalue == nullptr)
-					return ecError;
+					return ecServerOOM;
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PR_SEND_RICH_INFO;
 				tmp_propval.pvalue = deconst((oneoff_entry.ctrl_flags & MAPI_ONE_OFF_NO_RICH_INFO) ? &persist_false : &persist_true);
@@ -5171,5 +5171,5 @@ ec_error_t zs_essdn_to_username(const char *essdn, char **username)
 	if (ret != ecSuccess)
 		return ret;
 	*username = common_util_dup(es_result);
-	return ecSuccess;
+	return *username != nullptr ? ecSuccess : ecServerOOM;
 }
