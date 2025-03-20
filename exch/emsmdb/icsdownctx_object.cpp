@@ -246,16 +246,20 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			else
 				++j;
 		}
-		if (!chg.has(PR_ATTR_HIDDEN))
-			cu_set_propval(&chg, PR_ATTR_HIDDEN, &fake_byte);
-		if (!chg.has(PR_ATTR_SYSTEM))
-			cu_set_propval(&chg, PR_ATTR_SYSTEM, &fake_byte);
-		if (!chg.has(PR_ATTR_READONLY))
-			cu_set_propval(&chg, PR_ATTR_READONLY, &fake_byte);
+		if (!chg.has(PR_ATTR_HIDDEN) &&
+		    cu_set_propval(&chg, PR_ATTR_HIDDEN, &fake_byte) != ecSuccess)
+			return false;
+		if (!chg.has(PR_ATTR_SYSTEM) &&
+		    cu_set_propval(&chg, PR_ATTR_SYSTEM, &fake_byte) != ecSuccess)
+			return false;
+		if (!chg.has(PR_ATTR_READONLY) &&
+		    cu_set_propval(&chg, PR_ATTR_READONLY, &fake_byte) != ecSuccess)
+			return false;
 		if (!chg.has(PR_CREATOR_SID)) {
 			tmp_bin.cb = 0;
 			tmp_bin.pb = NULL;
-			cu_set_propval(&chg, PR_CREATOR_SID, &tmp_bin);
+			if (cu_set_propval(&chg, PR_CREATOR_SID, &tmp_bin) != ecSuccess)
+				return false;
 		}
 		auto lnum = chg.get<const uint64_t>(PidTagFolderId);
 		if (lnum == nullptr)
@@ -272,7 +276,8 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			auto psk = cu_fid_to_sk(pctx->pstream->plogon, folder_id);
 			if (psk == nullptr)
 				return FALSE;
-			cu_set_propval(&chg, PR_SOURCE_KEY, psk);
+			if (cu_set_propval(&chg, PR_SOURCE_KEY, psk) != ecSuccess)
+				return false;
 			if (pctx->pfolder->folder_id == parent_fid) {
 				tmp_bin.cb = 0;
 				tmp_bin.pb = NULL;
@@ -282,13 +287,15 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				if (psk == nullptr)
 					return FALSE;
 			}
-			cu_set_propval(&chg, PR_PARENT_SOURCE_KEY, psk);
+			if (cu_set_propval(&chg, PR_PARENT_SOURCE_KEY, psk) != ecSuccess)
+				return false;
 		} else {
 			if (!chg.has(PR_SOURCE_KEY)) {
 				auto psk = cu_fid_to_sk(pctx->pstream->plogon, folder_id);
 				if (psk == nullptr)
 					return FALSE;
-				cu_set_propval(&chg, PR_SOURCE_KEY, psk);
+				if (cu_set_propval(&chg, PR_SOURCE_KEY, psk) != ecSuccess)
+					return false;
 			}
 			void *psk;
 			if (pctx->pfolder->folder_id == parent_fid) {
@@ -305,7 +312,8 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 						return FALSE;
 				}
 			}
-			cu_set_propval(&chg, PR_PARENT_SOURCE_KEY, psk);
+			if (cu_set_propval(&chg, PR_PARENT_SOURCE_KEY, psk) != ecSuccess)
+				return false;
 		}
 		auto inboxy = pctx->pstream->plogon->is_private() &&
 		              (folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
@@ -320,27 +328,33 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		auto pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&chg, PR_IPM_DRAFTS_ENTRYID, pvalue);
+		if (cu_set_propval(&chg, PR_IPM_DRAFTS_ENTRYID, pvalue) != ecSuccess)
+			return false;
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&chg, PR_IPM_CONTACT_ENTRYID, pvalue);
+		if (cu_set_propval(&chg, PR_IPM_CONTACT_ENTRYID, pvalue) != ecSuccess)
+			return false;
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&chg, PR_IPM_APPOINTMENT_ENTRYID, pvalue);
+		if (cu_set_propval(&chg, PR_IPM_APPOINTMENT_ENTRYID, pvalue) != ecSuccess)
+			return false;
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&chg, PR_IPM_JOURNAL_ENTRYID, pvalue);
+		if (cu_set_propval(&chg, PR_IPM_JOURNAL_ENTRYID, pvalue) != ecSuccess)
+			return false;
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&chg, PR_IPM_NOTE_ENTRYID, pvalue);
+		if (cu_set_propval(&chg, PR_IPM_NOTE_ENTRYID, pvalue) != ecSuccess)
+			return false;
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&chg, PR_IPM_TASK_ENTRYID, pvalue);
+		if (cu_set_propval(&chg, PR_IPM_TASK_ENTRYID, pvalue) != ecSuccess)
+			return false;
 		if (!chg.has(PR_ADDITIONAL_REN_ENTRYIDS)) {
 			auto ba = cu_alloc<BINARY_ARRAY>();
 			if (ba == nullptr)
@@ -374,7 +388,8 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (pbin == nullptr)
 				return FALSE;
 			ba->pbin[4] = *pbin;
-			cu_set_propval(&chg, PR_ADDITIONAL_REN_ENTRYIDS, ba);
+			if (cu_set_propval(&chg, PR_ADDITIONAL_REN_ENTRYIDS, ba) != ecSuccess)
+				return false;
 		}
 		if (!chg.has(PR_ADDITIONAL_REN_ENTRYIDS_EX)) {
 			auto bv = cu_alloc<BINARY>();
@@ -393,7 +408,8 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (bv->pv == nullptr)
 				return FALSE;
 			memcpy(bv->pv, ext_push.m_udata, bv->cb);
-			cu_set_propval(&chg, PR_ADDITIONAL_REN_ENTRYIDS_EX, bv);
+			if (cu_set_propval(&chg, PR_ADDITIONAL_REN_ENTRYIDS_EX, bv) != ecSuccess)
+				return false;
 		}
 		if (!chg.has(PR_FREEBUSY_ENTRYIDS)) {
 			auto ba = cu_alloc<BINARY_ARRAY>();
@@ -414,7 +430,8 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (pbin == nullptr)
 				return FALSE;
 			ba->pbin[3] = *pbin;
-			cu_set_propval(&chg, PR_FREEBUSY_ENTRYIDS, ba);
+			if (cu_set_propval(&chg, PR_FREEBUSY_ENTRYIDS, ba) != ecSuccess)
+				return false;
 		}
 	}
 	icsdownctx_object_adjust_fldchgs(&fldchgs, pctx->pproptags,
@@ -791,13 +808,16 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			memcpy(ppropval, pembedded->proplist.ppropval,
 				sizeof(TAGGED_PROPVAL)*pembedded->proplist.count);
 			pembedded->proplist.ppropval = ppropval;
-			cu_set_propval(&pembedded->proplist, PidTagMid, &message_id);
-			cu_set_propval(&pembedded->proplist, PR_PARENT_SOURCE_KEY, pvalue);
+			if (cu_set_propval(&pembedded->proplist, PidTagMid, &message_id) != ecSuccess ||
+			    cu_set_propval(&pembedded->proplist, PR_PARENT_SOURCE_KEY, pvalue) != ecSuccess)
+				return false;
 			if (!pembedded->proplist.has(PR_SOURCE_KEY)) {
 				auto psk = cu_mid_to_sk(pctx->pstream->plogon, message_id);
 				if (psk == nullptr)
 					return FALSE;
-				cu_set_propval(&pembedded->proplist, PR_SOURCE_KEY, psk);
+				if (cu_set_propval(&pembedded->proplist,
+				    PR_SOURCE_KEY, psk) != ecSuccess)
+					return false;
 			}
 			if (!icsdownctx_object_extract_msgctntinfo(pembedded,
 			    pctx->extra_flags, message_id, &chgheader, &progmsg))
@@ -813,10 +833,14 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			auto flags = pembedded->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
 			auto xbit = flags != nullptr && (*flags & MSGFLAG_RN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
-			cu_set_propval(&pembedded->proplist, PR_READ_RECEIPT_REQUESTED, xbit);
+			if (cu_set_propval(&pembedded->proplist,
+			    PR_READ_RECEIPT_REQUESTED, xbit) != ecSuccess)
+				return false;
 			xbit = flags != nullptr && (*flags & MSGFLAG_NRN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
-			cu_set_propval(&pembedded->proplist, PR_NON_RECEIPT_NOTIFICATION_REQUESTED, xbit);
+			if (cu_set_propval(&pembedded->proplist,
+			    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, xbit) != ecSuccess)
+				return false;
 			fxs_propsort(*pembedded);
 			if (!pctx->pstream->write_messagechangefull(&chgheader, pembedded))
 				return FALSE;
@@ -839,22 +863,29 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			if (pvalue == nullptr)
 				return FALSE;
 		}
-		cu_set_propval(&pmsgctnt->proplist, PR_PARENT_SOURCE_KEY, pvalue);
+		if (cu_set_propval(&pmsgctnt->proplist, PR_PARENT_SOURCE_KEY,
+		    pvalue) != ecSuccess)
+			return false;
 		if (!pmsgctnt->proplist.has(PR_SOURCE_KEY)) {
 			pvalue = cu_mid_to_sk(pctx->pstream->plogon, message_id);
 			if (pvalue == nullptr)
 				return FALSE;
-			cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY, pvalue);
+			if (cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY,
+			    pvalue) != ecSuccess)
+				return false;
 		}
 	} else {
 		pvalue = cu_fid_to_sk(pctx->pstream->plogon, folder_id);
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&pmsgctnt->proplist, PR_PARENT_SOURCE_KEY, pvalue);
+		if (cu_set_propval(&pmsgctnt->proplist, PR_PARENT_SOURCE_KEY,
+		    pvalue) != ecSuccess)
+			return false;
 		pvalue = cu_mid_to_sk(pctx->pstream->plogon, message_id);
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY, pvalue);
+		if (cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY, pvalue) != ecSuccess)
+			return false;
 	}
 	if (!icsdownctx_object_extract_msgctntinfo(pmsgctnt,
 	    pctx->extra_flags, message_id, &chgheader, &progmsg))
@@ -904,10 +935,14 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	auto flags = pmsgctnt->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
 	auto xbit = flags != nullptr && (*flags & MSGFLAG_RN_PENDING) ?
 	            deconst(&fake_true) : deconst(&fake_false);
-	cu_set_propval(&pmsgctnt->proplist, PR_READ_RECEIPT_REQUESTED, xbit);
+	if (cu_set_propval(&pmsgctnt->proplist, PR_READ_RECEIPT_REQUESTED,
+	    xbit) != ecSuccess)
+		return false;
 	xbit = flags != nullptr && (*flags & MSGFLAG_NRN_PENDING) ?
 	       deconst(&fake_true) : deconst(&fake_false);
-	cu_set_propval(&pmsgctnt->proplist, PR_NON_RECEIPT_NOTIFICATION_REQUESTED, xbit);
+	if (cu_set_propval(&pmsgctnt->proplist,
+	    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, xbit) != ecSuccess)
+		return false;
 	fxs_propsort(*pmsgctnt);
 	return pctx->pstream->write_messagechangefull(&chgheader, pmsgctnt);
 }
