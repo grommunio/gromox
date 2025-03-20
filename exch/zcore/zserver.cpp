@@ -3190,7 +3190,9 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				memcpy(ppropval, prcpt->ppropval,
 					prcpt->count*sizeof(TAGGED_PROPVAL));
 				prcpt->ppropval = ppropval;
-				cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
+				auto err = cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
+				if (err != ecSuccess)
+					return err;
 				auto dupval = common_util_dup(ab_entryid.px500dn);
 				if (dupval == nullptr)
 					return ecServerOOM;

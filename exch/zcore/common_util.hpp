@@ -86,7 +86,7 @@ BOOL common_util_verify_columns_and_sorts(
 extern bool cu_extract_delegate(message_object *, std::string &dlgt);
 extern repr_grant cu_get_delegate_perm_MD(const char *account, const char *maildir);
 extern repr_grant cu_get_delegate_perm_AA(const char *account, const char *account_representing);
-extern void cu_set_propval(TPROPVAL_ARRAY *parray, gromox::proptag_t, const void *);
+extern ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, gromox::proptag_t, const void *);
 void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag);
 void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,

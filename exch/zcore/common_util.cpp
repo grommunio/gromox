@@ -208,17 +208,27 @@ repr_grant cu_get_delegate_perm_AA(const char *account, const char *repr)
 	return cu_get_delegate_perm_MD(account, mres.maildir.c_str());
 }
 
-void cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *data)
+ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *data)
 {
 	int i;
 	
 	for (i=0; i<parray->count; i++) {
 		if (parray->ppropval[i].proptag == tag) {
 			parray->ppropval[i].pvalue = deconst(data);
-			return;
+			return ecSuccess;
 		}
 	}
+
+	if (parray->count >= UINT16_MAX)
+		return ecTooBig;
+	auto newarr = cu_alloc<TAGGED_PROPVAL>(parray->count + 1);
+	if (newarr == nullptr)
+		return ecServerOOM;
+	if (parray->ppropval != nullptr)
+		memcpy(newarr, parray->ppropval, parray->count * sizeof(TAGGED_PROPVAL));
+	parray->ppropval = newarr;
 	parray->emplace_back(tag, data);
+	return ecSuccess;
 }
 
 void common_util_remove_propvals(
@@ -1577,20 +1587,26 @@ ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!exmdb_client->allocate_cn(dst_store->get_dir(), &change_num))
 		return ecError;
-	cu_set_propval(&pmsgctnt->proplist, PidTagChangeNumber, &change_num);
+	auto err = cu_set_propval(&pmsgctnt->proplist, PidTagChangeNumber, &change_num);
+	if (err != ecSuccess)
+		return err;
 	auto pbin = cu_xid_to_bin({src_store->guid(), change_num});
 	if (pbin == nullptr)
 		return ecError;
-	cu_set_propval(&pmsgctnt->proplist, PR_CHANGE_KEY, pbin);
+	err = cu_set_propval(&pmsgctnt->proplist, PR_CHANGE_KEY, pbin);
+	if (err != ecSuccess)
+		return err;
 	auto pbin1 = pmsgctnt->proplist.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 	auto newpcl = common_util_pcl_append(pbin1, pbin);
 	if (newpcl == nullptr)
 		return ecError;
-	cu_set_propval(&pmsgctnt->proplist, PR_PREDECESSOR_CHANGE_LIST, newpcl);
-	ec_error_t e_result = ecError;
+	err = cu_set_propval(&pmsgctnt->proplist, PR_PREDECESSOR_CHANGE_LIST, newpcl);
+	if (err != ecSuccess)
+		return err;
+	err = ecError;
 	if (!exmdb_client->write_message(dst_store->get_dir(), pinfo->cpid,
-	    folder_id1, pmsgctnt, &e_result) || e_result != ecSuccess)
-		return e_result;
+	    folder_id1, pmsgctnt, &err) || err != ecSuccess)
+		return err;
 	return ecSuccess;
 }
 
@@ -1625,22 +1641,32 @@ static ec_error_t cu_create_folder(store_object *pstore, uint64_t parent_id,
 	if (!pproplist->has(PR_DISPLAY_NAME))
 		return ecInvalidParam;
 	tmp_type = FOLDER_GENERIC;
-	cu_set_propval(pproplist, PR_FOLDER_TYPE, &tmp_type);
-	cu_set_propval(pproplist, PidTagParentFolderId, &parent_id);
+	auto err = cu_set_propval(pproplist, PR_FOLDER_TYPE, &tmp_type);
+	if (err != ecSuccess)
+		return err;
+	err = cu_set_propval(pproplist, PidTagParentFolderId, &parent_id);
+	if (err != ecSuccess)
+		return err;
 	if (!exmdb_client->allocate_cn(pstore->get_dir(), &change_num))
 		return ecError;
-	cu_set_propval(pproplist, PidTagChangeNumber, &change_num);
+	err = cu_set_propval(pproplist, PidTagChangeNumber, &change_num);
+	if (err != ecSuccess)
+		return err;
 	auto pbin = cu_xid_to_bin({pstore->guid(), change_num});
 	if (pbin == nullptr)
 		return ecMAPIOOM;
-	cu_set_propval(pproplist, PR_CHANGE_KEY, pbin);
+	err = cu_set_propval(pproplist, PR_CHANGE_KEY, pbin);
+	if (err != ecSuccess)
+		return err;
 	auto pbin1 = pproplist->get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 	auto newpcl = common_util_pcl_append(pbin1, pbin);
 	if (newpcl == nullptr)
 		return ecMAPIOOM;
-	cu_set_propval(pproplist, PR_PREDECESSOR_CHANGE_LIST, newpcl);
+	err = cu_set_propval(pproplist, PR_PREDECESSOR_CHANGE_LIST, newpcl);
+	if (err != ecSuccess)
+		return err;
 	auto pinfo = zs_get_info();
-	ec_error_t err = ecSuccess;
+	err = ecSuccess;
 	if (!exmdb_client->create_folder(pstore->get_dir(), pinfo->cpid,
 	    pproplist, pfolder_id, &err))
 		return ecError;
@@ -1721,8 +1747,11 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 	if (!exmdb_client->get_folder_properties(src_store->get_dir(), CP_ACP,
 	    folder_id, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	if (new_name != nullptr)
-		cu_set_propval(&tmp_propvals, PR_DISPLAY_NAME, new_name);
+	if (new_name != nullptr) {
+		auto err = cu_set_propval(&tmp_propvals, PR_DISPLAY_NAME, new_name);
+		if (err != ecSuccess)
+			return err;
+	}
 	auto err = cu_create_folder(dst_store, folder_id1, &tmp_propvals, &new_fid);
 	if (err != ecSuccess)
 		return err;
