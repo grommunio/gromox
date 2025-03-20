@@ -61,8 +61,7 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 	const BINARY *pbin_pcl2);
 BOOL common_util_mapping_replica(BOOL to_guid,
 	void *pparam, uint16_t *preplid, GUID *pguid);
-/* must ensure there's enough buffer in ppropval */
-extern void cu_set_propval(TPROPVAL_ARRAY *, uint32_t tag, const void *data);
+extern ec_error_t cu_set_propval(TPROPVAL_ARRAY *, gromox::proptag_t, const void *data);
 void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag);
 extern BOOL common_util_retag_propvals(TPROPVAL_ARRAY *, uint32_t orig_tag, uint32_t new_tag);

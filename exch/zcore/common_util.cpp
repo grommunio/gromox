@@ -208,18 +208,27 @@ repr_grant cu_get_delegate_perm_AA(const char *account, const char *repr)
 	return cu_get_delegate_perm_MD(account, mres.maildir.c_str());
 }
 
-void common_util_set_propvals(TPROPVAL_ARRAY *parray,
-	const TAGGED_PROPVAL *ppropval)
+ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *data)
 {
 	int i;
 	
 	for (i=0; i<parray->count; i++) {
-		if (ppropval->proptag == parray->ppropval[i].proptag) {
-			parray->ppropval[i].pvalue = ppropval->pvalue;
-			return;
+		if (parray->ppropval[i].proptag == tag) {
+			parray->ppropval[i].pvalue = deconst(data);
+			return ecSuccess;
 		}
 	}
-	parray->ppropval[parray->count++] = *ppropval;
+
+	if (parray->count >= UINT16_MAX)
+		return ecTooBig;
+	auto newarr = cu_alloc<TAGGED_PROPVAL>(parray->count + 1);
+	if (newarr == nullptr)
+		return ecServerOOM;
+	if (parray->ppropval != nullptr)
+		memcpy(newarr, parray->ppropval, parray->count * sizeof(TAGGED_PROPVAL));
+	parray->ppropval = newarr;
+	parray->emplace_back(tag, data);
+	return ecSuccess;
 }
 
 void common_util_remove_propvals(
@@ -1556,7 +1565,6 @@ ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
     store_object *dst_store, uint64_t folder_id1)
 {
 	uint64_t change_num;
-	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zs_get_info();
@@ -1579,25 +1587,26 @@ ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!exmdb_client->allocate_cn(dst_store->get_dir(), &change_num))
 		return ecError;
-	propval.proptag = PidTagChangeNumber;
-	propval.pvalue = &change_num;
-	common_util_set_propvals(&pmsgctnt->proplist, &propval);
+	auto err = cu_set_propval(&pmsgctnt->proplist, PidTagChangeNumber, &change_num);
+	if (err != ecSuccess)
+		return err;
 	auto pbin = cu_xid_to_bin({src_store->guid(), change_num});
 	if (pbin == nullptr)
 		return ecError;
-	propval.proptag = PR_CHANGE_KEY;
-	propval.pvalue = pbin;
-	common_util_set_propvals(&pmsgctnt->proplist, &propval);
+	err = cu_set_propval(&pmsgctnt->proplist, PR_CHANGE_KEY, pbin);
+	if (err != ecSuccess)
+		return err;
 	auto pbin1 = pmsgctnt->proplist.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
-	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
-	propval.pvalue = common_util_pcl_append(pbin1, pbin);
-	if (propval.pvalue == nullptr)
+	auto newpcl = common_util_pcl_append(pbin1, pbin);
+	if (newpcl == nullptr)
 		return ecError;
-	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	ec_error_t e_result = ecError;
+	err = cu_set_propval(&pmsgctnt->proplist, PR_PREDECESSOR_CHANGE_LIST, newpcl);
+	if (err != ecSuccess)
+		return err;
+	err = ecError;
 	if (!exmdb_client->write_message(dst_store->get_dir(), pinfo->cpid,
-	    folder_id1, pmsgctnt, &e_result) || e_result != ecSuccess)
-		return e_result;
+	    folder_id1, pmsgctnt, &err) || err != ecSuccess)
+		return err;
 	return ecSuccess;
 }
 
@@ -1609,7 +1618,6 @@ static ec_error_t cu_create_folder(store_object *pstore, uint64_t parent_id,
 	uint32_t tmp_type;
 	uint64_t change_num;
 	uint32_t permission;
-	TAGGED_PROPVAL propval;
 	PERMISSION_DATA permission_row;
 	TAGGED_PROPVAL propval_buff[10];
 
@@ -1632,32 +1640,33 @@ static ec_error_t cu_create_folder(store_object *pstore, uint64_t parent_id,
 		common_util_remove_propvals(pproplist, t);
 	if (!pproplist->has(PR_DISPLAY_NAME))
 		return ecInvalidParam;
-	propval.proptag = PR_FOLDER_TYPE;
-	propval.pvalue = &tmp_type;
 	tmp_type = FOLDER_GENERIC;
-	common_util_set_propvals(pproplist, &propval);
-	propval.proptag = PidTagParentFolderId;
-	propval.pvalue = &parent_id;
-	common_util_set_propvals(pproplist, &propval);
+	auto err = cu_set_propval(pproplist, PR_FOLDER_TYPE, &tmp_type);
+	if (err != ecSuccess)
+		return err;
+	err = cu_set_propval(pproplist, PidTagParentFolderId, &parent_id);
+	if (err != ecSuccess)
+		return err;
 	if (!exmdb_client->allocate_cn(pstore->get_dir(), &change_num))
 		return ecError;
-	propval.proptag = PidTagChangeNumber;
-	propval.pvalue = &change_num;
-	common_util_set_propvals(pproplist, &propval);
+	err = cu_set_propval(pproplist, PidTagChangeNumber, &change_num);
+	if (err != ecSuccess)
+		return err;
 	auto pbin = cu_xid_to_bin({pstore->guid(), change_num});
 	if (pbin == nullptr)
 		return ecMAPIOOM;
-	propval.proptag = PR_CHANGE_KEY;
-	propval.pvalue = pbin;
-	common_util_set_propvals(pproplist, &propval);
+	err = cu_set_propval(pproplist, PR_CHANGE_KEY, pbin);
+	if (err != ecSuccess)
+		return err;
 	auto pbin1 = pproplist->get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
-	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
-	propval.pvalue = common_util_pcl_append(pbin1, pbin);
-	if (propval.pvalue == nullptr)
+	auto newpcl = common_util_pcl_append(pbin1, pbin);
+	if (newpcl == nullptr)
 		return ecMAPIOOM;
-	common_util_set_propvals(pproplist, &propval);
+	err = cu_set_propval(pproplist, PR_PREDECESSOR_CHANGE_LIST, newpcl);
+	if (err != ecSuccess)
+		return err;
 	auto pinfo = zs_get_info();
-	ec_error_t err = ecSuccess;
+	err = ecSuccess;
 	if (!exmdb_client->create_folder(pstore->get_dir(), pinfo->cpid,
 	    pproplist, pfolder_id, &err))
 		return ecError;
@@ -1728,7 +1737,6 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
 	uint32_t permission;
-	TAGGED_PROPVAL propval;
 	EID_ARRAY *pmessage_ids;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -1739,10 +1747,10 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 	if (!exmdb_client->get_folder_properties(src_store->get_dir(), CP_ACP,
 	    folder_id, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	if (NULL != new_name) {
-		propval.proptag = PR_DISPLAY_NAME;
-		propval.pvalue = deconst(new_name);
-		common_util_set_propvals(&tmp_propvals, &propval);
+	if (new_name != nullptr) {
+		auto err = cu_set_propval(&tmp_propvals, PR_DISPLAY_NAME, new_name);
+		if (err != ecSuccess)
+			return err;
 	}
 	auto err = cu_create_folder(dst_store, folder_id1, &tmp_propvals, &new_fid);
 	if (err != ecSuccess)

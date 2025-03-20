@@ -3299,8 +3299,6 @@ BOOL exmdb_server::store_table_state(const char *dir,
 BOOL exmdb_server::restore_table_state(const char *dir,
 	uint32_t table_id, uint32_t state_id, int32_t *pposition)
 {
-	int i;
-	int depth;
 	void *pvalue;
 	uint32_t idx;
 	uint16_t type;
@@ -3398,10 +3396,12 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 	pstmt1 = pdb->eph_prep(sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
+
+	unsigned int depth = 0;
 	while (pstmt.step() == SQLITE_ROW) {
 		row_id = sqlite3_column_int64(pstmt, 0);
 		row_stat = sqlite3_column_int64(pstmt, 1);
-		depth = sqlite3_column_int64(pstmt, 2);
+		depth = pstmt.col_uint64(2);
 		if (depth >= ptnode->psorts->cexpanded) {
 			if (row_stat == 0)
 				continue;
@@ -3443,8 +3443,9 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 	current_id = 0;
 	while (pstmt.step() == SQLITE_ROW) {
 		current_id ++;
-		depth = sqlite3_column_int64(pstmt, 0);
+		depth = pstmt.col_uint64(0);
 		row_id = 0;
+		unsigned int i;
 		for (i=0; i<=depth; i++) {
 			type = ptnode->psorts->psort[i].type & ~MVI_FLAG;
 			pvalue = common_util_column_sqlite_statement(pstmt, i + 1, type);

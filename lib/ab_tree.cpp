@@ -666,7 +666,7 @@ const char *ab_base::user_info(minid mid, userinfo ui) const
 	const sql_user *user = fetch_user(mid);
 	if (!user)
 		return nullptr;
-	uint32_t tag;
+	uint32_t tag = 0;
 	switch (ui) {
 	case userinfo::mail_address:
 		if ((user->dtypx & DTE_MASK_LOCAL) != DT_REMOTE_MAILUSER)
@@ -681,6 +681,7 @@ const char *ab_base::user_info(minid mid, userinfo ui) const
 	case userinfo::nick_name: tag = PR_NICKNAME; break;
 	case userinfo::home_address: tag = PR_HOME_ADDRESS_STREET; break;
 	case userinfo::store_path: return user->maildir.c_str();
+	default: return "";
 	}
 	auto it = user->propvals.find(tag);
 	return it != user->propvals.cend() ? it->second.c_str() : "";

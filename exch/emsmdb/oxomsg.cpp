@@ -656,7 +656,9 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 			auto nt = cu_alloc<uint64_t>();
 			if (nt != nullptr) {
 				*nt = rop_util_current_nttime();
-				cu_set_propval(*pppropvals, PR_PROVIDER_SUBMIT_TIME, nt);
+				auto err = cu_set_propval(*pppropvals, PR_PROVIDER_SUBMIT_TIME, nt);
+				if (err != ecSuccess)
+					return err;
 			}
 		}
 	}

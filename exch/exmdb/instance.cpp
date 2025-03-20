@@ -992,7 +992,6 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 	BOOL b_force, PROPTAG_ARRAY *pproptags,
 	PROBLEM_ARRAY *pproblems)
 {
-	int i;
 	uint32_t proptag;
 	TARRAY_SET *prcpts;
 	
@@ -1014,7 +1013,7 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 		return FALSE;
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	auto pproplist = &ict->proplist;
-	for (i=0; i<pmsgctnt->proplist.count; i++) {
+	for (unsigned int i = 0; i < pmsgctnt->proplist.count; ++i) {
 		proptag = pmsgctnt->proplist.ppropval[i].proptag;
 		switch (proptag) {
 		case PR_ASSOCIATED:
@@ -1125,7 +1124,6 @@ BOOL exmdb_server::load_attachment_instance(const char *dir,
     uint32_t message_instance_id, uint32_t attachment_num,
     uint32_t *pinstance_id) try
 {
-	int i;
 	ATTACHMENT_CONTENT *pattachment = nullptr;
 	
 	auto pdb = db_engine_get_db(dir);
@@ -1144,6 +1142,7 @@ BOOL exmdb_server::load_attachment_instance(const char *dir,
 		*pinstance_id = 0;
 		return TRUE;
 	}
+	unsigned int i;
 	for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
 		pattachment = pmsgctnt->children.pattachments->pplist[i];
 		auto pvalue = pattachment->proplist.get<uint32_t>(PR_ATTACH_NUM);
@@ -1244,7 +1243,6 @@ BOOL exmdb_server::write_attachment_instance(const char *dir,
 	uint32_t instance_id, const ATTACHMENT_CONTENT *pattctnt,
 	BOOL b_force, PROBLEM_ARRAY *pproblems)
 {
-	int i;
 	uint32_t proptag;
 	
 	auto pdb = db_engine_get_db(dir);
@@ -1260,7 +1258,7 @@ BOOL exmdb_server::write_attachment_instance(const char *dir,
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
 	auto pproplist = &static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent)->proplist;
-	for (i=0; i<pattctnt->proplist.count; i++) {
+	for (unsigned int i = 0; i < pattctnt->proplist.count; ++i) {
 		proptag = pattctnt->proplist.ppropval[i].proptag;
 		switch (proptag) {
 		case PR_RECORD_KEY:
@@ -1316,8 +1314,6 @@ BOOL exmdb_server::write_attachment_instance(const char *dir,
 BOOL exmdb_server::delete_message_instance_attachment(const char *dir,
     uint32_t message_instance_id, uint32_t attachment_num)
 {
-	int i;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
@@ -1329,6 +1325,8 @@ BOOL exmdb_server::delete_message_instance_attachment(const char *dir,
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	if (pmsgctnt->children.pattachments == nullptr)
 		return TRUE;
+
+	unsigned int i;
 	for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
 		auto pattachment = pmsgctnt->children.pattachments->pplist[i];
 		auto pvalue = pattachment->proplist.get<uint32_t>(PR_ATTACH_NUM);
@@ -1351,7 +1349,6 @@ BOOL exmdb_server::delete_message_instance_attachment(const char *dir,
 BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
     ec_error_t *pe_result)
 {
-	int i;
 	uint64_t folder_id;
 	char tmp_buff[1024];
 	char address_type[16];
@@ -1399,6 +1396,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 				return FALSE;
 			}
 			auto attachment_num = *pvalue;
+			unsigned int i;
 			for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
 				pvalue = pmsgctnt->children.pattachments->pplist[i]->proplist.get<uint32_t>(PR_ATTACH_NUM);
 				if (NULL == pvalue) {

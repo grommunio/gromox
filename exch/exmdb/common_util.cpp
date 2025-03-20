@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -109,25 +109,31 @@ ec_error_t cu_id2user(int id, std::string &user)
 	return mysql_adaptor_userid_to_name(id, user);
 }
 
-void cu_set_propval(TPROPVAL_ARRAY *parray, uint32_t tag, const void *data)
+ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *data)
 {
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
+	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (parray->ppropval[i].proptag != tag)
 			continue;
 		parray->ppropval[i].pvalue = deconst(data);
-		return;
+		return ecSuccess;
 	}
+
+	if (parray->count >= UINT16_MAX)
+		return ecTooBig;
+	auto newarr = cu_alloc<TAGGED_PROPVAL>(parray->count + 1);
+	if (newarr == nullptr)
+		return ecServerOOM;
+	if (parray->ppropval != nullptr)
+		memcpy(newarr, parray->ppropval, parray->count * sizeof(TAGGED_PROPVAL));
+	parray->ppropval = newarr;
 	parray->emplace_back(tag, data);
+	return ecSuccess;
 }
 
 void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag)
 {
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
+	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (proptag != parray->ppropval[i].proptag)
 			continue;
 		parray->count--;
@@ -5435,12 +5441,11 @@ uint32_t common_util_calculate_message_size(
 uint32_t common_util_calculate_attachment_size(
 	const ATTACHMENT_CONTENT *pattachment)
 {
-	int i;
 	TAGGED_PROPVAL *ppropval;
 	uint32_t attachment_size;
 	
 	attachment_size = 0;
-	for (i=0; i<pattachment->proplist.count; i++) {
+	for (unsigned int i = 0; i < pattachment->proplist.count; ++i) {
 		ppropval = pattachment->proplist.ppropval + i;
 		switch (ppropval->proptag) {
 		case PR_ATTACH_NUM:

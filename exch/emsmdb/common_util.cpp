@@ -578,25 +578,31 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 	return ret == ecSuccess ? TRUE : false;
 }
 
-void cu_set_propval(TPROPVAL_ARRAY *parray, uint32_t tag, const void *data)
+ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *data)
 {
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
+	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (parray->ppropval[i].proptag == tag) {
 			parray->ppropval[i].pvalue = deconst(data);
-			return;
+			return ecSuccess;
 		}
 	}
+
+	if (parray->count >= UINT16_MAX)
+		return ecTooBig;
+	auto newarr = cu_alloc<TAGGED_PROPVAL>(parray->count + 1);
+	if (newarr == nullptr)
+		return ecServerOOM;
+	if (parray->ppropval != nullptr)
+		memcpy(newarr, parray->ppropval, parray->count * sizeof(TAGGED_PROPVAL));
+	parray->ppropval = newarr;
 	parray->emplace_back(tag, data);
+	return ecSuccess;
 }
 
 void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag)
 {
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
+	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (proptag != parray->ppropval[i].proptag)
 			continue;
 		parray->count--;
@@ -610,9 +616,7 @@ void common_util_remove_propvals(
 BOOL common_util_retag_propvals(TPROPVAL_ARRAY *parray,
     uint32_t original_proptag, uint32_t new_proptag)
 {
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
+	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (parray->ppropval[i].proptag == original_proptag) {
 			parray->ppropval[i].proptag = new_proptag;
 			return TRUE;
@@ -661,7 +665,7 @@ BOOL common_util_propvals_to_row(
 	const TPROPVAL_ARRAY *ppropvals,
 	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow)
 {
-	int i;
+	unsigned int i;
 	static constexpr uint32_t errcode = ecNotFound, enotsup = ecNotSupported;
 	
 	for (i = 0; i < pcolumns->count; ++i)
@@ -792,9 +796,7 @@ BOOL common_util_row_to_propvals(
 	const PROPERTY_ROW *prow, const PROPTAG_ARRAY *pcolumns,
 	TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
-	
-	for (i=0; i<pcolumns->count; i++) {
+	for (unsigned int i = 0; i < pcolumns->count; ++i) {
 		void *pvalue;
 		if (PROPERTY_ROW_FLAG_NONE == prow->flag) {
 			pvalue = prow->pppropval[i];
@@ -804,7 +806,8 @@ BOOL common_util_row_to_propvals(
 				continue;	
 			pvalue = p->pvalue;
 		}
-		cu_set_propval(ppropvals, pcolumns->pproptag[i], pvalue);
+		if (cu_set_propval(ppropvals, pcolumns->pproptag[i], pvalue) != ecSuccess)
+			return false;
 	}
 	return TRUE;
 }
@@ -897,8 +900,13 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 	static constexpr uint8_t persist_true = true, persist_false = false;
 	BOOL b_unicode = (prow->flags & RECIPIENT_ROW_FLAG_UNICODE) ? TRUE : false;
 	
-	cu_set_propval(ppropvals, PR_RESPONSIBILITY, (prow->flags & RECIPIENT_ROW_FLAG_RESPONSIBLE) ? &persist_true : &persist_false);
-	cu_set_propval(ppropvals, PR_SEND_RICH_INFO, (prow->flags & RECIPIENT_ROW_FLAG_NONRICH) ? &persist_true : &persist_false);
+	if (cu_set_propval(ppropvals, PR_RESPONSIBILITY,
+	    (prow->flags & RECIPIENT_ROW_FLAG_RESPONSIBLE) ?
+	    &persist_true : &persist_false) != ecSuccess ||
+	    cu_set_propval(ppropvals, PR_SEND_RICH_INFO,
+	    (prow->flags & RECIPIENT_ROW_FLAG_NONRICH) ?
+	    &persist_true : &persist_false) != ecSuccess)
+		return false;
 	if (NULL != prow->ptransmittable_name) {
 		void *pvalue;
 		if (b_unicode) {
@@ -908,13 +916,16 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 			if (pvalue == nullptr)
 				return FALSE;
 		}
-		cu_set_propval(ppropvals, PR_TRANSMITABLE_DISPLAY_NAME, pvalue);
+		if (cu_set_propval(ppropvals, PR_TRANSMITABLE_DISPLAY_NAME,
+		    pvalue) != ecSuccess)
+			return false;
 	}
 	if (NULL != prow->pdisplay_name) {
 		auto pvalue = b_unicode ? prow->pdisplay_name :
 		              common_util_dup_mb_to_utf8(cpid, prow->pdisplay_name);
-		if (pvalue != nullptr)
-			cu_set_propval(ppropvals, PR_DISPLAY_NAME, pvalue);
+		if (pvalue != nullptr && cu_set_propval(ppropvals,
+		    PR_DISPLAY_NAME, pvalue) != ecSuccess)
+			return false;
 	}
 	if (NULL != prow->pmail_address) {
 		void *pvalue;
@@ -925,21 +936,25 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 			if (pvalue == nullptr)
 				return FALSE;
 		}
-		cu_set_propval(ppropvals, PR_EMAIL_ADDRESS, pvalue);
+		if (cu_set_propval(ppropvals, PR_EMAIL_ADDRESS, pvalue) != ecSuccess)
+			return false;
 	}
 	switch (prow->flags & 0x0007) {
 	case RECIPIENT_ROW_TYPE_NONE:
-		if (prow->paddress_type != nullptr)
-			cu_set_propval(ppropvals, PR_ADDRTYPE, prow->paddress_type);
+		if (prow->paddress_type != nullptr && cu_set_propval(ppropvals,
+		    PR_ADDRTYPE, prow->paddress_type) != ecSuccess)
+			return false;
 		break;
 	case RECIPIENT_ROW_TYPE_X500DN:
 		if (prow->px500dn == nullptr)
 			return FALSE;
-		cu_set_propval(ppropvals, PR_ADDRTYPE, "EX");
-		cu_set_propval(ppropvals, PR_EMAIL_ADDRESS, prow->px500dn);
+		if (cu_set_propval(ppropvals, PR_ADDRTYPE, "EX") != ecSuccess ||
+		    cu_set_propval(ppropvals, PR_EMAIL_ADDRESS, prow->px500dn) != ecSuccess)
+			return false;
 		break;
 	case RECIPIENT_ROW_TYPE_SMTP:
-		cu_set_propval(ppropvals, PR_ADDRTYPE, "SMTP");
+		if (cu_set_propval(ppropvals, PR_ADDRTYPE, "SMTP") != ecSuccess)
+			return false;
 		break;
 	default:
 		/* we do not support other address types */
@@ -958,7 +973,8 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 		str = ppropvals->get<char>(PR_SMTP_ADDRESS);
 	if (str == nullptr)
 		str = "Undisclosed-Recipients";
-	cu_set_propval(ppropvals, PR_DISPLAY_NAME, str);
+	if (cu_set_propval(ppropvals, PR_DISPLAY_NAME, str) != ecSuccess)
+		return false;
 	return TRUE;
 }
 
@@ -998,12 +1014,14 @@ BOOL common_util_modifyrecipient_to_propvals(cpid_t cpid,
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(16 + pcolumns->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	cu_set_propval(ppropvals, PR_ROWID, deconst(&prow->row_id));
+	if (cu_set_propval(ppropvals, PR_ROWID, deconst(&prow->row_id)) != ecSuccess)
+		return false;
 	auto rcpttype = cu_alloc<uint32_t>();
 	if (rcpttype == nullptr)
 		return FALSE;
 	*rcpttype = prow->recipient_type;
-	cu_set_propval(ppropvals, PR_RECIPIENT_TYPE, rcpttype);
+	if (cu_set_propval(ppropvals, PR_RECIPIENT_TYPE, rcpttype) != ecSuccess)
+		return false;
 	if (prow->precipient_row == nullptr)
 		return TRUE;
 	return common_util_recipient_to_propvals(cpid,

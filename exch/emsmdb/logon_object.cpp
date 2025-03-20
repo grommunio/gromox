@@ -395,7 +395,6 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
     uint32_t proptag, void **ppvalue)
 {
 	void *pvalue;
-	char temp_buff[1024];
 	static constexpr uint64_t tmp_ll = 0;
 	static constexpr uint8_t test_buff[256]{};
 	static constexpr BINARY test_bin = {std::size(test_buff), {deconst(test_buff)}};
@@ -514,7 +513,7 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		std::string dispname;
 		if (!mysql_adaptor_get_user_displayname(plogon->account, dispname))
 			return FALSE;	
-		auto temp_len = utf8_to_mb_len(temp_buff);
+		auto temp_len = utf8_to_mb_len(dispname.c_str());
 		auto tstr = cu_alloc<char>(std::max(temp_len, strlen(plogon->account) + 1));
 		*ppvalue = tstr;
 		if (*ppvalue == nullptr)

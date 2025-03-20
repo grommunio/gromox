@@ -3107,7 +3107,6 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 	TPROPVAL_ARRAY *prcpt;
 	FLATUID provider_uid;
 	TAGGED_PROPVAL *ppropval;
-	TAGGED_PROPVAL tmp_propval;
 	ONEOFF_ENTRYID oneoff_entry;
 	EMSAB_ENTRYID ab_entryid;
 	
@@ -3191,32 +3190,29 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				memcpy(ppropval, prcpt->ppropval,
 					prcpt->count*sizeof(TAGGED_PROPVAL));
 				prcpt->ppropval = ppropval;
-				tmp_propval.proptag = PR_ADDRTYPE;
-				tmp_propval.pvalue  = deconst("EX");
-				common_util_set_propvals(prcpt, &tmp_propval);
-				tmp_propval.proptag = PR_EMAIL_ADDRESS;
-				tmp_propval.pvalue = common_util_dup(ab_entryid.px500dn);
-				if (tmp_propval.pvalue == nullptr)
-					return ecError;
-				common_util_set_propvals(prcpt, &tmp_propval);
-				tmp_propval.proptag = PR_SMTP_ADDRESS;
+				auto err = cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
+				if (err != ecSuccess)
+					return err;
+				auto dupval = common_util_dup(ab_entryid.px500dn);
+				if (dupval == nullptr)
+					return ecServerOOM;
+				cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
 				std::string es_result;
 				auto ret = cvt_essdn_to_username(ab_entryid.px500dn,
 				           g_org_name, cu_id2user, es_result);
 				if (ret != ecSuccess)
 					continue;
-				tmp_propval.pvalue = common_util_dup(es_result);
-				if (tmp_propval.pvalue == nullptr)
+				dupval = common_util_dup(es_result);
+				if (dupval == nullptr)
 					return ecServerOOM;
 				es_result.clear();
-				common_util_set_propvals(prcpt, &tmp_propval);
+				cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
 				if (!mysql_adaptor_get_user_displayname(tmp_buff, es_result))
 					continue;	
-				tmp_propval.proptag = PR_DISPLAY_NAME;
-				tmp_propval.pvalue = common_util_dup(es_result);
-				if (tmp_propval.pvalue == nullptr)
-					return ecError;
-				common_util_set_propvals(prcpt, &tmp_propval);
+				dupval = common_util_dup(es_result);
+				if (dupval == nullptr)
+					return ecServerOOM;
+				cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
 				continue;
 			}
 			if (provider_uid == muidOOP) {
@@ -3230,26 +3226,19 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				memcpy(ppropval, prcpt->ppropval,
 					prcpt->count*sizeof(TAGGED_PROPVAL));
 				prcpt->ppropval = ppropval;
-				tmp_propval.proptag = PR_ADDRTYPE;
-				tmp_propval.pvalue  = deconst("SMTP");
-				common_util_set_propvals(prcpt, &tmp_propval);
-				tmp_propval.proptag = PR_EMAIL_ADDRESS;
-				tmp_propval.pvalue = common_util_dup(
-						oneoff_entry.pmail_address);
-				if (tmp_propval.pvalue == nullptr)
-					return ecError;
-				common_util_set_propvals(prcpt, &tmp_propval);
-				tmp_propval.proptag = PR_SMTP_ADDRESS;
-				common_util_set_propvals(prcpt, &tmp_propval);
-				tmp_propval.proptag = PR_DISPLAY_NAME;
-				tmp_propval.pvalue = common_util_dup(
-						oneoff_entry.pdisplay_name);
-				if (tmp_propval.pvalue == nullptr)
-					return ecError;
-				common_util_set_propvals(prcpt, &tmp_propval);
-				tmp_propval.proptag = PR_SEND_RICH_INFO;
-				tmp_propval.pvalue = deconst((oneoff_entry.ctrl_flags & MAPI_ONE_OFF_NO_RICH_INFO) ? &persist_false : &persist_true);
-				common_util_set_propvals(prcpt, &tmp_propval);
+				cu_set_propval(prcpt, PR_ADDRTYPE, "SMTP");
+				auto dupval = common_util_dup(oneoff_entry.pmail_address);
+				if (dupval == nullptr)
+					return ecServerOOM;
+				cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
+				cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
+				dupval = common_util_dup(oneoff_entry.pdisplay_name);
+				if (dupval == nullptr)
+					return ecServerOOM;
+				cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
+				cu_set_propval(prcpt, PR_SEND_RICH_INFO,
+					oneoff_entry.ctrl_flags & MAPI_ONE_OFF_NO_RICH_INFO ?
+					&persist_false : &persist_true);
 			}
 		}
 	}
@@ -5171,5 +5160,5 @@ ec_error_t zs_essdn_to_username(const char *essdn, char **username)
 	if (ret != ecSuccess)
 		return ret;
 	*username = common_util_dup(es_result);
-	return ecSuccess;
+	return *username != nullptr ? ecSuccess : ecServerOOM;
 }
