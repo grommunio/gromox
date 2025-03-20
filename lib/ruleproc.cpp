@@ -145,6 +145,53 @@ static void *cu_alloc(size_t z)
 	return rp_alloc_ctx.alloc(z);
 }
 
+template<typename T> T *cu_alloc_t()
+{
+        static_assert(std::is_trivially_destructible_v<T>);
+        return static_cast<T *>(cu_alloc(sizeof(T)));
+}
+
+template<typename T> T *cu_alloc_t(size_t elem)
+{
+        static_assert(std::is_trivially_destructible_v<T>);
+        return static_cast<T *>(cu_alloc(sizeof(T) * elem));
+}
+
+static ec_error_t cu_set_propval(TPROPVAL_ARRAY &arr, proptag_t tag,
+    const void *data)
+{
+	for (unsigned int i = 0; i < arr.count; ++i) {
+		if (arr.ppropval[i].proptag == tag) {
+			arr.ppropval[i].pvalue = deconst(data);
+			return ecSuccess;
+		}
+	}
+
+	if (arr.count >= UINT16_MAX)
+		return ecTooBig;
+	auto newarr = cu_alloc_t<TAGGED_PROPVAL>(arr.count + 1);
+	if (newarr == nullptr)
+		return ecMAPIOOM;
+	if (arr.ppropval != nullptr)
+		memcpy(newarr, arr.ppropval, arr.count * sizeof(TAGGED_PROPVAL));
+	arr.ppropval = newarr;
+	arr.emplace_back(tag, data);
+	return ecSuccess;
+}
+
+static void cu_remove_propval(TPROPVAL_ARRAY &arr, proptag_t proptag)
+{
+	for (unsigned int i = 0; i < arr.count; ++i) {
+		if (proptag != arr.ppropval[i].proptag)
+			continue;
+		arr.count--;
+		if (i < arr.count)
+			memmove(arr.ppropval + i, arr.ppropval + i + 1,
+				(arr.count - i) * sizeof(TAGGED_PROPVAL));
+		return;
+	}
+}
+
 static BOOL cu_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 {
 	return exmdb_client->get_named_propids(rp_storedir, false, names, ids);
@@ -667,17 +714,22 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	auto &props = dst->proplist;
 	if (!props.has(PR_LAST_MODIFICATION_TIME)) {
 		auto last_time = rop_util_current_nttime();
-		auto ret = props.set(PR_LAST_MODIFICATION_TIME, &last_time);
-		if (ret != 0)
-			return ecError;
+		auto err = cu_set_propval(props, PR_LAST_MODIFICATION_TIME, &last_time);
+		if (err != 0)
+			return err;
 	}
-	int ret;
-	if ((ret = props.set(PidTagMid, &dst_mid)) != 0 ||
-	    (ret = props.set(PidTagChangeNumber, &dst_cn)) != 0 ||
-	    (ret = props.set(PR_CHANGE_KEY, &xidbin)) != 0 ||
-	    (ret = props.set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != 0) {
-		return ecError;
-	}
+	err = cu_set_propval(props, PidTagMid, &dst_mid);
+	if (err != ecSuccess)
+		return err;
+	err = cu_set_propval(props, PidTagChangeNumber, &dst_cn);
+	if (err != ecSuccess)
+		return err;
+	err = cu_set_propval(props, PR_CHANGE_KEY, &xidbin);
+	if (err != ecSuccess)
+		return err;
+	err = cu_set_propval(props, PR_PREDECESSOR_CHANGE_LIST, pclbin.get());
+	if (err != ecSuccess)
+		return err;
 
 	/* Writeout */
 	ec_error_t e_result = ecRpcFailed;
@@ -906,13 +958,16 @@ static ec_error_t mr_mark_done(rxparam &par)
 {
 	static constexpr uint8_t v_yes = 1;
 	auto &prop = par.ctnt->proplist;
-	prop.erase(PR_CHANGE_KEY); /* assign new CK upon write */
-	prop.erase(PidTagChangeNumber);
-	if (prop.set(PR_PROCESSED, &v_yes) != 0 ||
-	    prop.set(PR_READ, &v_yes) != 0)
-		return ecServerOOM;
+	cu_remove_propval(prop, PR_CHANGE_KEY); /* assign new CK upon write */
+	cu_remove_propval(prop, PidTagChangeNumber);
+	auto err = cu_set_propval(prop, PR_PROCESSED, &v_yes);
+	if (err != ecSuccess)
+		return err;
+	err = cu_set_propval(prop, PR_READ, &v_yes);
+	if (err != ecSuccess)
+		return err;
 	uint64_t cal_mid = par.cur.mid, cal_cn = 0;
-	ec_error_t err = ecSuccess;
+	err = ecSuccess;
 	if (!exmdb_client->write_message_v2(par.cur.dir.c_str(), CP_ACP,
 	    par.cur.fid, par.ctnt, &cal_mid, &cal_cn, &err))
 		return ecRpcFailed;
@@ -999,31 +1054,47 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	};
 	for (const auto propid : copytags_1) {
 		auto v = rq_prop.getval(propid);
-		if (v != nullptr && rsp_prop.set(propid, v) != 0)
-			return ecMAPIOOM;
+		if (v != nullptr) {
+			auto err = cu_set_propval(rsp_prop, propid, v);
+			if (err != ecSuccess)
+				return err;
+		}
 	}
 	if (recurring_flg)
 		for (const auto propid : copytags_2) {
 			auto v = rq_prop.getval(propid);
-			if (v != nullptr && rsp_prop.set(propid, v) != 0)
-				return ecMAPIOOM;
+			if (v != nullptr) {
+				auto err = cu_set_propval(rsp_prop, propid, v);
+				if (err != ecSuccess)
+					return err;
+			}
 		}
+
+	const char *newclass = nullptr, *newprefix = nullptr;
 	if (rsp_status == respAccepted) {
-		if (rsp_prop.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Resp.Pos") != 0 ||
-		    rsp_prop.set(PR_SUBJECT_PREFIX, "Accepted: ") != 0)
-			return ecMAPIOOM;
+		newclass  = "IPM.Schedule.Meeting.Resp.Pos";
+		newprefix = "Accepted: ";
 	} else if (rsp_status == respTentative) {
-		if (rsp_prop.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Resp.Tent") != 0 ||
-		    rsp_prop.set(PR_SUBJECT_PREFIX, "Maybe: ") != 0)
-			return ecMAPIOOM;
+		newclass  = "IPM.Schedule.Meeting.Resp.Tent";
+		newprefix = "Maybe: ";
 	} else if (rsp_status == respDeclined) {
-		if (rsp_prop.set(PR_MESSAGE_CLASS, "IPM.Schedule.Meeting.Resp.Neg") != 0 ||
-		    rsp_prop.set(PR_SUBJECT_PREFIX, "Declined: ") != 0)
-			return ecMAPIOOM;
+		newclass  = "IPM.Schedule.Meeting.Resp.Neg";
+		newprefix = "Declined: ";
+	}
+	if (newclass != nullptr) {
+		auto err = cu_set_propval(rsp_prop, PR_MESSAGE_CLASS, newclass);
+		if (err != ecSuccess)
+			return err;
+	}
+	if (newprefix != nullptr) {
+		auto err = cu_set_propval(rsp_prop, PR_SUBJECT_PREFIX, newprefix);
+		if (err != ecSuccess)
+			return err;
 	}
 	auto nt_time = rop_util_current_nttime();
-	if (rsp_prop.set(PROP_TAG(PT_SYSTIME, propids[l_attendeecritchg]), &nt_time) != 0)
-		return ecMAPIOOM;
+	auto err = cu_set_propval(rsp_prop, PROP_TAG(PT_SYSTIME, propids[l_attendeecritchg]), &nt_time);
+	if (err != ecSuccess)
+		return err;
 	auto rcpts = tarray_set_init();
 	if (rcpts == nullptr)
 		return ecMAPIOOM;
@@ -1060,8 +1131,9 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		BINARY cvbin;
 		cvbin.cb = bin->cb + 5;
 		cvbin.pc = cvidx.get();
-		if (rsp_prop.set(PR_CONVERSATION_INDEX, &cvbin) != 0)
-			return ecMAPIOOM;
+		err = cu_set_propval(rsp_prop, PR_CONVERSATION_INDEX, &cvbin);
+		if (err != ecSuccess)
+			return err;
 	}
 
 	MAIL imail;
@@ -1071,7 +1143,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		mlog(LV_ERR, "mr_send_response: oxcmail_export failed for an unspecified reason.\n");
 		return ecError;
 	}
-	auto err = cu_send_mail(imail, rp_smtp_url.c_str(), par.ev_to, {txt});
+	err = cu_send_mail(imail, rp_smtp_url.c_str(), par.ev_to, {txt});
 	rp_alloc_ctx.clear();
 	rp_storedir = nullptr;
 	return err;
