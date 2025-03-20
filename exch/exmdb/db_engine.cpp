@@ -267,9 +267,7 @@ BOOL db_engine_vacuum(const char *path)
 
 BOOL db_engine_unload_db(const char *path)
 {
-	int i;
-	
-	for (i=0; i<20; i++) {
+	for (unsigned int i = 0; i < 20; ++i) {
 		std::unique_lock hhold(g_hash_lock);
 		auto it = g_hash_table.find(path);
 		if (it == g_hash_table.end())

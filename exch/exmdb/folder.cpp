@@ -533,7 +533,6 @@ BOOL exmdb_server::set_folder_properties(const char *dir, cpid_t cpid,
     uint64_t folder_id, const TPROPVAL_ARRAY *pproperties,
     PROBLEM_ARRAY *pproblems)
 {
-	unsigned int i;
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
@@ -542,7 +541,7 @@ BOOL exmdb_server::set_folder_properties(const char *dir, cpid_t cpid,
 	if (!sql_transact)
 		return false;
 	if (exmdb_server::is_private() && fid_val == PRIVATE_FID_ROOT) {
-		for (i=0; i<pproperties->count; i++) {
+		for (unsigned int i = 0; i < pproperties->count; ++i) {
 			if (pproperties->ppropval[i].proptag != PR_ADDITIONAL_REN_ENTRYIDS &&
 			    pproperties->ppropval[i].proptag != PR_ADDITIONAL_REN_ENTRYIDS_EX &&
 			    pproperties->ppropval[i].proptag != PR_REM_ONLINE_ENTRYID)
@@ -2241,7 +2240,6 @@ BOOL exmdb_server::empty_folder_rule(const char *dir, uint64_t folder_id)
 BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
     uint16_t count, const RULE_DATA *prow, BOOL *pb_exceed) try
 {
-	int i;
 	EXT_PUSH ext_push;
 	char sql_string[256];
 	static constexpr size_t bigbufsiz = 256 << 10;
@@ -2263,7 +2261,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 	size_t rule_count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	*pb_exceed = FALSE;
-	for (i=0; i<count; i++) {
+	for (unsigned int i = 0; i < count; ++i) {
 		switch (prow[i].flags) {
 		case ROW_ADD: {
 			if (rule_count >= g_max_rule_num) {

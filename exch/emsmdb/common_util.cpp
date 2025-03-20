@@ -580,9 +580,7 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 
 ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *data)
 {
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
+	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (parray->ppropval[i].proptag == tag) {
 			parray->ppropval[i].pvalue = deconst(data);
 			return ecSuccess;
@@ -604,9 +602,7 @@ ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *dat
 void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag)
 {
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
+	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (proptag != parray->ppropval[i].proptag)
 			continue;
 		parray->count--;
@@ -620,9 +616,7 @@ void common_util_remove_propvals(
 BOOL common_util_retag_propvals(TPROPVAL_ARRAY *parray,
     uint32_t original_proptag, uint32_t new_proptag)
 {
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
+	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (parray->ppropval[i].proptag == original_proptag) {
 			parray->ppropval[i].proptag = new_proptag;
 			return TRUE;
@@ -671,7 +665,7 @@ BOOL common_util_propvals_to_row(
 	const TPROPVAL_ARRAY *ppropvals,
 	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow)
 {
-	int i;
+	unsigned int i;
 	static constexpr uint32_t errcode = ecNotFound, enotsup = ecNotSupported;
 	
 	for (i = 0; i < pcolumns->count; ++i)
@@ -802,9 +796,7 @@ BOOL common_util_row_to_propvals(
 	const PROPERTY_ROW *prow, const PROPTAG_ARRAY *pcolumns,
 	TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
-	
-	for (i=0; i<pcolumns->count; i++) {
+	for (unsigned int i = 0; i < pcolumns->count; ++i) {
 		void *pvalue;
 		if (PROPERTY_ROW_FLAG_NONE == prow->flag) {
 			pvalue = prow->pppropval[i];

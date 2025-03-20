@@ -111,9 +111,7 @@ ec_error_t cu_id2user(int id, std::string &user)
 
 ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *data)
 {
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
+	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (parray->ppropval[i].proptag != tag)
 			continue;
 		parray->ppropval[i].pvalue = deconst(data);
@@ -135,9 +133,7 @@ ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *dat
 void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag)
 {
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
+	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (proptag != parray->ppropval[i].proptag)
 			continue;
 		parray->count--;
@@ -5445,12 +5441,11 @@ uint32_t common_util_calculate_message_size(
 uint32_t common_util_calculate_attachment_size(
 	const ATTACHMENT_CONTENT *pattachment)
 {
-	int i;
 	TAGGED_PROPVAL *ppropval;
 	uint32_t attachment_size;
 	
 	attachment_size = 0;
-	for (i=0; i<pattachment->proplist.count; i++) {
+	for (unsigned int i = 0; i < pattachment->proplist.count; ++i) {
 		ppropval = pattachment->proplist.ppropval + i;
 		switch (ppropval->proptag) {
 		case PR_ATTACH_NUM:

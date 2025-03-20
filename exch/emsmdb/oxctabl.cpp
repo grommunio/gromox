@@ -25,11 +25,10 @@ static BOOL oxctable_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria)
 {
-	int i;
 	uint32_t proptag;
 	
 	proptag = 0;
-	for (i=0; i<psort_criteria->count; i++) {
+	for (unsigned int i = 0; i < psort_criteria->count; ++i) {
 		if (!(psort_criteria->psort[i].type & MV_INSTANCE))
 			continue;
 		if (!(psort_criteria->psort[i].type & MV_FLAG))
@@ -37,7 +36,7 @@ static BOOL oxctable_verify_columns_and_sorts(
 		proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
 		break;
 	}
-	for (i = 0; i < pcolumns->count; ++i)
+	for (unsigned int i = 0; i < pcolumns->count; ++i)
 		if (pcolumns->pproptag[i] & MV_INSTANCE)
 			if (proptag != pcolumns->pproptag[i])
 				return FALSE;

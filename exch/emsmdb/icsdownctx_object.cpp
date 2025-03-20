@@ -609,7 +609,6 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
     MESSAGE_CONTENT *pmsgctnt, uint32_t group_id, const INDEX_ARRAY *pindices,
 	const PROPTAG_ARRAY *pproptags, MSGCHG_PARTIAL *pmsg)
 {
-	int i;
 	uint32_t index;
 	PROPTAG_ARRAY *pchangetags;
 	static constexpr BINARY fake_bin{};
@@ -639,7 +638,9 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 		pmsg->count = 0;
 		return FALSE;
 	}
-	for (i=0; i<pindices->count; i++) {
+
+	unsigned int i;
+	for (i = 0; i < pindices->count; ++i) {
 		index = pindices->pproptag[i];
 		pmsg->pchanges[i].index = index;
 		pchangetags = pgpinfo->pgroups + index;
