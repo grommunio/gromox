@@ -506,9 +506,11 @@ int feed_w3m(const void *inbuf, size_t len, std::string &outbuf) try
 	filename[pos+13] = '.';
 
 	std::unique_ptr<FILE, file_deleter> fp(fopen(filename.c_str(), "w"));
-	if (fp == nullptr || fwrite(inbuf, len, 1, fp.get()) != 1)
+	if (fp == nullptr)
 		return -1;
 	auto cl1 = HX::make_scope_exit([&]() { unlink(filename.c_str()); });
+	if (fwrite(inbuf, len, 1, fp.get()) != 1)
+		return -1;
 	fp.reset();
 	int fout = -1;
 	auto cl2 = HX::make_scope_exit([&]() { if (fout != -1) close(fout); });
