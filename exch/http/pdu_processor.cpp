@@ -2335,160 +2335,126 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	if (pcontext == nullptr)
 		return PDU_PROCESSOR_ERROR;
 	ndr.init(pbuff, length, flags);
-	DCERPC_CALL *pcall;
+	
+	std::unique_ptr<DCERPC_CALL> pcall;
 	try {
-		pcall = new DCERPC_CALL();
+		pcall = std::make_unique<DCERPC_CALL>();
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-2371: ENOMEM");
 		return PDU_PROCESSOR_ERROR;
 	}
 	pcall->b_bigendian = b_bigendian;
 	if (pdu_ndr_pull_ncacnpkt(&ndr, &pcall->pkt) != pack_result::ok) {
-		delete pcall;
 		return PDU_PROCESSOR_ERROR;
 	}
 	
 	auto rts = static_cast<const dcerpc_rts *>(pcall->pkt.payload);
 	if (pcontext->channel_type == hchannel_type::out) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-		if (76 == length) {
-			if (pchannel_out->channel_stat != hchannel_stat::openstart) {
-				delete pcall;
-				return PDU_PROCESSOR_ERROR;
-			}
-			if (rts->flags != RTS_FLAG_NONE) {
-				delete pcall;
+		if (length == 76) {
+			if (pchannel_out->channel_stat != hchannel_stat::openstart || rts->flags != RTS_FLAG_NONE) {
 				return PDU_PROCESSOR_ERROR;
 			}
 			if (!pdu_processor_retrieve_conn_a1(pcall,
 			    pchannel_out->connection_cookie, std::size(pchannel_out->connection_cookie),
 			    pchannel_out->channel_cookie, std::size(pchannel_out->channel_cookie),
 			    &pchannel_out->window_size)) {
-				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
 			pchannel_out->available_window = pchannel_out->window_size;
 			if (!pcontext->try_create_vconnection()) {
-				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
-			if (!pdu_processor_rts_conn_a3(pcall)) {
-				delete pcall;
+			if (!pdu_processor_rts_conn_a3(pcall.get())) {
 				return PDU_PROCESSOR_ERROR;
 			}
-			*ppcall = pcall;
+			*ppcall = pcall.release();
 			return PDU_PROCESSOR_OUTPUT;
-		} else if (96 == length) {
-			if (pchannel_out->channel_stat != hchannel_stat::openstart) {
-				delete pcall;
-				return PDU_PROCESSOR_ERROR;
-			}
-			if (rts->flags != RTS_FLAG_RECYCLE_CHANNEL) {
-				delete pcall;
-				return PDU_PROCESSOR_ERROR;
-			}
 			
-			/* process outr2/a3 rts pdu and do recycling */
-			char channel_cookie[GUIDSTR_SIZE];
+		} else if (length == 96) {
+			if (pchannel_out->channel_stat != hchannel_stat::openstart ||
+					rts->flags != RTS_FLAG_RECYCLE_CHANNEL) {
+				/* process outr2/a3 rts pdu and do recycling */
+				char channel_cookie[GUIDSTR_SIZE];
+			}
 			if (!pdu_processor_retrieve_outr2_a3(pcall,
-			    pchannel_out->connection_cookie, std::size(pchannel_out->connection_cookie),
-			    channel_cookie, std::size(channel_cookie),
-			    pchannel_out->channel_cookie, std::size(pchannel_out->channel_cookie),
-			    &pchannel_out->window_size)) {
-				delete pcall;
+				pchannel_out->connection_cookie, std::size(pchannel_out->connection_cookie),
+				channel_cookie, std::size(channel_cookie),
+				pchannel_out->channel_cookie, std::size(pchannel_out->channel_cookie),
+				&pchannel_out->window_size)) {
 				return PDU_PROCESSOR_ERROR;
 			}
 			pchannel_out->available_window = pchannel_out->window_size;
-			delete pcall;
 			if (!pcontext->recycle_outchannel(channel_cookie))
 				return PDU_PROCESSOR_ERROR;
 			pchannel_out->channel_stat = hchannel_stat::recycling;
 			return PDU_PROCESSOR_INPUT;
-		} else if (24 == length) {
-			if (pchannel_out->channel_stat != hchannel_stat::recycling) {
-				delete pcall;
+			
+		} else if (length == 24) {
+			if (pchannel_out->channel_stat != hchannel_stat::recycling || rts->flags != RTS_FLAG_PING) {
 				return PDU_PROCESSOR_ERROR;
 			}
-			if (rts->flags != RTS_FLAG_PING) {
-				delete pcall;
+			if (!pdu_processor_retrieve_outr2_c1(pcall.get())) {
 				return PDU_PROCESSOR_ERROR;
 			}
-			if (!pdu_processor_retrieve_outr2_c1(pcall)) {
-				delete pcall;
-				return PDU_PROCESSOR_ERROR;
-			}
-			*ppcall = pcall;
+			*ppcall = pcall.release();
 			return PDU_PROCESSOR_OUTPUT;
 		}
-	} else if (pcontext->channel_type == hchannel_type::in) {
+	}
+	
+	// === in channel handling ===
+	else if (pcontext->channel_type == hchannel_type::in) {
 		auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-		if (104 == length) {
-			if (pchannel_in->channel_stat != hchannel_stat::openstart) {
-				delete pcall;
+		
+		if (length == 104) {
+			if (pchannel_in->channel_stat != hchannel_stat::openstart || rts->flags != RTS_FLAG_NONE)
 				return PDU_PROCESSOR_ERROR;
-			}
-			if (rts->flags != RTS_FLAG_NONE) {
-				delete pcall;
+			/* process conn/b1 rts pdu and do connection to out channel */
+			if (!pdu_processor_retrieve_conn_b1(pcall.get(),
+				pchannel_in->connection_cookie, std::size(pchannel_in->connection_cookie),
+				pchannel_in->channel_cookie, std::size(pchannel_in->channel_cookie),
+				&pchannel_in->life_time, &pchannel_in->client_keepalive,
+				pchannel_in->assoc_group_id, std::size(pchannel_in->assoc_group_id)))
 				return PDU_PROCESSOR_ERROR;
-			}
 			
-			/* process conn/b1 rts pdu and do connection to out channel */ 
-			if (!pdu_processor_retrieve_conn_b1(pcall,
-			    pchannel_in->connection_cookie, std::size(pchannel_in->connection_cookie),
-			    pchannel_in->channel_cookie, std::size(pchannel_in->channel_cookie),
-			    &pchannel_in->life_time, &pchannel_in->client_keepalive,
-			    pchannel_in->assoc_group_id, std::size(pchannel_in->assoc_group_id))) {
-				delete pcall;
-				return PDU_PROCESSOR_ERROR;
-			}
-			delete pcall;
-			/* notify out channel to send conn/c2 to client */
 			if (!pcontext->try_create_vconnection())
 				return PDU_PROCESSOR_ERROR;
+			
 			pchannel_in->channel_stat = hchannel_stat::opened;
 			return PDU_PROCESSOR_INPUT;
-		} else if (88 == length) {
-			if (pchannel_in->channel_stat != hchannel_stat::openstart) {
-				delete pcall;
-				return PDU_PROCESSOR_ERROR;
-			}
-			if (rts->flags != RTS_FLAG_RECYCLE_CHANNEL) {
-				delete pcall;
-				return PDU_PROCESSOR_ERROR;
-			}
 			
-			/* process inr2/a1 rts pdu and do recycling */
+		} else if (length == 88) {
+			if (pchannel_in->channel_stat != hchannel_stat::openstart ||
+					rts->flags != RTS_FLAG_RECYCLE_CHANNEL) {
+				return PDU_PROCESSOR_ERROR;
+			}
 			char channel_cookie[GUIDSTR_SIZE];
-			if (!pdu_processor_retrieve_inr2_a1(pcall,
-			    pchannel_in->connection_cookie, std::size(pchannel_in->connection_cookie),
-			    channel_cookie, std::size(channel_cookie),
-			    pchannel_in->channel_cookie, std::size(pchannel_in->channel_cookie))) {
-				delete pcall;
+			if (!pdu_processor_retrieve_inr2_a1(pcall.get(),
+												pchannel_in->connection_cookie, std::size(pchannel_in->connection_cookie),
+												channel_cookie, std::size(channel_cookie),
+												pchannel_in->channel_cookie, std::size(pchannel_in->channel_cookie))) {
 				return PDU_PROCESSOR_ERROR;
 			}
 			if (!pcontext->recycle_inchannel(channel_cookie)) {
-				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
 			pchannel_in->channel_stat = hchannel_stat::opened;
-			pdu_processor_rts_inr2_a4(pcall);
-			*ppcall = pcall;
+			pdu_processor_rts_inr2_a4(pcall.get());
+			*ppcall = pcall.release();
 			return PDU_PROCESSOR_OUTPUT;
-		} else if (28 == length) {
+			
+		} else if (length == 28) {
 			/*
 			if (pchannel_in->channel_stat != hchannel_stat::opened) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
 			*/
-			if (rts->flags != RTS_FLAG_OTHER_CMD) {
-				delete pcall;
+			if (rts->flags != RTS_FLAG_OTHER_CMD)
 				return PDU_PROCESSOR_ERROR;
-			}
-
+			
 			time_duration keep_alive;
-			if (!pdu_processor_retrieve_keep_alive(pcall, &keep_alive)) {
-				delete pcall;
+			if (!pdu_processor_retrieve_keep_alive(pcall.get(), &keep_alive)) {
 				return PDU_PROCESSOR_ERROR;
 			}
 			/* MS-RPCH 2.2.3.5.6 */
@@ -2497,69 +2463,57 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				keep_alive = 300000ms;
 			else if (keep_alive < 60000ms)
 				keep_alive = 60000ms;
+			
 			pchannel_in->client_keepalive = keep_alive;
 			pcontext->set_keep_alive(keep_alive);
-			delete pcall;
 			return PDU_PROCESSOR_INPUT;
-		} else if (40 == length) {
-			if (pchannel_in->channel_stat != hchannel_stat::opened) {
-				delete pcall;
-				return PDU_PROCESSOR_ERROR;
-			}
-			if (rts->flags != RTS_FLAG_NONE) {
-				delete pcall;
+			
+		} else if (length == 40) {
+			if (pchannel_in->channel_stat != hchannel_stat::opened ||
+					rts->flags != RTS_FLAG_NONE) {
 				return PDU_PROCESSOR_ERROR;
 			}
 			
 			char channel_cookie[GUIDSTR_SIZE];
-			if (!pdu_processor_retrieve_inr2_a5(pcall,
-			    channel_cookie, std::size(channel_cookie))) {
-				delete pcall;
+			if (!pdu_processor_retrieve_inr2_a5(pcall.get(),
+												channel_cookie, std::size(channel_cookie)))
 				return PDU_PROCESSOR_ERROR;
-			}
-			delete pcall;
+			
 			if (pcontext->activate_inrecycling(channel_cookie))
 				return PDU_PROCESSOR_TERMINATE;
 			return PDU_PROCESSOR_INPUT;
-		} else if (56 == length) {
+			
+		} else if (length == 56) {
 			if (pchannel_in->channel_stat != hchannel_stat::opened) {
-				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
 			if (rts->flags == RTS_FLAG_OTHER_CMD) {
-				if (!pdu_processor_retrieve_flowcontrolack_withdestination(pcall)) {
-					delete pcall;
+				if (!pdu_processor_retrieve_flowcontrolack_withdestination(pcall.get())) {
 					return PDU_PROCESSOR_ERROR;
 				}
 				pcontext->set_outchannel_flowcontrol(
-					rts->commands[1].command.flowcontrolack.bytes_received,
-					rts->commands[1].command.flowcontrolack.available_window);
-				delete pcall;
-				return PDU_PROCESSOR_INPUT;
+							rts->commands[1].command.flowcontrolack.bytes_received,
+							rts->commands[1].command.flowcontrolack.available_window);
+				return PDU_PROCESSOR_INPUT;			
 			} else if (rts->flags == RTS_FLAG_OUT_CHANNEL) {
 				char channel_cookie[GUIDSTR_SIZE];
-				if (!pdu_processor_retrieve_outr2_a7(pcall,
-				    channel_cookie, std::size(channel_cookie))) {
-					delete pcall;
+				if (!pdu_processor_retrieve_outr2_a7(pcall.get(),
+													 channel_cookie, std::size(channel_cookie))) {
 					return PDU_PROCESSOR_ERROR;
 				}
-				delete pcall;
 				pcontext->activate_outrecycling(channel_cookie);
 				return PDU_PROCESSOR_INPUT;
 			} else {
-				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
-		} else if (20 == length) {
+		} else if (length == 20) {
 			if (rts->flags == RTS_FLAG_PING && rts->num == 0) {
-				delete pcall;
 				return PDU_PROCESSOR_INPUT;
 			}
 		}
 	}
 	
 	mlog(LV_DEBUG, "pdu_processor: unknown pdu in RTS process procedure");
-	delete pcall;
 	return PDU_PROCESSOR_ERROR;
 }
 

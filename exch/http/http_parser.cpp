@@ -1801,29 +1801,29 @@ static tproc_status htparse_rdbody_nochan(http_context *pcontext)
 static tproc_status htparse_rdbody(http_context *pcontext)
 {
 	if (pcontext->pchannel == nullptr ||
-	    (pcontext->channel_type != hchannel_type::in &&
-	    pcontext->channel_type != hchannel_type::out))
+		(pcontext->channel_type != hchannel_type::in &&
+		pcontext->channel_type != hchannel_type::out))
 		return htparse_rdbody_nochan(pcontext);
 
 	auto pchannel_in  = pcontext->channel_type == hchannel_type::in ?
-	                    static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel)  : nullptr;
+						static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel)  : nullptr;
 	auto pchannel_out = pcontext->channel_type == hchannel_type::out ?
-	                    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel) : nullptr;
+						static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel) : nullptr;
 	auto frag_length  = pcontext->channel_type == hchannel_type::in ?
-	                    pchannel_in->frag_length : pchannel_out->frag_length;
+						pchannel_in->frag_length : pchannel_out->frag_length;
 	auto tmp_len = pcontext->stream_in.get_total_length();
 	if (tmp_len < DCERPC_FRAG_LEN_OFFSET + 2 ||
-	    (frag_length > 0 && tmp_len < frag_length)) {
+		(frag_length > 0 && tmp_len < frag_length)) {
 		unsigned int size = STREAM_BLOCK_SIZE;
 		auto pbuff = pcontext->stream_in.get_write_buf(&size);
-		if (NULL == pbuff) {
+		if (pbuff == nullptr) {
 			mlog(LV_ERR, "E-1175: ENOMEM");
 			return http_done(pcontext, http_status::enomem_CL);
 		}
 
 		auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
 		auto current_time = tp_now();
-		if (0 == actual_read) {
+		if (actual_read == 0) {
 			pcontext->log(LV_DEBUG, "connection lost");
 			return tproc_status::runoff;
 		} else if (actual_read > 0) {
@@ -1857,12 +1857,11 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 	if (tmp_len < DCERPC_FRAG_LEN_OFFSET + 2)
 		return tproc_status::cont;
 
-	if (0 == frag_length) {
-		static_assert(std::is_same_v<decltype(frag_length), uint16_t>, "");
+	if (frag_length == 0) {
 		auto pbd = static_cast<uint8_t *>(pbuff);
 		auto pfrag = &pbd[DCERPC_FRAG_LEN_OFFSET];
 		frag_length = (pbd[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE) ?
-			      le16p_to_cpu(pfrag) : be16p_to_cpu(pfrag);
+					le16p_to_cpu(pfrag) : be16p_to_cpu(pfrag);
 		if (pcontext->channel_type == hchannel_type::in)
 			pchannel_in->frag_length = frag_length;
 		else
@@ -1872,11 +1871,13 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 	if (tmp_len < frag_length)
 		return tproc_status::cont;
 	g_context_key = pcontext;
-	DCERPC_CALL *pcall = nullptr;
-	auto result = pdu_processor_rts_input(static_cast<char *>(pbuff),
-		 frag_length, &pcall);
+	std::unique_ptr<DCERPC_CALL> pcall;
+	DCERPC_CALL *pcall_raw = nullptr;
+	auto result = pdu_processor_rts_input(static_cast<char *>(pbuff), frag_length, &pcall_raw);
+	pcall.reset(pcall_raw);
+
 	if (pcontext->channel_type == hchannel_type::in &&
-	    pchannel_in->channel_stat == hchannel_stat::opened) {
+			pchannel_in->channel_stat == hchannel_stat::opened) {
 		if (PDU_PROCESSOR_ERROR == result) {
 			/* ignore rts processing error under this condition */
 			result = PDU_PROCESSOR_INPUT;
@@ -1891,19 +1892,20 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 				return tproc_status::runoff;
 			}
 			if (pvconnection->pcontext_in != pcontext ||
-			    NULL == pvconnection->pprocessor) {
+					pvconnection->pprocessor == nullptr) {
 				pvconnection.put();
 				pcontext->log(LV_DEBUG,
 					"virtual connection error in hash table");
 				return tproc_status::runoff;
 			}
 			result = pdu_processor_input(pvconnection->pprocessor.get(),
-				 static_cast<char *>(pbuff), frag_length, &pcall);
+				 static_cast<char *>(pbuff), frag_length, &pcall_raw);
+			pcall.reset(pcall_raw);
 			pchannel_in->available_window -= frag_length;
 			pchannel_in->bytes_received += frag_length;
 			if (pcall != nullptr &&
-			    pvconnection->pcontext_out != nullptr &&
-			    pchannel_in->available_window < static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel)->window_size / 2) {
+				pvconnection->pcontext_out != nullptr &&
+				pchannel_in->available_window < static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel)->window_size / 2) {
 				auto och = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
 				pchannel_in->available_window = och->window_size;
 				pdu_processor_rts_flowcontrolack_withdestination(
@@ -1912,7 +1914,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 					pchannel_in->channel_cookie);
 				/* if it is a fragment pdu, we must
 					make the flowcontrol output */
-				if (PDU_PROCESSOR_INPUT == result) {
+			if (PDU_PROCESSOR_INPUT == result) {
 					pcall->move_pdus(och->pdu_list);
 					pvconnection->pcontext_out->sched_stat = hsched_stat::wrrep;
 					contexts_pool_signal(pvconnection->pcontext_out);
@@ -1944,7 +1946,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 			/* only under two conditions below, out channel
 			   will produce PDU_PROCESSOR_OUTPUT */
 			if (pchannel_out->channel_stat != hchannel_stat::openstart &&
-			    pchannel_out->channel_stat != hchannel_stat::recycling) {
+				pchannel_out->channel_stat != hchannel_stat::recycling) {
 				pcontext->log(LV_DEBUG,
 					"pdu process error! out channel can't output "
 					"itself after virtual connection established");
@@ -1967,30 +1969,28 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 				OUT_CHANNEL_MAX_LENGTH + response_len;
 			pcall->output_pdus(pcontext->stream_out);
 			/* never free this kind of pcall */
-			pchannel_out->pcall = pcall;
+			pchannel_out->pcall = pcall.release();
 			pcontext->bytes_rw = 0;
 			pcontext->sched_stat = hsched_stat::wrrep;
 			pchannel_out->channel_stat = pchannel_out->channel_stat == hchannel_stat::openstart ?
-			                             hchannel_stat::waitinchannel : hchannel_stat::waitrecycled;
+										 hchannel_stat::waitinchannel : hchannel_stat::waitrecycled;
 			return tproc_status::loop;
 		}
 		/* in channel here, find the corresponding out channel first! */
 		auto pvconnection = http_parser_get_vconnection(pcontext->host,
 			pcontext->port, pchannel_in->connection_cookie);
 		if (pvconnection == nullptr) {
-			delete pcall;
 			pcontext->log(LV_DEBUG,
 				"cannot find virtual connection in hash table");
 			return tproc_status::runoff;
 		}
 
 		if ((pcontext != pvconnection->pcontext_in &&
-		    pcontext != pvconnection->pcontext_insucc)
-		    || NULL == pvconnection->pcontext_out) {
+			 pcontext != pvconnection->pcontext_insucc)
+				|| pvconnection->pcontext_out == nullptr) {
 			pvconnection.put();
-			delete pcall;
 			pcontext->log(LV_DEBUG,
-				"missing out channel in virtual connection");
+						  "missing out channel in virtual connection");
 			return tproc_status::runoff;
 		}
 		auto och = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
@@ -1998,14 +1998,12 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 			auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 			pcall->move_pdus(hch->pdu_list);
 			pvconnection.put();
-			delete pcall;
 			return tproc_status::cont;
 		}
 		pcall->move_pdus(och->pdu_list);
 		pvconnection->pcontext_out->sched_stat = hsched_stat::wrrep;
 		contexts_pool_signal(pvconnection->pcontext_out);
 		pvconnection.put();
-		delete pcall;
 		return tproc_status::cont;
 	}
 	case PDU_PROCESSOR_TERMINATE:
