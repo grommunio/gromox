@@ -297,8 +297,6 @@ static pack_result mod_fastcgi_push_params_end(NDR_PUSH *pndr)
 	
 	offset = pndr->offset;
 	len = offset - 8;
-	if (len > 0xFFFF)
-		return pack_result::failure;
 	pndr->offset = 4;
 	TRY(pndr->p_uint16(len));
 	pndr->offset = offset;
