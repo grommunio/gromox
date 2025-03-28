@@ -387,9 +387,9 @@ void VCONN_REF::put()
 	m_hold.unlock();
 	std::unique_lock vc_hold(g_parser->g_vconnection_lock);
 	pvconnection->reference --;
-	if (0 == pvconnection->reference &&
-		NULL == pvconnection->pcontext_in &&
-		NULL == pvconnection->pcontext_out) {
+	if (pvconnection->reference == 0 &&
+	    pvconnection->pcontext_in == nullptr &&
+	    pvconnection->pcontext_out == nullptr) {
 		auto nd = g_parser->g_vconnection_hash.extract(m_iter);
 		vc_hold.unlock();
 		/* end locked region before running ~nd (~VCONN_REF, pdu_processor_destroy) */
