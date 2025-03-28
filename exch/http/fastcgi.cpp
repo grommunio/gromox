@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <limits.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
@@ -852,6 +853,12 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				return FALSE;
 			}
 			tmp_len = header.padding_len + 8;
+			if (tmp_len > INT_MAX) {//To remove the cov-scan error, I directly show
+									//that we are doing an out-of-bounds check.
+				phttp->log(LV_DEBUG, "record too large in mod_fastcgi");
+				mod_fastcgi_insert_ctx(phttp);
+				return FALSE;
+			}
 			if (!mod_fastcgi_safe_read(&fctx,
 			    tmp_buff, tmp_len)) {
 				phttp->log(LV_DEBUG, "failed to read"
