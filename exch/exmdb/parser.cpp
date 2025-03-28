@@ -301,26 +301,29 @@ static void *request_parser_thread(void *pparam)
 				}
 				if (NULL == prouter) {
 					tmp_byte = exmdb_response::lack_memory;
-				} else if (g_max_routers != 0 && g_router_list.size() >= g_max_routers) {
-					tmp_byte = exmdb_response::max_reached;
-				} else {
-					prouter->remote_id = q.remote_id;
-					exmdb_server::free_env();
-					if (5 != write(pconnection->sockd, resp_buff, 5)) {
-						break;
+				} else if (g_max_routers != 0) {
+					std::unique_lock<std::mutex> r_hold(g_router_lock);
+					if (g_router_list.size() >= g_max_routers) {
+						tmp_byte = exmdb_response::max_reached;
 					} else {
-						prouter->thr_id = pconnection->thr_id;
-						prouter->sockd = pconnection->sockd;
-						pconnection->thr_id = {};
-						pconnection->sockd = -1;
-						prouter->last_time = time(nullptr);
-						std::unique_lock r_hold(g_router_lock);
-						g_router_list.insert(prouter);
-						r_hold.unlock();
-						std::unique_lock chold(g_connection_lock);
-						g_connection_list.erase(pconnection);
-						chold.unlock();
-						notification_agent_thread_work(std::move(prouter));
+						prouter->remote_id = q.remote_id;
+						exmdb_server::free_env();
+						if (5 != write(pconnection->sockd, resp_buff, 5)) {
+							r_hold.unlock();
+							break;
+						} else {
+							prouter->thr_id = pconnection->thr_id;
+							prouter->sockd = pconnection->sockd;
+							pconnection->thr_id = {};
+							pconnection->sockd = -1;
+							prouter->last_time = time(nullptr);
+							g_router_list.insert(prouter);
+							r_hold.unlock();
+							std::unique_lock chold(g_connection_lock);
+							g_connection_list.erase(pconnection);
+							chold.unlock();
+							notification_agent_thread_work(std::move(prouter));
+						}
 					}
 				}
 			} else {
