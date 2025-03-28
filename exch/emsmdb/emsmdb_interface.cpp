@@ -404,6 +404,8 @@ void emsmdb_interface_remove_handle(const CXH &cxh)
 			break;
 		gl_hold.unlock();
 		usleep(100000);
+		gl_hold.lock(); //previously before going to sleep thread was unlocked
+						//but on resume we will got race condition due to unlocked mutex
 	}
 	auto uh_iter = g_user_hash.find(phandle->username);
 	if (uh_iter != g_user_hash.end()) {

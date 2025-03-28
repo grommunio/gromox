@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <limits.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
@@ -155,15 +156,15 @@ static int mod_fastcgi_defaults()
 	node.suffix = "php";
 	node.index = "index.php";
 	node.sock_path = FPMSOCKDIR "/php-grommunio-sync-fpm.sock";
-	g_fastcgi_list.push_back(node);
+	g_fastcgi_list.push_back(std::move(node));
 	node.path = "/web";
 	node.dir = DATADIR "/grommunio-web";
 	node.sock_path = FPMSOCKDIR "/php-grommunio-web-fpm.sock";
-	g_fastcgi_list.push_back(node);
+	g_fastcgi_list.push_back(std::move(node));
 	node.path = "/dav";
 	node.dir = DATADIR "/grommunio-dav";
 	node.sock_path = FPMSOCKDIR "/php-grommunio-dav-fpm.sock";
-	g_fastcgi_list.push_back(node);
+	g_fastcgi_list.push_back(std::move(node));
 	return 0;
 }
 
@@ -296,8 +297,6 @@ static pack_result mod_fastcgi_push_params_end(NDR_PUSH *pndr)
 	
 	offset = pndr->offset;
 	len = offset - 8;
-	if (len > 0xFFFF)
-		return pack_result::failure;
 	pndr->offset = 4;
 	TRY(pndr->p_uint16(len));
 	pndr->offset = offset;
@@ -852,6 +851,12 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				return FALSE;
 			}
 			tmp_len = header.padding_len + 8;
+			if (tmp_len > INT_MAX) {//To remove the cov-scan error, I directly show
+									//that we are doing an out-of-bounds check.
+				phttp->log(LV_DEBUG, "record too large in mod_fastcgi");
+				mod_fastcgi_insert_ctx(phttp);
+				return FALSE;
+			}
 			if (!mod_fastcgi_safe_read(&fctx,
 			    tmp_buff, tmp_len)) {
 				phttp->log(LV_DEBUG, "failed to read"

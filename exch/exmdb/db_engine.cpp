@@ -914,6 +914,7 @@ void db_engine_stop()
 			if (iter == g_hash_table.end())
 				break;
 			futs.emplace_back(std::async([](size_t tid, decltype(g_hash_table)::iterator iter, size_t skip) -> void {
+				std::lock_guard lk(g_hash_lock);
 				while (iter != g_hash_table.end()) {
 					iter->second.drop_all();
 					for (size_t i = 0; i < skip && iter != g_hash_table.end(); ++i)

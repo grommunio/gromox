@@ -40,8 +40,15 @@ void common_util_day_to_filetime(const char *day, FILETIME *pftime)
 	
 	memset(&tmp_tm, 0, sizeof(tmp_tm));
 	strptime(day, "%Y-%m-%d", &tmp_tm);
-	tmp_time = mktime(&tmp_tm);
-	file_time = ((uint64_t)tmp_time + EPOCH_DIFF)*10000000;
+	tmp_time = mktime(&tmp_tm); //mktime can return -1
+	
+	if (tmp_time == -1) {
+		pftime->low_datetime = 0;
+		pftime->high_datetime = 0;
+		return;
+	}
+	
+	file_time = ((uint64_t)tmp_time + EPOCH_DIFF) * 10000000;
 	pftime->low_datetime = file_time & 0xFFFFFFFF;
 	pftime->high_datetime = file_time >> 32;
 }
