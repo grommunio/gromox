@@ -165,7 +165,7 @@ static int mod_fastcgi_defaults()
 	node.path = "/dav";
 	node.dir = DATADIR "/grommunio-dav";
 	node.sock_path = FPMSOCKDIR "/php-grommunio-dav-fpm.sock";
-	g_fastcgi_list.push_back(node);
+	g_fastcgi_list.push_back(std::move(node));
 	return 0;
 }
 
