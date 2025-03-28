@@ -200,6 +200,8 @@ void mod_cache_stop()
 	}
 	g_directory_list.clear();
 	g_context_list.reset();
+	// CID 1558707 Coverity Scan found tha
+	std::unique_lock lock(g_hash_lock);
 	g_cache_hash.clear();
 }
 
