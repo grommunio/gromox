@@ -156,15 +156,15 @@ static int mod_fastcgi_defaults()
 	node.suffix = "php";
 	node.index = "index.php";
 	node.sock_path = FPMSOCKDIR "/php-grommunio-sync-fpm.sock";
-	g_fastcgi_list.push_back(node);
+	g_fastcgi_list.push_back(std::move(node));
 	node.path = "/web";
 	node.dir = DATADIR "/grommunio-web";
 	node.sock_path = FPMSOCKDIR "/php-grommunio-web-fpm.sock";
-	g_fastcgi_list.push_back(node);
+	g_fastcgi_list.push_back(std::move(node));
 	node.path = "/dav";
 	node.dir = DATADIR "/grommunio-dav";
 	node.sock_path = FPMSOCKDIR "/php-grommunio-dav-fpm.sock";
-	g_fastcgi_list.push_back(node);
+	g_fastcgi_list.push_back(std::move(node));
 	return 0;
 }
 
