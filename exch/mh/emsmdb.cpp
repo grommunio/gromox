@@ -791,18 +791,17 @@ int MhEmsmdbPlugin::retr(int context_id)
 void MhEmsmdbPlugin::term(int context_id)
 {
 	EMSMDB_HANDLE acxh;
-
-	if (status[context_id].pending_status == PENDING_STATUS_NONE)
-		return;
-	acxh.handle_type = 0;
 	std::unique_lock ll_hold(pending_lock);
+	
 	if (status[context_id].pending_status != PENDING_STATUS_NONE) {
 		acxh.handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
 		acxh.guid = status[context_id].session_guid;
 		pending.erase(&status[context_id]);
 		status[context_id].pending_status = PENDING_STATUS_NONE;
 	}
+	
 	ll_hold.unlock();
+	
 	if (acxh.handle_type == HANDLE_EXCHANGE_ASYNCEMSMDB)
 		asyncemsmdb_interface_remove(&acxh);
 }
