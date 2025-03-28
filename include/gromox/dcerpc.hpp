@@ -22,7 +22,7 @@ struct DCERPC_INFO {
 	BOOL is_login = false; /* if client login */
 	const char *username = nullptr; /* username of client by http auth */
 	const char *maildir = nullptr, *lang = nullptr;
-	uint32_t stat_flags;   /* state flags of rpc context */
+	uint32_t stat_flags = 0; /* state flags of rpc context */
 };
 
 struct DCERPC_INTERFACE {
