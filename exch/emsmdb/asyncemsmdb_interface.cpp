@@ -281,21 +281,23 @@ static void *aemsi_thrwork(void *param)
 {
 	DOUBLE_LIST_NODE *pnode;
 	std::mutex g_cond_mutex;
-	
-	while (!g_notify_stop) {
-		std::unique_lock cm_hold(g_cond_mutex);
-		g_waken_cond.wait(cm_hold);
-		cm_hold.unlock();
- NEXT_WAKEUP:
-		if (g_notify_stop)
+
+	while (true) {
+		std::unique_lock<std::mutex> cm_hold(g_cond_mutex);
+		g_waken_cond.wait(cm_hold, [] {
+			return g_notify_stop.load() || double_list_get_nodes_num(&g_wakeup_list) > 0;
+		});
+		if (g_notify_stop.load())
 			break;
-		std::unique_lock ll_hold(g_list_lock);
-		pnode = double_list_pop_front(&g_wakeup_list);
-		ll_hold.unlock();
+
+		cm_hold.unlock();
+		{
+			std::unique_lock<std::mutex> ll_hold(g_list_lock);
+			pnode = double_list_pop_front(&g_wakeup_list);
+		}
 		if (pnode == nullptr)
 			continue;
 		asyncemsmdb_interface_activate(static_cast<ASYNC_WAIT *>(pnode->pdata), TRUE);
-		goto NEXT_WAKEUP;
 	}
 	return nullptr;
 }
