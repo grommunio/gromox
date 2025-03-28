@@ -117,6 +117,7 @@ void cmd_parser_stop()
 		pthread_join(tid, nullptr);
 	}
 	g_thread_ids.clear();
+	chold.lock();
 	g_connlist_active.clear();
 	g_connlist_idle.clear();
 }
