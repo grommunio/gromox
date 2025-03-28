@@ -193,6 +193,8 @@ void pdu_processor_init(int connection_num, const char *netbios_name,
     } e;
 
 	e.i = 0xFF000000;
+	//silent cov-scan, do lock even if single thread
+	std::unique_lock as_hold(g_async_lock);
 	g_bigendian = e.c[0] != 0 ? TRUE : false;
 	g_last_async_id = 0;
 	g_connection_ratio = connection_ratio;

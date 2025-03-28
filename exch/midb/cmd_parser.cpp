@@ -116,6 +116,7 @@ void cmd_parser_stop()
 		pthread_kill(tid, SIGALRM);
 		pthread_join(tid, nullptr);
 	}
+	chold.lock(); //silent cov-scan
 	g_thread_ids.clear();
 	g_connlist_active.clear();
 	g_connlist_idle.clear();
