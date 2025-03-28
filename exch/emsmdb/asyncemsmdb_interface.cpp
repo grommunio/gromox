@@ -54,7 +54,8 @@ static gromox::atomic_bool g_notify_stop{true};
 static DOUBLE_LIST g_wakeup_list;
 static std::unordered_map<std::string, ASYNC_WAIT *> g_tag_hash;
 static size_t g_tag_hash_max;
-static std::mutex g_list_lock, g_async_lock;
+static std::mutex g_list_lock; /* protects g_wakeup_list */
+static std::mutex g_async_lock; /* protects g_tag_hash & g_async_hash */
 static std::condition_variable g_waken_cond;
 static std::unordered_map<int, ASYNC_WAIT *> g_async_hash;
 
@@ -124,11 +125,8 @@ void asyncemsmdb_interface_stop()
 	}
 	g_thread_ids.clear();
 	{ /* silence cov-scan, take locks even in single-thread scenarios */
-		std::lock_guard lk(g_list_lock);
-		g_tag_hash.clear();
-	}
-	{
 		std::lock_guard lk(g_async_lock);
+		g_tag_hash.clear();
 		g_async_hash.clear();
 	}
 }
