@@ -123,6 +123,8 @@ struct RPC_OUT_CHANNEL {
 	hchannel_stat channel_stat = hchannel_stat::openstart;
 };
 
+HTTP_CONTEXT* get_context_list();
+void reset_context_list();
 extern void http_parser_init(size_t context_num, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int http_parser_run();
 extern tproc_status http_parser_process(schedule_context *);

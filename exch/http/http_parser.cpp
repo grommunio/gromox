@@ -124,6 +124,17 @@ size_t g_rqbody_flush_size, g_rqbody_max_size;
 bool g_enforce_auth;
 static thread_local HTTP_CONTEXT *g_context_key;
 static std::unique_ptr<HTTP_CONTEXT[]> g_context_list;
+HTTP_CONTEXT* get_context_list() {
+	static std::unique_ptr<HTTP_CONTEXT[]> instance(new HTTP_CONTEXT[g_context_num]);
+	return instance.get();
+}
+void reset_context_list() {
+	static std::unique_ptr<HTTP_CONTEXT[]>& instance = []() -> std::unique_ptr<HTTP_CONTEXT[]>& {
+			static std::unique_ptr<HTTP_CONTEXT[]> s;
+			return s;
+}();
+	instance.reset();
+}
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static std::string g_certificate_path, g_private_key_path, g_certificate_passwd;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
@@ -158,8 +169,10 @@ void http_report()
 	mlog(LV_INFO, "Ctx  fd  src->host");
 	mlog(LV_INFO, "   ChTy  RPCEndpoint, Username");
 	mlog(LV_INFO, "-------------------------------------------------------------------------------");
+
+    HTTP_CONTEXT* ctx_list = get_context_list();
 	for (size_t i = 0; i < g_context_num; ++i)
-		httpctx_report(g_context_list[i], i);
+		httpctx_report(ctx_list[i], i);
 }
 
 void http_parser_init(size_t context_num, time_duration timeout,
@@ -173,7 +186,7 @@ void http_parser_init(size_t context_num, time_duration timeout,
 	g_block_auth_fail       = block_auth_fail;
 	g_support_tls = support_tls;
 	g_async_stop = false;
-	
+
 	if (!support_tls)
 		return;
 	g_certificate_path = certificate_path;
@@ -264,23 +277,25 @@ int http_parser_run()
 #endif
 	}
 	try {
-		g_context_list = std::make_unique<HTTP_CONTEXT[]>(g_context_num);
 		g_context_list2.resize(g_context_num);
+
+		HTTP_CONTEXT* ctx_list = get_context_list();
+
 		for (size_t i = 0; i < g_context_num; ++i) {
-			g_context_list[i].context_id = i;
-			g_context_list2[i] = &g_context_list[i];
+			ctx_list[i].context_id = i;
+			g_context_list2[i] = &ctx_list[i];
 		}
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "http_parser: failed to allocate HTTP contexts");
-        return -8;
-    }
+		return -8;
+	}
     return 0;
 }
 
 void http_parser_stop()
 {
 	g_context_list2.clear();
-	g_context_list.reset();
+	reset_context_list();
 	g_vconnection_hash.clear();
 	if (g_support_tls && g_ssl_ctx != nullptr) {
 		SSL_CTX_free(g_ssl_ctx);
@@ -2266,10 +2281,12 @@ HTTP_CONTEXT* http_parser_get_context()
 void http_parser_set_context(int context_id)
 {
 	if (context_id < 0 ||
-	    static_cast<size_t>(context_id) >= g_context_num)
+		static_cast<size_t>(context_id) >= g_context_num) {
 		g_context_key = nullptr;
-	else
-		g_context_key = &g_context_list[context_id];
+	} else {
+		HTTP_CONTEXT* ctx_list = get_context_list();
+		g_context_key = &ctx_list[context_id];
+	}
 }
 
 bool http_parser_get_password(const char *username, char *password)
