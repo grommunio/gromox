@@ -86,19 +86,20 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 		mlog(LV_INFO, "timer_agent: timer address is [%s]:%hu",
 		       *g_timer_ip == '\0' ? "*" : g_timer_ip, g_timer_port);
 
+		std::unique_lock bk_hold(g_back_lock);
 		for (size_t i = 0; i < conn_num; ++i) try {
 			g_lost_list.emplace_back();
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1655: ENOMEM");
 		}
-
+		bk_hold.unlock();
 		g_notify_stop = false;
 		auto ret = pthread_create4(&g_scan_id, nullptr, tmrag_scanwork, nullptr);
 		if (ret != 0) {
 			g_notify_stop = true;
 			g_back_list.clear();
 			mlog(LV_ERR, "timer_agent: failed to create scan thread: %s",
-			        strerror(ret));
+				 strerror(ret));
 			return FALSE;
 		}
 		pthread_setname_np(g_scan_id, "timer_agent");
@@ -113,12 +114,15 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
+	{
+		std::unique_lock bk_hold(g_back_lock, std::defer_lock);
 		if (!g_notify_stop) {
 			g_notify_stop = true;
 			if (!pthread_equal(g_scan_id, {})) {
 				pthread_kill(g_scan_id, SIGALRM);
 				pthread_join(g_scan_id, NULL);
 			}
+			bk_hold.lock();
 			g_lost_list.clear();
 			while (g_back_list.size() > 0) {
 				auto pback = &g_back_list.front();
@@ -127,9 +131,12 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 				close(pback->sockd);
 				g_back_list.pop_front();
 			}
+			bk_hold.unlock();
 		}
+		bk_hold.lock();
 		g_back_list.clear();
 		return TRUE;
+	}
 	default:
 		return TRUE;
 	}
@@ -162,8 +169,8 @@ static void *tmrag_scanwork(void *param)
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
 			if (HXio_fullwrite(pback->sockd, "PING\r\n", 6) != 6 ||
-			    poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1 ||
-			    read(pback->sockd, temp_buff, 1024) <= 0) {
+					poll(&pfd_read, 1, SOCKET_TIMEOUT_MS) != 1 ||
+					read(pback->sockd, temp_buff, 1024) <= 0) {
 				close(pback->sockd);
 				pback->sockd = -1;
 				bk_hold.lock();
@@ -176,12 +183,12 @@ static void *tmrag_scanwork(void *param)
 				bk_hold.unlock();
 			}
 		}
-
+		
 		bk_hold.lock();
 		temp_list = std::move(g_lost_list);
 		g_lost_list.clear();
 		bk_hold.unlock();
-
+		
 		while (temp_list.size() > 0) {
 			auto pback = &temp_list.front();
 			pback->sockd = connect_timer();
@@ -214,7 +221,7 @@ static int add_timer(const char *command, int interval)
 	bk_hold.unlock();
 	auto pback = &hold.front();
 	len = gx_snprintf(temp_buff, std::size(temp_buff), "ADD %d %s\r\n",
-			interval, command);
+					  interval, command);
 	if (len != write(pback->sockd, temp_buff, len)) {
 		close(pback->sockd);
 		pback->sockd = -1;
@@ -244,7 +251,7 @@ static BOOL cancel_timer(int timer_id)
 	int len;
 	char temp_buff[MAX_CMD_LENGTH];
 	std::list<BACK_CONN> hold;
-
+	
 	std::unique_lock bk_hold(g_back_lock);
 	if (g_back_list.size() == 0)
 		return FALSE;
@@ -294,7 +301,7 @@ static int read_line(int sockd, char *buff, int length)
 		}
 		offset += read_len;
 		if (offset >= 2 &&
-			'\r' == buff[offset - 2] && '\n' == buff[offset - 1]) {
+				'\r' == buff[offset - 2] && '\n' == buff[offset - 1]) {
 			buff[offset - 2] = '\0';
 			return 0;
 		}
@@ -307,7 +314,7 @@ static int read_line(int sockd, char *buff, int length)
 
 static int connect_timer()
 {
-    char temp_buff[1024];
+	char temp_buff[1024];
 	int sockd = HX_inet_connect(g_timer_ip, g_timer_port, 0);
 	if (sockd < 0) {
 		static std::atomic<time_t> g_lastwarn_time;
@@ -316,8 +323,8 @@ static int connect_timer()
 		auto now = time(nullptr);
 		if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
 			mlog(LV_ERR, "HX_inet_connect timer_agent@[%s]:%hu: %s",
-			        g_timer_ip, g_timer_port, strerror(-sockd));
-	        return -1;
+				 g_timer_ip, g_timer_port, strerror(-sockd));
+		return -1;
 	}
 	if (-1 == read_line(sockd, temp_buff, 1024) ||
 		0 != strcasecmp(temp_buff, "OK")) {
