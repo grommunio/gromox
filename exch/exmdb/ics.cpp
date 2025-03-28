@@ -392,8 +392,11 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		eid_array_free(enum_param.pdeleted_eids);
 		return FALSE;
 	}
-	if (delete_impossible_mids(*pgiven, *enum_param.pdeleted_eids) != ecSuccess)
+	if (delete_impossible_mids(*pgiven, *enum_param.pdeleted_eids) != ecSuccess) {
+		eid_array_free(enum_param.pdeleted_eids);
+		eid_array_free(enum_param.pnolonger_mids);
 		return false;
+	}
 	if (!const_cast<idset *>(pgiven)->enum_repl(1, &enum_param,
 	    ics_enum_content_idset)) {
 		eid_array_free(enum_param.pdeleted_eids);
