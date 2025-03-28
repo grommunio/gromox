@@ -95,8 +95,9 @@ namespace {
 class VCONN_REF {
 	public:
 	VCONN_REF() = default;
-	explicit VCONN_REF(VIRTUAL_CONNECTION *p, decltype(g_vconnection_hash)::iterator i) :
-		pvconnection(p), m_hold(p->lock), m_iter(std::move(i)) {}
+	explicit VCONN_REF(VIRTUAL_CONNECTION *p, decltype(g_vconnection_hash)::iterator i)
+		: pvconnection(p), m_iter(std::move(i)) {}
+
 	~VCONN_REF() { put(); }
 	NOMOVE(VCONN_REF);
 	bool operator!=(std::nullptr_t) const { return pvconnection != nullptr; }
@@ -106,7 +107,6 @@ class VCONN_REF {
 
 	private:
 	VIRTUAL_CONNECTION *pvconnection = nullptr;
-	std::unique_lock<std::mutex> m_hold;
 	decltype(g_vconnection_hash)::iterator m_iter;
 };
 }
@@ -330,17 +330,18 @@ static VCONN_REF http_parser_get_vconnection(const char *host,
 
 void VCONN_REF::put()
 {
+	std::unique_lock vc_hold(g_vconnection_lock);
+
 	if (pvconnection == nullptr)
 		return;
-	m_hold.unlock();
-	std::unique_lock vc_hold(g_vconnection_lock);
-	pvconnection->reference --;
-	if (0 == pvconnection->reference &&
-		NULL == pvconnection->pcontext_in &&
-		NULL == pvconnection->pcontext_out) {
+
+	pvconnection->reference--;
+
+	if (pvconnection->reference == 0 &&
+			pvconnection->pcontext_in == nullptr &&
+			pvconnection->pcontext_out == nullptr) {
 		auto nd = g_vconnection_hash.extract(m_iter);
 		vc_hold.unlock();
-		/* end locked region before running ~nd (~VCONN_REF, pdu_processor_destroy) */
 	}
 	pvconnection = nullptr;
 }
