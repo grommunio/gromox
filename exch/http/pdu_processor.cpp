@@ -2317,14 +2317,14 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	DCERPC_CALL **ppcall)
 {
 	NDR_PULL ndr;
-	uint32_t flags;
+	uint32_t flags = 0;
 	BOOL b_bigendian;
 	HTTP_CONTEXT *pcontext;
 	
 	/* only rts pdu can be processed by this function */
 	if (pbuff[DCERPC_PTYPE_OFFSET] != DCERPC_PKT_RTS)
 		return PDU_PROCESSOR_FORWARD;
-	flags = 0;
+	
 	if (!(pbuff[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE)) {
 		flags |= NDR_FLAG_BIGENDIAN;
 		b_bigendian = TRUE;
@@ -2862,12 +2862,10 @@ PROC_PLUGIN::~PROC_PLUGIN()
 */
 static DCERPC_INFO pdu_processor_get_rpc_info()
 {
-	DCERPC_INFO info;
-	DCERPC_CALL *pcall;
-	HTTP_CONTEXT *pcontext;
+	DCERPC_INFO info = {};  //zero-init
+	DCERPC_CALL *pcall = pdu_processor_get_call();
+	HTTP_CONTEXT *pcontext = http_parser_get_context();
 	
-	pcall = pdu_processor_get_call();
-	pcontext = http_parser_get_context();
 	if (NULL != pcontext) {
 		info.client_addr = pcontext->connection.client_addr;
 		info.client_port = pcontext->connection.client_port;
