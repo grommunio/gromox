@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <climits>
 #include <condition_variable>
 #include <csignal>
@@ -36,7 +38,8 @@ static unsigned int g_threads_num;
 static gromox::atomic_bool g_notify_stop;
 static int g_timeout_interval;
 static std::vector<pthread_t> g_thread_ids;
-static std::mutex g_connection_lock, g_cond_mutex;
+static std::mutex g_connection_lock; /* protects g_connlist_active, g_connlist_idle */
+static std::mutex g_cond_mutex;
 static std::condition_variable g_waken_cond;
 static std::list<midb_conn> g_connlist_active, g_connlist_idle;
 static std::unordered_map<std::string, midb_cmd> g_cmd_entry;
@@ -214,6 +217,12 @@ static int midcp_exec(int argc, char **argv, MIDB_CONNECTION *conn)
 	return cmd_write_x(1, conn->sockd, rsp, len) < 0 ? MIDB_E_NETIO : 0;
 }
 
+static size_t connlist_idle_size()
+{
+	std::unique_lock lk(g_connection_lock);
+	return g_connlist_idle.size();
+}
+
 static void *midcp_thrwork(void *param)
 {
 	int i, argc, offset, tv_msec, read_len;
@@ -221,90 +230,98 @@ static void *midcp_thrwork(void *param)
 	struct pollfd pfd_read;
 	char buffer[CONN_BUFFLEN];
 
- NEXT_LOOP:
-	if (g_notify_stop)
-		return nullptr;
-	std::unique_lock cm_hold(g_cond_mutex);
-	g_waken_cond.wait(cm_hold);
-	cm_hold.unlock();
-	if (g_notify_stop)
-		return nullptr;
-	std::list<midb_conn>::iterator pconnection;
-	std::unique_lock co_hold(g_connection_lock);
-	if (g_connlist_idle.size() > 0) {
-		g_connlist_active.splice(g_connlist_active.end(), g_connlist_idle, g_connlist_idle.begin());
-		pconnection = std::prev(g_connlist_active.end());
-	} else {
-		pconnection = g_connlist_active.end();
-	}
-	if (pconnection == g_connlist_active.end())
-		goto NEXT_LOOP;
-	co_hold.unlock();
-	offset = 0;
+	while (!g_notify_stop) {
+		{
+			std::unique_lock cm_hold(g_cond_mutex);
+			g_waken_cond.wait(cm_hold, []() { return g_notify_stop.load() || connlist_idle_size() > 0; });
+			if (g_notify_stop)
+				return nullptr;
+		}
 
-    while (!g_notify_stop) {
-		tv_msec = g_timeout_interval * 1000;
-		pfd_read.fd = pconnection->sockd;
-		pfd_read.events = POLLIN|POLLPRI;
-		pconnection->is_selecting = TRUE;
-		pconnection->thr_id = pthread_self();
-		std::list<midb_conn> gc;
-		if (1 != poll(&pfd_read, 1, tv_msec)) {
-			pconnection->is_selecting = FALSE;
-			co_hold.lock();
-			gc.splice(gc.end(), g_connlist_active, pconnection);
-			goto NEXT_LOOP;
-		}
-		pconnection->is_selecting = FALSE;
-		read_len = read(pconnection->sockd, buffer + offset,
-					CONN_BUFFLEN - offset);
-		if (read_len <= 0) {
-			co_hold.lock();
-			gc.splice(gc.end(), g_connlist_active, pconnection);
-			goto NEXT_LOOP;
-		}
-		offset += read_len;
-		for (i=0; i<offset-1; i++) {
-			if (buffer[i] != '\r' || buffer[i+1] != '\n')
+		std::list<midb_conn>::iterator pconnection;
+		{
+			std::unique_lock co_hold(g_connection_lock);
+			if (g_connlist_idle.size() > 0) {
+				g_connlist_active.splice(g_connlist_active.end(), g_connlist_idle, g_connlist_idle.begin());
+				pconnection = std::prev(g_connlist_active.end());
+			} else {
 				continue;
-			if (4 == i && 0 == strncasecmp(buffer, "QUIT", 4)) {
-				if (HXio_fullwrite(pconnection->sockd, "BYE\r\n", 5) < 0)
-					/* ignore */;
-				co_hold.lock();
-				gc.splice(gc.end(), g_connlist_active, pconnection);
-				goto NEXT_LOOP;
 			}
+		}
+		offset = 0;
 
-			argc = cmd_parser_generate_args(buffer, i, argv);
-			if (argc < 2) {
-				if (HXio_fullwrite(pconnection->sockd, "FALSE 1\r\n", 9) < 0) {
-					co_hold.lock();
+		while (!g_notify_stop) {
+			tv_msec = g_timeout_interval * 1000;
+			pfd_read.fd = pconnection->sockd;
+			pfd_read.events = POLLIN | POLLPRI;
+			pconnection->is_selecting = TRUE;
+			pconnection->thr_id = pthread_self();
+
+			/*
+			 * gc is our little "garbage collector" which, when it
+			 * goes out of scope, destroys the connections -
+			 * outside locked sections.
+			 */
+			std::list<midb_conn> gc;
+			if (1 != poll(&pfd_read, 1, tv_msec)) {
+				pconnection->is_selecting = FALSE;
+				std::unique_lock co_hold(g_connection_lock);
+				gc.splice(gc.end(), g_connlist_active, pconnection);
+				break;
+			}
+			pconnection->is_selecting = FALSE;
+			read_len = read(pconnection->sockd, buffer + offset,
+			           CONN_BUFFLEN - offset);
+			if (read_len <= 0) {
+				std::unique_lock co_hold(g_connection_lock);
+				gc.splice(gc.end(), g_connlist_active, pconnection);
+				break;
+			}
+			offset += read_len;
+			for (i = 0; i < offset - 1; i++) {
+				if (buffer[i] != '\r' || buffer[i + 1] != '\n')
+					continue;
+				if (4 == i && 0 == strncasecmp(buffer, "QUIT", 4)) {
+					if (HXio_fullwrite(pconnection->sockd, "BYE\r\n", 5) < 0)
+						/* ignore */;
+					std::unique_lock co_hold(g_connection_lock);
 					gc.splice(gc.end(), g_connlist_active, pconnection);
-					goto NEXT_LOOP;
+					goto NEXT_CONN;
+				}
+
+				argc = cmd_parser_generate_args(buffer, i, argv);
+				if (argc < 2) {
+					if (HXio_fullwrite(pconnection->sockd, "FALSE 1\r\n", 9) < 0) {
+						std::unique_lock co_hold(g_connection_lock);
+						gc.splice(gc.end(), g_connlist_active, pconnection);
+						goto NEXT_CONN;
+					}
+					offset -= i + 2;
+					if (offset >= 0)
+						memmove(buffer, buffer + i + 2, offset);
+					i = 0;
+					continue;
+				}
+
+				HX_strupper(argv[0]);
+				if (midcp_exec(argc, argv, &*pconnection) == MIDB_E_NETIO) {
+					std::unique_lock co_hold(g_connection_lock);
+					gc.splice(gc.end(), g_connlist_active, pconnection);
+					goto NEXT_CONN;
 				}
 				offset -= i + 2;
-				if (offset >= 0)
-					memmove(buffer, buffer + i + 2, offset);
+				memmove(buffer, buffer + i + 2, offset);
 				i = 0;
-				continue;
 			}
 
-			HX_strupper(argv[0]);
-			if (midcp_exec(argc, argv, &*pconnection) == MIDB_E_NETIO) {
-				co_hold.lock();
+			if (CONN_BUFFLEN == offset) {
+				std::unique_lock co_hold(g_connection_lock);
 				gc.splice(gc.end(), g_connlist_active, pconnection);
-				goto NEXT_LOOP;
+				break;
 			}
-			offset -= i + 2;
-			memmove(buffer, buffer + i + 2, offset);
-			i = 0;
 		}
-
-		if (CONN_BUFFLEN == offset) {
-			co_hold.lock();
-			gc.splice(gc.end(), g_connlist_active, pconnection);
-			goto NEXT_LOOP;
-		}
+ NEXT_CONN:
+		;
 	}
 	return nullptr;
 }
