@@ -1741,7 +1741,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	if (item.End) {
 		endTime = clock::to_time_t(item.End.value().time);
 		endOffset = std::chrono::duration_cast<std::chrono::minutes>(item.Start.value().offset).count();
-		calcEndOffset = item.Start.value().needCalcOffset();
+		calcEndOffset = item.End.value().needCalcOffset();
 	}
 	// TODO handle no start and/or end times
 
