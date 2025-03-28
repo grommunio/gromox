@@ -124,11 +124,8 @@ void asyncemsmdb_interface_stop()
 	}
 	g_thread_ids.clear();
 	{ /* silence cov-scan, take locks even in single-thread scenarios */
-		std::lock_guard lk(g_list_lock);
-		g_tag_hash.clear();
-	}
-	{
 		std::lock_guard lk(g_async_lock);
+		g_tag_hash.clear();
 		g_async_hash.clear();
 	}
 }
