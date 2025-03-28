@@ -278,10 +278,10 @@ static void *midcp_thrwork(void *param)
 				break;
 			}
 			offset += read_len;
-			for (i = 0; i < offset - 1; i++) {
+			for (i = 0; i < offset - 1; ++i) {
 				if (buffer[i] != '\r' || buffer[i + 1] != '\n')
 					continue;
-				if (4 == i && 0 == strncasecmp(buffer, "QUIT", 4)) {
+				if (i == 4 && strncasecmp(buffer, "QUIT", 4) == 0) {
 					if (HXio_fullwrite(pconnection->sockd, "BYE\r\n", 5) < 0)
 						/* ignore */;
 					std::unique_lock co_hold(g_connection_lock);
@@ -314,7 +314,7 @@ static void *midcp_thrwork(void *param)
 				i = 0;
 			}
 
-			if (CONN_BUFFLEN == offset) {
+			if (offset == CONN_BUFFLEN) {
 				std::unique_lock co_hold(g_connection_lock);
 				gc.splice(gc.end(), g_connlist_active, pconnection);
 				break;
