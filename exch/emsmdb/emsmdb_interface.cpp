@@ -94,7 +94,8 @@ static constexpr time_duration HANDLE_VALID_INTERVAL = std::chrono::seconds(2000
 static constexpr size_t TAG_SIZE = 256;
 static time_point g_start_time;
 static pthread_t g_scan_id;
-static std::mutex g_lock, g_notify_lock;
+static std::mutex g_lock; /* protects g_handle_hash & g_user_hash */
+static std::mutex g_notify_lock;
 static gromox::atomic_bool g_notify_stop{true};
 static thread_local HANDLE_DATA *g_handle_key;
 static std::unordered_map<GUID, HANDLE_DATA> g_handle_hash;
@@ -404,6 +405,7 @@ void emsmdb_interface_remove_handle(const CXH &cxh)
 			break;
 		gl_hold.unlock();
 		usleep(100000);
+		gl_hold.lock();
 	}
 	auto uh_iter = g_user_hash.find(phandle->username);
 	if (uh_iter != g_user_hash.end()) {
