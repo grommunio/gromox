@@ -229,7 +229,8 @@ private:
 	pthread_t scan;
 
 	std::unordered_set<notification_ctx *> pending;
-	std::mutex pending_lock, ses_lock;
+	std::mutex pending_lock; /* protects pending list (and nothing else) */
+	std::mutex ses_lock;
 	std::unordered_map<std::string, int> users;
 	std::unordered_map<std::string, session_data> sessions;
 	std::vector<notification_ctx> status;
@@ -790,21 +791,17 @@ int MhEmsmdbPlugin::retr(int context_id)
 
 void MhEmsmdbPlugin::term(int context_id)
 {
-	EMSMDB_HANDLE acxh;
-
 	if (status[context_id].pending_status == PENDING_STATUS_NONE)
 		return;
-	acxh.handle_type = 0;
-	std::unique_lock ll_hold(pending_lock);
-	if (status[context_id].pending_status != PENDING_STATUS_NONE) {
-		acxh.handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
-		acxh.guid = status[context_id].session_guid;
+	EMSMDB_HANDLE acxh;
+	acxh.handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
+	acxh.guid = status[context_id].session_guid;
+	{
+		std::unique_lock ll_hold(pending_lock);
 		pending.erase(&status[context_id]);
-		status[context_id].pending_status = PENDING_STATUS_NONE;
 	}
-	ll_hold.unlock();
-	if (acxh.handle_type == HANDLE_EXCHANGE_ASYNCEMSMDB)
-		asyncemsmdb_interface_remove(&acxh);
+	status[context_id].pending_status = PENDING_STATUS_NONE;
+	asyncemsmdb_interface_remove(&acxh);
 }
 
 void MhEmsmdbPlugin::async_wakeup(int context_id, BOOL b_pending)
