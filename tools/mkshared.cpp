@@ -160,7 +160,7 @@ static bool add_folderprop_tv(sqlite3_stmt *stmt)
 	uint64_t nt_time = rop_util_unix_to_nttime(time(nullptr));
 	for (const auto proptag : tags) {
 		sqlite3_bind_int64(stmt, 1, proptag);
-		sqlite3_bind_int64(stmt, 2, nt_time);
+		sqlite3_bind_int64(stmt, 2, static_cast<int64_t>(nt_time));
 		if (gx_sql_step(stmt) != SQLITE_DONE)
 			return false;
 		sqlite3_reset(stmt);

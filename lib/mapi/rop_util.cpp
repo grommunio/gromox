@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// This file is part of Gromox.
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <limits>
 #include <libHX/endian.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/ical.hpp>
@@ -143,12 +146,13 @@ int rop_util_get_domain_id(GUID guid)
 
 uint64_t rop_util_unix_to_nttime(time_t unix_time)
 {
-	uint64_t nt_time;
-
-	nt_time = unix_time;
-	nt_time += TIME_FIXUP_CONSTANT_INT;
-	nt_time *= 10000000;
-	return nt_time;
+	auto w = static_cast<int64_t>(unix_time) + TIME_FIXUP_CONSTANT_INT;
+	if (w < 0)
+		return UINT64_MAX;
+	uint64_t v = w;
+	if (v > INT64_MAX / 10000000)
+		return UINT64_MAX;
+	return v * 10000000;
 }
 
 uint64_t rop_util_unix_to_nttime(std::chrono::system_clock::time_point unix_time)
@@ -156,12 +160,24 @@ uint64_t rop_util_unix_to_nttime(std::chrono::system_clock::time_point unix_time
 
 time_t rop_util_nttime_to_unix(uint64_t nt_time)
 {
-	uint64_t unix_time;
-
-	unix_time = nt_time;
-	unix_time /= 10000000;
+	/* After division by >=2, the value will fit in the range for signed int64 */
+	int64_t unix_time = nt_time / 10000000;
 	unix_time -= TIME_FIXUP_CONSTANT_INT;
-	return (time_t)unix_time;
+	auto min = std::numeric_limits<time_t>::min();
+	auto max = std::numeric_limits<time_t>::max();
+	if constexpr (std::numeric_limits<time_t>::is_signed) {
+		if (unix_time < min)
+			return min;
+		if (unix_time > max)
+			return max;
+		return unix_time;
+	} else {
+		if (unix_time < 0)
+			return 0;
+		if (static_cast<uint64_t>(unix_time) > static_cast<uint64_t>(max))
+			return max;
+		return static_cast<time_t>(unix_time);
+	}
 }
 
 std::chrono::system_clock::time_point rop_util_nttime_to_unix2(uint64_t nt_time)
@@ -188,7 +204,10 @@ uint64_t rop_util_current_nttime()
 {
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);
-	return rop_util_unix_to_nttime(ts.tv_sec) + ts.tv_nsec  / 100;
+	auto nt = rop_util_unix_to_nttime(ts.tv_sec);
+	if (nt > INT64_MIN)
+		return nt;
+	return nt + ts.tv_nsec / 100;
 }
 
 GUID rop_util_binary_to_guid(const BINARY *pbin)

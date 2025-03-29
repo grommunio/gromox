@@ -5,6 +5,7 @@
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 #include <libHX/endian.h>
 #include <libHX/string.h>
 #include <gromox/element_data.hpp>
@@ -488,10 +489,46 @@ static int t_string()
 	return EXIT_SUCCESS;
 }
 
+static bool negative_time_possible()
+{
+	time_t spot = -1;
+	return gmtime(&spot) != nullptr;
+}
+
 static int t_time()
 {
+#define SYSTEMTIME_MAX 0x7fff35f4f06c7fffLL
+
 	printf("It is now approximately %lld (mapitime_t)\n",
 		static_cast<long long>(rop_util_unix_to_nttime(std::chrono::system_clock::now())));
+
+	assert(rop_util_unix_to_nttime(INT_MAX) > 0);
+
+	if (sizeof(time_t) >= sizeof(int64_t)) {
+		/* this libc supports 64-bit time */
+		auto r = rop_util_unix_to_nttime(SYSTEMTIME_MAX / 10000000 - TIME_FIXUP_CONSTANT_INT);
+		assert(r < SYSTEMTIME_MAX);
+		r = rop_util_unix_to_nttime((SYSTEMTIME_MAX + 1) / 10000000 - TIME_FIXUP_CONSTANT_INT);
+		assert(r > SYSTEMTIME_MAX);
+		r = rop_util_unix_to_nttime(INT64_MAX / 10000000 - TIME_FIXUP_CONSTANT_INT - 1);
+		assert(r > 0);
+		r = rop_util_unix_to_nttime(INT64_MAX / 10000000 - TIME_FIXUP_CONSTANT_INT);
+		assert(r > 0);
+		r = rop_util_unix_to_nttime(INT64_MAX / 10000000 - TIME_FIXUP_CONSTANT_INT + 1);
+		assert(r > SYSTEMTIME_MAX);
+	}
+	if (negative_time_possible()) {
+		assert(rop_util_unix_to_nttime(-1) > 0);
+		assert(rop_util_unix_to_nttime(-TIME_FIXUP_CONSTANT_INT) == 0);
+		assert(rop_util_unix_to_nttime(INT32_MIN) > 0);
+		if (sizeof(time_t) >= sizeof(int64_t))
+			assert(rop_util_unix_to_nttime(INT64_MIN) > SYSTEMTIME_MAX);
+
+		assert(rop_util_nttime_to_unix((TIME_FIXUP_CONSTANT_INT * 10000000) - 1) < 0);
+		assert(rop_util_nttime_to_unix(0) <= INT32_MIN);
+	}
+	assert(rop_util_nttime_to_unix(TIME_FIXUP_CONSTANT_INT * 10000000) == 0);
+	assert(rop_util_nttime_to_unix(INT64_MAX) >= INT32_MAX);
 	return EXIT_SUCCESS;
 }
 

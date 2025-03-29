@@ -17,6 +17,10 @@ using proptype_t = uint16_t;
 using proptag_t = uint32_t;
 /* N.B.: PidLids are not propids (they are also 32-bit wide) */
 
+/*
+ * MS-DTYP §2.3.3 specifies it as unsigned; though, WinAPI functions
+ * for FILETIME<>SYSTIME conversions only allow for year <30828 (~63 bits).
+ */
 #define TIME_FIXUP_CONSTANT_INT 11644473600LL
 using mapitime_t = uint64_t;
 
