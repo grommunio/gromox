@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <atomic>
 #include <cerrno>
+#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -343,6 +345,8 @@ static pack_result mod_fastcgi_pull_record_header(
 	TRY(pndr->g_uint16(&pheader->request_id));
 	TRY(pndr->g_uint16(&pheader->content_len));
 	TRY(pndr->g_uint8(&pheader->padding_len));
+	pheader->content_len = std::min(pheader->content_len, static_cast<uint16_t>(UINT16_MAX));
+	pheader->padding_len = std::min(pheader->padding_len, static_cast<uint8_t>(UINT8_MAX));
 	return pndr->g_uint8(&pheader->reserved);
 }
 
