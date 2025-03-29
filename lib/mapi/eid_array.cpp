@@ -21,6 +21,9 @@ EID_ARRAY* eid_array_init()
 	return parray;
 }
 
+/**
+ * The caller should test for parray!=nullptr before calling this.
+ */
 void eid_array_free(EID_ARRAY *parray)
 {
 	free(parray->pids);

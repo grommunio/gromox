@@ -22,9 +22,15 @@ using namespace gromox;
 namespace {
 
 struct ENUM_PARAM {
+	~ENUM_PARAM() {
+		if (pnolonger_mids != nullptr)
+			eid_array_free(pnolonger_mids);
+		if (pdeleted_eids != nullptr)
+			eid_array_free(pdeleted_eids);
+	}
+
 	xstmt stm_exist, stm_msg;
-	EID_ARRAY *pdeleted_eids;
-	EID_ARRAY *pnolonger_mids;
+	EID_ARRAY *pdeleted_eids = nullptr, *pnolonger_mids = nullptr;
 	BOOL b_result;
 };
 
@@ -388,21 +394,13 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (enum_param.pdeleted_eids == nullptr)
 		return FALSE;
 	enum_param.pnolonger_mids = eid_array_init();
-	if (NULL == enum_param.pnolonger_mids) {
-		eid_array_free(enum_param.pdeleted_eids);
+	if (enum_param.pnolonger_mids == nullptr)
 		return FALSE;
-	}
-	if (delete_impossible_mids(*pgiven, *enum_param.pdeleted_eids) != ecSuccess) {
-		eid_array_free(enum_param.pdeleted_eids);
-		eid_array_free(enum_param.pnolonger_mids);
+	if (delete_impossible_mids(*pgiven, *enum_param.pdeleted_eids) != ecSuccess)
 		return false;
-	}
 	if (!const_cast<idset *>(pgiven)->enum_repl(1, &enum_param,
-	    ics_enum_content_idset)) {
-		eid_array_free(enum_param.pdeleted_eids);
-		eid_array_free(enum_param.pnolonger_mids);
+	    ics_enum_content_idset))
 		return FALSE;	
-	}
 	enum_param.stm_exist.finalize();
 	enum_param.stm_msg.finalize();
 	pdeleted_mids->count = enum_param.pdeleted_eids->count;
@@ -410,8 +408,6 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		pdeleted_mids->pids = cu_alloc<uint64_t>(pdeleted_mids->count);
 		if (NULL == pdeleted_mids->pids) {
 			pdeleted_mids->count = 0;
-			eid_array_free(enum_param.pdeleted_eids);
-			eid_array_free(enum_param.pnolonger_mids);
 			return FALSE;
 		}
 		memcpy(pdeleted_mids->pids,
@@ -420,13 +416,11 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	} else {
 		pdeleted_mids->pids = NULL;
 	}
-	eid_array_free(enum_param.pdeleted_eids);
 	pnolonger_mids->count = enum_param.pnolonger_mids->count;
 	if (0 != enum_param.pnolonger_mids->count) {
 		pnolonger_mids->pids = cu_alloc<uint64_t>(pnolonger_mids->count);
 		if (NULL == pnolonger_mids->pids) {
 			pnolonger_mids->count = 0;
-			eid_array_free(enum_param.pnolonger_mids);
 			return FALSE;
 		}
 		memcpy(pnolonger_mids->pids,
@@ -435,7 +429,6 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	} else {
 		pnolonger_mids->pids = NULL;
 	}
-	eid_array_free(enum_param.pnolonger_mids);
 	} /* section 3 */
 
 	/* Rollback transaction (no changes were made anyway) */
@@ -782,25 +775,20 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	enum_param.pdeleted_eids = eid_array_init();
 	if (enum_param.pdeleted_eids == nullptr)
 		return FALSE;
-	for (size_t i = 0; i < replids.count; ++i) {
+	for (size_t i = 0; i < replids.count; ++i)
 		if (!const_cast<idset *>(pgiven)->enum_repl(replids.replids[i],
-		    &enum_param, ics_enum_hierarchy_idset)) {
-			eid_array_free(enum_param.pdeleted_eids);
+		    &enum_param, ics_enum_hierarchy_idset))
 			return FALSE;	
-		}
-	}
 
 	pdeleted_fids->count = enum_param.pdeleted_eids->count;
 	pdeleted_fids->pids = cu_alloc<uint64_t>(pdeleted_fids->count);
 	if (NULL == pdeleted_fids->pids) {
 		pdeleted_fids->count = 0;
-		eid_array_free(enum_param.pdeleted_eids);
 		return FALSE;
 	}
 	memcpy(pdeleted_fids->pids,
 		enum_param.pdeleted_eids->pids,
 		sizeof(uint64_t)*pdeleted_fids->count);
-	eid_array_free(enum_param.pdeleted_eids);
 	} /* section 5 */
 
 	if (g_exmdb_ics_log_file.empty())
