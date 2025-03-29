@@ -169,6 +169,12 @@ static inline void stripslash(char *s)
 		s[z-1] = '\0';
 }
 
+static bool max_routers_reached()
+{
+	std::unique_lock r_hold(g_router_lock);
+	return g_router_list.size() >= g_max_routers;
+}
+
 static void *request_parser_thread(void *pparam)
 {
 	void *pbuff;
@@ -300,7 +306,7 @@ static void *request_parser_thread(void *pparam)
 				}
 				if (NULL == prouter) {
 					tmp_byte = exmdb_response::lack_memory;
-				} else if (g_max_routers != 0 && g_router_list.size() >= g_max_routers) {
+				} else if (g_max_routers != 0 && max_routers_reached()) {
 					tmp_byte = exmdb_response::max_reached;
 				} else {
 					prouter->remote_id = q.remote_id;
