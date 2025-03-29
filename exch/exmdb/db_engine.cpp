@@ -916,6 +916,10 @@ void db_engine_stop()
 		auto t_start = tp_now();
 		size_t conc = std::min(gx_concurrency(), g_threads_num);
 		std::vector<std::future<void>> futs;
+		/*
+		 * cov-scan may complain here about missing locks, but this is
+		 * a paralellized section that only reads data structures.
+		 */
 		auto iter = g_hash_table.begin();
 		for (size_t tid = 0; tid < conc; ++tid) {
 			if (iter == g_hash_table.end())
@@ -930,6 +934,7 @@ void db_engine_stop()
 			++iter;
 		}
 		futs.clear();
+		/* Single-threaded write section */
 		g_hash_table.clear();
 		mlog(LV_INFO, "Database shutdown took %llu ms",
 			LLU(std::chrono::duration_cast<std::chrono::milliseconds>(tp_now() - t_start).count()));
