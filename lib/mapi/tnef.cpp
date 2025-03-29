@@ -733,7 +733,7 @@ pack_result tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 	case ATTRIBUTE_ID_DATERECD:
 	case ATTRIBUTE_ID_ATTACHCREATEDATE:
 	case ATTRIBUTE_ID_ATTACHMODIFYDATE:
-	case ATTRIBUTE_ID_DATEMODIFY:
+	case ATTRIBUTE_ID_DATEMODIFY: {
 		r->pvalue = pext->anew<uint64_t>();
 		if (r->pvalue == nullptr)
 			return EXT_ERR_ALLOC;
@@ -750,11 +750,14 @@ pack_result tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 		tmp_tm.tm_mday = tmp_dtr.day;
 		tmp_tm.tm_mon = tmp_dtr.month - 1;
 		tmp_tm.tm_year = tmp_dtr.year - 1900;
-		tmp_tm.tm_wday = tmp_dtr.dow - 1;
+		tmp_tm.tm_wday = -1;
 		tmp_tm.tm_yday = 0;
 		tmp_tm.tm_isdst = 0;
-		*static_cast<uint64_t *>(r->pvalue) = rop_util_unix_to_nttime(mktime(&tmp_tm));
+		auto newtime = mktime(&tmp_tm);
+		*static_cast<uint64_t *>(r->pvalue) = newtime != -1 || tmp_tm.tm_wday != -1 ?
+		                                      rop_util_unix_to_nttime(newtime) : 0;
 		break;
+	}
 	case ATTRIBUTE_ID_REQUESTRES:
 	case ATTRIBUTE_ID_PRIORITY:
 		r->pvalue = pext->anew<uint16_t>();

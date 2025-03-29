@@ -1110,7 +1110,10 @@ static std::unique_ptr<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (strptime(argv[i], "%d-%b-%Y", &tmp_tm) == nullptr)
 				return {};
+			tmp_tm.tm_wday = -1;
 			ptree_node->ct_time = mktime(&tmp_tm);
+			if (ptree_node->ct_time == -1 && tmp_tm.tm_wday == -1)
+				return {};
 		} else if ('(' == argv[i][0]) {
 			len = strlen(argv[i]);
 			argv[i][len - 1] = '\0';

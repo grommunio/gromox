@@ -40,8 +40,9 @@ void common_util_day_to_filetime(const char *day, FILETIME *pftime)
 	
 	memset(&tmp_tm, 0, sizeof(tmp_tm));
 	strptime(day, "%Y-%m-%d", &tmp_tm);
+	tmp_tm.tm_wday = -1;
 	tmp_time = mktime(&tmp_tm);
-	if (tmp_time == -1) {
+	if (tmp_time == -1 && tmp_tm.tm_wday == -1) {
 		*pftime = {};
 		return;
 	}
