@@ -11,7 +11,6 @@
 #include <gromox/mapidefs.h>
 #include "type_conversion.hpp"
 #include "ext.hpp"
-#define TIME_FIXUP_CONSTANT_INT				11644473600LL
 
 using namespace gromox;
 

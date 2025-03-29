@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <chrono>
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
@@ -487,6 +488,13 @@ static int t_string()
 	return EXIT_SUCCESS;
 }
 
+static int t_time()
+{
+	printf("It is now approximately %lld (mapitime_t)\n",
+		static_cast<long long>(rop_util_unix_to_nttime(std::chrono::system_clock::now())));
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_utf7() != 0)
@@ -544,6 +552,9 @@ static int runner()
 	if (ret != 0)
 		return ret;
 	ret = t_string();
+	if (ret != 0)
+		return ret;
+	ret = t_time();
 	if (ret != 0)
 		return ret;
 	return EXIT_SUCCESS;

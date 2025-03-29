@@ -98,6 +98,19 @@ the properties do have semantics or warrants remarks from our side.
 
 All other property values have no extra meaning and are passed through.
 
+The SQL ``user_properties`` table has a ``propval_bin`` and a ``propval_str``
+column; if ``propval_bin`` is non-NULL, that value is used, otherwise
+``propval_str`` is. Conceptually, both propval_bin and propval_str are stored
+in a std::string in memory. Now, depending on the proptag, decoding of that
+std::string's content is performed according to the following actions, which
+also sets a standard for the data format in those columns:
+
+* PT_SHORT/PT_LONG/PT_I8: The input form must be an integer. The ``strtoul``
+  function is used (which works for signed and unsigned numbers).
+* PT_SYSTIME: The input form must be a mapitime integer (hectonanoseconds since
+  the Windows epoch); same handling as PT_I8. The earlier option of using
+  ``yyyy-mm-dd`` in the propval_str column is no longer supported.
+
 
 Display Type value correlation
 ==============================

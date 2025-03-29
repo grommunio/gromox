@@ -34,20 +34,8 @@ GUID common_util_get_server_guid()
 
 void common_util_day_to_filetime(const char *day, FILETIME *pftime)
 {
-	time_t tmp_time;
-	struct tm tmp_tm;
-	uint64_t file_time;
-	
-	memset(&tmp_tm, 0, sizeof(tmp_tm));
-	strptime(day, "%Y-%m-%d", &tmp_tm);
-	tmp_tm.tm_wday = -1;
-	tmp_time = mktime(&tmp_tm);
-	if (tmp_time == -1 && tmp_tm.tm_wday == -1) {
-		*pftime = {};
-		return;
-	}
-	file_time = ((uint64_t)tmp_time + EPOCH_DIFF)*10000000;
-	pftime->low_datetime = file_time & 0xFFFFFFFF;
+	uint64_t file_time = strtoull(day, nullptr, 0);
+	pftime->low_datetime  = file_time & 0xFFFFFFFF;
 	pftime->high_datetime = file_time >> 32;
 }
 

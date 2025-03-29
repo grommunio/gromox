@@ -16,6 +16,8 @@ using propid_t = uint16_t;
 using proptype_t = uint16_t;
 using proptag_t = uint32_t;
 /* N.B.: PidLids are not propids (they are also 32-bit wide) */
+
+#define TIME_FIXUP_CONSTANT_INT 11644473600LL
 using mapitime_t = uint64_t;
 
 }

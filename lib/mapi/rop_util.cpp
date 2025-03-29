@@ -12,7 +12,6 @@
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
-#define TIME_FIXUP_CONSTANT_INT				11644473600LL
 
 namespace
 {
