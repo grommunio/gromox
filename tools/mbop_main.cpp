@@ -478,8 +478,8 @@ namespace getfreebusy {
 
 static char *g_start_txt, *g_end_txt, *g_requestor;
 static constexpr struct HXoption g_options_table[] = {
-	{nullptr, 'a', HXTYPE_STRING, &g_start_txt, {}, {}, 0, "Start time"},
-	{nullptr, 'b', HXTYPE_STRING, &g_end_txt, {}, {}, 0, "End time"},
+	{nullptr, 'a', HXTYPE_STRING, &g_start_txt, {}, {}, 0, "Start time (localtime; respects $TZ)"},
+	{nullptr, 'b', HXTYPE_STRING, &g_end_txt, {}, {}, 0, "End time (localtime; respects $TZ)"},
 	{nullptr, 'x', HXTYPE_STRING, &g_requestor, {}, {}, 0, "Requestor account name (not the same as -d/-u)"},
 	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,

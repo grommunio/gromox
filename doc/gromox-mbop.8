@@ -230,7 +230,9 @@ option(s), and asks for free/busy status within the given time period.
 .SS Options
 .TP
 \fB\-a\fP {\fIyyyy-mm-dd\fP\fBT\fP\fIhh:mm:ss\fP|\fIunixtime\fP}
-Left end of the timeframe to query.
+Left end of the timeframe to query. Unixtime means seconds since the epoch (and
+is necessarily in UTC), whereas the calendar-based time is read as localtime
+(so, respecting the TZ environment variable or /etc/localtime).
 .TP
 \fB\-b\fP {\fIyyyy-mm-dd\fP\fBT\fP\fIhh:mm:ss\fP|\fIunixtime\fP}
 Right end of the timeframe to query.
