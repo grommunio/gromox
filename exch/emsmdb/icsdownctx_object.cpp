@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <chrono>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
@@ -519,7 +520,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(MESSAGE_CONTENT *pmsgctnt,
 		if (ts == nullptr)
 			return false;
 		/* Faking it seems to work */
-		*ts = rop_util_unix_to_nttime(time(nullptr));
+		*ts = rop_util_unix_to_nttime(std::chrono::system_clock::now());
 	}
 	pchgheader->emplace_back(PR_LAST_MODIFICATION_TIME, ts);
 	
