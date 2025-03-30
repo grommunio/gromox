@@ -558,7 +558,7 @@ BOOL ab_tree_match_minids(const ab_tree::ab_base *pbase, uint32_t container_id,
 			pminids->pl = NULL;
 			return TRUE;
 		}
-		for(ab_tree::minid mid : node) {
+		for (ab_tree::minid mid : node) {
 			ab_tree::ab_node child(pbase, mid);
 			if(child.type() >= ab_tree::abnode_type::containers ||
 			    child.hidden() & AB_HIDE_FROM_AL ||

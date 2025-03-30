@@ -13,8 +13,8 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 
-namespace
-{
+namespace {
+
 /// NT timestamp unit (100 ns)
 using nt_dur = std::chrono::duration<uint64_t, std::ratio<1, 10'000'000>>;
 /// Offset for NT timestamps

@@ -567,7 +567,7 @@ bool mysql_plugin::get_user_aliases(const char *username,
 
 	aliases.clear();
 	aliases.reserve(res.num_rows());
-	for(DB_ROW row = res.fetch_row(); row; row = res.fetch_row())
+	for (DB_ROW row = res.fetch_row(); row; row = res.fetch_row())
 		aliases.emplace_back(row[0]);
 	return true;
 } catch (const std::exception &e) {
@@ -602,15 +602,13 @@ bool mysql_plugin::get_user_props(const char *username,
 	if (!conn->query(qstr) || !(res = conn->store_result()))
 		return false;
 
-	for(DB_ROW row = res.fetch_row(); row; row = res.fetch_row())
-	{
+	for (DB_ROW row = res.fetch_row(); row; row = res.fetch_row()) {
 		uint32_t tag = strtoul(row[1], nullptr, 0);
 		const char* strval = row[3];
 		if(!strval) // Binary values are currently not supported
 			continue;
 
-		switch(PROP_TYPE(tag))
-		{
+		switch (PROP_TYPE(tag)) {
 		case PT_BOOLEAN: {
 			uint8_t converted = strtoul(strval, nullptr, 0);
 			if (properties.set(tag, &converted) != 0)

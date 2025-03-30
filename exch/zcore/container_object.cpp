@@ -752,7 +752,7 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 			    rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
 			    pproptags, TRUE, &tmp_set))
 				return FALSE;
-			for(auto it = pbase->dbegin(); it != pbase->dend(); ++it)
+			for (auto it = pbase->dbegin(); it != pbase->dend(); ++it)
 				if (!container_object_get_specialtables_from_node(it,
 				    pproptags, b_depth, &tmp_set))
 					return FALSE;
@@ -898,7 +898,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				pset->count ++;
 			}
 		} else if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
-			for(auto it = pbase->ubegin()+first_pos; it != pbase->uend(); ++it) {
+			for (auto it = pbase->ubegin() + first_pos; it != pbase->uend(); ++it) {
 				ab_tree::ab_node node(it);
 				if (node.hidden() & AB_HIDE_FROM_GAL)
 					continue;
@@ -918,7 +918,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 			ab_tree::ab_node node(pbase, pcontainer->id.abtree_id.minid);
 			if (!node.exists())
 				return TRUE;
-			for(auto it = node.begin()+first_pos; it != node.end(); ++it) {
+			for (auto it = node.begin() + first_pos; it != node.end(); ++it) {
 				ab_tree::ab_node child(pbase, *it);
 				if(child.type() >= ab_tree::abnode_type::containers ||
 				   child.hidden() & AB_HIDE_FROM_AL)
