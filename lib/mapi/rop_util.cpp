@@ -248,15 +248,18 @@ XID::XID(GUID g, eid_t change_num) : guid(g), size(22)
 
 namespace gromox {
 
+/**
+ * Return number of seconds of how long to hold/defer a message.
+ */
 uint32_t props_to_defer_interval(const TPROPVAL_ARRAY &pv)
 {
 	auto cur_time = time(nullptr);
-	auto submit_time = rop_util_unix_to_nttime(cur_time);
 	auto send_time = pv.get<const uint64_t>(PR_DEFERRED_SEND_TIME);
 	if (send_time != nullptr) {
-		if (*send_time < submit_time)
+		auto ut_send_time = rop_util_nttime_to_unix(*send_time);
+		if (ut_send_time < cur_time)
 			return 0;
-		return rop_util_nttime_to_unix(*send_time) - cur_time;
+		return ut_send_time - cur_time;
 	}
 	auto num = pv.get<const uint32_t>(PR_DEFERRED_SEND_NUMBER);
 	if (num == nullptr)
