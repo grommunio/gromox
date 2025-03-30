@@ -1416,9 +1416,16 @@ ec_error_t nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 
 static constexpr size_t DFL_TAGS_MAX = 32;
 
-static ec_error_t nsp_fill_dfl_tags(ab_tree::abnode_type node_type,
-    bool b_unicode, uint32_t *t, unsigned int &z)
+/**
+ * Return a list of all the properties that have values on a specified object.
+ */
+static ec_error_t nsp_get_proptags(const ab_tree::ab_node &node,
+    std::vector<proptag_t> &t, bool b_unicode) try
 {
+	auto node_type = node.exists() ? node.type() : ab_tree::abnode_type::user;
+
+	t.resize(32);
+	unsigned int z = 0;
 #define U(x) (b_unicode ? (x) : CHANGE_PROP_TYPE((x), PT_STRING8))
 	/* 16 props */
 	t[z++] = U(PR_DISPLAY_NAME);
@@ -1470,30 +1477,48 @@ static ec_error_t nsp_fill_dfl_tags(ab_tree::abnode_type node_type,
 	default:
 		return ecInvalidObject;
 	}
+	t.resize(z);
+
+	/* User-defined values */
+	node.proplist(t);
+	std::sort(t.begin(), t.end());
+	t.erase(std::unique(t.begin(), t.end()), t.end());
+
+	/* Trim tags that have no propval (requirement as per OXNSPI v24 §3.1.4.1.6) */
+	t.erase(std::remove_if(t.begin(), t.end(), [&](proptag_t proptag) {
+		char temp_buff[1024];
+		PROPERTY_VALUE prop_val{};
+		return nsp_interface_fetch_property(node, false, CP_UTF8,
+		       proptag, &prop_val, temp_buff,
+		       std::size(temp_buff)) != ecSuccess;
+	}), t.end());
 	return ecSuccess;
 #undef U
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }
 
-static ec_error_t nsp_interface_get_default_proptags(ab_tree::abnode_type node_type,
-	BOOL b_unicode, LPROPTAG_ARRAY *pproptags)
+static ec_error_t nsp_get_proptags(const ab_tree::ab_node &node,
+    LPROPTAG_ARRAY *pproptags, bool b_unicode)
 {
-	pproptags->cvalues  = 0;
-	pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, DFL_TAGS_MAX);
+	std::vector<proptag_t> ctags;
+	auto ret = nsp_get_proptags(node, ctags, b_unicode);
+	if (ret != ecSuccess)
+		return ret;
+	pproptags->cvalues  = ctags.size();
+	pproptags->pproptag = ndr_stack_anew<proptag_t>(NDR_STACK_OUT, pproptags->cvalues);
 	if (pproptags->pproptag == nullptr)
 		return ecServerOOM;
-	auto ret = nsp_fill_dfl_tags(node_type, b_unicode,
-	           pproptags->pproptag, pproptags->cvalues);
-	assert(pproptags->cvalues <= DFL_TAGS_MAX);
+	memcpy(pproptags->pproptag, ctags.data(), sizeof(proptag_t) * ctags.size());
 	return ret;
 }
 
+/* MS-OXNSPI v24 §3.1.4.1.6 */
 ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
     uint32_t mid, cpid_t codepage, LPROPTAG_ARRAY **tags)
 {
 	if (g_nsp_trace > 0)
 		fprintf(stderr, "Entering %s\n", __func__);
-	char temp_buff[1024];
-	PROPERTY_VALUE prop_val;
 	
 	auto base = ab_tree::AB.get(handle.guid);
 	if (!base || HANDLE_EXCHANGE_NSP != handle.handle_type || (g_session_check && base->guid() != handle.guid)) {
@@ -1515,24 +1540,10 @@ ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	}
 
 	/* Grab tags */
-	auto type = node.type();
-	uint32_t ntags = 0;
-	std::vector<uint32_t> ctags(DFL_TAGS_MAX);
-	auto ret = nsp_fill_dfl_tags(type, b_unicode, ctags.data(), ntags);
-	assert(ntags <= DFL_TAGS_MAX);
+	std::vector<proptag_t> ctags;
+	auto ret = nsp_get_proptags(node, ctags, b_unicode);
 	if (ret != ecSuccess)
-		ntags = 0;
-	ctags.resize(ntags);
-	node.proplist(ctags);
-
-	/* Trim tags that have no propval */
-	std::sort(ctags.begin(), ctags.end());
-	ctags.erase(std::unique(ctags.begin(), ctags.end()), ctags.end());
-	ctags.erase(std::remove_if(ctags.begin(), ctags.end(), [&](uint32_t proptag) {
-		return nsp_interface_fetch_property(node, false, codepage,
-		       proptag, &prop_val, temp_buff,
-		       std::size(temp_buff)) != ecSuccess;
-	}), ctags.end());
+		return ret;
 
 	/* Copy out */
 	(*tags)->cvalues = ctags.size();
@@ -1551,6 +1562,7 @@ ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	return ecSuccess;
 }
 
+/* MS-OXNSPI v24 §3.1.4.1.7 */
 ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
     const STAT *pstat, const LPROPTAG_ARRAY *pproptags, NSP_PROPROW **pprows)
 {
@@ -1610,13 +1622,18 @@ ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	}
 	b_proptags = TRUE;
 	if (NULL == pproptags) {
+		/* The list must be the same as for getproplist. */
 		b_proptags = FALSE;
 		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (nt == nullptr)
 			return ecServerOOM;
 		pproptags = nt;
-		auto type = node.exists() ? node.type() : ab_tree::abnode_type::user;
-		auto result = nsp_interface_get_default_proptags(type, b_unicode, nt);
+		/*
+		 * This is a bit inefficient, since we are getting the values
+		 * twice (once here, and once further below with
+		 * nsp_interface_fetch_row).
+		 */
+		auto result = nsp_get_proptags(node, nt, b_unicode);
 		if (result != ecSuccess)
 			return result;
 		if (g_nsp_trace >= 2) {
