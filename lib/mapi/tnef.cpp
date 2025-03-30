@@ -737,6 +737,14 @@ pack_result tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 		r->pvalue = pext->anew<uint64_t>();
 		if (r->pvalue == nullptr)
 			return EXT_ERR_ALLOC;
+		/*
+		 * MS-OXTNEF v §2.1.3.3.4: "The encoding process is
+		 * implementation-dependent". In practice, localtime is used by
+		 * the TNEF writer. But it is not recorded what timezone that
+		 * was done with. Luckily, ATTRIBUTE_ID_DATEMODIFY appears
+		 * again later as a PR_LAST_MODIFICATION_TIME propval with
+		 * PT_SYSTIME, which is known to be always UTC.
+		 */
 		TRY(pext->g_uint16(&tmp_dtr.year));
 		TRY(pext->g_uint16(&tmp_dtr.month));
 		TRY(pext->g_uint16(&tmp_dtr.day));
