@@ -8,8 +8,6 @@
 #undef asprintf
 #include <vector>
 
-uint64_t unix_to_nttime(time_t unix_time);
-time_t nttime_to_unix(uint64_t nt_time);
 uint32_t proptag_to_phptag(uint32_t proptag);
 uint32_t phptag_to_proptag(uint32_t proptag);
 extern ec_error_t php_to_binary_array(zval *, BINARY_ARRAY *);

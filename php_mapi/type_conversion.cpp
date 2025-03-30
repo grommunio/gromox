@@ -9,20 +9,11 @@
 #include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/rop_util.hpp>
 #include "type_conversion.hpp"
 #include "ext.hpp"
 
 using namespace gromox;
-
-uint64_t unix_to_nttime(time_t unix_time)
-{
-	return (static_cast<uint64_t>(unix_time) + TIME_FIXUP_CONSTANT_INT) * 10000000;
-}
-
-time_t nttime_to_unix(uint64_t nt_time)
-{
-	return nt_time / 10000000 - TIME_FIXUP_CONSTANT_INT;
-}
 
 /* In PHP-MAPI, PT_STRING8 means UTF-8
  * string. We do not use PT_UNICODE,
@@ -267,7 +258,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		pvalue = emalloc(sizeof(uint64_t));
 		if (pvalue == nullptr)
 			return NULL;
-		*static_cast<uint64_t *>(pvalue) = unix_to_nttime(zval_get_long(entry));
+		*static_cast<uint64_t *>(pvalue) = rop_util_unix_to_nttime(zval_get_long(entry));
 		break;
 	case PT_BINARY: {
 		zstrplus str(zval_get_string(entry));
@@ -481,7 +472,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			return NULL;
 		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
-			xl->pll[j++] = unix_to_nttime(zval_get_long(data_entry));
+			xl->pll[j++] = rop_util_unix_to_nttime(zval_get_long(data_entry));
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
@@ -1301,7 +1292,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 			break;
 		case PT_SYSTIME:
 			add_assoc_long(pzret, pts.c_str(),
-				nttime_to_unix(*static_cast<uint64_t *>(ppropval->pvalue)));
+				rop_util_nttime_to_unix(*static_cast<uint64_t *>(ppropval->pvalue)));
 			break;
 		case PT_CLSID:
 			add_assoc_stringl(pzret, pts.c_str(),
