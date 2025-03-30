@@ -1622,9 +1622,11 @@ tproc_status http_parser::wrrep(http_context *pcontext)
 			 * hexdump starts at the ROP part.
 			 */
 			auto b = static_cast<const uint8_t *>(pcontext->write_buff);
-			if (HXio_fullwrite(STDERR_FILENO, b, pfx) < 0)
-				/* ignore */;
-			HX_hexdump(stderr, &b[pfx], written_len - pfx);
+			if (b != nullptr) {
+				if (HXio_fullwrite(STDERR_FILENO, b, pfx) < 0)
+					/* ignore */;
+				HX_hexdump(stderr, &b[pfx], written_len - pfx);
+			}
 		}
 		fprintf(stderr, ">>-EOP\n");
 	}
