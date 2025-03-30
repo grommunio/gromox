@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 /* http parser is a module, which first read data from socket, parses rpc over http and
    relay the stream to pdu processor. it also process other http request
@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <poll.h>
 #include <string>
 #include <string_view>
@@ -89,13 +90,60 @@ struct VIRTUAL_CONNECTION {
 }
 
 static constexpr time_duration OUT_CHANNEL_MAX_WAIT = std::chrono::seconds(10);
-static std::unordered_map<std::string, VIRTUAL_CONNECTION> g_vconnection_hash;
 
 namespace {
+
+class VCONN_REF;
+
+struct http_parser {
+	http_parser(size_t context_num, time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
+	~http_parser();
+	int run();
+	VCONN_REF get_vconnection(const char *host, int port, const char *cookie);
+	ssize_t readsock(http_context *, const char *tag, void *buf, unsigned int size);
+
+	int auth_finalize(http_context &, const char *);
+	int auth_krb(http_context &ctx, const char *input, size_t isize, std::string &output);
+	int auth_ntlmssp(http_context &, const char *proc, const char *input, std::string &output);
+	tproc_status auth_spnego(http_context &ctx, const char *past_method);
+	tproc_status auth_basic(http_context *, const char *);
+	tproc_status auth(http_context &ctx);
+
+	tproc_status http_end(http_context *);
+	tproc_status initssl(http_context *);
+	tproc_status rdhead_no(http_context *, char *, unsigned int);
+	tproc_status rdhead_mt(http_context *, char *, unsigned int);
+	tproc_status rdhead_st(http_context *, ssize_t);
+	tproc_status rdhead(http_context *);
+	tproc_status rdbody_nochan2(http_context *);
+	tproc_status rdbody_nochan(http_context *);
+	tproc_status rdbody(http_context *);
+	tproc_status wrrep(http_context *);
+	tproc_status wrrep_nobuf(http_context *);
+	tproc_status waitinchannel(http_context *, RPC_OUT_CHANNEL *);
+	tproc_status waitrecycled(http_context *, RPC_OUT_CHANNEL *);
+	tproc_status wait(http_context *);
+	void vconnection_async_reply(const char *, int, const char *, DCERPC_CALL *);
+
+	size_t g_context_num = 0;
+	gromox::atomic_bool g_async_stop{false};
+	bool g_support_tls = false;
+	SSL_CTX *g_ssl_ctx = nullptr;
+	int g_max_auth_times = 0;
+	int g_block_auth_fail = 0;
+	time_duration g_timeout;
+	std::unique_ptr<http_context[]> g_context_list;
+	std::vector<schedule_context *> g_context_list2;
+	std::string g_certificate_path, g_private_key_path, g_certificate_passwd;
+	std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
+	std::mutex g_vconnection_lock; /* protects g_vconnection_hash */
+	std::unordered_map<std::string, VIRTUAL_CONNECTION> g_vconnection_hash;
+};
+
 class VCONN_REF {
 	public:
 	VCONN_REF() = default;
-	explicit VCONN_REF(VIRTUAL_CONNECTION *p, decltype(g_vconnection_hash)::iterator i) :
+	explicit VCONN_REF(VIRTUAL_CONNECTION *p, decltype(http_parser::g_vconnection_hash)::iterator i) :
 		pvconnection(p), m_hold(p->lock), m_iter(std::move(i)) {}
 	~VCONN_REF() { put(); }
 	NOMOVE(VCONN_REF);
@@ -107,28 +155,18 @@ class VCONN_REF {
 	private:
 	VIRTUAL_CONNECTION *pvconnection = nullptr;
 	std::unique_lock<std::mutex> m_hold;
-	decltype(g_vconnection_hash)::iterator m_iter;
+	decltype(http_parser::g_vconnection_hash)::iterator m_iter;
 };
+
 }
 
-static size_t g_context_num;
-static gromox::atomic_bool g_async_stop;
-static bool g_support_tls;
-static SSL_CTX *g_ssl_ctx;
-static int g_max_auth_times;
-static int g_block_auth_fail;
-static time_duration g_timeout;
 std::string g_http_remote_host_hdr;
 unsigned int g_http_debug;
 size_t g_rqbody_flush_size, g_rqbody_max_size;
 bool g_enforce_auth;
-static thread_local HTTP_CONTEXT *g_context_key;
-static std::unique_ptr<HTTP_CONTEXT[]> g_context_list;
-static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static std::string g_certificate_path, g_private_key_path, g_certificate_passwd;
-static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
-static std::mutex g_vconnection_lock;
 time_duration g_http_basic_auth_validity;
+static thread_local HTTP_CONTEXT *g_context_key;
+static std::optional<http_parser> g_parser;
 
 static void http_parser_context_clear(HTTP_CONTEXT *pcontext);
 
@@ -158,11 +196,20 @@ void http_report()
 	mlog(LV_INFO, "Ctx  fd  src->host");
 	mlog(LV_INFO, "   ChTy  RPCEndpoint, Username");
 	mlog(LV_INFO, "-------------------------------------------------------------------------------");
-	for (size_t i = 0; i < g_context_num; ++i)
-		httpctx_report(g_context_list[i], i);
+	for (size_t i = 0; i < g_parser->g_context_num; ++i)
+		httpctx_report(g_parser->g_context_list[i], i);
 }
 
 void http_parser_init(size_t context_num, time_duration timeout,
+	int max_auth_times, int block_auth_fail, bool support_tls,
+	const char *certificate_path, const char *cb_passwd,
+	const char *key_path)
+{
+	g_parser.emplace(context_num, timeout, max_auth_times, block_auth_fail,
+		support_tls, certificate_path, cb_passwd, key_path);
+}
+
+http_parser::http_parser(size_t context_num, time_duration timeout,
 	int max_auth_times, int block_auth_fail, bool support_tls,
 	const char *certificate_path, const char *cb_passwd,
 	const char *key_path)
@@ -205,12 +252,12 @@ VIRTUAL_CONNECTION::~VIRTUAL_CONNECTION()
 		pdu_processor_destroy(std::move(pprocessor));
 }
 
-/* 
- *    @return
- *         0    success
- *        <>0    fail    
- */
 int http_parser_run()
+{
+	return g_parser->run();
+}
+
+int http_parser::run()
 {
 	if (g_support_tls) {
 		SSL_library_init();
@@ -279,20 +326,22 @@ int http_parser_run()
 
 void http_parser_stop()
 {
+	g_parser.reset();
+}
+
+http_parser::~http_parser()
+{
 	g_context_list2.clear();
 	g_context_list.reset();
 	{
 		std::lock_guard lk(g_vconnection_lock); /* shut up cov-scan */
 		g_vconnection_hash.clear();
 	}
-	if (g_support_tls && g_ssl_ctx != nullptr) {
+	if (g_support_tls && g_ssl_ctx != nullptr)
 		SSL_CTX_free(g_ssl_ctx);
-		g_ssl_ctx = NULL;
-	}
 	if (g_support_tls && g_ssl_mutex_buf != nullptr) {
 		CRYPTO_set_id_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
-		g_ssl_mutex_buf.reset();
 	}
 }
 
@@ -311,7 +360,7 @@ time_point http_parser_get_context_timestamp(const schedule_context *ctx)
 	return static_cast<const http_context *>(ctx)->connection.last_timestamp;
 }
 
-static VCONN_REF http_parser_get_vconnection(const char *host,
+VCONN_REF http_parser::get_vconnection(const char *host,
     int port, const char *conn_cookie)
 {
 	char tmp_buff[384];
@@ -336,12 +385,12 @@ void VCONN_REF::put()
 	if (pvconnection == nullptr)
 		return;
 	m_hold.unlock();
-	std::unique_lock vc_hold(g_vconnection_lock);
+	std::unique_lock vc_hold(g_parser->g_vconnection_lock);
 	pvconnection->reference --;
 	if (0 == pvconnection->reference &&
 		NULL == pvconnection->pcontext_in &&
 		NULL == pvconnection->pcontext_out) {
-		auto nd = g_vconnection_hash.extract(m_iter);
+		auto nd = g_parser->g_vconnection_hash.extract(m_iter);
 		vc_hold.unlock();
 		/* end locked region before running ~nd (~VCONN_REF, pdu_processor_destroy) */
 	}
@@ -444,7 +493,7 @@ std::string http_make_err_response(const http_context &ctx, http_status code)
 		static_cast<int>(code), msg, dstring, strlen(msg) + 2,
 		ctx.b_close ? "close" : "keep-alive");
 	if (!ctx.b_close)
-		rsp += fmt::format("Keep-Alive: timeout={}\r\n", TOSEC(g_timeout));
+		rsp += fmt::format("Keep-Alive: timeout={}\r\n", TOSEC(g_parser->g_timeout));
 	if (code == http_status::unauthorized) {
 		rsp += "WWW-Authenticate: Basic realm=\"msrpc realm\", charset=\"utf-8\"\r\n";
 		if (g_config_file->get_ll("http_auth_spnego")) {
@@ -489,7 +538,7 @@ static tproc_status http_done(http_context *ctx, http_status code) try
 	return tproc_status::loop;
 }
 
-static tproc_status http_end(http_context *ctx)
+tproc_status http_parser::http_end(http_context *ctx)
 {
 	if (hpm_processor_is_in_charge(ctx))
 		hpm_processor_insert_ctx(ctx);
@@ -501,7 +550,7 @@ static tproc_status http_end(http_context *ctx)
 	if (ctx->pchannel != nullptr) {
 		if (ctx->channel_type == hchannel_type::in) {
 			auto chan = static_cast<RPC_IN_CHANNEL *>(ctx->pchannel);
-			auto conn = http_parser_get_vconnection(ctx->host,
+			auto conn = get_vconnection(ctx->host,
 			            ctx->port, chan->connection_cookie);
 			if (conn != nullptr) {
 				if (conn->pcontext_in == ctx)
@@ -511,7 +560,7 @@ static tproc_status http_end(http_context *ctx)
 			delete chan;
 		} else {
 			auto chan = static_cast<RPC_OUT_CHANNEL *>(ctx->pchannel);
-			auto conn = http_parser_get_vconnection(ctx->host,
+			auto conn = get_vconnection(ctx->host,
 			            ctx->port, chan->connection_cookie);
 			if (conn != nullptr) {
 				if (conn->pcontext_out == ctx)
@@ -537,7 +586,7 @@ static tproc_status http_end(http_context *ctx)
  * %sleeping:		need to sleep the context
  * %close:		need to cose the context
  */
-static tproc_status htparse_initssl(http_context *pcontext)
+tproc_status http_parser::initssl(http_context *pcontext)
 {
 	if (NULL == pcontext->connection.ssl) {
 		pcontext->connection.ssl = SSL_new(g_ssl_ctx);
@@ -585,7 +634,10 @@ static enum http_method http_method_lookup(const char *s)
 #undef E
 }
 
-static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
+/**
+ * (No request line with method has been seen yet) - Read a HTTP request line.
+ */
+tproc_status http_parser::rdhead_no(http_context *pcontext, char *line,
     unsigned int line_length)
 {
 	auto &ctx = *pcontext;
@@ -641,7 +693,10 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 	return tproc_status::runoff;
 }
 
-static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
+/**
+ * (A HTTP request line with method has been seen) - Read header line(s)
+ */
+tproc_status http_parser::rdhead_mt(http_context *pcontext, char *line,
     unsigned int line_length) try
 {
 	auto &ctx = *pcontext;
@@ -731,7 +786,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	return http_done(pcontext, http_status::enomem_CL);
 }
 
-static tproc_status htp_auth_basic(http_context *pcontext, const char *token) try
+tproc_status http_parser::auth_basic(http_context *pcontext, const char *token) try
 {
 	auto &ctx = *pcontext;
 	auto now = tp_now();
@@ -821,7 +876,7 @@ static void ntlm_stop(struct HXproc &pi)
 	pi.p_pid = 0;
 }
 
-static int htp_auth_finalize(http_context &ctx, const char *user)
+int http_parser::auth_finalize(http_context &ctx, const char *user)
 {
 	sql_meta_result mres;
 	auto err = mysql_adaptor_meta(user, 0, mres);
@@ -843,7 +898,7 @@ static int htp_auth_finalize(http_context &ctx, const char *user)
 	return 1;
 }
 
-static int htp_auth_ntlmssp(http_context &ctx, const char *prog,
+int http_parser::auth_ntlmssp(http_context &ctx, const char *prog,
     const char *encinput, std::string &output)
 {
 	auto encsize = strlen(encinput);
@@ -933,7 +988,7 @@ static int htp_auth_ntlmssp(http_context &ctx, const char *prog,
 		 * be just "user5", or it can be "DOMAIN\user5". Either way, an
 		 * altnames entry is needed for this.
 		 */
-		return htp_auth_finalize(ctx, output.c_str());
+		return auth_finalize(ctx, output.c_str());
 	else if (output[0] == 'N' && output[1] == 'A')
 		return 0;
 	return -1;
@@ -971,7 +1026,7 @@ static void krblog(const char* msg, OM_uint32 major, OM_uint32 minor)
  * returns negative for complete failure, returns 0 for auth-unsuccesful, 1 for
  * auth-success, 99 for GSS continue.
  */
-static int auth_krb(http_context &ctx, const char *input, size_t isize,
+int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
     std::string &output)
 {
 	OM_uint32 status{};
@@ -1039,18 +1094,17 @@ static int auth_krb(http_context &ctx, const char *input, size_t isize,
 	}
 	std::string ub(static_cast<const char *>(gss_user_buf.value), gss_user_buf.length);
 	mlog(LV_DEBUG, "Kerberos username: %s", ub.c_str());
-	return htp_auth_finalize(ctx, ub.c_str());
+	return auth_finalize(ctx, ub.c_str());
 }
 #endif
 
-static tproc_status htp_auth_spnego(http_context &ctx, const char *past_method)
+tproc_status http_parser::auth_spnego(http_context &ctx, const char *past_method)
 {
 	bool rq_ntlmssp = strncmp(past_method, "TlRMTVNT", 8) == 0;
 	auto the_helper = g_config_file->get_value(rq_ntlmssp ? "ntlmssp_program" : "gss_program");
 
 	if (strcmp(the_helper, "internal-gss") != 0) {
-		auto ret = htp_auth_ntlmssp(ctx, the_helper, past_method,
-		           ctx.last_gss_output);
+		auto ret = auth_ntlmssp(ctx, the_helper, past_method, ctx.last_gss_output);
 		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
 		ctx.auth_method = auth_method::negotiate_b64;
 		if (ret <= 0 && ret != -99)
@@ -1086,7 +1140,7 @@ static tproc_status htp_auth_spnego(http_context &ctx, const char *past_method)
  * Only if the request is to be hard-aborted can htp_auth return with a
  * different status from http_done().
  */
-static tproc_status htp_auth(http_context &ctx)
+tproc_status http_parser::auth(http_context &ctx)
 {
 	auto line = http_parser_request_head(ctx.request.f_others, "Authorization");
 	if (line == nullptr && ctx.auth_status == http_status::ok &&
@@ -1119,12 +1173,12 @@ static tproc_status htp_auth(http_context &ctx)
 	}
 	if (strcasecmp(method, "Basic") == 0 &&
 	    g_config_file->get_ll("http_auth_basic")) {
-		auto ret = htp_auth_basic(&ctx, past_method);
+		auto ret = auth_basic(&ctx, past_method);
 		if (ret != tproc_status::runoff)
 			return ret;
 	} else if (strcasecmp(method, "Negotiate") == 0 &&
 	    g_config_file->get_ll("http_auth_spnego")) {
-		auto ret = htp_auth_spnego(ctx, past_method);
+		auto ret = auth_spnego(ctx, past_method);
 		if (ret != tproc_status::runoff)
 			return ret;
 	}
@@ -1275,7 +1329,7 @@ static tproc_status http_done_soft(http_context &ctx, enum http_status status) t
 	return tproc_status::loop;
 }
 
-static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_read)
+tproc_status http_parser::rdhead_st(http_context *pcontext, ssize_t actual_read)
 {
 	while (true) {
 		pcontext->stream_in.try_mark_line();
@@ -1297,8 +1351,8 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 		auto line_length = pcontext->stream_in.readline(&line);
 		if (0 != line_length) {
 			auto ret = *pcontext->request.method == '\0' ?
-			           htparse_rdhead_no(pcontext, line, line_length) :
-			           htparse_rdhead_mt(pcontext, line, line_length);
+			           rdhead_no(pcontext, line, line_length) :
+			           rdhead_mt(pcontext, line, line_length);
 			if (ret != tproc_status::runoff)
 				return ret;
 			continue;
@@ -1316,7 +1370,7 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 			return http_done(pcontext, http_status::enomem_CL);
 		}
 		auto stream_1_written = pcontext->stream_in.get_total_length();
-		auto ret = htp_auth(*pcontext);
+		auto ret = auth(*pcontext);
 		if (ret != tproc_status::runoff)
 			return ret;
 		if (pcontext->auth_status >= http_status::bad_request)
@@ -1357,7 +1411,7 @@ static char *now_str(char *buf, size_t bufsize)
 	return buf;
 }
 
-static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
+ssize_t http_parser::readsock(HTTP_CONTEXT *pcontext, const char *tag,
     void *pbuff, unsigned int size)
 {
 	ssize_t actual_read = pcontext->connection.ssl != nullptr ?
@@ -1389,7 +1443,7 @@ static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
 	return actual_read;
 }
 
-static tproc_status htparse_rdhead(http_context *pcontext)
+tproc_status http_parser::rdhead(http_context *pcontext)
 {
 	unsigned int size = STREAM_BLOCK_SIZE;
 	auto pbuff = pcontext->stream_in.get_write_buf(&size);
@@ -1397,7 +1451,7 @@ static tproc_status htparse_rdhead(http_context *pcontext)
 		mlog(LV_ERR, "E-1180: ENOMEM");
 		return http_done(pcontext, http_status::enomem_CL);
 	}
-	auto actual_read = htparse_readsock(pcontext, "EOH", pbuff, size);
+	auto actual_read = readsock(pcontext, "EOH", pbuff, size);
 	auto current_time = tp_now();
 	if (0 == actual_read) {
 		pcontext->log(LV_DEBUG, "connection lost");
@@ -1405,7 +1459,7 @@ static tproc_status htparse_rdhead(http_context *pcontext)
 	} else if (actual_read > 0) {
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream_in.fwd_write_ptr(actual_read);
-		return htparse_rdhead_st(pcontext, actual_read);
+		return rdhead_st(pcontext, actual_read);
 	}
 	if (EAGAIN != errno) {
 		pcontext->log(LV_DEBUG, "connection lost");
@@ -1413,12 +1467,12 @@ static tproc_status htparse_rdhead(http_context *pcontext)
 	}
 	/* check if context is timed out */
 	if (current_time - pcontext->connection.last_timestamp < g_timeout)
-		return htparse_rdhead_st(pcontext, actual_read);
+		return rdhead_st(pcontext, actual_read);
 	pcontext->log(LV_DEBUG, "I-1934: timeout");
 	return http_done(pcontext, http_status::timeout);
 }
 
-static tproc_status htparse_wrrep_nobuf(http_context *pcontext)
+tproc_status http_parser::wrrep_nobuf(http_context *pcontext)
 {
 	if (hpm_processor_is_in_charge(pcontext)) {
 		switch (hpm_processor_retrieve_response(pcontext)) {
@@ -1493,7 +1547,7 @@ static tproc_status htparse_wrrep_nobuf(http_context *pcontext)
 		/* stream_out is shared resource of vconnection,
 			lock it first before operating */
 		auto chan = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-		auto pvconnection = http_parser_get_vconnection(pcontext->host,
+		auto pvconnection = get_vconnection(pcontext->host,
 		                    pcontext->port, chan->connection_cookie);
 		if (pvconnection == nullptr) {
 			pcontext->log(LV_DEBUG,
@@ -1521,10 +1575,13 @@ static tproc_status htparse_wrrep_nobuf(http_context *pcontext)
 	return tproc_status::runoff;
 }
 
-static tproc_status htparse_wrrep(http_context *pcontext)
+/**
+ * Writeout the response.
+ */
+tproc_status http_parser::wrrep(http_context *pcontext)
 {
 	if (NULL == pcontext->write_buff) {
-		auto ret = htparse_wrrep_nobuf(pcontext);
+		auto ret = wrrep_nobuf(pcontext);
 		if (ret != tproc_status::runoff)
 			return ret;
 	}
@@ -1559,7 +1616,7 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 				/* ignore */;
 		} else {
 			/*
-			 * Unlike in htparse_readsock, here the write buffer
+			 * Unlike in ::readsock, here the write buffer
 			 * contains both HTTP headers, MH chunks and ROP
 			 * response buffer. Try to separate them so that the
 			 * hexdump starts at the ROP part.
@@ -1603,8 +1660,8 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 	if (pcontext->channel_type == hchannel_type::out &&
 	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::opened) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-		auto pvconnection = http_parser_get_vconnection(pcontext->host,
-				pcontext->port, pchannel_out->connection_cookie);
+		auto pvconnection = get_vconnection(pcontext->host,
+		                    pcontext->port, pchannel_out->connection_cookie);
 		auto pnode = double_list_get_head(&pchannel_out->pdu_list);
 		if (pnode != nullptr && !static_cast<BLOB_NODE *>(pnode->pdata)->b_rts) {
 			pchannel_out->available_window -= written_len;
@@ -1622,7 +1679,7 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 		/* stream_out is shared resource of vconnection,
 			lock it first before operating */
 		auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-		auto pvconnection = http_parser_get_vconnection(pcontext->host,
+		auto pvconnection = get_vconnection(pcontext->host,
 		                    pcontext->port, hch->connection_cookie);
 		if (pvconnection == nullptr) {
 			pcontext->log(LV_DEBUG,
@@ -1678,7 +1735,7 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 	return tproc_status::cont;
 }
 
-static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
+tproc_status http_parser::rdbody_nochan2(http_context *pcontext)
 {
 	unsigned int size = STREAM_BLOCK_SIZE;
 	auto pbuff = pcontext->stream_in.get_write_buf(&size);
@@ -1686,7 +1743,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 		mlog(LV_ERR, "E-1179: ENOMEM");
 		return http_done(pcontext, http_status::enomem_CL);
 	}
-	auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
+	auto actual_read = readsock(pcontext, "EOB", pbuff, size);
 	auto current_time = tp_now();
 	if (0 == actual_read) {
 		pcontext->log(LV_DEBUG, "connection lost");
@@ -1746,11 +1803,11 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 	return http_done(pcontext, http_status::timeout);
 }
 
-static tproc_status htparse_rdbody_nochan(http_context *pcontext)
+tproc_status http_parser::rdbody_nochan(http_context *pcontext)
 {
 	if (0 == pcontext->total_length ||
 	    pcontext->bytes_rw < pcontext->total_length) {
-		auto ret = htparse_rdbody_nochan2(pcontext);
+		auto ret = rdbody_nochan2(pcontext);
 		if (ret == tproc_status::endproc)
 			return tproc_status::runoff;
 		if (ret != tproc_status::runoff)
@@ -1785,12 +1842,12 @@ static tproc_status htparse_rdbody_nochan(http_context *pcontext)
 	return tproc_status::cont;
 }
 
-static tproc_status htparse_rdbody(http_context *pcontext)
+tproc_status http_parser::rdbody(http_context *pcontext)
 {
 	if (pcontext->pchannel == nullptr ||
 	    (pcontext->channel_type != hchannel_type::in &&
 	    pcontext->channel_type != hchannel_type::out))
-		return htparse_rdbody_nochan(pcontext);
+		return rdbody_nochan(pcontext);
 
 	auto pchannel_in  = pcontext->channel_type == hchannel_type::in ?
 	                    static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel)  : nullptr;
@@ -1808,7 +1865,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 			return http_done(pcontext, http_status::enomem_CL);
 		}
 
-		auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
+		auto actual_read = readsock(pcontext, "EOB", pbuff, size);
 		auto current_time = tp_now();
 		if (0 == actual_read) {
 			pcontext->log(LV_DEBUG, "connection lost");
@@ -1870,8 +1927,8 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 		} else if (PDU_PROCESSOR_FORWARD == result) {
 			/* only under this condition, we can
 			forward pdu to pdu processor */
-			auto pvconnection = http_parser_get_vconnection(pcontext->host,
-				pcontext->port, pchannel_in->connection_cookie);
+			auto pvconnection = get_vconnection(pcontext->host,
+			                    pcontext->port, pchannel_in->connection_cookie);
 			if (pvconnection == nullptr) {
 				pcontext->log(LV_DEBUG,
 					"virtual connection error in hash table");
@@ -1962,8 +2019,8 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 			return tproc_status::loop;
 		}
 		/* in channel here, find the corresponding out channel first! */
-		auto pvconnection = http_parser_get_vconnection(pcontext->host,
-			pcontext->port, pchannel_in->connection_cookie);
+		auto pvconnection = get_vconnection(pcontext->host,
+		                    pcontext->port, pchannel_in->connection_cookie);
 		if (pvconnection == nullptr) {
 			delete pcall;
 			pcontext->log(LV_DEBUG,
@@ -2001,11 +2058,11 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 	return tproc_status::runoff;
 }
 
-static tproc_status htparse_waitinchannel(http_context *pcontext,
+tproc_status http_parser::waitinchannel(http_context *pcontext,
     RPC_OUT_CHANNEL *pchannel_out)
 {
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
-		pcontext->port, pchannel_out->connection_cookie);
+	auto pvconnection = get_vconnection(pcontext->host,
+	                    pcontext->port, pchannel_out->connection_cookie);
 	if (pvconnection != nullptr) {
 		if (pvconnection->pcontext_out == pcontext
 		    && NULL != pvconnection->pcontext_in) {
@@ -2038,11 +2095,11 @@ static tproc_status htparse_waitinchannel(http_context *pcontext,
 	return tproc_status::runoff;
 }
 
-static tproc_status htparse_waitrecycled(http_context *pcontext,
+tproc_status http_parser::waitrecycled(http_context *pcontext,
     RPC_OUT_CHANNEL *pchannel_out)
 {
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
-		pcontext->port, pchannel_out->connection_cookie);
+	auto pvconnection = get_vconnection(pcontext->host, pcontext->port,
+	                    pchannel_out->connection_cookie);
 	if (pvconnection != nullptr) {
 		if (pvconnection->pcontext_out == pcontext
 		    && NULL != pvconnection->pcontext_in) {
@@ -2070,7 +2127,7 @@ static tproc_status htparse_waitrecycled(http_context *pcontext,
 	return tproc_status::runoff;
 }
 
-static tproc_status htparse_wait(http_context *pcontext)
+tproc_status http_parser::wait(http_context *pcontext)
 {
 	if (hpm_processor_is_in_charge(pcontext))
 		return tproc_status::idle;
@@ -2078,9 +2135,9 @@ static tproc_status htparse_wait(http_context *pcontext)
 	auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 	switch (pchannel_out->channel_stat) {
 	case hchannel_stat::waitinchannel:
-		return htparse_waitinchannel(pcontext, pchannel_out);
+		return waitinchannel(pcontext, pchannel_out);
 	case hchannel_stat::waitrecycled:
-		return htparse_waitrecycled(pcontext, pchannel_out);
+		return waitrecycled(pcontext, pchannel_out);
 	case hchannel_stat::recycled:
 		return tproc_status::runoff;
 	default:
@@ -2103,7 +2160,7 @@ static tproc_status htparse_wait(http_context *pcontext)
 	/* stream_out is shared resource of vconnection,
 		lock it first before operating */
 	auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	pchannel_out->pcall->move_pdus(pchannel_out->pdu_list);
 	pcontext->sched_stat = hsched_stat::wrrep;
@@ -2116,25 +2173,31 @@ tproc_status http_parser_process(schedule_context *vcontext)
 	auto ret = tproc_status::runoff;
 	do {
 		switch (pcontext->sched_stat) {
-		case hsched_stat::initssl: ret = htparse_initssl(pcontext); break;
-		case hsched_stat::rdhead:  ret = htparse_rdhead(pcontext);  break;
-		case hsched_stat::rdbody:  ret = htparse_rdbody(pcontext);  break;
-		case hsched_stat::wrrep:   ret = htparse_wrrep(pcontext);   break;
-		case hsched_stat::wait:    ret = htparse_wait(pcontext);    break;
+		case hsched_stat::initssl: ret = g_parser->initssl(pcontext); break;
+		case hsched_stat::rdhead:  ret = g_parser->rdhead(pcontext);  break;
+		case hsched_stat::rdbody:  ret = g_parser->rdbody(pcontext);  break;
+		case hsched_stat::wrrep:   ret = g_parser->wrrep(pcontext);   break;
+		case hsched_stat::wait:    ret = g_parser->wait(pcontext);    break;
 		default: continue;
 		}
 	} while (ret == tproc_status::loop);
 	if (ret != tproc_status::runoff)
 		return ret;
-	return http_end(pcontext);
+	return g_parser->http_end(pcontext);
 }
 
 void http_parser_shutdown_async()
 {
-	g_async_stop = true;
+	g_parser->g_async_stop = true;
 }
 
 void http_parser_vconnection_async_reply(const char *host,
+	int port, const char *connection_cookie, DCERPC_CALL *pcall)
+{
+	g_parser->vconnection_async_reply(host, port, connection_cookie, pcall);
+}
+
+void http_parser::vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall)
 {
 	/* system is going to stop now */
@@ -2142,7 +2205,7 @@ void http_parser_vconnection_async_reply(const char *host,
 		mlog(LV_DEBUG, "noticed async_stop");
 		return;
 	}
-	auto pvconnection = http_parser_get_vconnection(host, port, connection_cookie);
+	auto pvconnection = get_vconnection(host, port, connection_cookie);
 	if (pvconnection == nullptr)
 		return;
 	if (pvconnection->pcontext_out == nullptr)
@@ -2163,23 +2226,19 @@ void http_parser_vconnection_async_reply(const char *host,
 
 int http_parser_get_param(int param)
 {
-    switch (param) {
-    case MAX_AUTH_TIMES:
-        return g_max_auth_times;
-    case BLOCK_AUTH_FAIL:
-        return g_block_auth_fail;
-    case HTTP_SESSION_TIMEOUT:
-		return std::chrono::duration_cast<std::chrono::seconds>(g_timeout).count();
-	case HTTP_SUPPORT_TLS:
-		return g_support_tls;
-    default:
-        return 0;
-    }
+	switch (param) {
+	case MAX_AUTH_TIMES: return g_parser->g_max_auth_times;
+	case BLOCK_AUTH_FAIL: return g_parser->g_block_auth_fail;
+	case HTTP_SESSION_TIMEOUT:
+		return std::chrono::duration_cast<std::chrono::seconds>(g_parser->g_timeout).count();
+	case HTTP_SUPPORT_TLS: return g_parser->g_support_tls;
+	default: return 0;
+	}
 }
 
 SCHEDULE_CONTEXT **http_parser_get_contexts_list()
 {
-	return g_context_list2.data();
+	return g_parser->g_context_list2.data();
 }
 
 http_context::http_context()
@@ -2267,11 +2326,10 @@ HTTP_CONTEXT* http_parser_get_context()
 
 void http_parser_set_context(int context_id)
 {
-	if (context_id < 0 ||
-	    static_cast<size_t>(context_id) >= g_context_num)
+	if (context_id < 0 || static_cast<size_t>(context_id) >= g_parser->g_context_num)
 		g_context_key = nullptr;
 	else
-		g_context_key = &g_context_list[context_id];
+		g_context_key = &g_parser->g_context_list[context_id];
 }
 
 bool http_parser_get_password(const char *username, char *password)
@@ -2302,8 +2360,8 @@ BOOL http_context::try_create_vconnection()
 		return FALSE;
 	}
  RETRY_QUERY:
-	auto pvconnection = http_parser_get_vconnection(
-		pcontext->host, pcontext->port, conn_cookie);
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
+	                    pcontext->port, conn_cookie);
 	if (pvconnection != nullptr) {
 		if (pcontext->channel_type == hchannel_type::out) {
 			pvconnection->pcontext_out = pcontext;
@@ -2315,18 +2373,18 @@ BOOL http_context::try_create_vconnection()
 		return TRUE;
 	}
 
-	std::unique_lock vc_hold(g_vconnection_lock);
-	if (g_vconnection_hash.size() >= g_context_num + 1) {
+	std::unique_lock vc_hold(g_parser->g_vconnection_lock);
+	if (g_parser->g_vconnection_hash.size() >= g_parser->g_context_num + 1) {
 		pcontext->log(LV_DEBUG, "W-1293: vconn hash full");
 		return false;
 	}
-	decltype(g_vconnection_hash.try_emplace(""s)) xp;
+	decltype(g_parser->g_vconnection_hash.try_emplace(""s)) xp;
 	try {
 		auto hash_key = conn_cookie + ":"s +
 				std::to_string(pcontext->port) + ":" +
 				pcontext->host;
 		HX_strlower(hash_key.data());
-		xp = g_vconnection_hash.try_emplace(std::move(hash_key));
+		xp = g_parser->g_vconnection_hash.try_emplace(std::move(hash_key));
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1292: ENOMEM");
 		return false;
@@ -2338,7 +2396,7 @@ BOOL http_context::try_create_vconnection()
 	auto nc = &xp.first->second;
 	nc->pprocessor = pdu_processor_create(pcontext->host, pcontext->port);
 	if (nc->pprocessor == nullptr) {
-		g_vconnection_hash.erase(xp.first);
+		g_parser->g_vconnection_hash.erase(xp.first);
 		pcontext->log(LV_DEBUG,
 			"fail to create processor on %s:%d",
 			pcontext->host, pcontext->port);
@@ -2359,7 +2417,7 @@ void http_context::set_outchannel_flowcontrol(uint32_t bytes_received,
 	if (pcontext->channel_type != hchannel_type::in)
 		return;
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr)
 		return;
@@ -2381,7 +2439,7 @@ BOOL http_context::recycle_inchannel(const char *predecessor_cookie)
 	if (pcontext->channel_type != hchannel_type::in)
 		return FALSE;
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr ||
 	    pvconnection->pcontext_in == nullptr ||
@@ -2403,7 +2461,7 @@ BOOL http_context::recycle_outchannel(const char *predecessor_cookie)
 	if (pcontext->channel_type != hchannel_type::out)
 		return FALSE;
 	auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr ||
 	    pvconnection->pcontext_out == nullptr ||
@@ -2431,7 +2489,7 @@ BOOL http_context::activate_inrecycling(const char *successor_cookie)
 	if (pcontext->channel_type != hchannel_type::in)
 		return FALSE;
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr ||
 	    pvconnection->pcontext_insucc != pcontext ||
@@ -2453,7 +2511,7 @@ BOOL http_context::activate_outrecycling(const char *successor_cookie)
 	if (pcontext->channel_type != hchannel_type::in)
 		return FALSE;
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr ||
 	    pvconnection->pcontext_in != pcontext ||
@@ -2481,7 +2539,7 @@ void http_context::set_keep_alive(time_duration keepalive)
 {
 	auto pcontext = this;
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	auto pvconnection = g_parser->get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr || pvconnection->pcontext_in != pcontext)
 		return;
