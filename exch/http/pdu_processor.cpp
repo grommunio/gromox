@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <atomic>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
@@ -112,12 +113,13 @@ static int g_connection_ratio;
 static char g_dns_domain[128];
 static char g_netbios_name[128];
 static size_t g_max_request_mem;
-static uint32_t g_last_async_id;
+static std::atomic<uint32_t> g_last_async_id;
 static thread_local DCERPC_CALL *g_call_key;
 static thread_local NDR_STACK_ROOT *g_stack_key;
 static thread_local PROC_PLUGIN *g_cur_plugin;
 static std::list<PROC_PLUGIN> g_plugin_list;
-static std::mutex g_list_lock, g_async_lock;
+static std::mutex g_list_lock; /* protects g_processor_list */
+static std::mutex g_async_lock; /* protects g_async_hash */
 static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unordered_map<int, ASYNC_NODE *> g_async_hash;
@@ -193,7 +195,6 @@ void pdu_processor_init(int connection_num, const char *netbios_name,
     } e;
 
 	e.i = 0xFF000000;
-	std::unique_lock as_hold(g_async_lock);
 	g_bigendian = e.c[0] != 0 ? TRUE : false;
 	g_last_async_id = 0;
 	g_connection_ratio = connection_ratio;
@@ -1477,9 +1478,20 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	return TRUE;
 }
 
+static uint32_t get_next_async_id()
+{
+	do {
+		uint32_t curr = g_last_async_id;
+		uint32_t next = curr + 1;
+		if (next >= INT32_MAX)
+			next = 0;
+		if (g_last_async_id.compare_exchange_weak(curr, next))
+			return next;
+	} while (true);
+}
+
 static uint32_t pdu_processor_apply_async_id()
 {
-	int async_id;
 	DCERPC_CALL *pcall;
 	HTTP_CONTEXT *pcontext;
 	
@@ -1514,12 +1526,9 @@ static uint32_t pdu_processor_apply_async_id()
 	pasync_node->vconn_port = pcontext->port;
 	strcpy(pasync_node->vconn_cookie, pchannel_in->connection_cookie);
 	
-	std::unique_lock as_hold(g_async_lock);
-	g_last_async_id ++;
-	async_id = g_last_async_id;
-	if (g_last_async_id >= INT32_MAX)
-		g_last_async_id = 0;
 	auto ctx_num = g_connection_num * g_connection_ratio;
+	auto async_id = get_next_async_id();
+	std::unique_lock as_hold(g_async_lock);
 	if (g_async_hash.size() >= 2 * ctx_num) {
 		as_hold.unlock();
 		delete pasync_node;
