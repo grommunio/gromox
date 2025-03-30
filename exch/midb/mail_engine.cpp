@@ -1111,7 +1111,7 @@ static std::unique_ptr<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			if (strptime(argv[i], "%d-%b-%Y", &tmp_tm) == nullptr)
 				return {};
 			tmp_tm.tm_wday = -1;
-			ptree_node->ct_time = mktime(&tmp_tm);
+			ptree_node->ct_time = timegm(&tmp_tm);
 			if (ptree_node->ct_time == -1 && tmp_tm.tm_wday == -1)
 				return {};
 		} else if ('(' == argv[i][0]) {

@@ -822,9 +822,9 @@ static int icp_process_fetch_item(imap_context &ctx,
 			if (!parse_rfc822_timestamp(mjson.get_mail_received(), &tmp_time))
 				tmp_time = strtol(mjson.get_mail_filename(), nullptr, 0);
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
-			localtime_r(&tmp_time, &tmp_tm);
+			gmtime_r(&tmp_time, &tmp_tm);
 			char b2[80];
-			strftime(b2, std::size(b2), "INTERNALDATE \"%d-%b-%Y %T %z\"", &tmp_tm);
+			strftime(b2, std::size(b2), "INTERNALDATE \"%d-%b-%Y %T +0000\"", &tmp_tm);
 			buf += b2;
 		} else if (strcasecmp(kw, "RFC822") == 0) {
 			buf += fmt::format("RFC822 <<{{file}}{}|0|{}\r\n",
