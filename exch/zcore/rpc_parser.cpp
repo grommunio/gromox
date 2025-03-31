@@ -110,122 +110,131 @@ static void *zcrp_thrwork(void *param)
 	uint32_t buff_len;
 	struct pollfd fdpoll;
 	DOUBLE_LIST_NODE *pnode;
-
- WAIT_CLIFD:
-	std::unique_lock cm_hold(g_cond_mutex);
-	g_waken_cond.wait(cm_hold);
-	cm_hold.unlock();
- NEXT_CLIFD:
-	std::unique_lock cl_hold(g_conn_lock);
-	pnode = double_list_pop_front(&g_conn_list);
-	cl_hold.unlock();
-	if (NULL == pnode) {
-		if (g_notify_stop)
-			return nullptr;
-		goto WAIT_CLIFD;
-	}
-	auto clifd = static_cast<CLIENT_NODE *>(pnode->pdata)->clifd;
-	free(pnode->pdata);
 	
-	offset = 0;
-	buff_len = 0;
-	
-	fdpoll.fd = clifd;
-	fdpoll.events = POLLIN|POLLPRI;
-	if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
-		close(clifd);
-		goto NEXT_CLIFD;
-	}
-	read_len = read(clifd, &buff_len, sizeof(uint32_t));
-	if (read_len != sizeof(uint32_t) || buff_len >= UINT_MAX) {
-		close(clifd);
-		goto NEXT_CLIFD;
-	}
-	buff_len = std::min(buff_len, UINT32_MAX);
-	auto pbuff = malloc(buff_len);
-	if (NULL == pbuff) {
-		auto tmp_byte = zcore_response::lack_memory;
-		fdpoll.events = POLLOUT|POLLWRBAND;
-		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-			if (write(clifd, &tmp_byte, 1) < 1)
-				/* ignore */;
-		close(clifd);
-		goto NEXT_CLIFD;
-	}
 	while (true) {
+		/* Wait for work items */
+		{
+			std::unique_lock<std::mutex> cm_hold(g_conn_lock);
+			g_waken_cond.wait(cm_hold, []() { return g_notify_stop || double_list_get_nodes_num(&g_conn_list) > 0; });
+			if (g_notify_stop)
+				return nullptr;
+			pnode = double_list_pop_front(&g_conn_list);
+		}
+		if (pnode == nullptr)
+			continue;
+
+		auto clifd = static_cast<CLIENT_NODE *>(pnode->pdata)->clifd;
+		free(pnode->pdata);
+
+		offset = 0;
+		buff_len = 0;
+
+		fdpoll.fd = clifd;
+		fdpoll.events = POLLIN | POLLPRI;
+
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
 			close(clifd);
-			free(pbuff);
-			goto NEXT_CLIFD;
+			continue;
 		}
-		read_len = read(clifd, static_cast<char *>(pbuff) + offset, buff_len - offset);
-		if (read_len <= 0) {
+
+		read_len = read(clifd, &buff_len, sizeof(uint32_t));
+		if (read_len != sizeof(uint32_t) || buff_len >= UINT_MAX) {
 			close(clifd);
-			free(pbuff);
-			goto NEXT_CLIFD;
+			continue;
 		}
-		offset += read_len;
-		if (offset == buff_len)
-			break;
-	}
-	common_util_build_environment();
-	tmp_bin.pv = pbuff;
-	tmp_bin.cb = buff_len;
-	std::unique_ptr<zcreq> request;
-	if (rpc_ext_pull_request(&tmp_bin, request) != pack_result::ok) {
+
+		buff_len = std::min(buff_len, UINT32_MAX);
+		auto pbuff = malloc(buff_len);
+		if (pbuff == nullptr) {
+			auto tmp_byte = zcore_response::lack_memory;
+			fdpoll.events = POLLOUT | POLLWRBAND;
+			if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
+				write(clifd, &tmp_byte, 1);
+			close(clifd);
+			continue;
+		}
+		while (true) {
+			if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
+				close(clifd);
+				free(pbuff);
+				break;
+			}
+			read_len = read(clifd, static_cast<char *>(pbuff) + offset, buff_len - offset);
+			if (read_len <= 0) {
+				close(clifd);
+				free(pbuff);
+				break;
+			}
+			offset += read_len;
+			if (offset == buff_len)
+				break;
+		}
+		//im not using goto to wait block.Instead 
+		//I just interrupt the read loop and if the entire buffer has not been read then we go back to waiting.
+		if (offset != buff_len)
+			continue;
+
+		common_util_build_environment();
+		tmp_bin.pv = pbuff;
+		tmp_bin.cb = buff_len;
+		std::unique_ptr<zcreq> request;
+
+		if (rpc_ext_pull_request(&tmp_bin, request) != pack_result::ok) {
+			free(pbuff);
+			common_util_free_environment();
+			auto tmp_byte = zcore_response::pull_error;
+			fdpoll.events = POLLOUT | POLLWRBAND;
+			if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
+				write(clifd, &tmp_byte, 1);
+			close(clifd);
+			continue;
+		}
 		free(pbuff);
+
+		if (request->call_id == zcore_callid::notifdequeue)
+			common_util_set_clifd(clifd);
+
+		std::unique_ptr<zcresp> response;
+		switch (rpc_parser_dispatch(request.get(), response)) {
+		case DISPATCH_FALSE: {
+			common_util_free_environment();
+			auto tmp_byte = zcore_response::dispatch_error;
+			fdpoll.events = POLLOUT | POLLWRBAND;
+			if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
+				write(clifd, &tmp_byte, 1);
+			close(clifd);
+			continue;
+		}
+		case DISPATCH_CONTINUE:
+			common_util_free_environment();
+			// Connection stays active, handled elsewhere
+			continue;
+		}
+		if (rpc_ext_push_response(response.get(), &tmp_bin) != pack_result::ok) {
+			common_util_free_environment();
+			auto tmp_byte = zcore_response::push_error;
+			fdpoll.events = POLLOUT | POLLWRBAND;
+			if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
+				write(clifd, &tmp_byte, 1);
+			close(clifd);
+			continue;
+		}
+
 		common_util_free_environment();
-		auto tmp_byte = zcore_response::pull_error;
-		fdpoll.events = POLLOUT|POLLWRBAND;
+		fdpoll.events = POLLOUT | POLLWRBAND;
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-			if (write(clifd, &tmp_byte, 1) < 1)
+			if (write(clifd, tmp_bin.pb, tmp_bin.cb) < 0)
 				/* ignore */;
-		close(clifd);
-		goto NEXT_CLIFD;
-	}
-	free(pbuff);
-	if (request->call_id == zcore_callid::notifdequeue)
-		common_util_set_clifd(clifd);
-	std::unique_ptr<zcresp> response;
-	switch (rpc_parser_dispatch(request.get(), response)) {
-	case DISPATCH_FALSE: {
-		common_util_free_environment();
-		auto tmp_byte = zcore_response::dispatch_error;
-		fdpoll.events = POLLOUT|POLLWRBAND;
-		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-			if (write(clifd, &tmp_byte, 1) < 1)
-				/* ignore */;
-		close(clifd);
-		goto NEXT_CLIFD;
-	}
-	case DISPATCH_CONTINUE:
-		common_util_free_environment();
-		/* clifd will be maintained by zarafa_server */
-		goto NEXT_CLIFD;
-	}
-	if (rpc_ext_push_response(response.get(), &tmp_bin) != pack_result::ok) {
-		common_util_free_environment();
-		auto tmp_byte = zcore_response::push_error;
-		fdpoll.events = POLLOUT|POLLWRBAND;
-		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-			if (write(clifd, &tmp_byte, 1) < 1)
-				/* ignore */;
-		close(clifd);
-		goto NEXT_CLIFD;
-	}
-	common_util_free_environment();
-	fdpoll.events = POLLOUT|POLLWRBAND;
-	if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) == 1)
-		if (write(clifd, tmp_bin.pb, tmp_bin.cb) < 0)
+
+		shutdown(clifd, SHUT_WR);
+		uint8_t tmp_byte;
+		if (read(clifd, &tmp_byte, 1))
 			/* ignore */;
-	shutdown(clifd, SHUT_WR);
-	uint8_t tmp_byte;
-	if (read(clifd, &tmp_byte, 1))
-		/* ignore */;
-	close(clifd);
-	free(tmp_bin.pb);
-	tmp_bin.pb = nullptr;
-	goto NEXT_CLIFD;
+		close(clifd);
+		free(tmp_bin.pb);
+		tmp_bin.pb = nullptr;
+	}
+	return nullptr;
 }
 
 int rpc_parser_run()
