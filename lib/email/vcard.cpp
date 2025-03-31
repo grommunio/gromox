@@ -112,12 +112,12 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 				b_quoted = strcasestr(pbuff, "QUOTED-PRINTABLE") != nullptr ? TRUE : false;
 			}
 			if (b_quoted) {
-				if ('=' == pbuff[i - 1]) {
+				if (i > 0 && pbuff[i-1] == '=') {
 					memmove(pbuff + i - 1, pbuff + i, max_length - i);
 					pbuff[max_length-1] = '\0';
 					max_length --;
 					i --;
-				} else if (pbuff[i+1] == '\n') {
+				} else if (i + 1 < max_length && pbuff[i+1] == '\n') {
 					return i + 2 < max_length ? pbuff + i + 2 : nullptr;
 				} else {
 					return i + 1 < max_length ? pbuff + i + 1 : nullptr;
@@ -174,7 +174,7 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 				b_quoted = strcasestr(pbuff, "QUOTED-PRINTABLE") != nullptr ? TRUE : false;
 			}
 			if (b_quoted) {
-				if ('=' == pbuff[i - 1]) {
+				if (i > 0 && pbuff[i-1] == '=') {
 					memmove(pbuff + i - 1, pbuff + i, max_length - i);
 					pbuff[max_length-1] = '\0';
 					max_length --;
