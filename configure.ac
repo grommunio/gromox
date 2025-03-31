@@ -69,15 +69,10 @@ AC_ARG_WITH([ubsan], AS_HELP_STRING([--with-ubsan], [Activate Undefined Behavior
 	my_LDFLAGS="$my_CXXFLAGS -fsanitize=undefined"
 	NO_VSYM=1
 ])
-AS_IF([test -n "$LD" && $LD -z help >/dev/null 2>/dev/null], [
-	with_sun_ld=yes
-	NO_VSYM=1
-], [with_sun_ld=no])
 AS_IF([test -z "$NO_VSYM"], [
 	my_CFLAGS="$my_CFLAGS -fvisibility=hidden"
 	my_CXXFLAGS="$my_CXXFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
 ])
-AM_CONDITIONAL([WITH_SUN_LD], [test "$with_sun_ld" = yes])
 AC_SUBST([NO_VSYM])
 
 
