@@ -352,13 +352,16 @@ tzd_files += data/Saratov.tzd data/Singapore.tzd data/South_Africa.tzd data/Sout
 tzd_files += data/windowsZones.xml
 header_files = include/gromox/ab_tree.hpp include/gromox/arcfour.hpp include/gromox/archive.hpp include/gromox/atomic.hpp include/gromox/authmgr.hpp include/gromox/bounce_gen.hpp include/gromox/clock.hpp include/gromox/common_types.hpp include/gromox/config_file.hpp include/gromox/contexts_pool.hpp include/gromox/cookie_parser.hpp include/gromox/cryptoutil.hpp include/gromox/database.h include/gromox/database_mysql.hpp include/gromox/dbop.h include/gromox/dcerpc.hpp include/gromox/defs.h include/gromox/double_list.hpp include/gromox/dsn.hpp include/gromox/eid_array.hpp include/gromox/element_data.hpp include/gromox/exmdb_client.hpp include/gromox/exmdb_common_util.hpp include/gromox/exmdb_ext.hpp include/gromox/exmdb_idef.hpp include/gromox/exmdb_provider_client.hpp include/gromox/exmdb_rpc.hpp include/gromox/exmdb_server.hpp include/gromox/ext_buffer.hpp
 header_files += include/gromox/fileio.h include/gromox/flusher_common.h include/gromox/freebusy.hpp include/gromox/gab.hpp include/gromox/generic_connection.hpp include/gromox/hook_common.h include/gromox/hpm_common.h include/gromox/http.hpp include/gromox/ical.hpp include/gromox/icase.hpp include/gromox/json.hpp include/gromox/list_file.hpp include/gromox/lzxpress.hpp include/gromox/mail.hpp include/gromox/mail_func.hpp include/gromox/mapi_types.hpp include/gromox/mapidefs.h include/gromox/mapierr.hpp include/gromox/mapitags.hpp include/gromox/midb.hpp include/gromox/midb_agent.hpp include/gromox/mime.hpp include/gromox/mjson.hpp include/gromox/msgchg_grouping.hpp include/gromox/mysql_adaptor.hpp include/gromox/ndr.hpp include/gromox/ntlmssp.hpp include/gromox/oxcmail.hpp include/gromox/oxoabkt.hpp
-header_files += include/gromox/paths.h.in include/gromox/pcl.hpp include/gromox/plugin.hpp include/gromox/proc_common.h include/gromox/process.hpp include/gromox/proptag_array.hpp include/gromox/propval.hpp include/gromox/range_set.hpp include/gromox/resource_pool.hpp include/gromox/restriction.hpp include/gromox/rop_util.hpp include/gromox/rpc_types.hpp include/gromox/rule_actions.hpp include/gromox/safeint.hpp include/gromox/simple_tree.hpp include/gromox/sortorder_set.hpp include/gromox/stream.hpp include/gromox/svc_common.h include/gromox/svc_loader.hpp include/gromox/textmaps.hpp include/gromox/threads_pool.hpp include/gromox/tie.hpp include/gromox/tnef.hpp include/gromox/usercvt.hpp include/gromox/util.hpp include/gromox/vcard.hpp include/gromox/xarray2.hpp include/gromox/zcore_client.hpp include/gromox/zcore_rpc.hpp include/gromox/zz_ndr_stack.hpp
-header_files += lib/mapi/oxcmail_int.hpp
+header_files += include/gromox/paths.h include/gromox/pcl.hpp include/gromox/plugin.hpp include/gromox/proc_common.h include/gromox/process.hpp include/gromox/proptag_array.hpp include/gromox/propval.hpp include/gromox/range_set.hpp include/gromox/resource_pool.hpp include/gromox/restriction.hpp include/gromox/rop_util.hpp include/gromox/rpc_types.hpp include/gromox/rule_actions.hpp include/gromox/safeint.hpp include/gromox/simple_tree.hpp include/gromox/sortorder_set.hpp include/gromox/stream.hpp include/gromox/svc_common.h include/gromox/svc_loader.hpp include/gromox/textmaps.hpp include/gromox/threads_pool.hpp include/gromox/tie.hpp include/gromox/tnef.hpp include/gromox/usercvt.hpp include/gromox/util.hpp include/gromox/vcard.hpp include/gromox/xarray2.hpp include/gromox/zcore_client.hpp include/gromox/zcore_rpc.hpp include/gromox/zz_ndr_stack.hpp
+if ENABLE_PRIVATE_HEADERS
+pkginclude_HEADERS = ${header_files}
+endif
+EXTRA_HEADERS = include/gromox/paths.h.in lib/mapi/oxcmail_int.hpp
 list_files = data/cpid.txt data/exmdb_list.txt data/folder_names.txt data/lang_charset.txt data/lcid.txt data/mime_extension.txt data/propnames.txt
 pkgdata_DATA = data/abkt.pak data/timezone.pak
 dist_pkgdata_DATA = ${list_files} data/gdbinit data/fpm-gromox.conf.sample data/gromox.ldif data/sqliterc
 toolprogs = tools/defs2php.pl tools/defs2php.sh tools/duplogid tools/enumsort tools/exmidl.pl tools/exmidl.sh tools/includesort tools/mpak.pl tools/mpak.sh tools/proptagsort tools/stackusage tools/warncount tools/zcidl.pl tools/zcidl.sh
-EXTRA_DIST = ${abkt_files} ${tzd_files} ${header_files} ${toolprogs} LICENSE.txt README.rst default.sym exch/bounce_exch.cpp exch/php/ews/thumbnail.php exch/php/lib/conf.php exch/php/lib/db.php lib/haproxy.cpp tools/genmails tools/staticnpmap.cpp
+EXTRA_DIST = ${abkt_files} ${tzd_files} ${header_files} ${EXTRA_HEADERS} ${toolprogs} LICENSE.txt README.rst default.sym exch/bounce_exch.cpp exch/php/ews/thumbnail.php exch/php/lib/conf.php exch/php/lib/db.php lib/haproxy.cpp tools/genmails tools/staticnpmap.cpp
 
 data/abkt.pak: ${abkt_files}
 	${AM_V_GEN}${MKDIR_P} data
@@ -429,7 +432,13 @@ dldcheck.stamp: dldcheck ${dldcheck_files}
 .tps.service:
 	${AM_V_GEN}${MKDIR_P} system; ${SED} -e 's|@''libexecdir''@|${libexecdir}|g' <$< >$@
 
-.PHONY: tarball
+.PHONY: header-presence tarball
+
+header-presence:
+	@echo ${header_files} | sed -e 's/ /\n/g' | sort -u >hdrinstalled.o
+	@echo include/gromox/*.h include/gromox/*.hpp | sed -e 's/ /\n/g' | sort -u >hdrpresent.o
+	${AM_V_GEN}diff -dpru hdrinstalled.o hdrpresent.o
+
 tarball:
 	tmpdir=$$(mktemp -dtu); \
 	mkdir $$tmpdir && \

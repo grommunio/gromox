@@ -53,6 +53,10 @@ AS_IF([test "$cxxmode" = error], [
 ])
 my_CXXFLAGS="$my_CXXFLAGS${cxxmode}"
 
+AC_ARG_ENABLE([private-headers],
+	[AS_HELP_STRING([--enable-private-headers], [Do copy header files during \`make install\`])],
+	[install_headers="$enableval"], [install_headers=no])
+AM_CONDITIONAL([ENABLE_PRIVATE_HEADERS], [test "$install_headers" = yes])
 AC_ARG_WITH([asan], AS_HELP_STRING([--with-asan], [Activate Address Sanitizer]),
 	[
 	my_CFLAGS="$my_CFLAGS -fsanitize=address"
@@ -277,3 +281,4 @@ AS_IF([test -z "$cxxmode"], [AC_MSG_RESULT([*** No usable -std= argument was det
 AC_LANG_POP([C++])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
+echo "Install private headers: $install_headers"
