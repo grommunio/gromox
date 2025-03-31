@@ -363,11 +363,8 @@ static int launch_notify_listener(remote_svr &srv) try
 	 * Wait for the notify thread to be up before allowing
 	 * current thread to send any commands.
 	 */
-	while (ag.startup_wait) {
-		std::mutex mtx;
-		std::unique_lock lk(mtx);
-		ag.startup_cv.wait(lk);
-	}
+	std::unique_lock lk(ag.startup_mutex);
+	ag.startup_cv.wait(lk, [&ag] { return !ag.startup_wait; });
 	return 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "exmdb_client: failed to allocate memory for exmdb");
