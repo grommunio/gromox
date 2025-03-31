@@ -3958,6 +3958,9 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		if (!imail.serialize(&tmp_stream))
 			return FALSE;
 		imail.clear();
+		if (static_cast<size_t>(mail_len) > SIZE_MAX - 128) {
+			return FALSE; //prevent integer overflow
+		}
 		std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(mail_len + 128));
 		if (pbuff == nullptr)
 			return FALSE;
