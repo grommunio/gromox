@@ -42,7 +42,6 @@ static bool g_lda_twostep, g_lda_mrautoproc;
 static char g_org_name[256];
 static thread_local alloc_context g_alloc_ctx;
 static thread_local const char *g_storedir;
-static char g_default_charset[32];
 static std::atomic<int> g_sequence_id;
 
 static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int flags);
@@ -58,10 +57,9 @@ static int exmdb_local_sequence_ID()
 }
 
 
-void exmdb_local_init(const char *org_name, const char *default_charset)
+void exmdb_local_init(const char *org_name)
 {
 	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
-	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
 }
 
 int exmdb_local_run() try
@@ -276,9 +274,6 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		return delivery_status::no_user;
 	}
 	auto home_dir = mres.maildir.c_str();
-	auto charset = lang_to_charset(mres.lang.c_str());
-	if (*znul(charset) == '\0')
-		charset = g_default_charset;
 	if (*znul(tmzone) == '\0')
 		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
 	
@@ -331,7 +326,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	digest["file"] = std::move(mid_string);
 	auto djson = json_to_str(digest);
 	g_storedir = mres.maildir.c_str();
-	auto pmsg = oxcmail_import(charset, tmzone, pmail, exmdb_local_alloc,
+	auto pmsg = oxcmail_import(nullptr, tmzone, pmail, exmdb_local_alloc,
 	            exmdb_local_get_propids);
 	g_storedir = nullptr;
 	if (NULL == pmsg) {
@@ -463,7 +458,7 @@ static constexpr cfg_directive mdlgx_cfg_defaults[] = {
 
 BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
-	char charset[32], org_name[256], temp_buff[45], cache_path[256];
+	char org_name[256], temp_buff[45], cache_path[256];
 	int cache_interval, retrying_times;
 	int response_capacity, response_interval, conn_num;
 
@@ -493,10 +488,6 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		auto str_value = pfile->get_value("X500_ORG_NAME");
 		gx_strlcpy(org_name, str_value != nullptr ? str_value : "Gromox default", std::size(org_name));
 		mlog(LV_INFO, "exmdb_local: x500 org name is \"%s\"", org_name);
-
-		str_value = pfile->get_value("DEFAULT_CHARSET");
-		gx_strlcpy(charset, str_value != nullptr ? str_value : "windows-1252", std::size(charset));
-		mlog(LV_INFO, "exmdb_local: default charset is \"%s\"", charset);
 
 		str_value = pfile->get_value("EXMDB_CONNECTION_NUM");
 		conn_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 5;
@@ -548,7 +539,7 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		exmdb_client.emplace(conn_num, 0);
 		exmdb_rpc_alloc = exmdb_local_alloc;
 		exmdb_rpc_free  = [](void *) {};
-		exmdb_local_init(org_name, charset);
+		exmdb_local_init(org_name);
 
 		if (bounce_gen_init(get_config_path(), get_data_path(),
 		    "local_bounce") != 0) {

@@ -18,9 +18,6 @@ Interval in which to scan /var/lib/gromox/queue/cache.
 .br
 Default: 3min
 .TP
-\fBdefault_charset\fP
-Default: \fIwindows-1252\fP
-.TP
 \fBexmdb_connection_num\fP
 Default: \fI5\fP
 .TP
