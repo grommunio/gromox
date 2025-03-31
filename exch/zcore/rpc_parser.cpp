@@ -49,7 +49,7 @@ static gromox::atomic_bool g_zrpc_stop;
 static std::vector<pthread_t> g_thread_ids;
 static DOUBLE_LIST g_conn_list;
 static std::condition_variable g_waken_cond;
-static std::mutex g_conn_lock, g_cond_mutex;
+static std::mutex g_conn_lock;
 unsigned int g_zrpc_debug;
 
 void rpc_parser_init(unsigned int thread_num)
@@ -111,19 +111,18 @@ static void *zcrp_thrwork(void *param)
 	struct pollfd fdpoll;
 	DOUBLE_LIST_NODE *pnode;
 
- WAIT_CLIFD:
-	std::unique_lock cm_hold(g_cond_mutex);
-	g_waken_cond.wait(cm_hold);
-	cm_hold.unlock();
- NEXT_CLIFD:
-	std::unique_lock cl_hold(g_conn_lock);
-	pnode = double_list_pop_front(&g_conn_list);
-	cl_hold.unlock();
-	if (NULL == pnode) {
+	while (true) {
+	/* Wait for work items */
+	{
+		std::unique_lock cm_hold(g_conn_lock);
+		g_waken_cond.wait(cm_hold, []() { return g_zrpc_stop || double_list_get_nodes_num(&g_conn_list) > 0; });
 		if (g_zrpc_stop)
 			return nullptr;
-		goto WAIT_CLIFD;
+		pnode = double_list_pop_front(&g_conn_list);
 	}
+	if (pnode == nullptr)
+		continue;
+
 	auto clifd = static_cast<CLIENT_NODE *>(pnode->pdata)->clifd;
 	free(pnode->pdata);
 	
@@ -134,12 +133,12 @@ static void *zcrp_thrwork(void *param)
 	fdpoll.events = POLLIN|POLLPRI;
 	if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
 		close(clifd);
-		goto NEXT_CLIFD;
+		continue;
 	}
 	read_len = read(clifd, &buff_len, sizeof(uint32_t));
 	if (read_len != sizeof(uint32_t) || buff_len >= UINT_MAX) {
 		close(clifd);
-		goto NEXT_CLIFD;
+		continue;
 	}
 	buff_len = std::min(buff_len, UINT32_MAX);
 	auto pbuff = malloc(buff_len);
@@ -150,24 +149,31 @@ static void *zcrp_thrwork(void *param)
 			if (write(clifd, &tmp_byte, 1) < 1)
 				/* ignore */;
 		close(clifd);
-		goto NEXT_CLIFD;
+		continue;
 	}
 	while (true) {
 		if (poll(&fdpoll, 1, SOCKET_TIMEOUT_MS) != 1) {
 			close(clifd);
 			free(pbuff);
-			goto NEXT_CLIFD;
+			break;
 		}
 		read_len = read(clifd, static_cast<char *>(pbuff) + offset, buff_len - offset);
 		if (read_len <= 0) {
 			close(clifd);
 			free(pbuff);
-			goto NEXT_CLIFD;
+			break;
 		}
 		offset += read_len;
 		if (offset == buff_len)
 			break;
 	}
+	/*
+	 * Interrupt the read loop and, if the entire buffer has not
+	 * been read, we go back to waiting.
+	 */
+	if (offset != buff_len)
+		continue;
+
 	common_util_build_environment();
 	tmp_bin.pv = pbuff;
 	tmp_bin.cb = buff_len;
@@ -181,7 +187,7 @@ static void *zcrp_thrwork(void *param)
 			if (write(clifd, &tmp_byte, 1) < 1)
 				/* ignore */;
 		close(clifd);
-		goto NEXT_CLIFD;
+		continue;
 	}
 	free(pbuff);
 	if (request->call_id == zcore_callid::notifdequeue)
@@ -196,12 +202,12 @@ static void *zcrp_thrwork(void *param)
 			if (write(clifd, &tmp_byte, 1) < 1)
 				/* ignore */;
 		close(clifd);
-		goto NEXT_CLIFD;
+		continue;
 	}
 	case DISPATCH_CONTINUE:
 		common_util_free_environment();
-		/* clifd will be maintained by zarafa_server */
-		goto NEXT_CLIFD;
+		// Connection stays active, handled elsewhere
+		continue;
 	}
 	if (rpc_ext_push_response(response.get(), &tmp_bin) != pack_result::ok) {
 		common_util_free_environment();
@@ -211,7 +217,7 @@ static void *zcrp_thrwork(void *param)
 			if (write(clifd, &tmp_byte, 1) < 1)
 				/* ignore */;
 		close(clifd);
-		goto NEXT_CLIFD;
+		continue;
 	}
 	common_util_free_environment();
 	fdpoll.events = POLLOUT|POLLWRBAND;
@@ -225,7 +231,8 @@ static void *zcrp_thrwork(void *param)
 	close(clifd);
 	free(tmp_bin.pb);
 	tmp_bin.pb = nullptr;
-	goto NEXT_CLIFD;
+	}
+	return nullptr;
 }
 
 int rpc_parser_run()
