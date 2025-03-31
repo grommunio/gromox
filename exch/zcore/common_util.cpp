@@ -612,6 +612,7 @@ void common_util_free_znotification(ZNOTIFICATION *pnotification)
 			rop_util_free_binary(pobj_notify->pold_parentid);
 		if (pobj_notify->pproptags != nullptr)
 			proptag_array_free(pobj_notify->pproptags);
+		free(pobj_notify);
 	}
 	free(pnotification);
 }
