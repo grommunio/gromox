@@ -278,7 +278,7 @@ static void *midcp_thrwork(void *param)
 				break;
 			}
 			offset += read_len;
-			for (i = 0; i < offset - 1; ++i) {
+			for (i = 0; i + 1 < offset; ++i) { //cov-scan overflow fix
 				if (buffer[i] != '\r' || buffer[i + 1] != '\n')
 					continue;
 				if (i == 4 && strncasecmp(buffer, "QUIT", 4) == 0) {
@@ -296,10 +296,13 @@ static void *midcp_thrwork(void *param)
 						gc.splice(gc.end(), g_connlist_active, pconnection);
 						goto NEXT_CONN;
 					}
-					offset -= i + 2;
-					if (offset >= 0)
+					if (i + 2 <= offset) {
+						offset -= i + 2;
 						memmove(buffer, buffer + i + 2, offset);
-					i = 0;
+					} else {
+						offset = 0;
+					}
+					i = -1;
 					continue;
 				}
 
@@ -309,9 +312,13 @@ static void *midcp_thrwork(void *param)
 					gc.splice(gc.end(), g_connlist_active, pconnection);
 					goto NEXT_CONN;
 				}
-				offset -= i + 2;
-				memmove(buffer, buffer + i + 2, offset);
-				i = 0;
+				if (i + 2 <= offset) {
+					offset -= i + 2;
+					memmove(buffer, buffer + i + 2, offset);
+				} else {
+					offset = 0;
+				}
+				i = -1;
 			}
 
 			if (offset == CONN_BUFFLEN) {
