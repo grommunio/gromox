@@ -486,8 +486,10 @@ void context_pool_activate_context(SCHEDULE_CONTEXT *pcontext)
 		return;
 	double_list_remove(&g_context_lists[static_cast<int>(sctx_status::polling)], &pcontext->node);
 	pcontext->type = sctx_status::switching;
-	poll_hold.unlock();
+	//before unlocking poll_hold turn_hold should be blocked to prevent RC
 	std::unique_lock turn_hold(g_context_locks[static_cast<int>(sctx_status::turning)]);
+	poll_hold.unlock();
+	
 	pcontext->type = sctx_status::turning;
 	double_list_append_as_tail(&g_context_lists[static_cast<int>(sctx_status::turning)], &pcontext->node);
 	turn_hold.unlock();
