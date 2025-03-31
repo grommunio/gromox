@@ -29,9 +29,14 @@ struct xmlfree {
 using xmldocptr = std::unique_ptr<xmlDoc, xmlfree>;
 
 /**
+ * @part:  MIME part to analyze (including its children)
+ * @info:  Result structure
  * @level: how often to recurse into multiparts.
  *         If level==0, a top-level multipart/ will not be analyzed.
  * Returns: indicator if something usable was found
+ *
+ * Recursively go through MIME parts and select parts to use for
+ * populating PR_BODY, PR_HTML, PR_RTF_COMPRESSED.
  */
 void select_parts(const MIME *part, MIME_ENUM_PARAM &info, unsigned int level) try
 {
