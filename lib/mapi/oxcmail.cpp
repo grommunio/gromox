@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -2712,11 +2712,13 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		auto phtml_bin = pmsg->proplist.get<const BINARY>(PR_HTML);
 		if (NULL != phtml_bin) {
 			auto num = pmsg->proplist.get<const uint32_t>(PR_INTERNET_CPID);
-			auto cpid = num == nullptr ? CP_UTF8 : static_cast<cpid_t>(*num);
+			auto cpid = num != nullptr ? static_cast<cpid_t>(*num) : CP_OEMCP;
 			std::string plainbuf;
-			auto ret = html_to_plain(phtml_bin->pc, phtml_bin->cb, plainbuf);
+			auto ret = html_to_plain(phtml_bin->pc, phtml_bin->cb, cpid, plainbuf);
 			if (ret < 0)
 				return imp_null;
+			else if (ret == CP_OEMCP)
+				ret = CP_UTF8;
 			if (ret == CP_UTF8) {
 				if (pmsg->proplist.set(PR_BODY_W, plainbuf.data()) != ecSuccess)
 					return imp_null;

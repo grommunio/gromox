@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
@@ -13,6 +13,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
 
 using namespace gromox;
@@ -90,17 +91,20 @@ static int instance_conv_textfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 		ret = instance_conv_htmlfromhigher(mc, bin);
 	if (ret <= 0)
 		return ret;
+
+	auto cpraw = mc->proplist.get<const uint32_t>(PR_INTERNET_CPID);
+	cpid_t cpid = cpraw != nullptr ? static_cast<cpid_t>(*cpraw) : CP_OEMCP;
 	std::string plainbuf;
-	ret = html_to_plain(bin->pc, bin->cb, plainbuf);
+	ret = html_to_plain(bin->pc, bin->cb, cpid, plainbuf);
 	if (ret < 0)
 		return 0;
-	auto cpraw = mc->proplist.get<const uint32_t>(PR_INTERNET_CPID);
-	cpid_t orig_cpid = cpraw != nullptr ? static_cast<cpid_t>(*cpraw) : CP_UTF8;
-	if (ret != CP_UTF8 && orig_cpid != CP_UTF8) {
-		bin->pv = common_util_convert_copy(TRUE, orig_cpid, plainbuf.c_str());
+	else if (ret == CP_OEMCP)
+		/* instructed to guess, but could not figure it out; guess is on us */
+		ret = CP_UTF8;
+	if (ret != CP_UTF8) {
+		bin->pv = common_util_convert_copy(TRUE, static_cast<cpid_t>(ret), plainbuf.c_str());
 		return bin->pv != nullptr ? 1 : -1;
 	}
-	/* Original already was UTF-8, or conversion to UTF-8 happened by htmltoplain */
 	bin->pv = common_util_alloc(plainbuf.size() + 1);
 	if (bin->pv == nullptr)
 		return -1;

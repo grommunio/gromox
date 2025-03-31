@@ -495,7 +495,18 @@ pid_t popenfd(const char *const *argv, int *fdinp, int *fdoutp,
 	return pid;
 }
 
-int feed_w3m(const void *inbuf, size_t len, std::string &outbuf) try
+/**
+ * Run an external HTML-to-text converter.
+ *
+ * @inbuf:  input data
+ * @cset:   character set of input data (overriding any <meta> tag
+ *          inside the data), or %nullptr if unknown
+ * @outbuf: result variable for caller
+ *
+ * Returns 0 on success, non-zero on error with errno set.
+ */
+int feed_w3m(const void *inbuf, size_t len, const char *cset,
+    std::string &outbuf) try
 {
 	std::string filename;
 	auto tmpdir = getenv("TMPDIR");

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020-2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
@@ -23,6 +23,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "db_engine.hpp"
@@ -1418,20 +1419,20 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	if ((pinstance->change_mask & CHANGE_MASK_HTML) &&
 	    !(pinstance->change_mask & CHANGE_MASK_BODY)) {
-		auto pbin  = ict->proplist.get<BINARY>(PR_HTML);
-		auto pcpid = ict->proplist.get<uint32_t>(PR_INTERNET_CPID);
-		if (NULL != pbin && NULL != pcpid) {
+		auto pbin  = ict->proplist.get<const BINARY>(PR_HTML);
+		auto num   = ict->proplist.get<const uint32_t>(PR_INTERNET_CPID);
+		auto cpid  = num != nullptr ? static_cast<cpid_t>(*num) : CP_OEMCP;
+		if (pbin != nullptr) {
 			std::string plainbuf;
-			auto ret = html_to_plain(pbin->pc, pbin->cb, plainbuf);
+			auto ret = html_to_plain(pbin->pc, pbin->cb, cpid, plainbuf);
 			if (ret < 0)
 				return false;
 			void *pvalue;
-			if (ret == CP_UTF8 || *pcpid == CP_UTF8) {
+			if (ret == CP_UTF8) {
 				pvalue = plainbuf.data();
 			} else {
 				pvalue = common_util_convert_copy(TRUE,
-				         static_cast<cpid_t>(*pcpid),
-				         plainbuf.c_str());
+				         static_cast<cpid_t>(ret), plainbuf.c_str());
 				if (pvalue == nullptr)
 					return false;
 			}

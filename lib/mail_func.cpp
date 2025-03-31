@@ -18,6 +18,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -1294,6 +1295,13 @@ static std::unique_ptr<char[]> htp_memdup(const void *src, size_t len)
 	return dst;
 }
 
+/**
+ * Rather trivial and uninspiring HTML-to-plaintext conversion.
+ * @inbuf:  HTML input; must be ASCII-compatible.
+ * @outbuf: Plaintext goes here. Codepage of @inbuf is retained.
+ *
+ * Returns 1 for success and negative numbers to indicate error.
+ */
 static int html_to_plain_boring(const void *inbuf, size_t len,
     std::string &outbuf) try
 {
@@ -1477,15 +1485,29 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 	return -1;
 }
 
-int html_to_plain(const void *inbuf, size_t len, std::string &outbuf)
+/**
+ * Render HTML document as plaintext.
+ *
+ * @inbuf:  input data
+ * @cpid:   character set of input data (overriding any <meta> tag
+ *          inside the data); use %CP_OEMCP to indicate "guess".
+ * @outbuf: result variable for caller
+ *
+ * Returns %CP_UTF8 to indicate conversion to UTF-8 happened.
+ * Returns @cpid to indicate no charset conversion happened.
+ * Thus it is possible for %CP_OEMCP to be returned again,
+ * which puts the ball back into the caller's court.
+ * Returns a negative number on error.
+ */
+int html_to_plain(const void *inbuf, size_t len, cpid_t cpid, std::string &outbuf)
 {
-	auto ret = feed_w3m(inbuf, len, outbuf);
+	auto ret = feed_w3m(inbuf, len, cpid_to_cset(cpid), outbuf);
 	if (ret >= 0)
 		return CP_UTF8;
 	ret = html_to_plain_boring(inbuf, len, outbuf);
-	if (ret <= 0)
+	if (ret < 0)
 		return ret;
-	return 1;
+	return cpid;
 }
 
 /*
