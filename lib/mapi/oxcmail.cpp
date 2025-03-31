@@ -3085,20 +3085,22 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 			if (NULL != prtf) {
 				ssize_t unc_size = rtfcp_uncompressed_size(prtf);
 				pbuff = nullptr;
-				if (unc_size >= 0) {
-					pbuff = me_alloc<char>(unc_size);
-					if (pbuff == nullptr)
-						return false;
-				}
+				if (unc_size < 0)
+					return false;
+				
+				pbuff = me_alloc<char>(unc_size);
+				if (pbuff == nullptr)
+					return false;
+				
 				size_t rtf_len = unc_size;
-				if (unc_size >= 0 && rtfcp_uncompress(prtf, pbuff, &rtf_len)) {
+				if (rtfcp_uncompress(prtf, pbuff, &rtf_len)) {
 					pskeleton->pattachments = attachment_list_init();
 					if (NULL == pskeleton->pattachments) {
 						free(pbuff);
 						return FALSE;
 					}
 					if (rtf_to_html(pbuff, rtf_len, pcharset, pskeleton->rtf,
-					    pskeleton->pattachments)) {
+							pskeleton->pattachments)) {
 						pskeleton->rtf_bin.pv = pskeleton->rtf.data();
 						free(pbuff);
 						pskeleton->rtf_bin.cb = pskeleton->rtf.size();
