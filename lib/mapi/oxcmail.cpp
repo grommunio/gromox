@@ -4232,7 +4232,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		BINARY *pbin = nullptr;
 		if (pmime == nullptr || !pmime->set_content_type("application/ms-tnef"))
 			return exp_false;
-		pbin = tnef_serialize(pmsg, log_id, alloc, get_propname);
+		pbin = tnef_serialize(pmsg, log_id, alloc, std::move(get_propname));
 		if (pbin == nullptr)
 			return exp_false;
 		if (!pmime->write_content(pbin->pc, pbin->cb, mime_encoding::base64)) {

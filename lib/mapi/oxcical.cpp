@@ -2512,7 +2512,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 			if (uid_list.size() > 1) {
 				if (!oxcical_import_events(str_zone,
 				    calendartype, pical,
-				    uid_list, alloc, get_propids,
+				    uid_list, alloc, std::move(get_propids),
 				    username_to_entryid, msgvec))
 					return ecError;
 				finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
