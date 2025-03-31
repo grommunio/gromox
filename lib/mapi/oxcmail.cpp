@@ -3066,8 +3066,11 @@ static bool skel_find_rtf(mime_skeleton &skel, const message_content &msg,
 		return true;
 	ssize_t unc_size = rtfcp_uncompressed_size(rtf);
 	std::string buf;
-	if (unc_size >= 0)
-		buf.resize(unc_size);
+	if (unc_size < 0) {
+		skel.mail_type = oxcmail_type::tnef;
+		return true;
+	}
+	buf.resize(unc_size);
 	size_t rtf_len = unc_size;
 	if (unc_size < 0 || !rtfcp_uncompress(rtf, buf.data(), &rtf_len)) {
 		skel.mail_type = oxcmail_type::tnef;
