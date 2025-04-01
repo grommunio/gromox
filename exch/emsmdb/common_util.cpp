@@ -220,14 +220,11 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 
 BINARY *cu_fid_to_entryid(const logon_object *plogon, uint64_t folder_id)
 {
-	BINARY tmp_bin;
 	EXT_PUSH ext_push;
 	FOLDER_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	tmp_bin.cb = 0;
-	tmp_bin.pv = &tmp_entryid.provider_uid;
-	rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
+	tmp_entryid.provider_uid = plogon->mailbox_guid;
 	if (replid_to_replguid(*plogon, rop_util_get_replid(folder_id),
 	    tmp_entryid.database_guid) != ecSuccess)
 		return nullptr;
@@ -295,14 +292,11 @@ BINARY *cu_fid_to_sk(const logon_object *plogon, uint64_t folder_id)
 BINARY *cu_mid_to_entryid(const logon_object *plogon,
 	uint64_t folder_id, uint64_t message_id)
 {
-	BINARY tmp_bin;
 	EXT_PUSH ext_push;
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	tmp_bin.cb = 0;
-	tmp_bin.pv = &tmp_entryid.provider_uid;
-	rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
+	tmp_entryid.provider_uid = plogon->mailbox_guid;
 	if (replid_to_replguid(*plogon, rop_util_get_replid(folder_id),
 	    tmp_entryid.folder_database_guid) != ecSuccess)
 		return nullptr;

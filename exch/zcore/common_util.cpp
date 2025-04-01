@@ -866,7 +866,6 @@ static ec_error_t replid_to_replguid(const store_object &logon,
 
 BINARY *cu_fid_to_entryid(const store_object *pstore, uint64_t folder_id)
 {
-	BINARY tmp_bin;
 	EXT_PUSH ext_push;
 	FOLDER_ENTRYID tmp_entryid;
 	
@@ -875,9 +874,7 @@ BINARY *cu_fid_to_entryid(const store_object *pstore, uint64_t folder_id)
 	    tmp_entryid.database_guid) != ecSuccess)
 		return nullptr;
 	if (pstore->b_private) {
-		tmp_bin.cb = 0;
-		tmp_bin.pv = &tmp_entryid.provider_uid;
-		rop_util_guid_to_binary(pstore->mailbox_guid, &tmp_bin);
+		tmp_entryid.provider_uid = pstore->mailbox_guid;
 		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
@@ -952,7 +949,6 @@ BINARY *cu_fid_to_sk(store_object *pstore,
 BINARY *cu_mid_to_entryid(store_object *pstore,
 	uint64_t folder_id, uint64_t message_id)
 {
-	BINARY tmp_bin;
 	EXT_PUSH ext_push;
 	MESSAGE_ENTRYID tmp_entryid;
 	
@@ -964,9 +960,7 @@ BINARY *cu_mid_to_entryid(store_object *pstore,
 	    tmp_entryid.message_database_guid) != ecSuccess)
 		return nullptr;
 	if (pstore->b_private) {
-		tmp_bin.cb = 0;
-		tmp_bin.pv = &tmp_entryid.provider_uid;
-		rop_util_guid_to_binary(pstore->mailbox_guid, &tmp_bin);
+		tmp_entryid.provider_uid = pstore->mailbox_guid;
 		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -1104,8 +1104,7 @@ void EWSPlugin::wakeContext(int ID, std::chrono::milliseconds timeout) const
 gromox::EWS::Structures::sFolderEntryId EWSPlugin::mkFolderEntryId(const Structures::sMailboxInfo& mbinfo, uint64_t fid) const
 {
 	Structures::sFolderEntryId feid{};
-	BINARY tmp_bin{0, {.pv = &feid.provider_uid}};
-	rop_util_guid_to_binary(mbinfo.mailboxGuid, &tmp_bin);
+	feid.provider_uid = mbinfo.mailboxGuid;
 	feid.folder_type = mbinfo.isPublic ? EITLT_PUBLIC_FOLDER : EITLT_PRIVATE_FOLDER;
 	feid.database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
 	feid.global_counter = rop_util_get_gc_array(fid);
@@ -1124,8 +1123,7 @@ gromox::EWS::Structures::sFolderEntryId EWSPlugin::mkFolderEntryId(const Structu
 Structures::sMessageEntryId EWSPlugin::mkMessageEntryId(const Structures::sMailboxInfo& mbinfo, uint64_t fid, uint64_t mid) const
 {
 	Structures::sMessageEntryId meid{};
-	BINARY tmp_bin{0, {.pv = &meid.provider_uid}};
-	rop_util_guid_to_binary(mbinfo.mailboxGuid, &tmp_bin);
+	meid.provider_uid = mbinfo.mailboxGuid;
 	meid.message_type = mbinfo.isPublic ? EITLT_PUBLIC_MESSAGE : EITLT_PRIVATE_MESSAGE;
 	meid.folder_database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
 	meid.folder_global_counter = rop_util_get_gc_array(fid);
