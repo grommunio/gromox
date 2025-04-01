@@ -864,8 +864,7 @@ static ec_error_t replid_to_replguid(const store_object &logon,
 	return ecSuccess;
 }
 
-static void *cu_fid_to_entryid_1(const store_object *pstore, uint64_t folder_id,
-    void *output, size_t *outmax)
+BINARY *cu_fid_to_entryid(const store_object *pstore, uint64_t folder_id)
 {
 	BINARY tmp_bin;
 	EXT_PUSH ext_push;
@@ -887,36 +886,39 @@ static void *cu_fid_to_entryid_1(const store_object *pstore, uint64_t folder_id,
 	tmp_entryid.global_counter = rop_util_get_gc_array(folder_id);
 	tmp_entryid.pad[0] = 0;
 	tmp_entryid.pad[1] = 0;
-	if (!ext_push.init(output, *outmax, 0) ||
-	    ext_push.p_folder_eid(tmp_entryid) != pack_result::ok)
-		return nullptr;
-	*outmax = ext_push.m_offset;
-	return output;
-}
-
-BINARY *cu_fid_to_entryid(const store_object *pstore, uint64_t folder_id)
-{
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	size_t z = 256;
-	pbin->pv = common_util_alloc(z);
-	if (pbin->pv == nullptr ||
-	    cu_fid_to_entryid_1(pstore, folder_id, pbin->pv, &z) == nullptr)
+	pbin->pv = common_util_alloc(256);
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
-	pbin->cb = z;
+	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
-/* The caller can check for .size() < 4 to detect errors */
 std::string cu_fid_to_entryid_s(const store_object *pstore, uint64_t folder_id) try
 {
-	std::string out;
-	size_t z = 256;
-	out.resize(z);
-	if (cu_fid_to_entryid_1(pstore, folder_id, out.data(), &z) == nullptr)
+	FOLDER_ENTRYID eid;
+	if (replid_to_replguid(*pstore, rop_util_get_replid(folder_id),
+	    eid.database_guid) != ecSuccess)
 		return {};
-	out.resize(z);
+	if (pstore->b_private) {
+		eid.provider_uid = pstore->mailbox_guid;
+		eid.folder_type  = EITLT_PRIVATE_FOLDER;
+	} else {
+		eid.provider_uid = pbLongTermNonPrivateGuid;
+		eid.folder_type  = EITLT_PUBLIC_FOLDER;
+	}
+	eid.global_counter = rop_util_get_gc_array(folder_id);
+
+	std::string out;
+	out.resize(255);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), 255, 0) ||
+	    ep.p_folder_eid(eid) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
 	return out;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2247: ENOMEM");
