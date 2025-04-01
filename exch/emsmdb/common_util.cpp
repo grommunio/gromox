@@ -175,6 +175,18 @@ BINARY *cu_username_to_oneoff(const char *username, const char *dispname)
 	auto bin = cu_alloc<BINARY>();
 	if (bin == nullptr)
 		return nullptr;
+	/*
+	 * Normative reference: MS-OXCDATA v19 §2.2.5.1.
+	 *
+	 * Unlimited by spec, but a sensible buffer size goes like so: 24 bytes
+	 * initial part, 255 chars display name plus \0 (usually Unicode),
+	 * L"SMTP", 319 chars email address (SMTP:319, EX:256) and \0
+	 * (Unicode).
+	 *
+	 * So roughly 1186. In the future, we should make EXT_PUSH use a
+	 * std::string, and let it dynamic-size itself (currently precluded due
+	 * to cu_alloc).
+	 */
 	bin->pv = common_util_alloc(1280);
 	if (bin->pv == nullptr)
 		return nullptr;
@@ -227,8 +239,8 @@ BINARY *cu_fid_to_entryid(const logon_object *plogon, uint64_t folder_id)
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	pbin->pv = common_util_alloc(46); /* MS-OXCDATA v19 §2.2.4.1 */
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 46, 0) ||
 	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
@@ -246,12 +258,11 @@ std::string cu_fid_to_entryid_s(const logon_object *plogon, uint64_t folder_id) 
 	eid.global_counter = rop_util_get_gc_array(folder_id);
 
 	std::string out;
-	out.resize(256);
+	out.resize(46); /* MS-OXCDATA v19 §2.2.4.1 */
 	EXT_PUSH ep;
-	if (!ep.init(out.data(), 256, 0) ||
+	if (!ep.init(out.data(), 46, 0) ||
 	    ep.p_folder_eid(eid) != pack_result::ok)
 		return {};
-	out.resize(ep.m_offset);
 	return out;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2246: ENOMEM");
@@ -309,8 +320,8 @@ BINARY *cu_mid_to_entryid(const logon_object *plogon,
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	pbin->pv = common_util_alloc(70); /* MS-OXCDATA v19 §2.2.4.2 */
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 70, 0) ||
 	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;

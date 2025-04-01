@@ -1132,8 +1132,8 @@ static BINARY *cu_fid_to_entryid(sqlite3 *psqlite, uint64_t folder_id)
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	pbin->pv = common_util_alloc(46); /* MS-OXCDATA v19 §2.2.4.1 */
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 46, 0) ||
 	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
@@ -1174,8 +1174,8 @@ static BINARY *cu_mid_to_entryid(sqlite3 *psqlite, uint64_t message_id)
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	pbin->pv = common_util_alloc(70); /* MS-OXCDATA v19 §2.2.4.2 */
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 70, 0) ||
 	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
@@ -3420,7 +3420,8 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		}
 		case PT_SVREID: {
 			EXT_PUSH ext_push;
-			if (!ext_push.init(temp_buff, 256, 0) ||
+			/* Normally 23 bytes, but who knows */
+			if (!ext_push.init(temp_buff, std::size(temp_buff), 0) ||
 			    ext_push.p_svreid(*static_cast<SVREID *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
@@ -3955,8 +3956,8 @@ BINARY* common_util_to_private_folder_entryid(
 	pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	pbin->pv = common_util_alloc(46); /* MS-OXCDATA v19 §2.2.4.1 */
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 46, 0) ||
 	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
@@ -3990,8 +3991,8 @@ BINARY* common_util_to_private_message_entryid(
 	pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	pbin->pv = common_util_alloc(70); /* MS-OXCDATA v19 §2.2.4.2 */
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 70, 0) ||
 	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
@@ -5156,7 +5157,8 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt, int bind_index,
 		sqlite3_bind_blob(pstmt, bind_index, ext_push.m_udata, ext_push.m_offset, SQLITE_TRANSIENT);
 		break;
 	case PT_SVREID:
-		if (!ext_push.init(temp_buff, 256, 0) ||
+		/* Normally 23 bytes */
+		if (!ext_push.init(temp_buff, std::size(temp_buff), 0) ||
 		    ext_push.p_svreid(*static_cast<const SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
 			return FALSE;
 		sqlite3_bind_blob(pstmt, bind_index, ext_push.m_udata, ext_push.m_offset, SQLITE_TRANSIENT);

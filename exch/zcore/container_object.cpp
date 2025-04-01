@@ -154,8 +154,8 @@ static BINARY *zcsab_prepend(const BINARY *lower_eid,
 	auto new_eid = cu_alloc<BINARY>();
 	if (new_eid == nullptr)
 		return nullptr;
-	new_eid->pb = cu_alloc<uint8_t>(256);
-	if (new_eid->pb == nullptr || !ep.init(new_eid->pb, 256, EXT_FLAG_UTF16) ||
+	new_eid->pb = cu_alloc<uint8_t>(255);
+	if (new_eid->pb == nullptr || !ep.init(new_eid->pb, 255, EXT_FLAG_UTF16) ||
 	    ep.p_uint32(0) != EXT_ERR_SUCCESS ||
 	    ep.p_guid(muidZCSAB) != EXT_ERR_SUCCESS ||
 	    ep.p_uint32(static_cast<uint32_t>(type)) != EXT_ERR_SUCCESS ||

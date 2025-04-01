@@ -850,7 +850,7 @@ pack_result EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 	}
 	TRY(g_uint8(&r->ivflag));
 	if (r->ivflag == 0) {
-		/* MS-OXCDATA §2.2.4.3 */
+		/* MS-OXCDATA v19 §2.2.4.3 */
 		char dll[14];
 		TRY(g_bytes(dll, 14));
 		TRY(g_uint32(&r->wrapped_flags));

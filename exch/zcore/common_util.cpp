@@ -889,8 +889,8 @@ BINARY *cu_fid_to_entryid(const store_object *pstore, uint64_t folder_id)
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	pbin->pv = common_util_alloc(46); /* MS-OXCDATA v19 §2.2.4.1 */
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 46, 0) ||
 	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
@@ -913,9 +913,9 @@ std::string cu_fid_to_entryid_s(const store_object *pstore, uint64_t folder_id) 
 	eid.global_counter = rop_util_get_gc_array(folder_id);
 
 	std::string out;
-	out.resize(255);
+	out.resize(46); /* MS-OXCDATA v19 §2.2.4.1 */
 	EXT_PUSH ep;
-	if (!ep.init(out.data(), 255, 0) ||
+	if (!ep.init(out.data(), 46, 0) ||
 	    ep.p_folder_eid(eid) != pack_result::ok)
 		return {};
 	out.resize(ep.m_offset);
@@ -981,8 +981,8 @@ BINARY *cu_mid_to_entryid(store_object *pstore,
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(256);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
+	pbin->pv = common_util_alloc(70); /* MS-OXCDATA v19 §2.2.4.2 */
+	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 70, 0) ||
 	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
@@ -1491,9 +1491,21 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(1024);
+	/*
+	 * The anecdotal DN length limit in MSAD & OpenLDAP is 255. MS-OXOAB
+	 * v15 §2.7 says ESSDNs are limited to 256.
+	 *
+	 * 60 bytes leading part (MS-OXCDATA v19 §2.2.4.3), 254 bytes
+	 * servername/FQDN (always ASCII AFAICT), \0, 256 bytes ESSDN (always
+	 * ASCII AFAICT), \0, 16 bytes V3 header, 319 chars SmtpAddress
+	 * (possibly Unicode), \0 (possibly Unicode).
+	 *
+	 * In zcore we do not output V3 store entryids (as seen in MFCMAPI), so
+	 * 572 bytes shall be our more-than-generous buffer size.
+	 */
+	pbin->pv = common_util_alloc(572);
 	if (pbin->pb == nullptr ||
-	    !ext_push.init(pbin->pv, 1024, EXT_FLAG_UTF16) ||
+	    !ext_push.init(pbin->pv, 572, EXT_FLAG_UTF16) ||
 	    ext_push.p_store_eid(store_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
