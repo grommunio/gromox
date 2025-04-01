@@ -549,24 +549,26 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		return TRUE;
 	}
 	case PR_ROOT_ENTRYID:
-		*ppvalue = cu_fid_to_entryid(plogon, plogon->is_private() ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT);
+		*ppvalue = cu_fid_to_entryid(*plogon, plogon->is_private() ?
+		           PRIVATE_FID_ROOT : PUBLIC_FID_ROOT);
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_IPM_INBOX_ENTRYID:
-		*ppvalue = cu_fid_to_entryid(plogon, plogon->is_private() ? PRIVATE_FID_INBOX : PUBLIC_FID_IPMSUBTREE);
+		*ppvalue = cu_fid_to_entryid(*plogon, plogon->is_private() ?
+		           PRIVATE_FID_INBOX : PUBLIC_FID_IPMSUBTREE);
 		return *ppvalue != nullptr ? TRUE : false;
 	case PidTagXSpoolerQueueEntryId:
-		*ppvalue = cu_fid_to_entryid(plogon, plogon->is_private() ?
+		*ppvalue = cu_fid_to_entryid(*plogon, plogon->is_private() ?
 		           PRIVATE_FID_SPOOLER_QUEUE : PUBLIC_FID_NONIPMSUBTREE);
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_NON_IPM_SUBTREE_ENTRYID:
 		if (plogon->is_private())
 			return false;
-		*ppvalue = cu_fid_to_entryid(plogon, PUBLIC_FID_NONIPMSUBTREE);
+		*ppvalue = cu_fid_to_entryid(*plogon, PUBLIC_FID_NONIPMSUBTREE);
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_EFORMS_REGISTRY_ENTRYID:
 		if (plogon->is_private())
 			return false;
-		*ppvalue = cu_fid_to_entryid(plogon, PUBLIC_FID_EFORMSREGISTRY);
+		*ppvalue = cu_fid_to_entryid(*plogon, PUBLIC_FID_EFORMSREGISTRY);
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_TEST_LINE_SPEED:
 		*ppvalue = deconst(&test_bin);

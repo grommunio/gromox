@@ -190,14 +190,14 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 		return TRUE;
 	}
 	case PR_ENTRYID:
-		*outvalue = cu_fid_to_entryid(pfolder->plogon, pfolder->folder_id);
+		*outvalue = cu_fid_to_entryid(*pfolder->plogon, pfolder->folder_id);
 		return TRUE;
 	case PR_PARENT_ENTRYID:
 		if (!exmdb_client->get_folder_property(dir,
 		    CP_ACP, pfolder->folder_id, PidTagParentFolderId,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		*outvalue = cu_fid_to_entryid(pfolder->plogon,
+		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 		            *static_cast<uint64_t *>(pvalue));
 		return TRUE;
 	case PR_PARENT_SOURCE_KEY:
@@ -215,7 +215,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 		    outvalue))
 			return FALSE;
 		if (*outvalue == nullptr) {
-			*outvalue = cu_fid_to_sk(pfolder->plogon,
+			*outvalue = cu_fid_to_sk(*pfolder->plogon,
 			            *static_cast<uint64_t *>(pvalue));
 			if (*outvalue == nullptr)
 				return FALSE;
@@ -232,37 +232,37 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 	case PR_IPM_DRAFTS_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return FALSE;	
-		*outvalue = cu_fid_to_entryid(pfolder->plogon,
+		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		return TRUE;
 	case PR_IPM_CONTACT_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return FALSE;	
-		*outvalue = cu_fid_to_entryid(pfolder->plogon,
+		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		return TRUE;
 	case PR_IPM_APPOINTMENT_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return FALSE;	
-		*outvalue = cu_fid_to_entryid(pfolder->plogon,
+		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		return TRUE;
 	case PR_IPM_JOURNAL_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return FALSE;	
-		*outvalue = cu_fid_to_entryid(pfolder->plogon,
+		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		return TRUE;
 	case PR_IPM_NOTE_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return FALSE;	
-		*outvalue = cu_fid_to_entryid(pfolder->plogon,
+		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		return TRUE;
 	case PR_IPM_TASK_ENTRYID:
 		if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 			return FALSE;	
-		*outvalue = cu_fid_to_entryid(pfolder->plogon,
+		*outvalue = cu_fid_to_entryid(*pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		return TRUE;
 	case PR_REM_ONLINE_ENTRYID:
@@ -295,27 +295,27 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 			ba->count = 0;
 			return FALSE;
 		}
-		pbin = cu_fid_to_entryid(pfolder->plogon,
+		pbin = cu_fid_to_entryid(*pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
 		if (pbin == nullptr)
 			return FALSE;
 		ba->pbin[0] = *pbin;
-		pbin = cu_fid_to_entryid(pfolder->plogon,
+		pbin = cu_fid_to_entryid(*pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
 		if (pbin == nullptr)
 			return FALSE;
 		ba->pbin[1] = *pbin;
-		pbin = cu_fid_to_entryid(pfolder->plogon,
+		pbin = cu_fid_to_entryid(*pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
 		if (pbin == nullptr)
 			return FALSE;
 		ba->pbin[2] = *pbin;
-		pbin = cu_fid_to_entryid(pfolder->plogon,
+		pbin = cu_fid_to_entryid(*pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
 		if (pbin == nullptr)
 			return FALSE;
 		ba->pbin[3] = *pbin;
-		pbin = cu_fid_to_entryid(pfolder->plogon,
+		pbin = cu_fid_to_entryid(*pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
 		if (pbin == nullptr)
 			return FALSE;
@@ -338,9 +338,9 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 		if (*outvalue == nullptr)
 			return FALSE;
 		const PERSISTDATA pd[] = {
-			{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(pfolder->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
-			{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(pfolder->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST))},
-			{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(pfolder->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS))},
+			{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
+			{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST))},
+			{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS))},
 		};
 		if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
 		    ext_push.p_persistdata_a(pd) != pack_result::ok)
@@ -379,7 +379,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 		ba->pbin[1].pb = nullptr;
 		ba->pbin[2].cb = 0;
 		ba->pbin[2].pb = nullptr;
-		pbin = cu_fid_to_entryid(pfolder->plogon,
+		pbin = cu_fid_to_entryid(*pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
 		if (pbin == nullptr)
 			return FALSE;
@@ -429,7 +429,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		ppropvals->count += tmp_propvals.count;
 	}
 	if (pproptags->has(PR_SOURCE_KEY) && !ppropvals->has(PR_SOURCE_KEY)) {
-		auto v = cu_fid_to_sk(pfolder->plogon, pfolder->folder_id);
+		auto v = cu_fid_to_sk(*pfolder->plogon, pfolder->folder_id);
 		if (v == nullptr)
 			return FALSE;
 		ppropvals->emplace_back(PR_SOURCE_KEY, v);

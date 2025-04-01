@@ -848,8 +848,8 @@ static BOOL message_object_get_calculated_property(const message_object *pmessag
 	case PR_ENTRYID:
 		if (pmessage->message_id == 0)
 			return FALSE;
-		*ppvalue = cu_mid_to_entryid(pmessage->plogon,
-						pmessage->folder_id, pmessage->message_id);
+		*ppvalue = cu_mid_to_entryid(*pmessage->plogon,
+		           pmessage->folder_id, pmessage->message_id);
 		return TRUE;
 	case PR_OBJECT_TYPE: {
 		auto v = cu_alloc<uint32_t>();
@@ -862,7 +862,7 @@ static BOOL message_object_get_calculated_property(const message_object *pmessag
 	case PR_PARENT_ENTRYID:
 		if (pmessage->message_id == 0)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pmessage->plogon, pmessage->folder_id);
+		*ppvalue = cu_fid_to_entryid(*pmessage->plogon, pmessage->folder_id);
 		return TRUE;
 	case PidTagFolderId:
 	case PidTagParentFolderId:
@@ -876,7 +876,7 @@ static BOOL message_object_get_calculated_property(const message_object *pmessag
 			return FALSE;	
 		if (*ppvalue != nullptr)
 			return TRUE;
-		*ppvalue = cu_fid_to_sk(pmessage->plogon, pmessage->folder_id);
+		*ppvalue = cu_fid_to_sk(*pmessage->plogon, pmessage->folder_id);
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
@@ -888,7 +888,7 @@ static BOOL message_object_get_calculated_property(const message_object *pmessag
 	case PR_RECORD_KEY:
 		if (pmessage->message_id == 0)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pmessage->plogon, pmessage->message_id);
+		*ppvalue = cu_fid_to_entryid(*pmessage->plogon, pmessage->message_id);
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
 	case PR_MAPPING_SIGNATURE:
@@ -954,7 +954,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	}
 	if (pmessage->pembedding == nullptr && pproptags->has(PR_SOURCE_KEY) &&
 	    !ppropvals->has(PR_SOURCE_KEY)) {
-		auto v = cu_mid_to_sk(pmessage->plogon, pmessage->message_id);
+		auto v = cu_mid_to_sk(*pmessage->plogon, pmessage->message_id);
 		if (v == nullptr)
 			return FALSE;
 		ppropvals->emplace_back(PR_SOURCE_KEY, v);

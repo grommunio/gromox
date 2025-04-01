@@ -218,17 +218,17 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 	return pbin;
 }
 
-BINARY *cu_fid_to_entryid(const logon_object *plogon, uint64_t folder_id)
+BINARY *cu_fid_to_entryid(const logon_object &logon, uint64_t folder_id)
 {
 	EXT_PUSH ext_push;
 	FOLDER_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	tmp_entryid.provider_uid = plogon->mailbox_guid;
-	if (replid_to_replguid(*plogon, rop_util_get_replid(folder_id),
+	tmp_entryid.provider_uid = logon.mailbox_guid;
+	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
 	    tmp_entryid.database_guid) != ecSuccess)
 		return nullptr;
-	tmp_entryid.folder_type = plogon->is_private() ?
+	tmp_entryid.folder_type = logon.is_private() ?
 	                          EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
 	tmp_entryid.global_counter = rop_util_get_gc_array(folder_id);
 	tmp_entryid.pad[0] = 0;
@@ -244,14 +244,14 @@ BINARY *cu_fid_to_entryid(const logon_object *plogon, uint64_t folder_id)
 	return pbin;
 }
 
-std::string cu_fid_to_entryid_s(const logon_object *plogon, uint64_t folder_id) try
+std::string cu_fid_to_entryid_s(const logon_object &logon, uint64_t folder_id) try
 {
 	FOLDER_ENTRYID eid{};
-	eid.provider_uid = plogon->mailbox_guid;
-	if (replid_to_replguid(*plogon, rop_util_get_replid(folder_id),
+	eid.provider_uid = logon.mailbox_guid;
+	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
 	    eid.database_guid) != ecSuccess)
 		return {};
-	eid.folder_type = plogon->is_private() ? EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
+	eid.folder_type = logon.is_private() ? EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
 	eid.global_counter = rop_util_get_gc_array(folder_id);
 
 	std::string out;
@@ -266,7 +266,7 @@ std::string cu_fid_to_entryid_s(const logon_object *plogon, uint64_t folder_id) 
 	return {};
 }
 
-BINARY *cu_fid_to_sk(const logon_object *plogon, uint64_t folder_id)
+BINARY *cu_fid_to_sk(const logon_object &logon, uint64_t folder_id)
 {
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
@@ -278,7 +278,7 @@ BINARY *cu_fid_to_sk(const logon_object *plogon, uint64_t folder_id)
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	if (replid_to_replguid(*plogon, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
 	    longid.guid) != ecSuccess)
 		return nullptr;
 	longid.global_counter = rop_util_get_gc_array(folder_id);
@@ -289,21 +289,21 @@ BINARY *cu_fid_to_sk(const logon_object *plogon, uint64_t folder_id)
 	return pbin;
 }
 
-BINARY *cu_mid_to_entryid(const logon_object *plogon,
+BINARY *cu_mid_to_entryid(const logon_object &logon,
 	uint64_t folder_id, uint64_t message_id)
 {
 	EXT_PUSH ext_push;
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	tmp_entryid.provider_uid = plogon->mailbox_guid;
-	if (replid_to_replguid(*plogon, rop_util_get_replid(folder_id),
+	tmp_entryid.provider_uid = logon.mailbox_guid;
+	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
 	    tmp_entryid.folder_database_guid) != ecSuccess)
 		return nullptr;
-	if (replid_to_replguid(*plogon, rop_util_get_replid(message_id),
+	if (replid_to_replguid(logon, rop_util_get_replid(message_id),
 	    tmp_entryid.message_database_guid) != ecSuccess)
 		return nullptr;
-	tmp_entryid.message_type = plogon->is_private() ?
+	tmp_entryid.message_type = logon.is_private() ?
 	                           EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;
 	tmp_entryid.folder_global_counter = rop_util_get_gc_array(folder_id);
 	tmp_entryid.message_global_counter = rop_util_get_gc_array(message_id);
@@ -322,7 +322,7 @@ BINARY *cu_mid_to_entryid(const logon_object *plogon,
 	return pbin;
 }
 
-BINARY *cu_mid_to_sk(const logon_object *plogon, uint64_t message_id)
+BINARY *cu_mid_to_sk(const logon_object &logon, uint64_t message_id)
 {
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
@@ -334,7 +334,7 @@ BINARY *cu_mid_to_sk(const logon_object *plogon, uint64_t message_id)
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	longid.guid = plogon->guid();
+	longid.guid = logon.guid();
 	longid.global_counter = rop_util_get_gc_array(message_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
 	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
@@ -343,7 +343,7 @@ BINARY *cu_mid_to_sk(const logon_object *plogon, uint64_t message_id)
 	return pbin;
 }
 
-BOOL cu_entryid_to_fid(const logon_object *plogon, const BINARY *pbin,
+BOOL cu_entryid_to_fid(const logon_object &logon, const BINARY *pbin,
     uint64_t *pfolder_id)
 {
 	uint16_t replid;
@@ -353,7 +353,7 @@ BOOL cu_entryid_to_fid(const logon_object *plogon, const BINARY *pbin,
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (ext_pull.g_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	if (replguid_to_replid(*plogon, tmp_entryid.database_guid,
+	if (replguid_to_replid(logon, tmp_entryid.database_guid,
 	    replid) != ecSuccess)
 		return false;
 	switch (tmp_entryid.folder_type) {
@@ -366,7 +366,7 @@ BOOL cu_entryid_to_fid(const logon_object *plogon, const BINARY *pbin,
 	}
 }
 
-BOOL cu_entryid_to_mid(const logon_object *plogon, const BINARY *pbin,
+BOOL cu_entryid_to_mid(const logon_object &logon, const BINARY *pbin,
     uint64_t *pfolder_id, uint64_t *pmessage_id)
 {
 	uint16_t freplid, mreplid;
@@ -376,10 +376,10 @@ BOOL cu_entryid_to_mid(const logon_object *plogon, const BINARY *pbin,
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (ext_pull.g_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	if (replguid_to_replid(*plogon, tmp_entryid.folder_database_guid,
+	if (replguid_to_replid(logon, tmp_entryid.folder_database_guid,
 	    freplid) != ecSuccess)
 		return false;
-	if (replguid_to_replid(*plogon, tmp_entryid.message_database_guid,
+	if (replguid_to_replid(logon, tmp_entryid.message_database_guid,
 	    mreplid) != ecSuccess)
 		return false;
 	switch (tmp_entryid.message_type) {
@@ -1549,8 +1549,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
-		if (!cu_entryid_to_mid(plogon,
-		    ptarget, &folder_id, &new_id)) {
+		if (!cu_entryid_to_mid(*plogon, ptarget, &folder_id, &new_id)) {
 			mlog2(LV_WARN, "W-1279: PR_TARGET_ENTRYID inconvertible in %s", log_id.c_str());
 			return ecWarnWithErrors;	
 		}
@@ -1576,7 +1575,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 
 	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
 	if (ptarget == nullptr ||
-	    !cu_entryid_to_fid(plogon, ptarget, &folder_id))
+	    !cu_entryid_to_fid(*plogon, ptarget, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
 
 	const EID_ARRAY ids = {1, &message_id};
