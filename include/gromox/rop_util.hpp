@@ -40,7 +40,6 @@ extern GX_EXPORT uint32_t rop_util_unix_to_rtime(time_t);
 extern GX_EXPORT time_t rop_util_rtime_to_unix(uint32_t);
 extern GX_EXPORT uint64_t rop_util_current_nttime();
 extern GX_EXPORT GUID rop_util_binary_to_guid(const BINARY *pbin);
-extern GX_EXPORT void rop_util_guid_to_binary(GUID guid, BINARY *pbin);
 extern GX_EXPORT void rop_util_free_binary(BINARY *pbin);
 
 namespace gromox {

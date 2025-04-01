@@ -24,9 +24,10 @@ static void pcl_pull_xid(const BINARY *pbin,
 
 static void pcl_push_xid(BINARY &bin, uint8_t size, const XID &xid)
 {
-	rop_util_guid_to_binary(xid.guid, &bin);
-	memcpy(bin.pb + bin.cb, xid.local_id, size - 16);
-	bin.cb += size - 16;
+	FLATUID f = xid.guid;
+	memcpy(&bin.pb[bin.cb], &f, sizeof(f));
+	memcpy(&bin.pb[bin.cb+16], xid.local_id, size - 16);
+	bin.cb += size;
 }
 
 static uint8_t pcl_pull_sized_xid(const BINARY *pbin, uint16_t offset, XID *pxid)

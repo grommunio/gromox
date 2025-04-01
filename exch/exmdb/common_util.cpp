@@ -646,8 +646,9 @@ static BINARY* common_util_get_mailbox_guid(sqlite3 *psqlite)
 	ptmp_bin->pv = common_util_alloc(16);
 	if (ptmp_bin->pv == nullptr)
 		return NULL;
-	ptmp_bin->cb = 0;
-	rop_util_guid_to_binary(tmp_guid, ptmp_bin);
+	ptmp_bin->cb = 16;
+	FLATUID f = tmp_guid;
+	memcpy(ptmp_bin->pv, &f, sizeof(f));
 	return ptmp_bin;
 }
 

@@ -221,20 +221,6 @@ GUID rop_util_binary_to_guid(const BINARY *pbin)
 	return guid;
 }
 
-void rop_util_guid_to_binary(GUID guid, BINARY *pbin)
-{
-	cpu_to_le32p(&pbin->pb[pbin->cb], guid.time_low);
-	pbin->cb += sizeof(uint32_t);
-	cpu_to_le16p(&pbin->pb[pbin->cb], guid.time_mid);
-	pbin->cb += sizeof(uint16_t);
-	cpu_to_le16p(&pbin->pb[pbin->cb], guid.time_hi_and_version);
-	pbin->cb += sizeof(uint16_t);
-	memcpy(pbin->pb + pbin->cb, guid.clock_seq, 2);
-	pbin->cb += 2;
-	memcpy(pbin->pb + pbin->cb, guid.node, 6);
-	pbin->cb += 6;
-}
-
 void rop_util_free_binary(BINARY *pbin)
 {
 	free(pbin->pb);

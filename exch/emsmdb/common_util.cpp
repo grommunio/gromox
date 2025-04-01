@@ -423,11 +423,12 @@ BINARY* common_util_guid_to_binary(GUID guid)
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->cb = 0;
+	pbin->cb = 16;
 	pbin->pv = common_util_alloc(16);
 	if (pbin->pv == nullptr)
 		return NULL;
-	rop_util_guid_to_binary(guid, pbin);
+	FLATUID f = guid;
+	memcpy(pbin->pv, &f, sizeof(f));
 	return pbin;
 }
 

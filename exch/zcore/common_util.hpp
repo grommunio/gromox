@@ -131,7 +131,7 @@ extern ec_error_t cu_calc_msg_access(store_object *, const char *user, uint64_t 
 extern BINARY *cu_mid_to_sk(store_object *, uint64_t msg_id);
 extern BINARY *cu_xid_to_bin(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
-BINARY* common_util_guid_to_binary(GUID guid);
+extern BINARY *common_util_guid_to_binary(FLATUID);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);
 extern void common_util_notify_receipt(const char *username, int type, message_content *brief);

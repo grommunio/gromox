@@ -1067,16 +1067,16 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 	return ext_pull.g_xid(pbin->cb, pxid) == EXT_ERR_SUCCESS ? TRUE : false;
 }
 
-BINARY* common_util_guid_to_binary(GUID guid)
+BINARY *common_util_guid_to_binary(FLATUID guid)
 {
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->cb = 0;
+	pbin->cb = 16;
 	pbin->pv = common_util_alloc(16);
 	if (pbin->pv == nullptr)
 		return NULL;
-	rop_util_guid_to_binary(guid, pbin);
+	memcpy(pbin->pv, &guid, sizeof(guid));
 	return pbin;
 }
 
