@@ -287,6 +287,24 @@ pack_result EXT_PULL::g_bin(BINARY *r)
 	return g_bytes(r->pv, r->cb);
 }
 
+pack_result EXT_PULL::g_bin(std::string *r) try
+{
+	size_t z = 0;
+	if (m_flags & EXT_FLAG_WCOUNT) {
+		uint32_t cb = 0;
+		TRY(g_uint32(&cb));
+		z = cb;
+	} else {
+		uint16_t cb = 0;
+		TRY(g_uint16(&cb));
+		z = cb;
+	}
+	r->resize(z);
+	return z != 0 ? g_bytes(r->data(), z) : pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
+}
+
 pack_result EXT_PULL::g_sbin(BINARY *r)
 {
 	uint16_t cb;
@@ -2337,6 +2355,20 @@ pack_result EXT_PUSH::p_bin(const BINARY &r)
 	if (r.cb == 0)
 		return EXT_ERR_SUCCESS;
 	return p_bytes(r.pb, r.cb);
+}
+
+pack_result EXT_PUSH::p_bin(std::string_view r)
+{
+	if (m_flags & EXT_FLAG_WCOUNT) {
+		if (r.size() > UINT32_MAX)
+			return pack_result::format;
+		TRY(p_uint32(r.size()));
+	} else {
+		if (r.size() > UINT16_MAX)
+			return pack_result::format;
+		TRY(p_uint16(r.size()));
+	}
+	return r.size() != 0 ? p_bytes(r.data(), r.size()) : pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_bin_s(const BINARY &r)

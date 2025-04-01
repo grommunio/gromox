@@ -137,6 +137,7 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_wstr(std::string *);
 	pack_result g_blob(DATA_BLOB *);
 	pack_result g_bin(BINARY *);
+	pack_result g_bin(std::string *);
 	pack_result g_sbin(BINARY *);
 	pack_result g_bin_ex(BINARY *);
 	pack_result g_uint16_an(SHORT_ARRAY *, uint32_t count);
@@ -249,6 +250,7 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_bool(BOOL);
 	pack_result p_blob(DATA_BLOB b) { return p_bytes(b.pv, b.cb); }
 	pack_result p_bin(const BINARY &);
+	pack_result p_bin(std::string_view);
 	pack_result p_bin_s(const BINARY &);
 	pack_result p_bin_ex(const BINARY &);
 	pack_result p_guid(const GUID &);
