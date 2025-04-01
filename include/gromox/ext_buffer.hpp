@@ -173,6 +173,7 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_guid_a(GUID_ARRAY *);
 	pack_result g_guid_a(std::vector<GUID> *);
 	pack_result g_proptag_a(PROPTAG_ARRAY *);
+	pack_result g_proptag_a(std::vector<gromox::proptag_t> *);
 	pack_result g_proptag_a(LPROPTAG_ARRAY *);
 	pack_result g_restriction(RESTRICTION *);
 	pack_result g_svreid(SVREID *);
@@ -277,6 +278,7 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_guid_a(const GUID_ARRAY &);
 	pack_result p_guid_a(const std::vector<GUID> &);
 	pack_result p_proptag_a(const PROPTAG_ARRAY &);
+	pack_result p_proptag_a(std::span<const gromox::proptag_t>);
 	pack_result p_proptag_a(const LPROPTAG_ARRAY &);
 	pack_result p_restriction(const RESTRICTION &);
 	pack_result p_svreid(const SVREID &);
