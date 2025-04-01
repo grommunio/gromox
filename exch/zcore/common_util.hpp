@@ -122,13 +122,18 @@ uint16_t common_util_get_messaging_entryid_type(BINARY bin);
 extern BOOL cu_entryid_to_fid(BINARY bin, BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id);
 extern BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id, uint64_t *pmessage_id);
 extern BINARY *cu_to_store_entryid(const store_object &);
+extern std::string cu_to_store_entryid_s(const store_object &);
 extern BINARY *cu_fid_to_entryid(const store_object &, uint64_t folder_id);
 extern std::string cu_fid_to_entryid_s(const store_object &, uint64_t folder_id);
 extern BINARY *cu_fid_to_sk(const store_object &, uint64_t folder_id);
+extern std::string cu_fid_to_sk_s(const store_object &, uint64_t folder_id);
 extern BINARY *cu_mid_to_entryid(const store_object &, uint64_t folder_id, uint64_t msg_id);
+extern std::string cu_mid_to_entryid_s(const store_object &, uint64_t folder_id, uint64_t msg_id);
 extern ec_error_t cu_calc_msg_access(const store_object &, const char *user, uint64_t folder_id, uint64_t msg_id, uint32_t &access);
 extern BINARY *cu_mid_to_sk(const store_object &, uint64_t msg_id);
+extern std::string cu_mid_to_sk_s(const store_object &, uint64_t msg_id);
 extern BINARY *cu_xid_to_bin(const XID &);
+extern std::string cu_xid_to_bin_s(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 extern BINARY *common_util_guid_to_binary(FLATUID);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,

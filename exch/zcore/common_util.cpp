@@ -891,6 +891,10 @@ BINARY *cu_fid_to_entryid(const store_object &store, uint64_t folder_id)
 	return pbin;
 }
 
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
 std::string cu_fid_to_entryid_s(const store_object &store, uint64_t folder_id) try
 {
 	FOLDER_ENTRYID eid;
@@ -915,7 +919,7 @@ std::string cu_fid_to_entryid_s(const store_object &store, uint64_t folder_id) t
 	out.resize(ep.m_offset);
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2247: ENOMEM");
+	mlog(LV_ERR, "E-2257: ENOMEM");
 	return {};
 }
 
@@ -940,6 +944,32 @@ BINARY *cu_fid_to_sk(const store_object &store, uint64_t folder_id)
 	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
 		return NULL;
 	return pbin;
+}
+
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_fid_to_sk_s(const store_object &store, uint64_t folder_id) try
+{
+	LONG_TERM_ID longid;
+	longid.global_counter = rop_util_get_gc_array(folder_id);
+	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
+	    longid.guid) != ecSuccess)
+		return {};
+
+	std::string out;
+	out.resize(22);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), 22, 0) ||
+	    ep.p_guid(longid.guid) != pack_result::ok ||
+	    ep.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2258: ENOMEM");
+	return {};
 }
 
 BINARY *cu_mid_to_entryid(const store_object &store,
@@ -977,6 +1007,44 @@ BINARY *cu_mid_to_entryid(const store_object &store,
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
+}
+
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_mid_to_entryid_s(const store_object &store, uint64_t folder_id,
+    uint64_t msg_id) try
+{
+	EXT_PUSH ep;
+	MESSAGE_ENTRYID eid{};
+
+	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
+	    eid.folder_database_guid) != ecSuccess)
+		return {};
+	if (replid_to_replguid(store, rop_util_get_replid(msg_id),
+	    eid.message_database_guid) != ecSuccess)
+		return {};
+	if (store.b_private) {
+		eid.provider_uid = store.mailbox_guid;
+		eid.message_type = EITLT_PRIVATE_MESSAGE;
+	} else {
+		eid.provider_uid = pbLongTermNonPrivateGuid;
+		eid.message_type = EITLT_PUBLIC_MESSAGE;
+	}
+	eid.folder_global_counter  = rop_util_get_gc_array(folder_id);
+	eid.message_global_counter = rop_util_get_gc_array(msg_id);
+
+	std::string out;
+	out.resize(255);
+	if (!ep.init(out.data(), 255, 0) ||
+	    ep.p_msg_eid(eid) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2259: ENOMEM");
+	return {};
 }
 
 ec_error_t cu_calc_msg_access(const store_object &store, const char *user,
@@ -1037,6 +1105,30 @@ BINARY *cu_mid_to_sk(const store_object &store, uint64_t message_id)
 	return pbin;
 }
 
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_mid_to_sk_s(const store_object &store, uint64_t msg_id) try
+{
+	std::string out;
+	EXT_PUSH ep;
+	LONG_TERM_ID longid;
+
+	out.resize(22);
+	longid.guid = store.guid();
+	longid.global_counter = rop_util_get_gc_array(msg_id);
+	if (!ep.init(out.data(), 22, 0) ||
+	    ep.p_guid(longid.guid) != pack_result::ok ||
+	    ep.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2260: ENOMEM");
+	return {};
+}
+
 BINARY *cu_xid_to_bin(const XID &xid)
 {
 	EXT_PUSH ext_push;
@@ -1050,6 +1142,22 @@ BINARY *cu_xid_to_bin(const XID &xid)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;
+}
+
+std::string cu_xid_to_bin_s(const XID &xid) try
+{
+	std::string out;
+	EXT_PUSH ep;
+
+	out.resize(24);
+	if (!ep.init(out.data(), 24, 0) ||
+	    ep.p_xid(xid) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2261: ENOMEM");
+	return {};
 }
 
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
@@ -1499,6 +1607,43 @@ BINARY *cu_to_store_entryid(const store_object &store)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
+}
+
+std::string cu_to_store_entryid_s(const store_object &store) try
+{
+	std::string essdn;
+	STORE_ENTRYID store_entryid{};
+
+	store_entryid.pserver_name = deconst(store.get_account());
+	if (store.b_private) {
+		store_entryid.wrapped_provider_uid = g_muidStorePrivate;
+		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
+		if (cvt_username_to_essdn(store.get_account(), g_org_name,
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
+		    essdn) != ecSuccess)
+			return {};
+	} else {
+		store_entryid.wrapped_provider_uid = g_muidStorePublic;
+		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_PUBLIC;
+		auto pinfo = zs_get_info();
+		if (cvt_username_to_essdn(pinfo->get_username(), g_org_name,
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
+		    essdn) != ecSuccess)
+			return {};
+	}
+	store_entryid.pmailbox_dn = deconst(essdn.c_str());
+
+	std::string out;
+	out.resize(572);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), out.size(), EXT_FLAG_UTF16) ||
+	    ep.p_store_eid(store_entryid) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2262: ENOMEM");
+	return {};
 }
 
 static ZMOVECOPY_ACTION *cu_cvt_to_zmovecopy(store_object *pstore, const MOVECOPY_ACTION &src)
