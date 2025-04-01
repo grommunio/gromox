@@ -309,31 +309,31 @@ static pack_result rpc_ext_push_newmail_znotification(EXT_PUSH &x, const NEWMAIL
 static pack_result rpc_ext_push_object_znotification(EXT_PUSH &x, const OBJECT_ZNOTIFICATION &r)
 {	
 	QRF(x.p_uint32(static_cast<uint32_t>(r.object_type)));
-	if (r.pentryid == nullptr) {
+	if (!r.pentryid.has_value()) {
 		QRF(x.p_uint8(0));
 	} else {
 		QRF(x.p_uint8(1));
 		QRF(x.p_bin(*r.pentryid));
 	}
-	if (r.pparentid == nullptr) {
+	if (!r.pparentid.has_value()) {
 		QRF(x.p_uint8(0));
 	} else {
 		QRF(x.p_uint8(1));
 		QRF(x.p_bin(*r.pparentid));
 	}
-	if (r.pold_entryid == nullptr) {
+	if (!r.pold_entryid.has_value()) {
 		QRF(x.p_uint8(0));
 	} else {
 		QRF(x.p_uint8(1));
 		QRF(x.p_bin(*r.pold_entryid));
 	}
-	if (r.pold_parentid == nullptr) {
+	if (!r.pold_parentid.has_value()) {
 		QRF(x.p_uint8(0));
 	} else {
 		QRF(x.p_uint8(1));
 		QRF(x.p_bin(*r.pold_parentid));
 	}
-	if (r.pproptags == nullptr) {
+	if (!r.pproptags.has_value()) {
 		QRF(x.p_uint8(0));
 	} else {
 		QRF(x.p_uint8(1));
@@ -364,9 +364,12 @@ static pack_result rpc_ext_push_znotification(EXT_PUSH &x, const ZNOTIFICATION &
 
 static pack_result rpc_ext_push_znotification_array(EXT_PUSH &x, const ZNOTIFICATION_ARRAY &r)
 {
-	QRF(x.p_uint16(r.count));
-	for (size_t i = 0; i < r.count; ++i) {
-		auto ret = rpc_ext_push_znotification(x, *r.ppnotification[i]);
+	if (r.size() > UINT16_MAX)
+		return pack_result::format;
+	uint16_t count = r.size();
+	QRF(x.p_uint16(count));
+	for (size_t i = 0; i < count; ++i) {
+		auto ret = rpc_ext_push_znotification(x, r[i]);
 		if (ret != pack_result::ok)
 			return ret;
 	}

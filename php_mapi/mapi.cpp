@@ -340,8 +340,7 @@ static ec_error_t notif_sink_timedwait(NOTIF_SINK *psink,
 	uint32_t timeval, ZNOTIFICATION_ARRAY *pnotifications)
 {
 	if (0 == psink->count) {
-		pnotifications->count = 0;
-		pnotifications->ppnotification = NULL;
+		pnotifications->clear();
 		return ecSuccess;
 	}
 	return zclient_notifdequeue(
@@ -1557,8 +1556,7 @@ static ZEND_FUNCTION(mapi_sink_timedwait)
 	ZEND_FETCH_RESOURCE(psink, pzressink, le_mapi_advisesink);
 	if (0 == psink->count) {
 		usleep(tmp_time*1000);
-		notifications.count = 0;
-		notifications.ppnotification = NULL;
+		notifications.clear();
 	} else {
 		tmp_time /= 1000;
 		if (tmp_time < 1)

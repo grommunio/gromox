@@ -15,6 +15,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 #include <libHX/string.h>
 #include <sys/socket.h>
@@ -409,209 +410,28 @@ char *common_util_dup(std::string_view sv)
 	return out;
 }
 
-static BINARY *common_util_dup_binary(const BINARY *src)
+ZNOTIFICATION::ZNOTIFICATION(ZNOTIFICATION &&o) :
+	event_type(o.event_type), pnotification_data(std::move(o.pnotification_data))
 {
-	auto dst = cu_alloc<BINARY>();
-	if (dst == nullptr)
-		return NULL;
-	dst->cb = src->cb;
-	if (src->cb == 0) {
-		dst->pb = nullptr;
-		return dst;
-	}
-	dst->pv = common_util_alloc(src->cb);
-	if (dst->pv == nullptr)
-		return NULL;
-	memcpy(dst->pv, src->pv, src->cb);
-	return dst;
+	o.pnotification_data = nullptr;
 }
 
-ZNOTIFICATION *common_util_dup_znotification(const ZNOTIFICATION *src, BOOL b_temp)
+void ZNOTIFICATION::clear()
 {
-	auto dst = !b_temp ? me_alloc<ZNOTIFICATION>() : cu_alloc<ZNOTIFICATION>();
-	
-	if (dst == nullptr)
-		return NULL;
-	dst->event_type = src->event_type;
-	if (src->event_type == NF_NEW_MAIL) {
-		auto src_nm = static_cast<const NEWMAIL_ZNOTIFICATION *>(src->pnotification_data);
-		NEWMAIL_ZNOTIFICATION *dst_nm;
-		if (!b_temp) {
-			dst_nm = me_alloc<NEWMAIL_ZNOTIFICATION>();
-			if (dst_nm == nullptr) {
-				free(dst);
-				return NULL;
-			}
-		} else {
-			dst_nm = cu_alloc<NEWMAIL_ZNOTIFICATION>();
-			if (dst_nm == nullptr)
-				return NULL;
-		}
-		memset(dst_nm, 0, sizeof(*dst_nm));
-		dst->pnotification_data = dst_nm;
-		dst_nm->entryid.cb = src_nm->entryid.cb;
-		if (!b_temp) {
-			dst_nm->entryid.pv = malloc(dst_nm->entryid.cb);
-			if (dst_nm->entryid.pv == nullptr) {
-				dst_nm->entryid.cb = 0;
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_nm->entryid.pv = common_util_alloc(dst_nm->entryid.cb);
-			if (dst_nm->entryid.pv == nullptr) {
-				dst_nm->entryid.cb = 0;
-				return NULL;
-			}
-		}
-		memcpy(dst_nm->entryid.pv, src_nm->entryid.pv, dst_nm->entryid.cb);
-		dst_nm->parentid.cb = src_nm->parentid.cb;
-		if (!b_temp) {
-			dst_nm->parentid.pv = malloc(dst_nm->parentid.cb);
-			if (dst_nm->parentid.pv == nullptr) {
-				dst_nm->parentid.cb = 0;
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_nm->parentid.pv = common_util_alloc(dst_nm->parentid.cb);
-			if (dst_nm->parentid.pv == nullptr) {
-				dst_nm->parentid.cb = 0;
-				return NULL;
-			}
-		}
-		memcpy(dst_nm->parentid.pv, src_nm->parentid.pv, dst_nm->parentid.cb);
-		dst_nm->flags = src_nm->flags;
-		if (!b_temp) {
-			dst_nm->message_class = strdup(src_nm->message_class);
-			if (dst_nm->message_class == nullptr) {
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_nm->message_class = common_util_dup(src_nm->message_class);
-			if (dst_nm->message_class == nullptr)
-				return NULL;
-		}
-		dst_nm->message_flags = src_nm->message_flags;
-		return dst;
-	}
-
-	auto src_ob = static_cast<OBJECT_ZNOTIFICATION *>(src->pnotification_data);
-	OBJECT_ZNOTIFICATION *dst_ob;
-	if (!b_temp) {
-		dst_ob = me_alloc<OBJECT_ZNOTIFICATION>();
-		if (dst_ob == nullptr) {
-			free(dst);
-			return NULL;
-		}
-	} else {
-		dst_ob = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (dst_ob == nullptr)
-			return NULL;
-	}
-	memset(dst_ob, 0, sizeof(*dst_ob));
-	dst->pnotification_data = dst_ob;
-	dst_ob->object_type = src_ob->object_type;
-	if (src_ob->pentryid != nullptr) {
-		if (!b_temp) {
-			dst_ob->pentryid = static_cast<BINARY *>(propval_dup(PT_BINARY, src_ob->pentryid));
-			if (dst_ob->pentryid == nullptr) {
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_ob->pentryid = common_util_dup_binary(src_ob->pentryid);
-			if (dst_ob->pentryid == nullptr)
-				return NULL;
-		}
-	}
-	if (src_ob->pparentid != nullptr) {
-		if (!b_temp) {
-			dst_ob->pparentid = static_cast<BINARY *>(propval_dup(PT_BINARY, src_ob->pparentid));
-			if (dst_ob->pparentid == nullptr) {
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_ob->pparentid = common_util_dup_binary(src_ob->pparentid);
-			if (dst_ob->pparentid == nullptr)
-				return NULL;
-		}
-	}
-	if (src_ob->pold_entryid != nullptr) {
-		if (!b_temp) {
-			dst_ob->pold_entryid = static_cast<BINARY *>(propval_dup(PT_BINARY, src_ob->pold_entryid));
-			if (dst_ob->pold_entryid == nullptr) {
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_ob->pold_entryid = common_util_dup_binary(src_ob->pold_entryid);
-			if (dst_ob->pold_entryid == nullptr)
-				return NULL;
-		}
-	}
-	if (src_ob->pold_parentid != nullptr) {
-		if (!b_temp) {
-			dst_ob->pold_parentid = static_cast<BINARY *>(propval_dup(PT_BINARY, src_ob->pold_parentid));
-			if (dst_ob->pold_parentid == nullptr) {
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_ob->pold_parentid = common_util_dup_binary(src_ob->pold_parentid);
-			if (dst_ob->pold_parentid == nullptr)
-				return NULL;
-		}
-	}
-	if (src_ob->pproptags != nullptr) {
-		if (!b_temp) {
-			dst_ob->pproptags = proptag_array_dup(src_ob->pproptags);
-			if (dst_ob->pproptags == nullptr) {
-				common_util_free_znotification(dst);
-				return NULL;
-			}
-		} else {
-			dst_ob->pproptags = cu_alloc<PROPTAG_ARRAY>();
-			if (dst_ob->pproptags == nullptr)
-				return NULL;
-			dst_ob->pproptags->count = src_ob->pproptags->count;
-			dst_ob->pproptags->pproptag = cu_alloc<uint32_t>(src_ob->pproptags->count);
-			if (dst_ob->pproptags->pproptag == nullptr)
-				return NULL;
-			memcpy(dst_ob->pproptags->pproptag, src_ob->pproptags->pproptag,
-			       sizeof(uint32_t) * src_ob->pproptags->count);
-		}
-	}
-	return dst;
+	if (event_type == NF_NEW_MAIL)
+		delete static_cast<NEWMAIL_ZNOTIFICATION *>(pnotification_data);
+	else
+		delete static_cast<OBJECT_ZNOTIFICATION *>(pnotification_data);
+	pnotification_data = nullptr;
 }
 
-void common_util_free_znotification(ZNOTIFICATION *pnotification)
+ZNOTIFICATION &ZNOTIFICATION::operator=(ZNOTIFICATION &&o)
 {
-	if (pnotification->event_type == NF_NEW_MAIL) {
-		auto pnew_notify = static_cast<NEWMAIL_ZNOTIFICATION *>(pnotification->pnotification_data);
-		if (pnew_notify->entryid.pb != nullptr)
-			free(pnew_notify->entryid.pb);
-		if (pnew_notify->parentid.pb != nullptr)
-			free(pnew_notify->parentid.pb);
-		if (pnew_notify->message_class != nullptr)
-			free(pnew_notify->message_class);
-		free(pnew_notify);
-	} else {
-		auto pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(pnotification->pnotification_data);
-		if (pobj_notify->pentryid != nullptr)
-			rop_util_free_binary(pobj_notify->pentryid);
-		if (pobj_notify->pparentid != nullptr)
-			rop_util_free_binary(pobj_notify->pparentid);
-		if (pobj_notify->pold_entryid != nullptr)
-			rop_util_free_binary(pobj_notify->pold_entryid);
-		if (pobj_notify->pold_parentid != nullptr)
-			rop_util_free_binary(pobj_notify->pold_parentid);
-		if (pobj_notify->pproptags != nullptr)
-			proptag_array_free(pobj_notify->pproptags);
-	}
-	free(pnotification);
+	clear();
+	event_type = o.event_type;
+	pnotification_data = std::move(o.pnotification_data);
+	o.pnotification_data = nullptr;
+	return *this;
 }
 
 BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,

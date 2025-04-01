@@ -57,11 +57,11 @@ using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 namespace {
 
 struct NOTIFY_ITEM {
-	NOTIFY_ITEM(const GUID &session, uint32_t store);
-	~NOTIFY_ITEM();
-	NOMOVE(NOTIFY_ITEM);
+	NOTIFY_ITEM(const GUID &ses, uint32_t store) :
+		hsession(ses), hstore(store), last_time(time(nullptr))
+	{}
 
-	DOUBLE_LIST notify_list{};
+	std::vector<ZNOTIFICATION> notify_list;
 	GUID hsession{};
 	uint32_t hstore = 0;
 	time_t last_time = 0;
@@ -146,22 +146,6 @@ void user_info_del::operator()(USER_INFO *pinfo)
 	pinfo->reference --;
 	tl_hold.unlock();
 	g_info_key = nullptr;
-}
-
-NOTIFY_ITEM::NOTIFY_ITEM(const GUID &ses, uint32_t store) :
-	hsession(ses), hstore(store), last_time(time(nullptr))
-{
-	double_list_init(&notify_list);
-}
-
-NOTIFY_ITEM::~NOTIFY_ITEM()
-{
-	DOUBLE_LIST_NODE *pnode;
-	while ((pnode = double_list_pop_front(&notify_list)) != nullptr) {
-		common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
-		free(pnode);
-	}
-	double_list_free(&notify_list);
 }
 
 static void *zcorezs_scanwork(void *param)
@@ -275,7 +259,7 @@ static void *zcorezs_scanwork(void *param)
 }
 
 void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
-    const DB_NOTIFY *pdb_notify)
+    const DB_NOTIFY *pdb_notify) try
 {
 	int i;
 	GUID hsession;
@@ -290,8 +274,6 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	struct pollfd fdpoll;
 	uint64_t old_parentid;
 	TPROPVAL_ARRAY propvals;
-	DOUBLE_LIST_NODE *pnode;
-	ZNOTIFICATION *pnotification;
 	
 	if (b_table)
 		return;
@@ -311,27 +293,22 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	if (pstore == nullptr || mapi_type != zs_objtype::store ||
 	    strcmp(dir, pstore->get_dir()) != 0)
 		return;
-	pnotification = cu_alloc<ZNOTIFICATION>();
-	if (pnotification == nullptr)
-		return;
+
+	ZNOTIFICATION zn, *pnotification = &zn;
 	switch (pdb_notify->type) {
 	case db_notify_type::new_mail: {
 		pnotification->event_type = NF_NEW_MAIL;
-		auto pnew_mail = cu_alloc<NEWMAIL_ZNOTIFICATION>();
-		if (pnew_mail == nullptr)
-			return;
+		auto pnew_mail = new NEWMAIL_ZNOTIFICATION;
 		pnotification->pnotification_data = pnew_mail;
 		auto nt = static_cast<const DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		auto pbin = cu_mid_to_entryid(*pstore, folder_id, message_id);
-		if (pbin == nullptr)
+		pnew_mail->entryid = cu_mid_to_entryid_s(*pstore, folder_id, message_id);
+		if (pnew_mail->entryid.empty())
 			return;
-		pnew_mail->entryid = *pbin;
-		pbin = cu_fid_to_entryid(*pstore, folder_id);
-		if (pbin == nullptr)
+		pnew_mail->parentid = cu_fid_to_entryid_s(*pstore, folder_id);
+		if (pnew_mail->parentid.empty())
 			return;
-		pnew_mail->parentid = *pbin;
 		static constexpr proptag_t proptag_buff[] = {PR_MESSAGE_CLASS, PR_MESSAGE_FLAGS};
 		static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
@@ -349,208 +326,164 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::folder_created: {
 		pnotification->event_type = NF_OBJECT_CREATED;
-		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
+		auto oz = new OBJECT_ZNOTIFICATION;
+		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_CREATED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
-		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(*pstore, folder_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_FOLDER;
+		oz->pentryid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(*pstore, parent_id);
-		if (pbin == nullptr)
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, parent_id));
+		if (oz->pparentid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
 		break;
 	}
 	case db_notify_type::message_created: {
 		pnotification->event_type = NF_OBJECT_CREATED;
-		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
+		auto oz = new OBJECT_ZNOTIFICATION;
+		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_MESSAGE_CREATED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pobj_notify->object_type = MAPI_MESSAGE;
-		auto pbin = cu_mid_to_entryid(*pstore, folder_id, message_id);
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(*pstore, folder_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_MESSAGE;
+		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pparentid->empty())
+			return;
 		break;
 	}
 	case db_notify_type::folder_deleted: {
 		pnotification->event_type = NF_OBJECT_DELETED;
-		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
+		auto oz = new OBJECT_ZNOTIFICATION;
+		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_DELETED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
-		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(*pstore, folder_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_FOLDER;
+		oz->pentryid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(*pstore, parent_id);
-		if (pbin == nullptr)
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, parent_id));
+		if (oz->pparentid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
 		break;
 	}
 	case db_notify_type::message_deleted: {
 		pnotification->event_type = NF_OBJECT_DELETED;
-		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
+		auto oz = new OBJECT_ZNOTIFICATION;
+		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_MESSAGE_DELETED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pobj_notify->object_type = MAPI_MESSAGE;
-		auto pbin = cu_mid_to_entryid(*pstore, folder_id, message_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_MESSAGE;
+		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(*pstore, folder_id);
-		if (pbin == nullptr)
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pparentid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
 		break;
 	}
 	case db_notify_type::folder_modified: {
 		pnotification->event_type = NF_OBJECT_MODIFIED;
-		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
+		auto oz = new OBJECT_ZNOTIFICATION;
+		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(*pstore, folder_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_FOLDER;
+		oz->pentryid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
 		break;
 	}
 	case db_notify_type::message_modified: {
 		pnotification->event_type = NF_OBJECT_MODIFIED;
-		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
+		auto oz = new OBJECT_ZNOTIFICATION;
+		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pobj_notify->object_type = MAPI_MESSAGE;
-		auto pbin = cu_mid_to_entryid(*pstore, folder_id, message_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_MESSAGE;
+		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(*pstore, folder_id);
-		if (pbin == nullptr)
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pparentid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
 		break;
 	}
 	case db_notify_type::folder_moved:
 	case db_notify_type::folder_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::folder_moved ?
 		                            NF_OBJECT_MOVED : NF_OBJECT_COPIED;
-		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
+		auto oz = new OBJECT_ZNOTIFICATION;
+		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
 		old_eid = rop_util_nfid_to_eid(nt->old_folder_id);
 		old_parentid = rop_util_nfid_to_eid(nt->old_parent_id);
-		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(*pstore, folder_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_FOLDER;
+		oz->pentryid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(*pstore, parent_id);
-		if (pbin == nullptr)
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, parent_id));
+		if (oz->pparentid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
-		pbin = cu_fid_to_entryid(*pstore, old_eid);
-		if (pbin == nullptr)
+		oz->pold_entryid.emplace(cu_fid_to_entryid_s(*pstore, old_eid));
+		if (oz->pold_entryid->empty())
 			return;
-		pobj_notify->pold_entryid = pbin;
-		pbin = cu_fid_to_entryid(*pstore, old_parentid);
-		if (pbin == nullptr)
+		oz->pold_parentid.emplace(cu_fid_to_entryid_s(*pstore, old_parentid));
+		if (oz->pold_parentid->empty())
 			return;
-		pobj_notify->pold_parentid = pbin;
 		break;
 	}
 	case db_notify_type::message_moved:
 	case db_notify_type::message_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::message_moved ?
 		                            NF_OBJECT_MOVED : NF_OBJECT_COPIED;
-		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
+		auto oz = new OBJECT_ZNOTIFICATION;
+		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
 		old_parentid = rop_util_nfid_to_eid(nt->old_folder_id);
 		old_eid = rop_util_make_eid_ex(1, nt->old_message_id);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pobj_notify->object_type = MAPI_MESSAGE;
-		auto pbin = cu_mid_to_entryid(*pstore, folder_id, message_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_MESSAGE;
+		oz->pentryid.emplace(cu_mid_to_entryid_s(*pstore, folder_id, message_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(*pstore, folder_id);
-		if (pbin == nullptr)
+		oz->pparentid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pparentid->empty())
 			return;
-		pobj_notify->pparentid = pbin;
-		pbin = cu_mid_to_entryid(*pstore, old_parentid, old_eid);
-		if (pbin == nullptr)
+		oz->pold_entryid.emplace(cu_mid_to_entryid_s(*pstore, old_parentid, old_eid));
+		if (oz->pold_entryid->empty())
 			return;
-		pobj_notify->pold_entryid = pbin;
-		pbin = cu_fid_to_entryid(*pstore, old_parentid);
-		if (pbin == nullptr)
+		oz->pold_parentid.emplace(cu_fid_to_entryid_s(*pstore, old_parentid));
+		if (oz->pold_parentid->empty())
 			return;
-		pobj_notify->pold_parentid = pbin;
 		break;
 	}
 	case db_notify_type::search_completed: {
 		pnotification->event_type = NF_SEARCH_COMPLETE;
-		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-		if (pobj_notify == nullptr)
-			return;
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification->pnotification_data = pobj_notify;
+		auto oz = new OBJECT_ZNOTIFICATION;
+		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_SEARCH_COMPLETED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
-		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(*pstore, folder_id);
-		if (pbin == nullptr)
+		oz->object_type = MAPI_FOLDER;
+		oz->pentryid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
+		if (oz->pentryid->empty())
 			return;
-		pobj_notify->pentryid = pbin;
 		break;
 	}
 	default:
 		return;
 	}
+
 	for (auto psink_node = pinfo->sink_list.begin();
 	     psink_node != pinfo->sink_list.end(); ++psink_node) {
 		for (i=0; i<psink_node->sink.count; i++) {
@@ -562,8 +495,8 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 			zcresp_notifdequeue response{};
 			response.call_id = zcore_callid::notifdequeue;
 			response.result  = ecSuccess;
-			response.notifications.count = 1;
-			response.notifications.ppnotification = &pnotification;
+			response.notifications.emplace_back(std::move(zn));
+
 			fdpoll.fd = psink_node->clifd;
 			fdpoll.events = POLLOUT | POLLWRBAND;
 			if (rpc_ext_push_response(&response, &tmp_bin) != pack_result::ok) {
@@ -583,24 +516,11 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 			return;
 		}
 	}
-	pnode = me_alloc<DOUBLE_LIST_NODE>();
-	if (pnode == nullptr)
-		return;
-	pnode->pdata = common_util_dup_znotification(pnotification, FALSE);
-	if (NULL == pnode->pdata) {
-		free(pnode);
-		return;
-	}
 	nl_hold.lock();
 	iter = g_notify_table.find(tmp_buff);
-	pitem = iter != g_notify_table.end() ? &iter->second : nullptr;
-	if (pitem != nullptr)
-		double_list_append_as_tail(&pitem->notify_list, pnode);
-	nl_hold.unlock();
-	if (NULL == pitem) {
-		common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
-		free(pnode);
-	}
+	if (iter != g_notify_table.end())
+		iter->second.notify_list.push_back(std::move(zn));
+} catch (const std::bad_alloc &) {
 }
 
 void zserver_init(size_t table_size, int cache_interval, int ping_interval)
@@ -2551,19 +2471,16 @@ ec_error_t zs_unadvise(GUID hsession, uint32_t hstore,
 	return ecServerOOM;
 }
 
-ec_error_t zs_notifdequeue(const NOTIF_SINK *psink,
-	uint32_t timeval, ZNOTIFICATION_ARRAY *pnotifications)
+ec_error_t zs_notifdequeue(const NOTIF_SINK *psink, uint32_t timeval,
+    std::vector<ZNOTIFICATION> *pnotifications)
 {
 	int i;
-	int count;
 	zs_objtype mapi_type;
-	DOUBLE_LIST_NODE *pnode;
-	ZNOTIFICATION* ppnotifications[1024];
+	std::vector<ZNOTIFICATION> ppnotifications;
 	
 	auto pinfo = zs_query_session(psink->hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	count = 0;
 	for (i=0; i<psink->count; i++) {
 		auto pstore = pinfo->ptree->get_object<store_object>(psink->padvise[i].hstore, &mapi_type);
 		if (pstore == nullptr || mapi_type != zs_objtype::store)
@@ -2582,27 +2499,20 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink,
 			continue;
 		auto pnitem = &iter->second;
 		pnitem->last_time = time(nullptr);
-		while ((pnode = double_list_pop_front(&pnitem->notify_list)) != nullptr) {
-			ppnotifications[count] = common_util_dup_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata), true);
-			common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
-			free(pnode);
-			if (ppnotifications[count] != nullptr)
-				count ++;
-			if (count == 1024)
-				break;
-		}
+
+		size_t limit = 1024 - std::min(ppnotifications.size(), static_cast<size_t>(1024));
+		limit = std::min(limit, pnitem->notify_list.size());
+		ppnotifications.insert(ppnotifications.end(),
+			std::make_move_iterator(pnitem->notify_list.begin()),
+			std::make_move_iterator(pnitem->notify_list.end()));
+		pnitem->notify_list.erase(pnitem->notify_list.begin(), pnitem->notify_list.begin() + limit);
 		nl_hold.unlock();
-		if (count == 1024)
+		if (ppnotifications.size() >= 1024)
 			break;
 	}
-	if (count > 0) {
+	if (ppnotifications.size() > 0) {
 		pinfo.reset();
-		pnotifications->count = count;
-		pnotifications->ppnotification = cu_alloc<ZNOTIFICATION *>(count);
-		if (pnotifications->ppnotification == nullptr)
-			return ecError;
-		memcpy(pnotifications->ppnotification,
-			ppnotifications, sizeof(void*)*count);
+		*pnotifications = std::move(ppnotifications);
 		return ecSuccess;
 	}
 	std::list<sink_node> holder;

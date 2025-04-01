@@ -13,7 +13,6 @@
 
 struct zcreq;
 struct zcresp;
-struct ZNOTIFICATION_ARRAY;
 extern zend_bool zclient_do_rpc(const zcreq *, zcresp *);
 extern ec_error_t zclient_setpropval(GUID ses, uint32_t obj, gromox::proptag_t, const void *);
 extern ec_error_t zclient_getpropval(GUID ses, uint32_t obj, gromox::proptag_t, void **);
@@ -51,7 +50,7 @@ ZCIDL(getstoreentryid, (const char *mailbox_dn, IDLOUT BINARY *entryid))
 ZCIDL(entryidfromsourcekey, (GUID hsession, uint32_t hstore, BINARY folder_key, const BINARY *pmessage_key, IDLOUT BINARY *entryid))
 ZCIDL(storeadvise, (GUID hsession, uint32_t hstore, const BINARY *pentryid, uint32_t event_mask, IDLOUT uint32_t *sub_id))
 ZCIDL(unadvise, (GUID hsession, uint32_t hstore, uint32_t sub_id))
-ZCIDL(notifdequeue, (const NOTIF_SINK *psink, uint32_t timeval, IDLOUT ZNOTIFICATION_ARRAY *notifications))
+ZCIDL(notifdequeue, (const NOTIF_SINK *psink, uint32_t timeval, IDLOUT std::vector<ZNOTIFICATION> *notifications))
 ZCIDL(queryrows, (GUID hsession, uint32_t htable, uint32_t start, uint32_t count, const RESTRICTION *prestriction, const PROPTAG_ARRAY *pproptags, IDLOUT TARRAY_SET *rowset))
 ZCIDL(setcolumns, (GUID hsession, uint32_t htable, const PROPTAG_ARRAY *pproptags, uint32_t flags))
 ZCIDL(seekrow, (GUID hsession, uint32_t htable, uint32_t bookmark, int32_t seek_rows, IDLOUT int32_t *sought_rows))

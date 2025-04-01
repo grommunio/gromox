@@ -140,109 +140,86 @@ static pack_result ext_pack_pull_object_znotification(PULL_CTX *pctx,
 	r->object_type = static_cast<mapi_object_type>(ot);
 	TRY(pctx->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		r->pentryid = NULL;
+		r->pentryid.reset();
 	} else {
-		r->pentryid = st_malloc<BINARY>();
-		if (NULL == r->pentryid) {
-			return EXT_ERR_ALLOC;
-		}
-		TRY(pctx->g_bin(r->pentryid));
+		std::string bin;
+		TRY(pctx->g_bin(&bin));
+		r->pentryid.emplace(std::move(bin));
 	}
 	TRY(pctx->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		r->pparentid = NULL;
+		r->pparentid.reset();
 	} else {
-		r->pparentid = st_malloc<BINARY>();
-		if (NULL == r->pparentid) {
-			return EXT_ERR_ALLOC;
-		}
-		TRY(pctx->g_bin(r->pparentid));
+		std::string bin;
+		TRY(pctx->g_bin(&bin));
+		r->pparentid.emplace(std::move(bin));
 	}
 	TRY(pctx->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		r->pold_entryid = NULL;
+		r->pold_entryid.reset();
 	} else {
-		r->pold_entryid = st_malloc<BINARY>();
-		if (NULL == r->pold_entryid) {
-			return EXT_ERR_ALLOC;
-		}
-		TRY(pctx->g_bin(r->pold_entryid));
+		std::string bin;
+		TRY(pctx->g_bin(&bin));
+		r->pold_entryid.emplace(std::move(bin));
 	}
 	TRY(pctx->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		r->pold_parentid = NULL;
+		r->pold_parentid.reset();
 	} else {
-		r->pold_parentid = st_malloc<BINARY>();
-		if (NULL == r->pold_parentid) {
-			return EXT_ERR_ALLOC;
-		}
-		TRY(pctx->g_bin(r->pold_parentid));
+		std::string bin;
+		TRY(pctx->g_bin(&bin));
+		r->pold_parentid.emplace(std::move(bin));
 	}
 	TRY(pctx->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		r->pproptags = NULL;
-		return EXT_ERR_SUCCESS;
+		r->pproptags.reset();
 	} else {
-		r->pproptags = st_malloc<PROPTAG_ARRAY>();
-		if (NULL == r->pproptags) {
-			return EXT_ERR_ALLOC;
-		}
-		return pctx->g_proptag_a(r->pproptags);
+		std::vector<gromox::proptag_t> tags;
+		TRY(pctx->g_proptag_a(&tags));
+		r->pproptags.emplace(std::move(tags));
 	}
+	return pack_result::ok;
 }
 
-static pack_result ext_pack_pull_znotification(PULL_CTX *pctx, ZNOTIFICATION *r)
+static pack_result ext_pack_pull_znotification(PULL_CTX *pctx, ZNOTIFICATION *r) try
 {
 	TRY(pctx->g_uint32(&r->event_type));
 	switch (r->event_type) {
-	case NF_NEW_MAIL:
-		r->pnotification_data = emalloc(sizeof(NEWMAIL_ZNOTIFICATION));
-		if (NULL == r->pnotification_data) {
-			return EXT_ERR_ALLOC;
-		}
-		return ext_pack_pull_newmail_znotification(pctx,
-		       static_cast<NEWMAIL_ZNOTIFICATION *>(r->pnotification_data));
+	case NF_NEW_MAIL: {
+		auto nz = new NEWMAIL_ZNOTIFICATION;
+		r->pnotification_data = nz;
+		return ext_pack_pull_newmail_znotification(pctx, nz);
+	}
 	case NF_OBJECT_CREATED:
 	case NF_OBJECT_DELETED:
 	case NF_OBJECT_MODIFIED:
 	case NF_OBJECT_MOVED:
 	case NF_OBJECT_COPIED:
-	case NF_SEARCH_COMPLETE:
-		r->pnotification_data = emalloc(sizeof(OBJECT_ZNOTIFICATION));
-		if (NULL == r->pnotification_data) {
-			return EXT_ERR_ALLOC;
-		}
-		return ext_pack_pull_object_znotification(pctx,
-		       static_cast<OBJECT_ZNOTIFICATION *>(r->pnotification_data));
+	case NF_SEARCH_COMPLETE: {
+		auto oz = new OBJECT_ZNOTIFICATION;
+		r->pnotification_data = oz;
+		return ext_pack_pull_object_znotification(pctx, oz);
+	}
 	default:
 		r->pnotification_data = NULL;
 		return EXT_ERR_SUCCESS;
 	}
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
-pack_result PULL_CTX::g_znotif_a(ZNOTIFICATION_ARRAY *r)
+pack_result PULL_CTX::g_znotif_a(std::vector<ZNOTIFICATION> *r) try
 {
-	int i;
-	
-	TRY(g_uint16(&r->count));
-	if (0 == r->count) {
-		r->ppnotification = NULL;
-		return EXT_ERR_SUCCESS;
-	}
-	r->count = std::min(r->count, static_cast<uint16_t>(UINT16_MAX));
-	r->ppnotification = sta_malloc<ZNOTIFICATION *>(r->count);
-	if (NULL == r->ppnotification) {
-		r->count = 0;
-		return EXT_ERR_ALLOC;
-	}
-	for (i=0; i<r->count; i++) {
-		r->ppnotification[i] = st_malloc<ZNOTIFICATION>();
-		if (NULL == r->ppnotification[i]) {
-			return EXT_ERR_ALLOC;
-		}
-		TRY(ext_pack_pull_znotification(this, r->ppnotification[i]));
-	}
-	return EXT_ERR_SUCCESS;
+	uint16_t count = 0;
+	TRY(g_uint16(&count));
+	r->resize(count);
+	if (count == 0)
+		return pack_result::ok;
+	for (unsigned int i = 0; i < count; ++i)
+		TRY(ext_pack_pull_znotification(this, &(*r)[i]));
+	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result ext_pack_push_permission_row(PUSH_CTX *x, const PERMISSION_ROW *r)

@@ -91,7 +91,7 @@ extern ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *entryid);
 extern ec_error_t zs_entryidfromsourcekey(GUID ses, uint32_t store_handle, BINARY folder_key, const BINARY *msg_key, BINARY *entryid);
 extern ec_error_t zs_storeadvise(GUID ses, uint32_t store_handle, const BINARY *entryid, uint32_t event_mask, uint32_t *sub_id);
 extern ec_error_t zs_unadvise(GUID ses, uint32_t store_handle, uint32_t sub_id);
-extern ec_error_t zs_notifdequeue(const NOTIF_SINK *, uint32_t timeval, ZNOTIFICATION_ARRAY *);
+extern ec_error_t zs_notifdequeue(const NOTIF_SINK *, uint32_t timeval, std::vector<ZNOTIFICATION> *);
 extern ec_error_t zs_queryrows(GUID ses, uint32_t tbl_handle, uint32_t start, uint32_t count, const RESTRICTION *, const PROPTAG_ARRAY *, TARRAY_SET *);
 extern ec_error_t zs_setcolumns(GUID ses, uint32_t tbl_handle, const PROPTAG_ARRAY *, uint32_t flags);
 extern ec_error_t zs_seekrow(GUID ses, uint32_t tbl_handle, uint32_t bookmark, int32_t seek_rows, int32_t *sought);

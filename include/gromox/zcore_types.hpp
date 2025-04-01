@@ -1,5 +1,8 @@
 #pragma once
 #include <cstdint>
+#include <optional>
+#include <string>
+#include <vector>
 #include <gromox/mapidefs.h>
 
 enum class zs_objtype : uint8_t {
@@ -10,32 +13,29 @@ enum class zs_objtype : uint8_t {
 };
 
 struct NEWMAIL_ZNOTIFICATION {
-	BINARY entryid;
-	BINARY parentid;
-	uint32_t flags; /* unicode or not */
-	char *message_class;
-	uint32_t message_flags;
+	std::string entryid, parentid, message_class;
+	uint32_t flags = 0; /* unicode or not */
+	uint32_t message_flags = 0;
 };
 
 struct OBJECT_ZNOTIFICATION {
 	mapi_object_type object_type;
-	BINARY *pentryid;
-	BINARY *pparentid;
-	BINARY *pold_entryid;
-	BINARY *pold_parentid;
-	PROPTAG_ARRAY *pproptags;
+	std::optional<std::string> pentryid, pparentid, pold_entryid, pold_parentid;
+	std::optional<std::vector<gromox::proptag_t>> pproptags;
 };
 
 struct ZNOTIFICATION {
-	uint32_t event_type;
-	void *pnotification_data; /* NEWMAIL_ZNOTIFICATION or OBJECT_ZNOTIFICATION */
+	ZNOTIFICATION() = default;
+	ZNOTIFICATION(ZNOTIFICATION &&);
+	~ZNOTIFICATION() { clear(); }
+	ZNOTIFICATION &operator=(ZNOTIFICATION &&);
+	void clear();
+
+	uint32_t event_type = 0;
+	void *pnotification_data = nullptr; /* NEWMAIL_ZNOTIFICATION or OBJECT_ZNOTIFICATION */
 };
 
-struct ZNOTIFICATION_ARRAY {
-	uint16_t count;
-	ZNOTIFICATION **ppnotification;
-	I_BEGIN_END(ppnotification, count);
-};
+using ZNOTIFICATION_ARRAY = std::vector<ZNOTIFICATION>;
 
 /* reply or OOF action */
 struct ZREPLY_ACTION {

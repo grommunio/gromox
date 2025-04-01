@@ -1231,10 +1231,10 @@ ec_error_t restriction_to_php(const RESTRICTION &pres, zval *pzret)
 	return ecSuccess;
 }
 
-ec_error_t proptag_array_to_php(const PROPTAG_ARRAY &pproptags, zval *pzret)
+static ec_error_t proptag_array_to_php(const std::vector<proptag_t> &tags, zval *pzret)
 {
 	zarray_init(pzret);
-	for (auto t : pproptags)
+	for (auto t : tags)
 		add_next_index_long(pzret, proptag_to_phptag(t));
 	return ecSuccess;
 }
@@ -1522,31 +1522,28 @@ ec_error_t php_to_state_array(zval *pzval, STATE_ARRAY *pstates)
 	return ecSuccess;
 }
 
-ec_error_t znotification_array_to_php(const ZNOTIFICATION_ARRAY &notifications, zval *pzret)
+ec_error_t znotification_array_to_php(const ZNOTIFICATION_ARRAY &pnotifications, zval *pzret)
 {
-	auto pnotifications=&notifications;
-	int i;
 	zval pzvalprops, pzvalnotif;
 	
 	zarray_init(pzret);
-	for (i=0; i<pnotifications->count; i++) {
+	for (const auto &nt : pnotifications) {
 		zarray_init(&pzvalnotif);
-		add_assoc_long(&pzvalnotif, "eventtype",
-			pnotifications->ppnotification[i]->event_type);
-		switch(pnotifications->ppnotification[i]->event_type) {
+		add_assoc_long(&pzvalnotif, "eventtype", nt.event_type);
+		switch (nt.event_type) {
 		case NF_NEW_MAIL: {
-			auto pnew_notification =
-				static_cast<const NEWMAIL_ZNOTIFICATION *>(pnotifications->ppnotification[i]->pnotification_data);
+			auto pnew_notification = static_cast<const NEWMAIL_ZNOTIFICATION *>(nt.pnotification_data);
 			add_assoc_stringl(&pzvalnotif, "entryid",
-				pnew_notification->entryid.pc,
-				pnew_notification->entryid.cb);
+				pnew_notification->entryid.data(),
+				pnew_notification->entryid.size());
 			add_assoc_stringl(&pzvalnotif, "parentid",
-				pnew_notification->parentid.pc,
-				pnew_notification->parentid.cb);
+				pnew_notification->parentid.data(),
+				pnew_notification->parentid.size());
 			add_assoc_long(&pzvalnotif, "flags",
 				pnew_notification->flags);
-			add_assoc_string(&pzvalnotif, "messageclass",
-				pnew_notification->message_class);
+			add_assoc_stringl(&pzvalnotif, "messageclass",
+				pnew_notification->message_class.data(),
+				pnew_notification->message_class.size());
 			add_assoc_long(&pzvalnotif, "messageflags",
 				pnew_notification->message_flags);
 			break;
@@ -1557,31 +1554,30 @@ ec_error_t znotification_array_to_php(const ZNOTIFICATION_ARRAY &notifications, 
 		case NF_OBJECT_MOVED:
 		case NF_OBJECT_COPIED:
 		case NF_SEARCH_COMPLETE: {
-			auto pobject_notification =
-				static_cast<const OBJECT_ZNOTIFICATION *>(pnotifications->ppnotification[i]->pnotification_data);
-			if (NULL != pobject_notification->pentryid) {
+			auto pobject_notification = static_cast<OBJECT_ZNOTIFICATION *>(nt.pnotification_data);
+			if (pobject_notification->pentryid.has_value()) {
 				add_assoc_stringl(&pzvalnotif, "entryid",
-					pobject_notification->pentryid->pc,
-					pobject_notification->pentryid->cb);
+					pobject_notification->pentryid->data(),
+					pobject_notification->pentryid->size());
 			}
 			add_assoc_long(&pzvalnotif, "objtype",
 				static_cast<uint32_t>(pobject_notification->object_type));
-			if (NULL != pobject_notification->pparentid) {
+			if (pobject_notification->pparentid.has_value()) {
 				add_assoc_stringl(&pzvalnotif, "parentid",
-				pobject_notification->pparentid->pc,
-				pobject_notification->pparentid->cb);
+					pobject_notification->pparentid->data(),
+					pobject_notification->pparentid->size());
 			}
-			if (NULL != pobject_notification->pold_entryid) {
+			if (pobject_notification->pold_entryid.has_value()) {
 				add_assoc_stringl(&pzvalnotif, "oldid",
-				pobject_notification->pold_entryid->pc,
-				pobject_notification->pold_entryid->cb);
+					pobject_notification->pold_entryid->data(),
+					pobject_notification->pold_entryid->size());
 			}
-			if (NULL != pobject_notification->pold_parentid) {
+			if (pobject_notification->pold_parentid.has_value()) {
 				add_assoc_stringl(&pzvalnotif, "oldparentid",
-				pobject_notification->pold_parentid->pc,
-				pobject_notification->pold_parentid->cb);
+					pobject_notification->pold_parentid->data(),
+					pobject_notification->pold_parentid->size());
 			}
-			if (NULL != pobject_notification->pproptags) {
+			if (pobject_notification->pproptags.has_value()) {
 				auto err = proptag_array_to_php(*pobject_notification->pproptags, &pzvalprops);
 				if (err != ecSuccess)
 					return err;
