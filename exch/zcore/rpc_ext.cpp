@@ -181,12 +181,11 @@ static pack_result rpc_ext_pull_state_array(
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_propval(EXT_PUSH *pext,
-	uint16_t type, const void *pval)
+static pack_result rpc_ext_push_propval(EXT_PUSH &x, uint16_t type, const void *pval)
 {
 #define CASE(mt, ct, fu) \
 	case (mt): \
-		QRF(pext->fu(*static_cast<const ct *>(pval))); \
+		QRF(x.fu(*static_cast<const ct *>(pval))); \
 		return pack_result::ok;
 
 	/* convert multi-value instance into single value */
@@ -204,10 +203,10 @@ static pack_result rpc_ext_push_propval(EXT_PUSH *pext,
 	case PT_SYSTIME:
 	CASE(PT_I8, uint64_t, p_uint64);
 	case PT_STRING8:
-		QRF(pext->p_str(static_cast<const char *>(pval)));
+		QRF(x.p_str(static_cast<const char *>(pval)));
 		return pack_result::ok;
 	case PT_UNICODE:
-		QRF(pext->p_wstr(static_cast<const char *>(pval)));
+		QRF(x.p_wstr(static_cast<const char *>(pval)));
 		return pack_result::ok;
 	CASE(PT_CLSID, GUID, p_guid);
 	CASE(PT_SRESTRICTION, RESTRICTION, p_restriction);
@@ -231,154 +230,143 @@ static pack_result rpc_ext_push_propval(EXT_PUSH *pext,
 #undef CASE
 }
 
-static pack_result rpc_ext_push_tagged_propval(
-	EXT_PUSH *pext, const TAGGED_PROPVAL *r)
+static pack_result rpc_ext_push_tagged_propval(EXT_PUSH &x, const TAGGED_PROPVAL &r)
 {
-	QRF(pext->p_uint32(r->proptag));
-	return rpc_ext_push_propval(pext, PROP_TYPE(r->proptag), r->pvalue);
+	QRF(x.p_uint32(r.proptag));
+	return rpc_ext_push_propval(x, PROP_TYPE(r.proptag), r.pvalue);
 }
 
-static pack_result rpc_ext_push_tpropval_array(
-	EXT_PUSH *pext, const TPROPVAL_ARRAY *r)
+static pack_result rpc_ext_push_tpropval_array(EXT_PUSH &x, const TPROPVAL_ARRAY &r)
 {
-	QRF(pext->p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i) {
-		auto ret = rpc_ext_push_tagged_propval(pext, &r->ppropval[i]);
+	QRF(x.p_uint16(r.count));
+	for (size_t i = 0; i < r.count; ++i) {
+		auto ret = rpc_ext_push_tagged_propval(x, r.ppropval[i]);
 		if (ret != pack_result::ok)
 			return ret;
 	}
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_tarray_set(
-	EXT_PUSH *pext, const TARRAY_SET *r)
+static pack_result rpc_ext_push_tarray_set(EXT_PUSH &x, const TARRAY_SET &r)
 {
-	QRF(pext->p_uint32(r->count));
-	for (size_t i = 0; i < r->count; ++i) {
-		auto ret = rpc_ext_push_tpropval_array(pext, r->pparray[i]);
+	QRF(x.p_uint32(r.count));
+	for (size_t i = 0; i < r.count; ++i) {
+		auto ret = rpc_ext_push_tpropval_array(x, *r.pparray[i]);
 		if (ret != pack_result::ok)
 			return ret;
 	}
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_permission_row(
-	EXT_PUSH *pext, const PERMISSION_ROW *r)
+static pack_result rpc_ext_push_permission_row(EXT_PUSH &x, const PERMISSION_ROW &r)
 {
-	QRF(pext->p_uint32(r->flags));
-	QRF(pext->p_uint32(r->member_id));
-	QRF(pext->p_uint32(r->member_rights));
-	QRF(pext->p_bin(r->entryid));
+	QRF(x.p_uint32(r.flags));
+	QRF(x.p_uint32(r.member_id));
+	QRF(x.p_uint32(r.member_rights));
+	QRF(x.p_bin(r.entryid));
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_permission_set(
-	EXT_PUSH *pext, const PERMISSION_SET *r)
+static pack_result rpc_ext_push_permission_set(EXT_PUSH &x, const PERMISSION_SET &r)
 {
-	QRF(pext->p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i) {
-		auto ret = rpc_ext_push_permission_row(pext, &r->prows[i]);
+	QRF(x.p_uint16(r.count));
+	for (size_t i = 0; i < r.count; ++i) {
+		auto ret = rpc_ext_push_permission_row(x, r.prows[i]);
 		if (ret != pack_result::ok)
 			return ret;
 	}
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_message_state(
-	EXT_PUSH *pext, const MESSAGE_STATE *r)
+static pack_result rpc_ext_push_message_state(EXT_PUSH &x, const MESSAGE_STATE &r)
 {
-	QRF(pext->p_bin(r->source_key));
-	QRF(pext->p_uint32(r->message_flags));
+	QRF(x.p_bin(r.source_key));
+	QRF(x.p_uint32(r.message_flags));
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_state_array(
-	EXT_PUSH *pext, const STATE_ARRAY *r)
+static pack_result rpc_ext_push_state_array(EXT_PUSH &x, const STATE_ARRAY &r)
 {
-	QRF(pext->p_uint32(r->count));
-	for (size_t i = 0; i < r->count; ++i) {
-		auto ret = rpc_ext_push_message_state(pext, &r->pstate[i]);
+	QRF(x.p_uint32(r.count));
+	for (size_t i = 0; i < r.count; ++i) {
+		auto ret = rpc_ext_push_message_state(x, r.pstate[i]);
 		if (ret != pack_result::ok)
 			return ret;
 	}
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_newmail_znotification(
-	EXT_PUSH *pext, const NEWMAIL_ZNOTIFICATION *r)
+static pack_result rpc_ext_push_newmail_znotification(EXT_PUSH &x, const NEWMAIL_ZNOTIFICATION &r)
 {
-	QRF(pext->p_bin(r->entryid));
-	QRF(pext->p_bin(r->parentid));
-	QRF(pext->p_uint32(r->flags));
-	QRF(pext->p_str(r->message_class));
-	QRF(pext->p_uint32(r->message_flags));
+	QRF(x.p_bin(r.entryid));
+	QRF(x.p_bin(r.parentid));
+	QRF(x.p_uint32(r.flags));
+	QRF(x.p_str(r.message_class));
+	QRF(x.p_uint32(r.message_flags));
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_object_znotification(
-	EXT_PUSH *pext, const OBJECT_ZNOTIFICATION *r)
+static pack_result rpc_ext_push_object_znotification(EXT_PUSH &x, const OBJECT_ZNOTIFICATION &r)
 {	
-	QRF(pext->p_uint32(static_cast<uint32_t>(r->object_type)));
-	if (NULL == r->pentryid) {
-		QRF(pext->p_uint8(0));
+	QRF(x.p_uint32(static_cast<uint32_t>(r.object_type)));
+	if (r.pentryid == nullptr) {
+		QRF(x.p_uint8(0));
 	} else {
-		QRF(pext->p_uint8(1));
-		QRF(pext->p_bin(*r->pentryid));
+		QRF(x.p_uint8(1));
+		QRF(x.p_bin(*r.pentryid));
 	}
-	if (NULL == r->pparentid) {
-		QRF(pext->p_uint8(0));
+	if (r.pparentid == nullptr) {
+		QRF(x.p_uint8(0));
 	} else {
-		QRF(pext->p_uint8(1));
-		QRF(pext->p_bin(*r->pparentid));
+		QRF(x.p_uint8(1));
+		QRF(x.p_bin(*r.pparentid));
 	}
-	if (NULL == r->pold_entryid) {
-		QRF(pext->p_uint8(0));
+	if (r.pold_entryid == nullptr) {
+		QRF(x.p_uint8(0));
 	} else {
-		QRF(pext->p_uint8(1));
-		QRF(pext->p_bin(*r->pold_entryid));
+		QRF(x.p_uint8(1));
+		QRF(x.p_bin(*r.pold_entryid));
 	}
-	if (NULL == r->pold_parentid) {
-		QRF(pext->p_uint8(0));
+	if (r.pold_parentid == nullptr) {
+		QRF(x.p_uint8(0));
 	} else {
-		QRF(pext->p_uint8(1));
-		QRF(pext->p_bin(*r->pold_parentid));
+		QRF(x.p_uint8(1));
+		QRF(x.p_bin(*r.pold_parentid));
 	}
-	if (NULL == r->pproptags) {
-		QRF(pext->p_uint8(0));
+	if (r.pproptags == nullptr) {
+		QRF(x.p_uint8(0));
 	} else {
-		QRF(pext->p_uint8(1));
-		QRF(pext->p_proptag_a(*r->pproptags));
+		QRF(x.p_uint8(1));
+		QRF(x.p_proptag_a(*r.pproptags));
 	}
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_znotification(
-	EXT_PUSH *pext, const ZNOTIFICATION *r)
+static pack_result rpc_ext_push_znotification(EXT_PUSH &x, const ZNOTIFICATION &r)
 {
-	QRF(pext->p_uint32(r->event_type));
-	switch (r->event_type) {
+	QRF(x.p_uint32(r.event_type));
+	switch (r.event_type) {
 	case NF_NEW_MAIL:
-		return rpc_ext_push_newmail_znotification(pext,
-		       static_cast<NEWMAIL_ZNOTIFICATION *>(r->pnotification_data));
+		return rpc_ext_push_newmail_znotification(x,
+		       *static_cast<const NEWMAIL_ZNOTIFICATION *>(r.pnotification_data));
 	case NF_OBJECT_CREATED:
 	case NF_OBJECT_DELETED:
 	case NF_OBJECT_MODIFIED:
 	case NF_OBJECT_MOVED:
 	case NF_OBJECT_COPIED:
 	case NF_SEARCH_COMPLETE:
-		return rpc_ext_push_object_znotification(pext,
-		       static_cast<OBJECT_ZNOTIFICATION *>(r->pnotification_data));
+		return rpc_ext_push_object_znotification(x,
+		       *static_cast<const OBJECT_ZNOTIFICATION *>(r.pnotification_data));
 	default:
 		return pack_result::ok;
 	}
 }
 
-static pack_result rpc_ext_push_znotification_array(
-	EXT_PUSH *pext, const ZNOTIFICATION_ARRAY *r)
+static pack_result rpc_ext_push_znotification_array(EXT_PUSH &x, const ZNOTIFICATION_ARRAY &r)
 {
-	QRF(pext->p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i) {
-		auto ret = rpc_ext_push_znotification(pext, r->ppnotification[i]);
+	QRF(x.p_uint16(r.count));
+	for (size_t i = 0; i < r.count; ++i) {
+		auto ret = rpc_ext_push_znotification(x, *r.ppnotification[i]);
 		if (ret != pack_result::ok)
 			return ret;
 	}
@@ -515,7 +503,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_getpermissions &d)
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_getpermissions &d)
 {
-	return rpc_ext_push_permission_set(&x, &d.perm_set);
+	return rpc_ext_push_permission_set(x, d.perm_set);
 }
 
 static pack_result zrpc_pull(EXT_PULL &x, zcreq_modifypermissions &d)
@@ -850,7 +838,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_notifdequeue &d)
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_notifdequeue &d)
 {
-	return rpc_ext_push_znotification_array(&x, &d.notifications);
+	return rpc_ext_push_znotification_array(x, d.notifications);
 }
 
 static pack_result zrpc_pull(EXT_PULL &x, zcreq_queryrows &d)
@@ -884,7 +872,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_queryrows &d)
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_queryrows &d)
 {
-	return rpc_ext_push_tarray_set(&x, &d.rowset);
+	return rpc_ext_push_tarray_set(x, d.rowset);
 }
 
 static pack_result zrpc_pull(EXT_PULL &x, zcreq_setcolumns &d)
@@ -1301,7 +1289,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_syncreadstatechanges &d)
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_syncreadstatechanges &d)
 {
-	return rpc_ext_push_state_array(&x, &d.states);
+	return rpc_ext_push_state_array(x, d.states);
 }
 
 static pack_result zrpc_pull(EXT_PULL &x, zcreq_syncdeletions &d)
