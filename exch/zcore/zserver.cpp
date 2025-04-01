@@ -292,8 +292,6 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	TPROPVAL_ARRAY propvals;
 	DOUBLE_LIST_NODE *pnode;
 	ZNOTIFICATION *pnotification;
-	NEWMAIL_ZNOTIFICATION *pnew_mail;
-	OBJECT_ZNOTIFICATION *pobj_notify;
 	
 	if (b_table)
 		return;
@@ -319,7 +317,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	switch (pdb_notify->type) {
 	case db_notify_type::new_mail: {
 		pnotification->event_type = NF_NEW_MAIL;
-		pnew_mail = cu_alloc<NEWMAIL_ZNOTIFICATION>();
+		auto pnew_mail = cu_alloc<NEWMAIL_ZNOTIFICATION>();
 		if (pnew_mail == nullptr)
 			return;
 		pnotification->pnotification_data = pnew_mail;
@@ -351,7 +349,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::folder_created: {
 		pnotification->event_type = NF_OBJECT_CREATED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
+		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
 		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
@@ -372,7 +370,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::message_created: {
 		pnotification->event_type = NF_OBJECT_CREATED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
+		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
 		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
@@ -391,7 +389,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::folder_deleted: {
 		pnotification->event_type = NF_OBJECT_DELETED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
+		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
 		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
@@ -412,7 +410,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::message_deleted: {
 		pnotification->event_type = NF_OBJECT_DELETED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
+		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
 		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
@@ -433,7 +431,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::folder_modified: {
 		pnotification->event_type = NF_OBJECT_MODIFIED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
+		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
 		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
@@ -449,7 +447,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::message_modified: {
 		pnotification->event_type = NF_OBJECT_MODIFIED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
+		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
 		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
@@ -472,7 +470,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::folder_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::folder_moved ?
 		                            NF_OBJECT_MOVED : NF_OBJECT_COPIED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
+		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
 		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
@@ -505,7 +503,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::message_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::message_moved ?
 		                            NF_OBJECT_MOVED : NF_OBJECT_COPIED;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
+		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
 		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
@@ -536,7 +534,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::search_completed: {
 		pnotification->event_type = NF_SEARCH_COMPLETE;
-		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
+		auto pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
 		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
