@@ -199,6 +199,33 @@ BINARY *cu_username_to_oneoff(const char *username, const char *dispname)
 	return bin;
 }
 
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_username_to_oneoff_s(const char *username, const char *dispname) try
+{
+	ONEOFF_ENTRYID e{};
+
+	e.ctrl_flags    = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
+	e.pdisplay_name = dispname != nullptr && *dispname != '\0' ?
+	                  deconst(dispname) : deconst(username);
+	e.paddress_type = deconst("SMTP");
+	e.pmail_address = deconst(username);
+
+	std::string out;
+	out.resize(1280);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), out.size(), EXT_FLAG_UTF16) ||
+	    ep.p_oneoff_eid(e) != pack_result::success)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2254: ENOMEM");
+	return {};
+}
+
 BINARY* common_util_username_to_addressbook_entryid(const char *username)
 {
 	std::string eidbuf;
@@ -244,6 +271,10 @@ BINARY *cu_fid_to_entryid(const logon_object &logon, uint64_t folder_id)
 	return pbin;
 }
 
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
 std::string cu_fid_to_entryid_s(const logon_object &logon, uint64_t folder_id) try
 {
 	FOLDER_ENTRYID eid{};
@@ -289,6 +320,31 @@ BINARY *cu_fid_to_sk(const logon_object &logon, uint64_t folder_id)
 	return pbin;
 }
 
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_fid_to_sk_s(const logon_object &logon, uint64_t folder_id) try
+{
+	LONG_TERM_ID longid;
+	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
+	    longid.guid) != ecSuccess)
+		return {};
+	longid.global_counter = rop_util_get_gc_array(folder_id);
+
+	std::string out;
+	out.resize(22);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), out.size(), 0) ||
+	    ep.p_guid(longid.guid) != pack_result::ok ||
+	    ep.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
+		return {};
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2248: ENOMEM");
+	return {};
+}
+
 BINARY *cu_mid_to_entryid(const logon_object &logon,
 	uint64_t folder_id, uint64_t message_id)
 {
@@ -322,6 +378,37 @@ BINARY *cu_mid_to_entryid(const logon_object &logon,
 	return pbin;
 }
 
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_mid_to_entryid_s(const logon_object &logon, uint64_t folder_id,
+    uint64_t msg_id) try
+{
+	MESSAGE_ENTRYID eid{};
+	eid.provider_uid = logon.mailbox_guid;
+	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
+	    eid.folder_database_guid) != ecSuccess)
+		return {};
+	if (replid_to_replguid(logon, rop_util_get_replid(msg_id),
+	    eid.message_database_guid) != ecSuccess)
+		return {};
+	eid.message_type = logon.is_private() ? EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;
+	eid.folder_global_counter  = rop_util_get_gc_array(folder_id);
+	eid.message_global_counter = rop_util_get_gc_array(msg_id);
+
+	std::string out;
+	out.resize(70); /* MS-OXCDATA v19 §2.2.4.2 */
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), 70, 0) || ep.p_msg_eid(eid) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2252: ENOMEM");
+	return {};
+}
+
 BINARY *cu_mid_to_sk(const logon_object &logon, uint64_t message_id)
 {
 	EXT_PUSH ext_push;
@@ -341,6 +428,29 @@ BINARY *cu_mid_to_sk(const logon_object &logon, uint64_t message_id)
 	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
 		return NULL;
 	return pbin;
+}
+
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_mid_to_sk_s(const logon_object &logon, uint64_t message_id) try
+{
+	LONG_TERM_ID longid;
+	longid.guid = logon.guid();
+	longid.global_counter = rop_util_get_gc_array(message_id);
+
+	std::string out;
+	out.resize(22);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), 22, 0) ||
+	    ep.p_guid(longid.guid) != pack_result::ok ||
+	    ep.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
+		return {};
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2253: ENOMEM");
+	return {};
 }
 
 BOOL cu_entryid_to_fid(const logon_object &logon, const BINARY *pbin,
@@ -406,6 +516,25 @@ BINARY *cu_xid_to_bin(const XID &xid)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
+}
+
+/**
+ * If the returned std::string has length 0, this signals an error.
+ * Callers ought to check the return value.
+ */
+std::string cu_xid_to_bin_s(const XID &xid) try
+{
+	std::string out;
+	out.resize(24);
+	EXT_PUSH ep;
+	if (!ep.init(out.data(), out.size(), 0) ||
+	    ep.p_xid(xid) != pack_result::ok)
+		return {};
+	out.resize(ep.m_offset);
+	return out;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2255: ENOMEM");
+	return {};
 }
 
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)

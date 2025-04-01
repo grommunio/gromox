@@ -42,15 +42,20 @@ extern ssize_t common_util_convert_string(bool to_utf8, const char *src, char *d
 void common_util_obfuscate_data(uint8_t *data, uint32_t size);
 BOOL common_util_essdn_to_public(const char *pessdn, char *domainname);
 extern BINARY *cu_username_to_oneoff(const char *username, const char *dispname);
+extern std::string cu_username_to_oneoff_s(const char *username, const char *dispname);
 BINARY* common_util_username_to_addressbook_entryid(const char *username);
 extern BINARY *cu_fid_to_entryid(const logon_object &, uint64_t folder_id);
 extern std::string cu_fid_to_entryid_s(const logon_object &, uint64_t folder_id);
 extern BINARY *cu_fid_to_sk(const logon_object &, uint64_t folder_id);
+extern std::string cu_fid_to_sk_s(const logon_object &, uint64_t folder_id);
 extern BINARY *cu_mid_to_entryid(const logon_object &, uint64_t folder_id, uint64_t msg_id);
+extern std::string cu_mid_to_entryid_s(const logon_object &, uint64_t folder_id, uint64_t msg_id);
 extern BOOL cu_entryid_to_fid(const logon_object &, const BINARY *, uint64_t *folder_id);
 extern BOOL cu_entryid_to_mid(const logon_object &, const BINARY *, uint64_t *folder_id, uint64_t *msg_id);
 extern BINARY *cu_mid_to_sk(const logon_object &, uint64_t msg_id);
+extern std::string cu_mid_to_sk_s(const logon_object &, uint64_t msg_id);
 extern BINARY *cu_xid_to_bin(const XID &);
+extern std::string cu_xid_to_bin_s(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_guid_to_binary(GUID guid);
 BOOL common_util_pcl_compare(const BINARY *pbin_pcl1,
