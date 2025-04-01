@@ -45,6 +45,7 @@ struct agent_thread {
 	pthread_t thr_id{};
 	int sockd = -1;
 	gromox::atomic_bool startup_wait{false};
+	std::mutex startup_mutex;
 	std::condition_variable startup_cv;
 };
 

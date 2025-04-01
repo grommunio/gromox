@@ -3085,20 +3085,22 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 			if (NULL != prtf) {
 				ssize_t unc_size = rtfcp_uncompressed_size(prtf);
 				pbuff = nullptr;
-				if (unc_size >= 0) {
-					pbuff = me_alloc<char>(unc_size);
-					if (pbuff == nullptr)
-						return false;
-				}
+				if (unc_size < 0)
+					return false;
+				
+				pbuff = me_alloc<char>(unc_size);
+				if (pbuff == nullptr)
+					return false;
+				
 				size_t rtf_len = unc_size;
-				if (unc_size >= 0 && rtfcp_uncompress(prtf, pbuff, &rtf_len)) {
+				if (rtfcp_uncompress(prtf, pbuff, &rtf_len)) {
 					pskeleton->pattachments = attachment_list_init();
 					if (NULL == pskeleton->pattachments) {
 						free(pbuff);
 						return FALSE;
 					}
 					if (rtf_to_html(pbuff, rtf_len, pcharset, pskeleton->rtf,
-					    pskeleton->pattachments)) {
+							pskeleton->pattachments)) {
 						pskeleton->rtf_bin.pv = pskeleton->rtf.data();
 						free(pbuff);
 						pskeleton->rtf_bin.cb = pskeleton->rtf.size();
@@ -3952,6 +3954,9 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		if (!imail.serialize(&tmp_stream))
 			return FALSE;
 		imail.clear();
+		if (static_cast<size_t>(mail_len) > SIZE_MAX - 128) {
+			return FALSE; //prevent integer overflow
+		}
 		std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(mail_len + 128));
 		if (pbuff == nullptr)
 			return FALSE;
@@ -4234,7 +4239,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		BINARY *pbin = nullptr;
 		if (pmime == nullptr || !pmime->set_content_type("application/ms-tnef"))
 			return exp_false;
-		pbin = tnef_serialize(pmsg, log_id, alloc, get_propname);
+		pbin = tnef_serialize(pmsg, log_id, alloc, std::move(get_propname));
 		if (pbin == nullptr)
 			return exp_false;
 		if (!pmime->write_content(pbin->pc, pbin->cb, mime_encoding::base64)) {

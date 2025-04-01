@@ -100,11 +100,10 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 {
 	size_t i;
 	char *pnext;
-	BOOL b_quoted;
+	BOOL b_quoted = false;
 	BOOL b_searched = false;
 	
-	b_quoted = FALSE;
-	for (i=0; i<max_length; i++) {
+	for (i = 0; i < max_length; i++) {
 		if ('\r' == pbuff[i]) {
 			pbuff[i] = '\0';
 			if (!b_searched) {
@@ -112,12 +111,12 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 				b_quoted = strcasestr(pbuff, "QUOTED-PRINTABLE") != nullptr ? TRUE : false;
 			}
 			if (b_quoted) {
-				if ('=' == pbuff[i - 1]) {
+				if (i > 0 && pbuff[i - 1] == '=') { //Added check i > 0 to prevent underflow
 					memmove(pbuff + i - 1, pbuff + i, max_length - i);
-					pbuff[max_length-1] = '\0';
-					max_length --;
-					i --;
-				} else if (pbuff[i+1] == '\n') {
+					pbuff[max_length - 1] = '\0';
+					max_length--;
+					i--;
+				} else if (i + 1 < max_length && pbuff[i + 1] == '\n') {//Added check < max_length
 					return i + 2 < max_length ? pbuff + i + 2 : nullptr;
 				} else {
 					return i + 1 < max_length ? pbuff + i + 1 : nullptr;
@@ -128,7 +127,7 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 				if (b_quoted) {
 					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
 					size_t bytes = pbuff + max_length - pnext;
-					pbuff[i+bytes] = '\0';
+					pbuff[i + bytes] = '\0';
 					max_length -= pnext - (pbuff + i);
 					continue;
 				}
@@ -140,7 +139,7 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 					}
 					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
 					size_t bytes = pbuff + max_length - pnext;
-					pbuff[i+bytes] = '\0';
+					pbuff[i + bytes] = '\0';
 					max_length -= pnext - (pbuff + i);
 					continue;
 				}
@@ -149,19 +148,19 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 				if (b_quoted) {
 					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
 					size_t bytes = pbuff + max_length - pnext;
-					pbuff[i+bytes] = '\0';
+					pbuff[i + bytes] = '\0';
 					max_length -= pnext - (pbuff + i);
 					continue;
 				}
 				if (' ' == *pnext || '\t' == *pnext) {
-					for (; pnext<pbuff+max_length; pnext++) {
+					for (; pnext < pbuff + max_length; pnext++) {
 						if (*pnext == ' ' || *pnext == '\t')
 							continue;
 						break;
 					}
 					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
 					size_t bytes = pbuff + max_length - pnext;
-					pbuff[i+bytes] = '\0';
+					pbuff[i + bytes] = '\0';
 					max_length -= pnext - (pbuff + i);
 					continue;
 				}
@@ -174,11 +173,11 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 				b_quoted = strcasestr(pbuff, "QUOTED-PRINTABLE") != nullptr ? TRUE : false;
 			}
 			if (b_quoted) {
-				if ('=' == pbuff[i - 1]) {
+				if (i > 0 && pbuff[i - 1] == '=') { //Added check i > 0 to prevent underflow
 					memmove(pbuff + i - 1, pbuff + i, max_length - i);
-					pbuff[max_length-1] = '\0';
-					max_length --;
-					i --;
+					pbuff[max_length - 1] = '\0';
+					max_length--;
+					i--;
 				} else if (i + 1 < max_length) {
 					return pbuff + i + 1;
 				}
@@ -199,7 +198,7 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 				}
 				memmove(pbuff + i, pnext, pbuff + max_length - pnext);
 				size_t bytes = pbuff + max_length - pnext;
-				pbuff[i+bytes] = '\0';
+				pbuff[i + bytes] = '\0';
 				max_length -= pnext - (pbuff + i);
 				continue;
 			}

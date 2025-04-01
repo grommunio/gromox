@@ -1530,7 +1530,7 @@ static int icp_selex(int argc, char **argv, imap_context &ctx, bool readonly) tr
 	ret = pcontext->contents.refresh(*pcontext, sys_name, true);
 	if (ret != 0)
 		return ret;
-	pcontext->selected_folder = sys_name;
+	pcontext->selected_folder = std::move(sys_name);
 	pcontext->proto_stat = iproto_stat::select;
 	pcontext->b_readonly = readonly;
 	imap_parser_add_select(pcontext);
@@ -2138,7 +2138,7 @@ static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
 	                time(nullptr), imap_parser_get_sequence_ID(),
 	                znul(g_config_file->get_value("host_id")));
 	ctx.append_stream.clear();
-	ctx.append_folder = sys_name;
+	ctx.append_folder = std::move(sys_name);
 	ctx.append_flags  = flagbits_to_s(
 	                    strcasestr(str_flags, "\\Seen") != nullptr,
 	                    strcasestr(str_flags, "\\Answered") != nullptr,

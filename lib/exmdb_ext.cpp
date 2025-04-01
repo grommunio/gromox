@@ -4387,20 +4387,30 @@ BOOL exmdb_client_write_socket(int fd, const BINARY &bin, long timeout_ms)
 		errno = EBADF;
 		return false;
 	}
+	if (bin.pb == nullptr || bin.cb == 0)
+		return false;
+	
 	uint32_t offset = 0;
 	struct pollfd pfd;
-
 	pfd.fd = fd;
 	pfd.events = POLLOUT | POLLWRBAND;
 
-	while (true) {
+	while (offset < bin.cb) {
 		if (timeout_ms >= 0 && poll(&pfd, 1, timeout_ms) != 1)
 			return false;
-		ssize_t written_len = write(fd, bin.pb + offset, bin.cb - offset);
+
+		size_t remaining = bin.cb - offset;
+		//ensure we dont pass too large chunk to write (ssize_t max)
+		if (remaining > SSIZE_MAX)
+			remaining = SSIZE_MAX;
+		ssize_t written_len = write(fd, bin.pb + offset, remaining);
 		if (written_len <= 0)
 			return false;
-		offset += written_len;
-		if (offset == bin.cb)
-			return TRUE;
+
+		if (offset > UINT32_MAX - written_len) //prevent overflow
+			return false;
+
+		offset += static_cast<uint32_t>(written_len);
 	}
+	return TRUE;
 }

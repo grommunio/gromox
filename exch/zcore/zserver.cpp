@@ -650,29 +650,36 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 	if (pdomain == nullptr)
 		return ecUnknownUser;
 	pdomain ++;
+	
 	gx_strlcpy(tmp_name, username, std::size(tmp_name));
 	HX_strlower(tmp_name);
-	std::unique_lock tl_hold(g_table_lock);
+	
 	unsigned int user_id = 0, domain_id = 0, org_id = 0;
-	auto iter = g_user_table.find(tmp_name);
-	if (iter != g_user_table.end()) {
-		user_id = iter->second;
-		auto st_iter = g_session_table.find(user_id);
-		if (st_iter != g_session_table.end()) {
-			auto pinfo = &st_iter->second;
-			pinfo->last_time = time(nullptr);
-			*phsession = pinfo->hsession;
-			return ecSuccess;
+	{
+		//wrap lock to prevent its reuse. 
+		//such wrapping best way to prevent double-unlock problem
+		std::unique_lock tl_hold(g_table_lock);
+		auto iter = g_user_table.find(tmp_name);
+		if (iter != g_user_table.end()) {
+			user_id = iter->second;
+			auto st_iter = g_session_table.find(user_id);
+			if (st_iter != g_session_table.end()) {
+				auto pinfo = &st_iter->second;
+				pinfo->last_time = time(nullptr);
+				*phsession = pinfo->hsession;
+				return ecSuccess;
+			}
+			g_user_table.erase(iter);
 		}
-		g_user_table.erase(iter);
 	}
-	tl_hold.unlock();
+	
 	if (!mysql_adaptor_get_user_ids(username, &user_id, nullptr, nullptr) ||
-	    !mysql_adaptor_get_homedir(pdomain, homedir, std::size(homedir)) ||
-	    !mysql_adaptor_get_domain_ids(pdomain, &domain_id, &org_id))
+		!mysql_adaptor_get_homedir(pdomain, homedir, std::size(homedir)) ||
+		!mysql_adaptor_get_domain_ids(pdomain, &domain_id, &org_id))
 		return ecError;
+	
 	assert(!mres.maildir.empty());
-
+	
 	USER_INFO tmp_info;
 	tmp_info.hsession = GUID::random_new();
 	memcpy(tmp_info.hsession.node, &user_id, sizeof(int32_t));
@@ -696,7 +703,19 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 	tmp_info.ptree = object_tree_create(tmp_info.maildir.c_str());
 	if (tmp_info.ptree == nullptr)
 		return ecError;
-	tl_hold.lock();
+	
+	std::unique_lock tl_hold(g_table_lock);
+	//recheck user_id for race condition safety
+	auto iter = g_user_table.find(tmp_name);
+	if (iter != g_user_table.end()) {
+		user_id = iter->second;
+		auto st_iter = g_session_table.find(user_id);
+		if (st_iter != g_session_table.end()) {
+			*phsession = st_iter->second.hsession;
+			return ecSuccess;
+		}
+	}
+	
 	auto st_iter = g_session_table.find(user_id);
 	if (st_iter != g_session_table.end()) {
 		auto pinfo = &st_iter->second;

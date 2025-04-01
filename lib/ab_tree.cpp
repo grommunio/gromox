@@ -141,12 +141,13 @@ void ab::work()
 			wait_time = m_cache_interval;
 		else {
 			auto base = get(worker_queue.front());
+			auto current_interval = m_cache_interval; //Copy m_cache_interval under lock to silent cov-scan			
 			if (!base || base->age() >= m_cache_interval) {
 				drop(worker_queue.front());
 				worker_queue.pop_front();
 				continue;
 			}
-			wait_time = m_cache_interval-base->age();
+			wait_time = current_interval - base->age();
 		}
 		lock_guard.unlock();
 		worker_signal.wait_for(notify_guard, wait_time);
