@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <vector>
 #include <gromox/mapidefs.h>
+#include <gromox/zcore_types.hpp>
 
 enum class zcore_response : uint8_t {
 	success = 0x00,

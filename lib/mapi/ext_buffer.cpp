@@ -16,6 +16,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/util.hpp>
+#include <gromox/zcore_types.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define CLAMP16(v) ((v) = std::min((v), static_cast<uint16_t>(UINT16_MAX)))
 #define CLAMP32(v) ((v) = std::min((v), static_cast<uint32_t>(UINT32_MAX)))

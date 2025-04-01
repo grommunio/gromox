@@ -12,6 +12,7 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/util.hpp>
+#include <gromox/zcore_types.hpp>
 #include "ext.hpp"
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define GROWING_BLOCK_SIZE				0x1000

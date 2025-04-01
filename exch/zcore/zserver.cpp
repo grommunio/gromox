@@ -35,6 +35,7 @@
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zcore_rpc.hpp>
+#include <gromox/zcore_types.hpp>
 #include "ab_tree.hpp"
 #include "common_util.hpp"
 #include "exmdb_client.hpp"

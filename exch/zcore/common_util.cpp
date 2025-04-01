@@ -41,6 +41,7 @@
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
+#include <gromox/zcore_types.hpp>
 #include "bounce_producer.hpp"
 #include "common_util.hpp"
 #include "exmdb_client.hpp"

@@ -10,6 +10,7 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/zcore_types.hpp>
 #include "type_conversion.hpp"
 #include "ext.hpp"
 

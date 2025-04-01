@@ -13,6 +13,7 @@
 
 struct zcreq;
 struct zcresp;
+struct ZNOTIFICATION_ARRAY;
 extern zend_bool zclient_do_rpc(const zcreq *, zcresp *);
 extern ec_error_t zclient_setpropval(GUID ses, uint32_t obj, gromox::proptag_t, const void *);
 extern ec_error_t zclient_getpropval(GUID ses, uint32_t obj, gromox::proptag_t, void **);
