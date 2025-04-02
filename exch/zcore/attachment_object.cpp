@@ -186,8 +186,7 @@ static BOOL attachment_object_get_calculated_property(attachment_object *pattach
 		*ppvalue = common_util_guid_to_binary(pattachment->pparent->pstore->mailbox_guid);
 		return TRUE;
 	case PR_STORE_ENTRYID:
-		*ppvalue = common_util_to_store_entryid(
-					pattachment->pparent->pstore);
+		*ppvalue = cu_to_store_entryid(*pattachment->pparent->pstore);
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;

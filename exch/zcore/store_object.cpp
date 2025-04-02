@@ -788,7 +788,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		return TRUE;
 	case PR_ENTRYID:
 	case PR_STORE_ENTRYID:
-		*ppvalue = common_util_to_store_entryid(pstore);
+		*ppvalue = cu_to_store_entryid(*pstore);
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
@@ -805,13 +805,13 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		return TRUE;
 	}
 	case PR_ROOT_ENTRYID:
-		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1, pstore->b_private ?
+		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1, pstore->b_private ?
 		           PRIVATE_FID_ROOT : PUBLIC_FID_ROOT));
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_FINDER_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_FINDER));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -821,7 +821,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		 * Our PR_IPM_FAVORITES_ENTRYID for public stores is not
 		 * replicating the behavior exhibited by MSMAPI.
 		 */
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 		           rop_util_make_eid_ex(1, pstore->b_private ?
 		           PRIVATE_FID_SHORTCUTS : PUBLIC_FID_IPMSUBTREE));
 		if (*ppvalue == nullptr)
@@ -829,13 +829,13 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		return TRUE;
 	case PR_IPM_SUBTREE_ENTRYID:
 		/* else case:: different from native MAPI */
-		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1,
+		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
 		           pstore->b_private ? PRIVATE_FID_IPMSUBTREE : PUBLIC_FID_IPMSUBTREE));
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
 	case PR_IPM_INBOX_ENTRYID:
-		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1,
+		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
 		           pstore->b_private ? PRIVATE_FID_INBOX : PUBLIC_FID_IPMSUBTREE));
 		if (*ppvalue == nullptr)
 			return false;
@@ -843,7 +843,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_IPM_OUTBOX_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -851,7 +851,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_IPM_SENTMAIL_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -859,7 +859,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_IPM_WASTEBASKET_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -867,13 +867,13 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_IPM_DAF_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1,
+		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
 		           PRIVATE_FID_DEFERRED_ACTION));
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_SCHEDULE_FOLDER_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SCHEDULE));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -881,12 +881,12 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_VIEWS_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1, PRIVATE_FID_VIEWS));
+		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1, PRIVATE_FID_VIEWS));
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_COMMON_VIEWS_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -899,7 +899,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_NON_IPM_SUBTREE_ENTRYID:
 		if (pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PUBLIC_FID_NONIPMSUBTREE));
 		if (*ppvalue == nullptr)
 			return FALSE;
@@ -907,13 +907,13 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_EFORMS_REGISTRY_ENTRYID:
 		if (pstore->b_private)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pstore,
+		*ppvalue = cu_fid_to_entryid(*pstore,
 			rop_util_make_eid_ex(1, PUBLIC_FID_EFORMSREGISTRY));
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
 	case PidTagXSpoolerQueueEntryId:
-		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1,
+		*ppvalue = cu_fid_to_entryid(*pstore, rop_util_make_eid_ex(1,
 		           pstore->b_private ? PRIVATE_FID_SPOOLER_QUEUE : PUBLIC_FID_NONIPMSUBTREE));
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_EC_SERVER_VERSION:

@@ -326,11 +326,11 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		auto nt = static_cast<const DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
+		auto pbin = cu_mid_to_entryid(*pstore, folder_id, message_id);
 		if (pbin == nullptr)
 			return;
 		pnew_mail->entryid = *pbin;
-		pbin = cu_fid_to_entryid(pstore, folder_id);
+		pbin = cu_fid_to_entryid(*pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pnew_mail->parentid = *pbin;
@@ -360,11 +360,11 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
 		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(pstore, folder_id);
+		auto pbin = cu_fid_to_entryid(*pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, parent_id);
+		pbin = cu_fid_to_entryid(*pstore, parent_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
@@ -381,9 +381,9 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
 		pobj_notify->object_type = MAPI_MESSAGE;
-		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
+		auto pbin = cu_mid_to_entryid(*pstore, folder_id, message_id);
 		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, folder_id);
+		pbin = cu_fid_to_entryid(*pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
@@ -400,11 +400,11 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
 		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(pstore, folder_id);
+		auto pbin = cu_fid_to_entryid(*pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, parent_id);
+		pbin = cu_fid_to_entryid(*pstore, parent_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
@@ -421,11 +421,11 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
 		pobj_notify->object_type = MAPI_MESSAGE;
-		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
+		auto pbin = cu_mid_to_entryid(*pstore, folder_id, message_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, folder_id);
+		pbin = cu_fid_to_entryid(*pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
@@ -441,7 +441,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(pstore, folder_id);
+		auto pbin = cu_fid_to_entryid(*pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
@@ -458,11 +458,11 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
 		pobj_notify->object_type = MAPI_MESSAGE;
-		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
+		auto pbin = cu_mid_to_entryid(*pstore, folder_id, message_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, folder_id);
+		pbin = cu_fid_to_entryid(*pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
@@ -483,19 +483,19 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		old_eid = rop_util_nfid_to_eid(nt->old_folder_id);
 		old_parentid = rop_util_nfid_to_eid(nt->old_parent_id);
 		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(pstore, folder_id);
+		auto pbin = cu_fid_to_entryid(*pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, parent_id);
+		pbin = cu_fid_to_entryid(*pstore, parent_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
-		pbin = cu_fid_to_entryid(pstore, old_eid);
+		pbin = cu_fid_to_entryid(*pstore, old_eid);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pold_entryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, old_parentid);
+		pbin = cu_fid_to_entryid(*pstore, old_parentid);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pold_parentid = pbin;
@@ -516,19 +516,19 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
 		pobj_notify->object_type = MAPI_MESSAGE;
-		auto pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
+		auto pbin = cu_mid_to_entryid(*pstore, folder_id, message_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, folder_id);
+		pbin = cu_fid_to_entryid(*pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pparentid = pbin;
-		pbin = cu_mid_to_entryid(pstore, old_parentid, old_eid);
+		pbin = cu_mid_to_entryid(*pstore, old_parentid, old_eid);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pold_entryid = pbin;
-		pbin = cu_fid_to_entryid(pstore, old_parentid);
+		pbin = cu_fid_to_entryid(*pstore, old_parentid);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pold_parentid = pbin;
@@ -544,7 +544,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		auto nt = static_cast<const DB_NOTIFY_SEARCH_COMPLETED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		pobj_notify->object_type = MAPI_FOLDER;
-		auto pbin = cu_fid_to_entryid(pstore, folder_id);
+		auto pbin = cu_fid_to_entryid(*pstore, folder_id);
 		if (pbin == nullptr)
 			return;
 		pobj_notify->pentryid = pbin;
@@ -1015,7 +1015,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			return ecError;
 		if (b_del && !(flags & SHOW_SOFT_DELETES))
 			return ecNotFound;
-		auto ret = cu_calc_msg_access(pstore, pinfo->get_username(),
+		auto ret = cu_calc_msg_access(*pstore, pinfo->get_username(),
 		           folder_id, message_id, tag_access);
 		if (ret != ecSuccess)
 			return ret;
@@ -2455,9 +2455,9 @@ ec_error_t zs_entryidfromsourcekey(GUID hsession, uint32_t hstore,
 				return ecInvalidParam;
 			message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		}
-		pbin = cu_mid_to_entryid(pstore, folder_id, message_id);
+		pbin = cu_mid_to_entryid(*pstore, folder_id, message_id);
 	} else {
-		pbin = cu_fid_to_entryid(pstore, folder_id);
+		pbin = cu_fid_to_entryid(*pstore, folder_id);
 	}
 	if (pbin == nullptr)
 		return ecError;
@@ -3088,7 +3088,7 @@ ec_error_t zs_getreceivefolder(GUID hsession,
 	if (!exmdb_client->get_folder_by_class(pstore->get_dir(), pstrclass,
 	    &folder_id, &temp_class))
 		return ecError;
-	pbin = cu_fid_to_entryid(pstore, folder_id);
+	pbin = cu_fid_to_entryid(*pstore, folder_id);
 	if (pbin == nullptr)
 		return ecError;
 	*pentryid = *pbin;
@@ -4841,7 +4841,7 @@ ec_error_t zs_getsearchcriteria(GUID hsession,
 	if (pfolder_array->pbin == nullptr)
 		return ecError;
 	for (size_t i = 0; i < folder_ids.count; ++i) {
-		auto pbin = cu_fid_to_entryid(pstore, folder_ids.pll[i]);
+		auto pbin = cu_fid_to_entryid(*pstore, folder_ids.pll[i]);
 		if (pbin == nullptr)
 			return ecError;
 		pfolder_array->pbin[i] = *pbin;

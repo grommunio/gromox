@@ -364,7 +364,7 @@ static bool conttbl_srckey(const table_object *ptable, TARRAY_SET &temp_set)
 			if (r.proptag != PidTagMid)
 				continue;
 			auto tmp_eid = *static_cast<uint64_t *>(r.pvalue);
-			r.pvalue = cu_mid_to_sk(ptable->pstore, tmp_eid);
+			r.pvalue = cu_mid_to_sk(*ptable->pstore, tmp_eid);
 			if (r.pvalue == nullptr)
 				return FALSE;
 			r.proptag = PR_SOURCE_KEY;
@@ -388,7 +388,7 @@ static bool conttbl_access(const table_object *table,
 			auto acval = cu_alloc<uint32_t>();
 			if (acval == nullptr)
 				return false;
-			auto err = cu_calc_msg_access(table->pstore, username,
+			auto err = cu_calc_msg_access(*table->pstore, username,
 			           fid, mid, *acval);
 			if (err != ecSuccess)
 				return false;
@@ -408,7 +408,7 @@ static bool hiertbl_srckey(const table_object *ptable, TARRAY_SET &temp_set)
 			if (r.proptag != PidTagFolderId)
 				continue;
 			auto tmp_eid = *static_cast<uint64_t *>(r.pvalue);
-			r.pvalue = cu_fid_to_sk(ptable->pstore, tmp_eid);
+			r.pvalue = cu_fid_to_sk(*ptable->pstore, tmp_eid);
 			if (r.pvalue == nullptr)
 				return false;
 			r.proptag = PR_SOURCE_KEY;
@@ -527,7 +527,7 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 			return FALSE;
 	}
 	if (pcolumns->has(PR_STORE_ENTRYID)) {
-		auto pentryid = common_util_to_store_entryid(ptable->pstore);
+		auto pentryid = cu_to_store_entryid(*ptable->pstore);
 		if (pentryid == nullptr)
 			return FALSE;
 		for (size_t i = 0; i < temp_set.count; ++i) {

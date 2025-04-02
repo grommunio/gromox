@@ -711,13 +711,13 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 	case PR_ENTRYID:
 		if (pmessage->message_id == 0)
 			return FALSE;
-		*ppvalue = cu_mid_to_entryid(pmessage->pstore,
+		*ppvalue = cu_mid_to_entryid(*pmessage->pstore,
 						pmessage->folder_id, pmessage->message_id);
 		return TRUE;
 	case PR_SOURCE_KEY:
 		if (pmessage->pembedding != nullptr)
 			return false;
-		*ppvalue = cu_mid_to_sk(pmessage->pstore, pmessage->message_id);
+		*ppvalue = cu_mid_to_sk(*pmessage->pstore, pmessage->message_id);
 		return TRUE;
 	case PR_OBJECT_TYPE: {
 		auto v = cu_alloc<uint32_t>();
@@ -730,7 +730,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 	case PR_PARENT_ENTRYID:
 		if (pmessage->message_id == 0)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pmessage->pstore, pmessage->folder_id);
+		*ppvalue = cu_fid_to_entryid(*pmessage->pstore, pmessage->folder_id);
 		return TRUE;
 	case PidTagFolderId:
 	case PidTagParentFolderId:
@@ -739,7 +739,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 		*ppvalue = &pmessage->folder_id;
 		return TRUE;
 	case PR_PARENT_SOURCE_KEY:
-		*ppvalue = cu_fid_to_sk(pmessage->pstore, pmessage->folder_id);
+		*ppvalue = cu_fid_to_sk(*pmessage->pstore, pmessage->folder_id);
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
@@ -751,14 +751,14 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 	case PR_RECORD_KEY:
 		if (pmessage->message_id == 0)
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pmessage->pstore, pmessage->message_id);
+		*ppvalue = cu_fid_to_entryid(*pmessage->pstore, pmessage->message_id);
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
 	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pmessage->pstore->mailbox_guid);
 		return TRUE;
 	case PR_STORE_ENTRYID:
-		*ppvalue = common_util_to_store_entryid(pmessage->pstore);
+		*ppvalue = cu_to_store_entryid(*pmessage->pstore);
 		return *ppvalue != nullptr ? TRUE : false;
 	}
 	return FALSE;

@@ -864,17 +864,17 @@ static ec_error_t replid_to_replguid(const store_object &logon,
 	return ecSuccess;
 }
 
-BINARY *cu_fid_to_entryid(const store_object *pstore, uint64_t folder_id)
+BINARY *cu_fid_to_entryid(const store_object &store, uint64_t folder_id)
 {
 	EXT_PUSH ext_push;
 	FOLDER_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (replid_to_replguid(*pstore, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
 	    tmp_entryid.database_guid) != ecSuccess)
 		return nullptr;
-	if (pstore->b_private) {
-		tmp_entryid.provider_uid = pstore->mailbox_guid;
+	if (store.b_private) {
+		tmp_entryid.provider_uid = store.mailbox_guid;
 		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
@@ -894,14 +894,14 @@ BINARY *cu_fid_to_entryid(const store_object *pstore, uint64_t folder_id)
 	return pbin;
 }
 
-std::string cu_fid_to_entryid_s(const store_object *pstore, uint64_t folder_id) try
+std::string cu_fid_to_entryid_s(const store_object &store, uint64_t folder_id) try
 {
 	FOLDER_ENTRYID eid;
-	if (replid_to_replguid(*pstore, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
 	    eid.database_guid) != ecSuccess)
 		return {};
-	if (pstore->b_private) {
-		eid.provider_uid = pstore->mailbox_guid;
+	if (store.b_private) {
+		eid.provider_uid = store.mailbox_guid;
 		eid.folder_type  = EITLT_PRIVATE_FOLDER;
 	} else {
 		eid.provider_uid = pbLongTermNonPrivateGuid;
@@ -922,8 +922,7 @@ std::string cu_fid_to_entryid_s(const store_object *pstore, uint64_t folder_id) 
 	return {};
 }
 
-BINARY *cu_fid_to_sk(store_object *pstore,
-    uint64_t folder_id)
+BINARY *cu_fid_to_sk(const store_object &store, uint64_t folder_id)
 {
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
@@ -935,7 +934,7 @@ BINARY *cu_fid_to_sk(store_object *pstore,
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	if (replid_to_replguid(*pstore, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
 	    longid.guid) != ecSuccess)
 		return nullptr;
 	longid.global_counter = rop_util_get_gc_array(folder_id);
@@ -946,21 +945,21 @@ BINARY *cu_fid_to_sk(store_object *pstore,
 	return pbin;
 }
 
-BINARY *cu_mid_to_entryid(store_object *pstore,
+BINARY *cu_mid_to_entryid(const store_object &store,
 	uint64_t folder_id, uint64_t message_id)
 {
 	EXT_PUSH ext_push;
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (replid_to_replguid(*pstore, rop_util_get_replid(folder_id),
+	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
 	    tmp_entryid.folder_database_guid) != ecSuccess)
 		return nullptr;
-	if (replid_to_replguid(*pstore, rop_util_get_replid(message_id),
+	if (replid_to_replguid(store, rop_util_get_replid(message_id),
 	    tmp_entryid.message_database_guid) != ecSuccess)
 		return nullptr;
-	if (pstore->b_private) {
-		tmp_entryid.provider_uid = pstore->mailbox_guid;
+	if (store.b_private) {
+		tmp_entryid.provider_uid = store.mailbox_guid;
 		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
@@ -983,18 +982,18 @@ BINARY *cu_mid_to_entryid(store_object *pstore,
 	return pbin;
 }
 
-ec_error_t cu_calc_msg_access(store_object *pstore, const char *user,
+ec_error_t cu_calc_msg_access(const store_object &store, const char *user,
     uint64_t folder_id, uint64_t message_id, uint32_t &tag_access)
 {
 	BOOL b_owner = false;
 	uint32_t permission = 0;
 
 	tag_access = 0;
-	if (pstore->owner_mode()) {
+	if (store.owner_mode()) {
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
-	if (!exmdb_client->get_folder_perm(pstore->get_dir(),
+	if (!exmdb_client->get_folder_perm(store.get_dir(),
 	    folder_id, user, &permission))
 		return ecError;
 	if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
@@ -1003,7 +1002,7 @@ ec_error_t cu_calc_msg_access(store_object *pstore, const char *user,
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
-	if (!exmdb_client_check_message_owner(pstore->get_dir(),
+	if (!exmdb_client_check_message_owner(store.get_dir(),
 	    message_id, user, &b_owner))
 		return ecError;
 	if (b_owner || (permission & frightsReadAny))
@@ -1020,8 +1019,7 @@ ec_error_t cu_calc_msg_access(store_object *pstore, const char *user,
 	return ecSuccess;
 }
 
-BINARY *cu_mid_to_sk(store_object *pstore,
-    uint64_t message_id)
+BINARY *cu_mid_to_sk(const store_object &store, uint64_t message_id)
 {
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
@@ -1033,7 +1031,7 @@ BINARY *cu_mid_to_sk(store_object *pstore,
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	longid.guid = pstore->guid();
+	longid.guid = store.guid();
 	longid.global_counter = rop_util_get_gc_array(message_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
 	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
@@ -1458,17 +1456,17 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 	return TRUE;
 }
 
-BINARY *common_util_to_store_entryid(store_object *pstore)
+BINARY *cu_to_store_entryid(const store_object &store)
 {
 	EXT_PUSH ext_push;
 	std::string essdn;
 	STORE_ENTRYID store_entryid = {};
 	
-	store_entryid.pserver_name = deconst(pstore->get_account());
-	if (pstore->b_private) {
+	store_entryid.pserver_name = deconst(store.get_account());
+	if (store.b_private) {
 		store_entryid.wrapped_provider_uid = g_muidStorePrivate;
 		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
-		if (cvt_username_to_essdn(pstore->get_account(), g_org_name,
+		if (cvt_username_to_essdn(store.get_account(), g_org_name,
 		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn) != ecSuccess)
 			return NULL;	
@@ -1522,11 +1520,11 @@ static ZMOVECOPY_ACTION *cu_cvt_to_zmovecopy(store_object *pstore, const MOVECOP
 		dst->store_eid.cb = ext_push.m_offset;
 		dst->folder_eid = *static_cast<BINARY *>(src.pfolder_eid);
 	} else {
-		auto pbin = common_util_to_store_entryid(pstore);
+		auto pbin = cu_to_store_entryid(*pstore);
 		if (pbin == nullptr)
 			return NULL;
 		dst->store_eid = *pbin;
-		pbin = cu_fid_to_entryid(pstore, static_cast<SVREID *>(src.pfolder_eid)->folder_id);
+		pbin = cu_fid_to_entryid(*pstore, static_cast<SVREID *>(src.pfolder_eid)->folder_id);
 		if (pbin == nullptr)
 			return NULL;
 		dst->folder_eid = *pbin;
@@ -1539,7 +1537,7 @@ static ZREPLY_ACTION *cu_cvt_to_zreply(store_object *pstore, const REPLY_ACTION 
 	auto dst = cu_alloc<ZREPLY_ACTION>();
 	if (dst == nullptr)
 		return NULL;
-	if (cu_mid_to_entryid(pstore, src.template_folder_id,
+	if (cu_mid_to_entryid(*pstore, src.template_folder_id,
 	    src.template_message_id) == nullptr)
 		return NULL;	
 	dst->template_guid = src.template_guid;

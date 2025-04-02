@@ -202,18 +202,18 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	}
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore, pfolder->folder_id);
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore, pfolder->folder_id);
 		return TRUE;
 	case PR_PARENT_ENTRYID:
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 		    CP_ACP, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 		           *static_cast<uint64_t *>(pvalue));
 		return TRUE;
 	case PR_SOURCE_KEY:
-		*ppvalue = cu_fid_to_sk(pfolder->pstore, pfolder->folder_id);
+		*ppvalue = cu_fid_to_sk(*pfolder->pstore, pfolder->folder_id);
 		return TRUE;
 	case PR_PARENT_SOURCE_KEY:
 		if (pfolder->pstore->b_private) {
@@ -233,7 +233,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		    CP_ACP, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*ppvalue = cu_fid_to_sk(pfolder->pstore,
+		*ppvalue = cu_fid_to_sk(*pfolder->pstore,
 		           *static_cast<uint64_t *>(pvalue));
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
@@ -241,7 +241,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*ppvalue = common_util_guid_to_binary(pfolder->pstore->mailbox_guid);
 		return TRUE;
 	case PR_STORE_ENTRYID:
-		*ppvalue = common_util_to_store_entryid(pfolder->pstore);
+		*ppvalue = cu_to_store_entryid(*pfolder->pstore);
 		return *ppvalue != nullptr ? TRUE : false;
 	case PR_DELETED_FOLDER_COUNT:
 		/* just like Exchange 2013, always return 0 */
@@ -250,37 +250,37 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	case PR_IPM_DRAFTS_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;	
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		return TRUE;
 	case PR_IPM_CONTACT_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		return TRUE;
 	case PR_IPM_APPOINTMENT_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		return TRUE;
 	case PR_IPM_JOURNAL_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		return TRUE;
 	case PR_IPM_NOTE_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		return TRUE;
 	case PR_IPM_TASK_ENTRYID:
 		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
+		*ppvalue = cu_fid_to_entryid(*pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		return TRUE;
 	case PR_REM_ONLINE_ENTRYID:
@@ -317,27 +317,27 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			ba->count = 0;
 			return FALSE;
 		}
-		pbin = cu_fid_to_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(*pfolder->pstore,
 				rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
 		if (pbin == nullptr)
 			return FALSE;
 		ba->pbin[0] = *pbin;
-		pbin = cu_fid_to_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(*pfolder->pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
 		if (pbin == nullptr)
 			return FALSE;
 		ba->pbin[1] = *pbin;
-		pbin = cu_fid_to_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(*pfolder->pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
 		if (pbin == nullptr)
 			return FALSE;
 		ba->pbin[2] = *pbin;
-		pbin = cu_fid_to_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(*pfolder->pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
 		if (pbin == nullptr)
 			return FALSE;
 		ba->pbin[3] = *pbin;
-		pbin = cu_fid_to_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(*pfolder->pstore,
 				rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
 		if (pbin == nullptr)
 			return FALSE;
@@ -356,9 +356,9 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			return TRUE;
 		}
 		const PERSISTDATA pd[] = {
-			{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
-			{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST))},
-			{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS))},
+			{RSF_PID_CONV_ACTIONS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS))},
+			{RSF_PID_BUDDYLIST_PDLS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST))},
+			{RSF_PID_BUDDYLIST_CONTACTS, RSF_ELID_ENTRYID, cu_fid_to_entryid_s(*pfolder->pstore, rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS))},
 		};
 		if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
 		    ext_push.p_persistdata_a(pd) != pack_result::ok)
@@ -403,7 +403,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		ba->pbin[1].pb = NULL;
 		ba->pbin[2].cb = 0;
 		ba->pbin[2].pb = NULL;
-		pbin = cu_fid_to_entryid(pfolder->pstore,
+		pbin = cu_fid_to_entryid(*pfolder->pstore,
 				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
 		if (pbin == nullptr)
 			return FALSE;
