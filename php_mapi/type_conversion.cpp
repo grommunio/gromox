@@ -1263,24 +1263,24 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_LONG:
 		case PT_ERROR:
-			add_assoc_long(pzret, pts.c_str(), *static_cast<uint32_t *>(ppropval->pvalue));
+			add_assoc_long(pzret, pts.c_str(), *static_cast<const uint32_t *>(ppropval->pvalue));
 			break;
 		case PT_SHORT:
-			add_assoc_long(pzret, pts.c_str(), *static_cast<uint16_t *>(ppropval->pvalue));
+			add_assoc_long(pzret, pts.c_str(), *static_cast<const uint16_t *>(ppropval->pvalue));
 			break;
 		case PT_DOUBLE:
 		case PT_APPTIME:
-			add_assoc_double(pzret, pts.c_str(), *static_cast<double *>(ppropval->pvalue));
+			add_assoc_double(pzret, pts.c_str(), *static_cast<const double *>(ppropval->pvalue));
 			break;
 		case PT_CURRENCY:
 		case PT_I8:
-			add_assoc_double(pzret, pts.c_str(), *static_cast<uint64_t *>(ppropval->pvalue));
+			add_assoc_double(pzret, pts.c_str(), *static_cast<const uint64_t *>(ppropval->pvalue));
 			break;
 		case PT_FLOAT:
-			add_assoc_double(pzret, pts.c_str(), *static_cast<float *>(ppropval->pvalue));
+			add_assoc_double(pzret, pts.c_str(), *static_cast<const float *>(ppropval->pvalue));
 			break;
 		case PT_BOOLEAN:
-			add_assoc_bool(pzret, pts.c_str(), *static_cast<uint8_t *>(ppropval->pvalue));
+			add_assoc_bool(pzret, pts.c_str(), *static_cast<const uint8_t *>(ppropval->pvalue));
 			break;
 		case PT_STRING8:
 		case PT_UNICODE:
@@ -1288,12 +1288,12 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 			break;
 		case PT_BINARY:
 			add_assoc_stringl(pzret, pts.c_str(),
-				reinterpret_cast<const char *>(static_cast<BINARY *>(ppropval->pvalue)->pb),
-				static_cast<BINARY *>(ppropval->pvalue)->cb);
+				reinterpret_cast<const char *>(static_cast<const BINARY *>(ppropval->pvalue)->pb),
+				static_cast<const BINARY *>(ppropval->pvalue)->cb);
 			break;
 		case PT_SYSTIME:
 			add_assoc_long(pzret, pts.c_str(),
-				rop_util_nttime_to_unix(*static_cast<uint64_t *>(ppropval->pvalue)));
+				rop_util_nttime_to_unix(*static_cast<const uint64_t *>(ppropval->pvalue)));
 			break;
 		case PT_CLSID:
 			add_assoc_stringl(pzret, pts.c_str(),
@@ -1301,7 +1301,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 			break;
 		case PT_MV_SHORT: {
 			zarray_init(&pzmval);
-			auto xs = static_cast<SHORT_ARRAY *>(ppropval->pvalue);
+			auto xs = static_cast<const SHORT_ARRAY *>(ppropval->pvalue);
 			for (size_t j = 0; j < xs->count; ++j)
 				add_assoc_long(&pzmval, itoa(j, key), xs->ps[j]);
 			add_assoc_zval(pzret, pts.c_str(), &pzmval);
@@ -1309,7 +1309,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 		}
 		case PT_MV_LONG: {
 			zarray_init(&pzmval);
-			auto xl = static_cast<LONG_ARRAY *>(ppropval->pvalue);
+			auto xl = static_cast<const LONG_ARRAY *>(ppropval->pvalue);
 			for (size_t j = 0; j < xl->count; ++j)
 				add_assoc_long(&pzmval, itoa(j, key), xl->pl[j]);
 			add_assoc_zval(pzret, pts.c_str(), &pzmval);
@@ -1317,7 +1317,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 		}
 		case PT_MV_FLOAT: {
 			zarray_init(&pzmval);
-			auto xl = static_cast<FLOAT_ARRAY *>(ppropval->pvalue);
+			auto xl = static_cast<const FLOAT_ARRAY *>(ppropval->pvalue);
 			for (size_t j = 0; j < xl->count; ++j) {
 				snprintf(key, std::size(key), "%zu", j);
 				add_assoc_double(&pzmval, key, xl->mval[j]);
@@ -1328,7 +1328,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 		case PT_MV_DOUBLE:
 		case PT_MV_APPTIME: {
 			zarray_init(&pzmval);
-			auto xl = static_cast<DOUBLE_ARRAY *>(ppropval->pvalue);
+			auto xl = static_cast<const DOUBLE_ARRAY *>(ppropval->pvalue);
 			for (size_t j = 0; j < xl->count; ++j) {
 				snprintf(key, std::size(key), "%zu", j);
 				add_assoc_double(&pzmval, key, xl->mval[j]);
@@ -1338,7 +1338,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 		}
 		case PT_MV_BINARY: {
 			zarray_init(&pzmval);
-			auto xb = static_cast<BINARY_ARRAY *>(ppropval->pvalue);
+			auto xb = static_cast<const BINARY_ARRAY *>(ppropval->pvalue);
 			for (size_t j = 0; j < xb->count; ++j)
 				add_assoc_stringl(&pzmval, itoa(j, key),
 					reinterpret_cast<const char *>(xb->pbin[j].pb),
@@ -1349,7 +1349,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 		case PT_MV_STRING8:
 		case PT_MV_UNICODE: {
 			zarray_init(&pzmval);
-			auto xs = static_cast<STRING_ARRAY *>(ppropval->pvalue);
+			auto xs = static_cast<const STRING_ARRAY *>(ppropval->pvalue);
 			for (size_t j = 0; j < xs->count; ++j)
 				add_assoc_string(&pzmval, itoa(j, key), xs->ppstr[j]);
 			add_assoc_zval(pzret, pts.c_str(), &pzmval);
@@ -1357,10 +1357,10 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 		}
 		case PT_MV_CLSID: {
 			zarray_init(&pzmval);
-			auto xb = static_cast<GUID_ARRAY *>(ppropval->pvalue);
+			auto xb = static_cast<const GUID_ARRAY *>(ppropval->pvalue);
 			for (size_t j = 0; j < xb->count; ++j)
 				add_assoc_stringl(&pzmval, itoa(j, key),
-					reinterpret_cast<char *>(&xb->pguid[j]),
+					reinterpret_cast<const char *>(&xb->pguid[j]),
 					sizeof(GUID));
 			add_assoc_zval(pzret, pts.c_str(), &pzmval);
 			break;
@@ -1425,7 +1425,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 				}
 				case OP_TAG: {
 					tmp_propvals.count = 1;
-					tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(act.pdata);
+					tmp_propvals.ppropval = deconst(static_cast<const TAGGED_PROPVAL *>(act.pdata));
 					auto err = tpropval_array_to_php(&tmp_propvals, &pzalist);
 					if (err != ecSuccess)
 						return err;
@@ -1445,7 +1445,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 			break;
 		}
 		case PT_SRESTRICTION: {
-			auto err = restriction_to_php(static_cast<RESTRICTION *>(ppropval->pvalue), &pzactval);
+			auto err = restriction_to_php(static_cast<const RESTRICTION *>(ppropval->pvalue), &pzactval);
 			if (err != ecSuccess)
 				return err;
 			add_assoc_zval(pzret, pts.c_str(), &pzactval);
@@ -1539,8 +1539,6 @@ ec_error_t znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval 
 {
 	int i;
 	zval pzvalprops, pzvalnotif;
-	NEWMAIL_ZNOTIFICATION *pnew_notification;
-	OBJECT_ZNOTIFICATION *pobject_notification;
 	
 	zarray_init(pzret);
 	for (i=0; i<pnotifications->count; i++) {
@@ -1548,9 +1546,9 @@ ec_error_t znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval 
 		add_assoc_long(&pzvalnotif, "eventtype",
 			pnotifications->ppnotification[i]->event_type);
 		switch(pnotifications->ppnotification[i]->event_type) {
-		case NF_NEW_MAIL:
-			pnew_notification =
-				static_cast<NEWMAIL_ZNOTIFICATION *>(pnotifications->ppnotification[i]->pnotification_data);
+		case NF_NEW_MAIL: {
+			auto pnew_notification =
+				static_cast<const NEWMAIL_ZNOTIFICATION *>(pnotifications->ppnotification[i]->pnotification_data);
 			add_assoc_stringl(&pzvalnotif, "entryid",
 				reinterpret_cast<const char *>(pnew_notification->entryid.pb),
 				pnew_notification->entryid.cb);
@@ -1564,14 +1562,15 @@ ec_error_t znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval 
 			add_assoc_long(&pzvalnotif, "messageflags",
 				pnew_notification->message_flags);
 			break;
+		}
 		case NF_OBJECT_CREATED:
 		case NF_OBJECT_DELETED:
 		case NF_OBJECT_MODIFIED:
 		case NF_OBJECT_MOVED:
 		case NF_OBJECT_COPIED:
-		case NF_SEARCH_COMPLETE:
-			pobject_notification =
-				static_cast<OBJECT_ZNOTIFICATION *>(pnotifications->ppnotification[i]->pnotification_data);
+		case NF_SEARCH_COMPLETE: {
+			auto pobject_notification =
+				static_cast<const OBJECT_ZNOTIFICATION *>(pnotifications->ppnotification[i]->pnotification_data);
 			if (NULL != pobject_notification->pentryid) {
 				add_assoc_stringl(&pzvalnotif, "entryid",
 					reinterpret_cast<const char *>(pobject_notification->pentryid->pb),
@@ -1601,6 +1600,7 @@ ec_error_t znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval 
 				add_assoc_zval(&pzvalnotif, "proptagarray", &pzvalprops);
 			}
 			break;
+		}
 		default:
 			continue;
 		}
