@@ -708,7 +708,7 @@ struct PROGRESS_RESPONSE final : public rop_response {
 
 struct OPENSTREAM_REQUEST final : public rop_request {
 	uint8_t ohindex;
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	uint8_t flags;
 };
 

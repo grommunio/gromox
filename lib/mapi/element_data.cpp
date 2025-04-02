@@ -333,7 +333,7 @@ bool property_groupinfo::append_internal(PROPTAG_ARRAY *pgroup)
 	return TRUE;
 }
 
-bool property_groupinfo::get_partial_index(uint32_t proptag,
+bool property_groupinfo::get_partial_index(proptag_t proptag,
     uint32_t *pindex) const
 {
 	auto pgpinfo = this;

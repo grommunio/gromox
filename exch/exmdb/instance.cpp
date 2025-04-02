@@ -132,7 +132,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				return FALSE;
-			uint32_t proptag = pstmt.col_uint64(0);
+			proptag_t proptag = pstmt.col_uint64(0);
 			auto cid = pstmt.col_text(1);
 			if (cid == nullptr) {
 				mlog(LV_DEBUG, "W-1441: illegal CID reference in msg %llu prop %xh",
@@ -174,7 +174,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				return FALSE;
-			uint32_t proptag = pstmt.col_uint64(0);
+			proptag_t proptag = pstmt.col_uint64(0);
 			auto cid = pstmt.col_text(1);
 			if (cid == nullptr) {
 				mlog(LV_DEBUG, "W-1444: illegal CID reference in msg %llu prop %xh",
@@ -992,7 +992,6 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 	BOOL b_force, PROPTAG_ARRAY *pproptags,
 	PROBLEM_ARRAY *pproblems)
 {
-	uint32_t proptag;
 	TARRAY_SET *prcpts;
 	
 	auto pdb = db_engine_get_db(dir);
@@ -1014,7 +1013,7 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	auto pproplist = &ict->proplist;
 	for (unsigned int i = 0; i < pmsgctnt->proplist.count; ++i) {
-		proptag = pmsgctnt->proplist.ppropval[i].proptag;
+		auto proptag = pmsgctnt->proplist.ppropval[i].proptag;
 		switch (proptag) {
 		case PR_ASSOCIATED:
 			if (pinstance->b_new)
@@ -1243,8 +1242,6 @@ BOOL exmdb_server::write_attachment_instance(const char *dir,
 	uint32_t instance_id, const ATTACHMENT_CONTENT *pattctnt,
 	BOOL b_force, PROBLEM_ARRAY *pproblems)
 {
-	uint32_t proptag;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
@@ -1259,7 +1256,7 @@ BOOL exmdb_server::write_attachment_instance(const char *dir,
 		return FALSE;
 	auto pproplist = &static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent)->proplist;
 	for (unsigned int i = 0; i < pattctnt->proplist.count; ++i) {
-		proptag = pattctnt->proplist.ppropval[i].proptag;
+		auto proptag = pattctnt->proplist.ppropval[i].proptag;
 		switch (proptag) {
 		case PR_RECORD_KEY:
 			pproblems->emplace_back(i, proptag, ecAccessDenied);
@@ -1614,7 +1611,7 @@ BOOL exmdb_server::get_instance_all_proptags(const char *dir,
 }
 
 static BOOL instance_get_message_display_recipients(const tarray_set *prcpts,
-    cpid_t cpid, uint32_t proptag, void **ppvalue) try
+    cpid_t cpid, proptag_t proptag, void **ppvalue) try
 {
 	std::string dr;
 	uint32_t recipient_type = 0;
@@ -1693,7 +1690,7 @@ static uint32_t instance_get_message_flags(MESSAGE_CONTENT *pmsgctnt)
 }
 
 static BOOL instance_get_message_subject(TPROPVAL_ARRAY *pproplist,
-    cpid_t cpid, uint32_t proptag, void **ppvalue)
+    cpid_t cpid, proptag_t proptag, void **ppvalue)
 {
 	auto pnormalized_subject = pproplist->get<const char>(PR_NORMALIZED_SUBJECT);
 	if (NULL == pnormalized_subject) {

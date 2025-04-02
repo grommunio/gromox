@@ -30,7 +30,7 @@ struct attachment_object {
 	BOOL commit_stream_object(stream_object *);
 	BOOL flush_streams();
 	BOOL get_all_proptags(PROPTAG_ARRAY *) const;
-	bool is_readonly_prop(uint32_t proptag) const;
+	bool is_readonly_prop(gromox::proptag_t) const;
 	BOOL get_properties(uint32_t size_limit, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *) const;
 	BOOL set_properties(const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
 	BOOL remove_properties(const PROPTAG_ARRAY *, PROBLEM_ARRAY *);

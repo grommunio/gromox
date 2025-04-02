@@ -950,7 +950,7 @@ static const char *tnef_to_msgclass(const char *s)
 }
 
 static BOOL tnef_set_attribute_address(TPROPVAL_ARRAY *pproplist,
-	uint32_t proptag1, uint32_t proptag2, uint32_t proptag3,
+    proptag_t proptag1, proptag_t proptag2, proptag_t proptag3,
 	ATTR_ADDR *paddr)
 {
 	if (pproplist->set(proptag1, paddr->displayname) != 0)
@@ -1020,10 +1020,9 @@ static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist,
 {
 	int i;
 	uint16_t propid;
-	uint32_t proptag;
 	
 	for (i=0; i<pproplist->count; i++) {
-		proptag = pproplist->ppropval[i].proptag;
+		auto proptag = pproplist->ppropval[i].proptag;
 		propid = PROP_ID(proptag);
 		if (!is_nameprop_id(propid))
 			continue;
@@ -2091,7 +2090,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 		    &tmp_bin) != EXT_ERR_SUCCESS)
 			return FALSE;
 	}
-	uint32_t proptag_buff[32];
+	proptag_t proptag_buff[32];
 	PROPTAG_ARRAY tmp_proptags = {0, proptag_buff};
 	tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_FLAGS;
 

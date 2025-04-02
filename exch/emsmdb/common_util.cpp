@@ -602,8 +602,7 @@ ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *dat
 	return ecSuccess;
 }
 
-void common_util_remove_propvals(
-	TPROPVAL_ARRAY *parray, uint32_t proptag)
+void common_util_remove_propvals(TPROPVAL_ARRAY *parray, proptag_t proptag)
 {
 	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (proptag != parray->ppropval[i].proptag)
@@ -617,7 +616,7 @@ void common_util_remove_propvals(
 }
 
 BOOL common_util_retag_propvals(TPROPVAL_ARRAY *parray,
-    uint32_t original_proptag, uint32_t new_proptag)
+    proptag_t original_proptag, proptag_t new_proptag)
 {
 	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (parray->ppropval[i].proptag == original_proptag) {

@@ -21,13 +21,13 @@
 #include "table_object.hpp"
 #define MAXIMUM_CONTENT_ROWS				127
 
+using namespace gromox;
+
 static BOOL oxctable_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria)
 {
-	uint32_t proptag;
-	
-	proptag = 0;
+	proptag_t proptag = 0;
 	for (unsigned int i = 0; i < psort_criteria->count; ++i) {
 		if (!(psort_criteria->psort[i].type & MV_INSTANCE))
 			continue;

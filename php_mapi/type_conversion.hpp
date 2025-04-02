@@ -8,8 +8,8 @@
 #undef asprintf
 #include <vector>
 
-uint32_t proptag_to_phptag(uint32_t proptag);
-uint32_t phptag_to_proptag(uint32_t proptag);
+extern gromox::proptag_t proptag_to_phptag(gromox::proptag_t);
+extern gromox::proptag_t phptag_to_proptag(gromox::proptag_t);
 extern ec_error_t php_to_binary_array(zval *, BINARY_ARRAY *);
 extern ec_error_t binary_array_to_php(const BINARY_ARRAY &, zval *);
 extern ec_error_t php_to_sortorder_set(zval *, SORTORDER_SET *);

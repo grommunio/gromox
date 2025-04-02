@@ -870,7 +870,7 @@ static int delstoreprop(int argc, char **argv, const GUID &guid,
 		return EXIT_SUCCESS;
 	else if (err != 0)
 		return EXIT_FAILURE;
-	uint32_t proptag = PROP_TAG(type, propid);
+	auto proptag = PROP_TAG(type, propid);
 	const PROPTAG_ARRAY tags = {1, &proptag};
 	if (!exmdb_client->remove_store_properties(g_storedir, &tags))
 		return EXIT_FAILURE;
@@ -881,7 +881,7 @@ static int delstoreprop(int argc, char **argv, const GUID &guid,
 	return EXIT_SUCCESS;
 }
 
-static errno_t showstoreprop(uint32_t proptag)
+static errno_t showstoreprop(proptag_t proptag)
 {
 	const PROPTAG_ARRAY tags = {1, &proptag};
 	TPROPVAL_ARRAY vals{};
@@ -934,7 +934,7 @@ static int showstoreprop(int argc, char **argv, const GUID guid,
 	return showstoreprop(PROP_TAG(proptype, propid));
 }
 
-static errno_t setstoreprop(uint32_t proptag)
+static errno_t setstoreprop(proptag_t proptag)
 {
 	size_t slurp_len = 0;
 	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_fd(STDIN_FILENO, &slurp_len));

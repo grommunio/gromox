@@ -250,7 +250,7 @@ static const char *az_special_ident(uint32_t nid)
 }
 
 /* Lookup the pff record entry for the given propid */
-static bool az_item_get_propv(libpff_item_t *item, uint32_t proptag,
+static bool az_item_get_propv(libpff_item_t *item, proptag_t proptag,
     libpff_record_entry_t **rent)
 {
 	libpff_record_set_ptr rset;
@@ -375,7 +375,7 @@ static char *u16convert(const uint8_t *data, size_t inbytes)
 }
 
 static std::unique_ptr<TPROPVAL_ARRAY, gi_delete>
-mv_decode_str(uint32_t proptag, const uint8_t *data, size_t dsize)
+mv_decode_str(proptag_t proptag, const uint8_t *data, size_t dsize)
 {
 	if (dsize < 4)
 		return nullptr;
@@ -437,7 +437,7 @@ mv_decode_str(uint32_t proptag, const uint8_t *data, size_t dsize)
 }
 
 static std::unique_ptr<TPROPVAL_ARRAY, gi_delete>
-mv_decode_bin(uint32_t proptag, const uint8_t *data, size_t dsize)
+mv_decode_bin(proptag_t proptag, const uint8_t *data, size_t dsize)
 {
 	if (dsize < 4)
 		return nullptr;
@@ -497,7 +497,7 @@ mv_decode_bin(uint32_t proptag, const uint8_t *data, size_t dsize)
 }
 
 static void emit_namedprop(namedprop_bimap &name_map, libpff_record_entry_t *rent,
-    uint32_t proptag)
+    proptag_t proptag)
 {
 	uint16_t propid = PROP_ID(proptag);
 	if (name_map.fwd.find(propid) != name_map.fwd.cend())
@@ -1063,7 +1063,7 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 	return 0;
 }
 
-static uint32_t az_nid_from_mst(libpff_item_t *item, uint32_t proptag)
+static uint32_t az_nid_from_mst(libpff_item_t *item, proptag_t proptag)
 {
 	libpff_record_entry_ptr rent;
 	if (az_item_get_propv(item, proptag, &~unique_tie(rent)) < 1)

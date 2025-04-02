@@ -78,7 +78,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	return TRUE;
 }
 
-bool folder_object::is_readonly_prop(uint32_t proptag) const
+bool folder_object::is_readonly_prop(proptag_t proptag) const
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return true;
@@ -135,7 +135,7 @@ bool folder_object::is_readonly_prop(uint32_t proptag) const
 }
 
 static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
-    uint32_t proptag, void **outvalue)
+    proptag_t proptag, void **outvalue)
 {
 	BINARY *pbin;
 	void *pvalue;

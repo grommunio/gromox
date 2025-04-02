@@ -15,6 +15,7 @@
 #include "objects.hpp"
 #include "store_object.hpp"
 
+using namespace gromox;
 using gromox::exmdb_client;
 
 static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
@@ -137,7 +138,7 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 }
 
 static BOOL aobj_is_readonly_prop(const attachment_object *pattachment,
-    uint32_t proptag)
+    proptag_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT && proptag != PR_ATTACH_DATA_OBJ)
 		return TRUE;
@@ -161,7 +162,7 @@ static BOOL aobj_is_readonly_prop(const attachment_object *pattachment,
 }
 
 static BOOL attachment_object_get_calculated_property(attachment_object *pattachment,
-     uint32_t proptag, void **ppvalue)
+     proptag_t proptag, void **ppvalue)
 {
 	switch (proptag) {
 	case PR_ACCESS:

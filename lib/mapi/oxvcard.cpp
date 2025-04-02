@@ -198,7 +198,6 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 	BINARY tmp_bin;
 	uint16_t propid;
 	BOOL b_encoding;
-	uint32_t proptag;
 	struct tm tmp_tm;
 	uint8_t tmp_byte;
 	size_t decode_len;
@@ -688,7 +687,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			return imp_null;
 	}
 	for (i=0; i<pmsg->proplist.count; i++) {
-		proptag = pmsg->proplist.ppropval[i].proptag;
+		auto proptag = pmsg->proplist.ppropval[i].proptag;
 		propid = PROP_ID(proptag);
 		if (is_nameprop_id(propid))
 			break;
@@ -699,7 +698,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 	if (!oxvcard_get_propids(&propids, std::move(get_propids)))
 		return imp_null;
 	for (i=0; i<pmsg->proplist.count; i++) {
-		proptag = pmsg->proplist.ppropval[i].proptag;
+		auto proptag = pmsg->proplist.ppropval[i].proptag;
 		propid = PROP_ID(proptag);
 		if (!is_nameprop_id(propid))
 			continue;
@@ -721,7 +720,6 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	const char *pvalue;
 	size_t out_len;
 	uint16_t propid;
-	uint32_t proptag;
 	struct tm tmp_tm;
 	PROPID_ARRAY propids;
 	const char *photo_type;
@@ -771,7 +769,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	
 	for (size_t i = 0; i < std::size(g_email_proptags); ++i) {
 		propid = PROP_ID(g_email_proptags[i]);
-		proptag = PROP_TAG(PROP_TYPE(g_email_proptags[i]), propids[propid - 0x8000]);
+		auto proptag = PROP_TAG(PROP_TYPE(g_email_proptags[i]), propids[propid - 0x8000]);
 		pvalue = pmsg->proplist.get<char>(proptag);
 		if (pvalue == nullptr)
 			continue;
@@ -831,7 +829,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	adr_line->append_param("TYPE", "WORK");
 	for (size_t i = 0; i < std::size(g_workaddr_proptags); ++i) {
 		propid = PROP_ID(g_workaddr_proptags[i]);
-		proptag = PROP_TAG(PROP_TYPE(g_workaddr_proptags[i]), propids[propid - 0x8000]);
+		auto proptag = PROP_TAG(PROP_TYPE(g_workaddr_proptags[i]), propids[propid - 0x8000]);
 		pvalue = pmsg->proplist.get<char>(proptag);
 		if (pvalue == nullptr)
 			continue;
@@ -885,7 +883,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	}
 	
 	propid = PROP_ID(g_categories_proptag);
-	proptag = PROP_TAG(PROP_TYPE(g_categories_proptag), propids[propid - 0x8000]);
+	auto proptag = PROP_TAG(PROP_TYPE(g_categories_proptag), propids[propid - 0x8000]);
 	auto saval = pmsg->proplist.get<const STRING_ARRAY>(proptag);
 	if (saval != nullptr) {
 		auto &cat_line = vcard.append_line("CATEGORIES");

@@ -388,7 +388,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 
 	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id);});
 
-	uint32_t proptag_buff[] = {
+	proptag_t proptag_buff[] = {
 		ptag.apptstartwhole, ptag.apptendwhole, ptag.busystatus,
 		ptag.recurring, ptag.apptsubtype, ptag.private_flag,
 		ptag.apptstateflags, ptag.location, ptag.reminderset,

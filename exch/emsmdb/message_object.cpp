@@ -69,7 +69,7 @@ static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
 	return TRUE;
 }
 
-static uint32_t message_object_rectify_proptag(uint32_t proptag)
+static proptag_t message_object_rectify_proptag(proptag_t proptag)
 {
 	switch (PROP_TYPE(proptag)) {
 	case PT_STRING8:     return CHANGE_PROP_TYPE(proptag, PT_UNICODE);
@@ -784,7 +784,7 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	return TRUE;
 }
 
-bool message_object::is_readonly_prop(uint32_t proptag) const
+bool message_object::is_readonly_prop(proptag_t proptag) const
 {
 	auto pmessage = this;
 	if (PROP_TYPE(proptag) == PT_OBJECT)
@@ -830,7 +830,7 @@ bool message_object::is_readonly_prop(uint32_t proptag) const
 }
 
 static BOOL message_object_get_calculated_property(const message_object *pmessage,
-    uint32_t proptag, void **ppvalue)
+    proptag_t proptag, void **ppvalue)
 {	
 	switch (proptag) {
 	case PR_ACCESS:
@@ -899,7 +899,7 @@ static BOOL message_object_get_calculated_property(const message_object *pmessag
 }
 
 static const void *message_object_get_stream_property_value(const message_object *pmessage,
-    uint32_t proptag)
+    proptag_t proptag)
 {
 	for (auto so : pmessage->stream_list)
 		if (so->get_proptag() == proptag)
@@ -977,7 +977,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	return TRUE;	
 }
 
-static bool mo_has_open_streams(message_object *pmessage, uint32_t proptag)
+static bool mo_has_open_streams(message_object *pmessage, proptag_t proptag)
 {
 	for (auto so : pmessage->stream_list)
 		if (so->get_proptag() == proptag)

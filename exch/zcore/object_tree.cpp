@@ -292,7 +292,7 @@ void OBJECT_TREE::release_object_handle(uint32_t obj_handle)
 	object_tree_release_objnode(pobjtree, iter->second);
 }
 
-void *OBJECT_TREE::get_zstore_propval(uint32_t proptag)
+void *OBJECT_TREE::get_zstore_propval(proptag_t proptag)
 {
 	auto pobjtree = this;
 	auto proot = pobjtree->tree.get_root();
@@ -322,7 +322,7 @@ BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 	return TRUE;
 }
 
-void OBJECT_TREE::remove_zstore_propval(uint32_t proptag)
+void OBJECT_TREE::remove_zstore_propval(proptag_t proptag)
 {
 	auto pobjtree = this;
 	auto proot = pobjtree->tree.get_root();

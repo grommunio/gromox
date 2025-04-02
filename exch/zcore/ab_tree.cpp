@@ -77,7 +77,8 @@ static ec_error_t ab_tree_fetchprop(const ab_tree::ab_node& node,
 }
 
 /* Returns: TRUE (success or notfound), FALSE (fatal error/enomem/etc.) */
-static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node& pnode, uint32_t proptag, void **ppvalue)
+static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node &pnode,
+    proptag_t proptag, void **ppvalue)
 {
 	EXT_PUSH ext_push;
 	

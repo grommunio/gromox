@@ -1760,10 +1760,9 @@ static void oxcmail_replace_propid(TPROPVAL_ARRAY *pproplist,
 {
 	int i;
 	uint16_t propid;
-	uint32_t proptag;
 	
 	for (i=0; i<pproplist->count; i++) {
-		proptag = pproplist->ppropval[i].proptag;
+		auto proptag = pproplist->ppropval[i].proptag;
 		propid = PROP_ID(proptag);
 		if (!is_nameprop_id(propid))
 			continue;

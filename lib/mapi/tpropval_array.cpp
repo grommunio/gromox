@@ -8,7 +8,7 @@
 
 using namespace gromox;
 
-static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
+static bool tpropval_array_append(TPROPVAL_ARRAY *parray, proptag_t proptag,
     const void *xpropval)
 {
 	if (xpropval == nullptr) {
@@ -54,7 +54,7 @@ int TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
 	return tpropval_array_append(this, tag, xpropval) ? 0 : -ENOMEM;
 }
 
-void TPROPVAL_ARRAY::erase(uint32_t proptag)
+void TPROPVAL_ARRAY::erase(proptag_t proptag)
 {
 	static_assert(std::is_trivially_copyable_v<TAGGED_PROPVAL>);
 	for (size_t i = 0; i < count; ++i) {

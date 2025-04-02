@@ -323,7 +323,7 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	return TRUE;
 }
 
-static bool lo_is_readonly_prop(const logon_object *plogon, uint32_t proptag)
+static bool lo_is_readonly_prop(const logon_object *plogon, proptag_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return true;
@@ -392,7 +392,7 @@ static inline const char *account_to_domain(const char *u)
 }
 
 static BOOL logon_object_get_calculated_property(const logon_object *plogon,
-    uint32_t proptag, void **ppvalue)
+    proptag_t proptag, void **ppvalue)
 {
 	void *pvalue;
 	static constexpr uint64_t tmp_ll = 0;

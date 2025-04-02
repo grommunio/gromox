@@ -13,7 +13,7 @@ struct stream_object {
 
 	public:
 	~stream_object();
-	static std::unique_ptr<stream_object> create(void *parent, ems_objtype, uint32_t open_flags, uint32_t proptag, uint32_t max_length);
+	static std::unique_ptr<stream_object> create(void *parent, ems_objtype, uint32_t open_flags, gromox::proptag_t, uint32_t max_length);
 	BOOL check() const { return content_bin.pb != nullptr ? TRUE : false; }
 	uint32_t get_max_length() const { return max_length; }
 	uint32_t read(void *buf, uint32_t len);
@@ -32,7 +32,8 @@ struct stream_object {
 	void *pparent = nullptr;
 	ems_objtype object_type = ems_objtype::none;
 	uint8_t open_flags = 0;
-	uint32_t proptag = 0, seek_ptr = 0;
+	gromox::proptag_t proptag = 0;
+	uint32_t seek_ptr = 0;
 	BINARY content_bin{};
 	BOOL b_touched = false;
 	uint32_t max_length = 0;

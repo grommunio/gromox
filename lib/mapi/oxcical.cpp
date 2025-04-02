@@ -1585,10 +1585,9 @@ static void oxcical_replace_propid(TPROPVAL_ARRAY *pproplist,
 {
 	int i;
 	uint16_t propid;
-	uint32_t proptag;
 
 	for (i=0; i<pproplist->count; i++) {
-		proptag = pproplist->ppropval[i].proptag;
+		auto proptag = pproplist->ppropval[i].proptag;
 		propid = PROP_ID(proptag);
 		if (!is_nameprop_id(propid))
 			continue;
@@ -3193,7 +3192,7 @@ static void append_dt(ical_component &com, const char *key,
 }
 
 static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
-    uint32_t proptag_xrt, bool b_exceptional, bool b_date,
+    proptag_t proptag_xrt, bool b_exceptional, bool b_date,
     ical_component &com, const ical_component *ptz_component,
     const char *tzid, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
 {

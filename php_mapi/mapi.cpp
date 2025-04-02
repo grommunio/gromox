@@ -86,7 +86,7 @@ struct MAPI_RESOURCE {
 struct STREAM_OBJECT {
 	GUID hsession;
 	uint32_t hparent;
-	uint32_t proptag;
+	proptag_t proptag;
 	uint32_t seek_offset;
 	BINARY content_bin;
 };
@@ -256,7 +256,7 @@ static uint32_t stream_object_write(STREAM_OBJECT *pstream,
 }
 
 static void stream_object_set_parent(STREAM_OBJECT *pstream,
-	GUID hsession, uint32_t hparent, uint32_t proptag)
+	GUID hsession, uint32_t hparent, proptag_t proptag)
 {
 	pstream->hsession = hsession;
 	pstream->hparent = hparent;

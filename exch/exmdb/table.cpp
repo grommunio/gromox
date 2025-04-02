@@ -39,7 +39,7 @@ using namespace gromox;
 namespace {
 
 struct condition_node {
-	uint32_t proptag;
+	proptag_t proptag;
 	void *pvalue;
 };
 
@@ -1409,7 +1409,7 @@ BOOL exmdb_server::sum_table(const char *dir,
 static BOOL table_column_content_tmptbl(
 	sqlite3_stmt *pstmt, sqlite3_stmt *pstmt1, sqlite3_stmt *pstmt2,
 	const SORTORDER_SET *psorts, uint64_t folder_id, int row_type,
-	uint32_t proptag, uint32_t instance_tag, uint32_t extremum_tag,
+	proptag_t proptag, uint32_t instance_tag, uint32_t extremum_tag,
 	void **ppvalue)
 {
 	int i;
@@ -1905,8 +1905,8 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 	return TRUE;
 }
 
-static BOOL table_get_content_row_property(
-	 void *pparam, uint32_t proptag, void **ppvalue)
+static BOOL table_get_content_row_property(void *pparam, proptag_t proptag,
+    void **ppvalue)
 {
 	uint32_t *pinst_num;
 	uint64_t parent_fid;
@@ -1952,8 +1952,8 @@ static BOOL table_get_content_row_property(
 	return TRUE;
 }
 
-static BOOL table_get_hierarchy_row_property(
-	 void *pparam, uint32_t proptag, void **ppvalue)
+static BOOL table_get_hierarchy_row_property(void *pparam, proptag_t proptag,
+    void **ppvalue)
 {
 	auto prow_param = static_cast<HIERARCHY_ROW_PARAM *>(pparam);
 	if (proptag != PR_DEPTH)

@@ -98,7 +98,7 @@ decltype(common_util_get_handle) common_util_get_handle;
 decltype(ems_send_mail) ems_send_mail;
 decltype(ems_send_vmail) ems_send_vmail;
 
-static bool cu_eval_subobj_restriction(sqlite3 *, cpid_t, uint64_t msgid, uint32_t proptag, const RESTRICTION *);
+static bool cu_eval_subobj_restriction(sqlite3 *, cpid_t, uint64_t msgid, gromox::proptag_t, const RESTRICTION *);
 static bool gp_prepare_anystr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static bool gp_prepare_mvstr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static bool gp_prepare_default(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
@@ -130,8 +130,7 @@ ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *dat
 	return ecSuccess;
 }
 
-void common_util_remove_propvals(
-	TPROPVAL_ARRAY *parray, uint32_t proptag)
+void common_util_remove_propvals(TPROPVAL_ARRAY *parray, proptag_t proptag)
 {
 	for (unsigned int i = 0; i < parray->count; ++i) {
 		if (proptag != parray->ppropval[i].proptag)
@@ -1334,7 +1333,7 @@ static void* common_util_get_message_parent_display(
  * Conversely, writes to PR_SUBJECT are intercepted and split up.
  */
 static BOOL common_util_get_message_subject(sqlite3 *psqlite, cpid_t cpid,
-    uint64_t message_id, uint32_t proptag, void **ppvalue)
+    uint64_t message_id, proptag_t proptag, void **ppvalue)
 {
 	const char *psubject_prefix, *pnormalized_subject;
 	
@@ -1401,7 +1400,7 @@ static BOOL common_util_get_message_subject(sqlite3 *psqlite, cpid_t cpid,
 }
 	
 static BOOL common_util_get_message_display_recipients(sqlite3 *psqlite,
-    cpid_t cpid, uint64_t message_id, uint32_t proptag, void **ppvalue) try
+    cpid_t cpid, uint64_t message_id, proptag_t proptag, void **ppvalue) try
 {
 	void *pvalue;
 	uint64_t rcpt_id;
@@ -1479,7 +1478,7 @@ std::string cu_cid_path(const char *dir, const char *id, unsigned int type) try
 static void *cu_get_object_text_v0(const char *dir, const char *cid, uint32_t, uint32_t, cpid_t);
 
 static void *cu_get_object_text_vx(const char *dir, const char *cid,
-    uint32_t proptag, uint32_t db_proptag, cpid_t cpid, unsigned int type)
+    proptag_t proptag, proptag_t db_proptag, cpid_t cpid, unsigned int type)
 {
 	BINARY dxbin{};
 	errno = gx_decompress_file(cu_cid_path(dir, cid, type).c_str(), dxbin,
@@ -1506,7 +1505,7 @@ static void *cu_get_object_text_vx(const char *dir, const char *cid,
 }
 
 static void *cu_get_object_text(sqlite3 *psqlite,
-    cpid_t cpid, uint64_t message_id, uint32_t proptag) try
+    cpid_t cpid, uint64_t message_id, proptag_t proptag) try
 {
 	char sql_string[128];
 	
@@ -1539,7 +1538,7 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return nullptr;
-	uint32_t proptag1 = sqlite3_column_int64(pstmt, 0);
+	proptag_t proptag1 = sqlite3_column_int64(pstmt, 0);
 	std::string cid = pstmt.col_text(1);
 	pstmt.finalize();
 
@@ -1583,7 +1582,7 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 }
 
 static void *cu_get_object_text_v0(const char *dir, const char *cid,
-    uint32_t proptag, uint32_t proptag1, cpid_t cpid)
+    proptag_t proptag, proptag_t proptag1, cpid_t cpid)
 {
 	wrapfd fd = open(cu_cid_path(dir, cid, 0).c_str(), O_RDONLY);
 	struct stat node_stat;
@@ -1627,7 +1626,7 @@ static void *cu_get_object_text_v0(const char *dir, const char *cid,
 }
 
 BOOL cu_get_property(mapi_object_type table_type, uint64_t id,
-    cpid_t cpid, sqlite3 *psqlite, uint32_t proptag, void **ppvalue)
+    cpid_t cpid, sqlite3 *psqlite, proptag_t proptag, void **ppvalue)
 {
 	const PROPTAG_ARRAY proptags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY propvals;
@@ -2029,7 +2028,7 @@ static GP_RESULT gp_spectableprop(mapi_object_type table_type, uint32_t tag,
 	}
 }
 
-static GP_RESULT gp_msgprop_synth(uint64_t msgid, uint32_t proptag,
+static GP_RESULT gp_msgprop_synth(uint64_t msgid, proptag_t proptag,
     TAGGED_PROPVAL &pv, sqlite3 *db)
 {
 	switch (proptag) {
@@ -2074,7 +2073,7 @@ static GP_RESULT gp_msgprop_synth(uint64_t msgid, uint32_t proptag,
 	return GP_UNHANDLED;
 }
 
-static GP_RESULT gp_rcptprop_synth(uint32_t proptag, TAGGED_PROPVAL &pv)
+static GP_RESULT gp_rcptprop_synth(proptag_t proptag, TAGGED_PROPVAL &pv)
 {
 	switch (proptag) {
 	case PR_ENTRYID: {
@@ -2119,7 +2118,7 @@ static GP_RESULT gp_rcptprop_synth(uint32_t proptag, TAGGED_PROPVAL &pv)
 }
 
 static GP_RESULT gp_fallbackprop(mapi_object_type table_type, uint64_t msgid,
-    uint32_t proptag, TAGGED_PROPVAL &pv, sqlite3 *db)
+    proptag_t proptag, TAGGED_PROPVAL &pv, sqlite3 *db)
 {
 	pv.proptag = proptag;
 	if (table_type == MAPI_MESSAGE)
@@ -2743,7 +2742,7 @@ void common_util_set_message_read(sqlite3 *psqlite,
 }
 
 static BOOL cu_update_object_cid(sqlite3 *psqlite, mapi_object_type table_type,
-    uint64_t object_id, uint32_t proptag, std::string_view cid)
+    uint64_t object_id, proptag_t proptag, std::string_view cid)
 {
 	char sql_string[256];
 	
@@ -2991,7 +2990,7 @@ static BOOL common_util_set_message_body(sqlite3 *psqlite, cpid_t cpid,
     uint64_t message_id, const TAGGED_PROPVAL *ppropval)
 {
 	void *pvalue;
-	uint32_t proptag;
+	proptag_t proptag = 0;
 	
 	if (ppropval->proptag == PR_BODY_A) {
 		if (cpid == CP_ACP) {
@@ -3570,7 +3569,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 }
 
 BOOL cu_remove_property(mapi_object_type table_type,
-	uint64_t id, sqlite3 *psqlite, uint32_t proptag)
+	uint64_t id, sqlite3 *psqlite, proptag_t proptag)
 {
 	const PROPTAG_ARRAY tmp_proptags = {1, deconst(&proptag)};
 	return cu_remove_properties(
@@ -3693,7 +3692,7 @@ static inline const char *rule_tag_to_col(uint32_t tag)
 }
 
 BOOL common_util_get_rule_property(uint64_t rule_id,
-	sqlite3 *psqlite, uint32_t proptag, void **ppvalue)
+    sqlite3 *psqlite, proptag_t proptag, void **ppvalue)
 {
 	EXT_PULL ext_pull;
 	char sql_string[128];
@@ -3781,7 +3780,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 }
 
 bool cu_get_permission_property(int64_t member_id,
-	sqlite3 *psqlite, uint32_t proptag, void **ppvalue)
+    sqlite3 *psqlite, proptag_t proptag, void **ppvalue)
 {
 	char sql_string[128];
 	const char *pusername;
@@ -4260,7 +4259,7 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 }
 
 static bool cu_eval_msgsubs_restriction(sqlite3 *psqlite, cpid_t cpid,
-    uint64_t message_id, uint32_t proptag, const RESTRICTION *pres)
+    uint64_t message_id, proptag_t proptag, const RESTRICTION *pres)
 {
 	uint64_t id;
 	uint32_t count;
@@ -4297,7 +4296,7 @@ static bool cu_eval_msgsubs_restriction(sqlite3 *psqlite, cpid_t cpid,
 }
 
 static bool cu_eval_subobj_restriction(sqlite3 *psqlite, cpid_t cpid,
-    uint64_t message_id, uint32_t proptag, const RESTRICTION *pres)
+    uint64_t message_id, proptag_t proptag, const RESTRICTION *pres)
 {
 	switch (pres->rt) {
 	case RES_OR:

@@ -19,7 +19,7 @@ using namespace gromox;
 /* In PHP-MAPI, PT_STRING8 means UTF-8
  * string. We do not use PT_UNICODE,
 	there's no definition for ansi string */
-uint32_t proptag_to_phptag(uint32_t proptag)
+proptag_t proptag_to_phptag(proptag_t proptag)
 {
 	switch (PROP_TYPE(proptag)) {
 	case PT_UNICODE:
@@ -31,7 +31,7 @@ uint32_t proptag_to_phptag(uint32_t proptag)
 	}
 }
 
-uint32_t phptag_to_proptag(uint32_t proptag)
+proptag_t phptag_to_proptag(proptag_t proptag)
 {
 	switch (PROP_TYPE(proptag)) {
 	case PT_STRING8:
@@ -149,7 +149,7 @@ ec_error_t php_to_sortorder_set(zval *pzval, SORTORDER_SET *pset)
 	zval *entry;
 	size_t i = 0;
 	ZEND_HASH_FOREACH_KEY_VAL(ptarget_hash, idx, key, entry) {
-		uint32_t proptag = phptag_to_proptag(key != nullptr ? strtol(key->val, nullptr, 0) : idx);
+		auto proptag = phptag_to_proptag(key != nullptr ? strtol(key->val, nullptr, 0) : idx);
 		pset->psort[i].propid = PROP_ID(proptag);
 		pset->psort[i].type = PROP_TYPE(proptag);
 		pset->psort[i].table_sort = zval_get_long(entry);

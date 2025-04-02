@@ -49,8 +49,7 @@ extern const GUID *(*common_util_get_handle)();
 
 extern bool cu_rebuild_subjects(const char *&, const char *&, const char *&);
 extern ec_error_t cu_set_propval(TPROPVAL_ARRAY *, gromox::proptag_t, const void *data);
-void common_util_remove_propvals(
-	TPROPVAL_ARRAY *parray, uint32_t proptag);
+extern void common_util_remove_propvals(TPROPVAL_ARRAY *, gromox::proptag_t);
 extern void common_util_pass_service(const char *name, void *func);
 void common_util_init(const char *org_name, unsigned int max_msg,
 	unsigned int max_rule_num, unsigned int max_ext_rule_num);
@@ -81,15 +80,14 @@ BOOL common_util_allocate_cid(sqlite3 *psqlite, uint64_t *pcid);
 extern BOOL cu_get_proptags(mapi_object_type, uint64_t id, sqlite3 *, std::vector<uint32_t> &);
 BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 	uint16_t replid, BOOL *pb_found, GUID *pguid);
-extern BOOL cu_get_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, uint32_t proptag, void **out);
+extern BOOL cu_get_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, gromox::proptag_t, void **out);
 extern BOOL cu_get_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
 extern BOOL cu_set_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, uint32_t tag, const void *data, BOOL *result);
 extern BOOL cu_set_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
-extern BOOL cu_remove_property(mapi_object_type, uint64_t id, sqlite3 *, uint32_t proptag);
+extern BOOL cu_remove_property(mapi_object_type, uint64_t id, sqlite3 *, gromox::proptag_t);
 extern BOOL cu_remove_properties(mapi_object_type, uint64_t id, sqlite3 *, const PROPTAG_ARRAY *);
-BOOL common_util_get_rule_property(uint64_t rule_id,
-	sqlite3 *psqlite, uint32_t proptag, void **ppvalue);
-extern bool cu_get_permission_property(int64_t member_id, sqlite3 *, uint32_t proptag, void **outval);
+extern BOOL common_util_get_rule_property(uint64_t rule_id, sqlite3 *, gromox::proptag_t, void **val);
+extern bool cu_get_permission_property(int64_t member_id, sqlite3 *, gromox::proptag_t, void **outval);
 BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite);
 extern BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag);
 extern uint32_t cu_folder_unread_count(sqlite3 *psqlite, uint64_t folder_id, unsigned int flags = 0);

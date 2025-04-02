@@ -763,7 +763,7 @@ uint32_t driver::hid_from_eid(const BINARY &eid)
 	return strtoul(row[0], nullptr, 0);
 }
 
-uint32_t driver::hid_from_mst(kdb_item &item, uint32_t proptag)
+uint32_t driver::hid_from_mst(kdb_item &item, proptag_t proptag)
 {
 	auto &props = item.get_props();
 	auto eid = props->get<BINARY>(proptag);

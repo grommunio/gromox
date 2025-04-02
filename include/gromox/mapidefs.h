@@ -1153,7 +1153,7 @@ struct GX_EXPORT SVREID {
 };
 
 struct GX_EXPORT TAGGED_PROPVAL {
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	void *pvalue;
 
 	std::string repr(bool v = true) const;
@@ -1319,7 +1319,7 @@ using RESTRICTION_NOT = SNotRestriction;
 
 struct GX_EXPORT SContentRestriction {
 	uint32_t fuzzy_level;
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	TAGGED_PROPVAL propval;
 	bool comparable() const;
 	bool eval(const void *) const;
@@ -1331,7 +1331,7 @@ using RESTRICTION_CONTENT = SContentRestriction;
 
 struct GX_EXPORT SPropertyRestriction {
 	enum relop relop;
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	/*
 	 * propval.proptag is only used for proptype information, the propid is
 	 * ignored, but generally the same as RESTRICTION_PROPERTY::proptag.
@@ -1347,8 +1347,7 @@ using RESTRICTION_PROPERTY = SPropertyRestriction;
 
 struct GX_EXPORT SComparePropsRestriction {
 	enum relop relop;
-	uint32_t proptag1;
-	uint32_t proptag2;
+	gromox::proptag_t proptag1, proptag2;
 	bool comparable() const;
 
 	std::string repr() const;
@@ -1358,7 +1357,7 @@ using RESTRICTION_PROPCOMPARE = SComparePropsRestriction;
 
 struct GX_EXPORT SBitMaskRestriction {
 	enum bm_relop bitmask_relop;
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	uint32_t mask;
 	bool comparable() const { return PROP_TYPE(proptag) == PT_LONG; }
 	bool eval(const void *) const;
@@ -1370,7 +1369,7 @@ using RESTRICTION_BITMASK = SBitMaskRestriction;
 
 struct GX_EXPORT SSizeRestriction {
 	enum relop relop;
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	uint32_t size;
 	bool eval(const void *) const;
 
@@ -1380,7 +1379,7 @@ struct GX_EXPORT SSizeRestriction {
 using RESTRICTION_SIZE = SSizeRestriction;
 
 struct GX_EXPORT SExistRestriction {
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 
 	std::string repr() const;
 	SExistRestriction *dup() const;

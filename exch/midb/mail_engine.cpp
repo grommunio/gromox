@@ -1473,7 +1473,7 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		    nullptr, nullptr, &table_id, &row_count))
 			return false;
 		auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
-		static constexpr uint32_t proptags_0[] = {
+		static constexpr proptag_t proptags_0[] = {
 			PidTagMid, PR_MESSAGE_FLAGS, PR_LAST_MODIFICATION_TIME,
 			PR_MESSAGE_DELIVERY_TIME, PidTagMidString, PR_FLAG_STATUS,
 			PR_ICON_INDEX,

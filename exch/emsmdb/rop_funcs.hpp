@@ -93,7 +93,7 @@ extern ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *, PR
 extern ec_error_t rop_copyproperties(uint8_t want_async, uint8_t copy_flags, const PROPTAG_ARRAY *, PROBLEM_ARRAY *, LOGMAP *, uint8_t logon_id, uint32_t hsrc, uint32_t hdst);
 extern ec_error_t rop_copyto(uint8_t want_async, uint8_t want_subobjects, uint8_t copy_flags, const PROPTAG_ARRAY *exclprop, PROBLEM_ARRAY *, LOGMAP *, uint8_t logon_id, uint32_t hsrc, uint32_t hdst);
 extern ec_error_t rop_progress(uint8_t want_cancel, uint32_t *completed_count, uint32_t *total_count, uint8_t *rop_id, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hin);
-extern ec_error_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *stream_size, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
+extern ec_error_t rop_openstream(gromox::proptag_t, uint8_t flags, uint32_t *stream_size, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
 extern ec_error_t rop_readstream(uint16_t byte_count, uint32_t max_byte_count, BINARY *data, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_writestream(const BINARY *data, uint16_t *written_size, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_commitstream(LOGMAP *, uint8_t logon_id, uint32_t hin);

@@ -179,7 +179,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 	LONG_ARRAY minid_array;
 	BINARY *pparent_entryid = nullptr;
 	LONG_ARRAY *pminid_array;
-	uint32_t proptag_buff[25];
+	proptag_t proptag_buff[25];
 	static constexpr uint32_t tmp_proptags[] = {
 		PR_NICKNAME, PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 		PR_TITLE, PR_PRIMARY_TELEPHONE_NUMBER,
@@ -365,8 +365,8 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 	return false;
 }
 
-BOOL container_object_fetch_special_property(
-	uint8_t special_type, uint32_t proptag, void **ppvalue)
+BOOL container_object_fetch_special_property(uint8_t special_type,
+    proptag_t proptag, void **ppvalue)
 {
 	void *pvalue;
 	EXT_PUSH ext_push;

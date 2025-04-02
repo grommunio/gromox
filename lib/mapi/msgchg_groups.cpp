@@ -24,7 +24,7 @@ using namespace gromox;
 namespace {
 
 struct tag_entry {
-	uint32_t proptag = 0;
+	proptag_t proptag = 0;
 	PROPERTY_XNAME propname{};
 };
 

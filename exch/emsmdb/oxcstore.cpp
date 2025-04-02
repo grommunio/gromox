@@ -297,12 +297,11 @@ ec_error_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
-	PROPTAG_ARRAY columns;
 	TARRAY_SET class_table;
-	uint32_t proptags[] = {PidTagFolderId, PR_MESSAGE_CLASS_A, PR_LAST_MODIFICATION_TIME};
+	static constexpr proptag_t proptags[] =
+		{PidTagFolderId, PR_MESSAGE_CLASS_A, PR_LAST_MODIFICATION_TIME};
+	static constexpr PROPTAG_ARRAY columns = {std::size(proptags), deconst(proptags)};
 	
-	columns.count = std::size(proptags);
-	columns.pproptag = proptags;
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;

@@ -148,7 +148,7 @@ void gi_name_map_read(const void *buf, size_t bufsize, gi_name_map &map)
 	if (ep.g_uint64(&max) != EXT_ERR_SUCCESS)
 		throw YError("PG-1108");
 	for (size_t n = 0; n < max; ++n) {
-		uint32_t proptag;
+		proptag_t proptag;
 		PROPERTY_NAME propname{};
 		if (ep.g_uint32(&proptag) != EXT_ERR_SUCCESS ||
 		    ep.g_propname(&propname) != EXT_ERR_SUCCESS)

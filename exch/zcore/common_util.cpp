@@ -95,9 +95,7 @@ BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria)
 {
-	uint32_t proptag;
-	
-	proptag = 0;
+	proptag_t proptag = 0;
 	for (size_t i = 0; i < psort_criteria->count; ++i) {
 		if (!(psort_criteria->psort[i].type & MV_INSTANCE))
 			continue;
@@ -232,8 +230,7 @@ ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *dat
 	return ecSuccess;
 }
 
-void common_util_remove_propvals(
-	TPROPVAL_ARRAY *parray, uint32_t proptag)
+void common_util_remove_propvals(TPROPVAL_ARRAY *parray, proptag_t proptag)
 {
 	int i;
 	
@@ -2068,7 +2065,7 @@ void *cu_read_storenamedprop(const char *dir, const GUID &guid,
 	if (!exmdb_client->get_named_propids(dir, false, &name_req, &name_rsp) ||
 	    name_rsp.size() != name_req.size() || name_rsp[0] == 0)
 		return nullptr;
-	uint32_t proptag = PROP_TAG(proptype, name_rsp[0]);
+	auto proptag = PROP_TAG(proptype, name_rsp[0]);
 	const PROPTAG_ARRAY tags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY values{};
 	if (!exmdb_client->get_store_properties(dir, CP_ACP, &tags, &values))

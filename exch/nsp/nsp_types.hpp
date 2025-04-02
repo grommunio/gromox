@@ -67,7 +67,7 @@ union PROP_VAL_UNION {
 };
 
 struct PROPERTY_VALUE {
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	uint32_t reserved;
 	PROP_VAL_UNION value; /* type is PROP_TYPE(proptag) */
 };
@@ -108,37 +108,36 @@ struct NSPRES_NOT {
 
 struct NSPRES_CONTENT {
 	uint32_t fuzzy_level;
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	PROPERTY_VALUE *pprop;
 };
 
 struct NSPRES_PROPERTY {
 	enum relop relop;
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	PROPERTY_VALUE *pprop;
 };
 
 struct NSPRES_PROPCOMPARE {
 	enum relop relop;
-	uint32_t proptag1;
-	uint32_t proptag2;
+	gromox::proptag_t proptag1, proptag2;
 };
 
 struct NSPRES_BITMASK {
 	enum bm_relop rel_mbr;
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	uint32_t mask;
 };
 
 struct NSPRES_SIZE {
 	enum relop relop;
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	uint32_t cb;
 };
 
 struct NSPRES_EXIST {
 	uint32_t reserved1;
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	uint32_t reserved2;
 };
 

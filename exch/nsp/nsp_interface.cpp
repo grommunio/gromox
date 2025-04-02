@@ -98,7 +98,7 @@ static const BINARY *nsp_photo_rpc(const char *dir)
 	if (!get_named_propids(dir, false, &name_req, &name_rsp) ||
 	    name_rsp.size() != name_req.size() || name_rsp[0] == 0)
 		return nullptr;
-	uint32_t proptag = PROP_TAG(PT_BINARY, name_rsp[0]);
+	auto proptag = PROP_TAG(PT_BINARY, name_rsp[0]);
 	const PROPTAG_ARRAY tags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY values{};
 	if (!get_store_properties(dir, CP_ACP, &tags, &values))
@@ -185,7 +185,7 @@ static ec_error_t nsp_fetchprop(const ab_tree::ab_node &node, cpid_t codepage, u
 }
 
 static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
-    BOOL b_ephid, cpid_t codepage, uint32_t proptag, PROPERTY_VALUE *pprop,
+    BOOL b_ephid, cpid_t codepage, proptag_t proptag, PROPERTY_VALUE *pprop,
     void *pbuff, size_t pbsize)
 {
 	size_t temp_len;
@@ -1893,7 +1893,7 @@ ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 }
 
 ec_error_t nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
-    uint32_t proptag, uint32_t mid, const BINARY_ARRAY *pentry_ids) try
+    proptag_t proptag, uint32_t mid, const BINARY_ARRAY *pentry_ids) try
 {
 	if (g_nsp_trace > 0)
 		fprintf(stderr, "Entering %s {flags=%xh,proptag=%xh,mid=%xh}\n",

@@ -648,7 +648,7 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 }
 
 static BOOL msgo_is_readonly_prop(const message_object *pmessage,
-   uint32_t proptag)
+   proptag_t proptag)
 { 
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
@@ -695,7 +695,7 @@ static BOOL msgo_is_readonly_prop(const message_object *pmessage,
 }
 
 static BOOL message_object_get_calculated_property(message_object *pmessage,
-    uint32_t proptag, void **ppvalue)
+    proptag_t proptag, void **ppvalue)
 {
 	switch (proptag) {
 	case PR_ACCESS:

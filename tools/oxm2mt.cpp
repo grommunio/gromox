@@ -34,7 +34,8 @@ namespace {
  * "proptag entry" - Same size as the structure on-disk, but in host-byte order.
  */
 struct pte {
-	uint32_t proptag, flags;
+	proptag_t proptag;
+	uint32_t flags;
 	union {
 		char data[8];
 		uint16_t v_ui2;

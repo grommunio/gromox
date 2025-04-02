@@ -327,7 +327,7 @@ store_object::get_property_groupinfo(uint32_t group_id) try
 	return nullptr;
 }
 
-static BOOL store_object_is_readonly_prop(store_object *pstore, uint32_t proptag)
+static BOOL store_object_is_readonly_prop(store_object *pstore, proptag_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
@@ -479,7 +479,7 @@ static constexpr struct cfg_directive oof_defaults[] = {
 };
 
 static void *store_object_get_oof_property(const char *maildir,
-    uint32_t proptag) try
+    proptag_t proptag) try
 {
 	int offset;
 	char *pbuff;
@@ -587,7 +587,7 @@ static void *store_object_get_oof_property(const char *maildir,
 }
 
 static BOOL store_object_get_calculated_property(store_object *pstore,
-    uint32_t proptag, void **ppvalue)
+    proptag_t proptag, void **ppvalue)
 {
 	uint32_t permission;
 	
@@ -1056,7 +1056,7 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 }
 
 static BOOL store_object_set_oof_property(const char *maildir,
-	uint32_t proptag, const void *pvalue)
+    proptag_t proptag, const void *pvalue)
 {
 	char *pbuff;
 	int buff_len;
@@ -1385,7 +1385,7 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 	uint32_t max_count;
 	TARRAY_SET permission_set;
 	PERMISSION_ROW *pperm_row;
-	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
+	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
 	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	
 	if (!exmdb_client->load_permission_table(

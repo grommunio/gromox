@@ -875,7 +875,7 @@ ec_error_t rop_progress(uint8_t want_cancel, uint32_t *pcompleted_count,
 	return ecNotSupported;
 }
 
-ec_error_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_size,
+ec_error_t rop_openstream(proptag_t proptag, uint8_t flags, uint32_t *pstream_size,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	ems_objtype object_type;

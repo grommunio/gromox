@@ -189,7 +189,7 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	return TRUE;
 }
 
-bool attachment_object::is_readonly_prop(uint32_t proptag) const
+bool attachment_object::is_readonly_prop(proptag_t proptag) const
 {
 	auto pattachment = this;
 	if (PROP_TYPE(proptag) == PT_OBJECT && proptag != PR_ATTACH_DATA_OBJ)
@@ -212,7 +212,7 @@ bool attachment_object::is_readonly_prop(uint32_t proptag) const
 }
 
 static BOOL attachment_object_get_calculated_property(const attachment_object *pattachment,
-    uint32_t proptag, void **ppvalue)
+    proptag_t proptag, void **ppvalue)
 {
 	switch (proptag) {
 	case PR_ACCESS:
@@ -243,7 +243,7 @@ static BOOL attachment_object_get_calculated_property(const attachment_object *p
 }
 
 static const void *attachment_object_get_stream_property_value(const attachment_object *at,
-    uint32_t proptag)
+    proptag_t proptag)
 {
 	for (auto so : at->stream_list)
 		if (so->get_proptag() == proptag)
@@ -296,7 +296,7 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 	return TRUE;	
 }
 
-static bool ao_has_open_streams(attachment_object *at, uint32_t proptag)
+static bool ao_has_open_streams(attachment_object *at, proptag_t proptag)
 {
 	for (auto so : at->stream_list)
 		if (so->get_proptag() == proptag)
@@ -360,7 +360,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	std::vector<uint16_t> poriginal_indices;

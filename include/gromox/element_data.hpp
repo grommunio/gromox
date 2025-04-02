@@ -14,7 +14,7 @@ struct GX_EXPORT property_groupinfo {
 	property_groupinfo(property_groupinfo &&) noexcept;
 	void operator=(property_groupinfo &&) noexcept = delete;
 	bool append_internal(PROPTAG_ARRAY *);
-	bool get_partial_index(uint32_t proptag, uint32_t *idx) const;
+	bool get_partial_index(gromox::proptag_t, uint32_t *idx) const;
 
 	uint32_t group_id = 0, reserved = 0, count = 0;
 	PROPTAG_ARRAY *pgroups = nullptr;

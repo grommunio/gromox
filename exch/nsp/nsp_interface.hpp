@@ -19,7 +19,7 @@ extern ec_error_t nsp_interface_compare_mids(NSPI_HANDLE, uint32_t, const STAT *
 extern ec_error_t nsp_interface_mod_props(NSPI_HANDLE, uint32_t, const STAT *, const LPROPTAG_ARRAY *, const NSP_PROPROW *);
 extern ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE, uint32_t flags, const STAT *, uint32_t *version, NSP_ROWSET **);
 extern ec_error_t nsp_interface_get_templateinfo(NSPI_HANDLE, uint32_t flags, uint32_t type, const char *dn, cpid_t, uint32_t locale_id, NSP_PROPROW **);
-extern ec_error_t nsp_interface_mod_linkatt(NSPI_HANDLE, uint32_t flags, uint32_t proptag, uint32_t mid, const BINARY_ARRAY *entry_ids);
+extern ec_error_t nsp_interface_mod_linkatt(NSPI_HANDLE, uint32_t flags, gromox::proptag_t, uint32_t mid, const BINARY_ARRAY *entry_ids);
 extern ec_error_t nsp_interface_query_columns(NSPI_HANDLE, uint32_t, uint32_t flags, LPROPTAG_ARRAY **cols);
 extern ec_error_t nsp_interface_resolve_names(NSPI_HANDLE, uint32_t, const STAT *, LPROPTAG_ARRAY *&, const STRINGS_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
 extern ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE, uint32_t, const STAT *, LPROPTAG_ARRAY *&, const STRINGS_ARRAY *, MID_ARRAY **, NSP_ROWSET **);

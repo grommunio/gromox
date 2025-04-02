@@ -196,7 +196,7 @@ static BOOL table_object_get_store_table_all_proptags(
 {
 	PROPTAG_ARRAY tmp_proptags1;
 	PROPTAG_ARRAY tmp_proptags2;
-	static constexpr uint32_t proptag_buff[] = {
+	static constexpr proptag_t proptag_buff[] = {
 		PR_MDB_PROVIDER, PR_MESSAGE_SIZE, PR_ASSOC_MESSAGE_SIZE,
 		PR_NORMAL_MESSAGE_SIZE, PR_EMS_AB_DISPLAY_NAME_PRINTABLE,
 		PR_DEFAULT_STORE, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS,

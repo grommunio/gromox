@@ -99,7 +99,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-bool folder_object::is_readonly_prop(uint32_t proptag) const
+bool folder_object::is_readonly_prop(proptag_t proptag) const
 {
 	auto pfolder = this;
 	if (PROP_TYPE(proptag) == PT_OBJECT)
@@ -156,7 +156,7 @@ bool folder_object::is_readonly_prop(uint32_t proptag) const
 }
 
 static BOOL folder_object_get_calculated_property(folder_object *pfolder,
-    uint32_t proptag, void **ppvalue)
+    proptag_t proptag, void **ppvalue)
 {
 	BINARY *pbin;
 	void *pvalue;
@@ -568,7 +568,7 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 	uint32_t row_num;
 	uint32_t table_id;
 	TARRAY_SET permission_set;
-	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
+	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
 	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	
 	auto pfolder = this;

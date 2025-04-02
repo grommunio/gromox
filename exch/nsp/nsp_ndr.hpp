@@ -212,7 +212,7 @@ struct NSPIGETTEMPLATEINFO_OUT {
 struct NSPIMODLINKATT_IN {
 	NSPI_HANDLE handle;
 	uint32_t flags;
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	uint32_t mid;
 	BINARY_ARRAY entry_ids;
 };

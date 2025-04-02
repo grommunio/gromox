@@ -230,7 +230,7 @@ struct PROPROW_SET {
 
 struct PROPERTY_PROBLEM {
 	uint16_t index;
-	uint32_t proptag;
+	gromox::proptag_t proptag;
 	uint32_t err;
 
 	inline bool operator<(const PROPERTY_PROBLEM &o) const { return index < o.index; }

@@ -184,8 +184,9 @@ EWSPlugin::DebugCtx::DebugCtx(const std::string_view& opts)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool EWSPlugin::_exmdb::get_message_property(const char *dir, const char *username, cpid_t cpid, uint64_t message_id,
-                                             uint32_t proptag, void **ppval) const
+bool EWSPlugin::_exmdb::get_message_property(const char *dir,
+    const char *username, cpid_t cpid, uint64_t message_id, proptag_t proptag,
+    void **ppval) const
 {
 	PROPTAG_ARRAY tmp_proptags{1, &proptag};
 	TPROPVAL_ARRAY propvals;

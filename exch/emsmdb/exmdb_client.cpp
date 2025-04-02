@@ -86,7 +86,7 @@ BOOL exmdb_client_shm::get_named_propname(const char *dir, uint16_t propid,
 }
 
 BOOL exmdb_client_shm::get_store_property(const char *dir, cpid_t cpid,
-    uint32_t proptag, void **ppval)
+    proptag_t proptag, void **ppval)
 {
 	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	TPROPVAL_ARRAY tmp_propvals;
@@ -98,7 +98,7 @@ BOOL exmdb_client_shm::get_store_property(const char *dir, cpid_t cpid,
 }
 
 BOOL exmdb_client_shm::get_folder_property(const char *dir, cpid_t cpid,
-    uint64_t folder_id, uint32_t proptag, void **ppval)
+    uint64_t folder_id, proptag_t proptag, void **ppval)
 {
 	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	TPROPVAL_ARRAY tmp_propvals;
@@ -122,7 +122,7 @@ BOOL exmdb_client_shm::delete_message(const char *dir, int account_id, cpid_t cp
 }
 
 BOOL exmdb_client_shm::get_instance_property(const char *dir, uint32_t instance_id,
-    uint32_t proptag, void **ppval)
+    proptag_t proptag, void **ppval)
 {
 	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	TPROPVAL_ARRAY tmp_propvals;
@@ -146,7 +146,7 @@ BOOL exmdb_client_shm::set_instance_property(const char *dir, uint32_t instance_
 }
 
 BOOL exmdb_client_shm::remove_instance_property(const char *dir, uint32_t instance_id,
-    uint32_t proptag, uint32_t *presult)
+    proptag_t proptag, uint32_t *presult)
 {
 	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	PROBLEM_ARRAY tmp_problems;
@@ -158,7 +158,7 @@ BOOL exmdb_client_shm::remove_instance_property(const char *dir, uint32_t instan
 }
 
 BOOL exmdb_client_shm::get_message_property(const char *dir, const char *username,
-    cpid_t cpid, uint64_t message_id, uint32_t proptag, void **ppval)
+    cpid_t cpid, uint64_t message_id, proptag_t proptag, void **ppval)
 {
 	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	TPROPVAL_ARRAY tmp_propvals;
@@ -183,7 +183,7 @@ BOOL exmdb_client_shm::set_message_property(const char *dir, const char *usernam
 }
 
 BOOL exmdb_client_shm::remove_message_property(const char *dir, cpid_t cpid,
-    uint64_t message_id, uint32_t proptag)
+    uint64_t message_id, proptag_t proptag)
 {
 	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	return exmdb_client->remove_message_properties(dir, cpid,

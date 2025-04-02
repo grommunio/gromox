@@ -10,7 +10,7 @@ static bool proptag_array_init_internal(PROPTAG_ARRAY *pproptags)
 	
 	pproptags->count = 0;
 	auto count = strange_roundup(pproptags->count, SR_GROW_PROPTAG_ARRAY);
-	pproptags->pproptag = me_alloc<uint32_t>(count);
+	pproptags->pproptag = me_alloc<proptag_t>(count);
 	return pproptags->pproptag != nullptr;
 }
 
@@ -43,7 +43,7 @@ void proptag_array_clear(PROPTAG_ARRAY *pproptags)
 	pproptags->count = 0;
 }
 
-bool proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
+bool proptag_array_append(PROPTAG_ARRAY *pproptags, proptag_t proptag)
 {
 	for (size_t i = 0; i < pproptags->count; ++i)
 		if (pproptags->pproptag[i] == proptag) {
@@ -52,7 +52,7 @@ bool proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 	auto count = strange_roundup(pproptags->count, SR_GROW_PROPTAG_ARRAY);
 	if (pproptags->count + 1U >= count) {
 		count += SR_GROW_PROPTAG_ARRAY;
-		auto pproptag = re_alloc<uint32_t>(pproptags->pproptag, count);
+		auto pproptag = re_alloc<proptag_t>(pproptags->pproptag, count);
 		if (NULL == pproptag) {
 			return false;
 		}
@@ -62,7 +62,7 @@ bool proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 	return true;
 }
 
-void proptag_array_remove(PROPTAG_ARRAY *pproptags, uint32_t proptag)
+void proptag_array_remove(PROPTAG_ARRAY *pproptags, proptag_t proptag)
 {
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		if (proptag == pproptags->pproptag[i]) {
@@ -81,7 +81,7 @@ static bool proptag_array_dup_internal(const PROPTAG_ARRAY *pproptags,
 {
 	auto count = strange_roundup(pproptags->count, SR_GROW_PROPTAG_ARRAY);
 	pproptags_dst->count = pproptags->count;
-	pproptags_dst->pproptag = me_alloc<uint32_t>(count);
+	pproptags_dst->pproptag = me_alloc<proptag_t>(count);
 	if (NULL == pproptags_dst->pproptag) {
 		return false;
 	}
