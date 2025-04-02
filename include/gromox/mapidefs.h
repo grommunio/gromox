@@ -1303,6 +1303,7 @@ struct GX_EXPORT restriction_list {
 
 	std::string repr() const;
 	restriction_list *dup() const;
+	I_BEGIN_END(pres, count);
 };
 using RESTRICTION_AND_OR = restriction_list;
 using SAndRestriction = restriction_list;
