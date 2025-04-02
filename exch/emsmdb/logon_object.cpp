@@ -44,7 +44,7 @@ static bool propname_to_packed(const PROPERTY_NAME &n, char *dst, size_t z)
 }
 
 static BOOL logon_object_cache_propname(logon_object *plogon,
-    uint16_t propid, const PROPERTY_NAME *ppropname) try
+    propid_t propid, const PROPERTY_NAME *ppropname) try
 {
 	char s[NP_STRBUF_SIZE];
 	if (!propname_to_packed(*ppropname, s, std::size(s)))
@@ -84,7 +84,7 @@ GUID logon_object::guid() const
 	       rop_util_make_domain_guid(account_id);
 }
 
-BOOL logon_object::get_named_propname(uint16_t propid,
+BOOL logon_object::get_named_propname(propid_t propid,
     PROPERTY_NAME *ppropname)
 {
 	if (!is_nameprop_id(propid)) {

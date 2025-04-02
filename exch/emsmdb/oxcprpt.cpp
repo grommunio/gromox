@@ -524,7 +524,7 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 		return ecNotSupported;
 	}
 	for (unsigned int i = 0; i < proptags.count; ++i) {
-		uint16_t propid = PROP_ID(proptags.pproptag[i]);
+		auto propid = PROP_ID(proptags.pproptag[i]);
 		if (!is_nameprop_id(propid))
 			continue;
 		propids.push_back(propid);

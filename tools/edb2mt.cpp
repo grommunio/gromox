@@ -344,7 +344,7 @@ static void do_namedprops(mbox_state &mbs)
 		throw az_error("EE-1039", err);
 	for (int y = 0; y < nrows; ++y) {
 		PROPERTY_XNAME pn_req{};
-		uint16_t propid = 0;
+		propid_t propid = 0;
 		foreach_col(table.get(), y, ix2na, [&](const std::string &key, std::string &&val) {
 			if (key == "PropNumber") {
 				propid = le32p_to_cpu(val.data());

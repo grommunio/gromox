@@ -670,7 +670,7 @@ static BOOL oxcmail_parse_thread_index(const char *charset, const char *field,
 }
 
 static BOOL oxcmail_parse_keywords(const char *charset, const char *field,
-    uint16_t propid, TPROPVAL_ARRAY *pproplist)
+    propid_t propid, TPROPVAL_ARRAY *pproplist)
 {
 	int i, len;
 	BOOL b_start;
@@ -1759,11 +1759,10 @@ static void oxcmail_replace_propid(TPROPVAL_ARRAY *pproplist,
     const propididmap_t &phash)
 {
 	int i;
-	uint16_t propid;
 	
 	for (i=0; i<pproplist->count; i++) {
 		auto proptag = pproplist->ppropval[i].proptag;
-		propid = PROP_ID(proptag);
+		auto propid = PROP_ID(proptag);
 		if (!is_nameprop_id(propid))
 			continue;
 		auto it = phash.find(propid);

@@ -12,7 +12,7 @@ class GX_EXPORT exmdb_client_shm final {
 	void stop();
 	void free();
 	BOOL get_named_propid(const char *dir, BOOL create, const PROPERTY_NAME *, uint16_t *ppropid);
-	BOOL get_named_propname(const char *dir, uint16_t propid, PROPERTY_NAME *);
+	BOOL get_named_propname(const char *dir, gromox::propid_t, PROPERTY_NAME *);
 	BOOL get_store_property(const char *dir, cpid_t, gromox::proptag_t, void **ppval);
 	BOOL get_folder_property(const char *dir, cpid_t, uint64_t folder_id, gromox::proptag_t, void **ppval);
 	BOOL delete_message(const char *dir, int account_id, cpid_t, uint64_t folder_id, uint64_t msg_id, BOOL b_hard, BOOL *pb_done);

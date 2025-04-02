@@ -251,7 +251,7 @@ int mbop_insert_namedprops(sqlite3 *sdb, const char *datadir)
 
 	size_t i = 0;
 	for (const auto &name : nplist) {
-		uint16_t propid = 0x8001 + i++;
+		propid_t propid = 0x8001 + i++;
 		if (propid >= 0xFFFF) {
 			fprintf(stderr, "insert_namedprop: exhausted namedprop space\n");
 			return -EIO;

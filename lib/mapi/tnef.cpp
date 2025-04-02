@@ -130,7 +130,7 @@ struct REND_DATA {
 
 struct TNEF_PROPVAL {
 	uint16_t proptype;
-	uint16_t propid;
+	propid_t propid;
 	PROPERTY_NAME *ppropname;
 	void *pvalue;
 };
@@ -1019,11 +1019,10 @@ static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist,
     const propididmap_t &phash)
 {
 	int i;
-	uint16_t propid;
 	
 	for (i=0; i<pproplist->count; i++) {
 		auto proptag = pproplist->ppropval[i].proptag;
-		propid = PROP_ID(proptag);
+		auto propid = PROP_ID(proptag);
 		if (!is_nameprop_id(propid))
 			continue;
 		auto ppropid = phash.find(propid);

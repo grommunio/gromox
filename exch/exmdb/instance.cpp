@@ -1896,7 +1896,6 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
     uint32_t size_limit, uint32_t instance_id, const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
-	uint16_t propid;
 	uint32_t length;
 	MESSAGE_CONTENT *pmsgctnt;
 	
@@ -1978,7 +1977,7 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 				            pinstance->cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}	
 		} else if (PROP_TYPE(tag) == PT_UNSPECIFIED) {
-			propid = PROP_ID(tag);
+			auto propid = PROP_ID(tag);
 			for (unsigned int j = 0; j < pmsgctnt->proplist.count; ++j) {
 				if (propid != PROP_ID(pmsgctnt->proplist.ppropval[j].proptag))
 					continue;

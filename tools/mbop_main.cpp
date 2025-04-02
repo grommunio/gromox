@@ -864,7 +864,7 @@ static int delstoreprop(int argc, char **argv, const GUID &guid,
 		return EXIT_PARAM;
 	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 
-	uint16_t propid = 0;
+	propid_t propid = 0;
 	auto err = resolvename(guid, name, false, &propid);
 	if (err == ENOENT)
 		return EXIT_SUCCESS;
@@ -925,7 +925,7 @@ static int showstoreprop(int argc, char **argv, const GUID guid,
 		return EXIT_PARAM;
 	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 
-	uint16_t propid = 0;
+	propid_t propid = 0;
 	auto err = resolvename(guid, name, false, &propid);
 	if (err == ENOENT)
 		return EXIT_SUCCESS;
@@ -977,7 +977,7 @@ static int setstoreprop(int argc, char **argv, const GUID guid,
 		return EXIT_PARAM;
 	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 
-	uint16_t propid = 0;
+	propid_t propid = 0;
 	auto err = resolvename(guid, name, true, &propid);
 	if (err == ENOENT) {
 		fprintf(stderr, "namedprop %s not found\n", name);

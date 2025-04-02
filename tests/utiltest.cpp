@@ -437,7 +437,7 @@ static int t_mcg()
 	if (msgchg_grouping_run(mpath) != 0)
 		return EXIT_FAILURE;
 	auto pgi = msgchg_grouping_get_groupinfo([](void *store, BOOL create, const PROPERTY_NAME *pn, uint16_t *id) -> BOOL {
-		static uint16_t propid = 0x8000;
+		static propid_t propid = 0x8000;
 		*id = propid++;
 		return TRUE;
 	}, nullptr, 1);

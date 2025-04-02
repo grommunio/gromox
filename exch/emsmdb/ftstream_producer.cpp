@@ -248,7 +248,7 @@ static BOOL ftstream_producer_write_binary(fxstream_producer *pstream, const BIN
 }
 
 static int ftstream_producer_write_propdef(fxstream_producer *pstream,
-	uint16_t proptype, uint16_t propid)
+    proptype_t proptype, propid_t propid)
 {
 	uint16_t tmp_val;
 	EXT_PUSH ext_push;
@@ -301,12 +301,9 @@ static int ftstream_producer_write_propdef(fxstream_producer *pstream,
 static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
     TAGGED_PROPVAL *ppropval)
 {
-	uint16_t propid;
-	uint16_t proptype;
 	uint16_t write_type;
-	
-	propid = PROP_ID(ppropval->proptag);
-	proptype = PROP_TYPE(ppropval->proptag);
+	auto propid = PROP_ID(ppropval->proptag);
+	auto proptype = PROP_TYPE(ppropval->proptag);
 	/* ignore PT_SVREID */
 	if (proptype == PT_SVREID)
 		return TRUE;
@@ -618,7 +615,7 @@ BOOL fxstream_producer::write_messagechangefull(
 static BOOL ftstream_producer_write_groupinfo(fxstream_producer *pstream,
 	const PROPERTY_GROUPINFO *pginfo)
 {
-	uint16_t propid;
+	propid_t propid = 0;
 	EXT_PUSH ext_push;
 	uint32_t name_size;
 	PROPERTY_NAME propname;

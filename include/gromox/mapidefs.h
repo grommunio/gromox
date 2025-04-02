@@ -1112,7 +1112,7 @@ struct SHORT_ARRAY {
  */
 struct GX_EXPORT SORT_ORDER {
 	uint16_t type;
-	uint16_t propid;
+	gromox::propid_t propid;
 	uint8_t table_sort;
 
 	std::string repr() const;

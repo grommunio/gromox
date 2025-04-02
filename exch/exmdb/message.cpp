@@ -2198,7 +2198,7 @@ static BOOL message_get_real_propid(sqlite3 *psqlite,
 	PROPID_ARRAY propids;
 	PROPNAME_ARRAY propnames;
 	
-	uint16_t propid = PROP_ID(*pproptag);
+	auto propid = PROP_ID(*pproptag);
 	*pb_replaced = FALSE;
 	if (!is_nameprop_id(propid))
 		return TRUE;
@@ -2413,7 +2413,7 @@ static BOOL message_get_propids(const PROPNAME_ARRAY *ppropnames,
 	return common_util_get_named_propids(psqlite, false, ppropnames, ppropids);
 }
 
-static BOOL message_get_propname(uint16_t propid,
+static BOOL message_get_propname(propid_t propid,
 	PROPERTY_NAME **pppropname) try
 {
 	PROPNAME_ARRAY propnames;

@@ -62,7 +62,7 @@ static bool propname_to_packed(const PROPERTY_NAME &n, char *dst, size_t z)
 }
 
 static BOOL store_object_cache_propname(store_object *pstore,
-    uint16_t propid, const PROPERTY_NAME *ppropname) try
+    propid_t propid, const PROPERTY_NAME *ppropname) try
 {
 	char s[NP_STRBUF_SIZE];
 	if (!propname_to_packed(*ppropname, s, std::size(s)))

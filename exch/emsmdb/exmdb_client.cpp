@@ -70,7 +70,7 @@ BOOL exmdb_client_shm::get_named_propid(const char *dir, BOOL b_create,
 	return TRUE;
 }
 
-BOOL exmdb_client_shm::get_named_propname(const char *dir, uint16_t propid,
+BOOL exmdb_client_shm::get_named_propname(const char *dir, propid_t propid,
     PROPERTY_NAME *ppropname) try
 {
 	PROPNAME_ARRAY tmp_propnames;

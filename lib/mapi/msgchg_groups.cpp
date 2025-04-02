@@ -142,7 +142,7 @@ std::unique_ptr<property_groupinfo>
 		for (const auto &node : raw_tags) {
 			uint32_t tag = node.proptag;
 			if (PROP_ID(tag) == 0) {
-				uint16_t propid = 0;
+				propid_t propid = 0;
 				PROPERTY_NAME pn(node.propname);
 				if (!get_named_propid(store, TRUE,
 				    &pn, &propid) || propid == 0) {

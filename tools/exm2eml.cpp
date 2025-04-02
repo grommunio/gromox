@@ -64,7 +64,7 @@ static BOOL cu_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 	       false, names, ids);
 }
 
-static BOOL cu_get_propname(uint16_t propid, PROPERTY_NAME **name) try
+static BOOL cu_get_propname(propid_t propid, PROPERTY_NAME **name) try
 {
 	PROPNAME_ARRAY names = {};
 	if (!exmdb_client_remote::get_named_propnames(g_storedir,

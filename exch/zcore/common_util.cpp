@@ -1153,7 +1153,7 @@ static BOOL common_util_get_propids_create(const PROPNAME_ARRAY *names,
 	       TRUE, names, ids);
 }
 
-static BOOL common_util_get_propname(uint16_t propid, PROPERTY_NAME **pppropname) try
+static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname) try
 {
 	PROPNAME_ARRAY propnames;
 	

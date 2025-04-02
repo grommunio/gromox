@@ -499,7 +499,7 @@ mv_decode_bin(proptag_t proptag, const uint8_t *data, size_t dsize)
 static void emit_namedprop(namedprop_bimap &name_map, libpff_record_entry_t *rent,
     proptag_t proptag)
 {
-	uint16_t propid = PROP_ID(proptag);
+	auto propid = PROP_ID(proptag);
 	if (name_map.fwd.find(propid) != name_map.fwd.cend())
 		return; /* already sent */
 	libpff_nti_entry_ptr nti_entry;
