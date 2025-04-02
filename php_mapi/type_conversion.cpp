@@ -88,9 +88,7 @@ ec_error_t binary_array_to_php(const BINARY_ARRAY *pbins, zval *pzval)
 {
 	zarray_init(pzval);
 	for (size_t i = 0; i < pbins->count; ++i)
-		add_next_index_stringl(
-			pzval, reinterpret_cast<const char *>(pbins->pbin[i].pb),
-			pbins->pbin[i].cb);
+		add_next_index_stringl(pzval, pbins->pbin[i].pc, pbins->pbin[i].cb);
 	return ecSuccess;
 }
 
@@ -1288,7 +1286,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 			break;
 		case PT_BINARY:
 			add_assoc_stringl(pzret, pts.c_str(),
-				reinterpret_cast<const char *>(static_cast<const BINARY *>(ppropval->pvalue)->pb),
+				static_cast<const BINARY *>(ppropval->pvalue)->pc,
 				static_cast<const BINARY *>(ppropval->pvalue)->cb);
 			break;
 		case PT_SYSTIME:
@@ -1340,9 +1338,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 			zarray_init(&pzmval);
 			auto xb = static_cast<const BINARY_ARRAY *>(ppropval->pvalue);
 			for (size_t j = 0; j < xb->count; ++j)
-				add_assoc_stringl(&pzmval, itoa(j, key),
-					reinterpret_cast<const char *>(xb->pbin[j].pb),
-					xb->pbin[j].cb);
+				add_assoc_stringl(&pzmval, itoa(j, key), xb->pbin[j].pc, xb->pbin[j].cb);
 			add_assoc_zval(pzret, pts.c_str(), &pzmval);
 			break;
 		}
@@ -1379,19 +1375,16 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 				case OP_COPY: {
 					auto xq = static_cast<const ZMOVECOPY_ACTION *>(act.pdata);
 					add_assoc_stringl(&pzactval, "storeentryid",
-						reinterpret_cast<const char *>(xq->store_eid.pb),
-						xq->store_eid.cb);
+						xq->store_eid.pc, xq->store_eid.cb);
 					add_assoc_stringl(&pzactval, "folderentryid",
-						reinterpret_cast<const char *>(xq->folder_eid.pb),
-						xq->folder_eid.cb);
+						xq->folder_eid.pc, xq->folder_eid.cb);
 					break;
 				}
 				case OP_REPLY:
 				case OP_OOF_REPLY: {
 					auto xq = static_cast<const ZREPLY_ACTION *>(act.pdata);
 					add_assoc_stringl(&pzactval, "replyentryid",
-						reinterpret_cast<const char *>(xq->message_eid.pb),
-						xq->message_eid.cb);
+						xq->message_eid.pc, xq->message_eid.cb);
 					add_assoc_stringl(
 						&pzactval, "replyguid",
 						reinterpret_cast<const char *>(&xq->template_guid),
@@ -1480,7 +1473,7 @@ ec_error_t state_array_to_php(const STATE_ARRAY *pstates, zval *pzret)
 	for (size_t i = 0; i < pstates->count; ++i) {
 		zarray_init(&pzval);
 		add_assoc_stringl(&pzval, "sourcekey",
-			reinterpret_cast<const char *>(pstates->pstate[i].source_key.pb),
+			pstates->pstate[i].source_key.pc,
 			pstates->pstate[i].source_key.cb);
 		add_assoc_long(&pzval, "flags",
 			pstates->pstate[i].message_flags);
@@ -1550,10 +1543,10 @@ ec_error_t znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval 
 			auto pnew_notification =
 				static_cast<const NEWMAIL_ZNOTIFICATION *>(pnotifications->ppnotification[i]->pnotification_data);
 			add_assoc_stringl(&pzvalnotif, "entryid",
-				reinterpret_cast<const char *>(pnew_notification->entryid.pb),
+				pnew_notification->entryid.pc,
 				pnew_notification->entryid.cb);
 			add_assoc_stringl(&pzvalnotif, "parentid",
-				reinterpret_cast<const char *>(pnew_notification->parentid.pb),
+				pnew_notification->parentid.pc,
 				pnew_notification->parentid.cb);
 			add_assoc_long(&pzvalnotif, "flags",
 				pnew_notification->flags);
@@ -1573,24 +1566,24 @@ ec_error_t znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval 
 				static_cast<const OBJECT_ZNOTIFICATION *>(pnotifications->ppnotification[i]->pnotification_data);
 			if (NULL != pobject_notification->pentryid) {
 				add_assoc_stringl(&pzvalnotif, "entryid",
-					reinterpret_cast<const char *>(pobject_notification->pentryid->pb),
+					pobject_notification->pentryid->pc,
 					pobject_notification->pentryid->cb);
 			}
 			add_assoc_long(&pzvalnotif, "objtype",
 				static_cast<uint32_t>(pobject_notification->object_type));
 			if (NULL != pobject_notification->pparentid) {
 				add_assoc_stringl(&pzvalnotif, "parentid",
-				reinterpret_cast<const char *>(pobject_notification->pparentid->pb),
+				pobject_notification->pparentid->pc,
 				pobject_notification->pparentid->cb);
 			}
 			if (NULL != pobject_notification->pold_entryid) {
 				add_assoc_stringl(&pzvalnotif, "oldid",
-				reinterpret_cast<const char *>(pobject_notification->pold_entryid->pb),
+				pobject_notification->pold_entryid->pc,
 				pobject_notification->pold_entryid->cb);
 			}
 			if (NULL != pobject_notification->pold_parentid) {
 				add_assoc_stringl(&pzvalnotif, "oldparentid",
-				reinterpret_cast<const char *>(pobject_notification->pold_parentid->pb),
+				pobject_notification->pold_parentid->pc,
 				pobject_notification->pold_parentid->cb);
 			}
 			if (NULL != pobject_notification->pproptags) {
