@@ -2144,7 +2144,7 @@ static GP_RESULT cu_get_properties1(mapi_object_type table_type, uint64_t id,
 	/* Normal stored property from sqlite */
 	xstmt own_stmt;
 	sqlite3_stmt *pstmt = nullptr;
-	uint16_t proptype = PROP_TYPE(tag);
+	auto proptype = PROP_TYPE(tag);
 	if (proptype == PT_UNSPECIFIED || proptype == PT_STRING8 ||
 	    proptype == PT_UNICODE) {
 		auto bret = gp_prepare_anystr(psqlite, table_type, id, tag, own_stmt, pstmt);
@@ -2415,7 +2415,7 @@ static bool gp_prepare_default(sqlite3 *psqlite, mapi_object_type table_type,
  * advancing here).
  */
 static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
-    uint16_t proptype, cpid_t cpid, GP_RESULT &gpr)
+    proptype_t proptype, cpid_t cpid, GP_RESULT &gpr)
 {
 	EXT_PULL ext_pull;
 	void *pvalue = nullptr;
@@ -3078,7 +3078,6 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 	int s_result;
 	char *pstring;
 	uint64_t tmp_id;
-	uint16_t proptype;
 	char sql_string[256];
 	uint8_t temp_buff[256];
 	STRING_ARRAY *pstrings;
@@ -3352,7 +3351,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		default:
 			break;
 		}
-		proptype = PROP_TYPE(ppropvals->ppropval[i].proptag);
+		auto proptype = PROP_TYPE(ppropvals->ppropval[i].proptag);
 		if (cpid != CP_ACP && proptype == PT_STRING8)
 			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_UNICODE));
 		else if (cpid != CP_ACP && proptype == PT_MV_STRING8)
@@ -5117,7 +5116,7 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 }
 
 BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt, int bind_index,
-    uint16_t proptype, const void *pvalue)
+    proptype_t proptype, const void *pvalue)
 {
 	EXT_PUSH ext_push;
 	char temp_buff[256];
@@ -5179,7 +5178,7 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt, int bind_index,
 }
 
 void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
-	int column_index, uint16_t proptype)
+    int column_index, proptype_t proptype)
 {
 	void *pvalue;
 	EXT_PULL ext_pull;
@@ -5333,7 +5332,7 @@ BOOL common_util_indexing_sub_contents(
  * exact science either, due to potential compression or potential presence of
  * midb EML copies.
  */
-static uint32_t cu_get_cid_length(const char *cid, uint16_t proptype)
+static uint32_t cu_get_cid_length(const char *cid, proptype_t proptype)
 {
 	auto dir = exmdb_server::get_dir();
 	if (strchr(cid, '/') != nullptr) {

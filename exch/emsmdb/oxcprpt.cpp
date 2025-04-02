@@ -135,7 +135,6 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 {
 	cpid_t cpid;
 	ems_objtype object_type;
-	uint16_t proptype;
 	uint32_t total_size;
 	TPROPVAL_ARRAY propvals;
 	PROPTAG_ARRAY *ptmp_proptags;
@@ -202,7 +201,7 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 	if (total_size >= 0x7000) {
 		for (unsigned int i = 0; i < propvals.count; ++i) {
 			auto &pv = propvals.ppropval[i];
-			proptype = PROP_TYPE(pv.proptag);
+			auto proptype = PROP_TYPE(pv.proptag);
 			switch (proptype) {
 			case PT_BINARY:
 			case PT_OBJECT:

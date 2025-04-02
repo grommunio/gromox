@@ -2055,7 +2055,7 @@ const char* common_util_get_submit_command()
 }
 
 void *cu_read_storenamedprop(const char *dir, const GUID &guid,
-    const char *name, uint16_t proptype)
+    const char *name, proptype_t proptype)
 {
 	if (*dir == '\0')
 		return nullptr;
@@ -2074,7 +2074,7 @@ void *cu_read_storenamedprop(const char *dir, const GUID &guid,
 }
 
 errno_t cu_write_storenamedprop(const char *dir, const GUID &guid,
-    const char *name, uint16_t proptype, const void *buf, size_t size)
+    const char *name, proptype_t proptype, const void *buf, size_t size)
 {
 	if (*dir == '\0')
 		return EINVAL;

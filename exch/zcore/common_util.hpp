@@ -154,8 +154,8 @@ void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);
 extern const char *zcore_rpc_idtoname(zcore_callid);
 extern ec_error_t cu_id2user(int, std::string &);
 extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, message_content *, const char *bounce_type, MAIL *);
-extern void *cu_read_storenamedprop(const char *, const GUID &, const char *, uint16_t proptype);
-extern gromox::errno_t cu_write_storenamedprop(const char *, const GUID &, const char *, uint16_t proptype, const void *buf, size_t);
+extern void *cu_read_storenamedprop(const char *, const GUID &, const char *, gromox::proptype_t);
+extern gromox::errno_t cu_write_storenamedprop(const char *, const GUID &, const char *, gromox::proptype_t, const void *buf, size_t);
 extern ec_error_t cu_fbdata_to_ical(const char *, const char *, time_t, time_t, const std::vector<freebusy_event> &, BINARY *);
 extern bool permrow_entryids_equal(const PERMISSION_ROW &, const uint32_t *, const BINARY *);
 

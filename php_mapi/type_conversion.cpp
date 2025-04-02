@@ -186,7 +186,7 @@ ec_error_t php_to_proptag_array(zval *pzval, PROPTAG_ARRAY *pproptags)
 	return ecSuccess;
 }
 
-static void *php_to_propval(zval *entry, uint16_t proptype)
+static void *php_to_propval(zval *entry, proptype_t proptype)
 {
 	int j = 0;
 	void *pvalue;

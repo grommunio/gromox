@@ -539,7 +539,7 @@ int SVREID_compare(const SVREID *a, const SVREID *b)
  * However, for RELOP_EQ and RELOP_NE, comparisons between PT_MV_x
  * and PT_x should be added [GXL-361].
  */
-int propval_compare(const void *pvalue1, const void *pvalue2, uint16_t proptype)
+int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptype)
 {
 #define MVCOMPARE(field) do { \
 		cmp = three_way_compare(a->count, b->count); \
@@ -672,7 +672,7 @@ int propval_compare(const void *pvalue1, const void *pvalue2, uint16_t proptype)
 #undef MVCOMPARE2
 }
 
-bool propval_compare_relop(enum relop relop, uint16_t proptype,
+bool propval_compare_relop(enum relop relop, proptype_t proptype,
     const void *pvalue1, const void *pvalue2)
 {
 	switch (relop) {
@@ -691,7 +691,7 @@ bool propval_compare_relop(enum relop relop, uint16_t proptype,
 
 namespace gromox {
 
-bool propval_compare_relop_nullok(enum relop relop, uint16_t proptype,
+bool propval_compare_relop_nullok(enum relop relop, proptype_t proptype,
     const void *a, const void *b)
 {
 	/*

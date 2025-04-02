@@ -1229,8 +1229,7 @@ void db_conn::proc_dynamic_event(cpid_t cpid, dynamic_event event_type,
 	}
 }
 
-static int db_engine_compare_propval(
-	uint16_t proptype, void *pvalue1, void *pvalue2)
+static int db_engine_compare_propval(proptype_t proptype, void *pvalue1, void *pvalue2)
 {
 	if (pvalue1 == nullptr && pvalue2 == nullptr)
 		return 0;

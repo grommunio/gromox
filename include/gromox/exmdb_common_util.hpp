@@ -143,9 +143,8 @@ extern BINARY *cu_xid_to_bin(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);
-extern BOOL common_util_bind_sqlite_statement(sqlite3_stmt *, int bind_index, uint16_t proptype, const void *val);
-void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
-	int column_index, uint16_t proptype);
+extern BOOL common_util_bind_sqlite_statement(sqlite3_stmt *, int bind_index, gromox::proptype_t, const void *val);
+extern void *common_util_column_sqlite_statement(sqlite3_stmt *, int col_idx, gromox::proptype_t);
 BOOL common_util_indexing_sub_contents(
 	uint32_t step, sqlite3_stmt *pstmt,
 	sqlite3_stmt *pstmt1, uint32_t *pidx);

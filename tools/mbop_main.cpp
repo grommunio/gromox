@@ -918,7 +918,7 @@ static errno_t showstoreprop(proptag_t proptag)
 }
 
 static int showstoreprop(int argc, char **argv, const GUID guid,
-    const char *name, uint16_t proptype)
+    const char *name, proptype_t proptype)
 {
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
@@ -970,7 +970,7 @@ static errno_t setstoreprop(proptag_t proptag)
 }
 
 static int setstoreprop(int argc, char **argv, const GUID guid,
-    const char *name, uint16_t proptype)
+    const char *name, proptype_t proptype)
 {
 	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)

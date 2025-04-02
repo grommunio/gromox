@@ -1732,7 +1732,6 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	uint32_t length;
-	uint16_t proptype;
 	
 	ppropvals->count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
@@ -1827,7 +1826,7 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 			continue;
 		}
 		case PR_ATTACH_DATA_BIN_U: {
-			proptype = PT_BINARY;
+			proptype_t proptype = PT_BINARY;
 			auto pbin = pattachment->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
 			if (NULL == pbin) {
 				auto cidstr = pattachment->proplist.get<const char>(ID_TAG_ATTACHDATABINARY);

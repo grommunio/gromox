@@ -129,7 +129,7 @@ struct REND_DATA {
 };
 
 struct TNEF_PROPVAL {
-	uint16_t proptype;
+	proptype_t proptype;
 	propid_t propid;
 	PROPERTY_NAME *ppropname;
 	void *pvalue;
@@ -1086,10 +1086,9 @@ static void tnef_tpropval_array_to_unicode(
 {
 	int i;
 	void *pvalue;
-	uint16_t proptype;
 	
 	for (i=0; i<pproplist->count; i++) {
-		proptype = PROP_TYPE(pproplist->ppropval[i].proptag);
+		auto proptype = PROP_TYPE(pproplist->ppropval[i].proptag);
 		if (proptype == PT_STRING8) {
 			pvalue = tnef_duplicate_string_to_unicode(charset,
 			         static_cast<char *>(pproplist->ppropval[i].pvalue));
