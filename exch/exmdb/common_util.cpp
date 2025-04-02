@@ -4252,6 +4252,8 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 		       table_type, id, rcom->pres);
 	}
 	default:
+		mlog(LV_WARN, "W-2244: restriction type %u unevaluated",
+			static_cast<unsigned int>(pres->rt));
 		return false;
 	}
 	return FALSE;
@@ -4325,6 +4327,8 @@ static bool cu_eval_subobj_restriction(sqlite3 *psqlite, cpid_t cpid,
 		return cu_eval_msgsubs_restriction(
 				psqlite, cpid, message_id, proptag, pres);
 	default:
+		mlog(LV_WARN, "W-2245: restriction type %u unevaluated",
+			static_cast<unsigned int>(pres->rt));
 		return false;
 	}	
 	return FALSE;
@@ -4414,6 +4418,8 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		return cu_eval_folder_restriction(psqlite,
 		       folder_id, pres->comment->pres);
 	default:
+		mlog(LV_WARN, "W-2248: restriction type %u unevaluated",
+			static_cast<unsigned int>(pres->rt));
 		return FALSE;
 	}	
 	return FALSE;
@@ -4540,6 +4546,10 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 	}
 	case RES_NULL:
 		return TRUE;
+	default:
+		mlog(LV_WARN, "W-2249: restriction type %u unevaluated",
+			static_cast<unsigned int>(pres->rt));
+		break;
 	}	
 	return FALSE;
 }

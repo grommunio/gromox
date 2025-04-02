@@ -1282,7 +1282,8 @@ static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
 		return table_evaluate_rule_restriction(psqlite, rule_id,
 		       pres->comment->pres);
 	default:
-		mlog(LV_ERR, "E-2240: restriction type %u remained unevaluated", pres->rt);
+		mlog(LV_WARN, "W-2240: restriction type %u unevaluated",
+			static_cast<unsigned int>(pres->rt));
 		return FALSE;
 	}	
 	return FALSE;
@@ -2050,7 +2051,8 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 		return table_evaluate_row_restriction(pres->comment->pres,
 		       pparam, get_property);
 	default:
-		mlog(LV_ERR, "E-2241: restriction type %u remained unevaluated", pres->rt);
+		mlog(LV_WARN, "W-2241: restriction type %u unevaluated",
+			static_cast<unsigned int>(pres->rt));
 		return FALSE;
 	}	
 	return FALSE;

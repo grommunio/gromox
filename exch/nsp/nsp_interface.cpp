@@ -1140,8 +1140,11 @@ static BOOL nsp_interface_match_node(const ab_tree::ab_node &node,
 		return TRUE;
 	}
 	case RES_SUBRESTRICTION:
-	default:
 		return FALSE;
+	default:
+		mlog(LV_WARN, "W-2243: restriction type %u unevaluated",
+			static_cast<unsigned int>(pfilter->res_type));
+		return false;
 	}	
 	return false;
 }

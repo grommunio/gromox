@@ -2681,6 +2681,8 @@ pack_result EXT_PUSH::p_restriction(const RESTRICTION &r)
 		return ext_buffer_push_restriction_count(this, r.count);
 	case RES_NULL:
 		return EXT_ERR_SUCCESS;
+	default:
+		return pack_result::bad_switch;
 	}
 	return EXT_ERR_BAD_SWITCH;
 }

@@ -474,6 +474,8 @@ BOOL cu_restriction_to_nspres(const RESTRICTION &r, NSPRES &nr)
 	case RES_SUBRESTRICTION:
 		return cu_to_nspres_subobj(*static_cast<RESTRICTION_SUBOBJ *>(r.pres), nr.res.res_sub);
 	default:
+		mlog(LV_WARN, "W-2270: restriction type %u unhandled",
+			static_cast<unsigned int>(r.rt));
 		return false;
 	}
 	return false;

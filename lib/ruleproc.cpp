@@ -557,6 +557,8 @@ static bool rx_eval_sub(const MESSAGE_CONTENT *ct, uint32_t tag, const RESTRICTI
 		return rx_eval_msgsub(ch, tag, res);
 	}
 	default:
+		mlog(LV_WARN, "W-2271: restriction type %u unevaluated",
+                        static_cast<unsigned int>(res.rt));
 		return false;
 	}
 }
@@ -629,6 +631,10 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 	}
 	case RES_NULL:
 		return true;
+	default:
+		mlog(LV_WARN, "W-2272: restriction type %u unevaluated",
+			static_cast<unsigned int>(res.rt));
+		return false;
 	}
 	return false;
 }

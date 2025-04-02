@@ -1585,7 +1585,7 @@ static pack_result nsp_ndr_pull_restriction_union(NDR_PULL &x,
 			TRY(nsp_ndr_pull_restriction_sub(x, FLAG_HEADER, &r->res_sub));
 			break;
 		default:
-			mlog(LV_ERR, "E-1914: nsp_ndr type %xh unhandled",
+			mlog(LV_WARN, "W-1914: restriction type %u unhandled",
 				static_cast<unsigned int>(*ptype));
 			return pack_result::bad_switch;
 		}
@@ -1616,7 +1616,7 @@ static pack_result nsp_ndr_pull_restriction_union(NDR_PULL &x,
 		TRY(nsp_ndr_pull_restriction_sub(x, FLAG_CONTENT, &r->res_sub));
 		break;
 	default:
-		mlog(LV_ERR, "E-1915: nsp_ndr type %xh unhandled",
+		mlog(LV_WARN, "W-1915: restriction type %u unhandled",
 			static_cast<unsigned int>(*ptype));
 		return pack_result::bad_switch;
 	}
@@ -1660,7 +1660,7 @@ static pack_result nsp_ndr_push_restriction_union(NDR_PUSH &x,
 			TRY(nsp_ndr_push_restriction_sub(x, FLAG_HEADER, r.res_sub));
 			break;
 		default:
-			mlog(LV_ERR, "E-1916: nsp_ndr type %xh unhandled",
+			mlog(LV_WARN, "W-1916: restriction type %u unhandled",
 				static_cast<unsigned int>(type));
 			return pack_result::bad_switch;
 		}
@@ -1691,7 +1691,7 @@ static pack_result nsp_ndr_push_restriction_union(NDR_PUSH &x,
 		TRY(nsp_ndr_push_restriction_sub(x, FLAG_CONTENT, r.res_sub));
 		break;
 	default:
-		mlog(LV_ERR, "E-1917: nsp_ndr type %xh unhandled",
+		mlog(LV_WARN, "W-1917: restriction type %u unhandled",
 			static_cast<unsigned int>(type));
 		return pack_result::bad_switch;
 	}
