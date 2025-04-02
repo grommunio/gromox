@@ -925,7 +925,7 @@ static ZEND_FUNCTION(mapi_ab_resolvename)
 		&result_set);
 	if (result != ecSuccess)
 		pthrow(result);
-	err = tarray_set_to_php(&result_set, &pzrowset);
+	err = tarray_set_to_php(result_set, &pzrowset);
 	if (err != ecSuccess)
 		pthrow(err);
 	RETVAL_ZVAL(&pzrowset, 0, 0);
@@ -1570,7 +1570,7 @@ static ZEND_FUNCTION(mapi_sink_timedwait)
 			goto RETURN_EXCEPTION;
 		}
 	}
-	auto err = znotification_array_to_php(&notifications, &pznotifications);
+	auto err = znotification_array_to_php(notifications, &pznotifications);
 	MAPI_G(hr) = err;
 	if (err != ecSuccess)
 		goto RETURN_EXCEPTION;
@@ -1614,7 +1614,7 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 	         INT32_MAX, prestriction, pproptags, &rowset);
 	if (result != ecSuccess)
 		pthrow(result);
-	auto err = tarray_set_to_php(&rowset, &pzrowset);
+	auto err = tarray_set_to_php(rowset, &pzrowset);
 	if (err != ecSuccess)
 		pthrow(err);
 	RETVAL_ZVAL(&pzrowset, 0, 0);
@@ -1649,7 +1649,7 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 			pproptags, &rowset);
 	if (result != ecSuccess)
 		pthrow(result);
-	auto err = tarray_set_to_php(&rowset, &pzrowset);
+	auto err = tarray_set_to_php(rowset, &pzrowset);
 	if (err != ecSuccess)
 		pthrow(err);
 	RETVAL_ZVAL(&pzrowset, 0, 0);
@@ -2630,7 +2630,7 @@ static ZEND_FUNCTION(mapi_getprops)
 				probject->hobject, pproptags, &propvals);
 	if (result != ecSuccess)
 		pthrow(result);
-	auto err = tpropval_array_to_php(&propvals, &pzpropvals);
+	auto err = tpropval_array_to_php(propvals, &pzpropvals);
 	if (err != ecSuccess)
 		pthrow(err);
 	RETVAL_ZVAL(&pzpropvals, 0, 0);
@@ -2792,9 +2792,9 @@ static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 		pthrow(result);
 	if (prestriction == nullptr)
 		ZVAL_NULL(&pzrestriction);
-	else if (auto err = restriction_to_php(prestriction, &pzrestriction); err != ecSuccess)
+	else if (auto err = restriction_to_php(*prestriction, &pzrestriction); err != ecSuccess)
 		pthrow(err);
-	else if (auto er2 = binary_array_to_php(&entryid_array, &pzfolderlist); er2 != ecSuccess)
+	else if (auto er2 = binary_array_to_php(entryid_array, &pzfolderlist); er2 != ecSuccess)
 		pthrow(er2);
 	zarray_init(return_value);
 	add_assoc_zval(return_value, "restriction", &pzrestriction);
@@ -3104,7 +3104,7 @@ static ZEND_FUNCTION(mapi_exportchanges_config)
 }
 
 static zend_bool import_message_change(zval *pztarget_obj,
-	const TPROPVAL_ARRAY *pproplist, uint32_t flags)
+    const TPROPVAL_ARRAY &pproplist, uint32_t flags)
 {
 	zval pzvalreturn, pzvalargs[3], pzvalfuncname;
 
@@ -3130,7 +3130,7 @@ static zend_bool import_message_change(zval *pztarget_obj,
 }
 
 static zend_bool import_message_deletion(zval *pztarget_obj,
-	uint32_t flags, const BINARY_ARRAY *pbins)
+    uint32_t flags, const BINARY_ARRAY &pbins)
 {
 	zval pzvalreturn, pzvalargs[2], pzvalfuncname;
 
@@ -3161,8 +3161,8 @@ static zend_bool import_message_deletion(zval *pztarget_obj,
 	return 1;
 }
 
-static zend_bool import_readstate_change(
-	zval *pztarget_obj, const STATE_ARRAY *pstates)
+static zend_bool import_readstate_change(zval *pztarget_obj,
+    const STATE_ARRAY &pstates)
 {
 	zval pzvalargs, pzvalreturn, pzvalfuncname;
     
@@ -3186,7 +3186,7 @@ static zend_bool import_readstate_change(
 }
 
 static zend_bool import_folder_change(zval *pztarget_obj,
-	TPROPVAL_ARRAY *pproplist)
+    const TPROPVAL_ARRAY &pproplist)
 {
 	zval pzvalargs, pzvalreturn, pzvalfuncname;
 
@@ -3213,7 +3213,7 @@ static zend_bool import_folder_change(zval *pztarget_obj,
 }
 
 static zend_bool import_folder_deletion(zval *pztarget_obj,
-	BINARY_ARRAY *pentryid_array)
+    const BINARY_ARRAY &pentryid_array)
 {
 	zval pzvalreturn, pzvalargs[2], pzvalfuncname;
 
@@ -3270,26 +3270,26 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				pctx->hsession, pctx->hobject, 0, &bins);
 			if (result != ecSuccess)
 				pthrow(result);
-			if (bins.count > 0 && !import_message_deletion(&pctx->pztarget_obj, 0, &bins))
+			if (bins.count > 0 && !import_message_deletion(&pctx->pztarget_obj, 0, bins))
 				pthrow(ecError);
 			result = zclient_syncdeletions(pctx->hsession,
 						pctx->hobject, SYNC_SOFT_DELETE, &bins);
 			if (result != ecSuccess)
 				pthrow(result);
-			if (bins.count > 0 && !import_message_deletion(&pctx->pztarget_obj, SYNC_SOFT_DELETE, &bins))
+			if (bins.count > 0 && !import_message_deletion(&pctx->pztarget_obj, SYNC_SOFT_DELETE, bins))
 				pthrow(ecError);
 			result = zclient_syncreadstatechanges(
 				pctx->hsession, pctx->hobject, &states);
 			if (result != ecSuccess)
 				pthrow(result);
-			if (states.count > 0 && !import_readstate_change(&pctx->pztarget_obj, &states))
+			if (states.count > 0 && !import_readstate_change(&pctx->pztarget_obj, states))
 				pthrow(ecError);
 		} else {
 			auto result = zclient_syncdeletions(
 				pctx->hsession, pctx->hobject, 0, &bins);
 			if (result != ecSuccess)
 				pthrow(result);
-			if (bins.count > 0 && !import_folder_deletion(&pctx->pztarget_obj, &bins))
+			if (bins.count > 0 && !import_folder_deletion(&pctx->pztarget_obj, bins))
 				pthrow(ecError);
 		}
 	}
@@ -3304,7 +3304,7 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				pthrow(result);
 			flags = b_new ? SYNC_NEW_MESSAGE : 0;
 			if (!import_message_change(&pctx->pztarget_obj,
-				&propvals, flags))
+			    propvals, flags))
 				pthrow(ecError);
 		} else {
 			auto result = zclient_syncfolderchange(
@@ -3314,8 +3314,7 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				continue;
 			if (result != ecSuccess)
 				pthrow(result);
-			if (!import_folder_change(&pctx->pztarget_obj,
-				&propvals))
+			if (!import_folder_change(&pctx->pztarget_obj, propvals))
 				pthrow(ecError);
 		}
 	}
