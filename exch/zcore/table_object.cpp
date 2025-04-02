@@ -900,6 +900,7 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 			return TRUE;
 		return table_object_evaluate_restriction(ppropvals, pres->comment->pres);
 	default:
+		mlog(LV_ERR, "E-2242: restriction type %u remained unevaluated", pres->rt);
 		return FALSE;
 	}	
 	return FALSE;
