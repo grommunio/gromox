@@ -4381,26 +4381,23 @@ BOOL exmdb_client_read_socket(int fd, BINARY &bin, long timeout_ms)
 	}
 }
 
-BOOL exmdb_client_write_socket(int fd, const BINARY &bin, long timeout_ms)
+BOOL exmdb_client_write_socket(int fd, std::string_view sv, long timeout_ms)
 {
 	if (fd < 0) {
 		errno = EBADF;
 		return false;
 	}
-	uint32_t offset = 0;
 	struct pollfd pfd;
-
 	pfd.fd = fd;
 	pfd.events = POLLOUT | POLLWRBAND;
 
-	while (true) {
+	while (sv.size() > 0) {
 		if (timeout_ms >= 0 && poll(&pfd, 1, timeout_ms) != 1)
 			return false;
-		ssize_t written_len = write(fd, bin.pb + offset, bin.cb - offset);
+		ssize_t written_len = write(fd, sv.data(), sv.size());
 		if (written_len <= 0)
 			return false;
-		offset += written_len;
-		if (offset == bin.cb)
-			return TRUE;
+		sv.remove_prefix(written_len);
 	}
+	return TRUE;
 }

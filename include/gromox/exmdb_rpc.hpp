@@ -1374,7 +1374,7 @@ extern GX_EXPORT pack_result exmdb_ext_pull_db_notify(const BINARY *, DB_NOTIFY_
 extern GX_EXPORT pack_result exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *, BINARY *);
 extern GX_EXPORT const char *exmdb_rpc_strerror(exmdb_response);
 extern GX_EXPORT BOOL exmdb_client_read_socket(int, BINARY &, long timeout = -1);
-extern GX_EXPORT BOOL exmdb_client_write_socket(int, const BINARY &, long timeout = -1);
+extern GX_EXPORT BOOL exmdb_client_write_socket(int, std::string_view, long timeout = -1);
 
 extern GX_EXPORT void *(*exmdb_rpc_alloc)(size_t);
 extern GX_EXPORT void (*exmdb_rpc_free)(void *);
