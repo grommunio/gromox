@@ -3100,15 +3100,9 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 						pskeleton->rtf_bin.pv = pskeleton->rtf.data();
 						pskeleton->rtf_bin.cb = pskeleton->rtf.size();
 						pskeleton->phtml = &pskeleton->rtf_bin;
-						if (0 == pskeleton->pattachments->count) {
-							attachment_list_free(pskeleton->pattachments);
-							pskeleton->pattachments = NULL;
-						} else {
+						if (pskeleton->pattachments->count > 0)
 							pskeleton->b_inline = TRUE;
-						}
 					} else {
-						attachment_list_free(pskeleton->pattachments);
-						pskeleton->pattachments = NULL;
 						pskeleton->mail_type = oxcmail_type::tnef;
 					}
 				} else {
