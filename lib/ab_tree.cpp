@@ -47,9 +47,6 @@ void ab::drop(int32_t id)
  */
 void ab::init(std::string_view org, int cache_interval)
 {
-	std::unique_lock ul(m_lock);
-	if (m_initialized)
-		return;
 	m_org_name = org;
 	m_cache_interval = std::chrono::seconds(cache_interval);
 	m_essdn_server_prefix = fmt::format("/o={}/" EAG_SERVERS "/cn=", m_org_name);

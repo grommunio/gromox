@@ -317,7 +317,6 @@ class ab {
 	std::shared_mutex m_lock;
 	std::chrono::seconds m_cache_interval;
 	std::unordered_map<int32_t, std::shared_ptr<ab_base>> m_base_hash;
-	bool m_initialized = false;
 
 	std::thread worker; ///< Worker thread removing expired bases
 	std::deque<int> worker_queue; ///< Queue of base IDs to be flushed
