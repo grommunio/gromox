@@ -3053,9 +3053,44 @@ static bool skel_use_rtf(const MESSAGE_CONTENT &msg)
 	return flag == nullptr || *flag == 0;
 }
 
+static bool skel_find_rtf(mime_skeleton &skel, const message_content &msg,
+    const char *charset) try
+{
+	auto rtf = msg.proplist.get<const BINARY>(PR_RTF_COMPRESSED);
+	if (rtf == nullptr)
+		return true;
+	ssize_t unc_size = rtfcp_uncompressed_size(rtf);
+	std::string buf;
+	if (unc_size >= 0)
+		buf.resize(unc_size);
+	size_t rtf_len = unc_size;
+	if (unc_size < 0 || !rtfcp_uncompress(rtf, buf.data(), &rtf_len)) {
+		skel.mail_type = oxcmail_type::tnef;
+		return true;
+	}
+	buf.resize(rtf_len);
+	skel.pattachments = attachment_list_init();
+	if (skel.pattachments == nullptr)
+		return false;
+	if (!rtf_to_html(buf.data(), buf.size(), charset,
+	    skel.rtf, skel.pattachments)) {
+		skel.mail_type = oxcmail_type::tnef;
+		return true;
+	}
+	skel.rtf_bin.pv = skel.rtf.data();
+	skel.rtf_bin.cb = skel.rtf.size();
+	skel.phtml = &skel.rtf_bin;
+	if (skel.pattachments->count > 0)
+		skel.b_inline = TRUE;
+	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2263: ENOMEM");
+	return false;
+}
+
 static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
     const char *pcharset, BOOL b_tnef, enum oxcmail_body body_type,
-    MIME_SKELETON *pskeleton) try
+    MIME_SKELETON *pskeleton)
 {
 	pskeleton->clear();
 	pskeleton->charset = pcharset;
@@ -3081,39 +3116,14 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 	    pskeleton->mail_type == oxcmail_type::tnef) {
 		/* do nothing */
 	} else if (skel_use_rtf(*pmsg)) {
- FIND_RTF:
-			auto prtf = pmsg->proplist.get<const BINARY>(PR_RTF_COMPRESSED);
-			if (NULL != prtf) {
-				ssize_t unc_size = rtfcp_uncompressed_size(prtf);
-				std::string pbuff;
-				if (unc_size >= 0)
-					pbuff.resize(unc_size);
-				size_t rtf_len = unc_size;
-				if (unc_size >= 0 && rtfcp_uncompress(prtf, pbuff.data(), &rtf_len)) {
-					pbuff.resize(rtf_len);
-					pskeleton->pattachments = attachment_list_init();
-					if (pskeleton->pattachments == nullptr)
-						return FALSE;
-					if (rtf_to_html(pbuff.data(), pbuff.size(),
-					    pcharset, pskeleton->rtf,
-					    pskeleton->pattachments)) {
-						pskeleton->rtf_bin.pv = pskeleton->rtf.data();
-						pskeleton->rtf_bin.cb = pskeleton->rtf.size();
-						pskeleton->phtml = &pskeleton->rtf_bin;
-						if (pskeleton->pattachments->count > 0)
-							pskeleton->b_inline = TRUE;
-					} else {
-						pskeleton->mail_type = oxcmail_type::tnef;
-					}
-				} else {
-					pskeleton->mail_type = oxcmail_type::tnef;
-				}
-			}
-		} else {
-			pskeleton->phtml = pmsg->proplist.get<BINARY>(PR_HTML);
-			if (pskeleton->phtml == nullptr)
-				goto FIND_RTF;
-		}
+		if (!skel_find_rtf(*pskeleton, *pmsg, pcharset))
+			return false;
+	} else {
+		pskeleton->phtml = pmsg->proplist.get<BINARY>(PR_HTML);
+		if (pskeleton->phtml == nullptr &&
+		    !skel_find_rtf(*pskeleton, *pmsg, pcharset))
+			return false;
+	}
 	if (pmsg->children.pattachments == nullptr)
 		return TRUE;
 	for (auto &attachment : *pmsg->children.pattachments) {
@@ -3133,9 +3143,6 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 		pskeleton->b_attachment = TRUE;
 	}
 	return TRUE;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2263: ENOMEM");
-	return false;
 }
 
 void mime_skeleton::clear()
