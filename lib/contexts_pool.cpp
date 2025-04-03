@@ -56,7 +56,7 @@ static SCHEDULE_CONTEXT **g_context_ptr;
 static pthread_t g_thread_id;
 static gromox::atomic_bool g_notify_stop{true};
 static DOUBLE_LIST g_context_lists[static_cast<int>(sctx_status::_alloc_max)];
-static std::mutex g_context_locks[static_cast<int>(sctx_status::_alloc_max)];
+static std::mutex g_context_locks[static_cast<int>(sctx_status::_alloc_max)]; /* protects g_context_lists */
 
 static int (*contexts_pool_get_context_socket)(const schedule_context *);
 static time_point (*contexts_pool_get_context_timestamp)(const schedule_context *);
@@ -481,15 +481,17 @@ BOOL contexts_pool_wakeup_context(schedule_context *pcontext, sctx_status type)
  */
 void context_pool_activate_context(SCHEDULE_CONTEXT *pcontext)
 {
-	std::unique_lock poll_hold(g_context_locks[static_cast<int>(sctx_status::polling)]);
-	if (pcontext->type != sctx_status::polling)
-		return;
-	double_list_remove(&g_context_lists[static_cast<int>(sctx_status::polling)], &pcontext->node);
-	pcontext->type = sctx_status::switching;
-	poll_hold.unlock();
-	std::unique_lock turn_hold(g_context_locks[static_cast<int>(sctx_status::turning)]);
-	pcontext->type = sctx_status::turning;
-	double_list_append_as_tail(&g_context_lists[static_cast<int>(sctx_status::turning)], &pcontext->node);
-	turn_hold.unlock();
+	{
+		std::unique_lock poll_hold(g_context_locks[static_cast<int>(sctx_status::polling)]);
+		if (pcontext->type != sctx_status::polling)
+			return;
+		double_list_remove(&g_context_lists[static_cast<int>(sctx_status::polling)], &pcontext->node);
+		pcontext->type = sctx_status::switching;
+	}
+	{
+		std::unique_lock turn_hold(g_context_locks[static_cast<int>(sctx_status::turning)]);
+		pcontext->type = sctx_status::turning;
+		double_list_append_as_tail(&g_context_lists[static_cast<int>(sctx_status::turning)], &pcontext->node);
+	}
 	threads_pool_wakeup_thread();
 }
