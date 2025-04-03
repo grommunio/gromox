@@ -3055,9 +3055,8 @@ static bool skel_use_rtf(const MESSAGE_CONTENT &msg)
 
 static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
     const char *pcharset, BOOL b_tnef, enum oxcmail_body body_type,
-    MIME_SKELETON *pskeleton)
+    MIME_SKELETON *pskeleton) try
 {
-	char *pbuff;
 	pskeleton->clear();
 	pskeleton->charset = pcharset;
 	pskeleton->pmessage_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS);
@@ -3086,23 +3085,19 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 			auto prtf = pmsg->proplist.get<const BINARY>(PR_RTF_COMPRESSED);
 			if (NULL != prtf) {
 				ssize_t unc_size = rtfcp_uncompressed_size(prtf);
-				pbuff = nullptr;
-				if (unc_size >= 0) {
-					pbuff = me_alloc<char>(unc_size);
-					if (pbuff == nullptr)
-						return false;
-				}
+				std::string pbuff;
+				if (unc_size >= 0)
+					pbuff.resize(unc_size);
 				size_t rtf_len = unc_size;
-				if (unc_size >= 0 && rtfcp_uncompress(prtf, pbuff, &rtf_len)) {
+				if (unc_size >= 0 && rtfcp_uncompress(prtf, pbuff.data(), &rtf_len)) {
+					pbuff.resize(rtf_len);
 					pskeleton->pattachments = attachment_list_init();
-					if (NULL == pskeleton->pattachments) {
-						free(pbuff);
+					if (pskeleton->pattachments == nullptr)
 						return FALSE;
-					}
-					if (rtf_to_html(pbuff, rtf_len, pcharset, pskeleton->rtf,
+					if (rtf_to_html(pbuff.data(), pbuff.size(),
+					    pcharset, pskeleton->rtf,
 					    pskeleton->pattachments)) {
 						pskeleton->rtf_bin.pv = pskeleton->rtf.data();
-						free(pbuff);
 						pskeleton->rtf_bin.cb = pskeleton->rtf.size();
 						pskeleton->phtml = &pskeleton->rtf_bin;
 						if (0 == pskeleton->pattachments->count) {
@@ -3114,11 +3109,9 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 					} else {
 						attachment_list_free(pskeleton->pattachments);
 						pskeleton->pattachments = NULL;
-						free(pbuff);
 						pskeleton->mail_type = oxcmail_type::tnef;
 					}
 				} else {
-					free(pbuff);
 					pskeleton->mail_type = oxcmail_type::tnef;
 				}
 			}
@@ -3146,6 +3139,9 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 		pskeleton->b_attachment = TRUE;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2263: ENOMEM");
+	return false;
 }
 
 void mime_skeleton::clear()
