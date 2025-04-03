@@ -3044,6 +3044,15 @@ static enum oxcmail_type oxcmail_get_mail_type(const char *pmessage_class)
 	return oxcmail_type::tnef;
 }
 
+static bool skel_use_rtf(const MESSAGE_CONTENT &msg)
+{
+	auto v = msg.proplist.get<const uint32_t>(PR_NATIVE_BODY_INFO);
+	if (v == nullptr || *v != NATIVE_BODY_RTF)
+		return false;
+	auto flag = msg.proplist.get<const uint8_t>(PR_RTF_IN_SYNC);
+	return flag == nullptr || *flag == 0;
+}
+
 static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
     const char *pcharset, BOOL b_tnef, enum oxcmail_body body_type,
     MIME_SKELETON *pskeleton)
@@ -3072,12 +3081,7 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 	    pskeleton->mail_type == oxcmail_type::encrypted ||
 	    pskeleton->mail_type == oxcmail_type::tnef) {
 		/* do nothing */
-	} else {
-		const uint8_t *flag = nullptr;
-		auto pvalue = pmsg->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
-		if (NULL != pvalue && NATIVE_BODY_RTF == *pvalue &&
-		    ((flag = pmsg->proplist.get<uint8_t>(PR_RTF_IN_SYNC)) == nullptr ||
-		    *flag == 0)) {
+	} else if (skel_use_rtf(*pmsg)) {
  FIND_RTF:
 			auto prtf = pmsg->proplist.get<const BINARY>(PR_RTF_COMPRESSED);
 			if (NULL != prtf) {
@@ -3123,7 +3127,6 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 			if (pskeleton->phtml == nullptr)
 				goto FIND_RTF;
 		}
-	}
 	if (pmsg->children.pattachments == nullptr)
 		return TRUE;
 	for (auto &attachment : *pmsg->children.pattachments) {
