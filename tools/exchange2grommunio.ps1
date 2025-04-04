@@ -1,7 +1,7 @@
 #
 # A PowerShell script for Exchange to grommunio migration.
 #
-# Copyright 2022-2023 Walter Hofstaedtler & grommunio GmbH
+# Copyright 2022-2025 Walter Hofstaedtler & grommunio GmbH
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Authors: grommunio <dev@grommunio.com>
 #          Walter Hofstaedtler <walter@hofstaedtler.com>
@@ -19,6 +19,10 @@
 # 2. Plink.exe must be located in the same directory as the script (latest
 #    version available at
 #    https://the.earth.li/~sgtatham/putty/latest/w64/plink.exe).
+#
+# 2.1 Additionally you can use Peagent.exe to make use of pubkey based ssh
+#    authentication. The latest download is available at
+#    https://the.earth.li/~sgtatham/putty/latest/w64/pageant.exe
 #
 # 3. The shared folder must be available from Windows and Linux (mount.cifs)
 #    and have enough space for all .pst files. To conserve disk space, delete
@@ -58,7 +62,7 @@
 #
 #    The other settings are explained in the variables.
 #
-# 6. Launch the script from an Exchange Admin shell.
+# 6. Launch the script from an (elevated) Exchange Admin shell.
 #
 #	Optional: Manually launch the Exchange Admin Shell for advanced functionality.
 #	The Exchange 2010 Management Shell reports an old PowerShell 2.0.
@@ -97,8 +101,35 @@
 #    # mount.cifs "//<SERVER FQDN>/<shared folder name>" /mnt/<shared folder name>
 #      -v -o ro,username=<Windows user>,password=<Windows password>
 #
-# To automount the Windows share, set $AutoMount = $true.
-
+#   To automount the Windows share, set $AutoMount = $true.
+#
+# 3.1 Alternatively add a fstab entry and credentials file on the Grommunio Host.
+#    Remember so set $AutoMount = $false when using this way.
+#
+#    /etc/fstab - FSTAB(5)
+#    ```
+#    //SERVER/SHARE$ /mnt/pst cifs auto,_netdev,rw,credentials=/etc/cifscred.import      0       0
+#    ```
+#
+#    /etc/cifscred.import - MOUNT.CIFS(8)
+#    ```
+#    domain=DOMAINNAME
+#    username=USERNAME
+#    password=PASSWORD
+#    ```
+#
+# 4. Rinse and repeat!
+#    You will likely run multiple tests before doing the actual migration.
+#    To remove all Data from the Mailbox but not deleting the Accounts you can
+#    run the following command. GROMOX-MBOP(8)
+#             !!! ATTENTION - THIS WILL DESTROY ALL DATA !!!
+#    # gromox-mbop foreach.here.mb \( echo-username \) \
+#    \( XXXemptyfldXXX --nuke-folders IPM_SUBTREE \) \
+#    \( purge-softdelete -r IPM_SUBTREE \) \( purge-datafiles \) \
+#    \( vacuum \) \( recalc-sizes \) \( unload \)
+#
+#    (the "XXX" where placed on purpose as a safe option)
+#
 
 # Variables to be set by the user of this script
 #
@@ -114,18 +145,34 @@ $LinuxSharedFolder = "/mnt/<shared folder name>"
 # Login for the grommunio side shell
 $LinuxUser = "root"
 
-# The $LinuxUser password - or use certificate based authentication
+# The $LinuxUser password
 $LinuxUserPWD = "Secret_root_Password"
+# For ssh key based authentication via peagent
+# #$LinuxUserPWD = ""
 
 # Import only these mailboxes, an array of mail addresses, case insensitive,
 # $IgnoreMboxes will be honored.
 # To import all mailboxes leave empty, to import only some mailboxes, populate
-# $ImportMboxes.
-#[string] $ImportMboxes = 'TestI1@example.com','Testi2@example.com'
 [string] $ImportMboxes = ''
 
+# TODO: Those could all be called via plink.exe
+# To populate from the grommunio host if users are already created:
+#  gromox-mbop foreach.mb echo-username > /mnt/pst/exchange2grommunio.import
+# This rule will only apply if you haven't set anything above and the file
+# "exchange2grommunio.import" is present in the UNC-Path.
+$ImportFile = Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.import
+if ((! $ImportMboxes) -and (Test-Path -Path $ImportFile)) {$ImportMboxes = Get-Content $ImportFile}
+
 # Ignore these mailboxes, an array of mail addresses, case insensitive
-[string] $IgnoreMboxes = 'TestX1@example.com','Testx2@example.com'
+# [string] $IgnoreMboxes = 'TestX1@example.com','Testx2@example.com'
+[string] $IgnoreMboxes = ''
+
+# To populate this file with alread imported Mailboxes:
+#  awk '/Import of mailbox.*done./ {print $7}' /mnt/pst/exchange2grommunio.log > /mnt/pst/exchange2grommunio.ignore
+# This rule will only apply if you haven't set anything above and the file
+# "exchange2grommunio.ignore" is present in the UNC-Path.
+$IgnoreFile = Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.ignore
+if ((! $IgnoreMboxes) -and (Test-Path -Path $IgnoreFile)) {$IgnoreMboxes = Get-Content $IgnoreFile}
 
 # Delete .pst files after import to save space.
 $DeletePST = $true
@@ -163,11 +210,11 @@ $OnlyCreateGrommunioMailbox = $false
 $MailboxLanguage = "de_DE"
 
 # Stop marker, if $WaitAfterImport = $false, create this file and migration will be interrupted after current mailbox
-$StopMarker = $WinSharedFolder + "\exchange2grommunio.STOP"
+$StopMarker = Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.STOP
 
 # Write timestamps and summary to this log file.
 #
-$LogFile = $WinSharedFolder + "\exchange2grommunio.log"
+$LogFile = Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.log
 
 # New-MailboxExportRequest accepts the -Priority parameter.
 # Use "Normal" or "High" for Exchange 2010. We found "Normal" is much faster
@@ -233,6 +280,25 @@ function isLocked
 		}
 	}
 }
+# If we don't set $LinuxUserPWD we should have peagent running with a imported ssh-key and need to change plink's arguments.
+#
+$PLINKARGS = @(
+	if ($null -ne $Debug) {
+		'-v'
+	}
+		'-ssh'
+	if ($LinuxUserPWD -ne $null) {
+		'-noagent'
+	} else {
+		'-agent'
+	}
+		'-batch'
+		"$LinuxUser@$GrommunioServer"
+	if ($LinuxUserPWD -ne $null) {
+		'-pw'
+		"$LinuxUserPWD"
+	}
+)
 
 # Mount the Windows shared folder via CIFS
 #
@@ -241,9 +307,9 @@ function Linux-mount
 	if ($AutoMount) {
 		Write-MLog "mkdir -p $LinuxSharedFolder" green
 		if ($PowerShellOld) {
-			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "mkdir -p $LinuxSharedFolder"
+			.\plink.exe @PLINKARGS "mkdir -p $LinuxSharedFolder"
 		} else {
-			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "mkdir -p $LinuxSharedFolder" 2>&1 | % ToString | Tee-Object -Variable TeeVar
+			.\plink.exe @PLINKARGS "mkdir -p $LinuxSharedFolder" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
 			# Save plink output to $LogFile
 			Write-MLog "---" none
 			Add-Content -Path $LogFile -Value $TeeVar
@@ -252,9 +318,9 @@ function Linux-mount
 		$WinFolder = $WinSharedFolder.replace('\','/')
 		Write-MLog "mount.cifs $LinuxSharedFolder" green
 		if ($PowerShellOld) {
-			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "mount.cifs -v '$WinFolder' '$LinuxSharedFolder' -o user='$WindowsUser',password='$WindowsPassword',ro"
+			.\plink.exe @PLINKARGS "mount.cifs -v '$WinFolder' '$LinuxSharedFolder' -o user='$WindowsUser',password='$WindowsPassword',ro"
 		} else {
-			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "mount.cifs -v '$WinFolder' '$LinuxSharedFolder' -o user='$WindowsUser',password='$WindowsPassword',ro" 2>&1 | % ToString | Tee-Object -Variable TeeVar
+			.\plink.exe @PLINKARGS "mount.cifs -v '$WinFolder' '$LinuxSharedFolder' -o user='$WindowsUser',password='$WindowsPassword',ro" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
 			# Save plink output to $LogFile
 			Write-MLog "---" none
 			Add-Content -Path $LogFile -Value $TeeVar
@@ -271,9 +337,9 @@ function Linux-umount
 	if ($AutoMount) {
 		Write-MLog "umount $LinuxSharedFolder" green
 		if ($PowerShellOld) {
-			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "umount $LinuxSharedFolder"
+			.\plink.exe @PLINKARGS "umount $LinuxSharedFolder"
 		} else {
-			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "umount $LinuxSharedFolder" 2>&1 | % ToString | Tee-Object -Variable TeeVar
+			.\plink.exe @PLINKARGS "umount $LinuxSharedFolder" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
 			# Save plink output to $LogFile
 			Write-MLog "---" none
 			Add-Content -Path $LogFile -Value $TeeVar
@@ -291,6 +357,18 @@ function Test-Plink
 	# does plink.exe exist?
 	if (!(Test-Path -Path $PSScriptRoot\plink.exe)) {
 		Write-MLog "Error: plink.exe not found, need plink.exe in $PSScriptRoot." red
+		exit 1
+	}
+}
+
+# Test if peagent.exe exists in $PSScriptRoot
+#
+function Test-Peagent
+{
+	Write-MLog "" white
+	# is peagent.exe running?
+	if (!(Get-Process -ErrorAction ignore peagent)) {
+		Write-MLog "Error: peagent.exe not running, either set \$LinuxUserPWD or start peagent.exe." red
 		exit 1
 	}
 }
@@ -316,6 +394,12 @@ function Test-Exchange
 		Write-MLog "Error: the Exchange cmdlets are not loaded. Launch this script from an Exchange Admin shell." red
 		exit 1
 	}
+	# https://learn.microsoft.com/en-us/exchange/new-features/build-numbers-and-release-dates
+	$Exchange_Newer_2016_CU6 = $true
+	$ExVer=(Get-ExchangeServer).AdminDisplayVersion
+	if (($ExVer.Major -eq 15) -and ($ExVer.Minor -eq 1) -and ($ExVer.Build -lt 1261)) { $Exchange_Newer_2016_CU6 = $false }
+	if (($ExVer.Major -eq 15) -and ($ExVer.Minor -lt 1)) { $Exchange_Newer_2016_CU6 = $false }
+	if ($ExVer.Major -lt 15) { $Exchange_Newer_2016_CU6 = $false }
 }
 
 # The Main code
@@ -402,11 +486,15 @@ Write-MLog "`$MigrationPriority .........: $MigrationPriority" none
 Write-MLog "" none
 Write-MLog "`$PowerShellOld .............: $PowerShellOld" none
 Write-MLog "`$PSScriptRoot ..............: $PSScriptRoot" none
+Write-MLog "`$Exchange_Newer_2016_CU6....: $Exchange_Newer_2016_CU6" none
 Write-MLog "" none
 
 # Check for prerequisites
 #
 Test-Plink
+if ($LinuxUserPWD -eq $null) {
+	Test-Peagent
+}
 Test-Exchange
 Linux-mount
 
@@ -474,14 +562,26 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		#
 		# Exchange 2010 only supports "Normal, High" for the -Priority parameter
 		#
-		New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority | ft -HideTableHeaders
+		$MAILBOXOPT = @(
+			if ($Exchange_Newer_2016_CU6) {
+				Mailbox = "$Mailbox.Alias"
+			} else {
+				Mailbox = "$Mailbox"
+			}
+		)
+		$EXPORTOPTS = @(
+			FilePath = "$WinSharedFolder\$MigMBox.pst"
+			Priority = "$MigrationPriority"
+		)
+		$OPTS
+		New-MailboxExportRequest @EXPORTOPTS @MAILBOXOPT | Format-Table -HideTableHeaders
 		Write-Host -NoNewline "[Wait] " -fore yellow
 		$MailboxesTotal++
 
 		# Wait until the .pst file is created.
 		# We probably should include a timeout to detect hanging exports.
 		$nTimeout = 0
-		while ((Get-MailboxExportRequest -Mailbox $Mailbox).Status -ne "Completed") {
+		while ((Get-MailboxExportRequest @MAILBOXOPT).Status -ne "Completed") {
 			Start-Sleep -s 2
 			$nTimeout += 2
 			if ($nTimeout % 60 -eq 0) {
@@ -533,10 +633,10 @@ foreach ($Mailbox in (Get-Mailbox)) {
 	if ($CreateGrommunioMailbox) {
 		Write-MLog "Create grommunio mailbox: $MigMBox." green
 		if ($PowerShellOld) {
-			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox"
+			.\plink.exe @PLINKARGS "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox"
 			$CMDExitCode = $lastexitcode
 		} else {
-			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox" 2>&1 | % ToString | Tee-Object -Variable TeeVar
+			.\plink.exe @PLINKARGS "grommunio-admin ldap downsync -l $MailboxLanguage $MigMBox" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
 			$CMDExitCode = $lastexitcode
 			# Save plink output to $LogFile
 			Write-MLog "---" none
@@ -565,10 +665,10 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		# file on the grommunio host.
 		Write-MLog "Starting import of mailbox: $MigMBox in grommunio." green
 		if ($PowerShellOld) {
-			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "gromox-e2ghelper -s $LinuxSharedFolder/$MigMBox.pst -u $MigMBox"
+			.\plink.exe @PLINKARGS "gromox-e2ghelper -s $LinuxSharedFolder/$MigMBox.pst -u $MigMBox"
 			$CMDExitCode = $lastexitcode
 		} else {
-			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "gromox-e2ghelper -s $LinuxSharedFolder/$MigMBox.pst -u $MigMBox" 2>&1 | % ToString | Tee-Object -Variable TeeVar
+			.\plink.exe @PLINKARGS  "gromox-e2ghelper -s $LinuxSharedFolder/$MigMBox.pst -u $MigMBox" 2>&1 | Foreach-Object ToString | Tee-Object -Variable TeeVar
 			$CMDExitCode = $lastexitcode
 			# Save plink output to $LogFile
 			Write-MLog "---" none
@@ -653,7 +753,7 @@ Linux-umount
 
 # Remove all "Completed" MailboxExportRequests.
 #
-Get-MailboxExportRequest | where {$_.status -eq "Completed"} | Remove-MailboxExportRequest -Confirm:$false
+Get-MailboxExportRequest | Where-Object {$_.status -eq "Completed"} | Remove-MailboxExportRequest -Confirm:$false
 
 # Calculate script run time
 #
