@@ -720,22 +720,15 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	auto &props = dst->proplist;
 	if (!props.has(PR_LAST_MODIFICATION_TIME)) {
 		auto last_time = rop_util_current_nttime();
-		auto ern = props.set(PR_LAST_MODIFICATION_TIME, &last_time);
-		if (ern != 0)
-			return ecServerOOM;
+		err = props.set(PR_LAST_MODIFICATION_TIME, &last_time);
+		if (err != ecSuccess)
+			return err;
 	}
-	auto ern = props.set(PidTagMid, &dst_mid);
-	if (ern != 0)
-		return ecServerOOM;
-	ern = props.set(PidTagChangeNumber, &dst_cn);
-	if (ern != 0)
-		return ecServerOOM;
-	ern = props.set(PR_CHANGE_KEY, &xidbin);
-	if (ern != 0)
-		return ecServerOOM;
-	ern = props.set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get());
-	if (ern != 0)
-		return ecServerOOM;
+	if ((err = props.set(PidTagMid, &dst_mid)) != ecSuccess ||
+	    (err = props.set(PidTagChangeNumber, &dst_cn)) != ecSuccess ||
+	    (err = props.set(PR_CHANGE_KEY, &xidbin)) != ecSuccess ||
+	    (err = props.set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != ecSuccess)
+		return err;
 
 	/* Writeout */
 	ec_error_t e_result = ecRpcFailed;
@@ -1001,12 +994,12 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 	for (auto t : rmprops)
 		prop.erase(t);
 	static constexpr uint32_t v_busy = olBusy;
-	if (prop.set(PROP_TAG(PT_LONG, propids[l_response_status]), deconst(&accept_type)) != 0 ||
-	    prop.set(PROP_TAG(PT_LONG, propids[l_busy_status]), deconst(&v_busy)) != 0 ||
-	    prop.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
-		return ecError;
+	ec_error_t err;
+	if ((err = prop.set(PROP_TAG(PT_LONG, propids[l_response_status]), &accept_type)) != ecSuccess ||
+	    (err = prop.set(PROP_TAG(PT_LONG, propids[l_busy_status]), &v_busy)) != ecSuccess ||
+	    (err = prop.set(PR_MESSAGE_CLASS, "IPM.Appointment")) != ecSuccess)
+		return err;
 	uint64_t cal_mid = 0, cal_cn = 0;
-	ec_error_t err = ecSuccess;
 	if (!exmdb_client->write_message_v2(par.cur.dir.c_str(), CP_ACP,
 	    cal_fid, msg.get(), &cal_mid, &cal_cn, &err))
 		return ecRpcFailed;
@@ -1111,15 +1104,19 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	if (txt == nullptr) {
 		mlog(LV_ERR, "%s: no PR_SENT_REPRESENTING_ADDRTYPE available", __func__);
 		return ecInvalidParam;
-	} else if (row->set(PR_ADDRTYPE, txt) != 0) {
-		return ecMAPIOOM;
+	} else {
+		err = row->set(PR_ADDRTYPE, txt);
+		if (err != ecSuccess)
+			return err;
 	}
 	txt = rq_prop.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 	if (txt == nullptr) {
 		mlog(LV_ERR, "%s: no PR_SENT_REPRESENTING_EMAIL_ADDRESS available", __func__);
 		return ecInvalidParam;
-	} else if (row->set(PR_EMAIL_ADDRESS, txt) != 0) {
-		return ecMAPIOOM;
+	} else {
+		err = row->set(PR_EMAIL_ADDRESS, txt);
+		if (err != ecSuccess)
+			return err;
 	}
 	txt = rq_prop.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (txt == nullptr) {

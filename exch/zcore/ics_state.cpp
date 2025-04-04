@@ -81,10 +81,10 @@ BINARY *ics_state::serialize()
 	if (pproplist == nullptr)
 		return NULL;
 	std::unique_ptr<BINARY, mdel> ser(pstate->pgiven->serialize());
-	if (ser == nullptr || pproplist->set(MetaTagIdsetGiven1, ser.get()) != 0)
+	if (ser == nullptr || pproplist->set(MetaTagIdsetGiven1, ser.get()) != ecSuccess)
 		return NULL;
 	ser.reset(pstate->pseen->serialize());
-	if (ser == nullptr || pproplist->set(MetaTagCnsetSeen, ser.get()) != 0)
+	if (ser == nullptr || pproplist->set(MetaTagCnsetSeen, ser.get()) != ecSuccess)
 		return NULL;
 	ser.reset();
 	
@@ -97,7 +97,7 @@ BINARY *ics_state::serialize()
 	if (ICS_TYPE_CONTENTS == pstate->type &&
 	    !pstate->pread->empty()) {
 		decltype(ser) s(pstate->pread->serialize());
-		if (s == nullptr || pproplist->set(MetaTagCnsetRead, s.get()) != 0)
+		if (s == nullptr || pproplist->set(MetaTagCnsetRead, s.get()) != ecSuccess)
 			return NULL;
 	}
 	if (!ext_push.init(nullptr, 0, 0) ||

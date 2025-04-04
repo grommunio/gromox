@@ -107,7 +107,7 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 		return NULL;
 	auto pproplist = pfldctnt->get_proplist();
 	for (size_t i = 0; i < tmp_propvals.count; ++i)
-		if (pproplist->set(tmp_propvals.ppropval[i]) != 0)
+		if (pproplist->set(tmp_propvals.ppropval[i]) != ecSuccess)
 			return NULL;
 	/*
 	 * Gromox does not have split public folders, so no need to emit

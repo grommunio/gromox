@@ -173,7 +173,7 @@ static int ptesv_to_prop(const struct pte &pte, const char *cset,
 		auto s = iconvtext(blob->pc, blob->cb, cset, "UTF-8//IGNORE");
 		if (errno != 0)
 			return -errno;
-		return proplist.set(pte.proptag, s.data());
+		return ece2nerrno(proplist.set(pte.proptag, s.data()));
 	}
 	case PT_UNICODE: {
 		if (pte.v_ui4 != blob->cb + 2)
@@ -181,18 +181,18 @@ static int ptesv_to_prop(const struct pte &pte, const char *cset,
 		auto s = iconvtext(blob->pc, blob->cb, "UTF-16", "UTF-8//IGNORE");
 		if (errno != 0)
 			return -errno;
-		return proplist.set(pte.proptag, s.data());
+		return ece2nerrno(proplist.set(pte.proptag, s.data()));
 	}
 	case PT_BINARY:
-		return proplist.set(pte.proptag, blob.get());
+		return ece2nerrno(proplist.set(pte.proptag, blob.get()));
 	case PT_CLSID:
 		if (blob->cb < sizeof(GUID))
 			return -EIO;
-		return proplist.set(pte.proptag, blob->pv);
+		return ece2nerrno(proplist.set(pte.proptag, blob->pv));
 	case PT_OBJECT:
 		if (pte.v_ui4 != 0xffffffff)
 			throw YError(fmt::format("Unsupported PTE with proptag {:08x}", pte.proptag));
-		return proplist.set(pte.proptag, blob.get());
+		return ece2nerrno(proplist.set(pte.proptag, blob.get()));
 	default:
 		if (pte.v_ui4 != blob->cb)
 			return -EIO;
@@ -227,7 +227,7 @@ static int ptemv_to_prop(const struct pte &pte, const char *cset,
 	}
 	if (unitsize != 0) {
 		GEN_ARRAY mv{pte.v_ui4 / unitsize, {blob->pv}};
-		return proplist.set(pte.proptag, &mv);
+		return ece2nerrno(proplist.set(pte.proptag, &mv));
 	}
 	if (pte.v_ui4 != blob->cb)
 		return -EIO;
@@ -243,7 +243,7 @@ static int ptemv_to_prop(const struct pte &pte, const char *cset,
 		bvec[i] = *bdata[i];
 	}
 	GEN_ARRAY mv{static_cast<uint32_t>(bvec.size()), {bvec.data()}};
-	return proplist.set(pte.proptag, &mv);
+	return ece2nerrno(proplist.set(pte.proptag, &mv));
 }
 
 /* PTE multi-value string [array of strings] to property conversion */
@@ -292,7 +292,7 @@ static int ptemvs_to_prop(const struct pte &pte, const char *cset,
 	for (uint32_t i = 0; i < sa.count; ++i)
 		strp[i] = strs[i].data();
 	sa.ppstr = strp.data();
-	return proplist.set(pte.proptag, &sa);
+	return ece2nerrno(proplist.set(pte.proptag, &sa));
 }
 
 static int pte_to_prop(const struct pte &pte, const char *cset,
@@ -308,10 +308,10 @@ static int pte_to_prop(const struct pte &pte, const char *cset,
 	case PT_SYSTIME:
 	case PT_I8:
 		/* Because of the union, the pointer for v_ui2, v_ui4, v_ui8 is the same. */
-		return proplist.set(pte.proptag, &pte.v_ui8);
+		return ece2nerrno(proplist.set(pte.proptag, &pte.v_ui8));
 	case PT_BOOLEAN: {
 		BOOL w = !!pte.v_ui4;
-		return proplist.set(pte.proptag, &w);
+		return ece2nerrno(proplist.set(pte.proptag, &w));
 	}
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:

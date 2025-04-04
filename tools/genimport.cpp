@@ -225,9 +225,9 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t change_num)
 		return -ENOMEM;
 	}
 	int ret;
-	if ((ret = props->set(PidTagChangeNumber, &change_num)) != 0 ||
-	    (ret = props->set(PR_CHANGE_KEY, &bxid)) != 0 ||
-	    (ret = props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != 0) {
+	if ((ret = props->set(PidTagChangeNumber, &change_num)) != ecSuccess ||
+	    (ret = props->set(PR_CHANGE_KEY, &bxid)) != ecSuccess ||
+	    (ret = props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != ecSuccess) {
 		fprintf(stderr, "%s: %s\n", __func__, strerror(-ret));
 		return ret;
 	}
@@ -249,12 +249,18 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 	if (!props->has(PR_LAST_MODIFICATION_TIME)) {
 		auto last_time = rop_util_current_nttime();
 		auto ret = props->set(PR_LAST_MODIFICATION_TIME, &last_time);
-		if (ret != 0)
-			return ret;
+		if (ret == ecServerOOM)
+			return -ENOMEM;
+		else if (ret != ecSuccess)
+			return -EIO;
 	}
-	int ret;
-	if ((ret = props->set(PidTagParentFolderId, &parent_fld)) != 0 ||
-	    (ret = exm_set_change_keys(props, change_num)) != 0) {
+	auto err = props->set(PidTagParentFolderId, &parent_fld);
+	if (err == ecServerOOM)
+		return -ENOMEM;
+	else if (err != ecSuccess)
+		return -EIO;
+	auto ret = exm_set_change_keys(props, change_num);
+	if (ret != 0) {
 		fprintf(stderr, "exm: tpropval: %s\n", strerror(-ret));
 		return ret;
 	}
@@ -270,7 +276,6 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 	}
 	if (dn == nullptr)
 		dn = "";
-	ec_error_t err = ecSuccess;
 	if (!exmdb_client->create_folder(g_storedir, CP_ACP, props, new_fld_id, &err)) {
 		fprintf(stderr, "exm: create_folder_by_properties \"%s\" RPC failed\n", dn);
 		return -EIO;
@@ -305,8 +310,9 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct, unsigned int mode)
 {
 	ct->proplist.erase(PidTagChangeNumber);
 	auto ts = rop_util_current_nttime();
-	if (ct->proplist.set(PR_MESSAGE_DELIVERY_TIME, &ts) != 0)
-		/* ignore */;
+	auto ret = ct->proplist.set(PR_MESSAGE_DELIVERY_TIME, &ts);
+	if (ret != ecSuccess)
+		return ece2nerrno(ret);
 	uint64_t folder_id = 0, msg_id = 0;
 	uint32_t r32 = 0;
 	if (mode & DELIVERY_TWOSTEP)
@@ -392,21 +398,19 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 		return -ENOMEM;
 	}
 	auto props = &ctnt->proplist;
-	int ret;
-	if ((ret = props->set(PidTagMid, &msg_id)) != 0 ||
-	    (ret = props->set(PidTagChangeNumber, &change_num)) != 0 ||
-	    (ret = props->set(PR_CHANGE_KEY, &bxid)) != 0 ||
-	    (ret = props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != 0) {
+	ec_error_t ret;
+	if ((ret = props->set(PidTagMid, &msg_id)) != ecSuccess ||
+	    (ret = props->set(PidTagChangeNumber, &change_num)) != ecSuccess ||
+	    (ret = props->set(PR_CHANGE_KEY, &bxid)) != ecSuccess ||
+	    (ret = props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != ecSuccess) {
 		fprintf(stderr, "exm: tpropval: %s\n", strerror(-ret));
-		return ret;
+		return ece2nerrno(ret);
 	}
-	ec_error_t e_result = ecRpcFailed;
-	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld, ctnt,
-	    &e_result)) {
+	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld, ctnt, &ret)) {
 		fprintf(stderr, "exm: write_message RPC failed\n");
 		return -EIO;
-	} else if (e_result != ecSuccess) {
-		fprintf(stderr, "exm: write_message: %s\n", mapi_strerror(e_result));
+	} else if (ret != ecSuccess) {
+		fprintf(stderr, "exm: write_message: %s\n", mapi_strerror(ret));
 		return -EIO;
 	} else if (g_verbose_create) {
 		fprintf(stderr, "Created new message 0x%llx:0x%llx\n",

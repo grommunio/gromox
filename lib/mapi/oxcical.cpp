@@ -617,7 +617,7 @@ static bool oxcical_parse_tzdisplay(bool b_dtstart, const ical_component &tzcom,
 		PidLidAppointmentTimeZoneDefinitionEndDisplay};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	return true;
@@ -645,7 +645,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Appointment, PidLidTimeZoneDescription};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), ptzid) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), ptzid) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
@@ -656,7 +656,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	propname = {MNID_ID, PSETID_Appointment, PidLidTimeZoneStruct};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	tmp_bin.pb = bin_buff;
@@ -667,7 +667,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	propname = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionRecur};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	return true;
@@ -681,7 +681,7 @@ static bool oxcical_parse_proposal(namemap &phash,
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
 		return false;
 	tmp_byte = 1;
-	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	return true;
@@ -750,47 +750,47 @@ static bool oxcical_parse_recipients(const ical_component &main_ev,
 		pproplist = prcpts->emplace();
 		if (pproplist == nullptr)
 			return false;
-		if (pproplist->set(PR_ADDRTYPE, "SMTP") != 0 ||
-		    pproplist->set(PR_EMAIL_ADDRESS, paddress) != 0 ||
-		    pproplist->set(PR_SMTP_ADDRESS, paddress) != 0)
+		if (pproplist->set(PR_ADDRTYPE, "SMTP") != ecSuccess ||
+		    pproplist->set(PR_EMAIL_ADDRESS, paddress) != ecSuccess ||
+		    pproplist->set(PR_SMTP_ADDRESS, paddress) != ecSuccess)
 			return false;
 		if (pdisplay_name == nullptr)
 			pdisplay_name = paddress;
-		if (pproplist->set(PR_DISPLAY_NAME, pdisplay_name) != 0 ||
-		    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME, pdisplay_name) != 0)
+		if (pproplist->set(PR_DISPLAY_NAME, pdisplay_name) != ecSuccess ||
+		    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME, pdisplay_name) != ecSuccess)
 			return false;
 		tmp_bin.pb = tmp_buff;
 		tmp_bin.cb = 0;
 		auto dtypx = DT_MAILUSER;
 		if (!username_to_entryid(paddress, pdisplay_name, &tmp_bin, &dtypx) ||
-		    pproplist->set(PR_ENTRYID, &tmp_bin) != 0 ||
-		    pproplist->set(PR_RECIPIENT_ENTRYID, &tmp_bin) != 0 ||
-		    pproplist->set(PR_RECORD_KEY, &tmp_bin) != 0)
+		    pproplist->set(PR_ENTRYID, &tmp_bin) != ecSuccess ||
+		    pproplist->set(PR_RECIPIENT_ENTRYID, &tmp_bin) != ecSuccess ||
+		    pproplist->set(PR_RECORD_KEY, &tmp_bin) != ecSuccess)
 			return false;
 		tmp_int32 = role_to_rcpttype(prole, cutype);
-		if (pproplist->set(PR_RECIPIENT_TYPE, &tmp_int32) != 0)
+		if (pproplist->set(PR_RECIPIENT_TYPE, &tmp_int32) != ecSuccess)
 			return false;
 		tmp_int32 = static_cast<uint32_t>(dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER);
-		if (pproplist->set(PR_OBJECT_TYPE, &tmp_int32) != 0)
+		if (pproplist->set(PR_OBJECT_TYPE, &tmp_int32) != ecSuccess)
 			return false;
 		tmp_int32 = static_cast<uint32_t>(dtypx);
-		if (pproplist->set(PR_DISPLAY_TYPE, &tmp_int32) != 0)
+		if (pproplist->set(PR_DISPLAY_TYPE, &tmp_int32) != ecSuccess)
 			return false;
 		tmp_byte = 1;
-		if (pproplist->set(PR_RESPONSIBILITY, &tmp_byte) != 0)
+		if (pproplist->set(PR_RESPONSIBILITY, &tmp_byte) != ecSuccess)
 			return false;
 		tmp_int32 = recipSendable;
 		if (is_organizer)
 			tmp_int32 |= recipOrganizer;
-		if (pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32) != 0)
+		if (pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32) != ecSuccess)
 			return false;
 	}
 	/*
 	 * XXX: Value of tmp_byte is unclear, but it appears it coincides with
 	 * the presence of any recipients.
 	 */
-	if (pmsg->proplist.set(PR_RESPONSE_REQUESTED, &tmp_byte) != 0 ||
-	    pmsg->proplist.set(PR_REPLY_REQUESTED, &tmp_byte) != 0)
+	if (pmsg->proplist.set(PR_RESPONSE_REQUESTED, &tmp_byte) != ecSuccess ||
+	    pmsg->proplist.set(PR_REPLY_REQUESTED, &tmp_byte) != ecSuccess)
 		return false;
 	return true;
 }
@@ -821,7 +821,7 @@ static bool oxcical_parse_categories(const ical_component &main_event,
 		PROPERTY_NAME pn = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameKeywords)};
 		if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
 			return false;
-		if (pmsg->proplist.set(PROP_TAG(PT_MV_UNICODE, *plast_propid), &strings_array) != 0)
+		if (pmsg->proplist.set(PROP_TAG(PT_MV_UNICODE, *plast_propid), &strings_array) != ecSuccess)
 			return false;
 		(*plast_propid) ++;
 	}
@@ -834,9 +834,7 @@ static bool oxcical_parse_class(const ical_component &main_event,
 	auto piline = main_event.get_line("CLASS");
 	if (piline == nullptr) {
 		uint32_t v = SENSITIVITY_NONE;
-		if (pmsg->proplist.set(PR_SENSITIVITY, &v) != 0)
-			return false;
-		return true;
+		return pmsg->proplist.set(PR_SENSITIVITY, &v) == ecSuccess;
 	}
 
 	uint32_t tmp_int32;
@@ -856,9 +854,7 @@ static bool oxcical_parse_class(const ical_component &main_event,
 		tmp_int32 = SENSITIVITY_NONE;
 	else
 		return true;
-	if (pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) != 0)
-		return false;
-	return true;
+	return pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) == ecSuccess;
 }
 
 static bool oxcical_parse_body(const ical_component &main_event,
@@ -877,9 +873,7 @@ static bool oxcical_parse_body(const ical_component &main_event,
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
 		return true;
-	if (pmsg->proplist.set(PR_BODY, pvalue) != 0)
-		return false;
-	return true;
+	return pmsg->proplist.set(PR_BODY, pvalue) == ecSuccess;
 }
 
 static bool oxcical_parse_html(const ical_component &main_event,
@@ -900,12 +894,10 @@ static bool oxcical_parse_html(const ical_component &main_event,
 		return true;
 	tmp_bin.cb = strlen(pvalue);
 	tmp_bin.pc = deconst(pvalue);
-	if (pmsg->proplist.set(PR_HTML, &tmp_bin) != 0)
+	if (pmsg->proplist.set(PR_HTML, &tmp_bin) != ecSuccess)
 		return false;
 	tmp_int32 = CP_UTF8;
-	if (pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32) != 0)
-		return false;
-	return true;
+	return pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32) == ecSuccess;
 }
 
 static bool oxcical_parse_dtstamp(const ical_component &main_event,
@@ -932,7 +924,7 @@ static bool oxcical_parse_dtstamp(const ical_component &main_event,
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	return true;
@@ -953,13 +945,13 @@ static bool oxcical_parse_start_end(bool b_start, bool b_proposal,
 			PidLidAppointmentProposedEndWhole};
 		if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
 			return false;
-		if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
+		if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess)
 			return false;
 		(*plast_propid) ++;
 		pn = {MNID_ID, PSETID_Common, comid};
 		if (namemap_add(phash, *plast_propid, std::move(pn)) != 0 ||
-		    pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0 ||
-		    pmsg->proplist.set(sdtag, &tmp_int64) != 0)
+		    pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess ||
+		    pmsg->proplist.set(sdtag, &tmp_int64) != ecSuccess)
 			return false;
 		++*plast_propid;
 	}
@@ -970,13 +962,13 @@ static bool oxcical_parse_start_end(bool b_start, bool b_proposal,
 			PidLidAppointmentStartWhole : PidLidAppointmentEndWhole};
 		if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
 			return false;
-		if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
+		if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess)
 			return false;
 		(*plast_propid) ++;
 		pn = {MNID_ID, PSETID_Common, comid};
 		if (namemap_add(phash, *plast_propid, std::move(pn)) != 0 ||
-		    pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0 ||
-		    pmsg->proplist.set(sdtag, &tmp_int64) != 0)
+		    pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess ||
+		    pmsg->proplist.set(sdtag, &tmp_int64) != ecSuccess)
 			return false;
 		++*plast_propid;
 	}
@@ -991,7 +983,7 @@ static bool oxcical_parse_subtype(namemap &phash, uint16_t *plast_propid,
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
 		return false;
 	tmp_byte = 1;
-	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	if (pexception != nullptr) {
@@ -1065,7 +1057,7 @@ static bool oxcical_parse_duration(uint32_t minutes, namemap &phash,
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentDuration};
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &minutes) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &minutes) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	return true;
@@ -1170,7 +1162,7 @@ static bool oxcical_parse_uid(const ical_component &main_event,
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Meeting, PidLidGlobalObjectId};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	globalobjectid.year = 0;
@@ -1184,7 +1176,7 @@ static bool oxcical_parse_uid(const ical_component &main_event,
 	propname = {MNID_ID, PSETID_Meeting, PidLidCleanGlobalObjectId};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	return true;
@@ -1223,7 +1215,7 @@ static bool oxcical_parse_location(const ical_component &main_event,
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Appointment, PidLidLocation};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), tmp_buff) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), tmp_buff) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	pvalue = piline->get_first_paramval("ALTREP");
@@ -1232,7 +1224,7 @@ static bool oxcical_parse_location(const ical_component &main_event,
 	propname = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameLocationUrl)};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), pvalue) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), pvalue) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	if (pexception != nullptr && pext_exception != nullptr) {
@@ -1277,10 +1269,10 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 	}
 	pdisplay_name = piline->get_first_paramval("CN");
 	if (pdisplay_name != nullptr) {
-		if (pmsg->proplist.set(PR_SENT_REPRESENTING_NAME, pdisplay_name) != 0)
+		if (pmsg->proplist.set(PR_SENT_REPRESENTING_NAME, pdisplay_name) != ecSuccess)
 			return false;
 		if (oxcmail_exchsched_compat &&
-		    pmsg->proplist.set(PR_SENDER_NAME, pdisplay_name) != 0)
+		    pmsg->proplist.set(PR_SENDER_NAME, pdisplay_name) != ecSuccess)
 			return false;
 	}
 	if (paddress == nullptr)
@@ -1300,16 +1292,16 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 	 * but EXC2019 does not do that either, and X-MS-OLK-SENDER is only generated
 	 * under peculiar circumstances (cf. doc/oxocal.rst).
 	 */
-	if (pmsg->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP") != 0 ||
-	    pmsg->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, paddress) != 0 ||
-	    pmsg->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, paddress) != 0 ||
-	    pmsg->proplist.set(PR_SENT_REPRESENTING_ENTRYID, &tmp_bin) != 0)
+	if (pmsg->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP") != ecSuccess ||
+	    pmsg->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, paddress) != ecSuccess ||
+	    pmsg->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, paddress) != ecSuccess ||
+	    pmsg->proplist.set(PR_SENT_REPRESENTING_ENTRYID, &tmp_bin) != ecSuccess)
 		return false;
 	if (oxcmail_exchsched_compat) {
-		if (pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != 0 ||
-		    pmsg->proplist.set(PR_SENDER_EMAIL_ADDRESS, paddress) != 0 ||
-		    pmsg->proplist.set(PR_SENDER_SMTP_ADDRESS, paddress) != 0 ||
-		    pmsg->proplist.set(PR_SENDER_ENTRYID, &tmp_bin) != 0)
+		if (pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != ecSuccess ||
+		    pmsg->proplist.set(PR_SENDER_EMAIL_ADDRESS, paddress) != ecSuccess ||
+		    pmsg->proplist.set(PR_SENDER_SMTP_ADDRESS, paddress) != ecSuccess ||
+		    pmsg->proplist.set(PR_SENDER_ENTRYID, &tmp_bin) != ecSuccess)
 			return false;
 	}
 	return true;
@@ -1332,7 +1324,7 @@ static bool oxcical_parse_sequence(const ical_component &main_event,
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentSequence};
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &tmp_int32) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &tmp_int32) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	return true;
@@ -1400,7 +1392,7 @@ static bool oxcical_set_busystatus(ol_busy_status busy_status,
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, pidlid};
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &busy_status) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &busy_status) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	if (pexception != nullptr) {
@@ -1438,7 +1430,7 @@ static bool oxcical_parse_summary(const ical_component &main_event,
 			tmp_len --;
 		}
 	}
-	if (pmsg->proplist.set(PR_SUBJECT, tmp_buff) != 0)
+	if (pmsg->proplist.set(PR_SUBJECT, tmp_buff) != ecSuccess)
 		return false;
 	if (pexception != nullptr && pext_exception != nullptr) {
 		pexception->overrideflags |= ARO_SUBJECT;
@@ -1466,9 +1458,7 @@ static bool oxcical_parse_ownerapptid(const ical_component &main_event,
 	if (pvalue == nullptr)
 		return true;
 	uint32_t tmp_int32 = strtol(pvalue, nullptr, 0);
-	if (pmsg->proplist.set(PR_OWNER_APPT_ID, &tmp_int32) != 0)
-		return false;
-	return true;
+	return pmsg->proplist.set(PR_OWNER_APPT_ID, &tmp_int32) == ecSuccess;
 }
 
 static bool oxcical_parse_recurrence_id(const ical_component *ptz_component,
@@ -1486,7 +1476,7 @@ static bool oxcical_parse_recurrence_id(const ical_component *ptz_component,
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
 		return false;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	return true;
@@ -1514,7 +1504,7 @@ static bool oxcical_parse_disallow_counter(const ical_component &main_event,
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentNotAllowPropose};
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	return true;
@@ -1545,19 +1535,19 @@ static bool oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Appointment, PidLidAppointmentRecur};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	propname = {MNID_ID, PSETID_Appointment, PidLidRecurring};
 	uint8_t flag = 1;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0 ||
-	    pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &flag) != 0)
+	    pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &flag) != ecSuccess)
 		return false;
 	++*plast_propid;
 	propname = {MNID_ID, PSETID_Appointment, PidLidRecurrenceType};
 	uint32_t num = aptrecur_to_recurtype(*apr);
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0 ||
-	    pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &num) != 0)
+	    pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &num) != ecSuccess)
 		return false;
 	++*plast_propid;
 	auto nt_time = rop_util_rtime_to_nttime(
@@ -1567,14 +1557,14 @@ static bool oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 	propname = {MNID_ID, PSETID_Appointment, PidLidClipEnd};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &nt_time) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &nt_time) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	nt_time = rop_util_rtime_to_nttime(apr->recur_pat.startdate);
 	propname = {MNID_ID, PSETID_Appointment, PidLidClipStart};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &nt_time) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &nt_time) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	return true;
@@ -1646,40 +1636,39 @@ static bool oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment
 	uint64_t tmp_int64;
 
 	tmp_int32 = ATTACH_EMBEDDED_MSG;
-	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
-		return false;
-	if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
+	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != ecSuccess ||
+	    pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != ecSuccess)
 		return false;
 	auto newval = pattachment->pembedded->proplist.getval(PR_SUBJECT);
 	if (newval != nullptr &&
-	    pattachment->proplist.set(PR_DISPLAY_NAME, newval) != 0)
+	    pattachment->proplist.set(PR_DISPLAY_NAME, newval) != ecSuccess)
 		return false;
 	if (!ical_itime_to_utc(nullptr, start_itime, &tmp_time))
 		return false;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0)
+	if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != ecSuccess)
 		return false;
 	if (!ical_itime_to_utc(nullptr, end_itime, &tmp_time))
 		return false;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
+	if (pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != ecSuccess)
 		return false;
 	tmp_bin.cb = 0;
 	tmp_bin.pb = nullptr;
-	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
+	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != ecSuccess)
 		return false;
 	tmp_int32 = afException;
-	if (pattachment->proplist.set(PR_ATTACHMENT_FLAGS, &tmp_int32) != 0)
+	if (pattachment->proplist.set(PR_ATTACHMENT_FLAGS, &tmp_int32) != ecSuccess)
 		return false;
 	tmp_int32 = 0x00000000;
-	if (pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != 0 ||
-	    pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0)
+	if (pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != ecSuccess ||
+	    pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != ecSuccess)
 		return false;
 	tmp_byte = 1;
-	if (pattachment->proplist.set(PR_ATTACHMENT_HIDDEN, &tmp_byte) != 0)
+	if (pattachment->proplist.set(PR_ATTACHMENT_HIDDEN, &tmp_byte) != ecSuccess)
 		return false;
 	tmp_byte = 0;
-	if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
+	if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != ecSuccess)
 		return false;
 	return true;
 }
@@ -1716,42 +1705,40 @@ static bool oxcical_parse_atx_value(const ical_line &piline,
 	tmp_bin.cb = gx_snprintf(tmp_buff, std::size(tmp_buff),
 		"[InternetShortcut]\r\nURL=%s", pvalue);
 	tmp_bin.pc = tmp_buff;
-	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0)
+	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != ecSuccess)
 		return false;
 	tmp_bin.cb = 0;
 	tmp_bin.pb = nullptr;
-	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
-		return false;
-	if (pattachment->proplist.set(PR_ATTACH_EXTENSION, ".URL") != 0)
+	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != ecSuccess ||
+	    pattachment->proplist.set(PR_ATTACH_EXTENSION, ".URL") != ecSuccess)
 		return false;
 	const char *pvalue1 = strrchr(pvalue, '/'); /* CONST-STRCHR-MARKER */
 	if (pvalue1 == nullptr)
 		pvalue1 = pvalue;
 	snprintf(tmp_buff, 256, "%s.url", pvalue1);
-	if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, tmp_buff) != 0 ||
-	    pattachment->proplist.set(PR_DISPLAY_NAME, tmp_buff) != 0)
+	if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, tmp_buff) != ecSuccess ||
+	    pattachment->proplist.set(PR_DISPLAY_NAME, tmp_buff) != ecSuccess)
 		return false;
 	tmp_int32 = ATTACH_BY_VALUE;
-	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
+	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != ecSuccess)
 		return false;
 	pvalue1 = piline.get_first_paramval("FMTYPE");
 	if (pvalue1 != nullptr &&
-	    pattachment->proplist.set(PR_ATTACH_MIME_TAG, pvalue1) != 0)
+	    pattachment->proplist.set(PR_ATTACH_MIME_TAG, pvalue1) != ecSuccess)
 		return false;
 	tmp_int32 = 0;
-	if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0)
+	if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != ecSuccess)
 		return false;
 	tmp_int32 = 0;
-	if (pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != 0)
+	if (pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != ecSuccess)
 		return false;
 	tmp_byte = 0;
-	if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
+	if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != ecSuccess)
 		return false;
 	tmp_int64 = 0x0CB34557A3DD4000;
-	if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0 ||
-	    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
-		return false;
-	if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
+	if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != ecSuccess ||
+	    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != ecSuccess ||
+	    pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != ecSuccess)
 		return false;
 	return true;
 }
@@ -1800,13 +1787,13 @@ static bool oxcical_parse_atx_binary(const ical_line &piline,
 		tmp_bin.cb = 0;
 		tmp_bin.pb = nullptr;
 	}
-	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0)
+	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != ecSuccess)
 		return false;
 	if (tmp_bin.pb != nullptr)
 		free(tmp_bin.pb);
 	tmp_bin.cb = 0;
 	tmp_bin.pb = nullptr;
-	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
+	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != ecSuccess)
 		return false;
 	pvalue = piline.get_first_paramval("X-FILENAME");
 	if (pvalue == nullptr)
@@ -1818,29 +1805,29 @@ static bool oxcical_parse_atx_binary(const ical_line &piline,
 	const char *pvalue1 = strrchr(pvalue, '.'); /* CONST-STRCHR-MARKER */
 	if (pvalue1 == nullptr)
 		pvalue1 = ".dat";
-	if (pattachment->proplist.set(PR_ATTACH_EXTENSION, pvalue1) != 0 ||
-	    pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, pvalue) != 0 ||
-	    pattachment->proplist.set(PR_DISPLAY_NAME, pvalue) != 0)
+	if (pattachment->proplist.set(PR_ATTACH_EXTENSION, pvalue1) != ecSuccess ||
+	    pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, pvalue) != ecSuccess ||
+	    pattachment->proplist.set(PR_DISPLAY_NAME, pvalue) != ecSuccess)
 		return false;
 	uint32_t tmp_int32 = ATTACH_BY_VALUE;
-	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
+	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != ecSuccess)
 		return false;
 	pvalue1 = piline.get_first_paramval("FMTYPE");
 	if (pvalue1 != nullptr &&
-	    pattachment->proplist.set(PR_ATTACH_MIME_TAG, pvalue1) != 0)
+	    pattachment->proplist.set(PR_ATTACH_MIME_TAG, pvalue1) != ecSuccess)
 		return false;
 	tmp_int32 = 0;
-	if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0 ||
-	    pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != 0)
+	if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != ecSuccess ||
+	    pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != ecSuccess)
 		return false;
 	tmp_byte = 0;
-	if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
+	if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != ecSuccess)
 		return false;
 	tmp_int64 = 0x0CB34557A3DD4000;
-	if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != 0 ||
-	    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != 0)
+	if (pattachment->proplist.set(PR_EXCEPTION_STARTTIME, &tmp_int64) != ecSuccess ||
+	    pattachment->proplist.set(PR_EXCEPTION_ENDTIME, &tmp_int64) != ecSuccess)
 		return false;
-	if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != 0)
+	if (pattachment->proplist.set(PR_RENDERING_POSITION, &indet_rendering_pos) != ecSuccess)
 		return false;
 	return true;
 }
@@ -1864,7 +1851,7 @@ static bool oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 	PROPERTY_NAME propname = {MNID_ID, PSETID_Common, PidLidReminderDelta};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &reminder_delta) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &reminder_delta) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	propname.guid = PSETID_Common;
@@ -1873,7 +1860,7 @@ static bool oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
 	tmp_int64 = rop_util_unix_to_nttime(start_time);
-	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	propname = {MNID_ID, PSETID_Common, PidLidReminderSignalTime};
@@ -1881,14 +1868,14 @@ static bool oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 		return false;
 	tmp_int64 = rop_util_unix_to_nttime(
 		start_time - reminder_delta*60);
-	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	propname = {MNID_ID, PSETID_Common, PidLidReminderSet};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return false;
 	tmp_byte = 1;
-	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != 0)
+	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != ecSuccess)
 		return false;
 	(*plast_propid) ++;
 	return true;
@@ -1947,7 +1934,7 @@ static bool oxcical_parse_importance(const ical_component &main_event,
 			return true;
 		uint32_t imp = strtol(str, nullptr, 0);
 		if (imp <= IMPORTANCE_HIGH &&
-		    msg->proplist.set(PR_IMPORTANCE, &imp) != 0)
+		    msg->proplist.set(PR_IMPORTANCE, &imp) != ecSuccess)
 			return false;
 		return true;
 	}
@@ -1971,7 +1958,7 @@ static bool oxcical_parse_importance(const ical_component &main_event,
 		imp = IMPORTANCE_LOW;
 	else
 		return true;
-	return msg->proplist.set(PR_IMPORTANCE, &imp) == 0;
+	return msg->proplist.set(PR_IMPORTANCE, &imp) == ecSuccess;
 }
 
 static inline unsigned int dfl_alarm_offset(bool allday)
@@ -2139,7 +2126,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 		return "E-2711";
 	if (!pmsg->proplist.has(PR_IMPORTANCE)) {
 		int32_t tmp_int32 = IMPORTANCE_NORMAL;
-		if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
+		if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != ecSuccess)
 			return "E-2712";
 	}
 	if (!oxcical_parse_sequence(*pmain_event, phash, &last_propid, pmsg))
@@ -2257,7 +2244,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			if (pembedded == nullptr)
 				return "E-2725: ENOMEM";
 			pattachment->set_embedded_internal(pembedded);
-			if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}") != 0)
+			if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}") != ecSuccess)
 				return "E-2726";
 
 			event_list_t tmp_list;
@@ -2386,7 +2373,7 @@ static bool oxcical_import_events(const char *str_zone, uint16_t calendartype,
 			return false;
 		msgvec.push_back(std::move(msg));
 		auto pembedded = msgvec.back().get();
-		if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
+		if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
 			return false;
 		auto err = oxcical_import_internal(str_zone, "PUBLISH", false,
 		           calendartype, pical, event_list, alloc, get_propids,
@@ -2553,8 +2540,9 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 		return ecMAPIOOM;
 	msgvec.push_back(std::move(msg));
 	auto pmsg = msgvec.back().get();
-	if (pmsg->proplist.set(PR_MESSAGE_CLASS, mclass) != 0)
-		return ecError;
+	auto ecr = pmsg->proplist.set(PR_MESSAGE_CLASS, mclass);
+	if (ecr != ecSuccess)
+		return ecr;
 	auto err = oxcical_import_internal(str_zone, pvalue, b_proposal,
 	           calendartype, pical, uid_list.begin()->second, alloc,
 	           std::move(get_propids), username_to_entryid, pmsg,

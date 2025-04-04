@@ -160,7 +160,7 @@ static void exm_adjust_staticprops(TPROPVAL_ARRAY &props)
 		{MSGFLAG_NRN_PENDING, PR_NON_RECEIPT_NOTIFICATION_REQUESTED},
 	};
 	for (const auto &e : xmap)
-		if (mf & e.first && props.set(e.second, &a_one) != 0)
+		if (mf & e.first && props.set(e.second, &a_one) == ecServerOOM)
 			throw std::bad_alloc();
 }
 
@@ -245,7 +245,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 		 * #1. Instruction to create folder beneath @fid_to
 		 * such as {NID_ROOT_FOLDER, {true, IPMSUBTREE, "Import of ..."}}
 		 */
-		if (props.set(PR_DISPLAY_NAME, current_it->second.create_name.c_str()) != 0)
+		if (props.set(PR_DISPLAY_NAME, current_it->second.create_name.c_str()) == ecServerOOM)
 			throw std::bad_alloc();
 		auto ret = exm_create_folder(current_it->second.fid_to,
 			   &props, g_oexcl, &new_fid);

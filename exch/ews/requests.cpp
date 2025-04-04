@@ -1598,13 +1598,12 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 				content->proplist.erase(tag);
 			for (const auto &prop : shape.write()) {
 				auto ret = content->proplist.set(prop);
-				if (ret == -ENOMEM)
+				if (ret == ecServerOOM)
 					throw EWSError::ItemSave(E3035);
 			}
-			auto ret = content->proplist.set(PidTagMid, EWSContext::construct<uint64_t>(rop_util_make_eid(1, mid.message_global_counter)));
-			if (ret == -ENOMEM)
+			auto error = content->proplist.set(PidTagMid, EWSContext::construct<uint64_t>(rop_util_make_eid(1, mid.message_global_counter)));
+			if (error == ecServerOOM)
 				throw EWSError::ItemSave(E3035);
-			ec_error_t error;
 			if (!ctx.plugin().exmdb.write_message(dir.c_str(),
 			    CP_ACP, parentFolder.folderId, content.get(),
 			    &error) || error != ecSuccess)

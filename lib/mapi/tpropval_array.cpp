@@ -33,7 +33,7 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray, proptag_t proptag,
 	return true;
 }
 
-int TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
+ec_error_t TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
 {
 	for (size_t i = 0; i < count; ++i) {
 		if (ppropval[i].proptag != tag)
@@ -42,16 +42,16 @@ int TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
 		ppropval[i].pvalue = propval_dup(PROP_TYPE(tag), xpropval);
 		if (ppropval[i].pvalue == nullptr) {
 			ppropval[i].pvalue = pvalue;
-			return -ENOMEM;
+			return ecServerOOM;
 		}
 		propval_free(PROP_TYPE(tag), pvalue);
-		return 0;
+		return ecSuccess;
 	}
 	/*
 	 * XXX: _dup could bail out because of unrecognized type, so
 	 * ENOMEM is not correct all the time.
 	 */
-	return tpropval_array_append(this, tag, xpropval) ? 0 : -ENOMEM;
+	return tpropval_array_append(this, tag, xpropval) ? ecSuccess : ecServerOOM;
 }
 
 void TPROPVAL_ARRAY::erase(proptag_t proptag)

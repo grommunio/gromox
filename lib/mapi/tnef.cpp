@@ -953,14 +953,14 @@ static BOOL tnef_set_attribute_address(TPROPVAL_ARRAY *pproplist,
     proptag_t proptag1, proptag_t proptag2, proptag_t proptag3,
 	ATTR_ADDR *paddr)
 {
-	if (pproplist->set(proptag1, paddr->displayname) != 0)
+	if (pproplist->set(proptag1, paddr->displayname) != ecSuccess)
 		return FALSE;
 	auto ptr = strchr(paddr->address, ':');
 	if (ptr == nullptr)
 		return FALSE;
 	*ptr++ = '\0';
-	return pproplist->set(proptag2, paddr->address) == 0 &&
-	       pproplist->set(proptag3, ptr) == 0 ? TRUE : false;
+	return pproplist->set(proptag2, paddr->address) == ecSuccess &&
+	       pproplist->set(proptag3, ptr) == ecSuccess ? TRUE : false;
 }
 
 static void tnef_convert_from_propname(const PROPERTY_NAME *ppropname,
@@ -1274,7 +1274,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				auto ptnef_propval = &tf->ppropval[i];
 				if (!rec_namedprop(phash, last_propid, ptnef_propval) ||
 				    pmsg->proplist.set(PROP_TAG(ptnef_propval->proptype,
-				    ptnef_propval->propid), ptnef_propval->pvalue) != 0)
+				    ptnef_propval->propid), ptnef_propval->pvalue) != ecSuccess)
 					return NULL;
 			}
 			b_props = TRUE;
@@ -1293,30 +1293,30 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			break;
 		case ATTRIBUTE_ID_DELEGATE:
 			if (pmsg->proplist.set(PR_RCVD_REPRESENTING_ENTRYID,
-			    attribute.pvalue) != 0)
+			    attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_DATESTART:
-			if (pmsg->proplist.set(PR_START_DATE, attribute.pvalue) != 0)
+			if (pmsg->proplist.set(PR_START_DATE, attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_DATEEND:
-			if (pmsg->proplist.set(PR_END_DATE, attribute.pvalue) != 0)
+			if (pmsg->proplist.set(PR_END_DATE, attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_AIDOWNER:
 			if (pmsg->proplist.set(PR_OWNER_APPT_ID,
-			    attribute.pvalue) != 0)
+			    attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_REQUESTRES:
 			tmp_byte = !!*static_cast<uint16_t *>(attribute.pvalue);
-			if (pmsg->proplist.set(PR_RESPONSE_REQUESTED, &tmp_byte) != 0)
+			if (pmsg->proplist.set(PR_RESPONSE_REQUESTED, &tmp_byte) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ORIGNINALMESSAGECLASS:
 			if (pmsg->proplist.set(PR_ORIG_MESSAGE_CLASS_A,
-			    tnef_to_msgclass(static_cast<char *>(attribute.pvalue))) != 0)
+			    tnef_to_msgclass(static_cast<char *>(attribute.pvalue))) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_FROM:
@@ -1328,17 +1328,17 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_SUBJECT:
-			if (pmsg->proplist.set(PR_SUBJECT_A, attribute.pvalue) != 0)
+			if (pmsg->proplist.set(PR_SUBJECT_A, attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_DATESENT:
 			if (pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME,
-			    attribute.pvalue) != 0)
+			    attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_DATERECD:
 			if (pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME,
-			    attribute.pvalue) != 0)
+			    attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_MESSAGESTATUS: {
@@ -1351,13 +1351,13 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			if (*bv->pb & FMS_SUBMITTED)
 				tmp_int32 |= MSGFLAG_SUBMITTED;
 			if (tmp_int32 != 0 &&
-			    pmsg->proplist.set(PR_MESSAGE_FLAGS, &tmp_int32) != 0)
+			    pmsg->proplist.set(PR_MESSAGE_FLAGS, &tmp_int32) != ecSuccess)
 				return NULL;
 			break;
 		}
 		case ATTRIBUTE_ID_MESSAGECLASS:
 			message_class = tnef_to_msgclass(static_cast<char *>(attribute.pvalue));
-			if (pmsg->proplist.set(PR_MESSAGE_CLASS_A, message_class) != 0)
+			if (pmsg->proplist.set(PR_MESSAGE_CLASS_A, message_class) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_MESSAGEID:
@@ -1368,11 +1368,11 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			if (tmp_bin.pv == nullptr ||
 			    !decode_hex_binary(static_cast<char *>(attribute.pvalue),
 			    tmp_bin.pv, tmp_bin.cb) ||
-			    pmsg->proplist.set(PR_SEARCH_KEY, &tmp_bin) != 0)
+			    pmsg->proplist.set(PR_SEARCH_KEY, &tmp_bin) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_BODY:
-			if (pmsg->proplist.set(PR_BODY_A, attribute.pvalue) != 0)
+			if (pmsg->proplist.set(PR_BODY_A, attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_PRIORITY:
@@ -1390,12 +1390,12 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				mlog(LV_DEBUG, "tnef: attPriority error");
 				return NULL;
 			}
-			if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
+			if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_DATEMODIFY:
 			if (pmsg->proplist.set(PR_LAST_MODIFICATION_TIME,
-			    attribute.pvalue) != 0)
+			    attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_RECIPTABLE: {
@@ -1417,7 +1417,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 					auto ptnef_propval = ptnef_proplist->ppropval + j;
 					if (!rec_namedprop(phash, last_propid, ptnef_propval) ||
 					    pproplist->set(PROP_TAG(ptnef_propval->proptype,
-					    ptnef_propval->propid), ptnef_propval->pvalue) != 0)
+					    ptnef_propval->propid), ptnef_propval->pvalue) != ecSuccess)
 						return NULL;
 				}
 				pproplist->erase(PR_ENTRYID);
@@ -1427,7 +1427,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 					tmp_bin.cb = 0;
 					tmp_bin.pb = tmp_buff;
 					if (!username_to_entryid(psmtp, pdisplay_name, &tmp_bin, nullptr) ||
-					    pproplist->set(PR_ENTRYID, &tmp_bin) != 0)
+					    pproplist->set(PR_ENTRYID, &tmp_bin) != ecSuccess)
 						return NULL;
 				}
 			}
@@ -1486,7 +1486,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 					continue;
 				if (r == X_ERROR ||
 				    pattachment->proplist.set(PROP_TAG(ptnef_propval->proptype,
-				    ptnef_propval->propid), ptnef_propval->pvalue) != 0)
+				    ptnef_propval->propid), ptnef_propval->pvalue) != ecSuccess)
 					return NULL;
 			}
 			b_props = TRUE;
@@ -1494,32 +1494,32 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		}
 		case ATTRIBUTE_ID_ATTACHDATA:
 			if (pattachment->proplist.set(PR_ATTACH_DATA_BIN,
-			    attribute.pvalue) != 0)
+			    attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ATTACHTITLE:
 			if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME_A,
-			    attribute.pvalue) != 0)
+			    attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ATTACHMETAFILE:
 			if (pattachment->proplist.set(PR_ATTACH_RENDERING,
-			    attribute.pvalue) != 0)
+			    attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ATTACHCREATEDATE:
 			if (pattachment->proplist.set(PR_CREATION_TIME,
-			    attribute.pvalue) != 0)
+			    attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ATTACHMODIFYDATE:
 			if (pattachment->proplist.set(PR_LAST_MODIFICATION_TIME,
-			    attribute.pvalue) != 0)
+			    attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME:
 			if (pattachment->proplist.set(PR_ATTACH_TRANSPORT_NAME_A,
-			    attribute.pvalue) != 0)
+			    attribute.pvalue) != ecSuccess)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ATTACHRENDDATA:
@@ -1534,16 +1534,16 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			if (rend.attach_type == ATTACH_TYPE_OLE) {
 				tmp_bin.cb = sizeof(OLE_TAG);
 				tmp_bin.pb = deconst(OLE_TAG);
-				if (pattachment->proplist.set(PR_ATTACH_TAG, &tmp_bin) != 0)
+				if (pattachment->proplist.set(PR_ATTACH_TAG, &tmp_bin) != ecSuccess)
 					return NULL;
 			} else if (rend.attach_type == FILE_DATA_MACBINARY) {
 				tmp_bin.cb = sizeof(MACBINARY_ENCODING);
 				tmp_bin.pb = deconst(MACBINARY_ENCODING);
-				if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
+				if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != ecSuccess)
 					return NULL;
 			}
 			if (pattachment->proplist.set(PR_RENDERING_POSITION,
-			    &rend.attach_position) != 0)
+			    &rend.attach_position) != ecSuccess)
 				return NULL;
 			b_props = FALSE;
 			break;
@@ -1583,7 +1583,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		for (auto &at : *pmsg->children.pattachments)
 			tnef_replace_propid(&at.proplist, phash1);
 	if (!pmsg->proplist.has(PR_INTERNET_CPID) &&
-	    pmsg->proplist.set(PR_INTERNET_CPID, &cpid) != 0)
+	    pmsg->proplist.set(PR_INTERNET_CPID, &cpid) != ecSuccess)
 		return nullptr;
 	tnef_message_to_unicode(cpid, pmsg);
 	pmsg->proplist.erase(PidTagMid);

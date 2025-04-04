@@ -41,10 +41,10 @@ struct MIME_ENUM_PARAM {
 static constexpr unsigned int MAXIMUM_SEARCHING_DEPTH = 10;
 
 extern void select_parts(const MIME *, MIME_ENUM_PARAM &, unsigned int level);
-extern gromox::errno_t bodyset_html(TPROPVAL_ARRAY &, std::string &&, const char *);
-extern gromox::errno_t bodyset_plain(TPROPVAL_ARRAY &, std::string &&, const char *);
-extern gromox::errno_t bodyset_enriched(TPROPVAL_ARRAY &, std::string &&, const char *);
-extern gromox::errno_t bodyset_multi(MIME_ENUM_PARAM &, TPROPVAL_ARRAY &, const char *);
+extern ec_error_t bodyset_html(TPROPVAL_ARRAY &, std::string &&, const char *);
+extern ec_error_t bodyset_plain(TPROPVAL_ARRAY &, std::string &&, const char *);
+extern ec_error_t bodyset_enriched(TPROPVAL_ARRAY &, std::string &&, const char *);
+extern ec_error_t bodyset_multi(MIME_ENUM_PARAM &, TPROPVAL_ARRAY &, const char *);
 
 }
 

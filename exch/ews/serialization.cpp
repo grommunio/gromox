@@ -192,25 +192,25 @@ std::string sSyncState::serialize()
 	if (!pproplist)
 		throw EWSError::NotEnoughMemory(E3035);
 	std::unique_ptr<BINARY, Cleaner> ser(given.serialize());
-	if (!ser || pproplist->set(MetaTagIdsetGiven1, ser.get()))
+	if (!ser || pproplist->set(MetaTagIdsetGiven1, ser.get()) == ecServerOOM)
 		throw EWSError::NotEnoughMemory(E3036);
 	ser.reset(seen.serialize());
-	if (!ser || pproplist->set(MetaTagCnsetSeen, ser.get()))
+	if (!ser || pproplist->set(MetaTagCnsetSeen, ser.get()) == ecServerOOM)
 		throw EWSError::NotEnoughMemory(E3037);
 	ser.reset();
 	if (!seen_fai.empty()) {
 		ser.reset(seen_fai.serialize());
-		if (!ser || pproplist->set(MetaTagCnsetSeenFAI, ser.get()))
+		if (!ser || pproplist->set(MetaTagCnsetSeenFAI, ser.get()) == ecServerOOM)
 			throw EWSError::NotEnoughMemory(E3038);
 	}
 	if (!read.empty()) {
 		ser.reset(read.serialize());
-		if (!ser || pproplist->set(MetaTagCnsetRead, ser.get()))
+		if (!ser || pproplist->set(MetaTagCnsetRead, ser.get()) == ecServerOOM)
 			throw EWSError::NotEnoughMemory(E3039);
 	}
 	ser.reset();
-	if (readOffset != 0 && pproplist->set(MetaTagReadOffset, &readOffset) != 0)
-		/* ignore error */;
+	if (readOffset != 0 && pproplist->set(MetaTagReadOffset, &readOffset) == ecServerOOM)
+		throw EWSError::NotEnoughMemory(E3039);
 
 	EXT_PUSH stateBuffer;
 	if (!stateBuffer.init(nullptr, 0, EXT_FLAG_WCOUNT) ||

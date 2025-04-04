@@ -102,21 +102,20 @@ void select_parts(const MIME *part, MIME_ENUM_PARAM &info, unsigned int level) t
 	return;
 }
 
-errno_t bodyset_html(TPROPVAL_ARRAY &props, std::string &&rawbody,
+ec_error_t bodyset_html(TPROPVAL_ARRAY &props, std::string &&rawbody,
     const char *charset)
 {
 	uint32_t id = cset_to_cpid(charset);
 	auto err = props.set(PR_INTERNET_CPID, &id);
-	if (err < 0)
-		return -err;
+	if (err != ecSuccess)
+		return err;
 	BINARY bin;
 	bin.cb = std::min(rawbody.size(), static_cast<size_t>(UINT32_MAX));
 	bin.pc = rawbody.data();
-	err = props.set(PR_HTML, &bin);
-	return err >= 0 ? 0 : -err;
+	return props.set(PR_HTML, &bin);
 }
 
-errno_t bodyset_plain(TPROPVAL_ARRAY &props, std::string &&rawbody,
+ec_error_t bodyset_plain(TPROPVAL_ARRAY &props, std::string &&rawbody,
     const char *charset) try
 {
 	std::string utfbody;
@@ -136,31 +135,29 @@ errno_t bodyset_plain(TPROPVAL_ARRAY &props, std::string &&rawbody,
 		pv.proptag = PR_BODY_A;
 		pv.pvalue  = rawbody.data();
 	}
-	auto err = props.set(pv);
-	return err >= 0 ? 0 : -err;
+	return props.set(pv);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1746: ENOMEM");
-	return ENOMEM;
+	return ecServerOOM;
 }
 
-errno_t bodyset_enriched(TPROPVAL_ARRAY &props,
+ec_error_t bodyset_enriched(TPROPVAL_ARRAY &props,
     std::string &&rawbody, const char *charset) try
 {
 	uint32_t id = cset_to_cpid(charset);
 	auto err = props.set(PR_INTERNET_CPID, &id);
-	if (err < 0)
-		return -err;
+	if (err != ecSuccess)
+		return err;
 	std::string utfbody;
 	utfbody.resize(mb_to_utf8_xlen(rawbody.size()));
 	enriched_to_html(rawbody.c_str(), utfbody.data(), utfbody.size() + 1);
 	BINARY bin;
 	bin.cb = utfbody.size();
 	bin.pc = utfbody.data();
-	err = props.set(PR_HTML, &bin);
-	return err >= 0 ? 0 : -err;
+	return props.set(PR_HTML, &bin);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1747: ENOMEM");
-	return ENOMEM;
+	return ecServerOOM;
 }
 
 #ifndef AVOID_LIBXML
@@ -194,25 +191,25 @@ static bool multibody_supported_img(const char *t)
 }
 
 #ifdef AVOID_LIBXML
-static errno_t multibody_html(std::string &&utfbody, std::string &ag_doc) try
+static ec_error_t multibody_html(std::string &&utfbody, std::string &ag_doc) try
 {
 	ag_doc += std::move(utfbody);
-	return 0;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1774: ENOMEM");
-	return ENOMEM;
+	return ecServerOOM;
 }
 
-static errno_t multibody_plain(std::string &&utfbody, std::string &ag_doc) try
+static ec_error_t multibody_plain(std::string &&utfbody, std::string &ag_doc) try
 {
 	ag_doc += "<pre>"s + std::move(utfbody) + "</pre>";
-	return 0;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1775: ENOMEM");
-	return ENOMEM;
+	return ecServerOOM;
 }
 
-static errno_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
+static ec_error_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
     std::string &ag_doc) try
 {
 	std::string ctid;
@@ -231,19 +228,19 @@ static errno_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
 		ctid = ctid_raw;
 	}
 	ag_doc += "<img src=\"cid:" + ctid + "\">";
-	return 0;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1778: ENOMEM");
-	return ENOMEM;
+	return ecServerOOM;
 }
 
 #else /* AVOID_LIBXML */
 
-static errno_t multibody_plain(std::string &&utfbody, xmldocptr &ag_doc) try
+static ec_error_t multibody_plain(std::string &&utfbody, xmldocptr &ag_doc) try
 {
 	auto ag_body = find_element(ag_doc.get(), "body");
 	if (ag_body == nullptr)
-		return EINVAL;
+		return ecInvalidParam;
 	/*
 	 * EXC2019: <div class="BodyFragment"><font size="2">
 	 * <span style="font-size: 10pt;"><div class="PlainText">
@@ -251,18 +248,18 @@ static errno_t multibody_plain(std::string &&utfbody, xmldocptr &ag_doc) try
 	auto body = xmlNewDocNode(ag_doc.get(), nullptr,
 		    reinterpret_cast<const xmlChar *>("pre"), nullptr);
 	if (body == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	xmlAddChild(ag_body, body);
 	auto content = xmlNewDocTextLen(ag_doc.get(),
 		       reinterpret_cast<const xmlChar *>(utfbody.c_str()),
 		       utfbody.size());
 	if (content == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	xmlAddChild(body, content);
-	return 0;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1766: ENOMEM");
-	return ENOMEM;
+	return ecServerOOM;
 }
 
 static void filter_meta(xmlNode *root)
@@ -282,13 +279,13 @@ static void filter_meta(xmlNode *root)
 	}
 }
 
-static errno_t multibody_html(std::string &&utfbody, xmldocptr &ag_doc) try
+static ec_error_t multibody_html(std::string &&utfbody, xmldocptr &ag_doc) try
 {
 	std::unique_ptr<xmlDoc, xmlfree> doc(htmlReadMemory(utfbody.c_str(),
 		utfbody.size(), nullptr, "utf-8",
 		HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET));
 	if (doc == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	utfbody.clear();
 	utfbody.shrink_to_fit();
 
@@ -298,7 +295,7 @@ static errno_t multibody_html(std::string &&utfbody, xmldocptr &ag_doc) try
 		root = xmlNewDocNode(doc.get(), nullptr,
 		       reinterpret_cast<const xmlChar *>("html"), nullptr);
 		if (root == nullptr)
-			return ENOMEM;
+			return ecServerOOM;
 		xmlDocSetRootElement(doc.get(), root);
 	} else {
 		filter_meta(find_element(root, "head"));
@@ -308,13 +305,13 @@ static errno_t multibody_html(std::string &&utfbody, xmldocptr &ag_doc) try
 		body = xmlNewDocNode(doc.get(), nullptr,
 		       reinterpret_cast<const xmlChar *>("body"), nullptr);
 		if (body == nullptr)
-			return ENOMEM;
+			return ecServerOOM;
 		xmlAddChild(root, body);
 	}
 	auto interbody = xmlNewDocNode(doc.get(), nullptr,
 			 reinterpret_cast<const xmlChar *>("body"), nullptr);
 	if (interbody == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	xmlUnlinkNode(body);
 	xmlAddChild(interbody, body);
 	xmlAddChild(root, interbody);
@@ -330,20 +327,20 @@ static errno_t multibody_html(std::string &&utfbody, xmldocptr &ag_doc) try
 	} else {
 		interbody = find_element(ag_doc.get(), "body");
 		if (interbody == nullptr)
-			return EINVAL;
+			return ecInvalidParam;
 		xmlUnlinkNode(body);
 		xmlAddChild(interbody, body);
 	}
-	return 0;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1769: ENOMEM");
-	return ENOMEM;
+	return ecServerOOM;
 }
 
 /**
  * @mime: may set new Content-ID
  */
-static errno_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
+static ec_error_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
     xmldocptr &ag_doc) try
 {
 	std::string ctid;
@@ -363,27 +360,27 @@ static errno_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
 	}
 	auto ag_body = find_element(ag_doc.get(), "body");
 	if (ag_body == nullptr)
-		return EINVAL;
+		return ecInvalidParam;
 	auto body = xmlNewDocNode(ag_doc.get(), nullptr,
 		    reinterpret_cast<const xmlChar *>("div"), nullptr);
 	if (body == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	xmlAddChild(ag_body, body);
 	auto img = xmlNewDocNode(ag_doc.get(), nullptr,
 		   reinterpret_cast<const xmlChar *>("img"), nullptr);
 	if (img == nullptr)
-		return ENOMEM;
+		return ecServerOOM;
 	xmlAddChild(body, img);
 	if (xml_setprop(img, "src", ctid.c_str()) == nullptr)
-		return ENOMEM;
-	return 0;
+		return ecServerOOM;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1773: ENOMEM");
-	return false;
+	return ecServerOOM;
 }
 #endif /* AVOID_LIBXML */
 
-errno_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props,
+ec_error_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props,
     const char *charset)
 {
 #ifdef AVOID_LIBXML
@@ -401,13 +398,13 @@ errno_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props,
 			auto rdlength = mime->get_length();
 			if (rdlength < 0) {
 				mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
-				return EINVAL;
+				return ecInvalidParam;
 			}
 			std::string rawbody;
 			rawbody.resize(rdlength);
 			size_t length = rdlength;
 			if (!mime->read_content(rawbody.data(), &length))
-				return 0;
+				return ecError;
 			rawbody.resize(length);
 
 			std::string mime_charset;
@@ -422,14 +419,14 @@ errno_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props,
 			utfbody.resize(strlen(utfbody.c_str()));
 		}
 
-		int err = 0;
+		ec_error_t err = ecSuccess;
 		if (strcasecmp(mime->content_type, "text/html") == 0)
 			err = multibody_html(std::move(utfbody), ag_doc);
 		else if (strcasecmp(mime->content_type, "text/plain") == 0)
 			err = multibody_plain(std::move(utfbody), ag_doc);
 		else if (multibody_supported_img(mime->content_type))
 			err = multibody_image(epar, mime, ag_doc);
-		if (err != 0)
+		if (err != ecSuccess)
 			return err;
 	}
 
@@ -445,19 +442,16 @@ errno_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props,
 	if (ag_rawsize < 0)
 		ag_rawsize = 0;
 	if (ag_rawsize == 0)
-		return 0;
+		return ecSuccess;
 	BINARY bin;
 	bin.cb = ag_rawsize;
 	bin.pb = ag_raw.get();
 #endif /* AVOID_LIBXML */
 	auto err = props.set(PR_HTML, &bin);
-	if (err < 0)
-		return -err;
+	if (err != ecSuccess)
+		return err;
 	uint32_t cpid = CP_UTF8;
-	err = props.set(PR_INTERNET_CPID, &cpid);
-	if (err < 0)
-		return -err;
-	return 0;
+	return props.set(PR_INTERNET_CPID, &cpid);
 }
 
 }

@@ -2500,11 +2500,12 @@ void tEmailAddressType::mkRecipient(TPROPVAL_ARRAY* rcpt, uint32_t type) const
 	if (!EmailAddress)
 		throw EWSError::InvalidRecipients(E3290);
 	auto displayname = Name ? Name->c_str() : EmailAddress->c_str();
-	if (rcpt->set(PR_DISPLAY_NAME, displayname) ||
-	   rcpt->set(PR_TRANSMITABLE_DISPLAY_NAME, displayname) ||
-	   rcpt->set(PR_ADDRTYPE, RoutingType ? RoutingType->c_str() : "SMTP") ||
-	   rcpt->set(PR_EMAIL_ADDRESS, EmailAddress->c_str()) ||
-	   rcpt->set(PR_RECIPIENT_TYPE, &type))
+	ec_error_t err;
+	if ((err = rcpt->set(PR_DISPLAY_NAME, displayname)) == ecServerOOM ||
+	    (err = rcpt->set(PR_TRANSMITABLE_DISPLAY_NAME, displayname)) == ecServerOOM ||
+	    (err = rcpt->set(PR_ADDRTYPE, RoutingType ? RoutingType->c_str() : "SMTP")) == ecServerOOM ||
+	    (err = rcpt->set(PR_EMAIL_ADDRESS, EmailAddress->c_str())) == ecServerOOM ||
+	    (err = rcpt->set(PR_RECIPIENT_TYPE, &type)) == ecServerOOM)
 		throw EWSError::NotEnoughMemory(E3291);
 }
 

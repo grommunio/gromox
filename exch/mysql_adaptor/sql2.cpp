@@ -611,20 +611,20 @@ bool mysql_plugin::get_user_props(const char *username,
 		switch (PROP_TYPE(tag)) {
 		case PT_BOOLEAN: {
 			uint8_t converted = strtoul(strval, nullptr, 0);
-			if (properties.set(tag, &converted) != 0)
+			if (properties.set(tag, &converted) != ecSuccess)
 				return false;
 			break;
 		}
 		case PT_SHORT: {
 			uint16_t converted = strtoul(strval, nullptr, 0);
-			if (properties.set(tag, &converted) != 0)
+			if (properties.set(tag, &converted) != ecSuccess)
 				return false;
 			break;
 		}
 		case PT_LONG:
 		case PT_ERROR: {
 			uint32_t converted = strtoul(strval, nullptr, 0);
-			if (properties.set(tag, &converted) != 0)
+			if (properties.set(tag, &converted) != ecSuccess)
 				return false;
 			break;
 		}
@@ -632,20 +632,20 @@ bool mysql_plugin::get_user_props(const char *username,
 		case PT_CURRENCY:
 		case PT_SYSTIME: {
 			uint64_t converted = strtoull(strval, nullptr, 0);
-			if (properties.set(tag, &converted) != 0)
+			if (properties.set(tag, &converted) != ecSuccess)
 				return false;
 			break;
 		}
 		case PT_FLOAT: {
 			float converted = strtof(strval, nullptr);
-			if (properties.set(tag, &converted) != 0)
+			if (properties.set(tag, &converted) != ecSuccess)
 				return false;
 			break;
 		}
 		case PT_DOUBLE:
 		case PT_APPTIME: {
 			double converted = strtod(strval, nullptr);
-			if (properties.set(tag, &converted) != 0)
+			if (properties.set(tag, &converted) != ecSuccess)
 				return false;
 			break;
 		}
@@ -653,7 +653,7 @@ bool mysql_plugin::get_user_props(const char *username,
 		case PT_UNICODE:
 			if(!row[3])
 				continue;
-			if (properties.set(tag, strval) != 0)
+			if (properties.set(tag, strval) != ecSuccess)
 				return false;
 			break;
 		}

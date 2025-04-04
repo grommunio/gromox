@@ -110,6 +110,7 @@ extern GX_EXPORT std::string gx_utf8_to_punycode(const char *);
 extern GX_EXPORT bool str_isascii(const char *);
 extern GX_EXPORT bool str_isasciipr(const char *);
 extern GX_EXPORT gromox::errno_t canonical_hostname(std::string &);
+extern GX_EXPORT int ece2nerrno(ec_error_t);
 
 /* _xlen - exact length (chars); _len - allocation size, i.e. \0-terminated */
 /* All the classic 8-bit charsets map to within the Unicode Basic Multilingual Plane */

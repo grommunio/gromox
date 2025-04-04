@@ -2166,14 +2166,14 @@ static int me_minst(int argc, char **argv, int sockd) try
 		return MIDB_E_OXCMAIL_IMPORT;
 	auto cl_msg = HX::make_scope_exit([&]() { message_content_free(pmsgctnt); });
 	auto nt_time = rop_util_unix_to_nttime(strtol(argv[5], nullptr, 0));
-	if (pmsgctnt->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
+	if (pmsgctnt->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != ecSuccess)
 		return MIDB_E_NO_MEMORY;
 	static_assert(std::is_same_v<decltype(b_read), uint8_t>);
-	if (b_read && pmsgctnt->proplist.set(PR_READ, &b_read) != 0)
+	if (b_read && pmsgctnt->proplist.set(PR_READ, &b_read) != ecSuccess)
 		return MIDB_E_NO_MEMORY;
 	if (0 != b_unsent) {
 		tmp_flags = MSGFLAG_UNSENT;
-		if (pmsgctnt->proplist.set(PR_MESSAGE_FLAGS, &tmp_flags) != 0)
+		if (pmsgctnt->proplist.set(PR_MESSAGE_FLAGS, &tmp_flags) != ecSuccess)
 			return MIDB_E_NO_MEMORY;
 	}
 	if (!exmdb_client->allocate_message_id(argv[1],
@@ -2198,16 +2198,16 @@ static int me_minst(int argc, char **argv, int sockd) try
 		return MIDB_E_NO_MEMORY;
 	}
 	pidb.reset();
-	if (pmsgctnt->proplist.set(PidTagMid, &message_id) != 0 ||
-	    pmsgctnt->proplist.set(PidTagChangeNumber, &change_num) != 0)
+	if (pmsgctnt->proplist.set(PidTagMid, &message_id) != ecSuccess ||
+	    pmsgctnt->proplist.set(PidTagChangeNumber, &change_num) != ecSuccess)
 		return MIDB_E_NO_MEMORY;
 	auto pbin = cu_xid_to_bin({rop_util_make_user_guid(user_id), change_num});
 	if (pbin == nullptr ||
-	    pmsgctnt->proplist.set(PR_CHANGE_KEY, pbin) != 0)
+	    pmsgctnt->proplist.set(PR_CHANGE_KEY, pbin) != ecSuccess)
 		return MIDB_E_NO_MEMORY;
 	auto newval = cu_pcl_append(NULL, pbin);
 	if (newval == nullptr ||
-	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0)
+	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != ecSuccess)
 		return MIDB_E_NO_MEMORY;
 	auto cpid = cset_to_cpid(charset);
 	if (cpid == CP_ACP)

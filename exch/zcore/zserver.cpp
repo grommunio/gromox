@@ -3474,9 +3474,11 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 		return ecNullObject;
 	switch (mapi_type) {
 	case zs_objtype::profproperty:
-		for (size_t i = 0; i < ppropvals->count; ++i)
-			if (static_cast<TPROPVAL_ARRAY *>(pobject)->set(ppropvals->ppropval[i]) != 0)
-				return ecError;
+		for (size_t i = 0; i < ppropvals->count; ++i) {
+			auto err = static_cast<TPROPVAL_ARRAY *>(pobject)->set(ppropvals->ppropval[i]);
+			if (err != ecSuccess)
+				return err;
+		}
 		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;
 	case zs_objtype::store: {

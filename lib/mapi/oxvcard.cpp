@@ -220,7 +220,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 	std::unique_ptr<MESSAGE_CONTENT, vc_delete> pmsg(message_content_init());
 	if (pmsg == nullptr)
 		return imp_null;
-	if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Contact") != 0)
+	if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Contact") != ecSuccess)
 		return imp_null;
 	for (const auto &line : pvcard->m_lines) try {
 		auto pvline = &line;
@@ -230,15 +230,15 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				throw unrecog(line);
-			if (pmsg->proplist.set(g_vcarduid_proptag, pstring) != 0)
+			if (pmsg->proplist.set(g_vcarduid_proptag, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "FN") == 0) {
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				throw unrecog(line);
-			if (pmsg->proplist.set(PR_DISPLAY_NAME, pstring) != 0 ||
-			    pmsg->proplist.set(PR_NORMALIZED_SUBJECT, pstring) != 0 ||
-			    pmsg->proplist.set(PR_CONVERSATION_TOPIC, pstring) != 0)
+			if (pmsg->proplist.set(PR_DISPLAY_NAME, pstring) != ecSuccess ||
+			    pmsg->proplist.set(PR_NORMALIZED_SUBJECT, pstring) != ecSuccess ||
+			    pmsg->proplist.set(PR_CONVERSATION_TOPIC, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "N") == 0) {
 			count = 0;
@@ -251,14 +251,14 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 					throw unrecog(line, vnode);
 				if (list_count > 0 &&
 				    !pvvalue->m_subvals[0].empty() &&
-				    pmsg->proplist.set(g_n_proptags[count], pvvalue->m_subvals[0].c_str()) != 0)
+				    pmsg->proplist.set(g_n_proptags[count], pvvalue->m_subvals[0].c_str()) != ecSuccess)
 					return imp_null;
 				count ++;
 			}
 		} else if (strcasecmp(pvline_name, "NICKNAME") == 0) {
 			auto pstring = pvline->get_first_subval();
 			if (pstring != nullptr &&
-			    pmsg->proplist.set(PR_NICKNAME, pstring) != 0)
+			    pmsg->proplist.set(PR_NICKNAME, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "PHOTO") == 0) {
 			if (pmsg->children.pattachments != nullptr)
@@ -307,14 +307,14 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 				throw unrecog(line);
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
-			if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0 ||
-			    pattachment->proplist.set(PR_ATTACH_EXTENSION, photo_type) != 0)
+			if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != ecSuccess ||
+			    pattachment->proplist.set(PR_ATTACH_EXTENSION, photo_type) != ecSuccess)
 				return imp_null;
 			snprintf(tmp_buff, std::size(tmp_buff), "ContactPhoto.%s", photo_type);
-			if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, tmp_buff) != 0)
+			if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, tmp_buff) != ecSuccess)
 				return imp_null;
 			tmp_byte = 1;
-			if (pmsg->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
+			if (pmsg->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "BDAY") == 0) {
 			auto pstring = pvline->get_first_subval();
@@ -323,7 +323,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (NULL != strptime(pstring, "%Y-%m-%d", &tmp_tm)) {
 				tmp_int64 = rop_util_unix_to_nttime(timegm(&tmp_tm));
-				if (pmsg->proplist.set(PR_BIRTHDAY, &tmp_int64) != 0)
+				if (pmsg->proplist.set(PR_BIRTHDAY, &tmp_int64) != ecSuccess)
 					return imp_null;
 			}
 		} else if (strcasecmp(pvline_name, "ADR") == 0) {
@@ -351,7 +351,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 						tag = g_homeaddr_proptags[count];
 					else
 						tag = g_otheraddr_proptags[count];
-					if (pmsg->proplist.set(tag, pvvalue->m_subvals[0].c_str()) != 0)
+					if (pmsg->proplist.set(tag, pvvalue->m_subvals[0].c_str()) != ecSuccess)
 						return imp_null;
 				}
 				count ++;
@@ -405,7 +405,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			} else {
 				continue;
 			}
-			if (pmsg->proplist.set(tag, pstring) != 0)
+			if (pmsg->proplist.set(tag, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "EMAIL") == 0) {
 			auto pstring = pvline->get_first_subval();
@@ -413,20 +413,20 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 				continue;
 			if (mail_count > 2)
 				continue;
-			if (pmsg->proplist.set(g_email_proptags[mail_count], pstring) != 0 ||
-			    pmsg->proplist.set(g_addrtype_proptags[mail_count++], "SMTP") != 0)
+			if (pmsg->proplist.set(g_email_proptags[mail_count], pstring) != ecSuccess ||
+			    pmsg->proplist.set(g_addrtype_proptags[mail_count++], "SMTP") != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "TITLE") == 0) {
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
-			if (pmsg->proplist.set(PR_TITLE, pstring) != 0)
+			if (pmsg->proplist.set(PR_TITLE, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "ROLE") == 0) {
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
-			if (pmsg->proplist.set(PR_PROFESSION, pstring) != 0)
+			if (pmsg->proplist.set(PR_PROFESSION, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "ORG") == 0) {
 			auto pvvalue = pvline->m_values.cbegin();
@@ -434,13 +434,13 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 				continue;
 			if (pvvalue->m_subvals.size() > 0 &&
 			    !pvvalue->m_subvals[0].empty() &&
-			    pmsg->proplist.set(PR_COMPANY_NAME, pvvalue->m_subvals[0].c_str()) != 0)
+			    pmsg->proplist.set(PR_COMPANY_NAME, pvvalue->m_subvals[0].c_str()) != ecSuccess)
 				return imp_null;
 			++pvvalue;
 			if (pvvalue != pvline->m_values.cend()) {
 				if (pvvalue->m_subvals.size() > 0 &&
 				    !pvvalue->m_subvals[0].empty() &&
-				    pmsg->proplist.set(PR_DEPARTMENT_NAME, pvvalue->m_subvals[0].c_str()) != 0)
+				    pmsg->proplist.set(PR_DEPARTMENT_NAME, pvvalue->m_subvals[0].c_str()) != ecSuccess)
 					return imp_null;
 			}
 		} else if (strcasecmp(pvline_name, "CATEGORIES") == 0) {
@@ -459,13 +459,13 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			strings_array.count = ptrs.size();
 			strings_array.ppstr = ptrs.data();
 			if (strings_array.count != 0 &&
-			    pmsg->proplist.set(g_categories_proptag, &strings_array) != 0)
+			    pmsg->proplist.set(g_categories_proptag, &strings_array) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "NOTE") == 0) {
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
-			if (pmsg->proplist.set(PR_BODY, pstring) != 0)
+			if (pmsg->proplist.set(PR_BODY, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "REV") == 0) {
 			auto pstring = pvline->get_first_subval();
@@ -474,7 +474,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (NULL != strptime(pstring, "%Y-%m-%dT%H:%M:%S", &tmp_tm)) {
 				tmp_int64 = rop_util_unix_to_nttime(timegm(&tmp_tm));
-				if (pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &tmp_int64) != 0)
+				if (pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &tmp_int64) != ecSuccess)
 					return imp_null;
 			}
 		} else if (strcasecmp(pvline_name, "URL") == 0) {
@@ -497,7 +497,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 				tag = PR_BUSINESS_HOME_PAGE;
 			else
 				continue;
-			if (pmsg->proplist.set(tag, pstring) != 0)
+			if (pmsg->proplist.set(tag, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "CLASS") == 0) {
 		auto pstring = pvline->get_first_subval();
@@ -508,7 +508,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 				tmp_int32 = SENSITIVITY_COMPANY_CONFIDENTIAL;
 			else
 				tmp_int32 = SENSITIVITY_NONE;
-			if (pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) != 0)
+			if (pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) != ecSuccess)
 				return imp_null;
 		}
 		} else if (strcasecmp(pvline_name, "KEY") == 0) {
@@ -531,7 +531,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			bin_array.pbin = &tmp_bin;
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
-			if (pmsg->proplist.set(PR_USER_X509_CERTIFICATE, &bin_array) != 0)
+			if (pmsg->proplist.set(PR_USER_X509_CERTIFICATE, &bin_array) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "X-MS-OL-DESIGN") == 0) {
 			auto pstring = pvline->get_first_subval();
@@ -539,7 +539,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 				continue;
 			tmp_bin.cb = strlen(pstring);
 			tmp_bin.pv = deconst(pstring);
-			if (pmsg->proplist.set(g_bcd_proptag, &tmp_bin) != 0)
+			if (pmsg->proplist.set(g_bcd_proptag, &tmp_bin) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "X-MS-CHILD") == 0) {
 			auto pstring = pvline->get_first_subval();
@@ -554,14 +554,14 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 				continue;
 			if (ufld_count > 3)
 				throw unrecog(line);
-			if (pmsg->proplist.set(g_ufld_proptags[ufld_count++], pstring) != 0)
+			if (pmsg->proplist.set(g_ufld_proptags[ufld_count++], pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "X-MS-IMADDRESS") == 0 ||
 		    strcasecmp(pvline_name, "X-MS-RM-IMACCOUNT") == 0) {
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
-			if (pmsg->proplist.set(g_im_proptag, pstring) != 0)
+			if (pmsg->proplist.set(g_im_proptag, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "X-MS-TEL") == 0) {
 			auto pvparam = pvline->m_params.cbegin();
@@ -586,7 +586,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 				tag = PR_TTYTDD_PHONE_NUMBER;
 			else
 				throw unrecog(line, *pvparam);
-			if (pmsg->proplist.set(tag, pstring) != 0)
+			if (pmsg->proplist.set(tag, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "X-MS-ANNIVERSARY") == 0) {
 			auto pstring = pvline->get_first_subval();
@@ -595,7 +595,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (NULL != strptime(pstring, "%Y-%m-%d", &tmp_tm)) {
 				tmp_int64 = rop_util_unix_to_nttime(timegm(&tmp_tm));
-				if (pmsg->proplist.set(PR_WEDDING_ANNIVERSARY, &tmp_int64) != 0)
+				if (pmsg->proplist.set(PR_WEDDING_ANNIVERSARY, &tmp_int64) != ecSuccess)
 					return imp_null;
 			}	
 		} else if (strcasecmp(pvline_name, "X-MS-SPOUSE") == 0) {
@@ -608,7 +608,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
-			if (pmsg->proplist.set(PR_SPOUSE_NAME, pstring) != 0)
+			if (pmsg->proplist.set(PR_SPOUSE_NAME, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "X-MS-MANAGER") == 0) {
 			auto pvparam = pvline->m_params.cbegin();
@@ -620,7 +620,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
-			if (pmsg->proplist.set(PR_MANAGER_NAME, pstring) != 0)
+			if (pmsg->proplist.set(PR_MANAGER_NAME, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "X-MS-ASSISTANT") == 0) {
 			auto pvparam = pvline->m_params.cbegin();
@@ -632,13 +632,13 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
-			if (pmsg->proplist.set(PR_ASSISTANT, pstring) != 0)
+			if (pmsg->proplist.set(PR_ASSISTANT, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "FBURL") == 0) {
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
-			if (pmsg->proplist.set(g_fbl_proptag, pstring) != 0)
+			if (pmsg->proplist.set(g_fbl_proptag, pstring) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "X-MS-INTERESTS") == 0) {
 			auto pvvalue = pvline->m_values.cbegin();
@@ -656,7 +656,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			strings_array.count = ptrs.size();
 			strings_array.ppstr = ptrs.data();
 			if (strings_array.count != 0 &&
-			    pmsg->proplist.set(PR_HOBBIES, &strings_array) != 0)
+			    pmsg->proplist.set(PR_HOBBIES, &strings_array) != ecSuccess)
 				return imp_null;
 		}
 	} catch (const unrecog &e) {
@@ -666,23 +666,23 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 		}
 	}
 	if (child_strings.count != 0 &&
-	    pmsg->proplist.set(PR_CHILDRENS_NAMES, &child_strings) != 0)
+	    pmsg->proplist.set(PR_CHILDRENS_NAMES, &child_strings) != ecSuccess)
 		return imp_null;
 	if (!pmsg->proplist.has(PR_DISPLAY_NAME)) {
 		auto dn = join(pmsg->proplist.get<char>(PR_GIVEN_NAME),
 		          pmsg->proplist.get<char>(PR_MIDDLE_NAME),
 		          pmsg->proplist.get<char>(PR_SURNAME));
-		if (pmsg->proplist.set(PR_DISPLAY_NAME, dn.c_str()) != 0)
+		if (pmsg->proplist.set(PR_DISPLAY_NAME, dn.c_str()) != ecSuccess)
 			return imp_null;
 	}
 	if (!pmsg->proplist.has(PR_NORMALIZED_SUBJECT)) {
 		auto dn = pmsg->proplist.get<const char>(PR_DISPLAY_NAME);
-		if (dn != nullptr && pmsg->proplist.set(PR_NORMALIZED_SUBJECT, dn) != 0)
+		if (dn != nullptr && pmsg->proplist.set(PR_NORMALIZED_SUBJECT, dn) != ecSuccess)
 			return imp_null;
 	}
 	if (!pmsg->proplist.has(PR_CONVERSATION_TOPIC)) {
 		auto dn = pmsg->proplist.get<const char>(PR_DISPLAY_NAME);
-		if (dn != nullptr && pmsg->proplist.set(PR_CONVERSATION_TOPIC, dn) != 0)
+		if (dn != nullptr && pmsg->proplist.set(PR_CONVERSATION_TOPIC, dn) != ecSuccess)
 			return imp_null;
 	}
 	for (i=0; i<pmsg->proplist.count; i++) {

@@ -1716,6 +1716,18 @@ errno_t canonical_hostname(std::string &out) try
 	return ENOMEM;
 }
 
+int ece2nerrno(ec_error_t e)
+{
+	switch (e) {
+	case ecSuccess: return 0;
+	case ecMAPIOOM: [[fallthrough]];
+	case ecServerOOM: return -ENOMEM;
+	case ecInvalidParam: return -EINVAL;
+	case ecNotFound: return -ENOENT;
+	default: return -EIO;
+	}
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try

@@ -55,7 +55,7 @@ attachment_content *attachment_content::dup() const
 	if (dst == nullptr)
 		return NULL;
 	for (unsigned int i = 0; i < src->proplist.count; ++i) {
-		if (dst->proplist.set(src->proplist.ppropval[i]) != 0) {
+		if (dst->proplist.set(src->proplist.ppropval[i]) != ecSuccess) {
 			attachment_content_free(dst);
 			return NULL;
 		}
@@ -277,7 +277,7 @@ message_content *message_content::dup() const
 	if (dst == nullptr)
 		return NULL;
 	for (unsigned int i = 0; i < src->proplist.count; ++i) {
-		if (dst->proplist.set(src->proplist.ppropval[i]) != 0) {
+		if (dst->proplist.set(src->proplist.ppropval[i]) != ecSuccess) {
 			message_content_free(dst);
 			return NULL;
 		}

@@ -345,11 +345,11 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	lq_report(pcontext->ctrl.queue_ID, 0, "before_delivery", pmsg);
 
 	nt_time = rop_util_current_nttime();
-	if (pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
+	if (pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != ecSuccess)
 		/* ignore */;
 	if (!pcontext->ctrl.need_bounce) {
 		tmp_int32 = UINT32_MAX;
-		if (pmsg->proplist.set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32) != 0)
+		if (pmsg->proplist.set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32) != ecSuccess)
 			/* ignore */;
 	}
 	

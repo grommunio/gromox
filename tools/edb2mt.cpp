@@ -463,14 +463,14 @@ static void folder_prop_handler(edb_folder &f, const std::string &key,
 	case PT_SYSTIME:
 	case PT_STRING8:
 	case PT_UNICODE:
-		if (f.props.set(proptag, val.c_str()) != 0)
+		if (f.props.set(proptag, val.c_str()) == ecServerOOM)
 			throw std::bad_alloc();
 		return;
 	case PT_BINARY: {
 		BINARY bv;
 		bv.pv = val.data();
 		bv.cb = val.size();
-		if (f.props.set(proptag, &bv) != 0)
+		if (f.props.set(proptag, &bv) == ecServerOOM)
 			throw std::bad_alloc();
 		return;
 	}

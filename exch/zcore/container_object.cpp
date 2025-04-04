@@ -308,15 +308,15 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 			default:
 				break;
 			}
-			if (ppropvals->set(PR_SMTP_ADDRESS, username.c_str()) != 0 ||
-			    ppropvals->set(PR_ACCOUNT, username.c_str()) != 0 ||
-			    ppropvals->set(PR_ADDRTYPE, addrtype) != 0 ||
-			    ppropvals->set(PR_EMAIL_ADDRESS, username.c_str()) != 0)
+			if (ppropvals->set(PR_SMTP_ADDRESS, username.c_str()) != ecSuccess ||
+			    ppropvals->set(PR_ACCOUNT, username.c_str()) != ecSuccess ||
+			    ppropvals->set(PR_ADDRTYPE, addrtype) != ecSuccess ||
+			    ppropvals->set(PR_EMAIL_ADDRESS, username.c_str()) != ecSuccess)
 				return FALSE;
 			if (NULL != pdisplayname) {
-				if (ppropvals->set(PR_DISPLAY_NAME, pdisplayname) != 0 ||
-				    ppropvals->set(PR_TRANSMITABLE_DISPLAY_NAME, pdisplayname) != 0 ||
-				    ppropvals->set(PR_EMS_AB_DISPLAY_NAME_PRINTABLE, pdisplayname) != 0)
+				if (ppropvals->set(PR_DISPLAY_NAME, pdisplayname) != ecSuccess ||
+				    ppropvals->set(PR_TRANSMITABLE_DISPLAY_NAME, pdisplayname) != ecSuccess ||
+				    ppropvals->set(PR_EMS_AB_DISPLAY_NAME_PRINTABLE, pdisplayname) != ecSuccess)
 					return FALSE;
 			}
 			for (size_t k = 0; k < std::size(tmp_proptags); ++k) {
@@ -324,10 +324,10 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 				auto newval = tmp_set.pparray[i]->getval(tag);
 				if (newval == nullptr)
 					continue;
-				if (ppropvals->set(tag, newval) != 0)
+				if (ppropvals->set(tag, newval) != ecSuccess)
 					return FALSE;
 			}
-			if (ppropvals->set(PR_PARENT_ENTRYID, pparent_entryid) != 0)
+			if (ppropvals->set(PR_PARENT_ENTRYID, pparent_entryid) != ecSuccess)
 				return FALSE;
 			auto msgid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
 			if (msgid == nullptr)
@@ -335,21 +335,21 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 			auto pvalue = zcsab_prepend(cu_mid_to_entryid(*pstore,
 			              pcontainer->id.exmdb_id.folder_id, *msgid), mot, 3*i+j);
 			if (pvalue == nullptr ||
-			    ppropvals->set(PR_ENTRYID, pvalue) != 0 ||
-			    ppropvals->set(PR_RECORD_KEY, pvalue) != 0 ||
-			    ppropvals->set(PR_TEMPLATEID, pvalue) != 0 ||
-			    ppropvals->set(PR_ORIGINAL_ENTRYID, pvalue) != 0)
+			    ppropvals->set(PR_ENTRYID, pvalue) != ecSuccess ||
+			    ppropvals->set(PR_RECORD_KEY, pvalue) != ecSuccess ||
+			    ppropvals->set(PR_TEMPLATEID, pvalue) != ecSuccess ||
+			    ppropvals->set(PR_ORIGINAL_ENTRYID, pvalue) != ecSuccess)
 				return FALSE;
 			tmp_bin.cb = sizeof(muidZCSAB);
 			tmp_bin.pv = deconst(&muidZCSAB);
-			if (ppropvals->set(PR_AB_PROVIDER_ID, &tmp_bin) != 0)
+			if (ppropvals->set(PR_AB_PROVIDER_ID, &tmp_bin) != ecSuccess)
 				return FALSE;
 			tmp_int = static_cast<uint32_t>(mot);
-			if (ppropvals->set(PR_OBJECT_TYPE, &tmp_int) != 0)
+			if (ppropvals->set(PR_OBJECT_TYPE, &tmp_int) != ecSuccess)
 				return FALSE;
 			tmp_int = static_cast<uint32_t>(dt);
-			if (ppropvals->set(PR_DISPLAY_TYPE, &tmp_int) != 0 ||
-			    ppropvals->set(PR_DISPLAY_TYPE_EX, &tmp_int) != 0)
+			if (ppropvals->set(PR_DISPLAY_TYPE, &tmp_int) != ecSuccess ||
+			    ppropvals->set(PR_DISPLAY_TYPE_EX, &tmp_int) != ecSuccess)
 				return FALSE;
 			if (prestriction != nullptr &&
 			    !container_object_match_contact_message(ppropvals.get(), prestriction))

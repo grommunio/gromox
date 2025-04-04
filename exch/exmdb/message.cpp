@@ -2341,27 +2341,27 @@ static BOOL message_make_dem(const char *username,
 	if (pmsg == nullptr)
 		return FALSE;
 	auto nt_time = rop_util_current_nttime();
-	if (pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME, &nt_time) != 0 ||
-	    pmsg->proplist.set(PR_CREATION_TIME, &nt_time) != 0 ||
-	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != 0 ||
-	    pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0 ||
-	    pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Error") != 0 ||
-	    pmsg->proplist.set(PR_RULE_ACTION_TYPE, &action_type) != 0 ||
-	    pmsg->proplist.set(PR_RULE_ACTION_NUMBER, &block_index) != 0 ||
-	    pmsg->proplist.set(PR_RULE_ERROR, &rule_error) != 0)
+	if (pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME, &nt_time) != ecSuccess ||
+	    pmsg->proplist.set(PR_CREATION_TIME, &nt_time) != ecSuccess ||
+	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != ecSuccess ||
+	    pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != ecSuccess ||
+	    pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Error") != ecSuccess ||
+	    pmsg->proplist.set(PR_RULE_ACTION_TYPE, &action_type) != ecSuccess ||
+	    pmsg->proplist.set(PR_RULE_ACTION_NUMBER, &block_index) != ecSuccess ||
+	    pmsg->proplist.set(PR_RULE_ERROR, &rule_error) != ecSuccess)
 		return FALSE;
 	auto newval = common_util_to_private_message_entryid(
 				psqlite, username, folder_id, message_id);
 	if (newval == nullptr ||
-	    pmsg->proplist.set(PR_DAM_ORIGINAL_ENTRYID, newval) != 0)
+	    pmsg->proplist.set(PR_DAM_ORIGINAL_ENTRYID, newval) != ecSuccess)
 		return FALSE;
 	newval = common_util_to_private_folder_entryid(psqlite, username, folder_id);
 	if (newval == nullptr ||
-	    pmsg->proplist.set(PR_RULE_FOLDER_ENTRYID, newval) != 0 ||
-	    pmsg->proplist.set(PR_RULE_PROVIDER, provider) != 0)
+	    pmsg->proplist.set(PR_RULE_FOLDER_ENTRYID, newval) != ecSuccess ||
+	    pmsg->proplist.set(PR_RULE_PROVIDER, provider) != ecSuccess)
 		return FALSE;
 	auto tmp_eid = rop_util_make_eid_ex(1, rule_id);
-	if (pmsg->proplist.set(PR_RULE_ID, &tmp_eid) != 0)
+	if (pmsg->proplist.set(PR_RULE_ID, &tmp_eid) != ecSuccess)
 		return FALSE;
 	uint64_t mid_val = 0, cn_val = 0;
 	bool partial = false;
@@ -2799,17 +2799,17 @@ static BOOL message_make_dam(const rulexec_in &rp,
 		return FALSE;
 	auto nt_time = rop_util_current_nttime();
 	uint8_t tmp_byte = 0;
-	if (pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME, &nt_time) != 0 ||
-	    pmsg->proplist.set(PR_CREATION_TIME, &nt_time) != 0 ||
-	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != 0 ||
-	    pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0 ||
-	    pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Action") != 0 ||
-	    pmsg->proplist.set(PR_DAM_BACK_PATCHED, &tmp_byte) != 0)
+	if (pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME, &nt_time) != ecSuccess ||
+	    pmsg->proplist.set(PR_CREATION_TIME, &nt_time) != ecSuccess ||
+	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != ecSuccess ||
+	    pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != ecSuccess ||
+	    pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Action") != ecSuccess ||
+	    pmsg->proplist.set(PR_DAM_BACK_PATCHED, &tmp_byte) != ecSuccess)
 		return FALSE;
 	auto pvalue = common_util_to_private_message_entryid(
 	              rp.sqlite, rp.ev_to, rp.folder_id, rp.message_id);
 	if (pvalue == nullptr ||
-	    pmsg->proplist.set(PR_DAM_ORIGINAL_ENTRYID, pvalue) != 0)
+	    pmsg->proplist.set(PR_DAM_ORIGINAL_ENTRYID, pvalue) != ecSuccess)
 		return FALSE;
 	SVREID svreid;
 	svreid.pbin = NULL;
@@ -2817,14 +2817,14 @@ static BOOL message_make_dam(const rulexec_in &rp,
 	svreid.message_id = rop_util_make_eid_ex(1, rp.message_id);
 	svreid.instance = 0;
 	auto tmp_eid = rop_util_make_eid_ex(1, rp.folder_id);
-	if (pmsg->proplist.set(PR_DAM_ORIG_MSG_SVREID, &svreid) != 0 ||
-	    pmsg->proplist.set(PR_RULE_FOLDER_FID, &tmp_eid) != 0)
+	if (pmsg->proplist.set(PR_DAM_ORIG_MSG_SVREID, &svreid) != ecSuccess ||
+	    pmsg->proplist.set(PR_RULE_FOLDER_FID, &tmp_eid) != ecSuccess)
 		return FALSE;
 	pvalue = common_util_to_private_folder_entryid(
 	         rp.sqlite, rp.ev_to, rp.folder_id);
 	if (pvalue == nullptr ||
-	    pmsg->proplist.set(PR_RULE_FOLDER_ENTRYID, pvalue) != 0 ||
-	    pmsg->proplist.set(PR_RULE_PROVIDER, provider) != 0)
+	    pmsg->proplist.set(PR_RULE_FOLDER_ENTRYID, pvalue) != ecSuccess ||
+	    pmsg->proplist.set(PR_RULE_PROVIDER, provider) != ecSuccess)
 		return FALSE;
 	RULE_ACTIONS actions;
 	actions.pblock = static_cast<ACTION_BLOCK *>(common_util_alloc(sizeof(ACTION_BLOCK) *
@@ -2849,13 +2849,13 @@ static BOOL message_make_dam(const rulexec_in &rp,
 	BINARY tmp_bin;
 	tmp_bin.pb = ext_push.m_udata;
 	tmp_bin.cb = ext_push.m_offset;
-	if (pmsg->proplist.set(PR_CLIENT_ACTIONS, &tmp_bin) != 0)
+	if (pmsg->proplist.set(PR_CLIENT_ACTIONS, &tmp_bin) != ecSuccess)
 		return FALSE;
 	tmp_bin.pv = tmp_ids;
 	tmp_bin.cb = sizeof(uint64_t)*id_count;
 	uint64_t mid_val = 0, cn_val = 0;
 	bool partial = false;
-	if (pmsg->proplist.set(PR_RULE_IDS, &tmp_bin) != 0 ||
+	if (pmsg->proplist.set(PR_RULE_IDS, &tmp_bin) != ecSuccess ||
 	    !message_write_message(false, rp.sqlite, CP_ACP, false,
 	    PRIVATE_FID_DEFERRED_ACTION, pmsg.get(), &mid_val, &cn_val, &partial))
 		return FALSE;

@@ -310,8 +310,7 @@ BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 		return FALSE;
 	auto prootobj = static_cast<root_object *>(static_cast<object_node *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
-	auto ret = prootobj->pprivate_proplist->set(*ppropval);
-	if (ret != 0)
+	if (prootobj->pprivate_proplist->set(*ppropval) != ecSuccess)
 		return false;
 	/*
 	 * g-web touches PR_EC_WEBACCESS_SETTINGS_JSON every now and then even
@@ -351,7 +350,7 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 	tpropval_array_ptr pproplist(tpropval_array_init());
 	if (pproplist == nullptr)
 		return NULL;
-	if (pproplist->set(PROP_TAG_PROFILESCLSID, &sec_guid) != 0 ||
+	if (pproplist->set(PROP_TAG_PROFILESCLSID, &sec_guid) != ecSuccess ||
 	    prootobj->pprof_set->append_move(std::move(pproplist)) != 0)
 		return NULL;
 	return prootobj->pprof_set->back();

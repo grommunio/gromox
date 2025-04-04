@@ -2601,12 +2601,12 @@ errno_t rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 	}
 	int ret;
 	uint32_t flags = ATT_MHTML_REF;
-	if ((ret = atx->proplist.set(PR_ATTACH_MIME_TAG, img_ctype)) != 0 ||
-	    (ret = atx->proplist.set(PR_ATTACH_CONTENT_ID, cid_name)) != 0 ||
-	    (ret = atx->proplist.set(PR_ATTACH_EXTENSION, pext)) != 0 ||
-	    (ret = atx->proplist.set(PR_ATTACH_LONG_FILENAME, picture_name)) != 0 ||
-	    (ret = atx->proplist.set(PR_ATTACH_FLAGS, &flags)) != 0 ||
-	    (ret = atx->proplist.set(PR_ATTACH_DATA_BIN, &bin)) != 0) {
+	if ((ret = atx->proplist.set(PR_ATTACH_MIME_TAG, img_ctype)) != ecSuccess ||
+	    (ret = atx->proplist.set(PR_ATTACH_CONTENT_ID, cid_name)) != ecSuccess ||
+	    (ret = atx->proplist.set(PR_ATTACH_EXTENSION, pext)) != ecSuccess ||
+	    (ret = atx->proplist.set(PR_ATTACH_LONG_FILENAME, picture_name)) != ecSuccess ||
+	    (ret = atx->proplist.set(PR_ATTACH_FLAGS, &flags)) != ecSuccess ||
+	    (ret = atx->proplist.set(PR_ATTACH_DATA_BIN, &bin)) != ecSuccess) {
 		free(bin.pv);
 		return ret;
 	}

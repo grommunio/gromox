@@ -278,18 +278,18 @@ errno_t ace_list::emplace(std::string &&s, uint32_t r)
 	if (props == nullptr)
 		return ENOMEM;
 	m_strs.push_back(std::move(s));
-	auto ret = props->set(PR_SMTP_ADDRESS, m_strs.back().c_str());
-	if (ret != 0) {
-		fprintf(stderr, "error ACL: %d\n", ret);
-		return ret;
+	auto err = props->set(PR_SMTP_ADDRESS, m_strs.back().c_str());
+	if (err != ecSuccess) {
+		fprintf(stderr, "error ACL: %xh\n", static_cast<unsigned int>(err));
+		return EIO;
 	}
-	ret = props->set(PR_MEMBER_RIGHTS, &r);
-	if (ret != 0) {
-		fprintf(stderr, "error ACL: %d\n", ret);
-		return ret;
+	err = props->set(PR_MEMBER_RIGHTS, &r);
+	if (err != ecSuccess) {
+		fprintf(stderr, "error ACL: %xh\n", static_cast<unsigned int>(err));
+		return EIO;
 	}
 	PERMISSION_DATA d = {ROW_ADD, {2, props->ppropval}};
-	ret = m_rdata->append_move(std::move(props));
+	auto ret = m_rdata->append_move(std::move(props));
 	if (ret != 0)
 		return ret;
 	m_rows.emplace_back(d);
@@ -319,8 +319,8 @@ static void substitute_addrs(TPROPVAL_ARRAY *ar)
 		auto repl = g_zaddr_to_email.find(em);
 		if (repl == g_zaddr_to_email.end())
 			continue;
-		if (ar->set(TAGGED_PROPVAL{pair.first, deconst("SMTP")}) != 0 ||
-		    ar->set(TAGGED_PROPVAL{pair.second, deconst(repl->second.c_str())}) != 0)
+		if (ar->set(TAGGED_PROPVAL{pair.first, deconst("SMTP")}) == ecServerOOM ||
+		    ar->set(TAGGED_PROPVAL{pair.second, deconst(repl->second.c_str())}) == ecServerOOM)
 			throw std::bad_alloc();
 	}
 }
@@ -364,8 +364,7 @@ static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 			throw YError("PK-1007: proptype %xh not supported. Implement me!", pv.proptag);
 		}
 		pv.proptag = PROP_TAG(xtype, xtag);
-
-		if (ar->set(pv) != 0)
+		if (ar->set(pv) == ecServerOOM)
 			throw std::bad_alloc();
 	}
 
@@ -446,7 +445,7 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 			LONG_ARRAY la;
 			la.count = xpair.mvl.size();
 			la.pl = xpair.mvl.data();
-			if (ar->set(proptag, &la) != 0)
+			if (ar->set(proptag, &la) == ecServerOOM)
 				throw std::bad_alloc();
 			break;
 		}
@@ -456,7 +455,7 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 			LONGLONG_ARRAY la;
 			la.count = xpair.mvll.size();
 			la.pll = xpair.mvll.data();
-			if (ar->set(proptag, &la) != 0)
+			if (ar->set(proptag, &la) == ecServerOOM)
 				throw std::bad_alloc();
 			break;
 		}
@@ -464,7 +463,7 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 			FLOAT_ARRAY la;
 			la.count = xpair.mvflt.size();
 			la.mval = xpair.mvflt.data();
-			if (ar->set(proptag, &la) != 0)
+			if (ar->set(proptag, &la) == ecServerOOM)
 				throw std::bad_alloc();
 			break;
 		}
@@ -473,7 +472,7 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 			DOUBLE_ARRAY la;
 			la.count = xpair.mvdbl.size();
 			la.mval = xpair.mvdbl.data();
-			if (ar->set(proptag, &la) != 0)
+			if (ar->set(proptag, &la) == ecServerOOM)
 				throw std::bad_alloc();
 			break;
 		}
@@ -485,7 +484,7 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 			for (size_t i = 0; i < sa.count; ++i)
 				ptrs[i] = xpair.mvstr[i].data();
 			sa.ppstr = ptrs.data();
-			if (ar->set(CHANGE_PROP_TYPE(proptag, PT_MV_UNICODE), &sa) != 0)
+			if (ar->set(CHANGE_PROP_TYPE(proptag, PT_MV_UNICODE), &sa) == ecServerOOM)
 				throw std::bad_alloc();
 			break;
 		}
@@ -499,7 +498,7 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 				bins[i].cb = xpair.mvstr[i].size();
 			}
 			ba.pbin = bins.data();
-			if (ar->set(proptag, &ba) != 0)
+			if (ar->set(proptag, &ba) == ecServerOOM)
 				throw std::bad_alloc();
 			break;
 		}
@@ -1278,7 +1277,7 @@ static void do_attach_byval(driver &drv, unsigned int depth, unsigned int hid,
 	BINARY bin;
 	bin.cb = contents.size();
 	bin.pv = contents.data();
-	if (props->set(PR_ATTACH_DATA_BIN, &bin) != 0)
+	if (props->set(PR_ATTACH_DATA_BIN, &bin) == ecServerOOM)
 		throw std::bad_alloc();
 }
 
