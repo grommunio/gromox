@@ -42,14 +42,14 @@ enum sql_schema_upgrade : uint8_t {
 	SSU_NOT_ENABLED, SSU_NOT_ME, SSU_AUTOUPGRADE,
 };
 
-struct mysql_adaptor_init_param {
+struct GX_EXPORT mysql_adaptor_init_param {
 	std::string host, user, pass, dbname, certfile, keyfile;
 	int port = 0, conn_num = 0, timeout = 0;
 	enum sql_schema_upgrade schema_upgrade = SSU_NOT_ENABLED;
 	bool enable_firsttimepw = false;
 };
 
-struct sql_domain {
+struct GX_EXPORT sql_domain {
 	std::string name, title, address;
 
 	std::weak_ordering operator<=>(const sql_domain&) const;
@@ -97,12 +97,12 @@ struct GX_EXPORT sql_user {
 	std::weak_ordering operator<=>(const sql_user &o) const;
 };
 
-struct sql_group {
+struct GX_EXPORT sql_group {
 	unsigned int id;
 	std::string name, title;
 };
 
-struct sql_class {
+struct GX_EXPORT sql_class {
 	unsigned int child_id;
 	std::string name;
 };

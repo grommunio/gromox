@@ -29,12 +29,12 @@ extern GX_EXPORT gromox::errno_t read_file_by_line(const char *file, std::vector
 
 namespace gromox {
 
-struct file_deleter {
+struct GX_EXPORT file_deleter {
 	inline void operator()(DIR *d) const { closedir(d); }
 	inline void operator()(FILE *f) const { fclose(f); }
 };
 
-struct DIR_mp {
+struct GX_EXPORT DIR_mp {
 	std::string m_path;
 	std::unique_ptr<DIR, file_deleter> m_dir;
 };

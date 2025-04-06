@@ -113,12 +113,12 @@ namespace gromox {
 
 static constexpr uint32_t SEQ_STAR = -1;
 
-struct seq_node {
+struct GX_EXPORT seq_node {
 	using value_type = unsigned int;
 	value_type min = SEQ_STAR, max = SEQ_STAR;
 };
 
-struct stdlib_delete {
+struct GX_EXPORT stdlib_delete {
 	inline void operator()(void *x) const { free(x); }
 };
 template<typename T> static inline T *me_alloc() {
@@ -146,7 +146,7 @@ template<typename U, typename V> static int three_way_compare(U &&a, V &&b)
 }
 
 #if defined(COMPILE_DIAG) && !defined(__clang__)
-struct errno_t {
+struct GX_EXPORT errno_t {
 	constexpr errno_t(int x) : m_value(x) {
 #ifdef COVERITY
 		assert(x >= 0);

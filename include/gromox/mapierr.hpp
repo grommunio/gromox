@@ -436,7 +436,7 @@ enum ec_error_t
 };
 
 #ifdef COMPILE_DIAG
-struct ec_error_t {
+struct GX_EXPORT ec_error_t {
 	constexpr ec_error_t() = default;
 	constexpr ec_error_t(uint32_t x) : m_value(static_cast<ec_error_t_ll>(x)) {}
 	constexpr ec_error_t(ec_error_t_ll x) : m_value(x) {}

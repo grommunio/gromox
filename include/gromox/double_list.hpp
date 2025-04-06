@@ -3,7 +3,7 @@
 #include <gromox/defs.h>
 
 /* double list is composed by the base unit DOUBLE_LIST_NODE */
-struct DOUBLE_LIST_NODE {
+struct GX_EXPORT DOUBLE_LIST_NODE {
 	union {
 		void *pdata;    /* pointer for recording the actual data */
 		char *cdata;
@@ -12,7 +12,7 @@ struct DOUBLE_LIST_NODE {
 };
 
 /* this struct actually represent the double list object */
-struct DOUBLE_LIST {
+struct GX_EXPORT DOUBLE_LIST {
     DOUBLE_LIST_NODE *phead;    /* indicate the first node of the double list*/
     size_t    nodes_num;           /* indicate the current number of nodes */
 };

@@ -24,7 +24,7 @@ struct vcard;
 
 namespace gromox {
 
-struct addr_tags {
+struct GX_EXPORT addr_tags {
 	uint32_t pr_name, pr_addrtype, pr_emaddr, pr_smtpaddr, pr_entryid;
 };
 

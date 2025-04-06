@@ -33,17 +33,17 @@ struct GX_EXPORT attachment_list {
 };
 using ATTACHMENT_LIST = attachment_list;
 
-struct MESSAGE_CHILDREN {
+struct GX_EXPORT MESSAGE_CHILDREN {
 	TARRAY_SET *prcpts;
 	ATTACHMENT_LIST *pattachments;
 };
 
-struct CHANGE_PART {
+struct GX_EXPORT CHANGE_PART {
 	uint32_t index;
 	TPROPVAL_ARRAY proplist;
 };
 
-struct MSGCHG_PARTIAL {
+struct GX_EXPORT MSGCHG_PARTIAL {
 	const PROPERTY_GROUPINFO *pgpinfo; /* this memory is only a reference */
 	uint32_t group_id;
 	uint32_t count;
@@ -51,12 +51,12 @@ struct MSGCHG_PARTIAL {
 	MESSAGE_CHILDREN children;
 };
 
-struct PROGRESS_MESSAGE {
+struct GX_EXPORT PROGRESS_MESSAGE {
 	uint32_t message_size;
 	BOOL b_fai;
 };
 
-struct PROGRESS_INFORMATION {
+struct GX_EXPORT PROGRESS_INFORMATION {
 	uint16_t version;
 	uint16_t padding1;
 	uint32_t fai_count;
@@ -86,7 +86,7 @@ struct GX_EXPORT attachment_content {
 };
 using ATTACHMENT_CONTENT = attachment_content;
 
-struct FOLDER_MESSAGES {
+struct GX_EXPORT FOLDER_MESSAGES {
 	EID_ARRAY *pfai_msglst;
 	EID_ARRAY *pnormal_msglst;
 };

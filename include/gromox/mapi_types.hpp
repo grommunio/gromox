@@ -15,7 +15,7 @@
 #include <gromox/range_set.hpp>
 
 /* https://learn.microsoft.com/en-us/office/client-developer/outlook/mapi/wrapstoreentryid */
-struct STORE_ENTRYID {
+struct GX_EXPORT STORE_ENTRYID {
 	uint32_t flags;
 	uint8_t version;
 	uint8_t ivflag;
@@ -34,7 +34,7 @@ struct STORE_ENTRYID {
 #define EITLT_WACKY_MESSAGE							0x000b
 #define EITLT_PUBLIC_FOLDER_BY_NAME					0x000c
 
-struct FOLDER_ENTRYID {
+struct GX_EXPORT FOLDER_ENTRYID {
 	uint32_t flags;
 	FLATUID provider_uid; /* glossary.rst:Store GUID */
 	uint16_t folder_type;
@@ -43,7 +43,7 @@ struct FOLDER_ENTRYID {
 	uint8_t pad[2];
 };
 
-struct MESSAGE_ENTRYID {
+struct GX_EXPORT MESSAGE_ENTRYID {
 	uint32_t flags;
 	FLATUID provider_uid; /* glossary.rst:Store GUID */
 	uint16_t message_type;
@@ -63,7 +63,7 @@ struct GX_EXPORT MOVECOPY_ACTION {
 	std::string repr() const;
 };
 
-struct EXT_MOVECOPY_ACTION {
+struct GX_EXPORT EXT_MOVECOPY_ACTION {
 	FOLDER_ENTRYID folder_eid;
 };
 
@@ -76,7 +76,7 @@ struct GX_EXPORT REPLY_ACTION {
 	std::string repr() const;
 };
 
-struct EXT_REPLY_ACTION {
+struct GX_EXPORT EXT_REPLY_ACTION {
 	MESSAGE_ENTRYID message_eid;
 	GUID template_guid;
 };
@@ -85,7 +85,7 @@ struct EXT_REPLY_ACTION {
 #define BOUNCE_CODE_MESSAGE_NOT_DISPLAYED			0x0000001f
 #define BOUNCE_CODE_MESSAGE_DENIED					0x00000026
 
-struct EXT_RECIPIENT_BLOCK {
+struct GX_EXPORT EXT_RECIPIENT_BLOCK {
 	uint8_t reserved;
 	uint32_t count;
 	TAGGED_PROPVAL *ppropval;
@@ -109,7 +109,7 @@ enum { /* ACTION_BLOCK::flavor for OP_REPLY */
 	STOCK_REPLY_TEMPLATE = 0x2U,
 };
 
-struct EXT_ACTION_BLOCK {
+struct GX_EXPORT EXT_ACTION_BLOCK {
 	uint32_t length;
 	uint8_t type;
 	uint32_t flavor;
@@ -148,7 +148,7 @@ enum {
 #define RULE_ERROR_TOO_MANY_RCPTS					0x0000000D
 #define RULE_ERROR_FOLDER_QUOTA						0x0000000E			
 
-struct NAMEDPROPERTY_INFO {
+struct GX_EXPORT NAMEDPROPERTY_INFO {
 	uint16_t count;
 	uint16_t *ppropid;
 	PROPERTY_NAME *ppropname;
@@ -158,30 +158,30 @@ struct NAMEDPROPERTY_INFO {
 #define FLAGGED_PROPVAL_FLAG_UNAVAILABLE			0x1
 #define FLAGGED_PROPVAL_FLAG_ERROR					0xA
 
-struct FLAGGED_PROPVAL {
+struct GX_EXPORT FLAGGED_PROPVAL {
 	uint8_t flag;
 	void *pvalue;
 };
 
-struct TYPED_PROPVAL {
+struct GX_EXPORT TYPED_PROPVAL {
 	uint16_t type;
 	void *pvalue;
 };
 
-struct LONG_TERM_ID {
+struct GX_EXPORT LONG_TERM_ID {
 	/* LTIDs are a specific form of XIDs */
 	GUID guid;
 	GLOBCNT global_counter;
 	uint16_t padding;
 };
 
-struct LONG_TERM_ID_ARRAY {
+struct GX_EXPORT LONG_TERM_ID_ARRAY {
 	uint16_t count;
 	LONG_TERM_ID *pids;
 	I_BEGIN_END(pids, count);
 };
 
-struct LONG_TERM_ID_RANGE {
+struct GX_EXPORT LONG_TERM_ID_RANGE {
 	LONG_TERM_ID min;
 	LONG_TERM_ID max;
 };
@@ -202,7 +202,7 @@ struct GX_EXPORT XID {
 #define STRING_TYPE_UNICODE_REDUCED					0x3
 #define STRING_TYPE_UNICODE							0x4
 
-struct TYPED_STRING {
+struct GX_EXPORT TYPED_STRING {
 	uint8_t string_type;
 	char *pstring;
 };
@@ -213,12 +213,12 @@ struct TYPED_STRING {
 #define PROPERTY_ROW_FLAG_NONE						0x00
 #define PROPERTY_ROW_FLAG_FLAGGED					0x01
 
-struct PROPERTY_ROW {
+struct GX_EXPORT PROPERTY_ROW {
 	uint8_t flag;
 	void **pppropval;
 };
 
-struct PROPROW_SET {
+struct GX_EXPORT PROPROW_SET {
 	uint16_t count;
 	PROPERTY_ROW *prows;
 };
@@ -228,7 +228,7 @@ struct PROPROW_SET {
 #define TABLE_SORT_MAXIMUM_CATEGORY					0x4
 #define TABLE_SORT_MINIMUM_CATEGORY					0x8
 
-struct PROPERTY_PROBLEM {
+struct GX_EXPORT PROPERTY_PROBLEM {
 	uint16_t index;
 	gromox::proptag_t proptag;
 	uint32_t err;
@@ -252,7 +252,7 @@ struct GX_EXPORT PROBLEM_ARRAY {
 	static constexpr size_t npos = -1;
 };
 
-struct EMSAB_ENTRYID {
+struct GX_EXPORT EMSAB_ENTRYID {
 	uint32_t flags;
 	uint32_t type;
 	char *px500dn;
@@ -266,7 +266,7 @@ struct EMSAB_ENTRYID {
 #define DAYOFWEEK_FRIDAY							0x5
 #define DAYOFWEEK_SATURDAY							0x6
 
-struct LOGON_TIME {
+struct GX_EXPORT LOGON_TIME {
 	uint8_t second;
 	uint8_t minute;
 	uint8_t hour;
@@ -276,7 +276,7 @@ struct LOGON_TIME {
 	uint16_t year;
 };
 
-struct GHOST_SERVER {
+struct GX_EXPORT GHOST_SERVER {
 	uint16_t server_count;
 	uint16_t cheap_server_count;
 	char **ppservers;
@@ -301,7 +301,7 @@ struct GHOST_SERVER {
 #define RECIPIENT_ROW_TYPE_PERSONAL_DLIST1			0x6
 #define RECIPIENT_ROW_TYPE_PERSONAL_DLIST2			0x7
 
-struct RECIPIENT_ROW {
+struct GX_EXPORT RECIPIENT_ROW {
 	uint8_t *pprefix_used;
 	char *px500dn;
 	BINARY *pentry_id;
@@ -316,20 +316,20 @@ struct RECIPIENT_ROW {
 	PROPERTY_ROW properties;
 };
 
-struct OPENRECIPIENT_ROW {
+struct GX_EXPORT OPENRECIPIENT_ROW {
 	uint8_t recipient_type;
 	uint16_t cpid;
 	uint16_t reserved;
 	RECIPIENT_ROW recipient_row;
 };
 
-struct MODIFYRECIPIENT_ROW {
+struct GX_EXPORT MODIFYRECIPIENT_ROW {
 	uint32_t row_id;
 	uint8_t recipient_type;
 	RECIPIENT_ROW *precipient_row;
 };
 
-struct READRECIPIENT_ROW {
+struct GX_EXPORT READRECIPIENT_ROW {
 	uint32_t row_id;
 	uint8_t recipient_type;
 	uint16_t cpid;
@@ -337,18 +337,18 @@ struct READRECIPIENT_ROW {
 	RECIPIENT_ROW recipient_row;
 };
 
-struct PERMISSION_DATA {
+struct GX_EXPORT PERMISSION_DATA {
 	uint8_t flags;
 	TPROPVAL_ARRAY propvals;
 };
 
-struct PROPIDNAME_ARRAY {
+struct GX_EXPORT PROPIDNAME_ARRAY {
 	uint16_t count;
 	uint16_t *ppropid;
 	PROPERTY_NAME *ppropname;
 };
 
-struct MESSAGE_READ_STAT {
+struct GX_EXPORT MESSAGE_READ_STAT {
 	BINARY message_xid;
 	uint8_t mark_as_read;
 };
@@ -489,7 +489,7 @@ enum {
 #define RSF_PID_BUDDYLIST_CONTACTS					0x800B
 #define PERSIST_SENTINEL							0x0000
 
-struct PERSISTDATA {
+struct GX_EXPORT PERSISTDATA {
 	uint16_t persist_id = 0, element_id = 0;
 	std::string entryid;
 };
@@ -500,7 +500,7 @@ struct PERSISTDATA {
 #define DELEGATE_PERMISSION_AUTHOR					0x0000001B
 #define DELEGATE_PERMISSION_EDITOR					0x0000007B
 
-struct SYSTEMTIME {
+struct GX_EXPORT SYSTEMTIME {
 	int16_t year;
 	int16_t month;
 	int16_t dayofweek;
@@ -519,7 +519,7 @@ struct SYSTEMTIME {
 };
 
 /* pidLidTimeZoneStruct */
-struct TIMEZONESTRUCT {
+struct GX_EXPORT TIMEZONESTRUCT {
 	int32_t bias;
 	int32_t standardbias;
 	int32_t daylightbias;
@@ -532,7 +532,7 @@ struct TIMEZONESTRUCT {
 #define TZRULE_FLAG_RECUR_CURRENT_TZREG				0x0001
 #define TZRULE_FLAG_EFFECTIVE_TZREG					0x0002
 
-struct TZRULE {
+struct GX_EXPORT TZRULE {
 	uint8_t major; /* 0x02 */
 	uint8_t minor; /* 0x01 */
 	uint16_t reserved; /* must be 0x003E */
@@ -548,7 +548,7 @@ struct TZRULE {
 	inline bool operator<(const TZRULE &o) const { return year < o.year; }
 };
 
-struct TIMEZONEDEFINITION {
+struct GX_EXPORT TIMEZONEDEFINITION {
 	uint8_t major; /* 0x02 */
 	uint8_t minor; /* 0x01 */
 	uint16_t reserved; /* 0x0002 */
@@ -605,7 +605,7 @@ enum {
 	ENDDATE_MISSING_RDELTA = 0x5ae980e1,
 };
 
-struct RECURRENCE_PATTERN {
+struct GX_EXPORT RECURRENCE_PATTERN {
 	uint16_t readerversion; /* 0x3004 */
 	uint16_t writerversion; /* 0x3004 */
 	uint16_t recurfrequency;
@@ -626,7 +626,7 @@ struct RECURRENCE_PATTERN {
 	uint32_t enddate; /* if no enddate, should be set to ENDDATE_MISSING */
 };
 
-struct EXCEPTIONINFO {
+struct GX_EXPORT EXCEPTIONINFO {
 	uint32_t startdatetime;
 	uint32_t enddatetime;
 	uint32_t originalstartdate;
@@ -645,13 +645,13 @@ struct EXCEPTIONINFO {
 		{ return startdatetime < o.startdatetime; }
 };
 
-struct CHANGEHIGHLIGHT {
+struct GX_EXPORT CHANGEHIGHLIGHT {
 	uint32_t size;
 	uint32_t value;
 	uint8_t *preserved;
 };
 
-struct EXTENDEDEXCEPTION {
+struct GX_EXPORT EXTENDEDEXCEPTION {
 	CHANGEHIGHLIGHT changehighlight;
 	uint32_t reservedblockee1size;
 	uint8_t *preservedblockee1;
@@ -667,7 +667,7 @@ struct EXTENDEDEXCEPTION {
 		{ return startdatetime < o.startdatetime; }
 };
 
-struct APPOINTMENT_RECUR_PAT {
+struct GX_EXPORT APPOINTMENT_RECUR_PAT {
 	RECURRENCE_PATTERN recur_pat;
 	uint32_t readerversion2; /* 0x00003006 */
 	uint32_t writerversion2; /* SHOULD be 0x00003009, can be 0x00003008 */
@@ -684,7 +684,7 @@ struct APPOINTMENT_RECUR_PAT {
 };
 
 /* GOID is not to be confused with GID (MS-OXCPRPT v25 §1.1) */
-struct GLOBALOBJECTID {
+struct GX_EXPORT GLOBALOBJECTID {
 	FLATUID arrayid; /* SHOULD be EncodedGlobalId */
 	uint16_t year;
 	uint8_t month;
@@ -709,7 +709,7 @@ using INDEX_ARRAY = PROPTAG_ARRAY;
 
 #define MAX_ATTACHMENT_NUM							200
 
-struct EXTENDED_ERROR {
+struct GX_EXPORT EXTENDED_ERROR {
 	uint16_t version;
 	uint16_t padding;
 	uint32_t errcode;
@@ -723,7 +723,7 @@ using REPLICA_MAPPING = BOOL (*)(BOOL, void *, uint16_t *, GUID *);
 using REPLIST_ENUM = void (*)(void *, uint16_t);
 using REPLICA_ENUM = void (*)(void *, uint64_t);
 
-struct repl_node {
+struct GX_EXPORT repl_node {
 	repl_node() = default;
 	repl_node(uint16_t r) : replid(r) {}
 	repl_node(const GUID &g) : replguid(g) {}
@@ -796,54 +796,54 @@ enum class db_notify_type : uint8_t {
 	hiertbl_row_modified, cttbl_row_modified, srchtbl_row_modified,
 };
 
-struct DB_NOTIFY {
+struct GX_EXPORT DB_NOTIFY {
 	enum db_notify_type type;
 	void *pdata;
 };
 
-struct DB_NOTIFY_NEW_MAIL {
+struct GX_EXPORT DB_NOTIFY_NEW_MAIL {
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t message_flags;
 	const char *pmessage_class;
 };
 
-struct DB_NOTIFY_FOLDER_CREATED {
+struct GX_EXPORT DB_NOTIFY_FOLDER_CREATED {
 	uint64_t folder_id;
 	uint64_t parent_id;
 	PROPTAG_ARRAY proptags;
 };
 
-struct DB_NOTIFY_MESSAGE_CREATED {
+struct GX_EXPORT DB_NOTIFY_MESSAGE_CREATED {
 	uint64_t folder_id;
 	uint64_t message_id;
 	PROPTAG_ARRAY proptags;
 };
 
-struct DB_NOTIFY_LINK_CREATED {
+struct GX_EXPORT DB_NOTIFY_LINK_CREATED {
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint64_t parent_id;
 	PROPTAG_ARRAY proptags;
 };
 
-struct DB_NOTIFY_FOLDER_DELETED {
+struct GX_EXPORT DB_NOTIFY_FOLDER_DELETED {
 	uint64_t folder_id;
 	uint64_t parent_id;
 };
 
-struct DB_NOTIFY_MESSAGE_DELETED {
+struct GX_EXPORT DB_NOTIFY_MESSAGE_DELETED {
 	uint64_t folder_id;
 	uint64_t message_id;
 };
 	
-struct DB_NOTIFY_LINK_DELETED {
+struct GX_EXPORT DB_NOTIFY_LINK_DELETED {
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint64_t parent_id;
 };
 
-struct DB_NOTIFY_FOLDER_MODIFIED {
+struct GX_EXPORT DB_NOTIFY_FOLDER_MODIFIED {
 	uint64_t folder_id;
 	uint64_t parent_id;
 	uint32_t *ptotal;
@@ -851,37 +851,37 @@ struct DB_NOTIFY_FOLDER_MODIFIED {
 	PROPTAG_ARRAY proptags;
 };
 	
-struct DB_NOTIFY_MESSAGE_MODIFIED {
+struct GX_EXPORT DB_NOTIFY_MESSAGE_MODIFIED {
 	uint64_t folder_id;
 	uint64_t message_id;
 	PROPTAG_ARRAY proptags;
 };
 
-struct DB_NOTIFY_FOLDER_MVCP {
+struct GX_EXPORT DB_NOTIFY_FOLDER_MVCP {
 	uint64_t folder_id;
 	uint64_t parent_id;
 	uint64_t old_folder_id;
 	uint64_t old_parent_id;
 };
 
-struct DB_NOTIFY_MESSAGE_MVCP {
+struct GX_EXPORT DB_NOTIFY_MESSAGE_MVCP {
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint64_t old_folder_id;
 	uint64_t old_message_id;
 };
 
-struct DB_NOTIFY_SEARCH_COMPLETED {
+struct GX_EXPORT DB_NOTIFY_SEARCH_COMPLETED {
 	uint64_t folder_id;
 };
 
-struct DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED {
+struct GX_EXPORT DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED {
 	uint64_t row_folder_id;
 	uint64_t after_folder_id;
 };
 using DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED = DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED;
 
-struct DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED {
+struct GX_EXPORT DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED {
 	uint64_t row_folder_id;
 	uint64_t row_message_id;
 	uint64_t row_instance;
@@ -891,11 +891,11 @@ struct DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED {
 };
 using DB_NOTIFY_CONTENT_TABLE_ROW_ADDED = DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED;
 
-struct DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED {
+struct GX_EXPORT DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED {
 	uint64_t row_folder_id;
 };
 
-struct DB_NOTIFY_CONTENT_TABLE_ROW_DELETED {
+struct GX_EXPORT DB_NOTIFY_CONTENT_TABLE_ROW_DELETED {
 	uint64_t row_folder_id;
 	uint64_t row_message_id;
 	uint64_t row_instance;

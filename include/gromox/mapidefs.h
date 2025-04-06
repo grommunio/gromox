@@ -859,7 +859,7 @@ enum {
 };
 
 /* cf. glossary.rst "Internal Identifier" */
-struct eid_t {
+struct GX_EXPORT eid_t {
 	static constexpr uint64_t GCV_MASK = 0xFFFFFFFFFFFF;
 	eid_t() = default;
 	constexpr eid_t(uint64_t v) : m_value(v) {}
@@ -882,7 +882,7 @@ struct GX_EXPORT ACTION_BLOCK {
 	std::string repr() const;
 };
 
-struct ADVISE_INFO {
+struct GX_EXPORT ADVISE_INFO {
 	uint32_t hstore;
 	uint32_t sub_id;
 };
@@ -904,13 +904,13 @@ struct GX_EXPORT BINARY {
 };
 using DATA_BLOB = BINARY;
 
-struct BINARY_ARRAY {
+struct GX_EXPORT BINARY_ARRAY {
 	uint32_t count;
 	BINARY *pbin;
 	I_BEGIN_END(pbin, count);
 };
 
-struct DOUBLE_ARRAY {
+struct GX_EXPORT DOUBLE_ARRAY {
 	uint32_t count;
 	double *mval;
 	I_BEGIN_END(mval, count);
@@ -950,19 +950,19 @@ struct GX_EXPORT FLATUID {
 #endif
 };
 
-struct FLATUID_ARRAY {
+struct GX_EXPORT FLATUID_ARRAY {
 	uint32_t cvalues;
 	FLATUID **ppguid;
 	I_BEGIN_END(ppguid, cvalues);
 };
 
-struct FLOAT_ARRAY {
+struct GX_EXPORT FLOAT_ARRAY {
 	uint32_t count;
 	float *mval;
 	I_BEGIN_END(mval, count);
 };
 
-struct GLOBCNT {
+struct GX_EXPORT GLOBCNT {
 	uint8_t ab[6];
 };
 
@@ -998,42 +998,42 @@ struct GX_EXPORT GUID {
 #endif
 };
 
-struct GUID_ARRAY {
+struct GX_EXPORT GUID_ARRAY {
 	uint32_t count;
 	GUID *pguid;
 	I_BEGIN_END(pguid, count);
 };
 
-struct LONG_ARRAY {
+struct GX_EXPORT LONG_ARRAY {
 	uint32_t count;
 	uint32_t *pl; // XXX: should be int32_t
 	I_BEGIN_END(pl, count);
 };
 
-struct LONGLONG_ARRAY {
+struct GX_EXPORT LONGLONG_ARRAY {
 	uint32_t count;
 	uint64_t *pll; // XXX: should be int64_t
 	I_BEGIN_END(pll, count);
 };
 
-struct LPROPTAG_ARRAY {
+struct GX_EXPORT LPROPTAG_ARRAY {
 	uint32_t cvalues;
 	uint32_t *pproptag;
 	I_BEGIN_END(pproptag, cvalues);
 };
 
-struct MESSAGE_STATE {
+struct GX_EXPORT MESSAGE_STATE {
 	BINARY source_key;
 	uint32_t message_flags;
 };
 
-struct NOTIF_SINK {
+struct GX_EXPORT NOTIF_SINK {
 	GUID hsession;
 	uint16_t count;
 	ADVISE_INFO *padvise;
 };
 
-struct ONEOFF_ENTRYID {
+struct GX_EXPORT ONEOFF_ENTRYID {
 	uint32_t flags;
 	uint16_t version; /* should be 0x0000 */
 	uint16_t ctrl_flags;
@@ -1042,18 +1042,18 @@ struct ONEOFF_ENTRYID {
 	char *pmail_address;
 };
 
-struct ONEOFF_ARRAY {
+struct GX_EXPORT ONEOFF_ARRAY {
 	uint32_t count;
 	ONEOFF_ENTRYID *pentry_id;
 	I_BEGIN_END(pentry_id, count);
 };
 
-struct PERMISSION_ROW {
+struct GX_EXPORT PERMISSION_ROW {
 	uint32_t flags, member_id, member_rights;
 	BINARY entryid;
 };
 
-struct PERMISSION_SET {
+struct GX_EXPORT PERMISSION_SET {
 	uint16_t count;
 	PERMISSION_ROW *prows;
 };
@@ -1081,7 +1081,7 @@ struct GX_EXPORT PROPERTY_XNAME {
 
 using PROPID_ARRAY = std::vector<gromox::propid_t>;
 
-struct PROPNAME_ARRAY {
+struct GX_EXPORT PROPNAME_ARRAY {
 	uint16_t count;
 	PROPERTY_NAME *ppropname;
 	I_BEGIN_END(ppropname, count);
@@ -1099,7 +1099,7 @@ struct GX_EXPORT PROPTAG_ARRAY {
 	I_BEGIN_END(pproptag, count);
 };
 
-struct SHORT_ARRAY {
+struct GX_EXPORT SHORT_ARRAY {
 	uint32_t count;
 	uint16_t *ps; // XXX: should be int16_t
 	I_BEGIN_END(ps, count);
@@ -1130,13 +1130,13 @@ struct GX_EXPORT SORTORDER_SET {
 	std::string repr() const;
 };
 
-struct STATE_ARRAY {
+struct GX_EXPORT STATE_ARRAY {
 	uint32_t count;
 	MESSAGE_STATE *pstate;
 	I_BEGIN_END(pstate, count);
 };
 
-struct STRING_ARRAY {
+struct GX_EXPORT STRING_ARRAY {
 	uint32_t count;
 	char **ppstr;
 	I_BEGIN_END(ppstr, count);
@@ -1170,7 +1170,7 @@ extern GX_EXPORT void tpropval_array_free_internal(TPROPVAL_ARRAY *);
 extern GX_EXPORT tarray_set *tarray_set_init();
 extern GX_EXPORT void tarray_set_free(tarray_set *);
 
-struct GEN_ARRAY {
+struct GX_EXPORT GEN_ARRAY {
 	uint32_t count = 0;
 	union {
 		void *mval = nullptr;
@@ -1224,13 +1224,13 @@ struct GX_EXPORT TPROPVAL_ARRAY {
 	I_BEGIN_END(ppropval, count);
 };
 
-struct mapidefs1_del {
+struct GX_EXPORT mapidefs1_del {
 	inline void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
 };
 
 using tpropval_array_ptr = std::unique_ptr<TPROPVAL_ARRAY, mapidefs1_del>;
 
-struct LTPROPVAL_ARRAY {
+struct GX_EXPORT LTPROPVAL_ARRAY {
 	uint32_t count;
 	TAGGED_PROPVAL *propval;
 	I_BEGIN_END(propval, count);
@@ -1422,7 +1422,7 @@ struct GX_EXPORT RULE_ACTIONS {
 	I_BEGIN_END(pblock, count);
 };
 
-struct RULE_DATA {
+struct GX_EXPORT RULE_DATA {
 	uint8_t flags;
 	TPROPVAL_ARRAY propvals;
 };

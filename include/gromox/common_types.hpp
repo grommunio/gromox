@@ -3,7 +3,7 @@
 #include <cstdint>
 #ifndef BOOL
 #if defined(__cplusplus) && defined(BOOLCHK)
-struct BOOL {
+struct GX_EXPORT BOOL {
 	int v;
 #if 0
 	constexpr BOOL() noexcept = default;

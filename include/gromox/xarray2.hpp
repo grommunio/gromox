@@ -8,7 +8,7 @@
 #include <json/value.h>
 #include <gromox/defs.h>
 
-struct MITEM {
+struct GX_EXPORT MITEM {
 	std::string mid;
 	int id = 0, uid = 0;
 	char flag_bits = 0;

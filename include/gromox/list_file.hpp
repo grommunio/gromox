@@ -26,7 +26,7 @@ enum {
 	ERROR_ON_ABSENCE,
 };
 
-struct EXMDB_ITEM {
+struct GX_EXPORT EXMDB_ITEM {
 	std::string prefix, host;
 	uint16_t port = 0;
 	enum {

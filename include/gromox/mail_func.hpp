@@ -31,12 +31,12 @@ struct GX_EXPORT EMAIL_ADDR {
 	char display_name[256], local_part[ULCLPART_SIZE], domain[UDOM_SIZE], addr[UADDR_SIZE];
 };
 
-struct kvpair {
+struct GX_EXPORT kvpair {
 	std::string name, value;
 };
 using MIME_FIELD = kvpair;
 
-struct ENCODE_STRING {
+struct GX_EXPORT ENCODE_STRING {
     char encoding[32];
     char charset[32];
     char title[1024];

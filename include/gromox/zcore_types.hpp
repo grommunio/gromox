@@ -12,19 +12,19 @@ enum class zs_objtype : uint8_t {
 	icsupctx, oneoff, invalid = 255,
 };
 
-struct NEWMAIL_ZNOTIFICATION {
+struct GX_EXPORT NEWMAIL_ZNOTIFICATION {
 	std::string entryid, parentid, message_class;
 	uint32_t flags = 0; /* unicode or not */
 	uint32_t message_flags = 0;
 };
 
-struct OBJECT_ZNOTIFICATION {
+struct GX_EXPORT OBJECT_ZNOTIFICATION {
 	mapi_object_type object_type;
 	std::optional<std::string> pentryid, pparentid, pold_entryid, pold_parentid;
 	std::optional<std::vector<gromox::proptag_t>> pproptags;
 };
 
-struct ZNOTIFICATION {
+struct GX_EXPORT ZNOTIFICATION {
 	ZNOTIFICATION() = default;
 	ZNOTIFICATION(ZNOTIFICATION &&);
 	~ZNOTIFICATION() { clear(); }
@@ -38,12 +38,12 @@ struct ZNOTIFICATION {
 using ZNOTIFICATION_ARRAY = std::vector<ZNOTIFICATION>;
 
 /* reply or OOF action */
-struct ZREPLY_ACTION {
+struct GX_EXPORT ZREPLY_ACTION {
 	BINARY message_eid; /* zarafa specific */
 	GUID template_guid;
 };
 
-struct ZMOVECOPY_ACTION {
+struct GX_EXPORT ZMOVECOPY_ACTION {
 	BINARY store_eid; /* zarafa specific */
 	BINARY folder_eid; /* zarafa specific */
 };

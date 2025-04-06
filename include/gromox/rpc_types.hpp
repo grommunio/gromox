@@ -2,12 +2,12 @@
 #include <cstdint>
 #include <gromox/mapidefs.h>
 
-struct CONTEXT_HANDLE {
+struct GX_EXPORT CONTEXT_HANDLE {
 	uint32_t handle_type;
 	GUID guid;
 };
 
-struct SYNTAX_ID {
+struct GX_EXPORT SYNTAX_ID {
 	GUID uuid;
 	uint32_t version;
 };

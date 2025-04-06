@@ -40,7 +40,7 @@ enum {
 
 struct remote_svr;
 
-struct agent_thread {
+struct GX_EXPORT agent_thread {
 	remote_svr *pserver = nullptr;
 	pthread_t thr_id{};
 	int sockd = -1;
@@ -48,7 +48,7 @@ struct agent_thread {
 	std::condition_variable startup_cv;
 };
 
-struct remote_conn {
+struct GX_EXPORT remote_conn {
 	remote_conn(remote_svr *s) : psvr(s) {}
 	NOMOVE(remote_conn);
 	~remote_conn();

@@ -12,7 +12,7 @@ struct NDR_PUSH;
  * Used for proc plugins to det DCERPC information.
  * Pointee lifetime is bound by the PDU processor object.
  */
-struct DCERPC_INFO {
+struct GX_EXPORT DCERPC_INFO {
 	const char *client_addr = nullptr;
 	const char *server_addr = nullptr; /* HTTP server address */
 	const char *ep_host = nullptr; /* endpoint host name */

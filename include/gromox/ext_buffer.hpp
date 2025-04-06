@@ -60,7 +60,7 @@ enum {
 
 using EXT_BUFFER_ALLOC = void *(*)(size_t);
 
-struct EXT_BUFFER_MGT {
+struct  GX_EXPORT EXT_BUFFER_MGT {
 	EXT_BUFFER_ALLOC alloc;
 	void *(*realloc)(void *, size_t);
 	void (*free)(void *);
@@ -73,7 +73,7 @@ struct EXT_PUSH;
 #define RHE_FLAG_XORMAGIC							0x0002
 #define RHE_FLAG_LAST								0x0004
 
-struct RPC_HEADER_EXT {
+struct  GX_EXPORT RPC_HEADER_EXT {
 	uint16_t version;
 	uint16_t flags;
 	uint16_t size;

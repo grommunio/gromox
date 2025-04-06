@@ -5,7 +5,7 @@
 #define MAX_TURN_COUNTS     0x7FFFFFFF
 
 /* enumeration for distinguishing parameters of contexts pool */
-enum{
+enum {
 	MAX_CONTEXTS_NUM,
 	CONTEXTS_PER_THR,
 	CUR_VALID_CONTEXTS,
@@ -30,7 +30,7 @@ enum class sctx_status {
 	switching, /* context is switching between scheduling (polling, idling to turning) queues */
 };
 
-struct schedule_context {
+struct GX_EXPORT schedule_context {
 	DOUBLE_LIST_NODE node{};
 	sctx_status type = sctx_status::free;
 	BOOL b_waiting = false; /* is still in epoll queue */

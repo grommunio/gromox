@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <gromox/defs.h>
 
 /**
  * Services that a user is allowed to exercise:
@@ -57,7 +58,7 @@ enum {
  * @have_xid:	Whether an externid is set
  * 		(0=no / 1=yes / 0xFF=indeterminate)
  */
-struct sql_meta_result {
+struct GX_EXPORT sql_meta_result {
 	std::string username, maildir, lang, timezone, enc_passwd, errstr;
 	std::string ldap_uri, ldap_binddn, ldap_bindpw, ldap_basedn;
 	std::string ldap_mail_attr;

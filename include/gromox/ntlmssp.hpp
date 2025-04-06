@@ -35,24 +35,24 @@
 #define NTLMSSP_NEGOTIATE_KEY_EXCH					0x40000000
 #define NTLMSSP_NEGOTIATE_56						0x80000000
 
-struct NTLMSSP_SESSION_INFO {
+struct GX_EXPORT NTLMSSP_SESSION_INFO {
 	char username[UADDR_SIZE];
 	DATA_BLOB session_key;
 	uint8_t session_key_buff[16];
 };
 
-struct NTLM_AUTH_CHALLENGE {
+struct GX_EXPORT NTLM_AUTH_CHALLENGE {
 	DATA_BLOB blob;
 	uint8_t blob_buff[8]; /* buffer for DATA_BLOB's data */
 };
 
-struct NTLMSSP_CRYPT_DIRECTION {
+struct GX_EXPORT NTLMSSP_CRYPT_DIRECTION {
 	uint32_t seq_num;
 	uint8_t sign_key[16];
 	ARCFOUR_STATE seal_state;
 };
 
-struct NTLMSSP_CRYPT_DIRECTION_V2 {
+struct GX_EXPORT NTLMSSP_CRYPT_DIRECTION_V2 {
 	NTLMSSP_CRYPT_DIRECTION sending;
 	NTLMSSP_CRYPT_DIRECTION receiving;
 };

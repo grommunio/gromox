@@ -121,7 +121,7 @@ extern "C" GX_EXPORT PLUGIN_DMAIN
 
 namespace gromox {
 
-struct service_node {
+struct GX_EXPORT service_node {
 	void *service_addr = nullptr;
 	std::string service_name;
 };

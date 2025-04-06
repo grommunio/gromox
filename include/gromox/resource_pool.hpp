@@ -23,7 +23,7 @@ namespace gromox {
  *              (used to determine whether putback or discard an object)
  * @m_list:     reusable objects
  */
-template<typename Tp> class resource_pool {
+template<typename Tp> class GX_EXPORT resource_pool {
 	public:
 	class token {
 		/* automatically return connection back to pool when going out of scope */

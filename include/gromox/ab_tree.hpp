@@ -87,7 +87,7 @@ enum class userinfo {
  * The ID of the (user or domain) object is used with an offset of 0x10, since
  * the lower minid values are reserved for special purposes.
  */
-struct minid {
+struct GX_EXPORT minid {
 	enum Type : uint32_t {
 		address = 0,
 		domain = 1,
@@ -138,7 +138,7 @@ struct minid {
 /**
  * @brief      Address book domain node
  */
-struct ab_domain {
+struct GX_EXPORT ab_domain {
 	uint32_t id;
 	sql_domain info;
 	std::vector<minid> userref; ///< List of minids of contained objects
@@ -332,7 +332,7 @@ extern class ab AB;
  *
  * Provides easy access to a specific node in an ab_tree.
  */
-struct ab_node {
+struct GX_EXPORT ab_node {
 	public:
 	ab_node() = default;
 	ab_node(const ab::const_base_ref &br, minid m) : base(br.get()), mid(m) {}

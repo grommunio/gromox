@@ -8,7 +8,7 @@
 
 class config_file;
 
-struct service_init_param {
+struct GX_EXPORT service_init_param {
 	std::shared_ptr<config_file> cfg;
 	std::span<const gromox::static_module> plugin_list;
 	unsigned int context_num = 0;

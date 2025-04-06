@@ -23,7 +23,7 @@ enum {
 	FLAG_LOADED   = 0x80,
 };
 
-struct MSG_UNIT {
+struct GX_EXPORT MSG_UNIT {
 	std::string file_name;
 	size_t size = 0;
 	bool b_deleted = false;
