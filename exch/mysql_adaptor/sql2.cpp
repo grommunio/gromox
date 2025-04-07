@@ -328,11 +328,6 @@ static ssize_t userlist_parse(sqlconn &conn, const char *query,
 		if (u.dtypx == DT_DISTLIST) {
 			u.list_type = static_cast<enum mlist_type>(strtoul(znul(row[5]), nullptr, 0));
 			u.list_priv = strtoul(znul(row[6]), nullptr, 0);
-			/* no overwrite of propval is intended */
-			if (u.list_type == mlist_type::dyngroup && row[7] != nullptr)
-				u.propvals.emplace(PR_DISPLAY_NAME, row[7]);
-			else if (u.list_type == mlist_type::group && row[8] != nullptr)
-				u.propvals.emplace(PR_DISPLAY_NAME, row[8]);
 		}
 		pfile.push_back(std::move(u));
 	}

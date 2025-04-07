@@ -35,7 +35,10 @@ enum {
 };
 
 enum class mlist_type {
-	normal = 0, group, domain, dyngroup /* class */,
+	normal = 0,
+	group = 1, /* defunct */
+	domain = 2,
+	dyngroup = 3, /* a.k.a. class */ /* defunct */
 };
 
 enum sql_schema_upgrade : uint8_t {
