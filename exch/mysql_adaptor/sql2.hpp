@@ -72,7 +72,7 @@ struct mysql_plugin final {
 	bool check_same_org(unsigned int domain_id1, unsigned int domain_id2);
 	bool get_domain_groups(unsigned int domain_id, std::vector<sql_group> &);
 	int get_domain_users(unsigned int domain_id, std::vector<sql_user> &);
-	bool check_mlist_include(const char *mlist_name, const char *account);
+	bool check_mlist_include(const char *mlist_name, const char *account, unsigned int max_depth = 16);
 	bool check_same_org2(const char *domainname1, const char *domainname2);
 	bool get_mlist_memb(const char *username, const char *from, int *presult, std::vector<std::string> &);
 	gromox::errno_t get_homeserver(const char *ent, bool is_pvt, std::pair<std::string, std::string> &);
@@ -83,6 +83,8 @@ struct mysql_plugin final {
 	gromox::errno_t mda_domain_list(gromox::sql_domain_set &);
 
 	protected:
+	bool mlist_domain_contains(sqlconn *, const char *mlist, const char *account);
+
 	mysql_adaptor_init_param g_parm;
 	sqlconnpool g_sqlconn_pool;
 };

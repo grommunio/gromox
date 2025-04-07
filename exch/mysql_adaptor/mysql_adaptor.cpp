@@ -662,46 +662,21 @@ bool mysql_plugin::get_domain_groups(unsigned int domain_id,
 	return false;
 }
 
-bool mysql_plugin::check_mlist_include(const char *mlist_name,
-    const char *account) try
+bool mysql_plugin::mlist_domain_contains(sqlconn *conn, const char *mlist_name,
+    const char *account)
 {
-	if (!str_isascii(mlist_name) || !str_isascii(account))
-		return false;
-	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn)
-		return false;
 	auto q_mlist = conn->quote(mlist_name);
 	const char *pencode_domain = strchr(q_mlist.c_str(), '@');
 	if (pencode_domain == nullptr)
 		return false;
 	++pencode_domain;
-	auto qstr = "SELECT id, list_type FROM mlists WHERE listname='" + q_mlist + "'";
-	if (!conn->query(qstr))
-		return false;
-	auto pmyres = conn->store_result();
-	if (pmyres == nullptr)
-		return false;
-	if (pmyres.num_rows() != 1)
-		return false;
 
-	auto myrow = pmyres.fetch_row();
-	unsigned int id = strtoul(myrow[0], nullptr, 0);
-	auto type = static_cast<mlist_type>(strtoul(myrow[1], nullptr, 0));
-	bool b_result = false;
-	switch (type) {
-	case mlist_type::normal:
-		qstr = "SELECT username FROM associations WHERE list_id=" +
-		       std::to_string(id) + " AND username='" +
-		       conn->quote(account) + "'";
-		if (!conn->query(qstr))
-			return false;
-		pmyres = conn->store_result();
-		if (pmyres == nullptr)
-			return false;
-		if (pmyres.num_rows() > 0)
-			b_result = true;
-		return b_result;
-	case mlist_type::domain: {
+	{
+		bool b_result = false;
+		std::string qstr;
+		DB_RESULT pmyres;
+		DB_ROW myrow;
+
 		qstr = "SELECT id FROM domains WHERE domainname='"s + pencode_domain + "'";
 		if (!conn->query(qstr))
 			return false;
@@ -724,12 +699,6 @@ bool mysql_plugin::check_mlist_include(const char *mlist_name,
 			b_result = true;
 		return b_result;
 	}
-	default:
-		return false;
-	}
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "%s: %s", "E-1729", e.what());
-	return false;
 }
 
 bool mysql_plugin::check_same_org2(const char *domainname1,

@@ -819,6 +819,93 @@ std::weak_ordering sql_user::operator<=>(const sql_user &o) const {
 	return r == 0? std::weak_ordering::equivalent : r < 0 ? std::weak_ordering::less : std::weak_ordering::greater;
 }
 
+/**
+ * Resolve @mlist_name to a list id.
+ * List 0 is never used, and so 0 is used as a placeholder for notfound/error.
+ */
+static std::pair<uint32_t, mlist_type>
+resolve_list_id(sqlconn &conn, const char *mlist_name)
+{
+	if (!str_isascii(mlist_name))
+		return {};
+	auto q_mlist = conn.quote(mlist_name);
+	auto qstr = "SELECT id, list_type FROM mlists WHERE listname='" + q_mlist + "'";
+	if (!conn.query(qstr))
+		return {};
+	auto res = conn.store_result();
+	if (res == nullptr)
+		return {};
+	auto nrows = res.num_rows();
+	if (nrows == 0)
+		return {};
+	auto row = res.fetch_row();
+	return {strtoul(row[0], nullptr, 0), static_cast<mlist_type>(strtoul(row[1], nullptr, 0))};
+}
+
+/**
+ * Check list @id whether it contains @account as a member.
+ * Scans subordinate lists for @depth.
+ */
+static bool mlist_contains(sqlconn &conn, uint32_t list_id, mlist_type mtype,
+    const char *account, unsigned int depth)
+{
+	auto qstr = "SELECT username FROM associations WHERE list_id=" +
+		    std::to_string(list_id) + " AND username='" +
+		    conn.quote(account) + "'";
+	if (!conn.query(qstr))
+		return false;
+	auto res = conn.store_result();
+	if (res == nullptr)
+		return false;
+	if (res.num_rows() > 0)
+		return true;
+	if (depth == 0)
+		return false;
+	--depth;
+
+	qstr = "SELECT ml.id, ml.list_type FROM associations AS a INNER JOIN mlists AS ml "
+	       "ON a.username=ml.listname WHERE a.list_id=" + std::to_string(list_id);
+	if (!conn.query(qstr))
+		return false;
+	res = conn.store_result();
+	if (res == nullptr)
+		return false;
+	auto nrows = res.num_rows();
+	for (size_t i = 0; i < nrows; ++i) {
+		auto row = res.fetch_row();
+		if (row == nullptr)
+			break;
+		uint32_t sub_id = strtoul(row[0], nullptr, 0);
+		auto sub_type = static_cast<mlist_type>(strtoul(row[1], nullptr, 0));
+		if (mlist_contains(conn, sub_id, sub_type, account, depth))
+			return true;
+	}
+	return false;
+}
+
+/**
+ * Check list @mlist_name whether it contains @account as a member. (With
+ * recursion up to @max_depth tries.)
+ */
+bool mysql_plugin::check_mlist_include(const char *mlist_name,
+    const char *account, unsigned int max_depth) try
+{
+	if (max_depth == 0)
+		return false;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return 0;
+	auto [id, type] = resolve_list_id(*conn, mlist_name);
+	if (id == 0)
+		return false;
+	if (type == mlist_type::domain)
+		return mlist_domain_contains(&*conn, mlist_name, account);
+	return mlist_contains(*conn, id, type, account, max_depth - 1);
+} catch (const std::exception &e) {
+	mlog(LV_ERR, "%s: %s", "E-1729", e.what());
+	return false;
+}
+
 errno_t mysql_adaptor_meta(const char *u, unsigned int p, sql_meta_result &r)
 {
 	return le_mysql_plugin->meta(u, p, r);
