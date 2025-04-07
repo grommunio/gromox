@@ -720,22 +720,22 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	auto &props = dst->proplist;
 	if (!props.has(PR_LAST_MODIFICATION_TIME)) {
 		auto last_time = rop_util_current_nttime();
-		auto err = cu_set_propval(props, PR_LAST_MODIFICATION_TIME, &last_time);
-		if (err != ecSuccess)
-			return err;
+		auto ern = props.set(PR_LAST_MODIFICATION_TIME, &last_time);
+		if (ern != 0)
+			return ecServerOOM;
 	}
-	err = cu_set_propval(props, PidTagMid, &dst_mid);
-	if (err != ecSuccess)
-		return err;
-	err = cu_set_propval(props, PidTagChangeNumber, &dst_cn);
-	if (err != ecSuccess)
-		return err;
-	err = cu_set_propval(props, PR_CHANGE_KEY, &xidbin);
-	if (err != ecSuccess)
-		return err;
-	err = cu_set_propval(props, PR_PREDECESSOR_CHANGE_LIST, pclbin.get());
-	if (err != ecSuccess)
-		return err;
+	auto ern = props.set(PidTagMid, &dst_mid);
+	if (ern != 0)
+		return ecServerOOM;
+	ern = props.set(PidTagChangeNumber, &dst_cn);
+	if (ern != 0)
+		return ecServerOOM;
+	ern = props.set(PR_CHANGE_KEY, &xidbin);
+	if (ern != 0)
+		return ecServerOOM;
+	ern = props.set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get());
+	if (ern != 0)
+		return ecServerOOM;
 
 	/* Writeout */
 	ec_error_t e_result = ecRpcFailed;

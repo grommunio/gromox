@@ -344,7 +344,7 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 			buf += " NIL";
 		}
 		buf += pmime->cid.size() > 0 && str_isasciipr(pmime->cid.c_str()) ?
-		       "\"" + mjson_add_backslash(pmime->cid.c_str()) + "\"" :
+		       " \"" + mjson_add_backslash(pmime->cid.c_str()) + "\"" :
 		       " NIL";
 		
 		/* body description */
