@@ -666,7 +666,7 @@ BOOL common_util_propvals_to_row(
 	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow)
 {
 	unsigned int i;
-	static constexpr uint32_t errcode = ecNotFound, enotsup = ecNotSupported;
+	static constexpr uint32_t errcode = ecNotFound;
 	
 	for (i = 0; i < pcolumns->count; ++i)
 		if (!ppropvals->has(pcolumns->pproptag[i]))
@@ -733,7 +733,7 @@ BOOL common_util_propvals_to_row(
 			 * earlier (e.g. ecMAPIOOM due to propval size); reuse.
 			 */
 			continue;
-		pflagged_val->pvalue = deconst((tag & MVI_FLAG) == MVI_FLAG ? &enotsup : &errcode);
+		pflagged_val->pvalue = deconst(&errcode);
 	}
 	return TRUE;
 }
