@@ -675,6 +675,29 @@ BOOL common_util_propvals_to_row(
 	prow->pppropval = cu_alloc<void *>(pcolumns->count);
 	if (prow->pppropval == nullptr)
 		return FALSE;
+	/*
+	 * OXCTABL v21 specifies no requirement on the number of MVI_FLAG
+	 * properties in the column set. Nor does it specify that the sortorder
+	 * shall contain those MVI_FLAG properties. EXC2019 behaves like so:
+	 *
+	 * If SORT_ORDER={1,j,k,{0x13003}}:
+	 * - and the column set does not contain 0x1zzzz:
+	 *   table is produced and so sorted (the desired column just is not
+	 *   present in the table)
+	 * - and the column set contains 0x11003 or 0x10003:
+	 *   QueryRows throws MAPI_E_NO_SUPPORT
+	 *
+	 * If SORT_ORDER={1,j,k,{0x11003}}:
+	 * - SortTable throws MAPI_E_TOO_COMPLEX
+	 *
+	 * If SORT_ORDER={1,j,k,{0x10003}}:
+	 * - that just sorts by scalar obviously
+	 *
+	 * If SORT_ORDER is not explicitly set:
+	 * - if the column set contains 0x13003,
+	 *   QueryRows throws MAPI_E_NO_SUPPORT
+	 *   [Gromox: this is where W-2270 would be logged]
+	 */
 	for (i=0; i<pcolumns->count; i++) {
 		const auto tag = pcolumns->pproptag[i];
 		auto val = ppropvals->getval(tag);
@@ -686,14 +709,17 @@ BOOL common_util_propvals_to_row(
 			return FALSE;
 		prow->pppropval[i] = pflagged_val;
 		if (val != nullptr) {
+			/* Found a data item with exact tag */
 			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_AVAILABLE;
 			pflagged_val->pvalue = deconst(val);
 			continue;
 		}
 		/*
 		 * The table protocol has two different ways to report empty
-		 * cells. OXCDATA §2.11.5 has a hint. Unavailable is defined as
-		 * "The PropertyValue field is not present." Error on the other
+		 * cells. OXCDATA §2.11.5 has a hint. Unavailable
+		 * [Gromox: FLAGGED_PROPVAL_FLAG_UNAVAILABLE] is defined as
+		 * "The PropertyValue field is not present." Error
+		 * [Gromox: FLAGGED_PROPVAL_FLAG_ERROR] on the other
 		 * hand is defined as "[...] why the property value is not
 		 * present". Since one can always make up a reason, this is why
 		 * only the Error variant is only ever seen/used in practice.
@@ -702,22 +728,11 @@ BOOL common_util_propvals_to_row(
 		val = ppropvals->getval(CHANGE_PROP_TYPE(tag, PT_ERROR));
 		pflagged_val->pvalue = deconst(val);
 		if (val != nullptr)
+			/*
+			 * Found propid with shifted type and error code from
+			 * earlier (e.g. ecMAPIOOM due to propval size); reuse.
+			 */
 			continue;
-		/*
-		 * OXCTABL v21 specifies no requirement on the number of
-		 * MVI_FLAG properties in the column set. Nor does it specify
-		 * that the sortorder shall contain those MVI_FLAG properties.
-		 *
-		 * EXC2019 however will reject ropQueryRows when the sortorder
-		 * is lacking an MVI_FLAG property that *is* in the column set.
-		 * EXC2019 also rejects ropSortTable if the sortorder contains
-		 * more than one MVI_FLAG property.
-		 *
-		 * Gromox will allow ropQueryRows, and db_engine simply won't
-		 * yield data for that column (@ppropvals). This gives us the
-		 * opportunity to signal ecNotSupported for only the affected
-		 * columns and still return other data.
-		 */
 		pflagged_val->pvalue = deconst((tag & MVI_FLAG) == MVI_FLAG ? &enotsup : &errcode);
 	}
 	return TRUE;
