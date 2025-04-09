@@ -158,7 +158,7 @@ class ab_base {
 	 * Random access iterator providing read-only access to all minids from
 	 * the address book.
 	 */
-	class iterator 	{
+	class iterator {
 		public:
 		using iterator_category = std::random_access_iterator_tag;
 		using difference_type = ssize_t;
@@ -187,7 +187,7 @@ class ab_base {
 		}
 
 		constexpr bool operator==(const iterator &other) const = default;
-		constexpr auto operator<=>(const iterator &other) const { return it <=> other.it; }
+		constexpr auto operator<=>(const iterator &other) const = delete;
 
 		inline iterator operator+(difference_type offset) const { return iterator(*this) += offset; }
 		inline iterator &operator++() { return *this += 1; }
