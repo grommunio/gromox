@@ -626,7 +626,8 @@ static BOOL ftstream_producer_write_groupinfo(fxstream_producer *pstream,
 	if (!pstream->write_uint32(INCRSYNCGROUPINFO))
 		return FALSE;
 	/* 0x00000102 is the only proptag in proplist */
-	if (!pstream->write_uint32(PT_BINARY) ||
+	static_assert(PT_BINARY == PROP_TAG(PT_BINARY, 0));
+	if (!pstream->write_uint32(PROP_TAG(PT_BINARY, 0)) ||
 	    !ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
 	    ext_push.p_uint32(pginfo->group_id) != EXT_ERR_SUCCESS ||
 	    ext_push.p_uint32(pginfo->reserved) != EXT_ERR_SUCCESS ||
@@ -762,11 +763,11 @@ BOOL fxstream_producer::write_progresspermessage(const PROGRESS_MESSAGE *pprogms
 	auto pstream = this;
 	if (!write_uint32(INCRSYNCPROGRESSPERMSG))
 		return FALSE;
-	if (!write_uint32(PT_LONG))
+	if (!write_uint32(PROP_TAG(PT_LONG, 0)))
 		return FALSE;
 	if (!write_uint32(pprogmsg->message_size))
 		return FALSE;	
-	if (!write_uint32(PT_BOOLEAN))
+	if (!write_uint32(PROP_TAG(PT_BOOLEAN, 0)))
 		return FALSE;
 	uint16_t b_fai = !!pprogmsg->b_fai;
 	if (!ftstream_producer_write_uint16(pstream, b_fai))
@@ -784,7 +785,7 @@ BOOL fxstream_producer::write_progresstotal(const PROGRESS_INFORMATION *pprogtot
 	auto pstream = this;
 	if (!write_uint32(INCRSYNCPROGRESSMODE))
 		return FALSE;
-	if (!write_uint32(PT_BINARY))
+	if (!write_uint32(PROP_TAG(PT_BINARY, 0)))
 		return FALSE;
 	/* binary length */
 	if (!write_uint32(32))
