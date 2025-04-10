@@ -426,6 +426,23 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 	return ecSuccess;
 }
 
+/*
+ * When messages are copied to another store, the one message that has been
+ * activated/opened in OL will be copied using IMAPIFolder::CopyTo
+ * [ropFastTransferSourceCopyTo]. Others will be copied using
+ * IMAPIFolder::CopyMessages [ropFastTransferSourceCopyMessages].
+ *
+ */
+
+/**
+ * @proptags: proptag exclusion list for this object only
+ *
+ * Cf. rop_fasttransfersourcecopyproperties too.
+ *
+ * Note that if @hin refers to a message, that's really a message instance(!).
+ * So, CopyTo can be used for instances (unsaved ones even), whereas
+ * CopyMessages cannot do that.
+ */
 ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
     uint8_t send_options, const PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
@@ -454,13 +471,6 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		return ecError;
 	switch (object_type) {
 	case ems_objtype::folder: {
-		/*
-		 * @proptags is an exclude list. OXFXICS says """This field
-		 * does not determine what properties and subobjects the server
-		 * copies for descendant subobjects of the InputServerObject
-		 * field.""", which legitimates applying it only to level 0.
-		 * Cf. rop_fasttransfersourcecopyproperties too.
-		 */
 		auto bg = pproptags->begin(), end = pproptags->end();
 		auto b_sub    = level == 0 && std::find(bg, end, PR_CONTAINER_HIERARCHY) == end;
 		auto b_fai    = level == 0 && std::find(bg, end, PR_CONTAINER_CONTENTS) == end;

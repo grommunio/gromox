@@ -327,6 +327,16 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 				return FALSE;
 			if (pmsgctnt == nullptr)
 				continue;
+			/*
+			 * MS-OXCFXICS v25 §3.2.5.9.1.1 pg. 111 only mentions
+			 * PR_MESSAGE_SIZE omission for
+			 * RopSynchronizationConfigure (icsdownctx), and says
+			 * nothing about ropFastTransferSourceCopyMessages
+			 * (fastdownctx). But we have to do it (and do it as
+			 * EXC2019) lest MSMAPI runs into errors.
+			 */
+			common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE);
+			common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE_EXTENDED);
 			if (pctx->pmsglst != nullptr) {
 				common_util_remove_propvals(&pmsgctnt->proplist, PR_ENTRYID);
 			} else if (!pctx->b_chginfo) {
