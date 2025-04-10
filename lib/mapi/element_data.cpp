@@ -410,9 +410,9 @@ void PROBLEM_ARRAY::transform(const std::vector<uint16_t> &orig_indices)
 	 * Cut off problems related to internally tacked-on properties (cf.
 	 * emsmdb/folder_object::set_folder_properties).
 	 */
-	auto end = std::remove_if(&pproblem[0], &pproblem[count],
+	auto end = std::remove_if(begin(), this->end(),
 	           [=](const PROPERTY_PROBLEM &p) { return p.index >= orig_indices.size(); });
-	count = end - &pproblem[0];
+	count = end - begin();
 	for (unsigned int i = 0; i < count; ++i)
 		pproblem[i].index = orig_indices[pproblem[i].index];
 }

@@ -56,8 +56,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 15);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	auto eop = std::copy_if(&tmp_proptags.pproptag[0],
-	           &tmp_proptags.pproptag[tmp_proptags.count],
+	auto eop = std::copy_if(tmp_proptags.begin(), tmp_proptags.end(),
 	           pproptags->pproptag, [](uint32_t x) { return x < 0x80000000; });
 	pproptags->count = eop - pproptags->pproptag;
 	for (auto t : {PR_ACCESS, PR_RIGHTS, PR_PARENT_ENTRYID, PR_PARENT_SOURCE_KEY})

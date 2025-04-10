@@ -461,7 +461,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		 * field.""", which legitimates applying it only to level 0.
 		 * Cf. rop_fasttransfersourcecopyproperties too.
 		 */
-		auto bg = &pproptags->pproptag[0], end = &pproptags->pproptag[pproptags->count];
+		auto bg = pproptags->begin(), end = pproptags->end();
 		auto b_sub    = level == 0 && std::find(bg, end, PR_CONTAINER_HIERARCHY) == end;
 		auto b_fai    = level == 0 && std::find(bg, end, PR_CONTAINER_CONTENTS) == end;
 		auto b_normal = level == 0 && std::find(bg, end, PR_FOLDER_ASSOCIATED_CONTENTS) == end;
@@ -471,8 +471,8 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (pfldctnt == nullptr)
 			return ecError;
 		auto pproplist = pfldctnt->get_proplist();
-		for (unsigned int i = 0; i < pproptags->count; ++i)
-			pproplist->erase(pproptags->pproptag[i]);
+		for (const auto tag : *pproptags)
+			pproplist->erase(tag);
 		if (!pctx->make_foldercontent(b_sub, std::move(pfldctnt)))
 			return ecError;
 		break;
@@ -483,8 +483,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (!exmdb_client->read_message_instance(plogon->get_dir(),
 		    static_cast<message_object *>(pobject)->get_instance_id(), &msgctnt))
 			return ecError;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
-			const auto tag = pproptags->pproptag[i];
+		for (const auto tag : *pproptags) {
 			switch (tag) {
 			case PR_MESSAGE_RECIPIENTS:	
 				msgctnt.children.prcpts = NULL;
@@ -510,8 +509,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (!exmdb_client->read_attachment_instance(plogon->get_dir(),
 		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
 			return ecError;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
-			const auto tag = pproptags->pproptag[i];
+		for (const auto tag : *pproptags) {
 			switch (tag) {
 			case PR_ATTACH_DATA_OBJ:
 				attctnt.pembedded = NULL;
@@ -568,7 +566,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		 * properties and subobjects to include, as opposed to
 		 * exclude""" [like rop_fasttransfersourcecopyproperties]
 		 */
-		auto bg = &pproptags->pproptag[0], end = &pproptags->pproptag[pproptags->count];
+		auto bg = pproptags->begin(), end = pproptags->end();
 		auto b_sub    = level == 0 && std::find(bg, end, PR_CONTAINER_HIERARCHY) != end;
 		auto b_normal = level == 0 && std::find(bg, end, PR_CONTAINER_CONTENTS) != end;
 		auto b_fai    = level == 0 && std::find(bg, end, PR_FOLDER_ASSOCIATED_CONTENTS) != end;
