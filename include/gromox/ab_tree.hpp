@@ -187,7 +187,7 @@ class ab_base {
 		}
 
 		constexpr bool operator==(const iterator &other) const = default;
-		constexpr auto operator<=>(const iterator &other) const = delete;
+		constexpr auto operator<=>(const iterator &other) const { return it <=> other.it; }
 
 		inline iterator operator+(difference_type offset) const { return iterator(*this) += offset; }
 		inline iterator &operator++() { return *this += 1; }
