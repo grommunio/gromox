@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -1460,10 +1460,7 @@ static BOOL table_column_content_tmptbl(
 			*ppvalue = common_util_column_sqlite_statement(pstmt, 8, PT_LONG);
 			return TRUE;
 		}
-		auto v = cu_alloc<uint32_t>();
-		*ppvalue = v;
-		if (*ppvalue != nullptr)
-			*v = 0;
+		*ppvalue = nullptr;
 		return TRUE;
 	}
 	case PR_CONTENT_UNREAD: {
@@ -1471,10 +1468,7 @@ static BOOL table_column_content_tmptbl(
 			*ppvalue = common_util_column_sqlite_statement(pstmt, 9, PT_LONG);
 			return TRUE;
 		}
-		auto v = cu_alloc<uint32_t>();
-		*ppvalue = v;
-		if (*ppvalue != nullptr)
-			*v = 0;
+		*ppvalue = nullptr;
 		return TRUE;
 	}
 	}
