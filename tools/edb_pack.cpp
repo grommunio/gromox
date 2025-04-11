@@ -460,7 +460,7 @@ pack_result edb_pull::g_edb_propval_a(TPROPVAL_ARRAY *r)
 		} else if (!proc.active) {
 			continue;
 		} else if (proc.new_enc_type == EPV_TOMBSTONE) {
-			pv.proptag = PROP_TAG(PR_NULL, PT_NULL);
+			pv.proptag = PR_NULL;
 			filter = true;
 		} else if (proc.active) {
 			/* e.g. EPV_FAR not implemented yet, so strip */
