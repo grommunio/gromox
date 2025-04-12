@@ -3615,10 +3615,29 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			piline->append_param("LANGUAGE", planguage);
 	}
 
+	int regravitate_allday = 0;
 	if (has_start_time) {
 		ical_time itime;
+		/*
+		 * Though MS-OXOCAL v25 §2.2.1.9 requires that MUAs create
+		 * allday events with start/end on midnight, MAPI itself does
+		 * not enforce proper TZ metadata. Therefore, it is technically
+		 * possible to cause a itime.hour!=0 situation. When that
+		 * happens, the event is nudged forwards/backwards by OL.
+		 *
+		 * Since the HMS part is cut off anyway (g_oxical_allday_ymd),
+		 * only the hour>=12 case needs to be handled. To flip itime to
+		 * the next day, adding 12 hours should do for *Gromox*
+		 * (precise OL behavior was not investigated). If there is a
+		 * STANDARD->DAYLIGHT switch, 12h may not be enough, but that's
+		 * what you get when having non-midnight timestamps.
+		 */
 		if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
 			return "E-2002";
+		regravitate_allday = b_allday && g_oxcical_allday_ymd && itime.hour >= 12 ? 12 * 3600 : 0;
+		if (regravitate_allday != 0 && !ical_utc_to_datetime(ptz_component,
+		    start_time + regravitate_allday, &itime))
+			return "E-2271";
 		append_dt(*pcomponent, "DTSTART", itime,
 			b_allday && g_oxcical_allday_ymd,
 			ptz_component != nullptr ? tzid : nullptr);
@@ -3628,6 +3647,10 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			ical_time itime;
 			if (!ical_utc_to_datetime(ptz_component, rop_util_nttime_to_unix(*lnum), &itime))
 				return "E-2003";
+			regravitate_allday = b_allday && g_oxcical_allday_ymd && itime.hour >= 12 ? 12 * 3600 : 0;
+			if (regravitate_allday != 0 && !ical_utc_to_datetime(ptz_component,
+			    start_time + regravitate_allday, &itime))
+				return "E-2272";
 			append_dt(*pcomponent, "DTSTART", itime,
 				b_allday && g_oxcical_allday_ymd,
 				ptz_component != nullptr ? tzid : nullptr);
@@ -3636,7 +3659,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 
 	if (has_start_time && start_time != end_time) {
 		ical_time itime;
-		if (!ical_utc_to_datetime(ptz_component, end_time, &itime))
+		if (!ical_utc_to_datetime(ptz_component, end_time + regravitate_allday, &itime))
 			return "E-2222";
 		append_dt(*pcomponent, "DTEND", itime,
 			b_allday && g_oxcical_allday_ymd,
