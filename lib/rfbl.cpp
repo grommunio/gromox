@@ -525,7 +525,7 @@ int feed_w3m(const void *inbuf, size_t len, const char *cset,
 	fp.reset();
 	int fout = -1;
 	auto cl2 = HX::make_scope_exit([&]() { if (fout != -1) close(fout); });
-	const char *const argv[] = {"w3m", "-dump", filename.c_str(), nullptr};
+	const char *const argv[] = {"w3m", "-O", "UTF-8", "-dump", filename.c_str(), nullptr};
 	auto pid = popenfd(argv, nullptr, &fout, nullptr, const_cast<const char *const *>(environ));
 	if (pid < 0)
 		return -1;
