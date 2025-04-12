@@ -204,9 +204,8 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 	
 	auto msgcpid = static_cast<uint32_t>(new_cpid);
 	uint32_t importance = IMPORTANCE_NORMAL, sens = SENSITIVITY_NONE;
-	uint32_t msgflags = MSGFLAG_UNSENT | MSGFLAG_UNMODIFIED;
-	uint8_t readflag = 0, assocflag = fai;
-	uint32_t trustsender = 1;
+	uint32_t msgflags = MSGFLAG_READ | MSGFLAG_UNSENT | MSGFLAG_EVERREAD;
+	uint8_t assocflag = fai;
 	auto modtime = rop_util_current_nttime();
 	auto search_key = common_util_guid_to_binary(GUID::random_new());
 	if (search_key == nullptr)
@@ -232,13 +231,8 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 		{PR_IMPORTANCE, &importance},
 		{PR_MESSAGE_CLASS, deconst("IPM.Note")},
 		{PR_SENSITIVITY, &sens},
-		{PR_ORIGINAL_DISPLAY_TO, deconst("")},
-		{PR_ORIGINAL_DISPLAY_CC, deconst("")},
-		{PR_ORIGINAL_DISPLAY_BCC, deconst("")},
 		{PR_MESSAGE_FLAGS, &msgflags},
-		{PR_READ, &readflag},
 		{PR_ASSOCIATED, &assocflag},
-		{PR_TRUST_SENDER, &trustsender},
 		{PR_CREATION_TIME, &modtime},
 		{PR_SEARCH_KEY, search_key},
 		{PR_MESSAGE_LOCALE_ID, &msglcid},

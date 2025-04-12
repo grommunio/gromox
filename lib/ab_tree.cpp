@@ -337,7 +337,7 @@ uint32_t ab_base::dtyp(minid mid) const
 	const sql_user *user = fetch_user(mid);
 	if (!user)
 		return DT_CONTAINER;
-	return user->dtypx;
+	return user->dtypx & DTE_MASK_LOCAL;
 }
 
 /**
@@ -352,7 +352,7 @@ std::optional<uint32_t> ab_base::dtypx(minid mid) const
 	const sql_user *user = fetch_user(mid);
 	if (!user)
 		return {};
-	if (user->dtypx == DT_REMOTE_MAILUSER)
+	if ((user->dtypx & DTE_MASK_LOCAL) == DT_REMOTE_MAILUSER)
 		return DT_REMOTE_MAILUSER;
 	/*
 	 * In Gromox, (almost) everything with a username is capable of being
@@ -643,7 +643,8 @@ abnode_type ab_base::type(minid mid) const
 {
 	const sql_user *user = fetch_user(mid);
 	if (user)
-		return user->dtypx == DT_DISTLIST ? abnode_type::mlist : abnode_type::user;
+		return (user->dtypx & DTE_MASK_LOCAL) == DT_DISTLIST ?
+		       abnode_type::mlist : abnode_type::user;
 	const ab_domain *domain = fetch_domain(mid);
 	if (domain)
 		return abnode_type::domain;

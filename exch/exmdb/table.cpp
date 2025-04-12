@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -1441,15 +1441,12 @@ static BOOL table_column_content_tmptbl(
 		*ppvalue = common_util_column_sqlite_statement(pstmt, 10, PT_LONG);
 		return TRUE;
 	case PR_ROW_TYPE: {
-		if (NULL == psorts || 0 == psorts->ccategories) {
-			*ppvalue = NULL;
-			return TRUE;
-		}
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
 		if (v == nullptr)
-			return TRUE;
-		*v = row_type == CONTENT_ROW_MESSAGE ? TBL_LEAF_ROW :
+			return false;
+		*v = psorts == nullptr || psorts->ccategories == 0 ||
+		     row_type == CONTENT_ROW_MESSAGE ? TBL_LEAF_ROW :
 			sqlite3_column_int64(pstmt, 8) == 0 ? TBL_EMPTY_CATEGORY :
 			sqlite3_column_int64(pstmt, 5) == 0 ? TBL_COLLAPSED_CATEGORY :
 			TBL_EXPANDED_CATEGORY;
@@ -1465,10 +1462,7 @@ static BOOL table_column_content_tmptbl(
 			*ppvalue = common_util_column_sqlite_statement(pstmt, 8, PT_LONG);
 			return TRUE;
 		}
-		auto v = cu_alloc<uint32_t>();
-		*ppvalue = v;
-		if (*ppvalue != nullptr)
-			*v = 0;
+		*ppvalue = nullptr;
 		return TRUE;
 	}
 	case PR_CONTENT_UNREAD: {
@@ -1476,10 +1470,7 @@ static BOOL table_column_content_tmptbl(
 			*ppvalue = common_util_column_sqlite_statement(pstmt, 9, PT_LONG);
 			return TRUE;
 		}
-		auto v = cu_alloc<uint32_t>();
-		*ppvalue = v;
-		if (*ppvalue != nullptr)
-			*v = 0;
+		*ppvalue = nullptr;
 		return TRUE;
 	}
 	}

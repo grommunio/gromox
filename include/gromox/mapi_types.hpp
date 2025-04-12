@@ -681,6 +681,10 @@ struct GX_EXPORT APPOINTMENT_RECUR_PAT {
 	EXTENDEDEXCEPTION *pextendedexception;
 	uint32_t reservedblock2size;
 	uint8_t *preservedblock2;
+
+	public:
+	inline const EXCEPTIONINFO *exceptions_cbegin() const { return pexceptioninfo; }
+	inline const EXCEPTIONINFO *exceptions_cend() const { return pexceptioninfo + exceptioncount; }
 };
 
 /* GOID is not to be confused with GID (MS-OXCPRPT v25 §1.1) */

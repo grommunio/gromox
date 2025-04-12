@@ -204,22 +204,16 @@ namespace emsmdb {
 
 static void fxs_propsort(FOLDER_CONTENT &fc)
 {
-	auto &p = fc.proplist.ppropval;
-	if (p != nullptr)
-		std::sort(&p[0], &p[fc.proplist.count], fxs_tagcmp_fld);
+	std::sort(fc.proplist.begin(), fc.proplist.end(), fxs_tagcmp_fld);
 }
 
 void fxs_propsort(MESSAGE_CONTENT &mc)
 {
-	auto &mp = mc.proplist.ppropval;
-	std::sort(&mp[0], &mp[mc.proplist.count], fxs_tagcmp_msg);
+	std::sort(mc.proplist.begin(), mc.proplist.end(), fxs_tagcmp_msg);
 
-	if (mc.children.prcpts != nullptr) {
-		for (auto &rc : *mc.children.prcpts) {
-			auto &rp = rc.ppropval;
-			std::sort(&rp[0], &rp[rc.count], fxs_tagcmp_rcpt);
-		}
-	}
+	if (mc.children.prcpts != nullptr)
+		for (auto &rc : *mc.children.prcpts)
+			std::sort(rc.begin(), rc.end(), fxs_tagcmp_rcpt);
 	if (mc.children.pattachments != nullptr) {
 		for (auto &at : *mc.children.pattachments) {
 			auto e = at.pembedded;
@@ -333,6 +327,16 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 				return FALSE;
 			if (pmsgctnt == nullptr)
 				continue;
+			/*
+			 * MS-OXCFXICS v25 §3.2.5.9.1.1 pg. 111 only mentions
+			 * PR_MESSAGE_SIZE omission for
+			 * RopSynchronizationConfigure (icsdownctx), and says
+			 * nothing about ropFastTransferSourceCopyMessages
+			 * (fastdownctx). But we have to do it (and do it as
+			 * EXC2019) lest MSMAPI runs into errors.
+			 */
+			common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE);
+			common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE_EXTENDED);
 			if (pctx->pmsglst != nullptr) {
 				common_util_remove_propvals(&pmsgctnt->proplist, PR_ENTRYID);
 			} else if (!pctx->b_chginfo) {

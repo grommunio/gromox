@@ -232,11 +232,10 @@ static bool find_recur_times(const ical_component *tzcom,
 			continue;
 		if (!ical_itime_to_utc(nullptr, itime, &utnz))
 			break;
-		auto &ei = apr.pexceptioninfo;
 		auto time_test = [&](const EXCEPTIONINFO &e) {
 			return rop_util_rtime_to_unix(e.originalstartdate) == utnz;
 		};
-		if (std::any_of(&ei[0], &ei[apr.exceptioncount], time_test))
+		if (std::any_of(apr.exceptions_cbegin(), apr.exceptions_cend(), time_test))
 			continue;
 		evlist.push_back(event{ut, ut + static_cast<long>((apr.endtimeoffset - apr.starttimeoffset) * 60)});
 		if (ut >= end_time)

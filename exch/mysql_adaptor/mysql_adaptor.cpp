@@ -662,69 +662,21 @@ bool mysql_plugin::get_domain_groups(unsigned int domain_id,
 	return false;
 }
 
-bool mysql_plugin::check_mlist_include(const char *mlist_name,
-    const char *account) try
+bool mysql_plugin::mlist_domain_contains(sqlconn *conn, const char *mlist_name,
+    const char *account)
 {
-	if (!str_isascii(mlist_name) || !str_isascii(account))
-		return false;
-	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn)
-		return false;
 	auto q_mlist = conn->quote(mlist_name);
 	const char *pencode_domain = strchr(q_mlist.c_str(), '@');
 	if (pencode_domain == nullptr)
 		return false;
 	++pencode_domain;
-	auto qstr = "SELECT id, list_type FROM mlists WHERE listname='" + q_mlist + "'";
-	if (!conn->query(qstr))
-		return false;
-	auto pmyres = conn->store_result();
-	if (pmyres == nullptr)
-		return false;
-	if (pmyres.num_rows() != 1)
-		return false;
 
-	auto myrow = pmyres.fetch_row();
-	unsigned int id = strtoul(myrow[0], nullptr, 0);
-	auto type = static_cast<mlist_type>(strtoul(myrow[1], nullptr, 0));
-	bool b_result = false;
-	switch (type) {
-	case mlist_type::normal:
-		qstr = "SELECT username FROM associations WHERE list_id=" +
-		       std::to_string(id) + " AND username='" +
-		       conn->quote(account) + "'";
-		if (!conn->query(qstr))
-			return false;
-		pmyres = conn->store_result();
-		if (pmyres == nullptr)
-			return false;
-		if (pmyres.num_rows() > 0)
-			b_result = true;
-		return b_result;
-	case mlist_type::group: {
-		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='" + q_mlist + "'";
-		if (!conn->query(qstr))
-			return false;
-		pmyres = conn->store_result();
-		if (pmyres == nullptr)
-			return false;
-		if (pmyres.num_rows() != 1)
-			return false;
-		myrow = pmyres.fetch_row();
-		unsigned int group_id = strtoul(myrow[0], nullptr, 0);
-		qstr = "SELECT username FROM users WHERE group_id=" +
-		       std::to_string(group_id) + " AND username='" +
-		       conn->quote(account) + "'";
-		if (!conn->query(qstr))
-			return false;
-		pmyres = conn->store_result();
-		if (pmyres == nullptr)
-			return false;
-		if (pmyres.num_rows() > 0)
-			b_result = true;
-		return b_result;
-	}
-	case mlist_type::domain: {
+	{
+		bool b_result = false;
+		std::string qstr;
+		DB_RESULT pmyres;
+		DB_ROW myrow;
+
 		qstr = "SELECT id FROM domains WHERE domainname='"s + pencode_domain + "'";
 		if (!conn->query(qstr))
 			return false;
@@ -747,15 +699,6 @@ bool mysql_plugin::check_mlist_include(const char *mlist_name,
 			b_result = true;
 		return b_result;
 	}
-	case mlist_type::dyngroup: {
-		return false;
-	}
-	default:
-		return false;
-	}
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "%s: %s", "E-1729", e.what());
-	return false;
 }
 
 bool mysql_plugin::check_same_org2(const char *domainname1,
@@ -913,55 +856,6 @@ bool mysql_plugin::get_mlist_memb(const char *username, const char *from,
 		}
 		*presult = MLIST_RESULT_OK;
 		return true;
-	case mlist_type::group: {
-		qstr = "SELECT `id` FROM `groups` WHERE `groupname`='" + q_user + "'";
-		if (!conn->query(qstr))
-			return false;
-		pmyres = conn->store_result();
-		if (pmyres == nullptr)
-			return false;
-		if (pmyres.num_rows() != 1) {
-			*presult = MLIST_RESULT_NONE;
-			return true;
-		}
-		myrow = pmyres.fetch_row();
-		unsigned int group_id = strtoul(myrow[0], nullptr, 0);
-		qstr = "SELECT u.username, dt.propval_str AS dtypx FROM users AS u "
-		       JOIN_WITH_DISPLAYTYPE " WHERE u.group_id=" + std::to_string(group_id);
-		if (!conn->query(qstr))
-			return false;
-		pmyres = conn->store_result();
-		if (pmyres == nullptr)
-			return false;
-		rows = pmyres.num_rows();
-		if (b_chkintl) {
-			for (i = 0; i < rows; i++) {
-				myrow = pmyres.fetch_row();
-				auto dtypx = DT_MAILUSER;
-				if (myrow[1] != nullptr)
-					dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
-				if (dtypx == DT_MAILUSER && strcasecmp(myrow[0], from) == 0) {
-					b_chkintl = false;
-					break;
-				}
-			}
-		}
-		if (b_chkintl) {
-			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
-			return true;
-		}
-		mysql_data_seek(pmyres.get(), 0);
-		for (i = 0; i < rows; i++) {
-			myrow = pmyres.fetch_row();
-			auto dtypx = DT_MAILUSER;
-			if (myrow[1] != nullptr)
-				dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
-			if (dtypx == DT_MAILUSER)
-				pfile.push_back(myrow[0]);
-		}
-		*presult = MLIST_RESULT_OK;
-		return true;
-	}
 	case mlist_type::domain: {
 		qstr = "SELECT id FROM domains WHERE domainname='"s + pencode_domain + "'";
 		if (!conn->query(qstr))
@@ -1008,10 +902,6 @@ bool mysql_plugin::get_mlist_memb(const char *username, const char *from,
 			if (dtypx == DT_MAILUSER)
 				pfile.push_back(myrow[0]);
 		}
-		*presult = MLIST_RESULT_OK;
-		return true;
-	}
-	case mlist_type::dyngroup: {
 		*presult = MLIST_RESULT_OK;
 		return true;
 	}

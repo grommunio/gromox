@@ -39,7 +39,9 @@
 1148	IBM01148
 1149	IBM01149
 1200	utf-16
+1200	utf-16LE
 1201	unicodeFFFE
+1201	utf-16BE
 1250	windows-1250
 1251	windows-1251
 1252	windows-1252
@@ -67,6 +69,7 @@
 10081	x-mac-turkish
 10082	x-mac-croatian
 12000	utf-32
+12000	utf-32LE
 12001	utf-32BE
 20000	x-Chinese_CNS
 20001	x-cp20001

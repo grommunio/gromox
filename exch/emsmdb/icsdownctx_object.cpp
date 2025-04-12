@@ -566,6 +566,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(MESSAGE_CONTENT *pmsgctnt,
 	if (extra_flags & SYNC_EXTRA_FLAG_MESSAGESIZE)
 		pchgheader->emplace_back(PR_MESSAGE_SIZE, num);
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE);
+	common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE_EXTENDED);
 	
 	if (SYNC_EXTRA_FLAG_CN & extra_flags) {
 		auto cn = pmsgctnt->proplist.get<const eid_t>(PidTagChangeNumber);

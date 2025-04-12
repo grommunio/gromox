@@ -456,27 +456,27 @@ pack_result edb_pull::g_edb_propval_a(TPROPVAL_ARRAY *r)
 		r->ppropval[i].proptag = PROP_TAG(type, ashort);
 	}
 	bool filter = false;
-	for (unsigned int i = 0; i < r->count; ++i) {
+	for (auto &pv : *r) {
 		edb_postproc proc;
-		auto ret = g_edb_propval(&r->ppropval[i].pvalue, proc);
+		auto ret = g_edb_propval(&pv.pvalue, proc);
 		if (ret != pack_result::ok) {
 			return ret;
 		} else if (!proc.active) {
 			continue;
 		} else if (proc.new_enc_type == EPV_TOMBSTONE) {
-			r->ppropval[i].proptag = PROP_TAG(PR_NULL, PT_NULL);
+			pv.proptag = PR_NULL;
 			filter = true;
 		} else if (proc.active) {
 			/* e.g. EPV_FAR not implemented yet, so strip */
 			/* Data is in "SeparatedProperty01" etc. */
-			r->ppropval[i].proptag = CHANGE_PROP_TYPE(r->ppropval[i].proptag, PT_NULL);
+			pv.proptag = CHANGE_PROP_TYPE(pv.proptag, PT_NULL);
 			filter = true;
 		}
 	}
 	if (filter) {
-		auto m = std::remove_if(&r->ppropval[0], &r->ppropval[r->count],
+		auto m = std::remove_if(r->begin(), r->end(),
 		         [](const TAGGED_PROPVAL &tp) { return PROP_TYPE(tp.proptag) == PT_NULL; });
-		r->count = m - &r->ppropval[0];
+		r->count = m - r->begin();
 	}
 	return pack_result::ok;
 }

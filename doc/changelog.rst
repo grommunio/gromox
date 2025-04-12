@@ -1,3 +1,17 @@
+Development 2.44.30
+===================
+
+Fixes:
+
+* emsmdb: avoid emissions of PR_MESSAGE_SIZE in fastdownctx streams
+  (this makes PST export possible)
+* email_lib: fix a lost space in IMAP BODYSTRUCTURE response
+
+Enhancements:
+
+* mysql_adaptor: add support for nesting mlists in permission checks
+
+
 Gromox 2.44 (2025-03-19)
 ========================
 
