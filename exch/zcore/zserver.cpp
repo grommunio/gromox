@@ -696,7 +696,7 @@ ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
 	pentryid->pv = common_util_alloc(1280);
 	if (pentryid->pv == nullptr ||
 	    !ext_push.init(pentryid->pb, 1280, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_abk_eid(tmp_entryid) != pack_result::ok)
 		return ecError;
 	pentryid->cb = ext_push.m_offset;
 	*ppdisplay_name = common_util_dup(dispname);
@@ -1014,7 +1014,7 @@ static ec_error_t zs_openab_oop(USER_INFO_REF &&info, BINARY bin,
 	ONEOFF_ENTRYID eid;
 	EXT_PULL ep;
 	ep.init(bin.pv, bin.cb, common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
-	if (ep.g_oneoff_eid(&eid) != EXT_ERR_SUCCESS)
+	if (ep.g_oneoff_eid(&eid) != pack_result::ok)
 		return ecInvalidParam;
 	auto u = oneoff_object::create(eid);
 	if (u == nullptr)
@@ -1164,10 +1164,10 @@ static ec_error_t zs_openab_zcsab(USER_INFO_REF &&info, BINARY entryid,
 	uint32_t mapi_type = 0;
 	ep.init(entryid.pb, entryid.cb, common_util_alloc, EXT_FLAG_UTF16);
 	ep.m_offset += 20;
-	if (ep.g_uint32(&mapi_type) != EXT_ERR_SUCCESS ||
+	if (ep.g_uint32(&mapi_type) != pack_result::ok ||
 	    static_cast<mapi_object_type>(mapi_type) != MAPI_ABCONT ||
-	    ep.advance(4) != EXT_ERR_SUCCESS ||
-	    ep.g_folder_eid(&fe) != EXT_ERR_SUCCESS ||
+	    ep.advance(4) != pack_result::ok ||
+	    ep.g_folder_eid(&fe) != pack_result::ok ||
 	    fe.folder_type != EITLT_PRIVATE_FOLDER)
 		return ecInvalidParam;
 
@@ -1355,7 +1355,7 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 	STORE_ENTRYID store_entryid = {};
 	
 	ext_pull.init(entryid.pb, entryid.cb, common_util_alloc, EXT_FLAG_UTF16);
-	if (ext_pull.g_store_eid(&store_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_store_eid(&store_entryid) != pack_result::ok)
 		return ecError;
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
@@ -2304,7 +2304,7 @@ ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 	pentryid->pv = common_util_alloc(1024);
 	if (pentryid->pv == nullptr ||
 	    !ext_push.init(pentryid->pb, 1024, EXT_FLAG_UTF16) ||
-	    ext_push.p_store_eid(store_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_store_eid(store_entryid) != pack_result::ok)
 		return ecError;
 	pentryid->cb = ext_push.m_offset;
 	return ecSuccess;
@@ -3083,14 +3083,14 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 			    prcpt->has(PR_ADDRTYPE) && prcpt->has(PR_DISPLAY_NAME)))
 				continue;
 			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-			if (ext_pull.g_uint32(&tmp_flags) != EXT_ERR_SUCCESS ||
+			if (ext_pull.g_uint32(&tmp_flags) != pack_result::ok ||
 			    tmp_flags != 0)
 				continue;
-			if (ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
+			if (ext_pull.g_guid(&provider_uid) != pack_result::ok)
 				continue;
 			if (provider_uid == muidEMSAB) {
 				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-				if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS ||
+				if (ext_pull.g_abk_eid(&ab_entryid) != pack_result::ok ||
 				    ab_entryid.type != DT_MAILUSER)
 					continue;
 				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 4);
@@ -3126,7 +3126,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 			}
 			if (provider_uid == muidOOP) {
 				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-				if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS ||
+				if (ext_pull.g_oneoff_eid(&oneoff_entry) != pack_result::ok ||
 				    strcasecmp(oneoff_entry.paddress_type, "SMTP") != 0)
 					continue;
 				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 5);

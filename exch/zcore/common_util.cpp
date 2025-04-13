@@ -417,7 +417,7 @@ BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
 	EMSAB_ENTRYID tmp_entryid;
 
 	ext_pull.init(entryid_bin.pb, entryid_bin.cb, common_util_alloc, EXT_FLAG_UTF16);
-	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_abk_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;
 	*ptype = tmp_entryid.type;
 	gx_strlcpy(pessdn, tmp_entryid.px500dn, dsize);
@@ -458,7 +458,7 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin,
 	tmp_entryid.px500dn = deconst(essdn);
 
 	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_abk_eid(tmp_entryid) != pack_result::ok)
 		return false;
 	pbin->cb = ext_push.m_offset;
 	return TRUE;
@@ -504,11 +504,11 @@ static BOOL common_util_username_to_entryid(const char *username,
 	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16))
 		return false;
 	auto status = ext_push.p_oneoff_eid(oneoff_entry);
-	if (EXT_ERR_CHARCNV == status) {
+	if (status == pack_result::charconv) {
 		oneoff_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;
 		status = ext_push.p_oneoff_eid(oneoff_entry);
 	}
-	if (status != EXT_ERR_SUCCESS)
+	if (status != pack_result::ok)
 		return FALSE;
 	pbin->cb = ext_push.m_offset;
 	if (dtpp != nullptr)
@@ -524,8 +524,8 @@ uint16_t common_util_get_messaging_entryid_type(BINARY bin)
 	FLATUID provider_uid;
 	
 	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
-	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS ||
-	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_uint32(&flags) != pack_result::ok ||
+	    ext_pull.g_guid(&provider_uid) != pack_result::ok)
 		return 0;
 	/*
 	 * The GUID determines how things look after byte 20. Without
@@ -533,7 +533,7 @@ uint16_t common_util_get_messaging_entryid_type(BINARY bin)
 	 * by specification. I suppose the caller ought to ensure it is only
 	 * used with FOLDER_ENTRYIDs and MESSAGE_ENTRYIDs.
          */
-	if (ext_pull.g_uint16(&folder_type) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_uint16(&folder_type) != pack_result::ok)
 		return 0;
 	return folder_type;
 }
@@ -546,7 +546,7 @@ BOOL cu_entryid_to_fid(BINARY bin,
 	FOLDER_ENTRYID tmp_entryid;
 	
 	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
-	if (ext_pull.g_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_folder_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;	
 	switch (tmp_entryid.folder_type) {
 	case EITLT_PRIVATE_FOLDER:
@@ -589,7 +589,7 @@ BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
-	if (ext_pull.g_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_msg_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;	
 	if (tmp_entryid.folder_database_guid != tmp_entryid.message_database_guid)
 		return FALSE;
@@ -681,7 +681,7 @@ BINARY *cu_fid_to_entryid(const store_object &store, uint64_t folder_id)
 		return NULL;
 	pbin->pv = common_util_alloc(46); /* MS-OXCDATA v19 §2.2.4.1 */
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 46, 0) ||
-	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_folder_eid(tmp_entryid) != pack_result::ok)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -736,8 +736,8 @@ BINARY *cu_fid_to_sk(const store_object &store, uint64_t folder_id)
 		return nullptr;
 	longid.global_counter = rop_util_get_gc_array(folder_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
-	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
-	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
+	    ext_push.p_guid(longid.guid) != pack_result::ok ||
+	    ext_push.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
 		return NULL;
 	return pbin;
 }
@@ -799,7 +799,7 @@ BINARY *cu_mid_to_entryid(const store_object &store,
 		return NULL;
 	pbin->pv = common_util_alloc(70); /* MS-OXCDATA v19 §2.2.4.2 */
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 70, 0) ||
-	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_msg_eid(tmp_entryid) != pack_result::ok)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -895,8 +895,8 @@ BINARY *cu_mid_to_sk(const store_object &store, uint64_t message_id)
 	longid.guid = store.guid();
 	longid.global_counter = rop_util_get_gc_array(message_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
-	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
-	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
+	    ext_push.p_guid(longid.guid) != pack_result::ok ||
+	    ext_push.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
 		return NULL;
 	return pbin;
 }
@@ -934,7 +934,7 @@ BINARY *cu_xid_to_bin(const XID &xid)
 		return NULL;
 	pbin->pv = common_util_alloc(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
-	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid) != pack_result::ok)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -963,7 +963,7 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 	if (pbin->cb < 17 || pbin->cb > 24)
 		return FALSE;
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	return ext_pull.g_xid(pbin->cb, pxid) == EXT_ERR_SUCCESS ? TRUE : false;
+	return ext_pull.g_xid(pbin->cb, pxid) == pack_result::ok ? TRUE : false;
 }
 
 BINARY *common_util_guid_to_binary(FLATUID guid)
@@ -1285,7 +1285,7 @@ static MOVECOPY_ACTION *cu_cvt_from_zmovecopy(const ZMOVECOPY_ACTION &src)
 		return NULL;
 	ext_pull.init(src.store_eid.pb, src.store_eid.cb,
 		common_util_alloc, EXT_FLAG_UTF16);
-	if (ext_pull.g_store_eid(pstore_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_store_eid(pstore_entryid) != pack_result::ok)
 		return NULL;
 	bool tgt_public = pstore_entryid->wrapped_provider_uid == g_muidStorePublic;
 	if (tgt_public) {
@@ -1399,7 +1399,7 @@ BINARY *cu_to_store_entryid(const store_object &store)
 	pbin->pv = common_util_alloc(572);
 	if (pbin->pb == nullptr ||
 	    !ext_push.init(pbin->pv, 572, EXT_FLAG_UTF16) ||
-	    ext_push.p_store_eid(store_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_store_eid(store_entryid) != pack_result::ok)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -1453,7 +1453,7 @@ static ZMOVECOPY_ACTION *cu_cvt_to_zmovecopy(store_object *pstore, const MOVECOP
 		dst->store_eid.pv = common_util_alloc(1024);
 		if (dst->store_eid.pv == nullptr ||
 		    !ext_push.init(dst->store_eid.pv, 1024, EXT_FLAG_UTF16) ||
-		    ext_push.p_store_eid(*src.pstore_eid) != EXT_ERR_SUCCESS)
+		    ext_push.p_store_eid(*src.pstore_eid) != pack_result::ok)
 			return NULL;	
 		dst->store_eid.cb = ext_push.m_offset;
 		dst->folder_eid = *static_cast<BINARY *>(src.pfolder_eid);

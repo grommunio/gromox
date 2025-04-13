@@ -156,11 +156,11 @@ static BINARY *zcsab_prepend(const BINARY *lower_eid,
 		return nullptr;
 	new_eid->pb = cu_alloc<uint8_t>(255);
 	if (new_eid->pb == nullptr || !ep.init(new_eid->pb, 255, EXT_FLAG_UTF16) ||
-	    ep.p_uint32(0) != EXT_ERR_SUCCESS ||
-	    ep.p_guid(muidZCSAB) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(static_cast<uint32_t>(type)) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(ofs) != EXT_ERR_SUCCESS ||
-	    ep.p_bytes(lower_eid->pb, lower_eid->cb) != EXT_ERR_SUCCESS)
+	    ep.p_uint32(0) != pack_result::ok ||
+	    ep.p_guid(muidZCSAB) != pack_result::ok ||
+	    ep.p_uint32(static_cast<uint32_t>(type)) != pack_result::ok ||
+	    ep.p_uint32(ofs) != pack_result::ok ||
+	    ep.p_bytes(lower_eid->pb, lower_eid->cb) != pack_result::ok)
 		return nullptr;
 	new_eid->cb = ep.m_offset;
 	return new_eid;
@@ -394,7 +394,7 @@ BOOL container_object_fetch_special_property(uint8_t special_type,
 		bv->pv = common_util_alloc(128);
 		if (bv->pv == nullptr ||
 		    !ext_push.init(static_cast<BINARY *>(pvalue)->pb, 128, 0) ||
-		    ext_push.p_abk_eid(ab_entryid) != EXT_ERR_SUCCESS)
+		    ext_push.p_abk_eid(ab_entryid) != pack_result::ok)
 			return FALSE;
 		bv->cb = ext_push.m_offset;
 		*ppvalue = pvalue;

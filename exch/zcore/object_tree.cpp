@@ -122,8 +122,8 @@ static void object_tree_write_root(root_object *prootobj)
 	
 	if (!prootobj->b_touched ||
 	    !ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT) ||
-	    ext_push.p_tpropval_a(*prootobj->pprivate_proplist) != EXT_ERR_SUCCESS ||
-	    ext_push.p_tarray_set(*prootobj->pprof_set) != EXT_ERR_SUCCESS)
+	    ext_push.p_tpropval_a(*prootobj->pprivate_proplist) != pack_result::ok ||
+	    ext_push.p_tarray_set(*prootobj->pprof_set) != pack_result::ok)
 		return;
 	cu_write_storenamedprop(prootobj->maildir, PSETID_Gromox,
 		"zcore_profsect", PT_BINARY, ext_push.m_udata, ext_push.m_offset);

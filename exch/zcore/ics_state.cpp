@@ -101,7 +101,7 @@ BINARY *ics_state::serialize()
 			return NULL;
 	}
 	if (!ext_push.init(nullptr, 0, 0) ||
-	    ext_push.p_tpropval_a(*pproplist) != EXT_ERR_SUCCESS)
+	    ext_push.p_tpropval_a(*pproplist) != pack_result::ok)
 		return NULL;
 	pproplist.reset();
 	auto pbin = cu_alloc<BINARY>();
@@ -127,7 +127,7 @@ BOOL ics_state::deserialize(const BINARY &bin)
 	if (pbin->cb <= 16)
 		return TRUE;
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_tpropval_a(&propvals) != pack_result::ok)
 		return FALSE;	
 	for (unsigned int i = 0; i < propvals.count; ++i) {
 		const auto &pv = propvals.ppropval[i];
