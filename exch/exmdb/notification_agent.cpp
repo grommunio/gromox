@@ -30,7 +30,7 @@ void notification_agent_backward_notify(const char *remote_id,
 		return;
 	}
 	BINARY bin{};
-	if (exmdb_ext_push_db_notify(pnotify, &bin) != EXT_ERR_SUCCESS) {
+	if (exmdb_ext_push_db_notify(pnotify, &bin) != pack_result::ok) {
 		exmdb_parser_insert_router(std::move(prouter));
 		return;	
 	}

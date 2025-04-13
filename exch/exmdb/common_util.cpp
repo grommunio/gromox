@@ -1134,7 +1134,7 @@ static BINARY *cu_fid_to_entryid(sqlite3 *psqlite, uint64_t folder_id)
 		return NULL;
 	pbin->pv = common_util_alloc(46); /* MS-OXCDATA v19 §2.2.4.1 */
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 46, 0) ||
-	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_folder_eid(tmp_entryid) != pack_result::ok)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -1176,7 +1176,7 @@ static BINARY *cu_mid_to_entryid(sqlite3 *psqlite, uint64_t message_id)
 		return NULL;
 	pbin->pv = common_util_alloc(70); /* MS-OXCDATA v19 §2.2.4.2 */
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 70, 0) ||
-	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_msg_eid(tmp_entryid) != pack_result::ok)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -2496,7 +2496,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_guid(v) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_guid(v) != pack_result::ok)
 			return nullptr;
 		return v;
 	}
@@ -2507,7 +2507,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_svreid(v) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_svreid(v) != pack_result::ok)
 			return nullptr;
 		return v;
 	}
@@ -2518,7 +2518,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_restriction(v) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_restriction(v) != pack_result::ok)
 			return nullptr;
 		return v;
 	}
@@ -2529,7 +2529,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_rule_actions(v) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_rule_actions(v) != pack_result::ok)
 			return nullptr;
 		return v;
 	}
@@ -2554,7 +2554,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_uint16_a(v) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_uint16_a(v) != pack_result::ok)
 			return nullptr;
 		if (v->count > 0)
 			return v;
@@ -2569,7 +2569,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_uint32_a(v) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_uint32_a(v) != pack_result::ok)
 			return nullptr;
 		if (v->count > 0)
 			return v;
@@ -2585,7 +2585,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_uint64_a(v) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_uint64_a(v) != pack_result::ok)
 			return nullptr;
 		if (v->count > 0)
 			return v;
@@ -2597,7 +2597,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		if (ar == nullptr)
 			return nullptr;
 		ext_pull.init(sqlite3_column_blob(pstmt, 0), sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
-		if (ext_pull.g_float_a(ar) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_float_a(ar) != pack_result::ok)
 			return nullptr;
 		if (ar->count > 0)
 			return ar;
@@ -2610,7 +2610,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		if (ar == nullptr)
 			return nullptr;
 		ext_pull.init(sqlite3_column_blob(pstmt, 0), sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
-		if (ext_pull.g_double_a(ar) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_double_a(ar) != pack_result::ok)
 			return nullptr;
 		if (ar->count > 0)
 			return ar;
@@ -2625,7 +2625,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_wstr_a(sa) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_wstr_a(sa) != pack_result::ok)
 			return nullptr;
 		if (sa->count == 0) {
 			gpr = GP_SKIP;
@@ -2648,7 +2648,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_guid_a(v) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_guid_a(v) != pack_result::ok)
 			return nullptr;
 		if (v->count > 0)
 			return v;
@@ -2662,7 +2662,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_bin_a(v) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_bin_a(v) != pack_result::ok)
 			return nullptr;
 		if (v->count > 0)
 			return v;
@@ -3411,7 +3411,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		case PT_CLSID: {
 			EXT_PUSH ext_push;
 			if (!ext_push.init(temp_buff, 16, 0) ||
-			    ext_push.p_guid(*static_cast<GUID *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+			    ext_push.p_guid(*static_cast<GUID *>(ppropvals->ppropval[i].pvalue)) != pack_result::ok)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = pstmt.step();
@@ -3421,7 +3421,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			EXT_PUSH ext_push;
 			/* Normally 23 bytes, but who knows */
 			if (!ext_push.init(temp_buff, std::size(temp_buff), 0) ||
-			    ext_push.p_svreid(*static_cast<SVREID *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+			    ext_push.p_svreid(*static_cast<SVREID *>(ppropvals->ppropval[i].pvalue)) != pack_result::ok)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = pstmt.step();
@@ -3430,7 +3430,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		case PT_SRESTRICTION: {
 			EXT_PUSH ext_push;
 			if (!ext_push.init(nullptr, 0, 0) ||
-			    ext_push.p_restriction(*static_cast<RESTRICTION *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+			    ext_push.p_restriction(*static_cast<RESTRICTION *>(ppropvals->ppropval[i].pvalue)) != pack_result::ok)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = pstmt.step();
@@ -3439,7 +3439,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		case PT_ACTIONS: {
 			EXT_PUSH ext_push;
 			if (!ext_push.init(nullptr, 0, 0) ||
-			    ext_push.p_rule_actions(*static_cast<RULE_ACTIONS *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+			    ext_push.p_rule_actions(*static_cast<RULE_ACTIONS *>(ppropvals->ppropval[i].pvalue)) != pack_result::ok)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = pstmt.step();
@@ -3458,7 +3458,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		case PT_MV_SHORT: {
 			EXT_PUSH ext_push;
 			if (!ext_push.init(nullptr, 0, 0) ||
-			    ext_push.p_uint16_a(*static_cast<SHORT_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+			    ext_push.p_uint16_a(*static_cast<SHORT_ARRAY *>(ppropvals->ppropval[i].pvalue)) != pack_result::ok)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = pstmt.step();
@@ -3467,7 +3467,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		case PT_MV_LONG: {
 			EXT_PUSH ext_push;
 			if (!ext_push.init(nullptr, 0, 0) ||
-			    ext_push.p_uint32_a(*static_cast<LONG_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+			    ext_push.p_uint32_a(*static_cast<LONG_ARRAY *>(ppropvals->ppropval[i].pvalue)) != pack_result::ok)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = pstmt.step();
@@ -3478,7 +3478,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		case PT_MV_SYSTIME: {
 			EXT_PUSH ext_push;
 			if (!ext_push.init(nullptr, 0, 0) ||
-			    ext_push.p_uint64_a(*static_cast<LONGLONG_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+			    ext_push.p_uint64_a(*static_cast<LONGLONG_ARRAY *>(ppropvals->ppropval[i].pvalue)) != pack_result::ok)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = pstmt.step();
@@ -3487,7 +3487,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		case PT_MV_FLOAT: {
 			EXT_PUSH ext_push;
 			if (!ext_push.init(nullptr, 0, 0) ||
-			    ext_push.p_float_a(*static_cast<FLOAT_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+			    ext_push.p_float_a(*static_cast<FLOAT_ARRAY *>(ppropvals->ppropval[i].pvalue)) != pack_result::ok)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = pstmt.step();
@@ -3497,7 +3497,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		case PT_MV_APPTIME: {
 			EXT_PUSH ext_push;
 			if (!ext_push.init(nullptr, 0, 0) ||
-			    ext_push.p_double_a(*static_cast<DOUBLE_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+			    ext_push.p_double_a(*static_cast<DOUBLE_ARRAY *>(ppropvals->ppropval[i].pvalue)) != pack_result::ok)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = pstmt.step();
@@ -3522,7 +3522,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			}
 			EXT_PUSH ext_push;
 			if (!ext_push.init(nullptr, 0, 0) ||
-			    ext_push.p_str_a(*pstrings) != EXT_ERR_SUCCESS)
+			    ext_push.p_str_a(*pstrings) != pack_result::ok)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = pstmt.step();
@@ -3531,7 +3531,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		case PT_MV_UNICODE: {
 			EXT_PUSH ext_push;
 			if (!ext_push.init(nullptr, 0, 0) ||
-			    ext_push.p_str_a(*static_cast<STRING_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+			    ext_push.p_str_a(*static_cast<STRING_ARRAY *>(ppropvals->ppropval[i].pvalue)) != pack_result::ok)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = pstmt.step();
@@ -3540,7 +3540,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		case PT_MV_CLSID: {
 			EXT_PUSH ext_push;
 			if (!ext_push.init(nullptr, 0, 0) ||
-			    ext_push.p_guid_a(*static_cast<GUID_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+			    ext_push.p_guid_a(*static_cast<GUID_ARRAY *>(ppropvals->ppropval[i].pvalue)) != pack_result::ok)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = pstmt.step();
@@ -3549,7 +3549,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		case PT_MV_BINARY: {
 			EXT_PUSH ext_push;
 			if (!ext_push.init(nullptr, 0, 0) ||
-			    ext_push.p_bin_a(*static_cast<BINARY_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+			    ext_push.p_bin_a(*static_cast<BINARY_ARRAY *>(ppropvals->ppropval[i].pvalue)) != pack_result::ok)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = pstmt.step();
@@ -3755,7 +3755,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 			return FALSE;
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
-		if (ext_pull.g_restriction(v) != EXT_ERR_SUCCESS) {
+		if (ext_pull.g_restriction(v) != pack_result::ok) {
 			*ppvalue = NULL;
 			return TRUE;
 		}
@@ -3768,7 +3768,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 			return FALSE;
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
-		if (ext_pull.g_rule_actions(v) != EXT_ERR_SUCCESS) {
+		if (ext_pull.g_rule_actions(v) != pack_result::ok) {
 			*ppvalue = NULL;
 			return TRUE;
 		}
@@ -3918,8 +3918,8 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 	if (pbin->cb < 20)
 		return FALSE;
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
-	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_uint32(&flags) != pack_result::ok || flags != 0 ||
+	    ext_pull.g_guid(&provider_uid) != pack_result::ok)
 		return FALSE;
 	/* Tail functions will use EXT_PULL::*_eid, which parse a full EID */
 	ext_pull.m_offset = 0;
@@ -3957,7 +3957,7 @@ BINARY* common_util_to_private_folder_entryid(
 		return NULL;
 	pbin->pv = common_util_alloc(46); /* MS-OXCDATA v19 §2.2.4.1 */
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 46, 0) ||
-	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_folder_eid(tmp_entryid) != pack_result::ok)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -3992,7 +3992,7 @@ BINARY* common_util_to_private_message_entryid(
 		return NULL;
 	pbin->pv = common_util_alloc(70); /* MS-OXCDATA v19 §2.2.4.2 */
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 70, 0) ||
-	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_msg_eid(tmp_entryid) != pack_result::ok)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -4616,7 +4616,7 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 		return TRUE;
 	}
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS) {
+	if (ext_pull.g_abk_eid(&ab_entryid) != pack_result::ok) {
 		*pb_owner = false;
 		return TRUE;
 	}
@@ -5079,7 +5079,7 @@ BINARY *cu_xid_to_bin(const XID &xid)
 		return NULL;
 	pbin->pv = common_util_alloc(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
-	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid) != pack_result::ok)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -5092,7 +5092,7 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 	if (pbin->cb < 17 || pbin->cb > 24)
 		return FALSE;
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	return ext_pull.g_xid(pbin->cb, pxid) == EXT_ERR_SUCCESS ? TRUE : false;
+	return ext_pull.g_xid(pbin->cb, pxid) == pack_result::ok ? TRUE : false;
 }
 
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
@@ -5161,14 +5161,14 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt, int bind_index,
 		break;
 	case PT_CLSID:
 		if (!ext_push.init(temp_buff, 16, 0) ||
-		    ext_push.p_guid(*static_cast<const GUID *>(pvalue)) != EXT_ERR_SUCCESS)
+		    ext_push.p_guid(*static_cast<const GUID *>(pvalue)) != pack_result::ok)
 			return FALSE;
 		sqlite3_bind_blob(pstmt, bind_index, ext_push.m_udata, ext_push.m_offset, SQLITE_TRANSIENT);
 		break;
 	case PT_SVREID:
 		/* Normally 23 bytes */
 		if (!ext_push.init(temp_buff, std::size(temp_buff), 0) ||
-		    ext_push.p_svreid(*static_cast<const SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
+		    ext_push.p_svreid(*static_cast<const SVREID *>(pvalue)) != pack_result::ok)
 			return FALSE;
 		sqlite3_bind_blob(pstmt, bind_index, ext_push.m_udata, ext_push.m_offset, SQLITE_TRANSIENT);
 		break;
@@ -5270,7 +5270,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		auto v = cu_alloc<SVREID>();
 		if (v == nullptr)
 			return NULL;
-		if (ext_pull.g_svreid(v) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_svreid(v) != pack_result::ok)
 			return NULL;
 		return v;
 	}

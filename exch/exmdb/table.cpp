@@ -3108,7 +3108,7 @@ BOOL exmdb_server::store_table_state(const char *dir,
 	sqlite3_bind_int64(pstmt, 2, ptnode->table_flags);
 	if (NULL != ptnode->psorts && 0 != ptnode->psorts->ccategories) {
 		if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-		    ext_push.p_sortorder_set(*ptnode->psorts) != EXT_ERR_SUCCESS)
+		    ext_push.p_sortorder_set(*ptnode->psorts) != pack_result::ok)
 			return FALSE;
 		sqlite3_bind_blob(pstmt, 3, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 	}
@@ -3360,7 +3360,7 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 		}
 	} else {
 		if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-		    ext_push.p_sortorder_set(*ptnode->psorts) != EXT_ERR_SUCCESS) {
+		    ext_push.p_sortorder_set(*ptnode->psorts) != pack_result::ok) {
 			pstmt.finalize();
 			goto RESTORE_POSITION;
 		}

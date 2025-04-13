@@ -1145,11 +1145,11 @@ BOOL exmdb_server::save_change_indices(const char *dir, uint64_t message_id,
 	sqlite3_bind_int64(pstmt, 1, mid_val);
 	sqlite3_bind_int64(pstmt, 2, rop_util_get_gc_value(cn));
 	if (!ext_push.init(indices_buff.get(), idbuff_size, 0) ||
-	    ext_push.p_proptag_a(*pindices) != EXT_ERR_SUCCESS)
+	    ext_push.p_proptag_a(*pindices) != pack_result::ok)
 		return false;
 	sqlite3_bind_blob(pstmt, 3, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 	if (!ext_push.init(proptags_buff.get(), idbuff_size, 0) ||
-	    ext_push.p_proptag_a(*pungroup_proptags) != EXT_ERR_SUCCESS)
+	    ext_push.p_proptag_a(*pungroup_proptags) != pack_result::ok)
 		return false;
 	sqlite3_bind_blob(pstmt, 4, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 	return pstmt.step() == SQLITE_DONE ? TRUE : false;
@@ -1193,7 +1193,7 @@ BOOL exmdb_server::get_change_indices(const char *dir,
 			ext_pull.init(sqlite3_column_blob(pstmt, 1),
 				sqlite3_column_bytes(pstmt, 1),
 				common_util_alloc, 0);
-			if (ext_pull.g_proptag_a(&tmp_indices) != EXT_ERR_SUCCESS)
+			if (ext_pull.g_proptag_a(&tmp_indices) != pack_result::ok)
 				return FALSE;
 			for (unsigned int i = 0; i < tmp_indices.count; ++i)
 				if (!proptag_array_append(ptmp_indices.get(),
@@ -1204,7 +1204,7 @@ BOOL exmdb_server::get_change_indices(const char *dir,
 			ext_pull.init(sqlite3_column_blob(pstmt, 2),
 				sqlite3_column_bytes(pstmt, 2),
 				common_util_alloc, 0);
-			if (ext_pull.g_proptag_a(&tmp_proptags) != EXT_ERR_SUCCESS)
+			if (ext_pull.g_proptag_a(&tmp_proptags) != pack_result::ok)
 				return FALSE;
 			for (unsigned int i = 0; i < tmp_proptags.count; ++i)
 				if (!proptag_array_append(ptmp_proptags.get(),
@@ -1645,7 +1645,7 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 		if (pbin->pv == nullptr)
 			return ecServerOOM;
 		if (!ext_push.init(pbin->pb, 16, 0) ||
-		    ext_push.p_guid(GUID::random_new()) != EXT_ERR_SUCCESS)
+		    ext_push.p_guid(GUID::random_new()) != pack_result::ok)
 			return ecError;
 		dprop.emplace_back(PR_SEARCH_KEY, pbin);
 	}
@@ -1721,7 +1721,7 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 				return ecError;
 		} else {
 			if (!ext_push.init(new_cvid->pb, 16, 0) ||
-			    ext_push.p_guid(GUID::random_new()) != EXT_ERR_SUCCESS)
+			    ext_push.p_guid(GUID::random_new()) != pack_result::ok)
 				return ecError;
 		}
 	}
@@ -1736,12 +1736,12 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 			return ecServerOOM;
 		auto nt_time = rop_util_current_nttime();
 		if (!ext_push.init(new_cvindex->pb, 27, 0) ||
-		    ext_push.p_uint8(1) != EXT_ERR_SUCCESS ||
-		    ext_push.p_uint32(nt_time >> 32) != EXT_ERR_SUCCESS ||
-		    ext_push.p_uint8((nt_time >> 24) & 0xff) != EXT_ERR_SUCCESS ||
-		    ext_push.p_bytes(new_cvid->pb, 16) != EXT_ERR_SUCCESS ||
-		    ext_push.p_uint32(0xFFFFFFFF) != EXT_ERR_SUCCESS ||
-		    ext_push.p_uint8(nt_time & 0xFF) != EXT_ERR_SUCCESS)
+		    ext_push.p_uint8(1) != pack_result::ok ||
+		    ext_push.p_uint32(nt_time >> 32) != pack_result::ok ||
+		    ext_push.p_uint8((nt_time >> 24) & 0xff) != pack_result::ok ||
+		    ext_push.p_bytes(new_cvid->pb, 16) != pack_result::ok ||
+		    ext_push.p_uint32(0xFFFFFFFF) != pack_result::ok ||
+		    ext_push.p_uint8(nt_time & 0xFF) != pack_result::ok)
 			return ecError;
 		new_cvindex->cb = ext_push.m_offset;
 		dprop.emplace_back(PR_CONVERSATION_INDEX, new_cvindex);
@@ -2844,7 +2844,7 @@ static BOOL message_make_dam(const rulexec_in &rp,
 			tmp_ids[id_count++] = tmp_eid;
 	}
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
-	    ext_push.p_rule_actions(actions) != EXT_ERR_SUCCESS)
+	    ext_push.p_rule_actions(actions) != pack_result::ok)
 		return FALSE;
 	BINARY tmp_bin;
 	tmp_bin.pb = ext_push.m_udata;
@@ -3544,8 +3544,8 @@ static ec_error_t opx_process(const rulexec_in &rp,
 		EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 	NAMEDPROPERTY_INFO propname_info;
 	RESTRICTION restriction;
-	if (ext_pull.g_namedprop_info(&propname_info) != EXT_ERR_SUCCESS ||
-	    ext_pull.g_restriction(&restriction) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_namedprop_info(&propname_info) != pack_result::ok ||
+	    ext_pull.g_restriction(&restriction) != pack_result::ok)
 		return ecSuccess;
 	if (!message_replace_restriction_propid(rp.sqlite, &propname_info, &restriction))
 		return ecError;
@@ -3562,10 +3562,10 @@ static ec_error_t opx_process(const rulexec_in &rp,
 		EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 	EXT_RULE_ACTIONS ext_actions;
 	uint32_t version = 0;
-	if (ext_pull.g_namedprop_info(&propname_info) != EXT_ERR_SUCCESS ||
-	    ext_pull.g_uint32(&version) != EXT_ERR_SUCCESS ||
+	if (ext_pull.g_namedprop_info(&propname_info) != pack_result::ok ||
+	    ext_pull.g_uint32(&version) != pack_result::ok ||
 	    version != 1 ||
-	    ext_pull.g_ext_rule_actions(&ext_actions) != EXT_ERR_SUCCESS)
+	    ext_pull.g_ext_rule_actions(&ext_actions) != pack_result::ok)
 		return ecSuccess;
 	if (!message_replace_actions_propid(rp.sqlite, &propname_info, &ext_actions))
 		return ecError;

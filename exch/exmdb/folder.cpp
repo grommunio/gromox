@@ -1793,7 +1793,7 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 			sqlite3_column_bytes(pstmt, 2), common_util_alloc, 0);
 		*pprestriction = cu_alloc<RESTRICTION>();
 		if (*pprestriction == nullptr ||
-		    ext_pull.g_restriction(*pprestriction) != EXT_ERR_SUCCESS)
+		    ext_pull.g_restriction(*pprestriction) != pack_result::ok)
 			return FALSE;
 	}
 	pstmt.finalize();
@@ -1890,7 +1890,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 		return false;
 	if (NULL != prestriction) {
 		if (!ext_push.init(tmp_buff.get(), buff_size, 0) ||
-		    ext_push.p_restriction(*prestriction) != EXT_ERR_SUCCESS)
+		    ext_push.p_restriction(*prestriction) != pack_result::ok)
 			return false;
 		snprintf(sql_string, std::size(sql_string), "UPDATE folders SET "
 		          "search_criteria=? WHERE folder_id=%llu", LLU{fid_val});
@@ -1916,7 +1916,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 			return false;
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
-		if (ext_pull.g_restriction(deconst(prestriction)) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_restriction(deconst(prestriction)) != pack_result::ok)
 			return false;
 		pstmt.finalize();
 	}
@@ -2296,14 +2296,14 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			if (pcondition == nullptr)
 				continue;
 			if (!ext_push.init(condition_buff.get(), bigbufsiz, 0) ||
-			    ext_push.p_restriction(*pcondition) != EXT_ERR_SUCCESS)
+			    ext_push.p_restriction(*pcondition) != pack_result::ok)
 				return false;
 			int condition_len = ext_push.m_offset;
 			auto paction = prow[i].propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 			if (paction == nullptr)
 				continue;
 			if (!ext_push.init(action_buff.get(), bigbufsiz, 0) ||
-			    ext_push.p_rule_actions(*paction) != EXT_ERR_SUCCESS)
+			    ext_push.p_rule_actions(*paction) != pack_result::ok)
 				return false;
 			int action_len = ext_push.m_offset;
 			if (NULL == pstmt) {
@@ -2411,7 +2411,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			auto pcondition = prow[i].propvals.get<RESTRICTION>(PR_RULE_CONDITION);
 			if (NULL != pcondition) {
 				if (!ext_push.init(condition_buff.get(), bigbufsiz, 0) ||
-				    ext_push.p_restriction(*pcondition) != EXT_ERR_SUCCESS)
+				    ext_push.p_restriction(*pcondition) != pack_result::ok)
 					return false;
 				int condition_len = ext_push.m_offset;
 				snprintf(sql_string, std::size(sql_string), "UPDATE rules SET "
@@ -2428,7 +2428,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			auto paction = prow[i].propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 			if (NULL != paction) {
 				if (!ext_push.init(action_buff.get(), bigbufsiz, 0) ||
-				    ext_push.p_rule_actions(*paction) != EXT_ERR_SUCCESS)
+				    ext_push.p_rule_actions(*paction) != pack_result::ok)
 					return false;
 				int action_len = ext_push.m_offset;
 				snprintf(sql_string, std::size(sql_string), "UPDATE rules SET "
