@@ -130,7 +130,7 @@
 #
 #    (the "XXX" where placed on purpose as a safe option)
 #
-
+#
 # Variables to be set by the user of this script
 #
 $GrommunioServer = "grommunio.example.com"
@@ -149,12 +149,17 @@ $LinuxUser = "root"
 $LinuxUserPWD = "Secret_root_Password"
 # For ssh key based authentication via peagent
 # #$LinuxUserPWD = ""
+# $LinuxUserSSHKey = "C:\grommunio\msx01.ppk"
+# if (Test-Path $LinuxUserSSHKey) {
+# 	.\peagent.exe  $LinuxUserSSHKey
+# }
 
 # Import only these mailboxes, an array of mail addresses, case insensitive,
 # $IgnoreMboxes will be honored.
 # To import all mailboxes leave empty, to import only some mailboxes, populate
+# $ImportMboxes.
+#[string] $ImportMboxes = 'TestI1@example.com','Testi2@example.com'
 [string] $ImportMboxes = ''
-
 # TODO: Those could all be called via plink.exe
 # To populate from the grommunio host if users are already created:
 #  gromox-mbop foreach.mb echo-username > /mnt/pst/exchange2grommunio.import
@@ -166,7 +171,6 @@ if ((! $ImportMboxes) -and (Test-Path -Path $ImportFile)) {$ImportMboxes = Get-C
 # Ignore these mailboxes, an array of mail addresses, case insensitive
 # [string] $IgnoreMboxes = 'TestX1@example.com','Testx2@example.com'
 [string] $IgnoreMboxes = ''
-
 # To populate this file with alread imported Mailboxes:
 #  awk '/Import of mailbox.*done./ {print $7}' /mnt/pst/exchange2grommunio.log > /mnt/pst/exchange2grommunio.ignore
 # This rule will only apply if you haven't set anything above and the file
@@ -375,6 +379,7 @@ function Test-Peagent
 
 # Test if the Exchange cmdlets are loaded
 #
+$Exchange_Newer_2016_CU6 = $true
 function Test-Exchange
 {
 	$Exchange_Cmdlets = $false
@@ -395,7 +400,6 @@ function Test-Exchange
 		exit 1
 	}
 	# https://learn.microsoft.com/en-us/exchange/new-features/build-numbers-and-release-dates
-	$Exchange_Newer_2016_CU6 = $true
 	$ExVer=(Get-ExchangeServer).AdminDisplayVersion
 	if (($ExVer.Major -eq 15) -and ($ExVer.Minor -eq 1) -and ($ExVer.Build -lt 1261)) { $Exchange_Newer_2016_CU6 = $false }
 	if (($ExVer.Major -eq 15) -and ($ExVer.Minor -lt 1)) { $Exchange_Newer_2016_CU6 = $false }
@@ -496,7 +500,7 @@ if ($LinuxUserPWD -eq $null) {
 	Test-Peagent
 }
 Test-Exchange
-Linux-mount
+Linux-Mount
 
 # If we get a create error, do not import the mailbox.
 #
@@ -562,26 +566,18 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		#
 		# Exchange 2010 only supports "Normal, High" for the -Priority parameter
 		#
-		$MAILBOXOPT = @(
-			if ($Exchange_Newer_2016_CU6) {
-				Mailbox = "$Mailbox.Alias"
-			} else {
-				Mailbox = "$Mailbox"
-			}
-		)
-		$EXPORTOPTS = @(
-			FilePath = "$WinSharedFolder\$MigMBox.pst"
-			Priority = "$MigrationPriority"
-		)
-		$OPTS
-		New-MailboxExportRequest @EXPORTOPTS @MAILBOXOPT | Format-Table -HideTableHeaders
+		if ($Exchange_Newer_2016_CU6) {
+			$Mailbox = $Mailbox.Alias
+		}
+
+		New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority| Format-Table -HideTableHeaders
 		Write-Host -NoNewline "[Wait] " -fore yellow
 		$MailboxesTotal++
 
 		# Wait until the .pst file is created.
 		# We probably should include a timeout to detect hanging exports.
 		$nTimeout = 0
-		while ((Get-MailboxExportRequest @MAILBOXOPT).Status -ne "Completed") {
+		while ((Get-MailboxExportRequest $Mailbox).Status -ne "Completed") {
 			Start-Sleep -s 2
 			$nTimeout += 2
 			if ($nTimeout % 60 -eq 0) {
@@ -783,3 +779,4 @@ Write-MLog "" white
 Write-MLog "Remove possibly orphaned .pst files from $WinSharedFolder" yellow
 Write-MLog "Import finished." green
 Write-MLog "" white
+
