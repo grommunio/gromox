@@ -146,9 +146,10 @@ $LinuxSharedFolder = "/mnt/<shared folder name>"
 $LinuxUser = "root"
 
 # The $LinuxUser password
-$LinuxUserPWD = "Secret_root_Password"
+# $LinuxUserPWD = "Secret_root_Password"
 # For ssh key based authentication via peagent
 # #$LinuxUserPWD = ""
+$LinuxUserSSHKey = ""
 
 # Import only these mailboxes, an array of mail addresses, case insensitive,
 # $IgnoreMboxes will be honored.
@@ -496,7 +497,7 @@ if ($LinuxUserPWD -eq $null) {
 	Test-Peagent
 }
 Test-Exchange
-Linux-mount
+Linux-Mount
 
 # If we get a create error, do not import the mailbox.
 #
