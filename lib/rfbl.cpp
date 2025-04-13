@@ -1787,7 +1787,12 @@ errno_t canonical_hostname(std::string &out) try
 
 int ece2nerrno(ec_error_t e)
 {
-	switch (e) {
+#ifdef COMPILE_DIAG
+	switch (static_cast<uint32_t>(e))
+#else
+	switch (e)
+#endif
+	{
 	case ecSuccess: return 0;
 	case ecMAPIOOM: [[fallthrough]];
 	case ecServerOOM: return -ENOMEM;

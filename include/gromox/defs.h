@@ -8,7 +8,6 @@
 #endif
 #include <string>
 #include <type_traits>
-#include <gromox/mapierr.hpp>
 #define FMODE_PRIVATE 0660U
 #define FMODE_PUBLIC 0666U
 #define SOCKET_TIMEOUT 60
@@ -31,6 +30,8 @@
 	inline size_t size() const { return (count); } \
 	inline bool empty() const { return (count) == 0; } \
 	inline void push_back(const value_type &v) { (memb)[(count)++] = v; }
+
+#include <gromox/mapierr.hpp>
 
 /*
  * The timezone column in the user database ought to be never empty. Having an
