@@ -77,6 +77,7 @@ AS_IF([test -z "$NO_VSYM"], [
 	my_CFLAGS="$my_CFLAGS -fvisibility=hidden"
 	my_CXXFLAGS="$my_CXXFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
 ])
+AS_IF([test "$with_gnu_ld" != yes], [NO_VSYM=1])
 AC_SUBST([NO_VSYM])
 
 
