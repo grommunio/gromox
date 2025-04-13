@@ -410,30 +410,6 @@ char *common_util_dup(std::string_view sv)
 	return out;
 }
 
-ZNOTIFICATION::ZNOTIFICATION(ZNOTIFICATION &&o) :
-	event_type(o.event_type), pnotification_data(std::move(o.pnotification_data))
-{
-	o.pnotification_data = nullptr;
-}
-
-void ZNOTIFICATION::clear()
-{
-	if (event_type == NF_NEW_MAIL)
-		delete static_cast<NEWMAIL_ZNOTIFICATION *>(pnotification_data);
-	else
-		delete static_cast<OBJECT_ZNOTIFICATION *>(pnotification_data);
-	pnotification_data = nullptr;
-}
-
-ZNOTIFICATION &ZNOTIFICATION::operator=(ZNOTIFICATION &&o)
-{
-	clear();
-	event_type = o.event_type;
-	pnotification_data = std::move(o.pnotification_data);
-	o.pnotification_data = nullptr;
-	return *this;
-}
-
 BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
     char *pessdn, size_t dsize)
 {

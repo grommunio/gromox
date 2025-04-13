@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <gromox/mapidefs.h>
+#include <gromox/mapi_types.hpp>
 
 enum class zs_objtype : uint8_t {
 	/* Zend resource type groups */
@@ -26,10 +27,31 @@ struct GX_EXPORT OBJECT_ZNOTIFICATION {
 
 struct GX_EXPORT ZNOTIFICATION {
 	ZNOTIFICATION() = default;
-	ZNOTIFICATION(ZNOTIFICATION &&);
+	ZNOTIFICATION(ZNOTIFICATION &&o) :
+		event_type(o.event_type), pnotification_data(std::move(o.pnotification_data))
+	{
+		o.pnotification_data = nullptr;
+	}
+
 	~ZNOTIFICATION() { clear(); }
-	ZNOTIFICATION &operator=(ZNOTIFICATION &&);
-	void clear();
+
+	ZNOTIFICATION &operator=(ZNOTIFICATION &&o)
+	{
+		clear();
+		event_type = o.event_type;
+		pnotification_data = std::move(o.pnotification_data);
+		o.pnotification_data = nullptr;
+		return *this;
+	}
+
+	void clear()
+	{
+		if (event_type == NF_NEW_MAIL)
+			delete static_cast<NEWMAIL_ZNOTIFICATION *>(pnotification_data);
+		else
+			delete static_cast<OBJECT_ZNOTIFICATION *>(pnotification_data);
+		pnotification_data = nullptr;
+	}
 
 	uint32_t event_type = 0;
 	void *pnotification_data = nullptr; /* NEWMAIL_ZNOTIFICATION or OBJECT_ZNOTIFICATION */
