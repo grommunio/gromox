@@ -478,18 +478,18 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 		if (cond != nullptr && cond->cb != 0) {
 			ep.init(cond->pb, cond->cb, exmdb_rpc_alloc,
 				EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
-			if (ep.g_namedprop_info(&rule.xcnames) != EXT_ERR_SUCCESS ||
-			    ep.g_restriction(&rule.xcond) != EXT_ERR_SUCCESS)
+			if (ep.g_namedprop_info(&rule.xcnames) != pack_result::ok ||
+			    ep.g_restriction(&rule.xcond) != pack_result::ok)
 				return ecError;
 			rule.cond = &rule.xcond;
 		}
 		uint32_t version = 0;
 		ep.init(act->pb, act->cb, exmdb_rpc_alloc,
 			EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
-		if (ep.g_namedprop_info(&rule.xanames) != EXT_ERR_SUCCESS ||
-		    ep.g_uint32(&version) != EXT_ERR_SUCCESS ||
+		if (ep.g_namedprop_info(&rule.xanames) != pack_result::ok ||
+		    ep.g_uint32(&version) != pack_result::ok ||
 		    version != 1 ||
-		    ep.g_ext_rule_actions(&rule.xact) != EXT_ERR_SUCCESS)
+		    ep.g_ext_rule_actions(&rule.xact) != pack_result::ok)
 			return ecError;
 		rule_list.emplace_back(std::move(rule));
 	}
@@ -795,7 +795,7 @@ static BINARY *xid_to_bin(const XID &xid)
 	if (bin->pv == nullptr)
 		return nullptr;
 	if (!ext_push.init(bin->pv, 24, 0) ||
-	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid) != pack_result::ok)
 		return nullptr;
 	bin->cb = ext_push.m_offset;
 	return bin;

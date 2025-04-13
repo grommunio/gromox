@@ -25,7 +25,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return ecError; } while (false)
+#define QRF(expr) do { if (pack_result{expr} != pack_result::ok) return ecError; } while (false)
 #define ERF(expr) do { ec_error_t klfdv{expr}; if (klfdv != ecSuccess) return klfdv; } while (false)
 #define RTF_PARAGRAPHALIGN_DEFAULT			0
 #define RTF_PARAGRAPHALIGN_LEFT				1

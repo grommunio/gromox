@@ -291,7 +291,7 @@ static bool oxcical_tzdefinition_to_binary(
 		return false;
 	for (size_t i = 0; i < ptz_definition->crules; ++i)
 		ptz_definition->prules[i].flags = tzrule_flags;
-	if (ext_push.p_tzdef(*ptz_definition) != EXT_ERR_SUCCESS)
+	if (ext_push.p_tzdef(*ptz_definition) != pack_result::ok)
 		return false;
 	pbin->cb = ext_push.m_offset;
 	return true;
@@ -303,7 +303,7 @@ static bool oxcical_timezonestruct_to_binary(
 	EXT_PUSH ext_push;
 
 	if (!ext_push.init(pbin->pb, 256, 0) ||
-	    ext_push.p_tzstruct(*ptzstruct) != EXT_ERR_SUCCESS)
+	    ext_push.p_tzstruct(*ptzstruct) != pack_result::ok)
 		return false;
 	pbin->cb = ext_push.m_offset;
 	return true;
@@ -1127,7 +1127,7 @@ static bool oxcical_parse_uid(const ical_component &main_event,
 	if (strncasecmp(pvalue, EncodedGlobalId_hex, 32) == 0 &&
 	    decode_hex_binary(pvalue, tmp_buff, std::size(tmp_buff))) {
 		ext_pull.init(tmp_buff, tmp_len / 2, alloc, 0);
-		if (ext_pull.g_goid(&globalobjectid) == EXT_ERR_SUCCESS &&
+		if (ext_pull.g_goid(&globalobjectid) == pack_result::ok &&
 		    ext_pull.m_offset == tmp_len / 2) {
 			if (globalobjectid.year < 1601 || globalobjectid.year > 4500 ||
 				globalobjectid.month > 12 || 0 == globalobjectid.month ||
@@ -1155,7 +1155,7 @@ static bool oxcical_parse_uid(const ical_component &main_event,
 	memcpy(globalobjectid.data.pb + 12, pvalue, tmp_len);
  MAKE_GLOBALOBJID:
 	if (!ext_push.init(tmp_buff, 1024, 0) ||
-	    ext_push.p_goid(globalobjectid) != EXT_ERR_SUCCESS)
+	    ext_push.p_goid(globalobjectid) != pack_result::ok)
 		return false;
 	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pc = tmp_buff;
@@ -1169,7 +1169,7 @@ static bool oxcical_parse_uid(const ical_component &main_event,
 	globalobjectid.month = 0;
 	globalobjectid.day = 0;
 	if (!ext_push.init(tmp_buff, 1024, 0) ||
-	    ext_push.p_goid(globalobjectid) != EXT_ERR_SUCCESS)
+	    ext_push.p_goid(globalobjectid) != pack_result::ok)
 		return false;
 	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pc = tmp_buff;
@@ -1528,7 +1528,7 @@ static bool oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 	EXT_PUSH ext_push;
 
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
-	    ext_push.p_apptrecpat(*apr) != EXT_ERR_SUCCESS)
+	    ext_push.p_apptrecpat(*apr) != pack_result::ok)
 		return false;
 	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pb = ext_push.m_udata;
@@ -3114,7 +3114,7 @@ static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
 		EXT_PULL ext_pull;
 
 		ext_pull.init(bin->pb, bin->cb, alloc, 0);
-		if (ext_pull.g_goid(&goid) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_goid(&goid) != pack_result::ok)
 			return "E-2215: PidLidGlobalObjectId contents not recognized";
 		if (goid.data.pb != nullptr && goid.data.cb >= 12 &&
 		    memcmp(goid.data.pb, ThirdPartyGlobalId, 12) == 0) {
@@ -3133,7 +3133,7 @@ static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
 			goid.month = 0;
 			goid.day = 0;
 			if (!ext_push.init(buf, sizeof(buf), 0) ||
-			    ext_push.p_goid(goid) != EXT_ERR_SUCCESS)
+			    ext_push.p_goid(goid) != pack_result::ok)
 				return "E-2223";
 			if (!encode_hex_binary(buf, ext_push.m_offset,
 			    buf1, sizeof(buf1)))
@@ -3148,9 +3148,9 @@ static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
 		goid.data.pc = buf1;
 		EXT_PUSH ext_push;
 		if (!ext_push.init(buf1, 16, 0) ||
-		    ext_push.p_guid(GUID::random_new()) != EXT_ERR_SUCCESS ||
+		    ext_push.p_guid(GUID::random_new()) != pack_result::ok ||
 		    !ext_push.init(buf, std::size(buf), 0) ||
-		    ext_push.p_goid(goid) != EXT_ERR_SUCCESS)
+		    ext_push.p_goid(goid) != pack_result::ok)
 			return "E-2224";
 		if (!encode_hex_binary(buf, ext_push.m_offset, buf1,
 		    sizeof(buf1)))
@@ -3216,7 +3216,7 @@ static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
 					GLOBALOBJECTID globalobjectid;
 
 					ext_pull.init(bin->pb, bin->cb, alloc, 0);
-					if (ext_pull.g_goid(&globalobjectid) != EXT_ERR_SUCCESS)
+					if (ext_pull.g_goid(&globalobjectid) != pack_result::ok)
 						return "E-2218: PidLidGlobalObjectId contents not recognized";
 					itime.year = globalobjectid.year;
 					itime.month = globalobjectid.month;
@@ -3479,7 +3479,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		if (bin != nullptr) {
 			EXT_PULL ext_pull;
 			ext_pull.init(bin->pb, bin->cb, alloc, EXT_FLAG_UTF16);
-			if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
+			if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok)
 				return "E-2204: PidLidAppointmentRecur contents not recognized";
 			b_recurrence = true;
 		}
@@ -3512,7 +3512,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				TIMEZONESTRUCT tz_struct;
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
-				if (ext_pull.g_tzdef(&tz_definition) != EXT_ERR_SUCCESS)
+				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
 					return "E-2207: PidLidAppointmentTimeZoneDefinitionRecur contents not recognized";
 				tzid = tz_definition.keyname;
 				oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
@@ -3531,7 +3531,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				TIMEZONESTRUCT tz_struct;
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
-				if (ext_pull.g_tzdef(&tz_definition) != EXT_ERR_SUCCESS)
+				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
 					return "E-2209: PidLidAppointmentTimeZoneDefinitionEndDisplay contents not recognized";
 				tzid = tz_definition.keyname;
 				oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
@@ -3551,7 +3551,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				TIMEZONESTRUCT tz_struct;
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
-				if (ext_pull.g_tzstruct(&tz_struct) != EXT_ERR_SUCCESS) {
+				if (ext_pull.g_tzstruct(&tz_struct) != pack_result::ok) {
 					mlog(LV_ERR, "E-2205: %s: PidLidTimeZoneStruct contents not recognized so TZ won't be exported", log_id);
 				} else {
 					ptz_component = oxcical_export_timezone(

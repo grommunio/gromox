@@ -206,7 +206,7 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16))
 		return false;
 	auto status = ext_push.p_oneoff_eid(tmp_entry);
-	if (EXT_ERR_CHARCNV == status) {
+	if (status == pack_result::charconv) {
 		tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;
 		status = ext_push.p_oneoff_eid(tmp_entry);
 	}
@@ -225,7 +225,7 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 	tmp_entryid.type = DT_MAILUSER;
 	tmp_entryid.px500dn = deconst(pessdn);
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_abk_eid(tmp_entryid) != pack_result::ok)
 		return false;
 	pbin->cb = ext_push.m_offset;
 	return TRUE;
@@ -508,10 +508,10 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 	count = 0;
 	if (!ext_push.init(bin_buff.get(), 256 * 1024, EXT_FLAG_UTF16))
 		return false;
-	if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
+	if (ext_push.advance(sizeof(uint32_t)) != pack_result::ok)
 		return FALSE;
 	uint32_t offset = ext_push.m_offset;
-	if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
+	if (ext_push.advance(sizeof(uint32_t)) != pack_result::ok)
 		return FALSE;
 	tmp_entry.flags = 0;
 	tmp_entry.version = 0;
@@ -543,11 +543,11 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 		}
 
 		uint32_t offset1 = ext_push.m_offset;
-		if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
+		if (ext_push.advance(sizeof(uint32_t)) != pack_result::ok)
 			return FALSE;
 		tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
 		auto status = ext_push.p_oneoff_eid(tmp_entry);
-		if (EXT_ERR_CHARCNV == status) {
+		if (status == pack_result::charconv) {
 			ext_push.m_offset = offset1 + sizeof(uint32_t);
 			tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;
 			status = ext_push.p_oneoff_eid(tmp_entry);
@@ -557,11 +557,11 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 		uint32_t offset2 = ext_push.m_offset;
 		uint32_t bytes = offset2 - (offset1 + sizeof(uint32_t));
 		ext_push.m_offset = offset1;
-		if (ext_push.p_uint32(bytes) != EXT_ERR_SUCCESS)
+		if (ext_push.p_uint32(bytes) != pack_result::ok)
 			return FALSE;
 		ext_push.m_offset = offset2;
 		pad_len = ((bytes + 3) & ~3) - bytes;
-		if (ext_push.p_bytes(pad_bytes, pad_len) != EXT_ERR_SUCCESS)
+		if (ext_push.p_bytes(pad_bytes, pad_len) != pack_result::ok)
 			return FALSE;
 		count++;
 	}
@@ -571,10 +571,10 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 	tmp_bin.pb = bin_buff.get();
 	uint32_t bytes = ext_push.m_offset - (offset + sizeof(uint32_t));
 	ext_push.m_offset = 0;
-	if (ext_push.p_uint32(count) != EXT_ERR_SUCCESS)
+	if (ext_push.p_uint32(count) != pack_result::ok)
 		return FALSE;
 	ext_push.m_offset = offset;
-	if (ext_push.p_uint32(bytes) != EXT_ERR_SUCCESS)
+	if (ext_push.p_uint32(bytes) != pack_result::ok)
 		return FALSE;
 	if (pproplist->set(PR_REPLY_RECIPIENT_ENTRIES, &tmp_bin) != ecSuccess)
 		return FALSE;
@@ -2937,7 +2937,7 @@ static bool oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 	 * part of a name. So we ignore that property altogether.
 	 */
 	ext_pull.init(pbin->pb, pbin->cb, malloc, EXT_FLAG_WCOUNT);
-	if (ext_pull.g_flatentry_a(&address_array) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_flatentry_a(&address_array) != pack_result::ok)
 		return FALSE;
 	for (size_t i = 0; i < address_array.count; ++i) {
 		EXT_PULL ep2;
@@ -2949,7 +2949,7 @@ static bool oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 		});
 		ep2.init(address_array.pbin[i].pb, address_array.pbin[i].cb,
 			malloc, EXT_FLAG_UTF16);
-		if (ep2.g_oneoff_eid(&oo) != EXT_ERR_SUCCESS ||
+		if (ep2.g_oneoff_eid(&oo) != pack_result::ok ||
 		    strcasecmp(oo.paddress_type, "SMTP") != 0) {
 			mlog(LV_WARN, "W-1964: skipping non-SMTP reply-to entry");
 			continue;

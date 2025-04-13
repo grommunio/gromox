@@ -164,10 +164,10 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	}
 	BINARY bin;
 	if (b_listen) {
-		if (exmdb_ext_push_request(&rql, &bin) != EXT_ERR_SUCCESS)
+		if (exmdb_ext_push_request(&rql, &bin) != pack_result::ok)
 			return -1;
 	} else {
-		if (exmdb_ext_push_request(&rqc, &bin) != EXT_ERR_SUCCESS)
+		if (exmdb_ext_push_request(&rqc, &bin) != pack_result::ok)
 			return -1;
 	}
 	if (!exmdb_client_write_socket(sockd, bin, SOCKET_TIMEOUT * 1000)) {
@@ -295,7 +295,7 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 	mdcl_build_env(*agent.pserver);
 	auto cl_0 = HX::make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
 	DB_NOTIFY_DATAGRAM notify;
-	auto resp_code = exmdb_ext_pull_db_notify(&bin, &notify) == EXT_ERR_SUCCESS ?
+	auto resp_code = exmdb_ext_pull_db_notify(&bin, &notify) == pack_result::ok ?
 	                 exmdb_response::success : exmdb_response::pull_error;
 	if (write(agent.sockd, &resp_code, 1) != 1)
 		return -1;
@@ -503,7 +503,7 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 {
 	BINARY bin;
 
-	if (exmdb_ext_push_request(rq, &bin) != EXT_ERR_SUCCESS)
+	if (exmdb_ext_push_request(rq, &bin) != pack_result::ok)
 		return false;
 	auto conn = exmdb_client_get_connection(rq->dir);
 	if (conn == nullptr || !exmdb_client_write_socket(conn->sockd,
@@ -540,7 +540,7 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 	auto ret = exmdb_ext_pull_response(&bin, rsp);
 	bin.pb -= 5;
 	exmdb_rpc_free(bin.pb);
-	return ret == EXT_ERR_SUCCESS ? TRUE : false;
+	return ret == pack_result::ok ? TRUE : false;
 }
 
 }

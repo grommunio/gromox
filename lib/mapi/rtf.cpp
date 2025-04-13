@@ -21,7 +21,7 @@
 #include <gromox/simple_tree.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return false; } while (false)
+#define QRF(expr) do { if (pack_result{expr} != pack_result::ok) return false; } while (false)
 
 #define MAX_ATTRS						10000
 #define MAX_GROUP_DEPTH					1000
@@ -974,7 +974,7 @@ pack_result rtf_reader::getchar(int *pch)
 		preader->ungot_chars[2] = -1;
 		preader->last_returned_ch = ch;
 		*pch = ch;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	do {
 		auto status = preader->ext_pull.g_int8(&tmp_char);
@@ -996,7 +996,7 @@ pack_result rtf_reader::getchar(int *pch)
 		ch = ' ';
 	preader->last_returned_ch = ch;
 	*pch = ch;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 char *rtf_reader::read_element()
@@ -1724,7 +1724,7 @@ int rtf_reader::cmd_field(SIMPLE_TREE_NODE *pword,
 						return CMD_RESULT_ERROR;
 					tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
 					          TAG_UNISYMBOL_PRINT, ch);
-					if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != EXT_ERR_SUCCESS)
+					if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != pack_result::ok)
 						return CMD_RESULT_ERROR;
 				}
 			}
@@ -1751,7 +1751,7 @@ int rtf_reader::cmd_field(SIMPLE_TREE_NODE *pword,
 				if (NULL != pword4 && NULL != pword4->pdata) {
 					tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 						  TAG_HYPERLINK_BEGIN, pword4->cdata);
-					if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != EXT_ERR_SUCCESS)
+					if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != pack_result::ok)
 						return CMD_RESULT_ERROR;
 					return CMD_RESULT_HYPERLINKED;
 				}
@@ -1800,7 +1800,7 @@ int rtf_reader::cmd_tab(SIMPLE_TREE_NODE *pword, int align,
 	int need;
 	
 	if (preader->have_fromhtml) {
-		if (preader->ext_push.p_uint8(0x09) != EXT_ERR_SUCCESS)
+		if (preader->ext_push.p_uint8(0x09) != pack_result::ok)
 			return CMD_RESULT_ERROR;
 		++preader->total_chars_in_line;
 		return CMD_RESULT_CONTINUE;
@@ -1809,7 +1809,7 @@ int rtf_reader::cmd_tab(SIMPLE_TREE_NODE *pword, int align,
 	preader->total_chars_in_line += need;
 	while (need > 0) {
 		if (preader->ext_push.p_bytes(TAG_FORCED_SPACE,
-		    sizeof(TAG_FORCED_SPACE) - 1) != EXT_ERR_SUCCESS)
+		    sizeof(TAG_FORCED_SPACE) - 1) != pack_result::ok)
 			return CMD_RESULT_ERROR;
 		need--;
 	}
@@ -1936,7 +1936,7 @@ int rtf_reader::cmd_bullet(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	if (preader->ext_push.p_bytes(TAG_CHARS_BULLET,
-	    sizeof(TAG_CHARS_BULLET) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_CHARS_BULLET) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -1947,7 +1947,7 @@ int rtf_reader::cmd_ldblquote(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	if (preader->ext_push.p_bytes(TAG_CHARS_LEFT_DBL_QUOTE,
-	    sizeof(TAG_CHARS_LEFT_DBL_QUOTE) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_CHARS_LEFT_DBL_QUOTE) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -1958,7 +1958,7 @@ int rtf_reader::cmd_rdblquote(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	if (preader->ext_push.p_bytes(TAG_CHARS_RIGHT_DBL_QUOTE,
-	    sizeof(TAG_CHARS_RIGHT_DBL_QUOTE) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_CHARS_RIGHT_DBL_QUOTE) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -1969,7 +1969,7 @@ int rtf_reader::cmd_lquote(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	if (preader->ext_push.p_bytes(TAG_CHARS_LEFT_QUOTE,
-	    sizeof(TAG_CHARS_LEFT_QUOTE) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_CHARS_LEFT_QUOTE) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -1980,7 +1980,7 @@ int rtf_reader::cmd_nonbreaking_space(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	if (preader->ext_push.p_bytes(TAG_CHARS_NONBREAKING_SPACE,
-	    sizeof(TAG_CHARS_NONBREAKING_SPACE) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_CHARS_NONBREAKING_SPACE) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -1991,7 +1991,7 @@ int rtf_reader::cmd_soft_hyphen(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	if (preader->ext_push.p_bytes(TAG_CHARS_SOFT_HYPHEN,
-	    sizeof(TAG_CHARS_NONBREAKING_SPACE) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_CHARS_NONBREAKING_SPACE) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2002,7 +2002,7 @@ int rtf_reader::cmd_emdash(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	if (preader->ext_push.p_bytes(TAG_CHARS_EMDASH,
-	    sizeof(TAG_CHARS_EMDASH) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_CHARS_EMDASH) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2013,7 +2013,7 @@ int rtf_reader::cmd_endash(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	if (preader->ext_push.p_bytes(TAG_CHARS_ENDASH,
-	    sizeof(TAG_CHARS_ENDASH) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_CHARS_ENDASH) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2024,7 +2024,7 @@ int rtf_reader::cmd_rquote(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	if (preader->ext_push.p_bytes(TAG_CHARS_RIGHT_QUOTE,
-	    sizeof(TAG_CHARS_RIGHT_QUOTE) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_CHARS_RIGHT_QUOTE) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2039,7 +2039,7 @@ int rtf_reader::cmd_par(SIMPLE_TREE_NODE *pword, int align,
 		       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 	}
 	if (preader->ext_push.p_bytes(TAG_LINE_BREAK,
-	    sizeof(TAG_LINE_BREAK) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_LINE_BREAK) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2050,7 +2050,7 @@ int rtf_reader::cmd_line(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	if (preader->ext_push.p_bytes(TAG_LINE_BREAK,
-	    sizeof(TAG_LINE_BREAK) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_LINE_BREAK) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2061,7 +2061,7 @@ int rtf_reader::cmd_page(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	if (preader->ext_push.p_bytes(TAG_PAGE_BREAK,
-	    sizeof(TAG_PAGE_BREAK) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_PAGE_BREAK) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
@@ -2324,7 +2324,7 @@ int rtf_reader::cmd_sect(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	if (preader->ext_push.p_bytes(TAG_PARAGRAPH_BEGIN,
-	    sizeof(TAG_PARAGRAPH_BEGIN) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_PARAGRAPH_BEGIN) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2589,7 +2589,7 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 	bin.cb = picture_push.m_offset / 2;
 	bin.pv = malloc(bin.cb);
 	if (bin.pv == nullptr ||
-	    picture_push.p_uint8(0) != EXT_ERR_SUCCESS ||
+	    picture_push.p_uint8(0) != pack_result::ok ||
 	    !decode_hex_binary(picture_push.m_cdata, bin.pv, bin.cb)) {
 		free(bin.pv);
 		return -EINVAL;
@@ -2611,9 +2611,9 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 		return ece2nerrno(ret);
 	}
 	free(bin.pv);
-	if (reader->ext_push.p_bytes(TAG_IMAGELINK_BEGIN, sizeof(TAG_IMAGELINK_BEGIN) - 1) != EXT_ERR_SUCCESS ||
-	    reader->ext_push.p_bytes(cid_name, strlen(cid_name)) != EXT_ERR_SUCCESS ||
-	    reader->ext_push.p_bytes(TAG_IMAGELINK_END, sizeof(TAG_IMAGELINK_END) - 1) != EXT_ERR_SUCCESS)
+	if (reader->ext_push.p_bytes(TAG_IMAGELINK_BEGIN, sizeof(TAG_IMAGELINK_BEGIN) - 1) != pack_result::ok ||
+	    reader->ext_push.p_bytes(cid_name, strlen(cid_name)) != pack_result::ok ||
+	    reader->ext_push.p_bytes(TAG_IMAGELINK_END, sizeof(TAG_IMAGELINK_END) - 1) != pack_result::ok)
 		return -EINVAL;
 	return 0;
 }
@@ -2691,7 +2691,7 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 					    preader->picture_width != 0 &&
 					    preader->picture_height != 0 &&
 					    preader->picture_bits_per_pixel != 0 &&
-					    picture_push.p_bytes(string, strlen(string)) != EXT_ERR_SUCCESS)
+					    picture_push.p_bytes(string, strlen(string)) != pack_result::ok)
 						return -ENOBUFS;
 				} else {
 					rtf_unescape_string(string);
@@ -2727,18 +2727,18 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 				} else if (0 == strcmp(string, "cell")) {
 					is_cell_group = true;
 					if (!preader->b_printed_cell_begin) {
-						if (preader->ext_push.p_bytes(TAG_TABLE_CELL_BEGIN, sizeof(TAG_TABLE_CELL_BEGIN) - 1) != EXT_ERR_SUCCESS)
+						if (preader->ext_push.p_bytes(TAG_TABLE_CELL_BEGIN, sizeof(TAG_TABLE_CELL_BEGIN) - 1) != pack_result::ok)
 							return -ENOBUFS;
 						astk_express_all();
 					}
 					astk_popx_all();
-					if (preader->ext_push.p_bytes(TAG_TABLE_CELL_END, sizeof(TAG_TABLE_CELL_END) - 1) != EXT_ERR_SUCCESS)
+					if (preader->ext_push.p_bytes(TAG_TABLE_CELL_END, sizeof(TAG_TABLE_CELL_END) - 1) != pack_result::ok)
 						return -ENOBUFS;
 					preader->b_printed_cell_begin = false;
 					preader->b_printed_cell_end = true;
 				} else if (0 == strcmp(string, "row")) {
 					if (preader->is_within_table) {
-						if (preader->ext_push.p_bytes(TAG_TABLE_ROW_END, sizeof(TAG_TABLE_ROW_END) - 1) != EXT_ERR_SUCCESS)
+						if (preader->ext_push.p_bytes(TAG_TABLE_ROW_END, sizeof(TAG_TABLE_ROW_END) - 1) != pack_result::ok)
 							return -ENOBUFS;
 						preader->b_printed_row_begin = false;
 						preader->b_printed_row_end = true;
@@ -2808,7 +2808,7 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 	if (!riconv_flush())
 		return -EINVAL;
 	if (b_hyperlinked && preader->ext_push.p_bytes(TAG_HYPERLINK_END,
-	    sizeof(TAG_HYPERLINK_END) - 1) != EXT_ERR_SUCCESS)
+	    sizeof(TAG_HYPERLINK_END) - 1) != pack_result::ok)
 		return -EINVAL;
 	if (!is_cell_group && !astk_popx_all())
 		return -EINVAL;

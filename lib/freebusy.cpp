@@ -269,7 +269,7 @@ static int goid_to_icaluid2(BINARY *gobj, std::string &uid_buf)
 
 	if (gobj == nullptr) {
 		if (!ext_push.init(guidbuf, std::size(guidbuf), 0) ||
-		    ext_push.p_guid(GUID::random_new()) != EXT_ERR_SUCCESS)
+		    ext_push.p_guid(GUID::random_new()) != pack_result::ok)
 			return -EIO;
 		ngid.arrayid = EncodedGlobalId;
 		ngid.creationtime = rop_util_unix_to_nttime(time(nullptr));
@@ -277,7 +277,7 @@ static int goid_to_icaluid2(BINARY *gobj, std::string &uid_buf)
 		ngid.data.pc = guidbuf;
 		uid_buf.resize(std::size(ngidbuf) * 2 + 1);
 		if (!ext_push.init(ngidbuf, std::size(ngidbuf), 0) ||
-		    ext_push.p_goid(ngid) != EXT_ERR_SUCCESS ||
+		    ext_push.p_goid(ngid) != pack_result::ok ||
 		    !encode_hex_binary(ngidbuf, ext_push.m_offset,
 		    uid_buf.data(), uid_buf.size()))
 			return -EIO;
@@ -287,7 +287,7 @@ static int goid_to_icaluid2(BINARY *gobj, std::string &uid_buf)
 	EXT_PULL ext_pull;
 	auto cl_0 = HX::make_scope_exit([&]() { free(ngid.data.pc); });
 	ext_pull.init(gobj->pb, gobj->cb, malloc, 0);
-	if (ext_pull.g_goid(&ngid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_goid(&ngid) != pack_result::ok)
 		return -EIO;
 	static_assert(sizeof(ThirdPartyGlobalId) == 12);
 	if (ngid.data.cb >= 12 && memcmp(ngid.data.pc, ThirdPartyGlobalId, 12) == 0) {
@@ -301,7 +301,7 @@ static int goid_to_icaluid2(BINARY *gobj, std::string &uid_buf)
 	uid_buf.resize(56*2+1);
 	ngid.year = ngid.month = ngid.day = 0;
 	if (!ext_push.init(ngidbuf, std::size(ngidbuf), 0) ||
-	    ext_push.p_goid(ngid) != EXT_ERR_SUCCESS ||
+	    ext_push.p_goid(ngid) != pack_result::ok ||
 	    !encode_hex_binary(ngidbuf, ext_push.m_offset, uid_buf.data(), uid_buf.size()))
 		return -EIO;
 	return 2;
@@ -442,7 +442,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 		if (bin != nullptr) {
 			TIMEZONESTRUCT tz;
 			ext_pull.init(bin->pb, bin->cb, exmdb_rpc_alloc, EXT_FLAG_UTF16);
-			if (ext_pull.g_tzstruct(&tz) != EXT_ERR_SUCCESS)
+			if (ext_pull.g_tzstruct(&tz) != pack_result::ok)
 				continue;
 			tzcom = tz_to_vtimezone(1600, "timezone", tz);
 			if (!tzcom.has_value())
@@ -454,7 +454,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 			continue;
 		APPOINTMENT_RECUR_PAT apprecurr;
 		ext_pull.init(bin->pb, bin->cb, exmdb_rpc_alloc, EXT_FLAG_UTF16);
-		if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok)
 			continue;
 
 		std::vector<event> event_list;
