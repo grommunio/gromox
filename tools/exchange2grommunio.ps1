@@ -146,7 +146,7 @@ $LinuxSharedFolder = "/mnt/<shared folder name>"
 $LinuxUser = "root"
 
 # The $LinuxUser password
-$LinuxUserPWD = "Secret_root_Password"
+# $LinuxUserPWD = "Secret_root_Password"
 # For ssh key based authentication via peagent
 # #$LinuxUserPWD = ""
 # $LinuxUserSSHKey = "C:\grommunio\msx01.ppk"
