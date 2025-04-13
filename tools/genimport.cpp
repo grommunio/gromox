@@ -224,12 +224,12 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t change_num)
 		fprintf(stderr, "exm: pcl_serialize: ENOMEM\n");
 		return -ENOMEM;
 	}
-	int ret;
+	ec_error_t ret;
 	if ((ret = props->set(PidTagChangeNumber, &change_num)) != ecSuccess ||
 	    (ret = props->set(PR_CHANGE_KEY, &bxid)) != ecSuccess ||
 	    (ret = props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != ecSuccess) {
-		fprintf(stderr, "%s: %s\n", __func__, strerror(-ret));
-		return ret;
+		fprintf(stderr, "%s: %s\n", __func__, mapi_strerror(ret));
+		return ece2nerrno(ret);
 	}
 	return 0;
 }
@@ -403,7 +403,7 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	    (ret = props->set(PidTagChangeNumber, &change_num)) != ecSuccess ||
 	    (ret = props->set(PR_CHANGE_KEY, &bxid)) != ecSuccess ||
 	    (ret = props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != ecSuccess) {
-		fprintf(stderr, "exm: tpropval: %s\n", strerror(-ret));
+		fprintf(stderr, "exm: tpropval: %s\n", mapi_strerror(ret));
 		return ece2nerrno(ret);
 	}
 	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld, ctnt, &ret)) {

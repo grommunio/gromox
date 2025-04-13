@@ -90,7 +90,7 @@ BINARY *ics_state::serialize()
 	
 	if (ICS_TYPE_CONTENTS == pstate->type) {
 		decltype(ser) s(pstate->pseen_fai->serialize());
-		if (s == nullptr || pproplist->set(MetaTagCnsetSeenFAI, s.get()) != 0)
+		if (s == nullptr || pproplist->set(MetaTagCnsetSeenFAI, s.get()) != ecSuccess)
 			return NULL;
 	}
 	

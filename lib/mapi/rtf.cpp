@@ -256,7 +256,7 @@ struct rtf_reader final {
 	bool build_font_table(SIMPLE_TREE_NODE *);
 	bool escape_output(char *);
 	bool word_output_date(SIMPLE_TREE_NODE *);
-	errno_t push_da_pic(EXT_PUSH &, const char *, const char *, const char *, const char *);
+	int push_da_pic(EXT_PUSH &, const char *, const char *, const char *, const char *);
 
 	CMD_PROC_FN cmd_ansi, cmd_ansicpg, cmd_b, cmd_bullet, cmd_caps, cmd_cb,
 	cmd_cf, cmd_colortbl, cmd_continue, cmd_deff, cmd_dn, cmd_emboss,
@@ -2580,7 +2580,7 @@ static CMD_PROC_FUNC rtf_find_fromhtml_func(const char *s)
 	return nullptr;
 }
 
-errno_t rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
+int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
     const char *pext, const char *cid_name, const char *picture_name)
 {
 	auto reader = this;
@@ -2592,14 +2592,14 @@ errno_t rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 	    picture_push.p_uint8(0) != EXT_ERR_SUCCESS ||
 	    !decode_hex_binary(picture_push.m_cdata, bin.pv, bin.cb)) {
 		free(bin.pv);
-		return EINVAL;
+		return -EINVAL;
 	}
 	auto atx = attachment_content_init();
 	if (atx == nullptr || !reader->pattachments->append_internal(atx)) {
 		free(bin.pv);
-		return EINVAL;
+		return -EINVAL;
 	}
-	int ret;
+	ec_error_t ret;
 	uint32_t flags = ATT_MHTML_REF;
 	if ((ret = atx->proplist.set(PR_ATTACH_MIME_TAG, img_ctype)) != ecSuccess ||
 	    (ret = atx->proplist.set(PR_ATTACH_CONTENT_ID, cid_name)) != ecSuccess ||
@@ -2608,13 +2608,13 @@ errno_t rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
 	    (ret = atx->proplist.set(PR_ATTACH_FLAGS, &flags)) != ecSuccess ||
 	    (ret = atx->proplist.set(PR_ATTACH_DATA_BIN, &bin)) != ecSuccess) {
 		free(bin.pv);
-		return ret;
+		return ece2nerrno(ret);
 	}
 	free(bin.pv);
 	if (reader->ext_push.p_bytes(TAG_IMAGELINK_BEGIN, sizeof(TAG_IMAGELINK_BEGIN) - 1) != EXT_ERR_SUCCESS ||
 	    reader->ext_push.p_bytes(cid_name, strlen(cid_name)) != EXT_ERR_SUCCESS ||
 	    reader->ext_push.p_bytes(TAG_IMAGELINK_END, sizeof(TAG_IMAGELINK_END) - 1) != EXT_ERR_SUCCESS)
-		return EINVAL;
+		return -EINVAL;
 	return 0;
 }
 
