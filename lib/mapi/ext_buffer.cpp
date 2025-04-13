@@ -17,7 +17,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/util.hpp>
 #include <gromox/zcore_types.hpp>
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 #define CLAMP16(v) ((v) = std::min((v), static_cast<uint16_t>(UINT16_MAX)))
 #define CLAMP32(v) ((v) = std::min((v), static_cast<uint32_t>(UINT32_MAX)))
 #define CLAMP64(v) ((v) = std::min((v), static_cast<uint64_t>(UINT64_MAX)))
@@ -54,8 +54,8 @@ pack_result EXT_PULL::advance(uint32_t size)
 {
 	m_offset += size;
 	if (m_offset > m_data_size)
-		return EXT_ERR_BUFSIZE;
-	return EXT_ERR_SUCCESS;
+		return pack_result::bufsize;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_rpc_header_ext(RPC_HEADER_EXT *r)
@@ -70,82 +70,82 @@ pack_result EXT_PULL::g_uint8(uint8_t *v)
 {
 	if (m_data_size < sizeof(uint8_t) ||
 	    m_offset + sizeof(uint8_t) > m_data_size)
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	*v = m_udata[m_offset];
 	m_offset += sizeof(uint8_t);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_uint16(uint16_t *v)
 {
 	if (m_data_size < sizeof(uint16_t) ||
 	    m_offset + sizeof(uint16_t) > m_data_size)
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	*v = le16p_to_cpu(&m_udata[m_offset]);
 	CLAMP16(*v);
 	m_offset += sizeof(uint16_t);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_uint32(uint32_t *v)
 {
 	if (m_data_size < sizeof(uint32_t) ||
 	    m_offset + sizeof(uint32_t) > m_data_size)
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	*v = le32p_to_cpu(&m_udata[m_offset]);
 	CLAMP32(*v);
 	m_offset += sizeof(uint32_t);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_uint64(uint64_t *v)
 {
 	if (m_data_size < sizeof(uint64_t) ||
 	    m_offset + sizeof(uint64_t) > m_data_size)
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	*v = le64p_to_cpu(&m_udata[m_offset]);
 	CLAMP64(*v);
 	m_offset += sizeof(uint64_t);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_float(float *v)
 {
 	if (m_data_size < sizeof(float) ||
 	    m_offset + sizeof(float) > m_data_size)
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	*v = float_le32p_to_cpu(&m_udata[m_offset]);
 	m_offset += sizeof(float);
 	static_assert(std::numeric_limits<float>::is_iec559);
 	static_assert(sizeof(float) == sizeof(uint32_t));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_double(double *v)
 {
 	if (m_data_size < sizeof(double) ||
 	    m_offset + sizeof(double) > m_data_size)
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	*v = float_le64p_to_cpu(&m_udata[m_offset]);
 	m_offset += sizeof(double);
 	static_assert(std::numeric_limits<double>::is_iec559);
 	static_assert(sizeof(double) == sizeof(uint64_t));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_bool(BOOL *v)
 {
 	if (m_data_size < sizeof(uint8_t) ||
 	    m_offset + sizeof(uint8_t) > m_data_size)
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	auto tmp_byte = m_udata[m_offset++];
 	if (tmp_byte == 0)
 		*v = FALSE;
 	else if (tmp_byte == 1)
 		*v = TRUE;
 	else
-		return EXT_ERR_FORMAT;
-	return EXT_ERR_SUCCESS;
+		return pack_result::format;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_bytes(void *data, uint32_t n)
@@ -153,10 +153,10 @@ pack_result EXT_PULL::g_bytes(void *data, uint32_t n)
 	if (n == 0)
 		return pack_result::ok;
 	if (m_data_size < n || m_offset + n > m_data_size)
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	memcpy(data, &m_udata[m_offset], n);
 	m_offset += n;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_guid(GUID *r)
@@ -166,20 +166,20 @@ pack_result EXT_PULL::g_guid(GUID *r)
 	TRY(g_uint16(&r->time_hi_and_version));
 	TRY(g_bytes(r->clock_seq, 2));
 	TRY(g_bytes(r->node, 6));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_str(char **ppstr)
 {
 	if (m_offset >= m_data_size)
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	auto len = strnlen(&m_cdata[m_offset], m_data_size - m_offset);
 	if (len + 1 > m_data_size - m_offset)
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	len ++;
 	*ppstr = anew<char>(len);
 	if (*ppstr == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	memcpy(*ppstr, &m_udata[m_offset], len);
 	return advance(len);
 }
@@ -207,20 +207,20 @@ pack_result EXT_PULL::g_wstr(char **ppstr)
 	if (!(m_flags & EXT_FLAG_UTF16))
 		return g_str(ppstr);
 	if (m_offset >= m_data_size)
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	size_t max_len = m_data_size - m_offset;
 	for (i = 0; i < max_len - 1; i += 2)
 		if (m_udata[m_offset+i] == '\0' && m_udata[m_offset+i+1] == '\0')
 			break;
 	if (i >= max_len - 1)
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	auto len = i + 2;
 	auto bufsize = utf16_to_utf8_len(len);
 	*ppstr = anew<char>(bufsize);
 	if (*ppstr == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	if (!utf16le_to_utf8(&m_cdata[m_offset], len, *ppstr, bufsize))
-		return EXT_ERR_CHARCNV;
+		return pack_result::charconv;
 	return advance(len);
 }
 
@@ -254,15 +254,15 @@ pack_result EXT_PULL::g_blob(DATA_BLOB *pblob)
 {
 	
 	if (m_offset > m_data_size)
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	uint32_t length = m_data_size - m_offset;
 	pblob->pb = anew<uint8_t>(length);
 	if (pblob->pb == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	memcpy(pblob->pb, &m_udata[m_offset], length);
 	pblob->cb = length;
 	m_offset += length;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_bin(BINARY *r)
@@ -276,13 +276,13 @@ pack_result EXT_PULL::g_bin(BINARY *r)
 	}
 	if (r->cb == 0) {
 		r->pb = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	CLAMP32(r->cb);
 	r->pv = m_alloc(r->cb);
 	if (r->pv == nullptr) {
 		r->cb = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	return g_bytes(r->pv, r->cb);
 }
@@ -314,12 +314,12 @@ pack_result EXT_PULL::g_sbin(BINARY *r)
 	r->cb = cb;
 	if (r->cb == 0) {
 		r->pb = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r->pv = m_alloc(r->cb);
 	if (r->pv == nullptr) {
 		r->cb = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	return g_bytes(r->pv, r->cb);
 }
@@ -329,13 +329,13 @@ pack_result EXT_PULL::g_bin_ex(BINARY *r)
 	TRY(g_uint32(&r->cb));
 	if (r->cb == 0) {
 		r->pb = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	CLAMP32(r->cb);
 	r->pv = m_alloc(r->cb);
 	if (r->pv == nullptr) {
 		r->cb = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	return g_bytes(r->pv, r->cb);
 }
@@ -345,16 +345,16 @@ pack_result EXT_PULL::g_uint16_an(SHORT_ARRAY *r, uint32_t count)
 	r->count = count;
 	if (r->count == 0) {
 		r->ps = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r->ps = anew<uint16_t>(r->count);
 	if (r->ps == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_uint16(&r->ps[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_uint16_a(SHORT_ARRAY *r)
@@ -369,16 +369,16 @@ pack_result EXT_PULL::g_uint32_an(LONG_ARRAY *r, uint32_t count)
 	r->count = count;
 	if (r->count == 0) {
 		r->pl = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r->pl = anew<uint32_t>(r->count);
 	if (r->pl == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_uint32(&r->pl[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_uint32_a(LONG_ARRAY *r)
@@ -393,16 +393,16 @@ pack_result EXT_PULL::g_uint64_an(LONGLONG_ARRAY *r, uint32_t count)
 	r->count = count;
 	if (r->count == 0) {
 		r->pll = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r->pll = anew<uint64_t>(r->count);
 	if (r->pll == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_uint64(&r->pll[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_uint64_a(LONGLONG_ARRAY *r)
@@ -425,16 +425,16 @@ pack_result EXT_PULL::g_float_an(FLOAT_ARRAY *r, uint32_t count)
 	r->count = count;
 	if (r->count == 0) {
 		r->mval = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r->mval = anew<float>(r->count);
 	if (r->mval == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_float(&r->mval[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_float_a(FLOAT_ARRAY *r)
@@ -449,16 +449,16 @@ pack_result EXT_PULL::g_double_an(DOUBLE_ARRAY *r, uint32_t count)
 	r->count = count;
 	if (r->count == 0) {
 		r->mval = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r->mval = anew<double>(r->count);
 	if (r->mval == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_double(&r->mval[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_double_a(DOUBLE_ARRAY *r)
@@ -473,13 +473,13 @@ pack_result EXT_PULL::g_bin_a(BINARY_ARRAY *r)
 	TRY(g_uint32(&r->count));
 	if (r->count == 0) {
 		r->pbin = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	CLAMP32(r->count);
 	r->pbin = anew<BINARY>(r->count);
 	if (r->pbin == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i) {
 		if (m_flags & EXT_FLAG_ABK) {
@@ -490,12 +490,12 @@ pack_result EXT_PULL::g_bin_a(BINARY_ARRAY *r)
 				r->pbin[i].pb = nullptr;
 				continue;
 			} else if (value_set != 0xFF) {
-				return EXT_ERR_FORMAT;
+				return pack_result::format;
 			}
 		}
 		TRY(g_bin(&r->pbin[i]));
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_str_a(STRING_ARRAY *r)
@@ -503,13 +503,13 @@ pack_result EXT_PULL::g_str_a(STRING_ARRAY *r)
 	TRY(g_uint32(&r->count));
 	if (r->count == 0) {
 		r->ppstr = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	CLAMP32(r->count);
 	r->ppstr = anew<char *>(r->count);
 	if (r->ppstr == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i) {
 		if (m_flags & EXT_FLAG_ABK) {
@@ -519,12 +519,12 @@ pack_result EXT_PULL::g_str_a(STRING_ARRAY *r)
 				r->ppstr[i] = nullptr;
 				continue;
 			} else if (value_set != 0xFF) {
-				return EXT_ERR_FORMAT;
+				return pack_result::format;
 			}
 		}
 		TRY(g_str(&r->ppstr[i]));
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_wstr_a(STRING_ARRAY *r)
@@ -532,13 +532,13 @@ pack_result EXT_PULL::g_wstr_a(STRING_ARRAY *r)
 	TRY(g_uint32(&r->count));
 	if (r->count == 0) {
 		r->ppstr = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	CLAMP32(r->count);
 	r->ppstr = anew<char *>(r->count);
 	if (r->ppstr == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i) {
 		if (m_flags & EXT_FLAG_ABK) {
@@ -548,12 +548,12 @@ pack_result EXT_PULL::g_wstr_a(STRING_ARRAY *r)
 				r->ppstr[i] = nullptr;
 				continue;
 			} else if (value_set != 0xFF) {
-				return EXT_ERR_FORMAT;
+				return pack_result::format;
 			}
 		}
 		TRY(g_wstr(&r->ppstr[i]));
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_guid_an(GUID_ARRAY *r, uint32_t count)
@@ -561,16 +561,16 @@ pack_result EXT_PULL::g_guid_an(GUID_ARRAY *r, uint32_t count)
 	r->count = count;
 	if (r->count == 0) {
 		r->pguid = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r->pguid = anew<GUID>(r->count);
 	if (r->pguid == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_guid(&r->pguid[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_guid_a(GUID_ARRAY *r)
@@ -596,16 +596,16 @@ static pack_result ext_buffer_pull_restriction_and_or(EXT_PULL *pext,
 	}
 	if (r->count == 0) {
 		r->pres = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r->pres = pext->anew<RESTRICTION>(r->count);
 	if (r->pres == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_restriction(&r->pres[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_pull_restriction_not(EXT_PULL *pext, RESTRICTION_NOT *r)
@@ -624,9 +624,9 @@ static pack_result ext_buffer_pull_restriction_content(EXT_PULL *pext,
 		TRY(pext->g_uint8(&value_set));
 		if (value_set == 0) {
 			r->propval = {};
-			return EXT_ERR_SUCCESS;
+			return pack_result::ok;
 		} else if (value_set != 0xFF) {
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		}
 	}
 	return pext->g_tagged_pv(&r->propval);
@@ -645,9 +645,9 @@ static pack_result ext_buffer_pull_restriction_property(EXT_PULL *pext,
 		TRY(pext->g_uint8(&value_set));
 		if (value_set == 0) {
 			r->propval = {};
-			return EXT_ERR_SUCCESS;
+			return pack_result::ok;
 		} else if (value_set != 0xFF) {
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		}
 	}
 	return pext->g_tagged_pv(&r->propval);
@@ -706,11 +706,11 @@ static pack_result ext_buffer_pull_restriction_comment(EXT_PULL *pext,
 	
 	TRY(pext->g_uint8(&r->count));
 	if (r->count == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (r->ppropval == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_tagged_pv(&r->ppropval[i]));
@@ -718,11 +718,11 @@ static pack_result ext_buffer_pull_restriction_comment(EXT_PULL *pext,
 	if (0 != res_present) {
 		r->pres = pext->anew<RESTRICTION>();
 		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return pext->g_restriction(r->pres);
 	}
 	r->pres = NULL;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_pull_restriction_count(EXT_PULL *pext,
@@ -743,64 +743,64 @@ pack_result EXT_PULL::g_restriction(RESTRICTION *r)
 	case RES_OR:
 		r->pres = anew<RESTRICTION_AND_OR>();
 		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_restriction_and_or(this, r->andor);
 	case RES_NOT:
 		r->pres = anew<RESTRICTION_NOT>();
 		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_restriction_not(this, r->xnot);
 	case RES_CONTENT:
 		r->pres = anew<RESTRICTION_CONTENT>();
 		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_restriction_content(this, r->cont);
 	case RES_PROPERTY:
 		r->pres = anew<RESTRICTION_PROPERTY>();
 		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_restriction_property(this, r->prop);
 	case RES_PROPCOMPARE:
 		r->pres = anew<RESTRICTION_PROPCOMPARE>();
 		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_restriction_propcompare(this, r->pcmp);
 	case RES_BITMASK:
 		r->pres = anew<RESTRICTION_BITMASK>();
 		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_restriction_bitmask(this, r->bm);
 	case RES_SIZE:
 		r->pres = anew<RESTRICTION_SIZE>();
 		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_restriction_size(this, r->size);
 	case RES_EXIST:
 		r->pres = anew<RESTRICTION_EXIST>();
 		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_restriction_exist(this, r->exist);
 	case RES_SUBRESTRICTION:
 		r->pres = anew<RESTRICTION_SUBOBJ>();
 		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_restriction_subobj(this, r->sub);
 	case RES_COMMENT:
 	case RES_ANNOTATION:
 		r->pres = anew<RESTRICTION_COMMENT>();
 		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_restriction_comment(this, r->comment);
 	case RES_COUNT:
 		r->pres = anew<RESTRICTION_COUNT>();
 		if (r->pres == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_restriction_count(this, r->count);
 	case RES_NULL:
 		r->pres = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	default:
-		return EXT_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 }
 
@@ -817,17 +817,17 @@ pack_result EXT_PULL::g_svreid(SVREID *r)
 		r->instance = 0;
 		r->pbin = anew<BINARY>();
 		if (r->pbin == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		r->pbin->cb = length > 0 ? length - 1 : 0;
 		r->pbin->pv = m_alloc(r->pbin->cb);
 		if (r->pbin->cb > 0 && r->pbin->pv == nullptr) {
 			r->pbin->cb = 0;
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		return g_bytes(r->pbin->pv, r->pbin->cb);
 	}
 	if (length != 21)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	r->pbin = NULL;
 	TRY(g_uint64(&r->folder_id));
 	TRY(g_uint64(&r->message_id));
@@ -841,7 +841,7 @@ pack_result EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 	TRY(g_guid(&g));
 	if (g != muidStoreWrap) {
 		mlog(LV_INFO, "I-1969: not a wrapuid");
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	}
 	TRY(g_uint8(&r->version));
 	if (r->version != 0) {
@@ -898,16 +898,16 @@ static pack_result ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTI
 		TRY(pext->advance(eid_size));
 		r->pfolder_eid = pext->anew<SVREID>();
 		if (r->pfolder_eid == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return pext->g_svreid(static_cast<SVREID *>(r->pfolder_eid));
 	}
 	r->pstore_eid = pext->anew<STORE_ENTRYID>();
 	if (r->pstore_eid == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	TRY(pext->g_store_eid(r->pstore_eid));
 	r->pfolder_eid = pext->anew<BINARY>();
 	if (r->pfolder_eid == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	return pext->g_bin(static_cast<BINARY *>(r->pfolder_eid));
 }
 
@@ -929,16 +929,16 @@ static pack_result ext_buffer_pull_recipient_block(EXT_PULL *pext, RECIPIENT_BLO
 	TRY(pext->g_uint8(&r->reserved));
 	TRY(pext->g_uint16(&r->count));
 	if (r->count == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	CLAMP16(r->count);
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (r->ppropval == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_tagged_pv(&r->ppropval[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_pull_forwarddelegate_action(EXT_PULL *pext,
@@ -946,16 +946,16 @@ static pack_result ext_buffer_pull_forwarddelegate_action(EXT_PULL *pext,
 {
 	TRY(pext->g_uint16(&r->count));
 	if (r->count == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	CLAMP16(r->count);
 	r->pblock = pext->anew<RECIPIENT_BLOCK>(r->count);
 	if (r->pblock == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_recipient_block(pext, &r->pblock[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
@@ -973,13 +973,13 @@ static pack_result ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
 		if (pext->m_flags & EXT_FLAG_ZCORE) {
 			auto mc = pext->anew<ZMOVECOPY_ACTION>();
 			if (mc == nullptr)
-				return EXT_ERR_ALLOC;
+				return pack_result::alloc;
 			r->pdata = mc;
 			return ext_buffer_pull_zmovecopy_action(pext, mc);
 		}
 		auto mc = pext->anew<MOVECOPY_ACTION>();
 		if (mc == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		r->pdata = mc;
 		return ext_buffer_pull_movecopy_action(pext, mc);
 	}
@@ -988,13 +988,13 @@ static pack_result ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
 		if (pext->m_flags & EXT_FLAG_ZCORE) {
 			auto rp = pext->anew<ZREPLY_ACTION>();
 			if (rp == nullptr)
-				return EXT_ERR_ALLOC;
+				return pack_result::alloc;
 			r->pdata = rp;
 			return ext_buffer_pull_zreply_action(pext, rp);
 		}
 		auto rp = pext->anew<REPLY_ACTION>();
 		if (rp == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		r->pdata = rp;
 		return ext_buffer_pull_reply_action(pext, rp);
 	}
@@ -1002,30 +1002,30 @@ static pack_result ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
 		r->pdata = ext.m_alloc(tmp_len);
 		if (r->pdata == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return pext->g_bytes(r->pdata, tmp_len);
 	case OP_BOUNCE:
 		r->pdata = pext->anew<uint32_t>();
 		if (r->pdata == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return pext->g_uint32(static_cast<uint32_t *>(r->pdata));
 	case OP_FORWARD:
 	case OP_DELEGATE:
 		r->pdata = pext->anew<FORWARDDELEGATE_ACTION>();
 		if (r->pdata == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_forwarddelegate_action(pext, static_cast<FORWARDDELEGATE_ACTION *>(r->pdata));
 	case OP_TAG:
 		r->pdata = pext->anew<TAGGED_PROPVAL>();
 		if (r->pdata == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return pext->g_tagged_pv(static_cast<TAGGED_PROPVAL *>(r->pdata));
 	case OP_DELETE:
 	case OP_MARK_AS_READ:
 		r->pdata = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	default:
-		return EXT_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 }
 
@@ -1033,16 +1033,16 @@ pack_result EXT_PULL::g_rule_actions(RULE_ACTIONS *r)
 {
 	TRY(g_uint16(&r->count));
 	if (r->count == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	CLAMP16(r->count);
 	r->pblock = anew<ACTION_BLOCK>(r->count);
 	if (r->pblock == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_action_block(this, &r->pblock[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_propval(uint16_t type, void **ppval)
@@ -1053,9 +1053,9 @@ pack_result EXT_PULL::g_propval(uint16_t type, void **ppval)
 		TRY(g_uint8(&value_set));
 		if (value_set == 0) {
 			*ppval = nullptr;
-			return EXT_ERR_SUCCESS;
+			return pack_result::ok;
 		} else if (value_set != 0xFF) {
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		}
 	} else if ((type & MVI_FLAG) == MVI_FLAG) {
 	/* convert multi-value instance into single value */
@@ -1065,7 +1065,7 @@ pack_result EXT_PULL::g_propval(uint16_t type, void **ppval)
 	case (mt): \
 		*ppval = anew<ct>(); \
 		if (*ppval == nullptr) \
-			return EXT_ERR_ALLOC; \
+			return pack_result::alloc; \
 		return fu(static_cast<ct *>(*ppval));
 
 	switch (type) {
@@ -1106,7 +1106,7 @@ pack_result EXT_PULL::g_propval(uint16_t type, void **ppval)
 	CASE(PT_MV_CLSID, GUID_ARRAY, g_guid_a);
 	CASE(PT_MV_BINARY, BINARY_ARRAY, g_bin_a);
 	default:
-		return m_flags & EXT_FLAG_ABK ? EXT_ERR_FORMAT : EXT_ERR_BAD_SWITCH;
+		return m_flags & EXT_FLAG_ABK ? pack_result::format : pack_result::bad_switch;
 	}
 #undef CASE
 }
@@ -1141,17 +1141,17 @@ pack_result EXT_PULL::g_proptag_a(PROPTAG_ARRAY *r)
 	TRY(g_uint16(&r->count));
 	if (r->count == 0) {
 		r->pproptag = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	CLAMP16(r->count);
 	r->pproptag = anew<uint32_t>(strange_roundup(r->count, SR_GROW_PROPTAG_ARRAY));
 	if (r->pproptag == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_uint32(&r->pproptag[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_proptag_a(std::vector<proptag_t> *r) try
@@ -1171,17 +1171,17 @@ pack_result EXT_PULL::g_proptag_a(LPROPTAG_ARRAY *r)
 	TRY(g_uint32(&r->cvalues));
 	if (r->cvalues == 0) {
 		r->pproptag = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	CLAMP32(r->cvalues);
 	r->pproptag = anew<uint32_t>(strange_roundup(r->cvalues, SR_GROW_PROPTAG_ARRAY));
 	if (r->pproptag == nullptr) {
 		r->cvalues = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->cvalues; ++i)
 		TRY(g_uint32(&r->pproptag[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_propname(PROPERTY_NAME *r)
@@ -1197,14 +1197,14 @@ pack_result EXT_PULL::g_propname(PROPERTY_NAME *r)
 	} else if (r->kind == MNID_STRING) {
 		TRY(g_uint8(&name_size));
 		if (name_size < 2)
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		uint32_t offset = m_offset + name_size;
 		TRY(g_wstr(&r->pname));
 		if (m_offset > offset)
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		m_offset = offset;
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_propname_a(PROPNAME_ARRAY *r)
@@ -1212,17 +1212,17 @@ pack_result EXT_PULL::g_propname_a(PROPNAME_ARRAY *r)
 	TRY(g_uint16(&r->count));
 	if (r->count == 0) {
 		r->ppropname = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	CLAMP16(r->count);
 	r->ppropname = anew<PROPERTY_NAME>(r->count);
 	if (r->ppropname == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_propname(&r->ppropname[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_tpropval_a(TPROPVAL_ARRAY *r)
@@ -1230,17 +1230,17 @@ pack_result EXT_PULL::g_tpropval_a(TPROPVAL_ARRAY *r)
 	TRY(g_uint16(&r->count));
 	if (r->count == 0) {
 		r->ppropval = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	CLAMP16(r->count);
 	r->ppropval = anew<TAGGED_PROPVAL>(strange_roundup(r->count, SR_GROW_TAGGED_PROPVAL));
 	if (r->ppropval == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_tagged_pv(&r->ppropval[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_tpropval_a(LTPROPVAL_ARRAY *r)
@@ -1248,17 +1248,17 @@ pack_result EXT_PULL::g_tpropval_a(LTPROPVAL_ARRAY *r)
 	TRY(g_uint32(&r->count));
 	if (r->count == 0) {
 		r->propval = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	CLAMP32(r->count);
 	r->propval = anew<TAGGED_PROPVAL>(strange_roundup(r->count, SR_GROW_TAGGED_PROPVAL));
 	if (r->propval == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_tagged_pv(&r->propval[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_tarray_set(TARRAY_SET *r)
@@ -1266,21 +1266,21 @@ pack_result EXT_PULL::g_tarray_set(TARRAY_SET *r)
 	TRY(g_uint32(&r->count));
 	if (r->count == 0) {
 		r->pparray = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	CLAMP32(r->count);
 	r->pparray = anew<TPROPVAL_ARRAY *>(strange_roundup(r->count, SR_GROW_TPROPVAL_ARRAY));
 	if (r->pparray == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i) {
 		r->pparray[i] = anew<TPROPVAL_ARRAY>();
 		if (r->pparray[i] == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(g_tpropval_a(r->pparray[i]));
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_pull_property_problem(EXT_PULL *pext, PROPERTY_PROBLEM *r)
@@ -1297,22 +1297,22 @@ pack_result EXT_PULL::g_problem_a(PROBLEM_ARRAY *r)
 	r->pproblem = anew<PROPERTY_PROBLEM>(r->count);
 	if (r->pproblem == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_property_problem(this, &r->pproblem[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 /* Works for GIDs and XIDs */
 pack_result EXT_PULL::g_xid(uint8_t size, XID *pxid)
 {
 	if (size < 17 || size > 24)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	TRY(g_guid(&pxid->guid));
 	TRY(g_bytes(pxid->local_id, size - 16));
 	pxid->size = size;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_folder_eid(FOLDER_ENTRYID *r)
@@ -1332,12 +1332,12 @@ static pack_result ext_buffer_pull_ext_movecopy_action(EXT_PULL *pext,
 	
 	TRY(pext->g_uint32(&size));
 	if (size == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	else
 		TRY(pext->advance(size));
 	TRY(pext->g_uint32(&size));
 	if (size != 46)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	return pext->g_folder_eid(&r->folder_eid);
 }
 
@@ -1361,7 +1361,7 @@ static pack_result ext_buffer_pull_ext_reply_action(EXT_PULL *pext,
 	
 	TRY(pext->g_uint32(&size));
 	if (size != 70)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	TRY(pext->g_msg_eid(&r->message_eid));
 	return pext->g_guid(&r->template_guid);
 }
@@ -1373,16 +1373,16 @@ static pack_result ext_buffer_pull_ext_recipient_block(EXT_PULL *pext,
 	TRY(pext->g_uint8(&r->reserved));
 	TRY(pext->g_uint32(&r->count));
 	if (r->count == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	CLAMP32(r->count);
 	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
 	if (r->ppropval == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->g_tagged_pv(&r->ppropval[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_pull_ext_forwarddelegate_action(EXT_PULL *pext,
@@ -1390,16 +1390,16 @@ static pack_result ext_buffer_pull_ext_forwarddelegate_action(EXT_PULL *pext,
 {
 	TRY(pext->g_uint32(&r->count));
 	if (r->count == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	CLAMP32(r->count);
 	r->pblock = pext->anew<EXT_RECIPIENT_BLOCK>(r->count);
 	if (r->pblock == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_ext_recipient_block(pext, &r->pblock[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_pull_ext_action_block(EXT_PULL *pext, EXT_ACTION_BLOCK *r)
@@ -1416,42 +1416,42 @@ static pack_result ext_buffer_pull_ext_action_block(EXT_PULL *pext, EXT_ACTION_B
 	case OP_COPY:
 		r->pdata = pext->anew<EXT_MOVECOPY_ACTION>();
 		if (r->pdata == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_ext_movecopy_action(pext, static_cast<EXT_MOVECOPY_ACTION *>(r->pdata));
 	case OP_REPLY:
 	case OP_OOF_REPLY:
 		r->pdata = pext->anew<EXT_REPLY_ACTION>();
 		if (r->pdata == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_ext_reply_action(pext, static_cast<EXT_REPLY_ACTION *>(r->pdata));
 	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - sizeof(uint32_t);
 		r->pdata = ext.m_alloc(tmp_len);
 		if (r->pdata == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return pext->g_bytes(r->pdata, tmp_len);
 	case OP_BOUNCE:
 		r->pdata = pext->anew<uint32_t>();
 		if (r->pdata == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return pext->g_uint32(static_cast<uint32_t *>(r->pdata));
 	case OP_FORWARD:
 	case OP_DELEGATE:
 		r->pdata = pext->anew<EXT_FORWARDDELEGATE_ACTION>();
 		if (r->pdata == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_ext_forwarddelegate_action(pext, static_cast<EXT_FORWARDDELEGATE_ACTION *>(r->pdata));
 	case OP_TAG:
 		r->pdata = pext->anew<TAGGED_PROPVAL>();
 		if (r->pdata == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return pext->g_tagged_pv(static_cast<TAGGED_PROPVAL *>(r->pdata));
 	case OP_DELETE:
 	case OP_MARK_AS_READ:
 		r->pdata = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	default:
-		return EXT_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 }
 
@@ -1459,16 +1459,16 @@ pack_result EXT_PULL::g_ext_rule_actions(EXT_RULE_ACTIONS *r)
 {
 	TRY(g_uint32(&r->count));
 	if (r->count == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	CLAMP32(r->count);
 	r->pblock = anew<EXT_ACTION_BLOCK>(r->count);
 	if (r->pblock == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_buffer_pull_ext_action_block(this, &r->pblock[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_namedprop_info(NAMEDPROPERTY_INFO *r)
@@ -1479,18 +1479,18 @@ pack_result EXT_PULL::g_namedprop_info(NAMEDPROPERTY_INFO *r)
 	if (r->count == 0) {
 		r->ppropid = NULL;
 		r->ppropname = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	CLAMP16(r->count);
 	r->ppropid = anew<uint16_t>(r->count);
 	if (r->ppropid == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	r->ppropname = anew<PROPERTY_NAME>(r->count);
 	if (r->ppropname == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_uint16(&r->ppropid[i]));
@@ -1499,9 +1499,9 @@ pack_result EXT_PULL::g_namedprop_info(NAMEDPROPERTY_INFO *r)
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_propname(&r->ppropname[i]));
 	if (offset < m_offset)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	m_offset = offset;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *r)
@@ -1513,7 +1513,7 @@ pack_result EXT_PULL::g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *r)
 		TRY(g_uint16(&type));
 		r->pvalue = anew<TYPED_PROPVAL>();
 		if (r->pvalue == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		static_cast<TYPED_PROPVAL *>(r->pvalue)->type = type;
 		ppvalue = &static_cast<TYPED_PROPVAL *>(r->pvalue)->pvalue;
 	} else {
@@ -1525,14 +1525,14 @@ pack_result EXT_PULL::g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *r)
 		return g_propval(type, ppvalue);
 	case FLAGGED_PROPVAL_FLAG_UNAVAILABLE:
 		*ppvalue = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	case FLAGGED_PROPVAL_FLAG_ERROR:
 		*ppvalue = anew<uint32_t>();
 		if (*ppvalue == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return g_uint32(static_cast<uint32_t *>(*ppvalue));
 	default:
-		return EXT_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 }
 
@@ -1541,22 +1541,22 @@ pack_result EXT_PULL::g_proprow(const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *r)
 	TRY(g_uint8(&r->flag));
 	r->pppropval = anew<void *>(pcolumns->count);
 	if (r->pppropval == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	if (PROPERTY_ROW_FLAG_NONE == r->flag) {
 		for (size_t i = 0; i < pcolumns->count; ++i)
 			TRY(g_propval(PROP_TYPE(pcolumns->pproptag[i]), &r->pppropval[i]));
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	} else if (PROPERTY_ROW_FLAG_FLAGGED == r->flag) {
 		for (size_t i = 0; i < pcolumns->count; ++i) {
 			r->pppropval[i] = anew<FLAGGED_PROPVAL>();
 			if (r->pppropval[i] == nullptr)
-				return EXT_ERR_ALLOC;
+				return pack_result::alloc;
 			TRY(g_flagged_pv(PROP_TYPE(pcolumns->pproptag[i]),
 			         static_cast<FLAGGED_PROPVAL *>(r->pppropval[i])));
 		}
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
-	return EXT_ERR_BAD_SWITCH;
+	return pack_result::bad_switch;
 }
 
 pack_result EXT_PULL::g_sortorder(SORT_ORDER *r)
@@ -1573,15 +1573,15 @@ pack_result EXT_PULL::g_sortorder_set(SORTORDER_SET *r)
 	TRY(g_uint16(&r->ccategories));
 	TRY(g_uint16(&r->cexpanded));
 	if (r->count == 0 || r->ccategories > r->count || r->cexpanded > r->ccategories)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	r->psort = anew<SORT_ORDER>(r->count);
 	if (r->psort == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_sortorder(&r->psort[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_recipient_row(const PROPTAG_ARRAY *pproptags, RECIPIENT_ROW *r)
@@ -1601,7 +1601,7 @@ pack_result EXT_PULL::g_recipient_row(const PROPTAG_ARRAY *pproptags, RECIPIENT_
 	if (RECIPIENT_ROW_TYPE_X500DN == type) {
 		r->pprefix_used = anew<uint8_t>();
 		if (r->pprefix_used == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(g_uint8(r->pprefix_used));
 		TRY(g_uint8(&r->display_type));
 		r->have_display_type = true;
@@ -1613,11 +1613,11 @@ pack_result EXT_PULL::g_recipient_row(const PROPTAG_ARRAY *pproptags, RECIPIENT_
 		RECIPIENT_ROW_TYPE_PERSONAL_DLIST2 == type) {
 		r->pentry_id = anew<BINARY>();
 		if (r->pentry_id == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(g_bin(r->pentry_id));
 		r->psearch_key = anew<BINARY>();
 		if (r->psearch_key == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(g_bin(r->psearch_key));
 	}
 	r->paddress_type = NULL;
@@ -1660,7 +1660,7 @@ pack_result EXT_PULL::g_recipient_row(const PROPTAG_ARRAY *pproptags, RECIPIENT_
 	}
 	TRY(g_uint16(&r->count));
 	if (r->count > pproptags->count)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	proptags.count = r->count;
 	proptags.pproptag = deconst(pproptags->pproptag);
 	return g_proprow(&proptags, &r->properties);
@@ -1675,17 +1675,17 @@ pack_result EXT_PULL::g_modrcpt_row(PROPTAG_ARRAY *pproptags, MODIFYRECIPIENT_RO
 	TRY(g_uint16(&row_size));
 	if (row_size == 0) {
 		r->precipient_row = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	uint32_t offset = m_offset + row_size;
 	r->precipient_row = anew<RECIPIENT_ROW>();
 	if (r->precipient_row == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	TRY(g_recipient_row(pproptags, r->precipient_row));
 	if (m_offset > offset)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	m_offset = offset;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_permission_data(PERMISSION_DATA *r)
@@ -1706,7 +1706,7 @@ pack_result EXT_PULL::g_abk_eid(EMSAB_ENTRYID *r)
 	TRY(g_uint32(&r->flags));
 	TRY(g_guid(&g));
 	if (g != muidEMSAB)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	uint32_t v;
 	TRY(g_uint32(&v));
 	if (v != 1)
@@ -1721,7 +1721,7 @@ pack_result EXT_PULL::g_oneoff_eid(ONEOFF_ENTRYID *r)
 	TRY(g_uint32(&r->flags));
 	TRY(g_guid(&g));
 	if (g != muidOOP)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	TRY(g_uint16(&r->version));
 	TRY(g_uint16(&r->ctrl_flags));
 	if (r->ctrl_flags & MAPI_ONE_OFF_UNICODE) {
@@ -1745,21 +1745,21 @@ pack_result EXT_PULL::g_flatentry_a(BINARY_ARRAY *r)
 	r->pbin = anew<BINARY>(r->count);
 	if (r->pbin == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	TRY(g_uint32(&bytes));
 	uint32_t offset = m_offset + bytes;
 	for (size_t i = 0; i < r->count; ++i) {
 		TRY(g_bin(&r->pbin[i]));
 		if (m_offset > offset)
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		bytes = r->pbin[i].cb;
 		pad_len = ((bytes + 3) & ~3) - bytes;
 		TRY(advance(pad_len));
 	}
 	if (m_offset > offset)
-		return EXT_ERR_FORMAT;
-	return EXT_ERR_SUCCESS;
+		return pack_result::format;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_eid_a(EID_ARRAY *r)
@@ -1767,17 +1767,17 @@ pack_result EXT_PULL::g_eid_a(EID_ARRAY *r)
 	TRY(g_uint32(&r->count));
 	if (r->count == 0) {
 		r->pids = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	CLAMP32(r->count);
 	r->pids = anew<uint64_t>(r->count);
 	if (r->pids == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_uint64(&r->pids[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_systime(SYSTEMTIME *r)
@@ -1829,29 +1829,29 @@ pack_result EXT_PULL::g_tzdef(TIMEZONEDEFINITION *r)
 	TRY(g_uint8(&r->minor));
 	TRY(g_uint16(&cbheader));
 	if (cbheader > 266)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	TRY(g_uint16(&r->reserved));
 	TRY(g_uint16(&cchkeyname));
 	if (cbheader != 6 + 2 * cchkeyname)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	memset(tmp_buff, 0, sizeof(tmp_buff));
 	TRY(g_bytes(tmp_buff, cbheader - 6));
 	if (!utf16le_to_utf8(tmp_buff, cbheader - 4, tmp_buff1, std::size(tmp_buff1)))
-		return EXT_ERR_CHARCNV;
+		return pack_result::charconv;
 	r->keyname = anew<char>(strlen(tmp_buff1) + 1);
 	if (r->keyname == nullptr)
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	strcpy(r->keyname, tmp_buff1);
 	TRY(g_uint16(&r->crules));
 	CLAMP16(r->crules);
 	r->prules = anew<TZRULE>(r->crules);
 	if (r->prules == nullptr) {
 		r->crules = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->crules; ++i)
 		TRY(ext_buffer_pull_tzrule(this, &r->prules[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_pull_patterntypespecific(EXT_PULL *pext,
@@ -1860,7 +1860,7 @@ static pack_result ext_buffer_pull_patterntypespecific(EXT_PULL *pext,
 	switch (patterntype) {
 	case rptMinute:
 		/* do nothing */
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	case rptWeek:
 		return pext->g_uint32(&r->weekrecur);
 	case rptMonth:
@@ -1873,7 +1873,7 @@ static pack_result ext_buffer_pull_patterntypespecific(EXT_PULL *pext,
 		TRY(pext->g_uint32(&r->monthnth.weekrecur));
 		return pext->g_uint32(&r->monthnth.recurnum);
 	default:
-		return EXT_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 }
 
@@ -1890,10 +1890,10 @@ static pack_result ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *
 		TRY(pext->g_uint16(&tmp_len));
 		TRY(pext->g_uint16(&tmp_len2));
 		if (tmp_len != tmp_len2 + 1)
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		r->subject = pext->anew<char>(tmp_len);
 		if (r->subject == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(pext->g_bytes(r->subject, tmp_len2));
 		r->subject[tmp_len2] = '\0';
 	}
@@ -1907,10 +1907,10 @@ static pack_result ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *
 		TRY(pext->g_uint16(&tmp_len));
 		TRY(pext->g_uint16(&tmp_len2));
 		if (tmp_len != tmp_len2 + 1)
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		r->location = pext->anew<char>(tmp_len);
 		if (r->location == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(pext->g_bytes(r->location, tmp_len2));
 		r->location[tmp_len2] = '\0';
 	}
@@ -1922,7 +1922,7 @@ static pack_result ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *
 		TRY(pext->g_uint32(&r->subtype));
 	if (r->overrideflags & ARO_APPTCOLOR)
 		TRY(pext->g_uint32(&r->appointmentcolor));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_pull_changehighlight(EXT_PULL *pext, CHANGEHIGHLIGHT *r)
@@ -1930,15 +1930,15 @@ static pack_result ext_buffer_pull_changehighlight(EXT_PULL *pext, CHANGEHIGHLIG
 	TRY(pext->g_uint32(&r->size));
 	TRY(pext->g_uint32(&r->value));
 	if (r->size < sizeof(uint32_t)) {
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	} else if (sizeof(uint32_t) == r->size) {
 		r->preserved = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r->preserved = pext->anew<uint8_t>(r->size - sizeof(uint32_t));
 	if (r->preserved == nullptr) {
 		r->size = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	return pext->g_bytes(r->preserved, r->size - sizeof(uint32_t));
 }
@@ -1958,7 +1958,7 @@ static pack_result ext_buffer_pull_extendedexception(EXT_PULL *pext,
 		r->preservedblockee1 = pext->anew<uint8_t>(r->reservedblockee1size);
 		if (r->preservedblockee1 == nullptr) {
 			r->reservedblockee1size = 0;
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		TRY(pext->g_bytes(r->preservedblockee1, r->reservedblockee1size));
 	}
@@ -1975,17 +1975,17 @@ static pack_result ext_buffer_pull_extendedexception(EXT_PULL *pext,
 		try {
 			pbuff = std::make_unique<char[]>(3 * (tmp_len + 2));
 		} catch (const std::bad_alloc &) {
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		TRY(pext->g_bytes(pbuff.get(), tmp_len));
 		pbuff[tmp_len ++] = '\0';
 		pbuff[tmp_len ++] = '\0';
 		if (!utf16le_to_utf8(pbuff.get(), tmp_len, &pbuff[tmp_len], 2 * tmp_len))
-			return EXT_ERR_CHARCNV;
+			return pack_result::charconv;
 		string_len = strlen(&pbuff[tmp_len]);
 		r->subject = pext->anew<char>(string_len + 1);
 		if (r->subject == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		strcpy(r->subject, &pbuff[tmp_len]);
 	}
 	if (overrideflags & ARO_LOCATION) {
@@ -1996,17 +1996,17 @@ static pack_result ext_buffer_pull_extendedexception(EXT_PULL *pext,
 		try {
 			pbuff = std::make_unique<char[]>(3 * (tmp_len + 2));
 		} catch (const std::bad_alloc &) {
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		TRY(pext->g_bytes(pbuff.get(), tmp_len));
 		pbuff[tmp_len ++] = '\0';
 		pbuff[tmp_len ++] = '\0';
 		if (!utf16le_to_utf8(pbuff.get(), tmp_len, &pbuff[tmp_len], 2 * tmp_len))
-			return EXT_ERR_CHARCNV;
+			return pack_result::charconv;
 		string_len = strlen(&pbuff[tmp_len]);
 		r->location = pext->anew<char>(string_len + 1);
 		if (r->location == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		strcpy(r->location, &pbuff[tmp_len]);
 	}
 	if (overrideflags & (ARO_SUBJECT | ARO_LOCATION)) {
@@ -2017,12 +2017,12 @@ static pack_result ext_buffer_pull_extendedexception(EXT_PULL *pext,
 			r->preservedblockee2 = pext->anew<uint8_t>(r->reservedblockee2size);
 			if (r->preservedblockee2 == nullptr) {
 				r->reservedblockee2size = 0;
-				return EXT_ERR_ALLOC;
+				return pack_result::alloc;
 			}
 			TRY(pext->g_bytes(r->preservedblockee2, r->reservedblockee2size));
 		}
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_recpat(RECURRENCE_PATTERN *r)
@@ -2047,7 +2047,7 @@ pack_result EXT_PULL::g_recpat(RECURRENCE_PATTERN *r)
 		r->pdeletedinstancedates = anew<uint32_t>(r->deletedinstancecount);
 		if (r->pdeletedinstancedates == nullptr) {
 			r->deletedinstancecount = 0;
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 	}
 	for (size_t i = 0; i < r->deletedinstancecount; ++i)
@@ -2060,7 +2060,7 @@ pack_result EXT_PULL::g_recpat(RECURRENCE_PATTERN *r)
 		r->pmodifiedinstancedates = anew<uint32_t>(r->modifiedinstancecount);
 		if (r->pmodifiedinstancedates == nullptr) {
 			r->modifiedinstancecount = 0;
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 	}
 	for (size_t i = 0; i < r->modifiedinstancecount; ++i)
@@ -2085,12 +2085,12 @@ pack_result EXT_PULL::g_apptrecpat(APPOINTMENT_RECUR_PAT *r)
 		r->pexceptioninfo = anew<EXCEPTIONINFO>(r->exceptioncount);
 		if (r->pexceptioninfo == nullptr) {
 			r->exceptioncount = 0;
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		r->pextendedexception = anew<EXTENDEDEXCEPTION>(r->exceptioncount);
 		if (r->pextendedexception == nullptr) {
 			r->exceptioncount = 0;
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 	}
 	for (size_t i = 0; i < r->exceptioncount; ++i)
@@ -2102,7 +2102,7 @@ pack_result EXT_PULL::g_apptrecpat(APPOINTMENT_RECUR_PAT *r)
 		r->preservedblock1 = anew<uint8_t>(r->reservedblock1size);
 		if (r->preservedblock1 == nullptr) {
 			r->reservedblock1size = 0;
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		TRY(g_bytes(r->preservedblock1, r->reservedblock1size));
 	}
@@ -2111,12 +2111,12 @@ pack_result EXT_PULL::g_apptrecpat(APPOINTMENT_RECUR_PAT *r)
 	TRY(g_uint32(&r->reservedblock2size));
 	if (r->reservedblock2size == 0) {
 		r->preservedblock2 = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r->preservedblock2 = anew<uint8_t>(r->reservedblock2size);
 	if (r->preservedblock2 == nullptr) {
 		r->reservedblock2size = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	return g_bytes(r->preservedblock2, r->reservedblock2size);
 }
@@ -2128,7 +2128,7 @@ static pack_result ext_pull_goid_trailer(EXT_PULL *ext,
 	r->data.pv = ext->m_alloc(len);
 	if (r->data.pv == nullptr) {
 		r->data.cb = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	r->data.cb = len;
 	return ext->g_bytes(r->data.pv, len);
@@ -2167,24 +2167,24 @@ static pack_result ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LI
 	r->pplist = pext->anew<ATTACHMENT_CONTENT *>(strange_roundup(r->count, SR_GROW_ATTACHMENT_CONTENT));
 	if (r->pplist == nullptr) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (i=0; i<r->count; i++) {
 		r->pplist[i] = pext->anew<ATTACHMENT_CONTENT>();
 		if (r->pplist[i] == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(pext->g_tpropval_a(&r->pplist[i]->proplist));
 		TRY(pext->g_uint8(&tmp_byte));
 		if (0 != tmp_byte) {
 			r->pplist[i]->pembedded = pext->anew<MESSAGE_CONTENT>();
 			if (r->pplist[i]->pembedded == nullptr)
-				return EXT_ERR_ALLOC;
+				return pack_result::alloc;
 			TRY(pext->g_msgctnt(r->pplist[i]->pembedded));
 		} else {
 			r->pplist[i]->pembedded = NULL;
 		}
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PULL::g_msgctnt(MESSAGE_CONTENT *r)
@@ -2196,7 +2196,7 @@ pack_result EXT_PULL::g_msgctnt(MESSAGE_CONTENT *r)
 	if (0 != tmp_byte) {
 		r->children.prcpts = anew<TARRAY_SET>();
 		if (r->children.prcpts == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		TRY(g_tarray_set(r->children.prcpts));
 	} else {
 		r->children.prcpts = NULL;
@@ -2205,11 +2205,11 @@ pack_result EXT_PULL::g_msgctnt(MESSAGE_CONTENT *r)
 	if (0 != tmp_byte) {
 		r->children.pattachments = anew<ATTACHMENT_LIST>();
 		if (r->children.pattachments == nullptr)
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		return ext_buffer_pull_attachment_list(this, r->children.pattachments);
 	}
 	r->children.pattachments = NULL;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 BOOL EXT_PUSH::init(void *pdata, uint32_t alloc_size,
@@ -2271,9 +2271,9 @@ BOOL EXT_PUSH::check_ovf(uint32_t extra_size)
 pack_result EXT_PUSH::advance(uint32_t size)
 {
 	if (!check_ovf(size))
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	m_offset += size;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_bytes(const void *pdata, uint32_t n)
@@ -2283,75 +2283,75 @@ pack_result EXT_PUSH::p_bytes(const void *pdata, uint32_t n)
 		 * Covers pdata==nullptr case as far as we care. If
 		 * pdata==nullptr and n>0, memcpy/ASAN will usually crash/exit.
 		 */
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	if (!check_ovf(n))
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	memcpy(&m_udata[m_offset], pdata, n);
 	m_offset += n;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_uint8(uint8_t v)
 {
 	if (!check_ovf(sizeof(uint8_t)))
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	m_udata[m_offset] = v;
 	m_offset += sizeof(uint8_t);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_uint16(uint16_t v)
 {
 	if (!check_ovf(sizeof(uint16_t)))
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	cpu_to_le16p(&m_udata[m_offset], v);
 	m_offset += sizeof(uint16_t);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_uint32(uint32_t v)
 {
 	if (!check_ovf(sizeof(uint32_t)))
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	cpu_to_le32p(&m_udata[m_offset], v);
 	m_offset += sizeof(uint32_t);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_uint64(uint64_t v)
 {
 	if (!check_ovf(sizeof(uint64_t)))
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	cpu_to_le64p(&m_udata[m_offset], v);
 	m_offset += sizeof(uint64_t);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_float(float v)
 {
 	if (!check_ovf(sizeof(float)))
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	float_cpu_to_le32p(&m_udata[m_offset], v);
 	m_offset += sizeof(float);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_double(double v)
 {
 	if (!check_ovf(sizeof(double)))
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	float_cpu_to_le64p(&m_udata[m_offset], v);
 	m_offset += sizeof(double);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_bool(BOOL v)
 {
 	if (!check_ovf(sizeof(uint8_t)))
-		return EXT_ERR_BUFSIZE;
+		return pack_result::bufsize;
 	m_udata[m_offset] = !!v;
 	m_offset += sizeof(uint8_t);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 	
 }
 
@@ -2361,11 +2361,11 @@ pack_result EXT_PUSH::p_bin(const BINARY &r)
 		TRY(p_uint32(r.cb));
 	} else {
 		if (r.cb > 0xFFFF)
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		TRY(p_uint16(r.cb));
 	}
 	if (r.cb == 0)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	return p_bytes(r.pb, r.cb);
 }
 
@@ -2386,10 +2386,10 @@ pack_result EXT_PUSH::p_bin(std::string_view r)
 pack_result EXT_PUSH::p_bin_s(const BINARY &r)
 {
 	if (r.cb > 0xFFFF)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	TRY(p_uint16(r.cb));
 	if (r.cb == 0)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	return p_bytes(r.pb, r.cb);
 }
 
@@ -2397,7 +2397,7 @@ pack_result EXT_PUSH::p_bin_ex(const BINARY &r)
 {
 	TRY(p_uint32(r.cb));
 	if (r.cb == 0)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	return p_bytes(r.pb, r.cb);
 }
 
@@ -2431,7 +2431,7 @@ pack_result EXT_PUSH::p_wstr(const char *pstr)
 	try {
 		pbuff = std::make_unique<char[]>(len);
 	} catch (const std::bad_alloc &) {
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	auto utf16_len = utf8_to_utf16le(pstr, pbuff.get(), len);
 	if (utf16_len < 2) {
@@ -2456,7 +2456,7 @@ pack_result EXT_PUSH::p_uint16_a(const SHORT_ARRAY &r)
 	TRY(p_uint32(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_uint16(r.ps[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_uint32_a(const LONG_ARRAY &r)
@@ -2464,7 +2464,7 @@ pack_result EXT_PUSH::p_uint32_a(const LONG_ARRAY &r)
 	TRY(p_uint32(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_uint32(r.pl[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_uint64_a(const LONGLONG_ARRAY &r)
@@ -2472,17 +2472,17 @@ pack_result EXT_PUSH::p_uint64_a(const LONGLONG_ARRAY &r)
 	TRY(p_uint32(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_uint64(r.pll[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_uint64_sa(const LONGLONG_ARRAY &r)
 {
 	if (r.count > 0xFFFF)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	TRY(p_uint16(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_uint64(r.pll[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_float_a(const FLOAT_ARRAY &r)
@@ -2490,7 +2490,7 @@ pack_result EXT_PUSH::p_float_a(const FLOAT_ARRAY &r)
 	TRY(p_uint32(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_float(r.mval[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_double_a(const DOUBLE_ARRAY &r)
@@ -2498,7 +2498,7 @@ pack_result EXT_PUSH::p_double_a(const DOUBLE_ARRAY &r)
 	TRY(p_uint32(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_double(r.mval[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_bin_a(const BINARY_ARRAY &r)
@@ -2514,7 +2514,7 @@ pack_result EXT_PUSH::p_bin_a(const BINARY_ARRAY &r)
 		}
 		TRY(p_bin(r.pbin[i]));
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_str_a(const STRING_ARRAY &r)
@@ -2530,7 +2530,7 @@ pack_result EXT_PUSH::p_str_a(const STRING_ARRAY &r)
 		}
 		TRY(p_str(r.ppstr[i]));
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_wstr_a(const STRING_ARRAY &r)
@@ -2546,7 +2546,7 @@ pack_result EXT_PUSH::p_wstr_a(const STRING_ARRAY &r)
 		}
 		TRY(p_wstr(r.ppstr[i]));
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_guid_a(const GUID_ARRAY &r)
@@ -2554,7 +2554,7 @@ pack_result EXT_PUSH::p_guid_a(const GUID_ARRAY &r)
 	TRY(p_uint32(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_guid(r.pguid[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_push_restriction_and_or(EXT_PUSH *pext,
@@ -2567,7 +2567,7 @@ static pack_result ext_buffer_push_restriction_and_or(EXT_PUSH *pext,
 		TRY(pext->p_uint16(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_restriction(r->pres[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_push_restriction_not(EXT_PUSH *pext,
@@ -2633,7 +2633,7 @@ static pack_result ext_buffer_push_restriction_comment(EXT_PUSH *pext,
     const RESTRICTION_COMMENT *r)
 {
 	if (r->count == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	TRY(pext->p_uint8(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_tagged_pv(r->ppropval[i]));
@@ -2680,11 +2680,11 @@ pack_result EXT_PUSH::p_restriction(const RESTRICTION &r)
 	case RES_COUNT:
 		return ext_buffer_push_restriction_count(this, r.count);
 	case RES_NULL:
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	default:
 		return pack_result::bad_switch;
 	}
-	return EXT_ERR_BAD_SWITCH;
+	return pack_result::bad_switch;
 }
 
 pack_result EXT_PUSH::p_svreid(const SVREID &r)
@@ -2734,7 +2734,7 @@ static pack_result ext_buffer_push_movecopy_action(EXT_PUSH *pext,
 		uint32_t offset = ext.m_offset;
 		TRY(pext->advance(sizeof(uint16_t)));
 		if (r->pstore_eid == nullptr)
-			return EXT_ERR_FORMAT;
+			return pack_result::format;
 		TRY(pext->p_store_eid(*r->pstore_eid));
 		uint32_t offset1 = ext.m_offset;
 		eid_size = offset1 - (offset + sizeof(uint16_t));
@@ -2769,23 +2769,23 @@ static pack_result ext_buffer_push_recipient_block(EXT_PUSH *pext,
     const RECIPIENT_BLOCK *r)
 {
 	if (r->count == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	TRY(pext->p_uint8(r->reserved));
 	TRY(pext->p_uint16(r->count));
 	for (const auto &p : *r)
 		TRY(pext->p_tagged_pv(p));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_push_forwarddelegate_action(EXT_PUSH *pext,
     const FORWARDDELEGATE_ACTION *r)
 {
 	if (r->count == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	TRY(pext->p_uint16(r->count));
 	for (const auto &rcpt : *r)
 		TRY(ext_buffer_push_recipient_block(pext, &rcpt));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_push_action_block(EXT_PUSH *pext, const ACTION_BLOCK *r)
@@ -2828,24 +2828,24 @@ static pack_result ext_buffer_push_action_block(EXT_PUSH *pext, const ACTION_BLO
 	case OP_MARK_AS_READ:
 		break;
 	default:
-		return EXT_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 	uint16_t tmp_len = ext.m_offset - (offset + sizeof(uint16_t));
 	uint32_t offset1 = ext.m_offset;
 	ext.m_offset = offset;
 	TRY(pext->p_uint16(tmp_len));
 	ext.m_offset = offset1;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_rule_actions(const RULE_ACTIONS &r)
 {
 	if (r.count == 0)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	TRY(p_uint16(r.count));
 	for (const auto &act : r)
 		TRY(ext_buffer_push_action_block(this, &act));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_propval(uint16_t type, const void *pval)
@@ -2901,7 +2901,7 @@ pack_result EXT_PUSH::p_propval(uint16_t type, const void *pval)
 	CASE(PT_MV_BINARY, BINARY_ARRAY, p_bin_a);
 	default:
 		mlog(LV_ERR, "E-2901: illegal proptype (%xh) serialized", type);
-		return EXT_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 #undef CASE
 }
@@ -2930,7 +2930,7 @@ pack_result EXT_PUSH::p_longterm_a(const LONG_TERM_ID_ARRAY &r)
 	TRY(p_uint16(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_longterm(r.pids[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_proptag_a(const PROPTAG_ARRAY &r)
@@ -2938,7 +2938,7 @@ pack_result EXT_PUSH::p_proptag_a(const PROPTAG_ARRAY &r)
 	TRY(p_uint16(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_uint32(r.pproptag[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_proptag_a(std::span<const gromox::proptag_t> r)
@@ -2955,7 +2955,7 @@ pack_result EXT_PUSH::p_proptag_a(const LPROPTAG_ARRAY &r)
 	TRY(p_uint32(r.cvalues));
 	for (size_t i = 0; i < r.cvalues; ++i)
 		TRY(p_uint32(r.pproptag[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_propname(const PROPERTY_NAME &r)
@@ -2974,7 +2974,7 @@ pack_result EXT_PUSH::p_propname(const PROPERTY_NAME &r)
 		TRY(p_uint8(name_size));
 		m_offset = offset1;
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_propname_a(const PROPNAME_ARRAY &r)
@@ -2982,7 +2982,7 @@ pack_result EXT_PUSH::p_propname_a(const PROPNAME_ARRAY &r)
 	TRY(p_uint16(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_propname(r.ppropname[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_tpropval_a(const TPROPVAL_ARRAY &r)
@@ -2990,7 +2990,7 @@ pack_result EXT_PUSH::p_tpropval_a(const TPROPVAL_ARRAY &r)
 	TRY(p_uint16(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_tagged_pv(r.ppropval[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_tpropval_a(const LTPROPVAL_ARRAY &r)
@@ -2998,7 +2998,7 @@ pack_result EXT_PUSH::p_tpropval_a(const LTPROPVAL_ARRAY &r)
 	TRY(p_uint32(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_tagged_pv(r.propval[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_tarray_set(const TARRAY_SET &r)
@@ -3006,7 +3006,7 @@ pack_result EXT_PUSH::p_tarray_set(const TARRAY_SET &r)
 	TRY(p_uint32(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_tpropval_a(*r.pparray[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 
@@ -3023,13 +3023,13 @@ pack_result EXT_PUSH::p_problem_a(const PROBLEM_ARRAY &r)
 	TRY(p_uint16(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(ext_buffer_push_property_problem(this, r.pproblem[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_xid(const XID &xid)
 {
 	if (xid.size < 17 || xid.size > 24)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	TRY(p_guid(xid.guid));
 	return p_bytes(xid.local_id, xid.size - 16);
 }
@@ -3081,11 +3081,11 @@ pack_result EXT_PUSH::p_flagged_pv(uint32_t tag, const FLAGGED_PROPVAL &r)
 	case FLAGGED_PROPVAL_FLAG_AVAILABLE:
 		return p_propval(type, pvalue);
 	case FLAGGED_PROPVAL_FLAG_UNAVAILABLE:
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	case FLAGGED_PROPVAL_FLAG_ERROR:
 		return p_uint32(*static_cast<uint32_t *>(pvalue));
 	default:
-		return EXT_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 }
 
@@ -3095,14 +3095,14 @@ pack_result EXT_PUSH::p_proprow(const PROPTAG_ARRAY &cols, const PROPERTY_ROW &r
 	if (PROPERTY_ROW_FLAG_NONE == r.flag) {
 		for (size_t i = 0; i < cols.count; ++i)
 			TRY(p_propval(PROP_TYPE(cols.pproptag[i]), r.pppropval[i]));
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	} else if (PROPERTY_ROW_FLAG_FLAGGED == r.flag) {
 		for (size_t i = 0; i < cols.count; ++i)
 			TRY(p_flagged_pv(cols.pproptag[i],
 			         *static_cast<FLAGGED_PROPVAL *>(r.pppropval[i])));
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
-	return EXT_ERR_BAD_SWITCH;
+	return pack_result::bad_switch;
 }
 
 pack_result EXT_PUSH::p_proprow(const LPROPTAG_ARRAY &cols, const PROPERTY_ROW &r)
@@ -3111,14 +3111,14 @@ pack_result EXT_PUSH::p_proprow(const LPROPTAG_ARRAY &cols, const PROPERTY_ROW &
 	if (r.flag == PROPERTY_ROW_FLAG_NONE) {
 		for (size_t i = 0; i < cols.cvalues; ++i)
 			TRY(p_propval(PROP_TYPE(cols.pproptag[i]), r.pppropval[i]));
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	} else if (r.flag == PROPERTY_ROW_FLAG_FLAGGED) {
 		for (size_t i = 0; i < cols.cvalues; ++i)
 			TRY(p_flagged_pv(cols.pproptag[i],
 			         *static_cast<FLAGGED_PROPVAL *>(r.pppropval[i])));
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
-	return EXT_ERR_BAD_SWITCH;
+	return pack_result::bad_switch;
 }
 
 pack_result EXT_PUSH::p_sortorder(const SORT_ORDER &r)
@@ -3131,13 +3131,13 @@ pack_result EXT_PUSH::p_sortorder(const SORT_ORDER &r)
 pack_result EXT_PUSH::p_sortorder_set(const SORTORDER_SET &r)
 {
 	if (r.count == 0 || r.ccategories > r.count || r.cexpanded > r.ccategories)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	TRY(p_uint16(r.count));
 	TRY(p_uint16(r.ccategories));
 	TRY(p_uint16(r.cexpanded));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_sortorder(r.psort[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_typed_str(const TYPED_STRING &r)
@@ -3146,14 +3146,14 @@ pack_result EXT_PUSH::p_typed_str(const TYPED_STRING &r)
 	switch (r.string_type) {
 	case STRING_TYPE_NONE:
 	case STRING_TYPE_EMPTY:
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	case STRING_TYPE_STRING8:
 	case STRING_TYPE_UNICODE_REDUCED:
 		return p_str(r.pstring);
 	case STRING_TYPE_UNICODE:
 		return p_wstr(r.pstring);
 	default:
-		return EXT_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 }
 
@@ -3204,7 +3204,7 @@ pack_result EXT_PUSH::p_recipient_row(const PROPTAG_ARRAY &pproptags, const RECI
 	}
 	TRY(p_uint16(r.count));
 	if (r.count > pproptags.count)
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	proptags.count = r.count;
 	proptags.pproptag = static_cast<uint32_t *>(pproptags.pproptag);
 	return p_proprow(proptags, r.properties);
@@ -3223,7 +3223,7 @@ pack_result EXT_PUSH::p_openrecipient_row(const PROPTAG_ARRAY &pproptags, const 
 	m_offset = offset;
 	TRY(p_uint16(row_size));
 	m_offset = offset1;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_readrecipient_row(const PROPTAG_ARRAY &pproptags, const READRECIPIENT_ROW &r)
@@ -3240,7 +3240,7 @@ pack_result EXT_PUSH::p_readrecipient_row(const PROPTAG_ARRAY &pproptags, const 
 	m_offset = offset;
 	TRY(p_uint16(row_size));
 	m_offset = offset1;
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_permission_data(const PERMISSION_DATA &r)
@@ -3286,7 +3286,7 @@ pack_result EXT_PUSH::p_eid_a(const EID_ARRAY &r)
 	TRY(p_uint32(r.count));
 	for (auto eid : r)
 		TRY(p_uint64(eid));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_systime(const SYSTEMTIME &r)
@@ -3336,7 +3336,7 @@ pack_result EXT_PUSH::p_tzdef(const TIMEZONEDEFINITION &r)
 	TRY(p_uint8(r.minor));
 	auto len = utf8_to_utf16le(r.keyname, tmp_buff, std::size(tmp_buff));
 	if (len < 2)
-		return EXT_ERR_CHARCNV;
+		return pack_result::charconv;
 	len -= 2;
 	cbheader = 6 + len;
 	TRY(p_uint16(cbheader));
@@ -3346,7 +3346,7 @@ pack_result EXT_PUSH::p_tzdef(const TIMEZONEDEFINITION &r)
 	TRY(p_uint16(r.crules));
 	for (size_t i = 0; i < r.crules; ++i)
 		TRY(ext_buffer_push_tzrule(this, &r.prules[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_push_patterntypespecific(EXT_PUSH *pext,
@@ -3355,7 +3355,7 @@ static pack_result ext_buffer_push_patterntypespecific(EXT_PUSH *pext,
 	switch (patterntype) {
 	case rptMinute:
 		/* do nothing */
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	case rptWeek:
 		return pext->p_uint32(r->weekrecur);
 	case rptMonth:
@@ -3368,7 +3368,7 @@ static pack_result ext_buffer_push_patterntypespecific(EXT_PUSH *pext,
 		TRY(pext->p_uint32(r->monthnth.weekrecur));
 		return pext->p_uint32(r->monthnth.recurnum);
 	default:
-		return EXT_ERR_BAD_SWITCH;
+		return pack_result::bad_switch;
 	}
 }
 
@@ -3432,7 +3432,7 @@ static pack_result ext_buffer_push_exceptioninfo(EXT_PUSH *pext,
 		TRY(pext->p_uint32(r->subtype));
 	if (r->overrideflags & ARO_APPTCOLOR)
 		TRY(pext->p_uint32(r->appointmentcolor));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_buffer_push_changehighlight(EXT_PUSH *pext,
@@ -3441,9 +3441,9 @@ static pack_result ext_buffer_push_changehighlight(EXT_PUSH *pext,
 	TRY(pext->p_uint32(r->size));
 	TRY(pext->p_uint32(r->value));
 	if (r->size < sizeof(uint32_t))
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	else if (sizeof(uint32_t) == r->size)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	return pext->p_bytes(r->preserved, r->size - sizeof(uint32_t));
 }
 
@@ -3467,11 +3467,11 @@ static pack_result ext_buffer_push_extendedexception(EXT_PUSH *pext,
 		try {
 			pbuff = std::make_unique<char[]>(2 * tmp_len);
 		} catch (const std::bad_alloc &) {
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		auto string_len = utf8_to_utf16le(subj, pbuff.get(), 2 * tmp_len);
 		if (string_len < 2)
-			return EXT_ERR_CHARCNV;
+			return pack_result::charconv;
 		if (string_len > UINT16_MAX)
 			string_len = UINT16_MAX;
 		string_len -= 2;
@@ -3485,11 +3485,11 @@ static pack_result ext_buffer_push_extendedexception(EXT_PUSH *pext,
 		try {
 			pbuff = std::make_unique<char[]>(2 * tmp_len);
 		} catch (const std::bad_alloc &) {
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		auto string_len = utf8_to_utf16le(loc, pbuff.get(), 2 * tmp_len);
 		if (string_len < 2)
-			return EXT_ERR_CHARCNV;
+			return pack_result::charconv;
 		if (string_len > UINT16_MAX)
 			string_len = UINT16_MAX;
 		string_len -= 2;
@@ -3501,7 +3501,7 @@ static pack_result ext_buffer_push_extendedexception(EXT_PUSH *pext,
 		if (r->reservedblockee2size != 0)
 			TRY(pext->p_bytes(r->preservedblockee2, r->reservedblockee2size));
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_apptrecpat(const APPOINTMENT_RECUR_PAT &r)
@@ -3519,7 +3519,7 @@ pack_result EXT_PUSH::p_apptrecpat(const APPOINTMENT_RECUR_PAT &r)
 		TRY(ext_buffer_push_extendedexception(this, r.writerversion2, r.pexceptioninfo[i].overrideflags, &r.pextendedexception[i]));
 	TRY(p_uint32(r.reservedblock2size));
 	if (r.reservedblock2size == 0)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	return p_bytes(r.preservedblock2, r.reservedblock2size);
 }
 
@@ -3552,7 +3552,7 @@ static pack_result ext_buffer_push_attachment_list(EXT_PUSH *pext,
 			TRY(pext->p_uint8(0));
 		}
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_msgctnt(const MESSAGE_CONTENT &r)
@@ -3585,7 +3585,7 @@ bool emsab_to_parts(EXT_PULL &ser, char *type, size_t tsize,
     char *addr, size_t asize)
 {
 	EMSAB_ENTRYID eid;
-	if (ser.g_abk_eid(&eid) != EXT_ERR_SUCCESS || eid.type != DT_MAILUSER)
+	if (ser.g_abk_eid(&eid) != pack_result::ok || eid.type != DT_MAILUSER)
 		return false;
 	if (type != nullptr)
 		gx_strlcpy(type, "EX", tsize);
@@ -3597,7 +3597,7 @@ bool oneoff_to_parts(EXT_PULL &ser, char *type, size_t tsize,
     char *addr, size_t asize)
 {
 	ONEOFF_ENTRYID eid;
-	if (ser.g_oneoff_eid(&eid) != EXT_ERR_SUCCESS ||
+	if (ser.g_oneoff_eid(&eid) != pack_result::ok ||
 	    strcasecmp(eid.paddress_type, "SMTP") != 0)
 		return false;
 	if (type != nullptr)
