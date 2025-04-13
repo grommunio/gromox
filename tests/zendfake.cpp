@@ -9,7 +9,6 @@
  * program providing the same symbols and mapi.so code constituents (hence
  * libmapi4zf.la).
  */
-int main() { return 0; }
 using voidp = void *;
 extern "C" {
 __attribute__((unused,visibility("default"))) voidp

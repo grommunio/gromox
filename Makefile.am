@@ -9,7 +9,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la ${program_plugins}
-noinst_LTLIBRARIES = libphp_mapi.la libgromox_abtree.la
+noinst_LTLIBRARIES = libgromox_abtree.la libphp_mapi.la
 pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/authtry tools/eidprint tools/textmapquery
 pkglib_LTLIBRARIES = libmapi4zf.la
 version_sc_SYFLAGS = -Wl,--version-script=${srcdir}/default.sym
@@ -241,12 +241,9 @@ libphp_mapi_la_SOURCES = php_mapi/ext.hpp php_mapi/ext_pack.cpp php_mapi/mapi.cp
 libphp_mapi_la_LIBADD = ${fmt_LIBS} ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 # allow-shlib-undefined makes no sense for libphp_mapi_la, since it
 # is a convenience archive (static archive in practice)
-libmapi4zf_la_SOURCES =
+libmapi4zf_la_SOURCES = tests/zendfake.cpp
 libmapi4zf_la_LDFLAGS = ${PHP_LDFLAGS}
 libmapi4zf_la_LIBADD = libphp_mapi.la
-if WITH_GNU_LD
-libmapi4zf_la_LDFLAGS += -Wl,--allow-shlib-undefined
-endif
 mapi_la_SOURCES =
 mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${default_SYFLAGS} ${PHP_LDFLAGS}
 if WITH_GNU_LD
@@ -255,7 +252,7 @@ endif
 mapi_la_LIBADD = libphp_mapi.la
 EXTRA_mapi_la_DEPENDENCIES = default.sym
 
-noinst_PROGRAMS = dldcheck tests/bdump tests/bodyconv tests/compress tests/dnsbl_check tests/exrpctest tests/gxl-383 tests/jsontest tests/lzxpress tests/oxcmail_ie tests/ucvttest tests/udb tests/utiltest tests/vcard tests/zendfake tools/tzdump
+noinst_PROGRAMS = dldcheck tests/bdump tests/bodyconv tests/compress tests/dnsbl_check tests/exrpctest tests/gxl-383 tests/jsontest tests/lzxpress tests/oxcmail_ie tests/ucvttest tests/udb tests/utiltest tests/vcard tools/tzdump
 if HAVE_ESEDB
 noinst_PROGRAMS += tests/epv_unpack
 endif
@@ -290,8 +287,6 @@ tests_utiltest_SOURCES = tests/utiltest.cpp
 tests_utiltest_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tests_vcard_SOURCES = tests/vcard.cpp
 tests_vcard_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
-tests_zendfake_SOURCES = tests/zendfake.cpp
-tests_zendfake_LDADD = libmapi4zf.la
 tools_authtry_SOURCES = tools/authtry.cpp
 tools_authtry_LDADD = ${libHX_LIBS} ${libldap_LIBS} libgromox_auth.la libgromox_authz.la libgromox_common.la libgxs_mysql_adaptor.la
 tools_eidprint_SOURCES = tools/eidprint.cpp
@@ -424,7 +419,7 @@ uninstall-hook:
 	rm -Rf ${DESTDIR}${pkgdatadir}/
 
 # On cross-compilation, dldcheck may fail to run, so allow exit code 126 (e.g. Linux) to pass
-dldcheck_files = ${lib_LTLIBRARIES} ${program_plugins} ${pamlib_LTLIBRARIES}
+dldcheck_files = ${lib_LTLIBRARIES} ${program_plugins} ${pkglib_LTLIBRARIES} ${pamlib_LTLIBRARIES}
 dldcheck.stamp: dldcheck ${dldcheck_files}
 	${AM_V_GEN}LD_LIBRARY_PATH="${abs_builddir}/.libs:$$LD_LIBRARY_PATH" ./dldcheck "$@" ${dldcheck_files}; rv="$$?"; test "$$rv" != 2
 
