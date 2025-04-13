@@ -205,7 +205,7 @@ uint64_t rop_util_current_nttime()
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);
 	auto nt = rop_util_unix_to_nttime(ts.tv_sec);
-	if (nt > INT64_MIN)
+	if (nt > static_cast<mapitime_t>(INT64_MIN))
 		return nt;
 	return nt + ts.tv_nsec / 100;
 }
