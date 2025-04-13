@@ -231,7 +231,7 @@ static pack_result nsp_ndr_push_string_array(NDR_PUSH &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r.ppstr == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.p_ulong(r.count));
 	for (size_t cnt = 0; cnt < r.count; ++cnt)
 		TRY(x.p_unique_ptr(r.ppstr[cnt]));
@@ -276,7 +276,7 @@ static pack_result nsp_ndr_pull_strings_array(NDR_PULL &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT))
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	for (size_t cnt = 0; cnt < r->count; ++cnt) {
 		if (r->ppstr[cnt] == nullptr)
 			continue;
@@ -367,7 +367,7 @@ static pack_result nsp_ndr_push_wstring_array(NDR_PUSH &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r.ppstr == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.p_ulong(r.count));
 	for (size_t cnt = 0; cnt < r.count; ++cnt)
 		TRY(x.p_unique_ptr(r.ppstr[cnt]));
@@ -429,7 +429,7 @@ static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT))
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	for (size_t cnt = 0; cnt < r->count; ++cnt) {
 		if (r->ppstr[cnt] == nullptr)
 			continue;
@@ -475,7 +475,7 @@ static pack_result nsp_ndr_pull_binary(NDR_PULL &x, unsigned int flag, BINARY *r
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r->pb == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.g_ulong(&size));
 	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->cb) {
@@ -502,7 +502,7 @@ static pack_result nsp_ndr_push_binary(NDR_PUSH &x, unsigned int flag, const BIN
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r.pb == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.p_ulong(r.cb));
 	TRY(x.p_uint8_a(r.pb, r.cb));
 	return pack_result::ok;
@@ -541,7 +541,7 @@ static pack_result nsp_ndr_pull_short_array(NDR_PULL &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r->ps == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.g_ulong(&size));
 	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->count)
@@ -566,7 +566,7 @@ static pack_result nsp_ndr_push_short_array(NDR_PUSH &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r.ps == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.p_ulong(r.count));
 	for (size_t cnt = 0; cnt < r.count; ++cnt)
 		TRY(x.p_uint16(r.ps[cnt]));
@@ -590,7 +590,7 @@ static pack_result nsp_ndr_pull_long_array(NDR_PULL &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r->pl == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.g_ulong(&size));
 	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->count)
@@ -615,7 +615,7 @@ static pack_result nsp_ndr_push_long_array(NDR_PUSH &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r.pl == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.p_ulong(r.count));
 	for (size_t cnt = 0; cnt < r.count; ++cnt)
 		TRY(x.p_uint32(r.pl[cnt]));
@@ -639,7 +639,7 @@ static pack_result nsp_ndr_pull_binary_array(NDR_PULL &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r->pbin == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.g_ulong(&size));
 	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->count)
@@ -666,7 +666,7 @@ static pack_result nsp_ndr_push_binary_array(NDR_PUSH &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r.pbin == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.p_ulong(r.count));
 	for (size_t cnt = 0; cnt < r.count; ++cnt)
 		TRY(nsp_ndr_push_binary(x, FLAG_HEADER, r.pbin[cnt]));
@@ -692,7 +692,7 @@ static pack_result nsp_ndr_pull_flatuid_array(NDR_PULL &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r->ppguid == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.g_ulong(&size));
 	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->cvalues)
@@ -728,7 +728,7 @@ static pack_result nsp_ndr_push_flatuid_array(NDR_PUSH &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r.ppguid == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.p_ulong(r.cvalues));
 	for (size_t cnt = 0; cnt < r.cvalues; ++cnt)
 		TRY(x.p_unique_ptr(r.ppguid[cnt]));
@@ -754,7 +754,7 @@ static pack_result nsp_ndr_pull_filetime_array(NDR_PULL &x,
 		TRY(x.trailer_align(5));
 	}
 	if (!(flag & FLAG_CONTENT) || r->pftime == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.g_ulong(&size));
 	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->cvalues)
@@ -779,7 +779,7 @@ static pack_result nsp_ndr_push_filetime_array(NDR_PUSH &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r.pftime == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.p_ulong(r.cvalues));
 	for (size_t cnt = 0; cnt < r.cvalues; ++cnt)
 		TRY(nsp_ndr_push_filetime(x, r.pftime[cnt]));
@@ -871,7 +871,7 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT))
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	switch (*ptype) {
 	case PT_NULL:
 	case PT_SHORT:
@@ -1041,7 +1041,7 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT))
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	switch (type) {
 	case PT_NULL:
 	case PT_SHORT:
@@ -1135,7 +1135,7 @@ static pack_result nsp_ndr_pull_property_value(NDR_PULL &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT))
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	uint32_t type = PROP_TYPE(r->proptag);
 	TRY(nsp_ndr_pull_prop_val_union(x, FLAG_CONTENT, &type, &r->value));
 	return pack_result::ok;
@@ -1193,7 +1193,7 @@ static pack_result nsp_ndr_pull_property_row(NDR_PULL &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r->pprops == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.g_ulong(&size));
 	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->cvalues)
@@ -1221,7 +1221,7 @@ static pack_result nsp_ndr_push_property_row(NDR_PUSH &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r.pprops == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.p_ulong(r.cvalues));
 	for (size_t cnt = 0; cnt < r.cvalues; ++cnt)
 		TRY(nsp_ndr_push_property_value(x, FLAG_HEADER, r.pprops[cnt]));
@@ -1264,7 +1264,7 @@ static pack_result nsp_ndr_pull_restriction_and_or(NDR_PULL &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r->pres == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.g_ulong(&size));
 	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->cres)
@@ -1291,7 +1291,7 @@ static pack_result nsp_ndr_push_restriction_and_or(NDR_PUSH &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT) || r.pres == nullptr)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	TRY(x.p_ulong(r.cres));
 	for (size_t cnt = 0; cnt < r.cres; ++cnt)
 		TRY(nsp_ndr_push_restriction(x, FLAG_HEADER, r.pres[cnt]));
@@ -1592,7 +1592,7 @@ static pack_result nsp_ndr_pull_restriction_union(NDR_PULL &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT))
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	switch (*ptype) {
 	case RES_AND:
 	case RES_OR:
@@ -1667,7 +1667,7 @@ static pack_result nsp_ndr_push_restriction_union(NDR_PUSH &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT))
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	switch (type) {
 	case RES_AND:
 	case RES_OR:
@@ -1714,7 +1714,7 @@ static pack_result nsp_ndr_pull_restriction(NDR_PULL &x,
 	}
 	
 	if (!(flag & FLAG_CONTENT))
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	auto type = r->res_type;
 	TRY(nsp_ndr_pull_restriction_union(x, FLAG_CONTENT, &type, &r->res));
 	if (type != r->res_type)
@@ -2008,7 +2008,7 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIGETPROPLIST_IN *r)
 	uint32_t v;
 	TRY(x.g_uint32(&v));
 	r->codepage = static_cast<cpid_t>(v);
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIGETPROPLIST_OUT &r)

@@ -519,11 +519,11 @@ MhNspPlugin::ProcRes MhNspPlugin::bind(MhNspContext& ctx)
 {
 	auto& request = ctx.request.emplace<bind_request>();
 	auto& response = ctx.response.emplace<bind_response>();
-	if (ctx.ext_pull.g_nsp_request(request) != EXT_ERR_SUCCESS)
+	if (ctx.ext_pull.g_nsp_request(request) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	response.result = nsp_bridge_run(ctx.session_guid, request, response);
 	if (response.result != ecSuccess) {
-		if (ctx.ext_push.p_nsp_response(response) != EXT_ERR_SUCCESS)
+		if (ctx.ext_push.p_nsp_response(response) != pack_result::ok)
 			return ctx.failure_response(RPC_X_BAD_STUB_DATA);
 		return std::nullopt;
 	}
@@ -555,7 +555,7 @@ MhNspPlugin::ProcRes MhNspPlugin::bind(MhNspContext& ctx)
 			return ctx.failure_response(ecServerOOM);
 		}
 	}
-	if (ctx.ext_push.p_nsp_response(response) != EXT_ERR_SUCCESS)
+	if (ctx.ext_push.p_nsp_response(response) != pack_result::ok)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
 	return std::nullopt;
 }
@@ -564,13 +564,13 @@ MhNspPlugin::ProcRes MhNspPlugin::unbind(MhNspContext& ctx)
 {
 	auto& request = ctx.request.emplace<unbind_request>();
 	auto& response = ctx.response.emplace<unbind_response>();
-	if (ctx.ext_pull.g_nsp_request(request) != EXT_ERR_SUCCESS)
+	if (ctx.ext_pull.g_nsp_request(request) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	response.result = nsp_bridge_unbind(ctx.session_guid, request.reserved);
 	std::unique_lock hl_hold(hashLock);
 	removeSession(ctx.session_string);
 	hl_hold.unlock();
-	if (ctx.ext_push.p_nsp_response(response) != EXT_ERR_SUCCESS)
+	if (ctx.ext_push.p_nsp_response(response) != pack_result::ok)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
 	return std::nullopt;
 }
@@ -580,12 +580,12 @@ MhNspPlugin::ProcRes MhNspPlugin::proxy(MhNspContext& ctx)
 {
 	auto& request = ctx.request.emplace<RI>();
 	auto& response = ctx.response.emplace<RI>();
-	if (ctx.ext_pull.g_nsp_request(request) != EXT_ERR_SUCCESS)
+	if (ctx.ext_pull.g_nsp_request(request) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	response.result = nsp_bridge_run(ctx.session_guid, request, response);
 	if constexpr(copystat)
 		response.stat = request.stat;
-	if (ctx.ext_push.p_nsp_response(response) != EXT_ERR_SUCCESS)
+	if (ctx.ext_push.p_nsp_response(response) != pack_result::ok)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
 	return std::nullopt;
 }
@@ -594,10 +594,10 @@ MhNspPlugin::ProcRes MhNspPlugin::getMailboxUrl(MhNspContext& ctx)
 {
 	auto& request = ctx.request.emplace<getmailboxurl_request>();
 	auto& response = ctx.response.emplace<getmatches_response>();
-	if (ctx.ext_pull.g_nsp_request(request) != EXT_ERR_SUCCESS)
+	if (ctx.ext_pull.g_nsp_request(request) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	response.result = ctx.getmailboxurl();
-	if (ctx.ext_push.p_nsp_response(response) != EXT_ERR_SUCCESS)
+	if (ctx.ext_push.p_nsp_response(response) != pack_result::ok)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
 	return std::nullopt;
 }
@@ -606,10 +606,10 @@ MhNspPlugin::ProcRes MhNspPlugin::getAddressBookUrl(MhNspContext& ctx)
 {
 	auto& request = ctx.request.emplace<getaddressbookurl_request>();
 	auto& response = ctx.response.emplace<getaddressbookurl_response>();
-	if (ctx.ext_pull.g_nsp_request(request) != EXT_ERR_SUCCESS)
+	if (ctx.ext_pull.g_nsp_request(request) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	response.result = ctx.getaddressbookurl();
-	if (ctx.ext_push.p_nsp_response(response) != EXT_ERR_SUCCESS)
+	if (ctx.ext_push.p_nsp_response(response) != pack_result::ok)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
 	return std::nullopt;
 }

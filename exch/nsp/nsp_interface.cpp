@@ -617,7 +617,7 @@ ec_error_t nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 	if (NULL != pserver_guid) {
 		EXT_PUSH ep;
 		ep.init(pserver_guid, sizeof(*pserver_guid), 0);
-		if (ep.p_guid(common_util_get_server_guid()) != EXT_ERR_SUCCESS)
+		if (ep.p_guid(common_util_get_server_guid()) != pack_result::ok)
 			return ecError;
 	}
 	nsp_trace(__func__, 1, pstat);

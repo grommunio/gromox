@@ -36,8 +36,8 @@
 #include "http_parser.hpp"
 #include "fastcgi.hpp"
 #include "resource.hpp"
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
-#define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return false; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
+#define QRF(expr) do { if (pack_result{expr} != pack_result::ok) return false; } while (false)
 
 #define POLL_MILLISECONDS_FOR_CHECK				50
 

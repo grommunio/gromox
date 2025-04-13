@@ -610,7 +610,7 @@ static bool parse_xclientapp(const char *ca, const char *ua, uint16_t clv[3])
 
 MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 {
-	if (ctx.ext_pull.g_connect_req(ctx.request.connect) != EXT_ERR_SUCCESS)
+	if (ctx.ext_pull.g_connect_req(ctx.request.connect) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	uint16_t cxr;
 	GUID old_guid;
@@ -657,7 +657,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::connect(MhEmsmdbContext &ctx)
 
 MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::disconnect(MhEmsmdbContext &ctx)
 {
-	if (ctx.ext_pull.g_disconnect_req(ctx.request.disconnect) != EXT_ERR_SUCCESS)
+	if (ctx.ext_pull.g_disconnect_req(ctx.request.disconnect) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	disconnect_response dr;
 	dr.status = 0;
@@ -672,7 +672,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::disconnect(MhEmsmdbContext &ctx)
 
 MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::execute(MhEmsmdbContext &ctx)
 {
-	if (ctx.ext_pull.g_execute_req(ctx.request.execute) != EXT_ERR_SUCCESS)
+	if (ctx.ext_pull.g_execute_req(ctx.request.execute) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	execute_response xr;
 	auto z = std::min(static_cast<size_t>(ctx.request.execute.cb_out), sizeof(xr.out));
@@ -689,7 +689,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::wait(MhEmsmdbContext &ctx)
 {
 	ECDOASYNCWAITEX_IN wait_in;
 	ECDOASYNCWAITEX_OUT wait_out;
-	if (ctx.ext_pull.g_notificationwait_req(ctx.request.notificationwait) != EXT_ERR_SUCCESS)
+	if (ctx.ext_pull.g_notificationwait_req(ctx.request.notificationwait) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	wait_in.acxh.handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
 	wait_in.acxh.guid = ctx.session_guid;
@@ -844,7 +844,7 @@ static BOOL emsmdb_preproc(int context_id)
 	return TRUE;
 }
 
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
 pack_result ems_pull::g_connect_req(connect_request &req)
 {
@@ -856,12 +856,12 @@ pack_result ems_pull::g_connect_req(connect_request &req)
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
 		req.auxin = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	req.auxin = static_cast<uint8_t *>(m_alloc(req.cb_auxin));
 	if (req.auxin == nullptr) {
 		req.cb_auxin = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	return g_bytes(req.auxin, req.cb_auxin);
 }
@@ -876,7 +876,7 @@ pack_result ems_pull::g_execute_req(execute_request &req)
 		req.in = static_cast<uint8_t *>(m_alloc(req.cb_in));
 		if (req.in == nullptr) {
 			req.cb_in = 0;
-			return EXT_ERR_ALLOC;
+			return pack_result::alloc;
 		}
 		TRY(g_bytes(req.in, req.cb_in));
 	}
@@ -884,12 +884,12 @@ pack_result ems_pull::g_execute_req(execute_request &req)
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
 		req.auxin = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	req.auxin = static_cast<uint8_t *>(m_alloc(req.cb_auxin));
 	if (req.auxin == nullptr) {
 		req.cb_auxin = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	return g_bytes(req.auxin, req.cb_auxin);
 }
@@ -899,12 +899,12 @@ pack_result ems_pull::g_disconnect_req(disconnect_request &req)
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
 		req.auxin = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	req.auxin = static_cast<uint8_t *>(m_alloc(req.cb_auxin));
 	if (req.auxin == nullptr) {
 		req.cb_auxin = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	return g_bytes(req.auxin, req.cb_auxin);
 }
@@ -915,12 +915,12 @@ pack_result ems_pull::g_notificationwait_req(notificationwait_request &req)
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
 		req.auxin = nullptr;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	req.auxin = static_cast<uint8_t *>(m_alloc(req.cb_auxin));
 	if (req.auxin == nullptr) {
 		req.cb_auxin = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	return g_bytes(req.auxin, req.cb_auxin);
 }
@@ -936,7 +936,7 @@ pack_result ems_push::p_connect_rsp(const connect_response &rsp)
 	TRY(p_wstr(rsp.displayname));
 	TRY(p_uint32(rsp.cb_auxout));
 	if (rsp.cb_auxout == 0)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	return p_bytes(rsp.auxout, rsp.cb_auxout);
 }
 
@@ -950,7 +950,7 @@ pack_result ems_push::p_execute_rsp(const execute_response &rsp)
 		TRY(p_bytes(rsp.out, rsp.cb_out));
 	TRY(p_uint32(rsp.cb_auxout));
 	if (rsp.cb_auxout == 0)
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	return p_bytes(rsp.auxout, rsp.cb_auxout);
 }
 
