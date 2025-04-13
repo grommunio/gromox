@@ -220,6 +220,10 @@ $StopMarker = Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.STO
 #
 $LogFile = Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.log
 
+# To get an additional log file per mailbox set to "$true"
+#
+$LogPerMbx = $false
+
 # New-MailboxExportRequest accepts the -Priority parameter.
 # Use "Normal" or "High" for Exchange 2010. We found "Normal" is much faster
 # than "High".
@@ -637,6 +641,7 @@ foreach ($Mailbox in (Get-Mailbox)) {
 			# Save plink output to $LogFile
 			Write-MLog "---" none
 			Add-Content -Path $LogFile -Value $TeeVar
+			if ($LogPerMbx) { $MbxLog=$LinuxShareFolder/$MigMBox.log ; Add-Content -Path $MbxLog -Value $TeeVara }
 			Write-MLog "---" none
 		}
 		if ($CMDExitCode -eq 0) {
@@ -671,6 +676,7 @@ foreach ($Mailbox in (Get-Mailbox)) {
 			#$TeeVar = $TeeVar.replace("`r`n`r","`r`n")
 			#$TeeVar = $TeeVar.replace("`n`r`n","`r`n")
 			Add-Content -Path $LogFile -Value $TeeVar
+			if ($LogPerMbx) { $MbxLog=$LinuxShareFolder/$MigMBox.log ; Add-Content -Path $MbxLog -Value $TeeVara }
 			Write-MLog "---" none
 		}
 		if ($CMDExitCode -eq 0) {
