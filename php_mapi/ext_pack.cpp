@@ -14,7 +14,7 @@
 #include <gromox/util.hpp>
 #include <gromox/zcore_types.hpp>
 #include "ext.hpp"
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 #define GROWING_BLOCK_SIZE				0x1000
 
 static thread_local std::vector<void *> g_allocs;
@@ -88,12 +88,12 @@ pack_result PULL_CTX::g_perm_set(PERMISSION_SET *r)
 	r->prows = sta_malloc<PERMISSION_ROW>(r->count);
 	if (NULL == r->prows) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (i=0; i<r->count; i++) {
 		TRY(ext_pack_pull_permission_row(this, &r->prows[i]));
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_pack_pull_message_state(PULL_CTX *pctx, MESSAGE_STATE *r)
@@ -107,17 +107,17 @@ pack_result PULL_CTX::g_state_a(STATE_ARRAY *r)
 	TRY(g_uint32(&r->count));
 	if (0 == r->count) {
 		r->pstate = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 	r->count = std::min(r->count, static_cast<uint32_t>(UINT32_MAX));
 	r->pstate = sta_malloc<MESSAGE_STATE>(r->count);
 	if (NULL == r->pstate) {
 		r->count = 0;
-		return EXT_ERR_ALLOC;
+		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_pack_pull_message_state(this, &r->pstate[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_pack_pull_newmail_znotification(PULL_CTX *pctx,
@@ -202,7 +202,7 @@ static pack_result ext_pack_pull_znotification(PULL_CTX *pctx, ZNOTIFICATION *r)
 	}
 	default:
 		r->pnotification_data = NULL;
-		return EXT_ERR_SUCCESS;
+		return pack_result::ok;
 	}
 } catch (const std::bad_alloc &) {
 	return pack_result::alloc;
@@ -238,7 +238,7 @@ pack_result PUSH_CTX::p_perm_set(const PERMISSION_SET *r)
 	for (i=0; i<r->count; i++) {
 		TRY(ext_pack_push_permission_row(this, &r->prows[i]));
 	}
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 pack_result PUSH_CTX::p_rule_data(const RULE_DATA *r)
@@ -252,7 +252,7 @@ pack_result PUSH_CTX::p_rule_list(const RULE_LIST *r)
 	TRY(p_uint16(r->count));
 	for (const auto &rule : *r)
 		TRY(p_rule_data(&rule));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }
 
 static pack_result ext_pack_push_message_state(PUSH_CTX *pctx, const MESSAGE_STATE *r)
@@ -266,5 +266,5 @@ pack_result PUSH_CTX::p_state_a(const STATE_ARRAY *r)
 	TRY(p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(ext_pack_push_message_state(this, &r->pstate[i]));
-	return EXT_ERR_SUCCESS;
+	return pack_result::ok;
 }

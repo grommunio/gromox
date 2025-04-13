@@ -5,7 +5,7 @@
 #include <climits>
 #include <gromox/ext_buffer.hpp>
 #include "edb_pack.hpp"
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
 enum { /* property types (in the metadata) */
 	EPT_BOOL         = 0x08, // mv 0x88

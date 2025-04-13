@@ -631,7 +631,7 @@ static ZEND_FUNCTION(mapi_createoneoff)
 	tmp_entry.paddress_type = ptype;
 	tmp_entry.pmail_address = paddress;
 	if (!push_ctx.init() ||
-	    push_ctx.p_oneoff_eid(tmp_entry) != EXT_ERR_SUCCESS)
+	    push_ctx.p_oneoff_eid(tmp_entry) != pack_result::ok)
 		pthrow(ecError);
 	RETVAL_STRINGL(reinterpret_cast<const char *>(push_ctx.m_vdata), push_ctx.m_offset);
 	MAPI_G(hr) = ecSuccess;
@@ -649,7 +649,7 @@ static ZEND_FUNCTION(mapi_parseoneoff)
 		pthrow(ecInvalidParam);
 	pull_ctx.init(pentryid, cbentryid, ext_pack_alloc,
 		EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
-	if (pull_ctx.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
+	if (pull_ctx.g_oneoff_eid(&oneoff_entry) != pack_result::ok)
 		pthrow(ecError);
 	zarray_init(return_value);
 	add_assoc_string(return_value, "name", oneoff_entry.pdisplay_name);
@@ -2471,7 +2471,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 			NULL == pzresource || NULL == guidstr)
 			pthrow(ecInvalidParam);
 		pull_ctx.init(guidstr, sizeof(GUID));
-		if (pull_ctx.g_guid(&iid_guid) != EXT_ERR_SUCCESS)
+		if (pull_ctx.g_guid(&iid_guid) != pack_result::ok)
 			pthrow(ecInvalidParam);
 	}
 	auto type = Z_RES_TYPE_P(pzresource);
@@ -3966,7 +3966,7 @@ static ZEND_FUNCTION(kc_session_save)
 		return;	
 	}
 	if (!push_ctx.init() ||
-	    push_ctx.p_guid(psession->hsession) != EXT_ERR_SUCCESS) {
+	    push_ctx.p_guid(psession->hsession) != pack_result::ok) {
 		RETVAL_LONG(ecMAPIOOM);
 		return;	
 	}
@@ -3991,7 +3991,7 @@ static ZEND_FUNCTION(kc_session_restore)
 	data_bin.pb = reinterpret_cast<uint8_t *>(Z_STRVAL_P(pzdata));
 	data_bin.cb = Z_STRLEN_P(pzdata);
 	pull_ctx.init(data_bin.pb, data_bin.cb);
-	if (pull_ctx.g_guid(&hsession) != EXT_ERR_SUCCESS) {
+	if (pull_ctx.g_guid(&hsession) != pack_result::ok) {
 		RETVAL_LONG(ecInvalidParam);
 		return;
 	}

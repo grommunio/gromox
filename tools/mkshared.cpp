@@ -176,7 +176,7 @@ static bool add_changenum(sqlite3_stmt *stmt, enum cnguid_type cng,
 	uint8_t tmp_buff[24];
 	EXT_PUSH ext_push;
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid) != pack_result::ok)
 		return false;
 	sqlite3_bind_int64(stmt, 1, PR_CHANGE_KEY);
 	sqlite3_bind_blob(stmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);

@@ -3,7 +3,7 @@
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
 #include "ext.hpp"
-#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
 static pack_result zrpc_push(PUSH_CTX &x, const zcreq_logon_token &d)
 {

@@ -104,17 +104,17 @@ void gi_folder_map_read(const void *buf, size_t bufsize, gi_folder_map_t &map)
 	EXT_PULL ep;
 	ep.init(buf, bufsize, zalloc, EXT_FLAG_WCOUNT);
 	uint64_t max = 0;
-	if (ep.g_uint64(&max) != EXT_ERR_SUCCESS)
+	if (ep.g_uint64(&max) != pack_result::ok)
 		throw YError("PG-1100");
 	for (size_t n = 0; n < max; ++n) {
 		uint32_t nid;
 		uint8_t create;
 		uint64_t fidto;
 		std::unique_ptr<char[], gi_delete> name;
-		if (ep.g_uint32(&nid) != EXT_ERR_SUCCESS ||
-		    ep.g_uint8(&create) != EXT_ERR_SUCCESS ||
-		    ep.g_uint64(&fidto) != EXT_ERR_SUCCESS ||
-		    ep.g_str(&unique_tie(name)) != EXT_ERR_SUCCESS)
+		if (ep.g_uint32(&nid) != pack_result::ok ||
+		    ep.g_uint8(&create) != pack_result::ok ||
+		    ep.g_uint64(&fidto) != pack_result::ok ||
+		    ep.g_str(&unique_tie(name)) != pack_result::ok)
 			throw YError("PG-1101");
 		map.insert_or_assign(nid, tgt_folder{static_cast<bool>(create), fidto, name != nullptr ? name.get() : ""});
 	}
@@ -125,13 +125,13 @@ void gi_folder_map_write(const gi_folder_map_t &map)
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
-	if (ep.p_uint64(map.size()) != EXT_ERR_SUCCESS)
+	if (ep.p_uint64(map.size()) != pack_result::ok)
 		throw YError("PG-1102");
 	for (const auto &[nid, tgt] : map)
-		if (ep.p_uint32(nid) != EXT_ERR_SUCCESS ||
-		    ep.p_uint8(!!tgt.create) != EXT_ERR_SUCCESS ||
-		    ep.p_uint64(tgt.fid_to) != EXT_ERR_SUCCESS ||
-		    ep.p_str(tgt.create_name.c_str()) != EXT_ERR_SUCCESS)
+		if (ep.p_uint32(nid) != pack_result::ok ||
+		    ep.p_uint8(!!tgt.create) != pack_result::ok ||
+		    ep.p_uint64(tgt.fid_to) != pack_result::ok ||
+		    ep.p_str(tgt.create_name.c_str()) != pack_result::ok)
 			throw YError("PG-1103");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
@@ -145,13 +145,13 @@ void gi_name_map_read(const void *buf, size_t bufsize, gi_name_map &map)
 	EXT_PULL ep;
 	ep.init(buf, bufsize, zalloc, EXT_FLAG_WCOUNT);
 	uint64_t max = 0;
-	if (ep.g_uint64(&max) != EXT_ERR_SUCCESS)
+	if (ep.g_uint64(&max) != pack_result::ok)
 		throw YError("PG-1108");
 	for (size_t n = 0; n < max; ++n) {
 		proptag_t proptag;
 		PROPERTY_NAME propname{};
-		if (ep.g_uint32(&proptag) != EXT_ERR_SUCCESS ||
-		    ep.g_propname(&propname) != EXT_ERR_SUCCESS)
+		if (ep.g_uint32(&proptag) != pack_result::ok ||
+		    ep.g_propname(&propname) != pack_result::ok)
 			throw YError("PG-1109");
 		try {
 			map.insert_or_assign(proptag, propname);
@@ -168,13 +168,13 @@ void gi_name_map_write(const gi_name_map &map)
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
-	if (ep.p_uint64(map.size()) != EXT_ERR_SUCCESS)
+	if (ep.p_uint64(map.size()) != pack_result::ok)
 		throw YError("PG-1110");
 	for (const auto &[proptag, xn] : map) {
 		static_assert(sizeof(gi_name_map::key_type) == sizeof(uint32_t),
 			"Something is fishy with the definition of gi_name_map");
 		if (ep.p_uint32(proptag) != pack_result::ok ||
-		    ep.p_propname(static_cast<PROPERTY_NAME>(xn)) != EXT_ERR_SUCCESS)
+		    ep.p_propname(static_cast<PROPERTY_NAME>(xn)) != pack_result::ok)
 			throw YError("PG-1111");
 	}
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
@@ -208,7 +208,7 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t change_num)
 	BINARY bxid;
 	EXT_PUSH ep;
 	if (!ep.init(tmp_buff, std::size(tmp_buff), 0) ||
-	    ep.p_xid(zxid) != EXT_ERR_SUCCESS) {
+	    ep.p_xid(zxid) != pack_result::ok) {
 		fprintf(stderr, "exm: ext_push: ENOMEM\n");
 		return -ENOMEM;
 	}
@@ -381,7 +381,7 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	BINARY bxid;
 	EXT_PUSH ep;
 	if (!ep.init(tmp_buff, std::size(tmp_buff), 0) ||
-	    ep.p_xid(zxid) != EXT_ERR_SUCCESS) {
+	    ep.p_xid(zxid) != pack_result::ok) {
 		fprintf(stderr, "exm: ext_push: ENOMEM\n");
 		return -ENOMEM;
 	}

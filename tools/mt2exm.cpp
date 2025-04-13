@@ -355,11 +355,11 @@ static int exm_packet(const void *buf, size_t bufsize)
 	ep.init(buf, bufsize, zalloc, EXT_FLAG_WCOUNT);
 	ob_desc obd;
 	uint32_t type = 0, parent_type = 0;
-	if (ep.g_uint32(&type) != EXT_ERR_SUCCESS ||
-	    ep.g_uint32(&obd.nid) != EXT_ERR_SUCCESS)
+	if (ep.g_uint32(&type) != pack_result::ok ||
+	    ep.g_uint32(&obd.nid) != pack_result::ok)
 		throw YError("PG-1121");
 	if (ep.g_uint32(&parent_type) != pack_result::success ||
-	    ep.g_uint64(&obd.parent.folder_id) != EXT_ERR_SUCCESS)
+	    ep.g_uint64(&obd.parent.folder_id) != pack_result::ok)
 		throw YError("PG-1116");
 	if (type == GXMT_NAMEDPROP) {
 		PROPERTY_NAME propname{};
@@ -381,15 +381,15 @@ static int exm_packet(const void *buf, size_t bufsize)
 	} else if (obd.mapitype == MAPI_FOLDER) {
 		TPROPVAL_ARRAY props{};
 		auto cl_0 = HX::make_scope_exit([&]() { tpropval_array_free_internal(&props); });
-		if (ep.g_tpropval_a(&props) != EXT_ERR_SUCCESS)
+		if (ep.g_tpropval_a(&props) != pack_result::ok)
 			throw YError("PG-1118");
 		uint64_t acl_items = 0;
-		if (ep.g_uint64(&acl_items) != EXT_ERR_SUCCESS)
+		if (ep.g_uint64(&acl_items) != pack_result::ok)
 			throw YError("PG-1132");
 		std::vector<PERMISSION_DATA> perms;
 		for (uint64_t i = 0; i < acl_items; ++i) {
 			PERMISSION_DATA d;
-			if (ep.g_permission_data(&d) != EXT_ERR_SUCCESS)
+			if (ep.g_permission_data(&d) != pack_result::ok)
 				throw YError("PG-1129");
 			if (d.flags == ROW_ADD)
 				perms.push_back(std::move(d));
@@ -403,7 +403,7 @@ static int exm_packet(const void *buf, size_t bufsize)
 	} else if (obd.mapitype == MAPI_MESSAGE) {
 		MESSAGE_CONTENT ctnt{};
 		auto cl_0 = HX::make_scope_exit([&]() { message_content_free_internal(&ctnt); });
-		if (ep.g_msgctnt(&ctnt) != EXT_ERR_SUCCESS)
+		if (ep.g_msgctnt(&ctnt) != pack_result::ok)
 			throw YError("PG-1119");
 		return exm_message(obd, ctnt);
 	}

@@ -406,11 +406,11 @@ int main(int argc, char **argv) try
 			fprintf(stderr, "E-2013: ENOMEM\n");
 			return EXIT_FAILURE;
 		}
-		if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
-		    ep.p_uint32(i + 1) != EXT_ERR_SUCCESS ||
-		    ep.p_uint32(static_cast<uint32_t>(parent.type)) != EXT_ERR_SUCCESS ||
-		    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
-		    ep.p_msgctnt(*msgs[i]) != EXT_ERR_SUCCESS) {
+		if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
+		    ep.p_uint32(i + 1) != pack_result::ok ||
+		    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
+		    ep.p_uint64(parent.folder_id) != pack_result::ok ||
+		    ep.p_msgctnt(*msgs[i]) != pack_result::ok) {
 			fprintf(stderr, "E-2004\n");
 			return EXIT_FAILURE;
 		}

@@ -45,16 +45,16 @@ static int t_extpp()
 	ep.init(s.data(), s.size(), zalloc, 0);
 	GLOBALOBJECTID goid;
 	auto ret = ep.g_goid(&goid);
-	assert(ret == EXT_ERR_SUCCESS && goid.unparsed);
+	assert(ret == pack_result::ok && goid.unparsed);
 #define s_date "0000000066b5d6b711d901010000000000000000"
 	s = encid + hex2bin(s_date "01000000ffff");
 	ep.init(s.data(), s.size(), zalloc, 0);
-	assert(ep.g_goid(&goid) == EXT_ERR_SUCCESS);
+	assert(ep.g_goid(&goid) == pack_result::ok);
 	assert((!goid.unparsed && goid.data.cb == 1) ||
 	       (goid.unparsed && goid.data.cb == 6));
 	s = encid + hex2bin(s_date "02000000ff");
 	ep.init(s.data(), s.size(), zalloc, 0);
-	assert(ep.g_goid(&goid) == EXT_ERR_SUCCESS);
+	assert(ep.g_goid(&goid) == pack_result::ok);
 	assert(goid.unparsed && goid.data.cb == 5);
 #undef s_date
 	return EXIT_SUCCESS;
@@ -317,7 +317,7 @@ static int t_cmp_guid()
 	static_assert(std::is_same_v<decltype(PSETID_Address), const GUID>);
 
 	ep.init(buf, sizeof(buf), 0);
-	if (ep.p_guid(muidEMSAB) != EXT_ERR_SUCCESS)
+	if (ep.p_guid(muidEMSAB) != pack_result::ok)
 		return EXIT_FAILURE;
 	assert(memcmp(ep.m_udata, "\xDC\xA7\x40\xC8", 4) == 0);
 	static_assert(std::is_same_v<decltype(muidEMSAB), const FLATUID>);

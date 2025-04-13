@@ -45,12 +45,12 @@ int main(int argc, char **argv)
 	}
 	if (g_decode == D_RESTRICT) {
 		RESTRICTION rs{};
-		if (ep.g_restriction(&rs) != EXT_ERR_SUCCESS)
+		if (ep.g_restriction(&rs) != pack_result::ok)
 			return EXIT_FAILURE;
 		printf("%s\n", rs.repr().c_str());
 	} else if (g_decode == D_ACTIONS) {
 		RULE_ACTIONS ra{};
-		if (ep.g_rule_actions(&ra) != EXT_ERR_SUCCESS)
+		if (ep.g_rule_actions(&ra) != pack_result::ok)
 			return EXIT_FAILURE;
 		printf("%s\n", ra.repr().c_str());
 	}

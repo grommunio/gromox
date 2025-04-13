@@ -245,11 +245,11 @@ int main(int argc, char **argv) try
 		EXT_PUSH ep;
 		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 			throw YError("ENOMEM");
-		if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
-		    ep.p_uint32(msg_id) != EXT_ERR_SUCCESS ||
-		    ep.p_uint32(static_cast<uint32_t>(0)) != EXT_ERR_SUCCESS ||
-		    ep.p_uint64(MAILBOX_FID_UNANCHORED) != EXT_ERR_SUCCESS ||
-		    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS) {
+		if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
+		    ep.p_uint32(msg_id) != pack_result::ok ||
+		    ep.p_uint32(static_cast<uint32_t>(0)) != pack_result::ok ||
+		    ep.p_uint64(MAILBOX_FID_UNANCHORED) != pack_result::ok ||
+		    ep.p_msgctnt(*ctnt) != pack_result::ok) {
 			fprintf(stderr, "E-2005\n");
 			return EXIT_FAILURE;
 		}

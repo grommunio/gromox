@@ -931,11 +931,11 @@ static int do_message(unsigned int depth, const parent_desc &parent,
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
 	++g_msg_count;
-	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(ident) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != EXT_ERR_SUCCESS ||
-	    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
-	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS)
+	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
+	    ep.p_uint32(ident) != pack_result::ok ||
+	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
+	    ep.p_uint64(parent.folder_id) != pack_result::ok ||
+	    ep.p_msgctnt(*ctnt) != pack_result::ok)
 		throw YError("PF-1058");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)

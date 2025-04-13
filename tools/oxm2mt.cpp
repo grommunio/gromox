@@ -131,12 +131,12 @@ static pack_result read_pte(EXT_PULL &ep, struct pte &pte)
 		 * read_pte won't always read the entire 16 bytes, so perform a
 		 * check now.
 		 */
-		return EXT_ERR_FORMAT;
+		return pack_result::format;
 	auto ret = ep.g_uint32(&pte.proptag);
-	if (ret != EXT_ERR_SUCCESS)
+	if (ret != pack_result::ok)
 		return ret;
 	ret = ep.g_uint32(&pte.flags);
-	if (ret != EXT_ERR_SUCCESS)
+	if (ret != pack_result::ok)
 		return ret;
 	auto pos = ep.m_offset;
 	switch (PROP_TYPE(pte.proptag)) {
@@ -156,7 +156,7 @@ static pack_result read_pte(EXT_PULL &ep, struct pte &pte)
 	/* For almost everything else, it indicates the size of the indirect block. */
 	default: ret = ep.g_uint32(&pte.v_ui4); break;
 	}
-	if (ret == EXT_ERR_SUCCESS)
+	if (ret == pack_result::ok)
 		ep.m_offset = pos + 8;
 	return ret;
 }
@@ -328,7 +328,7 @@ static errno_t parse_propstrm(EXT_PULL &ep, const char *cset,
 	while (ep.m_offset < ep.m_data_size) {
 		struct pte pte;
 		auto st = read_pte(ep, pte);
-		if (st != EXT_ERR_SUCCESS)
+		if (st != pack_result::ok)
 			return -EIO;
 		auto ret = pte_to_prop(pte, cset, dir, proplist);
 		if (ret != 0)
@@ -343,7 +343,7 @@ static int parse_propstrm_to_cpid(const EXT_PULL &ep1)
 	while (ep.m_offset < ep.m_data_size) {
 		struct pte pte;
 		auto ret = read_pte(ep, pte);
-		if (ret != EXT_ERR_SUCCESS)
+		if (ret != pack_result::ok)
 			return -EIO;
 		if (pte.proptag == PR_MESSAGE_CODEPAGE)
 			return pte.v_ui4;
@@ -366,7 +366,7 @@ static int do_recips(libolecf_item_t *msg_dir, unsigned int nrecips,
 		auto propstrm = slurp_stream(rcpt_dir.get(), S_PROPFILE);
 		EXT_PULL ep;
 		ep.init(propstrm->pv, propstrm->cb, malloc, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
-		if (ep.advance(8) != EXT_ERR_SUCCESS)
+		if (ep.advance(8) != pack_result::ok)
 			return EIO;
 		tpropval_array_ptr props(tpropval_array_init());
 		if (props == nullptr)
@@ -395,7 +395,7 @@ static int do_attachs(libolecf_item_t *msg_dir, unsigned int natx,
 		auto propstrm = slurp_stream(atx_dir.get(), S_PROPFILE);
 		EXT_PULL ep;
 		ep.init(propstrm->pv, propstrm->cb, malloc, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
-		if (ep.advance(8) != EXT_ERR_SUCCESS)
+		if (ep.advance(8) != pack_result::ok)
 			return EIO;
 		tpropval_array_ptr props(tpropval_array_init());
 		if (props == nullptr)
@@ -441,14 +441,14 @@ static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt, mapi_
 	auto propstrm = slurp_stream(msg_dir, S_PROPFILE);
 	EXT_PULL ep;
 	ep.init(propstrm->pv, propstrm->cb, malloc, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
-	if (ep.advance(16) != EXT_ERR_SUCCESS)
+	if (ep.advance(16) != pack_result::ok)
 		return EIO;
 	uint32_t recip_count = 0, atx_count = 0;
-	if (ep.g_uint32(&recip_count) != EXT_ERR_SUCCESS)
+	if (ep.g_uint32(&recip_count) != pack_result::ok)
 		return EIO;
-	if (ep.g_uint32(&atx_count) != EXT_ERR_SUCCESS)
+	if (ep.g_uint32(&atx_count) != pack_result::ok)
 		return EIO;
-	if (parent_type == MAPI_FOLDER && ep.advance(8) != EXT_ERR_SUCCESS)
+	if (parent_type == MAPI_FOLDER && ep.advance(8) != pack_result::ok)
 		return EIO;
 	auto cpid = parse_propstrm_to_cpid(ep);
 	if (cpid < 0)
@@ -503,15 +503,15 @@ static int npg_read(libolecf_item_t *root)
 			EXT_PULL sp;
 			uint32_t len = 0;
 			sp.init(strpool->pv, strpool->cb, malloc, 0);
-			if (sp.advance(niso) != EXT_ERR_SUCCESS)
+			if (sp.advance(niso) != pack_result::ok)
 				return -EIO;
-			if (sp.g_uint32(&len) != EXT_ERR_SUCCESS)
+			if (sp.g_uint32(&len) != pack_result::ok)
 				return -EIO;
 			if (len > 510)
 				len = 510;
 			std::string wbuf;
 			wbuf.resize(len);
-			if (sp.g_bytes(wbuf.data(), len) != EXT_ERR_SUCCESS)
+			if (sp.g_bytes(wbuf.data(), len) != pack_result::ok)
 				return -EIO;
 			pn_req.name = iconvtext(wbuf.data(), len, "UTF-16", "UTF-8//IGNORE");
 			if (errno != 0)
@@ -527,7 +527,7 @@ static int npg_read(libolecf_item_t *root)
 				return -EIO;
 			EXT_PULL gp;
 			gp.init(&guidpool->pb[ofs], sizeof(GUID), malloc, 0);
-			if (gp.g_guid(&pn_req.guid) != EXT_ERR_SUCCESS)
+			if (gp.g_guid(&pn_req.guid) != pack_result::ok)
 				return -EIO;
 		}
 		if (propidx != current_np) {
@@ -607,11 +607,11 @@ static errno_t do_file(const char *filename) try
 		fprintf(stderr, "E-2012: ENOMEM\n");
 		return EXIT_FAILURE;
 	}
-	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(1) != EXT_ERR_SUCCESS ||
-	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != EXT_ERR_SUCCESS ||
-	    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
-	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS) {
+	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
+	    ep.p_uint32(1) != pack_result::ok ||
+	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
+	    ep.p_uint64(parent.folder_id) != pack_result::ok ||
+	    ep.p_msgctnt(*ctnt) != pack_result::ok) {
 		fprintf(stderr, "E-2006\n");
 		return EXIT_FAILURE;
 	}
