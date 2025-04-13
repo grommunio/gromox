@@ -566,7 +566,7 @@ ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *pus
 	DCERPC_INFO rpc_info;
 	if (!ext_push.init(pauxout, 0x1008, EXT_FLAG_UTF16))
 		return ecServerOOM;
-	*pcb_auxout = aux_ext_push_aux_info(&ext_push, aux_out) != EXT_ERR_SUCCESS ?
+	*pcb_auxout = aux_ext_push_aux_info(&ext_push, aux_out) != pack_result::ok ?
 	              0 : ext_push.m_offset;
 	aux_out.aux_list.clear();
 	

@@ -205,7 +205,7 @@ BOOL exmdb_client_shm::is_message_owner(const char *dir, uint64_t message_id,
 	}
 	EXT_PULL ext_pull;
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (ext_pull.g_abk_eid(&ab_entryid)  != EXT_ERR_SUCCESS) {
+	if (ext_pull.g_abk_eid(&ab_entryid)  != pack_result::ok) {
 		*pb_owner = false;
 		return TRUE;
 	}

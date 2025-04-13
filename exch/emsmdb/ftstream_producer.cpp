@@ -277,16 +277,16 @@ static int ftstream_producer_write_propdef(fxstream_producer *pstream,
 		return 0;
 	}
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), EXT_FLAG_UTF16) ||
-	    ext_push.p_guid(propname.guid) != EXT_ERR_SUCCESS ||
-	    ext_push.p_uint8(propname.kind) != EXT_ERR_SUCCESS)
+	    ext_push.p_guid(propname.guid) != pack_result::ok ||
+	    ext_push.p_uint8(propname.kind) != pack_result::ok)
 		return -1;
 	switch (propname.kind) {
 	case MNID_ID:
-		if (ext_push.p_uint32(propname.lid) != EXT_ERR_SUCCESS)
+		if (ext_push.p_uint32(propname.lid) != pack_result::ok)
 			return -1;
 		break;
 	case MNID_STRING:
-		if (ext_push.p_wstr(propname.pname) != EXT_ERR_SUCCESS)
+		if (ext_push.p_wstr(propname.pname) != pack_result::ok)
 			return -1;
 		break;
 	default:
@@ -626,38 +626,38 @@ static BOOL ftstream_producer_write_groupinfo(fxstream_producer *pstream,
 	static_assert(PT_BINARY == PROP_TAG(PT_BINARY, 0));
 	if (!pstream->write_uint32(PROP_TAG(PT_BINARY, 0)) ||
 	    !ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
-	    ext_push.p_uint32(pginfo->group_id) != EXT_ERR_SUCCESS ||
-	    ext_push.p_uint32(pginfo->reserved) != EXT_ERR_SUCCESS ||
-	    ext_push.p_uint32(pginfo->count) != EXT_ERR_SUCCESS)
+	    ext_push.p_uint32(pginfo->group_id) != pack_result::ok ||
+	    ext_push.p_uint32(pginfo->reserved) != pack_result::ok ||
+	    ext_push.p_uint32(pginfo->count) != pack_result::ok)
 		return FALSE;
 	for (size_t i = 0; i < pginfo->count; ++i) {
-		if (ext_push.p_uint32(pginfo->pgroups[i].count) != EXT_ERR_SUCCESS)
+		if (ext_push.p_uint32(pginfo->pgroups[i].count) != pack_result::ok)
 			return FALSE;
 		for (size_t j = 0; j < pginfo->pgroups[i].count; ++j) {
 			propid = PROP_ID(pginfo->pgroups[i].pproptag[j]);
-			if (ext_push.p_uint32(pginfo->pgroups[i].pproptag[j]) != EXT_ERR_SUCCESS)
+			if (ext_push.p_uint32(pginfo->pgroups[i].pproptag[j]) != pack_result::ok)
 				return FALSE;
 			if (!is_nameprop_id(propid))
 				continue;
 			if (!pstream->plogon->get_named_propname(propid, &propname))
 				return FALSE;
-			if (ext_push.p_guid(propname.guid) != EXT_ERR_SUCCESS ||
-			    ext_push.p_uint32(propname.kind) != EXT_ERR_SUCCESS)
+			if (ext_push.p_guid(propname.guid) != pack_result::ok ||
+			    ext_push.p_uint32(propname.kind) != pack_result::ok)
 				return FALSE;
 			switch (propname.kind) {
 			case MNID_ID:
-				if (ext_push.p_uint32(propname.lid) != EXT_ERR_SUCCESS)
+				if (ext_push.p_uint32(propname.lid) != pack_result::ok)
 					return FALSE;
 				break;
 			case MNID_STRING: {
 				uint32_t offset = ext_push.m_offset;
-				if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS ||
-				    ext_push.p_wstr(propname.pname) != EXT_ERR_SUCCESS)
+				if (ext_push.advance(sizeof(uint32_t)) != pack_result::ok ||
+				    ext_push.p_wstr(propname.pname) != pack_result::ok)
 					return FALSE;
 				uint32_t offset1 = ext_push.m_offset - sizeof(uint16_t);
 				name_size = offset1 - (offset + sizeof(uint32_t));
 				ext_push.m_offset = offset;
-				if (ext_push.p_uint32(name_size) != EXT_ERR_SUCCESS)
+				if (ext_push.p_uint32(name_size) != pack_result::ok)
 					return FALSE;
 				ext_push.m_offset = offset1;
 				break;

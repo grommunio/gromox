@@ -478,14 +478,14 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		uint32_t last_offset = ext_push.m_offset;
 		auto status = rop_ext_push(ext_push, req->logon_id, *rsp);
 		switch (status) {
-		case EXT_ERR_SUCCESS:
+		case pack_result::ok:
 			try {
 				response_list.push_back(std::move(rsp));
 			} catch (const std::bad_alloc &) {
 				return ecServerOOM;
 			}
 			break;
-		case EXT_ERR_BUFSIZE: {
+		case pack_result::bufsize: {
 			/* MS-OXCPRPT 3.2.5.2, fail the whole RPC */
 			if (req->rop_id == ropGetPropertiesAll &&
 			    req_iter == prop_buff->rop_list.begin())
@@ -499,7 +499,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				return ecBufferTooSmall;
 			goto MAKE_RPC_EXT;
 		}
-		case EXT_ERR_ALLOC:
+		case pack_result::alloc:
 			return ecServerOOM;
 		default:
 			return ecRpcFailed;
@@ -541,7 +541,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 						goto NEXT_NOTIFY;
 				}
 				if (!common_util_propvals_to_row(&propvals, pcolumns, &tmp_row) ||
-				    ext_push1.p_proprow(*pcolumns, tmp_row) != EXT_ERR_SUCCESS)
+				    ext_push1.p_proprow(*pcolumns, tmp_row) != pack_result::ok)
 					goto NEXT_NOTIFY;
 				tmp_bin.cb = ext_push1.m_offset;
 				tmp_bin.pb = ext_push1.m_udata;
@@ -552,7 +552,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				double_list_insert_as_head(pnotify_list, pnode);
 				emsmdb_interface_get_cxr(&tmp_pending.session_index);
 				auto status = rop_ext_push(ext_push, tmp_pending);
-				if (status != EXT_ERR_SUCCESS)
+				if (status != pack_result::ok)
 					ext_push.m_offset = last_offset;
 				break;
 			}
@@ -564,7 +564,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	
  MAKE_RPC_EXT:
 	if (rop_ext_make_rpc_ext(ext_buff.get(), ext_push.m_offset, prop_buff,
-	    pbuff, pbuff_len) != EXT_ERR_SUCCESS)
+	    pbuff, pbuff_len) != pack_result::ok)
 		return ecError;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
@@ -590,9 +590,9 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	
 	ext_pull.init(pin, cb_in, common_util_alloc, EXT_FLAG_UTF16);
 	switch (rop_ext_pull(ext_pull, rop_buff)) {
-	case EXT_ERR_SUCCESS:
+	case pack_result::ok:
 		break;
-	case EXT_ERR_ALLOC:
+	case pack_result::alloc:
 		return ecServerOOM;
 	default:
 		return ecRpcFormat;

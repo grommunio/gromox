@@ -389,7 +389,7 @@ ec_error_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcoun
 			return ecServerOOM;
 		uint32_t last_offset = ext.m_offset;
 		if (pext->p_readrecipient_row(*pmessage->get_rcpt_columns(),
-		    tmp_row) != EXT_ERR_SUCCESS) {
+		    tmp_row) != pack_result::ok) {
 			ext.m_offset = last_offset;
 			break;
 		}

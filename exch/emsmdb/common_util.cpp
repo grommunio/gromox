@@ -265,7 +265,7 @@ BINARY *cu_fid_to_entryid(const logon_object &logon, uint64_t folder_id)
 		return NULL;
 	pbin->pv = common_util_alloc(46); /* MS-OXCDATA v19 §2.2.4.1 */
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 46, 0) ||
-	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_folder_eid(tmp_entryid) != pack_result::ok)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -314,8 +314,8 @@ BINARY *cu_fid_to_sk(const logon_object &logon, uint64_t folder_id)
 		return nullptr;
 	longid.global_counter = rop_util_get_gc_array(folder_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
-	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
-	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
+	    ext_push.p_guid(longid.guid) != pack_result::ok ||
+	    ext_push.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
 		return NULL;
 	return pbin;
 }
@@ -372,7 +372,7 @@ BINARY *cu_mid_to_entryid(const logon_object &logon,
 		return NULL;
 	pbin->pv = common_util_alloc(70); /* MS-OXCDATA v19 §2.2.4.2 */
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 70, 0) ||
-	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_msg_eid(tmp_entryid) != pack_result::ok)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -424,8 +424,8 @@ BINARY *cu_mid_to_sk(const logon_object &logon, uint64_t message_id)
 	longid.guid = logon.guid();
 	longid.global_counter = rop_util_get_gc_array(message_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
-	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
-	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
+	    ext_push.p_guid(longid.guid) != pack_result::ok ||
+	    ext_push.p_bytes(longid.global_counter.ab, 6) != pack_result::ok)
 		return NULL;
 	return pbin;
 }
@@ -461,7 +461,7 @@ BOOL cu_entryid_to_fid(const logon_object &logon, const BINARY *pbin,
 	FOLDER_ENTRYID tmp_entryid;
 	
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (ext_pull.g_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_folder_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;	
 	if (replguid_to_replid(logon, tmp_entryid.database_guid,
 	    replid) != ecSuccess)
@@ -484,7 +484,7 @@ BOOL cu_entryid_to_mid(const logon_object &logon, const BINARY *pbin,
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	if (ext_pull.g_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	if (ext_pull.g_msg_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;	
 	if (replguid_to_replid(logon, tmp_entryid.folder_database_guid,
 	    freplid) != ecSuccess)
@@ -512,7 +512,7 @@ BINARY *cu_xid_to_bin(const XID &xid)
 		return NULL;
 	pbin->pv = common_util_alloc(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
-	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid) != pack_result::ok)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -544,7 +544,7 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 	if (pbin->cb < 17 || pbin->cb > 24)
 		return FALSE;
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-	return ext_pull.g_xid(pbin->cb, pxid) == EXT_ERR_SUCCESS ? TRUE : false;
+	return ext_pull.g_xid(pbin->cb, pxid) == pack_result::ok ? TRUE : false;
 }
 
 BINARY* common_util_guid_to_binary(GUID guid)
