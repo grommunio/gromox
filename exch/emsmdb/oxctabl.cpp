@@ -59,7 +59,6 @@ static inline bool table_acceptable_type(uint16_t type)
 	case PT_UNICODE:
 	case PT_SYSTIME:
 	case PT_CLSID:
-	case PT_SVREID:
 	case PT_SRESTRICTION:
 	case PT_ACTIONS:
 	case PT_BINARY:
@@ -75,6 +74,13 @@ static inline bool table_acceptable_type(uint16_t type)
 	case PT_MV_SYSTIME:
 	case PT_MV_CLSID:
 	case PT_MV_BINARY:
+		return true;
+	case PT_SVREID:
+		/*
+		 * MSMAPI rejects SetColumns with PT_SVREID tags even before
+		 * calling rop_setcolumns. So this line is never reached in
+		 * reality.
+		 */
 		return true;
 	default:
 		return false;

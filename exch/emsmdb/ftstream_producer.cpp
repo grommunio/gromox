@@ -304,7 +304,11 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 	uint16_t write_type;
 	auto propid = PROP_ID(ppropval->proptag);
 	auto proptype = PROP_TYPE(ppropval->proptag);
-	/* ignore PT_SVREID */
+	/*
+	 * The ftstream reader on the MSMAPI side does not know what to do with
+	 * these and usually throws an error (e.g. when using FXCopyMessages,
+	 * or FXSynchronizeConfigure).
+	 */
 	if (proptype == PT_SVREID)
 		return TRUE;
 	if (ppropval->proptag == PR_MESSAGE_CLASS)
@@ -385,11 +389,6 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 		return ftstream_producer_write_wstring(pstream, static_cast<char *>(ppropval->pvalue));
 	case PT_CLSID:
 		return ftstream_producer_write_guid(pstream, static_cast<GUID *>(ppropval->pvalue));
-	/*
-	case PT_SVREID:
-		return ftstream_producer_write_svreid(
-					pstream, ppropval->pvalue);
-	*/
 	case PT_OBJECT:
 	case PT_BINARY:
 		return ftstream_producer_write_binary(pstream, static_cast<BINARY *>(ppropval->pvalue));

@@ -201,57 +201,6 @@ static BOOL ftstream_parser_read_guid(fxstream_parser *pstream, GUID *pguid)
 	return TRUE;
 }
 
-static BOOL ftstream_parser_read_svreid(fxstream_parser *pstream,
-	SVREID *psvreid, BOOL *pb_continue)
-{
-	uint32_t len;
-	uint8_t ours;
-	uint32_t origin_offset;
-	
-	*pb_continue = FALSE;
-	origin_offset = pstream->offset;
-	if (!ftstream_parser_read_uint32(pstream, &len))
-		return FALSE;
-	if (origin_offset + sizeof(uint32_t) + len >
-		pstream->st_size) {
-		*pb_continue = TRUE;
-		return FALSE;
-	}
-	if (len == 0)
-		abort(); /* if this ever happens, make cb=0,pb=NULL */
-	if (read(pstream->fd, &ours, sizeof(uint8_t)) != sizeof(uint8_t))
-		return FALSE;
-	pstream->offset += sizeof(uint8_t);
-	if (0 == ours) {
-		psvreid->pbin = cu_alloc<BINARY>();
-		if (psvreid->pbin == nullptr)
-			return FALSE;
-		psvreid->pbin->cb = len - 1;
-		if (0 == psvreid->pbin->cb) {
-			psvreid->pbin->pb = NULL;
-		} else {
-			psvreid->pbin->pv = common_util_alloc(psvreid->pbin->cb);
-			if (psvreid->pbin->pv == nullptr)
-				return FALSE;
-			auto ret = read(pstream->fd, psvreid->pbin->pv, psvreid->pbin->cb);
-			if (ret < 0 || static_cast<size_t>(ret) != psvreid->pbin->cb)
-				return FALSE;
-			pstream->offset += psvreid->pbin->cb;
-		}
-		return TRUE;
-	}
-	if (len != 21)
-		return FALSE;
-	psvreid->pbin = NULL;
-	if (!ftstream_parser_read_uint64(pstream, &psvreid->folder_id))
-		return FALSE;
-	if (!ftstream_parser_read_uint64(pstream, &psvreid->message_id))
-		return FALSE;
-	if (!ftstream_parser_read_uint32(pstream, &psvreid->instance))
-		return FALSE;
-	return TRUE;
-}
-
 static BOOL ftstream_parser_read_binary(fxstream_parser *pstream, BINARY *pbin,
 	BOOL *pb_continue)
 {
@@ -462,17 +411,16 @@ static int ftstream_parser_read_element(fxstream_parser &stream,
 		propval.pvalue = v;
 		return ftstream_parser_read_guid(pstream, v) ? FTSTREAM_PARSER_READ_OK : FTSTREAM_PARSER_READ_FAIL;
 	}
-	case PT_SVREID: {
-		auto v = cu_alloc<SVREID>();
-		if (v == nullptr)
-			return FTSTREAM_PARSER_READ_FAIL;
-		propval.pvalue = v;
-		if (ftstream_parser_read_svreid(pstream, v, &b_continue))
-			return FTSTREAM_PARSER_READ_OK;
-		if (b_continue)
-			goto CONTINUE_WAITING;
+	case PT_SVREID:
+		/*
+		 * You cannot create these property types in MSMAPI. This
+		 * precludes them from truly existing on the client side, and
+		 * so they have never been observed of being transferred in
+		 * either direction.
+		 * PT_SVREID only seems to show up in restrictions.
+		 */
+		mlog(LV_ERR, "E-2273: Reception of PT_SVREID in fxstream is unsupported");
 		return FTSTREAM_PARSER_READ_FAIL;
-	}
 	case PT_OBJECT:
 	case PT_BINARY: {
 		auto v = cu_alloc<BINARY>();
