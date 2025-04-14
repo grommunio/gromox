@@ -79,15 +79,16 @@ Synchronization Log
 
 Components of the sync error number vector:
 
-# local side: operation error code (e.g. MAPI)
+# first error code / local side (e.g. MSMAPI): operation error code
   * 0x80070057: MAPI_E_INVALID_PARAMETER
   * 0x80040803: SYNC_E_NO_PARENT
-# possibly the "response code"
-# ROP result
+# component code
+  * 501: synchronization
+# second error code (e.g. ROP result)
   * 0x4B9: ecNullObject
-  * 80070057: MAPI_E_INVALID_PARAMETER
+  * 0x80070057: MAPI_E_INVALID_PARAMETER
   * 0xFFFFFEAE: JET_errBadParentPageLink
-# possibly the "response code" or the length of the request
+# context code (possibly the "response code")
 
 The synchronization log messages contain a URL that has long been defunct but
 never updated. (outlook2000_us.asp is really telling.)
@@ -117,5 +118,5 @@ Send and Receive dialog
 	Fehler (0x80200011) beim Ausführen der Aufgabe "user@domain.example":
 	"Fehler beim Ausführen der Operation."
 
-The error decoder is a hit-and-miss in this regard. 80190194 was recognized,
-800ccc0d was not.
+The error decoder is a hit-and-miss in this regard. 0x80190194 was recognized,
+0x800ccc0d was not.
