@@ -1,5 +1,5 @@
-Development 2.44.30
-===================
+Gromox 2.45 (2025-04-15)
+========================
 
 Fixes:
 
@@ -10,6 +10,14 @@ Fixes:
 Enhancements:
 
 * mysql_adaptor: add support for nesting mlists in permission checks
+* Recognize the IANA Character Set names `utf-16le`, `utf-16be`
+  (and 32) when converting from RFC5322 to MAPI.
+
+Behavioral changes:
+
+* MAPI tables now always offer a valid PR_ROW_TYPE value
+* emsmdb: the set of default properties (on blank message objects) has changed
+  to be closer to what EXC2019 does
 
 
 Gromox 2.44 (2025-03-19)
