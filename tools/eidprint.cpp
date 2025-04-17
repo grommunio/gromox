@@ -15,6 +15,8 @@
 using namespace gromox;
 using LLU = unsigned long long;
 
+static void try_entryid(const std::string_view s, unsigned int ind);
+
 static unsigned int lead(unsigned int level)
 {
 	return 4 * level;
@@ -116,6 +118,57 @@ static void try_storewrap(std::string_view s, unsigned int ind)
 	printf("%-*sMDB_STORE_EID_V3_MAGIC\n%-*ssmtp    = %s\n", lead(ind), "", lead(ind), "", znul(smtp));
 }
 
+static void try_shared_cal(std::string_view s, unsigned int ind)
+{
+	EXT_PULL ep;
+	ep.init(s.data(), s.size(), malloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
+	uint32_t vd, dnbytes, smtpbytes;
+	GUID w;
+	std::string str;
+
+	ep.g_uint32(&vd);
+	ep.g_guid(&w);
+	ep.g_uint32(&vd); printf("%-*sCalendar index         = #%u\n", lead(ind), "", vd);
+	// 0x38 is the size from w to Inner EID
+	ep.g_uint32(&vd); printf("%-*sHeader size(?)         = 0x%xh // expected 0x38\n", lead(ind), "",  vd);
+	ep.g_uint32(&dnbytes);
+	printf("%-*sDisplayName field size = %u bytes\n", lead(ind), "",  dnbytes);
+	ep.g_uint32(&smtpbytes);
+	printf("%-*sSMTP field size        = %u bytes\n", lead(ind), "",  smtpbytes);
+	ep.g_guid(&w);
+	printf("%-*sInner provider UID     = ", lead(ind), ""); print_guid(w); printf("\n");
+	ep.g_guid(&w);
+	printf("%-*s(something)            = ", lead(ind), ""); print_guid(w); printf("\n");
+	printf("%-*s                         // ↑ random with EXC2019, somewhat orderly with Gromox\n", lead(ind), "");
+	ep.g_uint32(&vd);
+	printf("%-*sInner EID size         = %u bytes\n", lead(ind), "",  vd);
+	{
+		std::string_view sub = s;
+		sub.remove_prefix(ep.m_offset);
+		if (sub.size() > vd)
+			sub = {sub.data(), vd};
+		try_entryid(sub, ind + 1);
+	}
+	ep.advance(vd);
+
+	auto next_offset = ep.m_offset + dnbytes;
+	ep.g_wstr(&str); printf("%-*sDisplay name = %s\n", lead(ind), "", str.c_str());
+	if (ep.m_offset < next_offset)
+		printf("%-*s           + %zu unparsed/garbage bytes\n", lead(ind + 1), "",
+			static_cast<size_t>(next_offset - ep.m_offset));
+	ep.m_offset = next_offset;
+
+	next_offset = ep.m_offset + smtpbytes;
+	ep.g_wstr(&str);  printf("%-*sSMTP address = %s\n", lead(ind), "", str.c_str());
+	if (ep.m_offset < next_offset)
+		printf("%-*s           + %zu unparsed/garbage bytes\n", lead(ind + 1), "",
+			static_cast<size_t>(next_offset - ep.m_offset));
+	ep.m_offset = next_offset;
+	if (ep.m_offset != ep.m_data_size)
+		printf("%-*s+ %zu unparsed/garbage bytes\n", lead(ind), "",
+			static_cast<size_t>(ep.m_data_size - ep.m_offset));
+}
+
 static const char *objecttypename(unsigned int i)
 {
 	switch (i) {
@@ -198,6 +251,8 @@ static void try_entryid(const std::string_view s, unsigned int ind)
 		try_emsab(s, ind);
 	else if (le == muidStoreWrap)
 		try_storewrap(s, ind);
+	else if (le == shared_calendar_provider_guid)
+		try_shared_cal(s, ind);
 	else
 		try_object_eid(s, ind);
 }

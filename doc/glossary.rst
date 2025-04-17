@@ -319,6 +319,10 @@ Folder Identifier, FID
 	(see above) or the (host-endian) GCV. ``fid_val`` is almost exclusively
 	the host-endian GCV form.
 
+Correlation ID
+	Property 0x3dd10048 on Exchange folders. Contains the Exchange user id
+	(4 bytes), two zero fields (2x2 bytes), plus the FID.
+
 Message Identifier, MID
 	Name for *internal identifier* when talking about a message object. The
 	MID can be observed in *EX entryids* (with conditions) at bytes 62–70.

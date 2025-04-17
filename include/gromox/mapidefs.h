@@ -1569,7 +1569,7 @@ enum {
 extern GX_EXPORT const FLATUID
 	muidStoreWrap, muidEMSAB, WAB_GUID, muidContabDLL, pbLongTermNonPrivateGuid,
 	pbExchangeProviderPrimaryUserGuid, pbExchangeProviderPublicGuid,
-	pbExchangeProviderDelegateGuid,
+	pbExchangeProviderDelegateGuid, shared_calendar_provider_guid,
 	g_muidStorePrivate, g_muidStorePublic, muidOOP,
 	muidECSAB, muidZCSAB, EncodedGlobalId, IID_IStorage,
 	IID_IStream, IID_IMessage, IID_IExchangeExportChanges,
