@@ -180,6 +180,37 @@ static const char *objecttypename(unsigned int i)
 	}
 }
 
+static void try_shortterm_eid(const std::string_view s, unsigned int ind)
+{
+	if (s.size() != 34 && s.size() != 42)
+		return;
+
+	EXT_PULL ep;
+	ep.init(s.data(), s.size(), nullptr, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
+
+	uint64_t instid;
+	uint32_t flags, q2;
+	uint16_t folder_type;
+	GUID provider;
+	ep.g_uint32(&flags);
+	if (flags != (MAPI_SHORTTERM | MAPI_NOTRECIP | MAPI_THISSESSION | MAPI_NOTRESERVED | 0x0f))
+		return;
+	ep.g_guid(&provider);
+	ep.g_uint16(&folder_type);
+	ep.g_uint32(&q2);
+	ep.g_uint64(&instid);
+
+	printf("%-*sShortterm folder entry ID\n", lead(ind), "");
+	++ind;
+	printf("%-*sflags  = 0x%08x\n", lead(ind), "", flags);
+	printf("%-*stype   = 0x%02x <<%s>>\n", lead(ind), "", folder_type, objecttypename(folder_type));
+	printf("%-*s?      = 0x%08x\n", lead(ind), "", q2);
+	printf("%-*sinstid = 0x%llx\n", lead(ind), "", LLU{rop_util_get_gc_value(instid)});
+
+	if (ep.g_uint64(&instid) == pack_result::ok)
+		printf("%-*sinstid = 0x%llx\n", lead(ind), "", LLU{rop_util_get_gc_value(instid)});
+}
+
 static void try_folder_eid(const std::string_view s, unsigned int ind)
 {
 	if (s.size() != 46)
@@ -224,6 +255,7 @@ static void try_message_eid(const std::string_view s, unsigned int ind)
 
 static void try_object_eid(const std::string_view s, unsigned int ind)
 {
+	try_shortterm_eid(s, ind);
 	try_folder_eid(s, ind);
 	try_message_eid(s, ind);
 }
