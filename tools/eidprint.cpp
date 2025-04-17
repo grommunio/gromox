@@ -56,6 +56,32 @@ static void try_emsab(const std::string_view s, unsigned int ind)
 	printf("%-*sx500dn  = %s\n", lead(ind), "", znul(eid.px500dn));
 }
 
+static void try_contab(std::string_view s, unsigned int ind)
+{
+	EXT_PULL ep;
+	ep.init(s.data(), s.size(), malloc, EXT_FLAG_WCOUNT);
+
+	uint32_t flags, version, type;
+	GUID muid;
+	if (ep.g_uint32(&flags) != pack_result::ok ||
+	    ep.advance(16) != pack_result::ok ||
+	    ep.g_uint32(&version) != pack_result::ok ||
+	    ep.g_uint32(&type) != pack_result::ok ||
+	    ep.g_guid(&muid) != pack_result::ok)
+		return;
+
+	printf("%-*sContact Address Book entry ID\n", lead(ind), "");
+	++ind;
+	printf("%-*sflags   = 0x%08x\n", lead(ind), "", flags);
+	printf("%-*stype    = 0x%08x\n", lead(ind), "", type);
+	printf("%-*smuid    = ", lead(ind), "");
+	print_guid(muid);
+	printf("\n");
+	printf("%-*sEntryid = \n", lead(ind), "");
+	s.remove_prefix(ep.m_offset);
+	try_entryid(s, ind + 1);
+}
+
 static void try_storewrap(std::string_view s, unsigned int ind)
 {
 	EXT_PULL ep;
@@ -281,6 +307,8 @@ static void try_entryid(const std::string_view s, unsigned int ind)
 	printf("\n");
 	if (le == muidEMSAB)
 		try_emsab(s, ind);
+	else if (le == muidContabDLL)
+		try_contab(s, ind);
 	else if (le == muidStoreWrap)
 		try_storewrap(s, ind);
 	else if (le == shared_calendar_provider_guid)

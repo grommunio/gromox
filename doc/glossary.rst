@@ -280,6 +280,10 @@ GLOBCNT / GCV
 	  bits
 	* otherwise, a ``uint64_t`` holds the GCV in host-endian
 
+Minimal Entry ID, MINID
+	A global counter for objects in an address book.
+	Scope: one address book provider. Limit: 2^32 - 16.
+
 Change number / CN
 	Scope: one mailbox replica. Limit: 2^48. Every time a folder or message
 	is modified, a new change number is assigned. CNs are assigned in
@@ -330,6 +334,13 @@ Message Identifier, MID
 	sometimes refers to either the mixed-byteorder *Internal Identifier*
 	(see above) or the (host-endian) GCV. ``mid_val`` is almost exclusively
 	the host-endian GCV form.
+
+Instance key
+	Property 0x0ff60102 on table entries (computed, client-side-only
+	property). In EMSMDB32, message store table row instance keys are 20
+	bytes long: FID + GID + 4 bytes instance number. In EMSMDB32,
+	address book table row instance keys can be 8 bytes long: 4 bytes AB
+	provider counter, plus 4 byte MINID.
 
 Global Identifier, GID
 	The aggregation of the 128-bit *Database GUID* plus the 48-bit

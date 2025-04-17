@@ -631,6 +631,7 @@ std::string guid2name(const FLATUID le)
 #define GN(v) if (he == v) return #v;
 	FN(muidStoreWrap);
 	FN(muidEMSAB);
+	FN(muidContabDLL);
 	FN(pbLongTermNonPrivateGuid);
 	FN(shared_calendar_provider_guid);
 	FN(g_muidStorePrivate);
