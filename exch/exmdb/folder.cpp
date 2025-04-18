@@ -2051,9 +2051,6 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
 		permission |= frightsDeleteOwned;
 	if (permission & frightsEditAny)
 		permission |= frightsEditOwned;
-	if (!b_freebusy || !exmdb_server::is_private() ||
-	    fid_val != PRIVATE_FID_CALENDAR)
-		permission &= ~(frightsFreeBusySimple | frightsFreeBusyDetailed);
 	if (NULL == pstmt) {
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO permissions"
@@ -2142,9 +2139,6 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
 		permission |= frightsDeleteOwned;
 	if (permission & frightsEditAny)
 		permission |= frightsEditOwned;
-	if (!b_freebusy || !exmdb_server::is_private() ||
-	    fid_val != PRIVATE_FID_CALENDAR)
-		permission &= ~(frightsFreeBusySimple | frightsFreeBusyDetailed);
 	snprintf(sql_string, std::size(sql_string), "UPDATE permissions SET permission=%u"
 	         " WHERE member_id=%lld", permission, LLD{member_id});
 	if (pdb->exec(sql_string) != SQLITE_OK)
