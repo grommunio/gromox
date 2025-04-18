@@ -144,7 +144,7 @@ static void try_storewrap(std::string_view s, unsigned int ind)
 	printf("%-*sMDB_STORE_EID_V3_MAGIC\n%-*ssmtp    = %s\n", lead(ind), "", lead(ind), "", znul(smtp));
 }
 
-static void try_shared_cal(std::string_view s, unsigned int ind)
+static void try_shared_cal1(std::string_view s, unsigned int ind)
 {
 	EXT_PULL ep;
 	ep.init(s.data(), s.size(), malloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
@@ -190,6 +190,38 @@ static void try_shared_cal(std::string_view s, unsigned int ind)
 		printf("%-*s           + %zu unparsed/garbage bytes\n", lead(ind + 1), "",
 			static_cast<size_t>(next_offset - ep.m_offset));
 	ep.m_offset = next_offset;
+	if (ep.m_offset != ep.m_data_size)
+		printf("%-*s+ %zu unparsed/garbage bytes\n", lead(ind), "",
+			static_cast<size_t>(ep.m_data_size - ep.m_offset));
+}
+
+static void try_shared_cal2(std::string_view s, unsigned int ind)
+{
+	EXT_PULL ep;
+	ep.init(s.data(), s.size(), malloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
+	uint32_t vd;
+	GUID w;
+
+	ep.g_uint32(&vd);
+	ep.g_guid(&w);
+	ep.g_uint32(&vd);
+	printf("%-*sField 1.1         = %08xh\n", lead(ind), "",  vd);
+	ep.g_uint32(&vd);
+	printf("%-*sField 1.2         = %08xh\n", lead(ind), "",  vd);
+	ep.g_uint32(&vd);
+	printf("%-*sType or something = %u\n", lead(ind), "",  vd);
+	ep.g_uint32(&vd);
+	printf("%-*sInner EID size    = %u\n", lead(ind), "",  vd);
+	{
+		std::string_view sub = s;
+		sub.remove_prefix(ep.m_offset);
+		if (sub.size() > vd)
+			sub = {sub.data(), vd};
+		try_entryid(sub, ind + 1);
+	}
+	/* Always leaves room for a MESSAGE_ENTRYID even if not present. */
+	if (vd < 70 && ep.advance(70) != pack_result::ok)
+		return;
 	if (ep.m_offset != ep.m_data_size)
 		printf("%-*s+ %zu unparsed/garbage bytes\n", lead(ind), "",
 			static_cast<size_t>(ep.m_data_size - ep.m_offset));
@@ -311,8 +343,10 @@ static void try_entryid(const std::string_view s, unsigned int ind)
 		try_contab(s, ind);
 	else if (le == muidStoreWrap)
 		try_storewrap(s, ind);
+	else if (le == shared_calendar_store_guid)
+		try_shared_cal1(s, ind);
 	else if (le == shared_calendar_provider_guid)
-		try_shared_cal(s, ind);
+		try_shared_cal2(s, ind);
 	else
 		try_object_eid(s, ind);
 }

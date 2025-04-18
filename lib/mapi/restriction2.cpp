@@ -633,6 +633,7 @@ std::string guid2name(const FLATUID le)
 	FN(muidEMSAB);
 	FN(muidContabDLL);
 	FN(pbLongTermNonPrivateGuid);
+	FN(shared_calendar_store_guid);
 	FN(shared_calendar_provider_guid);
 	FN(g_muidStorePrivate);
 	FN(g_muidStorePublic);
