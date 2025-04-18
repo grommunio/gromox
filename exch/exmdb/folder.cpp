@@ -2023,7 +2023,7 @@ BOOL exmdb_server::empty_folder_permission(const char *dir, uint64_t folder_id)
 	return TRUE;
 }
 
-static uint32_t permission_adjust(uint32_t v)
+static uint32_t permission_adjust(uint32_t v, bool adjust_fb = false)
 {
 	if (v & frightsReadAny)
 		v |= frightsVisible; /* 0x1 => 0x401 */
@@ -2033,6 +2033,11 @@ static uint32_t permission_adjust(uint32_t v)
 		v |= frightsDeleteOwned; /* 0x40 => 0x50 */
 	if (v & frightsOwner)
 		v |= frightsVisible | frightsContact; /* 0x100 => 0x500 */
+	if (adjust_fb) {
+		v |= frightsFreeBusySimple;
+		if (v & frightsReadAny)
+			v |= frightsFreeBusyDetailed; /* 0x401 => 0x1c01 */
+	}
 	return v;
 }
 
@@ -2055,7 +2060,7 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
 	auto num = propvals.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if (num == nullptr)
 		return true;
-	auto permission = permission_adjust(*num);
+	auto permission = permission_adjust(*num, !b_freebusy);
 	if (NULL == pstmt) {
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO permissions"
@@ -2135,7 +2140,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
 	auto num = propvals.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if (num == nullptr)
 		return true;
-	auto permission = permission_adjust(*num);
+	auto permission = permission_adjust(*num, !b_freebusy);
 	snprintf(sql_string, std::size(sql_string), "UPDATE permissions SET permission=%u"
 	         " WHERE member_id=%lld", permission, LLD{member_id});
 	if (pdb->exec(sql_string) != SQLITE_OK)
@@ -2180,7 +2185,11 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
 	return true;
 }
 
-/* after updating the database, update the table too! */
+/**
+ * @b_freebusy: Indicates that the client is in charge of FB bits.
+ *
+ * [After updating the database, update the table too!]
+ */
 BOOL exmdb_server::update_folder_permission(const char *dir,
 	uint64_t folder_id, BOOL b_freebusy,
 	uint16_t count, const PERMISSION_DATA *prow)
