@@ -2023,6 +2023,19 @@ BOOL exmdb_server::empty_folder_permission(const char *dir, uint64_t folder_id)
 	return TRUE;
 }
 
+static uint32_t permission_adjust(uint32_t v)
+{
+	if (v & frightsReadAny)
+		v |= frightsVisible; /* 0x1 => 0x401 */
+	if (v & frightsEditAny)
+		v |= frightsEditOwned; /* 0x20 => 0x28 */
+	if (v & frightsDeleteAny)
+		v |= frightsDeleteOwned; /* 0x40 => 0x50 */
+	if (v & frightsOwner)
+		v |= frightsVisible | frightsContact; /* 0x100 => 0x500 */
+	return v;
+}
+
 static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
     bool b_freebusy, uint64_t fid_val, xstmt &pstmt) try
 {
@@ -2042,15 +2055,7 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
 	auto num = propvals.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if (num == nullptr)
 		return true;
-	auto permission = *num;
-	if (permission & frightsReadAny)
-		permission |= frightsVisible;
-	if (permission & frightsOwner)
-		permission |= frightsVisible | frightsContact;
-	if (permission & frightsDeleteAny)
-		permission |= frightsDeleteOwned;
-	if (permission & frightsEditAny)
-		permission |= frightsEditOwned;
+	auto permission = permission_adjust(*num);
 	if (NULL == pstmt) {
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO permissions"
@@ -2130,15 +2135,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
 	auto num = propvals.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if (num == nullptr)
 		return true;
-	auto permission = *num;
-	if (permission & frightsReadAny)
-		permission |= frightsVisible;
-	if (permission & frightsOwner)
-		permission |= frightsVisible | frightsContact;
-	if (permission & frightsDeleteAny)
-		permission |= frightsDeleteOwned;
-	if (permission & frightsEditAny)
-		permission |= frightsEditOwned;
+	auto permission = permission_adjust(*num);
 	snprintf(sql_string, std::size(sql_string), "UPDATE permissions SET permission=%u"
 	         " WHERE member_id=%lld", permission, LLD{member_id});
 	if (pdb->exec(sql_string) != SQLITE_OK)
