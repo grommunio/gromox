@@ -530,7 +530,7 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		*ppvalue = v;
 		if (*ppvalue == nullptr)
 			return FALSE;
-		*v = g_max_mail_len;
+		*v = std::min(static_cast<size_t>(INT32_MAX), g_max_mail_len >> 10);
 		return TRUE;
 	}
 	case PR_SORT_LOCALE_ID: {

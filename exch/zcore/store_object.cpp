@@ -728,7 +728,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		*ppvalue = r;
 		if (*ppvalue == nullptr)
 			return FALSE;
-		*r = g_max_mail_len;
+		*r = std::min(static_cast<size_t>(INT32_MAX), g_max_mail_len >> 10);
 		return TRUE;
 	}
 	case PR_OBJECT_TYPE: {
