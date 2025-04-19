@@ -78,7 +78,7 @@ struct message_content;
 struct message_object;
 struct store_object;
 
-extern void common_util_init(const char *org_name, const char *default_charset, unsigned int max_rcpt, unsigned int max_msg, unsigned int max_mail_len, unsigned int max_rule_len, std::string &&smtp_url, const char *submit_cmd);
+extern void common_util_init(const char *org_name, const char *default_charset, unsigned int max_rcpt, unsigned int max_msg, size_t max_mail_len, unsigned int max_rule_len, std::string &&smtp_url, const char *submit_cmd);
 extern int common_util_run(const char *data_path);
 BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
@@ -162,7 +162,8 @@ extern gromox::errno_t cu_write_storenamedprop(const char *, const GUID &, const
 extern ec_error_t cu_fbdata_to_ical(const char *, const char *, time_t, time_t, const std::vector<freebusy_event> &, BINARY *);
 extern bool permrow_entryids_equal(const PERMISSION_ROW &, const uint32_t *, const BINARY *);
 
-extern unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
+extern size_t g_max_mail_len;
+extern unsigned int g_max_rcpt, g_max_message;
 extern unsigned int g_max_rule_len, g_max_extrule_len;
 extern unsigned int zcore_backfill_transporthdr;
 extern char g_org_name[256];

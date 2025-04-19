@@ -81,7 +81,8 @@ struct LANGMAP_ITEM {
 
 }
 
-unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
+size_t g_max_mail_len;
+unsigned int g_max_rcpt, g_max_message;
 unsigned int g_max_rule_len, g_max_extrule_len, zcore_backfill_transporthdr;
 static std::string g_smtp_url;
 char g_org_name[256];
@@ -328,7 +329,7 @@ BOOL common_util_exmdb_locinfo_from_string(
 }
 
 void common_util_init(const char *org_name, const char *default_charset,
-    unsigned int max_rcpt, unsigned int max_message, unsigned int max_mail_len,
+    unsigned int max_rcpt, unsigned int max_message, size_t max_mail_len,
     unsigned int max_rule_len, std::string &&smtp_url, const char *submit_command)
 {
 	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));

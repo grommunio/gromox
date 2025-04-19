@@ -55,7 +55,8 @@ unsigned int emsmdb_backfill_transporthdr;
 
 namespace emsmdb {
 
-unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
+size_t g_max_mail_len;
+unsigned int g_max_rcpt, g_max_message;
 unsigned int g_max_rule_len, g_max_extrule_len;
 static std::string g_smtp_url;
 char g_emsmdb_org_name[256];
@@ -1734,7 +1735,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 }
 
 void common_util_init(const char *org_name, unsigned int max_rcpt,
-    unsigned int max_message, unsigned int max_mail_len,
+    unsigned int max_message, size_t max_mail_len,
     unsigned int max_rule_len, std::string &&smtp_url,
     const char *submit_command)
 {

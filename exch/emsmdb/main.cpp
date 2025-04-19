@@ -129,7 +129,6 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 	int max_mail;
 	int max_rcpt;
 	int async_num;
-	int max_length;
 	int max_rule_len;
 	int ping_interval;
 	char org_name[256];
@@ -165,7 +164,7 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 		max_rcpt = pfile->get_ll("max_rcpt_num");
 		max_mail = pfile->get_ll("max_mail_num");
 		char max_length_s[32], max_rule_len_s[32], ping_int_s[32];
-		max_length = pfile->get_ll("max_mail_length");
+		auto max_length = pfile->get_ll("max_mail_length");
 		max_rule_len = pfile->get_ll("max_ext_rule_length");
 		HX_unit_size(max_rule_len_s, std::size(max_rule_len_s), max_rule_len, 1024, 0);
 		ping_interval = pfile->get_ll("mailbox_ping_interval");
