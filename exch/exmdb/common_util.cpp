@@ -2038,6 +2038,23 @@ static GP_RESULT gp_spectableprop(mapi_object_type table_type, uint32_t tag,
 	}
 }
 
+static GP_RESULT gp_fldprop_synth(proptag_t tag, TAGGED_PROPVAL &pv)
+{
+	switch (tag) {
+	case PR_DELETED_FOLDER_COUNT:
+	case PR_DELETED_COUNT_TOTAL: {
+		auto v = cu_alloc<uint32_t>();
+		pv.pvalue = v;
+		if (v == nullptr)
+			return GP_ERR;
+		*v = 0;
+		return GP_ADV;
+	}
+	default:
+		return GP_UNHANDLED;
+	}
+}
+
 static GP_RESULT gp_msgprop_synth(uint64_t msgid, proptag_t proptag,
     TAGGED_PROPVAL &pv, sqlite3 *db)
 {
@@ -2127,12 +2144,14 @@ static GP_RESULT gp_rcptprop_synth(proptag_t proptag, TAGGED_PROPVAL &pv)
 	}
 }
 
-static GP_RESULT gp_fallbackprop(mapi_object_type table_type, uint64_t msgid,
+static GP_RESULT gp_fallbackprop(mapi_object_type table_type, uint64_t objid,
     proptag_t proptag, TAGGED_PROPVAL &pv, sqlite3 *db)
 {
 	pv.proptag = proptag;
+	if (table_type == MAPI_FOLDER)
+		return gp_fldprop_synth(proptag, pv);
 	if (table_type == MAPI_MESSAGE)
-		return gp_msgprop_synth(msgid, proptag, pv, db);
+		return gp_msgprop_synth(objid, proptag, pv, db);
 	if (table_type == MAPI_MAILUSER)
 		return gp_rcptprop_synth(proptag, pv);
 	return GP_UNHANDLED;
