@@ -56,24 +56,28 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 15);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
+	/* Folders are not supposed to have namedprops */
 	auto eop = std::copy_if(tmp_proptags.begin(), tmp_proptags.end(),
 	           pproptags->pproptag, [](uint32_t x) { return x < 0x80000000; });
 	pproptags->count = eop - pproptags->pproptag;
-	for (auto t : {PR_ACCESS, PR_RIGHTS, PR_PARENT_ENTRYID, PR_PARENT_SOURCE_KEY})
+	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
+	static constexpr proptag_t tags1[] = {
+		PR_ACCESS, PR_RIGHTS, PR_PARENT_ENTRYID, PR_PARENT_SOURCE_KEY,
+		PR_SOURCE_KEY,
+	};
+	for (auto t : tags1)
 		pproptags->emplace_back(t);
-	if (!tmp_proptags.has(PR_SOURCE_KEY))
-		pproptags->emplace_back(PR_SOURCE_KEY);
-	if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
-		return TRUE;
-	static constexpr uint32_t tags2[] = {
+	static constexpr proptag_t tags2[] = {
 		PR_IPM_DRAFTS_ENTRYID, PR_IPM_CONTACT_ENTRYID,
 		PR_IPM_APPOINTMENT_ENTRYID, PR_IPM_JOURNAL_ENTRYID,
 		PR_IPM_NOTE_ENTRYID, PR_IPM_TASK_ENTRYID, PR_FREEBUSY_ENTRYIDS,
 		PR_ADDITIONAL_REN_ENTRYIDS, PR_ADDITIONAL_REN_ENTRYIDS_EX,
 	};
-	for (auto t : tags2)
-		if (!tmp_proptags.has(t))
+	if (pfolder->plogon->is_private() && toplevel(pfolder->folder_id))
+		for (auto t : tags2)
 			pproptags->emplace_back(t);
+	std::sort(pproptags->begin(), pproptags->end());
+	pproptags->count = std::unique(pproptags->begin(), pproptags->end()) - pproptags->begin();
 	return TRUE;
 }
 
