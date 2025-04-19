@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -65,37 +66,24 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
 		sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
-	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
-	pproptags->pproptag[pproptags->count++] = PR_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
-	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
-	pproptags->pproptag[pproptags->count++] = PR_RIGHTS;
-	pproptags->pproptag[pproptags->count++] = PR_PARENT_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
-	if (!tmp_proptags.has(PR_SOURCE_KEY))
-		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
-	if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
-		return TRUE;
-	if (!tmp_proptags.has(PR_IPM_DRAFTS_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_DRAFTS_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_CONTACT_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_CONTACT_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_APPOINTMENT_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_APPOINTMENT_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_JOURNAL_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_JOURNAL_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_NOTE_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_NOTE_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_TASK_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_TASK_ENTRYID;
-	if (!tmp_proptags.has(PR_FREEBUSY_ENTRYIDS))
-		pproptags->pproptag[pproptags->count++] = PR_FREEBUSY_ENTRYIDS;
-	if (!tmp_proptags.has(PR_ADDITIONAL_REN_ENTRYIDS))
-		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS;
-	if (!tmp_proptags.has(PR_ADDITIONAL_REN_ENTRYIDS_EX))
-		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS_EX;
+	static constexpr proptag_t tags1[] = {
+		PR_ACCESS, PR_ENTRYID, PR_OBJECT_TYPE, PR_MAPPING_SIGNATURE,
+		PR_RIGHTS, PR_PARENT_ENTRYID, PR_PARENT_SOURCE_KEY,
+		PR_STORE_ENTRYID, PR_STORE_RECORD_KEY, PR_SOURCE_KEY,
+	};
+	for (auto t : tags1)
+		pproptags->emplace_back(t);
+	static constexpr proptag_t tags2[] = {
+		PR_IPM_DRAFTS_ENTRYID, PR_IPM_CONTACT_ENTRYID,
+		PR_IPM_APPOINTMENT_ENTRYID, PR_IPM_JOURNAL_ENTRYID,
+		PR_IPM_NOTE_ENTRYID, PR_IPM_TASK_ENTRYID, PR_FREEBUSY_ENTRYIDS,
+		PR_ADDITIONAL_REN_ENTRYIDS, PR_ADDITIONAL_REN_ENTRYIDS_EX,
+	};
+	if (pfolder->pstore->b_private && toplevel(pfolder->folder_id))
+		for (auto t : tags2)
+			pproptags->emplace_back(t);
+	std::sort(pproptags->begin(), pproptags->end());
+	pproptags->count = std::unique(pproptags->begin(), pproptags->end()) - pproptags->begin();
 	return TRUE;
 }
 

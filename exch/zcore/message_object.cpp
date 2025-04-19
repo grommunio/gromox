@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -624,26 +625,22 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		case PidTagChangeNumber:
 			continue;
 		default:
-			pproptags->pproptag[pproptags->count++] = tag;
+			pproptags->emplace_back(tag);
 			break;
 		}
 	}
-	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
-	pproptags->pproptag[pproptags->count++] = PR_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_ACCESS_LEVEL;
-	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
-	pproptags->pproptag[pproptags->count++] = PR_PARENT_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_RECORD_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
-	if (pmessage->pembedding == nullptr && !pproptags->has(PR_SOURCE_KEY))
-		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
-	if (!pproptags->has(PR_MESSAGE_LOCALE_ID))
-		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_LOCALE_ID;
-	if (!pproptags->has(PR_MESSAGE_CODEPAGE))
-		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_CODEPAGE;
+	static constexpr proptag_t tags1[] = {
+		PR_ACCESS, PR_ENTRYID, PR_ACCESS_LEVEL, PR_OBJECT_TYPE,
+		PR_PARENT_ENTRYID, PR_PARENT_SOURCE_KEY, PR_RECORD_KEY,
+		PR_STORE_RECORD_KEY, PR_MAPPING_SIGNATURE, PR_STORE_ENTRYID,
+		PR_MESSAGE_LOCALE_ID, PR_MESSAGE_CODEPAGE,
+	};
+	for (auto t : tags1)
+		pproptags->emplace_back(t);
+	if (pmessage->pembedding == nullptr)
+		pproptags->emplace_back(PR_SOURCE_KEY);
+	std::sort(pproptags->begin(), pproptags->end());
+	pproptags->count = std::unique(pproptags->begin(), pproptags->end()) - pproptags->begin();
 	return TRUE;
 }
 
