@@ -199,7 +199,7 @@ std::string TAGGED_PROPVAL::value_repr(bool verbose) const
 		break;
 	case PT_I8: {
 		auto v = *static_cast<int64_t *>(pvalue);
-		return fmt::format("{}/0x{:x}", v, v);
+		return fmt::format("{}/0x{:x}", v, static_cast<uint64_t>(v));
 	}
 	case PT_STRING8:
 	case PT_UNICODE:
