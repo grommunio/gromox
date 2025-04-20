@@ -544,7 +544,7 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 		PR_NORMAL_MESSAGE_SIZE_EXTENDED, PR_FOLDER_CHILD_COUNT,
 		PR_FOLDER_TYPE, PR_CONTENT_UNREAD, PR_SUBFOLDERS, PR_HAS_RULES,
 		PR_FOLDER_PATHNAME, PR_LOCAL_COMMIT_TIME, PidTagFolderId,
-		PidTagChangeNumber, PR_FOLDER_FLAGS,
+		PidTagChangeNumber, PR_FOLDER_FLAGS, PR_CI_SEARCH_ENABLED,
 	};
 	static constexpr uint32_t msg_tags[] = {
 		PidTagMid, PR_MESSAGE_SIZE, PR_ASSOCIATED, PidTagChangeNumber,
@@ -1796,6 +1796,14 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 			return GP_SKIP;
 		pv.pvalue = cu_fid_to_entryid(db, tmp_id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
+	}
+	case PR_CI_SEARCH_ENABLED: {
+		auto v = cu_alloc<uint8_t>();
+		pv.pvalue = v;
+		if (v == nullptr)
+			return GP_ERR;
+		*v = false;
+		return GP_ADV;
 	}
 	case PR_SUBFOLDERS: {
 		auto u = cu_alloc<uint8_t>();
