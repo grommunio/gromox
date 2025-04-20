@@ -201,6 +201,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 		if (!exmdb_client->get_folder_perm(dir,
 		    pfolder->folder_id, eff_user, v))
 			return FALSE;
+		*v &= ~(frightsFreeBusySimple | frightsFreeBusyDetailed);
 		return TRUE;
 	}
 	case PR_ENTRYID:
