@@ -651,6 +651,30 @@ static BINARY* common_util_get_mailbox_guid(sqlite3 *psqlite)
 	return ptmp_bin;
 }
 
+static BINARY *cu_get_mapping_sig(sqlite3 *db)
+{
+	GUID msig;
+	char qstr[128];
+
+	snprintf(qstr, std::size(qstr), "SELECT config_value FROM configurations "
+	         "WHERE config_id=%u", CONFIG_ID_MAPPING_SIGNATURE);
+	auto stm = gx_sql_prep(db, qstr);
+	if (stm == nullptr || stm.step() != SQLITE_ROW ||
+	    !msig.from_str(stm.col_text(0)))
+		return NULL;
+	stm.finalize();
+	auto bin = cu_alloc<BINARY>();
+	if (bin == nullptr)
+		return nullptr;
+	bin->pv = cu_alloc<FLATUID>();
+	if (bin->pv == nullptr)
+		return nullptr;
+	bin->cb = 16;
+	FLATUID f = msig;
+	memcpy(bin->pv, &f, sizeof(f));
+	return bin;
+}
+
 static uint32_t common_util_get_store_state(sqlite3 *psqlite)
 {
 	char sql_string[128];
@@ -1672,8 +1696,10 @@ static BINARY *cu_get_replmap(sqlite3 *db)
 	    ep.p_uint16(4) != pack_result::ok ||
 	    ep.p_guid(exc_replid4) != pack_result::ok)
 		return nullptr;
-	auto stm = gx_sql_prep(db, "SELECT config_value FROM configurations"
-	           " WHERE config_id=1"); /* CONFIG_ID_MAILBOX_GUID */
+	char qstr[128];
+	snprintf(qstr, sizeof(qstr), "SELECT config_value FROM configurations"
+	         " WHERE config_id=%u", CONFIG_ID_MAPPING_SIGNATURE);
+	auto stm = gx_sql_prep(db, qstr);
 	if (stm == nullptr)
 		return nullptr;
 	if (stm.step() == SQLITE_ROW) {
@@ -1682,7 +1708,7 @@ static BINARY *cu_get_replmap(sqlite3 *db)
 			GUID guid;
 			if (!guid.from_str(txt) ||
 			    ep.p_uint16(5) != pack_result::ok ||
-			    ep.p_guid(guid) != pack_result::ok) /* PR_MAPPING_SIGNATURE */
+			    ep.p_guid(guid) != pack_result::ok)
 				return nullptr;
 		}
 	}
@@ -2032,6 +2058,9 @@ static GP_RESULT gp_spectableprop(mapi_object_type table_type, uint32_t tag,
 	switch (tag) {
 	case PR_STORE_RECORD_KEY:
 		pv.pvalue = common_util_get_mailbox_guid(db);
+		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
+	case PR_MAPPING_SIGNATURE:
+		pv.pvalue = cu_get_mapping_sig(db);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	}
 	switch (table_type) {
@@ -3170,6 +3199,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case PR_MESSAGE_SIZE:
 			case PR_CONTENT_COUNT:
 			case PR_STORE_RECORD_KEY:
+			case PR_MAPPING_SIGNATURE:
 			case PR_ASSOC_MESSAGE_SIZE:
 			case PR_NORMAL_MESSAGE_SIZE:
 			case PR_MESSAGE_SIZE_EXTENDED:

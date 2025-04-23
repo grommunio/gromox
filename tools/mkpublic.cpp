@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cerrno>
@@ -101,18 +101,31 @@ static int mk_folders(sqlite3 *psqlite, uint32_t domain_id)
 
 static int mk_options(sqlite3 *psqlite, time_t ux_time)
 {
+	auto record_key  = GUID::random_new();
+	auto mapping_sig = GUID::random_new();
+	char rgtxt[GUIDSTR_SIZE][5];
+	record_key.to_str(rgtxt[0], sizeof(rgtxt[0]));
+	exc_replid2.to_str(rgtxt[1], sizeof(rgtxt[1]));
+	exc_replid3.to_str(rgtxt[2], sizeof(rgtxt[2]));
+	exc_replid4.to_str(rgtxt[3], sizeof(rgtxt[3]));
+	mapping_sig.to_str(rgtxt[4], sizeof(rgtxt[4]));
+
 	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return EXIT_FAILURE;
-	char tmp_bguid[GUIDSTR_SIZE];
-	GUID::random_new().to_str(tmp_bguid, std::size(tmp_bguid));
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAILBOX_GUID);
-	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
+	pstmt.bind_int64(1, CONFIG_ID_MAILBOX_GUID);
+	pstmt.bind_text(2, rgtxt[0]);
 	if (pstmt.step() != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		return EXIT_FAILURE;
 	}
-	sqlite3_reset(pstmt);
+	pstmt.reset();
+	pstmt.bind_int64(1, CONFIG_ID_MAPPING_SIGNATURE);
+	pstmt.bind_text(2, rgtxt[4]);
+	if (pstmt.step() != SQLITE_DONE)
+		return EXIT_FAILURE;
+	pstmt.reset();
+
 	std::pair<uint32_t, uint64_t> confprops[] = {
 		{CONFIG_ID_CURRENT_EID, CUSTOM_EID_BEGIN},
 		{CONFIG_ID_MAXIMUM_EID, ALLOCATED_EID_RANGE - 1},

@@ -86,7 +86,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	}
 
 	static constexpr proptag_t proptag_buff[] =
-		{PR_STORE_RECORD_KEY, PR_OOF_STATE};
+		{PR_STORE_RECORD_KEY, PR_OOF_STATE, PR_MAPPING_SIGNATURE};
 	static constexpr PROPTAG_ARRAY proptags =
 		{std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client->get_store_properties(maildir.c_str(), CP_ACP,
@@ -96,6 +96,11 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	if (bin == nullptr)
 		return ecError;
 	*pmailbox_guid = rop_util_binary_to_guid(bin);
+	bin = propvals.get<const BINARY>(PR_MAPPING_SIGNATURE);
+	if (bin == nullptr)
+		return ecError;
+	*replid   = 5;
+	*replguid = rop_util_binary_to_guid(bin);
 	auto flag = propvals.get<const uint8_t>(PR_OOF_STATE);
 	if (flag != nullptr && *flag != 0)
 		*presponse_flags |= RESPONSE_FLAG_OOF;
@@ -113,9 +118,6 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	pfolder_id[10] = rop_util_make_eid_ex(1, PRIVATE_FID_FINDER);
 	pfolder_id[11] = rop_util_make_eid_ex(1, PRIVATE_FID_VIEWS);
 	pfolder_id[12] = rop_util_make_eid_ex(1, PRIVATE_FID_SHORTCUTS);
-	
-	*replid   = 5;
-	*replguid = *pmailbox_guid; /* send PR_MAPPING_SIGNATURE */
 	
 	auto cur_time = time(nullptr);
 	ptm = gmtime_r(&cur_time, &tmp_tm);
@@ -135,7 +137,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	*pstore_stat = 0;
 	auto plogon = logon_object::create(logon_flags, open_flags, logon_mode,
 	              user_id, dom_id, username.c_str(), maildir.c_str(),
-	              *pmailbox_guid);
+	              *pmailbox_guid, *replguid);
 	if (plogon == nullptr)
 		return ecServerOOM;
 	g_last_rop_dir = plogon->get_dir();
@@ -159,7 +161,6 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 {
 	void *pvalue;
 	char homedir[256];
-	GUID mailbox_guid;
 	const char *pdomain;
 	
 	if (!(open_flags & LOGON_OPEN_FLAG_PUBLIC) ||
@@ -205,19 +206,24 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	pfolder_id[11] = 0;
 	pfolder_id[12] = 0;
 	
-	
 	if (!exmdb_client->get_store_property(homedir, CP_ACP,
 	    PR_STORE_RECORD_KEY, &pvalue))
 		return ecError;
 	if (pvalue == nullptr)
 		return ecError;
-	mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
+	auto record_key = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
+	if (!exmdb_client->get_store_property(homedir, CP_ACP,
+	    PR_MAPPING_SIGNATURE, &pvalue))
+		return ecError;
+	if (pvalue == nullptr)
+		return ecError;
+	auto mapping_sig = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
 	*replid   = 5;
-	*replguid = mailbox_guid; /* send PR_MAPPING_SIGNATURE */
+	*replguid = mapping_sig;
 	memset(pper_user_guid, 0, sizeof(GUID));
 	auto plogon = logon_object::create(logon_flags, open_flags,
 	              logon_mode::guest, domain_id, domain_id,
-	              pdomain, homedir, mailbox_guid);
+	              pdomain, homedir, record_key, mapping_sig);
 	if (plogon == nullptr)
 		return ecServerOOM;
 	g_last_rop_dir = plogon->get_dir();

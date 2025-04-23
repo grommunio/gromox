@@ -38,7 +38,7 @@ struct store_object {
 	int account_id = 0;
 	char account[UADDR_SIZE]{};
 	char dir[256]{};
-	GUID mailbox_guid{};
+	GUID mailbox_guid{}, mapping_signature{};
 	std::unique_ptr<property_groupinfo> m_gpinfo;
 	std::vector<property_groupinfo> group_list;
 	std::unordered_map<uint16_t, PROPERTY_XNAME> propid_hash;

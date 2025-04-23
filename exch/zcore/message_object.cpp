@@ -751,8 +751,10 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 		*ppvalue = cu_fid_to_entryid(*pmessage->pstore, pmessage->message_id);
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
-	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pmessage->pstore->mailbox_guid);
+		return TRUE;
+	case PR_MAPPING_SIGNATURE:
+		*ppvalue = common_util_guid_to_binary(pmessage->pstore->mapping_signature);
 		return TRUE;
 	case PR_STORE_ENTRYID:
 		*ppvalue = cu_to_store_entryid(*pmessage->pstore);

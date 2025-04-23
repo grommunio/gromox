@@ -883,8 +883,10 @@ static BOOL message_object_get_calculated_property(const message_object *pmessag
 		*ppvalue = cu_fid_to_entryid(*pmessage->plogon, pmessage->message_id);
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
-	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pmessage->plogon->mailbox_guid);
+		return TRUE;
+	case PR_MAPPING_SIGNATURE:
+		*ppvalue = common_util_guid_to_binary(pmessage->plogon->mapping_signature);
 		return TRUE;
 	}
 	return FALSE;

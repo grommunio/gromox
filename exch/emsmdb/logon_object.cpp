@@ -59,7 +59,8 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 
 std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
     uint32_t open_flags, enum logon_mode logon_mode, int account_id,
-    int dom_id, const char *account, const char *dir, GUID mailbox_guid)
+    int dom_id, const char *account, const char *dir, GUID record_key,
+    GUID mapping_sig)
 {
 	std::unique_ptr<logon_object> plogon;
 	try {
@@ -74,7 +75,8 @@ std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
 	plogon->domain_id = dom_id;
 	gx_strlcpy(plogon->account, account, std::size(plogon->account));
 	gx_strlcpy(plogon->dir, dir, std::size(plogon->dir));
-	plogon->mailbox_guid = mailbox_guid;
+	plogon->mailbox_guid = std::move(record_key);
+	plogon->mapping_signature = std::move(mapping_sig);
 	return plogon;
 }
 

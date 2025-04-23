@@ -783,8 +783,10 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_RECORD_KEY:
 	case PR_INSTANCE_KEY:
 	case PR_STORE_RECORD_KEY:
-	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pstore->mailbox_guid);
+		return TRUE;
+	case PR_MAPPING_SIGNATURE:
+		*ppvalue = common_util_guid_to_binary(pstore->mapping_signature);
 		return TRUE;
 	case PR_ENTRYID:
 	case PR_STORE_ENTRYID:

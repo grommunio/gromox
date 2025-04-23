@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <climits>
@@ -345,6 +345,9 @@ static constexpr char tbl_fixsyseidalloc_16[] =
 static constexpr char tbl_fixsyseidalloc_17[] =
 "UPDATE configurations SET config_value=(SELECT MAX(range_end) FROM allocated_eids) WHERE config_id=3"; // CONIFG_ID_MAXIMUM_EID
 
+static constexpr char tbl_addmappingsig_18[] =
+"INSERT INTO configurations VALUES (11, (SELECT config_value FROM configurations WHERE config_id=1))";
+
 static constexpr char tbl_pub_folders_0[] =
 "CREATE TABLE folders ("
 "  folder_id INTEGER PRIMARY KEY,"
@@ -605,6 +608,7 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{15, tbl_fixsyseidalloc_15},
 	{16, tbl_fixsyseidalloc_16},
 	{17, tbl_fixsyseidalloc_17},
+	{18, tbl_addmappingsig_18},
 	/* advance schema numbers in lockstep with public stores */
 	TABLE_END,
 };
@@ -620,6 +624,7 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 	{15, tbl_fixsyseidalloc_15},
 	{16, tbl_fixsyseidalloc_16},
 	{17, tbl_fixsyseidalloc_17},
+	{18, tbl_addmappingsig_18},
 	/* advance schema numbers in lockstep with private stores */
 	TABLE_END,
 };

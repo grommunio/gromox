@@ -225,8 +225,10 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		           *static_cast<uint64_t *>(pvalue));
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
-	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pfolder->pstore->mailbox_guid);
+		return TRUE;
+	case PR_MAPPING_SIGNATURE:
+		*ppvalue = common_util_guid_to_binary(pfolder->pstore->mapping_signature);
 		return TRUE;
 	case PR_STORE_ENTRYID:
 		*ppvalue = cu_to_store_entryid(*pfolder->pstore);
