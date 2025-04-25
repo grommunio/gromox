@@ -81,6 +81,38 @@ static int repair_folder(uint64_t fid)
 	return 0;
 }
 
+static int inspect_folder_row(const TPROPVAL_ARRAY &props)
+{
+	auto fid = props.get<const uint64_t>(PidTagFolderId);
+	if (fid == nullptr)
+		return 0;
+	auto ckey = props.get<const BINARY>(PR_CHANGE_KEY);
+	auto pcl  = props.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
+	if (ckey == nullptr)
+		return 0;
+	auto k1   = change_key_size_ok(*ckey);
+	auto k2   = change_key_gc_ok(*ckey);
+	auto k3   = pcl_ok(pcl);
+	if (k3 < 0)
+		return k3;
+
+	printf("%llxh", static_cast<unsigned long long>(rop_util_get_gc_value(*fid)));
+	auto goodpoints = k1 + k2 + k3;
+	if (goodpoints == 3) {
+		printf(" (ok)\n");
+		return 0;
+	}
+	printf(" (problems:%c%c%c)", !k1 ? 'Z' : '-', !k2 ? 'B' : '-', !k3 ? 'P' : '-');
+	if (g_dry_run) {
+		putc('\n', stdout);
+		return 0;
+	}
+	auto ret = repair_folder(*fid);
+	if (ret != 0)
+		return ret;
+	return 0;
+}
+
 static int repair_mbox()
 {
 	static constexpr uint32_t tags[] =
@@ -89,6 +121,13 @@ static int repair_mbox()
 	uint32_t table_id = 0, row_num = 0;
 	uint64_t root_fld = g_public_folder ? rop_util_make_eid_ex(1, PUBLIC_FID_ROOT) :
 	                    rop_util_make_eid_ex(1, PRIVATE_FID_ROOT);
+
+	TPROPVAL_ARRAY props{};
+	if (!exmdb_client->get_folder_properties(g_storedir, CP_ACP, root_fld,
+	    &ptags, &props))
+		return -EIO;
+	if (inspect_folder_row(props) < 0)
+		return -EIO;
 	/*
 	 * This does not return the root entry itself, just its subordinates.
 	 * Might want to refine later.
@@ -109,31 +148,7 @@ static int repair_mbox()
 
 	printf("Hierarchy discovery: %u folders\n", tset.count);
 	for (size_t i = 0; i < tset.count; ++i) {
-		auto fid = tset.pparray[i]->get<uint64_t>(PidTagFolderId);
-		if (fid == nullptr)
-			continue;
-		auto ckey = tset.pparray[i]->get<BINARY>(PR_CHANGE_KEY);
-		auto pcl  = tset.pparray[i]->get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
-		if (ckey == nullptr)
-			continue;
-		auto k1   = change_key_size_ok(*ckey);
-		auto k2   = change_key_gc_ok(*ckey);
-		auto k3   = pcl_ok(pcl);
-		if (k3 < 0)
-			return k3;
-
-		printf("%llxh", static_cast<unsigned long long>(rop_util_get_gc_value(*fid)));
-		auto goodpoints = k1 + k2 + k3;
-		if (goodpoints == 3) {
-			printf(" (ok)\n");
-			continue;
-		}
-		printf(" (problems:%c%c%c)", !k1 ? 'Z' : '-', !k2 ? 'B' : '-', !k3 ? 'P' : '-');
-		if (g_dry_run) {
-			putc('\n', stdout);
-			continue;
-		}
-		auto ret = repair_folder(*fid);
+		auto ret = inspect_folder_row(*tset.pparray[i]);
 		if (ret != 0)
 			return ret;
 	}
