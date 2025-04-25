@@ -324,8 +324,9 @@ Folder Identifier, FID
 	the host-endian GCV form.
 
 Correlation ID
-	Property 0x3dd10048 on Exchange folders. Contains the Exchange user id
-	(4 bytes), two zero fields (2x2 bytes), plus the FID.
+	Property 0x3dd10048 on Exchange folders. The GUID::time_low field
+	contains the Exchange user id, and the GUID::node fields contains the
+	GLOBCNT, other fields being zero.
 
 Message Identifier, MID
 	Name for *internal identifier* when talking about a message object. The
@@ -337,29 +338,36 @@ Message Identifier, MID
 
 Instance key
 	Property 0x0ff60102 on table entries (computed, client-side-only
-	property). In EMSMDB32, message store table row instance keys are 20
-	bytes long: FID + GID + 4 bytes instance number. In EMSMDB32,
-	address book table row instance keys can be 8 bytes long: 4 bytes AB
-	provider counter, plus 4 byte MINID.
+	property). MSEMS provider message store hierarchy table row instance
+	keys are 20 bytes long: FID + 8 zero bytes + 4 bytes instance number.
+	MSEMS provider message store content table row instance keys are 20
+	bytes long: FID + MID + 4 bytes instance number. MSEMS provider address
+	book table row instance keys can be 8 bytes long: 4 bytes AB provider
+	counter, plus 4 byte MINID. CONTAB provider address book table row
+	instance keys can vary; either they are 8 bytes or 4 + muidContabDLL
+	entryid.
+
+External Identifier, XID
+	The aggregation of a 128-bit "namespace GUID" plus a storage-specific
+	*GLOBCNT*/*CN*. Scope: all replicas of a mailbox. Limit: not defined
+	because aggregate. Total size: minimum 17 bytes, maximum 24 bytes.
+	[MS-OXCFXICS v25 §2.2.2.2] XIDs make an apperance in PR_CHANGE_KEY
+	and PR_PREDECESSOR_CHANGE_LIST (PCL).
+
+	EX: *Database GUID* + GCV/CN (6 bytes, MSB) = 22 bytes
+	OST: *Database GUID* + GCV/CN (4 bytes, MSB) = 20 bytes
 
 Global Identifier, GID
 	The aggregation of the 128-bit *Database GUID* plus the 48-bit
 	*GLOBCNT*/*CN*. Scope: all replicas of a mailbox. Limit: not defined
-	because aggregate. Total size: 22 octets.
-
-External Identifier, XID
-	The aggregation of a 128-bit namespace GUID plus a storage-specific
-	*GLOBCNT*/*CN*. Scope: all replicas of a mailbox. Limit: not defined
-	because aggregate. Total size: varies, but at most 255 bytes.
-
-	EX: 16-byte *Database GUID* + GCV/CN (6 bytes, MSB)
-	OST: 16-byte *Database GUID* + GCV/CN (4 bytes, MSB)
+	because aggregate. Total size: 22 octets. [MS-OXCDATA v19 §2.2.1.3]
+	Only XIDs with size 22 are GIDs. [MS-OXCFXICS v25 p.13]
 
 LongTermID
 	The aggregation of a *GID* (22 bytes) plus 2 NUL pad bytes. Total size:
-	24 octets. The pad bytes do not indicate a replid 0, because the
-	replica is already identified by the 16-byte GUID that is part of the
-	GID.
+	24 octets. [MS-OXCDATA v19 §2.2.1.3.1] The pad bytes do not indicate a
+	replid 0, because the replica is already identified by the 16-byte GUID
+	that is part of the GID.
 
 Entryid
 	A variable-length identifier which refers to a folder or message in a
@@ -379,6 +387,8 @@ EX entryid
 	(gromox: `struct FOLDER_ENTRYID`).
 	If byte 22-24 is {0x07,0x00}, read bytes 0-n as an EX Message Entryid
 	(gromox: `struct MESSAGE_ENTRYID`).
+	In entryids, the replid portions of FID/MID are just padding, ignored
+	by readers, and filed by writers with value 0.
 
 GABUID
 	16-byte GUID value composed of 4 bytes Gromox user ID plus
