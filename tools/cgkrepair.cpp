@@ -40,7 +40,7 @@ static constexpr HXoption g_options_table[] = {
 
 static FLATUID st_private, st_public;
 static constexpr uint32_t check_tags1[] =
-	{PidTagFolderId, PR_LAST_MODIFICATION_TIME,
+	{PidTagFolderId, PidTagMid, PR_LAST_MODIFICATION_TIME, PR_FOLDER_TYPE,
 	PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST};
 static constexpr PROPTAG_ARRAY check_tags =
 	{std::size(check_tags1), deconst(check_tags1)};
@@ -115,7 +115,7 @@ static inline bool pcl_ok(const BINARY *b, const mapitime_t *ts,
 	return true;
 }
 
-static int repair_folder(uint64_t fid)
+static int repair_object(uint64_t objid, mapi_object_type ot)
 {
 	tpropval_array_ptr props(tpropval_array_init());
 	if (props == nullptr)
@@ -129,12 +129,47 @@ static int repair_folder(uint64_t fid)
 	if (ret < 0)
 		return ret;
 	PROBLEM_ARRAY problems;
-	if (!exmdb_client->set_folder_properties(g_storedir,
-	    codepage, fid, props.get(), &problems)) {
+	bool ok = false;
+	if (ot == MAPI_FOLDER)
+		ok = exmdb_client->set_folder_properties(g_storedir, codepage,
+		     objid, props.get(), &problems);
+	else if (ot == MAPI_MESSAGE)
+		ok = exmdb_client->set_message_properties(g_storedir, nullptr,
+		     codepage, objid, props.get(), &problems);
+	else
+		abort();
+	if (!ok) {
 		fprintf(stderr, "exm: set_folder_properties RPC failed\n");
 		return -EIO;
 	}
 	printf(" (new key: %llxh)\n", static_cast<unsigned long long>(rop_util_get_gc_value(change_num)));
+	return 0;
+}
+
+static int inspect_message_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp)
+{
+	auto mid = props.get<const uint64_t>(PidTagMid);
+	if (mid == nullptr)
+		return 0;
+	auto ts   = props.get<const mapitime_t>(PR_LAST_MODIFICATION_TIME);
+	auto ckey = props.get<const BINARY>(PR_CHANGE_KEY);
+	auto pcl  = props.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
+	auto k1   = change_key_size_ok(ckey);
+	auto k2   = change_key_gc_ok(ckey, ts, mbp);
+	auto k3   = pcl_ok(pcl, ts, mbp);
+
+	auto goodpoints = k1 + k2 + k3;
+	if (goodpoints < 3) {
+		printf("message %llxh [%c%c%c]", static_cast<unsigned long long>(rop_util_get_gc_value(*mid)),
+			!k1 ? 'Z' : '-', !k2 ? 'N' : '-', !k3 ? 'P' : '-');
+		if (g_dry_run) {
+			printf("\n");
+		} else {
+			auto ret = repair_object(*mid, MAPI_MESSAGE);
+			if (ret != 0)
+				return ret;
+		}
+	}
 	return 0;
 }
 
@@ -143,6 +178,7 @@ static int inspect_folder_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp)
 	auto fid = props.get<const uint64_t>(PidTagFolderId);
 	if (fid == nullptr)
 		return 0;
+	auto ftype = props.get<const uint32_t>(PR_FOLDER_TYPE);
 	auto ts   = props.get<const mapitime_t>(PR_LAST_MODIFICATION_TIME);
 	auto ckey = props.get<const BINARY>(PR_CHANGE_KEY);
 	auto pcl  = props.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
@@ -157,10 +193,34 @@ static int inspect_folder_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp)
 		if (g_dry_run) {
 			printf("\n");
 		} else {
-			auto ret = repair_folder(*fid);
+			auto ret = repair_object(*fid, MAPI_FOLDER);
 			if (ret != 0)
 				return ret;
 		}
+	}
+
+	if (ftype != nullptr && *ftype != FOLDER_GENERIC)
+		/*
+		 * Skip recursing into search folders; that would just
+		 * duplicate work.
+		 */
+		return 0;
+
+	uint32_t table_id = 0, row_count = 0;
+	if (!exmdb_client->load_content_table(g_storedir, codepage, *fid,
+	    nullptr, 0, nullptr, nullptr, &table_id, &row_count))
+		return -EIO;
+	TARRAY_SET tset{};
+	if (!exmdb_client->query_table(g_storedir, nullptr, codepage, table_id,
+	    &check_tags, 0, row_count, &tset)) {
+		fprintf(stderr, "exm: query_table RPC failed\n");
+		return -EIO;
+	}
+	exmdb_client->unload_table(g_storedir, table_id);
+	for (size_t i = 0; i < tset.count; ++i) {
+		auto ret = inspect_message_row(*tset.pparray[i], mbp);
+		if (ret != 0)
+			return ret;
 	}
 	return 0;
 }
