@@ -11,6 +11,7 @@
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <gromox/exmdb_client.hpp>
+#include <gromox/svc_loader.hpp>
 #include "genimport.hpp"
 
 using namespace gromox;
@@ -139,6 +140,11 @@ static int repair_mbox()
 	return 0;
 }
 
+static constexpr static_module g_dfl_svc_plugins[] = {
+	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
+	{"libgxs_ruleproc.so", SVC_ruleproc},
+};
+
 int main(int argc, char **argv)
 {
 	if (HX_getopt5(g_options_table, argv, &argc, &argv,
@@ -151,11 +157,17 @@ int main(int argc, char **argv)
 	}
 	st_private = gx_dbguid_store_private;
 	st_public  = gx_dbguid_store_public;
+	service_init({nullptr, g_dfl_svc_plugins, 1});
+	auto cl_1 = HX::make_scope_exit(service_stop);
+	if (service_run_early() != 0 || service_run() != 0) {
+		fprintf(stderr, "service_run: failed\n");
+		return EXIT_FAILURE;
+	}
 	if (gi_setup_from_user(g_primail) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	if (gi_startup_client() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_1 = HX::make_scope_exit(gi_shutdown);
+	auto cl_2 = HX::make_scope_exit(gi_shutdown);
 	auto ret = repair_mbox();
 	if (ret == -ENOMEM) {
 		fprintf(stderr, "Insufficient system memory.\n");
