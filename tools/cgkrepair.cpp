@@ -137,20 +137,18 @@ static int inspect_folder_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp)
 	auto k2   = change_key_gc_ok(ckey, ts, mbp);
 	auto k3   = pcl_ok(pcl);
 
-	printf("%llxh", static_cast<unsigned long long>(rop_util_get_gc_value(*fid)));
 	auto goodpoints = k1 + k2 + k3;
-	if (goodpoints == 3) {
-		printf(" (ok)\n");
-		return 0;
+	if (goodpoints < 3) {
+		printf("folder %llxh [%c%c%c]", static_cast<unsigned long long>(rop_util_get_gc_value(*fid)),
+			!k1 ? 'Z' : '-', !k2 ? 'N' : '-', !k3 ? 'P' : '-');
+		if (g_dry_run) {
+			printf("\n");
+		} else {
+			auto ret = repair_folder(*fid);
+			if (ret != 0)
+				return ret;
+		}
 	}
-	printf(" (problems:%c%c%c)", !k1 ? 'Z' : '-', !k2 ? 'B' : '-', !k3 ? 'P' : '-');
-	if (g_dry_run) {
-		putc('\n', stdout);
-		return 0;
-	}
-	auto ret = repair_folder(*fid);
-	if (ret != 0)
-		return ret;
 	return 0;
 }
 
@@ -186,8 +184,6 @@ static int repair_mbox()
 		return -EIO;
 	}
 	exmdb_client->unload_table(g_storedir, table_id);
-
-	printf("Hierarchy discovery: %u folders\n", tset.count);
 	for (size_t i = 0; i < tset.count; ++i) {
 		auto ret = inspect_folder_row(*tset.pparray[i], mbp);
 		if (ret != 0)
