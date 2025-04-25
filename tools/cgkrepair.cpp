@@ -95,11 +95,24 @@ static inline bool change_key_gc_ok(const BINARY *b, const mapitime_t *ts,
 	return true;
 }
 
-static inline bool pcl_ok(const BINARY *b)
+static inline bool pcl_ok(const BINARY *b, const mapitime_t *ts,
+    const mboxparam &mbp)
 {
 	if (b == nullptr)
 		return false;
-	return PCL().deserialize(b);
+	PCL pcl;
+	if (!pcl.deserialize(b))
+		return false;
+	for (const auto &xid : pcl) {
+		if (xid.guid.operator!=(mbp.dbguid)) /* syntax hack for g++-12 */
+			continue;
+		if (xid.size != 22)
+			return false;
+		auto cn = rop_util_gc_to_value(xid.local_to_gc());
+		if (ts != nullptr && *ts < mbp.time_limit && cn >= mbp.cn_limit)
+			return false; /* CN too high */
+	}
+	return true;
 }
 
 static int repair_folder(uint64_t fid)
@@ -135,7 +148,7 @@ static int inspect_folder_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp)
 	auto pcl  = props.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 	auto k1   = change_key_size_ok(ckey);
 	auto k2   = change_key_gc_ok(ckey, ts, mbp);
-	auto k3   = pcl_ok(pcl);
+	auto k3   = pcl_ok(pcl, ts, mbp);
 
 	auto goodpoints = k1 + k2 + k3;
 	if (goodpoints < 3) {
