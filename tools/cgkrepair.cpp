@@ -91,11 +91,8 @@ static inline bool change_key_gc_ok(const BINARY *b, const mapitime_t *ts,
 	if (ts != nullptr && *ts < mbp.time_limit && cn >= mbp.cn_limit)
 		/* CN too high */
 		return false;
-	/*
-	 * Someone once decided to declare CHANGE_NUMBER_BEGIN to be 1<<47.
-	 * Oddly enough, that now gives us the possibility to check for it.
-	 */
-	return cn & 0x800000000000ULL;
+
+	return true;
 }
 
 static inline bool pcl_ok(const BINARY *b)
