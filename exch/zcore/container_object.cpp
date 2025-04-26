@@ -521,12 +521,12 @@ static BOOL container_object_fetch_folder_properties(
 			if (pc == nullptr)
 				return FALSE;
 			unsigned int count = 0;
-			for (; *pc != '\0'; ++pc)
-				if (*pc == '\\')
+			for (; *pc != '\0'; ++pc) {
+				if (pc[0] == '\xEF' && pc[1] == '\xBF' && pc[2] == '\xBE') {
 					count ++;
-			if (count < 3)
-				return FALSE;
-			count -= 2;
+					pc += 2; // 3rd char skipped with for()
+				}
+			}
 			auto pvalue = cu_alloc<uint32_t>();
 			if (pvalue == nullptr)
 				return FALSE;
