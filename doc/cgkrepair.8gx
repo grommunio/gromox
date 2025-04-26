@@ -1,10 +1,10 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH cgkrepair 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 \fBcgkrepair\fP \(em Repair broken Change Key and PCL properties
 .SH Synopsis
-\fB/usr/libexec/gromox/cgkrepair [\fB\-n\fP] \-e\fP
+\fB/usr/libexec/gromox/cgkrepair [options] \-e\fP
 [\fIuser\fP]\fB@\fIdomain\fP
 .PP
 For a given store, cgkrepair looks at all folder and message objects whether
@@ -16,6 +16,13 @@ change key is generated and the PCL reset.
 .PP
 Clients may resynchronize these folders as a result.
 .SH Options
+.TP
+\fB\-\-force\-fix\fP
+Replace Change Keys and PCLs of all objects regardless of whether they were
+considered broken or not.
+.TP
+\fB\-\-skip\-msg\fP
+Only process folder objects.
 .TP
 \fB\-e\fP [\fIuser\fP]\fB@\fP\fIdomain\fP
 Operate on the given private/user store or public/domain mailbox.

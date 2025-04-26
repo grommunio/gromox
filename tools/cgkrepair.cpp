@@ -28,12 +28,14 @@ struct mboxparam {
 };
 
 static constexpr cpid_t codepage = CP_UTF8;
-static unsigned int g_dry_run;
+static unsigned int g_dry_run, g_skip_msg, g_force_fix;
 static char *g_primail;
 
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'e', HXTYPE_STRING, &g_primail, nullptr, nullptr, 0, "Primary e-mail address of store", "ADDR"},
 	{nullptr, 'n', HXTYPE_NONE, &g_dry_run, nullptr, nullptr, 0, "Perform a dry run"},
+	{"force-fix", 0, HXTYPE_NONE, &g_force_fix, {}, {}, {}, "Reset CN/PCL of all objects even if good"},
+	{"skip-msg", 0, HXTYPE_NONE, &g_skip_msg, {}, {}, {}, "Skip messages / inspect only folder object"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -158,7 +160,7 @@ static int inspect_message_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp
 	auto k2   = change_key_gc_ok(ckey, ts, mbp);
 	auto k3   = pcl_ok(pcl, ts, mbp);
 
-	auto goodpoints = k1 + k2 + k3;
+	auto goodpoints = g_force_fix ? 0 : k1 + k2 + k3;
 	if (goodpoints < 3) {
 		printf("message %llxh [%c%c%c]", static_cast<unsigned long long>(rop_util_get_gc_value(*mid)),
 			!k1 ? 'Z' : '-', !k2 ? 'N' : '-', !k3 ? 'P' : '-');
@@ -186,7 +188,7 @@ static int inspect_folder_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp)
 	auto k2   = change_key_gc_ok(ckey, ts, mbp);
 	auto k3   = pcl_ok(pcl, ts, mbp);
 
-	auto goodpoints = k1 + k2 + k3;
+	auto goodpoints = g_force_fix ? 0 : k1 + k2 + k3;
 	if (goodpoints < 3) {
 		printf("folder %llxh [%c%c%c]", static_cast<unsigned long long>(rop_util_get_gc_value(*fid)),
 			!k1 ? 'Z' : '-', !k2 ? 'N' : '-', !k3 ? 'P' : '-');
@@ -199,6 +201,8 @@ static int inspect_folder_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp)
 		}
 	}
 
+	if (g_skip_msg)
+		return 0;
 	if (ftype != nullptr && *ftype != FOLDER_GENERIC)
 		/*
 		 * Skip recursing into search folders; that would just
