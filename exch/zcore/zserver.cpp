@@ -1231,12 +1231,13 @@ ec_error_t zs_resolvename(GUID hsession,
 	}
 	presult_set->pparray = cu_alloc<TPROPVAL_ARRAY *>(result_list.size());
 	if (presult_set->pparray == nullptr)
-		return ecError;
+		return ecServerOOM;
 	container_object_get_user_table_all_proptags(&proptags);
 	for (auto mid : result_list) {
 		presult_set->pparray[presult_set->count] = cu_alloc<TPROPVAL_ARRAY>();
-		if (NULL == presult_set->pparray[presult_set->count] ||
-		    !ab_tree_fetch_node_properties({pbase, mid},
+		if (presult_set->pparray[presult_set->count] == nullptr)
+			return ecServerOOM;
+		if (!ab_tree_fetch_node_properties({pbase, mid},
 		    &proptags, presult_set->pparray[presult_set->count]))
 			return ecError;
 		presult_set->count ++;
@@ -1646,7 +1647,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	ids.count = 0;
 	ids.pids = cu_alloc<uint64_t>(pentryids->count);
 	if (ids.pids == nullptr)
-		return ecError;
+		return ecServerOOM;
 	for (size_t i = 0; i < pentryids->count; ++i) {
 		if (!cu_entryid_to_mid(pentryids->pbin[i],
 		    &b_private, &account_id, &folder_id, &message_id))
@@ -1668,7 +1669,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	ids1.count = 0;
 	ids1.pids  = cu_alloc<uint64_t>(ids.count);
 	if (ids1.pids == nullptr)
-		return ecError;
+		return ecServerOOM;
 	for (auto i_eid : ids) {
 		if (username != STORE_OWNER_GRANTED) {
 			if (!exmdb_client_check_message_owner(pstore->get_dir(),
@@ -1787,7 +1788,7 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 	ids.count = 0;
 	ids.pids = cu_alloc<uint64_t>(pentryids->count);
 	if (ids.pids == nullptr)
-		return ecError;
+		return ecServerOOM;
 	for (size_t i = 0; i < pentryids->count; ++i) {
 		if (!cu_entryid_to_mid(pentryids->pbin[i],
 		    &b_private, &account_id, &folder_id, &message_id))
@@ -1873,7 +1874,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 			tmp_bins.count = 0;
 			tmp_bins.pbin = cu_alloc<BINARY>(tmp_set.count);
 			if (tmp_bins.pbin == nullptr)
-				return ecError;
+				return ecServerOOM;
 			for (size_t i = 0; i < tmp_set.count; ++i) {
 				if (tmp_set.pparray[i]->count != 1)
 					continue;
@@ -2530,7 +2531,7 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink, uint32_t timeval,
 	psink_node->sink.count = psink->count;
 	psink_node->sink.padvise = me_alloc<ADVISE_INFO>(psink->count);
 	if (psink_node->sink.padvise == nullptr)
-		return ecError;
+		return ecServerOOM;
 	memcpy(psink_node->sink.padvise, psink->padvise,
 				psink->count*sizeof(ADVISE_INFO));
 	pinfo->sink_list.splice(pinfo->sink_list.end(), holder, holder.begin());
@@ -2574,7 +2575,7 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 			prowset->count = 0;
 			prowset->pparray = cu_alloc<TPROPVAL_ARRAY *>(row_num);
 			if (prowset->pparray == nullptr)
-				return ecError;
+				return ecServerOOM;
 			while (true) {
 				if (!ptable->match_row(TRUE, prestriction, &position))
 					return ecError;
@@ -2636,7 +2637,7 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 	for (size_t i = 0; i < prowset->count; ++i) {
 		ppropvals = cu_alloc<TAGGED_PROPVAL>(prowset->pparray[i]->count + 1);
 		if (ppropvals == nullptr)
-			return ecError;
+			return ecServerOOM;
 		memcpy(ppropvals, prowset->pparray[i]->ppropval,
 			sizeof(TAGGED_PROPVAL)*prowset->pparray[i]->count);
 		ppropvals[prowset->pparray[i]->count].proptag = PR_OBJECT_TYPE;
@@ -2970,6 +2971,10 @@ ec_error_t zs_freebookmark(GUID hsession, uint32_t htable, uint32_t bookmark)
 	return ecSuccess;
 }
 
+/*
+ * Seeing [ZRPC 80040102h getreceivefolder] is legit; public stores
+ * just do not implement this function.
+ */
 ec_error_t zs_getreceivefolder(GUID hsession,
 	uint32_t hstore, const char *pstrclass, BINARY *pentryid)
 {
@@ -3068,13 +3073,13 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 			prcpt = prcpt_list->pparray[i];
 			ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 1);
 			if (ppropval == nullptr)
-				return ecError;
+				return ecServerOOM;
 			memcpy(ppropval, prcpt->ppropval,
 				sizeof(TAGGED_PROPVAL)*prcpt->count);
 			ppropval[prcpt->count].proptag = PR_ROWID;
 			ppropval[prcpt->count].pvalue = cu_alloc<uint32_t>();
 			if (ppropval[prcpt->count].pvalue == nullptr)
-				return ecError;
+				return ecServerOOM;
 			*static_cast<uint32_t *>(ppropval[prcpt->count++].pvalue) = last_rowid;
 			prcpt->ppropval = ppropval;
 			auto pbin = prcpt->get<BINARY>(PR_ENTRYID);
@@ -3095,7 +3100,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 					continue;
 				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 4);
 				if (ppropval == nullptr)
-					return ecError;
+					return ecServerOOM;
 				memcpy(ppropval, prcpt->ppropval,
 					prcpt->count*sizeof(TAGGED_PROPVAL));
 				prcpt->ppropval = ppropval;
@@ -3131,7 +3136,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 					continue;
 				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 5);
 				if (ppropval == nullptr)
-					return ecError;
+					return ecServerOOM;
 				memcpy(ppropval, prcpt->ppropval,
 					prcpt->count*sizeof(TAGGED_PROPVAL));
 				prcpt->ppropval = ppropval;
@@ -3546,7 +3551,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 		ppropvals->count = 0;
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (ppropvals->ppropval == nullptr)
-			return ecError;
+			return ecServerOOM;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			const auto tag = pproptags->pproptag[i];
 			auto v = static_cast<TPROPVAL_ARRAY *>(pobject)->getval(tag);
@@ -3869,7 +3874,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		tmp_proptags.count = 0;
 		tmp_proptags.pproptag = cu_alloc<uint32_t>(proptags.count);
 		if (tmp_proptags.pproptag == nullptr)
-			return ecError;
+			return ecServerOOM;
 		if (!b_force && !fdst->get_all_proptags(&proptags1))
 			return ecError;
 		for (unsigned int i = 0; i < proptags.count; ++i) {
@@ -4426,7 +4431,7 @@ ec_error_t zs_importfolder(GUID hsession,
 		tmp_propvals.count = 0;
 		tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8 + ppropvals->count);
 		if (tmp_propvals.ppropval == nullptr)
-			return ecError;
+			return ecServerOOM;
 		tmp_propvals.ppropval[0].proptag = PidTagFolderId;
 		tmp_propvals.ppropval[0].pvalue = &folder_id;
 		tmp_propvals.ppropval[1].proptag = PidTagParentFolderId;
@@ -4499,7 +4504,7 @@ ec_error_t zs_importfolder(GUID hsession,
 	tmp_propvals.count = 0;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5 + ppropvals->count);
 	if (tmp_propvals.ppropval == nullptr)
-		return ecError;
+		return ecServerOOM;
 	tmp_propvals.ppropval[0].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[0].pvalue = pproplist->ppropval[2].pvalue;
 	tmp_propvals.ppropval[1].proptag = PR_DISPLAY_NAME;
@@ -4561,7 +4566,7 @@ ec_error_t zs_importdeletion(GUID hsession,
 		message_ids.count = 0;
 		message_ids.pids = cu_alloc<uint64_t>(pbins->count);
 		if (message_ids.pids == nullptr)
-			return ecError;
+			return ecServerOOM;
 	}
 	for (size_t i = 0; i < pbins->count; ++i) {
 		if (pbins->pbin[i].cb != 22)
@@ -4750,7 +4755,7 @@ ec_error_t zs_getsearchcriteria(GUID hsession,
 	}
 	pfolder_array->pbin = cu_alloc<BINARY>(folder_ids.count);
 	if (pfolder_array->pbin == nullptr)
-		return ecError;
+		return ecServerOOM;
 	for (size_t i = 0; i < folder_ids.count; ++i) {
 		auto pbin = cu_fid_to_entryid(*pstore, folder_ids.pll[i]);
 		if (pbin == nullptr)
@@ -4808,7 +4813,7 @@ ec_error_t zs_setsearchcriteria(GUID hsession, uint32_t hfolder, uint32_t flags,
 	folder_ids.count = pfolder_array->count;
 	folder_ids.pll   = cu_alloc<uint64_t>(folder_ids.count);
 	if (folder_ids.pll == nullptr)
-		return ecError;
+		return ecServerOOM;
 	for (size_t i = 0; i < pfolder_array->count; ++i) {
 		if (!cu_entryid_to_fid(pfolder_array->pbin[i],
 		    &b_private, &db_id, &folder_ids.pll[i]))
