@@ -244,7 +244,7 @@ libphp_mapi_la_SOURCES = php_mapi/ext.hpp php_mapi/ext_pack.cpp php_mapi/mapi.cp
 libphp_mapi_la_LIBADD = ${fmt_LIBS} ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 # allow-shlib-undefined makes no sense for libphp_mapi_la, since it
 # is a convenience archive (static archive in practice)
-libmapi4zf_la_SOURCES = tests/zendfake.cpp
+libmapi4zf_la_SOURCES = tests/zendfake.c
 libmapi4zf_la_LDFLAGS = ${PHP_LDFLAGS}
 libmapi4zf_la_LIBADD = libphp_mapi.la
 mapi_la_SOURCES =

@@ -9,8 +9,7 @@
  * program providing the same symbols and mapi.so code constituents (hence
  * libmapi4zf.la).
  */
-using voidp = void *;
-extern "C" {
+typedef void *voidp;
 __attribute__((unused,visibility("default"))) voidp
 __zend_malloc,
 _call_user_function_ex,
@@ -77,4 +76,3 @@ zval_get_double_func,
 zval_get_long_func,
 zval_get_string_func,
 zval_ptr_dtor;
-}
