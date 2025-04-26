@@ -1,3 +1,22 @@
+Development 2.45.158
+====================
+
+Enhancements:
+
+* cgkrepair: detect Change Keys with impossibly high values
+* cgkrepair: retain a PCL's foreign XIDs
+
+Behavioral changes:
+
+* oxcical: deal with strange allday events that do not start/end on midnight
+* htmltotext: w3m is now instructed on charsets and does not need to guess
+  anymore
+* exch: value for the PR_MAX_SUBMIT_MESSAGE_SIZE property was off by a factor
+  of 1024, which has been fixed
+* mkprivate/mkpublic: generate a PR_MAPPING_SIGNATURE value distinct from
+  PR_STORE_RECORD_KEY for newly-initialized stores
+
+
 Gromox 2.45 (2025-04-15)
 ========================
 
