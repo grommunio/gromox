@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2025 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
@@ -57,16 +59,19 @@ static uint64_t pcl_convert_local_id(const XID &xid)
 	return ret_val;
 }
 
-bool PCL::append(const XID &zxid) try
+bool PCL::subst(const XID &zxid, bool check_larger) try
 {
 	for (auto node = begin(); node != end(); ++node) {
 		auto cmp_ret = memcmp(&node->guid, &zxid.guid, sizeof(GUID));
 		if (cmp_ret < 0) {
 			continue;
 		} else if (0 == cmp_ret) {
-			if (node->size != zxid.size)
+			if (!check_larger || node->size == 16)
+				memcpy(node->local_id, zxid.local_id,
+				       zxid.size - sizeof(GUID));
+			else if (node->size != zxid.size)
 				return false;
-			if (pcl_convert_local_id(zxid) > pcl_convert_local_id(*node))
+			else if (pcl_convert_local_id(zxid) > pcl_convert_local_id(*node))
 				memcpy(node->local_id, zxid.local_id,
 				       zxid.size - sizeof(GUID));
 			return true;
@@ -165,4 +170,9 @@ uint32_t PCL::compare(const PCL &their_list) const
 	    [&](const XID &their_node) { return pcl_check_included(*this, their_node); }))
 		ret_val |= PCL_INCLUDE;
 	return ret_val;
+}
+
+void PCL::delguid(GUID g)
+{
+	std::erase_if(*this, [&](const XID &x) { return x.guid == g; });
 }

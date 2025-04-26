@@ -117,7 +117,7 @@ static inline bool pcl_ok(const BINARY *b, const mapitime_t *ts,
 	return true;
 }
 
-static int repair_object(uint64_t objid, mapi_object_type ot)
+static int repair_object(uint64_t objid, mapi_object_type ot, const BINARY *oldpcl)
 {
 	tpropval_array_ptr props(tpropval_array_init());
 	if (props == nullptr)
@@ -127,7 +127,7 @@ static int repair_object(uint64_t objid, mapi_object_type ot)
 		fprintf(stderr, "exm: allocate_cn(fld) RPC failed\n");
 		return -EIO;
 	}
-	auto ret = exm_set_change_keys(props.get(), change_num);
+	auto ret = exm_set_change_keys(props.get(), change_num, oldpcl);
 	if (ret < 0)
 		return ret;
 	PROBLEM_ARRAY problems;
@@ -174,7 +174,7 @@ static int inspect_message_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp
 		if (g_dry_run) {
 			printf("\n");
 		} else {
-			auto ret = repair_object(*mid, MAPI_MESSAGE);
+			auto ret = repair_object(*mid, MAPI_MESSAGE, pcl);
 			if (ret != 0)
 				return ret;
 		}
@@ -209,7 +209,7 @@ static int inspect_folder_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp)
 		if (g_dry_run) {
 			printf("\n");
 		} else {
-			auto ret = repair_object(*fid, MAPI_FOLDER);
+			auto ret = repair_object(*fid, MAPI_FOLDER, pcl);
 			if (ret != 0)
 				return ret;
 		}

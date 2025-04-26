@@ -199,7 +199,8 @@ uint16_t gi_resolve_namedprop(const PROPERTY_XNAME &xpn_req)
 	return pid_rsp[0];
 }
 
-int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t change_num)
+int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t change_num,
+    const BINARY *oldpcl)
 {
 	/* Set the change key and initial PCL for the object */
 	XID zxid{g_public_folder ? rop_util_make_domain_guid(g_user_id) :
@@ -215,7 +216,9 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t change_num)
 	bxid.pv = tmp_buff;
 	bxid.cb = ep.m_offset;
 	PCL pcl;
-	if (!pcl.append(zxid)) {
+	if (oldpcl != nullptr)
+		pcl.deserialize(oldpcl);
+	if (!pcl.replace(zxid)) {
 		fprintf(stderr, "exm: pcl_append: ENOMEM\n");
 		return -ENOMEM;
 	}
