@@ -150,12 +150,19 @@ static int repair_object(uint64_t objid, mapi_object_type ot)
 
 static int inspect_message_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp)
 {
+	TPROPVAL_ARRAY newprops{};
 	auto mid = props.get<const uint64_t>(PidTagMid);
 	if (mid == nullptr)
 		return 0;
 	auto ts   = props.get<const mapitime_t>(PR_LAST_MODIFICATION_TIME);
 	auto ckey = props.get<const BINARY>(PR_CHANGE_KEY);
 	auto pcl  = props.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
+	if (pcl != nullptr && pcl->cb >= 510) {
+		if (!exmdb_client->get_message_properties(g_storedir, nullptr,
+		    codepage, *mid, &check_tags, &newprops))
+			return -EIO;
+		pcl = newprops.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
+	}
 	auto k1   = change_key_size_ok(ckey);
 	auto k2   = change_key_gc_ok(ckey, ts, mbp);
 	auto k3   = pcl_ok(pcl, ts, mbp);
@@ -177,6 +184,7 @@ static int inspect_message_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp
 
 static int inspect_folder_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp)
 {
+	TPROPVAL_ARRAY newprops{};
 	auto fid = props.get<const uint64_t>(PidTagFolderId);
 	if (fid == nullptr)
 		return 0;
@@ -184,6 +192,12 @@ static int inspect_folder_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp)
 	auto ts   = props.get<const mapitime_t>(PR_LAST_MODIFICATION_TIME);
 	auto ckey = props.get<const BINARY>(PR_CHANGE_KEY);
 	auto pcl  = props.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
+	if (pcl != nullptr && pcl->cb >= 510) {
+		if (!exmdb_client->get_folder_properties(g_storedir, codepage,
+		    *fid, &check_tags, &newprops))
+			return -EIO;
+		pcl = newprops.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
+	}
 	auto k1   = change_key_size_ok(ckey);
 	auto k2   = change_key_gc_ok(ckey, ts, mbp);
 	auto k3   = pcl_ok(pcl, ts, mbp);
