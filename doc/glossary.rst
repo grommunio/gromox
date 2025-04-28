@@ -240,7 +240,6 @@ Mapping Signature
 	propid<->propname map.
 	It is unspecified whether this also declares the validity scope for
 	ReplIDs.
-	In Gromox, the Mapping Signature has the same value as the Store GUID.
 
 IID_
 	A prefix in source code for "interface identifier", related to the
