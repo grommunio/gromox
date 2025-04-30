@@ -1838,7 +1838,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			auto pvalue = cu_xid_to_bin({exmdb_server::is_private() ?
 			              	rop_util_make_user_guid(exmdb_server::get_account_id()) :
 			              	rop_util_make_domain_guid(exmdb_server::get_account_id()),
-			              change_num});
+			              rop_util_make_eid_ex(1, change_num)});
 			if (pvalue == nullptr)
 				return FALSE;
 			msgctnt.proplist.emplace_back(PR_CHANGE_KEY, pvalue);
