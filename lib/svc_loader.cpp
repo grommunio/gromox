@@ -219,7 +219,6 @@ SVC_PLUG_ENTITY::SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&o) noexcept :
 
 SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 {
-	PLUGIN_MAIN func;
 	auto plib = this;
 	if (plib->ref_count > 0) try {
 		auto tx = "Unbalanced refcount on "s + znul(plib->file_name) + ", still held by {";
@@ -234,11 +233,12 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 		mlog(LV_NOTICE, "Unbalanced refcount on %s + ENOMEM", znul(plib->file_name));
 		return;
 	}
+	if (!plib->completed_init)
+		return;
 	if (plib->file_name != nullptr)
 		mlog(LV_INFO, "service: unloading %s", plib->file_name);
-	func = (PLUGIN_MAIN)plib->lib_main;
-	if (func != nullptr && plib->completed_init)
-		/* notify the plugin that it will be unloaded */
+	auto func = (PLUGIN_MAIN)plib->lib_main;
+	if (func != nullptr)
 		func(PLUGIN_FREE, server_funcs);
 }
 

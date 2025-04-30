@@ -2901,11 +2901,13 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	PLUGIN_MAIN func;
 	auto pplugin = this;
 	
-	mlog(LV_INFO, "pdu_processor: unloading %s", pplugin->file_name);
-	func = (PLUGIN_MAIN)pplugin->lib_main;
-	if (func != nullptr && pplugin->completed_init)
-		/* notify the plugin that it willbe unloaded */
-		func(PLUGIN_FREE, server_funcs);
+	if (pplugin->completed_init) {
+		if (pplugin->file_name != nullptr)
+			mlog(LV_INFO, "pdu_processor: unloading %s", pplugin->file_name);
+		func = (PLUGIN_MAIN)pplugin->lib_main;
+		if (func != nullptr)
+			func(PLUGIN_FREE, server_funcs);
+	}
 	for (const auto &nd : list_reference)
 		service_release(nd.service_name.c_str(), pplugin->file_name);
 }

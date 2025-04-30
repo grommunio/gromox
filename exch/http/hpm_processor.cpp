@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -194,11 +194,13 @@ HPM_PLUGIN::~HPM_PLUGIN()
 {
 	PLUGIN_MAIN func;
 	auto pplugin = this;
-	mlog(LV_INFO, "http_processor: unloading %s", pplugin->file_name);
-	func = (PLUGIN_MAIN)pplugin->lib_main;
-	if (func != nullptr && pplugin->completed_init)
-		/* notify the plugin that it willbe unloaded */
-		func(PLUGIN_FREE, server_funcs);
+	if (pplugin->completed_init) {
+		if (pplugin->file_name != nullptr)
+			mlog(LV_INFO, "http_processor: unloading %s", pplugin->file_name);
+		func = (PLUGIN_MAIN)pplugin->lib_main;
+		if (func != nullptr)
+			func(PLUGIN_FREE, server_funcs);
+	}
 
 	/* free the reference list */
 	for (const auto &nd : list_reference)
