@@ -90,6 +90,9 @@ static inline bool change_key_gc_ok(const BINARY *b, const mapitime_t *ts,
 	char flatcn[8]{};
 	memcpy(&flatcn[2], &b->pb[16], 6);
 	auto cn = be64p_to_cpu(flatcn);
+	if (cn == 0)
+		/* Should at least be 1 */
+		return false;
 	if (ts != nullptr && *ts < mbp.time_limit && cn >= mbp.cn_limit)
 		/* CN too high */
 		return false;
