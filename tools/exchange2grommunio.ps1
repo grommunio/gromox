@@ -104,7 +104,7 @@
 #   To automount the Windows share, set $AutoMount = $true.
 #
 # 3.1 Alternatively add a fstab entry and credentials file on the Grommunio Host.
-#    Remember so set $AutoMount = $false when using this way.
+#    Remember so set $AutoMount = $false.
 #
 #    /etc/fstab - FSTAB(5)
 #    ```
