@@ -191,11 +191,13 @@ function Usage {
         echo "$0 options:"
         echo ""
         echo "--cleanup                Runs a clenaup on mailboxes"
-        echo "--check-mbox             Tries to repair mailboxes"
-        echo "--repair-mbox            Tries to repair mailboxes"
-        echo "--include-sql-repair     Also tries to repair sqlite database. Will stop gromox-http temporarily"
+        echo "--check-mbox             Checks mailboxes"
+        echo "--repair-mbox            Checks and tries to repair mailboxes"
+        echo "--check-sql              Checks sqlite database"
+        echo "--repair-sql             Checks and tries to repair sqlite database. Will stop gromox-http temporarily"
         echo "--dryrun                 Actually don't run any modifications"
         echo "--maildir=all|path       When set to \"all\", will run over all maildirs. Can take mailbox path, eg /var/lib/gromox/user/1/2"
+
         exit 1
 }
 
