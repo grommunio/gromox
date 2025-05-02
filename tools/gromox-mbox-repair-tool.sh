@@ -1,11 +1,9 @@
 #!/bin/bash
 
-SCRIPT_BUILD=2024112502
-BIN_DIR=/usr/sbin
+SCRIPT_BUILD=2025050204
 
 LOG_FILE="/var/log/gromox-mbox-repair-tool.log"
 
-GROMOX_MAILDIR_PATH="$("${BIN_DIR}/grommunio-admin" config get options.userPrefix)"
 SOFTDELETE_TIMESTAMP=${SOFTDELETE_TIMESTAMP:-30d20h}
 
 function TrapQuit {
@@ -41,7 +39,7 @@ function log {
 
 
 function get_maildirs {
-        echo "$("${BIN_DIR}/grommunio-admin" user query maildir | awk '{if ($1~gromox_mail) {print $1}}' gromox="${GROMOX_MAILDIR_PATH}")"
+        command gromox-mbop foreach.mb.here echo-maildir
 }
 
 function cleanup {
@@ -54,28 +52,26 @@ function cleanup {
                         start_time=${SECONDS}
                         if [ "${_DRYRUN}" == false ]; then
                                 log "Purging soft deletions for ${maildir}"
-                                "${BIN_DIR}/gromox-mbop" -d "${maildir}" purge-softdelete -r -t "$SOFTDELETE_TIMESTAMP" IPM_SUBTREE
+                                if command gromox-mbop -d "${maildir}" purge-softdelete -r -t "$SOFTDELETE_TIMESTAMP" IPM_SUBTREE ; then
+                                        log "Operation took $((SECONDS-start_time)) seconds for $maildir"
+                                else
+                                        log "Failed to purge soft deletions for ${maildir}" "ERROR"
+                                fi
                         else
                                 log "Would soft delete mails for ${maildir}"
-                        fi
-                        if [ $? -eq 0 ]; then
-                                log "Operation took $((${SECONDS}-${start_time})) for ${maildir}"
-                        else
-                                log "Failed to purge soft deletions for ${maildir}" "ERROR"
                         fi
                 fi
                 start_time=${SECONDS}
                 if [ "${_DRYRUN}" == false ]; then
                         log "Purging datafiles for ${maildir}"
-                        "${BIN_DIR}/gromox-mbop" -d "${maildir}" purge-datafiles
+                        if command gromox-mbop -d "${maildir}" purge-datafiles ; then
+                                log "Operation took $((SECONDS-start_time)) seconds for ${maildir}"
+                        else
+                                log "Failed to purge datafiles for ${maildir}" "ERROR"
+                        fi
                 else
                         log "Would purge datafiles for ${maildir}"
 
-                fi
-                if [ $? -eq 0 ]; then
-                        log "Operation took $((${SECONDS}-${start_time}))  for ${maildir}"
-                else
-                        log "Failed to purge datafiles for ${maildir}" "ERROR"
                 fi
         done
 }
@@ -91,14 +87,13 @@ function repair_mbox {
                 fi
 
                 # gromox-mbck returns 0 regardless of mailbox state
-                if "${BIN_DIR}/gromox-mbck" "${maildir}/exmdb/exchange.sqlite3" | grep "\[0 issues\]"; then
+                if command gromox-mbck "${maildir}/exmdb/exchange.sqlite3" | grep "\[0 issues\]"; then
                         log "Check successful on ${maildir}"
                 elif [ "${_REPAIR_MAILBOX}" == true ]; then
                         log "Check failed for ${maildir}" "ERROR"
                         if [ "${_DRYRUN}" == false ]; then
                                 log "Repairing maildir with gromox-mbck"
-                                "${BIN_DIR}/gromox-mbck" -p "${maildir}/exmdb/exchange.sqlite3"
-                                if [ $? != 0 ]; then
+                                if ! command gromox-mbck -p "${maildir}/exmdb/exchange.sqlite3" ; then
                                         log "Repairing ${maildir}/exmdb/exchange.sqlite3 failed. stoppting operations" "ERROR"
                                         break
                                 fi
@@ -113,7 +108,7 @@ function repair_sql {
         log "Running mailbox sql checks"
 
 
-        if systemctl is-active gromox-http > /dev/null; then
+        if systemctl is-active gromox-http.service > /dev/null; then
                 log "gromox-http is active currently."
                 gromox_http_is_active=true
         else
@@ -129,12 +124,12 @@ function repair_sql {
                 fi
                 log "Checking sql database in ${maildir}/exmdb"
                 # This expects sqlite to output "ok"
-                if [ "$(echo ".quit" | sqlite3 "${maildir}/exmdb/exchange.sqlite3" -cmd "pragma integrity_check;")" != "ok" ]; then
+                if [ "$(sqlite3 -readonly "${maildir}/exmdb/exchange.sqlite3" 'pragma integrity_check;')" != "ok" ]; then
                         log "Maildir ${maildir} has errors according to sqlite3" "ERROR"
                         if [ "${_DRYRUN}" == false ] && [ "${_REPAIR_SQL}" == true ]; then
                                 log "Repairing sqlite database. This will shutdown gromox-http"
-                                systemctl stop gromox-http
-                                if systemctl is-active gromox-http > /dev/null; then
+                                systemctl stop gromox-http.service
+                                if systemctl is-active gromox-http.service > /dev/null; then
                                         log "Cannot stop gromox-http, stopping operations" "ERROR"
                                         break
                                 else
@@ -142,28 +137,23 @@ function repair_sql {
                                                 gromox_http_needs_restart=true
                                         fi
                                         log "Trying to create a recovery database"
-                                        (echo "PRAGMA foreign_keys=0;"; sqlite3 "${maildir}/exmdb/exchange.sqlite3" ".recover") | sqlite3 "${maildir}/exmdb/new.db"
-                                        if [ ! -f "${maildir}/exmdb/new.db" ]; then
+                                        if ! sqlite3 -readonly -cmd 'PRAGMA foreign_keys=0;' "${maildir}"/exmdb/exchange.sqlite3 '.recover' | sqlite3 "${maildir}"/exmdb/new.db ; then
                                                 log "sqlite recovery of db in ${maildir} failed, stoping operations" "ERROR"
                                                 break
                                         fi
-                                        chmod u=rw,g=rw "${maildir}/exmdb/new.db"
-                                        if [ $? -ne 0 ]; then
+                                        if ! chmod u=rw,g=rw "${maildir}/exmdb/new.db" ; then
                                                 log "Failed to set permissions on ${maildir}/exmdb/new.db" "ERROR"
                                                 break
                                         fi
-                                        chown grommunio:gromox "${maildir}/exmdb/new.db"
-                                                if [ $? -ne 0 ]; then
+                                        if ! chown grommunio:gromox "${maildir}/exmdb/new.db" ; then
                                                 log "Failed to set ownsersihp on ${maildir}/exmdb/new.db" "ERROR"
                                                 break
                                         fi
-                                        mv "${maildir}/exmdb/exchange.sqlite3" "${maildir}/exmdb/exchange.sqlite3.old"
-                                        if [ $? -ne 0 ]; then
+                                        if ! mv "${maildir}/exmdb/exchange.sqlite3" "${maildir}/exmdb/exchange.sqlite3.old" ; then
                                                 log "Failed to move ${maildir}/exmdb/exchange.sqlite3 to ${maildir}/exmdb/sqlite3.old" "ERROR"
                                                 break
                                         fi
-                                        mv "${maildir}/exmdb/new.db" "${maildir}/exmdb/exchange.sqlite3"
-                                        if [ $? -ne 0 ]; then
+                                        if ! mv "${maildir}/exmdb/new.db" "${maildir}/exmdb/exchange.sqlite3" ; then
                                                 log "Failed to move repaired db ${maildir}/exmdb/new.db to ${maildir}/exmdb/sqlite3" "ERROR"
                                                 break
                                         fi
@@ -179,7 +169,7 @@ function repair_sql {
         done
         if [ "${gromox_http_is_active}" == true ] && [ ${gromox_http_needs_restart} == true ]; then
                 log "Restarting gromox-http"
-                systemctl start gromox-http
+                systemctl start gromox-http.service
         fi
 }
 
@@ -213,8 +203,7 @@ _REPAIR_SQL=false
 _TARGET_MAILDIRS=""
 
 function GetCommandlineArguments {
-        if [ $# -eq 0 ]
-        then
+        if [ $# -eq 0 ]; then
                 Usage
         fi
 
