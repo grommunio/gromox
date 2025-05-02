@@ -8,6 +8,7 @@ m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT([disable-static])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
+AC_PROG_CC
 AC_PROG_CXX
 AM_CONDITIONAL([WITH_GNU_LD], [test "$with_gnu_ld" = yes])
 

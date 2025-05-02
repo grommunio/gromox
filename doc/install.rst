@@ -10,7 +10,7 @@ distribution. If you choose to build from source nevertheless, a number of
 dependencies are needed:
 
 * autotools
-* C++20 compiler
+* C and C++20 compiler
 * cURL library
 * fmt >= 8
 * jsoncpp
