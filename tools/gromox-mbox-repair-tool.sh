@@ -271,6 +271,8 @@ else
         TARGET_MAILDIRS="$(get_maildirs)"
 fi
 
+log "$0 invoked on $(date)"
+
 if [ "${_CHECK_MAILBOX}" == true ] || [ "${_REPAIR_MAILBOX}" == true ]; then
         repair_mbox
 fi
