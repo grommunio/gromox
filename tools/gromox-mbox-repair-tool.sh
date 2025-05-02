@@ -89,8 +89,11 @@ function repair_mbox {
                         log "Maildir ${maildir} does not exist" "ERROR"
                         continue
                 fi
-                "${BIN_DIR}/gromox-mbck" "${maildir}/exmdb/exchange.sqlite3"
-                if [ $? -ne 0 ] && [ "${_REPAIR_MAILBOX}" == true ]; then
+
+                # gromox-mbck returns 0 regardless of mailbox state
+                if "${BIN_DIR}/gromox-mbck" "${maildir}/exmdb/exchange.sqlite3" | grep "\[0 issues\]"; then
+                        log "Check successful on ${maildir}"
+                elif [ "${_REPAIR_MAILBOX}" == true ]; then
                         log "Check failed for ${maildir}" "ERROR"
                         if [ "${_DRYRUN}" == false ]; then
                                 log "Repairing maildir with gromox-mbck"
@@ -268,10 +271,10 @@ else
         TARGET_MAILDIRS="$(get_maildirs)"
 fi
 
-[ "${_RUN_CLEANUP}" == true ] && cleanup
 if [ "${_CHECK_MAILBOX}" == true ] || [ "${_REPAIR_MAILBOX}" == true ]; then
         repair_mbox
 fi
 if [ "${_CHECK_SQL}" == true ] || [ "${_REPAIR_SQL}" == true ]; then
         repair_sql
 fi
+[ "${_RUN_CLEANUP}" == true ] && cleanup
