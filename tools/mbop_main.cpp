@@ -84,6 +84,7 @@ void command_overview()
 		"purge-datafiles purge-softdelete recalc-sizes set-locale "
 		"set-photo set-websettings set-websettings-persistent "
 		"set-websettings-recipients unload vacuum\n");
+	fprintf(stderr, "Command chaining: ( command1 c1args... ) ( command2 c2args... )...\n");
 }
 
 static int help()

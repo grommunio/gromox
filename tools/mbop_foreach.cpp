@@ -97,7 +97,7 @@ static int filter_users(const char *mode, std::vector<sql_user> &ul)
 				       strcasecmp(u.homeserver.c_str(), this_server.c_str()) != 0;
 			});
 		else {
-			mlog(LV_ERR, "Unknown filter: %.*s", static_cast<int>(filter.size()), filter.data());
+			mlog(LV_ERR, "Unknown filter: \"%.*s\"", static_cast<int>(filter.size()), filter.data());
 			return -1;
 		}
 	}
