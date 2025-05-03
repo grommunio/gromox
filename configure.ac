@@ -71,7 +71,7 @@ NO_VSYM=""
 AC_ARG_WITH([ubsan], AS_HELP_STRING([--with-ubsan], [Activate Undefined Behavior Sanitizer]), [
 	my_CFLAGS="$my_CFLAGS -fsanitize=undefined"
 	my_CXXFLAGS="$my_CXXFLAGS -fsanitize=undefined"
-	my_LDFLAGS="$my_CXXFLAGS -fsanitize=undefined"
+	my_LDFLAGS="$my_LDFLAGS -fsanitize=undefined"
 	NO_VSYM=1
 ])
 AS_IF([test -z "$NO_VSYM"], [
