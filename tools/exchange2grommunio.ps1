@@ -155,7 +155,7 @@ $LinuxUser = "root"
 # #$LinuxUserPWD = ""
 # $LinuxUserSSHKey = "C:\grommunio\exch.ppk"
 # if (Test-Path $LinuxUserSSHKey) {
-# 	.\peagent.exe  $LinuxUserSSHKey
+#	.\peagent.exe  $LinuxUserSSHKey
 # }
 
 # Import only these mailboxes, an array of mail addresses, case insensitive,
@@ -183,7 +183,7 @@ $IgnoreFile = Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.ign
 if ((! $IgnoreMboxes) -and (Test-Path -Path $IgnoreFile)) {$IgnoreMboxes = Get-Content $IgnoreFile}
 
 # Delete .pst files after import to save space.
-$DeletePST = $false
+$DeletePST = $true
 
 # Wait after each mailbox import and allow exiting.
 # See $StopMarker how to interrupt migration
@@ -224,9 +224,6 @@ $StopMarker = Join-Path -Path $WinSharedFolder -ChildPath "exchange2grommunio.ST
 #
 $LogFile = Join-Path -Path $WinSharedFolder -ChildPath "exchange2grommunio.log"
 
-# Set to $true if you want additional import logs for each Mailbox
-$LogImport = $false
-
 # New-MailboxExportRequest accepts the -Priority parameter.
 # Use "Normal" or "High" for Exchange 2010. We found "Normal" is much faster
 # than "High".
@@ -264,19 +261,9 @@ function Write-MLog
 	Add-Content -Path $LogFile -Value "$("[{0:dd/MM/yy} {0:HH:mm:ss}]" -f (Get-Date)) $Level $LogString"
 }
 
-function Write-ImportLog
+function Write-UserLog
 {
-	Param(
-		[parameter(Mandatory=$True)]
-		$LogString,
-		[parameter(Mandatory=$True)]
-		$PSTFile
-	)
-	if ($LogImport)
-	{
-		$MailboxLogFile = (Join-Path -Path $WinSharedFolder -ChildPath $PSTFile.Replace("pst","log"))
-		Add-Content -Path $LogFile -Value "$("[{0:dd/MM/yy} {0:HH:mm:ss}]" -f (Get-Date)) $Level $LogString"
-	}
+	Add-Content -Path $ImpLogFile -Value "$("[{0:dd/MM/yy} {0:HH:mm:ss}]" -f (Get-Date)) $args"
 }
 
 # Check lock of file by Windows
@@ -313,14 +300,14 @@ $PLINKARGS = @(
 		'-v'
 	}
 		'-ssh'
-	if ($LinuxUserPWD -ne $null) {
+	if ($null -ne $LinuxUserPWD) {
 		'-noagent'
 	} else {
 		'-agent'
 	}
 		'-batch'
 		"$LinuxUser@$GrommunioServer"
-	if ($LinuxUserPWD -ne $null) {
+	if ($null -ne $LinuxUserPWD) {
 		'-pw'
 		"$LinuxUserPWD"
 	}
@@ -421,12 +408,6 @@ function Test-Exchange
 		Write-MLog "Error: the Exchange cmdlets are not loaded. Launch this script from an Exchange Admin shell." red
 		exit 1
 	}
-	# THATS ICKY /ö\
-	# https://learn.microsoft.com/en-us/exchange/new-features/build-numbers-and-release-dates
-	#$ExVer=(Get-ExchangeServer).AdminDisplayVersion
-	#if (($ExVer.Major -eq 15) -and ($ExVer.Minor -eq 1) -and ($ExVer.Build -lt 1261)) { $Exchange_Newer_2016_CU6 = $false }
-	#if (($ExVer.Major -eq 15) -and ($ExVer.Minor -lt 1)) { $Exchange_Newer_2016_CU6 = $false }
-	#if ($ExVer.Major -lt 15) { $Exchange_Newer_2016_CU6 = $false }
 }
 
 # The Main code
@@ -535,7 +516,13 @@ $SkipImportCreateError = $false
 # The migration loop
 #
 foreach ($Mailbox in (Get-Mailbox)) {
-	$MigMBox = $Mailbox.PrimarySmtpAddress.ToString()
+	$MigMBox = $Mailbox.PrimarySmtpAddress.ToString().ToLower()
+	$LogPath = (Join-Path -Path $WinSharedFolder -ChildPath logs)
+	New-Item -Path $LogPath -ErrorAction Ignore -Type Directory
+	$ImpLogFile = Join-Path -Path $LogPath -ChildPath ($MigMbox + "." + (Get-Date -Format FileDate) + ".import.log")
+	$ExpLogFile = Join-Path -Path $LogPath -ChildPath ($MigMbox + "." + (Get-Date -Format FileDate) + ".export.json")
+	Write-Debug "`nMigMBox: $MigMBox`nImpLogFile: $ImpLogFile`nExpLogFile: $ExpLogFile"
+
 
 	if ($ImportMboxes.length -gt 5) {
 		# Use $ImportMboxes only if it contains a minimum of one mail address
@@ -595,33 +582,46 @@ foreach ($Mailbox in (Get-Mailbox)) {
 			$Mailbox = $Mailbox.Alias
 		}
 
-		New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority | Format-Table -HideTableHeaders
+		New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority -ExcludeDumpster -BadItemLimit 5 | Format-Table -HideTableHeaders
 		Write-Host -NoNewline "[Wait] " -fore yellow
 		$MailboxesTotal++
 
 		# Wait until the .pst file is created.
 		# We probably should include a timeout to detect hanging exports.
-		$expPercent= 0; $continue = $true;
-		while ($continue) {
+		$expPercent= 0; $continue = $true; $OneHundredPercent = 0;
+		while ($true) {
 			$expRequest = (Get-MailboxExportRequest $Mailbox)
 			$expPercent = ($expRequest |Get-MailboxExportRequestStatistics |Select-Object PercentComplete).PercentComplete
 			$expStatus = ($expRequest).Status
+			Write-Progress -Id 1 -Activity "Export: $Mailbox" -Status "$expPercent% Complete:" -PercentComplete $expPercent;
+			Start-Sleep -Seconds 1
+			Write-Debug "DEBUG: $expStatus / $expPercent"
 			# Check if we didn't run into any issues while waiting
 			# https://learn.microsoft.com/en-us/powershell/module/exchange/get-mailboxexportrequest?view=exchange-ps#-status
-			if ($expStatus -iin ("AutoSuspended","CompletedWithWarning","Failed","Suspended","Synced")) {
-				$MailboxesExportFailed++
-				$continue = $false
-			}
-			if ($expStatus -iin ("Completed")) {
+			if (($expStatus -eq ("Completed")) -and ($expPercent -eq 100)) {
 				$MailboxesExport++
-				$continue = $false
+				break
 			}
-			Write-Progress -Id 1 -Activity "Export: $Mailbox" -Status "$expPercent% Complete:" -PercentComplete $expPercent;
-			Start-Sleep -Seconds 2
-			Write-Debug "DEBUG: $expStatus / $expPercent"
+			if ($expPercent -eq 100) {
+				$OneHundredPercent++
+				Write-Debug "100% but not finished loop: $$OneHundredPercent"
+			}
+			if ($OneHundredPercent -gt 50) {
+				break
+			}
+			if ($expStatus -iin ("AutoSuspended","CompletedWithWarning","Failed","Suspended")) {
+				Write-MLog "Error: Export Result: $expStatus" red 
+				$MailboxesExportFailed++
+				$SkipImport = $true
+				break
+			}
+
 		}
 		# End display of progress bar
 		Write-Progress -Id 1 -Completed -Activity "Export: $Mailbox"
+
+		# Export
+		Get-MailboxExportRequest | Get-MailboxExportRequestStatistics -IncludeReport | ConvertTo-Json |Add-Content -Path $ExpLogFile
 
 		Write-MLog "" white
 		Write-MLog "Export of mailbox $MigMBox took $nTimeout seconds." green
@@ -694,8 +694,8 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		# Using plink, start importing this mailbox and .pst
 		# file on the grommunio host.
 		Write-MLog "Starting import of mailbox: $MigMBox in grommunio." green
-		Write-ImportLog "Starting import of mailbox: $MigMBox in grommunio." $MigMBox.pst
-		Write-ImportLog "" $MigMBox.pst
+		Write-UserLog "Starting import of mailbox: $MigMBox in grommunio."
+		Write-UserLog ""
 		if ($PowerShellOld) {
 			.\plink.exe @PLINKARGS "gromox-e2ghelper -s $LinuxSharedFolder/$MigMBox.pst -u $MigMBox"
 			$CMDExitCode = $lastexitcode
@@ -707,17 +707,17 @@ foreach ($Mailbox in (Get-Mailbox)) {
 			#$TeeVar = $TeeVar.replace("`r`n`r","`r`n")
 			#$TeeVar = $TeeVar.replace("`n`r`n","`r`n")
 			Add-Content -Path $LogFile -Value $TeeVar
-			Write-ImportLog "$TeeVar" $MigMBox.pst
+			Write-UserLog "$TeeVar"
 			Write-MLog "---" none
 		}
 		if ($CMDExitCode -eq 0) {
 			Write-MLog "Import of mailbox: $MigMBox done." green
-			Write-ImportLog "Import of mailbox: $MigMBox done." $MigMBox.pst
+			Write-UserLog "Import of mailbox: $MigMBox done."
 			$MailboxesImported++
 			$MailboxesMB += $size
 		} else {
 			Write-MLog "Mailbox: $MigMBox imported with errors." red
-			Write-ImportLog "Mailbox: $MigMBox imported with errors." $MigMBox.pst
+			Write-UserLog "Mailbox: $MigMBox imported with errors."
 			$MailboxesImportFailed++
 			$ImportErrorsMBX += $MigMBox + ", "
 			# Wait for admin to make a decision.
@@ -729,7 +729,7 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		$ImportEndDate = (GET-DATE)
 		$Duration = [math]::ceiling($(NEW-TIMESPAN -Start $ImportStartDate -End $ImportEndDate).TotalSeconds)
 		Write-MLog "Import of mailbox $MigMBox took $Duration seconds." green
-		Write-ImportLog "Import of mailbox $MigMBox took $Duration seconds." $MigMBox.pst
+		Write-UserLog "Import of mailbox $MigMBox took $Duration seconds."
 	}
 
 	# Try to import the next mailbox.
