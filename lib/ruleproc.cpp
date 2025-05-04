@@ -1054,7 +1054,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	for (const auto propid : copytags_1) {
 		auto v = rq_prop.getval(propid);
 		if (v != nullptr) {
-			auto err = cu_set_propval(rsp_prop, propid, v);
+			auto err = rsp_prop.set(propid, v);
 			if (err != ecSuccess)
 				return err;
 		}
@@ -1063,7 +1063,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		for (const auto propid : copytags_2) {
 			auto v = rq_prop.getval(propid);
 			if (v != nullptr) {
-				auto err = cu_set_propval(rsp_prop, propid, v);
+				auto err = rsp_prop.set(propid, v);
 				if (err != ecSuccess)
 					return err;
 			}
@@ -1081,17 +1081,17 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		newprefix = "Declined: ";
 	}
 	if (newclass != nullptr) {
-		auto err = cu_set_propval(rsp_prop, PR_MESSAGE_CLASS, newclass);
+		auto err = rsp_prop.set(PR_MESSAGE_CLASS, newclass);
 		if (err != ecSuccess)
 			return err;
 	}
 	if (newprefix != nullptr) {
-		auto err = cu_set_propval(rsp_prop, PR_SUBJECT_PREFIX, newprefix);
+		auto err = rsp_prop.set(PR_SUBJECT_PREFIX, newprefix);
 		if (err != ecSuccess)
 			return err;
 	}
 	auto nt_time = rop_util_current_nttime();
-	auto err = cu_set_propval(rsp_prop, PROP_TAG(PT_SYSTIME, propids[l_attendeecritchg]), &nt_time);
+	auto err = rsp_prop.set(PROP_TAG(PT_SYSTIME, propids[l_attendeecritchg]), &nt_time);
 	if (err != ecSuccess)
 		return err;
 	auto rcpts = tarray_set_init();
@@ -1134,7 +1134,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		BINARY cvbin;
 		cvbin.cb = bin->cb + 5;
 		cvbin.pc = cvidx.get();
-		err = cu_set_propval(rsp_prop, PR_CONVERSATION_INDEX, &cvbin);
+		err = rsp_prop.set(PR_CONVERSATION_INDEX, &cvbin);
 		if (err != ecSuccess)
 			return err;
 	}
