@@ -3313,9 +3313,9 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		return ecQuotaExceeded;
 
 	auto num = tmp_propvals.get<const uint32_t>(PR_MAX_SUBMIT_MESSAGE_SIZE);
-	ssize_t max_length = -1;
+	uint64_t max_length = UINT64_MAX;
 	if (num != nullptr)
-		max_length = *num;
+		max_length = static_cast<uint64_t>(*num) << 10;
 
 	static constexpr proptag_t proptag_buff3[] =
 		{PR_MESSAGE_SIZE, PR_MESSAGE_FLAGS, PR_DEFERRED_SEND_TIME,
@@ -3329,7 +3329,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 	if (num == nullptr)
 		return ecError;
 	auto mail_length = *num;
-	if (max_length > 0 && mail_length > static_cast<size_t>(max_length))
+	if (max_length != UINT64_MAX && mail_length > max_length)
 		return EC_EXCEEDED_SIZE;
 	num = tmp_propvals.get<uint32_t>(PR_MESSAGE_FLAGS);
 	if (num == nullptr)

@@ -349,8 +349,10 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	    static_cast<uint64_t>(*sendquota) * 1024 <= *storesize)
 		return ecQuotaExceeded;
 
-	auto inum = tmp_propvals.get<const int32_t>(PR_MAX_SUBMIT_MESSAGE_SIZE);
-	int32_t max_length = inum != nullptr ? *inum : -1;
+	auto num = tmp_propvals.get<const uint32_t>(PR_MAX_SUBMIT_MESSAGE_SIZE);
+	uint64_t max_length = UINT64_MAX;
+	if (num != nullptr)
+		max_length = static_cast<uint64_t>(*num) << 10;
 	static constexpr proptag_t ptbuf_three[] =
 		{PR_MESSAGE_SIZE, PR_MESSAGE_FLAGS,
 		PR_DEFERRED_SEND_TIME, PR_DEFERRED_SEND_NUMBER,
@@ -361,10 +363,10 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	tmp_proptags.pproptag = deconst(ptbuf_three);
 	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	auto num = tmp_propvals.get<const uint32_t>(PR_MESSAGE_SIZE);
+	num = tmp_propvals.get<const uint32_t>(PR_MESSAGE_SIZE);
 	if (num == nullptr)
 		return ecError;
-	if (max_length > 0 && *num > static_cast<uint32_t>(max_length))
+	if (max_length != UINT64_MAX && *num > max_length)
 		return EC_EXCEEDED_SIZE;
 	auto message_flags = tmp_propvals.get<uint32_t>(PR_MESSAGE_FLAGS);
 	if (message_flags == nullptr)
