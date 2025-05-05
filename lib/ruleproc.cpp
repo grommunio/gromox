@@ -922,7 +922,10 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 
 static ec_error_t mr_get_policy(const char *ev_to, mr_policy &pol)
 {
-	TPROPVAL_ARRAY uprop{};
+	tpropval_array_ptr props(tpropval_array_init());
+	if (props == nullptr)
+		return ecServerOOM;
+	auto &uprop = *props;
 	if (!mysql_adaptor_get_user_properties(ev_to, uprop))
 		return ecError;
 	auto flag = uprop.get<const uint8_t>(PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS);
@@ -1094,7 +1097,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	auto err = rsp_prop.set(PROP_TAG(PT_SYSTIME, propids[l_attendeecritchg]), &nt_time);
 	if (err != ecSuccess)
 		return err;
-	auto rcpts = tarray_set_init();
+	auto rcpts = rsp_ctnt->children.prcpts = tarray_set_init();
 	if (rcpts == nullptr)
 		return ecMAPIOOM;
 	auto row = rcpts->emplace();
