@@ -103,7 +103,7 @@ static int mk_options(sqlite3 *psqlite, time_t ux_time)
 {
 	auto record_key  = GUID::random_new();
 	auto mapping_sig = GUID::random_new();
-	char rgtxt[GUIDSTR_SIZE][5];
+	char rgtxt[5][GUIDSTR_SIZE];
 	record_key.to_str(rgtxt[0], sizeof(rgtxt[0]));
 	exc_replid2.to_str(rgtxt[1], sizeof(rgtxt[1]));
 	exc_replid3.to_str(rgtxt[2], sizeof(rgtxt[2]));
