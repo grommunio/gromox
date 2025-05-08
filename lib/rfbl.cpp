@@ -1099,15 +1099,13 @@ void mlog_init(const char *ident, const char *filename, unsigned int max_level,
 {
 	g_max_loglevel = max_level;
 	bool for_syslog = false, for_tty = false;
-	if (filename == nullptr || *filename == '\0') {
+	if (filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0) {
 		if (isatty(STDERR_FILENO))
 			for_tty = true;
 		else if (getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
 			for_syslog = true;
 	} else if (strcmp(filename, "syslog") == 0) {
 		for_syslog = true;
-	} else if (strcmp(filename, "-") == 0) {
-		for_tty = true;
 	}
 	if (for_syslog) {
 		openlog(ident, LOG_PID, LOG_MAIL);
