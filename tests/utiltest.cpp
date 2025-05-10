@@ -464,7 +464,7 @@ static int t_eidcvt()
 	assert(rop_util_make_eid(2, gc) == eid);
 	assert(rop_util_make_eid_ex(2, 0x1fffe) == eid);
 
-	XID xid{GUID_NULL, 0x8877665544332211ULL};
+	XID xid{GUID_NULL, rop_util_make_eid_ex(1, 0x8877665544332211ULL)};
 	assert(memcmp(xid.local_id, "\x66\x55\x44\x33\x22\x11", 6) == 0);
 	return EXIT_SUCCESS;
 }
