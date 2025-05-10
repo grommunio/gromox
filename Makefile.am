@@ -9,9 +9,8 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la ${program_plugins}
-noinst_LTLIBRARIES = libgromox_abtree.la libphp_mapi.la
+noinst_LTLIBRARIES = libgromox_abtree.la
 pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/authtry tools/eidprint tools/textmapquery
-pkglib_LTLIBRARIES = libmapi4zf.la
 if WITH_GNU_LD
 version_sc_SYFLAGS = -Wl,--version-script=${srcdir}/default.sym
 endif
@@ -239,20 +238,13 @@ gromox_snapshot_LDADD = ${libHX_LIBS} libgromox_common.la
 timer_SOURCES = tools/timer.cpp
 timer_LDADD = -lpthread ${libHX_LIBS} ${libssl_LIBS} libgromox_common.la
 
-libphp_mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES}
-libphp_mapi_la_SOURCES = php_mapi/ext.hpp php_mapi/ext_pack.cpp php_mapi/mapi.cpp php_mapi/mapi_arginfo.hpp php_mapi/rpc_ext.cpp php_mapi/type_conversion.cpp php_mapi/type_conversion.hpp php_mapi/zclient.cpp php_mapi/zrpc.cpp
-libphp_mapi_la_LIBADD = ${fmt_LIBS} ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
-# allow-shlib-undefined makes no sense for libphp_mapi_la, since it
-# is a convenience archive (static archive in practice)
-libmapi4zf_la_SOURCES = tests/zendfake.c
-libmapi4zf_la_LDFLAGS = ${PHP_LDFLAGS}
-libmapi4zf_la_LIBADD = libphp_mapi.la
-mapi_la_SOURCES =
+mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES}
+mapi_la_SOURCES = php_mapi/ext.hpp php_mapi/ext_pack.cpp php_mapi/mapi.cpp php_mapi/mapi_arginfo.hpp php_mapi/rpc_ext.cpp php_mapi/type_conversion.cpp php_mapi/type_conversion.hpp php_mapi/zclient.cpp php_mapi/zrpc.cpp
+mapi_la_LIBADD = ${fmt_LIBS} ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${default_SYFLAGS} ${PHP_LDFLAGS}
 if WITH_GNU_LD
 mapi_la_LDFLAGS += -Wl,--allow-shlib-undefined
 endif
-mapi_la_LIBADD = libphp_mapi.la
 EXTRA_mapi_la_DEPENDENCIES = default.sym
 
 noinst_PROGRAMS = dldcheck tests/bdump tests/bodyconv tests/compress tests/dnsbl_check tests/exrpctest tests/gxl-383 tests/jsontest tests/lzxpress tests/oxcmail_ie tests/ucvttest tests/udb tests/utiltest tests/vcard tools/tzdump
@@ -410,7 +402,6 @@ exch/exmdb/rpc.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh tools/exmidl.p
 
 install-exec-hook:
 	${MKDIR_P} ${DESTDIR}${sbindir}
-	rm -fv ${DESTDIR}${pkglibdir}/libmapi4zf.*
 
 install-data-local:
 	${MKDIR_P} ${DESTDIR}${mandir}/man8 ${DESTDIR}${pkgdatadir}/http/php
