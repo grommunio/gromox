@@ -552,7 +552,7 @@ int main(int argc, char **argv)
 	
 	exmdb_rpc_alloc = xrpc_alloc;
 	exmdb_rpc_free = [](void *) {};
-	exmdb_client.emplace(1, 0);
+	exmdb_client.emplace(UINT_MAX, UINT_MAX);
 	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	if (exmdb_client_run(g_config_file->get_value("config_file_path"),
 	    EXMDB_CLIENT_ASYNC_CONNECT, xrpc_build_env1, xrpc_free_env, nullptr) != 0) {
