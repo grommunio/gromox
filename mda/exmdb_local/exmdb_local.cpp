@@ -563,7 +563,7 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_ERR, "exmdb_local: failed to start cache queue");
 			return FALSE;
 		}
-		if (exmdb_client_run(get_config_path(), EXMDB_CLIENT_ASYNC_CONNECT) != 0) {
+		if (exmdb_client_run(get_config_path()) != 0) {
 			mlog(LV_ERR, "exmdb_local: failed to start exmdb_client");
 			return FALSE;
 		}

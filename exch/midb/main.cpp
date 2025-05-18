@@ -145,7 +145,7 @@ static void event_proc(const char *dir, BOOL thing,
 static int exmdb_client_run_front(const char *dir)
 {
 	return exmdb_client_run(dir, EXMDB_CLIENT_SKIP_PUBLIC |
-	       EXMDB_CLIENT_SKIP_REMOTE | EXMDB_CLIENT_ASYNC_CONNECT, buildenv,
+	       EXMDB_CLIENT_SKIP_REMOTE, buildenv,
 	       cu_free_environment, event_proc);
 }
 

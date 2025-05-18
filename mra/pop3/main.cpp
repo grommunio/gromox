@@ -474,7 +474,7 @@ int main(int argc, char **argv)
 	exmdb_client.emplace(UINT_MAX, UINT_MAX);
 	auto cl_0 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	if (exmdb_client_run(g_config_file->get_value("config_file_path"),
-	    EXMDB_CLIENT_ASYNC_CONNECT, xrpc_build_env1, xrpc_free_env, nullptr) != 0) {
+	    EXMDB_CLIENT_NO_FLAGS, xrpc_build_env1, xrpc_free_env, nullptr) != 0) {
 		mlog(LV_ERR, "Failed to start exmdb_client");
 		return EXIT_FAILURE;
 	}

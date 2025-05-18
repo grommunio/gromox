@@ -423,8 +423,6 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 	}
 	if (mdcl_conn_max == 0)
 		return 0;
-	if (!(flags & EXMDB_CLIENT_ASYNC_CONNECT))
-		cl_pinger2();
 	auto ret = pthread_create4(&mdcl_scan_id, nullptr, cl_pinger, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "exmdb_client: failed to create proxy scan thread: %s", strerror(ret));

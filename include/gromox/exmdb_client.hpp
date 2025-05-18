@@ -36,7 +36,6 @@ enum {
 	 * !EXMDB_CLIENT_ALLOW_DIRECT means all "local" locations will be
 	 * accessed via TCP.
 	 */
-	EXMDB_CLIENT_ASYNC_CONNECT = 0x8U,
 };
 
 struct remote_svr;

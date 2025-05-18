@@ -20,7 +20,7 @@ static void buildenv(const remote_svr &s)
 
 int exmdb_client_run_front(const char *dir)
 {
-	return exmdb_client_run(dir, EXMDB_CLIENT_ALLOW_DIRECT | EXMDB_CLIENT_ASYNC_CONNECT,
+	return exmdb_client_run(dir, EXMDB_CLIENT_ALLOW_DIRECT,
 	       buildenv, exmdb_server::free_env, exmdb_server::event_proc);
 }
 
