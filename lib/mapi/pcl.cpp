@@ -127,6 +127,8 @@ BINARY *PCL::serialize() const
 
 bool PCL::deserialize(const BINARY *pbin)
 {
+	if (pbin->cb == 0)
+		return true;
 	auto ppcl = this;
 	XID xid;
 	uint16_t offset;
