@@ -203,23 +203,20 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	        return -2;
 	}
 	auto cl_sock = HX::make_scope_exit([&]() { close(sockd); });
-	exreq_connect rqc;
-	exreq_listen_notification rql;
+	BINARY bin;
 	if (!b_listen) {
+		exreq_connect rqc;
 		rqc.call_id = exmdb_callid::connect;
 		rqc.prefix = deconst(srv.prefix.c_str());
 		rqc.remote_id = mdcl_remote_id;
 		rqc.b_private = srv.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
-	} else {
-		rql.call_id = exmdb_callid::listen_notification;
-		rql.remote_id = mdcl_remote_id;
-	}
-	BINARY bin;
-	if (b_listen) {
-		if (exmdb_ext_push_request(&rql, &bin) != pack_result::ok)
+		if (exmdb_ext_push_request(&rqc, &bin) != pack_result::ok)
 			return -1;
 	} else {
-		if (exmdb_ext_push_request(&rqc, &bin) != pack_result::ok)
+		exreq_listen_notification rql;
+		rql.call_id = exmdb_callid::listen_notification;
+		rql.remote_id = mdcl_remote_id;
+		if (exmdb_ext_push_request(&rql, &bin) != pack_result::ok)
 			return -1;
 	}
 	if (!exmdb_client_write_socket(sockd, bin, SOCKET_TIMEOUT * 1000)) {
