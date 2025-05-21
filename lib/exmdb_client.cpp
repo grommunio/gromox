@@ -31,6 +31,53 @@
 #	define AI_V4MAPPED 0
 #endif
 
+namespace {
+
+struct remote_svr;
+
+struct agent_thread {
+	remote_svr *pserver = nullptr;
+	pthread_t thr_id{};
+	int sockd = -1;
+	gromox::atomic_bool startup_wait{false};
+	std::condition_variable startup_cv;
+};
+
+struct remote_conn {
+	remote_conn(remote_svr *s) : psvr(s) {}
+	NOMOVE(remote_conn);
+	~remote_conn();
+
+	remote_svr *psvr = nullptr;
+	time_t last_time = 0;
+	int sockd = -1;
+};
+
+struct remote_conn_ref {
+	remote_conn_ref() = default;
+	remote_conn_ref(remote_conn_ref &&);
+	~remote_conn_ref() { reset(true); }
+	void operator=(remote_conn &&) = delete;
+	remote_conn *operator->() { return tmplist.size() != 0 ? &tmplist.front() : nullptr; }
+	bool operator==(std::nullptr_t) const { return tmplist.size() == 0; }
+	void reset(bool lost = false);
+
+	std::list<remote_conn> tmplist;
+};
+
+struct remote_svr : public EXMDB_ITEM {
+	remote_svr(EXMDB_ITEM &&o) noexcept : EXMDB_ITEM(std::move(o)) {}
+	std::list<remote_conn> conn_list;
+	std::atomic<unsigned int> active_handles{0};
+};
+
+using AGENT_THREAD = agent_thread;
+using REMOTE_CONN = remote_conn;
+using REMOTE_SVR = remote_svr;
+using REMOTE_CONN_floating = remote_conn_ref;
+
+}
+
 namespace gromox {
 
 std::optional<exmdb_client_remote> exmdb_client;
@@ -49,6 +96,8 @@ static void (*mdcl_build_env)(bool pvt);
 static void (*mdcl_free_env)();
 static void (*mdcl_event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
 static char mdcl_remote_id[128];
+
+}
 
 remote_conn::~remote_conn()
 {
@@ -75,7 +124,7 @@ void remote_conn_ref::reset(bool lost)
 		tmplist.clear();
 		return;
 	}
-	std::lock_guard sv_hold(mdcl_server_lock);
+	std::lock_guard sv_hold(gromox::mdcl_server_lock);
 	pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), tmplist, tmplist.begin());
 }
 
@@ -83,6 +132,8 @@ static constexpr cfg_directive exmdb_client_dflt[] = {
 	{"exmdb_client_rpc_timeout", "0", CFG_TIME, "0"},
 	CFG_TABLE_END,
 };
+
+namespace gromox {
 
 exmdb_client_remote::exmdb_client_remote(unsigned int conn_max,
     unsigned int notify_threads_max)
