@@ -142,6 +142,7 @@ extern GX_EXPORT bool mysql_adaptor_check_mlist_include(const char *mlist_name, 
 extern GX_EXPORT bool mysql_adaptor_check_same_org2(const char *domainname1, const char *domainname2);
 extern GX_EXPORT bool mysql_adaptor_get_mlist_memb(const char *username, const char *from, int *presult, std::vector<std::string> &);
 extern GX_EXPORT gromox::errno_t mysql_adaptor_get_homeserver(const char *ent, bool is_pvt, std::pair<std::string, std::string> &);
+extern GX_EXPORT gromox::errno_t mysql_adaptor_get_homeserver_for_dir(const char *dir, bool *is_pvt, std::string &);
 extern GX_EXPORT gromox::errno_t mysql_adaptor_scndstore_hints(unsigned int pri, std::vector<sql_user> &hints);
 extern GX_EXPORT int mysql_adaptor_domain_list_query(const char *dom);
 extern GX_EXPORT int mysql_adaptor_mbop_userlist(std::vector<sql_user> &);

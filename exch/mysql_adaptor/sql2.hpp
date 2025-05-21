@@ -75,6 +75,7 @@ struct mysql_plugin final {
 	bool check_same_org2(const char *domainname1, const char *domainname2);
 	bool get_mlist_memb(const char *username, const char *from, int *presult, std::vector<std::string> &);
 	gromox::errno_t get_homeserver(const char *ent, bool is_pvt, std::pair<std::string, std::string> &);
+	gromox::errno_t get_homeserver_for_dir(const char *dir, bool *pvt, std::string &hostname);
 	gromox::errno_t scndstore_hints(unsigned int pri, std::vector<sql_user> &hints);
 	int domain_list_query(const char *dom);
 	int mbop_userlist(std::vector<sql_user> &);

@@ -421,6 +421,11 @@ int mysql_plugin::domain_list_query(const char *domain) try
 	return -ENOMEM;
 }
 
+/**
+ * @entity:  username/domainname
+ * @is_pvt:  whether lookup is for a private or public store
+ * @servers: hostname & extname output
+ */
 errno_t mysql_plugin::get_homeserver(const char *entity, bool is_pvt,
     std::pair<std::string, std::string> &servers) try
 {
@@ -453,6 +458,54 @@ errno_t mysql_plugin::get_homeserver(const char *entity, bool is_pvt,
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2132: ENOMEM");
 	return ENOMEM;
+}
+
+/**
+ * Support function for exmdb_client_get_connection().
+ *
+ * @dir:      directory to look up
+ * @is_pvt:   output whether found entity is a private/public store
+ * @hostname: output homeserver hostname
+ *
+ * Returns 0 on success.
+ * Returns ENOENT if the directory is not in the user list.
+ * Returns ELOOP if the database is wonky.
+ *
+ * A zero-length hostname may be returned if the user has an invalid server
+ * entry, or the special homeserver 0 (globally-concurrently-served userdir).
+ */
+errno_t mysql_plugin::get_homeserver_for_dir(const char *dir, bool *is_pvt,
+    std::string &hostname) try
+{
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return EIO;
+	auto qent = conn->quote(dir);
+	/*
+	 * The port 5000 protocol is not externally visible by definition, so
+	 * we won't bother with sv.extname.
+	 */
+	auto qstr = "SELECT sv.hostname, 1 AS pvt FROM users AS u "
+	            "LEFT JOIN servers AS sv ON u.homeserver=sv.id "
+	            "WHERE u.maildir='"s + dir + "' UNION "
+	            "SELECT sv.hostname, 0 AS pvt FROM domains AS d "
+	            "LEFT JOIN servers AS sv ON d.homeserver=sv.id "
+	            "WHERE d.homedir='" + qent + "' LIMIT 2";
+	if (!conn->query(qstr))
+		return EIO;
+	auto res = conn->store_result();
+	if (res == nullptr)
+		return ENOMEM;
+	conn.finish();
+	if (res.num_rows() != 1)
+		return ELOOP;
+	auto row = res.fetch_row();
+	hostname = znul(row[0]);
+	*is_pvt = *row[1] == '1';
+	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2141: ENOMEM");
+	return -ENOMEM;
 }
 
 void mysql_plugin::init(mysql_adaptor_init_param &&parm)
@@ -1158,6 +1211,12 @@ gromox::errno_t mysql_adaptor_get_homeserver(const char *e, bool p,
     std::pair<std::string, std::string> &v)
 {
 	return le_mysql_plugin->get_homeserver(e, p, v);
+}
+
+gromox::errno_t mysql_adaptor_get_homeserver_for_dir(const char *d,
+    bool *p, std::string &v)
+{
+	return le_mysql_plugin->get_homeserver_for_dir(d, p, v);
 }
 
 gromox::errno_t mysql_adaptor_scndstore_hints(unsigned int pri, std::vector<sql_user> &hints)
