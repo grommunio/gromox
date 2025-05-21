@@ -130,7 +130,7 @@ static bool midb_reload_config(std::shared_ptr<config_file> gxconfig = nullptr,
 	return true;
 }
 
-static void buildenv(const remote_svr &)
+static void buildenv(bool pvt)
 {
 	cu_build_environment("");
 }

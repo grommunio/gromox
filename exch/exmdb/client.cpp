@@ -12,10 +12,9 @@
 
 using namespace gromox;
 
-static void buildenv(const remote_svr &s)
+static void buildenv(bool pvt)
 {
-	auto flags = s.type == EXMDB_ITEM::EXMDB_PRIVATE ? EM_PRIVATE : 0;
-	exmdb_server::build_env(flags, nullptr);
+	exmdb_server::build_env(pvt ? EM_PRIVATE : 0, nullptr);
 }
 
 int exmdb_client_run_front(const char *dir)

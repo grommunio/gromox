@@ -266,7 +266,7 @@ void imrpc_build_env()
 	++g_amgr_refcount;
 }
 
-static void imrpc_build_env1(const remote_svr &)
+static void imrpc_build_env1(bool pvt)
 {
 	imrpc_build_env();
 }

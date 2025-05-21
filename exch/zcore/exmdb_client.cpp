@@ -15,7 +15,7 @@
 
 using namespace gromox;
 
-static void buildenv(const remote_svr &s)
+static void buildenv(bool pvt)
 {
 	common_util_build_environment();
 }

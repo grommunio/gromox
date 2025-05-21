@@ -45,7 +45,7 @@ static std::mutex mdcl_server_lock; /* he protecc mdcl_server_list+mdcl_agent_li
 static atomic_bool mdcl_notify_stop;
 static unsigned int mdcl_conn_max, mdcl_threads_max;
 static pthread_t mdcl_scan_id;
-static void (*mdcl_build_env)(const remote_svr &);
+static void (*mdcl_build_env)(bool pvt);
 static void (*mdcl_free_env)();
 static void (*mdcl_event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
 static char mdcl_remote_id[128];
@@ -178,7 +178,7 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	free(bin.pb);
 	bin.pb = nullptr;
 	if (mdcl_build_env != nullptr)
-		mdcl_build_env(srv);
+		mdcl_build_env(srv.type == EXMDB_ITEM::EXMDB_PRIVATE);
 	auto cl_0 = HX::make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
 	if (!exmdb_client_read_socket(sockd, bin, mdcl_rpc_timeout) ||
 	    bin.pb == nullptr)
@@ -294,7 +294,7 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 	bin.cb = buff_len;
 	bin.pb = buff;
 	if (mdcl_build_env != nullptr)
-		mdcl_build_env(*agent.pserver);
+		mdcl_build_env(agent.pserver->type == EXMDB_ITEM::EXMDB_PRIVATE);
 	auto cl_0 = HX::make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
 	DB_NOTIFY_DATAGRAM notify;
 	auto resp_code = exmdb_ext_pull_db_notify(&bin, &notify) == pack_result::ok ?
@@ -375,7 +375,7 @@ static int launch_notify_listener(remote_svr &srv) try
 }
 
 int exmdb_client_run(const char *cfgdir, unsigned int flags,
-    void (*build_env)(const remote_svr &), void (*free_env)(),
+    void (*build_env)(bool), void (*free_env)(),
     void (*event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *))
 {
 	mdcl_build_env = build_env;

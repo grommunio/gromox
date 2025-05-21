@@ -249,7 +249,7 @@ void xrpc_build_env()
 	++g_amgr_refcount;
 }
 
-static void xrpc_build_env1(const remote_svr &)
+static void xrpc_build_env1(bool pvt)
 {
 	xrpc_build_env();
 }

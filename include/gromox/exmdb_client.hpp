@@ -81,7 +81,7 @@ using REMOTE_CONN = remote_conn;
 using REMOTE_SVR = remote_svr;
 using REMOTE_CONN_floating = remote_conn_ref;
 
-extern GX_EXPORT int exmdb_client_run(const char *dir, unsigned int fl = EXMDB_CLIENT_NO_FLAGS, void (*)(const remote_svr &) = nullptr, void (*)() = nullptr, void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *) = nullptr);
+extern GX_EXPORT int exmdb_client_run(const char *cfgdir, unsigned int fl = EXMDB_CLIENT_NO_FLAGS, void (*build_cb)(bool) = nullptr, void (*free_cb)() = nullptr, void (*event_cb)(const char *, BOOL, uint32_t, const DB_NOTIFY *) = nullptr);
 extern GX_EXPORT bool exmdb_client_is_local(const char *pfx, BOOL *pvt);
 extern GX_EXPORT BOOL exmdb_client_do_rpc(const exreq *, exresp *);
 
