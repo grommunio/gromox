@@ -497,7 +497,10 @@ errno_t mysql_plugin::get_homeserver_for_dir(const char *dir, bool *is_pvt,
 	if (res == nullptr)
 		return ENOMEM;
 	conn.finish();
-	if (res.num_rows() != 1)
+	auto nrows = res.num_rows();
+	if (nrows == 0)
+		return ENOENT;
+	else if (nrows > 1)
 		return ELOOP;
 	auto row = res.fetch_row();
 	hostname = znul(row[0]);

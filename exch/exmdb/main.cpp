@@ -234,11 +234,12 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 			db_engine_stop();
 			return FALSE;
 		}
-		if (exmdb_parser_run(get_config_path()) != 0) {
-			mlog(LV_ERR, "exmdb_provider: failed to start exmdb parser");
-			db_engine_stop();
-			return FALSE;
-		}
+		g_host_id = znul(get_host_ID());
+		/*
+		 * If LPC is allowed, there has to be exmdb_provider in this
+		 * process image, which means we are authoritative and should
+		 * launch the socket.
+		 */
 		if (g_exmdb_allow_lpc && exmdb_listener_run(get_config_path(), *pconfig) != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start exmdb listener");
 			exmdb_listener_stop();

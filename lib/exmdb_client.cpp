@@ -24,8 +24,10 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
+#include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #ifndef AI_V4MAPPED
 #	define AI_V4MAPPED 0
@@ -94,7 +96,7 @@ bool g_exmdb_allow_lpc;
 
 static int mdcl_rpc_timeout = -1;
 static std::list<remote_svr> mdcl_server_list;
-static std::mutex mdcl_server_lock; /* he protecc mdcl_server_list+mdcl_agent_list */
+static std::mutex mdcl_server_lock; /* he protecc mdcl_server_list+mdcl_agent_list and contents */
 static atomic_bool mdcl_notify_stop;
 static unsigned int mdcl_conn_max;
 static void (*mdcl_build_env)(bool pvt);
@@ -181,7 +183,7 @@ exmdb_client_remote::~exmdb_client_remote()
 	mdcl_event_proc = nullptr;
 }
 
-static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
+static int exmdb_client_connect_exmdb(const EXMDB_ITEM &srv, bool b_listen,
     const char *prog_id)
 {
 	int sockd = HX_inet_connect(srv.host.c_str(), srv.port, 0);
@@ -362,48 +364,12 @@ void exmdb_client_remote::set_async_notif(void (*ep)(const char *, BOOL, uint32_
 int exmdb_client_run(const char *cfgdir, unsigned int flags,
     void (*build_env)(bool), void (*free_env)())
 {
+	if (service_run_library({"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+		return -1;
 	mdcl_build_env = build_env;
 	mdcl_free_env = free_env;
-	std::vector<EXMDB_ITEM> xmlist;
 
-	auto err = list_file_read_exmdb("exmdb_list.txt", cfgdir, xmlist);
-	if (err != 0) {
-		mlog(LV_ERR, "exmdb_client: list_file_read_exmdb: %s", strerror(err));
-		return 1;
-	}
 	mdcl_notify_stop = false;
-	for (auto &&item : xmlist) {
-		if (flags & EXMDB_CLIENT_SKIP_PUBLIC &&
-		    item.type != EXMDB_ITEM::EXMDB_PRIVATE)
-			continue; /* mostly used by midb */
-		auto local = HX_ipaddr_is_local(item.host.c_str(), AI_V4MAPPED);
-		if (flags & EXMDB_CLIENT_SKIP_REMOTE && !local)
-			continue; /* mostly used by midb */
-		item.local = (flags & EXMDB_CLIENT_ALLOW_DIRECT) ? local : false;
-		if (item.local) try {
-			/* mostly used by exmdb_provider */
-			mdcl_server_list.emplace_back(std::move(item));
-			continue; /* do not start notify agent for locals */
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "exmdb_client: failed to allocate memory");
-			mdcl_notify_stop = true;
-			return 3;
-		}
-		if (mdcl_conn_max == 0) {
-			mlog(LV_ERR, "exmdb_client: there's remote store media "
-				"in exmdb list, but RPC proxy connection number is 0");
-			mdcl_notify_stop = true;
-			return 4;
-		}
-
-		try {
-			mdcl_server_list.emplace_back(std::move(item));
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "exmdb_client: failed to allocate memory for exmdb");
-			mdcl_notify_stop = true;
-			return 5;
-		}
-	}
 	if (mdcl_conn_max == 0)
 		return 0;
 	return 0;
@@ -416,23 +382,26 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
  * as exmdb_provider).
  *
  * @prefix:  a mailbox directory
+ * @ourhost: caller's hostname
  * @pvt:     returns whether the directory refers to a private or public store
+ *
+ * A similar function body is located in exmdb_parser_is_local().
  */
-bool exmdb_client_can_use_lpc(const char *prefix, BOOL *pvt)
+bool exmdb_client_can_use_lpc(const char *prefix, const char *ourhost,
+    bool *is_pvt)
 {
 	if (!g_exmdb_allow_lpc)
 		return false;
 	if (*prefix == '\0')
 		return true;
-	auto i = std::find_if(mdcl_server_list.cbegin(), mdcl_server_list.cend(),
-	         [&](const EXMDB_ITEM &s) {
-	         	return s.local && strncmp(s.prefix.c_str(),
-	         	       prefix, s.prefix.size()) == 0;
-	         });
-	if (i == mdcl_server_list.cend())
+	std::string remotehost;
+	auto err = mysql_adaptor_get_homeserver_for_dir(prefix, is_pvt, remotehost);
+	if (err == 0)
+		return remotehost == znul(ourhost);
+	else if (err == ENOENT)
 		return false;
-	*pvt = i->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
-	return true;
+	mlog(LV_ERR, "%s: %s: %s", __func__, prefix, strerror(err));
+	return false;
 }
 
 static bool sock_ready_for_write(int fd)
@@ -442,19 +411,36 @@ static bool sock_ready_for_write(int fd)
 	return poll(&pfd, 1, 0) == 0;
 }
 
+/**
+ * Get a connection file descriptor for the given homedir.
+ * If necessary, vivify a remote_svr entry and/or sockets.
+ *
+ * This function always produces a socket: If you want to do LPC call
+ * exmdb_client_is_local instead (and if LPC is available, don't use
+ * get_connection).
+ */
 static remote_conn_ref exmdb_client_get_connection(const char *dir)
 {
 	remote_conn_ref fc;
-	std::lock_guard sv_hold(mdcl_server_lock);
-	auto i = *dir == '\0' ? mdcl_server_list.begin() :
-	         std::find_if(mdcl_server_list.begin(), mdcl_server_list.end(),
-	         [&](const remote_svr &s) { return strncmp(dir, s.prefix.c_str(), s.prefix.size()) == 0; });
-	if (i == mdcl_server_list.end()) {
-		if (*dir == 'E' && getenv("MILLENIUM_PRIZE") != nullptr) {
-			fprintf(stderr, "cannot find remote server for %s", dir);
-			kill(0, SIGSTOP);
+	std::unique_lock sv_hold(mdcl_server_lock);
+	auto i = std::find_if(mdcl_server_list.begin(), mdcl_server_list.end(),
+	         [&](const remote_svr &s) { return s.prefix == dir; });
+	/* std::list iterators don't invalidate unless the element goes away */
+	if (i == mdcl_server_list.end()) try {
+		sv_hold.unlock();
+		EXMDB_ITEM itm{dir, std::string{}, 5000}; /* XXX: hardcoded port number.. */
+		bool is_pvt = false;
+		auto err = mysql_adaptor_get_homeserver_for_dir(dir, &is_pvt, itm.host);
+		if (err != 0) {
+			mlog(LV_ERR, "exmdb_client: cannot find remote server for %s", dir);
+			return fc;
 		}
-		mlog(LV_ERR, "exmdb_client: cannot find remote server for %s", dir);
+		itm.type = is_pvt ? EXMDB_ITEM::EXMDB_PRIVATE : EXMDB_ITEM::EXMDB_PUBLIC;
+		sv_hold.lock();
+		mdcl_server_list.emplace_back(std::move(itm));
+		i = std::prev(mdcl_server_list.end());
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 		return fc;
 	}
 	while (i->conn_list.size() > 0) {
@@ -465,10 +451,14 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 		i->conn_list.pop_front();
 	}
 	if (i->active_handles >= mdcl_conn_max) {
+		// make it wait instead?
 		mlog(LV_ERR, "exmdb_client: reached maximum connections (%u) to [%s]:%hu/%s",
 		        mdcl_conn_max, i->host.c_str(), i->port, i->prefix.c_str());
 		return fc;
 	}
+
+	sv_hold.unlock();
+	/* i->{host,port,prefix} is unchanging after init, so should be ok to access without lock */
 	fc.tmplist.emplace_back(&*i);
 	auto &conn = fc.tmplist.back();
 	conn.sockd = exmdb_client_connect_exmdb(*i, false, "mdcl");
@@ -482,6 +472,7 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 		return fc;
 	}
 	++i->active_handles;
+	sv_hold.lock();
 	if (mdcl_event_proc != nullptr && !i->m_agent.has_value())
 		launch_notify_listener(*i);
 	return fc;

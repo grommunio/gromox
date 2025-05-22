@@ -9,6 +9,7 @@
 #include <gromox/exmdb_provider_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/exmdb_server.hpp>
+#include "parser.hpp"
 
 using namespace gromox;
 
@@ -30,9 +31,9 @@ BOOL exmdb_client_relay_delivery(const char *dir, const char *from_address,
     const char *account, cpid_t cpid, const MESSAGE_CONTENT *pmsg,
 	const char *pdigest, uint32_t *presult)
 {
-	BOOL b_private;
+	bool b_private = false;
 	
-	if (exmdb_client_can_use_lpc(dir, &b_private)) {
+	if (exmdb_client_can_use_lpc(dir, g_host_id.c_str(), &b_private)) {
 		auto original_dir = exmdb_server::get_dir();
 		exmdb_server::set_dir(dir);
 		uint64_t folder_id = 0, msg_id = 0;

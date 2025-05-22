@@ -39,7 +39,7 @@ enum {
 };
 
 extern GX_EXPORT int exmdb_client_run(const char *cfgdir, unsigned int fl = EXMDB_CLIENT_NO_FLAGS, void (*build_cb)(bool) = nullptr, void (*free_cb)() = nullptr);
-extern GX_EXPORT bool exmdb_client_can_use_lpc(const char *pfx, BOOL *pvt);
+extern GX_EXPORT bool exmdb_client_can_use_lpc(const char *dir, const char *ourhost, bool *pvt);
 extern GX_EXPORT BOOL exmdb_client_do_rpc(const exreq *, exresp *);
 
 class GX_EXPORT exmdb_client_remote {
