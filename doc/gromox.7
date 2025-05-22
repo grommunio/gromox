@@ -419,18 +419,10 @@ MIME types
 .IP \(bu 4
 /var/lib/gromox/queue: directory for delivery-queue(8) temporary files
 .IP \(bu 4
-/var/lib/gromox/user: default directory hierarchy for private mailboxes
-.IP \(bu 4
-/var/lib/gromox/domain: default directory hierarchy for public mailboxes
-(public folders)
+/var/lib/gromox/user/account@domain: individual mailbox container
 .br
-Additional hierarchies for private and public can be added to exmdb_list.txt.
-.IP \(bu 4
-\&.../user/account@domain: individual mailbox container
-.br
-The directory name/path has only few requirements. It needs to be within one of
-the exmdb_list.txt-specified hierarchies for private/public hierarchies, and
-the users.maildir column in MySQL needs to reflect that location. Some user
+The directory name/path has only few requirements. The users.maildir column in
+the gromox MariaDB/MySQL database needs to reflect that location. Some user
 management tools generate extra directory levels, e.g. /user/m1/1/0.
 .IP \(bu 4
 \&.../a@d/exmdb/exchange.sqlite3: mail store with almost everything (no mail bodies)

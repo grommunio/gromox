@@ -223,7 +223,8 @@ population.
 Default: \fI4\fP
 .TP
 \fBrpc_proxy_connection_num\fP
-For every remote exmdb server in exmdb_list.txt, establish and keep this
+For every remote exmdb server that needs to be contacted because of
+rule processing an OP_FOWARD (or similar) rule, keep this
 many number of outbound connections for sending commands.
 .br
 Default: \fI10\fP
@@ -243,39 +244,27 @@ Default: \fI5000\fP
 \fBx500_org_name\fP
 .br
 Default: (unspecified)
-.SH Multiserver selection map
-The SQL column \fBusers.homedir\fP specifies a home directory location in an
-abstract namespace. This abstract namespace is shared between all Gromox
-programs, and can be used to divide users into custom subsets and steer
-connections to different servers.
+.SH Sharding / Multiple Home Server Cluster
+Each exmdb_provider (server) instance evalutes the SQL columns
+\fBusers.homeserver\fP/\fBservers.hostname\fP for private stores and
+\fBdomains.homeserver\fP/\fBservers.hostname\fP for public stores against the
+\fBhost_id\fP directive to determine if it should be served. exmdb_client
+component, as used by zcore, imapd, etc. and a plethora of command-line utilities,
+likewise evaluates those SQL columns to determine which server to contact.
 .PP
-exmdb_list.txt specifies how to map from this namespace to exmdb servers. The
-file is used by exmdb clients to select the right server to connect to, and the
-file is used by exmdb_provider to set up its own data structures.
+The magic value 0 in the homeserver column means any and all server instances
+consider themselves authoritative. This has serious implications (concurrent
+writes by multiple hosts) and so, using homeserver=0 for accounts with an
+actual maildir should be avoided in multiserver setups. (Using 0 for Contact
+Objects, and using 0 for single-server setups is tolerable.)
 .PP
-Each line in this file consists of 4 columns separated by whitespace:
-.IP \(bu 4
-Initial prefix to match a user's exmdb home directory on. The pattern should
-almost always end in a '/' character, otherwise a prefix of "/home" is able to
-match a userdir of "/home2/username" as well, which may be undesired.
-.IP \(bu 4
-The type of mail stores that are served beneath the prefix. This must either be
-"private" or "public".
-.IP \(bu 4
-The IPv6 socket address of the exmdb server to connect to for all requests
-involving this prefix. The address must conform to gromox(7) \(sc "Host
-addresses".
-.IP \(bu 4
-The port number.
+For a decidedly single-server cluster, this cicrumstance requires attention
+too. For example, picture the server.hostname SQL column containing
+"server01.example.com", which resolves to "2001:db8::1" \(em this conflicts
+with the ::1 bind address, making connection attemps fail.
 .PP
-In the absence of exmdb_list.txt, two implicit default entries are used:
-.RS
-.PP
-.nf
-/var/lib/gromox/user/ private ::1 5000
-/var/lib/gromox/domain/ public ::1 5000
-.fi
-.RE
+The file /etc/gromox/exmdb_list.txt became obsolete in the development
+phase that followed the Gromox 3.4 release.
 .SH Network protocol
 The transmissions on the socket are simple concatenations of protocol data
 units built using the NDR format. The PDU length is present within the PDU
@@ -300,8 +289,6 @@ pdu := {
 	}
 }
 .SH Files
-.IP \(bu 4
-\fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map.
 .IP \(bu 4
 \fIdata_file_path\fP/mail_bounce/
 .PP
