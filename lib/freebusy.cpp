@@ -212,7 +212,11 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 			return false;
 		line.append_value("WKST", wd);
 	}
-	return ical_parse_rrule(tzcom, start_whole, &line.value_list, irrule);
+	auto err = ical_parse_rrule(tzcom, start_whole, &line.value_list, irrule);
+	if (err == nullptr)
+		return true;
+	mlog(LV_ERR, "%s: RRULE parse: %s", __func__, err);
+	return false;
 }
 
 static bool find_recur_times(const ical_component *tzcom,

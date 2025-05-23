@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -309,8 +309,14 @@ static bool oxcical_timezonestruct_to_binary(
 	return true;
 }
 
-/* ptz_component can be NULL, represents UTC */
-static bool oxcical_parse_rrule(const ical_component &tzcom,
+/**
+ * Breakdown RRULE into a MAPI recurrence pattern.
+ * MS-OXOCAL v21 §2.1.3.2.2 specifies limitations, and not all RFC 5545
+ * documents can be converted into MAPI.
+ *
+ * On success, returns %nullptr. On error, the error indicator string is returned.
+ */
+static const char *oxcical_parse_rrule(const ical_component &tzcom,
     const ical_line &iline, uint16_t calendartype, time_t start_time,
     uint32_t duration_minutes, APPOINTMENT_RECUR_PAT *apr)
 {
@@ -324,26 +330,29 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 	auto piline = &iline;
 	if (piline->get_subval_list("BYYEARDAY") != nullptr ||
 	    piline->get_subval_list("BYWEEKNO") != nullptr)
-		return false;
+		/* OXOCAL p.88/89 */
+		return "E-2801: RRULE.BYYEARDAY/BYWEEKNO not supported by MS-OXOCAL algorithm";
 	auto psubval_list = piline->get_subval_list("BYMONTHDAY");
 	if (psubval_list != nullptr && psubval_list->size() > 1)
-		return false;
+		return "E-2802: RRULE.BYMONTHDAY with more than one element not supported by MS-OXOCAL algorithm";
 	psubval_list = piline->get_subval_list("BYSETPOS");
 	if (psubval_list != nullptr && psubval_list->size() > 1)
-		return false;
+		return "E-2803: RRULE.BYSETPOS with more than one element not supported by MS-OXOCAL algorithm";
 	psubval_list = piline->get_subval_list("BYSECOND");
 	if (psubval_list != nullptr) {
 		if (psubval_list->size() > 1)
-			return false;
+			return "E-2804: MAPI does not support RRULE.BYSECOND";
 		pvalue = piline->get_first_subvalue_by_name("BYSECOND");
+		/* Try to cope with idempotent BYSECOND=0 amidst the unsupportedness */
 		if (pvalue != nullptr && strtol(pvalue, nullptr, 0) != start_time % 60)
-			return false;
+			return "E-2805: MAPI does not support RRULE.BYSECOND";
 	}
-	if (!ical_parse_rrule(&tzcom, start_time, &piline->value_list, &irrule))
-		return false;
+	auto err = ical_parse_rrule(&tzcom, start_time, &piline->value_list, &irrule);
+	if (err != nullptr)
+		return err;
 	auto b_exceptional = irrule.b_start_exceptional;
 	if (b_exceptional && !irrule.iterate())
-		return false;
+		return "E-2807";
 	ical_time itime_base = irrule.base_itime, itime_first = irrule.instance_itime;
 	apr->readerversion2 = 0x3006;
 	apr->writerversion2 = 0x3009;
@@ -374,7 +383,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 			if (itime1.year == itime.year &&
 				itime1.month == itime.month &&
 			    itime1.day == itime.day)
-				return false;
+				return "E-2808";
 			itime = itime1;
 		}
 		if (irrule.total_count != 0) {
@@ -394,19 +403,28 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 		ical_itime_to_utc(nullptr, itime, &tmp_time);
 		apr->recur_pat.enddate = rop_util_unix_to_rtime(tmp_time);
 	}
+	/*
+	 * MS-OXCICAL v14 §2.2.3.2.2.1 p. 89 gives a BNF syntax for the things
+	 * we must accept from iCal (and thus things we need not support).
+	 *
+	 * MS-OXOCAL v21 §2.2.1.44.1 p. 38 contains the limits for irrule.interval.
+	 *
+	 * RFC 5545 p. 43 contains a table of "limiters" and "expanders".
+	 * MAPI does not support representing most limiters.
+	 */
 	switch (irrule.frequency) {
 	case ical_frequency::second:
 	case ical_frequency::minute:
 	case ical_frequency::hour:
-		return false;
+		return "E-2809: MAPI does not support FREQ=SECONDLY/MINUTELY/HOURLY";
 	case ical_frequency::day:
 		if (piline->get_subval_list("BYDAY") != nullptr ||
 		    piline->get_subval_list("BYMONTH") != nullptr ||
 		    piline->get_subval_list("BYSETPOS") != nullptr)
-			return false;
+			return "E-2810: MAPI does not support FREQ=DAILY with BYDAY/BYMONTH/BYSETPOS limiters";
 		apr->recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_DAILY;
 		if (irrule.interval > 999)
-			return false;
+			return "E-2811: daily INTERVAL is too high for MAPI (>999)";
 		apr->recur_pat.period = irrule.interval * 1440;
 		apr->recur_pat.firstdatetime = apr->recur_pat.startdate % apr->recur_pat.period;
 		patterntype = rptMinute;
@@ -414,10 +432,10 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 	case ical_frequency::week:
 		if (piline->get_subval_list("BYMONTH") != nullptr ||
 		    piline->get_subval_list("BYSETPOS") != nullptr)
-			return false;
+			return "E-2812: MAPI does not support FREQ=WEEKLY with BYMONTH/BYSETPOS limiters";
 		apr->recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_WEEKLY;
 		if (irrule.interval > 99)
-			return false;
+			return "E-2813: weekly INTERVAL is too high for MAPI (>99)";
 		apr->recur_pat.period = irrule.interval;
 		itime = itime_base;
 		itime.hour = 0;
@@ -444,10 +462,10 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 		break;
 	case ical_frequency::month:
 		if (piline->get_subval_list("BYMONTH") != nullptr)
-			return false;
+			return "E-2814: MAPI does not support FREQ=MONTHLY with BYMONTH limiter";
 		apr->recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_MONTHLY;
 		if (irrule.interval > 99)
-			return false;
+			return "E-2815: monthly INTERVAL is too high for MAPI (>99)";
 		apr->recur_pat.period = irrule.interval;
 		itime = {};
 		itime.year = 1601;
@@ -476,7 +494,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
 			int tmp_int = strtol(pvalue, nullptr, 0);
 			if (tmp_int > 4 || tmp_int < -1)
-				return false;
+				return "E-2816: MAPI does not support MONTHLY.BYSETPOS>4";
 			else if (tmp_int == -1)
 				tmp_int = 5;
 			apr->recur_pat.pts.monthnth.recurnum = tmp_int;
@@ -487,11 +505,11 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.monthnth.weekrecur = 0;
 			if (psubval_list->size() > 1)
-				return false;
+				return "E-2817: MAPI does not support MONTHLY with multiple BYDAY";
 			if (psubval_list->size() == 1) {
 				int wd = 0, order = 0;
 				if (!ical_parse_byday(psubval_list->begin()->c_str(), &wd, &order))
-					return false;
+					return "E-2806: Parse error at RRULE.BYDAY";
 				apr->recur_pat.pts.monthnth.weekrecur |= 1 << wd;
 				/*
 				 * When importing from iCal, Outlook does not
@@ -501,11 +519,11 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 				if (order == -1 || order < 5)
 					apr->recur_pat.pts.monthnth.recurnum = order;
 				else
-					return false;
+					return "E-2831: weekorder out of range for MAPI";
 			}
 		} else if (!irrule.test_bymask(rrule_by::day) &&
 		    irrule.test_bymask(rrule_by::setpos)) {
-			return false; /* BYSETPOS limiter */
+			return "E-2832: MAPI does not supported singular MONTHLY.BYSETPOS";
 		} else {
 			/* No extra limiters */
 			int tmp_int;
@@ -517,7 +535,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 			} else {
 				tmp_int = strtol(pvalue, nullptr, 0);
 				if (tmp_int < -1)
-					return false;
+					return "E-2818: bymonthday out of range";
 				else if (tmp_int == -1)
 					tmp_int = 31;
 			}
@@ -527,7 +545,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 	case ical_frequency::year:
 		apr->recur_pat.recurfrequency = IDC_RCEV_PAT_ORB_YEARLY;
 		if (irrule.interval > 8)
-			return false;
+			return "E-2819: yearly INTERVAL is too high for MAPI (>99months)";
 		apr->recur_pat.period = 12 * irrule.interval;
 		itime = {};
 		itime.year = 1601;
@@ -544,7 +562,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 		    irrule.test_bymask(rrule_by::setpos) &&
 		    irrule.test_bymask(rrule_by::month)) {
 			if (irrule.test_bymask(rrule_by::monthday))
-				return false;
+				return "E-2820";
 			patterntype = rptMonthNth;
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.monthnth.weekrecur = 0;
@@ -557,14 +575,14 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
 			int tmp_int = strtol(pvalue, nullptr, 0);
 			if (tmp_int > 4 || tmp_int < -1)
-				return false;
+				return "E-2821";
 			else if (tmp_int == -1)
 				tmp_int = 5;
 			apr->recur_pat.pts.monthnth.recurnum = tmp_int;
 		} else {
 			if (irrule.test_bymask(rrule_by::day) ||
 			    irrule.test_bymask(rrule_by::setpos))
-				return false;
+				return "E-2822";
 			int tmp_int;
 			patterntype = rptMonth;
 			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
@@ -574,7 +592,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 			} else {
 				tmp_int = strtol(pvalue, nullptr, 0);
 				if (tmp_int < -1)
-					return false;
+					return "E-2823";
 				else if (tmp_int == -1)
 					tmp_int = 31;
 			}
@@ -593,7 +611,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 	}
 	apr->recur_pat.patterntype = patterntype;
 	apr->recur_pat.calendartype = calendartype;
-	return true;
+	return nullptr;
 }
 
 static const ical_component *oxcical_find_vtimezone(const ical &pical, const char *tzid)
@@ -2217,9 +2235,10 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 		apr.exceptioncount = 0;
 		apr.pexceptioninfo = exceptions;
 		apr.pextendedexception = ext_exceptions;
-		if (!oxcical_parse_rrule(*ptz_component, *piline, calendartype,
-		    start_time, duration_min, &apr))
-			return "E-2718";
+		auto err = oxcical_parse_rrule(*ptz_component, *piline,
+		           calendartype, start_time, duration_min, &apr);
+		if (err != nullptr)
+			return err;
 		piline = pmain_event->get_line("EXDATE");
 		if (piline == nullptr)
 			piline = pmain_event->get_line("X-MICROSOFT-EXDATE");

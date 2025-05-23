@@ -162,6 +162,6 @@ extern GX_EXPORT bool ical_parse_duration(const char *str_duration, long *psecon
 extern GX_EXPORT bool ical_itime_to_utc(const ical_component *, ical_time, time_t *);
 extern GX_EXPORT bool ical_datetime_to_utc(const ical_component *, const char *datetime, time_t *);
 extern GX_EXPORT bool ical_utc_to_datetime(const ical_component *, time_t utc_time, ical_time *);
-extern GX_EXPORT bool ical_parse_rrule(const ical_component *, time_t start, const std::vector<ical_value> *, ical_rrule *);
+extern GX_EXPORT const char *ical_parse_rrule(const ical_component *, time_t start, const std::vector<ical_value> *, ical_rrule *);
 extern GX_EXPORT int weekday_to_int(const char *);
 extern GX_EXPORT const char *weekday_to_str(unsigned int);

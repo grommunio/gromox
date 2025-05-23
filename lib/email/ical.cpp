@@ -1771,15 +1771,19 @@ static void ical_next_rrule_base_itime(ical_rrule *pirrule)
 	}
 }
 
-/* ptz_component can be NULL, represents UTC */
-bool ical_parse_rrule(const ical_component *ptz_component,
+/*
+ * @ptz_component: if NULL, represents UTC
+ *
+ * On success, returns %nullptr. On error, the error indicator string is returned.
+ */
+const char *ical_parse_rrule(const ical_component *ptz_component,
     time_t start_time, const std::vector<ical_value> *pvalue_list,
     ical_rrule *pirrule)
 {
 	*pirrule = {};
 	auto pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "FREQ");
 	if (pvalue == nullptr)
-		return false;
+		return "E-2824: RRULE has no FREQ";
 	if (strcasecmp(pvalue, "SECONDLY") == 0)
 		pirrule->frequency = ical_frequency::second;
 	else if (strcasecmp(pvalue, "MINUTELY") == 0)
@@ -1795,7 +1799,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	else if (strcasecmp(pvalue, "YEARLY") == 0)
 		pirrule->frequency = ical_frequency::year;
 	else
-		return false;
+		return "E-2825: RRULE has invalid FREQ";
 	pirrule->real_frequency = pirrule->frequency;
 	pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "INTERVAL");
 	if (NULL == pvalue) {
@@ -1803,7 +1807,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	} else {
 		pirrule->interval = strtol(pvalue, nullptr, 0);
 		if (pirrule->interval <= 0)
-			return false;
+			return "E-2826: RRULE has invalid INTERVAL";
 	}
 	pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "COUNT");
 	if (NULL == pvalue) {
@@ -1811,17 +1815,17 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	} else {
 		pirrule->total_count = strtol(pvalue, nullptr, 0);
 		if (pirrule->total_count <= 0)
-			return false;
+			return "E-2827: RRULE has invalid COUNT";
 	}
 	pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "UNTIL");
 	if (NULL != pvalue) {
 		if (pirrule->total_count != 0)
-			return false;
+			return "E-2828: Cannot combine COUNT with UNTIL in RRULE";
 		time_t until_time;
 		if (!ical_parse_until(ptz_component, pvalue, &until_time))
-			return false;
+			return "E-2829: RRULE has invalid UNTIL";
 		if (until_time < start_time)
-			return false;
+			return "E-2830: RRULE has UNTIL < DTSTART";
 		/* until==start can happen with a recurrent series with one occurrence */
 		pirrule->b_until = true;
 		ical_utc_to_datetime(ptz_component,
@@ -1910,14 +1914,14 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		if (pirrule->frequency != ical_frequency::week &&
 		    pirrule->frequency != ical_frequency::month &&
 		    pirrule->frequency != ical_frequency::year)
-			return false;
+			return "E-2841: RRULE has BYDAY but is not of frequency WEEK/MONTH/YEAR";
 		for (const auto &pnv2 : *pbywday_list) {
 			int dayofweek = -1, weekorder = -1;
 			if (!ical_parse_byday(pnv2.c_str(), &dayofweek, &weekorder))
 				continue;
 			if (ical_frequency::month == pirrule->frequency) {
 				if (weekorder > 5 || weekorder < -5)
-					return false;
+					return "E-2844: RRULE.FREQ=MONTHLY with invalid weekorder";
 				else if (weekorder > 0)
 					ical_set_bitmap(pirrule->wday_bitmap,
 						7*(weekorder - 1) + dayofweek);
@@ -1939,7 +1943,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 						ical_set_bitmap(pirrule->wday_bitmap, 7*i + dayofweek); 
 			} else {
 				if (weekorder != 0)
-					return false;
+					return "E-2845: RRULE with invalid weekorder";
 				ical_set_bitmap(pirrule->wday_bitmap, dayofweek);
 			}
 		}
@@ -1982,57 +1986,57 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	if (NULL != psetpos_list) {
 		switch (pirrule->frequency) {
 		case ical_frequency::second:
-			return false;
+			return "E-2850: RRULE has both BYSECOND and BYSETPOS";
 		case ical_frequency::minute:
 			if (pirrule->real_frequency != ical_frequency::second)
-				return false;
+				return "E-2851";
 			if (60 * pirrule->interval > 366)
-				return false;
+				return "E-2852";
 			break;
 		case ical_frequency::hour:
 			if (pirrule->real_frequency != ical_frequency::minute)
-				return false;
+				return "E-2853";
 			if (60 * pirrule->interval > 366)
-				return false;
+				return "E-2854";
 			break;
 		case ical_frequency::day:
 			if (pirrule->real_frequency != ical_frequency::hour)
-				return false;
+				return "E-2855";
 			if (24 * pirrule->interval > 366)
-				return false;
+				return "E-2856";
 			break;
 		case ical_frequency::week:
 			if (pirrule->real_frequency == ical_frequency::day) {
 				break;
 			} else if (pirrule->real_frequency == ical_frequency::hour) {
 				if (7 * 24 * pirrule->interval > 366)
-					return false;
+					return "E-2857";
 				break;
 			}
-			return false;
+			return "E-2858";
 		case ical_frequency::month:
 			if (pirrule->real_frequency == ical_frequency::day) {
 				if (31 * pirrule->interval > 366)
-					return false;
+					return "E-2859";
 			} else if (pirrule->real_frequency == ical_frequency::week) {
 				if (5 * pirrule->interval > 366)
-					return false;
+					return "E-2860";
 			} else {
-				return false;
+				return "E-2861";
 			}
 			break;
 		case ical_frequency::year:
 			if (pirrule->real_frequency == ical_frequency::day) {
 				if (pirrule->interval > 1)
-					return false;
+					return "E-2862";
 			} else if (pirrule->real_frequency == ical_frequency::week) {
 				if (pirrule->interval > 8)
-					return false;
+					return "E-2863";
 			} else if (pirrule->real_frequency == ical_frequency::month) {
 				if (pirrule->interval > 30)
-					return false;
+					return "E-2864";
 			} else {
-				return false;
+				return "E-2865";
 			}
 			break;
 		}
@@ -2053,7 +2057,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	if (NULL != pvalue) {
 		auto dow = weekday_to_int(pvalue);
 		if (dow < 0)
-			return false;
+			return "E-2868";
 		pirrule->weekstart = dow;
 	} else {
 		pirrule->weekstart = pbywnum_list != nullptr;
@@ -2129,7 +2133,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	     itime < pirrule->next_base_itime;
 	     itime = ical_next_rrule_itime(pirrule, hint_result, itime)) {
 		if (pirrule->b_until && itime > pirrule->until_itime)
-			return false;
+			return "E-2869";
 		hint_result = ical_test_rrule(pirrule, itime);
 		if (hint_result != rrule_by::setpos)
 			continue;
@@ -2146,10 +2150,10 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			pirrule->real_start_itime = itime;
 			pirrule->current_instance = 1;
 			pirrule->next_base_itime = pirrule->base_itime;
-			return true;
+			return nullptr;
 		}
 		pirrule->current_instance = 1;
-		return true;
+		return nullptr;
 	}
 	auto base_itime = pirrule->base_itime;
 	itime = pirrule->instance_itime;
@@ -2166,7 +2170,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	}
 	pirrule->current_instance = 1;
 	pirrule->b_start_exceptional = true;
-	return true;
+	return nullptr;
 }
 
 bool ical_rrule::iterate()
