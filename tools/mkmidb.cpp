@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
-		return EXIT_FAILURE;
+		return EXIT_FAILURE; /* e.g. permission denied */
 	std::string mysql_host = znul(pconfig->get_value("mysql_host"));
 	uint16_t mysql_port = pconfig->get_ll("mysql_port");
 	std::string mysql_user = znul(pconfig->get_value("mysql_username"));

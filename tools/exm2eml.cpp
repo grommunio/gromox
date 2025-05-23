@@ -131,7 +131,7 @@ int main(int argc, char **argv) try
 	g_config_file = config_file_prg(nullptr, "midb.cfg",
 	                exm2eml_cfg_defaults);
 	if (g_config_file == nullptr) {
-		fprintf(stderr, "Something went wrong with config files\n");
+		fprintf(stderr, "Something went wrong with config files (e.g. permission denied)\n");
 		return EXIT_FAILURE;
 	}
 	service_init({g_config_file, g_dfl_svc_plugins, 1});

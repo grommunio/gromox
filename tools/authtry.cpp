@@ -113,6 +113,8 @@ int main(int argc, char **argv)
 		return direct_ldap(g_ldap_uri, g_auth_user, password);
 
 	auto cfg = config_file_prg(nullptr, "http.cfg", no_defaults);
+	if (cfg == nullptr)
+		return EXIT_FAILURE; /* permission error */
 	service_init({std::move(cfg), g_dfl_svc_plugins, 0, "authtest"});
 	auto cl_1 = HX::make_scope_exit(service_stop);
 	if (service_run_early() != 0) {

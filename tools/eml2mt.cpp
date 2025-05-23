@@ -314,7 +314,7 @@ int main(int argc, char **argv) try
 	textmaps_init(PKGDATADIR);
 	g_config_file = config_file_prg(nullptr, "midb.cfg", eml2mt_cfg_defaults);
 	if (g_config_file == nullptr) {
-		fprintf(stderr, "Something went wrong with config files\n");
+		fprintf(stderr, "Something went wrong with config files (e.g. permission denied)\n");
 		return EXIT_FAILURE;
 	}
 	service_init({g_config_file, g_dfl_svc_plugins, 1});
@@ -345,6 +345,8 @@ int main(int argc, char **argv) try
 	}
 
 	auto cfg = config_file_prg(nullptr, "delivery.cfg", delivery_cfg_defaults);
+	if (cfg == nullptr)
+		return EXIT_FAILURE;
 	std::vector<message_ptr> msgs;
 
 	for (int i = 1; i < argc; ++i) {

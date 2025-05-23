@@ -130,6 +130,8 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (gxcfg == nullptr)
+		return false;
 	zcore_backfill_transporthdr = gxcfg->get_ll("backfill_transport_headers");
 
 	if (pconfig == nullptr)
@@ -140,6 +142,8 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
 		       opt_config_file, strerror(errno));
 		return false;
 	}
+	if (pconfig == nullptr)
+		return false;
 	mlog_init("gromox-zcore", pconfig->get_value("zcore_log_file"),
 		pconfig->get_ll("zcore_log_level"),
 		pconfig->get_value("running_identity"));
@@ -263,11 +267,12 @@ int main(int argc, char **argv)
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		mlog(LV_ERR, "system: config_file_init %s: %s",
 			opt_config_file, strerror(errno));
-	if (pconfig == nullptr)
-		return EXIT_FAILURE;
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", zcore_gxcfg_dflt);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
+	if (pconfig == nullptr || gxconfig == nullptr)
+		/* e.g. permission error */
+		return EXIT_FAILURE;
 	if (!zcore_reload_config(gxconfig, pconfig))
 		return EXIT_FAILURE;
 

@@ -137,6 +137,8 @@ static bool imap_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
 		fprintf(stderr, "config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (cfg == nullptr)
+		return false;
 	mlog_init("gromox-imap", cfg->get_value("imap_log_file"),
 		cfg->get_ll("imap_log_level"), cfg->get_value("running_identity"));
 	g_imapcmd_debug = cfg->get_ll("imap_cmd_debug");
@@ -397,11 +399,11 @@ int main(int argc, char **argv)
 	                imap_cfg_defaults);
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
-	if (g_config_file == nullptr)
-		return EXIT_FAILURE;
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
+	if (g_config_file == nullptr || gxconfig == nullptr)
+		return EXIT_FAILURE; /* e.g. permission error */
 	if (!imap_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
 

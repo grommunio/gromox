@@ -116,6 +116,8 @@ static bool dq_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (gxcfg == nullptr)
+		return false;
 	g_rcpt_delimiter = znul(gxcfg->get_value("lda_recipient_delimiter"));
 	g_haproxy_level = gxcfg->get_ll("lda_accept_haproxy");
 	if (g_haproxy_level > 0)
@@ -290,8 +292,8 @@ int main(int argc, char **argv)
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
-	if (g_config_file == nullptr)
-		return EXIT_FAILURE;
+	if (g_config_file == nullptr || gxconfig == nullptr)
+		return EXIT_FAILURE; /* e.g. permission error */
 	if (!dq_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
 

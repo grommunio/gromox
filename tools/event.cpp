@@ -195,6 +195,7 @@ int main(int argc, char **argv)
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
+		/* e.g. permission denied */
 		return EXIT_FAILURE;
 
 	mlog_init("gromox-event", pconfig->get_value("event_log_file"),

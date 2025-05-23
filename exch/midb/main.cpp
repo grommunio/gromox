@@ -119,6 +119,8 @@ static bool midb_reload_config(std::shared_ptr<config_file> gxconfig = nullptr,
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (pconfig == nullptr)
+		return false;
 	mlog_init("gromox-midb", pconfig->get_value("midb_log_file"),
 		pconfig->get_ll("midb_log_level"),
 		pconfig->get_value("running_identity"));
@@ -297,11 +299,11 @@ int main(int argc, char **argv)
 	                midb_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		mlog(LV_ERR, "system: config_file_init %s: %s", opt_config_file, strerror(errno));
-	if (pconfig == nullptr)
-		return EXIT_FAILURE;
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
+	if (pconfig == nullptr || gxconfig == nullptr)
+		return EXIT_FAILURE; /* e.g. permission error */
 	if (!midb_reload_config(gxconfig, pconfig))
 		return EXIT_FAILURE;
 

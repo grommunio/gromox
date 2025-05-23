@@ -83,6 +83,8 @@ static bool delivery_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (cfg == nullptr)
+		return false;
 	mlog_init("gromox-delivery", cfg->get_value("lda_log_file"),
 		cfg->get_ll("lda_log_level"), cfg->get_value("running_identity"));
 	return true;
@@ -118,7 +120,9 @@ int main(int argc, char **argv)
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
-	if (g_config_file == nullptr || !delivery_reload_config(g_config_file))
+	if (g_config_file == nullptr || gxconfig == nullptr)
+		return EXIT_FAILURE; /* e.g. permission error */
+	if (!delivery_reload_config(g_config_file))
 		return EXIT_FAILURE;
 
 	auto str_val = g_config_file->get_value("host_id");

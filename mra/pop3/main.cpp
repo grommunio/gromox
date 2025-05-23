@@ -134,6 +134,8 @@ static bool pop3_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (pconfig == nullptr)
+		return false;
 	mlog_init("gromox-pop3", pconfig->get_value("pop3_log_file"),
 		pconfig->get_ll("pop3_log_level"),
 		pconfig->get_value("running_identity"));
@@ -145,6 +147,8 @@ static bool pop3_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (gxcfg == nullptr)
+		return false;
 	g_haproxy_level = gxcfg->get_ll("pop3_accept_haproxy");
 	if (g_haproxy_level > 0)
 		mlog(LV_NOTICE, "All incoming connections must be HAPROXY type %u", g_haproxy_level);
@@ -382,11 +386,11 @@ int main(int argc, char **argv)
 	                pop3_cfg_defaults);
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
-	if (g_config_file == nullptr)
-		return EXIT_FAILURE;
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
+	if (g_config_file == nullptr || gxconfig == nullptr)
+		return EXIT_FAILURE; /* e.g. permission error */
 	if (!pop3_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
 

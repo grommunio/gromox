@@ -136,6 +136,8 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> xcfg = nullptr,
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (cfg == nullptr)
+		return false;
 	mlog_init("gromox-http", cfg->get_value("http_log_file"),
 		cfg->get_ll("http_log_level"), cfg->get_value("running_identity"));
 	g_http_debug = cfg->get_ll("http_debug");
@@ -149,6 +151,8 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> xcfg = nullptr,
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
+	if (xcfg == nullptr)
+		return false;
 	g_http_remote_host_hdr = znul(xcfg->get_value("http_remote_host_hdr"));
 	g_http_basic_auth_validity = std::chrono::duration_cast<time_duration>(std::chrono::nanoseconds(xcfg->get_ll("http_basic_auth_cred_caching")));
 	return true;
@@ -187,7 +191,9 @@ int main(int argc, char **argv)
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
-	if (g_config_file == nullptr || !http_reload_config(gxconfig, g_config_file))
+	if (g_config_file == nullptr || gxconfig == nullptr)
+		return EXIT_FAILURE; /* e.g. permission error */
+	if (!http_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
 
 	auto str_val = g_config_file->get_value("host_id");

@@ -1356,6 +1356,9 @@ BOOL SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 	if (!register_service("rules_execute", exmdb_local_rules_execute))
 		return false;
 	auto cfg = config_file_prg(nullptr, "gromox.cfg", rp_config_defaults);
+	if (cfg == nullptr)
+		/* e.g. permission error */
+		return false;
 	auto str = cfg->get_value("outgoing_smtp_url");
 	if (str != nullptr) {
 		try {
@@ -1363,7 +1366,7 @@ BOOL SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 		} catch (const vmime::exceptions::malformed_url &e) {
 			mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
 				str, e.what());
-			return EXIT_FAILURE;
+			return false;
 		}
 	}
 	return TRUE;
