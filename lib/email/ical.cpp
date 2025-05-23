@@ -1836,7 +1836,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			if (!pnv2.empty())
 				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59)
-				return false;
+				continue;
 			ical_set_bitmap(pirrule->second_bitmap, tmp_int);
 		}
 		if (pirrule->real_frequency > ical_frequency::second)
@@ -1850,7 +1850,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			if (!pnv2.empty())
 				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59)
-				return false;
+				continue;
 			ical_set_bitmap(pirrule->minute_bitmap, tmp_int);
 		}
 		if (pirrule->real_frequency > ical_frequency::minute)
@@ -1864,7 +1864,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			if (!pnv2.empty())
 				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 23)
-				return false;
+				continue;
 			ical_set_bitmap(pirrule->hour_bitmap, tmp_int);
 		}
 		if (pirrule->real_frequency > ical_frequency::hour)
@@ -1878,7 +1878,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			if (!pnv2.empty())
 				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -31 || 0 == tmp_int || tmp_int > 31)
-				return false;
+				continue;
 			if (tmp_int > 0)
 				ical_set_bitmap(pirrule->mday_bitmap, tmp_int - 1);
 			else
@@ -1895,7 +1895,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			if (!pnv2.empty())
 				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366)
-				return false;
+				continue;
 			if (tmp_int > 0)
 				ical_set_bitmap(pirrule->yday_bitmap, tmp_int - 1);
 			else
@@ -1914,7 +1914,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbywday_list) {
 			int dayofweek = -1, weekorder = -1;
 			if (!ical_parse_byday(pnv2.c_str(), &dayofweek, &weekorder))
-				return false;
+				continue;
 			if (ical_frequency::month == pirrule->frequency) {
 				if (weekorder > 5 || weekorder < -5)
 					return false;
@@ -1954,7 +1954,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			if (!pnv2.empty())
 				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -53 || 0 == tmp_int || tmp_int > 53)
-				return false;
+				continue;
 			if (tmp_int > 0)
 				ical_set_bitmap(pirrule->week_bitmap, tmp_int - 1);
 			else
@@ -1971,7 +1971,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			if (!pnv2.empty())
 				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 1 || tmp_int > 12)
-				return false;
+				continue;
 			ical_set_bitmap(pirrule->month_bitmap, tmp_int - 1);
 		}
 		if (pirrule->real_frequency > ical_frequency::month)
@@ -2041,7 +2041,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			if (!pnv2.empty())
 				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366)
-				return false;
+				continue;
 			if (tmp_int > 0)
 				ical_set_bitmap(pirrule->setpos_bitmap, tmp_int - 1);
 			else
