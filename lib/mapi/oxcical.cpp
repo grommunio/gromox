@@ -599,6 +599,9 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 			apr->recur_pat.pts.dayofmonth = tmp_int;
 		}
 		break;
+	default:
+		assert(false);
+		return nullptr;
 	}
 	if (calendartype == CAL_HIJRI) {
 		if (patterntype == rptMonth) {

@@ -10,7 +10,7 @@
 #define ICAL_NAME_LEN					64
 
 enum class ical_frequency {
-	second, minute, hour, day, week, month, year,
+	second, minute, hour, day, week, month, year, invalid,
 };
 
 enum class rrule_by {

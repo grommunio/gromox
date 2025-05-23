@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cassert>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -1558,6 +1559,9 @@ static ical_time ical_next_rrule_itime(ical_rrule *pirrule,
 		case ical_frequency::second:
 			itime.add_second(req ? pirrule->interval : 1);
 			break;
+		default:
+			assert(false);
+			break;
 		}
 		return itime;
 	}
@@ -1693,6 +1697,9 @@ static ical_time ical_next_rrule_itime(ical_rrule *pirrule,
 	case ical_frequency::second:
 		itime.add_second(1);
 		break;
+	default:
+		assert(false);
+		break;
 	}
 	switch (pirrule->frequency) {
 	case ical_frequency::year:
@@ -1723,6 +1730,9 @@ static ical_time ical_next_rrule_itime(ical_rrule *pirrule,
 		if (itime.second > pirrule->base_itime.second)
 			itime = pirrule->next_base_itime;
 		break;
+	default:
+		assert(false);
+		return {};
 	}
 	return itime;
 }
@@ -1768,7 +1778,23 @@ static void ical_next_rrule_base_itime(ical_rrule *pirrule)
 	case ical_frequency::second:
 		pirrule->next_base_itime.add_second(pirrule->interval);
 		break;
+	default:
+		assert(false);
+		return;
 	}
+}
+
+static enum ical_frequency parse_freq(const char *s)
+{
+	if (s == nullptr)                        return ical_frequency::invalid;
+	else if (strcasecmp(s, "SECONDLY") == 0) return ical_frequency::second;
+	else if (strcasecmp(s, "MINUTELY") == 0) return ical_frequency::minute;
+	else if (strcasecmp(s, "HOURLY") == 0)   return ical_frequency::hour;
+	else if (strcasecmp(s, "DAILY") == 0)    return ical_frequency::day;
+	else if (strcasecmp(s, "WEEKLY") == 0)   return ical_frequency::week;
+	else if (strcasecmp(s, "MONTHLY") == 0)  return ical_frequency::month;
+	else if (strcasecmp(s, "YEARLY") == 0)   return ical_frequency::year;
+	else                                     return ical_frequency::invalid;
 }
 
 /*
@@ -1781,27 +1807,11 @@ const char *ical_parse_rrule(const ical_component *ptz_component,
     ical_rrule *pirrule)
 {
 	*pirrule = {};
-	auto pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "FREQ");
-	if (pvalue == nullptr)
-		return "E-2824: RRULE has no FREQ";
-	if (strcasecmp(pvalue, "SECONDLY") == 0)
-		pirrule->frequency = ical_frequency::second;
-	else if (strcasecmp(pvalue, "MINUTELY") == 0)
-		pirrule->frequency = ical_frequency::minute;
-	else if (strcasecmp(pvalue, "HOURLY") == 0)
-		pirrule->frequency = ical_frequency::hour;
-	else if (strcasecmp(pvalue, "DAILY") == 0)
-		pirrule->frequency = ical_frequency::day;
-	else if (strcasecmp(pvalue, "WEEKLY") == 0)
-		pirrule->frequency = ical_frequency::week;
-	else if (strcasecmp(pvalue, "MONTHLY") == 0)
-		pirrule->frequency = ical_frequency::month;
-	else if (strcasecmp(pvalue, "YEARLY") == 0)
-		pirrule->frequency = ical_frequency::year;
-	else
-		return "E-2825: RRULE has invalid FREQ";
+	pirrule->frequency = parse_freq(ical_get_first_subvalue_by_name_internal(pvalue_list, "FREQ"));
+	if (pirrule->frequency == ical_frequency::invalid)
+		return "E-2825";
 	pirrule->real_frequency = pirrule->frequency;
-	pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "INTERVAL");
+	auto pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "INTERVAL");
 	if (NULL == pvalue) {
 		pirrule->interval = 1;
 	} else {
@@ -2039,6 +2049,9 @@ const char *ical_parse_rrule(const ical_component *ptz_component,
 				return "E-2865";
 			}
 			break;
+		default:
+			assert(false);
+			return "E-2824";
 		}
 		for (const auto &pnv2 : *psetpos_list) {
 			long tmp_int = LONG_MIN;
@@ -2124,6 +2137,9 @@ const char *ical_parse_rrule(const ical_component *ptz_component,
 		if (pbysecond_list != nullptr)
 			itime.second = 0;
 		break;
+	default:
+		assert(false);
+		return nullptr;
 	}
 	pirrule->base_itime = itime;
 	ical_next_rrule_base_itime(pirrule);
