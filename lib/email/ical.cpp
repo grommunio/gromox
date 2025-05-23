@@ -868,11 +868,8 @@ void ical_time::add_month(int months)
 
 void ical_time::add_day(int days)
 {
+	int yearday = ical_get_dayofyear(year, month, day);
 	auto pitime = this;
-	int yearday;
-	
-	yearday = ical_get_dayofyear(pitime->year,
-				pitime->month, pitime->day);
 	yearday += days;
 	while (true) {
 		auto z = 365 + ical_is_leap_year(pitime->year);
@@ -888,11 +885,8 @@ void ical_time::add_day(int days)
 
 void ical_time::subtract_day(int days)
 {
+	int yearday = ical_get_dayofyear(year, month, day);
 	auto pitime = this;
-	int yearday;
-	
-	yearday = ical_get_dayofyear(pitime->year,
-				pitime->month, pitime->day);
 	while (yearday <= days) {
 		days -= yearday;
 		pitime->year --;
@@ -1235,14 +1229,13 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 				if (weekorder > 5 || weekorder < -5 || 0 == weekorder)
 					return NULL;
 				dayofmonth = ical_get_dayofmonth(itime.year,
-						itime.month, weekorder, dayofweek);
+				             itime.month, weekorder, dayofweek);
 			} else {
 				dayofmonth = strtol(pvalue1, nullptr, 0);
 				if (abs(dayofmonth) < 1 || abs(dayofmonth) > 31)
 					return NULL;
 				if (dayofmonth < 0)
-					dayofmonth += ical_get_monthdays(
-								itime.year, month) + 1;
+					dayofmonth += ical_get_monthdays(itime.year, month) + 1;
 				if (dayofmonth <= 0)
 					return NULL;
 			}
@@ -1476,9 +1469,8 @@ static rrule_by ical_test_rrule(ical_rrule *pirrule, ical_time itime)
 					itime.day, pirrule->weekstart, &b_yeargap);
 		if (b_yeargap && pirrule->frequency == ical_frequency::year)
 			return rrule_by::weekno;
-		nweekorder = ical_get_negative_weekofyear(
-				itime.year, itime.month, itime.day,
-				pirrule->weekstart, &b_yeargap);
+		nweekorder = ical_get_negative_weekofyear(itime.year, itime.month,
+		             itime.day, pirrule->weekstart, &b_yeargap);
 		if (b_yeargap && pirrule->frequency == ical_frequency::year)
 			return rrule_by::weekno;
 		if (!ical_test_bitmap(pirrule->week_bitmap, weekorder - 1) &&
@@ -1498,21 +1490,20 @@ static rrule_by ical_test_rrule(ical_rrule *pirrule, ical_time itime)
 		    ical_get_monthdays(itime.year, itime.month) - itime.day))
 			return rrule_by::monthday;
 	if (pirrule->test_bymask(rrule_by::day)) {
-		dayofweek = ical_get_dayofweek(itime.year,
-						itime.month, itime.day);
+		dayofweek = ical_get_dayofweek(itime.year, itime.month, itime.day);
 		if (ical_frequency::week == pirrule->frequency) {
 			weekorder = itime.delta_day(pirrule->base_itime) / 7 + 1;
 			nweekorder = -(itime.delta_day(pirrule->next_base_itime) - 1) / 7 - 1;
 		} else if (pirrule->frequency == ical_frequency::month ||
 		    pirrule->test_bymask(rrule_by::month)) {
 			weekorder = ical_get_monthweekorder(itime.day);
-			nweekorder = ical_get_negative_monthweekorder(
-			             itime.year, itime.month, itime.day);
+			nweekorder = ical_get_negative_monthweekorder(itime.year,
+			             itime.month, itime.day);
 		} else {
-			weekorder = ical_get_yearweekorder(
-			            itime.year, itime.month, itime.day);
-			nweekorder = ical_get_negative_yearweekorder(
-			             itime.year, itime.month, itime.day);
+			weekorder  = ical_get_yearweekorder(itime.year,
+			             itime.month, itime.day);
+			nweekorder = ical_get_negative_yearweekorder(itime.year,
+			             itime.month, itime.day);
 		}
 		if (!ical_test_bitmap(pirrule->wday_bitmap, 7 * (weekorder - 1) + dayofweek) &&
 		    !ical_test_bitmap(pirrule->nwday_bitmap, 7 * (-nweekorder - 1) + dayofweek))
@@ -1575,12 +1566,11 @@ static ical_time ical_next_rrule_itime(ical_rrule *pirrule,
 	case ical_frequency::month:
 		switch (hint_result) {
 		case rrule_by::month:
-			dayofweek = ical_get_dayofweek(itime.year,
-							itime.month, itime.day);
+			dayofweek = ical_get_dayofweek(itime.year, itime.month, itime.day);
 			itime.add_month(1);
 			if (pirrule->test_bymask(rrule_by::weekno))
 				itime.day = ical_get_dayofmonth(itime.year,
-								itime.month, 1, dayofweek);
+				            itime.month, 1, dayofweek);
 			if (pirrule->test_bymask(rrule_by::yearday) ||
 			    pirrule->test_bymask(rrule_by::monthday) ||
 			    pirrule->test_bymask(rrule_by::day))
@@ -1597,8 +1587,7 @@ static ical_time ical_next_rrule_itime(ical_rrule *pirrule,
 			if (pirrule->test_bymask(rrule_by::yearday) ||
 			    pirrule->test_bymask(rrule_by::monthday) ||
 			    pirrule->test_bymask(rrule_by::day)) {
-				dayofweek = ical_get_dayofweek(itime.year,
-								itime.month, itime.day);
+				dayofweek = ical_get_dayofweek(itime.year, itime.month, itime.day);
 				if (dayofweek >= pirrule->weekstart)
 					itime.subtract_day(dayofweek - pirrule->weekstart);
 				else
@@ -1788,8 +1777,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
     ical_rrule *pirrule)
 {
 	*pirrule = {};
-	auto pvalue = ical_get_first_subvalue_by_name_internal(
-								pvalue_list, "FREQ");
+	auto pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "FREQ");
 	if (pvalue == nullptr)
 		return false;
 	if (strcasecmp(pvalue, "SECONDLY") == 0)
@@ -1817,8 +1805,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		if (pirrule->interval <= 0)
 			return false;
 	}
-	pvalue = ical_get_first_subvalue_by_name_internal(
-								pvalue_list, "COUNT");
+	pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "COUNT");
 	if (NULL == pvalue) {
 		pirrule->total_count = 0;
 	} else {
@@ -1826,8 +1813,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		if (pirrule->total_count <= 0)
 			return false;
 	}
-	pvalue = ical_get_first_subvalue_by_name_internal(
-								pvalue_list, "UNTIL");
+	pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "UNTIL");
 	if (NULL != pvalue) {
 		if (pirrule->total_count != 0)
 			return false;
@@ -2065,8 +2051,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		}
 		pirrule->set_bymask(rrule_by::setpos);
 	}
-	pvalue = ical_get_first_subvalue_by_name_internal(
-								pvalue_list, "WKST");
+	pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "WKST");
 	if (NULL != pvalue) {
 		auto dow = weekday_to_int(pvalue);
 		if (dow < 0)
@@ -2100,7 +2085,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	case ical_frequency::week:
 		if (NULL != pbywday_list) {
 			int dayofweek = ical_get_dayofweek(itime.year,
-								itime.month, itime.day);
+			                itime.month, itime.day);
 			if (dayofweek >= pirrule->weekstart)
 				itime.subtract_day(dayofweek - pirrule->weekstart);
 			else
