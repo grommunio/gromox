@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -1832,9 +1832,9 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	auto pbysecond_list = ical_get_subval_list_internal(pvalue_list, "BYSECOND");
 	if (NULL != pbysecond_list) {
 		for (const auto &pnv2 : *pbysecond_list) {
-			if (pnv2.empty())
-				return false;
-			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			long tmp_int = LONG_MIN;
+			if (!pnv2.empty())
+				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59)
 				return false;
 			ical_set_bitmap(pirrule->second_bitmap, tmp_int);
@@ -1846,9 +1846,9 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	auto pbyminute_list = ical_get_subval_list_internal(pvalue_list, "BYMINUTE");
 	if (NULL != pbyminute_list) {
 		for (const auto &pnv2 : *pbyminute_list) {
-			if (pnv2.empty())
-				return false;
-			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			long tmp_int = LONG_MIN;
+			if (!pnv2.empty())
+				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59)
 				return false;
 			ical_set_bitmap(pirrule->minute_bitmap, tmp_int);
@@ -1860,9 +1860,9 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	auto pbyhour_list = ical_get_subval_list_internal(pvalue_list, "BYHOUR");
 	if (NULL != pbyhour_list) {
 		for (const auto &pnv2 : *pbyhour_list) {
-			if (pnv2.empty())
-				return false;
-			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			long tmp_int = LONG_MIN;
+			if (!pnv2.empty())
+				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 23)
 				return false;
 			ical_set_bitmap(pirrule->hour_bitmap, tmp_int);
@@ -1874,9 +1874,9 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	auto pbymday_list = ical_get_subval_list_internal(pvalue_list, "BYMONTHDAY");
 	if (NULL != pbymday_list) {
 		for (const auto &pnv2 : *pbymday_list) {
-			if (pnv2.empty())
-				return false;
-			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			long tmp_int = LONG_MIN;
+			if (!pnv2.empty())
+				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -31 || 0 == tmp_int || tmp_int > 31)
 				return false;
 			if (tmp_int > 0)
@@ -1891,9 +1891,9 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	auto pbyyday_list = ical_get_subval_list_internal(pvalue_list, "BYYEARDAY");
 	if (NULL != pbyyday_list) {
 		for (const auto &pnv2 : *pbyyday_list) {
-			if (pnv2.empty())
-				return false;
-			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			long tmp_int = LONG_MIN;
+			if (!pnv2.empty())
+				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366)
 				return false;
 			if (tmp_int > 0)
@@ -1912,8 +1912,6 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 		    pirrule->frequency != ical_frequency::year)
 			return false;
 		for (const auto &pnv2 : *pbywday_list) {
-			if (pnv2.empty())
-				return false;
 			int dayofweek = -1, weekorder = -1;
 			if (!ical_parse_byday(pnv2.c_str(), &dayofweek, &weekorder))
 				return false;
@@ -1952,9 +1950,9 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	auto pbywnum_list = ical_get_subval_list_internal(pvalue_list, "BYWEEKNO");
 	if (NULL != pbywnum_list) {
 		for (const auto &pnv2 : *pbywnum_list) {
-			if (pnv2.empty())
-				return false;
-			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			long tmp_int = LONG_MIN;
+			if (!pnv2.empty())
+				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -53 || 0 == tmp_int || tmp_int > 53)
 				return false;
 			if (tmp_int > 0)
@@ -1969,9 +1967,9 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	auto pbymonth_list = ical_get_subval_list_internal(pvalue_list, "BYMONTH");
 	if (NULL != pbymonth_list) {
 		for (const auto &pnv2 : *pbymonth_list) {
-			if (pnv2.empty())
-				return false;
-			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			long tmp_int = LONG_MIN;
+			if (!pnv2.empty())
+				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < 1 || tmp_int > 12)
 				return false;
 			ical_set_bitmap(pirrule->month_bitmap, tmp_int - 1);
@@ -2039,9 +2037,9 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			break;
 		}
 		for (const auto &pnv2 : *psetpos_list) {
-			if (pnv2.empty())
-				return false;
-			auto tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+			long tmp_int = LONG_MIN;
+			if (!pnv2.empty())
+				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366)
 				return false;
 			if (tmp_int > 0)
