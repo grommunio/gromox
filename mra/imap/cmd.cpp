@@ -1581,8 +1581,6 @@ int icp_create(int argc, char **argv, imap_context &ctx)
 		return 1804;
 	if (argc < 3 || strlen(argv[2]) == 0)
 		return 1800;
-	if (strpbrk(argv[2], "%*?") != nullptr)
-		return 1910;
 	std::vector<enum_folder_t> folder_list;
 	auto ssr = midb_agent::enum_folders(pcontext->maildir, folder_list, &errnum);
 	auto ret = m2icode(ssr, errnum);
