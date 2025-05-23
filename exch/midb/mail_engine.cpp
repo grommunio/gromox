@@ -3649,12 +3649,11 @@ static BOOL notif_folder_added(IDB_ITEM *pidb,
 	auto str = propvals.get<const char>(PR_DISPLAY_NAME);
 	if (str == nullptr)
 		return FALSE;
-	auto tmp_len = strlen(str);
-	if (tmp_len >= 256)
-		return FALSE;
 	std::string temp_name;
 	if (parent_id == PRIVATE_FID_IPMSUBTREE) {
-		temp_name.assign(str, tmp_len);
+		temp_name = str;
+		if (strncasecmp(str, "inbox", 5) == 0)
+			temp_name += "." + std::to_string(folder_id);
 	} else {
 		temp_name = std::move(decoded_name) + "/"s + str;
 	}
