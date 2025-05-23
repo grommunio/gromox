@@ -1797,6 +1797,14 @@ static enum ical_frequency parse_freq(const char *s)
 	else                                     return ical_frequency::invalid;
 }
 
+static long clamp_low_n(const char *s, long def)
+{
+	if (s == nullptr)
+		return def;
+	auto v = strtol(s, nullptr, 0);
+	return v > 0 ? v : INT_MIN;
+}
+
 /*
  * @ptz_component: if NULL, represents UTC
  *
@@ -1811,23 +1819,12 @@ const char *ical_parse_rrule(const ical_component *ptz_component,
 	if (pirrule->frequency == ical_frequency::invalid)
 		return "E-2825";
 	pirrule->real_frequency = pirrule->frequency;
-	auto pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "INTERVAL");
-	if (NULL == pvalue) {
-		pirrule->interval = 1;
-	} else {
-		pirrule->interval = strtol(pvalue, nullptr, 0);
-		if (pirrule->interval <= 0)
-			return "E-2826: RRULE has invalid INTERVAL";
-	}
-	pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "COUNT");
-	if (NULL == pvalue) {
-		pirrule->total_count = 0;
-	} else {
-		pirrule->total_count = strtol(pvalue, nullptr, 0);
-		if (pirrule->total_count <= 0)
-			return "E-2827: RRULE has invalid COUNT";
-	}
-	pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "UNTIL");
+	pirrule->interval = clamp_low_n(ical_get_first_subvalue_by_name_internal(pvalue_list, "INTERVAL"), 1);
+	pirrule->total_count = clamp_low_n(ical_get_first_subvalue_by_name_internal(pvalue_list, "COUNT"), 0);
+	if (pirrule->interval == INT_MIN || pirrule->total_count == INT_MIN)
+		return "E-2826";
+
+	auto pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "UNTIL");
 	if (NULL != pvalue) {
 		if (pirrule->total_count != 0)
 			return "E-2828: Cannot combine COUNT with UNTIL in RRULE";
