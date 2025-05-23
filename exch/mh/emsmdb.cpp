@@ -549,17 +549,21 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 		ctx.session = nullptr;
 		return std::nullopt;
 	}
-	auto pparser = cookie_parser_init(ctx.orig.f_cookie.c_str());
-	auto string = cookie_parser_get(pparser, "sid");
+
+	cookie_jar pparser;
+	if (pparser.add(ctx.orig.f_cookie) != ecSuccess)
+		return ctx.error_responsecode(resp_code::enomem);
+	auto string = pparser["sid"];
 	if (string == nullptr || strlen(string) >= std::size(ctx.session_string))
 		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	gx_strlcpy(ctx.session_string, string, std::size(ctx.session_string));
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
-		string = cookie_parser_get(pparser, "sequence");
+		string = pparser["sequence"];
 		if (string == nullptr || !ctx.sequence_guid.from_str(string))
 			return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
 	}
+
 	std::unique_lock hl_hold(ses_lock);
 	auto it = sessions.find(ctx.session_string);
 	if (it == sessions.end())

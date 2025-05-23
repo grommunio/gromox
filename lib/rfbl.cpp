@@ -56,6 +56,7 @@
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
+#include <gromox/cookie_parser.hpp>
 #include <gromox/fileio.h>
 #include <gromox/generic_connection.hpp>
 #include <gromox/json.hpp>
@@ -1869,6 +1870,79 @@ int gx_mkbasedir(const char *file, unsigned int mode)
 	if (mode & (S_IROTH | S_IWOTH))
 		mode |= S_IXOTH;
 	return HX_mkdir(base.get(), mode);
+}
+
+static std::string cookie_rmeta(std::string_view sv)
+{
+	std::string s{sv};
+	auto o = s.begin();
+	for (auto i = s.begin(); i < s.end(); ++i) {
+		if (*i != '%') {
+			*o++ = *i;
+			continue;
+		}
+		if (i + 1 == s.end() || i + 2 == s.end())
+			break;
+		char tb[3] = {i[1], i[2], '\0'};
+		char *end = nullptr;
+		uint8_t c = strtoul(tb, &end, 16);
+		if (end == &tb[2])
+			*o++ = c;
+		i += 2;
+	}
+	s.erase(o, s.end());
+	return s;
+}
+
+static inline size_t sv_cspn(std::string_view sv, char c)
+{
+	auto p = sv.find(c);
+	return p != sv.npos ? p : sv.size();
+}
+
+ec_error_t cookie_jar::add(std::string_view sv) try
+{
+	while (sv.size() > 0) {
+		while (sv.size() > 0 && HX_isspace(sv[0]))
+			sv.remove_prefix(1);
+		auto klen = sv.find_first_of(";=");
+		if (klen == sv.npos)
+			klen = sv.size();
+		auto &value = emplace(sv.substr(0, klen), std::string()).first->second;
+		sv.remove_prefix(klen);
+		if (sv.size() == 0)
+			break; /* attribute without cookie-value */
+		if (sv[0] != '=') {
+			sv.remove_prefix(1); /* ; */
+			continue;
+		}
+		sv.remove_prefix(1); /* = */
+		if (sv.size() == 0)
+			break;
+		size_t vlen;
+		if (sv[0] == '"') {
+			sv.remove_prefix(1);
+			vlen  = sv_cspn(sv, '\"');
+			value = cookie_rmeta(sv.substr(0, vlen));
+			sv.remove_prefix(vlen);
+			vlen  = sv_cspn(sv, ';');
+		} else {
+			vlen  = sv_cspn(sv, ';');
+			value = cookie_rmeta(sv.substr(0, vlen));
+		}
+		sv.remove_prefix(vlen);
+		if (sv.size() > 0)
+			sv.remove_prefix(1); /* ; */
+	}
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
+const char *cookie_jar::operator[](const char *name) const
+{
+	auto i = map::find(name);
+	return i != cend() ? i->second.c_str() : nullptr;
 }
 
 }
