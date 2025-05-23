@@ -226,7 +226,8 @@ deleted: entities marked as "deleted"
 .IP \(bu 4
 mb: entity has a mailbox directory defined
 .IP \(bu 4
-here: entity has current server as homeserver
+here: entity has current host as homeserver (compares `hostname \-\-fqdn` where
+mbop is run with the SQL.servers.hostname column)
 .PP
 There is no "all" filter. Security objects and Contacts are so vastly different
 that it just does not make sense to operate on them in the same run.
