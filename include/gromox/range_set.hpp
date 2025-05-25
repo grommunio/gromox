@@ -28,8 +28,8 @@ template<typename T> struct GX_EXPORT range_node {
 	}
 #ifdef COMPILE_DIAG
 	~range_node() { GX_RANGE_NODE_ASSERT; }
-	constexpr inline size_t nelem() const { return hi - lo + 1; }
 #endif
+	constexpr inline size_t nelem() const { return hi - lo + 1; }
 	constexpr inline bool contains(const T &i) const { return lo <= i && i <= hi; }
 	T lo, hi;
 };
@@ -131,14 +131,12 @@ template<typename T> class GX_EXPORT range_set : private std::vector<gromox::ran
 		return i != cend() ? i->contains(v) : false;
 	}
 
-#ifdef COMPILE_DIAG
 	constexpr inline size_t nelem() const {
 		size_t x = 0;
 		for (const auto &i : *this)
 			x += i.nelem();
 		return x;
 	}
-#endif
 };
 
 using imap_seq_list = range_set<uint32_t>;

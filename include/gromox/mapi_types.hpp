@@ -761,14 +761,12 @@ class GX_EXPORT idset {
 	BOOL enum_repl(uint16_t replid, void *param, REPLICA_ENUM);
 	inline const std::vector<repl_node> &get_repl_list() const { return repl_list; }
 	void dump(FILE * = nullptr) const;
-#ifdef COMPILE_DIAG
 	inline size_t nelem() const {
 		size_t x = 0;
 		for (const auto &i : repl_list)
 			x += i.range_list.nelem();
 		return x;
 	}
-#endif
 
 	private:
 	std::pair<bool, repl_node::range_list_t *> get_range_by_id(uint16_t);
