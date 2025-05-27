@@ -381,6 +381,9 @@ sequence of subordinate folder names
 a folder path starting with a fixed symbolic name, optionally followed by a
 slash-separated sequence of subordinate folder names
 .PP
+The backslash may be used as a hierarchy separator instead; in any case, the
+chosen separator must be used consistently in the entire path.
+.PP
 The recognized strings are: CALENDAR, COMMON_VIEWS, CONFLICTS, CONTACTS,
 DEFERRED_ACTION, DELETED (TRASH, WASTEBASKET), DRAFT, FINDER, INBOX,
 IPM_SUBTREE, JOURNAL, JUNK, LOCAL_FAILURES, NOTES, OUTBOX, SENT,
@@ -399,5 +402,8 @@ Using the MAPI root: /Top of Information Store/Sent Items/2022
 Using a symbolic name: IPM_SUBTREE/Sent Items/2022
 .IP \(bu 4
 Using a symbolic name: SENT/2022
+.IP \(bu 4
+Referencing a folder with a slash can be done by using backslash as the
+hierarchy separator: SENT\\Winter break 2022/2023
 .SH See also
 \fBgromox\fP(7)

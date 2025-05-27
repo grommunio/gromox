@@ -605,7 +605,10 @@ eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 	if (end != name && *znul(end) == '\0')
 		return rop_util_make_eid_ex(1, pure_id);
 
-	auto pathcomp = gx_split(name, '/');
+	const char *sep = strpbrk(name, "/\\"); /* CONST-STRCHR-MARKER */
+	if (sep == nullptr)
+		sep = "/";
+	auto pathcomp = gx_split(name, *sep);
 	if (pathcomp.size() == 0)
 		return 0;
 	auto ptr = std::lower_bound(std::begin(fld_special_names), std::end(fld_special_names),
