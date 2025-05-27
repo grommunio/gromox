@@ -463,6 +463,7 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 		apr->recur_pat.firstdatetime = itime.delta_day(itime1) * 1440;
 		if (irrule.test_bymask(rrule_by::day) &&
 		    irrule.test_bymask(rrule_by::setpos)) {
+			/* Both limiters ("BYDAY=TU; BYSETPOS=4") */
 			patterntype = rptMonthNth;
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.monthnth.weekrecur = 0;
@@ -479,11 +480,34 @@ static bool oxcical_parse_rrule(const ical_component &tzcom,
 			else if (tmp_int == -1)
 				tmp_int = 5;
 			apr->recur_pat.pts.monthnth.recurnum = tmp_int;
-		} else {
-			/* Cf. RFC 5545 pg. 43, "rule: BY_SETPOS" */
-			if (irrule.test_bymask(rrule_by::day) &&
-			    !irrule.test_bymask(rrule_by::setpos))
+		} else if (irrule.test_bymask(rrule_by::day) &&
+		    !irrule.test_bymask(rrule_by::setpos)) {
+			/* BYDAY limiter (e.g. "4TU") */
+			patterntype = rptMonthNth;
+			psubval_list = piline->get_subval_list("BYDAY");
+			apr->recur_pat.pts.monthnth.weekrecur = 0;
+			if (psubval_list->size() > 1)
 				return false;
+			if (psubval_list->size() == 1) {
+				int wd = 0, order = 0;
+				if (!ical_parse_byday(psubval_list->begin()->c_str(), &wd, &order))
+					return false;
+				apr->recur_pat.pts.monthnth.weekrecur |= 1 << wd;
+				/*
+				 * When importing from iCal, Outlook does not
+				 * support 5WE, even though there is a 5th
+				 * Wednesday in January 2025.
+				 */
+				if (order == -1 || order < 5)
+					apr->recur_pat.pts.monthnth.recurnum = order;
+				else
+					return false;
+			}
+		} else if (!irrule.test_bymask(rrule_by::day) &&
+		    irrule.test_bymask(rrule_by::setpos)) {
+			return false; /* BYSETPOS limiter */
+		} else {
+			/* No extra limiters */
 			int tmp_int;
 			patterntype = rptMonth;
 			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
