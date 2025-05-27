@@ -1,20 +1,29 @@
-Development 2.45.158
+Development 2.45.189
 ====================
 
 Enhancements:
 
 * cgkrepair: detect Change Keys with impossibly high values
 * cgkrepair: retain a PCL's foreign XIDs
+* ical2mapi: support FREQ=MONTHLY recurrences using BYDAY= but no BYSETPOS=
+* mt2exm: the -B option now supports numeric identifiers
+* ical2mapi: expand E-2718 error into new codes E-28xx with extended reason
+* imap: allow '%' '*' and '?' in folder names
 
 Behavioral changes:
 
-* oxcical: deal with strange allday events that do not start/end on midnight
+* daemons: the default log destination is now "automatic" (stderr/syslog
+  autodetect) rather than "stderr"
+* mapi2ical: deal with strange allday events that do not start/end on midnight
 * htmltotext: w3m is now instructed on charsets and does not need to guess
   anymore
 * exch: value for the PR_MAX_SUBMIT_MESSAGE_SIZE property was off by a factor
   of 1024, which has been fixed
 * mkprivate/mkpublic: generate a PR_MAPPING_SIGNATURE value distinct from
   PR_STORE_RECORD_KEY for newly-initialized stores
+* ical2mt, vcf2mt: messages are no longer emitted with an anchor,
+  which now allows free placement with mt2exm -B
+* ical2mapi: ignore unreasonable requests like BYMONTHDAY=32
 
 
 Gromox 2.45 (2025-04-15)
