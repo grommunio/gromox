@@ -33,6 +33,10 @@ When called as gromox\-tnef2mt, the input is treated as a MS-OXTNEF object.
 eml2mt will resolve email addresses to Gromox objects already, so the emitted
 data stream should be consumed by an mt2exm invocation on the \fIsame\fP Gromox
 cluster.
+.PP
+All objects in the output stream are unanchored so that the \-B option of
+gromox\-mt2exm can be used to select placement. (Prior to Gromox 2.46,
+some modes like \-\-ical and \-\-vcard emitted an anchor.)
 .SH Options
 .TP
 \fB\-\-decap\fP=\fIn\fP
@@ -42,18 +46,15 @@ message. \fIn\fP is 1-based.
 .TP
 \fB\-\-ical\fP
 Treat all file arguments as iCalendar input. This is the default if the program
-was invoked as gromox\-ical2mt. Messages will be anchored to the calendar
-folder.
+was invoked as gromox\-ical2mt.
 .TP
 \fB\-\-mail\fP
 Treat all file arguments as Internet Mail input. This is the default if the
-program was invoked as gromox\-eml2mt. Messages remain unanchored, and you can
-use the mt2exm \-B option.
+program was invoked as gromox\-eml2mt.
 .TP
 \fB\-\-mbox\fP
 Treat all file arguments as Unix mboxes. This is the default if the program was
-invoked as gromox\-mbox2mt. Messages remain unanchored, and you can use the
-mt2exm \-B option.
+invoked as gromox\-mbox2mt.
 .TP
 \fB\-\-oneoff\fP
 Do not resolve email addresses to EX addresses, but to ONEOFF instead. This
@@ -62,12 +63,11 @@ clusters that do not have the same user set.
 .TP
 \fB\-\-tnef\fP
 Treat all file arguments as Transport Neutral Encapsulation Format objects.
-This is the default if the program was invoked as gromox\-tnef2mt. Messages
-remain unanchored, and you can use the mt2exm \-B option.
+This is the default if the program was invoked as gromox\-tnef2mt.
 .TP
 \fB\-\-vcard\fP
 Treat all file arguments as vCard input. This is the default if the program was
-invoked as gromox\-vcf2mt. Messages will be anchored to the contacts folder.
+invoked as gromox\-vcf2mt.
 .TP
 \fB\-P\fP
 Enable super-pedantic mode when parsing VCARDs and reject everything that is
