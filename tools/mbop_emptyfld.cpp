@@ -204,8 +204,7 @@ int main(int argc, char **argv)
 	while (*++argv != nullptr) {
 		BOOL partial = false;
 		uint64_t id = strtoull(*argv, nullptr, 0);
-		eid_t eid = id == 0 ? gi_lookup_eid_by_name(g_storedir, *argv) :
-		            rop_util_make_eid_ex(1, id);
+		eid_t eid = gi_lookup_eid_by_name(g_storedir, *argv);
 		if (eid == 0) {
 			fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
 			return EXIT_FAILURE;

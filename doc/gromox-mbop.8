@@ -371,22 +371,33 @@ Issue the SQLite ".vacuum" command on the user's exchange.sqlite3 file in an
 attempt to reclaim unused disk space and shrink it. This operation can
 potentially run for quite some time, during which the mailbox is inaccessible.
 .SH Folder specification
-\fIfolder_spec\fP can either be a numeric identifier, or a path-like
-specification into the folder hierarchy. If the name starts with the slash
-character '/', it is interpreted as starting from the root; otherwise, the
-first component must be a special fixed name (untranslated) (CALENDAR,
-COMMON_VIEWS, CONFLICTS, CONTACTS, DEFERRED_ACTION, DELETED (TRASH,
-WASTEBASKET), DRAFT, FINDER, INBOX, IPM_SUBTREE, JOURNAL, JUNK, LOCAL_FAILURES,
-NOTES, OUTBOX, SENT, SERVER_FAILURES, SHORTCUTS, SYNC_ISSUES, TASKS, VIEWS).
-These special names can be used with private stores only; there are no names
-defined for public folder contents at this time. There is also no parsing
-support for slashes in folder names currently in mbop; the slash character is
-always treated as a hierarchy separator. Examples:
+\fIfolder_spec\fP must conform to one of three forms. Either:
 .IP \(bu 4
-/Top of Information Store/Sent Items/2022
+a numeric identifer (e.g. 13, 0xd)
 .IP \(bu 4
-IPM_SUBTREE/Sent Items/2022
+a folder path starting with a slash, optionally followed by a slash-separated
+sequence of subordinate folder names
 .IP \(bu 4
-SENT/2022
+a folder path starting with a fixed symbolic name, optionally followed by a
+slash-separated sequence of subordinate folder names
+.PP
+The recognized strings are: CALENDAR, COMMON_VIEWS, CONFLICTS, CONTACTS,
+DEFERRED_ACTION, DELETED (TRASH, WASTEBASKET), DRAFT, FINDER, INBOX,
+IPM_SUBTREE, JOURNAL, JUNK, LOCAL_FAILURES, NOTES, OUTBOX, SENT,
+SERVER_FAILURES, SHORTCUTS, SYNC_ISSUES, TASKS, VIEWS.
+.PP
+The purpose of these names is for referencing a built-in folder irrespective of
+its assigned name, which is dependent upon translation settings. The symbolic
+names can be used with private stores only; there are no names defined for
+public folder contents at this time. There is also no parsing support for
+slashes in folder names. The slash character is always treated as a hierarchy
+separator.
+.SS Examples
+.IP \(bu 4
+Using the MAPI root: /Top of Information Store/Sent Items/2022
+.IP \(bu 4
+Using a symbolic name: IPM_SUBTREE/Sent Items/2022
+.IP \(bu 4
+Using a symbolic name: SENT/2022
 .SH See also
 \fBgromox\fP(7)

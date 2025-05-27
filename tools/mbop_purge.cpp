@@ -35,9 +35,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "mbop/purge: No folders specified, no action taken.\n");
 	auto age = rop_util_unix_to_nttime(time(nullptr) - HX_strtoull_sec(znul(g_age_str), nullptr));
 	while (*++argv != nullptr) {
-		uint64_t id = strtoull(*argv, nullptr, 0);
-		eid_t eid = id == 0 ? gi_lookup_eid_by_name(g_storedir, *argv) :
-		            rop_util_make_eid_ex(1, id);
+		eid_t eid = gi_lookup_eid_by_name(g_storedir, *argv);
 		if (eid == 0) {
 			fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
 			return EXIT_FAILURE;

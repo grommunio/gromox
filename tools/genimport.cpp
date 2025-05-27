@@ -600,6 +600,11 @@ static constexpr std::pair<const char *, uint8_t> fld_special_names[] = {
 
 eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 {
+	char *end = nullptr;
+	auto pure_id = strtoull(name, &end, 0);
+	if (end != name && *znul(end) == '\0')
+		return rop_util_make_eid_ex(1, pure_id);
+
 	auto pathcomp = gx_split(name, '/');
 	if (pathcomp.size() == 0)
 		return 0;
