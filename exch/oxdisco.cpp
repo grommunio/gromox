@@ -668,6 +668,9 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	}
 	else {
 		DisplayName = public_folder;
+		unsigned int org_id = 0;
+		if (!mysql_adaptor_get_domain_ids(domain, &domain_id, &org_id))
+			return -1;
 		if (cvt_username_to_essdn(email, x500_org_name.c_str(),
 		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn) != ecSuccess)
