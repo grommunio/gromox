@@ -3115,7 +3115,7 @@ static bool oxcical_export_rdate(const char *tzid, bool b_date,
 static void oxcical_export_organizer(const MESSAGE_CONTENT &msg,
     ical_component &com, const char *org_name, cvt_id2user id2user)
 {
-	char buf[UADDR_SIZE];
+	std::string buf;
 	auto str = msg.proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr) {
 		str = msg.proplist.get<char>(PR_SENT_REPRESENTING_ADDRTYPE);
@@ -3127,16 +3127,14 @@ static void oxcical_export_organizer(const MESSAGE_CONTENT &msg,
 			str = msg.proplist.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (str != nullptr) {
 				auto ret = cvt_essdn_to_username(str, org_name,
-				           std::move(id2user), buf, std::size(buf));
-				str = ret == ecSuccess ? buf : nullptr;
+				           std::move(id2user), buf);
+				str = ret == ecSuccess ? buf.c_str() : nullptr;
 			}
 		}
 	}
 	if (str == nullptr)
 		return;
-	char buf1[UADDR_SIZE+10];
-	snprintf(buf1, std::size(buf1), "MAILTO:%s", str);
-	auto line = &com.append_line("ORGANIZER", buf1);
+	auto line = &com.append_line("ORGANIZER", "MAILTO:"s + str);
 	str = msg.proplist.get<char>(PR_SENT_REPRESENTING_NAME);
 	if (str != nullptr)
 		line->append_param("CN", str);

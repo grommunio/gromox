@@ -49,16 +49,6 @@ ec_error_t cvt_essdn_to_username(const char *idn, const char *org,
 	return ecServerOOM;
 }
 
-ec_error_t cvt_essdn_to_username(const char *idn, const char *org,
-    cvt_id2user id2user, char *username, size_t ulen)
-{
-	std::string es_result;
-	auto ret = cvt_essdn_to_username(idn, org, std::move(id2user), es_result);
-	if (ret == ecSuccess)
-		gx_strlcpy(username, es_result.c_str(), ulen);
-	return ret;
-}
-
 /**
  * ecNullObject is returned to signify that a situation was encountered that is
  * equivalent to addrtype not having been present in the first place.
@@ -91,17 +81,6 @@ ec_error_t cvt_genaddr_to_smtpaddr(const char *addrtype, const char *emaddr,
 	 * {PR_ADDRTYPE = "SMTP", PR_EMAIL_ADDRESS = ""}.
 	 */
 	return ecUnknownUser;
-}
-
-ec_error_t cvt_genaddr_to_smtpaddr(const char *addrtype, const char *emaddr,
-    const char *org, cvt_id2user id2user, char *smtpaddr, size_t slen)
-{
-	std::string es_result;
-	auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, org,
-	           std::move(id2user), es_result);
-	if (ret == ecSuccess)
-		gx_strlcpy(smtpaddr, es_result.c_str(), slen);
-	return ret;
 }
 
 static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id2user,
