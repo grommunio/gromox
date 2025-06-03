@@ -10,6 +10,12 @@ Enhancements:
 * ical2mapi: expand E-2718 error into new codes E-28xx with extended reason
 * imap: allow '%' '*' and '?' in folder names
 
+Fixes:
+
+* PR_CHANGE_KEY/PR_PREDECESSOR_LIST was incorrectly generated between
+  Gromox >=2.29.70 <=2.45.161, which has been fixed, and you may want to run
+  cgkrepair.
+
 Behavioral changes:
 
 * daemons: the default log destination is now "automatic" (stderr/syslog
