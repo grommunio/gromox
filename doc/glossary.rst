@@ -203,13 +203,14 @@ ESSDN.MailboxServer
 	``/o=myexch/ou=EAG/cn=Configuration/cn=Servers/cn=<mailboxid>@<emaildomain>``.
 	Exchange and Gromox can generate this ESSDN kind for the ``<Server>``
 	element in Autodiscover responses. Practical use has to do with Public
-	Folders, but is only exercised in obscure ROPs.
+	Folders, but is only exercised in obscure ROPs (ropGetOwningServers,
+	ropPublicFolderIsGhosted).
 
 ESSDN.MdbDN
 	Typical form:
-	``/o=myexch/ou=EAG/cn=Configuration/cn=Servers/cn=<mailboxid>@<emaildomain>``.
-	Exchange and Gromox can generate this ESSDN kind for the ``<MdbDN>``
-	element, but no practical use has been seen.
+	``/o=myexch/ou=EAG/cn=Configuration/cn=Servers/cn=<mailboxid>@<emaildomain>/cn=Microsoft
+	Private MDB``. Exchange and Gromox can generate this ESSDN kind for the
+	``<MdbDN>`` element, but no practical use has been seen.
 
 Database GUID
 	Randomly-generated value on mailbox creation.
