@@ -78,7 +78,7 @@ FreeBSD/OpenBSD
 
 .. code-block::
 
-	./configure CPPFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib --with-php-config=/usr/local/bin/php-config-8.2
+	./configure CPPFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib --with-php=/usr/local/bin/php-config-8.4
 
 Solaris/OmniOSce
 ----------------
