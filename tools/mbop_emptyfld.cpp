@@ -203,7 +203,6 @@ int main(int argc, char **argv)
 	int ret = EXIT_SUCCESS;
 	while (*++argv != nullptr) {
 		BOOL partial = false;
-		uint64_t id = strtoull(*argv, nullptr, 0);
 		eid_t eid = gi_lookup_eid_by_name(g_storedir, *argv);
 		if (eid == 0) {
 			fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);

@@ -54,8 +54,7 @@ ec_error_t oneoff_object::get_props(const PROPTAG_ARRAY *tags, TPROPVAL_ARRAY *v
 		case PR_OBJECT_TYPE:   vc.pvalue = deconst(&objtype); break;
 		case PR_SEARCH_KEY: {
 			auto s = cu_alloc<char>(m_emaddr.size() + 6);
-			strcpy(s, "SMTP:");
-			strcat(s, m_emaddr.c_str());
+			snprintf(s, m_emaddr.size() + 6, "SMTP:%s", m_emaddr.c_str());
 			HX_strupper(s);
 			auto bin = cu_alloc<BINARY>();
 			if (bin == nullptr)

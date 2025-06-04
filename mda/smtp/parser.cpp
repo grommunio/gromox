@@ -599,7 +599,7 @@ static int smtp_parser_dispatch_cmd(const char *cmd, int len, SMTP_CONTEXT *ctx)
 void envelope_info::clear()
 {
 	from[0] = '\0';
-	strcpy(parsed_domain, "unknown");
+	gx_strlcpy(parsed_domain, "unknown", std::size(parsed_domain));
 	rcpt_to.clear();
 }
 

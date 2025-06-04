@@ -1417,8 +1417,6 @@ ec_error_t nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	return ecSuccess;
 }
 
-static constexpr size_t DFL_TAGS_MAX = 32;
-
 /**
  * Return a list of all the properties that have values on a specified object.
  */

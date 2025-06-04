@@ -70,7 +70,7 @@ static int t_convert()
 	char largeout[1024] = "foo";
 	if (!string_mb_to_utf8("utf-8", "utf-8", largeout, std::size(largeout)))
 		return EXIT_FAILURE;
-	strcpy(largeout, "\xef\xbb\xff foo \xef\xbb\xbf");
+	gx_strlcpy(largeout, "\xef\xbb\xff foo \xef\xbb\xbf", std::size(largeout));
 	if (utf8_valid(&largeout[0]))
 		return EXIT_FAILURE;
 	if (!utf8_valid(&largeout[3]))

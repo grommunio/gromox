@@ -2576,7 +2576,7 @@ static int me_punid(int argc, char **argv, int sockd)
 	uid = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
 	pidb.reset();
-	temp_len = sprintf(temp_buff, "TRUE %u\r\n", uid);
+	temp_len = gx_snprintf(temp_buff, std::size(temp_buff), "TRUE %u\r\n", uid);
 	return cmd_write(sockd, temp_buff, temp_len);
 }
 

@@ -14,7 +14,7 @@ enum {
 	SUB_TYPE_EQUIPMENT,
 };
 
-struct config_file;
+class config_file;
 
 namespace gromox {
 

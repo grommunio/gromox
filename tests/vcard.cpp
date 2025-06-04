@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <libHX/string.h>
 #include <gromox/ical.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mime.hpp>
@@ -118,7 +119,7 @@ static void t_card()
 	else
 		printf("%s\n", buf);
 
-	strcpy(buf, "BEGIN:VCARD\n\nEND:VCARD\n");
+	gx_strlcpy(buf, "BEGIN:VCARD\n\nEND:VCARD\n", sizeof(buf));
 	C.load_single_from_str_move(buf);
 }
 

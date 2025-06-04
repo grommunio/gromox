@@ -1112,8 +1112,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			pbuff = cu_alloc<char>(buff_len + 256);
 			if (pbuff == nullptr)
 				return FALSE;
-			buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n"
-			           "\tcharset=\"utf-8\"\r\n\r\n%s",
+			buff_len = gx_snprintf(pbuff, buff_len + 256,
+			           "Content-Type: text/html; charset=\"utf-8\"\r\n\r\n%s",
 			           static_cast<const char *>(pvalue));
 		} else {
 			buff_len = node_stat.st_size;
