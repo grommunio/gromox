@@ -1410,6 +1410,7 @@ struct tAttendee : public NS_EWS_Types {
 
 	tAttendee() = default;
 	explicit tAttendee(const TPROPVAL_ARRAY&);
+	explicit tAttendee(const tinyxml2::XMLElement*);
 };
 
 /**
