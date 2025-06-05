@@ -9,6 +9,7 @@
 // Follow the order in mapitags.hpp
 static const PROPERTY_NAME NtGlobalObjectId = {MNID_ID, PSETID_Meeting, PidLidGlobalObjectId};
 static const PROPERTY_NAME NtCleanGlobalObjectId = {MNID_ID, PSETID_Meeting, PidLidCleanGlobalObjectId};
+static const PROPERTY_NAME NtMeetingType = {MNID_ID, PSETID_Meeting, PidLidMeetingType};
 static const PROPERTY_NAME NtCategories = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")};
 
 /* PSETID_Address */
@@ -66,6 +67,7 @@ static const PROPERTY_NAME NtAppointmentTimeZoneDefinitionEndDisplay = {MNID_ID,
 static const PROPERTY_NAME NtReminderDelta = {MNID_ID, PSETID_Common, PidLidReminderDelta};
 static const PROPERTY_NAME NtReminderTime = {MNID_ID, PSETID_Common, PidLidReminderTime};
 static const PROPERTY_NAME NtReminderSet = {MNID_ID, PSETID_Common, PidLidReminderSet};
+static const PROPERTY_NAME NtPrivate = {MNID_ID, PSETID_Common, PidLidPrivate};
 static const PROPERTY_NAME NtCommonStart = {MNID_ID, PSETID_Common, PidLidCommonStart};
 static const PROPERTY_NAME NtCommonEnd = {MNID_ID, PSETID_Common, PidLidCommonEnd};
 static const PROPERTY_NAME NtMileage = {MNID_ID, PSETID_Common, PidLidMileage};
