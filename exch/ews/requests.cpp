@@ -243,19 +243,56 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		request.MessageDisposition = Enum::SaveOnly;
 	if (!request.SendMeetingInvitations)
 		request.SendMeetingInvitations = Enum::SendToNone;
-	bool sendMessages = request.MessageDisposition == Enum::SendOnly || request.MessageDisposition == Enum::SendAndSaveCopy;
+	bool sendMessages = request.MessageDisposition == Enum::SendOnly
+		|| request.MessageDisposition == Enum::SendAndSaveCopy
+		|| request.SendMeetingInvitations == Enum::SendOnlyToAll
+		|| request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy;
 
 	data.ResponseMessages.reserve(request.Items.size());
+	auto proptrue = 1;
 	for (sItem &item : request.Items) try {
 		if (!hasAccess)
 			throw EWSError::AccessDenied(E3130);
 
 		mCreateItemResponseMessage msg;
 		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
-		bool send = std::holds_alternative<tMessage>(item) &&	sendMessages;
+		bool send = std::holds_alternative<tMessage>(item) && sendMessages;
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
 		if (persist)
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
+		if (std::holds_alternative<tCalendarItem>(item) && sendMessages &&
+		    request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy) {
+			sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
+			uint64_t newMid;
+			if (!ctx.plugin().exmdb.allocate_message_id(dir.c_str(),
+				sentitems.folderId, &newMid))
+				throw EWSError::InternalServerError(E3132);
+			BOOL result;
+			uint64_t messageId = *(*content).proplist.get<uint64_t>(PidTagMid);
+			if (!ctx.plugin().exmdb.movecopy_message(dir.c_str(), CP_ACP,
+				messageId, sentitems.folderId, newMid, false, &result)
+				|| !result)
+				throw EWSError::InternalServerError(E3301);
+			const char* username = ctx.effectiveUser(sentitems);
+			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+			TAGGED_PROPVAL props[] = {
+				{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Request")},
+				{PR_RESPONSE_REQUESTED, &proptrue},
+				{PR_CLIENT_SUBMIT_TIME, now},
+				{PR_MESSAGE_DELIVERY_TIME, now},
+			};
+			TPROPVAL_ARRAY proplist{std::size(props), props};
+			PROBLEM_ARRAY problems;
+			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+				username, CP_ACP, newMid, &proplist, &problems))
+				throw EWSError::ItemSave(E3092);
+			MESSAGE_CONTENT *sendcontent = nullptr;
+			if (!ctx.plugin().exmdb.read_message(dir.c_str(),
+				username, CP_ACP, newMid, &sendcontent)
+				|| sendcontent == nullptr)
+				throw EWSError::ItemNotFound(E3143);
+			ctx.send(dir, messageId, *sendcontent);
+		}
 		if (send)
 			ctx.send(dir, 0, *content);
 		msg.success();
