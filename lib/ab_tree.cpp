@@ -315,7 +315,7 @@ bool ab_base::dn(minid mid, std::string& essdn) const
 	const sql_user *user = fetch_user(mid);
 	if(!user) {
 		char guid_str[33];
-		GUID(mid).to_str(guid_str, std::size(guid_str));
+		mid.to_guid().to_str(guid_str, std::size(guid_str));
 		essdn = "/guid=";
 		essdn += guid_str;
 		return true;

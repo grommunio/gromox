@@ -125,7 +125,7 @@ struct GX_EXPORT minid {
 	 */
 	constexpr minid(Type t, uint32_t v) : id((uint32_t(t) << TYPEOFFSET) | ((v + 0x10) & VALMASK)) {}
 	constexpr operator uint32_t() const { return id; }
-	constexpr explicit operator GUID() const { return GUID{id, 0, 0, {0, 0}, {0, 0, 0, 0, 0, 0}}; }
+	constexpr GUID to_guid() const { return GUID{id, 0, 0, {0, 0}, {0, 0, 0, 0, 0, 0}}; }
 
 	constexpr Type type() const { return Type(id >> TYPEOFFSET); } ///< Extract type from minid
 	constexpr uint32_t value() const { return (id & VALMASK) - 0x10; } ///< Extract object ID from minid
