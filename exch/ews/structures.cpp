@@ -1492,17 +1492,17 @@ uint16_t tBaseSubscriptionRequest::eventMask() const
 	for (auto event : EventTypes)
 		switch(event.index()) {
 		case 0: // CopiedEvent
-			res |= NF_OBJECT_COPIED; break;
+			res |= fnevObjectCopied; break;
 		case 1: // CreatedEvent
-			res |= NF_OBJECT_CREATED; break;
+			res |= fnevObjectCreated; break;
 		case 2: // DeletedEvent
-			res |= NF_OBJECT_DELETED; break;
+			res |= fnevObjectDeleted; break;
 		case 3: // ModifiedEvent
-			res |= NF_OBJECT_MODIFIED; break;
+			res |= fnevObjectModified; break;
 		case 4: // MovedEvent
-			res |= NF_OBJECT_MOVED; break;
+			res |= fnevObjectMoved; break;
 		case 5: // NewMailEvent
-			res |= NF_NEW_MAIL; break;
+			res |= fnevNewMail; break;
 		}
 	return res;
 }

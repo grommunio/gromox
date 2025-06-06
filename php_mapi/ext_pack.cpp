@@ -185,17 +185,17 @@ static pack_result ext_pack_pull_znotification(PULL_CTX *pctx, ZNOTIFICATION *r)
 {
 	TRY(pctx->g_uint32(&r->event_type));
 	switch (r->event_type) {
-	case NF_NEW_MAIL: {
+	case fnevNewMail: {
 		auto nz = new NEWMAIL_ZNOTIFICATION;
 		r->pnotification_data = nz;
 		return ext_pack_pull_newmail_znotification(pctx, nz);
 	}
-	case NF_OBJECT_CREATED:
-	case NF_OBJECT_DELETED:
-	case NF_OBJECT_MODIFIED:
-	case NF_OBJECT_MOVED:
-	case NF_OBJECT_COPIED:
-	case NF_SEARCH_COMPLETE: {
+	case fnevObjectCreated:
+	case fnevObjectDeleted:
+	case fnevObjectModified:
+	case fnevObjectMoved:
+	case fnevObjectCopied:
+	case fnevSearchComplete: {
 		auto oz = new OBJECT_ZNOTIFICATION;
 		r->pnotification_data = oz;
 		return ext_pack_pull_object_znotification(pctx, oz);

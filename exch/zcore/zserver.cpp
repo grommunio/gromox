@@ -297,7 +297,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	ZNOTIFICATION zn, *pnotification = &zn;
 	switch (pdb_notify->type) {
 	case db_notify_type::new_mail: {
-		pnotification->event_type = NF_NEW_MAIL;
+		pnotification->event_type = fnevNewMail;
 		auto pnew_mail = new NEWMAIL_ZNOTIFICATION;
 		pnotification->pnotification_data = pnew_mail;
 		auto nt = static_cast<const DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
@@ -325,7 +325,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		break;
 	}
 	case db_notify_type::folder_created: {
-		pnotification->event_type = NF_OBJECT_CREATED;
+		pnotification->event_type = fnevObjectCreated;
 		auto oz = new OBJECT_ZNOTIFICATION;
 		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_CREATED *>(pdb_notify->pdata);
@@ -341,7 +341,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		break;
 	}
 	case db_notify_type::message_created: {
-		pnotification->event_type = NF_OBJECT_CREATED;
+		pnotification->event_type = fnevObjectCreated;
 		auto oz = new OBJECT_ZNOTIFICATION;
 		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_MESSAGE_CREATED *>(pdb_notify->pdata);
@@ -357,7 +357,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		break;
 	}
 	case db_notify_type::folder_deleted: {
-		pnotification->event_type = NF_OBJECT_DELETED;
+		pnotification->event_type = fnevObjectDeleted;
 		auto oz = new OBJECT_ZNOTIFICATION;
 		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_DELETED *>(pdb_notify->pdata);
@@ -373,7 +373,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		break;
 	}
 	case db_notify_type::message_deleted: {
-		pnotification->event_type = NF_OBJECT_DELETED;
+		pnotification->event_type = fnevObjectDeleted;
 		auto oz = new OBJECT_ZNOTIFICATION;
 		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_MESSAGE_DELETED *>(pdb_notify->pdata);
@@ -389,7 +389,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		break;
 	}
 	case db_notify_type::folder_modified: {
-		pnotification->event_type = NF_OBJECT_MODIFIED;
+		pnotification->event_type = fnevObjectModified;
 		auto oz = new OBJECT_ZNOTIFICATION;
 		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata);
@@ -401,7 +401,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		break;
 	}
 	case db_notify_type::message_modified: {
-		pnotification->event_type = NF_OBJECT_MODIFIED;
+		pnotification->event_type = fnevObjectModified;
 		auto oz = new OBJECT_ZNOTIFICATION;
 		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata);
@@ -419,7 +419,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::folder_moved:
 	case db_notify_type::folder_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::folder_moved ?
-		                            NF_OBJECT_MOVED : NF_OBJECT_COPIED;
+		                            fnevObjectMoved : fnevObjectCopied;
 		auto oz = new OBJECT_ZNOTIFICATION;
 		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
@@ -445,7 +445,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::message_moved:
 	case db_notify_type::message_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::message_moved ?
-		                            NF_OBJECT_MOVED : NF_OBJECT_COPIED;
+		                            fnevObjectMoved : fnevObjectCopied;
 		auto oz = new OBJECT_ZNOTIFICATION;
 		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
@@ -469,7 +469,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		break;
 	}
 	case db_notify_type::search_completed: {
-		pnotification->event_type = NF_SEARCH_COMPLETE;
+		pnotification->event_type = fnevSearchComplete;
 		auto oz = new OBJECT_ZNOTIFICATION;
 		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_SEARCH_COMPLETED *>(pdb_notify->pdata);

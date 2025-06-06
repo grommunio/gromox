@@ -1531,7 +1531,7 @@ ec_error_t znotification_array_to_php(const ZNOTIFICATION_ARRAY &pnotifications,
 		zarray_init(&pzvalnotif);
 		add_assoc_long(&pzvalnotif, "eventtype", nt.event_type);
 		switch (nt.event_type) {
-		case NF_NEW_MAIL: {
+		case fnevNewMail: {
 			auto pnew_notification = static_cast<const NEWMAIL_ZNOTIFICATION *>(nt.pnotification_data);
 			add_assoc_stringl(&pzvalnotif, "entryid",
 				pnew_notification->entryid.data(),
@@ -1548,12 +1548,12 @@ ec_error_t znotification_array_to_php(const ZNOTIFICATION_ARRAY &pnotifications,
 				pnew_notification->message_flags);
 			break;
 		}
-		case NF_OBJECT_CREATED:
-		case NF_OBJECT_DELETED:
-		case NF_OBJECT_MODIFIED:
-		case NF_OBJECT_MOVED:
-		case NF_OBJECT_COPIED:
-		case NF_SEARCH_COMPLETE: {
+		case fnevObjectCreated:
+		case fnevObjectDeleted:
+		case fnevObjectModified:
+		case fnevObjectMoved:
+		case fnevObjectCopied:
+		case fnevSearchComplete: {
 			auto pobject_notification = static_cast<OBJECT_ZNOTIFICATION *>(nt.pnotification_data);
 			if (pobject_notification->pentryid.has_value()) {
 				add_assoc_stringl(&pzvalnotif, "entryid",

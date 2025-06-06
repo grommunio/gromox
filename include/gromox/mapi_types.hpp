@@ -401,16 +401,18 @@ struct GX_EXPORT MESSAGE_READ_STAT {
 #define SYNC_DELETES_FLAG_HARDDELETE				0x02
 
 enum notif_type : unsigned int {
-	NF_NEW_MAIL        = 0x2,
-	NF_OBJECT_CREATED  = 0x4,
-	NF_OBJECT_DELETED  = 0x8,
-	NF_OBJECT_MODIFIED = 0x10,
-	NF_OBJECT_MOVED    = 0x20,
-	NF_OBJECT_COPIED   = 0x40,
-	NF_SEARCH_COMPLETE = 0x80,
+	fnevNewMail        = 0x2,
+	fnevObjectCreated  = 0x4,
+	fnevObjectDeleted  = 0x8,
+	fnevObjectModified = 0x10,
+	fnevObjectMoved    = 0x20,
+	fnevObjectCopied   = 0x40,
+	fnevSearchComplete = 0x80,
 
 	/* Used only by emsmdb */
-	NF_TABLE_MODIFIED  = 0x100,
+	fnevTableModified  = 0x100,
+
+	/* Server-level flags (Client-side fnevExtended has a different value!) */
 	NF_EXTENDED        = 0x400,
 	NF_HAS_TOTAL       = 0x1000,
 	NF_HAS_UNREAD      = 0x2000,

@@ -346,15 +346,15 @@ static pack_result rpc_ext_push_znotification(EXT_PUSH &x, const ZNOTIFICATION &
 {
 	QRF(x.p_uint32(r.event_type));
 	switch (r.event_type) {
-	case NF_NEW_MAIL:
+	case fnevNewMail:
 		return rpc_ext_push_newmail_znotification(x,
 		       *static_cast<const NEWMAIL_ZNOTIFICATION *>(r.pnotification_data));
-	case NF_OBJECT_CREATED:
-	case NF_OBJECT_DELETED:
-	case NF_OBJECT_MODIFIED:
-	case NF_OBJECT_MOVED:
-	case NF_OBJECT_COPIED:
-	case NF_SEARCH_COMPLETE:
+	case fnevObjectCreated:
+	case fnevObjectDeleted:
+	case fnevObjectModified:
+	case fnevObjectMoved:
+	case fnevObjectCopied:
+	case fnevSearchComplete:
 		return rpc_ext_push_object_znotification(x,
 		       *static_cast<const OBJECT_ZNOTIFICATION *>(r.pnotification_data));
 	default:

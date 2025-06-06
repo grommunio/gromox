@@ -46,7 +46,7 @@ struct GX_EXPORT ZNOTIFICATION {
 
 	void clear()
 	{
-		if (event_type == NF_NEW_MAIL)
+		if (event_type == fnevNewMail)
 			delete static_cast<NEWMAIL_ZNOTIFICATION *>(pnotification_data);
 		else
 			delete static_cast<OBJECT_ZNOTIFICATION *>(pnotification_data);

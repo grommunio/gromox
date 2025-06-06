@@ -740,7 +740,7 @@ static void dbeng_notify_search_completion(const db_base &dbase,
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_SEARCH_COMPLETE, folder_id, 0);
+	               fnevSearchComplete, folder_id, 0);
 	if (parrays.size() == 0)
 		return;
 	datagram.dir = deconst(dir);
@@ -2072,7 +2072,7 @@ void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_NEW_MAIL, folder_id, 0);
+	               fnevNewMail, folder_id, 0);
 	if (parrays.size() == 0)
 		return;
 	datagram.dir = deconst(dir);
@@ -2098,7 +2098,7 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_NEW_MAIL, folder_id, 0);
+	               fnevNewMail, folder_id, 0);
 	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::new_mail;
@@ -2132,7 +2132,7 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_CREATED, folder_id, 0);
+	               fnevObjectCreated, folder_id, 0);
 	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_created;
@@ -2164,7 +2164,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_CREATED, anchor_fld, 0);
+	               fnevObjectCreated, anchor_fld, 0);
 	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::link_created;
@@ -2347,7 +2347,7 @@ void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_CREATED, parent_id, 0);
+	               fnevObjectCreated, parent_id, 0);
 	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_created;
@@ -2885,7 +2885,7 @@ void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_DELETED, folder_id, message_id);
+	               fnevObjectDeleted, folder_id, message_id);
 	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_deleted;
@@ -2917,7 +2917,7 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_DELETED, folder_id, message_id);
+	               fnevObjectDeleted, folder_id, message_id);
 	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::link_deleted;
@@ -3018,7 +3018,7 @@ void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_DELETED, parent_id, 0);
+	               fnevObjectDeleted, parent_id, 0);
 	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_deleted;
@@ -3633,7 +3633,7 @@ void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_i
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_MODIFIED, folder_id, message_id);
+	               fnevObjectModified, folder_id, message_id);
 	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_modified;
@@ -3823,7 +3823,7 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
-	               NF_OBJECT_MODIFIED, folder_id, 0);
+	               fnevObjectModified, folder_id, 0);
 	if (parrays.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_modified;
@@ -3856,10 +3856,10 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 	for (const auto &sub : dbase.nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
-			if (!(pnsub->notification_type & NF_OBJECT_COPIED))
+			if (!(pnsub->notification_type & fnevObjectCopied))
 				continue;
 		} else {
-			if (!(pnsub->notification_type & NF_OBJECT_MOVED))
+			if (!(pnsub->notification_type & fnevObjectMoved))
 				continue;
 		}
 		if (pnsub->b_whole || (pnsub->folder_id == old_fid &&
@@ -3908,10 +3908,10 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 	for (const auto &sub : dbase.nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
-			if (!(pnsub->notification_type & NF_OBJECT_COPIED))
+			if (!(pnsub->notification_type & fnevObjectCopied))
 				continue;
 		} else {
-			if (!(pnsub->notification_type & NF_OBJECT_MOVED))
+			if (!(pnsub->notification_type & fnevObjectMoved))
 				continue;
 		}
 		if (pnsub->b_whole ||

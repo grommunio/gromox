@@ -942,7 +942,7 @@ static BOOL emsmdb_interface_merge_content_row_deleted(
 		auto pnotify = static_cast<notify_response *>(pnode->pdata);
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
-		if (!(pnotify->nflags & NF_TABLE_MODIFIED))
+		if (!(pnotify->nflags & fnevTableModified))
 			continue;
 		if (pnotify->table_event == TABLE_EVENT_ROW_DELETED) {
 			count ++;
@@ -969,7 +969,7 @@ static BOOL emsmdb_interface_merge_hierarchy_row_modified(
 		auto pnotify = static_cast<notify_response *>(pnode->pdata);
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
-		if (!(pnotify->nflags & NF_TABLE_MODIFIED))
+		if (!(pnotify->nflags & fnevTableModified))
 			continue;
 		if (pnotify->table_event == TABLE_EVENT_ROW_MODIFIED &&
 		    pnotify->row_folder_id == row_folder_id) {
@@ -999,7 +999,7 @@ static BOOL emsmdb_interface_merge_message_modified(
 		auto pnotify = static_cast<notify_response *>(pnode->pdata);
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
-		if (pnotify->nflags == (NF_OBJECT_MODIFIED | NF_BY_MESSAGE) &&
+		if (pnotify->nflags == (fnevObjectModified | NF_BY_MESSAGE) &&
 		    pnotify->folder_id == folder_id &&
 		    pnotify->message_id == message_id &&
 		    pnotify->proptags.count == 0)
@@ -1021,7 +1021,7 @@ static BOOL emsmdb_interface_merge_folder_modified(
 		auto pnotify = static_cast<notify_response *>(pnode->pdata);
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
-		if (pnotify->nflags == NF_OBJECT_MODIFIED &&
+		if (pnotify->nflags == fnevObjectModified &&
 		    pnotify->folder_id == folder_id &&
 		    pnotify->proptags.count == 0)
 			return TRUE;

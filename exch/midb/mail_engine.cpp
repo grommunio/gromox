@@ -1840,8 +1840,8 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 	}
 	cl_err.release();
 	if (!exmdb_client->subscribe_notification(dir,
-	    NF_OBJECT_CREATED | NF_OBJECT_DELETED | NF_OBJECT_MODIFIED |
-	    NF_OBJECT_MOVED | NF_OBJECT_COPIED | NF_NEW_MAIL, TRUE,
+	    fnevObjectCreated | fnevObjectDeleted | fnevObjectModified |
+	    fnevObjectMoved | fnevObjectCopied | fnevNewMail, TRUE,
 	    0, 0, &pidb->sub_id))
 		pidb->sub_id = 0;	
 	pidb->load_time = time(nullptr);

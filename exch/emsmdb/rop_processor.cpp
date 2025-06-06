@@ -522,7 +522,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		auto pobject = rop_processor_get_object(&pemsmdb_info->logmap, pnotify->logon_id, pnotify->handle, &type);
 		if (NULL != pobject) {
 			if (type == ems_objtype::table &&
-			    pnotify->nflags & NF_TABLE_MODIFIED &&
+			    pnotify->nflags & fnevTableModified &&
 			    (pnotify->table_event == TABLE_EVENT_ROW_ADDED ||
 			    pnotify->table_event == TABLE_EVENT_ROW_MODIFIED)) {
 				auto tbl = static_cast<table_object *>(pobject);
