@@ -185,7 +185,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 			return false;
 		v->time_low = pfolder->plogon->account_id;
 		v->time_mid = v->time_hi_and_version = 0;
-		memcpy(&v->clock_seq, &pfolder->folder_id, sizeof(uint64_t));
+		memcpy(reinterpret_cast<char *>(v) + 8, &pfolder->folder_id, sizeof(uint64_t));
 		return TRUE;
 	}
 	case PR_RIGHTS: {
