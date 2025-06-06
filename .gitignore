@@ -78,6 +78,7 @@ Makefile.in
 /tests/gxl-383
 /tests/jsontest
 /tests/lzxpress
+/tests/mboxnotify
 /tests/mboxsync
 /tests/mboxwalk
 /tests/oxcmail_ie
