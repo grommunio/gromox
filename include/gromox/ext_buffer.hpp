@@ -205,12 +205,19 @@ struct GX_EXPORT EXT_PULL {
 	template<typename T> inline T *anew()
 	{
 		static_assert(std::is_trivially_destructible_v<T> && std::is_trivially_copyable_v<T>);
-		return static_cast<T *>(m_alloc(sizeof(T)));
+		auto r = static_cast<T *>(m_alloc(sizeof(T)));
+		if (r != nullptr)
+			new(r) T;
+		return r;
 	}
 	template<typename T> inline T *anew(size_t elem)
 	{
 		static_assert(std::is_trivially_destructible_v<T> && std::is_trivially_copyable_v<T>);
-		return static_cast<T *>(m_alloc(sizeof(T) * elem));
+		auto r = static_cast<T *>(m_alloc(sizeof(T) * elem));
+		if (r != nullptr)
+			for (size_t i = 0; i < elem; ++i)
+				new(r) T[i];
+		return r;
 	}
 	union {
 		const uint8_t *m_udata;
