@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <type_traits>
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
@@ -201,8 +202,16 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_fb_a(std::vector<freebusy_event> *);
 	pack_result g_recpat(RECURRENCE_PATTERN *);
 
-	template<typename T> inline T *anew() { return static_cast<T *>(m_alloc(sizeof(T))); }
-	template<typename T> inline T *anew(size_t elem) { return static_cast<T *>(m_alloc(sizeof(T) * elem)); }
+	template<typename T> inline T *anew()
+	{
+		static_assert(std::is_trivially_destructible_v<T> && std::is_trivially_copyable_v<T>);
+		return static_cast<T *>(m_alloc(sizeof(T)));
+	}
+	template<typename T> inline T *anew(size_t elem)
+	{
+		static_assert(std::is_trivially_destructible_v<T> && std::is_trivially_copyable_v<T>);
+		return static_cast<T *>(m_alloc(sizeof(T) * elem));
+	}
 	union {
 		const uint8_t *m_udata;
 		const char *m_cdata;
