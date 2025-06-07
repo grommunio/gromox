@@ -34,6 +34,8 @@ static constexpr char
 	uri_autod_xml[] = "/autodiscover/autodiscover.xml",
 	uri_autod_json[] = "/autodiscover/autodiscover.json",
 	uri_wkmc11_xml[] = "/.well-known/autoconfig/mail/config-v1.1.xml",
+	uri_wkcaldav[] = "/.well-known/caldav",
+	uri_wkcarddav[] = "/.well-known/carddav",
 	uri_mc11_xml[] = "/mail/config-v1.1.xml";
 
 namespace {
@@ -82,6 +84,7 @@ class OxdiscoPlugin {
 	static void resp_mh(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool);
 	void resp_rpch(XMLElement *, const char *home, const char *dom, const std::string &ews_url, const std::string &oab_url, const std::string &ecp_url, std::string &&serverdn, std::string &&mdbdn, const std::string &mailboxid, bool is_pvt) const;
 	http_status resp_autocfg(int, const char *) const;
+	http_status resp_dav(int) const;
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
 	static const char *gtx(tinyxml2::XMLElement &, const char *);
@@ -209,6 +212,8 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 	return umatch(uri, uri_autod_xml) != SIZE_MAX ||
 	       umatch(uri, uri_autod_json) != SIZE_MAX ||
 	       umatch(uri, uri_wkmc11_xml) != SIZE_MAX ||
+	       umatch(uri, uri_wkcaldav) != SIZE_MAX ||
+	       umatch(uri, uri_wkcarddav) != SIZE_MAX ||
 	       umatch(uri, uri_mc11_xml) != SIZE_MAX;
 }
 
@@ -310,6 +315,11 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 			return resp_autocfg(ctx_id, auth_info.username);
 		auto username = extract_qparam(&uri[45], "emailaddress");
 		return resp_autocfg(ctx_id, username.c_str());
+	} else if (auto z = umatch(uri, uri_wkcaldav); z != SIZE_MAX && uri[z] != '/') {
+		/* Not using mod_rewrite: Silent rewrite disallowed by RFC */
+		return resp_dav(ctx_id);
+	} else if (auto z = umatch(uri, uri_wkcarddav); z != SIZE_MAX && uri[z] != '/') {
+		return resp_dav(ctx_id);
 	} else if (auto z = umatch(uri, uri_mc11_xml); z != SIZE_MAX) {
 		if (uri[z] != '?')
 			return resp_autocfg(ctx_id, auth_info.username);
@@ -1047,6 +1057,17 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 
 	writeheader(ctx_id, code, strlen(response));
 	return write_response(ctx_id, response, strlen(response));
+}
+
+/**
+ * RFC 6764 §5
+ */
+http_status OxdiscoPlugin::resp_dav(int ctx_id) const
+{
+	auto r = fmt::format("HTTP/1.1 307 Redirect\r\n"
+			"Content-Length: 0\r\n"
+			"Location: /dav/\r\n\r\n");
+	return write_response(ctx_id, r.c_str(), r.size());
 }
 
 std::string OxdiscoPlugin::get_redirect_addr(const char *email) const
