@@ -30,6 +30,12 @@ using namespace std::string_literals;
 using namespace gromox;
 using namespace tinyxml2;
 
+static constexpr char
+	uri_autod_xml[] = "/autodiscover/autodiscover.xml",
+	uri_autod_json[] = "/autodiscover/autodiscover.json",
+	uri_wkmc11_xml[] = "/.well-known/autoconfig/mail/config-v1.1.xml",
+	uri_mc11_xml[] = "/mail/config-v1.1.xml";
+
 namespace {
 
 enum class adv_setting {
@@ -178,6 +184,12 @@ static bool brkp(char c)
 	return c == '\0' || c == '/' || c == '?';
 }
 
+template<typename T> static inline size_t umatch(const char *uri, T &&val)
+{
+	auto z = sizeof(val) - 1;
+	return strncasecmp(uri, val, z) == 0 && brkp(uri[z]) ? z : SIZE_MAX;
+}
+
 /**
  * @brief      Preprocess request
  *
@@ -194,15 +206,10 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 //		/* emit("All requests must be POST"); */
 //		return false;
 	auto uri = req->f_request_uri.c_str();
-	if (strcasecmp(uri, "/autodiscover/autodiscover.xml") == 0 && brkp(uri[30]))
-		return TRUE;
-	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44]))
-		return TRUE;
-	if (strncasecmp(uri, "/mail/config-v1.1.xml", 21) == 0 && brkp(uri[21]))
-		return TRUE;
-	if (strncasecmp(uri, "/autodiscover/autodiscover.json", 31) == 0 && brkp(uri[31]))
-		return TRUE;
-	return false;
+	return umatch(uri, uri_autod_xml) != SIZE_MAX ||
+	       umatch(uri, uri_autod_json) != SIZE_MAX ||
+	       umatch(uri, uri_wkmc11_xml) != SIZE_MAX ||
+	       umatch(uri, uri_mc11_xml) != SIZE_MAX;
 }
 
 static std::string extract_qparam(const char *qstr, const char *srkey)
@@ -298,19 +305,22 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 	if (l == 0)
 		return http_status::none;
 	auto uri = req->f_request_uri.c_str();
-	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44])) {
-		if (uri[44] == '/' || uri[44] == '\0')
+	if (auto z = umatch(uri, uri_wkmc11_xml); z != SIZE_MAX) {
+		if (uri[z] != '?')
 			return resp_autocfg(ctx_id, auth_info.username);
 		auto username = extract_qparam(&uri[45], "emailaddress");
 		return resp_autocfg(ctx_id, username.c_str());
-	} else if (strncasecmp(uri, "/mail/config-v1.1.xml", 21) == 0 && brkp(uri[21])) {
-		if (uri[21] == '/' || uri[21] == '\0')
+	} else if (auto z = umatch(uri, uri_mc11_xml); z != SIZE_MAX) {
+		if (uri[z] != '?')
 			return resp_autocfg(ctx_id, auth_info.username);
 		auto username = extract_qparam(&uri[22], "emailaddress");
 		return resp_autocfg(ctx_id, username.c_str());
-	} else if (strncasecmp(uri, "/autodiscover/autodiscover.json", 31) == 0 && brkp(uri[31])) {
+	} else if (umatch(uri, uri_autod_json) != SIZE_MAX) {
 		return resp_json(ctx_id, uri);
+	} else if (umatch(uri, uri_autod_xml) == SIZE_MAX) {
+		return http_status::not_found;
 	}
+
 	if (auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
 	XMLDocument doc;
