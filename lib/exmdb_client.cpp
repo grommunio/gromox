@@ -292,14 +292,15 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 	BINARY bin;
 	bin.cb = buff_len;
 	bin.pb = buff;
-	mdcl_build_env(*agent.pserver);
+	if (mdcl_build_env != nullptr)
+		mdcl_build_env(*agent.pserver);
 	auto cl_0 = HX::make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
 	DB_NOTIFY_DATAGRAM notify;
 	auto resp_code = exmdb_ext_pull_db_notify(&bin, &notify) == pack_result::ok ?
 	                 exmdb_response::success : exmdb_response::pull_error;
 	if (write(agent.sockd, &resp_code, 1) != 1)
 		return -1;
-	if (resp_code == exmdb_response::success)
+	if (resp_code == exmdb_response::success && mdcl_event_proc != nullptr)
 		for (size_t i = 0; i < notify.id_array.size(); ++i)
 			mdcl_event_proc(notify.dir, notify.b_table,
 				notify.id_array[i], &notify.db_notify);
