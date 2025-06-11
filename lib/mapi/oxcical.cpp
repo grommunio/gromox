@@ -512,7 +512,7 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 			if (psubval_list->size() == 1) {
 				int wd = 0, order = 0;
 				if (!ical_parse_byday(psubval_list->begin()->c_str(), &wd, &order))
-					return "E-2806: Parse error at RRULE.BYDAY";
+					return "E-2806: Parse error at RRULE(MONTHLY).BYDAY";
 				apr->recur_pat.pts.monthnth.weekrecur |= 1 << wd;
 				if (order > 4 || order < -1)
 					return "E-2831: weekorder out of range for MAPI";
@@ -560,6 +560,7 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 		if (irrule.test_bymask(rrule_by::day) &&
 		    irrule.test_bymask(rrule_by::setpos) &&
 		    irrule.test_bymask(rrule_by::month)) {
+			/* Both limiters ("BYDAY=TU; BYSETPOS=4") */
 			if (irrule.test_bymask(rrule_by::monthday))
 				return "E-2820";
 			patterntype = rptMonthNth;
@@ -578,6 +579,28 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 			else if (tmp_int == -1)
 				tmp_int = 5;
 			apr->recur_pat.pts.monthnth.recurnum = tmp_int;
+		} else if (irrule.test_bymask(rrule_by::day) &&
+		    !irrule.test_bymask(rrule_by::setpos) &&
+		    irrule.test_bymask(rrule_by::month)) {
+			/* BYDAY limiter ("BYDAY=4TU") */
+			if (irrule.test_bymask(rrule_by::monthday))
+				return "E-2827";
+			patterntype = rptMonthNth;
+			psubval_list = piline->get_subval_list("BYDAY");
+			apr->recur_pat.pts.monthnth.weekrecur = 0;
+			if (psubval_list->size() > 1)
+				return "E-2872: MAPI does not support YEARLY with multiple BYDAY";
+			if (psubval_list->size() == 1) {
+				int wd = 0, order = 0;
+				if (!ical_parse_byday(psubval_list->begin()->c_str(), &wd, &order))
+					return "E-2873: Parse error at RRULE(YEARLY).BYDAY";
+				apr->recur_pat.pts.monthnth.weekrecur |= 1 << wd;
+				if (order > 4 || order < -1)
+					return "E-2874: weekorder out of range for MAPI";
+				else if (order == -1)
+					order = 5;
+				apr->recur_pat.pts.monthnth.recurnum = order;
+			}
 		} else {
 			if (irrule.test_bymask(rrule_by::day) ||
 			    irrule.test_bymask(rrule_by::setpos))
