@@ -2978,7 +2978,8 @@ static bool oxcical_export_rrule(const ical_component *ptz_component,
 				piline->append_value("BYSETPOS", "-1");
 			else
 				piline->append_value("BYSETPOS", std::to_string(apr->recur_pat.pts.monthnth.recurnum));
-			piline->append_value("BYMONTH", std::to_string(apr->recur_pat.firstdatetime));
+			ical_get_itime_from_yearday(1601, apr->recur_pat.firstdatetime / 1440 + 1, &itime);
+			piline->append_value("BYMONTH", std::to_string(itime.month));
 		}
 		break;
 	}
