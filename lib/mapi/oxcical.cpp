@@ -164,7 +164,7 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	return true;
 }
 
-static bool oxcical_parse_tzdefinition(const ical_component &vt,
+static bool oxcical_tzcom_to_def(const ical_component &vt,
 	TIMEZONEDEFINITION *ptz_definition)
 {
 	int i;
@@ -281,8 +281,7 @@ static void oxcical_convert_to_tzstruct(
 	ptz_struct->daylightyear = ptz_struct->daylightdate.year;
 }
 
-static bool oxcical_tzdefinition_to_binary(
-	TIMEZONEDEFINITION *ptz_definition,
+static bool oxcical_tzdefinition_to_binary(const TIMEZONEDEFINITION *ptz_definition,
 	uint16_t tzrule_flags, BINARY *pbin)
 {
 	EXT_PUSH ext_push;
@@ -637,16 +636,30 @@ static const ical_component *oxcical_find_vtimezone(const ical &pical, const cha
 	return nullptr;
 }
 
+static bool oxcical_take_tzbin(bool b_dtstart, const BINARY &tmp_bin,
+    namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
+{
+	PROPERTY_NAME propname = {MNID_ID, PSETID_Appointment, b_dtstart ?
+		PidLidAppointmentTimeZoneDefinitionStartDisplay :
+		PidLidAppointmentTimeZoneDefinitionEndDisplay};
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
+		return false;
+	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
+		return false;
+	(*plast_propid) ++;
+	return true;
+}
+
 static bool oxcical_parse_tzdisplay(bool b_dtstart, const ical_component &tzcom,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
-	BINARY tmp_bin;
-	TIMEZONEDEFINITION tz_definition;
 	TZRULE rules_buff[MAX_TZRULE_NUMBER];
+	TIMEZONEDEFINITION tz_definition;
+	BINARY tmp_bin;
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 
 	tz_definition.prules = rules_buff;
-	if (!oxcical_parse_tzdefinition(tzcom, &tz_definition))
+	if (!oxcical_tzcom_to_def(tzcom, &tz_definition))
 		return false;
 	if (tz_definition.crules == 0) {
 		mlog(LV_DEBUG, "Rejecting conversion of iCal to MAPI object: no sensible TZ rules found (e.g. RFC 5545 §3.6.5 VTIMEZONE without STANDARD/DAYLIGHT not permitted)");
@@ -657,15 +670,7 @@ static bool oxcical_parse_tzdisplay(bool b_dtstart, const ical_component &tzcom,
 	if (!oxcical_tzdefinition_to_binary(&tz_definition,
 	    TZRULE_FLAG_EFFECTIVE_TZREG, &tmp_bin))
 		return false;
-	PROPERTY_NAME propname = {MNID_ID, PSETID_Appointment, b_dtstart ?
-		PidLidAppointmentTimeZoneDefinitionStartDisplay :
-		PidLidAppointmentTimeZoneDefinitionEndDisplay};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return false;
-	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != ecSuccess)
-		return false;
-	(*plast_propid) ++;
-	return true;
+	return oxcical_take_tzbin(b_dtstart, tmp_bin, phash, plast_propid, pmsg);
 }
 
 static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
@@ -679,7 +684,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 
 	tz_definition.prules = rules_buff;
-	if (!oxcical_parse_tzdefinition(tzcom, &tz_definition))
+	if (!oxcical_tzcom_to_def(tzcom, &tz_definition))
 		return false;
 	auto piline = tzcom.get_line("TZID");
 	if (piline == nullptr)
@@ -2054,13 +2059,32 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 	const ical_component *ptz_component = nullptr;
 	if (ptzid != nullptr) {
 		ptz_component = oxcical_find_vtimezone(pical, ptzid);
-		if (ptz_component == nullptr) {
-			mlog(LV_ERR, "E-2070: %s: timezone \"%s\" not found", __func__, znul(ptzid));
-			return "Used timezone was not declared";
+		if (ptz_component != nullptr) {
+			if (!oxcical_parse_tzdisplay(true, *ptz_component, phash,
+			    &last_propid, pmsg))
+				return "E-2195: oxcical_parse_tzdisplay returned an unspecified error";
+		} else {
+			/*
+			 * As per RFC 5545 §3.2.19, """An individual "VTIMEZONE" calendar
+			 * component MUST be specified for each unique "TZID" parameter
+			 * value""".
+			 */
+
+			/* Some final heroic efforts */
+			auto def = ianatz_to_tzdef(ptzid);
+			if (def == nullptr)
+				def = wintz_to_tzdef(ptzid);
+			if (def == nullptr) {
+				mlog(LV_ERR, "E-2070: %s: timezone \"%s\" not found", __func__, ptzid);
+				return "Used timezone was not declared";
+			}
+			mlog(LV_DEBUG, "D-5324: synthesized data for TZID \"%s\" from internal db", ptzid);
+			BINARY bin;
+			bin.cb = def->size();
+			bin.pc = deconst(def->data());
+			if (!oxcical_take_tzbin(true, bin, phash, &last_propid, pmsg))
+				return "E-5323: oxcical_parse_tzdef returned an unspecified error";
 		}
-		if (!oxcical_parse_tzdisplay(true, *ptz_component, phash,
-		    &last_propid, pmsg))
-			return "E-2195: oxcical_parse_tzdisplay returned an unspecified error";
 	}
 
 	time_t start_time = 0, end_time = 0;
