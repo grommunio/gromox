@@ -492,6 +492,10 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 				apr->recur_pat.pts.monthnth.weekrecur |= 1 << wd;
 			}
 			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
+			/*
+			 * MAPI does not support "fifth", only 1st/2nd/3rd/4th/last.
+			 * BYSETPOS=-1 bijectively maps from and to order 5 in MAPI.
+			 */
 			int tmp_int = strtol(pvalue, nullptr, 0);
 			if (tmp_int > 4 || tmp_int < -1)
 				return "E-2816: MAPI does not support MONTHLY.BYSETPOS>4";
@@ -511,15 +515,11 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 				if (!ical_parse_byday(psubval_list->begin()->c_str(), &wd, &order))
 					return "E-2806: Parse error at RRULE.BYDAY";
 				apr->recur_pat.pts.monthnth.weekrecur |= 1 << wd;
-				/*
-				 * When importing from iCal, Outlook does not
-				 * support 5WE, even though there is a 5th
-				 * Wednesday in January 2025.
-				 */
-				if (order == -1 || order < 5)
-					apr->recur_pat.pts.monthnth.recurnum = order;
-				else
+				if (order > 4 || order < -1)
 					return "E-2831: weekorder out of range for MAPI";
+				else if (order == -1)
+					order = 5;
+				apr->recur_pat.pts.monthnth.recurnum = order;
 			}
 		} else if (!irrule.test_bymask(rrule_by::day) &&
 		    irrule.test_bymask(rrule_by::setpos)) {
