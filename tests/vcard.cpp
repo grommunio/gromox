@@ -267,6 +267,52 @@ static int t_ical_dt()
 	return EXIT_SUCCESS;
 }
 
+static int t_rrule()
+{
+	std::string head =
+		"BEGIN:VCALENDAR\n"
+		"VERSION:2.0\n"
+		"BEGIN:VEVENT\n"
+		"CREATED:20170427T181700Z\n"
+		"LAST-MODIFIED:20250609T051307Z\n"
+		"DTSTAMP:20250609T051307Z\n"
+		"UID:74d6b21d-d73c-4cac-af61-6925d1882b30\n"
+		"SUMMARY:x\n";
+	static constexpr char foot[] =
+		"DTSTART;TZID=Europe/Berlin:20150830T110000\n"
+		"DTEND;TZID=Europe/Berlin:20150830T180000\n"
+		"CLASS:PUBLIC\n"
+		"TRANSP:OPAQUE\n"
+		"X-MICROSOFT-CDO-INTENDEDSTATUS:BUSY\n"
+		"LOCATION:Irgendwo\n"
+		"SEQUENCE:0\n"
+		"X-MICROSOFT-CDO-OWNER-CRITICAL-CHANGE:20160104T085628Z\n"
+		"X-MICROSOFT-CDO-ATTENDEE-CRITICAL-CHANGE:20160104T085628Z\n"
+		"X-MICROSOFT-CDO-APPT-SEQUENCE:0\n"
+		"X-MICROSOFT-CDO-OWNERAPPTID:-1\n"
+		"X-MICROSOFT-CDO-ALLDAYEVENT:FALSE\n"
+		"END:VEVENT\n"
+		"END:VCALENDAR\n";
+
+	ical icalin;
+	auto input = head + "RRULE:FREQ=MONTHLY;BYDAY=2MO\n" + foot;
+	bool succ = icalin.load_from_str_move(input.data());
+	if (!succ)
+		return EXIT_FAILURE;
+	auto msg = oxcical_import_single("UTC", icalin, zalloc, ee_get_propids,
+	           oxcmail_username_to_entryid);
+	assert(msg != nullptr);
+
+	input = head + "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=8\n" + foot;
+	succ = icalin.load_from_str_move(input.data());
+	if (!succ)
+		return EXIT_FAILURE;
+	msg = oxcical_import_single("UTC", icalin, zalloc, ee_get_propids,
+	      oxcmail_username_to_entryid);
+	assert(msg != nullptr);
+	return EXIT_SUCCESS;
+}
+
 int main()
 {
 	auto ret = t_ical_api();
@@ -277,6 +323,9 @@ int main()
 	t_card();
 	t_ical();
 	ret = t_ical_dt();
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	ret = t_rrule();
 	if (ret != EXIT_SUCCESS)
 		return ret;
 	return EXIT_SUCCESS;
