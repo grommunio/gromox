@@ -231,7 +231,8 @@ BOOL oxcmail_username_to_entryid(const char *username,
 {
 	std::string essdn;
 
-	if (oxcmail_get_user_ids(username, nullptr, nullptr, dtpp) &&
+	if (oxcmail_get_user_ids != nullptr &&
+	    oxcmail_get_user_ids(username, nullptr, nullptr, dtpp) &&
 	    cvt_username_to_essdn(username, g_oxcmail_org_name,
 	    oxcmail_get_user_ids, oxcmail_get_domain_ids,
 	    essdn) == ecSuccess)
