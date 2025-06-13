@@ -1,3 +1,21 @@
+Development 2.46.17
+===================
+
+Enhancements:
+
+* oxdisco: support RFC 6764 well-known endpoints for CalDAV/CardDAV
+  (if not running grommunio nginx config in front)
+* oxcical: try to handle ICS files with missing VTIMEZONE blocks
+* oxcical: support YEARLY recurrences with BYDAY without BYSETPOS
+
+Fixes:
+
+* oxcical: avoid setting out-of-spec MAPI recurnum for FREQ=MONTHLY,BYDAY=
+  recurrences
+* oxcical: fix wrong BYMONTH calculation for MONTHNTH recurrences being
+  exported to iCal
+
+
 Gromox 2.46 (2025-05-28)
 ========================
 
