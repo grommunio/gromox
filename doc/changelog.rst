@@ -14,6 +14,8 @@ Fixes:
   recurrences
 * oxcical: fix wrong BYMONTH calculation for MONTHNTH recurrences being
   exported to iCal
+* midb, imap: make EXPUNGE synchronous so that old UIDs don't reappear in
+  a subsequent FETCH
 
 
 Gromox 2.46 (2025-05-28)

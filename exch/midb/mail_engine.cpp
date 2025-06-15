@@ -2233,7 +2233,6 @@ static int me_minst(int argc, char **argv, int sockd) try
  */
 static int me_mdele(int argc, char **argv, int sockd)
 {
-	int i;
 	BOOL b_partial;
 	EID_ARRAY message_ids;
 
@@ -2254,7 +2253,9 @@ static int me_mdele(int argc, char **argv, int sockd)
 	             " folder_id FROM messages WHERE mid_string=?");
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	for (i=3; i<argc; i++) {
+
+	/* Translate midb-MIDs into Exch-MIDs. */
+	for (int i = 3; i < argc; ++i) {
 		sqlite3_reset(pstmt);
 		sqlite3_bind_text(pstmt, 1, argv[i], -1, SQLITE_STATIC);
 		if (SQLITE_ROW != pstmt.step() ||
@@ -2264,10 +2265,43 @@ static int me_mdele(int argc, char **argv, int sockd)
 			rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 0));
 	}
 	pstmt.finalize();
-	pidb.reset();
 	if (!exmdb_client->delete_messages(argv[1], CP_ACP, nullptr,
 	    rop_util_make_eid_ex(1, folder_id), &message_ids, TRUE, &b_partial))
 		return MIDB_E_MDB_DELETEMESSAGES;
+
+	/*
+	 * exmdb notifications may only arrive belatedly (or not at all),
+	 * therefore we should explicitly drop the messages from midb.sqlite
+	 * _now_, lest
+	 *
+	 * - the *same* midb client asking for a message listing after M-DELE
+	 *   could see messages again that really ought to be gone
+	 * - the *same* IMAP client asking for a message listing after EXPUNGE
+	 *   could see messages with IMAPUIDs that were just deleted, which can
+	 *   upset clients.
+	 *
+	 * While resynchronization can still "bring back" those messages (and
+	 * break midb client expectations), resync via RSYM/RSYF is considered
+	 * a debugging tool, and resync-upon-first-open of midb.sqlite is when
+	 * no clients are connected.
+	 */
+	auto pidb_transact = gx_sql_begin(pidb->psqlite, txn_mode::write);
+	if (!pidb_transact)
+		return false;
+	pstmt = gx_sql_prep(pidb->psqlite, "DELETE FROM messages WHERE mid_string=?");
+	if (pstmt == nullptr)
+		return MIDB_E_SQLPREP;
+	for (int i = 3; i < argc; ++i) {
+		pstmt.reset();
+		pstmt.bind_text(1, argv[i]);
+		if (pstmt.step() != SQLITE_DONE)
+			/* ignore */;
+	}
+	pstmt.finalize();
+	if (pidb_transact.commit() != SQLITE_OK)
+		/* ignore */;
+	pidb.reset();
+
 	return cmd_write(sockd, "TRUE\r\n");
 }
 

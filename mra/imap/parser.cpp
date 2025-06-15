@@ -1281,6 +1281,11 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream)
 	hl_hold.unlock();
 
 	imap_parser_echo_expunges(*pcontext, pstream, f_expunged);
+	/*
+	 * 3501 §7: "the server checks the mailbox for new messages as part of
+	 * command execution. […] If new messages are found, the server sends
+	 * untagged EXISTS and RECENT responses."
+	 */
 	if (pcontext->contents.refresh(*pcontext, pcontext->selected_folder,
 	    f_expunged.size() > 0) == 0) {
 		auto outlen = gx_snprintf(buff, std::size(buff),
