@@ -247,9 +247,8 @@ db_conn_ptr db_engine_get_db(const char *path)
 
 	/* Wait for another thread's costly postconstruct_init (or any EXRPC) to finish. */
 	db_conn_ptr conn(*pdb);
-	if (!conn->open(path)) {
+	if (!conn->open(path))
 		return std::nullopt;
-	}
 	return conn;
 }
 
@@ -355,7 +354,7 @@ db_base::db_base() :
 db_handle db_base::get_db(const char* dir, DB_TYPE type)
 {
 	auto& spares = type == DB_MAIN? mx_sqlite : mx_sqlite_eph;
-	if(!spares.empty()) {
+	if (!spares.empty()) {
 		db_handle handle = std::move(spares.back());
 		spares.pop_back();
 		return handle;
@@ -370,18 +369,19 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 			path.c_str(), strerror(errno));
 	int ret = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
 	db_handle hdb(db); /* automatically close connection if something goes wrong */
-	if(ret != SQLITE_OK) {
+	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-1350: sqlite_open_v2(%s): %s (%d)",
 			path.c_str(), sqlite3_errstr(ret), ret);
 		return nullptr;
 	}
-	if((ret = gx_sql_exec(db, "PRAGMA foreign_keys=ON")) != SQLITE_OK) {
+	ret = gx_sql_exec(db, "PRAGMA foreign_keys=ON");
+	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-2101: enable foreign keys %s: %s (%d)", dir, sqlite3_errstr(ret), ret);
 		return nullptr;
 	}
 	gx_sql_exec(db, "PRAGMA journal_mode=WAL");
 	sqlite3_busy_timeout(db, int(g_sqlite_busy_timeout_ns / 1000000)); // ns -> ms
-	if(type == DB_EPH)
+	if (type == DB_EPH)
 		gx_sql_exec(db, "PRAGMA	synchronous=OFF"); /* completely disable disk synchronization for eph db */
 	return hdb;
 }
@@ -419,7 +419,7 @@ void db_base::open(const char* dir)
 	if (!hdb)
 		throw std::runtime_error(fmt::format("E-1434: get_db({}) failed", dir));
 	ret = db_engine_autoupgrade(hdb.get(), dir);
-	if(ret != 0)
+	if (ret != 0)
 		throw std::runtime_error(fmt::format("E-2105: autoupgrade {}: {}", dir, ret));
 	if (exmdb_server::is_private())
 		db_engine_load_dynamic_list(this, hdb.get());
