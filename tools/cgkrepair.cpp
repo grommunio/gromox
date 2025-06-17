@@ -227,21 +227,30 @@ static int inspect_folder_row(const TPROPVAL_ARRAY &props, const mboxparam &mbp)
 		 */
 		return 0;
 
+	for (unsigned int b_assoc = 0; b_assoc <= 1; ++b_assoc) {
+	for (unsigned int b_softdel = 0; b_softdel <= 1; ++b_softdel) {
+
 	uint32_t table_id = 0, row_count = 0;
+	unsigned int tbl_flags = 0;
+	tbl_flags |= b_assoc   ? TABLE_FLAG_ASSOCIATED : 0;
+	tbl_flags |= b_softdel ? TABLE_FLAG_SOFTDELETES : 0;
 	if (!exmdb_client->load_content_table(g_storedir, codepage, *fid,
-	    nullptr, 0, nullptr, nullptr, &table_id, &row_count))
+	    nullptr, tbl_flags, nullptr, nullptr, &table_id, &row_count))
 		return -EIO;
+	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(g_storedir, table_id); });
 	TARRAY_SET tset{};
 	if (!exmdb_client->query_table(g_storedir, nullptr, codepage, table_id,
 	    &check_tags, 0, row_count, &tset)) {
 		fprintf(stderr, "exm: query_table RPC failed\n");
 		return -EIO;
 	}
-	exmdb_client->unload_table(g_storedir, table_id);
 	for (size_t i = 0; i < tset.count; ++i) {
 		auto ret = inspect_message_row(*tset.pparray[i], mbp);
 		if (ret != 0)
 			return ret;
+	}
+
+	}
 	}
 	return 0;
 }
