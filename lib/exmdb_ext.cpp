@@ -2409,7 +2409,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_imapfile_write &d)
 	E(write_message_v2) \
 	E(imapfile_read) \
 	E(imapfile_write) \
-	E(imapfile_delete)
+	E(imapfile_delete) \
+	E(cgkreset)
 
 /**
  * This uses *& because we do not know which request type we are going to get
@@ -3744,7 +3745,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_imapfile_read &d)
 	E(autoreply_tsupdate) \
 	E(recalc_store_size) \
 	E(imapfile_write) \
-	E(imapfile_delete)
+	E(imapfile_delete) \
+	E(cgkreset)
 #define RSP_WITH_ARGS \
 	E(get_all_named_propids) \
 	E(get_named_propids) \

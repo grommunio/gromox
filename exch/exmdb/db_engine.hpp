@@ -221,6 +221,7 @@ extern void db_engine_stop();
 
 extern db_conn_ptr db_engine_get_db(const char *dir);
 extern BOOL db_engine_vacuum(const char *path);
+extern BOOL db_engine_cgkreset(const char *dir, uint32_t flags);
 BOOL db_engine_unload_db(const char *path);
 extern BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t, uint64_t folder_id, BOOL recursive, const RESTRICTION *, const LONGLONG_ARRAY *folder_ids);
 extern bool db_engine_check_populating(const char *dir, uint64_t folder_id);

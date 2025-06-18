@@ -8,6 +8,7 @@
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/exmdb_client.hpp>
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/rop_util.hpp>
 #include "genimport.hpp"
 #include "mbop.hpp"
@@ -47,6 +48,34 @@ int main(int argc, char **argv)
 			fprintf(stderr, "purge_softdel %s failed\n", *argv);
 			return EXIT_FAILURE;
 		}
+	}
+	return EXIT_SUCCESS;
+}
+
+}
+
+namespace cgkreset {
+
+static unsigned int g_zero_lastcn, g_purge_pcl;
+static constexpr HXoption g_options_table[] = {
+	{{}, 'P', HXTYPE_NONE, &g_purge_pcl, {}, {}, 0, "Purge PCL of foreign identifiers"},
+	{{}, 'Z', HXTYPE_NONE, &g_zero_lastcn, {}, {}, 0, "Start with CN 0"},
+	MBOP_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
+int main(int argc, char **argv)
+{
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
+		return EXIT_PARAM;
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
+	unsigned int flags = CGKRESET_FOLDERS | CGKRESET_MESSAGES;
+	if (g_zero_lastcn)
+		flags |= CGKRESET_ZERO_LASTCN;
+	if (!exmdb_client->cgkreset(g_storedir, flags)) {
+		fprintf(stderr, "cgkreset %s failed\n", g_storedir);
+		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
 }

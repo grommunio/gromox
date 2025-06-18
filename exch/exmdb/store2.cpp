@@ -53,6 +53,11 @@ BOOL exmdb_server::unload_store(const char *dir)
 	return db_engine_unload_db(dir);
 }
 
+BOOL exmdb_server::cgkreset(const char *dir, uint32_t flags)
+{
+	return db_engine_cgkreset(dir, flags);
+}
+
 BOOL exmdb_server::notify_new_mail(const char *dir, uint64_t folder_id,
 	uint64_t message_id)
 {

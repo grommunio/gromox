@@ -24,6 +24,8 @@ store of a domain, leave out the local part, i.e. use
 \fB(\fP command1 c1args \fB) (\fP command2 c2args \fB)\fP: command
 chaining
 .IP \(bu 4
+cgkreset: reset synchronization state (PR_CHANGE_KEY, PR_PREDECESSOR_LIST)
+.IP \(bu 4
 clear\-photo: delete user picture
 .IP \(bu 4
 clear\-profile: delete user's PHP-MAPI profile
@@ -82,6 +84,22 @@ time around and \(...\) does not cache the input for any subcommands.
 .SS Examples
 Run two commands for a user: gromox\-mbop \-u a@b.de \\( purge\-softdelete -r /
 \\) \\( purge\-datafiles \\)
+.SH cgkreset
+cgkreset resets Change Numbers on all folder and message objects, PR_CHANGE_KEY
+and PR_PREDECESSOR_LIST values. The use cases for cgkreset are:
+.IP \(bu 4
+when the mailbox has CN corruption and Incremental Change Synchronization (by
+e.g. Outlook or grommunio-sync) is hampered (e.g. message flags/color updates
+not transferred)
+.IP \(bu 4
+when the mailbox has CN corruption and gromox-http/emsmdb has thrown the error
+"INSERT INTO messages ... UNIQUE constraint failed: messages.change_number"
+.PP
+After execution, .ost files referencing the reset mailbox should be deleted.
+`gromox\-mbop cgkreset` is different from `/usr/libexec/gromox/cgkrepair` in
+that cgkreset does not make any attempts to keep synchronization state; it just
+resets everything, unconditionally. On the other hand, cgkrepair is unable to
+get to all fields that may need resetting.
 .SH clear\-photo
 The clear\-photo command will delete the user picture. Note that, when there is
 no mailbox-level profile picture set, Gromox server processes may serve an

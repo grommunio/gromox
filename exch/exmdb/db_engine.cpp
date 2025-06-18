@@ -285,6 +285,158 @@ BOOL db_engine_unload_db(const char *path)
 	return FALSE;
 }
 
+/**
+ * @db:      sqlite handle
+ * @last_cn: counter for most recently assigned CN (GCV)
+ * @q_list:  query for obtaining some objects
+ *           (shall return 2 columns; id and eligibility)
+ * @q_cn:    query for updating per-object CN
+ * @q_prop:  query for updating per-object CK & PCL
+ *
+ * Iterate over an object set and assign new Change Numbers, Change Keys and
+ * Predecessor Change Lists.
+ */
+static bool cgkreset_3(sqlite3 *db, uint64_t &last_cn, const GUID &store_guid,
+    const char *q_list, const char *q_cn, const char *q_prop)
+{
+	std::vector<std::pair<uint64_t, uint64_t>> gcv_list;
+	auto stm = gx_sql_prep(db, q_list);
+	if (stm == nullptr)
+		return false;
+	while (stm.step() == SQLITE_ROW)
+		gcv_list.emplace_back(stm.col_uint64(0), stm.col_uint64(1));
+	stm = gx_sql_prep(db, q_cn);
+	if (stm == nullptr)
+		return false;
+	auto stm_prop = gx_sql_prep(db, q_prop);
+	if (stm_prop == nullptr)
+		return false;
+
+	for (auto [objid, parent_attid] : gcv_list) {
+		auto next_cn = last_cn + 1;
+		stm.reset();
+		stm.bind_int64(1, next_cn);
+		stm.bind_int64(2, objid);
+		if (stm.step() != SQLITE_DONE)
+			return false;
+		++last_cn;
+		if (parent_attid != 0)
+			/* CK/PCL on attachments makes no sense */
+			continue;
+
+		char buf[23];
+		XID xid{store_guid, rop_util_make_eid_ex(1, last_cn)};
+		EXT_PUSH ep;
+		if (!ep.init(&buf[1], sizeof(buf) - 1, 0))
+			return false;
+		ep.p_xid(xid);
+		stm_prop.reset();
+		stm_prop.bind_blob(1, &buf[1], ep.m_offset);
+		stm_prop.bind_int64(2, objid);
+		stm_prop.bind_int64(3, PR_CHANGE_KEY);
+		if (stm_prop.step() != SQLITE_DONE)
+			return false;
+
+		stm_prop.reset();
+		buf[0] = 22;
+		stm_prop.bind_blob(1, buf, 23);
+		stm_prop.bind_int64(2, objid);
+		stm_prop.bind_int64(3, PR_PREDECESSOR_CHANGE_LIST);
+		if (stm_prop.step() != SQLITE_DONE)
+			return false;
+	}
+	return true;
+}
+
+static bool cgkreset_2(sqlite3 *db, uint64_t &last_cn, const GUID &store_guid,
+    unsigned int flags)
+{
+	if (flags & CGKRESET_FOLDERS) {
+		auto succ = cgkreset_3(db, last_cn, store_guid,
+		            "SELECT folder_id, NULL FROM folders",
+		            "UPDATE folders SET change_number=? WHERE folder_id=?",
+		            "UPDATE folder_properties SET propval=? WHERE folder_id=? AND proptag=?");
+		if (!succ)
+			return false;
+	}
+	if (flags & CGKRESET_MESSAGES) {
+		auto succ = cgkreset_3(db, last_cn, store_guid,
+		            "SELECT message_id, parent_attid FROM messages",
+		            "UPDATE messages SET change_number=? WHERE message_id=?",
+		            "UPDATE message_properties SET propval=? WHERE message_id=? AND proptag=?");
+		if (!succ)
+			return false;
+	}
+	return true;
+}
+
+/**
+ * Obtain essential parameters for a global CN/CK reassignment. In doing so, it
+ * performs the first sanity check and returns a bumped last_cn if necessary.
+ */
+static bool cgkreset_load_param(sqlite3 *db, uint64_t &last_cn, GUID &store_guid)
+{
+	auto stm = gx_sql_prep(db, "SELECT config_value FROM configurations WHERE config_id=?");
+	if (stm == nullptr)
+		return false;
+	stm.bind_int64(1, CONFIG_ID_MAILBOX_GUID);
+	if (stm.step() != SQLITE_ROW)
+		return false;
+	store_guid.from_str(stm.col_text(0));
+	stm.reset();
+	stm.bind_int64(1, CONFIG_ID_LAST_CHANGE_NUMBER);
+	if (stm.step() != SQLITE_ROW)
+		return false;
+	last_cn = stm.col_uint64(0);
+
+	stm = gx_sql_prep(db, "SELECT MAX(change_number) FROM folders");
+	if (stm == nullptr)
+		return false;
+	if (stm.step() == SQLITE_ROW)
+		last_cn = std::max(last_cn, stm.col_uint64(0));
+	stm = gx_sql_prep(db, "SELECT MAX(change_number) FROM messages");
+	if (stm == nullptr)
+		return false;
+	if (stm.step() == SQLITE_ROW)
+		last_cn = std::max(last_cn, stm.col_uint64(0));
+	return true;
+}
+
+static bool cgkreset_save_param(sqlite3 *db, uint64_t last_cn)
+{
+	auto stm = gx_sql_prep(db, "UPDATE configurations SET config_value=? WHERE config_id=?");
+	if (stm == nullptr)
+		return false;
+	stm.bind_int64(1, last_cn);
+	stm.bind_int64(2, CONFIG_ID_LAST_CHANGE_NUMBER);
+	return stm.step() == SQLITE_DONE;
+}
+
+BOOL db_engine_cgkreset(const char *dir, uint32_t flags)
+{
+	auto db = db_engine_get_db(dir);
+	if (!db)
+		return false;
+	auto xact = gx_sql_begin(db->psqlite, txn_mode::write);
+	if (!xact)
+		return false;
+	uint64_t last_cn = 0;
+	GUID store_guid;
+	if (!cgkreset_load_param(db->psqlite, last_cn, store_guid))
+		return false;
+	if (flags & CGKRESET_ZERO_LASTCN)
+		last_cn = 0;
+	if (flags & (CGKRESET_ZERO_LASTCN | CGKRESET_FOLDERS | CGKRESET_MESSAGES)) {
+		auto succ = cgkreset_2(db->psqlite, last_cn, store_guid, flags);
+		if (!succ)
+			return false;
+	}
+	auto succ = cgkreset_save_param(db->psqlite, last_cn);
+	if (!succ)
+		return false;
+	return xact.commit() == SQLITE_OK;
+}
+
 dynamic_node::dynamic_node(dynamic_node &&o) noexcept :
 	folder_id(o.folder_id), search_flags(o.search_flags),
 	prestriction(o.prestriction), folder_ids(o.folder_ids)

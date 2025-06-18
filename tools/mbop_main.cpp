@@ -76,7 +76,7 @@ static constexpr HXoption g_options_table[] = {
 
 void command_overview()
 {
-	fprintf(stderr, "Commands:\n\tclear-photo clear-profile clear-rwz delmsg "
+	fprintf(stderr, "Commands:\n\tcgkreset clear-photo clear-profile clear-rwz delmsg "
 		"echo-maildir echo-username "
 		"emptyfld get-freebusy get-photo get-websettings "
 		"get-websettings-persistent "
@@ -514,6 +514,8 @@ int cmd_parser(int argc, char **argv)
 	} else if (strcmp(argv[0], "echo-username") == 0) {
 		printf("%s\n", g_dstuser.c_str());
 		return EXIT_SUCCESS;
+	} else if (strcmp(argv[0], "cgkreset") == 0) {
+		return cgkreset::main(argc, argv);
 	}
 	return simple_rpc::main(argc, argv);
 }

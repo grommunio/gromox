@@ -170,7 +170,8 @@ enum class exmdb_callid : uint8_t {
 	imapfile_read = 0x8e,
 	imapfile_write = 0x8f,
 	imapfile_delete = 0x90,
-	/* update exch/exmdb_provider/names.cpp:exmdb_rpc_idtoname! */
+	cgkreset = 0x91,
+	/* update exch/exmdb/names.cpp:exmdb_rpc_idtoname! */
 };
 
 struct exreq {
@@ -863,7 +864,19 @@ struct exreq_imapfile_write final : public exreq {
 	std::string type, mid, data;
 };
 
+/**
+ * FOLDERS:     process folders
+ * MESSAGES:    process messages
+ * ZERO_LASTCN: reset all CNs, start from 0 (implies FOLDERS|MESSAGES)
+ */
+enum cgkreset_flags {
+	CGKRESET_FOLDERS     = 0x1U,
+	CGKRESET_MESSAGES    = 0x2U,
+	CGKRESET_ZERO_LASTCN = 0x4U,
+};
+
 using exreq_imapfile_delete = exreq_imapfile_read;
+using exreq_cgkreset = exreq_recalc_store_size;
 
 struct exresp {
 	exresp() = default; /* Prevent use of direct-init-list */
@@ -1358,6 +1371,7 @@ using exresp_write_message = exresp_error;
 using exresp_movecopy_folder = exresp_error;
 using exresp_imapfile_write = exresp;
 using exresp_imapfile_delete = exresp;
+using exresp_cgkreset = exresp;
 
 struct DB_NOTIFY_DATAGRAM {
 	char *dir = nullptr;
