@@ -10,7 +10,7 @@ AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la ${program_plugins}
 noinst_LTLIBRARIES = libgromox_abtree.la
-pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/authtry tools/eidprint tools/textmapquery
+pkglibexec_PROGRAMS = delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/authtry tools/eidprint tools/textmapquery
 if WITH_GNU_LD
 version_sc_SYFLAGS = -Wl,--version-script=${srcdir}/default.sym
 endif
@@ -182,8 +182,6 @@ libgxs_ruleproc_la_LDFLAGS = ${default_SYFLAGS}
 libgxs_ruleproc_la_LIBADD = ${vmime_LIBS} libgromox_common.la libgromox_exrpc.la libgxs_mysql_adaptor.la
 EXTRA_libgxs_ruleproc_la_DEPENDENCIES = ${default_SYM}
 
-cgkrepair_SOURCES = tools/cgkrepair.cpp tools/genimport.cpp tools/genimport.hpp
-cgkrepair_LDADD = ${gromox_mt2exm_LDADD}
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
 pam_gromox_la_SOURCES = tools/pam_gromox.cpp
 pam_gromox_la_LIBADD = ${libHX_LIBS} ${pam_LIBS} libgromox_auth.la libgromox_common.la libgxs_mysql_adaptor.la

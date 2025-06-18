@@ -26,7 +26,6 @@ Makefile.in
 /libtool
 /stamp-h1
 
-/cgkrepair
 /delivery
 /delivery-queue
 /dldcheck

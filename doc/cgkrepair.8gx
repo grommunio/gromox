@@ -3,45 +3,11 @@
 .TH cgkrepair 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 \fBcgkrepair\fP \(em Repair broken Change Key and PCL properties
-.SH Synopsis
-\fB/usr/libexec/gromox/cgkrepair [options] \-e\fP
-[\fIuser\fP]\fB@\fIdomain\fP
+.SH Description
+This utility has been replaced by
 .PP
-For a given store, cgkrepair looks at all folder and message objects whether
-they have reasonably-looking values for PR_CHANGE_KEY and
-PR_PREDECESSOR_CHANGE_LIST. It emits a line for objects with problems, along
-with status letters in square brackets to
-indicate individual tests that have failed.
+gromox\-mbop -u ... cgkreset
 .PP
-message 6f5739h [--P] (new key: 8000008a04a7h)
-.PP
-The possible flags include:
-.IP \(bu 4
-Z: The size of PR_CHANGE_KEY did not match the requirements of the MS-OXCFXICS
-v25 specification \sc2.2.1.2.7.
-.IP \(bu 4
-N: PR_CHANGE_KEY is in the future.
-.IP \(bu 4
-P: PR_PREDECESSOR_LIST contains a Change Key that is in the future or which
-does not match the requirements of MS-OXCFXICS.
-.PP
-When a problem is found, or when \-\-force\-fix is specified, a new Change Key
-is issued and the PCL updated. Change Keys are a monotonic counter for recency,
-something quite like a timestamp, but not bound to a clock. Fixing Change Keys
-can make them go backwards, and since the server now apparently has an "older"
-item, clients do not necessarily synchronize it anymore, therefore, .ost files
-should be deleted to purge bad CKs from the client side as well.
-.SH Options
-.TP
-\fB\-\-force\-fix\fP
-Replace Change Keys and PCLs of all objects regardless of whether they were
-considered broken or not.
-.TP
-\fB\-\-skip\-msg\fP
-Only process folder objects.
-.TP
-\fB\-e\fP [\fIuser\fP]\fB@\fP\fIdomain\fP
-Operate on the given private/user store or public/domain mailbox.
-.TP
-\fB\-n\fP
-Perform a dry run.
+which is a server-assisted hard reset of CN/CK/PCL.
+.SH See also
+\fBgromox\-mbop\fP(8)

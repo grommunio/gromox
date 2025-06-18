@@ -96,10 +96,11 @@ when the mailbox has CN corruption and gromox-http/emsmdb has thrown the error
 "INSERT INTO messages ... UNIQUE constraint failed: messages.change_number"
 .PP
 After execution, .ost files referencing the reset mailbox should be deleted.
-`gromox\-mbop cgkreset` is different from `/usr/libexec/gromox/cgkrepair` in
-that cgkreset does not make any attempts to keep synchronization state; it just
-resets everything, unconditionally. On the other hand, cgkrepair is unable to
-get to all fields that may need resetting.
+`gromox\-mbop cgkreset` is different from the earlier
+`/usr/libexec/gromox/cgkrepair` in that cgkreset does not make any attempts to
+keep synchronization state; it just resets everything, unconditionally. On the
+other hand, cgkrepair (now deleted) was unable to get to all fields that may
+need resetting.
 .SH clear\-photo
 The clear\-photo command will delete the user picture. Note that, when there is
 no mailbox-level profile picture set, Gromox server processes may serve an
