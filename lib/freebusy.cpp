@@ -22,6 +22,12 @@ using namespace gromox;
 
 namespace {
 
+struct ievent {
+	time_t start_time = 0, end_time = 0;
+	EXCEPTIONINFO *ei = nullptr;
+	EXTENDEDEXCEPTION *xe = nullptr;
+};
+
 struct freebusy_tags {
 	freebusy_tags(const char *);
 
@@ -221,7 +227,7 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 
 static bool find_recur_times(const ical_component *tzcom,
     time_t start_whole, const APPOINTMENT_RECUR_PAT &apr,
-    time_t start_time, time_t end_time, std::vector<event> &evlist)
+    time_t start_time, time_t end_time, std::vector<ievent> &evlist)
 {
 	ical_rrule irrule{};
 
@@ -241,7 +247,7 @@ static bool find_recur_times(const ical_component *tzcom,
 		};
 		if (std::any_of(apr.exceptions_cbegin(), apr.exceptions_cend(), time_test))
 			continue;
-		evlist.push_back(event{ut, ut + static_cast<long>((apr.endtimeoffset - apr.starttimeoffset) * 60)});
+		evlist.push_back(ievent{ut, ut + static_cast<long>((apr.endtimeoffset - apr.starttimeoffset) * 60)});
 		if (ut >= end_time)
 			break;
 	} while (irrule.iterate());
@@ -252,7 +258,7 @@ static bool find_recur_times(const ical_component *tzcom,
 		    !ical_itime_to_utc(tzcom, itime, &ut) ||
 		    ut < start_time || ut > end_time)
 			continue;
-		event event = {ut};
+		ievent event = {ut};
 		ut = rop_util_rtime_to_unix(apr.pexceptioninfo[i].enddatetime);
 		if (!ical_utc_to_datetime(nullptr, ut, &itime) ||
 		    !ical_itime_to_utc(tzcom, itime, &ut))
@@ -461,7 +467,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 		if (ext_pull.g_apptrecpat(&apprecurr) != pack_result::ok)
 			continue;
 
-		std::vector<event> event_list;
+		std::vector<ievent> event_list;
 		if (!find_recur_times(tzcom.has_value() ? &*tzcom : nullptr,
 		    start_whole, apprecurr, start_time, end_time, event_list))
 			continue;

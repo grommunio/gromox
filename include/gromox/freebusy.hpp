@@ -23,11 +23,4 @@ template<> struct fmt::formatter<ical_time> {
 	}
 };
 
-struct event
-{
-	time_t start_time = 0, end_time = 0;
-	EXCEPTIONINFO *ei = nullptr;
-	EXTENDEDEXCEPTION *xe = nullptr;
-};
-
 extern GX_EXPORT bool get_freebusy(const char *, const char *, time_t, time_t, std::vector<freebusy_event> &);
