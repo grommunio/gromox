@@ -14,6 +14,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <fmt/core.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -2238,4 +2239,13 @@ bool ical_rrule::iterate()
 		pirrule->instance_itime = itime;
 		return true;
 	}
+}
+
+std::string ical_time::fmt() const
+{
+	if (type == ICT_FLOAT_DAY)
+		return fmt::format("{:04}{:02}{:02}", year, month, day);
+	return fmt::format("{:04}{:02}{:02}T{:02}{:02}{:02}{}",
+	       year, month, day, hour, minute, second,
+	       type == ICT_UTC ? "Z" : "");
 }

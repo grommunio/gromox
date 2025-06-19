@@ -103,6 +103,7 @@ struct GX_EXPORT ical_time {
 	void add_minute(int);
 	void add_second(int);
 	int delta_day(ical_time) const;
+	std::string fmt() const;
 
 	int year;
 	int month;

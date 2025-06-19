@@ -87,11 +87,9 @@ static bool fill_tzcom(ical_component &tzcom, const SYSTEMTIME &sys, int year,
 		str = "16010101T000000";
 	} else if (sys.year == 0) {
 		int day = ical_get_dayofmonth(year, sys.month, sys.day,	sys.dayofweek);
-		str = fmt::format("{}", ical_time{year, sys.month, day,
-		      sys.hour, sys.minute, sys.second});
+		str = ical_time{year, sys.month, day, sys.hour, sys.minute, sys.second}.fmt();
 	} else if (sys.year == 1) {
-		str = fmt::format("{}", ical_time{year, sys.month, sys.day,
-		      sys.hour, sys.minute, sys.second});
+		str = ical_time{year, sys.month, sys.day, sys.hour, sys.minute, sys.second}.fmt();
 	} else {
 		return false;
 	}
@@ -210,7 +208,7 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 	} else if (rpat.endtype == IDC_RCEV_PAT_ERB_END) {
 		auto ut = rop_util_rtime_to_unix(rpat.enddate + apr.starttimeoffset);
 		ical_utc_to_datetime(tzcom, ut, &itime);
-		line.append_value("UNTIL", fmt::format("{}", itime));
+		line.append_value("UNTIL", itime.fmt());
 	}
 	if (rpat.patterntype == rptWeek) {
 		auto wd = weekday_to_str(rpat.firstdow);
