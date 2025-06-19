@@ -610,7 +610,7 @@ bool ical_parse_date(const char *str_date, ical_time *itime)
 		++str_date;
 	gx_strlcpy(tmp_buff, str_date, std::size(tmp_buff));
 	*itime = {};
-	itime->type = ICT_FLOAT_DAY;
+	itime->type = itime_type::floating_day;
 	return strlen(tmp_buff) == 8 &&
 	       sscanf(tmp_buff, "%04d%02d%02d", &itime->year, &itime->month, &itime->day) == 3;
 }
@@ -626,11 +626,11 @@ bool ical_parse_datetime(const char *str_datetime, ical_time *pitime)
 	HX_strrtrim(tmp_buff);
 	len = strlen(tmp_buff);
 	if ('Z' == tmp_buff[len - 1]) {
-		pitime->type = ICT_UTC;
+		pitime->type = itime_type::utc;
 		len --;
 		tmp_buff[len] = '\0';
 	} else {
-		pitime->type = ICT_FLOAT;
+		pitime->type = itime_type::floating;
 	}
 	if (15 == len) {
 		if (sscanf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
@@ -1144,7 +1144,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 		if (pvalue == nullptr)
 			return NULL;
 		ical_time itime1{}, itime2{};
-		if (!ical_parse_datetime(pvalue, &itime1) || itime1.type == ICT_UTC)
+		if (!ical_parse_datetime(pvalue, &itime1) || itime1.type == itime_type::utc)
 			return NULL;
 		if (itime < itime1)
 			continue;
@@ -1327,7 +1327,7 @@ bool ical_itime_to_utc(const ical_component *ptz_component,
 	 * change that. Because timegm() assumes @tmp_tm was UTC, @*ptime
 	 * now has bias which needs to be corrected.
 	 */
-	//assert(itime.type != ICT_UTC);
+	//assert(itime.type != itime_type::utc);
 	auto str_offset = ical_get_datetime_offset(*ptz_component, itime);
 	if (str_offset == nullptr)
 		return false;
@@ -1346,7 +1346,7 @@ bool ical_datetime_to_utc(const ical_component *ptz_component,
 	if (!ical_parse_datetime(str_datetime, &itime))
 		return false;
 	tmp_tm.tm_sec = itime.leap_second >= 60 ? itime.leap_second : itime.second;
-	if (itime.type != ICT_UTC)
+	if (itime.type != itime_type::utc)
 		return ical_itime_to_utc(ptz_component, itime, ptime);
 	tmp_tm.tm_min = itime.minute;
 	tmp_tm.tm_hour = itime.hour;
@@ -1380,10 +1380,10 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 		pitime->minute = tmp_tm.tm_min;
 		pitime->second = tmp_tm.tm_sec;
 		pitime->leap_second = 0;
-		pitime->type = ICT_UTC;
+		pitime->type = itime_type::utc;
 		return true;
 	}
-	pitime->type = ICT_FLOAT;
+	pitime->type = itime_type::floating;
 	for (const auto &comp : ptz_component->component_list) {
 		auto pcomponent = &comp;
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") != 0 &&
@@ -1425,7 +1425,7 @@ static bool ical_parse_until(const ical_component *ptz_component,
 			return false;
 		return ical_itime_to_utc(ptz_component, itime, ptime);
 	} else {
-		return itime.type == ICT_UTC ?
+		return itime.type == itime_type::utc ?
 		       ical_datetime_to_utc(nullptr, str_until, ptime) :
 		       ical_itime_to_utc(ptz_component, itime, ptime);
 	}
@@ -2243,9 +2243,9 @@ bool ical_rrule::iterate()
 
 std::string ical_time::fmt() const
 {
-	if (type == ICT_FLOAT_DAY)
+	if (type == itime_type::floating_day)
 		return fmt::format("{:04}{:02}{:02}", year, month, day);
 	return fmt::format("{:04}{:02}{:02}T{:02}{:02}{:02}{}",
 	       year, month, day, hour, minute, second,
-	       type == ICT_UTC ? "Z" : "");
+	       type == itime_type::utc ? "Z" : "");
 }

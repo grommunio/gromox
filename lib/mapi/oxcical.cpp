@@ -112,7 +112,7 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	if (pvalue == nullptr)
 		return false;
 	ical_time itime{};
-	if (!ical_parse_datetime(pvalue, &itime) || itime.type == ICT_UTC)
+	if (!ical_parse_datetime(pvalue, &itime) || itime.type == itime_type::utc)
 		/* Z specifier should not be used with VTIMEZONE.DTSTART */
 		return false;
 	*pyear = itime.year;
@@ -1086,11 +1086,11 @@ static bool oxcical_parse_dates(const ical_component *ptz_component,
 			ical_time itime{};
 			if (!ical_parse_datetime(pnv2.c_str(), &itime))
 				continue;
-			if (itime.type == ICT_UTC && ptz_component != nullptr) {
+			if (itime.type == itime_type::utc && ptz_component != nullptr) {
 				/* Adjust itime to be in local time */
 				ical_itime_to_utc(nullptr, itime, &tmp_time);
 				ical_utc_to_datetime(ptz_component, tmp_time, &itime);
-				/* return value not checked -- could oddly be an ICT_FLOAT now */
+				/* return value not checked -- could oddly be an itime_type::floating now */
 			}
 			itime.hour = 0;
 			itime.minute = 0;
@@ -1153,12 +1153,13 @@ static bool oxcical_parse_dtvalue(const ical_component *ptz_component,
 				goto PARSE_DATE_VALUE;
 			return false;
 		}
-		if (pitime->type == ICT_UTC) {
+		if (pitime->type == itime_type::utc) {
 			if (!ical_itime_to_utc(nullptr, *pitime, putc_time))
 				return false;
 		} else {
-			if (pitime->type == ICT_FLOAT && ptz_component != nullptr)
-				pitime->type = ICT_LOCAL;
+			if (pitime->type == itime_type::floating &&
+			    ptz_component != nullptr)
+				pitime->type = itime_type::local;
 			if (!ical_itime_to_utc(ptz_component,
 			    *pitime, putc_time))
 				return false;
@@ -1168,8 +1169,8 @@ static bool oxcical_parse_dtvalue(const ical_component *ptz_component,
 		*pitime = {};
 		if (!ical_parse_date(pvalue, pitime))
 			return false;
-		if (pitime->type == ICT_FLOAT && ptz_component != nullptr)
-			pitime->type = ICT_LOCAL;
+		if (pitime->type == itime_type::floating && ptz_component != nullptr)
+			pitime->type = itime_type::local;
 		if (!ical_itime_to_utc(ptz_component, *pitime, putc_time))
 			return false;
 	} else {
@@ -2174,8 +2175,8 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 	if (!oxcical_parse_duration(duration_min, phash, &last_propid, pmsg))
 		return "E-2703: oxcical_parse_duration returned an unspecified error";
 
-	if (!b_allday && start_itime.type != ICT_UTC &&
-	    start_itime.type != ICT_UTC && start_itime.hour == 0 &&
+	if (!b_allday && start_itime.type != itime_type::utc &&
+	    start_itime.type != itime_type::utc && start_itime.hour == 0 &&
 	    start_itime.minute == 0 && start_itime.second == 0 &&
 	    end_itime.hour == 0 && end_itime.minute == 0 &&
 	    end_itime.second == 0 && end_itime.delta_day(start_itime) == 1)
@@ -2202,7 +2203,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			if (!oxcical_parse_dtvalue(nullptr,
 			    *piline, &itime, nullptr))
 				return "E-2709";
-			if (itime.type != ICT_UTC &&
+			if (itime.type != itime_type::utc &&
 			    (itime.hour != 0 || itime.minute != 0 ||
 			    itime.second != 0 || itime.leap_second != 0))
 				return "E-2710";

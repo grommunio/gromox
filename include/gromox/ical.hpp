@@ -81,12 +81,8 @@ struct GX_EXPORT ical : public ical_component {
 	ec_error_t serialize(std::string &out) const;
 };
 
-enum { /* for ical_time::type */
-	ICT_UNSPEC,
-	ICT_UTC,
-	ICT_FLOAT,
-	ICT_FLOAT_DAY,
-	ICT_LOCAL,
+enum itime_type : uint8_t {
+	unspec, utc, floating, floating_day, local,
 };
 
 struct GX_EXPORT ical_time {
@@ -112,7 +108,7 @@ struct GX_EXPORT ical_time {
 	int minute;
 	int second;
 	int leap_second;
-	uint8_t type;
+	itime_type type;
 };
 
 struct GX_EXPORT ical_rrule {

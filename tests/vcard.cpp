@@ -137,11 +137,11 @@ static int t_ical_api()
 	assert(ical_parse_datetime("20231224T123456Z", &it));
 	assert(it.year == 2023 && it.month == 12 && it.day == 24 &&
 	       it.hour == 12 && it.minute == 34 && it.second == 56 &&
-	       it.type == ICT_UTC);
+	       it.type == itime_type::utc);
 	assert(ical_parse_datetime("20101010T101010", &it));
 	assert(it.year == 2010 && it.month == 10 && it.day == 10 &&
 	       it.hour == 10 && it.minute == 10 && it.second == 10 &&
-	       it.type == ICT_FLOAT);
+	       it.type == itime_type::floating);
 	assert(!ical_parse_datetime("20231224T1234567", &it));
 	assert(!ical_parse_datetime("20231224X123456", &it));
 	assert(!ical_parse_datetime("20231224T12345", &it));
@@ -149,7 +149,7 @@ static int t_ical_api()
 	assert(ical_parse_date("20211221", &it));
 	assert(it.year == 2021 && it.month == 12 && it.day == 21 &&
 	       it.hour == 0 && it.minute == 0 && it.second == 0 &&
-	       it.type == ICT_FLOAT_DAY);
+	       it.type == itime_type::floating_day);
 	assert(!ical_parse_date("202112211", &it));
 
 	int dow = -99, weekord = -99;
