@@ -101,14 +101,8 @@ struct GX_EXPORT ical_time {
 	int delta_day(ical_time) const;
 	std::string fmt() const;
 
-	int year;
-	int month;
-	int day;
-	int hour;
-	int minute;
-	int second;
-	int leap_second;
-	itime_type type;
+	int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, leap_second = 0;
+	itime_type type = itime_type::unspec;
 };
 
 struct GX_EXPORT ical_rrule {
