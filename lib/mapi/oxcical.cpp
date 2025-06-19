@@ -3083,7 +3083,7 @@ static bool oxcical_export_exdate(const char *tzid, bool b_date,
 		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(apr->recur_pat.pdeletedinstancedates[i] + apr->starttimeoffset), &itime);
 		if (b_date)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
-		else if (tzid == nullptr)
+		else if (tzid == nullptr || itime.type == itime_type::utc)
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
@@ -3144,7 +3144,7 @@ static bool oxcical_export_rdate(const char *tzid, bool b_date,
 		ical_utc_to_datetime(nullptr, rop_util_rtime_to_unix(apr->recur_pat.pmodifiedinstancedates[i]), &itime);
 		if (b_date)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
-		else if (tzid == nullptr)
+		else if (tzid == nullptr || itime.type == itime_type::utc)
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
@@ -3255,7 +3255,7 @@ static void append_dt(ical_component &com, const char *key,
 	char txt[64];
 	if (b_date)
 		sprintf_dt(txt, std::size(txt), itime);
-	else if (tzid == nullptr)
+	else if (tzid == nullptr || itime.type == itime_type::utc)
 		sprintf_dtutc(txt, std::size(txt), itime);
 	else
 		sprintf_dtlcl(txt, std::size(txt), itime);

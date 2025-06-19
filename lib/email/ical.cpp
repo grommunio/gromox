@@ -1360,17 +1360,9 @@ bool ical_datetime_to_utc(const ical_component *ptz_component,
 	return true;
 }
 
-bool ical_utc_to_datetime(const ical_component *ptz_component,
-    time_t utc_time, ical_time *pitime)
+static bool ical_utc_to_datetime_2(time_t utc_time, ical_time *pitime)
 {
-	int hour;
-	int minute;
-	time_t tmp_time;
 	struct tm tmp_tm;
-	const char *pvalue;
-	
-	if (NULL == ptz_component) {
-		/* UTC time */
 		if (gmtime_r(&utc_time, &tmp_tm) == nullptr)
 			return false;
 		pitime->year = tmp_tm.tm_year + 1900;
@@ -1382,24 +1374,38 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 		pitime->leap_second = 0;
 		pitime->type = itime_type::utc;
 		return true;
+}
+
+bool ical_utc_to_datetime(const ical_component *ptz_component,
+    time_t utc_time, ical_time *pitime)
+{
+	int hour;
+	int minute;
+	time_t tmp_time;
+	struct tm tmp_tm;
+	const char *pvalue;
+	
+	if (NULL == ptz_component) {
+		/* UTC time */
+		return ical_utc_to_datetime_2(utc_time, pitime);
 	}
 	pitime->type = itime_type::floating;
 	for (const auto &comp : ptz_component->component_list) {
 		auto pcomponent = &comp;
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") != 0 &&
 		    strcasecmp(pcomponent->m_name.c_str(), "DAYLIGHT") != 0)
-			return false;
+			break;
 		auto piline = pcomponent->get_line("TZOFFSETTO");
 		if (piline == nullptr)
-			return false;
+			break;
 		pvalue = piline->get_first_subvalue();
 		if (pvalue == nullptr)
-			return false;
+			break;
 		if (!ical_parse_utc_offset(pvalue, &hour, &minute))
-			return false;
+			break;
 		tmp_time = utc_time - 60*60*hour - 60*minute;
 		if (gmtime_r(&tmp_time, &tmp_tm) == nullptr)
-			return false;
+			break;
 		pitime->year = tmp_tm.tm_year + 1900;
 		pitime->month = tmp_tm.tm_mon + 1;
 		pitime->day = tmp_tm.tm_mday;
@@ -1408,11 +1414,11 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 		pitime->second = tmp_tm.tm_sec;
 		pitime->leap_second = 0;
 		if (!ical_itime_to_utc(ptz_component, *pitime, &tmp_time))
-			return false;
+			break;
 		if (tmp_time == utc_time)
 			return true;
 	}
-	return false;
+	return ical_utc_to_datetime_2(utc_time, pitime);
 }
 
 static bool ical_parse_until(const ical_component *ptz_component,
