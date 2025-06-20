@@ -210,7 +210,7 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
 	} else if (rpat.endtype == IDC_RCEV_PAT_ERB_END) {
 		auto ut = rop_util_rtime_to_unix(rpat.enddate + apr.starttimeoffset);
 		ical_utc_to_datetime(tzcom, ut, &itime);
-		line.append_value("UNTIL", fmt::format("{}Z", itime));
+		line.append_value("UNTIL", fmt::format("{}", itime));
 	}
 	if (rpat.patterntype == rptWeek) {
 		auto wd = weekday_to_str(rpat.firstdow);
