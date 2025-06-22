@@ -2020,11 +2020,11 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 			return 1800;
 		flag_buff = flagbits_to_s(
 		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
+		            [](const char *s) { return strcasecmp(s, "\\Seen") == 0; }),
+		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
 		            [](const char *s) { return strcasecmp(s, "\\Answered") == 0; }),
 		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
 		            [](const char *s) { return strcasecmp(s, "\\Flagged") == 0; }),
-		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
-		            [](const char *s) { return strcasecmp(s, "\\Seen") == 0; }),
 		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
 		            [](const char *s) { return strcasecmp(s, "\\Draft") == 0; }));
 	}
