@@ -382,13 +382,13 @@ EMSAB entryid
 
 EX entryid
 	If the MAPI Provider UID refers to an Exchange-like store, the
-	remainder from byte 22 onwards specifies an Exchange-style entryid.
+	entryid as a whole conforms to an Exchange-style entryid.
 	If byte 22-24 is {0x01,0x00}, read bytes 0-n as an EX Folder Entryid
 	(gromox: `struct FOLDER_ENTRYID`).
 	If byte 22-24 is {0x07,0x00}, read bytes 0-n as an EX Message Entryid
 	(gromox: `struct MESSAGE_ENTRYID`).
 	In entryids, the replid portions of FID/MID are just padding, ignored
-	by readers, and filed by writers with value 0.
+	by readers, and filled by writers with value 0.
 
 GABUID
 	16-byte GUID value composed of 4 bytes Gromox user ID plus
