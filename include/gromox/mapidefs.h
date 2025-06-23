@@ -1248,6 +1248,7 @@ struct GX_EXPORT tarray_set {
 	inline gromox::deref_iterator<TPROPVAL_ARRAY> end() { return pparray + count; }
 	inline gromox::const_deref_iterator<TPROPVAL_ARRAY> begin() const { return pparray; }
 	inline gromox::const_deref_iterator<TPROPVAL_ARRAY> end() const { return pparray + count; }
+	std::string repr() const;
 
 	uint32_t count;
 	TPROPVAL_ARRAY **pparray;

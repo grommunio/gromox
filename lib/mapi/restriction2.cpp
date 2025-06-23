@@ -622,6 +622,15 @@ std::string TPROPVAL_ARRAY::repr() const
 	return s;
 }
 
+std::string tarray_set::repr() const
+{
+	std::string s = "rowset{\n";
+	for (const auto &e : *this)
+		s += e.repr() + "\n";
+	s += "}";
+	return s;
+}
+
 namespace gromox {
 
 std::string guid2name(const FLATUID le)
