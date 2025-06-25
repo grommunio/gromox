@@ -647,9 +647,9 @@ tCalendarItem::tCalendarItem(const tinyxml2::XMLElement* xml) :
 	XMLINIT(IsResponseRequested),
 	XMLINIT(MyResponseType),
 	XMLINIT(Organizer),
-//	XMLINIT(RequiredAttendees),
-//	XMLINIT(OptionalAttendees),
-//	XMLINIT(Resources),
+	XMLINIT(RequiredAttendees),
+	XMLINIT(OptionalAttendees),
+	XMLINIT(Resources),
 	XMLINIT(AppointmentReplyTime),
 	XMLINIT(AppointmentSequenceNumber),
 	XMLINIT(AppointmentState),
@@ -1340,6 +1340,14 @@ void tSingleRecipient::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(Mailbox);
 }
+
+tAttendee::tAttendee(const tinyxml2::XMLElement* xml) :
+	XMLINIT(Mailbox),
+	XMLINIT(ResponseType),
+	XMLINIT(LastResponseTime),
+	XMLINIT(ProposedStart),
+	XMLINIT(ProposedEnd)
+{}
 
 void tAttendee::serialize(XMLElement* xml) const
 {

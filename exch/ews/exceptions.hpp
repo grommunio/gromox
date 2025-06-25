@@ -429,6 +429,8 @@ inline std::string E3297(const char* uid) {return fmt::format("E-3297: Failed to
 E(3298, "Failed to allocate memory for goid data");
 E(3299, "Failed to generate goid data");
 E(3300, "Failed to get offset from the timezone definition");
+E(3301, "Failed to copy message to sent items");
+E(3302, "Failed to get the display name");
 
 #undef E
 }

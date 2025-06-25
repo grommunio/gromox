@@ -1997,6 +1997,59 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
 		shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
 	}
+
+	size_t recipients = (item.RequiredAttendees ? item.RequiredAttendees->size() : 0) +
+	                    (item.OptionalAttendees ? item.OptionalAttendees->size() : 0) +
+	                    (item.Resources ? item.Resources->size() : 0);
+	if (recipients) {
+		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
+			throw EWSError::NotEnoughMemory(E3288);
+		TARRAY_SET* rcpts = content->children.prcpts;
+		if (item.RequiredAttendees)
+			for (const auto &att : *item.RequiredAttendees)
+				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_TO);
+		if (item.OptionalAttendees)
+			for (const auto &att : *item.OptionalAttendees)
+				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_CC);
+		if (item.Resources)
+			for (const auto &att : *item.Resources)
+				att.Mailbox.mkRecipient(rcpts->emplace(), MAPI_TO);
+		std::string dispName;
+		if (!mysql_adaptor_get_user_displayname(m_auth_info.username, dispName))
+			throw DispatchError(E3302);
+		auto displayName = deconst(dispName.c_str());
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, displayName});
+		shape.write(TAGGED_PROPVAL{PR_SENDER_NAME, displayName});
+		auto username = deconst(m_auth_info.username);
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_SMTP_ADDRESS, username});
+		shape.write(TAGGED_PROPVAL{PR_SENDER_SMTP_ADDRESS, username});
+		auto addrType = deconst("SMTP");
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ADDRTYPE, addrType});
+		shape.write(TAGGED_PROPVAL{PR_SENDER_ADDRTYPE, addrType});
+		auto uint0 = construct<uint8_t>(0);
+		auto uint1 = construct<uint32_t>(1);
+		auto uint5 = construct<uint32_t>(5);
+		shape.write(NtMeetingType, TAGGED_PROPVAL{PT_LONG, uint1});
+		shape.write(NtPrivate, TAGGED_PROPVAL{PT_BOOLEAN, uint0});
+		shape.write(NtAppointmentStateFlags, TAGGED_PROPVAL{PT_LONG, uint1});
+		shape.write(NtResponseStatus, TAGGED_PROPVAL{PT_LONG, uint5});
+		std::string essdn;
+		if (cvt_username_to_essdn(m_auth_info.username, m_plugin.x500_org_name.c_str(),
+		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids, essdn) != ecSuccess)
+			throw DispatchError(E3085);
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_EMAIL_ADDRESS, strcpy(alloc<char>(essdn.size() + 1), essdn.c_str())});
+		shape.write(TAGGED_PROPVAL{PR_SENDER_EMAIL_ADDRESS, strcpy(alloc<char>(essdn.size() + 1), essdn.c_str())});
+		EMSAB_ENTRYID abEid{0, DT_MAILUSER, essdn.data()};
+		EXT_PUSH ext_push;
+		static constexpr size_t ABEIDBUFFSIZE = 1280;
+		uint8_t* abEidBuff = alloc<uint8_t>(ABEIDBUFFSIZE);
+		if (!ext_push.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) ||
+		    ext_push.p_abk_eid(abEid) != pack_result::ok)
+			throw DispatchError(E3085);
+		BINARY* abEidContainer = construct<BINARY>(BINARY{ext_push.m_offset, {abEidBuff}});
+		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ENTRYID, abEidContainer});
+		shape.write(TAGGED_PROPVAL{PR_SENDER_ENTRYID, abEidContainer});
+	}
 }
 
 /**
@@ -2165,7 +2218,7 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 	if (item.Subject)
 		shape.write(TAGGED_PROPVAL{PR_SUBJECT, deconst(item.Subject->c_str())});
 
-	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+	auto now = EWSContext::construct<mapitime_t>(rop_util_current_nttime());
 	shape.write(TAGGED_PROPVAL{PR_CREATION_TIME, now});
 	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, now});
 
@@ -2353,8 +2406,8 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	if (!m_plugin.exmdb.allocate_cn(dir.c_str(), &changeNum))
 		throw DispatchError(E3084);
 	uint64_t localCommitTime = rop_util_current_nttime();
-	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, construct<uint64_t>(localCommitTime)});
-	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFICATION_TIME, construct<uint64_t>(localCommitTime)});
+	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, construct<mapitime_t>(localCommitTime)});
+	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFICATION_TIME, construct<mapitime_t>(localCommitTime)});
 
 	std::string displayName;
 	if (mysql_adaptor_get_user_displayname(m_auth_info.username,
