@@ -2026,7 +2026,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		auto addrType = deconst("SMTP");
 		shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ADDRTYPE, addrType});
 		shape.write(TAGGED_PROPVAL{PR_SENDER_ADDRTYPE, addrType});
-		auto uint0 = construct<uint32_t>(0);
+		auto uint0 = construct<uint8_t>(0);
 		auto uint1 = construct<uint32_t>(1);
 		auto uint5 = construct<uint32_t>(5);
 		shape.write(NtMeetingType, TAGGED_PROPVAL{PT_LONG, uint1});
@@ -2218,7 +2218,7 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 	if (item.Subject)
 		shape.write(TAGGED_PROPVAL{PR_SUBJECT, deconst(item.Subject->c_str())});
 
-	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+	auto now = EWSContext::construct<mapitime_t>(rop_util_current_nttime());
 	shape.write(TAGGED_PROPVAL{PR_CREATION_TIME, now});
 	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, now});
 
@@ -2406,8 +2406,8 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	if (!m_plugin.exmdb.allocate_cn(dir.c_str(), &changeNum))
 		throw DispatchError(E3084);
 	uint64_t localCommitTime = rop_util_current_nttime();
-	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, construct<uint64_t>(localCommitTime)});
-	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFICATION_TIME, construct<uint64_t>(localCommitTime)});
+	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, construct<mapitime_t>(localCommitTime)});
+	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFICATION_TIME, construct<mapitime_t>(localCommitTime)});
 
 	std::string displayName;
 	if (mysql_adaptor_get_user_displayname(m_auth_info.username,

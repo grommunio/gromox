@@ -249,7 +249,6 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		|| request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy;
 
 	data.ResponseMessages.reserve(request.Items.size());
-	auto proptrue = 1;
 	for (sItem &item : request.Items) try {
 		if (!hasAccess)
 			throw EWSError::AccessDenied(E3130);
@@ -268,16 +267,17 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 				sentitems.folderId, &newMid))
 				throw EWSError::InternalServerError(E3132);
 			BOOL result;
-			uint64_t messageId = *(*content).proplist.get<uint64_t>(PidTagMid);
+			auto messageId = *content->proplist.get<const uint64_t>(PidTagMid);
 			if (!ctx.plugin().exmdb.movecopy_message(dir.c_str(), CP_ACP,
 				messageId, sentitems.folderId, newMid, false, &result)
 				|| !result)
 				throw EWSError::InternalServerError(E3301);
 			const char* username = ctx.effectiveUser(sentitems);
 			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+			static constexpr uint8_t proptrue = 1;
 			TAGGED_PROPVAL props[] = {
 				{PR_MESSAGE_CLASS, deconst("IPM.Schedule.Meeting.Request")},
-				{PR_RESPONSE_REQUESTED, &proptrue},
+				{PR_RESPONSE_REQUESTED, deconst(&proptrue)},
 				{PR_CLIENT_SUBMIT_TIME, now},
 				{PR_MESSAGE_DELIVERY_TIME, now},
 			};
