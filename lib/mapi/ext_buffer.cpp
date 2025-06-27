@@ -1196,7 +1196,7 @@ pack_result EXT_PULL::g_propname(PROPERTY_NAME *r)
 		TRY(g_uint32(&r->lid));
 	} else if (r->kind == MNID_STRING) {
 		TRY(g_uint8(&name_size));
-		if (name_size < 2)
+		if (name_size < 1)
 			return pack_result::format;
 		uint32_t offset = m_offset + name_size;
 		TRY(g_wstr(&r->pname));
