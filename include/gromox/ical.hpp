@@ -86,6 +86,11 @@ enum itime_type : uint8_t {
 };
 
 struct GX_EXPORT ical_time {
+	constexpr ical_time() = default;
+	constexpr ical_time(int y, int m, int d, int hr, int min, int sec) :
+		year(y), month(m), day(d), hour(hr), minute(min), second(sec)
+	{}
+
 	int twcompare(const ical_time &other) const;
 	inline bool operator<(const ical_time &o) const { return twcompare(o) < 0; }
 	inline bool operator<=(const ical_time &o) const { return twcompare(o) <= 0; }
@@ -100,6 +105,9 @@ struct GX_EXPORT ical_time {
 	void add_second(int);
 	int delta_day(ical_time) const;
 	std::string fmt() const;
+	bool assign_date(const char *);
+	bool assign_datetime(const char *);
+	void clear_time() { hour = minute = second = leap_second = 0; }
 
 	int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, leap_second = 0;
 	itime_type type = itime_type::floating;
@@ -140,8 +148,6 @@ struct GX_EXPORT ical_rrule {
 };
 
 extern GX_EXPORT bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute);
-extern GX_EXPORT bool ical_parse_date(const char *in, ical_time *out);
-extern GX_EXPORT bool ical_parse_datetime(const char *in, ical_time *out);
 extern GX_EXPORT unsigned int ical_get_dayofweek(unsigned int year, unsigned int month, unsigned int day);
 extern GX_EXPORT unsigned int ical_get_dayofyear(unsigned int year, unsigned int month, unsigned int day);
 extern GX_EXPORT unsigned int ical_get_monthdays(unsigned int year, unsigned int month);

@@ -112,7 +112,7 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	if (pvalue == nullptr)
 		return false;
 	ical_time itime{};
-	if (!ical_parse_datetime(pvalue, &itime) || itime.type == itime_type::utc)
+	if (!itime.assign_datetime(pvalue) || itime.type == itime_type::utc)
 		/* Z specifier should not be used with VTIMEZONE.DTSTART */
 		return false;
 	*pyear = itime.year;
@@ -1084,7 +1084,7 @@ static bool oxcical_parse_dates(const ical_component *ptz_component,
 			if (pnv2.empty())
 				continue;
 			ical_time itime{};
-			if (!ical_parse_datetime(pnv2.c_str(), &itime))
+			if (!itime.assign_datetime(pnv2.c_str()))
 				continue;
 			if (itime.type == itime_type::utc && ptz_component != nullptr) {
 				/* Adjust itime to be in local time */
@@ -1110,7 +1110,7 @@ static bool oxcical_parse_dates(const ical_component *ptz_component,
 			if (pnv2.empty())
 				continue;
 			ical_time itime{};
-			if (!ical_parse_date(pnv2.c_str(), &itime))
+			if (!itime.assign_date(pnv2.c_str()))
 				continue;
 			ical_itime_to_utc(nullptr, itime, &tmp_time);
 			pdates[*pcount] = rop_util_unix_to_rtime(tmp_time);
@@ -1148,7 +1148,7 @@ static bool oxcical_parse_dtvalue(const ical_component *ptz_component,
 		putc_time = &dummy_time;
 	auto pvalue1 = piline.get_first_paramval("VALUE");
 	if (pvalue1 == nullptr || strcasecmp(pvalue1, "DATE-TIME") == 0) {
-		if (!ical_parse_datetime(pvalue, pitime)) {
+		if (!pitime->assign_datetime(pvalue)) {
 			if (pvalue1 == nullptr)
 				goto PARSE_DATE_VALUE;
 			return false;
@@ -1164,7 +1164,7 @@ static bool oxcical_parse_dtvalue(const ical_component *ptz_component,
 	} else if (0 == strcasecmp(pvalue1, "DATE")) {
  PARSE_DATE_VALUE:
 		*pitime = {};
-		if (!ical_parse_date(pvalue, pitime))
+		if (!pitime->assign_date(pvalue))
 			return false;
 		if (!ical_itime_to_utc(ptz_component, *pitime, putc_time))
 			return false;

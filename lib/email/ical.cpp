@@ -602,8 +602,16 @@ bool ical_parse_utc_offset(const char *str_zone, int *phour, int *pminute)
 	return true;
 }
 
-bool ical_parse_date(const char *str_date, ical_time *itime)
+/**
+ * @str_date: string of the form yyyymmdd
+ *
+ * Break down input string and assign to ical_time. By virtue of the
+ * required input format, it is/becomes a itime_type::floating_day by
+ * definition.
+ */
+bool ical_time::assign_date(const char *str_date)
 {
+	auto itime = this;
 	char tmp_buff[10];
 	
 	while (HX_isspace(*str_date))
@@ -615,8 +623,16 @@ bool ical_parse_date(const char *str_date, ical_time *itime)
 	       sscanf(tmp_buff, "%04d%02d%02d", &itime->year, &itime->month, &itime->day) == 3;
 }
 
-bool ical_parse_datetime(const char *str_datetime, ical_time *pitime)
+/**
+ * @str_datetime: string of the form yyyymmdd "T" hhmmss [ "Z" ]
+ *
+ * Break down input string and assign to ical_time. By virtue of the
+ * required input format, it always becomes either a
+ * itime_type::floating or itime_type::utc.
+ */
+bool ical_time::assign_datetime(const char *str_datetime)
 {
+	auto pitime = this;
 	int len;
 	char tmp_buff[20];
 	
@@ -1144,7 +1160,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 		if (pvalue == nullptr)
 			return NULL;
 		ical_time itime1{}, itime2{};
-		if (!ical_parse_datetime(pvalue, &itime1) || itime1.type == itime_type::utc)
+		if (!itime1.assign_datetime(pvalue) || itime1.type == itime_type::utc)
 			return NULL;
 		if (itime < itime1)
 			continue;
@@ -1154,12 +1170,9 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 		pvalue = piline->get_first_subvalue_by_name("UNTIL");
 		if (pvalue == nullptr)
 			goto FOUND_COMPONENT;
-		if (!ical_parse_datetime(pvalue, &itime2)) {
-			itime2.hour = 0;
-			itime2.minute = 0;
-			itime2.second = 0;
-			itime2.leap_second = 0;
-			if (!ical_parse_date(pvalue, &itime2))
+		if (!itime2.assign_datetime(pvalue)) {
+			itime2.clear_time();
+			if (!itime2.assign_date(pvalue))
 				return nullptr;
 		} else {
 			if (!ical_datetime_to_utc(nullptr, pvalue, &tmp_time))
@@ -1343,7 +1356,7 @@ bool ical_datetime_to_utc(const ical_component *ptz_component,
 	ical_time itime{};
 	struct tm tmp_tm;
 	
-	if (!ical_parse_datetime(str_datetime, &itime))
+	if (!itime.assign_datetime(str_datetime))
 		return false;
 	tmp_tm.tm_sec = itime.leap_second >= 60 ? itime.leap_second : itime.second;
 	if (itime.type != itime_type::utc)
@@ -1426,8 +1439,8 @@ static bool ical_parse_until(const ical_component *ptz_component,
 {
 	ical_time itime{};
 	
-	if (!ical_parse_datetime(str_until, &itime)) {
-		if (!ical_parse_date(str_until, &itime))
+	if (!itime.assign_datetime(str_until)) {
+		if (!itime.assign_date(str_until))
 			return false;
 		return ical_itime_to_utc(ptz_component, itime, ptime);
 	} else {
