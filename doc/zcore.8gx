@@ -6,12 +6,13 @@ zcore \(em Bridge for PHP-MAPI requests
 .SH Synopsis
 \fBzcore\fP [\fB\-c\fP \fIconfig\fP]
 .SH Description
-zcore is a bridge process (proxy) between mapi(4gx) and exmdb_provider(4gx). It
+zcore is a bridge process (proxy) between PHP-MAPI and the Information Store
+(see manpages mapi(4gx) and exmdb_provider(4gx), respectively). It
 listens on /run/gromox/zcore.sock (hardcoded) for zcore RPCs, a Gromox-specific
 protocol and issues exmdb RPCs to exmdb_provider(4gx). As exmdb_provider connections
 have no state to speak of, zcore is the process that defines the logins sessions.
-zcore needs to run on the same server as the program that uses the Z-MAPI
-PHP functions.
+zcore needs to run on the same server as the program that uses the PHP-MAPI
+functions.
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
