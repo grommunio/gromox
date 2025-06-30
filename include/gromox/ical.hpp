@@ -82,7 +82,7 @@ struct GX_EXPORT ical : public ical_component {
 };
 
 enum itime_type : uint8_t {
-	unspec, utc, floating, floating_day, local,
+	floating, floating_day, utc,
 };
 
 struct GX_EXPORT ical_time {
@@ -102,7 +102,7 @@ struct GX_EXPORT ical_time {
 	std::string fmt() const;
 
 	int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, leap_second = 0;
-	itime_type type = itime_type::unspec;
+	itime_type type = itime_type::floating;
 };
 
 struct GX_EXPORT ical_rrule {

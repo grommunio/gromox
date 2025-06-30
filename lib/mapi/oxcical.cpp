@@ -1157,9 +1157,6 @@ static bool oxcical_parse_dtvalue(const ical_component *ptz_component,
 			if (!ical_itime_to_utc(nullptr, *pitime, putc_time))
 				return false;
 		} else {
-			if (pitime->type == itime_type::floating &&
-			    ptz_component != nullptr)
-				pitime->type = itime_type::local;
 			if (!ical_itime_to_utc(ptz_component,
 			    *pitime, putc_time))
 				return false;
@@ -1169,8 +1166,6 @@ static bool oxcical_parse_dtvalue(const ical_component *ptz_component,
 		*pitime = {};
 		if (!ical_parse_date(pvalue, pitime))
 			return false;
-		if (pitime->type == itime_type::floating && ptz_component != nullptr)
-			pitime->type = itime_type::local;
 		if (!ical_itime_to_utc(ptz_component, *pitime, putc_time))
 			return false;
 	} else {
