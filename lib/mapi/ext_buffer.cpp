@@ -1792,7 +1792,7 @@ pack_result EXT_PULL::g_systime(SYSTEMTIME *r)
 	return g_int16(&r->milliseconds);
 }
 
-pack_result EXT_PULL::g_tzstruct(TIMEZONESTRUCT *r)
+pack_result EXT_PULL::g_tzstruct(TZSTRUCT *r)
 {
 	TRY(g_int32(&r->bias));
 	TRY(g_int32(&r->standardbias));
@@ -3304,7 +3304,7 @@ pack_result EXT_PUSH::p_systime(const SYSTEMTIME &r)
 	return p_int16(r.milliseconds);
 }
 
-pack_result EXT_PUSH::p_tzstruct(const TIMEZONESTRUCT &r)
+pack_result EXT_PUSH::p_tzstruct(const TZSTRUCT &r)
 {
 	TRY(p_int32(r.bias));
 	TRY(p_int32(r.standardbias));

@@ -123,7 +123,7 @@ static bool fill_tzcom(ical_component &tzcom, const SYSTEMTIME &sys, int year,
 }
 
 static std::optional<ical_component> tz_to_vtimezone(int year,
-    const char *tzid, const TIMEZONESTRUCT &tz)
+    const char *tzid, const TZSTRUCT &tz)
 {
 	std::optional<ical_component> com("VTIMEZONE");
 	com->append_line("TZID", tzid);
@@ -448,7 +448,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 		std::optional<ical_component> tzcom;
 		auto bin = ctnt->proplist.get<BINARY>(ptag.timezonestruct);
 		if (bin != nullptr) {
-			TIMEZONESTRUCT tz;
+			TZSTRUCT tz;
 			ext_pull.init(bin->pb, bin->cb, exmdb_rpc_alloc, EXT_FLAG_UTF16);
 			if (ext_pull.g_tzstruct(&tz) != pack_result::ok)
 				continue;

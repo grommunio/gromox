@@ -515,8 +515,8 @@ struct GX_EXPORT SYSTEMTIME {
 	static constexpr int16_t maxyear = 30828;
 };
 
-/* pidLidTimeZoneStruct */
-struct GX_EXPORT TIMEZONESTRUCT {
+/* pidLidTimeZoneStruct - MS-OXOCAL v21 §2.2.1.39 */
+struct GX_EXPORT TZSTRUCT {
 	int32_t bias;
 	int32_t standardbias;
 	int32_t daylightbias;

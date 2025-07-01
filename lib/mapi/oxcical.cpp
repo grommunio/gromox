@@ -255,7 +255,7 @@ static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF *ptz_definition
 	return true;
 }
 
-static void oxcical_convert_to_tzstruct(TZDEF *ptz_definition, TIMEZONESTRUCT *ptz_struct)
+static void oxcical_convert_to_tzstruct(TZDEF *ptz_definition, TZSTRUCT *ptz_struct)
 {
 	*ptz_struct = {};
 	if (ptz_definition->crules == 0)
@@ -286,8 +286,7 @@ static bool oxcical_tzdefinition_to_binary(const TZDEF *ptz_definition,
 	return true;
 }
 
-static bool oxcical_timezonestruct_to_binary(
-	TIMEZONESTRUCT *ptzstruct, BINARY *pbin)
+static bool oxcical_timezonestruct_to_binary(TZSTRUCT *ptzstruct, BINARY *pbin)
 {
 	EXT_PUSH ext_push;
 
@@ -691,7 +690,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 {
 	BINARY tmp_bin;
 	const char *ptzid;
-	TIMEZONESTRUCT tz_struct;
+	TZSTRUCT tz_struct;
 	TZDEF tz_definition;
 	TZRULE rules_buff[MAX_TZRULE_NUMBER];
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
@@ -2690,7 +2689,7 @@ static int sprintf_dtutc(char *b, size_t z, const ical_time &t)
 }
 
 static ical_component *oxcical_export_timezone(ical &pical,
-    int year, const char *tzid, TIMEZONESTRUCT *ptzstruct) try
+    int year, const char *tzid, TZSTRUCT *ptzstruct) try
 {
 	int day;
 	int order;
@@ -3587,7 +3586,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			if (bin != nullptr) {
 				EXT_PULL ext_pull;
 				TZDEF tz_definition;
-				TIMEZONESTRUCT tz_struct;
+				TZSTRUCT tz_struct;
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
@@ -3606,7 +3605,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			if (bin != nullptr) {
 				EXT_PULL ext_pull;
 				TZDEF tz_definition;
-				TIMEZONESTRUCT tz_struct;
+				TZSTRUCT tz_struct;
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
@@ -3626,7 +3625,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				tzid = nullptr;
 			if (bin != nullptr && bin->cb > 0 && tzid != nullptr) {
 				EXT_PULL ext_pull;
-				TIMEZONESTRUCT tz_struct;
+				TZSTRUCT tz_struct;
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
 				if (ext_pull.g_tzstruct(&tz_struct) != pack_result::ok) {

@@ -90,7 +90,7 @@ struct RECURRENCE_PATTERN;
 struct STORE_ENTRYID;
 struct SYSTEMTIME;
 struct TZDEF;
-struct TIMEZONESTRUCT;
+struct TZSTRUCT;
 struct TYPED_PROPVAL;
 struct TYPED_STRING;
 struct XID;
@@ -193,7 +193,7 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_flatentry_a(BINARY_ARRAY *);
 	pack_result g_eid_a(EID_ARRAY *);
 	pack_result g_systime(SYSTEMTIME *);
-	pack_result g_tzstruct(TIMEZONESTRUCT *);
+	pack_result g_tzstruct(TZSTRUCT *);
 	pack_result g_tzdef(TZDEF *);
 	pack_result g_apptrecpat(APPOINTMENT_RECUR_PAT *);
 	pack_result g_goid(GLOBALOBJECTID *);
@@ -314,7 +314,7 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_persistdata_a(std::span<const PERSISTDATA>);
 	pack_result p_eid_a(const EID_ARRAY &);
 	pack_result p_systime(const SYSTEMTIME &);
-	pack_result p_tzstruct(const TIMEZONESTRUCT &);
+	pack_result p_tzstruct(const TZSTRUCT &);
 	pack_result p_tzdef(const TZDEF &);
 	pack_result p_apptrecpat(const APPOINTMENT_RECUR_PAT &);
 	pack_result p_goid(const GLOBALOBJECTID &);
