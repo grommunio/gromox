@@ -40,8 +40,6 @@ static void d_tzrule(const TZRULE &r)
 
 static void d_tzdef(const TIMEZONEDEFINITION &d)
 {
-	printf("major = %xh (%u), minor = %xh (%u), reserved = %xh (%u)\n",
-	       d.major, d.major, d.minor, d.minor, d.reserved, d.reserved);
 	printf("name = %s\n", d.keyname);
 	printf("#rules = %xh (%u)\n", d.crules, d.crules);
 	for (unsigned int i = 0; i < d.crules; ++i) {

@@ -540,9 +540,8 @@ struct GX_EXPORT TZRULE {
 	inline auto operator<=>(const TZRULE &o) const { return year <=> o.year; }
 };
 
+/* MS-OXOCAL v21 §2.2.1.41 */
 struct GX_EXPORT TIMEZONEDEFINITION {
-	uint8_t major = 0x2, minor = 0x1;
-	uint16_t reserved = 0x2;
 	char *keyname = nullptr;
 	uint16_t crules = 0;
 	TZRULE *prules = nullptr;

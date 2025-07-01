@@ -175,9 +175,6 @@ static bool oxcical_tzcom_to_def(const ical_component &vt,
 	TZRULE *pstandard_rule;
 	TZRULE *pdaylight_rule;
 
-	ptz_definition->major = 2;
-	ptz_definition->minor = 1;
-	ptz_definition->reserved = 0x0002;
 	auto piline = vt.get_line("TZID");
 	if (piline == nullptr)
 		return false;
