@@ -1805,9 +1805,11 @@ pack_result EXT_PULL::g_tzstruct(TIMEZONESTRUCT *r)
 
 static pack_result ext_buffer_pull_tzrule(EXT_PULL *pext, TZRULE *r)
 {
-	TRY(pext->g_uint8(&r->major));
-	TRY(pext->g_uint8(&r->minor));
-	TRY(pext->g_uint16(&r->reserved));
+	uint8_t major, minor;
+	uint16_t reserved;
+	TRY(pext->g_uint8(&major));
+	TRY(pext->g_uint8(&minor));
+	TRY(pext->g_uint16(&reserved));
 	TRY(pext->g_uint16(&r->flags));
 	TRY(pext->g_int16(&r->year));
 	TRY(pext->g_bytes(r->x, 14));
@@ -3314,9 +3316,9 @@ pack_result EXT_PUSH::p_tzstruct(const TIMEZONESTRUCT &r)
 
 static pack_result ext_buffer_push_tzrule(EXT_PUSH *pext, const TZRULE *r)
 {
-	TRY(pext->p_uint8(r->major));
-	TRY(pext->p_uint8(r->minor));
-	TRY(pext->p_uint16(r->reserved));
+	TRY(pext->p_uint8(2));
+	TRY(pext->p_uint8(1));
+	TRY(pext->p_uint16(0x3E));
 	TRY(pext->p_uint16(r->flags));
 	TRY(pext->p_int16(r->year));
 	TRY(pext->p_bytes(r->x, 14));

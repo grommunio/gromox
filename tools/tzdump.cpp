@@ -30,8 +30,7 @@ static void d_systime(const SYSTEMTIME &t)
 
 static void d_tzrule(const TZRULE &r)
 {
-	printf("TZRULE{%u,%u,0x%x,%u,%d,%d,%d,%d,",
-	       r.major, r.minor, r.reserved, r.flags,
+	printf("TZRULE{%u,%d,%d,%d,%d,", r.flags,
 	       r.year, r.bias, r.standardbias, r.daylightbias);
 	d_systime(r.standarddate);
 	printf(",");

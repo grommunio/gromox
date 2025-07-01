@@ -534,9 +534,9 @@ struct GX_EXPORT TIMEZONESTRUCT {
 #define TZRULE_FLAG_RECUR_CURRENT_TZREG				0x0001
 #define TZRULE_FLAG_EFFECTIVE_TZREG					0x0002
 
+/* MS-OXOCAL v21 §2.2.1.41.1 */
 struct GX_EXPORT TZRULE {
-	uint8_t major = 2, minor = 1;
-	uint16_t reserved = 0x3E, flags = 0;
+	uint16_t flags = 0;
 	int16_t year = 0;
 	uint8_t x[14]{};
 	int32_t bias = 0, standardbias = 0, daylightbias = 0;
