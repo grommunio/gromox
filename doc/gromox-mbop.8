@@ -71,16 +71,16 @@ vacuum: issue the "vacuum" RPC for a mailbox
 .IP \(bu 4
 SQLite recovery: https://docs.grommunio.com/kb/sqlite.html
 .SH Command chaining
-\fB\(\fP \fIsubcommand1 sub1args\fP... \fB\)\fP...
+\fB(\fP \fIsubcommand1 sub1args\fP... \fB)\fP...
 .PP
 It is possible to run multiple mbop commands in sequence for a user. For the
 option parser to recognize when a command ends and the next one starts, each
-subcommand invocation shall be wrapped in \fB\(\fP and \fB\)\fP. This becomes
+subcommand invocation shall be wrapped in \fB(\fP and \fB)\fP. This becomes
 even more handy in conjunction with the foreach.* pseudocommand.
 .PP
 Subcommands reading data from standard input (e.g. set\-photo) cannot be
 realiably used with chaining, because stdin would be fully consumed the first
-time around and \(...\) does not cache the input for any subcommands.
+time around and (...) does not cache the input for any subcommands.
 .SS Examples
 Run two commands for a user: gromox\-mbop \-u a@b.de \\( purge\-softdelete -r /
 \\) \\( purge\-datafiles \\)
