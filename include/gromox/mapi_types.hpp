@@ -541,12 +541,11 @@ struct GX_EXPORT TZRULE {
 };
 
 struct GX_EXPORT TIMEZONEDEFINITION {
-	uint8_t major; /* 0x02 */
-	uint8_t minor; /* 0x01 */
-	uint16_t reserved; /* 0x0002 */
-	char* keyname;
-	uint16_t crules;
-	TZRULE *prules;
+	uint8_t major = 0x2, minor = 0x1;
+	uint16_t reserved = 0x2;
+	char *keyname = nullptr;
+	uint16_t crules = 0;
+	TZRULE *prules = nullptr;
 };
 
 enum {
