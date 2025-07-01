@@ -537,7 +537,7 @@ struct GX_EXPORT TZRULE {
 	int32_t bias = 0, standardbias = 0, daylightbias = 0;
 	SYSTEMTIME standarddate{}, daylightdate{};
 
-	inline bool operator<(const TZRULE &o) const { return year < o.year; }
+	inline auto operator<=>(const TZRULE &o) const { return year <=> o.year; }
 };
 
 struct GX_EXPORT TIMEZONEDEFINITION {
