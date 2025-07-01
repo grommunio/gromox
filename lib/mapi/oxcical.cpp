@@ -207,10 +207,7 @@ static bool oxcical_tzcom_to_def(const ical_component &vt,
 			if (ptz_definition->crules >= MAX_TZRULE_NUMBER)
 				return false;
 			ptz_definition->crules ++;
-			memset(ptz_definition->prules + i, 0, sizeof(TZRULE));
-			ptz_definition->prules[i].major = 2;
-			ptz_definition->prules[i].minor = 1;
-			ptz_definition->prules[i].reserved = 0x003E;
+			ptz_definition->prules[i] = {};
 			ptz_definition->prules[i].year = year;
 		}
 		if (b_daylight) {

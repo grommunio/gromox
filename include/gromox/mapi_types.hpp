@@ -535,17 +535,12 @@ struct GX_EXPORT TIMEZONESTRUCT {
 #define TZRULE_FLAG_EFFECTIVE_TZREG					0x0002
 
 struct GX_EXPORT TZRULE {
-	uint8_t major; /* 0x02 */
-	uint8_t minor; /* 0x01 */
-	uint16_t reserved; /* must be 0x003E */
-	uint16_t flags;
-	int16_t year;
-	uint8_t x[14]; /* all zeroes */
-	int32_t bias;
-	int32_t standardbias;
-	int32_t daylightbias;
-	SYSTEMTIME standarddate;
-	SYSTEMTIME daylightdate;
+	uint8_t major = 2, minor = 1;
+	uint16_t reserved = 0x3E, flags = 0;
+	int16_t year = 0;
+	uint8_t x[14]{};
+	int32_t bias = 0, standardbias = 0, daylightbias = 0;
+	SYSTEMTIME standarddate{}, daylightdate{};
 
 	inline bool operator<(const TZRULE &o) const { return year < o.year; }
 };
