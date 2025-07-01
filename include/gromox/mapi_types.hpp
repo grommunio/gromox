@@ -503,15 +503,8 @@ struct GX_EXPORT PERSISTDATA {
 #define DELEGATE_PERMISSION_EDITOR					0x0000007B
 
 struct GX_EXPORT SYSTEMTIME {
-	int16_t year;
-	int16_t month;
-	int16_t dayofweek;
-	int16_t day;
-	int16_t hour;
-	int16_t minute;
-	int16_t second;
-	int16_t milliseconds;
-
+	int16_t year = 0, month = 0, dayofweek = 0, day = 0;
+	int16_t hour = 0, minute = 0, second = 0, milliseconds = 0;
 	/*
 	 * 63-bit mapitime limit is sometime in the year 30828. Rather than have an
 	 * incomplete year, the latest acceptable date for a SYSTEMTIME object is

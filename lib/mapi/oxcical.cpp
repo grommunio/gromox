@@ -81,7 +81,7 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	const char *pvalue1;
 	const char *pvalue2;
 
-	memset(pdate, 0, sizeof(SYSTEMTIME));
+	*pdate = {};
 	auto piline = sub.get_line("TZOFFSETTO");
 	if (piline == nullptr)
 		return false;
@@ -243,8 +243,7 @@ static bool oxcical_tzcom_to_def(const ical_component &vt,
 		if (ptz_definition->prules[i].daylightdate.month == 0 ||
 		    memcmp(&ptz_definition->prules[i].standarddate,
 		    &ptz_definition->prules[i].daylightdate, sizeof(SYSTEMTIME)) == 0)
-			memset(&ptz_definition->prules[i].daylightdate,
-				0, sizeof(SYSTEMTIME));
+			ptz_definition->prules[i].daylightdate = {};
 	}
 	if (ptz_definition->crules > 1 &&
 		(0 == ptz_definition->prules[0].standarddate.month ||
@@ -264,7 +263,7 @@ static bool oxcical_tzcom_to_def(const ical_component &vt,
 static void oxcical_convert_to_tzstruct(
 	TIMEZONEDEFINITION *ptz_definition, TIMEZONESTRUCT *ptz_struct)
 {
-	memset(ptz_struct, 0, sizeof(TIMEZONESTRUCT));
+	*ptz_struct = {};
 	if (ptz_definition->crules == 0)
 		return;
 	int index;
