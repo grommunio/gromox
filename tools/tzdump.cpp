@@ -38,7 +38,7 @@ static void d_tzrule(const TZRULE &r)
 	printf("}");
 }
 
-static void d_tzdef(const TIMEZONEDEFINITION &d)
+static void d_tzdef(const TZDEF &d)
 {
 	printf("name = %s\n", d.keyname);
 	printf("#rules = %xh (%u)\n", d.crules, d.crules);
@@ -52,10 +52,10 @@ static void d_tzdef(const TIMEZONEDEFINITION &d)
 static int d_raw(const char *name, const void *data, size_t size)
 {
 	EXT_PULL ep;
-	TIMEZONEDEFINITION def;
+	TZDEF def;
 	ep.init(data, size, zalloc, EXT_FLAG_UTF16);
 	if (ep.g_tzdef(&def) != pack_result::ok) {
-		fprintf(stderr, "%s: does not look like a TIMEZONEDEFINITION\n", name);
+		fprintf(stderr, "%s: does not look like a TZDEF\n", name);
 		return EXIT_FAILURE;
 	}
 	printf(">>> %s\n", name);

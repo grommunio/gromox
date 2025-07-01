@@ -1820,7 +1820,7 @@ static pack_result ext_buffer_pull_tzrule(EXT_PULL *pext, TZRULE *r)
 	return pext->g_systime(&r->daylightdate);
 }
 
-pack_result EXT_PULL::g_tzdef(TIMEZONEDEFINITION *r)
+pack_result EXT_PULL::g_tzdef(TZDEF *r)
 {
 	uint8_t major, minor;
 	uint16_t reserved, cbheader;
@@ -3330,7 +3330,7 @@ static pack_result ext_buffer_push_tzrule(EXT_PUSH *pext, const TZRULE *r)
 	return pext->p_systime(r->daylightdate);
 }
 
-pack_result EXT_PUSH::p_tzdef(const TIMEZONEDEFINITION &r)
+pack_result EXT_PUSH::p_tzdef(const TZDEF &r)
 {
 	uint16_t cbheader;
 	char tmp_buff[262];

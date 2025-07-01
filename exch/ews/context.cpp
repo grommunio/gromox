@@ -1954,7 +1954,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 				// try to get the offset from the timezone definition.
 				if ((startOffset == 0 && calcStartOffset) || (endOffset == 0 && calcEndOffset)) {
 					EXT_PULL ext_pull;
-					TIMEZONEDEFINITION tzdef;
+					TZDEF tzdef;
 					ext_pull.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
 					if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
 						throw EWS::DispatchError(E3294);

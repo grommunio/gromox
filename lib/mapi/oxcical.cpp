@@ -164,8 +164,7 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	return true;
 }
 
-static bool oxcical_tzcom_to_def(const ical_component &vt,
-	TIMEZONEDEFINITION *ptz_definition)
+static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF *ptz_definition)
 {
 	int i;
 	bool b_found;
@@ -256,8 +255,7 @@ static bool oxcical_tzcom_to_def(const ical_component &vt,
 	return true;
 }
 
-static void oxcical_convert_to_tzstruct(
-	TIMEZONEDEFINITION *ptz_definition, TIMEZONESTRUCT *ptz_struct)
+static void oxcical_convert_to_tzstruct(TZDEF *ptz_definition, TIMEZONESTRUCT *ptz_struct)
 {
 	*ptz_struct = {};
 	if (ptz_definition->crules == 0)
@@ -273,7 +271,7 @@ static void oxcical_convert_to_tzstruct(
 	ptz_struct->daylightyear = ptz_struct->daylightdate.year;
 }
 
-static bool oxcical_tzdefinition_to_binary(const TIMEZONEDEFINITION *ptz_definition,
+static bool oxcical_tzdefinition_to_binary(const TZDEF *ptz_definition,
 	uint16_t tzrule_flags, BINARY *pbin)
 {
 	EXT_PUSH ext_push;
@@ -669,7 +667,7 @@ static bool oxcical_parse_tzdisplay(bool b_dtstart, const ical_component &tzcom,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	TZRULE rules_buff[MAX_TZRULE_NUMBER];
-	TIMEZONEDEFINITION tz_definition;
+	TZDEF tz_definition;
 	BINARY tmp_bin;
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 
@@ -694,7 +692,7 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 	BINARY tmp_bin;
 	const char *ptzid;
 	TIMEZONESTRUCT tz_struct;
-	TIMEZONEDEFINITION tz_definition;
+	TZDEF tz_definition;
 	TZRULE rules_buff[MAX_TZRULE_NUMBER];
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 
@@ -3588,7 +3586,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefrecur]));
 			if (bin != nullptr) {
 				EXT_PULL ext_pull;
-				TIMEZONEDEFINITION tz_definition;
+				TZDEF tz_definition;
 				TIMEZONESTRUCT tz_struct;
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
@@ -3607,7 +3605,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefend]));
 			if (bin != nullptr) {
 				EXT_PULL ext_pull;
-				TIMEZONEDEFINITION tz_definition;
+				TZDEF tz_definition;
 				TIMEZONESTRUCT tz_struct;
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
