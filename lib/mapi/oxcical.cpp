@@ -241,8 +241,7 @@ static bool oxcical_tzcom_to_def(const ical_component &vt,
 		/* ignore the definition which has only STANDARD component
 			or with the same STANDARD and DAYLIGHT component */
 		if (ptz_definition->prules[i].daylightdate.month == 0 ||
-		    memcmp(&ptz_definition->prules[i].standarddate,
-		    &ptz_definition->prules[i].daylightdate, sizeof(SYSTEMTIME)) == 0)
+		    ptz_definition->prules[i].standarddate == ptz_definition->prules[i].daylightdate)
 			ptz_definition->prules[i].daylightdate = {};
 	}
 	if (ptz_definition->crules > 1 &&

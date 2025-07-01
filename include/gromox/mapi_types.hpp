@@ -503,6 +503,8 @@ struct GX_EXPORT PERSISTDATA {
 #define DELEGATE_PERMISSION_EDITOR					0x0000007B
 
 struct GX_EXPORT SYSTEMTIME {
+	auto operator<=>(const SYSTEMTIME &) const = default;
+
 	int16_t year = 0, month = 0, dayofweek = 0, day = 0;
 	int16_t hour = 0, minute = 0, second = 0, milliseconds = 0;
 	/*
