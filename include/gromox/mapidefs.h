@@ -941,13 +941,15 @@ struct GX_EXPORT FLATUID {
 	operator GUID() const;
 
 	uint8_t ab[16];
-#if __cplusplus >= 202000L && defined(__GNUG__) >= 13
-	/* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=103733 */
-	bool operator==(const FLATUID &) const = default;
-#else
+	/*
+	 * Not using auto operator==/<=> because of
+	 * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=103733
+	 *
+	 * https://en.cppreference.com/w/cpp/language/operators.html
+	 * `!=` needs to be explicit before C++20.
+	 */
 	inline bool operator==(const FLATUID &o) const { return memcmp(ab, o.ab, sizeof(ab)) == 0; }
 	inline bool operator!=(const FLATUID &o) const { return !operator==(o); }
-#endif
 };
 
 struct GX_EXPORT FLATUID_ARRAY {
@@ -989,13 +991,9 @@ struct GX_EXPORT GUID {
 	uint8_t clock_seq[2];
 	uint8_t node[6];
 
-#if __cplusplus >= 202000L && defined(__GNUG__) >= 13
-	/* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=103733 */
-	bool operator==(const FLATUID &) const = default;
-#else
+	/* Same considerations as for FLATUID */
 	inline bool operator==(const GUID &o) const { return memcmp(this, &o, sizeof(o)) == 0; }
 	inline bool operator!=(const GUID &o) const { return !operator==(o); }
-#endif
 };
 
 struct GX_EXPORT GUID_ARRAY {
