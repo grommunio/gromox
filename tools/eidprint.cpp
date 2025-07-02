@@ -152,21 +152,30 @@ static void try_shared_cal1(std::string_view s, unsigned int ind)
 	GUID w;
 	std::string str;
 
-	ep.g_uint32(&vd);
-	ep.g_guid(&w);
-	ep.g_uint32(&vd); printf("%-*sCalendar index         = #%u\n", lead(ind), "", vd);
+	if (ep.g_uint32(&vd) != pack_result::ok ||
+	    ep.g_guid(&w) != pack_result::ok ||
+	    ep.g_uint32(&vd) != pack_result::ok)
+		return;
+	printf("%-*sCalendar index         = #%u\n", lead(ind), "", vd);
 	// 0x38 is the size from w to Inner EID
-	ep.g_uint32(&vd); printf("%-*sHeader size(?)         = 0x%xh // expected 0x38\n", lead(ind), "",  vd);
-	ep.g_uint32(&dnbytes);
+	if (ep.g_uint32(&vd) != pack_result::ok)
+		return;
+	printf("%-*sHeader size(?)         = 0x%xh // expected 0x38\n", lead(ind), "",  vd);
+	if (ep.g_uint32(&dnbytes) != pack_result::ok)
+		return;
 	printf("%-*sDisplayName field size = %u bytes\n", lead(ind), "",  dnbytes);
-	ep.g_uint32(&smtpbytes);
+	if (ep.g_uint32(&smtpbytes) != pack_result::ok)
+		return;
 	printf("%-*sSMTP field size        = %u bytes\n", lead(ind), "",  smtpbytes);
-	ep.g_guid(&w);
+	if (ep.g_guid(&w) != pack_result::ok)
+		return;
 	printf("%-*sInner provider UID     = ", lead(ind), ""); print_guid(w); printf("\n");
-	ep.g_guid(&w);
+	if (ep.g_guid(&w) != pack_result::ok)
+		return;
 	printf("%-*s(something)            = ", lead(ind), ""); print_guid(w); printf("\n");
 	printf("%-*s                         // ↑ random with EXC2019, somewhat orderly with Gromox\n", lead(ind), "");
-	ep.g_uint32(&vd);
+	if (ep.g_uint32(&vd) != pack_result::ok)
+		return;
 	printf("%-*sInner EID size         = %u bytes\n", lead(ind), "",  vd);
 	{
 		std::string_view sub = s;
@@ -175,17 +184,22 @@ static void try_shared_cal1(std::string_view s, unsigned int ind)
 			sub = {sub.data(), vd};
 		try_entryid(sub, ind + 1);
 	}
-	ep.advance(vd);
+	if (ep.advance(vd) != pack_result::ok)
+		return;
 
 	auto next_offset = ep.m_offset + dnbytes;
-	ep.g_wstr(&str); printf("%-*sDisplay name = %s\n", lead(ind), "", str.c_str());
+	if (ep.g_wstr(&str) != pack_result::ok)
+		return;
+	printf("%-*sDisplay name = %s\n", lead(ind), "", str.c_str());
 	if (ep.m_offset < next_offset)
 		printf("%-*s           + %zu unparsed/garbage bytes\n", lead(ind + 1), "",
 			static_cast<size_t>(next_offset - ep.m_offset));
 	ep.m_offset = next_offset;
 
 	next_offset = ep.m_offset + smtpbytes;
-	ep.g_wstr(&str);  printf("%-*sSMTP address = %s\n", lead(ind), "", str.c_str());
+	if (ep.g_wstr(&str) != pack_result::ok)
+		return;
+	printf("%-*sSMTP address = %s\n", lead(ind), "", str.c_str());
 	if (ep.m_offset < next_offset)
 		printf("%-*s           + %zu unparsed/garbage bytes\n", lead(ind + 1), "",
 			static_cast<size_t>(next_offset - ep.m_offset));
@@ -202,15 +216,19 @@ static void try_shared_cal2(std::string_view s, unsigned int ind)
 	uint32_t vd;
 	GUID w;
 
-	ep.g_uint32(&vd);
-	ep.g_guid(&w);
-	ep.g_uint32(&vd);
+	if (ep.g_uint32(&vd) != pack_result::ok ||
+	    ep.g_guid(&w) != pack_result::ok ||
+	    ep.g_uint32(&vd) != pack_result::ok)
+		return;
 	printf("%-*sField 1.1         = %08xh\n", lead(ind), "",  vd);
-	ep.g_uint32(&vd);
+	if (ep.g_uint32(&vd) != pack_result::ok)
+		return;
 	printf("%-*sField 1.2         = %08xh\n", lead(ind), "",  vd);
-	ep.g_uint32(&vd);
+	if (ep.g_uint32(&vd) != pack_result::ok)
+		return;
 	printf("%-*sType or something = %u\n", lead(ind), "",  vd);
-	ep.g_uint32(&vd);
+	if (ep.g_uint32(&vd) != pack_result::ok)
+		return;
 	printf("%-*sInner EID size    = %u\n", lead(ind), "",  vd);
 	{
 		std::string_view sub = s;
@@ -250,13 +268,15 @@ static void try_shortterm_eid(const std::string_view s, unsigned int ind)
 	uint32_t flags, q2;
 	uint16_t folder_type;
 	GUID provider;
-	ep.g_uint32(&flags);
+	if (ep.g_uint32(&flags) != pack_result::ok)
+		return;
 	if (flags != (MAPI_SHORTTERM | MAPI_NOTRECIP | MAPI_THISSESSION | MAPI_NOTRESERVED | 0x0f))
 		return;
-	ep.g_guid(&provider);
-	ep.g_uint16(&folder_type);
-	ep.g_uint32(&q2);
-	ep.g_uint64(&instid);
+	if (ep.g_guid(&provider) != pack_result::ok ||
+	    ep.g_uint16(&folder_type) != pack_result::ok ||
+	    ep.g_uint32(&q2) != pack_result::ok ||
+	    ep.g_uint64(&instid) != pack_result::ok)
+		return;
 
 	printf("%-*sShortterm folder entry ID\n", lead(ind), "");
 	++ind;

@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <type_traits>
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
@@ -88,8 +89,8 @@ struct RECIPIENT_ROW;
 struct RECURRENCE_PATTERN;
 struct STORE_ENTRYID;
 struct SYSTEMTIME;
-struct TIMEZONEDEFINITION;
-struct TIMEZONESTRUCT;
+struct TZDEF;
+struct TZSTRUCT;
 struct TYPED_PROPVAL;
 struct TYPED_STRING;
 struct XID;
@@ -192,8 +193,8 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_flatentry_a(BINARY_ARRAY *);
 	pack_result g_eid_a(EID_ARRAY *);
 	pack_result g_systime(SYSTEMTIME *);
-	pack_result g_tzstruct(TIMEZONESTRUCT *);
-	pack_result g_tzdef(TIMEZONEDEFINITION *);
+	pack_result g_tzstruct(TZSTRUCT *);
+	pack_result g_tzdef(TZDEF *);
 	pack_result g_apptrecpat(APPOINTMENT_RECUR_PAT *);
 	pack_result g_goid(GLOBALOBJECTID *);
 	pack_result g_msgctnt(MESSAGE_CONTENT *);
@@ -201,8 +202,23 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_fb_a(std::vector<freebusy_event> *);
 	pack_result g_recpat(RECURRENCE_PATTERN *);
 
-	template<typename T> inline T *anew() { return static_cast<T *>(m_alloc(sizeof(T))); }
-	template<typename T> inline T *anew(size_t elem) { return static_cast<T *>(m_alloc(sizeof(T) * elem)); }
+	template<typename T> inline T *anew()
+	{
+		static_assert(std::is_trivially_destructible_v<T> && std::is_trivially_copyable_v<T>);
+		auto r = static_cast<T *>(m_alloc(sizeof(T)));
+		if (r != nullptr)
+			new(r) T;
+		return r;
+	}
+	template<typename T> inline T *anew(size_t elem)
+	{
+		static_assert(std::is_trivially_destructible_v<T> && std::is_trivially_copyable_v<T>);
+		auto r = static_cast<T *>(m_alloc(sizeof(T) * elem));
+		if (r != nullptr)
+			for (size_t i = 0; i < elem; ++i)
+				new(r) T[i];
+		return r;
+	}
 	union {
 		const uint8_t *m_udata;
 		const char *m_cdata;
@@ -298,8 +314,8 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_persistdata_a(std::span<const PERSISTDATA>);
 	pack_result p_eid_a(const EID_ARRAY &);
 	pack_result p_systime(const SYSTEMTIME &);
-	pack_result p_tzstruct(const TIMEZONESTRUCT &);
-	pack_result p_tzdef(const TIMEZONEDEFINITION &);
+	pack_result p_tzstruct(const TZSTRUCT &);
+	pack_result p_tzdef(const TZDEF &);
 	pack_result p_apptrecpat(const APPOINTMENT_RECUR_PAT &);
 	pack_result p_goid(const GLOBALOBJECTID &);
 	pack_result p_msgctnt(const MESSAGE_CONTENT &);

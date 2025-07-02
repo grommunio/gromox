@@ -81,7 +81,7 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	const char *pvalue1;
 	const char *pvalue2;
 
-	memset(pdate, 0, sizeof(SYSTEMTIME));
+	*pdate = {};
 	auto piline = sub.get_line("TZOFFSETTO");
 	if (piline == nullptr)
 		return false;
@@ -164,8 +164,7 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	return true;
 }
 
-static bool oxcical_tzcom_to_def(const ical_component &vt,
-	TIMEZONEDEFINITION *ptz_definition)
+static bool oxcical_tzcom_to_def(const ical_component &vt, TZDEF *ptz_definition)
 {
 	int i;
 	bool b_found;
@@ -175,9 +174,6 @@ static bool oxcical_tzcom_to_def(const ical_component &vt,
 	TZRULE *pstandard_rule;
 	TZRULE *pdaylight_rule;
 
-	ptz_definition->major = 2;
-	ptz_definition->minor = 1;
-	ptz_definition->reserved = 0x0002;
 	auto piline = vt.get_line("TZID");
 	if (piline == nullptr)
 		return false;
@@ -207,10 +203,7 @@ static bool oxcical_tzcom_to_def(const ical_component &vt,
 			if (ptz_definition->crules >= MAX_TZRULE_NUMBER)
 				return false;
 			ptz_definition->crules ++;
-			memset(ptz_definition->prules + i, 0, sizeof(TZRULE));
-			ptz_definition->prules[i].major = 2;
-			ptz_definition->prules[i].minor = 1;
-			ptz_definition->prules[i].reserved = 0x003E;
+			ptz_definition->prules[i] = {};
 			ptz_definition->prules[i].year = year;
 		}
 		if (b_daylight) {
@@ -244,10 +237,8 @@ static bool oxcical_tzcom_to_def(const ical_component &vt,
 		/* ignore the definition which has only STANDARD component
 			or with the same STANDARD and DAYLIGHT component */
 		if (ptz_definition->prules[i].daylightdate.month == 0 ||
-		    memcmp(&ptz_definition->prules[i].standarddate,
-		    &ptz_definition->prules[i].daylightdate, sizeof(SYSTEMTIME)) == 0)
-			memset(&ptz_definition->prules[i].daylightdate,
-				0, sizeof(SYSTEMTIME));
+		    ptz_definition->prules[i].standarddate == ptz_definition->prules[i].daylightdate)
+			ptz_definition->prules[i].daylightdate = {};
 	}
 	if (ptz_definition->crules > 1 &&
 		(0 == ptz_definition->prules[0].standarddate.month ||
@@ -264,10 +255,9 @@ static bool oxcical_tzcom_to_def(const ical_component &vt,
 	return true;
 }
 
-static void oxcical_convert_to_tzstruct(
-	TIMEZONEDEFINITION *ptz_definition, TIMEZONESTRUCT *ptz_struct)
+static void oxcical_convert_to_tzstruct(TZDEF *ptz_definition, TZSTRUCT *ptz_struct)
 {
-	memset(ptz_struct, 0, sizeof(TIMEZONESTRUCT));
+	*ptz_struct = {};
 	if (ptz_definition->crules == 0)
 		return;
 	int index;
@@ -281,7 +271,7 @@ static void oxcical_convert_to_tzstruct(
 	ptz_struct->daylightyear = ptz_struct->daylightdate.year;
 }
 
-static bool oxcical_tzdefinition_to_binary(const TIMEZONEDEFINITION *ptz_definition,
+static bool oxcical_tzdefinition_to_binary(const TZDEF *ptz_definition,
 	uint16_t tzrule_flags, BINARY *pbin)
 {
 	EXT_PUSH ext_push;
@@ -296,8 +286,7 @@ static bool oxcical_tzdefinition_to_binary(const TIMEZONEDEFINITION *ptz_definit
 	return true;
 }
 
-static bool oxcical_timezonestruct_to_binary(
-	TIMEZONESTRUCT *ptzstruct, BINARY *pbin)
+static bool oxcical_timezonestruct_to_binary(TZSTRUCT *ptzstruct, BINARY *pbin)
 {
 	EXT_PUSH ext_push;
 
@@ -677,7 +666,7 @@ static bool oxcical_parse_tzdisplay(bool b_dtstart, const ical_component &tzcom,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	TZRULE rules_buff[MAX_TZRULE_NUMBER];
-	TIMEZONEDEFINITION tz_definition;
+	TZDEF tz_definition;
 	BINARY tmp_bin;
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 
@@ -701,8 +690,8 @@ static bool oxcical_parse_recurring_timezone(const ical_component &tzcom,
 {
 	BINARY tmp_bin;
 	const char *ptzid;
-	TIMEZONESTRUCT tz_struct;
-	TIMEZONEDEFINITION tz_definition;
+	TZSTRUCT tz_struct;
+	TZDEF tz_definition;
 	TZRULE rules_buff[MAX_TZRULE_NUMBER];
 	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 
@@ -2700,7 +2689,7 @@ static int sprintf_dtutc(char *b, size_t z, const ical_time &t)
 }
 
 static ical_component *oxcical_export_timezone(ical &pical,
-    int year, const char *tzid, TIMEZONESTRUCT *ptzstruct) try
+    int year, const char *tzid, TZSTRUCT *ptzstruct) try
 {
 	int day;
 	int order;
@@ -3596,8 +3585,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefrecur]));
 			if (bin != nullptr) {
 				EXT_PULL ext_pull;
-				TIMEZONEDEFINITION tz_definition;
-				TIMEZONESTRUCT tz_struct;
+				TZDEF tz_definition;
+				TZSTRUCT tz_struct;
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
@@ -3615,8 +3604,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids[l_tzdefend]));
 			if (bin != nullptr) {
 				EXT_PULL ext_pull;
-				TIMEZONEDEFINITION tz_definition;
-				TIMEZONESTRUCT tz_struct;
+				TZDEF tz_definition;
+				TZSTRUCT tz_struct;
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
 				if (ext_pull.g_tzdef(&tz_definition) != pack_result::ok)
@@ -3636,7 +3625,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				tzid = nullptr;
 			if (bin != nullptr && bin->cb > 0 && tzid != nullptr) {
 				EXT_PULL ext_pull;
-				TIMEZONESTRUCT tz_struct;
+				TZSTRUCT tz_struct;
 
 				ext_pull.init(bin->pb, bin->cb, alloc, 0);
 				if (ext_pull.g_tzstruct(&tz_struct) != pack_result::ok) {

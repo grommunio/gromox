@@ -30,8 +30,7 @@ static void d_systime(const SYSTEMTIME &t)
 
 static void d_tzrule(const TZRULE &r)
 {
-	printf("TZRULE{%u,%u,0x%x,%u,%d,%d,%d,%d,",
-	       r.major, r.minor, r.reserved, r.flags,
+	printf("TZRULE{%u,%d,%d,%d,%d,", r.flags,
 	       r.year, r.bias, r.standardbias, r.daylightbias);
 	d_systime(r.standarddate);
 	printf(",");
@@ -39,10 +38,8 @@ static void d_tzrule(const TZRULE &r)
 	printf("}");
 }
 
-static void d_tzdef(const TIMEZONEDEFINITION &d)
+static void d_tzdef(const TZDEF &d)
 {
-	printf("major = %xh (%u), minor = %xh (%u), reserved = %xh (%u)\n",
-	       d.major, d.major, d.minor, d.minor, d.reserved, d.reserved);
 	printf("name = %s\n", d.keyname);
 	printf("#rules = %xh (%u)\n", d.crules, d.crules);
 	for (unsigned int i = 0; i < d.crules; ++i) {
@@ -55,10 +52,10 @@ static void d_tzdef(const TIMEZONEDEFINITION &d)
 static int d_raw(const char *name, const void *data, size_t size)
 {
 	EXT_PULL ep;
-	TIMEZONEDEFINITION def;
+	TZDEF def;
 	ep.init(data, size, zalloc, EXT_FLAG_UTF16);
 	if (ep.g_tzdef(&def) != pack_result::ok) {
-		fprintf(stderr, "%s: does not look like a TIMEZONEDEFINITION\n", name);
+		fprintf(stderr, "%s: does not look like a TZDEF\n", name);
 		return EXIT_FAILURE;
 	}
 	printf(">>> %s\n", name);

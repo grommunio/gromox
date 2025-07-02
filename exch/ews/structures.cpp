@@ -1711,7 +1711,7 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 				shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
 					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
 				EXT_PULL ext_pull;
-				TIMEZONEDEFINITION tzdef;
+				TZDEF tzdef;
 				ext_pull.init(buf->data(), buf->size(), EWSContext::alloc, EXT_FLAG_UTF16);
 				if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
 					throw EWSError::InternalServerError(E3294);

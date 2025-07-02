@@ -297,7 +297,7 @@ errno_t make_inet_msgid(char *id, size_t bufsize, uint32_t lcid)
 /**
  * Return the active timezone definition rule for a given year
  */
-const TZRULE *active_rule_for_year(const TIMEZONEDEFINITION *tzdef, int year)
+const TZRULE *active_rule_for_year(const TZDEF *tzdef, int year)
 {
 	for (auto i = tzdef->crules - 1; i >= 0; --i)
 		if ((tzdef->prules[i].flags & TZRULE_FLAG_EFFECTIVE_TZREG &&
@@ -326,7 +326,7 @@ time_t timegm_dststd_start(const int year, const SYSTEMTIME *ruledate)
 /**
  * Calculate the offset from UTC from the timezone definition
  */
-bool offset_from_tz(const TIMEZONEDEFINITION *tzdef, time_t start_time, int64_t &offset)
+bool offset_from_tz(const TZDEF *tzdef, time_t start_time, int64_t &offset)
 {
 	struct tm start_date;
 	gmtime_r(&start_time, &start_date);

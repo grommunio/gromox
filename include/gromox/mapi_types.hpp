@@ -503,15 +503,10 @@ struct GX_EXPORT PERSISTDATA {
 #define DELEGATE_PERMISSION_EDITOR					0x0000007B
 
 struct GX_EXPORT SYSTEMTIME {
-	int16_t year;
-	int16_t month;
-	int16_t dayofweek;
-	int16_t day;
-	int16_t hour;
-	int16_t minute;
-	int16_t second;
-	int16_t milliseconds;
+	auto operator<=>(const SYSTEMTIME &) const = default;
 
+	int16_t year = 0, month = 0, dayofweek = 0, day = 0;
+	int16_t hour = 0, minute = 0, second = 0, milliseconds = 0;
 	/*
 	 * 63-bit mapitime limit is sometime in the year 30828. Rather than have an
 	 * incomplete year, the latest acceptable date for a SYSTEMTIME object is
@@ -520,8 +515,8 @@ struct GX_EXPORT SYSTEMTIME {
 	static constexpr int16_t maxyear = 30828;
 };
 
-/* pidLidTimeZoneStruct */
-struct GX_EXPORT TIMEZONESTRUCT {
+/* pidLidTimeZoneStruct - MS-OXOCAL v21 §2.2.1.39 */
+struct GX_EXPORT TZSTRUCT {
 	int32_t bias;
 	int32_t standardbias;
 	int32_t daylightbias;
@@ -534,29 +529,22 @@ struct GX_EXPORT TIMEZONESTRUCT {
 #define TZRULE_FLAG_RECUR_CURRENT_TZREG				0x0001
 #define TZRULE_FLAG_EFFECTIVE_TZREG					0x0002
 
+/* MS-OXOCAL v21 §2.2.1.41.1 */
 struct GX_EXPORT TZRULE {
-	uint8_t major; /* 0x02 */
-	uint8_t minor; /* 0x01 */
-	uint16_t reserved; /* must be 0x003E */
-	uint16_t flags;
-	int16_t year;
-	uint8_t x[14]; /* all zeroes */
-	int32_t bias;
-	int32_t standardbias;
-	int32_t daylightbias;
-	SYSTEMTIME standarddate;
-	SYSTEMTIME daylightdate;
+	uint16_t flags = 0;
+	int16_t year = 0;
+	uint8_t x[14]{};
+	int32_t bias = 0, standardbias = 0, daylightbias = 0;
+	SYSTEMTIME standarddate{}, daylightdate{};
 
-	inline bool operator<(const TZRULE &o) const { return year < o.year; }
+	inline auto operator<=>(const TZRULE &o) const { return year <=> o.year; }
 };
 
-struct GX_EXPORT TIMEZONEDEFINITION {
-	uint8_t major; /* 0x02 */
-	uint8_t minor; /* 0x01 */
-	uint16_t reserved; /* 0x0002 */
-	char* keyname;
-	uint16_t crules;
-	TZRULE *prules;
+/* MS-OXOCAL v21 §2.2.1.41 */
+struct GX_EXPORT TZDEF {
+	char *keyname = nullptr;
+	uint16_t crules = 0;
+	TZRULE *prules = nullptr;
 };
 
 enum {

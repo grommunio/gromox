@@ -1792,7 +1792,7 @@ pack_result EXT_PULL::g_systime(SYSTEMTIME *r)
 	return g_int16(&r->milliseconds);
 }
 
-pack_result EXT_PULL::g_tzstruct(TIMEZONESTRUCT *r)
+pack_result EXT_PULL::g_tzstruct(TZSTRUCT *r)
 {
 	TRY(g_int32(&r->bias));
 	TRY(g_int32(&r->standardbias));
@@ -1805,9 +1805,11 @@ pack_result EXT_PULL::g_tzstruct(TIMEZONESTRUCT *r)
 
 static pack_result ext_buffer_pull_tzrule(EXT_PULL *pext, TZRULE *r)
 {
-	TRY(pext->g_uint8(&r->major));
-	TRY(pext->g_uint8(&r->minor));
-	TRY(pext->g_uint16(&r->reserved));
+	uint8_t major, minor;
+	uint16_t reserved;
+	TRY(pext->g_uint8(&major));
+	TRY(pext->g_uint8(&minor));
+	TRY(pext->g_uint16(&reserved));
 	TRY(pext->g_uint16(&r->flags));
 	TRY(pext->g_int16(&r->year));
 	TRY(pext->g_bytes(r->x, 14));
@@ -1818,19 +1820,20 @@ static pack_result ext_buffer_pull_tzrule(EXT_PULL *pext, TZRULE *r)
 	return pext->g_systime(&r->daylightdate);
 }
 
-pack_result EXT_PULL::g_tzdef(TIMEZONEDEFINITION *r)
+pack_result EXT_PULL::g_tzdef(TZDEF *r)
 {
-	uint16_t cbheader;
+	uint8_t major, minor;
+	uint16_t reserved, cbheader;
 	char tmp_buff[262];
 	uint16_t cchkeyname;
 	char tmp_buff1[1024];
 	
-	TRY(g_uint8(&r->major));
-	TRY(g_uint8(&r->minor));
+	TRY(g_uint8(&major));
+	TRY(g_uint8(&minor));
 	TRY(g_uint16(&cbheader));
 	if (cbheader > 266)
 		return pack_result::format;
-	TRY(g_uint16(&r->reserved));
+	TRY(g_uint16(&reserved));
 	TRY(g_uint16(&cchkeyname));
 	if (cbheader != 6 + 2 * cchkeyname)
 		return pack_result::format;
@@ -3301,7 +3304,7 @@ pack_result EXT_PUSH::p_systime(const SYSTEMTIME &r)
 	return p_int16(r.milliseconds);
 }
 
-pack_result EXT_PUSH::p_tzstruct(const TIMEZONESTRUCT &r)
+pack_result EXT_PUSH::p_tzstruct(const TZSTRUCT &r)
 {
 	TRY(p_int32(r.bias));
 	TRY(p_int32(r.standardbias));
@@ -3314,9 +3317,9 @@ pack_result EXT_PUSH::p_tzstruct(const TIMEZONESTRUCT &r)
 
 static pack_result ext_buffer_push_tzrule(EXT_PUSH *pext, const TZRULE *r)
 {
-	TRY(pext->p_uint8(r->major));
-	TRY(pext->p_uint8(r->minor));
-	TRY(pext->p_uint16(r->reserved));
+	TRY(pext->p_uint8(2));
+	TRY(pext->p_uint8(1));
+	TRY(pext->p_uint16(0x3E));
 	TRY(pext->p_uint16(r->flags));
 	TRY(pext->p_int16(r->year));
 	TRY(pext->p_bytes(r->x, 14));
@@ -3327,20 +3330,20 @@ static pack_result ext_buffer_push_tzrule(EXT_PUSH *pext, const TZRULE *r)
 	return pext->p_systime(r->daylightdate);
 }
 
-pack_result EXT_PUSH::p_tzdef(const TIMEZONEDEFINITION &r)
+pack_result EXT_PUSH::p_tzdef(const TZDEF &r)
 {
 	uint16_t cbheader;
 	char tmp_buff[262];
 	
-	TRY(p_uint8(r.major));
-	TRY(p_uint8(r.minor));
+	TRY(p_uint8(2));
+	TRY(p_uint8(1));
 	auto len = utf8_to_utf16le(r.keyname, tmp_buff, std::size(tmp_buff));
 	if (len < 2)
 		return pack_result::charconv;
 	len -= 2;
 	cbheader = 6 + len;
 	TRY(p_uint16(cbheader));
-	TRY(p_uint16(r.reserved));
+	TRY(p_uint16(2));
 	TRY(p_uint16(len / 2));
 	TRY(p_bytes(tmp_buff, len));
 	TRY(p_uint16(r.crules));

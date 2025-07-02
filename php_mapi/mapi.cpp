@@ -4097,7 +4097,7 @@ static ZEND_FUNCTION(mapi_linkmessage)
  *
  * @tz:		Timezone name within IANA tzdb
  *
- * Returns a TIMEZONEDEFINITION blob for the timezone. This can be put into
+ * Returns a TZDEF blob for the timezone. This can be put into
  * PidLidAppointmentTimeZoneDefinition{Start,End}Display.
  */
 static ZEND_FUNCTION(mapi_ianatz_to_tzdef)

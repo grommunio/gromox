@@ -10,6 +10,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <libHX/endian.h>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
@@ -185,7 +186,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 			return false;
 		v->time_low = pfolder->plogon->account_id;
 		v->time_mid = v->time_hi_and_version = 0;
-		memcpy(&v->clock_seq, &pfolder->folder_id, sizeof(uint64_t));
+		cpu_to_le64p(reinterpret_cast<char *>(v) + 8, pfolder->folder_id);
 		return TRUE;
 	}
 	case PR_RIGHTS: {
