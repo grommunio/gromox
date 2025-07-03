@@ -481,17 +481,16 @@ uint32_t propval_size(uint16_t type, const void *pvalue)
 	return 0;
 }
 
-int BINARY::compare(const BINARY &o) const
+std::strong_ordering BINARY::operator<=>(const BINARY &o) const
 {
 	/*
 	 * The sorting by length could be explained by BINARY's encoding on the wire
 	 * (length prefixes the byte block). It could also just be convention.
+	 * Either way, this is what EXC2019 does.
 	 */
-	if (cb < o.cb)
-		return -1;
-	if (cb > o.cb)
-		return 1;
-	return memcmp(pv, o.pv, cb);
+	if (cb == o.cb)
+		return memcmp(pv, o.pv, cb) <=> 0;
+	return cb < o.cb ? std::strong_ordering::less : std::strong_ordering::greater;
 }
 
 int SVREID::compare(const SVREID &o) const
@@ -522,10 +521,10 @@ int SVREID::compare(const SVREID &o) const
 		cpu_to_le64p(&o_buf[8], o.message_id);
 		cpu_to_le32p(&o_buf[16], o.instance);
 	}
-	if (flag)
-		return bin.compare(o_flag ? o_bin : *o.pbin);
-	else
-		return pbin->compare(o_flag ? o_bin : *o.pbin);
+	auto c = (flag ? bin : *pbin) <=> (o_flag ? o_bin : *o.pbin);
+	if (c == 0)
+		return 0;
+	return c < 0 ? -1 : 1;
 }
 
 int SVREID_compare(const SVREID *a, const SVREID *b)
@@ -608,8 +607,10 @@ int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptyp
 		       static_cast<const char *>(pvalue2));
 	case PT_CLSID:
 		return static_cast<const GUID *>(pvalue1)->compare(*static_cast<const GUID *>(pvalue2));
-	case PT_BINARY:
-		return static_cast<const BINARY *>(pvalue1)->compare(*static_cast<const BINARY *>(pvalue2));
+	case PT_BINARY: {
+		auto c = *static_cast<const BINARY *>(pvalue1) <=> *static_cast<const BINARY *>(pvalue2);
+		return c == 0 ? 0 : c < 0 ? -1 : 1;
+	}
 	case PT_SVREID:
 		return static_cast<const SVREID *>(pvalue1)->compare(*static_cast<const SVREID *>(pvalue2));
 	case PT_MV_SHORT: {
@@ -693,9 +694,9 @@ int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptyp
 		if (cmp != 0)
 			break;
 		for (size_t i = 0; i < bv1->count; ++i) {
-			cmp = bv1->pbin[i].compare(bv2->pbin[i]);
-			if (cmp != 0)
-				break;
+			auto c = bv1->pbin[i] <=> bv2->pbin[i];
+			if (c != 0)
+				return c < 0 ? -1 : 1;
 		}
 		break;
 	}

@@ -296,7 +296,11 @@ static int t_cmp_binary()
 {
 	uint8_t x[] = "X", xy[] = "XY";
 	BINARY p = {1, {x}}, q = {2, {xy}};
-	assert(p.compare(q) < 0);
+	assert(p < q);
+	assert(q > p);
+	assert(p == p);
+	assert(q == q);
+	assert(p != q);
 	return EXIT_SUCCESS;
 }
 
