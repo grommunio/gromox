@@ -602,8 +602,10 @@ int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptyp
 	case PT_GXI_STRING:
 		return strcasecmp(static_cast<const char *>(pvalue1),
 		       static_cast<const char *>(pvalue2));
-	case PT_CLSID:
-		return static_cast<const GUID *>(pvalue1)->compare(*static_cast<const GUID *>(pvalue2));
+	case PT_CLSID: {
+		auto c = *static_cast<const GUID *>(pvalue1) <=> *static_cast<const GUID *>(pvalue2);
+		return c == 0 ? 0 : c < 0 ? -1 : 1;
+	}
 	case PT_BINARY: {
 		auto c = *static_cast<const BINARY *>(pvalue1) <=> *static_cast<const BINARY *>(pvalue2);
 		return c == 0 ? 0 : c < 0 ? -1 : 1;
@@ -680,9 +682,9 @@ int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptyp
 		if (cmp != 0)
 			break;
 		for (size_t i = 0; i < bv1->count; ++i) {
-			cmp = bv1->pguid[i].compare(bv2->pguid[i]);
-			if (cmp != 0)
-				break;
+			auto c = bv1->pguid[i] <=> bv2->pguid[i];
+			if (c != 0)
+				return c < 0 ? -1 : 1;
 		}
 		break;
 	}

@@ -2787,7 +2787,7 @@ tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propnam
 		PropertyName = propname.pname;
 
 	auto it = std::find_if(std::begin(propsetIds), std::end(propsetIds),
-	                       [&](const auto& propsetId){ return propsetId->compare(propname.guid) == 0; });
+	                       [&](const auto &propsetId) { return *propsetId == propname.guid; });
 	if (it != std::end(propsetIds))
 		DistinguishedPropertySetId = Enum::DistinguishedPropertySetType(static_cast<uint8_t>(std::distance(std::begin(propsetIds), it)));
 }

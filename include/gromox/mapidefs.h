@@ -983,7 +983,6 @@ struct GX_EXPORT GUID {
 	void to_str(char *, size_t, unsigned int type = 36) const;
 	bool from_str(const char *);
 	int compare_4_12(const GUID &) const;
-	int compare(const GUID &) const;
 	static GUID random_new();
 	static const GUID &machine_id();
 
@@ -993,9 +992,17 @@ struct GX_EXPORT GUID {
 	uint8_t clock_seq[2];
 	uint8_t node[6];
 
-	/* Same considerations as for FLATUID */
+	/*
+	 * Same considerations as for FLATUID: because of bad gcc optimization,
+	 * call memcmp directly.
+	 */
 	inline bool operator==(const GUID &o) const { return memcmp(this, &o, sizeof(o)) == 0; }
 	inline bool operator!=(const GUID &o) const { return !operator==(o); }
+	/*
+	 * EXC2019 evaluates GUID-GUID comparisons (in e.g. restrictions)
+	 * member-wise and in host order.
+	 */
+	inline auto operator<=>(const GUID &) const = default;
 };
 
 struct GX_EXPORT GUID_ARRAY {

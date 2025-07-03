@@ -353,15 +353,3 @@ int GUID::compare_4_12(const GUID &o) const
 	auto r = memcmp(clock_seq, o.clock_seq, std::size(clock_seq));
 	return r != 0 ? r : memcmp(node, o.node, std::size(node));
 }
-
-int GUID::compare(const GUID &o) const
-{
-	/*
-	 * EXC2019 also evaluates restrictions (should be the same as the
-	 * outcome of a sort operation) such that GUID fields are compared in
-	 * broken-out fashion, host-order.
-	 */
-	if (time_low != o.time_low)
-		return time_low > o.time_low ? 1 : -1;
-	return compare_4_12(o);
-}

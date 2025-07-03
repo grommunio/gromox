@@ -307,7 +307,11 @@ static int t_cmp_binary()
 static int t_cmp_guid()
 {
 	GUID g1 = {0x01}, g2 = {0x0100};
-	assert(g1.compare(g2) < 0);
+	assert(g1 < g2);
+	assert(g2 > g1);
+	assert(g1 == g1);
+	assert(g2 == g2);
+	assert(g1 != g2);
 
 	char buf[sizeof(FLATUID)];
 	EXT_PUSH ep;
