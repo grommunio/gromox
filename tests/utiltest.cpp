@@ -334,9 +334,11 @@ static int t_cmp_svreid()
 	ep.g_svreid(&s1);
 	ep.init(eid2, sizeof(eid2), zalloc, 0);
 	ep.g_svreid(&s2);
-	assert(s1.compare(s2) < 0);
-	assert(s1.compare(s1) == 0);
-	assert(s2.compare(s1) > 0);
+	assert(s1 < s2);
+	assert(s1 == s1);
+	assert(s2 > s1);
+	assert(s2 == s2);
+	assert(s1 != s2);
 	assert(SVREID_compare(nullptr, &s1) < 0);
 	assert(SVREID_compare(nullptr, &s2) < 0);
 	assert(SVREID_compare(nullptr, nullptr) == 0);

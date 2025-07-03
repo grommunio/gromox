@@ -1148,7 +1148,8 @@ struct GX_EXPORT SVREID {
 	uint64_t message_id;
 	uint32_t instance;
 
-	int compare(const SVREID &) const;
+	std::strong_ordering operator<=>(const SVREID &) const;
+	inline bool operator==(const SVREID &o) const { return (*this <=> o) == 0; }
 	std::string repr(bool verbose = true) const;
 };
 

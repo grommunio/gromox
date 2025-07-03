@@ -493,7 +493,7 @@ std::strong_ordering BINARY::operator<=>(const BINARY &o) const
 	return cb < o.cb ? std::strong_ordering::less : std::strong_ordering::greater;
 }
 
-int SVREID::compare(const SVREID &o) const
+std::strong_ordering SVREID::operator<=>(const SVREID &o) const
 {
 	/*
 	 * This performs a FLATUID/bytewise comparison similar to BINARY properties.
@@ -503,10 +503,10 @@ int SVREID::compare(const SVREID &o) const
 	uint16_t o_len = cpu_to_le16(o.pbin != nullptr ? o.pbin->cb + 1 : 21);
 	uint8_t flag = pbin == nullptr;
 	uint8_t o_flag = o.pbin == nullptr;
-	auto ret = memcmp(&len, &o_len, sizeof(uint16_t));
+	auto ret = memcmp(&len, &o_len, sizeof(uint16_t)) <=> 0;
 	if (ret != 0)
 		return ret;
-	ret = memcmp(&flag, &o_flag, sizeof(uint8_t));
+	ret = memcmp(&flag, &o_flag, sizeof(uint8_t)) <=> 0;
 	if (ret != 0)
 		return ret;
 	uint8_t buf[20], o_buf[20];
@@ -521,19 +521,16 @@ int SVREID::compare(const SVREID &o) const
 		cpu_to_le64p(&o_buf[8], o.message_id);
 		cpu_to_le32p(&o_buf[16], o.instance);
 	}
-	auto c = (flag ? bin : *pbin) <=> (o_flag ? o_bin : *o.pbin);
-	if (c == 0)
-		return 0;
-	return c < 0 ? -1 : 1;
+	return (flag ? bin : *pbin) <=> (o_flag ? o_bin : *o.pbin);
 }
 
-int SVREID_compare(const SVREID *a, const SVREID *b)
+std::strong_ordering SVREID_compare(const SVREID *a, const SVREID *b)
 {
 	if (a == nullptr)
-		return b == nullptr ? 0 : -1;
+		return b == nullptr ? std::strong_ordering::equal : std::strong_ordering::less;
 	if (b == nullptr)
-		return 1;
-	return a->compare(*b);
+		return std::strong_ordering::greater;
+	return *a <=> *b;
 }
 
 template<typename T> static std::strong_ordering fpcompare(T x, T y)
@@ -611,8 +608,10 @@ int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptyp
 		auto c = *static_cast<const BINARY *>(pvalue1) <=> *static_cast<const BINARY *>(pvalue2);
 		return c == 0 ? 0 : c < 0 ? -1 : 1;
 	}
-	case PT_SVREID:
-		return static_cast<const SVREID *>(pvalue1)->compare(*static_cast<const SVREID *>(pvalue2));
+	case PT_SVREID: {
+		auto c = *static_cast<const SVREID *>(pvalue1) <=> *static_cast<const SVREID *>(pvalue2);
+		return c == 0 ? 0 : c < 0 ? -1 : 1;
+	}
 	case PT_MV_SHORT: {
 		auto a = static_cast<const SHORT_ARRAY *>(pvalue1);
 		auto b = static_cast<const SHORT_ARRAY *>(pvalue2);
