@@ -29,9 +29,9 @@ static int t_utf7()
 	auto a = "Gelöschte Elemente", b = "Gel&APY-schte Elemente";
 	char buf[80];
 	utf8_to_mutf7(a, strlen(a), buf, std::size(buf));
-	printf("%s -> %s\n", a, buf);
+	assert(strcmp(buf, b) == 0);
 	utf8_to_mutf7(b, strlen(b), buf, std::size(buf));
-	printf("%s -> %s\n", b, buf);
+	assert(strcmp(buf, "Gel&-APY-schte Elemente") == 0);
 	assert(mutf7_to_utf8("INBOX", 5, buf, 6) == 5);
 	assert(mutf7_to_utf8("INBOX2", 6, buf, 6) < 0);
 	assert(mutf7_to_utf8("", 0, buf, 6) == 0);
@@ -211,8 +211,6 @@ static int t_id9()
 	gromox::range_set<int> s;
 	s.insert(61, 63);
 	s.insert(51, 53);
-	for (int i = 50; i <= 64; ++i)
-		printf("%d: %d\n", i, s.contains(i));
 	assert(!s.contains(50));
 	assert(s.contains(51));
 	assert(s.contains(52));
@@ -224,8 +222,6 @@ static int t_id9()
 	assert(s.contains(63));
 	assert(!s.contains(64));
 	s.insert(100, INT_MAX);
-	for (int i = 50; i <= 64; ++i)
-		printf("%d: %d\n", i, s.contains(i));
 	assert(!s.contains(50));
 	assert(s.contains(51));
 	assert(s.contains(52));
