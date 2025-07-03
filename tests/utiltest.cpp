@@ -430,7 +430,7 @@ static int t_utf8_prefix()
 	return EXIT_SUCCESS;
 }
 
-static int t_mcg()
+static int t_msgchg()
 {
 	const char *mpath = getenv("TEST_PATH");
 	if (mpath == nullptr)
@@ -544,60 +544,21 @@ static int runner()
 	randstring(buf + 2, 0, "A");
 	randstring(buf, 1, "");
 
-	auto ret = t_mcg();
-	if (ret != EXIT_SUCCESS)
-		return ret;
-	ret = t_extpp();
-	if (ret != EXIT_SUCCESS)
-		return EXIT_FAILURE;
-	ret = t_convert();
-	if (ret != EXIT_SUCCESS)
-		return ret;
-	ret = t_emailaddr();
-	if (ret != EXIT_SUCCESS)
-		return EXIT_FAILURE;
-	ret = t_base64();
-	if (ret != 0)
-		return EXIT_FAILURE;
 	using fpt = decltype(&t_interval);
-	fpt fct[] = {t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6,
-	             t_id7, t_id8, t_id9, t_seq};
+	static constexpr fpt fct[] = {
+		t_msgchg, t_extpp, t_convert, t_emailaddr, t_base64,
+		t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6,
+		t_id7, t_id8, t_id9, t_seq,
+		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,
+		t_wildcard, t_utf8_prefix, t_eidcvt, t_bin2cstr, t_string,
+		t_time,
+	};
 	for (auto f : fct) {
-		ret = f();
+		auto ret = f();
 		if (ret != EXIT_SUCCESS)
 			return ret;
 	}
 	t_respool();
-	ret = t_cmp_binary();
-	if (ret != EXIT_SUCCESS)
-		return ret;
-	ret = t_cmp_guid();
-	if (ret != EXIT_SUCCESS)
-		return ret;
-	ret = t_cmp_svreid();
-	if (ret != EXIT_SUCCESS)
-		return ret;
-	ret = t_cmp_icaltime();
-	if (ret != 0)
-		return ret;
-	ret = t_wildcard();
-	if (ret != 0)
-		return ret;
-	ret = t_utf8_prefix();
-	if (ret != 0)
-		return ret;
-	ret = t_eidcvt();
-	if (ret != 0)
-		return ret;
-	ret = t_bin2cstr();
-	if (ret != 0)
-		return ret;
-	ret = t_string();
-	if (ret != 0)
-		return ret;
-	ret = t_time();
-	if (ret != 0)
-		return ret;
 	return EXIT_SUCCESS;
 }
 
