@@ -3321,6 +3321,16 @@ static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
 	return false;
 }
 
+/**
+ * @pmsg:         message to convert
+ * @get_propids:  routine to convert Named Property names to IDs
+ *                (an implementation is not required to make new NPs and can
+ *                return propid 0)
+ * @get_propname: routine to convert Named Property ids to names
+ *                (more comments in the function)
+ * @phead:        output object where MIME head is constructed from MAPI
+ *                properties in @pmsg
+ */
 static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	MIME_SKELETON *pskeleton, EXT_BUFFER_ALLOC alloc,
 	GET_PROPIDS get_propids, GET_PROPNAME get_propname,
@@ -3616,6 +3626,16 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		return FALSE;
 	
 	phead->set_field("X-Mailer", "gromox-oxcmail " PACKAGE_VERSION);
+	/*
+	 * Export custom MIME headers.
+	 *
+	 * There is no function in MSMAPI (nor Gromox) to retrieve all named
+	 * properties for a namespace. So, trivially, code simply does a lookup
+	 * for all propids in the message and then test if it is in the
+	 * namespace for custom MIME headers.
+	 *
+	 * For this reason we need the get_propname handler.
+	 */
 	auto guid = PS_INTERNET_HEADERS;
 	for (size_t i = 0; i < pmsg->proplist.count; ++i) {
 		auto proptag = pmsg->proplist.ppropval[i].proptag;
@@ -4033,6 +4053,21 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 }
 
 #define exp_false xlog_bool(__func__, __LINE__)
+/**
+ * Turn a MAPI message into RFC5322
+ *
+ * @pmsg:         MAPI message (downloaded object) to convert
+ * @log_id:       An arbitrary string used for log messages involving
+ *                conversion problem.
+ * @b_tnef:       Force TNEF?
+ * @body_type:    text vs text+html vs html
+ * @pmail:        RFC5322 output object
+ * @get_propids:  Routine to convert Named Property names to IDs
+ *                (an implementation is not required to make new NPs and can
+ *                return propid 0)
+ * @get_propname: Routine to convert Named Property ids to names
+ *                (used for testing PS_INTERNET_HEADERS membership)
+ */
 BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
     BOOL b_tnef, enum oxcmail_body body_type,
     MAIL *pmail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
