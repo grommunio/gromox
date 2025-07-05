@@ -2129,6 +2129,9 @@ static int me_minst(int argc, char **argv, int sockd) try
 	
 	uint8_t b_unsent = strchr(argv[4], midb_flag::unsent) != nullptr;
 	uint8_t b_read = strchr(argv[4], midb_flag::seen) != nullptr;
+	uint8_t b_answered  = strchr(argv[4], midb_flag::answered) != nullptr;
+	uint8_t b_flagged   = strchr(argv[4], midb_flag::flagged) != nullptr;
+	uint8_t b_forwarded = strchr(argv[4], midb_flag::forwarded) != nullptr;
 	std::string pbuff;
 	if (!exmdb_client->imapfile_read(argv[1], "eml", argv[3], &pbuff)) {
 		mlog(LV_ERR, "E-2071: imapfile_read %s/eml/%s failed", argv[1], argv[3]);
@@ -2185,6 +2188,22 @@ static int me_minst(int argc, char **argv, int sockd) try
 		if (pmsgctnt->proplist.set(PR_MESSAGE_FLAGS, &tmp_flags) != ecSuccess)
 			return MIDB_E_NO_MEMORY;
 	}
+	if (b_answered) {
+		const uint32_t val = MAIL_ICON_REPLIED;
+		if (pmsgctnt->proplist.set(PR_ICON_INDEX, &val) != ecSuccess)
+			return MIDB_E_NO_MEMORY;
+	} else if (b_forwarded) {
+		const uint32_t val = MAIL_ICON_FORWARDED;
+		if (pmsgctnt->proplist.set(PR_ICON_INDEX, &val) != ecSuccess)
+			return MIDB_E_NO_MEMORY;
+	}
+	if (b_flagged) {
+		static constexpr uint32_t val = followupFlagged, icon = olRedFlagIcon;
+		if (pmsgctnt->proplist.set(PR_FLAG_STATUS, &val) != ecSuccess ||
+		    pmsgctnt->proplist.set(PR_FOLLOWUP_ICON, &icon) != ecSuccess)
+			return MIDB_E_NO_MEMORY;
+	}
+
 	if (!exmdb_client->allocate_message_id(argv[1],
 		rop_util_make_eid_ex(1, folder_id), &message_id) ||
 	    !exmdb_client->allocate_cn(argv[1], &change_num))
@@ -3112,6 +3131,8 @@ static int me_psflg(int argc, char **argv, int sockd) try
 	/*
 	 * The backnotification (msg_modified) arrives belatedly, so we UPDATE
 	 * the table here already.
+	 * (This does not integrate with msg_added at all. If msg_added arrives
+	 * belatedly, UPDATE will update 0 rows.)
 	 */
 	std::string qstr = "UPDATE messages SET ";
 	bool set_answered  = strchr(argv[4], midb_flag::answered)  != nullptr;
@@ -3589,6 +3610,11 @@ static void notif_msg_added(IDB_ITEM *pidb,
 		if (pstmt == nullptr)
 			return;
 		if (pstmt.step() == SQLITE_ROW) {
+			/*
+			 * Get back the flags we temporarily put down during
+			 * M-INST, especially e.g. \Deleted which is not
+			 * transferred to MAPI.
+			 */
 			flags_buff = znul(pstmt.col_text(1));
 			gx_strlcpy(mid_string, pstmt.col_text(0), std::size(mid_string));
 			str = mid_string;
