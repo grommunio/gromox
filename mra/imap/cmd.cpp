@@ -435,52 +435,27 @@ static BOOL icp_parse_fetch_args(mdi_list &plist,
 	return false;
 }
 
-static void icp_convert_flags_string(int flag_bits, char *flags_string)
+static std::string icp_convert_flags_string(int flag_bits)
 {
-	flags_string[0] = '(';
-	bool b_first = false;
-	int len = 1;
-	if (flag_bits & FLAG_RECENT) {
-		len += sprintf(flags_string + len, "\\Recent");
-		b_first = TRUE;
-	}
-	if (flag_bits & FLAG_ANSWERED) {
-		if (b_first)
-			flags_string[len++] = ' ';
-		else
-			b_first = TRUE;
-		len += sprintf(flags_string + len, "\\Answered");
-	}
-	if (flag_bits & FLAG_FLAGGED) {
-		if (b_first)
-			flags_string[len++] = ' ';
-		else
-			b_first = TRUE;
-		len += sprintf(flags_string + len, "\\Flagged");
-	}
-	if (flag_bits & FLAG_DELETED) {
-		if (b_first)
-			flags_string[len++] = ' ';
-		else
-			b_first = TRUE;
-		len += sprintf(flags_string + len, "\\Deleted");
-	}
-	if (flag_bits & FLAG_SEEN) {
-		if (b_first)
-			flags_string[len++] = ' ';
-		else
-			b_first = TRUE;
-		len += sprintf(flags_string + len, "\\Seen");
-	}
-	if (flag_bits & FLAG_DRAFT) {
-		if (b_first)
-			flags_string[len++] = ' ';
-		else
-			b_first = TRUE;
-		len += sprintf(flags_string + len, "\\Draft");
-	}
-	flags_string[len] = ')';
-	flags_string[len + 1] = '\0';
+	std::string out = "(";
+	if (flag_bits & FLAG_RECENT)
+		out += "\\Recent ";
+	if (flag_bits & FLAG_ANSWERED)
+		out += "\\Answered ";
+	if (flag_bits & FLAG_FLAGGED)
+		out += "\\Flagged ";
+	if (flag_bits & FLAG_DELETED)
+		out += "\\Deleted ";
+	if (flag_bits & FLAG_SEEN)
+		out += "\\Seen ";
+	if (flag_bits & FLAG_DRAFT)
+		out += "\\Draft ";
+	if (out.size() > 1)
+		/* There is more than just the opening parenthesis, so there must be a space */
+		out.back() = ')';
+	else
+		out += ")";
+	return out;
 }
 
 static int icp_match_field(mjson_io &io, const char *cmd_tag,
@@ -811,10 +786,9 @@ static int icp_process_fetch_item(imap_context &ctx,
 			else
 				buf += std::move(b2);
 		} else if (strcasecmp(kw, "FLAGS") == 0) {
-			char flags_string[128];
-			icp_convert_flags_string(pitem->flag_bits, flags_string);
+			auto fs = icp_convert_flags_string(pitem->flag_bits);
 			buf += "FLAGS ";
-			buf += flags_string;
+			buf += std::move(fs);
 		} else if (strcasecmp(kw, "INTERNALDATE") == 0) {
 			time_t tmp_time;
 			struct tm tmp_tm;
@@ -977,7 +951,6 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 	int errnum;
 	char buff[1024];
 	int string_length;
-	char flags_string[128];
 	
 	string_length = 0;
 	if (0 == strcasecmp(cmd, "FLAGS") ||
@@ -988,15 +961,15 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 		midb_agent::set_flags(pcontext->maildir, pcontext->selected_folder,
 			mid, flag_bits, nullptr, &errnum);
 		if (0 == strcasecmp(cmd, "FLAGS")) {
-			icp_convert_flags_string(flag_bits, flags_string);
+			auto fs = icp_convert_flags_string(flag_bits);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
-					id, flags_string, uid);
+					id, fs.c_str(), uid);
 			else
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s)\r\n",
-					id, flags_string);
+					id, fs.c_str());
 		}
 	} else if (0 == strcasecmp(cmd, "+FLAGS") ||
 		0 == strcasecmp(cmd, "+FLAGS.SILENT")) {
@@ -1005,15 +978,15 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 		if (0 == strcasecmp(cmd, "+FLAGS") && 
 			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
-			icp_convert_flags_string(flag_bits, flags_string);
+			auto fs = icp_convert_flags_string(flag_bits);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
-					id, flags_string, uid);
+					id, fs.c_str(), uid);
 			else
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s)\r\n",
-					id, flags_string);
+					id, fs.c_str());
 		}
 	} else if (0 == strcasecmp(cmd, "-FLAGS") ||
 		0 == strcasecmp(cmd, "-FLAGS.SILENT")) {
@@ -1022,15 +995,15 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 		if (0 == strcasecmp(cmd, "-FLAGS") &&
 			MIDB_RESULT_OK == midb_agent::get_flags(pcontext->maildir,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
-			icp_convert_flags_string(flag_bits, flags_string);
+			auto fs = icp_convert_flags_string(flag_bits);
 			if (uid != 0)
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
-					id, flags_string, uid);
+					id, fs.c_str(), uid);
 			else
 				string_length = gx_snprintf(buff, std::size(buff),
 					"* %d FETCH (FLAGS %s)\r\n",
-					id, flags_string);
+					id, fs.c_str());
 		}
 	}
 	if (string_length != 0)
