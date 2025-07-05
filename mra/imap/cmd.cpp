@@ -1128,13 +1128,15 @@ static void icp_convert_folderlist(std::vector<enum_folder_t> &pfile) try
 	mlog(LV_ERR, "E-1814: ENOMEM");
 }
 
-static std::string flagbits_to_s(bool seen, bool answ, bool flagged, bool draft)
+static std::string flagbits_to_s(bool seen, bool answ, bool flagged, bool draft,
+    bool del)
 {
 	std::string s = "(";
 	if (seen)    s += midb_flag::seen;
 	if (answ)    s += midb_flag::answered;
 	if (flagged) s += midb_flag::flagged;
 	if (draft)   s += midb_flag::unsent;
+	if (del)     s += midb_flag::deleted;
 	s += ')';
 	return s;
 }
@@ -1999,7 +2001,9 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
 		            [](const char *s) { return strcasecmp(s, "\\Flagged") == 0; }),
 		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
-		            [](const char *s) { return strcasecmp(s, "\\Draft") == 0; }));
+		            [](const char *s) { return strcasecmp(s, "\\Draft") == 0; }),
+		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
+		            [](const char *s) { return strcasecmp(s, "\\Deleted") == 0; }));
 	}
 	std::string mid_string;
 	time_t tmp_time = time(nullptr);
@@ -2114,7 +2118,8 @@ static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
 	                    strcasestr(str_flags, "\\Seen") != nullptr,
 	                    strcasestr(str_flags, "\\Answered") != nullptr,
 	                    strcasestr(str_flags, "\\Flagged") != nullptr,
-	                    strcasestr(str_flags, "\\Draft") != nullptr);
+	                    strcasestr(str_flags, "\\Draft") != nullptr,
+	                    strcasestr(str_flags, "\\Deleted") != nullptr);
 	if (str_received == nullptr || *str_received == '\0' ||
 	    !icp_convert_imaptime(str_received, &ctx.append_time))
 		ctx.append_time = time(nullptr);
