@@ -6,7 +6,9 @@
 #include <libHX/scope.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/mail.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/oxcmail.hpp>
 #include <gromox/paths.h>
 #include <gromox/rop_util.hpp>
 
@@ -26,6 +28,25 @@ static std::string readable_pathname(const char *in)
 		}
 	}
 	return out;
+}
+
+static BOOL cu_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
+{
+	return exmdb_client_remote::get_named_propids(g_storedir,
+	       false, names, ids);
+}
+
+static BOOL cu_get_propname(propid_t propid, PROPERTY_NAME **name) try
+{
+	PROPNAME_ARRAY names = {};
+	if (!exmdb_client_remote::get_named_propnames(g_storedir,
+	    {propid}, &names) || names.size() != 1)
+		return false;
+	*name = &names.ppropname[0];
+	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2238: ENOMEM");
+	return false;
 }
 
 static int do_message(const TPROPVAL_ARRAY &row, unsigned int depth)
@@ -94,6 +115,18 @@ static int do_message(const TPROPVAL_ARRAY &row, unsigned int depth)
 	subject = content->proplist.get<const char>(PR_SUBJECT_A);
 	printf("%-*sPR_SUBJECT_A (full msg): %s\n", depth * 4, "", subject ? subject : "(nullptr)");
 
+	MAIL imail;
+	if (oxcmail_export(content, "(stdout)", false, oxcmail_body::plain_and_html,
+	    &imail, zalloc, cu_get_propids, cu_get_propname)) {
+		fprintf(stderr, "Could not/Won't produce RFC5322 representation, some error\n");
+		return EXIT_FAILURE;
+	}
+	std::string rfc5322_mail;
+	auto err = imail.to_str(rfc5322_mail);
+	if (err != 0) {
+		fprintf(stderr, "imail::to_str: %s\n", strerror(err));
+		return EXIT_FAILURE;
+	}
 	return 0;
 }
 
