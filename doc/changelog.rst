@@ -7,6 +7,7 @@ Enhancements:
   (if not running grommunio nginx config in front)
 * oxcical: try to handle ICS files with missing VTIMEZONE blocks
 * oxcical: support YEARLY recurrences with BYDAY without BYSETPOS
+* imap: offer $Forwarded keyword for APPEND/STORE commands
 
 Fixes:
 
@@ -16,6 +17,8 @@ Fixes:
   exported to iCal
 * midb, imap: make EXPUNGE synchronous so that old UIDs don't reappear in
   a subsequent FETCH
+* midb: respect setting \Deleted, \Answered, \Flagged during APPEND
+
 
 
 Gromox 2.46 (2025-05-28)

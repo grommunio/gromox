@@ -43,6 +43,7 @@ enum {
 };
 
 enum midb_flag : char {
+	/* On-wire text protocol */
 	answered = 'A',
 	deleted = 'D',
 	flagged = 'F',

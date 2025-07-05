@@ -20,6 +20,12 @@ enum {
 	FLAG_DELETED  = 0x8,
 	FLAG_SEEN     = 0x10,
 	FLAG_DRAFT    = 0x20,
+	FLAG_FORWARDED= 0x40,
+
+	/* mnemonics */
+	FLAG_ALL      = 0x4F,
+
+	/* internal */
 	FLAG_LOADED   = 0x80,
 };
 

@@ -450,6 +450,8 @@ static std::string icp_convert_flags_string(int flag_bits)
 		out += "\\Seen ";
 	if (flag_bits & FLAG_DRAFT)
 		out += "\\Draft ";
+	if (flag_bits & FLAG_FORWARDED)
+		out += "$Forwarded ";
 	if (out.size() > 1)
 		/* There is more than just the opening parenthesis, so there must be a space */
 		out.back() = ')';
@@ -956,8 +958,7 @@ static void icp_store_flags(const char *cmd, const std::string &mid,
 	if (0 == strcasecmp(cmd, "FLAGS") ||
 		0 == strcasecmp(cmd, "FLAGS.SILENT")) {
 		midb_agent::unset_flags(pcontext->maildir, pcontext->selected_folder,
-			mid, FLAG_ANSWERED | FLAG_FLAGGED | FLAG_DELETED |
-			FLAG_SEEN | FLAG_DRAFT | FLAG_RECENT, nullptr, &errnum);
+			mid, FLAG_ALL, nullptr, &errnum);
 		midb_agent::set_flags(pcontext->maildir, pcontext->selected_folder,
 			mid, flag_bits, nullptr, &errnum);
 		if (0 == strcasecmp(cmd, "FLAGS")) {
@@ -1129,7 +1130,7 @@ static void icp_convert_folderlist(std::vector<enum_folder_t> &pfile) try
 }
 
 static std::string flagbits_to_s(bool seen, bool answ, bool flagged, bool draft,
-    bool del)
+    bool del, bool fwd)
 {
 	std::string s = "(";
 	if (seen)    s += midb_flag::seen;
@@ -1137,6 +1138,7 @@ static std::string flagbits_to_s(bool seen, bool answ, bool flagged, bool draft,
 	if (flagged) s += midb_flag::flagged;
 	if (draft)   s += midb_flag::unsent;
 	if (del)     s += midb_flag::deleted;
+	if (fwd)     s += midb_flag::forwarded;
 	s += ')';
 	return s;
 }
@@ -1513,12 +1515,12 @@ static int icp_selex(int argc, char **argv, imap_context &ctx, bool readonly) tr
 	auto buf = fmt::format(
 		"* {} EXISTS\r\n"
 		"* {} RECENT\r\n"
-		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
+		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft $Forwarded)\r\n"
 		"* OK {}\r\n",
 		pcontext->contents.n_exists(),
 		pcontext->contents.n_recent, readonly ?
 		"[PERMANENTFLAGS ()] no permanent flags permitted" :
-		"[PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)] limited");
+		"[PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft $Forwarded)] limited");
 	if (pcontext->contents.firstunseen != 0)
 		buf += fmt::format("* OK [UNSEEN {}] message {} is first unseen\r\n",
 			pcontext->contents.firstunseen,
@@ -2003,7 +2005,9 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
 		            [](const char *s) { return strcasecmp(s, "\\Draft") == 0; }),
 		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
-		            [](const char *s) { return strcasecmp(s, "\\Deleted") == 0; }));
+		            [](const char *s) { return strcasecmp(s, "\\Deleted") == 0; }),
+		            std::any_of(&temp_argv[0], &temp_argv[temp_argc],
+		            [](const char *s) { return strcasecmp(s, "$Forwarded") == 0; }));
 	}
 	std::string mid_string;
 	time_t tmp_time = time(nullptr);
@@ -2066,7 +2070,7 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 
 static inline bool append_allowed_flag_name(const char *flag)
 {
-	static constexpr const char *names[] = {"\\Answered", "\\Flagged", "\\Seen", "\\Draft", "\\Deleted"};
+	static constexpr const char *names[] = {"\\Answered", "\\Flagged", "\\Seen", "\\Draft", "\\Deleted", "$Forwarded"};
 	for (auto s : names)
 		if (strcasecmp(flag, s) == 0)
 			return true;
@@ -2119,7 +2123,8 @@ static int icp_long_append_begin2(int argc, char **argv, imap_context &ctx) try
 	                    strcasestr(str_flags, "\\Answered") != nullptr,
 	                    strcasestr(str_flags, "\\Flagged") != nullptr,
 	                    strcasestr(str_flags, "\\Draft") != nullptr,
-	                    strcasestr(str_flags, "\\Deleted") != nullptr);
+	                    strcasestr(str_flags, "\\Deleted") != nullptr,
+	                    strcasestr(str_flags, "$Forwarded") != nullptr);
 	if (str_received == nullptr || *str_received == '\0' ||
 	    !icp_convert_imaptime(str_received, &ctx.append_time))
 		ctx.append_time = time(nullptr);
@@ -2498,6 +2503,8 @@ int icp_store(int argc, char **argv, imap_context &ctx)
 			flag_bits |= FLAG_DRAFT;
 		else if (strcasecmp(temp_argv[i], "\\Recent") == 0)
 			flag_bits |= FLAG_RECENT;			
+		else if (strcasecmp(temp_argv[i], "$Forwarded") == 0)
+			flag_bits |= FLAG_FORWARDED;
 		else
 			return 1807;
 	}
@@ -2759,6 +2766,8 @@ int icp_uid_store(int argc, char **argv, imap_context &ctx)
 			flag_bits |= FLAG_DRAFT;
 		else if (strcasecmp(temp_argv[i], "\\Recent") == 0)
 			flag_bits |= FLAG_RECENT;			
+		else if (strcasecmp(temp_argv[i], "$Forwarded") == 0)
+			flag_bits |= FLAG_FORWARDED;
 		else
 			return 1807;
 	}

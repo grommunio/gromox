@@ -1343,6 +1343,11 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream)
 				buff[outlen++] = ' ';
 			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "\\Draft");
 		}
+		if (flag_bits & FLAG_FORWARDED) {
+			if (b_first)
+				buff[outlen++] = ' ';
+			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "$Forwarded");
+		}
 		outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "))\r\n");
 		if (pstream == nullptr)
 			pcontext->connection.write(buff, outlen);

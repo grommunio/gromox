@@ -1091,6 +1091,7 @@ static unsigned int s_to_flagbits(std::string_view s)
 	if (s.find(midb_flag::deleted) != s.npos)  fl |= FLAG_DELETED;
 	if (s.find(midb_flag::seen) != s.npos)     fl |= FLAG_SEEN;
 	if (s.find(midb_flag::recent) != s.npos)   fl |= FLAG_RECENT;
+	if (s.find(midb_flag::forwarded) != s.npos)fl |= FLAG_FORWARDED;
 	return fl;
 }
 
@@ -1103,6 +1104,7 @@ static std::string flagbits_to_s(unsigned int v)
 	if (v & FLAG_DELETED)  s += midb_flag::deleted;
 	if (v & FLAG_SEEN)     s += midb_flag::seen;
 	if (v & FLAG_RECENT)   s += midb_flag::recent;
+	if (v & FLAG_FORWARDED)s += midb_flag::forwarded;
 	return s;
 }
 
@@ -1139,6 +1141,8 @@ static unsigned int di_to_flagbits(const Json::Value &jv)
 		fl |= FLAG_SEEN;
 	if (jv.isMember("recent") && (v = jv["recent"].asUInt()) != 0)
 		fl |= FLAG_RECENT;
+	if (jv.isMember("forwarded") && (v = jv["forwarded"].asUInt()) != 0)
+		fl |= FLAG_FORWARDED;
 	return fl;
 }
 
