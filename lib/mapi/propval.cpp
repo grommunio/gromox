@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
 // This file is part of Gromox.
+#include <cmath>
+#include <compare>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -535,6 +537,22 @@ int SVREID_compare(const SVREID *a, const SVREID *b)
 	return a->compare(*b);
 }
 
+template<typename T> static std::strong_ordering fpcompare(T x, T y)
+{
+	auto z = x <=> y;
+	if (z == std::partial_ordering::equivalent)
+		return std::strong_ordering::equivalent;
+	else if (z == std::partial_ordering::less)
+		return std::strong_ordering::less;
+	else if (z == std::partial_ordering::greater)
+		return std::strong_ordering::greater;
+	else if (std::isnan(x))
+		/* Mimic what EXC2019 seems to be doing (similar to nullptr handling) */
+		return std::isnan(y) ? std::strong_ordering::equivalent : std::strong_ordering::less;
+	else
+		return std::isnan(y) ? std::strong_ordering::greater : std::strong_ordering::equivalent;
+}
+
 /**
  * This supports only comparisons between same-typed values.
  *
@@ -572,13 +590,17 @@ int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptyp
 	case PT_SYSTIME:
 		return three_way_compare(*static_cast<const uint64_t *>(pvalue1),
 		       *static_cast<const uint64_t *>(pvalue2));
-	case PT_FLOAT:
-		return three_way_compare(*static_cast<const float *>(pvalue1),
-		       *static_cast<const float *>(pvalue2));
+	case PT_FLOAT: {
+		auto c = fpcompare(*static_cast<const float *>(pvalue1),
+		         *static_cast<const float *>(pvalue2));
+		return c == 0 ? 0 : c < 0 ? -1 : 1;
+	}
 	case PT_DOUBLE:
-	case PT_APPTIME:
-		return three_way_compare(*static_cast<const double *>(pvalue1),
-		       *static_cast<const double *>(pvalue2));
+	case PT_APPTIME: {
+		auto c = fpcompare(*static_cast<const double *>(pvalue1),
+		         *static_cast<const double *>(pvalue2));
+		return c == 0 ? 0 : c < 0 ? -1 : 1;
+	}
 	case PT_STRING8:
 	case PT_UNICODE:
 	case PT_GXI_STRING:
@@ -613,14 +635,28 @@ int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptyp
 	case PT_MV_FLOAT: {
 		auto a = static_cast<const FLOAT_ARRAY *>(pvalue1);
 		auto b = static_cast<const FLOAT_ARRAY *>(pvalue2);
-		MVCOMPARE2(mval, float);
+		cmp = three_way_compare(a->count, b->count);
+		if (cmp != 0)
+			break;
+		for (size_t i = 0; i < a->count; ++i) {
+			auto c = fpcompare(a->mval[i], b->mval[i]);
+			if (c != 0)
+				return c < 0 ? -1 : 1;
+		}
 		break;
 	}
 	case PT_MV_DOUBLE:
 	case PT_MV_APPTIME: {
 		auto a = static_cast<const DOUBLE_ARRAY *>(pvalue1);
 		auto b = static_cast<const DOUBLE_ARRAY *>(pvalue2);
-		MVCOMPARE2(mval, double);
+		cmp = three_way_compare(a->count, b->count);
+		if (cmp != 0)
+			break;
+		for (size_t i = 0; i < a->count; ++i) {
+			auto c = fpcompare(a->mval[i], b->mval[i]);
+			if (c != 0)
+				return c < 0 ? -1 : 1;
+		}
 		break;
 	}
 	case PT_MV_STRING8:
