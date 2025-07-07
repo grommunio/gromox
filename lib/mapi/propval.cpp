@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -541,11 +543,6 @@ int SVREID_compare(const SVREID *a, const SVREID *b)
  */
 int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptype)
 {
-#define MVCOMPARE(field) do { \
-		cmp = three_way_compare(a->count, b->count); \
-		if (cmp == 0) \
-			cmp = memcmp(a->field, b->field, sizeof(a->field[0]) * a->count); \
-	} while (false)
 #define MVCOMPARE2(field, retype) do { \
 		cmp = three_way_compare(a->count, b->count); \
 		if (cmp != 0) \
@@ -616,14 +613,14 @@ int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptyp
 	case PT_MV_FLOAT: {
 		auto a = static_cast<const FLOAT_ARRAY *>(pvalue1);
 		auto b = static_cast<const FLOAT_ARRAY *>(pvalue2);
-		MVCOMPARE(mval);
+		MVCOMPARE2(mval, float);
 		break;
 	}
 	case PT_MV_DOUBLE:
 	case PT_MV_APPTIME: {
 		auto a = static_cast<const DOUBLE_ARRAY *>(pvalue1);
 		auto b = static_cast<const DOUBLE_ARRAY *>(pvalue2);
-		MVCOMPARE(mval);
+		MVCOMPARE2(mval, double);
 		break;
 	}
 	case PT_MV_STRING8:
@@ -668,7 +665,6 @@ int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptyp
 	}
 	}
 	return cmp;
-#undef MVCOMPARE
 #undef MVCOMPARE2
 }
 
