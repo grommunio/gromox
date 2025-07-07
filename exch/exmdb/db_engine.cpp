@@ -5,6 +5,7 @@
 #include <cassert>
 #include <chrono>
 #include <climits>
+#include <compare>
 #include <condition_variable>
 #include <csignal>
 #include <cstdint>
@@ -1381,15 +1382,21 @@ void db_conn::proc_dynamic_event(cpid_t cpid, dynamic_event event_type,
 	}
 }
 
-static int db_engine_compare_propval(proptype_t proptype, void *pvalue1, void *pvalue2)
+static std::strong_ordering db_engine_compare_propval(proptype_t proptype,
+    void *pvalue1, void *pvalue2)
 {
+	/*
+	 * EXC2019-compatible behavior: absent values sort before anything
+	 * else, and compare equal to another absent property.
+	 * (See also: propval_compare_relop_nullok)
+	 */
 	if (pvalue1 == nullptr && pvalue2 == nullptr)
-		return 0;
+		return std::strong_ordering::equal;
 	if (pvalue1 == nullptr && pvalue2 != nullptr)
-		return -1;
+		return std::strong_ordering::less;
 	if (pvalue1 != nullptr && pvalue2 == nullptr)
-		return 1;
-	return propval_compare(pvalue1, pvalue2, proptype);
+		return std::strong_ordering::greater;
+	return propval_compare(pvalue1, pvalue2, proptype) <=> 0;
 }
 
 static BOOL db_engine_insert_categories(sqlite3 *psqlite,
@@ -2538,7 +2545,6 @@ static void *db_engine_get_extremum_value(db_conn *pdb, cpid_t cpid,
     uint32_t table_id, uint32_t extremum_tag, uint64_t parent_id,
     uint8_t table_sort)
 {
-	int result;
 	BOOL b_first;
 	void *pvalue;
 	void *pvalue1;
@@ -2562,7 +2568,7 @@ static void *db_engine_get_extremum_value(db_conn *pdb, cpid_t cpid,
 			b_first = TRUE;
 			continue;
 		}
-		result = db_engine_compare_propval(PROP_TYPE(extremum_tag), pvalue, pvalue1);
+		auto result = db_engine_compare_propval(PROP_TYPE(extremum_tag), pvalue, pvalue1);
 		if (TABLE_SORT_MAXIMUM_CATEGORY == table_sort) {
 			if (result < 0)
 				pvalue = pvalue1;
@@ -2577,7 +2583,6 @@ static void *db_engine_get_extremum_value(db_conn *pdb, cpid_t cpid,
 static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
     uint64_t folder_id, uint64_t message_id, db_base &dbase) try
 {
-	int result;
 	BOOL b_index;
 	BOOL b_break;
 	uint32_t idx;
@@ -2856,7 +2861,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 				row_id1 = stm_sel_ex.col_int64(0);
 				if (row_id1 != row_id) {
 					pvalue = common_util_column_sqlite_statement(stm_sel_ex, 2, type);
-					result = db_engine_compare_propval(type, pvalue, pvalue1);
+					auto result = db_engine_compare_propval(type, pvalue, pvalue1);
 					auto asc = table_sort == TABLE_SORT_ASCEND;
 					if ((asc && result > 0) || (!asc && result < 0)) {
 						b_break = TRUE;
@@ -3190,7 +3195,6 @@ void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
 static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
     uint64_t folder_id, uint64_t message_id, db_base &dbase) try
 {
-	int result;
 	int row_type;
 	BOOL b_error;
 	uint32_t idx;
@@ -3330,7 +3334,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 					b_error = TRUE;
 					break;
 				}
-				result = db_engine_compare_propval(
+				auto result = db_engine_compare_propval(
 					ptable->psorts->psort[i].type,
 					propvals[i].pvalue, pvalue);
 				auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
@@ -3350,7 +3354,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 					b_error = TRUE;
 					break;
 				}
-				result = db_engine_compare_propval(
+				auto result = db_engine_compare_propval(
 					ptable->psorts->psort[i].type,
 					propvals[i].pvalue, pvalue);
 				auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
@@ -3512,7 +3516,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 				pvalue = common_util_column_sqlite_statement(
 				         pstmt2, 0, PROP_TYPE(ptable->extremum_tag));
 				pstmt2.finalize();
-				result = db_engine_compare_propval(
+				auto result = db_engine_compare_propval(
 				         PROP_TYPE(ptable->extremum_tag), pvalue,
 				         propvals[ptable->psorts->ccategories].pvalue);
 				if (TABLE_SORT_MAXIMUM_CATEGORY == ptable->psorts->psort[
@@ -3563,7 +3567,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 					b_error = TRUE;
 					break;
 				}
-				result = db_engine_compare_propval(
+				auto result = db_engine_compare_propval(
 				         ptable->psorts->psort[i].type,
 				         propvals[i].pvalue, pvalue);
 				auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
@@ -3589,7 +3593,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 					b_error = TRUE;
 					break;
 				}
-				result = db_engine_compare_propval(
+				auto result = db_engine_compare_propval(
 				         ptable->psorts->psort[i].type,
 				         propvals[i].pvalue, pvalue);
 				auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
