@@ -506,7 +506,7 @@ static tproc_status ps_literal_processing(imap_context &ctx)
 			    argv, std::size(argv));
 		if (argc >= 3 && 0 == strcasecmp(argv[1], "APPEND")) {
 			/* Special handling for APPEND with potentially huge literals */
-			switch (icp_append_begin(argc, argv, ctx)) {
+			switch (icp_long_append_begin(argc, argv, ctx)) {
 			case DISPATCH_CONTINUE: {
 				ctx.current_len = &ctx.read_buffer[ctx.read_offset] - &ctx.literal_ptr[nl_len];
 				if (pcontext->current_len < 0) {
@@ -629,7 +629,7 @@ static tproc_status ps_cmd_processing(imap_context &ctx)
 				pcontext->connection.write(" ", 1);
 				pcontext->connection.write(imap_reply_str, string_length);
 			} else {
-				icp_append_end(argc, argv, ctx);
+				icp_long_append_end(argc, argv, ctx);
 			}
 			pcontext->sched_stat = isched_stat::rdcmd;
 			pcontext->literal_ptr = nullptr;

@@ -2064,16 +2064,16 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-static inline bool is_flag_name(const char *flag)
+static inline bool append_allowed_flag_name(const char *flag)
 {
-	static constexpr const char *names[] = {"\\Answered", "\\Flagged", "\\Seen", "\\Draft"};
+	static constexpr const char *names[] = {"\\Answered", "\\Flagged", "\\Seen", "\\Draft", "\\Deleted"};
 	for (auto s : names)
 		if (strcasecmp(flag, s) == 0)
 			return true;
 	return false;
 }
 
-static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
+static int icp_long_append_begin2(int argc, char **argv, imap_context &ctx) try
 {
 	if (!ctx.is_authed())
 		return 1804 | DISPATCH_BREAK;
@@ -2105,7 +2105,7 @@ static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
 		if (temp_argc == -1)
 			return 1800 | DISPATCH_BREAK;
 		for (int i = 0; i < temp_argc; ++i)
-			if (!is_flag_name(temp_argv[i]))
+			if (!append_allowed_flag_name(temp_argv[i]))
 				return 1800 | DISPATCH_BREAK;
 	}
 	auto pcontext = &ctx;
@@ -2130,12 +2130,12 @@ static int icp_append_begin2(int argc, char **argv, imap_context &ctx) try
 	return 1918 | DISPATCH_BREAK;
 }
 
-int icp_append_begin(int argc, char **argv, imap_context &ctx)
+int icp_long_append_begin(int argc, char **argv, imap_context &ctx)
 {
-	return icp_dval(argc, argv, ctx, icp_append_begin2(argc, argv, ctx));
+	return icp_dval(argc, argv, ctx, icp_long_append_begin2(argc, argv, ctx));
 }
 
-static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
+static int icp_long_append_end2(int argc, char **argv, imap_context &ctx) try
 {
 	auto pcontext = &ctx;
 	std::string content;
@@ -2199,9 +2199,9 @@ static int icp_append_end2(int argc, char **argv, imap_context &ctx) try
 	return 1918;
 }
 
-int icp_append_end(int argc, char **argv, imap_context &ctx)
+int icp_long_append_end(int argc, char **argv, imap_context &ctx)
 {
-	return icp_dval(argc, argv, ctx, icp_append_end2(argc, argv, ctx));
+	return icp_dval(argc, argv, ctx, icp_long_append_end2(argc, argv, ctx));
 }
 
 int icp_check(int argc, char **argv, imap_context &ctx)
