@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
+#include <compare>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -1053,7 +1054,7 @@ static BOOL nsp_interface_match_node(const ab_tree::ab_node &node,
 		       pfilter->res.res_not.pres) ? TRUE : false;
 	case RES_CONTENT:
 		return FALSE;
-	case RES_PROPERTY:
+	case RES_PROPERTY: {
 		if (pfilter->res.res_property.pprop == nullptr)
 			return TRUE;
 		// XXX RESTRICTION_PROPERTY::comparable check
@@ -1103,26 +1104,27 @@ static BOOL nsp_interface_match_node(const ab_tree::ab_node &node,
 		    temp_buff, std::size(temp_buff)) != ecSuccess)
 			return FALSE;
 		// XXX: convert to RESTRICTION_PROPERTY::eval
-		int cmp;
+		auto cmp = std::strong_ordering::equivalent;
 		switch (PROP_TYPE(pfilter->res.res_property.proptag)) {
 		case PT_SHORT:
-			cmp = three_way_compare(prop_val.value.s, pfilter->res.res_property.pprop->value.s);
+			cmp = prop_val.value.s <=> pfilter->res.res_property.pprop->value.s;
 			break;
 		case PT_LONG:
-			cmp = three_way_compare(prop_val.value.l, pfilter->res.res_property.pprop->value.l);
+			cmp = prop_val.value.l <=> pfilter->res.res_property.pprop->value.l;
 			break;
 		case PT_BOOLEAN:
-			cmp = three_way_compare(prop_val.value.b, pfilter->res.res_property.pprop->value.b);
+			cmp = prop_val.value.b <=> pfilter->res.res_property.pprop->value.b;
 			break;
 		case PT_STRING8:
 		case PT_UNICODE:
-			cmp = strcasecmp(prop_val.value.pstr, pfilter->res.res_property.pprop->value.pstr);
+			cmp = strcasecmp(prop_val.value.pstr, pfilter->res.res_property.pprop->value.pstr) <=> 0;
 			break;
 		default:
 			mlog(LV_ERR, "E-1967: unhandled proptag %xh", pfilter->res.res_property.proptag);
 			return false;
 		}
 		return three_way_eval(pfilter->res.res_property.relop, cmp) ? TRUE : false;
+	}
 	case RES_PROPCOMPARE:
 		return FALSE;
 	case RES_BITMASK:

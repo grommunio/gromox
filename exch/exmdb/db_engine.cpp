@@ -1396,7 +1396,7 @@ static std::strong_ordering db_engine_compare_propval(proptype_t proptype,
 		return std::strong_ordering::less;
 	if (pvalue1 != nullptr && pvalue2 == nullptr)
 		return std::strong_ordering::greater;
-	return propval_compare(pvalue1, pvalue2, proptype) <=> 0;
+	return propval_compare(pvalue1, pvalue2, proptype);
 }
 
 static BOOL db_engine_insert_categories(sqlite3 *psqlite,

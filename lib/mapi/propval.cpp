@@ -555,65 +555,59 @@ template<typename T> static std::strong_ordering fpcompare(T x, T y)
  * However, for RELOP_EQ and RELOP_NE, comparisons between PT_MV_x
  * and PT_x should be added [GXL-361].
  */
-int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptype)
+std::strong_ordering propval_compare(const void *pvalue1, const void *pvalue2,
+    proptype_t proptype)
 {
 #define MVCOMPARE2(field, retype) do { \
-		cmp = three_way_compare(a->count, b->count); \
+		cmp = a->count <=> b->count; \
 		if (cmp != 0) \
 			break; \
 		for (size_t jj = 0; jj < a->count; ++jj) { \
-			cmp = three_way_compare(static_cast<retype>((a->field)[jj]), \
-			                        static_cast<retype>((b->field)[jj])); \
+			cmp = static_cast<retype>((a->field)[jj]) <=> \
+			      static_cast<retype>((b->field)[jj]); \
 			if (cmp != 0) \
 				break; \
 		} \
 	} while (false)
 
-	int cmp = -2;
+	auto cmp = std::strong_ordering::equivalent;
 	switch (proptype) {
 	case PT_SHORT:
-		return three_way_compare(*static_cast<const uint16_t *>(pvalue1),
-		       *static_cast<const uint16_t *>(pvalue2));
+		return *static_cast<const uint16_t *>(pvalue1) <=>
+		       *static_cast<const uint16_t *>(pvalue2);
 	case PT_LONG:
 	case PT_ERROR:
-		return three_way_compare(*static_cast<const uint32_t *>(pvalue1),
-		       *static_cast<const uint32_t *>(pvalue2));
+		return *static_cast<const uint32_t *>(pvalue1) <=>
+		       *static_cast<const uint32_t *>(pvalue2);
 	case PT_BOOLEAN:
-		return three_way_compare(!!*static_cast<const uint8_t *>(pvalue1),
-		       !!*static_cast<const uint8_t *>(pvalue2));
+		return !!*static_cast<const uint8_t *>(pvalue1) <=>
+		       !!*static_cast<const uint8_t *>(pvalue2);
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
-		return three_way_compare(*static_cast<const uint64_t *>(pvalue1),
-		       *static_cast<const uint64_t *>(pvalue2));
-	case PT_FLOAT: {
-		auto c = fpcompare(*static_cast<const float *>(pvalue1),
-		         *static_cast<const float *>(pvalue2));
-		return c == 0 ? 0 : c < 0 ? -1 : 1;
-	}
+		return *static_cast<const uint64_t *>(pvalue1) <=>
+		       *static_cast<const uint64_t *>(pvalue2);
+	case PT_FLOAT:
+		return fpcompare(*static_cast<const float *>(pvalue1),
+		       *static_cast<const float *>(pvalue2));
 	case PT_DOUBLE:
-	case PT_APPTIME: {
-		auto c = fpcompare(*static_cast<const double *>(pvalue1),
-		         *static_cast<const double *>(pvalue2));
-		return c == 0 ? 0 : c < 0 ? -1 : 1;
-	}
+	case PT_APPTIME:
+		return fpcompare(*static_cast<const double *>(pvalue1),
+		       *static_cast<const double *>(pvalue2));
 	case PT_STRING8:
 	case PT_UNICODE:
 	case PT_GXI_STRING:
 		return strcasecmp(static_cast<const char *>(pvalue1),
-		       static_cast<const char *>(pvalue2));
-	case PT_CLSID: {
-		auto c = *static_cast<const GUID *>(pvalue1) <=> *static_cast<const GUID *>(pvalue2);
-		return c == 0 ? 0 : c < 0 ? -1 : 1;
-	}
-	case PT_BINARY: {
-		auto c = *static_cast<const BINARY *>(pvalue1) <=> *static_cast<const BINARY *>(pvalue2);
-		return c == 0 ? 0 : c < 0 ? -1 : 1;
-	}
-	case PT_SVREID: {
-		auto c = *static_cast<const SVREID *>(pvalue1) <=> *static_cast<const SVREID *>(pvalue2);
-		return c == 0 ? 0 : c < 0 ? -1 : 1;
-	}
+		       static_cast<const char *>(pvalue2)) <=> 0;
+	case PT_CLSID:
+		return *static_cast<const GUID *>(pvalue1) <=>
+		       *static_cast<const GUID *>(pvalue2);
+	case PT_BINARY:
+		return *static_cast<const BINARY *>(pvalue1) <=>
+		       *static_cast<const BINARY *>(pvalue2);
+	case PT_SVREID:
+		return *static_cast<const SVREID *>(pvalue1) <=>
+		       *static_cast<const SVREID *>(pvalue2);
 	case PT_MV_SHORT: {
 		auto a = static_cast<const SHORT_ARRAY *>(pvalue1);
 		auto b = static_cast<const SHORT_ARRAY *>(pvalue2);
@@ -637,13 +631,13 @@ int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptyp
 	case PT_MV_FLOAT: {
 		auto a = static_cast<const FLOAT_ARRAY *>(pvalue1);
 		auto b = static_cast<const FLOAT_ARRAY *>(pvalue2);
-		cmp = three_way_compare(a->count, b->count);
+		cmp = a->count <=> b->count;
 		if (cmp != 0)
 			break;
 		for (size_t i = 0; i < a->count; ++i) {
-			auto c = fpcompare(a->mval[i], b->mval[i]);
-			if (c != 0)
-				return c < 0 ? -1 : 1;
+			cmp = fpcompare(a->mval[i], b->mval[i]);
+			if (cmp != 0)
+				break;
 		}
 		break;
 	}
@@ -651,13 +645,13 @@ int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptyp
 	case PT_MV_APPTIME: {
 		auto a = static_cast<const DOUBLE_ARRAY *>(pvalue1);
 		auto b = static_cast<const DOUBLE_ARRAY *>(pvalue2);
-		cmp = three_way_compare(a->count, b->count);
+		cmp = a->count <=> b->count;
 		if (cmp != 0)
 			break;
 		for (size_t i = 0; i < a->count; ++i) {
-			auto c = fpcompare(a->mval[i], b->mval[i]);
-			if (c != 0)
-				return c < 0 ? -1 : 1;
+			cmp = fpcompare(a->mval[i], b->mval[i]);
+			if (cmp != 0)
+				break;
 		}
 		break;
 	}
@@ -665,11 +659,11 @@ int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptyp
 	case PT_MV_UNICODE: {
 		auto sa1 = static_cast<const STRING_ARRAY *>(pvalue1);
 		auto sa2 = static_cast<const STRING_ARRAY *>(pvalue2);
-		cmp = three_way_compare(sa1->count, sa2->count);
+		cmp = sa1->count <=> sa2->count;
 		if (cmp != 0)
 			break;
 		for (size_t i = 0; i < sa1->count; ++i) {
-			cmp = strcasecmp(sa1->ppstr[i], sa2->ppstr[i]);
+			cmp = strcasecmp(sa1->ppstr[i], sa2->ppstr[i]) <=> 0;
 			if (cmp != 0)
 				break;
 		}
@@ -678,26 +672,26 @@ int propval_compare(const void *pvalue1, const void *pvalue2, proptype_t proptyp
 	case PT_MV_CLSID: {
 		auto bv1 = static_cast<const GUID_ARRAY *>(pvalue1);
 		auto bv2 = static_cast<const GUID_ARRAY *>(pvalue2);
-		cmp = three_way_compare(bv1->count, bv2->count);
+		cmp = bv1->count <=> bv2->count;
 		if (cmp != 0)
 			break;
 		for (size_t i = 0; i < bv1->count; ++i) {
-			auto c = bv1->pguid[i] <=> bv2->pguid[i];
-			if (c != 0)
-				return c < 0 ? -1 : 1;
+			cmp = bv1->pguid[i] <=> bv2->pguid[i];
+			if (cmp != 0)
+				break;
 		}
 		break;
 	}
 	case PT_MV_BINARY: {
 		auto bv1 = static_cast<const BINARY_ARRAY *>(pvalue1);
 		auto bv2 = static_cast<const BINARY_ARRAY *>(pvalue2);
-		cmp = three_way_compare(bv1->count, bv2->count);
+		cmp = bv1->count <=> bv2->count;
 		if (cmp != 0)
 			break;
 		for (size_t i = 0; i < bv1->count; ++i) {
-			auto c = bv1->pbin[i] <=> bv2->pbin[i];
-			if (c != 0)
-				return c < 0 ? -1 : 1;
+			cmp = bv1->pbin[i] <=> bv2->pbin[i];
+			if (cmp != 0)
+				break;
 		}
 		break;
 	}
@@ -731,14 +725,16 @@ bool propval_compare_relop_nullok(enum relop relop, proptype_t proptype,
 	/*
 	 * EXC2019-compatible behavior: absent values sort before anything
 	 * else, and compare equal to another absent property.
+	 * (See also: db_engine_compare_propval)
 	 */
 	if (a == nullptr)
-		return three_way_eval(relop, b == nullptr ? 0 : -1);
-	return b == nullptr ? three_way_eval(relop, 1) :
+		return three_way_eval(relop, b == nullptr ?
+		       std::strong_ordering::equal : std::strong_ordering::less);
+	return b == nullptr ? three_way_eval(relop, std::strong_ordering::greater) :
 	       propval_compare_relop(relop, proptype, a, b);
 }
 
-bool three_way_eval(relop r, int order)
+bool three_way_eval(relop r, std::strong_ordering order)
 {
 	switch (r) {
 	case RELOP_LT: return order < 0;
