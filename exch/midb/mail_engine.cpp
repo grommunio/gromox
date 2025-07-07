@@ -3622,6 +3622,10 @@ static void notif_msg_added(IDB_ITEM *pidb,
 	me_insert_message(pstmt, &uidnext, message_id, pidb->psqlite,
 		syncmessage_entry{mod_time, received_time, message_flags,
 		znul(str), set_answered, set_forwarded, b_flagged});
+	if (flags_buff.find(midb_flag::deleted) != flags_buff.npos) {
+		qstr = fmt::format("UPDATE messages SET deleted=1 WHERE message_id={}", message_id);
+		gx_sql_exec(pidb->psqlite, qstr.c_str());
+	}
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2418: ENOMEM");
 }
