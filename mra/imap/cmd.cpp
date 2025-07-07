@@ -1131,10 +1131,10 @@ static void icp_convert_folderlist(std::vector<enum_folder_t> &pfile) try
 static std::string flagbits_to_s(bool seen, bool answ, bool flagged, bool draft)
 {
 	std::string s = "(";
-	if (seen)    s += 'S';
-	if (answ)    s += 'A';
-	if (flagged) s += 'F';
-	if (draft)   s += 'U';
+	if (seen)    s += midb_flag::seen;
+	if (answ)    s += midb_flag::answered;
+	if (flagged) s += midb_flag::flagged;
+	if (draft)   s += midb_flag::unsent;
 	s += ')';
 	return s;
 }
