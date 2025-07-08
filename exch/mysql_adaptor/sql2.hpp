@@ -27,7 +27,6 @@ class sqlconn final {
 	sqlconn &operator=(sqlconn &&o) noexcept;
 	operator bool() const { return m_conn; }
 	bool operator==(std::nullptr_t) const { return m_conn == nullptr; }
-	bool operator!=(std::nullptr_t) const { return m_conn != nullptr; }
 	MYSQL *get() const { return m_conn; }
 	std::string quote(std::string_view);
 	bool query(std::string_view);

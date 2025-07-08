@@ -951,7 +951,6 @@ struct GX_EXPORT FLATUID {
 	 * `!=` needs to be explicit before C++20.
 	 */
 	inline bool operator==(const FLATUID &o) const { return memcmp(ab, o.ab, sizeof(ab)) == 0; }
-	inline bool operator!=(const FLATUID &o) const { return !operator==(o); }
 };
 
 struct GX_EXPORT FLATUID_ARRAY {
@@ -997,7 +996,6 @@ struct GX_EXPORT GUID {
 	 * call memcmp directly.
 	 */
 	inline bool operator==(const GUID &o) const { return memcmp(this, &o, sizeof(o)) == 0; }
-	inline bool operator!=(const GUID &o) const { return !operator==(o); }
 	/*
 	 * EXC2019 evaluates GUID-GUID comparisons (in e.g. restrictions)
 	 * member-wise and in host order.

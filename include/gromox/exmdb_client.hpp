@@ -71,7 +71,6 @@ struct GX_EXPORT remote_conn_ref {
 	void operator=(remote_conn &&) = delete;
 	remote_conn *operator->() { return tmplist.size() != 0 ? &tmplist.front() : nullptr; }
 	bool operator==(std::nullptr_t) const { return tmplist.size() == 0; }
-	bool operator!=(std::nullptr_t) const { return tmplist.size() != 0; }
 	void reset(bool lost = false);
 
 	std::list<remote_conn> tmplist;

@@ -65,7 +65,6 @@ struct BACK_CONN_floating {
 	void operator=(BACK_CONN_floating &&) = delete;
 	BACK_CONN *operator->() { return tmplist.size() != 0 ? &tmplist.front() : nullptr; }
 	bool operator==(std::nullptr_t) const { return tmplist.size() == 0; }
-	bool operator!=(std::nullptr_t) const { return tmplist.size() != 0; }
 	void reset(bool lost = false);
 
 	std::list<BACK_CONN> tmplist;

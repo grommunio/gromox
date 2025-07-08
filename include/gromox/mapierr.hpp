@@ -442,7 +442,6 @@ struct GX_EXPORT ec_error_t {
 	constexpr ec_error_t(ec_error_t_ll x) : m_value(x) {}
 	constexpr ec_error_t(int) = delete;
 	constexpr bool operator==(ec_error_t_ll x) const { return m_value == x; }
-	constexpr bool operator!=(ec_error_t_ll x) const { return m_value != x; }
 	constexpr operator bool() const = delete;
 	constexpr void operator!() const = delete;
 	constexpr operator uint32_t() const { return m_value; }

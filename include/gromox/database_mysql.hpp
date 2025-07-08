@@ -33,7 +33,6 @@ class GX_EXPORT DB_RESULT {
 	}
 	operator bool() const noexcept { return m_res != nullptr; }
 	bool operator==(std::nullptr_t) const noexcept { return m_res == nullptr; }
-	bool operator!=(std::nullptr_t) const noexcept { return m_res != nullptr; }
 	MYSQL_RES *get() const noexcept { return m_res; }
 	void *release() noexcept
 	{

@@ -147,7 +147,6 @@ class VCONN_REF {
 		pvconnection(p), m_hold(p->lock), m_iter(std::move(i)) {}
 	~VCONN_REF() { put(); }
 	NOMOVE(VCONN_REF);
-	bool operator!=(std::nullptr_t) const { return pvconnection != nullptr; }
 	bool operator==(std::nullptr_t) const { return pvconnection == nullptr; }
 	void put();
 	VIRTUAL_CONNECTION *operator->() { return pvconnection; }
