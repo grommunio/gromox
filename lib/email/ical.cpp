@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cerrno>
 #include <climits>
+#include <compare>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -665,31 +666,31 @@ bool ical_time::assign_datetime(const char *str_datetime)
 	return false;
 }
 
-int ical_time::twcompare(const ical_time &o) const
+std::strong_ordering ical_time::operator<=>(const ical_time &o) const
 {
-	auto r = three_way_compare(year, o.year);
+	auto r = year <=> o.year;
 	if (r != 0)
 		return r;
-	r = three_way_compare(month, o.month);
+	r = month <=> o.month;
 	if (r != 0)
 		return r;
-	r = three_way_compare(day, o.day);
+	r = day <=> o.day;
 	if (r != 0)
 		return r;
-	r = three_way_compare(hour, o.hour);
+	r = hour <=> o.hour;
 	if (r != 0)
 		return r;
-	r = three_way_compare(minute, o.minute);
+	r = minute <=> o.minute;
 	if (r != 0)
 		return r;
-	r = three_way_compare(second, o.second);
+	r = second <=> o.second;
 	if (r != 0)
 		return r;
 	if (leap_second > 59 && o.leap_second <= 59)
-		return 1;
+		return std::strong_ordering::greater;
 	if (leap_second <= 59 && o.leap_second > 59)
-		return -1;
-	return 0;
+		return std::strong_ordering::less;
+	return std::strong_ordering::equivalent;
 }
 
 static bool ical_is_leap_year(unsigned int year)
@@ -2176,7 +2177,7 @@ const char *ical_parse_rrule(const ical_component *ptz_component,
 			if (!ical_test_setpos(pirrule))
 				continue;
 		}
-		int cmp_result = itime.twcompare(pirrule->instance_itime);
+		auto cmp_result = itime <=> pirrule->instance_itime;
 		if (cmp_result < 0) {
 			continue;
 		} else if (cmp_result > 0) {

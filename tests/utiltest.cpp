@@ -418,8 +418,11 @@ static int t_cmp_icaltime()
 	ical_time a{}, b{};
 	a.second = b.second = 59;
 	a.leap_second = 60;
-	if (a.twcompare(b) != -b.twcompare(a))
-		return printf("ical_time::compare failed\n");
+	assert(a == a);
+	assert(b == b);
+	assert(a != b);
+	assert(a > b);
+	assert(b < a);
 	return 0;
 }
 

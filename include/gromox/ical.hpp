@@ -1,4 +1,5 @@
 #pragma once
+#include <compare>
 #include <ctime>
 #include <list>
 #include <memory>
@@ -91,11 +92,8 @@ struct GX_EXPORT ical_time {
 		year(y), month(m), day(d), hour(hr), minute(min), second(sec)
 	{}
 
-	int twcompare(const ical_time &other) const;
-	inline bool operator<(const ical_time &o) const { return twcompare(o) < 0; }
-	inline bool operator<=(const ical_time &o) const { return twcompare(o) <= 0; }
-	inline bool operator>(const ical_time &o) const { return twcompare(o) > 0; }
-	inline bool operator>=(const ical_time &o) const { return twcompare(o) >= 0; }
+	std::strong_ordering operator<=>(const ical_time &other) const;
+	inline bool operator==(const ical_time &o) const { return (*this <=> o) == 0; }
 	void add_year(int ys);
 	void add_month(int ms);
 	void add_day(int ds);
