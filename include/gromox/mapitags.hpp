@@ -134,7 +134,7 @@ enum {
 	// PR_ORIGINAL_AUTHOR_SEARCH_KEY = PROP_TAG(PT_BINARY, 0x0056), /* PidTagOriginalAuthorSearchKey */
 	PR_MESSAGE_TO_ME = PROP_TAG(PT_BOOLEAN, 0x0057), /* PidTagMessageToMe */
 	PR_MESSAGE_CC_ME = PROP_TAG(PT_BOOLEAN, 0x0058), /* PidTagMessageCcMe */
-	// PR_MESSAGE_RECIP_ME = PROP_TAG(PT_BOOLEAN, 0x0059), /* PidTagMessageRecipientMe */
+	PR_MESSAGE_RECIP_ME = PROP_TAG(PT_BOOLEAN, 0x0059), /* PidTagMessageRecipientMe */
 	// PR_ORIGINAL_SENDER_NAME = PROP_TAG(PT_UNICODE, 0x005A), /* PidTagOriginalSenderName */
 	// PR_ORIGINAL_SENDER_ENTRYID = PROP_TAG(PT_BINARY, 0x005B), /* PidTagOriginalSenderEntryId */
 	// PR_ORIGINAL_SENDER_SEARCH_KEY = PROP_TAG(PT_BINARY, 0x005C), /* PidTagOriginalSenderSearchKey */

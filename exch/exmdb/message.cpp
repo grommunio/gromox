@@ -3720,9 +3720,14 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 				return false;
 		}
 		auto rcpt_type = detect_rcpt_type(account.c_str(), pmsg->children.prcpts);
-		if (rcpt_type != MAPI_BCC) {
+		if (rcpt_type == MAPI_TO || rcpt_type == MAPI_CC) {
 			err = cu_set_propval(&tmp_msg.proplist, rcpt_type == MAPI_TO ?
 				PR_MESSAGE_TO_ME : PR_MESSAGE_CC_ME, &fake_true);
+			if (err != ecSuccess)
+				return false;
+		}
+		if (rcpt_type == MAPI_TO || rcpt_type == MAPI_CC || rcpt_type == MAPI_BCC) {
+			err = cu_set_propval(&tmp_msg.proplist, PR_MESSAGE_RECIP_ME, &fake_true);
 			if (err != ecSuccess)
 				return false;
 		}
