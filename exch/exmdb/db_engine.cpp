@@ -553,7 +553,7 @@ void db_base::get_dbs(const char* dir, sqlite3 *&main, sqlite3 *&eph)
  * @brief      Initialize and unlock database
  *
  * Perform database initializations that should not be run for each connection:
- * - Remove residue ephemeral db
+ * - Remove residual ephemeral tables db from last process
  * - Perform schema upgrade
  *
  * @param      dir     User or domain base directory

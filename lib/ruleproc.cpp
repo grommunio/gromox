@@ -126,6 +126,7 @@ struct rxparam {
 	ec_error_t is_oof(bool *out) const;
 	ec_error_t load_std_rules(bool oof, std::vector<rule_node> &out) const;
 	ec_error_t load_ext_rules(bool oof, std::vector<rule_node> &out) const;
+	void notify();
 
 	const char *ev_from = nullptr, *ev_to = nullptr;
 	message_node cur;
@@ -1325,9 +1326,28 @@ ec_error_t rxparam::run()
 			return err;
 	}
 
-	if (!exmdb_client->notify_new_mail(cur.dirc(), cur.fid, cur.mid))
-		mlog(LV_ERR, "ruleproc: newmail notification unsuccessful");
+	notify();
 	return ecSuccess;
+}
+
+void rxparam::notify()
+{
+	static constexpr proptag_t tagdata[] = {PR_MESSAGE_FLAGS, PR_MESSAGE_CLASS};
+	static constexpr PROPTAG_ARRAY tags = {std::size(tagdata), deconst(tagdata)};
+	TPROPVAL_ARRAY vals{};
+	if (!exmdb_client->get_message_properties(cur.dirc(), nullptr, CP_UTF8,
+	    cur.mid, &tags, &vals)) {
+		mlog(LV_ERR, "ruleproc: getprops FL/C failed");
+		return;
+	}
+	auto cls   = vals.get<const char>(PR_MESSAGE_CLASS);
+	auto flags = vals.get<const uint32_t>(PR_MESSAGE_FLAGS);
+	if (cls == nullptr || flags == nullptr) {
+		mlog(LV_ERR, "ruleproc: msg %llxh oddly missing FL/C", static_cast<unsigned long long>(cur.mid));
+		return;
+	}
+	if (!exmdb_client->transport_new_mail(cur.dirc(), cur.fid, cur.mid, *flags, cls))
+		mlog(LV_ERR, "ruleproc: tnewmail notification unsuccessful");
 }
 
 static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,

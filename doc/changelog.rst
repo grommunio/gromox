@@ -20,7 +20,9 @@ Fixes:
 * midb, imap: make EXPUNGE synchronous so that old UIDs don't reappear in
   a subsequent FETCH
 * midb: respect setting \Deleted, \Answered, \Flagged during APPEND
-
+* exmdb: resolve a case of "INSERT INTO t... UNIQUE constraint failed" log
+  message appearing when the Twostep Rule Processor and a Move rule is
+  encountered and a MAPI client has a Content Table with Sort Order open.
 
 
 Gromox 2.46 (2025-05-28)

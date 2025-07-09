@@ -2929,9 +2929,9 @@ static ec_error_t op_move_same(const rulexec_in &rp,
 	rex.message_id = dst_mid;
 	if (exmdb_server::is_private() && rp.digest.has_value() &&
 	    common_util_get_mid_string(rp.sqlite, dst_mid, &pmid_string) &&
-	    pmid_string != nullptr) {
+	    pmid_string != nullptr)
 		(*rex.digest)["file"] = pmid_string;
-	}
+
 	auto ec = message_rule_new_message(std::move(rex), seen);
 	if (ec != ecSuccess)
 		return ec;
@@ -3786,26 +3786,21 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 			return FALSE;
 	}
 
-	if (dlflags & DELIVERY_DO_NOTIF) {
-		auto dbase = pdb->lock_base_wr();
-		db_conn::NOTIFQ notifq;
-		for (const auto &mn : seen.msg) {
-			pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
-				mn.folder_id, mn.message_id, 0, *dbase, notifq);
-			if (message_id == mn.message_id)
-				pdb->notify_new_mail(mn.folder_id,
-					mn.message_id, *dbase, notifq);
-			else
-				pdb->notify_message_creation(mn.folder_id,
-					mn.message_id, *dbase, notifq);
-		}
-		if (sql_transact.commit() != SQLITE_OK)
-			return false;
-		dg_notify(std::move(notifq));
-	} else {
-		if (sql_transact.commit() != SQLITE_OK)
-			return false;
+	auto dbase = pdb->lock_base_wr();
+	db_conn::NOTIFQ notifq;
+	for (const auto &mn : seen.msg) {
+		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
+			mn.folder_id, mn.message_id, 0, *dbase, notifq);
+		if (message_id == mn.message_id && dlflags & DELIVERY_DO_NOTIF)
+			pdb->notify_new_mail(mn.folder_id,
+				mn.message_id, *dbase, notifq);
+		else
+			pdb->notify_message_creation(mn.folder_id,
+				mn.message_id, *dbase, notifq);
 	}
+	if (sql_transact.commit() != SQLITE_OK)
+		return false;
+	dg_notify(std::move(notifq));
 	*new_folder_id = rop_util_make_eid_ex(1, fid_val);
 	*new_msg_id = rop_util_make_eid_ex(1, message_id);
 	*presult = static_cast<uint32_t>(partial ?

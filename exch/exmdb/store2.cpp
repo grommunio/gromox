@@ -64,7 +64,7 @@ BOOL exmdb_server::notify_new_mail(const char *dir, uint64_t folder_id,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return false;
-	/* notify_new_mail needs an externally managed transaction on main. */
+	/* db_conn::notify_new_mail needs an externally managed transaction. So start one. */
 	auto sql_trans = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	auto dbase = pdb->lock_base_wr();
 	db_conn::NOTIFQ notifq;
