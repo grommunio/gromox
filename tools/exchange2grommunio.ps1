@@ -20,7 +20,7 @@
 #    version available at
 #    https://the.earth.li/~sgtatham/putty/latest/w64/plink.exe).
 #
-# 2.1 Additionally you can use Peagent.exe to make use of pubkey based ssh
+# 2.1 Additionally you can use pageant.exe to make use of pubkey based ssh
 #    authentication. The latest download is available at
 #    https://the.earth.li/~sgtatham/putty/latest/w64/pageant.exe
 #
@@ -64,21 +64,21 @@
 #
 # 6. Launch the script from an (elevated) Exchange Admin shell.
 #
-#	Optional: Manually launch the Exchange Admin Shell for advanced functionality.
-#	The Exchange 2010 Management Shell reports an old PowerShell 2.0.
-#	Unfortunately, PowerShell 2.0 is missing some important commands
-#	which this script needs for advanced functionality.
-#	If you are migrating from Exchange 2010 and want to record the output of the
-#	Linux commands in the log, you need to start the PowerShell session with this command:
-#	C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -version 3.0 -noexit -command ". 'C:\Program Files\Microsoft\Exchange Server\V14\bin\RemoteExchange.ps1'; Connect-ExchangeServer -auto"
+#       Optional: Manually launch the Exchange Admin Shell for advanced functionality.
+#       The Exchange 2010 Management Shell reports an old PowerShell 2.0.
+#       Unfortunately, PowerShell 2.0 is missing some important commands
+#       which this script needs for advanced functionality.
+#       If you are migrating from Exchange 2010 and want to record the output of the
+#       Linux commands in the log, you need to start the PowerShell session with this command:
+#       C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -version 3.0 -noexit -command ". 'C:\Program Files\Microsoft\Exchange Server\V14\bin\RemoteExchange.ps1'; Connect-ExchangeServer -auto"
 #
 # 7. Test the migration.
 #
 # You may see this error:
 #
-#	New-MailboxExportRequest : The term 'New-MailboxExportRequest' is not
-#	recognized as the name of a cmdlet, function, script file, or operable
-#	program.
+#       New-MailboxExportRequest : The term 'New-MailboxExportRequest' is not
+#       recognized as the name of a cmdlet, function, script file, or operable
+#       program.
 #
 # Resolution:
 #
@@ -148,39 +148,46 @@ $LinuxSharedFolder = "/mnt/<shared folder name>"
 # Login for the grommunio side shell
 $LinuxUser = "root"
 
-# The $LinuxUser password
+# For cleartext password authentication
+# set the $LinuxUser's password
 # $LinuxUserPWD = "Secret_root_Password"
-# For ssh key based authentication via peagent
-# You could also run "plink.exe -i key.ppk" if preferred.
+# For pubkey authentication without a passphrse set
+# $LinuxUserSSHKey = "C:\grommunio\exch.ppk"
+# For pubkey authentication which needs a password set
+# $UsePageant = $true
+
 # #$LinuxUserPWD = ""
 # $LinuxUserSSHKey = "C:\grommunio\exch.ppk"
-# if (Test-Path $LinuxUserSSHKey) {
-#	.\peagent.exe  $LinuxUserSSHKey
-# }
+# $UsePageant = $true
 
 # Import only these mailboxes, an array of mail addresses, case insensitive,
 # $IgnoreMboxes will be honored.
 # To import all mailboxes leave empty, to import only some mailboxes, populate
-# $ImportMboxes.
+# $ImportMboxes or leave emtpy if you use the file below instead.
 #[string] $ImportMboxes = 'TestI1@example.com','Testi2@example.com'
 [string] $ImportMboxes = ''
+
 # TODO: Those could all be called via plink.exe
-# To populate from the grommunio host if users are already created:
+# To populate a list of users present on the grommunio-host:
 #  gromox-mbop foreach.mb echo-username > /mnt/pst/exchange2grommunio.import
-# This rule will only apply if you haven't set anything above and the file
-# "exchange2grommunio.import" is present in the UNC-Path.
-$ImportFile = Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.import
-if ((! $ImportMboxes) -and (Test-Path -Path $ImportFile)) {$ImportMboxes = Get-Content $ImportFile}
+
+# Also note that we will write the names of successfull imports into the
+# file called 'exchange2grommunio.done' as with failed attempts the file
+# 'exchange2grommunio.failed'. That allows you to do something like:
+# % cp exchange2grommunio.{done,ignore}; cp exchange2grommunio.{failed,import}
+
+# This file will only be processed if $ImportMboxes is empty, the file exists
+# on the UNC Path and isn't empty.
+$ImportFile = exchange2grommunio.import
 
 # Ignore these mailboxes, an array of mail addresses, case insensitive
 # [string] $IgnoreMboxes = 'TestX1@example.com','Testx2@example.com'
 [string] $IgnoreMboxes = ''
+
+# The same rules will apply for $IgnoreFile
 # To populate this file with alread imported Mailboxes:
 #  awk '/Import of mailbox.*done./ {print $7}' /mnt/pst/exchange2grommunio.log > /mnt/pst/exchange2grommunio.ignore
-# This rule will only apply if you haven't set anything above and the file
-# "exchange2grommunio.ignore" is present in the UNC-Path.
-$IgnoreFile = Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.ignore
-if ((! $IgnoreMboxes) -and (Test-Path -Path $IgnoreFile)) {$IgnoreMboxes = Get-Content $IgnoreFile}
+$IgnoreFile = exchange2grommunio.ignore
 
 # Delete .pst files after import to save space.
 $DeletePST = $true
@@ -245,7 +252,7 @@ function Write-MLog
 	)
 	# $Color "none" writes to the log file only
 	if ($Color -Ne "none") {
-		Write-Host $LogString -fore $Color
+		Write-Output $LogString -fore $Color
 	}
 	# populate log file with error state
 	$Level = switch ($Color)
@@ -293,29 +300,31 @@ function isLocked
 		}
 	}
 }
-# If we don't set $LinuxUserPWD we should have peagent running with a imported ssh-key and need to change plink's arguments.
-#
+
+# If we don't set $LinuxUserPWD we should either have pageant running with
+# an imported ssh-key or we just use '-key keyfile' with plink.
+# https://the.earth.li/~sgtatham/putty/0.83/htmldoc/Chapter7.html#plink
 $PLINKARGS = @(
 	if ($null -ne $Debug) {
 		'-v'
 	}
 		'-ssh'
+		'-agent'
 	if ($null -ne $LinuxUserPWD) {
 		'-noagent'
-	} else {
-		'-agent'
+		'-pw'
+		"$LinuxUserPWD"
+	} elseif ($null -eq $UsePageant) {
+		'-i'
+		"$LinuxUserSSHKey"
 	}
 		'-batch'
 		"$LinuxUser@$GrommunioServer"
-	if ($null -ne $LinuxUserPWD) {
-		'-pw'
-		"$LinuxUserPWD"
-	}
 )
 
 # Mount the Windows shared folder via CIFS
 #
-function Linux-mount
+function Linux-Mount
 {
 	if ($AutoMount) {
 		Write-MLog "mkdir -p $LinuxSharedFolder" green
@@ -345,7 +354,7 @@ function Linux-mount
 
 # Unmount the Windows shared folder
 #
-function Linux-umount
+function Linux-Umount
 {
 	if ($AutoMount) {
 		Write-MLog "umount $LinuxSharedFolder" green
@@ -374,14 +383,14 @@ function Test-Plink
 	}
 }
 
-# Test if peagent.exe exists in $PSScriptRoot
+# Test if pageant.exe exists in $PSScriptRoot
 #
-function Test-Peagent
+function Test-Pageant
 {
 	Write-MLog "" white
-	# is peagent.exe running?
-	if (!(Get-Process -ErrorAction ignore peagent)) {
-		Write-MLog "Error: peagent.exe not running, either set \$LinuxUserPWD or start peagent.exe." red
+	# is pageant.exe running?
+	if (!(Get-Process -ErrorAction ignore pageant)) {
+		Write-MLog "Error: pageant.exe not running, either set \$LinuxUserPWD or start pageant.exe manually and import the key." red
 		exit 1
 	}
 }
@@ -410,6 +419,22 @@ function Test-Exchange
 	}
 }
 
+# Configure Import/Ignore Arrays from defined filename if the rules apply.
+$ImportFile = Join-Path -Path $WinSharedFolder -ChildPath $ImportFile
+if ((! $ImportMboxes) -and
+	(Test-Path -Path $ImportFile) -and
+	((Get-Content $ImportFile|Where-Object {$_.trim() -ne "" } ).Length -gt 0)
+	) {
+		$ImportMboxes = Get-Content $ImportFile
+	}
+$IgnoreFile = Join-Path -Path $WinSharedFolder -ChildPath $IgnoreFile
+if ((! $IgnoreMboxes) -and
+	(Test-Path -Path $IgnoreFile) -and
+	((Get-Content $IgnoreFile|Where-Object {$_.trim() -ne "" } ).Length -gt 0)
+	) {
+		$IgnoreMboxes = Get-Content $IgnoreFile
+	}
+
 # The Main code
 #
 # Do we use an old PowerShell == Version 2.0?
@@ -425,8 +450,8 @@ if (!$PSScriptRoot) {
 # Test if $WinSharedFolder is a valide path
 #
 if (!( $(Try { Test-Path $WinSharedFolder.trim() } Catch { $false }) )) {  #Returns $false if $null, "" or " "
-	Write-Host ""
-	Write-Host "'$WinSharedFolder' is not a valide path, please update variable `$WinSharedFolder and try again." -fore red
+	Write-Output ""
+	Write-Output "'$WinSharedFolder' is not a valide path, please update variable `$WinSharedFolder and try again." -fore red
 	exit 1
 }
 
@@ -443,6 +468,7 @@ $MailboxesExportFailed = 0
 $MailboxesMB = 0
 $CreateErrorsMBX = ""
 $ImportErrorsMBX = ""
+$ExportErrorsMBX = ""
 $ScriptStartDate = (GET-DATE)
 
 # Create / append Log
@@ -502,8 +528,11 @@ Write-MLog "" none
 # Check for prerequisites
 #
 Test-Plink
-if ($LinuxUserPWD -eq $null) {
-	Test-Peagent
+if ($UsePageant) {
+	Test-Pageant
+	if (Test-Path -Path $PSScriptRoot\peagent.exe) {
+	.\pageant.exe  $LinuxUserSSHKey
+	}
 }
 Test-Exchange
 Linux-Mount
@@ -515,7 +544,7 @@ $SkipImportCreateError = $false
 #
 # The migration loop
 #
-foreach ($Mailbox in (Get-Mailbox)) {
+foreach ($Mailbox in (Get-Mailbox | Sort-Object -Property Alias)) {
 	$MigMBox = $Mailbox.PrimarySmtpAddress.ToString().ToLower()
 	$LogPath = (Join-Path -Path $WinSharedFolder -ChildPath logs)
 	New-Item -Path $LogPath -ErrorAction Ignore -Type Directory
@@ -582,13 +611,13 @@ foreach ($Mailbox in (Get-Mailbox)) {
 			$Mailbox = $Mailbox.Alias
 		}
 
-		New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority -ExcludeDumpster -BadItemLimit 5 | Format-Table -HideTableHeaders
+		New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority -ExcludeDumpster | Format-Table -HideTableHeaders
 		Write-Host -NoNewline "[Wait] " -fore yellow
 		$MailboxesTotal++
 
 		# Wait until the .pst file is created.
 		# We probably should include a timeout to detect hanging exports.
-		$expPercent= 0; $continue = $true; $OneHundredPercent = 0;
+		$expPercent= 0; $OneHundredPercent = 0;
 		while ($true) {
 			$expRequest = (Get-MailboxExportRequest $Mailbox)
 			$expPercent = ($expRequest |Get-MailboxExportRequestStatistics |Select-Object PercentComplete).PercentComplete
@@ -610,9 +639,11 @@ foreach ($Mailbox in (Get-Mailbox)) {
 				break
 			}
 			if ($expStatus -iin ("AutoSuspended","CompletedWithWarning","Failed","Suspended")) {
-				Write-MLog "Error: Export Result: $expStatus" red 
+				Write-MLog "Error: Export Result: $expStatus" red
+				$expRequest | Get-MailboxExportRequestStatistics -IncludeReport -Diagnostic| ConvertTo-Json |Add-Content -Path $ExpLogFile + ".diagnostic"
 				$MailboxesExportFailed++
-				$SkipImport = $true
+				$ExportErrorsMBX += $MigMBox + ", "
+				$SkipImportCreateError = $true
 				break
 			}
 
@@ -621,8 +652,8 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		Write-Progress -Id 1 -Completed -Activity "Export: $Mailbox"
 
 		# Export
-		Get-MailboxExportRequest | Get-MailboxExportRequestStatistics -IncludeReport | ConvertTo-Json |Add-Content -Path $ExpLogFile
-
+		Get-MailboxExportRequest $Mailbox | Get-MailboxExportRequestStatistics -IncludeReport | ConvertTo-Json |Add-Content -Path $ExpLogFile
+		Get-MailboxExportRequest $Mailbox | Remove-MailboxExportRequest -Confirm:$false
 		Write-MLog "" white
 		Write-MLog "Export of mailbox $MigMBox took $nTimeout seconds." green
 
@@ -650,6 +681,7 @@ foreach ($Mailbox in (Get-Mailbox)) {
 			} else {
 				Write-Host -NoNewline " "
 				Write-MLog "PST lock cleared, after $nTimeout seconds." green
+				$MailboxesExported++
 				break
 			}
 			start-sleep -seconds 2
@@ -713,12 +745,14 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		if ($CMDExitCode -eq 0) {
 			Write-MLog "Import of mailbox: $MigMBox done." green
 			Write-UserLog "Import of mailbox: $MigMBox done."
+			Add-Content -Path (Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.done) -Value $MigMbox
 			$MailboxesImported++
 			$MailboxesMB += $size
 		} else {
 			Write-MLog "Mailbox: $MigMBox imported with errors." red
 			Write-UserLog "Mailbox: $MigMBox imported with errors."
 			$MailboxesImportFailed++
+			Add-Content -Path (Join-Path -Path $WinSharedFolder -ChildPath exchange2grommunio.failed) -Value $MigMbox
 			$ImportErrorsMBX += $MigMBox + ", "
 			# Wait for admin to make a decision.
 			if ($StopOnError) {
@@ -733,7 +767,7 @@ foreach ($Mailbox in (Get-Mailbox)) {
 	}
 
 	# Try to import the next mailbox.
-	$SkipImportCreateError = $false
+		$SkipImportCreateError = $false
 
 	if ($DeletePST) {
 		Write-MLog "Remove the imported .pst file: $WinSharedFolder\$MigMBox.pst to save disk space." green
@@ -762,7 +796,7 @@ foreach ($Mailbox in (Get-Mailbox)) {
 	$OK = $false
 	while (!$OK) {
 		Write-MLog "Do you want to proceed with the next mailbox [Y]es [A]bort [C]ontinue? " none
-		$decision = $(Write-Host "Do you want to proceed with the next mailbox [Y]es [A]bort [C]ontinue? " -fore yellow -NoNewLine; Read-Host)
+		$decision = $(Write-Output "Do you want to proceed with the next mailbox [Y]es [A]bort [C]ontinue? " -fore yellow -NoNewLine; Read-Host)
 		$decision = $decision.ToUpper()
 		switch ($decision) {
 		"Y" {
@@ -785,7 +819,7 @@ foreach ($Mailbox in (Get-Mailbox)) {
 	}
 }
 
-Linux-umount
+Linux-Umount
 
 # Remove all "Completed" MailboxExportRequests.
 #
@@ -812,6 +846,10 @@ Write-MLog "$MailboxesImported mailboxes imported" green
 if ($MailboxesImportFailed -ne 0) {
 	Write-MLog "$MailboxesImportFailed mailboxes imported with errors or import failed" red
 	Write-Mlog "Affected mailboxes: $ImportErrorsMBX" red
+}
+if ($MailboxesExportFailed -ne 0) {
+	Write-MLog "$MailboxesExportFailed mailboxes couldn't be exported" red
+	Write-Mlog "Affected mailboxes: $ExportErrorsMBX" red
 }
 Write-MLog "Imported a total of $MailboxesMB MB of mailbox data" green
 Write-MLog "Total run time: $ScriptDuration minutes. Started: $ScriptStartDate, ended: $ScriptEndDate." green
