@@ -638,12 +638,13 @@ static void nsp_interface_position_in_list(const STAT *pstat,
 {
 	*pcount = uint32_t(base->users());
 	if (pstat->cur_rec == ab_tree::minid::CURRENT) {
-		/* fractional positioning MS-OXNSPI 3.1.4.5.2 */
+		/* fractional positioning MS-OXNSPI v14 §3.1.4.5.2 */
 		*pout_row = *pcount * static_cast<double>(pstat->num_pos) / pstat->total_rec;
 		if (*pout_row > 0 && *pout_row >= *pcount)
-			*pout_row = *pcount - 1; /* v13 pg72 §3.1.4.5.2 point 5 */
+			/* §3.1.4.5.2 pg. 73 point 5 (clamp to end of table) */
+			*pout_row = *pcount - 1;
 	} else if (pstat->cur_rec == ab_tree::minid::BEGINNING_OF_TABLE) {
-		/* absolute positioning MS-OXNSPI 3.1.4.5.1 */
+		/* absolute positioning MS-OXNSPI v14 §3.1.4.5.1 */
 		*pout_row = 0;
 	} else if (pstat->cur_rec == ab_tree::minid::END_OF_TABLE) {
 		*pout_row = *pcount;
@@ -662,19 +663,21 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 {
 	*pcount = uint32_t(node.children());
 	if (pstat->cur_rec == ab_tree::minid::CURRENT) {
-		/* fractional positioning MS-OXNSPI 3.1.4.5.2 */
+		/* fractional positioning MS-OXNSPI v14 §3.1.4.5.2 */
 		*pout_row = std::min(*pcount, static_cast<uint32_t>(*pcount *
 		      static_cast<double>(pstat->num_pos) / pstat->total_rec));
 	} else if (pstat->cur_rec == ab_tree::minid::BEGINNING_OF_TABLE) {
-		/* absolute positioning MS-OXNSPI 3.1.4.5.1 */
+		/* absolute positioning MS-OXNSPI v14 §3.1.4.5.1 */
 		*pout_row = 0;
 	} else if (pstat->cur_rec == ab_tree::minid::END_OF_TABLE) {
 		*pout_row = *pcount;
 	} else {
 		auto it = std::find(node.begin(), node.end(), pstat->cur_rec);
 		if (it == node.end() || node.base->hidden(pstat->cur_rec) & AB_HIDE_FROM_AL)
-			/* In this case the position is undefined.
-			   To avoid problems we will use first row */
+			/*
+			 * In this case, the position is undefined.
+			 * To avoid problems, we will use the first row.
+			 */
 			*pout_row = 0;
 		else
 			*pout_row = uint32_t(std::distance(node.begin(), it));
@@ -745,9 +748,9 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
     const LPROPTAG_ARRAY *pproptags, NSP_ROWSET **pprows)
 {
 	/*
-	 * OXNSPI says "implementations SHOULD return as many rows as possible
-	 * to improve usability of the server for clients", but then, if you
-	 * return more than @count entries, Outlook 2019/2021 crashes.
+	 * MS-OXNSPI says "implementations SHOULD return as many rows as
+	 * possible to improve usability of the server for clients", but then,
+	 * if you return more than @count entries, Outlook 2019/2021 crashes.
 	 */
 	*pprows = nullptr;
 	if (g_nsp_trace > 0)
@@ -761,15 +764,15 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 		return ecNotSupported;
 	if (count == 0 && ptable == nullptr)
 		return ecInvalidParam;
-	/* MS-OXNSPI 3.1.4.1.8.10 */
 	if (count == 0)
+		/* MS-OXNSPI v14 §3.1.4.1.8 point 10 */
 		count = 1;
 	
 	if (NULL == pproptags) {
 		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (nt == nullptr)
 			return ecServerOOM;
-		/* OXNSPI v13.1 §3.1.4.1.8 bp 6.2 / NSPI v15 §3.1.4.8 bp 6.2 */
+		/* MS-OXNSPI v14 §3.1.4.1.8 point 6.2 / MS-NSPI v15 §3.1.4.8 point 6.2 */
 		pproptags = nt;
 		nt->cvalues = 7;
 		nt->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, nt->cvalues);
@@ -1284,7 +1287,8 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		uint32_t start_pos, total;
 		nsp_interface_position_in_table(pstat, node, &start_pos, &total);
 		if (start_pos >= node.children()) {
-			pstat->container_id = pstat->cur_rec; /* MS-OXNSPI 3.1.4.1.10.16 */
+			/* MS-OXNSPI v14 §3.1.4.1.10 point 16 */
+			pstat->container_id = pstat->cur_rec;
 			*ppoutmids = outmids;
 			*pprows = rowset;
 			nsp_trace(__func__, 1, pstat, nullptr, rowset);
@@ -1320,7 +1324,8 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 	}
 	
-	pstat->container_id = pstat->cur_rec; /* MS-OXNSPI §3.1.4.1.10 bp 16 */
+	/* MS-OXNSPI v14 §3.1.4.1.10 point 16 */
+	pstat->container_id = pstat->cur_rec;
 	nsp_trace(__func__, 1, pstat, nullptr, rowset);
 	*ppoutmids = outmids;
 	*pprows = rowset;
@@ -1377,7 +1382,7 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserve
 		outmids->pproptag[i] = parray[i].minid;
 	pstat->total_rec = count;
 	if (!b_found) {
-		/* OXNSPI v13 pg 52 p 8 */
+		/* MS-OXNSPI v14 §3.1.4.1.11 pg 57 ¶8 */
 		pstat->cur_rec = ab_tree::minid::BEGINNING_OF_TABLE;
 		pstat->num_pos = 0;
 	}
@@ -1487,7 +1492,10 @@ static ec_error_t nsp_get_proptags(const ab_tree::ab_node &node,
 	std::sort(t.begin(), t.end());
 	t.erase(std::unique(t.begin(), t.end()), t.end());
 
-	/* Trim tags that have no propval (requirement as per OXNSPI v24 §3.1.4.1.6) */
+	/*
+	 * Trim tags that have no propval (requirement as per MS-OXNSPI v14
+	 * §3.1.4.1.6 point 5).
+	 */
 	t.erase(std::remove_if(t.begin(), t.end(), [&](proptag_t proptag) {
 		char temp_buff[1024];
 		PROPERTY_VALUE prop_val{};
@@ -1516,7 +1524,7 @@ static ec_error_t nsp_get_proptags(const ab_tree::ab_node &node,
 	return ret;
 }
 
-/* MS-OXNSPI v24 §3.1.4.1.6 */
+/* MS-OXNSPI v14 §3.1.4.1.6 */
 ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
     uint32_t mid, cpid_t codepage, LPROPTAG_ARRAY **tags)
 {
@@ -1565,7 +1573,7 @@ ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	return ecSuccess;
 }
 
-/* MS-OXNSPI v24 §3.1.4.1.7 */
+/* MS-OXNSPI v14 §3.1.4.1.7 */
 ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
     const STAT *pstat, const LPROPTAG_ARRAY *pproptags, NSP_PROPROW **pprows)
 {
@@ -1651,9 +1659,9 @@ ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	auto rowset = common_util_propertyrow_init(NULL);
 	if (rowset == nullptr)
 		return ecServerOOM;
-	/* MS-OXNSPI 3.1.4.1.7.11 */
 	ec_error_t result;
 	if (!node.exists()) {
+		/* MS-OXNSPI v14 §3.1.4.1.7 point 11 */
 		nsp_interface_make_ptyperror_row(pproptags, rowset);
 		result = ecWarnWithErrors;
 	} else {
@@ -1863,7 +1871,7 @@ ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 		return ecSuccess;
 	BOOL b_unicode = (flags & NspiUnicodeStrings) ? TRUE : false;
 	cpid_t codepage = pstat == nullptr ? static_cast<cpid_t>(1252) : pstat->codepage;
-	/* in MS-OXNSPI 3.1.4.1.3 server processing rules */
+	/* MS-OXNSPI v14 §3.1.4.1.3 ¶ Server processing rules */
 	if (!b_unicode && codepage == CP_WINUNICODE)
 		return ecNotSupported;
 	auto base = ab_tree::AB.get(handle.guid);

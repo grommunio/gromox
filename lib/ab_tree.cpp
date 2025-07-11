@@ -151,7 +151,7 @@ void ab::work()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// ab_base organistational member functions
+// ab_base organizational member functions
 
 const std::vector<std::string> ab_base::vs_empty{};
 

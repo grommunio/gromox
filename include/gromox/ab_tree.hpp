@@ -19,8 +19,7 @@ struct minid;
 
 }
 
-template<> struct std::hash<gromox::ab_tree::minid>
-{
+template<> struct std::hash<gromox::ab_tree::minid> {
 	inline size_t operator()(gromox::ab_tree::minid minid) const;
 };
 
@@ -54,9 +53,9 @@ enum class userinfo {
 };
 
 /**
- * @brief      Minimal entry ID ofaddress book entries
+ * @brief      Minimal entry ID of address book entries
  *
- * Wrapper for 32 bit unsigned integer to encode type information (high bits)
+ * Wrapper for 32-bit unsigned integer to encode type information (high bits)
  * and ID (low bits) of an entry.
  * The ID of the (user or domain) object is used with an offset of 0x10, since
  * the lower minid values are reserved for special purposes.
@@ -82,15 +81,15 @@ struct GX_EXPORT minid {
 	static constexpr uint32_t AMBIGUOUS = 0x0000001;
 	static constexpr uint32_t RESOLVED = 0x0000002;
 
-	// Special container IDs used by zcore
+	/* minids we have set aside for zcore special containers */
 	static constexpr uint32_t SC_ROOT = 0xC;
 	static constexpr uint32_t SC_EMPTY = 0xD;
 	static constexpr uint32_t SC_PROVIDER = 0xE;
-	static constexpr uint32_t SC_GAL= 0xF;
-
+	static constexpr uint32_t SC_GAL = 0xF;
 
 	constexpr minid(uint32_t i = 0) : id(i) {}
 	constexpr explicit minid(const GUID &guid) : id(guid.time_low) {}
+
 	/**
 	 * @brief      Construct minid from type and ID
 	 *
@@ -121,7 +120,7 @@ struct GX_EXPORT ab_domain {
 /**
  * @brief      Address book base
  *
- * Contains all domain and user nodes from an organization an provides a common
+ * Contains all domain and user nodes from an organization. Provides a common
  * interface to access node properties.
  */
 class ab_base {
@@ -259,11 +258,11 @@ class ab_base {
 	 * base_id==0: not permitted (contains e.g. the AAPI administrator)
 	 * base_id >0: Base is for an organization (multiple domains)
 	 * base_id <0: Base is for one domain (base_id == -domain_id);
-	 *             @domain_list will have exactly one entry.
+	 *             @domains will have exactly one entry.
 	 */
 	int m_base_id = 0;
 	std::vector<ab_domain> domains; ///< list of domains belonging to the base
-	std::vector<sql_user> m_users; ///< list of users from all domains, sorted by displayname
+	std::vector<sql_user> m_users; ///< list of users from all those domains, sorted by displayname
 	std::unordered_map<minid, uint32_t> minid_idx_map; ///< map from minid to index in domain/user list
 	mutable std::mutex m_lock;
 	std::atomic<Status> m_status{Status::CONSTRUCTING};
