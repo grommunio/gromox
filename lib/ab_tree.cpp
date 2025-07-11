@@ -11,6 +11,7 @@
 #include <gromox/proc_common.h>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
+#include <gromox/process.hpp>
 
 namespace gromox::ab_tree
 {

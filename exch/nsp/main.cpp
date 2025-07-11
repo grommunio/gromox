@@ -29,7 +29,6 @@ static constexpr cfg_directive nsp_cfg_defaults[] = {
 	{"cache_interval", "5min", CFG_TIME, "1s", "1d"},
 	{"hash_table_size", "3000", CFG_SIZE, "1"},
 	{"nsp_trace", "0"},
-	{"session_check", "1", CFG_BOOL},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
 };
@@ -58,7 +57,6 @@ static constexpr DCERPC_INTERFACE interface = {
 
 BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
-	BOOL b_check;
 	const char *org_name;
 	int cache_interval;
 	char temp_buff[45];
@@ -83,9 +81,6 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 		HX_unit_seconds(temp_buff, std::size(temp_buff), cache_interval, 0);
 		mlog(LV_INFO, "nsp: address book tree item"
 				" cache interval is %s", temp_buff);
-		b_check = pfile->get_ll("session_check");
-		if (b_check)
-			mlog(LV_INFO, "nsp: bind session will be checked");
 		ab_tree::AB.init(org_name, cache_interval);
 
 		query_service2("exmdb_client_get_named_propids", get_named_propids);
@@ -137,7 +132,7 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_ERR, "nsp: failed to run address book tree");
 			return FALSE;
 		}
-		nsp_interface_init(b_check);
+		nsp_interface_init();
 		return TRUE;
 	}
 	case PLUGIN_FREE:

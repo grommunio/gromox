@@ -59,7 +59,6 @@ enum {
 };
 
 unsigned int g_nsp_trace;
-static bool g_session_check;
 static gromox::archive abkt_archive;
 
 static void nsp_trace(const char *func, bool is_exit, const STAT *s,
@@ -565,9 +564,8 @@ static ec_error_t nsp_interface_fetch_row(const ab_tree::ab_node &node,
 	return ecSuccess;
 }
 
-void nsp_interface_init(bool b_check)
+void nsp_interface_init()
 {
-	g_session_check = b_check;
 	static constexpr char pk[] = PKGDATADIR "/abkt.pak";
 	auto err = abkt_archive.open(pk);
 	if (err != 0)
@@ -686,7 +684,12 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 
 static inline bool session_check(const NSPI_HANDLE &h, const ab_tree::ab_base &base)
 {
-	return g_session_check && base.guid() == h.guid;
+	/*
+	 * Gromox minid assignment is stable across reloads;
+	 * at present, there is no need for action when GUIDs are different.
+	 */
+	//return do_session_checking && base.guid() == h.guid;
+	return true;
 }
 
 ec_error_t nsp_interface_update_stat(NSPI_HANDLE handle, uint32_t reserved,
@@ -699,7 +702,10 @@ ec_error_t nsp_interface_update_stat(NSPI_HANDLE handle, uint32_t reserved,
 	auto pbase = ab_tree::AB.get(handle.guid);
 	if (pbase == nullptr || !session_check(handle, *pbase))
 		return ecError;
-
+	/*
+	 * pbase->guid can be different from handle.guid, but for now that is not
+	 * an actionable condition, as minids are stable across AB reloads.
+	 */
 	uint32_t init_row = 0, total = 0;
 	ab_tree::ab_node node{};
 	if (0 == pstat->container_id) {
@@ -944,6 +950,8 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	} else if (pproptags->cvalues > 100) {
 		return ecTableTooBig;
 	}
+	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
+		return ecError;
 	auto pbase = ab_tree::AB.get(handle.guid);
 	if (pbase == nullptr || !session_check(handle, *pbase))
 		return ecError;

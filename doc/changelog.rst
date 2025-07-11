@@ -11,6 +11,8 @@ Enhancements:
 
 Fixes:
 
+* nsp: remove meaningless session_check directive;
+  no longer erroneously reject requests after daemon received SIGHUP
 * oxcical: avoid setting out-of-spec MAPI recurnum for FREQ=MONTHLY,BYDAY=
   recurrences
 * oxcical: fix wrong BYMONTH calculation for MONTHNTH recurrences being

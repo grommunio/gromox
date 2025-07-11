@@ -24,9 +24,6 @@ Dump more data.
 .br
 Default: \fI0\fP
 .TP
-\fBsession_check\fP
-Default: \fIfalse\fP
-.TP
 \fBx500_org_name\fP
 Default: (unspecified)
 .SH Notes
