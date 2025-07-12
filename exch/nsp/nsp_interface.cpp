@@ -684,6 +684,11 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 	}
 }
 
+static inline bool session_check(const NSPI_HANDLE &h, const ab_tree::ab_base &base)
+{
+	return g_session_check && base.guid() == h.guid;
+}
+
 ec_error_t nsp_interface_update_stat(NSPI_HANDLE handle, uint32_t reserved,
     STAT *pstat, int32_t *pdelta)
 {
@@ -692,7 +697,7 @@ ec_error_t nsp_interface_update_stat(NSPI_HANDLE handle, uint32_t reserved,
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
 	auto pbase = ab_tree::AB.get(handle.guid);
-	if (pbase == nullptr || (g_session_check && pbase->guid() != handle.guid))
+	if (pbase == nullptr || !session_check(handle, *pbase))
 		return ecError;
 
 	uint32_t init_row = 0, total = 0;
@@ -789,7 +794,7 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 		return ecTableTooBig;
 	}
 	auto pbase = ab_tree::AB.get(handle.guid);
-	if (pbase == nullptr || (g_session_check && pbase->guid() != handle.guid))
+	if (pbase == nullptr || !session_check(handle, *pbase))
 		return ecError;
 	auto rowset = common_util_proprowset_init();
 	if (rowset == nullptr)
@@ -940,7 +945,7 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		return ecTableTooBig;
 	}
 	auto pbase = ab_tree::AB.get(handle.guid);
-	if (pbase == nullptr || (g_session_check && pbase->guid() != handle.guid))
+	if (pbase == nullptr || !session_check(handle, *pbase))
 		return ecError;
 	auto rowset = common_util_proprowset_init();
 	if (rowset == nullptr)
@@ -1193,7 +1198,7 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	if (reserved1 != 0 || ppropname != nullptr)
 		return ecNotSupported;
 	auto base = ab_tree::AB.get(handle.guid);
-	if (base == nullptr || (g_session_check && base->guid() != handle.guid))
+	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
 	auto outmids = common_util_proptagarray_init();
 	if (outmids == nullptr)
@@ -1362,7 +1367,7 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserve
 	if (outmids->pproptag == nullptr)
 		return ecServerOOM;
 	auto base = ab_tree::AB.get(handle.guid);
-	if (base == nullptr || (g_session_check && base->guid() != handle.guid))
+	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
 
 	size_t count = 0;
@@ -1407,7 +1412,7 @@ ec_error_t nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	if (pnames == nullptr)
 		return ecSuccess;
 	auto base = ab_tree::AB.get(handle.guid);
-	if (base == nullptr || (g_session_check && base->guid() != handle.guid))
+	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
 	auto outmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (outmids == nullptr)
@@ -1543,7 +1548,7 @@ ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	if (mid == 0)
 		return ecInvalidObject;
 	auto base = ab_tree::AB.get(handle.guid);
-	if (base == nullptr || (g_session_check && base->guid() != handle.guid))
+	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
 	*tags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (*tags == nullptr)
@@ -1590,7 +1595,7 @@ ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		return ecNotSupported;
 	bool b_ephid = flags & fEphID;
 	auto base = ab_tree::AB.get(handle.guid);
-	if (base == nullptr || (g_session_check && base->guid() != handle.guid))
+	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
 	if (g_nsp_trace >= 2) {
 		if (pproptags == nullptr) {
@@ -1709,7 +1714,7 @@ ec_error_t nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	if (pstat != nullptr && pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
 	auto base = ab_tree::AB.get(handle.guid);
-	if (base == nullptr || (g_session_check && base->guid() != handle.guid))
+	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
 
 	if (NULL == pstat || 0 == pstat->container_id) {
@@ -1865,7 +1870,7 @@ ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	if (!b_unicode && codepage == CP_WINUNICODE)
 		return ecNotSupported;
 	auto base = ab_tree::AB.get(handle.guid);
-	if (base == nullptr || (g_session_check && base->guid() != handle.guid))
+	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
 	(*pversion) ++;
 	auto rowset = common_util_proprowset_init();
@@ -1908,7 +1913,7 @@ ec_error_t nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		return ecNotSupported;
 	auto rpc_info = get_rpc_info();
 	auto base = ab_tree::AB.get(handle.guid);
-	if (base == nullptr || (g_session_check && base->guid() != handle.guid))
+	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
 	ab_tree::ab_node tnode(base, mid);
 	if (!tnode.exists())
@@ -2119,7 +2124,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	non-zero so we skip it.
 	*/
 	auto base = ab_tree::AB.get(handle.guid);
-	if (base == nullptr || (g_session_check && base->guid() != handle.guid))
+	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
 	if (NULL == pproptags) {
 		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
