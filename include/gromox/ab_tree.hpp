@@ -13,29 +13,6 @@
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/clock.hpp>
 
-namespace gromox {
-
-enum class abnode_type : uint8_t {
-	remote = 0,
-	user = 1, /* person, room, equipment */
-	mlist = 2,
-	folder = 5,
-	domain = 0x81,
-	group = 0x82,
-	abclass = 0x83,
-	containers = 0x81, /* for >= */
-};
-
-enum class minid_type : uint8_t {
-	address = 0,
-	domain = 4,
-	group = 5,
-	abclass = 6,
-	reserved = 7, /* NSPI reserves minids 0..0x10 */
-};
-
-}
-
 namespace gromox::ab_tree {
 
 struct minid;
@@ -60,10 +37,7 @@ enum class abnode_type : uint8_t {
 	remote = 0,
 	user = 1, /* person, room, equipment */
 	mlist = 2,
-	// folder = 5, /* currently unused */
 	domain = 0x81,
-	// group = 0x82, /* currently unused */
-	// abclass = 0x83, /* currently unused */
 	containers = 0x81, /* for >= */
 };
 
@@ -99,9 +73,9 @@ struct GX_EXPORT minid {
 	static constexpr uint32_t MAXVAL = VALMASK - 0x10; ///< Maximum value that can be stored in a minid
 
 	// Positioning ID as per MS-OXNSPI 2.2.1.8
-	static constexpr uint32_t BEGINNING_OF_TABLE = 0x00000000;
-	static constexpr uint32_t END_OF_TABLE = 0x00000002;
-	static constexpr uint32_t CURRENT = 0x00000001;
+	static constexpr uint32_t BEGINNING_OF_TABLE = STREAM_SEEK_SET;
+	static constexpr uint32_t CURRENT = STREAM_SEEK_CUR;
+	static constexpr uint32_t END_OF_TABLE = STREAM_SEEK_END;
 
 	// Ambiguous name resolution IDs, as per MS-OXNSPI 2.2.1.9
 	static constexpr uint32_t UNRESOLVED = 0x00000000;

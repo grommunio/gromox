@@ -37,18 +37,6 @@ enum {
 #define	AB_SUBCONTAINERS				0x2
 #define	AB_UNMODIFIABLE					0x8
 
-/* positioning of MID */
-enum {
-	MID_BEGINNING_OF_TABLE = STREAM_SEEK_SET,
-	MID_CURRENT = STREAM_SEEK_CUR,
-	MID_END_OF_TABLE = STREAM_SEEK_END,
-};
-
-/* resolve types of names */
-#define MID_UNRESOLVED					0x0
-#define MID_AMBIGUOUS					0x1
-#define MID_RESOLVED					0x2
-
 enum {
 	SortTypeDisplayName = 0,
 	SortTypePhoneticDisplayName = 0x3,

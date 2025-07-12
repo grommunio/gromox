@@ -637,15 +637,15 @@ static void nsp_interface_position_in_list(const STAT *pstat,
     const ab_tree::ab_base *base, uint32_t *pout_row, uint32_t *pcount)
 {
 	*pcount = uint32_t(base->users());
-	if (MID_CURRENT == pstat->cur_rec) {
+	if (pstat->cur_rec == ab_tree::minid::CURRENT) {
 		/* fractional positioning MS-OXNSPI 3.1.4.5.2 */
 		*pout_row = *pcount * static_cast<double>(pstat->num_pos) / pstat->total_rec;
 		if (*pout_row > 0 && *pout_row >= *pcount)
 			*pout_row = *pcount - 1; /* v13 pg72 §3.1.4.5.2 point 5 */
-	} else if (pstat->cur_rec == MID_BEGINNING_OF_TABLE) {
+	} else if (pstat->cur_rec == ab_tree::minid::BEGINNING_OF_TABLE) {
 		/* absolute positioning MS-OXNSPI 3.1.4.5.1 */
 		*pout_row = 0;
-	} else if (pstat->cur_rec == MID_END_OF_TABLE) {
+	} else if (pstat->cur_rec == ab_tree::minid::END_OF_TABLE) {
 		*pout_row = *pcount;
 	} else {
 		auto it = base->find(pstat->cur_rec);
@@ -661,14 +661,14 @@ static void nsp_interface_position_in_table(const STAT *pstat,
     const ab_tree::ab_node &node, uint32_t *pout_row, uint32_t *pcount)
 {
 	*pcount = uint32_t(node.children());
-	if (MID_CURRENT == pstat->cur_rec) {
+	if (pstat->cur_rec == ab_tree::minid::CURRENT) {
 		/* fractional positioning MS-OXNSPI 3.1.4.5.2 */
 		*pout_row = std::min(*pcount, static_cast<uint32_t>(*pcount *
 		      static_cast<double>(pstat->num_pos) / pstat->total_rec));
-	} else if (pstat->cur_rec == MID_BEGINNING_OF_TABLE) {
+	} else if (pstat->cur_rec == ab_tree::minid::BEGINNING_OF_TABLE) {
 		/* absolute positioning MS-OXNSPI 3.1.4.5.1 */
 		*pout_row = 0;
-	} else if (pstat->cur_rec == MID_END_OF_TABLE) {
+	} else if (pstat->cur_rec == ab_tree::minid::END_OF_TABLE) {
 		*pout_row = *pcount;
 	} else {
 		auto it = std::find(node.begin(), node.end(), pstat->cur_rec);
@@ -708,12 +708,12 @@ ec_error_t nsp_interface_update_stat(NSPI_HANDLE handle, uint32_t reserved,
 		row += pstat->delta;
 	if (row >= total) {
 		row = total;
-		pstat->cur_rec = MID_END_OF_TABLE;
+		pstat->cur_rec = ab_tree::minid::END_OF_TABLE;
 	} else {
 		pstat->cur_rec = pstat->container_id == 0 ? pbase->at(row) : node[row];
 		if (0 == pstat->cur_rec) {
 			row = total;
-			pstat->cur_rec = MID_END_OF_TABLE;
+			pstat->cur_rec = ab_tree::minid::END_OF_TABLE;
 		}
 	}
 	if (pdelta != nullptr)
@@ -876,11 +876,11 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	}
 
 	if (start_pos + tmp_count >= total) {
-		pstat->cur_rec = MID_END_OF_TABLE;
+		pstat->cur_rec = ab_tree::minid::END_OF_TABLE;
 	} else {
 		pstat->cur_rec = pstat->container_id == 0 ? pbase->at(start_pos + tmp_count) : node.at(start_pos + tmp_count);
 		if (0 == pstat->cur_rec) {
-			pstat->cur_rec = MID_END_OF_TABLE;
+			pstat->cur_rec = ab_tree::minid::END_OF_TABLE;
 			start_pos = total;
 			tmp_count = 0;
 		}
@@ -1378,7 +1378,7 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserve
 	pstat->total_rec = count;
 	if (!b_found) {
 		/* OXNSPI v13 pg 52 p 8 */
-		pstat->cur_rec = MID_BEGINNING_OF_TABLE;
+		pstat->cur_rec = ab_tree::minid::BEGINNING_OF_TABLE;
 		pstat->num_pos = 0;
 	}
 	nsp_trace(__func__, 1, pstat);
@@ -1603,7 +1603,7 @@ ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			ab_tree::ab_base::iterator it;
 			if (ab_tree::minid::BEGINNING_OF_TABLE == pstat->cur_rec) {
 				it = base->ubegin();
-			} else if (MID_END_OF_TABLE == pstat->cur_rec) {
+			} else if (pstat->cur_rec == ab_tree::minid::END_OF_TABLE) {
 				it = base->end();
 			} else {
 				nsp_interface_position_in_list(pstat, base.get(), &row, &total);
@@ -2159,7 +2159,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			if (pproptag == nullptr)
 				return ecServerOOM;
 			if (pstrs->ppstr[i] == nullptr) {
-				*pproptag = MID_UNRESOLVED;
+				*pproptag = ab_tree::minid::UNRESOLVED;
 				continue;
 			}
 			/* =SMTP:user@company.com */
@@ -2172,10 +2172,10 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			ptoken = idn_deco.c_str();
 			auto mid = nsp_interface_resolve_gal(base, ptoken, b_ambiguous);
 			if (!mid.valid()) {
-				*pproptag = b_ambiguous ? MID_AMBIGUOUS : MID_UNRESOLVED;
+				*pproptag = b_ambiguous ? ab_tree::minid::AMBIGUOUS : ab_tree::minid::UNRESOLVED;
 				continue;
 			}
-			*pproptag = MID_RESOLVED;
+			*pproptag = ab_tree::minid::RESOLVED;
 			prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr ||
 			    common_util_propertyrow_init(prow) == nullptr)
@@ -2201,7 +2201,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		if (pproptag == nullptr)
 			return ecServerOOM;
 		if (pstrs->ppstr[i] == nullptr) {
-			*pproptag = MID_UNRESOLVED;
+			*pproptag = ab_tree::minid::UNRESOLVED;
 			continue;
 		}
 		/* =SMTP:user@company.com */
@@ -2212,7 +2212,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			ptoken = pstrs->ppstr[i];
 		std::string idn_deco = gx_utf8_to_punycode(ptoken);
 		ptoken = idn_deco.c_str();
-		*pproptag = MID_UNRESOLVED;
+		*pproptag = ab_tree::minid::UNRESOLVED;
 		ab_tree::minid found;
 		for (ab_tree::minid mid : node) {
 			ab_tree::ab_node node1(base, mid);
