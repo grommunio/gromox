@@ -83,6 +83,12 @@ struct NSP_PROPROW {
 		auto v = find(tag);
 		return v != nullptr ? &v->value : nullptr;
 	}
+	bool has_properror() const {
+		for (size_t i = 0; i < cvalues; ++i)
+			if (PROP_TYPE(pprops[i].proptag) == PT_ERROR)
+				return true;
+		return false;
+	}
 
 	uint32_t reserved;
 	uint32_t cvalues;

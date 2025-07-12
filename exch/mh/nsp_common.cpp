@@ -286,12 +286,8 @@ static BOOL cu_nsp_proprow_to_proprow(const LPROPTAG_ARRAY &cols,
 		if (abrow.pppropval == nullptr)
 			return false;
 	}
-	size_t i;
-	for (i = 0; i < nsprow.cvalues; ++i)
-		if (PROP_TYPE(nsprow.pprops[i].proptag) == PT_ERROR)
-			break;
-	abrow.flag = i < nsprow.cvalues ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
-	for (i = 0; i < nsprow.cvalues; ++i) {
+	abrow.flag = nsprow.has_properror() ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
+	for (size_t i = 0; i < nsprow.cvalues; ++i) {
 		auto &nsprop = nsprow.pprops[i];
 		if (PROP_TYPE(nsprop.proptag) == PT_ERROR) {
 			auto ap = cu_alloc<FLAGGED_PROPVAL>();

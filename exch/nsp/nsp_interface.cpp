@@ -1686,13 +1686,8 @@ ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			count++;
 		}
 		rowset->cvalues = count;
-	} else {
-		for (size_t i = 0; i < rowset->cvalues; ++i) {
-			if (PROP_TYPE(rowset->pprops[i].proptag) == PT_ERROR) {
-				result = ecWarnWithErrors;
-				break;
-			}
-		}
+	} else if (rowset->has_properror()) {
+		result = ecWarnWithErrors;
 	}
 	if (result == ecSuccess || result == ecWarnWithErrors)
 		*pprows = rowset;
