@@ -688,14 +688,15 @@ ec_error_t nsp_interface_update_stat(NSPI_HANDLE handle, uint32_t reserved,
     STAT *pstat, int32_t *pdelta)
 {
 	nsp_trace(__func__, 0, pstat, pdelta);
-	ab_tree::ab_node node;
 	
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
 	auto pbase = ab_tree::AB.get(handle.guid);
 	if (pbase == nullptr || (g_session_check && pbase->guid() != handle.guid))
 		return ecError;
+
 	uint32_t init_row = 0, total = 0;
+	ab_tree::ab_node node{};
 	if (0 == pstat->container_id) {
 		nsp_interface_position_in_list(pstat, pbase.get(), &init_row, &total);
 	} else {
@@ -756,9 +757,6 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	if (g_nsp_trace > 0)
 		fprintf(stderr, "nsp_query_rows: table_count=%u count=%u\n", table_count, count);
 	nsp_trace(__func__, 0, pstat);
-	uint32_t start_pos, total;
-	NSP_PROPROW *prow;
-	bool b_ephid = flags & fEphID;
 	
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
@@ -795,9 +793,10 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	if (rowset == nullptr)
 		return ecServerOOM;
 	
+	bool b_ephid = flags & fEphID;
 	if (ptable != nullptr) {
 		for (size_t i = 0; i < table_count; ++i) {
-			prow = common_util_proprowset_enlarge(rowset);
+			auto prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr ||
 			    common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
@@ -817,6 +816,7 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	}
 
 	ab_tree::ab_node node;
+	uint32_t start_pos = 0, total = 0;
 	if (0 == pstat->container_id) {
 		nsp_interface_position_in_list(pstat, pbase.get(), &start_pos, &total);
 	} else {
@@ -855,7 +855,7 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	}
 	if (0 == pstat->container_id) {
 		for (auto it = pbase->ubegin() + start_pos; it != pbase->ubegin() + start_pos + tmp_count; ++it) {
-			prow = common_util_proprowset_enlarge(rowset);
+			auto prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr || common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
 			ab_tree::ab_node temp(pbase, *it);
@@ -868,7 +868,7 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 		auto endidx = std::min(start_pos+tmp_count, uint32_t(node.children()));
 		for (auto it = node.begin() + start_pos; it < node.begin() + endidx; ++it) {
 			ab_tree::ab_node child(pbase, *it);
-			prow = common_util_proprowset_enlarge(rowset);
+			auto prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr || common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
 			auto result = nsp_interface_fetch_row(child, b_ephid,
@@ -900,10 +900,6 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
     STAT *pstat, const PROPERTY_VALUE *ptarget, const MID_ARRAY *ptable,
     const LPROPTAG_ARRAY *pproptags, NSP_ROWSET **pprows)
 {
-	NSP_PROPROW *prow;
-	uint32_t tmp_minid;
-	std::string temp_name;
-	
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE ||
@@ -948,12 +944,12 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	
 	if (NULL != ptable) {
 		size_t row = 0;
-		tmp_minid = 0;
+		uint32_t tmp_minid = 0;
 		for (size_t i = 0; i < ptable->cvalues; ++i) {
 			ab_tree::ab_node node1{pbase, ptable->pproptag[i]};
 			if (!node1.exists())
 				continue;
-			temp_name = node1.displayname();
+			const std::string &temp_name = node1.displayname();
 			if (strcasecmp(temp_name.c_str(), ptarget->value.pstr) < 0)
 				continue;
 			if (0 == tmp_minid) {
@@ -962,7 +958,7 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			}
 			if (tmp_minid == 0)
 				continue;
-			prow = common_util_proprowset_enlarge(rowset);
+			auto prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr ||
 			    common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
@@ -1002,7 +998,7 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		                           { return strcasecmp(pbase->displayname(m1).c_str(), val) < 0; });
 		if (it == pbase->uend())
 			return ecNotFound;
-		prow = common_util_proprowset_enlarge(rowset);
+		auto prow = common_util_proprowset_enlarge(rowset);
 		if (prow == nullptr || common_util_propertyrow_init(prow) == nullptr)
 			return ecServerOOM;
 		if (nsp_interface_fetch_row({pbase, *it}, true, pstat->codepage, pproptags, prow) != ecSuccess)
@@ -1018,7 +1014,7 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		                           {return strcasecmp(pbase->displayname(m1).c_str(), val) < 0;});
 		if (it == node.end())
 			return ecNotFound;
-		prow = common_util_proprowset_enlarge(rowset);
+		auto prow = common_util_proprowset_enlarge(rowset);
 		if (prow == nullptr || common_util_propertyrow_init(prow) == nullptr)
 			return ecServerOOM;
 		if (nsp_interface_fetch_row({pbase, *it}, true, pstat->codepage,
@@ -1036,8 +1032,6 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 static BOOL nsp_interface_match_node(const ab_tree::ab_node &node,
     cpid_t codepage, const NSPRES *pfilter)
 {
-	char *ptoken;
-	char temp_buff[1024];
 	PROPERTY_VALUE prop_val;
 	
 	switch (pfilter->res_type) {
@@ -1061,6 +1055,7 @@ static BOOL nsp_interface_match_node(const ab_tree::ab_node &node,
 	case RES_PROPERTY: {
 		if (pfilter->res.res_property.pprop == nullptr)
 			return TRUE;
+		char temp_buff[1024];
 		// XXX RESTRICTION_PROPERTY::comparable check
 		if (pfilter->res.res_property.proptag == PR_ANR) {
 			if (nsp_interface_fetch_property(node, false, codepage,
@@ -1068,7 +1063,7 @@ static BOOL nsp_interface_match_node(const ab_tree::ab_node &node,
 			    std::size(temp_buff)) == ecSuccess &&
 			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
 				return TRUE;
-			ptoken = strchr(pfilter->res.res_property.pprop->value.pstr, ':');
+			char *ptoken = strchr(pfilter->res.res_property.pprop->value.pstr, ':');
 			if (NULL != ptoken) {
 				/* =SMTP:user@company.com */
 				if (strcasestr(temp_buff, &ptoken[1]) != nullptr)
@@ -1089,7 +1084,7 @@ static BOOL nsp_interface_match_node(const ab_tree::ab_node &node,
 			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
 				return TRUE;
 			/* =SMTP:user@company.com */
-			ptoken = strchr(pfilter->res.res_property.pprop->value.pstr, ':');
+			char *ptoken = strchr(pfilter->res.res_property.pprop->value.pstr, ':');
 			if (NULL != ptoken) {
 				if (strcasestr(temp_buff, &ptoken[1]) != nullptr)
 					return TRUE;
@@ -1139,6 +1134,10 @@ static BOOL nsp_interface_match_node(const ab_tree::ab_node &node,
 		auto node_type = node.type();
 		if (node_type >= ab_tree::abnode_type::containers)
 			return FALSE;
+
+		/* 1: not interested in the value; avoid wasting time with gx_strlcpy */
+		char temp_buff[1];
+
 		if (nsp_interface_fetch_property(node, false, codepage,
 		    pfilter->res.res_exist.proptag, &prop_val, temp_buff,
 		    std::size(temp_buff)) != ecSuccess)
@@ -1344,8 +1343,6 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserve
 {
 	*ppoutmids = nullptr;
 	nsp_trace(__func__, 0, pstat);
-	bool b_found;
-	std::string temp_buff;
 	
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
@@ -1361,8 +1358,9 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserve
 	auto base = ab_tree::AB.get(handle.guid);
 	if (!base || handle.handle_type != HANDLE_EXCHANGE_NSP || (g_session_check && base->guid() != handle.guid))
 		return ecError;
+
 	size_t count = 0;
-	b_found = FALSE;
+	bool b_found = false;
 	for (size_t i = 0; i < pinmids->cvalues; ++i) {
 		ab_tree::ab_node node(base, pinmids->pproptag[i]);
 		if (!node.exists())
@@ -1370,7 +1368,7 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserve
 		parray[count].minid = pinmids->pproptag[i];
 		if (pstat->cur_rec == pinmids->pproptag[i])
 			b_found = TRUE;
-		temp_buff = node.displayname();
+		std::string temp_buff = node.displayname();
 		parray[count].strv = ndr_stack_alloc(
 			NDR_STACK_IN, temp_buff.size() + 1);
 		if (parray[count].string == nullptr)
@@ -1541,7 +1539,6 @@ ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 		*tags = nullptr;
 		return ecInvalidObject;
 	}
-	bool b_unicode = codepage == CP_WINUNICODE;
 	*tags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (*tags == nullptr)
 		return ecServerOOM;
@@ -1553,6 +1550,7 @@ ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 
 	/* Grab tags */
 	std::vector<proptag_t> ctags;
+	bool b_unicode = codepage == CP_WINUNICODE;
 	auto ret = nsp_get_proptags(node, ctags, b_unicode);
 	if (ret != ecSuccess)
 		return ret;
@@ -1580,9 +1578,6 @@ ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 {
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
-	uint32_t row;
-	uint32_t total;
-	bool b_proptags = true;
 	
 	if (pstat == nullptr)
 		return ecNotSupported;
@@ -1607,6 +1602,7 @@ ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 				return ecNotSupported;
 	
 	ab_tree::ab_node node;
+	uint32_t row = 0, total = 0;
 	if (pstat->cur_rec <= 0x10) {
 		if (0 == pstat->container_id) {
 			ab_tree::ab_base::iterator it;
@@ -1632,6 +1628,7 @@ ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		if (node.exists() && pstat->container_id != 0 && !base->exists(pstat->container_id))
 			return ecInvalidBookmark;
 	}
+	bool b_proptags = true;
 	if (NULL == pproptags) {
 		/* The list must be the same as for getproplist. */
 		b_proptags = false;
@@ -1741,10 +1738,6 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
     unsigned int depth, int container_id, const char *str_dname,
     EMSAB_ENTRYID *ppermeid_parent, EMSAB_ENTRYID *ppermeid)
 {
-	int tmp_len;
-	char tmp_title[1024];
-	
-	
 	prow->reserved = 0x0;
 	prow->cvalues = depth == 0 ? 6 : 7;
 	prow->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, prow->cvalues);
@@ -1780,13 +1773,14 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
 		prow->pprops[4].value.pstr = NULL;
 	} else {
 		if (b_unicode) {
-			tmp_len = strlen(str_dname) + 1;
+			auto tmp_len = strlen(str_dname) + 1;
 			prow->pprops[4].value.pv =
 				ndr_stack_alloc(NDR_STACK_OUT, tmp_len);
 			memcpy(prow->pprops[4].value.pstr, str_dname, tmp_len);
 		} else {
-			tmp_len = cu_utf8_to_mb(codepage,
-				str_dname, tmp_title, sizeof(tmp_title));
+			char tmp_title[1024];
+			auto tmp_len = cu_utf8_to_mb(codepage, str_dname,
+			               tmp_title, std::size(tmp_title));
 			if (-1 == tmp_len) {
 				prow->pprops[4].value.pstr = NULL;
 			} else {
@@ -1821,28 +1815,22 @@ static ec_error_t nsp_interface_get_specialtables_from_node(
     const ab_tree::ab_node &node, EMSAB_ENTRYID *ppermeid_parent,
     bool b_unicode, cpid_t codepage, NSP_ROWSET *prows)
 {
-	GUID tmp_guid;
-	bool has_child;
-	ab_tree::minid container_id;
-	NSP_PROPROW *prow;
-	std::string str_dname;
-	
 	auto ppermeid = ndr_stack_anew<EMSAB_ENTRYID>(NDR_STACK_OUT);
 	if (ppermeid == nullptr)
 		return ecServerOOM;
-	tmp_guid = node.guid();
+	auto tmp_guid = node.guid();
 	if (!common_util_set_permanententryid(DT_CONTAINER, &tmp_guid,
 	    nullptr, ppermeid))
 		return ecServerOOM;
-	prow = common_util_proprowset_enlarge(prows);
+	auto prow = common_util_proprowset_enlarge(prows);
 	if (prow == nullptr)
 		return ecServerOOM;
-	has_child = node.children();
-	container_id = node.mid;
+	bool has_child = node.children() != 0;
+	ab_tree::minid container_id = node.mid;
 	if (container_id == 0)
 		return ecError;
 
-	str_dname = node.displayname();
+	std::string str_dname = node.displayname();
 	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage, has_child,
 	    0, container_id,
 	    str_dname.c_str(), ppermeid_parent, ppermeid))
@@ -1858,8 +1846,6 @@ ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 {
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
-	NSP_PROPROW *prow;
-	EMSAB_ENTRYID permeid;
 	
 	if (flags & NspiAddressCreationTemplates)
 		/* creation of templates table */
@@ -1878,9 +1864,10 @@ ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 		return ecServerOOM;
 	
 	/* build the gal root */
-	prow = common_util_proprowset_enlarge(rowset);
+	auto prow = common_util_proprowset_enlarge(rowset);
 	if (prow == nullptr)
 		return ecServerOOM;
+	EMSAB_ENTRYID permeid;
 	if (!common_util_set_permanententryid(DT_CONTAINER,
 	    nullptr, nullptr, &permeid))
 		return ecServerOOM;
@@ -1983,10 +1970,8 @@ ec_error_t nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	if (g_nsp_trace > 0)
 		fprintf(stderr, "Entering %s {flags=%xh}\n", __func__, flags);
 	*ppcolumns = nullptr;
-	LPROPTAG_ARRAY *pcolumns;
-	bool b_unicode = flags & NspiUnicodeProptypes;
 	
-	pcolumns = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
+	auto pcolumns = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (pcolumns == nullptr)
 		return ecServerOOM;
 	static constexpr uint32_t utags[] = {
@@ -2008,6 +1993,7 @@ ec_error_t nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	if (pcolumns->pproptag == nullptr)
 		return ecServerOOM;
 	size_t i = 0;
+	bool b_unicode = flags & NspiUnicodeProptypes;
 	for (auto tag : utags)
 		pcolumns->pproptag[i++] = b_unicode ? tag : CHANGE_PROP_TYPE(tag, PT_STRING8);
 	for (auto tag : ntags)
@@ -2020,15 +2006,13 @@ ec_error_t nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
     const STAT *pstat, LPROPTAG_ARRAY *&pproptags,
     const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
-	char *pstr;
-	
 	*ppmids = nullptr;
 	*pprows = nullptr;
 	for (size_t i = 0; i < pstrs->count; ++i) {
 		if (pstrs->ppstr[i] == nullptr)
 			continue;
 		auto temp_len = mb_to_utf8_len(pstrs->ppstr[i]);
-		pstr = ndr_stack_anew<char>(NDR_STACK_IN, temp_len);
+		auto pstr = ndr_stack_anew<char>(NDR_STACK_IN, temp_len);
 		if (pstr == nullptr)
 			return ecServerOOM;
 		if (cu_mb_to_utf8(pstat->codepage, pstrs->ppstr[i], pstr, temp_len) == -1)
@@ -2110,11 +2094,6 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
     const STAT *pstat, LPROPTAG_ARRAY *&pproptags,
     const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
-	bool b_ambiguous;
-	uint32_t start_pos, total;
-	uint32_t *pproptag;
-	NSP_PROPROW *prow;
-	
 	*ppmids = nullptr;
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
@@ -2158,7 +2137,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 
 	if (0 == pstat->container_id) {
 		for (size_t i = 0; i < pstrs->count; ++i) {
-			pproptag = common_util_proptagarray_enlarge(outmids);
+			auto pproptag = common_util_proptagarray_enlarge(outmids);
 			if (pproptag == nullptr)
 				return ecServerOOM;
 			if (pstrs->ppstr[i] == nullptr) {
@@ -2173,13 +2152,14 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				ptoken = pstrs->ppstr[i];
 			std::string idn_deco = gx_utf8_to_punycode(ptoken);
 			ptoken = idn_deco.c_str();
+			bool b_ambiguous = false;
 			auto mid = nsp_interface_resolve_gal(base, ptoken, b_ambiguous);
 			if (!mid.valid()) {
 				*pproptag = b_ambiguous ? ab_tree::minid::AMBIGUOUS : ab_tree::minid::UNRESOLVED;
 				continue;
 			}
 			*pproptag = ab_tree::minid::RESOLVED;
-			prow = common_util_proprowset_enlarge(rowset);
+			auto prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr ||
 			    common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
@@ -2197,10 +2177,11 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	ab_tree::ab_node node(base, pstat->container_id);
 	if (!node.exists())
 		return ecInvalidBookmark;
+	uint32_t start_pos = 0, total = 0;
 	nsp_interface_position_in_table(pstat,
 		node, &start_pos, &total);
 	for (size_t i = 0; i < pstrs->count; ++i) {
-		pproptag = common_util_proptagarray_enlarge(outmids);
+		auto pproptag = common_util_proptagarray_enlarge(outmids);
 		if (pproptag == nullptr)
 			return ecServerOOM;
 		if (pstrs->ppstr[i] == nullptr) {
@@ -2216,6 +2197,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		std::string idn_deco = gx_utf8_to_punycode(ptoken);
 		ptoken = idn_deco.c_str();
 		*pproptag = ab_tree::minid::UNRESOLVED;
+
 		ab_tree::minid found;
 		for (ab_tree::minid mid : node) {
 			ab_tree::ab_node node1(base, mid);
@@ -2230,7 +2212,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			}
 		}
 		if (*pproptag == ab_tree::minid::RESOLVED) {
-			prow = common_util_proprowset_enlarge(rowset);
+			auto prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr || common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
 			auto result = nsp_interface_fetch_row({base, found},
