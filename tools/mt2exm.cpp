@@ -335,8 +335,10 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 		mode |= DELIVERY_DO_RULES;
 	if (!g_skip_notif)
 		mode |= DELIVERY_DO_NOTIF;
-	if (g_twostep)
+	if (g_twostep) {
 		mode |= DELIVERY_TWOSTEP;
+		mode &= ~(DELIVERY_DO_RULES | DELIVERY_DO_NOTIF);
+	}
 	if (g_mrautoproc)
 		mode |= DELIVERY_MRAUTOPROC;
 	for (auto i = 0U; i < g_repeat_iter; ++i) {
