@@ -702,8 +702,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 		*ppvalue = cu_alloc<uint32_t>();
 		if (*ppvalue == nullptr)
 			return FALSE;
-		*static_cast<uint32_t *>(*ppvalue) = pmessage->b_writable ?
-			ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
+		*static_cast<uint32_t *>(*ppvalue) = pmessage->b_writable ? MAPI_MODIFY : 0;
 		return TRUE;
 	case PR_ENTRYID:
 		if (pmessage->message_id == 0)

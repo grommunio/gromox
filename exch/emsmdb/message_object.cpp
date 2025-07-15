@@ -833,8 +833,7 @@ static BOOL message_object_get_calculated_property(const message_object *pmessag
 		*ppvalue = v;
 		if (*ppvalue == nullptr)
 			return FALSE;
-		*v = (pmessage->open_flags & MAPI_MODIFY) ?
-			ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
+		*v = pmessage->open_flags & MAPI_MODIFY;
 		return TRUE;
 	}
 	case PR_ENTRYID:

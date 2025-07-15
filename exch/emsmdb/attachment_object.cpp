@@ -223,8 +223,7 @@ static BOOL attachment_object_get_calculated_property(const attachment_object *p
 		*ppvalue = v;
 		if (*ppvalue == nullptr)
 			return FALSE;
-		*v = (pattachment->open_flags & MAPI_MODIFY) ?
-		     ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
+		*v = pattachment->open_flags & MAPI_MODIFY;
 		return TRUE;
 	}
 	case PR_OBJECT_TYPE: {
