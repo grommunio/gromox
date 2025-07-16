@@ -308,16 +308,18 @@ $PLINKARGS = @(
 	if ($null -ne $Debug) {
 		'-v'
 	}
-		'-ssh'
-		'-agent'
 	if ($null -ne $LinuxUserPWD) {
 		'-noagent'
 		'-pw'
 		"$LinuxUserPWD"
-	} elseif ($null -eq $UsePageant) {
-		'-i'
-		"$LinuxUserSSHKey"
+	} else {
+		'-agent'
+		if ($null -eq $UsePageant) {
+			'-i'
+			"$LinuxUserSSHKey"
+		}
 	}
+		'-ssh'
 		'-batch'
 		"$LinuxUser@$GrommunioServer"
 )
