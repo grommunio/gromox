@@ -1210,6 +1210,15 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		if (!oxcmail_parse_response_suppress(field,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
+	} else if (strcasecmp(key, "Precedence") == 0) {
+		if (penum_param->pmsg->proplist.set(PR_INTERNET_PRECEDENCE, field) != ecSuccess)
+			return false;
+	} else if (strcasecmp(key, "Auto-Submitted") == 0 &&
+	    strcasecmp(field, "no") != 0) {
+		static constexpr uint32_t val = AUTO_RESPONSE_SUPPRESS_AUTOREPLY | AUTO_RESPONSE_SUPPRESS_OOF;
+		if (!penum_param->pmsg->proplist.has(PR_AUTO_RESPONSE_SUPPRESS) &&
+		    penum_param->pmsg->proplist.set(PR_AUTO_RESPONSE_SUPPRESS, &val) != ecSuccess)
+			return false;
 	} else if (strcasecmp(key, "Content-Class") == 0) {
 		if (!oxcmail_parse_content_class(field,
 		    penum_param->pmail, &penum_param->last_propid,
