@@ -365,6 +365,20 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		auto num = pmsg->proplist.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
 		if (num != nullptr)
 			suppress_mask = *num;
+		auto str = pmsg->proplist.get<const char>(PR_INTERNET_PRECEDENCE);
+		if (str != nullptr) {
+			if (strcasecmp(str, "bulk") == 0)
+				suppress_mask |= AUTO_RESPONSE_SUPPRESS_AUTOREPLY | AUTO_RESPONSE_SUPPRESS_OOF;
+			if (strcasecmp(str, "list") == 0)
+				suppress_mask |= AUTO_RESPONSE_SUPPRESS_ALL;
+		}
+		if (pmsg->proplist.has(PR_LIST_HELP) ||
+		    pmsg->proplist.has(PR_LIST_HELP_A) ||
+		    pmsg->proplist.has(PR_LIST_SUBSCRIBE) ||
+		    pmsg->proplist.has(PR_LIST_SUBSCRIBE_A) ||
+		    pmsg->proplist.has(PR_LIST_UNSUBSCRIBE) ||
+		    pmsg->proplist.has(PR_LIST_UNSUBSCRIBE_A))
+			suppress_mask |= AUTO_RESPONSE_SUPPRESS_ALL;
 		auto flag = pmsg->proplist.get<const uint8_t>(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
 		if (flag != nullptr && *flag != 0) {
 			b_bounce_delivered = TRUE;

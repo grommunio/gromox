@@ -159,6 +159,8 @@ enum { /* for PR_AUTO_RESPONSE_SUPPRESS */
 	AUTO_RESPONSE_SUPPRESS_NRN       = 0x8U,
 	AUTO_RESPONSE_SUPPRESS_OOF       = 0x10U,
 	AUTO_RESPONSE_SUPPRESS_AUTOREPLY = 0x20U,
+
+	AUTO_RESPONSE_SUPPRESS_ALL       = 0x2FU, /* Gromox-specific mnemonic */
 };
 
 enum { /* bits for PidLidChangeHighlight */
