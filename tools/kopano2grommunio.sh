@@ -2,7 +2,7 @@
 #
 # A bash script for Kopano 2 grommunio migration.
 #
-# Copyright 2022-2024 Walter Hofstaedtler
+# Copyright 2022-2025 Walter Hofstaedtler
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Authors: grommunio <dev@grommunio.com>
 #          Walter Hofstaedtler <walter@hofstaedtler.com>
@@ -181,6 +181,8 @@
 #    Otherwise, the script waits for a command from the admin in case of an error and that
 #    the whole night long, thereby destroying valuable migration time.
 #
+#    If an organization is registered with the domain, the organization must be specified here in the script.
+#
 #    The other settings are explained in the variables.
 #
 # 7. Test the migration
@@ -189,13 +191,13 @@
 # 8. If you delete all mailboxes and Public Store on grommunio,
 #    restart the grommunio server or its services before starting the migration again, to clear all caches.
 #
-# 9. clean up the grommunio server
+# 9. Clean up the grommunio server
 #
-# 9.1. remove sshfs from grommunio server
+# 9.1. Remove sshfs from grommunio server
 #      grommunio Appliance / SUSE: zypper remove sshfs
 #      Debian / Ubuntu: apt-get remove --purge sshfs
 #
-# 9.2. remove the mount directory
+# 9.2. Remove the mount directory
 #      rmdir /mnt/kopano/
 #
 #
@@ -262,6 +264,12 @@ MigrationList="/tmp/k2g_list.txt"
 
 # The mapping file contains mappings for Zarafa addresses to MAPI addresses
 KdbUidMap="/tmp/kdb-uidextract.map"
+
+# If an organization is registered with the domain, it must be specified here.
+# If the organization is not specified, the script cannot create the mailbox
+# and returns an invalid domain error.
+# If no organization is registered with the domain, leave this variable blank.
+Organization=""
 
 # Create a sample $MigrationList file. An existing $MigrationList will not be overwritten.
 # For normal migration, set this variable to 0.
@@ -515,7 +523,11 @@ while IFS= read -r line; do
 	else
 		if [[ $CreateGrommunioMailbox -eq 1 ]]; then
 			Write-MLog "Try to create the mailbox: $MigMBox" yellow
-			grommunio-admin ldap downsync -l $MailboxLanguage "$MigMBox" | tee -a $LOG
+			if [[ -z $Organization ]]; then
+				grommunio-admin ldap downsync -l "$MailboxLanguage" "$MigMBox" | tee -a "$LOG"
+			else
+				grommunio-admin ldap downsync -o "$Organization" -l "$MailboxLanguage" "$MigMBox" | tee -a "$LOG"
+			fi
 			ExitCode=${PIPESTATUS[0]}
 			# currently (Jan. 2024) grommunio-admin always return error code 0 = success,
 			# this prevents the error detection in this step. [DESK-1609]
