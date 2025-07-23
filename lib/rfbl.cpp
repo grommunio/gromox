@@ -575,7 +575,7 @@ int feed_w3m(const void *inbuf, size_t len, const char *cset,
 	argv[argc++] = "w3m";
 	if (cset != nullptr) {
 		argv[argc++] = "-I";
-		argv[argc++] = cset;
+		argv[argc++] = "UTF-8";
 	}
 	argv[argc++] = "-O";
 	argv[argc++] = "UTF-8";
