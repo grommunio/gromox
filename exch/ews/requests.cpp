@@ -947,40 +947,38 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 	unsigned int oof_state  = configFile != nullptr ? configFile->get_ll("oof_state") : 0;
 	bool allow_external_oof = configFile != nullptr ? configFile->get_ll("allow_external_oof") : false;
 	bool external_audience  = configFile != nullptr ? configFile->get_ll("external_audience") : false;
-	if (true) {
-		switch(oof_state) {
-		case 1:
-			data.OofSettings->OofState = "Enabled"; break;
-		case 2:
-			data.OofSettings->OofState = "Scheduled"; break;
-		default:
-			data.OofSettings->OofState = "Disabled"; break;
-		}
-		if (allow_external_oof)
-			data.OofSettings->ExternalAudience = external_audience ? "Known" : "All";
-		else
-			data.OofSettings->ExternalAudience = "None";
-		auto start_time = configFile->get_value("start_time");
-		auto end_time = configFile->get_value("end_time");
-		if (start_time != nullptr && end_time != nullptr) {
-			tDuration& Duration = data.OofSettings->Duration.emplace();
-			Duration.StartTime = clock::from_time_t(strtoll(start_time, nullptr, 0));
-			Duration.EndTime = clock::from_time_t(strtoll(end_time, nullptr, 0));
-		} else {
-			auto &dur = data.OofSettings->Duration.emplace();
-			dur.StartTime = clock::now();
-			dur.EndTime = dur.StartTime + std::chrono::days(1);
-		}
-		optional<string> reply = readMessageBody(maildir+"/config/internal-reply");
-		if (reply)
-			data.OofSettings->InternalReply.emplace(std::move(reply));
-		else
-			data.OofSettings->InternalReply.emplace(std::string{});
-		if ((reply = readMessageBody(maildir+"/config/external-reply")))
-			data.OofSettings->ExternalReply.emplace(std::move(reply));
-		else
-			data.OofSettings->ExternalReply.emplace(std::string{});
+	switch (oof_state) {
+	case 1:
+		data.OofSettings->OofState = "Enabled"; break;
+	case 2:
+		data.OofSettings->OofState = "Scheduled"; break;
+	default:
+		data.OofSettings->OofState = "Disabled"; break;
 	}
+	if (allow_external_oof)
+		data.OofSettings->ExternalAudience = external_audience ? "Known" : "All";
+	else
+		data.OofSettings->ExternalAudience = "None";
+	auto start_time = configFile->get_value("start_time");
+	auto end_time = configFile->get_value("end_time");
+	if (start_time != nullptr && end_time != nullptr) {
+		tDuration& Duration = data.OofSettings->Duration.emplace();
+		Duration.StartTime = clock::from_time_t(strtoll(start_time, nullptr, 0));
+		Duration.EndTime = clock::from_time_t(strtoll(end_time, nullptr, 0));
+	} else {
+		auto &dur = data.OofSettings->Duration.emplace();
+		dur.StartTime = clock::now();
+		dur.EndTime = dur.StartTime + std::chrono::days(1);
+	}
+	optional<string> reply = readMessageBody(maildir + "/config/internal-reply");
+	if (reply)
+		data.OofSettings->InternalReply.emplace(std::move(reply));
+	else
+		data.OofSettings->InternalReply.emplace(std::string{});
+	if ((reply = readMessageBody(maildir + "/config/external-reply")))
+		data.OofSettings->ExternalReply.emplace(std::move(reply));
+	else
+		data.OofSettings->ExternalReply.emplace(std::string{});
 
 	//Finalize response
 	data.ResponseMessage.success();
