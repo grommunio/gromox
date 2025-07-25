@@ -63,12 +63,6 @@ struct MJSON_MIME;
 struct XARRAY;
 struct XARRAY_UNIT;
 
-struct DIR_NODE {
-	SIMPLE_TREE_NODE stree;
-	BOOL b_loaded;
-	char name[256];
-};
-
 struct imap_context;
 struct content_array final : public XARRAY {
 	using XARRAY::XARRAY;

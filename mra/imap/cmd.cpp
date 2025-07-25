@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
+#include <map>
 #include <memory>
 #include <string>
 #include <unistd.h>
@@ -62,19 +63,38 @@ using mdi_list = std::vector<std::string>; /* message data item (RFC 3501 §6.4.
 namespace {
 
 struct dir_tree {
+	struct cmp {
+		inline bool operator()(const std::string &a, const std::string &b) const { return strcasecmp(a.c_str(), b.c_str()) < 0; }
+	};
+
 	dir_tree() = default;
-	~dir_tree();
-	NOMOVE(dir_tree);
 
-	void load_from_memfile(const std::vector<enum_folder_t> &);
-	DIR_NODE *match(const char *path);
-	static DIR_NODE *get_child(DIR_NODE *);
-	bool has_children(DIR_NODE *x) const { return get_child(x) != nullptr; }
+	template<typename Vec> void load_from_memfile(Vec &&pfile) try
+	{
+		for (auto &&[id, orig] : std::forward<Vec>(pfile)) {
+			auto curr = this;
+			constexpr bool inplace_edit = std::is_rvalue_reference<Vec>::value;
+			using ref_or_copy = typename std::conditional<inplace_edit, std::string &, std::string>::type;
+			ref_or_copy name{orig};
+			char *saveptr = nullptr;
 
-	SIMPLE_TREE stree{};
+			for (auto token = strtok_r(name.data(), "/", &saveptr);
+			     token != nullptr;
+			     token = strtok_r(nullptr, "/", &saveptr)) {
+				auto [it, added] = curr->entries.try_emplace(token);
+				curr = &it->second;
+			}
+		}
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-2903: ENOMEM");
+	}
+
+	const dir_tree *match(const char *path) const;
+	dir_tree *match(const char *path) { return const_cast<dir_tree *>(const_cast<const dir_tree *>(this)->match(path)); }
+	bool has_children() const { return entries.size() > 0; }
+
+	std::map<std::string, dir_tree, cmp> entries;
 };
-using DIR_TREE = dir_tree;
-using DIR_TREE_ENUM = void (*)(DIR_NODE *, void*);
 
 enum {
 	TYPE_WILDS = 1,
@@ -98,121 +118,25 @@ static constexpr const builtin_folder g_folder_list[] = {
 	{PRIVATE_FID_JUNK, "\\Junk \\Spam"},
 };
 
-void dir_tree::load_from_memfile(const std::vector<enum_folder_t> &pfile) try
+const dir_tree *dir_tree::match(const char *path) const
 {
-	auto ptree = this;
-	char *ptr1, *ptr2;
-	char temp_path[4096 + 1];
-	SIMPLE_TREE_NODE *pnode, *pnode_parent;
-
-	auto proot = ptree->stree.get_root();
-	if (NULL == proot) {
-		auto pdir = std::make_unique<DIR_NODE>();
-		pdir->stree.pdata = pdir.get();
-		pdir->name[0] = '\0';
-		pdir->b_loaded = TRUE;
-		proot = &pdir->stree;
-		ptree->stree.set_root(std::move(pdir));
-	}
-
-	for (const auto &pfile_path : pfile) {
-		gx_strlcpy(temp_path, pfile_path.second.c_str(), std::size(temp_path));
-		auto len = strlen(temp_path);
-		pnode = proot;
-		if (len == 0 || temp_path[len-1] != '/') {
-			temp_path[len++] = '/';
-			temp_path[len] = '\0';
-		}
-		ptr1 = temp_path;
-		while ((ptr2 = strchr(ptr1, '/')) != NULL) {
-			*ptr2 = '\0';
-			pnode_parent = pnode;
-			pnode = pnode->get_child();
-			if (NULL != pnode) {
-				do {
-					auto pdir = static_cast<DIR_NODE *>(pnode->pdata);
-					if (strcasecmp(pdir->name, ptr1) == 0)
-						break;
-				} while ((pnode = pnode->get_sibling()) != nullptr);
-			}
-
-			if (NULL == pnode) {
-				auto pdir = std::make_unique<DIR_NODE>();
-				pdir->stree.pdata = pdir.get();
-				gx_strlcpy(pdir->name, ptr1, std::size(pdir->name));
-				pdir->b_loaded = FALSE;
-				pnode = &pdir->stree;
-				ptree->stree.add_child(pnode_parent,
-					std::move(pdir), SIMPLE_TREE_ADD_LAST);
-			}
-			ptr1 = ptr2 + 1;
-		}
-		static_cast<DIR_NODE *>(pnode->pdata)->b_loaded = TRUE;
-	}
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2903: ENOMEM");
-}
-
-static void dir_tree_clear(DIR_TREE *ptree)
-{
-	auto pnode = ptree->stree.get_root();
-	if (pnode != nullptr)
-		ptree->stree.destroy_node(pnode, [](tree_node *p) { delete static_cast<DIR_NODE *>(p->pdata); });
-}
-
-DIR_NODE *dir_tree::match(const char *path)
-{
-	auto ptree = this;
-	int len;
-	DIR_NODE *pdir = nullptr;
-	char *ptr1, *ptr2;
-	char temp_path[4096 + 1];
-
-	auto pnode = ptree->stree.get_root();
-	if (pnode == nullptr)
-		return NULL;
+	auto curr = this;
 	if (*path == '\0')
-		return static_cast<DIR_NODE *>(pnode->pdata);
-	len = strlen(path);
+		return curr;
+	auto len = strlen(path);
 	if (len >= 4096)
 		return NULL;
-	memcpy(temp_path, path, len);
-	if (temp_path[len-1] != '/')
-		temp_path[len++] = '/';
-	temp_path[len] = '\0';
-	
-	ptr1 = temp_path;
-	for (unsigned int level = 0; (ptr2 = strchr(ptr1, '/')) != nullptr; ++level) {
-		*ptr2 = '\0';
-		pnode = pnode->get_child();
-		if (pnode == nullptr)
+	std::string temp_path(path, len);
+	char *saveptr = nullptr;
+	for (auto token = strtok_r(temp_path.data(), "/", &saveptr);
+	     token != nullptr;
+	     token = strtok_r(nullptr, "/", &saveptr)) {
+		auto it = curr->entries.find(token);
+		if (it == curr->entries.cend())
 			return NULL;
-		do {
-			pdir = static_cast<DIR_NODE *>(pnode->pdata);
-			if (strcasecmp(pdir->name, ptr1) == 0)
-				break;
-			if (level == 0 && strcasecmp(pdir->name, "INBOX") == 0 &&
-			    strcasecmp(ptr1, "inbox") == 0)
-				break;
-		} while ((pnode = pnode->get_sibling()) != nullptr);
-		if (pnode == nullptr)
-			return NULL;
-		ptr1 = ptr2 + 1;
+		curr = &it->second;
 	}
-	return pdir;
-}
-
-DIR_NODE *dir_tree::get_child(DIR_NODE* pdir)
-{
-	auto pnode = pdir->stree.get_child();
-	return pnode != nullptr ? static_cast<DIR_NODE *>(pnode->pdata) : nullptr;
-}
-
-dir_tree::~dir_tree()
-{
-	auto ptree = this;
-	dir_tree_clear(ptree);
-	ptree->stree.clear();
+	return curr;
 }
 
 static const builtin_folder *special_folder(uint64_t fid)
@@ -1621,7 +1545,7 @@ int icp_delete(int argc, char **argv, imap_context &ctx)
 		auto dh = folder_tree.match(argv[2]);
 		if (dh == nullptr)
 			return 1925;
-		if (folder_tree.has_children(dh))
+		if (dh->has_children())
 			return 1924;
 	}
 
@@ -1763,7 +1687,7 @@ int icp_list(int argc, char **argv, imap_context &ctx) try
 		if (!icp_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
 		auto pdir = folder_tree.match(sys_name.c_str());
-		auto have_cld = pdir != nullptr && folder_tree.has_children(pdir);
+		auto have_cld = pdir != nullptr && pdir->has_children();
 		auto buf = fmt::format("* LIST (\\Has{}Children{}{}) \"/\" {}\r\n",
 		           have_cld ? "" : "No",
 		           return_special && special != nullptr ? " " : "",
@@ -1816,7 +1740,7 @@ int icp_xlist(int argc, char **argv, imap_context &ctx) try
 			continue;
 		auto special = special_folder(fentry.first);
 		auto pdir = folder_tree.match(sys_name.c_str());
-		auto have = pdir != nullptr && folder_tree.has_children(pdir);
+		auto have = pdir != nullptr && pdir->has_children();
 		auto buf  = fmt::format("* XLIST (\\Has{}Children{}{}) \"/\" {}\r\n",
 		            have ? "" : "No",
 		            special != nullptr ? " " : "",
@@ -1880,7 +1804,7 @@ int icp_lsub(int argc, char **argv, imap_context &ctx) try
 		if (!icp_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
 		auto pdir = folder_tree.match(sys_name.c_str());
-		auto have = pdir != nullptr && folder_tree.has_children(pdir);
+		auto have = pdir != nullptr && pdir->has_children();
 		auto buf  = fmt::format("* LSUB (\\Has{}Children) \"/\" {}\r\n",
 		            have ? "" : "No", quote_encode(sys_name));
 		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
