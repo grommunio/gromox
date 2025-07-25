@@ -944,10 +944,10 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 	std::string maildir = ctx.get_maildir(request.Mailbox);
 	string configPath = maildir+"/config/autoreply.cfg";
 	auto configFile = config_file_init(configPath.c_str(), oof_defaults);
-	if (configFile) {
-		auto oof_state          = configFile->get_ll("oof_state");
-		auto allow_external_oof = configFile->get_ll("allow_external_oof");
-		auto external_audience  = configFile->get_ll("external_audience");
+	unsigned int oof_state  = configFile != nullptr ? configFile->get_ll("oof_state") : 0;
+	bool allow_external_oof = configFile != nullptr ? configFile->get_ll("allow_external_oof") : false;
+	bool external_audience  = configFile != nullptr ? configFile->get_ll("external_audience") : false;
+	if (true) {
 		switch(oof_state) {
 		case 1:
 			data.OofSettings->OofState = "Enabled"; break;
@@ -966,15 +966,20 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 			tDuration& Duration = data.OofSettings->Duration.emplace();
 			Duration.StartTime = clock::from_time_t(strtoll(start_time, nullptr, 0));
 			Duration.EndTime = clock::from_time_t(strtoll(end_time, nullptr, 0));
+		} else {
+			auto &dur = data.OofSettings->Duration.emplace();
+			dur.StartTime = clock::now();
+			dur.EndTime = dur.StartTime + std::chrono::days(1);
 		}
 		optional<string> reply = readMessageBody(maildir+"/config/internal-reply");
 		if (reply)
 			data.OofSettings->InternalReply.emplace(std::move(reply));
+		else
+			data.OofSettings->InternalReply.emplace(std::string{});
 		if ((reply = readMessageBody(maildir+"/config/external-reply")))
 			data.OofSettings->ExternalReply.emplace(std::move(reply));
-	} else {
-		data.OofSettings->OofState = "Disabled";
-		data.OofSettings->ExternalAudience = "None";
+		else
+			data.OofSettings->ExternalReply.emplace(std::string{});
 	}
 
 	//Finalize response

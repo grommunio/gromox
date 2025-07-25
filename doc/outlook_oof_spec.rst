@@ -28,10 +28,10 @@ Editing the FAI messages' ``PR_BODY`` will not change the automatic reply body.
 Changing e.g. the ``PR_MESSAGE_CLASS`` however will make Exchange stop sending
 the reply, even if it is changed back afterwards.
 
-Internet search suggests that OOF is set using the EWS API instead.
+OOF is get/set by Outlook using the EWS API instead.
 
-MAPI only gets gratitious copies, and only of certain information, making it
-practically useless.
+MAPI only gets gratitious copies, and only of certain information, making
+those copies practically useless.
 
 
 OOF levels
