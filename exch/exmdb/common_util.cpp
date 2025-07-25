@@ -4693,10 +4693,10 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 	return TRUE;
 }
 
-static errno_t copy_eml_ext(const char *old_midstr) try
+static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 {
 	auto basedir = exmdb_server::get_dir();
-	auto new_midstr = fmt::format("{}.{}.{}", time(nullptr), common_util_sequence_ID(), get_host_ID());
+	new_midstr = fmt::format("{}.{}.{}", time(nullptr), common_util_sequence_ID(), get_host_ID());
 	auto old_eml = fmt::format("{}/eml/{}", basedir, old_midstr);
 	auto new_eml = fmt::format("{}/eml/{}", basedir, new_midstr);
 	/*
@@ -4767,7 +4767,7 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	if (b_private) {
 		read_state = pstmt.col_uint64(2);
 		if (sqlite3_column_type(pstmt, 3) == SQLITE_NULL ||
-		    copy_eml_ext(pstmt.col_text(3)) != 0)
+		    copy_eml_ext(pstmt.col_text(3), mid_string) != 0)
 			mid_string.clear();
 	}
 
