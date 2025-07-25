@@ -1364,6 +1364,7 @@ static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from
 }
 
 static constexpr cfg_directive rp_config_defaults[] = {
+	{"ruleproc_debug", "0", CFG_BOOL},
 	{"outgoing_smtp_url", "sendmail://localhost"},
 	CFG_TABLE_END,
 };

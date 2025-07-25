@@ -1392,4 +1392,3 @@ extern GX_EXPORT BOOL exmdb_client_write_socket(int, std::string_view, long time
 
 extern GX_EXPORT void *(*exmdb_rpc_alloc)(size_t);
 extern GX_EXPORT void (*exmdb_rpc_free)(void *);
-extern GX_EXPORT unsigned int g_ruleproc_debug;

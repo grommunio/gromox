@@ -54,6 +54,18 @@ cannot be lower than 4s. The special value 0 disabled RPC timeout checking.
 .br
 Default: \fI0\fP
 .TP
+\fBruleproc_debug\fP
+Make the "TWOSTEP" Client-Side Inbox Rule Processor emit information about the
+conditions it is evaluating and the actions it is carrying out. The surrounding
+process also needs to have log level set to at least 6 (debug) to see anything,
+i.e. delivery.cfg:lda_log_level=6 in case of delivery(8gx), or \-\-loglevel=6
+in case of command-line tools like case of gromox\-mt2exm(8). [The Rule
+Processor implementation inside exmdb_provider(8gx) logs unconditionally, and
+its log messages will be seen, provided level 6 is set with
+http.cfg:http_log_level=6.]
+.br
+Default: \fIoff\fP
+.TP
 \fBreported_server_version\fP
 .br
 Default: \fI15.00.0847.4040\fP
