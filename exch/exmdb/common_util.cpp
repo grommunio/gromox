@@ -4729,14 +4729,6 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	uint64_t *pdst_mid, BOOL *pb_result, uint64_t *pchange_num,
 	uint32_t *pmessage_size)
 {
-	BOOL b_result;
-	uint64_t tmp_id;
-	uint64_t tmp_mid;
-	uint64_t last_id;
-	int is_associated, read_state = 0;
-	uint64_t change_num;
-	char sql_string[512];
-	uint32_t message_size;
 	auto b_private = exmdb_server::is_private();
 	std::string mid_string;
 	
@@ -4747,10 +4739,12 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	} else if (!common_util_allocate_eid(psqlite, pdst_mid)) {
 		return FALSE;
 	}
+	uint64_t change_num = 0;
 	if (cu_allocate_cn(psqlite, &change_num) != ecSuccess)
 		return FALSE;
 	if (pchange_num != nullptr)
 		*pchange_num = change_num;
+	char sql_string[512];
 	if (b_private)
 		snprintf(sql_string, std::size(sql_string), "SELECT is_associated, message_size,"
 			" read_state, mid_string FROM messages WHERE message_id=%llu",
@@ -4767,10 +4761,11 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 		*pb_result = FALSE;
 		return TRUE;
 	}
-	is_associated = sqlite3_column_int64(pstmt, 0);
-	message_size = sqlite3_column_int64(pstmt, 1);
+	bool read_state       = false;
+	bool is_associated    = pstmt.col_uint64(0);
+	uint64_t message_size = pstmt.col_uint64(1);
 	if (b_private) {
-		read_state = sqlite3_column_int64(pstmt, 2);
+		read_state = pstmt.col_uint64(2);
 		if (sqlite3_column_type(pstmt, 3) == SQLITE_NULL ||
 		    copy_eml_ext(pstmt.col_text(3)) != 0)
 			mid_string.clear();
@@ -4782,16 +4777,16 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	if (b_embedded) {
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO messages (message_id, parent_fid,"
 			" parent_attid, is_associated, change_number, message_size) "
-			"VALUES (%llu, NULL, %llu, %d, %llu, %u)", LLU{*pdst_mid},
-			LLU{parent_id}, 0, LLU{change_num}, message_size);
+			"VALUES (%llu, NULL, %llu, %d, %llu, %llu)", LLU{*pdst_mid},
+			LLU{parent_id}, 0, LLU{change_num}, LLU{message_size});
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	} else if (b_private) {
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO messages (message_id, "
 		         "parent_fid, parent_attid, is_associated, change_number, "
 		         "read_state, message_size, mid_string) VALUES (%llu, %llu,"
-		         " NULL, %d, %llu, %d, %u, ?)", LLU{*pdst_mid}, LLU{parent_id},
-		         is_associated, LLU{change_num}, read_state, message_size);
+		         " NULL, %d, %llu, %d, %llu, ?)", LLU{*pdst_mid}, LLU{parent_id},
+		         is_associated, LLU{change_num}, read_state, LLU{message_size});
 		pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
@@ -4805,8 +4800,8 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	} else {
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO messages (message_id, parent_fid,"
 		         " parent_attid, is_associated, change_number, message_size) "
-		         "VALUES (%llu, %llu, NULL, %d, %llu, %u)", LLU{*pdst_mid},
-		         LLU{parent_id}, is_associated, LLU{change_num}, message_size);
+		         "VALUES (%llu, %llu, NULL, %d, %llu, %llu)", LLU{*pdst_mid},
+		         LLU{parent_id}, is_associated, LLU{change_num}, LLU{message_size});
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
@@ -4832,10 +4827,10 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	if (pstmt2 == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
-		tmp_id = sqlite3_column_int64(pstmt, 0);
+		auto tmp_id = pstmt.col_uint64(0);
 		if (pstmt1.step() != SQLITE_DONE)
 			return FALSE;
-		last_id = sqlite3_last_insert_rowid(psqlite);
+		auto last_id = sqlite3_last_insert_rowid(psqlite);
 		sqlite3_bind_int64(pstmt2, 1, last_id);
 		sqlite3_bind_int64(pstmt2, 2, tmp_id);
 		if (pstmt2.step() != SQLITE_DONE)
@@ -4865,10 +4860,10 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	if (stm_sel_mid == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
-		tmp_id = sqlite3_column_int64(pstmt, 0);
+		uint64_t tmp_id = pstmt.col_uint64(0);
 		if (pstmt1.step() != SQLITE_DONE)
 			return FALSE;
-		last_id = sqlite3_last_insert_rowid(psqlite);
+		auto last_id = sqlite3_last_insert_rowid(psqlite);
 		sqlite3_bind_int64(pstmt2, 1, last_id);
 		sqlite3_bind_int64(pstmt2, 2, tmp_id);
 		if (pstmt2.step() != SQLITE_DONE)
@@ -4876,6 +4871,8 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 		sqlite3_reset(pstmt2);
 		stm_sel_mid.bind_int64(1, tmp_id);
 		if (stm_sel_mid.step() == SQLITE_ROW) {
+			uint64_t tmp_mid = 0;
+			BOOL b_result = false;
 			if (!common_util_copy_message_internal(psqlite, TRUE,
 			    stm_sel_mid.col_int64(0), last_id, &tmp_mid,
 			    &b_result, nullptr, nullptr))
