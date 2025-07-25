@@ -48,6 +48,12 @@ message. \fIn\fP is 1-based.
 Treat all file arguments as iCalendar input. This is the default if the program
 was invoked as gromox\-ical2mt.
 .TP
+\fB\-\-loglevel\fP \fIn\fP Maximum verbosity of general logging (not connected
+to \fB\-p\fP, \fB\-t\fP or \fB\-v\fP). 1=crit, 2=error, 3=warn, 4=notice,
+5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
+.TP
 \fB\-\-mail\fP
 Treat all file arguments as Internet Mail input. This is the default if the
 program was invoked as gromox\-eml2mt.

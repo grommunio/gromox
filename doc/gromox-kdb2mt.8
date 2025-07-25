@@ -52,6 +52,12 @@ Show a diagnostic tree view of the source data as it is being read.
 Print message count progress while processing larger folders. This option has
 no effect if (the even more verbose) \fB\-t\fP option was used.
 .TP
+\fB\-\-loglevel\fP \fIn\fP Maximum verbosity of general logging (not connected
+to \fB\-p\fP, \fB\-t\fP or \fB\-v\fP). 1=crit, 2=error, 3=warn, 4=notice,
+5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
+.TP
 \fB\-\-user\-map\fP \fIfile\fP
 Use the given file to perform ACL mapping. See section "ACL Extraction" below
 for details.

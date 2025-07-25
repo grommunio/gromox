@@ -45,5 +45,11 @@ properties to stderr.
 \fB\-u\fP [\fIuser\fP]\fB@\fIdomin.example\fP
 Source mail store from which to load the message from. For the public folder of
 a domain, leave out the local part, i.e. use \fB@\fP\fIdomain.example\fP.
+.TP
+\fB\-\-loglevel\fP \fIn\fP Maximum verbosity of general logging (not connected
+to \fB\-p\fP, \fB\-t\fP or \fB\-v\fP). 1=crit, 2=error, 3=warn, 4=notice,
+5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
 .SH See also
 \fBgromox\fP(7), \fBgromox\-eml2mt\fP(8)

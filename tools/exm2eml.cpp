@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -42,7 +42,7 @@ enum {
 
 static std::shared_ptr<config_file> g_config_file;
 static char *g_username;
-static unsigned int g_export_mode = EXPORT_MAIL;
+static unsigned int g_export_mode = EXPORT_MAIL, g_mlog_level = MLOG_DEFAULT_LEVEL;
 static int g_allday_mode = -1;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'Y', HXTYPE_INT, &g_allday_mode, nullptr, nullptr, 0, "Allday emission mode (default=-1, YMDHMS=0, YMD=1)"},
@@ -50,6 +50,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to export from", "EMAILADDR"},
 	{"ical", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_ICAL, "Export as calendar object"},
+	{"loglevel", 0, HXTYPE_UINT, &g_mlog_level, {}, {}, {}, "Basic loglevel of the program", "N"},
 	{"mail", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_MAIL, "Export as RFC5322 mail"},
 	{"mt", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_GXMT, "Export as Gromox mailbox transfer format"},
 	{"tnef", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_TNEF, "Export as TNEF object"},
@@ -127,6 +128,9 @@ int main(int argc, char **argv) try
 	}
 	if (g_allday_mode >= 0)
 		g_oxcical_allday_ymd = g_allday_mode;
+	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
+	if (iconv_validate() != 0)
+		return EXIT_FAILURE;
 	textmaps_init(PKGDATADIR);
 	g_config_file = config_file_prg(nullptr, "midb.cfg",
 	                exm2eml_cfg_defaults);

@@ -83,7 +83,7 @@ struct edb_folder {
 
 }
 
-static unsigned int g_list_mbox;
+static unsigned int g_list_mbox, g_mlog_level = MLOG_DEFAULT_LEVEL;
 static char *g_extract_mbox;
 
 static constexpr HXoption g_options_table[] = {
@@ -91,6 +91,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'x', HXTYPE_STRING, &g_extract_mbox, nullptr, nullptr, 0, "Extract the given mailbox", "ID/RK/GUID"},
+	{"loglevel", 0, HXTYPE_UINT, &g_mlog_level, {}, {}, {}, "Basic loglevel of the program", "N"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -676,6 +677,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 #endif
+	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	textmaps_init(PKGDATADIR);

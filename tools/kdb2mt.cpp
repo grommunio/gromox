@@ -145,6 +145,7 @@ static int do_item(driver &, unsigned int, const parent_desc &, kdb_item &);
 static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
 static char *g_srcguid, *g_srcmbox, *g_srcmro, *g_user_map_file;
 static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20, g_verbose;
+static unsigned int g_mlog_level = MLOG_DEFAULT_LEVEL;
 static enum aclconv g_acl_conv = aclconv::automatic;
 static int g_with_hidden = -1;
 static std::vector<uint32_t> g_only_objs;
@@ -180,6 +181,7 @@ static constexpr HXoption g_options_table[] = {
 	{"acl", 0, HXTYPE_STRING, nullptr, nullptr, acl_cb, 0, "Conversion for ACLs (auto, no/noextract, extract, convert)", "MODE"},
 	{"l1", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L1 fan number for attachment directories of type files_v1 (default: 10)", "N"},
 	{"l2", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L2 fan number for attachment directories of type files_v1 (default: 20)", "N"},
+	{"loglevel", 0, HXTYPE_UINT, &g_mlog_level, {}, {}, {}, "Basic loglevel of the program", "N"},
 	{"mbox-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Lookup source mailbox by GUID", "GUID"},
 	{"mbox-mro", 0, HXTYPE_STRING, &g_srcmro, nullptr, nullptr, 0, "Lookup source mailbox by MRO", "NAME"},
 	{"mbox-name", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Lookup source mailbox by username (requires --user-map)", "NAME"},
@@ -1467,6 +1469,7 @@ int main(int argc, char **argv)
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
+	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	textmaps_init(PKGDATADIR);

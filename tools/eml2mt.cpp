@@ -45,13 +45,14 @@ enum {
 };
 
 static unsigned int g_import_mode = IMPORT_MAIL;
-static unsigned int g_oneoff, g_attach_decap;
+static unsigned int g_oneoff, g_attach_decap, g_mlog_level = MLOG_DEFAULT_LEVEL;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'P', HXTYPE_NONE, &g_oxvcard_pedantic, nullptr, nullptr, 0, "Enable pedantic import mode"},
 	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{"decap", 0, HXTYPE_UINT, &g_attach_decap, {}, {}, {}, "Decapsulate embedded message (1-based index)", "IDX"},
 	{"ical", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_ICAL, "Treat input as iCalendar"},
+	{"loglevel", 0, HXTYPE_UINT, &g_mlog_level, {}, {}, {}, "Basic loglevel of the program", "N"},
 	{"mail", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_MAIL, "Treat input as Internet Mail"},
 	{"mbox", 0, HXTYPE_VAL, &g_import_mode, {}, {}, IMPORT_MBOX, "Treat input as Unix mbox"},
 	{"oneoff", 0, HXTYPE_NONE, &g_oneoff, nullptr, nullptr, 0, "Resolve addresses to ONEOFF rather than EX addresses"},
@@ -309,6 +310,7 @@ int main(int argc, char **argv) try
 		terse_help();
 		return EXIT_FAILURE;
 	}
+	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	textmaps_init(PKGDATADIR);

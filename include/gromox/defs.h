@@ -51,6 +51,7 @@ enum gx_loglevel {
 	LV_NOTICE = 4,
 	LV_INFO = 5,
 	LV_DEBUG = 6,
+	MLOG_DEFAULT_LEVEL = LV_NOTICE,
 };
 
 enum {

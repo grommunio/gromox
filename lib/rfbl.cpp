@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -87,7 +87,7 @@ class hxmc_deleter {
 
 }
 
-static unsigned int g_max_loglevel = LV_NOTICE;
+static unsigned int g_max_loglevel = MLOG_DEFAULT_LEVEL;
 static std::mutex g_log_mutex;
 static std::unique_ptr<FILE, file_deleter> g_logfp;
 static bool g_log_tty, g_log_syslog;

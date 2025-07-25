@@ -131,7 +131,7 @@ enum {
 
 static std::vector<uint32_t> g_only_objs;
 static gi_folder_map_t g_folder_map;
-static unsigned int g_splice;
+static unsigned int g_splice, g_mlog_level = MLOG_DEFAULT_LEVEL;
 static int g_with_hidden = -1, g_with_assoc;
 static const char *g_ascii_charset;
 static size_t g_msg_count;
@@ -145,6 +145,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Splice PFF objects into existing store hierarchy"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
+	{"loglevel", 0, HXTYPE_UINT, &g_mlog_level, {}, {}, {}, "Basic loglevel of the program", "N"},
 	{"with-assoc", 0, HXTYPE_VAL, &g_with_assoc, nullptr, nullptr, 1, "Do import FAI messages"},
 	{"without-assoc", 0, HXTYPE_VAL, &g_with_assoc, nullptr, nullptr, 0, "Skip FAI messages [default]"},
 	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
@@ -1294,6 +1295,7 @@ int main(int argc, char **argv)
 			"You probably wanted to redirect output into a file or pipe.\n");
 		return EXIT_FAILURE;
 	}
+	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	textmaps_init(PKGDATADIR);
