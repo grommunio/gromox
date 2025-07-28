@@ -1380,6 +1380,7 @@ BOOL SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 	if (cfg == nullptr)
 		/* e.g. permission error */
 		return false;
+	g_ruleproc_debug = parse_bool(cfg->get_value("ruleproc_debug"));
 	auto str = cfg->get_value("outgoing_smtp_url");
 	if (str != nullptr) {
 		try {
