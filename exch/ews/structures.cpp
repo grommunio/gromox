@@ -506,8 +506,10 @@ sFolderEntryId::sFolderEntryId(const void* data, uint64_t size)
 void sFolderEntryId::init(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
-	if (size > std::numeric_limits<uint32_t>::max())
+	if (size > std::numeric_limits<uint32_t>::max() || (data == nullptr && size > 0))
 		throw EWSError::InvalidFolderId(E3050);
+	if (data == nullptr)
+		return;
 	ext_pull.init(data, size, EWSContext::alloc, 0);
 	TRY(ext_pull.g_folder_eid(this), E3148, "ErrorInvalidFolderId");
 }
@@ -561,7 +563,8 @@ sMessageEntryId::sMessageEntryId(const TAGGED_PROPVAL& tp)
 	if (PROP_TYPE(tp.proptag) != PT_BINARY)
 		throw DispatchError(E3082);
 	const BINARY* bin = static_cast<const BINARY*>(tp.pvalue);
-	init(bin->pv, bin->cb);
+	if (bin != nullptr)
+		init(bin->pv, bin->cb);
 }
 
 /**
@@ -573,8 +576,10 @@ sMessageEntryId::sMessageEntryId(const TAGGED_PROPVAL& tp)
 void sMessageEntryId::init(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
-	if (size > std::numeric_limits<uint32_t>::max())
+	if (size > std::numeric_limits<uint32_t>::max() || (data == nullptr && size > 0))
 		throw EWSError::InvalidId(E3050);
+	if (data == nullptr)
+		return;
 	ext_pull.init(data, size, EWSContext::alloc, 0);
 	TRY(ext_pull.g_msg_eid(this), E3149, "ErrorInvalidId");
 }
