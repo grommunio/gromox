@@ -69,6 +69,7 @@ struct dir_tree {
 	void load_from_memfile(const std::vector<enum_folder_t> &);
 	DIR_NODE *match(const char *path);
 	static DIR_NODE *get_child(DIR_NODE *);
+	bool has_children(DIR_NODE *x) const { return get_child(x) != nullptr; }
 
 	SIMPLE_TREE stree{};
 };
@@ -1620,7 +1621,7 @@ int icp_delete(int argc, char **argv, imap_context &ctx)
 		auto dh = folder_tree.match(argv[2]);
 		if (dh == nullptr)
 			return 1925;
-		if (folder_tree.get_child(dh) != nullptr)
+		if (folder_tree.has_children(dh))
 			return 1924;
 	}
 
@@ -1762,7 +1763,7 @@ int icp_list(int argc, char **argv, imap_context &ctx) try
 		if (!icp_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
 		auto pdir = folder_tree.match(sys_name.c_str());
-		auto have_cld = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
+		auto have_cld = pdir != nullptr && folder_tree.has_children(pdir);
 		auto buf = fmt::format("* LIST (\\Has{}Children{}{}) \"/\" {}\r\n",
 		           have_cld ? "" : "No",
 		           return_special && special != nullptr ? " " : "",
@@ -1815,7 +1816,7 @@ int icp_xlist(int argc, char **argv, imap_context &ctx) try
 			continue;
 		auto special = special_folder(fentry.first);
 		auto pdir = folder_tree.match(sys_name.c_str());
-		auto have = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
+		auto have = pdir != nullptr && folder_tree.has_children(pdir);
 		auto buf  = fmt::format("* XLIST (\\Has{}Children{}{}) \"/\" {}\r\n",
 		            have ? "" : "No",
 		            special != nullptr ? " " : "",
@@ -1879,7 +1880,7 @@ int icp_lsub(int argc, char **argv, imap_context &ctx) try
 		if (!icp_wildcard_match(sys_name.c_str(), search_pattern.c_str()))
 			continue;
 		auto pdir = folder_tree.match(sys_name.c_str());
-		auto have = pdir != nullptr && folder_tree.get_child(pdir) != nullptr;
+		auto have = pdir != nullptr && folder_tree.has_children(pdir);
 		auto buf  = fmt::format("* LSUB (\\Has{}Children) \"/\" {}\r\n",
 		            have ? "" : "No", quote_encode(sys_name));
 		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
