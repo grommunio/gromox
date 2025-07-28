@@ -959,8 +959,8 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 		data.OofSettings->ExternalAudience = external_audience ? "Known" : "All";
 	else
 		data.OofSettings->ExternalAudience = "None";
-	auto start_time = configFile->get_value("start_time");
-	auto end_time = configFile->get_value("end_time");
+	auto start_time = configFile != nullptr ? configFile->get_value("start_time") : nullptr;
+	auto end_time   = configFile != nullptr ? configFile->get_value("end_time") : nullptr;
 	if (start_time != nullptr && end_time != nullptr) {
 		tDuration& Duration = data.OofSettings->Duration.emplace();
 		Duration.StartTime = clock::from_time_t(strtoll(start_time, nullptr, 0));
