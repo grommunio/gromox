@@ -101,7 +101,7 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node &pnode,
 		auto pvalue = cu_alloc<uint32_t>();
 		if (pvalue == nullptr)
 			return FALSE;
-		*static_cast<uint32_t *>(pvalue) = !pnode.children() ?
+		*static_cast<uint32_t *>(pvalue) = pnode.children_count() == 0 ?
 			ab_tree::CF_RECIPIENTS | ab_tree::CF_UNMODIFIABLE : ab_tree::CF_ALL;
 		*ppvalue = pvalue;
 		return TRUE;
@@ -554,7 +554,7 @@ BOOL ab_tree_match_minids(const ab_tree::ab_base *pbase, uint32_t container_id,
 		}
 	} else {
 		ab_tree::ab_node node(pbase, container_id);
-		if (!node.exists() || !node.children()) {
+		if (!node.exists() || node.children_count() == 0) {
 			pminids->count = 0;
 			pminids->pl = NULL;
 			return TRUE;

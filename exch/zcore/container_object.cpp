@@ -806,8 +806,8 @@ BOOL container_object::get_user_table_num(uint32_t *pnum)
 		return FALSE;
 	*pnum = 0;
 	if (pcontainer->id.abtree_id.minid == ab_tree::minid::SC_GAL) {
-		auto gs = pbase->users();
-		auto hi = pbase->hidden();
+		auto gs = pbase->user_count();
+		auto hi = pbase->hidden_count();
 		*pnum = uint32_t(gs-hi);
 		return TRUE;
 	} else if (0 == pcontainer->id.abtree_id.minid) {
@@ -817,7 +817,7 @@ BOOL container_object::get_user_table_num(uint32_t *pnum)
 	ab_tree::ab_node node(pbase, pcontainer->id.abtree_id.minid);
 	if (!node.exists())
 		return TRUE;
-	*pnum = uint32_t(node.children());
+	*pnum = node.children_count();
 	return TRUE;
 }
 

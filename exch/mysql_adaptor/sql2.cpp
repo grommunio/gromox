@@ -319,11 +319,11 @@ static ssize_t userlist_parse(sqlconn &conn, const char *query,
 		u.maildir = row[4];
 		auto it = u.propvals.find(PR_ATTR_HIDDEN_GROMOX);
 		if (it != u.propvals.end()) {
-			u.hidden = strtoul(it->second.c_str(), nullptr, 0);
+			u.cloak_bits = strtoul(it->second.c_str(), nullptr, 0);
 		} else {
 			it = u.propvals.find(PR_ATTR_HIDDEN);
 			if (it != u.propvals.end())
-				u.hidden = strtoul(it->second.c_str(), nullptr, 0) ? AB_HIDE__DEFAULT : 0;
+				u.cloak_bits = strtoul(it->second.c_str(), nullptr, 0) ? AB_HIDE__DEFAULT : 0;
 		}
 		if (u.dtypx == DT_DISTLIST) {
 			u.list_type = static_cast<enum mlist_type>(strtoul(znul(row[5]), nullptr, 0));

@@ -211,7 +211,7 @@ class ab_base {
 
 	minid at(uint32_t) const;
 	const std::vector<std::string> &aliases(minid) const;
-	size_t children(minid) const;
+	size_t children_count(minid) const;
 	bool company_info(minid, std::string *, std::string *) const;
 	std::string displayname(minid) const;
 	bool dn(minid, std::string &) const;
@@ -226,7 +226,7 @@ class ab_base {
 	const sql_user *fetch_user(minid) const;
 	uint32_t get_leaves_num(minid) const;
 	inline const GUID &guid() const { return m_guid; }
-	size_t hidden() const;
+	size_t hidden_count() const;
 	uint32_t hidden(minid) const;
 	ec_error_t mdbdn(minid, std::string &) const;
 	bool mlist_info(minid, std::string *, std::string *, int *) const;
@@ -234,7 +234,7 @@ class ab_base {
 	minid resolve(const char *) const;
 	inline size_t size() const { return m_users.size() + domains.size(); }
 	abnode_type type(minid) const;
-	inline size_t users() const { return m_users.size(); }
+	inline size_t user_count() const { return m_users.size(); }
 	const char *user_info(minid, userinfo) const;
 
 	inline iterator begin() const { return iterator(this, domains.cbegin()); } ///< Iterator to beginning of address book
@@ -331,7 +331,7 @@ struct GX_EXPORT ab_node {
 		{ return base->FUNC(mid, std::forward<Args>(args)...); }
 
 	WRAP(aliases)
-	WRAP(children)
+	WRAP(children_count)
 	WRAP(company_info)
 	WRAP(displayname)
 	WRAP(dn)
@@ -358,7 +358,7 @@ struct GX_EXPORT ab_node {
 	iterator begin() const;
 	iterator end() const;
 	inline iterator find(minid) const { return mid.type() == minid::address ? std::find(begin(), end(), mid) : end(); }
-	inline minid at(uint32_t idx) const { return idx < children() ? this->operator[](idx) : minid(); }
+	inline minid at(uint32_t idx) const { return idx < children_count() ? this->operator[](idx) : minid(); }
 	minid operator[](uint32_t) const;
 };
 

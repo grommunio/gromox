@@ -634,7 +634,7 @@ ec_error_t nsp_interface_unbind(NSPI_HANDLE *phandle, uint32_t reserved)
 static void nsp_interface_position_in_list(const STAT *pstat,
     const ab_tree::ab_base *base, uint32_t *pout_row, uint32_t *pcount)
 {
-	*pcount = uint32_t(base->users());
+	*pcount = base->user_count();
 	if (pstat->cur_rec == ab_tree::minid::CURRENT) {
 		/* fractional positioning MS-OXNSPI v14 §3.1.4.5.2 */
 		*pout_row = *pcount * static_cast<double>(pstat->num_pos) / pstat->total_rec;
@@ -659,7 +659,7 @@ static void nsp_interface_position_in_list(const STAT *pstat,
 static void nsp_interface_position_in_table(const STAT *pstat,
     const ab_tree::ab_node &node, uint32_t *pout_row, uint32_t *pcount)
 {
-	*pcount = uint32_t(node.children());
+	*pcount = node.children_count();
 	if (pstat->cur_rec == ab_tree::minid::CURRENT) {
 		/* fractional positioning MS-OXNSPI v14 §3.1.4.5.2 */
 		*pout_row = std::min(*pcount, static_cast<uint32_t>(*pcount *
@@ -837,7 +837,7 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 		if (!node.exists())
 			return ecInvalidBookmark;
 		nsp_interface_position_in_table(pstat, node, &start_pos, &total);
-		if (!node.children()) {
+		if (node.children_count() == 0) {
 			nsp_trace(__func__, 1, pstat, nullptr, rowset);
 			*pprows = rowset;
 			return ecSuccess;
@@ -878,7 +878,7 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 				return result;
 		}
 	} else {
-		auto endidx = std::min(start_pos+tmp_count, uint32_t(node.children()));
+		auto endidx = std::min(start_pos + tmp_count, static_cast<uint32_t>(node.children_count()));
 		for (auto it = node.begin() + start_pos; it < node.begin() + endidx; ++it) {
 			ab_tree::ab_node child(pbase, *it);
 			auto prow = common_util_proprowset_enlarge(rowset);
@@ -1002,7 +1002,7 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		if (!node.exists())
 			return ecInvalidBookmark;
 		nsp_interface_position_in_table(pstat, node, &start_pos, &total);
-		if (!node.children())
+		if (node.children_count() == 0)
 			return ecNotFound;
 	}
 	if (total == 0)
@@ -1024,7 +1024,7 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		pstat->num_pos = uint32_t(it.pos());
 	} else {
 		ab_tree::ab_node node(pbase, pstat->container_id);
-		if (start_pos >= node.children())
+		if (start_pos >= node.children_count())
 			return ecNotFound;
 		auto it = std::lower_bound(node.begin()+start_pos, node.end(), ptarget->value.pstr,
 		                           [&](ab_tree::minid m1, const char *val)
@@ -1304,7 +1304,7 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			return ecInvalidBookmark;
 		uint32_t start_pos, total;
 		nsp_interface_position_in_table(pstat, node, &start_pos, &total);
-		if (start_pos >= node.children()) {
+		if (start_pos >= node.children_count()) {
 			/* MS-OXNSPI v14 §3.1.4.1.10 point 16 */
 			pstat->container_id = pstat->cur_rec;
 			*ppoutmids = outmids;
@@ -1734,7 +1734,7 @@ ec_error_t nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 		*cmp = dx == 0 ? 0 : dx < 0 ? -1 : 1;
 	} else {
 		ab_tree::ab_node node(base, pstat->container_id);
-		if (!node.exists() || !node.children())
+		if (!node.exists() || node.children_count() == 0)
 			return ecInvalidBookmark;
 		auto it1 = std::find(node.begin(), node.end(), mid1);
 		auto it2 = std::find(node.begin(), node.end(), mid2);
@@ -1846,7 +1846,7 @@ static ec_error_t nsp_interface_get_specialtables_from_node(
 	auto prow = common_util_proprowset_enlarge(prows);
 	if (prow == nullptr)
 		return ecServerOOM;
-	bool has_child = node.children() != 0;
+	bool has_child = node.children_count() > 0;
 	ab_tree::minid container_id = node.mid;
 	if (container_id == 0)
 		return ecError;

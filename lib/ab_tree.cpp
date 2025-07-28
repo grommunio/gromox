@@ -187,34 +187,34 @@ bool ab_base::await_load() const
 bool ab_base::load()
 {
 	std::lock_guard lock(m_lock, std::adopt_lock);
-	std::vector<unsigned int> domain_ids;
+	std::vector<unsigned int> dmemb;
 	if (m_base_id <= 0)
-		domain_ids.emplace_back(-m_base_id);
-	else if (!mysql_adaptor_get_org_domains(m_base_id, domain_ids))
+		dmemb.emplace_back(-m_base_id);
+	else if (!mysql_adaptor_get_org_domains(m_base_id, dmemb))
 		return false;
-	if (domain_ids.size() > minid::MAXVAL) // cannot reference more nodes
-		domain_ids.resize(minid::MAXVAL);
-	std::unordered_map<unsigned int, unsigned int> domain_map;
-	domains.reserve(domain_ids.size());
-	sql_domain domain;
-	for (unsigned int domain_id : domain_ids) try {
-		if (!mysql_adaptor_get_domain_users(domain_id, m_users))
+	if (dmemb.size() > minid::MAXVAL) // cannot reference more nodes
+		dmemb.resize(minid::MAXVAL);
+
+	std::unordered_map<unsigned int, unsigned int> domid_to_listidx;
+	domains.reserve(dmemb.size());
+	for (unsigned int domid : dmemb) try {
+		/* appends to m_users */
+		if (!mysql_adaptor_get_domain_users(domid, m_users))
 			return false;
-		domain_map[domain_id] = uint32_t(domains.size());
+		domid_to_listidx[domid] = uint32_t(domains.size());
 		ab_domain &domain = domains.emplace_back();
-		domain.id = domain_id;
-		mysql_adaptor_get_domain_info(domain_id, domain.info);
+		domain.id = domid;
+		mysql_adaptor_get_domain_info(domid, domain.info);
 	} catch (std::exception &) {
 		return false;
 	}
 	if (m_users.size() > minid::MAXVAL)
 		m_users.resize(minid::MAXVAL);
 	std::sort(m_users.begin(), m_users.end());
-	minid_idx_map.reserve(m_users.size() + domain_ids.size());
-	std::unordered_map<unsigned int, unsigned int> domainMap;
+	minid_idx_map.reserve(m_users.size() + dmemb.size());
 	for (size_t i = 0; i < m_users.size(); ++i) {
 		const sql_user &u = m_users[i];
-		domains[domain_map[u.domain_id]].userref.emplace_back(minid(minid::address, u.id));
+		domains[domid_to_listidx[u.domain_id]].userref.emplace_back(minid(minid::address, u.id));
 		minid_idx_map.emplace(minid(minid::address, u.id), i);
 	}
 	for (size_t i = 0; i < domains.size(); ++i)
@@ -514,7 +514,7 @@ uint32_t ab_base::get_leaves_num(minid mid) const
  *
  * @return     Number of users of a domain node or 0 for user nodes
  */
-size_t ab_base::children(minid mid) const
+size_t ab_base::children_count(minid mid) const
 {
 	const ab_domain *domain = fetch_domain(mid);
 	return domain ? domain->userref.size() : 0;
@@ -525,10 +525,10 @@ size_t ab_base::children(minid mid) const
  *
  * @return     Number of users with AB_HIDE_FROM_GAL flag set
  */
-size_t ab_base::hidden() const
+size_t ab_base::hidden_count() const
 {
-	return uint32_t(std::count_if(m_users.begin(), m_users.end(),
-	                              [](const sql_user& u) {return u.hidden & AB_HIDE_FROM_GAL;}));
+	return std::count_if(m_users.cbegin(), m_users.cend(),
+	       [](const sql_user &u) { return u.cloak_bits & AB_HIDE_FROM_GAL; });
 }
 
 /**
@@ -541,7 +541,7 @@ size_t ab_base::hidden() const
 uint32_t ab_base::hidden(minid mid) const
 {
 	const sql_user *user = fetch_user(mid);
-	return user ? user->hidden : 0;
+	return user != nullptr ? user->cloak_bits : 0;
 }
 
 /**

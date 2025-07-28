@@ -78,7 +78,8 @@ enum { /* for PR_ATTR_HIDDEN_*GROMOX* */
 
 /**
  * @dtypx:      %DT_* type as specified for PR_DISPLAY_TYPE_EX
- * @hidden:     hide bits for the address book
+ * @cloak_bits: various forms of invisibility of this object
+ *              in the address book provider
  * @list_type:	mlist_type value; only interpret field when
  * 		addr_type==ADDRESS_TYPE_MLIST.
  *
@@ -91,7 +92,7 @@ struct GX_EXPORT sql_user {
 	unsigned int addr_status = AF_USER_DELETED;
 	unsigned int domain_id = 0;
 	enum mlist_type list_type = mlist_type::normal;
-	uint32_t hidden = 0;
+	uint32_t cloak_bits = 0;
 	unsigned int list_priv = 0, homeserver_id = 0;
 	std::string username, homeserver, maildir;
 	std::vector<std::string> aliases; /* email addresses */
