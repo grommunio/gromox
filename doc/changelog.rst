@@ -1,5 +1,5 @@
-Development 2.46.17
-===================
+Gromox 2.47 (2025-07-31)
+========================
 
 Enhancements:
 
@@ -8,6 +8,9 @@ Enhancements:
 * oxcical: try to handle ICS files with missing VTIMEZONE blocks
 * oxcical: support YEARLY recurrences with BYDAY without BYSETPOS
 * imap: offer $Forwarded keyword for APPEND/STORE commands
+* gromox.cfg now has a ``ruleproc_debug`` directive (applies to
+  the TWOSTEP Processor only)
+* edb2mt, eml2mt, kdb2mt, oxm2mt, pff2mt, exm2eml: add ``--loglevel`` option
 
 Fixes:
 
@@ -23,6 +26,22 @@ Fixes:
 * exmdb: resolve a case of "INSERT INTO t... UNIQUE constraint failed" log
   message appearing when the Twostep Rule Processor and a Move rule is
   encountered and a MAPI client has a Content Table with Sort Order open.
+* exmdb: stop losing RFC5322 representation when a message is copied
+* HTML-to-Text conversion using w3m suffered from an encoding mismatch, which
+  was fixed.
+
+Changes:
+
+* oxcmail: upon ingestion, the ``Precedence`` header (RFC 2076) is now
+  transformed to the MAPI property ``PR_INTERNET_PRECEDENCE``.
+* exmdb_local: Out-of-office autoreply logic now recognizes
+  PR_INTERNET_PRECEDENCE values ``bulk`` and ``list`` to inhibit certain and
+  all responses, respectively.
+* oxcmail: upon ingestion, the ``Auto-Submitted`` header (RFC 3834) and
+  ``List-Help``, ``List-Subscribe`` and ``List-Unsubscribe`` are now
+  transformed into the MAPI property ``PR_AUTO_RESPONSE_SUPPRESS``.
+* ews: unconditionally emit all OOF XML tags upon GetUserOofSettingsRequest to
+  workaround OL crash when modifying Out-of-office settings.
 
 
 Gromox 2.46 (2025-05-28)
