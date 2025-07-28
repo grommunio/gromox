@@ -36,17 +36,13 @@ dist_unit_DATA = system/gromox-cleaner.service system/gromox-cleaner.timer \
 	system/gromox-snapshot.service system/gromox-snapshot.timer \
 	system/gromox-timer.service system/gromox-zcore.service
 
-program_plugins = libgxs_mysql_adaptor.la libgromox_auth.la libgromox_authz.la ${mta_plugins} ${hpm_plugins} ${proc_plugins} ${svc_plugins}
-mta_plugins = \
+program_plugins = libgxs_mysql_adaptor.la libgromox_auth.la libgromox_authz.la \
 	libgxm_alias_resolve.la \
-	libgxm_exmdb_local.la
-hpm_plugins = \
-	libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oab.la libgxh_oxdisco.la
-proc_plugins = \
+	libgxm_exmdb_local.la \
+	libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oab.la libgxh_oxdisco.la \
 	libgxp_exchange_emsmdb.la \
 	libgxp_exchange_nsp.la \
-	libgxp_exchange_rfr.la
-svc_plugins = \
+	libgxp_exchange_rfr.la \
 	libgxs_exmdb_provider.la \
 	libgxs_event_proxy.la \
 	libgxs_event_stub.la \
