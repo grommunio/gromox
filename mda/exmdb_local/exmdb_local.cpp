@@ -14,6 +14,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <fmt/core.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <gromox/bounce_gen.hpp>
@@ -286,8 +287,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		else
 			hostname[std::size(hostname)-1] = '\0';
 	}
-	auto mid_string = std::to_string(time(nullptr)) + "." +
-	                  std::to_string(sequence_ID) + "." + hostname;
+	auto mid_string = fmt::format("{}.l{}.{}", time(nullptr), sequence_ID, hostname);
 	auto eml_path = mres.maildir + "/eml/" + mid_string;
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	if (fd.get() < 0) {

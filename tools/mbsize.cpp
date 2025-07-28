@@ -88,6 +88,18 @@ static double ratio_sav(double old, double nu)
 	return 100 * (1 - nu / old);
 }
 
+static bool looks_like_midb_generated(const char *name)
+{
+	auto dot = strchr(name, '.');
+	if (dot == nullptr)
+		return false;
+	if (dot[1] == 'm' && strtoul(&dot[2], nullptr, 10) != 0)
+		return true;
+	if (class_match_suffix(name, ".midb") == 0)
+		return true;
+	return false;
+}
+
 static struct rfc_stat rfc_count(const std::string &dirname)
 {
 	struct rfc_stat out;
@@ -111,7 +123,7 @@ static struct rfc_stat rfc_count(const std::string &dirname)
 		if (fstatat(dfd, name, &sb, 0) != 0 ||
 		    !S_ISREG(sb.st_mode))
 			continue;
-		if (class_match_suffix(name, ".midb") == 0)
+		if (looks_like_midb_generated(name))
 			out.sent += sb;
 		else
 			out.recv += sb;

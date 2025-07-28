@@ -103,7 +103,7 @@ libgxm_alias_resolve_la_LIBADD = -lpthread ${libHX_LIBS} ${mysql_LIBS} libgromox
 EXTRA_libgxm_alias_resolve_la_DEPENDENCIES = default.sym
 libgxm_exmdb_local_la_SOURCES = lib/bounce_mda.cpp mda/exmdb_local/auto_response.cpp mda/exmdb_local/bounce_audit.cpp mda/exmdb_local/bounce_producer.cpp mda/exmdb_local/cache_queue.cpp mda/exmdb_local/exmdb_local.cpp mda/exmdb_local/exmdb_local.hpp
 libgxm_exmdb_local_la_LDFLAGS = ${default_SYFLAGS}
-libgxm_exmdb_local_la_LIBADD = -lpthread ${libHX_LIBS} ${jsoncpp_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
+libgxm_exmdb_local_la_LIBADD = -lpthread ${fmt_LIBS} ${libHX_LIBS} ${jsoncpp_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
 EXTRA_libgxm_exmdb_local_la_DEPENDENCIES = default.sym
 
 pop3_SOURCES = mra/pop3/cmd.cpp mra/pop3/main.cpp mra/pop3/parser.cpp mra/pop3/pop3.hpp mra/pop3/resource.cpp

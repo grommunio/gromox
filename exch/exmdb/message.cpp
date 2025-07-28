@@ -3099,9 +3099,8 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 				tmp_path1, eaddr.c_str());
 			continue;
 		}
-		auto mid_string = std::to_string(time(nullptr)) + "." +
-				  std::to_string(common_util_sequence_ID()) + "." +
-				  get_host_ID();
+		auto mid_string = fmt::format("{}.x{}.{}", time(nullptr),
+		                  common_util_sequence_ID(), get_host_ID());
 		auto eml_path = maildir + "/eml/"s + mid_string;
 		auto ret = HX_copy_file(tmp_path1, eml_path.c_str(), 0);
 		if (ret < 0) {
@@ -3406,9 +3405,8 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 		if (mysql_adaptor_meta(eaddr.c_str(), WANTPRIV_METAONLY, mres) != 0)
 			continue;
 		auto maildir = mres.maildir.c_str();
-		auto mid_string = std::to_string(time(nullptr)) + "." +
-				  std::to_string(common_util_sequence_ID()) + "." +
-				  get_host_ID();
+		auto mid_string = fmt::format("{}.x{}.{}", time(nullptr),
+		                  common_util_sequence_ID(), get_host_ID());
 		auto eml_path = maildir + "/eml/"s + mid_string;
 		auto ret = HX_copy_file(tmp_path1, eml_path.c_str(), 0);
 		if (ret < 0) {

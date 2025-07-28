@@ -2113,7 +2113,7 @@ static int icp_long_append_begin2(int argc, char **argv, imap_context &ctx) try
 				return 1800 | DISPATCH_BREAK;
 	}
 	auto pcontext = &ctx;
-	pcontext->mid = fmt::format("{}.{}.{}",
+	pcontext->mid = fmt::format("{}.i{}.{}",
 	                time(nullptr), imap_parser_get_sequence_ID(),
 	                znul(g_config_file->get_value("host_id")));
 	ctx.append_stream.clear();

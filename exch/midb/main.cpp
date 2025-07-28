@@ -53,6 +53,7 @@ void (*system_services_broadcast_event)(const char*);
 
 static gromox::atomic_bool g_main_notify_stop, g_listener_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
+std::string g_host_id;
 static char *opt_config_file;
 static unsigned int opt_show_version;
 static gromox::atomic_bool g_hup_signalled;
@@ -306,6 +307,18 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE; /* e.g. permission error */
 	if (!midb_reload_config(gxconfig, pconfig))
 		return EXIT_FAILURE;
+
+	auto str_val = g_config_file->get_value("host_id");
+	if (str_val == nullptr) {
+		std::string hn;
+		auto ret = canonical_hostname(hn);
+		if (ret != 0)
+			return EXIT_FAILURE;
+		g_config_file->set_value("host_id", hn.c_str());
+		g_host_id = std::move(hn);
+	} else {
+		g_host_id = str_val;
+	}
 
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
 	mlog(LV_INFO, "system: exmdb proxy connection number is %d", proxy_num);

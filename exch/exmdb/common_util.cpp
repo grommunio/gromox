@@ -4696,7 +4696,7 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 {
 	auto basedir = exmdb_server::get_dir();
-	new_midstr = fmt::format("{}.{}.{}", time(nullptr), common_util_sequence_ID(), get_host_ID());
+	new_midstr = fmt::format("{}.x{}.{}", time(nullptr), common_util_sequence_ID(), get_host_ID());
 	auto old_eml = fmt::format("{}/eml/{}", basedir, old_midstr);
 	auto new_eml = fmt::format("{}/eml/{}", basedir, new_midstr);
 	/*

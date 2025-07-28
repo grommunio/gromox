@@ -1368,7 +1368,7 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 			return;
 		digest["file"] = "";
 		djson = json_to_str(digest);
-		e.midstr = std::to_string(time(nullptr)) + "." + std::to_string(++g_sequence_id) + ".midb";
+		e.midstr = fmt::format("{}.m{}.{}", time(nullptr), ++g_sequence_id, g_host_id);
 		if (!exmdb_client->imapfile_write(dir, "ext", e.midstr, djson)) {
 			mlog(LV_ERR, "E-1770: imapfile_write %s/ext/%s incomplete", dir, e.midstr.c_str());
 			return;
