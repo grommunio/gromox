@@ -3825,10 +3825,7 @@ BOOL exmdb_server::write_message_v2(const char *dir, cpid_t cpid,
     uint64_t folder_id, const MESSAGE_CONTENT *pmsgctnt,
     uint64_t *outmid, uint64_t *outcn, ec_error_t *pe_result)
 {
-	BOOL b_exist;
-	uint64_t mid_val = 0, cn_val = 0, fid_val1 = 0;
-	
-	b_exist = FALSE;
+	BOOL b_exist = false;
 	auto pmid = pmsgctnt->proplist.get<uint64_t>(PidTagMid);
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -3843,12 +3840,13 @@ BOOL exmdb_server::write_message_v2(const char *dir, cpid_t cpid,
 	}
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	if (NULL != pmid) {
+		uint64_t parent_fid = 0;
 		if (!common_util_get_message_parent_folder(pdb->psqlite,
-		    rop_util_get_gc_value(*pmid), &fid_val1))
+		    rop_util_get_gc_value(*pmid), &parent_fid))
 			return FALSE;	
-		if (0 != fid_val1) {
+		if (parent_fid != 0) {
 			b_exist = TRUE;
-			if (fid_val != fid_val1) {
+			if (fid_val != parent_fid) {
 				*pe_result = ecRpcFailed;
 				return TRUE;
 			}
@@ -3861,9 +3859,9 @@ BOOL exmdb_server::write_message_v2(const char *dir, cpid_t cpid,
 
 	bool partial = false;
 	if (!message_write_message(false, pdb->psqlite, cpid, false,
-	    fid_val, pmsgctnt, &mid_val, &cn_val, &partial))
+	    fid_val, pmsgctnt, outmid, outcn, &partial))
 		return FALSE;
-	if (0 == mid_val) {
+	if (*outmid == 0) {
 		// auto rollback at end of scope
 		*pe_result = ecRpcFailed;
 		return false;
@@ -3873,12 +3871,12 @@ BOOL exmdb_server::write_message_v2(const char *dir, cpid_t cpid,
 	db_conn::NOTIFQ notifq;
 	if (b_exist) {
 		pdb->proc_dynamic_event(cpid, dynamic_event::modify_msg,
-			fid_val, mid_val, 0, *dbase, notifq);
-		pdb->notify_message_modification(fid_val, mid_val, *dbase, notifq);
+			fid_val, *outmid, 0, *dbase, notifq);
+		pdb->notify_message_modification(fid_val, *outmid, *dbase, notifq);
 	} else {
 		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg, fid_val,
-			mid_val, 0, *dbase, notifq);
-		pdb->notify_message_creation(fid_val, mid_val, *dbase, notifq);
+			*outmid, 0, *dbase, notifq);
+		pdb->notify_message_creation(fid_val, *outmid, *dbase, notifq);
 	}
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
