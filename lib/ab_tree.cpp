@@ -214,8 +214,12 @@ bool ab_base::load()
 	minid_idx_map.reserve(m_users.size() + dmemb.size());
 	for (size_t i = 0; i < m_users.size(); ++i) {
 		const sql_user &u = m_users[i];
-		domains[domid_to_listidx[u.domain_id]].userref.emplace_back(minid(minid::address, u.id));
-		minid_idx_map.emplace(minid(minid::address, u.id), i);
+		minid mid(minid::address, u.id);
+		if (!(u.cloak_bits & AB_HIDE_FROM_GAL)) {
+			filtered_gal.emplace_back(mid);
+			domains[domid_to_listidx[u.domain_id]].userref.emplace_back(mid);
+		}
+		minid_idx_map.emplace(mid, i);
 	}
 	for (size_t i = 0; i < domains.size(); ++i)
 		minid_idx_map.emplace(minid(minid::domain, domains[i].id), i);
@@ -250,6 +254,11 @@ minid ab_base::at(uint32_t idx) const
 {
 	return idx < domains.size() ? minid(minid::domain, domains[idx].id) :
 	       idx - domains.size() < m_users.size() ? minid(minid::address, m_users[idx-domains.size()].id) : minid();
+}
+
+minid ab_base::at_filtered(uint32_t idx) const
+{
+	return idx < filtered_gal.size() ? minid(minid::address, filtered_gal[idx]) : minid();
 }
 
 /**
@@ -739,6 +748,12 @@ ab_base::iterator ab_base::find(minid mid) const
 		return end();
 	return mid.type() == minid::domain ? iterator(this, domains.begin() + it->second) :
 	       iterator(this, m_users.begin() + it->second);
+}
+
+uint32_t ab_base::pos_in_filtered_users(minid mid) const
+{
+	auto it = std::find(filtered_gal.cbegin(), filtered_gal.cend(), mid);
+	return it != filtered_gal.cend() ? it - filtered_gal.cbegin() : 0;
 }
 
 /**

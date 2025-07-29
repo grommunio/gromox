@@ -245,6 +245,12 @@ class ab_base {
 	inline iterator uend() const { return iterator(this, m_users.cend()); } ///< Iterator to end of user list
 	iterator find(minid) const;
 
+	inline auto ufbegin() const { return filtered_gal.cbegin(); }
+	inline auto ufend() const { return filtered_gal.cend(); }
+	inline size_t filtered_user_count() const { return filtered_gal.size(); }
+	minid at_filtered(uint32_t pos) const;
+	uint32_t pos_in_filtered_users(minid) const;
+
 	static display_type dtypx_to_etyp(display_type);
 
 	private:
@@ -263,6 +269,7 @@ class ab_base {
 	int m_base_id = 0;
 	std::vector<ab_domain> domains; ///< list of domains belonging to the base
 	std::vector<sql_user> m_users; ///< list of users from all those domains, sorted by displayname
+	std::vector<minid> filtered_gal;
 	std::unordered_map<minid, uint32_t> minid_idx_map; ///< map from minid to index in domain/user list
 	mutable std::mutex m_lock;
 	std::atomic<Status> m_status{Status::CONSTRUCTING};

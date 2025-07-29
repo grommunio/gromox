@@ -63,7 +63,6 @@ struct GX_EXPORT sql_domain {
  * %AB_HIDE_FROM_AL:	hide from Address Lists, EXC style (container != 0)
  * %AB_HIDE_DELEGATE:	hide from Delegate List
  * %AB_HIDE_RESOLVE:	hide from name resolution ("Check Names" in g-web)
- * %AB_HIDE_MINID:	disable resolution via MINID (experimental)
  *
  * %AB_HIDE__DEFAULT:	default action if AB encounters PR_ATTR_HIDDEN
  */

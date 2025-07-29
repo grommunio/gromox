@@ -634,7 +634,7 @@ ec_error_t nsp_interface_unbind(NSPI_HANDLE *phandle, uint32_t reserved)
 static void nsp_interface_position_in_list(const STAT *pstat,
     const ab_tree::ab_base *base, uint32_t *pout_row, uint32_t *pcount)
 {
-	*pcount = base->user_count();
+	*pcount = base->filtered_user_count();
 	if (pstat->cur_rec == ab_tree::minid::CURRENT) {
 		/* fractional positioning MS-OXNSPI v14 §3.1.4.5.2 */
 		*pout_row = *pcount * static_cast<double>(pstat->num_pos) / pstat->total_rec;
@@ -647,12 +647,12 @@ static void nsp_interface_position_in_list(const STAT *pstat,
 	} else if (pstat->cur_rec == ab_tree::minid::END_OF_TABLE) {
 		*pout_row = *pcount;
 	} else {
-		auto it = base->find(pstat->cur_rec);
 		/*
 		 * When not found, the position is undefined.
-		 * To avoid problems we will use first row.
+		 * To avoid problems, Gromox will use the first row.
+		 * (pos_in_filtered has been made to do this directly)
 		 */
-		*pout_row = it != base->end() && it->type() == ab_tree::minid::address ? it.pos()-base->ubegin().pos() : 0;
+		*pout_row = base->pos_in_filtered_users(pstat->cur_rec);
 	}
 }
 
@@ -671,14 +671,15 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 		*pout_row = *pcount;
 	} else {
 		auto it = std::find(node.begin(), node.end(), pstat->cur_rec);
-		if (it == node.end() || node.base->hidden(pstat->cur_rec) & AB_HIDE_FROM_AL)
+		if (it == node.end() || node.base->hidden(pstat->cur_rec) & AB_HIDE_FROM_AL) {
 			/*
 			 * In this case, the position is undefined.
 			 * To avoid problems, we will use the first row.
 			 */
 			*pout_row = 0;
-		else
-			*pout_row = uint32_t(std::distance(node.begin(), it));
+			return;
+		}
+		*pout_row = std::distance(node.begin(), it);
 	}
 }
 
@@ -867,7 +868,7 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 		return ecSuccess;
 	}
 	if (0 == pstat->container_id) {
-		for (auto it = pbase->ubegin() + start_pos; it != pbase->ubegin() + start_pos + tmp_count; ++it) {
+		for (auto it = pbase->ufbegin() + start_pos; it != pbase->ufbegin() + start_pos + tmp_count; ++it) {
 			auto prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr || common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
@@ -894,7 +895,9 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	if (start_pos + tmp_count >= total) {
 		pstat->cur_rec = ab_tree::minid::END_OF_TABLE;
 	} else {
-		pstat->cur_rec = pstat->container_id == 0 ? pbase->at(start_pos + tmp_count) : node.at(start_pos + tmp_count);
+		pstat->cur_rec = pstat->container_id == 0 ?
+		                 pbase->at_filtered(start_pos + tmp_count) :
+		                 node.at(start_pos + tmp_count);
 		if (0 == pstat->cur_rec) {
 			pstat->cur_rec = ab_tree::minid::END_OF_TABLE;
 			start_pos = total;
@@ -1010,10 +1013,10 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 
 	start_pos = 0;
 	if (0 == pstat->container_id) {
-		auto it = std::lower_bound(pbase->ubegin(), pbase->uend(), ptarget->value.pstr,
+		auto it = std::lower_bound(pbase->ufbegin(), pbase->ufend(), ptarget->value.pstr,
 		                           [&](ab_tree::minid m1, const char *val)
 		                           { return strcasecmp(pbase->displayname(m1).c_str(), val) < 0; });
-		if (it == pbase->uend())
+		if (it == pbase->ufend())
 			return ecNotFound;
 		auto prow = common_util_proprowset_enlarge(rowset);
 		if (prow == nullptr || common_util_propertyrow_init(prow) == nullptr)
@@ -1021,7 +1024,7 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		if (nsp_interface_fetch_row({pbase, *it}, true, pstat->codepage, pproptags, prow) != ecSuccess)
 			return ecError;
 		pstat->cur_rec = *it;
-		pstat->num_pos = uint32_t(it.pos());
+		pstat->num_pos = it - pbase->ufbegin();
 	} else {
 		ab_tree::ab_node node(pbase, pstat->container_id);
 		if (start_pos >= node.children_count())
