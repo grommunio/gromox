@@ -1,4 +1,20 @@
-Gromox 2.47 (2025-07-31)
+Gromox 2.48 (2025-07-31)
+========================
+
+Enhancements:
+
+* gromox.cfg now has a ``ruleproc_debug`` directive (applies to the TWOSTEP
+  Processor only)
+
+Fixes:
+
+* ews: repair a nullptr dereference from the OOF XML change
+* exmdb: make EXRPC write_message_v2 fill in return MID/CN values
+* ab_tree: restore filtering of objects with AB_HIDE_FROM_GAL for NSP (this was
+  lost in a Global Address Book provider rewrite in 2.40)
+
+
+Gromox 2.47 (2025-07-28)
 ========================
 
 Enhancements:
@@ -8,8 +24,6 @@ Enhancements:
 * oxcical: try to handle ICS files with missing VTIMEZONE blocks
 * oxcical: support YEARLY recurrences with BYDAY without BYSETPOS
 * imap: offer $Forwarded keyword for APPEND/STORE commands
-* gromox.cfg now has a ``ruleproc_debug`` directive (applies to
-  the TWOSTEP Processor only)
 * edb2mt, eml2mt, kdb2mt, oxm2mt, pff2mt, exm2eml: add ``--loglevel`` option
 
 Fixes:
