@@ -1,3 +1,12 @@
+Development 2.48.5
+==================
+
+Fixes:
+
+* fnevObjectCreate notifications were not sent when a mail was processed
+  through TWOSTEP Rule Processor, now fixed
+
+
 Gromox 2.48 (2025-07-31)
 ========================
 

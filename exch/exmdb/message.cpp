@@ -70,6 +70,8 @@ struct DAM_NODE {
 
 struct message_node {
 	uint64_t folder_id = 0, message_id = 0;
+
+	auto operator<=>(const message_node &) const = default;
 };
 
 struct rulexec_in {
@@ -3563,8 +3565,8 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 	}
 	if (dam_list.size() > 0 && !message_make_dams(rp, std::move(dam_list), seen))
 		return ecError;
-	if (!b_del) try {
-		seen.msg.emplace_back(message_node{rp.folder_id, rp.message_id});
+	if (b_del) try {
+		std::erase(seen.msg, message_node{rp.folder_id, rp.message_id});
 		return ecSuccess;
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-2029: ENOMEM");
@@ -3777,6 +3779,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	mlog(LV_DEBUG, "to=%s from=%s fid=%llu delivery mid=%llu (%s)", account.c_str(),
 		znul(from_address), LLU{fid_val}, LLU{message_id},
 		partial ? " (partial only)" : "");
+
+	seen.msg.emplace_back(fid_val, message_id);
 	if (dlflags & DELIVERY_DO_RULES) {
 		auto ec = message_rule_new_message({from_address, account.c_str(), cpid, b_oof,
 		          pdb->psqlite, fid_val, message_id, std::move(digest)}, seen);
