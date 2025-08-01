@@ -442,6 +442,8 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	}
 	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
+	if (g_continuous_mode)
+		fprintf(stderr, "Continuous mode has been selcted: On errors, the import will NOT abort\n");
 	if (g_twostep)
 		g_do_delivery = true;
 	if (g_do_delivery && g_anchor_folder != 0)
