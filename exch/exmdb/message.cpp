@@ -2372,7 +2372,7 @@ static BOOL message_make_dem(const char *username,
 	BOOL b_result = false;
 	cu_set_property(MAPI_FOLDER, PRIVATE_FID_DEFERRED_ACTION, CP_ACP,
 		psqlite, PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
-	seen.msg.emplace_back(message_node{PRIVATE_FID_DEFERRED_ACTION, mid_val});
+	seen.msg.emplace_back(PRIVATE_FID_DEFERRED_ACTION, mid_val);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2026: ENOMEM");
@@ -2830,7 +2830,7 @@ static BOOL message_make_dam(const rulexec_in &rp,
 	BOOL b_result = false;
 	cu_set_property(MAPI_FOLDER, PRIVATE_FID_DEFERRED_ACTION, CP_ACP,
 		rp.sqlite, PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
-	seen.msg.emplace_back(message_node{PRIVATE_FID_DEFERRED_ACTION, mid_val});
+	seen.msg.emplace_back(PRIVATE_FID_DEFERRED_ACTION, mid_val);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2027: ENOMEM");
