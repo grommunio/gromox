@@ -3565,13 +3565,10 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 	}
 	if (dam_list.size() > 0 && !message_make_dams(rp, std::move(dam_list), seen))
 		return ecError;
-	if (b_del) try {
-		std::erase(seen.msg, message_node{rp.folder_id, rp.message_id});
+	if (!b_del)
 		return ecSuccess;
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-2029: ENOMEM");
-		return ecServerOOM;
-	}
+
+	std::erase(seen.msg, message_node{rp.folder_id, rp.message_id});
 	void *pvalue = nullptr;
 	if (!cu_get_property(MAPI_MESSAGE, rp.message_id, CP_ACP, rp.sqlite,
 	    PR_MESSAGE_SIZE, &pvalue))
