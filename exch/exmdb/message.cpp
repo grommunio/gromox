@@ -3822,8 +3822,9 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
  *   replaced.
  * - If PR_LAST_MODIFICATION_TIME is not present, it will be set to now().
  */
-BOOL exmdb_server::write_message_v2(const char *dir, cpid_t cpid,
+BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
     uint64_t folder_id, const MESSAGE_CONTENT *pmsgctnt,
+    const std::string &digest_stream,
     uint64_t *outmid, uint64_t *outcn, ec_error_t *pe_result)
 {
 	BOOL b_exist = false;
@@ -3868,6 +3869,26 @@ BOOL exmdb_server::write_message_v2(const char *dir, cpid_t cpid,
 		return false;
 	}
 
+	if (digest_stream.size() > 0) {
+		Json::Value digest;
+		std::string mid_string;
+		if (json_from_str(digest_stream, digest) &&
+		    digest["file"].asString().size() > 0) {
+			std::string ext_file = exmdb_server::get_dir() + "/ext/"s + digest["file"].asString();
+			wrapfd fd = open(ext_file.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
+			if (fd.get() >= 0) {
+				if (HXio_fullwrite(fd.get(), digest_stream.c_str(), digest_stream.size()) < 0 ||
+				    fd.close_wr() != 0) {
+					mlog(LV_ERR, "E-1319: write %s: %s", ext_file.c_str(), strerror(errno));
+					return false;
+				}
+				if (!common_util_set_mid_string(pdb->psqlite,
+				    *outmid, digest["file"].asCString()))
+					return false;
+			}
+		}
+	}
+
 	auto dbase = pdb->lock_base_wr();
 	db_conn::NOTIFQ notifq;
 	if (b_exist) {
@@ -3884,18 +3905,6 @@ BOOL exmdb_server::write_message_v2(const char *dir, cpid_t cpid,
 	dg_notify(std::move(notifq));
 	*pe_result = ecSuccess;
 	return TRUE;
-}
-
-BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
-    uint64_t folder_id, const MESSAGE_CONTENT *ctnt, ec_error_t *e_result)
-{
-	if (!ctnt->proplist.has(PidTagChangeNumber)) {
-		*e_result = ecRpcFailed;
-		return TRUE;
-	}
-	uint64_t outmid = 0, outcn = 0;
-	return write_message_v2(dir, cpid, folder_id, ctnt,
-	       &outmid, &outcn, e_result);
 }
 
 /**

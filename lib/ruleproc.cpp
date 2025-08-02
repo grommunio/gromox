@@ -733,8 +733,9 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 
 	/* Writeout */
 	ec_error_t e_result = ecRpcFailed;
+	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(newdir, CP_UTF8, dst_fid,
-	    dst.get(), &e_result)) {
+	    dst.get(), {}, &outmid, &outcn, &e_result)) {
 		mlog(LV_DEBUG, "ruleproc: write_message failed");
 		return ecRpcFailed;
 	} else if (e_result != ecSuccess) {
@@ -971,8 +972,8 @@ static ec_error_t mr_mark_done(rxparam &par)
 		return err;
 	uint64_t cal_mid = par.cur.mid, cal_cn = 0;
 	err = ecSuccess;
-	if (!exmdb_client->write_message_v2(par.cur.dir.c_str(), CP_ACP,
-	    par.cur.fid, par.ctnt, &cal_mid, &cal_cn, &err))
+	if (!exmdb_client->write_message(par.cur.dir.c_str(), CP_ACP,
+	    par.cur.fid, par.ctnt, {}, &cal_mid, &cal_cn, &err))
 		return ecRpcFailed;
 	return err;
 }
@@ -1004,8 +1005,8 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 	    (err = prop.set(PR_MESSAGE_CLASS, "IPM.Appointment")) != ecSuccess)
 		return err;
 	uint64_t cal_mid = 0, cal_cn = 0;
-	if (!exmdb_client->write_message_v2(par.cur.dir.c_str(), CP_ACP,
-	    cal_fid, msg.get(), &cal_mid, &cal_cn, &err))
+	if (!exmdb_client->write_message(par.cur.dir.c_str(), CP_ACP,
+	    cal_fid, msg.get(), std::string(), &cal_mid, &cal_cn, &err))
 		return ecRpcFailed;
 	return err;
 }

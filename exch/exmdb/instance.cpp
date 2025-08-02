@@ -1513,8 +1513,9 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 	dbase.reset();
 	pdb.reset();
 	g_inside_flush_instance = true;
-	BOOL b_result = exmdb_server::write_message(dir, CP_ACP,
-	                folder_id, pmsgctnt, pe_result);
+	uint64_t outmid = 0, outcn = 0;
+	BOOL b_result = exmdb_server::write_message(dir, CP_ACP, folder_id,
+	                pmsgctnt, {}, &outmid, &outcn, pe_result);
 	g_inside_flush_instance = false;
 	exmdb_server::set_public_username(nullptr);
 	return b_result;

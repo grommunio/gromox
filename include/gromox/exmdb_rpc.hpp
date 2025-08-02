@@ -135,7 +135,7 @@ enum class exmdb_callid : uint8_t {
 	empty_folder_rule = 0x6b,
 	update_folder_rule = 0x6c,
 	// deliver_message_v1 = 0x6d,
-	write_message = 0x6e,
+	// write_message_v1 = 0x6e,
 	read_message = 0x6f,
 	get_content_sync = 0x70,
 	get_hierarchy_sync = 0x71,
@@ -166,11 +166,12 @@ enum class exmdb_callid : uint8_t {
 	recalc_store_size = 0x8a,
 	movecopy_folder = 0x8b,
 	create_folder = 0x8c,
-	write_message_v2 = 0x8d,
+	// write_message_v2 = 0x8d,
 	imapfile_read = 0x8e,
 	imapfile_write = 0x8f,
 	imapfile_delete = 0x90,
 	cgkreset = 0x91,
+	write_message /* v3 */ = 0x92,
 	/* update exch/exmdb/names.cpp:exmdb_rpc_idtoname! */
 };
 
@@ -770,11 +771,11 @@ struct exreq_deliver_message final : public exreq {
 };
 
 struct exreq_write_message final : public exreq {
-	cpid_t cpid;
-	uint64_t folder_id;
-	MESSAGE_CONTENT *pmsgctnt;
+	cpid_t cpid{};
+	uint64_t folder_id = 0;
+	MESSAGE_CONTENT *pmsgctnt = nullptr;
+	std::string digest;
 };
-using exreq_write_message_v2 = exreq_write_message;
 
 struct exreq_read_message final : public exreq {
 	char *username;
@@ -1316,7 +1317,7 @@ struct exresp_autoreply_tsquery final : public exresp {
 	uint64_t tdiff = 0;
 };
 
-struct exresp_write_message_v2 final : public exresp {
+struct exresp_write_message final : public exresp {
 	uint64_t outmid = 0, outcn = 0;
 	ec_error_t e_result{};
 };
@@ -1367,7 +1368,6 @@ using exresp_purge_datafiles = exresp;
 using exresp_autoreply_tsupdate = exresp;
 using exresp_recalc_store_size = exresp;
 using exresp_flush_instance = exresp_error;
-using exresp_write_message = exresp_error;
 using exresp_movecopy_folder = exresp_error;
 using exresp_imapfile_write = exresp;
 using exresp_imapfile_delete = exresp;

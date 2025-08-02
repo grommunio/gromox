@@ -119,7 +119,7 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(empty_folder_rule),
 	E(update_folder_rule),
 	"deliver_message_v1",
-	E(write_message),
+	"write_message_v1",
 	E(read_message),
 	E(get_content_sync),
 	E(get_hierarchy_sync),
@@ -150,11 +150,12 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(recalc_store_size),
 	E(movecopy_folder),
 	E(create_folder),
-	E(write_message_v2),
+	"write_message_v2",
 	E(imapfile_read),
 	E(imapfile_write),
 	E(imapfile_delete),
 	E(cgkreset),
+	E(write_message),
 };
 #undef E
 
@@ -163,7 +164,7 @@ namespace exmdb {
 const char *exmdb_rpc_idtoname(exmdb_callid i)
 {
 	auto j = static_cast<uint8_t>(i);
-	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::cgkreset) + 1);
+	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::write_message) + 1);
 	auto s = j < std::size(exmdb_rpc_names) ? exmdb_rpc_names[j] : nullptr;
 	return znul(s);
 }

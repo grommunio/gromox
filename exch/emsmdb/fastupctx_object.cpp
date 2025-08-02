@@ -213,8 +213,10 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 		return err;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	ec_error_t e_result = ecRpcFailed;
+	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(dir, pinfo->cpid, folder_id,
-	    pctx->m_content, &e_result) || e_result != ecSuccess)
+	    pctx->m_content, {}, &outmid, &outcn, &e_result) ||
+	    e_result != ecSuccess)
 		return e_result;
 	return ecSuccess;
 }

@@ -1644,9 +1644,12 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 			auto error = content->proplist.set(PidTagMid, EWSContext::construct<uint64_t>(rop_util_make_eid(1, mid.message_global_counter)));
 			if (error == ecServerOOM)
 				throw EWSError::ItemSave(E3035);
+			if (!content->proplist.has(PidTagChangeNumber))
+				throw EWSError::ItemSave(E3255);
+			uint64_t outmid = 0, outcn = 0;
 			if (!ctx.plugin().exmdb.write_message(dir.c_str(),
-			    CP_ACP, parentFolder.folderId, content.get(),
-			    &error) || error != ecSuccess)
+			    CP_ACP, parentFolder.folderId, content.get(), {},
+			    &outmid, &outcn, &error) || error != ecSuccess)
 				throw EWSError::ItemSave(E3255);
 		} else {
 			TPROPVAL_ARRAY props = shape.write();

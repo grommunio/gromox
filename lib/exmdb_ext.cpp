@@ -1841,24 +1841,23 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_deliver_message &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_write_message &d)
 {
-	char *unused = nullptr;
-	TRY(x.g_str(&unused));
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.folder_id));
 	d.pmsgctnt = cu_alloc<MESSAGE_CONTENT>();
 	if (d.pmsgctnt == nullptr)
 		return pack_result::alloc;
-	return x.g_msgctnt(d.pmsgctnt);
+	TRY(x.g_msgctnt(d.pmsgctnt));
+	return x.g_str(&d.digest);
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_write_message &d)
 {
-	TRY(x.p_str("unused@localhost"));
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.folder_id));
-	return x.p_msgctnt(*d.pmsgctnt);
+	TRY(x.p_msgctnt(*d.pmsgctnt));
+	return x.p_str(d.digest);
 }
-	
+
 static pack_result exmdb_pull(EXT_PULL &x, exreq_read_message &d)
 {
 	uint8_t tmp_byte;
@@ -2406,7 +2405,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_imapfile_write &d)
 	E(autoreply_tsquery) \
 	E(autoreply_tsupdate) \
 	E(recalc_store_size) \
-	E(write_message_v2) \
 	E(imapfile_read) \
 	E(imapfile_write) \
 	E(imapfile_delete) \
@@ -3679,14 +3677,14 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_autoreply_tsquery &d)
 	return x.p_uint64(d.tdiff);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_write_message_v2 &d)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_write_message &d)
 {
 	TRY(x.g_uint64(&d.outmid));
 	TRY(x.g_uint64(&d.outcn));
 	return x.g_uint32(reinterpret_cast<uint32_t *>(&d.e_result));
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_write_message_v2 &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_write_message &d)
 {
 	TRY(x.p_uint64(d.outmid));
 	TRY(x.p_uint64(d.outcn));
@@ -3846,7 +3844,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_imapfile_read &d)
 	E(get_public_folder_unread_count) \
 	E(store_eid_to_user) \
 	E(autoreply_tsquery) \
-	E(write_message_v2) \
 	E(imapfile_read)
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */

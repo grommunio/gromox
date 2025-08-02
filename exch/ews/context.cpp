@@ -499,8 +499,11 @@ sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, cons
 	auto messageId = content.proplist.get<const uint64_t>(PidTagMid);
 	if (!messageId)
 		throw DispatchError(E3112);
+	if (!content.proplist.has(PidTagChangeNumber))
+		throw EWSError::ItemSave(E3254);
+	uint64_t outmid = 0, outcn = 0;
 	if (!m_plugin.exmdb.write_message(dir.c_str(), CP_ACP, parent.folderId,
-	    &content, &error) || error != ecSuccess)
+	    &content, {}, &outmid, &outcn, &error) || error != ecSuccess)
 		throw EWSError::ItemSave(E3254);
 
 	sShape retshape = sShape(tItemResponseShape());

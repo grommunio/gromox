@@ -1502,8 +1502,10 @@ ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
 	if (err != ecSuccess)
 		return err;
 	err = ecError;
+	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(dst_store->get_dir(), pinfo->cpid,
-	    folder_id1, pmsgctnt, &err) || err != ecSuccess)
+	    folder_id1, pmsgctnt, {}, &outmid, &outcn, &err) ||
+	    err != ecSuccess)
 		return err;
 	return ecSuccess;
 }

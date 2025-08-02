@@ -2239,9 +2239,10 @@ static int me_minst(int argc, char **argv, int sockd) try
 	if (cpid == CP_ACP)
 		cpid = static_cast<cpid_t>(1252);
 	ec_error_t e_result = ecRpcFailed;
+	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(argv[1], cpid,
-	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, &e_result) ||
-	    e_result != ecSuccess)
+	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, {},
+	    &outmid, &outcn, &e_result) || e_result != ecSuccess)
 		return MIDB_E_MDB_WRITEMESSAGE;
 	return cmd_write(sockd, "TRUE\r\n");
 } catch (const std::bad_alloc &) {

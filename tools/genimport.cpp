@@ -388,7 +388,9 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 		return iret;
 	}
 
-	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld, ctnt, &ret)) {
+	uint64_t outmid = 0, outcn = 0;
+	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld,
+	    ctnt, {}, &outmid, &outcn, &ret)) {
 		fprintf(stderr, "exm: write_message RPC failed\n");
 		return -EIO;
 	} else if (ret != ecSuccess) {
@@ -397,7 +399,7 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	} else if (g_verbose_create) {
 		fprintf(stderr, "Created new message 0x%llx:0x%llx\n",
 			LLU{rop_util_get_gc_value(parent_fld)},
-			LLU{rop_util_get_gc_value(msg_id)});
+			LLU{rop_util_get_gc_value(outmid)});
 	}
 	return 0;
 }
