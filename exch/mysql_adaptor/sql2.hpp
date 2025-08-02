@@ -81,6 +81,9 @@ struct mysql_plugin final {
 	gromox::errno_t mda_alias_list(gromox::sql_alias_map &, size_t &);
 	gromox::errno_t mda_domain_list(gromox::sql_domain_set &);
 	gromox::errno_t get_user_groups_rec(const char *, std::vector<std::string> &);
+	gromox::errno_t mda_alias_resolve(std::string &addr_inplace);
+	gromox::errno_t mda_group_expand(sqlconn &, const std::string &group, std::vector<std::string> &exp, std::set<std::string> &seen, unsigned int depth);
+	gromox::errno_t mda_group_expand(const std::string &group, std::vector<std::string> &exp);
 
 	protected:
 	bool mlist_domain_contains(sqlconn *, const char *mlist, const char *account);

@@ -148,6 +148,8 @@ extern GX_EXPORT int mysql_adaptor_mbop_userlist(std::vector<sql_user> &);
 extern GX_EXPORT gromox::errno_t mysql_adaptor_mda_alias_list(gromox::sql_alias_map &, size_t &);
 extern GX_EXPORT gromox::errno_t mysql_adaptor_mda_domain_list(gromox::sql_domain_set &);
 extern GX_EXPORT gromox::errno_t mysql_adaptor_get_user_groups_rec(const char *, std::vector<std::string> &);
+extern GX_EXPORT gromox::errno_t mysql_adaptor_mda_alias_resolve(std::string &addr_inplace);
+extern GX_EXPORT gromox::errno_t mysql_adaptor_mda_group_expand(const std::string &addr, std::vector<std::string> &exp);
 
 /**
  * Determines whether an arbitrary actor can generally open/read the primary

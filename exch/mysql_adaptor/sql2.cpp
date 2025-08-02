@@ -788,6 +788,98 @@ errno_t mysql_plugin::mda_domain_list(sql_domain_set &newdom) try
 	return ENOMEM;
 }
 
+errno_t mysql_plugin::mda_alias_resolve(std::string &addr /* inplace */) try
+{
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return ENOMEM;
+	auto qstr =
+		"SELECT uv.propval_str AS mainname"
+		" FROM users AS u INNER JOIN user_properties AS up"
+		" ON u.id=up.user_id AND u.address_status=" + std::to_string(AF_USER_CONTACT) +
+		" AND up.proptag=" + std::to_string(PR_DISPLAY_TYPE_EX) +
+		" AND up.propval_str=" + std::to_string(DT_REMOTE_MAILUSER) +
+		" INNER JOIN user_properties AS uv"
+		" ON u.id=uv.user_id AND uv.proptag=" + std::to_string(PR_SMTP_ADDRESS) +
+		" WHERE username='" + conn->quote(addr) + "' UNION "
+		"SELECT a.mainname FROM aliases AS a INNER JOIN users AS u"
+		" ON u.address_status IN (" + std::to_string(AF_USER_NORMAL) + "," +
+		std::to_string(AF_USER_SHAREDMBOX) +
+		" AND u.username=a.mainname AND a.aliasname='" + conn->quote(addr) + "' LIMIT 2";
+	if (!conn->query(qstr))
+		return EIO;
+	auto result = conn->store_result();
+	if (result == nullptr)
+		return EIO;
+	if (result.num_rows() == 0)
+		return 0; /* No alias */
+	if (result.num_rows() > 1)
+		return ELOOP; /* Too many results */
+	auto row = result.fetch_row();
+	if (row == nullptr)
+		return EIO;
+	addr = znul(row[0]);
+	return 0;
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
+}
+
+errno_t mysql_plugin::mda_group_expand(sqlconn &conn, const std::string &group,
+    std::vector<std::string> &exp, std::set<std::string> &seen,
+    unsigned int depth)
+{
+	if (depth >= 8)
+		return ELOOP; /* too many groups nested */
+	seen.emplace(group);
+	auto qstr = "SELECT list_id FROM mlists WHERE listname='" + conn.quote(group) + "'";
+	if (!conn.query(qstr))
+		return EIO;
+	auto result = conn.store_result();
+	if (result == nullptr)
+		return EIO;
+	auto row = result.fetch_row();
+	if (row == nullptr)
+		return ENOENT; /* not a group */
+	auto list_id = strtoul(row[0], nullptr, 0);
+
+	qstr = "SELECT username FROM associations WHERE list_id=" + std::to_string(list_id);
+	if (!conn.query(qstr))
+		return EIO;
+	result = conn.store_result();
+	if (result == nullptr)
+		return EIO;
+	while ((row = result.fetch_row()) != nullptr) {
+		std::string member = znul(row[0]);
+		if (member.empty())
+			continue;
+		auto err = mda_alias_resolve(member);
+		if (err != 0)
+			continue; /* problem with user */
+		err = mda_group_expand(conn, member, exp, seen, depth + 1);
+		if (err == ENOENT) {
+			/* not a group */
+			exp.emplace_back(member);
+			continue;
+		}
+		if (seen.find(member) != seen.end())
+			return ELOOP; /* very bad */
+		seen.emplace(member);
+	}
+	return 0;
+}
+
+errno_t mysql_plugin::mda_group_expand(const std::string &group,
+    std::vector<std::string> &exp) try
+{
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return ENOMEM;
+	std::set<std::string> seen;
+	return mda_group_expand(*conn, group, exp, seen, 0);
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
+}
+
 /**
  * @brief     Compare domains based on (case-insensitive) domain name
  *
@@ -1096,4 +1188,14 @@ errno_t mysql_adaptor_mda_domain_list(sql_domain_set &v)
 errno_t mysql_adaptor_get_user_groups_rec(const char *user, std::vector<std::string> &groups)
 {
 	return le_mysql_plugin->get_user_groups_rec(user, groups);
+}
+
+errno_t mysql_adaptor_mda_alias_resolve(std::string &addr)
+{
+	return le_mysql_plugin->mda_alias_resolve(addr);
+}
+
+errno_t mysql_adaptor_mda_group_expand(const std::string &addr, std::vector<std::string> &exp)
+{
+	return le_mysql_plugin->mda_group_expand(addr, exp);
 }

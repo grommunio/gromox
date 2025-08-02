@@ -11,7 +11,7 @@ AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 # lib_LTL must be dependency-ordered, or make install fails
 lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_ndr.la libgxs_mysql_adaptor.la libgromox_abtree.la libgromox_auth.la libgromox_authz.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgromox_ews.la libgromox_mh_emsmdb.la libgromox_mh_nsp.la libgromox_oab.la libgromox_oxdisco.la libgromox_emsmdb.la libgromox_nsp.la libgromox_rfr.la libgxs_exmdb_provider.la libgxs_event_proxy.la libgxs_event_stub.la libgxs_midb_agent.la libgxs_timer_agent.la libgxs_ruleproc.la
 
-pkglibexec_PROGRAMS = delivery delivery-queue event gromox-snapshot http imap istore midb pop3 timer zcore tools/authtry tools/ddbg tools/textmapquery
+pkglibexec_PROGRAMS = delivery delivery-queue event gromox-snapshot http imap istore lda midb pop3 timer zcore tools/authtry tools/ddbg tools/textmapquery
 if WITH_GNU_LD
 version_sc_SYFLAGS = -Wl,--version-script=${srcdir}/default.sym
 endif
@@ -94,6 +94,8 @@ libgxm_exmdb_local_la_LDFLAGS = ${default_SYFLAGS}
 libgxm_exmdb_local_la_LIBADD = -lpthread ${fmt_LIBS} ${libHX_LIBS} ${jsoncpp_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
 EXTRA_libgxm_exmdb_local_la_DEPENDENCIES = default.sym
 
+lda_SOURCES = mda/lda.cpp
+lda_LDADD = ${libHX_LIBS} ${vmime_LIBS} libgromox_common.la libgxs_mysql_adaptor.la
 pop3_SOURCES = mra/pop3/cmd.cpp mra/pop3/main.cpp mra/pop3/parser.cpp mra/pop3/pop3.hpp mra/pop3/resource.cpp
 pop3_LDADD = -lpthread ${libcrypto_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_auth.la libgromox_authz.la libgromox_common.la libgromox_epoll.la libgromox_exrpc.la libgxs_event_proxy.la libgxs_midb_agent.la libgxs_mysql_adaptor.la
 imap_SOURCES = mra/imap/cmd.cpp mra/imap/imap.hpp mra/imap/main.cpp mra/imap/parser.cpp mra/imap/resource.cpp
