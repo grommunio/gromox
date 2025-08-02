@@ -14,7 +14,7 @@
 enum {
 	GXMT_FOLDER = static_cast<unsigned int>(MAPI_FOLDER),
 	GXMT_MESSAGE = static_cast<unsigned int>(MAPI_MESSAGE),
-	GXMT_NAMEDPROP = 250,
+	GXMT_NAMEDPROP = 250U,
 };
 
 struct PERMISSION_DATA;

@@ -583,7 +583,7 @@ static errno_t do_file(const char *filename) try
 			return ret;
 	}
 
-	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0004", 8) < 0)
 		throw YError("PG-1014: %s", strerror(errno));
 	uint8_t flag = false;
 	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* splice flag */
@@ -612,7 +612,9 @@ static errno_t do_file(const char *filename) try
 	    ep.p_uint32(1) != pack_result::ok ||
 	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
 	    ep.p_uint64(parent.folder_id) != pack_result::ok ||
-	    ep.p_msgctnt(*ctnt) != pack_result::ok) {
+	    ep.p_msgctnt(*ctnt) != pack_result::ok ||
+	    ep.p_str("") != pack_result::ok ||
+	    ep.p_str("") != pack_result::ok) {
 		fprintf(stderr, "E-2006\n");
 		return EXIT_FAILURE;
 	}

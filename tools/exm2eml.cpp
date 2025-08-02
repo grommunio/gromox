@@ -236,7 +236,7 @@ int main(int argc, char **argv) try
 			if (p.kind <= MNID_STRING)
 				static_namedprop_map.emplace(tags[i], p);
 		}
-		if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
+		if (HXio_fullwrite(STDOUT_FILENO, "GXMT0004", 8) < 0)
 			throw YError("PG-1014: %s", strerror(errno));
 		uint8_t flag = false;
 		if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* splice flag */
@@ -253,7 +253,9 @@ int main(int argc, char **argv) try
 		    ep.p_uint32(msg_id) != pack_result::ok ||
 		    ep.p_uint32(static_cast<uint32_t>(0)) != pack_result::ok ||
 		    ep.p_uint64(MAILBOX_FID_UNANCHORED) != pack_result::ok ||
-		    ep.p_msgctnt(*ctnt) != pack_result::ok) {
+		    ep.p_msgctnt(*ctnt) != pack_result::ok ||
+		    ep.p_str("") != pack_result::ok ||
+		    ep.p_str("") != pack_result::ok) {
 			fprintf(stderr, "E-2005\n");
 			return EXIT_FAILURE;
 		}

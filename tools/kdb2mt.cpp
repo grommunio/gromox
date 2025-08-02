@@ -1196,7 +1196,9 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 	    ep.p_uint32(item.m_hid) != pack_result::ok ||
 	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
 	    ep.p_uint64(parent.folder_id) != pack_result::ok ||
-	    ep.p_msgctnt(*ctnt) != pack_result::ok)
+	    ep.p_msgctnt(*ctnt) != pack_result::ok ||
+	    ep.p_str("") != pack_result::ok ||
+	    ep.p_str("") != pack_result::ok)
 		throw YError("PF-1058");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
@@ -1375,7 +1377,7 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 {
 	uint8_t xsplice = g_splice;
-	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0004", 8) < 0)
 		throw YError("PK-1032: %s", strerror(errno));
 	if (HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice)) < 0)
 		throw YError("PK-1034: %s", strerror(errno));

@@ -18,7 +18,7 @@ Spec
 
 All integers are to be in little-endian form.
 
-* ``char magic[8] = "GXMT0003";``
+* ``char magic[8] = "GXMT0004";``
   Magic fixed value to indicate the MT stream revision.
 * ``uint32_t splice_flag;``
   Indicates whether the root object of this MT stream is to become a new folder
@@ -101,6 +101,8 @@ to create folders/messages in the target mailbox. Each packet/frame is:
 			* PERMISSION_DATA serialized struct
 	* For objtype MAPI_MESSAGE:
 		* MESSAGE_CONTENT serialized struct
+		* NUL-terminated string for the RFC5322 representation
+		* NUL-terminated string (reserved)
 	* For objtype 250 (named property):
 		* PROPERTY_NAME serialized struct
 	* For other object types:

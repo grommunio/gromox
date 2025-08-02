@@ -410,7 +410,9 @@ int main(int argc, char **argv) try
 		    ep.p_uint32(i + 1) != pack_result::ok ||
 		    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
 		    ep.p_uint64(parent.folder_id) != pack_result::ok ||
-		    ep.p_msgctnt(*msgs[i]) != pack_result::ok) {
+		    ep.p_msgctnt(*msgs[i]) != pack_result::ok ||
+		    ep.p_str("") != pack_result::ok ||
+		    ep.p_str("") != pack_result::ok) {
 			fprintf(stderr, "E-2004\n");
 			return EXIT_FAILURE;
 		}

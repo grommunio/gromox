@@ -97,7 +97,7 @@ static int exm_read_base_maps()
 		return 0;
 	if (ret < 0 || static_cast<size_t>(ret) != std::size(magic))
 		throw YError("PG-1126: %s", strerror_eof(errno));
-	if (memcmp(magic, "GXMT0003", 8) != 0)
+	if (memcmp(magic, "GXMT0004", 8) != 0)
 		throw YError("PG-1127: Unrecognized input format");
 	ret = HXio_fullread(STDIN_FILENO, &g_splice, sizeof(g_splice));
 	if (ret < 0 || static_cast<size_t>(ret) != sizeof(g_splice))
@@ -301,7 +301,8 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 	return 0;
 }
 
-static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
+static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
+    const std::string &im_std)
 {
 	if (g_show_tree)
 		printf("exm: Message %lxh (parent=%llxh)\n",
@@ -408,7 +409,12 @@ static int exm_packet(const void *buf, size_t bufsize)
 		auto cl_0 = HX::make_scope_exit([&]() { message_content_free_internal(&ctnt); });
 		if (ep.g_msgctnt(&ctnt) != pack_result::ok)
 			throw YError("PG-1119");
-		return exm_message(obd, ctnt);
+		std::string im_std, reserved;
+		if (ep.g_str(&im_std) != pack_result::ok ||
+		    ep.g_str(&reserved) != pack_result::ok)
+			throw YError("PG-1113");
+		reserved = {};
+		return exm_message(obd, ctnt, im_std);
 	}
 	throw YError("PG-1117: unknown obd.mapitype %u", static_cast<unsigned int>(obd.mapitype));
 }
