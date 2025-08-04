@@ -36,6 +36,18 @@ using namespace gromox;
 using namespace gi_dump;
 using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
+/**
+ * @content: MAPI representation with broken-down fields
+ * @im_std:  Original RFC5322, stored in a std::string
+ * @im_raw:  Original RFC5322, stored in a malloc buffer
+ */
+struct fat_message {
+	message_ptr content;
+	std::string im_std;
+	std::unique_ptr<char[], stdlib_delete> im_raw;
+	size_t im_len = 0;
+};
+
 enum {
 	IMPORT_MAIL,
 	IMPORT_ICAL,
@@ -85,44 +97,44 @@ static void terse_help()
 	fprintf(stderr, "Documentation: man gromox-eml2mt\n");
 }
 
-static std::unique_ptr<MESSAGE_CONTENT, mc_delete>
-do_mail(const char *file, char *data, size_t dsize)
+static message_ptr do_mail(const char *file, char *data, size_t dsize)
 {
 	MAIL imail;
 	if (!imail.load_from_str(data, dsize)) {
 		fprintf(stderr, "Unable to parse %s\n", file);
 		return nullptr;
 	}
-	std::unique_ptr<MESSAGE_CONTENT, mc_delete> msg(oxcmail_import(nullptr,
-		"UTC", &imail, gi_alloc, ee_get_propids));
+	message_ptr msg(oxcmail_import(nullptr, "UTC", &imail, gi_alloc, ee_get_propids));
 	if (msg == nullptr)
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
 	return msg;
 }
 
-static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_eml(const char *file)
+static fat_message do_eml(const char *file)
 {
-	size_t slurp_len = 0;
-	std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(file, "-") == 0 ?
-		HX_slurp_fd(STDIN_FILENO, &slurp_len) : HX_slurp_file(file, &slurp_len));
 	static constexpr uint64_t olecf_sig = 0xd0cf11e0a1b11ae1, olecf_beta = 0x0e11fc0dd0cf110e;
-	if (slurp_data == nullptr) {
+	fat_message mo;
+
+	mo.im_raw.reset(strcmp(file, "-") == 0 ? HX_slurp_fd(STDIN_FILENO, &mo.im_len) :
+		HX_slurp_file(file, &mo.im_len));
+	auto raw = mo.im_raw.get();
+	if (raw == nullptr) {
 		fprintf(stderr, "Unable to read from %s: %s\n", file, strerror(errno));
-		return nullptr;
-	} else if (slurp_len >= 8 &&
-	    (be64p_to_cpu(slurp_data.get()) == olecf_sig ||
-	    be64p_to_cpu(slurp_data.get()) == olecf_beta)) {
+		return {};
+	} else if (mo.im_len >= 8 && (be64p_to_cpu(raw) == olecf_sig ||
+	    be64p_to_cpu(raw) == olecf_beta)) {
 		fprintf(stderr, "Input file %s looks like an OLECF file; "
 			"you should use gromox-oxm2mt, not gromox-eml2mt "
 			"(which is for Internet/RFC5322 mail).\n", file);
 	}
-	return do_mail(file, slurp_data.get(), slurp_len);
+	mo.content = do_mail(file, raw, mo.im_len);
+	return mo;
 }
 
 enum class mbox_rid { start, envelope_from, msghdr, msgbody, emit };
 
 struct mbox_rdstate {
-	std::vector<message_ptr> &msgvec;
+	std::vector<fat_message> &msgvec;
 	std::string filename;
 	size_t fncut = 0;
 	unsigned int mail_count = 0;
@@ -169,8 +181,11 @@ static void mbox_line(mbox_rdstate &rs, const char *line)
 		}
 		rs.filename.erase(rs.fncut);
 		rs.filename += std::to_string(++rs.mail_count);
-		auto mo = do_mail(rs.filename.c_str(), rs.cbuf.data(), rs.cbuf.size());
-		if (mo == nullptr)
+
+		fat_message mo;
+		mo.im_std  = std::move(rs.cbuf);
+		mo.content = do_mail(rs.filename.c_str(), mo.im_std.data(), mo.im_std.size());
+		if (mo.content == nullptr)
 			throw std::bad_alloc();
 		rs.msgvec.push_back(std::move(mo));
 		rs.cbuf = std::string();
@@ -182,7 +197,7 @@ static void mbox_line(mbox_rdstate &rs, const char *line)
 	}
 }
 
-static errno_t do_mbox(const char *file, std::vector<message_ptr> &msgvec)
+static errno_t do_mbox(const char *file, std::vector<fat_message> &msgvec)
 {
 	std::unique_ptr<FILE, stdlib_delete> extra_fp;
 	FILE *fp = nullptr;
@@ -349,41 +364,50 @@ int main(int argc, char **argv) try
 	auto cfg = config_file_prg(nullptr, "delivery.cfg", delivery_cfg_defaults);
 	if (cfg == nullptr)
 		return EXIT_FAILURE;
-	std::vector<message_ptr> msgs;
 
+	std::vector<fat_message> msgs;
 	for (int i = 1; i < argc; ++i) {
 		if (g_import_mode == IMPORT_MAIL) {
-			auto msg = do_eml(argv[i]);
-			if (msg == nullptr)
+			auto mo = do_eml(argv[i]);
+			if (mo.content == nullptr)
 				continue;
-			msgs.push_back(std::move(msg));
+			msgs.push_back(std::move(mo));
 		} else if (g_import_mode == IMPORT_MBOX) {
 			if (do_mbox(argv[i], msgs) != 0)
 				continue;
 		} else if (g_import_mode == IMPORT_ICAL) {
-			if (do_ical(argv[i], msgs) != 0)
+			std::vector<message_ptr> content_vec;
+			if (do_ical(argv[i], content_vec) != 0)
 				continue;
+			for (auto &&ct : std::move(content_vec))
+				msgs.emplace_back(std::move(ct));
 		} else if (g_import_mode == IMPORT_VCARD) {
-			if (do_vcard(argv[i], msgs) != 0)
+			std::vector<message_ptr> content_vec;
+			if (do_vcard(argv[i], content_vec) != 0)
 				continue;
+			for (auto &&ct : std::move(content_vec))
+				msgs.emplace_back(std::move(ct));
 		} else if (g_import_mode == IMPORT_TNEF) {
-			if (do_tnef(argv[i], msgs) != 0)
+			std::vector<message_ptr> content_vec;
+			if (do_tnef(argv[i], content_vec) != 0)
 				continue;
+			for (auto &&ct : std::move(content_vec))
+				msgs.emplace_back(std::move(ct));
 		}
 	}
 	if (g_attach_decap > 0) {
 		auto osize = msgs.size();
 		for (auto &msg : msgs) {
-			auto ret = gi_decapsulate_attachment(msg, g_attach_decap - 1);
+			auto ret = gi_decapsulate_attachment(msg.content, g_attach_decap - 1);
 			if (ret != 0)
-				msg.reset();
+				msg.content.reset();
 		}
-		std::erase_if(msgs, [](const message_ptr &x) { return x == nullptr; });
+		std::erase_if(msgs, [](const fat_message &mo) { return mo.content == nullptr; });
 		fprintf(stderr, "Attachment decapsulation filter: %zu MAPI messages have been turned into %zu\n",
 			osize, msgs.size());
 	}
 
-	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0004", 8) < 0)
 		throw YError("PG-1014: %s", strerror(errno));
 	uint8_t flag = false;
 	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* splice flag */
@@ -399,7 +423,7 @@ int main(int argc, char **argv) try
 	for (size_t i = 0; i < msgs.size(); ++i) {
 		if (g_show_tree) {
 			fprintf(stderr, "Message %zu\n", i + 1);
-			gi_print(0, *msgs[i], ee_get_propname);
+			gi_print(0, *msgs[i].content, ee_get_propname);
 		}
 		EXT_PUSH ep;
 		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT)) {
@@ -410,12 +434,19 @@ int main(int argc, char **argv) try
 		    ep.p_uint32(i + 1) != pack_result::ok ||
 		    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
 		    ep.p_uint64(parent.folder_id) != pack_result::ok ||
-		    ep.p_msgctnt(*msgs[i]) != pack_result::ok ||
-		    ep.p_str("") != pack_result::ok ||
-		    ep.p_str("") != pack_result::ok) {
+		    ep.p_msgctnt(*msgs[i].content) != pack_result::ok) {
 			fprintf(stderr, "E-2004\n");
 			return EXIT_FAILURE;
 		}
+		pack_result pr2 =
+			msgs[i].im_std.size() > 0 ? ep.p_str(msgs[i].im_std) :
+			msgs[i].im_raw != nullptr ? ep.p_str(msgs[i].im_raw.get()) :
+			ep.p_str("");
+		if (pr2 != pack_result::ok || ep.p_str("") != pack_result::ok) {
+			fprintf(stderr, "E-2014\n");
+			return EXIT_FAILURE;
+		}
+
 		uint64_t xsize = cpu_to_le64(ep.m_offset);
 		if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
 			throw YError("PG-1017: %s", strerror(errno));
