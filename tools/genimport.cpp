@@ -223,7 +223,7 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t change_num,
 		return -ENOMEM;
 	}
 	std::unique_ptr<BINARY, gi_delete> pclbin(pcl.serialize());
-	if (pclbin == nullptr){
+	if (pclbin == nullptr) {
 		fprintf(stderr, "exm: pcl_serialize: ENOMEM\n");
 		return -ENOMEM;
 	}
@@ -377,38 +377,17 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 		fprintf(stderr, "exm: allocate_cn(msg) RPC failed\n");
 		return -EIO;
 	}
-
-	XID zxid{g_public_folder ? rop_util_make_domain_guid(g_user_id) :
-	         rop_util_make_user_guid(g_user_id), change_num};
-	char tmp_buff[22];
-	BINARY bxid;
-	EXT_PUSH ep;
-	if (!ep.init(tmp_buff, std::size(tmp_buff), 0) ||
-	    ep.p_xid(zxid) != pack_result::ok) {
-		fprintf(stderr, "exm: ext_push: ENOMEM\n");
-		return -ENOMEM;
-	}
-	bxid.pv = tmp_buff;
-	bxid.cb = ep.m_offset;
-	PCL pcl;
-	if (!pcl.append(zxid)) {
-		fprintf(stderr, "exm: pcl_append: ENOMEM\n");
-		return -ENOMEM;
-	}
-	std::unique_ptr<BINARY, gi_delete> pclbin(pcl.serialize());
-	if (pclbin == nullptr){
-		fprintf(stderr, "exm: pcl_serialize: ENOMEM\n");
-		return -ENOMEM;
-	}
-	auto props = &ctnt->proplist;
 	ec_error_t ret;
-	if ((ret = props->set(PidTagMid, &msg_id)) != ecSuccess ||
-	    (ret = props->set(PidTagChangeNumber, &change_num)) != ecSuccess ||
-	    (ret = props->set(PR_CHANGE_KEY, &bxid)) != ecSuccess ||
-	    (ret = props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != ecSuccess) {
+	if ((ret = ctnt->proplist.set(PidTagMid, &msg_id)) != ecSuccess) {
 		fprintf(stderr, "exm: tpropval: %s\n", mapi_strerror(ret));
 		return ece2nerrno(ret);
 	}
+	auto iret = exm_set_change_keys(&ctnt->proplist, change_num);
+	if (iret != 0) {
+		fprintf(stderr, "exm: tpropval: %s\n", strerror(-iret));
+		return iret;
+	}
+
 	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld, ctnt, &ret)) {
 		fprintf(stderr, "exm: write_message RPC failed\n");
 		return -EIO;
