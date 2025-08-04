@@ -175,7 +175,7 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 	auto msgflags = cu_alloc<uint32_t>();
 	if (msgflags == nullptr)
 		return ENOMEM;
-	*msgflags = MSGFLAG_UNSENT | MSGFLAG_UNMODIFIED;
+	*msgflags = MSGFLAG_READ | MSGFLAG_UNSENT | MSGFLAG_EVERREAD | MSGFLAG_UNMODIFIED;
 	propvals.emplace_back(PR_MESSAGE_FLAGS, msgflags);
 
 	auto readflag = cu_alloc<uint8_t>();
