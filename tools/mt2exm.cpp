@@ -9,12 +9,14 @@
 #include <memory>
 #include <unistd.h>
 #include <utility>
+#include <json/value.h>
 #include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/mail.hpp>
 #include <gromox/paths.h>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
@@ -302,12 +304,16 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 }
 
 static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
-    const std::string &im_std)
+    const std::string &im_repr)
 {
-	if (g_show_tree)
-		printf("exm: Message %lxh (parent=%llxh)\n",
+	if (g_show_tree) {
+		printf("exm: Message %lxh (parent=%llxh)",
 			static_cast<unsigned long>(obd.nid),
 			static_cast<unsigned long long>(obd.parent.folder_id));
+		if (im_repr.size() > 0)
+			printf(" [RFC5322: %zu bytes]", im_repr.size());
+		printf("\n");
+	}
 	if (g_show_tree && g_show_props)
 		gi_print(0, ctnt, ee_get_propname);
 	auto folder_it = g_folder_map.find(obd.parent.folder_id);
@@ -322,11 +328,27 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 		tlog("adjusted properties:\n");
 		gi_print(0, ctnt, ee_get_propname);
 	}
+
+	Json::Value digest;
+	if (im_repr.size() > 0) {
+		MAIL imail;
+		if (!imail.load_from_str(im_repr.data(), im_repr.size())) {
+			fprintf(stderr, "Failed to parse RFC5322 block for message\n");
+			return -EIO;
+		}
+		auto ret = imail.make_digest(digest);
+		if (ret <= 0) {
+			fprintf(stderr, "Failed to produce JDigest for RFC5322 block\n");
+			return -EIO;
+		}
+	}
+
 	if (!g_do_delivery) {
 		for (auto i = 0U; i < g_repeat_iter; ++i) {
 			if (i > 0 && i % 1024 == 0)
 				fprintf(stderr, "mt2exm repeat %u/%u\n", i, g_repeat_iter);
-			auto ret = exm_create_msg(folder_it->second.fid_to, &ctnt);
+			auto ret = exm_create_msg(folder_it->second.fid_to,
+			           &ctnt, im_repr, std::move(digest));
 			if (ret != EXIT_SUCCESS)
 				return ret;
 		}
@@ -346,7 +368,8 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 	for (auto i = 0U; i < g_repeat_iter; ++i) {
 		if (i > 0 && i % 1024 == 0)
 			fprintf(stderr, "mt2exm repeat %u/%u\n", i, g_repeat_iter);
-		auto ret = exm_deliver_msg(g_username, &ctnt, mode);
+		auto ret = exm_deliver_msg(g_username, &ctnt, im_repr,
+		           std::move(digest), mode);
 		if (ret != EXIT_SUCCESS)
 			return ret;
 	}

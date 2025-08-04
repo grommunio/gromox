@@ -18,6 +18,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <fmt/format.h>
+#include <json/value.h>
 #include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/scope.hpp>
@@ -27,6 +29,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
@@ -309,9 +312,9 @@ int exm_permissions(eid_t fid, const std::vector<PERMISSION_DATA> &perms)
 	return 0;
 }
 
-int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct, unsigned int mode)
+int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct,
+    const std::string &im_repr, Json::Value &&digest, unsigned int mode)
 {
-	ct->proplist.erase(PidTagChangeNumber);
 	auto ts = rop_util_current_nttime();
 	auto ret = ct->proplist.set(PR_MESSAGE_DELIVERY_TIME, &ts);
 	if (ret != ecSuccess)
@@ -320,12 +323,31 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct, unsigned int mode)
 	uint32_t r32 = 0;
 	if (mode & DELIVERY_TWOSTEP)
 		mode &= ~(DELIVERY_DO_RULES | DELIVERY_DO_NOTIF);
+	uint64_t change_num = 0;
+	if (!exmdb_client->allocate_cn(g_storedir, &change_num)) {
+		fprintf(stderr, "exm: allocate_cn(msg)[delivery] RPC failed\n");
+		return -EIO;
+	}
+	auto iret = exm_set_change_keys(&ct->proplist, change_num);
+	if (iret != 0) {
+		fprintf(stderr, "exm: tpropval: %s\n", strerror(-iret));
+		return iret;
+	}
+	auto midstr = fmt::format("{}.cn{}", time(nullptr), rop_util_get_gc_value(change_num));
+	digest["file"] = midstr;
+	if (!exmdb_client->imapfile_write(g_storedir, "eml",
+	    midstr.c_str(), im_repr.c_str())) {
+		fprintf(stderr, "exm: imapfile_write RPC failed\n");
+		return -EIO;
+	}
+	auto djson = json_to_str(digest);
 	if (!exmdb_client->deliver_message(g_storedir, ENVELOPE_FROM_NULL,
-	    target, CP_ACP, mode, ct, "", &folder_id, &msg_id, &r32)) {
+	    target, CP_ACP, mode, ct, djson.c_str(), &folder_id, &msg_id, &r32)) {
 		fprintf(stderr, "exm: deliver_message RPC failed: code %u\n",
 		        r32);
 		return -EIO;
 	}
+
 	auto dm_status = static_cast<deliver_message_result>(r32);
 	switch (dm_status) {
 	case deliver_message_result::result_ok:
@@ -367,7 +389,8 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct, unsigned int mode)
 	return EXIT_SUCCESS;
 }
 
-int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
+int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt,
+    const std::string &im_repr, Json::Value &&digest)
 {
 	uint64_t msg_id = 0, change_num = 0;
 	if (!exmdb_client->allocate_message_id(g_storedir, parent_fld, &msg_id)) {
@@ -387,10 +410,18 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 		fprintf(stderr, "exm: tpropval: %s\n", strerror(-iret));
 		return iret;
 	}
+	auto midstr = fmt::format("{}.cn{}", time(nullptr), rop_util_get_gc_value(change_num));
+	digest["file"] = midstr;
+	if (!exmdb_client->imapfile_write(g_storedir, "eml",
+	    midstr.c_str(), im_repr.c_str())) {
+		fprintf(stderr, "exm: imapfile_write RPC failed\n");
+		return -EIO;
+	}
+	auto djson = json_to_str(digest);
 
 	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld,
-	    ctnt, {}, &outmid, &outcn, &ret)) {
+	    ctnt, djson.c_str(), &outmid, &outcn, &ret)) {
 		fprintf(stderr, "exm: write_message RPC failed\n");
 		return -EIO;
 	} else if (ret != ecSuccess) {
