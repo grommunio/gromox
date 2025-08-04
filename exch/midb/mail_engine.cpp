@@ -247,8 +247,7 @@ static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
 		MAIL imail;
 		if (!imail.load_from_str(slurp_data.c_str(), slurp_data.size()))
 			return 0;
-		size_t size = 0;
-		if (imail.make_digest(&size, digest) <= 0)
+		if (imail.make_digest(digest) <= 0)
 			return 0;
 		digest["file"] = "";
 		auto djson = json_to_str(digest);
@@ -1327,7 +1326,6 @@ static void me_extract_digest_fields(const Json::Value &digest, char *subject,
 static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
     uint64_t message_id, sqlite3 *db, syncmessage_entry e) try
 {
-	size_t size;
 	char from[UADDR_SIZE], rcpt[UADDR_SIZE];
 	char subject[1024];
 	MESSAGE_CONTENT *pmsgctnt;
@@ -1364,7 +1362,7 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 		}
 		cu_switch_allocator();
 		Json::Value digest;
-		if (imail.make_digest(&size, digest) <= 0)
+		if (imail.make_digest(digest) <= 0)
 			return;
 		digest["file"] = "";
 		djson = json_to_str(digest);
@@ -1391,6 +1389,7 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 	if (!json_from_str(djson.c_str(), digest))
 		return;
 	djson.clear();
+	size_t size = 0;
 	me_extract_digest_fields(digest, subject,
 		std::size(subject), from, std::size(from), rcpt,
 		std::size(rcpt), &size);
@@ -2121,7 +2120,6 @@ static int me_menum(int argc, char **argv, int sockd) try
  */
 static int me_minst(int argc, char **argv, int sockd) try
 {
-	size_t mess_len;
 	uint32_t tmp_flags;
 	uint64_t change_num;
 	uint64_t message_id;
@@ -2142,7 +2140,7 @@ static int me_minst(int argc, char **argv, int sockd) try
 	if (!imail.load_from_str(pbuff.c_str(), pbuff.size()))
 		return MIDB_E_IMAIL_RETRIEVE;
 	Json::Value digest;
-	if (imail.make_digest(&mess_len, digest) <= 0)
+	if (imail.make_digest(digest) <= 0)
 		return MIDB_E_IMAIL_DIGEST;
 	digest["file"] = "";
 	auto djson = json_to_str(digest);

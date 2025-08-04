@@ -362,14 +362,11 @@ static void replace_qb(char *s)
 
 /*
  *	get the digest string of mail
- *	@param
- *		poffset [out]       for retrieving mail length
  *	@return
  *	   -1                   fatal error
- *		0					buffer length insufficient
  *		1					digest mail OK
  */
-int MAIL::make_digest(size_t *poffset, Json::Value &digest) const try
+int MAIL::make_digest(Json::Value &digest) const try
 {
 	auto pmail = this;
 	char *ptr;
@@ -474,17 +471,17 @@ int MAIL::make_digest(size_t *poffset, Json::Value &digest) const try
 		digest["signed"] = 1;
 	if (b_tags[TAG_ENCRYPT])
 		digest["encrypt"] = 1;
-	*poffset = 0;
 	Json::Value dsarray = Json::arrayValue;
-	if (pmail->get_head()->make_structure_digest("", poffset, dsarray) < 0)
+	size_t offset = 0;
+	if (pmail->get_head()->make_structure_digest("", &offset, dsarray) < 0)
 		return -1;
 	digest["structure"] = std::move(dsarray);
-	*poffset = 0;
+	offset = 0;
 	dsarray = Json::arrayValue;
-	if (pmail->get_head()->make_mimes_digest("", poffset, dsarray) < 0)
+	if (pmail->get_head()->make_mimes_digest("", &offset, dsarray) < 0)
 		return -1;
 	digest["mimes"] = std::move(dsarray);
-	digest["size"] = Json::Value::UInt64(*poffset);
+	digest["size"] = Json::Value::UInt64(offset);
 	return 1;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1131: ENOMEM");

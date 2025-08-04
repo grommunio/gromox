@@ -256,7 +256,6 @@ static void lq_report(unsigned int qid, unsigned long long mid, const char *txt,
 delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
     const char *address) try
 {
-	size_t mess_len;
 	int sequence_ID;
 	uint64_t nt_time;
 	char tmzone[64], hostname[UDOM_SIZE];
@@ -314,7 +313,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		mlog(LV_ERR, "E-1120: close %s: %s", eml_path.c_str(), strerror(ret));
 
 	Json::Value digest;
-	auto result = pmail->make_digest(&mess_len, digest);
+	auto result = pmail->make_digest(digest);
 	if (result <= 0) {
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1387: remove %s: %s",
