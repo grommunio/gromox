@@ -1955,7 +1955,9 @@ static bool oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 static const ical_component *oxcical_main_event(const event_list_t &evlist, const char **err)
 {
 	*err = nullptr;
-	if (evlist.size() == 1)
+	if (evlist.size() == 0)
+		return nullptr;
+	else if (evlist.size() == 1)
 		return evlist.front();
 	const ical_component *main_event = nullptr;
 	for (const auto &event : evlist) {
@@ -1979,6 +1981,8 @@ static const ical_component *oxcical_main_event(const event_list_t &evlist, cons
 			return nullptr;
 		}
 	}
+	if (main_event == nullptr)
+		*err = "E-2739: Some VEVENT.RECURRENCE-ID points to a UID but there was no RRULE line anywhere";
 	return main_event;
 }
 
