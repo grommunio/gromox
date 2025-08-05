@@ -9,13 +9,16 @@
 #include <memory>
 #include <unistd.h>
 #include <utility>
+#include <fmt/format.h>
 #include <json/value.h>
 #include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/json.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/paths.h>
 #include <gromox/svc_loader.hpp>
@@ -27,6 +30,7 @@
 
 using namespace gromox;
 using namespace gi_dump;
+using LLU = unsigned long long;
 
 namespace {
 
@@ -227,6 +231,66 @@ static void exm_folder_adjust(TPROPVAL_ARRAY &props)
 	exm_adjust_namedprops(props);
 }
 
+/**
+ * @o_excl:	Enforce that we are the first to create the folder, just like
+ * 		open(2)'s %O_EXCL flag.
+ */
+static int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props,
+    bool o_excl, uint64_t *new_fld_id)
+{
+	uint64_t change_num = 0;
+	if (!exmdb_client->allocate_cn(g_storedir, &change_num)) {
+		fprintf(stderr, "exm: allocate_cn(fld) RPC failed\n");
+		return -EIO;
+	}
+	if (!props->has(PR_LAST_MODIFICATION_TIME)) {
+		auto last_time = rop_util_current_nttime();
+		auto ret = props->set(PR_LAST_MODIFICATION_TIME, &last_time);
+		if (ret == ecServerOOM)
+			return -ENOMEM;
+		else if (ret != ecSuccess)
+			return -EIO;
+	}
+	auto err = props->set(PidTagParentFolderId, &parent_fld);
+	if (err == ecServerOOM)
+		return -ENOMEM;
+	else if (err != ecSuccess)
+		return -EIO;
+	auto ret = exm_set_change_keys(props, change_num);
+	if (ret != 0) {
+		fprintf(stderr, "exm: tpropval: %s\n", strerror(-ret));
+		return ret;
+	}
+	auto dn = props->get<const char>(PR_DISPLAY_NAME);
+	if (!o_excl && dn != nullptr) {
+		if (!exmdb_client->get_folder_by_name(g_storedir,
+		    parent_fld, dn, new_fld_id)) {
+			fprintf(stderr, "exm: get_folder_by_name \"%s\" RPC/network failed\n", dn);
+			return -EIO;
+		}
+		if (*new_fld_id != 0)
+			return 0;
+	}
+	if (dn == nullptr)
+		dn = "";
+	if (!exmdb_client->create_folder(g_storedir, CP_ACP, props, new_fld_id, &err)) {
+		fprintf(stderr, "exm: create_folder_by_properties \"%s\" RPC failed\n", dn);
+		return -EIO;
+	} else if (err != ecSuccess) {
+		fprintf(stderr, "exm: create_folder_by_properties \"%s\" RPC failed: %s\n",
+			dn, mapi_strerror(err));
+		return -EIO;
+	} else if (*new_fld_id == 0) {
+		fprintf(stderr, "exm: Could not create folder \"%s\". "
+			"Either it already existed or some there was some other unspecified problem.\n", dn);
+		return -EEXIST;
+	} else if (g_verbose_create) {
+		fprintf(stderr, "exm: Created folder \"%s\" (fid=0x%llx)\n", dn,
+			LLU{rop_util_get_gc_value(*new_fld_id)});
+	}
+	return 0;
+}
+
 static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
     const std::vector<PERMISSION_DATA> &perms)
 {
@@ -301,6 +365,129 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 	fprintf(stderr, "exm: No known placement method for NID %lxh, skipping.\n",
 	        static_cast<unsigned long>(obd.nid));
 	return 0;
+}
+
+static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt,
+    const std::string &im_repr, Json::Value &&digest)
+{
+	uint64_t msg_id = 0, change_num = 0;
+	if (!exmdb_client->allocate_message_id(g_storedir, parent_fld, &msg_id)) {
+		fprintf(stderr, "exm: allocate_message_id RPC failed (timeout?)\n");
+		return -EIO;
+	} else if (!exmdb_client->allocate_cn(g_storedir, &change_num)) {
+		fprintf(stderr, "exm: allocate_cn(msg) RPC failed\n");
+		return -EIO;
+	}
+	ec_error_t ret;
+	if ((ret = ctnt->proplist.set(PidTagMid, &msg_id)) != ecSuccess) {
+		fprintf(stderr, "exm: tpropval: %s\n", mapi_strerror(ret));
+		return ece2nerrno(ret);
+	}
+	auto iret = exm_set_change_keys(&ctnt->proplist, change_num);
+	if (iret != 0) {
+		fprintf(stderr, "exm: tpropval: %s\n", strerror(-iret));
+		return iret;
+	}
+	auto midstr = fmt::format("{}.cn{}", time(nullptr), rop_util_get_gc_value(change_num));
+	digest["file"] = midstr;
+	if (!exmdb_client->imapfile_write(g_storedir, "eml",
+	    midstr.c_str(), im_repr.c_str())) {
+		fprintf(stderr, "exm: imapfile_write RPC failed\n");
+		return -EIO;
+	}
+	auto djson = json_to_str(digest);
+
+	uint64_t outmid = 0, outcn = 0;
+	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld,
+	    ctnt, djson.c_str(), &outmid, &outcn, &ret)) {
+		fprintf(stderr, "exm: write_message RPC failed\n");
+		return -EIO;
+	} else if (ret != ecSuccess) {
+		fprintf(stderr, "exm: write_message: %s\n", mapi_strerror(ret));
+		return -EIO;
+	} else if (g_verbose_create) {
+		fprintf(stderr, "Created new message 0x%llx:0x%llx\n",
+			LLU{rop_util_get_gc_value(parent_fld)},
+			LLU{rop_util_get_gc_value(outmid)});
+	}
+	return 0;
+}
+
+static int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct,
+    const std::string &im_repr, Json::Value &&digest, unsigned int mode)
+{
+	auto ts = rop_util_current_nttime();
+	auto ret = ct->proplist.set(PR_MESSAGE_DELIVERY_TIME, &ts);
+	if (ret != ecSuccess)
+		return ece2nerrno(ret);
+	uint64_t folder_id = 0, msg_id = 0;
+	uint32_t r32 = 0;
+	if (mode & DELIVERY_TWOSTEP)
+		mode &= ~(DELIVERY_DO_RULES | DELIVERY_DO_NOTIF);
+	uint64_t change_num = 0;
+	if (!exmdb_client->allocate_cn(g_storedir, &change_num)) {
+		fprintf(stderr, "exm: allocate_cn(msg)[delivery] RPC failed\n");
+		return -EIO;
+	}
+	auto iret = exm_set_change_keys(&ct->proplist, change_num);
+	if (iret != 0) {
+		fprintf(stderr, "exm: tpropval: %s\n", strerror(-iret));
+		return iret;
+	}
+	auto midstr = fmt::format("{}.cn{}", time(nullptr), rop_util_get_gc_value(change_num));
+	digest["file"] = midstr;
+	if (!exmdb_client->imapfile_write(g_storedir, "eml",
+	    midstr.c_str(), im_repr.c_str())) {
+		fprintf(stderr, "exm: imapfile_write RPC failed\n");
+		return -EIO;
+	}
+	auto djson = json_to_str(digest);
+	if (!exmdb_client->deliver_message(g_storedir, ENVELOPE_FROM_NULL,
+	    target, CP_ACP, mode, ct, djson.c_str(), &folder_id, &msg_id, &r32)) {
+		fprintf(stderr, "exm: deliver_message RPC failed: code %u\n",
+		        r32);
+		return -EIO;
+	}
+
+	auto dm_status = static_cast<deliver_message_result>(r32);
+	switch (dm_status) {
+	case deliver_message_result::result_ok:
+		if (g_verbose_create)
+			fprintf(stderr, "Created/delivered new message 0x%llx:0x%llx\n",
+				LLU{rop_util_get_gc_value(folder_id)},
+				LLU{rop_util_get_gc_value(msg_id)});
+		break;
+	case deliver_message_result::result_error:
+		fprintf(stderr, "Message rejected - unspecified reason\n");
+		return EXIT_FAILURE;
+	case deliver_message_result::mailbox_full_bysize:
+		fprintf(stderr, "Message rejected - mailbox has reached quota limit");
+		return EXIT_FAILURE;
+	case deliver_message_result::mailbox_full_bymsg:
+		fprintf(stderr, "Message rejected - mailbox has reached maximum message count (cf. exmdb_provider.cfg:max_store_message_count)");
+		return EXIT_FAILURE;
+	case deliver_message_result::partial_completion:
+		fprintf(stderr, "Partial completion - The server could not save all of the message (wrong permissions/disk full/...)\n");
+		return EXIT_FAILURE;
+	}
+	if (!(mode & DELIVERY_TWOSTEP))
+		return EXIT_SUCCESS;
+	if (exmdb_local_rules_execute == nullptr) {
+		fprintf(stderr, "Programmer's error: libgxs_ruleproc.so was not activated, cannot perform rule processing");
+		return EXIT_FAILURE;
+	}
+	fprintf(stderr, "Exercising TWOSTEP ruleprocessor:\n");
+	if (msg_id == 0) {
+		fprintf(stderr, "deliver_message RPC did not give us a message_id -- not executing any rules.\n");
+		return EXIT_SUCCESS;
+	}
+	auto err = exmdb_local_rules_execute(g_storedir, ENVELOPE_FROM_NULL,
+	           target, folder_id, msg_id, mode);
+	if (err != ecSuccess) {
+		fprintf(stderr, "Rule execution not successful: %s\n", mapi_strerror(err));
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
 }
 
 static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,

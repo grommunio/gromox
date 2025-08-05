@@ -92,6 +92,7 @@ extern std::string g_dstuser, g_storedir_s;
 extern const char *g_storedir;
 extern unsigned int g_user_id, g_wet_run;
 extern unsigned int g_public_folder, g_verbose_create;
+extern ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int);
 
 extern void gi_dump_folder_map(const gi_folder_map_t &);
 extern void gi_dump_name_map(const gi_name_map &);
@@ -101,10 +102,7 @@ extern void gi_name_map_read(const void *, size_t, gi_name_map &);
 extern void gi_name_map_write(const gi_name_map &);
 extern gromox::propid_t gi_resolve_namedprop(const PROPERTY_XNAME &);
 extern int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t cn, const BINARY *oldpcl = nullptr);
-extern int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl, uint64_t *new_fld_id);
 extern int exm_permissions(eid_t, const std::vector<PERMISSION_DATA> &);
-extern int exm_deliver_msg(const char *target, MESSAGE_CONTENT *, const std::string &, Json::Value &&, unsigned int flags = 0);
-extern int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *, const std::string &, Json::Value &&);
 extern int gi_setup_from_user(const char *);
 extern int gi_setup_from_dir(const char *);
 extern int gi_startup_client(unsigned int maxconn = 1);
