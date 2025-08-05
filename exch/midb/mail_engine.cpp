@@ -2142,7 +2142,7 @@ static int me_minst(int argc, char **argv, int sockd) try
 	Json::Value digest;
 	if (imail.make_digest(digest) <= 0)
 		return MIDB_E_IMAIL_DIGEST;
-	digest["file"] = "";
+	digest["file"] = argv[3];
 	auto djson = json_to_str(digest);
 	if (!exmdb_client->imapfile_write(argv[1], "ext", argv[3], djson)) {
 		mlog(LV_ERR, "E-2073: imapfile_write %s/ext/%s failed", argv[1], argv[3]);
@@ -2241,7 +2241,7 @@ static int me_minst(int argc, char **argv, int sockd) try
 	ec_error_t e_result = ecRpcFailed;
 	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(argv[1], cpid,
-	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, {},
+	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, djson.c_str(),
 	    &outmid, &outcn, &e_result) || e_result != ecSuccess)
 		return MIDB_E_MDB_WRITEMESSAGE;
 	return cmd_write(sockd, "TRUE\r\n");
