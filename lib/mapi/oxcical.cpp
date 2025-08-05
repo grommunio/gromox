@@ -1055,6 +1055,19 @@ static bool oxcical_parse_subtype(namemap &phash, uint16_t *plast_propid,
 	return true;
 }
 
+static bool oxcical_set_stateflags(namemap &hash, uint16_t &last_propid,
+    MESSAGE_CONTENT &msg)
+{
+	uint32_t val = 0;
+	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentStateFlags};
+	if (namemap_add(hash, last_propid, std::move(pn)) != 0)
+		return false;
+	if (msg.proplist.set(PROP_TAG(PT_LONG, last_propid), &val) != ecSuccess)
+		return false;
+	++last_propid;
+	return true;
+}
+
 static bool oxcical_parse_dates(const ical_component *ptz_component,
     const ical_line &iline, uint32_t *pcount, uint32_t *pdates)
 {
@@ -2167,6 +2180,8 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 		b_allday = true;
 	if (b_allday && !oxcical_parse_subtype(phash, &last_propid, pmsg, pexception))
 		return "E-2704: oxcical_parse_subtype returned an unspecified error";
+	if (!oxcical_set_stateflags(phash, last_propid, *pmsg))
+		return "E-2739";
 
 	ical_time itime{};
 	piline = pmain_event->get_line("RECURRENCE-ID");
