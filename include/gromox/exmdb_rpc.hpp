@@ -172,6 +172,7 @@ enum class exmdb_callid : uint8_t {
 	imapfile_delete = 0x90,
 	cgkreset = 0x91,
 	write_message /* v3 */ = 0x92,
+	set_maintenance = 0x93,
 	/* update exch/exmdb/names.cpp:exmdb_rpc_idtoname! */
 };
 
@@ -865,6 +866,14 @@ struct exreq_imapfile_write final : public exreq {
 	std::string type, mid, data;
 };
 
+enum class db_maint_mode {
+	usable, hold, reject, hold_waitforexcl, reject_waitforexcl,
+};
+
+struct exreq_set_maintenance final : public exreq {
+	uint32_t mode = 0;
+};
+
 /**
  * FOLDERS:     process folders
  * MESSAGES:    process messages
@@ -1372,6 +1381,7 @@ using exresp_movecopy_folder = exresp_error;
 using exresp_imapfile_write = exresp;
 using exresp_imapfile_delete = exresp;
 using exresp_cgkreset = exresp;
+using exresp_set_maintenance = exresp;
 
 struct DB_NOTIFY_DATAGRAM {
 	char *dir = nullptr;

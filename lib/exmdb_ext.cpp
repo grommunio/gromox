@@ -2282,6 +2282,16 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_imapfile_write &d)
 	return x.p_bytes(d.data.data(), z);
 }
 
+static pack_result exmdb_pull(EXT_PULL &x, exreq_set_maintenance &d)
+{
+	return x.g_uint32(&d.mode);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_maintenance &d)
+{
+	return x.p_uint32(d.mode);
+}
+
 #define RQ_WITH_ARGS \
 	E(get_named_propids) \
 	E(get_named_propnames) \
@@ -2408,7 +2418,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_imapfile_write &d)
 	E(imapfile_read) \
 	E(imapfile_write) \
 	E(imapfile_delete) \
-	E(cgkreset)
+	E(cgkreset) \
+	E(set_maintenance)
 
 /**
  * This uses *& because we do not know which request type we are going to get
@@ -3744,7 +3755,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_imapfile_read &d)
 	E(recalc_store_size) \
 	E(imapfile_write) \
 	E(imapfile_delete) \
-	E(cgkreset)
+	E(cgkreset) \
+	E(set_maintenance)
 #define RSP_WITH_ARGS \
 	E(get_all_named_propids) \
 	E(get_named_propids) \

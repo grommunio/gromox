@@ -1,5 +1,6 @@
 #pragma once
 #include <atomic>
+#include <condition_variable>
 #include <cstdint>
 #include <list>
 #include <map>
@@ -105,7 +106,7 @@ struct db_close;
 using db_handle = std::unique_ptr<sqlite3, db_close>;
 
 /**
- * Per-mailbox state shared across multiple (and basically indepdent of)
+ * Per-mailbox state shared across multiple (and basically independent of)
  * db_conn.
  *
  * @reference: client reference count, db_base can be destroyed when count is 0
@@ -141,7 +142,7 @@ struct db_base {
 	void drop_all();
 	void get_dbs(const char *dir, sqlite3 *&main, sqlite3 *&eph);
 
-private:
+	private:
 	db_handle get_db(const char *dir, DB_TYPE);
 
 	std::mutex sqlite_lock;
@@ -219,6 +220,7 @@ extern void db_engine_init(size_t table_size, int cache_interval, unsigned int t
 extern int db_engine_run();
 extern void db_engine_stop();
 
+extern bool db_engine_set_maint(const char *path, enum db_maint_mode);
 extern db_conn_ptr db_engine_get_db(const char *dir);
 extern BOOL db_engine_vacuum(const char *path);
 extern BOOL db_engine_cgkreset(const char *dir, uint32_t flags);

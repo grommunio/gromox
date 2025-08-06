@@ -140,3 +140,4 @@ EXMIDL(imapfile_read, (const char *dir, const std::string &type, const std::stri
 EXMIDL(imapfile_write, (const char *dir, const std::string &type, const std::string &mid, const std::string &data))
 EXMIDL(imapfile_delete, (const char *dir, const std::string &type, const std::string &mid))
 EXMIDL(cgkreset, (const char *dir, uint32_t flags))
+EXMIDL(set_maintenance, (const char *dir, uint32_t mode))

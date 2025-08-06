@@ -98,9 +98,10 @@ static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
 static pthread_t g_scan_tid;
 static gromox::time_duration g_cache_interval; /* maximum living interval in table */
 static std::vector<pthread_t> g_thread_ids;
-static std::mutex g_list_lock, g_hash_lock;
-static std::condition_variable g_waken_cond;
-static std::unordered_map<std::string, db_base> g_hash_table;
+static std::mutex g_list_lock, g_hash_lock, g_maint_lock;
+static std::condition_variable g_waken_cond, g_maint_cv, g_maint_ref_cv;
+static std::unordered_map<std::string, db_base> g_hash_table; /* protected by g_hash_lock */
+static std::unordered_map<std::string, db_maint_mode> g_maint_table; /* protected by g_maint_lock */
 /* List of queued searchcriteria, and list of searchcriteria evaluated right now */
 static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
 static std::optional<std::counting_semaphore<1>> g_autoupg_limiter;
@@ -198,6 +199,45 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	return 0;
 }
 
+bool db_engine_set_maint(const char *path, enum db_maint_mode mode) try
+{
+	if (mode == db_maint_mode::usable) {
+		std::lock_guard mhold(g_maint_lock);
+		g_maint_table.erase(path);
+		g_maint_cv.notify_all();
+		mlog(LV_INFO, "I-2510: Mailbox %s set to maintenance mode %u",
+			path, static_cast<unsigned int>(mode));
+		return true;
+	}
+	bool wait = false;
+	if (mode == db_maint_mode::hold_waitforexcl) {
+		wait = true;
+		mode = db_maint_mode::hold;
+	} else if (mode == db_maint_mode::reject_waitforexcl) {
+		wait = true;
+		mode = db_maint_mode::reject;
+	}
+
+	{
+		std::lock_guard mhold(g_maint_lock);
+		g_maint_table.try_emplace(path).first->second = mode;
+	}
+	g_maint_cv.notify_all();
+	mlog(LV_INFO, "I-2510: Mailbox %s set to maintenance mode %u",
+		path, static_cast<unsigned int>(mode));
+	if (!wait)
+		return true;
+	std::unique_lock hhold(g_hash_lock);
+	g_maint_ref_cv.wait(hhold, [&]() {
+		auto it = g_hash_table.find(path);
+		return it == g_hash_table.end() || it->second.reference == 0;
+	});
+	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1291: ENOMEM");
+	return false;
+}
+
 /**
  * Query or create db_conn in hash table.
  *
@@ -206,10 +246,21 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
  */
 db_conn_ptr db_engine_get_db(const char *path)
 {
-	db_base *pdb;
-	
 	if (*path == '\0')
 		return std::nullopt;
+
+	{
+		std::unique_lock mhold(g_maint_lock);
+		g_maint_cv.wait(mhold, [&]() {
+			auto i = g_maint_table.find(path);
+			return i == g_maint_table.cend() || i->second != db_maint_mode::hold;
+		});
+		auto m_iter = g_maint_table.find(path);
+		if (m_iter != g_maint_table.cend() && m_iter->second == db_maint_mode::reject)
+			return std::nullopt;
+	}
+
+	db_base *pdb;
 	std::unique_lock hhold(g_hash_lock);
 	auto it = g_hash_table.find(path);
 	if (it != g_hash_table.end()) {
@@ -624,6 +675,7 @@ db_conn::~db_conn()
 		return;
 	m_base->handle_spares(std::move(psqlite), std::move(m_sqlite_eph));
 	--m_base->reference;
+	g_maint_ref_cv.notify_all();
 }
 
 db_conn &db_conn::operator=(db_conn &&o)

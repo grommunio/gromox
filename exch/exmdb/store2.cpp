@@ -53,6 +53,11 @@ BOOL exmdb_server::unload_store(const char *dir)
 	return db_engine_unload_db(dir);
 }
 
+BOOL exmdb_server::set_maintenance(const char *dir, uint32_t mode)
+{
+	return db_engine_set_maint(dir, static_cast<enum db_maint_mode>(mode)) ? TRUE : false;
+}
+
 BOOL exmdb_server::cgkreset(const char *dir, uint32_t flags)
 {
 	return db_engine_cgkreset(dir, flags);
