@@ -423,11 +423,12 @@ struct sSyncState {
  * members.
  */
 struct sTime {
+	sTime() = default;
 	sTime(const tinyxml2::XMLElement*);
 
-	uint8_t hour;
-	uint8_t minute;
-	uint8_t second;
+	uint8_t hour = 0;
+	uint8_t minute = 0;
+	uint8_t second = 0;
 };
 
 /**
@@ -2219,13 +2220,14 @@ struct tTasksFolderType : public tBaseFolderType {
  * Types.xsd:6372
  */
 struct tSerializableTimeZoneTime {
+	tSerializableTimeZoneTime() = default;
 	explicit tSerializableTimeZoneTime(const tinyxml2::XMLElement*);
 
-	int32_t Bias;
-	sTime Time;
-	int32_t DayOrder;
-	int32_t Month;
-	Enum::DayOfWeekType DayOfWeek;
+	int32_t Bias = 0;
+	sTime Time{};
+	int32_t DayOrder = 0;
+	int32_t Month = 0;
+	Enum::DayOfWeekType DayOfWeek{};
 	std::optional<int32_t> Year;
 
 	bool valid() const;
@@ -2261,11 +2263,13 @@ struct tSetItemField : public tChangeDescription {
  * Types.xsd:6383
  */
 struct tSerializableTimeZone {
+	tSerializableTimeZone() = default;
 	explicit tSerializableTimeZone(const tinyxml2::XMLElement*);
+	explicit tSerializableTimeZone(int32_t bias) : Bias(bias) {}
 
-	int32_t Bias;
-	tSerializableTimeZoneTime StandardTime;
-	tSerializableTimeZoneTime DaylightTime;
+	int32_t Bias = 0;
+	tSerializableTimeZoneTime StandardTime{};
+	tSerializableTimeZoneTime DaylightTime{};
 
 	std::chrono::minutes offset(time_point) const;
 	time_point apply(time_point) const;
