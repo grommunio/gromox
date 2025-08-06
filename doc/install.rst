@@ -1,6 +1,6 @@
 ..
 	SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-	SPDX-FileCopyrightText: 2024 grommunio GmbH
+	SPDX-FileCopyrightText: 2025 grommunio GmbH
 
 Dependency installation
 =======================
@@ -14,7 +14,7 @@ dependencies are needed:
 * cURL library
 * fmt >= 8
 * jsoncpp
-* libHX >= 4.27
+* libHX >= 4.28
 * libiconv (OpenBSD)
 * libxml2 (we use this for HTML parsing)
 * libzstd >= 1.4

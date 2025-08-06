@@ -10,6 +10,7 @@
 #include <variant>
 #include <vector>
 #include <libHX/scope.hpp>
+#include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <gromox/ab_tree.hpp>
@@ -1137,6 +1138,25 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 
 	if (!request.FreeBusyViewOptions && !request.SuggestionsViewOptions)
 		throw EWSError::InvalidFreeBusyViewType(E3013);
+	if (!request.TimeZone) {
+		auto tag = ctx.request().header;
+		if (tag != nullptr)
+			tag = tag->FirstChildElement("t:TimeZoneContext");
+		if (tag != nullptr)
+			tag = tag->FirstChildElement("t:TimeZoneDefinition");
+		if (tag != nullptr)
+			tag = tag->FirstChildElement("t:Periods");
+		if (tag != nullptr)
+			tag = tag->FirstChildElement("t:Period");
+		/* Input is like <t:Period Bias="P0DT0H0M0.0S" Name="Standard" Id="Std" /> */
+		auto bias = tag != nullptr ? tag->Attribute("Bias") : nullptr;
+		if (bias != nullptr) {
+			char *end = nullptr;
+			auto minutes = HX_strtoull8601p_sec(bias, &end) / 60;
+			if (minutes != 0 || end != nullptr)
+				request.TimeZone.emplace(minutes);
+		}
+	}
 	if (!request.TimeZone)
 		throw EWSError::TimeZone(E3014);
 
