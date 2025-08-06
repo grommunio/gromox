@@ -42,6 +42,8 @@ emptyfld: remove objects from folders
 .IP \(bu 4
 foreach.*: iterate over security objects
 .IP \(bu 4
+freeze: halt all operations on a mailbox
+.IP \(bu 4
 get\-freebusy: test FB schedule lookups
 .IP \(bu 4
 get\-photo: retrieve user image from store and print to stdout
@@ -63,6 +65,8 @@ set\-photo: read user image from stdin and save to store
 .IP \(bu 4
 set\-websettings, set\-websettings\-persistent, set\-websettings\-recipients:
 read new grommunio-web settings from stdin and save to store
+.IP \(bu 4
+thaw: unfreeze a mailbox
 .IP \(bu 4
 unload: issue the "unload_store" RPC for a mailbox
 .IP \(bu 4
@@ -284,6 +288,19 @@ Right end of the timeframe to query.
 Sets the actor of the operation. This is used for permission checks.
 If the \-x option is omitted, the action is performed as the mailbox
 owner.
+.SH freeze
+.SS Synopsis
+\fBfreeze\fP [\fB\-\-no\-wait\fP]
+.SS Description
+Tell the Information Store to halt all new operations on the mailbox.
+Outstanding operations that are currently in processing are allowed to
+complete. New requests for the mailbox will be rejected. Special requests like
+(mbop's) \fIunload\fP or \fIthaw\fP are nevertheless allowed in frozen state,
+for obvious reasons.
+.SS Options
+.TP
+\fB\-\-no\-wait\fP
+Do not wait for outstanding operations to complete.
 .SH get\-photo
 .SS Synopsis
 \fBget\-photo >\fP\fIsomefile\fP

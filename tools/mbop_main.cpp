@@ -14,6 +14,7 @@
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/exmdb_client.hpp>
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/freebusy.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
@@ -78,12 +79,12 @@ void command_overview()
 {
 	fprintf(stderr, "Commands:\n\tcgkreset clear-photo clear-profile clear-rwz delmsg "
 		"echo-maildir echo-username "
-		"emptyfld get-freebusy get-photo get-websettings "
+		"emptyfld freeze get-freebusy get-photo get-websettings "
 		"get-websettings-persistent "
 		"get-websettings-recipients ping "
 		"purge-datafiles purge-softdelete recalc-sizes set-locale "
 		"set-photo set-websettings set-websettings-persistent "
-		"set-websettings-recipients unload vacuum\n");
+		"set-websettings-recipients thaw unload vacuum\n");
 	fprintf(stderr, "Command chaining: ( command1 c1args... ) ( command2 c2args... )...\n");
 }
 
@@ -161,6 +162,8 @@ static int main(int argc, char **argv)
 		ok = exmdb_client->ping_store(g_storedir);
 	else if (strcmp(argv[0], "unload") == 0)
 		ok = exmdb_client->unload_store(g_storedir);
+	else if (strcmp(argv[0], "thaw") == 0)
+		ok = exmdb_client->set_maintenance(g_storedir, static_cast<uint32_t>(db_maint_mode::usable));
 	else if (strcmp(argv[0], "vacuum") == 0)
 		ok = exmdb_client->vacuum(g_storedir);
 	else if (strcmp(argv[0], "recalc-sizes") == 0)
@@ -169,6 +172,37 @@ static int main(int argc, char **argv)
 		fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
 		return EXIT_PARAM;
 	}
+	if (!ok) {
+		fprintf(stderr, "%s: the operation failed\n", argv[0]);
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+} /* namespace simple_rpc */
+
+namespace set_maint {
+
+static unsigned int g_fast;
+static constexpr HXoption g_options_table[] = {
+	{"no-wait", 0, HXTYPE_NONE, &g_fast, {}, {}, 0, "Do not wait for reference count to reach zero"},
+	MBOP_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
+static int freeze_main(int argc, char **argv)
+{
+	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
+		return EXIT_PARAM;
+	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
+	/*
+	 * db_maint_mode::hold is not offered presently, since exmdb is prone
+	 * to get into out-of-memory situations when used.
+	 */
+	enum db_maint_mode mode = g_fast ? db_maint_mode::reject :
+	                          db_maint_mode::reject_waitforexcl;
+	auto ok = exmdb_client->set_maintenance(g_storedir, static_cast<uint32_t>(mode));
 	if (!ok) {
 		fprintf(stderr, "%s: the operation failed\n", argv[0]);
 		return EXIT_FAILURE;
@@ -516,6 +550,8 @@ int cmd_parser(int argc, char **argv)
 		return EXIT_SUCCESS;
 	} else if (strcmp(argv[0], "cgkreset") == 0) {
 		return cgkreset::main(argc, argv);
+	} else if (strcmp(argv[0], "freeze") == 0) {
+		return set_maint::freeze_main(argc, argv);
 	}
 	return simple_rpc::main(argc, argv);
 }
