@@ -3365,6 +3365,18 @@ void tFolderResponseShape::tags(sShape& shape) const
 	if (baseShape >= 1)
 		for (uint32_t tag : tagsDefault)
 			shape.add(tag, sShape::FL_FIELD);
+	if (baseShape == 2) {
+		/* "tagsAll" is really an _extra_ list (over default), not "all" */
+		for (uint32_t tag : tagsAll)
+			shape.add(tag, sShape::FL_FIELD);
+
+		/* XXX
+		bool is_root = ... == PRIVATE_FID_ROOT;
+		if (is_root)
+			for (uint32_t tag : tagsAllRootOnly)
+				shape.add(tag, sShape::FL_FIELD);
+		*/
+	}
 	if (AdditionalProperties)
 		for (const auto& additional : *AdditionalProperties)
 			additional.tags(shape);
