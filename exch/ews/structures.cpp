@@ -1329,8 +1329,8 @@ tAttachment::tAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
 	fromProp(props.find(PR_ATTACH_SIZE), Size);
 	fromProp(props.find(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
 	auto flags = props.get<const uint32_t>(PR_ATTACH_FLAGS);
-	if (flags)
-		IsInline = *flags & ATT_MHTML_REF;
+	if (flags != nullptr && *flags & ATT_MHTML_REF)
+		IsInline = true;
 }
 
 sAttachment tAttachment::create(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
