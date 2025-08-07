@@ -21,20 +21,35 @@
 using namespace gromox;
 
 namespace {
-struct REWRITE_NODE {
-	REWRITE_NODE() = default;
-	REWRITE_NODE(REWRITE_NODE &&) noexcept;
-	~REWRITE_NODE();
-	void operator=(REWRITE_NODE &&) = delete;
+
+class rewrite_list;
+class rewrite_rule {
+	public:
+	rewrite_rule() = default;
+	rewrite_rule(rewrite_rule &&) noexcept;
+	~rewrite_rule();
+	void operator=(rewrite_rule &&) = delete;
+	bool try_replace(char *uri, int uri_size);
+
+	private:
 	regex_t search_pattern{};
 	std::string replace_string;
 	bool reg_set = false;
+
+	friend class rewrite_list;
 };
+using REWRITE_NODE = rewrite_rule;
+
+class rewrite_list : public std::vector<rewrite_rule> {
+	public:
+	int emplace(const char *from, const char *to);
+};
+
 }
 
-static std::vector<REWRITE_NODE> g_rewrite_list;
+static rewrite_list g_rewrite_list;
 
-REWRITE_NODE::REWRITE_NODE(REWRITE_NODE &&o) noexcept :
+rewrite_rule::rewrite_rule(rewrite_rule &&o) noexcept :
     replace_string(std::move(o.replace_string))
 {
 	if (reg_set)
@@ -44,14 +59,13 @@ REWRITE_NODE::REWRITE_NODE(REWRITE_NODE &&o) noexcept :
 	o.reg_set = false;
 }
 
-REWRITE_NODE::~REWRITE_NODE()
+rewrite_rule::~rewrite_rule()
 {
 	if (reg_set)
 		regfree(&search_pattern);
 }
 
-static BOOL mod_rewrite_rreplace(char *buf,
-	int size, regex_t *re, const char *rp)
+bool rewrite_rule::try_replace(char *buf, int size)
 {
 	char *pos;
 	int last_pos;
@@ -61,15 +75,15 @@ static BOOL mod_rewrite_rreplace(char *buf,
 	char original_rp[8192];
 	char original_buf[8192];
 
-	if (0 != regexec(re, buf, 10, pmatch, 0)) {
+	if (regexec(&search_pattern, buf, 10, pmatch, 0))
 		return FALSE;
-	}
+	auto &rp = replace_string;
 	if ('\\' == rp[0] && '0' == rp[1]) {
-		gx_strlcpy(buf, rp + 2, size);
+		gx_strlcpy(buf, &rp[2], size);
 		return TRUE;
 	}
 	gx_strlcpy(original_buf, buf, std::size(original_buf));
-	gx_strlcpy(original_rp, rp, std::size(original_rp));
+	gx_strlcpy(original_rp, rp.c_str(), std::size(original_rp));
 	for (i = 0; i < 10; ++i)
 		rp_offsets[i] = -1;
 	for (pos=original_rp; '\0'!=*pos; pos++) {
@@ -109,23 +123,28 @@ static BOOL mod_rewrite_rreplace(char *buf,
 	return FALSE;
 }
 
-static int mod_rewrite_default()
+int rewrite_list::emplace(const char *from, const char *to)
 {
-	REWRITE_NODE node;
 	static constexpr size_t ebufsize = 512;
 	auto errbuf = std::make_unique<char[]>(ebufsize);
+	rewrite_rule node;
 
-	mlog(LV_INFO, "mod_rewrite: defaulting to built-in rule list");
-	node.replace_string = "\\1/grommunio-sync/index.php";
-	auto ret = regcomp(&node.search_pattern, "\\(/Microsoft-Server-ActiveSync\\)", REG_ICASE);
+	node.replace_string = to;
+	auto ret = regcomp(&node.search_pattern, from, REG_ICASE);
 	if (ret != 0) {
 		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
-		mlog(LV_ERR, "mod_rewrite: regcomp: %s", errbuf.get());
+		mlog(LV_ERR, "mod_rewrite %s: regcomp: %s", from, errbuf.get());
 		return -EINVAL;
 	}
 	node.reg_set = true;
 	g_rewrite_list.push_back(std::move(node));
 	return 0;
+}
+
+static int mod_rewrite_default()
+{
+	mlog(LV_INFO, "mod_rewrite: defaulting to built-in rule list");
+	return g_rewrite_list.emplace("\\(/Microsoft-Server-ActiveSync\\)", "\\1/grommunio-sync/index.php");
 }
 
 int mod_rewrite_run(const char *sdlist) try
@@ -170,16 +189,9 @@ int mod_rewrite_run(const char *sdlist) try
 				" find replace sequence number", line_no);
 			continue;
 		}
-		REWRITE_NODE node;
-		node.replace_string = ptoken;
-		auto ret = regcomp(&node.search_pattern, line, REG_ICASE);
-		if (ret != 0) {
-			regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);
-			mlog(LV_ERR, "mod_rewrite: line %d: %s", line_no, errbuf.get());
-			return -EINVAL;
-		}
-		node.reg_set = true;
-		g_rewrite_list.push_back(std::move(node));
+		auto err = g_rewrite_list.emplace(line, ptoken);
+		if (err != 0)
+			return err;
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
@@ -196,8 +208,7 @@ bool mod_rewrite_process(const char *uri_buff, size_t uri_len,
 	for (auto &node : g_rewrite_list) {
 		memcpy(tmp_buff, uri_buff, uri_len);
 		tmp_buff[uri_len] = '\0';
-		if (mod_rewrite_rreplace(tmp_buff, sizeof(tmp_buff),
-		    &node.search_pattern, node.replace_string.c_str())) {
+		if (node.try_replace(tmp_buff, std::size(tmp_buff))) {
 			f_request_uri = tmp_buff;
 			return TRUE;
 		}
