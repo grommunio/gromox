@@ -343,7 +343,7 @@ endif
 EXTRA_HEADERS = include/gromox/paths.h.in lib/mapi/oxcmail_int.hpp
 list_files = data/cpid.txt data/exmdb_list.txt data/folder_names.txt data/lang_charset.txt data/lcid.txt data/mime_extension.txt data/propnames.txt
 pkgdata_DATA = data/abkt.pak data/timezone.pak
-dist_pkgdata_DATA = ${list_files} data/gdbinit data/fpm-gromox.conf.sample data/gromox.ldif data/sqliterc
+dist_pkgdata_DATA = ${list_files} data/Services.wsdl data/Messages.xsd data/Types.xsd data/gdbinit data/fpm-gromox.conf.sample data/gromox.ldif data/sqliterc
 toolprogs = tools/defs2php.pl tools/defs2php.sh tools/duplogid tools/enumsort tools/exmidl.pl tools/exmidl.sh tools/includesort tools/mpak.pl tools/mpak.sh tools/proptagsort tools/stackusage tools/warncount tools/zcidl.pl tools/zcidl.sh
 EXTRA_DIST += ${abkt_files} ${tzd_files} ${header_files} ${EXTRA_HEADERS} ${toolprogs} LICENSE.txt README.rst default.sym exch/bounce_exch.cpp exch/php/ews/thumbnail.php exch/php/lib/conf.php exch/php/lib/db.php lib/haproxy.cpp tools/genmails tools/staticnpmap.cpp
 

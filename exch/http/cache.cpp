@@ -159,6 +159,9 @@ static int mod_cache_defaults()
 {
 	mlog(LV_INFO, "mod_cache: defaulting to built-in list of handled paths");
 	g_directory_list.emplace("*", "/web", DATADIR "/grommunio-web");
+	g_directory_list.emplace("*", "/EWS/Messages.xsd", PKGDATADIR "/Messages.xsd");
+	g_directory_list.emplace("*", "/EWS/Services.wsdl", PKGDATADIR "/Services.wsdl");
+	g_directory_list.emplace("*", "/EWS/Types.xsd", PKGDATADIR "/Types.xsd");
 	return 0;
 }
 

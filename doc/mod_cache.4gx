@@ -21,13 +21,16 @@ Domain or wildcard to match the HTTP Host: header with.
 .IP \(bu 4
 URI path (prefix) to match
 .IP \(bu 4
-Target directory within the filesystem
+Target file/directory within the filesystem
 .PP
 If the file has no lines, no documents will be served this way.
 If the file is absent however, a set of default entries will be used.
 .SS Default entries
 .nf
 * /web /usr/share/grommunio-web
+* /EWS/Messages.xsd /usr/share/gromox/Messages.xsd
+* /EWS/Services.wsdl /usr/share/gromox/Services.wsdl
+* /EWS/Types.xsd /usr/share/gromox/Types.xsd
 .fi
 .SH Files
 .IP \(bu 4

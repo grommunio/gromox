@@ -183,6 +183,7 @@
       <xs:enumeration value="V2017_01_07" />
       <xs:enumeration value="V2017_04_14" />
       <xs:enumeration value="V2017_07_11" />
+      <!-- M365 -->
       <xs:enumeration value="V2017_10_09" />
       <xs:enumeration value="V2018_01_08" />
     </xs:restriction>
