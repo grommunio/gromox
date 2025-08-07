@@ -21,10 +21,12 @@ namespace gromox::EWS::SOAP {
 /**
  * @brief      Generate empty SOAP Envelope
  */
-Envelope::Envelope(const VersionInfo &ver)
+Envelope::Envelope(const VersionInfo &ver, bool with_decl)
 {
-	auto decl = doc.NewDeclaration();
-	doc.InsertEndChild(decl);
+	if (with_decl) {
+		auto decl = doc.NewDeclaration();
+		doc.InsertEndChild(decl);
+	}
 	XMLElement* root = doc.NewElement("SOAP:Envelope");
 	doc.InsertEndChild(root);
 	root->SetAttribute("xmlns:SOAP", NS_SOAP);
