@@ -2870,7 +2870,7 @@ struct tUserOofSettings {
 /**
  * Types.xsd:4264
  */
-struct tResolution : public tFindResponsePagingAttributes {
+struct tResolution {
 	static constexpr char NAME[] = "Resolution";
 
 	tResolution() = default;
@@ -2878,6 +2878,15 @@ struct tResolution : public tFindResponsePagingAttributes {
 
 	tEmailAddressType Mailbox;
 	std::optional<tContact> Contact;
+};
+
+/**
+ * Types.xsd:4264
+ */
+struct tResolutionSet : public tFindResponsePagingAttributes {
+	std::vector<tResolution> Resolution;
+
+	void serialize(tinyxml2::XMLElement *) const;
 };
 
 /**
@@ -3837,7 +3846,7 @@ struct mResolveNamesResponseMessage : public mResponseMessageType {
 
 	using mResponseMessageType::mResponseMessageType;
 
-	std::optional<std::vector<tResolution>> ResolutionSet;
+	std::optional<tResolutionSet> ResolutionSet;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

@@ -2044,10 +2044,14 @@ void tFindResponsePagingAttributes::serialize(XMLElement* xml) const
 
 void tResolution::serialize(XMLElement* xml) const
 {
-	tFindResponsePagingAttributes::serialize(xml);
-
 	XMLDUMPT(Mailbox);
 	XMLDUMPT(Contact);
+}
+
+void tResolutionSet::serialize(XMLElement* xml) const
+{
+	tFindResponsePagingAttributes::serialize(xml);
+	XMLDUMPT(Resolution);
 }
 
 mResolveNamesRequest::mResolveNamesRequest(const XMLElement* xml) :

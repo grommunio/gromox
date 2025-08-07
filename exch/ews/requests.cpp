@@ -1593,7 +1593,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 
 	mResolveNamesResponseMessage& msg = data.ResponseMessages.emplace_back();
 	auto& resolutionSet = msg.ResolutionSet.emplace();
-	tResolution& resol = resolutionSet.emplace_back();
+	tResolution& resol = resolutionSet.Resolution.emplace_back();
 	resol.Mailbox.Name = displayName ? static_cast<const char *>(displayName->pvalue) : request.UnresolvedEntry;
 	resol.Mailbox.EmailAddress = request.UnresolvedEntry;
 	resol.Mailbox.RoutingType = "SMTP";
@@ -1601,6 +1601,9 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 
 	tContact& cnt = resol.Contact.emplace(sShape(userProps));
 	tpropval_array_free_internal(&userProps);
+
+	resolutionSet.TotalItemsInView = resolutionSet.Resolution.size();
+	resolutionSet.IncludesLastItemInRange = true;
 
 	std::vector<std::string> aliases;
 	if (!mysql_adaptor_get_user_aliases(request.UnresolvedEntry.c_str(), aliases))
