@@ -905,6 +905,18 @@ void tEmailAddressDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPA(MailboxType);
 }
 
+tFileAttachment::tFileAttachment(const XMLElement *xml)
+{
+	if (const XMLElement *xp = xml->FirstChildElement("Name"))
+		Name = fromXMLNode<std::string>(xp);
+	if (const XMLElement *xp = xml->FirstChildElement("IsInline"))
+		IsInline.emplace(fromXMLNode<bool>(xp));
+	if (const XMLElement *xp = xml->FirstChildElement("IsContactPhoto"))
+		IsContactPhoto.emplace(fromXMLNode<bool>(xp));
+	if (const XMLElement *xp = xml->FirstChildElement("Content"))
+		Content.emplace(xp);
+}
+
 void tFileAttachment::serialize(tinyxml2::XMLElement* xml) const
 {
 	tAttachment::serialize(xml);
@@ -1712,6 +1724,27 @@ void mGetAppManifestsResponse::serialize(tinyxml2::XMLElement* xml) const
 {
 	mResponseMessageType::serialize(xml);
 	xml->InsertNewChildElement("m:Manifests");
+}
+
+mCreateAttachmentRequest::mCreateAttachmentRequest(const XMLElement *xml) :
+	XMLINIT(ParentItemId)
+{
+	const XMLElement *attachments = xml->FirstChildElement("Attachments");
+	if (attachments != nullptr)
+		for (const XMLElement *fa = attachments->FirstChildElement("FileAttachment");
+		    fa != nullptr; fa = fa->NextSiblingElement("FileAttachment"))
+		        Attachments.emplace_back(fa);
+}
+
+void mCreateAttachmentResponseMessage::serialize(XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(Attachments);
+}
+
+void mCreateAttachmentResponse::serialize(XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
 }
 
 mGetAttachmentRequest::mGetAttachmentRequest(const XMLElement* xml) :

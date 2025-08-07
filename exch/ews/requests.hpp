@@ -17,6 +17,7 @@ namespace gromox::EWS::Requests {
 #define EWSFUNC_NC(in) void process(gromox::EWS::Structures::in&&, tinyxml2::XMLElement*, gromox::EWS::EWSContext&)
 
 EWSFUNC_NC(mConvertIdRequest);
+EWSFUNC(mCreateAttachmentRequest);
 EWSFUNC(mCreateFolderRequest);
 EWSFUNC(mCreateItemRequest);
 EWSFUNC(mDeleteFolderRequest);

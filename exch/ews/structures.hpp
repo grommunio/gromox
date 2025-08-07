@@ -513,6 +513,7 @@ using sAlternateId = std::variant<tAlternateId, tAlternatePublicFolderId, tAlter
  * Types.xsd:1611
  */
 struct tAttachment : public NS_EWS_Types {
+	tAttachment() = default;
 	explicit tAttachment(const sAttachmentId&, const TPROPVAL_ARRAY&);
 
 	static sAttachment create(const sAttachmentId&, const TPROPVAL_ARRAY&);
@@ -923,6 +924,8 @@ struct tFieldURI {
 struct tFileAttachment : public tAttachment {
 	static constexpr char NAME[] = "FileAttachment";
 
+	tFileAttachment() = default;
+	tFileAttachment(const tinyxml2::XMLElement *);
 	tFileAttachment(const sAttachmentId&, const TPROPVAL_ARRAY&);
 
 	std::optional<bool> IsContactPhoto;
@@ -3284,6 +3287,36 @@ struct mFindItemResponse {
 	std::vector<mFindItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:1460
+ */
+struct mCreateAttachmentRequest {
+	mCreateAttachmentRequest(const tinyxml2::XMLElement *);
+
+	tItemId ParentItemId;
+	std::vector<tFileAttachment> Attachments;
+};
+
+/**
+ * Messages.xsd:1471
+ */
+struct mCreateAttachmentResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "CreateAttachmentResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+	using mResponseMessageType::success;
+
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::vector<sAttachment> Attachments;
+};
+
+struct mCreateAttachmentResponse {
+	void serialize(tinyxml2::XMLElement *) const;
+
+	std::vector<mCreateAttachmentResponseMessage> ResponseMessages;
 };
 
 /**

@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
 #include <fstream>
 #include <unordered_set>
 #include <variant>
@@ -12,7 +14,9 @@
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/eid_array.hpp>
+#include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
+#include <gromox/mapitags.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
@@ -358,6 +362,108 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process CreateAttachment
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mCreateAttachmentRequest &&request, XMLElement *response,
+    const EWSContext &ctx)
+{
+	response->SetName("m:CreateAttachmentResponse");
+
+	mCreateAttachmentResponse data;
+	try {
+		ctx.assertIdType(request.ParentItemId.type, tFolderId::ID_ITEM);
+		sMessageEntryId mid(request.ParentItemId.Id.data(), request.ParentItemId.Id.size());
+		sFolderSpec parentFolder = ctx.resolveFolder(mid);
+		std::string dir = ctx.getDir(parentFolder);
+		ctx.validate(dir, mid);
+		// XXX: Permission check is wrong; we must check whether message can be modified
+		if (!(ctx.permissions(dir, parentFolder.folderId) & frightsEditAny))
+			throw EWSError::AccessDenied(E3190);
+
+		for (const tFileAttachment &att : request.Attachments) try {
+			auto mInst = ctx.plugin().loadMessageInstance(dir,
+			             mid.folderId(), mid.messageId());
+			uint32_t aInstId = 0, aNum = 0;
+			if (!ctx.plugin().exmdb.create_attachment_instance(dir.c_str(),
+			    mInst->instanceId, &aInstId, &aNum))
+				throw EWSError::ItemSave(E3094);
+
+			static constexpr uint32_t rendpos = UINT32_MAX;
+			mapitime_t modtime = rop_util_current_nttime();
+			const TAGGED_PROPVAL initProps[] = {
+				{PR_ATTACH_NUM, &aNum},
+				{PR_RENDERING_POSITION, deconst(&rendpos)},
+				{PR_CREATION_TIME, &modtime},
+				{PR_LAST_MODIFICATION_TIME, &modtime},
+			};
+			const TPROPVAL_ARRAY initList = {std::size(initProps), deconst(initProps)};
+			PROBLEM_ARRAY initProblems;
+			if (!ctx.plugin().exmdb.set_instance_properties(dir.c_str(),
+			    aInstId, &initList, &initProblems))
+				throw EWSError::ItemSave(E3094);
+
+			ATTACHMENT_CONTENT ac{};
+			std::vector<TAGGED_PROPVAL> props;
+			if (att.Name) {
+				props.push_back({PR_ATTACH_LONG_FILENAME, EWSContext::cpystr(*att.Name)});
+				props.push_back({PR_ATTACH_FILENAME, EWSContext::cpystr(*att.Name)});
+				props.push_back({PR_DISPLAY_NAME, EWSContext::cpystr(*att.Name)});
+			}
+			static constexpr uint32_t method = ATTACH_BY_VALUE;
+			props.push_back({PR_ATTACH_METHOD, EWSContext::construct<uint32_t>(method)});
+			if (att.IsInline && *att.IsInline) {
+				static constexpr uint32_t flags = ATT_MHTML_REF;
+				props.push_back({PR_ATTACH_FLAGS, EWSContext::construct<uint32_t>(flags)});
+			}
+			if (att.IsContactPhoto && *att.IsContactPhoto)
+				props.push_back({PR_ATTACHMENT_CONTACTPHOTO, EWSContext::construct<uint8_t>(1)});
+			if (att.Content) {
+				auto bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(att.Content->size()), {EWSContext::alloc<uint8_t>(att.Content->size())}});
+				memcpy(bin->pv, att.Content->data(), att.Content->size());
+				props.push_back({PR_ATTACH_DATA_BIN, bin});
+				props.push_back({PR_ATTACH_SIZE, EWSContext::construct<int32_t>(bin->cb)});
+			}
+			ac.proplist.count = props.size();
+			ac.proplist.ppropval = props.data();
+			ac.pembedded = nullptr;
+			PROBLEM_ARRAY problems;
+			if (!ctx.plugin().exmdb.write_attachment_instance(dir.c_str(),
+			    aInstId, &ac, false, &problems))
+				throw EWSError::ItemSave(E3094);
+			ec_error_t err;
+			if (!ctx.plugin().exmdb.flush_instance(dir.c_str(),
+			    aInstId, &err) || err != ecSuccess)
+				throw EWSError::ItemSave(E3094);
+
+			sShape shape;
+			ctx.updated(dir, mid, shape);
+			TPROPVAL_ARRAY msgProps = shape.write();
+			PROBLEM_ARRAY msgProblems;
+			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
+			    ctx.effectiveUser(parentFolder), CP_ACP, mid.messageId(),
+			    &msgProps, &msgProblems))
+				throw EWSError::ItemSave(E3092);
+
+			mCreateAttachmentResponseMessage msg;
+			sAttachmentId aid(ctx.getItemEntryId(dir, mid.messageId()), aNum);
+			msg.Attachments.emplace_back(ctx.loadAttachment(dir, aid));
+			msg.success();
+			data.ResponseMessages.emplace_back(std::move(msg));
+		} catch (const EWSError &err) {
+			data.ResponseMessages.emplace_back(err);
+		}
+	} catch (const EWSError &err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 

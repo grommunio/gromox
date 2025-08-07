@@ -230,6 +230,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"ConvertId", process<Structures::mConvertIdRequest>},
 	{"CopyFolder", process<Structures::mCopyFolderRequest>},
 	{"CopyItem", process<Structures::mCopyItemRequest>},
+	{"CreateAttachment", process<Structures::mCreateAttachmentRequest>},
 	{"CreateFolder", process<Structures::mCreateFolderRequest>},
 	{"CreateItem", process<Structures::mCreateItemRequest>},
 	{"DeleteFolder", process<Structures::mDeleteFolderRequest>},
@@ -249,8 +250,8 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"GetStreamingEvents", process<Structures::mGetStreamingEventsRequest>},
 	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},
 	{"GetUserConfiguration", process<Structures::mGetUserConfigurationRequest>},
-	{"GetUserPhoto", process<Structures::mGetUserPhotoRequest>},
 	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
+	{"GetUserPhoto", process<Structures::mGetUserPhotoRequest>},
 	{"MoveFolder", process<Structures::mMoveFolderRequest>},
 	{"MoveItem", process<Structures::mMoveItemRequest>},
 	{"ResolveNames", process<Structures::mResolveNamesRequest>},
@@ -259,9 +260,9 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"Subscribe", process<Structures::mSubscribeRequest>},
 	{"SyncFolderHierarchy", process<Structures::mSyncFolderHierarchyRequest>},
 	{"SyncFolderItems", process<Structures::mSyncFolderItemsRequest>},
+	{"Unsubscribe", process<Structures::mUnsubscribeRequest>},
 	{"UpdateFolder", process<Structures::mUpdateFolderRequest>},
 	{"UpdateItem", process<Structures::mUpdateItemRequest>},
-	{"Unsubscribe", process<Structures::mUnsubscribeRequest>},
 };
 
 ///////////////////////////////////////////////////////////////////////////////
