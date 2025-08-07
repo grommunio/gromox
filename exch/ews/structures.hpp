@@ -77,6 +77,9 @@ struct tMeetingMessage;
 struct tMeetingRequestMessage;
 struct tMeetingResponseMessage;
 struct tMeetingCancellationMessage;
+struct tAcceptItem;
+struct tTentativelyAcceptItem;
+struct tDeclineItem;
 struct tModifiedEvent;
 struct tReferenceAttachment;
 struct tSearchFolderType;
@@ -256,7 +259,8 @@ using sFolderChangeDescription = std::variant<tAppendToFolderField, tSetFolderFi
 	</Items>
 	*/
 using sItem = std::variant<tItem, tMessage, tMeetingMessage, tMeetingRequestMessage,
-	tMeetingResponseMessage, tMeetingCancellationMessage, tCalendarItem, tContact, tTask>;
+	tMeetingResponseMessage, tMeetingCancellationMessage, tCalendarItem, tContact,
+	tTask, tAcceptItem, tTentativelyAcceptItem, tDeclineItem>;
 
 /**
  * c.f. Types.xsd:1502
@@ -2475,6 +2479,45 @@ struct tMeetingCancellationMessage : public tMeetingMessage {
 	// <xs:element name="CalendarItemType" type="xs:string" minOccurs="0" />
 	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
 	// <xs:element name="DoNotForwardMeeting" type="xs:boolean" minOccurs="0"/>
+};
+
+/**
+ * Types.xsd:3913
+ */
+struct tAcceptItem : public tMessage {
+        static constexpr char NAME[] = "AcceptItem";
+
+        using tMessage::tMessage;
+
+        tAcceptItem(const tinyxml2::XMLElement *);
+        void serialize(tinyxml2::XMLElement *) const;
+
+        std::optional<time_point> ProposedStart, ProposedEnd;
+        std::optional<tItemId> ReferenceItemId;
+};
+
+struct tTentativelyAcceptItem : public tMessage {
+        static constexpr char NAME[] = "TentativelyAcceptItem";
+
+        using tMessage::tMessage;
+
+        tTentativelyAcceptItem(const tinyxml2::XMLElement *);
+        void serialize(tinyxml2::XMLElement *) const;
+
+        std::optional<time_point> ProposedStart, ProposedEnd;
+        std::optional<tItemId> ReferenceItemId;
+};
+
+struct tDeclineItem : public tMessage {
+        static constexpr char NAME[] = "DeclineItem";
+
+        using tMessage::tMessage;
+
+        tDeclineItem(const tinyxml2::XMLElement *);
+        void serialize(tinyxml2::XMLElement *) const;
+
+        std::optional<time_point> ProposedStart, ProposedEnd;
+        std::optional<tItemId> ReferenceItemId;
 };
 
 /**

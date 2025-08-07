@@ -2274,6 +2274,30 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 	}
 }
 
+void EWSContext::toContent(const std::string &dir, tAcceptItem &item,
+    sShape &shape, MCONT_PTR &content) const
+{
+	if (!item.ItemClass)
+		item.ItemClass.emplace("IPM.Schedule.Meeting.Resp.Pos");
+	toContent(dir, static_cast<tMessage &>(item), shape, content);
+}
+
+void EWSContext::toContent(const std::string &dir, tTentativelyAcceptItem &item,
+    sShape &shape, MCONT_PTR &content) const
+{
+	if (!item.ItemClass)
+		item.ItemClass.emplace("IPM.Schedule.Meeting.Resp.Tent");
+	toContent(dir, static_cast<tMessage &>(item), shape, content);
+}
+
+void EWSContext::toContent(const std::string &dir, tDeclineItem &item,
+    sShape &shape, MCONT_PTR &content) const
+{
+	if (!item.ItemClass)
+		item.ItemClass.emplace("IPM.Schedule.Meeting.Resp.Neg");
+	toContent(dir, static_cast<tMessage &>(item), shape, content);
+}
+
 /**
  * @brief      Mark folder as updated
  *

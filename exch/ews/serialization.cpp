@@ -1243,6 +1243,60 @@ void tMessage::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(ReceivedRepresenting);
 }
 
+tAcceptItem::tAcceptItem(const tinyxml2::XMLElement *xml) :
+	tMessage(xml),
+	XMLINIT(ProposedStart),
+	XMLINIT(ProposedEnd),
+	XMLINIT(ReferenceItemId)
+{
+	if (!ItemClass)
+		ItemClass.emplace("IPM.Schedule.Meeting.Resp.Pos");
+}
+
+void tAcceptItem::serialize(tinyxml2::XMLElement *xml) const
+{
+	tMessage::serialize(xml);
+	XMLDUMPT(ProposedStart);
+	XMLDUMPT(ProposedEnd);
+	XMLDUMPT(ReferenceItemId);
+}
+
+tTentativelyAcceptItem::tTentativelyAcceptItem(const tinyxml2::XMLElement *xml) :
+	tMessage(xml),
+	XMLINIT(ProposedStart),
+	XMLINIT(ProposedEnd),
+	XMLINIT(ReferenceItemId)
+{
+	if (!ItemClass)
+		ItemClass.emplace("IPM.Schedule.Meeting.Resp.Tent");
+}
+
+void tTentativelyAcceptItem::serialize(tinyxml2::XMLElement *xml) const
+{
+	tMessage::serialize(xml);
+	XMLDUMPT(ProposedStart);
+	XMLDUMPT(ProposedEnd);
+	XMLDUMPT(ReferenceItemId);
+}
+
+tDeclineItem::tDeclineItem(const tinyxml2::XMLElement *xml) :
+	tMessage(xml),
+	XMLINIT(ProposedStart),
+	XMLINIT(ProposedEnd),
+	XMLINIT(ReferenceItemId)
+{
+	if (!ItemClass)
+		ItemClass.emplace("IPM.Schedule.Meeting.Resp.Neg");
+}
+
+void tDeclineItem::serialize(tinyxml2::XMLElement *xml) const
+{
+	tMessage::serialize(xml);
+	XMLDUMPT(ProposedStart);
+	XMLDUMPT(ProposedEnd);
+	XMLDUMPT(ReferenceItemId);
+}
+
 void tModifiedEvent::serialize(tinyxml2::XMLElement* xml) const
 {
 	tBaseObjectChangedEvent::serialize(xml);
