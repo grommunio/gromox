@@ -1178,10 +1178,18 @@ tMailboxData::tMailboxData(const tinyxml2::XMLElement* xml) :
 	XMLINIT(Email), XMLINIT(AttendeeType), XMLINIT(ExcludeConflicts)
 {}
 
+void tOutOfOfficeMailTip::serialize(XMLElement* xml) const
+{
+	XMLDUMPT(OofState);
+	XMLDUMPT(Duration);
+	XMLDUMPT(OofReply);
+}
+
 void tMailTips::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(RecipientAddress);
 	XMLDUMPT(PendingMailTips);
+	XMLDUMPT(OutOfOffice);
 }
 
 void tMailTipsServiceConfiguration::serialize(tinyxml2::XMLElement* xml) const

@@ -834,6 +834,9 @@ void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSConte
 		tMailTips& mailTips = mailTipsResponseMessage.MailTips.emplace();
 		mailTips.RecipientAddress = std::move(recipient);
 		mailTips.RecipientAddress.Name.emplace("");
+		auto &oof = mailTips.OutOfOffice.emplace();
+		oof.OofState = "Disabled";
+		oof.OofReply.emplace(std::string{});
 		mailTipsResponseMessage.success();
 	}
 

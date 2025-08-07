@@ -2628,6 +2628,29 @@ struct tMailboxData {
 };
 
 /**
+ * @brief      Message reply body
+ *
+ * Type.xsd:6538
+ */
+struct tReplyBody {
+	template<typename T> explicit tReplyBody(T &&m) : Message(std::forward<T>(m)) {}
+	explicit tReplyBody(const tinyxml2::XMLElement*);
+
+	std::optional<std::string> Message;
+	std::optional<std::string> lang;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+struct tOutOfOfficeMailTip {
+	Enum::OofState OofState;
+	std::optional<tDuration> Duration;
+	std::optional<tReplyBody> OofReply;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Types.xsd:6987
  */
 struct tMailTips {
@@ -2636,7 +2659,8 @@ struct tMailTips {
 	tEmailAddressType RecipientAddress;
 	std::vector<Enum::MailTipTypes> PendingMailTips;
 
-	//<xs:element minOccurs="0" maxOccurs="1" name="OutOfOffice" type="t:OutOfOfficeMailTip" />
+	std::optional<tOutOfOfficeMailTip> OutOfOffice;
+
 	//<xs:element minOccurs="0" maxOccurs="1" name="MailboxFull" type="xs:boolean" />
 	//<xs:element minOccurs="0" maxOccurs="1" name="CustomMailTip" type="xs:string" />
 	//<xs:element minOccurs="0" maxOccurs="1" name="TotalMemberCount" type="xs:int" />
@@ -2687,21 +2711,6 @@ struct tMailTipsServiceConfiguration {
 	bool MailTipsEnabled = false;
 	bool PolicyTipsEnabled = false;
 	bool ShowExternalRecipientCount = false;
-};
-
-/**
- * @brief      Message reply body
- *
- * Type.xsd:6538
- */
-struct tReplyBody {
-	template<typename T> explicit tReplyBody(T &&m) : Message(std::forward<T>(m)) {}
-	explicit tReplyBody(const tinyxml2::XMLElement*);
-
-	std::optional<std::string> Message;
-	std::optional<std::string> lang;
-
-	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
