@@ -68,8 +68,17 @@ struct cache_context {
 };
 using CACHE_CONTEXT = cache_context;
 
-struct DIRECTORY_NODE {
+struct dir_node {
 	std::string domain, path, dir;
+};
+
+class directory_list : public std::vector<dir_node> {
+	private:
+	using base = std::vector<dir_node>;
+
+	public:
+	void emplace(const char *dom, const char *path, const char *dir);
+	base::const_iterator find(const char *host, const char *uri) const;
 };
 
 }
@@ -78,7 +87,7 @@ static int g_context_num;
 static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_tid;
 static std::mutex g_hash_lock;
-static std::vector<DIRECTORY_NODE> g_directory_list;
+static directory_list g_directory_list;
 static std::unordered_map<std::string, std::shared_ptr<cache_item>> g_cache_hash;
 static std::unique_ptr<CACHE_CONTEXT[]> g_context_list;
 
@@ -86,6 +95,25 @@ cache_item::~cache_item()
 {
 	if (mblk != nullptr)
 		munmap(mblk, static_cast<size_t>(sb.st_size));
+}
+
+void directory_list::emplace(const char *dom, const char *p1, const char *d1)
+{
+	std::string path = p1, dir = d1;
+	if (path.size() > 0 && path.back() == '/')
+		path.pop_back();
+	if (dir.size() > 0 && dir.back() == '/')
+		dir.pop_back();
+	static_cast<base &>(*this).emplace_back(dom, std::move(path), std::move(dir));
+}
+
+std::vector<dir_node>::const_iterator directory_list::find(const char *host, const char *uri) const
+{
+	return std::find_if(g_directory_list.cbegin(), g_directory_list.cend(),
+	       [&](const auto &e) {
+	       	return wildcard_match(host, e.domain.c_str(), TRUE) != 0 &&
+	       	       strncasecmp(uri, e.path.c_str(), e.path.size()) == 0;
+	       });
 }
 
 static bool stat4_eq(const struct stat &a, const struct stat &b)
@@ -130,11 +158,7 @@ void mod_cache_init(int context_num)
 static int mod_cache_defaults()
 {
 	mlog(LV_INFO, "mod_cache: defaulting to built-in list of handled paths");
-	DIRECTORY_NODE node;
-	node.domain = "*";
-	node.path = "/web";
-	node.dir = DATADIR "/grommunio-web";
-	g_directory_list.push_back(std::move(node));
+	g_directory_list.emplace("*", "/web", DATADIR "/grommunio-web");
 	return 0;
 }
 
@@ -152,17 +176,8 @@ static int mod_cache_read_txt() try
 	}
 	auto item_num = pfile->get_size();
 	auto pitem = static_cast<srcitem *>(pfile->get_list());
-	for (decltype(item_num) i = 0; i < item_num; ++i) {
-		DIRECTORY_NODE node;
-		node.domain = pitem[i].domain;
-		node.path = pitem[i].uri_path;
-		if (node.path.size() > 0 && node.path.back() == '/')
-			node.path.pop_back();
-		node.dir = pitem[i].dir;
-		if (node.dir.size() > 0 && node.dir.back() == '/')
-			node.dir.pop_back();
-		g_directory_list.push_back(std::move(node));
-	}
+	for (decltype(item_num) i = 0; i < item_num; ++i)
+		g_directory_list.emplace_back(pitem[i].domain, pitem[i].uri_path, pitem[i].dir);
 	return 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1253: ENOMEM");
@@ -479,11 +494,7 @@ http_status mod_cache_take_request(http_context *phttp)
 			if (strlen(ptoken) < 16)
 				strcpy(suffix, ptoken);
 		}
-		auto it = std::find_if(g_directory_list.cbegin(), g_directory_list.cend(),
-		          [&](const auto &e) {
-		          	return wildcard_match(phttp->request.f_host.c_str(), e.domain.c_str(), TRUE) != 0 &&
-		          	       strncasecmp(request_uri, e.path.c_str(), e.path.size()) == 0;
-		          });
+		auto it = g_directory_list.find(phttp->request.f_host.c_str(), request_uri);
 		if (it == g_directory_list.cend())
 			return http_status::none;
 		tmp_path = it->dir + &request_uri[it->path.size()];
