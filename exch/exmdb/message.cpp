@@ -3599,16 +3599,16 @@ static unsigned int detect_rcpt_type(const char *account, const TARRAY_SET *rcpt
 	if (rcpts == nullptr)
 		return MAPI_BCC;
 	for (size_t i = 0; i < rcpts->count; ++i) {
-		auto rcpt = rcpts->pparray[i];
-		auto smtpaddr = rcpt->get<const char>(PR_SMTP_ADDRESS);
+		auto &rcpt = *rcpts->pparray[i];
+		auto smtpaddr = rcpt.get<const char>(PR_SMTP_ADDRESS);
 		if (smtpaddr == nullptr) {
-			auto addrtype = rcpt->get<const char>(PR_ADDRTYPE);
+			auto addrtype = rcpt.get<const char>(PR_ADDRTYPE);
 			if (addrtype != nullptr && strcasecmp(addrtype, "SMTP") == 0)
-				smtpaddr = rcpt->get<const char>(PR_EMAIL_ADDRESS);
+				smtpaddr = rcpt.get<const char>(PR_EMAIL_ADDRESS);
 		}
 		if (smtpaddr == nullptr || strcasecmp(account, smtpaddr) != 0)
 			continue;
-		auto type = rcpt->get<const uint32_t>(PR_RECIPIENT_TYPE);
+		auto type = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
 		if (type == nullptr)
 			continue;
 		if (*type == MAPI_TO || *type == MAPI_CC)
