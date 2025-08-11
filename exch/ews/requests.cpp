@@ -212,7 +212,11 @@ void process(mGetDelegateRequest&& request, XMLElement* response, const EWSConte
 	std::vector<std::string> delegate_list;
 	std::string maildir = ctx.get_maildir(request.Mailbox);
 	auto path = maildir + "/config/delegates.txt";
-	read_file_by_line(path.c_str(), delegate_list);
+	auto err  = read_file_by_line(path.c_str(), delegate_list);
+	if (err != 0) {
+		data.serialize(response);
+		return;
+	}
 
 	std::unordered_set<std::string> requested;
 	if (request.UserIds) {
