@@ -220,15 +220,14 @@ void process(mGetDelegateRequest&& request, XMLElement* response, const EWSConte
 
 	std::unordered_set<std::string> requested;
 	if (request.UserIds) {
-		for (const auto &uid : *request.UserIds) {
+		for (auto &&uid : *request.UserIds)
 			if (uid.PrimarySmtpAddress)
-				requested.insert(*uid.PrimarySmtpAddress);
-		}
+				requested.insert(std::move(*uid.PrimarySmtpAddress));
 	}
 
 	std::unordered_set<std::string> found;
 	for (const auto &deleg : delegate_list) {
-		if (requested.empty() || requested.count(deleg)) {
+		if (requested.empty() || requested.contains(deleg)) {
 			auto &msg = data.ResponseMessages.emplace_back();
 			msg.success();
 			msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(deleg);
@@ -238,7 +237,7 @@ void process(mGetDelegateRequest&& request, XMLElement* response, const EWSConte
 
 	if (!requested.empty()) {
 		for (const auto &req : requested) {
-			if (!found.count(req)) {
+			if (!found.contains(req)) {
 				auto &msg = data.ResponseMessages.emplace_back();
 				msg.error("ErrorDelegateNotFound", "Delegate not found");
 				msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(req);
