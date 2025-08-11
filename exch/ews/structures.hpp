@@ -3868,7 +3868,7 @@ struct mUnsubscribeRequest {
  * Implicitely declared at Messages.xsd:1994
  */
 struct mUnsubscribeResponseMessage : public mResponseMessageType {
-	static constexpr char NAME[] = "UnsubscribeResponse";
+	static constexpr char NAME[] = "UnsubscribeResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
 };
