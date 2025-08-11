@@ -26,6 +26,7 @@ EWSFUNC(mFindFolderRequest);
 EWSFUNC(mFindItemRequest);
 EWSFUNC(mGetAppManifestsRequest);
 EWSFUNC(mGetAttachmentRequest);
+EWSFUNC(mGetDelegateRequest);
 EWSFUNC(mGetEventsRequest);
 EWSFUNC(mGetFolderRequest);
 EWSFUNC(mGetInboxRulesRequest);

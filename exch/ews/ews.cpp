@@ -239,6 +239,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"FindItem", process<Structures::mFindItemRequest>},
 	{"GetAppManifests", process<Structures::mGetAppManifestsRequest>},
 	{"GetAttachment", process<Structures::mGetAttachmentRequest>},
+	{"GetDelegate", process<Structures::mGetDelegateRequest>},
 	{"GetEvents", process<Structures::mGetEventsRequest>},
 	{"GetFolder", process<Structures::mGetFolderRequest>},
 	{"GetInboxRules", process<Structures::mGetInboxRulesRequest>},

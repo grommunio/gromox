@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <fstream>
+#include <unordered_set>
 #include <variant>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -11,6 +12,7 @@
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/eid_array.hpp>
+#include <gromox/fileio.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
@@ -183,6 +185,64 @@ void process(mConvertIdRequest&& request, XMLElement* response, EWSContext& ctx)
 		data.ResponseMessages.back().success();
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process GetDelegate
+ *
+ * Reads the delegate configuration of a mailbox and returns the delegates
+ * stored in the delegates.txt file. Only basic information (primary SMTP
+ * address) is returned for each delegate.
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+*/
+void process(mGetDelegateRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	response->SetName("m:GetDelegateResponse");
+
+	ctx.normalize(request.Mailbox);
+
+	mGetDelegateResponse data;
+
+	std::vector<std::string> delegate_list;
+	std::string maildir = ctx.get_maildir(request.Mailbox);
+	auto path = maildir + "/config/delegates.txt";
+	auto err  = read_file_by_line(path.c_str(), delegate_list);
+	if (err != 0) {
+		data.serialize(response);
+		return;
+	}
+
+	std::unordered_set<std::string> requested;
+	if (request.UserIds) {
+		for (auto &&uid : *request.UserIds)
+			if (uid.PrimarySmtpAddress)
+				requested.insert(std::move(*uid.PrimarySmtpAddress));
+	}
+
+	std::unordered_set<std::string> found;
+	for (const auto &deleg : delegate_list) {
+		if (requested.empty() || requested.contains(deleg)) {
+			auto &msg = data.ResponseMessages.emplace_back();
+			msg.success();
+			msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(deleg);
+			found.insert(deleg);
+		}
+	}
+
+	if (!requested.empty()) {
+		for (const auto &req : requested) {
+			if (!found.contains(req)) {
+				auto &msg = data.ResponseMessages.emplace_back();
+				msg.error("ErrorDelegateNotFound", "Delegate not found");
+				msg.DelegateUser.UserId.PrimarySmtpAddress.emplace(req);
+			}
+		}
 	}
 
 	data.serialize(response);

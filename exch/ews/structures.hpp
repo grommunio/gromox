@@ -1076,10 +1076,19 @@ struct tUserId {
 	//<xs:element name="SID" type="xs:string" minOccurs="0" maxOccurs="1" />
 	std::optional<std::string> PrimarySmtpAddress;
 	std::optional<std::string> DisplayName;
-    std::optional<Enum::DistinguishedUserType> DistinguishedUser;
-    //<xs:element name="ExternalUserIdentity" type="xs:string" minOccurs="0" maxOccurs="1" />
+	std::optional<Enum::DistinguishedUserType> DistinguishedUser;
+	//<xs:element name="ExternalUserIdentity" type="xs:string" minOccurs="0" maxOccurs="1" />
 
 	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:6909
+ */
+struct tDelegateUser {
+        tUserId UserId;
+
+        void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -3939,6 +3948,31 @@ struct mGetUserConfigurationResponseMessage : public mResponseMessageType {
  */
 struct mGetUserConfigurationResponse {
 	std::vector<mGetUserConfigurationResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:2321
+ */
+struct mGetDelegateRequest {
+	explicit mGetDelegateRequest(const tinyxml2::XMLElement*);
+
+	tMailbox Mailbox;
+	std::optional<std::vector<tUserId>> UserIds;
+	std::optional<bool> IncludePermissions;
+};
+
+struct mDelegateUserResponseMessage : public mResponseMessageType {
+	static constexpr char NAME[] = "DelegateUserResponseMessageType";
+
+	tDelegateUser DelegateUser;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+struct mGetDelegateResponse {
+	std::vector<mDelegateUserResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
