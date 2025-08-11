@@ -46,6 +46,7 @@ template<typename T> class GX_EXPORT range_set : private std::vector<gromox::ran
 	using base::cend;
 	using base::front;
 	using base::back;
+	using base::empty;
 	using base::size;
 	using base::clear;
 	using base::erase;
@@ -130,6 +131,13 @@ template<typename T> class GX_EXPORT range_set : private std::vector<gromox::ran
 		         [&](const gromox::range_node<T> &rn, T vv) { return rn.hi < vv; });
 		return i != cend() ? i->contains(v) : false;
 	}
+
+#if 0
+	T next_unused(T def = T{}) const
+	{
+		return empty() ? def : std::next(front().hi);
+	}
+#endif
 
 #ifdef COMPILE_DIAG
 	constexpr inline size_t nelem() const {
