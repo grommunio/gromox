@@ -418,22 +418,6 @@ BOOL exmdb_server::unsubscribe_notification(const char *dir, uint32_t sub_id)
 	return TRUE;
 }
 
-BOOL exmdb_server::transport_new_mail(const char *dir, uint64_t folder_id,
-	uint64_t message_id, uint32_t message_flags, const char *pstr_class)
-{
-	auto pdb = db_engine_get_db(dir);
-	if (!pdb)
-		return FALSE;
-	/* No database access, so no transaction. */
-	auto dbase = pdb->lock_base_rd();
-	db_conn::NOTIFQ notifq;
-	pdb->transport_new_mail(rop_util_get_gc_value(folder_id),
-		rop_util_get_gc_value(message_id), message_flags, pstr_class,
-		*dbase, notifq);
-	dg_notify(std::move(notifq));
-	return TRUE;
-}
-
 static BOOL table_check_address_in_contact_folder(
 	sqlite3_stmt *pstmt_subfolder, sqlite3_stmt *pstmt_search,
 	uint64_t folder_id, const char *paddress, BOOL *pb_found) try

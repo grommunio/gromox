@@ -3811,6 +3811,22 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	return false;
 }
 
+BOOL exmdb_server::transport_new_mail(const char *dir, uint64_t folder_id,
+	uint64_t message_id, uint32_t message_flags, const char *pstr_class)
+{
+	auto pdb = db_engine_get_db(dir);
+	if (!pdb)
+		return FALSE;
+	/* No database access, so no transaction. */
+	auto dbase = pdb->lock_base_rd();
+	db_conn::NOTIFQ notifq;
+	pdb->transport_new_mail(rop_util_get_gc_value(folder_id),
+		rop_util_get_gc_value(message_id), message_flags, pstr_class,
+		*dbase, notifq);
+	dg_notify(std::move(notifq));
+	return TRUE;
+}
+
 /**
  * Required properties:
  *
