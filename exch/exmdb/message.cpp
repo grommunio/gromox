@@ -3601,6 +3601,11 @@ static unsigned int detect_rcpt_type(const char *account, const TARRAY_SET *rcpt
 	for (size_t i = 0; i < rcpts->count; ++i) {
 		auto rcpt = rcpts->pparray[i];
 		auto smtpaddr = rcpt->get<const char>(PR_SMTP_ADDRESS);
+		if (smtpaddr == nullptr) {
+			auto addrtype = rcpt->get<const char>(PR_ADDRTYPE);
+			if (addrtype != nullptr && strcasecmp(addrtype, "SMTP") == 0)
+				smtpaddr = rcpt->get<const char>(PR_EMAIL_ADDRESS);
+		}
 		if (smtpaddr == nullptr || strcasecmp(account, smtpaddr) != 0)
 			continue;
 		auto type = rcpt->get<const uint32_t>(PR_RECIPIENT_TYPE);
