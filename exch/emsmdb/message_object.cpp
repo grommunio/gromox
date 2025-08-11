@@ -205,7 +205,11 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 	
 	auto msgcpid = static_cast<uint32_t>(new_cpid);
 	uint32_t importance = IMPORTANCE_NORMAL, sens = SENSITIVITY_NONE;
-	uint32_t msgflags = MSGFLAG_READ | MSGFLAG_UNSENT | MSGFLAG_EVERREAD;
+	/*
+	 * UNMODIFIED immediately gets lost again due to set_xns_props
+	 * (something similar happens in EXC2019).
+	 */
+	uint32_t msgflags = MSGFLAG_READ | MSGFLAG_UNSENT | MSGFLAG_EVERREAD | MSGFLAG_UNMODIFIED;
 	uint8_t assocflag = fai;
 	auto modtime = rop_util_current_nttime();
 	auto search_key = common_util_guid_to_binary(GUID::random_new());
