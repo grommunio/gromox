@@ -287,17 +287,19 @@ db_conn_ptr db_engine_get_db(const char *path)
 
 	/*
 	 * Release central map lock (g_hash_lock) early to unblock map read
-	 * access looking for DBs of other dirs.
+	 * access looking for DBs of other dirs. Other threads can now see this
+	 * db_base instance. If ctor2_and_open has not completed yet, those
+	 * other threads will be waiting on sqlite_lock and thus be safely
+	 * serialized.
 	 */
 	hhold.unlock();
 	try {
-		pdb->open(path);
+		pdb->ctor2_and_open(path);
 	} catch (const std::runtime_error& err) {
 		mlog(LV_ERR, "%s", err.what());
 		return std::nullopt;
 	}
 
-	/* Wait for another thread's costly postconstruct_init (or any EXRPC) to finish. */
 	db_conn_ptr conn(*pdb);
 	if (!conn->open(path))
 		return std::nullopt;
@@ -603,7 +605,9 @@ void db_base::get_dbs(const char* dir, sqlite3 *&main, sqlite3 *&eph)
 /**
  * @brief      Initialize and unlock database
  *
- * Perform database initializations that should not be run for each connection:
+ * Perform one-time database operations; operations that should not be run for
+ * each connection:
+ *
  * - Remove residual ephemeral tables db from last process
  * - Perform schema upgrade
  *
@@ -611,7 +615,7 @@ void db_base::get_dbs(const char* dir, sqlite3 *&main, sqlite3 *&eph)
  *
  * @throws     std::runtime_error  if any initialization step fails
  */
-void db_base::open(const char* dir)
+void db_base::ctor2_and_open(const char *dir)
 {
 	auto unlock = HX::make_scope_exit([this] { sqlite_lock.unlock(); --reference; }); /* unlock whenever we're done */
 	auto db_path = fmt::format("{}/tables.sqlite3", dir);
@@ -619,6 +623,7 @@ void db_base::open(const char* dir)
 	if (ret != 0 && errno != ENOENT)
 		throw std::runtime_error(fmt::format("E-1351: unlink {}: {}", db_path.c_str(), strerror(errno)));
 
+	/* We need a handle for the upgrade check... */
 	db_handle hdb(get_db(dir, DB_MAIN));
 	if (!hdb)
 		throw std::runtime_error(fmt::format("E-1434: get_db({}) failed", dir));
@@ -627,6 +632,8 @@ void db_base::open(const char* dir)
 		throw std::runtime_error(fmt::format("E-2105: autoupgrade {}: {}", dir, ret));
 	if (exmdb_server::is_private())
 		db_engine_load_dynamic_list(this, hdb.get());
+
+	/* ...don't let it go to waste */
 	mx_sqlite.emplace_back(std::move(hdb));
 }
 
