@@ -31,12 +31,12 @@ int main(int argc, char **argv)
 		return EXIT_PARAM;
 	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_language == nullptr) {
-		fprintf(stderr, "You need to specify the -l option\n");
+		global::mbop_fprintf(stderr, "You need to specify the -l option\n");
 		return EXIT_PARAM;
 	}
 	textmaps_init();
 	if (!mysql_adaptor_set_user_lang(g_dstuser.c_str(), g_language)) {
-		fprintf(stderr, "Update of UI language rejected\n");
+		global::mbop_fprintf(stderr, "Update of UI language rejected\n");
 		return EXIT_FAILURE;
 	}
 
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 			TPROPVAL_ARRAY props{};
 			if (!exmdb_client->get_folder_properties(g_storedir,
 			    CP_ACP, folder_id, &taghdr, &props)) {
-				fprintf(stderr, "get_folder_props failed\n");
+				global::mbop_fprintf(stderr, "get_folder_props failed\n");
 				return EXIT_FAILURE;
 			}
 			auto orig_name = props.get<const char>(PR_DISPLAY_NAME);
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 		PROBLEM_ARRAY probs{};
 		if (!exmdb_client->set_folder_properties(g_storedir, CP_ACP,
 		    folder_id, &new_props, &probs)) {
-			fprintf(stderr, "set_folder_props failed\n");
+			global::mbop_fprintf(stderr, "set_folder_props failed\n");
 			return EXIT_FAILURE;
 		}
 	}

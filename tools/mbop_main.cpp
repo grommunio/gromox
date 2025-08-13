@@ -66,9 +66,10 @@ void delcount(eid_t fid, uint32_t *delc, uint32_t *fldc)
 namespace global {
 
 char *g_arg_username, *g_arg_userdir;
-unsigned int g_continuous_mode;
+unsigned int g_continuous_mode, g_verbose_mode, g_command_num;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_NONE, &g_continuous_mode, {}, {}, {}, "Do not stop on errors"},
+	{nullptr, 'v', HXTYPE_NONE, &g_verbose_mode, {}, {}, {}, "Be a little more talkative"},
 	{nullptr, 'd', HXTYPE_STRING, &g_arg_userdir, nullptr, nullptr, 0, "Directory of the mailbox", "DIR"},
 	{nullptr, 'u', HXTYPE_STRING, &g_arg_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
 	MBOP_AUTOHELP,
@@ -169,11 +170,11 @@ static int main(int argc, char **argv)
 	else if (strcmp(argv[0], "recalc-sizes") == 0)
 		ok = recalc_sizes(g_storedir);
 	else {
-		fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
+		global::mbop_fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
 		return EXIT_PARAM;
 	}
 	if (!ok) {
-		fprintf(stderr, "%s: the operation failed\n", argv[0]);
+		global::mbop_fprintf(stderr, "%s: the operation failed\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

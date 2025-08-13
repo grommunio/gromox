@@ -110,6 +110,7 @@ int main(int argc, char **argv)
 	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
 	    g_exit_after_optparse)
 		return EXIT_PARAM;
+	global::g_command_num = 0;
 	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (global::g_arg_username != nullptr || global::g_arg_userdir != nullptr) {
 		fprintf(stderr, "Cannot use -d/-u with foreach.*\n");
@@ -187,6 +188,7 @@ int main(int argc, char **argv)
 			g_storedir_s = std::move(user.maildir);
 			g_storedir = g_storedir_s.c_str();
 			ret = global::cmd_parser(argc, argv);
+			++global::g_command_num;
 			if (ret == EXIT_PARAM)
 				return ret;
 			else if (ret != EXIT_SUCCESS && !global::g_continuous_mode)

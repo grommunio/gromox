@@ -27,8 +27,13 @@ extern void command_overview();
 extern int cmd_parser(int, char **);
 
 extern char *g_arg_username, *g_arg_userdir;
-extern unsigned int g_continuous_mode;
+extern unsigned int g_continuous_mode, g_verbose_mode, g_command_num;
 
+template <typename... Args> int mbop_fprintf(Args &&...args) {
+    if (g_verbose_mode)
+        fprintf(stderr, "%s [cmd %d]: ", g_storedir, g_command_num);
+    return fprintf(std::forward<Args>(args)...);
+}
 }
 
 extern void mbop_help_cb(const struct HXoptcb *);
