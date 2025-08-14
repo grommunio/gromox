@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 	while (*++argv != nullptr) {
 		eid_t eid = gi_lookup_eid_by_name(g_storedir, *argv);
 		if (eid == 0) {
-			global::mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
+			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
 			return EXIT_FAILURE;
 		}
 		eids.push_back(eid);

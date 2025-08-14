@@ -170,11 +170,11 @@ static int main(int argc, char **argv)
 	else if (strcmp(argv[0], "recalc-sizes") == 0)
 		ok = recalc_sizes(g_storedir);
 	else {
-		global::mbop_fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
+		mbop_fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
 		return EXIT_PARAM;
 	}
 	if (!ok) {
-		global::mbop_fprintf(stderr, "%s: the operation failed\n", argv[0]);
+		mbop_fprintf(stderr, "%s: the operation failed\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

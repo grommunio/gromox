@@ -35,13 +35,13 @@ static int xmktime(const char *str, time_t *out)
 	struct tm tm{};
 	end = strptime(str, "%FT%T", &tm);
 	if (end != nullptr && *end != '\0') {
-		global::mbop_fprintf(stderr, "\"%s\" not understood, error at \"%s\". Required format is \"2024-01-01T00:00:00\" [always local system time] or unixtime.\n", g_start_txt, end);
+		mbop_fprintf(stderr, "\"%s\" not understood, error at \"%s\". Required format is \"2024-01-01T00:00:00\" [always local system time] or unixtime.\n", g_start_txt, end);
 		return -1;
 	}
 	tm.tm_wday = -1;
 	*out = mktime(&tm);
 	if (*out == -1 && tm.tm_wday == -1) {
-		global::mbop_fprintf(stderr, "\"%s\" not understood by mktime\n", g_start_txt);
+		mbop_fprintf(stderr, "\"%s\" not understood by mktime\n", g_start_txt);
 		return -1;
 	}
 	return 0;
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 		return EXIT_PARAM;
 	std::vector<freebusy_event> fbout;
 	if (!get_freebusy(g_requestor, g_storedir, start_time, end_time, fbout)) {
-		global::mbop_fprintf(stderr, "get_freebusy call not successful\n");
+		mbop_fprintf(stderr, "get_freebusy call not successful\n");
 		return EXIT_FAILURE;
 	}
 	printf("Results (%zu rows):\n", fbout.size());
