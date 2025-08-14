@@ -110,7 +110,6 @@ int main(int argc, char **argv)
 	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
 	    g_exit_after_optparse)
 		return EXIT_PARAM;
-	global::g_command_num = 0;
 	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (global::g_arg_username != nullptr || global::g_arg_userdir != nullptr) {
 		fprintf(stderr, "Cannot use -d/-u with foreach.*\n");
@@ -121,6 +120,7 @@ int main(int argc, char **argv)
 	auto fe_mode = argv[0];
 	--argc;
 	++argv;
+	++global::g_command_num;
 	if (argc == 0)
 		return help();
 
@@ -182,13 +182,14 @@ int main(int argc, char **argv)
 			}, &user.maildir, &sem, &ret));
 		}
 	} else {
+		auto saved_cnum = global::g_command_num;
 		for (auto &&user : ul) {
 			/* cmd_parser is not thread-safe (global state), cannot parallelize */
 			g_dstuser = std::move(user.username);
 			g_storedir_s = std::move(user.maildir);
 			g_storedir = g_storedir_s.c_str();
+			global::g_command_num = saved_cnum;
 			ret = global::cmd_parser(argc, argv);
-			++global::g_command_num;
 			if (ret == EXIT_PARAM)
 				return ret;
 			else if (ret != EXIT_SUCCESS && !global::g_continuous_mode)

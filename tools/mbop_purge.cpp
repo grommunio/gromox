@@ -33,19 +33,19 @@ int main(int argc, char **argv)
 		return EXIT_PARAM;
 	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (argc < 2)
-		fprintf(stderr, "mbop/purge: No folders specified, no action taken.\n");
+		mbop_fprintf(stderr, "mbop/purge: No folders specified, no action taken.\n");
 	auto age = rop_util_unix_to_nttime(time(nullptr) - HX_strtoull_sec(znul(g_age_str), nullptr));
 	while (*++argv != nullptr) {
 		eid_t eid = gi_lookup_eid_by_name(g_storedir, *argv);
 		if (eid == 0) {
-			fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
+			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
 			return EXIT_FAILURE;
 		}
 		unsigned int flags = g_recursive ? DEL_FOLDERS : 0;
 		auto ok = exmdb_client->purge_softdelete(g_storedir, nullptr,
 		          eid, flags, age);
 		if (!ok) {
-			fprintf(stderr, "purge_softdel %s failed\n", *argv);
+			mbop_fprintf(stderr, "purge_softdel %s failed\n", *argv);
 			return EXIT_FAILURE;
 		}
 	}
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 	if (g_zero_lastcn)
 		flags |= CGKRESET_ZERO_LASTCN;
 	if (!exmdb_client->cgkreset(g_storedir, flags)) {
-		fprintf(stderr, "cgkreset %s failed\n", g_storedir);
+		mbop_fprintf(stderr, "cgkreset %s failed\n", g_storedir);
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

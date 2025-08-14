@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 				return EXIT_FAILURE;
 			}
 			auto orig_name = props.get<const char>(PR_DISPLAY_NAME);
-			printf("[0x%02x] %s -> %s\n", gcv, znul(orig_name), new_name);
+			mbop_fprintf(stdout, "[0x%02x] %s -> %s\n", gcv, znul(orig_name), new_name);
 		}
 		TAGGED_PROPVAL tp = {PR_DISPLAY_NAME, deconst(new_name)};
 		const TPROPVAL_ARRAY new_props = {1, &tp};

@@ -54,7 +54,7 @@ void delcount(eid_t fid, uint32_t *delc, uint32_t *fldc)
 	*delc = *fldc = 0;
 	if (!exmdb_client->get_folder_properties(g_storedir, CP_ACP, fid,
 	    &taghdr, &props)) {
-		fprintf(stderr, "delcount: get_folder_properties failed\n");
+		mbop_fprintf(stderr, "delcount: get_folder_properties failed\n");
 		return;
 	}
 	auto c = props.get<const uint32_t>(tags[0]);
@@ -205,7 +205,7 @@ static int freeze_main(int argc, char **argv)
 	                          db_maint_mode::reject_waitforexcl;
 	auto ok = exmdb_client->set_maintenance(g_storedir, static_cast<uint32_t>(mode));
 	if (!ok) {
-		fprintf(stderr, "%s: the operation failed\n", argv[0]);
+		mbop_fprintf(stderr, "%s: the operation failed\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
@@ -265,11 +265,11 @@ static errno_t showstoreprop(proptag_t proptag)
 		auto bv = vals.get<const BINARY>(proptag);
 		if (bv == nullptr) {
 			if (isatty(STDERR_FILENO))
-				fprintf(stderr, "Property is unset\n");
+				mbop_fprintf(stderr, "Property is unset\n");
 			return 0;
 		}
 		if (isatty(STDOUT_FILENO) && isatty(STDERR_FILENO))
-			fprintf(stderr, "[%u bytes of binary data]\n", bv->cb);
+			mbop_fprintf(stderr, "[%u bytes of binary data]\n", bv->cb);
 		if (!isatty(STDOUT_FILENO)) {
 			auto ret = HXio_fullwrite(STDOUT_FILENO, bv->pc, bv->cb);
 			if (ret < 0 || static_cast<size_t>(ret) != bv->cb)
@@ -353,10 +353,10 @@ static int setstoreprop(int argc, char **argv, const GUID guid,
 	propid_t propid = 0;
 	auto err = resolvename(guid, name, true, &propid);
 	if (err == ENOENT) {
-		fprintf(stderr, "namedprop %s not found\n", name);
+		mbop_fprintf(stderr, "namedprop %s not found\n", name);
 		return EXIT_FAILURE;
 	} else if (err != 0) {
-		fprintf(stderr, "%s\n", strerror(-err));
+		mbop_fprintf(stderr, "%s\n", strerror(-err));
 		return EXIT_FAILURE;
 	}
 	return setstoreprop(PROP_TAG(proptype, propid));
@@ -503,7 +503,8 @@ int cmd_parser(int argc, char **argv)
 		return EXIT_FAILURE;
 	if (strcmp(argv[0], "(") == 0)
 		return parens_parser(argc, argv);
-	else if (strcmp(argv[0], "delmsg") == 0)
+	++g_command_num;
+	if (strcmp(argv[0], "delmsg") == 0)
 		return delmsg::main(argc, argv);
 	else if (strcmp(argv[0], "emptyfld") == 0)
 		return emptyfld::main(argc, argv);
