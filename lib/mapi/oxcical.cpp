@@ -3700,13 +3700,11 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			partstat = "NEEDS-ACTION";
 		} else if (class_match_prefix(str, "IPM.Task") == 0) {
 			method = "";
-			icaltype = nullptr;
-			pical.m_name = "VTODO";
+			icaltype = "VTODO";
 			is_task = true;
 		} else if (class_match_prefix(str, "IPM.Activity") == 0) {
 			method = "";
-			icaltype = nullptr;
-			pical.m_name = "VJOURNAL";
+			icaltype = "VJOURNAL";
 		} else {
 			return fmt::format("W-2060: oxcical_export does not handle message class \"{}\"", str);
 		}
