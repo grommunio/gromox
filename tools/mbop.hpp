@@ -31,11 +31,18 @@ extern unsigned int g_continuous_mode, g_verbose_mode, g_command_num;
 
 }
 
-template<typename... Args> int mbop_fprintf(Args &&...args)
+template<typename... Args> int mbop_fprintf(FILE *f, Args &&...args)
 {
 	if (global::g_verbose_mode)
 		fprintf(stderr, "%s [cmd %d]: ", g_storedir, global::g_command_num);
-	return fprintf(std::forward<Args>(args)...);
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-security"
+#endif
+	return fprintf(f, args...);
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 }
 
 extern void mbop_help_cb(const struct HXoptcb *);
