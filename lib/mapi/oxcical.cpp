@@ -1341,6 +1341,15 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 			paddress = nullptr;
 	}
 	pdisplay_name = piline->get_first_paramval("CN");
+	/*
+	 * Some clients omit the CN parameter, which would leave
+	 * PR_SENT_REPRESENTING_NAME unset. Outlook interprets a missing
+	 * PR_SENT_REPRESENTING_NAME as if the current user were the organizer,
+	 * which disables the response buttons. Fallback to filling it with the
+	 * email address.
+	 */
+	if (pdisplay_name == nullptr)
+		pdisplay_name = paddress;
 	if (pdisplay_name != nullptr) {
 		if (pmsg->proplist.set(PR_SENT_REPRESENTING_NAME, pdisplay_name) != ecSuccess)
 			return false;
