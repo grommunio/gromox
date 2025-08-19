@@ -965,6 +965,13 @@ tPullSubscriptionRequest::tPullSubscriptionRequest(const tinyxml2::XMLElement* x
 	XMLINIT(Timeout)
 {}
 
+tPushSubscriptionRequest::tPushSubscriptionRequest(const tinyxml2::XMLElement *xml) :
+	tBaseSubscriptionRequest(xml),
+	XMLINIT(StatusFrequency),
+	XMLINIT(URL),
+	XMLINIT(CallerData)
+{}
+
 tExtendedFieldURI::tExtendedFieldURI(const tinyxml2::XMLElement* xml) :
 	XMLINITA(PropertyTag),
 	XMLINITA(PropertyType),

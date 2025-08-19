@@ -766,6 +766,19 @@ struct tPullSubscriptionRequest : public tBaseSubscriptionRequest {
 };
 
 /**
+ * Types.xsd:6139
+ */
+struct tPushSubscriptionRequest : public tBaseSubscriptionRequest {
+	static constexpr char NAME[] = "PushSubscriptionRequest";
+
+	explicit tPushSubscriptionRequest(const tinyxml2::XMLElement *);
+
+	int StatusFrequency;
+	std::string URL;
+	std::optional<std::string> CallerData;
+};
+
+/**
  * Types.xsd:1665
  */
 struct tReferenceAttachment : public tAttachment {
@@ -3940,7 +3953,7 @@ struct mSubscribeRequest {
 
 	explicit mSubscribeRequest(const tinyxml2::XMLElement*);
 
-	std::variant<tPullSubscriptionRequest, tStreamingSubscriptionRequest> subscription;
+	std::variant<tPullSubscriptionRequest, tPushSubscriptionRequest, tStreamingSubscriptionRequest> subscription;
 };
 
 /**

@@ -2401,13 +2401,29 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
  *
  * @return     Subscription ID
  */
-tSubscriptionId EWSContext::subscribe(const tPullSubscriptionRequest& req) const
+tSubscriptionId EWSContext::subscribe(const tPullSubscriptionRequest &req) const
 {
 	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
 	if (all && req.FolderIds)
 		throw EWSError::InvalidSubscriptionRequest(E3198);
 	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
 	       req.eventMask(), all, req.Timeout);
+}
+
+/**
+ * @brief      Create new push subscription
+ *
+ * @param      req    Push subscription request
+ *
+ * @return     Subscription ID
+ */
+tSubscriptionId EWSContext::subscribe(const tPushSubscriptionRequest& req) const
+{
+	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
+	if (all && req.FolderIds)
+		throw EWSError::InvalidSubscriptionRequest(E3198);
+	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
+	       req.eventMask(), all, req.StatusFrequency);
 }
 
 /**

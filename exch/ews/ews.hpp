@@ -275,6 +275,7 @@ class EWSContext {
 	MCONT_PTR toContent(const std::string&, std::string&) const;
 	MCONT_PTR toContent(const std::string&, const Structures::sFolderSpec&, Structures::sItem&, bool) const;
 	Structures::tSubscriptionId subscribe(const Structures::tPullSubscriptionRequest&) const;
+	Structures::tSubscriptionId subscribe(const Structures::tPushSubscriptionRequest &) const;
 	Structures::tSubscriptionId subscribe(const Structures::tStreamingSubscriptionRequest&) const;
 	bool unsubscribe(const Structures::tSubscriptionId&) const;
 	void updated(const std::string&, const Structures::sFolderSpec&) const;
