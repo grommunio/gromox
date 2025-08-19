@@ -5,12 +5,14 @@
 #include <cstdint>
 #include <cstring>
 #include <fstream>
+#include <tinyxml2.h>
 #include <unordered_set>
 #include <variant>
+#include <vector>
+#include <libHX/scope.hpp>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <tinyxml2.h>
-#include <libHX/scope.hpp>
+#include <gromox/ab_tree.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/eid_array.hpp>
@@ -144,6 +146,60 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 	file.close();
 }
 
+/* Copied straight outta zcore/ab_tree.cpp */
+static bool ab_tree_resolve_node(const ab_tree::ab_node &node, const char *needle)
+{
+	using ab_tree::userinfo;
+	std::string dn = node.displayname();
+	if (strcasestr(dn.c_str(), needle) != nullptr)
+		return true;
+	if (node.dn(dn) && strcasecmp(dn.c_str(), needle) == 0)
+		return true;
+
+	switch (node.type()) {
+	case ab_tree::abnode_type::user: {
+		auto s = node.user_info(userinfo::mail_address);
+		if (s != nullptr && strcasestr(s, needle) != nullptr)
+			return true;
+		for (const auto &a : node.aliases())
+			if (strcasestr(a.c_str(), needle) != nullptr)
+				return true;
+		for (auto info : {userinfo::nick_name, userinfo::job_title,
+		     userinfo::comment, userinfo::mobile_tel,
+		     userinfo::business_tel, userinfo::home_address}) {
+			s = node.user_info(info);
+			if (s != nullptr && strcasestr(s, needle) != nullptr)
+				return true;
+		}
+		break;
+	}
+	case ab_tree::abnode_type::mlist:
+		node.mlist_info(&dn, nullptr, nullptr);
+		if (strcasestr(dn.c_str(), needle) != nullptr)
+			return true;
+		break;
+	default:
+		break;
+	}
+	return false;
+}
+
+static bool ab_tree_resolvename(const ab_tree::ab_base &base, const char *needle,
+    std::vector<ab_tree::minid> &result) try
+{
+	result.clear();
+	for (auto it = base.ubegin(); it != base.uend(); ++it) {
+		ab_tree::ab_node node(it);
+		if (node.hidden() & AB_HIDE_RESOLVE ||
+		    !ab_tree_resolve_node(node, needle))
+			continue;
+		result.push_back(*it);
+	}
+	return true;
+} catch (const std::bad_alloc &) {
+	return false;
+}
+
 } //anonymous namespace
 ///////////////////////////////////////////////////////////////////////
 //Request implementations
@@ -191,6 +247,70 @@ void process(mConvertIdRequest&& request, XMLElement* response, EWSContext& ctx)
 		data.ResponseMessages.emplace_back(err);
 	}
 
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process FindPeople
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:FindPeopleResponse");
+
+	mFindPeopleResponse data;
+	auto &msg = data.ResponseMessages.emplace_back();
+	std::string domain = znul(ctx.auth_info().username);
+	auto at = domain.find('@');
+	if (at != std::string::npos)
+		domain.erase(0, at + 1);
+
+	std::vector<ab_tree::minid> results;
+	try {
+		uint32_t domId = ctx.getAccountId(domain, true);
+		auto base = ab_tree::AB.get(-static_cast<int32_t>(domId));
+		if (base && ab_tree_resolvename(*base, request.QueryString.c_str(), results)) {
+			for (auto mid : results) {
+				ab_tree::ab_node node(base.get(), mid);
+				tPersona persona;
+				std::string val;
+				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
+					persona.DisplayName = std::move(val);
+				if (node.fetch_prop(PR_SMTP_ADDRESS, val) == ecSuccess)
+					persona.EmailAddress = std::move(val);
+				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
+					persona.Title = std::move(val);
+				if (node.fetch_prop(PR_NICKNAME, val) == ecSuccess)
+					persona.Nickname = std::move(val);
+				if (node.fetch_prop(PR_PRIMARY_TELEPHONE_NUMBER, val) == ecSuccess)
+					persona.BusinessPhoneNumber = std::move(val);
+				if (node.fetch_prop(PR_MOBILE_TELEPHONE_NUMBER, val) == ecSuccess)
+					persona.MobilePhoneNumber = std::move(val);
+				if (node.fetch_prop(PR_HOME_ADDRESS_STREET, val) == ecSuccess)
+					persona.HomeAddress = std::move(val);
+				if (node.fetch_prop(PR_COMMENT, val) == ecSuccess)
+					persona.Comment = std::move(val);
+				if (persona.DisplayName || persona.EmailAddress ||
+				    persona.Title || persona.Nickname ||
+				    persona.BusinessPhoneNumber ||
+				    persona.MobilePhoneNumber ||
+				    persona.HomeAddress || persona.Comment)
+					msg.People.emplace().emplace_back(std::move(persona));
+			}
+			if (msg.People)
+				msg.TotalNumberOfPeopleInView = msg.People->size();
+		}
+	} catch (const EWSError &err) {
+		data.ResponseMessages.clear();
+		data.ResponseMessages.emplace_back(err);
+		data.serialize(response);
+		return;
+	}
+
+	msg.success();
 	data.serialize(response);
 }
 

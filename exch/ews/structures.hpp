@@ -53,6 +53,7 @@ struct tAppendToItemField;
 struct tCalendarFolderType;
 struct tCalendarItem;
 struct tContact;
+struct tPersona;
 struct tContactsFolderType;
 struct tDeleteFolderField;
 struct tDeleteItemField;
@@ -739,6 +740,18 @@ struct tPhoneNumberDictionaryEntry : public NS_EWS_Types {
 
 	std::string Entry;
 	Enum::PhoneNumberKeyType Key; //Attribute
+};
+
+/**
+ * Types.xsd:8508 (simplified)
+ */
+struct tPersona : public NS_EWS_Types {
+        static constexpr char NAME[] = "Persona";
+
+        void serialize(tinyxml2::XMLElement *) const;
+
+        std::optional<std::string> DisplayName, EmailAddress, Title, Nickname,
+		BusinessPhoneNumber, MobilePhoneNumber, HomeAddress, Comment;
 };
 
 /**
@@ -3822,6 +3835,35 @@ struct mGetItemResponse {
 	std::vector<mGetItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:2781 (simplified)
+ */
+struct mFindPeopleRequest {
+        explicit mFindPeopleRequest(const tinyxml2::XMLElement *);
+
+        std::string QueryString;
+};
+
+/**
+ * Messages.xsd:2788 (simplified)
+ */
+struct mFindPeopleResponseMessage : public mResponseMessageType {
+        static constexpr char NAME[] = "FindPeopleResponseMessage";
+
+        using mResponseMessageType::mResponseMessageType;
+
+        std::optional<std::vector<tPersona>> People;
+        std::optional<uint32_t> TotalNumberOfPeopleInView;
+
+        void serialize(tinyxml2::XMLElement *) const;
+};
+
+struct mFindPeopleResponse {
+        std::vector<mFindPeopleResponseMessage> ResponseMessages;
+
+        void serialize(tinyxml2::XMLElement *) const;
 };
 
 /**
