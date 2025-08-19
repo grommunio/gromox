@@ -3,16 +3,17 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
-#include <fmt/core.h>
+#include <cstring>
 #include <sstream>
+#include <fmt/core.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
-#include <gromox/rop_util.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
+#include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "exceptions.hpp"
@@ -2251,19 +2252,33 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 	size_t recipients = (item.ToRecipients ? item.ToRecipients->size() : 0) +
 	                    (item.CcRecipients ? item.CcRecipients->size() : 0) +
 	                    (item.BccRecipients ? item.BccRecipients->size() : 0);
-	if (recipients) {
-		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
+	auto rcpts = content->children.prcpts;
+	if (recipients > 0 && rcpts == nullptr) {
+		rcpts = content->children.prcpts = tarray_set_init();
+		if (rcpts == nullptr)
 			throw EWSError::NotEnoughMemory(E3288);
-		TARRAY_SET* rcpts = content->children.prcpts;
+	}
+	if (rcpts != nullptr) {
+		auto add_unique = [rcpts](const tEmailAddressType &rcpt, uint32_t type) {
+			if (rcpt.EmailAddress)
+				for (const auto &row : *rcpts) {
+					auto addr  = row.get<const char>(PR_EMAIL_ADDRESS);
+					auto rtype = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+					if (addr != nullptr && rtype != nullptr && *rtype == type &&
+					    strcasecmp(addr, rcpt.EmailAddress->c_str()) == 0)
+						return;
+				}
+			rcpt.mkRecipient(rcpts->emplace(), type);
+		};
 		if (item.ToRecipients)
 			for (const auto &rcpt : *item.ToRecipients)
-				rcpt.mkRecipient(rcpts->emplace(), MAPI_TO);
+				add_unique(rcpt, MAPI_TO);
 		if (item.CcRecipients)
 			for (const auto &rcpt : *item.CcRecipients)
-				rcpt.mkRecipient(rcpts->emplace(), MAPI_CC);
+				add_unique(rcpt, MAPI_CC);
 		if (item.BccRecipients)
 			for (const auto &rcpt : *item.BccRecipients)
-				rcpt.mkRecipient(rcpts->emplace(), MAPI_BCC);
+				add_unique(rcpt, MAPI_BCC);
 	}
 	if (item.From) {
 		if (item.From->Mailbox.RoutingType)
