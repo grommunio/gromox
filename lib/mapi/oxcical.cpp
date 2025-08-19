@@ -843,7 +843,9 @@ static bool oxcical_parse_recipients(const ical_component &main_ev,
 			return false;
 		tmp_int32 = recipSendable;
 		if (is_organizer)
-			tmp_int32 |= recipOrganizer;
+			tmp_int32 |= recipOrganizer | recipOriginal;
+		else
+			tmp_int32 |= recipAddedByOrganizer;
 		if (pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32) != ecSuccess)
 			return false;
 	}
