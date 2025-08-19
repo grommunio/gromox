@@ -1196,7 +1196,7 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 			if ((event.start_time >= start_ts && event.start_time <= end_ts) ||
 			    (event.end_time   >= start_ts && event.end_time <= end_ts) ||
 			    (event.start_time < start_ts  && event.end_time > end_ts))
-				if (event.busy_status == olBusy) {
+				if (event.busy_status != olFree) {
 					res_in_use = true;
 					break;
 				}
