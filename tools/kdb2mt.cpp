@@ -27,9 +27,11 @@
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/usercvt.hpp>
 #include <gromox/paths.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -302,17 +304,17 @@ errno_t ace_list::emplace(std::string &&s, uint32_t r)
 static void substitute_addrs(TPROPVAL_ARRAY *ar)
 {
 	static constexpr struct {
-		proptag_t addrtype, emaddr;
+		proptag_t addrtype, emaddr, entryid;
 	} propsets[] = {
-		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS},
-		{PR_ORIGINAL_SENDER_ADDRTYPE, PR_ORIGINAL_SENDER_EMAIL_ADDRESS},
-		{PR_ORIGINAL_SENT_REPRESENTING_ADDRTYPE, PR_ORIGINAL_SENT_REPRESENTING_EMAIL_ADDRESS},
-		{PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS},
-		{PR_RCVD_REPRESENTING_ADDRTYPE, PR_RCVD_REPRESENTING_EMAIL_ADDRESS},
-		{PR_ORIGINAL_AUTHOR_ADDRTYPE, PR_ORIGINAL_AUTHOR_EMAIL_ADDRESS},
-		{PR_ORIGINALLY_INTENDED_RECIP_ADDRTYPE, PR_ORIGINALLY_INTENDED_RECIP_EMAIL_ADDRESS},
-		{PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS},
-		{PR_ADDRTYPE, PR_EMAIL_ADDRESS},
+		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_ENTRYID},
+		{PR_ORIGINAL_SENDER_ADDRTYPE, PR_ORIGINAL_SENDER_EMAIL_ADDRESS, PR_ORIGINAL_SENDER_ENTRYID},
+		{PR_ORIGINAL_SENT_REPRESENTING_ADDRTYPE, PR_ORIGINAL_SENT_REPRESENTING_EMAIL_ADDRESS, PR_ORIGINAL_SENT_REPRESENTING_ENTRYID},
+		{PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS, PR_RECEIVED_BY_ENTRYID},
+		{PR_RCVD_REPRESENTING_ADDRTYPE, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, PR_RCVD_REPRESENTING_ENTRYID},
+		{PR_ORIGINAL_AUTHOR_ADDRTYPE, PR_ORIGINAL_AUTHOR_EMAIL_ADDRESS, PR_ORIGINAL_AUTHOR_ENTRYID},
+		{PR_ORIGINALLY_INTENDED_RECIP_ADDRTYPE, PR_ORIGINALLY_INTENDED_RECIP_EMAIL_ADDRESS, PR_ORIGINALLY_INTENDED_RECIP_ENTRYID},
+		{PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_ENTRYID},
+		{PR_ADDRTYPE, PR_EMAIL_ADDRESS, PR_ENTRYID},
 	};
 	for (const auto &tags : propsets) {
 		auto at = ar->get<const char>(tags.addrtype);
@@ -324,8 +326,28 @@ static void substitute_addrs(TPROPVAL_ARRAY *ar)
 		auto repl = g_zaddr_to_email.find(em);
 		if (repl == g_zaddr_to_email.end())
 			continue;
+		const auto &smtpaddr = repl->second;
+
+		ONEOFF_ENTRYID e{};
+		e.ctrl_flags    = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
+		e.pdisplay_name = smtpaddr;
+		e.paddress_type = "SMTP";
+		e.pmail_address = smtpaddr;
+		std::string out;
+		out.resize(1280);
+		EXT_PUSH ep;
+		if (!ep.init(out.data(), out.size(), EXT_FLAG_UTF16) ||
+		    ep.p_oneoff_eid(e) != pack_result::success)
+			continue;
+		BINARY ebin;
+		ebin.cb = ep.m_offset;
+		ebin.pb = ep.m_udata;
+
 		if (ar->set(TAGGED_PROPVAL{tags.addrtype, deconst("SMTP")}) == ecServerOOM ||
-		    ar->set(TAGGED_PROPVAL{tags.emaddr, deconst(repl->second.c_str())}) == ecServerOOM)
+		    ar->set(TAGGED_PROPVAL{tags.emaddr, deconst(smtpaddr.c_str())}) == ecServerOOM)
+			throw std::bad_alloc();
+		if (tags.entryid != 0 &&
+		    ar->set(TAGGED_PROPVAL{tags.entryid, &ebin}) == ecServerOOM)
 			throw std::bad_alloc();
 	}
 }
