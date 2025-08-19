@@ -2459,10 +2459,11 @@ void EWSContext::rcpt_add_unique(TARRAY_SET *rcpts, tEmailAddressType rcpt, uint
  */
 void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape, MCONT_PTR& content) const
 {
+	auto &to = item.ToRecipients, &cc = item.CcRecipients, &bcc = item.BccRecipients;
 	toContent(dir, static_cast<tItem&>(item), shape, content);
-	size_t recipients = (item.ToRecipients ? item.ToRecipients->size() : 0) +
-	                    (item.CcRecipients ? item.CcRecipients->size() : 0) +
-	                    (item.BccRecipients ? item.BccRecipients->size() : 0);
+	size_t recipients = (to ? to->size() : 0) +
+	                    (cc ? cc->size() : 0) +
+	                    (bcc ? bcc->size() : 0);
 	auto rcpts = content->children.prcpts;
 	if (recipients > 0 && rcpts == nullptr) {
 		rcpts = content->children.prcpts = tarray_set_init();
@@ -2470,14 +2471,14 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 			throw EWSError::NotEnoughMemory(E3288);
 	}
 	if (rcpts != nullptr) {
-		if (item.ToRecipients)
-			for (const auto &rcpt : *item.ToRecipients)
+		if (to)
+			for (const auto &rcpt : *to)
 				rcpt_add_unique(rcpts, rcpt, MAPI_TO);
-		if (item.CcRecipients)
-			for (const auto &rcpt : *item.CcRecipients)
+		if (cc)
+			for (const auto &rcpt : *cc)
 				rcpt_add_unique(rcpts, rcpt, MAPI_CC);
-		if (item.BccRecipients)
-			for (const auto &rcpt : *item.BccRecipients)
+		if (bcc)
+			for (const auto &rcpt : *bcc)
 				rcpt_add_unique(rcpts, rcpt, MAPI_BCC);
 	}
 	if (item.From) {
