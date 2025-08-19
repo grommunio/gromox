@@ -2200,6 +2200,7 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 			                                       {reinterpret_cast<uint8_t*>(body)}});
 			shape.write(TAGGED_PROPVAL{PR_HTML, html});
 		}
+		shape.write(TAGGED_PROPVAL{PR_INTERNET_CPID, construct<uint32_t>(CP_UTF8)});
 	}
 	if (item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst(item.ItemClass->c_str())});
