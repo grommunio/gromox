@@ -1179,8 +1179,12 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 
 	/* Lookup conflict state */
 	bool res_in_use = false, response_allowed = false;
-	auto start_nt = rq_prop.get<uint64_t>(PR_START_DATE);
-	auto end_nt   = rq_prop.get<uint64_t>(PR_END_DATE);
+	auto start_nt = rq_prop.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_start_whole]));
+	auto end_nt   = rq_prop.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids[l_end_whole]));
+	if (start_nt == nullptr || end_nt == nullptr) {
+		start_nt = rq_prop.get<uint64_t>(PR_START_DATE);
+		end_nt   = rq_prop.get<uint64_t>(PR_END_DATE);
+	}
 	if (start_nt != nullptr && end_nt != nullptr) {
 		std::vector<freebusy_event> fbdata;
 		auto start_ts = rop_util_nttime_to_unix(*start_nt);
