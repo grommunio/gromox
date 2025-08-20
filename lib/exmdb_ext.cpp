@@ -2419,7 +2419,9 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_maintenance &d)
 	E(imapfile_write) \
 	E(imapfile_delete) \
 	E(cgkreset) \
-	E(set_maintenance)
+	E(set_maintenance) \
+	E(autoreply_getprop) \
+	E(autoreply_setprop)
 
 /**
  * This uses *& because we do not know which request type we are going to get
@@ -3856,7 +3858,9 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_imapfile_read &d)
 	E(get_public_folder_unread_count) \
 	E(store_eid_to_user) \
 	E(autoreply_tsquery) \
-	E(imapfile_read)
+	E(imapfile_read) \
+	E(autoreply_getprop) \
+	E(autoreply_setprop)
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
 /*

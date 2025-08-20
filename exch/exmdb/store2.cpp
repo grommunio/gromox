@@ -23,6 +23,8 @@
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/fileio.h>
+#include <gromox/config_file.hpp>
+#include <gromox/mail_func.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
@@ -42,6 +44,13 @@ struct sql_del {
 };
 
 }
+
+static constexpr cfg_directive oof_defaults[] = {
+	{"allow_external_oof", "0", CFG_BOOL},
+	{"external_audience", "0", CFG_BOOL},
+	{"oof_state", "0"},
+	CFG_TABLE_END,
+};
 
 BOOL exmdb_server::vacuum(const char *dir)
 {
@@ -566,6 +575,278 @@ BOOL exmdb_server::autoreply_tsupdate(const char *dir, const char *peer) try
 	return stm.step() == SQLITE_DONE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2226: ENOMEM");
+	return false;
+}
+
+static std::string autoreply_fspath(const char *dir, proptag_t proptag)
+{
+	switch (proptag) {
+	case PR_EC_OUTOFOFFICE:
+	case PR_EC_OUTOFOFFICE_FROM:
+	case PR_EC_OUTOFOFFICE_UNTIL:
+	case PR_EC_ALLOW_EXTERNAL:
+	case PR_EC_EXTERNAL_AUDIENCE:
+		return dir + "/config/autoreply.cfg"s;
+	case PR_EC_OUTOFOFFICE_MSG:
+	case PR_EC_OUTOFOFFICE_SUBJECT:
+		return dir + "/config/internal-reply"s;
+	case PR_EC_EXTERNAL_REPLY:
+	case PR_EC_EXTERNAL_SUBJECT:
+		return dir + "/config/external-reply"s;
+	default:
+		return {};
+	}
+}
+
+static ec_error_t autoreply_getprop1(const char *dir,
+    proptag_t proptag, void *&value)
+{
+	char subject[1024];
+	MIME_FIELD mime_field;
+	auto path = autoreply_fspath(dir, proptag);
+
+	switch (proptag) {
+	case PR_EC_OUTOFOFFICE: {
+		auto oofstate = cu_alloc<uint32_t>();
+		if (oofstate == nullptr)
+			return ecServerOOM;
+		auto cfg = config_file_init(path.c_str(), oof_defaults);
+		*oofstate = cfg != nullptr ? cfg->get_ll("oof_state") : 0;
+		value = oofstate;
+		return ecSuccess;
+	}
+	case PR_EC_OUTOFOFFICE_MSG:
+	case PR_EC_EXTERNAL_REPLY: {
+		struct stat st;
+		wrapfd fd = open(path.c_str(), O_RDONLY);
+		if (fd.get() < 0 || fstat(fd.get(), &st) != 0)
+			return ecNotFound;
+		auto buf = cu_alloc<char>(st.st_size + 1);
+		if (buf == nullptr)
+			return ecServerOOM;
+		if (read(fd.get(), buf, st.st_size) != st.st_size)
+			return ecReadFault;
+		buf[st.st_size] = '\0';
+		auto ptr = strstr(buf, "\r\n\r\n");
+		value = ptr != nullptr ? &ptr[4] : nullptr;
+		return value != nullptr ? ecSuccess : ecNotFound;
+	}
+	case PR_EC_OUTOFOFFICE_SUBJECT:
+	case PR_EC_EXTERNAL_SUBJECT: {
+		struct stat st;
+		wrapfd fd = open(path.c_str(), O_RDONLY);
+		if (fd.get() < 0 || fstat(fd.get(), &st) != 0)
+			return ecNotFound;
+		auto buf = cu_alloc<char>(st.st_size);
+		if (buf == nullptr)
+			return ecServerOOM;
+		if (buf == nullptr || read(fd.get(), buf, st.st_size) != st.st_size)
+			return ecReadFault;
+		size_t offset = 0;
+		while (auto parsed = parse_mime_field(&buf[offset], st.st_size - offset, &mime_field)) {
+			offset += parsed;
+			if (strcasecmp(mime_field.name.c_str(), "Subject") == 0 &&
+			    mime_field.value.size() < sizeof(subject) &&
+			    mime_string_to_utf8("utf-8", mime_field.value.c_str(), subject, sizeof(subject))) {
+				value = common_util_dup(subject);
+				return value != nullptr ? ecSuccess : ecServerOOM;
+			}
+			if (buf[offset] == '\r' && buf[offset+1] == '\n')
+				break;
+		}
+		return ecNotFound;
+	}
+	case PR_EC_OUTOFOFFICE_FROM:
+	case PR_EC_OUTOFOFFICE_UNTIL: {
+		auto cfg = config_file_init(path.c_str(), oof_defaults);
+		if (cfg == nullptr)
+			return ecNotFound;
+		auto ts = cu_alloc<mapitime_t>();
+		if (ts == nullptr)
+			return ecServerOOM;
+		auto key = proptag == PR_EC_OUTOFOFFICE_FROM ? "START_TIME" : "END_TIME";
+		auto sval = cfg->get_value(key);
+		if (sval == nullptr)
+			return ecNotFound;
+		*ts = rop_util_unix_to_nttime(strtoll(sval, nullptr, 0));
+		value = ts;
+		return ecSuccess;
+	}
+	case PR_EC_ALLOW_EXTERNAL:
+	case PR_EC_EXTERNAL_AUDIENCE: {
+		static constexpr uint8_t fake_true = true, fake_false = false;
+		auto cfg = config_file_init(path.c_str(), oof_defaults);
+		if (cfg == nullptr) {
+			value = deconst(&fake_false);
+			return ecSuccess;
+		}
+		auto key = proptag == PR_EC_ALLOW_EXTERNAL ? "allow_external_oof" : "external_audience";
+		value = deconst(cfg->get_ll(key) == 0 ? &fake_false : &fake_true);
+		return ecSuccess;
+	}
+	}
+	return ecNotFound;
+}
+
+BOOL exmdb_server::autoreply_getprop(const char *dir, cpid_t cpid,
+    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals) try
+{
+	ppropvals->count = 0;
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	if (ppropvals->ppropval == nullptr)
+		return false;
+	for (proptag_t tag : *pproptags) {
+		void *value = nullptr;
+		auto err = autoreply_getprop1(dir, tag, value);
+		if (err == ecSuccess) {
+			if (value != nullptr) {
+				ppropvals->emplace_back(tag, value);
+				continue;
+			}
+			err = ecNotFound;
+		}
+		auto erp = cu_alloc<uint32_t>();
+		if (erp == nullptr)
+			return false;
+		*erp = err;
+		ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), erp);
+	}
+	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2227: ENOMEM");
+	return false;
+}
+
+static BOOL autoreply_setprop1(const char *dir, const TAGGED_PROPVAL &pv)
+{
+	auto path = autoreply_fspath(dir, pv.proptag);
+
+	/* Ensure file exists for the sake of config_file_init() */
+	auto fdtest = open(path.c_str(), O_CREAT | O_WRONLY, FMODE_PUBLIC);
+	if (fdtest < 0)
+		return false;
+	close(fdtest);
+
+	switch (pv.proptag) {
+	case PR_EC_OUTOFOFFICE: {
+		auto cfg = config_file_init(path.c_str(), oof_defaults);
+		if (cfg == nullptr)
+			return false;
+		auto v = *static_cast<const uint32_t *>(pv.pvalue);
+		cfg->set_value("OOF_STATE", v == 1 ? "1" : v == 2 ? "2" : "0");
+		return cfg->save();
+	}
+	case PR_EC_OUTOFOFFICE_FROM:
+	case PR_EC_OUTOFOFFICE_UNTIL: {
+		auto cfg = config_file_init(path.c_str(), oof_defaults);
+		if (cfg == nullptr)
+			return false;
+		auto ts = rop_util_nttime_to_unix(*static_cast<const mapitime_t *>(pv.pvalue));
+		cfg->set_value(pv.proptag == PR_EC_OUTOFOFFICE_FROM ?
+			"START_TIME" : "END_TIME", std::to_string(ts).c_str());
+		return cfg->save();
+	}
+	case PR_EC_OUTOFOFFICE_MSG:
+	case PR_EC_EXTERNAL_REPLY: {
+		wrapfd fd = open(path.c_str(), O_RDONLY);
+		struct stat st{};
+		ssize_t buff_len = 0;
+		char *buf = nullptr;
+
+		if (fd.get() < 0 || fstat(fd.get(), &st) != 0) {
+			buff_len = strlen(static_cast<const char *>(pv.pvalue));
+			buf = cu_alloc<char>(buff_len + 256);
+			if (buf == nullptr)
+				return false;
+			buff_len = gx_snprintf(buf, buff_len + 256,
+				   "Content-Type: text/html; charset=\"utf-8\"\r\n\r\n%s",
+				   static_cast<const char *>(pv.pvalue));
+		} else {
+			buff_len = st.st_size;
+			buf = cu_alloc<char>(buff_len + strlen(static_cast<const char *>(pv.pvalue)) + 1);
+			if (buf == nullptr || read(fd.get(), buf, buff_len) != buff_len)
+				return false;
+			buf[buff_len] = '\0';
+			auto token = strstr(buf, "\r\n\r\n");
+			if (token != nullptr) {
+				strcpy(&token[4], static_cast<const char *>(pv.pvalue));
+				buff_len = strlen(buf);
+			} else {
+				buff_len = sprintf(buf,
+					   "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\n\r\n%s",
+					   static_cast<const char *>(pv.pvalue));
+			}
+		}
+		gromox::tmpfile tf;
+		auto fdw = tf.open_linkable((dir + "/config"s).c_str(), O_WRONLY, FMODE_PUBLIC);
+		if (fdw < 0 || HXio_fullwrite(fdw, buf, buff_len) != buff_len)
+			return false;
+		return tf.link_to(path.c_str()) == 0;
+	}
+	case PR_EC_OUTOFOFFICE_SUBJECT:
+	case PR_EC_EXTERNAL_SUBJECT: {
+		wrapfd fd = open(path.c_str(), O_RDONLY);
+		struct stat st{};
+		ssize_t buff_len = 0;
+		char *buf = nullptr;
+
+		if (fd.get() < 0 || fstat(fd.get(), &st) != 0) {
+			buff_len = strlen(static_cast<const char *>(pv.pvalue));
+			buf = cu_alloc<char>(buff_len + 256);
+			if (buf == nullptr)
+				return false;
+			buff_len = sprintf(buf,
+				   "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\nSubject: %s\r\n\r\n",
+				   static_cast<const char *>(pv.pvalue));
+		} else {
+			buff_len = st.st_size;
+			buf = cu_alloc<char>(buff_len + strlen(static_cast<const char *>(pv.pvalue)) + 16);
+			if (buf == nullptr)
+				return false;
+			auto token = cu_alloc<char>(buff_len + 1);
+			if (token == nullptr ||
+			    read(fd.get(), token, buff_len) != buff_len)
+				return false;
+			token[buff_len] = '\0';
+			auto body = strstr(token, "\r\n\r\n");
+			if (body == nullptr)
+				buff_len = sprintf(buf,
+				           "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\nSubject: %s\r\n\r\n",
+				           static_cast<const char *>(pv.pvalue));
+			else
+				buff_len = sprintf(buf,
+				           "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\nSubject: %s%s",
+				           static_cast<const char *>(pv.pvalue), body);
+		}
+		gromox::tmpfile tf;
+		auto fdw = tf.open_linkable((dir + "/config"s).c_str(), O_WRONLY, FMODE_PUBLIC);
+		if (fdw < 0 || HXio_fullwrite(fdw, buf, buff_len) != buff_len)
+			return false;
+		return tf.link_to(path.c_str()) == 0;
+	}
+	case PR_EC_ALLOW_EXTERNAL:
+	case PR_EC_EXTERNAL_AUDIENCE: {
+		auto cfg = config_file_init(path.c_str(), oof_defaults);
+		if (cfg == nullptr)
+			return false;
+		auto key = pv.proptag == PR_EC_ALLOW_EXTERNAL ?
+			"ALLOW_EXTERNAL_OOF" : "EXTERNAL_AUDIENCE";
+		cfg->set_value(key, *static_cast<const uint8_t *>(pv.pvalue) ? "1" : "0");
+		return cfg->save();
+	}
+	}
+	return false;
+}
+
+BOOL exmdb_server::autoreply_setprop(const char *dir, cpid_t cpid,
+    const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems) try
+{
+	for (const auto &p : *ppropvals)
+		if (!autoreply_setprop1(dir, p))
+			return false;
+	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2229: ENOMEM");
 	return false;
 }
 

@@ -173,6 +173,8 @@ enum class exmdb_callid : uint8_t {
 	cgkreset = 0x91,
 	write_message /* v3 */ = 0x92,
 	set_maintenance = 0x93,
+	autoreply_getprop = 0x94,
+	autoreply_setprop = 0x95,
 	/* update exch/exmdb/names.cpp:exmdb_rpc_idtoname! */
 };
 
@@ -219,6 +221,10 @@ struct exreq_set_store_properties final : public exreq {
 	cpid_t cpid;
 	TPROPVAL_ARRAY *ppropvals;
 };
+
+/* @cpid fields unused, always CP_UTF8 */
+using exreq_autoreply_getprop = exreq_get_store_properties;
+using exreq_autoreply_setprop = exreq_set_store_properties;
 
 struct exreq_remove_store_properties final : public exreq {
 	PROPTAG_ARRAY *pproptags;
@@ -931,6 +937,9 @@ struct exresp_get_store_properties final : public exresp {
 struct exresp_set_store_properties final : public exresp {
 	PROBLEM_ARRAY problems;
 };
+
+using exresp_autoreply_getprop = exresp_get_store_properties;
+using exresp_autoreply_setprop = exresp_set_store_properties;
 
 struct exresp_get_mbox_perm final : public exresp {
 	uint32_t permission;

@@ -141,3 +141,5 @@ EXMIDL(imapfile_write, (const char *dir, const std::string &type, const std::str
 EXMIDL(imapfile_delete, (const char *dir, const std::string &type, const std::string &mid))
 EXMIDL(cgkreset, (const char *dir, uint32_t flags))
 EXMIDL(set_maintenance, (const char *dir, uint32_t mode))
+EXMIDL(autoreply_getprop, (const char *dir, cpid_t cpid, const PROPTAG_ARRAY *pproptags, IDLOUT TPROPVAL_ARRAY *propvals))
+EXMIDL(autoreply_setprop, (const char *dir, cpid_t cpid, const TPROPVAL_ARRAY *ppropvals, IDLOUT PROBLEM_ARRAY *problems))
