@@ -1168,6 +1168,8 @@ static bool skip_message(const TPROPVAL_ARRAY &props)
 	if (flags != nullptr && mcls != nullptr && *flags & MSGFLAG_ASSOCIATED &&
 	    class_match_prefix(mcls, "IPM.Microsoft.FolderDesign.NamedView") == 0)
 		return true;
+	if (class_match_prefix(mcls, "IPM.Microsoft.ScheduleData.FreeBusy") == 0)
+		return true;
 	if (g_proptag_stubbed != 0) {
 		auto flag = props.get<uint8_t>(g_proptag_stubbed);
 		if (flag != nullptr && *flag != 0)
