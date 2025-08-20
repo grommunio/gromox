@@ -2949,9 +2949,15 @@ static bool oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 		ONEOFF_ENTRYID oo{};
 		ep2.init(address_array.pbin[i].pb, address_array.pbin[i].cb,
 			malloc, EXT_FLAG_UTF16);
-		if (ep2.g_oneoff_eid(&oo) != pack_result::ok ||
-		    strcasecmp(oo.paddress_type.c_str(), "SMTP") != 0) {
-			mlog(LV_WARN, "W-1964: skipping non-SMTP reply-to entry");
+		if (ep2.g_oneoff_eid(&oo) != pack_result::ok) {
+			mlog(LV_WARN, "W-1964: skipping malformed reply-to entry");
+			continue;
+		}
+		std::string emaddr;
+		if (cvt_genaddr_to_smtpaddr(oo.paddress_type.c_str(),
+		    oo.pmail_address.c_str(), g_oxcmail_org_name,
+		    oxcmail_get_username, emaddr) != ecSuccess) {
+			mlog(LV_WARN, "W-1964: skipping %s reply-to entry", oo.paddress_type.c_str());
 			continue;
 		}
 		auto mb = vmime::make_shared<vmime::mailbox>("");
