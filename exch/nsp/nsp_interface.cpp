@@ -1966,25 +1966,26 @@ ec_error_t nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	}
 	if (tmp_list.size() == item_num)
 		return ecSuccess;
-	auto dlg_path = mres.maildir + "/config/delegates.txt";
-	wrapfd fd = open(dlg_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC);
-	if (fd.get() < 0) {
-		mlog(LV_ERR, "E-2024: open %s: %s",
-			dlg_path.c_str(), strerror(errno));
-		return ecError;
+	auto dlg_dir  = mres.maildir + "/config"s;
+	auto dlg_path = dlg_dir + "/delegates.txt"s;
+	gromox::tmpfile fd;
+	if (fd.open_linkable(dlg_dir.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC) < 0) {
+		mlog(LV_ERR, "E-2024: open %s: %s", dlg_path.c_str(), strerror(errno));
+		return ecWriteFault;
 	}
 	for (const auto &u : tmp_list) {
-		auto wr_ret = write(fd.get(), u.c_str(), u.size());
+		auto wr_ret = write(fd, u.c_str(), u.size());
 		if (wr_ret < 0 || static_cast<size_t>(wr_ret) != u.size() ||
-		    write(fd.get(), "\r\n", 2) != 2) {
-			mlog(LV_ERR, "E-1687: write %s: %s", dlg_path.c_str(), strerror(errno));
-			break;
+		    write(fd, "\r\n", 2) != 2) {
+			mlog(LV_ERR, "E-1687: write %s: %s", fd.m_path.c_str(), strerror(errno));
+			return ecWriteFault;
 		}
 	}
-	auto err = fd.close_wr();
+	auto err = fd.link_to(dlg_path.c_str());
 	if (err != 0) {
-		mlog(LV_ERR, "E-1686: write %s: %s", dlg_path.c_str(), strerror(err));
-		return ecError;
+		mlog(LV_ERR, "E-1686: link %s %s: %s", fd.m_path.c_str(),
+			dlg_path.c_str(), strerror(err));
+		return ecWriteFault;
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
