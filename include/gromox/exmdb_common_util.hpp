@@ -54,7 +54,6 @@ extern void common_util_pass_service(const char *name, void *func);
 void common_util_init(const char *org_name, unsigned int max_msg,
 	unsigned int max_rule_num, unsigned int max_ext_rule_num);
 extern void common_util_build_tls();
-extern unsigned int common_util_sequence_ID();
 void* common_util_alloc(size_t size);
 template<typename T> T *cu_alloc()
 {

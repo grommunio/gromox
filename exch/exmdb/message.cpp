@@ -3101,8 +3101,9 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 				tmp_path1, eaddr.c_str());
 			continue;
 		}
-		auto mid_string = fmt::format("{}.x{}.{}", time(nullptr),
-		                  common_util_sequence_ID(), get_host_ID());
+		char guidtxt[GUIDSTR_SIZE]{};
+		GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
+		auto mid_string = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
 		auto eml_path = maildir + "/eml/"s + mid_string;
 		auto ret = gx_mkbasedir(eml_path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
 		if (ret < 0) {
@@ -3412,8 +3413,9 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 		if (mysql_adaptor_meta(eaddr.c_str(), WANTPRIV_METAONLY, mres) != 0)
 			continue;
 		auto maildir = mres.maildir.c_str();
-		auto mid_string = fmt::format("{}.x{}.{}", time(nullptr),
-		                  common_util_sequence_ID(), get_host_ID());
+		char guidtxt[GUIDSTR_SIZE]{};
+		GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
+		auto mid_string = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
 		auto eml_path = maildir + "/eml/"s + mid_string;
 		auto ret = gx_mkbasedir(eml_path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
 		if (ret < 0) {

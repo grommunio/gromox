@@ -388,7 +388,20 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt,
 		fprintf(stderr, "exm: tpropval: %s\n", strerror(-iret));
 		return iret;
 	}
-	auto midstr = fmt::format("{}.cn{}", time(nullptr), rop_util_get_gc_value(change_num));
+	/*
+	 * midstr can be (almost) anything we want, the name is not
+	 * interpreted. But it should be chosen such that it does not collide
+	 * with a different process. A GUID fits that easily.
+	 *
+	 * Unlike attachments, the content of eml files is expected to be
+	 * different (look at all those timestamps in Date:, Received:, etc.),
+	 * so no effort is made to hash the content―which also conveniently
+	 * does away with the issue of multiple processes trying to potentially
+	 * vivify the same filename-derived-from-same-content.
+	 */
+	char guidtxt[GUIDSTR_SIZE]{};
+	GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
+	auto midstr = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
 	digest["file"] = midstr;
 	if (!exmdb_client->imapfile_write(g_storedir, "eml",
 	    midstr.c_str(), im_repr.c_str())) {
@@ -434,7 +447,9 @@ static int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct,
 		fprintf(stderr, "exm: tpropval: %s\n", strerror(-iret));
 		return iret;
 	}
-	auto midstr = fmt::format("{}.cn{}", time(nullptr), rop_util_get_gc_value(change_num));
+	char guidtxt[GUIDSTR_SIZE]{};
+	GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
+	auto midstr = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
 	digest["file"] = midstr;
 	if (!exmdb_client->imapfile_write(g_storedir, "eml",
 	    midstr.c_str(), im_repr.c_str())) {

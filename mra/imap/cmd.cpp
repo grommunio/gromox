@@ -8,7 +8,6 @@
 #	include "config.h"
 #endif
 #include <algorithm>
-#include <atomic>
 #include <cassert>
 #include <cerrno>
 #include <cstdio>
@@ -1937,15 +1936,12 @@ int icp_append(int argc, char **argv, imap_context &ctx) try
 	std::string mid_string;
 	time_t tmp_time = time(nullptr);
 	if (str_received != nullptr &&
-	    icp_convert_imaptime(str_received, &tmp_time)) {
-		char txt[GUIDSTR_SIZE];
-		GUID::random_new().to_str(txt, std::size(txt), 32);
-		mid_string = fmt::format("{}.g{}", tmp_time, txt);
-	} else {
-		mid_string = fmt::format("{}.n{}", tmp_time,
-			     imap_parser_get_sequence_ID());
-	}
-	mid_string += "."s + znul(g_config_file->get_value("host_id"));
+	    icp_convert_imaptime(str_received, &tmp_time))
+		/* good */;
+	char txt[GUIDSTR_SIZE]{};
+	GUID::random_new().to_str(txt, std::size(txt), 32);
+	mid_string = fmt::format("R-{}/{}", &txt[30], txt);
+
 	auto pcontext = &ctx;
 	imrpc_build_env();
 	auto cl_0 = HX::make_scope_exit(imrpc_free_env);
@@ -2038,9 +2034,9 @@ static int icp_long_append_begin2(int argc, char **argv, imap_context &ctx) try
 				return 1800 | DISPATCH_BREAK;
 	}
 	auto pcontext = &ctx;
-	pcontext->mid = fmt::format("{}.i{}.{}",
-	                time(nullptr), imap_parser_get_sequence_ID(),
-	                znul(g_config_file->get_value("host_id")));
+	char guidtxt[GUIDSTR_SIZE]{};
+	GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
+	pcontext->mid = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
 	ctx.append_stream.clear();
 	ctx.append_folder = std::move(sys_name);
 	ctx.append_flags  = flagbits_to_s(

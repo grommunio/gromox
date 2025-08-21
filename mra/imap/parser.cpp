@@ -6,7 +6,6 @@
  * commands and then does the corresponding action.
  */
 #include <algorithm>
-#include <atomic>
 #include <cerrno>
 #include <climits>
 #include <csignal>
@@ -66,7 +65,6 @@ static int imap_parser_wrdat_retrieve(imap_context &);
 unsigned int g_imapcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_tls, g_force_tls;
-static std::atomic<int> g_sequence_id;
 static int g_average_num;
 static size_t g_context_num;
 static time_duration g_timeout, g_autologout_time;
@@ -96,7 +94,6 @@ void imap_parser_init(int context_num, int average_num,
 	g_support_tls       = support_tls;
 	g_ssl_mutex_buf = nullptr;
 	g_notify_stop = true;
-	g_sequence_id = 0;
 	if (!support_tls)
 		return;
 	g_force_tls = force_tls;
@@ -1688,16 +1685,6 @@ static void *imps_scanwork(void *argp)
 		}
 	}
 	return nullptr;
-}
-
-int imap_parser_get_sequence_ID()
-{
-	int old = 0, nu = 0;
-	do {
-		old = g_sequence_id.load(std::memory_order_relaxed);
-		nu  = old != INT_MAX ? old + 1 : 1;
-	} while (!g_sequence_id.compare_exchange_weak(old, nu));
-	return nu;
 }
 
 void imap_parser_safe_write(imap_context *pcontext, const void *pbuff, size_t count)
