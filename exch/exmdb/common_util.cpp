@@ -2992,14 +2992,9 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 		maildir = exmdb_server::get_dir();
 	path = maildir + "/cid/"s + hval.str();
 	cid  = hval.str();
-	std::unique_ptr<char[], stdlib_delete> extradir(HX_dirname(path.c_str()));
-	if (extradir == nullptr) {
-		mlog(LV_ERR, "E-5318: ENOMEM");
-		return ENOMEM;
-	}
-	auto ret = HX_mkdir(extradir.get(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+	auto ret = gx_mkbasedir(path.c_str(), FMODE_PRIVATE);
 	if (ret < 0) {
-		mlog(LV_ERR, "E-2009: mkdir %s: %s", extradir.get(), strerror(-ret));
+		mlog(LV_ERR, "E-2009: mkbasedir for %s: %s", path.c_str(), strerror(-ret));
 		return -ret;
 	}
 

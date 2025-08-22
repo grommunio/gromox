@@ -1800,6 +1800,25 @@ int ece2nerrno(ec_error_t e)
 	}
 }
 
+/**
+ * Given a file path, create all directories leading up to it.
+ * @mode: desired mode of directory (+x is always auto-added)
+ */
+int gx_mkbasedir(const char *file, unsigned int mode)
+{
+	std::unique_ptr<char[], stdlib_delete> base(HX_dirname(file));
+	if (base == nullptr)
+		return ENOMEM;
+	if (mode & (S_IRUSR | S_IWUSR))
+		mode |= S_IXUSR;
+	if (mode & (S_IRGRP | S_IWGRP))
+		mode |= S_IXGRP;
+	if (mode & (S_IROTH | S_IWOTH))
+		mode |= S_IXOTH;
+	auto ret = HX_mkdir(base.get(), mode);
+	return ret < 0 ? -ret : 0;
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try

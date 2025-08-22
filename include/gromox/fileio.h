@@ -97,5 +97,6 @@ extern GX_EXPORT std::string base64_encode(const std::string_view &);
 extern GX_EXPORT std::string base64_decode(const std::string_view &);
 extern GX_EXPORT std::string sss_obf_reverse(const std::string_view &);
 extern GX_EXPORT int haproxy_intervene(int fd, unsigned int level, struct sockaddr_storage *);
+extern GX_EXPORT int gx_mkbasedir(const char *file, unsigned int mode);
 
 }
