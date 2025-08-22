@@ -618,15 +618,19 @@ BOOL exmdb_server::recalc_store_size(const char *dir, uint32_t flags)
 	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
-static bool imapfile_type_ok(const std::string &s)
+static bool imapfile_name_ok(const std::string &type, const std::string &mid)
 {
-	return s == "eml" || s == "ext" || s == "tmp/imap.rfc822";
+	if (mid.empty() || mid[0] == '.' || mid.find("/.") != mid.npos)
+		return false;
+	if (type != "eml" && type != "ext" && type != "tmp/imap.rfc822")
+		return false;
+	return true;
 }
 
 BOOL exmdb_server::imapfile_read(const char *dir, const std::string &type,
     const std::string &mid, std::string *data)
 {
-	if (!imapfile_type_ok(type) || mid.find('/') != mid.npos)
+	if (!imapfile_name_ok(type, mid))
 		return false;
 	size_t slurp_size = 0;
 	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file((dir + "/"s + type + "/" + mid).c_str(), &slurp_size));
@@ -639,7 +643,7 @@ BOOL exmdb_server::imapfile_read(const char *dir, const std::string &type,
 BOOL exmdb_server::imapfile_write(const char *dir, const std::string &type,
     const std::string &mid, const std::string &data)
 {
-	if (!imapfile_type_ok(type) || mid.find('/') != mid.npos)
+	if (!imapfile_name_ok(type, mid))
 		return false;
 	gromox::tmpfile tf;
 	auto fd = tf.open_linkable(dir, O_WRONLY, FMODE_PRIVATE);
@@ -660,7 +664,7 @@ BOOL exmdb_server::imapfile_write(const char *dir, const std::string &type,
 BOOL exmdb_server::imapfile_delete(const char *dir, const std::string &type,
     const std::string &mid)
 {
-	if (!imapfile_type_ok(type) || mid.find('/') != mid.npos)
+	if (!imapfile_name_ok(type, mid))
 		return false;
 	auto fn = dir + "/"s + type + "/" + mid;
 	if (remove(fn.c_str()) < 0 && errno != ENOENT) {
