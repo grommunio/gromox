@@ -2992,11 +2992,6 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 		maildir = exmdb_server::get_dir();
 	path = maildir + "/cid/"s + hval.str();
 	cid  = hval.str();
-	auto ret = gx_mkbasedir(path.c_str(), FMODE_PRIVATE);
-	if (ret < 0) {
-		mlog(LV_ERR, "E-2009: mkbasedir for %s: %s", path.c_str(), strerror(-ret));
-		return -ret;
-	}
 
 	/* See if the object already exists. (Skip compression.) */
 	wrapfd check_fd = open(path.c_str(), O_RDONLY);
@@ -3006,6 +3001,11 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 		return 0;
 	check_fd.close_rd();
 
+	auto ret = gx_mkbasedir(path.c_str(), FMODE_PRIVATE);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-2009: mkbasedir for %s: %s", path.c_str(), strerror(-ret));
+		return -ret;
+	}
 	gromox::tmpfile tmf;
 	ret = tmf.open_linkable(maildir, O_RDWR | O_TRUNC);
 	if (ret < 0) {
