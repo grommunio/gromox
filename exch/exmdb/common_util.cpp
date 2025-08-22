@@ -4694,6 +4694,11 @@ static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 	new_midstr = fmt::format("{}.x{}.{}", time(nullptr), common_util_sequence_ID(), get_host_ID());
 	auto old_eml = fmt::format("{}/eml/{}", basedir, old_midstr);
 	auto new_eml = fmt::format("{}/eml/{}", basedir, new_midstr);
+	auto ret = gx_mkbasedir(new_eml.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-1493: mkbasedir for %s: %s", new_eml.c_str(), strerror(-ret));
+		return -ret;
+	}
 	/*
 	 * Partial mailboxes (without cid/-like directories) are
 	 * normal for debugging, don't warn in that case.
@@ -4707,6 +4712,11 @@ static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 	}
 	auto old_ext = fmt::format("{}/ext/{}", basedir, old_midstr);
 	auto new_ext = fmt::format("{}/ext/{}", basedir, new_midstr);
+	ret = gx_mkbasedir(new_ext.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-1495: mkbasedir for %s: %s", new_ext.c_str(), strerror(-ret));
+		return -ret;
+	}
 	if (link(old_ext.c_str(), new_ext.c_str()) < 0) {
 		int se = errno;
 		if (errno != ENOENT || g_dbg_synth_content == 0)

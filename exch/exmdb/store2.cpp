@@ -652,7 +652,14 @@ BOOL exmdb_server::imapfile_write(const char *dir, const std::string &type,
 	auto wrret = HXio_fullwrite(fd, data.data(), data.size());
 	if (wrret < 0 || static_cast<size_t>(wrret) != data.size())
 		return false;
+
 	auto tgt = fmt::format("{}/{}/{}", dir, type, mid);
+	auto ret = gx_mkbasedir(mid.c_str(), FMODE_PRIVATE);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-1941: mkdir %s: %s", mid.c_str(), strerror(-ret));
+		return false;
+	}
+
 	auto err = tf.link_to(tgt.c_str());
 	if (err != 0) {
 		mlog(LV_ERR, "E-1752: link_to %s: %s", tgt.c_str(), strerror(errno));

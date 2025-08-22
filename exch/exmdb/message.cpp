@@ -3104,7 +3104,12 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 		auto mid_string = fmt::format("{}.x{}.{}", time(nullptr),
 		                  common_util_sequence_ID(), get_host_ID());
 		auto eml_path = maildir + "/eml/"s + mid_string;
-		auto ret = HX_copy_file(tmp_path1, eml_path.c_str(), 0);
+		auto ret = gx_mkbasedir(eml_path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+		if (ret < 0) {
+			mlog(LV_ERR, "E-1492: mkbasedir for %s: %s", eml_path.c_str(), strerror(-ret));
+			continue;
+		}
+		ret = HX_copy_file(tmp_path1, eml_path.c_str(), 0);
 		if (ret < 0) {
 			mlog(LV_ERR, "E-1606: HX_copy_file %s -> %s: %s",
 			        tmp_path1, eml_path.c_str(), strerror(-ret));
@@ -3410,7 +3415,12 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 		auto mid_string = fmt::format("{}.x{}.{}", time(nullptr),
 		                  common_util_sequence_ID(), get_host_ID());
 		auto eml_path = maildir + "/eml/"s + mid_string;
-		auto ret = HX_copy_file(tmp_path1, eml_path.c_str(), 0);
+		auto ret = gx_mkbasedir(eml_path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+		if (ret < 0) {
+			mlog(LV_ERR, "E-1493: mkbasedir for %s: %s", eml_path.c_str(), strerror(-ret));
+			continue;
+		}
+		ret = HX_copy_file(tmp_path1, eml_path.c_str(), 0);
 		if (ret < 0) {
 			mlog(LV_ERR, "E-1607: HX_copy_file %s -> %s: %s",
 			        tmp_path1, eml_path.c_str(), strerror(-ret));
@@ -3766,6 +3776,11 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		snprintf(tmp_path, std::size(tmp_path), "%s/ext/%s",
 		         exmdb_server::get_dir(), mid_string);
 		auto djson = json_to_str(std::move(newdigest));
+		auto ret = gx_mkbasedir(tmp_path, FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+		if (ret < 0) {
+			mlog(LV_ERR, "E-1942: mkbasedir for %s: %s", tmp_path, strerror(-ret));
+			return false;
+		}
 		wrapfd fd = open(tmp_path, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() >= 0) {
 			if (HXio_fullwrite(fd.get(), djson.c_str(), djson.size()) < 0 ||
@@ -3900,6 +3915,11 @@ BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
 		if (json_from_str(digest_stream, digest) &&
 		    digest["file"].asString().size() > 0) {
 			std::string ext_file = exmdb_server::get_dir() + "/ext/"s + digest["file"].asString();
+			auto ret = gx_mkbasedir(ext_file.c_str(), FMODE_PRIVATE);
+			if (ret < 0) {
+				mlog(LV_ERR, "E-1944: mkbasedir for %s: %s", ext_file.c_str(), strerror(-ret));
+				return false;
+			}
 			wrapfd fd = open(ext_file.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 			if (fd.get() >= 0) {
 				if (HXio_fullwrite(fd.get(), digest_stream.c_str(), digest_stream.size()) < 0 ||

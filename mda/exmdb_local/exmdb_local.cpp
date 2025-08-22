@@ -288,6 +288,12 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	}
 	auto mid_string = fmt::format("{}.l{}.{}", time(nullptr), sequence_ID, hostname);
 	auto eml_path = mres.maildir + "/eml/" + mid_string;
+
+	auto iret = gx_mkbasedir(eml_path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+	if (iret < 0) {
+		mlog(LV_ERR, "E-1493: mkbasedir for %s: %s", eml_path.c_str(), strerror(-iret));
+		return delivery_status::temp_fail;
+	}
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	if (fd.get() < 0) {
 		auto se = errno;
