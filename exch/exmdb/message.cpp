@@ -3795,11 +3795,15 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	for (const auto &mn : seen.msg) {
 		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
 			mn.folder_id, mn.message_id, 0, *dbase, notifq);
+		/*
+		 * Hint from <https://groups.google.com/g/microsoft.public.win32.programmer.messaging/c/LPnk0QqNTog>:
+		 * "fnevObjectCreated event arrives [...] when there is a new
+		 * incoming message but also when a new message is created"
+		 */
+		pdb->notify_message_creation(mn.folder_id,
+			mn.message_id, *dbase, notifq);
 		if (message_id == mn.message_id && dlflags & DELIVERY_DO_NOTIF)
 			pdb->notify_new_mail(mn.folder_id,
-				mn.message_id, *dbase, notifq);
-		else
-			pdb->notify_message_creation(mn.folder_id,
 				mn.message_id, *dbase, notifq);
 	}
 	if (sql_transact.commit() != SQLITE_OK)

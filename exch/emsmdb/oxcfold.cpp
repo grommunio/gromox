@@ -58,6 +58,11 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 		return ecError;
 	if (!b_exist)
 		return ecNotFound;
+	/*
+	 * Even if "register for notifications" is disabled in MFCMAPI,
+	 * emsmdb32.dll still uses notifications towards the server and does
+	 * not pass TABLE_FLAG_NONOTIFICATIONS to OpenFolder/GHT/GCT.
+	 */
 	if (!plogon->is_private()) {
 		if (!exmdb_client->is_folder_deleted(dir, folder_id, &b_del))
 			return ecError;
