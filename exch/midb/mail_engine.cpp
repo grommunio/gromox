@@ -1848,7 +1848,7 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 	cl_err.release();
 	if (!exmdb_client->subscribe_notification(dir,
 	    fnevObjectCreated | fnevObjectDeleted | fnevObjectModified |
-	    fnevObjectMoved | fnevObjectCopied | fnevNewMail, TRUE,
+	    fnevObjectMoved | fnevObjectCopied, TRUE,
 	    0, 0, &pidb->sub_id))
 		pidb->sub_id = 0;	
 	pidb->load_time = time(nullptr);
@@ -3969,16 +3969,6 @@ static void notif_handler(const char *dir,
 	uint64_t parent_id = 0, folder_id = 0, message_id = 0;
 
 	switch (pdb_notify->type) {
-	case db_notify_type::new_mail: {
-		auto n = static_cast<const DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
-		folder_id = n->folder_id;
-		message_id = n->message_id;
-		if (g_cmd_debug >= 2)
-			mlog(LV_DEBUG, "midb-async: %s new-mail f%llu:m%llu",
-				dir, LLU{folder_id}, LLU{message_id});
-		notif_msg_added(pidb.get(), folder_id, message_id);
-		break;
-	}
 	case db_notify_type::folder_created: {
 		auto n = static_cast<const DB_NOTIFY_FOLDER_CREATED *>(pdb_notify->pdata);
 		folder_id = n->folder_id;
