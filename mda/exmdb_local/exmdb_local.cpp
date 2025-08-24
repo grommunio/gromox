@@ -430,17 +430,16 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		return delivery_status::temp_fail;
 	}
 
-	if (!g_lda_twostep) {
-		if (b_bounce_delivered)
-			return delivery_status::bounce_sent;
-		return delivery_status::ok;
+	if (g_lda_twostep) {
+		if (g_lda_mrautoproc)
+			flags |= DELIVERY_DO_MRAUTOPROC;
+		auto err = exmdb_local_rules_execute(home_dir, pcontext->ctrl.from,
+			   address, folder_id, message_id, flags);
+		if (err != ecSuccess)
+			mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s", mapi_strerror(err));
 	}
-	if (g_lda_mrautoproc)
-		flags |= DELIVERY_DO_MRAUTOPROC;
-	auto err = exmdb_local_rules_execute(home_dir, pcontext->ctrl.from,
-	           address, folder_id, message_id, flags);
-	if (err != ecSuccess)
-		mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s", mapi_strerror(err));
+	if (b_bounce_delivered)
+		return delivery_status::bounce_sent;
 	return delivery_status::ok;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1472: ENOMEM");
