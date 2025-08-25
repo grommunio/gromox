@@ -3023,19 +3023,12 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 		mlog(LV_ERR, "E-5319: zstd routines have failed for object %s", path.c_str());
 		return err;
 	}
-	/*
-	 * If another thread created a writeout in the meantime, we will now
-	 * overwrite it. Since the contents are the same, that has no ill
-	 * effect (POSIX guarantees atomicity). But it is somewhat inefficient,
-	 * because now the filesystem will writeout our thread's second copy
-	 * and ditch the blocks from the first copy, which is pointless churn.
-	 * It is not too terrible, considering this can only happen for newly
-	 * instantiated @paths.
-	 */
-	err = tmf.link_to_overwrite(path.c_str());
-	if (err != 0)
-		mlog(LV_ERR, "E-5320: link %s -> %s: %s", tmf.m_path.c_str(),
-			path.c_str(), strerror(err));
+	/* Ditch tmf when another thread created the file in the meantime. */
+	err = tmf.link_to_noreplace(path.c_str());
+	if (err == 0 || err == EEXIST)
+		return 0;
+	mlog(LV_ERR, "E-5320: link %s -> %s: %s", tmf.m_path.c_str(),
+		path.c_str(), strerror(err));
 	return err;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2065: ENOMEM");
