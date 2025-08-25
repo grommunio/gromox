@@ -1084,12 +1084,40 @@ errno_t tmpfile::link_to_overwrite(const char *newpath)
 	 */
 	if (fsync(m_fd) < 0)
 		return errno;
-	/*
-	 * The use of renameat2(RENAME_NOREPLACE) to speed up the CID writer in
-	 * one particular edge case was evaluated, but it is not worth it.
-	 */
 	if (rename(m_path.c_str(), newpath) != 0)
 		return errno;
+	m_path.clear();
+	return 0;
+}
+
+errno_t tmpfile::link_to_noreplace(const char *newpath)
+{
+	if (m_path.empty())
+		return EINVAL;
+	if (m_fd < 0)
+		return EBADF;
+	if (fsync(m_fd) < 0)
+		return errno;
+#ifdef HAVE_RENAMEAT2
+	if (renameat2(AT_FDCWD, m_path.c_str(), AT_FDCWD, newpath, RENAME_NOREPLACE) == 0) {
+		m_path.clear();
+		return 0;
+	}
+#endif
+	/*
+	 * If we land here, renameat2 is not implemented for the particular
+	 * filesystem.
+	 *
+	 * renameat2 guarantees that at most one name will exist at any one
+	 * time. We do not need this guarantee. The file is just for this class
+	 * instsance. The "noreplace" logic can be implemented with link+unlink
+	 * instead. If unlink fails because the fs cannot allocate space to
+	 * start a transaction for unlink(), so be it.
+	 */
+	if (link(m_path.c_str(), newpath) != 0)
+		return errno;
+	if (unlink(m_path.c_str()) != 0)
+		/* ignore */;
 	m_path.clear();
 	return 0;
 }
