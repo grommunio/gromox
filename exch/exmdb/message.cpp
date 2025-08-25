@@ -3783,9 +3783,13 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		}
 		wrapfd fd = open(tmp_path, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() >= 0) {
-			if (HXio_fullwrite(fd.get(), djson.c_str(), djson.size()) < 0 ||
-			    fd.close_wr() != 0) {
+			if (HXio_fullwrite(fd.get(), djson.c_str(), djson.size()) < 0) {
 				mlog(LV_ERR, "E-1319: write %s: %s", tmp_path, strerror(errno));
+				return false;
+			}
+			auto err = fd.close_wr();
+			if (err != 0) {
+				mlog(LV_ERR, "E-1319: close %s: %s", tmp_path, strerror(err));
 				return false;
 			}
 			if (!common_util_set_mid_string(pdb->psqlite,
@@ -3922,9 +3926,13 @@ BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
 			}
 			wrapfd fd = open(ext_file.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 			if (fd.get() >= 0) {
-				if (HXio_fullwrite(fd.get(), digest_stream.c_str(), digest_stream.size()) < 0 ||
-				    fd.close_wr() != 0) {
+				if (HXio_fullwrite(fd.get(), digest_stream.c_str(), digest_stream.size()) < 0) {
 					mlog(LV_ERR, "E-1319: write %s: %s", ext_file.c_str(), strerror(errno));
+					return false;
+				}
+				auto err = fd.close_wr();
+				if (err != 0) {
+					mlog(LV_ERR, "E-1319: close %s: %s", ext_file.c_str(), strerror(err));
 					return false;
 				}
 				if (!common_util_set_mid_string(pdb->psqlite,

@@ -768,22 +768,28 @@ BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 		auto dlg_dir  = pfolder->pstore->get_dir() + "/config"s;
 		auto dlg_path = dlg_dir + "/delegates.txt";
 		gromox::tmpfile fd;
-		if (fd.open_linkable(dlg_dir.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC) >= 0 &&
-		    b_delegate)
+		auto ret = fd.open_linkable(dlg_dir.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC);
+		if (ret < 0) {
+			mlog(LV_ERR, "E-1543: open_linkable %s: %s", dlg_dir.c_str(), strerror(-ret));
+			return ecWriteFault;
+		}
+		if (b_delegate) {
 			for (const auto &a : *pactions) {
 				if (a.type != OP_DELEGATE)
 					continue;
 				auto ret = folder_object_flush_delegates(fd,
-				           *static_cast<const FORWARDDELEGATE_ACTION *>(a.pdata));
+					   *static_cast<const FORWARDDELEGATE_ACTION *>(a.pdata));
 				if (ret == -2)
 					mlog(LV_ERR, "E-2330: write %s: %s",
 						fd.m_path.c_str(), strerror(errno));
 				if (ret < 0)
 					return false;
 			}
-		if (fd.link_to(dlg_path.c_str()) != 0)
+		}
+		auto err = fd.link_to(dlg_path.c_str());
+		if (err != 0)
 			mlog(LV_ERR, "E-2350: link %s %s: %s", fd.m_path.c_str(),
-				dlg_path.c_str(), strerror(errno));
+				dlg_path.c_str(), strerror(err));
 	}
 	return exmdb_client->update_folder_rule(pfolder->pstore->get_dir(),
 		pfolder->folder_id, plist->count,

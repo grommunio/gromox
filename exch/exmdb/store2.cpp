@@ -943,7 +943,7 @@ BOOL exmdb_server::imapfile_write(const char *dir, const std::string &type,
 
 	auto err = tf.link_to(tgt.c_str());
 	if (err != 0) {
-		mlog(LV_ERR, "E-1752: link_to %s: %s", tgt.c_str(), strerror(errno));
+		mlog(LV_ERR, "E-1752: link_to %s: %s", tgt.c_str(), strerror(err));
 		return false;
 	}
 	return TRUE;

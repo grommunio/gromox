@@ -1981,8 +1981,9 @@ ec_error_t nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			break;
 		}
 	}
-	if (fd.close_wr() != 0) {
-		mlog(LV_ERR, "E-1686: write %s: %s", dlg_path.c_str(), strerror(errno));
+	auto err = fd.close_wr();
+	if (err != 0) {
+		mlog(LV_ERR, "E-1686: write %s: %s", dlg_path.c_str(), strerror(err));
 		return ecError;
 	}
 	return ecSuccess;
