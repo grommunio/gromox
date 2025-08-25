@@ -1,10 +1,46 @@
-Development 2.48.5
-==================
+Development 2.48.70
+===================
+
+Enhancements:
+
+* eml2mt now transmits the RFC5322 representation into the message store so
+  that IMAP clients can serve that instead of representation synthesized from
+  MAPI data. / Messages imported via eml2mt no longer "lose" their original
+  structure and headers when viewed in IMAP.
+* midb now transmits the RFC5322 representations of messages created via IMAP
+  into the message store. (Previously: just into the midb cache.) / Messages
+  which have been client-side copied in IMAP, i.e. with FETCH+STORE rather than
+  COPY, no longer "lose" their structure and headers.
+* oxcical: implement support for VTODO and VJOURNAL
+* mbop: add "freeze" and "thaw" commands
+* mbop: using the -v option will now additionaly report the mailbox and
+  subcommand in error messages
+* ews: include ParentFolderId in FindFolder/GetFolder response
+* ews: implement GetDelegate request
+* ews: implement oofReply responses like EX/365
+* ews: add direct meeting response related serialization
+* ews: implement CreateAttachment SOAP call
+* zcore: Out of Office configuration reading and writing is now performed over
+  the network rather than through direct filesystem access.
+* exmdb: the derivation for the PR_MESSAGE_*_ME property value, upon delivery,
+  now includes PR_EMAIL_ADDRESS as a fallback if PR_SMTP_ADDRESS is unset.
 
 Fixes:
 
 * fnevObjectCreate notifications were not sent when a mail was processed
-  through TWOSTEP Rule Processor, now fixed
+  through TWOSTEP Rule Processor, now fixed.
+* oxcical: iCal events with a date in DTSTART & DTEND but without
+  X-MICROSOFT-CDO-ALLDAYEVENT are now transformed into Allday events even if
+  the event is longer than one day.
+* delivery: emit MDN-RRT messages even with ``lda_twostep_ruleproc`` is set.
+* ews: Avoid sending multiple ``<?xml ?>`` lines into the notification stream
+  HTTP response body.
+
+Changes:
+
+* kdb2mt no longer imports LocalFreebusy control messages, since dangling
+  references in those can make delegate permission editing via OL
+  nonfunctional.
 
 
 Gromox 2.48 (2025-07-31)
