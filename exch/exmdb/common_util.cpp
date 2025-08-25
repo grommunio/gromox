@@ -3032,7 +3032,7 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 	 * It is not too terrible, considering this can only happen for newly
 	 * instantiated @paths.
 	 */
-	err = tmf.link_to(path.c_str());
+	err = tmf.link_to_overwrite(path.c_str());
 	if (err != 0)
 		mlog(LV_ERR, "E-5320: link %s -> %s: %s", tmf.m_path.c_str(),
 			path.c_str(), strerror(err));

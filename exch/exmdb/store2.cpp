@@ -781,7 +781,7 @@ static BOOL autoreply_setprop1(const char *dir, const TAGGED_PROPVAL &pv)
 		auto fdw = tf.open_linkable((dir + "/config"s).c_str(), O_WRONLY, FMODE_PUBLIC);
 		if (fdw < 0 || HXio_fullwrite(fdw, buf, buff_len) != buff_len)
 			return false;
-		return tf.link_to(path.c_str()) == 0;
+		return tf.link_to_overwrite(path.c_str()) == 0;
 	}
 	case PR_EC_OUTOFOFFICE_SUBJECT:
 	case PR_EC_EXTERNAL_SUBJECT: {
@@ -822,7 +822,7 @@ static BOOL autoreply_setprop1(const char *dir, const TAGGED_PROPVAL &pv)
 		auto fdw = tf.open_linkable((dir + "/config"s).c_str(), O_WRONLY, FMODE_PUBLIC);
 		if (fdw < 0 || HXio_fullwrite(fdw, buf, buff_len) != buff_len)
 			return false;
-		return tf.link_to(path.c_str()) == 0;
+		return tf.link_to_overwrite(path.c_str()) == 0;
 	}
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
@@ -940,8 +940,7 @@ BOOL exmdb_server::imapfile_write(const char *dir, const std::string &type,
 		mlog(LV_ERR, "E-1941: mkdir %s: %s", mid.c_str(), strerror(-ret));
 		return false;
 	}
-
-	auto err = tf.link_to(tgt.c_str());
+	auto err = tf.link_to_overwrite(tgt.c_str());
 	if (err != 0) {
 		mlog(LV_ERR, "E-1752: link_to %s: %s", tgt.c_str(), strerror(err));
 		return false;

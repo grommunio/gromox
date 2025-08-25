@@ -1071,7 +1071,7 @@ int tmpfile::open_impl(const char *dir, unsigned int flags, unsigned int mode,
 	return -ENOMEM;
 }
 
-errno_t tmpfile::link_to(const char *newpath)
+errno_t tmpfile::link_to_overwrite(const char *newpath)
 {
 	if (m_path.empty())
 		return EINVAL;

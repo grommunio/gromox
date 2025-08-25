@@ -52,7 +52,7 @@ class GX_EXPORT tmpfile {
 	void close();
 	int open_anon(const char *dir, unsigned int flags, unsigned int mode = FMODE_PRIVATE);
 	int open_linkable(const char *dir, unsigned int flags, unsigned int mode = FMODE_PRIVATE);
-	errno_t link_to(const char *newpath);
+	errno_t link_to_overwrite(const char *newpath);
 
 	int m_fd = -1;
 	std::string m_path;

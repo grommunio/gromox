@@ -1981,7 +1981,7 @@ ec_error_t nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			return ecWriteFault;
 		}
 	}
-	auto err = fd.link_to(dlg_path.c_str());
+	auto err = fd.link_to_overwrite(dlg_path.c_str());
 	if (err != 0) {
 		mlog(LV_ERR, "E-1686: link %s %s: %s", fd.m_path.c_str(),
 			dlg_path.c_str(), strerror(err));

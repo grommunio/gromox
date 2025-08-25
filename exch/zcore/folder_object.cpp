@@ -786,7 +786,7 @@ BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 					return false;
 			}
 		}
-		auto err = fd.link_to(dlg_path.c_str());
+		auto err = fd.link_to_overwrite(dlg_path.c_str());
 		if (err != 0)
 			mlog(LV_ERR, "E-2350: link %s %s: %s", fd.m_path.c_str(),
 				dlg_path.c_str(), strerror(err));
