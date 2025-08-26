@@ -246,6 +246,7 @@ static std::string extract_qparam(const char *qstr, const char *srkey)
 				*bg++ = *v;
 			}
 		}
+		*bg = '\0';
 	}
 	return ret;
 }
