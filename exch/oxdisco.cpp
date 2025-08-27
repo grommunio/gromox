@@ -1036,6 +1036,19 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 	add_child(srv, "authentication", "http-basic");
 	add_child(srv, "username", "%EMAILADDRESS%");
 
+	srv = add_child(resproot, "webMail");
+	auto el = add_child(srv, "loginPage");
+	el->SetAttribute("url", ("https://"s + t_host_id + "/web/").c_str());
+	el = add_child(srv, "loginPageInfo");
+	el->SetAttribute("url", ("https://"s + t_host_id + "/web/").c_str());
+	add_child(el, "username", "%EMAILADDRESS%");
+	el = add_child(srv, "usernameField");
+	el->SetAttribute("id", "username");
+	el = add_child(srv, "passwordField");
+	el->SetAttribute("id", "password");
+	el = add_child(srv, "loginButton");
+	el->SetAttribute("id", "kc-login");
+
 	int code = 200;
 	XMLPrinter printer(nullptr, !pretty_response);
 	respdoc.Print(&printer);
