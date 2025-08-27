@@ -956,6 +956,10 @@ http_status OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) co
 /**
  * RFC draft proposal:
  * https://datatracker.ietf.org/doc/html/draft-ietf-mailmaint-autoconfig-00
+ *
+ * config-v1.1.xml MUST be available without authorization. This also means we
+ * should not output anything that is dependent on the username, as that would
+ * allow unauthenticated clients to see the existence of a user account.
  */
 http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 {
@@ -983,8 +987,10 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 	 * Which means you have to read the source code at
 	 * https://hg-edge.mozilla.org/comm-central/file/tip/mail/components/accountcreation/modules/readFromXML.sys.mjs
 	 * https://github.com/mozilla/releases-comm-central/blob/master/mail/components/accountcreation/modules/readFromXML.sys.mjs
+	 *
+	 * The first incomingServer is the one that will be highlighted as the
+	 * preferred choice in the TB UI.
 	 */
-
 	auto srv = add_child(resp_prov, "incomingServer");
 	srv->SetAttribute("type", "imap");
 	add_child(srv, "hostname", t_host_id);
@@ -1016,6 +1022,21 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 	add_child(srv, "socketType", "SSL");
 	add_child(srv, "authentication", "password-cleartext");
 	add_child(srv, "username", "%EMAILADDRESS%");
+
+	/*
+	 * Because EWS/EAS requires an additional TB plugin (Owl), put Exchange
+	 * at the end.
+	 */
+	srv = add_child(resp_prov, "incomingServer");
+	srv->SetAttribute("type", "exchange");
+	add_child(srv, "hostname", t_host_id);
+	add_child(srv, "port", "443");
+	add_child(srv, "socketType", "SSL");
+	add_child(srv, "authentication", "password-cleartext");
+	add_child(srv, "username", "%EMAILADDRESS%");
+	add_child(srv, "owaURL", "https://"s + host_id + "/web/");
+	add_child(srv, "ewsURL", fmt::format(ews_base_url, host_id, exchange_asmx));
+	add_child(srv, "easURL", fmt::format(msas_base_url, host_id));
 
 	/* Bug in TB: no outgoing server may be something else than SMTP. */
 	srv = add_child(resp_prov, "outgoingServer");
