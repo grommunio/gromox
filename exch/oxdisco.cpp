@@ -83,7 +83,7 @@ class OxdiscoPlugin {
 	http_status resp_json(int, const char *) const;
 	static void resp_mh(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool);
 	void resp_rpch(XMLElement *, const char *home, const char *dom, const std::string &ews_url, const std::string &oab_url, const std::string &ecp_url, std::string &&serverdn, std::string &&mdbdn, const std::string &mailboxid, bool is_pvt) const;
-	http_status resp_autocfg(int, const char *) const;
+	http_status resp_autocfg(int) const;
 	http_status resp_dav(int) const;
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
@@ -312,20 +312,14 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 		return http_status::none;
 	auto uri = req->f_request_uri.c_str();
 	if (auto z = umatch(uri, uri_wkmc11_xml); z != SIZE_MAX) {
-		if (uri[z] != '?')
-			return resp_autocfg(ctx_id, auth_info.username);
-		auto username = extract_qparam(&uri[45], "emailaddress");
-		return resp_autocfg(ctx_id, username.c_str());
+		return resp_autocfg(ctx_id);
 	} else if (auto z = umatch(uri, uri_wkcaldav); z != SIZE_MAX && uri[z] != '/') {
 		/* Not using mod_rewrite: Silent rewrite disallowed by RFC */
 		return resp_dav(ctx_id);
 	} else if (auto z = umatch(uri, uri_wkcarddav); z != SIZE_MAX && uri[z] != '/') {
 		return resp_dav(ctx_id);
 	} else if (auto z = umatch(uri, uri_mc11_xml); z != SIZE_MAX) {
-		if (uri[z] != '?')
-			return resp_autocfg(ctx_id, auth_info.username);
-		auto username = extract_qparam(&uri[22], "emailaddress");
-		return resp_autocfg(ctx_id, username.c_str());
+		return resp_autocfg(ctx_id);
 	} else if (umatch(uri, uri_autod_json) != SIZE_MAX) {
 		return resp_json(ctx_id, uri);
 	} else if (umatch(uri, uri_autod_xml) == SIZE_MAX) {
@@ -963,7 +957,7 @@ http_status OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) co
  * RFC draft proposal:
  * https://datatracker.ietf.org/doc/html/draft-ietf-mailmaint-autoconfig-00
  */
-http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
+http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 {
 	tinyxml2::XMLDocument respdoc;
 	auto decl = respdoc.NewDeclaration();
@@ -988,7 +982,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 	add_child(srv, "port", "143");
 	add_child(srv, "socketType", "STARTTLS");
 	add_child(srv, "authentication", "password-cleartext");
-	add_child(srv, "username", username);
+	add_child(srv, "username", "%EMAILADDRESS%");
 
 	srv = add_child(resp_prov, "incomingServer");
 	add_child(srv, "type", "imap");
@@ -996,7 +990,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 	add_child(srv, "port", "993");
 	add_child(srv, "socketType", "SSL/TLS");
 	add_child(srv, "authentication", "password-cleartext");
-	add_child(srv, "username", username);
+	add_child(srv, "username", "%EMAILADDRESS%");
 
 	srv = add_child(resp_prov, "incomingServer");
 	add_child(srv, "type", "pop3");
@@ -1004,7 +998,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 	add_child(srv, "port", "110");
 	add_child(srv, "socketType", "STARTTLS");
 	add_child(srv, "authentication", "password-cleartext");
-	add_child(srv, "username", username);
+	add_child(srv, "username", "%EMAILADDRESS%");
 
 	srv = add_child(resp_prov, "incomingServer");
 	add_child(srv, "type", "pop3");
@@ -1012,7 +1006,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 	add_child(srv, "port", "995");
 	add_child(srv, "socketType", "SSL/TLS");
 	add_child(srv, "authentication", "password-cleartext");
-	add_child(srv, "username", username);
+	add_child(srv, "username", "%EMAILADDRESS%");
 
 	srv = add_child(resp_prov, "outgoingServer");
 	add_child(srv, "type", "smtp");
@@ -1020,7 +1014,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 	add_child(srv, "port", "25");
 	add_child(srv, "socketType", "none");
 	add_child(srv, "authentication", "password-cleartext");
-	add_child(srv, "username", username);
+	add_child(srv, "username", "%EMAILADDRESS%");
 
 	srv = add_child(resp_prov, "outgoingServer");
 	add_child(srv, "type", "submission");
@@ -1028,7 +1022,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 	add_child(srv, "port", "587");
 	add_child(srv, "socketType", "STARTTLS");
 	add_child(srv, "authentication", "password-cleartext");
-	add_child(srv, "username", username);
+	add_child(srv, "username", "%EMAILADDRESS%");
 
 	srv = add_child(resp_prov, "calendarServer");
 	add_child(srv, "type", "caldav");
@@ -1036,7 +1030,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 	add_child(srv, "port", "443");
 	add_child(srv, "socketType", "SSL/TLS");
 	add_child(srv, "authentication", "password-cleartext");
-	add_child(srv, "username", username);
+	add_child(srv, "username", "%EMAILADDRESS%");
 	add_child(srv, "path", "/dav/");
 
 	srv = add_child(resp_prov, "contactsServer");
@@ -1045,7 +1039,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 	add_child(srv, "port", "443");
 	add_child(srv, "socketType", "SSL/TLS");
 	add_child(srv, "authentication", "password-cleartext");
-	add_child(srv, "username", username);
+	add_child(srv, "username", "%EMAILADDRESS%");
 	add_child(srv, "path", "/dav/");
 
 	int code = 200;
