@@ -1024,23 +1024,17 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 	add_child(srv, "authentication", "password-cleartext");
 	add_child(srv, "username", "%EMAILADDRESS%");
 
-	srv = add_child(resp_prov, "calendarServer");
+	srv = add_child(resproot, "calendar");
 	srv->SetAttribute("type", "caldav");
-	add_child(srv, "hostname", t_host_id);
-	add_child(srv, "port", "443");
-	add_child(srv, "socketType", "SSL");
-	add_child(srv, "authentication", "password-cleartext");
+	add_child(srv, "serverURL", "https://"s + t_host_id + "/dav/");
+	add_child(srv, "authentication", "http-basic");
 	add_child(srv, "username", "%EMAILADDRESS%");
-	add_child(srv, "path", "/dav/");
 
-	srv = add_child(resp_prov, "contactsServer");
+	srv = add_child(resproot, "addressBook");
 	srv->SetAttribute("type", "carddav");
-	add_child(srv, "hostname", t_host_id);
-	add_child(srv, "port", "443");
-	add_child(srv, "socketType", "SSL");
-	add_child(srv, "authentication", "password-cleartext");
+	add_child(srv, "serverURL", "https://"s + t_host_id + "/dav/");
+	add_child(srv, "authentication", "http-basic");
 	add_child(srv, "username", "%EMAILADDRESS%");
-	add_child(srv, "path", "/dav/");
 
 	int code = 200;
 	XMLPrinter printer(nullptr, !pretty_response);
