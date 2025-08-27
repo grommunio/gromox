@@ -2,8 +2,7 @@
 .\" SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
 .TH autodiscover 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-autodiscover \(em Autodiscover HTTP Service Protocol handler (AutoDiscover
-responder)
+autodiscover \(em AutoDiscover HTTP Service Protocol handler (responder)
 .SH Description
 .PP
 A client would make a HTTP request to the /Autodiscover/Autodiscover.xml

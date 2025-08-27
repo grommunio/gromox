@@ -287,7 +287,7 @@ tools_tzdump_LDADD = ${libHX_LIBS} libgromox_common.la
 
 dist_man_MANS = \
 	doc/alias_resolve.4gx \
-	doc/authmgr.4gx doc/authtry.8gx doc/autodiscover.4gx \
+	doc/authmgr.4gx doc/authtry.8gx doc/autoconfig.7 doc/autodiscover.4gx \
 	doc/autodiscover.7 doc/cgkrepair.8gx doc/gromox-compress.8 \
 	doc/delivery.8gx doc/delivery-queue.8gx doc/dnsbl_filter.4gx \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
