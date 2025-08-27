@@ -976,6 +976,15 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 	add_child(resp_prov, "displayName", "Gromox Mail");
 	add_child(resp_prov, "displayShortName", "Gromox");
 
+	/*
+	 * <https://wiki.mozilla.org/Thunderbird:Autoconfiguration:ConfigFileFormat> is not
+	 * complete, and also lacks a formal specification by means of an XSD file.
+	 *
+	 * Which means you have to read the source code at
+	 * https://hg-edge.mozilla.org/comm-central/file/tip/mail/components/accountcreation/modules/readFromXML.sys.mjs
+	 * https://github.com/mozilla/releases-comm-central/blob/master/mail/components/accountcreation/modules/readFromXML.sys.mjs
+	 */
+
 	auto srv = add_child(resp_prov, "incomingServer");
 	srv->SetAttribute("type", "imap");
 	add_child(srv, "hostname", t_host_id);
@@ -1008,6 +1017,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 	add_child(srv, "authentication", "password-cleartext");
 	add_child(srv, "username", "%EMAILADDRESS%");
 
+	/* Bug in TB: no outgoing server may be something else than SMTP. */
 	srv = add_child(resp_prov, "outgoingServer");
 	srv->SetAttribute("type", "smtp");
 	add_child(srv, "hostname", t_host_id);
@@ -1017,7 +1027,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 	add_child(srv, "username", "%EMAILADDRESS%");
 
 	srv = add_child(resp_prov, "outgoingServer");
-	srv->SetAttribute("type", "submission");
+	srv->SetAttribute("type", "smtp");
 	add_child(srv, "hostname", t_host_id);
 	add_child(srv, "port", "587");
 	add_child(srv, "socketType", "STARTTLS");
