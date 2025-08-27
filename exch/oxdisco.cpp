@@ -988,7 +988,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 	srv->SetAttribute("type", "imap");
 	add_child(srv, "hostname", t_host_id);
 	add_child(srv, "port", "993");
-	add_child(srv, "socketType", "SSL/TLS");
+	add_child(srv, "socketType", "SSL");
 	add_child(srv, "authentication", "password-cleartext");
 	add_child(srv, "username", "%EMAILADDRESS%");
 
@@ -1004,7 +1004,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 	srv->SetAttribute("type", "pop3");
 	add_child(srv, "hostname", t_host_id);
 	add_child(srv, "port", "995");
-	add_child(srv, "socketType", "SSL/TLS");
+	add_child(srv, "socketType", "SSL");
 	add_child(srv, "authentication", "password-cleartext");
 	add_child(srv, "username", "%EMAILADDRESS%");
 
@@ -1028,7 +1028,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 	srv->SetAttribute("type", "caldav");
 	add_child(srv, "hostname", t_host_id);
 	add_child(srv, "port", "443");
-	add_child(srv, "socketType", "SSL/TLS");
+	add_child(srv, "socketType", "SSL");
 	add_child(srv, "authentication", "password-cleartext");
 	add_child(srv, "username", "%EMAILADDRESS%");
 	add_child(srv, "path", "/dav/");
@@ -1037,7 +1037,7 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 	srv->SetAttribute("type", "carddav");
 	add_child(srv, "hostname", t_host_id);
 	add_child(srv, "port", "443");
-	add_child(srv, "socketType", "SSL/TLS");
+	add_child(srv, "socketType", "SSL");
 	add_child(srv, "authentication", "password-cleartext");
 	add_child(srv, "username", "%EMAILADDRESS%");
 	add_child(srv, "path", "/dav/");
