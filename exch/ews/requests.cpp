@@ -1599,7 +1599,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	uint64_t fai_total, normal_total, last_cn, last_readcn;
 	EID_ARRAY updated_mids, chg_mids, given_mids, deleted_mids, nolonger_mids, read_mids, unread_mids;
 	bool getFai = request.SyncScope && *request.SyncScope == Enum::NormalAndAssociatedItems;
-	auto pseen_fai = getFai ? &syncState.seen : nullptr;
+	auto pseen_fai = getFai ? &syncState.seen_fai : nullptr;
 	if (!exmdb.get_content_sync(dir.c_str(), folder.folderId, ctx.effectiveUser(folder),
 	    &syncState.given, &syncState.seen, pseen_fai, &syncState.read,
 	    CP_ACP, nullptr, TRUE, &fai_count, &fai_total, &normal_count,
@@ -1659,9 +1659,15 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(templId.messageId(mid).serialize()), false});
 		if (!clipped) {
 			syncState.seen.clear();
+			syncState.seen_fai.clear();
 			syncState.read.clear();
-			if ((last_cn && !syncState.seen.append_range(1, 1, rop_util_get_gc_value(last_cn))) ||
-			   (last_readcn && !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn))))
+			if (last_cn) {
+				auto gc = rop_util_get_gc_value(last_cn);
+				if (!syncState.seen.append_range(1, 1, gc) ||
+				    (getFai && !syncState.seen_fai.append_range(1, 1, gc)))
+					throw DispatchError(E3066);
+			}
+			if (last_readcn && !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn)))
 				throw DispatchError(E3066);
 			syncState.readOffset = 0;
 		} else {
