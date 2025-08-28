@@ -19,10 +19,12 @@
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapitags.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include "exceptions.hpp"
+#include "namedtags.hpp"
 #include "requests.hpp"
 
 namespace gromox::EWS::Requests {
@@ -441,6 +443,42 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
 		bool send = std::holds_alternative<tMessage>(item) && sendMessages;
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
+
+		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
+			ctx.assertIdType(refId.type, tItemId::ID_ITEM);
+			sMessageEntryId mid(refId.Id.data(), refId.Id.size());
+			sFolderSpec pf = ctx.resolveFolder(mid);
+			std::string rdir = ctx.getDir(pf);
+			ctx.validate(rdir, mid);
+			const char *username = ctx.effectiveUser(pf);
+			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+			auto rstat = EWSContext::construct<uint32_t>(resp);
+			uint32_t state = asfMeeting | asfReceived;
+			auto astat = EWSContext::construct<uint32_t>(state);
+			uint16_t pidResp = ctx.getNamedPropId(rdir, NtResponseStatus, true);
+			uint16_t pidReply = ctx.getNamedPropId(rdir, NtAppointmentReplyTime, true);
+			uint16_t pidState = ctx.getNamedPropId(rdir, NtAppointmentStateFlags, true);
+			TAGGED_PROPVAL props[] = {
+				{PROP_TAG(PT_LONG, pidResp), rstat},
+				{PROP_TAG(PT_SYSTIME, pidReply), now},
+				{PROP_TAG(PT_LONG, pidState), astat},
+			};
+			TPROPVAL_ARRAY proplist{std::size(props), props};
+			PROBLEM_ARRAY problems;
+			if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
+				mid.messageId(), &proplist, &problems))
+				throw EWSError::ItemSave(E3092);
+		};
+		if (auto acc = std::get_if<tAcceptItem>(&item)) {
+			if (acc->ReferenceItemId)
+				updateRef(*acc->ReferenceItemId, respAccepted);
+		} else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item)) {
+			if (tent->ReferenceItemId)
+				updateRef(*tent->ReferenceItemId, respTentative);
+		} else if (auto dec = std::get_if<tDeclineItem>(&item)) {
+			if (dec->ReferenceItemId)
+				updateRef(*dec->ReferenceItemId, respDeclined);
+		}
 		if (persist)
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
 		if (std::holds_alternative<tCalendarItem>(item) && sendMessages &&
