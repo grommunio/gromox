@@ -3682,7 +3682,8 @@ sItem tItem::create(const sShape& shape)
 	if (!itemClass)
 		return tItem(shape);
 	if (class_match_prefix(itemClass, "IPM.Note") == 0 ||
-	    class_match_prefix(itemClass, "IPM.StickyNote") == 0)
+	    class_match_prefix(itemClass, "IPM.StickyNote") == 0 ||
+	    class_match_prefix(itemClass, "REPORT.IPM") == 0)
 		return tMessage(shape);
 	else if (class_match_prefix(itemClass, "IPM.Appointment") == 0)
 		return tCalendarItem(shape);
