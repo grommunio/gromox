@@ -19,10 +19,12 @@
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapitags.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include "exceptions.hpp"
+#include "namedtags.hpp"
 #include "requests.hpp"
 
 namespace gromox::EWS::Requests {
@@ -441,6 +443,42 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
 		bool send = std::holds_alternative<tMessage>(item) && sendMessages;
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
+
+		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
+			ctx.assertIdType(refId.type, tItemId::ID_ITEM);
+			sMessageEntryId mid(refId.Id.data(), refId.Id.size());
+			sFolderSpec pf = ctx.resolveFolder(mid);
+			std::string rdir = ctx.getDir(pf);
+			ctx.validate(rdir, mid);
+			const char *username = ctx.effectiveUser(pf);
+			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+			auto rstat = EWSContext::construct<uint32_t>(resp);
+			uint32_t state = asfMeeting | asfReceived;
+			auto astat = EWSContext::construct<uint32_t>(state);
+			uint16_t pidResp = ctx.getNamedPropId(rdir, NtResponseStatus, true);
+			uint16_t pidReply = ctx.getNamedPropId(rdir, NtAppointmentReplyTime, true);
+			uint16_t pidState = ctx.getNamedPropId(rdir, NtAppointmentStateFlags, true);
+			TAGGED_PROPVAL props[] = {
+				{PROP_TAG(PT_LONG, pidResp), rstat},
+				{PROP_TAG(PT_SYSTIME, pidReply), now},
+				{PROP_TAG(PT_LONG, pidState), astat},
+			};
+			TPROPVAL_ARRAY proplist{std::size(props), props};
+			PROBLEM_ARRAY problems;
+			if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
+				mid.messageId(), &proplist, &problems))
+				throw EWSError::ItemSave(E3092);
+		};
+		if (auto acc = std::get_if<tAcceptItem>(&item)) {
+			if (acc->ReferenceItemId)
+				updateRef(*acc->ReferenceItemId, respAccepted);
+		} else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item)) {
+			if (tent->ReferenceItemId)
+				updateRef(*tent->ReferenceItemId, respTentative);
+		} else if (auto dec = std::get_if<tDeclineItem>(&item)) {
+			if (dec->ReferenceItemId)
+				updateRef(*dec->ReferenceItemId, respDeclined);
+		}
 		if (persist)
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
 		if (std::holds_alternative<tCalendarItem>(item) && sendMessages &&
@@ -1568,7 +1606,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	uint64_t fai_total, normal_total, last_cn, last_readcn;
 	EID_ARRAY updated_mids, chg_mids, given_mids, deleted_mids, nolonger_mids, read_mids, unread_mids;
 	bool getFai = request.SyncScope && *request.SyncScope == Enum::NormalAndAssociatedItems;
-	auto pseen_fai = getFai ? &syncState.seen : nullptr;
+	auto pseen_fai = getFai ? &syncState.seen_fai : nullptr;
 	if (!exmdb.get_content_sync(dir.c_str(), folder.folderId, ctx.effectiveUser(folder),
 	    &syncState.given, &syncState.seen, pseen_fai, &syncState.read,
 	    CP_ACP, nullptr, TRUE, &fai_count, &fai_total, &normal_count,
@@ -1628,9 +1666,15 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(templId.messageId(mid).serialize()), false});
 		if (!clipped) {
 			syncState.seen.clear();
+			syncState.seen_fai.clear();
 			syncState.read.clear();
-			if ((last_cn && !syncState.seen.append_range(1, 1, rop_util_get_gc_value(last_cn))) ||
-			   (last_readcn && !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn))))
+			if (last_cn) {
+				auto gc = rop_util_get_gc_value(last_cn);
+				if (!syncState.seen.append_range(1, 1, gc) ||
+				    (getFai && !syncState.seen_fai.append_range(1, 1, gc)))
+					throw DispatchError(E3066);
+			}
+			if (last_readcn && !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn)))
 				throw DispatchError(E3066);
 			syncState.readOffset = 0;
 		} else {
