@@ -42,12 +42,21 @@ int main(int argc, char **argv)
 			return EXIT_FAILURE;
 		}
 		unsigned int flags = g_recursive ? DEL_FOLDERS : 0;
+		uint32_t st_folders = 0, st_messages = 0;
+		uint64_t sz_normal = 0, sz_fai = 0;
 		auto ok = exmdb_client->purge_softdelete(g_storedir, nullptr,
-		          eid, flags, age);
+		          eid, flags, age, &st_folders, &st_messages,
+		          &sz_normal, &sz_fai);
 		if (!ok) {
 			mbop_fprintf(stderr, "purge_softdel %s failed\n", *argv);
 			return EXIT_FAILURE;
 		}
+		char nbuf[32], fbuf[32];
+		HX_unit_size(nbuf, std::size(nbuf), sz_normal, 0, 0);
+		HX_unit_size(fbuf, std::size(fbuf), sz_fai,    0, 0);
+		printf("purge_softdelete: deleted %u messages, %u folders, reclaimed %sB (and %sB FAI)\n",
+			static_cast<unsigned int>(st_messages),
+			static_cast<unsigned int>(st_folders), nbuf, fbuf);
 	}
 	return EXIT_SUCCESS;
 }
