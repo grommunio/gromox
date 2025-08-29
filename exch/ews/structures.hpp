@@ -516,9 +516,9 @@ using sAlternateId = std::variant<tAlternateId, tAlternatePublicFolderId, tAlter
  */
 struct tAttachment : public NS_EWS_Types {
 	tAttachment() = default;
-	explicit tAttachment(const sAttachmentId&, const TPROPVAL_ARRAY&);
+	explicit tAttachment(const sAttachmentId&, const sShape&);
 
-	static sAttachment create(const sAttachmentId&, const TPROPVAL_ARRAY&);
+	static sAttachment create(const sAttachmentId&, sShape&&);
 
 	std::optional<sAttachmentId> AttachmentId;
 	std::optional<std::string> Name;///< PR_ATTACH_LONG_FILENAM
@@ -953,7 +953,7 @@ struct tFileAttachment : public tAttachment {
 
 	tFileAttachment() = default;
 	tFileAttachment(const tinyxml2::XMLElement *);
-	tFileAttachment(const sAttachmentId&, const TPROPVAL_ARRAY&);
+	tFileAttachment(const sAttachmentId&, const sShape&);
 
 	std::optional<bool> IsContactPhoto;
 	std::optional<sBase64Binary> Content;
@@ -2133,33 +2133,6 @@ struct tContact : public tItem {
 	static void genFields(sShape&);
 };
 
-/**
- * Types.xsd:1611
- */
-struct tItemAttachment : public tAttachment {
-	static constexpr char NAME[] = "ItemAttachment";
-
-	//tItemAttachment(const sAttachmentId&, const TPROPVAL_ARRAY&);
-	using tAttachment::tAttachment;
-
-	//<xs:element name="Item" type="t:ItemType"/>
-	//<xs:element name="Message" type="t:MessageType"/>
-	//<xs:element name="SharingMessage" type="t:SharingMessageType"/>
-	//<xs:element name="CalendarItem" type="t:CalendarItemType"/>
-	//<xs:element name="Contact" type="t:ContactItemType"/>
-	//<xs:element name="MeetingMessage" type="t:MeetingMessageType"/>
-	//<xs:element name="MeetingRequest" type="t:MeetingRequestMessageType"/>
-	//<xs:element name="MeetingResponse" type="t:MeetingResponseMessageType"/>
-	//<xs:element name="MeetingCancellation" type="t:MeetingCancellationMessageType"/>
-	//<xs:element name="Task" type="t:TaskType"/>
-	//<xs:element name="PostItem" type="t:PostItemType"/>
-	//<xs:element name="RoleMember" type="t:RoleMemberItemType"/>
-	//<xs:element name="Network" type="t:NetworkItemType"/>
-	//<xs:element name="Person" type="t:AbchPersonItemType"/>
-
-	//void serialize(tinyxml2::XMLElement*) const;
-};
-
 struct tItemChange {
 	static constexpr char NAME[] = "ItemChange";
 
@@ -2551,6 +2524,34 @@ struct tDeclineItem : public tMessage {
 
         std::optional<time_point> ProposedStart, ProposedEnd;
         std::optional<tItemId> ReferenceItemId;
+};
+
+/**
+ * Types.xsd:1611
+ */
+struct tItemAttachment : public tAttachment {
+	static constexpr char NAME[] = "ItemAttachment";
+
+	tItemAttachment() = default;
+	tItemAttachment(const sAttachmentId &, sShape &&);
+
+	//<xs:element name="Message" type="t:MessageType"/>
+	//<xs:element name="SharingMessage" type="t:SharingMessageType"/>
+	//<xs:element name="CalendarItem" type="t:CalendarItemType"/>
+	//<xs:element name="Contact" type="t:ContactItemType"/>
+	//<xs:element name="MeetingMessage" type="t:MeetingMessageType"/>
+	//<xs:element name="MeetingRequest" type="t:MeetingRequestMessageType"/>
+	//<xs:element name="MeetingResponse" type="t:MeetingResponseMessageType"/>
+	//<xs:element name="MeetingCancellation" type="t:MeetingCancellationMessageType"/>
+	//<xs:element name="Task" type="t:TaskType"/>
+	//<xs:element name="PostItem" type="t:PostItemType"/>
+	//<xs:element name="RoleMember" type="t:RoleMemberItemType"/>
+	//<xs:element name="Network" type="t:NetworkItemType"/>
+	//<xs:element name="Person" type="t:AbchPersonItemType"/>
+
+	std::optional<sItem> Item;
+
+	void serialize(tinyxml2::XMLElement *) const;
 };
 
 /**

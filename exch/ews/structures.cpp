@@ -1320,30 +1320,30 @@ tAlternateId::tAlternateId(Enum::IdFormatType format, std::string id, std::strin
 	Mailbox(std::move(mailbox))
 {}
 
-tAttachment::tAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
+tAttachment::tAttachment(const sAttachmentId& aid, const sShape& shape)
 {
 	AttachmentId.emplace(aid);
-	fromProp(props.find(PR_ATTACH_LONG_FILENAME), Name);
-	fromProp(props.find(PR_ATTACH_MIME_TAG), ContentType);
-	fromProp(props.find(PR_ATTACH_CONTENT_ID), ContentId);
-	fromProp(props.find(PR_ATTACH_SIZE), Size);
-	fromProp(props.find(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
-	auto flags = props.get<const uint32_t>(PR_ATTACH_FLAGS);
+	fromProp(shape.get(PR_ATTACH_LONG_FILENAME), Name);
+	fromProp(shape.get(PR_ATTACH_MIME_TAG), ContentType);
+	fromProp(shape.get(PR_ATTACH_CONTENT_ID), ContentId);
+	fromProp(shape.get(PR_ATTACH_SIZE), Size);
+	fromProp(shape.get(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
+	auto flags = shape.get<const uint32_t>(PR_ATTACH_FLAGS);
 	if (flags != nullptr && *flags & ATT_MHTML_REF)
 		IsInline = true;
 }
 
-sAttachment tAttachment::create(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
+sAttachment tAttachment::create(const sAttachmentId& aid, sShape&& shape)
 {
-	const TAGGED_PROPVAL* prop = props.find(PR_ATTACH_METHOD);
+	const TAGGED_PROPVAL* prop = shape.get(PR_ATTACH_METHOD);
 	if (prop)
 		switch(*static_cast<const uint32_t*>(prop->pvalue)) {
 		case ATTACH_EMBEDDED_MSG:
-			return sAttachment(std::in_place_type_t<tItemAttachment>(), aid, props);
+			return sAttachment(std::in_place_type_t<tItemAttachment>(), aid, std::move(shape));
 		case ATTACH_BY_REFERENCE:
-			return sAttachment(std::in_place_type_t<tReferenceAttachment>(), aid, props);
+			return sAttachment(std::in_place_type_t<tReferenceAttachment>(), aid, std::move(shape));
 		}
-	return sAttachment(std::in_place_type_t<tFileAttachment>(), aid, props);
+	return sAttachment(std::in_place_type_t<tFileAttachment>(), aid, std::move(shape));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3340,9 +3340,16 @@ uint32_t tFieldURI::tag(const sGetNameId& getId) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tFileAttachment::tFileAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props) : tAttachment(aid, props)
+tItemAttachment::tItemAttachment(const sAttachmentId &aid, sShape &&shape) :
+    tAttachment(aid, shape)
 {
-	const TAGGED_PROPVAL *tp = props.find(PR_ATTACH_DATA_BIN);
+	Item.emplace(std::in_place_type_t<tMessage>(), sShape{});
+	std::get<tMessage>(*Item).MimeContent.emplace(std::move(*shape.mimeContent));
+}
+
+tFileAttachment::tFileAttachment(const sAttachmentId& aid, const sShape& shape) : tAttachment(aid, shape)
+{
+	const TAGGED_PROPVAL *tp = shape.get(PR_ATTACH_DATA_BIN);
 	if (tp) {
 		Content.emplace(*tp);
 		Size = Content->size();
