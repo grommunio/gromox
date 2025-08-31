@@ -1,4 +1,4 @@
-Development 2.48.70
+Development 2.48.99
 ===================
 
 Enhancements:
@@ -15,11 +15,14 @@ Enhancements:
 * mbop: add "freeze" and "thaw" commands
 * mbop: using the -v option will now additionaly report the mailbox and
   subcommand in error messages
+* oxdisco: the AutoConfig mechanism now emits an EWS server information block
 * ews: include ParentFolderId in FindFolder/GetFolder response
-* ews: implement GetDelegate request
-* ews: implement oofReply responses like EX/365
-* ews: add direct meeting response related serialization
-* ews: implement CreateAttachment SOAP call
+* ews: implemented GetDelegate, CreateAttachment, FindPeople (GAL lookup),
+  PushSubscriptionRequest request handlers
+* ews: implemented oofReply responses like EX/365
+* ews: Direct Meeting Response related serialization was added
+* ews: referenced calendar items are now updated when a CreateItem request
+  contains AcceptItem or DeclineItem tags.
 * zcore: Out of Office configuration reading and writing is now performed over
   the network rather than through direct filesystem access.
 * exmdb: the derivation for the PR_MESSAGE_*_ME property value, upon delivery,
@@ -33,8 +36,16 @@ Fixes:
   X-MICROSOFT-CDO-ALLDAYEVENT are now transformed into Allday events even if
   the event is longer than one day.
 * delivery: emit MDN-RRT messages even with ``lda_twostep_ruleproc`` is set.
+* oxdisco: AutoConfig XML now features the incomingServer type parameter
+  in the right place.
+* oxdisco: AutoConfig now emits outgoing server port 587 as type smtp.
 * ews: Avoid sending multiple ``<?xml ?>`` lines into the notification stream
   HTTP response body.
+* ews: trim "duplicate" recipients when a newly-created item has recipients in
+  both <mimeContent> and <To>/<Cc>
+* ews: prevent FAI messages from polluting the Normal Message Set during ICS
+* ews: when the FindItem requests finds no objects, an empty RootFolder tag
+  is now still returned.
 
 Changes:
 
