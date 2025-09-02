@@ -363,7 +363,7 @@ enum ec_error_t
 	ecRpcFailed = 0x80040115,
 	ecNetwork = 0x80040115, /* MAPI_E_NETWORK_ERROR */
 	ecReadFault = 0x80040116, /* MAPI_E_DISK_ERROR */
-	ecWriteFault = ecReadFault, /* MAPI_E_DISK_ERROR */
+	ecWriteFault = ecReadFault,
 	ecTooComplex = 0x80040117, /* MAPI_E_TOO_COMPLEX */
 	// MAPI_E_BAD_COLUMN = 0x80040118,
 	// MAPI_E_EXTENDED_ERROR = 0x80040119,
