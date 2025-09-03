@@ -17,11 +17,10 @@ using namespace gromox;
 
 namespace getfreebusy {
 
-static char *g_start_txt, *g_end_txt, *g_requestor;
 static constexpr struct HXoption g_options_table[] = {
-	{nullptr, 'a', HXTYPE_STRING, &g_start_txt, {}, {}, 0, "Start time (localtime; respects $TZ)"},
-	{nullptr, 'b', HXTYPE_STRING, &g_end_txt, {}, {}, 0, "End time (localtime; respects $TZ)"},
-	{nullptr, 'x', HXTYPE_STRING, &g_requestor, {}, {}, 0, "Requestor account name (not the same as -d/-u)"},
+	{{}, 'a', HXTYPE_STRING, {}, {}, {}, 0, "Start time (localtime; respects $TZ)"},
+	{{}, 'b', HXTYPE_STRING, {}, {}, {}, 0, "End time (localtime; respects $TZ)"},
+	{{}, 'x', HXTYPE_STRING, {}, {}, {}, 0, "Requestor account name (not the same as -d/-u)"},
 	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -79,10 +78,19 @@ static int xmktime(const char *str, time_t *out)
 
 int main(int argc, char **argv)
 {
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
+	const char *g_start_txt = nullptr, *g_end_txt = nullptr, *g_requestor = nullptr;
+	HXopt6_auto_result result;
+	if (HX_getopt6(g_options_table, argc, argv, &result, HXOPT_USAGEONERR |
+	    HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
+	for (int i = 0; i < result.nopts; ++i) {
+		switch (result.desc[i]->sh) {
+		case 'a': g_start_txt = result.oarg[i]; break;
+		case 'b': g_end_txt   = result.oarg[i]; break;
+		case 'x': g_requestor = result.oarg[i]; break;
+		}
+	}
+
 	time_t start_time = -1, end_time = -1;
 	if (g_start_txt != nullptr && xmktime(g_start_txt, &start_time) < 0)
 		return EXIT_PARAM;

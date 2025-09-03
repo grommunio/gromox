@@ -15,9 +15,8 @@ using namespace gromox;
 
 namespace set_locale {
 
-static const char *g_language;
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'l', HXTYPE_STRING, &g_language, {}, {}, 0, "XPG/POSIX-style locale code (e.g. ja_JP)", "CODE"},
+	{{}, 'l', HXTYPE_STRING, {}, {}, {}, 0, "XPG/POSIX-style locale code (e.g. ja_JP)", "CODE"},
 	{nullptr, 'v', HXTYPE_NONE, &global::g_verbose_mode, {}, {}, 0, "Verbose mode"},
 	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -25,10 +24,14 @@ static constexpr HXoption g_options_table[] = {
 
 int main(int argc, char **argv)
 {
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
+	const char *g_language = nullptr;
+	HXopt6_auto_result result;
+	if (HX_getopt6(g_options_table, argc, argv, &result, HXOPT_USAGEONERR |
+	    HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
+	for (int i = 0; i < result.nopts; ++i)
+		if (result.desc[i]->sh == 'l')
+			g_language = result.oarg[i];
 	if (g_language == nullptr) {
 		mbop_fprintf(stderr, "You need to specify the -l option\n");
 		return EXIT_PARAM;

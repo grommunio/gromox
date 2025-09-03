@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdio>
 
 /*
  * Override HX_getopt_help_cb because it calls exit(0), which is really bad for
@@ -26,7 +27,7 @@ namespace global {
 extern void command_overview();
 extern int cmd_parser(int, char **);
 
-extern char *g_arg_username, *g_arg_userdir;
+extern const char *g_arg_username, *g_arg_userdir;
 extern unsigned int g_continuous_mode, g_verbose_mode, g_command_num;
 
 }
@@ -50,4 +51,5 @@ extern void mbop_usage_cb(const struct HXoptcb *);
 extern void delcount(eid_t fid, uint32_t *delc, uint32_t *fldc);
 
 extern bool g_exit_after_optparse;
+struct HXoption;
 extern const struct HXoption empty_options_table[];
