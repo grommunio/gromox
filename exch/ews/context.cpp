@@ -37,7 +37,7 @@ namespace {
  *
  * @return     Reference to the string
  */
-inline std::string &tolower(std::string &str)
+inline std::string &tolower_inplace(std::string &str)
 {
 	std::transform(str.begin(), str.end(), str.begin(), HX_tolower);
 	return str;
@@ -137,7 +137,7 @@ void daysofweek_to_pts(const std::string& daysOfWeek, uint32_t& weekrecur)
 	std::string dayOfWeek;
 
 	while (strstream >> dayOfWeek) {
-		tolower(dayOfWeek);
+		tolower_inplace(dayOfWeek);
 		if (dayOfWeek == "day") {
 			weekrecur = 0x7F;
 			break;
@@ -708,7 +708,8 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 {
 	std::string RoutingType = Mailbox.RoutingType.value_or("smtp");
 	std::string Address = Mailbox.Address;
-	if (tolower(RoutingType) == "ex") {
+	tolower_inplace(RoutingType);
+	if (RoutingType == "ex") {
 		Address = essdn_to_username(Address);
 		RoutingType = "smtp";
 	}
@@ -1428,7 +1429,8 @@ void EWSContext::normalize(tEmailAddressType& Mailbox) const
 		return;
 	if (!Mailbox.RoutingType)
 		Mailbox.RoutingType = "smtp";
-	if (tolower(*Mailbox.RoutingType) == "smtp")
+	tolower_inplace(*Mailbox.RoutingType);
+	if (Mailbox.RoutingType == "smtp")
 		return;
 	if (Mailbox.RoutingType != "ex")
 		throw  EWSError::InvalidRoutingType(E3114(*Mailbox.RoutingType));
@@ -1450,7 +1452,8 @@ void EWSContext::normalize(tMailbox& Mailbox) const
 {
 	if (!Mailbox.RoutingType)
 		Mailbox.RoutingType = "smtp";
-	if (tolower(*Mailbox.RoutingType) == "smtp")
+	tolower_inplace(*Mailbox.RoutingType);
+	if (Mailbox.RoutingType == "smtp")
 		return;
 	if (Mailbox.RoutingType != "ex")
 		throw  EWSError::InvalidRoutingType(E3010(*Mailbox.RoutingType));

@@ -92,7 +92,7 @@ std::string hexEncode(const std::string& bin)
  *
  * @return     Reference to the string
  */
-static inline std::string &tolower(std::string &str)
+static inline std::string &tolower_inplace(std::string &str)
 {
 	transform(str.begin(), str.end(), str.begin(), HX_tolower);
 	return str;
@@ -1477,7 +1477,7 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
 	oof_state = OofSettings.OofState;
 
 	std::string externalAudience = OofSettings.ExternalAudience;
-	allow_external_oof = !(tolower(externalAudience) == "none");
+	allow_external_oof = tolower_inplace(externalAudience) != "none";
 	//Note: counterintuitive but intentional: known -> 1, all -> 0
 	external_audience = externalAudience == "known";
 	if (allow_external_oof && !external_audience && externalAudience != "all")
