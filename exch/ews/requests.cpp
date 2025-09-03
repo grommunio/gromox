@@ -54,7 +54,7 @@ namespace {
  */
 std::string hexDecode(const std::string& hex)
 {
-	static auto charVal = [](int c) {
+	static auto charVal = [](unsigned char c) -> unsigned char {
 		return (c >= '0' && c <= '9') ? c - '0' : (c >= 'a' && c <= 'f') ? c - 'a' + 10 : throw InputError(E3249(static_cast<char>(c)));
 	};
 	if (hex.size() % 2)
@@ -62,7 +62,7 @@ std::string hexDecode(const std::string& hex)
 	std::string bin(hex.size()/2, 0);
 	auto it = hex.begin();
 	for (char &out : bin)
-		out = static_cast<char>(charVal(tolower(*it++)) << 4 | charVal(tolower(*it++)));
+		out = (charVal(HX_tolower(*it++)) << 4) | charVal(HX_tolower(*it++));
 	return bin;
 }
 
@@ -94,7 +94,7 @@ std::string hexEncode(const std::string& bin)
  */
 static inline std::string &tolower(std::string &str)
 {
-	transform(str.begin(), str.end(), str.begin(), ::tolower);
+	transform(str.begin(), str.end(), str.begin(), HX_tolower);
 	return str;
 }
 

@@ -236,7 +236,7 @@ static std::string extract_qparam(const char *qstr, const char *srkey)
 			if (*v == '+') {
 				*bg++ = ' ';
 			} else if (v[0] == '%' && v[1] != '\0' && v[2] != '\0') {
-				uint8_t a = toupper(v[1]), b = toupper(v[2]);
+				uint8_t a = HX_toupper(v[1]), b = HX_toupper(v[2]);
 				uint8_t c = a >= '0' && a <= '9' ? a - '0' : a - 'A' + 10;
 				c <<= 4;
 				c |=        b >= '0' && b <= '9' ? b - '0' : b - 'A' + 10;

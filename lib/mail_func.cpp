@@ -1460,9 +1460,9 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 		case 'e':
 			/* !DOCTYPE exception */
 			if (state == st::QUOTE && p > buf.get() + 6 &&
-			    tolower(p[-6]) == 'd' && tolower(p[-5]) == 'o' &&
-			    tolower(p[-4]) == 'c' && tolower(p[-3]) == 't' &&
-			    tolower(p[-2]) == 'y' && tolower(p[-1]) == 'p') {
+			    HX_tolower(p[-6]) == 'd' && HX_tolower(p[-5]) == 'o' &&
+			    HX_tolower(p[-4]) == 'c' && HX_tolower(p[-3]) == 't' &&
+			    HX_tolower(p[-2]) == 'y' && HX_tolower(p[-1]) == 'p') {
 				state = st::TAG;
 				break;
 			}
