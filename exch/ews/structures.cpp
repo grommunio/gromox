@@ -1671,8 +1671,9 @@ void tCalendarItem::update(const sShape& shape)
 	if ((prop = shape.get(NtGlobalObjectId))) {
 		const BINARY* goid = static_cast<BINARY*>(prop->pvalue);
 		if (goid->cb > 0) {
-			std::string uid(goid->cb * 2 + 1, 0);
-			encode_hex_binary(goid->pb, goid->cb, uid.data(), static_cast<int>(uid.size()));
+			std::string uid(goid->cb * 2, 0);
+			/* s[s.size()]='\0' is allowed >= C++17: */
+			encode_hex_binary(goid->pb, goid->cb, uid.data(), static_cast<int>(uid.size() + 1));
 			UID.emplace(std::move(uid));
 		}
 	}
