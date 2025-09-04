@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <vector>
+#include <libHX/ctype_helper.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <gromox/freebusy.hpp>
@@ -25,6 +26,20 @@ static constexpr struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
+static bool zone_present(const char *s)
+{
+	if (s[0] != '+' && s[0] != '-')
+		return false;
+	return HX_isdigit(s[1]) && HX_isdigit(s[2]) && HX_isdigit(s[3]) && HX_isdigit(s[4]);
+}
+
+static int minutes_west(const char *s)
+{
+	int min = (s[4] - '0') + (s[3] - '0') * 10 +
+	          (s[2] - '0') * 60 + (s[1] - '0') * 600;
+	return s[0] == '-' ? min : -min;
+}
+
 static int xmktime(const char *str, time_t *out)
 {
 	char *end = nullptr;
@@ -37,12 +52,20 @@ static int xmktime(const char *str, time_t *out)
 	if (end == nullptr) {
 		mbop_fprintf(stderr, "\"%s\" not understood. Required format is \"2024-01-01T00:00:00\" [always local system time] or unixtime.\n", str);
 		return -1;
-	} else if (end != nullptr && *end != '\0') {
+	}
+	auto has_zone = end != nullptr && zone_present(end);
+	unsigned int min_west = 0;
+	if (has_zone) {
+		min_west = minutes_west(end);
+		end += 5;
+	}
+	if (end != nullptr && *end != '\0') {
 		mbop_fprintf(stderr, "Don't know what to do with: \"%s\". Remove it.\n", end);
 		return -1;
 	}
 	tm.tm_wday = -1;
-	*out = mktime(&tm);
+	tm.tm_isdst = -1;
+	*out = has_zone ? timegm(&tm) + 60 * min_west : mktime(&tm);
 	if (*out == -1 && tm.tm_wday == -1) {
 		mbop_fprintf(stderr, "\"%s\" not understood by mktime\n", str);
 		return -1;
