@@ -51,10 +51,10 @@ int main(int argc, char **argv)
 	if (rop_util_get_gc_value(g_folderid) == 0)
 		return help();
 	std::vector<uint64_t> eids;
-	while (*++argv != nullptr) {
-		eid_t eid = gi_lookup_eid_by_name(g_storedir, *argv);
+	for (int uidx = 1; uidx < argc; ++uidx) {
+		eid_t eid = gi_lookup_eid_by_name(g_storedir, argv[uidx]);
 		if (eid == 0) {
-			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
+			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", argv[uidx]);
 			return EXIT_FAILURE;
 		}
 		eids.push_back(eid);

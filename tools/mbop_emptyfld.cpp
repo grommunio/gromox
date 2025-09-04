@@ -201,11 +201,11 @@ int main(int argc, char **argv)
 	}
 
 	int ret = EXIT_SUCCESS;
-	while (*++argv != nullptr) {
+	for (int uidx = 1; uidx < argc; ++uidx) {
 		BOOL partial = false;
-		eid_t eid = gi_lookup_eid_by_name(g_storedir, *argv);
+		eid_t eid = gi_lookup_eid_by_name(g_storedir, argv[uidx]);
 		if (eid == 0) {
-			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
+			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", argv[uidx]);
 			return EXIT_FAILURE;
 		}
 		if (g_cutoff_time != 0 || g_recurse) {
@@ -220,14 +220,14 @@ int main(int argc, char **argv)
 		auto ok = exmdb_client->empty_folder(g_storedir, CP_UTF8, nullptr,
 		          eid, g_del_flags, &partial);
 		if (!ok) {
-			mbop_fprintf(stderr, "empty_folder(%s) failed\n", *argv);
+			mbop_fprintf(stderr, "empty_folder(%s) failed\n", argv[uidx]);
 			ret = EXIT_FAILURE;
 		}
 		delcount(eid, &curr_delc, &curr_fldc);
 		if (partial)
 			printf("Partial completion (e.g. essential permanent folders were not deleted)\n");
 		printf("Folder %s: deleted %d message(s), deleted %d subfolder(s) plus messages\n",
-			*argv, curr_delc - prev_delc, prev_fldc - curr_fldc);
+			argv[uidx], curr_delc - prev_delc, prev_fldc - curr_fldc);
 		if (ret != EXIT_SUCCESS)
 			break;
 	}
