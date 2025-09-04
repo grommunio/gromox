@@ -44,29 +44,6 @@ using namespace tinyxml2;
 namespace {
 
 /**
- * @brief      Decode hex string
- *
- * @param      hex         Hex encoded input string
- *
- * @throw      InputError  Input string is not properly hex-encoded
- *
- * @return     String containing decoded binary data
- */
-std::string hexDecode(const std::string& hex)
-{
-	static auto charVal = [](unsigned char c) -> unsigned char {
-		return (c >= '0' && c <= '9') ? c - '0' : (c >= 'a' && c <= 'f') ? c - 'a' + 10 : throw InputError(E3249(static_cast<char>(c)));
-	};
-	if (hex.size() % 2)
-		throw InputError(E3250);
-	std::string bin(hex.size()/2, 0);
-	auto it = hex.begin();
-	for (char &out : bin)
-		out = (charVal(HX_tolower(*it++)) << 4) | charVal(HX_tolower(*it++));
-	return bin;
-}
-
-/**
  * @brief      Encode hex string
  *
  * @param      bin         Binary data
@@ -230,7 +207,7 @@ void process(mConvertIdRequest&& request, XMLElement* response, EWSContext& ctx)
 		} else {
 			std::string dir = ctx.get_maildir(aid.Mailbox);
 			tBaseItemId id(sBase64Binary(aid.Format == Enum::HexEntryId ?
-			               hexDecode(aid.Id) : base64_decode(aid.Id)),
+			               hex2bin(aid.Id) : base64_decode(aid.Id)),
 			               tBaseItemId::ID_GUESS);
 			if (id.type == tBaseItemId::ID_UNKNOWN)
 				throw EWSError::CorruptData(E3252);
