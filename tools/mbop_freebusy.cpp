@@ -30,18 +30,21 @@ static int xmktime(const char *str, time_t *out)
 	char *end = nullptr;
 	*out = strtol(str, &end, 0);
 	if (end == nullptr || *end == '\0')
-		/* looks like we've got outselves a unixts */
+		/* looks like we've got ourselves a unixts */
 		return 0;
 	struct tm tm{};
 	end = strptime(str, "%FT%T", &tm);
-	if (end != nullptr && *end != '\0') {
-		mbop_fprintf(stderr, "\"%s\" not understood, error at \"%s\". Required format is \"2024-01-01T00:00:00\" [always local system time] or unixtime.\n", g_start_txt, end);
+	if (end == nullptr) {
+		mbop_fprintf(stderr, "\"%s\" not understood. Required format is \"2024-01-01T00:00:00\" [always local system time] or unixtime.\n", str);
+		return -1;
+	} else if (end != nullptr && *end != '\0') {
+		mbop_fprintf(stderr, "Don't know what to do with: \"%s\". Remove it.\n", end);
 		return -1;
 	}
 	tm.tm_wday = -1;
 	*out = mktime(&tm);
 	if (*out == -1 && tm.tm_wday == -1) {
-		mbop_fprintf(stderr, "\"%s\" not understood by mktime\n", g_start_txt);
+		mbop_fprintf(stderr, "\"%s\" not understood by mktime\n", str);
 		return -1;
 	}
 	return 0;
