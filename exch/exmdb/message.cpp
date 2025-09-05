@@ -483,6 +483,8 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	if (is_private() && !g_exmdb_pvt_folder_softdel)
+		b_hard = true;
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!sql_transact)
 		return false;
