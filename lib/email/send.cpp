@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 #include <openssl/ssl.h>
+#include <vmime/exception.hpp>
 #include <vmime/mailbox.hpp>
 #include <vmime/mailboxList.hpp>
 #include <vmime/message.hpp>
@@ -106,6 +107,9 @@ ec_error_t cu_send_mail(MAIL &mail, const char *smtp_url, const char *sender,
 	try {
 		xprt->send(vsender, vrcpt_list, ct_adap, content.size(), nullptr, {}, {});
 		xprt->disconnect();
+	} catch (const vmime::exceptions::command_error &e) {
+		mlog(LV_ERR, "vmime.send: %s: %s", e.command().c_str(), e.response().c_str());
+		return MAPI_W_CANCEL_MESSAGE;
 	} catch (const vmime::exception &e) {
 		mlog(LV_ERR, "vmime.send: %s", e.what());
 		return MAPI_W_CANCEL_MESSAGE;
@@ -146,6 +150,9 @@ ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message> msg,
 	try {
 		xprt->send(std::move(msg), vsender, vrcpt_list, nullptr, {}, {});
 		xprt->disconnect();
+	} catch (const vmime::exceptions::command_error &e) {
+		mlog(LV_ERR, "vmime.send: %s: %s", e.command().c_str(), e.response().c_str());
+		return MAPI_W_CANCEL_MESSAGE;
 	} catch (const vmime::exception &e) {
 		mlog(LV_ERR, "vmime.send: %s", e.what());
 		return MAPI_W_CANCEL_MESSAGE;
