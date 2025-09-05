@@ -403,7 +403,7 @@ int main(int argc, char **argv) try
 				msg.content.reset();
 		}
 		std::erase_if(msgs, [](const fat_message &mo) { return mo.content == nullptr; });
-		fprintf(stderr, "Attachment decapsulation filter: %zu MAPI messages have been turned into %zu\n",
+		fprintf(stderr, "Attachment decapsulation filter: %zu MAPI message(s) have been turned into %zu\n",
 			osize, msgs.size());
 	}
 

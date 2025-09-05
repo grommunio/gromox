@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 		mbop_fprintf(stderr, "get_freebusy call not successful\n");
 		return EXIT_FAILURE;
 	}
-	printf("Results (%zu rows):\n", fbout.size());
+	printf("Results (%zu row(s)):\n", fbout.size());
 	for (const auto &e : fbout) {
 		char start_tx[64], end_tx[64];
 		struct tm tm{};

@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 	delcount(g_folderid, &curr_delc, &curr_fldc);
 	if (partial)
 		printf("Partial completion\n");
-	printf("%d messages deleted\n", curr_delc - prev_delc);
+	printf("%d message(s) deleted\n", curr_delc - prev_delc);
 	return EXIT_SUCCESS;
 }
 

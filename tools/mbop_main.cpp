@@ -398,7 +398,7 @@ static errno_t clear_rwz()
 	ea_info.count = ids.size();
 	ea_info.pids  = ids.data();
 	BOOL partial = false;
-	printf("Deleting %u messages...\n", ea_info.count);
+	printf("Deleting %u message(s)...\n", ea_info.count);
 	if (!exmdb_client->delete_messages(g_storedir, CP_ACP, nullptr, inbox,
 	    &ea_info, 1, &partial))
 		return EIO;

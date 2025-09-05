@@ -101,7 +101,7 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 	auto cl_0 = HX::make_scope_exit([&]() {
 		uint32_t curr_delc, curr_fldc;
 		delcount(fid, &curr_delc, &curr_fldc);
-		printf("Folder 0x%llx: deleted %d messages\n", LLU{rop_util_get_gc_value(fid)}, curr_delc - prev_delc);
+		printf("Folder 0x%llx: deleted %d message(s)\n", LLU{rop_util_get_gc_value(fid)}, curr_delc - prev_delc);
 	});
 	if (g_del_flags & DEL_MESSAGES) {
 		auto ret = do_contents(fid, 0);
@@ -226,7 +226,7 @@ int main(int argc, char **argv)
 		delcount(eid, &curr_delc, &curr_fldc);
 		if (partial)
 			printf("Partial completion (e.g. essential permanent folders were not deleted)\n");
-		printf("Folder %s: deleted %d messages, deleted %d subfolders plus messages\n",
+		printf("Folder %s: deleted %d message(s), deleted %d subfolder(s) plus messages\n",
 			*argv, curr_delc - prev_delc, prev_fldc - curr_fldc);
 		if (ret != EXIT_SUCCESS)
 			break;
