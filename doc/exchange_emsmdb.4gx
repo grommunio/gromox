@@ -31,12 +31,7 @@ somewhere between Unix compress(1) and gzip level 1.
 Default: \fI0\fP
 .TP
 \fBoutgoing_smtp_url\fP
-The SMTP server to use for outgoing mails. To use the local maildrop queue, set
-the value to \fIsendmail://localhost\fP. smtp:// is unqueued(!), and if the
-SMTP server is offline, submissions will be rejected (and mails stick around in
-Outbox or whatever folder they were submitted from).
-.br
-Default: \fIsendmail://localhost\fP
+See gromox.cfg(5):outgoing_smtp_url.
 .SH Configuration directives (exchange_emsmdb.cfg)
 The following directives are recognized when they appear in
 /etc/gromox/exchange_emsmdb.cfg.

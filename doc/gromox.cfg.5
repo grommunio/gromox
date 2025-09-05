@@ -54,6 +54,16 @@ cannot be lower than 4s. The special value 0 disabled RPC timeout checking.
 .br
 Default: \fI0\fP
 .TP
+\fBoutgoing_smtp_url\fP
+The SMTP server to use for outgoing mails. To use the local maildrop queue, set
+the value to \fIsendmail://localhost\fP. smtp:// is unqueued(!), and if the
+SMTP server is offline, submissions will be rejected (and mails stick around in
+Outbox or whatever folder they were submitted from). For STARTTLS, use
+smtp+tls://, and for ignoring TLS certificate validation,
+smtp+unverifiedtls://.
+.br
+Default: \fIsendmail://localhost\fP
+.TP
 \fBruleproc_debug\fP
 Make the "TWOSTEP" Client-Side Inbox Rule Processor emit information about the
 conditions it is evaluating and the actions it is carrying out. The surrounding

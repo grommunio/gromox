@@ -37,12 +37,7 @@ custom file:
 In gromox-zcore, this is treated as an alias for zcore_fd_limit.
 .TP
 \fBoutgoing_smtp_url\fP
-The SMTP server to use for outgoing mails. To use the local maildrop queue, set
-the value to \fIsendmail://localhost\fP. smtp:// is unqueued(!), and if the
-SMTP server is offline, submissions will be rejected (and mails stick around in
-Outbox or whatever folder they were submitted from).
-.br
-Default: \fIsendmail://localhost\fP
+See gromox.cfg(5):outgoing_smtp_url.
 .TP
 \fBzcore_fd_limit\fP
 Request that the file descriptor table be at least this large. The magic value
