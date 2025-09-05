@@ -44,7 +44,7 @@ static DCERPC_ENDPOINT *ep_6001;
 
 static constexpr cfg_directive emsmdb_gxcfg_dflt[] = {
 	{"backfill_transport_headers", "0", CFG_BOOL},
-	{"emsmdb_compress_threshold", "256", CFG_SIZE},
+	{"emsmdb_compress_threshold", "0", CFG_SIZE},
 	{"outgoing_smtp_url", "sendmail://localhost"},
 	{"reported_server_version", "15.00.0847.4040"},
 	CFG_TABLE_END,
