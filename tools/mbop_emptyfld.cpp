@@ -33,7 +33,7 @@ static constexpr HXoption g_options_table[] = {
 	{"nuke-folders", 0, HXTYPE_NONE, {}, {}, opt_nuke, 0, "Do not recurse but delete subfolders outright"},
 	{nullptr, 'a', HXTYPE_NONE, {}, {}, opt_a, 0, "Include associated messages in deletion"},
 	{nullptr, 't', HXTYPE_STRING, &g_time_str, {}, {}, 0, "Messages need to be older than...", "TIMESPEC"},
-	{"soft",    0, HXTYPE_NONE, {}, {}, opt_s, 0, "Soft-delete (experimental)"},
+	{"soft",    0, HXTYPE_NONE, {}, {}, opt_s, 0, "Soft-delete"},
 	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
