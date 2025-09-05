@@ -84,7 +84,7 @@ logons per mailbox that it opens.
 .br
 Default: \fI500\fP
 .TP
-\fBemsmdb_private_folder_softdel\fP
+\fBemsmdb_private_folder_softdelete\fP
 Enables soft-delete support for folders in private stores. (This feature is
 experimental.) Public folders always have this on. (Take note that
 exmdb_provider.cfg:exmdb_private_folder_softdelete also need to be enabled.)
