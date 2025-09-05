@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2025 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 {
 	bool decompress = false, randomtest = false;
 	int c;
-	while ((c = getopt(argc, argv, "Rcdk")) >= 0) {
+	while ((c = getopt(argc, argv, "Rcd")) >= 0) {
 		if (c == 'd')
 			decompress = true;
 		if (c == 'R')
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
 				return EXIT_FAILURE;
 			}
 #endif
-			auto complen  = lzxpress_compress(b1, std::size(b1), b2);
+			auto complen  = lzxpress_compress(b1, std::size(b1), b2, std::size(b2));
 			auto ucomplen = lzxpress_decompress(b2, complen, outbuf, std::size(outbuf));
 			if (ucomplen != std::size(b1)) {
 				fprintf(stderr, "Failed input (%zu):\n", ++z);
@@ -71,8 +71,8 @@ int main(int argc, char **argv)
 	auto outbuf = std::make_unique<char[]>(osize);
 	auto ret = decompress ?
 	           lzxpress_decompress(slurp_data.get(), slurp_len, outbuf.get(), osize) :
-	           lzxpress_compress(slurp_data.get(), slurp_len, outbuf.get());
-	if (ret == 0) {
+	           lzxpress_compress(slurp_data.get(), slurp_len, outbuf.get(), osize);
+	if (ret < 0) {
 		fprintf(stderr, "Something went wrong\n");
 		return EXIT_FAILURE;
 	}

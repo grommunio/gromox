@@ -115,8 +115,8 @@ pack_result aux_ext_push_aux_info(EXT_PUSH *pext, const AUX_INFO &r) try
 		if (rpc_header_ext.size_actual < MINIMUM_COMPRESS_SIZE) {
 			rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
 		} else {
-			auto compressed_len = lzxpress_compress(ext_buff.get(), subext.m_offset, tmp_buff.get());
-			if (compressed_len == 0 || compressed_len >= subext.m_offset) {
+			auto compressed_len = lzxpress_compress(ext_buff.get(), subext.m_offset, tmp_buff.get(), ext_buff_size);
+			if (compressed_len <= 0 || compressed_len >= subext.m_offset) {
 				/* if we can not get benefit from the
 					compression, unmask the compress bit */
 				rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
