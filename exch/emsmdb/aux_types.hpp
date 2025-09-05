@@ -123,3 +123,5 @@ struct AUX_INFO {
 };
 
 extern pack_result aux_ext_push_aux_info(EXT_PUSH *, const AUX_INFO &);
+
+extern size_t emsmdb_compress_threshold;

@@ -1992,7 +1992,8 @@ pack_result rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	rpc_header_ext.size_actual = subext.m_offset;
 	rpc_header_ext.size = rpc_header_ext.size_actual;
 	if (rpc_header_ext.flags & RHE_FLAG_COMPRESSED) {
-		if (rpc_header_ext.size_actual < MINIMUM_COMPRESS_SIZE) {
+		if (emsmdb_compress_threshold == static_cast<size_t>(-1) ||
+		    rpc_header_ext.size_actual < emsmdb_compress_threshold) {
 			rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
 		} else {
 			auto compressed_len = lzxpress_compress(ext_buff.get(), subext.m_offset, tmp_buff.get(), ext_buff_size);
