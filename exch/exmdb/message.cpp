@@ -630,6 +630,9 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 			const TPROPVAL_ARRAY npropds = {std::size(nprop), nprop};
 			cu_set_properties(MAPI_MESSAGE, tmp_val, CP_ACP, pdb->psqlite,
 				&npropds, &problems);
+
+			/* For GCT(SHOW_SOFTDELETES), this is a new message now */
+			pdb->notify_message_creation(src_val, tmp_val, *dbase, notifq);
 		}
 		if (!b_hard && !is_private()) {
 			char sql_string[256];

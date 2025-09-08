@@ -1679,6 +1679,14 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    pdb->psqlite, PR_ASSOCIATED, &pvalue0))
 		return;	
+	char qstr[256];
+	snprintf(qstr, std::size(qstr), "SELECT is_deleted FROM messages WHERE message_id=%llu", LLU{message_id});
+	auto stm = pdb->prep(qstr);
+	if (stm == nullptr)
+		return;
+	auto b_del = stm.step() != SQLITE_ROW || stm.col_uint64(0) != 0;
+	stm.finalize();
+
 	std::unique_ptr<prepared_statements> optim;
 	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
@@ -1692,6 +1700,8 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 		    folder_id != ptable->folder_id)
 			continue;
 		if (!!(ptable->table_flags & TABLE_FLAG_ASSOCIATED) == !b_fai)
+			continue;
+		if (!!(ptable->table_flags & TABLE_FLAG_SOFTDELETES) == !b_del)
 			continue;
 		if (dbase.tables.b_batch && ptable->b_hint)
 			continue;
