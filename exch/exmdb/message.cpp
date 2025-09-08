@@ -475,6 +475,17 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
     const char *username, uint64_t folder_id, const EID_ARRAY *pmessage_ids,
     BOOL b_hard, BOOL *pb_partial)
 {
+	/*
+	 * When a message is soft-deleted from a EXC2019 Private
+	 * Store, and the message is in or beneath IPM_SUBTREE, the
+	 * message gets moved to "\Recoverable Items\Deletions"
+	 * (new PR_PARENT_ENTRYID, CK/RK/PCL and LastActiveParentEntryId
+	 * properties are assigned).
+	 *
+	 * EXC2019 Public Stores also have \Recoverable Items\Deletions, but
+	 * use \NON_IPM_SUBTREE\DUMPSTER_ROOT\DUMPSTER_EXTEND\RESERVED_1\RESERVED_1\<uuid_of_user>.
+	 * UUID makes sense, but... who comes up with these paths!?
+	 */
 	void *pvalue;
 	BOOL b_check;
 	BOOL b_owner;
