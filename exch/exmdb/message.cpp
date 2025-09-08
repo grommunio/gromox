@@ -876,9 +876,7 @@ BOOL exmdb_server::is_msg_deleted(const char *dir,
 	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	*pb_del = pstmt.step() != SQLITE_ROW ||
-	          (!exmdb_server::is_private() &&
-	          sqlite3_column_int64(pstmt, 0) != 0) ? TRUE : false;
+	*pb_del = pstmt.step() != SQLITE_ROW || pstmt.col_uint64(0) ? TRUE : false;
 	return TRUE;
 }
 
