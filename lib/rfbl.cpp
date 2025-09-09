@@ -1843,8 +1843,7 @@ int gx_mkbasedir(const char *file, unsigned int mode)
 		mode |= S_IXGRP;
 	if (mode & (S_IROTH | S_IWOTH))
 		mode |= S_IXOTH;
-	auto ret = HX_mkdir(base.get(), mode);
-	return ret < 0 ? -ret : 0;
+	return HX_mkdir(base.get(), mode);
 }
 
 }
