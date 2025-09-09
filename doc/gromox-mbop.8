@@ -279,12 +279,11 @@ option(s) [or the mailbox currently in scope when using foreach.*], and asks
 for free/busy status within the given time period.
 .SS Options
 .TP
-\fB\-a\fP {\fIyyyy-mm-dd\fP\fBT\fP\fIhh:mm:ss\fP|\fIunixtime\fP}
-Left end of the timeframe to query. Unixtime means seconds since the epoch (and
-is necessarily in UTC), whereas the calendar-based time is read as localtime
-(so, respecting the TZ environment variable or /etc/localtime).
+\fB\-a\fP {\fIyyyy-mm-dd\fP\fBT\fP\fIhh:mm:ss\fP[\fBZ\fP|\fB+\fP\fIhhmm\fP|\fB\-\fP\fIhhmm\fP]|\fIunixtime\fP}
+Left end of the timeframe to query. Can either be a Unixtime or a ISO 8601
+timestamp.
 .TP
-\fB\-b\fP {\fIyyyy-mm-dd\fP\fBT\fP\fIhh:mm:ss\fP|\fIunixtime\fP}
+\fB\-b\fP {\fIyyyy-mm-dd\fP\fBT\fP\fIhh:mm:ss\fP[\fB+\fP\fIhhmm\fP|\fB\-\fP\fIhhmm\fP]|\fIunixtime\fP}
 Right end of the timeframe to query.
 .TP
 \fB\-x\fP \fIusername\fP
