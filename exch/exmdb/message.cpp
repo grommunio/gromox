@@ -2938,6 +2938,7 @@ static ec_error_t op_move_same(const rulexec_in &rp,
 	if (!cu_adjust_store_size(rp.sqlite, ADJ_INCREASE, message_size, 0))
 		return ecError;
 	seen.fld.emplace_back(dst_fid);
+	seen.msg.emplace_back(dst_fid, dst_mid);
 
 	rulexec_in rex = rp;
 	char *pmid_string = nullptr;
@@ -3295,6 +3296,7 @@ static ec_error_t opx_move(const rulexec_in &rp,
 	if (!cu_adjust_store_size(rp.sqlite, ADJ_INCREASE, message_size, 0))
 		return ecError;
 	seen.fld.emplace_back(dst_fid);
+	seen.msg.emplace_back(dst_fid, dst_mid);
 
 	rulexec_in rex = rp;
 	char *pmid_string = nullptr;
