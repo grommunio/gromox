@@ -409,7 +409,7 @@ void contexts_pool_insert(schedule_context *pcontext, sctx_status tpraw)
 			}
 		} else if (g_poll_ctx.mod(pcontext, false) != 0) {
 			int se = errno;
-			if (errno == ENOENT && g_poll_ctx.mod(pcontext, true) != 0) {
+			if (errno == ENOENT && g_poll_ctx.mod(pcontext, true) == 0) {
 				/* sometimes, fd will be removed by scanning
 				thread because of timeout, add it back
 				into epoll queue again */
