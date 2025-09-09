@@ -935,9 +935,9 @@ BOOL exmdb_server::imapfile_write(const char *dir, const std::string &type,
 		return false;
 
 	auto tgt = fmt::format("{}/{}/{}", dir, type, mid);
-	auto ret = gx_mkbasedir(mid.c_str(), FMODE_PRIVATE);
+	auto ret = gx_mkbasedir(tgt.c_str(), FMODE_PRIVATE);
 	if (ret < 0) {
-		mlog(LV_ERR, "E-1941: mkdir %s: %s", mid.c_str(), strerror(-ret));
+		mlog(LV_ERR, "E-1941: mkbasedir for %s: %s", tgt.c_str(), strerror(-ret));
 		return false;
 	}
 	auto err = tf.link_to_overwrite(tgt.c_str());
