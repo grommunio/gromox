@@ -1,5 +1,5 @@
-Development 2.48.99
-===================
+Development 2.48.134
+====================
 
 Enhancements:
 
@@ -13,6 +13,7 @@ Enhancements:
   COPY, no longer "lose" their structure and headers.
 * oxcical: implement support for VTODO and VJOURNAL
 * mbop: add "freeze" and "thaw" commands
+* mbop: support UTC/zone suffixes for getfreebusy -a/-b arguments
 * mbop: using the -v option will now additionaly report the mailbox and
   subcommand in error messages
 * oxdisco: the AutoConfig mechanism now emits an EWS server information block
@@ -23,6 +24,7 @@ Enhancements:
 * ews: Direct Meeting Response related serialization was added
 * ews: referenced calendar items are now updated when a CreateItem request
   contains AcceptItem or DeclineItem tags.
+* ews: support GetUserAvailabilityRequest request TimeZoneContext tag.
 * zcore: Out of Office configuration reading and writing is now performed over
   the network rather than through direct filesystem access.
 * exmdb: the derivation for the PR_MESSAGE_*_ME property value, upon delivery,
@@ -46,12 +48,15 @@ Fixes:
 * ews: prevent FAI messages from polluting the Normal Message Set during ICS
 * ews: when the FindItem requests finds no objects, an empty RootFolder tag
   is now still returned.
+* ews: delete excess NUL byte from tCalendarItem:UID tags
 
 Changes:
 
 * kdb2mt no longer imports LocalFreebusy control messages, since dangling
   references in those can make delegate permission editing via OL
   nonfunctional.
+* emsmdb: outgoing lzxpress compression in the EMSMDB protocol is now
+  disabled as it does not compress well for the time invested.
 
 
 Gromox 2.48 (2025-07-31)
