@@ -55,12 +55,34 @@ cannot be lower than 4s. The special value 0 disabled RPC timeout checking.
 Default: \fI0\fP
 .TP
 \fBoutgoing_smtp_url\fP
-The SMTP server to use for outgoing mails. To use the local maildrop queue, set
-the value to \fIsendmail://localhost\fP. smtp:// is unqueued(!), and if the
-SMTP server is offline, submissions will be rejected (and mails stick around in
-Outbox or whatever folder they were submitted from). For STARTTLS, use
-smtp+tls://, and for ignoring TLS certificate validation,
-smtp+unverifiedtls://.
+A string which selects how outgoing messages are handed to a mail transfer
+agent. The syntax follows the Common Internet Scheme for URIs (RFC 1738 section
+3.1), so something like "sendmail://localhost" or "smtp://[::1]:25/" can be
+used.
+.br
+The sendmail:// transport selects the local maildrop queue (hostname is
+ignored). Maildrop is perhaps best known to administrators by the command
+/usr/sbin/sendmail. This transport is the most robust one, because local
+maildrop implementations generally accept messages even if the MTA is not
+running (assuming everything else is fine, e.g. there is enough free disk
+space). Partial Delivery Failure handling then is also the MTA's
+responsibility, and the MTA will consistently emit NDR/DSN for unreachable
+recipients.
+.br
+Other recognized schemes are smtp:, smtp+tls: (STARTTLS), smtp+unverifiedtls:
+(STARTTLS but ignore validation issues) and smtps: (always-on/implicit TLS).
+These are only meant for developers who want to avoid running an MTA for having
+faster turnarounds. All SMTP transport drivers are \fBlocally unqueued\fP,
+which means that, if the SMTP server is unavailable due to network issues,
+pressing the "Send" button will immediately produce an error in always-online
+MUAs, and the user has to save the message as a draft and try again later on
+their own accord. MAPI also has no way to be conveyed Partial Delivery Failure
+occuring in SMTP conversations, so a multi-recipient message with one bad
+recipient can lead to three bad characteristics all at once: valid recipients
+will receive a message copy; the sender got the Send button error; no
+Non-Delivery Report is generated for users in the local mail system. The proper
+way to use a custom outgoing SMTP server is to configre the localhost MTA to
+perform relaying.
 .br
 Default: \fIsendmail://localhost\fP
 .TP
