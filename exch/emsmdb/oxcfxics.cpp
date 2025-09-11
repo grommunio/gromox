@@ -1315,7 +1315,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 			if (tmp_guid != tmp_xid.guid) {
 				mlog(LV_WARN, "W-2152: importdeletes expected store %s but got store+XID %s",
-				        bin2hex(&tmp_guid, sizeof(tmp_guid)).c_str(),
+				        bin2hex(tmp_guid).c_str(),
 				        bin2hex(&tmp_xid, tmp_xid.size).c_str());
 				return ecInvalidParam;
 			}
@@ -1324,7 +1324,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 			if (tmp_guid != tmp_xid.guid) {
 				mlog(LV_WARN, "W-2153: importdeletes expected store %s but got store+XID %s",
-				        bin2hex(&tmp_guid, sizeof(tmp_guid)).c_str(),
+				        bin2hex(tmp_guid).c_str(),
 				        bin2hex(&tmp_xid, tmp_xid.size).c_str());
 				return ecInvalidParam;
 			}
