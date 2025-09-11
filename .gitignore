@@ -81,6 +81,7 @@ Makefile.in
 /tests/oxcmail_ie
 /tests/ucvttest
 /tests/udb
+/tests/utf8filter
 /tests/utiltest
 /tests/vcard
 /tests/zendfake
