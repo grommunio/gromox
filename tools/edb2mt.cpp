@@ -371,7 +371,7 @@ static void do_namedprops(mbox_state &mbs)
 static void do_propblob(TPROPVAL_ARRAY &props, const std::string &blob)
 {
 	if (blob.size() < 6 || memcmp(&blob[0], "ProP\x00\x04", 6) != 0) {
-		fprintf(stderr, "Unrecognized propblob content: %s\n", bin2hex(blob.data(), blob.size()).c_str());
+		fprintf(stderr, "Unrecognized propblob content: %s\n", bin2hex(blob).c_str());
 		return;
 	}
 	TPROPVAL_ARRAY new_props;
@@ -525,7 +525,7 @@ static void do_folder(mbox_state &mbs, const edb_folder &folder)
 {
 	tree(mbs.depth);
 	if (g_show_tree)
-		tlog("[fld=%s]\n", bin2hex(folder.fid.data(), folder.fid.size()).c_str());
+		tlog("[fld=%s]\n", bin2hex(folder.fid).c_str());
 	++mbs.depth;
 	gi_print(mbs.depth, folder.props, ee_get_propname);
 	for (const auto &child_id : folder.children)
