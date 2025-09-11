@@ -103,7 +103,7 @@ struct ICS_EXPORT_CTX {
 	uint32_t hobject;
 	uint8_t ics_type;
 	zval pztarget_obj;
-	zend_bool b_changed;
+	uint8_t b_changed;
 	uint32_t progress;
 	uint32_t sync_steps;
 	uint32_t total_steps;
@@ -3246,7 +3246,6 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 {
 	ZCL_MEMORY;
 	uint32_t flags;
-	zend_bool b_new;
 	zval *pzresource;
 	BINARY_ARRAY bins;
 	STATE_ARRAY states;
@@ -3293,6 +3292,7 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 	}
 	for (size_t i = 0; i < pctx->sync_steps; ++i, ++pctx->progress) {
 		if (ICS_TYPE_CONTENTS == pctx->ics_type) {
+			uint8_t b_new = false;
 			auto result = zclient_syncmessagechange(
 				pctx->hsession, pctx->hobject, &b_new,
 				&propvals);

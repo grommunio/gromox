@@ -1,11 +1,4 @@
 #pragma once
-#include "php.h"
-#undef slprintf
-#undef vslprintf
-#undef snprintf
-#undef vsnprintf
-#undef vasprintf
-#undef asprintf
 #include <cstdint>
 #include <ctime>
 #include <vector>
@@ -13,7 +6,7 @@
 
 struct zcreq;
 struct zcresp;
-extern zend_bool zclient_do_rpc(const zcreq *, zcresp *);
+extern bool zclient_do_rpc(const zcreq *, zcresp *);
 extern ec_error_t zclient_setpropval(GUID ses, uint32_t obj, gromox::proptag_t, const void *);
 extern ec_error_t zclient_getpropval(GUID ses, uint32_t obj, gromox::proptag_t, void **);
 
@@ -78,9 +71,9 @@ ZCIDL(copyto, (GUID hsession, uint32_t hsrcobject, const PROPTAG_ARRAY *pexclude
 ZCIDL(savechanges, (GUID hsession, uint32_t hobject))
 ZCIDL(hierarchysync, (GUID hsession, uint32_t hfolder, IDLOUT uint32_t *hobject))
 ZCIDL(contentsync, (GUID hsession, uint32_t hfolder, IDLOUT uint32_t *hobject))
-ZCIDL(configsync, (GUID hsession, uint32_t hctx, uint32_t flags, const BINARY *pstate, const RESTRICTION *prestriction, IDLOUT zend_bool *b_changed, uint32_t *count))
+ZCIDL(configsync, (GUID hsession, uint32_t hctx, uint32_t flags, const BINARY *pstate, const RESTRICTION *prestriction, IDLOUT uint8_t *b_changed, uint32_t *count))
 ZCIDL(statesync, (GUID hsession, uint32_t hctx, IDLOUT BINARY *state))
-ZCIDL(syncmessagechange, (GUID hsession, uint32_t hctx, IDLOUT zend_bool *b_new, TPROPVAL_ARRAY *proplist))
+ZCIDL(syncmessagechange, (GUID hsession, uint32_t hctx, IDLOUT uint8_t *b_new, TPROPVAL_ARRAY *proplist))
 ZCIDL(syncfolderchange, (GUID hsession, uint32_t hctx, IDLOUT TPROPVAL_ARRAY *proplist))
 ZCIDL(syncreadstatechanges, (GUID hsession, uint32_t hctx, IDLOUT STATE_ARRAY *states))
 ZCIDL(syncdeletions, (GUID hsession, uint32_t hctx, uint32_t flags, IDLOUT BINARY_ARRAY *bins))
