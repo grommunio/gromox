@@ -935,16 +935,14 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 			last_row_id = sqlite3_last_insert_rowid(pdb->m_sqlite_eph);
 		sqlite3_reset(pstmt1);
 	}
+	pstmt.finalize();
+	pstmt1.finalize();
 	if (NULL != psorts) {
 		if (psort_transact.commit() != SQLITE_OK)
 			return false;
 		psort_transact = gx_sql_begin(psqlite, txn_mode::write);
 		if (!psort_transact)
 			return false;
-	}
-	pstmt.finalize();
-	pstmt1.finalize();
-	if (NULL != psorts) {
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u "
 			    "(inst_id, row_type, row_stat, parent_id, depth, "
 			    "count, inst_num, value, extremum, prev_id) VALUES"
