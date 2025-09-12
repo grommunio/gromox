@@ -4723,6 +4723,42 @@ static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 	return ENOMEM;
 }
 
+bool timeindex_delete(sqlite3 *db, uint64_t fid, uint64_t mid)
+{
+	if (fid == 0)
+		return true;
+	auto q = mid == 0 ?
+		fmt::format("DELETE FROM msgtime_index WHERE folder_id={}", fid) :
+		fmt::format("DELETE FROM msgtime_index WHERE folder_id={} AND message_id={}", fid, mid);
+	return gx_sql_exec(db, q) == SQLITE_OK;
+}
+
+bool timeindex_insert(sqlite3 *db, uint64_t fid, uint64_t mid)
+{
+	if (fid == 0)
+		return true; /* embedded message */
+	auto q = fmt::format(
+		"INSERT INTO msgtime_index "
+		"SELECT m.parent_fid, m.message_id, mt.propval, rt.propval, st.propval "
+		"FROM messages AS m "
+		"LEFT JOIN message_properties AS mt ON m.message_id=mt.message_id AND mt.proptag={} "
+		"LEFT JOIN message_properties AS rt ON m.message_id=rt.message_id AND rt.proptag={} "
+		"LEFT JOIN message_properties AS st ON m.message_id=st.message_id AND st.proptag={} "
+		"WHERE m.parent_fid={} AND m.message_id={} "
+		"AND m.is_associated=0 AND m.is_deleted=0",
+		static_cast<uint32_t>(PR_LAST_MODIFICATION_TIME),
+		static_cast<uint32_t>(PR_MESSAGE_DELIVERY_TIME),
+		static_cast<uint32_t>(PR_CLIENT_SUBMIT_TIME), fid, mid);
+	return gx_sql_exec(db, q) == SQLITE_OK;
+}
+
+bool timeindex_refresh(sqlite3 *db, uint64_t fid, uint64_t mid)
+{
+	if (!timeindex_delete(db, fid, mid))
+		/* ignore */;
+	return timeindex_insert(db, fid, mid);
+}
+
 static BOOL common_util_copy_message_internal(sqlite3 *psqlite, 
 	BOOL b_embedded, uint64_t message_id, uint64_t parent_id,
 	uint64_t *pdst_mid, BOOL *pb_result, uint64_t *pchange_num,
@@ -4804,12 +4840,15 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
+
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO message_properties (message_id,"
 			" proptag, propval) SELECT %llu, proptag, propval FROM "
 			"message_properties WHERE message_id=%llu",
 			LLU{*pdst_mid}, LLU{message_id});
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
+	if (!timeindex_insert(psqlite, parent_id, *pdst_mid))
+		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT recipient_id FROM"
 	          " recipients WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);

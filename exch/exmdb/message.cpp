@@ -185,6 +185,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, cpid_t cpid,
 			        "is_deleted=1 WHERE message_id=%llu", LLU{mid_val});
 			if (pdb->exec(sql_string) != SQLITE_OK)
 				return FALSE;
+			timeindex_delete(pdb->psqlite, fid_val, mid_val);
 			mlog(LV_DEBUG, "exmdb-audit: moved(PF) message %s:f%llu:m%llu to f%llu:m%llu",
 				dir, LLU{parent_fid}, LLU{mid_val}, LLU{fid_val}, LLU{dst_val});
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM "
@@ -303,7 +304,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 	             "is_associated FROM messages WHERE message_id=?");
 	if (stm_find == nullptr)
 		return FALSE;
-	BOOL b_update = TRUE;
+	bool b_update = true, b_softdel = false;
 	xstmt stm_del;
 	if (!b_copy) {
 		if (exmdb_server::is_private()) {
@@ -311,6 +312,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 			b_update = FALSE;
 		} else {
 			strcpy(sql_string, "UPDATE messages SET is_deleted=1 WHERE message_id=?");
+			b_softdel = true;
 		}
 		stm_del = pdb->prep(sql_string);
 		if (stm_del == nullptr)
@@ -394,6 +396,8 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		if (stm_del.step() != SQLITE_DONE)
 			return false;
 		stm_del.reset();
+		if (!b_copy && b_softdel)
+			timeindex_delete(pdb->psqlite, parent_fid, tmp_val);
 		mlog(LV_DEBUG, "exmdb-audit: moved(mmv) message %s:f%llu:m%llu to f%llu:m%llu",
 			dir, LLU{src_val}, LLU{tmp_val}, LLU{dst_val}, LLU{tmp_val1});
 		if (!exmdb_server::is_private()) {
@@ -590,6 +594,8 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		if (pstmt1.step() != SQLITE_DONE)
 			return FALSE;
 		sqlite3_reset(pstmt1);
+		if (!b_hard && !is_assoc)
+			timeindex_delete(pdb->psqlite, src_val, tmp_val);
 		mlog(LV_DEBUG, "exmdb-audit: %s-deleted message %s:f%llu:m%llu (actor:%s)",
 			b_hard ? "hard" : "soft", dir, LLU{src_val}, LLU{tmp_val},
 			username != nullptr ? username : "owner");
@@ -1922,6 +1928,8 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			        " WHERE message_id=%llu", LLU{*pmessage_id});
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
+			if (!b_embedded)
+				timeindex_refresh(psqlite, parent_id, *pmessage_id);
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM recipients"
 			        " WHERE message_id=%llu", LLU{*pmessage_id});
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
@@ -1997,6 +2005,8 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	if (!cu_set_properties(MAPI_MESSAGE, *pmessage_id, cpid,
 	    psqlite, &pmsgctnt->proplist, &tmp_problems))
 		return FALSE;
+	if (!b_embedded)
+		timeindex_refresh(psqlite, parent_id, *pmessage_id);
 	if (pmsgctnt->proplist.has(PR_BODY) && tmp_problems.has(PR_BODY))
 		*partial_completion = true;
 	if (pmsgctnt->proplist.has(PR_HTML) && tmp_problems.has(PR_HTML))

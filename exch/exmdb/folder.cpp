@@ -751,13 +751,15 @@ static BOOL folder_empty_folder(db_conn_ptr &pdb, cpid_t cpid,
 				pdb->notify_message_deletion(folder_id, message_id, *dbase, notifq);
 			}
 			if (b_check) {
-				if (b_hard)
+				if (b_hard) {
 					snprintf(sql_string, std::size(sql_string), "DELETE FROM messages "
 						"WHERE message_id=%llu", LLU{message_id});
-				else
+				} else {
 					snprintf(sql_string, std::size(sql_string), "UPDATE messages SET "
 						"is_deleted=1 WHERE message_id=%llu",
 						LLU{message_id});
+					timeindex_delete(pdb->psqlite, folder_id, message_id);
+				}
 				if (pdb->exec(sql_string) != SQLITE_OK)
 					return FALSE;
 			}
@@ -770,15 +772,17 @@ static BOOL folder_empty_folder(db_conn_ptr &pdb, cpid_t cpid,
 		}
 		pstmt.finalize();
 		if (!b_check) {
-			if (b_hard)
+			if (b_hard) {
 				/* Sweep removal */
 				snprintf(sql_string, std::size(sql_string), "DELETE FROM messages WHERE"
 				         " parent_fid=%llu AND is_associated IN (%s,%s)",
 				         LLU{folder_id}, s_normal, s_fai);
-			else
+			} else {
 				snprintf(sql_string, std::size(sql_string), "UPDATE messages SET is_deleted=1"
 				         " WHERE parent_fid=%llu AND is_associated IN (%s,%s)",
 				         LLU{folder_id}, s_normal, s_fai);
+				timeindex_delete(pdb->psqlite, folder_id, 0);
+			}
 			if (pdb->exec(sql_string) != SQLITE_OK)
 				return FALSE;
 		}
@@ -828,13 +832,15 @@ static BOOL folder_empty_folder(db_conn_ptr &pdb, cpid_t cpid,
 		}
 		if (pfolder_count != nullptr && b_hard)
 			(*pfolder_count) ++;
-		if (b_hard)
+		if (b_hard) {
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM folders "
 				"WHERE folder_id=%llu", LLU{fid_val});
-		else
+		} else {
 			snprintf(sql_string, std::size(sql_string), "UPDATE folders SET "
 				"is_deleted=1 WHERE folder_id=%llu",
 				LLU{fid_val});
+			timeindex_delete(pdb->psqlite, fid_val, 0);
+		}
 		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		pdb->notify_folder_deletion(folder_id, fid_val, *dbase, notifq);
@@ -974,6 +980,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		snprintf(sql_string, std::size(sql_string), "UPDATE folders SET"
 			" is_deleted=1 WHERE folder_id=%llu",
 			LLU{fid_val});
+		timeindex_delete(pdb->psqlite, fid_val, 0);
 	}
 	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
