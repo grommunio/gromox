@@ -3034,6 +3034,11 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 	if (ptnode->type != table_type::content)
 		return TRUE;
 	const auto &state_path = exmdb_server::get_dir() + "/tmp/state.sqlite3"s;
+	auto ret = gx_mkbasedir(state_path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-2711: mkbasedir %s: %s", state_path.c_str(), strerror(-ret));
+		return false;
+	}
 	/*
 	 * sqlite3_open does not expose O_EXCL, so let's create the file under
 	 * EXCL semantics ahead of time.
@@ -3041,7 +3046,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 	auto tfd = open(state_path.c_str(), O_RDWR | O_CREAT | O_EXCL, FMODE_PRIVATE);
 	if (tfd >= 0) {
 		close(tfd);
-		auto ret = sqlite3_open_v2(state_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+		ret = sqlite3_open_v2(state_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 		if (ret != SQLITE_OK) {
 			mlog(LV_ERR, "E-1435: sqlite3_open %s: %s", state_path.c_str(), sqlite3_errstr(ret));
 			return FALSE;
@@ -3072,7 +3077,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 			return FALSE;
 		}
 	} else if (errno == EEXIST) {
-		auto ret = sqlite3_open_v2(state_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+		ret = sqlite3_open_v2(state_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 		if (ret != SQLITE_OK) {
 			mlog(LV_ERR, "E-1436: sqlite3_open %s: %s", state_path.c_str(), sqlite3_errstr(ret));
 			return FALSE;

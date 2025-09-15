@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <fcntl.h>
 #include <future>
 #include <list>
 #include <mutex>
@@ -33,6 +34,7 @@
 #include <gromox/dbop.h>
 #include <gromox/double_list.hpp>
 #include <gromox/eid_array.hpp>
+#include <gromox/fileio.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/exmdb_server.hpp>
@@ -570,10 +572,15 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 	int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX;
 	flags |= type == DB_MAIN? 0 : SQLITE_OPEN_CREATE;
 	sqlite3 *db = nullptr;
+	int ret = gx_mkbasedir(path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-2710: mkbasedir %s: %s", path.c_str(), strerror(-ret));
+		return nullptr;
+	}
 	if (access(path.c_str(), W_OK) != 0 && errno != ENOENT)
 		mlog(LV_ERR, "E-1734: %s is not writable (%s), there may be more errors later",
 			path.c_str(), strerror(errno));
-	int ret = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
+	ret = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
 	db_handle hdb(db); /* automatically close connection if something goes wrong */
 	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-1350: sqlite_open_v2(%s): %s (%d)",

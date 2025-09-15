@@ -733,6 +733,11 @@ static BOOL autoreply_setprop1(const char *dir, const TAGGED_PROPVAL &pv)
 	auto path = autoreply_fspath(dir, pv.proptag);
 
 	/* Ensure file exists for the sake of config_file_init() */
+	auto ret = gx_mkbasedir(path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-1490: mkbasedir for %s: %s", path.c_str(), strerror(-ret));
+		return false;
+	}
 	auto fdtest = open(path.c_str(), O_CREAT | O_WRONLY, FMODE_PUBLIC);
 	if (fdtest < 0)
 		return false;
