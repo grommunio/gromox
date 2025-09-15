@@ -47,6 +47,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/sortorder_set.hpp>
 #include <gromox/util.hpp>
+#include <gromox/fileio.h>
 #include "db_engine.hpp"
 #include "notification_agent.hpp"
 #define MAX_DYNAMIC_NODES				100
@@ -112,6 +113,7 @@ unsigned long long g_exmdb_search_pacing_time = 2000000000;
 unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 unsigned int g_exmdb_pvt_folder_softdel, g_exmdb_max_sqlite_spares;
 unsigned long long g_sqlite_busy_timeout_ns;
+std::string exmdb_eph_prefix;
 
 static bool remove_from_hash(const db_base &, time_point);
 static void dbeng_notify_cttbl_modify_row(db_conn *, uint64_t folder_id, uint64_t message_id, db_base &) __attribute__((nonnull(1)));
@@ -568,7 +570,7 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 		return handle;
 	}
 	const auto &path = type == DB_MAIN ? fmt::format("{}/exmdb/exchange.sqlite3", dir) :
-	                   fmt::format("{}/tables.sqlite3", dir);
+			   fmt::format("{}/{}/tables.sqlite3", exmdb_eph_prefix, dir);
 	int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX;
 	flags |= type == DB_MAIN? 0 : SQLITE_OPEN_CREATE;
 	sqlite3 *db = nullptr;
@@ -625,7 +627,7 @@ void db_base::get_dbs(const char* dir, sqlite3 *&main, sqlite3 *&eph)
 void db_base::ctor2_and_open(const char *dir)
 {
 	auto unlock = HX::make_scope_exit([this] { sqlite_lock.unlock(); --reference; }); /* unlock whenever we're done */
-	auto db_path = fmt::format("{}/tables.sqlite3", dir);
+	auto db_path = fmt::format("{}/{}/tables.sqlite3", exmdb_eph_prefix, dir);
 	auto ret = ::unlink(db_path.c_str());
 	if (ret != 0 && errno != ENOENT)
 		throw std::runtime_error(fmt::format("E-1351: unlink {}: {}", db_path.c_str(), strerror(errno)));

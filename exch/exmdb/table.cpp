@@ -33,7 +33,6 @@
 #include "db_engine.hpp"
 #include "parser.hpp"
 
-using namespace std::string_literals;
 using LLU = unsigned long long;
 using namespace gromox;
 
@@ -3033,7 +3032,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 		return TRUE;
 	if (ptnode->type != table_type::content)
 		return TRUE;
-	const auto &state_path = exmdb_server::get_dir() + "/tmp/state.sqlite3"s;
+	const auto &state_path = exmdb_eph_prefix + "/" + exmdb_server::get_dir() + "/tablestate.sqlite3";
 	auto ret = gx_mkbasedir(state_path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
 	if (ret < 0) {
 		mlog(LV_ERR, "E-2711: mkbasedir %s: %s", state_path.c_str(), strerror(-ret));
@@ -3322,7 +3321,7 @@ BOOL exmdb_server::restore_table_state(const char *dir, uint32_t table_id,
 		return TRUE;
 	if (ptnode->type != table_type::content)
 		return TRUE;
-	const auto &state_path = exmdb_server::get_dir() + "/tmp/state.sqlite3"s;
+	const auto &state_path = exmdb_eph_prefix + "/" + exmdb_server::get_dir() + "/tablestate.sqlite3";
 	if (stat(state_path.c_str(), &node_stat) != 0)
 		return TRUE;
 	sqlite3 *psqlite = nullptr;
