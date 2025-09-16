@@ -1174,7 +1174,7 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	}
 
 	/* Lookup conflict state */
-	bool res_in_use = false;
+	bool res_in_use = false, response_allowed = false;
 	auto start_nt = rq_prop.get<uint64_t>(PR_START_DATE);
 	auto end_nt   = rq_prop.get<uint64_t>(PR_END_DATE);
 	if (start_nt != nullptr && end_nt != nullptr) {
@@ -1182,7 +1182,8 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 		auto start_ts = rop_util_nttime_to_unix(*start_nt);
 		auto end_ts   = rop_util_nttime_to_unix(*end_nt);
 		/* XXX: May need PR_SENDER rather than Envelope-From */
-		if (!get_freebusy(par.ev_from, par.cur.dirc(), start_ts, end_ts, fbdata))
+		response_allowed = freebusy_perms(par.ev_from, par.cur.dirc()) != 0;
+		if (!get_freebusy(nullptr, par.cur.dirc(), start_ts, end_ts, fbdata))
 			mlog(LV_ERR, "W-PREC: cannot retrieve freebusy %s", par.cur.dirc());
 
 		for (const freebusy_event &event : fbdata)
@@ -1197,9 +1198,11 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 
 	/* Decline double-booking if so configured */
 	if (res_in_use && policy.decline_overlap) {
-		auto err = mr_send_response(par, recurring_flg, propids, respDeclined);
-		if (err != ecSuccess)
-			return err;
+		if (response_allowed) {
+			auto err = mr_send_response(par, recurring_flg, propids, respDeclined);
+			if (err != ecSuccess)
+				return err;
+		}
 		return mr_mark_done(par);
 	}
 
@@ -1212,9 +1215,11 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	if (policy.is_resource())
 		return mr_mark_done(par);
 	if (tent == respAccepted) {
-		err = mr_send_response(par, recurring_flg, propids, tent);
-		if (err != ecSuccess)
-			return err;
+		if (response_allowed) {
+			err = mr_send_response(par, recurring_flg, propids, tent);
+			if (err != ecSuccess)
+				return err;
+		}
 		return mr_mark_done(par);
 	}
 	return ecSuccess;
