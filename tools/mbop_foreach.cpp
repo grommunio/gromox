@@ -33,7 +33,7 @@ static int help()
 {
 	fprintf(stderr, "Usage: foreach[.filter]* [-j jobs] command [args...]\n");
 	fprintf(stderr, " filter := secobj | user | mlist | sharedmb | contact |\n");
-	fprintf(stderr, "           active | susp | deleted | mb\n");
+	fprintf(stderr, "           active | susp | deleted | mb | here\n");
 	global::command_overview();
 	return EXIT_PARAM;
 }
