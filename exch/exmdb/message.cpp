@@ -2650,9 +2650,7 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
     uint32_t action_flavor, std::vector<std::string> &&rcpt_list) try
 {
 	int offset;
-	char tmp_path[256];
 	struct tm time_buff;
-	char mid_string[128];
 	struct stat node_stat;
 	char tmp_buff[64*1024];
 	MESSAGE_CONTENT *pmsgctnt;
@@ -2660,11 +2658,11 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 	std::unique_ptr<char[], stdlib_delete> pbuff;
 	MAIL imail;
 	if (rp.digest.has_value()) {
-		if (!get_digest(*rp.digest, "file", mid_string, std::size(mid_string)))
+		std::string mid_string;
+		if (!get_digest(*rp.digest, "file", mid_string))
 			return ecError;
-		snprintf(tmp_path, std::size(tmp_path), "%s/eml/%s",
-		         exmdb_server::get_dir(), mid_string);
-		wrapfd fd = open(tmp_path, O_RDONLY);
+		auto eml_path = exmdb_server::get_dir() + "/eml/"s + mid_string;
+		wrapfd fd = open(eml_path.c_str(), O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 			return ecNotFound;
 		if (!S_ISREG(node_stat.st_mode)) {
@@ -3102,10 +3100,9 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 	std::vector<std::string> rcpt_list;
 	if (!msg_rcpt_blocks_to_list(*pfwddlgt, rcpt_list))
 		return ecError;
-	char mid_string1[128], tmp_path1[256];
-	get_digest(*rp.digest, "file", mid_string1, std::size(mid_string1));
-	snprintf(tmp_path1, std::size(tmp_path1), "%s/eml/%s",
-		 exmdb_server::get_dir(), mid_string1);
+	std::string mid_string_src;
+	get_digest(*rp.digest, "file", mid_string_src);
+	auto eml_path_src = exmdb_server::get_dir() + "/eml/"s + mid_string_src;
 	for (const auto &eaddr : rcpt_list) {
 		sql_meta_result mres;
 		if (mysql_adaptor_meta(eaddr.c_str(), WANTPRIV_METAONLY, mres) != 0)
@@ -3113,7 +3110,7 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 		auto maildir = mres.maildir.c_str();
 		if (*maildir == '\0') {
 			mlog(LV_ERR, "E-1740: copy from %s to delegate %s not possible: no homedir",
-				tmp_path1, eaddr.c_str());
+				eml_path_src.c_str(), eaddr.c_str());
 			continue;
 		}
 		char guidtxt[GUIDSTR_SIZE]{};
@@ -3125,10 +3122,10 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 			mlog(LV_ERR, "E-1492: mkbasedir for %s: %s", eml_path.c_str(), strerror(-ret));
 			continue;
 		}
-		ret = HX_copy_file(tmp_path1, eml_path.c_str(), 0);
+		ret = HX_copy_file(eml_path_src.c_str(), eml_path.c_str(), 0);
 		if (ret < 0) {
 			mlog(LV_ERR, "E-1606: HX_copy_file %s -> %s: %s",
-			        tmp_path1, eml_path.c_str(), strerror(-ret));
+			        eml_path_src.c_str(), eml_path.c_str(), strerror(-ret));
 			continue;
 		}
 		Json::Value newdigest = *rp.digest;
@@ -3420,10 +3417,9 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 	std::vector<std::string> rcpt_list;
 	if (!msg_rcpt_blocks_to_list(*pextfwddlgt, rcpt_list))
 		return ecError;
-	char mid_string1[128], tmp_path1[256];
-	get_digest(*rp.digest, "file", mid_string1, std::size(mid_string1));
-	snprintf(tmp_path1, std::size(tmp_path1), "%s/eml/%s",
-	         exmdb_server::get_dir(), mid_string1);
+	std::string mid_string_src;
+	get_digest(*rp.digest, "file", mid_string_src);
+	auto eml_path_src = exmdb_server::get_dir() + "/eml/"s + mid_string_src;
 	for (const auto &eaddr : rcpt_list) {
 		sql_meta_result mres;
 		if (mysql_adaptor_meta(eaddr.c_str(), WANTPRIV_METAONLY, mres) != 0)
@@ -3438,10 +3434,10 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 			mlog(LV_ERR, "E-1493: mkbasedir for %s: %s", eml_path.c_str(), strerror(-ret));
 			continue;
 		}
-		ret = HX_copy_file(tmp_path1, eml_path.c_str(), 0);
+		ret = HX_copy_file(eml_path_src.c_str(), eml_path.c_str(), 0);
 		if (ret < 0) {
 			mlog(LV_ERR, "E-1607: HX_copy_file %s -> %s: %s",
-			        tmp_path1, eml_path.c_str(), strerror(-ret));
+			        eml_path_src.c_str(), eml_path.c_str(), strerror(-ret));
 			continue;
 		}
 		Json::Value newdigest = *rp.digest;
@@ -3613,12 +3609,11 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 		return ecError;
 	if (!rp.digest.has_value())
 		return ecSuccess;
-	char mid_string1[128], tmp_path1[256];
-	get_digest(*rp.digest, "file", mid_string1, std::size(mid_string1));
-	snprintf(tmp_path1, std::size(tmp_path1), "%s/eml/%s",
-	         exmdb_server::get_dir(), mid_string1);
-	if (::remove(tmp_path1) != 0 && errno != ENOENT)
-		mlog(LV_WARN, "W-1345: remove %s: %s", tmp_path1, strerror(errno));
+	std::string mid_string_src;
+	get_digest(*rp.digest, "file", mid_string_src);
+	auto eml_path_src = exmdb_server::get_dir() + "/eml/"s + mid_string_src;
+	if (::remove(eml_path_src.c_str()) != 0 && errno != ENOENT)
+		mlog(LV_WARN, "W-1345: remove %s: %s", eml_path_src.c_str(), strerror(errno));
 	return ecSuccess;
 }
 
@@ -3653,7 +3648,6 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 {
 	bool b_oof;
 	uint64_t fid_val;
-	char tmp_path[256];
 	BINARY searchkey_bin;
 	char mid_string[128];
 	std::string account, display_name;
@@ -3791,23 +3785,22 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	    get_digest(*digest, "file", mid_string, std::size(mid_string))) {
 		Json::Value newdigest = *digest;
 		newdigest["file"] = "";
-		snprintf(tmp_path, std::size(tmp_path), "%s/ext/%s",
-		         exmdb_server::get_dir(), mid_string);
+		auto ext_path = exmdb_server::get_dir() + "/ext/"s + mid_string;
 		auto djson = json_to_str(std::move(newdigest));
-		auto ret = gx_mkbasedir(tmp_path, FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+		auto ret = gx_mkbasedir(ext_path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
 		if (ret < 0) {
-			mlog(LV_ERR, "E-1942: mkbasedir for %s: %s", tmp_path, strerror(-ret));
+			mlog(LV_ERR, "E-1942: mkbasedir for %s: %s", ext_path.c_str(), strerror(-ret));
 			return false;
 		}
-		wrapfd fd = open(tmp_path, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
+		wrapfd fd = open(ext_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() >= 0) {
 			if (HXio_fullwrite(fd.get(), djson.c_str(), djson.size()) < 0) {
-				mlog(LV_ERR, "E-1319: write %s: %s", tmp_path, strerror(errno));
+				mlog(LV_ERR, "E-1319: write %s: %s", ext_path.c_str(), strerror(errno));
 				return false;
 			}
 			auto err = fd.close_wr();
 			if (err != 0) {
-				mlog(LV_ERR, "E-1319: close %s: %s", tmp_path, strerror(err));
+				mlog(LV_ERR, "E-1319: close %s: %s", ext_path.c_str(), strerror(err));
 				return false;
 			}
 			if (!common_util_set_mid_string(pdb->psqlite,
@@ -4009,7 +4002,7 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
     cpid_t cpid, uint64_t folder_id, uint64_t message_id) try
 {
-	char *pmid_string = nullptr, tmp_path[256];
+	char *pmid_string = nullptr;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -4027,10 +4020,9 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 		return FALSE;
 	std::optional<Json::Value> digest;
 	if (NULL != pmid_string) {
-		snprintf(tmp_path, std::size(tmp_path), "%s/ext/%s",
-		         exmdb_server::get_dir(), pmid_string);
+		auto ext_path = exmdb_server::get_dir() + "/ext/"s + pmid_string;
 		size_t slurp_size = 0;
-		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(tmp_path, &slurp_size));
+		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(ext_path.c_str(), &slurp_size));
 		if (slurp_data != nullptr) {
 			digest.emplace();
 			if (!json_from_str({slurp_data.get(), slurp_size}, *digest))
