@@ -1143,6 +1143,8 @@ void mlog_init(const char *ident, const char *filename, unsigned int max_level,
 			for_tty = true;
 		else if (getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
 			for_syslog = true;
+		else
+			for_tty = true;
 	} else if (strcmp(filename, "syslog") == 0) {
 		for_syslog = true;
 	}
