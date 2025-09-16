@@ -1107,14 +1107,6 @@ static std::string flagbits_to_s(unsigned int v)
 	return s;
 }
 
-static bool get_digest_string(const Json::Value &jv, const char *tag, std::string &buff)
-{
-	if (jv.type() != Json::ValueType::objectValue || !jv.isMember(tag))
-		return false;
-	buff = jv[tag].asString();
-	return true;
-}
-
 static bool get_digest_integer(const Json::Value &jv, const char *tag, int &i)
 {
 	if (jv.type() != Json::ValueType::objectValue || !jv.isMember(tag))
@@ -1466,7 +1458,7 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 					if (pspace == nullptr ||
 					    !json_from_str(std::string_view(&pspace[1], temp_len), mitem.digest)) {
 						b_format_error = TRUE;
-					} else if (get_digest_string(mitem.digest, "file", mitem.mid) &&
+					} else if (get_digest(mitem.digest, "file", mitem.mid) &&
 					    get_digest_integer(mitem.digest, "uid", mitem.uid)) {
 						*pspace++ = '\0';
 						auto mitem_uid = mitem.uid;

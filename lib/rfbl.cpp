@@ -965,6 +965,17 @@ int iconv_validate()
 	return 0;
 }
 
+bool get_digest(const Json::Value &jval, const char *key, std::string &out) try
+{
+	if (jval.type() != Json::ValueType::objectValue || !jval.isMember(key))
+		return false;
+	out = jval[key].asString();
+	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1988: ENOMEM");
+	return false;
+}
+
 bool get_digest(const Json::Value &jval, const char *key, char *out, size_t outmax) try
 {
 	if (jval.type() != Json::ValueType::objectValue || !jval.isMember(key))
