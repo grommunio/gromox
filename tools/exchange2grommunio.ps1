@@ -490,11 +490,11 @@ if (!$PSScriptRoot) {
 	$PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
 }
 
-# Test if $WinSharedFolder is a valide path
+# Test if $WinSharedFolder is a valid path
 #
 if (!( $(Try { Test-Path $WinSharedFolder.trim() } Catch { $false }) )) {  #Returns $false if $null, "" or " "
 	Write-Host ""
-	Write-Host "'$WinSharedFolder' is not a valide path, please update variable `$WinSharedFolder and try again." -fore red
+	Write-Host "'$WinSharedFolder' is not a valid path, please update variable `$WinSharedFolder and try again." -fore red
 	exit 1
 }
 
