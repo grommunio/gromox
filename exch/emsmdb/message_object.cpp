@@ -45,8 +45,8 @@ static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < tmp_proptags.count; ++i) {
-		switch (tmp_proptags.pproptag[i]) {
+	for (const auto tag : tmp_proptags) {
+		switch (tag) {
 		case PR_RESPONSIBILITY:
 		case PR_ADDRTYPE:
 		case PR_DISPLAY_NAME:
@@ -63,7 +63,7 @@ static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
 		case PR_TRANSMITABLE_DISPLAY_NAME_A:
 			continue;
 		default:
-			pproptags->emplace_back(tmp_proptags.pproptag[i]);
+			pproptags->emplace_back(tag);
 			break;
 		}
 	}
@@ -476,18 +476,17 @@ ec_error_t message_object::save()
 	/* always mark PR_MESSAGE_FLAGS as changed */
 	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_FLAGS))
 		return ecRpcFailed;
-	for (size_t i = 0; i < pmessage->pchanged_proptags->count; ++i) {
-		if (!pgpinfo->get_partial_index(pmessage->pchanged_proptags->pproptag[i], &tmp_index)) {
-			if (!proptag_array_append(pungroup_proptags.get(),
-			    pmessage->pchanged_proptags->pproptag[i]))
+	for (const auto tag : *pmessage->pchanged_proptags) {
+		if (!pgpinfo->get_partial_index(tag, &tmp_index)) {
+			if (!proptag_array_append(pungroup_proptags.get(), tag))
 				return ecRpcFailed;
 		} else {
 			if (!proptag_array_append(pindices.get(), tmp_index))
 				return ecRpcFailed;
 		}
 	}
-	for (size_t i = 0; i < pmessage->premoved_proptags->count; ++i) {
-		if (!pgpinfo->get_partial_index(pmessage->premoved_proptags->pproptag[i], &tmp_index))
+	for (const auto tag : *pmessage->premoved_proptags) {
+		if (!pgpinfo->get_partial_index(tag, &tmp_index))
 			goto SAVE_FULL_CHANGE;
 		else if (!proptag_array_append(pindices.get(), tmp_index))
 			return ecRpcFailed;
@@ -592,8 +591,8 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 	    pmessage->instance_id, pset))
 		return FALSE;	
 	for (const auto &row : *pset) {
-		for (size_t j = 0; j < row.count; ++j) {
-			switch (row.ppropval[j].proptag) {
+		for (const auto &cell : row) {
+			switch (cell.proptag) {
 			case PR_RESPONSIBILITY:
 			case PR_ADDRTYPE:
 			case PR_DISPLAY_NAME:
@@ -610,8 +609,7 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 			case PR_TRANSMITABLE_DISPLAY_NAME_A:
 				continue;
 			}
-			proptag_array_append(pmessage->precipient_columns,
-				row.ppropval[j].proptag);
+			proptag_array_append(pmessage->precipient_columns, cell.proptag);
 		}
 	}
 	pmessage->b_touched = TRUE;
@@ -754,8 +752,8 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + nodes_num);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < tmp_proptags.count; ++i) {
-		switch (tmp_proptags.pproptag[i]) {
+	for (const auto tag : tmp_proptags) {
+		switch (tag) {
 		case PidTagMid:
 		case PR_SUBJECT:
 		case PR_ASSOCIATED:
@@ -764,7 +762,7 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 		case PR_NORMALIZED_SUBJECT:
 			continue;
 		default:
-			pproptags->emplace_back(tmp_proptags.pproptag[i]);
+			pproptags->emplace_back(tag);
 			break;
 		}
 	}
@@ -918,9 +916,8 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : *pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (message_object_get_calculated_property(pmessage, tag, &pvalue)) {
 			if (pvalue != nullptr)
 				ppropvals->emplace_back(tag, pvalue);
@@ -1195,10 +1192,8 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 	}
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	for (unsigned int i = 0; i < proptags.count; ++i) {
-		auto u_tag = message_object_rectify_proptag(proptags.pproptag[i]);
-		proptag_array_append(pmessage->pchanged_proptags, u_tag);
-	}
+	for (const auto tag : proptags)
+		proptag_array_append(pmessage->pchanged_proptags, message_object_rectify_proptag(tag));
 	return TRUE;
 }
 

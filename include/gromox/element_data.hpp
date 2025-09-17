@@ -18,6 +18,7 @@ struct GX_EXPORT property_groupinfo {
 
 	uint32_t group_id = 0, reserved = 0, count = 0;
 	PROPTAG_ARRAY *pgroups = nullptr;
+	I_BEGIN_END(pgroups, count);
 };
 using PROPERTY_GROUPINFO = property_groupinfo;
 

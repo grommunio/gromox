@@ -1138,6 +1138,7 @@ struct GX_EXPORT SORTORDER_SET {
 	SORT_ORDER *psort;
 
 	std::string repr() const;
+	I_BEGIN_END(psort, count);
 };
 
 struct GX_EXPORT STATE_ARRAY {

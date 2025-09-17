@@ -263,9 +263,8 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : *pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (attachment_object_get_calculated_property(pattachment, tag, &pvalue)) {
 			if (pvalue != nullptr)
 				ppropvals->emplace_back(tag, pvalue);

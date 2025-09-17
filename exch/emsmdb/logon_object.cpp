@@ -616,9 +616,8 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	ppropvals->count = 0;
 	auto plogon = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : *pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 
 		if (PROP_ID(tag) == PROP_ID(PR_HIERARCHY_SERVER))
 			ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &invalid_code);

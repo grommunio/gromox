@@ -187,8 +187,8 @@ static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
 {
 	if (b_exclude) {
 		for (auto &chg : *pfldchgs)
-			for (size_t j = 0; j < pproptags->count; ++j)
-				common_util_remove_propvals(&chg, pproptags->pproptag[j]);
+			for (const auto tag : *pproptags)
+				common_util_remove_propvals(&chg, tag);
 		return;
 	}
 	for (auto &chg : *pfldchgs) {
@@ -582,8 +582,7 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
     const PROPTAG_ARRAY *pproptags, bool b_exclude)
 {
 	if (b_exclude) {
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
-			const auto tag = pproptags->pproptag[i];
+		for (const auto tag : *pproptags) {
 			switch (tag) {
 			case PR_MESSAGE_RECIPIENTS:
 				pmsgctnt->children.prcpts = NULL;
@@ -655,8 +654,7 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 		auto &pl = pmsg->pchanges[i].proplist;
 		pl.ppropval = cu_alloc<TAGGED_PROPVAL>(pchangetags->count);
 		unsigned int count = 0;
-		for (unsigned int j = 0; j < pchangetags->count; ++j) {
-			const auto proptag = pchangetags->pproptag[j];
+		for (const auto proptag : *pchangetags) {
 			switch (proptag) {
 			case PR_MESSAGE_RECIPIENTS:
 				pl.ppropval[count].proptag = PR_MESSAGE_RECIPIENTS;
@@ -687,8 +685,7 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 	pmsg->pchanges[i].index = UINT32_MAX;
 	pl.ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	unsigned int count = 0;
-	for (unsigned int j = 0; j < pproptags->count; ++j) {
-		const auto proptag = pproptags->pproptag[j];
+	for (const auto proptag : *pproptags) {
 		switch (proptag) {
 		case PR_MESSAGE_RECIPIENTS:
 			pl.ppropval[count].proptag = PR_MESSAGE_RECIPIENTS;
@@ -724,9 +721,9 @@ static void icsdownctx_object_trim_embedded(
 		auto pembedded = at.pembedded;
 		if (pembedded == nullptr)
 			continue;
-		for (unsigned int j = 0; j < pembedded->proplist.count; ++j) {
-			if (pembedded->proplist.ppropval[j].proptag == PidTagMid) {
-				*static_cast<uint64_t *>(pembedded->proplist.ppropval[j].pvalue) = 0;
+		for (auto &pv : pembedded->proplist) {
+			if (pv.proptag == PidTagMid) {
+				*static_cast<uint64_t *>(pv.pvalue) = 0;
 				break;
 			}
 		}

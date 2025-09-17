@@ -215,6 +215,7 @@ struct GX_EXPORT PROPERTY_ROW {
 struct GX_EXPORT PROPROW_SET {
 	uint16_t count;
 	PROPERTY_ROW *prows;
+	I_BEGIN_END(prows, count);
 };
 
 #define TABLE_SORT_ASCEND							0x0

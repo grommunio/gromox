@@ -392,8 +392,8 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 		auto ar = static_cast<const SHORT_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!ftstream_producer_write_uint16(pstream, ar->ps[i]))
+		for (const auto v : *ar)
+			if (!ftstream_producer_write_uint16(pstream, v))
 				return FALSE;
 		return TRUE;
 	}
@@ -401,8 +401,8 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 		auto ar = static_cast<const LONG_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!pstream->write_uint32(ar->pl[i]))
+		for (const auto v : *ar)
+			if (!pstream->write_uint32(v))
 				return FALSE;
 		return TRUE;
 	}
@@ -412,8 +412,8 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 		auto ar = static_cast<const LONGLONG_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!ftstream_producer_write_uint64(pstream, ar->pll[i]))
+		for (const auto v : *ar)
+			if (!ftstream_producer_write_uint64(pstream, v))
 				return FALSE;
 		return TRUE;
 	}
@@ -421,8 +421,8 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 		auto fa = static_cast<const FLOAT_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(fa->count))
 			return false;
-		for (size_t i = 0; i < fa->count; ++i)
-			if (!ftstream_producer_write_float(pstream, fa->mval[i]))
+		for (const auto v : *fa)
+			if (!ftstream_producer_write_float(pstream, v))
 				return false;
 		return TRUE;
 	}
@@ -431,8 +431,8 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 		auto fa = static_cast<const DOUBLE_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(fa->count))
 			return false;
-		for (size_t i = 0; i < fa->count; ++i)
-			if (!ftstream_producer_write_double(pstream, fa->mval[i]))
+		for (const auto v : *fa)
+			if (!ftstream_producer_write_double(pstream, v))
 				return false;
 		return TRUE;
 	}
@@ -440,8 +440,8 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 		auto ar = static_cast<const STRING_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!ftstream_producer_write_string(pstream, ar->ppstr[i]))
+		for (const auto &v : *ar)
+			if (!ftstream_producer_write_string(pstream, v))
 				return FALSE;
 		return TRUE;
 	}
@@ -449,8 +449,8 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 		auto ar = static_cast<const STRING_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!ftstream_producer_write_wstring(pstream, ar->ppstr[i]))
+		for (const auto &v : *ar)
+			if (!ftstream_producer_write_wstring(pstream, v))
 				return FALSE;
 		return TRUE;
 	}
@@ -458,8 +458,8 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 		auto ar = static_cast<const GUID_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!ftstream_producer_write_guid(pstream, &ar->pguid[i]))
+		for (const auto &e : *ar)
+			if (!ftstream_producer_write_guid(pstream, &e))
 				return FALSE;
 		return TRUE;
 	}
@@ -467,8 +467,8 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 		auto ar = static_cast<const BINARY_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!ftstream_producer_write_binary(pstream, &ar->pbin[i]))
+		for (const auto &e : *ar)
+			if (!ftstream_producer_write_binary(pstream, &e))
 				return FALSE;
 		return TRUE;
 	}
@@ -479,8 +479,8 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 BOOL fxstream_producer::write_proplist(const TPROPVAL_ARRAY *pproplist)
 {
 	auto pstream = this;
-	for (size_t i = 0; i < pproplist->count; ++i)
-		if (!ftstream_producer_write_propvalue(pstream, &pproplist->ppropval[i]))
+	for (const auto &pv : *pproplist)
+		if (!ftstream_producer_write_propvalue(pstream, &pv))
 			return FALSE;	
 	return TRUE;
 }
@@ -610,7 +610,6 @@ BOOL fxstream_producer::write_messagechangefull(
 static BOOL ftstream_producer_write_groupinfo(fxstream_producer *pstream,
 	const PROPERTY_GROUPINFO *pginfo)
 {
-	propid_t propid = 0;
 	EXT_PUSH ext_push;
 	uint32_t name_size;
 	PROPERTY_NAME propname;
@@ -625,12 +624,12 @@ static BOOL ftstream_producer_write_groupinfo(fxstream_producer *pstream,
 	    ext_push.p_uint32(pginfo->reserved) != pack_result::ok ||
 	    ext_push.p_uint32(pginfo->count) != pack_result::ok)
 		return FALSE;
-	for (size_t i = 0; i < pginfo->count; ++i) {
-		if (ext_push.p_uint32(pginfo->pgroups[i].count) != pack_result::ok)
+	for (const auto &group : *pginfo) {
+		if (ext_push.p_uint32(group.count) != pack_result::ok)
 			return FALSE;
-		for (size_t j = 0; j < pginfo->pgroups[i].count; ++j) {
-			propid = PROP_ID(pginfo->pgroups[i].pproptag[j]);
-			if (ext_push.p_uint32(pginfo->pgroups[i].pproptag[j]) != pack_result::ok)
+		for (const auto tag : group) {
+			auto propid = PROP_ID(tag);
+			if (ext_push.p_uint32(tag) != pack_result::ok)
 				return FALSE;
 			if (!is_nameprop_id(propid))
 				continue;
@@ -689,8 +688,8 @@ BOOL fxstream_producer::write_messagechangepartial(
 			return FALSE;
 		if (!write_uint32(pmsg->pchanges[i].index))
 			return FALSE;	
-		for (size_t j = 0; j < pmsg->pchanges[i].proplist.count; ++j) {
-			switch(pmsg->pchanges[i].proplist.ppropval[j].proptag) {
+		for (const auto &ipv : pmsg->pchanges[i].proplist) {
+			switch (ipv.proptag) {
 			case PR_MESSAGE_RECIPIENTS:
 				if (pmsg->children.prcpts == nullptr)
 					break;
@@ -714,8 +713,7 @@ BOOL fxstream_producer::write_messagechangepartial(
 						return FALSE;
 				break;
 			default:
-				if (!ftstream_producer_write_propvalue(pstream,
-				    &pmsg->pchanges[i].proplist.ppropval[j]))
+				if (!ftstream_producer_write_propvalue(pstream, &ipv))
 					return FALSE;	
 				break;
 			}

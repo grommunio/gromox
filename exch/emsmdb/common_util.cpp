@@ -708,9 +708,9 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 
 ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *data)
 {
-	for (unsigned int i = 0; i < parray->count; ++i) {
-		if (parray->ppropval[i].proptag == tag) {
-			parray->ppropval[i].pvalue = deconst(data);
+	for (auto &e : *parray) {
+		if (e.proptag == tag) {
+			e.pvalue = deconst(data);
 			return ecSuccess;
 		}
 	}
@@ -743,9 +743,9 @@ void common_util_remove_propvals(TPROPVAL_ARRAY *parray, proptag_t proptag)
 BOOL common_util_retag_propvals(TPROPVAL_ARRAY *parray,
     proptag_t original_proptag, proptag_t new_proptag)
 {
-	for (unsigned int i = 0; i < parray->count; ++i) {
-		if (parray->ppropval[i].proptag == original_proptag) {
-			parray->ppropval[i].proptag = new_proptag;
+	for (auto &e : *parray) {
+		if (e.proptag == original_proptag) {
+			e.proptag = new_proptag;
 			return TRUE;
 		}
 	}
@@ -755,9 +755,9 @@ BOOL common_util_retag_propvals(TPROPVAL_ARRAY *parray,
 void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	const PROPTAG_ARRAY *pproptags_subtractor)
 {
-	for (unsigned int j = 0; j < pproptags_subtractor->count; ++j) {
+	for (const auto subtag : *pproptags_subtractor) {
 		for (unsigned int i = 0; i < pproptags_minuend->count; ++i) {
-			if (pproptags_subtractor->pproptag[j] != pproptags_minuend->pproptag[i])
+			if (subtag != pproptags_minuend->pproptag[i])
 				continue;
 			pproptags_minuend->count--;
 			if (i < pproptags_minuend->count)
@@ -1205,15 +1205,14 @@ BOOL common_util_convert_tagged_propval(
 		}
 		case PT_MV_STRING8: {
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
-			for (size_t i = 0; i < sa->count; ++i) {
-				auto len = mb_to_utf8_len(sa->ppstr[i]);
+			for (auto &entry : *sa) {
+				auto len = mb_to_utf8_len(entry);
 				auto pstring = cu_alloc<char>(len);
 				if (pstring == nullptr)
 					return FALSE;
-				if (common_util_convert_string(true,
-				    sa->ppstr[i], pstring, len) < 0)
+				if (common_util_convert_string(true, entry, pstring, len) < 0)
 					return FALSE;	
-				sa->ppstr[i] = pstring;
+				entry = pstring;
 			}
 			common_util_convert_proptag(TRUE, &ppropval->proptag);
 			break;
@@ -1245,15 +1244,14 @@ BOOL common_util_convert_tagged_propval(
 		}
 		case PT_MV_UNICODE: {
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
-			for (size_t i = 0; i < sa->count; ++i) {
-				auto len = utf8_to_mb_len(sa->ppstr[i]);
+			for (auto &entry : *sa) {
+				auto len = utf8_to_mb_len(entry);
 				auto pstring = cu_alloc<char>(len);
 				if (pstring == nullptr)
 					return FALSE;
-				if (common_util_convert_string(false,
-				    sa->ppstr[i], pstring, len) < 0)
+				if (common_util_convert_string(false, entry, pstring, len) < 0)
 					return FALSE;	
-				sa->ppstr[i] = pstring;
+				entry = pstring;
 			}
 			common_util_convert_proptag(FALSE, &ppropval->proptag);
 			break;
@@ -1279,8 +1277,8 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 	switch (pres->rt) {
 	case RES_AND:
 	case RES_OR:
-		for (size_t i = 0; i < pres->andor->count; ++i)
-			if (!common_util_convert_restriction(to_unicode, &pres->andor->pres[i]))
+		for (auto &expr : *pres->andor)
+			if (!common_util_convert_restriction(to_unicode, &expr))
 				return FALSE;	
 		break;
 	case RES_NOT:
@@ -1479,8 +1477,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 			return FALSE;
 	}
 	if (NULL != pchanged_proptags) {
-		for (unsigned int i = 0; i < pchanged_proptags->count; ++i) {
-			const auto tag = pchanged_proptags->pproptag[i];
+		for (const auto tag : *pchanged_proptags) {
 			if (!pgpinfo->get_partial_index(tag, &tmp_index)) {
 				if (!proptag_array_append(pungroup_proptags.get(), tag))
 					return FALSE;
