@@ -901,7 +901,19 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 
 	std::vector<uint32_t> groups;
 	std::vector<proptag_t> ugrp_tags;
-	if (!b_downloaded || progmsg.b_fai) {
+	/*
+	 * [Grep keyword: FAULTY-PARTIALS]. The partial change synchronization
+	 * looks pretty bugged.
+	 *
+	 * The save_change_pgrp EXRPC records changed proptags between CNs. But
+	 * message_write_messages issues a fat `DELETE FROM message_changes`,
+	 * so in effect, only the most recent upload (i.e. diff(CN-1, CN)) is
+	 * ever kept. A client which is at CN-2 thus would not be served enough
+	 * propvals when catching up to CN-0.
+	 *
+	 * As a result, always transfer full messages.
+	 */
+	if (true /* !b_downloaded || progmsg.b_fai */) {
 		b_full = TRUE;
 	} else {
 		/* Downloaded && Normal message */
