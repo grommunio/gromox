@@ -28,18 +28,17 @@ static BOOL oxctable_verify_columns_and_sorts(
 	const SORTORDER_SET *psort_criteria)
 {
 	proptag_t proptag = 0;
-	for (unsigned int i = 0; i < psort_criteria->count; ++i) {
-		if (!(psort_criteria->psort[i].type & MV_INSTANCE))
+	for (const auto &crit : *psort_criteria) {
+		if (!(crit.type & MV_INSTANCE))
 			continue;
-		if (!(psort_criteria->psort[i].type & MV_FLAG))
+		if (!(crit.type & MV_FLAG))
 			return FALSE;
-		proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
+		proptag = PROP_TAG(crit.type, crit.propid);
 		break;
 	}
-	for (unsigned int i = 0; i < pcolumns->count; ++i)
-		if (pcolumns->pproptag[i] & MV_INSTANCE)
-			if (proptag != pcolumns->pproptag[i])
-				return FALSE;
+	for (const auto ctag : *pcolumns)
+		if (ctag & MV_INSTANCE && proptag != ctag)
+			return false;
 	return TRUE;
 }
 
@@ -99,8 +98,8 @@ ec_error_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
 		return ecNotSupported;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		uint16_t type = PROP_TYPE(pproptags->pproptag[i]);
+	for (const auto tag : *pproptags) {
+		auto type = PROP_TYPE(tag);
 		if ((type & MVI_FLAG) == MVI_FLAG) {
 				if (ropGetContentsTable != ptable->rop_id)
 					return ecNotSupported;
@@ -122,10 +121,8 @@ ec_error_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteri
     uint8_t *ptable_status, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_max;
-	uint16_t type;
 	ems_objtype object_type;
 	BOOL b_multi_inst;
-	uint32_t tmp_proptag;
 	
 	if (psort_criteria->count > MAXIMUM_SORT_COUNT)
 		return ecTooComplex;
@@ -139,13 +136,14 @@ ec_error_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteri
 	b_max = FALSE;
 	b_multi_inst = FALSE;
 	for (unsigned int i = 0; i < psort_criteria->count; ++i) {
-		tmp_proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
+		const auto &crit = psort_criteria->psort[i];
+		auto tmp_proptag = PROP_TAG(crit.type, crit.propid);
 		if (tmp_proptag == PR_DEPTH || tmp_proptag == PidTagInstID ||
 		    tmp_proptag == PidTagInstanceNum ||
 		    tmp_proptag == PR_CONTENT_COUNT ||
 		    tmp_proptag == PR_CONTENT_UNREAD)
 			return ecInvalidParam;
-		switch (psort_criteria->psort[i].table_sort) {
+		switch (crit.table_sort) {
 		case TABLE_SORT_ASCEND:
 		case TABLE_SORT_DESCEND:
 			break;
@@ -158,7 +156,7 @@ ec_error_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteri
 		default:
 			return ecInvalidParam;
 		}
-		type = psort_criteria->psort[i].type;
+		auto type = crit.type;
 		if (type & MV_FLAG) {
 			/* we do not support multivalue property
 				without multivalue instances */
@@ -172,10 +170,8 @@ ec_error_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteri
 		}
 		if (!table_acceptable_type(type))
 			return ecInvalidParam;
-		if (TABLE_SORT_MAXIMUM_CATEGORY ==
-			psort_criteria->psort[i].table_sort ||
-			TABLE_SORT_MINIMUM_CATEGORY ==
-			psort_criteria->psort[i].table_sort) {
+		if (crit.table_sort == TABLE_SORT_MAXIMUM_CATEGORY ||
+		    crit.table_sort == TABLE_SORT_MINIMUM_CATEGORY) {
 			if (b_max || i != psort_criteria->ccategories)
 				return ecInvalidParam;
 			b_max = TRUE;
@@ -938,8 +934,8 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	propval_buff[1].pvalue = &tmp_byte;
 	tmp_byte = 1;
 
-	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
+	for (const auto &row : tmp_set) {
+		auto pmid = row.get<uint64_t>(PidTagMid);
 		if (pmid == nullptr)
 			continue;
 		exmdb_client->set_message_properties(dir, nullptr, CP_ACP,

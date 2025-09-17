@@ -158,8 +158,8 @@ static pack_result rop_ext_push(EXT_PUSH &x, const GETRECEIVEFOLDERTABLE_RESPONS
 	static constexpr PROPTAG_ARRAY columns = {std::size(proptags), deconst(proptags)};
 
 	TRY(x.p_uint32(r.rows.count));
-	for (size_t i = 0; i < r.rows.count; ++i)
-		TRY(x.p_proprow(columns, r.rows.prows[i]));
+	for (const auto &row : r.rows)
+		TRY(x.p_proprow(columns, row));
 	return pack_result::ok;
 }
 
@@ -909,8 +909,8 @@ static pack_result rop_ext_push(EXT_PUSH &x, const GETADDRESSTYPES_RESPONSE &r)
 	TRY(x.p_uint16(r.address_types.count));
 	uint32_t offset = x.m_offset;
 	TRY(x.advance(sizeof(uint16_t)));
-	for (size_t i = 0; i < r.address_types.count; ++i)
-		TRY(x.p_str(r.address_types.ppstr[i]));
+	for (const auto &atypstr : r.address_types)
+		TRY(x.p_str(atypstr));
 	uint16_t size = x.m_offset - (offset + sizeof(uint16_t));
 	uint32_t offset1 = x.m_offset;
 	x.m_offset = offset;
