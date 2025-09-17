@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <vmime/message.hpp>
+#include <gromox/algorithm.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -1427,7 +1428,7 @@ void common_util_notify_receipt(const char *username, int type,
 }
 
 BOOL common_util_save_message_ics(logon_object *plogon,
-	uint64_t message_id, PROPTAG_ARRAY *pchanged_proptags)
+    uint64_t message_id, PROPTAG_ARRAY *pchanged_proptags) try
 {
 	uint32_t tmp_index;
 	uint64_t change_num;
@@ -1461,34 +1462,31 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 		if (pgpinfo == nullptr)
 			return FALSE;
 	}
-	/* memory format of PROPTAG_ARRAY is identical to LONG_ARRAY */
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pindices(proptag_array_init());
-	if (pindices == nullptr)
-		return FALSE;
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pungroup_proptags(proptag_array_init());
-	if (pungroup_proptags == nullptr)
-		return FALSE;
-	if (!pgpinfo->get_partial_index(PR_CHANGE_KEY, &tmp_index)) {
-		if (!proptag_array_append(pungroup_proptags.get(), PR_CHANGE_KEY))
-			return FALSE;
+
+	std::vector<uint32_t> groups;
+	std::vector<proptag_t> ugrp_tags;
+	if (pgpinfo->get_partial_index(PR_CHANGE_KEY, &tmp_index)) {
+		if (!contains(groups, tmp_index))
+			groups.emplace_back(tmp_index);
 	} else {
-		if (!proptag_array_append(pindices.get(), tmp_index))
-			return FALSE;
+		if (!contains(ugrp_tags, PR_CHANGE_KEY))
+			ugrp_tags.emplace_back(PR_CHANGE_KEY);
 	}
-	if (NULL != pchanged_proptags) {
-		for (const auto tag : *pchanged_proptags) {
-			if (!pgpinfo->get_partial_index(tag, &tmp_index)) {
-				if (!proptag_array_append(pungroup_proptags.get(), tag))
-					return FALSE;
+	if (pchanged_proptags != nullptr) {
+		for (const auto tag : *pchanged_proptags)
+			if (pgpinfo->get_partial_index(tag, &tmp_index)) {
+				if (!contains(groups, tmp_index))
+					groups.emplace_back(tmp_index);
 			} else {
-				if (!proptag_array_append(pindices.get(), tmp_index))
-					return FALSE;
+				if (!contains(ugrp_tags, tag))
+					ugrp_tags.emplace_back(tag);
 			}
-		}
-		
 	}
 	return exmdb_client->save_change_indices(dir, message_id,
-	       change_num, pindices.get(), pungroup_proptags.get());
+	       change_num, groups, ugrp_tags);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2904: ENOMEM");
+	return false;
 }
 
 static void common_util_set_dir(const char *dir)

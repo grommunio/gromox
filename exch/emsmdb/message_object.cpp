@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 #include <libHX/string.h>
+#include <gromox/algorithm.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
@@ -329,7 +330,7 @@ static ec_error_t message_object_save2(message_object *pmessage, bool b_fai,
 	return ecSuccess;
 }
 
-ec_error_t message_object::save()
+ec_error_t message_object::save() try
 {
 	auto pmessage = this;
 	uint32_t result;
@@ -465,32 +466,28 @@ ec_error_t message_object::save()
 	if (!exmdb_client->mark_modified(dir,
 	    pmessage->message_id))
 		return ecRpcFailed;
-	std::unique_ptr<INDEX_ARRAY, pta_delete> pindices(proptag_array_init());
-	if (pindices == nullptr)
-		return ecServerOOM;
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pungroup_proptags(proptag_array_init());
-	if (pungroup_proptags == nullptr)
-		return ecServerOOM;
+	std::vector<uint32_t> groups;
+	std::vector<proptag_t> ugrp_tags;
 	/* always mark PR_MESSAGE_FLAGS as changed */
 	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_FLAGS))
 		return ecRpcFailed;
 	for (const auto tag : *pmessage->pchanged_proptags) {
-		if (!pgpinfo->get_partial_index(tag, &tmp_index)) {
-			if (!proptag_array_append(pungroup_proptags.get(), tag))
-				return ecRpcFailed;
+		if (pgpinfo->get_partial_index(tag, &tmp_index)) {
+			if (!contains(groups, tmp_index))
+				groups.emplace_back(tmp_index);
 		} else {
-			if (!proptag_array_append(pindices.get(), tmp_index))
-				return ecRpcFailed;
+			if (!contains(ugrp_tags, tag))
+				ugrp_tags.emplace_back(tag);
 		}
 	}
 	for (const auto tag : *pmessage->premoved_proptags) {
 		if (!pgpinfo->get_partial_index(tag, &tmp_index))
 			goto SAVE_FULL_CHANGE;
-		else if (!proptag_array_append(pindices.get(), tmp_index))
-			return ecRpcFailed;
+		if (!contains(groups, tmp_index))
+			groups.emplace_back(tmp_index);
 	}
-	if (!exmdb_client->save_change_indices(dir,
-	    pmessage->message_id, pmessage->change_num, pindices.get(), pungroup_proptags.get()))
+	if (!exmdb_client->save_change_indices(dir, pmessage->message_id,
+	    pmessage->change_num, groups, ugrp_tags))
 		return ecRpcFailed;
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
@@ -500,10 +497,8 @@ ec_error_t message_object::save()
  SAVE_FULL_CHANGE:
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
-	INDEX_ARRAY tmp_indices{};
 	if (!exmdb_client->save_change_indices(dir,
-	    pmessage->message_id, pmessage->change_num, &tmp_indices,
-	    static_cast<PROPTAG_ARRAY *>(&tmp_indices)))
+	    pmessage->message_id, pmessage->change_num, {}, {}))
 		return ecRpcFailed;
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
@@ -513,6 +508,9 @@ ec_error_t message_object::save()
 			pmessage->cpid, pmessage->folder_id,
 			pmessage->message_id);
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2906: ENOMEM");
+	return ecServerOOM;
 }
 
 BOOL message_object::reload()

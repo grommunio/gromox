@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
@@ -691,8 +692,8 @@ struct exreq_set_pgm_id final : public exreq {
 struct exreq_save_change_indices final : public exreq {
 	uint64_t message_id;
 	uint64_t cn;
-	INDEX_ARRAY *pindices;
-	PROPTAG_ARRAY *pungroup_proptags;
+	std::vector<uint32_t> groups;
+	std::vector<gromox::proptag_t> ugrp_tags;
 };
 
 struct exreq_get_change_indices final : public exreq {
@@ -1249,8 +1250,8 @@ struct exresp_get_pgm_id final : public exresp {
 };
 
 struct exresp_get_change_indices final : public exresp {
-	INDEX_ARRAY indices;
-	PROPTAG_ARRAY ungroup_proptags;
+	std::vector<uint32_t> groups;
+	std::vector<gromox::proptag_t> ugrp_tags;
 };
 
 struct exresp_try_mark_submit final : public exresp {

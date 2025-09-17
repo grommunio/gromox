@@ -1143,21 +1143,21 @@ BOOL exmdb_server::set_pgm_id(const char *dir, uint64_t message_id, uint32_t map
 
 /* if count of indices and ungroup_proptags are both 0 means full change */
 BOOL exmdb_server::save_change_indices(const char *dir, uint64_t message_id,
-    uint64_t cn, const INDEX_ARRAY *pindices,
-    const PROPTAG_ARRAY *pungroup_proptags) try
+    uint64_t cn, const std::vector<uint32_t> &groups,
+    const std::vector<proptag_t> &ugrp_tags) try
 {
 	EXT_PUSH ext_push;
 	char sql_string[128];
 	static constexpr size_t idbuff_size = 0x8000;
-	auto indices_buff = std::make_unique<uint8_t[]>(idbuff_size);
-	auto proptags_buff = std::make_unique<uint8_t[]>(idbuff_size);
+	auto grp_buf  = std::make_unique<uint8_t[]>(idbuff_size);
+	auto utag_buf = std::make_unique<uint8_t[]>(idbuff_size);
 	
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
 	/* Only one SQL operation, no transaction needed. */
 	auto mid_val = rop_util_get_gc_value(message_id);
-	if (0 == pindices->count && 0 == pungroup_proptags->count) {
+	if (groups.empty() && ugrp_tags.empty()) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET "
 		          "group_id=? WHERE message_id=%llu", LLU{mid_val});
 		auto pstmt = pdb->prep(sql_string);
@@ -1172,12 +1172,12 @@ BOOL exmdb_server::save_change_indices(const char *dir, uint64_t message_id,
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, mid_val);
 	sqlite3_bind_int64(pstmt, 2, rop_util_get_gc_value(cn));
-	if (!ext_push.init(indices_buff.get(), idbuff_size, 0) ||
-	    ext_push.p_proptag_a(*pindices) != pack_result::ok)
+	if (!ext_push.init(grp_buf.get(), idbuff_size, 0) ||
+	    ext_push.p_proptag_a(groups) != pack_result::ok)
 		return false;
 	sqlite3_bind_blob(pstmt, 3, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
-	if (!ext_push.init(proptags_buff.get(), idbuff_size, 0) ||
-	    ext_push.p_proptag_a(*pungroup_proptags) != pack_result::ok)
+	if (!ext_push.init(utag_buf.get(), idbuff_size, 0) ||
+	    ext_push.p_proptag_a(ugrp_tags) != pack_result::ok)
 		return false;
 	sqlite3_bind_blob(pstmt, 4, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 	return pstmt.step() == SQLITE_DONE ? TRUE : false;
@@ -1187,13 +1187,11 @@ BOOL exmdb_server::save_change_indices(const char *dir, uint64_t message_id,
 }
 
 /* if count of indices and ungroup_proptags are both 0 means full change */
-BOOL exmdb_server::get_change_indices(const char *dir,
-	uint64_t message_id, uint64_t cn, INDEX_ARRAY *pindices,
-	PROPTAG_ARRAY *pungroup_proptags)
+BOOL exmdb_server::get_change_indices(const char *dir, uint64_t message_id,
+    uint64_t cn, std::vector<uint32_t> *groups,
+    std::vector<gromox::proptag_t> *ugrp_tags)
 {
 	EXT_PULL ext_pull;
-	INDEX_ARRAY tmp_indices;
-	PROPTAG_ARRAY tmp_proptags;
 	
 	auto cn_val = rop_util_get_gc_value(cn);
 	auto pdb = db_engine_get_db(dir);
@@ -1201,12 +1199,6 @@ BOOL exmdb_server::get_change_indices(const char *dir,
 		return FALSE;
 	/* Only one SQL operation, no transaction needed. */
 	auto mid_val = rop_util_get_gc_value(message_id);
-	std::unique_ptr<INDEX_ARRAY, pta_delete> ptmp_indices(proptag_array_init());
-	if (ptmp_indices == nullptr)
-		return FALSE;
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> ptmp_proptags(proptag_array_init());
-	if (ptmp_proptags == nullptr)
-		return FALSE;
 	char sql_string[128];
 	snprintf(sql_string, std::size(sql_string), "SELECT change_number,"
 				" indices, proptags FROM message_changes"
@@ -1214,6 +1206,10 @@ BOOL exmdb_server::get_change_indices(const char *dir,
 	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
+	groups->clear();
+	ugrp_tags->clear();
+
+	std::vector<proptag_t> dl_tags;
 	while (pstmt.step() == SQLITE_ROW) {
 		if (gx_sql_col_uint64(pstmt, 0) <= cn_val)
 			continue;
@@ -1221,47 +1217,25 @@ BOOL exmdb_server::get_change_indices(const char *dir,
 			ext_pull.init(sqlite3_column_blob(pstmt, 1),
 				sqlite3_column_bytes(pstmt, 1),
 				common_util_alloc, 0);
-			if (ext_pull.g_proptag_a(&tmp_indices) != pack_result::ok)
+			if (ext_pull.g_proptag_a(&dl_tags) != pack_result::ok)
 				return FALSE;
-			for (unsigned int i = 0; i < tmp_indices.count; ++i)
-				if (!proptag_array_append(ptmp_indices.get(),
-				    tmp_indices.pproptag[i]))
-					return FALSE;
+			groups->insert(groups->end(), std::make_move_iterator(dl_tags.begin()),
+				std::make_move_iterator(dl_tags.end()));
 		}
 		if (sqlite3_column_bytes(pstmt, 2) > 0) {
 			ext_pull.init(sqlite3_column_blob(pstmt, 2),
 				sqlite3_column_bytes(pstmt, 2),
 				common_util_alloc, 0);
-			if (ext_pull.g_proptag_a(&tmp_proptags) != pack_result::ok)
+			if (ext_pull.g_proptag_a(&dl_tags) != pack_result::ok)
 				return FALSE;
-			for (unsigned int i = 0; i < tmp_proptags.count; ++i)
-				if (!proptag_array_append(ptmp_proptags.get(),
-				    tmp_proptags.pproptag[i]))
-					return FALSE;
+			ugrp_tags->insert(ugrp_tags->end(), std::make_move_iterator(dl_tags.begin()),
+				std::make_move_iterator(dl_tags.end()));
 		}
 	}
-	pstmt.finalize();
-	pdb.reset();
-	pindices->count = ptmp_indices->count;
-	if (ptmp_indices->count > 0) {
-		pindices->pproptag = cu_alloc<uint32_t>(ptmp_indices->count);
-		if (pindices->pproptag == nullptr)
-			return FALSE;
-		memcpy(pindices->pproptag, ptmp_indices->pproptag,
-			sizeof(uint32_t)*ptmp_indices->count);
-	}
-	ptmp_indices.reset();
-	if (ptmp_proptags->count == 0) {
-		pungroup_proptags->count = 0;
-		pungroup_proptags->pproptag = NULL;
-		return TRUE;
-	}
-	pungroup_proptags->count = ptmp_proptags->count;
-	pungroup_proptags->pproptag = cu_alloc<uint32_t>(ptmp_proptags->count);
-	if (pungroup_proptags->pproptag == nullptr)
-		return FALSE;
-	memcpy(pungroup_proptags->pproptag, ptmp_proptags->pproptag,
-	       sizeof(uint32_t)*ptmp_proptags->count);
+	std::sort(groups->begin(), groups->end());
+	std::sort(ugrp_tags->begin(), ugrp_tags->end());
+	groups->erase(std::unique(groups->begin(), groups->end()), groups->end());
+	ugrp_tags->erase(std::unique(ugrp_tags->begin(), ugrp_tags->end()), ugrp_tags->end());
 	return TRUE;
 }
 

@@ -1596,22 +1596,16 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_save_change_indices &d)
 {
 	TRY(x.g_uint64(&d.message_id));
 	TRY(x.g_uint64(&d.cn));
-	d.pindices = cu_alloc<INDEX_ARRAY>();
-	if (d.pindices == nullptr)
-		return pack_result::alloc;
-	TRY(x.g_proptag_a(d.pindices));
-	d.pungroup_proptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pungroup_proptags == nullptr)
-		return pack_result::alloc;
-	return x.g_proptag_a(d.pungroup_proptags);
+	TRY(x.g_uint32_a(&d.groups));
+	return x.g_proptag_a(&d.ugrp_tags);
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_save_change_indices &d)
 {
 	TRY(x.p_uint64(d.message_id));
 	TRY(x.p_uint64(d.cn));
-	TRY(x.p_proptag_a(*d.pindices));
-	return x.p_proptag_a(*d.pungroup_proptags);
+	TRY(x.p_uint32_a(d.groups));
+	return x.p_proptag_a(d.ugrp_tags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_get_change_indices &d)
@@ -3448,14 +3442,14 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_pgm_id &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_get_change_indices &d)
 {
-	TRY(x.g_proptag_a(&d.indices));
-	return x.g_proptag_a(&d.ungroup_proptags);
+	TRY(x.g_proptag_a(&d.groups));
+	return x.g_proptag_a(&d.ugrp_tags);
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_change_indices &d)
 {
-	TRY(x.p_proptag_a(d.indices));
-	return x.p_proptag_a(d.ungroup_proptags);
+	TRY(x.p_proptag_a(d.groups));
+	return x.p_proptag_a(d.ugrp_tags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_try_mark_submit &d)

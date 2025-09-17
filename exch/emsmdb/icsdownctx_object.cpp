@@ -613,8 +613,8 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 static const property_groupinfo fake_gpinfo = {UINT32_MAX};
 
 static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
-    MESSAGE_CONTENT *pmsgctnt, uint32_t map_id, const INDEX_ARRAY *pindices,
-	const PROPTAG_ARRAY *pproptags, MSGCHG_PARTIAL *pmsg)
+    MESSAGE_CONTENT *pmsgctnt, uint32_t map_id, const std::vector<uint32_t> &group_list,
+    const std::vector<proptag_t> &ugrp_tags, MSGCHG_PARTIAL *pmsg)
 {
 	uint32_t index;
 	PROPTAG_ARRAY *pchangetags;
@@ -637,8 +637,8 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 			return false;
 		}
 	}
-	pmsg->count = pindices->count;
-	if (pproptags->count != 0)
+	pmsg->count = group_list.size();
+	if (ugrp_tags.size() != 0)
 		++pmsg->count;
 	pmsg->pchanges = cu_alloc<CHANGE_PART>(pmsg->count);
 	if (NULL == pmsg->pchanges) {
@@ -647,8 +647,8 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 	}
 
 	unsigned int i;
-	for (i = 0; i < pindices->count; ++i) {
-		index = pindices->pproptag[i];
+	for (i = 0; i < group_list.size(); ++i) {
+		index = group_list[i];
 		pmsg->pchanges[i].index = index;
 		pchangetags = pgpinfo->pgroups + index;
 		auto &pl = pmsg->pchanges[i].proplist;
@@ -679,13 +679,13 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 		}
 		pl.count = count;
 	}
-	if (pproptags->count == 0)
+	if (ugrp_tags.empty())
 		return TRUE;
 	auto &pl = pmsg->pchanges[i].proplist;
 	pmsg->pchanges[i].index = UINT32_MAX;
-	pl.ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	pl.ppropval = cu_alloc<TAGGED_PROPVAL>(ugrp_tags.size());
 	unsigned int count = 0;
-	for (const auto proptag : *pproptags) {
+	for (const auto proptag : ugrp_tags) {
 		switch (proptag) {
 		case PR_MESSAGE_RECIPIENTS:
 			pl.ppropval[count].proptag = PR_MESSAGE_RECIPIENTS;
@@ -754,8 +754,6 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	BOOL b_full;
 	void *pvalue;
 	uint64_t last_cn;
-	INDEX_ARRAY indices;
-	PROPTAG_ARRAY proptags;
 	PROGRESS_MESSAGE progmsg;
 	TPROPVAL_ARRAY chgheader;
 	MESSAGE_CONTENT *pmsgctnt;
@@ -899,6 +897,9 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	if (!(pctx->sync_flags & SYNC_IGNORE_SPECIFIED_ON_ASSOCIATED) ||
 	    cond1 || !progmsg.b_fai)
 		icsdownctx_object_adjust_msgctnt(pmsgctnt, pctx->pproptags, cond1);
+
+	std::vector<uint32_t> groups;
+	std::vector<proptag_t> ugrp_tags;
 	if (!b_downloaded || progmsg.b_fai) {
 		b_full = TRUE;
 	} else {
@@ -913,9 +914,9 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			if (!pctx->pstate->pseen->get_repl_first_max(1, &last_cn))
 				return false;
 			if (!exmdb_client->get_change_indices(dir,
-			    message_id, last_cn, &indices, &proptags))
+			    message_id, last_cn, &groups, &ugrp_tags))
 				return FALSE;	
-			if (0 == indices.count && 0 == proptags.count) {
+			if (groups.empty() && ugrp_tags.empty()) {
 				b_full = TRUE;
 			} else {
 				b_full = FALSE;
@@ -923,7 +924,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			}
 		}
 		if (!b_full && !icsdownctx_object_get_changepartial(pctx,
-		    pmsgctnt, map_id, &indices, &proptags, &msg_partial))
+		    pmsgctnt, map_id, groups, ugrp_tags, &msg_partial))
 			return FALSE;
 	}
 	if (pctx->sync_flags & SYNC_PROGRESS_MODE &&
