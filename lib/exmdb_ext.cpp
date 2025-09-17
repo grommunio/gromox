@@ -1570,26 +1570,26 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_allocate_message_id &d)
 	return x.p_uint64(d.folder_id);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_get_message_group_id &d)
+static pack_result exmdb_pull(EXT_PULL &x, exreq_get_pgm_id &d)
 {
 	return x.g_uint64(&d.message_id);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_message_group_id &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_pgm_id &d)
 {
 	return x.p_uint64(d.message_id);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_set_message_group_id &d)
+static pack_result exmdb_pull(EXT_PULL &x, exreq_set_pgm_id &d)
 {
 	TRY(x.g_uint64(&d.message_id));
-	return x.g_uint32(&d.group_id);
+	return x.g_uint32(&d.map_id);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_message_group_id &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_pgm_id &d)
 {
 	TRY(x.p_uint64(d.message_id));
-	return x.p_uint32(d.group_id);
+	return x.p_uint32(d.map_id);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_save_change_indices &d)
@@ -2382,8 +2382,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_maintenance &d)
 	E(set_message_read_state) \
 	E(remove_message_properties) \
 	E(allocate_message_id) \
-	E(get_message_group_id) \
-	E(set_message_group_id) \
+	E(get_pgm_id) \
+	E(set_pgm_id) \
 	E(save_change_indices) \
 	E(get_change_indices) \
 	E(mark_modified) \
@@ -3436,27 +3436,14 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_allocate_cn &d)
 	return x.p_uint64(d.cn);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_get_message_group_id &d)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_get_pgm_id &d)
 {
-	uint8_t tmp_byte;
-	
-	TRY(x.g_uint8(&tmp_byte));
-	if (0 == tmp_byte) {
-		d.pgroup_id = nullptr;
-		return pack_result::ok;
-	}
-	d.pgroup_id = cu_alloc<uint32_t>();
-	if (d.pgroup_id == nullptr)
-		return pack_result::alloc;
-	return x.g_uint32(d.pgroup_id);
+	return x.g_uint32(&d.map_id);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_message_group_id &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_pgm_id &d)
 {
-	if (d.pgroup_id == nullptr)
-		return x.p_uint8(0);
-	TRY(x.p_uint8(1));
-	return x.p_uint32(*d.pgroup_id);
+	return x.p_uint32(d.map_id);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_get_change_indices &d)
@@ -3752,7 +3739,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_purge_softdelete &d)
 	E(empty_message_instance_attachments) \
 	E(set_message_instance_conflict) \
 	E(remove_message_properties) \
-	E(set_message_group_id) \
+	E(set_pgm_id) \
 	E(save_change_indices) \
 	E(mark_modified) \
 	E(clear_submit) \
@@ -3856,7 +3843,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_purge_softdelete &d)
 	E(set_message_read_state) \
 	E(allocate_message_id) \
 	E(allocate_cn) \
-	E(get_message_group_id) \
+	E(get_pgm_id) \
 	E(get_change_indices) \
 	E(try_mark_submit) \
 	E(link_message) \

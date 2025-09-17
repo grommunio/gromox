@@ -119,8 +119,8 @@ enum class exmdb_callid : uint8_t {
 	allocate_message_id = 0x5b,
 	allocate_cn = 0x5c,
 	mark_modified = 0x5d,
-	get_message_group_id = 0x5e,
-	set_message_group_id = 0x5f,
+	get_pgm_id = 0x5e,
+	set_pgm_id = 0x5f,
 	save_change_indices = 0x60,
 	get_change_indices = 0x61,
 	try_mark_submit = 0x62,
@@ -679,13 +679,13 @@ struct exreq_allocate_message_id final : public exreq {
 	uint64_t folder_id;
 };
 
-struct exreq_get_message_group_id final : public exreq {
+struct exreq_get_pgm_id final : public exreq {
 	uint64_t message_id;
 };
 
-struct exreq_set_message_group_id final : public exreq {
+struct exreq_set_pgm_id final : public exreq {
 	uint64_t message_id;
-	uint32_t group_id;
+	uint32_t map_id = 0;
 };
 
 struct exreq_save_change_indices final : public exreq {
@@ -1244,8 +1244,8 @@ struct exresp_allocate_cn final : public exresp {
 	uint64_t cn;
 };
 
-struct exresp_get_message_group_id final : public exresp {
-	uint32_t *pgroup_id;
+struct exresp_get_pgm_id final : public exresp {
+	uint32_t map_id = 0;
 };
 
 struct exresp_get_change_indices final : public exresp {
@@ -1369,7 +1369,7 @@ using exresp_update_message_instance_rcpts = exresp;
 using exresp_empty_message_instance_attachments = exresp;
 using exresp_set_message_instance_conflict = exresp;
 using exresp_remove_message_properties = exresp;
-using exresp_set_message_group_id = exresp;
+using exresp_set_pgm_id = exresp;
 using exresp_save_change_indices = exresp;
 using exresp_remove_store_properties = exresp;
 using exresp_mark_modified = exresp;

@@ -335,7 +335,6 @@ ec_error_t message_object::save()
 	uint32_t result;
 	BINARY *pbin_pcl = nullptr;
 	uint32_t tmp_index;
-	uint32_t *pgroup_id;
 	
 	if (!pmessage->b_new && !pmessage->b_touched)
 		return ecSuccess;
@@ -446,18 +445,19 @@ ec_error_t message_object::save()
 	const property_groupinfo *pgpinfo = nullptr;
 	if (is_new || pmessage->pstate != nullptr)
 		goto SAVE_FULL_CHANGE;
-	if (!exmdb_client->get_message_group_id(dir,
-	    pmessage->message_id, &pgroup_id))
+
+	{
+	uint32_t map_id = 0;
+	if (!exmdb_client->get_pgm_id(dir, pmessage->message_id, &map_id))
 		return ecRpcFailed;
-	if (NULL == pgroup_id) {
+	if (map_id == 0) {
 		pgpinfo = pmessage->plogon->get_last_property_groupinfo();
 		if (pgpinfo == nullptr)
 			return ecRpcFailed;
-		if (!exmdb_client->set_message_group_id(dir,
-		    pmessage->message_id, pgpinfo->group_id))
+		if (!exmdb_client->set_pgm_id(dir, pmessage->message_id, pgpinfo->group_id))
 			return ecRpcFailed;
 	}  else {
-		pgpinfo = pmessage->plogon->get_property_groupinfo(*pgroup_id);
+		pgpinfo = pmessage->plogon->get_property_groupinfo(map_id);
 		if (pgpinfo == nullptr)
 			return ecRpcFailed;
 	}
@@ -465,8 +465,6 @@ ec_error_t message_object::save()
 	if (!exmdb_client->mark_modified(dir,
 	    pmessage->message_id))
 		return ecRpcFailed;
-	
-	{
 	std::unique_ptr<INDEX_ARRAY, pta_delete> pindices(proptag_array_init());
 	if (pindices == nullptr)
 		return ecServerOOM;

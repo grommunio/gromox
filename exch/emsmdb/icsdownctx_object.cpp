@@ -755,7 +755,6 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	void *pvalue;
 	uint64_t last_cn;
 	INDEX_ARRAY indices;
-	uint32_t *pgroup_id;
 	PROPTAG_ARRAY proptags;
 	PROGRESS_MESSAGE progmsg;
 	TPROPVAL_ARRAY chgheader;
@@ -904,12 +903,11 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		b_full = TRUE;
 	} else {
 		/* Downloaded && Normal message */
-		if (!exmdb_client->get_message_group_id(dir,
-		    message_id, &pgroup_id))
+		uint32_t map_id = 0;
+		if (!exmdb_client->get_pgm_id(dir, message_id, &map_id))
 			return FALSE;
 		if (!(pctx->send_options & SEND_OPTIONS_PARTIAL) ||
-		    pgroup_id == nullptr ||
-		    *ppartial_count > MAX_PARTIAL_ON_ROP) {
+		    map_id == 0 || *ppartial_count > MAX_PARTIAL_ON_ROP) {
 			b_full = TRUE;
 		} else {
 			if (!pctx->pstate->pseen->get_repl_first_max(1, &last_cn))
@@ -925,7 +923,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			}
 		}
 		if (!b_full && !icsdownctx_object_get_changepartial(pctx,
-		    pmsgctnt, *pgroup_id, &indices, &proptags, &msg_partial))
+		    pmsgctnt, map_id, &indices, &proptags, &msg_partial))
 			return FALSE;
 	}
 	if (pctx->sync_flags & SYNC_PROGRESS_MODE &&

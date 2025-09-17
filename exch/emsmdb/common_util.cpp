@@ -1430,7 +1430,6 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	uint64_t message_id, PROPTAG_ARRAY *pchanged_proptags)
 {
 	uint32_t tmp_index;
-	uint32_t *pgroup_id;
 	uint64_t change_num;
 	PROBLEM_ARRAY tmp_problems;
 	auto dir = plogon->get_dir();
@@ -1447,18 +1446,18 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	if (!exmdb_client->set_message_properties(dir, nullptr, CP_ACP,
 	    message_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
-	if (!exmdb_client->get_message_group_id(dir, message_id, &pgroup_id))
+	uint32_t map_id = 0;
+	if (!exmdb_client->get_pgm_id(dir, message_id, &map_id))
 		return FALSE;	
 	const property_groupinfo *pgpinfo;
-	if (NULL == pgroup_id) {
+	if (map_id == 0) {
 		pgpinfo = plogon->get_last_property_groupinfo();
 		if (pgpinfo == nullptr)
 			return FALSE;
-		if (!exmdb_client->set_message_group_id(dir,
-		    message_id, pgpinfo->group_id))
+		if (!exmdb_client->set_pgm_id(dir, message_id, pgpinfo->group_id))
 			return FALSE;	
 	}  else {
-		pgpinfo = plogon->get_property_groupinfo(*pgroup_id);
+		pgpinfo = plogon->get_property_groupinfo(map_id);
 		if (pgpinfo == nullptr)
 			return FALSE;
 	}

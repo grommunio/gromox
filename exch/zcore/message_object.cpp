@@ -246,7 +246,6 @@ ec_error_t message_object::save()
 	auto pmessage = this;
 	uint32_t result;
 	BINARY *pbin_pcl;
-	uint32_t *pgroup_id;
 	INDEX_ARRAY tmp_indices;
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -351,26 +350,25 @@ ec_error_t message_object::save()
 	const property_groupinfo *pgpinfo = nullptr;
 	if (is_new)
 		goto SAVE_FULL_CHANGE;
-	if (!exmdb_client->get_message_group_id(dir,
-	    pmessage->message_id, &pgroup_id))
+
+	{
+	uint32_t map_id = 0;
+	if (!exmdb_client->get_pgm_id(dir, pmessage->message_id, &map_id))
 		return ecError;
-	if (NULL == pgroup_id) {
+	if (map_id == 0) {
 		pgpinfo = pmessage->pstore->get_last_property_groupinfo();
 		if (pgpinfo == nullptr)
 			return ecError;
-		if (!exmdb_client->set_message_group_id(dir,
-		    pmessage->message_id, pgpinfo->group_id))
+		if (!exmdb_client->set_pgm_id(dir, pmessage->message_id, pgpinfo->group_id))
 			return ecError;
 	}  else {
-		pgpinfo = pmessage->pstore->get_property_groupinfo(*pgroup_id);
+		pgpinfo = pmessage->pstore->get_property_groupinfo(map_id);
 		if (pgpinfo == nullptr)
 			return ecError;
 	}
 	
 	if (!exmdb_client->mark_modified(dir, pmessage->message_id))
 		return ecError;
-	
-	{
 	std::unique_ptr<INDEX_ARRAY, pta_delete> pindices(proptag_array_init());
 	if (pindices == nullptr)
 		return ecServerOOM;

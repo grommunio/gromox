@@ -1104,8 +1104,7 @@ BOOL exmdb_server::allocate_message_id(const char *dir,
 	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 
-BOOL exmdb_server::get_message_group_id(const char *dir,
-	uint64_t message_id, uint32_t **ppgroup_id)
+BOOL exmdb_server::get_pgm_id(const char *dir, uint64_t message_id, uint32_t *map_id)
 {
 	char sql_string[128];
 	auto pdb = db_engine_get_db(dir);
@@ -1120,18 +1119,14 @@ BOOL exmdb_server::get_message_group_id(const char *dir,
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW ||
 		SQLITE_NULL == sqlite3_column_type(pstmt, 0)) {
-		*ppgroup_id = NULL;
+		*map_id = 0;
 		return TRUE;
 	}
-	*ppgroup_id = cu_alloc<uint32_t>();
-	if (*ppgroup_id == nullptr)
-		return FALSE;
-	**ppgroup_id = sqlite3_column_int64(pstmt, 0);
+	*map_id = pstmt.col_uint64(0);
 	return TRUE;
 }
 
-BOOL exmdb_server::set_message_group_id(const char *dir,
-	uint64_t message_id, uint32_t group_id)
+BOOL exmdb_server::set_pgm_id(const char *dir, uint64_t message_id, uint32_t map_id)
 {
 	char sql_string[128];
 	auto pdb = db_engine_get_db(dir);
@@ -1140,7 +1135,7 @@ BOOL exmdb_server::set_message_group_id(const char *dir,
 	/* Only one SQL operation, no transaction needed. */
 	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
 		" group_id=%u WHERE message_id=%llu",
-		XUI{group_id}, LLU{rop_util_get_gc_value(message_id)});
+		XUI{map_id}, LLU{rop_util_get_gc_value(message_id)});
 	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	return TRUE;
