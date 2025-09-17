@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
@@ -83,7 +83,7 @@ class OxdiscoPlugin {
 	http_status resp_json(int, const char *) const;
 	static void resp_mh(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool);
 	void resp_rpch(XMLElement *, const char *home, const char *dom, const std::string &ews_url, const std::string &oab_url, const std::string &ecp_url, std::string &&serverdn, std::string &&mdbdn, const std::string &mailboxid, bool is_pvt) const;
-	http_status resp_autocfg(int) const;
+	http_status resp_autocfg(int, const char *) const;
 	http_status resp_dav(int) const;
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
@@ -312,14 +312,20 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 		return http_status::none;
 	auto uri = req->f_request_uri.c_str();
 	if (auto z = umatch(uri, uri_wkmc11_xml); z != SIZE_MAX) {
-		return resp_autocfg(ctx_id);
+		if (uri[z] != '?')
+			return resp_autocfg(ctx_id, auth_info.username);
+		auto username = extract_qparam(&uri[45], "emailaddress");
+		return resp_autocfg(ctx_id, username.c_str());
 	} else if (auto z = umatch(uri, uri_wkcaldav); z != SIZE_MAX && uri[z] != '/') {
 		/* Not using mod_rewrite: Silent rewrite disallowed by RFC */
 		return resp_dav(ctx_id);
 	} else if (auto z = umatch(uri, uri_wkcarddav); z != SIZE_MAX && uri[z] != '/') {
 		return resp_dav(ctx_id);
 	} else if (auto z = umatch(uri, uri_mc11_xml); z != SIZE_MAX) {
-		return resp_autocfg(ctx_id);
+		if (uri[z] != '?')
+			return resp_autocfg(ctx_id, auth_info.username);
+		auto username = extract_qparam(&uri[45], "emailaddress");
+		return resp_autocfg(ctx_id, username.c_str());
 	} else if (umatch(uri, uri_autod_json) != SIZE_MAX) {
 		return resp_json(ctx_id, uri);
 	} else if (umatch(uri, uri_autod_xml) == SIZE_MAX) {
@@ -958,10 +964,10 @@ http_status OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) co
  * https://datatracker.ietf.org/doc/html/draft-ietf-mailmaint-autoconfig-00
  *
  * config-v1.1.xml MUST be available without authorization. This also means we
- * should not output anything that is dependent on the username, as that would
- * allow unauthenticated clients to see the existence of a user account.
+ * should not output anything that is dependent on the username, but there is
+ * only so much that is optional.
  */
-http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
+http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *email) const
 {
 	tinyxml2::XMLDocument respdoc;
 	auto decl = respdoc.NewDeclaration();
@@ -971,14 +977,29 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 	resproot->SetAttribute("version", "1.1");
 	respdoc.InsertEndChild(resproot);
 
-	auto t_host_id = host_id.c_str();
+	auto domain = strchr(email, '@');
+	if (domain == nullptr)
+		return http_status::not_found;
+	++domain;
+	bool is_private = strncasecmp(email, public_folder_email, 19) != 0;
+	std::pair<std::string, std::string> homesrv_buf;
+	if (mysql_adaptor_get_homeserver(is_private ? email : domain,
+	    is_private, homesrv_buf) != 0) {
+		mlog(LV_ERR, "oxdisco: no homeserver for \"%s\", does that user even exist?!",
+			is_private ? email : domain);
+		return http_status::not_found;
+	}
+	const char *t_host_id = homesrv_buf.second.c_str();
+	if (*t_host_id == '\0')
+		t_host_id = host_id.c_str();
+
 	auto resp_prov = add_child(resproot, "emailProvider");
-	resp_prov->SetAttribute("id", t_host_id);
+	resp_prov->SetAttribute("id", domain);
 
 	// TODO get all domains?
-	add_child(resp_prov, "domain", t_host_id);
-	add_child(resp_prov, "displayName", "Gromox Mail");
-	add_child(resp_prov, "displayShortName", "Gromox");
+	add_child(resp_prov, "domain", domain);
+	add_child(resp_prov, "displayName", "Gromox Mail ("s + domain + ")");
+	add_child(resp_prov, "displayShortName", "Gromox/"s + domain);
 
 	/*
 	 * <https://wiki.mozilla.org/Thunderbird:Autoconfiguration:ConfigFileFormat> is not
@@ -1034,9 +1055,9 @@ http_status OxdiscoPlugin::resp_autocfg(int ctx_id) const
 	add_child(srv, "socketType", "SSL");
 	add_child(srv, "authentication", "password-cleartext");
 	add_child(srv, "username", "%EMAILADDRESS%");
-	add_child(srv, "owaURL", "https://"s + host_id + "/web/");
-	add_child(srv, "ewsURL", fmt::format(ews_base_url, host_id, exchange_asmx));
-	add_child(srv, "easURL", fmt::format(msas_base_url, host_id));
+	add_child(srv, "owaURL", "https://"s + t_host_id + "/web/");
+	add_child(srv, "ewsURL", fmt::format(ews_base_url, t_host_id, exchange_asmx));
+	add_child(srv, "easURL", fmt::format(msas_base_url, t_host_id));
 
 	/* Bug in TB: no outgoing server may be something else than SMTP. */
 	srv = add_child(resp_prov, "outgoingServer");
