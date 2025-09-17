@@ -1532,20 +1532,13 @@ ec_error_t znotification_array_to_php(const ZNOTIFICATION_ARRAY &pnotifications,
 		add_assoc_long(&pzvalnotif, "eventtype", nt.event_type);
 		switch (nt.event_type) {
 		case fnevNewMail: {
-			auto pnew_notification = static_cast<const NEWMAIL_ZNOTIFICATION *>(nt.pnotification_data);
-			add_assoc_stringl(&pzvalnotif, "entryid",
-				pnew_notification->entryid.data(),
-				pnew_notification->entryid.size());
-			add_assoc_stringl(&pzvalnotif, "parentid",
-				pnew_notification->parentid.data(),
-				pnew_notification->parentid.size());
-			add_assoc_long(&pzvalnotif, "flags",
-				pnew_notification->flags);
-			add_assoc_stringl(&pzvalnotif, "messageclass",
-				pnew_notification->message_class.data(),
-				pnew_notification->message_class.size());
-			add_assoc_long(&pzvalnotif, "messageflags",
-				pnew_notification->message_flags);
+			if (nt.pentryid.has_value())
+				add_assoc_stringl(&pzvalnotif, "entryid", nt.pentryid->data(), nt.pentryid->size());
+			if (nt.pparentid.has_value())
+				add_assoc_stringl(&pzvalnotif, "parentid", nt.pparentid->data(), nt.pparentid->size());
+			add_assoc_long(&pzvalnotif, "flags", nt.flags);
+			add_assoc_stringl(&pzvalnotif, "messageclass", nt.message_class.data(), nt.message_class.size());
+			add_assoc_long(&pzvalnotif, "messageflags", nt.message_flags);
 			break;
 		}
 		case fnevObjectCreated:
@@ -1554,7 +1547,7 @@ ec_error_t znotification_array_to_php(const ZNOTIFICATION_ARRAY &pnotifications,
 		case fnevObjectMoved:
 		case fnevObjectCopied:
 		case fnevSearchComplete: {
-			auto pobject_notification = static_cast<OBJECT_ZNOTIFICATION *>(nt.pnotification_data);
+			auto pobject_notification = &nt;
 			if (pobject_notification->pentryid.has_value()) {
 				add_assoc_stringl(&pzvalnotif, "entryid",
 					pobject_notification->pentryid->data(),
