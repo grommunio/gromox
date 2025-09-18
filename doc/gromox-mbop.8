@@ -353,7 +353,7 @@ gromox\-mbop \-u abc@example.com purge\-softdelete \-r / \-t 10d
 Recalculates the store size.
 .SH set\-locale
 .SS Synopsis
-\fBset\-locale\fP [\fB\-v\fP] \-l\fP \fIid\fP
+\fBset\-locale\fP [\fB\-Tv\fP] \-l\fP \fIid\fP
 .SS Description
 First, the set\-locale operation changes the "preferred language" setting for
 the user account. This affects the display of user interfaces like
@@ -364,6 +364,10 @@ Second, provided Gromox has default folder name translations for the desired
 locale, set\-locale also resets the display names of the mailbox's built-in
 folders.
 .SS Options
+.TP
+\fB\-T\fP
+Run a trivial performance test against exmdb by repeatedly setting the folder
+names.
 .TP
 \fB\-l\fP \fId\fP
 A locale identifier in the form of \fIlanguage\fP\fB_\fP[\fIterritory\fP],
