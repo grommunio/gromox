@@ -694,7 +694,7 @@ BINARY *cu_fid_to_entryid(const store_object &store, uint64_t folder_id)
  */
 std::string cu_fid_to_entryid_s(const store_object &store, uint64_t folder_id) try
 {
-	FOLDER_ENTRYID eid;
+	FOLDER_ENTRYID eid{};
 	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
 	    eid.database_guid) != ecSuccess)
 		return {};
