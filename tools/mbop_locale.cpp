@@ -22,6 +22,8 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
+static int set_names(const char *lang);
+
 int main(int argc, char **argv)
 {
 	const char *g_language = nullptr;
@@ -47,6 +49,11 @@ int main(int argc, char **argv)
 		fprintf(stderr, "No folder name translations for locale \"%s\" available.\n", g_language);
 		return EXIT_SUCCESS;
 	}
+	return set_names(lang) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
+static int set_names(const char *lang)
+{
 	unsigned int start_gcv = 1;
 	unsigned int end_gcv   = g_public_folder ? PUBLIC_FID_UNASSIGNED_START : PRIVATE_FID_UNASSIGNED_START;
 	for (unsigned int gcv = start_gcv; gcv < end_gcv; ++gcv) {
