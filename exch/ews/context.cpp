@@ -3,16 +3,17 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
-#include <fmt/core.h>
+#include <cstring>
 #include <sstream>
+#include <fmt/core.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
-#include <gromox/rop_util.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
+#include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "exceptions.hpp"
@@ -36,9 +37,9 @@ namespace {
  *
  * @return     Reference to the string
  */
-inline std::string &tolower(std::string &str)
+inline std::string &tolower_inplace(std::string &str)
 {
-	std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+	std::transform(str.begin(), str.end(), str.begin(), HX_tolower);
 	return str;
 }
 
@@ -136,7 +137,7 @@ void daysofweek_to_pts(const std::string& daysOfWeek, uint32_t& weekrecur)
 	std::string dayOfWeek;
 
 	while (strstream >> dayOfWeek) {
-		tolower(dayOfWeek);
+		tolower_inplace(dayOfWeek);
 		if (dayOfWeek == "day") {
 			weekrecur = 0x7F;
 			break;
@@ -707,7 +708,8 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 {
 	std::string RoutingType = Mailbox.RoutingType.value_or("smtp");
 	std::string Address = Mailbox.Address;
-	if (tolower(RoutingType) == "ex") {
+	tolower_inplace(RoutingType);
+	if (RoutingType == "ex") {
 		Address = essdn_to_username(Address);
 		RoutingType = "smtp";
 	}
@@ -1427,7 +1429,8 @@ void EWSContext::normalize(tEmailAddressType& Mailbox) const
 		return;
 	if (!Mailbox.RoutingType)
 		Mailbox.RoutingType = "smtp";
-	if (tolower(*Mailbox.RoutingType) == "smtp")
+	tolower_inplace(*Mailbox.RoutingType);
+	if (Mailbox.RoutingType == "smtp")
 		return;
 	if (Mailbox.RoutingType != "ex")
 		throw  EWSError::InvalidRoutingType(E3114(*Mailbox.RoutingType));
@@ -1449,7 +1452,8 @@ void EWSContext::normalize(tMailbox& Mailbox) const
 {
 	if (!Mailbox.RoutingType)
 		Mailbox.RoutingType = "smtp";
-	if (tolower(*Mailbox.RoutingType) == "smtp")
+	tolower_inplace(*Mailbox.RoutingType);
+	if (Mailbox.RoutingType == "smtp")
 		return;
 	if (Mailbox.RoutingType != "ex")
 		throw  EWSError::InvalidRoutingType(E3010(*Mailbox.RoutingType));
@@ -2200,6 +2204,7 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 			                                       {reinterpret_cast<uint8_t*>(body)}});
 			shape.write(TAGGED_PROPVAL{PR_HTML, html});
 		}
+		shape.write(TAGGED_PROPVAL{PR_INTERNET_CPID, construct<uint32_t>(CP_UTF8)});
 	}
 	if (item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst(item.ItemClass->c_str())});
@@ -2250,19 +2255,33 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 	size_t recipients = (item.ToRecipients ? item.ToRecipients->size() : 0) +
 	                    (item.CcRecipients ? item.CcRecipients->size() : 0) +
 	                    (item.BccRecipients ? item.BccRecipients->size() : 0);
-	if (recipients) {
-		if (!content->children.prcpts && !(content->children.prcpts = tarray_set_init()))
+	auto rcpts = content->children.prcpts;
+	if (recipients > 0 && rcpts == nullptr) {
+		rcpts = content->children.prcpts = tarray_set_init();
+		if (rcpts == nullptr)
 			throw EWSError::NotEnoughMemory(E3288);
-		TARRAY_SET* rcpts = content->children.prcpts;
+	}
+	if (rcpts != nullptr) {
+		auto add_unique = [rcpts](const tEmailAddressType &rcpt, uint32_t type) {
+			if (rcpt.EmailAddress)
+				for (const auto &row : *rcpts) {
+					auto addr  = row.get<const char>(PR_EMAIL_ADDRESS);
+					auto rtype = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
+					if (addr != nullptr && rtype != nullptr && *rtype == type &&
+					    strcasecmp(addr, rcpt.EmailAddress->c_str()) == 0)
+						return;
+				}
+			rcpt.mkRecipient(rcpts->emplace(), type);
+		};
 		if (item.ToRecipients)
 			for (const auto &rcpt : *item.ToRecipients)
-				rcpt.mkRecipient(rcpts->emplace(), MAPI_TO);
+				add_unique(rcpt, MAPI_TO);
 		if (item.CcRecipients)
 			for (const auto &rcpt : *item.CcRecipients)
-				rcpt.mkRecipient(rcpts->emplace(), MAPI_CC);
+				add_unique(rcpt, MAPI_CC);
 		if (item.BccRecipients)
 			for (const auto &rcpt : *item.BccRecipients)
-				rcpt.mkRecipient(rcpts->emplace(), MAPI_BCC);
+				add_unique(rcpt, MAPI_BCC);
 	}
 	if (item.From) {
 		if (item.From->Mailbox.RoutingType)
@@ -2385,13 +2404,29 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
  *
  * @return     Subscription ID
  */
-tSubscriptionId EWSContext::subscribe(const tPullSubscriptionRequest& req) const
+tSubscriptionId EWSContext::subscribe(const tPullSubscriptionRequest &req) const
 {
 	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
 	if (all && req.FolderIds)
 		throw EWSError::InvalidSubscriptionRequest(E3198);
 	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
 	       req.eventMask(), all, req.Timeout);
+}
+
+/**
+ * @brief      Create new push subscription
+ *
+ * @param      req    Push subscription request
+ *
+ * @return     Subscription ID
+ */
+tSubscriptionId EWSContext::subscribe(const tPushSubscriptionRequest& req) const
+{
+	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
+	if (all && req.FolderIds)
+		throw EWSError::InvalidSubscriptionRequest(E3198);
+	return subscribe(req.FolderIds ? *req.FolderIds : std::vector<sFolderId>(),
+	       req.eventMask(), all, req.StatusFrequency);
 }
 
 /**

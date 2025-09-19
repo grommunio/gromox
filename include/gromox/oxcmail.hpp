@@ -28,7 +28,7 @@ struct GX_EXPORT addr_tags {
 	uint32_t pr_name, pr_addrtype, pr_emaddr, pr_smtpaddr, pr_entryid;
 };
 
-extern GX_EXPORT bool g_oxcical_allday_ymd, oxcical_exchsched_compat;
+extern GX_EXPORT bool g_oxcical_allday_ymd;
 extern GX_EXPORT unsigned int g_oxvcard_pedantic;
 
 }

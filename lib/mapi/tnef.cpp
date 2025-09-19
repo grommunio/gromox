@@ -760,7 +760,7 @@ pack_result tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 		tmp_tm.tm_year = tmp_dtr.year - 1900;
 		tmp_tm.tm_wday = -1;
 		tmp_tm.tm_yday = 0;
-		tmp_tm.tm_isdst = 0;
+		tmp_tm.tm_isdst = -1;
 		auto newtime = mktime(&tmp_tm);
 		*static_cast<uint64_t *>(r->pvalue) = newtime != -1 || tmp_tm.tm_wday != -1 ?
 		                                      rop_util_unix_to_nttime(newtime) : 0;

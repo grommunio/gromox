@@ -100,7 +100,7 @@ static zend_bool zclient_write_socket(int sockd, const BINARY &pbin)
 	}
 }
 
-zend_bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
+bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 {
 	BINARY tmp_bin;
 	

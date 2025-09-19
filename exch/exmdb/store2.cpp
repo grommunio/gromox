@@ -303,7 +303,9 @@ static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
  * @age:	soft-deleted items older than this age
  */
 BOOL exmdb_server::purge_softdelete(const char *dir, const char *username,
-    uint64_t folder_id, uint32_t del_flags, mapitime_t cutoff)
+    uint64_t folder_id, uint32_t del_flags, mapitime_t cutoff,
+    uint32_t *cnt_folders, uint32_t *cnt_messages,
+    uint64_t *sz_normal, uint64_t *sz_fai)
 {
 	del_flags &= DEL_FOLDERS;
 
@@ -359,6 +361,15 @@ BOOL exmdb_server::purge_softdelete(const char *dir, const char *username,
 	}
 	if (!cu_adjust_store_size(db->psqlite, ADJ_DECREASE, normal_size, fai_size))
 		return false;
+	char nbuf[32], fbuf[32];
+	HX_unit_size(nbuf, std::size(nbuf), normal_size + fai_size, 0, 0);
+	HX_unit_size(fbuf, std::size(fbuf), fai_size, 0, 0);
+	*cnt_messages = msg_count;
+	*cnt_folders  = fld_count;
+	*sz_normal    = normal_size;
+	*sz_fai       = fai_size;
+	mlog(LV_NOTICE, "I-2401: purge_softdelete %s: deleted %u messages, %u folders, reclaimed %sB (and %sB FAI)",
+		dir, msg_count, fld_count, nbuf, fbuf);
 	if (xact.commit() != SQLITE_OK)
 		return false;
 	dg_notify(std::move(notifq));
@@ -722,6 +733,11 @@ static BOOL autoreply_setprop1(const char *dir, const TAGGED_PROPVAL &pv)
 	auto path = autoreply_fspath(dir, pv.proptag);
 
 	/* Ensure file exists for the sake of config_file_init() */
+	auto ret = gx_mkbasedir(path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-1490: mkbasedir for %s: %s", path.c_str(), strerror(-ret));
+		return false;
+	}
 	auto fdtest = open(path.c_str(), O_CREAT | O_WRONLY, FMODE_PUBLIC);
 	if (fdtest < 0)
 		return false;
@@ -781,7 +797,7 @@ static BOOL autoreply_setprop1(const char *dir, const TAGGED_PROPVAL &pv)
 		auto fdw = tf.open_linkable((dir + "/config"s).c_str(), O_WRONLY, FMODE_PUBLIC);
 		if (fdw < 0 || HXio_fullwrite(fdw, buf, buff_len) != buff_len)
 			return false;
-		return tf.link_to(path.c_str()) == 0;
+		return tf.link_to_overwrite(path.c_str()) == 0;
 	}
 	case PR_EC_OUTOFOFFICE_SUBJECT:
 	case PR_EC_EXTERNAL_SUBJECT: {
@@ -822,7 +838,7 @@ static BOOL autoreply_setprop1(const char *dir, const TAGGED_PROPVAL &pv)
 		auto fdw = tf.open_linkable((dir + "/config"s).c_str(), O_WRONLY, FMODE_PUBLIC);
 		if (fdw < 0 || HXio_fullwrite(fdw, buf, buff_len) != buff_len)
 			return false;
-		return tf.link_to(path.c_str()) == 0;
+		return tf.link_to_overwrite(path.c_str()) == 0;
 	}
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
@@ -935,15 +951,14 @@ BOOL exmdb_server::imapfile_write(const char *dir, const std::string &type,
 		return false;
 
 	auto tgt = fmt::format("{}/{}/{}", dir, type, mid);
-	auto ret = gx_mkbasedir(mid.c_str(), FMODE_PRIVATE);
+	auto ret = gx_mkbasedir(tgt.c_str(), FMODE_PRIVATE);
 	if (ret < 0) {
-		mlog(LV_ERR, "E-1941: mkdir %s: %s", mid.c_str(), strerror(-ret));
+		mlog(LV_ERR, "E-1941: mkbasedir for %s: %s", tgt.c_str(), strerror(-ret));
 		return false;
 	}
-
-	auto err = tf.link_to(tgt.c_str());
+	auto err = tf.link_to_overwrite(tgt.c_str());
 	if (err != 0) {
-		mlog(LV_ERR, "E-1752: link_to %s: %s", tgt.c_str(), strerror(errno));
+		mlog(LV_ERR, "E-1752: link_to %s: %s", tgt.c_str(), strerror(err));
 		return false;
 	}
 	return TRUE;

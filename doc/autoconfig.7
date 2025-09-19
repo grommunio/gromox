@@ -1,0 +1,37 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+.TH autoconfig 7 "" "Gromox" "Gromox admin reference"
+.SH Name
+autoconfig \(em Thunderbird AutoConfig protocol
+.SH Description
+.PP
+AutoConfig is a HTTP-based discovery protocol, originally introduced for
+Mozilla Thunderbird 3.0 in 2009. It is quite similar to autodiscover(7). This
+manual page is not normative.
+.PP
+TB tries a bunch of URLs, with HTTP GET:
+.IP \(bu 4
+https://autoconfig.<DOMAINPART>/mail/config-v1.1.xml?emailaddress=<EMAILADDRESS>
+.IP \(bu 4
+http://autoconfig.<DOMAINPART>/mail/config-v1.1.xml?emailaddress=<EMAILADDRESS>
+.IP \(bu 4
+https://<DOMAINPART>/.well-known/autoconfig/mail/config-v1.1.xml?emailaddress=<EMAILADDRESS>
+.IP \(bu 4
+http://<DOMAINPART>/.well-known/autoconfig/mail/config-v1.1.xml?emailaddress=<EMAILADDRESS>
+.IP \(bu 4
+DNS SRV lookups are not performed.
+.PP
+Note that TLS wildcard certificates do not extend to more than one level; for
+example, if the e-mail address is `foo@m1.example.com`, and the m1 host
+presents a server certificates for `CN=example.com, subjAltName=*.example.com`,
+clients that are trying to download
+`autoconfig.m1.example.com/mail/config-v1.1.xml` may fail TLS verification. The
+Thunderbird setup wizard does not show TLS failures, and silently treats it as
+an unavailable resource.
+.PP
+TB \fIalso\fP performs AutoDiscover.
+.SH config-v1.1.xml
+.PP
+incomingServers may be of type "imap", "pop3", "nntp" or "exchange".
+.SH See also
+\fBgromox\fP(7), \fBautodiscover\fP(7)

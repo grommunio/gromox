@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <fcntl.h>
 #include <future>
 #include <list>
 #include <mutex>
@@ -33,6 +34,7 @@
 #include <gromox/dbop.h>
 #include <gromox/double_list.hpp>
 #include <gromox/eid_array.hpp>
+#include <gromox/fileio.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/exmdb_server.hpp>
@@ -45,6 +47,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/sortorder_set.hpp>
 #include <gromox/util.hpp>
+#include <gromox/fileio.h>
 #include "db_engine.hpp"
 #include "notification_agent.hpp"
 #define MAX_DYNAMIC_NODES				100
@@ -110,6 +113,7 @@ unsigned long long g_exmdb_search_pacing_time = 2000000000;
 unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 unsigned int g_exmdb_pvt_folder_softdel, g_exmdb_max_sqlite_spares;
 unsigned long long g_sqlite_busy_timeout_ns;
+std::string exmdb_eph_prefix;
 
 static bool remove_from_hash(const db_base &, time_point);
 static void dbeng_notify_cttbl_modify_row(db_conn *, uint64_t folder_id, uint64_t message_id, db_base &) __attribute__((nonnull(1)));
@@ -566,14 +570,19 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 		return handle;
 	}
 	const auto &path = type == DB_MAIN ? fmt::format("{}/exmdb/exchange.sqlite3", dir) :
-	                   fmt::format("{}/tables.sqlite3", dir);
+			   fmt::format("{}/{}/tables.sqlite3", exmdb_eph_prefix, dir);
 	int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX;
 	flags |= type == DB_MAIN? 0 : SQLITE_OPEN_CREATE;
 	sqlite3 *db = nullptr;
+	int ret = gx_mkbasedir(path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-2710: mkbasedir %s: %s", path.c_str(), strerror(-ret));
+		return nullptr;
+	}
 	if (access(path.c_str(), W_OK) != 0 && errno != ENOENT)
 		mlog(LV_ERR, "E-1734: %s is not writable (%s), there may be more errors later",
 			path.c_str(), strerror(errno));
-	int ret = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
+	ret = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
 	db_handle hdb(db); /* automatically close connection if something goes wrong */
 	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-1350: sqlite_open_v2(%s): %s (%d)",
@@ -618,7 +627,7 @@ void db_base::get_dbs(const char* dir, sqlite3 *&main, sqlite3 *&eph)
 void db_base::ctor2_and_open(const char *dir)
 {
 	auto unlock = HX::make_scope_exit([this] { sqlite_lock.unlock(); --reference; }); /* unlock whenever we're done */
-	auto db_path = fmt::format("{}/tables.sqlite3", dir);
+	auto db_path = fmt::format("{}/{}/tables.sqlite3", exmdb_eph_prefix, dir);
 	auto ret = ::unlink(db_path.c_str());
 	if (ret != 0 && errno != ENOENT)
 		throw std::runtime_error(fmt::format("E-1351: unlink {}: {}", db_path.c_str(), strerror(errno)));
@@ -1679,6 +1688,14 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    pdb->psqlite, PR_ASSOCIATED, &pvalue0))
 		return;	
+	char qstr[256];
+	snprintf(qstr, std::size(qstr), "SELECT is_deleted FROM messages WHERE message_id=%llu", LLU{message_id});
+	auto stm = pdb->prep(qstr);
+	if (stm == nullptr)
+		return;
+	auto b_del = stm.step() != SQLITE_ROW || stm.col_uint64(0) != 0;
+	stm.finalize();
+
 	std::unique_ptr<prepared_statements> optim;
 	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
@@ -1692,6 +1709,8 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 		    folder_id != ptable->folder_id)
 			continue;
 		if (!!(ptable->table_flags & TABLE_FLAG_ASSOCIATED) == !b_fai)
+			continue;
+		if (!!(ptable->table_flags & TABLE_FLAG_SOFTDELETES) == !b_del)
 			continue;
 		if (dbase.tables.b_batch && ptable->b_hint)
 			continue;

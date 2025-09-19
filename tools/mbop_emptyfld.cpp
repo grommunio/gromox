@@ -18,22 +18,16 @@ using namespace gromox;
 namespace emptyfld {
 
 static unsigned int g_del_flags = DEL_MESSAGES | DELETE_HARD_DELETE, g_recurse, g_delempty;
-static char *g_time_str;
 static mapitime_t g_cutoff_time;
 
-static void opt_m(const struct HXoptcb *cb) { g_del_flags &= ~DEL_MESSAGES; }
-static void opt_nuke(const struct HXoptcb *cb) { g_del_flags |= DEL_FOLDERS; }
-static void opt_a(const struct HXoptcb *cb) { g_del_flags |= DEL_ASSOCIATED; }
-static void opt_s(const struct HXoptcb *cb) { g_del_flags &= ~DELETE_HARD_DELETE; }
-
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'M', HXTYPE_NONE, {}, {}, opt_m, 0, "Exclude normal messages from deletion"},
-	{nullptr, 'R', HXTYPE_NONE, &g_recurse, {}, {}, 0, "Recurse into subfolders to delete messages"},
-	{"delempty", 0, HXTYPE_NONE, &g_delempty, {}, {}, 0, "Delete subfolders which are empty"},
-	{"nuke-folders", 0, HXTYPE_NONE, {}, {}, opt_nuke, 0, "Do not recurse but delete subfolders outright"},
-	{nullptr, 'a', HXTYPE_NONE, {}, {}, opt_a, 0, "Include associated messages in deletion"},
-	{nullptr, 't', HXTYPE_STRING, &g_time_str, {}, {}, 0, "Messages need to be older than...", "TIMESPEC"},
-	{"soft",    0, HXTYPE_NONE, {}, {}, opt_s, 0, "Soft-delete (experimental)"},
+	{{}, 'M', HXTYPE_NONE, {}, {}, {}, 'M', "Exclude normal messages from deletion"},
+	{{}, 'R', HXTYPE_NONE, {}, {}, {}, 'R', "Recurse into subfolders to delete messages"},
+	{"delempty", 0, HXTYPE_NONE, {}, {}, {}, '1', "Delete subfolders which are empty"},
+	{"nuke-folders", 0, HXTYPE_NONE, {}, {}, {}, '2', "Do not recurse but delete subfolders outright"},
+	{{}, 'a', HXTYPE_NONE, {}, {}, {}, 'a', "Include associated messages in deletion"},
+	{{}, 't', HXTYPE_STRING, {}, {}, {}, 't', "Messages need to be older than...", "TIMESPEC"},
+	{"soft", 0, HXTYPE_NONE, {}, {}, {}, '3', "Soft-delete"},
 	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -101,7 +95,7 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 	auto cl_0 = HX::make_scope_exit([&]() {
 		uint32_t curr_delc, curr_fldc;
 		delcount(fid, &curr_delc, &curr_fldc);
-		printf("Folder 0x%llx: deleted %d messages\n", LLU{rop_util_get_gc_value(fid)}, curr_delc - prev_delc);
+		printf("Folder 0x%llx: deleted %d message(s)\n", LLU{rop_util_get_gc_value(fid)}, curr_delc - prev_delc);
 	});
 	if (g_del_flags & DEL_MESSAGES) {
 		auto ret = do_contents(fid, 0);
@@ -171,10 +165,23 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 
 int main(int argc, char **argv)
 {
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
+	const char *g_time_str = nullptr;
+	HXopt6_auto_result result;
+	if (HX_getopt6(g_options_table, argc, argv, &result, HXOPT_USAGEONERR |
+	    HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
+	for (int i = 0; i < result.nopts; ++i)
+		switch (result.desc[i]->val) {
+		case 'M': g_del_flags &= ~DEL_MESSAGES; break;
+		case 'R': g_recurse = true; break;
+		case '1': g_delempty = true; break;
+		case '2': g_del_flags |= DEL_FOLDERS; break;
+		case 'a': g_del_flags |= DEL_ASSOCIATED; break;
+		case 't': g_time_str = result.oarg[i]; break;
+		case '3': g_del_flags &= ~DELETE_HARD_DELETE; break;
+		default: break;
+		}
+
 	if (g_del_flags & DEL_FOLDERS && g_recurse) {
 		mbop_fprintf(stderr, "Combining -R and --nuke-folders is unreasonable: when you nuke folders, you cannot recurse into them anymore.\n");
 		return EXIT_FAILURE;
@@ -201,11 +208,11 @@ int main(int argc, char **argv)
 	}
 
 	int ret = EXIT_SUCCESS;
-	while (*++argv != nullptr) {
+	for (int uidx = 0; uidx < result.nargs; ++uidx) {
 		BOOL partial = false;
-		eid_t eid = gi_lookup_eid_by_name(g_storedir, *argv);
+		eid_t eid = gi_lookup_eid_by_name(g_storedir, result.uarg[uidx]);
 		if (eid == 0) {
-			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
+			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", result.uarg[uidx]);
 			return EXIT_FAILURE;
 		}
 		if (g_cutoff_time != 0 || g_recurse) {
@@ -220,14 +227,14 @@ int main(int argc, char **argv)
 		auto ok = exmdb_client->empty_folder(g_storedir, CP_UTF8, nullptr,
 		          eid, g_del_flags, &partial);
 		if (!ok) {
-			mbop_fprintf(stderr, "empty_folder(%s) failed\n", *argv);
+			mbop_fprintf(stderr, "empty_folder(%s) failed\n", result.uarg[uidx]);
 			ret = EXIT_FAILURE;
 		}
 		delcount(eid, &curr_delc, &curr_fldc);
 		if (partial)
 			printf("Partial completion (e.g. essential permanent folders were not deleted)\n");
-		printf("Folder %s: deleted %d messages, deleted %d subfolders plus messages\n",
-			*argv, curr_delc - prev_delc, prev_fldc - curr_fldc);
+		printf("Folder %s: deleted %d message(s), deleted %d subfolder(s) plus messages\n",
+			result.uarg[uidx], curr_delc - prev_delc, prev_fldc - curr_fldc);
 		if (ret != EXIT_SUCCESS)
 			break;
 	}

@@ -65,13 +65,13 @@ void delcount(eid_t fid, uint32_t *delc, uint32_t *fldc)
 
 namespace global {
 
-char *g_arg_username, *g_arg_userdir;
+const char *g_arg_username, *g_arg_userdir;
 unsigned int g_continuous_mode, g_verbose_mode, g_command_num;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_NONE, &g_continuous_mode, {}, {}, {}, "Do not stop on errors"},
 	{nullptr, 'v', HXTYPE_NONE, &g_verbose_mode, {}, {}, {}, "Be a little more talkative"},
-	{nullptr, 'd', HXTYPE_STRING, &g_arg_userdir, nullptr, nullptr, 0, "Directory of the mailbox", "DIR"},
-	{nullptr, 'u', HXTYPE_STRING, &g_arg_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
+	{{}, 'd', HXTYPE_STRING, {}, {}, {}, 0, "Directory of the mailbox", "DIR"},
+	{{}, 'u', HXTYPE_STRING, {}, {}, {}, 0, "Username of store to import to", "EMAILADDR"},
 	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -147,10 +147,9 @@ static bool recalc_sizes(const char *dir)
 static int main(int argc, char **argv)
 {
 	bool ok = false;
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	if (HX_getopt6(g_options_table, argc, argv, nullptr,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (strcmp(argv[0], "purge-datafiles") == 0)
 		ok = exmdb_client->purge_datafiles(g_storedir);
 	else if (strcmp(argv[0], "echo-username") == 0) {
@@ -193,10 +192,9 @@ static constexpr HXoption g_options_table[] = {
 
 static int freeze_main(int argc, char **argv)
 {
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	if (HX_getopt6(g_options_table, argc, argv, nullptr,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	/*
 	 * db_maint_mode::hold is not offered presently, since exmdb is prone
 	 * to get into out-of-memory situations when used.
@@ -232,10 +230,9 @@ static errno_t resolvename(const GUID &guid, const char *name, bool create,
 static int delstoreprop(int argc, char **argv, const GUID &guid,
     const char *name, uint16_t type)
 {
-	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
+	if (HX_getopt6(empty_options_table, argc, argv, nullptr,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	propid_t propid = 0;
 	auto err = resolvename(guid, name, false, &propid);
@@ -293,10 +290,9 @@ static errno_t showstoreprop(proptag_t proptag)
 static int showstoreprop(int argc, char **argv, const GUID guid,
     const char *name, proptype_t proptype)
 {
-	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
+	if (HX_getopt6(empty_options_table, argc, argv, nullptr,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	propid_t propid = 0;
 	auto err = resolvename(guid, name, false, &propid);
@@ -345,10 +341,9 @@ static errno_t setstoreprop(proptag_t proptag)
 static int setstoreprop(int argc, char **argv, const GUID guid,
     const char *name, proptype_t proptype)
 {
-	if (HX_getopt5(empty_options_table, argv, &argc, &argv,
+	if (HX_getopt6(empty_options_table, argc, argv, nullptr,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 
 	propid_t propid = 0;
 	auto err = resolvename(guid, name, true, &propid);
@@ -398,7 +393,7 @@ static errno_t clear_rwz()
 	ea_info.count = ids.size();
 	ea_info.pids  = ids.data();
 	BOOL partial = false;
-	printf("Deleting %u messages...\n", ea_info.count);
+	printf("Deleting %u message(s)...\n", ea_info.count);
 	if (!exmdb_client->delete_messages(g_storedir, CP_ACP, nullptr, inbox,
 	    &ea_info, 1, &partial))
 		return EIO;
@@ -437,13 +432,19 @@ static constexpr static_module g_dfl_svc_plugins[] =
 int main(int argc, char **argv)
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(global::g_options_table, argv, &argc, &argv,
-	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
+	HXopt6_auto_result result;
+	if (HX_getopt6(global::g_options_table, argc, argv, &result,
+	    HXOPT_USAGEONERR | HXOPT_RQ_ORDER | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS ||
 	    g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
-	--argc;
-	++argv;
+	for (int i = 0; i < result.nopts; ++i) {
+		if (result.desc[i]->sh == 'd')
+			global::g_arg_userdir = result.oarg[i];
+		else if (result.desc[i]->sh == 'u')
+			global::g_arg_username = result.oarg[i];
+	}
+	argc = result.nargs;
+	argv = result.uarg;
 	if (argc == 0)
 		return global::help();
 	service_init({nullptr, g_dfl_svc_plugins, 1});

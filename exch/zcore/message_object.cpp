@@ -926,7 +926,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags) try
 			problems.pproblem[problems.count++].index = i;
 			continue;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count] = tag;
+		tmp_proptags.pproptag[tmp_proptags.count++] = tag;
 		poriginal_indices.push_back(i);
 	}
 	if (tmp_proptags.count == 0)

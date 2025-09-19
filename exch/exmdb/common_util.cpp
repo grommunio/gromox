@@ -5,7 +5,6 @@
 #	include "config.h"
 #endif
 #include <algorithm>
-#include <atomic>
 #include <cassert>
 #include <cerrno>
 #include <climits>
@@ -84,7 +83,6 @@ static constexpr uint8_t empty_entryid[20]{};
 
 static unsigned int g_max_msg, g_cid_use_xxhash = 1;
 static thread_local prepared_statements *g_opt_key;
-static std::atomic<unsigned int> g_sequence_id;
 
 namespace exmdb {
 
@@ -160,11 +158,6 @@ void common_util_build_tls()
 {
 	g_inside_flush_instance = false;
 	g_sqlite_for_oxcmail = nullptr;
-}
-
-unsigned int common_util_sequence_ID()
-{
-	return ++g_sequence_id;
 }
 
 /* can directly be called in local rpc thread without
@@ -3023,19 +3016,12 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 		mlog(LV_ERR, "E-5319: zstd routines have failed for object %s", path.c_str());
 		return err;
 	}
-	/*
-	 * If another thread created a writeout in the meantime, we will now
-	 * overwrite it. Since the contents are the same, that has no ill
-	 * effect (POSIX guarantees atomicity). But it is somewhat inefficient,
-	 * because now the filesystem will writeout our thread's second copy
-	 * and ditch the blocks from the first copy, which is pointless churn.
-	 * It is not too terrible, considering this can only happen for newly
-	 * instantiated @paths.
-	 */
-	err = tmf.link_to(path.c_str());
-	if (err != 0)
-		mlog(LV_ERR, "E-5320: link %s -> %s: %s", tmf.m_path.c_str(),
-			path.c_str(), strerror(err));
+	/* Ditch tmf when another thread created the file in the meantime. */
+	err = tmf.link_to_noreplace(path.c_str());
+	if (err == 0 || err == EEXIST)
+		return 0;
+	mlog(LV_ERR, "E-5320: link %s -> %s: %s", tmf.m_path.c_str(),
+		path.c_str(), strerror(err));
 	return err;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2065: ENOMEM");
@@ -4691,7 +4677,15 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 {
 	auto basedir = exmdb_server::get_dir();
-	new_midstr = fmt::format("{}.x{}.{}", time(nullptr), common_util_sequence_ID(), get_host_ID());
+	char guidtxt[GUIDSTR_SIZE]{};
+	GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
+	/*
+	 * The midstr column is UNIQUE in at least midb.sqlite3, so
+	 * unfortunately we always need to generate new midstrs even though
+	 * that is not strictly necessary (EML files are write-once).
+	 * For more notes on midstr format, see mt2exm.cpp.
+	 */
+	new_midstr = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
 	auto old_eml = fmt::format("{}/eml/{}", basedir, old_midstr);
 	auto new_eml = fmt::format("{}/eml/{}", basedir, new_midstr);
 	auto ret = gx_mkbasedir(new_eml.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);

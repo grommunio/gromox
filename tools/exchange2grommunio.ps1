@@ -134,6 +134,9 @@
 
 #>
 
+# Check below for a individual configuration file so you won't have to make
+# changes in this script directly.
+
 # Variables to be set by the user of this script
 #
 $GrommunioServer = "grommunio.example.com"
@@ -178,7 +181,7 @@ $LinuxUser = "root"
 
 # This file will only be processed if $ImportMboxes is empty, the file exists
 # on the UNC Path and isn't empty.
-$ImportFile = exchange2grommunio.import
+$ImportFile = "exchange2grommunio.import"
 
 # Ignore these mailboxes, an array of mail addresses, case insensitive
 # [string] $IgnoreMboxes = 'TestX1@example.com','Testx2@example.com'
@@ -187,7 +190,7 @@ $ImportFile = exchange2grommunio.import
 # The same rules will apply for $IgnoreFile
 # To populate this file with alread imported Mailboxes:
 #  awk '/Import of mailbox.*done./ {print $7}' /mnt/pst/exchange2grommunio.log > /mnt/pst/exchange2grommunio.ignore
-$IgnoreFile = exchange2grommunio.ignore
+$IgnoreFile = "exchange2grommunio.ignore"
 
 # Delete .pst files after import to save space.
 $DeletePST = $true
@@ -225,11 +228,11 @@ $OnlyCreateGrommunioMailbox = $false
 $MailboxLanguage = "de_DE"
 
 # Stop marker, if $WaitAfterImport = $false, create this file and migration will be interrupted after current mailbox
-$StopMarker = Join-Path -Path $WinSharedFolder -ChildPath "exchange2grommunio.STOP"
+$StopMarker = "exchange2grommunio.STOP"
 
 # Write timestamps and summary to this log file.
 #
-$LogFile = Join-Path -Path $WinSharedFolder -ChildPath "exchange2grommunio.log"
+$LogFile = "exchange2grommunio.log"
 
 # New-MailboxExportRequest accepts the -Priority parameter.
 # Use "Normal" or "High" for Exchange 2010. We found "Normal" is much faster
@@ -238,6 +241,60 @@ $LogFile = Join-Path -Path $WinSharedFolder -ChildPath "exchange2grommunio.log"
 $MigrationPriority = "Normal"
 
 # From here on, no code or variables need changing by the user of this script.
+
+<# SKEL exchange2grommunio.config.ps1
+#$GrommunioServer = "grommunio.example.com"
+#$WinSharedFolder = "\\<server FQDN>\<shared folder name>"
+#$LinuxSharedFolder = "/mnt/<shared folder name>"
+#$LinuxUser = "root"
+#$LinuxUserPWD = "Secret_root_Password"
+#$LinuxUserSSHKey = "C:\grommunio\exch.ppk"
+#$UsePageant = $true
+#[string] $ImportMboxes = 'TestI1@example.com','Testi2@example.com'
+#[string] $ImportMboxes = ''
+#$ImportFile = "exchange2grommunio.import"
+#$ImportFile = "exchange2grommunio.failed"
+#[string] $IgnoreMboxes = ''
+#$IgnoreFile = "exchange2grommunio.ignore"
+#$IgnoreFile = "exchange2grommunio.done"
+#$DeletePST = $true
+#$WaitAfterImport = $true
+#$StopOnError = $true
+#$AutoMount = $true
+#$WindowsUser = "<Windows user>"
+#$WindowsPassword = "<Windows user password>"
+#$CreateGrommunioMailbox = $false
+#$OnlyCreateGrommunioMailbox = $false
+#$MailboxLanguage = "de_DE"
+#$StopMarker = "exchange2grommunio.STOP"
+#$LogFile = "exchange2grommunio.log"
+#$MigrationPriority = "Normal"
+#>
+# Use configuration file named "exchange2grommunio.config.ps1" to override the
+# configration values above instead of changing the values in this script.
+if (Test-Path $PSScriptRoot/exchange2grommunio.config.ps1) {
+	. $PSScriptRoot/exchange2grommunio.config.ps1
+}
+
+# Overwrite File locations (after eventually sourcing exchange2grommunio.config.ps1)
+$StopMarker = Join-Path -Path $WinSharedFolder -ChildPath $StopMarker
+$LogFile = Join-Path -Path $WinSharedFolder -ChildPath $LogFile
+
+# Configure Import/Ignore Arrays from defined filename if the rules apply.
+$ImportFile = Join-Path -Path $WinSharedFolder -ChildPath $ImportFile
+if ((! $ImportMboxes) -and
+	(Test-Path -Path $ImportFile) -and
+	((Get-Content $ImportFile|Where-Object {$_.trim() -ne "" } ).Length -gt 0)
+	) {
+		$ImportMboxes = Get-Content $ImportFile
+	}
+$IgnoreFile = Join-Path -Path $WinSharedFolder -ChildPath $IgnoreFile
+if ((! $IgnoreMboxes) -and
+	(Test-Path -Path $IgnoreFile) -and
+	((Get-Content $IgnoreFile|Where-Object {$_.trim() -ne "" } ).Length -gt 0)
+	) {
+		$IgnoreMboxes = Get-Content $IgnoreFile
+	}
 
 
 # Write a time stamp and the string to the log file, also write to screen with color.
@@ -252,7 +309,7 @@ function Write-MLog
 	)
 	# $Color "none" writes to the log file only
 	if ($Color -Ne "none") {
-		Write-Output $LogString -fore $Color
+		Write-Host "$LogString" -fore $Color
 	}
 	# populate log file with error state
 	$Level = switch ($Color)
@@ -421,22 +478,6 @@ function Test-Exchange
 	}
 }
 
-# Configure Import/Ignore Arrays from defined filename if the rules apply.
-$ImportFile = Join-Path -Path $WinSharedFolder -ChildPath $ImportFile
-if ((! $ImportMboxes) -and
-	(Test-Path -Path $ImportFile) -and
-	((Get-Content $ImportFile|Where-Object {$_.trim() -ne "" } ).Length -gt 0)
-	) {
-		$ImportMboxes = Get-Content $ImportFile
-	}
-$IgnoreFile = Join-Path -Path $WinSharedFolder -ChildPath $IgnoreFile
-if ((! $IgnoreMboxes) -and
-	(Test-Path -Path $IgnoreFile) -and
-	((Get-Content $IgnoreFile|Where-Object {$_.trim() -ne "" } ).Length -gt 0)
-	) {
-		$IgnoreMboxes = Get-Content $IgnoreFile
-	}
-
 # The Main code
 #
 # Do we use an old PowerShell == Version 2.0?
@@ -449,11 +490,11 @@ if (!$PSScriptRoot) {
 	$PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
 }
 
-# Test if $WinSharedFolder is a valide path
+# Test if $WinSharedFolder is a valid path
 #
 if (!( $(Try { Test-Path $WinSharedFolder.trim() } Catch { $false }) )) {  #Returns $false if $null, "" or " "
-	Write-Output ""
-	Write-Output "'$WinSharedFolder' is not a valide path, please update variable `$WinSharedFolder and try again." -fore red
+	Write-Host ""
+	Write-Host "'$WinSharedFolder' is not a valid path, please update variable `$WinSharedFolder and try again." -fore red
 	exit 1
 }
 
@@ -532,7 +573,7 @@ Write-MLog "" none
 Test-Plink
 if ($UsePageant) {
 	Test-Pageant
-	if (Test-Path -Path $PSScriptRoot\peagent.exe) {
+	if (Test-Path -Path $PSScriptRoot\pageant.exe) {
 	.\pageant.exe  $LinuxUserSSHKey
 	}
 }
@@ -798,7 +839,7 @@ foreach ($Mailbox in (Get-Mailbox | Sort-Object -Property Alias)) {
 	$OK = $false
 	while (!$OK) {
 		Write-MLog "Do you want to proceed with the next mailbox [Y]es [A]bort [C]ontinue? " none
-		$decision = $(Write-Output "Do you want to proceed with the next mailbox [Y]es [A]bort [C]ontinue? " -fore yellow -NoNewLine; Read-Host)
+		$decision = $(Write-Host "Do you want to proceed with the next mailbox [Y]es [A]bort [C]ontinue? " -fore yellow -NoNewLine; Read-Host)
 		$decision = $decision.ToUpper()
 		switch ($decision) {
 		"Y" {

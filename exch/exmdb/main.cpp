@@ -47,6 +47,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"dbg_synthesize_content", "0"},
 	{"enable_dam", "1", CFG_BOOL},
 	{"exmdb_body_autosynthesis", "1", CFG_BOOL},
+	{"exmdb_eph_prefix", ""},
 	{"exmdb_file_compression", "zstd-6"},
 	{"exmdb_hosts_allow", ""}, /* ::1 default set later during startup */
 	{"exmdb_listen_port", "5000"},
@@ -112,6 +113,7 @@ static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
 	g_exmdb_search_pacing_time = pconfig->get_ll("exmdb_search_pacing_time");
 	g_exmdb_max_sqlite_spares = pconfig->get_ll("exmdb_max_sqlite_spares");
 	g_sqlite_busy_timeout_ns = pconfig->get_ll("sqlite_busy_timeout");
+	exmdb_eph_prefix = pconfig->get_value("exmdb_eph_prefix");
 	gx_sql_deep_backtrace = gxcfg->get_ll("exmdb_deep_backtrace");
 	gx_force_write_txn = gxcfg->get_ll("exmdb_force_write_txn");
 	auto s = gxcfg->get_value("exmdb_ics_log_file");

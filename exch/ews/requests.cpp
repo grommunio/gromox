@@ -5,22 +5,27 @@
 #include <cstdint>
 #include <cstring>
 #include <fstream>
+#include <tinyxml2.h>
 #include <unordered_set>
 #include <variant>
+#include <vector>
+#include <libHX/scope.hpp>
+#include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <tinyxml2.h>
-#include <libHX/scope.hpp>
+#include <gromox/ab_tree.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/eid_array.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapitags.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 #include "exceptions.hpp"
+#include "namedtags.hpp"
 #include "requests.hpp"
 
 namespace gromox::EWS::Requests {
@@ -38,29 +43,6 @@ using namespace tinyxml2;
 //Helper functions
 
 namespace {
-
-/**
- * @brief      Decode hex string
- *
- * @param      hex         Hex encoded input string
- *
- * @throw      InputError  Input string is not properly hex-encoded
- *
- * @return     String containing decoded binary data
- */
-std::string hexDecode(const std::string& hex)
-{
-	static auto charVal = [](int c) {
-		return (c >= '0' && c <= '9') ? c - '0' : (c >= 'a' && c <= 'f') ? c - 'a' + 10 : throw InputError(E3249(static_cast<char>(c)));
-	};
-	if (hex.size() % 2)
-		throw InputError(E3250);
-	std::string bin(hex.size()/2, 0);
-	auto it = hex.begin();
-	for (char &out : bin)
-		out = static_cast<char>(charVal(tolower(*it++)) << 4 | charVal(tolower(*it++)));
-	return bin;
-}
 
 /**
  * @brief      Encode hex string
@@ -88,9 +70,9 @@ std::string hexEncode(const std::string& bin)
  *
  * @return     Reference to the string
  */
-static inline std::string &tolower(std::string &str)
+static inline std::string &tolower_inplace(std::string &str)
 {
-	transform(str.begin(), str.end(), str.begin(), ::tolower);
+	transform(str.begin(), str.end(), str.begin(), HX_tolower);
 	return str;
 }
 
@@ -144,6 +126,60 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 	file.close();
 }
 
+/* Copied straight outta zcore/ab_tree.cpp */
+static bool ab_tree_resolve_node(const ab_tree::ab_node &node, const char *needle)
+{
+	using ab_tree::userinfo;
+	std::string dn = node.displayname();
+	if (strcasestr(dn.c_str(), needle) != nullptr)
+		return true;
+	if (node.dn(dn) && strcasecmp(dn.c_str(), needle) == 0)
+		return true;
+
+	switch (node.type()) {
+	case ab_tree::abnode_type::user: {
+		auto s = node.user_info(userinfo::mail_address);
+		if (s != nullptr && strcasestr(s, needle) != nullptr)
+			return true;
+		for (const auto &a : node.aliases())
+			if (strcasestr(a.c_str(), needle) != nullptr)
+				return true;
+		for (auto info : {userinfo::nick_name, userinfo::job_title,
+		     userinfo::comment, userinfo::mobile_tel,
+		     userinfo::business_tel, userinfo::home_address}) {
+			s = node.user_info(info);
+			if (s != nullptr && strcasestr(s, needle) != nullptr)
+				return true;
+		}
+		break;
+	}
+	case ab_tree::abnode_type::mlist:
+		node.mlist_info(&dn, nullptr, nullptr);
+		if (strcasestr(dn.c_str(), needle) != nullptr)
+			return true;
+		break;
+	default:
+		break;
+	}
+	return false;
+}
+
+static bool ab_tree_resolvename(const ab_tree::ab_base &base, const char *needle,
+    std::vector<ab_tree::minid> &result) try
+{
+	result.clear();
+	for (auto it = base.ubegin(); it != base.uend(); ++it) {
+		ab_tree::ab_node node(it);
+		if (node.hidden() & AB_HIDE_RESOLVE ||
+		    !ab_tree_resolve_node(node, needle))
+			continue;
+		result.push_back(*it);
+	}
+	return true;
+} catch (const std::bad_alloc &) {
+	return false;
+}
+
 } //anonymous namespace
 ///////////////////////////////////////////////////////////////////////
 //Request implementations
@@ -172,7 +208,7 @@ void process(mConvertIdRequest&& request, XMLElement* response, EWSContext& ctx)
 		} else {
 			std::string dir = ctx.get_maildir(aid.Mailbox);
 			tBaseItemId id(sBase64Binary(aid.Format == Enum::HexEntryId ?
-			               hexDecode(aid.Id) : base64_decode(aid.Id)),
+			               hex2bin(aid.Id) : base64_decode(aid.Id)),
 			               tBaseItemId::ID_GUESS);
 			if (id.type == tBaseItemId::ID_UNKNOWN)
 				throw EWSError::CorruptData(E3252);
@@ -191,6 +227,70 @@ void process(mConvertIdRequest&& request, XMLElement* response, EWSContext& ctx)
 		data.ResponseMessages.emplace_back(err);
 	}
 
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process FindPeople
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mFindPeopleRequest &&request, XMLElement *response, const EWSContext &ctx)
+{
+	response->SetName("m:FindPeopleResponse");
+
+	mFindPeopleResponse data;
+	auto &msg = data.ResponseMessages.emplace_back();
+	std::string domain = znul(ctx.auth_info().username);
+	auto at = domain.find('@');
+	if (at != std::string::npos)
+		domain.erase(0, at + 1);
+
+	std::vector<ab_tree::minid> results;
+	try {
+		uint32_t domId = ctx.getAccountId(domain, true);
+		auto base = ab_tree::AB.get(-static_cast<int32_t>(domId));
+		if (base && ab_tree_resolvename(*base, request.QueryString.c_str(), results)) {
+			for (auto mid : results) {
+				ab_tree::ab_node node(base.get(), mid);
+				tPersona persona;
+				std::string val;
+				if (node.fetch_prop(PR_DISPLAY_NAME, val) == ecSuccess)
+					persona.DisplayName = std::move(val);
+				if (node.fetch_prop(PR_SMTP_ADDRESS, val) == ecSuccess)
+					persona.EmailAddress = std::move(val);
+				if (node.fetch_prop(PR_TITLE, val) == ecSuccess)
+					persona.Title = std::move(val);
+				if (node.fetch_prop(PR_NICKNAME, val) == ecSuccess)
+					persona.Nickname = std::move(val);
+				if (node.fetch_prop(PR_PRIMARY_TELEPHONE_NUMBER, val) == ecSuccess)
+					persona.BusinessPhoneNumber = std::move(val);
+				if (node.fetch_prop(PR_MOBILE_TELEPHONE_NUMBER, val) == ecSuccess)
+					persona.MobilePhoneNumber = std::move(val);
+				if (node.fetch_prop(PR_HOME_ADDRESS_STREET, val) == ecSuccess)
+					persona.HomeAddress = std::move(val);
+				if (node.fetch_prop(PR_COMMENT, val) == ecSuccess)
+					persona.Comment = std::move(val);
+				if (persona.DisplayName || persona.EmailAddress ||
+				    persona.Title || persona.Nickname ||
+				    persona.BusinessPhoneNumber ||
+				    persona.MobilePhoneNumber ||
+				    persona.HomeAddress || persona.Comment)
+					msg.People.emplace().emplace_back(std::move(persona));
+			}
+			if (msg.People)
+				msg.TotalNumberOfPeopleInView = msg.People->size();
+		}
+	} catch (const EWSError &err) {
+		data.ResponseMessages.clear();
+		data.ResponseMessages.emplace_back(err);
+		data.serialize(response);
+		return;
+	}
+
+	msg.success();
 	data.serialize(response);
 }
 
@@ -321,6 +421,42 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
 		bool send = std::holds_alternative<tMessage>(item) && sendMessages;
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
+
+		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
+			ctx.assertIdType(refId.type, tItemId::ID_ITEM);
+			sMessageEntryId mid(refId.Id.data(), refId.Id.size());
+			sFolderSpec pf = ctx.resolveFolder(mid);
+			std::string rdir = ctx.getDir(pf);
+			ctx.validate(rdir, mid);
+			const char *username = ctx.effectiveUser(pf);
+			auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+			auto rstat = EWSContext::construct<uint32_t>(resp);
+			uint32_t state = asfMeeting | asfReceived;
+			auto astat = EWSContext::construct<uint32_t>(state);
+			uint16_t pidResp = ctx.getNamedPropId(rdir, NtResponseStatus, true);
+			uint16_t pidReply = ctx.getNamedPropId(rdir, NtAppointmentReplyTime, true);
+			uint16_t pidState = ctx.getNamedPropId(rdir, NtAppointmentStateFlags, true);
+			TAGGED_PROPVAL props[] = {
+				{PROP_TAG(PT_LONG, pidResp), rstat},
+				{PROP_TAG(PT_SYSTIME, pidReply), now},
+				{PROP_TAG(PT_LONG, pidState), astat},
+			};
+			TPROPVAL_ARRAY proplist{std::size(props), props};
+			PROBLEM_ARRAY problems;
+			if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
+				mid.messageId(), &proplist, &problems))
+				throw EWSError::ItemSave(E3092);
+		};
+		if (auto acc = std::get_if<tAcceptItem>(&item)) {
+			if (acc->ReferenceItemId)
+				updateRef(*acc->ReferenceItemId, respAccepted);
+		} else if (auto tent = std::get_if<tTentativelyAcceptItem>(&item)) {
+			if (tent->ReferenceItemId)
+				updateRef(*tent->ReferenceItemId, respTentative);
+		} else if (auto dec = std::get_if<tDeclineItem>(&item)) {
+			if (dec->ReferenceItemId)
+				updateRef(*dec->ReferenceItemId, respDeclined);
+		}
 		if (persist)
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
 		if (std::holds_alternative<tCalendarItem>(item) && sendMessages &&
@@ -740,7 +876,14 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 			throw EWSError::ItemPropertyRequestFailed(E3245);
 		auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
 		if (!rowCount) {
-			data.ResponseMessages.emplace_back().success();
+			mFindItemResponseMessage msg;
+			msg.RootFolder.emplace();
+			if (paging)
+				paging->update(*msg.RootFolder, 0, 0);
+			msg.RootFolder->IncludesLastItemInRange = true;
+			msg.RootFolder->TotalItemsInView = 0;
+			msg.success();
+			data.ResponseMessages.emplace_back(std::move(msg));
 			continue;
 		}
 		ctx.getNamedTags(dir, shape);
@@ -995,6 +1138,25 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 
 	if (!request.FreeBusyViewOptions && !request.SuggestionsViewOptions)
 		throw EWSError::InvalidFreeBusyViewType(E3013);
+	if (!request.TimeZone) {
+		auto tag = ctx.request().header;
+		if (tag != nullptr)
+			tag = tag->FirstChildElement("t:TimeZoneContext");
+		if (tag != nullptr)
+			tag = tag->FirstChildElement("t:TimeZoneDefinition");
+		if (tag != nullptr)
+			tag = tag->FirstChildElement("t:Periods");
+		if (tag != nullptr)
+			tag = tag->FirstChildElement("t:Period");
+		/* Input is like <t:Period Bias="P0DT0H0M0.0S" Name="Standard" Id="Std" /> */
+		auto bias = tag != nullptr ? tag->Attribute("Bias") : nullptr;
+		if (bias != nullptr) {
+			char *end = nullptr;
+			auto minutes = HX_strtoull8601p_sec(bias, &end) / 60;
+			if (minutes != 0 || end != nullptr)
+				request.TimeZone.emplace(minutes);
+		}
+	}
 	if (!request.TimeZone)
 		throw EWSError::TimeZone(E3014);
 
@@ -1312,7 +1474,7 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
 	oof_state = OofSettings.OofState;
 
 	std::string externalAudience = OofSettings.ExternalAudience;
-	allow_external_oof = !(tolower(externalAudience) == "none");
+	allow_external_oof = tolower_inplace(externalAudience) != "none";
 	//Note: counterintuitive but intentional: known -> 1, all -> 0
 	external_audience = externalAudience == "known";
 	if (allow_external_oof && !external_audience && externalAudience != "all")
@@ -1441,7 +1603,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	uint64_t fai_total, normal_total, last_cn, last_readcn;
 	EID_ARRAY updated_mids, chg_mids, given_mids, deleted_mids, nolonger_mids, read_mids, unread_mids;
 	bool getFai = request.SyncScope && *request.SyncScope == Enum::NormalAndAssociatedItems;
-	auto pseen_fai = getFai ? &syncState.seen : nullptr;
+	auto pseen_fai = getFai ? &syncState.seen_fai : nullptr;
 	if (!exmdb.get_content_sync(dir.c_str(), folder.folderId, ctx.effectiveUser(folder),
 	    &syncState.given, &syncState.seen, pseen_fai, &syncState.read,
 	    CP_ACP, nullptr, TRUE, &fai_count, &fai_total, &normal_count,
@@ -1501,9 +1663,15 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(templId.messageId(mid).serialize()), false});
 		if (!clipped) {
 			syncState.seen.clear();
+			syncState.seen_fai.clear();
 			syncState.read.clear();
-			if ((last_cn && !syncState.seen.append_range(1, 1, rop_util_get_gc_value(last_cn))) ||
-			   (last_readcn && !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn))))
+			if (last_cn) {
+				auto gc = rop_util_get_gc_value(last_cn);
+				if (!syncState.seen.append_range(1, 1, gc) ||
+				    (getFai && !syncState.seen_fai.append_range(1, 1, gc)))
+					throw DispatchError(E3066);
+			}
+			if (last_readcn && !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn)))
 				throw DispatchError(E3066);
 			syncState.readOffset = 0;
 		} else {

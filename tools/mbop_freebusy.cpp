@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <vector>
+#include <libHX/ctype_helper.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <gromox/freebusy.hpp>
@@ -16,32 +17,60 @@ using namespace gromox;
 
 namespace getfreebusy {
 
-static char *g_start_txt, *g_end_txt, *g_requestor;
 static constexpr struct HXoption g_options_table[] = {
-	{nullptr, 'a', HXTYPE_STRING, &g_start_txt, {}, {}, 0, "Start time (localtime; respects $TZ)"},
-	{nullptr, 'b', HXTYPE_STRING, &g_end_txt, {}, {}, 0, "End time (localtime; respects $TZ)"},
-	{nullptr, 'x', HXTYPE_STRING, &g_requestor, {}, {}, 0, "Requestor account name (not the same as -d/-u)"},
+	{{}, 'a', HXTYPE_STRING, {}, {}, {}, 0, "Start time (localtime; respects $TZ)"},
+	{{}, 'b', HXTYPE_STRING, {}, {}, {}, 0, "End time (localtime; respects $TZ)"},
+	{{}, 'x', HXTYPE_STRING, {}, {}, {}, 0, "Requestor account name (not the same as -d/-u)"},
 	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
+
+static bool zone_extract(const char *s, int *west, char **end)
+{
+	if (s[0] == 'Z' && s[1] == '\0') {
+		*end = deconst(s + 1);
+		*west = 0;
+		return true;
+	} else if (s[0] != '+' && s[0] != '-') {
+		*end = deconst(s);
+		return false;
+	} else if (!HX_isdigit(s[1]) || !HX_isdigit(s[2]) || !HX_isdigit(s[3]) || !HX_isdigit(s[4])) {
+		*end = deconst(s);
+		return false;
+	}
+	int min = (s[4] - '0') + (s[3] - '0') * 10 +
+		  (s[2] - '0') * 60 + (s[1] - '0') * 600;
+	*west = s[0] == '-' ? min : -min;
+	*end = deconst(s + 5);
+	return true;
+}
 
 static int xmktime(const char *str, time_t *out)
 {
 	char *end = nullptr;
 	*out = strtol(str, &end, 0);
 	if (end == nullptr || *end == '\0')
-		/* looks like we've got outselves a unixts */
+		/* looks like we've got ourselves a unixts */
 		return 0;
 	struct tm tm{};
 	end = strptime(str, "%FT%T", &tm);
+	if (end == nullptr) {
+		mbop_fprintf(stderr, "\"%s\" not understood. Required format is \"2024-01-01T00:00:00\" (withour or with zone offset), or unixtime.\n", str);
+		return -1;
+	}
+	int min_west = 0;
+	bool has_zone = false;
+	if (end != nullptr)
+		has_zone = zone_extract(end, &min_west, &end);
 	if (end != nullptr && *end != '\0') {
-		mbop_fprintf(stderr, "\"%s\" not understood, error at \"%s\". Required format is \"2024-01-01T00:00:00\" [always local system time] or unixtime.\n", g_start_txt, end);
+		mbop_fprintf(stderr, "Don't know what to do with: \"%s\". Remove it.\n", end);
 		return -1;
 	}
 	tm.tm_wday = -1;
-	*out = mktime(&tm);
+	tm.tm_isdst = -1;
+	*out = has_zone ? timegm(&tm) + 60 * min_west : mktime(&tm);
 	if (*out == -1 && tm.tm_wday == -1) {
-		mbop_fprintf(stderr, "\"%s\" not understood by mktime\n", g_start_txt);
+		mbop_fprintf(stderr, "\"%s\" not understood by mktime\n", str);
 		return -1;
 	}
 	return 0;
@@ -49,10 +78,19 @@ static int xmktime(const char *str, time_t *out)
 
 int main(int argc, char **argv)
 {
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
+	const char *g_start_txt = nullptr, *g_end_txt = nullptr, *g_requestor = nullptr;
+	HXopt6_auto_result result;
+	if (HX_getopt6(g_options_table, argc, argv, &result, HXOPT_USAGEONERR |
+	    HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
+	for (int i = 0; i < result.nopts; ++i) {
+		switch (result.desc[i]->sh) {
+		case 'a': g_start_txt = result.oarg[i]; break;
+		case 'b': g_end_txt   = result.oarg[i]; break;
+		case 'x': g_requestor = result.oarg[i]; break;
+		}
+	}
+
 	time_t start_time = -1, end_time = -1;
 	if (g_start_txt != nullptr && xmktime(g_start_txt, &start_time) < 0)
 		return EXIT_PARAM;
@@ -63,7 +101,7 @@ int main(int argc, char **argv)
 		mbop_fprintf(stderr, "get_freebusy call not successful\n");
 		return EXIT_FAILURE;
 	}
-	printf("Results (%zu rows):\n", fbout.size());
+	printf("Results (%zu row(s)):\n", fbout.size());
 	for (const auto &e : fbout) {
 		char start_tx[64], end_tx[64];
 		struct tm tm{};

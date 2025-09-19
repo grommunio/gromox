@@ -793,7 +793,7 @@ ec_error_t rop_deletemessages(uint8_t want_asynchronous, uint8_t notify_non_read
     const LONGLONG_ARRAY *pmessage_ids, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	return oxcfold_deletemessages(FALSE, want_asynchronous,
+	return oxcfold_deletemessages(!emsmdb_pvt_folder_softdel, want_asynchronous,
 			notify_non_read, pmessage_ids, ppartial_completion,
 			plogmap, logon_id, hin);
 }

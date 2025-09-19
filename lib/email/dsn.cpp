@@ -18,7 +18,8 @@ bool DSN::load_from_str(const char *in_buff, size_t length)
 	clear();
 	auto pfields = &pdsn->message_fields;
 	while (current_offset < length) {
-		if (0 == strncmp(in_buff + current_offset, "\r\n", 2)) {
+		auto nl_len = newline_size(&in_buff[current_offset], length - current_offset);
+		if (nl_len > 0) {
 			if (pfields->size() > 0) {
 				pfields = new_rcpt_fields();
 				if (NULL == pfields) {
@@ -26,7 +27,7 @@ bool DSN::load_from_str(const char *in_buff, size_t length)
 					return false;
 				}
 			}
-			current_offset += 2;
+			current_offset += nl_len;
 			continue;
 		}
 		auto parsed_length = parse_mime_field(in_buff + current_offset,

@@ -1306,6 +1306,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "pff: Import unsuccessful.\n");
 		return EXIT_FAILURE;
 	}
-	fprintf(stderr, "pff: emitted %zu messages\n", g_msg_count);
+	fprintf(stderr, "pff: emitted %zu message(s)\n", g_msg_count);
 	return EXIT_SUCCESS;
 }

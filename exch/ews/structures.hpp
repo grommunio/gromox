@@ -53,6 +53,7 @@ struct tAppendToItemField;
 struct tCalendarFolderType;
 struct tCalendarItem;
 struct tContact;
+struct tPersona;
 struct tContactsFolderType;
 struct tDeleteFolderField;
 struct tDeleteItemField;
@@ -422,11 +423,12 @@ struct sSyncState {
  * members.
  */
 struct sTime {
+	sTime() = default;
 	sTime(const tinyxml2::XMLElement*);
 
-	uint8_t hour;
-	uint8_t minute;
-	uint8_t second;
+	uint8_t hour = 0;
+	uint8_t minute = 0;
+	uint8_t second = 0;
 };
 
 /**
@@ -742,6 +744,18 @@ struct tPhoneNumberDictionaryEntry : public NS_EWS_Types {
 };
 
 /**
+ * Types.xsd:8508 (simplified)
+ */
+struct tPersona : public NS_EWS_Types {
+        static constexpr char NAME[] = "Persona";
+
+        void serialize(tinyxml2::XMLElement *) const;
+
+        std::optional<std::string> DisplayName, EmailAddress, Title, Nickname,
+		BusinessPhoneNumber, MobilePhoneNumber, HomeAddress, Comment;
+};
+
+/**
  * Types.xsd:6136
  */
 struct tPullSubscriptionRequest : public tBaseSubscriptionRequest {
@@ -750,6 +764,19 @@ struct tPullSubscriptionRequest : public tBaseSubscriptionRequest {
 	explicit tPullSubscriptionRequest(const tinyxml2::XMLElement*);
 
 	int Timeout;
+};
+
+/**
+ * Types.xsd:6139
+ */
+struct tPushSubscriptionRequest : public tBaseSubscriptionRequest {
+	static constexpr char NAME[] = "PushSubscriptionRequest";
+
+	explicit tPushSubscriptionRequest(const tinyxml2::XMLElement *);
+
+	int StatusFrequency;
+	std::string URL;
+	std::optional<std::string> CallerData;
 };
 
 /**
@@ -2193,13 +2220,14 @@ struct tTasksFolderType : public tBaseFolderType {
  * Types.xsd:6372
  */
 struct tSerializableTimeZoneTime {
+	tSerializableTimeZoneTime() = default;
 	explicit tSerializableTimeZoneTime(const tinyxml2::XMLElement*);
 
-	int32_t Bias;
-	sTime Time;
-	int32_t DayOrder;
-	int32_t Month;
-	Enum::DayOfWeekType DayOfWeek;
+	int32_t Bias = 0;
+	sTime Time{};
+	int32_t DayOrder = 0;
+	int32_t Month = 0;
+	Enum::DayOfWeekType DayOfWeek{};
 	std::optional<int32_t> Year;
 
 	bool valid() const;
@@ -2235,11 +2263,13 @@ struct tSetItemField : public tChangeDescription {
  * Types.xsd:6383
  */
 struct tSerializableTimeZone {
+	tSerializableTimeZone() = default;
 	explicit tSerializableTimeZone(const tinyxml2::XMLElement*);
+	explicit tSerializableTimeZone(int32_t bias) : Bias(bias) {}
 
-	int32_t Bias;
-	tSerializableTimeZoneTime StandardTime;
-	tSerializableTimeZoneTime DaylightTime;
+	int32_t Bias = 0;
+	tSerializableTimeZoneTime StandardTime{};
+	tSerializableTimeZoneTime DaylightTime{};
 
 	std::chrono::minutes offset(time_point) const;
 	time_point apply(time_point) const;
@@ -3825,6 +3855,35 @@ struct mGetItemResponse {
 };
 
 /**
+ * Messages.xsd:2781 (simplified)
+ */
+struct mFindPeopleRequest {
+        explicit mFindPeopleRequest(const tinyxml2::XMLElement *);
+
+        std::string QueryString;
+};
+
+/**
+ * Messages.xsd:2788 (simplified)
+ */
+struct mFindPeopleResponseMessage : public mResponseMessageType {
+        static constexpr char NAME[] = "FindPeopleResponseMessage";
+
+        using mResponseMessageType::mResponseMessageType;
+
+        std::optional<std::vector<tPersona>> People;
+        std::optional<uint32_t> TotalNumberOfPeopleInView;
+
+        void serialize(tinyxml2::XMLElement *) const;
+};
+
+struct mFindPeopleResponse {
+        std::vector<mFindPeopleResponseMessage> ResponseMessages;
+
+        void serialize(tinyxml2::XMLElement *) const;
+};
+
+/**
  * Messages.xsd:1676
  */
 struct mResolveNamesRequest {
@@ -3898,7 +3957,7 @@ struct mSubscribeRequest {
 
 	explicit mSubscribeRequest(const tinyxml2::XMLElement*);
 
-	std::variant<tPullSubscriptionRequest, tStreamingSubscriptionRequest> subscription;
+	std::variant<tPullSubscriptionRequest, tPushSubscriptionRequest, tStreamingSubscriptionRequest> subscription;
 };
 
 /**

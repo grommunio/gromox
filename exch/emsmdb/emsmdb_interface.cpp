@@ -123,7 +123,7 @@ void emsmdb_report()
 		auto &ei = h.info;
 		auto pn = double_list_get_nodes_num(&h.notify_list);
 		mlog(LV_INFO, "%-32s  %-32s  /%-2u %-4u %-4u %3zu",
-			bin2hex(&h.guid, sizeof(GUID)).c_str(), h.username, h.cxr,
+			bin2hex(h.guid).c_str(), h.username, h.cxr,
 			ei.cpid, ei.lcid_string, pn);
 		++sessions;
 		pend_notif += pn;
@@ -139,7 +139,7 @@ void emsmdb_report()
 			++logons;
 			auto lo = static_cast<logon_object *>(root->pobject);
 			mlog(LV_INFO, "%5u  %-32s  %s(%u/%u)", i,
-			        bin2hex(&lo->mailbox_guid, sizeof(lo->mailbox_guid)).c_str(),
+			        bin2hex(lo->mailbox_guid).c_str(),
 			        lo->account, lo->account_id, lo->domain_id);
 		}
 	}

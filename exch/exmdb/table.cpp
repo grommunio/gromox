@@ -935,13 +935,6 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 			last_row_id = sqlite3_last_insert_rowid(pdb->m_sqlite_eph);
 		sqlite3_reset(pstmt1);
 	}
-	if (NULL != psorts) {
-		if (psort_transact.commit() != SQLITE_OK)
-			return false;
-		psort_transact = gx_sql_begin(psqlite, txn_mode::write);
-		if (!psort_transact)
-			return false;
-	}
 	pstmt.finalize();
 	pstmt1.finalize();
 	if (NULL != psorts) {
@@ -3015,9 +3008,8 @@ BOOL exmdb_server::collapse_table(const char *dir,
 	return sql_transact_eph.commit() == SQLITE_OK ? TRUE : false;
 }
 
-BOOL exmdb_server::store_table_state(const char *dir,
-	uint32_t table_id, uint64_t inst_id,
-	uint32_t inst_num, uint32_t *pstate_id)
+BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
+    uint64_t inst_id, uint32_t inst_num, uint32_t *pstate_id) try
 {
 	int depth;
 	void *pvalue;
@@ -3026,7 +3018,6 @@ BOOL exmdb_server::store_table_state(const char *dir,
 	uint64_t last_id;
 	sqlite3 *psqlite;
 	EXT_PUSH ext_push;
-	char tmp_path[256];
 	char tmp_buff[1024];
 	uint32_t tmp_proptag;
 	char sql_string[1024];
@@ -3041,18 +3032,22 @@ BOOL exmdb_server::store_table_state(const char *dir,
 		return TRUE;
 	if (ptnode->type != table_type::content)
 		return TRUE;
-	snprintf(tmp_path, std::size(tmp_path), "%s/tmp/state.sqlite3",
-	         exmdb_server::get_dir());
+	const auto &state_path = exmdb_eph_prefix + "/" + exmdb_server::get_dir() + "/tablestate.sqlite3";
+	auto ret = gx_mkbasedir(state_path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-2711: mkbasedir %s: %s", state_path.c_str(), strerror(-ret));
+		return false;
+	}
 	/*
 	 * sqlite3_open does not expose O_EXCL, so let's create the file under
 	 * EXCL semantics ahead of time.
 	 */
-	auto tfd = open(tmp_path, O_RDWR | O_CREAT | O_EXCL, FMODE_PRIVATE);
+	auto tfd = open(state_path.c_str(), O_RDWR | O_CREAT | O_EXCL, FMODE_PRIVATE);
 	if (tfd >= 0) {
 		close(tfd);
-		auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+		ret = sqlite3_open_v2(state_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 		if (ret != SQLITE_OK) {
-			mlog(LV_ERR, "E-1435: sqlite3_open %s: %s", tmp_path, sqlite3_errstr(ret));
+			mlog(LV_ERR, "E-1435: sqlite3_open %s: %s", state_path.c_str(), sqlite3_errstr(ret));
 			return FALSE;
 		}
 		gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
@@ -3069,27 +3064,27 @@ BOOL exmdb_server::store_table_state(const char *dir,
 			"header_stat INTEGER DEFAULT NULL)");
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK) {
 			sqlite3_close(psqlite);
-			if (remove(tmp_path) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1348: remove %s: %s", tmp_path, strerror(errno));
+			if (remove(state_path.c_str()) < 0 && errno != ENOENT)
+				mlog(LV_WARN, "W-1348: remove %s: %s", state_path.c_str(), strerror(errno));
 			return FALSE;
 		}
 		snprintf(sql_string, std::size(sql_string), "CREATE UNIQUE INDEX state_index"
 			" ON state_info (folder_id, table_flags, sorts)");
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK) {
 			sqlite3_close(psqlite);
-			remove(tmp_path);
+			remove(state_path.c_str());
 			return FALSE;
 		}
 	} else if (errno == EEXIST) {
-		auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+		ret = sqlite3_open_v2(state_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 		if (ret != SQLITE_OK) {
-			mlog(LV_ERR, "E-1436: sqlite3_open %s: %s", tmp_path, sqlite3_errstr(ret));
+			mlog(LV_ERR, "E-1436: sqlite3_open %s: %s", state_path.c_str(), sqlite3_errstr(ret));
 			return FALSE;
 		}
 		gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
 		gx_sql_exec(psqlite, "PRAGMA synchronous=OFF");
 	} else {
-		mlog(LV_ERR, "E-1943: open %s: %s", tmp_path, strerror(errno));
+		mlog(LV_ERR, "E-1943: open %s: %s", state_path.c_str(), strerror(errno));
 		return false;
 	}
 	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
@@ -3289,10 +3284,12 @@ BOOL exmdb_server::store_table_state(const char *dir,
 		sqlite3_reset(pstmt1);
 	}
 	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
-BOOL exmdb_server::restore_table_state(const char *dir,
-	uint32_t table_id, uint32_t state_id, int32_t *pposition)
+BOOL exmdb_server::restore_table_state(const char *dir, uint32_t table_id,
+    uint32_t state_id, int32_t *pposition) try
 {
 	void *pvalue;
 	uint32_t idx;
@@ -3302,7 +3299,6 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 	uint8_t row_stat;
 	uint64_t inst_num;
 	EXT_PUSH ext_push;
-	char tmp_path[256];
 	uint64_t header_id;
 	uint64_t message_id;
 	uint8_t header_stat;
@@ -3325,15 +3321,14 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 		return TRUE;
 	if (ptnode->type != table_type::content)
 		return TRUE;
-	snprintf(tmp_path, std::size(tmp_path), "%s/tmp/state.sqlite3",
-	         exmdb_server::get_dir());
-	if (stat(tmp_path, &node_stat) != 0)
+	const auto &state_path = exmdb_eph_prefix + "/" + exmdb_server::get_dir() + "/tablestate.sqlite3";
+	if (stat(state_path.c_str(), &node_stat) != 0)
 		return TRUE;
 	sqlite3 *psqlite = nullptr;
-	auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+	auto ret = sqlite3_open_v2(state_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
-		mlog(LV_ERR, "E-1437: sqlite3_open %s: %s", tmp_path, sqlite3_errstr(ret));
-		return FALSE;
+		mlog(LV_ERR, "E-1437: sqlite3_open %s: %s", state_path.c_str(), sqlite3_errstr(ret));
+		return false;
 	}
 	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
 	gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
@@ -3521,4 +3516,6 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 		return false;
 	*pposition = pstmt.step() == SQLITE_ROW ? sqlite3_column_int64(pstmt, 0) - 1 : -1;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }

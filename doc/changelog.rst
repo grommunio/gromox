@@ -1,10 +1,62 @@
-Development 2.48.5
-==================
+Development 2.48.134
+====================
+
+Enhancements:
+
+* eml2mt now transmits the RFC5322 representation into the message store so
+  that IMAP clients can serve that instead of representation synthesized from
+  MAPI data. / Messages imported via eml2mt no longer "lose" their original
+  structure and headers when viewed in IMAP.
+* midb now transmits the RFC5322 representations of messages created via IMAP
+  into the message store. (Previously: just into the midb cache.) / Messages
+  which have been client-side copied in IMAP, i.e. with FETCH+STORE rather than
+  COPY, no longer "lose" their structure and headers.
+* oxcical: implement support for VTODO and VJOURNAL
+* mbop: add "freeze" and "thaw" commands
+* mbop: support UTC/zone suffixes for getfreebusy -a/-b arguments
+* mbop: using the -v option will now additionaly report the mailbox and
+  subcommand in error messages
+* oxdisco: the AutoConfig mechanism now emits an EWS server information block
+* ews: include ParentFolderId in FindFolder/GetFolder response
+* ews: implemented GetDelegate, CreateAttachment, FindPeople (GAL lookup),
+  PushSubscriptionRequest request handlers
+* ews: implemented oofReply responses like EX/365
+* ews: Direct Meeting Response related serialization was added
+* ews: referenced calendar items are now updated when a CreateItem request
+  contains AcceptItem or DeclineItem tags.
+* ews: support GetUserAvailabilityRequest request TimeZoneContext tag.
+* zcore: Out of Office configuration reading and writing is now performed over
+  the network rather than through direct filesystem access.
+* exmdb: the derivation for the PR_MESSAGE_*_ME property value, upon delivery,
+  now includes PR_EMAIL_ADDRESS as a fallback if PR_SMTP_ADDRESS is unset.
 
 Fixes:
 
 * fnevObjectCreate notifications were not sent when a mail was processed
-  through TWOSTEP Rule Processor, now fixed
+  through TWOSTEP Rule Processor, now fixed.
+* oxcical: iCal events with a date in DTSTART & DTEND but without
+  X-MICROSOFT-CDO-ALLDAYEVENT are now transformed into Allday events even if
+  the event is longer than one day.
+* delivery: emit MDN-RRT messages even with ``lda_twostep_ruleproc`` is set.
+* oxdisco: AutoConfig XML now features the incomingServer type parameter
+  in the right place.
+* oxdisco: AutoConfig now emits outgoing server port 587 as type smtp.
+* ews: Avoid sending multiple ``<?xml ?>`` lines into the notification stream
+  HTTP response body.
+* ews: trim "duplicate" recipients when a newly-created item has recipients in
+  both <mimeContent> and <To>/<Cc>
+* ews: prevent FAI messages from polluting the Normal Message Set during ICS
+* ews: when the FindItem requests finds no objects, an empty RootFolder tag
+  is now still returned.
+* ews: delete excess NUL byte from tCalendarItem:UID tags
+
+Changes:
+
+* kdb2mt no longer imports LocalFreebusy control messages, since dangling
+  references in those can make delegate permission editing via OL
+  nonfunctional.
+* emsmdb: outgoing lzxpress compression in the EMSMDB protocol is now
+  disabled as it does not compress well for the time invested.
 
 
 Gromox 2.48 (2025-07-31)

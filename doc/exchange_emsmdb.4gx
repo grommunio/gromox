@@ -21,13 +21,17 @@ OXCROPS consists of 130 calls that make up the mailbox protocol.
 The following directives are recognized when they appear in
 /etc/gromox/gromox.cfg.
 .TP
-\fBoutgoing_smtp_url\fP
-The SMTP server to use for outgoing mails. To use the local maildrop queue, set
-the value to \fIsendmail://localhost\fP. smtp:// is unqueued(!), and if the
-SMTP server is offline, submissions will be rejected (and mails stick around in
-Outbox or whatever folder they were submitted from).
+\fBemsmdb_compress_threshold\fP
+When a ROP response buffer has at least this many bytes, attempt to compress
+with LZXpress. (Use -1 to disable compression.) This format/implementation is
+underperforming in modern contexts: the rate is just about 60 MB/s on a 5950X
+CPU, which is a tenth of what zstd-1.5.7 achieves, and the compression ratio is
+somewhere between Unix compress(1) and gzip level 1.
 .br
-Default: \fIsendmail://localhost\fP
+Default: \fI0\fP
+.TP
+\fBoutgoing_smtp_url\fP
+See gromox.cfg(5):outgoing_smtp_url.
 .SH Configuration directives (exchange_emsmdb.cfg)
 The following directives are recognized when they appear in
 /etc/gromox/exchange_emsmdb.cfg.
@@ -80,7 +84,7 @@ logons per mailbox that it opens.
 .br
 Default: \fI500\fP
 .TP
-\fBemsmdb_private_folder_softdel\fP
+\fBemsmdb_private_folder_softdelete\fP
 Enables soft-delete support for folders in private stores. (This feature is
 experimental.) Public folders always have this on. (Take note that
 exmdb_provider.cfg:exmdb_private_folder_softdelete also need to be enabled.)

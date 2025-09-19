@@ -3722,6 +3722,22 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_imapfile_read &d)
 	return x.p_bytes(d.data.data(), d.data.size());
 }
 
+static pack_result exmdb_pull(EXT_PULL &x, exresp_purge_softdelete &d)
+{
+	TRY(x.g_uint32(&d.cnt_folders));
+	TRY(x.g_uint32(&d.cnt_messages));
+	TRY(x.g_uint64(&d.sz_normal));
+	return x.g_uint64(&d.sz_fai);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_purge_softdelete &d)
+{
+	TRY(x.p_uint32(d.cnt_folders));
+	TRY(x.p_uint32(d.cnt_messages));
+	TRY(x.p_uint64(d.sz_normal));
+	return x.p_uint64(d.sz_fai);
+}
+
 #define RSP_WITHOUT_ARGS \
 	E(ping_store) \
 	E(remove_store_properties) \
@@ -3751,7 +3767,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_imapfile_read &d)
 	E(vacuum) \
 	E(unload_store) \
 	E(notify_new_mail) \
-	E(purge_softdelete) \
 	E(purge_datafiles) \
 	E(autoreply_tsupdate) \
 	E(recalc_store_size) \
@@ -3860,7 +3875,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_imapfile_read &d)
 	E(autoreply_tsquery) \
 	E(imapfile_read) \
 	E(autoreply_getprop) \
-	E(autoreply_setprop)
+	E(autoreply_setprop) \
+	E(purge_softdelete)
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
 /*

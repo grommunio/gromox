@@ -169,7 +169,6 @@ unsigned int g_midb_cache_interval, g_midb_reload_interval;
 
 static constexpr time_duration DB_LOCK_TIMEOUT = std::chrono::seconds(60);
 static size_t g_table_size;
-static std::atomic<unsigned int> g_sequence_id;
 static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
 static pthread_t g_scan_tid;
 static char g_org_name[256];
@@ -1366,7 +1365,9 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 			return;
 		digest["file"] = "";
 		djson = json_to_str(digest);
-		e.midstr = fmt::format("{}.m{}.{}", time(nullptr), ++g_sequence_id, g_host_id);
+		char guidtxt[GUIDSTR_SIZE]{};
+		GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
+		e.midstr = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
 		if (!exmdb_client->imapfile_write(dir, "ext", e.midstr, djson)) {
 			mlog(LV_ERR, "E-1770: imapfile_write %s/ext/%s incomplete", dir, e.midstr.c_str());
 			return;
@@ -4119,7 +4120,6 @@ static void notif_handler(const char *dir,
 void me_init(const char *default_charset, const char *org_name,
     size_t table_size)
 {
-	g_sequence_id = 0;
 	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
 	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
 	g_table_size = table_size;

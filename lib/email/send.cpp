@@ -6,10 +6,12 @@
 #include <utility>
 #include <vector>
 #include <openssl/ssl.h>
+#include <vmime/exception.hpp>
 #include <vmime/mailbox.hpp>
 #include <vmime/mailboxList.hpp>
 #include <vmime/message.hpp>
 #include <vmime/net/transport.hpp>
+#include <vmime/security/cert/defaultCertificateVerifier.hpp>
 #include <vmime/utility/inputStreamStringAdapter.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
@@ -69,6 +71,27 @@ ec_error_t cu_rcpt_to_list(const TPROPVAL_ARRAY &props, const char *org_name,
 	return ecServerOOM;
 }
 
+static vmime::shared_ptr<vmime::net::transport> make_transport(const char *url)
+{
+	vmime::utility::url vurl(url);
+	bool uv  = strncmp(url, "smtp+unverifiedtls:", 9) == 0;
+	bool tls = uv || strncmp(url, "smtp+tls:", 9) == 0;
+	if (tls)
+		vurl.setProtocol("smtp");
+	auto xp = vmime::net::session::create()->getTransport(std::move(vurl));
+	if (!tls)
+		return xp;
+	xp->setProperty("connection.tls", true);
+	if (!uv)
+		return xp;
+
+	struct uv_impl : public vmime::security::cert::certificateVerifier {
+		void verify(const vmime::shared_ptr<vmime::security::cert::certificateChain> &chain, const std::string &host) {}
+	};
+	xp->setCertificateVerifier(vmime::make_shared<uv_impl>());
+	return xp;
+}
+
 ec_error_t cu_send_mail(MAIL &mail, const char *smtp_url, const char *sender,
     const std::vector<std::string> &rcpt_list) try
 {
@@ -96,7 +119,7 @@ ec_error_t cu_send_mail(MAIL &mail, const char *smtp_url, const char *sender,
 	content.clear();
 	vmime::shared_ptr<vmime::net::transport> xprt;
 	try {
-		xprt = vmime::net::session::create()->getTransport(vmime::utility::url(smtp_url));
+		xprt = make_transport(smtp_url);
 		/* vmime default timeout is 30s */
 		xprt->connect();
 	} catch (const vmime::exception &e) {
@@ -106,6 +129,9 @@ ec_error_t cu_send_mail(MAIL &mail, const char *smtp_url, const char *sender,
 	try {
 		xprt->send(vsender, vrcpt_list, ct_adap, content.size(), nullptr, {}, {});
 		xprt->disconnect();
+	} catch (const vmime::exceptions::command_error &e) {
+		mlog(LV_ERR, "vmime.send: %s: %s", e.command().c_str(), e.response().c_str());
+		return MAPI_W_CANCEL_MESSAGE;
 	} catch (const vmime::exception &e) {
 		mlog(LV_ERR, "vmime.send: %s", e.what());
 		return MAPI_W_CANCEL_MESSAGE;
@@ -136,7 +162,7 @@ ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message> msg,
 		vrcpt_list.appendMailbox(vmime::make_shared<vmime::mailbox>(r));
 	vmime::shared_ptr<vmime::net::transport> xprt;
 	try {
-		xprt = vmime::net::session::create()->getTransport(vmime::utility::url(smtp_url));
+		xprt = make_transport(smtp_url);
 		/* vmime default timeout is 30s */
 		xprt->connect();
 	} catch (const vmime::exception &e) {
@@ -146,6 +172,9 @@ ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message> msg,
 	try {
 		xprt->send(std::move(msg), vsender, vrcpt_list, nullptr, {}, {});
 		xprt->disconnect();
+	} catch (const vmime::exceptions::command_error &e) {
+		mlog(LV_ERR, "vmime.send: %s: %s", e.command().c_str(), e.response().c_str());
+		return MAPI_W_CANCEL_MESSAGE;
 	} catch (const vmime::exception &e) {
 		mlog(LV_ERR, "vmime.send: %s", e.what());
 		return MAPI_W_CANCEL_MESSAGE;

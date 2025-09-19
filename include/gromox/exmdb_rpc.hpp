@@ -1344,6 +1344,11 @@ struct exresp_imapfile_read final : public exresp {
 	std::string data;
 };
 
+struct exresp_purge_softdelete final : public exresp {
+	uint32_t cnt_folders = 0, cnt_messages = 0;
+	uint64_t sz_normal = 0, sz_fai = 0;
+};
+
 using exreq_ping_store = exreq;
 using exreq_get_all_named_propids = exreq;
 using exreq_get_store_all_proptags = exreq;
@@ -1381,7 +1386,7 @@ using exresp_vacuum = exresp;
 using exresp_unload_store = exresp;
 using exresp_ping_store = exresp;
 using exresp_notify_new_mail = exresp;
-using exresp_purge_softdelete = exresp;
+
 using exresp_purge_datafiles = exresp;
 using exresp_autoreply_tsupdate = exresp;
 using exresp_recalc_store_size = exresp;

@@ -48,6 +48,7 @@ static std::unordered_map<std::string, uint32_t> g_logon_hash;
 static unsigned int g_emsmdb_full_parenting;
 static unsigned int g_max_rop_payloads = 96;
 
+size_t emsmdb_compress_threshold;
 unsigned int emsmdb_max_obh_per_session = 500;
 unsigned int emsmdb_max_cxh_per_user = 100;
 unsigned int emsmdb_pvt_folder_softdel, emsmdb_rop_chaining;

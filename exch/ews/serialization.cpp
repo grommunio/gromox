@@ -948,9 +948,28 @@ void tPhoneNumberDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPA(Key);
 }
 
+void tPersona::serialize(XMLElement *xml) const
+{
+	XMLDUMPT(DisplayName);
+	XMLDUMPT(EmailAddress);
+	XMLDUMPT(Title);
+	XMLDUMPT(Nickname);
+	XMLDUMPT(BusinessPhoneNumber);
+	XMLDUMPT(MobilePhoneNumber);
+	XMLDUMPT(HomeAddress);
+	XMLDUMPT(Comment);
+}
+
 tPullSubscriptionRequest::tPullSubscriptionRequest(const tinyxml2::XMLElement* xml) :
 	tBaseSubscriptionRequest(xml),
 	XMLINIT(Timeout)
+{}
+
+tPushSubscriptionRequest::tPushSubscriptionRequest(const tinyxml2::XMLElement *xml) :
+	tBaseSubscriptionRequest(xml),
+	XMLINIT(StatusFrequency),
+	XMLINIT(URL),
+	XMLINIT(CallerData)
 {}
 
 tExtendedFieldURI::tExtendedFieldURI(const tinyxml2::XMLElement* xml) :
@@ -2031,6 +2050,22 @@ void mGetItemResponseMessage::serialize(XMLElement* xml) const
 {
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(Items);
+}
+
+mFindPeopleRequest::mFindPeopleRequest(const XMLElement *xml) :
+	XMLINIT(QueryString)
+{}
+
+void mFindPeopleResponseMessage::serialize(XMLElement *xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(People);
+	XMLDUMPM(TotalNumberOfPeopleInView);
+}
+
+void mFindPeopleResponse::serialize(XMLElement *xml) const
+{
+	XMLDUMPM(ResponseMessages);
 }
 
 void tFindResponsePagingAttributes::serialize(XMLElement* xml) const

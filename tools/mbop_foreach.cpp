@@ -33,7 +33,7 @@ static int help()
 {
 	fprintf(stderr, "Usage: foreach[.filter]* [-j jobs] command [args...]\n");
 	fprintf(stderr, " filter := secobj | user | mlist | sharedmb | contact |\n");
-	fprintf(stderr, "           active | susp | deleted | mb\n");
+	fprintf(stderr, "           active | susp | deleted | mb | here\n");
 	global::command_overview();
 	return EXIT_PARAM;
 }
@@ -106,11 +106,11 @@ static int filter_users(const char *mode, std::vector<sql_user> &ul)
 
 int main(int argc, char **argv)
 {
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
+	HXopt6_auto_result result;
+	if (HX_getopt6(g_options_table, argc, argv, &result, HXOPT_USAGEONERR |
+	    HXOPT_RQ_ORDER | HXOPT_ITER_ARGS) != HXOPT_ERR_SUCCESS ||
 	    g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (global::g_arg_username != nullptr || global::g_arg_userdir != nullptr) {
 		fprintf(stderr, "Cannot use -d/-u with foreach.*\n");
 		return EXIT_PARAM;
@@ -118,8 +118,8 @@ int main(int argc, char **argv)
 		g_numthreads = gx_concurrency();
 	}
 	auto fe_mode = argv[0];
-	--argc;
-	++argv;
+	argc = result.nargs;
+	argv = result.uarg;
 	++global::g_command_num;
 	if (argc == 0)
 		return help();
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 	Sem sem(g_numthreads);
 
 	if (strcmp(argv[0], "ping") == 0) {
-		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
+		if (HX_getopt6(empty_options_table, argc, argv, nullptr,
 		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
 		    g_exit_after_optparse)
 			return EXIT_PARAM;
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 			}, &user.maildir, &sem, &ret));
 		}
 	} else if (strcmp(argv[0], "unload") == 0) {
-		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
+		if (HX_getopt6(empty_options_table, argc, argv, nullptr,
 		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
 		    g_exit_after_optparse)
 			return EXIT_PARAM;
@@ -167,7 +167,7 @@ int main(int argc, char **argv)
 			}, &user.maildir, &sem, &ret));
 		}
 	} else if (strcmp(argv[0], "vacuum") == 0) {
-		if (HX_getopt5(empty_options_table, argv, nullptr, nullptr,
+		if (HX_getopt6(empty_options_table, argc, argv, nullptr,
 		    HXOPT_RQ_ORDER | HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS ||
 		    g_exit_after_optparse)
 			return EXIT_PARAM;

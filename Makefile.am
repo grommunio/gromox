@@ -151,7 +151,7 @@ libgxp_exchange_rfr_la_LIBADD = ${fmt_LIBS} ${libHX_LIBS} libgromox_common.la li
 EXTRA_libgxp_exchange_rfr_la_DEPENDENCIES = default.sym
 libgxh_ews_la_SOURCES = exch/ews/ObjectCache.hpp exch/ews/context.cpp exch/ews/enums.hpp exch/ews/ews.cpp exch/ews/ews.hpp exch/ews/exceptions.hpp exch/ews/hash.hpp exch/ews/namedtags.hpp exch/ews/requests.cpp exch/ews/requests.hpp exch/ews/serialization.cpp exch/ews/serialization.hpp exch/ews/soaputil.cpp exch/ews/soaputil.hpp exch/ews/structures.cpp exch/ews/structures.hpp
 libgxh_ews_la_LDFLAGS = ${default_SYFLAGS}
-libgxh_ews_la_LIBADD = ${libHX_LIBS} ${fmt_LIBS} ${tinyxml2_LIBS} ${vmime_LIBS} libgromox_common.la libgromox_mapi.la libgromox_exrpc.la libgxs_mysql_adaptor.la
+libgxh_ews_la_LIBADD = ${libHX_LIBS} ${fmt_LIBS} ${tinyxml2_LIBS} ${vmime_LIBS} libgromox_abtree.la libgromox_common.la libgromox_mapi.la libgromox_exrpc.la libgxs_mysql_adaptor.la
 EXTRA_libgxh_ews_la_DEPENDENCIES = default.sym
 libgxh_mh_emsmdb_la_SOURCES = exch/mh/emsmdb.cpp exch/mh/mh_common.cpp exch/mh/mh_common.hpp 
 libgxh_mh_emsmdb_la_LDFLAGS = ${default_SYFLAGS}
@@ -241,7 +241,7 @@ mapi_la_LDFLAGS += -Wl,--allow-shlib-undefined
 endif
 EXTRA_mapi_la_DEPENDENCIES = default.sym
 
-noinst_PROGRAMS = dldcheck tests/bdump tests/bodyconv tests/compress tests/dnsbl_check tests/exrpctest tests/gxl-383 tests/jsontest tests/lzxpress tests/oxcmail_ie tests/ucvttest tests/udb tests/utiltest tests/vcard tools/tzdump
+noinst_PROGRAMS = dldcheck tests/bdump tests/bodyconv tests/compress tests/dnsbl_check tests/exrpctest tests/gxl-383 tests/jsontest tests/lzxpress tests/oxcmail_ie tests/ucvttest tests/udb tests/utf8filter tests/utiltest tests/vcard tools/tzdump
 if HAVE_ESEDB
 noinst_PROGRAMS += tests/epv_unpack
 endif
@@ -272,6 +272,8 @@ tests_oxcmail_ie_SOURCES = tests/oxcmail_ie.cpp
 tests_oxcmail_ie_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tests_ucvttest_SOURCES = tests/ucvttest.cpp
 tests_ucvttest_LDADD = libgromox_mapi.la
+tests_utf8filter_SOURCES = tests/utf8filter.cpp
+tests_utf8filter_LDADD = ${libHX_LIBS} libgromox_common.la
 tests_utiltest_SOURCES = tests/utiltest.cpp
 tests_utiltest_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tests_vcard_SOURCES = tests/vcard.cpp
@@ -287,7 +289,7 @@ tools_tzdump_LDADD = ${libHX_LIBS} libgromox_common.la
 
 dist_man_MANS = \
 	doc/alias_resolve.4gx \
-	doc/authmgr.4gx doc/authtry.8gx doc/autodiscover.4gx \
+	doc/authmgr.4gx doc/authtry.8gx doc/autoconfig.7 doc/autodiscover.4gx \
 	doc/autodiscover.7 doc/cgkrepair.8gx doc/gromox-compress.8 \
 	doc/delivery.8gx doc/delivery-queue.8gx doc/dnsbl_filter.4gx \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \

@@ -362,7 +362,8 @@ enum ec_error_t
 	ecUnableToAbort = 0x80040114, /* MAPI_E_UNABLE_TO_ABORT */
 	ecRpcFailed = 0x80040115,
 	ecNetwork = 0x80040115, /* MAPI_E_NETWORK_ERROR */
-	ecReadFault = 0x80040116, /* ecWriteFault, MAPI_E_DISK_ERROR */
+	ecReadFault = 0x80040116, /* MAPI_E_DISK_ERROR */
+	ecWriteFault = ecReadFault,
 	ecTooComplex = 0x80040117, /* MAPI_E_TOO_COMPLEX */
 	// MAPI_E_BAD_COLUMN = 0x80040118,
 	// MAPI_E_EXTENDED_ERROR = 0x80040119,

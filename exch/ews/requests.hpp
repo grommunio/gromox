@@ -25,6 +25,7 @@ EWSFUNC(mDeleteItemRequest);
 EWSFUNC(mEmptyFolderRequest);
 EWSFUNC(mFindFolderRequest);
 EWSFUNC(mFindItemRequest);
+EWSFUNC(mFindPeopleRequest);
 EWSFUNC(mGetAppManifestsRequest);
 EWSFUNC(mGetAttachmentRequest);
 EWSFUNC(mGetDelegateRequest);

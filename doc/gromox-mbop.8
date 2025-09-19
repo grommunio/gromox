@@ -21,7 +21,7 @@ store of a domain, leave out the local part, i.e. use
 \fB@\fP\fIexample.com\fP.)
 .TP
 \fB\-v\fP
-Increase verbosity.
+Verbose mode.
 .SH Commands
 .IP \(bu 4
 \fB(\fP command1 c1args \fB) (\fP command2 c2args \fB)\fP: command
@@ -279,12 +279,11 @@ option(s) [or the mailbox currently in scope when using foreach.*], and asks
 for free/busy status within the given time period.
 .SS Options
 .TP
-\fB\-a\fP {\fIyyyy-mm-dd\fP\fBT\fP\fIhh:mm:ss\fP|\fIunixtime\fP}
-Left end of the timeframe to query. Unixtime means seconds since the epoch (and
-is necessarily in UTC), whereas the calendar-based time is read as localtime
-(so, respecting the TZ environment variable or /etc/localtime).
+\fB\-a\fP {\fIyyyy-mm-dd\fP\fBT\fP\fIhh:mm:ss\fP[\fBZ\fP|\fB+\fP\fIhhmm\fP|\fB\-\fP\fIhhmm\fP]|\fIunixtime\fP}
+Left end of the timeframe to query. Can either be a Unixtime or a ISO 8601
+timestamp.
 .TP
-\fB\-b\fP {\fIyyyy-mm-dd\fP\fBT\fP\fIhh:mm:ss\fP|\fIunixtime\fP}
+\fB\-b\fP {\fIyyyy-mm-dd\fP\fBT\fP\fIhh:mm:ss\fP[\fB+\fP\fIhhmm\fP|\fB\-\fP\fIhhmm\fP]|\fIunixtime\fP}
 Right end of the timeframe to query.
 .TP
 \fB\-x\fP \fIusername\fP
@@ -354,7 +353,7 @@ gromox\-mbop \-u abc@example.com purge\-softdelete \-r / \-t 10d
 Recalculates the store size.
 .SH set\-locale
 .SS Synopsis
-\fBset\-locale\fP [\fB\-v\fP] \-l\fP \fIid\fP
+\fBset\-locale\fP [\fB\-Tv\fP] \-l\fP \fIid\fP
 .SS Description
 First, the set\-locale operation changes the "preferred language" setting for
 the user account. This affects the display of user interfaces like
@@ -366,6 +365,10 @@ locale, set\-locale also resets the display names of the mailbox's built-in
 folders.
 .SS Options
 .TP
+\fB\-T\fP
+Run a trivial performance test against exmdb by repeatedly setting the folder
+names.
+.TP
 \fB\-l\fP \fId\fP
 A locale identifier in the form of \fIlanguage\fP\fB_\fP[\fIterritory\fP],
 where language is a ISO 639-1 code and territory is a ISO 3166-1 Alpha 2 code,
@@ -375,7 +378,7 @@ identifier syntax
 Codeset and no Modifier should be used in Gromox.
 .TP
 \fB\-v\fP
-Verbose mode.
+Verbose mode. (Same as global \-v.)
 .SS Examples
 .IP \(bu 4
 gromox\-mbop \-u abc@example.com set\-locale \-l ja_JP

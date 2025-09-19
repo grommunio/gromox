@@ -6,20 +6,18 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <ctime>
 #include <functional>
 #include <optional>
 #include <string>
-#include <variant>
-#include <vector>
-
-#include <gromox/clock.hpp>
-
 #include <tinyxml2.h>
+#include <variant>
 #include <vector>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <gromox/clock.hpp>
+#include <gromox/util.hpp>
 #include "exceptions.hpp"
 #include "structures.hpp"
 
@@ -133,8 +131,13 @@ template<> struct ExplicitConvert<std::string> {
 
 	static void serialize(const std::string &value, SetterFunc setter)
 	{
-		if (value.length())
-			setter(value.c_str());
+		if (value.empty())
+			return;
+		auto filtered = value;
+		utf8_filter(filtered.data());
+		filtered.resize(strlen(filtered.c_str()));
+		if (!filtered.empty())
+			setter(filtered.c_str());
 	}
 };
 

@@ -325,6 +325,15 @@ static bool goid_to_icaluid(BINARY *gobj, std::string &uid_buf)
 	return true;
 }
 
+unsigned int freebusy_perms(const char *actor, const char *target)
+{
+	auto cal_eid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	uint32_t perm = 0;
+	if (!exmdb_client->get_folder_perm(target, cal_eid, actor, &perm))
+		return 0;
+	return perm & (frightsFreeBusySimple | frightsFreeBusyDetailed | frightsReadAny);
+}
+
 bool get_freebusy(const char *username, const char *dir, time_t start_time,
     time_t end_time, std::vector<freebusy_event> &fb_data)
 {
@@ -332,9 +341,8 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 	auto cal_eid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
 
 	if (username != nullptr) {
-		if (!exmdb_client->get_folder_perm(dir, cal_eid, username, &permission))
-			return false;
-		if (!(permission & (frightsFreeBusySimple | frightsFreeBusyDetailed | frightsReadAny)))
+		permission = freebusy_perms(username, dir);
+		if (permission == 0)
 			return false;
 	} else {
 		permission = frightsFreeBusyDetailed | frightsReadAny;

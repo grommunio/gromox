@@ -41,7 +41,6 @@ using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
 namespace gromox {
 bool g_oxcical_allday_ymd = true; /* MS-OXCICAL v13 §2.1.3.1.1.20.8 p. 49. */
-bool oxcmail_exchsched_compat = false;
 }
 
 static constexpr char
@@ -843,7 +842,9 @@ static bool oxcical_parse_recipients(const ical_component &main_ev,
 			return false;
 		tmp_int32 = recipSendable;
 		if (is_organizer)
-			tmp_int32 |= recipOrganizer;
+			tmp_int32 |= recipOrganizer | recipOriginal;
+		else
+			tmp_int32 |= recipAddedByOrganizer;
 		if (pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32) != ecSuccess)
 			return false;
 	}
@@ -1339,10 +1340,17 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 			paddress = nullptr;
 	}
 	pdisplay_name = piline->get_first_paramval("CN");
+	/*
+	 * Some clients omit the CN parameter, which would leave
+	 * PR_SENT_REPRESENTING_NAME unset. Outlook interprets a missing
+	 * PR_SENT_REPRESENTING_NAME as if the current user were the organizer,
+	 * which disables the response buttons. Fallback to filling it with the
+	 * email address.
+	 */
+	if (pdisplay_name == nullptr)
+		pdisplay_name = paddress;
 	if (pdisplay_name != nullptr) {
-		if (pmsg->proplist.set(PR_SENT_REPRESENTING_NAME, pdisplay_name) != ecSuccess)
-			return false;
-		if (oxcmail_exchsched_compat &&
+		if (pmsg->proplist.set(PR_SENT_REPRESENTING_NAME, pdisplay_name) != ecSuccess ||
 		    pmsg->proplist.set(PR_SENDER_NAME, pdisplay_name) != ecSuccess)
 			return false;
 	}
@@ -1366,15 +1374,12 @@ static bool oxcical_parse_organizer(const ical_component &main_event,
 	if (pmsg->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP") != ecSuccess ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, paddress) != ecSuccess ||
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, paddress) != ecSuccess ||
-	    pmsg->proplist.set(PR_SENT_REPRESENTING_ENTRYID, &tmp_bin) != ecSuccess)
+	    pmsg->proplist.set(PR_SENT_REPRESENTING_ENTRYID, &tmp_bin) != ecSuccess ||
+	    pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != ecSuccess ||
+	    pmsg->proplist.set(PR_SENDER_EMAIL_ADDRESS, paddress) != ecSuccess ||
+	    pmsg->proplist.set(PR_SENDER_SMTP_ADDRESS, paddress) != ecSuccess ||
+	    pmsg->proplist.set(PR_SENDER_ENTRYID, &tmp_bin) != ecSuccess)
 		return false;
-	if (oxcmail_exchsched_compat) {
-		if (pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != ecSuccess ||
-		    pmsg->proplist.set(PR_SENDER_EMAIL_ADDRESS, paddress) != ecSuccess ||
-		    pmsg->proplist.set(PR_SENDER_SMTP_ADDRESS, paddress) != ecSuccess ||
-		    pmsg->proplist.set(PR_SENDER_ENTRYID, &tmp_bin) != ecSuccess)
-			return false;
-	}
 	return true;
 }
 

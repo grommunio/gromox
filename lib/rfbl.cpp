@@ -965,6 +965,17 @@ int iconv_validate()
 	return 0;
 }
 
+bool get_digest(const Json::Value &jval, const char *key, std::string &out) try
+{
+	if (jval.type() != Json::ValueType::objectValue || !jval.isMember(key))
+		return false;
+	out = jval[key].asString();
+	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1988: ENOMEM");
+	return false;
+}
+
 bool get_digest(const Json::Value &jval, const char *key, char *out, size_t outmax) try
 {
 	if (jval.type() != Json::ValueType::objectValue || !jval.isMember(key))
@@ -1071,7 +1082,7 @@ int tmpfile::open_impl(const char *dir, unsigned int flags, unsigned int mode,
 	return -ENOMEM;
 }
 
-errno_t tmpfile::link_to(const char *newpath)
+errno_t tmpfile::link_to_overwrite(const char *newpath)
 {
 	if (m_path.empty())
 		return EINVAL;
@@ -1084,12 +1095,40 @@ errno_t tmpfile::link_to(const char *newpath)
 	 */
 	if (fsync(m_fd) < 0)
 		return errno;
-	/*
-	 * The use of renameat2(RENAME_NOREPLACE) to speed up the CID writer in
-	 * one particular edge case was evaluated, but it is not worth it.
-	 */
 	if (rename(m_path.c_str(), newpath) != 0)
 		return errno;
+	m_path.clear();
+	return 0;
+}
+
+errno_t tmpfile::link_to_noreplace(const char *newpath)
+{
+	if (m_path.empty())
+		return EINVAL;
+	if (m_fd < 0)
+		return EBADF;
+	if (fsync(m_fd) < 0)
+		return errno;
+#ifdef HAVE_RENAMEAT2
+	if (renameat2(AT_FDCWD, m_path.c_str(), AT_FDCWD, newpath, RENAME_NOREPLACE) == 0) {
+		m_path.clear();
+		return 0;
+	}
+#endif
+	/*
+	 * If we land here, renameat2 is not implemented for the particular
+	 * filesystem.
+	 *
+	 * renameat2 guarantees that at most one name will exist at any one
+	 * time. We do not need this guarantee. The file is just for this class
+	 * instsance. The "noreplace" logic can be implemented with link+unlink
+	 * instead. If unlink fails because the fs cannot allocate space to
+	 * start a transaction for unlink(), so be it.
+	 */
+	if (link(m_path.c_str(), newpath) != 0)
+		return errno;
+	if (unlink(m_path.c_str()) != 0)
+		/* ignore */;
 	m_path.clear();
 	return 0;
 }
@@ -1104,6 +1143,8 @@ void mlog_init(const char *ident, const char *filename, unsigned int max_level,
 			for_tty = true;
 		else if (getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
 			for_syslog = true;
+		else
+			for_tty = true;
 	} else if (strcmp(filename, "syslog") == 0) {
 		for_syslog = true;
 	}
@@ -1815,8 +1856,7 @@ int gx_mkbasedir(const char *file, unsigned int mode)
 		mode |= S_IXGRP;
 	if (mode & (S_IROTH | S_IWOTH))
 		mode |= S_IXOTH;
-	auto ret = HX_mkdir(base.get(), mode);
-	return ret < 0 ? -ret : 0;
+	return HX_mkdir(base.get(), mode);
 }
 
 }

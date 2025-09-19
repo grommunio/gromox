@@ -17,13 +17,9 @@ using namespace gromox;
 
 namespace delmsg {
 
-static char *g_folderstr;
-static eid_t g_folderid;
-static unsigned int g_soft;
-
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'f', HXTYPE_STRING, &g_folderstr, nullptr, nullptr, 0, "Folder ID"},
-	{"soft", 0, HXTYPE_NONE, &g_soft, nullptr, nullptr, 0, "Soft-delete"},
+	{{}, 'f', HXTYPE_STRING, {}, {}, {}, 'f', "Folder ID"},
+	{"soft", 0, HXTYPE_NONE, {}, {}, {}, 's', "Soft-delete"},
 	MBOP_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -36,10 +32,20 @@ static int help()
 
 int main(int argc, char **argv)
 {
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
+	bool g_soft = false;
+	const char *g_folderstr = nullptr;
+	eid_t g_folderid{};
+
+	HXopt6_auto_result result;
+	if (HX_getopt6(g_options_table, argc, argv, &result, HXOPT_USAGEONERR |
+	    HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
 		return EXIT_PARAM;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
+	for (int i = 0; i < result.nopts; ++i) {
+		if (result.desc[i]->val == 's')
+			g_soft = true;
+		else if (result.desc[i]->val == 'f')
+			g_folderstr = result.oarg[i];
+	}
 	if (g_folderstr != nullptr) {
 		char *end = nullptr;
 		uint64_t fid = strtoul(g_folderstr, &end, 0);
@@ -51,10 +57,10 @@ int main(int argc, char **argv)
 	if (rop_util_get_gc_value(g_folderid) == 0)
 		return help();
 	std::vector<uint64_t> eids;
-	while (*++argv != nullptr) {
-		eid_t eid = gi_lookup_eid_by_name(g_storedir, *argv);
+	for (int uidx = 0; uidx < result.nargs; ++uidx) {
+		eid_t eid = gi_lookup_eid_by_name(g_storedir, result.uarg[uidx]);
 		if (eid == 0) {
-			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
+			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", result.uarg[uidx]);
 			return EXIT_FAILURE;
 		}
 		eids.push_back(eid);
@@ -73,7 +79,7 @@ int main(int argc, char **argv)
 	delcount(g_folderid, &curr_delc, &curr_fldc);
 	if (partial)
 		printf("Partial completion\n");
-	printf("%d messages deleted\n", curr_delc - prev_delc);
+	printf("%d message(s) deleted\n", curr_delc - prev_delc);
 	return EXIT_SUCCESS;
 }
 
