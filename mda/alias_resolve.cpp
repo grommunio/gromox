@@ -164,24 +164,6 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 		case ML_OK:
 			mlog(LV_DEBUG, "mlist_expand: subst RCPT %s -> %zu entities",
 				todo[i].c_str(), exp_result.size());
-			/* Suppress OOF auto-replies for messages delivered via a mailing list */
-			{
-				char existing[256];
-				bool have_hdr = false, have_oof = false;
-				auto head = ctx->mail.get_head();
-				if (head != nullptr && head->get_field("X-Auto-Response-Suppress", existing, std::size(existing))) {
-					have_hdr = true;
-					if (strcasestr(existing, "OOF") != nullptr)
-						have_oof = true;
-				}
-				if (!have_hdr) {
-					ctx->mail.set_header("X-Auto-Response-Suppress", "OOF");
-				} else if (!have_oof) {
-					std::string nv(existing);
-					nv += ", OOF";
-					ctx->mail.set_header("X-Auto-Response-Suppress", nv.c_str());
-				}
-			}
 			todo.insert(todo.begin() + i + 1,
 				std::make_move_iterator(exp_result.begin()),
 				std::make_move_iterator(exp_result.end()));
