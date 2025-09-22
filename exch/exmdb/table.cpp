@@ -646,8 +646,16 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 		if (ptnode->prestriction == nullptr)
 			return false;
 	}
+
 	xtransaction psort_transact;
 	if (NULL != psorts) {
+		/*
+		 * The propvals of the sort criterion proptags are copied from
+		 * the individual messages to rows in stbl. By way of stbl's
+		 * PRIMARY KEY, rows automatically get sorted as part of
+		 * filling the table. Then we read out the msgids from the rows
+		 * in primary key order.
+		 */
 		ptnode->psorts = sortorder_set_dup(psorts);
 		if (ptnode->psorts == nullptr)
 			return false;
@@ -743,6 +751,7 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 			return false;
 	}
 
+	/* Construct the SQL query that will scan the folder */
 	bool b_deleted = table_flags & TABLE_FLAG_SOFTDELETES;
 	if (exmdb_server::is_private()) {
 		if (!g_enable_dam && fid_val == PRIVATE_FID_DEFERRED_ACTION) {
@@ -816,6 +825,10 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 	if (pstmt == nullptr)
 		return false;
 
+	/*
+	 * Loop for reading the folder content. The first pass either fills the
+	 * MAPI content table, or, in case a sort criteria is defined, stbl.
+	 */
 	uint64_t last_row_id = 0;
 	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t mid_val = pstmt.col_uint64(0);
@@ -916,6 +929,8 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 	}
 	pstmt.finalize();
 	pstmt1.finalize();
+
+	/* Second pass copying from stbl into the MAPI content table. */
 	if (NULL != psorts) {
 		sql_string = fmt::format("INSERT INTO t{} "
 		             "(inst_id, row_type, row_stat, parent_id, depth, "
