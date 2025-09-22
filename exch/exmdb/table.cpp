@@ -538,6 +538,32 @@ static inline const BINARY *get_conv_id(const RESTRICTION *x)
 	return b->cb == 16 ? b : nullptr;
 }
 
+namespace {
+struct acsort {
+	int dir = 0;
+	proptag_t tag{};
+};
+}
+
+static acsort accel_sorting(const SORTORDER_SET *set)
+{
+	if (set == nullptr)
+		return {};
+	if (set->count != 1)
+		return {};
+	auto &so = set->psort[0];
+	int dir = so.table_sort == TABLE_SORT_ASCEND ? 1 : -1;
+	auto tag = PROP_TAG(so.type, so.propid);
+	switch (tag) {
+	case PR_LAST_MODIFICATION_TIME:
+	case PR_MESSAGE_DELIVERY_TIME:
+	case PR_CLIENT_SUBMIT_TIME:
+		return {dir, tag};
+	default:
+		return {};
+	}
+}
+
 /**
  * @username:   Used for retrieving public store readstates
  *
@@ -649,6 +675,12 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 
 	/* [Block 1] */
 	xtransaction psort_transact;
+	acsort accel_pair;
+	if ((table_flags & (TABLE_FLAG_ASSOCIATED | TABLE_FLAG_SOFTDELETES)) == 0 &&
+	    !b_search)
+		accel_pair = accel_sorting(psorts);
+	if (accel_pair.dir != 0)
+		psorts = nullptr;
 	if (NULL != psorts) {
 		/*
 		 * The propvals of the sort criterion proptags are copied from
@@ -784,6 +816,18 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 				             "FROM messages WHERE parent_fid IS NOT NULL "
 				             "AND is_associated=0 AND is_deleted={}",
 				             b_deleted);
+		} else if (accel_pair.tag == PR_LAST_MODIFICATION_TIME) {
+			sql_string = fmt::format("SELECT message_id FROM msgtime_index "
+			             "WHERE folder_id={} ORDER BY mtime {}",
+			             LLU{fid_val}, accel_pair.dir > 0 ? "ASC" : "DESC");
+		} else if (accel_pair.tag == PR_MESSAGE_DELIVERY_TIME) {
+			sql_string = fmt::format("SELECT message_id FROM msgtime_index "
+			             "WHERE folder_id={} ORDER BY rcvtime {}",
+			             LLU{fid_val}, accel_pair.dir > 0 ? "ASC" : "DESC");
+		} else if (accel_pair.tag == PR_CLIENT_SUBMIT_TIME) {
+			sql_string = fmt::format("SELECT message_id FROM msgtime_index "
+			             "WHERE folder_id={} ORDER BY sndtime {}",
+			             LLU{fid_val}, accel_pair.dir > 0 ? "ASC" : "DESC");
 		} else if (!b_search) {
 			sql_string = fmt::format("SELECT message_id "
 			             "FROM messages WHERE parent_fid={} "
