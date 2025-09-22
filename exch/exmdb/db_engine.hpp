@@ -204,9 +204,13 @@ struct db_conn {
 	std::unique_ptr<prepared_statements> begin_optim();
 
 	gromox::xstmt prep(const char *q) const { return gromox::gx_sql_prep(psqlite, q); }
+	gromox::xstmt prep(const std::string &q) const { return gromox::gx_sql_prep(psqlite, q.c_str()); }
 	int exec(const char *q, unsigned int fl = 0) const { return gromox::gx_sql_exec(psqlite, q, fl); }
+	int exec(const std::string &q, unsigned int fl = 0) const { return gromox::gx_sql_exec(psqlite, q.c_str(), fl); }
 	gromox::xstmt eph_prep(const char *q) const { return gromox::gx_sql_prep(m_sqlite_eph, q); }
+	gromox::xstmt eph_prep(const std::string &q) const { return gromox::gx_sql_prep(m_sqlite_eph, q.c_str()); }
 	int eph_exec(const char *q) const { return gromox::gx_sql_exec(m_sqlite_eph, q); }
+	int eph_exec(const std::string &q) const { return gromox::gx_sql_exec(m_sqlite_eph, q.c_str()); }
 	inline uint32_t next_table_id() { return ++m_base->tables.last_id; }
 
 	sqlite3 *psqlite = nullptr, *m_sqlite_eph = nullptr;
