@@ -372,7 +372,7 @@ static BOOL table_load_content(db_conn_ptr &pdb, sqlite3 *psqlite,
 				qstr += fmt::format(", v{:x} {}", tmp_proptag, ord);
 			}
 		}
-		auto pstmt = gx_sql_prep(psqlite, qstr.c_str());
+		auto pstmt = gx_sql_prep(psqlite, qstr);
 		if (pstmt == nullptr)
 			return FALSE;
 		bind_index = 1;
@@ -457,7 +457,7 @@ static BOOL table_load_content(db_conn_ptr &pdb, sqlite3 *psqlite,
 	}
 	qstr += psorts->psort[depth].table_sort == TABLE_SORT_ASCEND ?
 	        " ASC" : " DESC";
-	auto pstmt = gx_sql_prep(psqlite, qstr.c_str());
+	auto pstmt = gx_sql_prep(psqlite, qstr);
 	if (pstmt == nullptr)
 		return FALSE;
 	bind_index = 1;
@@ -555,7 +555,6 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 	unsigned int col_inum = 0; /* stbl column number for inst_num */
 	size_t tag_count = 0;
 	void *pvalue;
-	char sql_string[1024];
 	uint32_t tmp_proptags[16];
 
 	auto conv_id = (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) ?
@@ -566,8 +565,8 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 	if (!exmdb_server::is_private()) {
 		exmdb_server::set_public_username(username);
 	} else {
-		snprintf(sql_string, std::size(sql_string), "SELECT is_search FROM"
-		          " folders WHERE folder_id=%llu", LLU{fid_val});
+		auto sql_string = fmt::format("SELECT is_search FROM "
+		                  "folders WHERE folder_id={}", LLU{fid_val});
 		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
@@ -583,7 +582,7 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 	auto table_transact = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!table_transact)
 		return false;
-	snprintf(sql_string, std::size(sql_string), "CREATE TABLE t%u "
+	auto sql_string = fmt::format("CREATE TABLE t{} "
 		"(row_id INTEGER PRIMARY KEY AUTOINCREMENT, "
 		"idx INTEGER UNIQUE DEFAULT NULL, "
 		"prev_id INTEGER UNIQUE DEFAULT NULL, "
@@ -601,16 +600,16 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 	if (pdb->eph_exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	if (NULL != psorts && psorts->ccategories > 0) {
-		snprintf(sql_string, std::size(sql_string), "CREATE UNIQUE INDEX t%u_1 ON "
-			"t%u (inst_id, inst_num)", table_id, table_id);
+		sql_string = fmt::format("CREATE UNIQUE INDEX t{}_1 ON "
+		             "t{} (inst_id, inst_num)", table_id, table_id);
 		if (pdb->eph_exec(sql_string) != SQLITE_OK)
 			return FALSE;
-		snprintf(sql_string, std::size(sql_string), "CREATE INDEX t%u_2 ON"
-			" t%u (parent_id)", table_id, table_id);
+		sql_string = fmt::format("CREATE INDEX t{}_2 ON"
+		             " t{} (parent_id)", table_id, table_id);
 		if (pdb->eph_exec(sql_string) != SQLITE_OK)
 			return FALSE;
-		snprintf(sql_string, std::size(sql_string), "CREATE INDEX t%u_3 ON t%u"
-			" (parent_id, value)", table_id, table_id);
+		sql_string = fmt::format("CREATE INDEX t{}_3 ON t{}"
+		             " (parent_id, value)", table_id, table_id);
 		if (pdb->eph_exec(sql_string) != SQLITE_OK)
 			return FALSE;
 	}
@@ -658,8 +657,7 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 		psort_transact = gx_sql_begin(psqlite, txn_mode::write);
 		if (!psort_transact)
 			return false;
-		auto sql_len = snprintf(sql_string, std::size(sql_string), "CREATE"
-			" TABLE stbl (message_id INTEGER NOT NULL");
+		sql_string = "CREATE TABLE stbl (message_id INTEGER NOT NULL";
 		for (size_t i = 0; i < psorts->count; ++i) {
 			auto tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 			if (psorts->psort[i].table_sort == TABLE_SORT_MAXIMUM_CATEGORY ||
@@ -685,16 +683,12 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 			switch (type) {
 			case PT_STRING8:
 			case PT_UNICODE:
-				sql_len += gx_snprintf(sql_string + sql_len,
-				           std::size(sql_string) - sql_len,
-							", v%x TEXT COLLATE NOCASE", tmp_proptag);
+				sql_string += fmt::format(", v{:x} TEXT COLLATE NOCASE", tmp_proptag);
 				break;
 			case PT_FLOAT:
 			case PT_DOUBLE:
 			case PT_APPTIME:
-				sql_len += gx_snprintf(sql_string + sql_len,
-				           std::size(sql_string) - sql_len,
-							", v%x REAL", tmp_proptag);
+				sql_string += fmt::format(", v{:x} REAL", tmp_proptag);
 				break;
 			case PT_CURRENCY:
 			case PT_I8:
@@ -702,17 +696,13 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 			case PT_SHORT:
 			case PT_LONG:
 			case PT_BOOLEAN:
-				sql_len += gx_snprintf(sql_string + sql_len,
-				           std::size(sql_string) - sql_len,
-							", v%x INTEGER", tmp_proptag);
+				sql_string += fmt::format(", v{:x} INTEGER", tmp_proptag);
 				break;
 			case PT_CLSID:
 			case PT_SVREID:
 			case PT_OBJECT:
 			case PT_BINARY:
-				sql_len += gx_snprintf(sql_string + sql_len,
-				           std::size(sql_string) - sql_len,
-							", v%x BLOB", tmp_proptag);
+				sql_string += fmt::format(", v{:x} BLOB", tmp_proptag);
 				break;
 			default:
 				return false;
@@ -720,123 +710,112 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 		}
 		col_read = tag_count + 2;
 		col_inum = tag_count + 3;
-		sql_len += gx_snprintf(sql_string + sql_len,
-		           std::size(sql_string) - sql_len,
-		           ", read_state INTEGER DEFAULT 0"
-		           ", inst_num INTEGER DEFAULT 0)");
+		sql_string += ", read_state INTEGER DEFAULT 0, inst_num INTEGER DEFAULT 0)";
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return false;
 		for (size_t i = 0; i < tag_count; ++i) {
 			auto tmp_proptag = tmp_proptags[i];
-			snprintf(sql_string, std::size(sql_string),
-			         "CREATE INDEX stbl_%zu ON stbl (v%x)",
-			         i, tmp_proptag);
+			sql_string = fmt::format("CREATE INDEX stbl_{} ON stbl (v{:x})",
+			             i, tmp_proptag);
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return false;
 		}
 		if (ptnode->instance_tag == 0)
-			snprintf(sql_string, std::size(sql_string), "CREATE UNIQUE INDEX t%u_4 "
-					"ON t%u (inst_id)", table_id, table_id);
+			sql_string = fmt::format("CREATE UNIQUE INDEX t{}_4 ON t{} (inst_id)", table_id, table_id);
 		else
-			snprintf(sql_string, std::size(sql_string), "CREATE INDEX t%u_4 "
-				"ON t%u (inst_id)", table_id, table_id);
+			sql_string = fmt::format("CREATE INDEX t{}_4 ON t{} (inst_id)", table_id, table_id);
 		if (pdb->eph_exec(sql_string) != SQLITE_OK)
 			return false;
-		sql_len = snprintf(sql_string, std::size(sql_string), "INSERT INTO stbl VALUES (?");
+		sql_string = "INSERT INTO stbl VALUES (?";
 		for (size_t i = 0; i < tag_count; ++i)
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len, ", ?");
-		sql_len += gx_snprintf(sql_string + sql_len,
-		           std::size(sql_string) - sql_len, ", ?, ?)");
+			sql_string += ", ?";
+		sql_string += ", ?, ?)";
 		pstmt1 = gx_sql_prep(psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return false;
 	} else {
-		snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (inst_id,"
-			" prev_id, row_type, depth, inst_num, idx) VALUES "
-			"(?, ?, %u, 0, 0, ?)", table_id, CONTENT_ROW_MESSAGE);
+		auto sql_string = fmt::format("INSERT INTO t{} (inst_id,"
+		                  " prev_id, row_type, depth, inst_num, idx) VALUES "
+		                  "(?, ?, {}, 0, 0, ?)",
+		                  table_id, CONTENT_ROW_MESSAGE);
 		pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			return false;
 	}
+
 	bool b_deleted = table_flags & TABLE_FLAG_SOFTDELETES;
 	if (exmdb_server::is_private()) {
 		if (!g_enable_dam && fid_val == PRIVATE_FID_DEFERRED_ACTION) {
-			strcpy(sql_string, "SELECT message_id FROM messages WHERE 0");
+			sql_string = "SELECT message_id FROM messages WHERE 0";
 		} else if (table_flags & TABLE_FLAG_ASSOCIATED) {
 			if (!b_search)
-				snprintf(sql_string, std::size(sql_string), "SELECT message_id "
-				        "FROM messages WHERE parent_fid=%llu "
-				         "AND is_associated=1 AND is_deleted=%u",
-				         LLU{fid_val}, b_deleted);
+				sql_string = fmt::format("SELECT message_id "
+				             "FROM messages WHERE parent_fid={} "
+				             "AND is_associated=1 AND is_deleted={}",
+				             LLU{fid_val}, b_deleted);
 			else
-				snprintf(sql_string, std::size(sql_string), "SELECT "
-				        "messages.message_id FROM messages"
-				        " JOIN search_result ON "
-				        "search_result.folder_id=%llu AND "
-				        "search_result.message_id=messages.message_id"
-				         " AND messages.is_associated=1 AND messages.is_deleted=%u",
-				         LLU{fid_val}, b_deleted);
+				sql_string = fmt::format("SELECT "
+				             "messages.message_id FROM messages "
+				             "JOIN search_result ON "
+				             "search_result.folder_id={} AND "
+				             "search_result.message_id=messages.message_id "
+				             "AND messages.is_associated=1 AND messages.is_deleted={}",
+				             LLU{fid_val}, b_deleted);
 		} else if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
-			if (conv_id != nullptr) {
-				char tmp_string[128];
-				encode_hex_binary(conv_id->pb,
-					16, tmp_string, sizeof(tmp_string));
-				snprintf(sql_string, std::size(sql_string), "SELECT mp.message_id "
+			if (conv_id != nullptr)
+				sql_string = fmt::format("SELECT mp.message_id "
 				         "FROM message_properties AS mp INNER JOIN messages AS m "
 				         "ON mp.message_id=m.message_id "
-				         "WHERE mp.proptag=%u AND mp.propval=x'%s' "
-				         "AND m.is_deleted=%u", PR_CONVERSATION_ID,
-				         tmp_string, b_deleted);
-			} else {
-				snprintf(sql_string, std::size(sql_string), "SELECT message_id"
-				       " FROM messages WHERE parent_fid IS NOT NULL"
-				         " AND is_associated=0 AND is_deleted=%u",
-				         b_deleted);
-			}
+				         "WHERE mp.proptag={} AND mp.propval=x'{}' "
+				         "AND m.is_deleted={}", static_cast<uint32_t>(PR_CONVERSATION_ID),
+				         bin2hex(conv_id->pv, conv_id->cb), b_deleted);
+			else
+				sql_string = fmt::format("SELECT message_id "
+				             "FROM messages WHERE parent_fid IS NOT NULL "
+				             "AND is_associated=0 AND is_deleted={}",
+				             b_deleted);
 		} else if (!b_search) {
-			snprintf(sql_string, std::size(sql_string), "SELECT message_id "
-			        "FROM messages WHERE parent_fid=%llu "
-			         "AND is_associated=0 AND is_deleted=%u",
-			         LLU{fid_val}, b_deleted);
+			sql_string = fmt::format("SELECT message_id "
+			             "FROM messages WHERE parent_fid={} "
+			             "AND is_associated=0 AND is_deleted={}",
+			             LLU{fid_val}, b_deleted);
 		} else {
-			snprintf(sql_string, std::size(sql_string), "SELECT "
-			        "messages.message_id FROM messages"
-			        " JOIN search_result ON "
-			        "search_result.folder_id=%llu AND "
-			        "search_result.message_id=messages.message_id"
-			         " AND messages.is_associated=0 AND messages.is_deleted=%u",
-			         LLU{fid_val}, b_deleted);
+			sql_string = fmt::format("SELECT "
+			             "messages.message_id FROM messages "
+			             "JOIN search_result ON "
+			             "search_result.folder_id={} AND "
+			             "search_result.message_id=messages.message_id "
+			             "AND messages.is_associated=0 AND messages.is_deleted={}",
+			             LLU{fid_val}, b_deleted);
 		}
 	} else if (!(table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)) {
-		gx_snprintf(sql_string, std::size(sql_string),
-		            "SELECT message_id "
-		            "FROM messages WHERE parent_fid=%llu "
-		            " AND is_deleted=%u AND is_associated=%u",
-		            LLU{fid_val},
-		            !!(table_flags & TABLE_FLAG_SOFTDELETES),
-		            !!(table_flags & TABLE_FLAG_ASSOCIATED));
+		sql_string = fmt::format(
+		             "SELECT message_id "
+		             "FROM messages WHERE parent_fid={} "
+		             "AND is_deleted={} AND is_associated={}",
+		             LLU{fid_val},
+		             !!(table_flags & TABLE_FLAG_SOFTDELETES),
+		             !!(table_flags & TABLE_FLAG_ASSOCIATED));
 	} else if (conv_id != nullptr) {
-		char tmp_string[128];
-		encode_hex_binary(conv_id->pb, 16, tmp_string, sizeof(tmp_string));
-		gx_snprintf(sql_string, std::size(sql_string),
-		            "SELECT message_properties.message_id "
-		            "FROM message_properties JOIN messages ON "
-		            "messages.message_id=message_properties.message_id"
-		            " WHERE message_properties.proptag=%u AND"
-		            " message_properties.propval=x'%s' AND "
-		            "messages.is_deleted=%u", PR_CONVERSATION_ID,
-		            tmp_string, !!(table_flags & TABLE_FLAG_SOFTDELETES));
+		sql_string = fmt::format("SELECT message_properties.message_id "
+		             "FROM message_properties JOIN messages ON "
+		             "messages.message_id=message_properties.message_id "
+		             "WHERE message_properties.proptag={} AND "
+		             "message_properties.propval=x'{}' AND "
+		             "messages.is_deleted={}", static_cast<uint32_t>(PR_CONVERSATION_ID),
+		             bin2hex(conv_id->pv, conv_id->cb),
+		             !!(table_flags & TABLE_FLAG_SOFTDELETES));
 	} else {
-		gx_snprintf(sql_string, std::size(sql_string),
-		            "SELECT message_id"
-		            " FROM messages WHERE parent_fid IS NOT NULL"
-		            " AND is_associated=0 AND is_deleted=%u",
-		            !!(table_flags & TABLE_FLAG_SOFTDELETES));
+		sql_string = fmt::format(
+		             "SELECT message_id "
+		             "FROM messages WHERE parent_fid IS NOT NULL "
+		             "AND is_associated=0 AND is_deleted={}",
+		             !!(table_flags & TABLE_FLAG_SOFTDELETES));
 	}
 	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return false;
+
 	uint64_t last_row_id = 0;
 	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t mid_val = pstmt.col_uint64(0);
@@ -938,18 +917,18 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 	pstmt.finalize();
 	pstmt1.finalize();
 	if (NULL != psorts) {
-		snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u "
-			    "(inst_id, row_type, row_stat, parent_id, depth, "
-			    "count, inst_num, value, extremum, prev_id) VALUES"
-			    " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", table_id);
+		sql_string = fmt::format("INSERT INTO t{} "
+		             "(inst_id, row_type, row_stat, parent_id, depth, "
+		             "count, inst_num, value, extremum, prev_id) VALUES"
+		             " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", table_id);
 		pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			return false;
-		snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET"
-		        " unread=? WHERE row_id=?", table_id);
+		sql_string = fmt::format("UPDATE t{} SET unread=? WHERE row_id=?", table_id);
 		pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			return false;
+
 		std::vector<condition_node> cond_list;
 		uint32_t unread_count = 0;
 		if (!table_load_content(pdb, psqlite, psorts, 0, 0, cond_list,
@@ -963,17 +942,17 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 		psqlite = NULL;
 		/* index the content table */
 		if (psorts->ccategories > 0) {
-			snprintf(sql_string, std::size(sql_string), "SELECT row_id,"
-			        " row_type, row_stat, depth, prev_id FROM"
-			        " t%u ORDER BY row_id", table_id);
+			sql_string = fmt::format("SELECT row_id, "
+			             "row_type, row_stat, depth, prev_id FROM "
+			             "t{} ORDER BY row_id", table_id);
 			pstmt = pdb->eph_prep(sql_string);
 			if (pstmt == nullptr)
 				return false;
-			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET "
-			        "idx=? WHERE row_id=?", table_id);
+			sql_string = fmt::format("UPDATE t{} SET idx=? WHERE row_id=?", table_id);
 			pstmt1 = pdb->eph_prep(sql_string);
 			if (pstmt1 == nullptr)
 				return false;
+
 			size_t i = 1;
 			uint64_t prev_id = 0;
 			int depth = 0;
@@ -1001,7 +980,7 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 			pstmt.finalize();
 			pstmt1.finalize();
 		} else {
-			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=row_id", table_id);
+			sql_string = fmt::format("UPDATE t{} SET idx=row_id", table_id);
 			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				return false;
 		}
