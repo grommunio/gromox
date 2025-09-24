@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later 
 // SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
 // This file is part of Gromox.
-#include <algorithm>
+#include <algorithm> 
 #include <climits>
 #include <gromox/ext_buffer.hpp>
 #include "edb_pack.hpp"
