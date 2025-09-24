@@ -1,6 +1,6 @@
 {
 global:
-	HPM_*;
+	HPM_*; 
 	HOOK_*;
 	PROC_*;
 	SVC_*;
