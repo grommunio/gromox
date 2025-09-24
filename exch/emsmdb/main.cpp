@@ -64,7 +64,6 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"mailbox_ping_interval", "5min", CFG_TIME, "60s", "1h"},
 	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
 	{"max_mail_length", "64M", CFG_SIZE, "1"},
-	{"max_mail_num", "1000000", CFG_SIZE, "1"},
 	{"max_rcpt_num", "256", CFG_SIZE, "1"},
 	{"rop_debug", "0"},
 	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
@@ -128,7 +127,6 @@ static constexpr DCERPC_INTERFACE interface_async_emsmdb = {
 extern void emsmdb_report();
 BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 {
-	int max_mail;
 	int max_rcpt;
 	int async_num;
 	int max_rule_len;
@@ -164,7 +162,6 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 			return false;
 		gx_strlcpy(org_name, pfile->get_value("x500_org_name"), std::size(org_name));
 		max_rcpt = pfile->get_ll("max_rcpt_num");
-		max_mail = pfile->get_ll("max_mail_num");
 		char max_length_s[32], max_rule_len_s[32], ping_int_s[32];
 		auto max_length = pfile->get_ll("max_mail_length");
 		max_rule_len = pfile->get_ll("max_ext_rule_length");
@@ -185,10 +182,10 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 		async_num = pfile->get_ll("async_threads_num");
 
 		mlog(LV_INFO, "emsmdb: x500=\"%s\", max_rcpt=%d, "
-		        "max_mail=%d, max_mail_len=%s, max_ext_rule_len=%s, "
+		        "max_mail_len=%s, max_ext_rule_len=%s, "
 		        "ping_int=%s, async_threads=%d, smtp=%s",
 		       org_name, max_rcpt,
-		       max_mail, max_length_s, max_rule_len_s, ping_int_s,
+		       max_length_s, max_rule_len_s, ping_int_s,
 		       async_num, smtp_url.c_str());
 		
 #define regsvr(f) register_service(#f, f)
@@ -215,7 +212,7 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_ERR, "emsmdb: failed to register emsmdb interface");
 			return FALSE;
 		}
-		common_util_init(org_name, max_rcpt, max_mail, max_length,
+		common_util_init(org_name, max_rcpt, max_length,
 			max_rule_len, std::move(smtp_url), submit_command);
 		rop_processor_init(ping_interval);
 		emsmdb_interface_init();
