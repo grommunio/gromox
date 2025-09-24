@@ -1,4 +1,4 @@
-#pragma once
+#pragma once 
 #include <cstddef>
 #include <mysql.h>
 #include <gromox/defs.h>
