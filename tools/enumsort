@@ -5,7 +5,7 @@ print sort {
 	chomp($y);
 	my $have_x = $x =~ s{.*= ((?:0x)?[0-9a-f]+).*}{$1}ig;
 	my $have_y = $y =~ s{.*= ((?:0x)?[0-9a-f]+).*}{$1}ig;
-	return 1 if (!$have_x && $have_y);
+	return 1 if (!$have_x && $have_y); 
 	return -1 if ($have_x && !$have_y);
 	$x = hex($x) if (substr($x, 0, 2) eq "0x");
 	$y = hex($y) if (substr($y, 0, 2) eq "0x");
