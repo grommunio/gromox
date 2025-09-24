@@ -3,7 +3,7 @@
 
 /**
  * @alloc_hint:		number of elements multiplied by element size, or,
- * 			in case of strings, UTF-16 presentation size
+ * 			in case of strings, UTF-16 presentation size 
  * @sp_ulen:		length of SeparatedProperty<slot> (when uncompressed)
  */
 struct edb_postproc {
