@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <sqlite3.h>
 #include <string>
-#include <utility>
+#include <utility> 
 #include <gromox/dbop.h>
 
 enum cnguid_type { CN_USER, CN_DOMAIN };
