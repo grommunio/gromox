@@ -1561,13 +1561,6 @@ ec_error_t zs_createmessage(GUID hsession,
 	uint64_t total_size = lnum != nullptr ? *lnum : 0;
 	if (max_quota > 0 && total_size > static_cast<uint64_t>(max_quota))
 		return ecQuotaExceeded;
-	num = tmp_propvals.get<uint32_t>(PR_ASSOC_CONTENT_COUNT);
-	uint32_t total_mail = num != nullptr ? *num : 0;
-	num = tmp_propvals.get<uint32_t>(PR_CONTENT_COUNT);
-	if (num != nullptr)
-		total_mail += *num;
-	if (total_mail > g_max_message)
-		return ecQuotaExceeded;
 	if (!exmdb_client->allocate_message_id(pstore->get_dir(),
 	    folder_id, &message_id))
 		return ecError;

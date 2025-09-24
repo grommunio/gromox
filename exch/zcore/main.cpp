@@ -97,7 +97,6 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
 	{"mailbox_ping_interval", "5min", CFG_TIME, "1min", "1h"},
 	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
-	{"max_mail_num", "1000000", CFG_SIZE, "1"},
 	{"max_rcpt_num", "256", CFG_SIZE, "1"},
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
 	{"oxcical_allday_ymd", "1", CFG_BOOL},
@@ -297,9 +296,6 @@ int main(int argc, char **argv)
 	auto max_rcpt = pconfig->get_ll("max_rcpt_num");
 	mlog(LV_INFO, "system: maximum rcpt number is %lld", max_rcpt);
 	
-	auto max_mail = pconfig->get_ll("max_mail_num");
-	mlog(LV_INFO, "system: maximum mail number is %lld", max_mail);
-	
 	auto max_length = pconfig->get_ll("mail_max_length");
 	HX_unit_size(temp_buff, std::size(temp_buff), max_length, 1024, 0);
 	mlog(LV_INFO, "system: maximum mail length is %s", temp_buff);
@@ -321,7 +317,7 @@ int main(int argc, char **argv)
 	
 	common_util_init(g_config_file->get_value("x500_org_name"),
 		g_config_file->get_value("default_charset"),
-		max_rcpt, max_mail, max_length, max_rule_len, std::move(smtp_url),
+		max_rcpt, max_length, max_rule_len, std::move(smtp_url),
 		g_config_file->get_value("submit_command"));
 	
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
