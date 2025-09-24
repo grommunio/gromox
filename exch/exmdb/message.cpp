@@ -461,11 +461,11 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
-	dg_notify(std::move(notifq));
 	if (b_batch) {
 		b_batch = false;
 		db_conn::commit_batch_mode_release(std::move(pdb),std::move(dbase));
 	}
+	dg_notify(std::move(notifq));
 	return TRUE;
 }
 
@@ -684,11 +684,11 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		pdb->psqlite, src_val, del_count);
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
-	dg_notify(std::move(notifq));
 	if (b_batch) {
 		b_batch = false;
 		db_conn::commit_batch_mode_release(std::move(pdb), std::move(dbase));
 	}
+	dg_notify(std::move(notifq));
 	return TRUE;
 }
 
