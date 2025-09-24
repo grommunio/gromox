@@ -1,4 +1,4 @@
-#pragma once
+#pragma once 
 #include <typeinfo>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
