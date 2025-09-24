@@ -1,6 +1,6 @@
 AC_INIT([gromox], [2.48])
 AC_CONFIG_AUX_DIR([build-aux])
-AC_CONFIG_MACRO_DIR([build-aux])
+AC_CONFIG_MACRO_DIR([build-aux]) 
 AC_PREFIX_DEFAULT([/usr])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.10 -Wall -Wno-portability foreign subdir-objects tar-pax])
