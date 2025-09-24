@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
-#include <cerrno>
+#include <cerrno> 
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
