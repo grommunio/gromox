@@ -1,5 +1,5 @@
 Gromox
-======
+====== 
 
 Gromox is the central groupware server component of grommunio. It is capable of
 serving as a drop-in replacement for Microsoft Exchange. Connectivity
