@@ -1,5 +1,5 @@
 #pragma once
-#include <gromox/clock.hpp>
+#include <gromox/clock.hpp> 
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
 #define MAX_TURN_COUNTS     0x7FFFFFFF
