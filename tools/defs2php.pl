@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 my $mode = 0;
-if (scalar(@ARGV) > 0 && $ARGV[0] eq "-t") { $mode = 1; shift(@ARGV); }
+if (scalar(@ARGV) > 0 && $ARGV[0] eq "-t") { $mode = 1; shift(@ARGV); } 
 if (scalar(@ARGV) > 0 && $ARGV[0] eq "-e") { $mode = 2; shift(@ARGV); }
 while (<>) {
 	&proptag() if ($mode == 1 && m{^\s*(// )?(PR_\w+) = PROP_TAG\((\w+), (\S+)\)});
