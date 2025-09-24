@@ -1,5 +1,5 @@
 # -*- Mode: autoconf -*- 
-# php.m4 for configure scripts to check for php development files
+# php.m4 for configure scripts to check for php development files 
 # exports the following variables:
 #  PHP_INCLUDES
 #  PHP_LDFLAGS
