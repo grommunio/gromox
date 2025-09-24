@@ -169,7 +169,9 @@ struct db_conn {
 		}
 	};
 	/* remote_id => subscription ids */
-	class ID_ARRAYS : public std::map<const char *, std::vector<uint32_t>, xless> {};
+	class ID_ARRAYS : public std::map<const char *, std::vector<uint32_t>, xless> {
+		using std::map<const char *, std::vector<uint32_t>, xless>::map;
+	};
 	/* As long as any NOTIFQ object is alive, dbase should be held at least read-locked. */
 	class NOTIFQ : public std::vector<std::pair<DB_NOTIFY_DATAGRAM, ID_ARRAYS>> {};
 

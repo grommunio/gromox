@@ -1673,6 +1673,11 @@ static inline void *pick_single_val(uint16_t type, void *mv, size_t j)
 	return mv;
 }
 
+static db_conn::ID_ARRAYS table_to_idarray(const table_node &o)
+{
+	return db_conn::ID_ARRAYS{{o.remote_id, {o.table_id}}};
+}
+
 static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
     uint64_t message_id, db_base &dbase, db_conn::NOTIFQ &notifq) try
 {
@@ -1784,8 +1789,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 			datagram.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_added :
 			                          db_notify_type::cttbl_row_added;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			continue;
 		} else if (0 == ptable->psorts->ccategories) {
 			for (size_t i = 0; i < ptable->psorts->count; ++i) {
@@ -1889,8 +1893,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 			datagram.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_added :
 			                          db_notify_type::cttbl_row_added;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			continue;
 		}
 		if (NULL == pread_byte) {
@@ -2215,8 +2218,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 			datagram1.db_notify.type = ptable->b_search ?
 						   db_notify_type::srchtbl_changed :
 						   db_notify_type::cttbl_changed;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram1);
+			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
 			continue;
 		}
 
@@ -2265,8 +2267,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 				datagram1.db_notify.type = ptable->b_search ?
 							   db_notify_type::srchtbl_row_modified :
 							   db_notify_type::cttbl_row_modified;
-				notification_agent_backward_notify(
-					ptable->remote_id, &datagram1);
+				notifq.emplace_back(datagram1, table_to_idarray(*ptable));
 			} else if (stm_sel_tx.col_int64(4) == CONTENT_ROW_HEADER) {
 				padded_row1->row_message_id = stm_sel_tx.col_int64(3);
 				padded_row1->after_row_id = inst_id;
@@ -2275,8 +2276,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 				datagram1.db_notify.type = ptable->b_search ?
 				                           db_notify_type::srchtbl_row_added :
 				                           db_notify_type::cttbl_row_added;
-				notification_agent_backward_notify(
-					ptable->remote_id, &datagram1);
+				notifq.emplace_back(datagram1, table_to_idarray(*ptable));
 			} else {
 				padded_row->row_instance = stm_sel_tx.col_int64(10);
 				padded_row->after_row_id = inst_id;
@@ -2285,8 +2285,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 				datagram.db_notify.type = ptable->b_search ?
 				                          db_notify_type::srchtbl_row_added :
 				                          db_notify_type::cttbl_row_added;
-				notification_agent_backward_notify(
-					ptable->remote_id, &datagram);
+				notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			}
 			stm_sel_tx.reset();
 		}
@@ -2567,8 +2566,7 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb, uint64_t parent_id,
 			}
 		}
 		padded_row->row_folder_id = folder_id;
-		notification_agent_backward_notify(
-			ptable->remote_id, &datagram);
+		notifq.emplace_back(datagram, table_to_idarray(*ptable));
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2167: failed to commit hiertbl_add_row");
@@ -2771,8 +2769,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			datagram.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_deleted :
 			                          db_notify_type::cttbl_row_deleted;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			continue;
 		}
 		b_index = FALSE;
@@ -3029,8 +3026,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			datagram1.db_notify.type = ptable->b_search ?
 			                           db_notify_type::srchtbl_changed :
 			                           db_notify_type::cttbl_changed;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram1);
+			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
 			continue;
 		}
 		for (pnode1 = double_list_get_head(&tmp_list); NULL != pnode1;
@@ -3053,8 +3049,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			datagram.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_deleted :
 			                          db_notify_type::cttbl_row_deleted;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 		}
 		if (double_list_get_nodes_num(&notify_list) == 0)
 			continue;
@@ -3101,8 +3096,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			datagram1.db_notify.type = ptable->b_search ?
 			                           db_notify_type::srchtbl_row_modified :
 			                           db_notify_type::cttbl_row_modified;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram1);
+			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
 			sqlite3_reset(pstmt1);
 		}
 	}
@@ -3236,8 +3230,7 @@ static void dbeng_notify_hiertbl_delete_row(db_conn *pdb, uint64_t parent_id,
 			pdeleted_row->row_folder_id = folder_id;
 		}
 		datagram.id_array[0] = ptable->table_id; // reserved earlier
-		notification_agent_backward_notify(
-			ptable->remote_id, &datagram);
+		notifq.emplace_back(datagram, table_to_idarray(*ptable));
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2169: failed to commit hiertbl_delete_row");
@@ -3361,8 +3354,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb, uint64_t folder_id,
 			datagram.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_modified :
 			                          db_notify_type::cttbl_row_modified;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			continue;
 		} else if (0 == ptable->psorts->ccategories) {
 			size_t i;
@@ -3455,8 +3447,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb, uint64_t folder_id,
 			datagram.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_modified :
 			                          db_notify_type::cttbl_row_modified;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			continue;
 		}
 		{
@@ -3811,8 +3802,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb, uint64_t folder_id,
 			datagram.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_modified :
 			                          db_notify_type::cttbl_row_modified;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			sqlite3_reset(pstmt1);
 		}
 		continue;
@@ -3850,8 +3840,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb, uint64_t folder_id,
 			datagram.db_notify.type = ptnode->b_search ?
 			                          db_notify_type::srchtbl_changed :
 			                          db_notify_type::cttbl_changed;
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram);
+			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			break;
 		}
 	}
@@ -3967,8 +3956,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 					pstmt.finalize();
 				}
 				padded_row->row_folder_id = folder_id;
-				notification_agent_backward_notify(
-					ptable->remote_id, &datagram2);
+				notifq.emplace_back(datagram2, table_to_idarray(*ptable));
 			}
 			continue;
 		}
@@ -4010,8 +3998,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 				datagram1.db_notify.pdata = pdeleted_row;
 				pdeleted_row->row_folder_id = folder_id;
 			}
-			notification_agent_backward_notify(
-				ptable->remote_id, &datagram1);
+			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
 			continue;
 		}
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
@@ -4041,8 +4028,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 				sqlite3_column_int64(pstmt, 0);
 			pstmt.finalize();
 		}
-		notification_agent_backward_notify(
-			ptable->remote_id, &datagram);
+		notifq.emplace_back(datagram, table_to_idarray(*ptable));
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2171: failed to commit hiertbl_modify_row");
@@ -4198,8 +4184,7 @@ void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base &dbase,
 	datagram.db_notify.pdata = NULL;
 	datagram.b_table = TRUE;
 	datagram.id_array.push_back(table_id);
-	notification_agent_backward_notify(
-		ptable->remote_id, &datagram);
+	notifq.emplace_back(datagram, table_to_idarray(*ptable));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2411: ENOMEM");
 }
