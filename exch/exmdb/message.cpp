@@ -318,7 +318,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		if (stm_del == nullptr)
 			return FALSE;
 	}
-	uint64_t fai_size = 0, normal_size = 0;
+	uint64_t total_adjust[2]{};
 	uint32_t del_count = 0, message_size = 0;
 	std::set<uint64_t> touched_folders;
 	for (auto mid : *pmessage_ids) {
@@ -376,10 +376,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 			*pb_partial = TRUE;
 			continue;
 		}
-		if (!is_associated)
-			normal_size += message_size;
-		else
-			fai_size += message_size;
+		total_adjust[is_associated] += message_size;
 		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
 			dst_val, tmp_val1, 0, *dbase, notifq);
 		pdb->notify_message_movecopy(b_copy, dst_val, tmp_val1,
@@ -417,8 +414,8 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 	}
 	stm_find.finalize();
 	stm_del.finalize();
-	if (b_update && normal_size + fai_size > 0 &&
-	    !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, normal_size, fai_size))
+	if (b_update && total_adjust[0] + total_adjust[1] > 0 &&
+	    !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, total_adjust[0], total_adjust[1]))
 		return FALSE;
 	auto nt_time = rop_util_current_nttime();
 	if (!b_copy) for (auto parent_fid : touched_folders) {
@@ -537,7 +534,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 	              "UPDATE messages SET is_deleted=1 WHERE message_id=?");
 	if (pstmt1 == nullptr)
 		return FALSE;
-	uint64_t fai_size = 0, normal_size = 0;
+	uint64_t total_adjust[2]{};
 	int del_count = 0;
 	auto nt_time = rop_util_current_nttime();
 	for (auto mid : *pmessage_ids) {
@@ -580,10 +577,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 			}
 		}
 		del_count ++;
-		if (is_assoc)
-			fai_size += obj_size;
-		else
-			normal_size += obj_size;
+		total_adjust[is_assoc] += obj_size;
 		pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
 			parent_fid, tmp_val, 0, *dbase, notifq);
 		if (folder_type == FOLDER_SEARCH)
@@ -651,7 +645,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 	pstmt.finalize();
 	pstmt1.finalize();
 	if (b_hard && !cu_adjust_store_size(pdb->psqlite, ADJ_DECREASE,
-	    normal_size, fai_size))
+	    total_adjust[0], total_adjust[1]))
 		return FALSE;
 	TAGGED_PROPVAL tmp_propvals[5];
 	TPROPVAL_ARRAY propvals;
