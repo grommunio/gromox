@@ -75,22 +75,17 @@ struct POPULATING_NODE {
 	LONGLONG_ARRAY folder_ids{};
 };
 
-struct ROWINFO_NODE {
-	DOUBLE_LIST_NODE node;
-	BOOL b_added;
-	uint64_t row_id;
+struct rowinfo_node {
+	bool b_added = false;
+	uint64_t row_id = 0;
 };
 
-struct ROWDEL_NODE {
-	DOUBLE_LIST_NODE node;
-	uint64_t row_id;
-	uint32_t idx;
-	int64_t prev_id;
-	uint64_t inst_id;
-	uint64_t parent_id;
-	uint32_t depth;
-	uint32_t inst_num;
-	BOOL b_read;
+struct rowdel_node {
+	uint64_t row_id = 0;
+	int64_t prev_id = 0;
+	uint64_t inst_id = 0, parent_id = 0;
+	uint32_t depth, inst_num = 0, idx = 0;
+	bool b_read = false;
 };
 
 }
@@ -1466,12 +1461,12 @@ static std::strong_ordering db_engine_compare_propval(proptype_t proptype,
 	return propval_compare(pvalue1, pvalue2, proptype);
 }
 
-static BOOL db_engine_insert_categories(sqlite3 *psqlite,
-	int depth, uint64_t parent_id, uint64_t after_row_id,
-	uint64_t before_row_id, SORTORDER_SET *psorts,
-	TAGGED_PROPVAL *ppropvals, sqlite3_stmt *pstmt_insert,
-	sqlite3_stmt *pstmt_update, uint32_t *pheader_id,
-	DOUBLE_LIST *pnotify_list, uint64_t *plast_row_id)
+static bool db_engine_insert_categories(sqlite3 *psqlite, int depth,
+    uint64_t parent_id, uint64_t after_row_id, uint64_t before_row_id,
+    const SORTORDER_SET *psorts, const TAGGED_PROPVAL *ppropvals,
+    sqlite3_stmt *pstmt_insert, sqlite3_stmt *pstmt_update,
+    uint32_t *pheader_id, std::vector<rowinfo_node> &notify_list,
+    uint64_t *plast_row_id) try
 {
 	int i;
 	uint16_t type;
@@ -1509,14 +1504,8 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 		if (gx_sql_step(pstmt_insert) != SQLITE_DONE)
 			return FALSE;
 		sqlite3_reset(pstmt_insert);
-		auto prnode = cu_alloc<ROWINFO_NODE>();
-		if (prnode == nullptr)
-			return FALSE;
 		row_id = sqlite3_last_insert_rowid(psqlite);
-		prnode->node.pdata = prnode;
-		prnode->b_added = TRUE;
-		prnode->row_id = row_id;
-		double_list_append_as_tail(pnotify_list, &prnode->node);
+		notify_list.emplace_back(true, row_id);
 		if (i == depth)
 			prev_id = row_id;
 		parent_id = row_id;
@@ -1530,15 +1519,15 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 	}
 	*plast_row_id = row_id;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
-static BOOL db_engine_insert_message(sqlite3 *psqlite,
-	uint64_t message_id, BOOL b_read, int depth,
-	uint32_t inst_num, uint16_t type, void *pvalue,
-	uint64_t parent_id, uint64_t after_row_id,
-	uint64_t before_row_id, sqlite3_stmt *pstmt_insert,
-	sqlite3_stmt *pstmt_update, DOUBLE_LIST *pnotify_list,
-	uint64_t *plast_row_id)
+static bool db_engine_insert_message(sqlite3 *psqlite, uint64_t message_id,
+    bool b_read, int depth, uint32_t inst_num, uint16_t type, void *pvalue,
+    uint64_t parent_id, uint64_t after_row_id, uint64_t before_row_id,
+    sqlite3_stmt *pstmt_insert, sqlite3_stmt *pstmt_update,
+    std::vector<rowinfo_node> &notify_list, uint64_t *plast_row_id) try
 {
 	uint64_t row_id;
 	
@@ -1574,49 +1563,30 @@ static BOOL db_engine_insert_message(sqlite3 *psqlite,
 		sqlite3_reset(pstmt_update);
 	}
 	sqlite3_reset(pstmt_insert);
-	auto prnode = cu_alloc<ROWINFO_NODE>();
-	if (prnode == nullptr)
-		return FALSE;
-	prnode->node.pdata = prnode;
-	prnode->b_added = TRUE;
-	prnode->row_id = row_id;
-	double_list_append_as_tail(pnotify_list, &prnode->node);
+	notify_list.emplace_back(true, row_id);
 	*plast_row_id = row_id;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
-static void db_engine_append_rowinfo_node(
-	DOUBLE_LIST *pnotify_list, uint64_t row_id)
+static void db_engine_append_rowinfo_node(std::vector<rowinfo_node> &notify_list,
+    uint64_t row_id) try
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
-		pnode=double_list_get_after(pnotify_list, pnode)) {
-		auto prnode = static_cast<const ROWINFO_NODE *>(pnode->pdata);
-		if (row_id == prnode->row_id)
-			return;
-	}
-	auto prnode = cu_alloc<ROWINFO_NODE>();
-	if (NULL != prnode) {
-		prnode->node.pdata = prnode;
-		prnode->b_added = FALSE;
-		prnode->row_id = row_id;
-		double_list_append_as_tail(pnotify_list, &prnode->node);
-	}
+	auto it = std::find_if(notify_list.begin(), notify_list.end(), [&](const rowinfo_node &e) {
+	          	return e.row_id == row_id;
+	          });
+	if (it == notify_list.end())
+		notify_list.emplace_back(false, row_id);
+} catch (const std::bad_alloc &) {
 }
 
-static BOOL db_engine_check_new_header(
-	DOUBLE_LIST *pnotify_list, uint64_t row_id)
+static bool db_engine_check_new_header(const std::vector<rowinfo_node> &notify_list,
+    uint64_t row_id)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
-		pnode=double_list_get_after(pnotify_list, pnode)) {
-		auto prnode = static_cast<const ROWINFO_NODE *>(pnode->pdata);
-		if (row_id == prnode->row_id && prnode->b_added)
-			return TRUE;
-	}
-	return FALSE;
+	return std::find_if(notify_list.cbegin(), notify_list.cend(), [&](const rowinfo_node &e) {
+	       	return e.b_added && e.row_id == row_id;
+	       }) != notify_list.cend();
 }
 
 static inline size_t det_multi_num(uint16_t type, const void *mv)
@@ -1971,8 +1941,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 				continue;
 		}
 		BOOL b_resorted = FALSE;
-		DOUBLE_LIST notify_list;
-		double_list_init(&notify_list);
+		std::vector<rowinfo_node> notify_list;
 		for (size_t j = 0; j < multi_num; ++j) {
 			uint64_t parent_id = 0, inst_num = 0, row_id = 0, row_id1 = 0;
 			if (NULL != pmultival) {
@@ -2017,7 +1986,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 			if (b_break && !db_engine_insert_categories(pdb->m_sqlite_eph,
 			    i, parent_id, row_id, row_id1, ptable->psorts,
 			    propvals, pstmt1, pstmt2, &ptable->header_id,
-			    &notify_list, &parent_id))
+			    notify_list, &parent_id))
 				return;
 			row_id = 0;
 			row_id1 = 0;
@@ -2061,7 +2030,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 			    pdb->m_sqlite_eph, message_id, b_read,
 			    ptable->psorts->ccategories, inst_num,
 			    type, pvalue, parent_id, row_id, row_id1,
-			    pstmt1, pstmt2, &notify_list, &row_id))
+			    pstmt1, pstmt2, notify_list, &row_id))
 				return;
 			parent_id = 0;
 			while (true) {
@@ -2080,7 +2049,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 				         ptable->table_id, LLU{row_id});
 				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					return;
-				db_engine_append_rowinfo_node(&notify_list, row_id);
+				db_engine_append_rowinfo_node(notify_list, row_id);
 			}
 			if (ptable->extremum_tag == 0)
 				continue;
@@ -2103,7 +2072,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 					continue;
 			} else if (pvalue == nullptr &&
 			    propvals[ptable->psorts->ccategories].pvalue != nullptr &&
-			    db_engine_check_new_header(&notify_list, row_id)) {
+			    db_engine_check_new_header(notify_list, row_id)) {
 				/* extremum should be written */
 			} else if (result <= 0) {
 				continue;
@@ -2158,7 +2127,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 			if (prev_id == prev_id1)
 				continue;
 			/* position within the list has been changed */
-			if (!db_engine_check_new_header(&notify_list, row_id))
+			if (!db_engine_check_new_header(notify_list, row_id))
 				b_resorted = TRUE;
 			if (0 != row_id1) {
 				sqlite3_bind_null(pstmt2, 1);
@@ -2227,9 +2196,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 		pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
-		DOUBLE_LIST_NODE *pnode1;
-		while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
-			auto row_id = static_cast<ROWINFO_NODE *>(pnode1->pdata)->row_id;
+		for (const auto &[b_added, row_id] : notify_list) {
 			stm_sel_tx.bind_int64(1, row_id);
 			if (stm_sel_tx.step() != SQLITE_ROW ||
 			    sqlite3_column_type(stm_sel_tx, 1) == SQLITE_NULL) {
@@ -2259,7 +2226,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 				}
 				sqlite3_reset(pstmt);
 			}
-			if (!static_cast<ROWINFO_NODE *>(pnode1->pdata)->b_added) {
+			if (!b_added) {
 				padded_row1->row_message_id = stm_sel_tx.col_int64(3);
 				padded_row1->after_row_id = inst_id;
 				padded_row1->after_folder_id = inst_folder_id;
@@ -2601,19 +2568,14 @@ void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
 	mlog(LV_ERR, "E-2123: ENOMEM");
 }
 
-static void db_engine_update_prev_id(DOUBLE_LIST *plist,
-	int64_t prev_id, uint64_t original_prev_id)
+static void db_engine_update_prev_id(std::vector<rowdel_node> &list,
+    int64_t prev_id, uint64_t original_prev_id)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pdelnode = static_cast<ROWDEL_NODE *>(pnode->pdata);
-		if (original_prev_id == static_cast<uint64_t>(pdelnode->prev_id)) {
-			pdelnode->prev_id = prev_id;
-			break;
-		}
-	}
+	auto it = std::find_if(list.begin(), list.end(), [&](const rowdel_node &e) {
+	          	return static_cast<uint64_t>(e.prev_id) == original_prev_id;
+	          });
+	if (it != list.end())
+		it->prev_id = prev_id;
 }
 
 static void *db_engine_get_extremum_value(db_conn *pdb, cpid_t cpid,
@@ -2671,11 +2633,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 	uint32_t inst_num;
 	uint8_t table_sort;
 	uint64_t parent_id;
-	DOUBLE_LIST tmp_list;
-	ROWINFO_NODE *prnode;
 	char sql_string[1024];
-	DOUBLE_LIST notify_list;
-	DOUBLE_LIST_NODE *pnode1;
 	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	DB_NOTIFY_DATAGRAM datagram1 = datagram;
 	DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *pdeleted_row;
@@ -2774,7 +2732,6 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 		}
 		b_index = FALSE;
 		b_resorted = FALSE;
-		double_list_init(&tmp_list);
 		if (ptable->instance_tag == 0)
 			snprintf(sql_string, std::size(sql_string), "SELECT * FROM t%u"
 						" WHERE inst_id=%llu AND inst_num=0",
@@ -2786,11 +2743,10 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 		pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
+
+		std::vector<rowdel_node> del_list;
 		while (pstmt.step() == SQLITE_ROW) {
-			auto pdelnode = cu_alloc<ROWDEL_NODE>();
-			if (pdelnode == nullptr)
-				return;
-			pdelnode->node.pdata = pdelnode;
+			rowdel_node dn, *pdelnode = &dn;
 			pdelnode->row_id = sqlite3_column_int64(pstmt, 0);
 			/* will get 0 if SQLITE_NULL in 'idx' field */ 
 			pdelnode->idx = sqlite3_column_int64(pstmt, 1);
@@ -2801,8 +2757,8 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			pdelnode->parent_id = sqlite3_column_int64(pstmt, 6);
 			pdelnode->depth = sqlite3_column_int64(pstmt, 7);
 			pdelnode->inst_num = sqlite3_column_int64(pstmt, 10);
-			pdelnode->b_read = sqlite3_column_int64(pstmt, 12) == 0 ? false : TRUE;
-			double_list_append_as_tail(&tmp_list, &pdelnode->node);
+			pdelnode->b_read = pstmt.col_int64(12) != 0;
+			del_list.push_back(std::move(dn));
 		}
 		pstmt.finalize();
 		xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp2");
@@ -2836,10 +2792,10 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			if (stm_sel_ex == nullptr)
 				continue;
 		}
-		double_list_init(&notify_list);
-		for (pnode1=double_list_get_head(&tmp_list); NULL!=pnode1;
-			pnode1=double_list_get_after(&tmp_list, pnode1)) {
-			auto pdelnode = static_cast<ROWDEL_NODE *>(pnode1->pdata);
+
+		std::vector<rowinfo_node> notify_list;
+		for (const auto &delnode : del_list) {
+			auto pdelnode = &delnode;
 			if (ptable->extremum_tag != 0 &&
 			    pdelnode->depth == ptable->psorts->ccategories)
 				/* historically no-op for some reason */;
@@ -2855,7 +2811,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 				break;
 			if (pdelnode->depth == ptable->psorts->ccategories &&
 			    ptable->instance_tag != 0)
-				db_engine_update_prev_id(&tmp_list,
+				db_engine_update_prev_id(del_list,
 					pdelnode->prev_id, pdelnode->row_id);
 			if (pdelnode->parent_id == 0)
 				continue;
@@ -2863,10 +2819,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			if (pstmt.step() != SQLITE_ROW)
 				break;
 			if (1 == sqlite3_column_int64(pstmt, 8)) {
-				pdelnode = cu_alloc<ROWDEL_NODE>();
-				if (pdelnode == nullptr)
-					break;
-				pdelnode->node.pdata = pdelnode;
+				rowdel_node nn, *pdelnode = &nn;
 				pdelnode->row_id = sqlite3_column_int64(pstmt, 0);
 				pdelnode->idx = sqlite3_column_int64(pstmt, 1);
 				if (pdelnode->idx != 0)
@@ -2876,8 +2829,8 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 				pdelnode->parent_id = sqlite3_column_int64(pstmt, 6);
 				pdelnode->depth = sqlite3_column_int64(pstmt, 7);
 				pdelnode->inst_num = 0;
-				pdelnode->b_read = static_cast<ROWDEL_NODE *>(pnode1->pdata)->b_read;
-				double_list_append_as_tail(&tmp_list, &pdelnode->node);
+				pdelnode->b_read = delnode.b_read;
+				del_list.push_back(std::move(nn));
 				sqlite3_reset(pstmt);
 				continue;
 			}
@@ -2887,13 +2840,11 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			         ptable->table_id, LLU{pdelnode->parent_id});
 			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				break;
-			prnode = cu_alloc<ROWINFO_NODE>();
-			if (prnode == nullptr)
+			try {
+				notify_list.emplace_back(false, delnode.parent_id);
+			} catch (const std::bad_alloc &) {
 				break;
-			prnode->node.pdata = prnode;
-			prnode->b_added = FALSE;
-			prnode->row_id = pdelnode->parent_id;
-			double_list_append_as_tail(&notify_list, &prnode->node);
+			}
 			if (0 == ptable->extremum_tag ||
 				pdelnode->depth != ptable->psorts->ccategories) {
 				sqlite3_reset(pstmt);
@@ -2993,7 +2944,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			stm_upd_previd.finalize();
 			stm_sel_ex.finalize();
 		}
-		if (pnode1 != nullptr)
+		if (!del_list.empty())
 			continue;
 		if (b_index) {
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=NULL", ptable->table_id);
@@ -3029,9 +2980,8 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
 			continue;
 		}
-		for (pnode1 = double_list_get_head(&tmp_list); NULL != pnode1;
-		     pnode1 = double_list_get_after(&tmp_list, pnode1)) {
-			auto pdelnode = static_cast<const ROWDEL_NODE *>(pnode1->pdata);
+		for (const auto &delnode : del_list) {
+			auto pdelnode = &delnode;
 			if (pdelnode->idx == 0)
 				continue;
 			if (!ptable->b_search) {
@@ -3051,7 +3001,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			                          db_notify_type::cttbl_row_deleted;
 			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 		}
-		if (double_list_get_nodes_num(&notify_list) == 0)
+		if (notify_list.empty())
 			continue;
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM"
 		         " t%u WHERE idx=?", ptable->table_id);
@@ -3063,8 +3013,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 		pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			continue;
-		while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
-			auto row_id = static_cast<ROWINFO_NODE *>(pnode1->pdata)->row_id;
+		for (const auto &[_, row_id] : notify_list) {
 			sqlite3_bind_int64(pstmt1, 1, row_id);
 			if (pstmt1.step() != SQLITE_ROW) {
 				sqlite3_reset(pstmt1);
@@ -3280,8 +3229,6 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb, uint64_t folder_id,
 	std::list<table_node> tmp_list;
 	char sql_string[1024];
 	uint64_t row_folder_id;
-	DOUBLE_LIST notify_list;
-	DOUBLE_LIST_NODE *pnode1;
 	DB_NOTIFY_DATAGRAM datagram = {deconst(exmdb_server::get_dir()), TRUE, {0}};
 	TAGGED_PROPVAL propvals[MAXIMUM_SORT_COUNT];
 	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row;
@@ -3528,7 +3475,8 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb, uint64_t folder_id,
 		if (pstmt1 == nullptr)
 			continue;
 		b_error = FALSE;
-		double_list_init(&notify_list);
+
+		std::vector<rowinfo_node> notify_list;
 		for (i = 0; i < multi_num; i++) {
 			inst_num = ptable->instance_tag == 0 || pmultival == nullptr ? 0 : i + 1;
 			sqlite3_bind_int64(pstmt1, 1, inst_num);
@@ -3718,23 +3666,11 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb, uint64_t folder_id,
 					b_error = TRUE;
 					break;
 				}
-				auto prnode = cu_alloc<ROWINFO_NODE>();
-				if (prnode == nullptr)
-					return;
-				prnode->node.pdata = prnode;
-				prnode->b_added = FALSE;
-				prnode->row_id = row_id;
-				double_list_append_as_tail(&notify_list, &prnode->node);
+				notify_list.emplace_back(false, row_id);
 			}
 			if (b_error)
 				break;
-			auto prnode = cu_alloc<ROWINFO_NODE>();
-			if (prnode == nullptr)
-				return;
-			prnode->node.pdata = prnode;
-			prnode->b_added = FALSE;
-			prnode->row_id = row_id1;
-			double_list_append_as_tail(&notify_list, &prnode->node);
+			notify_list.emplace_back(false, row_id1);
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
@@ -3751,8 +3687,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb, uint64_t folder_id,
 		if (pstmt1 == nullptr)
 			continue;
 
-		while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
-			auto row_id = static_cast<ROWINFO_NODE *>(pnode1->pdata)->row_id;
+		for (const auto &[_, row_id] : notify_list) {
 			sqlite3_bind_int64(pstmt1, 1, row_id);
 			if (pstmt1.step() != SQLITE_ROW) {
 				sqlite3_reset(pstmt1);
