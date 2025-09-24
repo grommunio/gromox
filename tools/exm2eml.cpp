@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH 
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
