@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 #
 # A Shell script to generate the Kopano user list for Grommunio migration.
 #
