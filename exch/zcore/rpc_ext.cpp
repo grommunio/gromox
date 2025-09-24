@@ -296,17 +296,18 @@ static pack_result rpc_ext_push_state_array(EXT_PUSH &x, const STATE_ARRAY &r)
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_newmail_znotification(EXT_PUSH &x, const NEWMAIL_ZNOTIFICATION &r)
+static pack_result rpc_ext_push_newmail_znotification(EXT_PUSH &x, const ZNOTIFICATION &r)
 {
-	QRF(x.p_bin(r.entryid));
-	QRF(x.p_bin(r.parentid));
+	std::string empty;
+	QRF(x.p_bin(r.pentryid.has_value() ? *r.pentryid : empty));
+	QRF(x.p_bin(r.pparentid.has_value() ? *r.pparentid : empty));
 	QRF(x.p_uint32(r.flags));
 	QRF(x.p_str(r.message_class));
 	QRF(x.p_uint32(r.message_flags));
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_object_znotification(EXT_PUSH &x, const OBJECT_ZNOTIFICATION &r)
+static pack_result rpc_ext_push_object_znotification(EXT_PUSH &x, const ZNOTIFICATION &r)
 {	
 	QRF(x.p_uint32(static_cast<uint32_t>(r.object_type)));
 	if (!r.pentryid.has_value()) {
@@ -347,16 +348,14 @@ static pack_result rpc_ext_push_znotification(EXT_PUSH &x, const ZNOTIFICATION &
 	QRF(x.p_uint32(r.event_type));
 	switch (r.event_type) {
 	case fnevNewMail:
-		return rpc_ext_push_newmail_znotification(x,
-		       *static_cast<const NEWMAIL_ZNOTIFICATION *>(r.pnotification_data));
+		return rpc_ext_push_newmail_znotification(x, r);
 	case fnevObjectCreated:
 	case fnevObjectDeleted:
 	case fnevObjectModified:
 	case fnevObjectMoved:
 	case fnevObjectCopied:
 	case fnevSearchComplete:
-		return rpc_ext_push_object_znotification(x,
-		       *static_cast<const OBJECT_ZNOTIFICATION *>(r.pnotification_data));
+		return rpc_ext_push_object_znotification(x, r);
 	default:
 		return pack_result::ok;
 	}

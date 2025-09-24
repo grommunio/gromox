@@ -11,6 +11,7 @@
 #include <utility>
 #include <fmt/format.h>
 #include <json/value.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/endian.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
@@ -94,6 +95,18 @@ static void filter_folder_map(gi_folder_map_t &fmap)
 		p.second.fid_to = rop_util_make_eid_ex(1, p.second.fid_to);
 }
 
+static void validate_magic(const char *magic)
+{
+	if (memcmp(magic, "GXMT", 4) != 0 || !HX_isdigit(magic[4]) ||
+	    !HX_isdigit(magic[5]) || !HX_isdigit(magic[6]) ||
+	    !HX_isdigit(magic[7]))
+		throw YError("PG-1127: Unrecognized input format. GXMT0004 file signature is missing.");
+	if (memcmp(&magic[4], "0004", 4) == 0)
+		return;
+	throw YError("PG-1127: Input is from an unsupported version. "
+		"Observed signature \"%.8s\", but only \"GXMT0004\" is understood.", magic);
+}
+
 static int exm_read_base_maps()
 {
 	errno = 0;
@@ -103,8 +116,7 @@ static int exm_read_base_maps()
 		return 0;
 	if (ret < 0 || static_cast<size_t>(ret) != std::size(magic))
 		throw YError("PG-1126: %s", strerror_eof(errno));
-	if (memcmp(magic, "GXMT0004", 8) != 0)
-		throw YError("PG-1127: Unrecognized input format");
+	validate_magic(magic);
 	ret = HXio_fullread(STDIN_FILENO, &g_splice, sizeof(g_splice));
 	if (ret < 0 || static_cast<size_t>(ret) != sizeof(g_splice))
 		throw YError("PG-1120: %s", strerror_eof(errno));

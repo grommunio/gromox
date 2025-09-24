@@ -121,17 +121,22 @@ pack_result PULL_CTX::g_state_a(STATE_ARRAY *r)
 }
 
 static pack_result ext_pack_pull_newmail_znotification(PULL_CTX *pctx,
-    NEWMAIL_ZNOTIFICATION *r)
+    ZNOTIFICATION *r) try
 {
-	TRY(pctx->g_bin(&r->entryid));
-	TRY(pctx->g_bin(&r->parentid));
+	std::string s;
+	TRY(pctx->g_bin(&s));
+	r->pentryid = std::move(s);
+	TRY(pctx->g_bin(&s));
+	r->pparentid = std::move(s);
 	TRY(pctx->g_uint32(&r->flags));
 	TRY(pctx->g_str(&r->message_class));
 	return pctx->g_uint32(&r->message_flags);
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result ext_pack_pull_object_znotification(PULL_CTX *pctx,
-    OBJECT_ZNOTIFICATION *r)
+    ZNOTIFICATION *r)
 {
 	uint8_t tmp_byte;
 	uint32_t ot;
@@ -185,23 +190,16 @@ static pack_result ext_pack_pull_znotification(PULL_CTX *pctx, ZNOTIFICATION *r)
 {
 	TRY(pctx->g_uint32(&r->event_type));
 	switch (r->event_type) {
-	case fnevNewMail: {
-		auto nz = new NEWMAIL_ZNOTIFICATION;
-		r->pnotification_data = nz;
-		return ext_pack_pull_newmail_znotification(pctx, nz);
-	}
+	case fnevNewMail:
+		return ext_pack_pull_newmail_znotification(pctx, r);
 	case fnevObjectCreated:
 	case fnevObjectDeleted:
 	case fnevObjectModified:
 	case fnevObjectMoved:
 	case fnevObjectCopied:
-	case fnevSearchComplete: {
-		auto oz = new OBJECT_ZNOTIFICATION;
-		r->pnotification_data = oz;
-		return ext_pack_pull_object_znotification(pctx, oz);
-	}
+	case fnevSearchComplete:
+		return ext_pack_pull_object_znotification(pctx, r);
 	default:
-		r->pnotification_data = NULL;
 		return pack_result::ok;
 	}
 } catch (const std::bad_alloc &) {
