@@ -54,7 +54,7 @@ static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 BOOL table_object::load()
 {
 	auto ptable = this;
-	uint32_t &row_num = m_total;
+	uint32_t row_num;
 	uint32_t table_id;
 	uint32_t permission;
 	
@@ -115,7 +115,7 @@ BOOL table_object::load()
 			__PRETTY_FUNCTION__);
 		return TRUE;
 	}
-	/* exmdb may legitimately reeturn a new_table_id of 0. */
+	/* exmdb may legitimately return a new_table_id of 0. */
 	table_object_set_table_id(ptable, table_id);
 	m_loaded = true;
 	return TRUE;
@@ -127,7 +127,7 @@ void table_object::unload()
 }
 
 BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count,
-    TARRAY_SET *pset) const
+    TARRAY_SET *pset)
 {
 	assert(is_loaded());
 	auto ptable = this;
@@ -217,13 +217,16 @@ void table_object::set_position(uint32_t position)
 	m_position = position;
 }
 
-uint32_t table_object::get_total() const
+uint32_t table_object::get_total()
 {
-	if (rop_id != ropGetAttachmentTable)
-		return m_total;
-	uint16_t num = 0;
-	static_cast<message_object *>(pparent_obj)->get_attachments_num(&num);
-	return num;
+	if (rop_id == ropGetAttachmentTable) {
+		uint16_t num = 0;
+		static_cast<message_object *>(pparent_obj)->get_attachments_num(&num);
+		return num;
+	}
+	uint32_t total_rows = 0;
+	exmdb_client->sum_table(plogon->get_dir(), m_table_id, &total_rows);
+	return total_rows;
 }
 
 std::unique_ptr<table_object> table_object::create(logon_object *plogon,
