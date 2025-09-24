@@ -2332,11 +2332,11 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 {
 	auto pdb = this;
 	void *pvalue;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               fnevNewMail, folder_id, 0);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::new_mail;
 		auto pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
@@ -2366,11 +2366,11 @@ void db_conn::notify_message_creation(uint64_t folder_id,
     uint64_t message_id, db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               fnevObjectCreated, folder_id, 0);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_created;
 		auto pcreated_mail = cu_alloc<DB_NOTIFY_MESSAGE_CREATED>();
@@ -2394,7 +2394,6 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 {
 	auto pdb = this;
 	uint64_t anchor_fld;
-	DB_NOTIFY_DATAGRAM datagram;
 	
 	if (!common_util_get_message_parent_folder(pdb->psqlite, message_id, &anchor_fld))
 		return;
@@ -2403,6 +2402,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 	auto parrays = db_engine_classify_id_array(dbase,
 	               fnevObjectCreated, anchor_fld, 0);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::link_created;
 		auto plinked_mail = cu_alloc<DB_NOTIFY_LINK_CREATED>();
@@ -2581,11 +2581,11 @@ void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
     const db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               fnevObjectCreated, parent_id, 0);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_created;
 		auto pcreated_folder = cu_alloc<DB_NOTIFY_FOLDER_CREATED>();
@@ -3117,11 +3117,11 @@ void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
     db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               fnevObjectDeleted, folder_id, message_id);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_deleted;
 		auto pdeleted_mail = cu_alloc<DB_NOTIFY_MESSAGE_DELETED>();
@@ -3144,7 +3144,6 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 {
 	auto pdb = this;
 	uint64_t folder_id;
-	DB_NOTIFY_DATAGRAM datagram;
 	
 	if (!common_util_get_message_parent_folder(pdb->psqlite,
 	    message_id, &folder_id))
@@ -3154,6 +3153,7 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 	auto parrays = db_engine_classify_id_array(dbase,
 	               fnevObjectDeleted, folder_id, message_id);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::link_deleted;
 		auto punlinked_mail = cu_alloc<DB_NOTIFY_LINK_DELETED>();
@@ -3250,11 +3250,11 @@ void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
     const db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               fnevObjectDeleted, parent_id, 0);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_deleted;
 		auto pdeleted_folder = cu_alloc<DB_NOTIFY_FOLDER_DELETED>();
@@ -3864,11 +3864,11 @@ void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_i
     db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               fnevObjectModified, folder_id, message_id);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_modified;
 		auto pmodified_mail = cu_alloc<DB_NOTIFY_MESSAGE_MODIFIED>();
@@ -4054,11 +4054,11 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
     const db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(dbase,
 	               fnevObjectModified, folder_id, 0);
 	if (parrays.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_modified;
 		auto pmodified_folder = cu_alloc<DB_NOTIFY_FOLDER_MODIFIED>();
@@ -4082,7 +4082,6 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
     db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 
 	/* open-coded db_engine_classify_id_array(4-arg) */
@@ -4103,6 +4102,7 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 		}
 	}
 	if (recv_list.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = b_copy ? db_notify_type::message_copied :
 		                          db_notify_type::message_moved;
@@ -4134,7 +4134,6 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
     const db_base &dbase, NOTIFQ &notifq) try
 {
 	auto pdb = this;
-	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 
 	/* open-coded db_engine_classify_id_array(4-arg) */
@@ -4156,6 +4155,7 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 		}
 	}
 	if (recv_list.size() > 0) {
+		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = b_copy ? db_notify_type::folder_copied :
 		                          db_notify_type::folder_moved;
