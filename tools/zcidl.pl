@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: MIT 
 # SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 # This file is part of Gromox.
 use Getopt::Long;
