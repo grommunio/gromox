@@ -1,7 +1,7 @@
 <#
 # A PowerShell script for Exchange to grommunio migration.
 #
-# Copyright 2022-2025 Walter Hofstaedtler & grommunio GmbH
+# Copyright 2022-2025 Walter Hofstaedtler & grommunio GmbH 
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Authors: grommunio <dev@grommunio.com>
 #          Walter Hofstaedtler <walter@hofstaedtler.com>
