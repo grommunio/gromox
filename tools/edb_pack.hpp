@@ -1,6 +1,6 @@
 #pragma once
-#include <gromox/ext_buffer.hpp>
-
+#include <gromox/ext_buffer.hpp> 
+ 
 /**
  * @alloc_hint:		number of elements multiplied by element size, or,
  * 			in case of strings, UTF-16 presentation size 
