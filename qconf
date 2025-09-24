@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -e 
 topdir="${0%/*}"
 if [ "$topdir" = "$0" ]; then
 	topdir=.
