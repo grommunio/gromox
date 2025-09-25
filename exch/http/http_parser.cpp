@@ -979,7 +979,7 @@ int http_parser::auth_ntlmssp(http_context &ctx, const char *prog,
 		output.erase(0, 3);
 		return -99; /* MOAR */
 	}
-	output.clear();
+	auto cl_1 = HX::make_scope_exit([&]() { output.clear(); });
 	if (output[0] == 'A' && output[1] == 'F') // AF
 		/*
 		 * The AF response contains the winbind (Unix-side) username.
@@ -987,7 +987,7 @@ int http_parser::auth_ntlmssp(http_context &ctx, const char *prog,
 		 * be just "user5", or it can be "DOMAIN\user5". Either way, an
 		 * altnames entry is needed for this.
 		 */
-		return auth_finalize(ctx, output.c_str());
+		return auth_finalize(ctx, &output[3]);
 	else if (output[0] == 'N' && output[1] == 'A')
 		return 0;
 	return -1;
