@@ -138,6 +138,7 @@ struct http_parser {
 	std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 	std::mutex g_vconnection_lock; /* protects g_vconnection_hash */
 	std::unordered_map<std::string, VIRTUAL_CONNECTION> g_vconnection_hash;
+	std::string gss_helper_program, ntlm_helper_program;
 };
 
 class VCONN_REF {
@@ -228,6 +229,8 @@ http_parser::http_parser(size_t context_num, time_duration timeout,
 	else
 		g_certificate_passwd.clear();
 	g_private_key_path = key_path;
+	gss_helper_program = g_config_file->get_value("gss_program");
+	ntlm_helper_program = g_config_file->get_value("ntlmssp_program");
 }
 
 #ifdef OLD_SSL
@@ -1100,10 +1103,10 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 tproc_status http_parser::auth_spnego(http_context &ctx, const char *past_method)
 {
 	bool rq_ntlmssp = strncmp(past_method, "TlRMTVNT", 8) == 0;
-	auto the_helper = g_config_file->get_value(rq_ntlmssp ? "ntlmssp_program" : "gss_program");
+	const auto &the_helper = rq_ntlmssp ? ntlm_helper_program : gss_helper_program;
 
-	if (strcmp(the_helper, "internal-gss") != 0) {
-		auto ret = auth_exthelper(ctx, the_helper, past_method, ctx.last_gss_output);
+	if (the_helper != "internal-gss") {
+		auto ret = auth_exthelper(ctx, the_helper.c_str(), past_method, ctx.last_gss_output);
 		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
 		ctx.auth_method = auth_method::negotiate_b64;
 		if (ret <= 0 && ret != -99)
