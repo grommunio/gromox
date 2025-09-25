@@ -92,6 +92,21 @@ struct seen_list {
 
 static ec_error_t message_rule_new_message(const rulexec_in &, seen_list &);
 
+/*
+ * gx_collapse_event_storm: When copying or deleting "lots" of messages,
+ * collapse and replace all the new_msg/del_msg event notifications with a
+ * single table_change event.
+ *
+ * Drawback: Upon seeing a table_change event, a MAPI client may re-downloads
+ * the MAPI table. If it does, it has *all* rows already. Upon seeing the
+ * new_msg event, the client might ― erroneously ― add a message to its local
+ * table representation without checking for duplicate entryids.
+ *
+ * EXC2019 behavior can be selected by using collapse=false (the
+ * default).
+ */
+static bool gx_collapse_event_storm;
+
 static constexpr uint8_t fake_true = true;
 static constexpr uint32_t dummy_rcpttype = MAPI_TO;
 static constexpr char dummy_addrtype[] = "NONE", dummy_string[] = "";
@@ -291,7 +306,9 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		b_check = TRUE;
 	}
 
-	auto b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
+	auto b_batch = gx_collapse_event_storm && pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM
+	/* Table reload in MFCMAPI is ~700msg/sec, whereas event processing is ~100msgevt/sec */
+	               /* && table_new_content_count / 7 < pmessage_eids->count */;
 	auto dbase = pdb->lock_base_wr();
 	db_conn::NOTIFQ notifq;
 	if (b_batch)
@@ -516,7 +533,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		b_check = (permission & (frightsOwner | frightsDeleteAny)) ? false : TRUE;
 	}
 
-	auto b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
+	auto b_batch = gx_collapse_event_storm && pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
 	auto dbase = pdb->lock_base_wr();
 	db_conn::NOTIFQ notifq;
 	if (b_batch)
