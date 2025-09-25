@@ -104,7 +104,7 @@ struct http_parser {
 
 	int auth_finalize(http_context &, const char *);
 	int auth_krb(http_context &ctx, const char *input, size_t isize, std::string &output);
-	int auth_ntlmssp(http_context &, const char *proc, const char *input, std::string &output);
+	int auth_exthelper(http_context &, const char *proc, const char *input, std::string &output);
 	tproc_status auth_spnego(http_context &ctx, const char *past_method);
 	tproc_status auth_basic(http_context *, const char *);
 	tproc_status auth(http_context &ctx);
@@ -897,7 +897,7 @@ int http_parser::auth_finalize(http_context &ctx, const char *user)
 	return 1;
 }
 
-int http_parser::auth_ntlmssp(http_context &ctx, const char *prog,
+int http_parser::auth_exthelper(http_context &ctx, const char *prog,
     const char *encinput, std::string &output)
 {
 	auto encsize = strlen(encinput);
@@ -1103,7 +1103,7 @@ tproc_status http_parser::auth_spnego(http_context &ctx, const char *past_method
 	auto the_helper = g_config_file->get_value(rq_ntlmssp ? "ntlmssp_program" : "gss_program");
 
 	if (strcmp(the_helper, "internal-gss") != 0) {
-		auto ret = auth_ntlmssp(ctx, the_helper, past_method, ctx.last_gss_output);
+		auto ret = auth_exthelper(ctx, the_helper, past_method, ctx.last_gss_output);
 		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
 		ctx.auth_method = auth_method::negotiate_b64;
 		if (ret <= 0 && ret != -99)
