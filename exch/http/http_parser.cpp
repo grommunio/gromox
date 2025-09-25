@@ -1108,23 +1108,24 @@ tproc_status http_parser::auth_spnego(http_context &ctx, const char *past_method
 		ctx.auth_method = auth_method::negotiate_b64;
 		if (ret <= 0 && ret != -99)
 			ntlm_stop(ctx.ntlm_proc);
-	} else {
-#ifdef HAVE_GSSAPI
-		char decoded[4096];
-		size_t decode_len = 0;
-		if (decode64(past_method, strlen(past_method), decoded,
-		    std::size(decoded), &decode_len) != 0)
-			return tproc_status::runoff;
-		auto ret = auth_krb(ctx, decoded, decode_len, ctx.last_gss_output);
-		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
-		ctx.auth_method = auth_method::negotiate;
-#else
-		static bool y = false;
-		if (!y)
-			mlog(LV_DEBUG, "Cannot handle Negotiate request: software built without GSSAPI");
-		y = true;
-#endif
+		return tproc_status::runoff;
 	}
+
+#ifdef HAVE_GSSAPI
+	char decoded[4096];
+	size_t decode_len = 0;
+	if (decode64(past_method, strlen(past_method), decoded,
+	    std::size(decoded), &decode_len) != 0)
+		return tproc_status::runoff;
+	auto ret = auth_krb(ctx, decoded, decode_len, ctx.last_gss_output);
+	ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
+	ctx.auth_method = auth_method::negotiate;
+#else
+	static bool y = false;
+	if (!y)
+		mlog(LV_DEBUG, "Cannot handle Negotiate request: software built without GSSAPI");
+	y = true;
+#endif
 	return tproc_status::runoff;
 }
 
