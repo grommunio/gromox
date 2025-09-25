@@ -975,12 +975,12 @@ int http_parser::auth_ntlmssp(http_context &ctx, const char *prog,
 	output.resize(strlen(output.c_str()));
 	mlog(LV_DEBUG, "NTLM(%d)< %s", static_cast<int>(pinfo.p_pid), output.c_str());
 
-	if (output[0] == 'T' && output[1] == 'T') { // TT
+	if (output[0] == 'T' && output[1] == 'T' && HX_isspace(output[2])) { // TT
 		output.erase(0, 3);
 		return -99; /* MOAR */
 	}
 	auto cl_1 = HX::make_scope_exit([&]() { output.clear(); });
-	if (output[0] == 'A' && output[1] == 'F') // AF
+	if (output[0] == 'A' && output[1] == 'F' && HX_isspace(output[2])) // AF
 		/*
 		 * The AF response contains the winbind (Unix-side) username.
 		 * Depending on smb.conf "winbind use default domain", this can
