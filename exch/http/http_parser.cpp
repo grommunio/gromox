@@ -986,6 +986,8 @@ int http_parser::auth_exthelper(http_context &ctx, const char *prog,
 	auto cl_1 = HX::make_scope_exit([&]() { output.clear(); });
 	if (output[0] == 'A' && output[1] == 'F' && HX_isspace(output[2])) { // AF
 		/*
+		 * squid-2.5-style
+		 *
 		 * The AF response contains the winbind (Unix-side) username.
 		 * Depending on smb.conf "winbind use default domain", this can
 		 * be just "user5", or it can be "DOMAIN\user5". Either way, an
@@ -999,6 +1001,14 @@ int http_parser::auth_exthelper(http_context &ctx, const char *prog,
 			return -1;
 		auto idx = v.size() == 1 ? 0 : 1;
 		return auth_finalize(ctx, v[idx].c_str());
+	} else if (output[0] == 'O' && output[1] == 'K' && HX_isspace(output[2])) {
+		/* squid-3.4-style */
+		auto v = gx_split(&output[3], ' ');
+		for (auto &&elem : v)
+			if (strncmp(elem.c_str(), "user=", 5) == 0)
+				return auth_finalize(ctx, &elem[5]);
+		mlog(LV_DEBUG, "NTLM(%d)- no user= parameter found in response", static_cast<int>(pinfo.p_pid));
+		return -1;
 	} else if (output[0] == 'N' && output[1] == 'A') {
 		return 0;
 	}
