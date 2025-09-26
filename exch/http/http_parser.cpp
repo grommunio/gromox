@@ -1179,7 +1179,7 @@ tproc_status http_parser::auth(http_context &ctx)
 		auto ret = auth_basic(&ctx, past_method);
 		if (ret != tproc_status::runoff)
 			return ret;
-	} else if (strcasecmp(method, "Negotiate") == 0 &&
+	} else if ((strcasecmp(method, "Negotiate") == 0 || strcasecmp(method, "NTLM") == 0) &&
 	    g_config_file->get_ll("http_auth_spnego")) {
 		auto ret = auth_spnego(ctx, past_method);
 		if (ret != tproc_status::runoff)
