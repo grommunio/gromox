@@ -173,8 +173,11 @@ Enforce authentication at all times. This is a debugging knob.
 Default: \fIno\fP
 .TP
 \fBhttp_krb_service_principal\fP
+Kerberos service principal to use when gss_program=internal-gss. The form is
+often something like \fIHTTP\fP\fB/\fP\fIfqdn\fP\fB@\fP\fIREALM\fP, but may
+vary.
 .br
-Default: \fBgromox@\fP\fIhost_id\fP
+Default: (empty)
 .TP
 \fBhttp_listen_addr\fP
 AF_INET6 socket address to bind the HTTP service to.

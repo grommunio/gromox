@@ -1071,23 +1071,23 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 	if (ctx.m_gss_srv_creds == GSS_C_NO_CREDENTIAL) {
 		ctx.m_gss_ctx = GSS_C_NO_CONTEXT;
 		auto p = g_config_file->get_value("http_krb_service_principal");
-		std::string principal;
-		if (p != nullptr && *p != '\0')
-			principal = p;
-		else
-			principal = "gromox@"s + p;
-		mlog(LV_DEBUG, "krb service principal = \"%s\"", principal.c_str());
-		gss_input_buf.value  = principal.data();
-		gss_input_buf.length = principal.length();
-		auto ret = gss_import_name(&status, &gss_input_buf,
-		           GSS_C_NT_HOSTBASED_SERVICE, &gss_srv_name);
-		if (ret != GSS_S_COMPLETE) {
-			krblog("Unable to import server name", ret, status);
-			return 0;
+		if (p != nullptr && *p != '\0') {
+			mlog(LV_DEBUG, "krb service principal = \"%s\"", p);
+			gss_input_buf.value  = deconst(p);
+			gss_input_buf.length = strlen(p);
+			auto ret = gss_import_name(&status, &gss_input_buf,
+				   GSS_C_NT_HOSTBASED_SERVICE, &gss_srv_name);
+			if (ret != GSS_S_COMPLETE) {
+				krblog("Unable to import server name", ret, status);
+				return 0;
+			}
+		} else {
+			gss_srv_name = GSS_C_NO_NAME;
+			mlog(LV_DEBUG, "krb service principal = GSS_C_NO_NAME");
 		}
-		ret = gss_acquire_cred(&status, gss_srv_name, GSS_C_INDEFINITE,
-		      GSS_C_NO_OID_SET, GSS_C_ACCEPT, &ctx.m_gss_srv_creds,
-		      nullptr, nullptr);
+		auto ret = gss_acquire_cred(&status, gss_srv_name,
+		           GSS_C_INDEFINITE, GSS_C_NO_OID_SET, GSS_C_ACCEPT,
+		           &ctx.m_gss_srv_creds, nullptr, nullptr);
 		if (ret != GSS_S_COMPLETE) {
 			krblog("Unable to acquire credentials handle", ret, status);
 			return 0;
