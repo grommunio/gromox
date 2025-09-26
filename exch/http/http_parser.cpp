@@ -903,11 +903,11 @@ int http_parser::auth_finalize(http_context &ctx, const char *user)
 }
 
 int http_parser::auth_exthelper(http_context &ctx, const char *prog,
-    const char *encinput, std::string &output)
+    const char *encinput, std::string &gss_output)
 {
 	auto encsize = strlen(encinput);
 	auto &pinfo = ctx.ntlm_proc;
-	output.clear();
+	gss_output.clear();
 
 	if (pinfo.p_pid <= 0) {
 		if (prog == nullptr || *prog == '\0')
@@ -939,51 +939,55 @@ int http_parser::auth_exthelper(http_context &ctx, const char *prog,
 	}
 
 	struct pollfd pfd[] = {{pinfo.p_stdout, POLLIN}, {pinfo.p_stderr, POLLIN}};
+	std::string output, errbuf;
+	gss_output.clear();
  retry:
-	auto ret = poll(pfd, std::size(pfd), 10 * 1000);
-	if (ret < 0) {
-		if (errno == EINTR)
-			goto retry;
-		mlog(LV_INFO, "ntlm_auth poll: %s", strerror(errno));
-		return -1;
-	} else if (ret == 0) {
-		mlog(LV_INFO, "ntlm_auth poll timeout");
-		return -1;
+	auto nl_pos = errbuf.rfind('\n');
+	if (nl_pos != errbuf.npos) {
+		mlog(LV_DEBUG, "ntlm_auth(stderr): %.*s", static_cast<int>(nl_pos), errbuf.c_str());
+		errbuf.erase(0, nl_pos + 1);
+		goto retry;
 	}
-
-	output.clear();
-	output.resize(8192);
-	if (pfd[1].revents & POLLIN) {
-		/* Drain stderr first */
-		auto bytes = read(pinfo.p_stderr, output.data(), output.size());
-		if (bytes > 0) {
-			output[bytes] = '\0';
-			HX_chomp(output.data());
-			output.resize(strlen(output.c_str()));
-			mlog(LV_DEBUG, "ntlm_auth(stderr):%c%s",
-				output.find('\n') != output.npos ? '\n' : ' ',
-				output.c_str());
-			goto retry;
+	nl_pos = output.find('\n');
+	if (nl_pos == output.npos) {
+		/* Line on stdout not complete yet, read more */
+		auto ret = poll(pfd, std::size(pfd), 10 * 1000);
+		if (ret < 0) {
+			if (errno == EINTR)
+				goto retry;
+			mlog(LV_INFO, "ntlm_auth poll: %s", strerror(errno));
+			return -1;
+		} else if (ret == 0) {
+			mlog(LV_INFO, "ntlm_auth poll timeout");
+			return -1;
 		}
+
+		char buf[4096];
+		if (pfd[1].revents & POLLIN) {
+			/* Drain stderr first */
+			auto bytes = read(pinfo.p_stderr, buf, std::size(buf) - 1);
+			if (bytes > 0)
+				errbuf.append(buf, bytes);
+		}
+		if (pfd[0].revents & POLLIN) {
+			auto bytes = read(pinfo.p_stdout, buf, std::size(buf) - 1);
+			if (bytes < 0) {
+				mlog(LV_ERR, "ntlm_auth(stdout) error: %s", strerror(errno));
+				return -1;
+			} else if (bytes == 0) {
+				mlog(LV_ERR, "ntlm_auth(stdout) EOF");
+				return -1;
+			}
+			output.append(buf, bytes);
+		}
+		goto retry;
 	}
-	auto bytes = read(pinfo.p_stdout, output.data(), output.size());
-	if (bytes < 0) {
-		mlog(LV_ERR, "ntlm_auth(stdout) error: %s", strerror(errno));
-		return -1;
-	} else if (bytes == 0) {
-		mlog(LV_ERR, "ntlm_auth(stdout) EOF");
-		return -1;
-	}
-	output[bytes] = '\0';
-	HX_chomp(output.data());
-	output.resize(strlen(output.c_str()));
-	mlog(LV_DEBUG, "NTLM(%d)< %s", static_cast<int>(pinfo.p_pid), output.c_str());
 
 	if (output[0] == 'T' && output[1] == 'T' && HX_isspace(output[2])) { // TT
-		output.erase(0, 3);
+		gss_output.assign(&output[3], &output[nl_pos]);
 		return -99; /* MOAR */
 	}
-	auto cl_1 = HX::make_scope_exit([&]() { output.clear(); });
+	std::string_view thisline(output.c_str(), nl_pos);
 	if (output[0] == 'A' && output[1] == 'F' && HX_isspace(output[2])) { // AF
 		/*
 		 * squid-2.5-style
@@ -996,14 +1000,14 @@ int http_parser::auth_exthelper(http_context &ctx, const char *prog,
 		 * samba's ntlm_auth returns "AF username".
 		 * squid's negotiate_wrapper_auth returns "AF = username".
 		 */
-		auto v = gx_split(&output[3], ' ');
+		auto v = gx_split(thisline, ' ');
 		if (v.size() == 0)
 			return -1;
 		auto idx = v.size() == 1 ? 0 : 1;
 		return auth_finalize(ctx, v[idx].c_str());
 	} else if (output[0] == 'O' && output[1] == 'K' && HX_isspace(output[2])) {
 		/* squid-3.4-style */
-		auto v = gx_split(&output[3], ' ');
+		auto v = gx_split(thisline, ' ');
 		for (auto &&elem : v)
 			if (strncmp(elem.c_str(), "user=", 5) == 0)
 				return auth_finalize(ctx, &elem[5]);
