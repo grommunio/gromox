@@ -256,8 +256,6 @@ class ab_base {
 	private:
 	const ab_domain *find_domain(uint32_t) const;
 
-	static const std::vector<std::string> vs_empty; ///< used to return empty alias list in case of invalid minid
-
 	GUID m_guid; ///< GUID of the base
 	gromox::time_point m_load_time{}; ///< Load time
 	/**

@@ -154,7 +154,8 @@ void ab::work()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ab_base organizational member functions
 
-const std::vector<std::string> ab_base::vs_empty{};
+/* Used to return empty alias list in case of invalid minid */
+static const std::vector<std::string> vs_empty;
 
 /**
  * @brief      Initialize base and lock until loaded
