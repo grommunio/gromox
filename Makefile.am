@@ -8,8 +8,7 @@ AM_LDFLAGS  = ${my_LDFLAGS}
 AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 
-lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la ${program_plugins}
-noinst_LTLIBRARIES = libgromox_abtree.la
+lib_LTLIBRARIES = libgromox_abtree.la libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la ${program_plugins}
 pkglibexec_PROGRAMS = delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/authtry tools/eidprint tools/textmapquery
 if WITH_GNU_LD
 version_sc_SYFLAGS = -Wl,--version-script=${srcdir}/default.sym
@@ -66,7 +65,8 @@ noinst_DATA = dldcheck.stamp
 BUILT_SOURCES = exch/exmdb/rpc.cpp include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h lib/exmdb_rpc.cpp php_mapi/zrpc.cpp
 CLEANFILES = ${BUILT_SOURCES} dldcheck.stamp
 libgromox_abtree_la_SOURCES = lib/ab_tree.cpp
-libgromox_abtree_la_LIBADD = libgxs_mysql_adaptor.la
+libgromox_abtree_la_LDFLAGS = ${default_SYFLAGS}
+libgromox_abtree_la_LIBADD = ${fmt_LIBS} libgxs_mysql_adaptor.la
 libgromox_auth_la_SOURCES = exch/authmgr.cpp exch/ldap_adaptor.cpp exch/ldap_adaptor.hpp
 libgromox_auth_la_LDFLAGS = ${default_SYFLAGS}
 libgromox_auth_la_LIBADD = ${libcrypto_LIBS} ${libHX_LIBS} ${jsoncpp_LIBS} ${libldap_LIBS} ${pam_LIBS} libgromox_common.la libgxs_mysql_adaptor.la

@@ -15,6 +15,7 @@ global:
 	_ZT*;
 
 	extern "C++" {
+		gromox::ab_tree::*;
 		midb_agent::*;
 		mysql_adaptor_*;
 		sql_user::*;

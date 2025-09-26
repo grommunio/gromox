@@ -123,7 +123,7 @@ struct GX_EXPORT ab_domain {
  * Contains all domain and user nodes from an organization. Provides a common
  * interface to access node properties.
  */
-class ab_base {
+class GX_EXPORT ab_base {
 	public:
 	/**
 	 * @brief     Address book iterator
@@ -278,7 +278,7 @@ class ab_base {
  *
  * Manages ab_bases. There should only exist one instance.
  */
-class ab {
+class GX_EXPORT ab {
 	public:
 	using base_ref = std::shared_ptr<ab_base>;
 	using const_base_ref = std::shared_ptr<const ab_base>;
@@ -313,7 +313,7 @@ class ab {
 
 	void work();
 };
-extern class ab AB;
+extern GX_EXPORT class ab AB;
 
 /**
  * @brief      Node proxy, bundling minid with ab_base
