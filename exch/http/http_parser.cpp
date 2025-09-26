@@ -920,18 +920,17 @@ int http_parser::auth_exthelper(http_context &ctx, const char *prog,
 			mlog(LV_ERR, "execv ntlm_auth: %s", strerror(-ret));
 			return -1;
 		}
-		mlog(LV_DEBUG, "ntlm_auth is pid %d", pinfo.p_pid);
 		if (HXio_fullwrite(pinfo.p_stdin, "YR ", 3) < 0) {
 			mlog(LV_ERR, "write ntlm_auth: %s", strerror(errno));
 			return -1;
 		}
-		mlog(LV_DEBUG, "NTLM> YR %s", encinput);
+		mlog(LV_DEBUG, "NTLM(%d)> YR %s", static_cast<int>(pinfo.p_pid), encinput);
 	} else {
 		if (HXio_fullwrite(pinfo.p_stdin, "KK ", 3) < 0) {
 			mlog(LV_ERR, "write ntlm_auth: %s", strerror(errno));
 			return -1;
 		}
-		mlog(LV_DEBUG, "NTLM> KK %s", encinput);
+		mlog(LV_DEBUG, "NTLM(%d)> KK %s", static_cast<int>(pinfo.p_pid), encinput);
 	}
 	if (HXio_fullwrite(pinfo.p_stdin, encinput, encsize) < 0 ||
 	    HXio_fullwrite(pinfo.p_stdin, "\n", 1) < 0) {
