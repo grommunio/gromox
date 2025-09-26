@@ -1072,7 +1072,6 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 		ctx.m_gss_ctx = GSS_C_NO_CONTEXT;
 		auto p = g_config_file->get_value("http_krb_service_principal");
 		if (p != nullptr && *p != '\0') {
-			mlog(LV_DEBUG, "krb service principal = \"%s\"", p);
 			gss_input_buf.value  = deconst(p);
 			gss_input_buf.length = strlen(p);
 			auto ret = gss_import_name(&status, &gss_input_buf,
@@ -1083,7 +1082,6 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 			}
 		} else {
 			gss_srv_name = GSS_C_NO_NAME;
-			mlog(LV_DEBUG, "krb service principal = GSS_C_NO_NAME");
 		}
 		auto ret = gss_acquire_cred(&status, gss_srv_name,
 		           GSS_C_INDEFINITE, GSS_C_NO_OID_SET, GSS_C_ACCEPT,
@@ -1118,7 +1116,6 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 		return 0;
 	}
 	std::string ub(static_cast<const char *>(gss_user_buf.value), gss_user_buf.length);
-	mlog(LV_DEBUG, "Kerberos username: %s", ub.c_str());
 	return auth_finalize(ctx, ub.c_str());
 }
 #endif
