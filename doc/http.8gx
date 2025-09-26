@@ -107,13 +107,10 @@ Default: \fI10 minutes\fP
 .TP
 .TP
 \fBgss_program\fP
-The helper program to use for authenticating SPNEGO-GSS requests. The value is
-rudimentarily tokenized at whitespaces, so no special characters may be used.
-(If you need to, write a shell wrapper.) The special value "internal-gss" uses
-libgssapi directly.
-The use of Squid's negotiate_wrapper_auth is optional; Gromox can identify
-whether requests are SPNEGO-NTLMSSP or SPNEGO-Kerberos in the same fashion as
-negotiate_wrapper_auth does.
+The helper program to use for authenticating HTTP requests when
+Negotiate-SPNEGO headers are presented. The value is rudimentarily tokenized at
+whitespaces, so no special characters may be used. If necessary write your own
+wrapper. The special value "internal-gss" uses libgssapi directly.
 .br
 Default: \fIinternal\-gss\fP
 .br
@@ -250,13 +247,15 @@ all RPCs. Note the daemon log level needs to be "debug" (6), too.
 Default: \fI0\fP
 .TP
 \fBntlmssp_program\fP
-Path to samba-winbind ntlm_auth or equivalent program that implements the Squid
-authentication helper text protocol ("YR, TT, KK, AF"). The value is
-rudimentarily tokenized at whitespaces, so no special characters may be used.
-(If you need to, write a shell wrapper.)
-The use of Squid's negotiate_wrapper_auth is optional; Gromox can identify
-whether requests are SPNEGO-NTLMSSP or SPNEGO-Kerberos in the same fashion as
-negotiate_wrapper_auth does.
+The helper program to use for authenticating HTTP requests when NTLM or
+Negotiate-NTLM (but not Negotiate-SPNEGO-NTLM) headers are presented. The value
+is rudimentarily tokenized at whitespaces, so no special characters may be
+used. If necessary, write your own wrapper.
+.br
+Negotiate was meant to carry GSS-API auth data ("Authorization: Negotiate
+YII..."). NTLM can be wrapped in SPNEGO (also "YII"), but a handful of clients
+may also send raw NTLM tokens (appearing as "Authorization: Negotiate
+TlRMTVNT...").
 .br
 Default: \fI/usr/bin/ntlm_auth \-\-helper\-protocol=squid\-2.5\-ntlmssp\fP
 .br
