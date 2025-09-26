@@ -1078,7 +1078,7 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 			principal = "gromox@"s + p;
 		mlog(LV_DEBUG, "krb service principal = \"%s\"", principal.c_str());
 		gss_input_buf.value  = principal.data();
-		gss_input_buf.length = principal.length() + 1;
+		gss_input_buf.length = principal.length();
 		auto ret = gss_import_name(&status, &gss_input_buf,
 		           GSS_C_NT_HOSTBASED_SERVICE, &gss_srv_name);
 		if (ret != GSS_S_COMPLETE) {
