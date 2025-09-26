@@ -984,16 +984,24 @@ int http_parser::auth_exthelper(http_context &ctx, const char *prog,
 		return -99; /* MOAR */
 	}
 	auto cl_1 = HX::make_scope_exit([&]() { output.clear(); });
-	if (output[0] == 'A' && output[1] == 'F' && HX_isspace(output[2])) // AF
+	if (output[0] == 'A' && output[1] == 'F' && HX_isspace(output[2])) { // AF
 		/*
 		 * The AF response contains the winbind (Unix-side) username.
 		 * Depending on smb.conf "winbind use default domain", this can
 		 * be just "user5", or it can be "DOMAIN\user5". Either way, an
 		 * altnames entry is needed for this.
+		 *
+		 * samba's ntlm_auth returns "AF username".
+		 * squid's negotiate_wrapper_auth returns "AF = username".
 		 */
-		return auth_finalize(ctx, &output[3]);
-	else if (output[0] == 'N' && output[1] == 'A')
+		auto v = gx_split(&output[3], ' ');
+		if (v.size() == 0)
+			return -1;
+		auto idx = v.size() == 1 ? 0 : 1;
+		return auth_finalize(ctx, v[idx].c_str());
+	} else if (output[0] == 'N' && output[1] == 'A') {
 		return 0;
+	}
 	return -1;
 }
 
