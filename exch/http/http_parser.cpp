@@ -769,6 +769,8 @@ tproc_status http_parser::rdhead_mt(http_context *pcontext, char *line,
 	} else if (g_http_remote_host_hdr.size() > 0 &&
 	    strcasecmp(field_name, g_http_remote_host_hdr.c_str()) == 0) {
 		auto &cn = pcontext->connection;
+		gx_strlcpy(cn.proxy_addr, cn.client_addr, std::size(cn.proxy_addr));
+		cn.proxy_port = cn.client_port;
 		snprintf(cn.client_addr, std::size(cn.client_addr), "%.*s", static_cast<int>(tmp_len), ptoken);
 		cn.client_port = 0;
 	} else {
@@ -1426,9 +1428,12 @@ ssize_t http_parser::readsock(HTTP_CONTEXT *pcontext, const char *tag,
 		auto &co = pcontext->connection;
 		char tbuf[24];
 		now_str(tbuf, std::size(tbuf));
-		fprintf(stderr, "\e[1m<< %s [%s]:%hu->[%s]:%hu %zd bytes\e[0m\n",
+		fprintf(stderr, "\e[1m<< %s [%s]:%hu",
 		        now_str(tbuf, std::size(tbuf)),
-		        co.client_addr, co.client_port,
+		        co.client_addr, co.client_port);
+		if (co.proxy_port != 0)
+			fprintf(stderr, "->[%s]:%hu", co.proxy_addr, co.proxy_port);
+		fprintf(stderr, "->[%s]:%hu %zd bytes\e[0m\n",
 		        co.server_addr, co.server_port, actual_read);
 		auto pfx = utf8_printable_prefix(pbuff, actual_read);
 		if (pfx == static_cast<size_t>(actual_read)) {
@@ -1608,9 +1613,12 @@ tproc_status http_parser::wrrep(http_context *pcontext)
 	if (g_http_debug) {
 		auto &co = pcontext->connection;
 		char tbuf[24];
-		fprintf(stderr, "\e[1m>> %s [%s]:%hu->[%s]:%hu %zd bytes\e[0m\n",
+		fprintf(stderr, "\e[1m>> %s [%s]:%hu",
 		        now_str(tbuf, std::size(tbuf)),
-		        co.server_addr, co.server_port,
+		        co.server_addr, co.server_port);
+		if (co.proxy_port != 0)
+			fprintf(stderr, "->[%s]:%hu", co.proxy_addr, co.proxy_port);
+		fprintf(stderr, "->[%s]:%hu %zd bytes\e[0m\n",
 		        co.client_addr, co.client_port, written_len);
 		auto pfx = utf8_printable_prefix(pcontext->write_buff, written_len);
 		if (pfx == static_cast<size_t>(written_len)) {
