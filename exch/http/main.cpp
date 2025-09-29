@@ -45,11 +45,11 @@ using namespace gromox;
 
 gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
-static char *opt_config_file;
+static const char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled, g_usr_signalled;
 
-static struct HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -163,11 +163,15 @@ int main(int argc, char **argv)
 	int retcode = EXIT_FAILURE;
 	char host_name[UDOM_SIZE], *ptoken;
 	const char *dns_name, *dns_domain, *netbios_name;
+	HXopt6_auto_result argp;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-http");
 	setup_signal_defaults();

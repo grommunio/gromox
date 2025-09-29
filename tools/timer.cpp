@@ -83,11 +83,11 @@ static std::list<CONNECTION_NODE> g_connection_list, g_connection_list1;
 static std::list<TIMER> g_exec_list;
 static std::mutex g_list_lock /*(g_exec_list)*/, g_connection_lock /*(g_connection_list0/1)*/;
 static std::condition_variable g_waken_cond;
-static char *opt_config_file;
+static const char *opt_config_file;
 static unsigned int opt_show_version;
 
-static struct HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -211,9 +211,13 @@ int main(int argc, char **argv)
 	std::vector<pthread_t> thr_ids;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	HXopt6_auto_result argp;
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-timer");
 	if (opt_show_version)

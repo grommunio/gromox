@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <csignal>
@@ -32,10 +32,10 @@ using namespace gromox;
 gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 std::string g_outgoing_smtp_url;
-static char *opt_config_file;
+static const char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -94,11 +94,15 @@ int main(int argc, char **argv)
 { 
 	int retcode = EXIT_FAILURE;
 	char temp_buff[256];
+	HXopt6_auto_result argp;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-delivery");
 	setup_signal_defaults();

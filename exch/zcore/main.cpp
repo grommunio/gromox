@@ -58,15 +58,15 @@ int (*system_services_add_timer)(const char *, int);
 
 gromox::atomic_bool g_main_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
-static char *opt_config_file;
+static const char *opt_config_file;
 static unsigned int opt_show_version;
 static gromox::atomic_bool g_hup_signalled;
 static gromox::atomic_bool g_listener_notify_stop;
 static int g_listen_sockd;
 static pthread_t g_listener_id;
 
-static constexpr struct HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -242,13 +242,17 @@ int main(int argc, char **argv)
 {
 	char temp_buff[45];
 	std::shared_ptr<CONFIG_FILE> pconfig;
+	HXopt6_auto_result argp;
 	
 	exmdb_rpc_alloc = common_util_alloc;
 	exmdb_rpc_free = [](void *) {};
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-zcore");
 	if (opt_show_version)

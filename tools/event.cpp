@@ -109,11 +109,11 @@ static std::mutex g_enqueue_lock /*(g_enqueue_list0/1)*/;
 static std::mutex g_dequeue_lock /*(g_dequeue_list0/1)*/;
 static std::mutex g_host_lock /*(g_host_list)*/;
 static std::condition_variable g_enqueue_waken_cond, g_dequeue_waken_cond;
-static char *opt_config_file;
+static const char *opt_config_file;
 static unsigned int opt_show_version;
 
-static struct HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -177,10 +177,15 @@ ssize_t qsock::sk_write(const std::string_view &sv)
 
 int main(int argc, char **argv)
 {
+	HXopt6_auto_result argp;
+
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-event");
 	if (opt_show_version)
