@@ -644,12 +644,12 @@ static void terse_help()
 
 int main(int argc, char **argv)
 {
+	HXopt6_auto_result argp;
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_ARGS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
-	if (argc != 2) {
+	if (argp.nargs != 1) {
 		terse_help();
 		return EXIT_FAILURE;
 	}
@@ -663,7 +663,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	textmaps_init(PKGDATADIR);
 
-	auto ret = do_file(argv[1]);
+	auto ret = do_file(argp.uarg[0]);
 	if (ret != 0) {
 		fprintf(stderr, "oxm2mt: Import unsuccessful.\n");
 		return EXIT_FAILURE;

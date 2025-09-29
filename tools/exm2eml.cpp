@@ -41,14 +41,14 @@ enum {
 };
 
 static std::shared_ptr<config_file> g_config_file;
-static char *g_username;
+static const char *g_username;
 static unsigned int g_export_mode = EXPORT_MAIL, g_mlog_level = MLOG_DEFAULT_LEVEL;
 static int g_allday_mode = -1;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'Y', HXTYPE_INT, &g_allday_mode, nullptr, nullptr, 0, "Allday emission mode (default=-1, YMDHMS=0, YMD=1)"},
 	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
-	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to export from", "EMAILADDR"},
+	{nullptr, 'u', HXTYPE_STRING, {}, {}, {}, 0, "Username of store to export from", "EMAILADDR"},
 	{"ical", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_ICAL, "Export as calendar object"},
 	{"loglevel", 0, HXTYPE_UINT, &g_mlog_level, {}, {}, {}, "Basic loglevel of the program", "N"},
 	{"mail", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_MAIL, "Export as RFC5322 mail"},
@@ -159,12 +159,15 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	}
 
+	HXopt6_auto_result argp;
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
-	if (g_username == nullptr || argc < 2) {
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'u')
+			g_username = argp.oarg[i];
+	if (g_username == nullptr || argp.nargs < 1) {
 		terse_help();
 		return EXIT_FAILURE;
 	}
@@ -210,7 +213,7 @@ int main(int argc, char **argv) try
 	std::string log_id;
 	MESSAGE_CONTENT *ctnt = nullptr;
 	uint64_t msg_id = 0;
-	auto idstr = argv[1];
+	auto idstr = argp.uarg[0];
 	auto ret = strchr(idstr, ':') != nullptr ?
 	           fetch_as_instance(idstr, log_id, msg_id, ctnt) :
 	           fetch_message(idstr, log_id, msg_id, ctnt);

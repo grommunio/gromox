@@ -142,8 +142,8 @@ using LR_map = std::map<std::string, std::string>;
 
 static int do_item(driver &, unsigned int, const parent_desc &, kdb_item &);
 
-static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
-static char *g_srcguid, *g_srcmbox, *g_srcmro, *g_user_map_file;
+static const char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
+static const char *g_srcguid, *g_srcmbox, *g_srcmro, *g_user_map_file;
 static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20, g_verbose;
 static unsigned int g_mlog_level = MLOG_DEFAULT_LEVEL;
 static enum aclconv g_acl_conv = aclconv::automatic;
@@ -156,9 +156,8 @@ static void cb_only_obj(const HXoptcb *cb) {
 		g_only_objs.push_back(cb->data_long);
 }
 
-static void acl_cb(const struct HXoptcb *i)
+static int acl_cb(const char *s)
 {
-	auto s = i->data;
 	if (strcasecmp(s, "no") == 0 || strcasecmp(s, "noextract") == 0) {
 		g_acl_conv = aclconv::noextract;
 	} else if (strcasecmp(s, "ex") == 0 || strcasecmp(s, "extract") == 0) {
@@ -169,8 +168,9 @@ static void acl_cb(const struct HXoptcb *i)
 		g_acl_conv = aclconv::automatic;
 	} else {
 		fprintf(stderr, "Unrecognized --acl option value \"%s\"\n", s);
-		exit(EXIT_FAILURE);
+		return -1;
 	}
+	return 0;
 }
 
 static constexpr HXoption g_options_table[] = {
@@ -178,20 +178,20 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Map folders of a private store (see manpage for detail)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the source archive"},
 	{nullptr, 'v', HXTYPE_NONE | HXOPT_INC, &g_verbose, nullptr, nullptr, 0, "More detailed progress reports"},
-	{"acl", 0, HXTYPE_STRING, nullptr, nullptr, acl_cb, 0, "Conversion for ACLs (auto, no/noextract, extract, convert)", "MODE"},
+	{"acl", 0, HXTYPE_STRING, {}, {}, {}, '1', "Conversion for ACLs (auto, no/noextract, extract, convert)", "MODE"},
 	{"l1", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L1 fan number for attachment directories of type files_v1 (default: 10)", "N"},
 	{"l2", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L2 fan number for attachment directories of type files_v1 (default: 20)", "N"},
 	{"loglevel", 0, HXTYPE_UINT, &g_mlog_level, {}, {}, {}, "Basic loglevel of the program", "N"},
-	{"mbox-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Lookup source mailbox by GUID", "GUID"},
-	{"mbox-mro", 0, HXTYPE_STRING, &g_srcmro, nullptr, nullptr, 0, "Lookup source mailbox by MRO", "NAME"},
-	{"mbox-name", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Lookup source mailbox by username (requires --user-map)", "NAME"},
-	{"sql-host", 0, HXTYPE_STRING, &g_sqlhost, nullptr, nullptr, 0, "Hostname for SQL connection (default: localhost)", "HOST"},
+	{"mbox-guid", 0, HXTYPE_STRING, {}, {}, {}, '2', "Lookup source mailbox by GUID", "GUID"},
+	{"mbox-mro", 0, HXTYPE_STRING, {}, {}, {}, '3', "Lookup source mailbox by MRO", "NAME"},
+	{"mbox-name", 0, HXTYPE_STRING, {}, {}, {}, '4', "Lookup source mailbox by username (requires --user-map)", "NAME"},
+	{"sql-host", 0, HXTYPE_STRING, {}, {}, {}, '5', "Hostname for SQL connection (default: localhost)", "HOST"},
 	{"sql-port", 0, HXTYPE_STRING, &g_sqlport, nullptr, nullptr, 0, "Port for SQL connection (default: auto)", "PORT"},
-	{"sql-db", 0, HXTYPE_STRING, &g_sqldb, nullptr, nullptr, 0, "Database name (default: kopano)", "NAME"},
-	{"sql-user", 0, HXTYPE_STRING, &g_sqluser, nullptr, nullptr, 0, "Username for SQL connection (default: root)", "USER"},
-	{"src-attach", 0, HXTYPE_STRING, &g_atxdir, nullptr, nullptr, 0, "Attachment directory", "DIR"},
+	{"sql-db", 0, HXTYPE_STRING, {}, {}, {}, '6', "Database name (default: kopano)", "NAME"},
+	{"sql-user", 0, HXTYPE_STRING, {}, {}, {}, '7', "Username for SQL connection (default: root)", "USER"},
+	{"src-attach", 0, HXTYPE_STRING, {}, {}, {}, '8', "Attachment directory", "DIR"},
 	{"only-obj", 0, HXTYPE_ULONG, nullptr, nullptr, cb_only_obj, 0, "Extract specific object only", "OBJID"},
-	{"user-map", 0, HXTYPE_STRING, &g_user_map_file, nullptr, nullptr, 0, "User resolution map", "FILE"},
+	{"user-map", 0, HXTYPE_STRING, {}, {}, {}, '9', "User resolution map", "FILE"},
 	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
 	{"without-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 0, "Do skip folders with PR_ATTR_HIDDEN [default: dependent upon -s]"},
 	HXOPT_AUTOHELP,
@@ -1461,18 +1461,34 @@ static int usermap_read(const char *file, LR_map &ku, LR_map &na, LR_map &ze)
 static void terse_help()
 {
 	fprintf(stderr, "Usage: SQLPASS=sqlpass gromox-kdb2mt --sql-host kdb.lan "
-	        "--src-attach /tmp/at --mbox-guid 0123456789ABCDEFFEDCBA9876543210 jdoe\n");
+	        "--src-attach /tmp/at --mbox-guid 0123456789ABCDEFFEDCBA9876543210\n");
 	fprintf(stderr, "Option overview: gromox-kdb2mt -?\n");
 	fprintf(stderr, "Documentation: man gromox-kdb2mt\n");
 }
 
 int main(int argc, char **argv)
 {
+	HXopt6_auto_result argp;
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
+	for (int i = 0; i < argp.nopts; ++i) {
+		switch (argp.desc[i]->val) {
+		case '1':
+			if (acl_cb(argp.oarg[i]) != 0)
+				return EXIT_FAILURE;
+			break;
+		case '2': g_srcguid = argp.oarg[i]; break;
+		case '3': g_srcmro = argp.oarg[i]; break;
+		case '4': g_srcmbox = argp.oarg[i]; break;
+		case '5': g_sqlhost = argp.oarg[i]; break;
+		case '6': g_sqldb = argp.oarg[i]; break;
+		case '7': g_sqluser = argp.oarg[i]; break;
+		case '8': g_atxdir = argp.oarg[i]; break;
+		case '9': g_user_map_file = argp.oarg[i]; break;
+		}
+	}
 	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
@@ -1510,7 +1526,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "kdb2mt: (To skip the import of file-based attachments, use --src-attach \"\".)\n");
 		return EXIT_FAILURE;
 	}
-	if (argc != 1) {
+	if (argp.nargs != 0) {
 		terse_help();
 		return EXIT_FAILURE;
 	}
