@@ -418,9 +418,9 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 	for (size_t i = 0; i < rows.count; ++i) {
 		message_content *ctnt = nullptr;
 		auto msgid = rows.pparray[i]->get<const uint64_t>(PidTagMid);
-		if (msgid == nullptr)
-			continue;
-		if (!exmdb_client->read_message(dir, nullptr, CP_ACP, *msgid, &ctnt))
+		if (msgid == nullptr ||
+		    !exmdb_client->read_message(dir, nullptr, CP_ACP, *msgid, &ctnt) ||
+		    ctnt == nullptr)
 			continue;
 		std::string uid_buf;
 		if (!goid_to_icaluid(ctnt->proplist.get<BINARY>(ptag.globalobjectid), uid_buf))
