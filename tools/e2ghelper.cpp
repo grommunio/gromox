@@ -34,9 +34,9 @@ struct file_actions {
 };
 }
 
-static char *g_username;
+static const char *g_username;
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
+	{nullptr, 'u', HXTYPE_STRING, {}, {}, {}, 0, "Username of store to import to", "EMAILADDR"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -45,10 +45,14 @@ int main(int argc, char **argv) try
 {
 	if (argc == 0)
 		return EXIT_FAILURE;
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+
+	HXopt6_auto_result argp;
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'u')
+			g_username = argp.oarg[i];
 	int pfd[2] = {-1, -1};
 	if (pipe(pfd) < 0) {
 		perror("pipe");
@@ -56,12 +60,12 @@ int main(int argc, char **argv) try
 	}
 
 	/* Arguments for subprograms */
-	std::unique_ptr<const char *[]> pff_argv(new const char *[argc+2]);
+	std::unique_ptr<const char *[]> pff_argv(new const char *[argp.nargs+2]);
 	const char *import_argv[4];
 	int pff_argc = 0, import_argc = 0;
 	pff_argv[pff_argc++] = "gromox-pff2mt";
-	for (int i = 1; i < argc; ++i)
-		pff_argv[pff_argc++] = argv[i];
+	for (int i = 0; i < argp.nargs; ++i)
+		pff_argv[pff_argc++] = argp.uarg[i];
 	pff_argv[pff_argc] = nullptr;
 
 	import_argv[import_argc++] = "gromox-mt2exm";

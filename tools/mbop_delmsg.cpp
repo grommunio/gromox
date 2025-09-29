@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <vector>
 #include <libHX/option.h>
-#include <libHX/scope.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>

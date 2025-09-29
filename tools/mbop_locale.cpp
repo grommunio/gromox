@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <libHX/option.h>
-#include <libHX/scope.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/textmaps.hpp>

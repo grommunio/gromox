@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
@@ -18,13 +18,13 @@
 
 using namespace gromox;
 
-static char *g_auth_user, *g_ldap_uri;
+static const char *g_auth_user, *g_ldap_uri;
 static unsigned int g_direct_ldap, g_ldap_tls;
 static constexpr struct HXoption g_options_table[] = {
-	{nullptr, 'H', HXTYPE_STRING, &g_ldap_uri, {}, {}, 0, "LDAP server", "URI"},
+	{nullptr, 'H', HXTYPE_STRING, {}, {}, {}, 0, "LDAP server", "URI"},
 	{nullptr, 'L', HXTYPE_NONE, &g_direct_ldap, {}, {}, 0, "Pure LDAP bind without gromox-authmgr"},
 	{nullptr, 'Z', HXTYPE_NONE, &g_ldap_tls, {}, {}, 0, "Enable LDAP TLS (only for -L)"},
-	{nullptr, 'u', HXTYPE_STRING, &g_auth_user, {}, {}, 0, "User for authentication", "USERNAME"},
+	{nullptr, 'u', HXTYPE_STRING, {}, {}, {}, 0, "User for authentication", "USERNAME"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -98,13 +98,21 @@ static int direct_ldap(const char *uri, const char *bind_user,
 
 int main(int argc, char **argv)
 {
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	HXopt6_auto_result argp;
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i) {
+		switch (argp.desc[i]->sh) {
+		case 'H': g_ldap_uri  = argp.oarg[i]; break;
+		case 'u': g_auth_user = argp.oarg[i]; break;
+		}
+	}
 	if (g_auth_user == nullptr) {
 		fprintf(stderr, "The -u option is mandatory\n");
 		return EXIT_FAILURE;
 	}
+
 	auto password = getenv("PASS");
 	if (password == nullptr)
 		fprintf(stderr, "To convey a password, use the PASS environment variable. "

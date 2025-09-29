@@ -7,7 +7,6 @@
 #include <vector>
 #include <libHX/ctype_helper.h>
 #include <libHX/option.h>
-#include <libHX/scope.hpp>
 #include <gromox/freebusy.hpp>
 #include <gromox/mapidefs.h>
 #include "genimport.hpp"
