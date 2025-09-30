@@ -874,7 +874,6 @@ static void ntlm_stop(struct HXproc &pi)
 		close(pi.p_stdout);
 	if (pi.p_stderr >= 0)
 		close(pi.p_stderr);
-	mlog(LV_DEBUG, "NTLM(%ld) terminating the ntlm_auth worker", static_cast<long>(pi.p_pid));
 	kill(pi.p_pid, SIGKILL);
 	waitpid(pi.p_pid, nullptr, 0);
 	pi.p_pid = 0;
@@ -924,13 +923,11 @@ int http_parser::auth_exthelper(http_context &ctx, const char *prog,
 			mlog(LV_ERR, "write ntlm_auth: %s", strerror(errno));
 			return -1;
 		}
-		mlog(LV_DEBUG, "NTLM(%d)> YR %s", static_cast<int>(pinfo.p_pid), encinput);
 	} else {
 		if (HXio_fullwrite(pinfo.p_stdin, "KK ", 3) < 0) {
 			mlog(LV_ERR, "write ntlm_auth: %s", strerror(errno));
 			return -1;
 		}
-		mlog(LV_DEBUG, "NTLM(%d)> KK %s", static_cast<int>(pinfo.p_pid), encinput);
 	}
 	if (HXio_fullwrite(pinfo.p_stdin, encinput, encsize) < 0 ||
 	    HXio_fullwrite(pinfo.p_stdin, "\n", 1) < 0) {
@@ -1010,7 +1007,7 @@ int http_parser::auth_exthelper(http_context &ctx, const char *prog,
 		for (auto &&elem : v)
 			if (strncmp(elem.c_str(), "user=", 5) == 0)
 				return auth_finalize(ctx, &elem[5]);
-		mlog(LV_DEBUG, "NTLM(%d)- no user= parameter found in response", static_cast<int>(pinfo.p_pid));
+		mlog(LV_DEBUG, "ext_helper(%d): no user= parameter found in response", static_cast<int>(pinfo.p_pid));
 		return -1;
 	} else if (output[0] == 'N' && output[1] == 'A') {
 		return 0;
