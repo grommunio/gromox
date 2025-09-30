@@ -1056,7 +1056,8 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 	OM_uint32 status{};
 	gss_name_t gss_srv_name{}, gss_username{};
 	gss_buffer_desc gss_input_buf{}, gss_user_buf{}, gss_output_token{};
-	auto cl_0 = HX::make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() { ctx.clear_gss(); });
+	auto cl_1 = HX::make_scope_exit([&]() {
 		if (gss_output_token.length != 0)
 			gss_release_buffer(&status, &gss_output_token);
 		if (gss_user_buf.length != 0)
@@ -1101,8 +1102,10 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 	else
 		output.clear();
 
-	if (ret == GSS_S_CONTINUE_NEEDED)
+	if (ret == GSS_S_CONTINUE_NEEDED) {
+		cl_0.release(); /* keep state for next round */
 		return -99; /* MOAR */
+	}
 	output.clear();
 	if (ret != GSS_S_COMPLETE) {
 		krblog("Unable to accept security context", ret, status);
@@ -2309,16 +2312,25 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 		mod_fastcgi_insert_ctx(pcontext);
 }
 
+void http_context::clear_gss()
+{
+#ifdef HAVE_GSSAPI
+	OM_uint32 st;
+	if (m_gss_srv_creds != nullptr) {
+		gss_release_cred(&st, &m_gss_srv_creds);
+		m_gss_srv_creds = GSS_C_NO_CREDENTIAL;
+	}
+	if (m_gss_ctx != nullptr) {
+		gss_delete_sec_context(&st, &m_gss_ctx, GSS_C_NO_BUFFER);
+		m_gss_ctx = GSS_C_NO_CONTEXT;
+	}
+#endif
+}
+
 http_context::~http_context()
 {
 	auto pcontext = this;
-#ifdef HAVE_GSSAPI
-	OM_uint32 st;
-	if (m_gss_srv_creds != nullptr)
-		gss_release_cred(&st, &m_gss_srv_creds);
-	if (m_gss_ctx != nullptr)
-		gss_delete_sec_context(&st, &m_gss_ctx, GSS_C_NO_BUFFER);
-#endif
+	clear_gss();
 	if (hpm_processor_is_in_charge(pcontext))
 		hpm_processor_insert_ctx(pcontext);
 	else if (mod_fastcgi_is_in_charge(pcontext))

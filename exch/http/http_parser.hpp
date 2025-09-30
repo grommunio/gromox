@@ -52,6 +52,8 @@ struct http_context final : public schedule_context {
 	http_context();
 	~http_context();
 	NOMOVE(http_context);
+	void clear_gss();
+
 	BOOL try_create_vconnection();
 	void set_outchannel_flowcontrol(uint32_t bytes_received, uint32_t available_window);
 	BOOL recycle_inchannel(const char *predecessor_cookie);
