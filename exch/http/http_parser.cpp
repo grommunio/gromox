@@ -1003,8 +1003,7 @@ int http_parser::auth_exthelper(http_context &ctx, const char *prog,
 		auto v = gx_split(thisline, ' ');
 		if (v.size() == 0)
 			return -1;
-		auto idx = v.size() == 1 ? 0 : 1;
-		return auth_finalize(ctx, v[idx].c_str());
+		return auth_finalize(ctx, v.back().c_str());
 	} else if (output[0] == 'O' && output[1] == 'K' && HX_isspace(output[2])) {
 		/* squid-3.4-style */
 		auto v = gx_split(thisline, ' ');
