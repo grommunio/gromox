@@ -1,5 +1,5 @@
-Development 2.48.134
-====================
+Gromox 3.0 (2025-10-01)
+=======================
 
 Enhancements:
 
@@ -16,6 +16,12 @@ Enhancements:
 * mbop: support UTC/zone suffixes for getfreebusy -a/-b arguments
 * mbop: using the -v option will now additionaly report the mailbox and
   subcommand in error messages
+* exmdb: new config directive ``exmdb_eph_prefix`` to put ephmeral files like
+  tables.sqlite3 on a local disk (in case a mailbox is regularly on NFS).
+* exmdb: add a time index over messages to speed up common cases of
+  grommunio-web GetContentsTable requests.
+* exmdb: the derivation for the PR_MESSAGE_*_ME property value, upon delivery,
+  now includes PR_EMAIL_ADDRESS as a fallback if PR_SMTP_ADDRESS is unset.
 * oxdisco: the AutoConfig mechanism now emits an EWS server information block
 * ews: include ParentFolderId in FindFolder/GetFolder response
 * ews: implemented GetDelegate, CreateAttachment, FindPeople (GAL lookup),
@@ -27,20 +33,23 @@ Enhancements:
 * ews: support GetUserAvailabilityRequest request TimeZoneContext tag.
 * zcore: Out of Office configuration reading and writing is now performed over
   the network rather than through direct filesystem access.
-* exmdb: the derivation for the PR_MESSAGE_*_ME property value, upon delivery,
-  now includes PR_EMAIL_ADDRESS as a fallback if PR_SMTP_ADDRESS is unset.
 
 Fixes:
 
-* fnevObjectCreate notifications were not sent when a mail was processed
+* fnevObjectCreate event notifications were not created when a mail was processed
   through TWOSTEP Rule Processor, now fixed.
+* fnevObjectCreated event notifications were not created when a mail was
+  processed by ONESTEP Rule Processor when that executed a OP_COPY operation.
 * oxcical: iCal events with a date in DTSTART & DTEND but without
   X-MICROSOFT-CDO-ALLDAYEVENT are now transformed into Allday events even if
   the event is longer than one day.
 * delivery: emit MDN-RRT messages even with ``lda_twostep_ruleproc`` is set.
+* oxdisco: config-v1.1.xml now contains the homeservers as it should.
 * oxdisco: AutoConfig XML now features the incomingServer type parameter
   in the right place.
 * oxdisco: AutoConfig now emits outgoing server port 587 as type smtp.
+* ruleproc: auto-enter MRs into target calender even if the sender is not going
+  to get a response.
 * ews: Avoid sending multiple ``<?xml ?>`` lines into the notification stream
   HTTP response body.
 * ews: trim "duplicate" recipients when a newly-created item has recipients in
