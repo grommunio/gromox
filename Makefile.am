@@ -241,7 +241,7 @@ mapi_la_LDFLAGS += -Wl,--allow-shlib-undefined
 endif
 EXTRA_mapi_la_DEPENDENCIES = default.sym
 
-noinst_PROGRAMS = dldcheck tests/bdump tests/bodyconv tests/compress tests/dnsbl_check tests/exrpctest tests/gxl-383 tests/jsontest tests/lzxpress tests/oxcmail_ie tests/ucvttest tests/udb tests/utf8filter tests/utiltest tests/vcard tools/tzdump
+noinst_PROGRAMS = dldcheck tests/bdump tests/bodyconv tests/compress tests/dnsbl_check tests/exrpctest tests/gssauth tests/gxl-383 tests/jsontest tests/lzxpress tests/oxcmail_ie tests/ucvttest tests/udb tests/utf8filter tests/utiltest tests/vcard tools/tzdump
 if HAVE_ESEDB
 noinst_PROGRAMS += tests/epv_unpack
 endif
@@ -262,6 +262,8 @@ tests_epv_unpack_SOURCES = tests/epv_unpack.cpp tools/edb_pack.cpp tools/edb_pac
 tests_epv_unpack_LDADD = ${libesedb_LIBS} ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tests_exrpctest_SOURCES = tests/exrpctest.cpp
 tests_exrpctest_LDADD = libgromox_common.la libgromox_exrpc.la libgromox_mapi.la
+tests_gssauth_SOURCES = tests/gssauth.cpp
+tests_gssauth_LDADD = ${libHX_LIBS} ${gss_LIBS} libgromox_common.la
 tests_gxl_383_SOURCES = tests/gxl-383.cpp
 tests_gxl_383_LDADD = libgromox_common.la libgromox_exrpc.la libgromox_mapi.la
 tests_jsontest_SOURCES = tests/jsontest.cpp
