@@ -82,15 +82,6 @@ AS_IF([test "$with_gnu_ld" != yes], [NO_VSYM=1])
 AC_SUBST([NO_VSYM])
 
 
-AC_ARG_WITH([unitdir],
-	[AS_HELP_STRING([--with-unitdir=PATH], [Path to systemd service unit directory])],
-	[unitdir="$withval"],
-	[
-		unitdir=$("$PKG_CONFIG" systemd --variable systemdsystemunitdir 2>/dev/null)
-		AS_IF([test -z "$unitdir"], [unitdir='${prefix}/lib/systemd/system'])
-	])
-AC_SUBST([unitdir])
-
 dnl
 dnl The cstring header comes from the compiler, but ::strchr comes from the
 dnl C library. If the two are not synced up, a problem ensues.
@@ -239,6 +230,15 @@ AC_MSG_CHECKING([for MySQL includes])
 AC_MSG_RESULT([$mysql_CFLAGS])
 AC_MSG_CHECKING([for MySQL libs])
 AC_MSG_RESULT([$mysql_LIBS])
+
+AC_ARG_WITH([unitdir],
+	[AS_HELP_STRING([--with-unitdir=PATH], [Path to systemd service unit directory])],
+	[unitdir="$withval"],
+	[
+		unitdir=$("$PKG_CONFIG" systemd --variable systemdsystemunitdir 2>/dev/null)
+		AS_IF([test -z "$unitdir"], [unitdir='${prefix}/lib/systemd/system'])
+	])
+AC_SUBST([unitdir])
 
 sysusersdir=$("$PKG_CONFIG" systemd --variable sysusersdir 2>/dev/null)
 tmpfilesdir=$("$PKG_CONFIG" systemd --variable tmpfilesdir 2>/dev/null)
