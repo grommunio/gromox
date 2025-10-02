@@ -216,13 +216,6 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	uint64_t total_size = lnum != nullptr ? *lnum : 0;
 	if (total_size > max_quota)
 		return ecQuotaExceeded;
-	num = tmp_propvals.get<uint32_t>(PR_ASSOC_CONTENT_COUNT);
-	uint32_t total_mail = num != nullptr ? *num : 0;
-	num = tmp_propvals.get<uint32_t>(PR_CONTENT_COUNT);
-	if (num != nullptr)
-		total_mail += *num;
-	if (total_mail > g_max_message)
-		return ecQuotaExceeded;
 	*ppmessage_id = cu_alloc<uint64_t>();
 	if (*ppmessage_id == nullptr)
 		return ecServerOOM;

@@ -82,7 +82,7 @@ struct LANGMAP_ITEM {
 }
 
 size_t g_max_mail_len;
-unsigned int g_max_rcpt, g_max_message;
+unsigned int g_max_rcpt;
 unsigned int g_max_rule_len, g_max_extrule_len, zcore_backfill_transporthdr;
 static std::string g_smtp_url;
 char g_org_name[256];
@@ -329,13 +329,12 @@ BOOL common_util_exmdb_locinfo_from_string(
 }
 
 void common_util_init(const char *org_name, const char *default_charset,
-    unsigned int max_rcpt, unsigned int max_message, size_t max_mail_len,
+    unsigned int max_rcpt, size_t max_mail_len,
     unsigned int max_rule_len, std::string &&smtp_url, const char *submit_command)
 {
 	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
 	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
 	g_max_rcpt = max_rcpt;
-	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
 	g_max_rule_len = g_max_extrule_len = max_rule_len;
 	g_smtp_url = std::move(smtp_url);
@@ -694,7 +693,7 @@ BINARY *cu_fid_to_entryid(const store_object &store, uint64_t folder_id)
  */
 std::string cu_fid_to_entryid_s(const store_object &store, uint64_t folder_id) try
 {
-	FOLDER_ENTRYID eid;
+	FOLDER_ENTRYID eid{};
 	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
 	    eid.database_guid) != ecSuccess)
 		return {};

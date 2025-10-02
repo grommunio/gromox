@@ -294,20 +294,18 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	    strcmp(dir, pstore->get_dir()) != 0)
 		return;
 
-	ZNOTIFICATION zn, *pnotification = &zn;
+	ZNOTIFICATION zn, *pnotification = &zn, *pnew_mail = &zn, *oz = &zn;
 	switch (pdb_notify->type) {
 	case db_notify_type::new_mail: {
 		pnotification->event_type = fnevNewMail;
-		auto pnew_mail = new NEWMAIL_ZNOTIFICATION;
-		pnotification->pnotification_data = pnew_mail;
 		auto nt = static_cast<const DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pnew_mail->entryid = cu_mid_to_entryid_s(*pstore, folder_id, message_id);
-		if (pnew_mail->entryid.empty())
+		pnew_mail->pentryid = cu_mid_to_entryid_s(*pstore, folder_id, message_id);
+		if (pnew_mail->pentryid->empty())
 			return;
-		pnew_mail->parentid = cu_fid_to_entryid_s(*pstore, folder_id);
-		if (pnew_mail->parentid.empty())
+		pnew_mail->pparentid = cu_fid_to_entryid_s(*pstore, folder_id);
+		if (pnew_mail->pparentid->empty())
 			return;
 		static constexpr proptag_t proptag_buff[] = {PR_MESSAGE_CLASS, PR_MESSAGE_FLAGS};
 		static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
@@ -326,8 +324,6 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::folder_created: {
 		pnotification->event_type = fnevObjectCreated;
-		auto oz = new OBJECT_ZNOTIFICATION;
-		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_CREATED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
@@ -342,8 +338,6 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::message_created: {
 		pnotification->event_type = fnevObjectCreated;
-		auto oz = new OBJECT_ZNOTIFICATION;
-		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_MESSAGE_CREATED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
@@ -358,8 +352,6 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::folder_deleted: {
 		pnotification->event_type = fnevObjectDeleted;
-		auto oz = new OBJECT_ZNOTIFICATION;
-		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_DELETED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
@@ -374,8 +366,6 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::message_deleted: {
 		pnotification->event_type = fnevObjectDeleted;
-		auto oz = new OBJECT_ZNOTIFICATION;
-		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_MESSAGE_DELETED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
@@ -390,8 +380,6 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::folder_modified: {
 		pnotification->event_type = fnevObjectModified;
-		auto oz = new OBJECT_ZNOTIFICATION;
-		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		oz->object_type = MAPI_FOLDER;
@@ -402,8 +390,6 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::message_modified: {
 		pnotification->event_type = fnevObjectModified;
-		auto oz = new OBJECT_ZNOTIFICATION;
-		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
@@ -420,8 +406,6 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::folder_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::folder_moved ?
 		                            fnevObjectMoved : fnevObjectCopied;
-		auto oz = new OBJECT_ZNOTIFICATION;
-		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
@@ -446,8 +430,6 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::message_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::message_moved ?
 		                            fnevObjectMoved : fnevObjectCopied;
-		auto oz = new OBJECT_ZNOTIFICATION;
-		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
 		old_parentid = rop_util_nfid_to_eid(nt->old_folder_id);
 		old_eid = rop_util_make_eid_ex(1, nt->old_message_id);
@@ -470,8 +452,6 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::search_completed: {
 		pnotification->event_type = fnevSearchComplete;
-		auto oz = new OBJECT_ZNOTIFICATION;
-		pnotification->pnotification_data = oz;
 		auto nt = static_cast<const DB_NOTIFY_SEARCH_COMPLETED *>(pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		oz->object_type = MAPI_FOLDER;
@@ -1580,13 +1560,6 @@ ec_error_t zs_createmessage(GUID hsession,
 	auto lnum = tmp_propvals.get<const uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	uint64_t total_size = lnum != nullptr ? *lnum : 0;
 	if (max_quota > 0 && total_size > static_cast<uint64_t>(max_quota))
-		return ecQuotaExceeded;
-	num = tmp_propvals.get<uint32_t>(PR_ASSOC_CONTENT_COUNT);
-	uint32_t total_mail = num != nullptr ? *num : 0;
-	num = tmp_propvals.get<uint32_t>(PR_CONTENT_COUNT);
-	if (num != nullptr)
-		total_mail += *num;
-	if (total_mail > g_max_message)
 		return ecQuotaExceeded;
 	if (!exmdb_client->allocate_message_id(pstore->get_dir(),
 	    folder_id, &message_id))

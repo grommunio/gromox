@@ -110,11 +110,6 @@ Default: \fI64M\fP
 \fBmax_ext_rule_length\fP
 Default: \fI510K\fP
 .TP
-\fBmax_mail_num\fP
-The maximum number of mails that a mailbox is allowed to have.
-.br
-Default: \fI1000000\fP
-.TP
 \fBmax_rcpt_num\fP
 The maximum number of recipients that an e-mail is allowed to have.
 .br

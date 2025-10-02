@@ -96,7 +96,7 @@ extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*
 extern int (*common_util_add_timer)(const char *command, int interval);
 extern BOOL (*common_util_cancel_timer)(int timer_id);
 
-extern void common_util_init(const char *org_name, unsigned int max_rcpt, unsigned int max_msg, size_t max_mail_len, unsigned int max_rule_len, std::string &&smtp_url, const char *submit_cmd);
+extern void common_util_init(const char *org_name, unsigned int max_rcpt, size_t max_mail_len, unsigned int max_rule_len, std::string &&smtp_url, const char *submit_cmd);
 extern int common_util_run();
 extern const char *common_util_get_submit_command();
 extern uint32_t common_util_get_ftstream_id();
@@ -105,7 +105,7 @@ extern ec_error_t replid_to_replguid(const logon_object &, uint16_t, GUID &);
 extern ec_error_t replguid_to_replid(const logon_object &, const GUID &, uint16_t &);
 
 extern size_t g_max_mail_len;
-extern unsigned int g_max_rcpt, g_max_message;
+extern unsigned int g_max_rcpt;
 extern unsigned int g_max_rule_len, g_max_extrule_len;
 extern char g_emsmdb_org_name[256];
 

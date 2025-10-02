@@ -348,6 +348,31 @@ static constexpr char tbl_fixsyseidalloc_17[] =
 static constexpr char tbl_addmappingsig_18[] =
 "INSERT INTO configurations VALUES (11, (SELECT config_value FROM configurations WHERE config_id=1))";
 
+static constexpr char tbl_mtimeindex_19[] =
+"CREATE TABLE mtime_index (ignore INTEGER)",
+tbl_mtimeindex_21[] =
+"DROP TABLE mtime_index",
+tbl_msgtimeindex_22[] =
+"CREATE TABLE msgtime_index ("
+"  folder_id INTEGER NOT NULL,"
+"  message_id INTEGER NOT NULL,"
+"  mtime INTEGER,"
+"  rcvtime INTEGER,"
+"  sndtime INTEGER,"
+"  PRIMARY KEY (folder_id, message_id),"
+"  FOREIGN KEY (folder_id) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE,"
+"  FOREIGN KEY (message_id) REFERENCES messages (message_id) ON DELETE CASCADE ON UPDATE CASCADE);"
+"CREATE UNIQUE INDEX msgtime_mt_idx ON msgtime_index (folder_id, mtime, message_id);"
+"CREATE UNIQUE INDEX msgtime_rt_idx ON msgtime_index (folder_id, rcvtime, message_id);"
+"CREATE UNIQUE INDEX msgtime_st_idx ON msgtime_index (folder_id, sndtime, message_id);",
+tbl_addmsgtimeindex_23[] =
+"INSERT INTO msgtime_index "
+"SELECT m.parent_fid, m.message_id, mt.propval, rt.propval, st.propval FROM messages AS m "
+"LEFT JOIN message_properties AS mt ON m.message_id=mt.message_id AND mt.proptag=0x30080040 " /* PR_LAST_MODIFICATION_TIME */
+"LEFT JOIN message_properties AS rt ON m.message_id=rt.message_id AND rt.proptag=0xe060040 " /* PR_MESSAGE_DELIVERY_TIME */
+"LEFT JOIN message_properties AS st ON m.message_id=st.message_id AND st.proptag=0x390040 " /* PR_CLIENT_SUBMIT_TIME */
+"WHERE m.parent_fid IS NOT NULL AND m.is_associated=0 AND m.is_deleted=0";
+
 static constexpr char tbl_pub_folders_0[] =
 "CREATE TABLE folders ("
 "  folder_id INTEGER PRIMARY KEY,"
@@ -441,6 +466,7 @@ static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"search_scopes", tbl_pvt_searchscopes_0},
 	{"search_result", tbl_pvt_searchresult_0},
 	{"autoreply_ts", tbl_pvt_autoreply_ts_11},
+	{"msgtime_index", tbl_msgtimeindex_22},
 	TABLE_END,
 };
 
@@ -485,6 +511,7 @@ static constexpr tbl_init tbl_pub_init_top[] = {
 	{"read_states", tbl_pub_readst_0},
 	{"read_cns", tbl_pub_readcn_0},
 	{"replguidmap", tbl_replguidmap_14},
+	{"msgtime_index", tbl_msgtimeindex_22},
 	TABLE_END,
 };
 
@@ -609,6 +636,10 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{16, tbl_fixsyseidalloc_16},
 	{17, tbl_fixsyseidalloc_17},
 	{18, tbl_addmappingsig_18},
+	{19, tbl_mtimeindex_19},
+	{21, tbl_mtimeindex_21},
+	{22, tbl_msgtimeindex_22},
+	{23, tbl_addmsgtimeindex_23},
 	/* advance schema numbers in lockstep with public stores */
 	TABLE_END,
 };
@@ -625,6 +656,10 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 	{16, tbl_fixsyseidalloc_16},
 	{17, tbl_fixsyseidalloc_17},
 	{18, tbl_addmappingsig_18},
+	{19, tbl_mtimeindex_19},
+	{21, tbl_mtimeindex_21},
+	{22, tbl_msgtimeindex_22},
+	{23, tbl_addmsgtimeindex_23},
 	/* advance schema numbers in lockstep with private stores */
 	TABLE_END,
 };

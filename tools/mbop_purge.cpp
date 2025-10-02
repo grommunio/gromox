@@ -30,7 +30,7 @@ int main(int argc, char **argv)
 {
 	HXopt6_auto_result result;
 	if (HX_getopt6(g_options_table, argc, argv, &result,
-	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS ||
+	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS ||
 	    g_exit_after_optparse)
 		return EXIT_PARAM;
 	if (result.nargs == 0)

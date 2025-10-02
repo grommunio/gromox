@@ -222,13 +222,6 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 		uint64_t total_size = lnum != nullptr ? *lnum : 0;
 		if (total_size > max_quota)
 			return ecQuotaExceeded;
-		num = tmp_propvals.get<uint32_t>(PR_ASSOC_CONTENT_COUNT);
-		uint32_t total_mail = num != nullptr ? *num : 0;
-		num = tmp_propvals.get<uint32_t>(PR_CONTENT_COUNT);
-		if (num != nullptr)
-			total_mail += *num;
-		if (total_mail > g_max_message)
-			return ecQuotaExceeded;
 	}
 	auto pctx = fastupctx_object::create(plogon, pobject, root_element);
 	if (pctx == nullptr)

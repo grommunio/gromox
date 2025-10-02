@@ -94,9 +94,11 @@ enum class txn_mode {
 };
 
 extern GX_EXPORT struct xstmt gx_sql_prep(sqlite3 *, const char *);
+inline GX_EXPORT struct xstmt gx_sql_prep(sqlite3 *d, const std::string &q) { return gx_sql_prep(d, q.c_str()); }
 extern GX_EXPORT xtransaction gx_sql_begin3(const std::string &, sqlite3 *, txn_mode);
 #define gx_sql_begin(...) gx_sql_begin3(std::string(__FILE__) + ":" + std::to_string(__LINE__), __VA_ARGS__)
 extern GX_EXPORT int gx_sql_exec(sqlite3 *, const char *query, unsigned int flags = 0);
+inline GX_EXPORT int gx_sql_exec(sqlite3 *d, const std::string &q, unsigned int fl = 0) { return gx_sql_exec(d, q.c_str(), fl); }
 
 static inline uint64_t gx_sql_col_uint64(sqlite3_stmt *s, int c)
 {

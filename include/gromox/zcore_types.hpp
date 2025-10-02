@@ -13,48 +13,16 @@ enum class zs_objtype : uint8_t {
 	icsupctx, oneoff, invalid = 255,
 };
 
-struct GX_EXPORT NEWMAIL_ZNOTIFICATION {
-	std::string entryid, parentid, message_class;
-	uint32_t flags = 0; /* unicode or not */
-	uint32_t message_flags = 0;
-};
-
-struct GX_EXPORT OBJECT_ZNOTIFICATION {
-	mapi_object_type object_type;
+struct GX_EXPORT ZNOTIFICATION {
+	uint32_t event_type = 0;
+	mapi_object_type object_type{};
 	std::optional<std::string> pentryid, pparentid, pold_entryid, pold_parentid;
 	std::optional<std::vector<gromox::proptag_t>> pproptags;
-};
 
-struct GX_EXPORT ZNOTIFICATION {
-	ZNOTIFICATION() = default;
-	ZNOTIFICATION(ZNOTIFICATION &&o) :
-		event_type(o.event_type), pnotification_data(std::move(o.pnotification_data))
-	{
-		o.pnotification_data = nullptr;
-	}
-
-	~ZNOTIFICATION() { clear(); }
-
-	ZNOTIFICATION &operator=(ZNOTIFICATION &&o)
-	{
-		clear();
-		event_type = o.event_type;
-		pnotification_data = std::move(o.pnotification_data);
-		o.pnotification_data = nullptr;
-		return *this;
-	}
-
-	void clear()
-	{
-		if (event_type == fnevNewMail)
-			delete static_cast<NEWMAIL_ZNOTIFICATION *>(pnotification_data);
-		else
-			delete static_cast<OBJECT_ZNOTIFICATION *>(pnotification_data);
-		pnotification_data = nullptr;
-	}
-
-	uint32_t event_type = 0;
-	void *pnotification_data = nullptr; /* NEWMAIL_ZNOTIFICATION or OBJECT_ZNOTIFICATION */
+	/* if event_type == fnevNewMail, these are used too: */
+	std::string message_class;
+	uint32_t flags = 0; /* unicode or not */
+	uint32_t message_flags = 0;
 };
 
 using ZNOTIFICATION_ARRAY = std::vector<ZNOTIFICATION>;

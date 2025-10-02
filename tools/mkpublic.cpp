@@ -120,11 +120,13 @@ static int mk_options(sqlite3 *psqlite, time_t ux_time)
 		return EXIT_FAILURE;
 	}
 	pstmt.reset();
-	pstmt.bind_int64(1, CONFIG_ID_MAPPING_SIGNATURE);
-	pstmt.bind_text(2, rgtxt[4]);
-	if (pstmt.step() != SQLITE_DONE)
-		return EXIT_FAILURE;
-	pstmt.reset();
+	if (!opt_create_old) {
+		pstmt.bind_int64(1, CONFIG_ID_MAPPING_SIGNATURE);
+		pstmt.bind_text(2, rgtxt[4]);
+		if (pstmt.step() != SQLITE_DONE)
+			return EXIT_FAILURE;
+		pstmt.reset();
+	}
 
 	std::pair<uint32_t, uint64_t> confprops[] = {
 		{CONFIG_ID_CURRENT_EID, CUSTOM_EID_BEGIN},
