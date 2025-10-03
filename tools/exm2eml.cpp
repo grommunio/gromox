@@ -93,6 +93,54 @@ static constexpr cfg_directive exm2eml_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
+static int fetch_as_instance(const char *idstr, std::string &log_id,
+    uint64_t &msg_id, MESSAGE_CONTENT *&ctnt)
+{
+	char *sep = nullptr;
+	auto folder_id = strtoull(idstr, &sep, 0);
+	if (sep == nullptr || *sep != ':') {
+		fprintf(stderr, "Unparsable: \"%s\"\n", idstr);
+		return -1;
+	}
+	log_id = idstr;
+	msg_id = strtoull(sep + 1, nullptr, 0);
+	uint32_t inst_id = 0;
+	ctnt = message_content_init();
+	if (ctnt == nullptr)
+		throw std::bad_alloc();
+	if (!exmdb_client_remote::load_message_instance(g_storedir,
+	    nullptr, CP_UTF8, false, rop_util_make_eid_ex(1, folder_id),
+	    rop_util_make_eid_ex(1, msg_id), &inst_id)) {
+		fprintf(stderr, "RPC load_message_instance rejected; probably message not found.\n");
+		return -1;
+	}
+	auto cl_6 = HX::make_scope_exit([&]() { exmdb_client_remote::unload_instance(g_storedir, inst_id); });
+	if (!exmdb_client_remote::read_message_instance(g_storedir,
+	    inst_id, ctnt)) {
+		fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
+		return -1;
+	}
+	return 0;
+}
+
+static int fetch_message(const char *idstr, std::string &log_id,
+    uint64_t &msg_id, MESSAGE_CONTENT *&ctnt)
+{
+	msg_id = strtoull(idstr, nullptr, 0);
+	log_id = g_storedir_s + ":m" + std::to_string(msg_id);
+	if (!exmdb_client_remote::read_message(g_storedir, nullptr, CP_UTF8,
+	    rop_util_make_eid_ex(1, msg_id), &ctnt)) {
+		fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
+		return -1;
+	}
+	if (ctnt == nullptr) {
+		fprintf(stderr, "A message by the id %llxh was not found\n",
+			static_cast<unsigned long long>(msg_id));
+		return -1;
+	}
+	return 0;
+}
+
 int main(int argc, char **argv) try
 {
 	auto bn = HX_basename(argv[0]);
@@ -162,45 +210,12 @@ int main(int argc, char **argv) try
 	std::string log_id;
 	MESSAGE_CONTENT *ctnt = nullptr;
 	uint64_t msg_id = 0;
-	if (strchr(argv[1], ':') != nullptr) {
-		char *sep = nullptr;
-		auto folder_id = strtoull(argv[1], &sep, 0);
-		if (sep == nullptr || *sep != ':') {
-			fprintf(stderr, "Unparsable: \"%s\"\n", argv[1]);
-			return EXIT_FAILURE;
-		}
-		log_id = argv[1];
-		msg_id = strtoull(sep + 1, nullptr, 0);
-		uint32_t inst_id = 0;
-		ctnt = message_content_init();
-		if (ctnt == nullptr)
-			throw std::bad_alloc();
-		if (!exmdb_client_remote::load_message_instance(g_storedir,
-		    nullptr, CP_UTF8, false, rop_util_make_eid_ex(1, folder_id),
-		    rop_util_make_eid_ex(1, msg_id), &inst_id)) {
-			fprintf(stderr, "RPC load_message_instance rejected; probably message not found.\n");
-			return EXIT_FAILURE;
-		}
-		auto cl_6 = HX::make_scope_exit([&]() { exmdb_client_remote::unload_instance(g_storedir, inst_id); });
-		if (!exmdb_client_remote::read_message_instance(g_storedir,
-		    inst_id, ctnt)) {
-			fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
-			return EXIT_FAILURE;
-		}
-	} else {
-		msg_id = strtoull(argv[1], nullptr, 0);
-		log_id = g_storedir_s + ":m" + std::to_string(msg_id);
-		if (!exmdb_client_remote::read_message(g_storedir, nullptr, CP_UTF8,
-		    rop_util_make_eid_ex(1, msg_id), &ctnt)) {
-			fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
-			return EXIT_FAILURE;
-		}
-		if (ctnt == nullptr) {
-			fprintf(stderr, "A message by the id %llxh was not found\n",
-				static_cast<unsigned long long>(msg_id));
-			return EXIT_FAILURE;
-		}
-	}
+	auto idstr = argv[1];
+	auto ret = strchr(idstr, ':') != nullptr ?
+	           fetch_as_instance(idstr, log_id, msg_id, ctnt) :
+	           fetch_message(idstr, log_id, msg_id, ctnt);
+	if (ret != 0)
+		return EXIT_FAILURE;
 	if (g_show_tree) {
 		fprintf(stderr, "Message 0\n");
 		gi_print(0, *ctnt);
