@@ -1,3 +1,20 @@
+Development 3.0.34
+==================
+
+Enhancements:
+
+* http: support for SPNEGO authentication (Kerberos-in-SPNEGO or NTLMSSP-in-SPNEGO)
+  with the HTTP "Authorization: Negotiate" header.
+
+Fixes:
+
+* emsmdb: the total mail count in a contents view was not updated
+
+Changes:
+
+* exmdb: deactivate movecopy/deletemessages event storm compaction
+
+
 Gromox 3.0 (2025-10-01)
 =======================
 
@@ -542,3 +559,12 @@ Changes:
 * oxcmail: priorities for MIME parts have been rectified for
   multipart/alternative and non-alternative containers; the conversion routine
   is no longer making picks across multiple container siblings.
+
+
+Gromox 2.16 (2023-10-29)
+========================
+
+Enhancements:
+
+* http: support for NTLM authentication with the HTTP "Authorization:
+  Negotiate" header.
