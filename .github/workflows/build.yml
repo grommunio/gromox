@@ -18,8 +18,8 @@ jobs:
     - name: install-deps
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        packages: autoconf automake autotools-dev binutils cmake g++ gettext libbfio-dev libcurl4-openssl-dev libfmt-dev libgnutls28-dev libgsasl-dev libjsoncpp-dev libldap2-dev libmariadb-dev libpam0g-dev libolecf-dev libpff-dev libsqlite3-dev libssl-dev libtinyxml2-dev libtool libxml2-dev libxxhash-dev libzstd-dev make m4 openssl php-dev pkg-config sed systemd uuid-dev zlib1g-dev
-        version: 1.2
+        packages: autoconf automake autotools-dev binutils cmake g++ gettext libbfio-dev libcurl4-openssl-dev libfmt-dev libgnutls28-dev libgsasl-dev libjsoncpp-dev libkrb5-dev libldap2-dev libmariadb-dev libpam0g-dev libolecf-dev libpff-dev libsqlite3-dev libssl-dev libtinyxml2-dev libtool libxml2-dev libxxhash-dev libzstd-dev make m4 openssl php-dev pkg-config sed systemd uuid-dev zlib1g-dev
+        version: 1.3
     - name: clone-gromox
       uses: actions/checkout@v3
     - name: clone-vmime
