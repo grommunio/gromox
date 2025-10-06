@@ -3922,10 +3922,10 @@ bool cu_get_permission_property(int64_t member_id,
 	case PR_SMTP_ADDRESS: {
 		pusername = pstmt.col_text(0);
 		if ('\0' == pusername[0]) {
-			*ppvalue = deconst("default");
+			*ppvalue = deconst("anonymous");
 			return TRUE;
 		} else if (0 == strcasecmp(pusername, "default")) {
-			*ppvalue = deconst("anonymous");
+			*ppvalue = deconst("default");
 			return TRUE;
 		}
 		std::string display_name;
