@@ -439,6 +439,18 @@ static void ical_export_2()
 	}
 }
 
+static int hdrparse_1()
+{
+	static const char data[] =
+		"\r\n"
+		"Bodytext\r\n";
+	MAIL m;
+	assert(m.load_from_str(data, strlen(data)));
+	auto part = m.get_head();
+	assert(part->head_begin != nullptr);
+	return 0;
+}
+
 int main()
 {
 	auto ee_get_user_ids = [](const char *, unsigned int *, unsigned int *, enum display_type *) -> bool { return false; };
@@ -457,5 +469,6 @@ int main()
 	select_parts_5();
 	ical_export_1();
 	ical_export_2();
+	hdrparse_1();
 	return EXIT_SUCCESS;
 }
