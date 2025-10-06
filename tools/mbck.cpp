@@ -160,20 +160,23 @@ static constexpr struct HXoption g_options_table[] = {
 
 int main(int argc, char **argv)
 {
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	HXopt6_auto_result argp;
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_ARGS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	if (argc < 2) {
-		fprintf(stderr, "Usage: mbck [-p] sqlitefile\n");
+	if (argp.nargs < 1) {
+		fprintf(stderr, "Usage: mbck [-p] sqlitefile[...]\n");
 		return EXIT_FAILURE;
 	}
-	while (*++argv != nullptr) {
+	for (int i = 0; i < argp.nargs; ++i) {
+		auto le_file = argp.uarg[i];
 		sqlite3 *db = nullptr;
-		auto ret = sqlite3_open_v2(*argv, &db, SQLITE_OPEN_READWRITE, nullptr);
+		auto ret = sqlite3_open_v2(le_file, &db, SQLITE_OPEN_READWRITE, nullptr);
 		if (ret != SQLITE_OK) {
-			fprintf(stderr, "sqlite3_open_v2 %s: %s\n", *argv, sqlite3_errstr(ret));
+			fprintf(stderr, "sqlite3_open_v2 %s: %s\n", le_file, sqlite3_errstr(ret));
 			return EXIT_FAILURE;
 		}
-		printf("== %s ==\n", *argv);
+		printf("== %s ==\n", le_file);
 		auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(db); });
 		if (gx_sql_exec(db, "PRAGMA foreign_keys=ON") != SQLITE_OK ||
 		    gx_sql_exec(db, "PRAGMA journal_mode=WAL") != SQLITE_OK ||
@@ -183,7 +186,7 @@ int main(int argc, char **argv)
 		if (pr < 0)
 			return EXIT_FAILURE;
 		else if (pr > 0)
-			printf("%s: %zu problems total\n", *argv, pr);
+			printf("%s: %zu problems total\n", le_file, pr);
 	}
 	return EXIT_SUCCESS;
 }
