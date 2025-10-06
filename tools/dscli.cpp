@@ -36,8 +36,8 @@ struct curl_del {
 using namespace std::string_literals;
 using namespace gromox;
 
-static bool g_tty, g_verbose;
-static unsigned int g_eas_mode, g_tb_mode;
+static bool g_tty;
+static unsigned int g_eas_mode, g_tb_mode, g_verbose;
 static constexpr char g_user_agent[] = "Microsoft Office/16"; /* trigger MH codepath */
 static char *g_disc_host, *g_disc_url, *g_emailaddr, *g_legacydn, *g_auth_user;
 static constexpr HXoption g_options_table[] = {
