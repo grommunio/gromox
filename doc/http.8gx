@@ -109,12 +109,10 @@ Default: \fI10 minutes\fP
 \fBgss_program\fP
 The helper program to use for authenticating HTTP requests when
 Negotiate-SPNEGO headers are presented. The value is rudimentarily tokenized at
-whitespaces, so no special characters may be used. If necessary write your own
-wrapper. The special value "internal-gss" uses libgssapi directly.
+whitespaces, and no special characters may be used. If necessary, write your
+own wrapper. The special value "internal-gss" uses libgssapi directly.
 .br
 Default: \fIinternal\-gss\fP
-.br
-Example: \fI/usr/lib/squid/negotiate_kerberos_auth \-s GSS_C_NO_NAME\fP
 .br
 Example: \fI/usr/lib/squid/negotiate_wrapper_auth \-\-ntlm /usr/bin/ntlm_auth
 \-\-helper\-protocol=squid\-2.5\-ntlmssp \-\-kerberos
@@ -175,7 +173,10 @@ Default: \fIno\fP
 \fBhttp_krb_service_principal\fP
 Kerberos service principal to use when gss_program=internal-gss. The form is
 often something like \fIHTTP\fP\fB/\fP\fIfqdn\fP\fB@\fP\fIREALM\fP, but may
-vary.
+vary. When using an external GSS authentication helper,
+http_krb_service_principal has no effect, and any principal you want to use
+needs to be passed via the \fBgss_program\fP directive in some way.
+be
 .br
 Default: (empty)
 .TP

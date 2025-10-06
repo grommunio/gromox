@@ -104,7 +104,7 @@ struct http_parser {
 
 	int auth_finalize(http_context &, const char *);
 	int auth_krb(http_context &ctx, const char *input, size_t isize, std::string &output);
-	int auth_exthelper(http_context &, const char *proc, const char *input, std::string &output);
+	int auth_exthelper(http_context &, const std::string &proc, const char *input, std::string &output);
 	tproc_status auth_spnego(http_context &ctx, const char *past_method);
 	tproc_status auth_basic(http_context *, const char *);
 	tproc_status auth(http_context &ctx);
@@ -138,7 +138,7 @@ struct http_parser {
 	std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 	std::mutex g_vconnection_lock; /* protects g_vconnection_hash */
 	std::unordered_map<std::string, VIRTUAL_CONNECTION> g_vconnection_hash;
-	std::string gss_helper_program, ntlm_helper_program;
+	std::string gss_helper_program;
 };
 
 class VCONN_REF {
@@ -230,7 +230,6 @@ http_parser::http_parser(size_t context_num, time_duration timeout,
 		g_certificate_passwd.clear();
 	g_private_key_path = key_path;
 	gss_helper_program = g_config_file->get_value("gss_program");
-	ntlm_helper_program = g_config_file->get_value("ntlmssp_program");
 }
 
 #ifdef OLD_SSL
@@ -901,7 +900,7 @@ int http_parser::auth_finalize(http_context &ctx, const char *user)
 	return 1;
 }
 
-int http_parser::auth_exthelper(http_context &ctx, const char *prog,
+int http_parser::auth_exthelper(http_context &ctx, const std::string &prog,
     const char *encinput, std::string &gss_output)
 {
 	auto encsize = strlen(encinput);
@@ -909,9 +908,7 @@ int http_parser::auth_exthelper(http_context &ctx, const char *prog,
 	gss_output.clear();
 
 	if (pinfo.p_pid <= 0) {
-		if (prog == nullptr || *prog == '\0')
-			prog = "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp";
-		auto args = HX_split(prog, " ", nullptr, 0);
+		auto args = HX_split(prog.c_str(), " ", nullptr, 0);
 		auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(args); });
 		pinfo.p_flags = HXPROC_STDIN | HXPROC_STDOUT | HXPROC_STDERR;
 		auto ret = HXproc_run_async(&args[0], &pinfo);
@@ -1121,11 +1118,8 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 
 tproc_status http_parser::auth_spnego(http_context &ctx, const char *past_method)
 {
-	bool rq_ntlmssp = strncmp(past_method, "TlRMTVNT", 8) == 0;
-	const auto &the_helper = rq_ntlmssp ? ntlm_helper_program : gss_helper_program;
-
-	if (the_helper != "internal-gss") {
-		auto ret = auth_exthelper(ctx, the_helper.c_str(), past_method, ctx.last_gss_output);
+	if (gss_helper_program != "internal-gss") {
+		auto ret = auth_exthelper(ctx, gss_helper_program, past_method, ctx.last_gss_output);
 		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
 		ctx.auth_method = auth_method::negotiate_b64;
 		if (ret <= 0 && ret != -99)
