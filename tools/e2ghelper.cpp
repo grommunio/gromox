@@ -34,10 +34,8 @@ struct file_actions {
 };
 }
 
-static unsigned int g_splice;
 static char *g_username;
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Splice objects into existing store hierarchy"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -62,8 +60,6 @@ int main(int argc, char **argv) try
 	const char *import_argv[4];
 	int pff_argc = 0, import_argc = 0;
 	pff_argv[pff_argc++] = "gromox-pff2mt";
-	if (g_splice)
-		pff_argv[pff_argc++] = "-s";
 	for (int i = 1; i < argc; ++i)
 		pff_argv[pff_argc++] = argv[i];
 	pff_argv[pff_argc] = nullptr;
