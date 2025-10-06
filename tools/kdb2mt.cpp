@@ -81,6 +81,7 @@ struct driver final {
 	int open_by_mro(const char *);
 	int open_by_user(const char *);
 	DB_RESULT query(const std::string_view &);
+	DB_RESULT lookup_by_mro(const char *);
 	uint32_t hid_from_eid(const BINARY &);
 	uint32_t hid_from_mst(kdb_item &, uint32_t);
 	uint32_t hid_from_ren(kdb_item &, unsigned int);
@@ -655,6 +656,17 @@ static void bdash(size_t count)
 	fputs(buf, stderr);
 }
 
+DB_RESULT driver::lookup_by_mro(const char *user)
+{
+	auto qstr = "SELECT s.guid, s.user_id, s.user_name, s.type, "
+	            "p.val_longint FROM stores AS s "
+	            "LEFT JOIN properties AS p "
+	            "ON s.hierarchy_id=p.hierarchyid AND p.tag=0xE08"s;
+	if (*user != '\0')
+		qstr += " WHERE s.user_name='" + sql_escape(m_conn, user) + "'";
+	return query(qstr);
+}
+
 static void present_mro_stores(const char *storeuser, DB_RESULT &res)
 {
 	DB_ROW row;
@@ -698,16 +710,11 @@ static void present_user_stores(const char *storeuser)
 
 int driver::open_by_mro(const char *storeuser)
 {
-	auto drv = this;
-	std::string qstr = "SELECT s.guid, s.user_id, s.user_name, s.type, "
-	                   "p.val_longint FROM stores AS s "
-	                   "LEFT JOIN properties AS p "
-	                   "ON s.hierarchy_id=p.hierarchyid AND p.tag=0xE08";
-	if (*storeuser != '\0')
-		qstr += " WHERE s.user_name='" +
-		        sql_escape(drv->m_conn, storeuser) + "'";
-	auto res = drv->query(qstr);
-	if (*storeuser == '\0' || mysql_num_rows(res.get()) > 1) {
+	auto res = lookup_by_mro(storeuser);
+	if (*storeuser == '\0') {
+		present_mro_stores(storeuser, res);
+		return 0;
+	} else if (mysql_num_rows(res.get()) > 1) {
 		present_mro_stores(storeuser, res);
 		throw YError("PK-1013: \"%s\" was ambiguous.\n", storeuser);
 	}
@@ -1494,24 +1501,6 @@ int main(int argc, char **argv)
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	textmaps_init(PKGDATADIR);
-	if (g_acl_conv == aclconv::convert && g_user_map_file == nullptr) {
-		fprintf(stderr, "kdb2mt: The --acl=convert option also requires the use of --user-map.\n");
-		exit(EXIT_FAILURE);
-	} else if (g_acl_conv == aclconv::automatic) {
-		if (g_user_map_file == nullptr) {
-			g_acl_conv = aclconv::noextract;
-			fprintf(stderr, "kdb2mt: No ACLs will be extracted.\n");
-		} else {
-			g_acl_conv = aclconv::convert;
-			fprintf(stderr, "kdb2mt: ACLs will be extracted and converted.\n");
-		}
-	}
-	if (g_user_map_file != nullptr) {
-		int ret = usermap_read(g_user_map_file, g_kuid_to_email,
-		          g_username_to_storeguid, g_zaddr_to_email);
-		if (ret != EXIT_SUCCESS)
-			return ret;
-	}
 	if (g_with_hidden < 0)
 		g_with_hidden = !g_splice;
 	if (g_srcmbox != nullptr && g_user_map_file == nullptr) {
@@ -1522,10 +1511,33 @@ int main(int argc, char **argv)
 	    (g_srcmro != nullptr) != 1) {
 		fprintf(stderr, "kdb2mt: Exactly one of --mbox-guid, --mbox-name or --mbox-mro must be specified.\n");
 		return EXIT_FAILURE;
-	} else if (g_atxdir == nullptr) {
+	}
+	bool show_user_table = (g_srcmro != nullptr && *g_srcmro == '\0') ||
+	                       (g_srcmbox != nullptr && *g_srcmbox == '\0');
+	if (g_atxdir == nullptr && !show_user_table) {
 		fprintf(stderr, "kdb2mt: You must specify the --src-attach option at all times.\n");
 		fprintf(stderr, "kdb2mt: (To skip the import of file-based attachments, use --src-attach \"\".)\n");
 		return EXIT_FAILURE;
+	}
+	if (g_acl_conv == aclconv::convert && g_user_map_file == nullptr) {
+		fprintf(stderr, "kdb2mt: The --acl=convert option also requires the use of --user-map.\n");
+		exit(EXIT_FAILURE);
+	} else if (g_acl_conv == aclconv::automatic) {
+		if (g_user_map_file == nullptr) {
+			g_acl_conv = aclconv::noextract;
+			if (!show_user_table)
+				fprintf(stderr, "kdb2mt: No ACLs will be extracted.\n");
+		} else {
+			g_acl_conv = aclconv::convert;
+			if (!show_user_table)
+				fprintf(stderr, "kdb2mt: ACLs will be extracted and converted.\n");
+		}
+	}
+	if (g_user_map_file != nullptr) {
+		int ret = usermap_read(g_user_map_file, g_kuid_to_email,
+		          g_username_to_storeguid, g_zaddr_to_email);
+		if (ret != EXIT_SUCCESS)
+			return ret;
 	}
 	if (argp.nargs != 0) {
 		terse_help();
@@ -1561,14 +1573,16 @@ int main(int argc, char **argv)
 			fprintf(stderr, "kdb2mt: unexpected problem with user lookup\n");
 			return EXIT_FAILURE;
 		}
-		if (isatty(STDOUT_FILENO)) {
-			fprintf(stderr, "kdb2mt: Refusing to output the binary Mailbox Transfer Data Stream to a terminal.\n"
-				"You probably wanted to redirect output into a file or pipe.\n");
-			return EXIT_FAILURE;
+		if (!show_user_table) {
+			if (isatty(STDOUT_FILENO)) {
+				fprintf(stderr, "kdb2mt: Refusing to output the binary Mailbox Transfer Data Stream to a terminal.\n"
+					"You probably wanted to redirect output into a file or pipe.\n");
+				return EXIT_FAILURE;
+			}
+			ret = do_database(std::move(drv), g_srcguid != nullptr ? g_srcguid :
+			      g_srcmro != nullptr ? g_srcmro :
+			      g_srcmbox != nullptr ? g_srcmbox : "Strange Mailbox");
 		}
-		ret = do_database(std::move(drv), g_srcguid != nullptr ? g_srcguid :
-		      g_srcmro != nullptr ? g_srcmro :
-		      g_srcmbox != nullptr ? g_srcmbox : "Strange Mailbox");
 	} catch (const char *e) {
 		fprintf(stderr, "kdb2mt: Exception: %s\n", e);
 		return -ECANCELED;
