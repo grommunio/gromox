@@ -80,7 +80,7 @@ struct driver final {
 	int open_by_guid(const char *);
 	int open_by_mro(const char *);
 	int open_by_user(const char *);
-	DB_RESULT query(const char *);
+	DB_RESULT query(const std::string_view &);
 	uint32_t hid_from_eid(const BINARY &);
 	uint32_t hid_from_mst(kdb_item &, uint32_t);
 	uint32_t hid_from_ren(kdb_item &, unsigned int);
@@ -556,7 +556,7 @@ int driver::open_by_guid_1(const char *guid)
 
 	/* user_id available from n61 */
 	auto qstr = fmt::format("SELECT hierarchy_id, user_id, type FROM stores WHERE guid=0x{}", guid);
-	auto res = drv->query(qstr.c_str());
+	auto res = drv->query(qstr);
 	auto row = res.fetch_row();
 	if (row == nullptr || row[0] == nullptr || row[1] == nullptr)
 		throw YError("PK-1014: no store by that GUID");
@@ -599,7 +599,7 @@ static std::unique_ptr<driver> make_driver(const sql_login_param &sqp)
 		      mysql_error(drv->m_conn));
 
 	auto qstr = fmt::format("SELECT value FROM settings WHERE name='server_guid'");
-	DB_RESULT res = drv->query(qstr.c_str());
+	DB_RESULT res = drv->query(qstr);
 	if (res == nullptr)
 		throw YError("PG-1133: unable to request server_guid");
 	auto row = res.fetch_row();
@@ -612,7 +612,7 @@ static std::unique_ptr<driver> make_driver(const sql_login_param &sqp)
 	fmt::print(stderr, "kdb Server GUID: {}\n", drv->server_guid);
 
 	qstr = fmt::format("SELECT value FROM settings WHERE name='attachment_storage'");
-	res = drv->query(qstr.c_str());
+	res = drv->query(qstr);
 	if (res == nullptr)
 		throw YError("PG-1136: unable to request settings.attachment_storage");
 	row = res.fetch_row();
@@ -622,7 +622,7 @@ static std::unique_ptr<driver> make_driver(const sql_login_param &sqp)
 
 	qstr = "SELECT MAX(databaserevision) FROM versions";
 	try {
-		res = drv->query(qstr.c_str());
+		res = drv->query(qstr);
 		row = res.fetch_row();
 		if (row == nullptr || row[0] == nullptr)
 			throw YError("PK-1002: Database has no version information and is too old");
@@ -706,7 +706,7 @@ int driver::open_by_mro(const char *storeuser)
 	if (*storeuser != '\0')
 		qstr += " WHERE s.user_name='" +
 		        sql_escape(drv->m_conn, storeuser) + "'";
-	auto res = drv->query(qstr.c_str());
+	auto res = drv->query(qstr);
 	if (*storeuser == '\0' || mysql_num_rows(res.get()) > 1) {
 		present_mro_stores(storeuser, res);
 		throw YError("PK-1013: \"%s\" was ambiguous.\n", storeuser);
@@ -739,11 +739,12 @@ driver::~driver()
 		mysql_close(m_conn);
 }
 
-DB_RESULT driver::query(const char *qstr)
+DB_RESULT driver::query(const std::string_view &q)
 {
-	auto ret = mysql_query(m_conn, qstr);
+	auto ret = mysql_real_query(m_conn, q.data(), q.size());
 	if (ret != 0)
-		throw YError("PK-1000: mysql_query \"%s\": %s", qstr, mysql_error(m_conn));
+		throw YError("PK-1000: mysql_query \"%.*s\": %s",
+			static_cast<int>(q.size()), q.data(), mysql_error(m_conn));
 	DB_RESULT res = mysql_store_result(m_conn);
 	if (res == nullptr)
 		throw YError("PK-1001: mysql_store: %s", mysql_error(m_conn));
@@ -930,7 +931,7 @@ std::unique_ptr<kdb_item> driver::get_root_folder()
 std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 {
 	auto qstr = fmt::format("SELECT id, type, flags FROM hierarchy WHERE (id={} OR parent={})", hid, hid);
-	auto res = drv.query(qstr.c_str());
+	auto res = drv.query(qstr);
 	auto yi = std::make_unique<kdb_item>(drv);
 	DB_ROW row;
 	while ((row = res.fetch_row()) != nullptr) {
@@ -977,7 +978,7 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 	 * (ACCESS_TYPE_DENIED); but only 2 (ACCESS_TYPE_GRANT).
 	 */
 	qstr = fmt::format("SELECT id, rights FROM acl WHERE hierarchy_id={} AND type=2", hid);
-	res = drv.query(qstr.c_str());
+	res = drv.query(qstr);
 	while ((row = res.fetch_row()) != nullptr) {
 		uint32_t ben_id = strtoul(row[0], nullptr, 0);
 		uint32_t rights = strtoul(row[1], nullptr, 0);
