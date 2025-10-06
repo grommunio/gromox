@@ -154,10 +154,8 @@ static bool oxd_is_autodiscover_response(const std::string &xml_in,
 	node = node->FirstChildElement("Response");
 	if (node == nullptr)
 		return false;
-	node = node->FirstChildElement("Account");
-	if (node == nullptr)
-		return false;
-	return true;
+	return node->FirstChildElement("Account") != nullptr /* MAPI */ ||
+	       node->FirstChildElement("User") != nullptr /* EAS */;
 }
 
 static bool oxd_validate_response(const tinyxml2::XMLDocument &doc)
