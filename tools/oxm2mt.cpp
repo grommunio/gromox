@@ -457,7 +457,6 @@ static errno_t do_message(libolecf_item_t *msg_dir, MESSAGE_CONTENT &ctnt, mapi_
 	auto cset = cpid_to_cset(static_cast<cpid_t>(cpid));
 	if (cset == nullptr)
 		cset = "ascii";
-	fprintf(stderr, "Using codepage %s for 8-bit strings\n", cset);
 	auto ret = parse_propstrm(ep, cset, msg_dir, ctnt.proplist);
 	if (ret < 0)
 		return -ret;
