@@ -490,22 +490,20 @@ int main(int argc, char **argv)
 		result = curl_easy_perform(ch);
 		if (result != CURLE_OK) {
 			fprintf(stderr, "curl_easy_perform <%s>: %s\n", url.c_str(), curl_easy_strerror(result));
-			return EXIT_FAILURE;
+			continue;
 		}
 		long status = 0;
 		result = curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &status);
 		if (result != CURLE_OK || status >= 400)
 			fprintf(stderr, "curl_easy_perform <%s>: HTTP %ld\n",
 				url.c_str(), status);
-		else if (oxd_is_autodiscover_response(xml_response, xd_response))
+		if (g_verbose) {
+			fprintf(stderr, "* Response body:\n");
+			printf("%s\n", xml_response.c_str());
+		}
+		if (oxd_is_autodiscover_response(xml_response, xd_response))
 			break;
-		if (g_verbose)
-			fprintf(stderr, "* Response body:\n%s\n", xml_response.c_str());
 		xml_response.clear();
-	}
-	if (g_verbose) {
-		fprintf(stderr, "* Response body:\n");
-		printf("%s\n", xml_response.c_str());
 	}
 	if (xml_response.empty()) {
 		if (!g_verbose)
