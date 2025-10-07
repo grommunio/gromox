@@ -512,6 +512,142 @@ sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, cons
 }
 
 /**
+ * @brief Find calendar item using goid and clean goid
+ *
+ * @param calendarFolder The calendar folder
+ * @param calendarDir    Store directory
+ * @param content        Item content
+ *
+ * @return PidTagMid value of item matching goid or clean goid
+ */
+std::optional<uint64_t> EWSContext::findExistingByGoid(const sFolderSpec& calendarFolder, const std::string& calendarDir,
+	const MESSAGE_CONTENT& content) const
+{
+	std::array<RESTRICTION_PROPERTY, 2> propertyRestrictions{};
+	std::array<RESTRICTION, 2> childRestrictions{};
+	size_t restrictionCount = 0;
+
+	auto addRestriction = [&](const BINARY* value, uint16_t propId) {
+		if (value == nullptr || value->cb == 0 || value->pb == nullptr || propId == 0 ||
+		    restrictionCount >= propertyRestrictions.size())
+			return;
+		uint32_t tag = PROP_TAG(PT_BINARY, propId);
+		auto &propRestriction = propertyRestrictions[restrictionCount];
+		propRestriction.relop = RELOP_EQ;
+		propRestriction.proptag = tag;
+		propRestriction.propval.proptag = tag;
+		propRestriction.propval.pvalue = deconst(value);
+
+		childRestrictions[restrictionCount].rt = RES_PROPERTY;
+		childRestrictions[restrictionCount].prop = &propRestriction;
+		++restrictionCount;
+	};
+
+	uint16_t pidGlobalId = getNamedPropId(calendarDir, NtGlobalObjectId, true);
+	uint16_t pidCleanGlobalId = getNamedPropId(calendarDir, NtCleanGlobalObjectId, true);
+	const BINARY* goid = content.proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidGlobalId));
+	const BINARY* cleanGoid = content.proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidCleanGlobalId));
+	addRestriction(goid, pidGlobalId);
+	addRestriction(cleanGoid, pidCleanGlobalId);
+
+	if (restrictionCount == 0)
+		return std::nullopt;
+
+	RESTRICTION restriction{};
+	RESTRICTION_AND_OR orGroup{};
+	if (restrictionCount == 1) {
+		restriction.rt = RES_PROPERTY;
+		restriction.prop = &propertyRestrictions[0];
+	} else {
+		orGroup.count = static_cast<uint32_t>(restrictionCount);
+		orGroup.pres = childRestrictions.data();
+		restriction.rt = RES_OR;
+		restriction.andor = &orGroup;
+	}
+
+	uint32_t tableId = 0, rowCount = 0;
+	const char *calUser = effectiveUser(calendarFolder);
+	if (!m_plugin.exmdb.load_content_table(calendarDir.c_str(), CP_ACP,
+	    calendarFolder.folderId, calUser, TABLE_FLAG_NONOTIFICATIONS,
+	    &restriction, nullptr, &tableId, &rowCount))
+		throw EWSError::ItemPropertyRequestFailed(E3245);
+	auto unloadTable = HX::make_scope_exit([&, tableId]{
+		m_plugin.exmdb.unload_table(calendarDir.c_str(), tableId);
+	});
+	if (rowCount == 0)
+		return std::nullopt;
+
+	const uint32_t midTagValue = PidTagMid;
+	PROPTAG_ARRAY proptags{1, deconst(&midTagValue)};
+	TARRAY_SET rows{};
+	if (!m_plugin.exmdb.query_table(calendarDir.c_str(), calUser, CP_ACP,
+	    tableId, &proptags, 0, 1, &rows))
+		throw EWSError::ItemCorrupt(E3284);
+	if (rows.count == 0 || rows.pparray[0] == nullptr)
+		return std::nullopt;
+	auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);
+	if (!mid)
+		return std::nullopt;
+	return std::optional<uint64_t>(*mid);
+}
+
+/**
+ * @brief Create a calendar item after accepting a meeting request
+ *
+ * @param refId          Item id
+ * @param response       Response type
+ */
+void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint32_t response) const
+{
+	// Duplicate the original request and persist it as a calendar appointment.
+	assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId requestId(refId.Id.data(), refId.Id.size());
+	sFolderSpec requestFolder = resolveFolder(requestId);
+	std::string dir = getDir(requestFolder);
+	validate(dir, requestId);
+	const char *username = effectiveUser(requestFolder);
+
+	MESSAGE_CONTENT *content = nullptr;
+	if (!m_plugin.exmdb.read_message(dir.c_str(), username, CP_ACP, requestId.messageId(), &content) ||
+	    content == nullptr)
+		throw EWSError::ItemNotFound(E3143);
+
+	MCONT_PTR calendarItem(content->dup());
+	if (!calendarItem)
+		throw EWSError::ItemSave(E3254);
+
+	auto &props = calendarItem->proplist;
+	// Remove PidTagMid and PidTagChangeNumber, otherwise the calendar item won't be
+	// created / updated
+	static constexpr uint32_t rmProps[] = {PidTagMid, PidTagChangeNumber};
+	for (uint32_t tag : rmProps)
+		props.erase(tag);
+
+	sFolderSpec calendarFolder = requestFolder;
+	calendarFolder.folderId = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	calendarFolder.location = sFolderSpec::PRIVATE;
+	if (!calendarFolder.target)
+		calendarFolder.target = m_auth_info.username;
+	std::string calendarDir = getDir(calendarFolder);
+
+	if (!(permissions(calendarDir, calendarFolder.folderId) & (frightsOwner | frightsCreate)))
+		throw EWSError::AccessDenied(E3130);
+
+	if (props.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
+		throw EWSError::ItemSave(E3254);
+
+	std::optional<uint64_t> existingMid = findExistingByGoid(calendarFolder, calendarDir, *content);
+	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
+		throw EWSError::ItemSave(E3254);
+
+	ec_error_t err = ecSuccess;
+	uint64_t newMid = 0, newCn = 0;
+	if (!m_plugin.exmdb.write_message(calendarDir.c_str(), CP_ACP, calendarFolder.folderId,
+	        calendarItem.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
+		throw EWSError::ItemSave(E3254);
+}
+
+/**
  * @brief      Schedule notification stream for closing
  */
 void EWSContext::disableEventStream()
