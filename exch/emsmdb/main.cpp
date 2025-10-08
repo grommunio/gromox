@@ -66,7 +66,7 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"max_mail_length", "64M", CFG_SIZE, "1"},
 	{"max_rcpt_num", "256", CFG_SIZE, "1"},
 	{"rop_debug", "0"},
-	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
+	{"submit_command", "/usr/bin/php " PKGDATADIR "/submit.php"},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
 };

@@ -182,8 +182,6 @@ pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
 pam_gromox_la_SOURCES = tools/pam_gromox.cpp
 pam_gromox_la_LIBADD = ${libHX_LIBS} ${pam_LIBS} libgromox_auth.la libgromox_common.la libgxs_mysql_adaptor.la
 pam_gromox_la_LDFLAGS = ${plugin_LDFLAGS} ${default_SYFLAGS}
-saphpdir = ${pkgdatadir}/sa
-dist_saphp_DATA = tools/php/submit.php
 event_SOURCES = tools/event.cpp
 event_LDADD = -lpthread ${libHX_LIBS} ${libssl_LIBS} libgromox_common.la
 gromox_abktconv_SOURCES = tools/abktconv.cpp
@@ -347,9 +345,9 @@ endif
 EXTRA_HEADERS = include/gromox/paths.h.in lib/mapi/oxcmail_int.hpp
 list_files = data/cpid.txt data/exmdb_list.txt data/folder_names.txt data/lang_charset.txt data/lcid.txt data/mime_extension.txt data/propnames.txt
 pkgdata_DATA = data/abkt.pak data/timezone.pak
-dist_pkgdata_DATA = ${list_files} data/Services.wsdl data/Messages.xsd data/Types.xsd data/gdbinit data/fpm-gromox.conf.sample data/gromox.ldif data/sqliterc
+dist_pkgdata_DATA = ${list_files} data/Services.wsdl data/Messages.xsd data/Types.xsd data/gdbinit data/fpm-gromox.conf.sample data/gromox.ldif data/sqliterc tools/conf.php tools/db.php tools/submit.php
 toolprogs = tools/defs2php.pl tools/defs2php.sh tools/duplogid tools/enumsort tools/exmidl.pl tools/exmidl.sh tools/includesort tools/mpak.pl tools/mpak.sh tools/proptagsort tools/stackusage tools/warncount tools/zcidl.pl tools/zcidl.sh
-EXTRA_DIST += ${abkt_files} ${tzd_files} ${header_files} ${EXTRA_HEADERS} ${toolprogs} LICENSE.txt README.rst default.sym exch/bounce_exch.cpp exch/php/lib/conf.php exch/php/lib/db.php lib/haproxy.cpp tools/genmails tools/staticnpmap.cpp
+EXTRA_DIST += ${abkt_files} ${tzd_files} ${header_files} ${EXTRA_HEADERS} ${toolprogs} LICENSE.txt README.rst default.sym exch/bounce_exch.cpp lib/haproxy.cpp tools/genmails tools/staticnpmap.cpp
 
 data/abkt.pak: ${abkt_files}
 	${AM_V_GEN}${MKDIR_P} data
@@ -404,7 +402,6 @@ install-exec-hook:
 install-data-local:
 	${MKDIR_P} ${DESTDIR}${mandir}/man8 ${DESTDIR}${pkgdatadir}/http/php
 	cp -av ${srcdir}/data/*_bounce ${srcdir}/data/*.txt ${srcdir}/data/*.ldif ${srcdir}/data/*.sample ${srcdir}/data/gdbinit ${srcdir}/data/sqliterc ${DESTDIR}${pkgdatadir}/
-	cp -av ${srcdir}/exch/php/* ${DESTDIR}${pkgdatadir}/http/php/
 
 uninstall-hook:
 	chmod -R u+w ${DESTDIR}${pkgdatadir}/

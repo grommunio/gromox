@@ -104,7 +104,7 @@ of outbound connections for sending commands.
 Default: \fI10\fP
 .TP
 \fBsubmit_command\fP
-Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
+Default: \fI/usr/bin/php /usr/share/gromox/submit.php\fP
 .TP
 \fBuser_cache_interval\fP
 Sets the time how long the MAPI profile is cached before it is written to disk.

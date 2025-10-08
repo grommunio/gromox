@@ -123,7 +123,7 @@ all ROPs. Note the daemon log level needs to be "debug" (6), too.
 Default: \fI0\fP
 .TP
 \fBsubmit_command\fP
-Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
+Default: \fI/usr/bin/php /usr/share/gromox/submit.php\fP
 .TP
 \fBx500_org_name\fP
 Default: (unspecified)

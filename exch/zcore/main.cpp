@@ -101,7 +101,7 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
 	{"oxcical_allday_ymd", "1", CFG_BOOL},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
-	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
+	{"submit_command", "/usr/bin/php " PKGDATADIR "/submit.php"},
 	{"user_cache_interval", "1h", CFG_TIME, "1min", "1day"},
 	{"user_table_size", "5000", CFG_SIZE, "100", "50000"},
 	{"x500_org_name", "Gromox default"},
