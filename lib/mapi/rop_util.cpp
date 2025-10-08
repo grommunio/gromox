@@ -237,7 +237,7 @@ namespace gromox {
 /**
  * Return number of seconds of how long to hold/defer a message.
  */
-uint32_t props_to_defer_interval(const TPROPVAL_ARRAY &pv)
+uint64_t props_to_defer_interval(const TPROPVAL_ARRAY &pv)
 {
 	auto cur_time = time(nullptr);
 	auto send_time = pv.get<const uint64_t>(PR_DEFERRED_SEND_TIME);
