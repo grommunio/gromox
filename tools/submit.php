@@ -34,8 +34,20 @@
 	if (empty($props[PR_MESSAGE_FLAGS])) {
 		die("cannot get PR_MESSAGE_FLAGS from message object");
 	}
-	if (!($props[PR_MESSAGE_FLAGS] & MSGFLAG_SUBMIT))
-		die("message " . $argv[2] . " was not submitted");
+	if (!($props[PR_MESSAGE_FLAGS] & MSGFLAG_SUBMIT)) {
+		fwrite(STDERR, "$argv[2]: submit-init\n");
+		#
+		# MSGFLAG_SUBMIT not set. submitmessage() will start delayed
+		# delivery timers (if desired), or send right away and purge.
+		#
+	} else {
+		fwrite(STDERR, "$argv[2]: submit-now\n");
+		#
+		# MSGFLAG_SUBMIT is set. This means, now that we are called
+		# (possibly a second time) that the timer has expired.
+		# Send immediately.
+		#
+	}
 	mapi_message_submitmessage($message);
 	exit("message " . $argv[2] . " has been submitted successfully");
 ?>
