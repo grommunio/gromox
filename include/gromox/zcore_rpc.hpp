@@ -104,6 +104,7 @@ enum class zcore_callid : uint8_t {
 	logon_token = 0x5a,
 	getuserfreebusy = 0x5b,
 	getuserfreebusyical = 0x5c,
+	logon_np = 0x5d,
 	/* update exch/zcore/names.cpp! */
 };
 
@@ -124,6 +125,7 @@ struct zcreq_logon final : public zcreq {
 	char *rhost;
 	uint32_t flags;
 };
+using zcreq_logon_np = zcreq_logon;
 
 struct zcreq_checksession final : public zcreq {
 	GUID hsession;
@@ -926,6 +928,7 @@ using zcresp_submitmessage = zcresp;
 using zcresp_unadvise = zcresp;
 using zcresp_unloadobject = zcresp;
 using zcresp_vcftomessage = zcresp;
+using zcresp_logon_np = zcresp_logon;
 
 enum {
 	MXF_UNWRAP_SMIME_CLEARSIGNED = 0x1U,

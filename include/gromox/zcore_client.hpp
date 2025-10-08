@@ -101,5 +101,6 @@ ZCIDL(essdn_to_username, (const char *essdn, IDLOUT char **username))
 ZCIDL(logon_token, (const char *token, const char *rhost, IDLOUT GUID *hsession))
 ZCIDL(getuserfreebusy, (GUID hsession, BINARY entryid, time_t starttime, time_t endtime, IDLOUT std::vector<freebusy_event> *fb_events))
 ZCIDL(getuserfreebusyical, (GUID hsession, BINARY entryid, time_t starttime, time_t endtime, IDLOUT BINARY *ical_bin))
+ZCIDL(logon_np, (const char *username, const char *password, const char *rhost, uint32_t flags, IDLOUT GUID *hsession))
 #undef ZCIDL
 #undef IDLOUT

@@ -60,6 +60,7 @@ extern void zs_notification_proc(const char *dir, BOOL table, uint32_t notify_id
 extern USER_INFO *zs_get_info();
 extern USER_INFO_REF zs_query_session(GUID);
 extern ec_error_t zs_logon_token(const char *token, const char *rhost, GUID *ses);
+extern ec_error_t zs_logon_np(const char *username, const char *password, const char *rhost, uint32_t flags, GUID *ses);
 extern ec_error_t zs_logon(const char *username, const char *password, const char *rhost, uint32_t flags, GUID *ses);
 extern ec_error_t zs_checksession(GUID ses);
 extern ec_error_t zs_uinfo(const char *username, BINARY *entryid, char **dispname, char **x500dn, uint32_t *priv_bits);

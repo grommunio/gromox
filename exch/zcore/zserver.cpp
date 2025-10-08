@@ -636,6 +636,19 @@ ec_error_t zs_logon(const char *username, const char *password,
 	return zs_logon_phase2(std::move(mres), phsession);
 }
 
+ec_error_t zs_logon_np(const char *username, const char *password,
+    const char *rhost, uint32_t flags, GUID *phsession)
+{
+	sql_meta_result mres{};
+	auto ret = mysql_adaptor_meta(username, WANTPRIV_METAONLY, mres);
+	if (ret != 0) {
+		mlog(LV_WARN, "rhost=[%s]:0 user=%s zs_logon_np rejected: %s",
+			znul(rhost), username, mres.errstr.c_str());
+		return ecLoginFailure;
+	}
+	return zs_logon_phase2(std::move(mres), phsession);
+}
+
 ec_error_t zs_logon_token(const char *token, const char *rhost, GUID *phsession)
 {
 	sql_meta_result mres{};
