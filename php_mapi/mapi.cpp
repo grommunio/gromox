@@ -23,6 +23,7 @@
 #include <gromox/zcore_client.hpp>
 #include <gromox/zcore_rpc.hpp>
 #include "php.h"
+#include "SAPI.h"
 #include "ext/standard/info.h"
 #include "Zend/zend_exceptions.h"
 #include "Zend/zend_builtin_functions.h"
@@ -750,6 +751,44 @@ static ZEND_FUNCTION(mapi_logon_ex)
 	presource->type = zs_objtype::session;
 	presource->hobject = 0;
 	RETVAL_RG(presource, le_mapi_session);
+	MAPI_G(hr) = ecSuccess;
+}
+
+static ZEND_FUNCTION(mapi_logon_np)
+{
+	ZCL_MEMORY;
+	zend_long flags = 0;
+	char *username;
+	size_t username_len = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "sl", &username,
+	    &username_len, &flags) == FAILURE ||
+	    username == nullptr || *username == '\0')
+		pthrow(ecInvalidParam);
+
+	/* enforce CLI mode */
+	if (sapi_module.name != nullptr) {
+		if (strcasecmp(sapi_module.name, "cli") != 0)
+			pthrow(ecAccessDenied);
+	} else {
+		zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
+		auto server_vars = zend_hash_find(&EG(symbol_table), str_server.get());
+		zstrplus str_reqm(zend_string_init(ZEND_STRL("REQUEST_METHOD"), 0));
+		if (server_vars != nullptr && Z_TYPE_P(server_vars) == IS_ARRAY) {
+			auto method = zend_hash_find(Z_ARRVAL_P(server_vars), str_reqm.get());
+			if (method != nullptr)
+				pthrow(ecAccessDenied);
+		}
+	}
+	auto res = st_malloc<MAPI_RESOURCE>();
+	if (res == nullptr)
+		pthrow(ecMAPIOOM);
+	auto result = zclient_logon_np(username, "", "", flags, &res->hsession);
+	if (result != ecSuccess)
+		pthrow(result);
+	res->type = zs_objtype::session;
+	res->hobject = 0;
+	RETVAL_RG(res, le_mapi_session);
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -4157,6 +4196,7 @@ static zend_function_entry mapi_functions[] = {
 	F(mapi_logon_token)
 	F(mapi_logon_zarafa)
 	F(mapi_logon_ex)
+	F(mapi_logon_np)
 	F(mapi_getmsgstorestable)
 	F(mapi_openmsgstore)
 	F(mapi_openprofilesection)

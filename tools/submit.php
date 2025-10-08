@@ -20,7 +20,7 @@
 	$loc_string .= hex2bin('00');
 	$_SERVER['REMOTE_USER'] = $argv[1];
 	try {
-		$session = mapi_logon_ex($argv[1], null, 0);
+		$session = mapi_logon_np($argv[1], 0);
 	} catch (Exception  $e) {
 		die("fail to log on the " . $argv[1] . "'s store");
 	}
