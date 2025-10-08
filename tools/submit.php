@@ -15,7 +15,8 @@
 	if (empty($user_id)) {
 		die("cannot find " . $argv[1] . "'s information from database"); 
 	}
-	$loc_string = sprintf("/exmdb=3:%d:%x", $user_id, $argv[2]);
+	$msgid = intval($argv[2], 0);
+	$loc_string = sprintf("/exmdb=3:%d:%x", $user_id, $msgid);
 	// append a null terminate character for C
 	$loc_string .= hex2bin('00');
 	$_SERVER['REMOTE_USER'] = $argv[1];
