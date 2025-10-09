@@ -66,6 +66,7 @@ struct  GX_EXPORT RPC_HEADER_EXT {
 
 struct APPOINTMENT_RECUR_PAT;
 struct EID_ARRAY;
+struct EMSAB_ENTRYID_view;
 struct EMSAB_ENTRYID;
 struct EXT_RULE_ACTIONS;
 struct FLAGGED_PROPVAL;
@@ -309,7 +310,7 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_readrecipient_row(const PROPTAG_ARRAY &tags, const READRECIPIENT_ROW &);
 	pack_result p_permission_data(const PERMISSION_DATA &);
 	pack_result p_rule_data(const RULE_DATA &);
-	pack_result p_abk_eid(const EMSAB_ENTRYID &);
+	pack_result p_abk_eid(const EMSAB_ENTRYID_view &);
 	pack_result p_oneoff_eid(const ONEOFF_ENTRYID &);
 	pack_result p_persistdata_a(std::span<const PERSISTDATA>);
 	pack_result p_eid_a(const EID_ARRAY &);

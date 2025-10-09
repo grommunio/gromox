@@ -4660,7 +4660,7 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 		return TRUE;
 	}
 	std::string es_result;
-	auto ret = cvt_essdn_to_username(ab_entryid.px500dn, g_exmdb_org_name,
+	auto ret = cvt_essdn_to_username(ab_entryid.x500dn.c_str(), g_exmdb_org_name,
 	           mysql_adaptor_userid_to_name, es_result);
 	if (ret != ecSuccess) {
 		*pb_owner = false;

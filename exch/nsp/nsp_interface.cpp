@@ -190,7 +190,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 {
 	std::string dn;
 	EPHEMERAL_ENTRYID ephid;
-	EMSAB_ENTRYID permeid;
+	EMSAB_ENTRYID_manual permeid;
 	
 	pprop->proptag = proptag;
 	pprop->reserved = 0;
@@ -1746,7 +1746,7 @@ ec_error_t nsp_interface_mod_props(NSPI_HANDLE handle, uint32_t reserved,
 
 static bool nsp_interface_build_specialtable(NSP_PROPROW *prow,
     bool b_unicode, cpid_t codepage, bool has_child, int container_id,
-    const char *str_dname, const EMSAB_ENTRYID &permeid)
+    const char *str_dname, const EMSAB_ENTRYID_view &permeid)
 {
 	prow->reserved = 0x0;
 	prow->cvalues = 6;
@@ -1812,7 +1812,7 @@ static ec_error_t nsp_interface_get_specialtables_from_node(
     const ab_tree::ab_node &node,
     bool b_unicode, cpid_t codepage, NSP_ROWSET *prows)
 {
-	auto ppermeid = ndr_stack_anew<EMSAB_ENTRYID>(NDR_STACK_OUT);
+	auto ppermeid = ndr_stack_anew<EMSAB_ENTRYID_manual>(NDR_STACK_OUT);
 	if (ppermeid == nullptr)
 		return ecServerOOM;
 	auto tmp_guid = node.guid();
@@ -1864,7 +1864,7 @@ ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	auto prow = common_util_proprowset_enlarge(rowset);
 	if (prow == nullptr)
 		return ecServerOOM;
-	EMSAB_ENTRYID permeid;
+	EMSAB_ENTRYID_manual permeid;
 	if (!common_util_set_permanententryid(DT_CONTAINER,
 	    nullptr, nullptr, &permeid))
 		return ecServerOOM;

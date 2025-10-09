@@ -1712,7 +1712,7 @@ pack_result EXT_PULL::g_abk_eid(EMSAB_ENTRYID *r)
 	if (v != 1)
 		return pack_result::format;
 	TRY(g_uint32(&r->type));
-	return g_str(&r->px500dn);
+	return g_str(&r->x500dn);
 }
 
 pack_result EXT_PULL::g_oneoff_eid(ONEOFF_ENTRYID *r)
@@ -3258,7 +3258,7 @@ pack_result EXT_PUSH::p_rule_data(const RULE_DATA &r)
 	return p_tpropval_a(r.propvals);
 }
 
-pack_result EXT_PUSH::p_abk_eid(const EMSAB_ENTRYID &r)
+pack_result EXT_PUSH::p_abk_eid(const EMSAB_ENTRYID_view &r)
 {
 	TRY(p_uint32(r.flags));
 	TRY(p_guid(muidEMSAB));
@@ -3592,7 +3592,7 @@ bool emsab_to_parts(EXT_PULL &ser, char *type, size_t tsize,
 		return false;
 	if (type != nullptr)
 		gx_strlcpy(type, "EX", tsize);
-	gx_strlcpy(addr, eid.px500dn, asize);
+	gx_strlcpy(addr, eid.x500dn.c_str(), asize);
 	return true;
 }
 

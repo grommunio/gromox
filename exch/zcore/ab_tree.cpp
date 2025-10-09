@@ -225,10 +225,8 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node &pnode,
 		EMSAB_ENTRYID ab_entryid;
 		ab_entryid.flags = 0;
 		ab_entryid.type = pnode.etyp();
-		std::string dn;
-		if (!pnode.dn(dn))
+		if (!pnode.dn(ab_entryid.x500dn))
 			return FALSE;
-		ab_entryid.px500dn = dn.data();
 		bv->pv = common_util_alloc(1280);
 		if (bv->pv == nullptr || !ext_push.init(bv->pv, 1280, 0) ||
 		    ext_push.p_abk_eid(ab_entryid) != pack_result::ok)

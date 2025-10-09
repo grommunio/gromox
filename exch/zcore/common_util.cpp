@@ -420,7 +420,7 @@ BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
 	if (ext_pull.g_abk_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;
 	*ptype = tmp_entryid.type;
-	gx_strlcpy(pessdn, tmp_entryid.px500dn, dsize);
+	gx_strlcpy(pessdn, tmp_entryid.x500dn.c_str(), dsize);
 	return TRUE;
 }
 
@@ -448,14 +448,14 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin,
     unsigned int etyp)
 {
 	EXT_PUSH ext_push;
-	EMSAB_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID_view tmp_entryid;
 	
 	pbin->pv = common_util_alloc(1280);
 	if (pbin->pv == nullptr)
 		return FALSE;
 	tmp_entryid.flags = 0;
 	tmp_entryid.type = etyp;
-	tmp_entryid.px500dn = deconst(essdn);
+	tmp_entryid.px500dn = essdn;
 
 	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(tmp_entryid) != pack_result::ok)

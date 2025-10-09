@@ -100,8 +100,8 @@ void common_util_set_ephemeralentryid(uint32_t display_type,
 	pephid->mid = minid;
 }
 
-BOOL common_util_set_permanententryid(unsigned int display_type,
-    const GUID *pobj_guid, const char *pdn, EMSAB_ENTRYID *ppermeid)
+bool common_util_set_permanententryid(unsigned int display_type,
+    const GUID *pobj_guid, const char *pdn, EMSAB_ENTRYID_manual *ppermeid)
 {
 	int len;
 	char buff[128];
@@ -132,7 +132,7 @@ BOOL common_util_set_permanententryid(unsigned int display_type,
 	return TRUE;
 }
 
-bool cu_permeid_to_bin(const EMSAB_ENTRYID &permeid, BINARY *pbin)
+bool cu_permeid_to_bin(const EMSAB_ENTRYID_view &permeid, BINARY *pbin)
 {
 	auto ppermeid = &permeid;
 	size_t len = strlen(ppermeid->px500dn) + 1;

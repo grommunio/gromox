@@ -246,10 +246,24 @@ struct GX_EXPORT PROBLEM_ARRAY {
 	static constexpr size_t npos = -1;
 };
 
-struct GX_EXPORT EMSAB_ENTRYID {
+struct GX_EXPORT EMSAB_ENTRYID_view {
+	uint32_t flags = 0;
+	uint32_t type = 0;
+	const char *px500dn = nullptr;
+};
+
+struct GX_EXPORT EMSAB_ENTRYID_manual {
 	uint32_t flags;
 	uint32_t type;
 	char *px500dn;
+	operator EMSAB_ENTRYID_view() const { return {flags, type, px500dn}; }
+};
+
+struct GX_EXPORT EMSAB_ENTRYID {
+	uint32_t flags = 0;
+	uint32_t type = 0;
+	std::string x500dn;
+	operator EMSAB_ENTRYID_view() const { return {flags, type, x500dn.c_str()}; }
 };
 
 #define DAYOFWEEK_SUNDAY							0x0

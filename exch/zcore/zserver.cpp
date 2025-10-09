@@ -671,7 +671,7 @@ ec_error_t zs_checksession(GUID hsession)
 ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
     char **ppdisplay_name, char **ppx500dn, uint32_t *pprivilege_bits) try
 {
-	std::string essdn, dispname;
+	std::string dispname;
 	EXT_PUSH ext_push;
 	EMSAB_ENTRYID tmp_entryid;
 	
@@ -680,12 +680,11 @@ ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
 		return ecNotFound;
 	auto err = cvt_username_to_essdn(username, g_org_name,
 	           mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
-	           essdn);
+	           tmp_entryid.x500dn);
 	if (err != ecSuccess)
 		return err;
 	tmp_entryid.flags = 0;
 	tmp_entryid.type = DT_MAILUSER;
-	tmp_entryid.px500dn = deconst(essdn.c_str());
 	pentryid->pv = common_util_alloc(1280);
 	if (pentryid->pv == nullptr ||
 	    !ext_push.init(pentryid->pb, 1280, EXT_FLAG_UTF16) ||
@@ -693,7 +692,7 @@ ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
 		return ecError;
 	pentryid->cb = ext_push.m_offset;
 	*ppdisplay_name = common_util_dup(dispname);
-	*ppx500dn = common_util_dup(essdn);
+	*ppx500dn = common_util_dup(tmp_entryid.x500dn);
 	return *ppdisplay_name == nullptr || *ppx500dn == nullptr ?
 	       ecServerOOM : ecSuccess;
 } catch (const std::bad_alloc &) {
@@ -3011,7 +3010,6 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 	FLATUID provider_uid;
 	TAGGED_PROPVAL *ppropval;
 	ONEOFF_ENTRYID oneoff_entry;
-	EMSAB_ENTRYID ab_entryid;
 	
 	if (prcpt_list->count >= 0x7fef || (flags != MODRECIP_ADD &&
 	    flags != MODRECIP_MODIFY && flags != MODRECIP_REMOVE))
@@ -3083,6 +3081,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 			if (ext_pull.g_guid(&provider_uid) != pack_result::ok)
 				continue;
 			if (provider_uid == muidEMSAB) {
+				EMSAB_ENTRYID ab_entryid;
 				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 				if (ext_pull.g_abk_eid(&ab_entryid) != pack_result::ok ||
 				    ab_entryid.type != DT_MAILUSER)
@@ -3096,12 +3095,12 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				auto err = cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
 				if (err != ecSuccess)
 					return err;
-				auto dupval = common_util_dup(ab_entryid.px500dn);
+				auto dupval = common_util_dup(ab_entryid.x500dn.c_str());
 				if (dupval == nullptr)
 					return ecServerOOM;
 				cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
 				std::string es_result;
-				auto ret = cvt_essdn_to_username(ab_entryid.px500dn,
+				auto ret = cvt_essdn_to_username(ab_entryid.x500dn.c_str(),
 				           g_org_name, mysql_adaptor_userid_to_name, es_result);
 				if (ret != ecSuccess)
 					continue;

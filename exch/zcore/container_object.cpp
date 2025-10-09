@@ -370,7 +370,6 @@ BOOL container_object_fetch_special_property(uint8_t special_type,
 {
 	void *pvalue;
 	EXT_PUSH ext_push;
-	EMSAB_ENTRYID ab_entryid;
 	
 	switch (proptag) {
 	case PR_AB_PROVIDER_ID: {
@@ -387,10 +386,10 @@ BOOL container_object_fetch_special_property(uint8_t special_type,
 		if (pvalue == nullptr)
 			return FALSE;
 		auto bv = static_cast<BINARY *>(pvalue);
+		EMSAB_ENTRYID_view ab_entryid;
 		ab_entryid.flags = 0;
 		ab_entryid.type = DT_CONTAINER;
-		ab_entryid.px500dn = special_type == SPECIAL_CONTAINER_GAL ?
-		                     deconst("/") : deconst("/exmdb");
+		ab_entryid.px500dn = special_type == SPECIAL_CONTAINER_GAL ? "/" : "/exmdb";
 		bv->pv = common_util_alloc(128);
 		if (bv->pv == nullptr ||
 		    !ext_push.init(static_cast<BINARY *>(pvalue)->pb, 128, 0) ||

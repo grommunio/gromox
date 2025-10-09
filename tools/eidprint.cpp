@@ -46,14 +46,11 @@ static void try_emsab(const std::string_view s, unsigned int ind)
 	EMSAB_ENTRYID eid;
 	if (ep.g_abk_eid(&eid) != pack_result::success)
 		return;
-	auto cl_0 = HX::make_scope_exit([&]() {
-		free(eid.px500dn);
-	});
 	printf("%-*sEX address entry ID\n", lead(ind), "");
 	++ind;
 	printf("%-*sflags   = 0x%08x\n", lead(ind), "", eid.flags);
 	printf("%-*stype    = 0x%08x\n", lead(ind), "", eid.type);
-	printf("%-*sx500dn  = %s\n", lead(ind), "", znul(eid.px500dn));
+	printf("%-*sx500dn  = %s\n", lead(ind), "", eid.x500dn.c_str());
 }
 
 static void try_contab(std::string_view s, unsigned int ind)

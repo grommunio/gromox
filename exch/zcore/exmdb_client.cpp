@@ -147,7 +147,8 @@ BOOL exmdb_client_check_message_owner(const char *dir,
 		return TRUE;
 	}
 	std::string es_result;
-	auto ret = cvt_essdn_to_username(ab_entryid.px500dn, g_org_name, mysql_adaptor_userid_to_name, es_result);
+	auto ret = cvt_essdn_to_username(ab_entryid.x500dn.c_str(), g_org_name,
+	           mysql_adaptor_userid_to_name, es_result);
 	if (ret != ecSuccess) {
 		*pb_owner = false;
 		return TRUE;
