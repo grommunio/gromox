@@ -282,7 +282,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			return ecNotFound;
 		if (!common_util_set_permanententryid(node.etyp(),
 		    nullptr, dn.c_str(), &permeid) ||
-		    !common_util_permanent_entryid_to_binary(&permeid, &pprop->value.bin))
+		    !cu_permeid_to_bin(permeid, &pprop->value.bin))
 			return ecServerOOM;
 		return ecSuccess;
 	case PR_ENTRYID:
@@ -293,13 +293,12 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 				return ecNotFound;
 			if (!common_util_set_permanententryid(node.etyp(),
 			    nullptr, dn.c_str(), &permeid) ||
-			    !common_util_permanent_entryid_to_binary(&permeid, &pprop->value.bin))
+			    !cu_permeid_to_bin(permeid, &pprop->value.bin))
 				return ecServerOOM;
 		} else {
 			common_util_set_ephemeralentryid(node.etyp(),
 				node.mid, &ephid);
-			if (!common_util_ephemeral_entryid_to_binary(&ephid,
-			    &pprop->value.bin))
+			if (!cu_ephid_to_bin(ephid, &pprop->value.bin))
 				return ecServerOOM;
 		}
 		return ecSuccess;
@@ -1747,7 +1746,7 @@ ec_error_t nsp_interface_mod_props(NSPI_HANDLE handle, uint32_t reserved,
 
 static bool nsp_interface_build_specialtable(NSP_PROPROW *prow,
     bool b_unicode, cpid_t codepage, bool has_child, int container_id,
-    const char *str_dname, EMSAB_ENTRYID *ppermeid)
+    const char *str_dname, const EMSAB_ENTRYID &permeid)
 {
 	prow->reserved = 0x0;
 	prow->cvalues = 6;
@@ -1757,8 +1756,7 @@ static bool nsp_interface_build_specialtable(NSP_PROPROW *prow,
 	
 	prow->pprops[0].proptag = PR_ENTRYID;
 	prow->pprops[0].reserved = 0;
-	if (!common_util_permanent_entryid_to_binary(
-		ppermeid, &prow->pprops[0].value.bin)) {
+	if (!cu_permeid_to_bin(permeid, &prow->pprops[0].value.bin)) {
 		prow->pprops[0].proptag = CHANGE_PROP_TYPE(prow->pprops[0].proptag, PT_ERROR);
 		prow->pprops[0].value.err = ecMAPIOOM;
 	}
@@ -1831,7 +1829,7 @@ static ec_error_t nsp_interface_get_specialtables_from_node(
 
 	std::string str_dname = node.displayname();
 	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage, has_child,
-	    container_id, str_dname.c_str(), ppermeid))
+	    container_id, str_dname.c_str(), *ppermeid))
 		return ecServerOOM;
 	if (!has_child)
 		return ecSuccess;
@@ -1871,7 +1869,7 @@ ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	    nullptr, nullptr, &permeid))
 		return ecServerOOM;
 	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage,
-	    false, 0, nullptr, &permeid))
+	    false, 0, nullptr, permeid))
 		return ecServerOOM;
 	for (auto it = base->dbegin(); it != base->dend(); ++it) {
 		auto result = nsp_interface_get_specialtables_from_node({base, *it},

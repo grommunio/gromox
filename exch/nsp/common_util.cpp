@@ -132,8 +132,9 @@ BOOL common_util_set_permanententryid(unsigned int display_type,
 	return TRUE;
 }
 
-BOOL common_util_permanent_entryid_to_binary(const EMSAB_ENTRYID *ppermeid, BINARY *pbin)
+bool cu_permeid_to_bin(const EMSAB_ENTRYID &permeid, BINARY *pbin)
 {
+	auto ppermeid = &permeid;
 	size_t len = strlen(ppermeid->px500dn) + 1;
 	pbin->cb = 28 + len;
 	pbin->pv = ndr_stack_alloc(NDR_STACK_OUT, pbin->cb);
@@ -151,9 +152,9 @@ BOOL common_util_permanent_entryid_to_binary(const EMSAB_ENTRYID *ppermeid, BINA
 	return TRUE;
 }
 
-BOOL common_util_ephemeral_entryid_to_binary(
-	const EPHEMERAL_ENTRYID *pephid, BINARY *pbin)
+bool cu_ephid_to_bin(const EPHEMERAL_ENTRYID &ephid, BINARY *pbin)
 {
+	auto pephid = &ephid;
 	pbin->cb = 32;
 	pbin->pv = ndr_stack_alloc(NDR_STACK_OUT, pbin->cb);
 	if (pbin->pv == nullptr)
