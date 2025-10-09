@@ -70,7 +70,7 @@ BOOL exmdb_client_get_message_property(const char *dir, const char *username,
 	return TRUE;
 }
 
-BOOL exmdb_client_delete_message(const char *dir, int account_id, cpid_t cpid,
+BOOL exmdb_client_delete_message(const char *dir, cpid_t cpid,
     uint64_t folder_id, uint64_t message_id, BOOL b_hard, BOOL *pb_done)
 {
 	BOOL b_partial;

@@ -1764,8 +1764,8 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 						continue;
 				}
 				if (!exmdb_client_delete_message(src_store->get_dir(),
-				    src_store->account_id, pinfo->cpid,
-				    psrc_folder->folder_id, message_id, false, &b_done))
+				    pinfo->cpid, psrc_folder->folder_id,
+				    message_id, false, &b_done))
 					return ecError;
 			}
 		}

@@ -1177,9 +1177,8 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 			return ecWarnWithErrors;
 		return ecSuccess;
 	} else if (b_delete) {
-		exmdb_client_delete_message(pstore->get_dir(),
-			pstore->account_id, cpid, parent_id, message_id,
-			TRUE, &b_result);
+		exmdb_client_delete_message(pstore->get_dir(), cpid, parent_id,
+			message_id, TRUE, &b_result);
 		return ecSuccess;
 	}
 	if (!exmdb_client->clear_submit(pstore->get_dir(), message_id, false))
