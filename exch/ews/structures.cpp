@@ -521,7 +521,7 @@ void sFolderEntryId::init(const void* data, uint64_t size)
  */
 uint32_t sFolderEntryId::accountId() const
 {
-	return database_guid.time_low;
+	return folder_dbguid.time_low;
 }
 
 /**
@@ -531,7 +531,7 @@ uint32_t sFolderEntryId::accountId() const
  */
 uint64_t sFolderEntryId::folderId() const
 {
-	return rop_util_gc_to_value(global_counter);
+	return rop_util_gc_to_value(folder_gc);
 }
 
 /**
@@ -541,7 +541,7 @@ uint64_t sFolderEntryId::folderId() const
  */
 bool sFolderEntryId::isPrivate() const
 {
-	return folder_type == EITLT_PRIVATE_FOLDER;
+	return eid_type == EITLT_PRIVATE_FOLDER;
 }
 
 /**
@@ -591,7 +591,7 @@ void sMessageEntryId::init(const void* data, uint64_t size)
  */
 uint32_t sMessageEntryId::accountId() const
 {
-	return folder_database_guid.time_low;
+	return folder_dbguid.time_low;
 }
 
 /**
@@ -601,7 +601,7 @@ uint32_t sMessageEntryId::accountId() const
  */
 uint64_t sMessageEntryId::folderId() const
 {
-	return rop_util_gc_to_value(folder_global_counter);
+	return rop_util_gc_to_value(folder_gc);
 }
 
 /**
@@ -611,7 +611,7 @@ uint64_t sMessageEntryId::folderId() const
  */
 eid_t sMessageEntryId::messageId() const
 {
-	return rop_util_make_eid_ex(1, rop_util_gc_to_value(message_global_counter));
+	return rop_util_make_eid_ex(1, rop_util_gc_to_value(message_gc));
 }
 
 /**
@@ -623,7 +623,7 @@ eid_t sMessageEntryId::messageId() const
  */
 sMessageEntryId& sMessageEntryId::messageId(eid_t mid)
 {
-	message_global_counter = rop_util_get_gc_array(mid);
+	message_gc = rop_util_get_gc_array(mid);
 	return *this;
 }
 
@@ -634,7 +634,7 @@ sMessageEntryId& sMessageEntryId::messageId(eid_t mid)
  */
 bool sMessageEntryId::isPrivate() const
 {
-	return message_type == EITLT_PRIVATE_MESSAGE;
+	return eid_type == EITLT_PRIVATE_MESSAGE;
 }
 
 #undef TRY

@@ -1981,7 +1981,7 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 				if (ret == ecServerOOM)
 					throw EWSError::ItemSave(E3035);
 			}
-			auto error = content->proplist.set(PidTagMid, EWSContext::construct<uint64_t>(rop_util_make_eid(1, mid.message_global_counter)));
+			auto error = content->proplist.set(PidTagMid, EWSContext::construct<uint64_t>(rop_util_make_eid(1, mid.message_gc)));
 			if (error == ecServerOOM)
 				throw EWSError::ItemSave(E3035);
 			if (!content->proplist.has(PidTagChangeNumber))

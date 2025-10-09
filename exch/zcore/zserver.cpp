@@ -1161,12 +1161,12 @@ static ec_error_t zs_openab_zcsab(USER_INFO_REF &&info, BINARY entryid,
 	    static_cast<mapi_object_type>(mapi_type) != MAPI_ABCONT ||
 	    ep.advance(4) != pack_result::ok ||
 	    ep.g_folder_eid(&fe) != pack_result::ok ||
-	    fe.folder_type != EITLT_PRIVATE_FOLDER)
+	    fe.eid_type != EITLT_PRIVATE_FOLDER)
 		return ecInvalidParam;
 
 	CONTAINER_ID ctid;
 	ctid.exmdb_id.b_private = TRUE;
-	ctid.exmdb_id.folder_id = rop_util_make_eid(1, fe.global_counter);
+	ctid.exmdb_id.folder_id = rop_util_make_eid(1, fe.folder_gc);
 	auto contobj = container_object::create(CONTAINER_TYPE_FOLDER, ctid);
 	if (contobj == nullptr)
 		return ecError;

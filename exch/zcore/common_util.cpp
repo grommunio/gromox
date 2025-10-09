@@ -548,21 +548,19 @@ BOOL cu_entryid_to_fid(BINARY bin,
 	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
 	if (ext_pull.g_folder_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;	
-	switch (tmp_entryid.folder_type) {
+	switch (tmp_entryid.eid_type) {
 	case EITLT_PRIVATE_FOLDER:
 		*pb_private = TRUE;
-		*pdb_id = rop_util_get_user_id(tmp_entryid.database_guid);
+		*pdb_id = rop_util_get_user_id(tmp_entryid.folder_dbguid);
 		if (*pdb_id == -1)
 			return FALSE;
-		*pfolder_id = rop_util_make_eid(1,
-				tmp_entryid.global_counter);
+		*pfolder_id = rop_util_make_eid(1, tmp_entryid.folder_gc);
 		return TRUE;
 	case EITLT_PUBLIC_FOLDER: {
 		*pb_private = FALSE;
-		*pdb_id = rop_util_get_domain_id(tmp_entryid.database_guid);
+		*pdb_id = rop_util_get_domain_id(tmp_entryid.folder_dbguid);
 		if (*pdb_id > 0) {
-			*pfolder_id = rop_util_make_eid(1,
-					tmp_entryid.global_counter);
+			*pfolder_id = rop_util_make_eid(1, tmp_entryid.folder_gc);
 			return TRUE;
 		}
 		auto pinfo = zs_get_info();
@@ -570,10 +568,9 @@ BOOL cu_entryid_to_fid(BINARY bin,
 			return FALSE;
 		ec_error_t ret = ecSuccess;
 		if (!exmdb_client->get_mapping_replid(pinfo->get_homedir(),
-		    tmp_entryid.database_guid, &replid, &ret) || ret != ecSuccess)
+		    tmp_entryid.folder_dbguid, &replid, &ret) || ret != ecSuccess)
 			return FALSE;
-		*pfolder_id = rop_util_make_eid(replid,
-					tmp_entryid.global_counter);
+		*pfolder_id = rop_util_make_eid(replid, tmp_entryid.folder_gc);
 		return TRUE;
 	}
 	default:
@@ -591,27 +588,23 @@ BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
 	if (ext_pull.g_msg_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;	
-	if (tmp_entryid.folder_database_guid != tmp_entryid.message_database_guid)
+	if (tmp_entryid.folder_dbguid != tmp_entryid.message_dbguid)
 		return FALSE;
-	switch (tmp_entryid.message_type) {
+	switch (tmp_entryid.eid_type) {
 	case EITLT_PRIVATE_MESSAGE:
 		*pb_private = TRUE;
-		*pdb_id = rop_util_get_user_id(tmp_entryid.folder_database_guid);
+		*pdb_id = rop_util_get_user_id(tmp_entryid.folder_dbguid);
 		if (*pdb_id == -1)
 			return FALSE;
-		*pfolder_id = rop_util_make_eid(1,
-			tmp_entryid.folder_global_counter);
-		*pmessage_id = rop_util_make_eid(1,
-			tmp_entryid.message_global_counter);
+		*pfolder_id  = rop_util_make_eid(1, tmp_entryid.folder_gc);
+		*pmessage_id = rop_util_make_eid(1, tmp_entryid.message_gc);
 		return TRUE;
 	case EITLT_PUBLIC_MESSAGE: {
 		*pb_private = FALSE;
-		*pdb_id = rop_util_get_domain_id(tmp_entryid.folder_database_guid);
+		*pdb_id = rop_util_get_domain_id(tmp_entryid.folder_dbguid);
 		if (*pdb_id > 0) {
-			*pfolder_id = rop_util_make_eid(1,
-				tmp_entryid.folder_global_counter);
-			*pmessage_id = rop_util_make_eid(1,
-				tmp_entryid.message_global_counter);
+			*pfolder_id  = rop_util_make_eid(1, tmp_entryid.folder_gc);
+			*pmessage_id = rop_util_make_eid(1, tmp_entryid.message_gc);
 			return TRUE;
 		}
 		auto pinfo = zs_get_info();
@@ -619,13 +612,11 @@ BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 			return FALSE;
 		ec_error_t ret = ecSuccess;
 		if (!exmdb_client->get_mapping_replid(pinfo->get_homedir(),
-		    tmp_entryid.folder_database_guid, &replid, &ret) ||
+		    tmp_entryid.folder_dbguid, &replid, &ret) ||
 		    ret != ecSuccess)
 			return FALSE;
-		*pfolder_id = rop_util_make_eid(replid,
-			tmp_entryid.folder_global_counter);
-		*pmessage_id = rop_util_make_eid(replid,
-			tmp_entryid.message_global_counter);
+		*pfolder_id  = rop_util_make_eid(replid, tmp_entryid.folder_gc);
+		*pmessage_id = rop_util_make_eid(replid, tmp_entryid.message_gc);
 		return TRUE;
 	}
 	default:
@@ -664,18 +655,18 @@ BINARY *cu_fid_to_entryid(const store_object &store, uint64_t folder_id)
 	
 	tmp_entryid.flags = 0;
 	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
-	    tmp_entryid.database_guid) != ecSuccess)
+	    tmp_entryid.folder_dbguid) != ecSuccess)
 		return nullptr;
 	if (store.b_private) {
 		tmp_entryid.provider_uid = store.mailbox_guid;
-		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
+		tmp_entryid.eid_type     = EITLT_PRIVATE_FOLDER;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
-		tmp_entryid.folder_type = EITLT_PUBLIC_FOLDER;
+		tmp_entryid.eid_type     = EITLT_PUBLIC_FOLDER;
 	}
-	tmp_entryid.global_counter = rop_util_get_gc_array(folder_id);
-	tmp_entryid.pad[0] = 0;
-	tmp_entryid.pad[1] = 0;
+	tmp_entryid.folder_gc = rop_util_get_gc_array(folder_id);
+	tmp_entryid.pad1[0] = 0;
+	tmp_entryid.pad1[1] = 0;
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
@@ -695,16 +686,16 @@ std::string cu_fid_to_entryid_s(const store_object &store, uint64_t folder_id) t
 {
 	FOLDER_ENTRYID eid{};
 	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
-	    eid.database_guid) != ecSuccess)
+	    eid.folder_dbguid) != ecSuccess)
 		return {};
 	if (store.b_private) {
 		eid.provider_uid = store.mailbox_guid;
-		eid.folder_type  = EITLT_PRIVATE_FOLDER;
+		eid.eid_type     = EITLT_PRIVATE_FOLDER;
 	} else {
 		eid.provider_uid = pbLongTermNonPrivateGuid;
-		eid.folder_type  = EITLT_PUBLIC_FOLDER;
+		eid.eid_type     = EITLT_PUBLIC_FOLDER;
 	}
-	eid.global_counter = rop_util_get_gc_array(folder_id);
+	eid.folder_gc = rop_util_get_gc_array(folder_id);
 
 	std::string out;
 	out.resize(46); /* MS-OXCDATA v19 §2.2.4.1 */
@@ -776,20 +767,20 @@ BINARY *cu_mid_to_entryid(const store_object &store,
 	
 	tmp_entryid.flags = 0;
 	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
-	    tmp_entryid.folder_database_guid) != ecSuccess)
+	    tmp_entryid.folder_dbguid) != ecSuccess)
 		return nullptr;
 	if (replid_to_replguid(store, rop_util_get_replid(message_id),
-	    tmp_entryid.message_database_guid) != ecSuccess)
+	    tmp_entryid.message_dbguid) != ecSuccess)
 		return nullptr;
 	if (store.b_private) {
 		tmp_entryid.provider_uid = store.mailbox_guid;
-		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
+		tmp_entryid.eid_type     = EITLT_PRIVATE_MESSAGE;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
-		tmp_entryid.message_type = EITLT_PUBLIC_MESSAGE;
+		tmp_entryid.eid_type     = EITLT_PUBLIC_MESSAGE;
 	}
-	tmp_entryid.folder_global_counter = rop_util_get_gc_array(folder_id);
-	tmp_entryid.message_global_counter = rop_util_get_gc_array(message_id);
+	tmp_entryid.folder_gc  = rop_util_get_gc_array(folder_id);
+	tmp_entryid.message_gc = rop_util_get_gc_array(message_id);
 	tmp_entryid.pad1[0] = 0;
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
@@ -816,20 +807,20 @@ std::string cu_mid_to_entryid_s(const store_object &store, uint64_t folder_id,
 	MESSAGE_ENTRYID eid{};
 
 	if (replid_to_replguid(store, rop_util_get_replid(folder_id),
-	    eid.folder_database_guid) != ecSuccess)
+	    eid.folder_dbguid) != ecSuccess)
 		return {};
 	if (replid_to_replguid(store, rop_util_get_replid(msg_id),
-	    eid.message_database_guid) != ecSuccess)
+	    eid.message_dbguid) != ecSuccess)
 		return {};
 	if (store.b_private) {
 		eid.provider_uid = store.mailbox_guid;
-		eid.message_type = EITLT_PRIVATE_MESSAGE;
+		eid.eid_type     = EITLT_PRIVATE_MESSAGE;
 	} else {
 		eid.provider_uid = pbLongTermNonPrivateGuid;
-		eid.message_type = EITLT_PUBLIC_MESSAGE;
+		eid.eid_type     = EITLT_PUBLIC_MESSAGE;
 	}
-	eid.folder_global_counter  = rop_util_get_gc_array(folder_id);
-	eid.message_global_counter = rop_util_get_gc_array(msg_id);
+	eid.folder_gc  = rop_util_get_gc_array(folder_id);
+	eid.message_gc = rop_util_get_gc_array(msg_id);
 
 	std::string out;
 	out.resize(255);

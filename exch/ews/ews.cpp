@@ -1108,10 +1108,10 @@ void EWSPlugin::wakeContext(int ID, std::chrono::milliseconds timeout) const
 gromox::EWS::Structures::sFolderEntryId EWSPlugin::mkFolderEntryId(const Structures::sMailboxInfo& mbinfo, uint64_t fid) const
 {
 	Structures::sFolderEntryId feid{};
-	feid.provider_uid = mbinfo.mailboxGuid;
-	feid.folder_type = mbinfo.isPublic ? EITLT_PUBLIC_FOLDER : EITLT_PRIVATE_FOLDER;
-	feid.database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
-	feid.global_counter = rop_util_get_gc_array(fid);
+	feid.provider_uid  = mbinfo.mailboxGuid;
+	feid.eid_type      = mbinfo.isPublic ? EITLT_PUBLIC_FOLDER : EITLT_PRIVATE_FOLDER;
+	feid.folder_dbguid = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
+	feid.folder_gc     = rop_util_get_gc_array(fid);
 	return feid;
 }
 
@@ -1127,12 +1127,12 @@ gromox::EWS::Structures::sFolderEntryId EWSPlugin::mkFolderEntryId(const Structu
 Structures::sMessageEntryId EWSPlugin::mkMessageEntryId(const Structures::sMailboxInfo& mbinfo, uint64_t fid, uint64_t mid) const
 {
 	Structures::sMessageEntryId meid{};
-	meid.provider_uid = mbinfo.mailboxGuid;
-	meid.message_type = mbinfo.isPublic ? EITLT_PUBLIC_MESSAGE : EITLT_PRIVATE_MESSAGE;
-	meid.folder_database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
-	meid.folder_global_counter = rop_util_get_gc_array(fid);
-	meid.message_database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(mid));
-	meid.message_global_counter = rop_util_get_gc_array(mid);
+	meid.provider_uid   = mbinfo.mailboxGuid;
+	meid.eid_type       = mbinfo.isPublic ? EITLT_PUBLIC_MESSAGE : EITLT_PRIVATE_MESSAGE;
+	meid.folder_dbguid  = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
+	meid.folder_gc      = rop_util_get_gc_array(fid);
+	meid.message_dbguid = replid_to_replguid(mbinfo, rop_util_get_replid(mid));
+	meid.message_gc     = rop_util_get_gc_array(mid);
 	return meid;
 }
 

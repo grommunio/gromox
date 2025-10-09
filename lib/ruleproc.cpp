@@ -674,11 +674,11 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 		ep.init(fid_bin.pb, fid_bin.cb, malloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 		if (ep.g_folder_eid(&folder_eid) != pack_result::success)
 			return ecNotFound;
-		else if (folder_eid.folder_type == EITLT_PUBLIC_FOLDER && !tgt_public)
+		else if (folder_eid.eid_type == EITLT_PUBLIC_FOLDER && !tgt_public)
 			return ecNotFound;
-		else if (folder_eid.folder_type == EITLT_PRIVATE_FOLDER && tgt_public)
+		else if (folder_eid.eid_type == EITLT_PRIVATE_FOLDER && tgt_public)
 			return ecNotFound;
-		dst_fid = rop_util_make_eid_ex(1, rop_util_gc_to_value(folder_eid.global_counter));
+		dst_fid = rop_util_make_eid_ex(1, rop_util_gc_to_value(folder_eid.folder_gc));
 	}
 
 	/*

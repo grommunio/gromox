@@ -3260,9 +3260,9 @@ static ec_error_t op_process(const rulexec_in &rp,
 static ec_error_t opx_move_private(sqlite3 *psqlite, const rule_node &rule,
     const EXT_MOVECOPY_ACTION *pextmvcp)
 {
-	if (pextmvcp->folder_eid.folder_type != EITLT_PRIVATE_FOLDER)
+	if (pextmvcp->folder_eid.eid_type != EITLT_PRIVATE_FOLDER)
 		return message_disable_rule(psqlite, TRUE, rule.id);
-	if (pextmvcp->folder_eid.database_guid !=
+	if (pextmvcp->folder_eid.folder_dbguid !=
 	    rop_util_make_user_guid(exmdb_server::get_account_id()))
 		return message_disable_rule(psqlite, TRUE, rule.id);
 	return ecSuccess;
@@ -3272,9 +3272,9 @@ static ec_error_t opx_move_private(sqlite3 *psqlite, const rule_node &rule,
 static ec_error_t opx_move_public(sqlite3 *psqlite, const rule_node &rule,
     const EXT_MOVECOPY_ACTION *pextmvcp)
 {
-	if (pextmvcp->folder_eid.folder_type != EITLT_PUBLIC_FOLDER)
+	if (pextmvcp->folder_eid.eid_type != EITLT_PUBLIC_FOLDER)
 		return message_disable_rule(psqlite, TRUE, rule.id);
-	if (pextmvcp->folder_eid.database_guid !=
+	if (pextmvcp->folder_eid.folder_dbguid !=
 	    rop_util_make_domain_guid(exmdb_server::get_account_id()))
 		return message_disable_rule(psqlite, TRUE, rule.id);
 	return ecSuccess;
@@ -3290,8 +3290,7 @@ static ec_error_t opx_move(const rulexec_in &rp,
 	          opx_move_public(rp.sqlite, rule, pextmvcp);
 	if (ec != ecSuccess)
 		return ec;
-	auto dst_fid = rop_util_gc_to_value(
-		       pextmvcp->folder_eid.global_counter);
+	auto dst_fid = rop_util_gc_to_value(pextmvcp->folder_eid.folder_gc);
 	if (std::find(seen.fld.cbegin(), seen.fld.cend(), dst_fid) != seen.fld.cend())
 		/* Already moved to this folder once. */
 		return ecSuccess;
@@ -3352,10 +3351,9 @@ static ec_error_t opx_reply(const rulexec_in &rp, const rule_node &rule,
 	auto exp_guid = exmdb_server::is_private() ?
 	                rop_util_make_user_guid(exmdb_server::get_account_id()) :
 	                rop_util_make_domain_guid(exmdb_server::get_account_id());
-	if (exp_guid != pextreply->message_eid.message_database_guid)
+	if (exp_guid != pextreply->message_eid.message_dbguid)
 		return message_disable_rule(rp.sqlite, TRUE, rule.id);
-	auto dst_mid = rop_util_gc_to_value(
-		       pextreply->message_eid.message_global_counter);
+	auto dst_mid = rop_util_gc_to_value(pextreply->message_eid.message_gc);
 	BOOL b_result = false;
 	if (!message_auto_reply(rp, block.type, block.flavor,
 	    dst_mid, pextreply->template_guid, &b_result))

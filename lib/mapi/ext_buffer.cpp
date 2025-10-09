@@ -1319,10 +1319,10 @@ pack_result EXT_PULL::g_folder_eid(FOLDER_ENTRYID *r)
 {
 	TRY(g_uint32(&r->flags));
 	TRY(g_guid(&r->provider_uid));
-	TRY(g_uint16(&r->folder_type));
-	TRY(g_guid(&r->database_guid));
-	TRY(g_bytes(r->global_counter.ab, 6));
-	return g_bytes(r->pad, 2);
+	TRY(g_uint16(&r->eid_type));
+	TRY(g_guid(&r->folder_dbguid));
+	TRY(g_bytes(r->folder_gc.ab, 6));
+	return g_bytes(r->pad1, 2);
 }
 
 static pack_result ext_buffer_pull_ext_movecopy_action(EXT_PULL *pext,
@@ -1345,12 +1345,12 @@ pack_result EXT_PULL::g_msg_eid(MESSAGE_ENTRYID *r)
 {
 	TRY(g_uint32(&r->flags));
 	TRY(g_guid(&r->provider_uid));
-	TRY(g_uint16(&r->message_type));
-	TRY(g_guid(&r->folder_database_guid));
-	TRY(g_bytes(r->folder_global_counter.ab, 6));
+	TRY(g_uint16(&r->eid_type));
+	TRY(g_guid(&r->folder_dbguid));
+	TRY(g_bytes(r->folder_gc.ab, 6));
 	TRY(g_bytes(r->pad1, 2));
-	TRY(g_guid(&r->message_database_guid));
-	TRY(g_bytes(r->message_global_counter.ab, 6));
+	TRY(g_guid(&r->message_dbguid));
+	TRY(g_bytes(r->message_gc.ab, 6));
 	return g_bytes(r->pad2, 2);
 }
 
@@ -3041,22 +3041,22 @@ pack_result EXT_PUSH::p_folder_eid(const FOLDER_ENTRYID &r)
 {
 	TRY(p_uint32(r.flags));
 	TRY(p_guid(r.provider_uid));
-	TRY(p_uint16(r.folder_type));
-	TRY(p_guid(r.database_guid));
-	TRY(p_bytes(r.global_counter.ab, 6));
-	return p_bytes(r.pad, 2);
+	TRY(p_uint16(r.eid_type));
+	TRY(p_guid(r.folder_dbguid));
+	TRY(p_bytes(r.folder_gc.ab, 6));
+	return p_bytes(r.pad1, 2);
 }
 
 pack_result EXT_PUSH::p_msg_eid(const MESSAGE_ENTRYID &r)
 {
 	TRY(p_uint32(r.flags));
 	TRY(p_guid(r.provider_uid));
-	TRY(p_uint16(r.message_type));
-	TRY(p_guid(r.folder_database_guid));
-	TRY(p_bytes(r.folder_global_counter.ab, 6));
+	TRY(p_uint16(r.eid_type));
+	TRY(p_guid(r.folder_dbguid));
+	TRY(p_bytes(r.folder_gc.ab, 6));
 	TRY(p_bytes(r.pad1, 2));
-	TRY(p_guid(r.message_database_guid));
-	TRY(p_bytes(r.message_global_counter.ab, 6));
+	TRY(p_guid(r.message_dbguid));
+	TRY(p_bytes(r.message_gc.ab, 6));
 	return p_bytes(r.pad2, 2);
 }
 

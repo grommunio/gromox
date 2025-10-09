@@ -1135,23 +1135,21 @@ static BINARY *cu_fid_to_entryid(sqlite3 *psqlite, uint64_t folder_id)
 		if (pbin == nullptr)
 			return NULL;
 		memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
-		tmp_entryid.database_guid =
-			rop_util_make_user_guid(account_id);
-		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
+		tmp_entryid.folder_dbguid = rop_util_make_user_guid(account_id);
+		tmp_entryid.eid_type      = EITLT_PRIVATE_FOLDER;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
 		replid = folder_id >> 48;
 		if (replid == 0)
-			tmp_entryid.database_guid =
-				rop_util_make_domain_guid(account_id);
+			tmp_entryid.folder_dbguid = rop_util_make_domain_guid(account_id);
 		else if (!common_util_get_mapping_guid(psqlite, replid,
-		    &b_found, &tmp_entryid.database_guid) || !b_found)
+		    &b_found, &tmp_entryid.folder_dbguid) || !b_found)
 			return NULL;
-		tmp_entryid.folder_type = EITLT_PUBLIC_FOLDER;
+		tmp_entryid.eid_type = EITLT_PUBLIC_FOLDER;
 	}
-	tmp_entryid.global_counter = rop_util_value_to_gc(folder_id);
-	tmp_entryid.pad[0] = 0;
-	tmp_entryid.pad[1] = 0;
+	tmp_entryid.folder_gc = rop_util_value_to_gc(folder_id);
+	tmp_entryid.pad1[0] = 0;
+	tmp_entryid.pad1[1] = 0;
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
@@ -1178,18 +1176,16 @@ static BINARY *cu_mid_to_entryid(sqlite3 *psqlite, uint64_t message_id)
 		if (pbin == nullptr)
 			return NULL;
 		memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
-		tmp_entryid.folder_database_guid =
-			rop_util_make_user_guid(account_id);
-		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
+		tmp_entryid.folder_dbguid = rop_util_make_user_guid(account_id);
+		tmp_entryid.eid_type      = EITLT_PRIVATE_MESSAGE;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
-		tmp_entryid.folder_database_guid =
-			rop_util_make_domain_guid(account_id);
-		tmp_entryid.message_type = EITLT_PUBLIC_MESSAGE;
+		tmp_entryid.folder_dbguid = rop_util_make_domain_guid(account_id);
+		tmp_entryid.eid_type      = EITLT_PUBLIC_MESSAGE;
 	}
-	tmp_entryid.message_database_guid = tmp_entryid.folder_database_guid;
-	tmp_entryid.folder_global_counter = rop_util_value_to_gc(folder_id);
-	tmp_entryid.message_global_counter = rop_util_value_to_gc(message_id);
+	tmp_entryid.message_dbguid = tmp_entryid.folder_dbguid;
+	tmp_entryid.folder_gc      = rop_util_value_to_gc(folder_id);
+	tmp_entryid.message_gc     = rop_util_value_to_gc(message_id);
 	tmp_entryid.pad1[0] = 0;
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
@@ -3990,11 +3986,11 @@ BINARY* common_util_to_private_folder_entryid(
 	unsigned int user_id = 0;
 	if (!mysql_adaptor_get_user_ids(username, &user_id, nullptr, nullptr))
 		return nullptr;
-	tmp_entryid.database_guid = rop_util_make_user_guid(user_id);
-	tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
-	tmp_entryid.global_counter = rop_util_get_gc_array(folder_id);
-	tmp_entryid.pad[0] = 0;
-	tmp_entryid.pad[1] = 0;
+	tmp_entryid.folder_dbguid = rop_util_make_user_guid(user_id);
+	tmp_entryid.eid_type      = EITLT_PRIVATE_FOLDER;
+	tmp_entryid.folder_gc     = rop_util_get_gc_array(folder_id);
+	tmp_entryid.pad1[0] = 0;
+	tmp_entryid.pad1[1] = 0;
 	pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
@@ -4021,11 +4017,11 @@ BINARY* common_util_to_private_message_entryid(
 	unsigned int user_id = 0;
 	if (!mysql_adaptor_get_user_ids(username, &user_id, nullptr, nullptr))
 		return nullptr;
-	tmp_entryid.folder_database_guid = rop_util_make_user_guid(user_id);
-	tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
-	tmp_entryid.message_database_guid = tmp_entryid.folder_database_guid;
-	tmp_entryid.folder_global_counter = rop_util_get_gc_array(folder_id);
-	tmp_entryid.message_global_counter = rop_util_get_gc_array(message_id);
+	tmp_entryid.folder_dbguid  = rop_util_make_user_guid(user_id);
+	tmp_entryid.eid_type       = EITLT_PRIVATE_MESSAGE;
+	tmp_entryid.message_dbguid = tmp_entryid.folder_dbguid;
+	tmp_entryid.folder_gc      = rop_util_get_gc_array(folder_id);
+	tmp_entryid.message_gc     = rop_util_get_gc_array(message_id);
 	tmp_entryid.pad1[0] = 0;
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;

@@ -37,21 +37,21 @@ struct GX_EXPORT STORE_ENTRYID {
 struct GX_EXPORT FOLDER_ENTRYID {
 	uint32_t flags;
 	FLATUID provider_uid; /* glossary.rst:Store GUID */
-	uint16_t folder_type;
-	GUID database_guid;
-	GLOBCNT global_counter;
-	uint8_t pad[2];
+	uint16_t eid_type;
+	GUID folder_dbguid;
+	GLOBCNT folder_gc;
+	uint8_t pad1[2];
 };
 
 struct GX_EXPORT MESSAGE_ENTRYID {
 	uint32_t flags;
 	FLATUID provider_uid; /* glossary.rst:Store GUID */
-	uint16_t message_type;
-	GUID folder_database_guid;
-	GLOBCNT folder_global_counter;
+	uint16_t eid_type;
+	GUID folder_dbguid;
+	GLOBCNT folder_gc;
 	uint8_t pad1[2];
-	GUID message_database_guid;
-	GLOBCNT message_global_counter;
+	GUID message_dbguid;
+	GLOBCNT message_gc;
 	uint8_t pad2[2];
 };
 

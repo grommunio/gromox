@@ -1510,7 +1510,7 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 	sFolderEntryId eid(fId.Id.data(), fId.Id.size());
 	sFolderSpec folderSpec;
 	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
-	folderSpec.folderId = rop_util_make_eid_ex(1, rop_util_gc_to_value(eid.global_counter));
+	folderSpec.folderId = rop_util_make_eid_ex(1, rop_util_gc_to_value(eid.folder_gc));
 	if (eid.isPrivate()) {
 		std::string ubuf;
 		if (mysql_adaptor_userid_to_name(eid.accountId(), ubuf) != ecSuccess)
