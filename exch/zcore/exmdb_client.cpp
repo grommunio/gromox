@@ -70,21 +70,6 @@ BOOL exmdb_client_get_message_property(const char *dir, const char *username,
 	return TRUE;
 }
 
-BOOL exmdb_client_delete_message(const char *dir, cpid_t cpid,
-    uint64_t folder_id, uint64_t message_id, BOOL b_hard, BOOL *pb_done)
-{
-	BOOL b_partial;
-	EID_ARRAY message_ids;
-	
-	message_ids.count = 1;
-	message_ids.pids = &message_id;
-	if (!exmdb_client->delete_messages(dir, cpid, nullptr, folder_id,
-	    &message_ids, b_hard, &b_partial))
-		return FALSE;	
-	*pb_done = !b_partial ? TRUE : false;
-	return TRUE;
-}
-
 BOOL exmdb_client_get_instance_property(
 	const char *dir, uint32_t instance_id,
 	proptag_t proptag, void **ppval)
