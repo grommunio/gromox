@@ -186,14 +186,12 @@ static ec_error_t nsp_fetchprop(const ab_tree::ab_node &node, cpid_t codepage, u
 
 static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
     bool b_ephid, cpid_t codepage, proptag_t proptag, PROPERTY_VALUE *pprop,
-    void *pbuff, size_t pbsize)
+    void *pbuff, size_t temp_len)
 {
-	size_t temp_len;
 	std::string dn;
 	EPHEMERAL_ENTRYID ephid;
 	EMSAB_ENTRYID permeid;
 	
-	temp_len = 1024;
 	pprop->proptag = proptag;
 	pprop->reserved = 0;
 	auto node_type = node.type();
@@ -211,18 +209,18 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		if (err != ecSuccess)
 			return err;
 		if (NULL == pbuff) {
-			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, mdbdn.size() + 1);
+			temp_len = mdbdn.size() + 1;
+			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
-			gx_strlcpy(static_cast<char *>(pprop->value.pv), mdbdn.c_str(), mdbdn.size() + 1);
 		} else {
-			pprop->value.pv = pbuff;
-			gx_strlcpy(pprop->value.pstr, mdbdn.c_str(), pbsize);
+			pprop->value.pstr = static_cast<char *>(pbuff);
 		}
+		gx_strlcpy(pprop->value.pstr, mdbdn.c_str(), temp_len);
 		return ecSuccess;
 	}
 	case PR_EMS_AB_OBJECT_GUID: {
-		if (NULL == pbuff) {
+		if (pbuff == nullptr || temp_len < 16) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 16);
 			if (pprop->value.bin.pv == nullptr)
 				return ecServerOOM;
@@ -246,14 +244,14 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		if (!node.dn(dn))
 			return ecInvalidObject;
 		if (NULL == pbuff) {
-			pprop->value.pv = ndr_stack_alloc(
-				NDR_STACK_OUT, dn.size() + 1);
+			temp_len = dn.size() + 1;
+			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pv = pbuff;
+			pprop->value.pstr = static_cast<char *>(pbuff);
 		}
-		strcpy(pprop->value.pstr, dn.c_str());
+		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
 	case PR_OBJECT_TYPE: {
 		auto t = node_type == ab_tree::abnode_type::mlist ? MAPI_DISTLIST : MAPI_MAILUSER;
@@ -269,8 +267,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		return ecSuccess;
 	}
 	case PR_MAPPING_SIGNATURE:
-		pprop->value.bin.cb = 16;
-		if (NULL == pbuff) {
+		if (pbuff == nullptr || temp_len < 16) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 16);
 			if (pprop->value.bin.pb == nullptr)
 				return ecServerOOM;
@@ -278,6 +275,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			pprop->value.bin.pv = pbuff;
 		}
 		memcpy(pprop->value.bin.pb, &muidEMSAB, sizeof(muidEMSAB));
+		pprop->value.bin.cb = 16;
 		return ecSuccess;
 	case PR_TEMPLATEID:
 		if (!node.dn(dn))
@@ -308,28 +306,28 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 	case PR_SEARCH_KEY:
 		if (!node.dn(dn))
 			return ecNotFound;
-		pprop->value.bin.cb = uint32_t(dn.size() + 4);
 		if (NULL == pbuff) {
-			pprop->value.bin.pv = ndr_stack_alloc(
-				NDR_STACK_OUT, pprop->value.bin.cb);
+			temp_len = dn.size() + 4;
+			pprop->value.bin.pc = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
 			if (pprop->value.bin.pc == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.bin.pv = pbuff;
+			pprop->value.bin.pc = static_cast<char *>(pbuff);
 		}
-		sprintf(pprop->value.bin.pc, "EX:%s", dn.c_str());
+		snprintf(pprop->value.bin.pc, temp_len, "EX:%s", dn.c_str());
 		HX_strupper(pprop->value.bin.pc);
+		pprop->value.bin.cb = strlen(pprop->value.bin.pc) + 1;
 		return ecSuccess;
 	case PR_INSTANCE_KEY:
-		if (NULL == pbuff) {
+		if (pbuff == nullptr || temp_len < 4) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 4);
-			if (pprop->value.bin.pb == nullptr)
+			if (pprop->value.bin.pv == nullptr)
 				return ecServerOOM;
 		} else {
 			pprop->value.bin.pv = pbuff;
 		}
 		pprop->value.bin.cb = 4;
-		cpu_to_le32p(pprop->value.bin.pb, node.mid);
+		cpu_to_le32p(pprop->value.bin.pv, node.mid);
 		return ecSuccess;
 	case PR_TRANSMITABLE_DISPLAY_NAME:
 		if (node_type != ab_tree::abnode_type::user)
@@ -341,14 +339,14 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		if (dn.empty())
 			return ecNotFound;
 		if (NULL == pbuff) {
-			pprop->value.pv = ndr_stack_alloc(
-				NDR_STACK_OUT, dn.size() + 1);
+			temp_len = dn.size() + 1;
+			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pv = pbuff;
+			pprop->value.pstr = static_cast<char *>(pbuff);
 		}
-		strcpy(pprop->value.pstr, dn.c_str());
+		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
 	case PR_TRANSMITABLE_DISPLAY_NAME_A:
 		if (node_type != ab_tree::abnode_type::user)
@@ -376,14 +374,14 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		if (!node.company_info(&dn, nullptr))
 			return ecNotFound;
 		if (NULL == pbuff) {
-			pprop->value.pv = ndr_stack_alloc(
-				NDR_STACK_OUT, dn.size() + 1);
+			temp_len = dn.size() + 1;
+			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pv = pbuff;
+			pprop->value.pstr = static_cast<char *>(pbuff);
 		}
-		strcpy(pprop->value.pstr, dn.c_str());
+		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
 	case PR_COMPANY_NAME_A:
 		if (!node.company_info(&dn, nullptr))
@@ -403,25 +401,25 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		if (!node.company_info(nullptr, &dn))
 			return ecNotFound;
 		if (NULL == pbuff) {
-			pprop->value.pv = ndr_stack_alloc(
-				NDR_STACK_OUT, dn.size() + 1);
+			temp_len = dn.size() + 1;
+			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pv = pbuff;
+			pprop->value.pstr = static_cast<char *>(pbuff);
 		}
-		strcpy(pprop->value.pstr, dn.c_str());
+		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
 	case PR_OFFICE_LOCATION_A:
 		if (!node.company_info(nullptr, &dn))
 			return ecNotFound;
 		if (NULL == pbuff) {
 			temp_len = utf8_to_mb_len(dn.c_str());
-			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
+			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pv = pbuff;
+			pprop->value.pstr = static_cast<char *>(pbuff);
 		}
 		cu_utf8_to_mb(codepage, dn.c_str(),
 				pprop->value.pstr, temp_len);
@@ -439,14 +437,14 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		if (dn.empty())
 			return ecNotFound;
 		if (NULL == pbuff) {
-			pprop->value.pv = ndr_stack_alloc(
-				NDR_STACK_OUT, dn.size() + 1);
+			temp_len = dn.size() + 1;
+			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pv = pbuff;
+			pprop->value.pstr = static_cast<char *>(pbuff);
 		}
-		strcpy(pprop->value.pstr, dn.c_str());
+		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
 	case PR_EMS_AB_PROXY_ADDRESSES:
 	case PR_EMS_AB_PROXY_ADDRESSES_A: {
@@ -463,17 +461,18 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		pprop->value.string_array.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT, pprop->value.string_array.count);
 		if (pprop->value.string_array.ppstr == nullptr)
 			return ecServerOOM;
-		pprop->value.string_array.ppstr[0] = ndr_stack_anew<char>(NDR_STACK_OUT, dn.size() + 6);
+		temp_len = dn.size() + 6;
+		pprop->value.string_array.ppstr[0] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len);
 		if (pprop->value.string_array.ppstr[0] == nullptr)
 			return ecServerOOM;
-		sprintf(pprop->value.string_array.ppstr[0], "SMTP:%s", dn.c_str());
+		snprintf(pprop->value.string_array.ppstr[0], temp_len, "SMTP:%s", dn.c_str());
 		size_t i = 1;
 		for (const auto &a : alias_list) {
-			pprop->value.string_array.ppstr[i] = ndr_stack_anew<char>(NDR_STACK_OUT, a.size() + 6);
-			if (pprop->value.string_array.ppstr[i] == nullptr)
+			temp_len = a.size() + 6;
+			char *z = pprop->value.string_array.ppstr[i] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len);
+			if (z == nullptr)
 				return ecServerOOM;
-			strcpy(pprop->value.string_array.ppstr[i], "smtp:");
-			strcat(pprop->value.string_array.ppstr[i++], a.c_str());
+			snprintf(z, temp_len, "SMTP:%s", a.c_str());
 		}
 		return ecSuccess;
 	}
@@ -481,28 +480,16 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 	case PR_EMS_AB_NETWORK_ADDRESS_A: {
 		auto rpc_info = get_rpc_info();
 		temp_len = strlen(rpc_info.ep_host);
-		pprop->value.string_array.count = 2;
-		if (NULL == pbuff) {
-			pprop->value.string_array.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT, 2);
-			if (pprop->value.string_array.ppstr == nullptr)
-				return ecServerOOM;
-			pprop->value.string_array.ppstr[0] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len + 14);
-			if (pprop->value.string_array.ppstr[0] == nullptr)
-				return ecServerOOM;
-			pprop->value.string_array.ppstr[1] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len + 12);
-			if (pprop->value.string_array.ppstr[1] == nullptr)
-				return ecServerOOM;
-		} else {
-			pprop->value.string_array.ppstr = static_cast<char **>(pbuff);
-			pprop->value.string_array.ppstr[0] =
-				static_cast<char *>(pbuff) + 2 * sizeof(char **);
-			pprop->value.string_array.ppstr[1] =
-				static_cast<char *>(pbuff) + 2 * sizeof(char **) + temp_len + 1;
-		}
-		sprintf(pprop->value.string_array.ppstr[0],
-			"ncacn_ip_tcp:%s", rpc_info.ep_host);
-		sprintf(pprop->value.string_array.ppstr[1],
-			"ncacn_http:%s", rpc_info.ep_host);
+		auto z = ndr_stack_anew<char *>(NDR_STACK_OUT, 2);
+		pprop->value.string_array.ppstr = z;
+		if (pprop->value.string_array.ppstr == nullptr)
+			return ecServerOOM;
+		z[0] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len + 14);
+		z[1] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len + 12);
+		if (z[0] == nullptr || z[1] == nullptr)
+			return ecServerOOM;
+		snprintf(z[0], temp_len + 14, "ncacn_ip_tcp:%s", rpc_info.ep_host);
+		snprintf(z[1], temp_len + 12, "ncacn_http:%s", rpc_info.ep_host);
 		return ecSuccess;
 	}
 	case PR_EMS_AB_THUMBNAIL_PHOTO: {
