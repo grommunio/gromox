@@ -1745,13 +1745,12 @@ ec_error_t nsp_interface_mod_props(NSPI_HANDLE handle, uint32_t reserved,
 	return ecNotSupported;
 }
 
-static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
-    bool b_unicode, cpid_t codepage, bool has_child,
-    unsigned int depth, int container_id, const char *str_dname,
-    EMSAB_ENTRYID *ppermeid_parent, EMSAB_ENTRYID *ppermeid)
+static bool nsp_interface_build_specialtable(NSP_PROPROW *prow,
+    bool b_unicode, cpid_t codepage, bool has_child, int container_id,
+    const char *str_dname, EMSAB_ENTRYID *ppermeid)
 {
 	prow->reserved = 0x0;
-	prow->cvalues = depth == 0 ? 6 : 7;
+	prow->cvalues = 6;
 	prow->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, prow->cvalues);
 	if (prow->pprops == nullptr)
 		return FALSE;
@@ -1764,16 +1763,14 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
 		prow->pprops[0].value.err = ecMAPIOOM;
 	}
 	
-	/* PR_CONTAINER_FLAGS */
 	prow->pprops[1].proptag = PR_CONTAINER_FLAGS;
 	prow->pprops[1].reserved = 0;
 	prow->pprops[1].value.l = !has_child ? AB_RECIPIENTS | AB_UNMODIFIABLE :
 	                          AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 	
-	/* PR_DEPTH */
 	prow->pprops[2].proptag = PR_DEPTH;
 	prow->pprops[2].reserved = 0;
-	prow->pprops[2].value.l = depth;
+	prow->pprops[2].value.l = 0;
 	
 	prow->pprops[3].proptag = PR_EMS_AB_CONTAINERID;
 	prow->pprops[3].reserved = 0;
@@ -1810,16 +1807,6 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
 	prow->pprops[5].proptag = PR_EMS_AB_IS_MASTER;
 	prow->pprops[5].reserved = 0;
 	prow->pprops[5].value.b = 0;
-	
-	if (0 != depth) {
-		prow->pprops[6].proptag = PR_EMS_AB_PARENT_ENTRYID;
-		prow->pprops[6].reserved = 0;
-		if (!common_util_permanent_entryid_to_binary(
-			ppermeid_parent, &prow->pprops[6].value.bin)) {
-			prow->pprops[6].proptag = CHANGE_PROP_TYPE(prow->pprops[6].proptag, PT_ERROR);
-			prow->pprops[6].value.err = ecMAPIOOM;
-		}
-	}
 	return TRUE;
 }
 
@@ -1844,8 +1831,7 @@ static ec_error_t nsp_interface_get_specialtables_from_node(
 
 	std::string str_dname = node.displayname();
 	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage, has_child,
-	    0, container_id,
-	    str_dname.c_str(), nullptr, ppermeid))
+	    container_id, str_dname.c_str(), ppermeid))
 		return ecServerOOM;
 	if (!has_child)
 		return ecSuccess;
@@ -1885,7 +1871,7 @@ ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	    nullptr, nullptr, &permeid))
 		return ecServerOOM;
 	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage,
-	    false, 0, 0, nullptr, nullptr, &permeid))
+	    false, 0, nullptr, &permeid))
 		return ecServerOOM;
 	for (auto it = base->dbegin(); it != base->dend(); ++it) {
 		auto result = nsp_interface_get_specialtables_from_node({base, *it},
