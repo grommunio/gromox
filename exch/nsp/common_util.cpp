@@ -92,16 +92,6 @@ int cu_mb_to_utf8(cpid_t codepage, const char *src, char *dst, size_t len)
 	}
 }
 
-void common_util_guid_to_binary(GUID *pguid, BINARY *pbin)
-{
-	pbin->cb = 16;
-	cpu_to_le32p(&pbin->pb[0], pguid->time_low);
-	cpu_to_le16p(&pbin->pb[4], pguid->time_mid);
-	cpu_to_le16p(&pbin->pb[6], pguid->time_hi_and_version);
-	memcpy(pbin->pb + 8,  pguid->clock_seq, sizeof(uint8_t) * 2);
-	memcpy(pbin->pb + 10, pguid->node, sizeof(uint8_t) * 6);
-}
-
 void common_util_set_ephemeralentryid(uint32_t display_type,
 	uint32_t minid, EPHEMERAL_ENTRYID *pephid)
 {

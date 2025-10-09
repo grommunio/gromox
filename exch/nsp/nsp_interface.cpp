@@ -222,7 +222,6 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		return ecSuccess;
 	}
 	case PR_EMS_AB_OBJECT_GUID: {
-		GUID temp_guid = node.guid();
 		if (NULL == pbuff) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 16);
 			if (pprop->value.bin.pv == nullptr)
@@ -230,7 +229,9 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		} else {
 			pprop->value.bin.pv = deconst(pbuff);
 		}
-		common_util_guid_to_binary(&temp_guid, &pprop->value.bin);
+		FLATUID f = node.guid();
+		memcpy(pprop->value.bin.pv, &f, sizeof(f));
+		pprop->value.bin.cb = 16;
 		return ecSuccess;
 	}
 	case PR_EMS_AB_CONTAINERID: // TODO: ???
