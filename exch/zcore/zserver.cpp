@@ -1693,7 +1693,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
     uint32_t hdstfolder, const BINARY_ARRAY *pentryids, uint32_t flags)
 {
-	BOOL b_done, b_guest = TRUE, b_owner;
+	BOOL b_guest = TRUE, b_owner;
 	BOOL b_partial;
 	BOOL b_private;
 	int account_id;
@@ -1768,7 +1768,6 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 				    pinfo->cpid, nullptr, psrc_folder->folder_id,
 				    &ids, false, &b_partial))
 					return ecError;
-				b_done = !b_partial ? TRUE : false;
 			}
 		}
 		return ecSuccess;
