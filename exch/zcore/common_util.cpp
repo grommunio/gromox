@@ -1177,8 +1177,11 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 			return ecWarnWithErrors;
 		return ecSuccess;
 	} else if (b_delete) {
-		exmdb_client_delete_message(pstore->get_dir(), cpid, parent_id,
-			message_id, TRUE, &b_result);
+		const EID_ARRAY ids = {1, &message_id};
+		if (!exmdb_client->delete_messages(pstore->get_dir(), cpid,
+		    nullptr, parent_id, &ids, TRUE, &b_result))
+			/* ignore */;
+		b_result = !b_partial ? TRUE : false;
 		return ecSuccess;
 	}
 	if (!exmdb_client->clear_submit(pstore->get_dir(), message_id, false))

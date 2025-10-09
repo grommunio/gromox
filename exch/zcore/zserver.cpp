@@ -1694,7 +1694,6 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
     uint32_t hdstfolder, const BINARY_ARRAY *pentryids, uint32_t flags)
 {
 	BOOL b_done, b_guest = TRUE, b_owner;
-	EID_ARRAY ids;
 	BOOL b_partial;
 	BOOL b_private;
 	int account_id;
@@ -1763,14 +1762,19 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 					if (!b_owner)
 						continue;
 				}
-				if (!exmdb_client_delete_message(src_store->get_dir(),
-				    pinfo->cpid, psrc_folder->folder_id,
-				    message_id, false, &b_done))
+				BOOL b_partial = false;
+				const EID_ARRAY ids = {1, &message_id};
+				if (!exmdb_client->delete_messages(src_store->get_dir(),
+				    pinfo->cpid, nullptr, psrc_folder->folder_id,
+				    &ids, false, &b_partial))
 					return ecError;
+				b_done = !b_partial ? TRUE : false;
 			}
 		}
 		return ecSuccess;
 	}
+
+	EID_ARRAY ids;
 	ids.count = 0;
 	ids.pids = cu_alloc<uint64_t>(pentryids->count);
 	if (ids.pids == nullptr)
