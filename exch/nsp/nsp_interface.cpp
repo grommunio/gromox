@@ -1824,7 +1824,7 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
 }
 
 static ec_error_t nsp_interface_get_specialtables_from_node(
-    const ab_tree::ab_node &node, EMSAB_ENTRYID *ppermeid_parent,
+    const ab_tree::ab_node &node,
     bool b_unicode, cpid_t codepage, NSP_ROWSET *prows)
 {
 	auto ppermeid = ndr_stack_anew<EMSAB_ENTRYID>(NDR_STACK_OUT);
@@ -1845,7 +1845,7 @@ static ec_error_t nsp_interface_get_specialtables_from_node(
 	std::string str_dname = node.displayname();
 	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage, has_child,
 	    0, container_id,
-	    str_dname.c_str(), ppermeid_parent, ppermeid))
+	    str_dname.c_str(), nullptr, ppermeid))
 		return ecServerOOM;
 	if (!has_child)
 		return ecSuccess;
@@ -1889,7 +1889,7 @@ ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 		return ecServerOOM;
 	for (auto it = base->dbegin(); it != base->dend(); ++it) {
 		auto result = nsp_interface_get_specialtables_from_node({base, *it},
-		              nullptr, b_unicode, codepage, rowset);
+		              b_unicode, codepage, rowset);
 		if (result != ecSuccess)
 			return result;
 	}
