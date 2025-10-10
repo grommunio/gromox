@@ -112,6 +112,16 @@ Negotiate-SPNEGO headers are presented. The value is rudimentarily tokenized at
 whitespaces, and no special characters may be used. If necessary, write your
 own wrapper. The special value "internal-gss" uses libgssapi directly.
 .br
+Negotiate was meant to carry GSS-API auth data (appearing as "Authorization:
+Negotiate YII..." in HTTP protocol dumps). NTLM can be wrapped in SPNEGO (also
+shows up as "YII"), but a handful of clients may also send raw NTLM tokens
+(appearing as "Authorization: Negotiate TlRMTVNT..."). Whether raw NTLM tokens
+are accepted by internal-gss depends on your GSS library and, more broadly,
+your Kerberos setup. Otherwise, you may need to use a helper program like the
+one from Squid. internal-gss also does not offer a way to specify a separate
+keytab or replay cache parameters, so use Squid's helper if you need such
+parameters.
+.br
 Default: \fIinternal\-gss\fP
 .br
 Example: \fI/usr/lib/squid/negotiate_wrapper_auth \-\-ntlm /usr/bin/ntlm_auth
@@ -249,23 +259,6 @@ fashion to stderr. Level 1 emits RPCs with a failure return code, level 2 emits
 all RPCs. Note the daemon log level needs to be "debug" (6), too.
 .br
 Default: \fI0\fP
-.TP
-\fBntlmssp_program\fP
-The helper program to use for authenticating HTTP requests when NTLM or
-Negotiate-NTLM (but not Negotiate-SPNEGO-NTLM) headers are presented. The value
-is rudimentarily tokenized at whitespaces, so no special characters may be
-used. If necessary, write your own wrapper.
-.br
-Negotiate was meant to carry GSS-API auth data ("Authorization: Negotiate
-YII..."). NTLM can be wrapped in SPNEGO (also "YII"), but a handful of clients
-may also send raw NTLM tokens (appearing as "Authorization: Negotiate
-TlRMTVNT...").
-.br
-Default: \fI/usr/bin/ntlm_auth \-\-helper\-protocol=squid\-2.5\-ntlmssp\fP
-.br
-Example: \fI/usr/lib/squid/negotiate_wrapper_auth \-\-ntlm /usr/bin/ntlm_auth
-\-\-helper\-protocol=squid\-2.5\-ntlmssp \-\-kerberos
-/usr/lib/squid/negotiate_kerberos_auth \-s GSS_C_NO_NAME\fP
 .TP
 \fBrequest_max_mem\fP
 The maximum hint size for fragmented RPC PDU requests that will be allowed
