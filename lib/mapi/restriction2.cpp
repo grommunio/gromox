@@ -587,11 +587,11 @@ std::string SORTORDER_SET::repr() const
 	return s;
 }
 
-std::string PROPTAG_ARRAY::repr() const
+std::string proptag_cspan::repr() const
 {
 	std::string s = "PROPTAG_ARRAY{";
-	for (unsigned int i = 0; i < count; ++i)
-		s += fmt::format("0x{:x},", pproptag[i]);
+	for (auto tag : *this)
+		s += fmt::format("0x{:x},", tag);
 	s += "}";
 	return s;
 }

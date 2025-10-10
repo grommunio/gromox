@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdlib>
@@ -316,10 +316,10 @@ PROPERTY_XNAME::operator PROPERTY_NAME() const
 	return z;
 }
 
-size_t PROPTAG_ARRAY::indexof(uint32_t tag) const
+size_t proptag_cspan::indexof(uint32_t tag) const
 {
-	for (size_t i = 0; i < count; ++i)
-		if (pproptag[i] == tag)
+	for (size_t i = 0; i < size(); ++i)
+		if ((*this)[i] == tag)
 			return i;
 	return npos;
 }

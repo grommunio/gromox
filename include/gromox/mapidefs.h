@@ -6,6 +6,7 @@
 #include <ctime>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -1098,11 +1099,34 @@ struct GX_EXPORT PROPNAME_ARRAY {
 	I_BEGIN_END(ppropname, count);
 };
 
-struct GX_EXPORT PROPTAG_ARRAY {
-	size_t indexof(uint32_t tag) const;
+struct GX_EXPORT proptag_cspan : public std::span<const gromox::proptag_t> {
+	private:
+	using base_t = std::span<const gromox::proptag_t>;
+	static constexpr size_t npos = -1;
+
+	public:
+	using base_t::base_t;
+	size_t indexof(gromox::proptag_t) const;
 	inline bool has(uint32_t tag) const { return indexof(tag) != npos; }
-	void emplace_back(uint32_t tag) { pproptag[count++] = tag; }
 	std::string repr() const;
+};
+
+struct GX_EXPORT proptag_span : public std::span<gromox::proptag_t> {
+	private:
+	using base_t = std::span<gromox::proptag_t>;
+
+	public:
+	using base_t::base_t;
+	inline size_t indexof(gromox::proptag_t t) const { return proptag_cspan(*this).indexof(t); }
+	inline bool has(gromox::proptag_t t) const { return proptag_cspan(*this).has(t); }
+	inline std::string repr() const { return proptag_cspan(*this).repr(); }
+};
+
+struct GX_EXPORT PROPTAG_ARRAY {
+	inline size_t indexof(gromox::proptag_t t) const { return proptag_cspan(*this).indexof(t); }
+	inline bool has(gromox::proptag_t t) const { return proptag_cspan(*this).has(t); }
+	inline std::string repr() const { return proptag_cspan(*this).repr(); }
+	void emplace_back(uint32_t tag) { pproptag[count++] = tag; }
 
 	uint16_t count;
 	uint32_t *pproptag;
