@@ -121,14 +121,10 @@ static ec_error_t cvt_oneoff_to_smtpaddr(EXT_PULL &ser, const char *org,
     cvt_id2user id2user, std::string &smtpaddr)
 {
 	ONEOFF_ENTRYID eid{};
-	auto cl_0 = HX::make_scope_exit([&]() {
-		free(eid.pdisplay_name);
-		free(eid.paddress_type);
-		free(eid.pmail_address);
-	});
 	if (ser.g_oneoff_eid(&eid) != pack_result::success)
 		return ecInvalidParam;
-	return cvt_genaddr_to_smtpaddr(eid.paddress_type, eid.pmail_address,
+	return cvt_genaddr_to_smtpaddr(eid.paddress_type.c_str(),
+	       eid.pmail_address.c_str(),
 	       org, std::move(id2user), smtpaddr);
 }
 

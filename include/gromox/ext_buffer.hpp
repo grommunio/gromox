@@ -311,7 +311,7 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_permission_data(const PERMISSION_DATA &);
 	pack_result p_rule_data(const RULE_DATA &);
 	pack_result p_abk_eid(const EMSAB_ENTRYID_view &);
-	pack_result p_oneoff_eid(const ONEOFF_ENTRYID &);
+	pack_result p_oneoff_eid(const ONEOFF_ENTRYID_view &);
 	pack_result p_persistdata_a(std::span<const PERSISTDATA>);
 	pack_result p_eid_a(const EID_ARRAY &);
 	pack_result p_systime(const SYSTEMTIME &);

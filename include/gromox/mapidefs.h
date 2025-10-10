@@ -1040,13 +1040,22 @@ struct GX_EXPORT NOTIF_SINK {
 	ADVISE_INFO *padvise;
 };
 
+struct GX_EXPORT ONEOFF_ENTRYID_view {
+	uint32_t flags = 0;
+	uint16_t version = 0;
+	uint16_t ctrl_flags = 0;
+	const char *pdisplay_name, *paddress_type, *pmail_address;
+};
+
 struct GX_EXPORT ONEOFF_ENTRYID {
-	uint32_t flags;
-	uint16_t version; /* should be 0x0000 */
-	uint16_t ctrl_flags;
-	char *pdisplay_name;
-	char *paddress_type;
-	char *pmail_address;
+	uint32_t flags = 0;
+	uint16_t version = 0; /* should be 0x0000 */
+	uint16_t ctrl_flags = 0;
+	std::string pdisplay_name, paddress_type, pmail_address;
+	operator ONEOFF_ENTRYID_view() const {
+		return {flags, version, ctrl_flags, pdisplay_name.c_str(),
+		        paddress_type.c_str(), pmail_address.c_str()};
+	}
 };
 
 struct GX_EXPORT PERMISSION_ROW {

@@ -222,10 +222,10 @@ struct user_object {
 
 struct oneoff_object {
 	protected:
-	oneoff_object(const ONEOFF_ENTRYID &);
+	oneoff_object(ONEOFF_ENTRYID &&);
 
 	public:
-	static std::unique_ptr<oneoff_object> create(const ONEOFF_ENTRYID &);
+	static std::unique_ptr<oneoff_object> create(ONEOFF_ENTRYID &&);
 	ec_error_t get_props(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
 
 	static const uint32_t all_tags_raw[];

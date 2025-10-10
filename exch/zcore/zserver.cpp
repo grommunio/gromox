@@ -1005,7 +1005,7 @@ static ec_error_t zs_openab_oop(USER_INFO_REF &&info, BINARY bin,
 	ep.init(bin.pv, bin.cb, common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 	if (ep.g_oneoff_eid(&eid) != pack_result::ok)
 		return ecInvalidParam;
-	auto u = oneoff_object::create(eid);
+	auto u = oneoff_object::create(std::move(eid));
 	if (u == nullptr)
 		return ecServerOOM;
 	*zmg_type = zs_objtype::oneoff;
@@ -3006,7 +3006,6 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 	TPROPVAL_ARRAY *prcpt;
 	FLATUID provider_uid;
 	TAGGED_PROPVAL *ppropval;
-	ONEOFF_ENTRYID oneoff_entry;
 	
 	if (prcpt_list->count >= 0x7fef || (flags != MODRECIP_ADD &&
 	    flags != MODRECIP_MODIFY && flags != MODRECIP_REMOVE))
@@ -3080,6 +3079,8 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 			continue;
 		if (provider_uid == muidEMSAB) {
 			EMSAB_ENTRYID ab_entryid;
+			EXT_PULL ext_pull;
+
 			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 			if (ext_pull.g_abk_eid(&ab_entryid) != pack_result::ok ||
 			    ab_entryid.type != DT_MAILUSER)
@@ -3114,9 +3115,12 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				return ecServerOOM;
 			cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
 		} else if (provider_uid == muidOOP) {
+			ONEOFF_ENTRYID oneoff_entry;
+			EXT_PULL ext_pull;
+
 			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 			if (ext_pull.g_oneoff_eid(&oneoff_entry) != pack_result::ok ||
-			    strcasecmp(oneoff_entry.paddress_type, "SMTP") != 0)
+			    strcasecmp(oneoff_entry.paddress_type.c_str(), "SMTP") != 0)
 				continue;
 			ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 5);
 			if (ppropval == nullptr)

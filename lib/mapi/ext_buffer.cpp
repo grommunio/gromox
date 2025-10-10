@@ -3267,7 +3267,7 @@ pack_result EXT_PUSH::p_abk_eid(const EMSAB_ENTRYID_view &r)
 	return p_str(r.px500dn);
 }
 
-pack_result EXT_PUSH::p_oneoff_eid(const ONEOFF_ENTRYID &r)
+pack_result EXT_PUSH::p_oneoff_eid(const ONEOFF_ENTRYID_view &r)
 {
 	TRY(p_uint32(r.flags));
 	TRY(p_guid(muidOOP));
@@ -3601,11 +3601,11 @@ bool oneoff_to_parts(EXT_PULL &ser, char *type, size_t tsize,
 {
 	ONEOFF_ENTRYID eid;
 	if (ser.g_oneoff_eid(&eid) != pack_result::ok ||
-	    strcasecmp(eid.paddress_type, "SMTP") != 0)
+	    strcasecmp(eid.paddress_type.c_str(), "SMTP") != 0)
 		return false;
 	if (type != nullptr)
 		gx_strlcpy(type, "SMTP", tsize);
-	gx_strlcpy(addr, eid.pmail_address, asize);
+	gx_strlcpy(addr, eid.pmail_address.c_str(), asize);
 	return true;
 }
 

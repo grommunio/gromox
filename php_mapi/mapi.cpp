@@ -653,9 +653,9 @@ static ZEND_FUNCTION(mapi_parseoneoff)
 	if (pull_ctx.g_oneoff_eid(&oneoff_entry) != pack_result::ok)
 		pthrow(ecError);
 	zarray_init(return_value);
-	add_assoc_string(return_value, "name", oneoff_entry.pdisplay_name);
-	add_assoc_string(return_value, "type", oneoff_entry.paddress_type);
-	add_assoc_string(return_value, "address", oneoff_entry.pmail_address);
+	add_assoc_string(return_value, "name", oneoff_entry.pdisplay_name.c_str());
+	add_assoc_string(return_value, "type", oneoff_entry.paddress_type.c_str());
+	add_assoc_string(return_value, "address", oneoff_entry.pmail_address.c_str());
 	MAPI_G(hr) = ecSuccess;
 }
 
