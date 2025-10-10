@@ -668,10 +668,9 @@ struct zcresp_logon_token final : public zcresp {
 };
 
 struct zcresp_uinfo final : public zcresp {
-	BINARY entryid;
-	char *pdisplay_name;
-	char *px500dn;
-	uint32_t privilege_bits;
+	BINARY entryid{};
+	std::string pdisplay_name, px500dn;
+	uint32_t privilege_bits = 0;
 };
 
 struct zcresp_openentry final : public zcresp {

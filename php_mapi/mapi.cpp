@@ -4055,7 +4055,8 @@ static ZEND_FUNCTION(kc_session_restore)
 static ZEND_FUNCTION(nsp_getuserinfo)
 {
 	ZCL_MEMORY;
-	char *px500dn, *username, *pdisplay_name;
+	std::string pdisplay_name, px500dn;
+	char *username;
 	BINARY entryid;
 	size_t username_len = 0;
 	uint32_t privilege_bits;
@@ -4071,8 +4072,8 @@ static ZEND_FUNCTION(nsp_getuserinfo)
 	add_assoc_stringl(return_value, "userid", reinterpret_cast<const char *>(entryid.pb), entryid.cb);
 	add_assoc_string(return_value, "username", username);
 	add_assoc_string(return_value, "primary_email", username);
-	add_assoc_string(return_value, "fullname", pdisplay_name);
-	add_assoc_string(return_value, "essdn", px500dn);
+	add_assoc_string(return_value, "fullname", pdisplay_name.c_str());
+	add_assoc_string(return_value, "essdn", px500dn.c_str());
 	add_assoc_long(return_value, "privilege", privilege_bits);
 	MAPI_G(hr) = ecSuccess;
 }

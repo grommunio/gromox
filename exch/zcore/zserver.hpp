@@ -63,7 +63,7 @@ extern ec_error_t zs_logon_token(const char *token, const char *rhost, GUID *ses
 extern ec_error_t zs_logon_np(const char *username, const char *password, const char *rhost, uint32_t flags, GUID *ses);
 extern ec_error_t zs_logon(const char *username, const char *password, const char *rhost, uint32_t flags, GUID *ses);
 extern ec_error_t zs_checksession(GUID ses);
-extern ec_error_t zs_uinfo(const char *username, BINARY *entryid, char **dispname, char **x500dn, uint32_t *priv_bits);
+extern ec_error_t zs_uinfo(const char *username, BINARY *entryid, std::string *dispname, std::string *x500dn, uint32_t *priv_bits);
 extern ec_error_t zs_unloadobject(GUID ses, uint32_t obj_handle);
 extern ec_error_t zs_openentry(GUID ses, BINARY entryid, uint32_t flags, zs_objtype *, uint32_t *obj_handle);
 extern ec_error_t zs_openstoreentry(GUID ses, uint32_t obj_handle, BINARY entryid, uint32_t flags, zs_objtype *, uint32_t *out_handle);

@@ -669,32 +669,29 @@ ec_error_t zs_checksession(GUID hsession)
 }
 
 ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
-    char **ppdisplay_name, char **ppx500dn, uint32_t *pprivilege_bits) try
+    std::string *dispname, std::string *essdn, uint32_t *pprivilege_bits) try
 {
-	std::string dispname;
 	EXT_PUSH ext_push;
-	EMSAB_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID_view tmp_entryid;
 	
-	if (!mysql_adaptor_get_user_displayname(username, dispname) ||
+	if (!mysql_adaptor_get_user_displayname(username, *dispname) ||
 	    !mysql_adaptor_get_user_privilege_bits(username, pprivilege_bits))
 		return ecNotFound;
 	auto err = cvt_username_to_essdn(username, g_org_name,
 	           mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
-	           tmp_entryid.x500dn);
+	           *essdn);
 	if (err != ecSuccess)
 		return err;
 	tmp_entryid.flags = 0;
 	tmp_entryid.type = DT_MAILUSER;
+	tmp_entryid.px500dn = essdn->c_str();
 	pentryid->pv = common_util_alloc(1280);
 	if (pentryid->pv == nullptr ||
 	    !ext_push.init(pentryid->pb, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(tmp_entryid) != pack_result::ok)
 		return ecError;
 	pentryid->cb = ext_push.m_offset;
-	*ppdisplay_name = common_util_dup(dispname);
-	*ppx500dn = common_util_dup(tmp_entryid.x500dn);
-	return *ppdisplay_name == nullptr || *ppx500dn == nullptr ?
-	       ecServerOOM : ecSuccess;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
 }
