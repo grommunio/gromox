@@ -3584,29 +3584,31 @@ uint8_t *EXT_PUSH::release()
 	return t;
 }
 
-bool emsab_to_parts(EXT_PULL &ser, char *type, size_t tsize,
-    char *addr, size_t asize)
+bool emsab_to_parts(EXT_PULL &ser, std::string &type, std::string &addr) try
 {
 	EMSAB_ENTRYID eid;
 	if (ser.g_abk_eid(&eid) != pack_result::ok || eid.type != DT_MAILUSER)
 		return false;
-	if (type != nullptr)
-		gx_strlcpy(type, "EX", tsize);
-	gx_strlcpy(addr, eid.x500dn.c_str(), asize);
+	type = "EX";
+	addr = std::move(eid.x500dn);
 	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1991: ENOMEM");
+	return false;
 }
 
-bool oneoff_to_parts(EXT_PULL &ser, char *type, size_t tsize,
-    char *addr, size_t asize)
+bool oneoff_to_parts(EXT_PULL &ser, std::string &type, std::string &addr) try
 {
 	ONEOFF_ENTRYID eid;
 	if (ser.g_oneoff_eid(&eid) != pack_result::ok ||
 	    strcasecmp(eid.paddress_type.c_str(), "SMTP") != 0)
 		return false;
-	if (type != nullptr)
-		gx_strlcpy(type, "SMTP", tsize);
-	gx_strlcpy(addr, eid.pmail_address.c_str(), asize);
+	type = "SMTP";
+	addr = std::move(eid.pmail_address);
 	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1990: ENOMEM");
+	return false;
 }
 
 freebusy_event::freebusy_event(time_t start, time_t end, uint32_t b_status,

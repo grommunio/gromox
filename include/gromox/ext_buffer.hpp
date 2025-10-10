@@ -332,5 +332,5 @@ struct GX_EXPORT EXT_PUSH {
 	EXT_BUFFER_MGT m_mgt{};
 };
 
-extern GX_EXPORT bool emsab_to_parts(EXT_PULL &, char *type, size_t tsize, char *addr, size_t asize);
-extern GX_EXPORT bool oneoff_to_parts(EXT_PULL &, char *type, size_t tsize, char *addr, size_t asize);
+extern GX_EXPORT bool emsab_to_parts(EXT_PULL &, std::string &type, std::string &addr);
+extern GX_EXPORT bool oneoff_to_parts(EXT_PULL &, std::string &type, std::string &addr);

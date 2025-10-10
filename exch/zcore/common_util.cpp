@@ -410,8 +410,7 @@ char *common_util_dup(std::string_view sv)
 	return out;
 }
 
-BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
-    char *pessdn, size_t dsize)
+bool cu_parse_abkeid(BINARY entryid_bin, uint32_t *ptype, std::string &essdn)
 {
 	EXT_PULL ext_pull;
 	EMSAB_ENTRYID tmp_entryid;
@@ -420,7 +419,7 @@ BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
 	if (ext_pull.g_abk_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;
 	*ptype = tmp_entryid.type;
-	gx_strlcpy(pessdn, tmp_entryid.x500dn.c_str(), dsize);
+	essdn = std::move(tmp_entryid.x500dn);
 	return TRUE;
 }
 

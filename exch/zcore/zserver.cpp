@@ -713,7 +713,7 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 {
 	BOOL b_private;
 	int account_id;
-	char essdn[1024];
+	std::string essdn;
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t address_type;
@@ -724,12 +724,10 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 		return ecError;
 	if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
 		/* Stupid GUID-less entryid from submit.php */
-		gx_strlcpy(essdn, entryid.pc, sizeof(essdn));
-		return zs_openentry_emsab(hsession, entryid, flags, essdn,
+		return zs_openentry_emsab(hsession, entryid, flags, entryid.pc,
 		       DT_REMOTE_MAILUSER, pmapi_type, phobject);
-	} else if (common_util_parse_addressbook_entryid(entryid, &address_type,
-	    essdn, std::size(essdn))) {
-		return zs_openentry_emsab(hsession, entryid, flags, essdn,
+	} else if (cu_parse_abkeid(entryid, &address_type, essdn)) {
+		return zs_openentry_emsab(hsession, entryid, flags, essdn.c_str(),
 		       address_type, pmapi_type, phobject);
 	} else if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidZCSAB) {
 		return zs_openentry_zcsab(hsession, entryid, flags,
@@ -828,7 +826,6 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 	uint16_t type;
 	BOOL b_private;
 	int account_id;
-	char essdn[1024];
 	uint64_t fid_val;
 	uint8_t loc_type;
 	zs_objtype mapi_type;
@@ -851,6 +848,9 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		            PRIVATE_FID_ROOT : PUBLIC_FID_ROOT);
 		message_id = 0;
 	} else {
+		std::string essdn_s;
+		const char *essdn = essdn_s.c_str();
+
 		type = common_util_get_messaging_entryid_type(entryid);
 		switch (type) {
 		case EITLT_PRIVATE_FOLDER:
@@ -869,12 +869,11 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			break;
 		}
 		if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
-			gx_strlcpy(essdn, entryid.pc, sizeof(essdn));
-		} else if (common_util_parse_addressbook_entryid(entryid,
-		     &address_type, essdn, std::size(essdn)) &&
-		     strncmp(essdn, "/exmdb=", 7) == 0 &&
+			essdn = entryid.pc;
+		} else if (cu_parse_abkeid(entryid, &address_type, essdn_s) &&
+		     strncmp(essdn_s.c_str(), "/exmdb=", 7) == 0 &&
 		     address_type == DT_REMOTE_MAILUSER) {
-			/* do nothing */	
+			essdn = essdn_s.c_str();
 		} else {
 			return ecInvalidParam;
 		}
@@ -1049,13 +1048,13 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
     int base_id, zs_objtype *pmapi_type, uint32_t *phobject)
 {
 	int user_id, domain_id;
-	char essdn[1024];
+	std::string essdn_s;
 	uint32_t address_type;
 
-	if (!common_util_parse_addressbook_entryid(entryid, &address_type,
-	    essdn, std::size(essdn)))
+	if (!cu_parse_abkeid(entryid, &address_type, essdn_s))
 		return ecInvalidParam;
 
+	auto essdn = essdn_s.data();
 	if (address_type == DT_CONTAINER) {
 		CONTAINER_ID container_id;
 		uint8_t type;

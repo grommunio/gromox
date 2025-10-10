@@ -3947,8 +3947,7 @@ bool cu_get_permission_property(int64_t member_id,
 	return TRUE;
 }
 
-BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
-    char *address_type, size_t atsize, char *email_address, size_t emsize)
+bool cu_parse_abkeid(const BINARY *pbin, std::string &type, std::string &addr)
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
@@ -3963,11 +3962,9 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 	/* Tail functions will use EXT_PULL::*_eid, which parse a full EID */
 	ext_pull.m_offset = 0;
 	if (provider_uid == muidEMSAB)
-		return emsab_to_parts(ext_pull, address_type,
-		       atsize, email_address, emsize) ? TRUE : false;
+		return emsab_to_parts(ext_pull, type, addr);
 	if (provider_uid == muidOOP)
-		return oneoff_to_parts(ext_pull, address_type,
-		       atsize, email_address, emsize) ? TRUE : false;
+		return oneoff_to_parts(ext_pull, type, addr);
 	return FALSE;
 }
 

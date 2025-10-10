@@ -106,7 +106,7 @@ void common_util_set_message_read(sqlite3 *psqlite,
 	uint64_t message_id, uint8_t is_read);
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
-extern BOOL common_util_parse_addressbook_entryid(const BINARY *, char *address_type, size_t atsize, char *email_address, size_t emsize);
+extern bool cu_parse_abkeid(const BINARY *, std::string &type, std::string &addr);
 BINARY* common_util_to_private_folder_entryid(
 	sqlite3 *psqlite, const char *username,
 	uint64_t folder_id);
