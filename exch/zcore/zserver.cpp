@@ -3053,92 +3053,90 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				*prowid = last_rowid;
 			else
 				last_rowid = *prowid;
-		} else {
-			prcpt = prcpt_list->pparray[i];
-			ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 1);
+			continue;
+		}
+		prcpt = prcpt_list->pparray[i];
+		ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 1);
+		if (ppropval == nullptr)
+			return ecServerOOM;
+		memcpy(ppropval, prcpt->ppropval,
+			sizeof(TAGGED_PROPVAL)*prcpt->count);
+		ppropval[prcpt->count].proptag = PR_ROWID;
+		ppropval[prcpt->count].pvalue = cu_alloc<uint32_t>();
+		if (ppropval[prcpt->count].pvalue == nullptr)
+			return ecServerOOM;
+		*static_cast<uint32_t *>(ppropval[prcpt->count++].pvalue) = last_rowid;
+		prcpt->ppropval = ppropval;
+		auto pbin = prcpt->get<BINARY>(PR_ENTRYID);
+		if (pbin == nullptr ||
+		    (prcpt->has(PR_EMAIL_ADDRESS) &&
+		    prcpt->has(PR_ADDRTYPE) && prcpt->has(PR_DISPLAY_NAME)))
+			continue;
+		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
+		if (ext_pull.g_uint32(&tmp_flags) != pack_result::ok ||
+		    tmp_flags != 0)
+			continue;
+		if (ext_pull.g_guid(&provider_uid) != pack_result::ok)
+			continue;
+		if (provider_uid == muidEMSAB) {
+			EMSAB_ENTRYID ab_entryid;
+			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+			if (ext_pull.g_abk_eid(&ab_entryid) != pack_result::ok ||
+			    ab_entryid.type != DT_MAILUSER)
+				continue;
+			ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 4);
 			if (ppropval == nullptr)
 				return ecServerOOM;
 			memcpy(ppropval, prcpt->ppropval,
-				sizeof(TAGGED_PROPVAL)*prcpt->count);
-			ppropval[prcpt->count].proptag = PR_ROWID;
-			ppropval[prcpt->count].pvalue = cu_alloc<uint32_t>();
-			if (ppropval[prcpt->count].pvalue == nullptr)
-				return ecServerOOM;
-			*static_cast<uint32_t *>(ppropval[prcpt->count++].pvalue) = last_rowid;
+				prcpt->count*sizeof(TAGGED_PROPVAL));
 			prcpt->ppropval = ppropval;
-			auto pbin = prcpt->get<BINARY>(PR_ENTRYID);
-			if (pbin == nullptr ||
-			    (prcpt->has(PR_EMAIL_ADDRESS) &&
-			    prcpt->has(PR_ADDRTYPE) && prcpt->has(PR_DISPLAY_NAME)))
+			auto err = cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
+			if (err != ecSuccess)
+				return err;
+			auto dupval = common_util_dup(ab_entryid.x500dn.c_str());
+			if (dupval == nullptr)
+				return ecServerOOM;
+			cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
+			std::string es_result;
+			auto ret = cvt_essdn_to_username(ab_entryid.x500dn.c_str(),
+				   g_org_name, mysql_adaptor_userid_to_name, es_result);
+			if (ret != ecSuccess)
 				continue;
-			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-			if (ext_pull.g_uint32(&tmp_flags) != pack_result::ok ||
-			    tmp_flags != 0)
+			dupval = common_util_dup(es_result);
+			if (dupval == nullptr)
+				return ecServerOOM;
+			es_result.clear();
+			cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
+			if (!mysql_adaptor_get_user_displayname(tmp_buff, es_result))
 				continue;
-			if (ext_pull.g_guid(&provider_uid) != pack_result::ok)
+			dupval = common_util_dup(es_result);
+			if (dupval == nullptr)
+				return ecServerOOM;
+			cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
+		} else if (provider_uid == muidOOP) {
+			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+			if (ext_pull.g_oneoff_eid(&oneoff_entry) != pack_result::ok ||
+			    strcasecmp(oneoff_entry.paddress_type, "SMTP") != 0)
 				continue;
-			if (provider_uid == muidEMSAB) {
-				EMSAB_ENTRYID ab_entryid;
-				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-				if (ext_pull.g_abk_eid(&ab_entryid) != pack_result::ok ||
-				    ab_entryid.type != DT_MAILUSER)
-					continue;
-				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 4);
-				if (ppropval == nullptr)
-					return ecServerOOM;
-				memcpy(ppropval, prcpt->ppropval,
-					prcpt->count*sizeof(TAGGED_PROPVAL));
-				prcpt->ppropval = ppropval;
-				auto err = cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
-				if (err != ecSuccess)
-					return err;
-				auto dupval = common_util_dup(ab_entryid.x500dn.c_str());
-				if (dupval == nullptr)
-					return ecServerOOM;
-				cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
-				std::string es_result;
-				auto ret = cvt_essdn_to_username(ab_entryid.x500dn.c_str(),
-				           g_org_name, mysql_adaptor_userid_to_name, es_result);
-				if (ret != ecSuccess)
-					continue;
-				dupval = common_util_dup(es_result);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				es_result.clear();
-				cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
-				if (!mysql_adaptor_get_user_displayname(tmp_buff, es_result))
-					continue;	
-				dupval = common_util_dup(es_result);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
-				continue;
-			}
-			if (provider_uid == muidOOP) {
-				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-				if (ext_pull.g_oneoff_eid(&oneoff_entry) != pack_result::ok ||
-				    strcasecmp(oneoff_entry.paddress_type, "SMTP") != 0)
-					continue;
-				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 5);
-				if (ppropval == nullptr)
-					return ecServerOOM;
-				memcpy(ppropval, prcpt->ppropval,
-					prcpt->count*sizeof(TAGGED_PROPVAL));
-				prcpt->ppropval = ppropval;
-				cu_set_propval(prcpt, PR_ADDRTYPE, "SMTP");
-				auto dupval = common_util_dup(oneoff_entry.pmail_address);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
-				cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
-				dupval = common_util_dup(oneoff_entry.pdisplay_name);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
-				cu_set_propval(prcpt, PR_SEND_RICH_INFO,
-					oneoff_entry.ctrl_flags & MAPI_ONE_OFF_NO_RICH_INFO ?
-					&persist_false : &persist_true);
-			}
+			ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 5);
+			if (ppropval == nullptr)
+				return ecServerOOM;
+			memcpy(ppropval, prcpt->ppropval,
+				prcpt->count*sizeof(TAGGED_PROPVAL));
+			prcpt->ppropval = ppropval;
+			cu_set_propval(prcpt, PR_ADDRTYPE, "SMTP");
+			auto dupval = common_util_dup(oneoff_entry.pmail_address);
+			if (dupval == nullptr)
+				return ecServerOOM;
+			cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
+			cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
+			dupval = common_util_dup(oneoff_entry.pdisplay_name);
+			if (dupval == nullptr)
+				return ecServerOOM;
+			cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
+			cu_set_propval(prcpt, PR_SEND_RICH_INFO,
+				oneoff_entry.ctrl_flags & MAPI_ONE_OFF_NO_RICH_INFO ?
+				&persist_false : &persist_true);
 		}
 	}
 	return pmessage->set_rcpts(prcpt_list) ? ecSuccess : ecError;
