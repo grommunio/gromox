@@ -1049,12 +1049,6 @@ struct GX_EXPORT ONEOFF_ENTRYID {
 	char *pmail_address;
 };
 
-struct GX_EXPORT ONEOFF_ARRAY {
-	uint32_t count;
-	ONEOFF_ENTRYID *pentry_id;
-	I_BEGIN_END(pentry_id, count);
-};
-
 struct GX_EXPORT PERMISSION_ROW {
 	uint32_t flags, member_id, member_rights;
 	BINARY entryid;
