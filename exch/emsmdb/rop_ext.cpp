@@ -710,7 +710,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, MODIFYRECIPIENTS_REQUEST &r)
 		}
 	}
 	for (size_t i = 0; i < r.count; ++i)
-		TRY(x.g_modrcpt_row(&r.proptags, &r.prow[i]));
+		TRY(x.g_modrcpt_row(r.proptags, &r.prow[i]));
 	return pack_result::ok;
 }
 

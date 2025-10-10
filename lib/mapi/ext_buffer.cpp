@@ -1536,8 +1536,9 @@ pack_result EXT_PULL::g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *r)
 	}
 }
 
-pack_result EXT_PULL::g_proprow(const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *r)
+pack_result EXT_PULL::g_proprow(const PROPTAG_ARRAY &cols, PROPERTY_ROW *r)
 {
+	auto pcolumns = &cols;
 	TRY(g_uint8(&r->flag));
 	r->pppropval = anew<void *>(pcolumns->count);
 	if (r->pppropval == nullptr)
@@ -1584,8 +1585,9 @@ pack_result EXT_PULL::g_sortorder_set(SORTORDER_SET *r)
 	return pack_result::ok;
 }
 
-pack_result EXT_PULL::g_recipient_row(const PROPTAG_ARRAY *pproptags, RECIPIENT_ROW *r)
+pack_result EXT_PULL::g_recipient_row(const PROPTAG_ARRAY &tags, RECIPIENT_ROW *r)
 {
+	auto pproptags = &tags;
 	uint8_t type;
 	BOOL b_unicode;
 	PROPTAG_ARRAY proptags;
@@ -1663,10 +1665,10 @@ pack_result EXT_PULL::g_recipient_row(const PROPTAG_ARRAY *pproptags, RECIPIENT_
 		return pack_result::format;
 	proptags.count = r->count;
 	proptags.pproptag = deconst(pproptags->pproptag);
-	return g_proprow(&proptags, &r->properties);
+	return g_proprow(proptags, &r->properties);
 }
 
-pack_result EXT_PULL::g_modrcpt_row(PROPTAG_ARRAY *pproptags, MODIFYRECIPIENT_ROW *r)
+pack_result EXT_PULL::g_modrcpt_row(const PROPTAG_ARRAY &tags, MODIFYRECIPIENT_ROW *r)
 {
 	uint16_t row_size;
 	
@@ -1681,7 +1683,7 @@ pack_result EXT_PULL::g_modrcpt_row(PROPTAG_ARRAY *pproptags, MODIFYRECIPIENT_RO
 	r->precipient_row = anew<RECIPIENT_ROW>();
 	if (r->precipient_row == nullptr)
 		return pack_result::alloc;
-	TRY(g_recipient_row(pproptags, r->precipient_row));
+	TRY(g_recipient_row(tags, r->precipient_row));
 	if (m_offset > offset)
 		return pack_result::format;
 	m_offset = offset;

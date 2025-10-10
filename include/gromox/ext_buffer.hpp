@@ -172,7 +172,7 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_propval(uint16_t type, void **);
 	pack_result g_tagged_pv(TAGGED_PROPVAL *);
 	pack_result g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *);
-	pack_result g_proprow(const PROPTAG_ARRAY *cols, PROPERTY_ROW *);
+	pack_result g_proprow(const PROPTAG_ARRAY &cols, PROPERTY_ROW *);
 	pack_result g_propname(PROPERTY_NAME *);
 	pack_result g_propname_a(PROPNAME_ARRAY *);
 	pack_result g_propid_a(PROPID_ARRAY *);
@@ -185,8 +185,8 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_msg_eid(MESSAGE_ENTRYID *);
 	pack_result g_sortorder(SORT_ORDER *);
 	pack_result g_sortorder_set(SORTORDER_SET *);
-	pack_result g_recipient_row(const PROPTAG_ARRAY *tags, RECIPIENT_ROW *);
-	pack_result g_modrcpt_row(PROPTAG_ARRAY *tag, MODIFYRECIPIENT_ROW *);
+	pack_result g_recipient_row(const PROPTAG_ARRAY &tags, RECIPIENT_ROW *);
+	pack_result g_modrcpt_row(const PROPTAG_ARRAY &tags, MODIFYRECIPIENT_ROW *);
 	pack_result g_permission_data(PERMISSION_DATA *);
 	pack_result g_rule_data(RULE_DATA *);
 	pack_result g_abk_eid(EMSAB_ENTRYID *);
