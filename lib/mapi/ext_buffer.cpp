@@ -2946,7 +2946,7 @@ pack_result EXT_PUSH::p_proptag_a(const PROPTAG_ARRAY &r)
 
 pack_result EXT_PUSH::p_proptag_a(std::span<const gromox::proptag_t> r)
 {
-	auto z = std::max(r.size(), static_cast<size_t>(UINT16_MAX));
+	auto z = std::min(r.size(), static_cast<size_t>(UINT16_MAX));
 	TRY(p_uint16(z));
 	for (size_t i = 0; i < z; ++i)
 		TRY(p_uint32(r[i]));
