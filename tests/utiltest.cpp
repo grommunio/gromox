@@ -451,7 +451,7 @@ static int t_msgchg()
 		*id = propid++;
 		return TRUE;
 	}, nullptr, 1);
-	assert(pgi->group_id == 1);
+	assert(pgi->map_id == 1);
 	assert(pgi->count == 25);
 	assert(pgi->pgroups[0].count == 5);
 	assert(is_nameprop_id(PROP_ID(pgi->pgroups[7].pproptag[0])));

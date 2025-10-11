@@ -1454,7 +1454,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 		pgpinfo = plogon->get_last_property_groupinfo();
 		if (pgpinfo == nullptr)
 			return FALSE;
-		if (!exmdb_client->set_pgm_id(dir, message_id, pgpinfo->group_id))
+		if (!exmdb_client->set_pgm_id(dir, message_id, pgpinfo->map_id))
 			return FALSE;	
 	}  else {
 		pgpinfo = plogon->get_property_groupinfo(map_id);

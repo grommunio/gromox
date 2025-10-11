@@ -613,25 +613,25 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 static const property_groupinfo fake_gpinfo = {UINT32_MAX};
 
 static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
-    MESSAGE_CONTENT *pmsgctnt, uint32_t group_id, const INDEX_ARRAY *pindices,
+    MESSAGE_CONTENT *pmsgctnt, uint32_t map_id, const INDEX_ARRAY *pindices,
 	const PROPTAG_ARRAY *pproptags, MSGCHG_PARTIAL *pmsg)
 {
 	uint32_t index;
 	PROPTAG_ARRAY *pchangetags;
 	static constexpr BINARY fake_bin{};
 	
-	auto pgpinfo = pctx->pstream->plogon->get_property_groupinfo(group_id);
+	auto pgpinfo = pctx->pstream->plogon->get_property_groupinfo(map_id);
 	if (pgpinfo == nullptr)
 		return FALSE;
-	auto b_written = std::find(pctx->group_list.cbegin(), pctx->group_list.cend(), group_id) !=
+	auto b_written = std::find(pctx->group_list.cbegin(), pctx->group_list.cend(), map_id) !=
 	                 pctx->group_list.cend();
-	pmsg->group_id = group_id;
+	pmsg->map_id = map_id;
 	if (b_written) {
 		pmsg->pgpinfo = &fake_gpinfo;
 	} else {
 		pmsg->pgpinfo = pgpinfo;
 		try {
-			pctx->group_list.push_back(group_id);
+			pctx->group_list.push_back(map_id);
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1597: ENOMEM");
 			return false;

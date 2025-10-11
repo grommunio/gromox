@@ -27,7 +27,7 @@ struct store_object {
 	 */
 	const property_groupinfo *get_last_property_groupinfo();
 	/* same as get_last_property_groupinfo, do not free it outside */
-	const property_groupinfo *get_property_groupinfo(uint32_t group_id);
+	const property_groupinfo *get_property_groupinfo(uint32_t map_id);
 	BOOL get_all_proptags(PROPTAG_ARRAY *);
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
 	BOOL set_properties(const TPROPVAL_ARRAY *);

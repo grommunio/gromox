@@ -620,7 +620,7 @@ static BOOL ftstream_producer_write_groupinfo(fxstream_producer *pstream,
 	static_assert(PT_BINARY == PROP_TAG(PT_BINARY, 0));
 	if (!pstream->write_uint32(PROP_TAG(PT_BINARY, 0)) ||
 	    !ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
-	    ext_push.p_uint32(pginfo->group_id) != pack_result::ok ||
+	    ext_push.p_uint32(pginfo->map_id) != pack_result::ok ||
 	    ext_push.p_uint32(pginfo->reserved) != pack_result::ok ||
 	    ext_push.p_uint32(pginfo->count) != pack_result::ok)
 		return FALSE;
@@ -677,7 +677,7 @@ BOOL fxstream_producer::write_messagechangepartial(
 		return FALSE;
 	if (!write_uint32(MetaTagIncrSyncGroupId))
 		return FALSE;
-	if (!write_uint32(pmsg->group_id))
+	if (!write_uint32(pmsg->map_id))
 		return FALSE;	
 	if (!write_uint32(INCRSYNCCHGPARTIAL))
 		return FALSE;

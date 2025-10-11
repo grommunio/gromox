@@ -299,8 +299,8 @@ message_content *message_content::dup() const
 	return dst;
 }
 
-property_groupinfo::property_groupinfo(uint32_t gid) :
-	group_id(gid)
+property_groupinfo::property_groupinfo(uint32_t mid) :
+	map_id(mid)
 {
 	auto z = strange_roundup(0, SR_GROW_PROPTAG_ARRAY);
 	pgroups = me_alloc<PROPTAG_ARRAY>(z);
@@ -309,7 +309,7 @@ property_groupinfo::property_groupinfo(uint32_t gid) :
 }
 
 property_groupinfo::property_groupinfo(property_groupinfo &&o) noexcept :
-	group_id(o.group_id), reserved(o.reserved), count(o.count),
+	map_id(o.map_id), reserved(o.reserved), count(o.count),
 	pgroups(std::move(o.pgroups))
 {
 	o.pgroups = nullptr;

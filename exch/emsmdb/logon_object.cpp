@@ -259,22 +259,22 @@ const property_groupinfo *logon_object::get_last_property_groupinfo()
 	auto plogon = this;
 	if (m_gpinfo == nullptr)
 		m_gpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
-		           plogon, msgchg_grouping_get_last_group_id());
+		           plogon, msgchg_grouping_get_last_map_id());
 	return m_gpinfo.get();
 }
 
 const property_groupinfo *
-logon_object::get_property_groupinfo(uint32_t group_id) try
+logon_object::get_property_groupinfo(uint32_t map_id) try
 {
 	auto plogon = this;
 	
-	if (group_id == msgchg_grouping_get_last_group_id())
+	if (map_id == msgchg_grouping_get_last_map_id())
 		return get_last_property_groupinfo();
 	auto node = std::find_if(group_list.begin(), group_list.end(),
-	            [&](const property_groupinfo &p) { return p.group_id == group_id; });
+	            [&](const property_groupinfo &p) { return p.map_id == map_id; });
 	if (node != group_list.end())
 		return &*node;
-	auto pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, plogon, group_id);
+	auto pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, plogon, map_id);
 	if (pgpinfo == nullptr)
 		return NULL;
 	group_list.push_back(std::move(*pgpinfo));

@@ -33,7 +33,7 @@ using indextotags_t = std::map<uint32_t, taglist_t>;
 
 }
 
-static std::map<uint32_t, indextotags_t> g_group_list; /* group to indices; index to tags */
+static std::map<uint32_t, indextotags_t> g_map_list; /* map to indices; index to tags */
 
 static errno_t mcg_parse(const char *line, tag_entry &node)
 {
@@ -78,9 +78,9 @@ static errno_t mcg_parse(const char *line, tag_entry &node)
 	return 0;
 }
 
-static errno_t mcg_loadfile(const char *dirs, const char *file, uint32_t group_id)
+static errno_t mcg_loadfile(const char *dirs, const char *file, uint32_t map_id)
 {
-	auto emp_res = g_group_list.emplace(group_id, indextotags_t{});
+	auto emp_res = g_map_list.emplace(map_id, indextotags_t{});
 	if (!emp_res.second)
 		return EEXIST;
 	std::unique_ptr<FILE, file_deleter> fp(fopen_sd(file, dirs));
@@ -115,29 +115,29 @@ static errno_t mcg_loadfile(const char *dirs, const char *file, uint32_t group_i
 
 errno_t msgchg_grouping_run(const char *datadir) try
 {
-	auto err = mcg_loadfile(datadir, "msgchg_group_0x1.txt", 1);
+	auto err = mcg_loadfile(datadir, "msgchg_1.txt", 1);
 	if (err != 0)
-		mlog(LV_ERR, "msgchggrp: group 1: %s", strerror(err));
-	return g_group_list.size() != 0 ? err : errno_t{ENOENT};
+		mlog(LV_ERR, "msgchggrp: map 1: %s", strerror(err));
+	return g_map_list.size() != 0 ? err : errno_t{ENOENT};
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1493: ENOMEM");
 	return ENOMEM;
 }
 
-uint32_t msgchg_grouping_get_last_group_id()
+uint32_t msgchg_grouping_get_last_map_id()
 {
-	return g_group_list.size() > 0 ? g_group_list.rbegin()->first : 0;
+	return g_map_list.size() > 0 ? g_map_list.rbegin()->first : 0;
 }
 
 std::unique_ptr<property_groupinfo>
     msgchg_grouping_get_groupinfo(get_named_propid_t get_named_propid,
-    void *store, uint32_t group_id) try
+    void *store, uint32_t map_id) try
 {
-	auto group_iter = g_group_list.find(group_id);
-	if (group_iter == g_group_list.end())
+	auto map_iter = g_map_list.find(map_id);
+	if (map_iter == g_map_list.end())
 		return NULL;
-	auto info = std::make_unique<property_groupinfo>(group_id);
-	for (const auto &[index, raw_tags] : group_iter->second) {
+	auto info = std::make_unique<property_groupinfo>(map_id);
+	for (const auto &[index, raw_tags] : map_iter->second) {
 		auto resolved_tags = proptag_array_init();
 		for (const auto &node : raw_tags) {
 			uint32_t tag = node.proptag;

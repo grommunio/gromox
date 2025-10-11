@@ -359,7 +359,7 @@ ec_error_t message_object::save()
 		pgpinfo = pmessage->pstore->get_last_property_groupinfo();
 		if (pgpinfo == nullptr)
 			return ecError;
-		if (!exmdb_client->set_pgm_id(dir, pmessage->message_id, pgpinfo->group_id))
+		if (!exmdb_client->set_pgm_id(dir, pmessage->message_id, pgpinfo->map_id))
 			return ecError;
 	}  else {
 		pgpinfo = pmessage->pstore->get_property_groupinfo(map_id);

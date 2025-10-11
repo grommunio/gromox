@@ -454,7 +454,7 @@ ec_error_t message_object::save()
 		pgpinfo = pmessage->plogon->get_last_property_groupinfo();
 		if (pgpinfo == nullptr)
 			return ecRpcFailed;
-		if (!exmdb_client->set_pgm_id(dir, pmessage->message_id, pgpinfo->group_id))
+		if (!exmdb_client->set_pgm_id(dir, pmessage->message_id, pgpinfo->map_id))
 			return ecRpcFailed;
 	}  else {
 		pgpinfo = pmessage->plogon->get_property_groupinfo(map_id);
