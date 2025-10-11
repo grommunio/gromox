@@ -616,7 +616,6 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
     MESSAGE_CONTENT *pmsgctnt, uint32_t map_id, const std::vector<uint32_t> &group_list,
     const std::vector<proptag_t> &ugrp_tags, MSGCHG_PARTIAL *pmsg)
 {
-	uint32_t index;
 	PROPTAG_ARRAY *pchangetags;
 	static constexpr BINARY fake_bin{};
 	
@@ -648,9 +647,9 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 
 	unsigned int i;
 	for (i = 0; i < group_list.size(); ++i) {
-		index = group_list[i];
-		pmsg->pchanges[i].index = index;
-		pchangetags = pgpinfo->pgroups + index;
+		auto group_id = group_list[i];
+		pmsg->pchanges[i].group = group_id;
+		pchangetags = &pgpinfo->pgroups[group_id];
 		auto &pl = pmsg->pchanges[i].proplist;
 		pl.ppropval = cu_alloc<TAGGED_PROPVAL>(pchangetags->count);
 		unsigned int count = 0;
@@ -682,7 +681,7 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 	if (ugrp_tags.empty())
 		return TRUE;
 	auto &pl = pmsg->pchanges[i].proplist;
-	pmsg->pchanges[i].index = UINT32_MAX;
+	pmsg->pchanges[i].group = UINT32_MAX;
 	pl.ppropval = cu_alloc<TAGGED_PROPVAL>(ugrp_tags.size());
 	unsigned int count = 0;
 	for (const auto proptag : ugrp_tags) {

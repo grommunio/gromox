@@ -335,7 +335,6 @@ ec_error_t message_object::save() try
 	auto pmessage = this;
 	uint32_t result;
 	BINARY *pbin_pcl = nullptr;
-	uint32_t tmp_index;
 	
 	if (!pmessage->b_new && !pmessage->b_touched)
 		return ecSuccess;
@@ -472,19 +471,21 @@ ec_error_t message_object::save() try
 	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_FLAGS))
 		return ecRpcFailed;
 	for (const auto tag : *pmessage->pchanged_proptags) {
-		if (pgpinfo->get_partial_index(tag, &tmp_index)) {
-			if (!contains(groups, tmp_index))
-				groups.emplace_back(tmp_index);
+		uint32_t le_grp = 0;
+		if (pgpinfo->get_group(tag, &le_grp)) {
+			if (!contains(groups, le_grp))
+				groups.emplace_back(le_grp);
 		} else {
 			if (!contains(ugrp_tags, tag))
 				ugrp_tags.emplace_back(tag);
 		}
 	}
 	for (const auto tag : *pmessage->premoved_proptags) {
-		if (!pgpinfo->get_partial_index(tag, &tmp_index))
+		uint32_t le_grp = 0;
+		if (!pgpinfo->get_group(tag, &le_grp))
 			goto SAVE_FULL_CHANGE;
-		if (!contains(groups, tmp_index))
-			groups.emplace_back(tmp_index);
+		if (!contains(groups, le_grp))
+			groups.emplace_back(le_grp);
 	}
 	if (!exmdb_client->save_change_pgrp(dir, pmessage->message_id,
 	    pmessage->change_num, groups, ugrp_tags))

@@ -1430,7 +1430,6 @@ void common_util_notify_receipt(const char *username, int type,
 BOOL common_util_save_message_ics(logon_object *plogon,
     uint64_t message_id, PROPTAG_ARRAY *pchanged_proptags) try
 {
-	uint32_t tmp_index;
 	uint64_t change_num;
 	PROBLEM_ARRAY tmp_problems;
 	auto dir = plogon->get_dir();
@@ -1465,22 +1464,25 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 
 	std::vector<uint32_t> groups;
 	std::vector<proptag_t> ugrp_tags;
-	if (pgpinfo->get_partial_index(PR_CHANGE_KEY, &tmp_index)) {
-		if (!contains(groups, tmp_index))
-			groups.emplace_back(tmp_index);
+	uint32_t le_grp = 0;
+	if (pgpinfo->get_group(PR_CHANGE_KEY, &le_grp)) {
+		if (!contains(groups, le_grp))
+			groups.emplace_back(le_grp);
 	} else {
 		if (!contains(ugrp_tags, PR_CHANGE_KEY))
 			ugrp_tags.emplace_back(PR_CHANGE_KEY);
 	}
 	if (pchanged_proptags != nullptr) {
-		for (const auto tag : *pchanged_proptags)
-			if (pgpinfo->get_partial_index(tag, &tmp_index)) {
-				if (!contains(groups, tmp_index))
-					groups.emplace_back(tmp_index);
+		for (const auto tag : *pchanged_proptags) {
+			uint32_t le_grp = 0;
+			if (pgpinfo->get_group(tag, &le_grp)) {
+				if (!contains(groups, le_grp))
+					groups.emplace_back(le_grp);
 			} else {
 				if (!contains(ugrp_tags, tag))
 					ugrp_tags.emplace_back(tag);
 			}
+		}
 	}
 	return exmdb_client->save_change_pgrp(dir, message_id,
 	       change_num, groups, ugrp_tags);

@@ -1141,7 +1141,7 @@ BOOL exmdb_server::set_pgm_id(const char *dir, uint64_t message_id, uint32_t map
 	return TRUE;
 }
 
-/* if count of indices and ungroup_proptags are both 0 means full change */
+/* if groups.size() and ungroup_proptags are both 0, it means full change */
 BOOL exmdb_server::save_change_pgrp(const char *dir, uint64_t message_id,
     uint64_t cn, const std::vector<uint32_t> &groups,
     const std::vector<proptag_t> &ugrp_tags) try
@@ -1186,7 +1186,7 @@ BOOL exmdb_server::save_change_pgrp(const char *dir, uint64_t message_id,
 	return false;
 }
 
-/* if count of indices and ungroup_proptags are both 0 means full change */
+/* if groups.size() and ungroup_proptags are both 0, it means full change */
 BOOL exmdb_server::get_change_pgrp(const char *dir, uint64_t message_id,
     uint64_t cn, std::vector<uint32_t> *groups,
     std::vector<gromox::proptag_t> *ugrp_tags)

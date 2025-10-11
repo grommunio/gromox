@@ -29,11 +29,11 @@ struct tag_entry {
 };
 
 using taglist_t = std::vector<tag_entry>;
-using indextotags_t = std::map<uint32_t, taglist_t>;
+using grptotags_t = std::map<uint32_t, taglist_t>;
 
 }
 
-static std::map<uint32_t, indextotags_t> g_map_list; /* map to indices; index to tags */
+static std::map<uint32_t, grptotags_t> g_map_list; /* map to group; group to tags */
 
 static errno_t mcg_parse(const char *line, tag_entry &node)
 {
@@ -80,7 +80,7 @@ static errno_t mcg_parse(const char *line, tag_entry &node)
 
 static errno_t mcg_loadfile(const char *dirs, const char *file, uint32_t map_id)
 {
-	auto emp_res = g_map_list.emplace(map_id, indextotags_t{});
+	auto emp_res = g_map_list.emplace(map_id, grptotags_t{});
 	if (!emp_res.second)
 		return EEXIST;
 	std::unique_ptr<FILE, file_deleter> fp(fopen_sd(file, dirs));
@@ -88,14 +88,14 @@ static errno_t mcg_loadfile(const char *dirs, const char *file, uint32_t map_id)
 		mlog(LV_ERR, "Could not open %s: %s", file, strerror(errno));
 		return errno;
 	}
-	auto &index_list = emp_res.first->second;
+	auto &grp_list = emp_res.first->second;
 	std::vector<tag_entry> *tag_list = nullptr;
 	hxmc_t *line = nullptr;
 	auto cl_0 = HX::make_scope_exit([&]() { HXmc_free(line); });
 	while (HX_getl(&line, fp.get()) != nullptr) {
-		if (strncasecmp(line, "index:", 6) == 0) {
+		if (strncasecmp(line, "group:", 6) == 0) {
 			auto i = strtoul(&line[6], nullptr, 0);
-			tag_list = &index_list.emplace(i, taglist_t{}).first->second;
+			tag_list = &grp_list.emplace(i, taglist_t{}).first->second;
 			continue;
 		}
 		if (*line == '\0' || HX_isspace(*line))
@@ -137,7 +137,7 @@ std::unique_ptr<property_groupinfo>
 	if (map_iter == g_map_list.end())
 		return NULL;
 	auto info = std::make_unique<property_groupinfo>(map_id);
-	for (const auto &[index, raw_tags] : map_iter->second) {
+	for (const auto &[group_id, raw_tags] : map_iter->second) {
 		auto resolved_tags = proptag_array_init();
 		for (const auto &node : raw_tags) {
 			uint32_t tag = node.proptag;

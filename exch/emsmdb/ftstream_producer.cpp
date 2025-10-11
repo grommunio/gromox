@@ -675,10 +675,16 @@ BOOL fxstream_producer::write_messagechangepartial(
 	
 	if (!ftstream_producer_write_groupinfo(pstream, pmsg->pgpinfo))
 		return FALSE;
+	/*
+	 * OXCFXICS itself confuses the terms heavily, calling this meta tag
+	 * "GroupId" (cf. §2.2.4.1.5.4), right in the next subclause saying
+	 * it is the *PGM* ID not the group id.
+	 */
 	if (!write_uint32(MetaTagIncrSyncGroupId))
 		return FALSE;
 	if (!write_uint32(pmsg->map_id))
 		return FALSE;	
+
 	if (!write_uint32(INCRSYNCCHGPARTIAL))
 		return FALSE;
 	if (!ftstream_producer_write_messagechangeheader(pstream, pchgheader))
@@ -686,7 +692,7 @@ BOOL fxstream_producer::write_messagechangepartial(
 	for (size_t i = 0; i < pmsg->count; ++i) {
 		if (!write_uint32(MetaTagIncrementalSyncMessagePartial))
 			return FALSE;
-		if (!write_uint32(pmsg->pchanges[i].index))
+		if (!write_uint32(pmsg->pchanges[i].group))
 			return FALSE;	
 		for (const auto &ipv : pmsg->pchanges[i].proplist) {
 			switch (ipv.proptag) {

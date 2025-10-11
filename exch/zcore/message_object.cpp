@@ -377,10 +377,10 @@ ec_error_t message_object::save() try
 		return ecError;
 	for (unsigned int i = 0; i < pmessage->pchanged_proptags->count; ++i) {
 		const auto tag = pmessage->pchanged_proptags->pproptag[i];
-		uint32_t tmp_index = 0;
-		if (pgpinfo->get_partial_index(tag, &tmp_index)) {
-			if (!contains(groups, tmp_index))
-				groups.emplace_back(tmp_index);
+		uint32_t le_grp = 0;
+		if (pgpinfo->get_group(tag, &le_grp)) {
+			if (!contains(groups, le_grp))
+				groups.emplace_back(le_grp);
 		} else {
 			if (!contains(ugrp_tags, tag))
 				ugrp_tags.emplace_back(tag);
@@ -388,11 +388,11 @@ ec_error_t message_object::save() try
 	}
 	for (unsigned int i = 0; i < pmessage->premoved_proptags->count; ++i) {
 		const auto tag = pmessage->premoved_proptags->pproptag[i];
-		uint32_t tmp_index = 0;
-		if (!pgpinfo->get_partial_index(tag, &tmp_index))
+		uint32_t le_grp = 0;
+		if (!pgpinfo->get_group(tag, &le_grp))
 			goto SAVE_FULL_CHANGE;
-		if (!contains(groups, tmp_index))
-			groups.emplace_back(tmp_index);
+		if (!contains(groups, le_grp))
+			groups.emplace_back(le_grp);
 	}
 	if (!exmdb_client->save_change_pgrp(dir, pmessage->message_id,
 	    pmessage->change_num, groups, ugrp_tags))
