@@ -8,7 +8,8 @@ AM_LDFLAGS  = ${my_LDFLAGS}
 AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 
-lib_LTLIBRARIES = libgromox_abtree.la libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la ${program_plugins}
+lib_LTLIBRARIES = libgromox_abtree.la libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la libgxs_mysql_adaptor.la libgromox_auth.la libgromox_authz.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oab.la libgxh_oxdisco.la libgxp_exchange_emsmdb.la libgxp_exchange_nsp.la libgxp_exchange_rfr.la libgxs_exmdb_provider.la libgxs_event_proxy.la libgxs_event_stub.la libgxs_midb_agent.la libgxs_timer_agent.la libgxs_ruleproc.la
+
 pkglibexec_PROGRAMS = delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/authtry tools/eidprint tools/textmapquery
 if WITH_GNU_LD
 version_sc_SYFLAGS = -Wl,--version-script=${srcdir}/default.sym
@@ -35,19 +36,6 @@ dist_unit_DATA = system/gromox-cleaner.service system/gromox-cleaner.timer \
 	system/gromox-snapshot.service system/gromox-snapshot.timer \
 	system/gromox-timer.service system/gromox-zcore.service
 
-program_plugins = libgxs_mysql_adaptor.la libgromox_auth.la libgromox_authz.la \
-	libgxm_alias_resolve.la \
-	libgxm_exmdb_local.la \
-	libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oab.la libgxh_oxdisco.la \
-	libgxp_exchange_emsmdb.la \
-	libgxp_exchange_nsp.la \
-	libgxp_exchange_rfr.la \
-	libgxs_exmdb_provider.la \
-	libgxs_event_proxy.la \
-	libgxs_event_stub.la \
-	libgxs_midb_agent.la \
-	libgxs_timer_agent.la \
-	libgxs_ruleproc.la
 sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbck gromox-mbop gromox-mbsize gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
 if HAVE_ESEDB
 sbin_PROGRAMS += gromox-edb2mt
@@ -408,7 +396,7 @@ uninstall-hook:
 	rm -Rf ${DESTDIR}${pkgdatadir}/
 
 # On cross-compilation, dldcheck may fail to run, so allow exit code 126 (e.g. Linux) to pass
-dldcheck_files = ${lib_LTLIBRARIES} ${program_plugins} ${pkglib_LTLIBRARIES} ${pamlib_LTLIBRARIES}
+dldcheck_files = ${lib_LTLIBRARIES} ${pkglib_LTLIBRARIES} ${pamlib_LTLIBRARIES}
 dldcheck.stamp: dldcheck ${dldcheck_files}
 	${AM_V_GEN}LD_LIBRARY_PATH="${abs_builddir}/.libs:$$LD_LIBRARY_PATH" ./dldcheck "$@" ${dldcheck_files}; rv="$$?"; test "$$rv" != 2
 
