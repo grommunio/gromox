@@ -1592,7 +1592,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_pgm_id &d)
 	return x.p_uint32(d.map_id);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_save_change_indices &d)
+static pack_result exmdb_pull(EXT_PULL &x, exreq_save_change_pgrp &d)
 {
 	TRY(x.g_uint64(&d.message_id));
 	TRY(x.g_uint64(&d.cn));
@@ -1600,7 +1600,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_save_change_indices &d)
 	return x.g_proptag_a(&d.ugrp_tags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_save_change_indices &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_save_change_pgrp &d)
 {
 	TRY(x.p_uint64(d.message_id));
 	TRY(x.p_uint64(d.cn));
@@ -1608,13 +1608,13 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_save_change_indices &d)
 	return x.p_proptag_a(d.ugrp_tags);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_get_change_indices &d)
+static pack_result exmdb_pull(EXT_PULL &x, exreq_get_change_pgrp &d)
 {
 	TRY(x.g_uint64(&d.message_id));
 	return x.g_uint64(&d.cn);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_change_indices &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_change_pgrp &d)
 {
 	TRY(x.p_uint64(d.message_id));
 	return x.p_uint64(d.cn);
@@ -2378,8 +2378,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_maintenance &d)
 	E(allocate_message_id) \
 	E(get_pgm_id) \
 	E(set_pgm_id) \
-	E(save_change_indices) \
-	E(get_change_indices) \
+	E(save_change_pgrp) \
+	E(get_change_pgrp) \
 	E(mark_modified) \
 	E(try_mark_submit) \
 	E(clear_submit) \
@@ -3440,13 +3440,13 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_pgm_id &d)
 	return x.p_uint32(d.map_id);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_get_change_indices &d)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_get_change_pgrp &d)
 {
 	TRY(x.g_proptag_a(&d.groups));
 	return x.g_proptag_a(&d.ugrp_tags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_change_indices &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_change_pgrp &d)
 {
 	TRY(x.p_proptag_a(d.groups));
 	return x.p_proptag_a(d.ugrp_tags);
@@ -3734,7 +3734,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_purge_softdelete &d)
 	E(set_message_instance_conflict) \
 	E(remove_message_properties) \
 	E(set_pgm_id) \
-	E(save_change_indices) \
+	E(save_change_pgrp) \
 	E(mark_modified) \
 	E(clear_submit) \
 	E(unlink_message) \
@@ -3838,7 +3838,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_purge_softdelete &d)
 	E(allocate_message_id) \
 	E(allocate_cn) \
 	E(get_pgm_id) \
-	E(get_change_indices) \
+	E(get_change_pgrp) \
 	E(try_mark_submit) \
 	E(link_message) \
 	E(get_message_timer) \

@@ -913,7 +913,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		} else {
 			if (!pctx->pstate->pseen->get_repl_first_max(1, &last_cn))
 				return false;
-			if (!exmdb_client->get_change_indices(dir,
+			if (!exmdb_client->get_change_pgrp(dir,
 			    message_id, last_cn, &groups, &ugrp_tags))
 				return FALSE;	
 			if (groups.empty() && ugrp_tags.empty()) {

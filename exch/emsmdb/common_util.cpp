@@ -1482,7 +1482,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 					ugrp_tags.emplace_back(tag);
 			}
 	}
-	return exmdb_client->save_change_indices(dir, message_id,
+	return exmdb_client->save_change_pgrp(dir, message_id,
 	       change_num, groups, ugrp_tags);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2904: ENOMEM");

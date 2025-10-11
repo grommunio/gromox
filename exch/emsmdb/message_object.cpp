@@ -486,7 +486,7 @@ ec_error_t message_object::save() try
 		if (!contains(groups, tmp_index))
 			groups.emplace_back(tmp_index);
 	}
-	if (!exmdb_client->save_change_indices(dir, pmessage->message_id,
+	if (!exmdb_client->save_change_pgrp(dir, pmessage->message_id,
 	    pmessage->change_num, groups, ugrp_tags))
 		return ecRpcFailed;
 	proptag_array_clear(pmessage->pchanged_proptags);
@@ -497,7 +497,7 @@ ec_error_t message_object::save() try
  SAVE_FULL_CHANGE:
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
-	if (!exmdb_client->save_change_indices(dir,
+	if (!exmdb_client->save_change_pgrp(dir,
 	    pmessage->message_id, pmessage->change_num, {}, {}))
 		return ecRpcFailed;
 	/* trigger the rule evaluation under public mode 

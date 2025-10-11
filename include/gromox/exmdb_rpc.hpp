@@ -122,8 +122,8 @@ enum class exmdb_callid : uint8_t {
 	mark_modified = 0x5d,
 	get_pgm_id = 0x5e,
 	set_pgm_id = 0x5f,
-	save_change_indices = 0x60,
-	get_change_indices = 0x61,
+	save_change_pgrp = 0x60,
+	get_change_pgrp = 0x61,
 	try_mark_submit = 0x62,
 	clear_submit = 0x63,
 	link_message = 0x64,
@@ -689,14 +689,14 @@ struct exreq_set_pgm_id final : public exreq {
 	uint32_t map_id = 0;
 };
 
-struct exreq_save_change_indices final : public exreq {
+struct exreq_save_change_pgrp final : public exreq {
 	uint64_t message_id;
 	uint64_t cn;
 	std::vector<uint32_t> groups;
 	std::vector<gromox::proptag_t> ugrp_tags;
 };
 
-struct exreq_get_change_indices final : public exreq {
+struct exreq_get_change_pgrp final : public exreq {
 	uint64_t message_id;
 	uint64_t cn;
 };
@@ -1249,7 +1249,7 @@ struct exresp_get_pgm_id final : public exresp {
 	uint32_t map_id = 0;
 };
 
-struct exresp_get_change_indices final : public exresp {
+struct exresp_get_change_pgrp final : public exresp {
 	std::vector<uint32_t> groups;
 	std::vector<gromox::proptag_t> ugrp_tags;
 };
@@ -1371,7 +1371,7 @@ using exresp_empty_message_instance_attachments = exresp;
 using exresp_set_message_instance_conflict = exresp;
 using exresp_remove_message_properties = exresp;
 using exresp_set_pgm_id = exresp;
-using exresp_save_change_indices = exresp;
+using exresp_save_change_pgrp = exresp;
 using exresp_remove_store_properties = exresp;
 using exresp_mark_modified = exresp;
 using exresp_clear_submit = exresp;
