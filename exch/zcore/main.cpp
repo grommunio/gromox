@@ -35,7 +35,6 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
-#include <gromox/msgchg_grouping.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
@@ -381,10 +380,6 @@ int main(int argc, char **argv)
 	if (bounce_gen_init(g_config_file->get_value("config_file_path"),
 	    g_config_file->get_value("data_file_path"), "notify_bounce") != 0) {
 		mlog(LV_ERR, "system: failed to start bounce producer");
-		return EXIT_FAILURE;
-	}
-	if (msgchg_grouping_run(g_config_file->get_value("data_file_path")) != 0) {
-		mlog(LV_ERR, "system: failed to start msgchg grouping");
 		return EXIT_FAILURE;
 	}
 	if (!ab_tree::AB.run()) {

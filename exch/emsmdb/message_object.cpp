@@ -442,65 +442,14 @@ ec_error_t message_object::save() try
 		return ecSuccess;
 	}
 	
-	const property_groupinfo *pgpinfo = nullptr;
 	if (is_new || pmessage->pstate != nullptr)
 		goto SAVE_FULL_CHANGE;
-
-	{
-	uint32_t map_id = 0;
-	if (!exmdb_client->get_pgm_id(dir, pmessage->message_id, &map_id))
-		return ecRpcFailed;
-	if (map_id == 0) {
-		pgpinfo = pmessage->plogon->get_last_property_groupinfo();
-		if (pgpinfo == nullptr)
-			return ecRpcFailed;
-		if (!exmdb_client->set_pgm_id(dir, pmessage->message_id, pgpinfo->map_id))
-			return ecRpcFailed;
-	}  else {
-		pgpinfo = pmessage->plogon->get_property_groupinfo(map_id);
-		if (pgpinfo == nullptr)
-			return ecRpcFailed;
-	}
-	
 	if (!exmdb_client->mark_modified(dir,
 	    pmessage->message_id))
 		return ecRpcFailed;
-	std::vector<uint32_t> groups;
-	std::vector<proptag_t> ugrp_tags;
-	/* always mark PR_MESSAGE_FLAGS as changed */
-	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_FLAGS))
-		return ecRpcFailed;
-	for (const auto tag : *pmessage->pchanged_proptags) {
-		uint32_t le_grp = 0;
-		if (pgpinfo->get_group(tag, &le_grp)) {
-			if (!contains(groups, le_grp))
-				groups.emplace_back(le_grp);
-		} else {
-			if (!contains(ugrp_tags, tag))
-				ugrp_tags.emplace_back(tag);
-		}
-	}
-	for (const auto tag : *pmessage->premoved_proptags) {
-		uint32_t le_grp = 0;
-		if (!pgpinfo->get_group(tag, &le_grp))
-			goto SAVE_FULL_CHANGE;
-		if (!contains(groups, le_grp))
-			groups.emplace_back(le_grp);
-	}
-	if (!exmdb_client->save_change_pgrp(dir, pmessage->message_id,
-	    pmessage->change_num, groups, ugrp_tags))
-		return ecRpcFailed;
-	proptag_array_clear(pmessage->pchanged_proptags);
-	proptag_array_clear(pmessage->premoved_proptags);
-	return ecSuccess;
-	}
-	
  SAVE_FULL_CHANGE:
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
-	if (!exmdb_client->save_change_pgrp(dir,
-	    pmessage->message_id, pmessage->change_num, {}, {}))
-		return ecRpcFailed;
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
 	if (is_new && !b_fai && pmessage->message_id != 0 &&

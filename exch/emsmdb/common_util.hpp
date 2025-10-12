@@ -87,7 +87,6 @@ BOOL common_util_convert_tagged_propval(
 BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres);
 BOOL common_util_convert_rule_actions(BOOL to_unicode, RULE_ACTIONS *pactions);
 extern void common_util_notify_receipt(const char *username, int type, message_content *brief);
-extern BOOL common_util_save_message_ics(logon_object *plogon, uint64_t msg_id, PROPTAG_ARRAY *changed_tags);
 extern ec_error_t ems_send_mail(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
 extern ec_error_t ems_send_vmail(vmime::shared_ptr<vmime::message>, const char *sender, const std::vector<std::string> &rcpts);
 extern ec_error_t cu_send_message(logon_object *, message_object *, bool submit);

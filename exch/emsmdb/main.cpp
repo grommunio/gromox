@@ -15,7 +15,6 @@
 #include <gromox/defs.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/msgchg_grouping.hpp>
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
@@ -228,10 +227,6 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 		if (exmdb_client->run() != 0) {
 			mlog(LV_ERR, "emsmdb: failed to run exmdb client");
-			return FALSE;
-		}
-		if (msgchg_grouping_run(get_data_path()) != 0) {
-			mlog(LV_ERR, "emsmdb: failed to run msgchg grouping");
 			return FALSE;
 		}
 		if (0 != emsmdb_interface_run()) {

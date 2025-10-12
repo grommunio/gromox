@@ -474,8 +474,6 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 			return ecUnableToAbort;
 		if (!exmdb_client->clear_submit(plogon->get_dir(), message_id, TRUE))
 			return ecError;
-		if (!common_util_save_message_ics(plogon, message_id, nullptr))
-			return ecError;
 		return ecSuccess;
 	}
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);

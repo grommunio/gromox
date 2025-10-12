@@ -131,8 +131,6 @@ Default: (unspecified)
 .IP \(bu 4
 \fIdata_file_path\fP/notify_bounce/: templates for read/nonread notification
 mails sent to originators
-.IP \(bu 4
-\fIdata_file_path\fP/msgchg_grouping/\fI*\fP.txt
 .SH Outlook notes
 Outlook can be started with the \fB/rpcinfo\fP command-line parameter to
 display a status table about the RPC connections it has open. Alternatively,

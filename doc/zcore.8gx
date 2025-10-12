@@ -200,8 +200,6 @@ exmdb_provider(4gx) for details.
 \fIdata_file_path\fP/folder_names.txt: Translations for essential folders in a
 message store.
 .IP \(bu 4
-\fIdata_file_path\fP/msgchg_grouping/: Data files for exchange_emsmdb(4gx)
-.IP \(bu 4
 \fIdata_file_path\fP/notify_bounce/: templates for read/nonread notification
 mails sent to originators
 .IP \(bu 4

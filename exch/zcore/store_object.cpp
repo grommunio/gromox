@@ -24,7 +24,6 @@
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/msgchg_grouping.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
@@ -203,33 +202,6 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY &propids,
 	return false;
 }
 
-static BOOL store_object_get_named_propid(store_object *pstore,
-	BOOL b_create, const PROPERTY_NAME *ppropname,
-	uint16_t *ppropid)
-{
-	if (ppropname->guid == PS_MAPI) {
-		*ppropid = ppropname->kind == MNID_ID ? ppropname->lid : 0;
-		return TRUE;
-	}
-	char ps[NP_STRBUF_SIZE];
-	if (!propname_to_packed(*ppropname, ps, std::size(ps))) {
-		*ppropid = 0;
-		return TRUE;
-	}
-	auto iter = pstore->propname_hash.find(ps);
-	if (iter != pstore->propname_hash.end()) {
-		*ppropid = iter->second;
-		return TRUE;
-	}
-	if (!exmdb_client_get_named_propid(pstore->dir,
-	    b_create, ppropname, ppropid))
-		return FALSE;
-	if (*ppropid == 0)
-		return TRUE;
-	store_object_cache_propname(pstore, *ppropid, ppropname);
-	return TRUE;
-}
-
 BOOL store_object::get_named_propids(BOOL b_create,
     const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids) try
 {
@@ -290,41 +262,6 @@ BOOL store_object::get_named_propids(BOOL b_create,
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2233: ENOMEM");
 	return false;
-}
-
-static BOOL gnpwrap(void *store, BOOL create, const PROPERTY_NAME *pn, uint16_t *pid)
-{
-	return store_object_get_named_propid(static_cast<store_object *>(store), create, pn, pid);
-}
-
-const property_groupinfo *store_object::get_last_property_groupinfo()
-{
-	auto pstore = this;
-	if (m_gpinfo == nullptr)
-		m_gpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
-		           pstore, msgchg_grouping_get_last_map_id());
-	return m_gpinfo.get();
-}
-
-const property_groupinfo *
-store_object::get_property_groupinfo(uint32_t map_id) try
-{
-	auto pstore = this;
-	
-	if (map_id == msgchg_grouping_get_last_map_id())
-		return get_last_property_groupinfo();
-	auto node = std::find_if(group_list.begin(), group_list.end(),
-	            [&](const property_groupinfo &p) { return p.map_id == map_id; });
-	if (node != group_list.end())
-		return &*node;
-	auto pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, pstore, map_id);
-	if (pgpinfo == nullptr)
-		return NULL;
-	group_list.push_back(std::move(*pgpinfo));
-	return &group_list.back();
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1630: ENOMEM");
-	return nullptr;
 }
 
 static BOOL store_object_is_readonly_prop(store_object *pstore, proptag_t proptag)
