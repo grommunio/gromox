@@ -8,20 +8,6 @@
 struct attachment_content;
 struct PROPERTY_XNAME;
 
-struct GX_EXPORT property_groupinfo {
-	property_groupinfo(uint32_t map_id);
-	~property_groupinfo();
-	property_groupinfo(property_groupinfo &&) noexcept;
-	void operator=(property_groupinfo &&) noexcept = delete;
-	bool append_internal(PROPTAG_ARRAY *);
-	bool get_group(gromox::proptag_t, uint32_t *grp) const;
-
-	uint32_t map_id = 0, reserved = 0, count = 0;
-	PROPTAG_ARRAY *pgroups = nullptr;
-	I_BEGIN_END(pgroups, count);
-};
-using PROPERTY_GROUPINFO = property_groupinfo;
-
 struct GX_EXPORT attachment_list {
 	void remove(uint16_t index);
 	BOOL append_internal(attachment_content *);
@@ -42,13 +28,6 @@ struct GX_EXPORT MESSAGE_CHILDREN {
 struct GX_EXPORT CHANGE_PART {
 	uint32_t group;
 	TPROPVAL_ARRAY proplist;
-};
-
-struct GX_EXPORT MSGCHG_PARTIAL {
-	const PROPERTY_GROUPINFO *pgpinfo; /* this memory is only a reference */
-	uint32_t map_id = 0, count = 0;
-	CHANGE_PART *pchanges;
-	MESSAGE_CHILDREN children;
 };
 
 struct GX_EXPORT PROGRESS_MESSAGE {

@@ -9,7 +9,6 @@
 #include <memory>
 #include <vector>
 #include <libHX/string.h>
-#include <gromox/algorithm.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>

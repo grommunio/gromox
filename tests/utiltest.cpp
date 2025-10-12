@@ -14,7 +14,6 @@
 #include <gromox/ical.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapi_types.hpp>
-#include <gromox/msgchg_grouping.hpp>
 #include <gromox/paths.h>
 #include <gromox/propval.hpp>
 #include <gromox/resource_pool.hpp>
@@ -439,26 +438,6 @@ static int t_utf8_prefix()
 	return EXIT_SUCCESS;
 }
 
-static int t_msgchg()
-{
-	const char *mpath = getenv("TEST_PATH");
-	if (mpath == nullptr)
-		mpath = PKGDATADIR;
-	if (msgchg_grouping_run(mpath) != 0)
-		return EXIT_FAILURE;
-	auto pgi = msgchg_grouping_get_groupinfo([](void *store, BOOL create, const PROPERTY_NAME *pn, uint16_t *id) -> BOOL {
-		static propid_t propid = 0x8000;
-		*id = propid++;
-		return TRUE;
-	}, nullptr, 1);
-	assert(pgi->map_id == 1);
-	assert(pgi->count == 25);
-	assert(pgi->pgroups[0].count == 5);
-	assert(is_nameprop_id(PROP_ID(pgi->pgroups[7].pproptag[0])));
-	assert(PROP_TYPE(pgi->pgroups[7].pproptag[0]) != 0);
-	return 0;
-}
-
 static int t_eidcvt()
 {
 	uint8_t network_input[] = {2,0,0,0,0,0x1,0xff,0xfe};
@@ -555,7 +534,7 @@ static int runner()
 
 	using fpt = decltype(&t_interval);
 	static constexpr fpt fct[] = {
-		t_msgchg, t_extpp, t_convert, t_emailaddr, t_base64,
+		t_extpp, t_convert, t_emailaddr, t_base64,
 		t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6,
 		t_id7, t_id8, t_id9, t_seq,
 		t_cmp_binary, t_cmp_guid, t_cmp_svreid, t_cmp_icaltime,

@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
-#include <gromox/algorithm.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
