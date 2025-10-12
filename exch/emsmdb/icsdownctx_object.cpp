@@ -680,6 +680,8 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 	}
 	if (ugrp_tags.empty())
 		return TRUE;
+
+	/* Special "group" for write_messagechangepartial(). */
 	auto &pl = pmsg->pchanges[i].proplist;
 	pmsg->pchanges[i].group = UINT32_MAX;
 	pl.ppropval = cu_alloc<TAGGED_PROPVAL>(ugrp_tags.size());

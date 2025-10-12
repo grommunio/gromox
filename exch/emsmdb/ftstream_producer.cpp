@@ -692,9 +692,30 @@ BOOL fxstream_producer::write_messagechangepartial(
 	for (size_t i = 0; i < pmsg->count; ++i) {
 		if (!write_uint32(MetaTagIncrementalSyncMessagePartial))
 			return FALSE;
+		/*
+		 * [Grep keyword: FAULTY-PARTIALS]. Earlier in
+		 * icsdownctx_object_get_changepartial(), ungrouped tags were
+		 * put into the special (struct MSGCHG_PARTIAL::pchanges)
+		 * pseudo-group with id UINT32_MAX/0xffffffff. pmsg->pgpinfo
+		 * does not have any group with id 0xffffffff, and OL would
+		 * rightfully deleted ungrouped properties from an .ost.
+		 *
+		 * OXCFXICS has terrible explanations, but it appears very much
+		 * like we are supposed to use a proptag terminator instead
+		 * (see below).
+		 */
 		if (!write_uint32(pmsg->pchanges[i].group))
 			return FALSE;	
 		for (const auto &ipv : pmsg->pchanges[i].proplist) {
+			/*
+			 * When we are in our special group (of ungrouped tags),
+			 * emit the marker for "terminating" SyncMessagePartial,
+			 * as per OXCFXICS v25 2.2.4.3.15.
+			 */
+			if (pmsg->pchanges[i].group == UINT32_MAX) {
+				if (!write_uint32(UINT32_MAX))
+					return FALSE;
+			}
 			switch (ipv.proptag) {
 			case PR_MESSAGE_RECIPIENTS:
 				if (pmsg->children.prcpts == nullptr)
