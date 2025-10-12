@@ -2107,8 +2107,8 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_MESSAGECLASS,
 		    deconst(tnef_from_msgclass(message_class))) != pack_result::ok)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_CLASS_A;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_CLASS;
+		tmp_proptags.emplace_back(PR_MESSAGE_CLASS_A);
+		tmp_proptags.emplace_back(PR_MESSAGE_CLASS);
 	}
 	/* ATTRIBUTE_ID_ORIGNINALMESSAGECLASS */
 	auto str = pmsg->proplist.get<const char>(PR_ORIG_MESSAGE_CLASS_A);
@@ -2116,8 +2116,8 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_ORIGNINALMESSAGECLASS,
 		    deconst(tnef_from_msgclass(str))) != pack_result::ok)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PR_ORIG_MESSAGE_CLASS_A;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PR_ORIG_MESSAGE_CLASS;
+		tmp_proptags.emplace_back(PR_ORIG_MESSAGE_CLASS_A);
+		tmp_proptags.emplace_back(PR_ORIG_MESSAGE_CLASS);
 	}
 	/* ATTRIBUTE_ID_SUBJECT */
 	if (!b_embedded) {
@@ -2134,7 +2134,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 			if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_BODY,
 			    str) != pack_result::ok)
 				return FALSE;
-			tmp_proptags.pproptag[tmp_proptags.count++] = PR_BODY_A;
+			tmp_proptags.emplace_back(PR_BODY_A);
 		}
 	}
 	/* ATTRIBUTE_ID_MESSAGEID */
@@ -2145,7 +2145,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_MESSAGEID,
 		    tmp_buff) != pack_result::ok)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PR_SEARCH_KEY;
+		tmp_proptags.emplace_back(PR_SEARCH_KEY);
 	}
 	/* ATTRIBUTE_ID_OWNER */
 	if (is_meeting_request(message_class)) {
@@ -2170,7 +2170,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DELEGATE,
 		    bv) != pack_result::ok)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PR_RCVD_REPRESENTING_ENTRYID;
+		tmp_proptags.emplace_back(PR_RCVD_REPRESENTING_ENTRYID);
 	}
 	/* ATTRIBUTE_ID_DATESTART */
 	auto stamp = pmsg->proplist.get<const uint64_t>(PR_START_DATE);
@@ -2178,7 +2178,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DATESTART,
 		    stamp) != pack_result::ok)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PR_START_DATE;
+		tmp_proptags.emplace_back(PR_START_DATE);
 	}
 	/* ATTRIBUTE_ID_DATEEND */
 	stamp = pmsg->proplist.get<uint64_t>(PR_END_DATE);
@@ -2186,7 +2186,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DATEEND,
 		    stamp) != pack_result::ok)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PR_END_DATE;
+		tmp_proptags.emplace_back(PR_END_DATE);
 	}
 	/* ATTRIBUTE_ID_AIDOWNER */
 	num = pmsg->proplist.get<uint32_t>(PR_OWNER_APPT_ID);
@@ -2194,7 +2194,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_AIDOWNER,
 		    num) != pack_result::ok)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PR_OWNER_APPT_ID;
+		tmp_proptags.emplace_back(PR_OWNER_APPT_ID);
 	}
 	/* ATTRIBUTE_ID_REQUESTRES */
 	auto flag = pmsg->proplist.get<const uint8_t>(PR_RESPONSE_REQUESTED);
@@ -2203,7 +2203,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_REQUESTRES,
 		    &tmp_int16) != pack_result::ok)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PR_RESPONSE_REQUESTED;
+		tmp_proptags.emplace_back(PR_RESPONSE_REQUESTED);
 	}
 	/* ATTRIBUTE_ID_DATESENT */
 	stamp = pmsg->proplist.get<uint64_t>(PR_CLIENT_SUBMIT_TIME);
@@ -2217,7 +2217,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DATERECD,
 		    stamp) != pack_result::ok)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_DELIVERY_TIME;
+		tmp_proptags.emplace_back(PR_MESSAGE_DELIVERY_TIME);
 	}
 	/* ATTRIBUTE_ID_PRIORITY */
 	num = pmsg->proplist.get<uint32_t>(PR_IMPORTANCE);
@@ -2240,7 +2240,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_PRIORITY,
 		    &tmp_int16) != pack_result::ok)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_DELIVERY_TIME;
+		tmp_proptags.emplace_back(PR_MESSAGE_DELIVERY_TIME);
 	}
 	/* ATTRIBUTE_ID_DATEMODIFY */
 	stamp = pmsg->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
@@ -2248,7 +2248,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DATEMODIFY,
 		    stamp) != pack_result::ok)
 			return FALSE;
-		tmp_proptags.pproptag[tmp_proptags.count++] = PR_LAST_MODIFICATION_TIME;
+		tmp_proptags.emplace_back(PR_LAST_MODIFICATION_TIME);
 	}
 	/* ATTRIBUTE_ID_RECIPTABLE */
 	/* do not generate this attribute for top-level message */
@@ -2353,7 +2353,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 				if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHDATA,
 				    bv) != pack_result::ok)
 					return FALSE;
-				tmp_proptags.pproptag[tmp_proptags.count++] = PR_ATTACH_DATA_BIN;
+				tmp_proptags.emplace_back(PR_ATTACH_DATA_BIN);
 			}
 		}
 		/* ATTRIBUTE_ID_ATTACHTITLE */
@@ -2362,14 +2362,14 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 			if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHTITLE,
 			    str) != pack_result::ok)
 				return FALSE;
-			tmp_proptags.pproptag[tmp_proptags.count++] = PR_ATTACH_LONG_FILENAME_A;
+			tmp_proptags.emplace_back(PR_ATTACH_LONG_FILENAME_A);
 		} else {
 			str = pattachment->proplist.get<char>(PR_ATTACH_FILENAME_A);
 			if (str != nullptr) {
 				if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHTITLE,
 				    str) != pack_result::ok)
 					return FALSE;
-				tmp_proptags.pproptag[tmp_proptags.count++] = PR_ATTACH_FILENAME_A;
+				tmp_proptags.emplace_back(PR_ATTACH_FILENAME_A);
 			}
 		}
 		/* ATTRIBUTE_ID_ATTACHMETAFILE */
@@ -2378,7 +2378,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 			if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHMETAFILE,
 			    bv) != pack_result::ok)
 				return FALSE;
-			tmp_proptags.pproptag[tmp_proptags.count++] = PR_ATTACH_RENDERING;
+			tmp_proptags.emplace_back(PR_ATTACH_RENDERING);
 		}
 		/* ATTRIBUTE_ID_ATTACHCREATEDATE */
 		stamp = pattachment->proplist.get<uint64_t>(PR_CREATION_TIME);
@@ -2386,7 +2386,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 			if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHCREATEDATE,
 			    stamp) != pack_result::ok)
 				return FALSE;
-			tmp_proptags.pproptag[tmp_proptags.count++] = PR_CREATION_TIME;
+			tmp_proptags.emplace_back(PR_CREATION_TIME);
 		}
 		/* ATTRIBUTE_ID_ATTACHMODIFYDATE */
 		stamp = pattachment->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
@@ -2394,7 +2394,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 			if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHMODIFYDATE,
 			    stamp) != pack_result::ok)
 				return FALSE;
-			tmp_proptags.pproptag[tmp_proptags.count++] = PR_LAST_MODIFICATION_TIME;
+			tmp_proptags.emplace_back(PR_LAST_MODIFICATION_TIME);
 		}
 		/* ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME */
 		str = pattachment->proplist.get<char>(PR_ATTACH_TRANSPORT_NAME_A);
@@ -2402,7 +2402,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 			if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME,
 			    str) != pack_result::ok)
 				return FALSE;
-			tmp_proptags.pproptag[tmp_proptags.count++] = PR_ATTACH_TRANSPORT_NAME_A;
+			tmp_proptags.emplace_back(PR_ATTACH_TRANSPORT_NAME_A);
 		}
 		/* ATTRIBUTE_ID_ATTACHMENT */
 		if (pattachment->proplist.count == 0)
