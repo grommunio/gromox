@@ -610,109 +610,6 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 		pmsgctnt->children.pattachments = NULL;
 }
 
-static const property_groupinfo fake_gpinfo = {UINT32_MAX};
-
-static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
-    MESSAGE_CONTENT *pmsgctnt, uint32_t map_id, const std::vector<uint32_t> &group_list,
-    const std::vector<proptag_t> &ugrp_tags, MSGCHG_PARTIAL *pmsg)
-{
-	PROPTAG_ARRAY *pchangetags;
-	static constexpr BINARY fake_bin{};
-	
-	auto pgpinfo = pctx->pstream->plogon->get_property_groupinfo(map_id);
-	if (pgpinfo == nullptr)
-		return FALSE;
-	auto b_written = std::find(pctx->group_list.cbegin(), pctx->group_list.cend(), map_id) !=
-	                 pctx->group_list.cend();
-	pmsg->map_id = map_id;
-	if (b_written) {
-		pmsg->pgpinfo = &fake_gpinfo;
-	} else {
-		pmsg->pgpinfo = pgpinfo;
-		try {
-			pctx->group_list.push_back(map_id);
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1597: ENOMEM");
-			return false;
-		}
-	}
-	pmsg->count = group_list.size();
-	if (ugrp_tags.size() != 0)
-		++pmsg->count;
-	pmsg->pchanges = cu_alloc<CHANGE_PART>(pmsg->count);
-	if (NULL == pmsg->pchanges) {
-		pmsg->count = 0;
-		return FALSE;
-	}
-
-	unsigned int i;
-	for (i = 0; i < group_list.size(); ++i) {
-		auto group_id = group_list[i];
-		pmsg->pchanges[i].group = group_id;
-		pchangetags = &pgpinfo->pgroups[group_id];
-		auto &pl = pmsg->pchanges[i].proplist;
-		pl.ppropval = cu_alloc<TAGGED_PROPVAL>(pchangetags->count);
-		unsigned int count = 0;
-		for (const auto proptag : *pchangetags) {
-			switch (proptag) {
-			case PR_MESSAGE_RECIPIENTS:
-				pl.ppropval[count].proptag = PR_MESSAGE_RECIPIENTS;
-				pl.ppropval[count++].pvalue = deconst(&fake_bin);
-				pmsg->children.prcpts = pmsgctnt->children.prcpts;
-				break;
-			case PR_MESSAGE_ATTACHMENTS:
-				pl.ppropval[count].proptag = PR_MESSAGE_ATTACHMENTS;
-				pl.ppropval[count++].pvalue = deconst(&fake_bin);
-				pmsg->children.pattachments =
-					pmsgctnt->children.pattachments;
-				break;
-			default: {
-				auto pvalue = pmsgctnt->proplist.getval(proptag);
-				if (NULL != pvalue) {
-					pl.ppropval[count].proptag = proptag;
-					pl.ppropval[count++].pvalue = pvalue;
-				}
-				break;
-			}
-			}
-		}
-		pl.count = count;
-	}
-	if (ugrp_tags.empty())
-		return TRUE;
-
-	/* Special "group" for write_messagechangepartial(). */
-	auto &pl = pmsg->pchanges[i].proplist;
-	pmsg->pchanges[i].group = UINT32_MAX;
-	pl.ppropval = cu_alloc<TAGGED_PROPVAL>(ugrp_tags.size());
-	unsigned int count = 0;
-	for (const auto proptag : ugrp_tags) {
-		switch (proptag) {
-		case PR_MESSAGE_RECIPIENTS:
-			pl.ppropval[count].proptag = PR_MESSAGE_RECIPIENTS;
-			pl.ppropval[count++].pvalue = deconst(&fake_bin);
-			pmsg->children.prcpts = pmsgctnt->children.prcpts;
-			break;
-		case PR_MESSAGE_ATTACHMENTS:
-			pl.ppropval[count].proptag = PR_MESSAGE_ATTACHMENTS;
-			pl.ppropval[count++].pvalue = deconst(&fake_bin);
-			pmsg->children.pattachments =
-				pmsgctnt->children.pattachments;
-			break;
-		default: {
-			auto pvalue = pmsgctnt->proplist.getval(proptag);
-			if (pvalue == nullptr)
-				break;
-			pl.ppropval[count].proptag = proptag;
-			pl.ppropval[count++].pvalue = pvalue;
-			break;
-		}
-		}
-	}
-	pl.count = count;
-	return TRUE;
-}
-
 static void icsdownctx_object_trim_embedded(
 	MESSAGE_CONTENT *pmsgctnt)
 {
@@ -752,13 +649,10 @@ static void icsdownctx_object_trim_report_recipients(
 static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	uint64_t message_id, BOOL b_downloaded, int *ppartial_count)
 {
-	BOOL b_full;
 	void *pvalue;
-	uint64_t last_cn;
 	PROGRESS_MESSAGE progmsg;
 	TPROPVAL_ARRAY chgheader;
 	MESSAGE_CONTENT *pmsgctnt;
-	MSGCHG_PARTIAL msg_partial;
 	static constexpr uint8_t fake_true = 1;
 	static constexpr uint8_t fake_false = 0;
 	
@@ -899,53 +793,10 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	    cond1 || !progmsg.b_fai)
 		icsdownctx_object_adjust_msgctnt(pmsgctnt, pctx->pproptags, cond1);
 
-	std::vector<uint32_t> groups;
-	std::vector<proptag_t> ugrp_tags;
-	/*
-	 * [Grep keyword: FAULTY-PARTIALS]. The partial change synchronization
-	 * looks pretty bugged.
-	 *
-	 * The save_change_pgrp EXRPC records changed proptags between CNs. But
-	 * message_write_messages issues a fat `DELETE FROM message_changes`,
-	 * so in effect, only the most recent upload (i.e. diff(CN-1, CN)) is
-	 * ever kept. A client which is at CN-2 thus would not be served enough
-	 * propvals when catching up to CN-0.
-	 *
-	 * As a result, always transfer full messages.
-	 */
-	if (true /* !b_downloaded || progmsg.b_fai */) {
-		b_full = TRUE;
-	} else {
-		/* Downloaded && Normal message */
-		uint32_t map_id = 0;
-		if (!exmdb_client->get_pgm_id(dir, message_id, &map_id))
-			return FALSE;
-		if (!(pctx->send_options & SEND_OPTIONS_PARTIAL) ||
-		    map_id == 0 || *ppartial_count > MAX_PARTIAL_ON_ROP) {
-			b_full = TRUE;
-		} else {
-			if (!pctx->pstate->pseen->get_repl_first_max(1, &last_cn))
-				return false;
-			if (!exmdb_client->get_change_pgrp(dir,
-			    message_id, last_cn, &groups, &ugrp_tags))
-				return FALSE;	
-			if (groups.empty() && ugrp_tags.empty()) {
-				b_full = TRUE;
-			} else {
-				b_full = FALSE;
-				(*ppartial_count) ++;
-			}
-		}
-		if (!b_full && !icsdownctx_object_get_changepartial(pctx,
-		    pmsgctnt, map_id, groups, ugrp_tags, &msg_partial))
-			return FALSE;
-	}
 	if (pctx->sync_flags & SYNC_PROGRESS_MODE &&
 	    !pctx->pstream->write_progresspermessage(&progmsg))
 		return FALSE;
 	pctx->next_progress_steps += progmsg.message_size;
-	if (!b_full)
-		return pctx->pstream->write_messagechangepartial(&chgheader, &msg_partial);
 
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_READ);
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_CHANGE_KEY);
