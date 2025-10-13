@@ -186,7 +186,7 @@ static ec_error_t nsp_fetchprop(const ab_tree::ab_node &node, cpid_t codepage, u
 
 static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
     bool b_ephid, cpid_t codepage, proptag_t proptag, PROPERTY_VALUE *pprop,
-    void *pbuff, size_t temp_len)
+    char *pbuff, size_t temp_len)
 {
 	std::string dn;
 	EPHEMERAL_ENTRYID ephid;
@@ -214,7 +214,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pstr = static_cast<char *>(pbuff);
+			pprop->value.pstr = pbuff;
 		}
 		gx_strlcpy(pprop->value.pstr, mdbdn.c_str(), temp_len);
 		return ecSuccess;
@@ -225,7 +225,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			if (pprop->value.bin.pv == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.bin.pv = deconst(pbuff);
+			pprop->value.bin.pv = pbuff;
 		}
 		FLATUID f = node.guid();
 		memcpy(pprop->value.bin.pv, &f, sizeof(f));
@@ -249,7 +249,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pstr = static_cast<char *>(pbuff);
+			pprop->value.pstr = pbuff;
 		}
 		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
@@ -269,12 +269,12 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 	case PR_MAPPING_SIGNATURE:
 		if (pbuff == nullptr || temp_len < 16) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 16);
-			if (pprop->value.bin.pb == nullptr)
+			if (pprop->value.bin.pv == nullptr)
 				return ecServerOOM;
 		} else {
 			pprop->value.bin.pv = pbuff;
 		}
-		memcpy(pprop->value.bin.pb, &muidEMSAB, sizeof(muidEMSAB));
+		memcpy(pprop->value.bin.pv, &muidEMSAB, sizeof(muidEMSAB));
 		pprop->value.bin.cb = 16;
 		return ecSuccess;
 	case PR_TEMPLATEID:
@@ -311,7 +311,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			if (pprop->value.bin.pc == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.bin.pc = static_cast<char *>(pbuff);
+			pprop->value.bin.pc = pbuff;
 		}
 		snprintf(pprop->value.bin.pc, temp_len, "EX:%s", dn.c_str());
 		HX_strupper(pprop->value.bin.pc);
@@ -343,7 +343,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pstr = static_cast<char *>(pbuff);
+			pprop->value.pstr = pbuff;
 		}
 		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
@@ -359,12 +359,11 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			return ecNotFound;
 		if (NULL == pbuff) {
 			temp_len = utf8_to_mb_len(dn.c_str());
-			pprop->value.pv = ndr_stack_alloc(
-						NDR_STACK_OUT, temp_len);
+			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pv = pbuff;
+			pprop->value.pstr = pbuff;
 		}
 		cu_utf8_to_mb(codepage, dn.c_str(),
 				pprop->value.pstr, temp_len);
@@ -378,7 +377,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pstr = static_cast<char *>(pbuff);
+			pprop->value.pstr = pbuff;
 		}
 		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
@@ -387,11 +386,11 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			return ecNotFound;
 		if (NULL == pbuff) {
 			temp_len = utf8_to_mb_len(dn.c_str());
-			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
+			pprop->value.pstr = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, temp_len));
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pv = pbuff;
+			pprop->value.pstr = pbuff;
 		}
 		cu_utf8_to_mb(codepage,
 			dn.c_str(), pprop->value.pstr, temp_len);
@@ -405,7 +404,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pstr = static_cast<char *>(pbuff);
+			pprop->value.pstr = pbuff;
 		}
 		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
@@ -418,7 +417,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pstr = static_cast<char *>(pbuff);
+			pprop->value.pstr = pbuff;
 		}
 		cu_utf8_to_mb(codepage, dn.c_str(),
 				pprop->value.pstr, temp_len);
@@ -441,7 +440,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
 		} else {
-			pprop->value.pstr = static_cast<char *>(pbuff);
+			pprop->value.pstr = pbuff;
 		}
 		gx_strlcpy(pprop->value.pstr, dn.c_str(), temp_len);
 		return ecSuccess;
