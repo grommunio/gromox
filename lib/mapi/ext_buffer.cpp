@@ -7,7 +7,9 @@
 #include <cstring>
 #include <limits>
 #include <memory>
+#include <span>
 #include <string>
+#include <vector>
 #include <libHX/endian_float.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -1536,23 +1538,24 @@ pack_result EXT_PULL::g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *r)
 	}
 }
 
-pack_result EXT_PULL::g_proprow(const PROPTAG_ARRAY &cols, PROPERTY_ROW *r)
+pack_result EXT_PULL::g_proprow(std::span<const proptag_t> cols, PROPERTY_ROW *r)
 {
-	auto pcolumns = &cols;
+	if (cols.size() > UINT16_MAX)
+		return pack_result::format;
 	TRY(g_uint8(&r->flag));
-	r->pppropval = anew<void *>(pcolumns->count);
+	r->pppropval = anew<void *>(cols.size());
 	if (r->pppropval == nullptr)
 		return pack_result::alloc;
 	if (PROPERTY_ROW_FLAG_NONE == r->flag) {
-		for (size_t i = 0; i < pcolumns->count; ++i)
-			TRY(g_propval(PROP_TYPE(pcolumns->pproptag[i]), &r->pppropval[i]));
+		for (uint16_t i = 0; i < cols.size(); ++i)
+			TRY(g_propval(PROP_TYPE(cols[i]), &r->pppropval[i]));
 		return pack_result::ok;
 	} else if (PROPERTY_ROW_FLAG_FLAGGED == r->flag) {
-		for (size_t i = 0; i < pcolumns->count; ++i) {
+		for (uint16_t i = 0; i < cols.size(); ++i) {
 			r->pppropval[i] = anew<FLAGGED_PROPVAL>();
 			if (r->pppropval[i] == nullptr)
 				return pack_result::alloc;
-			TRY(g_flagged_pv(PROP_TYPE(pcolumns->pproptag[i]),
+			TRY(g_flagged_pv(PROP_TYPE(cols[i]),
 			         static_cast<FLAGGED_PROPVAL *>(r->pppropval[i])));
 		}
 		return pack_result::ok;
@@ -1585,12 +1588,10 @@ pack_result EXT_PULL::g_sortorder_set(SORTORDER_SET *r)
 	return pack_result::ok;
 }
 
-pack_result EXT_PULL::g_recipient_row(const PROPTAG_ARRAY &tags, RECIPIENT_ROW *r)
+pack_result EXT_PULL::g_recipient_row(std::span<const proptag_t> tags, RECIPIENT_ROW *r)
 {
-	auto pproptags = &tags;
 	uint8_t type;
 	BOOL b_unicode;
-	PROPTAG_ARRAY proptags;
 	
 	TRY(g_uint16(&r->flags));
 	type = r->flags & 0x0007;
@@ -1661,14 +1662,12 @@ pack_result EXT_PULL::g_recipient_row(const PROPTAG_ARRAY &tags, RECIPIENT_ROW *
 			r->ptransmittable_name = r->pdisplay_name;
 	}
 	TRY(g_uint16(&r->count));
-	if (r->count > pproptags->count)
+	if (r->count > tags.size())
 		return pack_result::format;
-	proptags.count = r->count;
-	proptags.pproptag = deconst(pproptags->pproptag);
-	return g_proprow(proptags, &r->properties);
+	return g_proprow(tags, &r->properties);
 }
 
-pack_result EXT_PULL::g_modrcpt_row(const PROPTAG_ARRAY &tags, MODIFYRECIPIENT_ROW *r)
+pack_result EXT_PULL::g_modrcpt_row(std::span<const proptag_t> tags, MODIFYRECIPIENT_ROW *r)
 {
 	uint16_t row_size;
 	
@@ -2456,117 +2455,6 @@ pack_result EXT_PUSH::p_wstr(const char *pstr)
 	return p_bytes(pbuff.get(), len);
 }
 
-pack_result EXT_PUSH::p_uint16_a(const SHORT_ARRAY &r)
-{
-	TRY(p_uint32(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_uint16(r.ps[i]));
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_uint32_a(const LONG_ARRAY &r)
-{
-	TRY(p_uint32(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_uint32(r.pl[i]));
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_uint64_a(const LONGLONG_ARRAY &r)
-{
-	TRY(p_uint32(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_uint64(r.pll[i]));
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_uint64_sa(const LONGLONG_ARRAY &r)
-{
-	if (r.count > 0xFFFF)
-		return pack_result::format;
-	TRY(p_uint16(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_uint64(r.pll[i]));
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_float_a(const FLOAT_ARRAY &r)
-{
-	TRY(p_uint32(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_float(r.mval[i]));
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_double_a(const DOUBLE_ARRAY &r)
-{
-	TRY(p_uint32(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_double(r.mval[i]));
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_bin_a(const BINARY_ARRAY &r)
-{
-	TRY(p_uint32(r.count));
-	for (size_t i = 0; i < r.count; ++i) {
-		if (m_flags & EXT_FLAG_ABK) {
-			if (r.pbin[i].cb == 0) {
-				TRY(p_uint8(0));
-				continue;
-			}
-			TRY(p_uint8(0xFF));
-		}
-		TRY(p_bin(r.pbin[i]));
-	}
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_str_a(const STRING_ARRAY &r)
-{
-	TRY(p_uint32(r.count));
-	for (size_t i = 0; i < r.count; ++i) {
-		if (m_flags & EXT_FLAG_ABK) {
-			/*
-			 * Ironically, Outlook's NSP handler eventually crashes
-			 * when it encounters a null string so idk why MS felt
-			 * a need to allow sending nullptr.
-			 */
-			if (r.ppstr[i] == nullptr) {
-				TRY(p_uint8(0));
-				continue;
-			}
-			TRY(p_uint8(0xFF));
-		}
-		TRY(p_str(r.ppstr[i]));
-	}
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_wstr_a(const STRING_ARRAY &r)
-{
-	TRY(p_uint32(r.count));
-	for (size_t i = 0; i < r.count; ++i) {
-		if (m_flags & EXT_FLAG_ABK) {
-			if (r.ppstr[i] == nullptr) {
-				TRY(p_uint8(0));
-				continue;
-			}
-			TRY(p_uint8(0xFF));
-		}
-		TRY(p_wstr(r.ppstr[i]));
-	}
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_guid_a(const GUID_ARRAY &r)
-{
-	TRY(p_uint32(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_guid(r.pguid[i]));
-	return pack_result::ok;
-}
-
 static pack_result ext_buffer_push_restriction_and_or(EXT_PUSH *pext,
     const RESTRICTION_AND_OR *r)
 {
@@ -2935,39 +2823,6 @@ pack_result EXT_PUSH::p_longterm(const LONG_TERM_ID &r)
 	return p_uint16(r.padding);
 }
 
-pack_result EXT_PUSH::p_longterm_a(const LONG_TERM_ID_ARRAY &r)
-{
-	TRY(p_uint16(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_longterm(r.pids[i]));
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_proptag_a(const PROPTAG_ARRAY &r)
-{
-	TRY(p_uint16(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_uint32(r.pproptag[i]));
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_proptag_a(std::span<const gromox::proptag_t> r)
-{
-	auto z = std::min(r.size(), static_cast<size_t>(UINT16_MAX));
-	TRY(p_uint16(z));
-	for (size_t i = 0; i < z; ++i)
-		TRY(p_uint32(r[i]));
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_proptag_la(const LPROPTAG_ARRAY &r)
-{
-	TRY(p_uint32(r.cvalues));
-	for (size_t i = 0; i < r.cvalues; ++i)
-		TRY(p_uint32(r.pproptag[i]));
-	return pack_result::ok;
-}
-
 pack_result EXT_PUSH::p_propname(const PROPERTY_NAME &r)
 {
 	TRY(p_uint8(r.kind));
@@ -2987,52 +2842,11 @@ pack_result EXT_PUSH::p_propname(const PROPERTY_NAME &r)
 	return pack_result::ok;
 }
 
-pack_result EXT_PUSH::p_propname_a(const PROPNAME_ARRAY &r)
-{
-	TRY(p_uint16(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_propname(r.ppropname[i]));
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_tpropval_a(const TPROPVAL_ARRAY &r)
-{
-	TRY(p_uint16(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_tagged_pv(r.ppropval[i]));
-	return pack_result::ok;
-}
-
-pack_result EXT_PUSH::p_tpropval_la(const LTPROPVAL_ARRAY &r)
-{
-	TRY(p_uint32(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_tagged_pv(r.propval[i]));
-	return pack_result::ok;
-}
-
 pack_result EXT_PUSH::p_tarray_set(const TARRAY_SET &r)
 {
 	TRY(p_uint32(r.count));
 	for (size_t i = 0; i < r.count; ++i)
 		TRY(p_tpropval_a(*r.pparray[i]));
-	return pack_result::ok;
-}
-
-
-static pack_result ext_buffer_push_property_problem(EXT_PUSH *pext,
-    const PROPERTY_PROBLEM &r)
-{
-	TRY(pext->p_uint16(r.index));
-	TRY(pext->p_uint32(r.proptag));
-	return pext->p_uint32(r.err);
-}
-
-pack_result EXT_PUSH::p_problem_a(const PROBLEM_ARRAY &r)
-{
-	TRY(p_uint16(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(ext_buffer_push_property_problem(this, r.pproblem[i]));
 	return pack_result::ok;
 }
 
@@ -3099,16 +2913,18 @@ pack_result EXT_PUSH::p_flagged_pv(uint32_t tag, const FLAGGED_PROPVAL &r)
 	}
 }
 
-pack_result EXT_PUSH::p_proprow(const PROPTAG_ARRAY &cols, const PROPERTY_ROW &r)
+pack_result EXT_PUSH::p_proprow(std::span<const proptag_t> cols, const PROPERTY_ROW &r)
 {
+	if (cols.size() > UINT16_MAX)
+		return pack_result::format;
 	TRY(p_uint8(r.flag));
 	if (PROPERTY_ROW_FLAG_NONE == r.flag) {
-		for (size_t i = 0; i < cols.count; ++i)
-			TRY(p_propval(PROP_TYPE(cols.pproptag[i]), r.pppropval[i]));
+		for (uint16_t i = 0; i < cols.size(); ++i)
+			TRY(p_propval(PROP_TYPE(cols[i]), r.pppropval[i]));
 		return pack_result::ok;
 	} else if (PROPERTY_ROW_FLAG_FLAGGED == r.flag) {
-		for (size_t i = 0; i < cols.count; ++i)
-			TRY(p_flagged_pv(cols.pproptag[i],
+		for (uint16_t i = 0; i < cols.size(); ++i)
+			TRY(p_flagged_pv(cols[i],
 			         *static_cast<FLAGGED_PROPVAL *>(r.pppropval[i])));
 		return pack_result::ok;
 	}
@@ -3167,10 +2983,9 @@ pack_result EXT_PUSH::p_typed_str(const TYPED_STRING &r)
 	}
 }
 
-pack_result EXT_PUSH::p_recipient_row(const PROPTAG_ARRAY &pproptags, const RECIPIENT_ROW &r)
+pack_result EXT_PUSH::p_recipient_row(std::span<const proptag_t> cols, const RECIPIENT_ROW &r)
 {
 	BOOL b_unicode;
-	PROPTAG_ARRAY proptags;
 	
 	b_unicode = FALSE;
 	if (r.flags & RECIPIENT_ROW_FLAG_UNICODE)
@@ -3213,21 +3028,19 @@ pack_result EXT_PUSH::p_recipient_row(const PROPTAG_ARRAY &pproptags, const RECI
 			TRY(p_str(r.ptransmittable_name));
 	}
 	TRY(p_uint16(r.count));
-	if (r.count > pproptags.count)
+	if (r.count > cols.size())
 		return pack_result::format;
-	proptags.count = r.count;
-	proptags.pproptag = static_cast<uint32_t *>(pproptags.pproptag);
-	return p_proprow(proptags, r.properties);
+	return p_proprow(cols, r.properties);
 }
 
-pack_result EXT_PUSH::p_openrecipient_row(const PROPTAG_ARRAY &pproptags, const OPENRECIPIENT_ROW &r)
+pack_result EXT_PUSH::p_openrecipient_row(std::span<const proptag_t> cols, const OPENRECIPIENT_ROW &r)
 {
 	TRY(p_uint8(r.recipient_type));
 	TRY(p_uint16(r.cpid));
 	TRY(p_uint16(r.reserved));
 	uint32_t offset = m_offset;
 	TRY(advance(sizeof(uint16_t)));
-	TRY(p_recipient_row(pproptags, r.recipient_row));
+	TRY(p_recipient_row(cols, r.recipient_row));
 	uint16_t row_size = m_offset - (offset + sizeof(uint16_t));
 	uint32_t offset1 = m_offset;
 	m_offset = offset;
@@ -3236,7 +3049,7 @@ pack_result EXT_PUSH::p_openrecipient_row(const PROPTAG_ARRAY &pproptags, const 
 	return pack_result::ok;
 }
 
-pack_result EXT_PUSH::p_readrecipient_row(const PROPTAG_ARRAY &pproptags, const READRECIPIENT_ROW &r)
+pack_result EXT_PUSH::p_readrecipient_row(std::span<const proptag_t> cols, const READRECIPIENT_ROW &r)
 {
 	TRY(p_uint32(r.row_id));
 	TRY(p_uint8(r.recipient_type));
@@ -3244,7 +3057,7 @@ pack_result EXT_PUSH::p_readrecipient_row(const PROPTAG_ARRAY &pproptags, const 
 	TRY(p_uint16(r.reserved));
 	uint32_t offset = m_offset;
 	TRY(advance(sizeof(uint16_t)));
-	TRY(p_recipient_row(pproptags, r.recipient_row));
+	TRY(p_recipient_row(cols, r.recipient_row));
 	uint16_t row_size = m_offset - (offset + sizeof(uint16_t));
 	uint32_t offset1 = m_offset;
 	m_offset = offset;
@@ -3289,14 +3102,6 @@ pack_result EXT_PUSH::p_oneoff_eid(const ONEOFF_ENTRYID_view &r)
 		TRY(p_str(r.paddress_type));
 		return p_str(r.pmail_address);
 	}
-}
-
-pack_result EXT_PUSH::p_eid_a(const EID_ARRAY &r)
-{
-	TRY(p_uint32(r.count));
-	for (auto eid : r)
-		TRY(p_uint64(eid));
-	return pack_result::ok;
 }
 
 pack_result EXT_PUSH::p_systime(const SYSTEMTIME &r)

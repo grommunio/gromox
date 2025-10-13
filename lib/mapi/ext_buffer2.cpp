@@ -53,19 +53,142 @@ using namespace gromox;
 	PULL_AC(T, t, C, c, fn)
 
 PULL_A(uint16_t, uint16, uint32_t, uint32, uint16)
-PUSH_A(uint16_t, uint16, uint32_t, uint32, uint16)
 PULL_A(uint32_t, uint32, uint32_t, uint32, uint32)
-PUSH_A(uint32_t, uint32, uint32_t, uint32, uint32)
 PULL_A(uint64_t, uint64, uint32_t, uint32, uint64)
-PUSH_A(uint64_t, uint64, uint32_t, uint32, uint64)
 PULL_A(float, float, uint32_t, uint32, float)
-PUSH_A(float, float, uint32_t, uint32, float)
 PULL_A(double, double, uint32_t, uint32, double)
-PUSH_A(double, double, uint32_t, uint32, double)
 PULL_A(GUID, guid, uint32_t, uint32, guid)
-PUSH_A(GUID, guid, uint32_t, uint32, guid)
 PULL_A(std::string, str, uint32_t, uint32, str)
 PULL_A(std::string, wstr, uint32_t, uint32, wstr)
+
+pack_result EXT_PUSH::p_uint16_a(std::span<const uint16_t> r)
+{
+	if (r.size() > UINT32_MAX)
+		return pack_result::format;
+	TRY(p_uint32(r.size()));
+	for (uint32_t i = 0; i < r.size(); ++i)
+		TRY(p_uint16(r[i]));
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_uint32_a(std::span<const uint32_t> r)
+{
+	if (r.size() > UINT32_MAX)
+		return pack_result::format;
+	TRY(p_uint32(r.size()));
+	for (uint32_t i = 0; i < r.size(); ++i)
+		TRY(p_uint32(r[i]));
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_uint64_a(std::span<const uint64_t> r)
+{
+	if (r.size() > UINT32_MAX)
+		return pack_result::format;
+	TRY(p_uint32(r.size()));
+	for (uint32_t i = 0; i < r.size(); ++i)
+		TRY(p_uint64(r[i]));
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_uint64_sa(std::span<const uint64_t> r)
+{
+	if (r.size() > UINT16_MAX)
+		return pack_result::format;
+	TRY(p_uint16(r.size()));
+	for (uint16_t i = 0; i < r.size(); ++i)
+		TRY(p_uint64(r[i]));
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_float_a(std::span<const float> r)
+{
+	if (r.size() > UINT32_MAX)
+		return pack_result::format;
+	TRY(p_uint32(r.size()));
+	for (uint32_t i = 0; i < r.size(); ++i)
+		TRY(p_float(r[i]));
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_double_a(std::span<const double> r)
+{
+	if (r.size() > UINT32_MAX)
+		return pack_result::format;
+	TRY(p_uint32(r.size()));
+	for (uint32_t i = 0; i < r.size(); ++i)
+		TRY(p_double(r[i]));
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_bin_a(std::span<const BINARY> r)
+{
+	if (r.size() > UINT32_MAX)
+		return pack_result::format;
+	TRY(p_uint32(r.size()));
+	for (uint32_t i = 0; i < r.size(); ++i) {
+		if (m_flags & EXT_FLAG_ABK) {
+			if (r[i].cb == 0) {
+				TRY(p_uint8(0));
+				continue;
+			}
+			TRY(p_uint8(0xFF));
+		}
+		TRY(p_bin(r[i]));
+	}
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_str_a(std::span<const char *const> r)
+{
+	if (r.size() > UINT32_MAX)
+		return pack_result::format;
+	TRY(p_uint32(r.size()));
+	for (uint32_t i = 0; i < r.size(); ++i) {
+		if (m_flags & EXT_FLAG_ABK) {
+			/*
+			 * Ironically, Outlook's NSP handler eventually crashes
+			 * when it encounters a null string so idk why MS felt
+			 * a need to allow sending nullptr.
+			 */
+			if (r[i] == nullptr) {
+				TRY(p_uint8(0));
+				continue;
+			}
+			TRY(p_uint8(0xFF));
+		}
+		TRY(p_str(r[i]));
+	}
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_wstr_a(std::span<const char *const> r)
+{
+	if (r.size() > UINT32_MAX)
+		return pack_result::format;
+	TRY(p_uint32(r.size()));
+	for (uint32_t i = 0; i < r.size(); ++i) {
+		if (m_flags & EXT_FLAG_ABK) {
+			if (r[i] == nullptr) {
+				TRY(p_uint8(0));
+				continue;
+			}
+			TRY(p_uint8(0xFF));
+		}
+		TRY(p_wstr(r[i]));
+	}
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_guid_a(std::span<const GUID> r)
+{
+	if (r.size() > UINT32_MAX)
+		return pack_result::format;
+	TRY(p_uint32(r.size()));
+	for (size_t i = 0; i < r.size(); ++i)
+		TRY(p_guid(r[i]));
+	return pack_result::ok;
+}
 
 pack_result EXT_PULL::g_propid_a(std::vector<uint16_t> *a)
 {
@@ -75,7 +198,15 @@ pack_result EXT_PULL::g_propid_a(std::vector<uint16_t> *a)
 	return g_uint16_an(a, count);
 }
 
-PUSH_A(uint16_t, uint16, uint16_t, uint16, propid)
+pack_result EXT_PUSH::p_propid_a(std::span<const gromox::propid_t> r)
+{
+	if (r.size() > UINT16_MAX)
+		return pack_result::format;
+	TRY(p_uint16(r.size()));
+	for (uint16_t i = 0; i < r.size(); ++i)
+		TRY(p_uint16(r[i]));
+	return pack_result::ok;
+}
 
 #undef PUSH_A
 #undef PULL_A
@@ -131,6 +262,66 @@ pack_result EXT_PULL::g_fb_a(std::vector<freebusy_event> *r) try
 	return pack_result::alloc;
 }
 
+pack_result EXT_PUSH::p_proptag_a(std::span<const proptag_t> r)
+{
+	if (r.size() > UINT16_MAX)
+		return pack_result::format;
+	TRY(p_uint16(r.size()));
+	for (const auto v : r)
+		TRY(p_uint32(v));
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_proptag_la(std::span<const proptag_t> r)
+{
+	if (r.size() > UINT32_MAX)
+		return pack_result::format;
+	TRY(p_uint32(r.size()));
+	for (auto v : r)
+		TRY(p_uint32(v));
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_longterm_a(std::span<const LONG_TERM_ID> r)
+{
+	if (r.size() > UINT16_MAX)
+		return pack_result::format;
+	TRY(p_uint16(r.size()));
+	for (const auto &e : r)
+		TRY(p_longterm(e));
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_propname_a(std::span<const PROPERTY_NAME> r)
+{
+	if (r.size() > UINT16_MAX)
+		return pack_result::format;
+	TRY(p_uint16(r.size()));
+	for (const auto &e : r)
+		TRY(p_propname(e));
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_tpropval_a(std::span<const TAGGED_PROPVAL> r)
+{
+	if (r.size() > UINT16_MAX)
+		return pack_result::format;
+	TRY(p_uint16(r.size()));
+	for (const auto &e : r)
+		TRY(p_tagged_pv(e));
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_tpropval_la(std::span<const TAGGED_PROPVAL> r)
+{
+	if (r.size() > UINT32_MAX)
+		return pack_result::format;
+	TRY(p_uint32(r.size()));
+	for (const auto &e : r)
+		TRY(p_tagged_pv(e));
+	return pack_result::ok;
+}
+
 pack_result EXT_PUSH::p_fbevent(const freebusy_event &r)
 {
 	TRY(p_int64(r.start_time));
@@ -177,4 +368,27 @@ pack_result EXT_PUSH::p_persistdata_a(std::span<const PERSISTDATA> pdlist)
 	for (const auto &pd : pdlist)
 		TRY(ext_push_persistdata(*this, pd));
 	return ext_push_persistdata(*this, {PERSIST_SENTINEL, ELEMENT_SENTINEL});
+}
+
+pack_result EXT_PUSH::p_problem_a(std::span<const PROPERTY_PROBLEM> r)
+{
+	if (r.size() > UINT16_MAX)
+		return pack_result::format;
+	TRY(p_uint16(r.size()));
+	for (const auto &e : r) {
+		TRY(p_uint16(e.index));
+		TRY(p_uint32(e.proptag));
+		TRY(p_uint32(e.err));
+	}
+	return pack_result::ok;
+}
+
+pack_result EXT_PUSH::p_eid_a(std::span<const uint64_t> r)
+{
+	if (r.size() > UINT32_MAX)
+		return pack_result::format;
+	TRY(p_uint32(r.size()));
+	for (auto eid : r)
+		TRY(p_uint64(eid));
+	return pack_result::ok;
 }
