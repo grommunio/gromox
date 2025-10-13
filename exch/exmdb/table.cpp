@@ -676,7 +676,7 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 	/* [Block 1] */
 	xtransaction psort_transact;
 	acsort accel_pair;
-	if ((table_flags & (TABLE_FLAG_ASSOCIATED | TABLE_FLAG_SOFTDELETES)) == 0 &&
+	if ((table_flags & (TABLE_FLAG_CONVERSATIONMEMBERS | TABLE_FLAG_ASSOCIATED | TABLE_FLAG_SOFTDELETES)) == 0 &&
 	    !b_search)
 		accel_pair = accel_sorting(psorts);
 	if (accel_pair.dir != 0)
@@ -842,6 +842,19 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 			             "AND messages.is_associated=0 AND messages.is_deleted={}",
 			             LLU{fid_val}, b_deleted);
 		}
+	/* public cases */
+	} else if (accel_pair.tag == PR_LAST_MODIFICATION_TIME) {
+		sql_string = fmt::format("SELECT message_id FROM msgtime_index "
+			     "WHERE folder_id={} ORDER BY mtime {}",
+			     LLU{fid_val}, accel_pair.dir > 0 ? "ASC" : "DESC");
+	} else if (accel_pair.tag == PR_MESSAGE_DELIVERY_TIME) {
+		sql_string = fmt::format("SELECT message_id FROM msgtime_index "
+			     "WHERE folder_id={} ORDER BY rcvtime {}",
+			     LLU{fid_val}, accel_pair.dir > 0 ? "ASC" : "DESC");
+	} else if (accel_pair.tag == PR_CLIENT_SUBMIT_TIME) {
+		sql_string = fmt::format("SELECT message_id FROM msgtime_index "
+			     "WHERE folder_id={} ORDER BY sndtime {}",
+			     LLU{fid_val}, accel_pair.dir > 0 ? "ASC" : "DESC");
 	} else if (!(table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)) {
 		sql_string = fmt::format(
 		             "SELECT message_id "
