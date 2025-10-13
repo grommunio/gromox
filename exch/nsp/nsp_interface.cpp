@@ -468,7 +468,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 		size_t i = 1;
 		for (const auto &a : alias_list) {
 			temp_len = a.size() + 6;
-			char *z = pprop->value.string_array.ppstr[i] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len);
+			char *z = pprop->value.string_array.ppstr[i++] = ndr_stack_anew<char>(NDR_STACK_OUT, temp_len);
 			if (z == nullptr)
 				return ecServerOOM;
 			snprintf(z, temp_len, "SMTP:%s", a.c_str());

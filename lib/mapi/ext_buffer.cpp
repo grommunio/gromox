@@ -2527,6 +2527,11 @@ pack_result EXT_PUSH::p_str_a(const STRING_ARRAY &r)
 	TRY(p_uint32(r.count));
 	for (size_t i = 0; i < r.count; ++i) {
 		if (m_flags & EXT_FLAG_ABK) {
+			/*
+			 * Ironically, Outlook's NSP handler eventually crashes
+			 * when it encounters a null string so idk why MS felt
+			 * a need to allow sending nullptr.
+			 */
 			if (r.ppstr[i] == nullptr) {
 				TRY(p_uint8(0));
 				continue;
