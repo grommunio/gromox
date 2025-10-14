@@ -1243,7 +1243,7 @@ pack_result EXT_PULL::g_tpropval_a(TPROPVAL_ARRAY *r)
 	return pack_result::ok;
 }
 
-pack_result EXT_PULL::g_tpropval_a(LTPROPVAL_ARRAY *r)
+pack_result EXT_PULL::g_tpropval_la(LTPROPVAL_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
 	if (r->count == 0) {
@@ -3003,7 +3003,7 @@ pack_result EXT_PUSH::p_tpropval_a(const TPROPVAL_ARRAY &r)
 	return pack_result::ok;
 }
 
-pack_result EXT_PUSH::p_tpropval_a(const LTPROPVAL_ARRAY &r)
+pack_result EXT_PUSH::p_tpropval_la(const LTPROPVAL_ARRAY &r)
 {
 	TRY(p_uint32(r.count));
 	for (size_t i = 0; i < r.count; ++i)

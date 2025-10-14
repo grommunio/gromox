@@ -377,7 +377,7 @@ pack_result nsp_ext_pull::g_nsp_request(modprops_request &req)
 		req.values = anew<LTPROPVAL_ARRAY>();
 		if (req.values == nullptr)
 			return pack_result::alloc;
-		TRY(g_tpropval_a(req.values));
+		TRY(g_tpropval_la(req.values));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
@@ -756,7 +756,7 @@ pack_result nsp_ext_push::p_nsp_response(const getprops_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_tpropval_a(*rsp.row));
+		TRY(p_tpropval_la(*rsp.row));
 	}
 	return p_uint32(0);
 }
@@ -779,7 +779,7 @@ pack_result nsp_ext_push::p_nsp_response(const getspecialtable_response &rsp)
 		TRY(p_uint8(0xFF));
 		TRY(p_uint32(rsp.count));
 		for (size_t i = 0; i < rsp.count; ++i)
-			TRY(p_tpropval_a(rsp.row[i]));
+			TRY(p_tpropval_la(rsp.row[i]));
 	}
 	return p_uint32(0);
 }
@@ -794,7 +794,7 @@ pack_result nsp_ext_push::p_nsp_response(const gettemplateinfo_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_tpropval_a(*rsp.row));
+		TRY(p_tpropval_la(*rsp.row));
 	}
 	return p_uint32(0);
 }

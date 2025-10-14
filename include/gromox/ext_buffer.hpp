@@ -177,7 +177,7 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_propname_a(PROPNAME_ARRAY *);
 	pack_result g_propid_a(PROPID_ARRAY *);
 	pack_result g_tpropval_a(TPROPVAL_ARRAY *);
-	pack_result g_tpropval_a(LTPROPVAL_ARRAY *);
+	pack_result g_tpropval_la(LTPROPVAL_ARRAY *);
 	pack_result g_tarray_set(TARRAY_SET *);
 	pack_result g_problem_a(PROBLEM_ARRAY *);
 	pack_result g_xid(uint8_t size, XID *);
@@ -296,7 +296,7 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_propname_a(const PROPNAME_ARRAY &);
 	pack_result p_propid_a(const PROPID_ARRAY &);
 	pack_result p_tpropval_a(const TPROPVAL_ARRAY &);
-	pack_result p_tpropval_a(const LTPROPVAL_ARRAY &);
+	pack_result p_tpropval_la(const LTPROPVAL_ARRAY &);
 	pack_result p_tarray_set(const TARRAY_SET &);
 	pack_result p_problem_a(const PROBLEM_ARRAY &);
 	pack_result p_xid(const XID &);
