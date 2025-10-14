@@ -1062,7 +1062,7 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
 }
 
 ec_error_t cu_send_message(store_object *pstore, message_object *msg,
-    bool b_submit) try
+    const char *ev_from) try
 {
 	uint64_t message_id = msg->get_id();
 	void *pvalue;
@@ -1143,8 +1143,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		}
 	}
 
-	auto ret = cu_send_mail(imail, g_smtp_url.c_str(),
-		   pstore->get_account(), rcpt_list);
+	auto ret = cu_send_mail(imail, g_smtp_url.c_str(), ev_from, rcpt_list);
 	if (ret != ecSuccess) {
 		mlog(LV_ERR, "E-1194: failed to send %s via SMTP: %s",
 			log_id.c_str(), mapi_strerror(ret));

@@ -1458,8 +1458,11 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
 	return false;
 }
 
+/**
+ * @ev_from: address to use for Envelope-From
+ */
 ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
-    bool b_submit) try
+    const char *ev_from) try
 {
 	uint64_t message_id = msg->get_id();
 	MAIL imail;
@@ -1545,7 +1548,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 		}
 	}
 
-	auto ret = ems_send_mail(&imail, plogon->get_account(), rcpt_list);
+	auto ret = ems_send_mail(&imail, ev_from, rcpt_list);
 	if (ret != ecSuccess) {
 		mlog2(LV_ERR, "E-1280: failed to send %s via SMTP: %s",
 			log_id.c_str(), mapi_strerror(ret));
