@@ -3264,23 +3264,23 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0)
 		return ecAccessDenied;
-	std::string username;
-	if (!cu_extract_delegate(pmessage, username))
+	std::string delegator;
+	if (!cu_extract_delegator(pmessage, delegator))
 		return ecSendAsDenied;
-	auto account = pstore->get_account();
+	auto actor = pstore->get_account();
 	repr_grant repr_grant;
-	if (username.empty()) {
-		username = account;
+	if (delegator.empty()) {
+		delegator = actor;
 		repr_grant = repr_grant::send_as;
 	} else {
-		repr_grant = cu_get_delegate_perm_AA(account, username.c_str());
+		repr_grant = cu_get_delegate_perm_AA(actor, delegator.c_str());
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
 		mlog(LV_INFO, "I-1334: uid %s tried to submit %s:%llxh with from=<%s>, but no impersonation permission given.",
-		        account, pstore->dir, LLU{pmessage->get_id()}, username.c_str());
+		        actor, pstore->dir, LLU{pmessage->get_id()}, delegator.c_str());
 		return ecAccessDenied;
 	}
-	auto err = rectify_message(pmessage, username.c_str(),
+	auto err = rectify_message(pmessage, delegator.c_str(),
 	           repr_grant >= repr_grant::send_as);
 	if (err != ecSuccess)
 		return err;
@@ -3337,8 +3337,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		auto deferred_time = props_to_defer_interval(tmp_propvals);
 		if (deferred_time > 0) {
 			snprintf(command_buff, 1024, "%s %s %llu",
-				common_util_get_submit_command(),
-			         pstore->get_account(),
+			         common_util_get_submit_command(), actor,
 			         LLU{rop_util_get_gc_value(pmessage->get_id())});
 			timer_id = system_services_add_timer(
 					command_buff, deferred_time);

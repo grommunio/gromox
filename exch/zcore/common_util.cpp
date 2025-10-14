@@ -114,7 +114,7 @@ BOOL common_util_verify_columns_and_sorts(
 }
 
 /* Cf. oxomsg_extract_delegate for comments */
-bool cu_extract_delegate(message_object *pmessage, std::string &username)
+bool cu_extract_delegator(message_object *pmessage, std::string &username)
 {
 	TPROPVAL_ARRAY tmp_propvals;
 	static constexpr proptag_t proptag_buff[] =

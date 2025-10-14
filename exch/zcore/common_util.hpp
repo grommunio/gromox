@@ -83,7 +83,7 @@ extern int common_util_run(const char *data_path);
 BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria);
-extern bool cu_extract_delegate(message_object *, std::string &dlgt);
+extern bool cu_extract_delegator(message_object *, std::string &);
 extern repr_grant cu_get_delegate_perm_MD(const char *account, const char *maildir);
 extern repr_grant cu_get_delegate_perm_AA(const char *account, const char *account_representing);
 extern ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, gromox::proptag_t, const void *);
