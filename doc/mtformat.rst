@@ -20,17 +20,18 @@ All integers are to be in little-endian form.
 
 * ``char magic[8] = "GXMT0004";``
   Magic fixed value to indicate the MT stream revision.
-* ``uint32_t splice_flag;``
+* ``uint8_t splice_flag;``
   Indicates whether the root object of this MT stream is to become a new folder
   in the target mailbox (0), or whether the objects in this stream are to be
   spliced (1) into preexisting folders of a mailbox.
-* ``uint32_t public_store_flag;``
+* ``uint8_t public_store_flag;``
   Indicates whether this MT stream was generated from a private (0) or public
   store (1) and whether folder IDs appearing in ``target_nid`` use the magic
   values from the ``PRIVATE_FID_`` or ``PUBLIC_FID_`` sets for built-in
   folders.
 * ``uint64_t fm_size;``
-  Size in bytes for the folder map section that follows.
+  Size in bytes for the folder map section that follows. This must be non-zero,
+  i.e. fm_entires needs to be present, even if fm_entries is 0.
 * Folder map:
 	* ``uint64_t fm_entries;``
 	  The number of entries in the folder map
@@ -48,7 +49,8 @@ All integers are to be in little-endian form.
 		* ``char name[];``
 		  NUL-terminated folder name string for newly created folders.
 * ``uint64_t np_size;``
-  Size in bytes for the named property map section that follows.
+  Size in bytes for the named property map section that follows. This must be
+  non-zero, i.e. np_entries needs to be present, even if np_entries is 0.
 * Named Property map:
 	* ``uint64_t np_entries;``
 	  Number of entries in the NP map
