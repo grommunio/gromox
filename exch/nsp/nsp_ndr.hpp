@@ -79,7 +79,7 @@ struct NSPISEEKENTRIES_IN {
 	uint32_t reserved;
 	STAT stat;
 	PROPERTY_VALUE target;
-	LPROPTAG_ARRAY *ptable;
+	MINID_ARRAY *ptable;
 	LPROPTAG_ARRAY *pproptags;
 };
 
@@ -93,7 +93,7 @@ struct NSPIGETMATCHES_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved1;
 	STAT stat;
-	LPROPTAG_ARRAY *preserved;
+	MINID_ARRAY *ptable;
 	uint32_t reserved2;
 	NSPRES *pfilter;
 	NSP_PROPNAME *ppropname;
@@ -103,7 +103,7 @@ struct NSPIGETMATCHES_IN {
 
 struct NSPIGETMATCHES_OUT {
 	STAT stat;
-	LPROPTAG_ARRAY *poutmids;
+	MINID_ARRAY *poutmids;
 	NSP_ROWSET *prows;
 	ec_error_t result;
 };
@@ -112,13 +112,12 @@ struct NSPIRESORTRESTRICTION_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	STAT stat;
-	LPROPTAG_ARRAY inmids;
-	LPROPTAG_ARRAY *poutmids;
+	MINID_ARRAY inmids, *poutmids;
 };
 
 struct NSPIRESORTRESTRICTION_OUT {
 	STAT stat;
-	LPROPTAG_ARRAY *poutmids;
+	MINID_ARRAY *poutmids;
 	ec_error_t result;
 };
 
@@ -129,7 +128,7 @@ struct NSPIDNTOMID_IN {
 };
 
 struct NSPIDNTOMID_OUT {
-	LPROPTAG_ARRAY *poutmids;
+	MINID_ARRAY *poutmids;
 	ec_error_t result;
 };
 
@@ -241,7 +240,7 @@ struct NSPIRESOLVENAMES_IN {
 };
 
 struct NSPIRESOLVENAMES_OUT {
-	LPROPTAG_ARRAY *pmids;
+	MINID_ARRAY *pmids;
 	NSP_ROWSET *prows;
 	ec_error_t result;
 };
@@ -255,7 +254,7 @@ struct NSPIRESOLVENAMESW_IN {
 };
 
 struct NSPIRESOLVENAMESW_OUT {
-	LPROPTAG_ARRAY *pmids;
+	MINID_ARRAY *pmids;
 	NSP_ROWSET *prows;
 	ec_error_t result;
 };

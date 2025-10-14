@@ -20,6 +20,7 @@ struct STAT {
 
 /* MID_ARRAY is semantically different, but layout-compatible to LPROPTAG_ARRAY (and exchange_nsp uses the proptag deserializer). */
 using MID_ARRAY = LPROPTAG_ARRAY;
+using MINID_ARRAY = LPROPTAG_ARRAY;
 
 struct NSP_PROPNAME {
 	FLATUID *pguid;

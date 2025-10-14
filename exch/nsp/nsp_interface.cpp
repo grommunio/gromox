@@ -1173,7 +1173,7 @@ static std::unordered_set<std::string> delegates_for(const char *dir) try
 }
 
 ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
-    STAT *pstat, const MID_ARRAY *preserved, uint32_t reserved2,
+    STAT *pstat, const MID_ARRAY *ptable, uint32_t reserved2,
     const NSPRES *pfilter, const NSP_PROPNAME *ppropname,
     uint32_t requested, MID_ARRAY **ppoutmids, const LPROPTAG_ARRAY *pproptags,
     NSP_ROWSET **pprows)

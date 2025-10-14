@@ -1904,12 +1904,12 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIGETMATCHES_IN *r)
 	TRY(nsp_ndr_pull_stat(x, &r->stat));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
-		r->preserved = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
-		if (r->preserved == nullptr)
+		r->ptable = ndr_stack_anew<MINID_ARRAY>(NDR_STACK_IN);
+		if (r->ptable == nullptr)
 			return pack_result::alloc;
-		TRY(nsp_ndr_pull_proptag_array(x, r->preserved));
+		TRY(nsp_ndr_pull_proptag_array(x, r->ptable));
 	} else {
-		r->preserved = NULL;
+		r->ptable = NULL;
 	}
 	TRY(x.g_uint32(&r->reserved2));
 	TRY(x.g_genptr(&ptr));
