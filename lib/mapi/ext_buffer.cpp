@@ -1166,7 +1166,7 @@ pack_result EXT_PULL::g_proptag_a(std::vector<proptag_t> *r) try
 	return pack_result::alloc;
 }
 
-pack_result EXT_PULL::g_proptag_a(LPROPTAG_ARRAY *r)
+pack_result EXT_PULL::g_proptag_la(LPROPTAG_ARRAY *r)
 {
 	TRY(g_uint32(&r->cvalues));
 	if (r->cvalues == 0) {
@@ -2960,7 +2960,7 @@ pack_result EXT_PUSH::p_proptag_a(std::span<const gromox::proptag_t> r)
 	return pack_result::ok;
 }
 
-pack_result EXT_PUSH::p_proptag_a(const LPROPTAG_ARRAY &r)
+pack_result EXT_PUSH::p_proptag_la(const LPROPTAG_ARRAY &r)
 {
 	TRY(p_uint32(r.cvalues));
 	for (size_t i = 0; i < r.cvalues; ++i)

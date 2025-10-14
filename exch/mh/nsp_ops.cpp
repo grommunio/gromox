@@ -157,7 +157,7 @@ pack_result nsp_ext_pull::g_nsp_request(getmatches_request &req)
 		req.inmids = anew<MID_ARRAY>();
 		if (req.inmids == nullptr)
 			return pack_result::alloc;
-		TRY(g_proptag_a(req.inmids));
+		TRY(g_proptag_la(req.inmids));
 	}
 	TRY(g_uint32(&req.reserved2));
 	TRY(g_uint8(&tmp_byte));
@@ -186,7 +186,7 @@ pack_result nsp_ext_pull::g_nsp_request(getmatches_request &req)
 		req.columns = anew<LPROPTAG_ARRAY>();
 		if (req.columns == nullptr)
 			return pack_result::alloc;
-		TRY(g_proptag_a(req.columns));
+		TRY(g_proptag_la(req.columns));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
@@ -241,7 +241,7 @@ pack_result nsp_ext_pull::g_nsp_request(getprops_request &req)
 		req.proptags = anew<LPROPTAG_ARRAY>();
 		if (req.proptags == nullptr)
 			return pack_result::alloc;
-		TRY(g_proptag_a(req.proptags));
+		TRY(g_proptag_la(req.proptags));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
@@ -368,7 +368,7 @@ pack_result nsp_ext_pull::g_nsp_request(modprops_request &req)
 		req.proptags = anew<LPROPTAG_ARRAY>();
 		if (req.proptags == nullptr)
 			return pack_result::alloc;
-		TRY(g_proptag_a(req.proptags));
+		TRY(g_proptag_la(req.proptags));
 	}
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
@@ -407,7 +407,7 @@ pack_result nsp_ext_pull::g_nsp_request(queryrows_request &req)
 			return pack_result::alloc;
 		TRY(nsp_ext_g_stat(*this, *req.stat));
 	}
-	TRY(g_proptag_a(&req.explicit_table));
+	TRY(g_proptag_la(&req.explicit_table));
 	TRY(g_uint32(&req.count));
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
@@ -416,7 +416,7 @@ pack_result nsp_ext_pull::g_nsp_request(queryrows_request &req)
 		req.columns = anew<LPROPTAG_ARRAY>();
 		if (req.columns == nullptr)
 			return pack_result::alloc;
-		TRY(g_proptag_a(req.columns));
+		TRY(g_proptag_la(req.columns));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
@@ -470,7 +470,7 @@ pack_result nsp_ext_pull::g_nsp_request(resolvenames_request &req)
 		req.proptags = anew<LPROPTAG_ARRAY>();
 		if (req.proptags == nullptr)
 			return pack_result::alloc;
-		TRY(g_proptag_a(req.proptags));
+		TRY(g_proptag_la(req.proptags));
 	}
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
@@ -516,7 +516,7 @@ pack_result nsp_ext_pull::g_nsp_request(resortrestriction_request &req)
 		req.inmids = anew<MID_ARRAY>();
 		if (req.inmids == nullptr)
 			return pack_result::alloc;
-		TRY(g_proptag_a(req.inmids));
+		TRY(g_proptag_la(req.inmids));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
@@ -562,7 +562,7 @@ pack_result nsp_ext_pull::g_nsp_request(seekentries_request &req)
 		req.explicit_table = anew<MID_ARRAY>();
 		if (req.explicit_table == nullptr)
 			return pack_result::alloc;
-		TRY(g_proptag_a(req.explicit_table));
+		TRY(g_proptag_la(req.explicit_table));
 	}
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
@@ -571,7 +571,7 @@ pack_result nsp_ext_pull::g_nsp_request(seekentries_request &req)
 		req.columns = anew<LPROPTAG_ARRAY>();
 		if (req.columns == nullptr)
 			return pack_result::alloc;
-		TRY(g_proptag_a(req.columns));
+		TRY(g_proptag_la(req.columns));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
@@ -663,7 +663,7 @@ static pack_result nsp_ext_p_stat(nsp_ext_push &ext, const STAT &s)
 
 static pack_result nsp_ext_p_colrow(nsp_ext_push &ext, const nsp_rowset2 *colrow)
 {
-	TRY(ext.p_proptag_a(colrow->columns));
+	TRY(ext.p_proptag_la(colrow->columns));
 	TRY(ext.p_uint32(colrow->row_count));
 	for (size_t i = 0; i < colrow->row_count; ++i)
 		TRY(ext.p_proprow(colrow->columns, colrow->rows[i]));
@@ -701,7 +701,7 @@ pack_result nsp_ext_push::p_nsp_response(const dntomid_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_a(*rsp.outmids));
+		TRY(p_proptag_la(*rsp.outmids));
 	}
 	return p_uint32(0);
 }
@@ -721,7 +721,7 @@ pack_result nsp_ext_push::p_nsp_response(const getmatches_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_a(*rsp.mids));
+		TRY(p_proptag_la(*rsp.mids));
 	}
 	if (rsp.result != ecSuccess) {
 		TRY(p_uint8(0));
@@ -741,7 +741,7 @@ pack_result nsp_ext_push::p_nsp_response(const getproplist_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_a(*rsp.proptags));
+		TRY(p_proptag_la(*rsp.proptags));
 	}
 	return p_uint32(0);
 }
@@ -842,7 +842,7 @@ pack_result nsp_ext_push::p_nsp_response(const querycolumns_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_a(*rsp.columns));
+		TRY(p_proptag_la(*rsp.columns));
 	}
 	return p_uint32(0);
 }
@@ -857,7 +857,7 @@ pack_result nsp_ext_push::p_nsp_response(const resolvenames_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_a(*rsp.mids));
+		TRY(p_proptag_la(*rsp.mids));
 	}
 	if (rsp.result != ecSuccess) {
 		TRY(p_uint8(0));
@@ -882,7 +882,7 @@ pack_result nsp_ext_push::p_nsp_response(const resortrestriction_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_a(*rsp.outmids));
+		TRY(p_proptag_la(*rsp.outmids));
 	}
 	return p_uint32(0);
 }
