@@ -33,12 +33,6 @@ and persist them across restarts.
 .SH Configuration directives
 The usual config file location is /etc/gromox/timer.cfg.
 .TP
-\fBconfig_file_path\fP
-Colon-separated list of directories which will be scanned when locating further
-configuration files, e.g. timer_acl.txt.
-.br
-Default: \fI/etc/gromox/timer:/etc/gromox\fP
-.TP
 \fBrunning_identity\fP
 An unprivileged user account to switch the process to after startup.
 To inhibit the switch, assign the empty value.
@@ -48,8 +42,7 @@ Default: \fIgromox\fP
 \fBtimer_hosts_allow\fP
 A space-separated list of individual IPv6 or v4-mapped IPv6 host addresses that
 are allowed to converse with the timer service. No networks and no CIDR
-notations are permitted. This option deprecates the /etc/gromox/timer_acl.txt
-file used in earlier versions.
+notations are permitted.
 .br
 Default: \fI::1\fP
 .TP
