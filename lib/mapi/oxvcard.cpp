@@ -938,21 +938,21 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_SPOUSE_NAME);
-	if (NULL != pvalue) {
+	if (NULL != pvalue && *pvalue != '\0') {
 		auto &sp_line = vcard.append_line("X-MS-SPOUSE");
 		sp_line.append_param("N");
 		sp_line.append_value(pvalue);
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_MANAGER_NAME);
-	if (NULL != pvalue) {
+	if (NULL != pvalue && *pvalue != '\0') {
 		auto &mgr_line = vcard.append_line("X-MS-MANAGER");
 		mgr_line.append_param("N");
 		mgr_line.append_value(pvalue);
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_ASSISTANT);
-	if (NULL != pvalue) {
+	if (NULL != pvalue && *pvalue != '\0') {
 		auto &as_line = vcard.append_line("X-MS-ASSISTANT");
 		as_line.append_param("N");
 		as_line.append_value(pvalue);
