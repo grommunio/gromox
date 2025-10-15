@@ -433,19 +433,26 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 			auto rstat = EWSContext::construct<uint32_t>(resp);
 			uint32_t state = asfMeeting | asfReceived;
 			auto astat = EWSContext::construct<uint32_t>(state);
+			uint32_t busyValue = resp == respAccepted ? olBusy :
+			                     resp == respTentative ? olTentative : olFree;
+			auto bstat = EWSContext::construct<uint32_t>(busyValue);
 			uint16_t pidResp = ctx.getNamedPropId(rdir, NtResponseStatus, true);
 			uint16_t pidReply = ctx.getNamedPropId(rdir, NtAppointmentReplyTime, true);
 			uint16_t pidState = ctx.getNamedPropId(rdir, NtAppointmentStateFlags, true);
+			uint16_t pidBusy = ctx.getNamedPropId(rdir, NtBusyStatus, true);
 			TAGGED_PROPVAL props[] = {
 				{PROP_TAG(PT_LONG, pidResp), rstat},
 				{PROP_TAG(PT_SYSTIME, pidReply), now},
 				{PROP_TAG(PT_LONG, pidState), astat},
+				{PROP_TAG(PT_LONG, pidBusy), bstat},
 			};
 			TPROPVAL_ARRAY proplist{std::size(props), props};
 			PROBLEM_ARRAY problems;
 			if (!ctx.plugin().exmdb.set_message_properties(rdir.c_str(), username, CP_ACP,
 				mid.messageId(), &proplist, &problems))
 				throw EWSError::ItemSave(E3092);
+			if (resp == respAccepted || resp == respTentative)
+				ctx.createCalendarItemFromMeetingRequest(refId, resp);
 		};
 		if (auto acc = std::get_if<tAcceptItem>(&item)) {
 			if (acc->ReferenceItemId)
