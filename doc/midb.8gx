@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH midb 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 midb \(em Message Index database daemon
@@ -46,7 +46,9 @@ or when the \fB\-c\fP option is used to specify a custom file:
 .TP
 \fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further
-configuration files, especially those used by plugin instances.
+configuration files, especially those used by subcomponent instances. (For
+example, mysql_adaptor(4gx) would be directed to look at
+/etc/gromox/midb/mysql_adaptor.cfg before /etc/gromox/mysql_adaptor.cfg.)
 .br
 Default: \fI/etc/gromox/midb:/etc/gromox\fP
 .TP

@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH delivery-queue 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 delivery\-queue \(em LMTP/SMTP frontend for local delivery
@@ -63,7 +63,9 @@ Default: \fIboth\fP
 .TP
 \fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further
-configuration files, especially those used by plugin instances.
+configuration files, especially those used by subcomponent instances. (For
+example, mysql_adaptor(4gx) would be directed to look at
+/etc/gromox/smtp/mysql_adaptor.cfg before /etc/gromox/mysql_adaptor.cfg.)
 .br
 Default: \fI/etc/gromox/smtp:/etc/gromox\fP
 .TP

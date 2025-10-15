@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH pop3 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 pop3 \(em Gromox POP3 server
@@ -57,8 +57,10 @@ many failed logins.
 Default: \fI1 minute\fP
 .TP
 \fBconfig_file_path\fP
-Colon-separated list of directories in which further configuration files,
-especially those used by plugin instances, will be searched.
+Colon-separated list of directories which will be scanned when locating further
+configuration files, especially those used by subcomponent instances. (For
+example, mysql_adaptor(4gx) would be directed to look at
+/etc/gromox/pop3/mysql_adaptor.cfg before /etc/gromox/mysql_adaptor.cfg.)
 .br
 Default: \fI/etc/gromox/pop3:/etc/gromox\fP
 .TP
