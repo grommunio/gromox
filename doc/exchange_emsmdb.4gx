@@ -3,18 +3,19 @@
 .TH exchange_emsmdb 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 exchange_emsmdb(4gx) \(em Handler for the Wire Format
-Protocol (Outlook/Exchange RPCs).
+Protocol (Outlook/Exchange RPCs) and Remote Operations Protocol
 .SH Description
-exchange_emsmdb is a component for http(8gx) which handles the remote
-procedure calls for the EMSMDB v1 and AsyncEMSMDB v1 RPC interfaces, as well as
-OXCROPS as issued by the EcDoRpcExt2 call or the MAPIHTTP EXECUTE call.
+exchange_emsmdb is a component of http(8gx) which handles (1.) the remote
+procedure calls for the EMSMDB v1 and AsyncEMSMDB v1 RPC interfaces, and (2.)
+the Remote Operations encoding protocol that is typically wrapped by EMSMDB's
+EcDoRpcExt2 call or MAPIHTTP's EXECUTE call.
 .PP
 EMSMDB is a DCE/RPC interface with just a few RPC calls (6 are still used
 today). ecDoRpcExt2, a call offered by that interface, takes an opaque byte
 buffer argument not interpreted by DCE/RPC. That byte buffer contains another
 protocol, "Remote Operation(s) Encoding Protocol" [OXCROPS]. No reason for this
 wrapping is given in the OXCRPC spec. MAPIHTTP runs OXCROPS directly without
-the extra EMSMDB framing.
+the extra DCERPC/EMSMDB framing.
 .PP
 OXCROPS consists of 130 calls that make up the mailbox protocol.
 .SH Configuration directives (gromox.cfg)

@@ -4,9 +4,9 @@
 .SH Name
 mh_nsp \(em Handler for MAPIHTTP-wrapped NSPI requests
 .SH Description
-mh_nsp is a component for http(8gx) which reacts to URIs starting in
+mh_nsp is a component for http(8gx) which reacts to URIs starting with
 \fB/mapi/nspi/\fP. The ROP stream inside the HTTP request bodies is handed off
-to exchange_nsp(4gx) for processing.
+to exchange_nsp(4gx) for subsequent processing.
 .SH Configuration directives
 This component has no config directives of its own.
 .SH Normative references

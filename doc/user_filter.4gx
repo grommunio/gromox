@@ -4,7 +4,7 @@
 .SH Name
 user_filter \(em User logon limiter
 .SH Description
-This component implements two core ideas (each independently configurable):
+This component implements two concepts (each independently configurable):
 .IP \(bu 4
 A mechanism for banning user identities for a set time window. When a user
 repeatedly fails to successfully authenticate, the http(8gx), imap(8gx),

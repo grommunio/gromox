@@ -21,7 +21,7 @@ extension. This mirrors the "recipient_delimiter" directive from postconf(5).
 .br
 Default: (empty)
 .SH Signals
-When the component is reloaded (i.e. SIGHUP is sent to delivery(8gx)), the alias
+When the component is reloaded, i.e. by way of sending SIGHUP to delivery(8gx), the alias
 cache is refreshed as well, resetting the timer for the next refresh.
 .SH Files
 .IP \(bu 4

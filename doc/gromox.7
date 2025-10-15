@@ -49,15 +49,15 @@ timer(8gx) \(em deferred command executor
 .SS Exchange subsystem and its components
 .IP \(bu 4
 exchange_emsmdb(4gx) \(em Handler for the Wire Format
-Protocol (Outlook/Exchange RPCs)
+Protocol (Outlook/Exchange RPCs) and Remote Operations Protocol
 .IP \(bu 4
-exchange_nsp(4gx) \(em Handler for the Exchange Server Name
+exchange_nsp(4gx) \(em Handler for the Name
 Service Provider Interface Protocol
 .IP \(bu 4
 exchange_rfr(4gx) \(em Handler for the Address Book Name
 Service Provider Interface Referral Protocol
 .IP \(bu 4
-ews(4gx) \(em Handler for EWS requests
+ews(4gx) \(em Handler for Exchange Web Services requests
 .IP \(bu 4
 mh_emsmdb(4gx) \(em Handler for MAPIHTTP-wrapped EMSMDB
 requests
@@ -424,7 +424,6 @@ The directory name/path has only few requirements. It needs to be within one of
 the exmdb_list.txt-specified hierarchies for private/public hierarchies, and
 the users.maildir column in MySQL needs to reflect that location. Some user
 management tools generate extra directory levels, e.g. /user/m1/1/0.
-.
 .IP \(bu 4
 \&.../a@d/exmdb/exchange.sqlite3: mail store with almost everything (no mail bodies)
 .IP \(bu 4

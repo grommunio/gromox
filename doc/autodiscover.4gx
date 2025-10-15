@@ -39,7 +39,7 @@ simply be: this server's hostname).
 Default: (inherited from http.cfg:host_id, which defaults to the system FQDN)
 .TP
 \fBoxdisco_pretty_response\fP
-A debugging knob to make the module emit indented XML responses.
+A debugging knob to make the Autodiscovery handler emit indented XML responses.
 .br
 Default: \fIno\fP
 .TP
@@ -58,7 +58,7 @@ Default: \fIno\fP
 \fBoxdisco_validate_scndrequest\fP
 When OL opens a non-default store (store of another user) or a public store, it
 may also make an AutoDiscover inquiry for the extra store. This setting
-controls whether the server-side AutoDiscover module should perform a
+controls whether the AutoDiscover handler should perform a
 permission check on non-default stores and possibly reject returning connection
 details. (Inquiry of public stores are always permitted.)
 .br

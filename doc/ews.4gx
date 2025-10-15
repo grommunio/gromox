@@ -2,7 +2,7 @@
 .\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH ews 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-ews \(em Handler for for EWS requests
+ews \(em Handler for Exchange Web Services requests
 .SH Description
 The ews(4gx) component handles requests to the \fB/EWS/Exchange.asmx\fP
 URI path.
