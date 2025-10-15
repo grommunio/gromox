@@ -264,14 +264,6 @@ int main(int argc, char **argv)
 	auto hosts_allow = pconfig->get_value("event_hosts_allow");
 	if (hosts_allow != nullptr)
 		g_acl_list = gx_split(hosts_allow, ' ');
-	auto err = list_file_read_fixedstrings("event_acl.txt",
-	           pconfig->get_value("config_file_path"), g_acl_list);
-	if (err == ENOENT) {
-	} else if (err != 0) {
-		printf("[system]: list_file_initd event_acl.txt: %s\n", strerror(err));
-		g_notify_stop = true;
-		return EXIT_FAILURE;
-	}
 	std::sort(g_acl_list.begin(), g_acl_list.end());
 	g_acl_list.erase(std::remove(g_acl_list.begin(), g_acl_list.end(), ""), g_acl_list.end());
 	g_acl_list.erase(std::unique(g_acl_list.begin(), g_acl_list.end()), g_acl_list.end());
