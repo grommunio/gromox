@@ -28,7 +28,7 @@ underperforming in modern contexts: the rate is just about 60 MB/s on a 5950X
 CPU, which is a tenth of what zstd-1.5.7 achieves, and the compression ratio is
 somewhere between Unix compress(1) and gzip level 1.
 .br
-Default: \fI0\fP
+Default: \fI-1\fP
 .TP
 \fBoutgoing_smtp_url\fP
 See gromox.cfg(5):outgoing_smtp_url.

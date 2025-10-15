@@ -24,6 +24,8 @@ Fixes:
 Changes:
 
 * exmdb: deactivate movecopy/deletemessages event storm compaction
+* emsmdb: outgoing lzxpress compression in the EMSMDB protocol is now
+  disabled as it does not compress well for the time invested.
 * http: the ``ntlm_program_helper`` config directive was removed;
   your ``gss_program`` simply needs to handle both GSS and NTLM
 
@@ -94,8 +96,6 @@ Changes:
 * kdb2mt no longer imports LocalFreebusy control messages, since dangling
   references in those can make delegate permission editing via OL
   nonfunctional.
-* emsmdb: outgoing lzxpress compression in the EMSMDB protocol is now
-  disabled as it does not compress well for the time invested.
 
 
 Gromox 2.48 (2025-07-31)
