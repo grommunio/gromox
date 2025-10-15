@@ -1,18 +1,31 @@
-Development 3.0.34
-==================
+Development 3.0.115
+===================
 
 Enhancements:
 
 * http: support for SPNEGO authentication (Kerberos-in-SPNEGO or NTLMSSP-in-SPNEGO)
   with the HTTP "Authorization: Negotiate" header.
+* dscli: try all oxdisco URLs until one succeeds
+* exmdb: support repeated import of permission data (e.g. from kdb2mt)
+* ews: create calendar item after accepting a MR with MacMail
 
 Fixes:
 
 * emsmdb: the total mail count in a contents view was not updated
+* emsmdb,zcore: Send-As mail now correctly has the delegator in Envelope-From
+* email_lib: deal with MIME parts with zero header lines
+* tools: reinstate submit.php for delayed sending
+* nsp: avoid buffer overruns in nsp_interface_fetch_property
+* emsmdb: repair IPM.Task items losing properties in cached mode from
+  defective partial message change tracking
+* exmdb: public folders were missing timeindex queries and their content tables
+  might have shown fewer messages
 
 Changes:
 
 * exmdb: deactivate movecopy/deletemessages event storm compaction
+* http: the ``ntlm_program_helper`` config directive was removed;
+  your ``gss_program`` simply needs to handle both GSS and NTLM
 
 
 Gromox 3.0 (2025-10-01)
