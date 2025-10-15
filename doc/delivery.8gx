@@ -17,9 +17,6 @@ Display option summary.
 All time-based command-line options and configuration file directives are
 subject to the syntax described in gromox(7), section "Duration
 specifications".
-.SH Plugins
-The delivery daemon can be extended by a number of plugins. In Gromox, their
-filenames begin with libmtahook_.
 .SH Configuration directives (gromox.cfg)
 The following directives are recognized when reading from
 /etc/gromox/gromox.cfg, or when the \fB\-c\fP option is used to specify a
@@ -103,10 +100,5 @@ Default: \fI5\fP
 .TP
 \fBwork_threads_min\fP
 Default: \fI1\fP
-.SH Files
-.IP \(bu 4
-/usr/lib/gromox/libgxm_*.so: hook plugins
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
 \fBgromox\fP(7)

@@ -23,7 +23,7 @@ Requests are passed to the mod_rewrite(4gx) module (built-in) to have their URI
 potentially rewritten.
 .IP \(bu 4
 If a HTTP request is using the methods RPC_IN_DATA or RPC_OUT_DATA, the data
-stream is handed off to the exchange_emsmdb(4gx) plugin.
+stream is handed off to the exchange_emsmdb(4gx) component.
 .IP \(bu 4
 Otherwise, HTTP processing modules (HPM) are invoked. Processing ends when
 one module signals that the request was handled. The order depends on the HPM
@@ -39,7 +39,7 @@ Otherwise, the request is rejected.
 .SH RPC-over-HTTP
 RPC-over-HTTP utilizes two special HTTP methods, RPC_IN_DATA and RPC_OUT_DATA.
 These requests can, similarly to HTTP CONNECT, be very long-lived. The RPC data
-stream is handled by the included exchange_emsmdb(4gx) plugin.
+stream is handled by the included exchange_emsmdb(4gx) component.
 .PP
 All time-based command-line options and configuration file directives are
 subject to the syntax described in gromox(7), section "Duration
@@ -132,7 +132,7 @@ Example: \fI/usr/lib/squid/negotiate_wrapper_auth \-\-ntlm /usr/bin/ntlm_auth
 .TP
 \fBhost_id\fP
 A unique identifier for this system. It is used for the Server HTTP responses
-header, for service plugins like exmdb_provider(4gx), which makes use of it for
+header, for components like exmdb_provider(4gx), which makes use of it for
 SMTP HELO lines, for DSN report texts, for MIDB database/EML cache. The
 identifier should only use characters allowed for hostnames.
 .br
@@ -288,13 +288,6 @@ Default: \fI0\fP (do not limit the MSS)
 .TP
 \fBuser_default_lang\fP
 Default: \fIen\fP
-.SH Files
-.IP \(bu 4
-/usr/lib/gromox/libgxh_*.so: HTTP processing plugins
-.IP \(bu 4
-/usr/lib/gromox/libgxp_*.so: PDU processing plugins
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: service plugins
 .SH Normative references
 .IP \(bu 4
 MS-RPCE: Remote Procedure Call Protocol Extensions

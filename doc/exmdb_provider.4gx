@@ -1,14 +1,14 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH exmdb_provider 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 exmdb_provider \(em Gromox Information Store
 .SH Description
-exmdb_provider is a service plugin for http(8gx). It offers a plethora of
+exmdb_provider is a component for http(8gx). It offers a plethora of
 individual functions (124 of them) for operating on mailbox stores. This
 functionality is also exposed by way of a Gromox-specific network protocol on
 port 5000. The aforementioned RPC functions transparently operate over the
-network and may connect to a remote exmdb. In other words, this plugin contains
+network and may connect to a remote exmdb. In other words, this component contains
 a process-local function API, a network client, and a network server.
 .SH Configuration directives (gromox.cfg)
 The following directives are recognized when they appear in
@@ -302,6 +302,6 @@ pdu := {
 \fIdata_file_path\fP/mail_bounce/
 .PP
 \fIconfig_file_path\fP and \fIdata_file_path\fP is determined by the
-configuration of the program that loaded the exmdb_provider plugin.
+configuration of the program that loaded the exmdb_provider component.
 .SH See also
 \fBgromox\fP(7), \fBhttp\fP(8gx)

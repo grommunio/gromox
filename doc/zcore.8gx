@@ -177,8 +177,8 @@ pdu := {
 	}
 }
 .SH Store lookup
-zcore determines the store path for a user from the user database, which may be
-provided by a service plugin like mysql_adaptor(4gx).
+zcore determines the store path for a user from the user database, which is
+provided by mysql_adaptor(4gx).
 .PP
 The filemap that specifies how paths are handled is located at
 \fIdata_file_path\fP/exmdb_list.txt, whereby data_file_path is the eponymous
@@ -204,8 +204,6 @@ message store.
 .IP \(bu 4
 \fIdata_file_path\fP/notify_bounce/: templates for read/nonread notification
 mails sent to originators
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: service plugins
 .SH Notes
 Behavior for the address book generally mirrors exchange_nsp(4gx), so see that
 manpage for additional notes.

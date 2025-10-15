@@ -1,10 +1,10 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH mysql_adaptor 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 mysql_adaptor \(em MySQL/MariaDB connector for user metadata and authentication
 .SH Description
-mysql_adaptor is a service plugin for integrating mail accounts from
+mysql_adaptor is a component for integrating mail accounts from
 a MySQL/MariaDB database.
 .SH Configuration directives
 The usual config file location is /etc/gromox/mysql_adaptor.cfg.
@@ -66,7 +66,7 @@ Default: \fI1 minute\fP
 .TP
 \fBschema_upgrade\fP
 This controls what to do when a database schema update is available. Because
-the mysql_adaptor plugin is loaded by many programs across potentially multiple
+the mysql_adaptor component is loaded by many programs across potentially multiple
 machines, the basic default is to do nothing.
 .RS
 .TP
@@ -76,7 +76,7 @@ is http(8gx) and only if http.cfg's \fBhost_id\fP value matches \fIxyz\fP.
 .TP
 (any other value)
 No automatic schema upgrades are performed in the process which has loaded the
-plugin. The plugin may be unable to process or produce certain data, e.g. if it
+component. The component may be unable to process or produce certain data, e.g. if it
 relies on a table that has not yet been created. Generally, no restart is
 needed when that upgrade is finally performed, because SQL queries just start
 working. However, there may be some caches, e.g. in the zcore(8gx) address book

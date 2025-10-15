@@ -187,9 +187,5 @@ Default: \fItls1.2\fP
 .IP \(bu 4
 \fIdata_file_path\fP/smtp_code.txt: Mapping from internal SMTP error codes to
 textual descriptions.
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: flusher plugins
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
 \fBgromox\fP(7), \fBdelivery\fP(8gx), \fBmidb_agent\fP(4gx)

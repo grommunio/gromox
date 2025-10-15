@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH mod_rewrite 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 mod_rewrite \(em http(8gx) component for altering HTTP request URIs
@@ -7,8 +7,6 @@ before processing
 .SH Description
 mod_rewrite can alter request URIs. It runs before any of the other built-in or
 HTTP processing modules.
-.PP
-mod_rewrite is built into http(8gx) and not a separate module/plugin.
 .SH Configuration directives
 This component shares \fBhttp.cfg\fP. See http(8gx).
 .SH Rewrite map

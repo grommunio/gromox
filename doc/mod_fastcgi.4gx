@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH mod_fastcgi 4gx "" "Gromox" "Gromox admin references"
 .SH Name
 mod_fastcgi \(em http(8gx) component for proxying requests to
@@ -9,10 +9,8 @@ mod_fastcgi can forward HTTP requests to one or more FastCGI servers when
 certain URIs are requested. Take special note of the file suffix column
 documented below; in particular, to override an entire directory, you may also
 need to edit the table for mod_cache(4gx).
-.PP
-mod_fastcgi is built into http(8gx) and not a separate module/plugin.
 .SH Configuration directives
-This (built-in) plugin shares \fBhttp.cfg\fP. See http(8gx).
+This component shares \fBhttp.cfg\fP. See http(8gx).
 .SH URI map
 The filemap that specifies which URIs to handle is \fBfastcgi.txt\fP,
 which is searched for in \fIconfig_file_path\fP. The usual location is
@@ -56,7 +54,7 @@ out-of-the-box on all distro-provided platform configurations without fail.
 /run/php-fpm is used as the default in line with the Grommunio Appliance.
 .SH Files
 .IP \(bu 4
-\fIconfig_file_path\fP/fastcgi.txt: URI map specifying which paths this plugin
+\fIconfig_file_path\fP/fastcgi.txt: URI map specifying which paths this component
 shall handle.
 .SH See also
 \fBgromox\fP(7), \fBhttp\fP(8gx)

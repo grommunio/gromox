@@ -1,10 +1,10 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH ldap_adaptor 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 ldap_adaptor \(em LDAP connector for authentication
 .SH Description
-ldap_adaptor is a service plugin for Gromox that facilitates the use of an LDAP
+ldap_adaptor is a component for Gromox that facilitates the use of an LDAP
 server for authentication purposes. Since the authoritative user database is in
 MySQL, LDAP is only used to perform authentication (Bind operations), and
 metadata searches that lead up to such Binds, i.e. looking for the LDAP object
@@ -19,7 +19,7 @@ ldap_host, ldap_start_tls, ldap_bind_user, ldap_bind_pass, ldap_search_base and
 ldap_mail_attr.
 .SH Configuration directives
 The configuration file, /etc/gromox/ldap_adaptor.cfg, serves not only the
-ldap_adaptor plugin, but is also read by the Grommunio Admin API.
+ldap_adaptor component, but is also read by the Grommunio Admin API.
 .SS Gromox directives
 .TP
 \fBauth_connections\fP

@@ -1,12 +1,12 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH autodiscover 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 autodiscover \(em AutoDiscover HTTP Service Protocol handler (responder)
 .SH Description
 .PP
 A client would make a HTTP request to the /Autodiscover/Autodiscover.xml
-endpoint, which is handled by the Gromox oxdisco plugin.
+endpoint, which is handled by the Gromox oxdisco component.
 .PP
 The Autodiscover response contains the home server name and protocol options
 (MAPI-RPC-HTTP, MAPIHTTP, IMAP, etc.). A client uses this to set up the mailbox

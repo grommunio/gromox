@@ -204,7 +204,5 @@ Default: \fItls1.2\fP
 .IP \(bu 4
 \fIdata_file_path\fP/pop3_code.txt: Mapping from internal POP3 error codes to
 textual descriptions.
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
 \fBgromox\fP(7), \fBmidb_agent\fP(4gx)

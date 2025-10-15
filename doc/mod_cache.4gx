@@ -1,15 +1,13 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH mod_cache 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 mod_cache \(em http(8gx) component for serving objects from a local filesystem
 .SH Description
 mod_cache serves local files when certain URIs are requested. Note that
 mod_fastcgi(4gx) has a table of its own and higher precedence.
-.PP
-mod_cache is built into http(8gx) and not a separate module/plugin.
 .SH Configuration directives
-This (built-in) plugin shares \fBhttp.cfg\fP. See http(8gx).
+This component shares \fBhttp.cfg\fP. See http(8gx).
 .SH URI map
 The filemap that specifies which URIs to handle is \fBcache.txt\fP,
 which is searched for in \fIconfig_file_path\fP. The usual location is
