@@ -38,6 +38,10 @@
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
+#if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30000000L
+#	define WITH_SSLPROV 1
+#	include <openssl/provider.h>
+#endif
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -125,6 +129,10 @@ struct http_parser {
 	tproc_status wait(http_context *);
 	void vconnection_async_reply(const char *, int, const char *, DCERPC_CALL *);
 
+#ifdef WITH_SSLPROV
+	struct provfree { inline void operator()(OSSL_PROVIDER *x) const { OSSL_PROVIDER_unload(x); }};
+	std::unique_ptr<OSSL_PROVIDER, provfree> sslprov_default, sslprov_legacy;
+#endif
 	size_t g_context_num = 0;
 	gromox::atomic_bool g_async_stop{false};
 	bool g_support_tls = false;
@@ -260,9 +268,15 @@ int http_parser_run()
 
 int http_parser::run()
 {
+	SSL_library_init();
+	OpenSSL_add_all_algorithms();
+#ifdef WITH_SSLPROV
+	sslprov_default.reset(OSSL_PROVIDER_load(nullptr, "default"));
+	sslprov_legacy.reset(OSSL_PROVIDER_load(nullptr, "legacy"));
+	if (sslprov_legacy == nullptr)
+		mlog(LV_ERR, "openssl \"legacy\" provider not available; Outlook 2010 won't be able to login");
+#endif
 	if (g_support_tls) {
-		SSL_library_init();
-		OpenSSL_add_all_algorithms();
 		SSL_load_error_strings();
 		g_ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 		if (NULL == g_ssl_ctx) {

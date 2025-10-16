@@ -702,6 +702,11 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 			&pauth_ctx->node);
 		return TRUE;
 	} else if (pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NTLMSSP) {
+		/*
+		 * Outlook 2010 performs a weird double authentication: it
+		 * sends HTTP Authorization headers, but then *also* performs
+		 * NTLMSSP inside the MSRPC channel.
+		 */
 		if (pauth_ctx->auth_info.auth_level <= RPC_C_AUTHN_LEVEL_CONNECT)
 			pauth_ctx->pntlmssp = ntlmssp_ctx::create(g_netbios_name,
 									g_dns_name, g_dns_domain, TRUE,
