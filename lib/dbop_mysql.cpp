@@ -432,7 +432,8 @@ static constexpr char tbl_assoc_top[] =
 "CREATE TABLE `associations` ("
 "  `list_id` int(10) NOT NULL,"
 "  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
-"  PRIMARY KEY (`list_id`,`username`)"
+"  PRIMARY KEY (`list_id`,`username`),"
+"  KEY `username` (`username`)"
 ") DEFAULT CHARSET=utf8mb4";
 
 static constexpr char tbl_classes_top[] =
@@ -778,6 +779,7 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{129, tbl_altnames_129},
 	{130, "INSERT INTO altnames (SELECT id AS user_id, altname, 0 AS magic FROM users WHERE altname IS NOT NULL)"},
 	{131, "UPDATE users SET altname=NULL"},
+	{132, "ALTER TABLE `associations` ADD INDEX `username` (`username`)"},
 	{0, nullptr},
 };
 
@@ -789,7 +791,7 @@ int dbop_mysql_recentversion()
 int dbop_mysql_upgrade(MYSQL *conn)
 {
 	auto current = dbop_mysql_schemaversion(conn);
-	mlog(LV_NOTICE, "dbop: Current database schema: gx-%d", current);
+	mlog(LV_NOTICE, "dbop: Current userdb schema: GX-%d", current);
 	if (current < 0)
 		return EXIT_FAILURE;
 
