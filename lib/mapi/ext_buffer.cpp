@@ -1664,7 +1664,7 @@ pack_result EXT_PULL::g_recipient_row(std::span<const proptag_t> tags, RECIPIENT
 	TRY(g_uint16(&r->count));
 	if (r->count > tags.size())
 		return pack_result::format;
-	return g_proprow(tags, &r->properties);
+	return g_proprow(tags.subspan(0, r->count), &r->properties);
 }
 
 pack_result EXT_PULL::g_modrcpt_row(std::span<const proptag_t> tags, MODIFYRECIPIENT_ROW *r)
