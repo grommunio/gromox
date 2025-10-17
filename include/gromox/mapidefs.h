@@ -1122,6 +1122,17 @@ struct GX_EXPORT proptag_span : public std::span<gromox::proptag_t> {
 	inline std::string repr() const { return proptag_cspan(*this).repr(); }
 };
 
+struct GX_EXPORT proptag_vector : public std::vector<gromox::proptag_t> {
+	private:
+	using base_t = std::vector<gromox::proptag_t>;
+
+	public:
+	using base_t::base_t;
+	inline size_t indexof(gromox::proptag_t t) const { return proptag_cspan(*this).indexof(t); }
+	inline bool has(gromox::proptag_t t) const { return proptag_cspan(*this).has(t); }
+	inline std::string repr() const { return proptag_cspan(*this).repr(); }
+};
+
 struct GX_EXPORT PROPTAG_ARRAY {
 	inline size_t indexof(gromox::proptag_t t) const { return proptag_cspan(*this).indexof(t); }
 	inline bool has(gromox::proptag_t t) const { return proptag_cspan(*this).has(t); }
