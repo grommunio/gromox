@@ -234,22 +234,17 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 		proptags.pproptag = proptag_buff;
 		if (!container_object_get_pidlids(&proptags))
 			return FALSE;
-		proptags.pproptag[proptags.count++] = PR_DISPLAY_NAME;
-		proptags.pproptag[proptags.count++] = PR_NICKNAME;
-		proptags.pproptag[proptags.count++] = PR_TITLE;
-		proptags.pproptag[proptags.count++] = PR_SURNAME;
-		proptags.pproptag[proptags.count++] = PR_GIVEN_NAME;
-		proptags.pproptag[proptags.count++] = PR_MIDDLE_NAME;
-		proptags.pproptag[proptags.count++] = PR_PRIMARY_TELEPHONE_NUMBER;
-		proptags.pproptag[proptags.count++] = PR_MOBILE_TELEPHONE_NUMBER;
-		proptags.pproptag[proptags.count++] = PR_HOME_ADDRESS_STREET;
-		proptags.pproptag[proptags.count++] = PR_COMMENT;
-		proptags.pproptag[proptags.count++] = PR_COMPANY_NAME;
-		proptags.pproptag[proptags.count++] = PR_DEPARTMENT_NAME;
-		proptags.pproptag[proptags.count++] = PR_OFFICE_LOCATION;
-		proptags.pproptag[proptags.count++] = PR_CREATION_TIME;
-		proptags.pproptag[proptags.count++] = PR_MESSAGE_CLASS;
-		proptags.pproptag[proptags.count++] = PidTagMid;
+		static constexpr proptag_t ntags[] = {
+			PR_DISPLAY_NAME, PR_NICKNAME, PR_TITLE, PR_SURNAME,
+			PR_GIVEN_NAME, PR_MIDDLE_NAME,
+			PR_PRIMARY_TELEPHONE_NUMBER,
+			PR_MOBILE_TELEPHONE_NUMBER, PR_HOME_ADDRESS_STREET,
+			PR_COMMENT, PR_COMPANY_NAME, PR_DEPARTMENT_NAME,
+			PR_OFFICE_LOCATION, PR_CREATION_TIME, PR_MESSAGE_CLASS,
+			PidTagMid,
+		};
+		for (auto t : ntags)
+			proptags.emplace_back(t);
 		if (!exmdb_client->query_table(pinfo->get_maildir(), nullptr,
 		    pinfo->cpid, table_id, &proptags, 0, row_num, &tmp_set))
 			return FALSE;

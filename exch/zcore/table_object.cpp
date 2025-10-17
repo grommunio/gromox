@@ -220,13 +220,13 @@ static BOOL table_object_get_store_table_all_proptags(
 	for (size_t i = 0; i < tmp_proptags2.count; ++i) {
 		if (tmp_proptags1.has(tmp_proptags2.pproptag[i]))
 			continue;	
-		pproptags->pproptag[pproptags->count++] = tmp_proptags2.pproptag[i];
+		pproptags->emplace_back(tmp_proptags2.pproptag[i]);
 	}
 	for (size_t i = 0; i < std::size(proptag_buff); ++i) {
 		if (tmp_proptags1.has(proptag_buff[i]) ||
 		    tmp_proptags2.has(proptag_buff[i]))
 			continue;	
-		pproptags->pproptag[pproptags->count++] = proptag_buff[i];
+		pproptags->emplace_back(proptag_buff[i]);
 	}
 	return TRUE;
 }

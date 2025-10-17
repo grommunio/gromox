@@ -2090,7 +2090,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 	}
 	proptag_t proptag_buff[32];
 	PROPTAG_ARRAY tmp_proptags = {0, proptag_buff};
-	tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_FLAGS;
+	tmp_proptags.emplace_back(PR_MESSAGE_FLAGS);
 
 	/* ATTRIBUTE_ID_FROM */
 	if (b_embedded && !serialize_rcpt(*pext, *pmsg, alloc, get_propname,
