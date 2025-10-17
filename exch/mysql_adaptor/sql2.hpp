@@ -80,6 +80,7 @@ struct mysql_plugin final {
 	int mbop_userlist(std::vector<sql_user> &);
 	gromox::errno_t mda_alias_list(gromox::sql_alias_map &, size_t &);
 	gromox::errno_t mda_domain_list(gromox::sql_domain_set &);
+	gromox::errno_t get_user_groups_rec(const char *, std::vector<std::string> &);
 
 	protected:
 	bool mlist_domain_contains(sqlconn *, const char *mlist, const char *account);
