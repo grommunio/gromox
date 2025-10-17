@@ -219,8 +219,6 @@ BOOL exmdb_server::remove_store_properties(const char *dir,
 BOOL exmdb_server::get_mbox_perm(const char *dir,
     const char *username, uint32_t *ppermission) try
 {
-	char sql_string[128];
-	
 	if (!exmdb_server::is_private())
 		return FALSE;
 	auto pdb = db_engine_get_db(dir);
@@ -272,23 +270,24 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 		if (fid == PRIVATE_FID_IPMSUBTREE && perm & frightsOwner)
 			*ppermission |= frightsGromoxStoreOwner;
 	}
-	pstmt.finalize();
 
 	/* add in mlist permissions(?) */
-	snprintf(sql_string, std::size(sql_string), "SELECT "
-		"username, permission FROM permissions");
-	pstmt = pdb->prep(sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	while (pstmt.step() == SQLITE_ROW) {
-		auto ben = pstmt.col_text(0);
-		if (!mysql_adaptor_check_mlist_include(ben, username))
-			continue;
-		auto perm = pstmt.col_uint64(1);
-		auto fid  = pstmt.col_uint64(2);
-		*ppermission |= perm;
-		if (fid == PRIVATE_FID_IPMSUBTREE && perm & frightsOwner)
-			*ppermission |= frightsGromoxStoreOwner;
+	std::vector<std::string> group_memberships;
+	auto err = mysql_adaptor_get_user_groups_rec(username, group_memberships);
+	if (err != 0)
+		return false;
+	for (auto &&group : group_memberships) {
+		pstmt.reset();
+		pstmt.bind_text(1, group.c_str());
+		while (pstmt.step() == SQLITE_ROW) {
+			auto fid = pstmt.col_uint64(0);
+			if (seen_fid.find(fid) != seen_fid.end())
+				continue;
+			auto perm = pstmt.col_uint64(1);
+			*ppermission |= perm;
+			if (fid == PRIVATE_FID_IPMSUBTREE && perm & frightsOwner)
+				*ppermission |= frightsGromoxStoreOwner;
+		}
 	}
 	pstmt.finalize();
 	pdb.reset();

@@ -911,19 +911,18 @@ errno_t mysql_plugin::get_user_groups_rec(const char *username, std::vector<std:
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn)
 		return EIO;
-	bool round = 0;
-	size_t rescan_begin = 0, rescan_end = 0;
-	for (size_t i = rescan_begin; i < rescan_end || round == 0; ++i) {
-		auto entity = round != 0 ? groups[i].c_str() : username;
-		auto qstr = "SELECT DISTINCT m.listname FROM associations AS a "
+	groups.clear();
+	groups.emplace_back(username);
+	size_t rescan_begin = 0, rescan_end = 1;
+	for (size_t i = rescan_begin; i < rescan_end; ++i) {
+		auto qstr = "SELECT DISTINCT m.id, m.listname FROM associations AS a "
 			    "INNER JOIN mlists AS m ON a.list_id=m.id "
-			    "WHERE a.username='" + conn->quote(entity) + "'";
+			    "WHERE a.username='" + conn->quote(groups[i]) + "'";
 		if (!conn->query(qstr))
 			return EIO;
 		auto result = conn->store_result();
 		DB_ROW row;
 		++rescan_begin;
-		round = 1;
 		while ((row = result.fetch_row()) != nullptr) {
 			if (row[1] == nullptr)
 				continue;
@@ -935,6 +934,7 @@ errno_t mysql_plugin::get_user_groups_rec(const char *username, std::vector<std:
 			++rescan_end;
 		}
 	}
+	groups.erase(groups.begin());
 	return 0;
 } catch (const std::bad_alloc &e) {
 	mlog(LV_ERR, "E-1731: ENOMEM");
