@@ -35,6 +35,8 @@ static void do_perftest(const char *lang)
 		auto delta = now - t_start;
 		if (delta < std::chrono::seconds(1))
 			continue;
+		if (fcount == 0)
+			fcount = 1; /* calm static-analyzer */
 		auto d = std::chrono::duration_cast<std::chrono::microseconds>(delta) / fcount;
 		fprintf(stderr, "\r\e[2K%llu µs\e[K", static_cast<unsigned long long>(d.count()));
 		t_start = now;

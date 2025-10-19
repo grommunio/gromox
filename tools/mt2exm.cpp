@@ -380,7 +380,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 }
 
 static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt,
-    const std::string &im_repr, Json::Value &&digest)
+    const std::string &im_repr, Json::Value &digest)
 {
 	uint64_t msg_id = 0, change_num = 0;
 	if (!exmdb_client->allocate_message_id(g_storedir, parent_fld, &msg_id)) {
@@ -421,6 +421,7 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt,
 		return -EIO;
 	}
 	auto djson = json_to_str(digest);
+	digest["file"].clear();
 
 	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld,
@@ -562,7 +563,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 			if (i > 0 && i % 1024 == 0)
 				fprintf(stderr, "mt2exm repeat %u/%u\n", i, g_repeat_iter);
 			auto ret = exm_create_msg(folder_it->second.fid_to,
-			           &ctnt, im_repr, std::move(digest));
+			           &ctnt, im_repr, digest);
 			if (ret != EXIT_SUCCESS)
 				return ret;
 		}

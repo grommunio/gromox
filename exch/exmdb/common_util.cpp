@@ -4720,7 +4720,7 @@ bool timeindex_delete(sqlite3 *db, uint64_t fid, uint64_t mid)
 {
 	if (fid == 0)
 		return true;
-	auto q = mid == 0 ?
+	const auto &q = mid == 0 ?
 		fmt::format("DELETE FROM msgtime_index WHERE folder_id={}", fid) :
 		fmt::format("DELETE FROM msgtime_index WHERE folder_id={} AND message_id={}", fid, mid);
 	return gx_sql_exec(db, q) == SQLITE_OK;

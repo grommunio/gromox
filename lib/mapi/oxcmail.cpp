@@ -3619,7 +3619,8 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	if (str != nullptr && !phead->set_field("Content-Location", str))
 		return FALSE;
 	
-	phead->set_field("X-Mailer", "gromox-oxcmail " PACKAGE_VERSION);
+	if (!phead->set_field("X-Mailer", "gromox-oxcmail " PACKAGE_VERSION))
+		/* ignore */;
 	auto guid = PS_INTERNET_HEADERS;
 	for (size_t i = 0; i < pmsg->proplist.count; ++i) {
 		auto proptag = pmsg->proplist.ppropval[i].proptag;

@@ -186,7 +186,7 @@ static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type
 
 void pdu_processor_init(int connection_num, const char *netbios_name,
     const char *dns_name, const char *dns_domain, BOOL header_signing,
-    size_t max_request_mem, const std::span<const static_module> &names)
+    size_t max_request_mem, std::span<const static_module> &&names)
 {
 	static constexpr unsigned int connection_ratio = 10;
 	union {
