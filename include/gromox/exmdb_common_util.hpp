@@ -82,7 +82,6 @@ extern BOOL cu_get_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, gr
 extern BOOL cu_get_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
 extern BOOL cu_set_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, uint32_t tag, const void *data, BOOL *result);
 extern BOOL cu_set_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
-extern BOOL cu_remove_property(mapi_object_type, uint64_t id, sqlite3 *, gromox::proptag_t);
 extern BOOL cu_remove_properties(mapi_object_type, uint64_t id, sqlite3 *, const PROPTAG_ARRAY *);
 extern BOOL common_util_get_rule_property(uint64_t rule_id, sqlite3 *, gromox::proptag_t, void **val);
 extern bool cu_get_permission_property(int64_t member_id, sqlite3 *, gromox::proptag_t, void **outval);

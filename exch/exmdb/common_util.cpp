@@ -3577,14 +3577,6 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 	return TRUE;
 }
 
-BOOL cu_remove_property(mapi_object_type table_type,
-	uint64_t id, sqlite3 *psqlite, proptag_t proptag)
-{
-	const PROPTAG_ARRAY tmp_proptags = {1, deconst(&proptag)};
-	return cu_remove_properties(
-		table_type, id, psqlite, &tmp_proptags);
-}
-
 BOOL cu_remove_properties(mapi_object_type table_type, uint64_t id,
 	sqlite3 *psqlite, const PROPTAG_ARRAY *pproptags)
 {
