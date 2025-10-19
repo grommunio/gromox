@@ -33,12 +33,12 @@ static void do_perftest(const char *lang)
 			/* ignore */;
 		auto now = tp_now();
 		auto delta = now - t_start;
-		if (delta >= std::chrono::seconds(1)) {
-			auto d = std::chrono::duration_cast<std::chrono::microseconds>(delta) / fcount;
-			fprintf(stderr, "\r\e[2K%llu µs\e[K", static_cast<unsigned long long>(d.count()));
-			t_start = now;
-			fcount = 0;
-		}
+		if (delta < std::chrono::seconds(1))
+			continue;
+		auto d = std::chrono::duration_cast<std::chrono::microseconds>(delta) / fcount;
+		fprintf(stderr, "\r\e[2K%llu µs\e[K", static_cast<unsigned long long>(d.count()));
+		t_start = now;
+		fcount = 0;
 	}
 }
 
