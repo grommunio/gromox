@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdio>
@@ -176,7 +176,7 @@ BOOL exmdb_server::get_store_properties(const char *dir, cpid_t cpid,
 		return FALSE;
 	/* Only one SQL operation, no transaction needed. */
 	return cu_get_properties(MAPI_STORE, 0, cpid, pdb->psqlite,
-	       pproptags, ppropvals);
+	       *pproptags, ppropvals);
 }
 
 BOOL exmdb_server::set_store_properties(const char *dir, cpid_t cpid,
@@ -199,7 +199,7 @@ BOOL exmdb_server::remove_store_properties(const char *dir,
 	if (!pdb)
 		return FALSE;
 	auto transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
-	if (!cu_remove_properties(MAPI_STORE, 0, pdb->psqlite, pproptags))
+	if (!cu_remove_properties(MAPI_STORE, 0, pdb->psqlite, *pproptags))
 		return FALSE;
 	return transact.commit() == SQLITE_OK ? TRUE : false;
 }

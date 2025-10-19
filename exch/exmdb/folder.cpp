@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -526,7 +526,7 @@ BOOL exmdb_server::get_folder_properties(const char *dir, cpid_t cpid,
 		return FALSE;
 	/* Only one SQL operation, no transaction needed. */
 	return cu_get_properties(MAPI_FOLDER, rop_util_get_gc_value(folder_id),
-	       cpid, pdb->psqlite, pproptags, ppropvals);
+	       cpid, pdb->psqlite, *pproptags, ppropvals);
 }
 
 /* no PROPERTY_PROBLEM for PidTagChangeNumber and PR_CHANGE_KEY */
@@ -579,7 +579,7 @@ BOOL exmdb_server::remove_folder_properties(const char *dir,
 	if (!sql_transact)
 		return false;
 	if (!cu_remove_properties(MAPI_FOLDER,
-	    fid_val, pdb->psqlite, pproptags))
+	    fid_val, pdb->psqlite, *pproptags))
 		return FALSE;
 
 	db_conn::NOTIFQ notifq;

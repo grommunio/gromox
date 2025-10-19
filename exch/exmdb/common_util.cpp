@@ -776,13 +776,10 @@ BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
 
 BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
 {
-	const proptag_t proptag_buff[] = {qtag, PR_MESSAGE_SIZE_EXTENDED};
-	const PROPTAG_ARRAY proptags =
-		{std::size(proptag_buff), deconst(proptag_buff)};
 	TPROPVAL_ARRAY propvals;
 	
 	if (!cu_get_properties(MAPI_STORE, 0, CP_ACP, psqlite,
-	    &proptags, &propvals))
+	    {qtag, PR_MESSAGE_SIZE_EXTENDED}, &propvals))
 		return FALSE;
 	auto ptotal = propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	auto qv_kb = propvals.get<uint32_t>(qtag);
@@ -1618,11 +1615,9 @@ static void *cu_get_object_text_v0(const char *dir, const char *cid,
 BOOL cu_get_property(mapi_object_type table_type, uint64_t id,
     cpid_t cpid, sqlite3 *psqlite, proptag_t proptag, void **ppvalue)
 {
-	const PROPTAG_ARRAY proptags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY propvals;
-	
 	if (!cu_get_properties(table_type,
-	    id, cpid, psqlite, &proptags, &propvals))
+	    id, cpid, psqlite, {proptag}, &propvals))
 		return FALSE;
 	*ppvalue = propvals.count == 0 ? nullptr : propvals.ppropval[0].pvalue;
 	return TRUE;
@@ -2200,16 +2195,16 @@ static GP_RESULT cu_get_properties1(mapi_object_type table_type, uint64_t id,
 	return GP_SKIP; /* emplace_back already did the GP_ADV part */
 }
 
-BOOL cu_get_properties(mapi_object_type table_type, uint64_t objid, cpid_t cpid,
-    sqlite3 *psqlite, const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+bool cu_get_properties(mapi_object_type table_type, uint64_t objid, cpid_t cpid,
+    sqlite3 *psqlite, proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	ppropvals->count = 0;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	for (size_t i = 0; i < pproptags->count; ++i) {
+	for (size_t i = 0; i < pproptags.size(); ++i) {
 		auto ret = cu_get_properties1(table_type, objid, cpid, psqlite,
-		           pproptags->pproptag[i], ppropvals);
+		           pproptags[i], ppropvals);
 		if (ret == GP_ADV)
 			++ppropvals->count;
 		else if (ret == GP_ERR)
@@ -3577,8 +3572,8 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 	return TRUE;
 }
 
-BOOL cu_remove_properties(mapi_object_type table_type, uint64_t id,
-	sqlite3 *psqlite, const PROPTAG_ARRAY *pproptags)
+bool cu_remove_properties(mapi_object_type table_type, uint64_t id,
+    sqlite3 *psqlite, proptag_cspan pproptags)
 {
 	char sql_string[128];
 	
@@ -3613,8 +3608,7 @@ BOOL cu_remove_properties(mapi_object_type table_type, uint64_t id,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (const auto tag : pproptags) {
 		switch (table_type) {
 		case MAPI_STORE:
 			switch (tag) {

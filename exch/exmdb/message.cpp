@@ -744,11 +744,10 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite, uint64_t message_id,
 		/* Nudge cu_get_properties allocation to make extra room. */
 		for (size_t i = 0; i < 5; ++i)
 			tags.push_back(PR_NULL);
-		PROPTAG_ARRAY proptags = {static_cast<uint16_t>(tags.size()), tags.data()};
 		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (pset->pparray[pset->count] == nullptr ||
 		    !cu_get_properties(MAPI_MAILUSER, rcpt_id, CP_ACP,
-		    psqlite, &proptags, pset->pparray[pset->count]))
+		    psqlite, tags, pset->pparray[pset->count]))
 			return FALSE;
 		/* PR_ROWID MUST be the first */
 		memmove(pset->pparray[pset->count]->ppropval + 1,
@@ -804,16 +803,14 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 	*ppbrief = cu_alloc<MESSAGE_CONTENT>();
 	if (*ppbrief == nullptr)
 		return FALSE;
-	static constexpr proptag_t proptag_buff[] = {
+	static constexpr proptag_t proptags[] = {
 		PR_SUBJECT, PR_SENT_REPRESENTING_NAME,
 		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_CLIENT_SUBMIT_TIME,
 		PR_MESSAGE_SIZE, PR_INTERNET_CPID, PR_INTERNET_MESSAGE_ID,
 		PR_PARENT_KEY, PR_CONVERSATION_INDEX,
 	};
-	static constexpr PROPTAG_ARRAY proptags =
-		{std::size(proptag_buff), deconst(proptag_buff)};
 	if (!cu_get_properties(MAPI_MESSAGE, mid_val, cpid,
-	    pdb->psqlite, &proptags, &(*ppbrief)->proplist))
+	    pdb->psqlite, proptags, &(*ppbrief)->proplist))
 		return FALSE;
 	(*ppbrief)->children.prcpts = cu_alloc<TARRAY_SET>();
 	if ((*ppbrief)->children.prcpts == nullptr)
@@ -841,15 +838,14 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 	if (pstmt == nullptr)
 		return FALSE;
 
-	static constexpr proptag_t proptag2_buff[] = {PR_ATTACH_LONG_FILENAME};
-	static constexpr PROPTAG_ARRAY proptags2 = {std::size(proptag2_buff), deconst(proptag2_buff)};
+	static constexpr proptag_t proptags2[] = {PR_ATTACH_LONG_FILENAME};
 	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t attachment_id = sqlite3_column_int64(pstmt, 0);
 		auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (pattachment == nullptr)
 			return FALSE;
 		if (!cu_get_properties(MAPI_ATTACH, attachment_id, cpid,
-		    pdb->psqlite, &proptags2, &pattachment->proplist))
+		    pdb->psqlite, proptags2, &pattachment->proplist))
 			return FALSE;
 		pattachment->pembedded = NULL;
 		auto &ats = *(*ppbrief)->children.pattachments;
@@ -940,7 +936,7 @@ BOOL exmdb_server::get_message_properties(const char *dir,
 	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	return cu_get_properties(MAPI_MESSAGE,
 	       rop_util_get_gc_value(message_id), cpid, pdb->psqlite,
-	       pproptags, ppropvals);
+	       *pproptags, ppropvals);
 }
 
 /**
@@ -993,7 +989,7 @@ BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
 	mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!cu_remove_properties(MAPI_MESSAGE, mid_val,
-	    pdb->psqlite, pproptags))
+	    pdb->psqlite, *pproptags))
 		return FALSE;
 	uint64_t fid_val = 0;
 	if (!common_util_get_message_parent_folder(pdb->psqlite,
@@ -1348,11 +1344,8 @@ static BOOL message_read_message(sqlite3 *psqlite, cpid_t cpid,
 		       t == PR_DISPLAY_BCC || t == PR_DISPLAY_BCC_A ||
 		       t == PR_HASATTACH;
 	}), mtags.end());
-	PROPTAG_ARRAY proptags;
-	proptags.count    = mtags.size();
-	proptags.pproptag = mtags.data();
 	if (!cu_get_properties(MAPI_MESSAGE, message_id, cpid,
-	    psqlite, &proptags, &(*ppmsgctnt)->proplist))
+	    psqlite, mtags, &(*ppmsgctnt)->proplist))
 		return FALSE;
 	(*ppmsgctnt)->children.prcpts = cu_alloc<TARRAY_SET>();
 	if ((*ppmsgctnt)->children.prcpts == nullptr)
@@ -1394,10 +1387,8 @@ static BOOL message_read_message(sqlite3 *psqlite, cpid_t cpid,
 		if (pattachment == nullptr)
 			return FALSE;
 		atags.push_back(PR_ATTACH_NUM);
-		proptags.count    = atags.size();
-		proptags.pproptag = atags.data();
 		if (!cu_get_properties(MAPI_ATTACH, attachment_id, cpid,
-		    psqlite, &proptags, &pattachment->proplist))
+		    psqlite, atags, &pattachment->proplist))
 			return FALSE;
 		/* PR_ATTACH_NUM MUST be the first */
 		memmove(pattachment->proplist.ppropval + 1,

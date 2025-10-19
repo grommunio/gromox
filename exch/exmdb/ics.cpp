@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdio>
@@ -708,7 +708,6 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		if (stm_select_chg.step() != SQLITE_ROW)
 			return FALSE;
 		auto fid_val1 = sqlite3_column_int64(stm_select_chg, 0);
-		PROPTAG_ARRAY proptags;
 		std::vector<uint32_t> tags;
 		if (!cu_get_proptags(MAPI_FOLDER, fid_val1,
 		    pdb->psqlite, tags))
@@ -720,10 +719,8 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 			       t == PR_HIERARCHY_CHANGE_NUM;
 		}), tags.end());
 		tags.push_back(PidTagParentFolderId);
-		proptags.count = tags.size();
-		proptags.pproptag = tags.data();
 		if (!cu_get_properties(MAPI_FOLDER, fid_val1, CP_ACP,
-		    pdb->psqlite, &proptags, &pfldchgs->pfldchgs[i]))
+		    pdb->psqlite, tags, &pfldchgs->pfldchgs[i]))
 			return FALSE;
 	}
 	stm_select_chg.finalize();
