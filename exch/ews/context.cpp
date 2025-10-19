@@ -981,8 +981,12 @@ TAGGED_PROPVAL EWSContext::getFolderEntryId(const std::string& dir, uint64_t fol
  *
  * @return    Property values
  */
-TPROPVAL_ARRAY EWSContext::getFolderProps(const std::string& dir, uint64_t folderId, const PROPTAG_ARRAY& props) const
+TPROPVAL_ARRAY EWSContext::getFolderProps(const std::string &dir,
+    uint64_t folderId, proptag_cspan tags) const
 {
+	PROPTAG_ARRAY props;
+	props.count    = std::min(tags.size(), static_cast<size_t>(UINT16_MAX));
+	props.pproptag = deconst(tags.data());
 	TPROPVAL_ARRAY result;
 	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folderId, &props, &result))
 		throw EWSError::FolderPropertyRequestFailed(E3023);

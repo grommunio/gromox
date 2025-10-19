@@ -287,7 +287,7 @@ class EWSContext {
 	std::string getDir(const Structures::sFolderSpec&) const;
 	TAGGED_PROPVAL getFolderEntryId(const std::string&, uint64_t) const;
 	template<typename T> const T* getFolderProp(const std::string&, uint64_t, uint32_t) const;
-	TPROPVAL_ARRAY getFolderProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
+	TPROPVAL_ARRAY getFolderProps(const std::string&, uint64_t, proptag_cspan) const;
 	std::pair<std::list<Structures::sNotificationEvent>, bool> getEvents(const Structures::tSubscriptionId&) const;
 	TAGGED_PROPVAL getFolderEntryId(const Structures::sFolderSpec&) const;
 	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
