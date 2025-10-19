@@ -32,7 +32,7 @@ struct GX_EXPORT envelope_info {
 	void clear();
 
 	char parsed_domain[UDOM_SIZE]{"unknown"};
-	char hello_domain[UDOM_SIZE]{}; /* domain name after helo */
+	std::string hello_domain; /* domain name after helo */
 	char from[UADDR_SIZE]{}; /* envelope's from message */
 	std::vector<std::string> rcpt_to; /* envelope's rcpt to message */
 };

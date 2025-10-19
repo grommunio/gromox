@@ -235,7 +235,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 		auto tmp_len = sprintf(tmp_buff, "X-Lasthop: %s\r\nReceived: from %s "
 		          "(%s [%s%s])\r\n\tby %s with %s%s;\r\n\t%s\r\n",
 		          pentity->pconnection->client_addr,
-		          pentity->penvelope->hello_domain,
+		          pentity->penvelope->hello_domain.c_str(),
 		          pentity->penvelope->parsed_domain,
 		          af_type == AF_INET6 ? "IPv6:" : "",
 		          pentity->pconnection->client_addr,

@@ -22,7 +22,7 @@ using namespace gromox;
 
 static BOOL cmdh_check_onlycmd(std::string_view cmd_line, smtp_context &);
 
-int cmdh_helo(std::string_view cmd_line, smtp_context &ctx)
+int cmdh_helo(std::string_view cmd_line, smtp_context &ctx) try
 {
 	auto pcontext = &ctx;
 	int line_length = cmd_line.size();
@@ -33,8 +33,8 @@ int cmdh_helo(std::string_view cmd_line, smtp_context &ctx)
 			/* 502 Command not implemented */
 			return 506;
 		/* copy parameter to hello_domain */
-		strncpy(pcontext->menv.hello_domain, &cmd_line[5], line_length - 5);
-		pcontext->menv.hello_domain[line_length-5] = '\0';
+		cmd_line.remove_prefix(5);
+		pcontext->menv.hello_domain = cmd_line;
     } else if(line_length > 255 + 1 + 4) {
         /* domain name too long */
 		return 502;
@@ -43,9 +43,11 @@ int cmdh_helo(std::string_view cmd_line, smtp_context &ctx)
 	pcontext->menv.clear();
     pcontext->last_cmd = T_HELO_CMD;
 	return 205;
-}    
+} catch (const std::bad_alloc &) {
+	return 416; /* ENOMEM */
+}
 
-static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx)
+static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx) try
 {
 	auto pcontext = &ctx;
 	int line_length = cmd_line.size();
@@ -58,8 +60,8 @@ static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx)
 		if (cmd_line[4] != ' ')
 			return 506;
 		/* copy parameter to hello_domain */
-		strncpy(pcontext->menv.hello_domain, &cmd_line[5], line_length - 5);
-		pcontext->menv.hello_domain[line_length-5] = '\0';
+		cmd_line.remove_prefix(5);
+		pcontext->menv.hello_domain = cmd_line;
     } else if(line_length > 255 + 1 + 4) {
         /* domain name too long */
 		return 202;
@@ -86,6 +88,8 @@ static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx)
 
 	pcontext->connection.write(buff, string_length);
     return DISPATCH_CONTINUE;
+} catch (const std::bad_alloc &) {
+	return 416; /* ENOMEM */
 }
 
 int cmdh_lhlo(std::string_view cmd_line, smtp_context &ctx)
@@ -108,7 +112,7 @@ int cmdh_starttls(std::string_view cmd_line, smtp_context &ctx)
 	if (!g_param.support_starttls)
 		return 506;
 	pcontext->last_cmd = T_STARTTLS_CMD;
-	memset(pcontext->menv.hello_domain, '\0', std::size(pcontext->menv.hello_domain));
+	pcontext->menv.hello_domain.clear();
 	pcontext->menv.clear();
 	return 210;
 }
