@@ -163,6 +163,11 @@ static bool is_fax_param(const vcard_param &p)
 	return strcasecmp(p.name(), "fax") == 0;
 }
 
+static inline bool has_content(const char *value)
+{
+	return value != nullptr && *value != '\0';
+}
+
 static std::string join(const char *gn, const char *mn, const char *sn)
 {
 	std::string r = znul(gn);
@@ -750,28 +755,35 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	vcard.append_line("PRODID", "gromox-oxvcard");
 
 	pvalue = pmsg->proplist.get<char>(PR_DISPLAY_NAME);
-	if (pvalue == nullptr)
+	if (!has_content(pvalue))
 		pvalue = pmsg->proplist.get<char>(PR_NORMALIZED_SUBJECT);
-	if (pvalue != nullptr)
+	if (has_content(pvalue))
 		vcard.append_line("FN", pvalue);
-	
-	auto &n_line = vcard.append_line("N");
+
+	const char *name_parts[std::size(g_n_proptags)]{};
+	bool has_name_part = false;
 	for (size_t i = 0; i < std::size(g_n_proptags); ++i) {
 		pvalue = pmsg->proplist.get<char>(g_n_proptags[i]);
-		if (pvalue == nullptr)
-			continue;
-		n_line.append_value(pvalue);
+		if (has_content(pvalue)) {
+			name_parts[i] = pvalue;
+			has_name_part = true;
+		}
 	}
-	
+	if (has_name_part) {
+		auto &n_line = vcard.append_line("N");
+		for (const auto *part : name_parts)
+			n_line.append_value(znul(part));
+	}
+
 	pvalue = pmsg->proplist.get<char>(PR_NICKNAME);
-	if (pvalue != nullptr)
+	if (has_content(pvalue))
 		vcard.append_line("NICKNAME", pvalue);
 	
 	for (size_t i = 0; i < std::size(g_email_proptags); ++i) {
 		auto propid = PROP_ID(g_email_proptags[i]);
 		auto proptag = PROP_TAG(PROP_TYPE(g_email_proptags[i]), propids[propid - 0x8000]);
 		pvalue = pmsg->proplist.get<char>(proptag);
-		if (pvalue == nullptr)
+		if (!has_content(pvalue))
 			continue;
 		auto &email_line = vcard.append_line("EMAIL");
 		auto &type_param = email_line.append_param("TYPE");
@@ -805,14 +817,16 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_BODY);
-	if (pvalue != nullptr)
+	if (has_content(pvalue))
 		vcard.append_line("NOTE", pvalue);
 	
-	auto &org_line = vcard.append_line("ORG");
-	pvalue = pmsg->proplist.get<char>(PR_COMPANY_NAME);
-	org_line.append_value(pvalue);
-	pvalue = pmsg->proplist.get<char>(PR_DEPARTMENT_NAME);
-	org_line.append_value(pvalue);
+	const char *company = pmsg->proplist.get<char>(PR_COMPANY_NAME);
+	const char *department = pmsg->proplist.get<char>(PR_DEPARTMENT_NAME);
+	if (has_content(company) || has_content(department)) {
+		auto &org_line = vcard.append_line("ORG");
+		org_line.append_value(znul(company));
+		org_line.append_value(znul(department));
+	}
 	
 	auto num = pmsg->proplist.get<uint32_t>(PR_SENSITIVITY);
 	if (num == nullptr)
@@ -859,7 +873,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	
 	for (size_t i = 0; i < std::size(tel_proptags); ++i) {
 		pvalue = pmsg->proplist.get<char>(tel_proptags[i]);
-		if (pvalue == nullptr)
+		if (!has_content(pvalue))
 			continue;
 		auto &tel_line = vcard.append_line("TEL");
 		tel_line.append_param("TYPE", tel_types[i]);
@@ -867,7 +881,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_HOME_FAX_NUMBER);
-	if (NULL != pvalue) {
+	if (has_content(pvalue)) {
 		auto &tel_line = vcard.append_line("TEL");
 		tel_line.append_param("TYPE", "HOME");
 		tel_line.append_param("FAX");
@@ -875,7 +889,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_BUSINESS_FAX_NUMBER);
-	if (NULL != pvalue) {
+	if (has_content(pvalue)) {
 		auto &tel_line = vcard.append_line("TEL");
 		tel_line.append_param("TYPE", "WORK");
 		tel_line.append_param("FAX");
@@ -893,18 +907,18 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_PROFESSION);
-	if (pvalue != nullptr)
+	if (has_content(pvalue))
 		vcard.append_line("ROLE", pvalue);
 	
 	pvalue = pmsg->proplist.get<char>(PR_PERSONAL_HOME_PAGE);
-	if (NULL != pvalue) {
+	if (has_content(pvalue)) {
 		auto &url_line = vcard.append_line("URL");
 		url_line.append_param("TYPE", "HOME");
 		url_line.append_value(pvalue);
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_BUSINESS_HOME_PAGE);
-	if (NULL != pvalue) {
+	if (has_content(pvalue)) {
 		auto &url_line = vcard.append_line("URL");
 		url_line.append_param("TYPE", "WORK");
 		url_line.append_value(pvalue);
@@ -913,7 +927,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	propid = PROP_ID(g_bcd_proptag);
 	proptag = PROP_TAG(PROP_TYPE(g_bcd_proptag), propids[propid - 0x8000]);
 	pvalue = pmsg->proplist.get<char>(proptag);
-	if (pvalue != nullptr)
+	if (has_content(pvalue))
 		vcard.append_line("X-MS-OL-DESIGN", pvalue);
 	
 	saval = pmsg->proplist.get<STRING_ARRAY>(PR_CHILDRENS_NAMES);
@@ -925,14 +939,14 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		propid = PROP_ID(g_ufld_proptags[i]);
 		proptag = PROP_TAG(PROP_TYPE(g_ufld_proptags[i]), propids[propid - 0x8000]);
 		pvalue = pmsg->proplist.get<char>(proptag);
-		if (pvalue == nullptr)
+		if (!has_content(pvalue))
 			continue;
 		vcard.append_line("X-MS-TEXT", pvalue);
 	}
 	
 	for (size_t i = 0; i < std::size(ms_tel_proptags); ++i) {
 		pvalue = pmsg->proplist.get<char>(ms_tel_proptags[i]);
-		if (pvalue == nullptr)
+		if (!has_content(pvalue))
 			continue;
 		auto &tel_line = vcard.append_line("X-MS-TEL");
 		tel_line.append_param("TYPE", ms_tel_types[i]);
@@ -961,18 +975,18 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids[PROP_ID(g_vcarduid_proptag)-0x8000]));
-	if (pvalue == nullptr) {
+	if (!has_content(pvalue)) {
 		auto guid = GUID::random_new();
 		vcarduid = "uuid:" + bin2hex(guid);
 		pvalue = vcarduid.c_str();
 	}
-	if (pvalue != nullptr)
+	if (has_content(pvalue))
 		vcard.append_line("UID", pvalue);
 
 	propid = PROP_ID(g_fbl_proptag);
 	proptag = PROP_TAG(PROP_TYPE(g_fbl_proptag), propids[propid - 0x8000]);
 	pvalue = pmsg->proplist.get<char>(proptag);
-	if (pvalue != nullptr)
+	if (has_content(pvalue))
 		vcard.append_line("FBURL", pvalue);
 	
 	saval = pmsg->proplist.get<STRING_ARRAY>(PR_HOBBIES);
@@ -995,12 +1009,14 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_TITLE);
-	vcard.append_line("TITLE", pvalue);
+	if (has_content(pvalue))
+		vcard.append_line("TITLE", pvalue);
 	
 	propid = PROP_ID(g_im_proptag);
 	proptag = PROP_TAG(PROP_TYPE(g_im_proptag), propids[propid - 0x8000]);
 	pvalue = pmsg->proplist.get<char>(proptag);
-	vcard.append_line("X-MS-IMADDRESS", pvalue);
+	if (has_content(pvalue))
+		vcard.append_line("X-MS-IMADDRESS", pvalue);
 	
 	auto lnum = pmsg->proplist.get<uint64_t>(PR_BIRTHDAY);
 	if (lnum != nullptr) {
