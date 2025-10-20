@@ -1100,13 +1100,10 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		return MAPI_E_NO_RECIPIENTS;
 	}
 
-	auto body_type = get_override_format(*pmsgctnt);
 	common_util_set_dir(pstore->get_dir());
-	/* try to avoid TNEF message */
 	MAIL imail;
-	if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type,
-	    &imail, common_util_alloc, common_util_get_propids,
-	    common_util_get_propname))
+	if (!oxcmail_export_AF(*pmsgctnt, log_id, &imail, common_util_alloc,
+	    common_util_get_propids, common_util_get_propname))
 		return ecError;
 
 	imail.set_header("X-Mailer", ZCORE_UA);
@@ -1696,13 +1693,11 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
 	}
-	auto body_type = get_override_format(*pmsgctnt);
 	common_util_set_dir(pstore->get_dir());
-	/* try to avoid TNEF message */
 	auto log_id = pstore->get_dir() + ":i"s + std::to_string(inst_id);
 	MAIL imail;
-	if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type, &imail,
-	    common_util_alloc, common_util_get_propids, common_util_get_propname))
+	if (!oxcmail_export_AF(*pmsgctnt, log_id, &imail, common_util_alloc,
+	    common_util_get_propids, common_util_get_propname))
 		return FALSE;	
 	auto mail_len = imail.get_length();
 	if (mail_len < 0)

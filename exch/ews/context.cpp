@@ -719,8 +719,8 @@ std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONT
 	auto getPropIds  = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 		{ *ids = getNamedPropIds(dir, *names); return TRUE; };
 	auto getPropName = [&](propid_t id, PROPERTY_NAME **name) { *name = getPropertyName(dir, id); return TRUE; };
-	if (!oxcmail_export(&content, log_id.c_str(), false,
-	                    oxcmail_body::plain_and_html, &mail, alloc, getPropIds, getPropName))
+	if (!oxcmail_export_PH(content, log_id.c_str(), &mail,
+	    alloc, getPropIds, getPropName))
 		throw EWSError::ItemCorrupt(E3072);
 	auto mail_len = mail.get_length();
 	if (mail_len < 0)
@@ -1848,8 +1848,7 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	std::string log_id;
 	if (log_msg_id != 0)
 		log_id = dir + ":m" + std::to_string(log_msg_id);
-	if (!oxcmail_export(&content, log_id.c_str(), false,
-	    oxcmail_body::plain_and_html, &mail, alloc, getPropIds, getPropName))
+	if (!oxcmail_export_PH(content, log_id, &mail, alloc, getPropIds, getPropName))
 		throw EWSError::ItemCorrupt(E3116);
 	std::vector<std::string> rcpts;
 	rcpts.reserve(content.children.prcpts->count);

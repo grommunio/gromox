@@ -1446,11 +1446,9 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 		mlog2(LV_ERR, "E-1282: Empty converted recipients list attempting to send %s", log_id.c_str());
 		return MAPI_E_NO_RECIPIENTS;
 	}
-	auto body_type = get_override_format(*pmsgctnt);
 	common_util_set_dir(dir);
-	/* try to avoid TNEF message */
-	if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type, &imail,
-	    common_util_alloc, common_util_get_propids, common_util_get_propname)) {
+	if (!oxcmail_export_AF(*pmsgctnt, log_id, &imail, common_util_alloc,
+	    common_util_get_propids, common_util_get_propname)) {
 		mlog2(LV_ERR, "E-1281: oxcmail_export %s failed", log_id.c_str());
 		return ecError;	
 	}

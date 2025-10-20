@@ -2403,8 +2403,8 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	g_sqlite_for_oxcmail = rp.sqlite;
 	auto log_id = rp.ev_to + ":m"s + std::to_string(rop_util_get_gc_value(template_message_id));
 	MAIL imail;
-	if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, oxcmail_body::plain_and_html,
-	    &imail, common_util_alloc, message_get_propids, message_get_propname)) {
+	if (!oxcmail_export_PH(*pmsgctnt, log_id, &imail, common_util_alloc,
+	    message_get_propids, message_get_propname)) {
 		g_sqlite_for_oxcmail = nullptr;
 		return FALSE;
 	}
@@ -2538,12 +2538,9 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		if (!message_read_message(rp.db, rp.cpid, rp.message_id,
 		    &pmsgctnt) || pmsgctnt == nullptr)
 			return ecError;
-		auto body_type = get_override_format(*pmsgctnt);
-		/* try to avoid TNEF message */
 		g_sqlite_for_oxcmail = rp.sqlite;
 		auto log_id = rp.ev_to + ":m"s + std::to_string(rop_util_get_gc_value(rp.message_id));
-		if (!oxcmail_export(pmsgctnt, log_id.c_str(), false, body_type,
-		    &imail, common_util_alloc,
+		if (!oxcmail_export_AF(*pmsgctnt, log_id, &imail, common_util_alloc,
 		    message_get_propids, message_get_propname)) {
 			g_sqlite_for_oxcmail = nullptr;
 			return ecError;

@@ -41,9 +41,9 @@ extern GX_EXPORT std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete> oxcical_imp
 extern GX_EXPORT bool oxcical_export(const MESSAGE_CONTENT *, const char *log_id, ical &, const char *org, EXT_BUFFER_ALLOC, GET_PROPIDS, gromox::cvt_id2user) __attribute__((nonnull(2)));
 extern GX_EXPORT bool oxcical_export_freebusy(const char *, const char *, time_t, time_t, const std::vector<freebusy_event> &, ical &);
 extern GX_EXPORT message_content *oxcmail_import(const MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS);
-extern GX_EXPORT BOOL oxcmail_export(const MESSAGE_CONTENT *, const char *log_id, BOOL tnef, enum oxcmail_body, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME) __attribute__((nonnull(2)));
+extern GX_EXPORT bool oxcmail_export_AF(const message_content &, const std::string &log_id, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
+extern GX_EXPORT bool oxcmail_export_PH(const message_content &, const std::string &log_id, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
 extern GX_EXPORT BOOL oxcmail_username_to_entryid(const char *user, const char *disp, BINARY *, enum display_type *);
-extern GX_EXPORT enum oxcmail_body get_override_format(const MESSAGE_CONTENT &);
 extern GX_EXPORT BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &, const gromox::addr_tags *, const char *org, gromox::cvt_id2user, std::string &out);
 
 extern GX_EXPORT MESSAGE_CONTENT *oxvcard_import(const vcard *, GET_PROPIDS);

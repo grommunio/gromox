@@ -1141,10 +1141,12 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 			return err;
 	}
 
+	auto log_id = "f" + std::to_string(rop_util_get_gc_value(par.cur.fid)) +
+	              ":m" + std::to_string(rop_util_get_gc_value(par.cur.mid));
 	MAIL imail;
 	rp_storedir = par.cur.dirc();
-	if (!oxcmail_export(rsp_ctnt.get(), "-", false, oxcmail_body::plain_and_html,
-	    &imail, cu_alloc, cu_get_propids, cu_get_propname)) {
+	if (!oxcmail_export_PH(*rsp_ctnt.get(), log_id, &imail,
+	    cu_alloc, cu_get_propids, cu_get_propname)) {
 		mlog(LV_ERR, "mr_send_response: oxcmail_export failed for an unspecified reason.\n");
 		return ecError;
 	}

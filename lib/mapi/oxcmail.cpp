@@ -146,6 +146,8 @@ struct mime_skeleton {
 using MIME_SKELETON = mime_skeleton;
 }
 
+static bool oxcmail_export(const message_content *, const char *log_id, bool b_tnef, enum oxcmail_body, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
+
 static constexpr char
 	PidNameContentClass[] = "Content-Class",
 	PidNameKeywords[] = "Keywords";
@@ -3948,7 +3950,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		auto b_tnef = pskeleton->mail_type == oxcmail_type::tnef;
 		MAIL imail;
 		if (!oxcmail_export(pattachment->pembedded, log_id,
-		    b_tnef ? TRUE : false, pskeleton->body_type, &imail,
+		    b_tnef, pskeleton->body_type, &imail,
 		    alloc, std::move(get_propids), std::move(get_propname)))
 			return FALSE;
 		auto mail_len = imail.get_length();
@@ -4037,10 +4039,9 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 }
 
 #define exp_false xlog_bool(__func__, __LINE__)
-BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
-    BOOL b_tnef, enum oxcmail_body body_type,
-    MAIL *pmail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
-    GET_PROPNAME get_propname) try
+static bool oxcmail_export(const message_content *pmsg, const char *log_id,
+    bool b_tnef, enum oxcmail_body body_type, MAIL *pmail, EXT_BUFFER_ALLOC alloc,
+    GET_PROPIDS get_propids, GET_PROPNAME get_propname) try
 {
 	int i;
 	ical ical;
@@ -4364,14 +4365,31 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 }
 #undef exp_false
 
-enum oxcmail_body get_override_format(const MESSAGE_CONTENT &mc)
+/* automatic format selection */
+bool oxcmail_export_AF(const MESSAGE_CONTENT &mc, const std::string &log_id,
+    MAIL *mail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
+    GET_PROPNAME get_propname)
 {
+	oxcmail_body body_type;
+
 	auto v = mc.proplist.get<uint32_t>(PR_INETMAIL_OVERRIDE_FORMAT);
 	if (v == nullptr)
-		return oxcmail_body::plain_and_html;
+		body_type = oxcmail_body::plain_and_html;
 	else if (*v & MESSAGE_FORMAT_PLAIN_AND_HTML)
-		return oxcmail_body::plain_and_html;
+		body_type = oxcmail_body::plain_and_html;
 	else if (*v & MESSAGE_FORMAT_HTML_ONLY)
-		return oxcmail_body::html_only;
-	return oxcmail_body::plain_only;
+		body_type = oxcmail_body::html_only;
+	else
+		body_type = oxcmail_body::plain_only;
+
+	return oxcmail_export(&mc, log_id.c_str(), false, body_type,
+	       mail, alloc, get_propids, get_propname);
+}
+
+bool oxcmail_export_PH(const MESSAGE_CONTENT &mc, const std::string &log_id,
+    MAIL *mail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
+    GET_PROPNAME get_propname)
+{
+	return oxcmail_export(&mc, log_id.c_str(), false, oxcmail_body::plain_and_html,
+	       mail, alloc, get_propids, get_propname);
 }

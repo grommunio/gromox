@@ -1368,8 +1368,7 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 		}
 		auto log_id = dir + ":m"s + std::to_string(message_id);
 		MAIL imail;
-		if (!oxcmail_export(pmsgctnt, log_id.c_str(), false,
-		    oxcmail_body::plain_and_html, &imail, cu_alloc_bytes,
+		if (!oxcmail_export_PH(*pmsgctnt, log_id, &imail, cu_alloc_bytes,
 		    cu_get_propids, cu_get_propname)) {
 			mlog(LV_ERR, "E-1222: oxcmail_export %s failed", log_id.c_str());
 			cu_switch_allocator();
