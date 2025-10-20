@@ -570,7 +570,7 @@ static void q_else(eq_iter_t eq_node)
 			dl_hold.unlock();
 			if (b_result)
 				pdequeue->waken_cond.notify_one();
-			phost->list.push_back(pdequeue);
+			phost->list.push_back(std::move(pdequeue));
 		}
 	}
 	hl_hold.unlock();

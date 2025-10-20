@@ -2588,7 +2588,7 @@ MESSAGE_CONTENT *oxcmail_import(const MAIL *pmail, EXT_BUFFER_ALLOC alloc,
 					return imp_null;
 				std::swap(pmsg->children.prcpts, pmsg1->children.prcpts);
 				if (field_param.b_flag_del)
-					oxcmail_remove_flag_properties(pmsg1.get(), get_propids);
+					oxcmail_remove_flag_properties(pmsg1.get(), std::move(get_propids));
 				return pmsg1.release();
 			}
 		}

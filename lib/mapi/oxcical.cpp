@@ -2754,7 +2754,7 @@ ec_error_t oxcical_import_multi(const ical &pical,
 	piline = pical.get_line("METHOD");
 	if (piline == nullptr) {
 		if (!oxcical_import_events(calendartype,
-		    pical, uid_list, alloc, get_propids,
+		    pical, uid_list, alloc, std::move(get_propids),
 		    username_to_entryid, msgvec))
 			return ecError;
 		finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
