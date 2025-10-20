@@ -168,6 +168,17 @@ static inline bool has_content(const char *value)
 	return value != nullptr && *value != '\0';
 }
 
+static void add_person(vcard &card, const MESSAGE_CONTENT &msg,
+    proptag_t proptag, const char *line_key)
+{
+	auto value = msg.proplist.get<const char>(proptag);
+	if (!has_content(value))
+		return;
+	auto &line = card.append_line(line_key);
+	line.append_param("N");
+	line.append_value(value);
+}
+
 static std::string join(const char *gn, const char *mn, const char *sn)
 {
 	std::string r = znul(gn);
@@ -953,26 +964,9 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		tel_line.append_value(pvalue);
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PR_SPOUSE_NAME);
-	if (NULL != pvalue && *pvalue != '\0') {
-		auto &sp_line = vcard.append_line("X-MS-SPOUSE");
-		sp_line.append_param("N");
-		sp_line.append_value(pvalue);
-	}
-	
-	pvalue = pmsg->proplist.get<char>(PR_MANAGER_NAME);
-	if (NULL != pvalue && *pvalue != '\0') {
-		auto &mgr_line = vcard.append_line("X-MS-MANAGER");
-		mgr_line.append_param("N");
-		mgr_line.append_value(pvalue);
-	}
-	
-	pvalue = pmsg->proplist.get<char>(PR_ASSISTANT);
-	if (NULL != pvalue && *pvalue != '\0') {
-		auto &as_line = vcard.append_line("X-MS-ASSISTANT");
-		as_line.append_param("N");
-		as_line.append_value(pvalue);
-	}
+	add_person(vcard, *pmsg, PR_SPOUSE_NAME, "X-MS-SPOUSE");
+	add_person(vcard, *pmsg, PR_MANAGER_NAME, "X-MS-MANAGER");
+	add_person(vcard, *pmsg, PR_ASSISTANT, "X-MS-ASSISTANT");
 	
 	pvalue = pmsg->proplist.get<char>(PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids[PROP_ID(g_vcarduid_proptag)-0x8000]));
 	if (!has_content(pvalue)) {
