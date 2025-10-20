@@ -47,6 +47,18 @@ unqualified hostname in /etc/hosts that many system installations use).
 .br
 Default: \fIpostmaster@\fP
 .TP
+\fBlda_junk_rules\fP
+A semicolon-separated list of header/value matches that make delivery(8) place
+incoming messages into the junk folder rather than Inbox. Each entry in this
+list has the form \fIHeader=val\fP (`:` may be used in place of `=`).
+Header names and values are compared case-insensitively. Values are checked
+both against the full header value and individual comma/semicolon separated
+tokens; use \fB*\fP or an empty value to match any header value.
+.br
+Default: (empty)
+.br
+Example: \fIX-Spam-Flag=YES; X-Spam=yes; X-Spam=1\fP
+.TP
 \fBexmdb_client_rpc_timeout\fP
 If the execution of an RPC takes longer than the specified time, the client
 will sever the connection and return an error to the calling program. The value

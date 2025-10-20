@@ -32,6 +32,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
+#include "../junk.cpp"
 #define MAX_DIGLEN				256*1024
 
 using namespace gromox;
@@ -44,6 +45,7 @@ static thread_local alloc_context g_alloc_ctx;
 static thread_local const char *g_storedir;
 
 static ec_error_t (*exmdb_local_rules_execute)(const char *, const char *, const char *, eid_t, eid_t, unsigned int flags);
+static junk_rule_list g_junk_rules;
 
 void exmdb_local_init(const char *org_name)
 {
@@ -240,6 +242,20 @@ static void lq_report(unsigned int qid, unsigned long long mid, const char *txt,
 		qid, mid, txt, znul(from), znul(subj), acount);
 }
 
+static bool should_move_to_junk(const MAIL &mail)
+{
+	const auto &rlist = g_junk_rules;
+	if (rlist.empty())
+		return false;
+	auto mhead = mail.get_head();
+	if (mhead == nullptr)
+		return false;
+	for (const auto &[eml_hdr, eml_val] : mhead->f_other_fields)
+		if (junk_rlist_matches(rlist, eml_hdr, eml_val))
+			return true;
+	return false;
+}
+
 delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
     const char *address) try
 {
@@ -266,6 +282,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	}
 	auto home_dir = mres.maildir.c_str();
 	auto pmail = &pcontext->mail;
+	bool deliver_to_junk = should_move_to_junk(*pmail);
 	gx_strlcpy(hostname, get_host_ID(), std::size(hostname));
 	if ('\0' == hostname[0]) {
 		if (gethostname(hostname, std::size(hostname)) < 0)
@@ -351,6 +368,8 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	unsigned int flags = DELIVERY_DO_RULES | DELIVERY_DO_NOTIF;
 	if (g_lda_twostep)
 		flags = 0;
+	if (deliver_to_junk)
+		flags |= DELIVERY_FORCE_JUNK;
 	if (!exmdb_client_remote::deliver_message(home_dir,
 	    pcontext->ctrl.from, address, CP_ACP, flags,
 	    pmsg.get(), djson.c_str(), &folder_id, &message_id, &r32))
@@ -494,6 +513,7 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 				strerror(errno));
 			return FALSE;
 		}
+		g_junk_rules = parse_junk_rules(cfg->get_value("lda_junk_rules"));
 
 		sprintf(cache_path, "%s/cache", get_queue_path());
 		auto str_value = pfile->get_value("X500_ORG_NAME");

@@ -4,6 +4,8 @@ Gromox 3.3.32 (Development)
 Enhancements:
 
 * mbop: new "zaddrxlat" command
+* delivery: add pre-delivery junk shelving and ``lda_junk_rules``
+  config directive
 
 Fixes:
 
