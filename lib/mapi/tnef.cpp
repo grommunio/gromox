@@ -2260,17 +2260,18 @@ static BOOL tnef_serialize_internal(tnef_push &ext, const char *log_id,
 			                      pmsg->children.prcpts->count));
 			if (tnef_propset.pplist == nullptr)
 				return FALSE;
-		}
-		for (auto &msg_rcpt : *pmsg->children.prcpts) {
-			num = msg_rcpt.get<uint32_t>(PR_RECIPIENT_TYPE);
-			/* BCC recipients must be excluded */
-			if (num != nullptr && *num == MAPI_BCC)
-				continue;
-			tnef_propset.pplist[tnef_propset.count] =
-				tnef_convert_recipient(&msg_rcpt, alloc, get_propname);
-			if (tnef_propset.pplist[tnef_propset.count] == nullptr)
-				return FALSE;
-			tnef_propset.count ++;
+
+			for (auto &msg_rcpt : *pmsg->children.prcpts) {
+				num = msg_rcpt.get<uint32_t>(PR_RECIPIENT_TYPE);
+				/* BCC recipients must be excluded */
+				if (num != nullptr && *num == MAPI_BCC)
+					continue;
+				tnef_propset.pplist[tnef_propset.count] =
+					tnef_convert_recipient(&msg_rcpt, alloc, get_propname);
+				if (tnef_propset.pplist[tnef_propset.count] == nullptr)
+					return FALSE;
+				tnef_propset.count++;
+			}
 		}
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_RECIPTABLE,
 		    &tnef_propset) != pack_result::ok)

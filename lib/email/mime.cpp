@@ -343,7 +343,8 @@ bool MIME::write_mail(MAIL *pmail)
 	pmime->content_begin = reinterpret_cast<char *>(pmail);
 	pmime->content_length = 0;
 	content_buf.reset();
-	pmime->set_field("Content-Transfer-Encoding", "8bit");
+	if (!pmime->set_field("Content-Transfer-Encoding", "8bit"))
+		return false;
 	return true;
 }
 

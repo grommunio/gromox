@@ -435,7 +435,8 @@ static bool cgkreset_load_param(sqlite3 *db, uint64_t &last_cn, GUID &store_guid
 	stm.bind_int64(1, CONFIG_ID_MAILBOX_GUID);
 	if (stm.step() != SQLITE_ROW)
 		return false;
-	store_guid.from_str(stm.col_text(0));
+	if (!store_guid.from_str(stm.col_text(0)))
+		return false;
 	stm.reset();
 	stm.bind_int64(1, CONFIG_ID_LAST_CHANGE_NUMBER);
 	if (stm.step() != SQLITE_ROW)
