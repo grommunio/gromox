@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -11,6 +11,8 @@
 #include <libxml/HTMLtree.h>
 #include <vmime/generationContext.hpp>
 #include <vmime/utility/outputStreamStringAdapter.hpp>
+#include <gromox/element_data.hpp>
+#include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mime.hpp>
@@ -414,6 +416,64 @@ ec_error_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props,
 		return err;
 	uint32_t cpid = CP_UTF8;
 	return props.set(PR_INTERNET_CPID, &cpid);
+}
+
+static bool att_is_mtg_exception(const attachment_content &at)
+{
+	if (at.pembedded == nullptr)
+		return false;
+	auto s = at.pembedded->proplist.get<const char>(PR_MESSAGE_CLASS);
+	return s != nullptr && strcasecmp(s, IPM_Appointment_Exception) == 0;
+}
+
+bool attachment_is_inline(const attachment_content &at)
+{
+	if (at.pembedded != nullptr)
+		return false;
+	auto num = at.proplist.get<uint32_t>(PR_ATTACH_FLAGS);
+	if (num == nullptr || !(*num & ATT_MHTML_REF))
+		return false;
+	return at.proplist.has(PR_ATTACH_CONTENT_ID) ||
+	       at.proplist.has(PR_ATTACH_CONTENT_LOCATION);
+}
+
+/* For exporting MAPI Attachments as MIME parts */
+ec_error_t export_attachments(const message_content &mc, const char *log_id,
+    mime_skeleton &skel, MAIL &m_mail, MIME *m_related, MIME *m_mixed,
+    EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids, GET_PROPNAME get_propname)
+{
+	if (mc.children.pattachments == nullptr)
+		return ecSuccess;
+	for (auto &at : *mc.children.pattachments) {
+		if (att_is_mtg_exception(at))
+			continue;
+		auto b_inline = attachment_is_inline(at);
+		auto new_part = m_mail.add_child(b_inline ? m_related : m_mixed, MIME_ADD_LAST);
+		if (new_part == nullptr)
+			return ecMAPIOOM;
+		if (!oxcmail_export_attachment(&at, log_id, b_inline, &skel,
+		    alloc, get_propids, get_propname, new_part))
+			return ecError;
+	}
+	return ecSuccess;
+}
+
+/* Certain MAPI objects can only be expressed in MIME as TNEF */
+ec_error_t export_tnef_body(const char *log_id, mime_skeleton &skel,
+    MAIL &mail, MIME *m_related, EXT_BUFFER_ALLOC alloc,
+    GET_PROPIDS get_propids, GET_PROPNAME get_propname)
+{
+	if (skel.pattachments == nullptr)
+		return ecSuccess;
+	for (auto &at : *skel.pattachments) {
+		auto new_part = mail.add_child(m_related, MIME_ADD_LAST);
+		if (new_part == nullptr)
+			return ecMAPIOOM;
+		if (!oxcmail_export_attachment(&at, log_id, true, &skel, alloc,
+		    get_propids, get_propname, new_part))
+			return ecError;
+	}
+	return ecSuccess;
 }
 
 }

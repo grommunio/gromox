@@ -124,8 +124,6 @@ static constexpr addr_tags tags_read_rcpt = {
 
 using MIME_SKELETON = mime_skeleton;
 
-static bool oxcmail_export(const message_content *, const char *log_id, bool b_tnef, enum oxcmail_body, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
-
 static constexpr char
 	PidNameContentClass[] = "Content-Class",
 	PidNameKeywords[] = "Keywords";
@@ -3115,21 +3113,13 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 	}
 	if (pmsg->children.pattachments == nullptr)
 		return TRUE;
-	for (auto &attachment : *pmsg->children.pattachments) {
-		auto pattachment = &attachment;
-		if (NULL != pattachment->pembedded) {
+	for (auto &at : *pmsg->children.pattachments) {
+		if (at.pembedded != nullptr)
 			pskeleton->b_attachment = TRUE;
-			continue;
-		}
-		auto pvalue = pattachment->proplist.get<uint32_t>(PR_ATTACH_FLAGS);
-		if (pvalue != nullptr && (*pvalue & ATT_MHTML_REF)) {
-			if (pattachment->proplist.has(PR_ATTACH_CONTENT_ID) ||
-			    pattachment->proplist.has(PR_ATTACH_CONTENT_LOCATION)) {
-				pskeleton->b_inline = TRUE;
-				continue;
-			}
-		}
-		pskeleton->b_attachment = TRUE;
+		else if (attachment_is_inline(at))
+			pskeleton->b_inline = TRUE;
+		else
+			pskeleton->b_attachment = TRUE;
 	}
 	return TRUE;
 }
@@ -3785,7 +3775,7 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
 	return false;
 }
 
-static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
+bool oxcmail_export_attachment(attachment_content *pattachment,
     const char *log_id,
     BOOL b_inline, MIME_SKELETON *pskeleton, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, GET_PROPNAME get_propname, MIME *pmime)
@@ -4018,17 +4008,15 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 }
 
 #define exp_false xlog_bool(__func__, __LINE__)
-static bool oxcmail_export(const message_content *pmsg, const char *log_id,
+bool oxcmail_export(const message_content *pmsg, const char *log_id,
     bool b_tnef, enum oxcmail_body body_type, MAIL *pmail, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, GET_PROPNAME get_propname) try
 {
-	int i;
 	ical ical;
 	MIME *phtml;
 	MIME *pmime;
 	MIME *pplain;
 	MIME *pmixed;
-	BOOL b_inline;
 	MIME *prelated;
 	MIME *pcalendar;
 	char tmp_method[32];
@@ -4297,45 +4285,18 @@ static bool oxcmail_export(const message_content *pmsg, const char *log_id,
 		    mime_encoding::none))
 			return exp_false;
 	}
-	
-	if (NULL != mime_skeleton.pattachments) {
-		for (i=0; i<mime_skeleton.pattachments->count; i++) {
-			pmime = pmail->add_child(prelated, MIME_ADD_LAST);
-			if (pmime == nullptr)
-				return exp_false;
-			if (!oxcmail_export_attachment(mime_skeleton.pattachments->pplist[i],
-			    log_id, TRUE, &mime_skeleton, alloc, get_propids,
-			    get_propname, pmime))
-				return exp_false;
-		}
+
+	auto err = oxcmail::export_tnef_body(log_id, mime_skeleton, *pmail,
+	           prelated, alloc, get_propids, get_propname);
+	if (err != ecSuccess) {
+		mlog(LV_ERR, "E-2941: %s", mapi_strerror(err));
+		return false;
 	}
-	
-	if (pmsg->children.pattachments == nullptr)
-		return TRUE;
-	for (auto &attachment : *pmsg->children.pattachments) {
-		auto pattachment = &attachment;
-		if (NULL != pattachment->pembedded) {
-			auto str = pattachment->pembedded->proplist.get<const char>(PR_MESSAGE_CLASS);
-			if (str != nullptr && strcasecmp(str, IPM_Appointment_Exception) == 0)
-				continue;
-		}
-		if (NULL == pattachment->pembedded &&
-		    (num = pattachment->proplist.get<uint32_t>(PR_ATTACH_FLAGS)) != nullptr &&
-		    (*num & ATT_MHTML_REF) &&
-		    (pattachment->proplist.has(PR_ATTACH_CONTENT_ID) ||
-		    pattachment->proplist.has(PR_ATTACH_CONTENT_LOCATION))) {
-			b_inline = TRUE;
-			pmime = pmail->add_child(prelated, MIME_ADD_LAST);
-		} else {
-			b_inline = FALSE;
-			pmime = pmail->add_child(pmixed, MIME_ADD_LAST);
-		}
-		if (pmime == nullptr)
-			return exp_false;
-		if (!oxcmail_export_attachment(pattachment, log_id,
-		    b_inline, &mime_skeleton, alloc, get_propids,
-		    get_propname, pmime))
-			return exp_false;
+	err = oxcmail::export_attachments(*pmsg, log_id, mime_skeleton,
+	      *pmail, prelated, pmixed, alloc, get_propids, get_propname);
+	if (err != ecSuccess) {
+		mlog(LV_ERR, "E-2940: %s", mapi_strerror(err));
+		return false;
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
