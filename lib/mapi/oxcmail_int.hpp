@@ -48,6 +48,20 @@ struct MIME_ENUM_PARAM {
 	std::unordered_map<const MIME *, std::string> new_ctids;
 };
 
+/**
+ * @b_inline:     Indicator for producing a multipart/related later on
+ * @b_attachment: Indicator for producing a multipart/mixed later on
+ * @pattachments: Buffer for holding ad-hoc generated attachments (that are not
+ *                (backed by an actual MAPI attachment; mostly used for an RTF body)
+ * @pplain:       Pointer to the plaintext body (if any) of the
+ *                struct message_content that is to be exported
+ * @phtml:        Pointer to the HTML body (if any)
+ * @rtf:          Uncompressed RTF markup.
+ * @rtf_bin:      RTF markup's container for other APIs.
+ *
+ * mime_skeleton will hold a bunch of pointers to a struct message_content.
+ * You are responsible for lifetime management.
+ */
 struct mime_skeleton {
 	mime_skeleton() = default;
 	~mime_skeleton() { clear(); }

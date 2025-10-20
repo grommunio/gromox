@@ -3076,6 +3076,9 @@ static bool skel_grab_rtf(mime_skeleton &skel, const message_content &msg,
 	return false;
 }
 
+/***
+ * Populate pskeleton with condensed information about the message.
+ */
 static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
     const char *pcharset, BOOL b_tnef, enum oxcmail_body body_type,
     MIME_SKELETON *pskeleton)
