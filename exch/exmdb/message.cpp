@@ -3528,7 +3528,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		    *pdb, PR_OOF_STATE, &pvalue))
 			return FALSE;
 		b_oof = pvb_disabled(pvalue);
-		fid_val = PRIVATE_FID_INBOX;
+		fid_val = (dlflags & DELIVERY_FORCE_JUNK) ?
+		          PRIVATE_FID_JUNK : PRIVATE_FID_INBOX;
 	} else {
 		b_oof = false;
 		//TODO get public folder id
