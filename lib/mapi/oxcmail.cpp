@@ -4336,8 +4336,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		auto pattachment = &attachment;
 		if (NULL != pattachment->pembedded) {
 			auto str = pattachment->pembedded->proplist.get<const char>(PR_MESSAGE_CLASS);
-			if (str != nullptr && strcasecmp(str,
-			    "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}") == 0)
+			if (str != nullptr && strcasecmp(str, IPM_Appointment_Exception) == 0)
 				continue;
 		}
 		if (NULL == pattachment->pembedded &&

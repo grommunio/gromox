@@ -2342,7 +2342,7 @@ static const char *oxcical_import_internal(const char *method,
 			if (pembedded == nullptr)
 				return "E-2725: ENOMEM";
 			pattachment->set_embedded_internal(pembedded);
-			if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}") != ecSuccess)
+			if (pembedded->proplist.set(PR_MESSAGE_CLASS, IPM_Appointment_Exception) != ecSuccess)
 				return "E-2726";
 
 			event_list_t tmp_list;
@@ -4013,8 +4013,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				str = pembedded->proplist.get<char>(PR_MESSAGE_CLASS_A);
 			if (str == nullptr)
 				str = "IPM.Note";
-			if (class_match_prefix(str,
-			    "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}"))
+			if (class_match_prefix(str, IPM_Appointment_Exception))
 				continue;
 			if (!pembedded->proplist.has(proptag_xrt))
 				continue;
