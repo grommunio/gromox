@@ -55,6 +55,8 @@ static constexpr uint32_t g_otheraddr_proptags[] =
 	{PR_OTHER_ADDRESS_POST_OFFICE_BOX, PR_OTHER_ADDRESS_STREET,
 	PR_OTHER_ADDRESS_CITY, PR_OTHER_ADDRESS_STATE_OR_PROVINCE,
 	PR_OTHER_ADDRESS_POSTAL_CODE, PR_OTHER_ADDRESS_COUNTRY};
+static_assert(std::size(g_workaddr_proptags) == std::size(g_homeaddr_proptags));
+static_assert(std::size(g_workaddr_proptags) == std::size(g_otheraddr_proptags));
 static constexpr uint32_t g_email_proptags[] =
 	{0x8006001F, 0x8007001F, 0x8008001F};
 static constexpr uint32_t g_addrtype_proptags[] =
