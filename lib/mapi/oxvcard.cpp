@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -195,6 +196,27 @@ static void add_string_array(vcard &card, const STRING_ARRAY *arr,
 		}
 		value->append_subval(entry);
 	}
+}
+
+template<size_t N, typename Func>
+static void add_adr(vcard &card, const char *type, Func &&get_part)
+{
+	std::array<const char *, N> parts{};
+	bool has_value = false;
+	for (size_t idx = 0; idx < N; ++idx) {
+		const char *part = get_part(idx);
+		if (has_content(part)) {
+			parts[idx] = part;
+			has_value = true;
+		}
+	}
+	if (!has_value)
+		return;
+	auto &adr_line = card.append_line("ADR");
+	adr_line.append_param("TYPE", type);
+	for (const auto *part : parts)
+		adr_line.append_value(znul(part));
+	adr_line.append_value();
 }
 
 static std::string join(const char *gn, const char *mn, const char *sn)
@@ -868,38 +890,18 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		pvalue = "PUBLIC";
 	vcard.append_line("CLASS", pvalue);
 	
-	auto adr_line = &vcard.append_line("ADR");
-	adr_line->append_param("TYPE", "WORK");
-	for (size_t i = 0; i < std::size(g_workaddr_proptags); ++i) {
-		auto propid = PROP_ID(g_workaddr_proptags[i]);
-		auto proptag = PROP_TAG(PROP_TYPE(g_workaddr_proptags[i]), propids[propid - 0x8000]);
-		pvalue = pmsg->proplist.get<char>(proptag);
-		if (pvalue == nullptr)
-			continue;
-		adr_line->append_value(pvalue);
-	}
-	adr_line->append_value();
-	
-	adr_line = &vcard.append_line("ADR");
-	adr_line->append_param("TYPE", "HOME");
-	for (size_t i = 0; i < std::size(g_homeaddr_proptags); ++i) {
-		pvalue = pmsg->proplist.get<char>(g_homeaddr_proptags[i]);
-		if (pvalue == nullptr)
-			continue;
-		adr_line->append_value(pvalue);
-	}
-	adr_line->append_value();
-	
-	adr_line = &vcard.append_line("ADR");
-	adr_line->append_param("TYPE", "POSTAL");
-	for (size_t i = 0; i < std::size(g_otheraddr_proptags); ++i) {
-		pvalue = pmsg->proplist.get<char>(g_otheraddr_proptags[i]);
-		if (pvalue == nullptr)
-			continue;
-		adr_line->append_value(pvalue);
-	}
-	adr_line->append_value();
-	
+	add_adr<std::size(g_workaddr_proptags)>(vcard, "WORK", [&](unsigned int idx) {
+		auto propid = PROP_ID(g_workaddr_proptags[idx]);
+		auto proptag = PROP_TAG(PROP_TYPE(g_workaddr_proptags[idx]), propids[propid - 0x8000]);
+		return pmsg->proplist.get<const char>(proptag);
+	});
+	add_adr<std::size(g_homeaddr_proptags)>(vcard, "HOME", [&](unsigned int idx) {
+		return pmsg->proplist.get<const char>(g_homeaddr_proptags[idx]);
+	});
+	add_adr<std::size(g_otheraddr_proptags)>(vcard, "POSTAL", [&](unsigned int idx) {
+		return pmsg->proplist.get<const char>(g_otheraddr_proptags[idx]);
+	});
+
 	for (size_t i = 0; i < std::size(tel_proptags); ++i) {
 		pvalue = pmsg->proplist.get<char>(tel_proptags[i]);
 		if (!has_content(pvalue))
