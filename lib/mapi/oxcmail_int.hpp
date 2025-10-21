@@ -11,6 +11,16 @@
 struct MIME;
 struct message_content;
 
+enum class oxcmail_body {
+	plain_only = 1,
+	html_only = 2,
+	plain_and_html = 3,
+};
+
+enum class oxcmail_type {
+	normal, xsigned, encrypted, dsn, mdn, calendar, tnef,
+};
+
 namespace oxcmail {
 
 using namemap = std::unordered_map<int, PROPERTY_NAME>;
@@ -36,6 +46,23 @@ struct MIME_ENUM_PARAM {
 	const MIME *pcalendar = nullptr, *preport = nullptr;
 	std::vector<const MIME *> htmls, hjoin;
 	std::unordered_map<const MIME *, std::string> new_ctids;
+};
+
+struct mime_skeleton {
+	mime_skeleton() = default;
+	~mime_skeleton() { clear(); }
+	NOMOVE(mime_skeleton);
+	void clear();
+
+	enum oxcmail_type mail_type{};
+	enum oxcmail_body body_type{};
+	bool b_inline = false, b_attachment = false;
+	std::string rtf;
+	BINARY rtf_bin{};
+	const char *pplain = nullptr;
+	const BINARY *phtml = nullptr;
+	const char *charset = nullptr, *pmessage_class = nullptr;
+	attachment_list *pattachments = nullptr;
 };
 
 static constexpr unsigned int MAXIMUM_SEARCHING_DEPTH = 10;

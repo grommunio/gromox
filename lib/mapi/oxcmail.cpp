@@ -122,29 +122,7 @@ static constexpr addr_tags tags_read_rcpt = {
 
 }
 
-enum class oxcmail_type {
-	normal, xsigned, encrypted, dsn, mdn, calendar, tnef,
-};
-
-namespace {
-struct mime_skeleton {
-	mime_skeleton() = default;
-	~mime_skeleton() { clear(); }
-	NOMOVE(mime_skeleton);
-	void clear();
-
-	enum oxcmail_type mail_type{};
-	enum oxcmail_body body_type{};
-	BOOL b_inline = false, b_attachment = false;
-	std::string rtf;
-	BINARY rtf_bin{};
-	const char *pplain = nullptr;
-	const BINARY *phtml = nullptr;
-	const char *charset = nullptr, *pmessage_class = nullptr;
-	ATTACHMENT_LIST *pattachments = nullptr;
-};
 using MIME_SKELETON = mime_skeleton;
-}
 
 static bool oxcmail_export(const message_content *, const char *log_id, bool b_tnef, enum oxcmail_body, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
 
