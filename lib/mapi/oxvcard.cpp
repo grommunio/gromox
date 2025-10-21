@@ -759,7 +759,10 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 		auto propid = PROP_ID(proptag);
 		if (!is_nameprop_id(propid))
 			continue;
-		proptag = propids[propid - 0x8000];
+		uint16_t idx = propid - 0x8000;
+		if (idx >= propids.size())
+			continue; /* Skip invalid propids */
+		proptag = propids[idx];
 		pmsg->proplist.ppropval[i].proptag =
 			PROP_TAG(PROP_TYPE(pmsg->proplist.ppropval[i].proptag), proptag);
 	}
