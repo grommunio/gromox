@@ -905,6 +905,15 @@ void tEmailAddressDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPA(MailboxType);
 }
 
+tRoomType::tRoomType(const tinyxml2::XMLElement* xml) :
+	XMLINIT(Id)
+{}
+
+void tRoomType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(Id);
+}
+
 tFileAttachment::tFileAttachment(const XMLElement *xml)
 {
 	if (const XMLElement *xp = xml->FirstChildElement("Name"))
@@ -1832,6 +1841,25 @@ void mGetMailTipsResponse::serialize(XMLElement* xml) const
 {
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(ResponseMessages);
+}
+
+mGetRoomListsRequest::mGetRoomListsRequest(const XMLElement*)
+{}
+
+void mGetRoomListsResponse::serialize(XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(RoomLists);
+}
+
+mGetRoomsRequest::mGetRoomsRequest(const XMLElement* xml) :
+	XMLINIT(RoomList)
+{}
+
+void mGetRoomsResponse::serialize(XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(Rooms);
 }
 
 mGetServiceConfigurationRequest::mGetServiceConfigurationRequest(const XMLElement* xml) :

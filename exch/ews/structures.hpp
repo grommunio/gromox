@@ -729,6 +729,29 @@ struct tEmailAddressDictionaryEntry : public NS_EWS_Types {
 };
 
 /**
+ * Types.xsd:312
+ */
+struct tRoomListEntry : public tEmailAddressType {
+	static constexpr char NAME[] = "Address";
+
+	using tEmailAddressType::tEmailAddressType;
+};
+
+/**
+ * Types.xsd:320
+ */
+struct tRoomType : public NS_EWS_Types {
+	static constexpr char NAME[] = "Room";
+
+	tRoomType() = default;
+	explicit tRoomType(const tinyxml2::XMLElement*);
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::optional<tEmailAddressType> Id;
+};
+
+/**
  * Types.xsd
  */
 struct tPhoneNumberDictionaryEntry : public NS_EWS_Types {
@@ -3483,6 +3506,48 @@ struct mGetMailTipsResponse : public mResponseMessageType {
 	using mResponseMessageType::success;
 
 	std::vector<mMailTipsResponseMessageType> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:2685
+ */
+struct mGetRoomListsRequest {
+	explicit mGetRoomListsRequest(const tinyxml2::XMLElement*);
+};
+
+/**
+ * Messages.xsd:2696
+ */
+struct mGetRoomListsResponse : public mResponseMessageType {
+	static constexpr char NAME[] = "GetRoomListsResponse";
+
+	using mResponseMessageType::success;
+
+	std::optional<std::vector<tRoomListEntry>> RoomLists;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:2709
+ */
+struct mGetRoomsRequest {
+	explicit mGetRoomsRequest(const tinyxml2::XMLElement*);
+
+	tEmailAddressType RoomList;
+};
+
+/**
+ * Messages.xsd:2723
+ */
+struct mGetRoomsResponse : public mResponseMessageType {
+	static constexpr char NAME[] = "GetRoomsResponse";
+
+	using mResponseMessageType::success;
+
+	std::optional<std::vector<tRoomType>> Rooms;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
