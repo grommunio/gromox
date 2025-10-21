@@ -421,7 +421,7 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt,
 		return -EIO;
 	}
 	auto djson = json_to_str(digest);
-	digest["file"].clear();
+	digest.removeMember("file");
 
 	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld,
