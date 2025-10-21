@@ -861,6 +861,8 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 			photo_line.append_param("ENCODING", "B");
 			if (encode64(bv->pb, bv->cb, tmp_buff, VCARD_MAX_BUFFER_LEN - 1, &out_len) != 0)
 				return exp_false;
+			if (out_len >= VCARD_MAX_BUFFER_LEN)
+				return exp_false;
 			tmp_buff[out_len] = '\0';
 			photo_line.append_value(tmp_buff);
 			break;
@@ -1002,6 +1004,8 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		key_line.append_param("ENCODING", "B");
 		if (encode64(ba->pbin->pb, ba->pbin->cb, tmp_buff,
 		    std::size(tmp_buff) - 1, &out_len) != 0)
+			return exp_false;
+		if (out_len >= std::size(tmp_buff))
 			return exp_false;
 		tmp_buff[out_len] = '\0';
 		key_line.append_value(tmp_buff);
