@@ -1314,7 +1314,7 @@ struct GX_EXPORT restriction_list {
 	uint32_t count;
 	SRestriction *pres;
 
-	std::string repr() const;
+	std::string repr(const char *sep = ",") const;
 	restriction_list *dup() const;
 	I_BEGIN_END(pres, count);
 };
