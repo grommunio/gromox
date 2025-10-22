@@ -1604,4 +1604,5 @@ extern GX_EXPORT const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlo
 
 namespace gromox {
 extern GX_EXPORT std::string guid2name(const FLATUID);
+extern GX_EXPORT const char *relop_repr(enum relop);
 }

@@ -24,7 +24,9 @@
 using namespace std::string_view_literals;
 using namespace gromox;
 
-static inline const char *relop_repr(relop r)
+namespace gromox {
+
+const char *relop_repr(enum relop r)
 {
 	switch (r) {
 	case RELOP_LT: return "<";
@@ -37,6 +39,8 @@ static inline const char *relop_repr(relop r)
 	case RELOP_MEMBER_OF_DL: return "DL";
 	default: return "??";
 	}
+}
+
 }
 
 static std::string apptime_repr(double v)

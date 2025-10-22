@@ -37,6 +37,7 @@
 #include <gromox/util.hpp>
 #include "common_util.hpp"
 #include "nsp_interface.hpp"
+#include "repr.cpp"
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -904,6 +905,9 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 {
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
+	if (g_nsp_trace >= 2 && ptarget != nullptr)
+		fprintf(stderr, "seek_entries target={%xh,%s}\n",
+			ptarget->proptag, ptarget->repr().c_str());
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE ||
@@ -1181,6 +1185,8 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	*ppoutmids = nullptr;
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
+	if (g_nsp_trace >= 2 && pfilter != nullptr)
+		mlog(LV_DEBUG, "get_matches filter: %s", pfilter->repr().c_str());
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
 	PROPERTY_VALUE prop_val;
