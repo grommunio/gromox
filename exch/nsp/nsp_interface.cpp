@@ -1242,7 +1242,6 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				return ecServerOOM;
 			*pproptag = node.mid;
 		}
-		goto FETCH_ROWS;
 	} else if (pstat->container_id == PR_EMS_AB_PUBLIC_DELEGATES) {
 		ab_tree::ab_node node(base, pstat->cur_rec);
 		if (!node.exists())
@@ -1270,9 +1269,7 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				return ecServerOOM;
 			*pproptag = node.mid;
 		}
-		goto FETCH_ROWS;
-	}
-	if (pfilter == nullptr) {
+	} else if (pfilter == nullptr) {
 		char temp_buff[1024];
 		ab_tree::ab_node node = {base, pstat->cur_rec};
 		if (node.exists() && nsp_interface_fetch_property(node,
@@ -1318,7 +1315,6 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			}
 	}
 
- FETCH_ROWS:
 	if (rowset != nullptr) {
 		for (size_t i = 0; i < outmids->cvalues; ++i) {
 			auto prow = common_util_proprowset_enlarge(rowset);
