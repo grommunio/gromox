@@ -546,7 +546,8 @@ BOOL ab_tree_match_minids(const ab_tree::ab_base *pbase, uint32_t container_id,
 	if (container_id == ab_tree::minid::SC_GAL) {
 		for (auto it = pbase->ubegin(); it != pbase->uend(); ++it) {
 			ab_tree::ab_node node(it);
-			if (node.hidden() & AB_HIDE_FROM_GAL || !ab_tree_match_node(node, pfilter))
+			if (node.hidden() & AB_HIDE_FROM_GAL ||
+			    !ab_tree_match_node(node, pfilter))
 				continue;
 			tlist.push_back(*it);
 		}
@@ -559,7 +560,7 @@ BOOL ab_tree_match_minids(const ab_tree::ab_base *pbase, uint32_t container_id,
 		}
 		for (ab_tree::minid mid : node) {
 			ab_tree::ab_node child(pbase, mid);
-			if(child.type() >= ab_tree::abnode_type::containers ||
+			if (child.type() >= ab_tree::abnode_type::containers ||
 			    child.hidden() & AB_HIDE_FROM_AL ||
 			    !ab_tree_match_node(child, pfilter))
 				continue;
