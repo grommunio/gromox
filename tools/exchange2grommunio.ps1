@@ -447,9 +447,9 @@ function Test-Plink
 function Test-Pageant
 {
 	Write-MLog "" white
-	# is pageant.exe running?
-	if (!(Get-Process -ErrorAction ignore pageant)) {
-		Write-MLog "Error: pageant.exe not running, either set \$LinuxUserPWD or start pageant.exe manually and import the key." red
+	# does pageant.exe exist?
+	if (Test-Path -Path $PSScriptRoot\pageant.exe) {
+		Write-MLog "Error: paegeant.exe not found, need paegeant.exe in $PSScriptRoot." red
 		exit 1
 	}
 }
@@ -572,9 +572,14 @@ Write-MLog "" none
 #
 Test-Plink
 if ($UsePageant) {
-	Test-Pageant
-	if (Test-Path -Path $PSScriptRoot\pageant.exe) {
-	.\pageant.exe  $LinuxUserSSHKey
+	if (Test-Pageant) {
+		.\pageant.exe  $LinuxUserSSHKey
+	}
+	Start-Sleep -Seconds 1
+	# is pageant.exe running?
+	if (!(Get-Process -ErrorAction ignore pageant)) {
+		Write-MLog "Error: pageant.exe not running/couldn't be started, either set \$LinuxUserPWD or start pageant.exe manually and import the key." red
+		exit 1
 	}
 }
 Test-Exchange
