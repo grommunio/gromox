@@ -81,7 +81,17 @@ struct GX_EXPORT minid {
 	static constexpr uint32_t AMBIGUOUS = 0x0000001;
 	static constexpr uint32_t RESOLVED = 0x0000002;
 
-	/* minids we have set aside for zcore special containers */
+	/*
+	 * The ab_tree.hpp implementation indexes its data with minids and
+	 * exposes these record numbers in its programming API. It was
+	 * convenient for zcore to make its special containers have a minid and
+	 * thus a muidEMSAB-based entryid.
+	 *
+	 * It's all different in MSMAPI, where the SCs have their own random
+	 * provider UID and do not leech from muidEMSAB.
+	 *
+	 * ab_tree.cpp functions shall never receive SC_ values.
+	 */
 	static constexpr uint32_t SC_ROOT = 0xC;
 	static constexpr uint32_t SC_EMPTY = 0xD;
 	static constexpr uint32_t SC_PROVIDER = 0xE;
