@@ -886,8 +886,14 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 			for (size_t i = first_pos; i < first_pos+row_count &&
 			     i < pcontainer->contents.pminid_array->count; ++i) {
 				ab_tree::ab_node node(pbase, pcontainer->contents.pminid_array->pl[i]);
-				if (!node.exists() || node.hidden() & AB_HIDE_FROM_AL)
+				if (!node.exists())
 					continue;
+				/*
+				 * No testing for HIDE* here, because
+				 * pminid_array is already prefiltered (when it
+				 * was made; ab_tree_match_minids is called by
+				 * load_user_table).
+				 */
 				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 				if (pset->pparray[pset->count] == nullptr)
 					return FALSE;
