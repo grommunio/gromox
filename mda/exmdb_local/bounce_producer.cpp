@@ -18,13 +18,19 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <vmime/addressList.hpp>
+#include <vmime/contentTypeField.hpp>
+#include <vmime/dateTime.hpp>
+#include <vmime/mailbox.hpp>
+#include <vmime/stringContentHandler.hpp>
+#include <vmime/utility/outputStreamStringAdapter.hpp>
 #include <gromox/authmgr.hpp>
 #include <gromox/bounce_gen.hpp>
 #include <gromox/defs.h>
-#include <gromox/dsn.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/oxcmail.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
@@ -42,9 +48,8 @@ using namespace exmdb_local;
  */
 bool exml_bouncer_make(const char *from, const char *rcpt_to,
     MAIL *pmail_original, time_t original_time, const char *bounce_type,
-    MAIL *pmail) try
+    MAIL *qmail) try
 {
-	MIME *pmime;
 	char date_buff[128];
 	sql_meta_result mres;
 	const char *charset = nullptr;
@@ -93,71 +98,63 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 	if (aprint_len < 0)
 		return false;
 	auto cl_1 = HX::make_scope_exit([&]() { HXmc_free(replaced); });
+	std::string content_buff = replaced, subject = tp.subject;
 
-	auto phead = pmail->add_head();
-	if (NULL == phead) {
-		mlog(LV_ERR, "exmdb_local: MIME pool exhausted");
-		return false;
-	}
-	pmime = phead;
-	pmime->set_content_type("multipart/report");
-	pmime->set_content_param("report-type", "delivery-status");
+	vmime::message pmail;
+	auto hdr = pmail.getHeader();
+	hdr->getField("MIME-Version")->setValue("1.0");
+	hdr->ContentType()->setValue(vmime::mediaType(vmime::mediaTypes::MULTIPART, vmime::mediaTypes::MULTIPART_REPORT));
+	vmime::dynamicCast<vmime::contentTypeField>(hdr->ContentType())->setReportType("delivery-status");
+
 	str = bounce_gen_thrindex(*pmail_original);
 	if (!str.empty())
-		pmime->set_field("Thread-Index", str.c_str());
-	pmime->set_field("From", tp.from.size() > 0 ? tp.from.c_str() : bounce_gen_postmaster());
-	pmime->set_field("To", ("<"s + from + ">").c_str());
-	pmime->set_field("MIME-Version", "1.0");
-	pmime->set_field("X-Auto-Response-Suppress", "All");
-	rfc1123_dstring(date_buff, std::size(date_buff), 0);
-	pmime->set_field("Date", date_buff);
-	pmime->set_field("Subject", tp.subject.c_str());
+		hdr->getField("Thread-Index")->setValue(std::move(str));
+	vmime::mailbox expeditor, target;
+	expeditor.setEmail(tp.from.size() > 0 ? tp.from.c_str() : bounce_gen_postmaster());
+	hdr->From()->setValue(expeditor);
+	vmime::addressList target_list;
+	target.setEmail(from /*orig_from*/);
+	target_list.appendAddress(vmime::make_shared<vmime::mailbox>(target));
+	hdr->To()->setValue(target_list);
+	hdr->getField("X-Auto-Response-Suppress")->setValue("All");
+	hdr->Date()->setValue(vmime::datetime::now());
+	hdr->Subject()->setValue(vmime::text(std::move(subject), vmime::charsets::UTF_8));
 	
-	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
-	if (NULL == pmime) {
-		mlog(LV_ERR, "exmdb_local: MIME pool exhausted");
-		return false;
-	}
-	pmime->set_content_type("text/plain");
-	pmime->set_content_param("charset", "utf-8");
-	if (!pmime->write_content(replaced, aprint_len,
-	    mime_encoding::automatic)) {
-	mlog(LV_ERR, "exmdb_local: failed to write content");
-		return false;
-	}
-	
-	DSN dsn;
-	auto pdsn_fields = dsn.get_message_fields();
-	auto mta = "dns;"s + get_host_ID();
-	auto t_addr = "rfc822;"s + rcpt_to;
-	dsn.append_field(pdsn_fields, "Reporting-MTA", mta.c_str());
-	rfc1123_dstring(date_buff, std::size(date_buff), original_time);
-	dsn.append_field(pdsn_fields, "Arrival-Date", date_buff);
-	pdsn_fields = dsn.new_rcpt_fields();
-	if (pdsn_fields == nullptr)
-		return false;
-	dsn.append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
-	if (strcmp(bounce_type, "BOUNCE_MAIL_DELIVERED") != 0) {
-		dsn.append_field(pdsn_fields, "Action", "failed");
-		dsn.append_field(pdsn_fields, "Status", "5.0.0");
-	} else {
-		dsn.append_field(pdsn_fields, "Action", "delivered");
-		dsn.append_field(pdsn_fields, "Status", "2.0.0");
-	}
-	dsn.append_field(pdsn_fields, "Remote-MTA", mta.c_str());
+	vmime::encoding enc;
+	enc.setUsage(vmime::encoding::EncodingUsage::USAGE_TEXT);
+	auto part1 = vmime::make_shared<vmime::bodyPart>();
+	part1->getBody()->setContents(vmime::make_shared<vmime::stringContentHandler>(std::move(content_buff), std::move(enc)),
+		vmime::mediaType(vmime::mediaTypes::TEXT, vmime::mediaTypes::TEXT_PLAIN),
+		vmime::charsets::UTF_8);
+	pmail.getBody()->appendPart(std::move(part1));
 
-	std::string ct;
-	auto err = dsn.serialize(ct);
-	if (err != ecSuccess) {
-		mlog(LV_ERR, "E-1764: %s", mapi_strerror(err));
-		return false;
+	auto part2 = vmime::make_shared<vmime::bodyPart>();
+	std::string vstr;
+	vmime::utility::outputStreamStringAdapter vadap(vstr);
+
+	vmime::header dsn;
+	auto mta = "dns;"s + get_host_ID();
+	dsn.getField("Reporting-MTA")->setValue(mta);
+	dsn.getField("Arrival-Date")->setValue(date_buff);
+	dsn.generate(vadap);
+	vstr += "\r\n";
+
+	dsn = vmime::header();
+	dsn.getField("Final-Recipient")->setValue("rfc822;"s + rcpt_to);
+	if (strcmp(bounce_type, "BOUNCE_MAIL_DELIVERED") != 0) {
+		dsn.getField("Action")->setValue("failed");
+		dsn.getField("Status")->setValue("5.0.0");
+	} else {
+		dsn.getField("Action")->setValue("delivered");
+		dsn.getField("Status")->setValue("2.0.0");
 	}
-	pmime = pmail->add_child(phead, MIME_ADD_LAST);
-	if (NULL != pmime) {
-		pmime->set_content_type("message/delivery-status");
-		pmime->write_content(ct.c_str(), ct.size(), mime_encoding::none);
-	}
-	return true;
+	dsn.getField("Remote-MTA")->setValue(mta);
+	dsn.generate(vadap);
+
+	part2->getBody()->setContents(vmime::make_shared<vmime::stringContentHandler>(std::move(vstr)));
+	part2->getBody()->setContentType(vmime::mediaType(vmime::mediaTypes::MESSAGE, vmime::mediaTypes::MESSAGE_DELIVERY_STATUS));
+	pmail.getBody()->appendPart(std::move(part2));
+	return vmail_to_mail(pmail, *qmail);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1216: ENOMEM");
 	return false;
