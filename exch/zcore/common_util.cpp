@@ -1749,7 +1749,11 @@ static void zc_unwrap_clearsigned(MAIL &ma) try
 	part = part->get_child();
 	if (part == nullptr)
 		return;
-	ma.load_from_str(part->head_begin, part->content_begin + part->content_length - part->head_begin);
+	/*
+	 * head_begin is a pointer into the caller's peml_bin block,
+	 * so lifetimes should still be ok.
+	 */
+	ma.refonly_parse(part->head_begin, part->content_begin + part->content_length - part->head_begin);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1996: ENOMEM");
 }
@@ -1760,7 +1764,7 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 	char charset[32];
 	auto pinfo = zs_get_info();
 	MAIL imail;
-	if (!imail.load_from_str(peml_bin->pc, peml_bin->cb))
+	if (!imail.refonly_parse(peml_bin->pc, peml_bin->cb))
 		return NULL;
 	if (mxf_flags & MXF_UNWRAP_SMIME_CLEARSIGNED)
 		zc_unwrap_clearsigned(imail);

@@ -589,7 +589,7 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 	
 	MJSON temp_mjson;
 	MAIL imail;
-	if (!imail.load_from_str(eml.c_str(), eml.size())) {
+	if (!imail.refonly_parse(eml.c_str(), eml.size())) {
 		pbuild->build_result = FALSE;
 		return;
 	}

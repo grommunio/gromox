@@ -550,7 +550,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 	Json::Value digest;
 	if (im_repr.size() > 0) {
 		MAIL imail;
-		if (!imail.load_from_str(im_repr.data(), im_repr.size())) {
+		if (!imail.refonly_parse(im_repr.data(), im_repr.size())) {
 			fprintf(stderr, "Failed to parse RFC5322 block for message\n");
 			return -EIO;
 		}

@@ -97,10 +97,10 @@ static void terse_help()
 	fprintf(stderr, "Documentation: man gromox-eml2mt\n");
 }
 
-static message_ptr do_mail(const char *file, char *data, size_t dsize)
+static message_ptr do_mail(const char *file, const char *data, size_t dsize)
 {
 	MAIL imail;
-	if (!imail.load_from_str(data, dsize)) {
+	if (!imail.refonly_parse(data, dsize)) {
 		fprintf(stderr, "Unable to parse %s\n", file);
 		return nullptr;
 	}

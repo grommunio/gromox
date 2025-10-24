@@ -48,7 +48,7 @@ void MAIL::clear()
  *		TRUE				OK
  *		FALSE				fail
  */
-bool MAIL::load_from_str(const char *in_buff, size_t length)
+bool MAIL::refonly_parse(const char *in_buff, size_t length)
 {
 	auto pmail = this;
 
@@ -626,7 +626,7 @@ bool MAIL::dup(MAIL *pmail_dst)
 		size = STREAM_BLOCK_SIZE;
 	}
 	tmp_stream.clear();
-	if (!pmail_dst->load_from_str(pbuff, offset)) {
+	if (!pmail_dst->refonly_parse(pbuff, offset)) {
 		free(pbuff);
 		return false;
 	} else {
