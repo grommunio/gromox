@@ -4355,12 +4355,26 @@ ec_error_t zs_importfolder(GUID hsession,
 			auto tmp_guid = rop_util_make_user_guid(pstore->account_id);
 			if (tmp_guid != tmp_xid.guid)
 				return ecInvalidParam;
+			parent_id1 = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else {
 			auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
-			if (tmp_guid != tmp_xid.guid)
-				return ecAccessDenied;
+			if (tmp_guid != tmp_xid.guid) {
+				auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
+				if (domain_id == -1)
+					return ecInvalidParam;
+				if (!mysql_adaptor_check_same_org(domain_id, pstore->account_id))
+					return ecInvalidParam;
+				ec_error_t ret = ecSuccess;
+				if (!exmdb_client->get_mapping_replid(pstore->get_dir(),
+				    tmp_xid.guid, &replid, &ret))
+					return ecError;
+				if (ret != ecSuccess)
+					return ret;
+				parent_id1 = rop_util_make_eid(replid, tmp_xid.local_to_gc());
+			} else {
+				parent_id1 = rop_util_make_eid(1, tmp_xid.local_to_gc());
+			}
 		}
-		parent_id1 = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		if (!exmdb_client_get_folder_property(pstore->get_dir(), CP_ACP,
 		    parent_id1, PR_FOLDER_TYPE, &pvalue))
 			return ecError;

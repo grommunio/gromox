@@ -1076,12 +1076,30 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			return ecInvalidParam;
 		if (!common_util_binary_to_xid(pbin, &tmp_xid))
 			return ecError;
-		auto tmp_guid = plogon->is_private() ?
-		                rop_util_make_user_guid(plogon->account_id) :
-		                rop_util_make_domain_guid(plogon->account_id);
-		if (tmp_guid != tmp_xid.guid)
-			return ecInvalidParam;
-		parent_id1 = rop_util_make_eid(1, tmp_xid.local_to_gc());
+		if (plogon->is_private()) {
+			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
+			if (tmp_guid != tmp_xid.guid)
+				return ecInvalidParam;
+			parent_id1 = rop_util_make_eid(1, tmp_xid.local_to_gc());
+		} else {
+			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
+			if (tmp_guid != tmp_xid.guid) {
+				auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
+				if (domain_id == -1)
+					return ecInvalidParam;
+				if (!mysql_adaptor_check_same_org(domain_id, plogon->account_id))
+					return ecInvalidParam;
+				ec_error_t ret = ecSuccess;
+				if (!exmdb_client->get_mapping_replid(dir,
+				    tmp_xid.guid, &replid, &ret))
+					return ecError;
+				if (ret != ecSuccess)
+					return ret;
+				parent_id1 = rop_util_make_eid(replid, tmp_xid.local_to_gc());
+			} else {
+				parent_id1 = rop_util_make_eid(1, tmp_xid.local_to_gc());
+			}
+		}
 		if (!exmdb_client->get_folder_property(dir, CP_ACP,
 		    parent_id1, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
