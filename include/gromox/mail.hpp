@@ -35,5 +35,5 @@ struct GX_EXPORT MAIL {
 	bool set_header(const char *hdr, const char *val);
 
 	SIMPLE_TREE tree{};
-	char *buffer = nullptr;
+	std::unique_ptr<char[]> buffer;
 };
