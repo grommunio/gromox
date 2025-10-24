@@ -2467,7 +2467,7 @@ static BOOL xlog_bool(const char *func, unsigned int line)
 
 static std::nullptr_t xlog_null(const char *func, unsigned int line)
 {
-	mlog(LV_ERR, "%s:%u returned false; see surrounding log messages and those of gromox-http for unexpected shutdowns", func, line);
+	mlog(LV_ERR, "%s:%u returned false; see surrounding log messages and those of gromox-http for unexpected shutdowns or absence of the mailbox directory", func, line);
 	return nullptr;
 }
 
