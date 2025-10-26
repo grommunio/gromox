@@ -1,5 +1,5 @@
-Development 3.0.115
-===================
+Gromox 3.1 (2025-10-26)
+=======================
 
 Enhancements:
 
@@ -16,10 +16,16 @@ Fixes:
 * email_lib: deal with MIME parts with zero header lines
 * tools: reinstate submit.php for delayed sending
 * nsp: avoid buffer overruns in nsp_interface_fetch_property
-* emsmdb: repair IPM.Task items losing properties in cached mode from
-  defective partial message change tracking
-* exmdb: public folders were missing timeindex queries and their content tables
-  might have shown fewer messages
+* emsmdb: Partial message change tracking was bug-ridden and deleted. Standard
+  transfers are now used instead. (E.g. an IPM.Task object where only the
+  percentage-completed field was changed would be mis-synchronized to another
+  Cached Mode client as "delete start/end dates".)
+* exmdb: Public folders were missing timeindex queries and their content tables
+  might have shown fewer messages.
+* http: A workaround was added for OpenSSL 3.0 so that connections from
+  Outlook 2010 once again succeed.
+* mysql_adaptor: Improve the time needed to compute the composite mailbox
+  permission for user in a case of a mailbox with 100K ACL entries.
 
 Changes:
 
@@ -27,7 +33,11 @@ Changes:
 * emsmdb: outgoing lzxpress compression in the EMSMDB protocol is now
   disabled as it does not compress well for the time invested.
 * http: the ``ntlm_program_helper`` config directive was removed;
-  your ``gss_program`` simply needs to handle both GSS and NTLM
+  your ``gss_program`` simply needs to handle both GSS and NTLM.
+* event: support for reading the old event_acl.txt was deleted.
+  The replacement is the ``event_hosts_allow`` config directive.
+* timer: support for reading the old timer_acl.txt was deleted.
+  The replacement is the ``timer_hosts_allow`` config directive.
 
 
 Gromox 3.0 (2025-10-01)
