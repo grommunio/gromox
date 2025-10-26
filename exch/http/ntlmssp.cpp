@@ -147,56 +147,46 @@ static uint32_t crc32_calc_buffer(const uint8_t *p, size_t z)
 	return ~crc;
 }
 
-/*
- * An implementation of the arcfour algorithm
- * Copyright (C) Andrew Tridgell 1998
- */
 /* initialise the arcfour sbox with key */
-void ARCFOUR_STATE::init(const uint8_t *keydata, size_t keylen)
+ec_error_t ARCFOUR_STATE::init(const uint8_t *keydata, size_t keylen)
 {
-	auto pstate = this;
-	uint8_t tc;
-	uint8_t j = 0;
-
-	for (size_t i = 0; i < sizeof(pstate->sbox); ++i)
-		pstate->sbox[i] = (uint8_t)i;
-	for (size_t i = 0; i < sizeof(pstate->sbox); ++i) {
-		j += pstate->sbox[i] + keydata[i%keylen];
-		tc = pstate->sbox[i];
-		pstate->sbox[i] = pstate->sbox[j];
-		pstate->sbox[j] = tc;
-	}
-	pstate->index_i = 0;
-	pstate->index_j = 0;
+	auto cipher = EVP_get_cipherbyname(SN_rc4);
+	if (cipher == nullptr)
+		return ecInvalidParam;
+	ctx.reset(EVP_CIPHER_CTX_new());
+	if (ctx == nullptr)
+		return ecServerOOM;
+	return EVP_CipherInit_ex(ctx.get(), cipher, nullptr, keydata,
+	       nullptr, keylen) > 0 ? ecSuccess : ecError;
 }
 
 /* crypt the data with arcfour */
-void ARCFOUR_STATE::crypt_sbox(uint8_t *pdata, int len)
+ec_error_t ARCFOUR_STATE::crypt_sbox(uint8_t *buf, size_t len)
 {
-	auto pstate = this;
-	int i;
-	uint8_t t;
-	uint8_t tc;
-
-	for (i = 0; i < len; i++) {
-
-		pstate->index_i++;
-		pstate->index_j += pstate->sbox[pstate->index_i];
-
-		tc = pstate->sbox[pstate->index_i];
-		pstate->sbox[pstate->index_i] = pstate->sbox[pstate->index_j];
-		pstate->sbox[pstate->index_j] = tc;
-
-		t = pstate->sbox[pstate->index_i] + pstate->sbox[pstate->index_j];
-		pdata[i] = pdata[i] ^ pstate->sbox[t];
+	while (len > 0) {
+		int towrite = std::min(static_cast<size_t>(INT_MAX), len);
+		int written = 0;
+		if (EVP_CipherUpdate(ctx.get(), buf, &written, buf, towrite) <= 0)
+			return ecError;
+		/*
+		 * We rely on RC4 operating in-place and at a 1:1 ratio
+		 * and that no EVP_CipherFinal is needed...
+		 */
+		if (written < 0 || written != towrite)
+			return ecError;
+		len -= written;
+		buf += written;
 	}
+	return ecSuccess;
 }
 
-void ARCFOUR_STATE::crypt(uint8_t *pdata, const uint8_t keystr[16], int len)
+ec_error_t ARCFOUR_STATE::crypt(uint8_t *data, const uint8_t key[16], size_t datalen)
 {
-	ARCFOUR_STATE state;
-	state.init(keystr, 16);
-	state.crypt_sbox(pdata, len);
+	ARCFOUR_STATE s;
+	auto r = s.init(key, 16);
+	if (r != ecSuccess)
+		return r;
+	return s.crypt_sbox(data, datalen);
 }
 
 /* the microsoft version of hmac_md5 initialisation */
@@ -1230,7 +1220,7 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 			"signing in sign_init");
 		return false;
 	}
-	memset(&pntlmssp->crypt, 0, sizeof(NTLMSSP_CRYPT_STATE));
+	pntlmssp->crypt = {};
 	
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		weak_key = pntlmssp->session_key;

@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <mutex>
 #include <gromox/common_types.hpp>
+#include <gromox/cryptoutil.hpp>
 
 #define NTLMSSP_PROCESS_NEGOTIATE		1
 #define	NTLMSSP_PROCESS_CHALLENGE		2
@@ -36,13 +37,11 @@
 #define NTLMSSP_NEGOTIATE_56						0x80000000
 
 struct ARCFOUR_STATE {
-	void init(const uint8_t *key, size_t len);
-	void crypt_sbox(uint8_t *data, int len);
-	static void crypt(uint8_t *data, const uint8_t key[16], int datalen);
+	ec_error_t init(const uint8_t *key, size_t keylen);
+	ec_error_t crypt_sbox(uint8_t *data, size_t len);
+	static ec_error_t crypt(uint8_t *data, const uint8_t keystr[16], size_t datalen);
 
-	uint8_t sbox[256];
-	uint8_t index_i;
-	uint8_t index_j;
+	std::unique_ptr<EVP_CIPHER_CTX, gromox::sslfree> ctx;
 };
 
 struct GX_EXPORT NTLMSSP_SESSION_INFO {
@@ -57,8 +56,8 @@ struct GX_EXPORT NTLM_AUTH_CHALLENGE {
 };
 
 struct GX_EXPORT NTLMSSP_CRYPT_DIRECTION {
-	uint32_t seq_num;
-	uint8_t sign_key[16];
+	uint32_t seq_num = 0;
+	uint8_t sign_key[16]{};
 	ARCFOUR_STATE seal_state;
 };
 
@@ -67,7 +66,7 @@ struct GX_EXPORT NTLMSSP_CRYPT_DIRECTION_V2 {
 	NTLMSSP_CRYPT_DIRECTION receiving;
 };
 
-union NTLMSSP_CRYPT_STATE {
+struct NTLMSSP_CRYPT_STATE {
 	NTLMSSP_CRYPT_DIRECTION ntlm;     /* NTLM */
 	NTLMSSP_CRYPT_DIRECTION_V2 ntlm2; /* NTLM2 */
 };
