@@ -36,6 +36,10 @@
 #define NTLMSSP_NEGOTIATE_56						0x80000000
 
 struct ARCFOUR_STATE {
+	void init(const uint8_t *key, size_t len);
+	void crypt_sbox(uint8_t *data, int len);
+	static void crypt(uint8_t *data, const uint8_t key[16], int datalen);
+
 	uint8_t sbox[256];
 	uint8_t index_i;
 	uint8_t index_j;

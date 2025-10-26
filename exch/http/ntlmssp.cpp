@@ -153,8 +153,9 @@ static uint32_t crc32_calc_buffer(const uint8_t *p, size_t z)
  * Copyright (C) Andrew Tridgell 1998
  */
 /* initialise the arcfour sbox with key */
-static void arcfour_init(ARCFOUR_STATE *pstate, const uint8_t *keydata, size_t keylen)
+void ARCFOUR_STATE::init(const uint8_t *keydata, size_t keylen)
 {
+	auto pstate = this;
 	uint8_t tc;
 	uint8_t j = 0;
 
@@ -171,8 +172,9 @@ static void arcfour_init(ARCFOUR_STATE *pstate, const uint8_t *keydata, size_t k
 }
 
 /* crypt the data with arcfour */
-static void arcfour_crypt_sbox(ARCFOUR_STATE *pstate, uint8_t *pdata, int len)
+void ARCFOUR_STATE::crypt_sbox(uint8_t *pdata, int len)
 {
+	auto pstate = this;
 	int i;
 	uint8_t t;
 	uint8_t tc;
@@ -191,11 +193,11 @@ static void arcfour_crypt_sbox(ARCFOUR_STATE *pstate, uint8_t *pdata, int len)
 	}
 }
 
-static void arcfour_crypt(uint8_t *pdata, const uint8_t keystr[16], int len)
+void ARCFOUR_STATE::crypt(uint8_t *pdata, const uint8_t keystr[16], int len)
 {
 	ARCFOUR_STATE state;
-	arcfour_init(&state, keystr, 16);
-	arcfour_crypt_sbox(&state, pdata, len);
+	state.init(keystr, 16);
+	state.crypt_sbox(pdata, len);
 }
 
 /* the microsoft version of hmac_md5 initialisation */
@@ -1264,8 +1266,7 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 		/* SEND: seal ARCFOUR pad */
 		if (!ntlmssp_calc_ntlm2_key(send_seal_buff, weak_key, send_seal_const))
 			return false;
-		arcfour_init(&pntlmssp->crypt.ntlm2.sending.seal_state,
-		             send_seal_blob.pb, send_seal_blob.cb);
+		pntlmssp->crypt.ntlm2.sending.seal_state.init(send_seal_blob.pb, send_seal_blob.cb);
 
 		/* SEND: seq num */
 		pntlmssp->crypt.ntlm2.sending.seq_num = 0;
@@ -1279,8 +1280,7 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 		if (!ntlmssp_calc_ntlm2_key(recv_seal_buff, weak_key, recv_seal_const))
 			return false;
 
-		arcfour_init(&pntlmssp->crypt.ntlm2.receiving.seal_state,
-		             recv_seal_blob.pb, recv_seal_blob.cb);
+		pntlmssp->crypt.ntlm2.receiving.seal_state.init(recv_seal_blob.pb, recv_seal_blob.cb);
 
 		/* RECV: seq num */
 		pntlmssp->crypt.ntlm2.receiving.seq_num = 0;
@@ -1306,8 +1306,7 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 			}
 		}
 
-		arcfour_init(&pntlmssp->crypt.ntlm.seal_state,
-		             seal_key.pb, seal_key.cb);
+		pntlmssp->crypt.ntlm.seal_state.init(seal_key.pb, seal_key.cb);
 		pntlmssp->crypt.ntlm.seq_num = 0;
 	}
 	return true;
@@ -1385,7 +1384,7 @@ static bool ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
 				session_key.cb);
 			pntlmssp->session_key.cb = session_key.cb;
 		} else {
-			arcfour_crypt(pauth->encrypted_session_key.pb, session_key.pb,
+			ARCFOUR_STATE::crypt(pauth->encrypted_session_key.pb, session_key.pb,
 				pauth->encrypted_session_key.cb);
 			memcpy(pntlmssp->session_key.pb, pauth->encrypted_session_key.pb,
 				pauth->encrypted_session_key.cb);
@@ -1495,8 +1494,7 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 		    0, crc, pntlmssp->crypt.ntlm.seq_num))
 			return false;
 		pntlmssp->crypt.ntlm.seq_num ++;
-		arcfour_crypt_sbox(&pntlmssp->crypt.ntlm.seal_state,
-			&psig->pb[4], psig->cb - 4);
+		pntlmssp->crypt.ntlm.seal_state.crypt_sbox(&psig->pb[4], psig->cb - 4);
 		return true;
 	}
 
@@ -1521,12 +1519,10 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 	if (encrypt_sig && (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
 		switch (direction) {
 		case NTLMSSP_DIRECTION_SEND:
-			arcfour_crypt_sbox(&pntlmssp->crypt.ntlm2.sending.seal_state,
-				digest, 8);
+			pntlmssp->crypt.ntlm2.sending.seal_state.crypt_sbox(digest, 8);
 			break;
 		case NTLMSSP_DIRECTION_RECEIVE:
-			arcfour_crypt_sbox(&pntlmssp->crypt.ntlm2.receiving.seal_state,
-				digest, 8);
+			pntlmssp->crypt.ntlm2.receiving.seal_state.crypt_sbox(digest, 8);
 			break;
 		}
 	}
@@ -1621,19 +1617,16 @@ bool ntlmssp_ctx::seal_packet(uint8_t *pdata, size_t length,
 		if (!ntlmssp_make_packet_signature(pntlmssp, pdata, length,
 		    pwhole_pdu, pdu_length, NTLMSSP_DIRECTION_SEND, psig, false))
 			return false;
-		arcfour_crypt_sbox(&pntlmssp->crypt.ntlm2.sending.seal_state,
-			pdata, length);
+		pntlmssp->crypt.ntlm2.sending.seal_state.crypt_sbox(pdata, length);
 		if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)
-			arcfour_crypt_sbox(&pntlmssp->crypt.ntlm2.sending.seal_state,
-				&psig->pb[4], 8);
+			pntlmssp->crypt.ntlm2.sending.seal_state.crypt_sbox(&psig->pb[4], 8);
 	} else {
 		crc = crc32_calc_buffer(pdata, length);
 		if (!ntlmssp_gen_packet(psig, "dddd", NTLMSSP_SIGN_VERSION,
 		    0, crc, pntlmssp->crypt.ntlm.seq_num))
 			return false;
-		arcfour_crypt_sbox(&pntlmssp->crypt.ntlm.seal_state, pdata, length);
-		arcfour_crypt_sbox(&pntlmssp->crypt.ntlm.seal_state,
-			&psig->pb[4], psig->cb - 4);
+		pntlmssp->crypt.ntlm.seal_state.crypt_sbox(pdata, length);
+		pntlmssp->crypt.ntlm.seal_state.crypt_sbox(&psig->pb[4], psig->cb - 4);
 		pntlmssp->crypt.ntlm.seq_num ++;
 	}
 	return true;
@@ -1651,10 +1644,9 @@ bool ntlmssp_ctx::unseal_packet(uint8_t *pdata,
 	}
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2)
 		/* First unseal the data. */
-		arcfour_crypt_sbox(&pntlmssp->crypt.ntlm2.receiving.seal_state,
-			pdata, length);
+		pntlmssp->crypt.ntlm2.receiving.seal_state.crypt_sbox(pdata, length);
 	else
-		arcfour_crypt_sbox(&pntlmssp->crypt.ntlm.seal_state, pdata, length);
+		pntlmssp->crypt.ntlm.seal_state.crypt_sbox(pdata, length);
 	if (!ntlmssp_check_packet_internal(pntlmssp, pdata, length, pwhole_pdu,
 	    pdu_length, psig))
 		return false;
