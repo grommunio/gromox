@@ -130,6 +130,7 @@ libgxp_exchange_nsp_la_SOURCES = exch/nsp/common_util.cpp exch/nsp/common_util.h
 libgxp_exchange_nsp_la_LDFLAGS = ${default_SYFLAGS}
 libgxp_exchange_nsp_la_LIBADD = -lpthread ${libcrypto_LIBS} ${fmt_LIBS} ${libHX_LIBS} ${iconv_LIBS} libgromox_common.la libgromox_mapi.la libgromox_rpc.la libgxs_mysql_adaptor.la libgromox_abtree.la
 EXTRA_libgxp_exchange_nsp_la_DEPENDENCIES = default.sym
+EXTRA_DIST += exch/nsp/repr.cpp
 libgxp_exchange_rfr_la_SOURCES = exch/rfr.cpp
 libgxp_exchange_rfr_la_LDFLAGS = ${default_SYFLAGS}
 libgxp_exchange_rfr_la_LIBADD = ${fmt_LIBS} ${libHX_LIBS} libgromox_common.la libgromox_rpc.la libgxs_mysql_adaptor.la

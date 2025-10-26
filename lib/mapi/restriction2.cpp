@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdarg>
 #include <cstdio>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -25,7 +24,9 @@
 using namespace std::string_view_literals;
 using namespace gromox;
 
-static inline const char *relop_repr(relop r)
+namespace gromox {
+
+const char *relop_repr(enum relop r)
 {
 	switch (r) {
 	case RELOP_LT: return "<";
@@ -38,6 +39,8 @@ static inline const char *relop_repr(relop r)
 	case RELOP_MEMBER_OF_DL: return "DL";
 	default: return "??";
 	}
+}
+
 }
 
 static std::string apptime_repr(double v)
@@ -250,17 +253,8 @@ std::string TAGGED_PROPVAL::repr(bool verbose) const
 std::string RESTRICTION::repr() const
 {
 	switch (rt) {
-	case RES_AND: {
-		auto s = andor->repr();
-		s[5] = 'N';
-		s[6] = 'D';
-		return s;
-	}
-	case RES_OR: {
-		auto s = andor->repr();
-		s[4] = '_';
-		return s;
-	}
+	case RES_AND:            return "RES_AND" + andor->repr(" && ");
+	case RES_OR:             return "RES_OR" + andor->repr(" || ");
 	case RES_NOT:            return xnot->repr();
 	case RES_CONTENT:        return cont->repr();
 	case RES_PROPERTY:       return prop->repr();
@@ -277,12 +271,15 @@ std::string RESTRICTION::repr() const
 	}
 }
 
-std::string RESTRICTION_AND_OR::repr() const
+std::string restriction_list::repr(const char *sep) const
 {
-	auto s = std::to_string(count);
+	std::string s;
 	for (size_t i = 0; i < count; ++i)
-		s += "," + pres[i].repr();
-	return "RES_AOR[" + std::to_string(count) + "]{" + std::move(s) + "}";
+		if (i == 0)
+			s = pres[i].repr();
+		else
+			s += sep + pres[i].repr();
+	return "[" + std::to_string(count) + "]{" + std::move(s) + "}";
 }
 
 std::string RESTRICTION_NOT::repr() const
@@ -336,27 +333,26 @@ bool RESTRICTION_CONTENT::eval(const void *dbval) const
 
 std::string RESTRICTION_CONTENT::repr() const
 {
-	std::stringstream ss;
-	ss << "RES_CONTENT{";
+	std::string ss = "RES_CONTENT{";
 	switch (fuzzy_level & 0xffff) {
-	case FL_FULLSTRING: ss << "FL_FULLSTRING,"; break;
-	case FL_SUBSTRING: ss << "FL_SUBSTRING,"; break;
-	case FL_PREFIX: ss << "FL_PREFIX,"; break;
-	default: ss << "part??,"; break;
+	case FL_FULLSTRING: ss += "FL_FULLSTRING,"; break;
+	case FL_SUBSTRING: ss += "FL_SUBSTRING,"; break;
+	case FL_PREFIX: ss += "FL_PREFIX,"; break;
+	default: ss += "part??,"; break;
 	}
 	if (fuzzy_level & FL_PREFIX_ON_ANY_WORD)
-		ss << "FL_PREFIX_ON_ANY_WORD,";
+		ss += "FL_PREFIX_ON_ANY_WORD,";
 	if (fuzzy_level & FL_PHRASE_MATCH)
-		ss << "FL_PHRASE_MATCH,";
+		ss += "FL_PHRASE_MATCH,";
 	if (fuzzy_level & FL_IGNORECASE)
-		ss << "FL_IGNORECASE,";
+		ss += "FL_IGNORECASE,";
 	if (fuzzy_level & FL_IGNORENONSPACE)
-		ss << "FL_IGNORE_NON_SPACE,";
+		ss += "FL_IGNORE_NON_SPACE,";
 	if (fuzzy_level & FL_LOOSE)
-		ss << "FL_LOOSE,";
+		ss += "FL_LOOSE,";
 	TAGGED_PROPVAL p2{PROP_TYPE(propval.proptag), propval.pvalue};
-	ss << std::hex << proptag << "h," << p2.repr() << "}";
-	return std::move(ss).str();
+	ss += fmt::format("{:x}h,{}", proptag, p2.repr());
+	return ss;
 }
 
 bool RESTRICTION_PROPERTY::comparable() const
@@ -385,11 +381,9 @@ bool RESTRICTION_PROPERTY::eval(const void *dbval) const
 
 std::string RESTRICTION_PROPERTY::repr() const
 {
-	std::stringstream ss;
 	TAGGED_PROPVAL p2{PROP_TYPE(propval.proptag), propval.pvalue};
-	ss << "RES_PROP{val(" << std::hex << proptag << "h) " <<
-	      relop_repr(relop) << " " << p2.repr() << "}";
-	return std::move(ss).str();
+	return fmt::format("RES_PROP{{val({:x}h) {} {}}}",
+	       proptag, relop_repr(relop), p2.repr());
 }
 
 bool RESTRICTION_PROPCOMPARE::comparable() const
@@ -405,10 +399,8 @@ bool RESTRICTION_PROPCOMPARE::comparable() const
 
 std::string RESTRICTION_PROPCOMPARE::repr() const
 {
-	std::stringstream ss;
-	ss << "RES_PROPCMP{val(" << std::hex << proptag1 << "h) " <<
-	      relop_repr(relop) << " val(" << proptag2 << ")}";
-	return std::move(ss).str();
+	return fmt::format("RES_PROPCMP{{val({:x}h) {} val({})}}",
+	       proptag1, relop_repr(relop), proptag2);
 }
 
 bool RESTRICTION_BITMASK::eval(const void *v) const
@@ -423,15 +415,13 @@ bool RESTRICTION_BITMASK::eval(const void *v) const
 
 std::string RESTRICTION_BITMASK::repr() const
 {
-	std::stringstream ss;
-	ss << "RES_BITMASK{val(" << std::hex << proptag <<
-	      "h)&" << mask;
+	std::string ss = fmt::format("RES_BITMASK{{val({:x}h & {:x}", proptag, mask);
 	switch (bitmask_relop) {
-	case BMR_EQZ: ss << "h==0}"; break;
-	case BMR_NEZ: ss << "h!=0}"; break;
-	default: ss << "h..op?}"; break;
+	case BMR_EQZ: ss += "h == 0}"; break;
+	case BMR_NEZ: ss += "h != 0}"; break;
+	default: ss += "h ..op?}"; break;
 	}
-	return std::move(ss).str();
+	return ss;
 }
 
 bool RESTRICTION_SIZE::eval(const void *v) const
@@ -442,24 +432,17 @@ bool RESTRICTION_SIZE::eval(const void *v) const
 
 std::string RESTRICTION_SIZE::repr() const
 {
-	std::stringstream ss;
-	ss << "RES_SIZE{" << relop_repr(relop) << "," << std::hex << proptag <<
-	      "h," << std::dec << size << "}";
-	return std::move(ss).str();
+	return fmt::format("RES_SIZE{{{},{:x}h,{}}}", relop_repr(relop), proptag, size);
 }
 
 std::string RESTRICTION_EXIST::repr() const
 {
-	std::stringstream ss;
-	ss << "RES_EXIST{" << std::hex << proptag << "h}";
-	return std::move(ss).str();
+	return fmt::format("RES_EXIST{{{:x}h}}", proptag);
 }
 
 std::string RESTRICTION_SUBOBJ::repr() const
 {
-	std::stringstream ss;
-	ss << "RES_SUBOBJ{" << std::hex << subobject << "h," << res.repr() << "}";
-	return std::move(ss).str();
+	return fmt::format("RES_SUBOBJ{{{:x}h,{}}}", subobject, res.repr());
 }
 
 std::string RESTRICTION_COMMENT::repr() const

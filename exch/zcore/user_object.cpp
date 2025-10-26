@@ -216,7 +216,7 @@ ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 		auto mid = ab_tree::minid(ab_tree::minid::address, user_id);
 		node = {base, mid};
 		LONG_ARRAY unused{};
-		if (!node.exists() ||
+		if (!node.exists() || node.hidden() & AB_HIDE_FROM_AL ||
 		    !ab_tree_match_minids(base.get(), mid, res, &unused))
 			continue;
 		free(unused.pl);

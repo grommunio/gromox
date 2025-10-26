@@ -1314,7 +1314,7 @@ struct GX_EXPORT restriction_list {
 	uint32_t count;
 	SRestriction *pres;
 
-	std::string repr() const;
+	std::string repr(const char *sep = ",") const;
 	restriction_list *dup() const;
 	I_BEGIN_END(pres, count);
 };
@@ -1604,4 +1604,5 @@ extern GX_EXPORT const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlo
 
 namespace gromox {
 extern GX_EXPORT std::string guid2name(const FLATUID);
+extern GX_EXPORT const char *relop_repr(enum relop);
 }

@@ -37,6 +37,7 @@
 #include <gromox/util.hpp>
 #include "common_util.hpp"
 #include "nsp_interface.hpp"
+#include "repr.cpp"
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -904,6 +905,9 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 {
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
+	if (g_nsp_trace >= 2 && ptarget != nullptr)
+		fprintf(stderr, "seek_entries target={%xh,%s}\n",
+			ptarget->proptag, ptarget->repr().c_str());
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE ||
@@ -1172,6 +1176,22 @@ static std::unordered_set<std::string> delegates_for(const char *dir) try
 	return {};
 }
 
+/**
+ * Used to search the address book based on certain criteria (like a display
+ * name prefix), and returns a list of matching entries.
+ *
+ * (Also see resolve_namesw for differences.)
+ *
+ * Outlook uses get_matches(container=PR_EMS_AB_MEMBER, cur_rec=<minid of an
+ * mlist>, filter=nullptr) to obtain the members of an address list.
+ *
+ * Outlook uses get_matches(container=0 <gal>, cur_rec=0, filter={PR_ANR,
+ * "needle"}) as an alternative to resolve_names().
+ *
+ * Also note that get_matches(container=0, filter=RES_EXIST{PR_ENTRYID}) yields
+ * the same as iterating the GAL with query_rows(container=0). We need to be
+ * wary of HIDE flag testing.
+ */
 ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
     STAT *pstat, const MID_ARRAY *ptable, uint32_t reserved2,
     const NSPRES *pfilter, const NSP_PROPNAME *ppropname,
@@ -1181,6 +1201,8 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	*ppoutmids = nullptr;
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
+	if (g_nsp_trace >= 2 && pfilter != nullptr)
+		mlog(LV_DEBUG, "get_matches filter: %s", pfilter->repr().c_str());
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
 	PROPERTY_VALUE prop_val;
@@ -1236,7 +1258,6 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				return ecServerOOM;
 			*pproptag = node.mid;
 		}
-		goto FETCH_ROWS;
 	} else if (pstat->container_id == PR_EMS_AB_PUBLIC_DELEGATES) {
 		ab_tree::ab_node node(base, pstat->cur_rec);
 		if (!node.exists())
@@ -1264,9 +1285,8 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				return ecServerOOM;
 			*pproptag = node.mid;
 		}
-		goto FETCH_ROWS;
-	}
-	if (pfilter == nullptr) {
+	} else if (pfilter == nullptr) {
+		/* OXNSPI v14 §3.1.4.1.10 pg. 56 item 8 */
 		char temp_buff[1024];
 		ab_tree::ab_node node = {base, pstat->cur_rec};
 		if (node.exists() && nsp_interface_fetch_property(node,
@@ -1278,15 +1298,19 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			*pproptag = node.mid;
 		}
 	} else if (pstat->container_id == 0) {
+		/* Alternative attempt by OL to do resolvenames */
 		uint32_t start_pos, total;
 		nsp_interface_position_in_list(pstat, base.get(), &start_pos, &total);
-		for (auto it = base->ubegin() + start_pos; it != base->uend() && it-base->ubegin() < total; ++it)
-			if (nsp_interface_match_node({base, *it}, pstat->codepage, pfilter)) {
-				auto pproptag = common_util_proptagarray_enlarge(outmids);
-				if (pproptag == nullptr)
-					return ecServerOOM;
-				*pproptag = *it;
-			}
+		for (auto it = base->ubegin() + start_pos; it != base->uend() && it-base->ubegin() < total; ++it) {
+			ab_tree::ab_node node(base, *it);
+			if (node.hidden() & (AB_HIDE_RESOLVE | AB_HIDE_FROM_GAL) ||
+			    !nsp_interface_match_node(node, pstat->codepage, pfilter))
+				continue;
+			auto pproptag = common_util_proptagarray_enlarge(outmids);
+			if (pproptag == nullptr)
+				return ecServerOOM;
+			*pproptag = *it;
+		}
 	} else {
 		ab_tree::ab_node node(base, pstat->container_id);
 		if (!node.exists())
@@ -1301,18 +1325,19 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			nsp_trace(__func__, 1, pstat, nullptr, rowset);
 			return ecSuccess;
 		}
-		for (auto it = node.begin() + start_pos; it != node.end(); ++it)
-			if (!(node.hidden() & AB_HIDE_FROM_AL) && nsp_interface_match_node({base, *it}, pstat->codepage, pfilter)) {
-				auto pproptag = common_util_proptagarray_enlarge(outmids);
-				if (pproptag == nullptr)
-					return ecServerOOM;
-				*pproptag = *it;
-				if (outmids->cvalues >= requested)
-					break;
-			}
+		for (auto it = node.begin() + start_pos; it != node.end(); ++it) {
+			if (node.hidden() & (AB_HIDE_RESOLVE | AB_HIDE_FROM_AL) ||
+			    !nsp_interface_match_node({base, *it}, pstat->codepage, pfilter))
+				continue;
+			auto pproptag = common_util_proptagarray_enlarge(outmids);
+			if (pproptag == nullptr)
+				return ecServerOOM;
+			*pproptag = *it;
+			if (outmids->cvalues >= requested)
+				break;
+		}
 	}
 
- FETCH_ROWS:
 	if (rowset != nullptr) {
 		for (size_t i = 0; i < outmids->cvalues; ++i) {
 			auto prow = common_util_proprowset_enlarge(rowset);
@@ -2090,6 +2115,15 @@ static ab_tree::minid nsp_interface_resolve_gal(const ab_tree::ab::const_base_re
 	return res;
 }
 
+/**
+ * Used to resolve a list of names into unique address book entries (or fail if
+ * ambiguous).
+ *
+ * (Also see get_matches for differences.)
+ *
+ * If Outlook does not get a resolution using this call, it will retry with
+ * get_matches()!
+ */
 ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
     const STAT *pstat, LPROPTAG_ARRAY *&pproptags,
     const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)

@@ -389,7 +389,7 @@ BOOL container_object_fetch_special_property(uint8_t special_type,
 		EMSAB_ENTRYID_view ab_entryid;
 		ab_entryid.flags = 0;
 		ab_entryid.type = DT_CONTAINER;
-		ab_entryid.px500dn = special_type == SPECIAL_CONTAINER_GAL ? "/" : "/exmdb";
+		ab_entryid.px500dn = special_type == ab_tree::minid::SC_GAL ? "/" : "/exmdb";
 		bv->pv = common_util_alloc(128);
 		if (bv->pv == nullptr ||
 		    !ext_push.init(static_cast<BINARY *>(pvalue)->pb, 128, 0) ||
@@ -414,7 +414,7 @@ BOOL container_object_fetch_special_property(uint8_t special_type,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_DISPLAY_NAME:
-		*ppvalue = special_type == SPECIAL_CONTAINER_GAL ?
+		*ppvalue = special_type == ab_tree::minid::SC_GAL ?
 		           deconst("Global Address List") :
 		           deconst("Gromox Contact Folders");
 		return TRUE;
@@ -488,7 +488,7 @@ static BOOL container_object_fetch_folder_properties(
 				         MAPI_ABCONT, UINT32_MAX);
 			} else if (folder_id == rop_util_make_eid_ex(
 			    1, PRIVATE_FID_CONTACTS)) {
-				if (!container_object_fetch_special_property(SPECIAL_CONTAINER_PROVIDER,
+				if (!container_object_fetch_special_property(ab_tree::minid::SC_PROVIDER,
 				    PR_ENTRYID, &pvalue))
 					return FALSE;
 			} else {
@@ -579,9 +579,9 @@ BOOL container_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return container_object_fetch_folder_properties(
 					&tmp_propvals, pproptags, ppropvals);
 	}
-	if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_EMPTY)
-		return container_object_fetch_special_properties(
-			SPECIAL_CONTAINER_PROVIDER, pproptags, ppropvals);
+	if (pcontainer->id.abtree_id.minid == ab_tree::minid::SC_EMPTY)
+		return container_object_fetch_special_properties(ab_tree::minid::SC_PROVIDER,
+		       pproptags, ppropvals);
 	auto pbase = ab_tree::AB.get(pcontainer->id.abtree_id.base_id);
 	if (!pbase)
 		return FALSE;
@@ -719,18 +719,18 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 		auto pbase = ab_tree::AB.get(pcontainer->id.abtree_id.base_id);
 		if (!pbase)
 			return FALSE;
-		if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_ROOT) {
+		if (pcontainer->id.abtree_id.minid == ab_tree::minid::SC_ROOT) {
 			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (tmp_set.pparray[tmp_set.count] == nullptr)
 				return FALSE;
-			if (!container_object_fetch_special_properties(SPECIAL_CONTAINER_GAL,
+			if (!container_object_fetch_special_properties(ab_tree::minid::SC_GAL,
 			    pproptags, tmp_set.pparray[tmp_set.count]))
 				return FALSE;
 			tmp_set.count ++;
 			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (tmp_set.pparray[tmp_set.count] == nullptr)
 				return FALSE;
-			if (!container_object_fetch_special_properties(SPECIAL_CONTAINER_PROVIDER,
+			if (!container_object_fetch_special_properties(ab_tree::minid::SC_PROVIDER,
 			    pproptags, tmp_set.pparray[tmp_set.count]))
 				return FALSE;
 			tmp_set.count ++;
@@ -755,7 +755,7 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 				if (!container_object_get_specialtables_from_node(it,
 				    pproptags, b_depth, &tmp_set))
 					return FALSE;
-		} else if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
+		} else if (pcontainer->id.abtree_id.minid == ab_tree::minid::SC_GAL) {
 			/* no subordinates */
 		} else {
 			if (!pbase->exists(pcontainer->id.abtree_id.minid)) {
@@ -886,8 +886,14 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 			for (size_t i = first_pos; i < first_pos+row_count &&
 			     i < pcontainer->contents.pminid_array->count; ++i) {
 				ab_tree::ab_node node(pbase, pcontainer->contents.pminid_array->pl[i]);
-				if (!node.exists() || node.hidden() & AB_HIDE_FROM_AL)
+				if (!node.exists())
 					continue;
+				/*
+				 * No testing for HIDE* here, because
+				 * pminid_array is already prefiltered (when it
+				 * was made; ab_tree_match_minids is called by
+				 * load_user_table).
+				 */
 				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 				if (pset->pparray[pset->count] == nullptr)
 					return FALSE;
@@ -896,7 +902,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 					return FALSE;	
 				pset->count ++;
 			}
-		} else if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
+		} else if (pcontainer->id.abtree_id.minid == ab_tree::minid::SC_GAL) {
 			for (auto it = pbase->ubegin() + first_pos; it != pbase->uend(); ++it) {
 				ab_tree::ab_node node(it);
 				if (node.hidden() & AB_HIDE_FROM_GAL)
@@ -911,7 +917,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				if (pset->count == row_count)
 					break;
 			}
-		} else if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_EMPTY) {
+		} else if (pcontainer->id.abtree_id.minid == ab_tree::minid::SC_EMPTY) {
 			return TRUE;
 		} else {
 			ab_tree::ab_node node(pbase, pcontainer->id.abtree_id.minid);

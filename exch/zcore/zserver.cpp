@@ -1022,7 +1022,7 @@ ec_error_t zs_openabentry(GUID hsession,
 	if (0 == entryid.cb) {
 		CONTAINER_ID container_id;
 		container_id.abtree_id.base_id = base_id;
-		container_id.abtree_id.minid = SPECIAL_CONTAINER_ROOT;
+		container_id.abtree_id.minid = ab_tree::minid::SC_ROOT;
 		auto contobj = container_object::create(CONTAINER_TYPE_ABTREE, container_id);
 		if (contobj == nullptr)
 			return ecError;
@@ -1063,11 +1063,11 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
 		if (strcmp(essdn, "/") == 0) {
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;
-			container_id.abtree_id.minid = SPECIAL_CONTAINER_GAL;
+			container_id.abtree_id.minid = ab_tree::minid::SC_GAL;
 		} else if (strcmp(essdn, "/exmdb") == 0) {
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;
-			container_id.abtree_id.minid = SPECIAL_CONTAINER_EMPTY;
+			container_id.abtree_id.minid = ab_tree::minid::SC_EMPTY;
 		} else {
 			if (strncmp(essdn, "/guid=", 6) != 0 || strlen(essdn) != 38)
 				return ecNotFound;
@@ -1316,7 +1316,7 @@ ec_error_t zs_getabgal(GUID hsession, BINARY *pentryid)
 {
 	void *pvalue;
 	
-	if (!container_object_fetch_special_property(SPECIAL_CONTAINER_GAL,
+	if (!container_object_fetch_special_property(ab_tree::minid::SC_GAL,
 	    PR_ENTRYID, &pvalue))
 		return ecError;
 	if (pvalue == nullptr)
