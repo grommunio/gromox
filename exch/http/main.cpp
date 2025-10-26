@@ -55,16 +55,16 @@ static constexpr HXoption g_options_table[] = {
 };
 
 static constexpr static_module g_dfl_hpm_plugins[] = {
-	{"libgxh_ews.so", HPM_ews},
-	{"libgxh_mh_emsmdb.so", HPM_mh_emsmdb},
-	{"libgxh_mh_nsp.so", HPM_mh_nsp},
-	{"libgxh_oxdisco.so", HPM_oxdisco},
-	{"libgxh_oab.so", HPM_oab},
+	{"libgromox_ews.so", HPM_ews},
+	{"libgromox_mh_emsmdb.so", HPM_mh_emsmdb},
+	{"libgromox_mh_nsp.so", HPM_mh_nsp},
+	{"libgromox_oxdisco.so", HPM_oxdisco},
+	{"libgromox_oab.so", HPM_oab},
 };
 static constexpr static_module g_dfl_proc_plugins[] = {
-	{"libgxp_exchange_emsmdb.so", PROC_exchange_emsmdb},
-	{"libgxp_exchange_nsp.so", PROC_exchange_nsp},
-	{"libgxp_exchange_rfr.so", PROC_exchange_rfr},
+	{"libgromox_emsmdb.so", PROC_exchange_emsmdb},
+	{"libgromox_nsp.so", PROC_exchange_nsp},
+	{"libgromox_rfr.so", PROC_exchange_rfr},
 };
 static constexpr static_module g_dfl_svc_plugins[] = {
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
