@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <mutex>
-#include <gromox/arcfour.hpp>
 #include <gromox/common_types.hpp>
+
 #define NTLMSSP_PROCESS_NEGOTIATE		1
 #define	NTLMSSP_PROCESS_CHALLENGE		2
 #define NTLMSSP_PROCESS_AUTH			3
@@ -34,6 +34,12 @@
 #define NTLMSSP_NEGOTIATE_128						0x20000000
 #define NTLMSSP_NEGOTIATE_KEY_EXCH					0x40000000
 #define NTLMSSP_NEGOTIATE_56						0x80000000
+
+struct ARCFOUR_STATE {
+	uint8_t sbox[256];
+	uint8_t index_i;
+	uint8_t index_j;
+};
 
 struct GX_EXPORT NTLMSSP_SESSION_INFO {
 	char username[UADDR_SIZE];

@@ -16,13 +16,12 @@
 #include <openssl/evp.h>
 #include <openssl/md4.h>
 #include <openssl/md5.h>
-#include <gromox/arcfour.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/ndr.hpp>
-#include <gromox/ntlmssp.hpp>
 #include <gromox/util.hpp>
+#include "ntlmssp.hpp"
 
 #define MSVAVEOL					0
 #define MSVAVNBCOMPUTERNAME			1
@@ -134,6 +133,56 @@ static uint32_t crc32_calc_buffer(const uint8_t *p, size_t z)
 	for (; z-- > 0; ++p)
 		crc = crc32_tab[(crc ^ *p) & 0xFF] ^ (crc >> 8);
 	return ~crc;
+}
+
+/*
+ * An implementation of the arcfour algorithm
+ * Copyright (C) Andrew Tridgell 1998
+ */
+/* initialise the arcfour sbox with key */
+static void arcfour_init(ARCFOUR_STATE *pstate, const uint8_t *keydata, size_t keylen)
+{
+	uint8_t tc;
+	uint8_t j = 0;
+
+	for (size_t i = 0; i < sizeof(pstate->sbox); ++i)
+		pstate->sbox[i] = (uint8_t)i;
+	for (size_t i = 0; i < sizeof(pstate->sbox); ++i) {
+		j += pstate->sbox[i] + keydata[i%keylen];
+		tc = pstate->sbox[i];
+		pstate->sbox[i] = pstate->sbox[j];
+		pstate->sbox[j] = tc;
+	}
+	pstate->index_i = 0;
+	pstate->index_j = 0;
+}
+
+/* crypt the data with arcfour */
+static void arcfour_crypt_sbox(ARCFOUR_STATE *pstate, uint8_t *pdata, int len)
+{
+	int i;
+	uint8_t t;
+	uint8_t tc;
+
+	for (i = 0; i < len; i++) {
+
+		pstate->index_i++;
+		pstate->index_j += pstate->sbox[pstate->index_i];
+
+		tc = pstate->sbox[pstate->index_i];
+		pstate->sbox[pstate->index_i] = pstate->sbox[pstate->index_j];
+		pstate->sbox[pstate->index_j] = tc;
+
+		t = pstate->sbox[pstate->index_i] + pstate->sbox[pstate->index_j];
+		pdata[i] = pdata[i] ^ pstate->sbox[t];
+	}
+}
+
+static void arcfour_crypt(uint8_t *pdata, const uint8_t keystr[16], int len)
+{
+	ARCFOUR_STATE state;
+	arcfour_init(&state, keystr, 16);
+	arcfour_crypt_sbox(&state, pdata, len);
 }
 
 static void str_to_key(const uint8_t *s, uint8_t *k)
