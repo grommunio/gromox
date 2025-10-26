@@ -52,7 +52,7 @@ dist_pkglibexec_SCRIPTS = tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 
 BUILT_SOURCES = exch/exmdb/rpc.cpp include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h lib/exmdb_rpc.cpp php_mapi/zrpc.cpp
-CLEANFILES = ${BUILT_SOURCES} dldcheck.stamp
+CLEANFILES = ${BUILT_SOURCES} dldcheck.stamp data/abkt.pak data/timezone.pak
 libgromox_abtree_la_SOURCES = lib/ab_tree.cpp
 libgromox_abtree_la_LDFLAGS = ${default_SYFLAGS}
 libgromox_abtree_la_LIBADD = ${fmt_LIBS} libgxs_mysql_adaptor.la
@@ -113,6 +113,7 @@ midb_SOURCES = exch/midb/cmd_parser.cpp exch/midb/cmd_parser.hpp exch/midb/commo
 midb_LDADD = -lpthread ${libHX_LIBS} ${fmt_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${libssl_LIBS} ${sqlite_LIBS} ${vmime_LIBS} libgromox_auth.la libgromox_common.la libgromox_dbop.la libgromox_exrpc.la libgromox_mapi.la libgxs_event_proxy.la libgxs_mysql_adaptor.la
 zcore_SOURCES = exch/gab.cpp exch/zcore/ab_tree.cpp exch/zcore/ab_tree.hpp exch/zcore/attachment_object.cpp exch/zcore/bounce_producer.hpp exch/zcore/common_util.cpp exch/zcore/common_util.hpp exch/zcore/container_object.cpp exch/zcore/exmdb_client.cpp exch/zcore/exmdb_client.hpp exch/zcore/folder_object.cpp exch/zcore/ics_state.cpp exch/zcore/ics_state.hpp exch/zcore/icsdownctx_object.cpp exch/zcore/icsupctx_object.cpp exch/zcore/main.cpp exch/zcore/message_object.cpp exch/zcore/names.cpp exch/zcore/object_tree.cpp exch/zcore/object_tree.hpp exch/zcore/objects.hpp exch/zcore/rpc_ext.cpp exch/zcore/rpc_ext.hpp exch/zcore/rpc_parser.cpp exch/zcore/rpc_parser.hpp exch/zcore/store_object.cpp exch/zcore/store_object.hpp exch/zcore/system_services.hpp exch/zcore/table_object.cpp exch/zcore/table_object.hpp exch/zcore/user_object.cpp exch/zcore/zserver.cpp exch/zcore/zserver.hpp
 zcore_LDADD = -lpthread ${libcrypto_LIBS} ${libHX_LIBS} ${libssl_LIBS} ${vmime_LIBS} libgromox_auth.la libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la libgxs_timer_agent.la libgromox_abtree.la
+EXTRA_DIST = exch/bounce_exch.cpp
 libgxs_exmdb_provider_la_SOURCES = exch/exmdb/bounce_producer.cpp exch/exmdb/bounce_producer.hpp exch/exmdb/common_util.cpp exch/exmdb/db_engine.cpp exch/exmdb/db_engine.hpp exch/exmdb/client.cpp exch/exmdb/listener.cpp exch/exmdb/listener.hpp exch/exmdb/parser.cpp exch/exmdb/parser.hpp exch/exmdb/rpc.cpp exch/exmdb/notification_agent.cpp exch/exmdb/notification_agent.hpp exch/exmdb/server.cpp exch/exmdb/folder.cpp exch/exmdb/ics.cpp exch/exmdb/instance.cpp exch/exmdb/instbody.cpp exch/exmdb/main.cpp exch/exmdb/message.cpp exch/exmdb/names.cpp exch/exmdb/store.cpp exch/exmdb/store2.cpp exch/exmdb/table.cpp
 libgxs_exmdb_provider_la_LDFLAGS = ${default_SYFLAGS}
 libgxs_exmdb_provider_la_LIBADD = -lpthread ${libcrypto_LIBS} ${fmt_LIBS} ${libHX_LIBS} ${iconv_LIBS} ${sqlite_LIBS} ${libxxhash_LIBS} libgromox_common.la libgromox_dbop.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
@@ -190,7 +191,7 @@ gromox_mailq_LDADD = libgromox_common.la
 gromox_mbck_SOURCES = tools/mbck.cpp
 gromox_mbck_LDADD = ${libHX_LIBS} ${fmt_LIBS} ${sqlite_LIBS} libgromox_common.la
 gromox_mbop_SOURCES = tools/genimport.cpp tools/genimport.hpp tools/mbop.hpp tools/mbop.cpp
-EXTRA_DIST = tools/mbop_delmsg.cpp tools/mbop_emptyfld.cpp tools/mbop_foreach.cpp tools/mbop_freebusy.cpp tools/mbop_locale.cpp tools/mbop_main.cpp tools/mbop_purge.cpp
+EXTRA_DIST += tools/mbop_delmsg.cpp tools/mbop_emptyfld.cpp tools/mbop_foreach.cpp tools/mbop_freebusy.cpp tools/mbop_locale.cpp tools/mbop_main.cpp tools/mbop_purge.cpp tools/staticnpmap.cpp
 gromox_mbop_LDADD = ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
 gromox_mbsize_SOURCES = tools/mbsize.cpp
 gromox_mbsize_LDADD = ${sqlite_LIBS} libgromox_common.la
@@ -285,12 +286,12 @@ dist_man_MANS = \
 	doc/gromox-e2ghelper.8 \
 	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 doc/gromox-exm2eml.8 \
 	doc/gromox-exm2ical.8 doc/gromox-exm2mt.8 doc/gromox-exm2tnef.8 \
-	doc/gromox-exm2vcf.8 \
-	doc/gromox-kdb2mt.8 doc/gromox-mailq.8 doc/gromox-mbop.8 \
+	doc/gromox-exm2vcf.8 doc/gromox-ical2mt.8 \
+	doc/gromox-kdb2mt.8 doc/gromox-mailq.8 doc/gromox-mbck.8 doc/gromox-mbop.8 \
 	doc/gromox-mbsize.8 \
 	doc/gromox-mkmidb.8 doc/gromox-mkprivate.8 doc/gromox-mkpublic.8 \
 	doc/gromox-mt2exm.8 doc/gromox-selinux.5 \
-	doc/gromox-snapshot.8 doc/http.8gx \
+	doc/gromox-snapshot.8 doc/gromox-vcf2mt.8 doc/http.8gx \
 	doc/imap.8gx \
 	doc/kdb-uidextract.8 doc/kdb-uidextract-limited.8 \
 	doc/ldap_adaptor.4gx \
@@ -319,18 +320,27 @@ tzd_files = data/AUS_Central.tzd data/AUS_Eastern.tzd data/Afghanistan.tzd data/
 tzd_files += data/Greenwich.tzd data/Haiti.tzd data/Hawaiian.tzd data/India.tzd data/Iran.tzd data/Israel.tzd data/Jordan.tzd data/Kaliningrad.tzd data/Korea.tzd data/Libya.tzd data/Line_Islands.tzd data/Lord_Howe.tzd data/Magadan.tzd data/Magallanes.tzd data/Marquesas.tzd data/Mauritius.tzd data/Middle_East.tzd data/Montevideo.tzd data/Morocco.tzd data/Mountain.tzd data/Mountain__Mexico_.tzd data/Myanmar.tzd data/N__Central_Asia.tzd data/Namibia.tzd data/Nepal.tzd data/New_Zealand.tzd data/Newfoundland.tzd data/Norfolk.tzd data/North_Asia.tzd data/North_Asia_East.tzd data/North_Korea.tzd data/Omsk.tzd data/Pacific.tzd data/Pacific_SA.tzd data/Pacific__Mexico_.tzd data/Pakistan.tzd data/Paraguay.tzd data/Qyzylorda.tzd data/Romance.tzd data/Russia_Time_Zone_10.tzd data/Russia_Time_Zone_11.tzd data/Russia_Time_Zone_3.tzd data/Russian.tzd data/SA_Eastern.tzd data/SA_Pacific.tzd data/SA_Western.tzd data/SE_Asia.tzd data/Saint_Pierre.tzd data/Sakhalin.tzd data/Samoa.tzd data/Sao_Tome.tzd
 tzd_files += data/Saratov.tzd data/Singapore.tzd data/South_Africa.tzd data/South_Sudan.tzd data/Sri_Lanka.tzd data/Sudan.tzd data/Syria.tzd data/Taipei.tzd data/Tasmania.tzd data/Tocantins.tzd data/Tokyo.tzd data/Tomsk.tzd data/Tonga.tzd data/Transbaikal.tzd data/Turkey.tzd data/Turks_And_Caicos.tzd data/US_Eastern.tzd data/US_Mountain.tzd data/UTC+12.tzd data/UTC+13.tzd data/UTC-02.tzd data/UTC-08.tzd data/UTC-09.tzd data/UTC-11.tzd data/UTC.tzd data/Ulaanbaatar.tzd data/Venezuela.tzd data/Vladivostok.tzd data/Volgograd.tzd data/W__Australia.tzd data/W__Central_Africa.tzd data/W__Europe.tzd data/W__Mongolia.tzd data/West_Asia.tzd data/West_Bank.tzd data/West_Pacific.tzd data/Yakutsk.tzd data/Yukon.tzd
 tzd_files += data/windowsZones.xml
-header_files = include/gromox/ab_tree.hpp include/gromox/arcfour.hpp include/gromox/archive.hpp include/gromox/atomic.hpp include/gromox/authmgr.hpp include/gromox/bounce_gen.hpp include/gromox/clock.hpp include/gromox/common_types.hpp include/gromox/config_file.hpp include/gromox/contexts_pool.hpp include/gromox/cookie_parser.hpp include/gromox/cryptoutil.hpp include/gromox/database.h include/gromox/database_mysql.hpp include/gromox/dbop.h include/gromox/dcerpc.hpp include/gromox/defs.h include/gromox/double_list.hpp include/gromox/dsn.hpp include/gromox/eid_array.hpp include/gromox/element_data.hpp include/gromox/exmdb_client.hpp include/gromox/exmdb_common_util.hpp include/gromox/exmdb_ext.hpp include/gromox/exmdb_idef.hpp include/gromox/exmdb_provider_client.hpp include/gromox/exmdb_rpc.hpp include/gromox/exmdb_server.hpp include/gromox/ext_buffer.hpp
+header_files = include/gromox/ab_tree.hpp include/gromox/algorithm.hpp include/gromox/arcfour.hpp include/gromox/archive.hpp include/gromox/atomic.hpp include/gromox/authmgr.hpp include/gromox/bounce_gen.hpp include/gromox/clock.hpp include/gromox/common_types.hpp include/gromox/config_file.hpp include/gromox/contexts_pool.hpp include/gromox/cookie_parser.hpp include/gromox/cryptoutil.hpp include/gromox/database.h include/gromox/database_mysql.hpp include/gromox/dbop.h include/gromox/dcerpc.hpp include/gromox/defs.h include/gromox/double_list.hpp include/gromox/dsn.hpp include/gromox/eid_array.hpp include/gromox/element_data.hpp include/gromox/exmdb_client.hpp include/gromox/exmdb_common_util.hpp include/gromox/exmdb_ext.hpp include/gromox/exmdb_idef.hpp include/gromox/exmdb_provider_client.hpp include/gromox/exmdb_rpc.hpp include/gromox/exmdb_server.hpp include/gromox/ext_buffer.hpp
 header_files += include/gromox/fileio.h include/gromox/flat_set.hpp include/gromox/flusher_common.h include/gromox/freebusy.hpp include/gromox/gab.hpp include/gromox/generic_connection.hpp include/gromox/hook_common.h include/gromox/hpm_common.h include/gromox/http.hpp include/gromox/ical.hpp include/gromox/icase.hpp include/gromox/json.hpp include/gromox/list_file.hpp include/gromox/lzxpress.hpp include/gromox/mail.hpp include/gromox/mail_func.hpp include/gromox/mapi_types.hpp include/gromox/mapidefs.h include/gromox/mapierr.hpp include/gromox/mapitags.hpp include/gromox/midb.hpp include/gromox/midb_agent.hpp include/gromox/mime.hpp include/gromox/mjson.hpp include/gromox/mysql_adaptor.hpp include/gromox/ndr.hpp include/gromox/ntlmssp.hpp include/gromox/oxcmail.hpp include/gromox/oxoabkt.hpp
 header_files += include/gromox/paths.h include/gromox/pcl.hpp include/gromox/plugin.hpp include/gromox/proc_common.h include/gromox/process.hpp include/gromox/proptag_array.hpp include/gromox/propval.hpp include/gromox/range_set.hpp include/gromox/resource_pool.hpp include/gromox/restriction.hpp include/gromox/rop_util.hpp include/gromox/rpc_types.hpp include/gromox/rule_actions.hpp include/gromox/safeint.hpp include/gromox/simple_tree.hpp include/gromox/sortorder_set.hpp include/gromox/stream.hpp include/gromox/svc_common.h include/gromox/svc_loader.hpp include/gromox/textmaps.hpp include/gromox/threads_pool.hpp include/gromox/tie.hpp include/gromox/tnef.hpp include/gromox/usercvt.hpp include/gromox/util.hpp include/gromox/vcard.hpp include/gromox/xarray2.hpp include/gromox/zcore_client.hpp include/gromox/zcore_rpc.hpp include/gromox/zcore_types.hpp include/gromox/zz_ndr_stack.hpp
 if ENABLE_PRIVATE_HEADERS
 pkginclude_HEADERS = ${header_files}
 endif
-EXTRA_HEADERS = include/gromox/paths.h.in lib/mapi/oxcmail_int.hpp
 list_files = data/cpid.txt data/exmdb_list.txt data/folder_names.txt data/lang_charset.txt data/lcid.txt data/mime_extension.txt data/propnames.txt
 pkgdata_DATA = data/abkt.pak data/timezone.pak
 dist_pkgdata_DATA = ${list_files} data/Services.wsdl data/Messages.xsd data/Types.xsd data/gdbinit data/fpm-gromox.conf.sample data/gromox.ldif data/sqliterc tools/conf.php tools/db.php tools/submit.php
-toolprogs = tools/defs2php.pl tools/defs2php.sh tools/duplogid tools/enumsort tools/exmidl.pl tools/exmidl.sh tools/includesort tools/mpak.pl tools/mpak.sh tools/proptagsort tools/stackusage tools/warncount tools/zcidl.pl tools/zcidl.sh
-EXTRA_DIST += ${abkt_files} ${tzd_files} ${header_files} ${EXTRA_HEADERS} ${toolprogs} LICENSE.txt README.rst default.sym exch/bounce_exch.cpp lib/haproxy.cpp tools/genmails tools/staticnpmap.cpp
+EXTRA_DIST += \
+	.editorconfig .gitignore LICENSE.txt README.rst default.sym qconf \
+	${abkt_files} ${tzd_files} \
+	data/local_bounce/ascii/BOUNCE_MAILBOX_FULL data/local_bounce/ascii/BOUNCE_MAIL_DELIVERED data/local_bounce/ascii/BOUNCE_NO_USER data/local_bounce/ascii/BOUNCE_OPERATION_ERROR data/local_bounce/big5/BOUNCE_MAILBOX_FULL data/local_bounce/big5/BOUNCE_MAIL_DELIVERED data/local_bounce/big5/BOUNCE_NO_USER data/local_bounce/big5/BOUNCE_OPERATION_ERROR data/local_bounce/euc-jp/BOUNCE_MAILBOX_FULL data/local_bounce/euc-jp/BOUNCE_MAIL_DELIVERED data/local_bounce/euc-jp/BOUNCE_NO_USER data/local_bounce/euc-jp/BOUNCE_OPERATION_ERROR data/local_bounce/gb2312/BOUNCE_MAILBOX_FULL data/local_bounce/gb2312/BOUNCE_MAIL_DELIVERED data/local_bounce/gb2312/BOUNCE_NO_USER data/local_bounce/gb2312/BOUNCE_OPERATION_ERROR data/local_bounce/gbk/BOUNCE_MAILBOX_FULL data/local_bounce/gbk/BOUNCE_MAIL_DELIVERED data/local_bounce/gbk/BOUNCE_NO_USER data/local_bounce/gbk/BOUNCE_OPERATION_ERROR data/local_bounce/shift-jis/BOUNCE_MAILBOX_FULL data/local_bounce/shift-jis/BOUNCE_MAIL_DELIVERED data/local_bounce/shift-jis/BOUNCE_NO_USER data/local_bounce/shift-jis/BOUNCE_OPERATION_ERROR data/mail_bounce/ascii/BOUNCE_AUTO_RESPONSE data/mail_bounce/ascii/BOUNCE_CANNOT_DISPLAY data/mail_bounce/ascii/BOUNCE_GENERIC_ERROR data/mail_bounce/ascii/BOUNCE_MAIL_TOO_LARGE data/mail_bounce/big5/BOUNCE_AUTO_RESPONSE data/mail_bounce/big5/BOUNCE_CANNOT_DISPLAY data/mail_bounce/big5/BOUNCE_GENERIC_ERROR data/mail_bounce/big5/BOUNCE_MAIL_TOO_LARGE data/mail_bounce/gb2312/BOUNCE_AUTO_RESPONSE data/mail_bounce/gb2312/BOUNCE_CANNOT_DISPLAY data/mail_bounce/gb2312/BOUNCE_GENERIC_ERROR data/mail_bounce/gb2312/BOUNCE_MAIL_TOO_LARGE data/mail_bounce/gbk/BOUNCE_AUTO_RESPONSE data/mail_bounce/gbk/BOUNCE_GENERIC_ERROR data/mail_bounce/gbk/BOUNCE_MAIL_CANNOT_DISPLAY data/mail_bounce/gbk/BOUNCE_MAIL_TOO_LARGE data/mlist_bounce/ascii/BOUNCE_MLIST_DOMAIN data/mlist_bounce/ascii/BOUNCE_MLIST_INTERNAL data/mlist_bounce/ascii/BOUNCE_MLIST_SPECIFIED data/mlist_bounce/big5/BOUNCE_MLIST_DOMAIN data/mlist_bounce/big5/BOUNCE_MLIST_INTERNAL data/mlist_bounce/big5/BOUNCE_MLIST_SPECIFIED data/mlist_bounce/euc-jp/BOUNCE_MLIST_DOMAIN data/mlist_bounce/euc-jp/BOUNCE_MLIST_INTERNAL data/mlist_bounce/euc-jp/BOUNCE_MLIST_SPECIFIED data/mlist_bounce/gb2312/BOUNCE_MLIST_DOMAIN data/mlist_bounce/gb2312/BOUNCE_MLIST_INTERNAL data/mlist_bounce/gb2312/BOUNCE_MLIST_SPECIFIED data/mlist_bounce/gbk/BOUNCE_MLIST_DOMAIN data/mlist_bounce/gbk/BOUNCE_MLIST_INTERNAL data/mlist_bounce/gbk/BOUNCE_MLIST_SPECIFIED data/mlist_bounce/shift-jis/BOUNCE_MLIST_DOMAIN data/mlist_bounce/shift-jis/BOUNCE_MLIST_INTERNAL data/mlist_bounce/shift-jis/BOUNCE_MLIST_SPECIFIED data/notify_bounce/ascii/BOUNCE_NOTIFY_NON_READ data/notify_bounce/ascii/BOUNCE_NOTIFY_READ data/notify_bounce/big5/BOUNCE_NOTIFY_NON_READ data/notify_bounce/big5/BOUNCE_NOTIFY_READ data/notify_bounce/gb2312/BOUNCE_NOTIFY_NON_READ data/notify_bounce/gb2312/BOUNCE_NOTIFY_READ data/notify_bounce/gbk/BOUNCE_NOTIFY_NON_READ data/notify_bounce/gbk/BOUNCE_NOTIFY_READ \
+	doc/changelog.rst doc/charset.rst doc/commchan.svg doc/downgrade.rst doc/error_codes.rst doc/exmdb.html doc/ews_spec.rst doc/faq.rst doc/folderrefs.txt doc/glossary.rst doc/install.rst doc/known_bugs.rst doc/mascot.svg doc/mtformat.rst doc/outlook_oof_spec.rst doc/outlook_rule_spec.rst doc/oxoabkt.rst doc/oxocal_notes.rst doc/protocols.rst doc/string_props.rst doc/user_properties.rst \
+	${header_files} include/gromox/paths.h.in lib/mapi/oxcmail_int.hpp \
+	php_mapi/mapi.stub.php \
+	system/gromox-delivery-queue.tps system/gromox-delivery.tps system/gromox-event.tps system/gromox-http.tps system/gromox-imap.tps system/gromox-midb.tps system/gromox-pop3.tps system/gromox-snapshot.tps system/gromox-timer.tps system/gromox-zcore.tps \
+	system/selinux/gromox.fc system/selinux/gromox.if system/selinux/gromox.te system/selinux/readme.rst \
+	tests/eps_1_01_03.b tests/eps_1_02.b tests/eps_1_04.b tests/eps_2_05.b tests/epv_1.b tests/epv_2.b tests/epv_3.b tests/epv_4.b \
+	tests/gxl-475.ics tests/gxl-598.ics tests/httppipe.pl tests/mainstub.cpp tests/zlogin.php \
+	tools/abtohex tools/create_k2g_migration_lists.sh tools/defs2php.pl tools/defs2php.sh tools/duplogid tools/enumsort tools/exchange2grommunio.ps1 tools/exmidl.pl tools/exmidl.sh tools/genmails tools/hunpack tools/includesort tools/kopano2grommunio.sh tools/mpak.pl tools/mpak.sh tools/procnames tools/proptagsort tools/smtpaddr.cpp tools/smtpaddr.rst tools/stackusage tools/tzdef_decode tools/warncount tools/zcidl.pl tools/zcidl.sh
 
 data/abkt.pak: ${abkt_files}
 	${AM_V_GEN}${MKDIR_P} data
@@ -399,17 +409,9 @@ dldcheck.stamp: dldcheck ${dldcheck_files}
 .tps.service:
 	${AM_V_GEN}${MKDIR_P} system; ${SED} -e 's|@''libexecdir''@|${libexecdir}|g' <$< >$@
 
-.PHONY: header-presence tarball
+.PHONY: header-presence
 
 header-presence:
 	@echo ${header_files} | sed -e 's/ /\n/g' | sort -u >hdrinstalled.o
 	@echo include/gromox/*.h include/gromox/*.hpp | sed -e 's/ /\n/g' | sort -u >hdrpresent.o
 	${AM_V_GEN}diff -dpru hdrinstalled.o hdrpresent.o
-
-tarball:
-	tmpdir=$$(mktemp -dtu); \
-	mkdir $$tmpdir && \
-	(cd ${top_srcdir} && git archive --prefix=${PACKAGE_NAME}-${PACKAGE_VERSION}/ HEAD | tar -C $$tmpdir -x); \
-	(cd $$tmpdir/${PACKAGE_NAME}-${PACKAGE_VERSION} && autoreconf -fi && rm -Rf autom4te*.cache); \
-	tar --use="zstd -19" -C $$tmpdir -cf ${PACKAGE_NAME}-${PACKAGE_VERSION}.tar.zst --owner=root --group=root ${PACKAGE_NAME}-${PACKAGE_VERSION}/; \
-	rm -Rf $$tmpdir
