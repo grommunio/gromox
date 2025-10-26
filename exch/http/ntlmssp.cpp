@@ -72,6 +72,19 @@ struct NTLMSSP_VERSION {
 	uint8_t ntlm_revers;
 };
 
+struct GX_EXPORT HMACMD5_CTX {
+	HMACMD5_CTX() = default;
+	HMACMD5_CTX(const void *key, size_t len);
+	bool update(const void *text, size_t len);
+	bool finish(void *output);
+	bool is_valid() const { return valid_flag; }
+
+	protected:
+	std::unique_ptr<EVP_MD_CTX, sslfree> osslctx;
+	uint8_t k_ipad[65]{}, k_opad[65]{};
+	bool valid_flag = false;
+};
+
 }
 
 /* G(x) = x^32+x^26+x^23+x^22+x^16+x^12+x^11+x^10+x^8+x^7+x^5+x^4+x^2+x^1+x^0 */
@@ -183,6 +196,45 @@ static void arcfour_crypt(uint8_t *pdata, const uint8_t keystr[16], int len)
 	ARCFOUR_STATE state;
 	arcfour_init(&state, keystr, 16);
 	arcfour_crypt_sbox(&state, pdata, len);
+}
+
+/* the microsoft version of hmac_md5 initialisation */
+HMACMD5_CTX::HMACMD5_CTX(const void *key, size_t key_len) :
+	osslctx(EVP_MD_CTX_new())
+{
+	if (osslctx == nullptr)
+		return;
+	if (key_len > 64)
+		key_len = 64;
+	memcpy(k_ipad, key, key_len);
+	memcpy(k_opad, key, key_len);
+	/* XOR key with ipad and opad values */
+	for (size_t i = 0; i < 64; ++i) {
+		k_ipad[i] ^= 0x36;
+		k_opad[i] ^= 0x5c;
+	}
+	if (EVP_DigestInit(osslctx.get(), EVP_md5()) <= 0 ||
+	    EVP_DigestUpdate(osslctx.get(), k_ipad, 64) <= 0)
+		return;
+	valid_flag = true;
+}
+
+bool HMACMD5_CTX::update(const void *text, size_t text_len)
+{
+	return EVP_DigestUpdate(osslctx.get(), text, text_len) > 0;
+}
+
+bool HMACMD5_CTX::finish(void *digest)
+{
+	decltype(osslctx) ctx_o(EVP_MD_CTX_new());
+	if (ctx_o == nullptr ||
+	    EVP_DigestFinal(osslctx.get(), static_cast<uint8_t *>(digest), nullptr) <= 0 ||
+	    EVP_DigestInit(ctx_o.get(), EVP_md5()) <= 0 ||
+	    EVP_DigestUpdate(ctx_o.get(), k_opad, 64) <= 0 ||
+	    EVP_DigestUpdate(ctx_o.get(), digest, 16) <= 0 ||
+	    EVP_DigestFinal(ctx_o.get(), static_cast<uint8_t *>(digest), nullptr) <= 0)
+		return false;
+	return true;
 }
 
 static void str_to_key(const uint8_t *s, uint8_t *k)
