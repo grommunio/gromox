@@ -34,6 +34,12 @@ Optional deps:
   * libc/libresolv with interface "res_nquery" & "ns_initparse" functions
   * c-ares
 * cURL library
+* GSSAPI library
+  * mit-krb5-gssapi or
+  * heimdal-gssapi or
+  * libgssglue
+  * (even if built with any, you can still use external helpers like
+    ``/usr/libexec/squid/negotiate_wrapper_auth`` from Gromox)
 * mit-krb5-gssapi
 * libesedb
 * libolecf

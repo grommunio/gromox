@@ -118,7 +118,12 @@ PKG_CHECK_MODULES([gss], [krb5-gssapi], [
 	AC_DEFINE([HAVE_GSSAPI], [1])
 	have_gssapi=1
 ], [
-	have_gssapi=0
+	PKG_CHECK_MODULES([gss], [libgssglue], [
+		AC_DEFINE([HAVE_GSSAPI], [1])
+		have_gssapi=1
+	], [
+		have_gssapi=0
+	])
 ])
 PKG_CHECK_MODULES([libHX], [libHX >= 4.28])
 PKG_CHECK_MODULES([libcrypto], [libcrypto])
