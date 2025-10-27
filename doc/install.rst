@@ -11,7 +11,6 @@ dependencies are needed:
 
 * autotools
 * C and C++20 compiler
-* cURL library
 * fmt >= 8
 * jsoncpp
 * libHX >= 4.28
@@ -34,6 +33,7 @@ Optional deps:
 * A resolver library
   * libc/libresolv with interface "res_nquery" & "ns_initparse" functions
   * c-ares
+* cURL library
 * libesedb
 * libolecf
 * libpff

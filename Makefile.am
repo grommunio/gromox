@@ -37,7 +37,10 @@ dist_unit_DATA = system/gromox-cleaner.service system/gromox-cleaner.timer \
 	system/gromox-snapshot.service system/gromox-snapshot.timer \
 	system/gromox-timer.service system/gromox-zcore.service
 
-sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbck gromox-mbop gromox-mbsize gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
+sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbck gromox-mbop gromox-mbsize gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
+if HAVE_CURL
+sbin_PROGRAMS += gromox-dscli
+endif
 if HAVE_ESEDB
 sbin_PROGRAMS += gromox-edb2mt
 endif

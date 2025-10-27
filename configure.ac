@@ -119,7 +119,7 @@ PKG_CHECK_MODULES([gss], [krb5-gssapi], [
 ], [:])
 PKG_CHECK_MODULES([libHX], [libHX >= 4.28])
 PKG_CHECK_MODULES([libcrypto], [libcrypto])
-PKG_CHECK_MODULES([libcurl], [libcurl])
+PKG_CHECK_MODULES([libcurl], [libcurl], [have_curl=1], [have_curl=0])
 PKG_CHECK_MODULES([libesedb], [libesedb], [have_esedb=1], [have_esedb=0])
 PKG_CHECK_MODULES([libldap], [ldap], [], [
 	AC_CHECK_HEADERS([ldap.h], [], [AC_MSG_ERROR([ldap.h is required])])
@@ -141,6 +141,7 @@ have_pamheader=""
 AC_CHECK_HEADERS([crypt.h syslog.h])
 AC_CHECK_HEADERS([sys/epoll.h sys/event.h sys/ioctl.h sys/random.h sys/vfs.h sys/xattr.h])
 AC_CHECK_HEADERS([security/pam_modules.h], [have_pamheader="yes"])
+AM_CONDITIONAL([HAVE_CURL], [test "$have_curl" = 1])
 AM_CONDITIONAL([HAVE_ESEDB], [test "$have_esedb" = 1])
 AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])
 AM_CONDITIONAL([HAVE_OLECF], [test "$have_olecf" = 1])
