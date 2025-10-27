@@ -116,7 +116,10 @@ PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 1.4.0], [], [
 ])
 PKG_CHECK_MODULES([gss], [krb5-gssapi], [
 	AC_DEFINE([HAVE_GSSAPI], [1])
-], [:])
+	have_gssapi=1
+], [
+	have_gssapi=0
+])
 PKG_CHECK_MODULES([libHX], [libHX >= 4.28])
 PKG_CHECK_MODULES([libcrypto], [libcrypto])
 PKG_CHECK_MODULES([libcurl], [libcurl], [have_curl=1], [have_curl=0])
@@ -143,6 +146,7 @@ AC_CHECK_HEADERS([sys/epoll.h sys/event.h sys/ioctl.h sys/random.h sys/vfs.h sys
 AC_CHECK_HEADERS([security/pam_modules.h], [have_pamheader="yes"])
 AM_CONDITIONAL([HAVE_CURL], [test "$have_curl" = 1])
 AM_CONDITIONAL([HAVE_ESEDB], [test "$have_esedb" = 1])
+AM_CONDITIONAL([HAVE_GSSAPI], [test "$have_gssapi" = 1])
 AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])
 AM_CONDITIONAL([HAVE_OLECF], [test "$have_olecf" = 1])
 AM_CONDITIONAL([HAVE_PFF], [test "$have_pff" = 1])

@@ -34,6 +34,7 @@ Optional deps:
   * libc/libresolv with interface "res_nquery" & "ns_initparse" functions
   * c-ares
 * cURL library
+* mit-krb5-gssapi
 * libesedb
 * libolecf
 * libpff
