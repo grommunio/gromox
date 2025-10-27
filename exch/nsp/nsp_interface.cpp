@@ -1301,7 +1301,8 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		/* Alternative attempt by OL to do resolvenames */
 		uint32_t start_pos, total;
 		nsp_interface_position_in_list(pstat, base.get(), &start_pos, &total);
-		for (auto it = base->ubegin() + start_pos; it != base->uend() && it-base->ubegin() < total; ++it) {
+		for (auto it = base->ubegin() + start_pos; it != base->uend() &&
+		     static_cast<size_t>(it - base->ubegin()) < total; ++it) {
 			ab_tree::ab_node node(base, *it);
 			if (node.hidden() & (AB_HIDE_RESOLVE | AB_HIDE_FROM_GAL) ||
 			    !nsp_interface_match_node(node, pstat->codepage, pfilter))

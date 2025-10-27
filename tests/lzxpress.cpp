@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 #endif
 			auto complen  = lzxpress_compress(b1, std::size(b1), b2, std::size(b2));
 			auto ucomplen = lzxpress_decompress(b2, complen, outbuf, std::size(outbuf));
-			if (ucomplen != std::size(b1)) {
+			if (ucomplen < 0 || static_cast<size_t>(ucomplen) != std::size(b1)) {
 				fprintf(stderr, "Failed input (%zu):\n", ++z);
 				HX_hexdump(stderr, b1, std::size(b1));
 				HX_hexdump(stderr, b2, complen);
