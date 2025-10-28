@@ -521,7 +521,7 @@ struct tAttachment : public NS_EWS_Types {
 	static sAttachment create(const sAttachmentId&, sShape&&);
 
 	std::optional<sAttachmentId> AttachmentId;
-	std::optional<std::string> Name;///< PR_ATTACH_LONG_FILENAM
+	std::optional<std::string> Name;///< PR_ATTACH_LONG_FILENAME or PR_DISPLAYNAME
 	std::optional<std::string> ContentType; ///< PR_ATTACH_MIME_TAG
 	std::optional<std::string> ContentId; ///< PR_ATTACH_CONTENT_ID
 	std::optional<std::string> ContentLocation;

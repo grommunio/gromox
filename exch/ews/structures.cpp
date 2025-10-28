@@ -1326,7 +1326,7 @@ tAlternateId::tAlternateId(Enum::IdFormatType format, std::string id, std::strin
 tAttachment::tAttachment(const sAttachmentId& aid, const sShape& shape)
 {
 	AttachmentId.emplace(aid);
-	fromProp(shape.get(PR_ATTACH_LONG_FILENAME), Name);
+	fromProp(shape.get(PR_ATTACH_LONG_FILENAME), Name) || fromProp(shape.get(PR_DISPLAY_NAME), Name);
 	fromProp(shape.get(PR_ATTACH_MIME_TAG), ContentType);
 	fromProp(shape.get(PR_ATTACH_CONTENT_ID), ContentId);
 	fromProp(shape.get(PR_ATTACH_SIZE), Size);
