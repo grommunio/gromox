@@ -1285,7 +1285,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	}
 	if (special & sShape::Attachments) {
 		static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_CONTENT_ID,
-			                        PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS};
+			                        PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS, PR_ATTACH_SIZE};
 		auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
 		uint16_t count;
 		if (!exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
