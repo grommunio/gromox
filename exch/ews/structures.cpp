@@ -89,16 +89,19 @@ T& defaulted(std::optional<T>& container, Args&&... args)
  *
  * @tparam     T          Type of the field
  * @tparam     PT         Type of the value contained in the property
+ *
+ * @return    Reference to target
  */
 template<typename T, typename PT=PropType<T>, std::enable_if_t<!std::is_same_v<PT, void>, bool> = true>
-void fromProp(const TAGGED_PROPVAL* prop, std::optional<T>& target)
+std::optional<T>& fromProp(const TAGGED_PROPVAL* prop, std::optional<T>& target)
 {
 	if (!prop)
-		return;
+		return target;
 	if constexpr (std::is_pointer_v<PT>)
 		target.emplace(static_cast<PT>(prop->pvalue));
 	else
 		target.emplace(*static_cast<const PT*>(prop->pvalue));
+	return target;
 }
 
 /**
