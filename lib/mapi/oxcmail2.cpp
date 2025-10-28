@@ -385,6 +385,18 @@ static ec_error_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
 }
 #endif /* AVOID_LIBXML */
 
+/**
+ * There are some MUAs around that produce HTML mails with multiple text/html
+ * parts when an inline image is inserted into the richtext textarea. The
+ * bodyset_* family of functions recombines these MIME parts, because MAPI (and
+ * thus all of its MUAs) can only deal with at most one PR_HTML.
+ *
+ * (Since one cannot add inline images to plaintext, plaintext mails are
+ * generally not chopped up.)
+ *
+ * @epar:  input mail and its parts
+ * @props: target MAPI message properties
+ */
 ec_error_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props,
     const char *charset)
 {
