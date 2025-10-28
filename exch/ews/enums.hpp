@@ -113,6 +113,8 @@ struct Enum {
 	STR(BusinessPhone);
 	STR(BusinessPhone2);
 	STR(Busy);
+	STR(Byte);
+	STR(ByteArray);
 	STR(CalendarAssistant);
 	STR(Callback);
 	STR(CarPhone);
@@ -138,6 +140,7 @@ struct Enum {
 	STR(Custom);
 	STR(CustomMailTip);
 	STR(CreatedEvent);
+	STR(DateTime);
 	STR(Day);
 	STR(December);
 	STR(Decline);
@@ -201,6 +204,8 @@ struct Enum {
 	STR(InProgress);
 	STR(Integer);
 	STR(IntegerArray);
+	STR(Integer32);
+	STR(Integer64);
 	STR(InternetHeaders);
 	STR(InvalidRecipient);
 	STR(IPPhone);
@@ -334,6 +339,8 @@ struct Enum {
 	STR(Tuesday);
 	STR(UnifiedMessaging);
 	STR(UnifiedMessagingConfiguration);
+	STR(UnsignedInteger32);
+	STR(UnsignedInteger64);
 	STR(Unknown);
 	STR(User);
 	STR(WaitingOnOthers);
@@ -465,6 +472,7 @@ struct Enum {
 	using SuggestionQuality = StrEnum<Excellent, Good, Fair, Poor>; ///< Types.xsd:6423
 	using SyncFolderItemsScopeType = StrEnum<NormalItems, NormalAndAssociatedItems>; ///< Types.xsd:6256
 	using UserConfigurationPropertyType = StrEnum<Id, Dictionary, XmlData, BinaryData, All>; ///< Types.xsd:7256
+	using UserConfigurationDictionaryObjectTypesType = StrEnum<DateTime, Boolean, Byte, String, Integer32, UnsignedInteger32, Integer64, UnsignedInteger64, StringArray, ByteArray>; ///<Types.xsd: 7212
 	using TaskStatusType = StrEnum<NotStarted, InProgress, Completed, WaitingOnOthers, Deferred>; ///< Types.xsd:4072
 };
 
