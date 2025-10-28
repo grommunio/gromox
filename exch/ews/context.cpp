@@ -685,6 +685,42 @@ void EWSContext::enableEventStream(int timeout)
 }
 
 /**
+ * @brief      Export message content to string
+ *
+ * @param      dir       Parent store
+ * @param      content   Content to export
+ * @param      log_id    Log ID
+ *
+ * @return     Serialized content
+ */
+std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONTENT& content, const std::string& log_id) const
+{
+	MAIL mail;
+	auto getPropIds  = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
+		{ *ids = getNamedPropIds(dir, *names); return TRUE; };
+	auto getPropName = [&](uint16_t id, PROPERTY_NAME **name) { *name = getPropertyName(dir, id); return TRUE; };
+	if (!oxcmail_export(&content, log_id.c_str(), false,
+	                    oxcmail_body::plain_and_html, &mail, alloc, getPropIds, getPropName))
+		throw EWSError::ItemCorrupt(E3072);
+	auto mail_len = mail.get_length();
+	if (mail_len < 0)
+		throw EWSError::ItemCorrupt(E3073);
+	STREAM tempStream;
+	if (!mail.serialize(&tempStream))
+		throw EWSError::ItemCorrupt(E3074);
+	std::string mime;
+	mime.reserve(mail_len);
+	char *data;
+	unsigned int size = STREAM_BLOCK_SIZE;
+	while ((data = static_cast<char *>(tempStream.get_read_buf(&size))) != nullptr) {
+		mime.insert(mime.end(), data, &data[size]);
+		size = STREAM_BLOCK_SIZE;
+	}
+	return mime;
+}
+
+
+/**
  * @brief     Get user or domain ID by name
  *
  * @param     name       Name to resolve
@@ -1101,7 +1137,19 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
 	PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
 	if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
 		throw DispatchError(E3083);
-	return tAttachment::create(aid, props);
+	sShape shape(props);
+
+	auto method = props.get<const uint32_t>(PR_ATTACH_METHOD);
+	if (method != nullptr && *method == ATTACH_EMBEDDED_MSG) {
+		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		MESSAGE_CONTENT content{};
+		if (!m_plugin.exmdb.read_message_instance(dir.c_str(),
+		    eInst->instanceId, &content))
+			throw DispatchError(E3208);
+		auto log_id = dir + ":a" + std::to_string(aid.attachment_num);
+		shape.mimeContent.emplace(exportContent(dir, content, log_id));
+	}
+	return tAttachment::create(aid, std::move(shape));
 }
 
 /**
@@ -1232,33 +1280,12 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		if (!exmdb.read_message(dir.c_str(), nullptr, CP_ACP, mid, &content) ||
 		    content == nullptr)
 			throw EWSError::ItemNotFound(E3071);
-		MAIL mail;
-		auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
-		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
-		auto getPropName = [&](uint16_t id, PROPERTY_NAME** name)
-		                   {*name = getPropertyName(dir, id); return TRUE;};
 		auto log_id = dir + ":m" + std::to_string(mid);
-		if (!oxcmail_export(content, log_id.c_str(), false,
-		    oxcmail_body::plain_and_html, &mail, alloc, getPropIds, getPropName))
-			throw EWSError::ItemCorrupt(E3072);
-		auto mailLen = mail.get_length();
-		if (mailLen < 0)
-			throw EWSError::ItemCorrupt(E3073);
-		STREAM tempStream;
-		if (!mail.serialize(&tempStream))
-			throw EWSError::ItemCorrupt(E3074);
-		auto& mimeContent = item.MimeContent.emplace();
-		mimeContent.reserve(mailLen);
-		uint8_t* data;
-		unsigned int size = STREAM_BLOCK_SIZE;
-		while ((data = static_cast<uint8_t*>(tempStream.get_read_buf(&size))) != nullptr) {
-			mimeContent.insert(mimeContent.end(), data, data + size);
-			size = STREAM_BLOCK_SIZE;
-		}
+		item.MimeContent.emplace(exportContent(dir, *content, log_id));
 	}
 	if (special & sShape::Attachments) {
 		static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_CONTENT_ID,
-			                        PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS};
+			                        PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS, PR_ATTACH_SIZE};
 		auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
 		uint16_t count;
 		if (!exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
@@ -1272,7 +1299,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			if (!exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
 				throw DispatchError(E3080);
 			aid.attachment_num = i;
-			item.Attachments->emplace_back(tAttachment::create(aid, props));
+			item.Attachments->emplace_back(tAttachment::create(aid, sShape(props)));
 		}
 	}
 	if (special & sShape::Rights)

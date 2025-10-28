@@ -905,6 +905,12 @@ void tEmailAddressDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPA(MailboxType);
 }
 
+void tItemAttachment::serialize(tinyxml2::XMLElement *xml) const
+{
+	tAttachment::serialize(xml);
+	XMLDUMPT(Item);
+}
+
 tFileAttachment::tFileAttachment(const XMLElement *xml)
 {
 	if (const XMLElement *xp = xml->FirstChildElement("Name"))
