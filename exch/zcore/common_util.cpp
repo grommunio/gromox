@@ -1066,9 +1066,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 {
 	uint64_t message_id = msg->get_id();
 	void *pvalue;
-	BOOL b_result;
-	BOOL b_private;
-	BOOL b_partial;
+	BOOL b_private, b_partial = false;
 	int account_id;
 	uint64_t new_id;
 	uint64_t folder_id;
@@ -1162,15 +1160,14 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		if (!exmdb_client->clear_submit(pstore->get_dir(), message_id, false))
 			return ecWarnWithErrors;
 		if (!exmdb_client->movecopy_message(pstore->get_dir(), cpid,
-		    message_id, folder_id, new_id, TRUE, &b_result))
+		    message_id, folder_id, new_id, TRUE, &b_partial) || b_partial)
 			return ecWarnWithErrors;
 		return ecSuccess;
 	} else if (b_delete) {
 		const EID_ARRAY ids = {1, &message_id};
 		if (!exmdb_client->delete_messages(pstore->get_dir(), cpid,
-		    nullptr, parent_id, &ids, TRUE, &b_result))
+		    nullptr, parent_id, &ids, TRUE, &b_partial) || b_partial)
 			/* ignore */;
-		b_result = !b_partial ? TRUE : false;
 		return ecSuccess;
 	}
 	if (!exmdb_client->clear_submit(pstore->get_dir(), message_id, false))
@@ -1182,7 +1179,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 
 	const EID_ARRAY ids = {1, &message_id};
 	if (!exmdb_client->movecopy_messages(pstore->get_dir(), cpid, false,
-	    STORE_OWNER_GRANTED, parent_id, folder_id, false, &ids, &b_partial))
+	    STORE_OWNER_GRANTED, parent_id, folder_id, false, &ids, &b_partial) || b_partial)
 		return ecWarnWithErrors;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
