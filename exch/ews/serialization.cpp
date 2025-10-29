@@ -1552,8 +1552,8 @@ tTargetFolderIdType::tTargetFolderIdType(const XMLElement* xml) :
 {}
 
 tUserConfigurationName::tUserConfigurationName(const tinyxml2::XMLElement* xml) :
-	XMLINITA(Name),
-	XMLINIT(FolderId)
+	tTargetFolderIdType(xml),
+	XMLINITA(Name)
 {}
 
 tUserId::tUserId(const tinyxml2::XMLElement* xml) :

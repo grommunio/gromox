@@ -4071,12 +4071,10 @@ struct mUpdateItemResponse {
 /*
  * Types.xsd:7203
  */
-struct tUserConfigurationName {
+struct tUserConfigurationName : public tTargetFolderIdType {
 	explicit tUserConfigurationName(const tinyxml2::XMLElement*);
 
 	std::string Name; //Attribute
-	std::optional<tFolderId> FolderId;
-	std::optional<tDistinguishedFolderId> DistinguishedFolderId;
 };
 
 /**
