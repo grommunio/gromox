@@ -849,6 +849,13 @@ tDistinguishedFolderId::tDistinguishedFolderId(const tinyxml2::XMLElement* xml) 
 	XMLINITA(Id)
 {}
 
+void tDistinguishedFolderId::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(Mailbox);
+	XMLDUMPA(ChangeKey);
+	XMLDUMPA(Id);
+}
+
 tDuration::tDuration(const XMLElement* xml) :
 	XMLINIT(StartTime), XMLINIT(EndTime)
 {}
@@ -1551,10 +1558,47 @@ tTargetFolderIdType::tTargetFolderIdType(const XMLElement* xml) :
 	VXMLINIT(FolderId)
 {}
 
+void tTargetFolderIdType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(FolderId);
+}
+
 tUserConfigurationName::tUserConfigurationName(const tinyxml2::XMLElement* xml) :
 	tTargetFolderIdType(xml),
 	XMLINITA(Name)
 {}
+
+void tUserConfigurationName::serialize(XMLElement* xml) const
+{
+	tTargetFolderIdType::serialize(xml);
+	XMLDUMPA(Name);
+}
+
+void tUserConfigurationDictionaryObject::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(Type);
+	XMLDUMPT(Value);
+}
+
+void tUserConfigurationDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(DictionaryKey);
+	XMLDUMPT(DictionaryValue);
+}
+
+void tUserConfigurationDictionaryType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(DictionaryEntry);
+}
+
+void tUserConfigurationType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(UserConfigurationName);
+	XMLDUMPT(ItemId);
+	XMLDUMPT(Dictionary);
+	XMLDUMPT(XmlData);
+	XMLDUMPT(BinaryData);
+}
 
 tUserId::tUserId(const tinyxml2::XMLElement* xml) :
 	XMLINIT(PrimarySmtpAddress),
@@ -1888,6 +1932,12 @@ mGetUserConfigurationRequest::mGetUserConfigurationRequest(const tinyxml2::XMLEl
 	XMLINIT(UserConfigurationName),
 	XMLINIT(UserConfigurationProperties)
 {}
+
+void mGetUserConfigurationResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPT(UserConfiguration);
+}
 
 void mGetUserConfigurationResponse::serialize(XMLElement* xml) const
 {

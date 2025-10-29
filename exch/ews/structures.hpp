@@ -2681,6 +2681,8 @@ struct tDistinguishedFolderId {
 	std::optional<tEmailAddressType> Mailbox;
 	std::optional<std::string> ChangeKey; //Attribute
 	Enum::DistinguishedFolderIdNameType Id; //Attribute
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 struct tFolderChange {
@@ -2866,6 +2868,8 @@ struct tTargetFolderIdType {
 	explicit tTargetFolderIdType(const tinyxml2::XMLElement*);
 
 	sFolderId FolderId;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -4075,6 +4079,50 @@ struct tUserConfigurationName : public tTargetFolderIdType {
 	explicit tUserConfigurationName(const tinyxml2::XMLElement*);
 
 	std::string Name; //Attribute
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:7227
+ */
+struct tUserConfigurationDictionaryObject {
+	Enum::UserConfigurationDictionaryObjectTypesType Type;
+	std::vector<std::string> Value;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:7234
+ */
+struct tUserConfigurationDictionaryEntry {
+	tUserConfigurationDictionaryObject DictionaryKey;
+	std::optional<tUserConfigurationDictionaryObject> DictionaryValue;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:7241
+ */
+struct tUserConfigurationDictionaryType {
+	std::vector<tUserConfigurationDictionaryEntry> DictionaryEntry;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/*
+ * Types.xsd:7247
+ */
+struct tUserConfigurationType {
+	tUserConfigurationName UserConfigurationName;
+	std::optional<tItemId> ItemId;
+	std::optional<tUserConfigurationDictionaryType> Dictionary;
+	std::optional<sBase64Binary> XmlData;
+	std::optional<sBase64Binary> BinaryData;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -4092,6 +4140,10 @@ struct mGetUserConfigurationRequest {
  */
 struct mGetUserConfigurationResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "GetUserConfigurationResponseMessage";
+
+	std::optional<tUserConfigurationType> UserConfiguration;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
