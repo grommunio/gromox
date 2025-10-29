@@ -365,7 +365,7 @@ void process(mCreateFolderRequest&& request, XMLElement* response, const EWSCont
 
 	mCreateFolderResponse data;
 
-	sFolderSpec parent = ctx.resolveFolder(request.ParentFolderId.folderId);
+	sFolderSpec parent = ctx.resolveFolder(request.ParentFolderId.FolderId);
 	std::string dir = ctx.getDir(parent);
 	bool hasAccess = ctx.permissions(dir, parent.folderId);
 
@@ -397,7 +397,7 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 
 	std::optional<sFolderSpec> targetFolder;
 	if (request.SavedItemFolderId)
-		targetFolder = ctx.resolveFolder(request.SavedItemFolderId->folderId);
+		targetFolder = ctx.resolveFolder(request.SavedItemFolderId->FolderId);
 	else
 		targetFolder = ctx.resolveFolder(tDistinguishedFolderId("outbox"));
 	std::string dir = ctx.getDir(*targetFolder);
@@ -1371,7 +1371,7 @@ void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWS
 {
 	response->SetName(request.copy ? "m:CopyFolderResponse" : "m:MoveFolderResponse");
 
-	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
+	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.FolderId);
 	std::string dir = ctx.getDir(dstFolder);
 	uint32_t accountId = ctx.getAccountId(ctx.auth_info().username, false);
 
@@ -1414,7 +1414,7 @@ void process(const mBaseMoveCopyItem& request, XMLElement* response, const EWSCo
 {
 	response->SetName(request.copy ? "m:CopyItemResponse" : "m:MoveItemResponse");
 
-	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
+	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.FolderId);
 	std::string dir = ctx.getDir(dstFolder);
 
 	bool dstAccess = ctx.permissions(dir, dstFolder.folderId);
@@ -1528,7 +1528,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		syncState.init(*request.SyncState);
 	syncState.convert();
 
-	sFolderSpec folder = ctx.resolveFolder(request.SyncFolderId->folderId);
+	sFolderSpec folder = ctx.resolveFolder(request.SyncFolderId->FolderId);
 	if (!folder.target)
 		folder.target = ctx.auth_info().username;
 	std::string dir = ctx.getDir(folder.normalize());
@@ -1587,7 +1587,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 {
 	response->SetName("m:SyncFolderItemsResponse");
 
-	sFolderSpec folder = ctx.resolveFolder(request.SyncFolderId.folderId);
+	sFolderSpec folder = ctx.resolveFolder(request.SyncFolderId.FolderId);
 
 	sSyncState syncState;
 	if (request.SyncState && !request.SyncState->empty())
@@ -1817,7 +1817,7 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 		return;
 	}
 	sFolderSpec saveFolder = request.SavedItemFolderId ?
-		ctx.resolveFolder(request.SavedItemFolderId->folderId) :
+		ctx.resolveFolder(request.SavedItemFolderId->FolderId) :
 		sFolderSpec(tDistinguishedFolderId(Enum::sentitems));
 	if (request.SavedItemFolderId && !(ctx.permissions(ctx.getDir(saveFolder), saveFolder.folderId) & frightsCreate)) {
 		data.Responses.emplace_back(EWSError::AccessDenied(E3141));

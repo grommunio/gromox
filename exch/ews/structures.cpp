@@ -4255,7 +4255,7 @@ tSyncFolderItemsDelete::tSyncFolderItemsDelete(const sBase64Binary& meid) : Item
 ///////////////////////////////////////////////////////////////////////////////
 
 tTargetFolderIdType::tTargetFolderIdType(sFolderId&& id) :
-    folderId(std::move(id))
+    FolderId(std::move(id))
 {}
 
 ///////////////////////////////////////////////////////////////////////////////

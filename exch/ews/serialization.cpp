@@ -1548,7 +1548,7 @@ void tSyncFolderItemsReadFlag::serialize(tinyxml2::XMLElement* xml) const
 }
 
 tTargetFolderIdType::tTargetFolderIdType(const XMLElement* xml) :
-	VXMLINIT(folderId)
+	VXMLINIT(FolderId)
 {}
 
 tUserConfigurationName::tUserConfigurationName(const tinyxml2::XMLElement* xml) :

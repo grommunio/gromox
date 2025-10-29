@@ -2865,7 +2865,7 @@ struct tTargetFolderIdType {
 	explicit tTargetFolderIdType(sFolderId&&);
 	explicit tTargetFolderIdType(const tinyxml2::XMLElement*);
 
-	sFolderId folderId;
+	sFolderId FolderId;
 };
 
 /**
