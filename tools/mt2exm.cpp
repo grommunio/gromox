@@ -411,17 +411,20 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt,
 	 * does away with the issue of multiple processes trying to potentially
 	 * vivify the same filename-derived-from-same-content.
 	 */
-	char guidtxt[GUIDSTR_SIZE]{};
-	GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
-	auto midstr = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
-	digest["file"] = midstr;
-	if (!exmdb_client->imapfile_write(g_storedir, "eml",
-	    midstr.c_str(), im_repr.c_str())) {
-		fprintf(stderr, "exm: imapfile_write RPC failed\n");
-		return -EIO;
+	std::string djson;
+	if (im_repr.size() > 0) {
+		char guidtxt[GUIDSTR_SIZE]{};
+		GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
+		auto midstr = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
+		digest["file"] = midstr;
+		if (!exmdb_client->imapfile_write(g_storedir, "eml",
+		    midstr.c_str(), im_repr.c_str())) {
+			fprintf(stderr, "exm: imapfile_write RPC failed\n");
+			return -EIO;
+		}
+		djson = json_to_str(digest);
+		digest.removeMember("file");
 	}
-	auto djson = json_to_str(digest);
-	digest.removeMember("file");
 
 	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld,
