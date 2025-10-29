@@ -1,6 +1,10 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <unistd.h>
 #include <libHX/io.h>
 #include <gromox/defs.h>
 #include <gromox/util.hpp>

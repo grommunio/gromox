@@ -27,6 +27,7 @@
 #include <utility>
 #include <vector>
 #include <fmt/core.h>
+#include <sys/stat.h>
 #include <libHX/scope.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>

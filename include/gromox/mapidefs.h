@@ -3,6 +3,7 @@
 #include <compare>
 #include <cstdint>
 #include <cstring>
+#include <ctime>
 #include <memory>
 #include <optional>
 #include <string>
