@@ -179,7 +179,10 @@ BOOL MJSON::load_from_json(const Json::Value &root) try
 		pjson->flag         = root["flag"].asBool();
 		pjson->priority     = root["priority"].asUInt();
 		pjson->ref          = base64_decode(root["ref"].asString());
-		if (!mjson_parse_array(pjson, root["structure"], TYPE_STRUCTURE) ||
+		if (root.isMember("structure") &&
+		    !mjson_parse_array(pjson, root["structure"], TYPE_STRUCTURE))
+			return false;
+		if (root.isMember("mimes") &&
 		    !mjson_parse_array(pjson, root["mimes"], TYPE_MIMES))
 			return false;
 		pjson->size         = root["size"].asUInt();
