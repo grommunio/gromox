@@ -747,11 +747,11 @@ struct tPhoneNumberDictionaryEntry : public NS_EWS_Types {
  * Types.xsd:8508 (simplified)
  */
 struct tPersona : public NS_EWS_Types {
-        static constexpr char NAME[] = "Persona";
+	static constexpr char NAME[] = "Persona";
 
-        void serialize(tinyxml2::XMLElement *) const;
+	void serialize(tinyxml2::XMLElement *) const;
 
-        std::optional<std::string> DisplayName, EmailAddress, Title, Nickname,
+	std::optional<std::string> DisplayName, EmailAddress, Title, Nickname,
 		BusinessPhoneNumber, MobilePhoneNumber, HomeAddress, Comment;
 };
 
@@ -1120,9 +1120,9 @@ struct tUserId {
  * Types.xsd:6909
  */
 struct tDelegateUser {
-        tUserId UserId;
+	tUserId UserId;
 
-        void serialize(tinyxml2::XMLElement*) const;
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -2518,39 +2518,39 @@ struct tMeetingCancellationMessage : public tMeetingMessage {
  * Types.xsd:3913
  */
 struct tAcceptItem : public tMessage {
-        static constexpr char NAME[] = "AcceptItem";
+	static constexpr char NAME[] = "AcceptItem";
 
-        using tMessage::tMessage;
+	using tMessage::tMessage;
 
-        tAcceptItem(const tinyxml2::XMLElement *);
-        void serialize(tinyxml2::XMLElement *) const;
+	tAcceptItem(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
 
-        std::optional<time_point> ProposedStart, ProposedEnd;
-        std::optional<tItemId> ReferenceItemId;
+	std::optional<time_point> ProposedStart, ProposedEnd;
+	std::optional<tItemId> ReferenceItemId;
 };
 
 struct tTentativelyAcceptItem : public tMessage {
-        static constexpr char NAME[] = "TentativelyAcceptItem";
+	static constexpr char NAME[] = "TentativelyAcceptItem";
 
-        using tMessage::tMessage;
+	using tMessage::tMessage;
 
-        tTentativelyAcceptItem(const tinyxml2::XMLElement *);
-        void serialize(tinyxml2::XMLElement *) const;
+	tTentativelyAcceptItem(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
 
-        std::optional<time_point> ProposedStart, ProposedEnd;
-        std::optional<tItemId> ReferenceItemId;
+	std::optional<time_point> ProposedStart, ProposedEnd;
+	std::optional<tItemId> ReferenceItemId;
 };
 
 struct tDeclineItem : public tMessage {
-        static constexpr char NAME[] = "DeclineItem";
+	static constexpr char NAME[] = "DeclineItem";
 
-        using tMessage::tMessage;
+	using tMessage::tMessage;
 
-        tDeclineItem(const tinyxml2::XMLElement *);
-        void serialize(tinyxml2::XMLElement *) const;
+	tDeclineItem(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
 
-        std::optional<time_point> ProposedStart, ProposedEnd;
-        std::optional<tItemId> ReferenceItemId;
+	std::optional<time_point> ProposedStart, ProposedEnd;
+	std::optional<tItemId> ReferenceItemId;
 };
 
 /**
@@ -3862,29 +3862,29 @@ struct mGetItemResponse {
  * Messages.xsd:2781 (simplified)
  */
 struct mFindPeopleRequest {
-        explicit mFindPeopleRequest(const tinyxml2::XMLElement *);
+	explicit mFindPeopleRequest(const tinyxml2::XMLElement *);
 
-        std::string QueryString;
+	std::string QueryString;
 };
 
 /**
  * Messages.xsd:2788 (simplified)
  */
 struct mFindPeopleResponseMessage : public mResponseMessageType {
-        static constexpr char NAME[] = "FindPeopleResponseMessage";
+	static constexpr char NAME[] = "FindPeopleResponseMessage";
 
-        using mResponseMessageType::mResponseMessageType;
+	using mResponseMessageType::mResponseMessageType;
 
-        std::optional<std::vector<tPersona>> People;
-        std::optional<uint32_t> TotalNumberOfPeopleInView;
+	std::optional<std::vector<tPersona>> People;
+	std::optional<uint32_t> TotalNumberOfPeopleInView;
 
-        void serialize(tinyxml2::XMLElement *) const;
+	void serialize(tinyxml2::XMLElement *) const;
 };
 
 struct mFindPeopleResponse {
-        std::vector<mFindPeopleResponseMessage> ResponseMessages;
+	std::vector<mFindPeopleResponseMessage> ResponseMessages;
 
-        void serialize(tinyxml2::XMLElement *) const;
+	void serialize(tinyxml2::XMLElement *) const;
 };
 
 /**
