@@ -90,7 +90,7 @@ Enables soft-delete support for folders in private stores. (This feature is
 experimental.) Public folders always have this on. (Take note that
 exmdb_provider.cfg:exmdb_private_folder_softdelete also need to be enabled.)
 .br
-Default: \fIno\fP
+Default: \fIyes\fP
 .TP
 \fBemsmdb_rop_chaining\fP
 0: Deactivate ROP chaining. 1: Enable ROP chaining for OL < 15 and OL >=

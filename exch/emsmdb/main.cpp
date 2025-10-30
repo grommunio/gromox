@@ -58,7 +58,7 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"ems_max_pending_sesnotif", "1K", CFG_SIZE, "0"},
 	{"emsmdb_max_cxh_per_user", "100", CFG_SIZE, "100"},
 	{"emsmdb_max_obh_per_session", "500", CFG_SIZE, "500"},
-	{"emsmdb_private_folder_softdelete", "0", CFG_BOOL},
+	{"emsmdb_private_folder_softdelete", "1", CFG_BOOL},
 	{"emsmdb_rop_chaining", "1"},
 	{"mailbox_ping_interval", "5min", CFG_TIME, "60s", "1h"},
 	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
