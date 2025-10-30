@@ -1232,14 +1232,90 @@ void process(mGetStreamingEventsRequest&& request, XMLElement* response, EWSCont
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetUserConfigurationRequest&&, XMLElement* response, const EWSContext&)
+void process(mGetUserConfigurationRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
 	response->SetName("m:GetUserConfigurationResponse");
 
 	mGetUserConfigurationResponse data;
-	mGetUserConfigurationResponseMessage& msg = data.ResponseMessages.emplace_back();
+	try {
+		auto &exmdb = ctx.plugin().exmdb;
+		const auto &reqName = request.UserConfigurationName;
+		const auto &folderId = reqName.FolderId;
+		sFolderSpec folder;
 
-	msg.error("ErrorItemNotFound", "Object not found in the information store");
+		if (auto raw = std::get_if<tFolderId>(&folderId))
+			folder = ctx.resolveFolder(*raw);
+		else if (auto dist = std::get_if<tDistinguishedFolderId>(&folderId))
+			folder = ctx.resolveFolder(*dist);
+		else if (reqName.FolderId.valueless_by_exception())
+			throw EWSError::InvalidFolderId(E3252);
+
+		std::string dir = ctx.getDir(folder);
+		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
+			throw EWSError::AccessDenied(E3218);
+
+		std::string configClass = "IPM.Configuration." + reqName.Name;
+		RESTRICTION_PROPERTY resProp{RELOP_EQ, PR_MESSAGE_CLASS,
+			{PR_MESSAGE_CLASS, const_cast<char *>(configClass.c_str())}};
+		RESTRICTION res{RES_PROPERTY, {&resProp}};
+
+		uint32_t tableId = 0, rowCount = 0;
+		const char *username = ctx.effectiveUser(folder);
+		if (!exmdb.load_content_table(dir.c_str(), CP_UTF8, folder.folderId, username,
+		    TABLE_FLAG_ASSOCIATED, &res, nullptr, &tableId, &rowCount))
+			throw EWSError::ItemPropertyRequestFailed(E3245);
+		auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
+		if (rowCount == 0)
+			throw EWSError::ItemNotFound(E3143);
+
+		static constexpr uint32_t midTag = PidTagMid;
+		static constexpr PROPTAG_ARRAY midTags = {1, deconst(&midTag)};
+		TARRAY_SET rows;
+		exmdb.query_table(dir.c_str(), username, CP_UTF8, tableId, &midTags, 0, 1, &rows);
+		if (rows.count == 0 || rows.pparray[0] == nullptr)
+			throw EWSError::ItemNotFound(E3143);
+		auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);
+		if (mid == nullptr)
+			throw EWSError::ItemNotFound(E3143);
+
+		static constexpr uint32_t propTags[] = {
+			PR_ENTRYID, PR_CHANGE_KEY, PR_ROAMING_XMLSTREAM, PR_ROAMING_BINARYSTREAM,
+		};
+		const PROPTAG_ARRAY props = {std::size(propTags), deconst(propTags)};
+		TPROPVAL_ARRAY propvals = ctx.getItemProps(dir, *mid, props);
+
+		mGetUserConfigurationResponseMessage& msg = data.ResponseMessages.emplace_back();
+		msg.UserConfiguration.emplace(tUserConfigurationType{reqName});
+		auto &config = *msg.UserConfiguration;
+		config.UserConfigurationName = reqName;
+
+		auto propType = request.UserConfigurationProperties;
+		bool includeAll = propType == Enum::All;
+
+		if (includeAll || propType == Enum::Id) {
+			if (const auto *entryId = propvals.get<const BINARY>(PR_ENTRYID))
+				config.ItemId.emplace(sBase64Binary(entryId), tBaseItemId::ID_ITEM);
+			else
+				throw EWSError::ItemPropertyRequestFailed(E3024);
+			if (const auto *changeKey = propvals.get<const BINARY>(PR_CHANGE_KEY))
+				config.ItemId->ChangeKey.emplace(sBase64Binary(changeKey));
+		}
+
+		// Dictionary support (PR_ROAMING_DICTIONARY) is not implemented yet
+		if (includeAll || propType == Enum::XmlData) {
+			if (const auto *xmlData = propvals.get<const BINARY>(PR_ROAMING_XMLSTREAM))
+				config.XmlData.emplace(xmlData);
+		}
+		if (includeAll || propType == Enum::BinaryData) {
+			if (const auto *binData = propvals.get<const BINARY>(PR_ROAMING_BINARYSTREAM))
+				config.BinaryData.emplace(binData);
+		}
+
+		msg.success();
+	} catch (const EWSError &err) {
+		data.ResponseMessages.clear();
+		data.ResponseMessages.emplace_back(err);
+	}
 	data.serialize(response);
 }
 
