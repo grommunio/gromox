@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
 // This file is part of Gromox.
 
 #pragma once
@@ -747,11 +747,11 @@ struct tPhoneNumberDictionaryEntry : public NS_EWS_Types {
  * Types.xsd:8508 (simplified)
  */
 struct tPersona : public NS_EWS_Types {
-        static constexpr char NAME[] = "Persona";
+	static constexpr char NAME[] = "Persona";
 
-        void serialize(tinyxml2::XMLElement *) const;
+	void serialize(tinyxml2::XMLElement *) const;
 
-        std::optional<std::string> DisplayName, EmailAddress, Title, Nickname,
+	std::optional<std::string> DisplayName, EmailAddress, Title, Nickname,
 		BusinessPhoneNumber, MobilePhoneNumber, HomeAddress, Comment;
 };
 
@@ -1120,9 +1120,9 @@ struct tUserId {
  * Types.xsd:6909
  */
 struct tDelegateUser {
-        tUserId UserId;
+	tUserId UserId;
 
-        void serialize(tinyxml2::XMLElement*) const;
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -2491,39 +2491,39 @@ struct tMeetingCancellationMessage : public tMeetingMessage {
  * Types.xsd:3913
  */
 struct tAcceptItem : public tMessage {
-        static constexpr char NAME[] = "AcceptItem";
+	static constexpr char NAME[] = "AcceptItem";
 
-        using tMessage::tMessage;
+	using tMessage::tMessage;
 
-        tAcceptItem(const tinyxml2::XMLElement *);
-        void serialize(tinyxml2::XMLElement *) const;
+	tAcceptItem(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
 
-        std::optional<time_point> ProposedStart, ProposedEnd;
-        std::optional<tItemId> ReferenceItemId;
+	std::optional<time_point> ProposedStart, ProposedEnd;
+	std::optional<tItemId> ReferenceItemId;
 };
 
 struct tTentativelyAcceptItem : public tMessage {
-        static constexpr char NAME[] = "TentativelyAcceptItem";
+	static constexpr char NAME[] = "TentativelyAcceptItem";
 
-        using tMessage::tMessage;
+	using tMessage::tMessage;
 
-        tTentativelyAcceptItem(const tinyxml2::XMLElement *);
-        void serialize(tinyxml2::XMLElement *) const;
+	tTentativelyAcceptItem(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
 
-        std::optional<time_point> ProposedStart, ProposedEnd;
-        std::optional<tItemId> ReferenceItemId;
+	std::optional<time_point> ProposedStart, ProposedEnd;
+	std::optional<tItemId> ReferenceItemId;
 };
 
 struct tDeclineItem : public tMessage {
-        static constexpr char NAME[] = "DeclineItem";
+	static constexpr char NAME[] = "DeclineItem";
 
-        using tMessage::tMessage;
+	using tMessage::tMessage;
 
-        tDeclineItem(const tinyxml2::XMLElement *);
-        void serialize(tinyxml2::XMLElement *) const;
+	tDeclineItem(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
 
-        std::optional<time_point> ProposedStart, ProposedEnd;
-        std::optional<tItemId> ReferenceItemId;
+	std::optional<time_point> ProposedStart, ProposedEnd;
+	std::optional<tItemId> ReferenceItemId;
 };
 
 /**
@@ -2682,6 +2682,8 @@ struct tDistinguishedFolderId {
 	std::optional<tEmailAddressType> Mailbox;
 	std::optional<std::string> ChangeKey; //Attribute
 	Enum::DistinguishedFolderIdNameType Id; //Attribute
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 struct tFolderChange {
@@ -2866,7 +2868,9 @@ struct tTargetFolderIdType {
 	explicit tTargetFolderIdType(sFolderId&&);
 	explicit tTargetFolderIdType(const tinyxml2::XMLElement*);
 
-	sFolderId folderId;
+	sFolderId FolderId;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -3859,29 +3863,29 @@ struct mGetItemResponse {
  * Messages.xsd:2781 (simplified)
  */
 struct mFindPeopleRequest {
-        explicit mFindPeopleRequest(const tinyxml2::XMLElement *);
+	explicit mFindPeopleRequest(const tinyxml2::XMLElement *);
 
-        std::string QueryString;
+	std::string QueryString;
 };
 
 /**
  * Messages.xsd:2788 (simplified)
  */
 struct mFindPeopleResponseMessage : public mResponseMessageType {
-        static constexpr char NAME[] = "FindPeopleResponseMessage";
+	static constexpr char NAME[] = "FindPeopleResponseMessage";
 
-        using mResponseMessageType::mResponseMessageType;
+	using mResponseMessageType::mResponseMessageType;
 
-        std::optional<std::vector<tPersona>> People;
-        std::optional<uint32_t> TotalNumberOfPeopleInView;
+	std::optional<std::vector<tPersona>> People;
+	std::optional<uint32_t> TotalNumberOfPeopleInView;
 
-        void serialize(tinyxml2::XMLElement *) const;
+	void serialize(tinyxml2::XMLElement *) const;
 };
 
 struct mFindPeopleResponse {
-        std::vector<mFindPeopleResponseMessage> ResponseMessages;
+	std::vector<mFindPeopleResponseMessage> ResponseMessages;
 
-        void serialize(tinyxml2::XMLElement *) const;
+	void serialize(tinyxml2::XMLElement *) const;
 };
 
 /**
@@ -4072,12 +4076,54 @@ struct mUpdateItemResponse {
 /*
  * Types.xsd:7203
  */
-struct tUserConfigurationName {
+struct tUserConfigurationName : public tTargetFolderIdType {
 	explicit tUserConfigurationName(const tinyxml2::XMLElement*);
 
 	std::string Name; //Attribute
-	std::optional<tFolderId> FolderId;
-	std::optional<tDistinguishedFolderId> DistinguishedFolderId;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:7227
+ */
+struct tUserConfigurationDictionaryObject {
+	Enum::UserConfigurationDictionaryObjectTypesType Type;
+	std::vector<std::string> Value;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:7234
+ */
+struct tUserConfigurationDictionaryEntry {
+	tUserConfigurationDictionaryObject DictionaryKey;
+	std::optional<tUserConfigurationDictionaryObject> DictionaryValue;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:7241
+ */
+struct tUserConfigurationDictionaryType {
+	std::vector<tUserConfigurationDictionaryEntry> DictionaryEntry;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/*
+ * Types.xsd:7247
+ */
+struct tUserConfigurationType {
+	tUserConfigurationName UserConfigurationName;
+	std::optional<tItemId> ItemId;
+	std::optional<tUserConfigurationDictionaryType> Dictionary;
+	std::optional<sBase64Binary> XmlData;
+	std::optional<sBase64Binary> BinaryData;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -4095,6 +4141,12 @@ struct mGetUserConfigurationRequest {
  */
 struct mGetUserConfigurationResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "GetUserConfigurationResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+
+	std::optional<tUserConfigurationType> UserConfiguration;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
