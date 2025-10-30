@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
 // This file is part of Gromox.
 
 #pragma once
@@ -4140,6 +4140,8 @@ struct mGetUserConfigurationRequest {
  */
 struct mGetUserConfigurationResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "GetUserConfigurationResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
 
 	std::optional<tUserConfigurationType> UserConfiguration;
 
