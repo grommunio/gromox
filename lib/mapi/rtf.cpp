@@ -255,6 +255,7 @@ struct rtf_reader final {
 	const FONTENTRY *lookup_font(int) const;
 	bool build_font_table(SIMPLE_TREE_NODE *);
 	bool escape_output(char *);
+	bool push_text_encoded(const char *, size_t);
 	bool word_output_date(SIMPLE_TREE_NODE *);
 	int push_da_pic(EXT_PUSH &, const char *, const char *, const char *, const char *);
 
@@ -277,12 +278,12 @@ struct rtf_reader final {
 	bool is_within_table = false, b_printed_row_begin = false;
 	bool b_printed_cell_begin = false, b_printed_row_end = false;
 	bool b_printed_cell_end = false, b_simulate_smallcaps = false;
-	bool b_simulate_allcaps = false, b_ubytes_switch = false;
+	bool b_simulate_allcaps = false, b_ubytes_switch = true;
 	bool is_within_picture = false, have_printed_body = false;
 	bool is_within_header = true, have_ansicpg = false;
 	bool have_fromhtml = false, is_within_htmltag = false;
 	bool is_within_htmlrtf = false;
-	int coming_pars_tabular = 0, ubytes_num = 0, ubytes_left = 0;
+	int coming_pars_tabular = 0, ubytes_num = 1, ubytes_left = 0;
 	int picture_file_number = 1;
 	char picture_path[256]{};
 	int picture_width = 0, picture_height = 0, picture_bits_per_pixel = 1;
@@ -366,10 +367,16 @@ bool rtf_reader::riconv_open(const char *fromcode)
 bool rtf_reader::escape_output(char *string)
 {
 	auto preader = this;
-	int i;
-	int tmp_len;
+	size_t tmp_len = strlen(string);
+	if (ubytes_left > 0 && tmp_len > 0) {
+		auto skip = std::min<size_t>(ubytes_left, tmp_len);
+		ubytes_left -= skip;
+		if (skip >= tmp_len)
+			return true;
+		string += skip;
+		tmp_len -= skip;
+	}
 	
-	tmp_len = strlen(string);
 	if (preader->is_within_htmltag) {
 		QRF(preader->ext_push.p_bytes(string, tmp_len));
 		return true;
@@ -378,7 +385,7 @@ bool rtf_reader::escape_output(char *string)
 		HX_strupper(string);
 	if (preader->b_simulate_smallcaps)
 		HX_strlower(string);
-	for (i=0; i<tmp_len; i++) {
+	for (size_t i = 0; i < tmp_len; ++i) {
 		switch (string[i]) {
 		case '<':
 			QRF(preader->ext_push.p_bytes("&lt;", 4));
@@ -395,6 +402,23 @@ bool rtf_reader::escape_output(char *string)
 		}
 	}
 	return true;
+}
+
+bool rtf_reader::push_text_encoded(const char *string, size_t len)
+{
+	if (b_ubytes_switch && ubytes_left > 0 && len > 0) {
+		auto skip = std::min<size_t>(ubytes_left, len);
+		string += skip;
+		len -= skip;
+		ubytes_left -= skip;
+		if (len == 0)
+			return true;
+	}
+	if (len == 0)
+		return true;
+	if (iconv_push.p_bytes(string, len) != pack_result::ok)
+		return false;
+	return riconv_flush();
 }
 
 bool rtf_reader::riconv_flush()
@@ -535,6 +559,9 @@ bool rtf_reader::init_reader(const char *prtf_buff, uint32_t rtf_length,
 	if (!preader->ext_push.init(nullptr, 0, 0) ||
 	    !preader->iconv_push.init(nullptr, 0, 0))
 		return false;
+	b_ubytes_switch = true;
+	ubytes_num = 1;
+	ubytes_left = 0;
 	preader->pattachments = pattachments;
 	return true;
 }
@@ -1554,11 +1581,13 @@ bool rtf_reader::process_info_group(SIMPLE_TREE_NODE *pword)
 				if (pword2->cdata[0] != '\\') {
 					if (!riconv_flush())
 						return false;
-					if (!escape_output(pword2->cdata))
+					auto slen = strlen(pword2->cdata);
+					if (!push_text_encoded(pword2->cdata, slen))
 						return false;
 				} else if (pword2->cdata[1] == '\'') {
 					ch = rtf_decode_hex_char(&pword2->cdata[2]);
-					QRF(preader->iconv_push.p_uint8(ch));
+					if (!put_iconv_cache(ch))
+						return false;
 				}
 			}
 			if (!riconv_flush())
@@ -1573,11 +1602,13 @@ bool rtf_reader::process_info_group(SIMPLE_TREE_NODE *pword)
 				if (pword2->cdata[0] != '\\') {
 					if (!riconv_flush())
 						return false;
-					if (!escape_output(pword2->cdata))
+					auto slen = strlen(pword2->cdata);
+					if (!push_text_encoded(pword2->cdata, slen))
 						return false;
 				} else if (pword2->cdata[1] == '\'') {
 					ch = rtf_decode_hex_char(&pword2->cdata[2]);
-					QRF(preader->iconv_push.p_uint8(ch));
+					if (!put_iconv_cache(ch))
+						return false;
 				}
 			}
 			if (!riconv_flush())
@@ -2231,7 +2262,14 @@ int rtf_reader::cmd_u(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_uc(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	return astk_pushx(ATTR_UBYTES, num) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	if (!have_param)
+		num = ubytes_num != 0 ? ubytes_num : 1;
+	if (num < 0)
+		num = 0;
+	b_ubytes_switch = true;
+	ubytes_num = num;
+	ubytes_left = 0;
+	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_dn(SIMPLE_TREE_NODE *pword, int align,
@@ -2641,6 +2679,13 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 	if (!check_for_table())
 		return -EINVAL;
 	auto preader = this;
+	auto uc_prev_active = b_ubytes_switch;
+	auto uc_prev_num = ubytes_num;
+	auto uc_guard = HX::make_scope_exit([&,this]() {
+		b_ubytes_switch = uc_prev_active;
+		ubytes_num = uc_prev_num;
+		ubytes_left = 0;
+	});
 	try {
 		preader->attr_stack_list.emplace_back();
 	} catch (const std::bad_alloc &) {
@@ -2695,14 +2740,16 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 						return -ENOBUFS;
 				} else {
 					rtf_unescape_string(string);
-					preader->total_chars_in_line += strlen(string);
-					if (!escape_output(string))
+					auto slen = strlen(string);
+					total_chars_in_line += slen;
+					if (!push_text_encoded(string, slen))
 						return -ENOMEM;
 				}
 			} else if (string[1] == '\\' || string[1] == '{' || string[1] == '}') {
 				rtf_unescape_string(string);
-				preader->total_chars_in_line += strlen(string);
-				if (!escape_output(string))
+				auto slen = strlen(string);
+				total_chars_in_line += slen;
+				if (!push_text_encoded(string, slen))
 					return -EINVAL;
 			} else {
 				string ++;
