@@ -1456,7 +1456,7 @@ int fetch_detail_uid(const char *path, const std::string &folder,
 					           line_pos - (pspace + 1 - temp_line);
 					MITEM mitem;
 					if (pspace == nullptr ||
-					    !json_from_str(std::string_view(&pspace[1], temp_len), mitem.digest)) {
+					    !str_to_json(std::string_view(&pspace[1], temp_len), mitem.digest)) {
 						b_format_error = TRUE;
 					} else if (get_digest(mitem.digest, "file", mitem.mid) &&
 					    get_digest_integer(mitem.digest, "uid", mitem.uid)) {

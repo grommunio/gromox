@@ -991,7 +991,7 @@ bool get_digest(const Json::Value &jval, const char *key, char *out, size_t outm
 bool get_digest(const char *json, const char *key, char *out, size_t outmax) try
 {
 	Json::Value jval;
-	if (!gromox::json_from_str(json, jval))
+	if (!gromox::str_to_json(json, jval))
 		return false;
 	return get_digest(jval, key, out, outmax);
 } catch (const std::bad_alloc &) {
@@ -1003,7 +1003,7 @@ template<typename T> static bool
 set_digest2(char *json, size_t iomax, const char *key, T &&val) try
 {
 	Json::Value jval;
-	if (!gromox::json_from_str(json, jval))
+	if (!gromox::str_to_json(json, jval))
                 return false;
 	jval[key] = val;
 	Json::StreamWriterBuilder swb;
@@ -1456,7 +1456,7 @@ errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile,
 	return fd.close_wr();
 }
 
-bool json_from_str(std::string_view sv, Json::Value &jv)
+bool str_to_json(std::string_view sv, Json::Value &jv)
 {
 	return Json::Reader().parse(sv.data(), sv.data() + sv.size(), jv);
 }

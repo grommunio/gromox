@@ -1431,7 +1431,7 @@ static int usermap_read(const char *file, LR_map &ku, LR_map &na, LR_map &ze)
 		return EXIT_FAILURE;
 	}
 	Json::Value jval;
-	if (!json_from_str({slurp_data.get(), slurp_len}, jval) ||
+	if (!str_to_json({slurp_data.get(), slurp_len}, jval) ||
 	    !jval.isArray()) {
 		fprintf(stderr, "%s: parse error\n", file);
 		return EXIT_FAILURE;

@@ -398,7 +398,7 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 			if (eml_content == nullptr)
 				goto RFC822_FAILURE;
 			Json::Value digest;
-			if (!json_from_str(*eml_content, digest))
+			if (!str_to_json(*eml_content, digest))
 				goto RFC822_FAILURE;
 			MJSON temp_mjson;
 			if (!temp_mjson.load_from_json(digest))
@@ -677,7 +677,7 @@ BOOL MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
 			continue;
 		pjson->clear();
 		Json::Value digest;
-		if (!json_from_str(*eml_content, digest) ||
+		if (!str_to_json(*eml_content, digest) ||
 		    !pjson->load_from_json(digest))
 			return false;
 		pjson->path = temp_path;
