@@ -180,6 +180,75 @@ static bool ab_tree_resolvename(const ab_tree::ab_base &base, const char *needle
 	return false;
 }
 
+static std::string extract_domain(const char *address)
+{
+	if (address == nullptr)
+		return {};
+	const char *at = strchr(address, '@');
+	if (at == nullptr || at[1] == '\0')
+		return {};
+	std::string domain(at + 1);
+	return tolower_inplace(domain);
+}
+
+static void resolve_domain_ids(const std::string& domain, unsigned int& domain_id, unsigned int& org_id)
+{
+	if (!mysql_adaptor_get_domain_ids(domain.c_str(), &domain_id, &org_id))
+		throw DispatchError(E3027);
+}
+
+static bool is_visible_room(const sql_user& user)
+{
+	return user.dtypx == DT_ROOM && !(user.cloak_bits & AB_HIDE_FROM_GAL) && !user.username.empty();
+}
+
+static tRoomType make_room(const sql_user& user)
+{
+	tRoomType room;
+	auto &id = room.Id.emplace();
+	auto it = user.propvals.find(PR_DISPLAY_NAME);
+	if (it != user.propvals.end() && !it->second.empty())
+		id.Name = it->second;
+	else
+		id.Name = user.username;
+	id.EmailAddress = user.username;
+	id.RoutingType = "SMTP";
+	id.MailboxType = Enum::MailboxTypeType(Enum::Mailbox);
+	return room;
+}
+
+static bool collect_rooms(unsigned int domain_id, std::vector<tRoomType>* rooms=nullptr)
+{
+	std::vector<sql_user> users;
+	if (!mysql_adaptor_get_domain_users(domain_id, users))
+		throw DispatchError(E3027);
+	bool found = false;
+	if (rooms) {
+		rooms->clear();
+		rooms->reserve(users.size());
+	}
+	for (const auto &user : users) {
+		if (!is_visible_room(user))
+			continue;
+		found = true;
+		if (rooms)
+			rooms->emplace_back(make_room(user));
+		else
+			break;
+	}
+	return found;
+}
+
+static tRoomListEntry make_room_list_entry(const sql_domain& domain)
+{
+	tRoomListEntry entry;
+	entry.EmailAddress = std::string("rooms@") + domain.name;
+	entry.RoutingType = "SMTP";
+	entry.MailboxType = Enum::MailboxTypeType(Enum::PublicDL);
+	entry.Name = domain.title.empty() ? domain.name : domain.title;
+	return entry;
+}
+
 } //anonymous namespace
 ///////////////////////////////////////////////////////////////////////
 //Request implementations
@@ -1096,6 +1165,79 @@ void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSConte
 		mailTipsResponseMessage.success();
 	}
 
+	data.success();
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process GetRoomListsRequest
+ */
+void process(mGetRoomListsRequest&&, XMLElement* response, const EWSContext& ctx)
+{
+	response->SetName("m:GetRoomListsResponse");
+
+	auto user_domain = extract_domain(ctx.auth_info().username);
+	if (user_domain.empty())
+		throw DispatchError(E3090(ctx.auth_info().username));
+
+	unsigned int user_domain_id = 0, org_id = 0;
+	resolve_domain_ids(user_domain, user_domain_id, org_id);
+	(void)user_domain_id;
+
+	std::vector<unsigned int> domain_ids;
+	if (!mysql_adaptor_get_org_domains(org_id, domain_ids))
+		throw DispatchError(E3027);
+
+	mGetRoomListsResponse data;
+	std::vector<tRoomListEntry> lists;
+	lists.reserve(domain_ids.size());
+
+	for (unsigned int domain_id : domain_ids) {
+		sql_domain info;
+		if (!mysql_adaptor_get_domain_info(domain_id, info))
+			throw DispatchError(E3027);
+		if (!collect_rooms(domain_id))
+			continue;
+		lists.emplace_back(make_room_list_entry(info));
+	}
+
+	if (!lists.empty())
+		data.RoomLists = std::move(lists);
+	data.success();
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process GetRoomsRequest
+ */
+void process(mGetRoomsRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	response->SetName("m:GetRoomsResponse");
+
+	ctx.normalize(request.RoomList);
+	if (!request.RoomList.EmailAddress)
+		throw DispatchError(E3090("RoomList"));
+
+	auto user_domain = extract_domain(ctx.auth_info().username);
+	if (user_domain.empty())
+		throw DispatchError(E3090(ctx.auth_info().username));
+	unsigned int user_domain_id = 0, user_org_id = 0;
+	resolve_domain_ids(user_domain, user_domain_id, user_org_id);
+
+	auto target_domain = extract_domain(request.RoomList.EmailAddress->c_str());
+	if (target_domain.empty())
+		throw DispatchError(E3090(*request.RoomList.EmailAddress));
+	unsigned int target_domain_id = 0, target_org_id = 0;
+	resolve_domain_ids(target_domain, target_domain_id, target_org_id);
+
+	if (user_org_id != target_org_id)
+		throw EWSError::AccessDenied(E3018);
+
+	std::vector<tRoomType> rooms;
+	collect_rooms(target_domain_id, &rooms);
+
+	mGetRoomsResponse data;
+	data.Rooms = std::move(rooms);
 	data.success();
 	data.serialize(response);
 }

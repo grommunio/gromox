@@ -34,6 +34,8 @@ EWSFUNC(mGetFolderRequest);
 EWSFUNC(mGetInboxRulesRequest);
 EWSFUNC(mGetItemRequest);
 EWSFUNC(mGetMailTipsRequest);
+EWSFUNC(mGetRoomListsRequest);
+EWSFUNC(mGetRoomsRequest);
 EWSFUNC(mGetServiceConfigurationRequest);
 EWSFUNC_NC(mGetStreamingEventsRequest);
 EWSFUNC(mGetUserAvailabilityRequest);
