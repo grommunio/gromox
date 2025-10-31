@@ -1564,8 +1564,10 @@ size_t utf8_printable_prefix(const void *vinput, size_t max)
 std::string iconvtext(const char *src, size_t src_size,
     const char *from, const char *to)
 {
-	if (strcasecmp(from, to) == 0)
+	if (strcasecmp(from, to) == 0) {
+		errno = 0;
 		return {reinterpret_cast<const char *>(src), src_size};
+	}
 	auto cs = to + "//IGNORE"s;
 	auto cd = iconv_open(cs.c_str(), from);
 	if (cd == reinterpret_cast<iconv_t>(-1)) {
