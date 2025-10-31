@@ -73,12 +73,9 @@ struct dir_node {
 };
 
 class directory_list : public std::vector<dir_node> {
-	private:
-	using base = std::vector<dir_node>;
-
 	public:
 	void emplace(const char *dom, const char *path, const char *dir);
-	base::const_iterator find(const char *host, const char *uri) const;
+	std::vector<dir_node>::const_iterator find(const char *host, const char *uri) const;
 };
 
 }
