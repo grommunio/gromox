@@ -1097,7 +1097,7 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
 	void tags(sShape&, bool=true) const;
 	uint32_t tag(const sGetNameId&) const;
 
-	inline const Base& asVariant() const {return static_cast<const Base&>(*this);}
+	inline const Base &asVariant() const { return *this; }
 };
 
 /**

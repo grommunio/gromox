@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -104,7 +104,7 @@ void directory_list::emplace(const char *dom, const char *p1, const char *d1)
 		path.pop_back();
 	if (dir.size() > 0 && dir.back() == '/')
 		dir.pop_back();
-	static_cast<base &>(*this).emplace_back(dom, std::move(path), std::move(dir));
+	emplace_back(dom, std::move(path), std::move(dir));
 }
 
 std::vector<dir_node>::const_iterator directory_list::find(const char *host, const char *uri) const
