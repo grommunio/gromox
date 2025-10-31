@@ -179,6 +179,24 @@ static void add_person(vcard &card, const MESSAGE_CONTENT &msg,
 	line.append_value(value);
 }
 
+static void add_string_array(vcard &card, const STRING_ARRAY *arr,
+    const char *line_key)
+{
+	if (arr == nullptr)
+		return;
+	vcard_value *value = nullptr;
+	for (size_t i = 0; i < arr->count; ++i) {
+		auto entry = arr->ppstr[i];
+		if (!has_content(entry))
+			continue;
+		if (value == nullptr) {
+			auto &line = card.append_line(line_key);
+			value = &line.append_value();
+		}
+		value->append_subval(entry);
+	}
+}
+
 static std::string join(const char *gn, const char *mn, const char *sn)
 {
 	std::string r = znul(gn);
@@ -909,13 +927,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	
 	auto propid = PROP_ID(g_categories_proptag);
 	auto proptag = PROP_TAG(PROP_TYPE(g_categories_proptag), propids[propid - 0x8000]);
-	auto saval = pmsg->proplist.get<const STRING_ARRAY>(proptag);
-	if (saval != nullptr) {
-		auto &cat_line = vcard.append_line("CATEGORIES");
-		auto &val = cat_line.append_value();
-		for (size_t i = 0; i < saval->count; ++i)
-			val.append_subval(saval->ppstr[i]);
-	}
+	add_string_array(vcard, pmsg->proplist.get<const STRING_ARRAY>(proptag), "CATEGORIES");
 	
 	pvalue = pmsg->proplist.get<char>(PR_PROFESSION);
 	if (has_content(pvalue))
@@ -940,11 +952,8 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	pvalue = pmsg->proplist.get<char>(proptag);
 	if (has_content(pvalue))
 		vcard.append_line("X-MS-OL-DESIGN", pvalue);
-	
-	saval = pmsg->proplist.get<STRING_ARRAY>(PR_CHILDRENS_NAMES);
-	if (saval != nullptr)
-		for (size_t i = 0; i < saval->count; ++i)
-			vcard.append_line("X-MS-CHILD", saval->ppstr[i]);
+
+	add_string_array(vcard, pmsg->proplist.get<const STRING_ARRAY>(PR_CHILDRENS_NAMES), "X-MS-CHILD");
 	
 	for (size_t i = 0; i < std::size(g_ufld_proptags); ++i) {
 		propid = PROP_ID(g_ufld_proptags[i]);
@@ -983,13 +992,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	if (has_content(pvalue))
 		vcard.append_line("FBURL", pvalue);
 	
-	saval = pmsg->proplist.get<STRING_ARRAY>(PR_HOBBIES);
-	if (NULL != pvalue) {
-		auto &int_line = vcard.append_line("X-MS-INTERESTS");
-		auto &val = int_line.append_value();
-		for (size_t i = 0; i < saval->count; ++i)
-			val.append_subval(saval->ppstr[i]);
-	}
+	add_string_array(vcard, pmsg->proplist.get<const STRING_ARRAY>(PR_HOBBIES), "X-MS-INTERESTS");
 	
 	auto ba = pmsg->proplist.get<const BINARY_ARRAY>(PR_USER_X509_CERTIFICATE);
 	if (ba != nullptr && ba->count != 0) {
