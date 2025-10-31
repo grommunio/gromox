@@ -19,14 +19,11 @@
 #include <cwctype>
 #include <fcntl.h>
 #include <iconv.h>
-#include <istream>
 #include <memory>
 #include <mutex>
 #include <netdb.h>
 #include <pwd.h>
 #include <spawn.h>
-#include <sstream>
-#include <streambuf>
 #include <string>
 #include <string_view>
 #include <unistd.h>
@@ -1459,29 +1456,9 @@ errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile,
 	return fd.close_wr();
 }
 
-namespace {
-
-struct iomembuf : public std::streambuf {
-	iomembuf(const char *p, size_t z) {
-		auto q = const_cast<char *>(p);
-		setg(q, q, q + z);
-	}
-};
-
-struct imemstream : public virtual iomembuf, public std::istream {
-	imemstream(const char *p, size_t z) :
-		iomembuf(p, z),
-		std::istream(static_cast<std::streambuf *>(this))
-	{}
-};
-
-}
-
 bool json_from_str(std::string_view sv, Json::Value &jv)
 {
-	imemstream strm(sv.data(), sv.size());
-	return Json::parseFromStream(Json::CharReaderBuilder(),
-	       strm, &jv, nullptr);
+	return Json::Reader().parse(sv.data(), sv.data() + sv.size(), jv);
 }
 
 std::string json_to_str(const Json::Value &jv)
