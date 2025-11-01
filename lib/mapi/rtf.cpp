@@ -369,7 +369,7 @@ bool rtf_reader::escape_output(char *string)
 	auto preader = this;
 	size_t tmp_len = strlen(string);
 	if (ubytes_left > 0 && tmp_len > 0) {
-		auto skip = std::min<size_t>(ubytes_left, tmp_len);
+		auto skip = std::min(static_cast<size_t>(ubytes_left), tmp_len);
 		ubytes_left -= skip;
 		if (skip >= tmp_len)
 			return true;
@@ -407,7 +407,7 @@ bool rtf_reader::escape_output(char *string)
 bool rtf_reader::push_text_encoded(const char *string, size_t len)
 {
 	if (b_ubytes_switch && ubytes_left > 0 && len > 0) {
-		auto skip = std::min<size_t>(ubytes_left, len);
+		auto skip = std::min(static_cast<size_t>(ubytes_left), len);
 		string += skip;
 		len -= skip;
 		ubytes_left -= skip;
