@@ -2648,7 +2648,7 @@ struct tFolderResponseShape {
 	"All" = "all the properties used by the Exchange Business Logic layer", for whatever that means.
 	Here, it means tagsDefault + {our extra list}.
 	*/
-	static constexpr uint32_t tagsAll[] = {PR_PARENT_ENTRYID, PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME, PR_ATTR_HIDDEN, PR_ATTR_READONLY, PR_CONTAINER_FLAGS, PR_RECORD_KEY, PR_STORE_ENTRYID, PR_ACCESS, PR_ACCESS_LEVEL};
+	static constexpr uint32_t tagsAll[] = {PR_CONTAINER_CLASS, PR_PARENT_ENTRYID, PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME, PR_ATTR_HIDDEN, PR_ATTR_READONLY, PR_CONTAINER_FLAGS, PR_RECORD_KEY, PR_STORE_ENTRYID, PR_ACCESS, PR_ACCESS_LEVEL};
 	static constexpr uint32_t tagsAllRootOnly[] = {PR_IPM_SUBTREE_ENTRYID, PR_SENTMAIL_ENTRYID};
 };
 
