@@ -74,7 +74,7 @@ static ec_error_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 	else
 		ptoken = username;
 	encode_hex_int(user_id, hex_string);
-	server = fmt::format("{}{}{}{}-{}{}-{}{}-{}{}-{}{}{}@{}",
+	server = fmt::format("{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{}@{}",
 			username[0], username[1], username[2],
 			username[3], username[4], username[5], username[6],
 			username[7], username[8], username[9], username[10],
