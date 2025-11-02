@@ -170,7 +170,7 @@ static uint32_t emsmdb_interface_get_timestamp()
 	return std::chrono::duration_cast<std::chrono::seconds>(d).count() + 1230336000;
 }
 
-bool emsmdb_interface_inspect_acxh(ACXH *pacxh, std::string &username,
+bool emsmdb_interface_inspect_acxh(const ACXH *pacxh, std::string &username,
     uint16_t *pcxr, bool b_touch) try
 {
 	if (pacxh->handle_type != HANDLE_EXCHANGE_ASYNCEMSMDB)
@@ -190,7 +190,7 @@ bool emsmdb_interface_inspect_acxh(ACXH *pacxh, std::string &username,
 	return false;
 }
 
-bool emsmdb_interface_notifications_pending(ACXH &acxh)
+bool emsmdb_interface_notifications_pending(const ACXH &acxh)
 {
 	auto pacxh = &acxh;
 	if (pacxh->handle_type != HANDLE_EXCHANGE_ASYNCEMSMDB)

@@ -37,8 +37,8 @@ extern ec_error_t emsmdb_interface_connect_ex(uint64_t hrpc, CXH *, const char *
 extern ec_error_t emsmdb_interface_rpc_ext2(CXH &, uint32_t *flags, const uint8_t *in, uint32_t cb_in, uint8_t *out, uint32_t *cb_out, const uint8_t *auxin, uint32_t cb_auxin, uint8_t *auxout, uint32_t *cb_auxout, uint32_t *trans_time);
 extern ec_error_t emsmdb_interface_async_connect_ex(CXH, ACXH *);
 void emsmdb_interface_unbind_rpc_handle(uint64_t hrpc);
-extern bool emsmdb_interface_inspect_acxh(ACXH *, std::string &username, uint16_t *cxr, bool touch);
-extern bool emsmdb_interface_notifications_pending(ACXH &);
+extern bool emsmdb_interface_inspect_acxh(const ACXH *, std::string &username, uint16_t *cxr, bool touch);
+extern bool emsmdb_interface_notifications_pending(const ACXH &);
 extern void emsmdb_interface_touch_handle(const CXH &);
 extern const char *emsmdb_interface_get_username();
 extern const GUID *emsmdb_interface_get_handle();

@@ -366,7 +366,7 @@ static int exchange_async_emsmdb_dispatch(unsigned int opnum,
 		async_id = apply_async_id();
 		if (async_id == 0)
 			return DISPATCH_FAIL;
-		result = asyncemsmdb_interface_async_wait(async_id, static_cast<ECDOASYNCWAITEX_IN *>(pin), pout);
+		result = asyncemsmdb_interface_async_wait(async_id, static_cast<const ECDOASYNCWAITEX_IN *>(pin), pout);
 		if (result == DISPATCH_PENDING)
 			activate_async_id(async_id);
 		else

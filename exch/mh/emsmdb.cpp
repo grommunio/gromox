@@ -96,7 +96,7 @@ static int emsmdb_retr(int context_id);
 static void emsmdb_term(int context_id);
 static void asyncemsmdb_wakeup_proc(int context_id, BOOL b_pending);
 
-static int (*asyncemsmdb_interface_async_wait)(uint32_t async_id, ECDOASYNCWAITEX_IN *, ECDOASYNCWAITEX_OUT *);
+static int (*asyncemsmdb_interface_async_wait)(uint32_t async_id, const ECDOASYNCWAITEX_IN *, ECDOASYNCWAITEX_OUT *);
 static void (*asyncemsmdb_interface_register_active)(void *);
 static void (*asyncemsmdb_interface_remove)(CONTEXT_HANDLE *);
 

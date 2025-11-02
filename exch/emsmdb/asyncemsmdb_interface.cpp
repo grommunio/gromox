@@ -134,7 +134,7 @@ void asyncemsmdb_interface_free()
 }
 
 int asyncemsmdb_interface_async_wait(uint32_t async_id,
-    ECDOASYNCWAITEX_IN *pin, ECDOASYNCWAITEX_OUT *pout)
+    const ECDOASYNCWAITEX_IN *pin, ECDOASYNCWAITEX_OUT *pout)
 {
 	auto cl_fail = HX::make_scope_exit([&]() {
 		pout->flags_out = 0;
