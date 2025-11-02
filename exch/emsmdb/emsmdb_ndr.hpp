@@ -35,26 +35,27 @@ enum {
 struct NDR_PULL;
 struct NDR_PUSH;
 
-struct ECDOASYNCWAITEX_IN {
+/* warning: replicated from emsmdb/emsmdb.cpp, definitions must match! */
+struct ECDOASYNCWAITEX_IN final : public rpc_request {
 	ACXH acxh;
 	uint32_t flags_in;
 };
 
-struct ECDOASYNCWAITEX_OUT {
+struct ECDOASYNCWAITEX_OUT final : public rpc_response {
 	uint32_t flags_out;
 	ec_error_t result;
 };
 
-struct ECDODISCONNECT_IN {
+struct ECDODISCONNECT_IN final : public rpc_request {
 	CXH cxh;
 };
 
-struct ECDODISCONNECT_OUT {
+struct ECDODISCONNECT_OUT final : public rpc_response {
 	CXH cxh;
 	ec_error_t result;
 };
 
-struct ECRREGISTERPUSHNOTIFICATION_IN {
+struct ECRREGISTERPUSHNOTIFICATION_IN final : public rpc_request {
 	CXH cxh;
 	uint32_t rpc;
 	uint8_t *pctx;
@@ -64,17 +65,17 @@ struct ECRREGISTERPUSHNOTIFICATION_IN {
 	uint16_t cb_addr;
 };
 
-struct ECDUMMYRPC_OUT {
+struct ECDUMMYRPC_OUT final : public rpc_response {
 	ec_error_t result;
 };
 
-struct ECRREGISTERPUSHNOTIFICATION_OUT {
+struct ECRREGISTERPUSHNOTIFICATION_OUT final : public rpc_response {
 	CXH cxh;
 	uint32_t hnotification;
 	ec_error_t result;
 };
 
-struct ECDOCONNECTEX_IN {
+struct ECDOCONNECTEX_IN final : public rpc_request {
 	char puserdn[1024];
 	uint32_t flags;
 	uint32_t conmod;
@@ -91,7 +92,7 @@ struct ECDOCONNECTEX_IN {
 	uint32_t cb_auxout;
 };
 
-struct ECDOCONNECTEX_OUT {
+struct ECDOCONNECTEX_OUT final : public rpc_response {
 	CXH cxh;
 	uint32_t max_polls;
 	uint32_t max_retry;
@@ -107,7 +108,7 @@ struct ECDOCONNECTEX_OUT {
 	ec_error_t result;
 };
 
-struct ECDORPCEXT2_IN {
+struct ECDORPCEXT2_IN final : public rpc_request {
 	CXH cxh;
 	uint32_t flags;
 	uint8_t *pin;
@@ -118,7 +119,7 @@ struct ECDORPCEXT2_IN {
 	uint32_t cb_auxout;
 };
 
-struct ECDORPCEXT2_OUT {
+struct ECDORPCEXT2_OUT final : public rpc_response {
 	CXH cxh;
 	uint32_t flags;
 	uint8_t pout[0x40000];
@@ -129,11 +130,11 @@ struct ECDORPCEXT2_OUT {
 	ec_error_t result;
 };
 
-struct ECDOASYNCCONNECTEX_IN {
+struct ECDOASYNCCONNECTEX_IN final : public rpc_request {
 	CXH cxh;
 };
 
-struct ECDOASYNCCONNECTEX_OUT {
+struct ECDOASYNCCONNECTEX_OUT final : public rpc_response {
 	ACXH acxh;
 	ec_error_t result;
 };

@@ -53,12 +53,16 @@ enum {
 	HANDLE_EXCHANGE_ASYNCEMSMDB = 3,
 };
 
-struct ECDOASYNCWAITEX_IN {
-	CONTEXT_HANDLE acxh;
+using rpc_request = gromox::universal_base;
+using rpc_response = gromox::universal_base;
+
+/* warning: replicated in mh/emsmdb.cpp, definitions must match! */
+struct ECDOASYNCWAITEX_IN final : public rpc_request {
+	ACXH acxh;
 	uint32_t flags_in;
 };
 
-struct ECDOASYNCWAITEX_OUT {
+struct ECDOASYNCWAITEX_OUT final : public rpc_response {
 	uint32_t flags_out; ///< record context_id in the variable for asyncemsmdb_wakeup_proc
 	int32_t result;
 };

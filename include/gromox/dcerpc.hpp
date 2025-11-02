@@ -25,6 +25,9 @@ struct GX_EXPORT DCERPC_INFO {
 	uint32_t stat_flags = 0; /* state flags of rpc context */
 };
 
+using rpc_request = gromox::universal_base;
+using rpc_response = gromox::universal_base;
+
 struct DCERPC_INTERFACE {
 	char name[128]{};
 	GUID uuid{};

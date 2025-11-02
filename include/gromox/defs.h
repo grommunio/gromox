@@ -113,6 +113,10 @@ static inline constexpr bool is_nameprop_id(unsigned int i) { return i >= 0x8000
 
 namespace gromox {
 
+struct GX_EXPORT universal_base {
+	virtual ~universal_base() = default;
+};
+
 static constexpr uint32_t SEQ_STAR = -1;
 
 struct GX_EXPORT seq_node {
