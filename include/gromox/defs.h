@@ -123,13 +123,32 @@ struct GX_EXPORT seq_node {
 struct GX_EXPORT stdlib_delete {
 	inline void operator()(void *x) const { free(x); }
 };
-template<typename T> static inline T *me_alloc() {
-	static_assert(std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
-	return static_cast<T *>(malloc(sizeof(T)));
+template<typename T> static inline T *me_alloc()
+{
+	static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
+	auto t = static_cast<T *>(malloc(sizeof(T)));
+	if (t == nullptr)
+		return nullptr;
+	try {
+		new(t) T;
+	} catch (...) {
+		free(t);
+		throw;
+	}
+	return t;
 }
-template<typename T> static inline T *me_alloc(size_t elem) {
-	static_assert(std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
-	return static_cast<T *>(malloc(sizeof(T) * elem));
+template<typename T> static inline T *me_alloc(size_t elem)
+{
+	static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
+	auto t = static_cast<T *>(malloc(sizeof(T) * elem));
+	try {
+		for (size_t i = 0; i < elem; ++i)
+			new(&t[i]) T;
+	} catch (...) {
+		free(t);
+		throw;
+	}
+	return t;
 }
 template<typename T> static inline T *re_alloc(void *x) {
 	static_assert(std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);

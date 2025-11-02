@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -158,7 +158,6 @@ static pack_result exchange_rfr_ndr_pull(unsigned int opnum, NDR_PULL &x, void *
 		prfr = ndr_stack_anew<RFRGETNEWDSA_IN>(NDR_STACK_IN);
 		if (prfr == nullptr)
 			return pack_result::alloc;
-		memset(prfr, 0, sizeof(RFRGETNEWDSA_IN));
 		TRY(x.g_uint32(&prfr->flags));
 		TRY(x.g_ulong(&size));
 		TRY(x.g_ulong(&offset));
@@ -207,7 +206,6 @@ static pack_result exchange_rfr_ndr_pull(unsigned int opnum, NDR_PULL &x, void *
 		prfr_dn = ndr_stack_anew<RFRGETFQDNFROMLEGACYDN_IN>(NDR_STACK_IN);
 		if (prfr_dn == nullptr)
 			return pack_result::alloc;
-		memset(prfr_dn, 0, sizeof(RFRGETFQDNFROMLEGACYDN_IN));
 		TRY(x.g_uint32(&prfr_dn->flags));
 		TRY(x.g_uint32(&prfr_dn->cb));
 		if (prfr_dn->cb < 10 || prfr_dn->cb > 1024)
