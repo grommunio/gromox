@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <condition_variable>
 #include <csignal>
@@ -33,15 +33,13 @@ using namespace gromox;
 namespace {
 
 struct ASYNC_WAIT {
-	DOUBLE_LIST_NODE node;
-	time_t wait_time;
-	char username[UADDR_SIZE];
-	uint16_t cxr;
-	uint32_t async_id;
-	union {
-		ECDOASYNCWAITEX_OUT *pout;
-		int context_id; /* when async_id is 0 */
-	} out_payload;
+	DOUBLE_LIST_NODE node{};
+	time_t wait_time = 0;
+	char username[UADDR_SIZE]{};
+	uint16_t cxr = 0;
+	uint32_t async_id = 0;
+	ECDOASYNCWAITEX_OUT *pout = nullptr;
+	int context_id = 0; /* when async_id is 0 */
 };
 
 }
@@ -165,10 +163,13 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	pwait->async_id = async_id;
 	HX_strlower(pwait->username);
 	pwait->wait_time = time(nullptr);
-	if (async_id == 0)
-		pwait->out_payload.context_id = pout->flags_out;
-	else
-		pwait->out_payload.pout = pout;
+	if (async_id == 0) {
+		pwait->context_id = pout->flags_out;
+		pwait->pout = nullptr;
+	} else {
+		pwait->context_id = 0;
+		pwait->pout = pout;
+	}
 	snprintf(tmp_tag, std::size(tmp_tag), "%s:%d", pwait->username,
 	         static_cast<int>(pwait->cxr));
 	HX_strlower(tmp_tag);
@@ -247,11 +248,11 @@ static void asyncemsmdb_interface_activate(
 	ASYNC_WAIT *pwait, BOOL b_pending)
 {
 	if (0 == pwait->async_id) {
-		active_hpm_context(pwait->out_payload.context_id, b_pending);
+		active_hpm_context(pwait->context_id, b_pending);
 	} else if (rpc_build_environment(pwait->async_id)) {
-		pwait->out_payload.pout->result = ecSuccess;
-		pwait->out_payload.pout->flags_out = b_pending ? FLAG_NOTIFICATION_PENDING : 0;
-		async_reply(pwait->async_id, pwait->out_payload.pout);
+		pwait->pout->result = ecSuccess;
+		pwait->pout->flags_out = b_pending ? FLAG_NOTIFICATION_PENDING : 0;
+		async_reply(pwait->async_id, pwait->pout);
 	}
 	delete pwait;
 }
