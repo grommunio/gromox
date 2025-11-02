@@ -52,51 +52,7 @@ struct RFRGETFQDNFROMLEGACYDN_OUT final : public rpc_response {
 
 }
 
-static pack_result exchange_rfr_ndr_pull(unsigned int op, NDR_PULL &, std::unique_ptr<rpc_request> &);
-static int exchange_rfr_dispatch(unsigned int op, const GUID *obj, uint64_t handle, const rpc_request *, std::unique_ptr<rpc_response> &, ec_error_t *);
-static pack_result exchange_rfr_ndr_push(unsigned int op, NDR_PUSH &, const rpc_response *);
-
 static DCERPC_ENDPOINT *ep_6001, *ep_6002;
-
-static constexpr DCERPC_INTERFACE interface = {
-	"exchangeRFR",
-	/* {1544f5e0-613c-11d1-93df-00c04fd7bd09} */
-	{0x1544f5e0, 0x613c, 0x11d1, {0x93, 0xdf}, {0x00, 0xc0, 0x4f, 0xd7, 0xbd, 0x09}},
-	1, exchange_rfr_ndr_pull, exchange_rfr_dispatch, exchange_rfr_ndr_push,
-};
-
-BOOL PROC_exchange_rfr(enum plugin_op reason, const struct dlfuncs &ppdata)
-{
-	if (reason == PLUGIN_FREE) {
-		unregister_interface(ep_6002, &interface);
-		unregister_interface(ep_6001, &interface);
-		return TRUE;
-	}
-	/* path contains the config files directory */
-	switch (reason) {
-	case PLUGIN_INIT: {
-		LINK_PROC_API(ppdata);
-		ep_6001 = register_endpoint("*", 6001);
-		if (ep_6001 == nullptr) {
-			mlog(LV_ERR, "rfr: failed to register endpoint with port 6001");
-			return FALSE;
-		}
-		ep_6002 = register_endpoint("*", 6002);
-		if (ep_6002 == nullptr) {
-			mlog(LV_ERR, "rfr: failed to register endpoint with port 6002");
-			return FALSE;
-		}
-		if (!register_interface(ep_6001, &interface) ||
-		    !register_interface(ep_6002, &interface)) {
-			mlog(LV_ERR, "rfr: failed to register interface");
-			return FALSE;
-		}
-		return TRUE;
-	}
-	default:
-		return TRUE;
-	}
-}
 
 static ec_error_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
     std::string &server)
@@ -292,4 +248,43 @@ static pack_result exchange_rfr_ndr_push(unsigned int opnum, NDR_PUSH &x,
 	}
 	}
 	return pack_result::ok;
+}
+
+static constexpr DCERPC_INTERFACE interface = {
+	"exchangeRFR",
+	/* {1544f5e0-613c-11d1-93df-00c04fd7bd09} */
+	{0x1544f5e0, 0x613c, 0x11d1, {0x93, 0xdf}, {0x00, 0xc0, 0x4f, 0xd7, 0xbd, 0x09}},
+	1, exchange_rfr_ndr_pull, exchange_rfr_dispatch, exchange_rfr_ndr_push,
+};
+
+BOOL PROC_exchange_rfr(enum plugin_op reason, const struct dlfuncs &ppdata)
+{
+	/* path contains the config files directory */
+	switch (reason) {
+	case PLUGIN_FREE:
+		unregister_interface(ep_6002, &interface);
+		unregister_interface(ep_6001, &interface);
+		return TRUE;
+	case PLUGIN_INIT: {
+		LINK_PROC_API(ppdata);
+		ep_6001 = register_endpoint("*", 6001);
+		if (ep_6001 == nullptr) {
+			mlog(LV_ERR, "rfr: failed to register endpoint with port 6001");
+			return FALSE;
+		}
+		ep_6002 = register_endpoint("*", 6002);
+		if (ep_6002 == nullptr) {
+			mlog(LV_ERR, "rfr: failed to register endpoint with port 6002");
+			return FALSE;
+		}
+		if (!register_interface(ep_6001, &interface) ||
+		    !register_interface(ep_6002, &interface)) {
+			mlog(LV_ERR, "rfr: failed to register interface");
+			return FALSE;
+		}
+		return TRUE;
+	}
+	default:
+		return TRUE;
+	}
 }
