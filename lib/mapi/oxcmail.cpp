@@ -511,9 +511,7 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 		return FALSE;
 	tmp_entry.flags = 0;
 	tmp_entry.version = 0;
-	tmp_entry.pdisplay_name = email_addr.display_name;
 	tmp_entry.paddress_type = deconst("SMTP");
-	tmp_entry.pmail_address = email_addr.addr;
 	/* Ensure the fields are a classic array and thus do not change address */
 	static_assert(std::size(email_addr.display_name) > 0);
 	static_assert(std::size(email_addr.addr) > 0);
@@ -541,6 +539,8 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 		uint32_t offset1 = ext_push.m_offset;
 		if (ext_push.advance(sizeof(uint32_t)) != pack_result::ok)
 			return FALSE;
+		tmp_entry.pmail_address = email_addr.addr;
+		tmp_entry.pdisplay_name = email_addr.display_name;
 		tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
 		auto status = ext_push.p_oneoff_eid(tmp_entry);
 		if (status == pack_result::charconv) {
