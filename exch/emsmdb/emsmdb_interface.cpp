@@ -170,8 +170,8 @@ static uint32_t emsmdb_interface_get_timestamp()
 	return std::chrono::duration_cast<std::chrono::seconds>(d).count() + 1230336000;
 }
 
-bool emsmdb_interface_inspect_acxh(ACXH *pacxh, char *username, size_t ulen,
-    uint16_t *pcxr, bool b_touch)
+bool emsmdb_interface_inspect_acxh(ACXH *pacxh, std::string &username,
+    uint16_t *pcxr, bool b_touch) try
 {
 	if (pacxh->handle_type != HANDLE_EXCHANGE_ASYNCEMSMDB)
 		return FALSE;
@@ -182,9 +182,12 @@ bool emsmdb_interface_inspect_acxh(ACXH *pacxh, char *username, size_t ulen,
 	auto phandle = &iter->second;
 	if (b_touch)
 		phandle->last_time = tp_now();
-	gx_strlcpy(username, phandle->username, ulen);
+	username = phandle->username;
 	*pcxr = phandle->cxr;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 bool emsmdb_interface_notifications_pending(ACXH &acxh)
@@ -632,10 +635,9 @@ static bool enable_rop_chaining(uint16_t v[4])
 ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 	const uint8_t *pin, uint32_t cb_in, uint8_t *pout, uint32_t *pcb_out,
 	const uint8_t *pauxin, uint32_t cb_auxin, uint8_t *pauxout,
-	uint32_t *pcb_auxout, uint32_t *ptrans_time)
+	uint32_t *pcb_auxout, uint32_t *ptrans_time) try
 {
 	auto pcxh = &cxh;
-	uint16_t cxr;
 	char username[UADDR_SIZE];
 	HANDLE_DATA *phandle;
 	auto input_flags = *pflags;
@@ -690,13 +692,14 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 		input_flags &= ~GROMOX_READSTREAM_NOCHAIN;
 	else
 		input_flags |= GROMOX_READSTREAM_NOCHAIN;
+
 	auto result = rop_processor_proc(input_flags, pin, cb_in, pout, pcb_out);
-	gx_strlcpy(username, phandle->username, std::size(username));
-	cxr = phandle->cxr;
+	std::string usrname = phandle->username;
+	uint16_t cxr = phandle->cxr;
 	BOOL b_wakeup = double_list_get_nodes_num(&phandle->notify_list) == 0 ? false : TRUE;
 	emsmdb_interface_put_handle_data(phandle);
 	if (b_wakeup)
-		asyncemsmdb_interface_wakeup(username, cxr);
+		asyncemsmdb_interface_wakeup(std::move(username), cxr);
 	g_handle_key = nullptr;
 	if (result != ecSuccess) {
 		*pcb_out = 0;
@@ -704,6 +707,9 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 	}
 	*ptrans_time = std::chrono::duration_cast<std::chrono::milliseconds>(tp_now() - first_time).count();
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 	
 ec_error_t emsmdb_interface_async_connect_ex(CXH cxh, ACXH *pacxh)
@@ -1030,13 +1036,13 @@ static BOOL emsmdb_interface_merge_folder_modified(
 }
 
 void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
-	uint32_t notify_id, const DB_NOTIFY *pdb_notify)
+    uint32_t notify_id, const DB_NOTIFY *pdb_notify) try
 {
 	CXH cxh;
 	uint16_t cxr;
 	uint8_t logon_id;
 	BOOL b_processing;
-	char username[UADDR_SIZE];
+	std::string username;
 	uint32_t obj_handle;
 	HANDLE_DATA *phandle;
 	DOUBLE_LIST_NODE *pnode;
@@ -1068,11 +1074,11 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		b_processing = phandle->b_processing;
 		if (!b_processing) {
 			cxr = phandle->cxr;
-			gx_strlcpy(username, phandle->username, std::size(username));
+			username = phandle->username;
 		}
 		emsmdb_interface_put_handle_notify_list(phandle);
 		if (!b_processing)
-			asyncemsmdb_interface_wakeup(username, cxr);
+			asyncemsmdb_interface_wakeup(std::move(username), cxr);
 		return;
 	case db_notify_type::message_modified:
 		if (!emsmdb_interface_merge_message_modified(
@@ -1100,7 +1106,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	}
 	ems_high_pending_sesnotif = std::max(ems_high_pending_sesnotif, notifnum);
 	cxr = phandle->cxr;
-	gx_strlcpy(username, phandle->username, std::size(username));
+	username = phandle->username;
 	pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		emsmdb_interface_put_handle_notify_list(phandle);
@@ -1128,7 +1134,9 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		free(pnode);
 	}
 	if (!b_processing)
-		asyncemsmdb_interface_wakeup(username, cxr);
+		asyncemsmdb_interface_wakeup(std::move(username), cxr);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 static void *emsi_scanwork(void *pparam)

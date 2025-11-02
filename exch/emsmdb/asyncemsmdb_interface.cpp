@@ -35,7 +35,7 @@ namespace {
 
 struct ASYNC_WAIT {
 	time_t wait_time = 0;
-	char username[UADDR_SIZE]{};
+	std::string username;
 	uint16_t cxr = 0;
 	uint32_t async_id = 0;
 	ECDOASYNCWAITEX_OUT *pout = nullptr;
@@ -136,7 +136,6 @@ void asyncemsmdb_interface_free()
 int asyncemsmdb_interface_async_wait(uint32_t async_id,
     ECDOASYNCWAITEX_IN *pin, ECDOASYNCWAITEX_OUT *pout)
 {
-	char tmp_tag[TAG_SIZE];
 	auto cl_fail = HX::make_scope_exit([&]() {
 		pout->flags_out = 0;
 		pout->result = ecRejected;
@@ -145,13 +144,13 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	auto pwait = std::make_shared<ASYNC_WAIT>();
 	auto rpc_info = get_rpc_info();
 	if (!emsmdb_interface_inspect_acxh(&pin->acxh, pwait->username,
-	    std::size(pwait->username), &pwait->cxr, true) ||
-	    strcasecmp(rpc_info.username, pwait->username) != 0)
+	    &pwait->cxr, true) ||
+	    strcasecmp(rpc_info.username, pwait->username.c_str()) != 0)
 		return DISPATCH_SUCCESS;
 	if (emsmdb_interface_notifications_pending(pin->acxh))
 		return DISPATCH_SUCCESS;
 	pwait->async_id = async_id;
-	HX_strlower(pwait->username);
+	HX_strlower(pwait->username.data());
 	pwait->wait_time = time(nullptr);
 	if (async_id == 0) {
 		pwait->context_id = pout->flags_out;
@@ -160,13 +159,12 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		pwait->context_id = 0;
 		pwait->pout = pout;
 	}
-	snprintf(tmp_tag, std::size(tmp_tag), "%s:%d", pwait->username,
-	         static_cast<int>(pwait->cxr));
-	HX_strlower(tmp_tag);
+	auto tag = pwait->username + ":" + std::to_string(pwait->cxr);
+	HX_strlower(tag.data());
 	std::unique_lock as_hold(g_async_lock);
 	if (async_id == 0) {
 		if (g_tag_hash.size() < g_tag_hash_max &&
-		    g_tag_hash.emplace(tmp_tag, pwait).second) {
+		    g_tag_hash.emplace(tag, pwait).second) {
 			/* actual "success" case */
 			cl_fail.release();
 			return DISPATCH_PENDING;
@@ -181,7 +179,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		return DISPATCH_SUCCESS;
 	auto cl_fail2 = HX::make_scope_exit([&]() { g_async_hash.erase(async_id); });
 	if (g_tag_hash.size() >= g_tag_hash_max &&
-	    g_tag_hash.emplace(tmp_tag, pwait).second) {
+	    g_tag_hash.emplace(tag, pwait).second) {
 		/* actual success case */
 		cl_fail2.release();
 		cl_fail.release();
@@ -190,42 +188,41 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	return DISPATCH_SUCCESS;
 }
 
-void asyncemsmdb_interface_reclaim(uint32_t async_id)
+void asyncemsmdb_interface_reclaim(uint32_t async_id) try
 {
-	char tmp_tag[TAG_SIZE];
-	
 	std::unique_lock as_hold(g_async_lock);
 	auto iter = g_async_hash.find(async_id);
 	if (iter == g_async_hash.end())
 		return;
 	auto pwait = iter->second;
-	snprintf(tmp_tag, std::size(tmp_tag), "%s:%d", pwait->username,
-	         static_cast<int>(pwait->cxr));
-	HX_strlower(tmp_tag);
-	g_tag_hash.erase(tmp_tag);
+	auto tag = pwait->username + ":" + std::to_string(pwait->cxr);
+	HX_strlower(tag.data());
+	g_tag_hash.erase(tag.data());
 	g_async_hash.erase(async_id);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 /* called by moh_emsmdb module */
-void asyncemsmdb_interface_remove(ACXH *pacxh)
+void asyncemsmdb_interface_remove(ACXH *pacxh) try
 {
 	uint16_t cxr;
-	char tmp_tag[TAG_SIZE];
-	char username[UADDR_SIZE];
+	std::string tag;
 
-	if (!emsmdb_interface_inspect_acxh(pacxh, username, std::size(username),
-	    &cxr, false))
+	if (!emsmdb_interface_inspect_acxh(pacxh, tag, &cxr, false))
 		return;
-	snprintf(tmp_tag, std::size(tmp_tag), "%s:%d", username, cxr);
-	HX_strlower(tmp_tag);
+	tag += ":" + std::to_string(cxr);
+	HX_strlower(tag.data());
 	std::unique_lock as_hold(g_async_lock);
-	auto iter = g_tag_hash.find(tmp_tag);
+	auto iter = g_tag_hash.find(std::move(tag));
 	if (iter == g_tag_hash.cend())
 		return;
 	auto pwait = iter->second;
 	if (pwait->async_id != 0)
 		g_async_hash.erase(pwait->async_id);
 	g_tag_hash.erase(iter);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 static void asyncemsmdb_interface_activate(std::shared_ptr<ASYNC_WAIT> &&pwait, bool b_pending)
@@ -239,15 +236,13 @@ static void asyncemsmdb_interface_activate(std::shared_ptr<ASYNC_WAIT> &&pwait, 
 	}
 }
 
-void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
+void asyncemsmdb_interface_wakeup(std::string &&tag, uint16_t cxr) try
 {
-	char tmp_tag[TAG_SIZE];
-	
-	snprintf(tmp_tag, std::size(tmp_tag), "%s:%d",
-	         username, static_cast<int>(cxr));
-	HX_strlower(tmp_tag);
+	tag += ":";
+	tag += std::to_string(cxr);
+	HX_strlower(tag.data());
 	std::unique_lock as_hold(g_async_lock);
-	auto iter = g_tag_hash.find(tmp_tag);
+	auto iter = g_tag_hash.find(std::move(tag));
 	if (iter == g_tag_hash.cend())
 		return;
 	auto pwait = iter->second;
@@ -259,6 +254,8 @@ void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
 	g_wakeup_list.emplace_back(std::move(pwait));
 	ll_hold.unlock();
 	g_waken_cond.notify_one();
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 static void *aemsi_thrwork(void *param)
