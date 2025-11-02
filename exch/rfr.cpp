@@ -27,26 +27,25 @@ enum {
 namespace {
 
 struct RFRGETNEWDSA_IN {
-	uint32_t flags;
-	char puserdn[1024];
-	char punused[256];
-	char pserver[256];
+	uint32_t flags = 0;
+	char puserdn[1024]{};
+	char punused[256]{};
+	char pserver[256]{};
 };
 
 struct RFRGETNEWDSA_OUT {
 	std::string pserver;
-	uint32_t result;
+	uint32_t result = 0;
 };
 
 struct RFRGETFQDNFROMLEGACYDN_IN {
-	uint32_t flags;
-	uint32_t cb;
-	char mbserverdn[1024];
+	uint32_t flags = 0, cb = 0;
+	char mbserverdn[1024]{};
 };
 
 struct RFRGETFQDNFROMLEGACYDN_OUT {
 	std::string serverfqdn;
-	uint32_t result;
+	uint32_t result = 0;
 };
 
 }
