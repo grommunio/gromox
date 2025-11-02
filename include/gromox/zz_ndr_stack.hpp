@@ -8,6 +8,7 @@ namespace ZZNDR_NS {
  */
 template<typename T> T *ndr_stack_anew(unsigned int dir)
 {
+	static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
 	auto t = static_cast<T *>(ndr_stack_alloc(dir, sizeof(T)));
 	if (t != nullptr)
 		new(t) T;
@@ -16,6 +17,7 @@ template<typename T> T *ndr_stack_anew(unsigned int dir)
 
 template<typename T> T *ndr_stack_anew(unsigned int dir, size_t elem)
 {
+	static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
 	auto t = static_cast<T *>(ndr_stack_alloc(dir, sizeof(T) * elem));
 	if (t == nullptr)
 		return nullptr;
