@@ -31,6 +31,9 @@ pack_result asyncemsmdb_ndr_pull(unsigned int opnum, NDR_PULL &x, void **ppin)
 	default:
 		return pack_result::bad_switch;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return pack_result::alloc;
 }
 
 pack_result asyncemsmdb_ndr_push(unsigned int opnum, NDR_PUSH &x, const void *r)
@@ -282,6 +285,9 @@ pack_result emsmdb_ndr_pull(unsigned int opnum, NDR_PULL &x, void **ppin)
 	default:
 		return pack_result::bad_switch;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return pack_result::alloc;
 }
 
 pack_result emsmdb_ndr_push(unsigned int opnum, NDR_PUSH &x, const void *r)

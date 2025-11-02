@@ -221,6 +221,9 @@ static pack_result exchange_rfr_ndr_pull(unsigned int opnum, NDR_PULL &x, void *
 	default:
 		return pack_result::bad_switch;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return pack_result::alloc;
 }
 
 static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
@@ -262,6 +265,9 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 	default:
 		return DISPATCH_FAIL;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return DISPATCH_FAIL;
 }
 
 static pack_result exchange_rfr_ndr_push(unsigned int opnum, NDR_PUSH &x, const void *pout)

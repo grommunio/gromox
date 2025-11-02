@@ -377,6 +377,9 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 	default:
 		return DISPATCH_FAIL;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return DISPATCH_FAIL;
 }
 
 static void exchange_nsp_unbind(uint64_t handle)

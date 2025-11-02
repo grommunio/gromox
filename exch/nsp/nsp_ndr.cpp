@@ -2265,6 +2265,9 @@ pack_result exchange_nsp_ndr_pull(unsigned int opnum, NDR_PULL &x, void **ppin)
 		return pack_result::bad_switch;
 	}
 #undef H
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return pack_result::alloc;
 }
 
 pack_result exchange_nsp_ndr_push(unsigned int opnum, NDR_PUSH &x, const void *pout)

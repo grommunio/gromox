@@ -343,6 +343,9 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 	default:
 		return DISPATCH_FAIL;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return DISPATCH_FAIL;
 }
 
 static void exchange_emsmdb_unbind(uint64_t handle)
@@ -377,6 +380,9 @@ static int exchange_async_emsmdb_dispatch(unsigned int opnum,
 	default:
 		return DISPATCH_FAIL;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return DISPATCH_FAIL;
 }
 
 static void exchange_async_emsmdb_reclaim(uint32_t async_id)
