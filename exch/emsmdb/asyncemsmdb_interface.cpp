@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <vector>
 #include <libHX/defs.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
@@ -33,7 +34,6 @@ using namespace gromox;
 namespace {
 
 struct ASYNC_WAIT {
-	DOUBLE_LIST_NODE node{};
 	time_t wait_time = 0;
 	char username[UADDR_SIZE]{};
 	uint16_t cxr = 0;
@@ -49,13 +49,13 @@ static unsigned int g_threads_num;
 static pthread_t g_scan_id;
 static std::vector<pthread_t> g_thread_ids;
 static gromox::atomic_bool g_notify_stop{true};
-static DOUBLE_LIST g_wakeup_list;
-static std::unordered_map<std::string, ASYNC_WAIT *> g_tag_hash;
+static std::vector<std::shared_ptr<ASYNC_WAIT>> g_wakeup_list;
+static std::unordered_map<std::string, std::shared_ptr<ASYNC_WAIT>> g_tag_hash;
 static size_t g_tag_hash_max;
 static std::mutex g_list_lock; /* protects g_wakeup_list */
 static std::mutex g_async_lock; /* protects g_tag_hash & g_async_hash */
 static std::condition_variable g_waken_cond;
-static std::unordered_map<int, ASYNC_WAIT *> g_async_hash;
+static std::unordered_map<int, std::shared_ptr<ASYNC_WAIT>> g_async_hash;
 
 static void *aemsi_scanwork(void *);
 static void *aemsi_thrwork(void *);
@@ -72,7 +72,6 @@ void asyncemsmdb_interface_init(unsigned int threads_num)
 {
 	g_threads_num = threads_num;
 	g_thread_ids.reserve(threads_num);
-	double_list_init(&g_wakeup_list);
 }
 
 int asyncemsmdb_interface_run()
@@ -131,36 +130,26 @@ void asyncemsmdb_interface_stop()
 
 void asyncemsmdb_interface_free()
 {
-	double_list_free(&g_wakeup_list);
+	g_wakeup_list.clear();
 }
 
 int asyncemsmdb_interface_async_wait(uint32_t async_id,
-	ECDOASYNCWAITEX_IN *pin, ECDOASYNCWAITEX_OUT *pout)
+    ECDOASYNCWAITEX_IN *pin, ECDOASYNCWAITEX_OUT *pout)
 {
 	char tmp_tag[TAG_SIZE];
-	
-	auto pwait = new ASYNC_WAIT();
-	if (NULL == pwait) {
+	auto cl_fail = HX::make_scope_exit([&]() {
 		pout->flags_out = 0;
 		pout->result = ecRejected;
-		return DISPATCH_SUCCESS;
-	}
+	});
+
+	auto pwait = std::make_shared<ASYNC_WAIT>();
 	auto rpc_info = get_rpc_info();
 	if (!emsmdb_interface_inspect_acxh(&pin->acxh, pwait->username,
 	    std::size(pwait->username), &pwait->cxr, true) ||
-		0 != strcasecmp(rpc_info.username, pwait->username)) {
-		delete pwait;
-		pout->flags_out = 0;
-		pout->result = ecRejected;
+	    strcasecmp(rpc_info.username, pwait->username) != 0)
 		return DISPATCH_SUCCESS;
-	}
-	if (emsmdb_interface_notifications_pending(pin->acxh)) {
-		delete pwait;
-		pout->flags_out = FLAG_NOTIFICATION_PENDING;
-		pout->result = ecSuccess;
+	if (emsmdb_interface_notifications_pending(pin->acxh))
 		return DISPATCH_SUCCESS;
-	}
-	pwait->node.pdata = pwait;
 	pwait->async_id = async_id;
 	HX_strlower(pwait->username);
 	pwait->wait_time = time(nullptr);
@@ -175,32 +164,29 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	         static_cast<int>(pwait->cxr));
 	HX_strlower(tmp_tag);
 	std::unique_lock as_hold(g_async_lock);
-	if (async_id != 0) try {
-		if (g_async_hash.size() >= 2 * get_context_num())
-			throw std::bad_alloc();
-		auto pair = g_async_hash.emplace(async_id, pwait);
-		if (!pair.second)
-			throw std::bad_alloc();
-	} catch (const std::bad_alloc &) {
-		as_hold.unlock();
-		delete pwait;
-		pout->flags_out = 0;
-		pout->result = ecRejected;
+	if (async_id == 0) {
+		if (g_tag_hash.size() < g_tag_hash_max &&
+		    g_tag_hash.emplace(tmp_tag, pwait).second) {
+			/* actual "success" case */
+			cl_fail.release();
+			return DISPATCH_PENDING;
+		}
 		return DISPATCH_SUCCESS;
 	}
-	try {
-		if (g_tag_hash.size() < g_tag_hash_max &&
-		    g_tag_hash.emplace(tmp_tag, pwait).second)
-			return DISPATCH_PENDING;
-	} catch (const std::bad_alloc &) {
-		mlog(LV_WARN, "W-1540: ENOMEM");
+
+	if (g_async_hash.size() >= 2 * get_context_num())
+		return DISPATCH_SUCCESS;
+	auto pair = g_async_hash.emplace(async_id, pwait);
+	if (!pair.second)
+		return DISPATCH_SUCCESS;
+	auto cl_fail2 = HX::make_scope_exit([&]() { g_async_hash.erase(async_id); });
+	if (g_tag_hash.size() >= g_tag_hash_max &&
+	    g_tag_hash.emplace(tmp_tag, pwait).second) {
+		/* actual success case */
+		cl_fail2.release();
+		cl_fail.release();
+		return DISPATCH_PENDING;
 	}
-	if (async_id != 0)
-		g_async_hash.erase(async_id);
-	as_hold.unlock();
-	delete pwait;
-	pout->flags_out = 0;
-	pout->result = ecRejected;
 	return DISPATCH_SUCCESS;
 }
 
@@ -218,8 +204,6 @@ void asyncemsmdb_interface_reclaim(uint32_t async_id)
 	HX_strlower(tmp_tag);
 	g_tag_hash.erase(tmp_tag);
 	g_async_hash.erase(async_id);
-	as_hold.unlock();
-	delete pwait;
 }
 
 /* called by moh_emsmdb module */
@@ -242,12 +226,9 @@ void asyncemsmdb_interface_remove(ACXH *pacxh)
 	if (pwait->async_id != 0)
 		g_async_hash.erase(pwait->async_id);
 	g_tag_hash.erase(iter);
-	as_hold.unlock();
-	delete pwait;
 }
 
-static void asyncemsmdb_interface_activate(
-	ASYNC_WAIT *pwait, BOOL b_pending)
+static void asyncemsmdb_interface_activate(std::shared_ptr<ASYNC_WAIT> &&pwait, bool b_pending)
 {
 	if (0 == pwait->async_id) {
 		active_hpm_context(pwait->context_id, b_pending);
@@ -256,7 +237,6 @@ static void asyncemsmdb_interface_activate(
 		pwait->pout->flags_out = b_pending ? FLAG_NOTIFICATION_PENDING : 0;
 		async_reply(pwait->async_id, pwait->pout);
 	}
-	delete pwait;
 }
 
 void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
@@ -276,42 +256,38 @@ void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
 		g_async_hash.erase(pwait->async_id);
 	as_hold.unlock();
 	std::unique_lock ll_hold(g_list_lock);
-	double_list_append_as_tail(&g_wakeup_list, &pwait->node);
+	g_wakeup_list.emplace_back(std::move(pwait));
 	ll_hold.unlock();
 	g_waken_cond.notify_one();
 }
 
 static void *aemsi_thrwork(void *param)
 {
-	DOUBLE_LIST_NODE *pnode;
 	std::mutex g_cond_mutex;
 
 	while (true) {
+		std::shared_ptr<ASYNC_WAIT> pnode;
 		{
-			std::unique_lock<std::mutex> cm_hold(g_cond_mutex);
-			g_waken_cond.wait(cm_hold, [] {
-				return g_notify_stop || double_list_get_nodes_num(&g_wakeup_list) > 0;
+			std::unique_lock<std::mutex> holder(g_list_lock);
+			g_waken_cond.wait(holder, [] {
+				return g_notify_stop || g_wakeup_list.size() > 0;
 			});
 			if (g_notify_stop)
 				break;
+			if (g_wakeup_list.empty())
+				continue;
+			pnode = g_wakeup_list.front();
+			g_wakeup_list.erase(g_wakeup_list.begin());
 		}
-		{
-			std::unique_lock<std::mutex> ll_hold(g_list_lock);
-			pnode = double_list_pop_front(&g_wakeup_list);
-		}
-		if (pnode == nullptr)
-			continue;
-		asyncemsmdb_interface_activate(static_cast<ASYNC_WAIT *>(pnode->pdata), TRUE);
+		asyncemsmdb_interface_activate(std::move(pnode), TRUE);
 	}
 	return nullptr;
 }
 
 static void *aemsi_scanwork(void *param)
 {
-	DOUBLE_LIST temp_list;
-	DOUBLE_LIST_NODE *pnode;
+	std::vector<std::shared_ptr<ASYNC_WAIT>> tl;
 	
-	double_list_init(&temp_list);
 	while (!g_notify_stop) {
 		sleep(1);
 		auto cur_time = time(nullptr);
@@ -322,15 +298,17 @@ static void *aemsi_scanwork(void *param)
 				++iter;
 				continue;
 			}
+			tl.push_back(pwait);
 			iter = g_tag_hash.erase(iter);
 			if (pwait->async_id != 0)
 				g_async_hash.erase(pwait->async_id);
-			double_list_append_as_tail(&temp_list, &pwait->node);
 		}
 		as_hold.unlock();
-		while ((pnode = double_list_pop_front(&temp_list)) != nullptr)
-			asyncemsmdb_interface_activate(static_cast<ASYNC_WAIT *>(pnode->pdata), FALSE);
+		while (tl.size() > 0) {
+			auto pwait = std::move(tl.front());
+			tl.erase(tl.begin());
+			asyncemsmdb_interface_activate(std::move(pwait), false);
+		}
 	}
-	double_list_free(&temp_list);
 	return nullptr;
 }
