@@ -170,8 +170,8 @@ static uint32_t emsmdb_interface_get_timestamp()
 	return std::chrono::duration_cast<std::chrono::seconds>(d).count() + 1230336000;
 }
 
-BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
-	char *username, uint16_t *pcxr, BOOL b_touch)
+bool emsmdb_interface_inspect_acxh(ACXH *pacxh, char *username, size_t ulen,
+    uint16_t *pcxr, bool b_touch)
 {
 	if (pacxh->handle_type != HANDLE_EXCHANGE_ASYNCEMSMDB)
 		return FALSE;
@@ -182,7 +182,7 @@ BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 	auto phandle = &iter->second;
 	if (b_touch)
 		phandle->last_time = tp_now();
-	strcpy(username, phandle->username);
+	gx_strlcpy(username, phandle->username, ulen);
 	*pcxr = phandle->cxr;
 	return TRUE;
 }
