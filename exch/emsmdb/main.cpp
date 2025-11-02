@@ -8,6 +8,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <libHX/string.h>
 #include <vmime/utility/url.hpp>
 #include <gromox/bounce_gen.hpp>
@@ -34,9 +35,9 @@ using namespace gromox;
 DECLARE_PROC_API(emsmdb, );
 using namespace emsmdb;
 
-static int exchange_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, ec_error_t *);
+static int exchange_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, const rpc_request *, std::unique_ptr<rpc_response> &, ec_error_t *);
 static void exchange_emsmdb_unbind(uint64_t handle);
-static int exchange_async_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, ec_error_t *);
+static int exchange_async_emsmdb_dispatch(unsigned int op, const GUID *obj, uint64_t handle, const rpc_request *, std::unique_ptr<rpc_response> &, ec_error_t *);
 static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 
 static DCERPC_ENDPOINT *ep_6001;
@@ -256,49 +257,41 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 }
 
 static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
-    uint64_t handle, void *pin, void **ppout, ec_error_t *ecode)
+    uint64_t handle, const rpc_request *pin, std::unique_ptr<rpc_response> &ppout,
+    ec_error_t *ecode) try
 {
 	switch (opnum) {
 	case ecDoDisconnect: {
 		auto in  = static_cast<const ECDODISCONNECT_IN *>(pin);
-		auto out = ndr_stack_anew<ECDODISCONNECT_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<ECDODISCONNECT_OUT>();
 		emsmdb_interface_remove_handle(in->cxh);
 		out->result = ecSuccess;
 		out->cxh = {};
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case ecRRegisterPushNotification: {
 		auto in  = static_cast<const ECRREGISTERPUSHNOTIFICATION_IN *>(pin);
-		auto out = ndr_stack_anew<ECRREGISTERPUSHNOTIFICATION_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<ECRREGISTERPUSHNOTIFICATION_OUT>();
 		out->cxh = in->cxh;
 		out->result = emsmdb_interface_register_push_notification(&out->cxh,
 		              in->rpc, in->pctx, in->cb_ctx, in->advise_bits,
 		              in->paddr, in->cb_addr, &out->hnotification);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case ecDummyRpc: {
-		auto out = ndr_stack_anew<ECDUMMYRPC_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<ECDUMMYRPC_OUT>();
 		out->result = emsmdb_interface_dummy_rpc(handle);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case ecDoConnectEx: {
 		auto in  = static_cast<const ECDOCONNECTEX_IN *>(pin);
-		auto out = ndr_stack_anew<ECDOCONNECTEX_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<ECDOCONNECTEX_OUT>();
 		out->timestamp = in->timestamp;
 		out->cb_auxout = in->cb_auxout;
 		out->result = emsmdb_interface_connect_ex(handle, &out->cxh,
@@ -311,14 +304,12 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		              out->pbest_vers, &out->timestamp, in->pauxin,
 		              in->cb_auxin, out->pauxout, &out->cb_auxout);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case ecDoRpcExt2: {
 		auto in  = static_cast<const ECDORPCEXT2_IN *>(pin);
-		auto out = ndr_stack_anew<ECDORPCEXT2_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<ECDORPCEXT2_OUT>();
 		out->cxh = in->cxh;
 		out->flags = in->flags;
 		out->cb_out = in->cb_out;
@@ -328,16 +319,15 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 		              in->pauxin, in->cb_auxin, out->pauxout,
 		              &out->cb_auxout, &out->trans_time);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case ecDoAsyncConnectEx: {
 		auto in  = static_cast<const ECDOASYNCCONNECTEX_IN *>(pin);
-		auto out = ndr_stack_anew<ECDOASYNCCONNECTEX_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<ECDOASYNCCONNECTEX_OUT>();
 		out->result = emsmdb_interface_async_connect_ex(in->cxh, &out->acxh);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	default:
@@ -354,27 +344,25 @@ static void exchange_emsmdb_unbind(uint64_t handle)
 }
 
 static int exchange_async_emsmdb_dispatch(unsigned int opnum,
-    const GUID *pobject, uint64_t handle, void *pin, void **ppout,
-    ec_error_t *ecode)
+    const GUID *pobject, uint64_t handle, const rpc_request *pin,
+    std::unique_ptr<rpc_response> &ppout, ec_error_t *ecode) try
 {
 	int result;
 	uint32_t async_id;
 	
 	switch (opnum) {
 	case ecDoAsyncWaitEx: {
-		auto pout = ndr_stack_anew<ECDOASYNCWAITEX_OUT>(NDR_STACK_OUT);
-		*ppout = pout;
-		if (*ppout == nullptr)
-			return DISPATCH_FAIL;
+		auto pout = std::make_unique<ECDOASYNCWAITEX_OUT>();
 		async_id = apply_async_id();
 		if (async_id == 0)
 			return DISPATCH_FAIL;
-		result = asyncemsmdb_interface_async_wait(async_id, static_cast<const ECDOASYNCWAITEX_IN *>(pin), pout);
+		result = asyncemsmdb_interface_async_wait(async_id, static_cast<const ECDOASYNCWAITEX_IN *>(pin), pout.get());
 		if (result == DISPATCH_PENDING)
 			activate_async_id(async_id);
 		else
 			cancel_async_id(async_id);
 		*ecode = pout->result;
+		ppout = std::move(pout);
 		return result;
 	}
 	default:

@@ -5,6 +5,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <utility>
 #include <fmt/core.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -50,9 +52,9 @@ struct RFRGETFQDNFROMLEGACYDN_OUT final : public rpc_response {
 
 }
 
-static pack_result exchange_rfr_ndr_pull(unsigned int op, NDR_PULL &, void **in);
-static int exchange_rfr_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, ec_error_t *);
-static pack_result exchange_rfr_ndr_push(unsigned int op, NDR_PUSH &, const void *out);
+static pack_result exchange_rfr_ndr_pull(unsigned int op, NDR_PULL &, std::unique_ptr<rpc_request> &);
+static int exchange_rfr_dispatch(unsigned int op, const GUID *obj, uint64_t handle, const rpc_request *, std::unique_ptr<rpc_response> &, ec_error_t *);
+static pack_result exchange_rfr_ndr_push(unsigned int op, NDR_PUSH &, const rpc_response *);
 
 static DCERPC_ENDPOINT *ep_6001, *ep_6002;
 
@@ -142,21 +144,17 @@ static ec_error_t rfr_get_fqdnfromlegacydn(uint32_t flags, uint32_t cb,
 	return ecSuccess;
 }
 
-static pack_result exchange_rfr_ndr_pull(unsigned int opnum, NDR_PULL &x, void **ppin)
+static pack_result exchange_rfr_ndr_pull(unsigned int opnum, NDR_PULL &x,
+    std::unique_ptr<rpc_request> &in) try
 {
 	uint32_t ptr;
 	uint32_t size;
 	uint32_t offset;
 	uint32_t length;
-	RFRGETNEWDSA_IN *prfr;
-	RFRGETFQDNFROMLEGACYDN_IN *prfr_dn;
 
-	
 	switch (opnum) {
-	case RfrGetNewDSA:
-		prfr = ndr_stack_anew<RFRGETNEWDSA_IN>(NDR_STACK_IN);
-		if (prfr == nullptr)
-			return pack_result::alloc;
+	case RfrGetNewDSA: {
+		auto prfr = std::make_unique<RFRGETNEWDSA_IN>();
 		TRY(x.g_uint32(&prfr->flags));
 		TRY(x.g_ulong(&size));
 		TRY(x.g_ulong(&offset));
@@ -199,12 +197,11 @@ static pack_result exchange_rfr_ndr_pull(unsigned int opnum, NDR_PULL &x, void *
 		} else {
 			prfr->pserver[0] = '\0';
 		}
-		*ppin = prfr;
+		in = std::move(prfr);
 		return pack_result::ok;
-	case RfrGetFQDNFromServerDN:
-		prfr_dn = ndr_stack_anew<RFRGETFQDNFROMLEGACYDN_IN>(NDR_STACK_IN);
-		if (prfr_dn == nullptr)
-			return pack_result::alloc;
+	}
+	case RfrGetFQDNFromServerDN: {
+		auto prfr_dn = std::make_unique<RFRGETFQDNFROMLEGACYDN_IN>();
 		TRY(x.g_uint32(&prfr_dn->flags));
 		TRY(x.g_uint32(&prfr_dn->cb));
 		if (prfr_dn->cb < 10 || prfr_dn->cb > 1024)
@@ -216,8 +213,9 @@ static pack_result exchange_rfr_ndr_pull(unsigned int opnum, NDR_PULL &x, void *
 			return pack_result::array_size;
 		TRY(x.check_str(length, sizeof(uint8_t)));
 		TRY(x.g_str(prfr_dn->mbserverdn, length));
-		*ppin = prfr_dn;
+		in = std::move(prfr_dn);
 		return pack_result::ok;
+	}
 	default:
 		return pack_result::bad_switch;
 	}
@@ -227,39 +225,25 @@ static pack_result exchange_rfr_ndr_pull(unsigned int opnum, NDR_PULL &x, void *
 }
 
 static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
-    uint64_t handle, void *pin, void **ppout, ec_error_t *ecode)
+    uint64_t handle, const rpc_request *pin,
+    std::unique_ptr<rpc_response> &out, ec_error_t *ecode) try
 {
-	RFRGETNEWDSA_OUT *prfr_out;
-	RFRGETFQDNFROMLEGACYDN_OUT *prfr_dn_out;
-	
 	switch (opnum) {
 	case RfrGetNewDSA: {
 		auto prfr_in = static_cast<const RFRGETNEWDSA_IN *>(pin);
-		prfr_out = ndr_stack_anew<RFRGETNEWDSA_OUT>(NDR_STACK_OUT);
-		if (prfr_out == nullptr)
-			return DISPATCH_FAIL;
-		try {
-			prfr_out->result = rfr_get_newdsa(prfr_in->flags,
-			                   prfr_in->puserdn, prfr_out->pserver);
-		} catch (const std::bad_alloc &) {
-			return DISPATCH_FAIL;
-		}
-		*ppout = prfr_out;
+		auto prfr_out = std::make_unique<RFRGETNEWDSA_OUT>();
+		prfr_out->result = rfr_get_newdsa(prfr_in->flags,
+		                   prfr_in->puserdn, prfr_out->pserver);
+		out = std::move(prfr_out);
 		return DISPATCH_SUCCESS;
 	}
 	case RfrGetFQDNFromServerDN: {
 		auto prfr_dn_in = static_cast<const RFRGETFQDNFROMLEGACYDN_IN *>(pin);
-		prfr_dn_out = ndr_stack_anew<RFRGETFQDNFROMLEGACYDN_OUT>(NDR_STACK_OUT);
-		if (prfr_dn_out == nullptr)
-			return DISPATCH_FAIL;
-		try {
-			prfr_dn_out->result = rfr_get_fqdnfromlegacydn(prfr_dn_in->flags,
-			                      prfr_dn_in->cb, prfr_dn_in->mbserverdn,
-			                      prfr_dn_out->serverfqdn);
-		} catch (const std::bad_alloc &) {
-			return DISPATCH_FAIL;
-		}
-		*ppout = prfr_dn_out;
+		auto prfr_dn_out = std::make_unique<RFRGETFQDNFROMLEGACYDN_OUT>();
+		prfr_dn_out->result = rfr_get_fqdnfromlegacydn(prfr_dn_in->flags,
+		                      prfr_dn_in->cb, prfr_dn_in->mbserverdn,
+		                      prfr_dn_out->serverfqdn);
+		out = std::move(prfr_dn_out);
 		return DISPATCH_SUCCESS;
 	}
 	default:
@@ -270,7 +254,8 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 	return DISPATCH_FAIL;
 }
 
-static pack_result exchange_rfr_ndr_push(unsigned int opnum, NDR_PUSH &x, const void *pout)
+static pack_result exchange_rfr_ndr_push(unsigned int opnum, NDR_PUSH &x,
+    const rpc_response *pout)
 {
 	int length;
 	

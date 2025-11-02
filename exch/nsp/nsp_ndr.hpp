@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <gromox/defs.h>
 #include <gromox/ndr.hpp>
 #include "nsp_types.hpp"
@@ -263,5 +264,5 @@ struct NSPIRESOLVENAMESW_OUT final : public nsp_response {
 	ec_error_t result;
 };
 
-extern pack_result exchange_nsp_ndr_pull(unsigned int op, NDR_PULL &, void **in);
-extern pack_result exchange_nsp_ndr_push(unsigned int op, NDR_PUSH &, const void *out);
+extern pack_result exchange_nsp_ndr_pull(unsigned int op, NDR_PULL &, std::unique_ptr<rpc_request> &);
+extern pack_result exchange_nsp_ndr_push(unsigned int op, NDR_PUSH &, const rpc_response *);

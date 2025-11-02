@@ -139,7 +139,7 @@ struct ECDOASYNCCONNECTEX_OUT final : public rpc_response {
 	ec_error_t result;
 };
 
-extern pack_result asyncemsmdb_ndr_pull(unsigned int op, NDR_PULL &, void **in);
-extern pack_result asyncemsmdb_ndr_push(unsigned int op, NDR_PUSH &, const void *out);
-extern pack_result emsmdb_ndr_pull(unsigned int op, NDR_PULL &, void **in);
-extern pack_result emsmdb_ndr_push(unsigned int op, NDR_PUSH &, const void *out);
+extern pack_result asyncemsmdb_ndr_pull(unsigned int op, NDR_PULL &, std::unique_ptr<rpc_request> &);
+extern pack_result asyncemsmdb_ndr_push(unsigned int op, NDR_PUSH &, const rpc_response *);
+extern pack_result emsmdb_ndr_pull(unsigned int op, NDR_PULL &, std::unique_ptr<rpc_request> &);
+extern pack_result emsmdb_ndr_push(unsigned int op, NDR_PUSH &, const rpc_response *);
