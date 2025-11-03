@@ -881,7 +881,7 @@ ec_error_t rop_openstream(proptag_t proptag, uint8_t flags, uint32_t *pstream_si
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pobject == nullptr)
 		return ecNullObject;
-	BOOL b_write = flags == MAPI_CREATE || flags == MAPI_MODIFY ? TRUE : false;
+	const bool b_write = flags & MAPI_BEST_ACCESS; /* one bit suffices for wanting to write */
 	switch (object_type) {
 	case ems_objtype::folder:
 		/* MS-OXCPERM 3.1.4.1 */
@@ -898,8 +898,11 @@ ec_error_t rop_openstream(proptag_t proptag, uint8_t flags, uint32_t *pstream_si
 				    static_cast<folder_object *>(pobject)->folder_id,
 				    eff_user, &permission))
 					return ecError;
-				if (!(permission & frightsOwner))
-					return ecAccessDenied;
+				if (!(permission & frightsOwner)) {
+					if ((flags & MAPI_BEST_ACCESS) != MAPI_BEST_ACCESS)
+						return ecAccessDenied;
+					flags &= ~MAPI_BEST_ACCESS;
+				}
 			}
 		}
 		max_length = MAX_LENGTH_FOR_FOLDER;
@@ -922,8 +925,11 @@ ec_error_t rop_openstream(proptag_t proptag, uint8_t flags, uint32_t *pstream_si
 			auto tag_access = object_type == ems_objtype::message ?
 				static_cast<message_object *>(pobject)->get_tag_access() :
 				static_cast<attachment_object *>(pobject)->get_tag_access();
-			if (!(tag_access & MAPI_ACCESS_MODIFY))
-				return ecAccessDenied;
+			if (!(tag_access & MAPI_ACCESS_MODIFY)) {
+				if ((flags & MAPI_BEST_ACCESS) != MAPI_BEST_ACCESS)
+					return ecAccessDenied;
+				flags &= ~MAPI_BEST_ACCESS;
+			}
 		}
 		max_length = g_max_mail_len;
 		break;

@@ -1560,6 +1560,9 @@ enum {
 /*
  * Documented for ropOpenMessage, ropOpenAttachment, various I*::OpenEntry,
  * IMAPISession::OpenMsgStore.
+ *
+ * MAPI_CREATE implies MAPI_MODIFY already, therefore a value with both bits
+ * being set can (and does) have a different meaning.
  */
 #define MAPI_BEST_ACCESS 0x3U
 
