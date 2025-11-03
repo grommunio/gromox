@@ -58,7 +58,6 @@ extern GX_EXPORT int encode64_ex(const void *in, size_t inlen, char *out, size_t
 extern GX_EXPORT int decode64_ex(const char *in, size_t inlen, void *out, size_t outmax, size_t *outlen);
 extern GX_EXPORT ssize_t qp_decode_ex(void *output, size_t out_len, const char *input, size_t length, unsigned int qp_flags = 0);
 extern GX_EXPORT ssize_t qp_encode_ex(void *output, size_t outlen, const char *input, size_t length);
-extern GX_EXPORT void encode_hex_int(int id, char *out);
 extern GX_EXPORT int decode_hex_int(const char *in);
 extern GX_EXPORT BOOL encode_hex_binary(const void *src, int srclen, char *dst, int dstlen);
 extern GX_EXPORT BOOL decode_hex_binary(const char *src, void *dst, int dstlen);

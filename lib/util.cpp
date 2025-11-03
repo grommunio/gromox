@@ -1060,21 +1060,6 @@ ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
 	return qp_decode(output, input, length, qp_flags);
 }
 
-void encode_hex_int(int id, char *out)
-{
-	static const char codes[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
-							'8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-	char t_char;
-	size_t i, j;
-	
-	for (i=0,j=0; i<sizeof(int); i++,j+=2) {
-		t_char = (id >> i*8) & 0xFF;
-		out[j+1] = codes[t_char&0x0f];
-		out[j] = codes[(t_char&0xf0)>>4];
-	}
-	out[j] = '\0';
-}
-
 int decode_hex_int(const char *in)
 {
 	int retval;

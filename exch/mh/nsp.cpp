@@ -17,6 +17,7 @@
 #include <variant>
 #include <fmt/core.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/endian.h>
 #include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
@@ -386,7 +387,7 @@ static BOOL nsp_preproc(int context_id)
 ec_error_t MhNspContext::getaddressbookurl(std::string *dest) try
 {
 	unsigned int user_id = 0;
-	char username1[UADDR_SIZE], hex_string[32];
+	char username1[UADDR_SIZE];
 
 	if (dest == nullptr)
 		dest = &std::get<getaddressbookurl_response>(response).server_url;
@@ -400,11 +401,10 @@ ec_error_t MhNspContext::getaddressbookurl(std::string *dest) try
 		++token;
 	else
 		token = username1;
-	encode_hex_int(user_id, hex_string);
 	*dest = fmt::format("https://{}/mapi/nspi/?MailboxId={}{}{}{}-{}{}-{}{}-{}{}-{}{}{}@{}",
 		get_host_ID(), username1[0], username1[1], username1[2], username1[3],
 		username1[4], username1[5], username1[6], username1[7], username1[8],
-		username1[9], username1[10], username1[11], hex_string, token);
+		username1[9], username1[10], username1[11], be32_to_cpu(cpu_to_le32(user_id)), token);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;

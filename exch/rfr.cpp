@@ -8,6 +8,7 @@
 #include <memory>
 #include <utility>
 #include <fmt/core.h>
+#include <libHX/endian.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -59,7 +60,6 @@ static ec_error_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 {
 	char *ptoken;
 	char username[UADDR_SIZE];
-	char hex_string[32];
 	
 	auto rpc_info = get_rpc_info();
 	unsigned int user_id = 0;
@@ -73,12 +73,11 @@ static ec_error_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 		ptoken ++;
 	else
 		ptoken = username;
-	encode_hex_int(user_id, hex_string);
-	server = fmt::format("{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{}@{}",
+	server = fmt::format("{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:08x}@{}",
 			username[0], username[1], username[2],
 			username[3], username[4], username[5], username[6],
 			username[7], username[8], username[9], username[10],
-			username[11], hex_string, ptoken);
+			username[11], be32_to_cpu(cpu_to_le32(user_id)), ptoken);
 	return ecSuccess;
 }
 
