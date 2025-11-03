@@ -683,15 +683,22 @@ void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(RequiredAttendees);
 	XMLDUMPT(OptionalAttendees);
 	XMLDUMPT(Resources);
+	XMLDUMPT(Duration);
+	XMLDUMPT(TimeZone);
 	XMLDUMPT(AppointmentReplyTime);
 	XMLDUMPT(AppointmentSequenceNumber);
 	XMLDUMPT(AppointmentState);
 	XMLDUMPT(Recurrence);
 	XMLDUMPT(ModifiedOccurrences);
 	XMLDUMPT(DeletedOccurrences);
+	XMLDUMPT(ConferenceType);
 	XMLDUMPT(AllowNewTimeProposal);
+	XMLDUMPT(IsOnlineMeeting);
+	XMLDUMPT(MeetingWorkspaceUrl);
+	XMLDUMPT(NetShowUrl);
 	XMLDUMPT(StartTimeZoneId);
 	XMLDUMPT(EndTimeZoneId);
+	XMLDUMPT(DoNotForwardMeeting);
 }
 
 tCalendarPermission::tCalendarPermission(const tinyxml2::XMLElement* xml) :

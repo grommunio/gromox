@@ -1707,6 +1707,17 @@ void tCalendarItem::update(const sShape& shape)
 	fromProp(shape.get(NtRecurring), IsRecurring);
 	fromProp(shape.get(NtFInvited), MeetingRequestWasSent);
 	fromProp(shape.get(NtLocation), Location);
+	if ((prop = shape.get(NtAppointmentDuration))) {
+		const uint32_t* duration = static_cast<const uint32_t*>(prop->pvalue);
+		if (duration)
+			Duration.emplace(fmt::format("PT{}M", *duration));
+	}
+	fromProp(shape.get(NtTimeZone), TimeZone);
+	fromProp(shape.get(NtConferencingType), ConferenceType);
+	fromProp(shape.get(NtConferencingCheck), IsOnlineMeeting);
+	fromProp(shape.get(NtMeetingWorkspaceUrl), MeetingWorkspaceUrl);
+	fromProp(shape.get(NtNetShowUrl), NetShowUrl);
+	fromProp(shape.get(NtMeetingDoNotForward), DoNotForwardMeeting);
 
 	if ((prop = shape.get(NtCalendarTimeZone))) {
 		std::optional<std::string> tzid;
@@ -3314,24 +3325,31 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:AppointmentReplyTime", {NtAppointmentReplyTime, PT_SYSTIME}},
 	{"calendar:AppointmentState", {NtAppointmentStateFlags, PT_LONG}},
 	{"calendar:AppointmentSequenceNumber", {NtAppointmentSequence, PT_LONG}},
+	{"calendar:ConferenceType", {NtConferencingType, PT_LONG}},
+	{"calendar:Duration", {NtAppointmentDuration, PT_LONG}},
+	{"calendar:DeletedOccurrences", {NtAppointmentRecur, PT_BINARY}},
+	{"calendar:DoNotForwardMeeting", {NtMeetingDoNotForward, PT_BOOLEAN}},
 	{"calendar:End", {NtAppointmentEndWhole, PT_SYSTIME}},
 	{"calendar:End", {NtCommonEnd, PT_SYSTIME}},
 	{"calendar:EndTimeZoneId", {NtCalendarTimeZone, PT_UNICODE}},
 	{"calendar:IsAllDayEvent", {NtAppointmentSubType, PT_BOOLEAN}},
 	{"calendar:IsCancelled", {NtAppointmentStateFlags, PT_LONG}},
 	{"calendar:IsMeeting", {NtAppointmentStateFlags, PT_LONG}},
+	{"calendar:IsOnlineMeeting", {NtConferencingCheck, PT_BOOLEAN}},
 	{"calendar:IsRecurring", {NtRecurring, PT_BOOLEAN}},
 	{"calendar:LegacyFreeBusyStatus", {NtBusyStatus, PT_LONG}},
 	{"calendar:Location", {NtLocation, PT_UNICODE}},
 	{"calendar:MeetingRequestWasSent", {NtFInvited, PT_BOOLEAN}},
+	{"calendar:MeetingWorkspaceUrl", {NtMeetingWorkspaceUrl, PT_UNICODE}},
 	{"calendar:MyResponseType", {NtResponseStatus, PT_LONG}},
+	{"calendar:NetShowUrl", {NtNetShowUrl, PT_UNICODE}},
 	{"calendar:Recurrence", {NtAppointmentRecur, PT_BINARY}},
-	{"calendar:DeletedOccurrences", {NtAppointmentRecur, PT_BINARY}},
+	{"calendar:RecurrenceId", {NtExceptionReplaceTime, PT_SYSTIME}},
 	{"calendar:Start", {NtAppointmentStartWhole, PT_SYSTIME}},
 	{"calendar:Start", {NtCommonStart, PT_SYSTIME}},
 	{"calendar:StartTimeZoneId", {NtCalendarTimeZone, PT_UNICODE}},
+	{"calendar:TimeZone", {NtTimeZone, PT_UNICODE}},
 	{"calendar:UID", {NtGlobalObjectId, PT_BINARY}},
-	{"calendar:RecurrenceId", {NtExceptionReplaceTime, PT_SYSTIME}},
 	{"contacts:DisplayName", {NtFileAs, PT_UNICODE}},
 	{"contacts:FileAs", {NtFileAs, PT_UNICODE}},
 	{"contacts:PostalAddressIndex", {NtPostalAddressIndex, PT_LONG}},

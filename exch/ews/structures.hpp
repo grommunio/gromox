@@ -1965,8 +1965,8 @@ struct tCalendarItem : public tItem {
 	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
 	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
 	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
-	// <xs:element name="Duration" type="xs:string" minOccurs="0" />
-	// <xs:element name="TimeZone" type="xs:string" minOccurs="0" />
+	std::optional<std::string> Duration;
+	std::optional<std::string> TimeZone;
 	std::optional<time_point> AppointmentReplyTime;
 	std::optional<int> AppointmentSequenceNumber;
 	std::optional<int> AppointmentState;
@@ -1980,11 +1980,11 @@ struct tCalendarItem : public tItem {
 	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0"/>
 	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
-	// <xs:element name="ConferenceType" type="xs:int" minOccurs="0" />
+	std::optional<int32_t> ConferenceType;
 	std::optional<bool> AllowNewTimeProposal;
-	// <xs:element name="IsOnlineMeeting" type="xs:boolean" minOccurs="0" />
-	// <xs:element name="MeetingWorkspaceUrl" type="xs:string" minOccurs="0" />
-	// <xs:element name="NetShowUrl" type="xs:string" minOccurs="0" />
+	std::optional<bool> IsOnlineMeeting;
+	std::optional<std::string> MeetingWorkspaceUrl;
+	std::optional<std::string> NetShowUrl;
 	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
 	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
@@ -1995,7 +1995,7 @@ struct tCalendarItem : public tItem {
 	// <xs:element name="OnlineMeetingSettings" type="t:OnlineMeetingSettingsType" minOccurs="0" maxOccurs="1"/>
 	// <xs:element name="IsOrganizer" type="xs:boolean" minOccurs="0" />
 	// <xs:element name="CalendarActivityData" type="t:CalendarActivityDataType" minOccurs="0" maxOccurs="1"/>
-	// <xs:element name="DoNotForwardMeeting" type="xs:boolean" minOccurs="0"/>
+	std::optional<bool> DoNotForwardMeeting;
 };
 
 /**
