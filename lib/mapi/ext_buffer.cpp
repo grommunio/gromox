@@ -193,9 +193,7 @@ pack_result EXT_PULL::g_str(std::string *out) try
 	auto len = strnlen(&m_cdata[m_offset], m_data_size - m_offset);
 	if (len + 1 > m_data_size - m_offset)
 		return pack_result::format;
-	out->resize(len);
-	/* Copy with, and advance over, NUL */
-	memcpy(out->data(), &m_udata[m_offset], len + 1);
+	out->assign(reinterpret_cast<const char *>(&m_udata[m_offset]), len);
 	return advance(len + 1);
 } catch (const std::bad_alloc &) {
 	return pack_result::alloc;
