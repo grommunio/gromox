@@ -2022,7 +2022,10 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		endOffset = std::chrono::duration_cast<std::chrono::minutes>(item.End.value().offset).count();
 		calcEndOffset = item.End.value().needCalcOffset();
 	}
-	// TODO handle no start and/or end times
+	if (!item.Start || !item.End) {
+		const char* missing = item.Start ? "End" : "Start";
+		throw EWSError::ItemCorrupt(E3046(missing, "CalendarItem"));
+	}
 
 	if (!shape.writes(NtCalendarTimeZone)) {
 		if (item.StartTimeZoneId)
