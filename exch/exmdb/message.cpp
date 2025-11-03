@@ -1535,30 +1535,30 @@ static ec_error_t message_rectify_message(const MESSAGE_CONTENT *src,
 		dprop.emplace_back(PR_BODY_CONTENT_ID, pvalue);
 	}
 	if (!sprop.has(PR_CREATOR_NAME)) {
-		auto pvalue = sprop.get<char>(PR_SENDER_NAME);
+		auto pvalue = sprop.getval(PR_SENDER_NAME);
 		if (pvalue == nullptr)
-			pvalue = sprop.get<char>(PR_SENT_REPRESENTING_NAME);
+			pvalue = sprop.getval(PR_SENT_REPRESENTING_NAME);
 		if (pvalue != nullptr)
 			dprop.emplace_back(PR_CREATOR_NAME, pvalue);
 	}
 	if (!sprop.has(PR_CREATOR_ENTRYID)) {
-		auto pvalue = sprop.get<char>(PR_SENDER_ENTRYID);
+		auto pvalue = sprop.getval(PR_SENDER_ENTRYID);
 		if (pvalue == nullptr)
-			pvalue = sprop.get<char>(PR_SENT_REPRESENTING_ENTRYID);
+			pvalue = sprop.getval(PR_SENT_REPRESENTING_ENTRYID);
 		if (pvalue != nullptr)
 			dprop.emplace_back(PR_CREATOR_ENTRYID, pvalue);
 	}
 	if (!sprop.has(PR_LAST_MODIFIER_NAME)) {
-		auto pvalue = sprop.get<char>(PR_SENDER_NAME);
+		auto pvalue = sprop.getval(PR_SENDER_NAME);
 		if (pvalue == nullptr)
-			pvalue = sprop.get<char>(PR_SENT_REPRESENTING_NAME);
+			pvalue = sprop.getval(PR_SENT_REPRESENTING_NAME);
 		if (pvalue != nullptr)
 			dprop.emplace_back(PR_LAST_MODIFIER_NAME, pvalue);
 	}
 	if (!sprop.has(PR_LAST_MODIFIER_ENTRYID)) {
-		auto pvalue = sprop.get<BINARY>(PR_SENDER_ENTRYID);
+		auto pvalue = sprop.getval(PR_SENDER_ENTRYID);
 		if (pvalue == nullptr)
-			pvalue = sprop.get<BINARY>(PR_SENT_REPRESENTING_ENTRYID);
+			pvalue = sprop.getval(PR_SENT_REPRESENTING_ENTRYID);
 		if (pvalue != nullptr)
 			dprop.emplace_back(PR_LAST_MODIFIER_ENTRYID, pvalue);
 	}
