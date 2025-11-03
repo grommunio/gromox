@@ -31,9 +31,7 @@ namespace {
 
 struct RFRGETNEWDSA_IN final : public rpc_request {
 	uint32_t flags = 0;
-	char puserdn[1024]{};
-	char punused[256]{};
-	char pserver[256]{};
+	std::string puserdn, pserver;
 };
 
 struct RFRGETNEWDSA_OUT final : public rpc_response {
@@ -43,7 +41,7 @@ struct RFRGETNEWDSA_OUT final : public rpc_response {
 
 struct RFRGETFQDNFROMLEGACYDN_IN final : public rpc_request {
 	uint32_t flags = 0, cb = 0;
-	char mbserverdn[1024]{};
+	std::string mbserverdn;
 };
 
 struct RFRGETFQDNFROMLEGACYDN_OUT final : public rpc_response {
@@ -58,17 +56,14 @@ static DCERPC_ENDPOINT *ep_6001, *ep_6002;
 static ec_error_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
     std::string &server)
 {
-	char *ptoken;
-	char username[UADDR_SIZE];
-	
 	auto rpc_info = get_rpc_info();
 	unsigned int user_id = 0;
 	if (!mysql_adaptor_get_user_ids(rpc_info.username, &user_id, nullptr, nullptr))
 		return ecError;
-	memset(username, 0, sizeof(username));
+	char username[13]{};
 	gx_strlcpy(username, rpc_info.username, std::size(username));
-	ptoken = strchr(username, '@');
 	HX_strlower(username);
+	auto ptoken = strchr(rpc_info.username, '@');
 	if (ptoken != nullptr)
 		ptoken ++;
 	else
@@ -117,7 +112,7 @@ static pack_result exchange_rfr_ndr_pull(unsigned int opnum, NDR_PULL &x,
 		if (offset != 0 || length > size || length > 1024)
 			return pack_result::array_size;
 		TRY(x.check_str(length, sizeof(uint8_t)));
-		TRY(x.g_str(prfr->puserdn, length));
+		TRY(x.g_str(&prfr->puserdn, length));
 		TRY(x.g_genptr(&ptr));
 		if (0 != ptr) {
 			TRY(x.g_genptr(&ptr));
@@ -128,12 +123,9 @@ static pack_result exchange_rfr_ndr_pull(unsigned int opnum, NDR_PULL &x,
 				if (offset != 0 || length > size || length > 256)
 					return pack_result::array_size;
 				TRY(x.check_str(length, sizeof(uint8_t)));
-				TRY(x.g_str(prfr->punused, length));
-			} else {
-				prfr->punused[0] = '\0';
+				std::string unused;
+				TRY(x.g_str(&unused, length));
 			}
-		} else {
-			prfr->punused[0] = '\0';
 		}
 		TRY(x.g_genptr(&ptr));
 		if (0 != ptr) {
@@ -145,12 +137,8 @@ static pack_result exchange_rfr_ndr_pull(unsigned int opnum, NDR_PULL &x,
 				if (offset != 0 || length > size || length > 256)
 					return pack_result::array_size;
 				TRY(x.check_str(length, sizeof(uint8_t)));
-				TRY(x.g_str(prfr->pserver, length));
-			} else {
-				prfr->pserver[0] = '\0';
+				TRY(x.g_str(&prfr->pserver, length));
 			}
-		} else {
-			prfr->pserver[0] = '\0';
 		}
 		in = std::move(prfr);
 		return pack_result::ok;
@@ -167,7 +155,7 @@ static pack_result exchange_rfr_ndr_pull(unsigned int opnum, NDR_PULL &x,
 		if (offset != 0 || length > size || length > 1024)
 			return pack_result::array_size;
 		TRY(x.check_str(length, sizeof(uint8_t)));
-		TRY(x.g_str(prfr_dn->mbserverdn, length));
+		TRY(x.g_str(&prfr_dn->mbserverdn, length));
 		in = std::move(prfr_dn);
 		return pack_result::ok;
 	}
@@ -188,7 +176,7 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 		auto prfr_in = static_cast<const RFRGETNEWDSA_IN *>(pin);
 		auto prfr_out = std::make_unique<RFRGETNEWDSA_OUT>();
 		prfr_out->result = rfr_get_newdsa(prfr_in->flags,
-		                   prfr_in->puserdn, prfr_out->pserver);
+		                   prfr_in->puserdn.c_str(), prfr_out->pserver);
 		out = std::move(prfr_out);
 		return DISPATCH_SUCCESS;
 	}
@@ -196,7 +184,7 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 		auto prfr_dn_in = static_cast<const RFRGETFQDNFROMLEGACYDN_IN *>(pin);
 		auto prfr_dn_out = std::make_unique<RFRGETFQDNFROMLEGACYDN_OUT>();
 		prfr_dn_out->result = rfr_get_fqdnfromlegacydn(prfr_dn_in->flags,
-		                      prfr_dn_in->cb, prfr_dn_in->mbserverdn,
+		                      prfr_dn_in->cb, prfr_dn_in->mbserverdn.c_str(),
 		                      prfr_dn_out->serverfqdn);
 		out = std::move(prfr_dn_out);
 		return DISPATCH_SUCCESS;
