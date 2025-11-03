@@ -733,7 +733,7 @@ int main(int argc, char **argv) try
 			break;
 		else if (ret < 0 || static_cast<size_t>(ret) != sizeof(xsize))
 			throw YError("PG-1005: %s", strerror_eof(errno));
-		xsize = le64_to_cpu(xsize);
+		xsize = std::min(le64_to_cpu(xsize), UINT64_MAX);
 		auto buf = std::make_unique<char[]>(xsize);
 		errno = 0;
 		ret = HXio_fullread(STDIN_FILENO, buf.get(), xsize);

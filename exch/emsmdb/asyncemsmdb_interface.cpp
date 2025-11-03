@@ -130,6 +130,7 @@ void asyncemsmdb_interface_stop()
 
 void asyncemsmdb_interface_free()
 {
+	std::unique_lock hold(g_list_lock); /* silence cov-scan */
 	g_wakeup_list.clear();
 }
 

@@ -70,6 +70,7 @@ static pack_result emsmdb_ndr_pull(NDR_PULL &x, ECRREGISTERPUSHNOTIFICATION_IN *
 	TRY(x.g_ctx_handle(&r->cxh));
 	TRY(x.g_uint32(&r->rpc));
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	r->pctx = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pctx == nullptr)
 		return pack_result::alloc;
@@ -211,6 +212,7 @@ static pack_result emsmdb_ndr_pull(NDR_PULL &x, ECDORPCEXT2_IN *r)
 	if (r->cb_out > 0x40000)
 		return pack_result::range;
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	r->pauxin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pauxin == nullptr)
 		return pack_result::alloc;
