@@ -14,7 +14,7 @@ extern ec_error_t zclient_getpropval(GUID ses, uint32_t obj, gromox::proptag_t, 
 #define ZCIDL(n, p) extern ec_error_t zclient_ ## n p;
 /* When calling these functions, none of the IDLOUT parameters may be NULL */
 ZCIDL(logon, (const char *username, const char *password, const char *rhost, uint32_t flags, IDLOUT GUID *hsession))
-ZCIDL(uinfo, (const char *username, IDLOUT BINARY *entryid, char **pdisplay_name, char **px500dn, uint32_t *privilege_bits))
+ZCIDL(uinfo, (const char *username, IDLOUT BINARY *entryid, std::string *pdisplay_name, std::string *px500dn, uint32_t *privilege_bits))
 ZCIDL(unloadobject, (GUID hsession, uint32_t hobject))
 ZCIDL(openentry, (GUID hsession, BINARY entryid, uint32_t flags, IDLOUT zs_objtype *mapi_type, uint32_t *hobject))
 ZCIDL(openstoreentry, (GUID hsession, uint32_t hobject, BINARY entryid, uint32_t flags, IDLOUT zs_objtype *mapi_type, uint32_t *hxobject))
@@ -101,5 +101,6 @@ ZCIDL(essdn_to_username, (const char *essdn, IDLOUT char **username))
 ZCIDL(logon_token, (const char *token, const char *rhost, IDLOUT GUID *hsession))
 ZCIDL(getuserfreebusy, (GUID hsession, BINARY entryid, time_t starttime, time_t endtime, IDLOUT std::vector<freebusy_event> *fb_events))
 ZCIDL(getuserfreebusyical, (GUID hsession, BINARY entryid, time_t starttime, time_t endtime, IDLOUT BINARY *ical_bin))
+ZCIDL(logon_np, (const char *username, const char *password, const char *rhost, uint32_t flags, IDLOUT GUID *hsession))
 #undef ZCIDL
 #undef IDLOUT

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdlib>
@@ -23,28 +23,31 @@ enum {
 	OP_UPGRADE,
 };
 
-static char *opt_config_file;
+static const char *opt_config_file;
 static unsigned int g_do_create, g_do_upgrade, g_do_create0;
 
 static struct HXoption g_options_table[] = {
 	{nullptr, 'C', HXTYPE_NONE, &g_do_create, {}, {}, {}, "Create MySQL database tables"},
 	{nullptr, 'U', HXTYPE_NONE, &g_do_upgrade, {}, {}, {}, "Upgrade MySQL database tables"},
 	{"create-old", 0, HXTYPE_NONE, &g_do_create0, {}, {}, {}, "Create MySQL database tables version 0"},
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read"},
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
 int main(int argc, char **argv)
 {
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	HXopt6_auto_result argp;
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	if (g_do_create + g_do_upgrade + g_do_create0 > 1) {
 		fprintf(stderr, "-C/-U/--create-old are mutually exclusive. Decide already!\n");
 		return EXIT_SUCCESS;
 	}
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	std::shared_ptr<CONFIG_FILE> pconfig;
 	if (opt_config_file == nullptr) {

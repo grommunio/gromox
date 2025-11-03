@@ -299,61 +299,6 @@ message_content *message_content::dup() const
 	return dst;
 }
 
-property_groupinfo::property_groupinfo(uint32_t gid) :
-	group_id(gid)
-{
-	auto z = strange_roundup(0, SR_GROW_PROPTAG_ARRAY);
-	pgroups = me_alloc<PROPTAG_ARRAY>(z);
-	if (pgroups == nullptr)
-		throw std::bad_alloc();
-}
-
-property_groupinfo::property_groupinfo(property_groupinfo &&o) noexcept :
-	group_id(o.group_id), reserved(o.reserved), count(o.count),
-	pgroups(std::move(o.pgroups))
-{
-	o.pgroups = nullptr;
-}
-
-bool property_groupinfo::append_internal(PROPTAG_ARRAY *pgroup)
-{
-	auto pgpinfo = this;
-	/* allocate like proptag_array.cpp does */
-	auto z = strange_roundup(pgpinfo->count, SR_GROW_PROPTAG_ARRAY);
-	if (pgpinfo->count + 1 >= z) {
-		z += SR_GROW_PROPTAG_ARRAY;
-		auto list = re_alloc<PROPTAG_ARRAY>(pgpinfo->pgroups, z);
-		if (list == nullptr)
-			return FALSE;
-		pgpinfo->pgroups = list;
-	}
-	pgpinfo->pgroups[pgpinfo->count].count = pgroup->count;
-	pgpinfo->pgroups[pgpinfo->count++].pproptag = pgroup->pproptag;
-	free(pgroup);
-	return TRUE;
-}
-
-bool property_groupinfo::get_partial_index(proptag_t proptag,
-    uint32_t *pindex) const
-{
-	auto pgpinfo = this;
-	for (size_t i = 0; i < pgpinfo->count; ++i)
-		for (size_t j = 0; j < pgpinfo->pgroups[i].count; ++j)
-			if (proptag == pgpinfo->pgroups[i].pproptag[j]) {
-				*pindex = i;
-				return true;
-			}
-	return false;
-}
-
-property_groupinfo::~property_groupinfo()
-{
-	auto pgpinfo = this;
-	for (size_t i = 0; i < pgpinfo->count; ++i)
-		proptag_array_free_internal(pgpinfo->pgroups + i);
-	free(pgpinfo->pgroups);
-}
-
 PROPERTY_XNAME::PROPERTY_XNAME(const PROPERTY_NAME &o) :
 	kind(o.kind), lid(o.lid), guid(o.guid)
 {

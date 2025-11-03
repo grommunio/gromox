@@ -75,6 +75,7 @@ Makefile.in
 /tests/dnsbl_check
 /tests/epv_unpack
 /tests/exrpctest
+/tests/gssauth
 /tests/gxl-383
 /tests/jsontest
 /tests/lzxpress

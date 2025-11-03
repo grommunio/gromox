@@ -92,16 +92,6 @@ int cu_mb_to_utf8(cpid_t codepage, const char *src, char *dst, size_t len)
 	}
 }
 
-void common_util_guid_to_binary(GUID *pguid, BINARY *pbin)
-{
-	pbin->cb = 16;
-	cpu_to_le32p(&pbin->pb[0], pguid->time_low);
-	cpu_to_le16p(&pbin->pb[4], pguid->time_mid);
-	cpu_to_le16p(&pbin->pb[6], pguid->time_hi_and_version);
-	memcpy(pbin->pb + 8,  pguid->clock_seq, sizeof(uint8_t) * 2);
-	memcpy(pbin->pb + 10, pguid->node, sizeof(uint8_t) * 6);
-}
-
 void common_util_set_ephemeralentryid(uint32_t display_type,
 	uint32_t minid, EPHEMERAL_ENTRYID *pephid)
 {
@@ -110,8 +100,8 @@ void common_util_set_ephemeralentryid(uint32_t display_type,
 	pephid->mid = minid;
 }
 
-BOOL common_util_set_permanententryid(unsigned int display_type,
-    const GUID *pobj_guid, const char *pdn, EMSAB_ENTRYID *ppermeid)
+bool common_util_set_permanententryid(unsigned int display_type,
+    const GUID *pobj_guid, const char *pdn, EMSAB_ENTRYID_manual *ppermeid)
 {
 	int len;
 	char buff[128];
@@ -142,8 +132,9 @@ BOOL common_util_set_permanententryid(unsigned int display_type,
 	return TRUE;
 }
 
-BOOL common_util_permanent_entryid_to_binary(const EMSAB_ENTRYID *ppermeid, BINARY *pbin)
+bool cu_permeid_to_bin(const EMSAB_ENTRYID_view &permeid, BINARY *pbin)
 {
+	auto ppermeid = &permeid;
 	size_t len = strlen(ppermeid->px500dn) + 1;
 	pbin->cb = 28 + len;
 	pbin->pv = ndr_stack_alloc(NDR_STACK_OUT, pbin->cb);
@@ -161,9 +152,9 @@ BOOL common_util_permanent_entryid_to_binary(const EMSAB_ENTRYID *ppermeid, BINA
 	return TRUE;
 }
 
-BOOL common_util_ephemeral_entryid_to_binary(
-	const EPHEMERAL_ENTRYID *pephid, BINARY *pbin)
+bool cu_ephid_to_bin(const EPHEMERAL_ENTRYID &ephid, BINARY *pbin)
 {
+	auto pephid = &ephid;
 	pbin->cb = 32;
 	pbin->pv = ndr_stack_alloc(NDR_STACK_OUT, pbin->cb);
 	if (pbin->pv == nullptr)

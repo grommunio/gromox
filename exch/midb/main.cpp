@@ -54,7 +54,7 @@ void (*system_services_broadcast_event)(const char*);
 static gromox::atomic_bool g_main_notify_stop, g_listener_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 std::string g_host_id;
-static char *opt_config_file;
+static const char *opt_config_file;
 static unsigned int opt_show_version;
 static gromox::atomic_bool g_hup_signalled;
 static uint16_t g_listen_port;
@@ -64,7 +64,7 @@ static std::vector<std::string> g_acl_list;
 static void (*exmdb_client_event_proc)(const char *dir, BOOL table, uint32_t notify_id, const DB_NOTIFY *);
 
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -277,13 +277,17 @@ int main(int argc, char **argv)
 {
 	char temp_buff[45];
 	std::shared_ptr<CONFIG_FILE> pconfig;
+	HXopt6_auto_result argp;
 	
 	exmdb_rpc_alloc = cu_alloc_bytes;
 	exmdb_rpc_free = [](void *) {};
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-midb");
 	if (opt_show_version)

@@ -87,7 +87,6 @@ static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id
     std::string &smtpaddr)
 {
 	EMSAB_ENTRYID eid{};
-	auto cl_0 = HX::make_scope_exit([&]() { free(eid.px500dn); });
 	if (ser.g_abk_eid(&eid) != pack_result::success)
 		return ecInvalidParam;
 	/*
@@ -100,7 +99,7 @@ static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id
 	 * The type field (EMSAB_ENTRYID::type) is oddly set (cf.
 	 * doc/user_properties.rst).
 	 */
-	return cvt_essdn_to_username(eid.px500dn, org, std::move(id2user), smtpaddr);
+	return cvt_essdn_to_username(eid.x500dn.c_str(), org, std::move(id2user), smtpaddr);
 }
 
 ec_error_t cvt_emsab_to_essdn(const BINARY *bin, std::string &essdn) try
@@ -109,11 +108,10 @@ ec_error_t cvt_emsab_to_essdn(const BINARY *bin, std::string &essdn) try
 		return ecInvalidParam;
 	EXT_PULL ep;
 	EMSAB_ENTRYID eid{};
-	auto cl_0 = HX::make_scope_exit([&]() { free(eid.px500dn); });
 	ep.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
 	if (ep.g_abk_eid(&eid) != pack_result::success)
 		return ecInvalidParam;
-	essdn = eid.px500dn;
+	essdn = std::move(eid.x500dn);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
@@ -123,14 +121,10 @@ static ec_error_t cvt_oneoff_to_smtpaddr(EXT_PULL &ser, const char *org,
     cvt_id2user id2user, std::string &smtpaddr)
 {
 	ONEOFF_ENTRYID eid{};
-	auto cl_0 = HX::make_scope_exit([&]() {
-		free(eid.pdisplay_name);
-		free(eid.paddress_type);
-		free(eid.pmail_address);
-	});
 	if (ser.g_oneoff_eid(&eid) != pack_result::success)
 		return ecInvalidParam;
-	return cvt_genaddr_to_smtpaddr(eid.paddress_type, eid.pmail_address,
+	return cvt_genaddr_to_smtpaddr(eid.paddress_type.c_str(),
+	       eid.pmail_address.c_str(),
 	       org, std::move(id2user), smtpaddr);
 }
 
@@ -212,14 +206,12 @@ ec_error_t cvt_username_to_abkeid(const char *username, const char *org,
     enum display_type dtx, GET_USER_IDS get_uids, GET_DOMAIN_IDS get_dids,
     std::string &eidbuf) try
 {
-	std::string essdn;
-	auto err = cvt_username_to_essdn(username, org, get_uids, get_dids, essdn);
-	if (err != ecSuccess)
-		return err;
 	EMSAB_ENTRYID te;
 	te.flags = 0;
 	te.type = dtx;
-	te.px500dn = deconst(essdn.c_str());
+	auto err = cvt_username_to_essdn(username, org, get_uids, get_dids, te.x500dn);
+	if (err != ecSuccess)
+		return err;
 	eidbuf.resize(1280);
 	EXT_PUSH ep;
 	if (!ep.init(eidbuf.data(), eidbuf.size(), EXT_FLAG_UTF16) ||

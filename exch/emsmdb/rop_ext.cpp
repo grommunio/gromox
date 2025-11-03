@@ -158,8 +158,8 @@ static pack_result rop_ext_push(EXT_PUSH &x, const GETRECEIVEFOLDERTABLE_RESPONS
 	static constexpr PROPTAG_ARRAY columns = {std::size(proptags), deconst(proptags)};
 
 	TRY(x.p_uint32(r.rows.count));
-	for (size_t i = 0; i < r.rows.count; ++i)
-		TRY(x.p_proprow(columns, r.rows.prows[i]));
+	for (const auto &row : r.rows)
+		TRY(x.p_proprow(columns, row));
 	return pack_result::ok;
 }
 
@@ -710,7 +710,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, MODIFYRECIPIENTS_REQUEST &r)
 		}
 	}
 	for (size_t i = 0; i < r.count; ++i)
-		TRY(x.g_modrcpt_row(&r.proptags, &r.prow[i]));
+		TRY(x.g_modrcpt_row(r.proptags, &r.prow[i]));
 	return pack_result::ok;
 }
 
@@ -909,8 +909,8 @@ static pack_result rop_ext_push(EXT_PUSH &x, const GETADDRESSTYPES_RESPONSE &r)
 	TRY(x.p_uint16(r.address_types.count));
 	uint32_t offset = x.m_offset;
 	TRY(x.advance(sizeof(uint16_t)));
-	for (size_t i = 0; i < r.address_types.count; ++i)
-		TRY(x.p_str(r.address_types.ppstr[i]));
+	for (const auto &atypstr : r.address_types)
+		TRY(x.p_str(atypstr));
 	uint16_t size = x.m_offset - (offset + sizeof(uint16_t));
 	uint32_t offset1 = x.m_offset;
 	x.m_offset = offset;
@@ -1997,7 +1997,7 @@ pack_result rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 			rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;
 		} else {
 			auto compressed_len = lzxpress_compress(ext_buff.get(), subext.m_offset, tmp_buff.get(), ext_buff_size);
-			if (compressed_len <= 0 || compressed_len >= subext.m_offset) {
+			if (compressed_len <= 0 || static_cast<size_t>(compressed_len) >= subext.m_offset) {
 				/* if we can not get benefit from the
 					compression, unmask the compress bit */
 				rpc_header_ext.flags &= ~RHE_FLAG_COMPRESSED;

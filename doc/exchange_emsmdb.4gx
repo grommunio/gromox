@@ -1,20 +1,21 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH exchange_emsmdb 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-exchange_emsmdb(4gx) \(em http(8gx) processing plugin for the Wire Format
-Protocol (Outlook/Exchange RPCs).
+exchange_emsmdb(4gx) \(em Handler for the Wire Format
+Protocol (Outlook/Exchange RPCs) and Remote Operations Protocol
 .SH Description
-exchange_emsmdb is a processing plugin for http(8gx) which handles the remote
-procedure calls for the EMSMDB v1 and AsyncEMSMDB v1 RPC interfaces, as well as
-OXCROPS as issued by the EcDoRpcExt2 call or the MAPIHTTP EXECUTE call.
+exchange_emsmdb is a component of http(8gx) which handles (1.) the remote
+procedure calls for the EMSMDB v1 and AsyncEMSMDB v1 RPC interfaces, and (2.)
+the Remote Operations encoding protocol that is typically wrapped by EMSMDB's
+EcDoRpcExt2 call or MAPIHTTP's EXECUTE call.
 .PP
 EMSMDB is a DCE/RPC interface with just a few RPC calls (6 are still used
 today). ecDoRpcExt2, a call offered by that interface, takes an opaque byte
 buffer argument not interpreted by DCE/RPC. That byte buffer contains another
 protocol, "Remote Operation(s) Encoding Protocol" [OXCROPS]. No reason for this
 wrapping is given in the OXCRPC spec. MAPIHTTP runs OXCROPS directly without
-the extra EMSMDB framing.
+the extra DCERPC/EMSMDB framing.
 .PP
 OXCROPS consists of 130 calls that make up the mailbox protocol.
 .SH Configuration directives (gromox.cfg)
@@ -28,7 +29,7 @@ underperforming in modern contexts: the rate is just about 60 MB/s on a 5950X
 CPU, which is a tenth of what zstd-1.5.7 achieves, and the compression ratio is
 somewhere between Unix compress(1) and gzip level 1.
 .br
-Default: \fI0\fP
+Default: \fI-1\fP
 .TP
 \fBoutgoing_smtp_url\fP
 See gromox.cfg(5):outgoing_smtp_url.
@@ -89,7 +90,7 @@ Enables soft-delete support for folders in private stores. (This feature is
 experimental.) Public folders always have this on. (Take note that
 exmdb_provider.cfg:exmdb_private_folder_softdelete also need to be enabled.)
 .br
-Default: \fIno\fP
+Default: \fIyes\fP
 .TP
 \fBemsmdb_rop_chaining\fP
 0: Deactivate ROP chaining. 1: Enable ROP chaining for OL < 15 and OL >=
@@ -123,7 +124,7 @@ all ROPs. Note the daemon log level needs to be "debug" (6), too.
 Default: \fI0\fP
 .TP
 \fBsubmit_command\fP
-Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
+Default: \fI/usr/bin/php /usr/share/gromox/submit.php\fP
 .TP
 \fBx500_org_name\fP
 Default: (unspecified)
@@ -131,8 +132,6 @@ Default: (unspecified)
 .IP \(bu 4
 \fIdata_file_path\fP/notify_bounce/: templates for read/nonread notification
 mails sent to originators
-.IP \(bu 4
-\fIdata_file_path\fP/msgchg_grouping/\fI*\fP.txt
 .SH Outlook notes
 Outlook can be started with the \fB/rpcinfo\fP command-line parameter to
 display a status table about the RPC connections it has open. Alternatively,

@@ -7,13 +7,6 @@
 #include "ics_state.hpp"
 
 enum {
-	SPECIAL_CONTAINER_ROOT = 0xc,
-	SPECIAL_CONTAINER_EMPTY = 0xd,
-	SPECIAL_CONTAINER_PROVIDER = 0xe,
-	SPECIAL_CONTAINER_GAL = 0xf,
-};
-
-enum {
 	CONTAINER_TYPE_FOLDER = 1,
 	CONTAINER_TYPE_ABTREE = 2,
 };
@@ -222,10 +215,10 @@ struct user_object {
 
 struct oneoff_object {
 	protected:
-	oneoff_object(const ONEOFF_ENTRYID &);
+	oneoff_object(ONEOFF_ENTRYID &&);
 
 	public:
-	static std::unique_ptr<oneoff_object> create(const ONEOFF_ENTRYID &);
+	static std::unique_ptr<oneoff_object> create(ONEOFF_ENTRYID &&);
 	ec_error_t get_props(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
 
 	static const uint32_t all_tags_raw[];

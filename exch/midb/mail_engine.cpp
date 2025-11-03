@@ -237,10 +237,18 @@ static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
 {
 	auto dir = cu_get_maildir();
 	std::string slurp_data;
-	if (exmdb_client->imapfile_read(dir, "ext", mid_string, &slurp_data)) {
-		if (!json_from_str(slurp_data.c_str(), digest))
-			return 0;
-	} else {
+	bool have_ext = false;
+
+	/* ext files may be absent (only midb generates them) */
+	if (exmdb_client->imapfile_read(dir, "ext", mid_string, &slurp_data))
+		if (json_from_str(slurp_data.c_str(), digest) &&
+		    digest.isMember("structure") && digest.isMember("mimes"))
+			have_ext = true;
+	if (!have_ext) {
+		/*
+		 * eml files are generally present, either because http wrote
+		 * it, or midb's me_insert_message wrote it.
+		 */
 		if (!exmdb_client->imapfile_read(dir, "eml", mid_string, &slurp_data))
 			return 0;
 		MAIL imail;
@@ -1334,7 +1342,15 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 	if (e.midstr.size() > 0 &&
 	    !exmdb_client->imapfile_read(dir, "ext", e.midstr, &djson))
 		e.midstr.clear();
-	if (e.midstr.empty()) {
+	Json::Value digest;
+	if (djson.size() > 0) {
+		if (!json_from_str(djson.c_str(), digest) ||
+		    !digest.isMember("structure") || !digest.isMember("mimes")) {
+			djson.clear();
+			digest = {};
+		}
+	}
+	if (digest.empty()) {
 		if (!cu_switch_allocator())
 			return;
 		if (!exmdb_client->read_message(dir, nullptr, CP_ACP,
@@ -1360,10 +1376,9 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 			return;
 		}
 		cu_switch_allocator();
-		Json::Value digest;
 		if (imail.make_digest(digest) <= 0)
 			return;
-		digest["file"] = "";
+		digest.removeMember("file");
 		djson = json_to_str(digest);
 		char guidtxt[GUIDSTR_SIZE]{};
 		GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
@@ -1386,9 +1401,6 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 	(*puidnext) ++;
 	bool b_unsent = e.msg_flags & MSGFLAG_UNSENT;
 	bool b_read   = e.msg_flags & MSGFLAG_READ;
-	Json::Value digest;
-	if (!json_from_str(djson.c_str(), digest))
-		return;
 	djson.clear();
 	size_t size = 0;
 	me_extract_digest_fields(digest, subject,

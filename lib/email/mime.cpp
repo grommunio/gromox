@@ -89,6 +89,9 @@ bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length)
 		strcpy(pmime->content_type, "text/plain");
 		return true;
 	}
+
+	pmime->head_begin = in_buff;
+	pmime->head_length = 0;
 	while (current_offset <= length) {
 		MIME_FIELD mime_field;
 		auto parsed_length = parse_mime_field(in_buff + current_offset,
@@ -111,7 +114,6 @@ bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length)
 			auto nl_size = newline_size(&in_buff[current_offset], length);
 			if (nl_size == 0)
 				continue;
-			pmime->head_begin = in_buff;
 			pmime->head_length = current_offset;
 			/*
 			 * If an empty line is met, end the parse of mail head
@@ -159,7 +161,6 @@ bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length)
 			pmime->mime_type = mime_type::single;
 			return true;
 		}
-		pmime->head_begin = in_buff;
 		pmime->head_length = current_offset;
 
 		if (current_offset > length) {
@@ -342,7 +343,8 @@ bool MIME::write_mail(MAIL *pmail)
 	pmime->content_begin = reinterpret_cast<char *>(pmail);
 	pmime->content_length = 0;
 	content_buf.reset();
-	pmime->set_field("Content-Transfer-Encoding", "8bit");
+	if (!pmime->set_field("Content-Transfer-Encoding", "8bit"))
+		return false;
 	return true;
 }
 

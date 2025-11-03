@@ -1,15 +1,15 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2021 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH exchange_rfr 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-exchange_rfr \(em http(8gx) processing plugin for the Address Book Name
+exchange_rfr \(em Handler for the Address Book Name
 Service Provider Interface Referral Protocol.
 .SH Description
-exchange_rfr is a processing plugin for http(8gx) which handles the Address
+exchange_rfr is a component for http(8gx) which handles the Address
 Book Name Service Provider Interface Referral Protocol, also referred to as
 the Directory Service Referral Interface (RFRI).
 .SH Configuration directives
-This plugin has no directives and therefore no config file.
+This component has no config directives of its own.
 .SH Normative references
 .IP \(bu 4
 MS-OXABREF: Address Book Name Service Provider Interface (NSPI) Referral

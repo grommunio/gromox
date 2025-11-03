@@ -10,8 +10,6 @@ enum class logon_mode {
 	owner, delegate, guest,
 };
 
-struct property_groupinfo;
-
 struct logon_object {
 	protected:
 	logon_object() = default;
@@ -27,14 +25,6 @@ struct logon_object {
 	BOOL get_named_propnames(const PROPID_ARRAY &, PROPNAME_ARRAY *);
 	BOOL get_named_propid(BOOL create, const PROPERTY_NAME *, gromox::propid_t *);
 	BOOL get_named_propids(BOOL create, const PROPNAME_ARRAY *, PROPID_ARRAY *);
-	/*
-	 * Used for message partial change information when saving 
-	 * message, the return value is maintained by logon object,
-	 * do not free it outside.
-	 */
-	const property_groupinfo *get_last_property_groupinfo();
-	/* same as logon_object_get_last_property_groupinfo, do not free it outside */
-	const property_groupinfo *get_property_groupinfo(uint32_t group_id);
 	BOOL get_all_proptags(PROPTAG_ARRAY *) const;
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *) const;
 	BOOL set_properties(const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
@@ -49,8 +39,6 @@ struct logon_object {
 	char account[UADDR_SIZE]{};
 	char dir[256]{};
 	GUID mailbox_guid{}, mapping_signature{};
-	std::unique_ptr<property_groupinfo> m_gpinfo;
-	std::vector<property_groupinfo> group_list;
 	std::unordered_map<uint32_t, PROPERTY_XNAME> propid_hash;
 	std::unordered_map<std::string, uint16_t> propname_hash;
 };

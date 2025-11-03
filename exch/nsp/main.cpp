@@ -223,7 +223,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		*ppout = out;
 		out->stat = in->stat;
 		out->result = nsp_interface_get_matches(in->handle,
-		              in->reserved1, &out->stat, in->preserved,
+		              in->reserved1, &out->stat, in->ptable,
 		              in->reserved2, in->pfilter, in->ppropname,
 		              in->requested, &out->poutmids, in->pproptags,
 		              &out->prows);

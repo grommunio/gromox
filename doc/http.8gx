@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH http 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 http \(em Central server for RPC and the message database
@@ -23,7 +23,7 @@ Requests are passed to the mod_rewrite(4gx) module (built-in) to have their URI
 potentially rewritten.
 .IP \(bu 4
 If a HTTP request is using the methods RPC_IN_DATA or RPC_OUT_DATA, the data
-stream is handed off to the exchange_emsmdb(4gx) plugin.
+stream is handed off to the exchange_emsmdb(4gx) component.
 .IP \(bu 4
 Otherwise, HTTP processing modules (HPM) are invoked. Processing ends when
 one module signals that the request was handled. The order depends on the HPM
@@ -39,7 +39,7 @@ Otherwise, the request is rejected.
 .SH RPC-over-HTTP
 RPC-over-HTTP utilizes two special HTTP methods, RPC_IN_DATA and RPC_OUT_DATA.
 These requests can, similarly to HTTP CONNECT, be very long-lived. The RPC data
-stream is handled by the included exchange_emsmdb(4gx) plugin.
+stream is handled by the included exchange_emsmdb(4gx) component.
 .PP
 All time-based command-line options and configuration file directives are
 subject to the syntax described in gromox(7), section "Duration
@@ -84,7 +84,9 @@ Default: \fI1 minute\fP
 .TP
 \fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further
-configuration files, especially those used by plugin instances.
+configuration files, especially those used by subcomponent instances. (For
+example, mysql_adaptor(4gx) would be directed to look at
+/etc/gromox/http/mysql_adaptor.cfg before /etc/gromox/mysql_adaptor.cfg.)
 .br
 Default: \fI/etc/gromox/http:/etc/gromox\fP
 .TP
@@ -107,17 +109,22 @@ Default: \fI10 minutes\fP
 .TP
 .TP
 \fBgss_program\fP
-The helper program to use for authenticating SPNEGO-GSS requests. The value is
-rudimentarily tokenized at whitespaces, so no special characters may be used.
-(If you need to, write a shell wrapper.) The special value "internal-gss" uses
-libgssapi directly.
-The use of Squid's negotiate_wrapper_auth is optional; Gromox can identify
-whether requests are SPNEGO-NTLMSSP or SPNEGO-Kerberos in the same fashion as
-negotiate_wrapper_auth does.
+The helper program to use for authenticating HTTP requests when
+Negotiate-SPNEGO headers are presented. The value is rudimentarily tokenized at
+whitespaces, and no special characters may be used. If necessary, write your
+own wrapper. The special value "internal-gss" uses libgssapi directly.
+.br
+Negotiate was meant to carry GSS-API auth data (appearing as "Authorization:
+Negotiate YII..." in HTTP protocol dumps). NTLM can be wrapped in SPNEGO (also
+shows up as "YII"), but a handful of clients may also send raw NTLM tokens
+(appearing as "Authorization: Negotiate TlRMTVNT..."). Whether raw NTLM tokens
+are accepted by internal-gss depends on your GSS library and, more broadly,
+your Kerberos setup. Otherwise, you may need to use a helper program like the
+one from Squid. internal-gss also does not offer a way to specify a separate
+keytab or replay cache parameters, so use Squid's helper if you need such
+parameters.
 .br
 Default: \fIinternal\-gss\fP
-.br
-Example: \fI/usr/lib/squid/negotiate_kerberos_auth \-s GSS_C_NO_NAME\fP
 .br
 Example: \fI/usr/lib/squid/negotiate_wrapper_auth \-\-ntlm /usr/bin/ntlm_auth
 \-\-helper\-protocol=squid\-2.5\-ntlmssp \-\-kerberos
@@ -125,7 +132,7 @@ Example: \fI/usr/lib/squid/negotiate_wrapper_auth \-\-ntlm /usr/bin/ntlm_auth
 .TP
 \fBhost_id\fP
 A unique identifier for this system. It is used for the Server HTTP responses
-header, for service plugins like exmdb_provider(4gx), which makes use of it for
+header, for components like exmdb_provider(4gx), which makes use of it for
 SMTP HELO lines, for DSN report texts, for MIDB database/EML cache. The
 identifier should only use characters allowed for hostnames.
 .br
@@ -176,8 +183,14 @@ Enforce authentication at all times. This is a debugging knob.
 Default: \fIno\fP
 .TP
 \fBhttp_krb_service_principal\fP
+Kerberos service principal to use when gss_program=internal-gss. The form is
+often something like \fIHTTP\fP\fB/\fP\fIfqdn\fP\fB@\fP\fIREALM\fP, but may
+vary. When using an external GSS authentication helper,
+http_krb_service_principal has no effect, and any principal you want to use
+needs to be passed via the \fBgss_program\fP directive in some way.
+be
 .br
-Default: \fBgromox@\fP\fIhost_id\fP
+Default: (empty)
 .TP
 \fBhttp_listen_addr\fP
 AF_INET6 socket address to bind the HTTP service to.
@@ -249,21 +262,6 @@ all RPCs. Note the daemon log level needs to be "debug" (6), too.
 .br
 Default: \fI0\fP
 .TP
-\fBntlmssp_program\fP
-Path to samba-winbind ntlm_auth or equivalent program that implements the Squid
-authentication helper text protocol ("YR, TT, KK, AF"). The value is
-rudimentarily tokenized at whitespaces, so no special characters may be used.
-(If you need to, write a shell wrapper.)
-The use of Squid's negotiate_wrapper_auth is optional; Gromox can identify
-whether requests are SPNEGO-NTLMSSP or SPNEGO-Kerberos in the same fashion as
-negotiate_wrapper_auth does.
-.br
-Default: \fI/usr/bin/ntlm_auth \-\-helper\-protocol=squid\-2.5\-ntlmssp\fP
-.br
-Example: \fI/usr/lib/squid/negotiate_wrapper_auth \-\-ntlm /usr/bin/ntlm_auth
-\-\-helper\-protocol=squid\-2.5\-ntlmssp \-\-kerberos
-/usr/lib/squid/negotiate_kerberos_auth \-s GSS_C_NO_NAME\fP
-.TP
 \fBrequest_max_mem\fP
 The maximum hint size for fragmented RPC PDU requests that will be allowed
 (C706 §12.6.3.7, MS-RPCE v33 §2.2.2.6).
@@ -290,13 +288,6 @@ Default: \fI0\fP (do not limit the MSS)
 .TP
 \fBuser_default_lang\fP
 Default: \fIen\fP
-.SH Files
-.IP \(bu 4
-/usr/lib/gromox/libgxh_*.so: HTTP processing plugins
-.IP \(bu 4
-/usr/lib/gromox/libgxp_*.so: PDU processing plugins
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: service plugins
 .SH Normative references
 .IP \(bu 4
 MS-RPCE: Remote Procedure Call Protocol Extensions

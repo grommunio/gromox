@@ -636,6 +636,19 @@ ec_error_t zs_logon(const char *username, const char *password,
 	return zs_logon_phase2(std::move(mres), phsession);
 }
 
+ec_error_t zs_logon_np(const char *username, const char *password,
+    const char *rhost, uint32_t flags, GUID *phsession)
+{
+	sql_meta_result mres{};
+	auto ret = mysql_adaptor_meta(username, WANTPRIV_METAONLY, mres);
+	if (ret != 0) {
+		mlog(LV_WARN, "rhost=[%s]:0 user=%s zs_logon_np rejected: %s",
+			znul(rhost), username, mres.errstr.c_str());
+		return ecLoginFailure;
+	}
+	return zs_logon_phase2(std::move(mres), phsession);
+}
+
 ec_error_t zs_logon_token(const char *token, const char *rhost, GUID *phsession)
 {
 	sql_meta_result mres{};
@@ -656,33 +669,29 @@ ec_error_t zs_checksession(GUID hsession)
 }
 
 ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
-    char **ppdisplay_name, char **ppx500dn, uint32_t *pprivilege_bits) try
+    std::string *dispname, std::string *essdn, uint32_t *pprivilege_bits) try
 {
-	std::string essdn, dispname;
 	EXT_PUSH ext_push;
-	EMSAB_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID_view tmp_entryid;
 	
-	if (!mysql_adaptor_get_user_displayname(username, dispname) ||
+	if (!mysql_adaptor_get_user_displayname(username, *dispname) ||
 	    !mysql_adaptor_get_user_privilege_bits(username, pprivilege_bits))
 		return ecNotFound;
 	auto err = cvt_username_to_essdn(username, g_org_name,
 	           mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
-	           essdn);
+	           *essdn);
 	if (err != ecSuccess)
 		return err;
 	tmp_entryid.flags = 0;
 	tmp_entryid.type = DT_MAILUSER;
-	tmp_entryid.px500dn = deconst(essdn.c_str());
+	tmp_entryid.px500dn = essdn->c_str();
 	pentryid->pv = common_util_alloc(1280);
 	if (pentryid->pv == nullptr ||
 	    !ext_push.init(pentryid->pb, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(tmp_entryid) != pack_result::ok)
 		return ecError;
 	pentryid->cb = ext_push.m_offset;
-	*ppdisplay_name = common_util_dup(dispname);
-	*ppx500dn = common_util_dup(essdn);
-	return *ppdisplay_name == nullptr || *ppx500dn == nullptr ?
-	       ecServerOOM : ecSuccess;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
 }
@@ -704,7 +713,7 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 {
 	BOOL b_private;
 	int account_id;
-	char essdn[1024];
+	std::string essdn;
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t address_type;
@@ -715,12 +724,10 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 		return ecError;
 	if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
 		/* Stupid GUID-less entryid from submit.php */
-		gx_strlcpy(essdn, entryid.pc, sizeof(essdn));
-		return zs_openentry_emsab(hsession, entryid, flags, essdn,
+		return zs_openentry_emsab(hsession, entryid, flags, entryid.pc,
 		       DT_REMOTE_MAILUSER, pmapi_type, phobject);
-	} else if (common_util_parse_addressbook_entryid(entryid, &address_type,
-	    essdn, std::size(essdn))) {
-		return zs_openentry_emsab(hsession, entryid, flags, essdn,
+	} else if (cu_parse_abkeid(entryid, &address_type, essdn)) {
+		return zs_openentry_emsab(hsession, entryid, flags, essdn.c_str(),
 		       address_type, pmapi_type, phobject);
 	} else if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidZCSAB) {
 		return zs_openentry_zcsab(hsession, entryid, flags,
@@ -819,7 +826,6 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 	uint16_t type;
 	BOOL b_private;
 	int account_id;
-	char essdn[1024];
 	uint64_t fid_val;
 	uint8_t loc_type;
 	zs_objtype mapi_type;
@@ -842,6 +848,9 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		            PRIVATE_FID_ROOT : PUBLIC_FID_ROOT);
 		message_id = 0;
 	} else {
+		std::string essdn_s;
+		const char *essdn = essdn_s.c_str();
+
 		type = common_util_get_messaging_entryid_type(entryid);
 		switch (type) {
 		case EITLT_PRIVATE_FOLDER:
@@ -860,12 +869,11 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			break;
 		}
 		if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
-			gx_strlcpy(essdn, entryid.pc, sizeof(essdn));
-		} else if (common_util_parse_addressbook_entryid(entryid,
-		     &address_type, essdn, std::size(essdn)) &&
-		     strncmp(essdn, "/exmdb=", 7) == 0 &&
+			essdn = entryid.pc;
+		} else if (cu_parse_abkeid(entryid, &address_type, essdn_s) &&
+		     strncmp(essdn_s.c_str(), "/exmdb=", 7) == 0 &&
 		     address_type == DT_REMOTE_MAILUSER) {
-			/* do nothing */	
+			essdn = essdn_s.c_str();
 		} else {
 			return ecInvalidParam;
 		}
@@ -996,7 +1004,7 @@ static ec_error_t zs_openab_oop(USER_INFO_REF &&info, BINARY bin,
 	ep.init(bin.pv, bin.cb, common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
 	if (ep.g_oneoff_eid(&eid) != pack_result::ok)
 		return ecInvalidParam;
-	auto u = oneoff_object::create(eid);
+	auto u = oneoff_object::create(std::move(eid));
 	if (u == nullptr)
 		return ecServerOOM;
 	*zmg_type = zs_objtype::oneoff;
@@ -1014,7 +1022,7 @@ ec_error_t zs_openabentry(GUID hsession,
 	if (0 == entryid.cb) {
 		CONTAINER_ID container_id;
 		container_id.abtree_id.base_id = base_id;
-		container_id.abtree_id.minid = SPECIAL_CONTAINER_ROOT;
+		container_id.abtree_id.minid = ab_tree::minid::SC_ROOT;
 		auto contobj = container_object::create(CONTAINER_TYPE_ABTREE, container_id);
 		if (contobj == nullptr)
 			return ecError;
@@ -1040,13 +1048,13 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
     int base_id, zs_objtype *pmapi_type, uint32_t *phobject)
 {
 	int user_id, domain_id;
-	char essdn[1024];
+	std::string essdn_s;
 	uint32_t address_type;
 
-	if (!common_util_parse_addressbook_entryid(entryid, &address_type,
-	    essdn, std::size(essdn)))
+	if (!cu_parse_abkeid(entryid, &address_type, essdn_s))
 		return ecInvalidParam;
 
+	auto essdn = essdn_s.data();
 	if (address_type == DT_CONTAINER) {
 		CONTAINER_ID container_id;
 		uint8_t type;
@@ -1055,11 +1063,11 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
 		if (strcmp(essdn, "/") == 0) {
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;
-			container_id.abtree_id.minid = SPECIAL_CONTAINER_GAL;
+			container_id.abtree_id.minid = ab_tree::minid::SC_GAL;
 		} else if (strcmp(essdn, "/exmdb") == 0) {
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;
-			container_id.abtree_id.minid = SPECIAL_CONTAINER_EMPTY;
+			container_id.abtree_id.minid = ab_tree::minid::SC_EMPTY;
 		} else {
 			if (strncmp(essdn, "/guid=", 6) != 0 || strlen(essdn) != 38)
 				return ecNotFound;
@@ -1148,12 +1156,12 @@ static ec_error_t zs_openab_zcsab(USER_INFO_REF &&info, BINARY entryid,
 	    static_cast<mapi_object_type>(mapi_type) != MAPI_ABCONT ||
 	    ep.advance(4) != pack_result::ok ||
 	    ep.g_folder_eid(&fe) != pack_result::ok ||
-	    fe.folder_type != EITLT_PRIVATE_FOLDER)
+	    fe.eid_type != EITLT_PRIVATE_FOLDER)
 		return ecInvalidParam;
 
 	CONTAINER_ID ctid;
 	ctid.exmdb_id.b_private = TRUE;
-	ctid.exmdb_id.folder_id = rop_util_make_eid(1, fe.global_counter);
+	ctid.exmdb_id.folder_id = rop_util_make_eid(1, fe.folder_gc);
 	auto contobj = container_object::create(CONTAINER_TYPE_FOLDER, ctid);
 	if (contobj == nullptr)
 		return ecError;
@@ -1308,7 +1316,7 @@ ec_error_t zs_getabgal(GUID hsession, BINARY *pentryid)
 {
 	void *pvalue;
 	
-	if (!container_object_fetch_special_property(SPECIAL_CONTAINER_GAL,
+	if (!container_object_fetch_special_property(ab_tree::minid::SC_GAL,
 	    PR_ENTRYID, &pvalue))
 		return ecError;
 	if (pvalue == nullptr)
@@ -1680,8 +1688,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
     uint32_t hdstfolder, const BINARY_ARRAY *pentryids, uint32_t flags)
 {
-	BOOL b_done, b_guest = TRUE, b_owner;
-	EID_ARRAY ids;
+	BOOL b_guest = TRUE, b_owner;
 	BOOL b_partial;
 	BOOL b_private;
 	int account_id;
@@ -1750,14 +1757,18 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 					if (!b_owner)
 						continue;
 				}
-				if (!exmdb_client_delete_message(src_store->get_dir(),
-				    src_store->account_id, pinfo->cpid,
-				    psrc_folder->folder_id, message_id, false, &b_done))
+				BOOL b_partial = false;
+				const EID_ARRAY ids = {1, &message_id};
+				if (!exmdb_client->delete_messages(src_store->get_dir(),
+				    pinfo->cpid, nullptr, psrc_folder->folder_id,
+				    &ids, false, &b_partial))
 					return ecError;
 			}
 		}
 		return ecSuccess;
 	}
+
+	EID_ARRAY ids;
 	ids.count = 0;
 	ids.pids = cu_alloc<uint64_t>(pentryids->count);
 	if (ids.pids == nullptr)
@@ -2994,8 +3005,6 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 	TPROPVAL_ARRAY *prcpt;
 	FLATUID provider_uid;
 	TAGGED_PROPVAL *ppropval;
-	ONEOFF_ENTRYID oneoff_entry;
-	EMSAB_ENTRYID ab_entryid;
 	
 	if (prcpt_list->count >= 0x7fef || (flags != MODRECIP_ADD &&
 	    flags != MODRECIP_MODIFY && flags != MODRECIP_REMOVE))
@@ -3042,91 +3051,95 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				*prowid = last_rowid;
 			else
 				last_rowid = *prowid;
-		} else {
-			prcpt = prcpt_list->pparray[i];
-			ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 1);
+			continue;
+		}
+		prcpt = prcpt_list->pparray[i];
+		ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 1);
+		if (ppropval == nullptr)
+			return ecServerOOM;
+		memcpy(ppropval, prcpt->ppropval,
+			sizeof(TAGGED_PROPVAL)*prcpt->count);
+		ppropval[prcpt->count].proptag = PR_ROWID;
+		ppropval[prcpt->count].pvalue = cu_alloc<uint32_t>();
+		if (ppropval[prcpt->count].pvalue == nullptr)
+			return ecServerOOM;
+		*static_cast<uint32_t *>(ppropval[prcpt->count++].pvalue) = last_rowid;
+		prcpt->ppropval = ppropval;
+		auto pbin = prcpt->get<BINARY>(PR_ENTRYID);
+		if (pbin == nullptr ||
+		    (prcpt->has(PR_EMAIL_ADDRESS) &&
+		    prcpt->has(PR_ADDRTYPE) && prcpt->has(PR_DISPLAY_NAME)))
+			continue;
+		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
+		if (ext_pull.g_uint32(&tmp_flags) != pack_result::ok ||
+		    tmp_flags != 0)
+			continue;
+		if (ext_pull.g_guid(&provider_uid) != pack_result::ok)
+			continue;
+		if (provider_uid == muidEMSAB) {
+			EMSAB_ENTRYID ab_entryid;
+			EXT_PULL ext_pull;
+
+			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+			if (ext_pull.g_abk_eid(&ab_entryid) != pack_result::ok ||
+			    ab_entryid.type != DT_MAILUSER)
+				continue;
+			ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 4);
 			if (ppropval == nullptr)
 				return ecServerOOM;
 			memcpy(ppropval, prcpt->ppropval,
-				sizeof(TAGGED_PROPVAL)*prcpt->count);
-			ppropval[prcpt->count].proptag = PR_ROWID;
-			ppropval[prcpt->count].pvalue = cu_alloc<uint32_t>();
-			if (ppropval[prcpt->count].pvalue == nullptr)
-				return ecServerOOM;
-			*static_cast<uint32_t *>(ppropval[prcpt->count++].pvalue) = last_rowid;
+				prcpt->count*sizeof(TAGGED_PROPVAL));
 			prcpt->ppropval = ppropval;
-			auto pbin = prcpt->get<BINARY>(PR_ENTRYID);
-			if (pbin == nullptr ||
-			    (prcpt->has(PR_EMAIL_ADDRESS) &&
-			    prcpt->has(PR_ADDRTYPE) && prcpt->has(PR_DISPLAY_NAME)))
+			auto err = cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
+			if (err != ecSuccess)
+				return err;
+			auto dupval = common_util_dup(ab_entryid.x500dn.c_str());
+			if (dupval == nullptr)
+				return ecServerOOM;
+			cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
+			std::string es_result;
+			auto ret = cvt_essdn_to_username(ab_entryid.x500dn.c_str(),
+				   g_org_name, mysql_adaptor_userid_to_name, es_result);
+			if (ret != ecSuccess)
 				continue;
-			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
-			if (ext_pull.g_uint32(&tmp_flags) != pack_result::ok ||
-			    tmp_flags != 0)
+			dupval = common_util_dup(es_result);
+			if (dupval == nullptr)
+				return ecServerOOM;
+			es_result.clear();
+			cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
+			if (!mysql_adaptor_get_user_displayname(tmp_buff, es_result))
 				continue;
-			if (ext_pull.g_guid(&provider_uid) != pack_result::ok)
+			dupval = common_util_dup(es_result);
+			if (dupval == nullptr)
+				return ecServerOOM;
+			cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
+		} else if (provider_uid == muidOOP) {
+			ONEOFF_ENTRYID oneoff_entry;
+			EXT_PULL ext_pull;
+
+			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
+			if (ext_pull.g_oneoff_eid(&oneoff_entry) != pack_result::ok ||
+			    strcasecmp(oneoff_entry.paddress_type.c_str(), "SMTP") != 0)
 				continue;
-			if (provider_uid == muidEMSAB) {
-				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-				if (ext_pull.g_abk_eid(&ab_entryid) != pack_result::ok ||
-				    ab_entryid.type != DT_MAILUSER)
-					continue;
-				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 4);
-				if (ppropval == nullptr)
-					return ecServerOOM;
-				memcpy(ppropval, prcpt->ppropval,
-					prcpt->count*sizeof(TAGGED_PROPVAL));
-				prcpt->ppropval = ppropval;
-				auto err = cu_set_propval(prcpt, PR_ADDRTYPE, "EX");
-				if (err != ecSuccess)
-					return err;
-				auto dupval = common_util_dup(ab_entryid.px500dn);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
-				std::string es_result;
-				auto ret = cvt_essdn_to_username(ab_entryid.px500dn,
-				           g_org_name, mysql_adaptor_userid_to_name, es_result);
-				if (ret != ecSuccess)
-					continue;
-				dupval = common_util_dup(es_result);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				es_result.clear();
-				cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
-				if (!mysql_adaptor_get_user_displayname(tmp_buff, es_result))
-					continue;	
-				dupval = common_util_dup(es_result);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
-				continue;
-			}
-			if (provider_uid == muidOOP) {
-				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-				if (ext_pull.g_oneoff_eid(&oneoff_entry) != pack_result::ok ||
-				    strcasecmp(oneoff_entry.paddress_type, "SMTP") != 0)
-					continue;
-				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 5);
-				if (ppropval == nullptr)
-					return ecServerOOM;
-				memcpy(ppropval, prcpt->ppropval,
-					prcpt->count*sizeof(TAGGED_PROPVAL));
-				prcpt->ppropval = ppropval;
-				cu_set_propval(prcpt, PR_ADDRTYPE, "SMTP");
-				auto dupval = common_util_dup(oneoff_entry.pmail_address);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
-				cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
-				dupval = common_util_dup(oneoff_entry.pdisplay_name);
-				if (dupval == nullptr)
-					return ecServerOOM;
-				cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
-				cu_set_propval(prcpt, PR_SEND_RICH_INFO,
-					oneoff_entry.ctrl_flags & MAPI_ONE_OFF_NO_RICH_INFO ?
-					&persist_false : &persist_true);
-			}
+			ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 5);
+			if (ppropval == nullptr)
+				return ecServerOOM;
+			memcpy(ppropval, prcpt->ppropval,
+				prcpt->count*sizeof(TAGGED_PROPVAL));
+			prcpt->ppropval = ppropval;
+			cu_set_propval(prcpt, PR_ADDRTYPE, "SMTP");
+			auto dupval = common_util_dup(oneoff_entry.pmail_address);
+			if (dupval == nullptr)
+				return ecServerOOM;
+			cu_set_propval(prcpt, PR_EMAIL_ADDRESS, dupval);
+			cu_set_propval(prcpt, PR_SMTP_ADDRESS, dupval);
+			dupval = common_util_dup(oneoff_entry.pdisplay_name);
+			if (dupval == nullptr)
+				return ecServerOOM;
+			cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
+			cu_set_propval(prcpt, PR_SEND_RICH_INFO,
+				oneoff_entry.ctrl_flags & MAPI_ONE_OFF_NO_RICH_INFO ?
+				&persist_false : &persist_true);
 		}
 	}
 	return pmessage->set_rcpts(prcpt_list) ? ecSuccess : ecError;
@@ -3251,23 +3264,23 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0)
 		return ecAccessDenied;
-	std::string username;
-	if (!cu_extract_delegate(pmessage, username))
+	std::string delegator;
+	if (!cu_extract_delegator(pmessage, delegator))
 		return ecSendAsDenied;
-	auto account = pstore->get_account();
+	auto actor = pstore->get_account();
 	repr_grant repr_grant;
-	if (username.empty()) {
-		username = account;
+	if (delegator.empty()) {
+		delegator = actor;
 		repr_grant = repr_grant::send_as;
 	} else {
-		repr_grant = cu_get_delegate_perm_AA(account, username.c_str());
+		repr_grant = cu_get_delegate_perm_AA(actor, delegator.c_str());
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
 		mlog(LV_INFO, "I-1334: uid %s tried to submit %s:%llxh with from=<%s>, but no impersonation permission given.",
-		        account, pstore->dir, LLU{pmessage->get_id()}, username.c_str());
+		        actor, pstore->dir, LLU{pmessage->get_id()}, delegator.c_str());
 		return ecAccessDenied;
 	}
-	auto err = rectify_message(pmessage, username.c_str(),
+	auto err = rectify_message(pmessage, delegator.c_str(),
 	           repr_grant >= repr_grant::send_as);
 	if (err != ecSuccess)
 		return err;
@@ -3324,8 +3337,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		auto deferred_time = props_to_defer_interval(tmp_propvals);
 		if (deferred_time > 0) {
 			snprintf(command_buff, 1024, "%s %s %llu",
-				common_util_get_submit_command(),
-			         pstore->get_account(),
+			         common_util_get_submit_command(), actor,
 			         LLU{rop_util_get_gc_value(pmessage->get_id())});
 			timer_id = system_services_add_timer(
 					command_buff, deferred_time);
@@ -3340,7 +3352,8 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 			return ecSuccess;
 		}
 	}
-	auto ret = cu_send_message(pstore, pmessage, TRUE);
+	auto ev_from = repr_grant >= repr_grant::send_as ? delegator.c_str() : actor;
+	auto ret = cu_send_message(pstore, pmessage, ev_from);
 	if (ret != ecSuccess) {
 		exmdb_client->clear_submit(pstore->get_dir(),
 			pmessage->get_id(), b_unsent);

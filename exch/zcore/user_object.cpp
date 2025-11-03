@@ -17,9 +17,9 @@
 
 using namespace gromox;
 
-std::unique_ptr<oneoff_object> oneoff_object::create(const ONEOFF_ENTRYID &e) try
+std::unique_ptr<oneoff_object> oneoff_object::create(ONEOFF_ENTRYID &&e) try
 {
-	return std::unique_ptr<oneoff_object>(new oneoff_object(e));
+	return std::unique_ptr<oneoff_object>(new oneoff_object(std::move(e)));
 } catch (const std::bad_alloc &) {
 	return nullptr;
 }
@@ -32,9 +32,9 @@ const uint32_t oneoff_object::all_tags_raw[] = {
 const PROPTAG_ARRAY oneoff_object::all_tags =
 	{std::size(all_tags_raw), deconst(all_tags_raw)};
 
-oneoff_object::oneoff_object(const ONEOFF_ENTRYID &e) :
-	m_flags(e.ctrl_flags), m_dispname(znul(e.pdisplay_name)),
-	m_addrtype(znul(e.paddress_type)), m_emaddr(znul(e.pmail_address))
+oneoff_object::oneoff_object(ONEOFF_ENTRYID &&e) :
+	m_flags(e.ctrl_flags), m_dispname(std::move(e.pdisplay_name)),
+	m_addrtype(std::move(e.paddress_type)), m_emaddr(std::move(e.pmail_address))
 {}
 
 ec_error_t oneoff_object::get_props(const PROPTAG_ARRAY *tags, TPROPVAL_ARRAY *vals)
@@ -216,7 +216,7 @@ ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 		auto mid = ab_tree::minid(ab_tree::minid::address, user_id);
 		node = {base, mid};
 		LONG_ARRAY unused{};
-		if (!node.exists() ||
+		if (!node.exists() || node.hidden() & AB_HIDE_FROM_AL ||
 		    !ab_tree_match_minids(base.get(), mid, res, &unused))
 			continue;
 		free(unused.pl);

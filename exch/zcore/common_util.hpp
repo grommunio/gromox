@@ -83,7 +83,7 @@ extern int common_util_run(const char *data_path);
 BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria);
-extern bool cu_extract_delegate(message_object *, std::string &dlgt);
+extern bool cu_extract_delegator(message_object *, std::string &);
 extern repr_grant cu_get_delegate_perm_MD(const char *account, const char *maildir);
 extern repr_grant cu_get_delegate_perm_AA(const char *account, const char *account_representing);
 extern ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, gromox::proptag_t, const void *);
@@ -115,7 +115,7 @@ template<typename T> T *cu_alloc(size_t elem)
 void common_util_set_clifd(int clifd);
 extern int common_util_get_clifd();
 extern char *common_util_dup(std::string_view);
-extern BOOL common_util_parse_addressbook_entryid(BINARY, uint32_t *type, char *essdn, size_t);
+extern bool cu_parse_abkeid(BINARY, uint32_t *type, std::string &essdn);
 uint16_t common_util_get_messaging_entryid_type(BINARY bin);
 extern BOOL cu_entryid_to_fid(BINARY bin, BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id);
 extern BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id, uint64_t *pmessage_id);
@@ -142,7 +142,7 @@ BOOL common_util_load_file(const char *path, BINARY *pbin);
 extern BOOL common_util_convert_to_zrule_data(store_object *, TPROPVAL_ARRAY *);
 extern ec_error_t cu_remote_copy_message(store_object *s0, uint64_t message_id, store_object *s1, uint64_t folder_id1);
 extern ec_error_t cu_remote_copy_folder(store_object *s0, uint64_t folder_id, store_object *s1, uint64_t folder_id1, const char *new_name);
-extern ec_error_t cu_send_message(store_object *, message_object *, bool submit);
+extern ec_error_t cu_send_message(store_object *, message_object *, const char *ev_from);
 extern BOOL common_util_message_to_rfc822(store_object *, uint64_t inst_id, BINARY *eml);
 extern message_content *cu_rfc822_to_message(store_object *, unsigned int mxf_flags, BINARY *eml);
 extern BOOL common_util_message_to_ical(store_object *, uint64_t msg_id, BINARY *ical);

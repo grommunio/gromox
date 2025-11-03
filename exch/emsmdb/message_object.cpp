@@ -45,8 +45,8 @@ static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < tmp_proptags.count; ++i) {
-		switch (tmp_proptags.pproptag[i]) {
+	for (const auto tag : tmp_proptags) {
+		switch (tag) {
 		case PR_RESPONSIBILITY:
 		case PR_ADDRTYPE:
 		case PR_DISPLAY_NAME:
@@ -63,7 +63,7 @@ static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
 		case PR_TRANSMITABLE_DISPLAY_NAME_A:
 			continue;
 		default:
-			pproptags->emplace_back(tmp_proptags.pproptag[i]);
+			pproptags->emplace_back(tag);
 			break;
 		}
 	}
@@ -329,13 +329,11 @@ static ec_error_t message_object_save2(message_object *pmessage, bool b_fai,
 	return ecSuccess;
 }
 
-ec_error_t message_object::save()
+ec_error_t message_object::save() try
 {
 	auto pmessage = this;
 	uint32_t result;
 	BINARY *pbin_pcl = nullptr;
-	uint32_t tmp_index;
-	uint32_t *pgroup_id;
 	
 	if (!pmessage->b_new && !pmessage->b_touched)
 		return ecSuccess;
@@ -443,71 +441,14 @@ ec_error_t message_object::save()
 		return ecSuccess;
 	}
 	
-	const property_groupinfo *pgpinfo = nullptr;
 	if (is_new || pmessage->pstate != nullptr)
 		goto SAVE_FULL_CHANGE;
-	if (!exmdb_client->get_message_group_id(dir,
-	    pmessage->message_id, &pgroup_id))
-		return ecRpcFailed;
-	if (NULL == pgroup_id) {
-		pgpinfo = pmessage->plogon->get_last_property_groupinfo();
-		if (pgpinfo == nullptr)
-			return ecRpcFailed;
-		if (!exmdb_client->set_message_group_id(dir,
-		    pmessage->message_id, pgpinfo->group_id))
-			return ecRpcFailed;
-	}  else {
-		pgpinfo = pmessage->plogon->get_property_groupinfo(*pgroup_id);
-		if (pgpinfo == nullptr)
-			return ecRpcFailed;
-	}
-	
 	if (!exmdb_client->mark_modified(dir,
 	    pmessage->message_id))
 		return ecRpcFailed;
-	
-	{
-	std::unique_ptr<INDEX_ARRAY, pta_delete> pindices(proptag_array_init());
-	if (pindices == nullptr)
-		return ecServerOOM;
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pungroup_proptags(proptag_array_init());
-	if (pungroup_proptags == nullptr)
-		return ecServerOOM;
-	/* always mark PR_MESSAGE_FLAGS as changed */
-	if (!proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_FLAGS))
-		return ecRpcFailed;
-	for (size_t i = 0; i < pmessage->pchanged_proptags->count; ++i) {
-		if (!pgpinfo->get_partial_index(pmessage->pchanged_proptags->pproptag[i], &tmp_index)) {
-			if (!proptag_array_append(pungroup_proptags.get(),
-			    pmessage->pchanged_proptags->pproptag[i]))
-				return ecRpcFailed;
-		} else {
-			if (!proptag_array_append(pindices.get(), tmp_index))
-				return ecRpcFailed;
-		}
-	}
-	for (size_t i = 0; i < pmessage->premoved_proptags->count; ++i) {
-		if (!pgpinfo->get_partial_index(pmessage->premoved_proptags->pproptag[i], &tmp_index))
-			goto SAVE_FULL_CHANGE;
-		else if (!proptag_array_append(pindices.get(), tmp_index))
-			return ecRpcFailed;
-	}
-	if (!exmdb_client->save_change_indices(dir,
-	    pmessage->message_id, pmessage->change_num, pindices.get(), pungroup_proptags.get()))
-		return ecRpcFailed;
-	proptag_array_clear(pmessage->pchanged_proptags);
-	proptag_array_clear(pmessage->premoved_proptags);
-	return ecSuccess;
-	}
-	
  SAVE_FULL_CHANGE:
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
-	INDEX_ARRAY tmp_indices{};
-	if (!exmdb_client->save_change_indices(dir,
-	    pmessage->message_id, pmessage->change_num, &tmp_indices,
-	    static_cast<PROPTAG_ARRAY *>(&tmp_indices)))
-		return ecRpcFailed;
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
 	if (is_new && !b_fai && pmessage->message_id != 0 &&
@@ -516,6 +457,9 @@ ec_error_t message_object::save()
 			pmessage->cpid, pmessage->folder_id,
 			pmessage->message_id);
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2906: ENOMEM");
+	return ecServerOOM;
 }
 
 BOOL message_object::reload()
@@ -592,8 +536,8 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 	    pmessage->instance_id, pset))
 		return FALSE;	
 	for (const auto &row : *pset) {
-		for (size_t j = 0; j < row.count; ++j) {
-			switch (row.ppropval[j].proptag) {
+		for (const auto &cell : row) {
+			switch (cell.proptag) {
 			case PR_RESPONSIBILITY:
 			case PR_ADDRTYPE:
 			case PR_DISPLAY_NAME:
@@ -610,8 +554,7 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 			case PR_TRANSMITABLE_DISPLAY_NAME_A:
 				continue;
 			}
-			proptag_array_append(pmessage->precipient_columns,
-				row.ppropval[j].proptag);
+			proptag_array_append(pmessage->precipient_columns, cell.proptag);
 		}
 	}
 	pmessage->b_touched = TRUE;
@@ -754,8 +697,8 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + nodes_num);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < tmp_proptags.count; ++i) {
-		switch (tmp_proptags.pproptag[i]) {
+	for (const auto tag : tmp_proptags) {
+		switch (tag) {
 		case PidTagMid:
 		case PR_SUBJECT:
 		case PR_ASSOCIATED:
@@ -764,7 +707,7 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 		case PR_NORMALIZED_SUBJECT:
 			continue;
 		default:
-			pproptags->emplace_back(tmp_proptags.pproptag[i]);
+			pproptags->emplace_back(tag);
 			break;
 		}
 	}
@@ -918,9 +861,8 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : *pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (message_object_get_calculated_property(pmessage, tag, &pvalue)) {
 			if (pvalue != nullptr)
 				ppropvals->emplace_back(tag, pvalue);
@@ -1195,10 +1137,8 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 	}
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	for (unsigned int i = 0; i < proptags.count; ++i) {
-		auto u_tag = message_object_rectify_proptag(proptags.pproptag[i]);
-		proptag_array_append(pmessage->pchanged_proptags, u_tag);
-	}
+	for (const auto tag : proptags)
+		proptag_array_append(pmessage->pchanged_proptags, message_object_rectify_proptag(tag));
 	return TRUE;
 }
 

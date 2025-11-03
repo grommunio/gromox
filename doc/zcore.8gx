@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH zcore 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 zcore \(em Bridge for PHP-MAPI requests
@@ -57,7 +57,9 @@ Default: \fI3000\fP
 .TP
 \fBconfig_file_path\fP
 Colon-separated list of directories which will be scanned when locating further
-configuration files, especially those used by plugin instances.
+configuration files, especially those used by subcomponent instances. (For
+example, mysql_adaptor(4gx) would be directed to look at
+/etc/gromox/zcore/mysql_adaptor.cfg before /etc/gromox/mysql_adaptor.cfg.)
 .br
 Default: \fI/etc/gromox/zcore:/etc/gromox\fP
 .TP
@@ -104,7 +106,7 @@ of outbound connections for sending commands.
 Default: \fI10\fP
 .TP
 \fBsubmit_command\fP
-Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
+Default: \fI/usr/bin/php /usr/share/gromox/submit.php\fP
 .TP
 \fBuser_cache_interval\fP
 Sets the time how long the MAPI profile is cached before it is written to disk.
@@ -175,8 +177,8 @@ pdu := {
 	}
 }
 .SH Store lookup
-zcore determines the store path for a user from the user database, which may be
-provided by a service plugin like mysql_adaptor(4gx).
+zcore determines the store path for a user from the user database, which is
+provided by mysql_adaptor(4gx).
 .PP
 The filemap that specifies how paths are handled is located at
 \fIdata_file_path\fP/exmdb_list.txt, whereby data_file_path is the eponymous
@@ -200,12 +202,8 @@ exmdb_provider(4gx) for details.
 \fIdata_file_path\fP/folder_names.txt: Translations for essential folders in a
 message store.
 .IP \(bu 4
-\fIdata_file_path\fP/msgchg_grouping/: Data files for exchange_emsmdb(4gx)
-.IP \(bu 4
 \fIdata_file_path\fP/notify_bounce/: templates for read/nonread notification
 mails sent to originators
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: service plugins
 .SH Notes
 Behavior for the address book generally mirrors exchange_nsp(4gx), so see that
 manpage for additional notes.

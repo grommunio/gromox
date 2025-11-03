@@ -186,7 +186,7 @@ static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type
 
 void pdu_processor_init(int connection_num, const char *netbios_name,
     const char *dns_name, const char *dns_domain, BOOL header_signing,
-    size_t max_request_mem, const std::span<const static_module> &names)
+    size_t max_request_mem, std::span<const static_module> &&names)
 {
 	static constexpr unsigned int connection_ratio = 10;
 	union {
@@ -702,6 +702,11 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 			&pauth_ctx->node);
 		return TRUE;
 	} else if (pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NTLMSSP) {
+		/*
+		 * Outlook 2010 performs a weird double authentication: it
+		 * sends HTTP Authorization headers, but then *also* performs
+		 * NTLMSSP inside the MSRPC channel.
+		 */
 		if (pauth_ctx->auth_info.auth_level <= RPC_C_AUTHN_LEVEL_CONNECT)
 			pauth_ctx->pntlmssp = ntlmssp_ctx::create(g_netbios_name,
 									g_dns_name, g_dns_domain, TRUE,

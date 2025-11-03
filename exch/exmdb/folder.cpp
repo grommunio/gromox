@@ -2069,9 +2069,13 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
 	if (num == nullptr)
 		return true;
 	auto permission = permission_adjust(*num, !b_freebusy);
+	/*
+	 * EXC2019 does REPLACE. So I guess that is our excuse for doing the
+	 * same, even if it overwrites preexisting permissions.
+	 */
 	if (NULL == pstmt) {
 		char sql_string[128];
-		snprintf(sql_string, std::size(sql_string), "INSERT INTO permissions"
+		snprintf(sql_string, std::size(sql_string), "REPLACE INTO permissions"
 					" (folder_id, username, permission) VALUES"
 					" (%llu, ?, ?)", LLU{fid_val});
 		pstmt = pdb->prep(sql_string);

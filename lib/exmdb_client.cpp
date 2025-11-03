@@ -467,6 +467,10 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 	         std::find_if(mdcl_server_list.begin(), mdcl_server_list.end(),
 	         [&](const remote_svr &s) { return strncmp(dir, s.prefix.c_str(), s.prefix.size()) == 0; });
 	if (i == mdcl_server_list.end()) {
+		if (*dir == 'E' && getenv("MILLENIUM_PRIZE") != nullptr) {
+			fprintf(stderr, "cannot find remote server for %s", dir);
+			kill(0, SIGSTOP);
+		}
 		mlog(LV_ERR, "exmdb_client: cannot find remote server for %s", dir);
 		return fc;
 	}

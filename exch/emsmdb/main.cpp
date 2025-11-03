@@ -15,7 +15,6 @@
 #include <gromox/defs.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/msgchg_grouping.hpp>
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
@@ -44,7 +43,7 @@ static DCERPC_ENDPOINT *ep_6001;
 
 static constexpr cfg_directive emsmdb_gxcfg_dflt[] = {
 	{"backfill_transport_headers", "0", CFG_BOOL},
-	{"emsmdb_compress_threshold", "0", CFG_SIZE},
+	{"emsmdb_compress_threshold", "-1", CFG_SIZE},
 	{"outgoing_smtp_url", "sendmail://localhost"},
 	{"reported_server_version", "15.00.0847.4040"},
 	CFG_TABLE_END,
@@ -59,14 +58,14 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"ems_max_pending_sesnotif", "1K", CFG_SIZE, "0"},
 	{"emsmdb_max_cxh_per_user", "100", CFG_SIZE, "100"},
 	{"emsmdb_max_obh_per_session", "500", CFG_SIZE, "500"},
-	{"emsmdb_private_folder_softdelete", "0", CFG_BOOL},
+	{"emsmdb_private_folder_softdelete", "1", CFG_BOOL},
 	{"emsmdb_rop_chaining", "1"},
 	{"mailbox_ping_interval", "5min", CFG_TIME, "60s", "1h"},
 	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
 	{"max_mail_length", "64M", CFG_SIZE, "1"},
 	{"max_rcpt_num", "256", CFG_SIZE, "1"},
 	{"rop_debug", "0"},
-	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
+	{"submit_command", "/usr/bin/php " PKGDATADIR "/submit.php"},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
 };
@@ -228,10 +227,6 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 		if (exmdb_client->run() != 0) {
 			mlog(LV_ERR, "emsmdb: failed to run exmdb client");
-			return FALSE;
-		}
-		if (msgchg_grouping_run(get_data_path()) != 0) {
-			mlog(LV_ERR, "emsmdb: failed to run msgchg grouping");
 			return FALSE;
 		}
 		if (0 != emsmdb_interface_run()) {

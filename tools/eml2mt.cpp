@@ -317,11 +317,12 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	}
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+
+	HXopt6_auto_result argp;
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_ARGS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
-	if (argc < 2) {
+	if (argp.nargs < 1) {
 		terse_help();
 		return EXIT_FAILURE;
 	}
@@ -366,30 +367,31 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 
 	std::vector<fat_message> msgs;
-	for (int i = 1; i < argc; ++i) {
+	for (int i = 0; i < argp.nargs; ++i) {
+		auto le_file = argp.uarg[i];
 		if (g_import_mode == IMPORT_MAIL) {
-			auto mo = do_eml(argv[i]);
+			auto mo = do_eml(le_file);
 			if (mo.content == nullptr)
 				continue;
 			msgs.push_back(std::move(mo));
 		} else if (g_import_mode == IMPORT_MBOX) {
-			if (do_mbox(argv[i], msgs) != 0)
+			if (do_mbox(le_file, msgs) != 0)
 				continue;
 		} else if (g_import_mode == IMPORT_ICAL) {
 			std::vector<message_ptr> content_vec;
-			if (do_ical(argv[i], content_vec) != 0)
+			if (do_ical(le_file, content_vec) != 0)
 				continue;
 			for (auto &&ct : std::move(content_vec))
 				msgs.emplace_back(std::move(ct));
 		} else if (g_import_mode == IMPORT_VCARD) {
 			std::vector<message_ptr> content_vec;
-			if (do_vcard(argv[i], content_vec) != 0)
+			if (do_vcard(le_file, content_vec) != 0)
 				continue;
 			for (auto &&ct : std::move(content_vec))
 				msgs.emplace_back(std::move(ct));
 		} else if (g_import_mode == IMPORT_TNEF) {
 			std::vector<message_ptr> content_vec;
-			if (do_tnef(argv[i], content_vec) != 0)
+			if (do_tnef(le_file, content_vec) != 0)
 				continue;
 			for (auto &&ct : std::move(content_vec))
 				msgs.emplace_back(std::move(ct));

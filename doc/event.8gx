@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2021 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH event 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 event \(em Folder change notification daemon
@@ -30,17 +30,10 @@ specifications".
 .SH Configuration directives
 The usual config file location is /etc/gromox/event.cfg.
 .TP
-\fBconfig_file_path\fP
-Colon-separated list of directories which will be scanned when locating further
-configuration files.
-.br
-Default: \fI/etc/gromox/event:/etc/gromox\fP
-.TP
 \fBevent_hosts_allow\fP
 A space-separated list of individual host addresses that are allowed to
 converse with the event service. The addresses must conform to gromox(7) \sc
-"Host addresses". No networks and no CIDR notations are permitted. This option
-deprecates the /etc/gromox/event_acl.txt file used before Gromox 2.8.
+"Host addresses". No networks and no CIDR notations are permitted.
 .br
 Default: \fI::1\fP
 .TP
@@ -129,9 +122,9 @@ received by the client needs to be acknowledged with a "TRUE" response. It is
 not possible to exit Dequeue Mode; connection termination is the only way out.
 .PP
 Events do not echo for a particular res_id. The event_proxy(4gx) and
-event_stub(4gx) plugin implementations use the getpid() function when
+event_stub(4gx) components use the getpid() function when
 constructing the res_id for the ID/LISTEN commands. A process like imap(8gx)
-which uses both plugins will intentionally not see its own notifications over
+which uses both components will intentionally not see its own notifications over
 the gromox-event IPC system this way.
 .SH See also
 \fBgromox\fP(7), \fBevent_proxy\fP(4gx), \fBevent_stub\fP(4gx)

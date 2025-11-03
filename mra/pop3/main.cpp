@@ -53,7 +53,7 @@ E(broadcast_event)
 
 gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
-static char *opt_config_file;
+static const char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
 static thread_local std::unique_ptr<alloc_context> g_alloc_mgr;
 static thread_local unsigned int g_amgr_refcount;
@@ -363,11 +363,15 @@ int main(int argc, char **argv)
 { 
 	int retcode = EXIT_FAILURE;
 	char temp_buff[256];
+	HXopt6_auto_result argp;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-pop3");
 	setup_signal_defaults();

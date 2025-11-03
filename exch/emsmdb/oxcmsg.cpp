@@ -309,8 +309,8 @@ ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 	
 	if (pproptags->count >= 0x7FEF || count >= 0x7FEF)
 		return ecInvalidParam;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		switch (pproptags->pproptag[i]) {
+	for (const auto tag : *pproptags) {
+		switch (tag) {
 		case PR_ADDRTYPE:
 		case PR_DISPLAY_NAME:
 		case PR_EMAIL_ADDRESS:
@@ -652,16 +652,14 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 			alt_msgs.pll = cu_alloc<uint64_t>(result_set.count);
 			if (alt_msgs.pll == nullptr)
 				return ecServerOOM;
-			for (unsigned int i = 0; i < result_set.count; ++i) {
-				if (result_set.pparray[i]->count != 1)
-					continue;
-				alt_msgs.pll[alt_msgs.count++] = *static_cast<uint64_t *>(result_set.pparray[i]->ppropval[0].pvalue);
-			}
+			for (const auto &row : result_set)
+				if (row.count == 1)
+					alt_msgs.pll[alt_msgs.count++] = *static_cast<uint64_t *>(row.ppropval[0].pvalue);
 			pmessage_ids = &alt_msgs;
 		}
 	}
-	for (size_t i = 0; i < pmessage_ids->count; ++i)
-		if (!oxcmsg_setreadflag(plogon, pmessage_ids->pll[i], read_flags))
+	for (const auto msgid : *pmessage_ids)
+		if (!oxcmsg_setreadflag(plogon, msgid, read_flags))
 			b_partial = TRUE;	
 	*ppartial_completion = !!b_partial;
 	return ecSuccess;

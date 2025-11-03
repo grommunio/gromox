@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH delivery 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 delivery \(em Backend for local delivery
@@ -17,9 +17,6 @@ Display option summary.
 All time-based command-line options and configuration file directives are
 subject to the syntax described in gromox(7), section "Duration
 specifications".
-.SH Plugins
-The delivery daemon can be extended by a number of plugins. In Gromox, their
-filenames begin with libmtahook_.
 .SH Configuration directives (gromox.cfg)
 The following directives are recognized when reading from
 /etc/gromox/gromox.cfg, or when the \fB\-c\fP option is used to specify a
@@ -48,8 +45,10 @@ An e-mail address where to send reports from the "net_failure" code component.
 Default: (empty)
 .TP
 \fBconfig_file_path\fP
-Colon-separated list of directories in which further configuration files,
-especially those used by plugin instances, will be searched.
+Colon-separated list of directories which will be scanned when locating further
+configuration files, especially those used by subcomponent instances. (For
+example, mysql_adaptor(4gx) would be directed to look at
+/etc/gromox/delivery/mysql_adaptor.cfg before /etc/gromox/mysql_adaptor.cfg.)
 .br
 Default: \fI/etc/gromox/delivery:/etc/gromox\fP
 .TP
@@ -101,10 +100,5 @@ Default: \fI5\fP
 .TP
 \fBwork_threads_min\fP
 Default: \fI1\fP
-.SH Files
-.IP \(bu 4
-/usr/lib/gromox/libgxm_*.so: hook plugins
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
 \fBgromox\fP(7)

@@ -121,8 +121,8 @@ static uint32_t propval_size_xfer(uint16_t type, void *val)
 		return propval_size(type, val);
 	uint32_t len = 0;
 	auto sa = static_cast<STRING_ARRAY *>(val);
-	for (size_t i = 0; i < sa->count; ++i) {
-		len += size_in_utf16(sa->ppstr[i]);
+	for (const auto &e : *sa) {
+		len += size_in_utf16(e);
 		if (len >= 0x8000)
 			break;
 	}
@@ -185,8 +185,7 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 		return ecNotSupported;
 	}
 	total_size = 0;
-	for (unsigned int i = 0; i < propvals.count; ++i) {
-		auto &pv = propvals.ppropval[i];
+	for (auto &pv : propvals) {
 		auto tmp_size = propval_size_xfer(PROP_TYPE(pv.proptag), pv.pvalue);
 		if (tmp_size < 0x8000) {
 			total_size += tmp_size;
@@ -199,8 +198,7 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 		*static_cast<uint32_t *>(pv.pvalue) = ecMAPIOOM;
 	}
 	if (total_size >= 0x7000) {
-		for (unsigned int i = 0; i < propvals.count; ++i) {
-			auto &pv = propvals.ppropval[i];
+		for (auto &pv : propvals) {
 			auto proptype = PROP_TYPE(pv.proptag);
 			switch (proptype) {
 			case PT_BINARY:
@@ -246,8 +244,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 			return ecServerOOM;
 		if (!xlog->get_properties(ptmp_proptags, ppropvals))
 			return ecError;
-		for (unsigned int i = 0; i < ppropvals->count; ++i) {
-			auto &pv = ppropvals->ppropval[i];
+		for (auto &pv : *ppropvals) {
 			if (propval_size(PROP_TYPE(pv.proptag), pv.pvalue) <= size_limit)
 				continue;
 			pv.proptag = CHANGE_PROP_TYPE(pv.proptag, PT_ERROR);
@@ -271,8 +268,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 			return ecServerOOM;
 		if (!fld->get_properties(ptmp_proptags, ppropvals))
 			return ecError;
-		for (unsigned int i = 0; i < ppropvals->count; ++i) {
-			auto &pv = ppropvals->ppropval[i];
+		for (auto &pv : *ppropvals) {
 			if (propval_size(PROP_TYPE(pv.proptag), pv.pvalue) <= size_limit)
 				continue;
 			pv.proptag = CHANGE_PROP_TYPE(pv.proptag, PT_ERROR);
@@ -314,8 +310,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 	default:
 		return ecNotSupported;
 	}
-	for (unsigned int i = 0; i < ppropvals->count; ++i) {
-		const auto &pv = ppropvals->ppropval[i];
+	for (auto &pv : *ppropvals) {
 		if (PROP_TYPE(pv.proptag) != PT_UNSPECIFIED)
 			continue;	
 		if (!common_util_convert_unspecified(cpid, b_unicode,
@@ -522,11 +517,10 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 	default:
 		return ecNotSupported;
 	}
-	for (unsigned int i = 0; i < proptags.count; ++i) {
-		auto propid = PROP_ID(proptags.pproptag[i]);
-		if (!is_nameprop_id(propid))
-			continue;
-		propids.push_back(propid);
+	for (const auto tag : proptags) {
+		auto propid = PROP_ID(tag);
+		if (is_nameprop_id(propid))
+			propids.push_back(propid);
 	}
 	if (propids.empty()) {
 		ppropidnames->count = 0;
@@ -811,12 +805,12 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 			return ecServerOOM;
 		if (!b_force && !flddst->get_all_proptags(&proptags1))
 			return ecError;
-		for (size_t i = 0; i < proptags.count; ++i) {
-			if (flddst->is_readonly_prop(proptags.pproptag[i]))
+		for (const auto tag : proptags) {
+			if (flddst->is_readonly_prop(tag))
 				continue;
-			if (!b_force && proptags1.has(proptags.pproptag[i]))
+			if (!b_force && proptags1.has(tag))
 				continue;
-			tmp_proptags.emplace_back(proptags.pproptag[i]);
+			tmp_proptags.emplace_back(tag);
 		}
 		if (!fldsrc->get_properties(&tmp_proptags, &propvals))
 			return ecError;

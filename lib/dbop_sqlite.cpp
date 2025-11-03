@@ -113,6 +113,17 @@ static constexpr char tbl_perms_0[] =
 "CREATE INDEX fid_permissions_index ON permissions(folder_id);"
 "CREATE UNIQUE INDEX folder_username_index ON permissions(folder_id, username);";
 
+static constexpr char tbl_perms_24[] =
+"CREATE TABLE permissions ("
+"  member_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+"  folder_id INTEGER NOT NULL,"
+"  username TEXT COLLATE NOCASE NOT NULL,"
+"  permission INTEGER NOT NULL,"
+"  FOREIGN KEY (folder_id) REFERENCES folders (folder_id) ON DELETE CASCADE ON UPDATE CASCADE);"
+"CREATE INDEX fid_permissions_index ON permissions(folder_id);"
+"CREATE UNIQUE INDEX folder_username_index ON permissions(folder_id, username);"
+"CREATE UNIQUE INDEX folder_username_index2 ON permissions(username, folder_id);";
+
 static constexpr char tbl_rules_0[] =
 "CREATE TABLE rules ("
 "  rule_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -372,6 +383,9 @@ tbl_addmsgtimeindex_23[] =
 "LEFT JOIN message_properties AS rt ON m.message_id=rt.message_id AND rt.proptag=0xe060040 " /* PR_MESSAGE_DELIVERY_TIME */
 "LEFT JOIN message_properties AS st ON m.message_id=st.message_id AND st.proptag=0x390040 " /* PR_CLIENT_SUBMIT_TIME */
 "WHERE m.parent_fid IS NOT NULL AND m.is_associated=0 AND m.is_deleted=0";
+static constexpr char tbl_mboxpermissionindex_24[] =
+/* this helps determining mbox perm (bitwise-OR of all folders) */
+"CREATE UNIQUE INDEX folder_username_index2 ON permissions(username, folder_id);";
 
 static constexpr char tbl_pub_folders_0[] =
 "CREATE TABLE folders ("
@@ -451,7 +465,7 @@ static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"named_properties", tbl_namedprops_12},
 	{"store_properties", tbl_storeprops_2},
 	{"folder_properties", tbl_fldprops_3},
-	{"permissions", tbl_perms_0},
+	{"permissions", tbl_perms_24},
 	{"rules", tbl_rules_0},
 	{"message_properties", tbl_msgprops_4},
 	{"message_changes", tbl_msgchgs_0},
@@ -498,7 +512,7 @@ static constexpr tbl_init tbl_pub_init_top[] = {
 	{"named_properties", tbl_namedprops_0},
 	{"store_properties", tbl_storeprops_2},
 	{"folder_properties", tbl_fldprops_3},
-	{"permissions", tbl_perms_0},
+	{"permissions", tbl_perms_24},
 	{"rules", tbl_rules_0},
 	{"message_properties", tbl_msgprops_4},
 	{"message_changes", tbl_msgchgs_0},
@@ -640,6 +654,7 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{21, tbl_mtimeindex_21},
 	{22, tbl_msgtimeindex_22},
 	{23, tbl_addmsgtimeindex_23},
+	{24, tbl_mboxpermissionindex_24},
 	/* advance schema numbers in lockstep with public stores */
 	TABLE_END,
 };
@@ -660,6 +675,7 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 	{21, tbl_mtimeindex_21},
 	{22, tbl_msgtimeindex_22},
 	{23, tbl_addmsgtimeindex_23},
+	{24, tbl_mboxpermissionindex_24},
 	/* advance schema numbers in lockstep with private stores */
 	TABLE_END,
 };

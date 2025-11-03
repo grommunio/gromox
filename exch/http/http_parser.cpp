@@ -38,6 +38,10 @@
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
+#if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30000000L
+#	define WITH_SSLPROV 1
+#	include <openssl/provider.h>
+#endif
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -104,7 +108,7 @@ struct http_parser {
 
 	int auth_finalize(http_context &, const char *);
 	int auth_krb(http_context &ctx, const char *input, size_t isize, std::string &output);
-	int auth_ntlmssp(http_context &, const char *proc, const char *input, std::string &output);
+	int auth_exthelper(http_context &, const std::string &proc, const char *input, std::string &output);
 	tproc_status auth_spnego(http_context &ctx, const char *past_method);
 	tproc_status auth_basic(http_context *, const char *);
 	tproc_status auth(http_context &ctx);
@@ -125,6 +129,10 @@ struct http_parser {
 	tproc_status wait(http_context *);
 	void vconnection_async_reply(const char *, int, const char *, DCERPC_CALL *);
 
+#ifdef WITH_SSLPROV
+	struct provfree { inline void operator()(OSSL_PROVIDER *x) const { OSSL_PROVIDER_unload(x); }};
+	std::unique_ptr<OSSL_PROVIDER, provfree> sslprov_default, sslprov_legacy;
+#endif
 	size_t g_context_num = 0;
 	gromox::atomic_bool g_async_stop{false};
 	bool g_support_tls = false;
@@ -138,6 +146,7 @@ struct http_parser {
 	std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 	std::mutex g_vconnection_lock; /* protects g_vconnection_hash */
 	std::unordered_map<std::string, VIRTUAL_CONNECTION> g_vconnection_hash;
+	std::string gss_helper_program;
 };
 
 class VCONN_REF {
@@ -228,6 +237,7 @@ http_parser::http_parser(size_t context_num, time_duration timeout,
 	else
 		g_certificate_passwd.clear();
 	g_private_key_path = key_path;
+	gss_helper_program = g_config_file->get_value("gss_program");
 }
 
 #ifdef OLD_SSL
@@ -258,9 +268,15 @@ int http_parser_run()
 
 int http_parser::run()
 {
+	SSL_library_init();
+	OpenSSL_add_all_algorithms();
+#ifdef WITH_SSLPROV
+	sslprov_default.reset(OSSL_PROVIDER_load(nullptr, "default"));
+	sslprov_legacy.reset(OSSL_PROVIDER_load(nullptr, "legacy"));
+	if (sslprov_legacy == nullptr)
+		mlog(LV_ERR, "openssl \"legacy\" provider not available; Outlook 2010 won't be able to login");
+#endif
 	if (g_support_tls) {
-		SSL_library_init();
-		OpenSSL_add_all_algorithms();
 		SSL_load_error_strings();
 		g_ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 		if (NULL == g_ssl_ctx) {
@@ -766,6 +782,8 @@ tproc_status http_parser::rdhead_mt(http_context *pcontext, char *line,
 	} else if (g_http_remote_host_hdr.size() > 0 &&
 	    strcasecmp(field_name, g_http_remote_host_hdr.c_str()) == 0) {
 		auto &cn = pcontext->connection;
+		gx_strlcpy(cn.proxy_addr, cn.client_addr, std::size(cn.proxy_addr));
+		cn.proxy_port = cn.client_port;
 		snprintf(cn.client_addr, std::size(cn.client_addr), "%.*s", static_cast<int>(tmp_len), ptoken);
 		cn.client_port = 0;
 	} else {
@@ -869,7 +887,6 @@ static void ntlm_stop(struct HXproc &pi)
 		close(pi.p_stdout);
 	if (pi.p_stderr >= 0)
 		close(pi.p_stderr);
-	mlog(LV_DEBUG, "NTLM(%ld) terminating the ntlm_auth worker", static_cast<long>(pi.p_pid));
 	kill(pi.p_pid, SIGKILL);
 	waitpid(pi.p_pid, nullptr, 0);
 	pi.p_pid = 0;
@@ -897,17 +914,15 @@ int http_parser::auth_finalize(http_context &ctx, const char *user)
 	return 1;
 }
 
-int http_parser::auth_ntlmssp(http_context &ctx, const char *prog,
-    const char *encinput, std::string &output)
+int http_parser::auth_exthelper(http_context &ctx, const std::string &prog,
+    const char *encinput, std::string &gss_output)
 {
 	auto encsize = strlen(encinput);
 	auto &pinfo = ctx.ntlm_proc;
-	output.clear();
+	gss_output.clear();
 
 	if (pinfo.p_pid <= 0) {
-		if (prog == nullptr || *prog == '\0')
-			prog = "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp";
-		auto args = HX_split(prog, " ", nullptr, 0);
+		auto args = HX_split(prog.c_str(), " ", nullptr, 0);
 		auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(args); });
 		pinfo.p_flags = HXPROC_STDIN | HXPROC_STDOUT | HXPROC_STDERR;
 		auto ret = HXproc_run_async(&args[0], &pinfo);
@@ -915,18 +930,15 @@ int http_parser::auth_ntlmssp(http_context &ctx, const char *prog,
 			mlog(LV_ERR, "execv ntlm_auth: %s", strerror(-ret));
 			return -1;
 		}
-		mlog(LV_DEBUG, "ntlm_auth is pid %d", pinfo.p_pid);
 		if (HXio_fullwrite(pinfo.p_stdin, "YR ", 3) < 0) {
 			mlog(LV_ERR, "write ntlm_auth: %s", strerror(errno));
 			return -1;
 		}
-		mlog(LV_DEBUG, "NTLM> YR %s", encinput);
 	} else {
 		if (HXio_fullwrite(pinfo.p_stdin, "KK ", 3) < 0) {
 			mlog(LV_ERR, "write ntlm_auth: %s", strerror(errno));
 			return -1;
 		}
-		mlog(LV_DEBUG, "NTLM> KK %s", encinput);
 	}
 	if (HXio_fullwrite(pinfo.p_stdin, encinput, encsize) < 0 ||
 	    HXio_fullwrite(pinfo.p_stdin, "\n", 1) < 0) {
@@ -935,61 +947,82 @@ int http_parser::auth_ntlmssp(http_context &ctx, const char *prog,
 	}
 
 	struct pollfd pfd[] = {{pinfo.p_stdout, POLLIN}, {pinfo.p_stderr, POLLIN}};
+	std::string output, errbuf;
+	gss_output.clear();
  retry:
-	auto ret = poll(pfd, std::size(pfd), 10 * 1000);
-	if (ret < 0) {
-		if (errno == EINTR)
-			goto retry;
-		mlog(LV_INFO, "ntlm_auth poll: %s", strerror(errno));
-		return -1;
-	} else if (ret == 0) {
-		mlog(LV_INFO, "ntlm_auth poll timeout");
-		return -1;
+	auto nl_pos = errbuf.rfind('\n');
+	if (nl_pos != errbuf.npos) {
+		mlog(LV_DEBUG, "ntlm_auth(stderr): %.*s", static_cast<int>(nl_pos), errbuf.c_str());
+		errbuf.erase(0, nl_pos + 1);
+		goto retry;
 	}
-
-	output.clear();
-	output.resize(8192);
-	if (pfd[1].revents & POLLIN) {
-		/* Drain stderr first */
-		auto bytes = read(pinfo.p_stderr, output.data(), output.size());
-		if (bytes > 0) {
-			output[bytes] = '\0';
-			HX_chomp(output.data());
-			output.resize(strlen(output.c_str()));
-			mlog(LV_DEBUG, "ntlm_auth(stderr):%c%s",
-				output.find('\n') != output.npos ? '\n' : ' ',
-				output.c_str());
-			goto retry;
+	nl_pos = output.find('\n');
+	if (nl_pos == output.npos) {
+		/* Line on stdout not complete yet, read more */
+		auto ret = poll(pfd, std::size(pfd), 10 * 1000);
+		if (ret < 0) {
+			if (errno == EINTR)
+				goto retry;
+			mlog(LV_INFO, "ntlm_auth poll: %s", strerror(errno));
+			return -1;
+		} else if (ret == 0) {
+			mlog(LV_INFO, "ntlm_auth poll timeout");
+			return -1;
 		}
-	}
-	auto bytes = read(pinfo.p_stdout, output.data(), output.size());
-	if (bytes < 0) {
-		mlog(LV_ERR, "ntlm_auth(stdout) error: %s", strerror(errno));
-		return -1;
-	} else if (bytes == 0) {
-		mlog(LV_ERR, "ntlm_auth(stdout) EOF");
-		return -1;
-	}
-	output[bytes] = '\0';
-	HX_chomp(output.data());
-	output.resize(strlen(output.c_str()));
-	mlog(LV_DEBUG, "NTLM(%d)< %s", static_cast<int>(pinfo.p_pid), output.c_str());
 
-	if (output[0] == 'T' && output[1] == 'T') { // TT
-		output.erase(0, 3);
+		char buf[4096];
+		if (pfd[1].revents & POLLIN) {
+			/* Drain stderr first */
+			auto bytes = read(pinfo.p_stderr, buf, std::size(buf) - 1);
+			if (bytes > 0)
+				errbuf.append(buf, bytes);
+		}
+		if (pfd[0].revents & POLLIN) {
+			auto bytes = read(pinfo.p_stdout, buf, std::size(buf) - 1);
+			if (bytes < 0) {
+				mlog(LV_ERR, "ntlm_auth(stdout) error: %s", strerror(errno));
+				return -1;
+			} else if (bytes == 0) {
+				mlog(LV_ERR, "ntlm_auth(stdout) EOF");
+				return -1;
+			}
+			output.append(buf, bytes);
+		}
+		goto retry;
+	}
+
+	if (output[0] == 'T' && output[1] == 'T' && HX_isspace(output[2])) { // TT
+		gss_output.assign(&output[3], &output[nl_pos]);
 		return -99; /* MOAR */
 	}
-	output.clear();
-	if (output[0] == 'A' && output[1] == 'F') // AF
+	std::string_view thisline(output.c_str(), nl_pos);
+	if (output[0] == 'A' && output[1] == 'F' && HX_isspace(output[2])) { // AF
 		/*
+		 * squid-2.5-style
+		 *
 		 * The AF response contains the winbind (Unix-side) username.
 		 * Depending on smb.conf "winbind use default domain", this can
 		 * be just "user5", or it can be "DOMAIN\user5". Either way, an
 		 * altnames entry is needed for this.
+		 *
+		 * samba's ntlm_auth returns "AF username".
+		 * squid's negotiate_wrapper_auth returns "AF = username".
 		 */
-		return auth_finalize(ctx, output.c_str());
-	else if (output[0] == 'N' && output[1] == 'A')
+		auto v = gx_split(thisline, ' ');
+		if (v.size() == 0)
+			return -1;
+		return auth_finalize(ctx, v.back().c_str());
+	} else if (output[0] == 'O' && output[1] == 'K' && HX_isspace(output[2])) {
+		/* squid-3.4-style */
+		auto v = gx_split(thisline, ' ');
+		for (auto &&elem : v)
+			if (strncmp(elem.c_str(), "user=", 5) == 0)
+				return auth_finalize(ctx, &elem[5]);
+		mlog(LV_DEBUG, "ext_helper(%d): no user= parameter found in response", static_cast<int>(pinfo.p_pid));
+		return -1;
+	} else if (output[0] == 'N' && output[1] == 'A') {
 		return 0;
+	}
 	return -1;
 }
 
@@ -1031,7 +1064,8 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 	OM_uint32 status{};
 	gss_name_t gss_srv_name{}, gss_username{};
 	gss_buffer_desc gss_input_buf{}, gss_user_buf{}, gss_output_token{};
-	auto cl_0 = HX::make_scope_exit([&]() {
+	auto cl_0 = HX::make_scope_exit([&]() { ctx.clear_gss(); });
+	auto cl_1 = HX::make_scope_exit([&]() {
 		if (gss_output_token.length != 0)
 			gss_release_buffer(&status, &gss_output_token);
 		if (gss_user_buf.length != 0)
@@ -1045,23 +1079,21 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 	if (ctx.m_gss_srv_creds == GSS_C_NO_CREDENTIAL) {
 		ctx.m_gss_ctx = GSS_C_NO_CONTEXT;
 		auto p = g_config_file->get_value("http_krb_service_principal");
-		std::string principal;
-		if (p != nullptr && *p != '\0')
-			principal = p;
-		else
-			principal = "gromox@"s + p;
-		mlog(LV_DEBUG, "krb service principal = \"%s\"", principal.c_str());
-		gss_input_buf.value  = principal.data();
-		gss_input_buf.length = principal.length() + 1;
-		auto ret = gss_import_name(&status, &gss_input_buf,
-		           GSS_C_NT_HOSTBASED_SERVICE, &gss_srv_name);
-		if (ret != GSS_S_COMPLETE) {
-			krblog("Unable to import server name", ret, status);
-			return 0;
+		if (p != nullptr && *p != '\0') {
+			gss_input_buf.value  = deconst(p);
+			gss_input_buf.length = strlen(p);
+			auto ret = gss_import_name(&status, &gss_input_buf,
+				   GSS_C_NT_HOSTBASED_SERVICE, &gss_srv_name);
+			if (ret != GSS_S_COMPLETE) {
+				krblog("Unable to import server name", ret, status);
+				return 0;
+			}
+		} else {
+			gss_srv_name = GSS_C_NO_NAME;
 		}
-		ret = gss_acquire_cred(&status, gss_srv_name, GSS_C_INDEFINITE,
-		      GSS_C_NO_OID_SET, GSS_C_ACCEPT, &ctx.m_gss_srv_creds,
-		      nullptr, nullptr);
+		auto ret = gss_acquire_cred(&status, gss_srv_name,
+		           GSS_C_INDEFINITE, GSS_C_NO_OID_SET, GSS_C_ACCEPT,
+		           &ctx.m_gss_srv_creds, nullptr, nullptr);
 		if (ret != GSS_S_COMPLETE) {
 			krblog("Unable to acquire credentials handle", ret, status);
 			return 0;
@@ -1078,8 +1110,10 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 	else
 		output.clear();
 
-	if (ret == GSS_S_CONTINUE_NEEDED)
+	if (ret == GSS_S_CONTINUE_NEEDED) {
+		cl_0.release(); /* keep state for next round */
 		return -99; /* MOAR */
+	}
 	output.clear();
 	if (ret != GSS_S_COMPLETE) {
 		krblog("Unable to accept security context", ret, status);
@@ -1092,39 +1126,36 @@ int http_parser::auth_krb(http_context &ctx, const char *input, size_t isize,
 		return 0;
 	}
 	std::string ub(static_cast<const char *>(gss_user_buf.value), gss_user_buf.length);
-	mlog(LV_DEBUG, "Kerberos username: %s", ub.c_str());
 	return auth_finalize(ctx, ub.c_str());
 }
 #endif
 
 tproc_status http_parser::auth_spnego(http_context &ctx, const char *past_method)
 {
-	bool rq_ntlmssp = strncmp(past_method, "TlRMTVNT", 8) == 0;
-	auto the_helper = g_config_file->get_value(rq_ntlmssp ? "ntlmssp_program" : "gss_program");
-
-	if (strcmp(the_helper, "internal-gss") != 0) {
-		auto ret = auth_ntlmssp(ctx, the_helper, past_method, ctx.last_gss_output);
+	if (gss_helper_program != "internal-gss") {
+		auto ret = auth_exthelper(ctx, gss_helper_program, past_method, ctx.last_gss_output);
 		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
 		ctx.auth_method = auth_method::negotiate_b64;
 		if (ret <= 0 && ret != -99)
 			ntlm_stop(ctx.ntlm_proc);
-	} else {
-#ifdef HAVE_GSSAPI
-		char decoded[4096];
-		size_t decode_len = 0;
-		if (decode64(past_method, strlen(past_method), decoded,
-		    std::size(decoded), &decode_len) != 0)
-			return tproc_status::runoff;
-		auto ret = auth_krb(ctx, decoded, decode_len, ctx.last_gss_output);
-		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
-		ctx.auth_method = auth_method::negotiate;
-#else
-		static bool y = false;
-		if (!y)
-			mlog(LV_DEBUG, "Cannot handle Negotiate request: software built without GSSAPI");
-		y = true;
-#endif
+		return tproc_status::runoff;
 	}
+
+#ifdef HAVE_GSSAPI
+	char decoded[4096];
+	size_t decode_len = 0;
+	if (decode64(past_method, strlen(past_method), decoded,
+	    std::size(decoded), &decode_len) != 0)
+		return tproc_status::runoff;
+	auto ret = auth_krb(ctx, decoded, decode_len, ctx.last_gss_output);
+	ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
+	ctx.auth_method = auth_method::negotiate;
+#else
+	static bool y = false;
+	if (!y)
+		mlog(LV_DEBUG, "Cannot handle Negotiate request: software built without GSSAPI");
+	y = true;
+#endif
 	return tproc_status::runoff;
 }
 
@@ -1175,7 +1206,7 @@ tproc_status http_parser::auth(http_context &ctx)
 		auto ret = auth_basic(&ctx, past_method);
 		if (ret != tproc_status::runoff)
 			return ret;
-	} else if (strcasecmp(method, "Negotiate") == 0 &&
+	} else if ((strcasecmp(method, "Negotiate") == 0 || strcasecmp(method, "NTLM") == 0) &&
 	    g_config_file->get_ll("http_auth_spnego")) {
 		auto ret = auth_spnego(ctx, past_method);
 		if (ret != tproc_status::runoff)
@@ -1422,9 +1453,12 @@ ssize_t http_parser::readsock(HTTP_CONTEXT *pcontext, const char *tag,
 		auto &co = pcontext->connection;
 		char tbuf[24];
 		now_str(tbuf, std::size(tbuf));
-		fprintf(stderr, "\e[1m<< %s [%s]:%hu->[%s]:%hu %zd bytes\e[0m\n",
+		fprintf(stderr, "\e[1m<< %s [%s]:%hu",
 		        now_str(tbuf, std::size(tbuf)),
-		        co.client_addr, co.client_port,
+		        co.client_addr, co.client_port);
+		if (co.proxy_port != 0)
+			fprintf(stderr, "->[%s]:%hu", co.proxy_addr, co.proxy_port);
+		fprintf(stderr, "->[%s]:%hu %zd bytes\e[0m\n",
 		        co.server_addr, co.server_port, actual_read);
 		auto pfx = utf8_printable_prefix(pbuff, actual_read);
 		if (pfx == static_cast<size_t>(actual_read)) {
@@ -1604,9 +1638,12 @@ tproc_status http_parser::wrrep(http_context *pcontext)
 	if (g_http_debug) {
 		auto &co = pcontext->connection;
 		char tbuf[24];
-		fprintf(stderr, "\e[1m>> %s [%s]:%hu->[%s]:%hu %zd bytes\e[0m\n",
+		fprintf(stderr, "\e[1m>> %s [%s]:%hu",
 		        now_str(tbuf, std::size(tbuf)),
-		        co.server_addr, co.server_port,
+		        co.server_addr, co.server_port);
+		if (co.proxy_port != 0)
+			fprintf(stderr, "->[%s]:%hu", co.proxy_addr, co.proxy_port);
+		fprintf(stderr, "->[%s]:%hu %zd bytes\e[0m\n",
 		        co.client_addr, co.client_port, written_len);
 		auto pfx = utf8_printable_prefix(pcontext->write_buff, written_len);
 		if (pfx == static_cast<size_t>(written_len)) {
@@ -2280,16 +2317,25 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 		mod_fastcgi_insert_ctx(pcontext);
 }
 
+void http_context::clear_gss()
+{
+#ifdef HAVE_GSSAPI
+	OM_uint32 st;
+	if (m_gss_srv_creds != nullptr) {
+		gss_release_cred(&st, &m_gss_srv_creds);
+		m_gss_srv_creds = GSS_C_NO_CREDENTIAL;
+	}
+	if (m_gss_ctx != nullptr) {
+		gss_delete_sec_context(&st, &m_gss_ctx, GSS_C_NO_BUFFER);
+		m_gss_ctx = GSS_C_NO_CONTEXT;
+	}
+#endif
+}
+
 http_context::~http_context()
 {
 	auto pcontext = this;
-#ifdef HAVE_GSSAPI
-	OM_uint32 st;
-	if (m_gss_srv_creds != nullptr)
-		gss_release_cred(&st, &m_gss_srv_creds);
-	if (m_gss_ctx != nullptr)
-		gss_delete_sec_context(&st, &m_gss_ctx, GSS_C_NO_BUFFER);
-#endif
+	clear_gss();
 	if (hpm_processor_is_in_charge(pcontext))
 		hpm_processor_insert_ctx(pcontext);
 	else if (mod_fastcgi_is_in_charge(pcontext))

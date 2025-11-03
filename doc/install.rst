@@ -11,7 +11,6 @@ dependencies are needed:
 
 * autotools
 * C and C++20 compiler
-* cURL library
 * fmt >= 8
 * jsoncpp
 * libHX >= 4.28
@@ -34,6 +33,14 @@ Optional deps:
 * A resolver library
   * libc/libresolv with interface "res_nquery" & "ns_initparse" functions
   * c-ares
+* cURL library
+* GSSAPI library
+  * mit-krb5-gssapi or
+  * heimdal-gssapi or
+  * libgssglue
+  * (even if built with any, you can still use external helpers like
+    ``/usr/libexec/squid/negotiate_wrapper_auth`` from Gromox)
+* mit-krb5-gssapi
 * libesedb
 * libolecf
 * libpff
@@ -168,14 +175,14 @@ SQL database
 A MariaDB/MySQL database is used to store (and replicate, if so needed later)
 users and other objects like groups/distribution lists, organizations, etc.
 The default database
-name Gromox's mysql_adaptor plugin will use is ``email``, hence you would
+name Gromox's mysql_adaptor component will use is ``email``, hence you would
 create that as a blank database. The default database access users is root with
 no password, which fits the default installation of MariaDB too. Any deviations
 will have to be specified in ``/etc/gromox/mysql_adaptor.cfg``; the
 corresponding manpage is mysql_adaptor(4gx) and autodiscover(4gx). The database
 can then be populated using ``gromox-dbop -C``.
 
-Gromox only requires SELECT,UPDATE permissions on this database as it does not
+Gromox only requires ``SELECT,UPDATE`` permissions on this database as it does not
 create or delete users. The grommunio Administration Backend is in charge of user
 management, and this role will need more permissions.
 
@@ -185,7 +192,7 @@ TLS certificates
 
 Have a PEM-encoded certificate and key ready. The cert file should contain any
 necessary sections of the certificate chain (in case those CAs are not already
-available by way of ``/etc/ssl/certs``). openSSL generally allows having the
+available by way of ``/etc/ssl/certs``). OpenSSL generally allows having the
 cert and the key in the same file, if you wish to do so. Add to
 ``/etc/gromox/http.cfg``::
 
@@ -274,9 +281,9 @@ SMTP
 
 exchange_emsmdb.cfg and zcore.cfg implicitly default to using localhost:25 as
 outgoing SMTP. At the same time, gromox-delivery-queue listens on port 25 by
-default, but it is only the local delivery agent (LDA). Therefore, running with
-implied defaults only gets you a system that can send mail to itself. To enable
-Internet mail or to add spam filtration, you will have reconfigure
+default, but it is only the local delivery agent (LDA). Therefore, the implied
+defaults only get you a system that can send mail to itself. To enable
+Internet mail or to add spam filtration, you will have to reconfigure
 gromox-delivery-queue (edit smtp.cfg) to listen on port 24 rather than 25, and
 install a full MTA like Postfix with configuration directives similar to::
 
@@ -305,7 +312,7 @@ with no edits to configuration, e.g.::
 	./http
 
 To test updates to data files such as ``folder_names.txt``, the
-modifications will either have to be copied to corresponding path in
+modifications will either have to be copied to the corresponding path in
 ``/usr/share/gromox``; else, you can set up and run the daemon with
 an alternate config, e.g.:
 
@@ -323,7 +330,7 @@ Service start
 
 * ``gromox-http`` — at the very least, the main process needs to be started. This is sufficient for e.g. Outlook to open and browse mailboxes.
 * ``gromox-adaptor`` — caches SQL data and generates work files used by other daemons
-* ``gromox-zcore`` — the zcore process is needed by anything using php-mapi (grommuniom-web, grommunio-sync, ...)
+* ``gromox-zcore`` — the zcore process is needed by anything using php-mapi (grommunio-web, grommunio-sync, ...)
 * ``gromox-delivery-queue`` — LMTP/SMTP frontend of the local delivery agent (for incoming mail)
 * ``gromox-delivery`` — Dequeueing backend of the local delivery agent
 * ``gromox-imap`` — for ye Thunderbird

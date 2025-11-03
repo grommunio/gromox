@@ -237,7 +237,7 @@ namespace gromox {
 /**
  * Return number of seconds of how long to hold/defer a message.
  */
-uint32_t props_to_defer_interval(const TPROPVAL_ARRAY &pv)
+uint64_t props_to_defer_interval(const TPROPVAL_ARRAY &pv)
 {
 	auto cur_time = time(nullptr);
 	auto send_time = pv.get<const uint64_t>(PR_DEFERRED_SEND_TIME);
@@ -250,14 +250,15 @@ uint32_t props_to_defer_interval(const TPROPVAL_ARRAY &pv)
 	auto num = pv.get<const uint32_t>(PR_DEFERRED_SEND_NUMBER);
 	if (num == nullptr)
 		return 0;
+	uint64_t lnum = *num;
 	auto unit = pv.get<const uint32_t>(PR_DEFERRED_SEND_UNITS);
 	if (unit == nullptr)
 		return 0;
 	switch (*unit) {
-	case 0: return *num * 60;
-	case 1: return *num * 3600;
-	case 2: return *num * 86400;
-	case 3: return *num * 86400 * 7;
+	case 0: return lnum * 60;
+	case 1: return lnum * 3600;
+	case 2: return lnum * 86400;
+	case 3: return lnum * 86400 * 7;
 	default: return 0;
 	}
 }

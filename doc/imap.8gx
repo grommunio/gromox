@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH imap 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 imap \(em Gromox IMAP server
@@ -64,8 +64,10 @@ many failed logins.
 Default: \fI1 minute\fP
 .TP
 \fBconfig_file_path\fP
-Colon-separated list of directories in which further configuration files,
-especially those used by plugin instances, will be searched.
+Colon-separated list of directories which will be scanned when locating further
+configuration files, especially those used by subcomponent instances. (For
+example, mysql_adaptor(4gx) would be directed to look at
+/etc/gromox/imap/mysql_adaptor.cfg before /etc/gromox/mysql_adaptor.cfg.)
 .br
 Default: \fI/etc/gromox/imap:/etc/gromox\fP
 .TP
@@ -231,7 +233,5 @@ Default: \fItls1.2\fP
 .IP \(bu 4
 \fIdata_file_path\fP/imap_code.txt: Mapping from internal IMAP error codes to
 textual descriptions.
-.IP \(bu 4
-/usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
 \fBgromox\fP(7), \fBmidb_agent\fP(4gx)

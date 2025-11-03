@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <ctime>
 #include <string>
@@ -12,6 +12,7 @@
 #include <vmime/dateTime.hpp>
 #include <vmime/mailbox.hpp>
 #include <vmime/stringContentHandler.hpp>
+#include <vmime/utility/outputStreamAdapter.hpp>
 #include <gromox/bounce_gen.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/rop_util.hpp>
@@ -133,19 +134,24 @@ bool exch_bouncer_make(buff_t gudn, meta_t meta,
 	pmail->getBody()->appendPart(std::move(part1));
 
 	auto part2 = vmime::make_shared<vmime::bodyPart>();
-	auto dsn = part2->getHeader();
-	dsn->getField("Final-Recipient")->setValue("rfc822;"s + username);
+	vmime::header dsn;
+	dsn.getField("Final-Recipient")->setValue("rfc822;"s + username);
 	if (strcmp(bounce_type, "BOUNCE_NOTIFY_READ") == 0)
-		dsn->getField("Disposition")->setValue("automatic-action/MDN-sent-automatically; displayed");
+		dsn.getField("Disposition")->setValue("automatic-action/MDN-sent-automatically; displayed");
 	else if (strcmp(bounce_type, "BOUNCE_NOTIFY_NON_READ") == 0)
-		dsn->getField("Disposition")->setValue("manual-action/MDN-sent-automatically; deleted");
+		dsn.getField("Disposition")->setValue("manual-action/MDN-sent-automatically; deleted");
 	str = pbrief->proplist.get<char>(PR_INTERNET_MESSAGE_ID);
 	if (str != nullptr)
-		dsn->getField("Original-Message-ID")->setValue(str);
+		dsn.getField("Original-Message-ID")->setValue(str);
 	bv = pbrief->proplist.get<BINARY>(PR_PARENT_KEY);
 	if (bv != nullptr)
-		dsn->getField("X-MSExch-Correlation-Key")->setValue(base64_encode({bv->pc, bv->cb}));
-	dsn->getField("X-Display-Name")->setValue(expeditor);
+		dsn.getField("X-MSExch-Correlation-Key")->setValue(base64_encode({bv->pc, bv->cb}));
+	dsn.getField("X-Display-Name")->setValue(expeditor);
+
+	std::ostringstream oss;
+	vmime::utility::outputStreamAdapter vos(oss);
+	dsn.generate(vos);
+	part2->getBody()->setContents(vmime::make_shared<vmime::stringContentHandler>(oss.str()));
 	part2->getBody()->setContentType(vmime::mediaType(vmime::mediaTypes::MESSAGE, vmime::mediaTypes::MESSAGE_DISPOSITION_NOTIFICATION));
 	pmail->getBody()->appendPart(std::move(part2));
 	return true;

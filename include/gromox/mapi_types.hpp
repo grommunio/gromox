@@ -37,21 +37,15 @@ struct GX_EXPORT STORE_ENTRYID {
 struct GX_EXPORT FOLDER_ENTRYID {
 	uint32_t flags;
 	FLATUID provider_uid; /* glossary.rst:Store GUID */
-	uint16_t folder_type;
-	GUID database_guid;
-	GLOBCNT global_counter;
-	uint8_t pad[2];
+	uint16_t eid_type;
+	GUID folder_dbguid;
+	GLOBCNT folder_gc;
+	uint8_t pad1[2];
 };
 
-struct GX_EXPORT MESSAGE_ENTRYID {
-	uint32_t flags;
-	FLATUID provider_uid; /* glossary.rst:Store GUID */
-	uint16_t message_type;
-	GUID folder_database_guid;
-	GLOBCNT folder_global_counter;
-	uint8_t pad1[2];
-	GUID message_database_guid;
-	GLOBCNT message_global_counter;
+struct GX_EXPORT MESSAGE_ENTRYID : public FOLDER_ENTRYID {
+	GUID message_dbguid;
+	GLOBCNT message_gc;
 	uint8_t pad2[2];
 };
 
@@ -221,6 +215,7 @@ struct GX_EXPORT PROPERTY_ROW {
 struct GX_EXPORT PROPROW_SET {
 	uint16_t count;
 	PROPERTY_ROW *prows;
+	I_BEGIN_END(prows, count);
 };
 
 #define TABLE_SORT_ASCEND							0x0
@@ -252,10 +247,24 @@ struct GX_EXPORT PROBLEM_ARRAY {
 	static constexpr size_t npos = -1;
 };
 
-struct GX_EXPORT EMSAB_ENTRYID {
+struct GX_EXPORT EMSAB_ENTRYID_view {
+	uint32_t flags = 0;
+	uint32_t type = 0;
+	const char *px500dn = nullptr;
+};
+
+struct GX_EXPORT EMSAB_ENTRYID_manual {
 	uint32_t flags;
 	uint32_t type;
 	char *px500dn;
+	operator EMSAB_ENTRYID_view() const { return {flags, type, px500dn}; }
+};
+
+struct GX_EXPORT EMSAB_ENTRYID {
+	uint32_t flags = 0;
+	uint32_t type = 0;
+	std::string x500dn;
+	operator EMSAB_ENTRYID_view() const { return {flags, type, x500dn.c_str()}; }
 };
 
 #define DAYOFWEEK_SUNDAY							0x0

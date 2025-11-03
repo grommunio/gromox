@@ -89,16 +89,19 @@ T& defaulted(std::optional<T>& container, Args&&... args)
  *
  * @tparam     T          Type of the field
  * @tparam     PT         Type of the value contained in the property
+ *
+ * @return    Reference to target
  */
 template<typename T, typename PT=PropType<T>, std::enable_if_t<!std::is_same_v<PT, void>, bool> = true>
-void fromProp(const TAGGED_PROPVAL* prop, std::optional<T>& target)
+std::optional<T>& fromProp(const TAGGED_PROPVAL* prop, std::optional<T>& target)
 {
 	if (!prop)
-		return;
+		return target;
 	if constexpr (std::is_pointer_v<PT>)
 		target.emplace(static_cast<PT>(prop->pvalue));
 	else
 		target.emplace(*static_cast<const PT*>(prop->pvalue));
+	return target;
 }
 
 /**
@@ -521,7 +524,7 @@ void sFolderEntryId::init(const void* data, uint64_t size)
  */
 uint32_t sFolderEntryId::accountId() const
 {
-	return database_guid.time_low;
+	return folder_dbguid.time_low;
 }
 
 /**
@@ -531,7 +534,7 @@ uint32_t sFolderEntryId::accountId() const
  */
 uint64_t sFolderEntryId::folderId() const
 {
-	return rop_util_gc_to_value(global_counter);
+	return rop_util_gc_to_value(folder_gc);
 }
 
 /**
@@ -541,7 +544,7 @@ uint64_t sFolderEntryId::folderId() const
  */
 bool sFolderEntryId::isPrivate() const
 {
-	return folder_type == EITLT_PRIVATE_FOLDER;
+	return eid_type == EITLT_PRIVATE_FOLDER;
 }
 
 /**
@@ -591,7 +594,7 @@ void sMessageEntryId::init(const void* data, uint64_t size)
  */
 uint32_t sMessageEntryId::accountId() const
 {
-	return folder_database_guid.time_low;
+	return folder_dbguid.time_low;
 }
 
 /**
@@ -601,7 +604,7 @@ uint32_t sMessageEntryId::accountId() const
  */
 uint64_t sMessageEntryId::folderId() const
 {
-	return rop_util_gc_to_value(folder_global_counter);
+	return rop_util_gc_to_value(folder_gc);
 }
 
 /**
@@ -611,7 +614,7 @@ uint64_t sMessageEntryId::folderId() const
  */
 eid_t sMessageEntryId::messageId() const
 {
-	return rop_util_make_eid_ex(1, rop_util_gc_to_value(message_global_counter));
+	return rop_util_make_eid_ex(1, rop_util_gc_to_value(message_gc));
 }
 
 /**
@@ -623,7 +626,7 @@ eid_t sMessageEntryId::messageId() const
  */
 sMessageEntryId& sMessageEntryId::messageId(eid_t mid)
 {
-	message_global_counter = rop_util_get_gc_array(mid);
+	message_gc = rop_util_get_gc_array(mid);
 	return *this;
 }
 
@@ -634,7 +637,7 @@ sMessageEntryId& sMessageEntryId::messageId(eid_t mid)
  */
 bool sMessageEntryId::isPrivate() const
 {
-	return message_type == EITLT_PRIVATE_MESSAGE;
+	return eid_type == EITLT_PRIVATE_MESSAGE;
 }
 
 #undef TRY
@@ -1320,30 +1323,31 @@ tAlternateId::tAlternateId(Enum::IdFormatType format, std::string id, std::strin
 	Mailbox(std::move(mailbox))
 {}
 
-tAttachment::tAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
+tAttachment::tAttachment(const sAttachmentId& aid, const sShape& shape)
 {
 	AttachmentId.emplace(aid);
-	fromProp(props.find(PR_ATTACH_LONG_FILENAME), Name);
-	fromProp(props.find(PR_ATTACH_MIME_TAG), ContentType);
-	fromProp(props.find(PR_ATTACH_CONTENT_ID), ContentId);
-	fromProp(props.find(PR_ATTACH_SIZE), Size);
-	fromProp(props.find(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
-	auto flags = props.get<const uint32_t>(PR_ATTACH_FLAGS);
+	if (!fromProp(shape.get(PR_ATTACH_LONG_FILENAME), Name))
+		fromProp(shape.get(PR_DISPLAY_NAME), Name);
+	fromProp(shape.get(PR_ATTACH_MIME_TAG), ContentType);
+	fromProp(shape.get(PR_ATTACH_CONTENT_ID), ContentId);
+	fromProp(shape.get(PR_ATTACH_SIZE), Size);
+	fromProp(shape.get(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
+	auto flags = shape.get<const uint32_t>(PR_ATTACH_FLAGS);
 	if (flags != nullptr && *flags & ATT_MHTML_REF)
 		IsInline = true;
 }
 
-sAttachment tAttachment::create(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
+sAttachment tAttachment::create(const sAttachmentId& aid, sShape&& shape)
 {
-	const TAGGED_PROPVAL* prop = props.find(PR_ATTACH_METHOD);
+	const TAGGED_PROPVAL* prop = shape.get(PR_ATTACH_METHOD);
 	if (prop)
 		switch(*static_cast<const uint32_t*>(prop->pvalue)) {
 		case ATTACH_EMBEDDED_MSG:
-			return sAttachment(std::in_place_type_t<tItemAttachment>(), aid, props);
+			return sAttachment(std::in_place_type_t<tItemAttachment>(), aid, std::move(shape));
 		case ATTACH_BY_REFERENCE:
-			return sAttachment(std::in_place_type_t<tReferenceAttachment>(), aid, props);
+			return sAttachment(std::in_place_type_t<tReferenceAttachment>(), aid, std::move(shape));
 		}
-	return sAttachment(std::in_place_type_t<tFileAttachment>(), aid, props);
+	return sAttachment(std::in_place_type_t<tFileAttachment>(), aid, std::move(shape));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3340,9 +3344,16 @@ uint32_t tFieldURI::tag(const sGetNameId& getId) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tFileAttachment::tFileAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props) : tAttachment(aid, props)
+tItemAttachment::tItemAttachment(const sAttachmentId &aid, sShape &&shape) :
+    tAttachment(aid, shape)
 {
-	const TAGGED_PROPVAL *tp = props.find(PR_ATTACH_DATA_BIN);
+	Item.emplace(std::in_place_type_t<tMessage>(), sShape{});
+	std::get<tMessage>(*Item).MimeContent.emplace(std::move(*shape.mimeContent));
+}
+
+tFileAttachment::tFileAttachment(const sAttachmentId& aid, const sShape& shape) : tAttachment(aid, shape)
+{
+	const TAGGED_PROPVAL *tp = shape.get(PR_ATTACH_DATA_BIN);
 	if (tp) {
 		Content.emplace(*tp);
 		Size = Content->size();

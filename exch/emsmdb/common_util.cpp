@@ -254,13 +254,12 @@ BINARY *cu_fid_to_entryid(const logon_object &logon, uint64_t folder_id)
 	tmp_entryid.flags = 0;
 	tmp_entryid.provider_uid = logon.mailbox_guid;
 	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
-	    tmp_entryid.database_guid) != ecSuccess)
+	    tmp_entryid.folder_dbguid) != ecSuccess)
 		return nullptr;
-	tmp_entryid.folder_type = logon.is_private() ?
-	                          EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
-	tmp_entryid.global_counter = rop_util_get_gc_array(folder_id);
-	tmp_entryid.pad[0] = 0;
-	tmp_entryid.pad[1] = 0;
+	tmp_entryid.eid_type  = logon.is_private() ? EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
+	tmp_entryid.folder_gc = rop_util_get_gc_array(folder_id);
+	tmp_entryid.pad1[0] = 0;
+	tmp_entryid.pad1[1] = 0;
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
@@ -281,10 +280,10 @@ std::string cu_fid_to_entryid_s(const logon_object &logon, uint64_t folder_id) t
 	FOLDER_ENTRYID eid{};
 	eid.provider_uid = logon.mailbox_guid;
 	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
-	    eid.database_guid) != ecSuccess)
+	    eid.folder_dbguid) != ecSuccess)
 		return {};
-	eid.folder_type = logon.is_private() ? EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
-	eid.global_counter = rop_util_get_gc_array(folder_id);
+	eid.eid_type  = logon.is_private() ? EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
+	eid.folder_gc = rop_util_get_gc_array(folder_id);
 
 	std::string out;
 	out.resize(46); /* MS-OXCDATA v19 §2.2.4.1 */
@@ -355,15 +354,14 @@ BINARY *cu_mid_to_entryid(const logon_object &logon,
 	tmp_entryid.flags = 0;
 	tmp_entryid.provider_uid = logon.mailbox_guid;
 	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
-	    tmp_entryid.folder_database_guid) != ecSuccess)
+	    tmp_entryid.folder_dbguid) != ecSuccess)
 		return nullptr;
 	if (replid_to_replguid(logon, rop_util_get_replid(message_id),
-	    tmp_entryid.message_database_guid) != ecSuccess)
+	    tmp_entryid.message_dbguid) != ecSuccess)
 		return nullptr;
-	tmp_entryid.message_type = logon.is_private() ?
-	                           EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;
-	tmp_entryid.folder_global_counter = rop_util_get_gc_array(folder_id);
-	tmp_entryid.message_global_counter = rop_util_get_gc_array(message_id);
+	tmp_entryid.eid_type   = logon.is_private() ? EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;
+	tmp_entryid.folder_gc  = rop_util_get_gc_array(folder_id);
+	tmp_entryid.message_gc = rop_util_get_gc_array(message_id);
 	tmp_entryid.pad1[0] = 0;
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
@@ -389,14 +387,14 @@ std::string cu_mid_to_entryid_s(const logon_object &logon, uint64_t folder_id,
 	MESSAGE_ENTRYID eid{};
 	eid.provider_uid = logon.mailbox_guid;
 	if (replid_to_replguid(logon, rop_util_get_replid(folder_id),
-	    eid.folder_database_guid) != ecSuccess)
+	    eid.folder_dbguid) != ecSuccess)
 		return {};
 	if (replid_to_replguid(logon, rop_util_get_replid(msg_id),
-	    eid.message_database_guid) != ecSuccess)
+	    eid.message_dbguid) != ecSuccess)
 		return {};
-	eid.message_type = logon.is_private() ? EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;
-	eid.folder_global_counter  = rop_util_get_gc_array(folder_id);
-	eid.message_global_counter = rop_util_get_gc_array(msg_id);
+	eid.eid_type   = logon.is_private() ? EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;
+	eid.folder_gc  = rop_util_get_gc_array(folder_id);
+	eid.message_gc = rop_util_get_gc_array(msg_id);
 
 	std::string out;
 	out.resize(70); /* MS-OXCDATA v19 §2.2.4.2 */
@@ -464,13 +462,12 @@ BOOL cu_entryid_to_fid(const logon_object &logon, const BINARY *pbin,
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (ext_pull.g_folder_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;	
-	if (replguid_to_replid(logon, tmp_entryid.database_guid,
-	    replid) != ecSuccess)
+	if (replguid_to_replid(logon, tmp_entryid.folder_dbguid, replid) != ecSuccess)
 		return false;
-	switch (tmp_entryid.folder_type) {
+	switch (tmp_entryid.eid_type) {
 	case EITLT_PRIVATE_FOLDER:
 	case EITLT_PUBLIC_FOLDER:
-		*pfolder_id = rop_util_make_eid(replid, tmp_entryid.global_counter);
+		*pfolder_id = rop_util_make_eid(replid, tmp_entryid.folder_gc);
 		return TRUE;
 	default:
 		return FALSE;
@@ -487,17 +484,15 @@ BOOL cu_entryid_to_mid(const logon_object &logon, const BINARY *pbin,
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (ext_pull.g_msg_eid(&tmp_entryid) != pack_result::ok)
 		return FALSE;	
-	if (replguid_to_replid(logon, tmp_entryid.folder_database_guid,
-	    freplid) != ecSuccess)
+	if (replguid_to_replid(logon, tmp_entryid.folder_dbguid, freplid) != ecSuccess)
 		return false;
-	if (replguid_to_replid(logon, tmp_entryid.message_database_guid,
-	    mreplid) != ecSuccess)
+	if (replguid_to_replid(logon, tmp_entryid.message_dbguid, mreplid) != ecSuccess)
 		return false;
-	switch (tmp_entryid.message_type) {
+	switch (tmp_entryid.eid_type) {
 	case EITLT_PRIVATE_MESSAGE:
 	case EITLT_PUBLIC_MESSAGE:
-		*pfolder_id  = rop_util_make_eid(freplid, tmp_entryid.folder_global_counter);
-		*pmessage_id = rop_util_make_eid(mreplid, tmp_entryid.message_global_counter);
+		*pfolder_id  = rop_util_make_eid(freplid, tmp_entryid.folder_gc);
+		*pmessage_id = rop_util_make_eid(mreplid, tmp_entryid.message_gc);
 		return TRUE;
 	default:
 		return FALSE;
@@ -713,9 +708,9 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 
 ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *data)
 {
-	for (unsigned int i = 0; i < parray->count; ++i) {
-		if (parray->ppropval[i].proptag == tag) {
-			parray->ppropval[i].pvalue = deconst(data);
+	for (auto &e : *parray) {
+		if (e.proptag == tag) {
+			e.pvalue = deconst(data);
 			return ecSuccess;
 		}
 	}
@@ -748,9 +743,9 @@ void common_util_remove_propvals(TPROPVAL_ARRAY *parray, proptag_t proptag)
 BOOL common_util_retag_propvals(TPROPVAL_ARRAY *parray,
     proptag_t original_proptag, proptag_t new_proptag)
 {
-	for (unsigned int i = 0; i < parray->count; ++i) {
-		if (parray->ppropval[i].proptag == original_proptag) {
-			parray->ppropval[i].proptag = new_proptag;
+	for (auto &e : *parray) {
+		if (e.proptag == original_proptag) {
+			e.proptag = new_proptag;
 			return TRUE;
 		}
 	}
@@ -760,9 +755,9 @@ BOOL common_util_retag_propvals(TPROPVAL_ARRAY *parray,
 void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	const PROPTAG_ARRAY *pproptags_subtractor)
 {
-	for (unsigned int j = 0; j < pproptags_subtractor->count; ++j) {
+	for (const auto subtag : *pproptags_subtractor) {
 		for (unsigned int i = 0; i < pproptags_minuend->count; ++i) {
-			if (pproptags_subtractor->pproptag[j] != pproptags_minuend->pproptag[i])
+			if (subtag != pproptags_minuend->pproptag[i])
 				continue;
 			pproptags_minuend->count--;
 			if (i < pproptags_minuend->count)
@@ -1210,15 +1205,14 @@ BOOL common_util_convert_tagged_propval(
 		}
 		case PT_MV_STRING8: {
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
-			for (size_t i = 0; i < sa->count; ++i) {
-				auto len = mb_to_utf8_len(sa->ppstr[i]);
+			for (auto &entry : *sa) {
+				auto len = mb_to_utf8_len(entry);
 				auto pstring = cu_alloc<char>(len);
 				if (pstring == nullptr)
 					return FALSE;
-				if (common_util_convert_string(true,
-				    sa->ppstr[i], pstring, len) < 0)
+				if (common_util_convert_string(true, entry, pstring, len) < 0)
 					return FALSE;	
-				sa->ppstr[i] = pstring;
+				entry = pstring;
 			}
 			common_util_convert_proptag(TRUE, &ppropval->proptag);
 			break;
@@ -1250,15 +1244,14 @@ BOOL common_util_convert_tagged_propval(
 		}
 		case PT_MV_UNICODE: {
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
-			for (size_t i = 0; i < sa->count; ++i) {
-				auto len = utf8_to_mb_len(sa->ppstr[i]);
+			for (auto &entry : *sa) {
+				auto len = utf8_to_mb_len(entry);
 				auto pstring = cu_alloc<char>(len);
 				if (pstring == nullptr)
 					return FALSE;
-				if (common_util_convert_string(false,
-				    sa->ppstr[i], pstring, len) < 0)
+				if (common_util_convert_string(false, entry, pstring, len) < 0)
 					return FALSE;	
-				sa->ppstr[i] = pstring;
+				entry = pstring;
 			}
 			common_util_convert_proptag(FALSE, &ppropval->proptag);
 			break;
@@ -1284,8 +1277,8 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 	switch (pres->rt) {
 	case RES_AND:
 	case RES_OR:
-		for (size_t i = 0; i < pres->andor->count; ++i)
-			if (!common_util_convert_restriction(to_unicode, &pres->andor->pres[i]))
+		for (auto &expr : *pres->andor)
+			if (!common_util_convert_restriction(to_unicode, &expr))
 				return FALSE;	
 		break;
 	case RES_NOT:
@@ -1433,73 +1426,6 @@ void common_util_notify_receipt(const char *username, int type,
 	mlog(LV_ERR, "E-2035: ENOMEM");
 }
 
-BOOL common_util_save_message_ics(logon_object *plogon,
-	uint64_t message_id, PROPTAG_ARRAY *pchanged_proptags)
-{
-	uint32_t tmp_index;
-	uint32_t *pgroup_id;
-	uint64_t change_num;
-	PROBLEM_ARRAY tmp_problems;
-	auto dir = plogon->get_dir();
-	
-	if (!exmdb_client->allocate_cn(dir, &change_num))
-		return FALSE;	
-	const TAGGED_PROPVAL propval_buff[] = {
-		{PidTagChangeNumber, &change_num},
-		{PR_CHANGE_KEY, cu_xid_to_bin({plogon->guid(), change_num})},
-	};
-	if (propval_buff[1].pvalue == nullptr)
-		return FALSE;
-	const TPROPVAL_ARRAY tmp_propvals = {std::size(propval_buff), deconst(propval_buff)};
-	if (!exmdb_client->set_message_properties(dir, nullptr, CP_ACP,
-	    message_id, &tmp_propvals, &tmp_problems))
-		return FALSE;	
-	if (!exmdb_client->get_message_group_id(dir, message_id, &pgroup_id))
-		return FALSE;	
-	const property_groupinfo *pgpinfo;
-	if (NULL == pgroup_id) {
-		pgpinfo = plogon->get_last_property_groupinfo();
-		if (pgpinfo == nullptr)
-			return FALSE;
-		if (!exmdb_client->set_message_group_id(dir,
-		    message_id, pgpinfo->group_id))
-			return FALSE;	
-	}  else {
-		pgpinfo = plogon->get_property_groupinfo(*pgroup_id);
-		if (pgpinfo == nullptr)
-			return FALSE;
-	}
-	/* memory format of PROPTAG_ARRAY is identical to LONG_ARRAY */
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pindices(proptag_array_init());
-	if (pindices == nullptr)
-		return FALSE;
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pungroup_proptags(proptag_array_init());
-	if (pungroup_proptags == nullptr)
-		return FALSE;
-	if (!pgpinfo->get_partial_index(PR_CHANGE_KEY, &tmp_index)) {
-		if (!proptag_array_append(pungroup_proptags.get(), PR_CHANGE_KEY))
-			return FALSE;
-	} else {
-		if (!proptag_array_append(pindices.get(), tmp_index))
-			return FALSE;
-	}
-	if (NULL != pchanged_proptags) {
-		for (unsigned int i = 0; i < pchanged_proptags->count; ++i) {
-			const auto tag = pchanged_proptags->pproptag[i];
-			if (!pgpinfo->get_partial_index(tag, &tmp_index)) {
-				if (!proptag_array_append(pungroup_proptags.get(), tag))
-					return FALSE;
-			} else {
-				if (!proptag_array_append(pindices.get(), tmp_index))
-					return FALSE;
-			}
-		}
-		
-	}
-	return exmdb_client->save_change_indices(dir, message_id,
-	       change_num, pindices.get(), pungroup_proptags.get());
-}
-
 static void common_util_set_dir(const char *dir)
 {
 	g_dir_key = dir;
@@ -1532,8 +1458,11 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
 	return false;
 }
 
+/**
+ * @ev_from: address to use for Envelope-From
+ */
 ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
-    bool b_submit) try
+    const char *ev_from) try
 {
 	uint64_t message_id = msg->get_id();
 	MAIL imail;
@@ -1619,7 +1548,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 		}
 	}
 
-	auto ret = ems_send_mail(&imail, plogon->get_account(), rcpt_list);
+	auto ret = ems_send_mail(&imail, ev_from, rcpt_list);
 	if (ret != ecSuccess) {
 		mlog2(LV_ERR, "E-1280: failed to send %s via SMTP: %s",
 			log_id.c_str(), mapi_strerror(ret));

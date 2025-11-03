@@ -35,7 +35,6 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
-#include <gromox/msgchg_grouping.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/paths.h>
 #include <gromox/process.hpp>
@@ -58,15 +57,15 @@ int (*system_services_add_timer)(const char *, int);
 
 gromox::atomic_bool g_main_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
-static char *opt_config_file;
+static const char *opt_config_file;
 static unsigned int opt_show_version;
 static gromox::atomic_bool g_hup_signalled;
 static gromox::atomic_bool g_listener_notify_stop;
 static int g_listen_sockd;
 static pthread_t g_listener_id;
 
-static constexpr struct HXoption g_options_table[] = {
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -101,7 +100,7 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
 	{"oxcical_allday_ymd", "1", CFG_BOOL},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
-	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
+	{"submit_command", "/usr/bin/php " PKGDATADIR "/submit.php"},
 	{"user_cache_interval", "1h", CFG_TIME, "1min", "1day"},
 	{"user_table_size", "5000", CFG_SIZE, "100", "50000"},
 	{"x500_org_name", "Gromox default"},
@@ -242,13 +241,17 @@ int main(int argc, char **argv)
 {
 	char temp_buff[45];
 	std::shared_ptr<CONFIG_FILE> pconfig;
+	HXopt6_auto_result argp;
 	
 	exmdb_rpc_alloc = common_util_alloc;
 	exmdb_rpc_free = [](void *) {};
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, nullptr, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
 
 	startup_banner("gromox-zcore");
 	if (opt_show_version)
@@ -377,10 +380,6 @@ int main(int argc, char **argv)
 	if (bounce_gen_init(g_config_file->get_value("config_file_path"),
 	    g_config_file->get_value("data_file_path"), "notify_bounce") != 0) {
 		mlog(LV_ERR, "system: failed to start bounce producer");
-		return EXIT_FAILURE;
-	}
-	if (msgchg_grouping_run(g_config_file->get_value("data_file_path")) != 0) {
-		mlog(LV_ERR, "system: failed to start msgchg grouping");
 		return EXIT_FAILURE;
 	}
 	if (!ab_tree::AB.run()) {

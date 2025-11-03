@@ -28,14 +28,14 @@ struct table_object {
 	bool is_loaded() const { return rop_id == ropGetAttachmentTable || m_loaded; }
 	BOOL load();
 	void unload();
-	BOOL query_rows(BOOL forward, uint16_t row_count, TARRAY_SET *) const;
+	BOOL query_rows(BOOL forward, uint16_t row_count, TARRAY_SET *);
 	BOOL set_restriction(const RESTRICTION *);
 	void seek_current(BOOL forward, uint16_t row_count);
 	void set_handle(uint32_t h) { handle = h; }
 	uint32_t get_position() const { return m_position; }
 	void set_position(uint32_t position);
 	void clear_position() { m_position = 0; }
-	uint32_t get_total() const;
+	uint32_t get_total();
 	BOOL create_bookmark(uint32_t *pindex);
 	void remove_bookmark(uint32_t index);
 	void clear_bookmarks() { bookmark_list.clear(); }
@@ -58,7 +58,7 @@ struct table_object {
 	PROPTAG_ARRAY *m_columns = nullptr;
 	SORTORDER_SET *m_sorts = nullptr;
 	RESTRICTION *m_restriction = nullptr;
-	uint32_t m_position = 0, m_total = 0;
+	uint32_t m_position = 0;
 	uint32_t handle = 0, m_table_id = 0, bookmark_index = 0;
 	std::vector<bookmark_node> bookmark_list;
 };

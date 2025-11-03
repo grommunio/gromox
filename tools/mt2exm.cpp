@@ -45,7 +45,7 @@ struct ob_desc {
 
 using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
 
-static char *g_username, *g_anchor_folder_str;
+static const char *g_username, *g_anchor_folder_str;
 static gi_folder_map_t g_folder_map;
 static gi_name_map g_src_name_map;
 static propididmap_t g_thru_name_map;
@@ -71,7 +71,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_NONE, &g_continuous_mode, {}, {}, 0, "Continuous operation mode (do not stop on errors)"},
 	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
-	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
+	{nullptr, 'u', HXTYPE_STRING, {}, {}, {}, 0, "Username of store to import to", "EMAILADDR"},
 	{nullptr, 'v', HXTYPE_NONE | HXOPT_INC, &g_verbose_create, nullptr, nullptr, 0, "Be more verbose"},
 	{nullptr, 'x', HXTYPE_VAL, &g_oexcl, nullptr, nullptr, 0, "Disable O_EXCL like behavior for non-spliced folders"},
 	{"loglevel", 0, HXTYPE_UINT, &g_mlog_level, {}, {}, {}, "Basic loglevel of the program", "N"},
@@ -380,7 +380,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 }
 
 static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt,
-    const std::string &im_repr, Json::Value &&digest)
+    const std::string &im_repr, Json::Value &digest)
 {
 	uint64_t msg_id = 0, change_num = 0;
 	if (!exmdb_client->allocate_message_id(g_storedir, parent_fld, &msg_id)) {
@@ -411,16 +411,20 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt,
 	 * does away with the issue of multiple processes trying to potentially
 	 * vivify the same filename-derived-from-same-content.
 	 */
-	char guidtxt[GUIDSTR_SIZE]{};
-	GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
-	auto midstr = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
-	digest["file"] = midstr;
-	if (!exmdb_client->imapfile_write(g_storedir, "eml",
-	    midstr.c_str(), im_repr.c_str())) {
-		fprintf(stderr, "exm: imapfile_write RPC failed\n");
-		return -EIO;
+	std::string djson;
+	if (im_repr.size() > 0) {
+		char guidtxt[GUIDSTR_SIZE]{};
+		GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
+		auto midstr = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
+		digest["file"] = midstr;
+		if (!exmdb_client->imapfile_write(g_storedir, "eml",
+		    midstr.c_str(), im_repr.c_str())) {
+			fprintf(stderr, "exm: imapfile_write RPC failed\n");
+			return -EIO;
+		}
+		djson = json_to_str(digest);
+		digest.removeMember("file");
 	}
-	auto djson = json_to_str(digest);
 
 	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(g_storedir, CP_UTF8, parent_fld,
@@ -562,7 +566,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 			if (i > 0 && i % 1024 == 0)
 				fprintf(stderr, "mt2exm repeat %u/%u\n", i, g_repeat_iter);
 			auto ret = exm_create_msg(folder_it->second.fid_to,
-			           &ctnt, im_repr, std::move(digest));
+			           &ctnt, im_repr, digest);
 			if (ret != EXIT_SUCCESS)
 				return ret;
 		}
@@ -675,11 +679,14 @@ static void terse_help()
 
 int main(int argc, char **argv) try
 {
+	HXopt6_auto_result argp;
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'u')
+			g_username = argp.oarg[i];
 	if (g_username == nullptr) {
 		terse_help();
 		return EXIT_FAILURE;

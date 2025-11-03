@@ -1,8 +1,8 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH midb_agent 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-midb_agent \(em Service plugin for conversing with midb(8gx)
+midb_agent \(em Client for midb(8gx)
 .SH Configuration directives
 The usual config file location is /etc/gromox/midb_agent.cfg.
 .TP
@@ -60,6 +60,6 @@ in loading midb_agent twice.)
 \fIconfig_file_path\fP/midb_list.txt: midb multiserver map
 .PP
 \fIconfig_file_path\fP is determined by the configuration of the program that
-loaded the midb_agent plugin.
+loaded the midb_agent component.
 .SH See also
 \fBgromox\fP(7)

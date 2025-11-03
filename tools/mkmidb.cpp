@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
@@ -36,11 +36,11 @@ enum {
 
 static unsigned int opt_force, opt_create_old, opt_upgrade;
 static unsigned int opt_verbose, opt_integ;
-static char *opt_config_file;
+static const char *opt_config_file;
 
 static constexpr HXoption g_options_table[] = {
 	{"integrity", 0, HXTYPE_NONE, &opt_integ, nullptr, nullptr, 0, "Perform integrity SQLite check"},
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	{nullptr, 'f', HXTYPE_NONE, &opt_force, nullptr, nullptr, 0, "Allow overwriting midb.sqlite3"},
 	{nullptr, 'U', HXTYPE_NONE, &opt_upgrade, nullptr, nullptr, 0, "Perform schema upgrade"},
 	{nullptr, 'v', HXTYPE_NONE, &opt_verbose, nullptr, nullptr, 0, "Bump verbosity"},
@@ -59,17 +59,22 @@ static constexpr cfg_directive mkmidb_cfg_defaults[] = {
 
 int main(int argc, char **argv)
 {
+	HXopt6_auto_result argp;
 	sqlite3 *psqlite;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
-	if (2 != argc) {
+	if (argp.nargs != 1) {
 		printf("usage: %s <username>\n", argv[0]);
 		return EXIT_FAILURE;
 	}
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'c')
+			opt_config_file = argp.oarg[i];
+
+	auto le_username = argp.uarg[0];
 	auto pconfig = config_file_prg(opt_config_file, "mysql_adaptor.cfg",
 	               mkmidb_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr)
@@ -105,7 +110,7 @@ int main(int argc, char **argv)
 		"SELECT up.propval_str AS dtypx, u.address_status, u.maildir "
 		"FROM users AS u "
 		"LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
-		"WHERE username='"s + argv[1] + "'";
+		"WHERE username='"s + le_username + "'";
 	if (mysql_query(conn.get(), qstr.c_str()) != 0) {
 		fprintf(stderr, "%s: %s\n", qstr.c_str(), mysql_error(conn.get()));
 		return EXIT_FAILURE;
@@ -118,7 +123,7 @@ int main(int argc, char **argv)
 	auto myrow = myres.fetch_row();
 	if (myrow == nullptr || myres.num_rows() > 1) {
 		printf("cannot find information from database "
-				"for username %s\n", argv[1]);
+				"for username %s\n", le_username);
 		return EXIT_FAILURE;
 	}
 	auto dtypx = DT_MAILUSER;

@@ -12,7 +12,6 @@ BOOL exmdb_client_get_named_propid(const char *dir,
 	uint16_t *ppropid);
 extern BOOL exmdb_client_get_folder_property(const char *dir, cpid_t, uint64_t folder_id, gromox::proptag_t, void **val);
 extern BOOL exmdb_client_get_message_property(const char *dir, const char *username, cpid_t, uint64_t message_id, gromox::proptag_t, void **val);
-extern BOOL exmdb_client_delete_message(const char *dir, int account_id, cpid_t, uint64_t folder_id, uint64_t message_id, BOOL hard, BOOL *done);
 extern BOOL exmdb_client_get_instance_property(const char *dir, uint32_t instance_id, gromox::proptag_t, void **val);
 BOOL exmdb_client_set_instance_property(
 	const char *dir, uint32_t instance_id,

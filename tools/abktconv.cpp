@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdio>
@@ -13,7 +13,6 @@
 #include <utility>
 #include <libHX/io.h>
 #include <libHX/option.h>
-#include <libHX/scope.hpp>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/paths.h>
 #include <gromox/textmaps.hpp>
@@ -35,10 +34,9 @@ static constexpr struct HXoption g_options_table[] = {
 
 int main(int argc, char **argv)
 {
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
+	if (HX_getopt6(g_options_table, argc, argv, nullptr,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
 	textmaps_init(PKGDATADIR);
 	if (g_cpid != CP_ACP && cpid_to_cset(g_cpid) == nullptr) {
 		fprintf(stderr, "Unknown codepage %u\n", g_cpid);

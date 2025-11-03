@@ -54,7 +54,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"exmdb_max_sqlite_spares", "3", CFG_SIZE},
 	{"exmdb_pf_read_per_user", "1"},
 	{"exmdb_pf_read_states", "2"},
-	{"exmdb_private_folder_softdelete", "0", CFG_BOOL},
+	{"exmdb_private_folder_softdelete", "1", CFG_BOOL},
 	{"exmdb_schema_upgrades", "auto"},
 	{"exmdb_search_nice", "0"},
 	{"exmdb_search_pacing", "250", CFG_SIZE},

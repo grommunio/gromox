@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <ctime>
 #include <libHX/option.h>
-#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>

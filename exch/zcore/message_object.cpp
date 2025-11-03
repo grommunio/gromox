@@ -241,13 +241,11 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 	return 0;
 }
 
-ec_error_t message_object::save()
+ec_error_t message_object::save() try
 {
 	auto pmessage = this;
 	uint32_t result;
 	BINARY *pbin_pcl;
-	uint32_t *pgroup_id;
-	INDEX_ARRAY tmp_indices;
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -348,76 +346,13 @@ ec_error_t message_object::save()
 		proptag_array_clear(pmessage->premoved_proptags);
 		return ecSuccess;
 	}
-	const property_groupinfo *pgpinfo = nullptr;
 	if (is_new)
 		goto SAVE_FULL_CHANGE;
-	if (!exmdb_client->get_message_group_id(dir,
-	    pmessage->message_id, &pgroup_id))
-		return ecError;
-	if (NULL == pgroup_id) {
-		pgpinfo = pmessage->pstore->get_last_property_groupinfo();
-		if (pgpinfo == nullptr)
-			return ecError;
-		if (!exmdb_client->set_message_group_id(dir,
-		    pmessage->message_id, pgpinfo->group_id))
-			return ecError;
-	}  else {
-		pgpinfo = pmessage->pstore->get_property_groupinfo(*pgroup_id);
-		if (pgpinfo == nullptr)
-			return ecError;
-	}
-	
 	if (!exmdb_client->mark_modified(dir, pmessage->message_id))
 		return ecError;
-	
-	{
-	std::unique_ptr<INDEX_ARRAY, pta_delete> pindices(proptag_array_init());
-	if (pindices == nullptr)
-		return ecServerOOM;
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pungroup_proptags(proptag_array_init());
-	if (pungroup_proptags == nullptr)
-		return ecServerOOM;
-	/* always mark PR_MESSAGE_FLAGS as changed */
-	if (!proptag_array_append(pmessage->pchanged_proptags,
-	    PR_MESSAGE_FLAGS))
-		return ecError;
-	for (unsigned int i = 0; i < pmessage->pchanged_proptags->count; ++i) {
-		const auto tag = pmessage->pchanged_proptags->pproptag[i];
-		uint32_t tmp_index = 0;
-		if (!pgpinfo->get_partial_index(tag, &tmp_index)) {
-			if (!proptag_array_append(pungroup_proptags.get(), tag))
-				return ecError;
-		} else {
-			if (!proptag_array_append(pindices.get(), tmp_index))
-				return ecError;
-		}
-	}
-	for (unsigned int i = 0; i < pmessage->premoved_proptags->count; ++i) {
-		const auto tag = pmessage->premoved_proptags->pproptag[i];
-		uint32_t tmp_index = 0;
-		if (!pgpinfo->get_partial_index(tag, &tmp_index))
-			goto SAVE_FULL_CHANGE;
-		else if (!proptag_array_append(pindices.get(), tmp_index))
-			return ecError;
-	}
-	if (!exmdb_client->save_change_indices(
-		dir, pmessage->message_id, pmessage->change_num,
-	    pindices.get(), pungroup_proptags.get()))
-		return ecError;
-	proptag_array_clear(pmessage->pchanged_proptags);
-	proptag_array_clear(pmessage->premoved_proptags);
-	return ecSuccess;
-	}
-	
  SAVE_FULL_CHANGE:
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
-	tmp_indices.count = 0;
-	tmp_indices.pproptag = NULL;
-	if (!exmdb_client->save_change_indices(
-		dir, pmessage->message_id, pmessage->change_num,
-	    &tmp_indices, static_cast<PROPTAG_ARRAY *>(&tmp_indices)))
-		return ecError;
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
 	if (is_new && !b_fai && pmessage->message_id != 0 &&
@@ -425,6 +360,9 @@ ec_error_t message_object::save()
 		exmdb_client->rule_new_message(dir, pinfo->get_username(),
 			pmessage->cpid, pmessage->folder_id, pmessage->message_id);
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2905: ENOMEM");
+	return ecServerOOM;
 }
 
 BOOL message_object::reload()

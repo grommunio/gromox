@@ -1,14 +1,14 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH mh_nsp 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-mh_nsp \(em http(8gx) processing plugin for MAPIHTTP-wrapped NSPI requests
+mh_nsp \(em Handler for MAPIHTTP-wrapped NSPI requests
 .SH Description
-mh_nsp is a processing plugin for http(8gx) which reacts to URIs starting in
+mh_nsp is a component for http(8gx) which reacts to URIs starting with
 \fB/mapi/nspi/\fP. The ROP stream inside the HTTP request bodies is handed off
-to exchange_nsp(4gx) for processing.
+to exchange_nsp(4gx) for subsequent processing.
 .SH Configuration directives
-This plugin has no directives and therefore no config file.
+This component has no config directives of its own.
 .SH Normative references
 .IP \(bu 4
 MS-OXCMAPIHTTP: Messaging Application Programming Interface (MAPI) Extensions

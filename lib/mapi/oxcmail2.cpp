@@ -165,7 +165,6 @@ ec_error_t bodyset_enriched(TPROPVAL_ARRAY &props,
 	return ecServerOOM;
 }
 
-#ifndef AVOID_LIBXML
 static xmlNode *find_element(xmlNode *node, const char *elem)
 {
 	for (node = xmlFirstElementChild(node); node != nullptr;
@@ -184,7 +183,6 @@ static xmlNode *find_element(xmlDoc *doc, const char *elem)
 		return nullptr;
 	return find_element(node, elem);
 }
-#endif
 
 static bool multibody_supported_img(const char *t)
 {
@@ -194,52 +192,6 @@ static bool multibody_supported_img(const char *t)
 	return strcasecmp(t, "jpeg") == 0 || strcasecmp(t, "png") == 0 ||
 	       strcasecmp(t, "gif") == 0 || strcasecmp(t, "bmp") == 0;
 }
-
-#ifdef AVOID_LIBXML
-static ec_error_t multibody_html(std::string &&utfbody, std::string &ag_doc) try
-{
-	ag_doc += std::move(utfbody);
-	return ecSuccess;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1774: ENOMEM");
-	return ecServerOOM;
-}
-
-static ec_error_t multibody_plain(std::string &&utfbody, std::string &ag_doc) try
-{
-	ag_doc += "<pre>"s + std::move(utfbody) + "</pre>";
-	return ecSuccess;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1775: ENOMEM");
-	return ecServerOOM;
-}
-
-static ec_error_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
-    std::string &ag_doc) try
-{
-	std::string ctid;
-	char ctid_raw[128];
-	if (!mime->get_field("Content-ID", ctid_raw, std::size(ctid_raw))) {
-		GUID::random_new().to_str(&ctid_raw[0], std::size(ctid_raw), 32);
-		ctid_raw[32] = '@';
-		GUID::random_new().to_str(&ctid_raw[33], std::size(ctid_raw) - 33, 32);
-		ctid = ctid_raw;
-		epar.new_ctids.emplace(mime, ctid_raw);
-	} else if (ctid_raw[0] == '<') {
-		ctid = &ctid_raw[1];
-		if (ctid.size() > 0 && ctid_raw[0] == '<' && ctid.back() == '>')
-			ctid.pop_back();
-	} else {
-		ctid = ctid_raw;
-	}
-	ag_doc += "<img src=\"cid:" + ctid + "\">";
-	return ecSuccess;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1778: ENOMEM");
-	return ecServerOOM;
-}
-
-#else /* AVOID_LIBXML */
 
 static ec_error_t multibody_plain(std::string &&utfbody, xmldocptr &ag_doc) try
 {
@@ -383,16 +335,23 @@ static ec_error_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
 	mlog(LV_ERR, "E-1773: ENOMEM");
 	return ecServerOOM;
 }
-#endif /* AVOID_LIBXML */
 
+/**
+ * There are some MUAs around that produce HTML mails with multiple text/html
+ * parts when an inline image is inserted into the richtext textarea. The
+ * bodyset_* family of functions recombines these MIME parts, because MAPI (and
+ * thus all of its MUAs) can only deal with at most one PR_HTML.
+ *
+ * (Since one cannot add inline images to plaintext, plaintext mails are
+ * generally not chopped up.)
+ *
+ * @epar:  input mail and its parts
+ * @props: target MAPI message properties
+ */
 ec_error_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props,
     const char *charset)
 {
-#ifdef AVOID_LIBXML
-	std::string ag_doc;
-#else
 	xmldocptr ag_doc;
-#endif
 
 	for (auto mime : epar.hjoin) {
 		auto is_html  = strcasecmp(mime->content_type, "text/html") == 0;
@@ -435,11 +394,6 @@ ec_error_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props,
 			return err;
 	}
 
-#ifdef AVOID_LIBXML
-	BINARY bin;
-	bin.pc = ag_doc.data();
-	bin.cb = ag_doc.size();
-#else
 	std::unique_ptr<xmlChar[], xmlfree> ag_raw;
 	int ag_rawsize = 0;
 	htmlDocDumpMemoryFormat(ag_doc.get(), &unique_tie(ag_raw), &ag_rawsize, 1);
@@ -451,7 +405,6 @@ ec_error_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props,
 	BINARY bin;
 	bin.cb = ag_rawsize;
 	bin.pb = ag_raw.get();
-#endif /* AVOID_LIBXML */
 	auto err = props.set(PR_HTML, &bin);
 	if (err != ecSuccess)
 		return err;

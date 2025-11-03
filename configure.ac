@@ -1,4 +1,4 @@
-AC_INIT([gromox], [3.0])
+AC_INIT([gromox], [3.1])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
 AC_PREFIX_DEFAULT([/usr])
@@ -82,15 +82,6 @@ AS_IF([test "$with_gnu_ld" != yes], [NO_VSYM=1])
 AC_SUBST([NO_VSYM])
 
 
-AC_ARG_WITH([unitdir],
-	[AS_HELP_STRING([--with-unitdir=PATH], [Path to systemd service unit directory])],
-	[unitdir="$withval"],
-	[
-		unitdir=$("$PKG_CONFIG" systemd --variable systemdsystemunitdir 2>/dev/null)
-		AS_IF([test -z "$unitdir"], [unitdir='${prefix}/lib/systemd/system'])
-	])
-AC_SUBST([unitdir])
-
 dnl
 dnl The cstring header comes from the compiler, but ::strchr comes from the
 dnl C library. If the two are not synced up, a problem ensues.
@@ -125,10 +116,18 @@ PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 1.4.0], [], [
 ])
 PKG_CHECK_MODULES([gss], [krb5-gssapi], [
 	AC_DEFINE([HAVE_GSSAPI], [1])
-], [:])
+	have_gssapi=1
+], [
+	PKG_CHECK_MODULES([gss], [libgssglue], [
+		AC_DEFINE([HAVE_GSSAPI], [1])
+		have_gssapi=1
+	], [
+		have_gssapi=0
+	])
+])
 PKG_CHECK_MODULES([libHX], [libHX >= 4.28])
 PKG_CHECK_MODULES([libcrypto], [libcrypto])
-PKG_CHECK_MODULES([libcurl], [libcurl])
+PKG_CHECK_MODULES([libcurl], [libcurl], [have_curl=1], [have_curl=0])
 PKG_CHECK_MODULES([libesedb], [libesedb], [have_esedb=1], [have_esedb=0])
 PKG_CHECK_MODULES([libldap], [ldap], [], [
 	AC_CHECK_HEADERS([ldap.h], [], [AC_MSG_ERROR([ldap.h is required])])
@@ -150,7 +149,9 @@ have_pamheader=""
 AC_CHECK_HEADERS([crypt.h syslog.h])
 AC_CHECK_HEADERS([sys/epoll.h sys/event.h sys/ioctl.h sys/random.h sys/vfs.h sys/xattr.h])
 AC_CHECK_HEADERS([security/pam_modules.h], [have_pamheader="yes"])
+AM_CONDITIONAL([HAVE_CURL], [test "$have_curl" = 1])
 AM_CONDITIONAL([HAVE_ESEDB], [test "$have_esedb" = 1])
+AM_CONDITIONAL([HAVE_GSSAPI], [test "$have_gssapi" = 1])
 AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])
 AM_CONDITIONAL([HAVE_OLECF], [test "$have_olecf" = 1])
 AM_CONDITIONAL([HAVE_PFF], [test "$have_pff" = 1])
@@ -239,6 +240,15 @@ AC_MSG_CHECKING([for MySQL includes])
 AC_MSG_RESULT([$mysql_CFLAGS])
 AC_MSG_CHECKING([for MySQL libs])
 AC_MSG_RESULT([$mysql_LIBS])
+
+AC_ARG_WITH([unitdir],
+	[AS_HELP_STRING([--with-unitdir=PATH], [Path to systemd service unit directory])],
+	[unitdir="$withval"],
+	[
+		unitdir=$("$PKG_CONFIG" systemd --variable systemdsystemunitdir 2>/dev/null)
+		AS_IF([test -z "$unitdir"], [unitdir='${prefix}/lib/systemd/system'])
+	])
+AC_SUBST([unitdir])
 
 sysusersdir=$("$PKG_CONFIG" systemd --variable sysusersdir 2>/dev/null)
 tmpfilesdir=$("$PKG_CONFIG" systemd --variable tmpfilesdir 2>/dev/null)

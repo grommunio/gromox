@@ -36,17 +36,17 @@ struct curl_del {
 using namespace std::string_literals;
 using namespace gromox;
 
-static bool g_tty, g_verbose;
-static unsigned int g_eas_mode, g_tb_mode;
+static bool g_tty;
+static unsigned int g_eas_mode, g_tb_mode, g_verbose;
 static constexpr char g_user_agent[] = "Microsoft Office/16"; /* trigger MH codepath */
-static char *g_disc_host, *g_disc_url, *g_emailaddr, *g_legacydn, *g_auth_user;
+static const char *g_disc_host, *g_disc_url, *g_emailaddr, *g_legacydn, *g_auth_user;
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'h', HXTYPE_STRING, &g_disc_host, nullptr, nullptr, 0, "Host to contact (in absence of -e/-H)"},
-	{nullptr, 'H', HXTYPE_STRING, &g_disc_url, nullptr, nullptr, 0, "Full autodiscover URL to use"},
-	{nullptr, 'e', HXTYPE_STRING, &g_emailaddr, nullptr, nullptr, 0, "Perform discovery for this specific store (username/emailaddr)", "USERNAME"},
-	{nullptr, 'u', HXTYPE_STRING, &g_auth_user, nullptr, nullptr, 0, "Use a distinct user for authentication", "USERNAME"},
+	{nullptr, 'h', HXTYPE_STRING, {}, {}, {}, 0, "Host to contact (in absence of -e/-H)"},
+	{nullptr, 'H', HXTYPE_STRING, {}, {}, {}, 0, "Full autodiscover URL to use"},
+	{nullptr, 'e', HXTYPE_STRING, {}, {}, {}, 0, "Perform discovery for this specific store (username/emailaddr)", "USERNAME"},
+	{nullptr, 'u', HXTYPE_STRING, {}, {}, {}, 0, "Use a distinct user for authentication", "USERNAME"},
 	{nullptr, 'v', HXTYPE_NONE, &g_verbose, nullptr, nullptr, 0, "Be verbose, dump HTTP and XML"},
-	{nullptr, 'x', HXTYPE_STRING, &g_legacydn, nullptr, nullptr, 0, "Legacy DN"},
+	{nullptr, 'x', HXTYPE_STRING, {}, {}, {}, 0, "Legacy DN"},
 	{"eas", 0, HXTYPE_NONE, &g_eas_mode, nullptr, nullptr, 0, "Request EAS response"},
 	{"ac", 0, HXTYPE_NONE, &g_tb_mode, {}, {}, 0, "Perform Mail Autoconfig request instead of AutoDiscover"},
 	HXOPT_AUTOHELP,
@@ -154,10 +154,8 @@ static bool oxd_is_autodiscover_response(const std::string &xml_in,
 	node = node->FirstChildElement("Response");
 	if (node == nullptr)
 		return false;
-	node = node->FirstChildElement("Account");
-	if (node == nullptr)
-		return false;
-	return true;
+	return node->FirstChildElement("Account") != nullptr /* MAPI */ ||
+	       node->FirstChildElement("User") != nullptr /* EAS */;
 }
 
 static bool oxd_validate_response(const tinyxml2::XMLDocument &doc)
@@ -439,16 +437,19 @@ int main(int argc, char **argv)
 {
 	g_tty = isatty(STDERR_FILENO);
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	HXopt6_auto_result argp;
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OPTS) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0 = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
-	auto cl_args = HX::make_scope_exit([]() {
-		free(g_disc_host);
-		free(g_disc_url);
-		free(g_emailaddr);
-		free(g_legacydn);
-	});
+	for (int i = 0; i < argp.nopts; ++i) {
+		switch (argp.desc[i]->sh) {
+		case 'h': g_disc_host = argp.oarg[i]; break;
+		case 'H': g_disc_url  = argp.oarg[i]; break;
+		case 'e': g_emailaddr = argp.oarg[i]; break;
+		case 'u': g_auth_user = argp.oarg[i]; break;
+		case 'x': g_legacydn  = argp.oarg[i]; break;
+		}
+	}
 	if (g_disc_url != nullptr && g_disc_host != nullptr) {
 		fprintf(stderr, "Can only use one of -H and -h.\n");
 		return EXIT_FAILURE;
@@ -490,22 +491,20 @@ int main(int argc, char **argv)
 		result = curl_easy_perform(ch);
 		if (result != CURLE_OK) {
 			fprintf(stderr, "curl_easy_perform <%s>: %s\n", url.c_str(), curl_easy_strerror(result));
-			return EXIT_FAILURE;
+			continue;
 		}
 		long status = 0;
 		result = curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &status);
 		if (result != CURLE_OK || status >= 400)
 			fprintf(stderr, "curl_easy_perform <%s>: HTTP %ld\n",
 				url.c_str(), status);
-		else if (oxd_is_autodiscover_response(xml_response, xd_response))
+		if (g_verbose) {
+			fprintf(stderr, "* Response body:\n");
+			printf("%s\n", xml_response.c_str());
+		}
+		if (oxd_is_autodiscover_response(xml_response, xd_response))
 			break;
-		if (g_verbose)
-			fprintf(stderr, "* Response body:\n%s\n", xml_response.c_str());
 		xml_response.clear();
-	}
-	if (g_verbose) {
-		fprintf(stderr, "* Response body:\n");
-		printf("%s\n", xml_response.c_str());
 	}
 	if (xml_response.empty()) {
 		if (!g_verbose)

@@ -131,15 +131,17 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 }
 
 /**
+ * Inspects a message that a delegate (secretary) wants to submit.
+ *
  * Returns:
- * - %true and @username is empty: no delegation was requested
- * - %true and @username is set: delegation with given identity;
+ * - %true and @username is empty: no delegation
+ * - %true and @username is set: delegator ("boss") extracted and
  *   identity guaranteed to exist; caller still needs to perform a
  *   permission check.
  * - %false: unable to contact server,
- *   or requested identity not present in the system
+ *   or requested identity (boss) not present in the system
  */
-static bool oxomsg_extract_delegate(message_object *pmessage,
+static bool oxomsg_extract_delegator(message_object *pmessage,
     std::string &username)
 {
 	static constexpr proptag_t proptag_buff[] =
@@ -312,25 +314,25 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
-	std::string username;
-	if (!oxomsg_extract_delegate(pmessage, username))
+	std::string delegator;
+	if (!oxomsg_extract_delegator(pmessage, delegator))
 		return ecError;
-	auto account = plogon->get_account();
+	auto actor = plogon->get_account();
 	repr_grant repr_grant;
-	if (username.empty()) {
+	if (delegator.empty()) {
 		/* "No impersonation requested" is modeled as {impersonate yourself}. */
-		username = account;
+		delegator = actor;
 		repr_grant = repr_grant::send_as;
 	} else {
-		repr_grant = oxomsg_get_perm(account, username.c_str());
+		repr_grant = oxomsg_get_perm(actor, delegator.c_str());
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
-		auto ret = pass_scheduling("E-2081", account, username.c_str(), *pmessage,
+		auto ret = pass_scheduling("E-2081", actor, delegator.c_str(), *pmessage,
 		           tmp_propvals.get<const char>(PR_MESSAGE_CLASS));
 		if (ret != ecSuccess)
 			return ret;
 	}
-	auto ret = oxomsg_rectify_message(pmessage, username.c_str(),
+	auto ret = oxomsg_rectify_message(pmessage, delegator.c_str(),
 	           repr_grant >= repr_grant::send_as);
 	if (ret != ecSuccess)
 		return ret;
@@ -423,8 +425,9 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		pmessage->reload();
 		return ecSuccess;
 	}
-	
-	ret = cu_send_message(plogon, pmessage, true);
+
+	auto ev_from = repr_grant >= repr_grant::send_as ? delegator.c_str() : actor;
+	ret = cu_send_message(plogon, pmessage, ev_from);
 	if (ret != ecSuccess && ret != ecWarnWithErrors)
 		exmdb_client->clear_submit(dir, pmessage->get_id(), b_unsent);
 	else if (!b_delete)
@@ -473,8 +476,6 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		if (ptimer_id != nullptr && !common_util_cancel_timer(*ptimer_id))
 			return ecUnableToAbort;
 		if (!exmdb_client->clear_submit(plogon->get_dir(), message_id, TRUE))
-			return ecError;
-		if (!common_util_save_message_ics(plogon, message_id, nullptr))
 			return ecError;
 		return ecSuccess;
 	}
@@ -620,27 +621,27 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
-	std::string username;
-	if (!oxomsg_extract_delegate(pmessage, username))
+	std::string delegator;
+	if (!oxomsg_extract_delegator(pmessage, delegator))
 		return ecError;
-	auto account = plogon->get_account();
+	auto actor = plogon->get_account();
 	repr_grant repr_grant;
-	if (username.empty()) {
-		username = account;
+	if (delegator.empty()) {
+		delegator = actor;
 		repr_grant = repr_grant::send_as;
 	} else {
-		repr_grant = oxomsg_get_perm(account, username.c_str());
+		repr_grant = oxomsg_get_perm(actor, delegator.c_str());
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
 		TPROPVAL_ARRAY cls_vals{};
 		if (pmessage->get_properties(0, &cls_tags, &cls_vals) != 0)
 			/* ignore, since we can test for cls_vals fill */;
-		auto ret = pass_scheduling("E-2080", account, username.c_str(), *pmessage,
+		auto ret = pass_scheduling("E-2080", actor, delegator.c_str(), *pmessage,
 		           cls_vals.get<const char>(PR_MESSAGE_CLASS));
 		if (ret != ecSuccess)
 			return ret;
 	}
-	auto ret = oxomsg_rectify_message(pmessage, username.c_str(),
+	auto ret = oxomsg_rectify_message(pmessage, delegator.c_str(),
 	           repr_grant >= repr_grant::send_as);
 	if (ret != ecSuccess)
 		return ret;
@@ -664,7 +665,9 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 			}
 		}
 	}
-	return cu_send_message(plogon, pmessage, false);
+
+	auto ev_from = repr_grant >= repr_grant::send_as ? delegator.c_str() : actor;
+	return cu_send_message(plogon, pmessage, ev_from);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2352: ENOMEM");
 	return ecServerOOM;

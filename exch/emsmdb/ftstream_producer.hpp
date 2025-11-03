@@ -16,7 +16,6 @@ struct attachment_content;
 struct FOLDER_CHANGES;
 struct logon_object;
 struct message_content;
-struct MSGCHG_PARTIAL;
 struct PROGRESS_INFORMATION;
 struct PROGRESS_MESSAGE;
 
@@ -46,7 +45,6 @@ struct fxstream_producer {
 	BOOL write_progresstotal(const PROGRESS_INFORMATION *);
 	BOOL write_progresspermessage(const PROGRESS_MESSAGE *);
 	BOOL write_messagechangefull(const TPROPVAL_ARRAY *chgheader, message_content *);
-	BOOL write_messagechangepartial(const TPROPVAL_ARRAY *chgheader, const MSGCHG_PARTIAL *msg);
 	BOOL write_deletions(const TPROPVAL_ARRAY *);
 	BOOL write_readstatechanges(const TPROPVAL_ARRAY *);
 	BOOL write_state(const TPROPVAL_ARRAY *);

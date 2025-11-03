@@ -1,3 +1,45 @@
+Gromox 3.1 (2025-10-26)
+=======================
+
+Enhancements:
+
+* http: support for SPNEGO authentication (Kerberos-in-SPNEGO or NTLMSSP-in-SPNEGO)
+  with the HTTP "Authorization: Negotiate" header.
+* dscli: try all oxdisco URLs until one succeeds
+* exmdb: support repeated import of permission data (e.g. from kdb2mt)
+* ews: create calendar item after accepting a MR with MacMail
+
+Fixes:
+
+* emsmdb: the total mail count in a contents view was not updated
+* emsmdb,zcore: Send-As mail now correctly has the delegator in Envelope-From
+* email_lib: deal with MIME parts with zero header lines
+* tools: reinstate submit.php for delayed sending
+* nsp: avoid buffer overruns in nsp_interface_fetch_property
+* emsmdb: Partial message change tracking was bug-ridden and deleted. Standard
+  transfers are now used instead. (E.g. an IPM.Task object where only the
+  percentage-completed field was changed would be mis-synchronized to another
+  Cached Mode client as "delete start/end dates".)
+* exmdb: Public folders were missing timeindex queries and their content tables
+  might have shown fewer messages.
+* http: A workaround was added for OpenSSL 3.0 so that connections from
+  Outlook 2010 once again succeed.
+* mysql_adaptor: Improve the time needed to compute the composite mailbox
+  permission for user in a case of a mailbox with 100K ACL entries.
+
+Changes:
+
+* exmdb: deactivate movecopy/deletemessages event storm compaction
+* emsmdb: outgoing lzxpress compression in the EMSMDB protocol is now
+  disabled as it does not compress well for the time invested.
+* http: the ``ntlm_program_helper`` config directive was removed;
+  your ``gss_program`` simply needs to handle both GSS and NTLM.
+* event: support for reading the old event_acl.txt was deleted.
+  The replacement is the ``event_hosts_allow`` config directive.
+* timer: support for reading the old timer_acl.txt was deleted.
+  The replacement is the ``timer_hosts_allow`` config directive.
+
+
 Gromox 3.0 (2025-10-01)
 =======================
 
@@ -64,8 +106,6 @@ Changes:
 * kdb2mt no longer imports LocalFreebusy control messages, since dangling
   references in those can make delegate permission editing via OL
   nonfunctional.
-* emsmdb: outgoing lzxpress compression in the EMSMDB protocol is now
-  disabled as it does not compress well for the time invested.
 
 
 Gromox 2.48 (2025-07-31)
@@ -542,3 +582,12 @@ Changes:
 * oxcmail: priorities for MIME parts have been rectified for
   multipart/alternative and non-alternative containers; the conversion routine
   is no longer making picks across multiple container siblings.
+
+
+Gromox 2.16 (2023-10-29)
+========================
+
+Enhancements:
+
+* http: support for NTLM authentication with the HTTP "Authorization:
+  Negotiate" header.

@@ -3,6 +3,15 @@
 .TH gromox\-e2ghelper 8 "" "Gromox" "Gromox admin reference"
 .SH Name
 gromox\-e2ghelper \(em Helper program for exchange2grommunio.ps1
+.SH Synopsis
+\fBgromox\-e2ghelper\fP [\fB\-u\fP \fIusername\fP] [\fB--\fP
+\fIpff-args\fP...]
+.SH Options
+.TP
+\fB\-u\fP \fIemailaddr\fP
+Username of store to import to.
+.PP
+All non-options arguments are passed through to gromox\-pff2mt(8).
 .SH Description
 e2ghelper is an implementation detail in the exchange2grommunio.ps1 script and
 not meant to be called directly.

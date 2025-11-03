@@ -92,6 +92,21 @@ struct seen_list {
 
 static ec_error_t message_rule_new_message(const rulexec_in &, seen_list &);
 
+/*
+ * gx_collapse_event_storm: When copying or deleting "lots" of messages,
+ * collapse and replace all the new_msg/del_msg event notifications with a
+ * single table_change event.
+ *
+ * Drawback: Upon seeing a table_change event, a MAPI client may re-downloads
+ * the MAPI table. If it does, it has *all* rows already. Upon seeing the
+ * new_msg event, the client might ― erroneously ― add a message to its local
+ * table representation without checking for duplicate entryids.
+ *
+ * EXC2019 behavior can be selected by using collapse=false (the
+ * default).
+ */
+static bool gx_collapse_event_storm;
+
 static constexpr uint8_t fake_true = true;
 static constexpr uint32_t dummy_rcpttype = MAPI_TO;
 static constexpr char dummy_addrtype[] = "NONE", dummy_string[] = "";
@@ -291,7 +306,9 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		b_check = TRUE;
 	}
 
-	auto b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
+	auto b_batch = gx_collapse_event_storm && pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM
+	/* Table reload in MFCMAPI is ~700msg/sec, whereas event processing is ~100msgevt/sec */
+	               /* && table_new_content_count / 7 < pmessage_eids->count */;
 	auto dbase = pdb->lock_base_wr();
 	db_conn::NOTIFQ notifq;
 	if (b_batch)
@@ -318,7 +335,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		if (stm_del == nullptr)
 			return FALSE;
 	}
-	uint64_t fai_size = 0, normal_size = 0;
+	uint64_t total_adjust[2]{};
 	uint32_t del_count = 0, message_size = 0;
 	std::set<uint64_t> touched_folders;
 	for (auto mid : *pmessage_ids) {
@@ -376,10 +393,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 			*pb_partial = TRUE;
 			continue;
 		}
-		if (!is_associated)
-			normal_size += message_size;
-		else
-			fai_size += message_size;
+		total_adjust[is_associated] += message_size;
 		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
 			dst_val, tmp_val1, 0, *dbase, notifq);
 		pdb->notify_message_movecopy(b_copy, dst_val, tmp_val1,
@@ -417,8 +431,8 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 	}
 	stm_find.finalize();
 	stm_del.finalize();
-	if (b_update && normal_size + fai_size > 0 &&
-	    !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, normal_size, fai_size))
+	if (b_update && total_adjust[0] + total_adjust[1] > 0 &&
+	    !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, total_adjust[0], total_adjust[1]))
 		return FALSE;
 	auto nt_time = rop_util_current_nttime();
 	if (!b_copy) for (auto parent_fid : touched_folders) {
@@ -464,11 +478,11 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
-	dg_notify(std::move(notifq));
 	if (b_batch) {
 		b_batch = false;
 		db_conn::commit_batch_mode_release(std::move(pdb),std::move(dbase));
 	}
+	dg_notify(std::move(notifq));
 	return TRUE;
 }
 
@@ -519,7 +533,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		b_check = (permission & (frightsOwner | frightsDeleteAny)) ? false : TRUE;
 	}
 
-	auto b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
+	auto b_batch = gx_collapse_event_storm && pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
 	auto dbase = pdb->lock_base_wr();
 	db_conn::NOTIFQ notifq;
 	if (b_batch)
@@ -537,7 +551,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 	              "UPDATE messages SET is_deleted=1 WHERE message_id=?");
 	if (pstmt1 == nullptr)
 		return FALSE;
-	uint64_t fai_size = 0, normal_size = 0;
+	uint64_t total_adjust[2]{};
 	int del_count = 0;
 	auto nt_time = rop_util_current_nttime();
 	for (auto mid : *pmessage_ids) {
@@ -580,10 +594,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 			}
 		}
 		del_count ++;
-		if (is_assoc)
-			fai_size += obj_size;
-		else
-			normal_size += obj_size;
+		total_adjust[is_assoc] += obj_size;
 		pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
 			parent_fid, tmp_val, 0, *dbase, notifq);
 		if (folder_type == FOLDER_SEARCH)
@@ -651,7 +662,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 	pstmt.finalize();
 	pstmt1.finalize();
 	if (b_hard && !cu_adjust_store_size(pdb->psqlite, ADJ_DECREASE,
-	    normal_size, fai_size))
+	    total_adjust[0], total_adjust[1]))
 		return FALSE;
 	TAGGED_PROPVAL tmp_propvals[5];
 	TPROPVAL_ARRAY propvals;
@@ -690,11 +701,11 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		pdb->psqlite, src_val, del_count);
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
-	dg_notify(std::move(notifq));
 	if (b_batch) {
 		b_batch = false;
 		db_conn::commit_batch_mode_release(std::move(pdb), std::move(dbase));
 	}
+	dg_notify(std::move(notifq));
 	return TRUE;
 }
 
@@ -1091,172 +1102,6 @@ BOOL exmdb_server::allocate_message_id(const char *dir,
 		return FALSE;
 	*pmessage_id = rop_util_make_eid_ex(1, eid_val);
 	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
-}
-
-BOOL exmdb_server::get_message_group_id(const char *dir,
-	uint64_t message_id, uint32_t **ppgroup_id)
-{
-	char sql_string[128];
-	auto pdb = db_engine_get_db(dir);
-	if (!pdb)
-		return FALSE;
-	/* Only one SQL operation, no transaction needed. */
-	snprintf(sql_string, std::size(sql_string), "SELECT group_id "
-				"FROM messages WHERE message_id=%llu",
-				LLU{rop_util_get_gc_value(message_id)});
-	auto pstmt = pdb->prep(sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	if (pstmt.step() != SQLITE_ROW ||
-		SQLITE_NULL == sqlite3_column_type(pstmt, 0)) {
-		*ppgroup_id = NULL;
-		return TRUE;
-	}
-	*ppgroup_id = cu_alloc<uint32_t>();
-	if (*ppgroup_id == nullptr)
-		return FALSE;
-	**ppgroup_id = sqlite3_column_int64(pstmt, 0);
-	return TRUE;
-}
-
-BOOL exmdb_server::set_message_group_id(const char *dir,
-	uint64_t message_id, uint32_t group_id)
-{
-	char sql_string[128];
-	auto pdb = db_engine_get_db(dir);
-	if (!pdb)
-		return FALSE;
-	/* Only one SQL operation, no transaction needed. */
-	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
-		" group_id=%u WHERE message_id=%llu",
-		XUI{group_id}, LLU{rop_util_get_gc_value(message_id)});
-	if (pdb->exec(sql_string) != SQLITE_OK)
-		return FALSE;
-	return TRUE;
-}
-
-/* if count of indices and ungroup_proptags are both 0 means full change */
-BOOL exmdb_server::save_change_indices(const char *dir, uint64_t message_id,
-    uint64_t cn, const INDEX_ARRAY *pindices,
-    const PROPTAG_ARRAY *pungroup_proptags) try
-{
-	EXT_PUSH ext_push;
-	char sql_string[128];
-	static constexpr size_t idbuff_size = 0x8000;
-	auto indices_buff = std::make_unique<uint8_t[]>(idbuff_size);
-	auto proptags_buff = std::make_unique<uint8_t[]>(idbuff_size);
-	
-	auto pdb = db_engine_get_db(dir);
-	if (!pdb)
-		return FALSE;
-	/* Only one SQL operation, no transaction needed. */
-	auto mid_val = rop_util_get_gc_value(message_id);
-	if (0 == pindices->count && 0 == pungroup_proptags->count) {
-		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET "
-		          "group_id=? WHERE message_id=%llu", LLU{mid_val});
-		auto pstmt = pdb->prep(sql_string);
-		if (pstmt == nullptr)
-			return FALSE;
-		sqlite3_bind_null(pstmt, 1);
-		return pstmt.step() == SQLITE_DONE ? TRUE : false;
-	}
-	auto pstmt = pdb->prep("INSERT INTO"
-	             " message_changes VALUES (?, ?, ?, ?)");
-	if (pstmt == nullptr)
-		return FALSE;
-	sqlite3_bind_int64(pstmt, 1, mid_val);
-	sqlite3_bind_int64(pstmt, 2, rop_util_get_gc_value(cn));
-	if (!ext_push.init(indices_buff.get(), idbuff_size, 0) ||
-	    ext_push.p_proptag_a(*pindices) != pack_result::ok)
-		return false;
-	sqlite3_bind_blob(pstmt, 3, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
-	if (!ext_push.init(proptags_buff.get(), idbuff_size, 0) ||
-	    ext_push.p_proptag_a(*pungroup_proptags) != pack_result::ok)
-		return false;
-	sqlite3_bind_blob(pstmt, 4, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
-	return pstmt.step() == SQLITE_DONE ? TRUE : false;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1162: ENOMEM");
-	return false;
-}
-
-/* if count of indices and ungroup_proptags are both 0 means full change */
-BOOL exmdb_server::get_change_indices(const char *dir,
-	uint64_t message_id, uint64_t cn, INDEX_ARRAY *pindices,
-	PROPTAG_ARRAY *pungroup_proptags)
-{
-	EXT_PULL ext_pull;
-	INDEX_ARRAY tmp_indices;
-	PROPTAG_ARRAY tmp_proptags;
-	
-	auto cn_val = rop_util_get_gc_value(cn);
-	auto pdb = db_engine_get_db(dir);
-	if (!pdb)
-		return FALSE;
-	/* Only one SQL operation, no transaction needed. */
-	auto mid_val = rop_util_get_gc_value(message_id);
-	std::unique_ptr<INDEX_ARRAY, pta_delete> ptmp_indices(proptag_array_init());
-	if (ptmp_indices == nullptr)
-		return FALSE;
-	std::unique_ptr<PROPTAG_ARRAY, pta_delete> ptmp_proptags(proptag_array_init());
-	if (ptmp_proptags == nullptr)
-		return FALSE;
-	char sql_string[128];
-	snprintf(sql_string, std::size(sql_string), "SELECT change_number,"
-				" indices, proptags FROM message_changes"
-				" WHERE message_id=%llu", LLU{mid_val});
-	auto pstmt = pdb->prep(sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	while (pstmt.step() == SQLITE_ROW) {
-		if (gx_sql_col_uint64(pstmt, 0) <= cn_val)
-			continue;
-		if (sqlite3_column_bytes(pstmt, 1) > 0) {
-			ext_pull.init(sqlite3_column_blob(pstmt, 1),
-				sqlite3_column_bytes(pstmt, 1),
-				common_util_alloc, 0);
-			if (ext_pull.g_proptag_a(&tmp_indices) != pack_result::ok)
-				return FALSE;
-			for (unsigned int i = 0; i < tmp_indices.count; ++i)
-				if (!proptag_array_append(ptmp_indices.get(),
-				    tmp_indices.pproptag[i]))
-					return FALSE;
-		}
-		if (sqlite3_column_bytes(pstmt, 2) > 0) {
-			ext_pull.init(sqlite3_column_blob(pstmt, 2),
-				sqlite3_column_bytes(pstmt, 2),
-				common_util_alloc, 0);
-			if (ext_pull.g_proptag_a(&tmp_proptags) != pack_result::ok)
-				return FALSE;
-			for (unsigned int i = 0; i < tmp_proptags.count; ++i)
-				if (!proptag_array_append(ptmp_proptags.get(),
-				    tmp_proptags.pproptag[i]))
-					return FALSE;
-		}
-	}
-	pstmt.finalize();
-	pdb.reset();
-	pindices->count = ptmp_indices->count;
-	if (ptmp_indices->count > 0) {
-		pindices->pproptag = cu_alloc<uint32_t>(ptmp_indices->count);
-		if (pindices->pproptag == nullptr)
-			return FALSE;
-		memcpy(pindices->pproptag, ptmp_indices->pproptag,
-			sizeof(uint32_t)*ptmp_indices->count);
-	}
-	ptmp_indices.reset();
-	if (ptmp_proptags->count == 0) {
-		pungroup_proptags->count = 0;
-		pungroup_proptags->pproptag = NULL;
-		return TRUE;
-	}
-	pungroup_proptags->count = ptmp_proptags->count;
-	pungroup_proptags->pproptag = cu_alloc<uint32_t>(ptmp_proptags->count);
-	if (pungroup_proptags->pproptag == nullptr)
-		return FALSE;
-	memcpy(pungroup_proptags->pproptag, ptmp_proptags->pproptag,
-	       sizeof(uint32_t)*ptmp_proptags->count);
-	return TRUE;
 }
 
 BOOL exmdb_server::mark_modified(const char *dir, uint64_t message_id)
@@ -3249,9 +3094,9 @@ static ec_error_t op_process(const rulexec_in &rp,
 static ec_error_t opx_move_private(sqlite3 *psqlite, const rule_node &rule,
     const EXT_MOVECOPY_ACTION *pextmvcp)
 {
-	if (pextmvcp->folder_eid.folder_type != EITLT_PRIVATE_FOLDER)
+	if (pextmvcp->folder_eid.eid_type != EITLT_PRIVATE_FOLDER)
 		return message_disable_rule(psqlite, TRUE, rule.id);
-	if (pextmvcp->folder_eid.database_guid !=
+	if (pextmvcp->folder_eid.folder_dbguid !=
 	    rop_util_make_user_guid(exmdb_server::get_account_id()))
 		return message_disable_rule(psqlite, TRUE, rule.id);
 	return ecSuccess;
@@ -3261,9 +3106,9 @@ static ec_error_t opx_move_private(sqlite3 *psqlite, const rule_node &rule,
 static ec_error_t opx_move_public(sqlite3 *psqlite, const rule_node &rule,
     const EXT_MOVECOPY_ACTION *pextmvcp)
 {
-	if (pextmvcp->folder_eid.folder_type != EITLT_PUBLIC_FOLDER)
+	if (pextmvcp->folder_eid.eid_type != EITLT_PUBLIC_FOLDER)
 		return message_disable_rule(psqlite, TRUE, rule.id);
-	if (pextmvcp->folder_eid.database_guid !=
+	if (pextmvcp->folder_eid.folder_dbguid !=
 	    rop_util_make_domain_guid(exmdb_server::get_account_id()))
 		return message_disable_rule(psqlite, TRUE, rule.id);
 	return ecSuccess;
@@ -3279,8 +3124,7 @@ static ec_error_t opx_move(const rulexec_in &rp,
 	          opx_move_public(rp.sqlite, rule, pextmvcp);
 	if (ec != ecSuccess)
 		return ec;
-	auto dst_fid = rop_util_gc_to_value(
-		       pextmvcp->folder_eid.global_counter);
+	auto dst_fid = rop_util_gc_to_value(pextmvcp->folder_eid.folder_gc);
 	if (std::find(seen.fld.cbegin(), seen.fld.cend(), dst_fid) != seen.fld.cend())
 		/* Already moved to this folder once. */
 		return ecSuccess;
@@ -3341,10 +3185,9 @@ static ec_error_t opx_reply(const rulexec_in &rp, const rule_node &rule,
 	auto exp_guid = exmdb_server::is_private() ?
 	                rop_util_make_user_guid(exmdb_server::get_account_id()) :
 	                rop_util_make_domain_guid(exmdb_server::get_account_id());
-	if (exp_guid != pextreply->message_eid.message_database_guid)
+	if (exp_guid != pextreply->message_eid.message_dbguid)
 		return message_disable_rule(rp.sqlite, TRUE, rule.id);
-	auto dst_mid = rop_util_gc_to_value(
-		       pextreply->message_eid.message_global_counter);
+	auto dst_mid = rop_util_gc_to_value(pextreply->message_eid.message_gc);
 	BOOL b_result = false;
 	if (!message_auto_reply(rp, block.type, block.flavor,
 	    dst_mid, pextreply->template_guid, &b_result))

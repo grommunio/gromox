@@ -564,6 +564,77 @@ static acsort accel_sorting(const SORTORDER_SET *set)
 	}
 }
 
+static std::string gct_makequery_fai(uint64_t fid_val, bool b_search, bool b_del)
+{
+	if (!b_search)
+		return fmt::format("SELECT message_id FROM messages "
+		       "WHERE parent_fid={} AND is_associated=1 AND is_deleted={}",
+		       LLU{fid_val}, b_del);
+
+	return fmt::format("SELECT m.message_id FROM messages AS m "
+	       "JOIN search_result AS sr ON sr.folder_id={} AND "
+	       "sr.message_id=m.message_id AND m.is_associated=1 "
+	       "AND m.is_deleted={}", LLU{fid_val}, b_del);
+}
+
+static std::string gct_makequery_regular(uint64_t fid_val, bool b_search, bool b_del)
+{
+	if (!b_search)
+		return fmt::format("SELECT message_id FROM messages "
+		       "WHERE parent_fid={} AND is_deleted={} AND "
+		       "is_associated=0", LLU{fid_val}, b_del);
+
+	return fmt::format("SELECT m.message_id FROM messages AS m "
+	       "JOIN search_result AS sr ON sr.folder_id={} AND "
+	       "sr.message_id=m.message_id AND m.is_associated=0 "
+	       "AND m.is_deleted={}", LLU{fid_val}, b_del);
+}
+
+static std::string gct_makequery_conv(uint64_t fid_val,
+    const BINARY *conv_id, bool b_del)
+{
+	if (conv_id == nullptr)
+		return fmt::format("SELECT message_id FROM messages "
+		       "WHERE parent_fid IS NOT NULL AND is_associated=0 "
+		       "AND is_deleted={}", b_del);
+
+	return fmt::format("SELECT mp.message_id FROM message_properties AS mp "
+	       "JOIN messages AS m ON mp.message_id=m.message_id "
+	       "WHERE mp.proptag={} AND mp.propval=x'{}' "
+	       "AND m.is_deleted={}", static_cast<uint32_t>(PR_CONVERSATION_ID),
+	       bin2hex(conv_id->pv, conv_id->cb), b_del);
+}
+
+static std::string gct_makequery(uint64_t fid_val, unsigned int flags,
+    const acsort &accel_pair, const BINARY *conv, bool b_private, bool b_search)
+{
+	if (!g_enable_dam && b_private && fid_val == PRIVATE_FID_DEFERRED_ACTION)
+		return "SELECT message_id FROM messages WHERE 0";
+	/*
+	 * accel tag is only set under no-frills conditions anyway, so no harm
+	 * in testing it before table_falgs.
+	 */
+	static constexpr char order_kw[2][5] = {"DESC", "ASC"};
+	auto adir = order_kw[accel_pair.dir > 0];
+	if (accel_pair.tag == PR_LAST_MODIFICATION_TIME)
+		return fmt::format("SELECT message_id FROM msgtime_index "
+		       "WHERE folder_id={} ORDER BY mtime {}", LLU{fid_val}, adir);
+	else if (accel_pair.tag == PR_MESSAGE_DELIVERY_TIME)
+		return fmt::format("SELECT message_id FROM msgtime_index "
+		       "WHERE folder_id={} ORDER BY rcvtime {}", LLU{fid_val}, adir);
+	else if (accel_pair.tag == PR_CLIENT_SUBMIT_TIME)
+		return fmt::format("SELECT message_id FROM msgtime_index "
+		       "WHERE folder_id={} ORDER BY sndtime {}", LLU{fid_val}, adir);
+
+	auto b_del = flags & TABLE_FLAG_SOFTDELETES;
+	if (flags & TABLE_FLAG_CONVERSATIONMEMBERS)
+		return gct_makequery_conv(fid_val, conv, b_del);
+	if (flags & TABLE_FLAG_ASSOCIATED)
+		return gct_makequery_fai(fid_val, b_search, b_del);
+
+	return gct_makequery_regular(fid_val, b_search, b_del);
+}
+
 /**
  * @username:   Used for retrieving public store readstates
  *
@@ -676,7 +747,7 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 	/* [Block 1] */
 	xtransaction psort_transact;
 	acsort accel_pair;
-	if ((table_flags & (TABLE_FLAG_ASSOCIATED | TABLE_FLAG_SOFTDELETES)) == 0 &&
+	if ((table_flags & (TABLE_FLAG_CONVERSATIONMEMBERS | TABLE_FLAG_ASSOCIATED | TABLE_FLAG_SOFTDELETES)) == 0 &&
 	    !b_search)
 		accel_pair = accel_sorting(psorts);
 	if (accel_pair.dir != 0)
@@ -785,87 +856,8 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 	}
 
 	/* [Block 2] Construct the SQL query that will scan the folder */
-	bool b_deleted = table_flags & TABLE_FLAG_SOFTDELETES;
-	if (exmdb_server::is_private()) {
-		if (!g_enable_dam && fid_val == PRIVATE_FID_DEFERRED_ACTION) {
-			sql_string = "SELECT message_id FROM messages WHERE 0";
-		} else if (table_flags & TABLE_FLAG_ASSOCIATED) {
-			if (!b_search)
-				sql_string = fmt::format("SELECT message_id "
-				             "FROM messages WHERE parent_fid={} "
-				             "AND is_associated=1 AND is_deleted={}",
-				             LLU{fid_val}, b_deleted);
-			else
-				sql_string = fmt::format("SELECT "
-				             "messages.message_id FROM messages "
-				             "JOIN search_result ON "
-				             "search_result.folder_id={} AND "
-				             "search_result.message_id=messages.message_id "
-				             "AND messages.is_associated=1 AND messages.is_deleted={}",
-				             LLU{fid_val}, b_deleted);
-		} else if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
-			if (conv_id != nullptr)
-				sql_string = fmt::format("SELECT mp.message_id "
-				         "FROM message_properties AS mp INNER JOIN messages AS m "
-				         "ON mp.message_id=m.message_id "
-				         "WHERE mp.proptag={} AND mp.propval=x'{}' "
-				         "AND m.is_deleted={}", static_cast<uint32_t>(PR_CONVERSATION_ID),
-				         bin2hex(conv_id->pv, conv_id->cb), b_deleted);
-			else
-				sql_string = fmt::format("SELECT message_id "
-				             "FROM messages WHERE parent_fid IS NOT NULL "
-				             "AND is_associated=0 AND is_deleted={}",
-				             b_deleted);
-		} else if (accel_pair.tag == PR_LAST_MODIFICATION_TIME) {
-			sql_string = fmt::format("SELECT message_id FROM msgtime_index "
-			             "WHERE folder_id={} ORDER BY mtime {}",
-			             LLU{fid_val}, accel_pair.dir > 0 ? "ASC" : "DESC");
-		} else if (accel_pair.tag == PR_MESSAGE_DELIVERY_TIME) {
-			sql_string = fmt::format("SELECT message_id FROM msgtime_index "
-			             "WHERE folder_id={} ORDER BY rcvtime {}",
-			             LLU{fid_val}, accel_pair.dir > 0 ? "ASC" : "DESC");
-		} else if (accel_pair.tag == PR_CLIENT_SUBMIT_TIME) {
-			sql_string = fmt::format("SELECT message_id FROM msgtime_index "
-			             "WHERE folder_id={} ORDER BY sndtime {}",
-			             LLU{fid_val}, accel_pair.dir > 0 ? "ASC" : "DESC");
-		} else if (!b_search) {
-			sql_string = fmt::format("SELECT message_id "
-			             "FROM messages WHERE parent_fid={} "
-			             "AND is_associated=0 AND is_deleted={}",
-			             LLU{fid_val}, b_deleted);
-		} else {
-			sql_string = fmt::format("SELECT "
-			             "messages.message_id FROM messages "
-			             "JOIN search_result ON "
-			             "search_result.folder_id={} AND "
-			             "search_result.message_id=messages.message_id "
-			             "AND messages.is_associated=0 AND messages.is_deleted={}",
-			             LLU{fid_val}, b_deleted);
-		}
-	} else if (!(table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)) {
-		sql_string = fmt::format(
-		             "SELECT message_id "
-		             "FROM messages WHERE parent_fid={} "
-		             "AND is_deleted={} AND is_associated={}",
-		             LLU{fid_val},
-		             !!(table_flags & TABLE_FLAG_SOFTDELETES),
-		             !!(table_flags & TABLE_FLAG_ASSOCIATED));
-	} else if (conv_id != nullptr) {
-		sql_string = fmt::format("SELECT message_properties.message_id "
-		             "FROM message_properties JOIN messages ON "
-		             "messages.message_id=message_properties.message_id "
-		             "WHERE message_properties.proptag={} AND "
-		             "message_properties.propval=x'{}' AND "
-		             "messages.is_deleted={}", static_cast<uint32_t>(PR_CONVERSATION_ID),
-		             bin2hex(conv_id->pv, conv_id->cb),
-		             !!(table_flags & TABLE_FLAG_SOFTDELETES));
-	} else {
-		sql_string = fmt::format(
-		             "SELECT message_id "
-		             "FROM messages WHERE parent_fid IS NOT NULL "
-		             "AND is_associated=0 AND is_deleted={}",
-		             !!(table_flags & TABLE_FLAG_SOFTDELETES));
-	}
+	sql_string = gct_makequery(fid_val, table_flags, accel_pair, conv_id,
+	             exmdb_server::is_private(), b_search);
 	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return false;

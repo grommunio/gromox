@@ -225,10 +225,8 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node &pnode,
 		EMSAB_ENTRYID ab_entryid;
 		ab_entryid.flags = 0;
 		ab_entryid.type = pnode.etyp();
-		std::string dn;
-		if (!pnode.dn(dn))
+		if (!pnode.dn(ab_entryid.x500dn))
 			return FALSE;
-		ab_entryid.px500dn = dn.data();
 		bv->pv = common_util_alloc(1280);
 		if (bv->pv == nullptr || !ext_push.init(bv->pv, 1280, 0) ||
 		    ext_push.p_abk_eid(ab_entryid) != pack_result::ok)
@@ -548,7 +546,8 @@ BOOL ab_tree_match_minids(const ab_tree::ab_base *pbase, uint32_t container_id,
 	if (container_id == ab_tree::minid::SC_GAL) {
 		for (auto it = pbase->ubegin(); it != pbase->uend(); ++it) {
 			ab_tree::ab_node node(it);
-			if (node.hidden() & AB_HIDE_FROM_GAL || !ab_tree_match_node(node, pfilter))
+			if (node.hidden() & AB_HIDE_FROM_GAL ||
+			    !ab_tree_match_node(node, pfilter))
 				continue;
 			tlist.push_back(*it);
 		}
@@ -561,7 +560,7 @@ BOOL ab_tree_match_minids(const ab_tree::ab_base *pbase, uint32_t container_id,
 		}
 		for (ab_tree::minid mid : node) {
 			ab_tree::ab_node child(pbase, mid);
-			if(child.type() >= ab_tree::abnode_type::containers ||
+			if (child.type() >= ab_tree::abnode_type::containers ||
 			    child.hidden() & AB_HIDE_FROM_AL ||
 			    !ab_tree_match_node(child, pfilter))
 				continue;

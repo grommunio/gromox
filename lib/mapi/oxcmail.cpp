@@ -214,7 +214,7 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 {
 	EXT_PUSH ext_push;
-	EMSAB_ENTRYID tmp_entryid;
+	EMSAB_ENTRYID_view tmp_entryid;
 	
 	tmp_entryid.flags = 0;
 	tmp_entryid.type = DT_MAILUSER;
@@ -2947,23 +2947,18 @@ static bool oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 	for (size_t i = 0; i < address_array.count; ++i) {
 		EXT_PULL ep2;
 		ONEOFF_ENTRYID oo{};
-		auto cl_1 = HX::make_scope_exit([&]() {
-			free(oo.pdisplay_name);
-			free(oo.paddress_type);
-			free(oo.pmail_address);
-		});
 		ep2.init(address_array.pbin[i].pb, address_array.pbin[i].cb,
 			malloc, EXT_FLAG_UTF16);
 		if (ep2.g_oneoff_eid(&oo) != pack_result::ok ||
-		    strcasecmp(oo.paddress_type, "SMTP") != 0) {
+		    strcasecmp(oo.paddress_type.c_str(), "SMTP") != 0) {
 			mlog(LV_WARN, "W-1964: skipping non-SMTP reply-to entry");
 			continue;
 		}
 		auto mb = vmime::make_shared<vmime::mailbox>("");
-		if (oo.pdisplay_name != nullptr && *oo.pdisplay_name != '\0')
-			mb->setName(vmime::text(oo.pdisplay_name, vmime::charsets::UTF_8));
-		if (*oo.pmail_address != '\0')
-			mb->setEmail(oo.pmail_address);
+		if (!oo.pdisplay_name.empty())
+			mb->setName(vmime::text(std::move(oo.pdisplay_name), vmime::charsets::UTF_8));
+		if (!oo.pmail_address.empty())
+			mb->setEmail(std::move(oo.pmail_address));
 		adrlist.appendAddress(mb);
 	}
 	return true;
@@ -3624,7 +3619,8 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	if (str != nullptr && !phead->set_field("Content-Location", str))
 		return FALSE;
 	
-	phead->set_field("X-Mailer", "gromox-oxcmail " PACKAGE_VERSION);
+	if (!phead->set_field("X-Mailer", "gromox-oxcmail " PACKAGE_VERSION))
+		/* ignore */;
 	auto guid = PS_INTERNET_HEADERS;
 	for (size_t i = 0; i < pmsg->proplist.count; ++i) {
 		auto proptag = pmsg->proplist.ppropval[i].proptag;

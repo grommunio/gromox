@@ -15,7 +15,6 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
-#include <gromox/msgchg_grouping.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
@@ -247,41 +246,6 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2177: ENOMEM");
 	return false;
-}
-
-static BOOL gnpwrap(void *obj, BOOL create, const PROPERTY_NAME *pn, uint16_t *pid)
-{
-	return static_cast<logon_object *>(obj)->get_named_propid(create, pn, pid);
-}
-
-const property_groupinfo *logon_object::get_last_property_groupinfo()
-{
-	auto plogon = this;
-	if (m_gpinfo == nullptr)
-		m_gpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
-		           plogon, msgchg_grouping_get_last_group_id());
-	return m_gpinfo.get();
-}
-
-const property_groupinfo *
-logon_object::get_property_groupinfo(uint32_t group_id) try
-{
-	auto plogon = this;
-	
-	if (group_id == msgchg_grouping_get_last_group_id())
-		return get_last_property_groupinfo();
-	auto node = std::find_if(group_list.begin(), group_list.end(),
-	            [&](const property_groupinfo &p) { return p.group_id == group_id; });
-	if (node != group_list.end())
-		return &*node;
-	auto pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, plogon, group_id);
-	if (pgpinfo == nullptr)
-		return NULL;
-	group_list.push_back(std::move(*pgpinfo));
-	return &group_list.back();
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1631: ENOMEM");
-	return nullptr;
 }
 
 BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
@@ -616,9 +580,8 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	ppropvals->count = 0;
 	auto plogon = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : *pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 
 		if (PROP_ID(tag) == PROP_ID(PR_HIERARCHY_SERVER))
 			ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &invalid_code);

@@ -281,8 +281,12 @@ GLOBCNT / GCV
 	* otherwise, a ``uint64_t`` holds the GCV in host-endian
 
 Minimal Entry ID, MINID
-	A global counter for objects in an address book.
+	A unique identifier for objects in an address book.
 	Scope: one address book provider. Limit: 2^32 - 16.
+	The first 16 values are reserved for special values like
+	minid::BEGINNING_OF_TABLE, minid::UNRESOLVED, etc.
+	NSPI also implicitly reserves >= 0x80000000, e.g. PR_EMS_AB_MEMBER
+	makes for a special container, too.
 
 Change number / CN
 	Scope: one mailbox replica. Limit: 2^48. Every time a folder or message

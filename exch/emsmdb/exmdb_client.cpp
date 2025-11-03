@@ -211,7 +211,7 @@ BOOL exmdb_client_shm::is_message_owner(const char *dir, uint64_t message_id,
 		return TRUE;
 	}
 	std::string es_result;
-	if (cvt_essdn_to_username(ab_entryid.px500dn, g_emsmdb_org_name,
+	if (cvt_essdn_to_username(ab_entryid.x500dn.c_str(), g_emsmdb_org_name,
 	    mysql_adaptor_userid_to_name, es_result) != ecSuccess) {
 		*pb_owner = false;
 		return TRUE;

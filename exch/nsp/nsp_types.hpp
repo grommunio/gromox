@@ -20,6 +20,7 @@ struct STAT {
 
 /* MID_ARRAY is semantically different, but layout-compatible to LPROPTAG_ARRAY (and exchange_nsp uses the proptag deserializer). */
 using MID_ARRAY = LPROPTAG_ARRAY;
+using MINID_ARRAY = LPROPTAG_ARRAY;
 
 struct NSP_PROPNAME {
 	FLATUID *pguid;
@@ -70,6 +71,7 @@ struct PROPERTY_VALUE {
 	gromox::proptag_t proptag;
 	uint32_t reserved;
 	PROP_VAL_UNION value; /* type is PROP_TYPE(proptag) */
+	std::string repr() const;
 };
 
 struct NSP_PROPROW {
@@ -106,50 +108,59 @@ struct NSPRES;
 struct NSPRES_AND_OR {
 	uint32_t cres;
 	NSPRES *pres;
+	std::string repr(const char *sep = ",") const;
 };
 
 struct NSPRES_NOT {
 	NSPRES *pres;
+	std::string repr() const;
 };
 
 struct NSPRES_CONTENT {
 	uint32_t fuzzy_level;
 	gromox::proptag_t proptag;
 	PROPERTY_VALUE *pprop;
+	std::string repr() const;
 };
 
 struct NSPRES_PROPERTY {
 	enum relop relop;
 	gromox::proptag_t proptag;
 	PROPERTY_VALUE *pprop;
+	std::string repr() const;
 };
 
 struct NSPRES_PROPCOMPARE {
 	enum relop relop;
 	gromox::proptag_t proptag1, proptag2;
+	std::string repr() const;
 };
 
 struct NSPRES_BITMASK {
 	enum bm_relop rel_mbr;
 	gromox::proptag_t proptag;
 	uint32_t mask;
+	std::string repr() const;
 };
 
 struct NSPRES_SIZE {
 	enum relop relop;
 	gromox::proptag_t proptag;
 	uint32_t cb;
+	std::string repr() const;
 };
 
 struct NSPRES_EXIST {
 	uint32_t reserved1;
 	gromox::proptag_t proptag;
 	uint32_t reserved2;
+	std::string repr() const;
 };
 
 struct NSPRES_SUB {
 	uint32_t subobject;
 	NSPRES *pres;
+	std::string repr() const;
 };
 
 union NSPRES_UNION {
@@ -167,6 +178,7 @@ union NSPRES_UNION {
 struct NSPRES {
 	mapi_rtype res_type;
 	NSPRES_UNION res;
+	std::string repr() const;
 };
 
 struct EPHEMERAL_ENTRYID {

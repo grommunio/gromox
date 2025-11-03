@@ -1224,6 +1224,7 @@ pack_result rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
 	E(logon_token)
 	E(getuserfreebusy)
 	E(getuserfreebusyical)
+	E(logon_np)
 #undef E
 	default:
 		return pack_result::bad_switch;
@@ -1338,6 +1339,7 @@ pack_result rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
 	E(logon_token)
 	E(getuserfreebusy)
 	E(getuserfreebusyical)
+	E(logon_np)
 #undef E
 	default:
 		return pack_result::bad_switch;

@@ -31,6 +31,7 @@
 #include <gromox/dbop.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/flat_set.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/svc_common.h>
@@ -904,6 +905,42 @@ bool mysql_plugin::check_mlist_include(const char *mlist_name,
 	return false;
 }
 
+errno_t mysql_plugin::get_user_groups_rec(const char *username, std::vector<std::string> &groups) try
+{
+	gromox::maybe_flat_set<uint32_t> seen_ml;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (!conn)
+		return EIO;
+	groups.clear();
+	groups.emplace_back(username);
+	size_t rescan_begin = 0, rescan_end = 1;
+	for (size_t i = rescan_begin; i < rescan_end; ++i) {
+		auto qstr = "SELECT DISTINCT m.id, m.listname FROM associations AS a "
+			    "INNER JOIN mlists AS m ON a.list_id=m.id "
+			    "WHERE a.username='" + conn->quote(groups[i]) + "'";
+		if (!conn->query(qstr))
+			return EIO;
+		auto result = conn->store_result();
+		DB_ROW row;
+		++rescan_begin;
+		while ((row = result.fetch_row()) != nullptr) {
+			if (row[1] == nullptr)
+				continue;
+			auto list_id = strtoul(row[0], nullptr, 0);
+			if (seen_ml.contains(list_id))
+				continue;
+			seen_ml.emplace(list_id);
+			groups.emplace_back(row[1]);
+			++rescan_end;
+		}
+	}
+	groups.erase(groups.begin());
+	return 0;
+} catch (const std::bad_alloc &e) {
+	mlog(LV_ERR, "E-1731: ENOMEM");
+	return ENOMEM;
+}
+
 errno_t mysql_adaptor_meta(const char *u, unsigned int p, sql_meta_result &r)
 {
 	return le_mysql_plugin->meta(u, p, r);
@@ -1054,4 +1091,9 @@ errno_t mysql_adaptor_mda_alias_list(sql_alias_map &v, size_t &a)
 errno_t mysql_adaptor_mda_domain_list(sql_domain_set &v)
 {
 	return le_mysql_plugin->mda_domain_list(v);
+}
+
+errno_t mysql_adaptor_get_user_groups_rec(const char *user, std::vector<std::string> &groups)
+{
+	return le_mysql_plugin->get_user_groups_rec(user, groups);
 }

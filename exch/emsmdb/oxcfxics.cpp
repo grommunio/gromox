@@ -63,8 +63,8 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 	pmessage_ids = eid_array_init();
 	if (pmessage_ids == nullptr)
 		return NULL;
-	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
+	for (const auto &row : tmp_set) {
+		auto pmid = row.get<uint64_t>(PidTagMid);
 		if (NULL == pmid) {
 			eid_array_free(pmessage_ids);
 			return NULL;
@@ -106,8 +106,8 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	    folder_id, &tmp_proptags, &tmp_propvals))
 		return NULL;
 	auto pproplist = pfldctnt->get_proplist();
-	for (size_t i = 0; i < tmp_propvals.count; ++i)
-		if (pproplist->set(tmp_propvals.ppropval[i]) != ecSuccess)
+	for (const auto &pv : tmp_propvals)
+		if (pproplist->set(pv) != ecSuccess)
 			return NULL;
 	/*
 	 * Gromox does not have split public folders, so no need to emit
@@ -142,8 +142,8 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	    table_id, &tmp_proptags, 0, row_count, &tmp_set))
 		return NULL;
 	exmdb_client->unload_table(plogon->get_dir(), table_id);
-	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PidTagFolderId);
+	for (const auto &row : tmp_set) {
+		auto pfolder_id = row.get<uint64_t>(PidTagFolderId);
 		if (pfolder_id == nullptr)
 			return NULL;
 		auto psubfldctnt = oxcfxics_load_folder_content(
@@ -383,9 +383,9 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 		    pfolder->folder_id, username, &permission))
 			return ecError;
 		if (!(permission & (frightsReadAny | frightsOwner))) {
-			for (size_t i = 0; i < pmessage_ids->count; ++i) {
+			for (const auto msgid : *pmessage_ids) {
 				if (!exmdb_client->is_message_owner(plogon->get_dir(),
-				    pmessage_ids->pll[i], username, &b_owner))
+				    msgid, username, &b_owner))
 					return ecError;
 				if (!b_owner)
 					return ecAccessDenied;
@@ -984,7 +984,8 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 	}
 	auto rds_user = plogon->readstate_user();
 	for (unsigned int i = 0; i < count; ++i) {
-		if (!common_util_binary_to_xid(&pread_stat[i].message_xid, &tmp_xid))
+		const auto &rds = pread_stat[i];
+		if (!common_util_binary_to_xid(&rds.message_xid, &tmp_xid))
 			return ecError;
 		auto tmp_guid = plogon->guid();
 		if (tmp_guid != tmp_xid.guid)
@@ -1007,10 +1008,10 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 		if (flag != nullptr && *flag != 0)
 			continue;
 		flag = tmp_propvals.get<uint8_t>(PR_READ);
-		if ((flag == nullptr || *flag == 0) == (pread_stat[i].mark_as_read == 0))
+		if ((flag == nullptr || *flag == 0) == (rds.mark_as_read == 0))
 			continue;
 		if (!exmdb_client->set_message_read_state(dir, rds_user,
-		    message_id, pread_stat[i].mark_as_read, &read_cn))
+		    message_id, rds.mark_as_read, &read_cn))
 			return ecError;
 		pctx->pstate->pread->append(read_cn);
 	}
@@ -1149,8 +1150,8 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		tmp_propvals.emplace_back(PR_PREDECESSOR_CHANGE_LIST, phichyvals->ppropval[4].pvalue);
 		tmp_propvals.emplace_back(PR_DISPLAY_NAME, phichyvals->ppropval[5].pvalue);
 		tmp_propvals.emplace_back(PidTagChangeNumber, &change_num);
-		for (unsigned int i = 0; i < ppropvals->count; ++i)
-			tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
+		for (const auto &pv : *ppropvals)
+			tmp_propvals.ppropval[tmp_propvals.count++] = pv;
 		if (!tmp_propvals.has(PR_FOLDER_TYPE)) {
 			tmp_type = FOLDER_GENERIC;
 			tmp_propvals.emplace_back(PR_FOLDER_TYPE, &tmp_type);
@@ -1231,8 +1232,8 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	tmp_propvals.ppropval[4].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[4].pvalue = &change_num;
 	tmp_propvals.count = 5;
-	for (unsigned int i = 0; i < ppropvals->count; ++i)
-		tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
+	for (const auto &pv : *ppropvals)
+		tmp_propvals.ppropval[tmp_propvals.count++] = pv;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client->set_folder_properties(dir,
 	    pinfo->cpid, folder_id, &tmp_propvals, &tmp_problems))
@@ -1296,13 +1297,13 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 		if (message_ids.pids == nullptr)
 			return ecServerOOM;
 	}
-	for (size_t i = 0; i < pbins->count; ++i) {
-		if (22 != pbins->pbin[i].cb) {
+	for (const auto &bxid : *pbins) {
+		if (bxid.cb != 22) {
 			mlog(LV_WARN, "W-2151: importdeletes expected 22-byte XID, "
- 			        "but got a %u-long object instead", pbins->pbin[i].cb);
+				"but got a %u-byte thing instead", bxid.cb);
 			return ecInvalidParam;
 		}
-		if (!common_util_binary_to_xid(&pbins->pbin[i], &tmp_xid))
+		if (!common_util_binary_to_xid(&bxid, &tmp_xid))
 			return ecError;
 		if (plogon->is_private()) {
 			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);

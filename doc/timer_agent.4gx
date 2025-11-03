@@ -1,8 +1,8 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH timer_agent 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-timer_agent \(em Service plugin for deferred command execution with timer(8gx)
+timer_agent \(em Client for timer(8gx)
 .SH Description
 timer_agent connects to a remote timer(8gx) daemon and locally installs two
 service functions, "add_timer" and "cancel_timer", which can be used to set up

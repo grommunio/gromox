@@ -3,6 +3,7 @@
 #include <compare>
 #include <cstdint>
 #include <cstring>
+#include <ctime>
 #include <memory>
 #include <optional>
 #include <string>
@@ -1040,19 +1041,22 @@ struct GX_EXPORT NOTIF_SINK {
 	ADVISE_INFO *padvise;
 };
 
-struct GX_EXPORT ONEOFF_ENTRYID {
-	uint32_t flags;
-	uint16_t version; /* should be 0x0000 */
-	uint16_t ctrl_flags;
-	char *pdisplay_name;
-	char *paddress_type;
-	char *pmail_address;
+struct GX_EXPORT ONEOFF_ENTRYID_view {
+	uint32_t flags = 0;
+	uint16_t version = 0;
+	uint16_t ctrl_flags = 0;
+	const char *pdisplay_name, *paddress_type, *pmail_address;
 };
 
-struct GX_EXPORT ONEOFF_ARRAY {
-	uint32_t count;
-	ONEOFF_ENTRYID *pentry_id;
-	I_BEGIN_END(pentry_id, count);
+struct GX_EXPORT ONEOFF_ENTRYID {
+	uint32_t flags = 0;
+	uint16_t version = 0; /* should be 0x0000 */
+	uint16_t ctrl_flags = 0;
+	std::string pdisplay_name, paddress_type, pmail_address;
+	operator ONEOFF_ENTRYID_view() const {
+		return {flags, version, ctrl_flags, pdisplay_name.c_str(),
+		        paddress_type.c_str(), pmail_address.c_str()};
+	}
 };
 
 struct GX_EXPORT PERMISSION_ROW {
@@ -1135,6 +1139,7 @@ struct GX_EXPORT SORTORDER_SET {
 	SORT_ORDER *psort;
 
 	std::string repr() const;
+	I_BEGIN_END(psort, count);
 };
 
 struct GX_EXPORT STATE_ARRAY {
@@ -1310,7 +1315,7 @@ struct GX_EXPORT restriction_list {
 	uint32_t count;
 	SRestriction *pres;
 
-	std::string repr() const;
+	std::string repr(const char *sep = ",") const;
 	restriction_list *dup() const;
 	I_BEGIN_END(pres, count);
 };
@@ -1600,4 +1605,5 @@ extern GX_EXPORT const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlo
 
 namespace gromox {
 extern GX_EXPORT std::string guid2name(const FLATUID);
+extern GX_EXPORT const char *relop_repr(enum relop);
 }

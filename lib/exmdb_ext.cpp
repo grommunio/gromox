@@ -1570,62 +1570,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_allocate_message_id &d)
 	return x.p_uint64(d.folder_id);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_get_message_group_id &d)
-{
-	return x.g_uint64(&d.message_id);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_message_group_id &d)
-{
-	return x.p_uint64(d.message_id);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exreq_set_message_group_id &d)
-{
-	TRY(x.g_uint64(&d.message_id));
-	return x.g_uint32(&d.group_id);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_message_group_id &d)
-{
-	TRY(x.p_uint64(d.message_id));
-	return x.p_uint32(d.group_id);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exreq_save_change_indices &d)
-{
-	TRY(x.g_uint64(&d.message_id));
-	TRY(x.g_uint64(&d.cn));
-	d.pindices = cu_alloc<INDEX_ARRAY>();
-	if (d.pindices == nullptr)
-		return pack_result::alloc;
-	TRY(x.g_proptag_a(d.pindices));
-	d.pungroup_proptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pungroup_proptags == nullptr)
-		return pack_result::alloc;
-	return x.g_proptag_a(d.pungroup_proptags);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_save_change_indices &d)
-{
-	TRY(x.p_uint64(d.message_id));
-	TRY(x.p_uint64(d.cn));
-	TRY(x.p_proptag_a(*d.pindices));
-	return x.p_proptag_a(*d.pungroup_proptags);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exreq_get_change_indices &d)
-{
-	TRY(x.g_uint64(&d.message_id));
-	return x.g_uint64(&d.cn);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_change_indices &d)
-{
-	TRY(x.p_uint64(d.message_id));
-	return x.p_uint64(d.cn);
-}
-
 static pack_result exmdb_pull(EXT_PULL &x, exreq_mark_modified &d)
 {
 	return x.g_uint64(&d.message_id);
@@ -2382,10 +2326,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_maintenance &d)
 	E(set_message_read_state) \
 	E(remove_message_properties) \
 	E(allocate_message_id) \
-	E(get_message_group_id) \
-	E(set_message_group_id) \
-	E(save_change_indices) \
-	E(get_change_indices) \
 	E(mark_modified) \
 	E(try_mark_submit) \
 	E(clear_submit) \
@@ -3436,41 +3376,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_allocate_cn &d)
 	return x.p_uint64(d.cn);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_get_message_group_id &d)
-{
-	uint8_t tmp_byte;
-	
-	TRY(x.g_uint8(&tmp_byte));
-	if (0 == tmp_byte) {
-		d.pgroup_id = nullptr;
-		return pack_result::ok;
-	}
-	d.pgroup_id = cu_alloc<uint32_t>();
-	if (d.pgroup_id == nullptr)
-		return pack_result::alloc;
-	return x.g_uint32(d.pgroup_id);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_message_group_id &d)
-{
-	if (d.pgroup_id == nullptr)
-		return x.p_uint8(0);
-	TRY(x.p_uint8(1));
-	return x.p_uint32(*d.pgroup_id);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exresp_get_change_indices &d)
-{
-	TRY(x.g_proptag_a(&d.indices));
-	return x.g_proptag_a(&d.ungroup_proptags);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_change_indices &d)
-{
-	TRY(x.p_proptag_a(d.indices));
-	return x.p_proptag_a(d.ungroup_proptags);
-}
-
 static pack_result exmdb_pull(EXT_PULL &x, exresp_try_mark_submit &d)
 {
 	return x.g_bool(&d.b_marked);
@@ -3752,8 +3657,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_purge_softdelete &d)
 	E(empty_message_instance_attachments) \
 	E(set_message_instance_conflict) \
 	E(remove_message_properties) \
-	E(set_message_group_id) \
-	E(save_change_indices) \
 	E(mark_modified) \
 	E(clear_submit) \
 	E(unlink_message) \
@@ -3856,8 +3759,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_purge_softdelete &d)
 	E(set_message_read_state) \
 	E(allocate_message_id) \
 	E(allocate_cn) \
-	E(get_message_group_id) \
-	E(get_change_indices) \
 	E(try_mark_submit) \
 	E(link_message) \
 	E(get_message_timer) \

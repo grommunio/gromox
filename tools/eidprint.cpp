@@ -46,14 +46,11 @@ static void try_emsab(const std::string_view s, unsigned int ind)
 	EMSAB_ENTRYID eid;
 	if (ep.g_abk_eid(&eid) != pack_result::success)
 		return;
-	auto cl_0 = HX::make_scope_exit([&]() {
-		free(eid.px500dn);
-	});
 	printf("%-*sEX address entry ID\n", lead(ind), "");
 	++ind;
 	printf("%-*sflags   = 0x%08x\n", lead(ind), "", eid.flags);
 	printf("%-*stype    = 0x%08x\n", lead(ind), "", eid.type);
-	printf("%-*sx500dn  = %s\n", lead(ind), "", znul(eid.px500dn));
+	printf("%-*sx500dn  = %s\n", lead(ind), "", eid.x500dn.c_str());
 }
 
 static void try_contab(std::string_view s, unsigned int ind)
@@ -301,11 +298,11 @@ static void try_folder_eid(const std::string_view s, unsigned int ind)
 	printf("%-*sEX folder entry ID\n", lead(ind), "");
 	++ind;
 	printf("%-*sflags  = 0x%08x\n", lead(ind), "", eid.flags);
-	printf("%-*stype   = 0x%02x <<%s>>\n", lead(ind), "", eid.folder_type, objecttypename(eid.folder_type));
+	printf("%-*stype   = 0x%02x <<%s>>\n", lead(ind), "", eid.eid_type, objecttypename(eid.eid_type));
 	printf("%-*sdbguid = ", lead(ind), "");
-	print_guid(eid.database_guid);
-	printf("\n%-*sfidgcv = 0x%llx\n", lead(ind), "", LLU{rop_util_gc_to_value(eid.global_counter)});
-	printf("%-*sreplid = %u\n", lead(ind), "", (eid.pad[0] << 8) | eid.pad[1]);
+	print_guid(eid.folder_dbguid);
+	printf("\n%-*sfidgcv = 0x%llx\n", lead(ind), "", LLU{rop_util_gc_to_value(eid.folder_gc)});
+	printf("%-*sreplid = %u\n", lead(ind), "", (eid.pad1[0] << 8) | eid.pad1[1]);
 }
 
 static void try_message_eid(const std::string_view s, unsigned int ind)
@@ -320,14 +317,14 @@ static void try_message_eid(const std::string_view s, unsigned int ind)
 	printf("%-*sEX message entry ID\n", lead(ind), "");
 	++ind;
 	printf("%-*sflags  = 0x%08x\n", lead(ind), "", eid.flags);
-	printf("%-*stype   = 0x%04x\n", lead(ind), "", eid.message_type);
+	printf("%-*stype   = 0x%04x\n", lead(ind), "", eid.eid_type);
 	printf("%-*sfdguid = ", lead(ind), "");
-	print_guid(eid.folder_database_guid);
-	printf("\n%-*sfidgcv = 0x%llx\n", lead(ind), "", LLU{rop_util_gc_to_value(eid.folder_global_counter)});
+	print_guid(eid.folder_dbguid);
+	printf("\n%-*sfidgcv = 0x%llx\n", lead(ind), "", LLU{rop_util_gc_to_value(eid.folder_gc)});
 	printf("%-*sreplid = 0x%x\n", lead(ind), "", (eid.pad1[0] << 8) | eid.pad1[1]);
 	printf("%-*smdguid = ", lead(ind), "");
-	print_guid(eid.message_database_guid);
-	printf("\n%-*smidgcv = 0x%llx\n", lead(ind), "", LLU{rop_util_gc_to_value(eid.message_global_counter)});
+	print_guid(eid.message_dbguid);
+	printf("\n%-*smidgcv = 0x%llx\n", lead(ind), "", LLU{rop_util_gc_to_value(eid.message_gc)});
 	printf("%-*sreplid = 0x%x\n", lead(ind), "", (eid.pad2[0] << 8) | eid.pad2[1]);
 }
 

@@ -59,15 +59,15 @@ enum {
 	RES_TOTAL_NUM
 };
 
-static char *opt_config_file, *opt_datadir;
+static const char *opt_config_file, *opt_datadir;
 static const char *g_lang;
 static unsigned int opt_force, opt_create_old, opt_upgrade;
 static unsigned int opt_verbose, opt_integ;
 
 static constexpr HXoption g_options_table[] = {
 	{"integrity", 0, HXTYPE_NONE, &opt_integ, nullptr, nullptr, 0, "Perform integrity SQLite check"},
-	{nullptr, 'T', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Directory with templates (default: " PKGDATADIR ")", "DIR"},
-	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	{nullptr, 'T', HXTYPE_STRING, {}, {}, {}, 0, "Directory with templates (default: " PKGDATADIR ")", "DIR"},
+	{nullptr, 'c', HXTYPE_STRING, {}, {}, {}, 0, "Config file to read", "FILE"},
 	{nullptr, 'f', HXTYPE_NONE, &opt_force, nullptr, nullptr, 0, "Allow overwriting exchange.sqlite3"},
 	{nullptr, 'U', HXTYPE_NONE, &opt_upgrade, nullptr, nullptr, 0, "Perform schema upgrade"},
 	{nullptr, 'v', HXTYPE_NONE, &opt_verbose, nullptr, nullptr, 0, "Bump verbosity"},
@@ -274,17 +274,24 @@ static int mk_options(sqlite3 *psqlite, time_t ux_time)
 
 int main(int argc, char **argv)
 {
+	HXopt6_auto_result argp;
 	sqlite3 *psqlite;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt5(g_options_table, argv, &argc, &argv,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	auto cl_0a = HX::make_scope_exit([=]() { HX_zvecfree(argv); });
-	if (2 != argc) {
+	if (argp.nargs != 1) {
 		printf("usage: %s <username>\n", argv[0]);
 		return EXIT_FAILURE;
 	}
+	for (int i = 0; i < argp.nopts; ++i) {
+		switch (argp.desc[i]->sh) {
+		case 'c': opt_config_file = argp.oarg[i]; break;
+		case 'T': opt_datadir = argp.oarg[i]; break;
+		}
+	}
+	auto le_username = argp.uarg[0];
 	auto pconfig = config_file_prg(opt_config_file, "mysql_adaptor.cfg",
 	               mkprivate_cfg_defaults);
 	if (opt_config_file != nullptr && pconfig == nullptr)
@@ -322,7 +329,7 @@ int main(int argc, char **argv)
 	auto qstr = "SELECT 0, u.maildir, u.lang, up.propval_str AS dtypx, u.address_status, u.id "
 	            "FROM users AS u "
 	            "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
-	            "WHERE u.username='"s + argv[1] + "'";
+	            "WHERE u.username='"s + le_username + "'";
 	if (mysql_query(conn.get(), qstr.c_str()) != 0) {
 		fprintf(stderr, "%s: %s\n", qstr.c_str(), mysql_error(conn.get()));
 		return EXIT_FAILURE;
@@ -335,7 +342,7 @@ int main(int argc, char **argv)
 	auto myrow = myres.fetch_row();
 	if (myrow == nullptr || myres.num_rows() > 1) {
 		printf("cannot find information from database "
-				"for username %s\n", argv[1]);
+				"for username %s\n", le_username);
 		return EXIT_FAILURE;
 	}
 	auto dtypx = DT_MAILUSER;

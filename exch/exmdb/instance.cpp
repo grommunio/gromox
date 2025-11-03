@@ -1349,8 +1349,6 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
     ec_error_t *pe_result)
 {
 	uint64_t folder_id;
-	char tmp_buff[1024];
-	char address_type[16];
 	
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -1462,11 +1460,10 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 	    !pmsgctnt->proplist.has(PR_SENT_REPRESENTING_EMAIL_ADDRESS)) {
 		auto sr_addrtype = pmsgctnt->proplist.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
 		if (sr_addrtype == nullptr) {
-			if (common_util_parse_addressbook_entryid(pbin,
-			    address_type, std::size(address_type),
-			    tmp_buff, std::size(tmp_buff))) {
-				if (pmsgctnt->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, address_type) != ecSuccess ||
-				    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != ecSuccess)
+			std::string ntype, naddr;
+			if (cu_parse_abkeid(pbin, ntype, naddr)) {
+				if (pmsgctnt->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, ntype.c_str()) != ecSuccess ||
+				    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, naddr.c_str()) != ecSuccess)
 					return FALSE;
 			}
 		} else if (strcasecmp(sr_addrtype, "EX") == 0) {
@@ -1486,11 +1483,10 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 	if (pbin != nullptr && !pmsgctnt->proplist.has(PR_SENDER_EMAIL_ADDRESS)) {
 		auto sr_addrtype = pmsgctnt->proplist.get<const char>(PR_SENDER_ADDRTYPE);
 		if (sr_addrtype == nullptr) {
-			if (common_util_parse_addressbook_entryid(pbin,
-			    address_type, std::size(address_type),
-			    tmp_buff, std::size(tmp_buff))) {
-				if (pmsgctnt->proplist.set(PR_SENDER_ADDRTYPE, address_type) != ecSuccess ||
-				    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != ecSuccess)
+			std::string ntype, naddr;
+			if (cu_parse_abkeid(pbin, ntype, naddr)) {
+				if (pmsgctnt->proplist.set(PR_SENDER_ADDRTYPE, ntype.c_str()) != ecSuccess ||
+				    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, naddr.c_str()) != ecSuccess)
 					return FALSE;
 			}
 		} else if (strcasecmp(sr_addrtype, "EX") == 0) {

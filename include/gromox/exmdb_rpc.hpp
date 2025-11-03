@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
@@ -119,10 +120,10 @@ enum class exmdb_callid : uint8_t {
 	allocate_message_id = 0x5b,
 	allocate_cn = 0x5c,
 	mark_modified = 0x5d,
-	get_message_group_id = 0x5e,
-	set_message_group_id = 0x5f,
-	save_change_indices = 0x60,
-	get_change_indices = 0x61,
+	// get_pgm_id = 0x5e,
+	// set_pgm_id = 0x5f,
+	// save_change_pgrp = 0x60,
+	// get_change_pgrp = 0x61,
 	try_mark_submit = 0x62,
 	clear_submit = 0x63,
 	link_message = 0x64,
@@ -679,27 +680,6 @@ struct exreq_allocate_message_id final : public exreq {
 	uint64_t folder_id;
 };
 
-struct exreq_get_message_group_id final : public exreq {
-	uint64_t message_id;
-};
-
-struct exreq_set_message_group_id final : public exreq {
-	uint64_t message_id;
-	uint32_t group_id;
-};
-
-struct exreq_save_change_indices final : public exreq {
-	uint64_t message_id;
-	uint64_t cn;
-	INDEX_ARRAY *pindices;
-	PROPTAG_ARRAY *pungroup_proptags;
-};
-
-struct exreq_get_change_indices final : public exreq {
-	uint64_t message_id;
-	uint64_t cn;
-};
-
 struct exreq_mark_modified final : public exreq {
 	uint64_t message_id;
 };
@@ -1244,15 +1224,6 @@ struct exresp_allocate_cn final : public exresp {
 	uint64_t cn;
 };
 
-struct exresp_get_message_group_id final : public exresp {
-	uint32_t *pgroup_id;
-};
-
-struct exresp_get_change_indices final : public exresp {
-	INDEX_ARRAY indices;
-	PROPTAG_ARRAY ungroup_proptags;
-};
-
 struct exresp_try_mark_submit final : public exresp {
 	BOOL b_marked;
 };
@@ -1369,8 +1340,6 @@ using exresp_update_message_instance_rcpts = exresp;
 using exresp_empty_message_instance_attachments = exresp;
 using exresp_set_message_instance_conflict = exresp;
 using exresp_remove_message_properties = exresp;
-using exresp_set_message_group_id = exresp;
-using exresp_save_change_indices = exresp;
 using exresp_remove_store_properties = exresp;
 using exresp_mark_modified = exresp;
 using exresp_clear_submit = exresp;

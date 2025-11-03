@@ -299,11 +299,12 @@ static int ftstream_producer_write_propdef(fxstream_producer *pstream,
 }
 
 static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
-    TAGGED_PROPVAL *ppropval)
+    const TAGGED_PROPVAL *ppropval)
 {
 	uint16_t write_type;
 	auto propid = PROP_ID(ppropval->proptag);
 	auto proptype = PROP_TYPE(ppropval->proptag);
+	const void *pvalue = ppropval->pvalue;
 	/*
 	 * The ftstream reader on the MSMAPI side does not know what to do with
 	 * these and usually throws an error (e.g. when using FXCopyMessages,
@@ -322,14 +323,14 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 			if (proptype == PT_STRING8) {
 				proptype = PT_UNICODE;
 				write_type = PT_UNICODE;
-				auto len = mb_to_utf8_len(static_cast<char *>(ppropval->pvalue));
-				auto pvalue = cu_alloc<char>(len);
-				if (pvalue == nullptr)
+				auto len = mb_to_utf8_len(static_cast<const char *>(pvalue));
+				auto cvstr = cu_alloc<char>(len);
+				if (cvstr == nullptr)
 					return FALSE;
 				if (common_util_convert_string(true,
-				    static_cast<char *>(ppropval->pvalue), pvalue, len) <= 0)
-					*pvalue = '\0';	
-				ppropval->pvalue = pvalue;
+				    static_cast<const char *>(pvalue), cvstr, len) <= 0)
+					*cvstr = '\0';
+				pvalue = cvstr;
 			}
 		} else if (pstream->string_option & STRING_OPTION_CPID) {
 			if (proptype == PT_STRING8) {
@@ -344,14 +345,14 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 			if (proptype == PT_UNICODE) {
 				proptype = PT_STRING8;
 				write_type = PT_STRING8;
-				auto len = utf8_to_mb_len(static_cast<char *>(ppropval->pvalue));
-				auto pvalue = cu_alloc<char>(len);
-				if (pvalue == nullptr)
+				auto len = utf8_to_mb_len(static_cast<const char *>(pvalue));
+				auto cvstr = cu_alloc<char>(len);
+				if (cvstr == nullptr)
 					return FALSE;
 				if (common_util_convert_string(false,
-				    static_cast<char *>(ppropval->pvalue), pvalue, len) <= 0)
-					*pvalue = '\0';	
-				ppropval->pvalue = pvalue;
+				    static_cast<const char *>(pvalue), cvstr, len) <= 0)
+					*cvstr = '\0';	
+				pvalue = cvstr;
 			}
 		}
 	}
@@ -363,116 +364,111 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 	
 	switch (proptype) {
 	case PT_SHORT:
-		return ftstream_producer_write_uint16(pstream,
-		       *static_cast<uint16_t *>(ppropval->pvalue));
+		return ftstream_producer_write_uint16(pstream, *static_cast<const uint16_t *>(pvalue));
 	case PT_ERROR:
 	case PT_LONG:
-		return pstream->write_uint32(*static_cast<uint32_t *>(ppropval->pvalue));
+		return pstream->write_uint32(*static_cast<const uint32_t *>(pvalue));
 	case PT_FLOAT:
-		return ftstream_producer_write_float(pstream,
-		       *static_cast<float *>(ppropval->pvalue));
+		return ftstream_producer_write_float(pstream, *static_cast<const float *>(pvalue));
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		return ftstream_producer_write_double(pstream,
-		       *static_cast<double *>(ppropval->pvalue));
+		return ftstream_producer_write_double(pstream, *static_cast<const double *>(pvalue));
 	case PT_BOOLEAN:
-		return ftstream_producer_write_uint16(pstream,
-		       *static_cast<uint8_t *>(ppropval->pvalue));
+		return ftstream_producer_write_uint16(pstream, *static_cast<const uint8_t *>(pvalue));
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
-		return ftstream_producer_write_uint64(pstream,
-		       *static_cast<uint64_t *>(ppropval->pvalue));
+		return ftstream_producer_write_uint64(pstream, *static_cast<const uint64_t *>(pvalue));
 	case PT_STRING8:
-		return ftstream_producer_write_string(pstream, static_cast<char *>(ppropval->pvalue));
+		return ftstream_producer_write_string(pstream, static_cast<const char *>(pvalue));
 	case PT_UNICODE:
-		return ftstream_producer_write_wstring(pstream, static_cast<char *>(ppropval->pvalue));
+		return ftstream_producer_write_wstring(pstream, static_cast<const char *>(pvalue));
 	case PT_CLSID:
-		return ftstream_producer_write_guid(pstream, static_cast<GUID *>(ppropval->pvalue));
+		return ftstream_producer_write_guid(pstream, static_cast<const GUID *>(pvalue));
 	case PT_OBJECT:
 	case PT_BINARY:
-		return ftstream_producer_write_binary(pstream, static_cast<BINARY *>(ppropval->pvalue));
+		return ftstream_producer_write_binary(pstream, static_cast<const BINARY *>(pvalue));
 	case PT_MV_SHORT: {
-		auto ar = static_cast<const SHORT_ARRAY *>(ppropval->pvalue);
+		auto ar = static_cast<const SHORT_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!ftstream_producer_write_uint16(pstream, ar->ps[i]))
+		for (const auto v : *ar)
+			if (!ftstream_producer_write_uint16(pstream, v))
 				return FALSE;
 		return TRUE;
 	}
 	case PT_MV_LONG: {
-		auto ar = static_cast<const LONG_ARRAY *>(ppropval->pvalue);
+		auto ar = static_cast<const LONG_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!pstream->write_uint32(ar->pl[i]))
+		for (const auto v : *ar)
+			if (!pstream->write_uint32(v))
 				return FALSE;
 		return TRUE;
 	}
 	case PT_MV_CURRENCY:
 	case PT_MV_I8:
 	case PT_MV_SYSTIME: {
-		auto ar = static_cast<const LONGLONG_ARRAY *>(ppropval->pvalue);
+		auto ar = static_cast<const LONGLONG_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!ftstream_producer_write_uint64(pstream, ar->pll[i]))
+		for (const auto v : *ar)
+			if (!ftstream_producer_write_uint64(pstream, v))
 				return FALSE;
 		return TRUE;
 	}
 	case PT_MV_FLOAT: {
-		auto fa = static_cast<FLOAT_ARRAY *>(ppropval->pvalue);
+		auto fa = static_cast<const FLOAT_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(fa->count))
 			return false;
-		for (size_t i = 0; i < fa->count; ++i)
-			if (!ftstream_producer_write_float(pstream, fa->mval[i]))
+		for (const auto v : *fa)
+			if (!ftstream_producer_write_float(pstream, v))
 				return false;
 		return TRUE;
 	}
 	case PT_MV_DOUBLE:
 	case PT_MV_APPTIME: {
-		auto fa = static_cast<DOUBLE_ARRAY *>(ppropval->pvalue);
+		auto fa = static_cast<const DOUBLE_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(fa->count))
 			return false;
-		for (size_t i = 0; i < fa->count; ++i)
-			if (!ftstream_producer_write_double(pstream, fa->mval[i]))
+		for (const auto v : *fa)
+			if (!ftstream_producer_write_double(pstream, v))
 				return false;
 		return TRUE;
 	}
 	case PT_MV_STRING8: {
-		auto ar = static_cast<const STRING_ARRAY *>(ppropval->pvalue);
+		auto ar = static_cast<const STRING_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!ftstream_producer_write_string(pstream, ar->ppstr[i]))
+		for (const auto &v : *ar)
+			if (!ftstream_producer_write_string(pstream, v))
 				return FALSE;
 		return TRUE;
 	}
 	case PT_MV_UNICODE: {
-		auto ar = static_cast<const STRING_ARRAY *>(ppropval->pvalue);
+		auto ar = static_cast<const STRING_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!ftstream_producer_write_wstring(pstream, ar->ppstr[i]))
+		for (const auto &v : *ar)
+			if (!ftstream_producer_write_wstring(pstream, v))
 				return FALSE;
 		return TRUE;
 	}
 	case PT_MV_CLSID: {
-		auto ar = static_cast<const GUID_ARRAY *>(ppropval->pvalue);
+		auto ar = static_cast<const GUID_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!ftstream_producer_write_guid(pstream, &ar->pguid[i]))
+		for (const auto &e : *ar)
+			if (!ftstream_producer_write_guid(pstream, &e))
 				return FALSE;
 		return TRUE;
 	}
 	case PT_MV_BINARY: {
-		auto ar = static_cast<const BINARY_ARRAY *>(ppropval->pvalue);
+		auto ar = static_cast<const BINARY_ARRAY *>(pvalue);
 		if (!pstream->write_uint32(ar->count))
 			return FALSE;
-		for (uint32_t i = 0; i < ar->count; ++i)
-			if (!ftstream_producer_write_binary(pstream, &ar->pbin[i]))
+		for (const auto &e : *ar)
+			if (!ftstream_producer_write_binary(pstream, &e))
 				return FALSE;
 		return TRUE;
 	}
@@ -483,8 +479,8 @@ static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
 BOOL fxstream_producer::write_proplist(const TPROPVAL_ARRAY *pproplist)
 {
 	auto pstream = this;
-	for (size_t i = 0; i < pproplist->count; ++i)
-		if (!ftstream_producer_write_propvalue(pstream, &pproplist->ppropval[i]))
+	for (const auto &pv : *pproplist)
+		if (!ftstream_producer_write_propvalue(pstream, &pv))
 			return FALSE;	
 	return TRUE;
 }
@@ -609,123 +605,6 @@ BOOL fxstream_producer::write_messagechangefull(
 		return FALSE;	
 	return ftstream_producer_write_messagechildren(
 				pstream, TRUE, &pmessage->children);
-}
-
-static BOOL ftstream_producer_write_groupinfo(fxstream_producer *pstream,
-	const PROPERTY_GROUPINFO *pginfo)
-{
-	propid_t propid = 0;
-	EXT_PUSH ext_push;
-	uint32_t name_size;
-	PROPERTY_NAME propname;
-	
-	if (!pstream->write_uint32(INCRSYNCGROUPINFO))
-		return FALSE;
-	/* 0x00000102 is the only proptag in proplist */
-	static_assert(PT_BINARY == PROP_TAG(PT_BINARY, 0));
-	if (!pstream->write_uint32(PROP_TAG(PT_BINARY, 0)) ||
-	    !ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
-	    ext_push.p_uint32(pginfo->group_id) != pack_result::ok ||
-	    ext_push.p_uint32(pginfo->reserved) != pack_result::ok ||
-	    ext_push.p_uint32(pginfo->count) != pack_result::ok)
-		return FALSE;
-	for (size_t i = 0; i < pginfo->count; ++i) {
-		if (ext_push.p_uint32(pginfo->pgroups[i].count) != pack_result::ok)
-			return FALSE;
-		for (size_t j = 0; j < pginfo->pgroups[i].count; ++j) {
-			propid = PROP_ID(pginfo->pgroups[i].pproptag[j]);
-			if (ext_push.p_uint32(pginfo->pgroups[i].pproptag[j]) != pack_result::ok)
-				return FALSE;
-			if (!is_nameprop_id(propid))
-				continue;
-			if (!pstream->plogon->get_named_propname(propid, &propname))
-				return FALSE;
-			if (ext_push.p_guid(propname.guid) != pack_result::ok ||
-			    ext_push.p_uint32(propname.kind) != pack_result::ok)
-				return FALSE;
-			switch (propname.kind) {
-			case MNID_ID:
-				if (ext_push.p_uint32(propname.lid) != pack_result::ok)
-					return FALSE;
-				break;
-			case MNID_STRING: {
-				uint32_t offset = ext_push.m_offset;
-				if (ext_push.advance(sizeof(uint32_t)) != pack_result::ok ||
-				    ext_push.p_wstr(propname.pname) != pack_result::ok)
-					return FALSE;
-				uint32_t offset1 = ext_push.m_offset - sizeof(uint16_t);
-				name_size = offset1 - (offset + sizeof(uint32_t));
-				ext_push.m_offset = offset;
-				if (ext_push.p_uint32(name_size) != pack_result::ok)
-					return FALSE;
-				ext_push.m_offset = offset1;
-				break;
-			}
-			default:
-				return FALSE;
-			}
-		}
-	}
-	BINARY tmp_bin;
-	tmp_bin.cb = ext_push.m_offset;
-	tmp_bin.pb = ext_push.m_udata;
-	return ftstream_producer_write_binary(pstream, &tmp_bin);
-}
-
-BOOL fxstream_producer::write_messagechangepartial(
-	const TPROPVAL_ARRAY *pchgheader,
-	const MSGCHG_PARTIAL *pmsg)
-{
-	auto pstream = this;
-	
-	if (!ftstream_producer_write_groupinfo(pstream, pmsg->pgpinfo))
-		return FALSE;
-	if (!write_uint32(MetaTagIncrSyncGroupId))
-		return FALSE;
-	if (!write_uint32(pmsg->group_id))
-		return FALSE;	
-	if (!write_uint32(INCRSYNCCHGPARTIAL))
-		return FALSE;
-	if (!ftstream_producer_write_messagechangeheader(pstream, pchgheader))
-		return FALSE;	
-	for (size_t i = 0; i < pmsg->count; ++i) {
-		if (!write_uint32(MetaTagIncrementalSyncMessagePartial))
-			return FALSE;
-		if (!write_uint32(pmsg->pchanges[i].index))
-			return FALSE;	
-		for (size_t j = 0; j < pmsg->pchanges[i].proplist.count; ++j) {
-			switch(pmsg->pchanges[i].proplist.ppropval[j].proptag) {
-			case PR_MESSAGE_RECIPIENTS:
-				if (pmsg->children.prcpts == nullptr)
-					break;
-				if (!write_uint32(MetaTagFXDelProp))
-					return FALSE;
-				if (!write_uint32(PR_MESSAGE_RECIPIENTS))
-					return FALSE;
-				for (const auto &rcpt : *pmsg->children.prcpts)
-					if (!ftstream_producer_write_recipient(pstream, &rcpt))
-						return FALSE;
-				break;
-			case PR_MESSAGE_ATTACHMENTS:
-				if (pmsg->children.pattachments == nullptr)
-					break;
-				if (!write_uint32(MetaTagFXDelProp))
-					return FALSE;
-				if (!write_uint32(PR_MESSAGE_ATTACHMENTS))
-					return FALSE;
-				for (auto &at : *pmsg->children.pattachments)
-					if (!ftstream_producer_write_attachment(pstream, TRUE, &at))
-						return FALSE;
-				break;
-			default:
-				if (!ftstream_producer_write_propvalue(pstream,
-				    &pmsg->pchanges[i].proplist.ppropval[j]))
-					return FALSE;	
-				break;
-			}
-		}
-	}
-	return TRUE;
 }
 
 static BOOL ftstream_producer_write_folderchange(fxstream_producer *pstream,

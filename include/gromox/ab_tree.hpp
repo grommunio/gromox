@@ -66,9 +66,9 @@ struct GX_EXPORT minid {
 		domain = 1,
 	};
 
-	static constexpr uint32_t TYPEMASK = 0x80000000; ///< Bits used for minid type information
-	static constexpr uint32_t VALMASK = 0x7FFFFFFF; ///< Bits used for minid value information
-	static constexpr uint32_t TYPEOFFSET = 31; ///< Offset for type information bits
+	static constexpr uint32_t TYPEMASK = 0x40000000; ///< Bits used for minid type information
+	static constexpr uint32_t VALMASK = 0x3FFFFFFF; ///< Bits used for minid value information
+	static constexpr uint32_t TYPEOFFSET = 30; ///< Offset for type information bits
 	static constexpr uint32_t MAXVAL = VALMASK - 0x10; ///< Maximum value that can be stored in a minid
 
 	// Positioning ID as per MS-OXNSPI 2.2.1.8
@@ -81,11 +81,27 @@ struct GX_EXPORT minid {
 	static constexpr uint32_t AMBIGUOUS = 0x0000001;
 	static constexpr uint32_t RESOLVED = 0x0000002;
 
-	/* minids we have set aside for zcore special containers */
+	/*
+	 * The ab_tree.hpp implementation indexes its data with minids and
+	 * exposes these record numbers in its programming API. It was
+	 * convenient for zcore to make its special containers have a minid and
+	 * thus a muidEMSAB-based entryid.
+	 *
+	 * It's all different in MSMAPI, where the SCs have their own random
+	 * provider UID and do not leech from muidEMSAB.
+	 *
+	 * ab_tree.cpp functions shall never receive SC_ values.
+	 */
 	static constexpr uint32_t SC_ROOT = 0xC;
 	static constexpr uint32_t SC_EMPTY = 0xD;
 	static constexpr uint32_t SC_PROVIDER = 0xE;
 	static constexpr uint32_t SC_GAL = 0xF;
+
+	/*
+	 * NSPI special containers (must not collide with minids for
+	 * users/domains / cf. VALMASK and TYPEMASK): everything PR_EMS_AB_*
+	 * with PT_OBJECT, e.g. PR_EMS_AB_MEMBER = 0x8009000d.
+	 */
 
 	constexpr minid(uint32_t i = 0) : id(i) {}
 	constexpr explicit minid(const GUID &guid) : id(guid.time_low) {}
@@ -123,7 +139,7 @@ struct GX_EXPORT ab_domain {
  * Contains all domain and user nodes from an organization. Provides a common
  * interface to access node properties.
  */
-class ab_base {
+class GX_EXPORT ab_base {
 	public:
 	/**
 	 * @brief     Address book iterator
@@ -256,8 +272,6 @@ class ab_base {
 	private:
 	const ab_domain *find_domain(uint32_t) const;
 
-	static const std::vector<std::string> vs_empty; ///< used to return empty alias list in case of invalid minid
-
 	GUID m_guid; ///< GUID of the base
 	gromox::time_point m_load_time{}; ///< Load time
 	/**
@@ -280,7 +294,7 @@ class ab_base {
  *
  * Manages ab_bases. There should only exist one instance.
  */
-class ab {
+class GX_EXPORT ab {
 	public:
 	using base_ref = std::shared_ptr<ab_base>;
 	using const_base_ref = std::shared_ptr<const ab_base>;
@@ -315,7 +329,7 @@ class ab {
 
 	void work();
 };
-extern class ab AB;
+extern GX_EXPORT class ab AB;
 
 /**
  * @brief      Node proxy, bundling minid with ab_base

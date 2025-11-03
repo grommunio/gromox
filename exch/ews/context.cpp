@@ -512,6 +512,142 @@ sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, cons
 }
 
 /**
+ * @brief Find calendar item using goid and clean goid
+ *
+ * @param calendarFolder The calendar folder
+ * @param calendarDir    Store directory
+ * @param content        Item content
+ *
+ * @return PidTagMid value of item matching goid or clean goid
+ */
+std::optional<uint64_t> EWSContext::findExistingByGoid(const sFolderSpec& calendarFolder, const std::string& calendarDir,
+	const MESSAGE_CONTENT& content) const
+{
+	std::array<RESTRICTION_PROPERTY, 2> propertyRestrictions{};
+	std::array<RESTRICTION, 2> childRestrictions{};
+	size_t restrictionCount = 0;
+
+	auto addRestriction = [&](const BINARY* value, uint16_t propId) {
+		if (value == nullptr || value->cb == 0 || value->pb == nullptr || propId == 0 ||
+		    restrictionCount >= propertyRestrictions.size())
+			return;
+		uint32_t tag = PROP_TAG(PT_BINARY, propId);
+		auto &propRestriction = propertyRestrictions[restrictionCount];
+		propRestriction.relop = RELOP_EQ;
+		propRestriction.proptag = tag;
+		propRestriction.propval.proptag = tag;
+		propRestriction.propval.pvalue = deconst(value);
+
+		childRestrictions[restrictionCount].rt = RES_PROPERTY;
+		childRestrictions[restrictionCount].prop = &propRestriction;
+		++restrictionCount;
+	};
+
+	uint16_t pidGlobalId = getNamedPropId(calendarDir, NtGlobalObjectId, true);
+	uint16_t pidCleanGlobalId = getNamedPropId(calendarDir, NtCleanGlobalObjectId, true);
+	const BINARY* goid = content.proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidGlobalId));
+	const BINARY* cleanGoid = content.proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidCleanGlobalId));
+	addRestriction(goid, pidGlobalId);
+	addRestriction(cleanGoid, pidCleanGlobalId);
+
+	if (restrictionCount == 0)
+		return std::nullopt;
+
+	RESTRICTION restriction{};
+	RESTRICTION_AND_OR orGroup{};
+	if (restrictionCount == 1) {
+		restriction.rt = RES_PROPERTY;
+		restriction.prop = &propertyRestrictions[0];
+	} else {
+		orGroup.count = static_cast<uint32_t>(restrictionCount);
+		orGroup.pres = childRestrictions.data();
+		restriction.rt = RES_OR;
+		restriction.andor = &orGroup;
+	}
+
+	uint32_t tableId = 0, rowCount = 0;
+	const char *calUser = effectiveUser(calendarFolder);
+	if (!m_plugin.exmdb.load_content_table(calendarDir.c_str(), CP_ACP,
+	    calendarFolder.folderId, calUser, TABLE_FLAG_NONOTIFICATIONS,
+	    &restriction, nullptr, &tableId, &rowCount))
+		throw EWSError::ItemPropertyRequestFailed(E3245);
+	auto unloadTable = HX::make_scope_exit([&, tableId]{
+		m_plugin.exmdb.unload_table(calendarDir.c_str(), tableId);
+	});
+	if (rowCount == 0)
+		return std::nullopt;
+
+	const uint32_t midTagValue = PidTagMid;
+	PROPTAG_ARRAY proptags{1, deconst(&midTagValue)};
+	TARRAY_SET rows{};
+	if (!m_plugin.exmdb.query_table(calendarDir.c_str(), calUser, CP_ACP,
+	    tableId, &proptags, 0, 1, &rows))
+		throw EWSError::ItemCorrupt(E3284);
+	if (rows.count == 0 || rows.pparray[0] == nullptr)
+		return std::nullopt;
+	auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);
+	if (!mid)
+		return std::nullopt;
+	return std::optional<uint64_t>(*mid);
+}
+
+/**
+ * @brief Create a calendar item after accepting a meeting request
+ *
+ * @param refId          Item id
+ * @param response       Response type
+ */
+void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint32_t response) const
+{
+	// Duplicate the original request and persist it as a calendar appointment.
+	assertIdType(refId.type, tItemId::ID_ITEM);
+	sMessageEntryId requestId(refId.Id.data(), refId.Id.size());
+	sFolderSpec requestFolder = resolveFolder(requestId);
+	std::string dir = getDir(requestFolder);
+	validate(dir, requestId);
+	const char *username = effectiveUser(requestFolder);
+
+	MESSAGE_CONTENT *content = nullptr;
+	if (!m_plugin.exmdb.read_message(dir.c_str(), username, CP_ACP, requestId.messageId(), &content) ||
+	    content == nullptr)
+		throw EWSError::ItemNotFound(E3143);
+
+	MCONT_PTR calendarItem(content->dup());
+	if (!calendarItem)
+		throw EWSError::ItemSave(E3254);
+
+	auto &props = calendarItem->proplist;
+	// Remove PidTagMid and PidTagChangeNumber, otherwise the calendar item won't be
+	// created / updated
+	static constexpr uint32_t rmProps[] = {PidTagMid, PidTagChangeNumber};
+	for (uint32_t tag : rmProps)
+		props.erase(tag);
+
+	sFolderSpec calendarFolder = requestFolder;
+	calendarFolder.folderId = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
+	calendarFolder.location = sFolderSpec::PRIVATE;
+	if (!calendarFolder.target)
+		calendarFolder.target = m_auth_info.username;
+	std::string calendarDir = getDir(calendarFolder);
+
+	if (!(permissions(calendarDir, calendarFolder.folderId) & (frightsOwner | frightsCreate)))
+		throw EWSError::AccessDenied(E3130);
+
+	if (props.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
+		throw EWSError::ItemSave(E3254);
+
+	std::optional<uint64_t> existingMid = findExistingByGoid(calendarFolder, calendarDir, *content);
+	if (existingMid && props.set(PidTagMid, construct<uint64_t>(*existingMid)) != ecSuccess)
+		throw EWSError::ItemSave(E3254);
+
+	ec_error_t err = ecSuccess;
+	uint64_t newMid = 0, newCn = 0;
+	if (!m_plugin.exmdb.write_message(calendarDir.c_str(), CP_ACP, calendarFolder.folderId,
+	        calendarItem.get(), {}, &newMid, &newCn, &err) || err != ecSuccess)
+		throw EWSError::ItemSave(E3254);
+}
+
+/**
  * @brief      Schedule notification stream for closing
  */
 void EWSContext::disableEventStream()
@@ -547,6 +683,42 @@ void EWSContext::enableEventStream(int timeout)
 	auto expire = tp_now() + std::chrono::minutes(timeout);
 	m_notify = std::make_unique<NotificationContext>(expire);
 }
+
+/**
+ * @brief      Export message content to string
+ *
+ * @param      dir       Parent store
+ * @param      content   Content to export
+ * @param      log_id    Log ID
+ *
+ * @return     Serialized content
+ */
+std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONTENT& content, const std::string& log_id) const
+{
+	MAIL mail;
+	auto getPropIds  = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
+		{ *ids = getNamedPropIds(dir, *names); return TRUE; };
+	auto getPropName = [&](uint16_t id, PROPERTY_NAME **name) { *name = getPropertyName(dir, id); return TRUE; };
+	if (!oxcmail_export(&content, log_id.c_str(), false,
+	                    oxcmail_body::plain_and_html, &mail, alloc, getPropIds, getPropName))
+		throw EWSError::ItemCorrupt(E3072);
+	auto mail_len = mail.get_length();
+	if (mail_len < 0)
+		throw EWSError::ItemCorrupt(E3073);
+	STREAM tempStream;
+	if (!mail.serialize(&tempStream))
+		throw EWSError::ItemCorrupt(E3074);
+	std::string mime;
+	mime.reserve(mail_len);
+	char *data;
+	unsigned int size = STREAM_BLOCK_SIZE;
+	while ((data = static_cast<char *>(tempStream.get_read_buf(&size))) != nullptr) {
+		mime.insert(mime.end(), data, &data[size]);
+		size = STREAM_BLOCK_SIZE;
+	}
+	return mime;
+}
+
 
 /**
  * @brief     Get user or domain ID by name
@@ -965,7 +1137,19 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
 	PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
 	if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
 		throw DispatchError(E3083);
-	return tAttachment::create(aid, props);
+	sShape shape(props);
+
+	auto method = props.get<const uint32_t>(PR_ATTACH_METHOD);
+	if (method != nullptr && *method == ATTACH_EMBEDDED_MSG) {
+		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		MESSAGE_CONTENT content{};
+		if (!m_plugin.exmdb.read_message_instance(dir.c_str(),
+		    eInst->instanceId, &content))
+			throw DispatchError(E3208);
+		auto log_id = dir + ":a" + std::to_string(aid.attachment_num);
+		shape.mimeContent.emplace(exportContent(dir, content, log_id));
+	}
+	return tAttachment::create(aid, std::move(shape));
 }
 
 /**
@@ -1096,33 +1280,12 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		if (!exmdb.read_message(dir.c_str(), nullptr, CP_ACP, mid, &content) ||
 		    content == nullptr)
 			throw EWSError::ItemNotFound(E3071);
-		MAIL mail;
-		auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
-		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
-		auto getPropName = [&](uint16_t id, PROPERTY_NAME** name)
-		                   {*name = getPropertyName(dir, id); return TRUE;};
 		auto log_id = dir + ":m" + std::to_string(mid);
-		if (!oxcmail_export(content, log_id.c_str(), false,
-		    oxcmail_body::plain_and_html, &mail, alloc, getPropIds, getPropName))
-			throw EWSError::ItemCorrupt(E3072);
-		auto mailLen = mail.get_length();
-		if (mailLen < 0)
-			throw EWSError::ItemCorrupt(E3073);
-		STREAM tempStream;
-		if (!mail.serialize(&tempStream))
-			throw EWSError::ItemCorrupt(E3074);
-		auto& mimeContent = item.MimeContent.emplace();
-		mimeContent.reserve(mailLen);
-		uint8_t* data;
-		unsigned int size = STREAM_BLOCK_SIZE;
-		while ((data = static_cast<uint8_t*>(tempStream.get_read_buf(&size))) != nullptr) {
-			mimeContent.insert(mimeContent.end(), data, data + size);
-			size = STREAM_BLOCK_SIZE;
-		}
+		item.MimeContent.emplace(exportContent(dir, *content, log_id));
 	}
 	if (special & sShape::Attachments) {
 		static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_CONTENT_ID,
-			                        PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS};
+			                        PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS, PR_ATTACH_SIZE};
 		auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
 		uint16_t count;
 		if (!exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
@@ -1136,7 +1299,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			if (!exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
 				throw DispatchError(E3080);
 			aid.attachment_num = i;
-			item.Attachments->emplace_back(tAttachment::create(aid, props));
+			item.Attachments->emplace_back(tAttachment::create(aid, sShape(props)));
 		}
 	}
 	if (special & sShape::Rights)
@@ -1510,7 +1673,7 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 	sFolderEntryId eid(fId.Id.data(), fId.Id.size());
 	sFolderSpec folderSpec;
 	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
-	folderSpec.folderId = rop_util_make_eid_ex(1, rop_util_gc_to_value(eid.global_counter));
+	folderSpec.folderId = rop_util_make_eid_ex(1, rop_util_gc_to_value(eid.folder_gc));
 	if (eid.isPrivate()) {
 		std::string ubuf;
 		if (mysql_adaptor_userid_to_name(eid.accountId(), ubuf) != ecSuccess)
