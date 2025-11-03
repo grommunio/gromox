@@ -972,7 +972,7 @@ struct tFieldURI {
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, proptag_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, proptype_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 17> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 18> specialMap; ///< Mapping for special properties
 };
 
 /**
@@ -2355,7 +2355,7 @@ struct tMessage : public tItem {
 	std::optional<bool> IsRead;
 	std::optional<bool> IsResponseRequested;
 	std::optional<std::string> References; ///< PR_INTERNET_REFERENCES
-	std::optional<std::vector<tSingleRecipient>> ReplyTo;
+	std::optional<std::vector<tEmailAddressType>> ReplyTo;
 	std::optional<tSingleRecipient> ReceivedBy;
 	std::optional<tSingleRecipient> ReceivedRepresenting;
 

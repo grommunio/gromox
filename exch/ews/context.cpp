@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
 #include <cstring>
 #include <sstream>
 #include <fmt/core.h>
@@ -1361,30 +1362,76 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	loadSpecial(dir, fid, mid, static_cast<tItem&>(message), special);
 	if (!(special & sShape::Recipients))
 		return;
-	TARRAY_SET rcpts;
-	if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
-		mlog(LV_ERR, "[ews] failed to load message recipients (%s:%llu)",
-			dir.c_str(), static_cast<unsigned long long>(mid));
-		return;
-	}
-	for (const auto &rcpt : rcpts) {
-		auto recipientType = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
-		if (!recipientType)
-			continue;
-		switch (*recipientType) {
-		case MAPI_TO:
-			if (special & sShape::ToRecipients)
-				defaulted(message.ToRecipients).emplace_back(rcpt);
-			break;
-		case MAPI_CC:
-			if (special & sShape::CcRecipients)
-				defaulted(message.CcRecipients).emplace_back(rcpt);
-			break;
-		case MAPI_BCC:
-			if (special & sShape::BccRecipients)
-				defaulted(message.BccRecipients).emplace_back(rcpt);
-			break;
+
+	if (special & (sShape::ToRecipients | sShape::CcRecipients | sShape::BccRecipients)) {
+		TARRAY_SET rcpts;
+		if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts)) {
+			mlog(LV_ERR, "[ews] failed to load message recipients (%s:%llu)",
+				dir.c_str(), static_cast<unsigned long long>(mid));
+		} else {
+			for (const auto &rcpt : rcpts) {
+				auto recipientType = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
+				if (!recipientType)
+					continue;
+				switch (*recipientType) {
+				case MAPI_TO:
+					if (special & sShape::ToRecipients)
+						defaulted(message.ToRecipients).emplace_back(rcpt);
+					break;
+				case MAPI_CC:
+					if (special & sShape::CcRecipients)
+						defaulted(message.CcRecipients).emplace_back(rcpt);
+					break;
+				case MAPI_BCC:
+					if (special & sShape::BccRecipients)
+						defaulted(message.BccRecipients).emplace_back(rcpt);
+					break;
+				}
+			}
 		}
+	}
+
+	if (!(special & sShape::ReplyToRecipients))
+		return;
+
+	void *propval = nullptr;
+	if (!m_plugin.exmdb.get_message_property(dir.c_str(), nullptr, CP_ACP, mid,
+	    PR_REPLY_RECIPIENT_ENTRIES, &propval) || propval == nullptr)
+		return;
+	auto replyEntries = static_cast<const BINARY *>(propval);
+	if (replyEntries->pb == nullptr || replyEntries->cb == 0)
+		return;
+
+	EXT_PULL pull;
+	BINARY_ARRAY addressArray{};
+	auto cleanup = HX::make_scope_exit([&]() {
+		for (uint32_t i = 0; i < addressArray.count; ++i)
+			std::free(addressArray.pbin[i].pb);
+		std::free(addressArray.pbin);
+	});
+	pull.init(replyEntries->pb, replyEntries->cb, zalloc, EXT_FLAG_WCOUNT);
+	auto parseResult = pull.g_flatentry_a(&addressArray);
+	if (parseResult != pack_result::ok || addressArray.count == 0)
+		return;
+
+	auto &replyList = defaulted(message.ReplyTo);
+	replyList.reserve(replyList.size() + static_cast<size_t>(addressArray.count));
+	for (uint32_t i = 0; i < addressArray.count; ++i) {
+		EXT_PULL entryPull;
+		entryPull.init(addressArray.pbin[i].pb, addressArray.pbin[i].cb, zalloc, EXT_FLAG_UTF16);
+		ONEOFF_ENTRYID entry{};
+		if (entryPull.g_oneoff_eid(&entry) != pack_result::ok)
+			continue;
+		if (entry.pmail_address.empty())
+			continue;
+		auto &recipient = replyList.emplace_back();
+		recipient.EmailAddress = std::move(entry.pmail_address);
+		if (!entry.pdisplay_name.empty())
+			recipient.Name = std::move(entry.pdisplay_name);
+		if (!entry.paddress_type.empty())
+			recipient.RoutingType = std::move(entry.paddress_type);
+		else
+			recipient.RoutingType = "SMTP";
 	}
 }
 
