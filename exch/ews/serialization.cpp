@@ -1301,6 +1301,33 @@ void tMessage::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(ReceivedRepresenting);
 }
 
+tMeetingMessage::tMeetingMessage(const tinyxml2::XMLElement* xml) :
+	tMessage(xml),
+	XMLINIT(AssociatedCalendarItemId),
+	XMLINIT(IsDelegated),
+	XMLINIT(IsOutOfDate),
+	XMLINIT(HasBeenProcessed),
+	XMLINIT(ResponseType),
+	XMLINIT(UID),
+	XMLINIT(RecurrenceId),
+	XMLINIT(DateTimeStamp),
+	XMLINIT(IsOrganizer)
+{}
+
+void tMeetingMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	tMessage::serialize(xml);
+	XMLDUMPT(AssociatedCalendarItemId);
+	XMLDUMPT(IsDelegated);
+	XMLDUMPT(IsOutOfDate);
+	XMLDUMPT(HasBeenProcessed);
+	XMLDUMPT(ResponseType);
+	XMLDUMPT(UID);
+	XMLDUMPT(RecurrenceId);
+	XMLDUMPT(DateTimeStamp);
+	XMLDUMPT(IsOrganizer);
+}
+
 tAcceptItem::tAcceptItem(const tinyxml2::XMLElement *xml) :
 	tMessage(xml),
 	XMLINIT(ProposedStart),

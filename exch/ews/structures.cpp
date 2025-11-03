@@ -151,6 +151,36 @@ constexpr size_t max_count()
 	return std::numeric_limits<count_t<C>>::max();
 }
 
+Enum::ResponseTypeType response_type_from_status(uint32_t status)
+{
+	switch (status) {
+	case respOrganized:    return Enum::Organizer;
+	case respTentative:    return Enum::Tentative;
+	case respAccepted:     return Enum::Accept;
+	case respDeclined:     return Enum::Decline;
+	case respNotResponded: return Enum::NoResponseReceived;
+	default:               return Enum::Unknown;
+	}
+}
+
+std::optional<Enum::ResponseTypeType> response_type_from_class(const std::optional<std::string>& itemClass)
+{
+	if (!itemClass)
+		return std::nullopt;
+
+	const char* cls = itemClass->c_str();
+	if (class_match_prefix(cls, "IPM.Schedule.Meeting.Resp.Pos") == 0)
+		return Enum::Accept;
+	if (class_match_prefix(cls, "IPM.Schedule.Meeting.Resp.Tent") == 0)
+		return Enum::Tentative;
+	if (class_match_prefix(cls, "IPM.Schedule.Meeting.Resp.Neg") == 0)
+		return Enum::Decline;
+	if (class_match_prefix(cls, "IPM.Schedule.Meeting.Resp") == 0)
+		return Enum::Unknown;
+
+	return std::nullopt;
+}
+
 /**
  * @brief      Convert STL vector to gromox array
  *
@@ -3262,6 +3292,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"message:Sender", PR_SENDER_ADDRTYPE},
 	{"message:Sender", PR_SENDER_EMAIL_ADDRESS},
 	{"message:Sender", PR_SENDER_NAME},
+	{"meeting:HasBeenProcessed", PR_PROCESSED},
 };
 
 decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
@@ -3319,6 +3350,8 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"task:Status", {NtTaskStatus, PT_LONG}},
 	// {"task:StatusDescription", {}},
 	{"task:TotalWork", {NtTaskEstimatedEffort, PT_LONG}},
+	{"meeting:IsOutOfDate", {NtMeetingType, PT_LONG}},
+	{"meeting:ResponseType", {NtResponseStatus, PT_LONG}},
 };
 
 decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
@@ -3846,6 +3879,35 @@ void tMessage::update(const sShape& shape)
 		fromProp(prop, defaulted(From).Mailbox.EmailAddress);
 	if ((prop = shape.get(PR_SENT_REPRESENTING_NAME)))
 		fromProp(prop, defaulted(From).Mailbox.Name);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tMeetingMessage::tMeetingMessage(const sShape& shape) : tMessage(shape)
+{
+	tMeetingMessage::update(shape);
+}
+
+void tMeetingMessage::update(const sShape& shape)
+{
+	const TAGGED_PROPVAL* prop;
+
+	tMessage::update(shape);
+
+	if ((prop = shape.get(NtMeetingType))) {
+		const uint32_t* meetingType = static_cast<const uint32_t*>(prop->pvalue);
+		IsOutOfDate.emplace((*meetingType & mtgOutOfDate) != 0);
+	}
+
+	fromProp(shape.get(PR_PROCESSED), HasBeenProcessed);
+
+	if ((prop = shape.get(NtResponseStatus))) {
+		const uint32_t* responseStatus = static_cast<const uint32_t*>(prop->pvalue);
+		ResponseType.emplace(response_type_from_status(*responseStatus));
+	} else {
+		if (auto inferred = response_type_from_class(ItemClass))
+			ResponseType.emplace(*inferred);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

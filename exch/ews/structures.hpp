@@ -2383,24 +2383,22 @@ struct tMessage : public tItem {
 struct tMeetingMessage : public tMessage {
 	static constexpr char NAME[] = "MeetingMessage";
 
-	using tMessage::tMessage;
+	explicit tMeetingMessage(const sShape&);
+	explicit tMeetingMessage(const tinyxml2::XMLElement*);
+	void update(const sShape&);
 
-	// <xs:element name="AssociatedCalendarItemId" type="t:ItemIdType" minOccurs="0"/>
-	// <xs:element name="IsDelegated" type="xs:boolean" minOccurs="0" />
-	// <xs:element name="IsOutOfDate" type="xs:boolean" minOccurs="0" />
-	// <xs:element name="HasBeenProcessed" type="xs:boolean" minOccurs="0" />
+	std::optional<tItemId> AssociatedCalendarItemId;
+	std::optional<bool> IsDelegated;
+	std::optional<bool> IsOutOfDate;
+	std::optional<bool> HasBeenProcessed;
 
-	// <!-- Meeting response related properties -->
+	std::optional<Enum::ResponseTypeType> ResponseType;
+	std::optional<std::string> UID;
+	std::optional<time_point> RecurrenceId;
+	std::optional<sTimePoint> DateTimeStamp;
+	std::optional<bool> IsOrganizer;
 
-	// <xs:element name="ResponseType" type="t:ResponseTypeType" minOccurs="0" />
-
-	// <!-- iCalendar properties -->
-
-	// <xs:element name="UID" type="xs:string" minOccurs="0" />
-	// <xs:element name="RecurrenceId" type="xs:dateTime" minOccurs="0" />
-	// <xs:element name="DateTimeStamp" type="xs:dateTime" minOccurs="0" />
-
-	// <xs:element name="IsOrganizer" type="xs:boolean" minOccurs="0" />
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
