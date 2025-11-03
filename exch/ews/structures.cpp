@@ -1581,6 +1581,7 @@ void tCalendarItem::update(const sShape& shape)
 	tItem::update(shape);
 	fromProp(shape.get(PR_RESPONSE_REQUESTED), IsResponseRequested);
 	const TAGGED_PROPVAL* prop;
+	Enum::CalendarItemTypeType calendarItemType = Enum::Single;
 	if ((prop = shape.get(PR_SENDER_ADDRTYPE)))
 		fromProp(prop, defaulted(Organizer).Mailbox.RoutingType);
 	if ((prop = shape.get(PR_SENDER_EMAIL_ADDRESS)))
@@ -1592,7 +1593,7 @@ void tCalendarItem::update(const sShape& shape)
 		AllowNewTimeProposal.emplace(!*static_cast<const uint8_t*>(prop->pvalue));
 
 	if ((prop = shape.get(NtAppointmentRecur))) {
-		CalendarItemType.emplace(Enum::RecurringMaster);
+		calendarItemType = Enum::RecurringMaster;
 		const BINARY* recurData = static_cast<BINARY*>(prop->pvalue);
 		if (recurData->cb > 0) {
 			APPOINTMENT_RECUR_PAT apprecurr = getAppointmentRecurPattern(recurData);
@@ -1614,8 +1615,6 @@ void tCalendarItem::update(const sShape& shape)
 					DeletedOccurrences.emplace(delOccs);
 			}
 		}
-	} else {
-		CalendarItemType.emplace(Enum::Single); // TODO correct type
 	}
 
 	if ((prop = shape.get(NtAppointmentReplyTime)))
@@ -1694,8 +1693,32 @@ void tCalendarItem::update(const sShape& shape)
 	}
 
 	// TODO: check if we should use some other property for RecurrenceId
-	if ((prop = shape.get(NtExceptionReplaceTime)))
+	bool hasExceptionReplaceTime = false;
+	if ((prop = shape.get(NtExceptionReplaceTime))) {
 		RecurrenceId.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+		hasExceptionReplaceTime = true;
+	}
+
+	if (calendarItemType != Enum::RecurringMaster) {
+		bool isSeriesMember = (IsRecurring && *IsRecurring);
+		if (!isSeriesMember) {
+			const TAGGED_PROPVAL* recurFlag = shape.get(NtRecurring);
+			if (recurFlag) {
+				if (PROP_TYPE(recurFlag->proptag) == PT_BOOLEAN)
+					isSeriesMember = *static_cast<const uint8_t*>(recurFlag->pvalue) != 0;
+				else if (PROP_TYPE(recurFlag->proptag) == PT_LONG)
+					isSeriesMember = *static_cast<const uint32_t*>(recurFlag->pvalue) != 0;
+			}
+		}
+		if (hasExceptionReplaceTime)
+			calendarItemType = Enum::Exception;
+		else if (isSeriesMember)
+			calendarItemType = Enum::Occurrence;
+		else
+			calendarItemType = Enum::Single;
+	}
+
+	CalendarItemType.emplace(calendarItemType);
 
 	if ((prop = shape.get(PR_CREATION_TIME)))
 		fromProp(prop, DateTimeStamp);
