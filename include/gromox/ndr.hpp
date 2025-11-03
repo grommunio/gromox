@@ -37,6 +37,7 @@ struct GX_EXPORT NDR_PULL {
 	pack_result union_align(size_t);
 	pack_result trailer_align(size_t);
 	pack_result g_str(char *v, uint32_t z);
+	pack_result g_str(std::string *v, size_t z);
 	pack_result g_uint8(uint8_t *);
 	pack_result g_uint16(uint16_t *);
 	pack_result g_int32(int32_t *);

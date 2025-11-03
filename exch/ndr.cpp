@@ -108,6 +108,20 @@ pack_result NDR_PULL::g_str(char *buff, uint32_t inbytes)
 	return pndr->advance(inbytes);
 }
 
+pack_result NDR_PULL::g_str(std::string *buf, size_t z) try
+{
+	if (z == 0) {
+		buf->clear();
+		return pack_result::ok;
+	}
+	if (data_size < z || offset + z > data_size)
+		return pack_result::bufsize;
+	buf->assign(reinterpret_cast<const char *>(&data[offset]), z);
+	return advance(z);
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
+}
+
 pack_result NDR_PULL::g_uint8(uint8_t *v)
 {
 	auto pndr = this;
