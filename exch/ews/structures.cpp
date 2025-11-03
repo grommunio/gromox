@@ -1692,7 +1692,6 @@ void tCalendarItem::update(const sShape& shape)
 		}
 	}
 
-	// TODO: check if we should use some other property for RecurrenceId
 	bool hasExceptionReplaceTime = false;
 	if ((prop = shape.get(NtExceptionReplaceTime))) {
 		RecurrenceId.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
