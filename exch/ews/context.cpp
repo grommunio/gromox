@@ -1118,22 +1118,29 @@ sMailboxInfo EWSContext::getMailboxInfo(const std::string& dir, bool isDomain) c
  */
 void EWSContext::impersonate(const char* addrtype, const char* addr)
 {
-	if (!addrtype || !addr)
+	if (!addrtype || !addr || *addr == '\0')
 		return;
+	if (strcasecmp(addrtype, "sid") == 0)
+		/*
+		 * SID-based impersonation is part of MS-OXWSCDATA but not yet
+		 * implemented. To add support, we need to use ldap to resolve
+		 * SID (objectSid attribute) to username
+		 *
+		 * For now, SID impersonation returns "unsupported ConnectingSID".
+		 */
+		throw EWSError::ImpersonationFailed(E3276);
 	if (strcasecmp(addrtype, "PrincipalName") != 0 &&
 	    strcasecmp(addrtype, "PrimarySmtpAddress") != 0 &&
 	    strcasecmp(addrtype, "SmtpAddress") != 0)
 		throw EWSError::ImpersonationFailed(E3242);
 
-	/*
-	 * Exception safety: construct strings (potential allocation)
-	 * ahead of changing the members.
-	 */
-	std::string dir = get_maildir(addr), user = addr;
-	if (!(permissions(dir, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)) & frightsGromoxStoreOwner))
+	sql_meta_result mres;
+	if (mysql_adaptor_meta(addr, WANTPRIV_METAONLY, mres) != 0)
+		throw EWSError::CannotFindUser(E3007);
+	if (!(permissions(mres.maildir, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)) & frightsGromoxStoreOwner))
 		throw EWSError::ImpersonateUserDenied(E3243);
-	impersonationUser    = std::move(user);
-	impersonationMaildir = std::move(dir);
+	impersonationUser    = std::move(mres.username);
+	impersonationMaildir = std::move(mres.maildir);
 	m_auth_info.username = impersonationUser.c_str();
 	m_auth_info.maildir = impersonationMaildir.c_str();
 }
