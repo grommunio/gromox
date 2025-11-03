@@ -523,6 +523,32 @@ static ec_error_t html_write_style_text_indent(RTF_WRITER *pwriter, int text_ind
 	return ecSuccess;
 }
 
+static bool html_css_font_keyword_to_pt(const char *value, int &pt_out)
+{
+	static const struct {
+		const char *name;
+		int points;
+	} keywords[] = {
+		{"xx-small", 6},
+		{"x-small", 8},
+		{"small", 10},
+		{"medium", 12},
+		{"large", 14},
+		{"x-large", 18},
+		{"xx-large", 24},
+		{"smaller", 10},
+		{"larger", 14},
+	};
+
+	for (const auto &kw : keywords) {
+		if (strcasecmp(value, kw.name) == 0) {
+			pt_out = kw.points;
+			return true;
+		}
+	}
+	return false;
+}
+
 static void html_trim_style_value(char *value)
 {
 	char *ptr;
@@ -645,8 +671,23 @@ static ec_error_t html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
 	}
 	if (html_match_style(pattribute,
 		"font-size", value, sizeof(value))) {
-		auto unit_point = class_match_suffix(value, "pt") == 0;
-		ERF(html_write_style_font_size(pwriter, strtol(value, nullptr, 0), unit_point));
+		html_trim_style_value(value);
+		bool unit_point = false;
+		int font_size = 0;
+		if (class_match_suffix(value, "pt") == 0) {
+			unit_point = true;
+			font_size = strtol(value, nullptr, 0);
+		} else if (class_match_suffix(value, "px") == 0) {
+			unit_point = false;
+			font_size = strtol(value, nullptr, 0);
+		} else if (html_css_font_keyword_to_pt(value, font_size)) {
+			unit_point = true;
+		} else {
+			/* Unrecognised value, ignore to keep compatibility */
+			font_size = 0;
+		}
+		if (font_size > 0)
+			ERF(html_write_style_font_size(pwriter, font_size, unit_point));
 	}
 	if (html_match_style(pattribute,
 		"line-height", value, sizeof(value))) {
