@@ -2,8 +2,10 @@
 // SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <chrono>
 #include <cctype>
 #include <climits>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <sstream>
@@ -16,6 +18,7 @@
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "exceptions.hpp"
@@ -111,6 +114,19 @@ void writeProp(sShape &shape, const std::optional<std::string> &value,
 {
 	if (value)
 		shape.write(name, TAGGED_PROPVAL{type, const_cast<char *>(value->c_str())});
+}
+
+void writeBoolProp(sShape& shape, const std::optional<bool>& value, uint32_t tag)
+{
+	if (value)
+		shape.write(TAGGED_PROPVAL{tag, EWSContext::construct<uint8_t>(*value ? 1 : 0)});
+}
+
+uint64_t toNT(const time_point& tp)
+{
+	using namespace std::chrono;
+	auto secs = duration_cast<seconds>(tp.time_since_epoch());
+	return rop_util_unix_to_nttime(secs.count());
 }
 
 /**
@@ -2438,8 +2454,6 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
  * @param      item      Item to create
  * @param      shape     Shape to store properties in
  * @param      content   Message content
- *
- * @todo Map remaining fields
  */
 void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, MCONT_PTR& content) const
 {
@@ -2478,6 +2492,55 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 		shape.write(TAGGED_PROPVAL{PR_IMPORTANCE, construct<uint32_t>(item.Importance->index())});
 	if (item.Subject)
 		shape.write(TAGGED_PROPVAL{PR_SUBJECT, deconst(item.Subject->c_str())});
+	if (item.InReplyTo)
+		shape.write(TAGGED_PROPVAL{PR_IN_REPLY_TO_ID, deconst(item.InReplyTo->c_str())});
+	writeBoolProp(shape, item.IsAssociated, PR_ASSOCIATED);
+
+	std::optional<uint32_t> messageFlags;
+	auto applyFlag = [&](const std::optional<bool>& flag, uint32_t mask) {
+		if (!flag)
+			return;
+		if (!messageFlags)
+			messageFlags.emplace(0);
+		if (*flag)
+			*messageFlags |= mask;
+	};
+	applyFlag(item.IsSubmitted, MSGFLAG_SUBMITTED);
+	applyFlag(item.IsDraft, MSGFLAG_UNSENT);
+	applyFlag(item.IsFromMe, MSGFLAG_FROMME);
+	applyFlag(item.IsResend, MSGFLAG_RESEND);
+	applyFlag(item.IsUnmodified, MSGFLAG_UNMODIFIED);
+	if (messageFlags)
+		shape.write(TAGGED_PROPVAL{PR_MESSAGE_FLAGS, construct<uint32_t>(*messageFlags)});
+
+	if (item.ReminderDueBy) {
+		auto reminderNt = toNT(*item.ReminderDueBy);
+		shape.write(NtReminderTime, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(reminderNt)});
+		shape.write(NtReminderSignalTime, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(reminderNt)});
+	}
+	if (item.ReminderIsSet)
+		shape.write(NtReminderSet, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint8_t>(*item.ReminderIsSet ? 1 : 0)});
+	if (item.ReminderMinutesBeforeStart)
+		shape.write(NtReminderDelta, TAGGED_PROPVAL{PT_LONG, construct<int32_t>(*item.ReminderMinutesBeforeStart)});
+	if (item.Flag) {
+		uint32_t status = 0;
+		bool setStatus = false;
+		if (item.Flag->FlagStatus == Enum::Flagged) {
+			status = followupFlagged;
+			setStatus = true;
+		} else if (item.Flag->FlagStatus == Enum::Complete) {
+			status = followupComplete;
+			setStatus = true;
+		}
+		if (setStatus)
+			shape.write(TAGGED_PROPVAL{PR_FLAG_STATUS, construct<uint32_t>(status)});
+		if (item.Flag->StartDate)
+			shape.write(NtTaskStartDate, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(toNT(*item.Flag->StartDate))});
+		if (item.Flag->DueDate)
+			shape.write(NtTaskDueDate, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(toNT(*item.Flag->DueDate))});
+		if (item.Flag->CompleteDate)
+			shape.write(NtTaskDateCompleted, TAGGED_PROPVAL{PT_SYSTIME, construct<uint64_t>(toNT(*item.Flag->CompleteDate))});
+	}
 
 	auto now = EWSContext::construct<mapitime_t>(rop_util_current_nttime());
 	shape.write(TAGGED_PROPVAL{PR_CREATION_TIME, now});
@@ -2532,8 +2595,6 @@ void EWSContext::rcpt_add_unique(TARRAY_SET *rcpts, tEmailAddressType rcpt, uint
  * @param      item      Message to create
  * @param      shape     Shape to store properties in
  * @param      content   Message content
- *
- * @todo Map remaining fields
  */
 void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape, MCONT_PTR& content) const
 {
@@ -2566,6 +2627,43 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 			shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_EMAIL_ADDRESS, item.From->Mailbox.EmailAddress->data()});
 		if (item.From->Mailbox.Name)
 			shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, item.From->Mailbox.Name->data()});
+	}
+	if (item.Sender) {
+		writeProp(shape, item.Sender->Mailbox.RoutingType, PR_SENDER_ADDRTYPE);
+		writeProp(shape, item.Sender->Mailbox.EmailAddress, PR_SENDER_EMAIL_ADDRESS);
+		writeProp(shape, item.Sender->Mailbox.Name, PR_SENDER_NAME);
+		if (item.Sender->Mailbox.EmailAddress) {
+			auto isSmtp = !item.Sender->Mailbox.RoutingType ||
+				strcasecmp(item.Sender->Mailbox.RoutingType->c_str(), "SMTP") == 0;
+			if (isSmtp)
+				shape.write(TAGGED_PROPVAL{PR_SENDER_SMTP_ADDRESS,
+					deconst(item.Sender->Mailbox.EmailAddress->c_str())});
+		}
+	}
+	if (item.References)
+		shape.write(TAGGED_PROPVAL{PR_INTERNET_REFERENCES, deconst(item.References->c_str())});
+	if (item.IsResponseRequested)
+		writeBoolProp(shape, item.IsResponseRequested, PR_RESPONSE_REQUESTED);
+	if (item.IsDeliveryReceiptRequested)
+		writeBoolProp(shape, item.IsDeliveryReceiptRequested, PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
+	if (item.IsReadReceiptRequested)
+		writeBoolProp(shape, item.IsReadReceiptRequested, PR_READ_RECEIPT_REQUESTED);
+	auto ensureMessageFlags = [&]() -> uint32_t* {
+		const TAGGED_PROPVAL* prop = shape.writes(PR_MESSAGE_FLAGS);
+		if (!prop) {
+			auto flags = construct<uint32_t>(0);
+			shape.write(TAGGED_PROPVAL{PR_MESSAGE_FLAGS, flags});
+			prop = shape.writes(PR_MESSAGE_FLAGS);
+		}
+		return static_cast<uint32_t*>(prop->pvalue);
+	};
+	if (item.IsRead) {
+		writeBoolProp(shape, item.IsRead, PR_READ);
+		uint32_t* flags = ensureMessageFlags();
+		if (*item.IsRead)
+			*flags |= MSGFLAG_READ;
+		else
+			*flags &= ~MSGFLAG_READ;
 	}
 }
 
