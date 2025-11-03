@@ -1120,7 +1120,9 @@ void EWSContext::impersonate(const char* addrtype, const char* addr)
 {
 	if (!addrtype || !addr)
 		return;
-	if (strcmp(addrtype, "PrincipalName") && strcmp(addrtype, "PrimarySmtpAddres") && strcmp(addrtype, "SmtpAddress"))
+	if (strcasecmp(addrtype, "PrincipalName") != 0 &&
+	    strcasecmp(addrtype, "PrimarySmtpAddress") != 0 &&
+	    strcasecmp(addrtype, "SmtpAddress") != 0)
 		throw EWSError::ImpersonationFailed(E3242);
 	impersonationMaildir = get_maildir(addr);
 	if (!(permissions(impersonationMaildir, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)) & frightsGromoxStoreOwner))
