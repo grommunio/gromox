@@ -341,8 +341,9 @@ class sShape {
 	static constexpr uint64_t Resources =         1 << 9;
 	static constexpr uint64_t Rights =            1 << 10;
 	static constexpr uint64_t Permissions =       1 << 11;
+	static constexpr uint64_t ReplyToRecipients = 1 << 12;
 
-	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients;
+	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients | ReplyToRecipients;
 	static constexpr uint64_t Attendees = RequiredAttendees | OptionalAttendees | Resources;
 
 	sShape() = default;

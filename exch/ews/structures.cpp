@@ -3296,6 +3296,7 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"item:MimeContent", sShape::MimeContent},
 	{"message:BccRecipients", sShape::BccRecipients},
 	{"message:CcRecipients", sShape::CcRecipients},
+	{"message:ReplyTo", sShape::ReplyToRecipients},
 	{"message:ToRecipients", sShape::ToRecipients},
 }};
 
