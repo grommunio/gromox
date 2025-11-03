@@ -3284,7 +3284,10 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"item:Sensitivity", PR_SENSITIVITY},
 	{"item:Size", PR_MESSAGE_SIZE},
 	{"item:Subject", PR_SUBJECT},
+	{"meeting:DateTimeStamp", PR_CREATION_TIME},
+	{"meeting:DateTimeStamp", PR_LOCAL_COMMIT_TIME},
 	{"meeting:HasBeenProcessed", PR_PROCESSED},
+	{"meeting:IsDelegated", PR_DELEGATED_BY_RULE},
 	{"message:ConversationIndex", PR_CONVERSATION_INDEX},
 	{"message:ConversationTopic", PR_CONVERSATION_TOPIC},
 	{"message:From", PR_SENT_REPRESENTING_ADDRTYPE},
@@ -3339,8 +3342,11 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"item:ReminderDueBy", {NtReminderTime, PT_SYSTIME}},
 	{"item:ReminderIsSet", {NtReminderSet, PT_BOOLEAN}},
 	{"item:ReminderMinutesBeforeStart", {NtReminderDelta, PT_LONG}},
+	{"meeting:IsOrganizer", {NtCalendarIsOrganizer, PT_BOOLEAN}},
 	{"meeting:IsOutOfDate", {NtMeetingType, PT_LONG}},
+	{"meeting:RecurrenceId", {NtExceptionReplaceTime, PT_SYSTIME}},
 	{"meeting:ResponseType", {NtResponseStatus, PT_LONG}},
+	{"meeting:UID", {NtGlobalObjectId, PT_BINARY}},
 	{"meetingRequest:ChangeHighlights", {NtChangeHighlight, PT_LONG}},
 	{"meetingRequest:IntendedFreeBusyStatus", {NtIntendedBusyStatus, PT_LONG}},
 	{"meetingRequest:MeetingRequestType", {NtMeetingType, PT_LONG}},
@@ -3908,6 +3914,8 @@ void tMeetingMessage::update(const sShape& shape)
 
 	tMessage::update(shape);
 
+	fromProp(shape.get(PR_DELEGATED_BY_RULE), IsDelegated);
+
 	if ((prop = shape.get(NtMeetingType))) {
 		const uint32_t* meetingType = static_cast<const uint32_t*>(prop->pvalue);
 		IsOutOfDate.emplace((*meetingType & mtgOutOfDate) != 0);
@@ -3922,8 +3930,24 @@ void tMeetingMessage::update(const sShape& shape)
 	else if (auto inferred = response_type_from_class(ItemClass))
 		ResponseType.emplace(*inferred);
 
+	if ((prop = shape.get(NtGlobalObjectId))) {
+		const BINARY* goid = static_cast<const BINARY*>(prop->pvalue);
+		if (goid->cb > 0) {
+			std::string uid(goid->cb * 2, 0);
+			encode_hex_binary(goid->pb, goid->cb, uid.data(), static_cast<int>(uid.size() + 1));
+			UID.emplace(std::move(uid));
+		}
+	}
+
 	if ((prop = shape.get(NtExceptionReplaceTime)))
 		RecurrenceId.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+
+	if ((prop = shape.get(PR_CREATION_TIME)))
+		fromProp(prop, DateTimeStamp);
+	else
+		fromProp(shape.get(PR_LOCAL_COMMIT_TIME), DateTimeStamp);
+
+	fromProp(shape.get(NtCalendarIsOrganizer), IsOrganizer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
