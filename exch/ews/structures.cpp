@@ -193,12 +193,28 @@ Enum::LegacyFreeBusyType legacy_free_busy_from_status(uint32_t status)
 	}
 }
 
+std::optional<Enum::MeetingRequestTypeType> meeting_request_type_from_property(uint32_t value)
+{
+	switch (value) {
+	case 0: return Enum::None;
+	case 1: return Enum::FullUpdate;
+	case 2: return Enum::InformationalUpdate;
+	case 3: return Enum::NewMeetingRequest;
+	case 4: return Enum::Outdated;
+	case 5: return Enum::SilentUpdate;
+	case 6: return Enum::PrincipalWantsCopy;
+	default: return std::nullopt;
+	}
+}
+
 std::optional<Enum::MeetingRequestTypeType> meeting_request_type_from_meeting_type(uint32_t meetingType)
 {
+	if (auto direct = meeting_request_type_from_property(meetingType))
+		return direct;
 	if (meetingType & mtgOutOfDate)
 		return Enum::Outdated;
 	if (meetingType & mtgDelegatorCopy)
-		return Enum::SilentUpdate;
+		return Enum::PrincipalWantsCopy;
 	if (meetingType & mtgFull)
 		return Enum::FullUpdate;
 	if (meetingType & mtgInfo)
@@ -3987,6 +4003,8 @@ void tMeetingRequestMessage::update(const sShape& shape)
 		if (auto mapped = meeting_request_type_from_meeting_type(meetingType))
 			MeetingRequestType.emplace(*mapped);
 	}
+	if (!MeetingRequestType)
+		MeetingRequestType.emplace(Enum::None);
 
 	if ((prop = shape.get(NtIntendedBusyStatus))) {
 		const uint32_t status = *static_cast<const uint32_t*>(prop->pvalue);
