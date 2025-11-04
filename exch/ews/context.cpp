@@ -681,6 +681,8 @@ void EWSContext::enableEventStream(int timeout)
 {
 	m_state = S_STREAM_NOTIFY;
 	auto expire = tp_now() + std::chrono::minutes(timeout);
+	if (m_notify)
+		mlog(LV_DEBUG, "EWSContext::m_notify already populated, programming error");
 	m_notify = std::make_unique<NotificationContext>(expire);
 }
 
