@@ -346,7 +346,7 @@ private:
 
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 
-	int m_ID = 0;
+	int m_ID = -1;
 	http_status m_code = http_status::ok;
 	State m_state = S_DEFAULT;
 	bool m_log = false;
