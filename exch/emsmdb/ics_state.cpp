@@ -9,6 +9,8 @@
 #include "common_util.hpp"
 #include "ics_state.hpp"
 
+using namespace gromox;
+
 static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int type)
 {
 	pstate->pseen = idset::create(idset::type::guid_loose);

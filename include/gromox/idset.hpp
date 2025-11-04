@@ -8,6 +8,8 @@
 #include <gromox/mapidefs.h>
 #include <gromox/range_set.hpp>
 
+namespace gromox {
+
 using REPLICA_MAPPING = BOOL (*)(BOOL, void *, uint16_t *, GUID *);
 using REPLIST_ENUM = void (*)(void *, uint16_t);
 using REPLICA_ENUM = void (*)(void *, uint64_t);
@@ -74,3 +76,5 @@ class GX_EXPORT idset {
 	/* If @repl_type is guid_packed, repl_nodes are REPLGUID_NODE. */
 	std::vector<repl_node> repl_list;
 };
+
+}

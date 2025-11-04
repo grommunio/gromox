@@ -774,7 +774,7 @@ struct exreq_read_message final : public exreq {
 struct exreq_get_content_sync final : public exreq {
 	uint64_t folder_id;
 	char *username;
-	idset *pgiven, *pseen, *pseen_fai, *pread;
+	gromox::idset *pgiven, *pseen, *pseen_fai, *pread;
 	cpid_t cpid;
 	RESTRICTION *prestriction;
 	BOOL b_ordered;
@@ -783,7 +783,7 @@ struct exreq_get_content_sync final : public exreq {
 struct exreq_get_hierarchy_sync final : public exreq {
 	uint64_t folder_id;
 	char *username;
-	idset *pgiven, *pseen;
+	gromox::idset *pgiven, *pseen;
 };
 
 struct exreq_allocate_ids final : public exreq {

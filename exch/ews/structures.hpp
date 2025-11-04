@@ -406,10 +406,10 @@ struct sSyncState {
 	void update(const EID_ARRAY&, const EID_ARRAY&, uint64_t);
 	std::string serialize();
 
-	idset given; ///< Set of known IDs
-	idset seen;  ///< Set of known change numbers
-	idset read;  ///< Set of read change numbers
-	idset seen_fai; ///< Set of seen fai change numbers
+	gromox::idset given; ///< Set of known IDs
+	gromox::idset seen;  ///< Set of known change numbers
+	gromox::idset read;  ///< Set of read change numbers
+	gromox::idset seen_fai; ///< Set of seen fai change numbers
 	uint32_t readOffset = 0; ///< Number of read states already delivered
 
 	private:

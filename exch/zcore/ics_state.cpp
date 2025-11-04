@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
@@ -10,6 +10,8 @@
 #include <gromox/rop_util.hpp>
 #include "common_util.hpp"
 #include "ics_state.hpp"
+
+using namespace gromox;
 
 static void ics_state_clear(ics_state *pstate)
 {

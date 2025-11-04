@@ -16,9 +16,9 @@ struct ics_state {
 	NOMOVE(ics_state);
 	static std::unique_ptr<ics_state> create(logon_object *, int type);
 	static std::shared_ptr<ics_state> create_shared(logon_object *, int type);
-	BOOL append_idset(uint32_t state_property, std::unique_ptr<idset> &&);
+	BOOL append_idset(uint32_t state_property, std::unique_ptr<gromox::idset> &&);
 	TPROPVAL_ARRAY *serialize();
 
 	int type = 0;
-	std::unique_ptr<idset> pgiven, pseen, pseen_fai, pread;
+	std::unique_ptr<gromox::idset> pgiven, pseen, pseen_fai, pread;
 };

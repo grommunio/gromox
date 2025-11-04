@@ -13,6 +13,6 @@ struct ics_state {
 	BOOL deserialize(const BINARY &);
 
 	int type = 0;
-	std::unique_ptr<idset> pgiven, pread, pseen, pseen_fai;
+	std::unique_ptr<gromox::idset> pgiven, pread, pseen, pseen_fai;
 };
 
