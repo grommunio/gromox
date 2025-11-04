@@ -12,6 +12,7 @@
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/ical.hpp>
+#include <gromox/idset.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/paths.h>

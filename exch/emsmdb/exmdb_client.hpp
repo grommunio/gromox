@@ -3,6 +3,7 @@
 #include <optional>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
+#include <gromox/idset.hpp>
 #include <gromox/mapi_types.hpp>
 
 class GX_EXPORT exmdb_client_shm final {

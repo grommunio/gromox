@@ -7,9 +7,10 @@
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/idset.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapierr.hpp>
-#include <gromox/mapi_types.hpp>
 
 enum class exmdb_response : uint8_t {
 	success = 0x00,

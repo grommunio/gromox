@@ -22,6 +22,7 @@
 #include <gromox/element_data.hpp> /* MESSAGE_CONTENT alias */
 #include <gromox/fileio.h>
 #include <gromox/hpm_common.h>
+#include <gromox/idset.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/usercvt.hpp>

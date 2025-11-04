@@ -13,7 +13,7 @@
 #include <variant>
 #include <vector>
 #include <gromox/freebusy.hpp>
-#include <gromox/mapi_types.hpp>
+#include <gromox/idset.hpp>
 #include <gromox/mapidefs.h>
 
 #include "enums.hpp"

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -8,7 +10,7 @@
 #include <optional>
 #include <vector>
 #include <libHX/endian.h>
-#include <gromox/mapi_types.hpp>
+#include <gromox/idset.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 

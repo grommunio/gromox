@@ -15,7 +15,7 @@
 #include <libHX/scope.hpp>
 #include <gromox/eid_array.hpp>
 #include <gromox/ext_buffer.hpp>
-#include <gromox/mapi_types.hpp>
+#include <gromox/idset.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/restriction.hpp>

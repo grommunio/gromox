@@ -1,7 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <memory>
-#include <gromox/mapi_types.hpp>
+#include <gromox/defs.h>
+#include <gromox/idset.hpp>
 
 struct ics_state {
 	ics_state(uint8_t t) : type(t) {}

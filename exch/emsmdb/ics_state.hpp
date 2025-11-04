@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include <gromox/mapi_types.hpp>
+#include <gromox/idset.hpp>
 
 struct logon_object;
 
