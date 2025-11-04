@@ -1079,7 +1079,10 @@ bool EWSPlugin::unsubscribe(detail::SubscriptionKey subscriptionKey,
  */
 void EWSPlugin::unsubscribe(const detail::ExmdbSubscriptionKey& key) const
 {
-	subscriptions.erase(key);
+	{
+		std::unique_lock lk(subscriptionLock);
+		subscriptions.erase(key);
+	}
 	exmdb.unsubscribe_notification(key.first.c_str(), key.second);
 }
 
