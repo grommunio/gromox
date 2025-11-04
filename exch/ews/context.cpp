@@ -2437,16 +2437,36 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 			throw EWSError::NotEnoughMemory(E3288);
 	}
 	if (rcpts != nullptr) {
-		auto add_unique = [rcpts](const tEmailAddressType &rcpt, uint32_t type) {
+		auto add_unique = [this, rcpts](tEmailAddressType rcpt, uint32_t type) {
 			if (rcpt.EmailAddress)
+				/* Normalize EX->SMTP for comparison */
+				this->normalize(rcpt);
+			const char *needle = rcpt.EmailAddress ? rcpt.EmailAddress->c_str() : nullptr;
+			if (needle != nullptr) {
 				for (const auto &row : *rcpts) {
-					auto addr  = row.get<const char>(PR_EMAIL_ADDRESS);
 					auto rtype = row.get<const uint32_t>(PR_RECIPIENT_TYPE);
-					if (addr != nullptr && rtype != nullptr && *rtype == type &&
-					    strcasecmp(addr, rcpt.EmailAddress->c_str()) == 0)
+					if (rtype == nullptr || *rtype != type)
+						continue;
+					/* Prefer PR_SMTP_ADDRESS for comparison; fall back to SMTP PR_EMAIL_ADDRESS */
+					auto smtp = row.get<const char>(PR_SMTP_ADDRESS);
+					if (smtp == nullptr) {
+						auto at = row.get<const char>(PR_ADDRTYPE);
+						auto em = row.get<const char>(PR_EMAIL_ADDRESS);
+						if (at != nullptr && em != nullptr && strcasecmp(at, "SMTP") == 0)
+							smtp = em;
+					}
+					if (smtp != nullptr && strcasecmp(smtp, needle) == 0)
 						return;
 				}
-			rcpt.mkRecipient(rcpts->emplace(), type);
+			}
+			/* Not found: add recipient and record SMTP address if available */
+			auto row = rcpts->emplace();
+			rcpt.mkRecipient(row, type);
+			if (needle != nullptr) {
+				auto err = row->set(PR_SMTP_ADDRESS, needle);
+				if (err == ecServerOOM || err == ecMAPIOOM)
+					throw EWSError::NotEnoughMemory(E3291);
+			}
 		};
 		if (item.ToRecipients)
 			for (const auto &rcpt : *item.ToRecipients)
