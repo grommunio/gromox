@@ -271,9 +271,7 @@ class EWSContext {
 
 	EWSContext(detail::ContextKey, const HTTP_AUTH_INFO &, const char *, uint64_t, EWSPlugin &);
 	~EWSContext();
-
-	EWSContext(const EWSContext&) = delete;
-	EWSContext(EWSContext&&) = delete;
+	NOMOVE(EWSContext);
 
 	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
 	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&) const;
