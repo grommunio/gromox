@@ -132,7 +132,7 @@ class EWSPlugin {
 		std::mutex lock; ///< I/O mutex
 		std::vector<detail::ExmdbSubscriptionKey> inner_subs; ///< Exmdb subscription keys
 		std::list<Structures::sNotificationEvent> events; ///< Events that occured since last check
-		std::optional<detail::ContextKey> waitingContext; ///< ID of context waiting for events
+		detail::ContextKey waitingContext = -1; ///< ID of context waiting for events
 	};
 
 	void event(const char*, BOOL, uint32_t, const DB_NOTIFY*) const;

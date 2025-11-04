@@ -768,8 +768,8 @@ EWSPlugin::SubManager::~SubManager()
 {
 	for (const auto &subKey : inner_subs)
 		ews.unsubscribe(subKey);
-	if (waitingContext)
-		ews.unlinkSubscription(*waitingContext);
+	if (waitingContext >= 0)
+		ews.unlinkSubscription(waitingContext);
 }
 
 /**
@@ -874,10 +874,10 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 	default:
 		break;
 	}
-	if (mgr->waitingContext)
+	if (mgr->waitingContext >= 0)
 		// Reschedule next wakeup 0.1 seconds. Should be enough to gather related events.
 		// Is still bound to the ObjectCache cleanup cycle and might take significantly longer than that.
-		cache.get(*mgr->waitingContext, std::chrono::milliseconds(100));
+		cache.get(mgr->waitingContext, std::chrono::milliseconds(100));
 } catch (const std::exception &err) {
 	mlog(LV_ERR, "[ews#evt] %s: Failed to process notification: %s",
 		err.what(), timestamp().c_str());
@@ -928,8 +928,8 @@ bool EWSPlugin::linkSubscription(const Structures::tSubscriptionId& subscription
 	if (mgr == nullptr || mgr->username != ctx.auth_info().username)
 		return false;
 	std::lock_guard subLock(mgr->lock);
-	if (mgr->waitingContext)
-		unlinkSubscription(*mgr->waitingContext);
+	if (mgr->waitingContext >= 0)
+		unlinkSubscription(mgr->waitingContext);
 	mgr->waitingContext = ctx.context_id();
 	return true;
 }
