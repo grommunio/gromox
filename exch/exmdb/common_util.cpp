@@ -409,31 +409,6 @@ BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
 	return TRUE;
 }
 
-BOOL common_util_allocate_cid(sqlite3 *psqlite, uint64_t *pcid)
-{
-	char sql_string[128];
-	
-	snprintf(sql_string, std::size(sql_string), "SELECT config_value FROM "
-		"configurations WHERE config_id=%u", CONFIG_ID_LAST_CID);
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	uint64_t last_cid = pstmt.step() == SQLITE_ROW ?
-	                    sqlite3_column_int64(pstmt, 0) : 0;
-	pstmt.finalize();
-	last_cid ++;
-	snprintf(sql_string, std::size(sql_string), "REPLACE INTO configurations"
-					" VALUES (%u, ?)", CONFIG_ID_LAST_CID);
-	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	sqlite3_bind_int64(pstmt, 1, last_cid);
-	if (pstmt.step() != SQLITE_DONE)
-		return FALSE;
-	*pcid = last_cid;
-	return TRUE;
-}
-
 }
 
 bool prepared_statements::begin(sqlite3 *psqlite)
