@@ -1081,11 +1081,13 @@ bool EWSPlugin::unsubscribe(detail::SubscriptionKey subscriptionKey,
  */
 void EWSPlugin::unsubscribe(const detail::ExmdbSubscriptionKey& key) const
 {
+	bool del = false;
 	{
 		std::unique_lock lk(subscriptionLock);
-		subscriptions.erase(key);
+		del = subscriptions.erase(key) > 0;
 	}
-	exmdb.unsubscribe_notification(key.first.c_str(), key.second);
+	if (del)
+		exmdb.unsubscribe_notification(key.first.c_str(), key.second);
 }
 
 /**
