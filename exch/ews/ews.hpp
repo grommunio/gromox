@@ -57,7 +57,7 @@ struct EmbeddedInstanceKey {
 	uint32_t aid;
 
 	inline bool operator==(const EmbeddedInstanceKey& o) const
-	{return dir == o.dir && aid == o.aid;}
+	{ return aid == o.aid && dir == o.dir; }
 };
 
 } // namespace gromox::EWS::detail
