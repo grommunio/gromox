@@ -4243,18 +4243,6 @@ std::atomic<uint32_t> tSubscriptionId::globcnt = 0;
 tSubscriptionId::tSubscriptionId(uint32_t t) : ID(++globcnt), timeout(t)
 {}
 
-/**
- * @brief      Constructor for single subscription ID
- *
- * @param      ID  Subscription key
- * @param      t   Subscription timeout (minutes)
- */
-tSubscriptionId::tSubscriptionId(uint32_t id, uint32_t t) : ID(++globcnt), timeout(t)
-{}
-
-///////////////////////////////////////////////////////////////////////////////
-
-
 tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder &&f) : folder(std::move(f))
 {}
 

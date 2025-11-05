@@ -2825,8 +2825,7 @@ struct tSubscriptionId {
 	static constexpr char NAME[] = "SubscriptionId";
 
 	tSubscriptionId() = default;
-	explicit tSubscriptionId(uint32_t);
-	tSubscriptionId(uint32_t, uint32_t);
+	explicit tSubscriptionId(uint32_t timeout);
 	explicit tSubscriptionId(const tinyxml2::XMLElement*);
 
 	uint32_t ID = 0; ///< Counter value
