@@ -7,7 +7,8 @@
 
 using namespace gromox;
 
-#define E(s) #s
+//#define E(s) [static_cast<unsigned int>(exmdb_callid::s)] = #s
+#define E(s) (static_cast<void>(exmdb_callid::s), #s)
 static constexpr const char *exmdb_rpc_names[] = {
 	E(connect),
 	E(listen_notification),

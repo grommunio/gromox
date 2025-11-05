@@ -7,8 +7,10 @@
 
 using namespace gromox;
 
-#define EXP(s) zcore_callid::s
-#define E(s) #s
+//#define E(s) [static_cast<unsigned int>(zcore_callid::s)] = #s
+//#define U(p, s) [p] = (s)
+#define E(s) (static_cast<void>(zcore_callid::s), #s)
+#define U(p, s) (s)
 static constexpr const char *zcore_rpc_names[] = {
 	E(logon),
 	E(unloadobject),
@@ -16,7 +18,7 @@ static constexpr const char *zcore_rpc_names[] = {
 	E(openstoreentry),
 	E(openabentry),
 	E(resolvename),
-	nullptr,
+	U(0x06, nullptr),
 	E(getpermissions),
 	E(modifypermissions),
 	E(modifyrules),
@@ -27,7 +29,7 @@ static constexpr const char *zcore_rpc_names[] = {
 	E(loadhierarchytable),
 	E(loadcontenttable),
 	E(loadrecipienttable),
-	nullptr,
+	U(0x17, nullptr),
 	E(loadruletable),
 	E(createmessage),
 	E(deletemessages),
@@ -86,18 +88,18 @@ static constexpr const char *zcore_rpc_names[] = {
 	E(getsearchcriteria),
 	E(setsearchcriteria),
 	E(messagetorfc822),
-	"rfc822tomessage(v1)",
+	U(0x4c, "rfc822tomessage(v1)"),
 	E(messagetoical),
 	E(icaltomessage),
 	E(messagetovcf),
 	E(vcftomessage),
 	E(uinfo),
 	E(checksession),
-	"getuseravailability",
+	U(0x53, "getuseravailability"),
 	E(setpasswd),
 	E(linkmessage),
 	E(rfc822tomessage),
-	E(icaltomessage2),
+	U(0x57, "icaltomessage2"),
 	E(imtomessage2),
 	E(essdn_to_username),	
 	E(logon_token),
@@ -106,7 +108,6 @@ static constexpr const char *zcore_rpc_names[] = {
 	E(logon_np),
 };
 #undef E
-#undef EXP
 
 const char *zcore_rpc_idtoname(zcore_callid i)
 {
