@@ -4,11 +4,12 @@
 /**
  * @brief      Implementation of EWS structure (de-)serialization
  */
+#include <cstdint>
 #include <ctime>
+#include <libHX/endian.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
-
 #include "exceptions.hpp"
 #include "ews.hpp"
 #include "serialization.hpp"
@@ -1479,53 +1480,39 @@ void tSmtpDomain::serialize(XMLElement* xml) const
 	XMLDUMPT(IncludeSubdomains);
 }
 
-/**
- * @brief      Base64 encode 32bit unsigned integer
- *
- * @param      v   Value to encode
- * @param      d   Destination buffer. Must have space for 6 characters. Pointer is moved to the end of the string.
- */
-constexpr void tSubscriptionId::encode(uint32_t v, char*& d)
-{
-	for (uint32_t offset = 0; offset < 31; offset += 6)
-		*d++ = b64[(v & (0x3fu << offset)) >> offset];
-}
-
-/**
- * @brief      Base64 decode 32bit unsigned integer
- *
- * @param      s   Data to decode. Pointer is moved to the end of the string.
- *
- * @throw      DeserializationError  The input contains invalid characters
- *
- * @return Decoded value
- */
-constexpr uint32_t tSubscriptionId::decode(const uint8_t*& s)
-{
-	uint32_t res = 0;
-	for (uint32_t offset = 0; offset < 6; ++s, ++offset)
-		res |= *s < 128 && i64[*s] >= 0 ? (i64[*s] << offset * 6) : throw DeserializationError(E3112);
-	return res;
-}
-
 tSubscriptionId::tSubscriptionId(const tinyxml2::XMLElement* xml)
 {
 	const char* data = xml->GetText();
 	size_t len;
 	if (!data || (len = strlen(data)) != 12)
 		throw DeserializationError(E3201);
-	const uint8_t* d = reinterpret_cast<const uint8_t*>(data);
-	ID = decode(d);
-	timeout = decode(d);
+
+	size_t fz = 0;
+	char exp[9]; /* expanded form */
+	char val[7];
+	memcpy(&exp[0], &data[0], 6);
+	exp[6] = exp[7] = '=';
+	exp[8] = '\0';
+	if (decode64_ex(exp, 8, val, sizeof(val), &fz) != 0 ||
+	    fz != sizeof(uint32_t))
+		throw DeserializationError(E3201);
+	ID = le32p_to_cpu(&val[0]);
+	memcpy(&exp[0], &data[6], 6);
+	if (decode64_ex(exp, 8, val, sizeof(val), &fz) != 0 ||
+	    fz != sizeof(uint32_t))
+		throw DeserializationError(E3201);
+	timeout = le32p_to_cpu(&val[0]);
 }
 
 void tSubscriptionId::serialize(tinyxml2::XMLElement* xml) const
 {
-	std::string res(12, 0);
-	char* data = res.data();
-	encode(ID, data);
-	encode(timeout, data);
-	xml->SetText(res.c_str());
+	uint32_t x = cpu_to_le32(ID), y = cpu_to_le32(timeout);
+	char data[6+8+1]{};
+	size_t fz = 0;
+	encode64(&x, sizeof(x), &data[0], 9, &fz);
+	encode64(&y, sizeof(y), &data[6], 9, &fz);
+	data[12] = '\0'; /* trim trailing == */
+	xml->SetText(data);
 }
 
 tSuggestionsViewOptions::tSuggestionsViewOptions(const tinyxml2::XMLElement* xml) :
