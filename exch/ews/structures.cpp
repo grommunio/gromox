@@ -4233,7 +4233,7 @@ void tSetItemField::put(sShape& shape) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::atomic<uint32_t> tSubscriptionId::globcnt = 0;
+std::atomic<detail::SubscriptionKey> tSubscriptionId::globcnt = 0;
 
 /**
  * @brief      Constructor for single subscription ID

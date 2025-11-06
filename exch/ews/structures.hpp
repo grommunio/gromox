@@ -25,6 +25,12 @@ namespace tinyxml2 {
 
 namespace gromox::EWS {
 
+namespace detail {
+
+using SubscriptionKey = uint32_t;
+
+}
+
 class EWSContext;
 using clock = std::chrono::system_clock;
 using time_point = clock::time_point;
@@ -2828,7 +2834,7 @@ struct tSubscriptionId {
 	explicit tSubscriptionId(uint32_t timeout);
 	explicit tSubscriptionId(const tinyxml2::XMLElement*);
 
-	uint32_t ID = 0; ///< Counter value
+	detail::SubscriptionKey ID = 0; ///< Counter value. 0 is reserved, 1 is first valid value.
 	uint32_t timeout = 30; ///< subscription timeout (minutes)
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -2836,7 +2842,7 @@ struct tSubscriptionId {
 	inline bool operator==(const tSubscriptionId& other) {return ID == other.ID;}
 
 	private:
-	static std::atomic<uint32_t> globcnt;
+	static std::atomic<detail::SubscriptionKey> globcnt;
 };
 
 /**

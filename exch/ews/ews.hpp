@@ -51,7 +51,6 @@ struct MessageInstanceKey {
 };
 
 using ExmdbSubscriptionKey = std::pair<std::string, uint32_t>;
-using SubscriptionKey = uint32_t;
 using ContextWakeupKey = int;
 
 struct EmbeddedInstanceKey {
