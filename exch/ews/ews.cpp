@@ -83,7 +83,8 @@ GUID replid_to_replguid(const gromox::EWS::Structures::sMailboxInfo& mbinfo, uin
  * @param      code            HTTP response code
  * @param      content_length  Length of the response body
  */
-void writeheader(int ctx_id, http_status code, size_t content_length)
+static void writeheader(detail::ContextKey ctx_id, http_status code,
+    size_t content_length)
 {
 	static constexpr char templ[] =
 	        "HTTP/1.1 {} {}\r\n"
@@ -113,7 +114,8 @@ void writeheader(int ctx_id, http_status code, size_t content_length)
  * @param      log       Whether write data to log
  * @param      loglevel  Log level
  */
-void writecontent(int ctx_id, const std::string_view& data, bool log, gx_loglevel loglevel)
+static void writecontent(detail::ContextKey ctx_id, const std::string_view &data,
+    bool log, gx_loglevel loglevel)
 {
 	write_response(ctx_id, data.data(), static_cast<int>(data.size()));
 	if (log)
@@ -279,13 +281,14 @@ static void ews_event_proc(const char*, BOOL table, uint32_t, const DB_NOTIFY*);
  *
  * @return     TRUE if the request is to be processed by this plugin, false otherwise
  */
-BOOL EWSPlugin::preproc(int ctx_id)
+BOOL EWSPlugin::preproc(detail::ContextKey ctx_id)
 {
 	auto req = get_request(ctx_id);
 	return strcasecmp(req->f_request_uri.c_str(), "/EWS/Exchange.asmx") == 0 ? TRUE : false;
 }
 
-http_status EWSPlugin::fault(int ctx_id, http_status code, const std::string_view& content)
+http_status EWSPlugin::fault(detail::ContextKey ctx_id, http_status code,
+    const std::string_view &content)
 {
 	writeheader(ctx_id, code, content.length());
 	if (content.length())
@@ -305,7 +308,7 @@ http_status EWSPlugin::fault(int ctx_id, http_status code, const std::string_vie
  *
  * @return     TRUE if request was handled, false otherwise
  */
-http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
+http_status EWSPlugin::proc(detail::ContextKey ctx_id, const void* content, uint64_t len)
 {
 	auto req = get_request(ctx_id);
 	if (req->imethod != http_method::post)
@@ -327,7 +330,8 @@ http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
  *
  * @return     Pair of response content and HTTP response code
  */
-http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const void* data, uint64_t len) try
+http_status EWSPlugin::dispatch(detail::ContextKey ctx_id, HTTP_AUTH_INFO &auth_info,
+    const void *data, uint64_t len) try
 {
 	if (ctx_id < 0 || static_cast<size_t>(ctx_id) >= contexts.size())
 		return fault(ctx_id, http_status::server_error, "Invalid context ID");
@@ -556,9 +560,9 @@ static BOOL ews_init(const struct dlfuncs &apidata)
 	LINK_HPM_API(apidata)
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &EWSPlugin::preproc;
-	ifc.proc    = [](int ctx, const void *cont, uint64_t len) { return g_ews_plugin->proc(ctx, cont, len); };
-	ifc.retr    = [](int ctx) { return g_ews_plugin ? g_ews_plugin->retr(ctx) : HPM_RETRIEVE_DONE; };
-	ifc.term    = [](int ctx) { if (g_ews_plugin) g_ews_plugin->term(ctx); };
+	ifc.proc    = [](detail::ContextKey ctx, const void *cont, uint64_t len) { return g_ews_plugin->proc(ctx, cont, len); };
+	ifc.retr    = [](detail::ContextKey ctx) { return g_ews_plugin ? g_ews_plugin->retr(ctx) : HPM_RETRIEVE_DONE; };
+	ifc.term    = [](detail::ContextKey ctx) { if (g_ews_plugin) g_ews_plugin->term(ctx); };
 	if (!register_interface(&ifc))
 		return false;
 	try {
@@ -687,7 +691,7 @@ int EWSContext::notify()
 	return flush();
 }
 
-int EWSPlugin::retr(int ctx_id) try
+int EWSPlugin::retr(detail::ContextKey ctx_id) try
 {
 	if (ctx_id < 0 || static_cast<size_t>(ctx_id) >= contexts.size() || !contexts[ctx_id])
 		return HPM_RETRIEVE_DONE;
@@ -720,7 +724,7 @@ int EWSPlugin::retr(int ctx_id) try
 	return HPM_RETRIEVE_ERROR;
 }
 
-void EWSPlugin::term(int ctx)
+void EWSPlugin::term(detail::ContextKey ctx)
 {
 	if (ctx >= 0 && static_cast<size_t>(ctx) < contexts.size())
 		contexts[ctx].reset();
@@ -1041,7 +1045,7 @@ std::string EWSPlugin::timestamp() const try
  *
  * @param      ctx_id  Context to unlink
  */
-void EWSPlugin::unlinkSubscription(int ctx_id) const
+void EWSPlugin::unlinkSubscription(detail::ContextKey ctx_id) const
 {
 	auto& pOldCtx = contexts[ctx_id];
 	if (pOldCtx) {
@@ -1096,7 +1100,7 @@ void EWSPlugin::unsubscribe(const detail::ExmdbSubscriptionKey& key) const
  * @param     ID       Context ID
  * @param     timeout  Time until wake up
  */
-void EWSPlugin::wakeContext(int ID, std::chrono::milliseconds timeout) const
+void EWSPlugin::wakeContext(detail::ContextKey ID, std::chrono::milliseconds timeout) const
 {
 	cache.emplace(timeout, ID, std::make_shared<WakeupNotify>(ID));
 }

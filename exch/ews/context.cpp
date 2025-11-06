@@ -374,8 +374,8 @@ void Cleaner::operator()(MESSAGE_CONTENT *x) {message_content_free(x);}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-EWSContext::EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length,
-    EWSPlugin &p) :
+EWSContext::EWSContext(detail::ContextKey id, HTTP_AUTH_INFO ai,
+    const char *data, uint64_t length, EWSPlugin &p) :
 	m_ID(id), m_orig(*get_request(id)), m_auth_info(ai),
 	m_request(data, length), m_response(p.server_version()), m_plugin(p),
 	m_created(tp_now())
