@@ -177,8 +177,8 @@ class EWSPlugin {
 	struct DebugCtx;
 
 	struct WakeupNotify {
-		inline explicit WakeupNotify(detail::ContextKey id) : ID(id) {}
-		detail::ContextKey ID;
+		inline explicit WakeupNotify(detail::ContextKey id) : ctx_id(id) {}
+		detail::ContextKey ctx_id;
 		~WakeupNotify();
 	};
 
@@ -286,7 +286,7 @@ class EWSContext {
 	gromox::time_duration age() const { return tp_now() - m_created; }
 	void experimental(const char*) const;
 
-	inline detail::ContextKey ID() const { return m_ID; }
+	inline detail::ContextKey context_id() const { return m_ctx_id; }
 	inline const HTTP_AUTH_INFO& auth_info() const {return m_auth_info;}
 	inline const EWSPlugin& plugin() const {return m_plugin;}
 	inline const SOAP::Envelope& request() const {return m_request;}
@@ -345,7 +345,7 @@ private:
 
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 
-	detail::ContextKey m_ID = -1;
+	detail::ContextKey m_ctx_id = -1;
 	http_status m_code = http_status::ok;
 	State m_state = S_DEFAULT;
 	bool m_log = false;

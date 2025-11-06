@@ -376,7 +376,7 @@ void Cleaner::operator()(MESSAGE_CONTENT *x) {message_content_free(x);}
 
 EWSContext::EWSContext(detail::ContextKey id, HTTP_AUTH_INFO ai,
     const char *data, uint64_t length, EWSPlugin &p) :
-	m_ID(id), m_orig(*get_request(id)), m_auth_info(ai),
+	m_ctx_id(id), m_orig(*get_request(id)), m_auth_info(ai),
 	m_request(data, length), m_response(p.server_version()), m_plugin(p),
 	m_created(tp_now())
 {
@@ -935,7 +935,7 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
  */
 std::pair<std::list<sNotificationEvent>, bool> EWSContext::getEvents(const tSubscriptionId& subscriptionId) const
 {
-	auto mgr = m_plugin.get_submgr(subscriptionId.ID, subscriptionId.timeout);
+	auto mgr = m_plugin.get_submgr(subscriptionId.tsub_rawkey, subscriptionId.timeout);
 	if (mgr == nullptr)
 		throw EWSError::InvalidSubscription(E3202);
 	if (mgr->username != m_auth_info.username)
@@ -2534,10 +2534,9 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
 	auto mgr = m_plugin.make_submgr(subscriptionId, m_auth_info.username);
 	if (folderIds.empty()) {
 		mgr->mailboxInfo = getMailboxInfo(m_auth_info.maildir, false);
-		detail::ExmdbSubscriptionKey key =
-			m_plugin.subscribe(m_auth_info.maildir, eventMask, true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
-		                       subscriptionId.ID);
-		mgr->inner_subs.emplace_back(key);
+		mgr->inner_subs.emplace_back(m_plugin.subscribe(m_auth_info.maildir,
+			eventMask, true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+			subscriptionId.tsub_rawkey));
 		return subscriptionId;
 	}
 	mgr->inner_subs.reserve(folderIds.size());
@@ -2557,7 +2556,7 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
 		if (!(permissions(maildir, folderspec.folderId) & frightsReadAny))
 			continue; // TODO: proper error handling
 		mgr->inner_subs.emplace_back(m_plugin.subscribe(maildir,
-			eventMask, all, folderspec.folderId, subscriptionId.ID));
+			eventMask, all, folderspec.folderId, subscriptionId.tsub_rawkey));
 	}
 	return subscriptionId;
 }
@@ -2617,7 +2616,7 @@ tSubscriptionId EWSContext::subscribe(const tStreamingSubscriptionRequest& req) 
  */
 bool EWSContext::unsubscribe(const Structures::tSubscriptionId& subscriptionId) const
 {
-	return m_plugin.unsubscribe(subscriptionId.ID, m_auth_info.username);
+	return m_plugin.unsubscribe(subscriptionId.tsub_rawkey, m_auth_info.username);
 }
 
 /**

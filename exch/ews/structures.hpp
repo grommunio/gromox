@@ -2834,12 +2834,11 @@ struct tSubscriptionId {
 	explicit tSubscriptionId(uint32_t timeout);
 	explicit tSubscriptionId(const tinyxml2::XMLElement*);
 
-	detail::SubscriptionKey ID = 0; ///< Counter value. 0 is reserved, 1 is first valid value.
+	detail::SubscriptionKey tsub_rawkey = 0; ///< Counter value. 0 is reserved, 1 is first valid value.
 	uint32_t timeout = 30; ///< subscription timeout (minutes)
 
 	void serialize(tinyxml2::XMLElement*) const;
-
-	inline bool operator==(const tSubscriptionId& other) {return ID == other.ID;}
+	constexpr inline bool operator==(const tSubscriptionId &o) { return tsub_rawkey == o.tsub_rawkey; }
 
 	private:
 	static std::atomic<detail::SubscriptionKey> globcnt;

@@ -623,7 +623,7 @@ int EWSContext::notify()
 	if (nctx.state == NS::S_WRITE) {
 		/* Just wrote something -> got to sleep and set a wake up timer */
 		nctx.state = NS::S_SLEEP;
-		m_plugin.wakeContext(m_ID, m_plugin.event_stream_interval);
+		m_plugin.wakeContext(m_ctx_id, m_plugin.event_stream_interval);
 		return HPM_RETRIEVE_WAIT;
 	}
 
@@ -634,8 +634,8 @@ int EWSContext::notify()
 	if (nctx.state == NS::S_INIT) {
 		/* First call after initialization -> write context data */
 		m_response.doc.Print(&printer);
-		writeheader(m_ID, m_code, 0);
-		writecontent(m_ID, to_sv(printer), logResponse, loglevel);
+		writeheader(m_ctx_id, m_code, 0);
+		writecontent(m_ctx_id, to_sv(printer), logResponse, loglevel);
 		nctx.state = NS::S_WRITE;
 		return HPM_RETRIEVE_WRITE;
 	}
@@ -649,7 +649,7 @@ int EWSContext::notify()
 	auto flush = [&]() {
 		data.serialize(response);
 		envelope.doc.Print(&printer);
-		writecontent(m_ID, to_sv(printer), logResponse, loglevel);
+		writecontent(m_ctx_id, to_sv(printer), logResponse, loglevel);
 		return HPM_RETRIEVE_WRITE;
 	};
 
@@ -687,7 +687,7 @@ int EWSContext::notify()
 	nctx.state = nctx.nct_subs.empty() || tp_now() > nctx.expire ?
 	             NS::S_CLOSING : moreAny ? NS::S_SLEEP : NS::S_WRITE;
 	if (nctx.state == NS::S_SLEEP)
-		m_plugin.wakeContext(m_ID, m_plugin.event_stream_interval);
+		m_plugin.wakeContext(m_ctx_id, m_plugin.event_stream_interval);
 	return flush();
 }
 
@@ -778,7 +778,7 @@ EWSPlugin::SubManager::~SubManager()
 EWSPlugin::WakeupNotify::~WakeupNotify()
 {
 	if (g_ews_plugin && !g_ews_plugin->teardown)
-		wakeup_context(ID);
+		wakeup_context(ctx_id);
 }
 
 void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notification) const try
@@ -924,13 +924,13 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const s
  */
 bool EWSPlugin::linkSubscription(const Structures::tSubscriptionId& subscriptionId, const EWSContext& ctx) const
 {
-	auto mgr = get_submgr(subscriptionId.ID, subscriptionId.timeout);
+	auto mgr = get_submgr(subscriptionId.tsub_rawkey, subscriptionId.timeout);
 	if (mgr == nullptr || mgr->username != ctx.auth_info().username)
 		return false;
 	std::lock_guard subLock(mgr->lock);
 	if (mgr->waitingContext)
 		unlinkSubscription(*mgr->waitingContext);
-	mgr->waitingContext = ctx.ID();
+	mgr->waitingContext = ctx.context_id();
 	return true;
 }
 
@@ -975,7 +975,7 @@ EWSPlugin::make_submgr(const Structures::tSubscriptionId &ID,
     const char *username) const
 {
 	auto mgr = std::make_shared<SubManager>(username, *this);
-	cache.emplace(std::chrono::milliseconds(ID.timeout * 60'000), ID.ID, mgr);
+	cache.emplace(std::chrono::milliseconds(ID.timeout * 60'000), ID.tsub_rawkey, mgr);
 	return mgr;
 }
 

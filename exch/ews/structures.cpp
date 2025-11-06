@@ -4240,7 +4240,7 @@ std::atomic<detail::SubscriptionKey> tSubscriptionId::globcnt = 0;
  *
  * @param      t   Subscription timeout (minutes)
  */
-tSubscriptionId::tSubscriptionId(uint32_t t) : ID(++globcnt), timeout(t)
+tSubscriptionId::tSubscriptionId(uint32_t t) : tsub_rawkey(++globcnt), timeout(t)
 {}
 
 tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder &&f) : folder(std::move(f))

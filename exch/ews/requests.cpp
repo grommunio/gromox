@@ -1572,7 +1572,7 @@ void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& c
 			ctx.code(http_status::not_found);
 	} catch (const std::exception &err) {
 		ctx.code(http_status::not_found);
-		mlog(LV_WARN, "[ews#%d] Failed to load user photo: %s", ctx.ID(), err.what());
+		mlog(LV_WARN, "[ews#%d] Failed to load user photo: %s", ctx.context_id(), err.what());
 	}
 	data.success();
 	data.serialize(response);
