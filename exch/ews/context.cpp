@@ -1298,8 +1298,18 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
 			if (!exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
 				throw DispatchError(E3080);
+			sShape shape(props);
+			auto method = props.get<const uint32_t>(PR_ATTACH_METHOD);
+			if (method != nullptr && *method == ATTACH_EMBEDDED_MSG) {
+				auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+				MESSAGE_CONTENT eInstContent{};
+				if (!exmdb.read_message_instance(dir.c_str(), eInst->instanceId, &eInstContent))
+					throw DispatchError(E3208);
+				auto log_id = dir + ":a" + std::to_string(i);
+				shape.mimeContent.emplace(exportContent(dir, eInstContent, log_id));
+			}
 			aid.attachment_num = i;
-			item.Attachments->emplace_back(tAttachment::create(aid, sShape(props)));
+			item.Attachments->emplace_back(tAttachment::create(aid, std::move(shape)));
 		}
 	}
 	if (special & sShape::Rights)
