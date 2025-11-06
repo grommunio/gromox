@@ -288,7 +288,7 @@ BOOL EWSPlugin::preproc(detail::ContextKey ctx_id)
 }
 
 http_status EWSPlugin::fault(detail::ContextKey ctx_id, http_status code,
-    const std::string_view &content)
+    const std::string_view content)
 {
 	writeheader(ctx_id, code, content.length());
 	if (content.length())
@@ -413,7 +413,7 @@ http_status EWSPlugin::dispatch(detail::ContextKey ctx_id, HTTP_AUTH_INFO &auth_
  *
  * @return    true if logging is enabled, false otherwise
  */
-bool EWSPlugin::logEnabled(const std::string_view& requestName) const
+bool EWSPlugin::logEnabled(const std::string_view requestName) const
 {
 	return std::binary_search(logFilters.begin(), logFilters.end(), requestName) != invertFilter;
 }

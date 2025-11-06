@@ -94,7 +94,7 @@ class EWSPlugin {
 	~EWSPlugin();
 	http_status proc(detail::ContextKey, const void*, uint64_t);
 	static BOOL preproc(detail::ContextKey);
-	bool logEnabled(const std::string_view&) const;
+	bool logEnabled(const std::string_view) const;
 
 	struct _exmdb {
 		_exmdb();
@@ -187,7 +187,7 @@ class EWSPlugin {
 
 	static const std::unordered_map<std::string, Handler> requestMap;
 
-	static http_status fault(detail::ContextKey, http_status, const std::string_view &);
+	static http_status fault(detail::ContextKey, http_status, const std::string_view);
 
 	mutable std::mutex subscriptionLock;
 	mutable std::unordered_map<detail::ExmdbSubscriptionKey, detail::SubscriptionKey> subscriptions;
@@ -302,7 +302,7 @@ class EWSContext {
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);
 	template<typename T, typename... Args> static T* construct(Args&&...);
-	static char* cpystr(const std::string_view&);
+	static char *cpystr(const std::string_view);
 
 	static void assertIdType(Structures::tBaseItemId::IdType, Structures::tBaseItemId::IdType);
 	static void ext_error(pack_result, const char* = nullptr, const char* = nullptr);

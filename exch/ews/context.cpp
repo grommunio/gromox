@@ -400,7 +400,7 @@ EWSContext::~EWSContext()
  *
  * @return     Pointer to copied C-string
  */
-char* EWSContext::cpystr(const std::string_view& src)
+char *EWSContext::cpystr(const std::string_view src)
 {
 	char* dst = alloc<char>(src.size()+1);
 	strncpy(dst, src.data(), src.size());
