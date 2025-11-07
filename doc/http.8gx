@@ -2,13 +2,16 @@
 .\" SPDX-FileCopyrightText: 2025 grommunio GmbH
 .TH http 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-http \(em Central server for RPC and the message database
+http \(em Protocol handler for HTTP and RPCH
 .SH Synopsis
 \fBhttp\fP [\fB\-c\fP \fIconfig\fP]
 .SH Description
 http(8gx) is a trivial HTTP server. It understands the special HTTP methods as
 used by RPC-over-HTTP protocol as used by Outlook, it can serve files verbatim,
 or forward requests to a FastCGI server such as php-fpm(8).
+.PP
+Generally, http(8gx) also executed the Information Store, exmdb_provider(4gx),
+which is a loadable module.
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
@@ -106,7 +109,6 @@ Default: \fI/usr/share/gromox/http\fP
 Maximum execution time for CGI scripts.
 .br
 Default: \fI10 minutes\fP
-.TP
 .TP
 \fBgss_program\fP
 The helper program to use for authenticating HTTP requests when

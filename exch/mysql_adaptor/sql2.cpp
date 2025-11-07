@@ -528,7 +528,7 @@ bool mysql_plugin::reload_config(std::shared_ptr<config_file> &&cfg)
 	par.schema_upgrade = SSU_NOT_ENABLED;
 	auto prog_id = get_prog_id();
 	auto host_id = get_host_ID();
-	if (prog_id == nullptr || strcmp(prog_id, "http") != 0)
+	if (prog_id == nullptr || strcmp(prog_id, "istore") != 0)
 		par.schema_upgrade = SSU_NOT_ME;
 	else if (v != nullptr && strncmp(v, "host:", 5) == 0 &&
 	    prog_id != nullptr && strcmp(&v[5], host_id) == 0)

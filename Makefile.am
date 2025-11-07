@@ -11,7 +11,7 @@ AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 # lib_LTL must be dependency-ordered, or make install fails
 lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_ndr.la libgxs_mysql_adaptor.la libgromox_abtree.la libgromox_auth.la libgromox_authz.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgromox_ews.la libgromox_mh_emsmdb.la libgromox_mh_nsp.la libgromox_oab.la libgromox_oxdisco.la libgromox_emsmdb.la libgromox_nsp.la libgromox_rfr.la libgxs_exmdb_provider.la libgxs_event_proxy.la libgxs_event_stub.la libgxs_midb_agent.la libgxs_timer_agent.la libgxs_ruleproc.la
 
-pkglibexec_PROGRAMS = delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/authtry tools/eidprint tools/textmapquery
+pkglibexec_PROGRAMS = delivery delivery-queue event gromox-snapshot http imap istore midb pop3 timer zcore tools/authtry tools/eidprint tools/textmapquery
 if WITH_GNU_LD
 version_sc_SYFLAGS = -Wl,--version-script=${srcdir}/default.sym
 endif
@@ -33,6 +33,7 @@ dist_unit_DATA = system/gromox-cleaner.service system/gromox-cleaner.timer \
 	system/gromox-delivery.service \
 	system/gromox-delivery-queue.service system/gromox-event.service \
 	system/gromox-http.service system/gromox-imap.service \
+	system/gromox-istore.service \
 	system/gromox-midb.service system/gromox-pop3.service \
 	system/gromox-snapshot.service system/gromox-snapshot.timer \
 	system/gromox-timer.service system/gromox-zcore.service
@@ -112,6 +113,8 @@ EXTRA_libgxs_midb_agent_la_DEPENDENCIES = default.sym
 
 http_SOURCES = exch/http/cache.cpp exch/http/cache.hpp exch/http/fastcgi.cpp exch/http/fastcgi.hpp exch/http/hpm_processor.cpp exch/http/hpm_processor.hpp exch/http/http_parser.cpp exch/http/http_parser.hpp exch/http/listener.cpp exch/http/listener.hpp exch/http/main.cpp exch/http/ntlmssp.cpp exch/http/ntlmssp.hpp exch/http/pdu_ndr.cpp exch/http/pdu_ndr.hpp exch/http/pdu_ndr_ids.hpp exch/http/pdu_processor.cpp exch/http/pdu_processor.hpp exch/http/resource.hpp exch/http/rewrite2.cpp exch/http/rewrite.hpp exch/http/system_services.cpp exch/http/system_services.hpp
 http_LDADD = -lpthread ${libcrypto_LIBS} ${fmt_LIBS} ${gss_LIBS} ${iconv_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_auth.la libgromox_authz.la libgromox_common.la libgromox_epoll.la libgromox_ndr.la libgromox_mapi.la libgromox_ews.la libgromox_mh_emsmdb.la libgromox_mh_nsp.la libgromox_oab.la libgromox_oxdisco.la libgromox_emsmdb.la libgromox_nsp.la libgromox_rfr.la libgxs_exmdb_provider.la libgxs_mysql_adaptor.la libgxs_timer_agent.la
+istore_SOURCES = exch/istore.cpp
+istore_LDADD = -lpthread ${libHX_LIBS} libgromox_common.la libgromox_mapi.la libgxs_exmdb_provider.la libgxs_mysql_adaptor.la
 midb_SOURCES = exch/midb/cmd_parser.cpp exch/midb/cmd_parser.hpp exch/midb/common_util.cpp exch/midb/common_util.hpp exch/midb/exmdb_client.hpp exch/midb/mail_engine.cpp exch/midb/mail_engine.hpp exch/midb/main.cpp exch/midb/system_services.hpp
 midb_LDADD = -lpthread ${libHX_LIBS} ${fmt_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${libssl_LIBS} ${sqlite_LIBS} ${vmime_LIBS} libgromox_auth.la libgromox_common.la libgromox_dbop.la libgromox_exrpc.la libgromox_mapi.la libgxs_event_proxy.la libgxs_mysql_adaptor.la
 zcore_SOURCES = exch/gab.cpp exch/zcore/ab_tree.cpp exch/zcore/ab_tree.hpp exch/zcore/attachment_object.cpp exch/zcore/bounce_producer.hpp exch/zcore/common_util.cpp exch/zcore/common_util.hpp exch/zcore/container_object.cpp exch/zcore/exmdb_client.cpp exch/zcore/exmdb_client.hpp exch/zcore/folder_object.cpp exch/zcore/ics_state.cpp exch/zcore/ics_state.hpp exch/zcore/icsdownctx_object.cpp exch/zcore/icsupctx_object.cpp exch/zcore/main.cpp exch/zcore/message_object.cpp exch/zcore/names.cpp exch/zcore/object_tree.cpp exch/zcore/object_tree.hpp exch/zcore/objects.hpp exch/zcore/rpc_ext.cpp exch/zcore/rpc_ext.hpp exch/zcore/rpc_parser.cpp exch/zcore/rpc_parser.hpp exch/zcore/store_object.cpp exch/zcore/store_object.hpp exch/zcore/system_services.hpp exch/zcore/table_object.cpp exch/zcore/table_object.hpp exch/zcore/user_object.cpp exch/zcore/zserver.cpp exch/zcore/zserver.hpp
@@ -299,7 +302,7 @@ dist_man_MANS = \
 	doc/gromox-mkmidb.8 doc/gromox-mkprivate.8 doc/gromox-mkpublic.8 \
 	doc/gromox-mt2exm.8 doc/gromox-selinux.5 \
 	doc/gromox-snapshot.8 doc/gromox-vcf2mt.8 doc/http.8gx \
-	doc/imap.8gx \
+	doc/imap.8gx doc/istore.8gx \
 	doc/kdb-uidextract.8 doc/kdb-uidextract-limited.8 \
 	doc/ldap_adaptor.4gx \
 	doc/mapi.4gx doc/mapi.7gx doc/midb.8gx doc/midb_agent.4gx \
@@ -343,7 +346,7 @@ EXTRA_DIST += \
 	doc/changelog.rst doc/charset.rst doc/commchan.svg doc/downgrade.rst doc/error_codes.rst doc/exmdb.html doc/ews_spec.rst doc/faq.rst doc/folderrefs.txt doc/glossary.rst doc/install.rst doc/known_bugs.rst doc/mascot.svg doc/mtformat.rst doc/outlook_oof_spec.rst doc/outlook_rule_spec.rst doc/oxoabkt.rst doc/oxocal_notes.rst doc/protocols.rst doc/string_props.rst doc/user_properties.rst \
 	${header_files} include/gromox/paths.h.in lib/mapi/oxcmail_int.hpp \
 	php_mapi/mapi.stub.php \
-	system/gromox-delivery-queue.tps system/gromox-delivery.tps system/gromox-event.tps system/gromox-http.tps system/gromox-imap.tps system/gromox-midb.tps system/gromox-pop3.tps system/gromox-snapshot.tps system/gromox-timer.tps system/gromox-zcore.tps \
+	system/gromox-delivery-queue.tps system/gromox-delivery.tps system/gromox-event.tps system/gromox-http.tps system/gromox-imap.tps system/gromox-istore.tps system/gromox-midb.tps system/gromox-pop3.tps system/gromox-snapshot.tps system/gromox-timer.tps system/gromox-zcore.tps \
 	system/selinux/gromox.fc system/selinux/gromox.if system/selinux/gromox.te system/selinux/readme.rst \
 	tests/eps_1_01_03.b tests/eps_1_02.b tests/eps_1_04.b tests/eps_2_05.b tests/epv_1.b tests/epv_2.b tests/epv_3.b tests/epv_4.b \
 	tests/gxl-475.ics tests/gxl-598.ics tests/httppipe.pl tests/mainstub.cpp tests/zlogin.php \

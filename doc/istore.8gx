@@ -1,0 +1,75 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
+.TH istore 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+istore \(em Gromox Information Store launcher
+.SH Synopsis
+\fB/usr/libexec/gromox/istore\fP [\fB\-c\fP \fIconfig\fP]
+.SH Description
+The Gromox Information Store, exmdb_provider(4gx), is built as a shared object,
+and can be either be loaded by gromox\-http(8) or run in a separate process
+which is gromox\-istore. The benefit of a separate process is improved
+debuggability.
+.SH Options
+.TP
+\fB\-c\fP \fIconfig\fP
+Read configuration directives from the given file. If this option is not
+specified, /etc/gromox/gromox.cfg will be read if it exists.
+.SH Configuration directives (gromox.cfg)
+The following directives are recognized when reading from
+/etc/gromox/gromox.cfg, or when the \fB\-c\fP option is used to specify a
+custom file:
+.TP
+\fBconfig_file_path\fP
+Colon-separated list of directories which will be scanned when locating further
+configuration files, especially those used by subcomponent instances. (For
+example, mysql_adaptor(4gx) would be directed to look at
+/etc/gromox/istore/mysql_adaptor.cfg before /etc/gromox/mysql_adaptor.cfg.)
+.br
+Default: \fI/etc/gromox/istore:/etc/gromox\fP
+.TP
+\fBdaemons_fd_limit\fP
+In gromox-istore, this is treated as an alias for istore_fd_limit.
+.TP
+\fBdata_file_path\fP
+Colon-separated list of directories which will be scanned when locating data
+files.
+.br
+Default: \fI/usr/share/gromox/istore:/usr/share/gromox\fP
+.TP
+\fBhost_id\fP
+A unique identifier for this system. It is used for the Server HTTP responses
+header, for components like exmdb_provider(4gx), which makes use of it for
+SMTP HELO lines, for DSN report texts, for MIDB database/EML cache. The
+identifier should only use characters allowed for hostnames.
+.br
+Default: (system hostname)
+.TP
+\fBistore_fd_limit\fP
+Request that the file descriptor table be at least this large. The magic value
+0 indicates that the system default hard limit (rlim_max, cf. setrlimit(2))
+should be used.
+.br
+Default: \fI0\fP
+.TP
+\fBistore_log_file\fP
+Target for log messages here. Special values: "\fI-\fP" (stderr/syslog
+depending on parent PID) or "\fIsyslog\fP" are recognized.
+.br
+Default: \fI-\fP (auto)
+.TP
+\fBistore_log_level\fP
+Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
+.TP
+\fBrunning_identity\fP
+An unprivileged user account to switch the process to after startup.
+To inhibit the switch, assign the empty value.
+.br
+Default: \fIgromox\fP
+.SH Known issues
+istore cannot exercise mail sending when using the Onestep rule processing.
+You should exercise Twostep rule processor.
+.SH See also
+\fBgromox\fP(7), \fBexmdb_provider\fP(4gx)

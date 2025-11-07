@@ -48,6 +48,7 @@ static std::vector<EXMDB_ITEM> g_local_list;
 static std::unordered_set<std::shared_ptr<ROUTER_CONNECTION>> g_router_list;
 static std::unordered_set<std::shared_ptr<EXMDB_CONNECTION>> g_connection_list;
 static std::mutex g_router_lock, g_connection_lock;
+bool g_exmdb_client_only;
 unsigned int g_enable_dam;
 
 ROUTER_CONNECTION::~ROUTER_CONNECTION()
@@ -80,6 +81,8 @@ std::unique_ptr<EXMDB_CONNECTION> exmdb_parser_make_conn()
 
 static bool exmdb_parser_is_local(const char *prefix, BOOL *pb_private)
 {
+	if (g_exmdb_client_only)
+		return false;
 	if (*prefix == '\0')
 		return true;
 	auto i = std::find_if(g_local_list.cbegin(), g_local_list.cend(),

@@ -6,6 +6,8 @@ Enhancements:
 * ews: implement GetRoomLists and GetRooms handlers
 * ews: implement tItemAttachment, tUserConfigurationName types
 * ews: implement types related to CategoryList
+* istore: standalone exmdb_provider process launcher
+  (splits the gromox-http process into two for better debuggability)
 
 Fixes:
 

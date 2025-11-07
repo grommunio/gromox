@@ -55,6 +55,7 @@ Makefile.in
 /gromox-snapshot
 /http
 /imap
+/istore
 /midb
 /pop3
 /timer
