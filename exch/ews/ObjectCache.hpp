@@ -49,7 +49,9 @@ template<class Key, class Object> class ObjectCache {
 	};
 
 	mutable std::mutex objectLock; ///< Mutex to protect object map
-	std::unordered_map<Key, Container> objects; ///< Stored objects
+	using map_t = std::unordered_map<Key, Container>;
+	using node_t = map_t::node_type;
+	map_t objects; ///< Stored objects
 
 	std::condition_variable notify; ///< CV to signal stopping
 	std::thread scanThread; ///< Thread used for periodic scanning
@@ -173,7 +175,7 @@ Object ObjectCache<Key, Object>::get(const Key& key, std::chrono::milliseconds l
 template<class Key, class Object>
 void ObjectCache<Key, Object>::evict(const Key &key) try
 {
-	typename decltype(objects)::node_type del; // delete object after releasing lock to avoid deadlocks
+	node_t del; // delete object after releasing lock to avoid deadlocks
 	auto guard = std::lock_guard(objectLock);
 	del = objects.extract(key);
 } catch (const std::bad_variant_access &) {
@@ -186,7 +188,7 @@ void ObjectCache<Key, Object>::evict(const Key &key) try
 template<class Key, class Object>
 void ObjectCache<Key, Object>::scan()
 {
-	std::vector<typename decltype(objects)::node_type> del; // delete objects after releasing lock to avoid deadlocks
+	std::vector<node_t> del; // delete objects after releasing lock to avoid deadlocks
 	auto guard = std::lock_guard(objectLock);
 	auto now = std::chrono::steady_clock::now();
 	for (auto it = objects.begin(); it != objects.end(); )
