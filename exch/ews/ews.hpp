@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
-
 #pragma once
 #include <cstdint>
 #include <list>
@@ -193,7 +192,63 @@ class EWSPlugin {
 	mutable std::unordered_map<detail::ExmdbSubscriptionKey, detail::SubscriptionKey> subscriptions;
 
 	std::vector<std::unique_ptr<EWSContext>> contexts;
-	mutable ObjectCache<CacheKey, CacheObj> cache;
+
+	/**
+	 * @brief      Timed object cache
+	 *
+	 * Objects are stored for a limited time and automatically removed once they
+	 * expire.
+	 *
+	 * Once stored, only copies of the stored elements can be retrieved to avoid
+	 * asynchronous deconstruction during access (use std::shared_ptr).
+	 */
+	class ObjectCache {
+		private:
+		mutable std::mutex objectLock; ///< Mutex to protect object map
+		using Container = std::pair<gromox::time_point, CacheObj>;
+		std::unordered_map<CacheKey, Container> objects; ///< Stored objects
+		using node_t = typename decltype(objects)::node_type;
+
+		std::condition_variable notify; ///< CV to signal stopping
+		std::thread scanThread; ///< Thread used for periodic scanning
+		gromox::atomic_bool running{false}; ///< Whether the scanner is running
+
+		public:
+		/**
+		 * @brief      Clear cache and stop scanner
+		 */
+		~ObjectCache() { stop(); }
+		void run(std::chrono::milliseconds);
+		void stop();
+
+		/**
+		 * @brief      Add object to cache
+		 *
+		 * @param      lifespan  Object life span
+		 * @param      key       Object key
+		 * @param      args      Object constructor arguments
+		 *
+		 * @tparam     KeyArg    Type to derive key from
+		 * @tparam     Args      Object constructor arguments
+		 *
+		 * @return     true if emplaced, false if already present
+		 */
+		template<typename K, typename... Args>
+		bool emplace(std::chrono::milliseconds lifespan, K &&key, Args &&...args)
+		{
+			std::lock_guard guard(objectLock);
+			auto res = objects.try_emplace(CacheKey(key), tp_now() + lifespan, std::forward<Args...>(args)...);
+			return res.second;
+		}
+
+		CacheObj get(const CacheKey &) const;
+		CacheObj get(const CacheKey &, std::chrono::milliseconds);
+		void evict(const CacheKey &);
+		void scan();
+		void periodicScan(std::chrono::milliseconds);
+	};
+
+	mutable ObjectCache cache;
 
 	std::unique_ptr<DebugCtx> debug;
 	std::vector<std::string> logFilters;

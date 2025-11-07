@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -1168,6 +1168,109 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadEmbeddedInstance(const 
 	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
 	cache.emplace(cache_embedded_instance_lifetime, ekey, instance);
 	return instance;
+}
+
+/**
+ * @brief      Start clean up thread
+ *
+ * @param      interval  Scan interval
+ */
+void EWSPlugin::ObjectCache::run(std::chrono::milliseconds interval)
+{
+	if (running)
+		return;
+	running = true;
+	scanThread = std::thread([this, interval]() { periodicScan(interval); });
+}
+
+/**
+ * @brief      Stop clean up thread
+ */
+void EWSPlugin::ObjectCache::stop()
+{
+	if (!running)
+		return;
+	running = false;
+	notify.notify_all();
+	scanThread.join();
+}
+
+/**
+ * @brief      Get cached object
+ *
+ * Throws std::out_of_range if object does not exist.
+ *
+ * @param      key     Object key
+ *
+ * @return     Copy of the cached object
+ */
+EWSPlugin::CacheObj EWSPlugin::ObjectCache::get(const CacheKey &key) const
+{
+	std::lock_guard guard(objectLock);
+	return objects.at(key).second;
+}
+
+/**
+ * @brief      Get cached object and bump lifespan
+ *
+ * Throws std::out_of_range if object does not exist.
+ *
+ * @param      key       Object key
+ * @param      lifespan  New lifespan
+ *
+ * @return     Copy of the cached object
+ */
+EWSPlugin::CacheObj EWSPlugin::ObjectCache::get(const CacheKey &key,
+    std::chrono::milliseconds lifespan)
+{
+	std::lock_guard guard(objectLock);
+	Container &cont = objects.at(key);
+	cont.first = tp_now() + lifespan;
+	return cont.second;
+}
+
+/**
+ * @brief      Remove object from cache
+ *
+ * @param      key       Object key
+ */
+void EWSPlugin::ObjectCache::evict(const CacheKey &key) try
+{
+	node_t del; // delete object after releasing lock to avoid deadlocks
+	std::lock_guard guard(objectLock);
+	del = objects.extract(key);
+} catch (const std::bad_variant_access &) {
+	/* Shut up cov-scan. Getting here is contrived and mostly theoretical. */
+}
+
+/**
+ * @brief      Scan cache for expired objects
+ */
+void EWSPlugin::ObjectCache::scan()
+{
+	std::vector<node_t> del; // delete objects after releasing lock to avoid deadlocks
+	std::lock_guard guard(objectLock);
+	auto now = std::chrono::steady_clock::now();
+	for (auto it = objects.begin(); it != objects.end(); )
+		if (it->second.first < now)
+			del.emplace_back(objects.extract(it++));
+		else
+			++it;
+}
+
+/**
+ * @brief      Periodically invoke scan
+ *
+ * @param sleepTime
+ */
+void EWSPlugin::ObjectCache::periodicScan(std::chrono::milliseconds sleepTime)
+{
+	std::mutex notifyLock;
+	std::unique_lock notifyGuard(notifyLock);
+	while (running) {
+		scan();
+		notify.wait_for(notifyGuard, sleepTime);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
