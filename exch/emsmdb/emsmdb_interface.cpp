@@ -91,7 +91,6 @@ struct NOTIFY_ITEM {
 }
 
 static constexpr time_duration HANDLE_VALID_INTERVAL = std::chrono::seconds(2000);
-static constexpr size_t TAG_SIZE = 256;
 static time_point g_start_time;
 static pthread_t g_scan_id;
 static std::mutex g_lock; /* protects g_handle_hash & g_user_hash */
@@ -833,16 +832,29 @@ BOOL emsmdb_interface_set_rop_num(int num)
 	return TRUE;
 }
 
+/**
+ * Generate keys for the notify map. Since the map can have different kinds of
+ * elements, the tag formats need to be unique.
+ */
+static std::string make_table_notify_tag(const char *dir, uint32_t id)
+{
+	return std::to_string(id) + ":" + dir;
+}
+
+static std::string make_sub_notify_tag(const char *dir, uint32_t id)
+{
+	return std::to_string(id) + "|" + dir;
+}
+
 void emsmdb_interface_add_table_notify(const char *dir,
     uint32_t table_id, uint32_t handle, uint8_t logon_id, GUID *pguid) try
 {
-	char tag_buff[TAG_SIZE];
 	NOTIFY_ITEM tmp_notify;
 	
 	tmp_notify.handle = handle;
 	tmp_notify.logon_id = logon_id;
 	tmp_notify.guid = *pguid;
-	snprintf(tag_buff, std::size(tag_buff), "%u:%s", table_id, dir);
+	auto tag = make_table_notify_tag(dir, table_id);
 	std::lock_guard nt_hold(g_notify_lock);
 	if (ems_max_active_notifh > 0 &&
 	    g_notify_hash.size() >= ems_max_active_notifh) {
@@ -850,20 +862,19 @@ void emsmdb_interface_add_table_notify(const char *dir,
 			ems_max_active_notifh);
 		return;
 	}
-	g_notify_hash.emplace(tag_buff, std::move(tmp_notify));
+	g_notify_hash.emplace(std::move(tag), std::move(tmp_notify));
 	ems_high_active_notifh = std::max(ems_high_active_notifh, g_notify_hash.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_WARN, "W-1541: ENOMEM");
 }
 
-static BOOL emsmdb_interface_get_table_notify(const char *dir,
-	uint32_t table_id, uint32_t *phandle, uint8_t *plogon_id, GUID *pguid)
+static BOOL emsmdb_interface_get_table_notify(const char *dir, uint32_t table_id,
+    uint32_t *phandle, uint8_t *plogon_id, GUID *pguid) try
 {
-	char tag_buff[TAG_SIZE];
-	snprintf(tag_buff, std::size(tag_buff), "%u:%s", table_id, dir);
+	auto tag = make_table_notify_tag(dir, table_id);
 	std::lock_guard nt_hold(g_notify_lock);
 	const auto &nh = g_notify_hash;
-	auto iter = nh.find(tag_buff);
+	auto iter = nh.find(std::move(tag));
 	if (iter == nh.cend())
 		return FALSE;
 	auto pnotify = &iter->second;
@@ -871,30 +882,29 @@ static BOOL emsmdb_interface_get_table_notify(const char *dir,
 	*plogon_id = pnotify->logon_id;
 	*pguid = pnotify->guid;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_WARN, "%s: ENOMEM", __func__);
+	return false;
 }
 
-void emsmdb_interface_remove_table_notify(
-	const char *dir, uint32_t table_id)
+void emsmdb_interface_remove_table_notify(const char *dir, uint32_t table_id) try
 {
-	char tag_buff[TAG_SIZE];
-	
-	snprintf(tag_buff, std::size(tag_buff), "%u:%s", table_id, dir);
+	auto tag = make_table_notify_tag(dir, table_id);
 	std::lock_guard nt_hold(g_notify_lock);
-	g_notify_hash.erase(tag_buff);
+	g_notify_hash.erase(std::move(tag));
+} catch (const std::bad_alloc &) {
+	mlog(LV_WARN, "%s: ENOMEM", __func__);
 }
 
 void emsmdb_interface_add_subscription_notify(const char *dir,
     uint32_t sub_id, uint32_t handle, uint8_t logon_id, GUID *pguid) try
 {
-	char tag_buff[TAG_SIZE];
 	NOTIFY_ITEM tmp_notify;
-	
 	
 	tmp_notify.handle = handle;
 	tmp_notify.logon_id = logon_id;
 	tmp_notify.guid = *pguid;
-	
-	snprintf(tag_buff, std::size(tag_buff), "%u|%s", sub_id, dir);
+	auto tag = make_sub_notify_tag(dir, sub_id);
 	std::lock_guard nt_hold(g_notify_lock);
 	if (ems_max_active_notifh > 0 &&
 	    g_notify_hash.size() >= ems_max_active_notifh) {
@@ -902,21 +912,19 @@ void emsmdb_interface_add_subscription_notify(const char *dir,
 			ems_max_active_notifh);
 		return;
 	}
-	g_notify_hash.emplace(tag_buff, std::move(tmp_notify));
+	g_notify_hash.emplace(std::move(tag), std::move(tmp_notify));
 	ems_high_active_notifh = std::max(ems_high_active_notifh, g_notify_hash.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_WARN, "W-1542: ENOMEM");
 }
 
-static BOOL emsmdb_interface_get_subscription_notify(
-	const char *dir, uint32_t sub_id, uint32_t *phandle,
-	uint8_t *plogon_id, GUID *pguid)
+static BOOL emsmdb_interface_get_subscription_notify(const char *dir,
+    uint32_t sub_id, uint32_t *phandle, uint8_t *plogon_id, GUID *pguid) try
 {
-	char tag_buff[TAG_SIZE];
-	snprintf(tag_buff, std::size(tag_buff), "%u|%s", sub_id, dir);
+	auto tag = make_sub_notify_tag(dir, sub_id);
 	std::lock_guard nt_hold(g_notify_lock);
 	const auto &nh = g_notify_hash;
-	auto iter = nh.find(tag_buff);
+	auto iter = nh.find(std::move(tag));
 	if (iter == nh.cend())
 		return FALSE;
 	auto pnotify = &iter->second;
@@ -924,16 +932,18 @@ static BOOL emsmdb_interface_get_subscription_notify(
 	*plogon_id = pnotify->logon_id;
 	*pguid = pnotify->guid;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_WARN, "%s: ENOMEM", __func__);
+	return false;
 }
 
-void emsmdb_interface_remove_subscription_notify(
-	const char *dir, uint32_t sub_id)
+void emsmdb_interface_remove_subscription_notify(const char *dir, uint32_t sub_id) try
 {
-	char tag_buff[TAG_SIZE];
-	
-	snprintf(tag_buff, std::size(tag_buff), "%u|%s", sub_id, dir);
+	auto tag = make_sub_notify_tag(dir, sub_id);
 	std::lock_guard nt_hold(g_notify_lock);
-	g_notify_hash.erase(tag_buff);
+	g_notify_hash.erase(std::move(tag));
+} catch (const std::bad_alloc &) {
+	mlog(LV_WARN, "%s: ENOMEM", __func__);
 }
 
 static BOOL emsmdb_interface_merge_content_row_deleted(
