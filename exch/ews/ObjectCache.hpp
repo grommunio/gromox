@@ -189,7 +189,7 @@ void ObjectCache<Key, Object>::periodicScan(std::chrono::milliseconds sleepTime)
 	std::unique_lock notifyGuard(notifyLock);
 	while (running) {
 		scan();
-		notify.wait_for(notifyGuard, std::chrono::milliseconds(sleepTime));
+		notify.wait_for(notifyGuard, sleepTime);
 	}
 }
 
