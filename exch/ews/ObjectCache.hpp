@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
 #include <unordered_map>
+#include <gromox/clock.hpp>
 
 namespace gromox::EWS {
 
@@ -26,8 +26,6 @@ namespace gromox::EWS {
  */
 template<class Key, class Object> class ObjectCache {
 	public:
-	using clock_t = std::chrono::steady_clock;
-
 	~ObjectCache();
 
 	void run(std::chrono::milliseconds);
@@ -41,10 +39,9 @@ template<class Key, class Object> class ObjectCache {
 
 	private:
 	struct Container {
-		template<typename... Args>
-		Container(clock_t::time_point, Args&&...);
+		template<typename... Args> Container(gromox::time_point, Args &&...);
 
-		clock_t::time_point expires;
+		gromox::time_point expires;
 		Object object;
 	};
 
@@ -71,7 +68,7 @@ template<class Key, class Object> class ObjectCache {
  */
 template<class Key, class Object>
 template<typename... Args>
-ObjectCache<Key, Object>::Container::Container(clock_t::time_point exp, Args&&... args) :
+ObjectCache<Key, Object>::Container::Container(gromox::time_point exp, Args &&...args) :
 	expires(exp), object(std::forward<Args...>(args)...)
 {}
 
@@ -128,7 +125,7 @@ template<typename KeyArg, typename... Args>
 bool ObjectCache<Key, Object>::emplace(std::chrono::milliseconds lifespan, KeyArg&& key, Args&&... args)
 {
 	std::lock_guard guard(objectLock);
-	auto res = objects.try_emplace(Key(key), clock_t::now() + lifespan, std::forward<Args...>(args)...);
+	auto res = objects.try_emplace(Key(key), tp_now() + lifespan, std::forward<Args...>(args)...);
 	return res.second;
 }
 
@@ -163,7 +160,7 @@ Object ObjectCache<Key, Object>::get(const Key& key, std::chrono::milliseconds l
 {
 	std::lock_guard guard(objectLock);
 	Container& cont = objects.at(key);
-	cont.expires = clock_t::now() + lifespan;
+	cont.expires = tp_now() + lifespan;
 	return cont.object;
 }
 
