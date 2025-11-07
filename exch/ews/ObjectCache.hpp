@@ -38,13 +38,7 @@ template<class Key, class Object> class ObjectCache {
 	void evict(const Key&);
 
 	private:
-	struct Container {
-		template<typename... Args> Container(gromox::time_point, Args &&...);
-
-		gromox::time_point expires;
-		Object object;
-	};
-
+	using Container = std::pair<gromox::time_point, Object>;
 	mutable std::mutex objectLock; ///< Mutex to protect object map
 	using map_t = std::unordered_map<Key, Container>;
 	using node_t = map_t::node_type;
@@ -59,18 +53,6 @@ template<class Key, class Object> class ObjectCache {
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * @brief      Create new object container
- *
- * @param      exp     Expiration time point
- * @param      args    Arguments for object creation
- */
-template<class Key, class Object>
-template<typename... Args>
-ObjectCache<Key, Object>::Container::Container(gromox::time_point exp, Args &&...args) :
-	expires(exp), object(std::forward<Args...>(args)...)
-{}
 
 /**
  * @brief      Clear cache and stop scanner
@@ -142,7 +124,7 @@ template<class Key, class Object>
 Object ObjectCache<Key, Object>::get(const Key& key) const
 {
 	std::lock_guard guard(objectLock);
-	return objects.at(key).object;
+	return objects.at(key).second;
 }
 
 /**
@@ -160,8 +142,8 @@ Object ObjectCache<Key, Object>::get(const Key& key, std::chrono::milliseconds l
 {
 	std::lock_guard guard(objectLock);
 	Container& cont = objects.at(key);
-	cont.expires = tp_now() + lifespan;
-	return cont.object;
+	cont.first = tp_now() + lifespan;
+	return cont.second;
 }
 
 /**
@@ -189,7 +171,7 @@ void ObjectCache<Key, Object>::scan()
 	std::lock_guard guard(objectLock);
 	auto now = std::chrono::steady_clock::now();
 	for (auto it = objects.begin(); it != objects.end(); )
-		if (it->second.expires < now)
+		if (it->second.first < now)
 			del.emplace_back(objects.extract(it++));
 		else
 			++it;
