@@ -44,7 +44,6 @@ struct ASYNC_WAIT {
 
 }
 
-static constexpr size_t TAG_SIZE = UADDR_SIZE + 1 + HXSIZEOF_Z32;
 static unsigned int g_threads_num;
 static pthread_t g_scan_id;
 static std::vector<pthread_t> g_thread_ids;
