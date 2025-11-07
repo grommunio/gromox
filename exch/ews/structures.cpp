@@ -3348,7 +3348,8 @@ tItemAttachment::tItemAttachment(const sAttachmentId &aid, sShape &&shape) :
     tAttachment(aid, shape)
 {
 	Item.emplace(std::in_place_type_t<tMessage>(), sShape{});
-	std::get<tMessage>(*Item).MimeContent.emplace(std::move(*shape.mimeContent));
+	if (shape.mimeContent.has_value())
+		std::get<tMessage>(*Item).MimeContent.emplace(std::move(*shape.mimeContent));
 }
 
 tFileAttachment::tFileAttachment(const sAttachmentId& aid, const sShape& shape) : tAttachment(aid, shape)
