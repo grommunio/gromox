@@ -8,6 +8,7 @@
 #include <mutex>
 #include <thread>
 #include <unordered_map>
+#include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 
 namespace gromox::EWS {
@@ -46,7 +47,7 @@ template<class Key, class Object> class ObjectCache {
 
 	std::condition_variable notify; ///< CV to signal stopping
 	std::thread scanThread; ///< Thread used for periodic scanning
-	bool running = false; ///< Whether the scanner is running
+	gromox::atomic_bool running{false}; ///< Whether the scanner is running
 
 	void scan();
 	void periodicScan(std::chrono::milliseconds);
