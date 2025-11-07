@@ -127,7 +127,7 @@ template<class Key, class Object>
 template<typename KeyArg, typename... Args>
 bool ObjectCache<Key, Object>::emplace(std::chrono::milliseconds lifespan, KeyArg&& key, Args&&... args)
 {
-	auto guard = std::lock_guard(objectLock);
+	std::lock_guard guard(objectLock);
 	auto res = objects.try_emplace(Key(key), clock_t::now() + lifespan, std::forward<Args...>(args)...);
 	return res.second;
 }
@@ -144,7 +144,7 @@ bool ObjectCache<Key, Object>::emplace(std::chrono::milliseconds lifespan, KeyAr
 template<class Key, class Object>
 Object ObjectCache<Key, Object>::get(const Key& key) const
 {
-	auto guard = std::lock_guard(objectLock);
+	std::lock_guard guard(objectLock);
 	return objects.at(key).object;
 }
 
@@ -161,7 +161,7 @@ Object ObjectCache<Key, Object>::get(const Key& key) const
 template<class Key, class Object>
 Object ObjectCache<Key, Object>::get(const Key& key, std::chrono::milliseconds lifespan)
 {
-	auto guard = std::lock_guard(objectLock);
+	std::lock_guard guard(objectLock);
 	Container& cont = objects.at(key);
 	cont.expires = clock_t::now() + lifespan;
 	return cont.object;
@@ -176,7 +176,7 @@ template<class Key, class Object>
 void ObjectCache<Key, Object>::evict(const Key &key) try
 {
 	node_t del; // delete object after releasing lock to avoid deadlocks
-	auto guard = std::lock_guard(objectLock);
+	std::lock_guard guard(objectLock);
 	del = objects.extract(key);
 } catch (const std::bad_variant_access &) {
 	/* Shut up cov-scan. Getting here is contrived and mostly theoretical. */
@@ -189,7 +189,7 @@ template<class Key, class Object>
 void ObjectCache<Key, Object>::scan()
 {
 	std::vector<node_t> del; // delete objects after releasing lock to avoid deadlocks
-	auto guard = std::lock_guard(objectLock);
+	std::lock_guard guard(objectLock);
 	auto now = std::chrono::steady_clock::now();
 	for (auto it = objects.begin(); it != objects.end(); )
 		if (it->second.expires < now)
