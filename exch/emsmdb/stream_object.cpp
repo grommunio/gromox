@@ -66,14 +66,11 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	}
 	void *pvalue = nullptr;
 	if (open_flags & MAPI_CREATE) {
-		pvalue = propvals.getval(proptag);
-		if (pvalue == nullptr) {
-			pstream->content_bin.cb = 0;
-			pstream->content_bin.pv = malloc(1);
-			if (pstream->content_bin.pv == nullptr)
-				return NULL;
-			return pstream;
-		}
+		pstream->content_bin.cb = 0;
+		pstream->content_bin.pv = malloc(1);
+		if (pstream->content_bin.pv == nullptr)
+			return NULL;
+		return pstream;
 	} else {
 		pvalue = propvals.getval(proptag);
 		if (pvalue == nullptr) {
