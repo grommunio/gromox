@@ -83,7 +83,7 @@ static void terse_help()
 	fprintf(stderr, "Usage: gromox-exm2eml -u source@mbox.de msgid >dump.eml\n");
 }
 
-static constexpr static_module g_dfl_svc_plugins[] =
+static constexpr generic_module g_dfl_svc_plugins[] =
 	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
 
 static constexpr cfg_directive exm2eml_cfg_defaults[] = {

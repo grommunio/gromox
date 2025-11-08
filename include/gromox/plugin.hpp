@@ -128,18 +128,11 @@ struct GX_EXPORT service_node {
 };
 
 /**
- * @path: can be nullptr in case of g_system_image
- */
-struct GX_EXPORT static_module {
-	const char *path = nullptr;
-	PLUGIN_MAIN efunc = nullptr;
-};
-
-/**
  * @file_name: can be nullptr in case of g_system_image
  */
 struct GX_EXPORT generic_module {
-	generic_module() = default;
+	constexpr generic_module() = default;
+	constexpr generic_module(const char *a, PLUGIN_MAIN b) : file_name(a), lib_main(b) {}
 	generic_module(generic_module &&) noexcept;
 	void operator=(generic_module &&) noexcept = delete;
 

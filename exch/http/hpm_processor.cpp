@@ -54,9 +54,9 @@ static unsigned int g_context_num;
 static thread_local HPM_PLUGIN *g_cur_plugin;
 static std::list<HPM_PLUGIN> g_plugin_list;
 static std::unique_ptr<HPM_CONTEXT[]> g_context_list;
-static std::span<const static_module> g_plugin_names;
+static std::span<const generic_module> g_plugin_names;
 
-void hpm_processor_init(int context_num, std::span<const static_module> names)
+void hpm_processor_init(int context_num, std::span<const generic_module> names)
 {
 	g_context_num = context_num;
 	g_plugin_names = std::move(names);
@@ -207,12 +207,12 @@ HPM_PLUGIN::~HPM_PLUGIN()
 		service_release(nd.service_name.c_str(), pplugin->file_name);
 }
 
-static int hpm_processor_load_library(const static_module &mod)
+static int hpm_processor_load_library(const generic_module &mod)
 {
 	HPM_PLUGIN plug;
 
-	plug.lib_main = mod.efunc;
-	plug.file_name = mod.path;
+	plug.lib_main = mod.lib_main;
+	plug.file_name = mod.file_name;
 	g_plugin_list.push_back(std::move(plug));
 	g_cur_plugin = &g_plugin_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */

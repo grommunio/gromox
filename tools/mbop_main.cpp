@@ -426,7 +426,7 @@ static int single_user_wrap(int argc, char **argv)
 	return ret;
 }
 
-static constexpr static_module g_dfl_svc_plugins[] =
+static constexpr generic_module g_dfl_svc_plugins[] =
 	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
 
 int main(int argc, char **argv)

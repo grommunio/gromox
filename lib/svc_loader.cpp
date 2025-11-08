@@ -74,11 +74,11 @@ struct svc_mgr final {
 	std::shared_ptr<config_file> g_config_file;
 
 	protected:
-	int load_library(const static_module &);
+	int load_library(const generic_module &);
 
 	std::list<SVC_PLUG_ENTITY> g_list_plug;
 	std::vector<std::shared_ptr<service_entry>> g_list_service;
-	std::span<const static_module> g_plugin_names;
+	std::span<const generic_module> g_plugin_names;
 	SVC_PLUG_ENTITY g_system_image;
 };
 
@@ -188,17 +188,17 @@ svc_mgr::~svc_mgr()
  *      PLUGIN_FAIL_ALLOCNODE       fail to allocate memory for a node
  *      PLUGIN_FAIL_EXECUTEMAIN     error executing the plugin's init function
  */
-int svc_mgr::load_library(const static_module &mod)
+int svc_mgr::load_library(const generic_module &mod)
 {
 	/* check whether the library is already loaded */
 	if (std::any_of(g_list_plug.cbegin(), g_list_plug.cend(),
-	    [&](const SVC_PLUG_ENTITY &p) { return p.file_name == znul(mod.path); })) {
-		mlog(LV_ERR, "%s: already loaded", znul(mod.path));
+	    [&](const SVC_PLUG_ENTITY &p) { return p.file_name == znul(mod.file_name); })) {
+		mlog(LV_ERR, "%s: already loaded", znul(mod.file_name));
 		return PLUGIN_ALREADY_LOADED;
 	}
 	SVC_PLUG_ENTITY plug;
-	plug.lib_main = mod.efunc;
-	plug.file_name = mod.path;
+	plug.lib_main = mod.lib_main;
+	plug.file_name = mod.file_name;
 	g_list_plug.push_back(std::move(plug));
 	/*
 	 *  indicate the current lib node when plugin rigisters service

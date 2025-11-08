@@ -40,11 +40,11 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static constexpr static_module g_dfl_mpc_plugins[] = {
+static constexpr generic_module g_dfl_mpc_plugins[] = {
 	{"libgxm_alias_resolve.so", HOOK_alias_resolve},
 	{"libgxm_exmdb_local.so", HOOK_exmdb_local},
 };
-static constexpr static_module g_dfl_svc_plugins[] = {
+static constexpr generic_module g_dfl_svc_plugins[] = {
 	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
 	{"libgromox_auth.so/ldap", SVC_ldap_adaptor},
 	{"libgromox_auth.so/mgr", SVC_authmgr},

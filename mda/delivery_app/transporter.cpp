@@ -84,7 +84,7 @@ struct THREAD_DATA {
 static void *transporter_queryservice(const char *service, const char *rq, const std::type_info &);
 
 static char				g_path[256];
-static std::span<const static_module> g_plugin_names;
+static std::span<const generic_module> g_plugin_names;
 static std::string g_local_path;
 static HOOK_FUNCTION g_local_hook;
 static unsigned int g_threads_max, g_threads_min, g_free_num;
@@ -176,7 +176,7 @@ hook_plug_entity::~hook_plug_entity()
  *		threads_num				threads number to be created
  *		free_num				free contexts number for hooks to throw out
  */
-void transporter_init(const char *path, const std::span<const static_module> &names,
+void transporter_init(const char *path, const std::span<const generic_module> &names,
     unsigned int threads_min, unsigned int threads_max, unsigned int free_num,
     bool ignerr)
 {
@@ -488,24 +488,24 @@ static void *dxp_scanwork(void *arg)
  *		PLUGIN_FAIL_ALLOCNODE		fail to allocate node for plugin
  *		PLUGIN_FAIL_EXECUTEMAIN		main entry in plugin returns FALSE
  */
-int transporter_load_library(const static_module &mod) try
+int transporter_load_library(const generic_module &mod) try
 {
 	/* check whether the plugin is same as local or remote plugin */
-	if (g_local_path == mod.path) {
-		mlog(LV_ERR, "transporter: %s is already loaded", mod.path);
+	if (g_local_path == mod.file_name) {
+		mlog(LV_ERR, "transporter: %s is already loaded", mod.file_name);
 		return PLUGIN_ALREADY_LOADED;
 	}
 	
     /* check whether the library is already loaded */
 	if (std::any_of(g_lib_list.cbegin(), g_lib_list.cend(),
-	    [&](const hook_plug_entity &p) { return p.file_name == mod.path; })) {
-		mlog(LV_ERR, "transporter: %s is already loaded", mod.path);
+	    [&](const hook_plug_entity &p) { return p.file_name == mod.file_name; })) {
+		mlog(LV_ERR, "transporter: %s is already loaded", mod.file_name);
 		return PLUGIN_ALREADY_LOADED;
 	}
 
 	hook_plug_entity plug;
-	plug.lib_main = mod.efunc;
-	plug.file_name = mod.path;
+	plug.lib_main = mod.lib_main;
+	plug.file_name = mod.file_name;
 	g_lib_list.push_back(std::move(plug));
 	g_cur_lib = &g_lib_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */

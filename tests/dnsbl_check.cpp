@@ -10,7 +10,7 @@
 
 using namespace gromox;
 
-static constexpr static_module g_dfl_svc_plugins[] = {{"dnsbl_filter", SVC_dnsbl_filter}};
+static constexpr generic_module g_dfl_svc_plugins[] = {{"dnsbl_filter", SVC_dnsbl_filter}};
 
 int main(int argc, char **argv)
 {

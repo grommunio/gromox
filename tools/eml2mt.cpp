@@ -74,7 +74,7 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static constexpr static_module g_dfl_svc_plugins[] =
+static constexpr generic_module g_dfl_svc_plugins[] =
 	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
 
 static constexpr cfg_directive eml2mt_cfg_defaults[] = {

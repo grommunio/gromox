@@ -124,7 +124,7 @@ static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unordered_map<int, ASYNC_NODE *> g_async_hash;
 static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
-static std::span<const static_module> g_plugin_names;
+static std::span<const generic_module> g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
 	/* {8a885d04-1ceb-11c9-9fe8-08002b104860} */
 	{{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8}, {0x08,0x00,0x2b,0x10,0x48,0x60}}, 2};
@@ -133,7 +133,7 @@ static const SYNTAX_ID g_transfer_syntax_ndr64 =
 	/* {71710533-beba-4937-8319-b5dbef9ccc36} */
 	{{0x71710533, 0xbeba, 0x4937, {0x83, 0x19}, {0xb5,0xdb,0xef,0x9c,0xcc,0x36}}, 1};
 
-static int pdu_processor_load_library(const static_module &);
+static int pdu_processor_load_library(const generic_module &);
 
 dcerpc_call::dcerpc_call() :
 	pkt(b_bigendian)
@@ -186,7 +186,7 @@ static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type
 
 void pdu_processor_init(int connection_num, const char *netbios_name,
     const char *dns_name, const char *dns_domain, BOOL header_signing,
-    size_t max_request_mem, std::span<const static_module> &&names)
+    size_t max_request_mem, std::span<const generic_module> &&names)
 {
 	static constexpr unsigned int connection_ratio = 10;
 	union {
@@ -3004,12 +3004,12 @@ static void *pdu_processor_queryservice(const char *service, const char *rq,
  *		PLUGIN_FAIL_ALLOCNODE		fail to allocate node for plugin
  *		PLUGIN_FAIL_EXECUTEMAIN		main entry in plugin returns FALSE
  */
-static int pdu_processor_load_library(const static_module &mod)
+static int pdu_processor_load_library(const generic_module &mod)
 {
 	PROC_PLUGIN plug;
 
-	plug.lib_main = mod.efunc;
-	plug.file_name = std::move(mod.path);
+	plug.lib_main = mod.lib_main;
+	plug.file_name = std::move(mod.file_name);
 	g_plugin_list.push_back(std::move(plug));
 	g_cur_plugin = &g_plugin_list.back();
 	
