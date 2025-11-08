@@ -934,7 +934,7 @@ ec_error_t rop_openstream(proptag_t proptag, uint8_t flags, uint32_t *pstream_si
 	               proptag, max_length);
 	if (pstream == nullptr)
 		return ecError;
-	if (!pstream->check())
+	if (!pstream->prop_present())
 		return ecNotFound;
 	auto rstream = pstream.get();
 	auto hnd = rop_processor_add_object_handle(plogmap,

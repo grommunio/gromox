@@ -14,7 +14,7 @@ struct stream_object {
 	public:
 	~stream_object();
 	static std::unique_ptr<stream_object> create(void *parent, ems_objtype, uint32_t open_flags, gromox::proptag_t, uint32_t max_length);
-	BOOL check() const { return content_bin.pb != nullptr ? TRUE : false; }
+	bool prop_present() const { return content_bin.pb != nullptr; }
 	uint32_t get_max_length() const { return max_length; }
 	uint32_t read(void *buf, uint32_t len);
 	std::pair<uint16_t, ec_error_t> write(void *buf, uint16_t len);
