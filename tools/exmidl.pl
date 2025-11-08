@@ -21,9 +21,9 @@ if ($gen_mode eq "CLN" || $gen_mode eq "SDP") {
 if ($gen_mode eq "SDP") {
 	print "extern unsigned int g_exrpc_debug;\n";
 	print "unsigned int g_exrpc_debug;\n\n";
-	print "static void smlpc_log(bool ok, const char *dir, const char *func, gromox::time_point tstart, gromox::time_point tend)\n{\n";
+	print "static void lpc_log(bool ok, const char *dir, const char *func, gromox::time_point tstart, gromox::time_point tend)\n{\n";
 	print "\tif (g_exrpc_debug >= 2 || (!ok && g_exrpc_debug == 1))\n";
-	print "\t\tmlog(LV_DEBUG, \"SMLPC %s %s \%5luµs \%s\", dir, !ok ? \"ERR\" : \"ok \",\n";
+	print "\t\tmlog(LV_DEBUG, \"LPC %s %s \%5luµs \%s\", dir, !ok ? \"ERR\" : \"ok \",\n";
 	print "\t\t\tstatic_cast<unsigned long>(std::chrono::duration_cast<std::chrono::microseconds>(tend - tstart).count()), func);\n";
 	print "}\n\n";
 }
@@ -49,7 +49,7 @@ while (<STDIN>) {
 		print "\tauto tstart = gromox::tp_now();\n";
 		print "\texmdb_server::build_env(EM_LOCAL | (xb_private ? EM_PRIVATE : 0), dir);\n";
 		print "\tauto xbresult = exmdb_server::$func(".join(", ", @anames).");\n";
-		print "\tsmlpc_log(xbresult, dir, \"$func\", tstart, gromox::tp_now());\n";
+		print "\tlpc_log(xbresult, dir, \"$func\", tstart, gromox::tp_now());\n";
 		print "\texmdb_server::free_env();\n";
 		print "\treturn xbresult;\n";
 		print "}\n\n";
