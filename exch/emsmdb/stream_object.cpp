@@ -64,19 +64,23 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	default:
 		return NULL;
 	}
-	auto pvalue = propvals.getval(proptag);
-	if (NULL == pvalue) {
-		if (!(open_flags & MAPI_CREATE)) {
-			/* cannot find proptag, return immediately to
-			caller and the caller check the result by
-			calling stream_object_check */
-			pstream->content_bin.pb = NULL;
-			return pstream;
-		} else {
+	void *pvalue = nullptr;
+	if (open_flags & MAPI_CREATE) {
+		pvalue = propvals.getval(proptag);
+		if (pvalue == nullptr) {
 			pstream->content_bin.cb = 0;
 			pstream->content_bin.pv = malloc(1);
 			if (pstream->content_bin.pv == nullptr)
 				return NULL;
+			return pstream;
+		}
+	} else {
+		pvalue = propvals.getval(proptag);
+		if (pvalue == nullptr) {
+			/* cannot find proptag, return immediately to
+			caller and the caller check the result by
+			calling stream_object_check */
+			pstream->content_bin.pb = NULL;
 			return pstream;
 		}
 	}
