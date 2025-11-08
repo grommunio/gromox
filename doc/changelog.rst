@@ -1,3 +1,32 @@
+Development 3.1.134
+===================
+
+Enhancements:
+
+* ews: implement GetRoomLists and GetRooms handlers
+* ews: implement tItemAttachment, tUserConfigurationName types
+* ews: implement types related to CategoryList
+
+Fixes:
+
+* mt2exm: avoid generating zero-sized /var/lib/gromox/user/*/eml/* files
+  (and thus bogus imapstructure ext files) in the internal mailbox directory
+  when a message object to import has no RFC5322 representation
+* midb: ignore incomplete imapstructure files in /var/lib/gromox/user/**/ext
+* delivery: stop treating non-existing users as a temporary condition
+* oxcmail: ONEOFF_ENTRYIDs did not have their email address/name set properly
+  after some refactoring in 3.0, which was fixed
+* ab_tree: users with HIDE_FROM_GAL or HIDE_FROM_AL were not always hidden
+* ews: avoid dereference of unenganged std::optional, which had led to
+  spurious use-after-free/crash
+* ews: include PR_CONTAINER_CLASS in tFolderResponseShape
+* ews: add missing locking for concurrent EWSPlugin::unsubscribe invocation
+* emsmdb: implement truncation behavior for ropOpenStream+MAPI_CREATE
+* ab_tree: rework minid encoding to avoid values >= 0x80000000
+  (solves a hypothetical problem reading the addressbook data
+  for the 589821th domain in the user database)
+
+
 Gromox 3.1 (2025-10-26)
 =======================
 
