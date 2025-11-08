@@ -325,6 +325,7 @@ class EWSContext {
 	void send(const std::string &dir, uint64_t log_msg_id, const MESSAGE_CONTENT &) const;
 	BINARY serialize(const XID&) const;
 	bool streamEvents(const Structures::tSubscriptionId&) const;
+	void rcpt_add_unique(TARRAY_SET *, gromox::EWS::Structures::tEmailAddressType, uint32_t) const;
 	MCONT_PTR toContent(const std::string&, std::string&) const;
 	MCONT_PTR toContent(const std::string&, const Structures::sFolderSpec&, Structures::sItem&, bool) const;
 	Structures::tSubscriptionId subscribe(const Structures::tPullSubscriptionRequest&) const;
