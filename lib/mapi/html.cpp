@@ -523,7 +523,7 @@ static ec_error_t html_write_style_text_indent(RTF_WRITER *pwriter, int text_ind
 	return ecSuccess;
 }
 
-static bool html_css_font_keyword_to_pt(const char *value, int &pt_out)
+static int html_css_font_keyword_to_pt(const char *value)
 {
 	static const struct {
 		const char *name;
@@ -539,14 +539,10 @@ static bool html_css_font_keyword_to_pt(const char *value, int &pt_out)
 		{"smaller", 10},
 		{"larger", 14},
 	};
-
-	for (const auto &kw : keywords) {
-		if (strcasecmp(value, kw.name) == 0) {
-			pt_out = kw.points;
-			return true;
-		}
-	}
-	return false;
+	for (const auto &kw : keywords)
+		if (strcasecmp(value, kw.name) == 0)
+			return kw.points;
+	return 0;
 }
 
 static void html_trim_style_value(char *value)
@@ -680,8 +676,10 @@ static ec_error_t html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
 		} else if (class_match_suffix(value, "px") == 0) {
 			unit_point = false;
 			font_size = strtol(value, nullptr, 0);
-		} else if (html_css_font_keyword_to_pt(value, font_size)) {
-			unit_point = true;
+		} else {
+			font_size = html_css_font_keyword_to_pt(value);
+			if (font_size > 0)
+				unit_point = true;
 		}
 		if (font_size > 0)
 			ERF(html_write_style_font_size(pwriter, font_size, unit_point));
