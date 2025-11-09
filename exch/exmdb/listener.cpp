@@ -41,11 +41,6 @@ static pthread_t g_listener_id;
 
 static void *sockaccept_thread(void *param)
 {
-	while (ems_send_mail == nullptr || ems_send_vmail == nullptr) {
-		if (g_notify_stop)
-			break;
-		sleep(1);	
-	}
 	while (!g_notify_stop) {
 		auto conn = generic_connection::accept(g_listen_sockd, false, &g_notify_stop);
 		if (conn.sockd == -2)
