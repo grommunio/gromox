@@ -682,9 +682,6 @@ static ec_error_t html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
 			font_size = strtol(value, nullptr, 0);
 		} else if (html_css_font_keyword_to_pt(value, font_size)) {
 			unit_point = true;
-		} else {
-			/* Unrecognised value, ignore to keep compatibility */
-			font_size = 0;
 		}
 		if (font_size > 0)
 			ERF(html_write_style_font_size(pwriter, font_size, unit_point));
