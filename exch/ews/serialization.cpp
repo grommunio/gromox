@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 /**
  * @brief      Implementation of EWS structure (de-)serialization
@@ -1403,7 +1403,7 @@ tRestriction::tRestriction(const tinyxml2::XMLElement* xml) :
 	source(xml->FirstChildElement())
 {}
 
-uint32_t tRestriction::getTag(const tinyxml2::XMLElement* parent, const sGetNameId& getId)
+proptag_t tRestriction::getTag(const tinyxml2::XMLElement *parent, const sGetNameId &getId)
 {
 	tPath path(fromXMLNodeVariantFind<tPath::Base>(parent));
 	return path.tag(getId);

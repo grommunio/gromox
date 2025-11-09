@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -693,7 +693,7 @@ void process(mDeleteFolderRequest&& request, XMLElement* response, const EWSCont
 {
 	response->SetName("m:DeleteFolderResponse");
 
-	static constexpr uint32_t parentFidTag = PidTagParentFolderId;
+	static constexpr proptag_t parentFidTag = PidTagParentFolderId;
 	static constexpr PROPTAG_ARRAY parentTags = {1, deconst(&parentFidTag)};
 
 	mDeleteFolderResponse data;
@@ -1410,7 +1410,7 @@ void process(mGetUserConfigurationRequest&& request, XMLElement* response, const
 		if (rowCount == 0)
 			throw EWSError::ItemNotFound(E3143);
 
-		static constexpr uint32_t midTag = PidTagMid;
+		static constexpr proptag_t midTag = PidTagMid;
 		static constexpr PROPTAG_ARRAY midTags = {1, deconst(&midTag)};
 		TARRAY_SET rows;
 		exmdb.query_table(dir.c_str(), username, CP_UTF8, tableId, &midTags, 0, 1, &rows);
@@ -1561,7 +1561,7 @@ void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& c
 		PROPID_ARRAY propIds = ctx.getNamedPropIds(dir, propNames);
 		if (propIds.size() != 1)
 			throw std::runtime_error("failed to get photo property id");
-		uint32_t tag = PROP_TAG(PT_BINARY, propIds[0]);
+		proptag_t tag = PROP_TAG(PT_BINARY, propIds[0]);
 		PROPTAG_ARRAY tags{1, &tag};
 		TPROPVAL_ARRAY props;
 		ctx.plugin().exmdb.get_store_properties(dir.c_str(), CP_ACP, &tags, & props);
@@ -2199,7 +2199,7 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 		mUpdateItemResponseMessage msg;
 		if (shape.mimeContent) {
 			EWSContext::MCONT_PTR content = ctx.toContent(dir, *shape.mimeContent);
-			for (uint32_t tag : shape.remove())
+			for (auto tag : shape.remove())
 				content->proplist.erase(tag);
 			for (const auto &prop : shape.write()) {
 				auto ret = content->proplist.set(prop);

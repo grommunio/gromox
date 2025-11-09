@@ -77,7 +77,7 @@ T& defaulted(std::optional<T>& container, Args&&... args)
  * @param      value   value to write
  * @param      tag     Property tag to use
  */
-void writeProp(sShape& shape, const std::optional<std::string>& value, uint32_t tag)
+static void writeProp(sShape &shape, const std::optional<std::string> &value, proptag_t tag)
 {
 	if (value)
 		shape.write(TAGGED_PROPVAL{tag, const_cast<char *>(value->c_str())});
@@ -90,7 +90,7 @@ void writeProp(sShape& shape, const std::optional<std::string>& value, uint32_t 
  * @param      value   value to write
  * @param      tag     Property tag to use
  */
-void writeProp(sShape& shape, const std::optional<sTimePoint>& value, uint32_t tag)
+static void writeProp(sShape &shape, const std::optional<sTimePoint> &value, proptag_t tag)
 {
 	if (value)
 		shape.write(TAGGED_PROPVAL{tag, EWSContext::construct<uint64_t>(value->toNT())});
@@ -531,7 +531,7 @@ std::optional<uint64_t> EWSContext::findExistingByGoid(const sFolderSpec& calend
 		if (value == nullptr || value->cb == 0 || value->pb == nullptr || propId == 0 ||
 		    restrictionCount >= propertyRestrictions.size())
 			return;
-		uint32_t tag = PROP_TAG(PT_BINARY, propId);
+		auto tag = PROP_TAG(PT_BINARY, propId);
 		auto &propRestriction = propertyRestrictions[restrictionCount];
 		propRestriction.relop = RELOP_EQ;
 		propRestriction.proptag = tag;
@@ -577,8 +577,8 @@ std::optional<uint64_t> EWSContext::findExistingByGoid(const sFolderSpec& calend
 	if (rowCount == 0)
 		return std::nullopt;
 
-	const uint32_t midTagValue = PidTagMid;
-	PROPTAG_ARRAY proptags{1, deconst(&midTagValue)};
+	static constexpr proptag_t midTagValue = PidTagMid;
+	static constexpr PROPTAG_ARRAY proptags = {1, deconst(&midTagValue)};
 	TARRAY_SET rows{};
 	if (!m_plugin.exmdb.query_table(calendarDir.c_str(), calUser, CP_ACP,
 	    tableId, &proptags, 0, 1, &rows))
@@ -619,8 +619,8 @@ void EWSContext::createCalendarItemFromMeetingRequest(const tItemId &refId, uint
 	auto &props = calendarItem->proplist;
 	// Remove PidTagMid and PidTagChangeNumber, otherwise the calendar item won't be
 	// created / updated
-	static constexpr uint32_t rmProps[] = {PidTagMid, PidTagChangeNumber};
-	for (uint32_t tag : rmProps)
+	static constexpr proptag_t rmProps[] = {PidTagMid, PidTagChangeNumber};
+	for (auto tag : rmProps)
 		props.erase(tag);
 
 	sFolderSpec calendarFolder = requestFolder;
@@ -964,7 +964,7 @@ std::pair<std::list<sNotificationEvent>, bool> EWSContext::getEvents(const tSubs
  */
 TAGGED_PROPVAL EWSContext::getFolderEntryId(const std::string& dir, uint64_t folderId) const
 {
-	static constexpr uint32_t propids[] = {PR_ENTRYID};
+	static constexpr proptag_t propids[] = {PR_ENTRYID};
 	static constexpr PROPTAG_ARRAY proptags = {1, deconst(propids)};
 	TPROPVAL_ARRAY props = getFolderProps(dir, folderId, proptags);
 	if (props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
@@ -1004,7 +1004,7 @@ TPROPVAL_ARRAY EWSContext::getFolderProps(const std::string &dir,
  */
 TAGGED_PROPVAL EWSContext::getItemEntryId(const std::string& dir, uint64_t mid) const
 {
-	static constexpr uint32_t propids[] = {PR_ENTRYID};
+	static constexpr proptag_t propids[] = {PR_ENTRYID};
 	static constexpr PROPTAG_ARRAY proptags = {1, deconst(propids)};
 	TPROPVAL_ARRAY props = getItemProps(dir, mid, proptags);
 	if (props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
@@ -1021,7 +1021,8 @@ TAGGED_PROPVAL EWSContext::getItemEntryId(const std::string& dir, uint64_t mid) 
  *
  * @return     Pointer to property value or nullptr if not found
  */
-const void* EWSContext::getFolderProp(const std::string& dir, uint64_t fid, uint32_t tag) const
+const void *EWSContext::getFolderProp(const std::string &dir, uint64_t fid,
+    proptag_t tag) const
 {
 	PROPTAG_ARRAY proptags{1, &tag};
 	TPROPVAL_ARRAY props = getFolderProps(dir, fid, proptags);
@@ -1039,7 +1040,8 @@ const void* EWSContext::getFolderProp(const std::string& dir, uint64_t fid, uint
  *
  * @return     Pointer to property value or nullptr if not found
  */
-const void* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32_t tag) const
+const void *EWSContext::getItemProp(const std::string &dir, uint64_t mid,
+    proptag_t tag) const
 {
 	PROPTAG_ARRAY proptags{1, &tag};
 	TPROPVAL_ARRAY props = getItemProps(dir, mid, proptags);
@@ -1075,7 +1077,7 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
  */
 GUID EWSContext::getMailboxGuid(const std::string& dir) const
 {
-	static constexpr uint32_t recordKeyTag = PR_STORE_RECORD_KEY;
+	static constexpr proptag_t recordKeyTag = PR_STORE_RECORD_KEY;
 	static constexpr PROPTAG_ARRAY recordKeyTags = {1, deconst(&recordKeyTag)};
 	TPROPVAL_ARRAY recordKeyProp;
 	if (!m_plugin.exmdb.get_store_properties(dir.c_str(), CP_ACP, &recordKeyTags, &recordKeyProp) ||
@@ -1137,10 +1139,13 @@ void EWSContext::impersonate(const char* addrtype, const char* addr)
 sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachmentId& aid) const
 {
 	auto aInst = m_plugin.loadAttachmentInstance(dir, aid.folderId(), aid.messageId(), aid.attachment_num);
-	static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_DATA_BIN,
-	                            PR_ATTACH_CONTENT_ID, PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS};
+	static constexpr proptag_t tagIDs[] = {
+		PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG,
+		PR_ATTACH_DATA_BIN, PR_ATTACH_CONTENT_ID,
+		PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS,
+	};
 	TPROPVAL_ARRAY props;
-	PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
+	static constexpr PROPTAG_ARRAY tags{std::size(tagIDs), deconst(tagIDs)};
 	if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
 		throw DispatchError(E3083);
 	sShape shape(props);
@@ -1173,7 +1178,7 @@ TARRAY_SET EWSContext::loadPermissions(const std::string& dir, uint64_t fid) con
 	if (!exmdb.load_permission_table(dir.c_str(), fid, 0, &tableId, &rowCount))
 		throw EWSError::ItemCorrupt(E3283);
 	auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
-	static constexpr uint32_t tags[] = {PR_MEMBER_ID, PR_MEMBER_NAME, PR_MEMBER_RIGHTS, PR_SMTP_ADDRESS};
+	static constexpr proptag_t tags[] = {PR_MEMBER_ID, PR_MEMBER_NAME, PR_MEMBER_RIGHTS, PR_SMTP_ADDRESS};
 	static constexpr PROPTAG_ARRAY proptags = {std::size(tags), deconst(tags)};
 	TARRAY_SET propTable;
 	if (!exmdb.query_table(dir.c_str(), "", CP_UTF8, tableId, &proptags, 0, rowCount, &propTable))
@@ -1290,8 +1295,11 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		item.MimeContent.emplace(exportContent(dir, *content, log_id));
 	}
 	if (special & sShape::Attachments) {
-		static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_CONTENT_ID,
-			                        PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS, PR_ATTACH_SIZE};
+		static constexpr proptag_t tagIDs[] = {
+			PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG,
+			PR_ATTACH_CONTENT_ID, PR_ATTACH_LONG_FILENAME,
+			PR_ATTACHMENT_FLAGS, PR_ATTACH_SIZE,
+		};
 		auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
 		uint16_t count;
 		if (!exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
@@ -1301,7 +1309,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		for (uint16_t i = 0; i < count; ++i) {
 			auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 			TPROPVAL_ARRAY props;
-			PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
+			static constexpr PROPTAG_ARRAY tags = {std::size(tagIDs), deconst(tagIDs)};
 			if (!exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
 				throw DispatchError(E3080);
 			sShape shape(props);
@@ -1532,7 +1540,7 @@ std::unique_ptr<BINARY, detail::Cleaner> EWSContext::mkPCL(const XID& xid, PCL p
 uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& folder, uint64_t newParent, uint32_t accountId,
                                     bool copy) const
 {
-	static constexpr uint32_t tagIds[] = {PidTagParentFolderId, PR_DISPLAY_NAME};
+	static constexpr proptag_t tagIds[] = {PidTagParentFolderId, PR_DISPLAY_NAME};
 	static constexpr PROPTAG_ARRAY tags = {std::size(tagIds), deconst(tagIds)};
 	TPROPVAL_ARRAY props;
 	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folder.folderId, &tags, &props))
@@ -2119,8 +2127,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	}
 	shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(isrecurring)});
 
-	uint32_t tag;
-	if ((tag = shape.tag(NtCalendarTimeZone))) {
+	proptag_t tag = shape.tag(NtCalendarTimeZone);
+	if (tag != 0) {
 		const TAGGED_PROPVAL* caltz = shape.writes(NtCalendarTimeZone);
 		if (caltz) {
 			auto buf = ianatz_to_tzdef(static_cast<char*>(caltz->pvalue));
@@ -2323,7 +2331,7 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 		}
 	if (item.PhoneNumbers)
 		for (const tPhoneNumberDictionaryEntry &entry : *item.PhoneNumbers) {
-			uint32_t tag;
+			proptag_t tag;
 			switch(entry.Key) {
 			case 0: tag = PR_ASSISTANT_TELEPHONE_NUMBER; break;
 			case 1: tag = PR_BUSINESS_FAX_NUMBER; break;

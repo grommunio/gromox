@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 
 #pragma once
@@ -283,7 +283,7 @@ struct sMailboxInfo {
 	bool isPublic = false; ///< Whether it is a public (domain) store
 };
 
-using sNamedPropertyMap = std::unordered_map<uint32_t, PROPERTY_NAME>;
+using sNamedPropertyMap = std::unordered_map<proptag_t, PROPERTY_NAME>;
 
 using sNotificationEvent = std::variant<aCreatedEvent, aDeletedEvent, tModifiedEvent, aMovedEvent, aCopiedEvent, aNewMailEvent, aStatusEvent/*, aFreeBusyEvent*/>;
 
@@ -305,17 +305,17 @@ class sShape {
 		uint8_t flags = 0;
 	};
 
-	std::vector<uint32_t> tags; ///< Tags requested + named tags
+	std::vector<proptag_t> tags; ///< Tags requested + named tags
 
-	std::vector<uint32_t> namedTags; ///< Named tags (ID and type, ID might be 0 if unknown)
+	std::vector<proptag_t> namedTags; ///< Named tags (ID and type, ID might be 0 if unknown)
 	std::vector<PROPERTY_NAME> names; ///< Requested named properties
 	std::vector<uint8_t> nameMeta; ///< Flags for named tags
 	std::vector<TAGGED_PROPVAL> namedCache; ///< Properties that were written written before resolving names
 
 	std::vector<TAGGED_PROPVAL> wProps; ///< List of properties meant to be written
-	std::vector<uint32_t> dTags; ///< List of tags to remove
+	std::vector<proptag_t> dTags; ///< List of tags to remove
 
-	std::unordered_map<uint32_t, PropInfo> props; ///< Tag -> Property mapping
+	std::unordered_map<proptag_t, PropInfo> props; ///< Tag -> Property mapping
 
 	void collectExtendedProperty(const tExtendedFieldURI&);
 	void collectExtendedProperty(const tFieldURI&);
@@ -363,23 +363,23 @@ class sShape {
 	PROPNAME_ARRAY namedProperties() const;
 	void properties(const TPROPVAL_ARRAY&);
 	PROPTAG_ARRAY proptags() const;
-	uint32_t tag(const PROPERTY_NAME&) const;
+	proptag_t tag(const PROPERTY_NAME &) const;
 
-	sShape& add(uint32_t, uint8_t=0);
+	sShape &add(proptag_t, uint8_t = 0);
 	sShape& add(const PROPERTY_NAME&, uint16_t, uint8_t=0);
 
 	void write(const TAGGED_PROPVAL&);
 	void write(const PROPERTY_NAME&, const TAGGED_PROPVAL&);
 	TPROPVAL_ARRAY write() const;
-	const TAGGED_PROPVAL* writes(uint32_t) const;
+	const TAGGED_PROPVAL *writes(proptag_t) const;
 	const TAGGED_PROPVAL* writes(const PROPERTY_NAME&) const;
 
 	PROPTAG_ARRAY remove() const;
 
-	bool requested(uint32_t, uint8_t=FL_FIELD) const;
-	const TAGGED_PROPVAL* get(uint32_t, uint8_t=FL_FIELD) const;
+	bool requested(proptag_t, uint8_t = FL_FIELD) const;
+	const TAGGED_PROPVAL *get(proptag_t, uint8_t = FL_FIELD) const;
 	const TAGGED_PROPVAL* get(const PROPERTY_NAME&, uint8_t=FL_FIELD) const;
-	template<typename T> const T* get(uint32_t, uint8_t=FL_FIELD) const;
+	template<typename T> const T *get(proptag_t, uint8_t = FL_FIELD) const;
 	template<typename T> const T* get(const PROPERTY_NAME&, uint8_t=FL_FIELD) const;
 	void putExtended(std::vector<tExtendedProperty>&) const;
 
@@ -389,8 +389,7 @@ class sShape {
 	std::optional<std::string> mimeContent; ///< MimeContent to write
 	const tinyxml2::XMLElement* permissionSet = nullptr; ///< PermissionSet for update
 	const tinyxml2::XMLElement* calendarPermissionSet = nullptr; ///< CalendarPermissionSet for update
-	std::vector<uint32_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
-
+	std::vector<proptag_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
 };
 
 /**
@@ -419,7 +418,7 @@ struct sSyncState {
 	uint32_t readOffset = 0; ///< Number of read states already delivered
 
 	private:
-	static constexpr uint32_t MetaTagReadOffset = PROP_TAG(PT_LONG, 0x0e69); //PR_READ, but with long type
+	static constexpr proptag_t MetaTagReadOffset = PROP_TAG(PT_LONG, 0x0e69); //PR_READ, but with long type
 };
 
 /**
@@ -877,7 +876,7 @@ struct tExtendedFieldURI {
 
 	tExtendedFieldURI() = default;
 	explicit tExtendedFieldURI(const tinyxml2::XMLElement*);
-	explicit tExtendedFieldURI(uint32_t);
+	explicit tExtendedFieldURI(proptag_t);
 	tExtendedFieldURI(uint16_t, const PROPERTY_NAME&);
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -892,8 +891,8 @@ struct tExtendedFieldURI {
 	void tags(sShape&, bool=true) const;
 	uint16_t type() const;
 
-	uint32_t tag() const;
-	uint32_t tag(const sGetNameId&) const;
+	proptag_t tag() const;
+	proptag_t tag(const sGetNameId&) const;
 	PROPERTY_NAME name() const;
 
 	static const char* typeName(uint16_t);
@@ -964,12 +963,12 @@ struct tFieldURI {
 	tFieldURI(const tinyxml2::XMLElement*);
 
 	void tags(sShape&, bool=true) const;
-	uint32_t tag(const sGetNameId&) const;
+	proptag_t tag(const sGetNameId &) const;
 
 	std::string FieldURI; //Attribute
 
 	//Types.xsd:402
-	static std::unordered_multimap<std::string, uint32_t> tagMap; ///< Mapping for normal properties
+	static std::unordered_multimap<std::string, proptag_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Mapping for named properties
 	static std::array<SMEntry, 17> specialMap; ///< Mapping for special properties
 };
@@ -1074,14 +1073,14 @@ struct tIndexedFieldURI {
 	tIndexedFieldURI(const tinyxml2::XMLElement*);
 
 	void tags(sShape&, bool=true) const;
-	uint32_t tag(const sGetNameId&) const;
+	proptag_t tag(const sGetNameId &) const;
 
 	std::string FieldURI; //Attribute
 	std::string FieldIndex; //Attribute
 
 	using UIKey = std::pair<std::string, std::string>;
 	//Types.xsd:988
-	static std::array<std::pair<UIKey, uint32_t>, 25> tagMap;
+	static std::array<std::pair<UIKey, proptag_t>, 25> tagMap;
 	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>, 25> nameMap;
 };
 
@@ -1124,7 +1123,7 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
 	explicit inline tPath(Base &&b) : Base(std::move(b)) {}
 
 	void tags(sShape&, bool=true) const;
-	uint32_t tag(const sGetNameId&) const;
+	proptag_t tag(const sGetNameId &) const;
 
 	inline const Base &asVariant() const { return *this; }
 };
@@ -1298,20 +1297,20 @@ struct tChangeDescription {
 
 	static const Field* find(const char*, const char*);
 	template<typename T>
-	static TAGGED_PROPVAL mkProp(uint32_t, const T&);
+	static TAGGED_PROPVAL mkProp(proptag_t, const T &);
 	static void convProp(const char*, const char*, const tinyxml2::XMLElement*, sShape&);
 
-	static void convBool(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	static void convBool(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	static void convBool(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
-	static void convDate(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	static void convDate(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	static void convDate(const PROPERTY_NAME&, const tinyxml2::XMLElement*, sShape&);
-	static void convText(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	static void convText(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	static void convText(const PROPERTY_NAME&, const tinyxml2::XMLElement*, sShape&);
 	template<typename ET, typename PT=uint32_t>
-	static void convEnumIndex(uint32_t,  const tinyxml2::XMLElement*, sShape&);
+	static void convEnumIndex(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(const PROPERTY_NAME&,  const tinyxml2::XMLElement*, sShape&);
-	static void convStrArray(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	static void convStrArray(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	static void convStrArray(const PROPERTY_NAME&, const tinyxml2::XMLElement*, sShape&);
 	static void convBody(const tinyxml2::XMLElement*, sShape&);
 
@@ -2195,9 +2194,9 @@ struct tItemResponseShape {
 	//std::optional<int32_t> MaximumBodySize;
 	std::optional<std::vector<tPath>> AdditionalProperties;
 
-	static constexpr std::array<uint32_t, 1> tagsStructural = {PR_MESSAGE_CLASS};
-	static constexpr std::array<uint32_t, 2> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY};
-	static constexpr std::array<uint32_t, 29> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
+	static constexpr std::array<proptag_t, 1> tagsStructural = {PR_MESSAGE_CLASS};
+	static constexpr std::array<proptag_t, 2> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY};
+	static constexpr std::array<proptag_t, 29> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
 		PR_ASSOCIATED, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME,
 		PR_LOCAL_COMMIT_TIME, PR_DISPLAY_NAME_PREFIX, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 		PR_SURNAME, PR_GENERATION, PR_INITIALS, PR_DISPLAY_NAME, PR_NICKNAME,
@@ -2646,16 +2645,16 @@ struct tFolderResponseShape {
 	Enum::DefaultShapeNamesType BaseShape;
 	std::optional<std::vector<tPath>> AdditionalProperties;
 
-	static constexpr uint32_t tagsStructural[] = {PR_CONTAINER_CLASS, PR_FOLDER_TYPE};
-	static constexpr uint32_t tagsIdOnly[] = {PR_ENTRYID, PR_CHANGE_KEY};
-	static constexpr uint32_t tagsDefault[] = {PR_DISPLAY_NAME, PR_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT, PR_CONTENT_UNREAD};
+	static constexpr proptag_t tagsStructural[] = {PR_CONTAINER_CLASS, PR_FOLDER_TYPE};
+	static constexpr proptag_t tagsIdOnly[] = {PR_ENTRYID, PR_CHANGE_KEY};
+	static constexpr proptag_t tagsDefault[] = {PR_DISPLAY_NAME, PR_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT, PR_CONTENT_UNREAD};
 	/*
 	https://learn.microsoft.com/en-us/exchange/client-developer/web-service-reference/baseshape
 	"All" = "all the properties used by the Exchange Business Logic layer", for whatever that means.
 	Here, it means tagsDefault + {our extra list}.
 	*/
-	static constexpr uint32_t tagsAll[] = {PR_CONTAINER_CLASS, PR_PARENT_ENTRYID, PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME, PR_ATTR_HIDDEN, PR_ATTR_READONLY, PR_CONTAINER_FLAGS, PR_RECORD_KEY, PR_STORE_ENTRYID, PR_ACCESS, PR_ACCESS_LEVEL};
-	static constexpr uint32_t tagsAllRootOnly[] = {PR_IPM_SUBTREE_ENTRYID, PR_SENTMAIL_ENTRYID};
+	static constexpr proptag_t tagsAll[] = {PR_CONTAINER_CLASS, PR_PARENT_ENTRYID, PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME, PR_ATTR_HIDDEN, PR_ATTR_READONLY, PR_CONTAINER_FLAGS, PR_RECORD_KEY, PR_STORE_ENTRYID, PR_ACCESS, PR_ACCESS_LEVEL};
+	static constexpr proptag_t tagsAllRootOnly[] = {PR_IPM_SUBTREE_ENTRYID, PR_SENTMAIL_ENTRYID};
 };
 
 /**
@@ -2962,7 +2961,7 @@ class tRestriction {
 	static void deserialize(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
 
 	static void* loadConstant(const tinyxml2::XMLElement*, uint16_t);
-	static uint32_t getTag(const tinyxml2::XMLElement*, const sGetNameId&);
+	static proptag_t getTag(const tinyxml2::XMLElement *, const sGetNameId &);
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

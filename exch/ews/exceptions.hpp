@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
-
 #pragma once
-
-#include <fmt/format.h>
 #include <stdexcept>
+#include <fmt/format.h>
+#include <gromox/mapidefs.h>
 
 namespace gromox::EWS::Exceptions {
 
@@ -351,14 +350,14 @@ E(3218, "cannot access target folder");
 E(3219, "failed to load hierarchy table");
 inline std::string E3220(const char* name) {return fmt::format("E-3220: unknown restriction type '{}'", name);}
 E(3221, "missing FieldURIOrConstant node");
-inline std::string E3223(uint32_t tag1, uint32_t tag2) {return fmt::format("E-3223: properties 0x{:08x} and 0x{:08x} are not comparable", tag1, tag2);}
+inline std::string E3223(proptag_t tag1, proptag_t tag2) {return fmt::format("E-3223: properties 0x{:08x} and 0x{:08x} are not comparable", tag1, tag2);}
 E(3224, "failed to find tag for Contains path");
 E(3225, "invalid Contains property type");
 E(3226, "missing Constant node");
 inline std::string E3227(const char* mode){return fmt::format("E-3227: invalid ContainmentMode '{}'", mode);}
 inline std::string E3228(const char* comp){return fmt::format("E-3228: invalid ContainmentComparison'{}'", comp);}
 E(3229, "failed to find tag for Excludes path");
-inline std::string E3230(const char* type, uint32_t tag) {return fmt::format("E-3230: cannnot apply bitmask operation to {} tag (0x{:08x})", type, tag);}
+inline std::string E3230(const char* type, proptag_t tag) {return fmt::format("E-3230: cannnot apply bitmask operation to {} tag (0x{:08x})", type, tag);}
 E(3231, "missing BitMask node");
 E(3232, "failed to find tag for Exist path");
 E(3233, "missing child restriction for Not restriction");

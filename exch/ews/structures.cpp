@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 /**
  * @brief      Implementation of EWS structure methods
@@ -805,7 +805,7 @@ sShape::sShape(const TPROPVAL_ARRAY& tp)
  *
  * @return     Reference to self
  */
-sShape& sShape::add(uint32_t tag, uint8_t flags)
+sShape &sShape::add(proptag_t tag, uint8_t flags)
 {
 	auto it = props.find(tag);
 	if (it == props.end()) {
@@ -855,7 +855,7 @@ PROPTAG_ARRAY sShape::remove() const
  *
  * @return     True if the property was requested, false otherwise
  */
-bool sShape::requested(uint32_t tag, uint8_t mask) const
+bool sShape::requested(proptag_t tag, uint8_t mask) const
 {
 	auto it = props.find(tag);
 	return it != props.end() && (mask == FL_ANY || it->second.flags & mask);
@@ -926,7 +926,7 @@ TPROPVAL_ARRAY sShape::write() const
  *
  * @return     Property or nullptr if not present
  */
-const TAGGED_PROPVAL* sShape::writes(uint32_t tag) const
+const TAGGED_PROPVAL *sShape::writes(proptag_t tag) const
 {
 	auto it = std::find_if(wProps.begin(), wProps.end(), [=](const TAGGED_PROPVAL& tp){return tp.proptag == tag;});
 	return it != wProps.end() ? &*it : nullptr;
@@ -973,7 +973,7 @@ void sShape::clean()
  *
  * @return     Pointer to property or nullptr if not found
  */
-const TAGGED_PROPVAL* sShape::get(uint32_t tag, uint8_t mask) const
+const TAGGED_PROPVAL *sShape::get(proptag_t tag, uint8_t mask) const
 {
 	auto it = props.find(tag);
 	if (it == props.end() || (mask != FL_ANY && !(it->second.flags & mask)))
@@ -1008,7 +1008,7 @@ const TAGGED_PROPVAL* sShape::get(const PROPERTY_NAME& name, uint8_t mask) const
  *
  * @return     Pointer to property value or nullptr if not found
  */
-template<typename T> const T* sShape::get(uint32_t tag, uint8_t mask) const
+template<typename T> const T *sShape::get(proptag_t tag, uint8_t mask) const
 {
 	const TAGGED_PROPVAL* prop = get(tag, mask);
 	return prop ? static_cast<const T *>(prop->pvalue) : nullptr;
@@ -1057,7 +1057,7 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 	if (ids.size() != names.size()) // Abort if sizes do not match
 		return false;
 	size_t namedAdd = 0, namedRm = 0;
-	for (uint32_t tag : namedTags) {//Remove all named tags
+	for (auto tag : namedTags) { /* remove all named tags */
 		auto it = props.find(tag);
 		if (it == props.end())
 			continue;
@@ -1072,7 +1072,7 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 	if (dTags.size() >=namedRm)
 		dTags.resize(dTags.size()-namedRm);//Truncate named IDs
 	for (size_t index = 0; index < names.size(); ++index) { //Add named IDs
-		uint32_t tag = PROP_TAG(PROP_TYPE(namedTags[index]), ids[index]);
+		auto tag = PROP_TAG(PROP_TYPE(namedTags[index]), ids[index]);
 		namedTags[index] = tag;
 		if (!PROP_ID(tag))
 			continue;
@@ -1133,7 +1133,7 @@ void sShape::putExtended(std::vector<tExtendedProperty>& extprops) const
  *
  * @return     Property tag or 0 if unknown
  */
-uint32_t sShape::tag(const PROPERTY_NAME& name) const
+proptag_t sShape::tag(const PROPERTY_NAME &name) const
 {
 	auto it = std::find(names.begin(), names.end(), name);
 	return it == names.end() ? 0 : namedTags[std::distance(names.begin(), it)];
@@ -1700,12 +1700,12 @@ void tCalendarItem::update(const sShape& shape)
  */
 void tCalendarItem::setDatetimeFields(sShape& shape)
 {
-	uint32_t tag;
 	int64_t startOffset = 0, endOffset = 0;
 	std::optional<uint64_t> startTime = 0, endTime = 0;
 	fromProp(shape.writes(NtCommonStart), startTime);
 	fromProp(shape.writes(NtCommonEnd), endTime);
-	if ((tag = shape.tag(NtCalendarTimeZone))) {
+	auto tag = shape.tag(NtCalendarTimeZone);
+	if (tag != 0) {
 		std::optional<std::string> calTimezone;
 		fromProp(shape.writes(NtCalendarTimeZone), calTimezone);
 		if (calTimezone.has_value()) {
@@ -1965,7 +1965,7 @@ const tChangeDescription::Field* tChangeDescription::find(const char* type, cons
  * @return     Property containing a copy of the value
  */
 template<typename T>
-TAGGED_PROPVAL tChangeDescription::mkProp(uint32_t tag, const T& val)
+TAGGED_PROPVAL tChangeDescription::mkProp(proptag_t tag, const T &val)
 {
 	return TAGGED_PROPVAL{tag, EWSContext::construct<T>(val)};
 }
@@ -2018,7 +2018,7 @@ void tChangeDescription::convBody(const tinyxml2::XMLElement* xml, sShape& shape
  * @param      v      XML value node
  * @param      shape  Shape to store property in
  */
-void tChangeDescription::convBool(uint32_t tag, const XMLElement* v, sShape& shape)
+void tChangeDescription::convBool(proptag_t tag, const XMLElement *v, sShape &shape)
 {
 	bool value;
 	if (v->QueryBoolText(&value))
@@ -2036,7 +2036,7 @@ void tChangeDescription::convBool(uint32_t tag, const XMLElement* v, sShape& sha
 void tChangeDescription::convBool(const PROPERTY_NAME &name,
     const XMLElement *v, sShape& shape)
 {
-	uint32_t tag = shape.tag(name);
+	auto tag = shape.tag(name);
 	if (tag)
 		convBool(tag, v, shape);
 }
@@ -2048,7 +2048,7 @@ void tChangeDescription::convBool(const PROPERTY_NAME &name,
  * @param      v      XML value node
  * @param      shape  Shape to store property in
  */
-void tChangeDescription::convDate(uint32_t tag, const XMLElement* v, sShape& shape)
+void tChangeDescription::convDate(proptag_t tag, const XMLElement *v, sShape &shape)
 {
 	const char* text = v->GetText();
 	if (!text)
@@ -2067,7 +2067,7 @@ void tChangeDescription::convDate(uint32_t tag, const XMLElement* v, sShape& sha
  */
 void tChangeDescription::convDate(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
 {
-	uint32_t tag = shape.tag(name);
+	auto tag = shape.tag(name);
 	if (tag)
 		convDate(tag, v, shape);
 }
@@ -2086,7 +2086,7 @@ void tChangeDescription::convDate(const PROPERTY_NAME& name, const XMLElement* v
  * @tparam     PT     Numeric property type
  */
 template<typename ET, typename PT>
-void tChangeDescription::convEnumIndex(uint32_t tag, const XMLElement* v, sShape& shape)
+void tChangeDescription::convEnumIndex(proptag_t tag, const XMLElement *v, sShape &shape)
 {
 	shape.write(mkProp(tag, PT{ET{v->GetText()}.index()}));
 }
@@ -2116,7 +2116,7 @@ void tChangeDescription::convEnumIndex(const PROPERTY_NAME& name, const XMLEleme
  * @param      v      XML value node
  * @param      shape  Shape to store property in
  */
-void tChangeDescription::convText(uint32_t tag, const XMLElement* v, sShape& shape)
+void tChangeDescription::convText(proptag_t tag, const XMLElement *v, sShape &shape)
 {
 	shape.write(TAGGED_PROPVAL{tag, deconst(znul(v->GetText()))});
 }
@@ -2130,12 +2130,12 @@ void tChangeDescription::convText(uint32_t tag, const XMLElement* v, sShape& sha
  */
 void tChangeDescription::convText(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
 {
-	uint32_t tag = shape.tag(name);
+	auto tag = shape.tag(name);
 	if (tag)
 		convText(tag, v, shape);
 }
 
-void tChangeDescription::convStrArray(uint32_t tag, const XMLElement* v, sShape& shape)
+void tChangeDescription::convStrArray(proptag_t tag, const XMLElement *v, sShape &shape)
 {
 	uint32_t count = 0;
 	for (const XMLElement *s = v->FirstChildElement("String"); s != nullptr;
@@ -2151,7 +2151,7 @@ void tChangeDescription::convStrArray(uint32_t tag, const XMLElement* v, sShape&
 
 void tChangeDescription::convStrArray(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
 {
-	uint32_t tag = shape.tag(name);
+	auto tag = shape.tag(name);
 	if (tag)
 		convStrArray(tag, v, shape);
 }
@@ -2172,8 +2172,8 @@ void tContact::genFields(sShape& shape)
 {
 	std::optional<std::string> street, city, state, country, postal;
 
-	uint32_t tag;
-	if ((tag = shape.tag(NtBusinessAddress)) && !shape.writes(tag)) {
+	auto tag = shape.tag(NtBusinessAddress);
+	if (tag != 0 && !shape.writes(tag)) {
 		fromProp(shape.writes(NtBusinessAddressStreet), street);
 		fromProp(shape.writes(NtBusinessAddressCity), city);
 		fromProp(shape.writes(NtBusinessAddressState), state);
@@ -2471,7 +2471,7 @@ decltype(tExtendedFieldURI::propsetIds) tExtendedFieldURI::propsetIds = {
  *
  * @param     tag     Property tag ID
  */
-tExtendedFieldURI::tExtendedFieldURI(uint32_t tag) :
+tExtendedFieldURI::tExtendedFieldURI(proptag_t tag) :
     PropertyTag(PROP_ID(tag)),
     PropertyType(typeName(PROP_TYPE(tag)))
 {}
@@ -2627,7 +2627,7 @@ void tRestriction::build_andor(RESTRICTION& dst, const tinyxml2::XMLElement* src
 
 void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* src, relop op, const sGetNameId& getId)
 {
-	uint32_t tag = getTag(src, getId);
+	auto tag = getTag(src, getId);
 	const tinyxml2::XMLElement* cmptarget = src->FirstChildElement("FieldURIOrConstant");
 	if (!cmptarget)
 		throw EWSError::InvalidRestriction(E3221);
@@ -2807,7 +2807,7 @@ tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propnam
  *
  * @return     Tag ID or 0 if named property
  */
-uint32_t tExtendedFieldURI::tag() const
+proptag_t tExtendedFieldURI::tag() const
 {
 	return PropertyTag ? PROP_TAG(type(), *PropertyTag) : 0;
 }
@@ -2821,7 +2821,7 @@ uint32_t tExtendedFieldURI::tag() const
  *
  * @return     Tag ID
  */
-uint32_t tExtendedFieldURI::tag(const sGetNameId& getId) const
+proptag_t tExtendedFieldURI::tag(const sGetNameId &getId) const
 {
 	return PROP_TAG(type(), PropertyTag ? *PropertyTag : getId(name()));
 }
@@ -3133,7 +3133,7 @@ SORTORDER_SET* tFieldOrder::build(const std::vector<tFieldOrder>& sorts, const s
 	sset->psort = EWSContext::alloc<SORT_ORDER>(sset->count);
 	SORT_ORDER* current = sset->psort;
 	for (const tFieldOrder& sort : sorts) {
-		uint32_t tag = sort.fieldURI.tag(getId);
+		auto tag = sort.fieldURI.tag(getId);
 		current->type = PROP_TYPE(tag);
 		current->propid = PROP_ID(tag);
 		current->table_sort = sort.Order.index();
@@ -3332,7 +3332,7 @@ void tFieldURI::tags(sShape& shape, bool add) const
  *
  * @return    Tag or 0 if not found
  */
-uint32_t tFieldURI::tag(const sGetNameId& getId) const
+proptag_t tFieldURI::tag(const sGetNameId& getId) const
 {
 	auto tags = tagMap.equal_range(FieldURI);
 	if (tags.first != tagMap.end())
@@ -3370,23 +3370,23 @@ tFileAttachment::tFileAttachment(const sAttachmentId& aid, const sShape& shape) 
  */
 void tFolderResponseShape::tags(sShape& shape) const
 {
-	for (uint32_t tag : tagsStructural)
+	for (auto tag : tagsStructural)
 		shape.add(tag);
 	size_t baseShape = BaseShape.index();
-	for (uint32_t tag : tagsIdOnly)
+	for (auto tag : tagsIdOnly)
 		shape.add(tag, sShape::FL_FIELD);
 	if (baseShape >= 1)
-		for (uint32_t tag : tagsDefault)
+		for (auto tag : tagsDefault)
 			shape.add(tag, sShape::FL_FIELD);
 	if (baseShape == 2) {
 		/* "tagsAll" is really an _extra_ list (over default), not "all" */
-		for (uint32_t tag : tagsAll)
+		for (auto tag : tagsAll)
 			shape.add(tag, sShape::FL_FIELD);
 
 		/* XXX
 		bool is_root = ... == PRIVATE_FID_ROOT;
 		if (is_root)
-			for (uint32_t tag : tagsAllRootOnly)
+			for (auto tag : tagsAllRootOnly)
 				shape.add(tag, sShape::FL_FIELD);
 		*/
 	}
@@ -3533,7 +3533,7 @@ void tIndexedFieldURI::tags(sShape& shape, bool add) const
  *
  * @return
  */
-uint32_t tIndexedFieldURI::tag(const sGetNameId& getId) const
+proptag_t tIndexedFieldURI::tag(const sGetNameId &getId) const
 {
 	static auto compval = [](const auto& v1, const tIndexedFieldURI& v2)
 	{return std::tie(v1.first.first, v1.first.second) < std::tie(v2.FieldURI, v2.FieldIndex);};
@@ -3730,10 +3730,9 @@ decltype(tItemResponseShape::namedTagsDefault) tItemResponseShape::namedTagsDefa
  */
 void tItemResponseShape::tags(sShape& shape) const
 {
-
-	for (uint32_t tag : tagsStructural)
+	for (auto tag : tagsStructural)
 		shape.add(tag);
-	for (uint32_t tag : tagsIdOnly)
+	for (auto tag : tagsIdOnly)
 		shape.add(tag, sShape::FL_FIELD);
 	std::string_view type = BodyType ? *BodyType : Enum::Best;
 	if ((IncludeMimeContent && *IncludeMimeContent) || (BodyType && type == Enum::Best))
@@ -3754,7 +3753,7 @@ void tItemResponseShape::tags(sShape& shape) const
 	}
 	size_t baseShape = BaseShape.index();
 	if (baseShape >= 1) {
-		for (uint32_t tag : tagsDefault)
+		for (auto tag : tagsDefault)
 			shape.add(tag, sShape::FL_FIELD);
 		for (const auto& named : namedTagsDefault)
 			shape.add(*named.first, named.second, sShape::FL_FIELD);
@@ -3836,7 +3835,7 @@ void tPath::tags(sShape& shape, bool add) const
  *
  * @return    Tag or 0 if not found
  */
-uint32_t tPath::tag(const sGetNameId& getId) const
+proptag_t tPath::tag(const sGetNameId &getId) const
 {
 	return std::visit([&](auto &&v) { return v.tag(getId); }, asVariant());
 }
@@ -4211,7 +4210,7 @@ void tSetItemField::put(sShape& shape) const
 	} else if (std::holds_alternative<tIndexedFieldURI>(fieldURI.asVariant())) {
 		const tIndexedFieldURI& uri = std::get<tIndexedFieldURI>(fieldURI.asVariant());
 		auto getId = [&shape](const PROPERTY_NAME& name){return PROP_ID(shape.tag(name));};
-		uint32_t tag = uri.tag(getId);
+		auto tag = uri.tag(getId);
 		if (!tag) {
 			mlog(LV_WARN, "ews: failed to resolve indexed property %s/%s", uri.FieldURI.c_str(), uri.FieldIndex.c_str());
 			return;

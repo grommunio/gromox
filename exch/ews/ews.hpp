@@ -286,13 +286,13 @@ class EWSContext {
 	uint32_t getAccountId(const std::string&, bool) const;
 	std::string getDir(const Structures::sFolderSpec&) const;
 	TAGGED_PROPVAL getFolderEntryId(const std::string&, uint64_t) const;
-	template<typename T> const T* getFolderProp(const std::string&, uint64_t, uint32_t) const;
+	template<typename T> const T *getFolderProp(const std::string &, uint64_t, proptag_t) const;
 	TPROPVAL_ARRAY getFolderProps(const std::string&, uint64_t, proptag_cspan) const;
 	std::pair<std::list<Structures::sNotificationEvent>, bool> getEvents(const Structures::tSubscriptionId&) const;
 	TAGGED_PROPVAL getFolderEntryId(const Structures::sFolderSpec&) const;
 	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
-	template<typename T> const T* getItemProp(const std::string&, uint64_t, uint32_t) const;
+	template<typename T> const T *getItemProp(const std::string &, uint64_t, proptag_t) const;
 	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
 	GUID getMailboxGuid(const std::string&) const;
 	Structures::sMailboxInfo getMailboxInfo(const std::string&, bool) const;
@@ -425,8 +425,8 @@ private:
  *
  * @return     Pointer to property or nullptr if not found.
  */
-template<typename T>
-const T* EWSContext::getFolderProp(const std::string& dir, uint64_t mid, uint32_t tag) const
+template<typename T> const T *
+EWSContext::getFolderProp(const std::string &dir, uint64_t mid, proptag_t tag) const
 {
 	return static_cast<const T *>(getFolderProp(dir, mid, tag));
 }
@@ -442,8 +442,8 @@ const T* EWSContext::getFolderProp(const std::string& dir, uint64_t mid, uint32_
  *
  * @return     Pointer to property or nullptr if not found.
  */
-template<typename T>
-const T* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32_t tag) const
+template<typename T> const T *
+EWSContext::getItemProp(const std::string &dir, uint64_t mid, proptag_t tag) const
 {
 	return static_cast<const T*>(getItemProp(dir, mid, tag));
 }
