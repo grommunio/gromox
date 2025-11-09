@@ -11,7 +11,7 @@ AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 # lib_LTL must be dependency-ordered, or make install fails
 lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_ndr.la libgxs_mysql_adaptor.la libgromox_abtree.la libgromox_auth.la libgromox_authz.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgromox_ews.la libgromox_mh_emsmdb.la libgromox_mh_nsp.la libgromox_oab.la libgromox_oxdisco.la libgromox_emsmdb.la libgromox_nsp.la libgromox_rfr.la libgxs_exmdb_provider.la libgxs_event_proxy.la libgxs_event_stub.la libgxs_midb_agent.la libgxs_timer_agent.la libgxs_ruleproc.la
 
-pkglibexec_PROGRAMS = delivery delivery-queue event gromox-snapshot http imap istore lda midb pop3 timer zcore tools/authtry tools/ddbg tools/textmapquery
+pkglibexec_PROGRAMS = delivery delivery-queue event gromox-snapshot http imap istore lda midb oab oxdisco pop3 timer zcore tools/authtry tools/ddbg tools/textmapquery
 if WITH_GNU_LD
 version_sc_SYFLAGS = -Wl,--version-script=${srcdir}/default.sym
 endif
@@ -115,6 +115,12 @@ EXTRA_libgxs_midb_agent_la_DEPENDENCIES = default.sym
 
 http_SOURCES = exch/http/cache.cpp exch/http/cache.hpp exch/http/fastcgi.cpp exch/http/fastcgi.hpp exch/http/hpm_processor.cpp exch/http/hpm_processor.hpp exch/http/http_parser.cpp exch/http/http_parser.hpp exch/http/listener.cpp exch/http/listener.hpp exch/http/main.cpp exch/http/ntlmssp.cpp exch/http/ntlmssp.hpp exch/http/pdu_ndr.cpp exch/http/pdu_ndr.hpp exch/http/pdu_ndr_ids.hpp exch/http/pdu_processor.cpp exch/http/pdu_processor.hpp exch/http/resource.hpp exch/http/rewrite2.cpp exch/http/rewrite.hpp exch/http/system_services.cpp exch/http/system_services.hpp
 http_LDADD = -lpthread ${libcrypto_LIBS} ${fmt_LIBS} ${gss_LIBS} ${iconv_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_auth.la libgromox_authz.la libgromox_common.la libgromox_epoll.la libgromox_ndr.la libgromox_mapi.la libgromox_ews.la libgromox_mh_emsmdb.la libgromox_mh_nsp.la libgromox_oab.la libgromox_oxdisco.la libgromox_emsmdb.la libgromox_nsp.la libgromox_rfr.la libgxs_exmdb_provider.la libgxs_mysql_adaptor.la libgxs_timer_agent.la
+oab_SOURCES = exch/fcgid.cpp
+oab_CPPFLAGS = ${AM_CPPFLAGS} -DENTRYPOINT=HPM_oab
+oab_LDADD = -lpthread ${libHX_LIBS} libgromox_common.la libgromox_mapi.la libgxs_mysql_adaptor.la libgromox_oab.la
+oxdisco_SOURCES = exch/fcgid.cpp
+oxdisco_CPPFLAGS = ${AM_CPPFLAGS} -DENTRYPOINT=HPM_oxdisco
+oxdisco_LDADD = -lpthread ${libHX_LIBS} libgromox_common.la libgromox_mapi.la libgxs_mysql_adaptor.la libgromox_oxdisco.la
 istore_SOURCES = exch/istore.cpp
 istore_LDADD = -lpthread ${libHX_LIBS} libgromox_common.la libgromox_mapi.la libgxs_exmdb_provider.la libgxs_mysql_adaptor.la
 midb_SOURCES = exch/midb/cmd_parser.cpp exch/midb/cmd_parser.hpp exch/midb/common_util.cpp exch/midb/common_util.hpp exch/midb/exmdb_client.hpp exch/midb/mail_engine.cpp exch/midb/mail_engine.hpp exch/midb/main.cpp exch/midb/system_services.hpp

@@ -58,6 +58,8 @@ Makefile.in
 /istore
 /lda
 /midb
+/oab
+/oxdisco
 /pop3
 /timer
 /zcore
