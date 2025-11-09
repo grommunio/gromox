@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
@@ -525,24 +527,23 @@ static ec_error_t html_write_style_text_indent(RTF_WRITER *pwriter, int text_ind
 
 static int html_css_font_keyword_to_pt(const char *value)
 {
-	static const struct {
-		const char *name;
-		int points;
+	static constexpr struct kw {
+		const char name[9];
+		int8_t pt;
 	} keywords[] = {
-		{"xx-small", 6},
-		{"x-small", 8},
-		{"small", 10},
-		{"medium", 12},
 		{"large", 14},
-		{"x-large", 18},
-		{"xx-large", 24},
-		{"smaller", 10},
 		{"larger", 14},
+		{"medium", 12},
+		{"small", 10},
+		{"smaller", 10},
+		{"x-large", 18},
+		{"x-small", 8},
+		{"xx-large", 24},
+		{"xx-small", 6},
 	};
-	for (const auto &kw : keywords)
-		if (strcasecmp(value, kw.name) == 0)
-			return kw.points;
-	return 0;
+	auto i = std::lower_bound(std::cbegin(keywords), std::cend(keywords), value,
+	         [](const kw &e, const char *v) { return strcasecmp(e.name, v) < 0; });
+	return i != std::cend(keywords) ? i->pt : 0;
 }
 
 static void html_trim_style_value(char *value)
