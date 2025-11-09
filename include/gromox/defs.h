@@ -23,8 +23,10 @@
 	using const_iterator = std::add_pointer_t<const value_type>; \
 	inline iterator begin() { return (memb); } \
 	inline const_iterator begin() const { return (memb); } \
+	inline const_iterator cbegin() const { return (memb); } \
 	inline iterator end() { return (memb) + (count); } \
 	inline const_iterator end() const { return (memb) + (count); } \
+	inline const_iterator cend() const { return (memb) + (count); } \
 	inline const value_type &operator[](size_t i) const { return (memb)[i]; } \
 	inline value_type &operator[](size_t i) { return (memb)[i]; } \
 	inline size_t size() const { return (count); } \
