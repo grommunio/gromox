@@ -23,9 +23,8 @@
 
 using namespace gromox;
 
-static BOOL oxctable_verify_columns_and_sorts(
-	const PROPTAG_ARRAY *pcolumns,
-	const SORTORDER_SET *psort_criteria)
+static bool verify_columns_and_sorts(proptag_cspan pcolumns,
+    const SORTORDER_SET *psort_criteria)
 {
 	proptag_t proptag = 0;
 	for (const auto &crit : *psort_criteria) {
@@ -36,7 +35,7 @@ static BOOL oxctable_verify_columns_and_sorts(
 		proptag = PROP_TAG(crit.type, crit.propid);
 		break;
 	}
-	for (const auto ctag : *pcolumns)
+	for (const auto ctag : pcolumns)
 		if (ctag & MV_INSTANCE && proptag != ctag)
 			return false;
 	return TRUE;
@@ -109,7 +108,7 @@ ec_error_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 			return ecInvalidParam;
 	}
 	auto psorts = ptable->get_sorts();
-	if (psorts != nullptr && !oxctable_verify_columns_and_sorts(pproptags, psorts))
+	if (psorts != nullptr && !verify_columns_and_sorts(*pproptags, psorts))
 		return ecNotSupported;
 	if (!ptable->set_columns(pproptags))
 		return ecServerOOM;
@@ -179,7 +178,7 @@ ec_error_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteri
 	}
 	auto pcolumns = ptable->get_columns();
 	if (b_multi_inst && pcolumns != nullptr && 
-	    !oxctable_verify_columns_and_sorts(pcolumns, psort_criteria))
+	    !verify_columns_and_sorts(*pcolumns, psort_criteria))
 		return ecNotSupported;
 	if (!ptable->set_sorts(psort_criteria))
 		return ecServerOOM;
@@ -248,13 +247,13 @@ ec_error_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count
 	if (0 == tmp_set.count) {
 		*pcount = 0;
 	} else {
+		const auto cols = ptable->get_columns();
 		size_t i;
 		for (i=0; i<tmp_set.count; i++) {
-			if (!common_util_propvals_to_row(tmp_set.pparray[i],
-			    ptable->get_columns(), &tmp_row))
+			if (!cu_propvals_to_row(tmp_set.pparray[i], *cols, &tmp_row))
 				return ecServerOOM;
 			uint32_t last_offset = ext.m_offset;
-			if (pext->p_proprow(*ptable->get_columns(), tmp_row) != pack_result::ok) {
+			if (pext->p_proprow(*cols, tmp_row) != pack_result::ok) {
 				ext.m_offset = last_offset;
 				break;
 			}
@@ -527,7 +526,7 @@ ec_error_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 	*pprow = cu_alloc<PROPERTY_ROW>();
 	if (*pprow == nullptr)
 		return ecServerOOM;
-	if (!common_util_propvals_to_row(&propvals, *ppcolumns, *pprow))
+	if (!cu_propvals_to_row(&propvals, **ppcolumns, *pprow))
 		return ecServerOOM;
 	return ecSuccess;
 }
@@ -614,12 +613,12 @@ ec_error_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 		return ecError;
 	}
 	ptable->set_position(old_position);
+	const auto *cols = ptable->get_columns();
 	for (i = 0; i < tmp_set.count; ++i) {
-		if (!common_util_propvals_to_row(tmp_set.pparray[i],
-		    ptable->get_columns(), &tmp_row))
+		if (!cu_propvals_to_row(tmp_set.pparray[i], *cols, &tmp_row))
 			return ecServerOOM;
 		uint32_t last_offset = ext.m_offset;
-		if (pext->p_proprow(*ptable->get_columns(), tmp_row) != pack_result::ok) {
+		if (pext->p_proprow(*cols, tmp_row) != pack_result::ok) {
 			ext.m_offset = last_offset;
 			break;
 		}

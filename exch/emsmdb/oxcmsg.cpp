@@ -149,8 +149,8 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 			return ecServerOOM;
 	}
 	for (size_t i = 0; i < rcpts.count; ++i) {
-		if (!common_util_propvals_to_openrecipient(cpid,
-		    rcpts.pparray[i], pcolumns, &(*pprecipient_row)[i]))
+		if (!cu_propvals_to_openrecipient(cpid, rcpts.pparray[i],
+		    *pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
@@ -345,8 +345,8 @@ ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 			ppropvals->ppropval->proptag = PR_ROWID;
 			ppropvals->ppropval->pvalue = deconst(&prow[i].row_id);
 		} else {
-			if (!common_util_modifyrecipient_to_propvals(pinfo->cpid,
-			    &prow[i], pproptags, ppropvals))
+			if (!cu_modifyrecipient_to_propvals(pinfo->cpid,
+			    &prow[i], *pproptags, ppropvals))
 				return ecServerOOM;
 		}
 		tmp_set.pparray[i] = ppropvals;
@@ -375,8 +375,8 @@ ec_error_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcoun
 	if (tmp_set.count == 0)
 		return ecNotFound;
 	for (i = 0; i < tmp_set.count; ++i) {
-		if (!common_util_propvals_to_readrecipient(pmessage->get_cpid(),
-		    tmp_set.pparray[i], pmessage->get_rcpt_columns(), &tmp_row))
+		if (!cu_propvals_to_readrecipient(pmessage->get_cpid(),
+		    tmp_set.pparray[i], *pmessage->get_rcpt_columns(), &tmp_row))
 			return ecServerOOM;
 		uint32_t last_offset = ext.m_offset;
 		if (pext->p_readrecipient_row(*pmessage->get_rcpt_columns(),
@@ -442,8 +442,8 @@ ec_error_t rop_reloadcachedinformation(uint16_t reserved,
 	if (*pprecipient_row == nullptr)
 		return ecServerOOM;
 	for (size_t i = 0; i < rcpts.count; ++i)
-		if (!common_util_propvals_to_openrecipient(pmessage->get_cpid(),
-		    rcpts.pparray[i], pcolumns, *pprecipient_row + i))
+		if (!cu_propvals_to_openrecipient(pmessage->get_cpid(),
+		    rcpts.pparray[i], *pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
 	return ecSuccess;
 }
@@ -924,8 +924,8 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 	if (*pprecipient_row == nullptr)
 		return ecServerOOM;
 	for (size_t i = 0; i < rcpts.count; ++i)
-		if (!common_util_propvals_to_openrecipient(pmessage->get_cpid(),
-		    rcpts.pparray[i], pcolumns, *pprecipient_row + i))
+		if (!cu_propvals_to_openrecipient(pmessage->get_cpid(),
+		    rcpts.pparray[i], *pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});

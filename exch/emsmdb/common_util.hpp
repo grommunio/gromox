@@ -70,20 +70,14 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 extern ec_error_t cu_set_propval(TPROPVAL_ARRAY *, gromox::proptag_t, const void *data);
 extern void common_util_remove_propvals(TPROPVAL_ARRAY *, gromox::proptag_t);
 extern BOOL common_util_retag_propvals(TPROPVAL_ARRAY *, gromox::proptag_t orig_tag, gromox::proptag_t new_tag);
-void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
-	const PROPTAG_ARRAY *pproptags_subtractor);
-PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags);
-BOOL common_util_propvals_to_row(
-	const TPROPVAL_ARRAY *ppropvals,
-	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow);
+extern void cu_reduce_proptags(PROPTAG_ARRAY *minuend, proptag_cspan subtractor);
+extern PROPTAG_ARRAY *cu_trim_proptags(proptag_cspan tags);
+extern bool cu_propvals_to_row(const TPROPVAL_ARRAY *, proptag_cspan cols, PROPERTY_ROW *row);
+extern bool cu_propvals_to_row_ex(cpid_t, bool unicode, const TPROPVAL_ARRAY *, proptag_cspan cols, PROPERTY_ROW *row);
 extern BOOL common_util_convert_unspecified(cpid_t, BOOL unicode, TYPED_PROPVAL *);
-extern BOOL common_util_propvals_to_row_ex(cpid_t, BOOL unicode, const TPROPVAL_ARRAY *, const PROPTAG_ARRAY *cols, PROPERTY_ROW *row);
-extern BOOL common_util_propvals_to_openrecipient(cpid_t, TPROPVAL_ARRAY *, const PROPTAG_ARRAY *cols, OPENRECIPIENT_ROW *row);
-extern BOOL common_util_propvals_to_readrecipient(cpid_t, TPROPVAL_ARRAY *, const PROPTAG_ARRAY *cols, READRECIPIENT_ROW *row);
-BOOL common_util_row_to_propvals(
-	const PROPERTY_ROW *prow, const PROPTAG_ARRAY *pcolumns,
-	TPROPVAL_ARRAY *ppropvals);
-extern BOOL common_util_modifyrecipient_to_propvals(cpid_t, const MODIFYRECIPIENT_ROW *, const PROPTAG_ARRAY *cols, TPROPVAL_ARRAY *vals);
+extern bool cu_propvals_to_openrecipient(cpid_t, TPROPVAL_ARRAY *vals, proptag_cspan cols, OPENRECIPIENT_ROW *row);
+extern bool cu_propvals_to_readrecipient(cpid_t, TPROPVAL_ARRAY *vals, proptag_cspan cols, READRECIPIENT_ROW *row);
+extern bool cu_modifyrecipient_to_propvals(cpid_t, const MODIFYRECIPIENT_ROW *, proptag_cspan cols, TPROPVAL_ARRAY *vals);
 BOOL common_util_convert_tagged_propval(
 	BOOL to_unicode, TAGGED_PROPVAL *ppropval);
 BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres);

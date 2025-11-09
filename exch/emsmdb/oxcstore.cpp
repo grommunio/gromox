@@ -324,8 +324,7 @@ ec_error_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
 	if (prows->prows == nullptr)
 		return ecServerOOM;
 	for (size_t i = 0; i < class_table.count; ++i)
-		if (!common_util_propvals_to_row(class_table.pparray[i],
-		    &columns, &prows->prows[i]))
+		if (!cu_propvals_to_row(class_table.pparray[i], columns, &prows->prows[i]))
 			return ecServerOOM;
 	return ecSuccess;
 }

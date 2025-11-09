@@ -137,7 +137,6 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 	ems_objtype object_type;
 	uint32_t total_size;
 	TPROPVAL_ARRAY propvals;
-	PROPTAG_ARRAY *ptmp_proptags;
 	
 	/* we ignore the size_limit as
 		mentioned in MS-OXCPRPT 3.2.5.1 */
@@ -145,7 +144,7 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 	if (pobject == nullptr)
 		return ecNullObject;
 	BOOL b_unicode = want_unicode == 0 ? false : TRUE;
-	ptmp_proptags = common_util_trim_proptags(pproptags);
+	auto ptmp_proptags = cu_trim_proptags(*pproptags);
 	if (ptmp_proptags == nullptr)
 		return ecServerOOM;
 	switch (object_type) {
@@ -216,10 +215,8 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 			}
 		}
 	}
-	if (!common_util_propvals_to_row_ex(cpid, b_unicode,
-	    &propvals, pproptags, prow))
-		return ecServerOOM;
-	return ecSuccess;
+	return cu_propvals_to_row_ex(cpid, b_unicode, &propvals, *pproptags, prow) ?
+	       ecSuccess : ecServerOOM;
 }
 
 ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
@@ -229,7 +226,6 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 	BOOL b_unicode = false;
 	ems_objtype object_type;
 	PROPTAG_ARRAY proptags;
-	PROPTAG_ARRAY *ptmp_proptags;
 	
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (pobject == nullptr)
@@ -239,7 +235,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		auto xlog = static_cast<logon_object *>(pobject);
 		if (!xlog->get_all_proptags(&proptags))
 			return ecError;
-		ptmp_proptags = common_util_trim_proptags(&proptags);
+		auto ptmp_proptags = cu_trim_proptags(proptags);
 		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
 		if (!xlog->get_properties(ptmp_proptags, ppropvals))
@@ -263,7 +259,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		auto fld = static_cast<folder_object *>(pobject);
 		if (!fld->get_all_proptags(&proptags))
 			return ecError;
-		ptmp_proptags = common_util_trim_proptags(&proptags);
+		auto ptmp_proptags = cu_trim_proptags(proptags);
 		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
 		if (!fld->get_properties(ptmp_proptags, ppropvals))
@@ -287,7 +283,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->get_all_proptags(&proptags))
 			return ecError;
-		ptmp_proptags = common_util_trim_proptags(&proptags);
+		auto ptmp_proptags = cu_trim_proptags(proptags);
 		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
 		if (!msg->get_properties(size_limit, ptmp_proptags, ppropvals))
@@ -299,7 +295,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (!atx->get_all_proptags(&proptags))
 			return ecError;
-		ptmp_proptags = common_util_trim_proptags(&proptags);
+		auto ptmp_proptags = cu_trim_proptags(proptags);
 		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
 		if (!atx->get_properties(size_limit, ptmp_proptags, ppropvals))
@@ -798,7 +794,7 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		BOOL b_fai    = !pexcluded_proptags->has(PR_FOLDER_ASSOCIATED_CONTENTS) ? TRUE : false;
 		if (!fldsrc->get_all_proptags(&proptags))
 			return ecError;
-		common_util_reduce_proptags(&proptags, pexcluded_proptags);
+		cu_reduce_proptags(&proptags, *pexcluded_proptags);
 		tmp_proptags.count = 0;
 		tmp_proptags.pproptag = cu_alloc<proptag_t>(proptags.count);
 		if (tmp_proptags.pproptag == nullptr)
