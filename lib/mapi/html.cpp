@@ -486,8 +486,8 @@ static ec_error_t html_write_style_font_size(RTF_WRITER *pwriter,
 	char tmp_buff[256];
 	
 	if (!unit_point)
-		/* 1px = 0.75292857248934pt */
-		font_size = (int)(((double)font_size)*0.75292857248934*2);
+		/* 1px = 0.75pt (at 96 DPI, anyway) */
+		font_size = static_cast<double>(font_size) * 0.75 * 2;
 	else
 		font_size *= 2;
 	length = snprintf(tmp_buff, std::size(tmp_buff), "\\fs%d ", font_size);
