@@ -1020,7 +1020,7 @@ tExtendedProperty::tExtendedProperty(const XMLElement* xml) :
 {
 	const XMLElement* value = xml->FirstChildElement("Value");
 	const XMLElement* values = xml->FirstChildElement("Values");
-	uint16_t type = ExtendedFieldURI.type();
+	proptype_t type = ExtendedFieldURI.type();
 	propval.proptag = ExtendedFieldURI.tag() ? ExtendedFieldURI.tag() : type;
 	bool ismv = type & MV_FLAG;
 	if (value && values)

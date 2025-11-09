@@ -366,7 +366,7 @@ class sShape {
 	proptag_t tag(const PROPERTY_NAME &) const;
 
 	sShape &add(proptag_t, uint8_t = 0);
-	sShape& add(const PROPERTY_NAME&, uint16_t, uint8_t=0);
+	sShape &add(const PROPERTY_NAME &, proptype_t, uint8_t = 0);
 
 	void write(const TAGGED_PROPVAL&);
 	void write(const PROPERTY_NAME&, const TAGGED_PROPVAL&);
@@ -870,14 +870,14 @@ struct tEffectiveRights {
  * Types.xsd:1142
  */
 struct tExtendedFieldURI {
-	using TMEntry = std::pair<const char*, uint16_t>;
+	using TMEntry = std::pair<const char *, proptype_t>;
 
 	static constexpr char NAME[] = "ExtendedFieldURI";
 
 	tExtendedFieldURI() = default;
 	explicit tExtendedFieldURI(const tinyxml2::XMLElement*);
 	explicit tExtendedFieldURI(proptag_t);
-	tExtendedFieldURI(uint16_t, const PROPERTY_NAME&);
+	tExtendedFieldURI(proptype_t, const PROPERTY_NAME &);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -889,13 +889,13 @@ struct tExtendedFieldURI {
 	std::optional<std::string> PropertyName; //Attribute
 
 	void tags(sShape&, bool=true) const;
-	uint16_t type() const;
+	proptype_t type() const;
 
 	proptag_t tag() const;
 	proptag_t tag(const sGetNameId&) const;
 	PROPERTY_NAME name() const;
 
-	static const char* typeName(uint16_t);
+	static const char *typeName(proptype_t);
 
 	static std::array<const GUID*, 10> propsetIds; ///< Same order as Enum::DistinguishedPropertySetType, Types.xsd:1040
 	static std::array<TMEntry, 26> typeMap; ///< Types.xsd:1060
@@ -913,13 +913,13 @@ struct tExtendedProperty {
 
 	void serialize(tinyxml2::XMLElement*) const;
 	private:
-	void serialize(const void*, uint16_t, tinyxml2::XMLElement*) const;
-	void deserialize(const tinyxml2::XMLElement*, uint16_t, void* = nullptr);
+	void serialize(const void *, proptype_t, tinyxml2::XMLElement *) const;
+	void deserialize(const tinyxml2::XMLElement *, proptype_t, void * = nullptr);
 
 	template<typename C, typename T>
-	void serializeMV(const void*, uint16_t, tinyxml2::XMLElement*, T* C::*) const;
+	void serializeMV(const void *, proptype_t, tinyxml2::XMLElement *, T *C::*) const;
 	template<typename C, typename T>
-	void deserializeMV(const tinyxml2::XMLElement*, uint16_t, T* C::*);
+	void deserializeMV(const tinyxml2::XMLElement *, proptype_t, T *C::*);
 };
 
 /**
@@ -969,7 +969,7 @@ struct tFieldURI {
 
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, proptag_t> tagMap; ///< Mapping for normal properties
-	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Mapping for named properties
+	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, proptype_t>> nameMap; ///< Mapping for named properties
 	static std::array<SMEntry, 17> specialMap; ///< Mapping for special properties
 };
 
@@ -1081,7 +1081,7 @@ struct tIndexedFieldURI {
 	using UIKey = std::pair<std::string, std::string>;
 	//Types.xsd:988
 	static std::array<std::pair<UIKey, proptag_t>, 25> tagMap;
-	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>, 25> nameMap;
+	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, proptype_t>>, 25> nameMap;
 };
 
 /**
@@ -2205,7 +2205,7 @@ struct tItemResponseShape {
 		PR_BUSINESS_FAX_NUMBER, PR_ASSISTANT_TELEPHONE_NUMBER, PR_HOME2_TELEPHONE_NUMBER,
 		PR_COMPANY_MAIN_PHONE_NUMBER, PR_HOME_FAX_NUMBER, PR_OTHER_TELEPHONE_NUMBER,
 		PR_CALLBACK_TELEPHONE_NUMBER, PR_RADIO_TELEPHONE_NUMBER};
-	static const std::array<std::pair<const PROPERTY_NAME*, uint16_t>, 5> namedTagsDefault;
+	static const std::array<std::pair<const PROPERTY_NAME *, proptype_t>, 5> namedTagsDefault;
 };
 
 /**
@@ -2960,7 +2960,7 @@ class tRestriction {
 	static void build_not(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
 	static void deserialize(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
 
-	static void* loadConstant(const tinyxml2::XMLElement*, uint16_t);
+	static void *loadConstant(const tinyxml2::XMLElement *, proptype_t);
 	static proptag_t getTag(const tinyxml2::XMLElement *, const sGetNameId &);
 };
 

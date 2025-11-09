@@ -104,7 +104,8 @@ static void writeProp(sShape &shape, const std::optional<sTimePoint> &value, pro
  * @param      name    Property name to write to
  * @param      type    Property type to use
  */
-void writeProp(sShape& shape, const std::optional<std::string>& value, const PROPERTY_NAME& name, uint16_t type)
+void writeProp(sShape &shape, const std::optional<std::string> &value,
+    const PROPERTY_NAME &name, proptype_t type)
 {
 	if (value)
 		shape.write(name, TAGGED_PROPVAL{type, const_cast<char *>(value->c_str())});

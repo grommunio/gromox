@@ -188,7 +188,7 @@ inline C mkArray(const std::vector<T>& data)
  *
  * @return     Memory requirement of property type
  */
-constexpr size_t typeWidth(uint16_t type)
+static constexpr size_t typeWidth(proptype_t type)
 {
 	switch (type) {
 	case PT_UNSPECIFIED:  return sizeof(TYPED_PROPVAL);
@@ -828,7 +828,7 @@ sShape &sShape::add(proptag_t tag, uint8_t flags)
  *
  * @return     Reference to self
  */
-sShape& sShape::add(const PROPERTY_NAME& name, uint16_t type, uint8_t flags)
+sShape &sShape::add(const PROPERTY_NAME &name, proptype_t type, uint8_t flags)
 {
 	names.emplace_back(name);
 	namedTags.emplace_back(type);
@@ -2724,7 +2724,7 @@ void tRestriction::build_not(RESTRICTION& dst, const tinyxml2::XMLElement* src, 
 	deserialize(dst.xnot->res, child, getId);
 }
 
-void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t type)
+void *tRestriction::loadConstant(const tinyxml2::XMLElement *parent, proptype_t type)
 {
 	const tinyxml2::XMLElement* constantNode = parent->FirstChildElement("Constant");
 	if (!constantNode)
@@ -2787,7 +2787,7 @@ void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t ty
  * @param     type       Property type
  * @param     propname   Property name information
  */
-tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propname) :
+tExtendedFieldURI::tExtendedFieldURI(proptype_t type, const PROPERTY_NAME &propname) :
     PropertyType(typeName(type)),
     PropertySetId(propname.guid)
 {
@@ -2871,7 +2871,7 @@ void tExtendedFieldURI::tags(sShape& shape, bool add) const
  *
  * @return     Tag type ID
  */
-uint16_t tExtendedFieldURI::type() const
+proptype_t tExtendedFieldURI::type() const
 {
 	static auto compval = [](const TMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
 	auto type = std::lower_bound(typeMap.begin(), typeMap.end(), PropertyType.c_str(), compval);
@@ -2887,7 +2887,7 @@ uint16_t tExtendedFieldURI::type() const
  *
  * @return    EWS type name
  */
-const char* tExtendedFieldURI::typeName(uint16_t type)
+const char *tExtendedFieldURI::typeName(proptype_t type)
 {
 	switch (type) {
 	case PT_MV_APPTIME: return "ApplicationTimeArray";
@@ -2934,13 +2934,13 @@ tExtendedProperty::tExtendedProperty(const TAGGED_PROPVAL& tp, const PROPERTY_NA
  *
  * @param      xml     XML values node
  * @param      type    Property type
- * @param      values  Member to write values to
+ * @param      values  Member to write values to (&SomeType::some_member)
  *
  * @tparam     C     Container type
  * @tparam     T     Value type
  */
 template<typename C, typename T>
-void tExtendedProperty::deserializeMV(const XMLElement* xml, uint16_t type, T* C::* values)
+void tExtendedProperty::deserializeMV(const XMLElement *xml, proptype_t type, T *C::* values)
 {
 	C* container = static_cast<C*>(propval.pvalue);
 	container->count = 0;
@@ -2962,7 +2962,7 @@ void tExtendedProperty::deserializeMV(const XMLElement* xml, uint16_t type, T* C
  * @param      type  Property type
  * @param      dest  Value destination or nullptr to automatically allocate
  */
-void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* dest)
+void tExtendedProperty::deserialize(const XMLElement *xml, proptype_t type, void *dest)
 {
 	size_t allocSize = typeWidth(type);
 	if (!dest)
@@ -3047,7 +3047,8 @@ void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* 
  * @tparam     T     Type of the values to store
  */
 template<typename C, typename T>
-inline void tExtendedProperty::serializeMV(const void* data, uint16_t type, XMLElement* xml, T* C::*value) const
+inline void tExtendedProperty::serializeMV(const void *data, proptype_t type,
+    XMLElement *xml, T *C::* value) const
 {
 	const C* content = static_cast<const C*>(data);
 	for (T *val = content->*value; val < content->*value + content->count; ++val) {
@@ -3065,7 +3066,7 @@ inline void tExtendedProperty::serializeMV(const void* data, uint16_t type, XMLE
  * @param      type  Property type
  * @param      xml   XML node to store value(s) in
  */
-void tExtendedProperty::serialize(const void* data, uint16_t type, XMLElement* xml) const
+void tExtendedProperty::serialize(const void *data, proptype_t type, XMLElement *xml) const
 {
 	switch (type) {
 	case PT_BOOLEAN:
