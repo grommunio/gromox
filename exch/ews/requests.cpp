@@ -505,10 +505,10 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 			uint32_t busyValue = resp == respAccepted ? olBusy :
 			                     resp == respTentative ? olTentative : olFree;
 			auto bstat = EWSContext::construct<uint32_t>(busyValue);
-			uint16_t pidResp = ctx.getNamedPropId(rdir, NtResponseStatus, true);
-			uint16_t pidReply = ctx.getNamedPropId(rdir, NtAppointmentReplyTime, true);
-			uint16_t pidState = ctx.getNamedPropId(rdir, NtAppointmentStateFlags, true);
-			uint16_t pidBusy = ctx.getNamedPropId(rdir, NtBusyStatus, true);
+			auto pidResp  = ctx.getNamedPropId(rdir, NtResponseStatus, true);
+			auto pidReply = ctx.getNamedPropId(rdir, NtAppointmentReplyTime, true);
+			auto pidState = ctx.getNamedPropId(rdir, NtAppointmentStateFlags, true);
+			auto pidBusy  = ctx.getNamedPropId(rdir, NtBusyStatus, true);
 			TAGGED_PROPVAL props[] = {
 				{PROP_TAG(PT_LONG, pidResp), rstat},
 				{PROP_TAG(PT_SYSTIME, pidReply), now},

@@ -528,7 +528,7 @@ std::optional<uint64_t> EWSContext::findExistingByGoid(const sFolderSpec& calend
 	std::array<RESTRICTION, 2> childRestrictions{};
 	size_t restrictionCount = 0;
 
-	auto addRestriction = [&](const BINARY* value, uint16_t propId) {
+	auto addRestriction = [&](const BINARY *value, propid_t propId) {
 		if (value == nullptr || value->cb == 0 || value->pb == nullptr || propId == 0 ||
 		    restrictionCount >= propertyRestrictions.size())
 			return;
@@ -544,8 +544,8 @@ std::optional<uint64_t> EWSContext::findExistingByGoid(const sFolderSpec& calend
 		++restrictionCount;
 	};
 
-	uint16_t pidGlobalId = getNamedPropId(calendarDir, NtGlobalObjectId, true);
-	uint16_t pidCleanGlobalId = getNamedPropId(calendarDir, NtCleanGlobalObjectId, true);
+	auto pidGlobalId      = getNamedPropId(calendarDir, NtGlobalObjectId, true);
+	auto pidCleanGlobalId = getNamedPropId(calendarDir, NtCleanGlobalObjectId, true);
 	const BINARY* goid = content.proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidGlobalId));
 	const BINARY* cleanGoid = content.proplist.get<const BINARY>(PROP_TAG(PT_BINARY, pidCleanGlobalId));
 	addRestriction(goid, pidGlobalId);
@@ -701,7 +701,7 @@ std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONT
 	MAIL mail;
 	auto getPropIds  = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 		{ *ids = getNamedPropIds(dir, *names); return TRUE; };
-	auto getPropName = [&](uint16_t id, PROPERTY_NAME **name) { *name = getPropertyName(dir, id); return TRUE; };
+	auto getPropName = [&](propid_t id, PROPERTY_NAME **name) { *name = getPropertyName(dir, id); return TRUE; };
 	if (!oxcmail_export(&content, log_id.c_str(), false,
 	                    oxcmail_body::plain_and_html, &mail, alloc, getPropIds, getPropName))
 		throw EWSError::ItemCorrupt(E3072);
@@ -754,7 +754,8 @@ uint32_t EWSContext::getAccountId(const std::string& name, bool isDomain) const
  *
  * @return     Array of property IDs
  */
-uint16_t EWSContext::getNamedPropId(const std::string& dir, const PROPERTY_NAME& propName, bool create) const
+propid_t EWSContext::getNamedPropId(const std::string &dir,
+    const PROPERTY_NAME &propName, bool create) const
 {
 	PROPNAME_ARRAY propNames{1, deconst(&propName)};
 	PROPID_ARRAY namedIds{};
@@ -812,7 +813,7 @@ void EWSContext::getNamedTags(const std::string& dir, sShape& shape, bool create
  *
  * @return     Property name
  */
-PROPERTY_NAME* EWSContext::getPropertyName(const std::string& dir, uint16_t id) const
+PROPERTY_NAME *EWSContext::getPropertyName(const std::string &dir, propid_t id) const
 {
 	PROPNAME_ARRAY propnames{};
 	if (!m_plugin.exmdb.get_named_propnames(dir.c_str(), {id}, &propnames) ||
@@ -1765,7 +1766,7 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	MAIL mail;
 	auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
 		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
-	auto getPropName = [&](uint16_t id, PROPERTY_NAME** name)
+	auto getPropName = [&](propid_t id, PROPERTY_NAME **name)
 					   {*name = getPropertyName(dir, id); return TRUE;};
 	std::string log_id;
 	if (log_msg_id != 0)

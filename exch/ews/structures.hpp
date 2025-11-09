@@ -169,7 +169,7 @@ struct sFolderEntryId : public FOLDER_ENTRYID {
 using sFolderId = std::variant<tFolderId, tDistinguishedFolderId>;
 
 /// Function to get tag id from property name
-using sGetNameId = std::function<uint16_t(const PROPERTY_NAME&)>;
+using sGetNameId = std::function<propid_t (const PROPERTY_NAME &)>;
 
 /**
  * @brief     Message entry ID extension

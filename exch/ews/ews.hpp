@@ -296,7 +296,7 @@ class EWSContext {
 	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
 	GUID getMailboxGuid(const std::string&) const;
 	Structures::sMailboxInfo getMailboxInfo(const std::string&, bool) const;
-	uint16_t getNamedPropId(const std::string&, const PROPERTY_NAME&, bool=false) const;
+	propid_t getNamedPropId(const std::string &, const PROPERTY_NAME &, bool = false) const;
 	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&, bool=false) const;
 	void getNamedTags(const std::string&, Structures::sShape&, bool=false) const;
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
@@ -397,7 +397,7 @@ private:
 	inline void updateProps(Structures::tItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const {}
 	void updateProps(Structures::tCalendarItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const;
 
-	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
+	PROPERTY_NAME *getPropertyName(const std::string &, propid_t) const;
 
 	detail::ContextKey m_ctx_id = -1;
 	http_status m_code = http_status::ok;

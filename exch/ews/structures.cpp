@@ -3545,7 +3545,7 @@ proptag_t tIndexedFieldURI::tag(const sGetNameId &getId) const
 
 	auto names = std::lower_bound(nameMap.begin(), nameMap.end(), *this, compval);
 	if (names != nameMap.end() && names->first.first == FieldURI && names->first.second == FieldIndex) {
-		uint16_t tagid =  getId(names->second.first);
+		auto tagid = getId(names->second.first);
 		return tagid ? PROP_TAG(names->second.second, tagid) : 0;
 	}
 	return 0;
