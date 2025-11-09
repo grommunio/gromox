@@ -1480,8 +1480,9 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	PROPID_ARRAY namedids = getNamedPropIds(dir, propnames, true);
 	auto ex_replace_time_tag = PROP_TAG(PT_SYSTIME, namedids[0]);
 	TPROPVAL_ARRAY props;
-	PROPTAG_ARRAY tags = shape.proptags();
-	tags.emplace_back(ex_replace_time_tag);
+	auto tags_1 = shape.proptags_vec();
+	tags_1.emplace_back(ex_replace_time_tag);
+	const PROPTAG_ARRAY tags = {static_cast<uint16_t>(tags_1.size()), deconst(tags_1.data())};
 
 	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
 	struct tm basedate_local;
