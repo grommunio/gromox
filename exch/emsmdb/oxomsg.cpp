@@ -634,7 +634,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
 		TPROPVAL_ARRAY cls_vals{};
-		if (pmessage->get_properties(0, &cls_tags, &cls_vals) != 0)
+		if (!pmessage->get_properties(0, &cls_tags, &cls_vals))
 			/* ignore, since we can test for cls_vals fill */;
 		auto ret = pass_scheduling("E-2080", actor, delegator.c_str(), *pmessage,
 		           cls_vals.get<const char>(PR_MESSAGE_CLASS));
