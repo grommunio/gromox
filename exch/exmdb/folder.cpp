@@ -568,7 +568,7 @@ BOOL exmdb_server::set_folder_properties(const char *dir, cpid_t cpid,
 }
 
 BOOL exmdb_server::remove_folder_properties(const char *dir,
-	uint64_t folder_id, const PROPTAG_ARRAY *pproptags)
+    uint64_t folder_id, proptag_cspan pproptags)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -578,7 +578,7 @@ BOOL exmdb_server::remove_folder_properties(const char *dir,
 	if (!sql_transact)
 		return false;
 	if (!cu_remove_properties(MAPI_FOLDER,
-	    fid_val, pdb->psqlite, *pproptags))
+	    fid_val, pdb->psqlite, pproptags))
 		return FALSE;
 
 	db_conn::NOTIFQ notifq;

@@ -541,7 +541,7 @@ bool folder_object::remove_properties(proptag_cspan pproptags,
 		return TRUE;
 	auto dir = plogon->get_dir();
 	if (!exmdb_client->remove_folder_properties(dir,
-	    pfolder->folder_id, &tmp_proptags))
+	    pfolder->folder_id, tmp_proptags))
 		return FALSE;	
 
 	BINARY *pbin_pcl = nullptr;

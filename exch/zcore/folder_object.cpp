@@ -519,7 +519,7 @@ bool folder_object::remove_properties(proptag_cspan pproptags)
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	if (!exmdb_client->remove_folder_properties(pfolder->pstore->get_dir(),
-	    pfolder->folder_id, &tmp_proptags))
+	    pfolder->folder_id, tmp_proptags))
 		return FALSE;	
 	tmp_propvals.count = 4;
 	tmp_propvals.ppropval = propval_buff;

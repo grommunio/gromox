@@ -278,16 +278,13 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_folder_properties &d)
 static pack_result exmdb_pull(EXT_PULL &x, exreq_remove_folder_properties &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return pack_result::alloc;
-	return x.g_proptag_a(d.pproptags);
+	return x.g_proptag_a(&d.pproptags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_folder_properties &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_folder_properties_v &d)
 {
 	TRY(x.p_uint64(d.folder_id));
-	return x.p_proptag_a(*d.pproptags);
+	return x.p_proptag_a(d.pproptags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_delete_folder &d)

@@ -339,10 +339,16 @@ struct exreq_set_folder_properties final : public exreq {
 	TPROPVAL_ARRAY *pproperties;
 };
 
-struct exreq_remove_folder_properties final : public exreq {
-	using view_t = exreq_remove_folder_properties;
+struct exreq_remove_folder_properties_v final : public exreq {
 	uint64_t folder_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_cspan pproptags;
+};
+
+struct exreq_remove_folder_properties final : public exreq {
+	using view_t = exreq_remove_folder_properties_v;
+	uint64_t folder_id;
+	proptag_vector pproptags;
+	operator view_t() const { view_t v; v.folder_id = folder_id; v.pproptags = pproptags; return v; }
 };
 
 struct exreq_empty_folder final : public exreq {

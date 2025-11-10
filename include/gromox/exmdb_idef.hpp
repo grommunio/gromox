@@ -29,7 +29,7 @@ EXMIDL(create_folder, (const char *dir, cpid_t cpid, const TPROPVAL_ARRAY *pprop
 EXMIDL(get_folder_all_proptags, (const char *dir, uint64_t folder_id, IDLOUT PROPTAG_ARRAY *proptags))
 EXMIDL(get_folder_properties, (const char *dir, cpid_t cpid, uint64_t folder_id, proptag_cspan pproptags, IDLOUT TPROPVAL_ARRAY *propvals))
 EXMIDL(set_folder_properties, (const char *dir, cpid_t cpid, uint64_t folder_id, const TPROPVAL_ARRAY *pproperties, IDLOUT PROBLEM_ARRAY *problems))
-EXMIDL(remove_folder_properties, (const char *dir, uint64_t folder_id, const PROPTAG_ARRAY *pproptags))
+EXMIDL(remove_folder_properties, (const char *dir, uint64_t folder_id, proptag_cspan pproptags))
 EXMIDL(delete_folder, (const char *dir, cpid_t cpid, uint64_t folder_id, BOOL b_hard, IDLOUT BOOL *b_result))
 EXMIDL(empty_folder, (const char *dir, cpid_t cpid, const char *username, uint64_t folder_id, uint32_t flags, IDLOUT BOOL *b_partial))
 EXMIDL(is_descendant_folder, (const char *dir, uint64_t parent_fid, uint64_t child_fid, IDLOUT BOOL *b_included))
