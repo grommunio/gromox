@@ -632,10 +632,10 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 		    &res_top, nullptr, &table_id, &row_count))
 			return ecError;
 		static constexpr proptag_t one_proptag = PidTagMid;
-		static constexpr PROPTAG_ARRAY proptags = {1, deconst(&one_proptag)};
 		TARRAY_SET result_set;
 		if (!exmdb_client->query_table(plogon->dir, username,
-		    CP_ACP, table_id, &proptags, 0, row_count, &result_set)) {
+		    CP_ACP, table_id, {&one_proptag, 1},
+		    0, row_count, &result_set)) {
 			exmdb_client->unload_table(plogon->dir, table_id);
 			return ecError;
 		}

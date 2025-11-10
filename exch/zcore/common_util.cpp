@@ -1585,9 +1585,8 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 	    nullptr, nullptr, &table_id, &row_count))
 		return NULL;	
 	static constexpr proptag_t tmp_proptag[] = {PidTagMid};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 	if (!exmdb_client->query_table(pstore->get_dir(), nullptr, CP_ACP,
-	    table_id, &proptags, 0, row_count, &tmp_set))
+	    table_id, tmp_proptag, 0, row_count, &tmp_set))
 		return NULL;	
 	exmdb_client->unload_table(pstore->get_dir(), table_id);
 	pmessage_ids = cu_alloc<EID_ARRAY>();
@@ -1658,9 +1657,8 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 		return ecError;
 
 	static constexpr proptag_t xb_proptag[] = {PidTagFolderId};
-	static constexpr PROPTAG_ARRAY xb_proptags = {std::size(xb_proptag), deconst(xb_proptag)};
 	if (!exmdb_client->query_table(src_store->get_dir(), nullptr, CP_ACP,
-	    table_id, &xb_proptags, 0, row_count, &tmp_set))
+	    table_id, xb_proptag, 0, row_count, &tmp_set))
 		return ecError;
 	exmdb_client->unload_table(src_store->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {

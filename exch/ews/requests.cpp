@@ -920,8 +920,8 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 		TARRAY_SET table;
 		uint32_t offset = paging ? paging->offset(rowCount) : 0;
 		uint32_t results = maxResults ? std::min(maxResults, rowCount - offset) : rowCount;
-		exmdb.query_table(dir.c_str(), ctx.auth_info().username, CP_UTF8, tableId, &tags, offset,
-			              results, &table);
+		exmdb.query_table(dir.c_str(), ctx.auth_info().username,
+			CP_UTF8, tableId, tags, offset, results, &table);
 		mFindFolderResponseMessage msg;
 		msg.RootFolder.emplace().Folders.reserve(rowCount);
 		for (const TPROPVAL_ARRAY &props : table) {
@@ -1010,7 +1010,8 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 		TARRAY_SET table;
 		uint32_t offset = paging ? paging->offset(rowCount) : 0;
 		uint32_t results = maxResults ? std::min(maxResults, rowCount - offset) : rowCount;
-		exmdb.query_table(dir.c_str(), ctx.auth_info().username, CP_UTF8, tableId, &tags, offset, results, &table);
+		exmdb.query_table(dir.c_str(), ctx.auth_info().username,
+			CP_UTF8, tableId, tags, offset, results, &table);
 		mFindItemResponseMessage msg;
 		msg.RootFolder.emplace().Items.reserve(rowCount);
 		for (const TPROPVAL_ARRAY &props : table) {
@@ -1457,9 +1458,9 @@ void process(mGetUserConfigurationRequest&& request, XMLElement* response, const
 			throw EWSError::ItemNotFound(E3143);
 
 		static constexpr proptag_t midTag = PidTagMid;
-		static constexpr PROPTAG_ARRAY midTags = {1, deconst(&midTag)};
 		TARRAY_SET rows;
-		exmdb.query_table(dir.c_str(), username, CP_UTF8, tableId, &midTags, 0, 1, &rows);
+		exmdb.query_table(dir.c_str(), username, CP_UTF8, tableId,
+			{&midTag, 1}, 0, 1, &rows);
 		if (rows.count == 0 || rows.pparray[0] == nullptr)
 			throw EWSError::ItemNotFound(E3143);
 		auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);

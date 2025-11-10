@@ -445,10 +445,9 @@ static errno_t clear_rwz()
 	}
 
 	static constexpr proptag_t qtags1[] = {PidTagMid};
-	static constexpr PROPTAG_ARRAY qtags = {std::size(qtags1), deconst(qtags1)};
 	TARRAY_SET rowset{};
 	if (!exmdb_client->query_table(g_storedir, nullptr, CP_ACP, table_id,
-	    &qtags, 0, rowcount, &rowset))
+	    qtags1, 0, rowcount, &rowset))
 		return EIO;
 	std::vector<eid_t> ids;
 	for (unsigned int i = 0; i < rowset.count; ++i) {

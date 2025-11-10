@@ -50,7 +50,7 @@ EXMIDL(load_permission_table, (const char *dir, uint64_t folder_id, uint32_t tab
 EXMIDL(load_rule_table, (const char *dir, uint64_t folder_id,  uint8_t table_flags, const RESTRICTION *prestriction, IDLOUT uint32_t *table_id, uint32_t *row_count))
 EXMIDL(unload_table, (const char *dir, uint32_t table_id))
 EXMIDL(sum_table, (const char *dir, uint32_t table_id, IDLOUT uint32_t *rows))
-EXMIDL(query_table, (const char *dir, const char *username, cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed, IDLOUT TARRAY_SET *set))
+EXMIDL(query_table, (const char *dir, const char *username, cpid_t cpid, uint32_t table_id, proptag_cspan pproptags, uint32_t start_pos, int32_t row_needed, IDLOUT TARRAY_SET *set))
 EXMIDL(match_table, (const char *dir, const char *username, cpid_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags, IDLOUT int32_t *position, TPROPVAL_ARRAY *propvals))
 EXMIDL(locate_table, (const char *dir, uint32_t table_id, uint64_t inst_id, uint32_t inst_num, IDLOUT int32_t *position, uint32_t *row_type))
 EXMIDL(read_table_row, (const char *dir, const char *username, cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num, IDLOUT TPROPVAL_ARRAY *propvals))

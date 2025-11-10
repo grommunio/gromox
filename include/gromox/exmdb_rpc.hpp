@@ -499,14 +499,33 @@ struct exreq_sum_table final : public exreq {
 	uint32_t table_id;
 };
 
+struct exreq_query_table_v final : public exreq {
+	const char *username;
+	cpid_t cpid;
+	uint32_t table_id;
+	proptag_cspan pproptags;
+	uint32_t start_pos;
+	int32_t row_needed;
+};
+
 struct exreq_query_table final : public exreq {
-	using view_t = exreq_query_table;
+	using view_t = exreq_query_table_v;
 	char *username;
 	cpid_t cpid;
 	uint32_t table_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_vector pproptags;
 	uint32_t start_pos;
 	int32_t row_needed;
+	operator view_t() const {
+		view_t v;
+		v.username = username;
+		v.cpid = cpid;
+		v.table_id = table_id;
+		v.pproptags = pproptags;
+		v.start_pos = start_pos;
+		v.row_needed = row_needed;
+		return v;
+	}
 };
 
 struct exreq_match_table final : public exreq {

@@ -37,7 +37,6 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 	uint32_t table_id;
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
-	PROPTAG_ARRAY proptags;
 	RESTRICTION restriction;
 	EID_ARRAY *pmessage_ids;
 	RESTRICTION_PROPERTY res_prop;
@@ -54,10 +53,8 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 	    &table_id, &row_count))
 		return NULL;	
 	proptag_t tmp_proptag = PidTagMid;
-	proptags.count = 1;
-	proptags.pproptag = &tmp_proptag;
 	if (!exmdb_client->query_table(plogon->get_dir(), nullptr, CP_ACP,
-	    table_id, &proptags, 0, row_count, &tmp_set))
+	    table_id, {&tmp_proptag, 1}, 0, row_count, &tmp_set))
 		return NULL;	
 	exmdb_client->unload_table(plogon->get_dir(), table_id);
 	pmessage_ids = eid_array_init();
@@ -136,10 +133,8 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	    &table_id, &row_count))
 		return NULL;
 	proptag_t tmp_proptag = PidTagFolderId;
-	tmp_proptags.count = 1;
-	tmp_proptags.pproptag = &tmp_proptag;
 	if (!exmdb_client->query_table(plogon->get_dir(), nullptr, CP_ACP,
-	    table_id, &tmp_proptags, 0, row_count, &tmp_set))
+	    table_id, {&tmp_proptag, 1}, 0, row_count, &tmp_set))
 		return NULL;
 	exmdb_client->unload_table(plogon->get_dir(), table_id);
 	for (const auto &row : tmp_set) {

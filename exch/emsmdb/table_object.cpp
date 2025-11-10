@@ -151,7 +151,7 @@ BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count,
 		       *m_columns, m_position, row_needed, pset);
 	return exmdb_client->query_table(ptable->plogon->get_dir(),
 	       ptable->plogon->readstate_user(),
-	       pinfo->cpid, m_table_id, m_columns,
+	       pinfo->cpid, m_table_id, *m_columns,
 	       m_position, row_needed, pset);
 }
 

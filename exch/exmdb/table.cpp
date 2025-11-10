@@ -1584,7 +1584,7 @@ const table_node *db_base::find_table(uint32_t table_id) const
 }
 
 static bool query_hierarchy(db_conn &db, cpid_t cpid, uint32_t table_id,
-    const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed,
+    proptag_cspan pproptags, uint32_t start_pos, int32_t row_needed,
     TARRAY_SET *pset)
 {
 	char sql_string[1024];
@@ -1621,12 +1621,11 @@ static bool query_hierarchy(db_conn &db, cpid_t cpid, uint32_t table_id,
 		if (mrow == nullptr)
 			return FALSE;
 		mrow->count = 0;
-		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (mrow->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue = nullptr;
-			const auto tag = pproptags->pproptag[i];
 			if (tag == PR_DEPTH) {
 				auto v = cu_alloc<uint32_t>();
 				pvalue = v;
@@ -1662,7 +1661,7 @@ static bool query_hierarchy(db_conn &db, cpid_t cpid, uint32_t table_id,
 }
 
 static bool query_content(db_conn &db, cpid_t cpid, uint32_t table_id,
-    const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed,
+    proptag_cspan pproptags, uint32_t start_pos, int32_t row_needed,
     const table_node *ptnode, TARRAY_SET *pset)
 {
 	char sql_string[1024];
@@ -1719,12 +1718,11 @@ static bool query_content(db_conn &db, cpid_t cpid, uint32_t table_id,
 		if (mrow == nullptr)
 			return FALSE;
 		mrow->count = 0;
-		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (mrow->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue = nullptr;
-			const auto tag = pproptags->pproptag[i];
 			if (!table_column_content_tmptbl(pstmt, pstmt1,
 			    pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
 			    tag, ptnode->instance_tag,
@@ -1760,7 +1758,7 @@ static bool query_content(db_conn &db, cpid_t cpid, uint32_t table_id,
 }
 
 static bool query_perm(db_conn &db, cpid_t cpid, uint32_t table_id,
-    const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed,
+    proptag_cspan pproptags, uint32_t start_pos, int32_t row_needed,
     const table_node *ptnode, TARRAY_SET *pset)
 {
 	char sql_string[1024];
@@ -1792,12 +1790,11 @@ static bool query_perm(db_conn &db, cpid_t cpid, uint32_t table_id,
 		if (mrow == nullptr)
 			return FALSE;
 		mrow->count = 0;
-		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (mrow->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue = nullptr;
-			const auto tag = pproptags->pproptag[i];
 			auto u_tag = tag;
 			if (u_tag == PR_MEMBER_NAME_A)
 				u_tag = PR_MEMBER_NAME;
@@ -1823,7 +1820,7 @@ static bool query_perm(db_conn &db, cpid_t cpid, uint32_t table_id,
 }
 
 static bool query_rule(db_conn &db, cpid_t cpid, uint32_t table_id,
-    const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed,
+    proptag_cspan pproptags, uint32_t start_pos, int32_t row_needed,
     TARRAY_SET *pset)
 {
 	char sql_string[1024];
@@ -1855,12 +1852,11 @@ static bool query_rule(db_conn &db, cpid_t cpid, uint32_t table_id,
 		if (mrow == nullptr)
 			return FALSE;
 		mrow->count = 0;
-		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (mrow->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue = nullptr;
-			const auto tag = pproptags->pproptag[i];
 			auto u_tag = tag;
 			if (u_tag == PR_RULE_NAME_A)
 				u_tag = PR_RULE_NAME;
@@ -1891,7 +1887,7 @@ static bool query_rule(db_conn &db, cpid_t cpid, uint32_t table_id,
  * any other way.
  */
 BOOL exmdb_server::query_table(const char *dir, const char *username,
-    cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
+    cpid_t cpid, uint32_t table_id, proptag_cspan pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
 	auto pdb = db_engine_get_db(dir);

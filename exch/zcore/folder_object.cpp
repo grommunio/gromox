@@ -555,7 +555,6 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 	uint32_t table_id;
 	TARRAY_SET permission_set;
 	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	
 	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();
@@ -567,7 +566,7 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 		return FALSE;
 	}
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
-		table_id, &proptags, 0, row_num, &permission_set)) {
+	    table_id, proptag_buff, 0, row_num, &permission_set)) {
 		exmdb_client->unload_table(dir, table_id);
 		return FALSE;
 	}
@@ -605,9 +604,8 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 	    pfolder->folder_id, 0, &table_id, &row_num))
 		return FALSE;
 	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_ID};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
-		table_id, &proptags, 0, row_num, &permission_set)) {
+	    table_id, proptag_buff, 0, row_num, &permission_set)) {
 		exmdb_client->unload_table(dir, table_id);
 		return FALSE;
 	}

@@ -378,9 +378,8 @@ ec_error_t rxparam::load_std_rules(bool oof,
 		PR_RULE_STATE, PR_RULE_ID, PR_RULE_SEQUENCE, PR_RULE_NAME,
 		PR_RULE_PROVIDER, PR_RULE_CONDITION, PR_RULE_ACTIONS,
 	};
-	const PROPTAG_ARRAY ptags = {std::size(tags), deconst(tags)};
 	tarray_set output_rows{};
-	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id, &ptags,
+	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id, tags,
 	    0, row_count, &output_rows))
 		return ecError;
 
@@ -442,10 +441,9 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 	static constexpr proptag_t tags2[] = {
 		PR_EXTENDED_RULE_MSG_CONDITION, PR_EXTENDED_RULE_MSG_ACTIONS,
 	};
-	const PROPTAG_ARRAY ptags = {std::size(tags), deconst(tags)};
 	const PROPTAG_ARRAY ptags2 = {std::size(tags2), deconst(tags2)};
 	tarray_set output_rows{};
-	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id, &ptags,
+	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id, tags,
 	    0, row_count, &output_rows))
 		return ecError;
 

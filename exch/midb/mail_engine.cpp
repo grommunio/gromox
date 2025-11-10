@@ -1490,9 +1490,8 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 			PR_MESSAGE_DELIVERY_TIME, PidTagMidString, PR_FLAG_STATUS,
 			PR_ICON_INDEX,
 		};
-		static constexpr PROPTAG_ARRAY proptags_1 = {std::size(proptags_0), deconst(proptags_0)};
 		if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
-		    &proptags_1, 0, row_count, &rows))
+		    proptags_0, 0, row_count, &rows))
 			return false;
 	}
 
@@ -1683,10 +1682,9 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 	static constexpr proptag_t proptag_buff[] =
 		{PidTagFolderId, PidTagParentFolderId, PR_ATTR_HIDDEN,
 		PR_CONTAINER_CLASS, PR_DISPLAY_NAME, PR_LOCAL_COMMIT_TIME_MAX};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	TARRAY_SET rows{};
 	if (!exmdb_client->query_table(dir, NULL,
-	    CP_ACP, table_id, &proptags, 0, row_count, &rows)) {
+	    CP_ACP, table_id, proptag_buff, 0, row_count, &rows)) {
 		exmdb_client->unload_table(dir, table_id);
 		return FALSE;
 	}

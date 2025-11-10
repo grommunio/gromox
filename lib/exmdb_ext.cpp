@@ -808,15 +808,12 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_query_table &d)
 		TRY(x.g_str(&d.username));
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint32(&d.table_id));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return pack_result::alloc;
-	TRY(x.g_proptag_a(d.pproptags));
+	TRY(x.g_proptag_a(&d.pproptags));
 	TRY(x.g_uint32(&d.start_pos));
 	return x.g_int32(&d.row_needed);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_query_table &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_query_table_v &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -826,7 +823,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_query_table &d)
 	}
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint32(d.table_id));
-	TRY(x.p_proptag_a(*d.pproptags));
+	TRY(x.p_proptag_a(d.pproptags));
 	TRY(x.p_uint32(d.start_pos));
 	return x.p_int32(d.row_needed);
 }

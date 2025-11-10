@@ -597,10 +597,9 @@ std::optional<uint64_t> EWSContext::findExistingByGoid(const sFolderSpec& calend
 		return std::nullopt;
 
 	static constexpr proptag_t midTagValue = PidTagMid;
-	static constexpr PROPTAG_ARRAY proptags = {1, deconst(&midTagValue)};
 	TARRAY_SET rows{};
 	if (!m_plugin.exmdb.query_table(calendarDir.c_str(), calUser, CP_ACP,
-	    tableId, &proptags, 0, 1, &rows))
+	    tableId, {&midTagValue, 1}, 0, 1, &rows))
 		throw EWSError::ItemCorrupt(E3284);
 	if (rows.count == 0 || rows.pparray[0] == nullptr)
 		return std::nullopt;
@@ -1212,9 +1211,9 @@ TARRAY_SET EWSContext::loadPermissions(const std::string& dir, uint64_t fid) con
 		throw EWSError::ItemCorrupt(E3283);
 	auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
 	static constexpr proptag_t tags[] = {PR_MEMBER_ID, PR_MEMBER_NAME, PR_MEMBER_RIGHTS, PR_SMTP_ADDRESS};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tags), deconst(tags)};
 	TARRAY_SET propTable;
-	if (!exmdb.query_table(dir.c_str(), "", CP_UTF8, tableId, &proptags, 0, rowCount, &propTable))
+	if (!exmdb.query_table(dir.c_str(), "", CP_UTF8, tableId,
+	    proptag_cspan{tags}, 0, rowCount, &propTable))
 		throw EWSError::ItemCorrupt(E3284);
 	return propTable;
 }

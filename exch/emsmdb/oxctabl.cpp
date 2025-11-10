@@ -884,7 +884,6 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	uint32_t permission;
 	uint64_t fid_deferred;
 	PROBLEM_ARRAY problems;
-	PROPTAG_ARRAY proptags;
 	RESTRICTION restriction;
 	TPROPVAL_ARRAY propvals;
 	TAGGED_PROPVAL propval_buff[2];
@@ -918,10 +917,8 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 		return ecError;
 
 	static constexpr proptag_t tmp_proptag = PidTagMid;
-	proptags.count = 1;
-	proptags.pproptag = deconst(&tmp_proptag);
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
-	    table_id, &proptags, 0, row_count, &tmp_set))
+	    table_id, {&tmp_proptag, 1}, 0, row_count, &tmp_set))
 		return ecError;
 	exmdb_client->unload_table(dir, table_id);
 

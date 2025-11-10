@@ -1070,13 +1070,12 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 	TARRAY_SET permission_set;
 	PERMISSION_ROW *pperm_row;
 	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	
 	if (!exmdb_client->load_permission_table(
 	    pstore->dir, folder_id, 0, &table_id, &row_num))
 		return FALSE;
 	if (!exmdb_client->query_table(pstore->dir, nullptr, CP_ACP, table_id,
-	    &proptags, 0, row_num, &permission_set)) {
+	    proptag_buff, 0, row_num, &permission_set)) {
 		exmdb_client->unload_table(pstore->dir, table_id);
 		return FALSE;
 	}
@@ -1131,9 +1130,8 @@ BOOL store_object::get_permissions(PERMISSION_SET *pperm_set)
 	    NULL, &table_id, &row_num))
 		return FALSE;
 	static constexpr proptag_t tmp_proptag[] = {PidTagFolderId};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 	if (!exmdb_client->query_table(pstore->dir, nullptr, CP_ACP, table_id,
-	    &proptags, 0, row_num, &tmp_set))
+	    tmp_proptag, 0, row_num, &tmp_set))
 		return FALSE;
 	pperm_set->count = 0;
 	pperm_set->prows = NULL;

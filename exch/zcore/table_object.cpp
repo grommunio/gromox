@@ -497,7 +497,7 @@ static bool hierconttbl_query_rows(const table_object *ptable,
 		if (idx_rig != pcolumns.npos)
 			tmp_columns.pproptag[idx_rig] = PidTagFolderId;
 		if (!exmdb_client->query_table(ptable->pstore->get_dir(),
-		    username, pinfo->cpid, ptable->table_id, &tmp_columns,
+		    username, pinfo->cpid, ptable->table_id, tmp_columns,
 		    ptable->position, row_needed, &temp_set))
 			return FALSE;
 		if (ptable->table_type == zcore_tbltype::content) {
@@ -519,10 +519,9 @@ static bool hierconttbl_query_rows(const table_object *ptable,
 				return false;
 		}
 	} else {
-		const PROPTAG_ARRAY cols_pta = {static_cast<uint16_t>(pcolumns.size()), deconst(pcolumns.data())};
 		if (!exmdb_client->query_table(ptable->pstore->get_dir(),
 		    username, pinfo->cpid, ptable->table_id,
-		    &cols_pta, ptable->position, row_needed, &temp_set))
+		    pcolumns, ptable->position, row_needed, &temp_set))
 			return FALSE;
 	}
 	if (pcolumns.has(PR_STORE_ENTRYID)) {
@@ -596,9 +595,8 @@ bool table_object::query_rows(/*maybenull*/ const proptag_cspan *icols,
 		auto u = static_cast<user_object *>(ptable->pparent_obj);
 		return u->query_member_table(cols, ptable->position, row_count, pset) == ecSuccess;
 	} else if (ptable->table_type == zcore_tbltype::rule) {
-		const PROPTAG_ARRAY cols_pta = {static_cast<uint16_t>(cols.size()), deconst(cols.data())};
 		if (!exmdb_client->query_table(ptable->pstore->get_dir(),
-		    nullptr, pinfo->cpid, ptable->table_id, &cols_pta,
+		    nullptr, pinfo->cpid, ptable->table_id, cols,
 		    ptable->position, row_count, pset))
 			return FALSE;
 		for (auto &row : *pset)
@@ -612,9 +610,8 @@ bool table_object::query_rows(/*maybenull*/ const proptag_cspan *icols,
 	if ((ptable->table_type == zcore_tbltype::content ||
 	    ptable->table_type == zcore_tbltype::hierarchy))
 		return hierconttbl_query_rows(ptable, cols, tmp_columns, pinfo, row_count, pset);
-	const PROPTAG_ARRAY cols_pta = {static_cast<uint16_t>(cols.size()), deconst(cols.data())};
 	return exmdb_client->query_table(ptable->pstore->get_dir(),
-	       username, pinfo->cpid, ptable->table_id, &cols_pta,
+	       username, pinfo->cpid, ptable->table_id, cols,
 	       ptable->position, row_count, pset);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);

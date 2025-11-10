@@ -246,7 +246,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 		for (auto t : ntags)
 			proptags.emplace_back(t);
 		if (!exmdb_client->query_table(pinfo->get_maildir(), nullptr,
-		    pinfo->cpid, table_id, &proptags, 0, row_num, &tmp_set))
+		    pinfo->cpid, table_id, proptags, 0, row_num, &tmp_set))
 			return FALSE;
 		pparent_entryid = zcsab_prepend(cu_fid_to_entryid(*pstore,
 		                  pcontainer->id.exmdb_id.folder_id), MAPI_ABCONT, UINT32_MAX);
@@ -544,17 +544,11 @@ static bool container_object_fetch_folder_properties(const TPROPVAL_ARRAY *pprop
 	return TRUE;
 }
 
-static constexpr proptag_t container_object_get_folder_proptags_raw[] = {
+static constexpr proptag_t container_object_get_folder_proptags[] = {
 	PidTagFolderId, PR_SUBFOLDERS, PR_DISPLAY_NAME,
 	PR_CONTAINER_CLASS, PR_FOLDER_PATHNAME,
 	PidTagParentFolderId, PR_ATTR_HIDDEN,
 };
-
-static const PROPTAG_ARRAY* container_object_get_folder_proptags()
-{
-	static constexpr PROPTAG_ARRAY proptags = {std::size(container_object_get_folder_proptags_raw), deconst(container_object_get_folder_proptags_raw)};
-	return &proptags;
-}
 
 bool container_object::get_properties(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals)
@@ -566,7 +560,7 @@ bool container_object::get_properties(proptag_cspan pproptags,
 		auto pinfo = zs_get_info();
 		if (!exmdb_client->get_folder_properties(pinfo->get_maildir(),
 		    pinfo->cpid, pcontainer->id.exmdb_id.folder_id,
-		    container_object_get_folder_proptags_raw, &tmp_propvals))
+		    container_object_get_folder_proptags, &tmp_propvals))
 			return FALSE;
 		return container_object_fetch_folder_properties(
 					&tmp_propvals, pproptags, ppropvals);
@@ -652,7 +646,7 @@ static bool container_object_query_folder_hierarchy(uint64_t folder_id,
 	if (row_num == 0)
 		tmp_set.count = 0;
 	else if (!exmdb_client->query_table(pinfo->get_maildir(), nullptr,
-	    pinfo->cpid, table_id, container_object_get_folder_proptags(),
+	    pinfo->cpid, table_id, container_object_get_folder_proptags,
 	    0, row_num, &tmp_set))
 		return FALSE;
 	exmdb_client->unload_table(pinfo->get_maildir(), table_id);
@@ -730,7 +724,7 @@ bool container_object::query_container_table(proptag_cspan pproptags,
 			auto pinfo = zs_get_info();
 			if (!exmdb_client->get_folder_properties(pinfo->get_maildir(),
 				pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
-			    container_object_get_folder_proptags_raw, &tmp_propvals)) {
+			    container_object_get_folder_proptags, &tmp_propvals)) {
 				return FALSE;
 			}
 			if (!container_object_fetch_folder_properties(&tmp_propvals,

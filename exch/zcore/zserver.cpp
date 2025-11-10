@@ -1841,9 +1841,8 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 			return ecError;
 
 		static constexpr proptag_t tmp_proptag[] = {PR_ENTRYID};
-		static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 		if (!exmdb_client->query_table(pstore->get_dir(), username,
-		    CP_ACP, table_id, &proptags, 0, row_count, &tmp_set)) {
+		    CP_ACP, table_id, tmp_proptag, 0, row_count, &tmp_set)) {
 			exmdb_client->unload_table(pstore->get_dir(), table_id);
 			return ecError;
 		}
