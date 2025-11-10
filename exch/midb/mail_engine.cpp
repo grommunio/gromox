@@ -3550,20 +3550,12 @@ static int me_xunld(int argc, char **argv, int sockd)
  * Request:
  * 	X-RSYM <store-dir>
  * Response:
- * 	TRUE 0: synchro failure
- * 	TRUE 1: was loaded before (tracking changes live), now is synchronized
- * 	TRUE 2: was unloaded before (not tracking), now is synchronized
+ * 	TRUE <0|1|2>
  */
 static int me_xrsym(int argc, char **argv, int sockd)
 {
 	auto idb = me_peek_idb(argv[1]);
 	if (idb == nullptr) {
-		/*
-		 * There is a time between me_peek_idb and me_get_idb that
-		 * another thread may have invoked me_get_idb and already
-		 * triggered an initial sync. Therefore, we are passing `true`
-		 * here to force resync in any case.
-		 */
 		me_get_idb(argv[1], true);
 		return cmd_write(sockd, "TRUE 2\r\n");
 	} else if (!me_sync_mailbox(idb.get(), true)) {

@@ -39,7 +39,6 @@ Enhancements:
 * dscli: try all oxdisco URLs until one succeeds
 * exmdb: support repeated import of permission data (e.g. from kdb2mt)
 * ews: create calendar item after accepting a MR with MacMail
-* mbop: new `sync-midb` subcommand to prebuild midb caches ahead of the first IMAP login
 
 Fixes:
 

@@ -17,7 +17,6 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/freebusy.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/midb_agent.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/process.hpp>
 #include <gromox/svc_loader.hpp>
@@ -208,65 +207,6 @@ static int freeze_main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
-}
-
-}
-
-namespace sync_midb {
-
-static const char *g_folder_spec;
-static constexpr HXoption g_options_table[] = {
-	{{}, 'f', HXTYPE_STRP, &g_folder_spec, {}, {}, {}, "Forcibly rescan this folder", "SPEC"},
-	MBOP_AUTOHELP,
-	HXOPT_TABLEEND,
-};
-
-int main(int argc, char **argv)
-{
-	HXopt6_auto_result argp;
-
-	if (HX_getopt6(g_options_table, argc, argv, nullptr,
-	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
-		return EXIT_PARAM;
-
-	int err = 0, ret;
-	if (g_folder_spec == nullptr) {
-		ret = midb_agent::ping_mailbox(g_storedir, &err);
-	} else if (strcasecmp(g_folder_spec, "all") == 0) {
-		ret = midb_agent::sync_mailbox(g_storedir, 0, &err);
-	} else {
-		eid_t eid = gi_lookup_eid_by_name(g_storedir, g_folder_spec);
-		if (eid == 0) {
-			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", g_folder_spec);
-			return EXIT_FAILURE;
-		}
-		ret = midb_agent::sync_mailbox(g_storedir, eid.gcv(), &err);
-	}
-	switch (ret) {
-	case MIDB_RESULT_OK:
-		if (global::g_verbose_mode)
-			printf("midb sync triggered\n");
-		return EXIT_SUCCESS;
-	case MIDB_RESULT_ERROR:
-		mbop_fprintf(stderr, "midb sync failed: backend returned %d\n", err);
-		break;
-	case MIDB_NO_SERVER:
-		mbop_fprintf(stderr, "midb sync failed: midb backend unavailable\n");
-		break;
-	case MIDB_RDWR_ERROR:
-		mbop_fprintf(stderr, "midb sync failed: protocol error while talking to midb\n");
-		break;
-	case MIDB_LOCAL_ENOMEM:
-		mbop_fprintf(stderr, "midb sync failed: local memory exhausted\n");
-		break;
-	case MIDB_TOO_MANY_RESULTS:
-		mbop_fprintf(stderr, "midb sync failed: backend returned too much data\n");
-		break;
-	default:
-		mbop_fprintf(stderr, "midb sync failed: unexpected midb agent status %d\n", ret);
-		break;
-	}
-	return EXIT_FAILURE;
 }
 
 }
@@ -486,10 +426,8 @@ static int single_user_wrap(int argc, char **argv)
 	return ret;
 }
 
-static constexpr generic_module g_dfl_svc_plugins[] = {
-	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
-	{"libgxs_midb_agent.so", SVC_midb_agent},
-};
+static constexpr generic_module g_dfl_svc_plugins[] =
+	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
 
 int main(int argc, char **argv)
 {
@@ -509,7 +447,7 @@ int main(int argc, char **argv)
 	argv = result.uarg;
 	if (argc == 0)
 		return global::help();
-	service_init({nullptr, g_dfl_svc_plugins, 2});
+	service_init({nullptr, g_dfl_svc_plugins, 1});
 	auto cl_1 = HX::make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");
@@ -597,8 +535,6 @@ int cmd_parser(int argc, char **argv)
 		return set_locale::main(argc, argv);
 	else if (strcmp(argv[0], "get-freebusy") == 0 || strcmp(argv[0], "gfb") == 0)
 		return getfreebusy::main(argc, argv);
-	else if (strcmp(argv[0], "sync-midb") == 0)
-		return sync_midb::main(argc, argv);
 
 	if (strcmp(argv[0], "clear-profile") == 0) {
 		auto ret = delstoreprop(argc, argv, PSETID_Gromox, "zcore_profsect", PT_BINARY);

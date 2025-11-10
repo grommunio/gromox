@@ -21,7 +21,6 @@ namespace foreach_wrap { extern int main(int, char **); }
 namespace getfreebusy { extern int main(int, char **); }
 namespace purgesoftdel { extern int main(int, char **); }
 namespace set_locale { extern int main(int, char **); }
-namespace sync_midb { extern int main(int, char **); }
 
 namespace global {
 
