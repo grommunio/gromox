@@ -109,16 +109,13 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_mapping_replid &d)
 static pack_result exmdb_pull(EXT_PULL &x, exreq_get_store_properties &d)
 {
 	TRY(x.g_nlscp(&d.cpid));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return pack_result::alloc;
-	return x.g_proptag_a(d.pproptags);
+	return x.g_proptag_a(&d.pproptags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_store_properties &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_store_properties_v &d)
 {
 	TRY(x.p_uint32(d.cpid));
-	return x.p_proptag_a(*d.pproptags);
+	return x.p_proptag_a(d.pproptags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_set_store_properties &d)

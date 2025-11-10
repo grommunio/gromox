@@ -169,14 +169,14 @@ BOOL exmdb_server::get_store_all_proptags(const char *dir,
 }
 
 BOOL exmdb_server::get_store_properties(const char *dir, cpid_t cpid,
-    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+    proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
 	/* Only one SQL operation, no transaction needed. */
 	return cu_get_properties(MAPI_STORE, 0, cpid, *pdb,
-	       *pproptags, ppropvals);
+	       pproptags, ppropvals);
 }
 
 BOOL exmdb_server::set_store_properties(const char *dir, cpid_t cpid,

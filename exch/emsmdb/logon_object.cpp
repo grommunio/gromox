@@ -588,7 +588,7 @@ bool logon_object::get_properties(proptag_cspan pproptags,
 
 	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client->get_store_properties(plogon->dir,
-	    pinfo->cpid, &tmp_proptags, &tmp_propvals))
+	    pinfo->cpid, tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count == 0)
 		return TRUE;

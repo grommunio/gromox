@@ -1607,10 +1607,9 @@ void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& c
 		PROPID_ARRAY propIds = ctx.getNamedPropIds(dir, propNames);
 		if (propIds.size() != 1)
 			throw std::runtime_error("failed to get photo property id");
-		proptag_t tag = PROP_TAG(PT_BINARY, propIds[0]);
-		PROPTAG_ARRAY tags{1, &tag};
+		const proptag_t tag = PROP_TAG(PT_BINARY, propIds[0]);
 		TPROPVAL_ARRAY props;
-		ctx.plugin().exmdb.get_store_properties(dir.c_str(), CP_ACP, &tags, & props);
+		ctx.plugin().exmdb.get_store_properties(dir.c_str(), CP_ACP, {&tag, 1}, &props);
 		auto photodata = props.get<const BINARY>(tag);
 		if (photodata && photodata->cb)
 			data.PictureData = photodata;

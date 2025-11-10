@@ -1098,9 +1098,9 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
 GUID EWSContext::getMailboxGuid(const std::string& dir) const
 {
 	static constexpr proptag_t recordKeyTag = PR_STORE_RECORD_KEY;
-	static constexpr PROPTAG_ARRAY recordKeyTags = {1, deconst(&recordKeyTag)};
 	TPROPVAL_ARRAY recordKeyProp;
-	if (!m_plugin.exmdb.get_store_properties(dir.c_str(), CP_ACP, &recordKeyTags, &recordKeyProp) ||
+	if (!m_plugin.exmdb.get_store_properties(dir.c_str(), CP_ACP,
+	    {&recordKeyTag, 1}, &recordKeyProp) ||
 	   recordKeyProp.count != 1 || recordKeyProp.ppropval->proptag != PR_STORE_RECORD_KEY)
 		throw DispatchError(E3194);
 	const BINARY* recordKeyData = static_cast<const BINARY*>(recordKeyProp.ppropval->pvalue);

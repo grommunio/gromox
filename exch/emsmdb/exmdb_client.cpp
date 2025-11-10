@@ -89,10 +89,9 @@ BOOL exmdb_client_shm::get_named_propname(const char *dir, propid_t propid,
 BOOL exmdb_client_shm::get_store_property(const char *dir, cpid_t cpid,
     proptag_t proptag, void **ppval)
 {
-	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client->get_store_properties(dir, cpid,
-	    &tmp_proptags, &tmp_propvals))
+	    {&proptag, 1}, &tmp_propvals))
 		return FALSE;	
 	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
 	return TRUE;

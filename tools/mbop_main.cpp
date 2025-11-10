@@ -123,9 +123,8 @@ static bool recalc_sizes(const char *dir)
 		PR_MESSAGE_SIZE_EXTENDED, PR_NORMAL_MESSAGE_SIZE_EXTENDED,
 		PR_ASSOC_MESSAGE_SIZE_EXTENDED
 	};
-	static constexpr PROPTAG_ARRAY tags1 = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY vals;
-	auto ok = exmdb_client->get_store_properties(dir, CP_ACP, &tags1, &vals);
+	auto ok = exmdb_client->get_store_properties(dir, CP_ACP, tags, &vals);
 	if (!ok)
 		return false;
 	printf("Old: %llu bytes (%llu normal, %llu FAI)\n",
@@ -135,7 +134,7 @@ static bool recalc_sizes(const char *dir)
 	ok = exmdb_client->recalc_store_size(g_storedir, 0);
 	if (!ok)
 		return false;
-	ok = exmdb_client->get_store_properties(g_storedir, CP_ACP, &tags1, &vals);
+	ok = exmdb_client->get_store_properties(g_storedir, CP_ACP, tags, &vals);
 	if (!ok)
 		return false;
 	printf("New: %llu bytes (%llu normal, %llu FAI)\n",
@@ -323,9 +322,9 @@ static int delstoreprop(int argc, char **argv, const GUID &guid,
 
 static errno_t showstoreprop(proptag_t proptag)
 {
-	const PROPTAG_ARRAY tags = {1, &proptag};
 	TPROPVAL_ARRAY vals{};
-	if (!exmdb_client->get_store_properties(g_storedir, CP_ACP, &tags, &vals))
+	if (!exmdb_client->get_store_properties(g_storedir, CP_ACP,
+	    {&proptag, 1}, &vals))
 		return EINVAL;
 	switch (PROP_TYPE(proptag)) {
 	case PT_BINARY: {

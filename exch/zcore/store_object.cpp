@@ -78,11 +78,10 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	int account_id, const char *account, const char *dir)
 {
 	static constexpr proptag_t proptag = PR_STORE_RECORD_KEY;
-	const PROPTAG_ARRAY proptags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY propvals;
 	
 	if (!exmdb_client->get_store_properties(dir, CP_ACP,
-	    &proptags, &propvals)) {
+	    {&proptag, 1}, &propvals)) {
 		mlog(LV_ERR, "get_store_properties %s: failed", dir);
 		return NULL;	
 	}
@@ -396,9 +395,8 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 static void *store_object_get_oof_property(const char *maildir,
     proptag_t proptag)
 {
-	const PROPTAG_ARRAY tags = {1, &proptag};
 	TPROPVAL_ARRAY props{};
-	if (!exmdb_client->autoreply_getprop(maildir, CP_UTF8, &tags, &props) ||
+	if (!exmdb_client->autoreply_getprop(maildir, CP_UTF8, {&proptag, 1}, &props) ||
 	    props.count == 0 || props[0].proptag != proptag)
 		return nullptr;
 	return props[0].pvalue;
@@ -860,9 +858,8 @@ bool store_object::get_properties(proptag_cspan pproptags, TPROPVAL_ARRAY *pprop
 		if (tmp_proptags.count == 0)
 			return TRUE;
 	}
-	if (!exmdb_client->get_store_properties(
-		pstore->dir, pinfo->cpid, &tmp_proptags,
-	    &tmp_propvals))
+	if (!exmdb_client->get_store_properties(pstore->dir, pinfo->cpid,
+	    tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count == 0)
 		return TRUE;

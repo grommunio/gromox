@@ -24,6 +24,13 @@ class GX_EXPORT exmdb_client_shm final {
 	BOOL get_message_property(const char *dir, const char *username, cpid_t, uint64_t msg_id, gromox::proptag_t, void **ppval);
 	BOOL set_message_property(const char *dir, const char *username, cpid_t, uint64_t msg_id, TAGGED_PROPVAL *, uint32_t *presult);
 	BOOL remove_message_property(const char *dir, cpid_t, uint64_t msg_id, gromox::proptag_t);
+
+	/*
+	 * Due to https://gcc.gnu.org/bugzilla/show_bug.cgi?id=122630, you will
+	 * see some explicit constructor invocations, e.g.
+	 * `proptag_cspan{expr}` when exmdb_client_shm's function pointers are
+	 * invoked.
+	 */
 #define EXMIDL(n, p) EXMIDL_RETTYPE (*n) p;
 #define IDLOUT
 #include <gromox/exmdb_idef.hpp>

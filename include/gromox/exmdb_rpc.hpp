@@ -224,10 +224,16 @@ struct exreq_get_mapping_replid final : public exreq {
 	GUID guid;
 };
 
-struct exreq_get_store_properties final : public exreq {
-	using view_t = exreq_get_store_properties;
+struct exreq_get_store_properties_v final : public exreq {
 	cpid_t cpid;
-	PROPTAG_ARRAY *pproptags;
+	proptag_cspan pproptags;
+};
+
+struct exreq_get_store_properties final : public exreq {
+	using view_t = exreq_get_store_properties_v;
+	operator view_t() const { view_t v; v.cpid = cpid; v.pproptags = pproptags; return v; }
+	cpid_t cpid;
+	proptag_vector pproptags;
 };
 
 struct exreq_set_store_properties final : public exreq {

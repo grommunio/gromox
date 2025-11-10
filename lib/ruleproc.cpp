@@ -342,9 +342,8 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 ec_error_t rxparam::is_oof(bool *oof) const
 {
 	static constexpr proptag_t tags[] = {PR_OOF_STATE};
-	static constexpr PROPTAG_ARRAY pt = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY props{};
-	if (!exmdb_client->get_store_properties(cur.dirc(), CP_UTF8, &pt, &props))
+	if (!exmdb_client->get_store_properties(cur.dirc(), CP_UTF8, tags, &props))
 		return ecError;
 	auto flag = props.get<uint8_t>(PR_OOF_STATE);
 	*oof = flag != nullptr ? *flag : 0;

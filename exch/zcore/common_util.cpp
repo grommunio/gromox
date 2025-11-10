@@ -1917,9 +1917,9 @@ void *cu_read_storenamedprop(const char *dir, const GUID &guid,
 	    name_rsp.size() != name_req.size() || name_rsp[0] == 0)
 		return nullptr;
 	auto proptag = PROP_TAG(proptype, name_rsp[0]);
-	const PROPTAG_ARRAY tags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY values{};
-	if (!exmdb_client->get_store_properties(dir, CP_ACP, &tags, &values))
+	if (!exmdb_client->get_store_properties(dir, CP_ACP,
+	    {&proptag, 1}, &values))
 		return nullptr;
 	return values.getval(proptag);
 }
