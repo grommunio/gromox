@@ -36,9 +36,8 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	pstream->max_length = max_length;
 	switch (object_type) {
 	case ems_objtype::message: {
-		const proptag_t proptag_buff[] = {proptag, PR_MESSAGE_SIZE};
-		const PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-		if (!static_cast<message_object *>(pparent)->get_properties(0, &proptags, &propvals))
+		const proptag_t proptags[] = {proptag, PR_MESSAGE_SIZE};
+		if (!static_cast<message_object *>(pparent)->get_properties(0, proptags, &propvals))
 			return NULL;
 		auto psize = propvals.get<uint32_t>(PR_MESSAGE_SIZE);
 		if (psize != nullptr && *psize >= g_max_mail_len)
@@ -46,9 +45,8 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		break;
 	}
 	case ems_objtype::attach: {
-		const proptag_t proptag_buff[] = {proptag, PR_ATTACH_SIZE};
-		const PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-		if (!static_cast<attachment_object *>(pparent)->get_properties(0, &proptags, &propvals))
+		const proptag_t proptags[] = {proptag, PR_ATTACH_SIZE};
+		if (!static_cast<attachment_object *>(pparent)->get_properties(0, proptags, &propvals))
 			return NULL;
 		auto psize = propvals.get<uint32_t>(PR_ATTACH_SIZE);
 		if (psize != nullptr && *psize >= g_max_mail_len)
@@ -56,8 +54,8 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		break;
 	}
 	case ems_objtype::folder: {
-		const PROPTAG_ARRAY proptags = {1, &proptag};
-		if (!static_cast<const folder_object *>(pparent)->get_properties(&proptags, &propvals))
+		const proptag_cspan proptags = {&proptag, 1};
+		if (!static_cast<const folder_object *>(pparent)->get_properties(proptags, &propvals))
 			return NULL;
 		break;
 	}

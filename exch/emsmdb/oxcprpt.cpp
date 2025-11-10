@@ -149,7 +149,7 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 		return ecServerOOM;
 	switch (object_type) {
 	case ems_objtype::logon: {
-		if (!static_cast<logon_object *>(pobject)->get_properties(ptmp_proptags, &propvals))
+		if (!static_cast<logon_object *>(pobject)->get_properties(*ptmp_proptags, &propvals))
 			return ecError;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (pinfo == nullptr)
@@ -158,7 +158,7 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 		break;
 	}
 	case ems_objtype::folder: {
-		if (!static_cast<folder_object *>(pobject)->get_properties(ptmp_proptags, &propvals))
+		if (!static_cast<folder_object *>(pobject)->get_properties(*ptmp_proptags, &propvals))
 			return ecError;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (pinfo == nullptr)
@@ -168,14 +168,14 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 	}
 	case ems_objtype::message: {
 		auto msg = static_cast<message_object *>(pobject);
-		if (!msg->get_properties(0, ptmp_proptags, &propvals))
+		if (!msg->get_properties(0, *ptmp_proptags, &propvals))
 			return ecError;
 		cpid = msg->get_cpid();
 		break;
 	}
 	case ems_objtype::attach: {
 		auto atx = static_cast<attachment_object *>(pobject);
-		if (!atx->get_properties(0, ptmp_proptags, &propvals))
+		if (!atx->get_properties(0, *ptmp_proptags, &propvals))
 			return ecError;
 		cpid = atx->get_cpid();
 		break;
@@ -238,7 +238,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		auto ptmp_proptags = cu_trim_proptags(proptags);
 		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
-		if (!xlog->get_properties(ptmp_proptags, ppropvals))
+		if (!xlog->get_properties(*ptmp_proptags, ppropvals))
 			return ecError;
 		for (auto &pv : *ppropvals) {
 			if (propval_size(PROP_TYPE(pv.proptag), pv.pvalue) <= size_limit)
@@ -262,7 +262,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		auto ptmp_proptags = cu_trim_proptags(proptags);
 		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
-		if (!fld->get_properties(ptmp_proptags, ppropvals))
+		if (!fld->get_properties(*ptmp_proptags, ppropvals))
 			return ecError;
 		for (auto &pv : *ppropvals) {
 			if (propval_size(PROP_TYPE(pv.proptag), pv.pvalue) <= size_limit)
@@ -286,7 +286,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		auto ptmp_proptags = cu_trim_proptags(proptags);
 		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
-		if (!msg->get_properties(size_limit, ptmp_proptags, ppropvals))
+		if (!msg->get_properties(size_limit, *ptmp_proptags, ppropvals))
 			return ecError;
 		cpid = msg->get_cpid();
 		break;
@@ -298,7 +298,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		auto ptmp_proptags = cu_trim_proptags(proptags);
 		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
-		if (!atx->get_properties(size_limit, ptmp_proptags, ppropvals))
+		if (!atx->get_properties(size_limit, *ptmp_proptags, ppropvals))
 			return ecError;
 		cpid = atx->get_cpid();
 		break;
@@ -424,7 +424,7 @@ ec_error_t rop_deleteproperties(const PROPTAG_ARRAY *pproptags,
 	case ems_objtype::logon:
 		if (plogon->logon_mode == logon_mode::guest)
 			return ecAccessDenied;
-		if (!static_cast<logon_object *>(pobject)->remove_properties(pproptags, pproblems))
+		if (!static_cast<logon_object *>(pobject)->remove_properties(*pproptags, pproblems))
 			return ecError;
 		return ecSuccess;
 	case ems_objtype::folder: {
@@ -437,7 +437,7 @@ ec_error_t rop_deleteproperties(const PROPTAG_ARRAY *pproptags,
 			if (!(permission & frightsOwner))
 				return ecAccessDenied;
 		}
-		if (!fld->remove_properties(pproptags, pproblems))
+		if (!fld->remove_properties(*pproptags, pproblems))
 			return ecError;
 		return ecSuccess;
 	}
@@ -446,7 +446,7 @@ ec_error_t rop_deleteproperties(const PROPTAG_ARRAY *pproptags,
 		auto tag_access = msg->get_tag_access();
 		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		if (!msg->remove_properties(pproptags, pproblems))
+		if (!msg->remove_properties(*pproptags, pproblems))
 			return ecError;
 		return ecSuccess;
 	}
@@ -455,7 +455,7 @@ ec_error_t rop_deleteproperties(const PROPTAG_ARRAY *pproptags,
 		auto tag_access = atx->get_tag_access();
 		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		if (!atx->remove_properties(pproptags, pproblems))
+		if (!atx->remove_properties(*pproptags, pproblems))
 			return ecError;
 		return ecSuccess;
 	}
@@ -618,7 +618,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			poriginal_indices.push_back(i);
 			proptags.emplace_back(tag);
 		}
-		if (!fldsrc->get_properties(&proptags, &propvals))
+		if (!fldsrc->get_properties(proptags, &propvals))
 			return ecError;
 		for (size_t i = 0; i < proptags.count; ++i) {
 			const auto tag = pproptags->pproptag[i];
@@ -668,7 +668,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			poriginal_indices.push_back(i);
 			proptags.emplace_back(tag);
 		}
-		if (!msgsrc->get_properties(0, &proptags, &propvals))
+		if (!msgsrc->get_properties(0, proptags, &propvals))
 			return ecError;
 		for (size_t i = 0; i < proptags.count; ++i) {
 			const auto tag = pproptags->pproptag[i];
@@ -702,7 +702,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			poriginal_indices.push_back(i);
 			proptags.emplace_back(tag);
 		}
-		if (!atsrc->get_properties(0, &proptags, &propvals))
+		if (!atsrc->get_properties(0, proptags, &propvals))
 			return ecError;
 		for (size_t i = 0; i < proptags.count; ++i) {
 			const auto tag = pproptags->pproptag[i];
@@ -808,7 +808,7 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 				continue;
 			tmp_proptags.emplace_back(tag);
 		}
-		if (!fldsrc->get_properties(&tmp_proptags, &propvals))
+		if (!fldsrc->get_properties(tmp_proptags, &propvals))
 			return ecError;
 		if (b_sub || b_normal || b_fai) {
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -834,7 +834,7 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
 		if (!msgdst->copy_to(static_cast<message_object *>(pobject),
-		    pexcluded_proptags, b_force, &b_cycle, pproblems))
+		    *pexcluded_proptags, b_force, &b_cycle, pproblems))
 			return ecError;
 		if (b_cycle)
 			return ecMsgCycle;
@@ -846,7 +846,7 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
 		if (!atdst->copy_properties(static_cast<attachment_object *>(pobject),
-		    pexcluded_proptags, b_force, &b_cycle, pproblems))
+		    *pexcluded_proptags, b_force, &b_cycle, pproblems))
 			return ecError;
 		if (b_cycle)
 			return ecMsgCycle;

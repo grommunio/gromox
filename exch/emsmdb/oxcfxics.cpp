@@ -203,13 +203,11 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 	if (ROOT_ELEMENT_TOPFOLDER == root_element ||
 		ROOT_ELEMENT_MESSAGELIST == root_element ||
 		ROOT_ELEMENT_FOLDERCONTENT == root_element) {
-		static constexpr proptag_t proptag_buff[] =
+		static constexpr proptag_t tmp_proptags[] =
 			{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
 			PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
-		static constexpr PROPTAG_ARRAY tmp_proptags =
-			{std::size(proptag_buff), deconst(proptag_buff)};
 		TPROPVAL_ARRAY tmp_propvals;
-		if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
+		if (!plogon->get_properties(tmp_proptags, &tmp_propvals))
 			return ecError;
 
 		auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
@@ -818,8 +816,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	void *pvalue;
 	uint32_t result;
 	ems_objtype object_type;
-	uint32_t permission = rightsNone, tag_access = 0, tmp_proptag;
-	PROPTAG_ARRAY proptags;
+	uint32_t permission = rightsNone, tag_access = 0;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -908,10 +905,8 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (pmessage == nullptr)
 		return ecError;
 	if (!b_new) {
-		proptags.count = 1;
-		proptags.pproptag = &tmp_proptag;
-		tmp_proptag = PR_PREDECESSOR_CHANGE_LIST;
-		if (!pmessage->get_properties(0, &proptags, &tmp_propvals))
+		static constexpr proptag_t tags[] = {PR_PREDECESSOR_CHANGE_LIST};
+		if (!pmessage->get_properties(0, tags, &tmp_propvals))
 			return ecError;
 		auto bin = tmp_propvals.get<const BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 		if (bin == nullptr)

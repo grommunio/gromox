@@ -591,12 +591,13 @@ BOOL message_object::get_attachment_table_all_proptags(PROPTAG_ARRAY *pproptags)
 	       pmessage->plogon->get_dir(), pmessage->instance_id, pproptags);
 }
 
-BOOL message_object::query_attachment_table(const PROPTAG_ARRAY *pproptags,
+bool message_object::query_attachment_table(proptag_cspan pproptags,
     uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset) const
 {
 	auto pmessage = this;
+	const PROPTAG_ARRAY pta = {static_cast<uint16_t>(pproptags.size()), deconst(pproptags.data())};
 	return exmdb_client->query_message_instance_attachment_table(
-	       pmessage->plogon->get_dir(), pmessage->instance_id, pproptags,
+	       pmessage->plogon->get_dir(), pmessage->instance_id, &pta,
 	       start_pos, row_needed, pset);
 }
 
@@ -847,21 +848,21 @@ static const void *message_object_get_stream_property_value(const message_object
 	return NULL;
 }
 
-BOOL message_object::get_properties(uint32_t size_limit,
-    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals) const
+bool message_object::get_properties(uint32_t size_limit,
+    proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals) const
 {
 	auto pmessage = this;
 	static const uint32_t err_code = ecError;
 	static const uint32_t lcid_default = 0x409; /* en-US */
 	
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (const auto tag : *pproptags) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
 		if (message_object_get_calculated_property(pmessage, tag, &pvalue)) {
 			if (pvalue != nullptr)
@@ -891,14 +892,14 @@ BOOL message_object::get_properties(uint32_t size_limit,
 			sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 		ppropvals->count += tmp_propvals.count;
 	}
-	if (pmessage->pembedding == nullptr && pproptags->has(PR_SOURCE_KEY) &&
+	if (pmessage->pembedding == nullptr && pproptags.has(PR_SOURCE_KEY) &&
 	    !ppropvals->has(PR_SOURCE_KEY)) {
 		auto v = cu_mid_to_sk(*pmessage->plogon, pmessage->message_id);
 		if (v == nullptr)
 			return FALSE;
 		ppropvals->emplace_back(PR_SOURCE_KEY, v);
 	}
-	if (pproptags->has(PR_MESSAGE_LOCALE_ID) &&
+	if (pproptags.has(PR_MESSAGE_LOCALE_ID) &&
 	    !ppropvals->has(PR_MESSAGE_LOCALE_ID)) {
 		void *pvalue = nullptr;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -910,7 +911,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 			pvalue = deconst(&lcid_default);
 		ppropvals->emplace_back(PR_MESSAGE_LOCALE_ID, pvalue);
 	}
-	if (pproptags->has(PR_MESSAGE_CODEPAGE) &&
+	if (pproptags.has(PR_MESSAGE_CODEPAGE) &&
 	    !ppropvals->has(PR_MESSAGE_CODEPAGE))
 		ppropvals->emplace_back(PR_MESSAGE_CODEPAGE, &pmessage->cpid);
 	return TRUE;	
@@ -1019,7 +1020,7 @@ BOOL message_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 			pmessage, TRUE, ppropvals, pproblems);
 }
 
-BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
+bool message_object::remove_properties(proptag_cspan pproptags,
     PROBLEM_ARRAY *pproblems) try
 {
 	auto pmessage = this;
@@ -1027,16 +1028,16 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	if (!(pmessage->open_flags & MAPI_MODIFY))
 		return FALSE;
 	pproblems->count = 0;
-	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags.size());
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	std::vector<uint16_t> poriginal_indices;
 	/* if property is being open as stream object, can not be removed */
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (unsigned int i = 0; i < pproptags.size(); ++i) {
+		const auto tag = pproptags[i];
 		if (is_readonly_prop(tag) ||
 		    mo_has_open_streams(pmessage, tag)) {
 			pproblems->emplace_back(i, tag, ecAccessDenied);
@@ -1071,11 +1072,11 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		pmessage->b_touched = TRUE;
 		return TRUE;
 	}
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (unsigned int i = 0; i < pproptags.size(); ++i) {
 		if (pproblems->have_index(i))
 			continue;
 		pmessage->b_touched = TRUE;
-		auto u_tag = message_object_rectify_proptag(pproptags->pproptag[i]);
+		auto u_tag = message_object_rectify_proptag(pproptags[i]);
 		proptag_array_remove(pmessage->pchanged_proptags, u_tag);
 		if (!proptag_array_append(pmessage->premoved_proptags, u_tag))
 			return FALSE;	
@@ -1086,8 +1087,8 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	return false;
 }
 
-BOOL message_object::copy_to(message_object *pmessage_src,
-     const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force, BOOL *pb_cycle,
+bool message_object::copy_to(message_object *pmessage_src,
+     proptag_cspan pexcluded_proptags, BOOL b_force, BOOL *pb_cycle,
      PROBLEM_ARRAY *pproblems)
 {
 	auto pmessage = this;
@@ -1116,16 +1117,16 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 	for (auto t : tags)
 		common_util_remove_propvals(&msgctnt.proplist, t);
 	for (unsigned int i = 0; i < msgctnt.proplist.count; ) {
-		if (pexcluded_proptags->has(msgctnt.proplist.ppropval[i].proptag)) {
+		if (pexcluded_proptags.has(msgctnt.proplist.ppropval[i].proptag)) {
 			common_util_remove_propvals(&msgctnt.proplist,
 					msgctnt.proplist.ppropval[i].proptag);
 			continue;
 		}
 		i ++;
 	}
-	if (pexcluded_proptags->has(PR_MESSAGE_RECIPIENTS))
+	if (pexcluded_proptags.has(PR_MESSAGE_RECIPIENTS))
 		msgctnt.children.prcpts = NULL;
-	if (pexcluded_proptags->has(PR_MESSAGE_ATTACHMENTS))
+	if (pexcluded_proptags.has(PR_MESSAGE_ATTACHMENTS))
 		msgctnt.children.pattachments = NULL;
 	if (!exmdb_client->write_message_instance(dstdir,
 	    pmessage->instance_id, &msgctnt, b_force, &proptags, pproblems))

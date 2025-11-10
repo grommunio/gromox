@@ -26,9 +26,9 @@ struct logon_object {
 	BOOL get_named_propid(BOOL create, const PROPERTY_NAME *, gromox::propid_t *);
 	BOOL get_named_propids(BOOL create, const PROPNAME_ARRAY *, PROPID_ARRAY *);
 	BOOL get_all_proptags(PROPTAG_ARRAY *) const;
-	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *) const;
+	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *) const;
 	BOOL set_properties(const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
-	BOOL remove_properties(const PROPTAG_ARRAY *, PROBLEM_ARRAY *);
+	bool remove_properties(proptag_cspan, PROBLEM_ARRAY *);
 	const char *eff_user() const;
 	const char *readstate_user() const;
 

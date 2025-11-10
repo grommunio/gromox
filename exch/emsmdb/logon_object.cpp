@@ -555,7 +555,7 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
  * PR_HIERARCHY_SERVER property on the store visible with MFCMAPI, which means
  * EXC2019 also does not synthesize anything server-side in any way.
  */
-BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
+bool logon_object::get_properties(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals) const
 {
 	static const uint32_t err_code = ecError, invalid_code = ecInvalidParam;
@@ -563,15 +563,15 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
 		return FALSE;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
 	auto plogon = this;
-	for (const auto tag : *pproptags) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
 
 		if (PROP_ID(tag) == PROP_ID(PR_HIERARCHY_SERVER))
@@ -639,19 +639,19 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	return false;
 }
 
-BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,
+bool logon_object::remove_properties(proptag_cspan pproptags,
     PROBLEM_ARRAY *pproblems)
 {
 	pproblems->count = 0;
-	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags.size());
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	auto plogon = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (unsigned int i = 0; i < pproptags.size(); ++i) {
+		const auto tag = pproptags[i];
 		if (lo_is_readonly_prop(plogon, tag))
 			pproblems->emplace_back(i, tag, ecAccessDenied);
 		else
