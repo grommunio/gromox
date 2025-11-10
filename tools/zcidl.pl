@@ -52,7 +52,7 @@ while (<STDIN>) {
 	}
 
 	print "ec_error_t zclient_$func($rbsig)\n{\n";
-	print "\tzcreq_$func q{};\n\tzcresp_$func r{};\n\n";
+	print "\tzcreq_${func}::view_t q{};\n\tzcresp_$func r{};\n\n";
 	print "\tq.call_id = zcore_callid::$func;\n";
 	for (@$iargs) {
 		my($type, $field) = @$_;

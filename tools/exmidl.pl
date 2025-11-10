@@ -74,7 +74,7 @@ while (<STDIN>) {
 	}
 
 	print "BOOL exmdb_client_remote::$func($rbsig)\n{\n";
-	print "\texreq_$func q{};\n\texresp_$func r{};\n";
+	print "\texreq_${func}::view_t q{};\n\texresp_$func r{};\n";
 	print "\n";
 	print "\tq.call_id = exmdb_callid::$func;\n";
 	print "\tq.dir = deconst(dir);\n";

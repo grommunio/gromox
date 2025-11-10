@@ -2485,7 +2485,7 @@ pack_result exmdb_ext_push_request(const exreq *prequest, BINARY *pbin_out)
 	case exmdb_callid::purge_datafiles:
 		status = pack_result::ok;
 		break;
-#define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exreq_ ## t *>(prequest)); break;
+#define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exreq_ ## t::view_t *>(prequest)); break;
 	RQ_WITH_ARGS
 #undef E
 	}
@@ -3854,7 +3854,7 @@ pack_result exmdb_ext_push_response(const exresp *presponse, BINARY *pbin_out)
 		status = pack_result::ok;
 		break;
 #undef E
-#define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exresp_ ## t *>(presponse)); break;
+#define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exresp_ ## t::view_t *>(presponse)); break;
 	RSP_WITH_ARGS
 #undef E
 	}
