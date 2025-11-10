@@ -262,12 +262,12 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 				sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 
-	static constexpr uint32_t pvt_tags[] = {
+	static constexpr proptag_t pvt_tags[] = {
 		PR_MAILBOX_OWNER_NAME, PR_MAILBOX_OWNER_ENTRYID,
 		PR_MAX_SUBMIT_MESSAGE_SIZE, PR_EXTENDED_RULE_SIZE_LIMIT,
 		PR_EMS_AB_DISPLAY_NAME_PRINTABLE,
 	};
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_DELETED_ASSOC_MESSAGE_SIZE,
 		PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED,
 		PR_DELETED_ASSOC_MSG_COUNT, PR_DELETED_MESSAGE_SIZE,

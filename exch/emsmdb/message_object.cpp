@@ -1106,7 +1106,7 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 	if (!exmdb_client->read_message_instance(pmessage_src->plogon->get_dir(),
 	    pmessage_src->instance_id, &msgctnt))
 		return FALSE;
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PidTagMid, PR_DISPLAY_TO, PR_DISPLAY_TO_A,
 		PR_DISPLAY_CC, PR_DISPLAY_CC_A, PR_DISPLAY_BCC,
 		PR_DISPLAY_BCC_A, PR_MESSAGE_SIZE,

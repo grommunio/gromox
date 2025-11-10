@@ -606,8 +606,8 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		return ecAccessDenied;
 	}
 
-	static constexpr uint32_t rq_tags1[] = {PR_MESSAGE_FLAGS};
-	static constexpr uint32_t cls_tags1[] = {PR_MESSAGE_CLASS};
+	static constexpr proptag_t rq_tags1[] = {PR_MESSAGE_FLAGS};
+	static constexpr proptag_t cls_tags1[] = {PR_MESSAGE_CLASS};
 	static constexpr PROPTAG_ARRAY rq_tags = {1, deconst(rq_tags1)};
 	static constexpr PROPTAG_ARRAY cls_tags = {1, deconst(cls_tags1)};
 	TPROPVAL_ARRAY outvalues{};

@@ -242,7 +242,6 @@ ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hresponse, uint32_t hin)
 {
 	ems_objtype object_type;
-	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	
 	save_flags &= SAVE_FLAG_KEEPOPENREADONLY |
@@ -265,9 +264,8 @@ ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 		if (ret != ecSuccess)
 			return ret;
 	}
-	uint32_t tmp_proptag = PidTagMid;
-	proptags.count = 1;
-	proptags.pproptag = &tmp_proptag;
+	static constexpr proptag_t tmp_proptag[] = {PidTagMid};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
 	auto pvalue = propvals.get<uint64_t>(PidTagMid);
@@ -639,7 +637,7 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 		    fld->folder_id, username, TABLE_FLAG_NONOTIFICATIONS,
 		    &res_top, nullptr, &table_id, &row_count))
 			return ecError;
-		static constexpr uint32_t one_proptag = PidTagMid;
+		static constexpr proptag_t one_proptag = PidTagMid;
 		static constexpr PROPTAG_ARRAY proptags = {1, deconst(&one_proptag)};
 		TARRAY_SET result_set;
 		if (!exmdb_client->query_table(plogon->dir, username,

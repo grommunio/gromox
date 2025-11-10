@@ -341,7 +341,7 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 
 ec_error_t rxparam::is_oof(bool *oof) const
 {
-	static constexpr uint32_t tags[] = {PR_OOF_STATE};
+	static constexpr proptag_t tags[] = {PR_OOF_STATE};
 	static constexpr PROPTAG_ARRAY pt = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY props{};
 	if (!exmdb_client->get_store_properties(cur.dirc(), CP_UTF8, &pt, &props))
@@ -375,7 +375,7 @@ ec_error_t rxparam::load_std_rules(bool oof,
 	    &table_id, &row_count))
 		return ecError;
 	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_RULE_STATE, PR_RULE_ID, PR_RULE_SEQUENCE, PR_RULE_NAME,
 		PR_RULE_PROVIDER, PR_RULE_CONDITION, PR_RULE_ACTIONS,
 	};
@@ -436,11 +436,11 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 		return ecError;
 	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_RULE_MSG_STATE, PidTagMid, PR_RULE_MSG_SEQUENCE,
 		PR_RULE_MSG_PROVIDER,
 	};
-	static constexpr uint32_t tags2[] = {
+	static constexpr proptag_t tags2[] = {
 		PR_EXTENDED_RULE_MSG_CONDITION, PR_EXTENDED_RULE_MSG_ACTIONS,
 	};
 	const PROPTAG_ARRAY ptags = {std::size(tags), deconst(tags)};
@@ -985,7 +985,7 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 	if (msg == nullptr)
 		return ecServerOOM;
 	auto &prop = msg->proplist;
-	static constexpr uint32_t rmprops[] = {
+	static constexpr proptag_t rmprops[] = {
 		PidTagMid, PidTagChangeNumber, PR_CHANGE_KEY,
 		PR_PREDECESSOR_CHANGE_LIST,
 		PR_RECEIVED_BY_ENTRYID, PR_RECEIVED_BY_NAME,
@@ -1031,7 +1031,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 	if (rsp_ctnt == nullptr)
 		return ecMAPIOOM;
 	auto &rsp_prop = rsp_ctnt->proplist;
-	static const uint32_t copytags_1[] = {
+	const proptag_t copytags_1[] = {
 		/* OXOCAL §3.1.4.8.4 */
 		PROP_TAG(PT_UNICODE, propids[l_location]),
 		PROP_TAG(PT_UNICODE, propids[l_where]),
@@ -1047,7 +1047,7 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT,
 		PR_CONVERSATION_INDEX_TRACKING,
 	};
-	static const uint32_t copytags_2[] = {
+	const proptag_t copytags_2[] = {
 		/* OXOCAL §3.1.4.8.4 */
 		PROP_TAG(PT_BINARY, propids[l_tzstruct]),
 		PROP_TAG(PT_BINARY, propids[l_apptrecur]),
@@ -1056,19 +1056,19 @@ static ec_error_t mr_send_response(rxparam &par, bool recurring_flg,
 		PROP_TAG(PT_LONG, propids[l_tz]),
 		PROP_TAG(PT_UNICODE, propids[l_tzdesc]),
 	};
-	for (const auto propid : copytags_1) {
-		auto v = rq_prop.getval(propid);
+	for (const auto tag : copytags_1) {
+		auto v = rq_prop.getval(tag);
 		if (v != nullptr) {
-			auto err = rsp_prop.set(propid, v);
+			auto err = rsp_prop.set(tag, v);
 			if (err != ecSuccess)
 				return err;
 		}
 	}
 	if (recurring_flg)
-		for (const auto propid : copytags_2) {
-			auto v = rq_prop.getval(propid);
+		for (const auto tag : copytags_2) {
+			auto v = rq_prop.getval(tag);
 			if (v != nullptr) {
-				auto err = rsp_prop.set(propid, v);
+				auto err = rsp_prop.set(tag, v);
 				if (err != ecSuccess)
 					return err;
 			}

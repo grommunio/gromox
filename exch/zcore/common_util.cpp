@@ -1459,7 +1459,7 @@ ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
 		return ecError;
 	if (pmsgctnt == nullptr)
 		return ecSuccess;
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_CONVERSATION_ID, PR_DISPLAY_TO,
 		PR_DISPLAY_TO_A, PR_DISPLAY_CC,
 		PR_DISPLAY_CC_A, PR_DISPLAY_BCC, PR_DISPLAY_BCC_A, PidTagMid,
@@ -1508,7 +1508,7 @@ static ec_error_t cu_create_folder(store_object *pstore, uint64_t parent_id,
 	PERMISSION_DATA permission_row;
 	TAGGED_PROPVAL propval_buff[10];
 
-	static constexpr uint32_t tags[] = {	
+	static constexpr proptag_t tags[] = {	
 		PR_ACCESS, PR_ACCESS_LEVEL, PR_ADDRESS_BOOK_ENTRYID,
 		PR_ASSOC_CONTENT_COUNT, PR_ATTR_READONLY,
 		PR_CONTENT_COUNT, PR_CONTENT_UNREAD,

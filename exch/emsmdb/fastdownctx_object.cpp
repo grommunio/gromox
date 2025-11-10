@@ -340,7 +340,7 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 			if (pctx->pmsglst != nullptr) {
 				common_util_remove_propvals(&pmsgctnt->proplist, PR_ENTRYID);
 			} else if (!pctx->b_chginfo) {
-				static constexpr uint32_t tags[] = {
+				static constexpr proptag_t tags[] = {
 					PR_ENTRYID, PR_SOURCE_KEY,
 					PR_CHANGE_KEY,
 					PR_ORIGINAL_ENTRYID,

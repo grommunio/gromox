@@ -497,7 +497,7 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 	 * exmdb_server::read_message, so it's not just for the default columns
 	 * of content tables.
 	 */
-	static constexpr uint32_t folder_tags[] = {
+	static constexpr proptag_t folder_tags[] = {
 		PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT,
 		PR_MESSAGE_SIZE_EXTENDED, PR_ASSOC_MESSAGE_SIZE_EXTENDED,
 		PR_NORMAL_MESSAGE_SIZE_EXTENDED, PR_FOLDER_CHILD_COUNT,
@@ -505,12 +505,12 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 		PR_FOLDER_PATHNAME, PR_LOCAL_COMMIT_TIME, PidTagFolderId,
 		PidTagChangeNumber, PR_FOLDER_FLAGS, PR_CI_SEARCH_ENABLED,
 	};
-	static constexpr uint32_t msg_tags[] = {
+	static constexpr proptag_t msg_tags[] = {
 		PidTagMid, PR_MESSAGE_SIZE, PR_ASSOCIATED, PidTagChangeNumber,
 		PR_READ, PR_HASATTACH, PR_MESSAGE_FLAGS, PR_DISPLAY_TO,
 		PR_DISPLAY_CC, PR_DISPLAY_BCC, PR_MESSAGE_CLASS,
 	};
-	static constexpr uint32_t rcpt_tags[] = {
+	static constexpr proptag_t rcpt_tags[] = {
 		PR_RECIPIENT_TYPE, PR_DISPLAY_NAME, PR_ADDRTYPE, PR_EMAIL_ADDRESS,
 	};
 	BOOL b_subject;

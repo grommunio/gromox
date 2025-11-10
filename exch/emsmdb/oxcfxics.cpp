@@ -53,7 +53,7 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 	    username, TABLE_FLAG_NONOTIFICATIONS, &restriction, nullptr,
 	    &table_id, &row_count))
 		return NULL;	
-	uint32_t tmp_proptag = PidTagMid;
+	proptag_t tmp_proptag = PidTagMid;
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
 	if (!exmdb_client->query_table(plogon->get_dir(), nullptr, CP_ACP,
@@ -135,7 +135,7 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	    folder_id, username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
 	    &table_id, &row_count))
 		return NULL;
-	uint32_t tmp_proptag = PidTagFolderId;
+	proptag_t tmp_proptag = PidTagFolderId;
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &tmp_proptag;
 	if (!exmdb_client->query_table(plogon->get_dir(), nullptr, CP_ACP,

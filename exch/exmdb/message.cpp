@@ -2899,7 +2899,7 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 			" again", rp.ev_to, LLU{rp.message_id}, LLU{rp.folder_id});
 		return ecSuccess;
 	}
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_DISPLAY_TO, PR_DISPLAY_TO_A,
 		PR_DISPLAY_CC, PR_DISPLAY_CC_A,
 		PR_DISPLAY_BCC, PR_DISPLAY_BCC_A, PidTagMid, PR_MESSAGE_SIZE,
@@ -3214,7 +3214,7 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 			" again", rp.ev_to, LLU{rp.message_id}, LLU{rp.folder_id});
 		return ecSuccess;
 	}
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_DISPLAY_TO, PR_DISPLAY_TO_A,
 		PR_DISPLAY_CC, PR_DISPLAY_CC_A,
 		PR_DISPLAY_BCC, PR_DISPLAY_BCC_A, PidTagMid, PR_MESSAGE_SIZE,

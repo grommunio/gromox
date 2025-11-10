@@ -2000,7 +2000,7 @@ ec_error_t nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	auto pcolumns = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (pcolumns == nullptr)
 		return ecServerOOM;
-	static constexpr uint32_t utags[] = {
+	static constexpr proptag_t utags[] = {
 		PR_DISPLAY_NAME, PR_NICKNAME,/* PR_TITLE, */
 		PR_BUSINESS_TELEPHONE_NUMBER, PR_PRIMARY_TELEPHONE_NUMBER,
 		PR_MOBILE_TELEPHONE_NUMBER, PR_HOME_ADDRESS_STREET, PR_COMMENT,

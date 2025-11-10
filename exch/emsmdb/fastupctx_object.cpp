@@ -95,7 +95,7 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	uint32_t tmp_type;
 	uint64_t change_num;
 	
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_ACCESS, PR_ACCESS_LEVEL, PR_ADDRESS_BOOK_ENTRYID,
 		PR_ASSOC_CONTENT_COUNT, PR_ATTR_READONLY,
 		PR_CONTENT_COUNT, PR_CONTENT_UNREAD,
@@ -181,7 +181,7 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 {
 	uint64_t change_num;
 	auto pproplist = pctx->m_content->get_proplist();
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_CONVERSATION_ID, PR_DISPLAY_TO, PR_DISPLAY_TO_A,
 		PR_DISPLAY_CC, PR_DISPLAY_CC_A, PR_DISPLAY_BCC,
 		PR_DISPLAY_BCC_A, PidTagMid, PR_MESSAGE_SIZE,

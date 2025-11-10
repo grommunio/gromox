@@ -50,7 +50,7 @@ void mbop_usage_cb(const struct HXoptcb *cbi)
 
 void delcount(eid_t fid, uint32_t *delc, uint32_t *fldc)
 {
-	static constexpr uint32_t tags[] = {PR_DELETED_COUNT_TOTAL, PR_FOLDER_CHILD_COUNT};
+	static constexpr proptag_t tags[] = {PR_DELETED_COUNT_TOTAL, PR_FOLDER_CHILD_COUNT};
 	static constexpr PROPTAG_ARRAY taghdr = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY props;
 	*delc = *fldc = 0;
@@ -120,7 +120,7 @@ static inline uint64_t inul(const uint64_t *v)
 
 static bool recalc_sizes(const char *dir)
 {
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_MESSAGE_SIZE_EXTENDED, PR_NORMAL_MESSAGE_SIZE_EXTENDED,
 		PR_ASSOC_MESSAGE_SIZE_EXTENDED
 	};
@@ -447,7 +447,7 @@ static errno_t clear_rwz()
 		return 0;
 	}
 
-	static constexpr uint32_t qtags1[] = {PidTagMid};
+	static constexpr proptag_t qtags1[] = {PidTagMid};
 	static constexpr PROPTAG_ARRAY qtags = {std::size(qtags1), deconst(qtags1)};
 	TARRAY_SET rowset{};
 	if (!exmdb_client->query_table(g_storedir, nullptr, CP_ACP, table_id,

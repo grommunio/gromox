@@ -153,7 +153,7 @@ static bool add_folderprop_sv(sqlite3_stmt *stmt, const char *dispname,
 
 static bool add_folderprop_tv(sqlite3_stmt *stmt)
 {
-	static constexpr uint32_t tags[] = {
+	static constexpr proptag_t tags[] = {
 		PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME, PR_HIER_REV,
 		PR_LOCAL_COMMIT_TIME_MAX,
 	};

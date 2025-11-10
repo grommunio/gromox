@@ -42,33 +42,33 @@ namespace gromox {
 unsigned int g_oxvcard_pedantic;
 }
 
-static constexpr uint32_t g_n_proptags[] = 
+static constexpr proptag_t g_n_proptags[] = 
 	{PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 	PR_DISPLAY_NAME_PREFIX, PR_GENERATION};
 /* The 8000s numbers must match up with the order of the oxvcard_get_propids::bf array */
-static constexpr uint32_t g_workaddr_proptags[] =
+static constexpr proptag_t g_workaddr_proptags[] =
 	{0x8000001F, 0x8001001F, 0x8002001F, 0x8003001F, 0x8004001F, 0x8005001F};
-static constexpr uint32_t g_homeaddr_proptags[] =
+static constexpr proptag_t g_homeaddr_proptags[] =
 	{PR_HOME_ADDRESS_POST_OFFICE_BOX, PR_HOME_ADDRESS_STREET,
 	PR_HOME_ADDRESS_CITY, PR_HOME_ADDRESS_STATE_OR_PROVINCE,
 	PR_HOME_ADDRESS_POSTAL_CODE, PR_HOME_ADDRESS_COUNTRY};
-static constexpr uint32_t g_otheraddr_proptags[] =
+static constexpr proptag_t g_otheraddr_proptags[] =
 	{PR_OTHER_ADDRESS_POST_OFFICE_BOX, PR_OTHER_ADDRESS_STREET,
 	PR_OTHER_ADDRESS_CITY, PR_OTHER_ADDRESS_STATE_OR_PROVINCE,
 	PR_OTHER_ADDRESS_POSTAL_CODE, PR_OTHER_ADDRESS_COUNTRY};
 static_assert(std::size(g_workaddr_proptags) == std::size(g_homeaddr_proptags));
 static_assert(std::size(g_workaddr_proptags) == std::size(g_otheraddr_proptags));
-static constexpr uint32_t g_email_proptags[] =
+static constexpr proptag_t g_email_proptags[] =
 	{0x8006001F, 0x8007001F, 0x8008001F};
-static constexpr uint32_t g_addrtype_proptags[] =
+static constexpr proptag_t g_addrtype_proptags[] =
 	{0x8012001F, 0x8013001F, 0x8014001F};
-static constexpr uint32_t g_im_proptag = 0x8009001F;
-static constexpr uint32_t g_categories_proptag = 0x800A101F;
-static constexpr uint32_t g_bcd_proptag = 0x800B0102;
-static constexpr uint32_t g_ufld_proptags[] = 
+static constexpr proptag_t g_im_proptag = 0x8009001F;
+static constexpr proptag_t g_categories_proptag = 0x800A101F;
+static constexpr proptag_t g_bcd_proptag = 0x800B0102;
+static constexpr proptag_t g_ufld_proptags[] = 
 	{0x800C001F, 0x800D001F, 0x800E001F, 0x800F001F};
-static constexpr uint32_t g_fbl_proptag = 0x8010001F;
-static constexpr uint32_t g_vcarduid_proptag = 0x8011001F;
+static constexpr proptag_t g_fbl_proptag = 0x8010001F;
+static constexpr proptag_t g_vcarduid_proptag = 0x8011001F;
 
 static BOOL oxvcard_check_compatible(const vcard *pvcard)
 {
@@ -789,13 +789,13 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		"CELL", "PAGER", "CAR", "ISDN", "PREF"};
 	static constexpr const char *ms_tel_types[] =
 		{"ASSISTANT", "CALLBACK", "COMPANY", "RADIO", "TTYTTD"};
-	static constexpr uint32_t tel_proptags[] =
+	static constexpr proptag_t tel_proptags[] =
 		{PR_HOME_TELEPHONE_NUMBER, PR_HOME2_TELEPHONE_NUMBER,
 		PR_OTHER_TELEPHONE_NUMBER, PR_BUSINESS_TELEPHONE_NUMBER,
 		PR_BUSINESS2_TELEPHONE_NUMBER, PR_MOBILE_TELEPHONE_NUMBER,
 		PR_PAGER_TELEPHONE_NUMBER, PR_CAR_TELEPHONE_NUMBER,
 		PR_ISDN_NUMBER, PR_PRIMARY_TELEPHONE_NUMBER};
-	static constexpr uint32_t ms_tel_proptags[] =
+	static constexpr proptag_t ms_tel_proptags[] =
 		{PR_ASSISTANT_TELEPHONE_NUMBER, PR_CALLBACK_TELEPHONE_NUMBER,
 		PR_COMPANY_MAIN_PHONE_NUMBER, PR_RADIO_TELEPHONE_NUMBER,
 		PR_TTYTDD_PHONE_NUMBER};

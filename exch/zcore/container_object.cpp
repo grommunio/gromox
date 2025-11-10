@@ -180,7 +180,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 	BINARY *pparent_entryid = nullptr;
 	LONG_ARRAY *pminid_array;
 	proptag_t proptag_buff[25];
-	static constexpr uint32_t tmp_proptags[] = {
+	static constexpr proptag_t tmp_proptags[] = {
 		PR_NICKNAME, PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 		PR_TITLE, PR_PRIMARY_TELEPHONE_NUMBER,
 		PR_MOBILE_TELEPHONE_NUMBER, PR_HOME_ADDRESS_STREET, PR_COMMENT,
@@ -550,7 +550,7 @@ static BOOL container_object_fetch_folder_properties(
 
 static const PROPTAG_ARRAY* container_object_get_folder_proptags()
 {
-	static constexpr uint32_t p[] = {
+	static constexpr proptag_t p[] = {
 		PidTagFolderId, PR_SUBFOLDERS, PR_DISPLAY_NAME,
 		PR_CONTAINER_CLASS, PR_FOLDER_PATHNAME,
 		PidTagParentFolderId, PR_ATTR_HIDDEN,
@@ -606,7 +606,7 @@ BOOL container_object::get_container_table_num(BOOL b_depth, uint32_t *pnum)
 void container_object_get_container_table_all_proptags(
 	PROPTAG_ARRAY *pproptags)
 {
-	static constexpr uint32_t p[] = {
+	static constexpr proptag_t p[] = {
 		PR_ENTRYID, PR_CONTAINER_FLAGS, PR_DEPTH, PR_INSTANCE_KEY,
 		PR_EMS_AB_CONTAINERID, PR_DISPLAY_NAME, PR_EMS_AB_IS_MASTER,
 		PR_EMS_AB_PARENT_ENTRYID, PR_AB_PROVIDER_ID,
@@ -818,7 +818,7 @@ BOOL container_object::get_user_table_num(uint32_t *pnum)
 void container_object_get_user_table_all_proptags(
 	PROPTAG_ARRAY *pproptags)
 {
-	static constexpr uint32_t p[] = {
+	static constexpr proptag_t p[] = {
 		PR_DISPLAY_NAME, PR_NICKNAME, PR_SURNAME, PR_GIVEN_NAME,
 		PR_MIDDLE_NAME, PR_TITLE, PR_PRIMARY_TELEPHONE_NUMBER,
 		PR_MOBILE_TELEPHONE_NUMBER, PR_HOME_ADDRESS_STREET, PR_COMMENT,

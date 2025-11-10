@@ -221,7 +221,7 @@ struct oneoff_object {
 	static std::unique_ptr<oneoff_object> create(ONEOFF_ENTRYID &&);
 	ec_error_t get_props(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
 
-	static const uint32_t all_tags_raw[];
+	static const gromox::proptag_t all_tags_raw[];
 	static const PROPTAG_ARRAY all_tags;
 
 	private:

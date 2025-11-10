@@ -28,7 +28,7 @@ static uint32_t propid_elist(const char *dir)
 static int askfor(const char *dir, uint64_t folder_id, uint32_t elist_tag,
     uint16_t sort_count)
 {
-	const uint32_t letags[] = {PR_NORMALIZED_SUBJECT, elist_tag};
+	const proptag_t letags[] = {PR_NORMALIZED_SUBJECT, elist_tag};
 	const PROPTAG_ARRAY tagarr = {std::size(letags), deconst(letags)};
 	const SORT_ORDER sort_spec[] = {
 		{PROP_TYPE(letags[0]), PROP_ID(letags[0]), 0},

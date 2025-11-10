@@ -24,7 +24,7 @@ std::unique_ptr<oneoff_object> oneoff_object::create(ONEOFF_ENTRYID &&e) try
 	return nullptr;
 }
 
-const uint32_t oneoff_object::all_tags_raw[] = {
+const proptag_t oneoff_object::all_tags_raw[] = {
 	PR_ADDRTYPE, PR_DISPLAY_NAME, PR_DISPLAY_TYPE, PR_EMAIL_ADDRESS,
 	PR_OBJECT_TYPE, PR_SEARCH_KEY, PR_SEND_INTERNET_ENCODING,
 	PR_SEND_RICH_INFO, PR_SMTP_ADDRESS,

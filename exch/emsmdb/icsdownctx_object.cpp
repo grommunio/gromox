@@ -231,7 +231,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		if (!pctx->pstate->pgiven->append(fid))
 			return FALSE;	
 	for (auto &chg : fldchgs) {
-		static constexpr uint32_t tags[] = {
+		static constexpr proptag_t tags[] = {
 			PR_FOLDER_PATHNAME, PR_NORMAL_MESSAGE_SIZE,
 			PR_NORMAL_MESSAGE_SIZE_EXTENDED, PR_MESSAGE_SIZE_EXTENDED,
 			PR_ASSOC_MESSAGE_SIZE, PR_ASSOC_MESSAGE_SIZE_EXTENDED,

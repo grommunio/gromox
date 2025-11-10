@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 	// Connection should have died by now
 	printf("req 2\n");
 
-	static constexpr uint32_t tags[] = {PR_STORE_RECORD_KEY};
+	static constexpr proptag_t tags[] = {PR_STORE_RECORD_KEY};
 	static constexpr PROPTAG_ARRAY ptags = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY props{};
 	if (!exmdb_client->get_store_properties(g_storedir, CP_UTF8, &ptags, &props))

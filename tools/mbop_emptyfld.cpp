@@ -62,7 +62,7 @@ static int select_mids_by_time(eid_t fid, unsigned int tbl_flags,
 		return EXIT_FAILURE;
 	}
 	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(g_storedir, table_id); });
-	static constexpr uint32_t mtags[] = {PidTagMid};
+	static constexpr proptag_t mtags[] = {PidTagMid};
 	static constexpr PROPTAG_ARRAY mtaghdr = {std::size(mtags), deconst(mtags)};
 	tarray_set rowset{};
 	if (!exmdb_client->query_table(g_storedir, nullptr, CP_ACP, table_id,
@@ -117,7 +117,7 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 		return EXIT_FAILURE;
 	}
 	auto cl_1 = HX::make_scope_exit([=]() { exmdb_client->unload_table(g_storedir, table_id); });
-	static constexpr uint32_t ftags[] = {PidTagFolderId};
+	static constexpr proptag_t ftags[] = {PidTagFolderId};
 	static constexpr PROPTAG_ARRAY ftaghdr = {std::size(ftags), deconst(ftags)};
 	tarray_set rowset{};
 	if (!exmdb_client->query_table(g_storedir, nullptr, CP_ACP, table_id,
@@ -135,7 +135,7 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 
 	if (depth == 0 || !g_delempty)
 		return EXIT_SUCCESS;
-	static constexpr uint32_t ftags2[] = {PR_CONTENT_COUNT, PR_ASSOC_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT};
+	static constexpr proptag_t ftags2[] = {PR_CONTENT_COUNT, PR_ASSOC_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT};
 	static constexpr PROPTAG_ARRAY ftaghdr2 = {std::size(ftags2), deconst(ftags2)};
 	TPROPVAL_ARRAY props{};
 	if (!exmdb_client->get_folder_properties(g_storedir, CP_ACP, fid, &ftaghdr2, &props)) {

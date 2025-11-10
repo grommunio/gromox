@@ -1420,7 +1420,7 @@ void process(mGetUserConfigurationRequest&& request, XMLElement* response, const
 		if (mid == nullptr)
 			throw EWSError::ItemNotFound(E3143);
 
-		static constexpr uint32_t propTags[] = {
+		static constexpr proptag_t propTags[] = {
 			PR_ENTRYID, PR_CHANGE_KEY, PR_ROAMING_XMLSTREAM, PR_ROAMING_BINARYSTREAM,
 		};
 		const PROPTAG_ARRAY props = {std::size(propTags), deconst(propTags)};
