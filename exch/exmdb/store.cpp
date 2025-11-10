@@ -193,13 +193,13 @@ BOOL exmdb_server::set_store_properties(const char *dir, cpid_t cpid,
 }
 
 BOOL exmdb_server::remove_store_properties(const char *dir,
-    const PROPTAG_ARRAY *pproptags)
+    proptag_cspan pproptags)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
 	auto transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
-	if (!cu_remove_properties(MAPI_STORE, 0, pdb->psqlite, *pproptags))
+	if (!cu_remove_properties(MAPI_STORE, 0, pdb->psqlite, pproptags))
 		return FALSE;
 	return transact.commit() == SQLITE_OK ? TRUE : false;
 }

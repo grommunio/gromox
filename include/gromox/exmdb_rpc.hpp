@@ -240,9 +240,14 @@ struct exreq_set_store_properties final : public exreq {
 using exreq_autoreply_getprop = exreq_get_store_properties;
 using exreq_autoreply_setprop = exreq_set_store_properties;
 
+struct exreq_remove_store_properties_v final : public exreq {
+	proptag_cspan pproptags;
+};
+
 struct exreq_remove_store_properties final : public exreq {
-	using view_t = exreq_remove_store_properties;
-	PROPTAG_ARRAY *pproptags;
+	using view_t = exreq_remove_store_properties_v;
+	proptag_vector pproptags;
+	operator view_t() const { view_t v; v.pproptags = pproptags; return v; }
 };
 
 struct exreq_get_mbox_perm final : public exreq {

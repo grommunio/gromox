@@ -659,7 +659,7 @@ bool logon_object::remove_properties(proptag_cspan pproptags,
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
-	return exmdb_client->remove_store_properties(plogon->dir, &tmp_proptags);
+	return exmdb_client->remove_store_properties(plogon->dir, tmp_proptags);
 }
 
 /**

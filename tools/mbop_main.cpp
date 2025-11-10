@@ -312,7 +312,7 @@ static int delstoreprop(int argc, char **argv, const GUID &guid,
 		return EXIT_FAILURE;
 	auto proptag = PROP_TAG(type, propid);
 	const PROPTAG_ARRAY tags = {1, &proptag};
-	if (!exmdb_client->remove_store_properties(g_storedir, &tags))
+	if (!exmdb_client->remove_store_properties(g_storedir, tags))
 		return EXIT_FAILURE;
 	if (strcmp(name, "zcore_profsect") == 0)
 		unlink((g_storedir + "/config/zarafa.dat"s).c_str());
