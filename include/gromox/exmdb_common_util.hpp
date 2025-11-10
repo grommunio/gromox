@@ -86,7 +86,7 @@ extern bool cu_remove_properties(mapi_object_type, uint64_t id, sqlite3 *, propt
 extern BOOL common_util_get_rule_property(uint64_t rule_id, sqlite3 *, gromox::proptag_t, void **val);
 extern bool cu_get_permission_property(int64_t member_id, sqlite3 *, gromox::proptag_t, void **outval);
 BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite);
-extern BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag);
+extern bool cu_check_msgsize_overflow(sqlite3 *, gromox::proptag_t);
 extern uint32_t cu_folder_unread_count(sqlite3 *psqlite, uint64_t folder_id, unsigned int flags = 0);
 extern BOOL common_util_get_folder_type(sqlite3 *, uint64_t folder_id, uint32_t *type, const char *dir = nullptr);
 uint64_t common_util_get_folder_parent_fid(

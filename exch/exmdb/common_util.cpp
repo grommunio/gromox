@@ -774,12 +774,13 @@ BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
 	return c >= g_max_msg ? TRUE : false;
 }
 
-BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
+bool cu_check_msgsize_overflow(sqlite3 *psqlite, proptag_t qtag)
 {
+	const proptag_t tags[] = {qtag, PR_MESSAGE_SIZE_EXTENDED};
 	TPROPVAL_ARRAY propvals;
 	
 	if (!cu_get_properties(MAPI_STORE, 0, CP_ACP, psqlite,
-	    {qtag, PR_MESSAGE_SIZE_EXTENDED}, &propvals))
+	    tags, &propvals))
 		return FALSE;
 	auto ptotal = propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	auto qv_kb = propvals.get<uint32_t>(qtag);
@@ -1615,9 +1616,10 @@ static void *cu_get_object_text_v0(const char *dir, const char *cid,
 BOOL cu_get_property(mapi_object_type table_type, uint64_t id,
     cpid_t cpid, sqlite3 *psqlite, proptag_t proptag, void **ppvalue)
 {
+	const proptag_t tags[] = {proptag};
 	TPROPVAL_ARRAY propvals;
 	if (!cu_get_properties(table_type,
-	    id, cpid, psqlite, {proptag}, &propvals))
+	    id, cpid, psqlite, tags, &propvals))
 		return FALSE;
 	*ppvalue = propvals.count == 0 ? nullptr : propvals.ppropval[0].pvalue;
 	return TRUE;
