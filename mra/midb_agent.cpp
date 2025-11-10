@@ -745,6 +745,33 @@ int ping_mailbox(const char *path, int *perrno)
 	return MIDB_RDWR_ERROR;
 }
 
+int sync_mailbox(const char *path, uint64_t folder_id, int *err)
+{
+	auto conn = get_connection(path);
+	if (conn == nullptr)
+		return MIDB_NO_SERVER;
+	char buf[1024];
+	int len;
+	if (folder_id == 0)
+		len = gx_snprintf(buf, std::size(buf), "X-RSYM %s\r\n", path);
+	else
+		len = gx_snprintf(buf, std::size(buf), "X-RSYF %s %llu\r\n",
+		      path, static_cast<unsigned long long>(folder_id));
+	auto ret = rw_command(conn->sockd, buf, len, std::size(buf));
+	if (ret != 0)
+		return ret;
+	if (strncmp(buf, "TRUE", 4) == 0) {
+		conn.reset();
+		return MIDB_RESULT_OK;
+	} else if (strncmp(buf, "FALSE ", 6) == 0) {
+		conn.reset();
+		if (err != nullptr)
+			*err = strtol(&buf[6], nullptr, 0);
+		return MIDB_RESULT_ERROR;
+	}
+	return MIDB_RDWR_ERROR;
+}
+
 int rename_folder(const char *path, const std::string &src_name,
     const std::string &dst_name, int *perrno)
 {

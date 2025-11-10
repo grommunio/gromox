@@ -69,6 +69,8 @@ set\-photo: read user image from stdin and save to store
 set\-websettings, set\-websettings\-persistent, set\-websettings\-recipients:
 read new grommunio-web settings from stdin and save to store
 .IP \(bu 4
+sync\-midb: trigger a midb synchronization run
+.IP \(bu 4
 thaw: unfreeze a mailbox
 .IP \(bu 4
 unload: issue the "unload_store" RPC for a mailbox
@@ -323,6 +325,19 @@ Reads various grommunio-web settings from the store and dumps it to stdout.
 Causes the respective mailbox to be opened by the server. (Any request to the
 information storage server causes the respective mailbox to be opened; and ping
 is technically just a no-op request type.)
+.SH sync\-midb
+.SS Synopsis
+\fBsync-midb\fP [\fB\-f\fP \fIfolder_spec\fP]
+.SS Description
+Sends a request to midb for opening the mailbox and updating the midb-specific
+folder indices, as well as potentially building RFC5322 representations for
+newly-appeared messages. (Once the mailbox is open in midb, it uses
+asynchronous notifications to stay up to date.)
+.SS Options
+.TP
+\fB\-f\fP \fIfolder_spec\fP
+Forcibly rerun the sync routine for a single specific folder. See section
+"Folder specification". In addition, the special keyword "all" is recognized.
 .SH purge\-datafiles
 The "purge\-datafiles" RPC makes exmdb_provider remove attachment and content
 files from disk that are no longer referenced by any message.

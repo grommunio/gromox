@@ -12,9 +12,11 @@
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/fileio.h>
 #include <gromox/freebusy.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
@@ -207,6 +209,75 @@ static int freeze_main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
+}
+
+}
+
+namespace sync_midb {
+
+static const char *g_folder_spec;
+static constexpr HXoption g_options_table[] = {
+	{{}, 'f', HXTYPE_STRP, &g_folder_spec, {}, {}, {}, "Forcibly rescan this folder", "SPEC"},
+	MBOP_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
+static int send_cmd(const char *host, uint16_t port, const std::string &cmd)
+{
+	int fd = HX_inet_connect(host, port, 0);
+	if (fd < 0) {
+		fprintf(stderr, "connect [%s]:%hu: %s", host, port, strerror(errno));
+		return -1;
+	}
+	std::unique_ptr<FILE, file_deleter> fp(fdopen(fd, "r+"));
+	if (fp == nullptr) {
+		perror("fdopen");
+		return -1;
+	}
+	setvbuf(fp.get(), nullptr, _IOLBF, 0);
+	hxmc_t *line = nullptr;
+	auto cl_0 = HX::make_scope_exit([&]() { HXmc_free(line); });
+	if (HX_getl(&line, fp.get()) == nullptr)
+		return -1;
+	if (strcmp(line, "OK\r\n") != 0) {
+		fprintf(stderr, "No MIDB intro line received\n");
+		return -1;
+	}
+	fprintf(fp.get(), "%s", cmd.c_str());
+	if (HX_getl(&line, fp.get()) == nullptr) {
+		fprintf(stderr, "MIDB connection aborted?!\n");
+		return -1;
+	}
+	if (strncasecmp(line, "true", 4) == 0 && HX_isspace(line[4]))
+		return 0;
+	mbop_fprintf(stderr, "MIDB command unsuccessful\n");
+	return 1;
+}
+
+int main(int argc, char **argv)
+{
+	HXopt6_auto_result argp;
+	const char *host = "localhost";
+	uint16_t port = 5555;
+
+	if (HX_getopt6(g_options_table, argc, argv, nullptr,
+	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS || g_exit_after_optparse)
+		return EXIT_PARAM;
+
+	int ret;
+	if (g_folder_spec == nullptr) {
+		ret = send_cmd(host, port, "M-PING " + g_storedir_s + "\r\n");
+	} else if (strcasecmp(g_folder_spec, "all") == 0) {
+		ret = send_cmd(host, port, "X-RSYM " + g_storedir_s + "\r\n");
+	} else {
+		eid_t eid = gi_lookup_eid_by_name(g_storedir, g_folder_spec);
+		if (eid == 0) {
+			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", g_folder_spec);
+			return EXIT_FAILURE;
+		}
+		ret = send_cmd(host, port, "X-RSYF " + g_storedir_s + " " + std::to_string(eid.gcv()) + "\r\n");
+	}
+	return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 }
@@ -426,8 +497,9 @@ static int single_user_wrap(int argc, char **argv)
 	return ret;
 }
 
-static constexpr generic_module g_dfl_svc_plugins[] =
-	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
+static constexpr generic_module g_dfl_svc_plugins[] = {
+	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
+};
 
 int main(int argc, char **argv)
 {
@@ -447,7 +519,7 @@ int main(int argc, char **argv)
 	argv = result.uarg;
 	if (argc == 0)
 		return global::help();
-	service_init({nullptr, g_dfl_svc_plugins, 1});
+	service_init({nullptr, g_dfl_svc_plugins, 2});
 	auto cl_1 = HX::make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");
@@ -535,6 +607,8 @@ int cmd_parser(int argc, char **argv)
 		return set_locale::main(argc, argv);
 	else if (strcmp(argv[0], "get-freebusy") == 0 || strcmp(argv[0], "gfb") == 0)
 		return getfreebusy::main(argc, argv);
+	else if (strcmp(argv[0], "sync-midb") == 0)
+		return sync_midb::main(argc, argv);
 
 	if (strcmp(argv[0], "clear-profile") == 0) {
 		auto ret = delstoreprop(argc, argv, PSETID_Gromox, "zcore_profsect", PT_BINARY);

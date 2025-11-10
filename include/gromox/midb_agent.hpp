@@ -46,6 +46,7 @@ extern GX_EXPORT int summary_folder(const char *path, const std::string &folder,
 extern GX_EXPORT int make_folder(const char *path, const std::string &folder, int *perrno);
 extern GX_EXPORT int remove_folder(const char *path, const std::string &folder, int *perrno);
 extern GX_EXPORT int ping_mailbox(const char *path, int *perrno);
+extern GX_EXPORT int sync_mailbox(const char *path, uint64_t folder_id, int *err);
 extern GX_EXPORT int rename_folder(const char *path, const std::string &src_name, const std::string &dst_name, int *perrno);
 extern GX_EXPORT int subscribe_folder(const char *path, const std::string &folder, int *perrno);
 extern GX_EXPORT int unsubscribe_folder(const char *path, const std::string &folder, int *perrno);
