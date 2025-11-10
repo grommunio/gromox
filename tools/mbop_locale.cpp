@@ -93,10 +93,9 @@ static int set_names(const char *lang, size_t &fcount)
 		auto folder_id = rop_util_make_eid_ex(1, gcv);
 		if (global::g_verbose_mode) {
 			static constexpr proptag_t tags[] = {PR_DISPLAY_NAME};
-			static constexpr PROPTAG_ARRAY taghdr = {std::size(tags), deconst(tags)};
 			TPROPVAL_ARRAY props{};
 			if (!exmdb_client->get_folder_properties(g_storedir,
-			    CP_ACP, folder_id, &taghdr, &props)) {
+			    CP_ACP, folder_id, tags, &props)) {
 				mbop_fprintf(stderr, "get_folder_props failed\n");
 				return EXIT_FAILURE;
 			}

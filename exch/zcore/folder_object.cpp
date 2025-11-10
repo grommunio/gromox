@@ -440,7 +440,7 @@ bool folder_object::get_properties(proptag_cspan pproptags,
 		return TRUE;
 	auto pinfo = zs_get_info();
 	if (!exmdb_client->get_folder_properties(pfolder->pstore->get_dir(),
-	    pinfo->cpid, pfolder->folder_id, &tmp_proptags, &tmp_propvals))
+	    pinfo->cpid, pfolder->folder_id, tmp_proptags, &tmp_propvals))
 		return FALSE;
 	if (tmp_propvals.count == 0)
 		return TRUE;

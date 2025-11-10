@@ -436,7 +436,7 @@ bool folder_object::get_properties(proptag_cspan pproptags,
 		return TRUE;
 	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client->get_folder_properties(pfolder->plogon->get_dir(),
-	    pinfo->cpid, pfolder->folder_id, &tmp_proptags, &tmp_propvals))
+	    pinfo->cpid, pfolder->folder_id, tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count > 0) {
 		memcpy(ppropvals->ppropval + ppropvals->count,

@@ -1622,7 +1622,7 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 	    folder_id, &tmp_proptags))
 		return ecError;
 	if (!exmdb_client->get_folder_properties(src_store->get_dir(), CP_ACP,
-	    folder_id, &tmp_proptags, &tmp_propvals))
+	    folder_id, tmp_proptags, &tmp_propvals))
 		return ecError;
 	if (new_name != nullptr) {
 		auto err = cu_set_propval(&tmp_propvals, PR_DISPLAY_NAME, new_name);

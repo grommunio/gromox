@@ -103,7 +103,7 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 		return NULL;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client->get_folder_properties(plogon->get_dir(), pinfo->cpid,
-	    folder_id, &tmp_proptags, &tmp_propvals))
+	    folder_id, tmp_proptags, &tmp_propvals))
 		return NULL;
 	auto pproplist = pfldctnt->get_proplist();
 	for (const auto &pv : tmp_propvals)

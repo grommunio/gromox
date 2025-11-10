@@ -518,15 +518,14 @@ BOOL exmdb_server::get_folder_all_proptags(const char *dir, uint64_t folder_id,
 }
 
 BOOL exmdb_server::get_folder_properties(const char *dir, cpid_t cpid,
-    uint64_t folder_id, const PROPTAG_ARRAY *pproptags,
-    TPROPVAL_ARRAY *ppropvals)
+    uint64_t folder_id, proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
 	/* Only one SQL operation, no transaction needed. */
 	return cu_get_properties(MAPI_FOLDER, rop_util_get_gc_value(folder_id),
-	       cpid, *pdb, *pproptags, ppropvals);
+	       cpid, *pdb, pproptags, ppropvals);
 }
 
 /* no PROPERTY_PROBLEM for PidTagChangeNumber and PR_CHANGE_KEY */

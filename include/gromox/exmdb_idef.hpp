@@ -27,7 +27,7 @@ EXMIDL(get_folder_perm, (const char *dir, uint64_t folder_id, const char *userna
 EXMIDL(create_folder_v1, (const char *dir, cpid_t cpid, const TPROPVAL_ARRAY *pproperties, IDLOUT uint64_t *folder_id))
 EXMIDL(create_folder, (const char *dir, cpid_t cpid, const TPROPVAL_ARRAY *pproperties, IDLOUT uint64_t *folder_id, ec_error_t *e_result))
 EXMIDL(get_folder_all_proptags, (const char *dir, uint64_t folder_id, IDLOUT PROPTAG_ARRAY *proptags))
-EXMIDL(get_folder_properties, (const char *dir, cpid_t cpid, uint64_t folder_id, const PROPTAG_ARRAY *pproptags, IDLOUT TPROPVAL_ARRAY *propvals))
+EXMIDL(get_folder_properties, (const char *dir, cpid_t cpid, uint64_t folder_id, proptag_cspan pproptags, IDLOUT TPROPVAL_ARRAY *propvals))
 EXMIDL(set_folder_properties, (const char *dir, cpid_t cpid, uint64_t folder_id, const TPROPVAL_ARRAY *pproperties, IDLOUT PROBLEM_ARRAY *problems))
 EXMIDL(remove_folder_properties, (const char *dir, uint64_t folder_id, const PROPTAG_ARRAY *pproptags))
 EXMIDL(delete_folder, (const char *dir, cpid_t cpid, uint64_t folder_id, BOOL b_hard, IDLOUT BOOL *b_result))

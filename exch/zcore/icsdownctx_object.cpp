@@ -310,9 +310,8 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	static constexpr gromox::proptag_t proptag_buff[] =
 		{PidTagParentFolderId, PR_DISPLAY_NAME, PR_CONTAINER_CLASS,
 		PR_ATTR_HIDDEN, PR_EXTENDED_FOLDER_FLAGS, PidTagChangeNumber};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client->get_folder_properties(pctx->pstore->get_dir(), CP_ACP,
-	    fid, &proptags, &tmp_propvals))
+	    fid, proptag_buff, &tmp_propvals))
 		return FALSE;
 	auto lnum = tmp_propvals.get<const uint64_t>(PidTagChangeNumber);
 	if (lnum == nullptr) {

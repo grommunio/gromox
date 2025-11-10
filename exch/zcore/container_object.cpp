@@ -544,14 +544,15 @@ static bool container_object_fetch_folder_properties(const TPROPVAL_ARRAY *pprop
 	return TRUE;
 }
 
+static constexpr proptag_t container_object_get_folder_proptags_raw[] = {
+	PidTagFolderId, PR_SUBFOLDERS, PR_DISPLAY_NAME,
+	PR_CONTAINER_CLASS, PR_FOLDER_PATHNAME,
+	PidTagParentFolderId, PR_ATTR_HIDDEN,
+};
+
 static const PROPTAG_ARRAY* container_object_get_folder_proptags()
 {
-	static constexpr proptag_t p[] = {
-		PidTagFolderId, PR_SUBFOLDERS, PR_DISPLAY_NAME,
-		PR_CONTAINER_CLASS, PR_FOLDER_PATHNAME,
-		PidTagParentFolderId, PR_ATTR_HIDDEN,
-	};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(p), deconst(p)};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(container_object_get_folder_proptags_raw), deconst(container_object_get_folder_proptags_raw)};
 	return &proptags;
 }
 
@@ -565,7 +566,7 @@ bool container_object::get_properties(proptag_cspan pproptags,
 		auto pinfo = zs_get_info();
 		if (!exmdb_client->get_folder_properties(pinfo->get_maildir(),
 		    pinfo->cpid, pcontainer->id.exmdb_id.folder_id,
-		    container_object_get_folder_proptags(), &tmp_propvals))
+		    container_object_get_folder_proptags_raw, &tmp_propvals))
 			return FALSE;
 		return container_object_fetch_folder_properties(
 					&tmp_propvals, pproptags, ppropvals);
@@ -729,7 +730,7 @@ bool container_object::query_container_table(proptag_cspan pproptags,
 			auto pinfo = zs_get_info();
 			if (!exmdb_client->get_folder_properties(pinfo->get_maildir(),
 				pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
-				container_object_get_folder_proptags(), &tmp_propvals)) {
+			    container_object_get_folder_proptags_raw, &tmp_propvals)) {
 				return FALSE;
 			}
 			if (!container_object_fetch_folder_properties(&tmp_propvals,

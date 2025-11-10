@@ -51,11 +51,10 @@ void mbop_usage_cb(const struct HXoptcb *cbi)
 void delcount(eid_t fid, uint32_t *delc, uint32_t *fldc)
 {
 	static constexpr proptag_t tags[] = {PR_DELETED_COUNT_TOTAL, PR_FOLDER_CHILD_COUNT};
-	static constexpr PROPTAG_ARRAY taghdr = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY props;
 	*delc = *fldc = 0;
 	if (!exmdb_client->get_folder_properties(g_storedir, CP_ACP, fid,
-	    &taghdr, &props)) {
+	    tags, &props)) {
 		mbop_fprintf(stderr, "delcount: get_folder_properties failed\n");
 		return;
 	}

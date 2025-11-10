@@ -2487,10 +2487,9 @@ static int me_mrenf(int argc, char **argv, int sockd)
 	if (!exmdb_client->allocate_cn(argv[1], &change_num))
 		return MIDB_E_MDB_ALLOCID;
 	static constexpr proptag_t tmp_proptag[] = {PR_PREDECESSOR_CHANGE_LIST};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 	TPROPVAL_ARRAY propvals;
 	if (!exmdb_client->get_folder_properties(argv[1], CP_ACP,
-	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
+	    rop_util_make_eid_ex(1, folder_id), tmp_proptag, &propvals))
 		return MIDB_E_MDB_GETFOLDERPROPS;
 	auto pbin1 = propvals.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 
@@ -3705,12 +3704,11 @@ static BOOL notif_folder_added(IDB_ITEM *pidb,
 	static constexpr proptag_t tmp_proptags[] =
 		{PR_DISPLAY_NAME, PR_LOCAL_COMMIT_TIME_MAX, PR_CONTAINER_CLASS,
 		PR_ATTR_HIDDEN};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptags), deconst(tmp_proptags)};
 	bool b_waited = false;
  REQUERY_FOLDER:
 	TPROPVAL_ARRAY propvals{};
 	if (!exmdb_client->get_folder_properties(cu_get_maildir(), CP_ACP,
-	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
+	    rop_util_make_eid_ex(1, folder_id), tmp_proptags, &propvals))
 		return FALSE;		
 	auto flag = propvals.get<const uint8_t>(PR_ATTR_HIDDEN);
 	if (flag != nullptr && *flag != 0)
@@ -3815,11 +3813,10 @@ static void notif_folder_moved(IDB_ITEM *pidb,
 		decoded_name = znul(pstmt.col_text(0));
 		pstmt.finalize();
 	}
-	static constexpr proptag_t tmp_proptag[] = {PR_DISPLAY_NAME};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
+	static constexpr proptag_t tmp_proptags[] = {PR_DISPLAY_NAME};
 	TPROPVAL_ARRAY propvals;
 	if (!exmdb_client->get_folder_properties(cu_get_maildir(), CP_ACP,
-	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
+	    rop_util_make_eid_ex(1, folder_id), tmp_proptags, &propvals))
 		return;		
 
 	auto str = propvals.get<const char>(PR_DISPLAY_NAME);
@@ -3862,11 +3859,10 @@ static void notif_folder_modified(IDB_ITEM *pidb,
 	uint64_t parent_fid = pstmt.col_uint64(1);
 	pstmt.finalize();
 
-	static constexpr proptag_t tmp_proptag[] = {PR_DISPLAY_NAME};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
+	static constexpr proptag_t tmp_proptags[] = {PR_DISPLAY_NAME};
 	TPROPVAL_ARRAY propvals;
 	if (!exmdb_client->get_folder_properties(cu_get_maildir(), CP_ACP,
-	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
+	    rop_util_make_eid_ex(1, folder_id), tmp_proptags, &propvals))
 		return;		
 	auto str = propvals.get<const char>(PR_DISPLAY_NAME);
 	if (str == nullptr)

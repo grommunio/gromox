@@ -41,14 +41,9 @@ bool exmdb_client_get_named_propid(const char *dir, bool b_create,
 BOOL exmdb_client_get_folder_property(const char *dir, cpid_t cpid,
     uint64_t folder_id, proptag_t proptag, void **ppval)
 {
-	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	
-	tmp_proptags.count = 1;
-	tmp_proptags.pproptag = &proptag;
-	if (!exmdb_client->get_folder_properties(
-		dir, cpid, folder_id, &tmp_proptags,
-	    &tmp_propvals))
+	if (!exmdb_client->get_folder_properties(dir, cpid, folder_id,
+	    {&proptag, 1}, &tmp_propvals))
 		return FALSE;	
 	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
 	return TRUE;

@@ -1004,11 +1004,9 @@ TAGGED_PROPVAL EWSContext::getFolderEntryId(const std::string& dir, uint64_t fol
 TPROPVAL_ARRAY EWSContext::getFolderProps(const std::string &dir,
     uint64_t folderId, proptag_cspan tags) const
 {
-	PROPTAG_ARRAY props;
-	props.count    = std::min(tags.size(), static_cast<size_t>(UINT16_MAX));
-	props.pproptag = deconst(tags.data());
 	TPROPVAL_ARRAY result;
-	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folderId, &props, &result))
+	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP,
+	    folderId, tags, &result))
 		throw EWSError::FolderPropertyRequestFailed(E3023);
 	return result;
 }
@@ -1623,9 +1621,9 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
                                     bool copy) const
 {
 	static constexpr proptag_t tagIds[] = {PidTagParentFolderId, PR_DISPLAY_NAME};
-	static constexpr PROPTAG_ARRAY tags = {std::size(tagIds), deconst(tagIds)};
 	TPROPVAL_ARRAY props;
-	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folder.folderId, &tags, &props))
+	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP,
+	    folder.folderId, proptag_cspan{tagIds}, &props))
 		throw DispatchError(E3159);
 	uint64_t* parentFid = props.get<uint64_t>(PidTagParentFolderId);
 	auto folderName = props.get<const char>(PR_DISPLAY_NAME);
