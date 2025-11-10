@@ -1124,10 +1124,16 @@ void EWSContext::impersonate(const char* addrtype, const char* addr)
 	    strcasecmp(addrtype, "PrimarySmtpAddress") != 0 &&
 	    strcasecmp(addrtype, "SmtpAddress") != 0)
 		throw EWSError::ImpersonationFailed(E3242);
-	impersonationMaildir = get_maildir(addr);
-	if (!(permissions(impersonationMaildir, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)) & frightsGromoxStoreOwner))
+
+	/*
+	 * Exception safety: construct strings (potential allocation)
+	 * ahead of changing the members.
+	 */
+	std::string dir = get_maildir(addr), user = addr;
+	if (!(permissions(dir, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)) & frightsGromoxStoreOwner))
 		throw EWSError::ImpersonateUserDenied(E3243);
-	impersonationUser = addr;
+	impersonationUser    = std::move(user);
+	impersonationMaildir = std::move(dir);
 	m_auth_info.username = impersonationUser.c_str();
 	m_auth_info.maildir = impersonationMaildir.c_str();
 }
