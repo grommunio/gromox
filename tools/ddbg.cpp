@@ -10,6 +10,7 @@
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <gromox/element_data.hpp>
+#include <gromox/lzxpress.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
@@ -23,7 +24,8 @@ using LLU = unsigned long long;
 
 enum {
 	CM_NONE, CM_DEC_ACTION, CM_DEC_ANYTHING, CM_DEC_ENTRYID, CM_DEC_GUID,
-	CM_DEC_NTTIME, CM_DEC_RESTRICT, CM_DEC_UNIXTIME, CM_HTMLTORTF,
+	CM_DEC_NTTIME, CM_DEC_RESTRICT, CM_DEC_UNIXTIME,
+	CM_LZXDEC, CM_LZXENC, CM_HTMLTORTF,
 	CM_HTMLTOTEXT, CM_RTFCP, CM_RTFTOHTML, CM_TEXTTOHTML, CM_UNRTFCP,
 };
 static unsigned int g_dowhat, g_hex2bin;
@@ -37,6 +39,8 @@ static constexpr struct HXoption g_options_table[] = {
 	{"decode-unixtime", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_UNIXTIME, "Decode Unix timestamp to nttime/calendar"},
 	{"htmltortf", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_HTMLTORTF, "Convert HTML to RTF"},
 	{"htmltotext", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_HTMLTOTEXT, "Convert HTML to plaintext"},
+	{"lzxdec", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXDEC, "LZX decompression"},
+	{"lzxenc", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_LZXENC, "LZX compression"},
 	{"pack", 'p', HXTYPE_NONE, &g_hex2bin, {}, {}, 0, "Employ hex2bin before main action"},
 	{"rtfcp", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_RTFCP, "Convert RTF to uncompressed RTFCP"},
 	{"unrtfcp", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_UNRTFCP, "Decompress RTFCP (all forms) to RTF"},
@@ -443,6 +447,27 @@ static void print_unixtime(const char *str)
 	printf("%lld ... is calendar %s\n", LLD{ut}, buf);
 }
 
+static int do_lzx(std::string_view data, bool enc)
+{
+	/*
+	 * The API of that lzxpress implementation does not expose streamed
+	 * decompression; it's just one-shot. Just allocate a huge chunk and
+	 * hope.
+	 */
+	size_t osize = data.size() * 10;
+	auto outbuf = std::make_unique<char[]>(osize);
+	auto ret = enc ? lzxpress_compress(data.data(), data.size(), outbuf.get(), osize) :
+	           lzxpress_decompress(data.data(), data.size(), outbuf.get(), osize);
+	if (ret < 0) {
+		fprintf(stderr, "Something went wrong\n");
+		return -1;
+	} else if (HXio_fullwrite(STDOUT_FILENO, outbuf.get(), ret) < 0) {
+		perror("write");
+		return -1;
+	}
+	return 0;
+}
+
 static int do_process_2(std::string_view &&data, const char *str)
 {
 	switch (g_dowhat) {
@@ -492,6 +517,10 @@ static int do_process_2(std::string_view &&data, const char *str)
 		puts(out.c_str());
 		return 0;
 	}
+	case CM_LZXDEC:
+		return do_lzx(data, 0);
+	case CM_LZXENC:
+		return do_lzx(data, 1);
 	case CM_RTFCP: {
 		auto comp(rtfcp_compress(data.data(), data.size()));
 		if (comp == nullptr) {
