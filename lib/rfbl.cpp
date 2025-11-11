@@ -715,16 +715,26 @@ std::string bin2cstr(const void *vdata, size_t len)
  */
 namespace {
 struct bin2txt_init {
-	bin2txt_init() { m_cstr = *znul(getenv("BIN2TXT_CSTR")) != '\0'; }
-	bool m_cstr = false;
+	bin2txt_init() {
+		auto p = znul(getenv("BIN2TXT_MODE"));
+		if (*p == '\0' || strcasecmp(p, "txt") == 0)
+			m_cstr = 0;
+		else if (strcasecmp(p, "hex") == 0)
+			m_cstr = 1;
+		else if (strcasecmp(p, "co") == 0 || strcasecmp(p, "cstr") == 0)
+			m_cstr = 2;
+	}
+	unsigned int m_cstr = 0;
 };
 static bin2txt_init g_bin2txt_choice;
 }
 
 std::string bin2txt(const void *vdata, size_t len)
 {
-	if (g_bin2txt_choice.m_cstr)
-		return bin2cstr(vdata, len);
+	switch (g_bin2txt_choice.m_cstr) {
+	case 1: return bin2hex(vdata, len);
+	case 2: return bin2cstr(vdata, len);
+	}
 	auto data = static_cast<const unsigned char *>(vdata);
 	std::string ret;
 	char b[4]{};

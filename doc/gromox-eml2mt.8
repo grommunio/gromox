@@ -81,7 +81,11 @@ not recognized. (Not recommended)
 .TP
 \fB\-p\fP
 Show properties in detail (enhances \fB\-t\fP). Using \-p twice prints
-properties with human-readable mnemonic names.
+properties with human-readable mnemonic names. The BIN2TXT_MODE environment
+variable can be set to control how binary properties are presented; possible
+values are "co" (C string representation with octal escapes), "cstr" (C string
+representation, any form) and "hex" (two-hex-nibble representation), "txt"
+(compact representation for light-binary text-heavy content).
 .TP
 \fB\-t\fP
 Show a diagnostic tree view of the source data as it is being read.
