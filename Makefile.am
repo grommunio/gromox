@@ -230,7 +230,7 @@ mapi_la_LDFLAGS += -Wl,--allow-shlib-undefined
 endif
 EXTRA_mapi_la_DEPENDENCIES = default.sym
 
-noinst_PROGRAMS = dldcheck tests/bdump tests/bodyconv tests/compress tests/dnsbl_check tests/exrpctest tests/gxl-383 tests/jsontest tests/lzxpress tests/oxcmail_ie tests/ucvttest tests/udb tests/utf8filter tests/utiltest tests/vcard tools/tzdump
+noinst_PROGRAMS = dldcheck tests/bodyconv tests/compress tests/dnsbl_check tests/exrpctest tests/gxl-383 tests/jsontest tests/lzxpress tests/oxcmail_ie tests/ucvttest tests/udb tests/utf8filter tests/utiltest tests/vcard tools/tzdump
 if HAVE_ESEDB
 noinst_PROGRAMS += tests/epv_unpack
 endif
@@ -242,8 +242,6 @@ dldcheck_LDADD = ${dl_LIBS}
 TESTS = tests/utiltest
 tests_udb_SOURCES = tests/userdb.cpp
 tests_udb_LDADD = ${libHX_LIBS} libgromox_common.la libgxs_mysql_adaptor.la
-tests_bdump_SOURCES = tests/bdump.cpp
-tests_bdump_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tests_compress_SOURCES = tests/compress.cpp
@@ -275,7 +273,7 @@ tests_vcard_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tools_authtry_SOURCES = tools/authtry.cpp
 tools_authtry_LDADD = ${libHX_LIBS} ${libldap_LIBS} libgromox_auth.la libgromox_authz.la libgromox_common.la libgxs_mysql_adaptor.la
 tools_eidprint_SOURCES = tools/eidprint.cpp
-tools_eidprint_LDADD = libgromox_common.la libgromox_mapi.la
+tools_eidprint_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tools_textmapquery_SOURCES = tools/textmapquery.cpp
 tools_textmapquery_LDADD = libgromox_common.la
 tools_tzdump_SOURCES = tools/tzdump.cpp

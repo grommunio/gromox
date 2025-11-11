@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
 #include <string>
 #include <string_view>
+#include <libHX/io.h>
+#include <libHX/option.h>
 #include <libHX/scope.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
@@ -15,7 +17,22 @@
 using namespace gromox;
 using LLU = unsigned long long;
 
-static void try_entryid(const std::string_view s, unsigned int ind);
+enum {
+	CM_NONE, CM_DEC_ACTION, CM_DEC_ANYTHING, CM_DEC_ENTRYID, CM_DEC_GUID, CM_DEC_RESTRICT,
+};
+static unsigned int g_dowhat, g_hex2bin;
+static constexpr struct HXoption g_options_table[] = {
+	{"decode", 'd', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_ANYTHING, "Try all decoders"},
+	{"decode-action", 'A', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_ACTION, "Decode rule action blob"},
+	{"decode-entryid", 'e', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_ENTRYID, "Decode entryid"},
+	{"decode-guid", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_GUID, "Decode GUID"},
+	{"decode-restrict", 'r', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_RESTRICT, "Decode restriction blob (e.g. rule condition)"},
+	{"pack", 'p', HXTYPE_NONE, &g_hex2bin, {}, {}, 0, "Employ hex2bin before main action"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
+static void try_entryid(const std::string_view s, unsigned int ind = 0);
 
 static unsigned int lead(unsigned int level)
 {
@@ -33,7 +50,7 @@ static void print_guid(const FLATUID le)
 		printf(" <<%s>>", name.c_str());
 }
 
-static void try_guid(const std::string_view s, unsigned int ind)
+static void try_guid(const std::string_view s, unsigned int ind = 0)
 {
 	if (s.size() == sizeof(FLATUID))
 		print_guid(*reinterpret_cast<const FLATUID *>(s.data()));
@@ -368,19 +385,82 @@ static void try_entryid(const std::string_view s, unsigned int ind)
 		try_object_eid(s, ind);
 }
 
-static void parse(const char *hex)
+static int print_action(std::string_view data)
 {
-	printf("===== %s:\n", hex);
-	auto bin = hex2bin(hex);
-	unsigned int i = 0;
-	try_guid(bin, i);
-	try_entryid(bin, i);
-	printf("\n");
+	RULE_ACTIONS ra{};
+	EXT_PULL ep;
+	ep.init(data.data(), data.size(), zalloc, 0);
+	if (ep.g_rule_actions(&ra) != pack_result::ok)
+		return -1;
+	printf("%s\n", ra.repr().c_str());
+	return 0;
+}
+
+static int print_restrict(std::string_view data)
+{
+	RESTRICTION rs{};
+	EXT_PULL ep;
+	ep.init(data.data(), data.size(), zalloc, 0);
+	if (ep.g_restriction(&rs) != pack_result::ok)
+		return -1;
+	printf("%s\n", rs.repr().c_str());
+	return 0;
+}
+
+static int do_process_2(std::string_view &&data)
+{
+	switch (g_dowhat) {
+	case CM_DEC_ANYTHING: {
+		try_entryid(data);
+		try_guid(data);
+		return 0;
+	}
+	case CM_DEC_ACTION:
+		return print_action(data);
+	case CM_DEC_ENTRYID: {
+		try_entryid(data, 0);
+		return 0;
+	}
+	case CM_DEC_GUID: {
+		try_guid(data, 0);
+		return 0;
+	}
+	case CM_DEC_RESTRICT:
+		return print_restrict(data);
+	default:
+		return -1;
+	}
+}
+
+static int do_process_1(std::string_view &&data)
+{
+	return do_process_2(g_hex2bin ? hex2bin(data, HEX2BIN_SKIP) : std::move(data));
 }
 
 int main(int argc, char **argv)
 {
-	while (*++argv != nullptr)
-		parse(*argv);
-	return EXIT_SUCCESS;
+	HXopt6_auto_result argp;
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_ARGS) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+
+	if (g_dowhat == CM_NONE) {
+		fprintf(stderr, "No command selected\n");
+		return EXIT_FAILURE;
+	}
+	if (argp.nargs == 0) {
+		size_t slurp_len = 0;
+		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_fd(STDIN_FILENO, &slurp_len));
+		if (slurp_data == nullptr)
+			return EXIT_FAILURE;
+		return do_process_1(std::string_view(slurp_data.get(), slurp_len));
+	}
+
+	int combined_ret = EXIT_SUCCESS;
+	for (int i = 0; i < argp.nargs; ++i) {
+		int ret = do_process_1(argp.uarg[i]);
+		if (ret != 0)
+			combined_ret = EXIT_FAILURE;
+	}
+	return combined_ret;
 }
