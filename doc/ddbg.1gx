@@ -1,0 +1,35 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2025 grommunio GmbH
+.TH ddbg 1 "" "Gromox" "Gromox admin reference"
+.SH Name
+ddbg \(em MAPI data debugger
+.SH Synopsis
+\fB/usr/libexec/gromox/ddbg\fP [options...] command [args...]
+.SH Description
+ddbg can be used to analyze various binary blobs. If no arguments are
+given, input is instead read from stdin instead.
+.SH Options
+.TP
+\fB\-p\fP, \fB\-\-pack\fP
+Employ hex2bin before main action.
+.SH Commands
+.TP
+\fB\-d\fP, \fB\-\-decode\fP
+Try all decoders.
+.TP
+\fB\-A\fP, \fB\-\-decode\-action\fP
+Decode rule action blob.
+.TP
+\fB\-e\fP, \fB\-\-decode\-entryid\fP
+Decode entryid.
+.TP
+\fB\-\-decode\-guid\fP
+Lookup GUID.
+.TP
+\fB\-\-decode\-restrict\fP
+Decode restriction blob (e.g. rule condition).
+.SH Examples
+.IP \(bu 4
+ddbg \-p \-\-decode\-guid 38a1bb1005e5101aa1bb08002b2a56c2
+.SH See also
+\fBgromox\fP(7)
