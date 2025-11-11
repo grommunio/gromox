@@ -11,7 +11,7 @@ AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 # lib_LTL must be dependency-ordered, or make install fails
 lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_ndr.la libgxs_mysql_adaptor.la libgromox_abtree.la libgromox_auth.la libgromox_authz.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgromox_ews.la libgromox_mh_emsmdb.la libgromox_mh_nsp.la libgromox_oab.la libgromox_oxdisco.la libgromox_emsmdb.la libgromox_nsp.la libgromox_rfr.la libgxs_exmdb_provider.la libgxs_event_proxy.la libgxs_event_stub.la libgxs_midb_agent.la libgxs_timer_agent.la libgxs_ruleproc.la
 
-pkglibexec_PROGRAMS = delivery delivery-queue event gromox-snapshot http imap istore midb pop3 timer zcore tools/authtry tools/eidprint tools/textmapquery
+pkglibexec_PROGRAMS = delivery delivery-queue event gromox-snapshot http imap istore midb pop3 timer zcore tools/authtry tools/ddbg tools/textmapquery
 if WITH_GNU_LD
 version_sc_SYFLAGS = -Wl,--version-script=${srcdir}/default.sym
 endif
@@ -272,8 +272,8 @@ tests_vcard_SOURCES = tests/vcard.cpp
 tests_vcard_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tools_authtry_SOURCES = tools/authtry.cpp
 tools_authtry_LDADD = ${libHX_LIBS} ${libldap_LIBS} libgromox_auth.la libgromox_authz.la libgromox_common.la libgxs_mysql_adaptor.la
-tools_eidprint_SOURCES = tools/eidprint.cpp
-tools_eidprint_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
+tools_ddbg_SOURCES = tools/ddbg.cpp
+tools_ddbg_LDADD = ${libHX_LIBS} libgromox_common.la libgromox_mapi.la
 tools_textmapquery_SOURCES = tools/textmapquery.cpp
 tools_textmapquery_LDADD = libgromox_common.la
 tools_tzdump_SOURCES = tools/tzdump.cpp
