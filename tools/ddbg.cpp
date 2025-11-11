@@ -9,9 +9,12 @@
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/scope.hpp>
+#include <gromox/element_data.hpp>
+#include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -20,7 +23,8 @@ using LLU = unsigned long long;
 
 enum {
 	CM_NONE, CM_DEC_ACTION, CM_DEC_ANYTHING, CM_DEC_ENTRYID, CM_DEC_GUID,
-	CM_DEC_NTTIME, CM_DEC_RESTRICT, CM_DEC_UNIXTIME, CM_TEXTTOHTML,
+	CM_DEC_NTTIME, CM_DEC_RESTRICT, CM_DEC_UNIXTIME, CM_HTMLTORTF,
+	CM_HTMLTOTEXT, CM_RTFCP, CM_RTFTOHTML, CM_TEXTTOHTML, CM_UNRTFCP,
 };
 static unsigned int g_dowhat, g_hex2bin;
 static constexpr struct HXoption g_options_table[] = {
@@ -31,7 +35,13 @@ static constexpr struct HXoption g_options_table[] = {
 	{"decode-nttime", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_NTTIME, "Decode NT timestamps to unixtime/calendar"},
 	{"decode-restrict", 'r', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_RESTRICT, "Decode restriction blob (e.g. rule condition)"},
 	{"decode-unixtime", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_UNIXTIME, "Decode Unix timestamp to nttime/calendar"},
+	{"htmltortf", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_HTMLTORTF, "Convert HTML to RTF"},
+	{"htmltotext", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_HTMLTOTEXT, "Convert HTML to plaintext"},
 	{"pack", 'p', HXTYPE_NONE, &g_hex2bin, {}, {}, 0, "Employ hex2bin before main action"},
+	{"rtfcp", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_RTFCP, "Convert RTF to uncompressed RTFCP"},
+	{"unrtfcp", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_UNRTFCP, "Decompress RTFCP (all forms) to RTF"},
+	{"rtftohtml", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_RTFTOHTML, "Convert RTF to HTML"},
+	{"texttohtml", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_TEXTTOHTML, "Convert plaintext to HTML"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -459,6 +469,83 @@ static int do_process_2(std::string_view &&data, const char *str)
 	case CM_DEC_UNIXTIME:
 		print_unixtime(str);
 		return 0;
+	case CM_HTMLTORTF: {
+		std::unique_ptr<char[], stdlib_delete> out;
+		size_t outlen = 0;
+		auto err = html_to_rtf(data.data(), data.size(), CP_UTF8,
+		           &unique_tie(out), &outlen);
+		if (err != ecSuccess) {
+			fprintf(stderr, "html_to_rtf: %s", mapi_strerror(err));
+			return -1;
+		} else if (HXio_fullwrite(STDOUT_FILENO, out.get(), outlen) < 0) {
+			perror("write");
+			return -1;
+		}
+		return 0;
+	}
+	case CM_HTMLTOTEXT: {
+		std::string out;
+		if (html_to_plain(data.data(), data.size(), CP_OEMCP, out) < 0) {
+			fprintf(stderr, "html-to_plain failed\n");
+			return -1;
+		}
+		puts(out.c_str());
+		return 0;
+	}
+	case CM_RTFCP: {
+		auto comp(rtfcp_compress(data.data(), data.size()));
+		if (comp == nullptr) {
+			fprintf(stderr, "rtfcp_compress failed\n");
+			return -1;
+		}
+		auto cl_0 = HX::make_scope_exit([&]() { rop_util_free_binary(comp); });
+		if (HXio_fullwrite(STDOUT_FILENO, comp->pv, comp->cb) < 0) {
+			perror("write");
+			return -1;
+		}
+		return 0;
+	}
+	case CM_RTFTOHTML: {
+		auto at = attachment_list_init();
+		std::string out;
+		if (!rtf_to_html(data.data(), data.size(), "utf-8", out, at)) {
+			fprintf(stderr, "rtf_to_html failed\n");
+			return -1;
+		}
+		puts(out.c_str());
+		return 0;
+	}
+	case CM_TEXTTOHTML: {
+		std::unique_ptr<char[], stdlib_delete> out(plain_to_html(str));
+		if (out == nullptr) {
+			fprintf(stderr, "Out of memory\n");
+			return -1;
+		}
+		puts(out.get());
+		return 0;
+	}
+	case CM_UNRTFCP: {
+		BINARY comp;
+		comp.cb = data.size();
+		comp.pv = deconst(data.data());
+		auto unc_size = rtfcp_uncompressed_size(&comp);
+		if (unc_size == -1) {
+			fprintf(stderr, "Bad header magic, or data stream is shorter than the header says it should be.\n");
+			return -1;
+		} else if (unc_size == 0) {
+			return 0;
+		}
+		std::string unc_data;
+		unc_data.resize(unc_size);
+		size_t unc_size2 = unc_size;
+		if (!rtfcp_uncompress(&comp, &unc_data[0], &unc_size2)) {
+			fprintf(stderr, "Decompression failed\n");
+			return -1;
+		}
+		unc_data.resize(unc_size2);
+		write(STDOUT_FILENO, unc_data.c_str(), unc_data.size());
+		return 0;
+	}
 	default:
 		return -1;
 	}

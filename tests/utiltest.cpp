@@ -565,25 +565,6 @@ int main(int argc, char **argv)
 	static_assert(sizeof(be16_to_cpu(0)) == sizeof(uint16_t));
 	static_assert(sizeof(be32_to_cpu(0)) == sizeof(uint32_t));
 	static_assert(sizeof(be64_to_cpu(0)) == sizeof(uint64_t));
-	if (argc >= 3 && strcmp(argv[1], "nttime") == 0) {
-		auto nt = strtoll(argv[2], nullptr, 0);
-		auto ut = rop_util_nttime_to_unix(nt);
-		printf("...is unixtime %lld\n", static_cast<long long>(ut));
-		char buf[64];
-		auto tm = localtime(&ut);
-		strftime(buf, std::size(buf), "%FT%T", tm);
-		printf("...is calendar %s\n", buf);
-		return EXIT_SUCCESS;
-	} else if (argc >= 3 && strcmp(argv[1], "unixtime") == 0) {
-		time_t ut = strtoll(argv[2], nullptr, 0);
-		auto nt = rop_util_unix_to_nttime(ut);
-		printf("...is nttime %lld\n", static_cast<long long>(nt));
-		char buf[64];
-		auto tm = localtime(&ut);
-		strftime(buf, std::size(buf), "%FT%T", tm);
-		printf("...is calendar %s\n", buf);
-		return EXIT_SUCCESS;
-	}
 	auto ret = runner();
 	if (ret != EXIT_SUCCESS)
 		printf("FAILED\n");

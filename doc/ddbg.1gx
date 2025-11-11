@@ -36,8 +36,23 @@ Decode restriction blob (e.g. rule condition).
 \fB\-\-decode\-unixtime\fP
 Decode an Unix timestamp and show the equivalent NT time and calendar-based
 date.
+.TP
+\fB\-\-rtfcp\fP
+Convert RTF to the RTFCP format, particularly the uncompressed "MELA"
+subformat.
+.TP
+\fB\-\-rtftohtml\fP
+Convert RTF to HTML.
+.TP
+\fB\-\-texttohtml\fP
+Convert plaintext to HTML.
+.TP
+\fB\-\-unrtfcp\fP
+Decompress RTFCP (either "MELA" or "LZFU") to RTF.
 .SH Examples
 .IP \(bu 4
 ddbg \-p \-\-decode\-guid 38a1bb1005e5101aa1bb08002b2a56c2
+.IP \(bu 4
+ddbg \-\-unrtfcp <body.bin >body.rtf
 .SH See also
 \fBgromox\fP(7)
