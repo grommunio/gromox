@@ -15,10 +15,12 @@
 #include <gromox/util.hpp>
 
 using namespace gromox;
+using LLD = long long;
 using LLU = unsigned long long;
 
 enum {
-	CM_NONE, CM_DEC_ACTION, CM_DEC_ANYTHING, CM_DEC_ENTRYID, CM_DEC_GUID, CM_DEC_RESTRICT,
+	CM_NONE, CM_DEC_ACTION, CM_DEC_ANYTHING, CM_DEC_ENTRYID, CM_DEC_GUID,
+	CM_DEC_NTTIME, CM_DEC_RESTRICT, CM_DEC_UNIXTIME, CM_TEXTTOHTML,
 };
 static unsigned int g_dowhat, g_hex2bin;
 static constexpr struct HXoption g_options_table[] = {
@@ -26,7 +28,9 @@ static constexpr struct HXoption g_options_table[] = {
 	{"decode-action", 'A', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_ACTION, "Decode rule action blob"},
 	{"decode-entryid", 'e', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_ENTRYID, "Decode entryid"},
 	{"decode-guid", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_GUID, "Decode GUID"},
+	{"decode-nttime", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_NTTIME, "Decode NT timestamps to unixtime/calendar"},
 	{"decode-restrict", 'r', HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_RESTRICT, "Decode restriction blob (e.g. rule condition)"},
+	{"decode-unixtime", 0, HXTYPE_VAL, &g_dowhat, {}, {}, CM_DEC_UNIXTIME, "Decode Unix timestamp to nttime/calendar"},
 	{"pack", 'p', HXTYPE_NONE, &g_hex2bin, {}, {}, 0, "Employ hex2bin before main action"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -407,7 +411,29 @@ static int print_restrict(std::string_view data)
 	return 0;
 }
 
-static int do_process_2(std::string_view &&data)
+static void print_nttime(const char *str)
+{
+	auto nt = strtoll(str, nullptr, 0);
+	auto ut = rop_util_nttime_to_unix(nt);
+	printf("%lld ... is unixtime %lld\n", LLD{nt}, LLD{ut});
+	char buf[64];
+	auto tm = localtime(&ut);
+	strftime(buf, std::size(buf), "%FT%T", tm);
+	printf("%lld ... is calendar %s\n", LLD{nt}, buf);
+}
+
+static void print_unixtime(const char *str)
+{
+	time_t ut = strtoll(str, nullptr, 0);
+	auto nt = rop_util_unix_to_nttime(ut);
+	printf("%lld ... is nttime %lld\n", LLD{ut}, LLU{nt});
+	char buf[64];
+	auto tm = localtime(&ut);
+	strftime(buf, std::size(buf), "%FT%T", tm);
+	printf("%lld ... is calendar %s\n", LLD{ut}, buf);
+}
+
+static int do_process_2(std::string_view &&data, const char *str)
 {
 	switch (g_dowhat) {
 	case CM_DEC_ANYTHING: {
@@ -425,16 +451,22 @@ static int do_process_2(std::string_view &&data)
 		try_guid(data, 0);
 		return 0;
 	}
+	case CM_DEC_NTTIME:
+		print_nttime(str);
+		return 0;
 	case CM_DEC_RESTRICT:
 		return print_restrict(data);
+	case CM_DEC_UNIXTIME:
+		print_unixtime(str);
+		return 0;
 	default:
 		return -1;
 	}
 }
 
-static int do_process_1(std::string_view &&data)
+static int do_process_1(std::string_view &&data, const char *str)
 {
-	return do_process_2(g_hex2bin ? hex2bin(data, HEX2BIN_SKIP) : std::move(data));
+	return do_process_2(g_hex2bin ? hex2bin(data, HEX2BIN_SKIP) : std::move(data), str);
 }
 
 int main(int argc, char **argv)
@@ -453,12 +485,12 @@ int main(int argc, char **argv)
 		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_fd(STDIN_FILENO, &slurp_len));
 		if (slurp_data == nullptr)
 			return EXIT_FAILURE;
-		return do_process_1(std::string_view(slurp_data.get(), slurp_len));
+		return do_process_1(std::string_view(slurp_data.get(), slurp_len), slurp_data.get());
 	}
 
 	int combined_ret = EXIT_SUCCESS;
 	for (int i = 0; i < argp.nargs; ++i) {
-		int ret = do_process_1(argp.uarg[i]);
+		int ret = do_process_1(argp.uarg[i], argp.uarg[i]);
 		if (ret != 0)
 			combined_ret = EXIT_FAILURE;
 	}
