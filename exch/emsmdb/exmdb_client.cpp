@@ -158,10 +158,9 @@ BOOL exmdb_client_shm::remove_instance_property(const char *dir, uint32_t instan
 BOOL exmdb_client_shm::get_message_property(const char *dir, const char *username,
     cpid_t cpid, uint64_t message_id, proptag_t proptag, void **ppval)
 {
-	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client->get_message_properties(dir, username, cpid,
-	    message_id, &tmp_proptags, &tmp_propvals))
+	    message_id, {&proptag, 1}, &tmp_propvals))
 		return FALSE;	
 	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
 	return TRUE;

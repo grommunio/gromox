@@ -761,10 +761,9 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 			}
 		}
 		static constexpr proptag_t proptag_buff[] = {PR_NON_RECEIPT_NOTIFICATION_REQUESTED, PR_READ};
-		static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 		TPROPVAL_ARRAY tmp_propvals;
 		if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
-		    msgid, &tmp_proptags, &tmp_propvals))
+		    msgid, proptag_cspan{proptag_buff}, &tmp_propvals))
 			return ecError;
 		pbrief = NULL;
 		auto pvalue = tmp_propvals.get<uint8_t>(PR_NON_RECEIPT_NOTIFICATION_REQUESTED);

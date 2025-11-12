@@ -94,7 +94,7 @@ EXMIDL(query_message_instance_attachment_table, (const char *dir, uint32_t insta
 EXMIDL(copy_instance_attachments, (const char *dir, BOOL b_force, uint32_t src_instance_id, uint32_t dst_instance_id, IDLOUT BOOL *b_result))
 EXMIDL(set_message_instance_conflict, (const char *dir, uint32_t instance_id, const MESSAGE_CONTENT *pmsgctnt))
 EXMIDL(get_message_rcpts, (const char *dir, uint64_t message_id, IDLOUT TARRAY_SET *set))
-EXMIDL(get_message_properties, (const char *dir, const char *username, cpid_t cpid, uint64_t message_id, const PROPTAG_ARRAY *pproptags, IDLOUT TPROPVAL_ARRAY *propvals))
+EXMIDL(get_message_properties, (const char *dir, const char *username, cpid_t cpid, uint64_t message_id, proptag_cspan pproptags, IDLOUT TPROPVAL_ARRAY *propvals))
 EXMIDL(set_message_properties, (const char *dir, const char *username, cpid_t cpid, uint64_t message_id, const TPROPVAL_ARRAY *pproperties, IDLOUT PROBLEM_ARRAY *problems))
 EXMIDL(set_message_read_state, (const char *dir, const char *username, uint64_t message_id, uint8_t mark_as_read, IDLOUT uint64_t *read_cn))
 EXMIDL(remove_message_properties, (const char *dir, cpid_t cpid, uint64_t message_id, const PROPTAG_ARRAY *pproptags))

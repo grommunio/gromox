@@ -927,7 +927,7 @@ BOOL exmdb_server::get_message_rcpts(const char *dir,
  */
 BOOL exmdb_server::get_message_properties(const char *dir,
     const char *username, cpid_t cpid, uint64_t message_id,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+    proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -938,7 +938,7 @@ BOOL exmdb_server::get_message_properties(const char *dir,
 	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	return cu_get_properties(MAPI_MESSAGE,
 	       rop_util_get_gc_value(message_id), cpid, *pdb,
-	       *pproptags, ppropvals);
+	       pproptags, ppropvals);
 }
 
 /**

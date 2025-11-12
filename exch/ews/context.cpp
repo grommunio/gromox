@@ -1076,11 +1076,12 @@ const void *EWSContext::getItemProp(const std::string &dir, uint64_t mid,
  *
  * @return    Property values
  */
-TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, const PROPTAG_ARRAY& props) const
+TPROPVAL_ARRAY EWSContext::getItemProps(const std::string &dir, uint64_t mid,
+    proptag_cspan props) const
 {
 	TPROPVAL_ARRAY result;
 	if (!m_plugin.exmdb.get_message_properties(dir.c_str(), m_auth_info.username,
-	    CP_ACP, mid, &props, &result))
+	    CP_ACP, mid, props, &result))
 		throw EWSError::ItemPropertyRequestFailed(E3025);
 	return result;
 }

@@ -58,7 +58,7 @@ BOOL exmdb_client_get_message_property(const char *dir, const char *username,
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &proptag;
 	if (!exmdb_client->get_message_properties(dir,
-	    username, cpid, message_id, &tmp_proptags, &tmp_propvals))
+	    username, cpid, message_id, tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
 	return TRUE;

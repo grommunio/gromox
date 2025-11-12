@@ -541,10 +541,8 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 
 	static constexpr proptag_t proptag_buff[] =
 		{PR_DELETE_AFTER_SUBMIT, PR_TARGET_ENTRYID, PR_PARENT_ENTRYID};
-	static constexpr PROPTAG_ARRAY tmp_proptags =
-		{std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
-	    message_id, &tmp_proptags, &tmp_propvals))
+	    message_id, proptag_cspan{proptag_buff}, &tmp_propvals))
 		return ecError;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_DELETE_AFTER_SUBMIT);
 	BOOL b_delete = flag != nullptr && *flag != 0 ? TRUE : false;
@@ -598,10 +596,9 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 
 	static constexpr proptag_t rq_tags1[] = {PR_MESSAGE_FLAGS};
 	static constexpr proptag_t cls_tags[] = {PR_MESSAGE_CLASS};
-	static constexpr PROPTAG_ARRAY rq_tags = {1, deconst(rq_tags1)};
 	TPROPVAL_ARRAY outvalues{};
 	if (!exmdb_client->get_message_properties(plogon->get_dir(), nullptr,
-	    CP_ACP, pmessage->get_id(), &rq_tags, &outvalues))
+	    CP_ACP, pmessage->get_id(), proptag_cspan{rq_tags1}, &outvalues))
 		return ecError;
 	auto msgflags = outvalues.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (msgflags != nullptr && *msgflags & MSGFLAG_SUBMITTED) {

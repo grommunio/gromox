@@ -441,7 +441,6 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 	static constexpr proptag_t tags2[] = {
 		PR_EXTENDED_RULE_MSG_CONDITION, PR_EXTENDED_RULE_MSG_ACTIONS,
 	};
-	const PROPTAG_ARRAY ptags2 = {std::size(tags2), deconst(tags2)};
 	tarray_set output_rows{};
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id, tags,
 	    0, row_count, &output_rows))
@@ -466,7 +465,7 @@ ec_error_t rxparam::load_ext_rules(bool oof,
 		rule.provider = znul(row->get<const char>(PR_RULE_MSG_PROVIDER));
 		TPROPVAL_ARRAY vals2{};
 		if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
-		    *mid, &ptags2, &vals2))
+		    *mid, tags2, &vals2))
 			continue;
 		auto cond = vals2.get<const BINARY>(PR_EXTENDED_RULE_MSG_CONDITION);
 		auto act  = vals2.get<const BINARY>(PR_EXTENDED_RULE_MSG_ACTIONS);
@@ -1339,10 +1338,9 @@ ec_error_t rxparam::run()
 void rxparam::notify()
 {
 	static constexpr proptag_t tagdata[] = {PR_MESSAGE_FLAGS, PR_MESSAGE_CLASS};
-	static constexpr PROPTAG_ARRAY tags = {std::size(tagdata), deconst(tagdata)};
 	TPROPVAL_ARRAY vals{};
 	if (!exmdb_client->get_message_properties(cur.dirc(), nullptr, CP_UTF8,
-	    cur.mid, &tags, &vals)) {
+	    cur.mid, tagdata, &vals)) {
 		mlog(LV_ERR, "ruleproc: getprops FL/C failed");
 		return;
 	}

@@ -989,10 +989,8 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 				continue;
 		}
 		static constexpr proptag_t proptag_buff[] = {PR_ASSOCIATED, PR_READ};
-		static constexpr PROPTAG_ARRAY tmp_proptags =
-			{std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
-		    message_id, &tmp_proptags, &tmp_propvals))
+		    message_id, proptag_cspan{proptag_buff}, &tmp_propvals))
 			return ecError;
 		auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 		if (flag != nullptr && *flag != 0)

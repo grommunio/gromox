@@ -309,9 +309,8 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 		if (pnew_mail->pparentid->empty())
 			return;
 		static constexpr proptag_t proptag_buff[] = {PR_MESSAGE_CLASS, PR_MESSAGE_FLAGS};
-		static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client->get_message_properties(dir, nullptr, CP_ACP,
-		    message_id, &proptags, &propvals))
+		    message_id, proptag_buff, &propvals))
 			return;
 		auto str = propvals.get<char>(PR_MESSAGE_CLASS);
 		if (str == nullptr)
@@ -1657,10 +1656,8 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 		}
 		static constexpr proptag_t proptag_buff[] =
 			{PR_NON_RECEIPT_NOTIFICATION_REQUESTED, PR_READ};
-		static constexpr PROPTAG_ARRAY tmp_proptags =
-			{std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client->get_message_properties(pstore->get_dir(),
-		    nullptr, CP_ACP, i_eid, &tmp_proptags, &tmp_propvals))
+		    nullptr, CP_ACP, i_eid, proptag_buff, &tmp_propvals))
 			return ecError;
 		pbrief = NULL;
 		auto flag = tmp_propvals.get<const uint8_t>(PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
@@ -4694,9 +4691,8 @@ ec_error_t zs_importreadstates(GUID hsession,
 				continue;
 		}
 		static constexpr proptag_t proptag_buff[] = {PR_ASSOCIATED, PR_READ};
-		static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 		if (!exmdb_client->get_message_properties(pstore->get_dir(),
-		    nullptr, CP_ACP, message_id, &tmp_proptags, &tmp_propvals))
+		    nullptr, CP_ACP, message_id, proptag_buff, &tmp_propvals))
 			return ecError;
 		auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 		if (flag != nullptr && *flag != 0)

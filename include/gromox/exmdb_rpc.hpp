@@ -863,12 +863,27 @@ struct exreq_get_message_rcpts final : public exreq {
 	uint64_t message_id;
 };
 
+struct exreq_get_message_properties_v final : public exreq {
+	const char *username;
+	cpid_t cpid;
+	uint64_t message_id;
+	proptag_cspan pproptags;
+};
+
 struct exreq_get_message_properties final : public exreq {
-	using view_t = exreq_get_message_properties;
+	using view_t = exreq_get_message_properties_v;
 	char *username;
 	cpid_t cpid;
 	uint64_t message_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_vector pproptags;
+	operator view_t() const {
+		view_t v;
+		v.username = username;
+		v.cpid = cpid;
+		v.message_id = message_id;
+		v.pproptags = pproptags;
+		return v;
+	}
 };
 
 struct exreq_set_message_properties final : public exreq {
