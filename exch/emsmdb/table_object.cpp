@@ -350,7 +350,7 @@ BOOL table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
 	return exmdb_client->match_table(ptable->plogon->get_dir(),
 	       ptable->plogon->readstate_user(),
 	       pinfo->cpid, m_table_id, b_forward, m_position,
-	       pres, m_columns, pposition, ppropvals);
+	       pres, *m_columns, pposition, ppropvals);
 }
 
 BOOL table_object::read_row(uint64_t inst_id, uint32_t inst_num,

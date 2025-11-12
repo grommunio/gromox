@@ -845,13 +845,10 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_match_table &d)
 	if (d.pres == nullptr)
 		return pack_result::alloc;
 	TRY(x.g_restriction(d.pres));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return pack_result::alloc;
-	return x.g_proptag_a(d.pproptags);
+	return x.g_proptag_a(&d.pproptags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_match_table &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_match_table_v &d)
 {
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
@@ -864,7 +861,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_match_table &d)
 	TRY(x.p_bool(d.b_forward));
 	TRY(x.p_uint32(d.start_pos));
 	TRY(x.p_restriction(*d.pres));
-	return x.p_proptag_a(*d.pproptags);
+	return x.p_proptag_a(d.pproptags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_locate_table &d)

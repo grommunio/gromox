@@ -969,9 +969,8 @@ BOOL table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
 	auto pinfo = zs_get_info();
 	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
 	static constexpr proptag_t proptag_buff[] = {PidTagInstID, PidTagInstanceNum};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	return exmdb_client->match_table(ptable->pstore->get_dir(), username,
 		pinfo->cpid, ptable->table_id, b_forward,
-		ptable->position, pres, &proptags, pposition,
+		ptable->position, pres, proptag_buff, pposition,
 		&tmp_propvals);
 }

@@ -528,15 +528,36 @@ struct exreq_query_table final : public exreq {
 	}
 };
 
+struct exreq_match_table_v final : public exreq {
+	const char *username;
+	cpid_t cpid;
+	uint32_t table_id;
+	BOOL b_forward;
+	uint32_t start_pos;
+	RESTRICTION *pres;
+	proptag_cspan pproptags;
+};
+
 struct exreq_match_table final : public exreq {
-	using view_t = exreq_match_table;
+	using view_t = exreq_match_table_v;
 	char *username;
 	cpid_t cpid;
 	uint32_t table_id;
 	BOOL b_forward;
 	uint32_t start_pos;
 	RESTRICTION *pres;
-	PROPTAG_ARRAY *pproptags;
+	proptag_vector pproptags;
+	operator view_t() const {
+		view_t v;
+		v.username = username;
+		v.cpid = cpid;
+		v.table_id = table_id;
+		v.b_forward = b_forward;
+		v.start_pos = start_pos;
+		v.pres = pres;
+		v.pproptags = pproptags;
+		return v;
+	}
 };
 
 struct exreq_locate_table final : public exreq {

@@ -2072,7 +2072,7 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 }
 
 static bool match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
-    uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
+    uint32_t start_pos, const RESTRICTION *pres, proptag_cspan pproptags,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_conn &db)
 {
 	char sql_string[1024];
@@ -2105,12 +2105,11 @@ static bool match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		    &hierarchy_param, table_get_hierarchy_row_property))
 			continue;
 		idx = sqlite3_column_int64(pstmt, 1);
-		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (ppropvals->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue;
-			const auto tag = pproptags->pproptag[i];
 			if (tag == PR_DEPTH) {
 				auto v = cu_alloc<uint32_t>();
 				pvalue = v;
@@ -2147,7 +2146,7 @@ static bool match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 }
 
 static bool match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
-    uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
+    uint32_t start_pos, const RESTRICTION *pres, proptag_cspan pproptags,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_conn &db,
     const table_node *ptnode)
 {
@@ -2211,12 +2210,11 @@ static bool match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		    &content_param, table_get_content_row_property))
 			continue;
 		idx = sqlite3_column_int64(pstmt, 1);
-		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (ppropvals->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue;
-			const auto tag = pproptags->pproptag[i];
 			if (!table_column_content_tmptbl(pstmt, pstmt1,
 			    pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
 			    tag, ptnode->instance_tag,
@@ -2253,7 +2251,7 @@ static bool match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 }
 
 static bool match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
-    uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
+    uint32_t start_pos, const RESTRICTION *pres, proptag_cspan pproptags,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_conn &db)
 {
 	char sql_string[1024];
@@ -2277,12 +2275,11 @@ static bool match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		    db.psqlite, rule_id, pres))
 			continue;
 		ppropvals->count = 0;
-		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (ppropvals->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue;
-			const auto tag = pproptags->pproptag[i];
 			auto u_tag = tag;
 			if (u_tag == PR_RULE_NAME_A)
 				u_tag = PR_RULE_NAME;
@@ -2310,7 +2307,7 @@ static bool match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
  */
 BOOL exmdb_server::match_table(const char *dir, const char *username,
     cpid_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos,
-	const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
+	const RESTRICTION *pres, proptag_cspan pproptags,
 	int32_t *pposition, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pdb = db_engine_get_db(dir);
