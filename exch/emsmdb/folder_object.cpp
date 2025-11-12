@@ -61,7 +61,6 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	auto eop = std::copy_if(tmp_proptags.begin(), tmp_proptags.end(),
 	           pproptags->pproptag, [](uint32_t x) { return x < 0x80000000; });
 	pproptags->count = eop - pproptags->pproptag;
-	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	static constexpr proptag_t tags1[] = {
 		PR_ACCESS, PR_RIGHTS, PR_PARENT_ENTRYID, PR_PARENT_SOURCE_KEY,
 		PR_SOURCE_KEY, PR_CORRELATION_ID,
