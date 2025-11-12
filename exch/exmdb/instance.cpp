@@ -2525,11 +2525,10 @@ BOOL exmdb_server::set_instance_properties(const char *dir,
 	return set_xns_props_atx(ins, props, prob);
 }
 
-static BOOL rip_message(MESSAGE_CONTENT *pmsgctnt,
-    const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
+static bool rip_message(MESSAGE_CONTENT *pmsgctnt,
+    proptag_cspan pproptags, PROBLEM_ARRAY *pproblems)
 {
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (const auto tag : pproptags) {
 		switch (tag) {
 		case PR_BODY:
 		case PR_BODY_A:
@@ -2580,11 +2579,10 @@ static BOOL rip_message(MESSAGE_CONTENT *pmsgctnt,
 	return TRUE;
 }
 
-static BOOL rip_attachment(ATTACHMENT_CONTENT *pattachment,
-    const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
+static bool rip_attachment(ATTACHMENT_CONTENT *pattachment,
+    proptag_cspan pproptags, PROBLEM_ARRAY *pproblems)
 {
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (const auto tag : pproptags) {
 		switch (tag) {
 		case PR_ATTACH_DATA_BIN:
 			pattachment->proplist.erase(ID_TAG_ATTACHDATABINARY);
@@ -2613,7 +2611,7 @@ static BOOL rip_attachment(ATTACHMENT_CONTENT *pattachment,
 }
 
 BOOL exmdb_server::remove_instance_properties(const char *dir,
-    uint32_t instance_id, const PROPTAG_ARRAY *pproptags,
+    uint32_t instance_id, proptag_cspan pproptags,
     PROBLEM_ARRAY *pproblems)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -2625,9 +2623,10 @@ BOOL exmdb_server::remove_instance_properties(const char *dir,
 	if (pinstance == nullptr)
 		return FALSE;
 	pproblems->count = 0;
-	return pinstance->type == instance_type::message ?
-	       rip_message(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pproptags, pproblems) :
-	       rip_attachment(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pproptags, pproblems);
+	auto ret = pinstance->type == instance_type::message ?
+	           rip_message(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pproptags, pproblems) :
+	           rip_attachment(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pproptags, pproblems);
+	return ret ? TRUE : false;
 }
 
 BOOL exmdb_server::is_descendant_instance(const char *dir,

@@ -1062,7 +1062,7 @@ bool message_object::remove_properties(proptag_cspan pproptags,
 		return TRUE;
 	PROBLEM_ARRAY tmp_problems;
 	if (!exmdb_client->remove_instance_properties(pmessage->plogon->get_dir(),
-	    pmessage->instance_id, &tmp_proptags, &tmp_problems))
+	    pmessage->instance_id, tmp_proptags, &tmp_problems))
 		return FALSE;	
 	if (tmp_problems.count > 0) {
 		tmp_problems.transform(poriginal_indices);

@@ -375,7 +375,7 @@ bool attachment_object::remove_properties(proptag_cspan pproptags,
 		return TRUE;
 	PROBLEM_ARRAY tmp_problems;
 	if (!exmdb_client->remove_instance_properties(pattachment->pparent->plogon->get_dir(),
-	    pattachment->instance_id, &tmp_proptags, &tmp_problems))
+	    pattachment->instance_id, tmp_proptags, &tmp_problems))
 		return FALSE;	
 	if (0 == tmp_problems.count) {
 		pattachment->b_touched = TRUE;

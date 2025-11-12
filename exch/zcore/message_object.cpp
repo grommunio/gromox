@@ -870,7 +870,7 @@ bool message_object::remove_properties(proptag_cspan pproptags) try
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	if (!exmdb_client->remove_instance_properties(pmessage->pstore->get_dir(),
-	    pmessage->instance_id, &tmp_proptags, &tmp_problems))
+	    pmessage->instance_id, tmp_proptags, &tmp_problems))
 		return FALSE;	
 	if (tmp_problems.count > 0) {
 		tmp_problems.transform(poriginal_indices);

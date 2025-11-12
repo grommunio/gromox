@@ -98,7 +98,7 @@ BOOL exmdb_client_remove_instance_property(const char *dir,
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &proptag;
 	if (!exmdb_client->remove_instance_properties(
-	    dir, instance_id, &tmp_proptags, &tmp_problems))
+	    dir, instance_id, tmp_proptags, &tmp_problems))
 		return FALSE;	
 	*presult = tmp_problems.count == 0 ? 0 : tmp_problems.pproblem->err;
 	return TRUE;

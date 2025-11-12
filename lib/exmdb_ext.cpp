@@ -1249,16 +1249,13 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_instance_properties &
 static pack_result exmdb_pull(EXT_PULL &x, exreq_remove_instance_properties &d)
 {
 	TRY(x.g_uint32(&d.instance_id));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return pack_result::alloc;
-	return x.g_proptag_a(d.pproptags);
+	return x.g_proptag_a(&d.pproptags);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_instance_properties &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_instance_properties_v &d)
 {
 	TRY(x.p_uint32(d.instance_id));
-	return x.p_proptag_a(*d.pproptags);
+	return x.p_proptag_a(d.pproptags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_is_descendant_instance &d)

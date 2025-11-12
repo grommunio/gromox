@@ -147,10 +147,9 @@ BOOL exmdb_client_shm::set_instance_property(const char *dir, uint32_t instance_
 BOOL exmdb_client_shm::remove_instance_property(const char *dir, uint32_t instance_id,
     proptag_t proptag, uint32_t *presult)
 {
-	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	PROBLEM_ARRAY tmp_problems;
 	if (!exmdb_client->remove_instance_properties(dir, instance_id,
-	    &tmp_proptags, &tmp_problems))
+	    {&proptag, 1}, &tmp_problems))
 		return FALSE;	
 	*presult = tmp_problems.count == 0 ? 0 : tmp_problems.pproblem->err;
 	return TRUE;

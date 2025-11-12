@@ -278,7 +278,7 @@ bool attachment_object::remove_properties(proptag_cspan tags)
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	if (!exmdb_client->remove_instance_properties(pattachment->pparent->pstore->get_dir(),
-	    pattachment->instance_id, &tmp_proptags, &tmp_problems))
+	    pattachment->instance_id, tmp_proptags, &tmp_problems))
 		return FALSE;	
 	if (tmp_problems.count < tmp_proptags.count)
 		pattachment->b_touched = TRUE;
