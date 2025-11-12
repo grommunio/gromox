@@ -701,7 +701,7 @@ ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 		return ecServerOOM;
 	}
 	auto pctx = icsdownctx_object::create(plogon, pfolder, sync_type,
-	            send_options, sync_flags, pres, extra_flags, pproptags);
+	            send_options, sync_flags, pres, extra_flags, *pproptags);
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::icsdownctx, std::move(pctx)});
 	if (hnd < 0)

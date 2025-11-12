@@ -52,8 +52,8 @@ bool ics_flow_list::record_node(ics_flow_func func_id, const void *param)
 
 std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogon,
     folder_object *pfolder, uint8_t sync_type, uint8_t send_options,
-	uint16_t sync_flags, const RESTRICTION *prestriction,
-	uint32_t extra_flags, const PROPTAG_ARRAY *pproptags) try
+    uint16_t sync_flags, const RESTRICTION *prestriction,
+    uint32_t extra_flags, proptag_cspan pproptags) try
 {
 	int state_type = sync_type == SYNC_TYPE_CONTENTS ? ICS_STATE_CONTENTS_DOWN : ICS_STATE_HIERARCHY_DOWN;
 	std::unique_ptr<icsdownctx_object> pctx(new icsdownctx_object);
@@ -65,12 +65,10 @@ std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogo
 	pctx->send_options = send_options;
 	pctx->sync_flags = sync_flags;
 	pctx->extra_flags = extra_flags;
-	pctx->pproptags = proptag_array_dup(pproptags);
-	if (pctx->pproptags == nullptr)
-		return NULL;
+	pctx->pproptags.assign(pproptags.begin(), pproptags.end());
 	/* OL produces PR_BODY from PR_PREVIEW if the former is missing, which is meh. */
-	if (!proptag_array_append(pctx->pproptags, PR_PREVIEW))
-		return nullptr;
+	if (!pctx->pproptags.has(PR_PREVIEW))
+		pctx->pproptags.emplace_back(PR_PREVIEW);
 	if (NULL != prestriction) {
 		pctx->prestriction = prestriction->dup();
 		if (pctx->prestriction == nullptr)
@@ -180,18 +178,18 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 }
 
 static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
-    const PROPTAG_ARRAY *pproptags, bool b_exclude)
+    proptag_cspan pproptags, bool b_exclude)
 {
 	if (b_exclude) {
 		for (auto &chg : *pfldchgs)
-			for (const auto tag : *pproptags)
+			for (const auto tag : pproptags)
 				common_util_remove_propvals(&chg, tag);
 		return;
 	}
 	for (auto &chg : *pfldchgs) {
 		size_t j = 0;
 		while (j < chg.count) {
-			if (!pproptags->has(chg.ppropval[j].proptag))
+			if (!pproptags.has(chg.ppropval[j].proptag))
 				common_util_remove_propvals(&chg, chg.ppropval[j].proptag);
 			else
 				j++;
@@ -576,10 +574,10 @@ static BOOL icsdownctx_object_extract_msgctntinfo(MESSAGE_CONTENT *pmsgctnt,
 }
 
 static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
-    const PROPTAG_ARRAY *pproptags, bool b_exclude)
+    proptag_cspan pproptags, bool b_exclude)
 {
 	if (b_exclude) {
-		for (const auto tag : *pproptags) {
+		for (const auto tag : pproptags) {
 			switch (tag) {
 			case PR_MESSAGE_RECIPIENTS:
 				pmsgctnt->children.prcpts = NULL;
@@ -595,15 +593,15 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 		return;
 	}
 	for (unsigned int i = 0; i < pmsgctnt->proplist.count; ) {
-		if (!pproptags->has(pmsgctnt->proplist.ppropval[i].proptag))
+		if (!pproptags.has(pmsgctnt->proplist.ppropval[i].proptag))
 			common_util_remove_propvals(&pmsgctnt->proplist,
 				pmsgctnt->proplist.ppropval[i].proptag);
 		else
 			i++;
 	}
-	if (!pproptags->has(PR_MESSAGE_RECIPIENTS))
+	if (!pproptags.has(PR_MESSAGE_RECIPIENTS))
 		pmsgctnt->children.prcpts = NULL;
-	if (!pproptags->has(PR_MESSAGE_ATTACHMENTS))
+	if (!pproptags.has(PR_MESSAGE_ATTACHMENTS))
 		pmsgctnt->children.pattachments = NULL;
 }
 
@@ -1047,7 +1045,6 @@ icsdownctx_object::~icsdownctx_object()
 		eid_array_free(pctx->pread_messages);
 	if (pctx->punread_messages != nullptr)
 		eid_array_free(pctx->punread_messages);
-	proptag_array_free(pctx->pproptags);
 	if (pctx->prestriction != nullptr)
 		restriction_free(pctx->prestriction);
 }
