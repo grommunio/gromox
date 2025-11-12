@@ -2922,6 +2922,31 @@ static BOOL oxcmail_export_addresses(const TARRAY_SET &rcpt_list,
 	return false;
 }
 
+static bool genentryid_to_smtpaddr(const BINARY &bin, std::string &dispname,
+    std::string &emaddr)
+{
+	EXT_PULL ep;
+	EMSAB_ENTRYID ems;
+	ep.init(bin.pb, bin.cb, malloc, EXT_FLAG_UTF16);
+	if (ep.g_abk_eid(&ems) == pack_result::ok &&
+	    cvt_essdn_to_username(ems.x500dn.c_str(), g_oxcmail_org_name,
+	    oxcmail_get_username, emaddr) == ecSuccess)
+		return true;
+
+	ONEOFF_ENTRYID oo;
+	ep.init(bin.pb, bin.cb, malloc, EXT_FLAG_UTF16);
+	if (ep.g_oneoff_eid(&oo) == pack_result::ok) {
+		dispname = std::move(oo.pdisplay_name);
+		if (cvt_genaddr_to_smtpaddr(oo.paddress_type.c_str(),
+		    oo.pmail_address.c_str(), g_oxcmail_org_name,
+		    oxcmail_get_username, emaddr) == ecSuccess)
+			return true;
+	}
+
+	mlog(LV_WARN, "W-1964: skipping unrecognizable entry in PR_REPLY_RECIPIENTS_TO");
+	return false;
+}
+
 static bool oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
     vmime::addressList &adrlist) try
 {
@@ -2945,26 +2970,15 @@ static bool oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 	if (ext_pull.g_flatentry_a(&address_array) != pack_result::ok)
 		return FALSE;
 	for (size_t i = 0; i < address_array.count; ++i) {
-		EXT_PULL ep2;
-		ONEOFF_ENTRYID oo{};
-		ep2.init(address_array.pbin[i].pb, address_array.pbin[i].cb,
-			malloc, EXT_FLAG_UTF16);
-		if (ep2.g_oneoff_eid(&oo) != pack_result::ok) {
-			mlog(LV_WARN, "W-1964: skipping malformed reply-to entry");
+		std::string dispname, emaddr;
+		if (!genentryid_to_smtpaddr(address_array.pbin[i], dispname, emaddr))
 			continue;
-		}
-		std::string emaddr;
-		if (cvt_genaddr_to_smtpaddr(oo.paddress_type.c_str(),
-		    oo.pmail_address.c_str(), g_oxcmail_org_name,
-		    oxcmail_get_username, emaddr) != ecSuccess) {
-			mlog(LV_WARN, "W-1964: skipping %s reply-to entry", oo.paddress_type.c_str());
-			continue;
-		}
 		auto mb = vmime::make_shared<vmime::mailbox>("");
-		if (!oo.pdisplay_name.empty())
-			mb->setName(vmime::text(std::move(oo.pdisplay_name), vmime::charsets::UTF_8));
-		if (!oo.pmail_address.empty())
-			mb->setEmail(std::move(oo.pmail_address));
+		if (!emaddr.empty()) {
+			mb->setEmail(std::move(emaddr));
+			if (!dispname.empty())
+				mb->setName(vmime::text(std::move(dispname), vmime::charsets::UTF_8));
+		}
 		adrlist.appendAddress(mb);
 	}
 	return true;
