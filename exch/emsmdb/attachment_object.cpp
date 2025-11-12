@@ -282,7 +282,7 @@ bool attachment_object::get_properties(uint32_t size_limit,
 		return TRUE;
 	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client->get_instance_properties(pattachment->pparent->plogon->get_dir(),
-	    size_limit, pattachment->instance_id, &tmp_proptags, &tmp_propvals))
+	    size_limit, pattachment->instance_id, tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count == 0)
 		return TRUE;

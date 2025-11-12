@@ -883,7 +883,7 @@ bool message_object::get_properties(uint32_t size_limit,
 	auto dir = plogon->get_dir();
 	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client->get_instance_properties(dir,
-	    size_limit, pmessage->instance_id, &tmp_proptags, &tmp_propvals))
+	    size_limit, pmessage->instance_id, tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	
 	if (tmp_propvals.count > 0) {

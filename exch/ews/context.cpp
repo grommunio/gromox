@@ -1177,8 +1177,8 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
 		PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS,
 	};
 	TPROPVAL_ARRAY props;
-	static constexpr PROPTAG_ARRAY tags{std::size(tagIDs), deconst(tagIDs)};
-	if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
+	if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0,
+	    aInst->instanceId, proptag_cspan{tagIDs}, &props))
 		throw DispatchError(E3083);
 	sShape shape(props);
 
@@ -1341,8 +1341,8 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		for (uint16_t i = 0; i < count; ++i) {
 			auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 			TPROPVAL_ARRAY props;
-			static constexpr PROPTAG_ARRAY tags = {std::size(tagIDs), deconst(tagIDs)};
-			if (!exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
+			if (!exmdb.get_instance_properties(dir.c_str(), 0,
+			    aInst->instanceId, proptag_cspan{tagIDs}, &props))
 				throw DispatchError(E3080);
 			sShape shape(props);
 			auto method = props.get<const uint32_t>(PR_ATTACH_METHOD);
@@ -1558,7 +1558,6 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	TPROPVAL_ARRAY props;
 	auto tags_1 = shape.proptags_vec();
 	tags_1.emplace_back(ex_replace_time_tag);
-	const PROPTAG_ARRAY tags = {static_cast<uint16_t>(tags_1.size()), deconst(tags_1.data())};
 
 	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
 	struct tm basedate_local;
@@ -1567,7 +1566,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	for (uint16_t i = 0; i < count; ++i) {
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
-		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, &tags, &props))
+		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, tags_1, &props))
 			throw DispatchError(E3211);
 
 		auto exstarttime = props.get<const uint64_t>(ex_replace_time_tag);

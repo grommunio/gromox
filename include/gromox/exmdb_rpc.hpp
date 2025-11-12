@@ -729,11 +729,24 @@ struct exreq_get_instance_all_proptags final : public exreq {
 	uint32_t instance_id;
 };
 
-struct exreq_get_instance_properties final : public exreq {
-	using view_t = exreq_get_instance_properties;
+struct exreq_get_instance_properties_v final : public exreq {
 	uint32_t size_limit;
 	uint32_t instance_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_cspan pproptags;
+};
+
+struct exreq_get_instance_properties final : public exreq {
+	using view_t = exreq_get_instance_properties_v;
+	uint32_t size_limit;
+	uint32_t instance_id;
+	proptag_vector pproptags;
+	operator view_t() const {
+		view_t v;
+		v.size_limit = size_limit;
+		v.instance_id = instance_id;
+		v.pproptags = pproptags;
+		return v;
+	}
 };
 
 struct exreq_set_instance_properties final : public exreq {

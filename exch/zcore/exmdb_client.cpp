@@ -68,13 +68,9 @@ BOOL exmdb_client_get_instance_property(
 	const char *dir, uint32_t instance_id,
 	proptag_t proptag, void **ppval)
 {
-	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	
-	tmp_proptags.count = 1;
-	tmp_proptags.pproptag = &proptag;
 	if (!exmdb_client->get_instance_properties(dir,
-	    0, instance_id, &tmp_proptags, &tmp_propvals))
+	    0, instance_id, {&proptag, 1}, &tmp_propvals))
 		return FALSE;	
 	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
 	return TRUE;

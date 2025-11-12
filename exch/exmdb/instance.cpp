@@ -1803,16 +1803,15 @@ static BOOL instance_get_message_subject(TPROPVAL_ARRAY *pproplist,
 
 static BOOL instance_get_attachment_properties(cpid_t cpid,
 	const uint64_t *pmessage_id, ATTACHMENT_CONTENT *pattachment,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+    proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	uint32_t length;
 	
 	ppropvals->count = 0;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (const auto tag : pproptags) {
 		auto pvalue = pattachment->proplist.getval(tag);
 		if (NULL != pvalue) {
 			ppropvals->emplace_back(tag, pvalue);
@@ -1966,7 +1965,7 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 }	
 
 BOOL exmdb_server::get_instance_properties(const char *dir,
-    uint32_t size_limit, uint32_t instance_id, const PROPTAG_ARRAY *pproptags,
+    uint32_t size_limit, uint32_t instance_id, proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	uint32_t length;
@@ -1993,12 +1992,11 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 	}
 	pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	ppropvals->count = 0;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : pproptags) {
 		auto &vc = ppropvals->ppropval[ppropvals->count];
-		const auto tag = pproptags->pproptag[i];
 		if (tag == PR_MESSAGE_FLAGS) {
 			vc.proptag = tag;
 			auto uv = cu_alloc<uint32_t>();
@@ -3039,7 +3037,7 @@ BOOL exmdb_server::query_message_instance_attachment_table(const char *dir,
 				return FALSE;
 			if (!instance_get_attachment_properties(
 			    pinstance->cpid, msgidnum,
-			    pattachments->pplist[i], pproptags,
+			    pattachments->pplist[i], *pproptags,
 			    pset->pparray[pset->count]))
 				return FALSE;
 			pset->count ++;
@@ -3057,7 +3055,7 @@ BOOL exmdb_server::query_message_instance_attachment_table(const char *dir,
 			if (!instance_get_attachment_properties(
 			    pinstance->cpid, msgidnum,
 			    pattachments->pplist[i],
-			    pproptags, pset->pparray[pset->count]))
+			    *pproptags, pset->pparray[pset->count]))
 				return FALSE;
 			pset->count ++;
 		}

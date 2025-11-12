@@ -124,10 +124,9 @@ BOOL exmdb_client_shm::delete_message(const char *dir, int account_id, cpid_t cp
 BOOL exmdb_client_shm::get_instance_property(const char *dir, uint32_t instance_id,
     proptag_t proptag, void **ppval)
 {
-	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client->get_instance_properties(dir, 0, instance_id,
-	    &tmp_proptags, &tmp_propvals))
+	    {&proptag, 1}, &tmp_propvals))
 		return FALSE;	
 	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
 	return TRUE;

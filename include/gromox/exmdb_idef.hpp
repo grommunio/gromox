@@ -77,7 +77,7 @@ EXMIDL(delete_message_instance_attachment, (const char *dir, uint32_t message_in
 EXMIDL(flush_instance, (const char *dir, uint32_t instance_id, IDLOUT ec_error_t *e_result))
 EXMIDL(unload_instance, (const char *dir, uint32_t instance_id))
 EXMIDL(get_instance_all_proptags, (const char *dir, uint32_t instance_id, IDLOUT PROPTAG_ARRAY *proptags))
-EXMIDL(get_instance_properties, (const char *dir, uint32_t size_limit, uint32_t instance_id, const PROPTAG_ARRAY *pproptags, IDLOUT TPROPVAL_ARRAY *propvals))
+EXMIDL(get_instance_properties, (const char *dir, uint32_t size_limit, uint32_t instance_id, proptag_cspan pproptags, IDLOUT TPROPVAL_ARRAY *propvals))
 EXMIDL(set_instance_properties, (const char *dir, uint32_t instance_id, const TPROPVAL_ARRAY *pproperties, IDLOUT PROBLEM_ARRAY *problems))
 EXMIDL(remove_instance_properties, (const char *dir, uint32_t instance_id, const PROPTAG_ARRAY *pproptags, IDLOUT PROBLEM_ARRAY *problems))
 EXMIDL(is_descendant_instance, (const char *dir, uint32_t parent_iid, uint32_t child_iid, IDLOUT BOOL *b_included))

@@ -225,7 +225,7 @@ bool attachment_object::get_properties(proptag_cspan tags, TPROPVAL_ARRAY *pprop
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	if (!exmdb_client->get_instance_properties(pattachment->pparent->pstore->get_dir(),
-	    0, pattachment->instance_id, &tmp_proptags, &tmp_propvals))
+	    0, pattachment->instance_id, tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count == 0)
 		return TRUE;

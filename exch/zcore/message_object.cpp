@@ -729,7 +729,7 @@ bool message_object::get_properties(proptag_cspan pproptags,
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	if (!exmdb_client->get_instance_properties(pmessage->pstore->get_dir(),
-	    pmessage->cpid, pmessage->instance_id, &tmp_proptags, &tmp_propvals))
+	    pmessage->cpid, pmessage->instance_id, tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count > 0) {
 		memcpy(ppropvals->ppropval +
