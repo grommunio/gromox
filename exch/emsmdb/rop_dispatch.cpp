@@ -391,7 +391,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 		auto rq = CAST_TO(SETCOLUMNS);
 		rsp->hindex = prequest->hindex;
 		rsp->result = rop_setcolumns(rq->table_flags,
-			&rq->proptags, &rsp->table_status,
+			rq->proptags, &rsp->table_status,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		rshead = std::move(rsp);
 		break;
@@ -638,7 +638,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 	case ropModifyRecipients: {
 		auto rq = CAST_TO(MODIFYRECIPIENTS);
 		rshead->hindex = prequest->hindex;
-		rshead->result = rop_modifyrecipients(&rq->proptags,
+		rshead->result = rop_modifyrecipients(rq->proptags,
 			rq->count, rq->prow,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
@@ -897,10 +897,10 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 	case ropGetPropertiesSpecific: {
 		auto rsp = std::make_unique<GETPROPERTIESSPECIFIC_RESPONSE>();
 		auto rq = CAST_TO(GETPROPERTIESSPECIFIC);
-		rsp->pproptags = deconst(&rq->proptags);
+		rsp->pproptags = std::move(rq->proptags);
 		rsp->hindex = prequest->hindex;
 		rsp->result = rop_getpropertiesspecific(
-			rq->size_limit, rq->want_unicode, &rq->proptags, &rsp->row,
+			rq->size_limit, rq->want_unicode, rq->proptags, &rsp->row,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		rshead = std::move(rsp);
 		break;
@@ -948,7 +948,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 		auto rq = CAST_TO(DELETEPROPERTIES);
 		rsp->hindex = prequest->hindex;
 		rsp->result = rop_deleteproperties(
-			&rq->proptags, &rsp->problems,
+			rq->proptags, &rsp->problems,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		rshead = std::move(rsp);
 		break;
@@ -958,7 +958,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 		auto rq = CAST_TO(DELETEPROPERTIESNOREPLICATE);
 		rsp->hindex = prequest->hindex;
 		rsp->result = rop_deletepropertiesnoreplicate(
-			&rq->proptags, &rsp->problems,
+			rq->proptags, &rsp->problems,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		rshead = std::move(rsp);
 		break;
@@ -980,7 +980,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 		auto rsp = std::make_unique<COPYPROPERTIES_RESPONSE>();
 		rsp->hindex = prequest->hindex;
 		rsp->result = rop_copyproperties(
-			rq->want_asynchronous, rq->copy_flags, &rq->proptags,
+			rq->want_asynchronous, rq->copy_flags, rq->proptags,
 			&rsp->problems,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
@@ -1001,7 +1001,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 		rsp->hindex = prequest->hindex;
 		rsp->result = rop_copyto(rq->want_asynchronous,
 			rq->want_subobjects, rq->copy_flags,
-			&rq->excluded_proptags, &rsp->problems,
+			rq->excluded_proptags, &rsp->problems,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
 		rshead = std::move(rsp);
@@ -1255,7 +1255,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 			return ecInvalidObject;
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_fasttransfersourcecopyto(
-			rq->level, rq->flags, rq->send_options, &rq->proptags,
+			rq->level, rq->flags, rq->send_options, rq->proptags,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
@@ -1265,8 +1265,8 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
 		rshead->hindex = rq->ohindex;
-		rshead->result =	rop_fasttransfersourcecopyproperties(
-			rq->level, rq->flags, rq->send_options, &rq->proptags,
+		rshead->result = rop_fasttransfersourcecopyproperties(
+			rq->level, rq->flags, rq->send_options, std::move(rq->proptags),
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
@@ -1285,7 +1285,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_syncconfigure(rq->sync_type,
 			rq->send_options, rq->sync_flags, rq->pres,
-			rq->extra_flags, &rq->proptags,
+			rq->extra_flags, std::move(rq->proptags),
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;

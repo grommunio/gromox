@@ -292,7 +292,7 @@ struct GETCONTENTSTABLE_RESPONSE final : public rop_response {
 
 struct SETCOLUMNS_REQUEST final : public rop_request {
 	uint8_t table_flags;
-	PROPTAG_ARRAY proptags;
+	proptag_vector proptags;
 };
 
 struct SORTTABLE_REQUEST final : public rop_request {
@@ -368,7 +368,7 @@ struct FINDROW_REQUEST final : public rop_request {
 struct FINDROW_RESPONSE final : public rop_response {
 	uint8_t bookmark_invisible;
 	PROPERTY_ROW *prow;
-	PROPTAG_ARRAY *pcolumns;
+	proptag_vector pcolumns;
 };
 
 struct FREEBOOKMARK_REQUEST final : public rop_request {
@@ -455,7 +455,7 @@ struct REMOVEALLRECIPIENTS_REQUEST final : public rop_request {
 };
 
 struct MODIFYRECIPIENTS_REQUEST final : public rop_request {
-	PROPTAG_ARRAY proptags;
+	proptag_vector proptags;
 	uint16_t count;
 	MODIFYRECIPIENT_ROW *prow;
 };
@@ -635,11 +635,11 @@ struct GETNAMESFROMPROPERTYIDS_RESPONSE final : public rop_response {
 struct GETPROPERTIESSPECIFIC_REQUEST final : public rop_request {
 	uint16_t size_limit;
 	uint16_t want_unicode;
-	PROPTAG_ARRAY proptags;
+	proptag_vector proptags;
 };
 
 struct GETPROPERTIESSPECIFIC_RESPONSE final : public rop_response {
-	PROPTAG_ARRAY *pproptags;    /* only for pushing row data into stream */
+	proptag_vector pproptags; /* only for pushing row data into stream */
 	PROPERTY_ROW row;
 };
 
@@ -665,11 +665,11 @@ struct SETPROPERTIESNOREPLICATE_REQUEST final : public rop_request {
 };
 
 struct DELETEPROPERTIES_REQUEST final : public rop_request {
-	PROPTAG_ARRAY proptags;
+	proptag_vector proptags;
 };
 
 struct DELETEPROPERTIESNOREPLICATE_REQUEST final : public rop_request {
-	PROPTAG_ARRAY proptags;
+	proptag_vector proptags;
 };
 
 struct QUERYNAMEDPROPERTIES_REQUEST final : public rop_request {
@@ -685,7 +685,7 @@ struct COPYPROPERTIES_REQUEST final : public rop_request {
 	uint8_t dhindex;
 	uint8_t want_asynchronous;
 	uint8_t copy_flags;
-	PROPTAG_ARRAY proptags;
+	proptag_vector proptags;
 };
 
 struct COPYTO_REQUEST final : public rop_request {
@@ -693,7 +693,7 @@ struct COPYTO_REQUEST final : public rop_request {
 	uint8_t want_asynchronous;
 	uint8_t want_subobjects;
 	uint8_t copy_flags;
-	PROPTAG_ARRAY excluded_proptags;
+	proptag_vector excluded_proptags;
 };
 
 struct PROGRESS_REQUEST final : public rop_request {
@@ -869,7 +869,7 @@ struct FASTTRANSFERSOURCECOPYTO_REQUEST final : public rop_request {
 	uint8_t level;
 	uint32_t flags;
 	uint8_t send_options;
-	PROPTAG_ARRAY proptags;
+	proptag_vector proptags;
 };
 
 struct FASTTRANSFERSOURCECOPYPROPERTIES_REQUEST final : public rop_request {
@@ -877,7 +877,7 @@ struct FASTTRANSFERSOURCECOPYPROPERTIES_REQUEST final : public rop_request {
 	uint8_t level;
 	uint8_t flags;
 	uint8_t send_options;
-	PROPTAG_ARRAY proptags;
+	proptag_vector proptags;
 };
 
 struct TELLVERSION_REQUEST final : public rop_request {
@@ -891,7 +891,7 @@ struct SYNCCONFIGURE_REQUEST final : public rop_request {
 	uint16_t sync_flags;
 	RESTRICTION *pres;
 	uint32_t extra_flags;
-	PROPTAG_ARRAY proptags;
+	proptag_vector proptags;
 };
 
 struct SYNCIMPORTMESSAGECHANGE_REQUEST final : public rop_request {

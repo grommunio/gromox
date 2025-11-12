@@ -430,7 +430,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const EID_ARRAY *pmessage_ids,
  * CopyMessages cannot do that.
  */
 ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
-    uint8_t send_options, const PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
+    uint8_t send_options, proptag_cspan pproptags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	ems_objtype object_type;
@@ -457,7 +457,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		return ecError;
 	switch (object_type) {
 	case ems_objtype::folder: {
-		auto bg = pproptags->begin(), end = pproptags->end();
+		auto bg = pproptags.begin(), end = pproptags.end();
 		auto b_sub    = level == 0 && std::find(bg, end, PR_CONTAINER_HIERARCHY) == end;
 		auto b_fai    = level == 0 && std::find(bg, end, PR_CONTAINER_CONTENTS) == end;
 		auto b_normal = level == 0 && std::find(bg, end, PR_FOLDER_ASSOCIATED_CONTENTS) == end;
@@ -467,7 +467,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (pfldctnt == nullptr)
 			return ecError;
 		auto pproplist = pfldctnt->get_proplist();
-		for (const auto tag : *pproptags)
+		for (const auto tag : pproptags)
 			pproplist->erase(tag);
 		if (!pctx->make_foldercontent(b_sub, std::move(pfldctnt)))
 			return ecError;
@@ -479,7 +479,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (!exmdb_client->read_message_instance(plogon->get_dir(),
 		    static_cast<message_object *>(pobject)->get_instance_id(), &msgctnt))
 			return ecError;
-		for (const auto tag : *pproptags) {
+		for (const auto tag : pproptags) {
 			switch (tag) {
 			case PR_MESSAGE_RECIPIENTS:	
 				msgctnt.children.prcpts = NULL;
@@ -505,7 +505,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (!exmdb_client->read_attachment_instance(plogon->get_dir(),
 		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
 			return ecError;
-		for (const auto tag : *pproptags) {
+		for (const auto tag : pproptags) {
 			switch (tag) {
 			case PR_ATTACH_DATA_OBJ:
 				attctnt.pembedded = NULL;
@@ -530,7 +530,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 }
 
 ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
-    uint8_t send_options, const PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
+    uint8_t send_options, proptag_cspan pproptags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	ems_objtype object_type;
@@ -562,7 +562,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		 * properties and subobjects to include, as opposed to
 		 * exclude""" [like rop_fasttransfersourcecopyproperties]
 		 */
-		auto bg = pproptags->begin(), end = pproptags->end();
+		auto bg = pproptags.begin(), end = pproptags.end();
 		auto b_sub    = level == 0 && std::find(bg, end, PR_CONTAINER_HIERARCHY) != end;
 		auto b_normal = level == 0 && std::find(bg, end, PR_CONTAINER_CONTENTS) != end;
 		auto b_fai    = level == 0 && std::find(bg, end, PR_FOLDER_ASSOCIATED_CONTENTS) != end;
@@ -574,7 +574,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		auto pproplist = pfldctnt->get_proplist();
 		for (unsigned int i = 0; i < pproplist->count; ) {
 			if (pproplist->ppropval[i].proptag != MetaTagNewFXFolder) {
-				if (!pproptags->has(pproplist->ppropval[i].proptag)) {
+				if (!pproptags.has(pproplist->ppropval[i].proptag)) {
 					pproplist->erase(pproplist->ppropval[i].proptag);
 					continue;
 				}
@@ -592,16 +592,16 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		    static_cast<message_object *>(pobject)->get_instance_id(), &msgctnt))
 			return ecError;
 		for (unsigned int i = 0; i < msgctnt.proplist.count; ) {
-			if (!pproptags->has(msgctnt.proplist.ppropval[i].proptag)) {
+			if (!pproptags.has(msgctnt.proplist.ppropval[i].proptag)) {
 				common_util_remove_propvals(&msgctnt.proplist,
 						msgctnt.proplist.ppropval[i].proptag);
 				continue;
 			}
 			i ++;
 		}
-		if (!pproptags->has(PR_MESSAGE_RECIPIENTS))
+		if (!pproptags.has(PR_MESSAGE_RECIPIENTS))
 			msgctnt.children.prcpts = NULL;
-		if (!pproptags->has(PR_MESSAGE_ATTACHMENTS))
+		if (!pproptags.has(PR_MESSAGE_ATTACHMENTS))
 			msgctnt.children.pattachments = NULL;
 		if (0 != level) {
 			msgctnt.children.prcpts = NULL;
@@ -617,14 +617,14 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
 			return ecError;
 		for (unsigned int i = 0; i < attctnt.proplist.count; ) {
-			if (!pproptags->has(attctnt.proplist.ppropval[i].proptag)) {
+			if (!pproptags.has(attctnt.proplist.ppropval[i].proptag)) {
 				common_util_remove_propvals(&attctnt.proplist,
 						attctnt.proplist.ppropval[i].proptag);
 				continue;
 			}
 			i ++;
 		}
-		if (!pproptags->has(PR_ATTACH_DATA_OBJ))
+		if (!pproptags.has(PR_ATTACH_DATA_OBJ))
 			attctnt.pembedded = NULL;
 		if (!pctx->make_attachmentcontent(&attctnt))
 			return ecError;
@@ -648,8 +648,8 @@ ec_error_t rop_tellversion(const uint16_t *pversion, LOGMAP *plogmap,
 
 ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
     uint16_t sync_flags, const RESTRICTION *pres, uint32_t extra_flags,
-    const PROPTAG_ARRAY *pproptags, LOGMAP *plogmap, uint8_t logon_id,
-    uint32_t hin, uint32_t *phout)
+    proptag_cspan pproptags, LOGMAP *plogmap, uint8_t logon_id,
+    uint32_t hin, uint32_t *phout) try
 {
 	ems_objtype object_type;
 	uint32_t permission;
@@ -679,35 +679,28 @@ ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	    const_cast<RESTRICTION *>(pres)))
 			return ecError;
 
-	std::vector<proptag_t> new_tags;
-	PROPTAG_ARRAY new_pta;
-	auto bodyof = pproptags->indexof(PR_BODY);
+	proptag_vector new_tags{pproptags.begin(), pproptags.end()};
+	auto bodyit = std::find(new_tags.begin(), new_tags.end(), PR_BODY);
 	if (!(sync_flags & SYNC_ONLY_SPECIFIED_PROPS) &&
-	    bodyof != pproptags->npos && !pproptags->has(PR_HTML)) try {
+	    bodyit != new_tags.end() && !new_tags.has(PR_HTML))
 		/*
 		 * Ignore Outlook's request to exclude PR_BODY.
 		 * PR_BODY may be the only format some message has.
 		 * Send at least one body format. (Ignoring RTF presence
 		 * altogether here; that is another consideration.)
 		 */
-		auto p = pproptags->pproptag;
-		new_tags.insert(new_tags.end(), p, p + bodyof);
-		new_tags.insert(new_tags.end(), p + bodyof + 1, p + pproptags->count - 1);
-		new_pta.count = new_tags.size();
-		new_pta.pproptag = new_tags.data();
-		pproptags = &new_pta;
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "%s: ENOMEM", __func__);
-		return ecServerOOM;
-	}
+		new_tags.erase(bodyit);
 	auto pctx = icsdownctx_object::create(plogon, pfolder, sync_type,
-	            send_options, sync_flags, pres, extra_flags, *pproptags);
+	            send_options, sync_flags, pres, extra_flags, std::move(new_tags));
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::icsdownctx, std::move(pctx)});
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 /**

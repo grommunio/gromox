@@ -85,19 +85,19 @@ static inline bool table_acceptable_type(proptype_t type)
 	}
 }
 
-ec_error_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
+ec_error_t rop_setcolumns(uint8_t table_flags, proptag_cspan pproptags,
     uint8_t *ptable_status, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
 	
-	if (pproptags->count == 0)
+	if (pproptags.empty())
 		return ecInvalidParam;
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
 		return ecNotSupported;
-	for (const auto tag : *pproptags) {
+	for (const auto tag : pproptags) {
 		auto type = PROP_TYPE(tag);
 		if ((type & MVI_FLAG) == MVI_FLAG) {
 				if (ropGetContentsTable != ptable->rop_id)
@@ -108,9 +108,10 @@ ec_error_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 			return ecInvalidParam;
 	}
 	auto psorts = ptable->get_sorts();
-	if (psorts != nullptr && !verify_columns_and_sorts(*pproptags, psorts))
+	if (psorts != nullptr && !verify_columns_and_sorts(pproptags, psorts))
 		return ecNotSupported;
-	if (!ptable->set_columns(*pproptags))
+	proptag_vector new_tags{pproptags.begin(), pproptags.end()};
+	if (!ptable->set_columns(std::move(new_tags)))
 		return ecServerOOM;
 	*ptable_status = TBLSTAT_COMPLETE;
 	return ecSuccess;
@@ -465,7 +466,7 @@ ec_error_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
 
 ec_error_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
     const BINARY *pbookmark, uint8_t *pbookmark_invisible, PROPERTY_ROW **pprow,
-    PROPTAG_ARRAY **ppcolumns, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
+    proptag_vector *pcolumns, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin) try
 {
 	ems_objtype object_type;
 	int32_t position;
@@ -520,24 +521,22 @@ ec_error_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 	if (!ptable->match_row(b_forward, pres, &position, &propvals))
 		return ecError;
 	auto colptr = ptable->get_columns();
-	if (colptr == nullptr) {
-		*ppcolumns = nullptr;
-	} else {
-		*ppcolumns = cu_alloc<PROPTAG_ARRAY>();
-		if (*ppcolumns == nullptr)
-			return ecServerOOM;
-		(*ppcolumns)->count    = colptr->size();
-		(*ppcolumns)->pproptag = deconst(colptr->data());
-	}
+	if (colptr == nullptr)
+		pcolumns->clear();
+	else
+		pcolumns->assign(colptr->cbegin(), colptr->cend());
 	if (position < 0)
 		return ecNotFound;
 	ptable->set_position(position);
 	*pprow = cu_alloc<PROPERTY_ROW>();
 	if (*pprow == nullptr)
 		return ecServerOOM;
-	if (!cu_propvals_to_row(&propvals, **ppcolumns, *pprow))
+	if (!cu_propvals_to_row(&propvals, *pcolumns, *pprow))
 		return ecServerOOM;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 ec_error_t rop_freebookmark(const BINARY *pbookmark, LOGMAP *plogmap,

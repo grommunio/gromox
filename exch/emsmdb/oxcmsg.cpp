@@ -294,16 +294,16 @@ ec_error_t rop_removeallrecipients(uint32_t reserved, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
+ec_error_t rop_modifyrecipients(proptag_cspan pproptags, uint16_t count,
     const MODIFYRECIPIENT_ROW *prow, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin)
 {
 	ems_objtype object_type;
 	TARRAY_SET tmp_set;
 	
-	if (pproptags->count >= 0x7FEF || count >= 0x7FEF)
+	if (pproptags.size() >= 0x7FEF || count >= 0x7FEF)
 		return ecInvalidParam;
-	for (const auto tag : *pproptags) {
+	for (const auto tag : pproptags) {
 		switch (tag) {
 		case PR_ADDRTYPE:
 		case PR_DISPLAY_NAME:
@@ -342,7 +342,7 @@ ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 			ppropvals->ppropval->pvalue = deconst(&prow[i].row_id);
 		} else {
 			if (!cu_modifyrecipient_to_propvals(pinfo->cpid,
-			    &prow[i], *pproptags, ppropvals))
+			    &prow[i], pproptags, ppropvals))
 				return ecServerOOM;
 		}
 		tmp_set.pparray[i] = ppropvals;
