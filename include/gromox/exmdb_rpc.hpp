@@ -567,14 +567,33 @@ struct exreq_locate_table final : public exreq {
 	uint32_t inst_num;
 };
 
+struct exreq_read_table_row_v final : public exreq {
+	const char *username;
+	cpid_t cpid;
+	uint32_t table_id;
+	proptag_cspan pproptags;
+	uint64_t inst_id;
+	uint32_t inst_num;
+};
+
 struct exreq_read_table_row final : public exreq {
-	using view_t = exreq_read_table_row;
+	using view_t = exreq_read_table_row_v;
 	char *username;
 	cpid_t cpid;
 	uint32_t table_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_vector pproptags;
 	uint64_t inst_id;
 	uint32_t inst_num;
+	operator view_t() const {
+		view_t v;
+		v.username = username;
+		v.cpid = cpid;
+		v.table_id = table_id;
+		v.pproptags = pproptags;
+		v.inst_id = inst_id;
+		v.inst_num = inst_num;
+		return v;
+	}
 };
 
 struct exreq_mark_table final : public exreq {

@@ -362,7 +362,7 @@ BOOL table_object::read_row(uint64_t inst_id, uint32_t inst_num,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	return exmdb_client->read_table_row(ptable->plogon->get_dir(),
 	       ptable->plogon->readstate_user(),
-	       pinfo->cpid, m_table_id, m_columns,
+	       pinfo->cpid, m_table_id, *m_columns,
 	       inst_id, inst_num, ppropvals);
 }
 

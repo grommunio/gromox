@@ -2405,7 +2405,7 @@ BOOL exmdb_server::locate_table(const char *dir,
 }
 
 static bool read_tblrow_hier(cpid_t cpid, uint32_t table_id,
-    const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
+    proptag_cspan pproptags, uint64_t inst_id, uint32_t inst_num,
     TPROPVAL_ARRAY *ppropvals, db_conn &db)
 {
 	uint32_t depth;
@@ -2433,12 +2433,11 @@ static bool read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 	auto sql_transact = gx_sql_begin(db.psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (tag == PR_DEPTH) {
 			auto v = cu_alloc<uint32_t>();
 			pvalue = v;
@@ -2470,7 +2469,7 @@ static bool read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 }
 
 static bool read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
-    const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
+    proptag_cspan pproptags, uint64_t inst_id, uint32_t inst_num,
     TPROPVAL_ARRAY *ppropvals, db_conn &db, const table_node *ptnode)
 {
 	int row_type;
@@ -2512,12 +2511,11 @@ static bool read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 	auto sql_transact_eph = gx_sql_begin(db.m_sqlite_eph, txn_mode::read);
 	if (!sql_transact_eph)
 		return false;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (!table_column_content_tmptbl(pstmt, pstmt1,
 		    pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
 		    tag, ptnode->instance_tag,
@@ -2552,7 +2550,7 @@ static bool read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
  * @username:   Used for retrieving public store readstates
  */
 BOOL exmdb_server::read_table_row(const char *dir, const char *username,
-    cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
+    cpid_t cpid, uint32_t table_id, proptag_cspan pproptags,
 	uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pdb = db_engine_get_db(dir);
