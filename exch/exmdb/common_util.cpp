@@ -1735,6 +1735,7 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
 		break;
+	case PR_OOF_STATE:
 	case PidTagSerializedReplidGuidMap:
 		break;
 	default:
@@ -1750,6 +1751,11 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 	case PidTagSerializedReplidGuidMap:
 		pv.pvalue = cu_get_replmap(db);
 		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		break;
+	case PR_OOF_STATE:
+		auto err = autoreply_make_oofstate(exmdb_server::get_dir(), pv.pvalue);
+		if (err != 0)
 			return GP_ERR;
 		break;
 	}

@@ -155,6 +155,7 @@ extern int have_delete_perm(sqlite3 *, const char *user, uint64_t fid, uint64_t 
 extern bool timeindex_delete(sqlite3 *db, uint64_t fid, uint64_t mid);
 extern bool timeindex_insert(sqlite3 *db, uint64_t fid, uint64_t mid);
 extern bool timeindex_refresh(sqlite3 *db, uint64_t fid, uint64_t mid);
+extern ec_error_t autoreply_make_oofstate(const char *dir, void *&outptr);
 
 extern unsigned int g_max_rule_num, g_max_extrule_num, g_cid_compression;
 extern thread_local unsigned int g_inside_flush_instance;
