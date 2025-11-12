@@ -1376,18 +1376,15 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_message_instance_atta
 static pack_result exmdb_pull(EXT_PULL &x, exreq_query_message_instance_attachment_table &d)
 {
 	TRY(x.g_uint32(&d.instance_id));
-	d.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return pack_result::alloc;
-	TRY(x.g_proptag_a(d.pproptags));
+	TRY(x.g_proptag_a(&d.pproptags));
 	TRY(x.g_uint32(&d.start_pos));
 	return x.g_int32(&d.row_needed);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_query_message_instance_attachment_table &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_query_message_instance_attachment_table_v &d)
 {
 	TRY(x.p_uint32(d.instance_id));
-	TRY(x.p_proptag_a(*d.pproptags));
+	TRY(x.p_proptag_a(d.pproptags));
 	TRY(x.p_uint32(d.start_pos));
 	return x.p_int32(d.row_needed);
 }

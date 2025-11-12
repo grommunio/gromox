@@ -595,9 +595,8 @@ bool message_object::query_attachment_table(proptag_cspan pproptags,
     uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset) const
 {
 	auto pmessage = this;
-	const PROPTAG_ARRAY pta = {static_cast<uint16_t>(pproptags.size()), deconst(pproptags.data())};
 	return exmdb_client->query_message_instance_attachment_table(
-	       pmessage->plogon->get_dir(), pmessage->instance_id, &pta,
+	       pmessage->plogon->get_dir(), pmessage->instance_id, pproptags,
 	       start_pos, row_needed, pset);
 }
 

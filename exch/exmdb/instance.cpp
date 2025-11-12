@@ -2998,7 +2998,7 @@ BOOL exmdb_server::copy_instance_attachments(const char *dir, BOOL b_force,
 }
 
 BOOL exmdb_server::query_message_instance_attachment_table(const char *dir,
-    uint32_t instance_id, const PROPTAG_ARRAY *pproptags, uint32_t start_pos,
+    uint32_t instance_id, proptag_cspan pproptags, uint32_t start_pos,
     int32_t row_needed, TARRAY_SET *pset)
 {
 	int i;
@@ -3036,7 +3036,7 @@ BOOL exmdb_server::query_message_instance_attachment_table(const char *dir,
 				return FALSE;
 			if (!instance_get_attachment_properties(
 			    pinstance->cpid, msgidnum,
-			    pattachments->pplist[i], *pproptags,
+			    pattachments->pplist[i], pproptags,
 			    pset->pparray[pset->count]))
 				return FALSE;
 			pset->count ++;
@@ -3054,7 +3054,7 @@ BOOL exmdb_server::query_message_instance_attachment_table(const char *dir,
 			if (!instance_get_attachment_properties(
 			    pinstance->cpid, msgidnum,
 			    pattachments->pplist[i],
-			    *pproptags, pset->pparray[pset->count]))
+			    pproptags, pset->pparray[pset->count]))
 				return FALSE;
 			pset->count ++;
 		}

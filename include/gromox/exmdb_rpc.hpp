@@ -822,12 +822,27 @@ struct exreq_get_message_instance_attachment_table_all_proptags final : public e
 	uint32_t instance_id;
 };
 
-struct exreq_query_message_instance_attachment_table final : public exreq {
-	using view_t = exreq_query_message_instance_attachment_table;
+struct exreq_query_message_instance_attachment_table_v final : public exreq {
 	uint32_t instance_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_cspan pproptags;
 	uint32_t start_pos;
 	int32_t row_needed;
+};
+
+struct exreq_query_message_instance_attachment_table final : public exreq {
+	using view_t = exreq_query_message_instance_attachment_table_v;
+	uint32_t instance_id;
+	proptag_vector pproptags;
+	uint32_t start_pos;
+	int32_t row_needed;
+	operator view_t() const {
+		view_t v;
+		v.instance_id = instance_id;
+		v.pproptags = pproptags;
+		v.start_pos = start_pos;
+		v.row_needed = row_needed;
+		return v;
+	}
 };
 
 struct exreq_copy_instance_attachments final : public exreq {
