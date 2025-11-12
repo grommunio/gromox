@@ -304,29 +304,35 @@ errno_t ace_list::emplace(std::string &&s, uint32_t r)
 static void substitute_addrs(TPROPVAL_ARRAY *ar)
 {
 	static constexpr struct {
-		proptag_t addrtype, emaddr, entryid, srchkey;
+		proptag_t addrtype, emaddr, entryid, srchkey, smtpaddr;
 	} propsets[] = {
-		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_SEARCH_KEY},
+		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_SEARCH_KEY, PR_SENT_REPRESENTING_SMTP_ADDRESS},
 		{PR_ORIGINAL_SENDER_ADDRTYPE, PR_ORIGINAL_SENDER_EMAIL_ADDRESS, PR_ORIGINAL_SENDER_ENTRYID, PR_ORIGINAL_SENDER_SEARCH_KEY},
 		{PR_ORIGINAL_SENT_REPRESENTING_ADDRTYPE, PR_ORIGINAL_SENT_REPRESENTING_EMAIL_ADDRESS, PR_ORIGINAL_SENT_REPRESENTING_ENTRYID, PR_ORIGINAL_SENT_REPRESENTING_SEARCH_KEY},
 		{PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS, PR_RECEIVED_BY_ENTRYID, PR_RECEIVED_BY_SEARCH_KEY},
 		{PR_RCVD_REPRESENTING_ADDRTYPE, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, PR_RCVD_REPRESENTING_ENTRYID, PR_RCVD_REPRESENTING_SEARCH_KEY},
 		{PR_ORIGINAL_AUTHOR_ADDRTYPE, PR_ORIGINAL_AUTHOR_EMAIL_ADDRESS, PR_ORIGINAL_AUTHOR_ENTRYID, PR_ORIGINAL_AUTHOR_SEARCH_KEY},
 		{PR_ORIGINALLY_INTENDED_RECIP_ADDRTYPE, PR_ORIGINALLY_INTENDED_RECIP_EMAIL_ADDRESS, PR_ORIGINALLY_INTENDED_RECIP_ENTRYID, 0},
-		{PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_ENTRYID, PR_SENDER_SEARCH_KEY},
-		{PR_ADDRTYPE, PR_EMAIL_ADDRESS, PR_ENTRYID, PR_SEARCH_KEY},
+		{PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_ENTRYID, PR_SENDER_SEARCH_KEY, PR_SENDER_SMTP_ADDRESS},
+		{PR_ADDRTYPE, PR_EMAIL_ADDRESS, PR_ENTRYID, PR_SEARCH_KEY, PR_SMTP_ADDRESS},
 	};
 	for (const auto &tags : propsets) {
-		auto at = ar->get<const char>(tags.addrtype);
-		if (at == nullptr || strcasecmp(at, "ZARAFA") != 0)
-			continue;
-		auto em = ar->get<const char>(tags.emaddr);
-		if (em == nullptr)
-			continue;
-		auto repl = g_zaddr_to_email.find(em);
-		if (repl == g_zaddr_to_email.end())
-			continue;
-		const auto &smtpaddr = repl->second;
+		const char *smtpaddr = nullptr;
+		/* If we already have PR.*SMTP_ADDRESS, just use that */
+		if (tags.smtpaddr != 0)
+			smtpaddr = ar->get<const char>(tags.smtpaddr);
+		if (smtpaddr != nullptr) {
+			auto at = ar->get<const char>(tags.addrtype);
+			if (at == nullptr || strcasecmp(at, "ZARAFA") != 0)
+				continue;
+			auto em = ar->get<const char>(tags.emaddr);
+			if (em == nullptr)
+				continue;
+			auto repl = g_zaddr_to_email.find(em);
+			if (repl == g_zaddr_to_email.end())
+				continue;
+			smtpaddr = repl->second.c_str();
+		}
 
 		ONEOFF_ENTRYID e{};
 		e.ctrl_flags    = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
@@ -342,14 +348,20 @@ static void substitute_addrs(TPROPVAL_ARRAY *ar)
 		BINARY ebin;
 		ebin.cb = ep.m_offset;
 		ebin.pb = ep.m_udata;
-		std::string srchkey = "SMTP:" + smtpaddr;
+		std::string srchkey = "SMTP:"s + smtpaddr;
 		HX_strupper(srchkey.data());
 		BINARY sbin;
 		sbin.cb = srchkey.size() + 1;
 		sbin.pc = deconst(srchkey.c_str());
 
+		/*
+		 * No need to set PR_SMTP_ADDRESS:
+		 * - if it existed, it is the source truth (and is not changing)
+		 * - it did not exist before, don't add redundant
+		 *   data (PR_EMAIL_ADDRESS already contains everything)
+		 */
 		if (ar->set(TAGGED_PROPVAL{tags.addrtype, deconst("SMTP")}) == ecServerOOM ||
-		    ar->set(TAGGED_PROPVAL{tags.emaddr, deconst(smtpaddr.c_str())}) == ecServerOOM)
+		    ar->set(TAGGED_PROPVAL{tags.emaddr, deconst(smtpaddr)}) == ecServerOOM)
 			throw std::bad_alloc();
 		if (tags.entryid != 0 &&
 		    ar->set(TAGGED_PROPVAL{tags.entryid, &ebin}) == ecServerOOM)
