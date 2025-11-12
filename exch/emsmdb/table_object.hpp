@@ -21,8 +21,8 @@ struct table_object {
 	public:
 	~table_object();
 	static std::unique_ptr<table_object> create(logon_object *, void *parent, uint8_t table_flags, uint8_t rop_id, uint8_t logon_id);
-	const PROPTAG_ARRAY *get_columns() const { return m_columns; }
-	BOOL set_columns(const PROPTAG_ARRAY *);
+	const proptag_vector *get_columns() const { return m_colset ? &m_columns : nullptr; }
+	bool set_columns(proptag_cspan);
 	const SORTORDER_SET *get_sorts() const { return m_sorts; }
 	BOOL set_sorts(const SORTORDER_SET *);
 	bool is_loaded() const { return rop_id == ropGetAttachmentTable || m_loaded; }
@@ -54,8 +54,8 @@ struct table_object {
 	LOGMAP *plogmap = nullptr;
 	void *pparent_obj = nullptr;
 	uint8_t logon_id = 0, rop_id = 0, table_flags = 0;
-	bool m_loaded = false;
-	PROPTAG_ARRAY *m_columns = nullptr;
+	bool m_loaded = false, m_colset = false;
+	proptag_vector m_columns;
 	SORTORDER_SET *m_sorts = nullptr;
 	RESTRICTION *m_restriction = nullptr;
 	uint32_t m_position = 0;

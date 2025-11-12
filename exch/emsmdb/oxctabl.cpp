@@ -110,7 +110,7 @@ ec_error_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 	auto psorts = ptable->get_sorts();
 	if (psorts != nullptr && !verify_columns_and_sorts(*pproptags, psorts))
 		return ecNotSupported;
-	if (!ptable->set_columns(pproptags))
+	if (!ptable->set_columns(*pproptags))
 		return ecServerOOM;
 	*ptable_status = TBLSTAT_COMPLETE;
 	return ecSuccess;
@@ -519,7 +519,16 @@ ec_error_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 		return ecError;
 	if (!ptable->match_row(b_forward, pres, &position, &propvals))
 		return ecError;
-	*ppcolumns = deconst(ptable->get_columns());
+	auto colptr = ptable->get_columns();
+	if (colptr == nullptr) {
+		*ppcolumns = nullptr;
+	} else {
+		*ppcolumns = cu_alloc<PROPTAG_ARRAY>();
+		if (*ppcolumns == nullptr)
+			return ecServerOOM;
+		(*ppcolumns)->count    = colptr->size();
+		(*ppcolumns)->pproptag = deconst(colptr->data());
+	}
 	if (position < 0)
 		return ecNotFound;
 	ptable->set_position(position);
