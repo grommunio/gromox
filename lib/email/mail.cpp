@@ -32,10 +32,7 @@ void MAIL::clear()
 	auto pnode = pmail->tree.get_root();
 	if (pnode != nullptr)
 		pmail->tree.destroy_node(pnode, [](SIMPLE_TREE_NODE *n) { delete static_cast<MIME *>(n->pdata); });
-	if (NULL != pmail->buffer) {
-		free(pmail->buffer);
-		pmail->buffer = NULL;
-	}
+	pmail->buffer.reset();
 }
 
 /*
@@ -48,7 +45,7 @@ void MAIL::clear()
  *		TRUE				OK
  *		FALSE				fail
  */
-bool MAIL::load_from_str(const char *in_buff, size_t length)
+bool MAIL::refonly_parse(const char *in_buff, size_t length)
 {
 	auto pmail = this;
 
@@ -276,8 +273,7 @@ MAIL &MAIL::operator=(MAIL &&o)
 	tree.clear();
 	tree = o.tree;
 	o.tree = {};
-	buffer = o.buffer;
-	o.buffer = nullptr;
+	buffer = std::move(o.buffer);
 	return *this;
 }
 
@@ -612,8 +608,10 @@ bool MAIL::dup(MAIL *pmail_dst)
 	STREAM tmp_stream;
 	if (!pmail_src->serialize(&tmp_stream))
 		return false;
-	auto pbuff = me_alloc<char>(strange_roundup(mail_len - 1, 64 * 1024));
-	if (NULL == pbuff) {
+	std::unique_ptr<char[]> pbuff;
+	try {
+		pbuff.reset(new char[mail_len]);
+	} catch (const std::bad_alloc &) {
 		mlog(LV_DEBUG, "Failed to allocate memory in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
@@ -621,16 +619,14 @@ bool MAIL::dup(MAIL *pmail_dst)
 	size_t offset = 0;
 	size = STREAM_BLOCK_SIZE;
 	while ((ptr = tmp_stream.get_read_buf(&size)) != nullptr) {
-		memcpy(pbuff + offset, ptr, size);
+		memcpy(&pbuff[offset], ptr, size);
 		offset += size;
 		size = STREAM_BLOCK_SIZE;
 	}
 	tmp_stream.clear();
-	if (!pmail_dst->load_from_str(pbuff, offset)) {
-		free(pbuff);
+	if (!pmail_dst->refonly_parse(pbuff.get(), offset)) {
 		return false;
-	} else {
-		pmail_dst->buffer = pbuff;
-		return true;
 	}
+	pmail_dst->buffer = std::move(pbuff);
+	return true;
 }

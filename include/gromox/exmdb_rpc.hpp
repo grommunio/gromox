@@ -7,9 +7,10 @@
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/idset.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapierr.hpp>
-#include <gromox/mapi_types.hpp>
 
 enum class exmdb_response : uint8_t {
 	success = 0x00,
@@ -773,7 +774,7 @@ struct exreq_read_message final : public exreq {
 struct exreq_get_content_sync final : public exreq {
 	uint64_t folder_id;
 	char *username;
-	idset *pgiven, *pseen, *pseen_fai, *pread;
+	gromox::idset *pgiven, *pseen, *pseen_fai, *pread;
 	cpid_t cpid;
 	RESTRICTION *prestriction;
 	BOOL b_ordered;
@@ -782,7 +783,7 @@ struct exreq_get_content_sync final : public exreq {
 struct exreq_get_hierarchy_sync final : public exreq {
 	uint64_t folder_id;
 	char *username;
-	idset *pgiven, *pseen;
+	gromox::idset *pgiven, *pseen;
 };
 
 struct exreq_allocate_ids final : public exreq {

@@ -81,7 +81,7 @@ smtp_param g_param;
  */
 void smtp_parser_init(const smtp_param &param)
 {
-	g_param = std::move(param);
+	g_param = param;
 	g_block_ID              = 0;
 	g_ssl_mutex_buf         = NULL;
 }

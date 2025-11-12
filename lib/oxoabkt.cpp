@@ -270,7 +270,7 @@ std::string abkt_tojson(std::string_view bin, cpid_t codepage)
 std::string abkt_tobinary(std::string_view json, cpid_t codepage, bool dogap)
 {
 	Json::Value jval;
-	if (!json_from_str(std::move(json), jval))
+	if (!str_to_json(std::move(json), jval))
 		throw std::runtime_error("Invalid JSON input");
 	EXT_PUSH writer;
 	if (!writer.init(nullptr, 0, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT, nullptr))

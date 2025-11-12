@@ -3,10 +3,14 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <gromox/ndr.hpp>
+#include <gromox/util.hpp>
 #include "emsmdb_interface.hpp"
 #include "emsmdb_ndr.hpp"
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
+
+using namespace gromox;
 
 static pack_result asyncemsmdb_ndr_pull(NDR_PULL &x, ECDOASYNCWAITEX_IN *r)
 {
@@ -20,20 +24,25 @@ static pack_result asyncemsmdb_ndr_push(NDR_PUSH &x, const ECDOASYNCWAITEX_OUT &
 	return x.p_err32(r.result);
 }
 
-pack_result asyncemsmdb_ndr_pull(unsigned int opnum, NDR_PULL &x, void **ppin)
+pack_result asyncemsmdb_ndr_pull(unsigned int opnum, NDR_PULL &x,
+    std::unique_ptr<rpc_request> &in) try
 {
 	switch (opnum) {
-	case ecDoAsyncWaitEx:
-		*ppin = ndr_stack_anew<ECDOASYNCWAITEX_IN>(NDR_STACK_IN);
-		if (*ppin == nullptr)
-			return pack_result::alloc;
-		return asyncemsmdb_ndr_pull(x, static_cast<ECDOASYNCWAITEX_IN *>(*ppin));
+	case ecDoAsyncWaitEx: {
+		auto r0 = std::make_unique<ECDOASYNCWAITEX_IN>();
+		auto v = asyncemsmdb_ndr_pull(x, static_cast<ECDOASYNCWAITEX_IN *>(r0.get()));
+		in = std::move(r0);
+		return v;
+	}
 	default:
 		return pack_result::bad_switch;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return pack_result::alloc;
 }
 
-pack_result asyncemsmdb_ndr_push(unsigned int opnum, NDR_PUSH &x, const void *r)
+pack_result asyncemsmdb_ndr_push(unsigned int opnum, NDR_PUSH &x, const rpc_response *r)
 {
 	switch (opnum) {
 	case ecDoAsyncWaitEx:
@@ -61,6 +70,7 @@ static pack_result emsmdb_ndr_pull(NDR_PULL &x, ECRREGISTERPUSHNOTIFICATION_IN *
 	TRY(x.g_ctx_handle(&r->cxh));
 	TRY(x.g_uint32(&r->rpc));
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	r->pctx = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pctx == nullptr)
 		return pack_result::alloc;
@@ -202,6 +212,7 @@ static pack_result emsmdb_ndr_pull(NDR_PULL &x, ECDORPCEXT2_IN *r)
 	if (r->cb_out > 0x40000)
 		return pack_result::range;
 	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	r->pauxin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pauxin == nullptr)
 		return pack_result::alloc;
@@ -248,43 +259,52 @@ static pack_result emsmdb_ndr_push(NDR_PUSH &x, const ECDOASYNCCONNECTEX_OUT &r)
 	return x.p_err32(r.result);
 }
 
-pack_result emsmdb_ndr_pull(unsigned int opnum, NDR_PULL &x, void **ppin)
+pack_result emsmdb_ndr_pull(unsigned int opnum, NDR_PULL &x,
+    std::unique_ptr<rpc_request> &in) try
 {
 	switch (opnum) {
-	case ecDoDisconnect:
-		*ppin = ndr_stack_anew<ECDODISCONNECT_IN>(NDR_STACK_IN);
-		if (*ppin == nullptr)
-			return pack_result::alloc;
-		return emsmdb_ndr_pull(x, static_cast<ECDODISCONNECT_IN *>(*ppin));
-	case ecRRegisterPushNotification:
-		*ppin = ndr_stack_anew<ECRREGISTERPUSHNOTIFICATION_IN>(NDR_STACK_IN);
-		if (*ppin == nullptr)
-			return pack_result::alloc;
-		return emsmdb_ndr_pull(x, static_cast<ECRREGISTERPUSHNOTIFICATION_IN *>(*ppin));
+	case ecDoDisconnect: {
+		auto r0 = std::make_unique<ECDODISCONNECT_IN>();
+		auto v = emsmdb_ndr_pull(x, static_cast<ECDODISCONNECT_IN *>(r0.get()));
+		in = std::move(r0);
+		return v;
+	}
+	case ecRRegisterPushNotification: {
+		auto r0 = std::make_unique<ECRREGISTERPUSHNOTIFICATION_IN>();
+		auto v = emsmdb_ndr_pull(x, static_cast<ECRREGISTERPUSHNOTIFICATION_IN *>(r0.get()));
+		in = std::move(r0);
+		return v;
+	}
 	case ecDummyRpc:
-		*ppin = NULL;
+		in.reset();
 		return pack_result::ok;
-	case ecDoConnectEx:
-		*ppin = ndr_stack_anew<ECDOCONNECTEX_IN>(NDR_STACK_IN);
-		if (*ppin == nullptr)
-			return pack_result::alloc;
-		return emsmdb_ndr_pull(x, static_cast<ECDOCONNECTEX_IN *>(*ppin));
-	case ecDoRpcExt2:
-		*ppin = ndr_stack_anew<ECDORPCEXT2_IN>(NDR_STACK_IN);
-		if (*ppin == nullptr)
-			return pack_result::alloc;
-		return emsmdb_ndr_pull(x, static_cast<ECDORPCEXT2_IN *>(*ppin));
-	case ecDoAsyncConnectEx:
-		*ppin = ndr_stack_anew<ECDOASYNCCONNECTEX_IN>(NDR_STACK_IN);
-		if (*ppin == nullptr)
-			return pack_result::alloc;
-		return emsmdb_ndr_pull(x, static_cast<ECDOASYNCCONNECTEX_IN *>(*ppin));
+	case ecDoConnectEx: {
+		auto r0 = std::make_unique<ECDOCONNECTEX_IN>();
+		auto v = emsmdb_ndr_pull(x, static_cast<ECDOCONNECTEX_IN *>(r0.get()));
+		in = std::move(r0);
+		return v;
+	}
+	case ecDoRpcExt2: {
+		auto r0 = std::make_unique<ECDORPCEXT2_IN>();
+		auto v = emsmdb_ndr_pull(x, static_cast<ECDORPCEXT2_IN *>(r0.get()));
+		in = std::move(r0);
+		return v;
+	}
+	case ecDoAsyncConnectEx: {
+		auto r0 = std::make_unique<ECDOASYNCCONNECTEX_IN>();
+		auto v = emsmdb_ndr_pull(x, static_cast<ECDOASYNCCONNECTEX_IN *>(r0.get()));
+		in = std::move(r0);
+		return v;
+	}
 	default:
 		return pack_result::bad_switch;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return pack_result::alloc;
 }
 
-pack_result emsmdb_ndr_push(unsigned int opnum, NDR_PUSH &x, const void *r)
+pack_result emsmdb_ndr_push(unsigned int opnum, NDR_PUSH &x, const rpc_response *r)
 {
 	switch (opnum) {
 	case ecDoDisconnect:

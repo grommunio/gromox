@@ -358,9 +358,21 @@ static ec_error_t html_write_string(RTF_WRITER *pwriter, const char *string)
 	char tmp_buff[24];
 	const char *ptr = string, *pend = string + strlen(string);
 
+	bool seen_non_ws = false;
 	while ('\0' != *ptr) {
+		if (*ptr == '\r') {
+			++ptr;
+			continue;
+		}
+		if (*ptr == '\n') {
+			if (seen_non_ws)
+				QRF(pwriter->ext_push.p_bytes("\\line ", 6));
+			++ptr;
+			continue;
+		}
 		static_assert(UCHAR_MAX <= std::size(utf8_byte_num));
-		auto len = utf8_byte_num[static_cast<unsigned char>(*ptr)];
+		char cur = *ptr;
+		auto len = utf8_byte_num[static_cast<unsigned char>(cur)];
 		if (len == 0) {
 			++ptr;
 			continue;
@@ -377,6 +389,8 @@ static ec_error_t html_write_string(RTF_WRITER *pwriter, const char *string)
 			else
 				QRF(pwriter->ext_push.p_uint8(*ptr));
 			ptr += len;
+			if (!HX_isspace(cur))
+				seen_non_ws = true;
 			continue;
 		}
 		auto [w1, w2] = html_utf8_to_utf16(pwriter->cd, ptr, len);
@@ -391,6 +405,7 @@ static ec_error_t html_write_string(RTF_WRITER *pwriter, const char *string)
 
 		tmp_len = strlen(tmp_buff);
 		QRF(pwriter->ext_push.p_bytes(tmp_buff, tmp_len));
+		seen_non_ws = true;
 	}
 	return ecSuccess;
 }

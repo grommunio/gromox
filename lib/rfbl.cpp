@@ -19,14 +19,11 @@
 #include <cwctype>
 #include <fcntl.h>
 #include <iconv.h>
-#include <istream>
 #include <memory>
 #include <mutex>
 #include <netdb.h>
 #include <pwd.h>
 #include <spawn.h>
-#include <sstream>
-#include <streambuf>
 #include <string>
 #include <string_view>
 #include <unistd.h>
@@ -994,7 +991,7 @@ bool get_digest(const Json::Value &jval, const char *key, char *out, size_t outm
 bool get_digest(const char *json, const char *key, char *out, size_t outmax) try
 {
 	Json::Value jval;
-	if (!gromox::json_from_str(json, jval))
+	if (!gromox::str_to_json(json, jval))
 		return false;
 	return get_digest(jval, key, out, outmax);
 } catch (const std::bad_alloc &) {
@@ -1006,7 +1003,7 @@ template<typename T> static bool
 set_digest2(char *json, size_t iomax, const char *key, T &&val) try
 {
 	Json::Value jval;
-	if (!gromox::json_from_str(json, jval))
+	if (!gromox::str_to_json(json, jval))
                 return false;
 	jval[key] = val;
 	Json::StreamWriterBuilder swb;
@@ -1459,29 +1456,9 @@ errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile,
 	return fd.close_wr();
 }
 
-namespace {
-
-struct iomembuf : public std::streambuf {
-	iomembuf(const char *p, size_t z) {
-		auto q = const_cast<char *>(p);
-		setg(q, q, q + z);
-	}
-};
-
-struct imemstream : public virtual iomembuf, public std::istream {
-	imemstream(const char *p, size_t z) :
-		iomembuf(p, z),
-		std::istream(static_cast<std::streambuf *>(this))
-	{}
-};
-
-}
-
-bool json_from_str(std::string_view sv, Json::Value &jv)
+bool str_to_json(std::string_view sv, Json::Value &jv)
 {
-	imemstream strm(sv.data(), sv.size());
-	return Json::parseFromStream(Json::CharReaderBuilder(),
-	       strm, &jv, nullptr);
+	return Json::Reader().parse(sv.data(), sv.data() + sv.size(), jv);
 }
 
 std::string json_to_str(const Json::Value &jv)
@@ -1587,8 +1564,10 @@ size_t utf8_printable_prefix(const void *vinput, size_t max)
 std::string iconvtext(const char *src, size_t src_size,
     const char *from, const char *to)
 {
-	if (strcasecmp(from, to) == 0)
+	if (strcasecmp(from, to) == 0) {
+		errno = 0;
 		return {reinterpret_cast<const char *>(src), src_size};
+	}
 	auto cs = to + "//IGNORE"s;
 	auto cd = iconv_open(cs.c_str(), from);
 	if (cd == reinterpret_cast<iconv_t>(-1)) {

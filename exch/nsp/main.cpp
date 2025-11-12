@@ -1,10 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+	// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <memory>
 #include <string>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/ab_tree.hpp>
 #include <gromox/config_file.hpp>
@@ -20,7 +22,7 @@
 using namespace gromox;
 DECLARE_PROC_API(nsp, );
 
-static int exchange_nsp_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, ec_error_t *);
+static int exchange_nsp_dispatch(unsigned int op, const GUID *obj, uint64_t handle, const rpc_request *, std::unique_ptr<rpc_response> &, ec_error_t *);
 static void exchange_nsp_unbind(uint64_t handle);
 
 static DCERPC_ENDPOINT *ep_6001, *ep_6004;
@@ -150,77 +152,65 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 }
 
 static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
-    uint64_t handle, void *pin, void **ppout, ec_error_t *ecode)
+    uint64_t handle, const rpc_request *pin, std::unique_ptr<rpc_response> &ppout,
+     ec_error_t *ecode) try
 {
 	switch (opnum) {
 	case nspiBind: {
 		auto in  = static_cast<const NSPIBIND_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIBIND_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIBIND_OUT>();
 		out->pserver_guid = in->pserver_guid;
 		out->result = nsp_interface_bind(handle, in->flags, &in->stat,
 		              in->pserver_guid, &out->handle);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiUnbind: {
 		auto in  = static_cast<const NSPIUNBIND_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIUNBIND_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIUNBIND_OUT>();
 		out->handle = in->handle;
 		out->result = nsp_interface_unbind(&out->handle, in->reserved);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiUpdateStat: {
 		auto in  = static_cast<const NSPIUPDATESTAT_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIUPDATESTAT_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIUPDATESTAT_OUT>();
 		out->stat = in->stat;
 		out->pdelta = in->pdelta;
 		out->result = nsp_interface_update_stat(in->handle,
 		              in->reserved, &out->stat, out->pdelta);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiQueryRows: {
 		auto in  = static_cast<const NSPIQUERYROWS_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIQUERYROWS_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIQUERYROWS_OUT>();
 		out->stat = in->stat;
 		out->result = nsp_interface_query_rows(in->handle, in->flags,
 		              &out->stat, in->table_count, in->ptable, in->count,
 		              in->pproptags, &out->prows);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiSeekEntries: {
 		auto in  = static_cast<const NSPISEEKENTRIES_IN *>(pin);
-		auto out = ndr_stack_anew<NSPISEEKENTRIES_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPISEEKENTRIES_OUT>();
 		out->stat = in->stat;
 		out->result = nsp_interface_seek_entries(in->handle,
 		              in->reserved, &out->stat, &in->target, in->ptable,
 		              in->pproptags, &out->prows);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiGetMatches: {
 		auto in  = static_cast<const NSPIGETMATCHES_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIGETMATCHES_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIGETMATCHES_OUT>();
 		out->stat = in->stat;
 		out->result = nsp_interface_get_matches(in->handle,
 		              in->reserved1, &out->stat, in->ptable,
@@ -228,155 +218,135 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		              in->requested, &out->poutmids, in->pproptags,
 		              &out->prows);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiResortRestriction: {
 		auto in  = static_cast<const NSPIRESORTRESTRICTION_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIRESORTRESTRICTION_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIRESORTRESTRICTION_OUT>();
 		out->stat = in->stat;
 		out->poutmids = in->poutmids;
 		out->result = nsp_interface_resort_restriction(in->handle,
 		              in->reserved, &out->stat, &in->inmids,
 		              &out->poutmids);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiDNToMId: {
 		auto in  = static_cast<const NSPIDNTOMID_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIDNTOMID_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIDNTOMID_OUT>();
 		out->result = nsp_interface_dntomid(in->handle, in->reserved,
 		              &in->names, &out->poutmids);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiGetPropList: {
 		auto in  = static_cast<const NSPIGETPROPLIST_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIGETPROPLIST_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIGETPROPLIST_OUT>();
 		out->result = nsp_interface_get_proplist(in->handle, in->flags,
 		              in->mid, static_cast<cpid_t>(in->codepage),
 		              &out->pproptags);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiGetProps: {
 		auto in  = static_cast<const NSPIGETPROPS_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIGETPROPS_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIGETPROPS_OUT>();
 		out->result = nsp_interface_get_props(in->handle, in->flags,
 		              &in->stat, in->pproptags, &out->prows);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiCompareMIds: {
 		auto in  = static_cast<const NSPICOMPAREMIDS_IN *>(pin);
-		auto out = ndr_stack_anew<NSPICOMPAREMIDS_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPICOMPAREMIDS_OUT>();
 		out->result = nsp_interface_compare_mids(in->handle,
 		              in->reserved, &in->stat, in->mid1, in->mid2,
 		              &out->cmp);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiModProps: {
 		auto in  = static_cast<const NSPIMODPROPS_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIMODPROPS_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIMODPROPS_OUT>();
 		out->result = nsp_interface_mod_props(in->handle, in->reserved,
 		              &in->stat, in->pproptags, &in->row);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiGetSpecialTable: {
 		auto in  = static_cast<const NSPIGETSPECIALTABLE_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIGETSPECIALTABLE_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIGETSPECIALTABLE_OUT>();
 		out->version = in->version;
 		out->result = nsp_interface_get_specialtable(in->handle,
 		              in->flags, &in->stat, &out->version, &out->prows);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiGetTemplateInfo: {
 		auto in  = static_cast<const NSPIGETTEMPLATEINFO_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIGETTEMPLATEINFO_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIGETTEMPLATEINFO_OUT>();
 		out->result = nsp_interface_get_templateinfo(in->handle,
 		              in->flags, in->type, in->pdn,
 		              static_cast<cpid_t>(in->codepage),
 		              in->locale_id, &out->pdata);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiModLinkAtt: {
 		auto in  = static_cast<const NSPIMODLINKATT_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIMODLINKATT_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIMODLINKATT_OUT>();
 		out->result = nsp_interface_mod_linkatt(in->handle, in->flags,
 		              in->proptag, in->mid, &in->entry_ids);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiQueryColumns: {
 		auto in  = static_cast<const NSPIQUERYCOLUMNS_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIQUERYCOLUMNS_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIQUERYCOLUMNS_OUT>();
 		out->result = nsp_interface_query_columns(in->handle,
 		              in->reserved, in->flags, &out->pcolumns);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiResolveNames: {
 		auto in  = static_cast<const NSPIRESOLVENAMES_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIRESOLVENAMES_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIRESOLVENAMES_OUT>();
 		auto tags = in->pproptags;
 		out->result = nsp_interface_resolve_names(in->handle,
 		              in->reserved, &in->stat, tags, &in->strs,
 		              &out->pmids, &out->prows);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	case nspiResolveNamesW: {
 		auto in  = static_cast<const NSPIRESOLVENAMESW_IN *>(pin);
-		auto out = ndr_stack_anew<NSPIRESOLVENAMESW_OUT>(NDR_STACK_OUT);
-		if (out == nullptr)
-			return DISPATCH_FAIL;
-		*ppout = out;
+		auto out = std::make_unique<NSPIRESOLVENAMESW_OUT>();
 		auto tags = in->pproptags;
 		out->result = nsp_interface_resolve_namesw(in->handle,
 		              in->reserved, &in->stat, tags, &in->strs,
 		              &out->pmids, &out->prows);
 		*ecode = out->result;
+		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
 	}
 	default:
 		return DISPATCH_FAIL;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return DISPATCH_FAIL;
 }
 
 static void exchange_nsp_unbind(uint64_t handle)

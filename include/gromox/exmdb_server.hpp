@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <gromox/defs.h>
+#include <gromox/idset.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/util.hpp>
 

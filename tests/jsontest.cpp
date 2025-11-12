@@ -76,7 +76,7 @@ static int t_digest()
 static int t_extparse(const char *s)
 {
 	Json::Value json;
-	if (!json_from_str(s, json))
+	if (!str_to_json(s, json))
 		return EXIT_FAILURE;
 	MJSON m;
 	if (!m.load_from_json(json)) {

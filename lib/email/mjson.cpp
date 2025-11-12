@@ -398,7 +398,7 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 			if (eml_content == nullptr)
 				goto RFC822_FAILURE;
 			Json::Value digest;
-			if (!json_from_str(*eml_content, digest))
+			if (!str_to_json(*eml_content, digest))
 				goto RFC822_FAILURE;
 			MJSON temp_mjson;
 			if (!temp_mjson.load_from_json(digest))
@@ -589,7 +589,7 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 	
 	MJSON temp_mjson;
 	MAIL imail;
-	if (!imail.load_from_str(eml.c_str(), eml.size())) {
+	if (!imail.refonly_parse(eml.c_str(), eml.size())) {
 		pbuild->build_result = FALSE;
 		return;
 	}
@@ -677,7 +677,7 @@ BOOL MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
 			continue;
 		pjson->clear();
 		Json::Value digest;
-		if (!json_from_str(*eml_content, digest) ||
+		if (!str_to_json(*eml_content, digest) ||
 		    !pjson->load_from_json(digest))
 			return false;
 		pjson->path = temp_path;

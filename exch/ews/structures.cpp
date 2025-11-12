@@ -3348,7 +3348,8 @@ tItemAttachment::tItemAttachment(const sAttachmentId &aid, sShape &&shape) :
     tAttachment(aid, shape)
 {
 	Item.emplace(std::in_place_type_t<tMessage>(), sShape{});
-	std::get<tMessage>(*Item).MimeContent.emplace(std::move(*shape.mimeContent));
+	if (shape.mimeContent.has_value())
+		std::get<tMessage>(*Item).MimeContent.emplace(std::move(*shape.mimeContent));
 }
 
 tFileAttachment::tFileAttachment(const sAttachmentId& aid, const sShape& shape) : tAttachment(aid, shape)
@@ -4233,27 +4234,15 @@ void tSetItemField::put(sShape& shape) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::atomic<uint32_t> tSubscriptionId::globcnt = 0;
+std::atomic<detail::SubscriptionKey> tSubscriptionId::globcnt = 0;
 
 /**
  * @brief      Constructor for single subscription ID
  *
  * @param      t   Subscription timeout (minutes)
  */
-tSubscriptionId::tSubscriptionId(uint32_t t) : ID(++globcnt), timeout(t)
+tSubscriptionId::tSubscriptionId(uint32_t t) : tsub_rawkey(++globcnt), timeout(t)
 {}
-
-/**
- * @brief      Constructor for single subscription ID
- *
- * @param      ID  Subscription key
- * @param      t   Subscription timeout (minutes)
- */
-tSubscriptionId::tSubscriptionId(uint32_t id, uint32_t t) : ID(++globcnt), timeout(t)
-{}
-
-///////////////////////////////////////////////////////////////////////////////
-
 
 tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder &&f) : folder(std::move(f))
 {}
@@ -4266,7 +4255,7 @@ tSyncFolderItemsDelete::tSyncFolderItemsDelete(const sBase64Binary& meid) : Item
 ///////////////////////////////////////////////////////////////////////////////
 
 tTargetFolderIdType::tTargetFolderIdType(sFolderId&& id) :
-    folderId(std::move(id))
+    FolderId(std::move(id))
 {}
 
 ///////////////////////////////////////////////////////////////////////////////

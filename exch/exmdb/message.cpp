@@ -1289,9 +1289,7 @@ BOOL exmdb_server::set_message_timer(const char *dir,
 	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
 		" timer_id=%u WHERE message_id=%llu",
 		XUI{timer_id}, LLU{rop_util_get_gc_value(message_id)});
-	if (pdb->exec(sql_string) != SQLITE_OK)
-		return FALSE;
-	return TRUE;
+	return pdb->exec(sql_string) == SQLITE_OK ? TRUE : false;
 }
 
 /* private only */
@@ -2530,7 +2528,7 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return ecError;
 		imail.clear();
-		if (!imail.load_from_str(pbuff.get(), node_stat.st_size))
+		if (!imail.refonly_parse(pbuff.get(), node_stat.st_size))
 			return ecError;
 		auto pmime = imail.get_head();
 		if (pmime == nullptr)
@@ -3631,7 +3629,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	std::optional<Json::Value> digest;
 	if (pdigest != nullptr) {
 		digest.emplace();
-		if (!json_from_str(pdigest, *digest))
+		if (!str_to_json(pdigest, *digest))
 			digest.reset();
 	}
 	if (digest.has_value() &&
@@ -3780,7 +3778,7 @@ BOOL exmdb_server::write_message(const char *dir, cpid_t cpid,
 	if (digest_stream.size() > 0) {
 		Json::Value digest;
 		std::string mid_string;
-		if (json_from_str(digest_stream, digest) &&
+		if (str_to_json(digest_stream, digest) &&
 		    digest["file"].asString().size() > 0) {
 			std::string ext_file = exmdb_server::get_dir() + "/ext/"s + digest["file"].asString();
 			auto ret = gx_mkbasedir(ext_file.c_str(), FMODE_PRIVATE);
@@ -3878,7 +3876,7 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(ext_path.c_str(), &slurp_size));
 		if (slurp_data != nullptr) {
 			digest.emplace();
-			if (!json_from_str({slurp_data.get(), slurp_size}, *digest))
+			if (!str_to_json({slurp_data.get(), slurp_size}, *digest))
 				digest.reset();
 		}
 	}

@@ -355,56 +355,42 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 				sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 	if (pstore->b_private) {
-		pproptags->pproptag[pproptags->count++] = PidTagXSpoolerQueueEntryId;
-		pproptags->pproptag[pproptags->count++] = PR_COMMON_VIEWS_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_EC_ALLOW_EXTERNAL;
-		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_AUDIENCE;
-		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_REPLY;
-		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_SUBJECT;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_FROM;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_MSG;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_SUBJECT;
-		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_UNTIL;
-		pproptags->pproptag[pproptags->count++] = PR_EMAIL_ADDRESS;
-		pproptags->pproptag[pproptags->count++] = PR_EMS_AB_DISPLAY_NAME_PRINTABLE;
-		pproptags->pproptag[pproptags->count++] = PR_FINDER_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_DAF_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_INBOX_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_OUTBOX_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_SENTMAIL_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_WASTEBASKET_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_NAME;
-		pproptags->pproptag[pproptags->count++] = PR_MAX_SUBMIT_MESSAGE_SIZE;
-		pproptags->pproptag[pproptags->count++] = PR_SCHEDULE_FOLDER_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_VIEWS_ENTRYID;
+		static constexpr proptag_t ntags[] = {
+			PidTagXSpoolerQueueEntryId, PR_COMMON_VIEWS_ENTRYID,
+			PR_EC_ALLOW_EXTERNAL, PR_EC_EXTERNAL_AUDIENCE,
+			PR_EC_EXTERNAL_REPLY, PR_EC_EXTERNAL_SUBJECT,
+			PR_EC_OUTOFOFFICE, PR_EC_OUTOFOFFICE_FROM,
+			PR_EC_OUTOFOFFICE_MSG, PR_EC_OUTOFOFFICE_SUBJECT,
+			PR_EC_OUTOFOFFICE_UNTIL, PR_EMAIL_ADDRESS,
+			PR_EMS_AB_DISPLAY_NAME_PRINTABLE, PR_FINDER_ENTRYID,
+			PR_IPM_DAF_ENTRYID, PR_IPM_INBOX_ENTRYID,
+			PR_IPM_OUTBOX_ENTRYID, PR_IPM_SENTMAIL_ENTRYID,
+			PR_IPM_WASTEBASKET_ENTRYID, PR_MAILBOX_OWNER_ENTRYID,
+			PR_MAILBOX_OWNER_NAME, PR_MAX_SUBMIT_MESSAGE_SIZE,
+			PR_SCHEDULE_FOLDER_ENTRYID, PR_VIEWS_ENTRYID,
+		};
+		for (auto t : ntags)
+			pproptags->emplace_back(t);
 	} else {
-		pproptags->pproptag[pproptags->count++] = PR_EFORMS_REGISTRY_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_IPM_PUBLIC_FOLDERS_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_NON_IPM_SUBTREE_ENTRYID;
+		static constexpr proptag_t ntags[] = {
+			PR_EFORMS_REGISTRY_ENTRYID, PR_IPM_PUBLIC_FOLDERS_ENTRYID,
+			PR_NON_IPM_SUBTREE_ENTRYID,
+		};
+		for (auto t : ntags)
+			pproptags->emplace_back(t);
 	}
-	pproptags->pproptag[pproptags->count++] = PR_CONTENT_COUNT;
-	pproptags->pproptag[pproptags->count++] = PR_DEFAULT_STORE;
-	pproptags->pproptag[pproptags->count++] = PR_DISPLAY_NAME;
-	pproptags->pproptag[pproptags->count++] = PR_EC_SERVER_VERSION;
-	pproptags->pproptag[pproptags->count++] = PR_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_EXTENDED_RULE_SIZE_LIMIT;
-	pproptags->pproptag[pproptags->count++] = PR_INSTANCE_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_IPM_FAVORITES_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_IPM_SUBTREE_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
-	pproptags->pproptag[pproptags->count++] = PR_MDB_PROVIDER;
-	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
-	pproptags->pproptag[pproptags->count++] = PR_PROVIDER_DISPLAY;
-	pproptags->pproptag[pproptags->count++] = PR_RECORD_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_RESOURCE_FLAGS;
-	pproptags->pproptag[pproptags->count++] = PR_RESOURCE_TYPE;
-	pproptags->pproptag[pproptags->count++] = PR_ROOT_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_SUPPORT_MASK;
-	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
+	static constexpr proptag_t ntags[] = {
+		PR_CONTENT_COUNT, PR_DEFAULT_STORE, PR_DISPLAY_NAME,
+		PR_EC_SERVER_VERSION, PR_ENTRYID, PR_EXTENDED_RULE_SIZE_LIMIT,
+		PR_INSTANCE_KEY, PR_IPM_FAVORITES_ENTRYID,
+		PR_IPM_SUBTREE_ENTRYID, PR_MAPPING_SIGNATURE, PR_MDB_PROVIDER,
+		PR_OBJECT_TYPE, PR_PROVIDER_DISPLAY, PR_RECORD_KEY,
+		PR_RESOURCE_FLAGS, PR_RESOURCE_TYPE, PR_ROOT_ENTRYID,
+		PR_STORE_ENTRYID, PR_STORE_RECORD_KEY, PR_STORE_SUPPORT_MASK,
+		PR_USER_ENTRYID,
+	};
+	for (auto t : ntags)
+		pproptags->emplace_back(t);
 	return TRUE;
 }
 

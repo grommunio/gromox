@@ -58,7 +58,7 @@ bool proptag_array_append(PROPTAG_ARRAY *pproptags, proptag_t proptag)
 		}
 		pproptags->pproptag = pproptag;
 	}
-	pproptags->pproptag[pproptags->count++] = proptag;
+	pproptags->emplace_back(proptag);
 	return true;
 }
 

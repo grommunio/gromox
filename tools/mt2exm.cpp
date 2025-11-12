@@ -443,7 +443,7 @@ static int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt,
 }
 
 static int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct,
-    const std::string &im_repr, Json::Value &&digest, unsigned int mode)
+    const std::string &im_repr, Json::Value &digest, unsigned int mode)
 {
 	auto ts = rop_util_current_nttime();
 	auto ret = ct->proplist.set(PR_MESSAGE_DELIVERY_TIME, &ts);
@@ -473,6 +473,7 @@ static int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct,
 		return -EIO;
 	}
 	auto djson = json_to_str(digest);
+	digest.removeMember("file");
 	if (!exmdb_client->deliver_message(g_storedir, ENVELOPE_FROM_NULL,
 	    target, CP_ACP, mode, ct, djson.c_str(), &folder_id, &msg_id, &r32)) {
 		fprintf(stderr, "exm: deliver_message RPC failed: code %u\n",
@@ -550,7 +551,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 	Json::Value digest;
 	if (im_repr.size() > 0) {
 		MAIL imail;
-		if (!imail.load_from_str(im_repr.data(), im_repr.size())) {
+		if (!imail.refonly_parse(im_repr.data(), im_repr.size())) {
 			fprintf(stderr, "Failed to parse RFC5322 block for message\n");
 			return -EIO;
 		}
@@ -587,7 +588,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 		if (i > 0 && i % 1024 == 0)
 			fprintf(stderr, "mt2exm repeat %u/%u\n", i, g_repeat_iter);
 		auto ret = exm_deliver_msg(g_username, &ctnt, im_repr,
-		           std::move(digest), mode);
+		           digest, mode);
 		if (ret != EXIT_SUCCESS)
 			return ret;
 	}
@@ -732,7 +733,7 @@ int main(int argc, char **argv) try
 			break;
 		else if (ret < 0 || static_cast<size_t>(ret) != sizeof(xsize))
 			throw YError("PG-1005: %s", strerror_eof(errno));
-		xsize = le64_to_cpu(xsize);
+		xsize = std::min(le64_to_cpu(xsize), UINT64_MAX);
 		auto buf = std::make_unique<char[]>(xsize);
 		errno = 0;
 		ret = HXio_fullread(STDIN_FILENO, buf.get(), xsize);

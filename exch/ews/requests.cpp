@@ -180,6 +180,75 @@ static bool ab_tree_resolvename(const ab_tree::ab_base &base, const char *needle
 	return false;
 }
 
+static std::string extract_domain(const char *address)
+{
+	if (address == nullptr)
+		return {};
+	const char *at = strchr(address, '@');
+	if (at == nullptr || at[1] == '\0')
+		return {};
+	std::string domain(at + 1);
+	return tolower_inplace(domain);
+}
+
+static void resolve_domain_ids(const std::string& domain, unsigned int& domain_id, unsigned int& org_id)
+{
+	if (!mysql_adaptor_get_domain_ids(domain.c_str(), &domain_id, &org_id))
+		throw DispatchError(E3027);
+}
+
+static bool is_visible_room(const sql_user& user)
+{
+	return user.dtypx == DT_ROOM && !(user.cloak_bits & AB_HIDE_FROM_GAL) && !user.username.empty();
+}
+
+static tRoomType make_room(const sql_user& user)
+{
+	tRoomType room;
+	auto &id = room.Id.emplace();
+	auto it = user.propvals.find(PR_DISPLAY_NAME);
+	if (it != user.propvals.end() && !it->second.empty())
+		id.Name = it->second;
+	else
+		id.Name = user.username;
+	id.EmailAddress = user.username;
+	id.RoutingType = "SMTP";
+	id.MailboxType = Enum::MailboxTypeType(Enum::Mailbox);
+	return room;
+}
+
+static bool collect_rooms(unsigned int domain_id, std::vector<tRoomType>* rooms=nullptr)
+{
+	std::vector<sql_user> users;
+	if (!mysql_adaptor_get_domain_users(domain_id, users))
+		throw DispatchError(E3027);
+	bool found = false;
+	if (rooms) {
+		rooms->clear();
+		rooms->reserve(users.size());
+	}
+	for (const auto &user : users) {
+		if (!is_visible_room(user))
+			continue;
+		found = true;
+		if (rooms)
+			rooms->emplace_back(make_room(user));
+		else
+			break;
+	}
+	return found;
+}
+
+static tRoomListEntry make_room_list_entry(const sql_domain& domain)
+{
+	tRoomListEntry entry;
+	entry.EmailAddress = std::string("rooms@") + domain.name;
+	entry.RoutingType = "SMTP";
+	entry.MailboxType = Enum::MailboxTypeType(Enum::PublicDL);
+	entry.Name = domain.title.empty() ? domain.name : domain.title;
+	return entry;
+}
+
 } //anonymous namespace
 ///////////////////////////////////////////////////////////////////////
 //Request implementations
@@ -365,7 +434,7 @@ void process(mCreateFolderRequest&& request, XMLElement* response, const EWSCont
 
 	mCreateFolderResponse data;
 
-	sFolderSpec parent = ctx.resolveFolder(request.ParentFolderId.folderId);
+	sFolderSpec parent = ctx.resolveFolder(request.ParentFolderId.FolderId);
 	std::string dir = ctx.getDir(parent);
 	bool hasAccess = ctx.permissions(dir, parent.folderId);
 
@@ -397,7 +466,7 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 
 	std::optional<sFolderSpec> targetFolder;
 	if (request.SavedItemFolderId)
-		targetFolder = ctx.resolveFolder(request.SavedItemFolderId->folderId);
+		targetFolder = ctx.resolveFolder(request.SavedItemFolderId->FolderId);
 	else
 		targetFolder = ctx.resolveFolder(tDistinguishedFolderId("outbox"));
 	std::string dir = ctx.getDir(*targetFolder);
@@ -1101,6 +1170,79 @@ void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSConte
 }
 
 /**
+ * @brief      Process GetRoomListsRequest
+ */
+void process(mGetRoomListsRequest&&, XMLElement* response, const EWSContext& ctx)
+{
+	response->SetName("m:GetRoomListsResponse");
+
+	auto user_domain = extract_domain(ctx.auth_info().username);
+	if (user_domain.empty())
+		throw DispatchError(E3090(ctx.auth_info().username));
+
+	unsigned int user_domain_id = 0, org_id = 0;
+	resolve_domain_ids(user_domain, user_domain_id, org_id);
+	(void)user_domain_id;
+
+	std::vector<unsigned int> domain_ids;
+	if (!mysql_adaptor_get_org_domains(org_id, domain_ids))
+		throw DispatchError(E3027);
+
+	mGetRoomListsResponse data;
+	std::vector<tRoomListEntry> lists;
+	lists.reserve(domain_ids.size());
+
+	for (unsigned int domain_id : domain_ids) {
+		sql_domain info;
+		if (!mysql_adaptor_get_domain_info(domain_id, info))
+			throw DispatchError(E3027);
+		if (!collect_rooms(domain_id))
+			continue;
+		lists.emplace_back(make_room_list_entry(info));
+	}
+
+	if (!lists.empty())
+		data.RoomLists = std::move(lists);
+	data.success();
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process GetRoomsRequest
+ */
+void process(mGetRoomsRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	response->SetName("m:GetRoomsResponse");
+
+	ctx.normalize(request.RoomList);
+	if (!request.RoomList.EmailAddress)
+		throw DispatchError(E3090("RoomList"));
+
+	auto user_domain = extract_domain(ctx.auth_info().username);
+	if (user_domain.empty())
+		throw DispatchError(E3090(ctx.auth_info().username));
+	unsigned int user_domain_id = 0, user_org_id = 0;
+	resolve_domain_ids(user_domain, user_domain_id, user_org_id);
+
+	auto target_domain = extract_domain(request.RoomList.EmailAddress->c_str());
+	if (target_domain.empty())
+		throw DispatchError(E3090(*request.RoomList.EmailAddress));
+	unsigned int target_domain_id = 0, target_org_id = 0;
+	resolve_domain_ids(target_domain, target_domain_id, target_org_id);
+
+	if (user_org_id != target_org_id)
+		throw EWSError::AccessDenied(E3018);
+
+	std::vector<tRoomType> rooms;
+	collect_rooms(target_domain_id, &rooms);
+
+	mGetRoomsResponse data;
+	data.Rooms = std::move(rooms);
+	data.success();
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetServiceConfigurationRequest
  *
  * Provides the functionality of GetServiceConfiguration
@@ -1232,14 +1374,90 @@ void process(mGetStreamingEventsRequest&& request, XMLElement* response, EWSCont
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mGetUserConfigurationRequest&&, XMLElement* response, const EWSContext&)
+void process(mGetUserConfigurationRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
 	response->SetName("m:GetUserConfigurationResponse");
 
 	mGetUserConfigurationResponse data;
-	mGetUserConfigurationResponseMessage& msg = data.ResponseMessages.emplace_back();
+	try {
+		auto &exmdb = ctx.plugin().exmdb;
+		const auto &reqName = request.UserConfigurationName;
+		const auto &folderId = reqName.FolderId;
+		sFolderSpec folder;
 
-	msg.error("ErrorItemNotFound", "Object not found in the information store");
+		if (auto raw = std::get_if<tFolderId>(&folderId))
+			folder = ctx.resolveFolder(*raw);
+		else if (auto dist = std::get_if<tDistinguishedFolderId>(&folderId))
+			folder = ctx.resolveFolder(*dist);
+		else if (reqName.FolderId.valueless_by_exception())
+			throw EWSError::InvalidFolderId(E3252);
+
+		std::string dir = ctx.getDir(folder);
+		if (!(ctx.permissions(dir, folder.folderId) & frightsVisible))
+			throw EWSError::AccessDenied(E3218);
+
+		std::string configClass = "IPM.Configuration." + reqName.Name;
+		RESTRICTION_PROPERTY resProp{RELOP_EQ, PR_MESSAGE_CLASS,
+			{PR_MESSAGE_CLASS, const_cast<char *>(configClass.c_str())}};
+		RESTRICTION res{RES_PROPERTY, {&resProp}};
+
+		uint32_t tableId = 0, rowCount = 0;
+		const char *username = ctx.effectiveUser(folder);
+		if (!exmdb.load_content_table(dir.c_str(), CP_UTF8, folder.folderId, username,
+		    TABLE_FLAG_ASSOCIATED, &res, nullptr, &tableId, &rowCount))
+			throw EWSError::ItemPropertyRequestFailed(E3245);
+		auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
+		if (rowCount == 0)
+			throw EWSError::ItemNotFound(E3143);
+
+		static constexpr uint32_t midTag = PidTagMid;
+		static constexpr PROPTAG_ARRAY midTags = {1, deconst(&midTag)};
+		TARRAY_SET rows;
+		exmdb.query_table(dir.c_str(), username, CP_UTF8, tableId, &midTags, 0, 1, &rows);
+		if (rows.count == 0 || rows.pparray[0] == nullptr)
+			throw EWSError::ItemNotFound(E3143);
+		auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);
+		if (mid == nullptr)
+			throw EWSError::ItemNotFound(E3143);
+
+		static constexpr uint32_t propTags[] = {
+			PR_ENTRYID, PR_CHANGE_KEY, PR_ROAMING_XMLSTREAM, PR_ROAMING_BINARYSTREAM,
+		};
+		const PROPTAG_ARRAY props = {std::size(propTags), deconst(propTags)};
+		TPROPVAL_ARRAY propvals = ctx.getItemProps(dir, *mid, props);
+
+		mGetUserConfigurationResponseMessage& msg = data.ResponseMessages.emplace_back();
+		msg.UserConfiguration.emplace(tUserConfigurationType{reqName});
+		auto &config = *msg.UserConfiguration;
+		config.UserConfigurationName = reqName;
+
+		auto propType = request.UserConfigurationProperties;
+		bool includeAll = propType == Enum::All;
+
+		if (includeAll || propType == Enum::Id) {
+			if (const auto *entryId = propvals.get<const BINARY>(PR_ENTRYID))
+				config.ItemId.emplace(sBase64Binary(entryId), tBaseItemId::ID_ITEM);
+			else
+				throw EWSError::ItemPropertyRequestFailed(E3024);
+			if (const auto *changeKey = propvals.get<const BINARY>(PR_CHANGE_KEY))
+				config.ItemId->ChangeKey.emplace(sBase64Binary(changeKey));
+		}
+
+		// Dictionary support (PR_ROAMING_DICTIONARY) is not implemented yet
+		if (includeAll || propType == Enum::XmlData) {
+			if (const auto *xmlData = propvals.get<const BINARY>(PR_ROAMING_XMLSTREAM))
+				config.XmlData.emplace(xmlData);
+		}
+		if (includeAll || propType == Enum::BinaryData) {
+			if (const auto *binData = propvals.get<const BINARY>(PR_ROAMING_BINARYSTREAM))
+				config.BinaryData.emplace(binData);
+		}
+
+		msg.success();
+	} catch (const EWSError &err) {
+		data.ResponseMessages.clear();
+		data.ResponseMessages.emplace_back(err);
+	}
 	data.serialize(response);
 }
 
@@ -1354,7 +1572,7 @@ void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& c
 			ctx.code(http_status::not_found);
 	} catch (const std::exception &err) {
 		ctx.code(http_status::not_found);
-		mlog(LV_WARN, "[ews#%d] Failed to load user photo: %s", ctx.ID(), err.what());
+		mlog(LV_WARN, "[ews#%d] Failed to load user photo: %s", ctx.context_id(), err.what());
 	}
 	data.success();
 	data.serialize(response);
@@ -1371,7 +1589,7 @@ void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWS
 {
 	response->SetName(request.copy ? "m:CopyFolderResponse" : "m:MoveFolderResponse");
 
-	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
+	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.FolderId);
 	std::string dir = ctx.getDir(dstFolder);
 	uint32_t accountId = ctx.getAccountId(ctx.auth_info().username, false);
 
@@ -1414,7 +1632,7 @@ void process(const mBaseMoveCopyItem& request, XMLElement* response, const EWSCo
 {
 	response->SetName(request.copy ? "m:CopyItemResponse" : "m:MoveItemResponse");
 
-	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
+	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.FolderId);
 	std::string dir = ctx.getDir(dstFolder);
 
 	bool dstAccess = ctx.permissions(dir, dstFolder.folderId);
@@ -1528,7 +1746,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		syncState.init(*request.SyncState);
 	syncState.convert();
 
-	sFolderSpec folder = ctx.resolveFolder(request.SyncFolderId->folderId);
+	sFolderSpec folder = ctx.resolveFolder(request.SyncFolderId->FolderId);
 	if (!folder.target)
 		folder.target = ctx.auth_info().username;
 	std::string dir = ctx.getDir(folder.normalize());
@@ -1587,7 +1805,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 {
 	response->SetName("m:SyncFolderItemsResponse");
 
-	sFolderSpec folder = ctx.resolveFolder(request.SyncFolderId.folderId);
+	sFolderSpec folder = ctx.resolveFolder(request.SyncFolderId.FolderId);
 
 	sSyncState syncState;
 	if (request.SyncState && !request.SyncState->empty())
@@ -1817,7 +2035,7 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 		return;
 	}
 	sFolderSpec saveFolder = request.SavedItemFolderId ?
-		ctx.resolveFolder(request.SavedItemFolderId->folderId) :
+		ctx.resolveFolder(request.SavedItemFolderId->FolderId) :
 		sFolderSpec(tDistinguishedFolderId(Enum::sentitems));
 	if (request.SavedItemFolderId && !(ctx.permissions(ctx.getDir(saveFolder), saveFolder.folderId) & frightsCreate)) {
 		data.Responses.emplace_back(EWSError::AccessDenied(E3141));

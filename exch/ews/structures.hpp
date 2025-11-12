@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2025 grommunio GmbH
 // This file is part of Gromox.
 
 #pragma once
@@ -13,7 +13,7 @@
 #include <variant>
 #include <vector>
 #include <gromox/freebusy.hpp>
-#include <gromox/mapi_types.hpp>
+#include <gromox/idset.hpp>
 #include <gromox/mapidefs.h>
 
 #include "enums.hpp"
@@ -24,6 +24,12 @@ namespace tinyxml2 {
 }
 
 namespace gromox::EWS {
+
+namespace detail {
+
+using SubscriptionKey = uint32_t;
+
+}
 
 class EWSContext;
 using clock = std::chrono::system_clock;
@@ -406,10 +412,10 @@ struct sSyncState {
 	void update(const EID_ARRAY&, const EID_ARRAY&, uint64_t);
 	std::string serialize();
 
-	idset given; ///< Set of known IDs
-	idset seen;  ///< Set of known change numbers
-	idset read;  ///< Set of read change numbers
-	idset seen_fai; ///< Set of seen fai change numbers
+	gromox::idset given; ///< Set of known IDs
+	gromox::idset seen;  ///< Set of known change numbers
+	gromox::idset read;  ///< Set of read change numbers
+	gromox::idset seen_fai; ///< Set of seen fai change numbers
 	uint32_t readOffset = 0; ///< Number of read states already delivered
 
 	private:
@@ -729,6 +735,29 @@ struct tEmailAddressDictionaryEntry : public NS_EWS_Types {
 };
 
 /**
+ * Types.xsd:312
+ */
+struct tRoomListEntry : public tEmailAddressType {
+	static constexpr char NAME[] = "Address";
+
+	using tEmailAddressType::tEmailAddressType;
+};
+
+/**
+ * Types.xsd:320
+ */
+struct tRoomType : public NS_EWS_Types {
+	static constexpr char NAME[] = "Room";
+
+	tRoomType() = default;
+	explicit tRoomType(const tinyxml2::XMLElement*);
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::optional<tEmailAddressType> Id;
+};
+
+/**
  * Types.xsd
  */
 struct tPhoneNumberDictionaryEntry : public NS_EWS_Types {
@@ -747,11 +776,11 @@ struct tPhoneNumberDictionaryEntry : public NS_EWS_Types {
  * Types.xsd:8508 (simplified)
  */
 struct tPersona : public NS_EWS_Types {
-        static constexpr char NAME[] = "Persona";
+	static constexpr char NAME[] = "Persona";
 
-        void serialize(tinyxml2::XMLElement *) const;
+	void serialize(tinyxml2::XMLElement *) const;
 
-        std::optional<std::string> DisplayName, EmailAddress, Title, Nickname,
+	std::optional<std::string> DisplayName, EmailAddress, Title, Nickname,
 		BusinessPhoneNumber, MobilePhoneNumber, HomeAddress, Comment;
 };
 
@@ -1097,7 +1126,7 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
 	void tags(sShape&, bool=true) const;
 	uint32_t tag(const sGetNameId&) const;
 
-	inline const Base& asVariant() const {return static_cast<const Base&>(*this);}
+	inline const Base &asVariant() const { return *this; }
 };
 
 /**
@@ -1120,9 +1149,9 @@ struct tUserId {
  * Types.xsd:6909
  */
 struct tDelegateUser {
-        tUserId UserId;
+	tUserId UserId;
 
-        void serialize(tinyxml2::XMLElement*) const;
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -2491,39 +2520,39 @@ struct tMeetingCancellationMessage : public tMeetingMessage {
  * Types.xsd:3913
  */
 struct tAcceptItem : public tMessage {
-        static constexpr char NAME[] = "AcceptItem";
+	static constexpr char NAME[] = "AcceptItem";
 
-        using tMessage::tMessage;
+	using tMessage::tMessage;
 
-        tAcceptItem(const tinyxml2::XMLElement *);
-        void serialize(tinyxml2::XMLElement *) const;
+	tAcceptItem(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
 
-        std::optional<time_point> ProposedStart, ProposedEnd;
-        std::optional<tItemId> ReferenceItemId;
+	std::optional<time_point> ProposedStart, ProposedEnd;
+	std::optional<tItemId> ReferenceItemId;
 };
 
 struct tTentativelyAcceptItem : public tMessage {
-        static constexpr char NAME[] = "TentativelyAcceptItem";
+	static constexpr char NAME[] = "TentativelyAcceptItem";
 
-        using tMessage::tMessage;
+	using tMessage::tMessage;
 
-        tTentativelyAcceptItem(const tinyxml2::XMLElement *);
-        void serialize(tinyxml2::XMLElement *) const;
+	tTentativelyAcceptItem(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
 
-        std::optional<time_point> ProposedStart, ProposedEnd;
-        std::optional<tItemId> ReferenceItemId;
+	std::optional<time_point> ProposedStart, ProposedEnd;
+	std::optional<tItemId> ReferenceItemId;
 };
 
 struct tDeclineItem : public tMessage {
-        static constexpr char NAME[] = "DeclineItem";
+	static constexpr char NAME[] = "DeclineItem";
 
-        using tMessage::tMessage;
+	using tMessage::tMessage;
 
-        tDeclineItem(const tinyxml2::XMLElement *);
-        void serialize(tinyxml2::XMLElement *) const;
+	tDeclineItem(const tinyxml2::XMLElement *);
+	void serialize(tinyxml2::XMLElement *) const;
 
-        std::optional<time_point> ProposedStart, ProposedEnd;
-        std::optional<tItemId> ReferenceItemId;
+	std::optional<time_point> ProposedStart, ProposedEnd;
+	std::optional<tItemId> ReferenceItemId;
 };
 
 /**
@@ -2625,7 +2654,7 @@ struct tFolderResponseShape {
 	"All" = "all the properties used by the Exchange Business Logic layer", for whatever that means.
 	Here, it means tagsDefault + {our extra list}.
 	*/
-	static constexpr uint32_t tagsAll[] = {PR_PARENT_ENTRYID, PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME, PR_ATTR_HIDDEN, PR_ATTR_READONLY, PR_CONTAINER_FLAGS, PR_RECORD_KEY, PR_STORE_ENTRYID, PR_ACCESS, PR_ACCESS_LEVEL};
+	static constexpr uint32_t tagsAll[] = {PR_CONTAINER_CLASS, PR_PARENT_ENTRYID, PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME, PR_ATTR_HIDDEN, PR_ATTR_READONLY, PR_CONTAINER_FLAGS, PR_RECORD_KEY, PR_STORE_ENTRYID, PR_ACCESS, PR_ACCESS_LEVEL};
 	static constexpr uint32_t tagsAllRootOnly[] = {PR_IPM_SUBTREE_ENTRYID, PR_SENTMAIL_ENTRYID};
 };
 
@@ -2682,6 +2711,8 @@ struct tDistinguishedFolderId {
 	std::optional<tEmailAddressType> Mailbox;
 	std::optional<std::string> ChangeKey; //Attribute
 	Enum::DistinguishedFolderIdNameType Id; //Attribute
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 struct tFolderChange {
@@ -2800,33 +2831,17 @@ struct tSubscriptionId {
 	static constexpr char NAME[] = "SubscriptionId";
 
 	tSubscriptionId() = default;
-	explicit tSubscriptionId(uint32_t);
-	tSubscriptionId(uint32_t, uint32_t);
+	explicit tSubscriptionId(uint32_t timeout);
 	explicit tSubscriptionId(const tinyxml2::XMLElement*);
 
-	uint32_t ID = 0; ///< Counter value
+	detail::SubscriptionKey tsub_rawkey = 0; ///< Counter value. 0 is reserved, 1 is first valid value.
 	uint32_t timeout = 30; ///< subscription timeout (minutes)
 
 	void serialize(tinyxml2::XMLElement*) const;
-
-	inline bool operator==(const tSubscriptionId& other) {return ID == other.ID;}
+	constexpr inline bool operator==(const tSubscriptionId &o) { return tsub_rawkey == o.tsub_rawkey; }
 
 	private:
-	static std::atomic<uint32_t> globcnt;
-
-	static constexpr void encode(uint32_t, char*&);
-	static constexpr uint32_t decode(const uint8_t*&);
-
-
-	static constexpr char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-	static constexpr int8_t i64[128] = {-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		                                -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-		                                -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,62, -1,-1,-1,63,
-		                                52,53,54,55, 56,57,58,59, 60,61,-1,-1, -1,-1,-1,-1,
-		                                -1, 0, 1, 2,  3, 4, 5, 6,  7, 8, 9,10, 11,12,13,14,
-		                                15,16,17,18, 19,20,21,22, 23,24,25,-1, -1,-1,-1,-1,
-		                                -1,26,27,28, 29,30,31,32, 33,34,35,36, 37,38,39,40,
-		                                41,42,43,44, 45,46,47,48, 49,50,51,-1, -1,-1,-1,-1};
+	static std::atomic<detail::SubscriptionKey> globcnt;
 };
 
 /**
@@ -2866,7 +2881,9 @@ struct tTargetFolderIdType {
 	explicit tTargetFolderIdType(sFolderId&&);
 	explicit tTargetFolderIdType(const tinyxml2::XMLElement*);
 
-	sFolderId folderId;
+	sFolderId FolderId;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -3489,6 +3506,48 @@ struct mGetMailTipsResponse : public mResponseMessageType {
 };
 
 /**
+ * Messages.xsd:2685
+ */
+struct mGetRoomListsRequest {
+	explicit mGetRoomListsRequest(const tinyxml2::XMLElement*);
+};
+
+/**
+ * Messages.xsd:2696
+ */
+struct mGetRoomListsResponse : public mResponseMessageType {
+	static constexpr char NAME[] = "GetRoomListsResponse";
+
+	using mResponseMessageType::success;
+
+	std::optional<std::vector<tRoomListEntry>> RoomLists;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:2709
+ */
+struct mGetRoomsRequest {
+	explicit mGetRoomsRequest(const tinyxml2::XMLElement*);
+
+	tEmailAddressType RoomList;
+};
+
+/**
+ * Messages.xsd:2723
+ */
+struct mGetRoomsResponse : public mResponseMessageType {
+	static constexpr char NAME[] = "GetRoomsResponse";
+
+	using mResponseMessageType::success;
+
+	std::optional<std::vector<tRoomType>> Rooms;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Messages.xsd:2815
  */
 struct mGetServiceConfigurationRequest {
@@ -3859,29 +3918,29 @@ struct mGetItemResponse {
  * Messages.xsd:2781 (simplified)
  */
 struct mFindPeopleRequest {
-        explicit mFindPeopleRequest(const tinyxml2::XMLElement *);
+	explicit mFindPeopleRequest(const tinyxml2::XMLElement *);
 
-        std::string QueryString;
+	std::string QueryString;
 };
 
 /**
  * Messages.xsd:2788 (simplified)
  */
 struct mFindPeopleResponseMessage : public mResponseMessageType {
-        static constexpr char NAME[] = "FindPeopleResponseMessage";
+	static constexpr char NAME[] = "FindPeopleResponseMessage";
 
-        using mResponseMessageType::mResponseMessageType;
+	using mResponseMessageType::mResponseMessageType;
 
-        std::optional<std::vector<tPersona>> People;
-        std::optional<uint32_t> TotalNumberOfPeopleInView;
+	std::optional<std::vector<tPersona>> People;
+	std::optional<uint32_t> TotalNumberOfPeopleInView;
 
-        void serialize(tinyxml2::XMLElement *) const;
+	void serialize(tinyxml2::XMLElement *) const;
 };
 
 struct mFindPeopleResponse {
-        std::vector<mFindPeopleResponseMessage> ResponseMessages;
+	std::vector<mFindPeopleResponseMessage> ResponseMessages;
 
-        void serialize(tinyxml2::XMLElement *) const;
+	void serialize(tinyxml2::XMLElement *) const;
 };
 
 /**
@@ -4072,12 +4131,54 @@ struct mUpdateItemResponse {
 /*
  * Types.xsd:7203
  */
-struct tUserConfigurationName {
+struct tUserConfigurationName : public tTargetFolderIdType {
 	explicit tUserConfigurationName(const tinyxml2::XMLElement*);
 
 	std::string Name; //Attribute
-	std::optional<tFolderId> FolderId;
-	std::optional<tDistinguishedFolderId> DistinguishedFolderId;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:7227
+ */
+struct tUserConfigurationDictionaryObject {
+	Enum::UserConfigurationDictionaryObjectTypesType Type;
+	std::vector<std::string> Value;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:7234
+ */
+struct tUserConfigurationDictionaryEntry {
+	tUserConfigurationDictionaryObject DictionaryKey;
+	std::optional<tUserConfigurationDictionaryObject> DictionaryValue;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:7241
+ */
+struct tUserConfigurationDictionaryType {
+	std::vector<tUserConfigurationDictionaryEntry> DictionaryEntry;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/*
+ * Types.xsd:7247
+ */
+struct tUserConfigurationType {
+	tUserConfigurationName UserConfigurationName;
+	std::optional<tItemId> ItemId;
+	std::optional<tUserConfigurationDictionaryType> Dictionary;
+	std::optional<sBase64Binary> XmlData;
+	std::optional<sBase64Binary> BinaryData;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -4095,6 +4196,12 @@ struct mGetUserConfigurationRequest {
  */
 struct mGetUserConfigurationResponseMessage : public mResponseMessageType {
 	static constexpr char NAME[] = "GetUserConfigurationResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+
+	std::optional<tUserConfigurationType> UserConfiguration;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**

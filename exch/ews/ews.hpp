@@ -51,8 +51,7 @@ struct MessageInstanceKey {
 };
 
 using ExmdbSubscriptionKey = std::pair<std::string, uint32_t>;
-using SubscriptionKey = uint32_t;
-using ContextWakeupKey = int;
+using ContextKey = int;
 
 struct EmbeddedInstanceKey {
 	std::string dir;
@@ -93,10 +92,9 @@ class EWSPlugin {
 
 	EWSPlugin();
 	~EWSPlugin();
-	http_status proc(int, const void*, uint64_t);
-	static BOOL preproc(int);
-
-	bool logEnabled(const std::string_view&) const;
+	http_status proc(detail::ContextKey, const void*, uint64_t);
+	static BOOL preproc(detail::ContextKey);
+	bool logEnabled(const std::string_view) const;
 
 	struct _exmdb {
 		_exmdb();
@@ -135,7 +133,7 @@ class EWSPlugin {
 		std::mutex lock; ///< I/O mutex
 		std::vector<detail::ExmdbSubscriptionKey> inner_subs; ///< Exmdb subscription keys
 		std::list<Structures::sNotificationEvent> events; ///< Events that occured since last check
-		std::optional<int> waitingContext; ///< ID of context waiting for events
+		std::optional<detail::ContextKey> waitingContext; ///< ID of context waiting for events
 	};
 
 	void event(const char*, BOOL, uint32_t, const DB_NOTIFY*) const;
@@ -149,7 +147,7 @@ class EWSPlugin {
 	detail::ExmdbSubscriptionKey subscribe(const std::string&, uint16_t, bool, uint64_t, detail::SubscriptionKey) const;
 	std::shared_ptr<SubManager> get_submgr(detail::SubscriptionKey, uint32_t) const;
 	std::string timestamp() const;
-	void unlinkSubscription(int) const;
+	void unlinkSubscription(detail::ContextKey) const;
 	bool unsubscribe(detail::SubscriptionKey, const char*) const;
 	void unsubscribe(const detail::ExmdbSubscriptionKey&) const;
 	void wakeContext(int, std::chrono::milliseconds) const;
@@ -170,8 +168,8 @@ class EWSPlugin {
 	std::chrono::milliseconds cache_message_instance_lifetime{30'000}; ///< Lifetime of message instances
 	std::chrono::milliseconds event_stream_interval{45'000}; ///< How often to send updates for GetStreamingEvents
 
-	int retr(int);
-	void term(int);
+	int retr(detail::ContextKey);
+	void term(detail::ContextKey);
 
 	private:
 	template<typename T> using sptr = std::shared_ptr<T>;
@@ -179,17 +177,17 @@ class EWSPlugin {
 	struct DebugCtx;
 
 	struct WakeupNotify {
-		inline explicit WakeupNotify(int id) : ID(id) {}
-		int ID;
+		inline explicit WakeupNotify(detail::ContextKey id) : ctx_id(id) {}
+		detail::ContextKey ctx_id;
 		~WakeupNotify();
 	};
 
-	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey, detail::SubscriptionKey, detail::ContextWakeupKey, detail::EmbeddedInstanceKey>;
+	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey, detail::SubscriptionKey, detail::ContextKey, detail::EmbeddedInstanceKey>;
 	using CacheObj = std::variant<sptr<ExmdbInstance>, sptr<SubManager>, sptr<WakeupNotify>>;
 
 	static const std::unordered_map<std::string, Handler> requestMap;
 
-	static http_status fault(int, http_status, const std::string_view&);
+	static http_status fault(detail::ContextKey, http_status, const std::string_view);
 
 	mutable std::mutex subscriptionLock;
 	mutable std::unordered_map<detail::ExmdbSubscriptionKey, detail::SubscriptionKey> subscriptions;
@@ -203,7 +201,7 @@ class EWSPlugin {
 	bool invertFilter = true;
 	bool teardown = false;
 
-	http_status dispatch(int, HTTP_AUTH_INFO&, const void*, uint64_t);
+	http_status dispatch(detail::ContextKey, HTTP_AUTH_INFO &, const void *, uint64_t);
 	void loadConfig();
 };
 
@@ -216,7 +214,7 @@ class EWSContext {
 
 	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE, S_STREAM_NOTIFY};
 
-	EWSContext(int, HTTP_AUTH_INFO, const char *, uint64_t, EWSPlugin &);
+	EWSContext(detail::ContextKey, const HTTP_AUTH_INFO &, const char *, uint64_t, EWSPlugin &);
 	~EWSContext();
 
 	EWSContext(const EWSContext&) = delete;
@@ -288,7 +286,7 @@ class EWSContext {
 	gromox::time_duration age() const { return tp_now() - m_created; }
 	void experimental(const char*) const;
 
-	inline int ID() const {return m_ID;}
+	inline detail::ContextKey context_id() const { return m_ctx_id; }
 	inline const HTTP_AUTH_INFO& auth_info() const {return m_auth_info;}
 	inline const EWSPlugin& plugin() const {return m_plugin;}
 	inline const SOAP::Envelope& request() const {return m_request;}
@@ -304,7 +302,7 @@ class EWSContext {
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);
 	template<typename T, typename... Args> static T* construct(Args&&...);
-	static char* cpystr(const std::string_view&);
+	static char *cpystr(const std::string_view);
 
 	static void assertIdType(Structures::tBaseItemId::IdType, Structures::tBaseItemId::IdType);
 	static void ext_error(pack_result, const char* = nullptr, const char* = nullptr);
@@ -347,7 +345,7 @@ private:
 
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 
-	int m_ID = 0;
+	detail::ContextKey m_ctx_id = -1;
 	http_status m_code = http_status::ok;
 	State m_state = S_DEFAULT;
 	bool m_log = false;

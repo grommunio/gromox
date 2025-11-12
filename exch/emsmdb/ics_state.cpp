@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <gromox/mapi_types.hpp>
+#include <gromox/idset.hpp>
 #include <gromox/rop_util.hpp>
 #include "common_util.hpp"
 #include "ics_state.hpp"
+
+using namespace gromox;
 
 static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int type)
 {

@@ -1378,7 +1378,7 @@ static DCERPC_CALL* pdu_processor_get_call()
 }
 
 static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
-	NDR_STACK_ROOT *pstack_root, void *pout)
+    NDR_STACK_ROOT *pstack_root, const rpc_response *pout)
 {
 	uint32_t flags;
 	uint32_t length;
@@ -1656,7 +1656,7 @@ void pdu_processor_rpc_free_stack()
 	}
 }
 
-static void pdu_processor_async_reply(uint32_t async_id, void *pout)
+static void pdu_processor_async_reply(uint32_t async_id, const rpc_response *pout)
 {
 	DCERPC_CALL *pcall;
 	DOUBLE_LIST_NODE *pnode;
@@ -1707,7 +1707,6 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	GUID *pobject;
 	uint32_t flags;
 	uint64_t handle;
-	void *pin, *pout;
 	NDR_PULL ndr_pull;
 	DCERPC_CONTEXT *pcontext;
 	PDU_PROCESSOR *pprocessor;
@@ -1741,7 +1740,8 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	pcall->pcontext	= pcontext;
 	
 	/* unmarshaling the NDR in param data */
-	if (pcontext->pinterface->ndr_pull(prequest->opnum, ndr_pull, &pin) != pack_result::ok) {
+	std::unique_ptr<rpc_request> pin;
+	if (pcontext->pinterface->ndr_pull(prequest->opnum, ndr_pull, pin) != pack_result::ok) {
 		pdu_processor_free_stack_root(pstack_root);
 		mlog(LV_DEBUG, "pdu_processor: pull fail on RPC call %u on %s",
 			prequest->opnum, pcontext->pinterface->name);
@@ -1757,8 +1757,9 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	*pb_async = false;
 	/* call the dispatch function */
 	ec_error_t ecode = ecSuccess;
+	std::unique_ptr<rpc_response> pout;
 	auto ret = pcontext->pinterface->dispatch(prequest->opnum,
-	           pobject, handle, pin, &pout, &ecode);
+	           pobject, handle, pin.get(), pout, &ecode);
 	bool dbg = g_msrpc_debug >= 2;
 	if (g_msrpc_debug >= 1 &&
 	    (ret != DISPATCH_SUCCESS || ecode != ecSuccess))
@@ -1780,7 +1781,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 		*pb_async = TRUE;
 		return TRUE;
 	case DISPATCH_SUCCESS:
-		return pdu_processor_reply_request(pcall, pstack_root, pout);
+		return pdu_processor_reply_request(pcall, pstack_root, pout.get());
 	default:
 		pdu_processor_free_stack_root(pstack_root);
 		mlog(LV_DEBUG, "pdu_processor: unknown return value by %s:%02x",

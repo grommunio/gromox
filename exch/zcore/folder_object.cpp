@@ -519,7 +519,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 		const auto tag = pproptags->pproptag[i];
 		if (pfolder->is_readonly_prop(tag))
 			continue;
-		tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+		tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;

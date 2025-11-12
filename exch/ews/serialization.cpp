@@ -4,11 +4,12 @@
 /**
  * @brief      Implementation of EWS structure (de-)serialization
  */
+#include <cstdint>
 #include <ctime>
+#include <libHX/endian.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
-
 #include "exceptions.hpp"
 #include "ews.hpp"
 #include "serialization.hpp"
@@ -849,6 +850,13 @@ tDistinguishedFolderId::tDistinguishedFolderId(const tinyxml2::XMLElement* xml) 
 	XMLINITA(Id)
 {}
 
+void tDistinguishedFolderId::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(Mailbox);
+	XMLDUMPA(ChangeKey);
+	XMLDUMPA(Id);
+}
+
 tDuration::tDuration(const XMLElement* xml) :
 	XMLINIT(StartTime), XMLINIT(EndTime)
 {}
@@ -909,6 +917,15 @@ void tItemAttachment::serialize(tinyxml2::XMLElement *xml) const
 {
 	tAttachment::serialize(xml);
 	XMLDUMPT(Item);
+}
+
+tRoomType::tRoomType(const tinyxml2::XMLElement* xml) :
+	XMLINIT(Id)
+{}
+
+void tRoomType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(Id);
 }
 
 tFileAttachment::tFileAttachment(const XMLElement *xml)
@@ -1463,53 +1480,25 @@ void tSmtpDomain::serialize(XMLElement* xml) const
 	XMLDUMPT(IncludeSubdomains);
 }
 
-/**
- * @brief      Base64 encode 32bit unsigned integer
- *
- * @param      v   Value to encode
- * @param      d   Destination buffer. Must have space for 6 characters. Pointer is moved to the end of the string.
- */
-constexpr void tSubscriptionId::encode(uint32_t v, char*& d)
-{
-	for (uint32_t offset = 0; offset < 31; offset += 6)
-		*d++ = b64[(v & (0x3fu << offset)) >> offset];
-}
-
-/**
- * @brief      Base64 decode 32bit unsigned integer
- *
- * @param      s   Data to decode. Pointer is moved to the end of the string.
- *
- * @throw      DeserializationError  The input contains invalid characters
- *
- * @return Decoded value
- */
-constexpr uint32_t tSubscriptionId::decode(const uint8_t*& s)
-{
-	uint32_t res = 0;
-	for (uint32_t offset = 0; offset < 6; ++s, ++offset)
-		res |= *s < 128 && i64[*s] >= 0 ? (i64[*s] << offset * 6) : throw DeserializationError(E3112);
-	return res;
-}
-
 tSubscriptionId::tSubscriptionId(const tinyxml2::XMLElement* xml)
 {
 	const char* data = xml->GetText();
-	size_t len;
-	if (!data || (len = strlen(data)) != 12)
+	if (data == nullptr)
 		throw DeserializationError(E3201);
-	const uint8_t* d = reinterpret_cast<const uint8_t*>(data);
-	ID = decode(d);
-	timeout = decode(d);
+	std::string_view dv(data);
+	if (dv.size() != 12)
+		throw DeserializationError(E3201);
+	auto blob = base64_decode(std::move(dv));
+	if (blob.size() != 8)
+		throw DeserializationError(E3201);
+	tsub_rawkey = le32p_to_cpu(&blob[0]);
+	timeout = le32p_to_cpu(&blob[4]);
 }
 
 void tSubscriptionId::serialize(tinyxml2::XMLElement* xml) const
 {
-	std::string res(12, 0);
-	char* data = res.data();
-	encode(ID, data);
-	encode(timeout, data);
-	xml->SetText(res.c_str());
+	uint32_t a[2] = {cpu_to_le32(tsub_rawkey), cpu_to_le32(timeout)};
+	xml->SetText(base64_encode({reinterpret_cast<const char *>(a), sizeof(a)}).c_str());
 }
 
 tSuggestionsViewOptions::tSuggestionsViewOptions(const tinyxml2::XMLElement* xml) :
@@ -1554,13 +1543,50 @@ void tSyncFolderItemsReadFlag::serialize(tinyxml2::XMLElement* xml) const
 }
 
 tTargetFolderIdType::tTargetFolderIdType(const XMLElement* xml) :
-	VXMLINIT(folderId)
+	VXMLINIT(FolderId)
 {}
 
+void tTargetFolderIdType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(FolderId);
+}
+
 tUserConfigurationName::tUserConfigurationName(const tinyxml2::XMLElement* xml) :
-	XMLINITA(Name),
-	XMLINIT(FolderId)
+	tTargetFolderIdType(xml),
+	XMLINITA(Name)
 {}
+
+void tUserConfigurationName::serialize(XMLElement* xml) const
+{
+	tTargetFolderIdType::serialize(xml);
+	XMLDUMPA(Name);
+}
+
+void tUserConfigurationDictionaryObject::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(Type);
+	XMLDUMPT(Value);
+}
+
+void tUserConfigurationDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(DictionaryKey);
+	XMLDUMPT(DictionaryValue);
+}
+
+void tUserConfigurationDictionaryType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(DictionaryEntry);
+}
+
+void tUserConfigurationType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(UserConfigurationName);
+	XMLDUMPT(ItemId);
+	XMLDUMPT(Dictionary);
+	XMLDUMPT(XmlData);
+	XMLDUMPT(BinaryData);
+}
 
 tUserId::tUserId(const tinyxml2::XMLElement* xml) :
 	XMLINIT(PrimarySmtpAddress),
@@ -1840,6 +1866,25 @@ void mGetMailTipsResponse::serialize(XMLElement* xml) const
 	XMLDUMPM(ResponseMessages);
 }
 
+mGetRoomListsRequest::mGetRoomListsRequest(const XMLElement*)
+{}
+
+void mGetRoomListsResponse::serialize(XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(RoomLists);
+}
+
+mGetRoomsRequest::mGetRoomsRequest(const XMLElement* xml) :
+	XMLINIT(RoomList)
+{}
+
+void mGetRoomsResponse::serialize(XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(Rooms);
+}
+
 mGetServiceConfigurationRequest::mGetServiceConfigurationRequest(const XMLElement* xml) :
 	XMLINIT(ActingAs), XMLINIT(RequestedConfiguration)
 {}
@@ -1894,6 +1939,12 @@ mGetUserConfigurationRequest::mGetUserConfigurationRequest(const tinyxml2::XMLEl
 	XMLINIT(UserConfigurationName),
 	XMLINIT(UserConfigurationProperties)
 {}
+
+void mGetUserConfigurationResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPT(UserConfiguration);
+}
 
 void mGetUserConfigurationResponse::serialize(XMLElement* xml) const
 {

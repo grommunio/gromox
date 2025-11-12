@@ -291,9 +291,7 @@ BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 	snprintf(sql_string, std::size(sql_string), "UPDATE configurations SET"
 		" config_value=%llu WHERE config_id=%u",
 		LLU{cur_eid}, CONFIG_ID_CURRENT_EID);
-	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
-		return FALSE;
-	return TRUE;
+	return gx_sql_exec(psqlite, sql_string) == SQLITE_OK ? TRUE : false;
 }
 
 /**
@@ -331,9 +329,7 @@ BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 	snprintf(sql_string, std::size(sql_string), "UPDATE folders SET cur_eid=%llu,"
 		" max_eid=%llu WHERE folder_id=%llu", LLU{cur_eid},
 		LLU{max_eid}, LLU{folder_id});
-	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
-		return FALSE;
-	return TRUE;
+	return gx_sql_exec(psqlite, sql_string) == SQLITE_OK ? TRUE : false;
 }
 
 /**
@@ -406,31 +402,6 @@ BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	*pb_result = pstmt.step() == SQLITE_ROW ? TRUE : false;
-	return TRUE;
-}
-
-BOOL common_util_allocate_cid(sqlite3 *psqlite, uint64_t *pcid)
-{
-	char sql_string[128];
-	
-	snprintf(sql_string, std::size(sql_string), "SELECT config_value FROM "
-		"configurations WHERE config_id=%u", CONFIG_ID_LAST_CID);
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	uint64_t last_cid = pstmt.step() == SQLITE_ROW ?
-	                    sqlite3_column_int64(pstmt, 0) : 0;
-	pstmt.finalize();
-	last_cid ++;
-	snprintf(sql_string, std::size(sql_string), "REPLACE INTO configurations"
-					" VALUES (%u, ?)", CONFIG_ID_LAST_CID);
-	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	sqlite3_bind_int64(pstmt, 1, last_cid);
-	if (pstmt.step() != SQLITE_DONE)
-		return FALSE;
-	*pcid = last_cid;
 	return TRUE;
 }
 

@@ -124,7 +124,7 @@ static bool verify_token(std::string token, std::string &ex_user)
 
 	/* Grab username */
 	Json::Value root;
-	if (!json_from_str(base64_decode(std::move(payload)), root))
+	if (!str_to_json(base64_decode(std::move(payload)), root))
 		return false;
 	payload.clear();
 	ex_user = root["email"].asString();

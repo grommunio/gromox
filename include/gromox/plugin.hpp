@@ -53,6 +53,7 @@ struct HPM_INTERFACE;
 struct http_request;
 struct HTTP_AUTH_INFO;
 using HOOK_FUNCTION = gromox::hook_result (*)(MESSAGE_CONTEXT *);
+using rpc_response = gromox::universal_base;
 
 struct dlfuncs {
 	void *(*symget)(const char *service, const char *requestor, const std::type_info &);
@@ -78,7 +79,7 @@ struct dlfuncs {
 		void (*activate_async_id)(uint32_t);
 		void (*cancel_async_id)(uint32_t);
 		BOOL (*rpc_build_env)(int);
-		void (*async_reply)(uint32_t, void *);
+		void (*async_reply)(uint32_t, const rpc_response *);
 	} proc;
 
 	// HPM_

@@ -251,7 +251,12 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	BOOL b_bounce_delivered = false;
 	sql_meta_result mres{};
 
-	if (mysql_adaptor_meta(address, WANTPRIV_METAONLY, mres) != 0) {
+	auto err = mysql_adaptor_meta(address, WANTPRIV_METAONLY, mres);
+	if (err == ENOENT) {
+		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
+			"<%s> has no mailbox here", address);
+		return delivery_status::no_user;
+	} else if (err != 0) {
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail"
 			"to get user information from data source!");
 		return delivery_status::temp_fail;

@@ -53,12 +53,16 @@ enum {
 	HANDLE_EXCHANGE_ASYNCEMSMDB = 3,
 };
 
-struct ECDOASYNCWAITEX_IN {
-	CONTEXT_HANDLE acxh;
+using rpc_request = gromox::universal_base;
+using rpc_response = gromox::universal_base;
+
+/* warning: replicated in mh/emsmdb.cpp, definitions must match! */
+struct ECDOASYNCWAITEX_IN final : public rpc_request {
+	ACXH acxh;
 	uint32_t flags_in;
 };
 
-struct ECDOASYNCWAITEX_OUT {
+struct ECDOASYNCWAITEX_OUT final : public rpc_response {
 	uint32_t flags_out; ///< record context_id in the variable for asyncemsmdb_wakeup_proc
 	int32_t result;
 };
@@ -96,7 +100,7 @@ static int emsmdb_retr(int context_id);
 static void emsmdb_term(int context_id);
 static void asyncemsmdb_wakeup_proc(int context_id, BOOL b_pending);
 
-static int (*asyncemsmdb_interface_async_wait)(uint32_t async_id, ECDOASYNCWAITEX_IN *, ECDOASYNCWAITEX_OUT *);
+static int (*asyncemsmdb_interface_async_wait)(uint32_t async_id, const ECDOASYNCWAITEX_IN *, ECDOASYNCWAITEX_OUT *);
 static void (*asyncemsmdb_interface_register_active)(void *);
 static void (*asyncemsmdb_interface_remove)(CONTEXT_HANDLE *);
 

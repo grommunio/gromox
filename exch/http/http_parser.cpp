@@ -995,7 +995,7 @@ int http_parser::auth_exthelper(http_context &ctx, const std::string &prog,
 		gss_output.assign(&output[3], &output[nl_pos]);
 		return -99; /* MOAR */
 	}
-	std::string_view thisline(output.c_str(), nl_pos);
+	std::string_view thisline(&output[0], &output[nl_pos]);
 	if (output[0] == 'A' && output[1] == 'F' && HX_isspace(output[2])) { // AF
 		/*
 		 * squid-2.5-style

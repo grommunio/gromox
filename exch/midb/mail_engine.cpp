@@ -241,7 +241,7 @@ static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
 
 	/* ext files may be absent (only midb generates them) */
 	if (exmdb_client->imapfile_read(dir, "ext", mid_string, &slurp_data))
-		if (json_from_str(slurp_data.c_str(), digest) &&
+		if (str_to_json(slurp_data.c_str(), digest) &&
 		    digest.isMember("structure") && digest.isMember("mimes"))
 			have_ext = true;
 	if (!have_ext) {
@@ -252,7 +252,7 @@ static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
 		if (!exmdb_client->imapfile_read(dir, "eml", mid_string, &slurp_data))
 			return 0;
 		MAIL imail;
-		if (!imail.load_from_str(slurp_data.c_str(), slurp_data.size()))
+		if (!imail.refonly_parse(slurp_data.c_str(), slurp_data.size()))
 			return 0;
 		if (imail.make_digest(digest) <= 0)
 			return 0;
@@ -1344,7 +1344,7 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 		e.midstr.clear();
 	Json::Value digest;
 	if (djson.size() > 0) {
-		if (!json_from_str(djson.c_str(), digest) ||
+		if (!str_to_json(djson.c_str(), digest) ||
 		    !digest.isMember("structure") || !digest.isMember("mimes")) {
 			djson.clear();
 			digest = {};
@@ -2150,7 +2150,7 @@ static int me_minst(int argc, char **argv, int sockd) try
 	}
 
 	MAIL imail;
-	if (!imail.load_from_str(pbuff.c_str(), pbuff.size()))
+	if (!imail.refonly_parse(pbuff.c_str(), pbuff.size()))
 		return MIDB_E_IMAIL_RETRIEVE;
 	Json::Value digest;
 	if (imail.make_digest(digest) <= 0)

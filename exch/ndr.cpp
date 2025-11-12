@@ -12,6 +12,9 @@
 #include <gromox/ndr.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 #define NDR_BE(pndr) ((pndr->flags & NDR_FLAG_BIGENDIAN) != 0)
+#define CLAMP16(v) ((v) = std::min((v), static_cast<uint16_t>(UINT16_MAX)))
+#define CLAMP32(v) ((v) = std::min((v), static_cast<uint32_t>(UINT32_MAX)))
+#define CLAMP64(v) ((v) = std::min((v), static_cast<uint64_t>(UINT64_MAX)))
 
 pack_result NDR_PULL::advance(uint32_t size)
 {
@@ -105,6 +108,20 @@ pack_result NDR_PULL::g_str(char *buff, uint32_t inbytes)
 	return pndr->advance(inbytes);
 }
 
+pack_result NDR_PULL::g_str(std::string *buf, size_t z) try
+{
+	if (z == 0) {
+		buf->clear();
+		return pack_result::ok;
+	}
+	if (data_size < z || offset + z > data_size)
+		return pack_result::bufsize;
+	buf->assign(reinterpret_cast<const char *>(&data[offset]), z);
+	return advance(z);
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
+}
+
 pack_result NDR_PULL::g_uint8(uint8_t *v)
 {
 	auto pndr = this;
@@ -123,6 +140,7 @@ pack_result NDR_PULL::g_uint16(uint16_t *v)
 		return pack_result::bufsize;
 	auto r = &pndr->data[pndr->offset];
 	*v = NDR_BE(pndr) ? be16p_to_cpu(r) : le16p_to_cpu(r);
+	CLAMP16(*v);
 	pndr->offset += 2;
 	return pack_result::ok;
 }
@@ -141,6 +159,7 @@ pack_result NDR_PULL::g_uint32(uint32_t *v)
 		return pack_result::bufsize;
 	auto r = &pndr->data[pndr->offset];
 	*v = NDR_BE(pndr) ? be32p_to_cpu(r) : le32p_to_cpu(r);
+	CLAMP32(*v);
 	pndr->offset += 4;
 	return pack_result::ok;
 }
@@ -151,6 +170,8 @@ pack_result NDR_PULL::g_uint32_x2(uint64_t *v)
 	uint32_t lo, hi;
 	TRY(g_uint32(&lo));
 	TRY(g_uint32(&hi));
+	CLAMP32(lo);
+	CLAMP32(hi);
 	*v = (static_cast<uint64_t>(hi) << 32) | lo;
 	return trailer_align(4);
 }
@@ -162,7 +183,7 @@ pack_result NDR_PULL::g_uint64(uint64_t *v)
 	if (pndr->data_size < 8 || pndr->offset + 8 > pndr->data_size)
 		return pack_result::bufsize;
 	auto r = &pndr->data[pndr->offset];
-	*v = NDR_BE(pndr) ? be64p_to_cpu(r) : le64p_to_cpu(r);
+	*v = std::min(NDR_BE(pndr) ? be64p_to_cpu(r) : le64p_to_cpu(r), UINT64_MAX);
 	pndr->offset += 8;
 	return pack_result::ok;
 }

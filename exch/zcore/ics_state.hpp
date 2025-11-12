@@ -1,7 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <memory>
-#include <gromox/mapi_types.hpp>
+#include <gromox/defs.h>
+#include <gromox/idset.hpp>
 
 struct ics_state {
 	ics_state(uint8_t t) : type(t) {}
@@ -12,6 +13,6 @@ struct ics_state {
 	BOOL deserialize(const BINARY &);
 
 	int type = 0;
-	std::unique_ptr<idset> pgiven, pread, pseen, pseen_fai;
+	std::unique_ptr<gromox::idset> pgiven, pread, pseen, pseen_fai;
 };
 

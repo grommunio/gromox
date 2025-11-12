@@ -132,12 +132,26 @@ template<typename T> class GX_EXPORT range_set : private std::vector<gromox::ran
 		return i != cend() ? i->contains(v) : false;
 	}
 
-#if 0
-	T next_unused(T def = T{}) const
+	/**
+	 * @def: First legitimate value for any object.
+	 * @ill: First non-legitimate value for any object.
+	 *
+	 * Example 1: File descriptors - all calls should be alloc_next_unused(0).
+	 * Example 2: SQL row IDs - all calls should be alloc_next_unused(1).
+	 */
+	T alloc_next_unused(T def, T ill)
 	{
-		return empty() ? def : std::next(front().hi);
+		if (empty()) {
+			base::emplace(begin(), def, def);
+			return def;
+		}
+		auto hi = front().hi;
+		if (hi >= ill)
+			return hi;
+		++hi;
+		insert(hi);
+		return hi;
 	}
-#endif
 
 #ifdef COMPILE_DIAG
 	constexpr inline size_t nelem() const {

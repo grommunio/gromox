@@ -3869,7 +3869,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 				continue;
 			if (!b_force && proptags1.has(tag))
 				continue;
-			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+			tmp_proptags.emplace_back(tag);
 		}
 		if (!folder->get_properties(&tmp_proptags, &propvals))
 			return ecError;

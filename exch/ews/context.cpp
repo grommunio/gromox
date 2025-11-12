@@ -374,9 +374,9 @@ void Cleaner::operator()(MESSAGE_CONTENT *x) {message_content_free(x);}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-EWSContext::EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length,
-    EWSPlugin &p) :
-	m_ID(id), m_orig(*get_request(id)), m_auth_info(ai),
+EWSContext::EWSContext(detail::ContextKey id, const HTTP_AUTH_INFO &ai,
+    const char *data, uint64_t length, EWSPlugin &p) :
+	m_ctx_id(id), m_orig(*get_request(id)), m_auth_info(ai),
 	m_request(data, length), m_response(p.server_version()), m_plugin(p),
 	m_created(tp_now())
 {
@@ -400,7 +400,7 @@ EWSContext::~EWSContext()
  *
  * @return     Pointer to copied C-string
  */
-char* EWSContext::cpystr(const std::string_view& src)
+char *EWSContext::cpystr(const std::string_view src)
 {
 	char* dst = alloc<char>(src.size()+1);
 	strncpy(dst, src.data(), src.size());
@@ -681,6 +681,8 @@ void EWSContext::enableEventStream(int timeout)
 {
 	m_state = S_STREAM_NOTIFY;
 	auto expire = tp_now() + std::chrono::minutes(timeout);
+	if (m_notify)
+		mlog(LV_DEBUG, "EWSContext::m_notify already populated, programming error");
 	m_notify = std::make_unique<NotificationContext>(expire);
 }
 
@@ -933,7 +935,7 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
  */
 std::pair<std::list<sNotificationEvent>, bool> EWSContext::getEvents(const tSubscriptionId& subscriptionId) const
 {
-	auto mgr = m_plugin.get_submgr(subscriptionId.ID, subscriptionId.timeout);
+	auto mgr = m_plugin.get_submgr(subscriptionId.tsub_rawkey, subscriptionId.timeout);
 	if (mgr == nullptr)
 		throw EWSError::InvalidSubscription(E3202);
 	if (mgr->username != m_auth_info.username)
@@ -1298,8 +1300,18 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
 			if (!exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
 				throw DispatchError(E3080);
+			sShape shape(props);
+			auto method = props.get<const uint32_t>(PR_ATTACH_METHOD);
+			if (method != nullptr && *method == ATTACH_EMBEDDED_MSG) {
+				auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+				MESSAGE_CONTENT eInstContent{};
+				if (!exmdb.read_message_instance(dir.c_str(), eInst->instanceId, &eInstContent))
+					throw DispatchError(E3208);
+				auto log_id = dir + ":a" + std::to_string(i);
+				shape.mimeContent.emplace(exportContent(dir, eInstContent, log_id));
+			}
 			aid.attachment_num = i;
-			item.Attachments->emplace_back(tAttachment::create(aid, sShape(props)));
+			item.Attachments->emplace_back(tAttachment::create(aid, std::move(shape)));
 		}
 	}
 	if (special & sShape::Rights)
@@ -1808,7 +1820,7 @@ bool EWSContext::streamEvents(const tSubscriptionId& subscriptionId) const
 EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, std::string& mimeContent) const
 {
 	MAIL mail;
-	if (!mail.load_from_str(mimeContent.data(), mimeContent.size()))
+	if (!mail.refonly_parse(mimeContent.data(), mimeContent.size()))
 		throw EWSError::ItemCorrupt(E3123);
 	auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
 	{*ids = getNamedPropIds(dir, *names, true); return TRUE;};
@@ -2532,10 +2544,9 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
 	auto mgr = m_plugin.make_submgr(subscriptionId, m_auth_info.username);
 	if (folderIds.empty()) {
 		mgr->mailboxInfo = getMailboxInfo(m_auth_info.maildir, false);
-		detail::ExmdbSubscriptionKey key =
-			m_plugin.subscribe(m_auth_info.maildir, eventMask, true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
-		                       subscriptionId.ID);
-		mgr->inner_subs.emplace_back(key);
+		mgr->inner_subs.emplace_back(m_plugin.subscribe(m_auth_info.maildir,
+			eventMask, true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+			subscriptionId.tsub_rawkey));
 		return subscriptionId;
 	}
 	mgr->inner_subs.reserve(folderIds.size());
@@ -2555,7 +2566,7 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
 		if (!(permissions(maildir, folderspec.folderId) & frightsReadAny))
 			continue; // TODO: proper error handling
 		mgr->inner_subs.emplace_back(m_plugin.subscribe(maildir,
-			eventMask, all, folderspec.folderId, subscriptionId.ID));
+			eventMask, all, folderspec.folderId, subscriptionId.tsub_rawkey));
 	}
 	return subscriptionId;
 }
@@ -2615,7 +2626,7 @@ tSubscriptionId EWSContext::subscribe(const tStreamingSubscriptionRequest& req) 
  */
 bool EWSContext::unsubscribe(const Structures::tSubscriptionId& subscriptionId) const
 {
-	return m_plugin.unsubscribe(subscriptionId.ID, m_auth_info.username);
+	return m_plugin.unsubscribe(subscriptionId.tsub_rawkey, m_auth_info.username);
 }
 
 /**

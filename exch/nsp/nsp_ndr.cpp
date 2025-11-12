@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iconv.h>
 #include <memory>
+#include <utility>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
@@ -2233,13 +2236,15 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIRESOLVENAMESW_OUT &r)
 	return x.p_uint32(r.result);
 }
 
-pack_result exchange_nsp_ndr_pull(unsigned int opnum, NDR_PULL &x, void **ppin)
+pack_result exchange_nsp_ndr_pull(unsigned int opnum, NDR_PULL &x,
+    std::unique_ptr<universal_base> &ppin) try
 {
 #define H(rpc, t) \
 	case (rpc): { \
-		auto r0 = ndr_stack_anew<t ## _IN>(NDR_STACK_IN); \
-		*ppin = r0; \
-		return r0 != nullptr ? nsp_ndr_pull(x, r0) : pack_result::alloc; \
+		auto r0 = std::make_unique<t ## _IN>(); \
+		auto xret = nsp_ndr_pull(x, r0.get()); \
+		ppin = std::move(r0); \
+		return xret; \
 	}
 
 	switch (opnum) {
@@ -2265,9 +2270,12 @@ pack_result exchange_nsp_ndr_pull(unsigned int opnum, NDR_PULL &x, void **ppin)
 		return pack_result::bad_switch;
 	}
 #undef H
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return pack_result::alloc;
 }
 
-pack_result exchange_nsp_ndr_push(unsigned int opnum, NDR_PUSH &x, const void *pout)
+pack_result exchange_nsp_ndr_push(unsigned int opnum, NDR_PUSH &x, const rpc_response *pout)
 {
 #define H(rpc, t) case (rpc): return nsp_ndr_push(x, *static_cast<const t ## _OUT *>(pout));
 	switch (opnum) {
