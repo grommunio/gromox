@@ -97,7 +97,7 @@ EXMIDL(get_message_rcpts, (const char *dir, uint64_t message_id, IDLOUT TARRAY_S
 EXMIDL(get_message_properties, (const char *dir, const char *username, cpid_t cpid, uint64_t message_id, proptag_cspan pproptags, IDLOUT TPROPVAL_ARRAY *propvals))
 EXMIDL(set_message_properties, (const char *dir, const char *username, cpid_t cpid, uint64_t message_id, const TPROPVAL_ARRAY *pproperties, IDLOUT PROBLEM_ARRAY *problems))
 EXMIDL(set_message_read_state, (const char *dir, const char *username, uint64_t message_id, uint8_t mark_as_read, IDLOUT uint64_t *read_cn))
-EXMIDL(remove_message_properties, (const char *dir, cpid_t cpid, uint64_t message_id, const PROPTAG_ARRAY *pproptags))
+EXMIDL(remove_message_properties, (const char *dir, cpid_t cpid, uint64_t message_id, proptag_cspan pproptags))
 EXMIDL(allocate_message_id, (const char *dir, uint64_t folder_id, IDLOUT uint64_t *message_id))
 EXMIDL(allocate_cn, (const char *dir, IDLOUT uint64_t *cn))
 EXMIDL(mark_modified, (const char *dir, uint64_t message_id))

@@ -3271,7 +3271,6 @@ static int me_prflg(int argc, char **argv, int sockd) try
 	}
 	if (set_answered || set_forwarded) {
 		static constexpr proptag_t proptags_1[] = {PR_ICON_INDEX};
-		static constexpr PROPTAG_ARRAY proptags = {std::size(proptags_1), deconst(proptags_1)};
 		TPROPVAL_ARRAY propvals{};
 		if (exmdb_client->get_message_properties(argv[1], nullptr,
 		    CP_ACP, rop_util_make_eid_ex(1, message_id),
@@ -3280,7 +3279,7 @@ static int me_prflg(int argc, char **argv, int sockd) try
 			auto icon = propvals.get<const uint32_t>(PR_ICON_INDEX);
 			if (icon != nullptr && *icon == testfor)
 				if (!exmdb_client->remove_message_properties(argv[1], CP_ACP,
-				    rop_util_make_eid_ex(1, message_id), &proptags))
+				    rop_util_make_eid_ex(1, message_id), proptags_1))
 					/* ignore */;
 		}
 	}
@@ -3288,9 +3287,8 @@ static int me_prflg(int argc, char **argv, int sockd) try
 		static constexpr proptag_t tags[] = {
 			PR_FLAG_STATUS, PR_FOLLOWUP_ICON, PR_TODO_ITEM_FLAGS,
 		};
-		static constexpr PROPTAG_ARRAY ta = {std::size(tags), deconst(tags)};
 		if (!exmdb_client->remove_message_properties(argv[1], CP_ACP,
-		    rop_util_make_eid_ex(1, message_id), &ta))
+		    rop_util_make_eid_ex(1, message_id), tags))
 			return MIDB_E_MDB_SETMSGPROPS;
 	}
 	if (set_seen && !exmdb_client->set_message_read_state(argv[1], nullptr,

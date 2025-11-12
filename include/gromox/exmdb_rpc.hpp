@@ -901,11 +901,24 @@ struct exreq_set_message_read_state final : public exreq {
 	uint8_t mark_as_read;
 };
 
-struct exreq_remove_message_properties final : public exreq {
-	using view_t = exreq_remove_message_properties;
+struct exreq_remove_message_properties_v final : public exreq {
 	cpid_t cpid;
 	uint64_t message_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_cspan pproptags;
+};
+
+struct exreq_remove_message_properties final : public exreq {
+	using view_t = exreq_remove_message_properties_v;
+	cpid_t cpid;
+	uint64_t message_id;
+	proptag_vector pproptags;
+	operator view_t() const {
+		view_t v;
+		v.cpid = cpid;
+		v.message_id = message_id;
+		v.pproptags = pproptags;
+		return v;
+	}
 };
 
 struct exreq_allocate_message_id final : public exreq {

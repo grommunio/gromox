@@ -982,7 +982,7 @@ BOOL exmdb_server::set_message_properties(const char *dir,
 }
 
 BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
-    uint64_t message_id, const PROPTAG_ARRAY *pproptags)
+    uint64_t message_id, proptag_cspan pproptags)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -991,7 +991,7 @@ BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
 	mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::write);
 	if (!cu_remove_properties(MAPI_MESSAGE, mid_val,
-	    pdb->psqlite, *pproptags))
+	    pdb->psqlite, pproptags))
 		return FALSE;
 	uint64_t fid_val = 0;
 	if (!common_util_get_message_parent_folder(pdb->psqlite,

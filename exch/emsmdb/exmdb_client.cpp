@@ -182,9 +182,8 @@ BOOL exmdb_client_shm::set_message_property(const char *dir, const char *usernam
 BOOL exmdb_client_shm::remove_message_property(const char *dir, cpid_t cpid,
     uint64_t message_id, proptag_t proptag)
 {
-	const PROPTAG_ARRAY tmp_proptags = {1, &proptag};
 	return exmdb_client->remove_message_properties(dir, cpid,
-	       message_id, &tmp_proptags);
+	       message_id, {&proptag, 1});
 }
 
 BOOL exmdb_client_shm::is_message_owner(const char *dir, uint64_t message_id,

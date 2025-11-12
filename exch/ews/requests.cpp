@@ -2264,10 +2264,10 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 				throw EWSError::ItemSave(E3255);
 		} else {
 			TPROPVAL_ARRAY props = shape.write();
-			PROPTAG_ARRAY tagsRm = shape.remove();
+			const auto &tagsRm = shape.remove_vec();
 			PROBLEM_ARRAY problems;
 			if (!ctx.plugin().exmdb.remove_message_properties(dir.c_str(),
-			    CP_ACP, mid.messageId(), &tagsRm))
+			    CP_ACP, mid.messageId(), tagsRm))
 				throw EWSError::ItemSave(E3093);
 			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 			    username, CP_ACP, mid.messageId(), &props, &problems))

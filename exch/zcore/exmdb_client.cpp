@@ -107,14 +107,7 @@ BOOL exmdb_client_remove_instance_property(const char *dir,
 BOOL exmdb_client_remove_message_property(const char *dir,
     cpid_t cpid, uint64_t message_id, proptag_t proptag)
 {
-	PROPTAG_ARRAY tmp_proptags;
-	
-	tmp_proptags.count = 1;
-	tmp_proptags.pproptag = &proptag;
-	if (!exmdb_client->remove_message_properties(
-	    dir, cpid, message_id, &tmp_proptags))
-		return FALSE;	
-	return TRUE;
+	return exmdb_client->remove_message_properties(dir, cpid, message_id, {&proptag, 1});
 }
 
 BOOL exmdb_client_check_message_owner(const char *dir,
