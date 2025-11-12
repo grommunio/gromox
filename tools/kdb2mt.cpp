@@ -301,7 +301,9 @@ errno_t ace_list::emplace(std::string &&s, uint32_t r)
 
 static void substitute_addrs(TPROPVAL_ARRAY *ar)
 {
-	static constexpr std::pair<uint32_t, uint32_t> proplist[] = {
+	static constexpr struct {
+		proptag_t addrtype, emaddr;
+	} propsets[] = {
 		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS},
 		{PR_ORIGINAL_SENDER_ADDRTYPE, PR_ORIGINAL_SENDER_EMAIL_ADDRESS},
 		{PR_ORIGINAL_SENT_REPRESENTING_ADDRTYPE, PR_ORIGINAL_SENT_REPRESENTING_EMAIL_ADDRESS},
@@ -312,18 +314,18 @@ static void substitute_addrs(TPROPVAL_ARRAY *ar)
 		{PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS},
 		{PR_ADDRTYPE, PR_EMAIL_ADDRESS},
 	};
-	for (const auto &pair : proplist) {
-		auto at = ar->get<const char>(pair.first);
+	for (const auto &tags : propsets) {
+		auto at = ar->get<const char>(tags.addrtype);
 		if (at == nullptr || strcasecmp(at, "ZARAFA") != 0)
 			continue;
-		auto em = ar->get<const char>(pair.second);
+		auto em = ar->get<const char>(tags.emaddr);
 		if (em == nullptr)
 			continue;
 		auto repl = g_zaddr_to_email.find(em);
 		if (repl == g_zaddr_to_email.end())
 			continue;
-		if (ar->set(TAGGED_PROPVAL{pair.first, deconst("SMTP")}) == ecServerOOM ||
-		    ar->set(TAGGED_PROPVAL{pair.second, deconst(repl->second.c_str())}) == ecServerOOM)
+		if (ar->set(TAGGED_PROPVAL{tags.addrtype, deconst("SMTP")}) == ecServerOOM ||
+		    ar->set(TAGGED_PROPVAL{tags.emaddr, deconst(repl->second.c_str())}) == ecServerOOM)
 			throw std::bad_alloc();
 	}
 }
