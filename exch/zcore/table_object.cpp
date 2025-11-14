@@ -49,7 +49,7 @@ static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 }
 
 static errno_t storetbl_add_row(table_object *tbl, const USER_INFO &info,
-    const PROPTAG_ARRAY &tags, bool is_private, unsigned int user_id)
+    proptag_cspan tags, bool is_private, unsigned int user_id)
 {
 	uint32_t handle = info.ptree->get_store_handle(is_private ? TRUE : false, user_id);
 	zs_objtype mapi_type = zs_objtype::invalid;
@@ -285,8 +285,8 @@ static uint32_t table_object_get_folder_permission_rights(store_object *pstore,
 	return permission;
 }
 
-static BOOL rcpttable_query_rows(const table_object *ptable,
-    const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset, uint32_t row_needed)
+static bool rcpttable_query_rows(const table_object *ptable,
+    proptag_cspan pcolumns, TARRAY_SET *pset, uint32_t row_needed)
 {
 	TARRAY_SET rcpt_set;
 
@@ -301,7 +301,7 @@ static BOOL rcpttable_query_rows(const table_object *ptable,
 		return FALSE;
 	for (size_t i = ptable->position; i < end_pos; ++i)
 		pset->pparray[pset->count++] = rcpt_set.pparray[i];
-	if (!pcolumns->has(PR_ENTRYID))
+	if (!pcolumns.has(PR_ENTRYID))
 		return TRUE;
 	for (auto &row : *pset) {
 		if (row.has(PR_ENTRYID))
@@ -333,8 +333,8 @@ static BOOL rcpttable_query_rows(const table_object *ptable,
 	return TRUE;
 }
 
-static BOOL storetbl_query_rows(const table_object *ptable,
-    const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset, const USER_INFO *pinfo,
+static bool storetbl_query_rows(const table_object *ptable,
+    proptag_cspan pcolumns, TARRAY_SET *pset, const USER_INFO *pinfo,
     uint32_t row_needed)
 {
 	uint32_t end_pos = ptable->position + row_needed;
@@ -462,24 +462,24 @@ static bool hiertbl_rights(const table_object *ptable,
 	return true;
 }
 
-static BOOL hierconttbl_query_rows(const table_object *ptable,
-    const PROPTAG_ARRAY *pcolumns, PROPTAG_ARRAY &tmp_columns,
+static bool hierconttbl_query_rows(const table_object *ptable,
+    proptag_cspan pcolumns, PROPTAG_ARRAY &tmp_columns,
     const USER_INFO *pinfo, uint32_t row_needed, TARRAY_SET *pset)
 {
 	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
-	size_t idx_sk = pcolumns->indexof(PR_SOURCE_KEY);
-	size_t idx_acc = pcolumns->indexof(PR_ACCESS);
+	size_t idx_sk  = pcolumns.indexof(PR_SOURCE_KEY);
+	size_t idx_acc = pcolumns.indexof(PR_ACCESS);
 	size_t idx_rig = ptable->table_type == zcore_tbltype::hierarchy ?
-	                 pcolumns->indexof(PR_RIGHTS) : pcolumns->npos;
+	                 pcolumns.indexof(PR_RIGHTS) : pcolumns.npos;
 	TARRAY_SET temp_set;
 
-	if (idx_sk != pcolumns->npos || idx_acc != pcolumns->npos ||
-	    idx_rig != pcolumns->npos) {
-		tmp_columns.pproptag = cu_alloc<proptag_t>(pcolumns->count);
+	if (idx_sk != pcolumns.npos || idx_acc != pcolumns.npos ||
+	    idx_rig != pcolumns.npos) {
+		tmp_columns.pproptag = cu_alloc<proptag_t>(pcolumns.size());
 		if (tmp_columns.pproptag == nullptr)
 			return FALSE;
-		tmp_columns.count = pcolumns->count;
-		memcpy(tmp_columns.pproptag, pcolumns->pproptag, sizeof(proptag_t) * pcolumns->count);
+		tmp_columns.count = pcolumns.size();
+		memcpy(tmp_columns.pproptag, pcolumns.data(), sizeof(proptag_t) * pcolumns.size());
 		/*
 		 * For source_key/access/rights, we need the MID/FID,
 		 * so do some substitution (which will be "undone")
@@ -488,43 +488,44 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 		 * We may be requesting PidTagFolderId more than once from
 		 * exmdb, which is intentional.
 		 */
-		if (idx_sk != pcolumns->npos)
+		if (idx_sk != pcolumns.npos)
 			tmp_columns.pproptag[idx_sk] = ptable->table_type == zcore_tbltype::content ?
 			                            PidTagMid : PidTagFolderId;
-		if (idx_acc != pcolumns->npos)
+		if (idx_acc != pcolumns.npos)
 			tmp_columns.pproptag[idx_acc] = ptable->table_type == zcore_tbltype::content ?
 			                                PidTagMid : PidTagFolderId;
-		if (idx_rig != pcolumns->npos)
+		if (idx_rig != pcolumns.npos)
 			tmp_columns.pproptag[idx_rig] = PidTagFolderId;
 		if (!exmdb_client->query_table(ptable->pstore->get_dir(),
 		    username, pinfo->cpid, ptable->table_id, &tmp_columns,
 		    ptable->position, row_needed, &temp_set))
 			return FALSE;
 		if (ptable->table_type == zcore_tbltype::content) {
-			if (idx_sk != pcolumns->npos &&
+			if (idx_sk != pcolumns.npos &&
 			    !conttbl_srckey(ptable, temp_set))
 				return false;
-			if (idx_acc != pcolumns->npos &&
+			if (idx_acc != pcolumns.npos &&
 			    !conttbl_access(ptable, pinfo->get_username(), temp_set))
 				return false;
 		} else {
-			if (idx_sk != pcolumns->npos &&
+			if (idx_sk != pcolumns.npos &&
 			    !hiertbl_srckey(ptable, temp_set))
 				return false;
-			if (idx_acc != pcolumns->npos &&
+			if (idx_acc != pcolumns.npos &&
 			    !hiertbl_access(ptable, pinfo->get_username(), temp_set))
 				return false;
-			if (idx_rig != pcolumns->npos &&
+			if (idx_rig != pcolumns.npos &&
 			    !hiertbl_rights(ptable, pinfo->get_username(), temp_set))
 				return false;
 		}
 	} else {
+		const PROPTAG_ARRAY cols_pta = {static_cast<uint16_t>(pcolumns.size()), deconst(pcolumns.data())};
 		if (!exmdb_client->query_table(ptable->pstore->get_dir(),
 		    username, pinfo->cpid, ptable->table_id,
-		    pcolumns, ptable->position, row_needed, &temp_set))
+		    &cols_pta, ptable->position, row_needed, &temp_set))
 			return FALSE;
 	}
-	if (pcolumns->has(PR_STORE_ENTRYID)) {
+	if (pcolumns.has(PR_STORE_ENTRYID)) {
 		auto pentryid = cu_to_store_entryid(*ptable->pstore);
 		if (pentryid == nullptr)
 			return FALSE;
@@ -548,20 +549,22 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 	return TRUE;
 }
 
-BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
-    uint32_t row_count, TARRAY_SET *pset)
+bool table_object::query_rows(/*maybenull*/ const proptag_cspan *icols,
+    uint32_t row_count, TARRAY_SET *pset) try
 {
 	assert(m_loaded);
 	auto ptable = this;
 	PROPTAG_ARRAY tmp_columns;
-	if (cols == nullptr) {
-		if (NULL != ptable->pcolumns) {
-			cols = ptable->pcolumns;
-		} else {
-			if (!table_object_get_all_columns(ptable, &tmp_columns))
-				return FALSE;
-			cols = &tmp_columns;
-		}
+	proptag_cspan cols;
+
+	if (icols != nullptr) {
+		cols = *icols;
+	} else if (ptable->pcolumns != nullptr) {
+		cols = *ptable->pcolumns;
+	} else {
+		if (!table_object_get_all_columns(ptable, &tmp_columns))
+			return FALSE;
+		cols = tmp_columns;
 	}
 	auto pinfo = zs_get_info();
 	if (pinfo == nullptr)
@@ -578,7 +581,7 @@ BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
 
 	if (ptable->table_type == zcore_tbltype::attachment) {
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
-		return msg->query_attachment_table(*cols, ptable->position, row_count, pset);
+		return msg->query_attachment_table(cols, ptable->position, row_count, pset);
 	} else if (ptable->table_type == zcore_tbltype::recipient) {
 		return rcpttable_query_rows(ptable, cols, pset, row_count);
 	} else if (ptable->table_type == zcore_tbltype::container) {
@@ -591,10 +594,11 @@ BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
 		return ct->query_user_table(cols, ptable->position, row_count, pset);
 	} else if (ptable->table_type == zcore_tbltype::distlist) {
 		auto u = static_cast<user_object *>(ptable->pparent_obj);
-		return u->query_member_table(cols, ptable->position, row_count, pset) == ecSuccess ? TRUE : false;
+		return u->query_member_table(cols, ptable->position, row_count, pset) == ecSuccess;
 	} else if (ptable->table_type == zcore_tbltype::rule) {
+		const PROPTAG_ARRAY cols_pta = {static_cast<uint16_t>(cols.size()), deconst(cols.data())};
 		if (!exmdb_client->query_table(ptable->pstore->get_dir(),
-		    nullptr, pinfo->cpid, ptable->table_id, cols,
+		    nullptr, pinfo->cpid, ptable->table_id, &cols_pta,
 		    ptable->position, row_count, pset))
 			return FALSE;
 		for (auto &row : *pset)
@@ -608,9 +612,13 @@ BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
 	if ((ptable->table_type == zcore_tbltype::content ||
 	    ptable->table_type == zcore_tbltype::hierarchy))
 		return hierconttbl_query_rows(ptable, cols, tmp_columns, pinfo, row_count, pset);
+	const PROPTAG_ARRAY cols_pta = {static_cast<uint16_t>(cols.size()), deconst(cols.data())};
 	return exmdb_client->query_table(ptable->pstore->get_dir(),
-		username, pinfo->cpid, ptable->table_id,
-	       cols, ptable->position, row_count, pset);
+	       username, pinfo->cpid, ptable->table_id, &cols_pta,
+	       ptable->position, row_count, pset);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 
 void table_object::seek_current(BOOL b_forward, uint32_t row_count)
@@ -935,7 +943,7 @@ bool table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 	case zcore_tbltype::abcontusr:
 		container_object_get_user_table_all_proptags(&proptags);
 		if (!static_cast<container_object *>(ptable->pparent_obj)->
-		    query_user_table(&proptags, ptable->position, INT32_MAX, &tmp_set))
+		    query_user_table(proptags, ptable->position, INT32_MAX, &tmp_set))
 			return FALSE;	
 		break;
 	default:

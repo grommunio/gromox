@@ -2516,7 +2516,7 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink, uint32_t timeval,
 
 ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 	uint32_t count, const RESTRICTION *prestriction,
-	const PROPTAG_ARRAY *pproptags, TARRAY_SET *prowset)
+	const PROPTAG_ARRAY *itags, TARRAY_SET *prowset)
 {
 	uint32_t row_num;
 	int32_t position;
@@ -2540,6 +2540,12 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 	auto table_type = ptable->table_type;
 	if (start != UINT32_MAX)
 		ptable->set_position(start);
+
+	proptag_cspan wtags, *pproptags = nullptr;
+	if (itags != nullptr) {
+		wtags = *itags;
+		pproptags = &wtags;
+	}
 	if (NULL != prestriction) {
 		switch (ptable->table_type) {
 		case zcore_tbltype::hierarchy:
@@ -3513,6 +3519,10 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 	auto pobject = pinfo->ptree->get_object<void>(hobject, &mapi_type);
 	if (pobject == nullptr)
 		return ecNullObject;
+
+	proptag_cspan wtags;
+	if (pproptags != nullptr)
+		wtags = *pproptags;
 	switch (mapi_type) {
 	case zs_objtype::profproperty:
 		if (NULL == pproptags) {
@@ -3520,11 +3530,10 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 			return ecSuccess;
 		}
 		ppropvals->count = 0;
-		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->size());
 		if (ppropvals->ppropval == nullptr)
 			return ecServerOOM;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
-			const auto tag = pproptags->pproptag[i];
+		for (const auto tag : wtags) {
 			auto v = static_cast<TPROPVAL_ARRAY *>(pobject)->getval(tag);
 			if (v != nullptr)
 				ppropvals->emplace_back(tag, v);
@@ -3535,9 +3544,9 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 		if (NULL == pproptags) {
 			if (!store->get_all_proptags(&proptags))
 				return ecError;
-			pproptags = &proptags;
+			wtags = proptags;
 		}
-		if (!store->get_properties(*pproptags, ppropvals))
+		if (!store->get_properties(wtags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3546,9 +3555,9 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 		if (NULL == pproptags) {
 			if (!folder->get_all_proptags(&proptags))
 				return ecError;
-			pproptags = &proptags;
+			wtags = proptags;
 		}
-		if (!folder->get_properties(*pproptags, ppropvals))
+		if (!folder->get_properties(wtags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3557,9 +3566,9 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 		if (NULL == pproptags) {
 			if (!msg->get_all_proptags(&proptags))
 				return ecError;
-			pproptags = &proptags;
+			wtags = proptags;
 		}
-		if (!msg->get_properties(*pproptags, ppropvals))
+		if (!msg->get_properties(wtags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3568,9 +3577,9 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 		if (NULL == pproptags) {
 			if (!atx->get_all_proptags(&proptags))
 				return ecError;
-			pproptags = &proptags;
+			wtags = proptags;
 		}
-		if (!atx->get_properties(*pproptags, ppropvals))
+		if (!atx->get_properties(wtags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3578,24 +3587,24 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 		if (NULL == pproptags) {
 			container_object_get_container_table_all_proptags(
 				&proptags);
-			pproptags = &proptags;
+			wtags = proptags;
 		}
-		if (!static_cast<container_object *>(pobject)->get_properties(pproptags, ppropvals))
+		if (!static_cast<container_object *>(pobject)->get_properties(wtags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	case zs_objtype::mailuser:
 	case zs_objtype::distlist:
 		if (NULL == pproptags) {
 			container_object_get_user_table_all_proptags(&proptags);
-			pproptags = &proptags;
+			wtags = proptags;
 		}
-		if (!static_cast<user_object *>(pobject)->get_properties(pproptags, ppropvals))
+		if (!static_cast<user_object *>(pobject)->get_properties(wtags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	case zs_objtype::oneoff:
 		if (pproptags == nullptr)
-			pproptags = &oneoff_object::all_tags;
-		return static_cast<oneoff_object *>(pobject)->get_props(pproptags, ppropvals);
+			wtags = oneoff_object::all_tags;
+		return static_cast<oneoff_object *>(pobject)->get_props(wtags, ppropvals);
 	default:
 		return ecNotSupported;
 	}

@@ -41,7 +41,7 @@ struct table_object {
 	BOOL set_sorts(const SORTORDER_SET *);
 	BOOL load();
 	void unload();
-	BOOL query_rows(const PROPTAG_ARRAY *cols, uint32_t row_count, TARRAY_SET *);
+	bool query_rows(const proptag_cspan *cols, uint32_t row_count, TARRAY_SET *);
 	BOOL set_restriction(const RESTRICTION *);
 	void seek_current(BOOL forward, uint32_t row_count);
 	uint32_t get_position() const { return position; }

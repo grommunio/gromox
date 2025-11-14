@@ -37,12 +37,12 @@ struct container_object {
 	~container_object() { clear(); }
 	static std::unique_ptr<container_object> create(uint8_t type, CONTAINER_ID);
 	void clear();
-	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
 	BOOL load_user_table(const RESTRICTION *);
 	BOOL get_container_table_num(BOOL depth, uint32_t *num);
-	BOOL query_container_table(const PROPTAG_ARRAY *, BOOL depth, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
+	bool query_container_table(proptag_cspan, BOOL depth, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
 	BOOL get_user_table_num(uint32_t *);
-	BOOL query_user_table(const PROPTAG_ARRAY *, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
+	bool query_user_table(proptag_cspan, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
 
 	uint8_t type = 0;
 	CONTAINER_ID id{};
@@ -205,9 +205,9 @@ struct user_object {
 	public:
 	static std::unique_ptr<user_object> create(int base_id, uint32_t minid);
 	bool valid();
-	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
 	ec_error_t load_list_members(const RESTRICTION *);
-	ec_error_t query_member_table(const PROPTAG_ARRAY *, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
+	ec_error_t query_member_table(proptag_cspan, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
 
 	int base_id = 0;
 	uint32_t minid = 0;
@@ -220,7 +220,7 @@ struct oneoff_object {
 
 	public:
 	static std::unique_ptr<oneoff_object> create(ONEOFF_ENTRYID &&);
-	ec_error_t get_props(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	ec_error_t get_props(proptag_cspan, TPROPVAL_ARRAY *);
 
 	static const gromox::proptag_t all_tags_raw[];
 	static const PROPTAG_ARRAY all_tags;
