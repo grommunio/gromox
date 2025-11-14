@@ -2580,7 +2580,7 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 		case zcore_tbltype::recipient:
 		case zcore_tbltype::store:
 		case zcore_tbltype::abcontusr:
-			if (!ptable->filter_rows(count, prestriction, pproptags, prowset))
+			if (!ptable->filter_rows(count, prestriction, prowset))
 				return ecError;
 			break;
 		default:

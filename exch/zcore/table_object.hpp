@@ -52,7 +52,7 @@ struct table_object {
 	void remove_bookmark(uint32_t index);
 	void clear_bookmarks() { bookmark_list.clear(); }
 	BOOL retrieve_bookmark(uint32_t index, BOOL *exist);
-	BOOL filter_rows(uint32_t count, const RESTRICTION *, const PROPTAG_ARRAY *cols, TARRAY_SET *);
+	bool filter_rows(uint32_t count, const RESTRICTION *, TARRAY_SET *);
 	BOOL match_row(BOOL forward, const RESTRICTION *, int32_t *pos);
 
 	store_object *pstore = nullptr;

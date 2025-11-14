@@ -907,8 +907,8 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 	return FALSE;
 }
 
-BOOL table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
-	const PROPTAG_ARRAY *cols, TARRAY_SET *pset)
+bool table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
+    TARRAY_SET *pset)
 {
 	auto ptable = this;
 	TARRAY_SET tmp_set{};
