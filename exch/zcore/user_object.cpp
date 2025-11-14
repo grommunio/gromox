@@ -134,7 +134,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	ab_tree::ab_node node(pbase, puser->minid);
 	if (pbase->exists(puser->minid))
-		return ab_tree_fetch_node_properties(node, pproptags, ppropvals);
+		return ab_tree_fetch_node_properties(node, *pproptags, ppropvals);
 	pbase.reset();
 	/* if user is hidden from addressbook tree, we simply
 		return the necessary information to the caller */
@@ -273,7 +273,7 @@ ec_error_t user_object::query_member_table(const PROPTAG_ARRAY *proptags,
 		if (set->pparray[set->count] == nullptr)
 			return ecServerOOM;
 		if (!ab_tree_fetch_node_properties(node,
-		    proptags, set->pparray[set->count]))
+		    *proptags, set->pparray[set->count]))
 			return ecNotFound;
 		++set->count;
 	}

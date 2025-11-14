@@ -918,8 +918,7 @@ bool table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 		if (!msg->get_attachment_table_all_proptags(&proptags))
 			return FALSE;	
 		static constexpr proptag_t tmp_proptag[] = {PR_ATTACH_DATA_BIN};
-		static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
-		common_util_reduce_proptags(&proptags, &tmp_proptags);
+		cu_reduce_proptags(&proptags, tmp_proptag);
 		if (!msg->query_attachment_table(&proptags, ptable->position, INT32_MAX, &tmp_set))
 			return FALSE;	
 		break;

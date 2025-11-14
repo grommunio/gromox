@@ -1224,7 +1224,7 @@ ec_error_t zs_resolvename(GUID hsession,
 		if (presult_set->pparray[presult_set->count] == nullptr)
 			return ecServerOOM;
 		if (!ab_tree_fetch_node_properties({pbase, mid},
-		    &proptags, presult_set->pparray[presult_set->count]))
+		    proptags, presult_set->pparray[presult_set->count]))
 			return ecError;
 		presult_set->count ++;
 	}
@@ -2794,7 +2794,7 @@ ec_error_t zs_sorttable(GUID hsession,
 	}
 	auto pcolumns = ptable->get_columns();
 	if (b_multi_inst && pcolumns != nullptr &&
-	    !common_util_verify_columns_and_sorts(pcolumns, psortset))
+	    !cu_verify_columns_and_sorts(*pcolumns, psortset))
 		return ecNotSupported;
 	if (!ptable->set_sorts(psortset))
 		return ecError;
@@ -3855,7 +3855,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		BOOL b_fai    = !pexclude_proptags->has(PR_FOLDER_ASSOCIATED_CONTENTS) ? TRUE : false;
 		if (!static_cast<folder_object *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
-		common_util_reduce_proptags(&proptags, pexclude_proptags);
+		cu_reduce_proptags(&proptags, *pexclude_proptags);
 		tmp_proptags.count = 0;
 		tmp_proptags.pproptag = cu_alloc<proptag_t>(proptags.count);
 		if (tmp_proptags.pproptag == nullptr)

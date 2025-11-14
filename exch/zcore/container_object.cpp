@@ -585,7 +585,7 @@ BOOL container_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		ppropvals->count = 0;
 		return TRUE;
 	}
-	return ab_tree_fetch_node_properties(node, pproptags, ppropvals);
+	return ab_tree_fetch_node_properties(node, *pproptags, ppropvals);
 }
 
 BOOL container_object::get_container_table_num(BOOL b_depth, uint32_t *pnum)
@@ -633,7 +633,7 @@ container_object_get_specialtables_from_node(const ab_tree::ab_node& node,
 	pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 	if (pset->pparray[pset->count] == nullptr)
 		return FALSE;
-	if (!ab_tree_fetch_node_properties(node, pproptags,
+	if (!ab_tree_fetch_node_properties(node, *pproptags,
 	    pset->pparray[pset->count]))
 		return FALSE;	
 	pset->count ++;
@@ -892,7 +892,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				if (pset->pparray[pset->count] == nullptr)
 					return FALSE;
 				if (!ab_tree_fetch_node_properties(node,
-				    pproptags, pset->pparray[pset->count]))
+				    *pproptags, pset->pparray[pset->count]))
 					return FALSE;	
 				pset->count ++;
 			}
@@ -905,7 +905,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				if (pset->pparray[pset->count] == nullptr)
 					return FALSE;
 				if (!ab_tree_fetch_node_properties(node,
-				    pproptags, pset->pparray[pset->count]))
+				    *pproptags, pset->pparray[pset->count]))
 					return FALSE;
 				pset->count++;
 				if (pset->count == row_count)
@@ -926,7 +926,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				if (pset->pparray[pset->count] == nullptr)
 					return FALSE;
 				if (!ab_tree_fetch_node_properties(child,
-				    pproptags, pset->pparray[pset->count]))
+				    *pproptags, pset->pparray[pset->count]))
 					return FALSE;
 				if (++pset->count == row_count)
 					break;

@@ -92,9 +92,7 @@ static thread_local std::unique_ptr<env_context> g_env_key;
 static char g_submit_command[1024];
 static constexpr char ZCORE_UA[] = PACKAGE_NAME "-zcore " PACKAGE_VERSION;
 
-BOOL common_util_verify_columns_and_sorts(
-	const PROPTAG_ARRAY *pcolumns,
-	const SORTORDER_SET *psort_criteria)
+bool cu_verify_columns_and_sorts(proptag_cspan cols, const SORTORDER_SET *psort_criteria)
 {
 	proptag_t proptag = 0;
 	for (size_t i = 0; i < psort_criteria->count; ++i) {
@@ -105,9 +103,8 @@ BOOL common_util_verify_columns_and_sorts(
 		proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
 		break;
 	}
-	for (size_t i = 0; i < pcolumns->count; ++i)
-		if (pcolumns->pproptag[i] & MV_INSTANCE &&
-		    proptag != pcolumns->pproptag[i])
+	for (const auto t : cols)
+		if (t & MV_INSTANCE && proptag != t)
 			return FALSE;
 	return TRUE;
 }
@@ -244,12 +241,12 @@ void common_util_remove_propvals(TPROPVAL_ARRAY *parray, proptag_t proptag)
 	}
 }
 
-void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
-	const PROPTAG_ARRAY *pproptags_subtractor)
+void cu_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
+    proptag_cspan pproptags_subtractor)
 {
-	for (unsigned int j = 0; j < pproptags_subtractor->count; ++j) {
+	for (const auto t : pproptags_subtractor) {
 		for (unsigned int i = 0; i < pproptags_minuend->count; ++i) {
-			if (pproptags_subtractor->pproptag[j] != pproptags_minuend->pproptag[i])
+			if (t != pproptags_minuend->pproptag[i])
 				continue;
 			pproptags_minuend->count--;
 			if (i < pproptags_minuend->count)

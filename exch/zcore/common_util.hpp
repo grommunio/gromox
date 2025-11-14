@@ -80,16 +80,13 @@ struct store_object;
 
 extern void common_util_init(const char *org_name, unsigned int max_rcpt, size_t max_mail_len, unsigned int max_rule_len, std::string &&smtp_url, const char *submit_cmd);
 extern int common_util_run(const char *data_path);
-BOOL common_util_verify_columns_and_sorts(
-	const PROPTAG_ARRAY *pcolumns,
-	const SORTORDER_SET *psort_criteria);
+extern bool cu_verify_columns_and_sorts(proptag_cspan, const SORTORDER_SET *);
 extern bool cu_extract_delegator(message_object *, std::string &);
 extern repr_grant cu_get_delegate_perm_MD(const char *account, const char *maildir);
 extern repr_grant cu_get_delegate_perm_AA(const char *account, const char *account_representing);
 extern ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, gromox::proptag_t, const void *);
 extern void common_util_remove_propvals(TPROPVAL_ARRAY *, gromox::proptag_t);
-void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
-	const PROPTAG_ARRAY *pproptags_subtractor);
+extern void cu_reduce_proptags(PROPTAG_ARRAY *, proptag_cspan);
 BOOL common_util_essdn_to_uid(const char *pessdn, int *puid);
 BOOL common_util_essdn_to_ids(const char *pessdn,
 	int *pdomain_id, int *puser_id);
