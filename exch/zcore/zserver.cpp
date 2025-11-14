@@ -1558,8 +1558,7 @@ ec_error_t zs_createmessage(GUID hsession,
 	static constexpr proptag_t proptag_buff[] =
 		{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
 		PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
-	static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-	if (!pstore->get_properties(&tmp_proptags, &tmp_propvals))
+	if (!pstore->get_properties(proptag_buff, &tmp_propvals))
 		return ecError;
 	auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
 	int64_t max_quota = num == nullptr ? -1 : static_cast<int64_t>(*num) * 1024;
@@ -3248,8 +3247,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		return ecTooManyRecips;
 
 	static constexpr proptag_t proptag_buff1[] = {PR_ASSOCIATED};
-	static constexpr PROPTAG_ARRAY tmp_proptags1 = {std::size(proptag_buff1), deconst(proptag_buff1)};
-	if (!pmessage->get_properties(&tmp_proptags1, &tmp_propvals))
+	if (!pmessage->get_properties(proptag_buff1, &tmp_propvals))
 		return ecError;
 	auto flag = tmp_propvals.get<const uint8_t>(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
@@ -3277,9 +3275,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		return err;
 	static constexpr proptag_t proptag_buff2[] =
 		{PR_MAX_SUBMIT_MESSAGE_SIZE, PR_PROHIBIT_SEND_QUOTA, PR_MESSAGE_SIZE_EXTENDED};
-	static const PROPTAG_ARRAY tmp_proptags2 =
-		{std::size(proptag_buff2), deconst(proptag_buff2)};
-	if (!pstore->get_properties(&tmp_proptags2, &tmp_propvals))
+	if (!pstore->get_properties(proptag_buff2, &tmp_propvals))
 		return ecError;
 
 	auto sendquota = tmp_propvals.get<uint32_t>(PR_PROHIBIT_SEND_QUOTA);
@@ -3298,9 +3294,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		{PR_MESSAGE_SIZE, PR_MESSAGE_FLAGS, PR_DEFERRED_SEND_TIME,
 		PR_DEFERRED_SEND_NUMBER, PR_DEFERRED_SEND_UNITS,
 		PR_DELETE_AFTER_SUBMIT};
-	static constexpr PROPTAG_ARRAY tmp_proptags3 =
-		{std::size(proptag_buff3), deconst(proptag_buff3)};
-	if (!pmessage->get_properties(&tmp_proptags3, &tmp_propvals))
+	if (!pmessage->get_properties(proptag_buff3, &tmp_propvals))
 		return ecError;
 	num = tmp_propvals.get<uint32_t>(PR_MESSAGE_SIZE);
 	if (num == nullptr)
@@ -3543,7 +3537,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 				return ecError;
 			pproptags = &proptags;
 		}
-		if (!store->get_properties(pproptags, ppropvals))
+		if (!store->get_properties(*pproptags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3554,7 +3548,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 				return ecError;
 			pproptags = &proptags;
 		}
-		if (!folder->get_properties(pproptags, ppropvals))
+		if (!folder->get_properties(*pproptags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3565,7 +3559,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 				return ecError;
 			pproptags = &proptags;
 		}
-		if (!msg->get_properties(pproptags, ppropvals))
+		if (!msg->get_properties(*pproptags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3576,7 +3570,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 				return ecError;
 			pproptags = &proptags;
 		}
-		if (!atx->get_properties(pproptags, ppropvals))
+		if (!atx->get_properties(*pproptags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3629,7 +3623,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		auto store = static_cast<store_object *>(pobject);
 		if (!store->owner_mode())
 			return ecAccessDenied;
-		if (!store->remove_properties(pproptags))
+		if (!store->remove_properties(*pproptags))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3643,7 +3637,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 			if (!(permission & frightsOwner))
 				return ecAccessDenied;
 		}
-		if (!folder->remove_properties(pproptags))
+		if (!folder->remove_properties(*pproptags))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3651,7 +3645,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
-		if (!msg->remove_properties(pproptags))
+		if (!msg->remove_properties(*pproptags))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3659,7 +3653,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (!atx->writable())
 			return ecAccessDenied;
-		if (!atx->remove_properties(pproptags))
+		if (!atx->remove_properties(*pproptags))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3870,7 +3864,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 				continue;
 			tmp_proptags.emplace_back(tag);
 		}
-		if (!folder->get_properties(&tmp_proptags, &propvals))
+		if (!folder->get_properties(tmp_proptags, &propvals))
 			return ecError;
 		if (b_sub || b_normal || b_fai) {
 			BOOL b_guest = username == STORE_OWNER_GRANTED ? false : TRUE;
@@ -3894,7 +3888,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		if (!mdst->writable())
 			return ecAccessDenied;
 		if (!mdst->copy_to(static_cast<message_object *>(pobject),
-		    pexclude_proptags, b_force, &b_cycle))
+		    *pexclude_proptags, b_force, &b_cycle))
 			return ecError;
 		return b_cycle ? ecMsgCycle : ecSuccess;
 	}
@@ -3903,7 +3897,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		if (!adst->writable())
 			return ecAccessDenied;
 		if (!adst->copy_properties(static_cast<attachment_object *>(pobject),
-		    pexclude_proptags, b_force, &b_cycle))
+		    *pexclude_proptags, b_force, &b_cycle))
 			return ecError;
 		return b_cycle ? ecMsgCycle : ecSuccess;
 	}

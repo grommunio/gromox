@@ -199,24 +199,22 @@ static BOOL attachment_object_get_calculated_property(attachment_object *pattach
 	return FALSE;
 }
 
-BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
-    TPROPVAL_ARRAY *ppropvals)
+bool attachment_object::get_properties(proptag_cspan tags, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pattachment = this;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(tags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(tags.size());
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : tags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (!attachment_object_get_calculated_property(pattachment, tag, &pvalue))
 			tmp_proptags.emplace_back(tag);
 		else if (pvalue != nullptr)
@@ -264,22 +262,19 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	return TRUE;
 }
 
-BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags)
+bool attachment_object::remove_properties(proptag_cspan tags)
 {
 	auto pattachment = this;
 	PROBLEM_ARRAY tmp_problems;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(tags.size());
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
-		if (aobj_is_readonly_prop(pattachment, tag))
-			continue;
-		tmp_proptags.emplace_back(tag);
-	}
+	for (const auto tag : tags)
+		if (!aobj_is_readonly_prop(pattachment, tag))
+			tmp_proptags.emplace_back(tag);
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	if (!exmdb_client->remove_instance_properties(pattachment->pparent->pstore->get_dir(),
@@ -290,10 +285,11 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
-	const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force, BOOL *pb_cycle)
+bool attachment_object::copy_properties(attachment_object *pattachment_src,
+    proptag_cspan excluded_proptags, BOOL b_force, BOOL *pb_cycle)
 {
 	auto pattachment = this;
+	auto pexcluded_proptags = &excluded_proptags;
 	int i;
 	PROBLEM_ARRAY tmp_problems;
 	ATTACHMENT_CONTENT attctnt;

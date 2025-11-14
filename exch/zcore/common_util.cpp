@@ -116,8 +116,7 @@ bool cu_extract_delegator(message_object *pmessage, std::string &username)
 	static constexpr proptag_t proptag_buff[] =
 		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
 		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID};
-	static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
+	if (!pmessage->get_properties(proptag_buff, &tmp_propvals))
 		return FALSE;	
 	if (0 == tmp_propvals.count) {
 		username.clear();

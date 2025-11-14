@@ -59,7 +59,7 @@ static errno_t storetbl_add_row(table_object *tbl, const USER_INFO &info,
 	auto props = cu_alloc<TPROPVAL_ARRAY>();
 	if (props == nullptr)
 		return ENOMEM;
-	if (!store->get_properties(&tags, props))
+	if (!store->get_properties(tags, props))
 		return 0;
 	/* props is from the cu_alloc allocator; by duplication, we make one with me_alloc */
 	tpropval_array_ptr pdup(props->dup());
@@ -578,7 +578,7 @@ BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
 
 	if (ptable->table_type == zcore_tbltype::attachment) {
 		auto msg = static_cast<message_object *>(ptable->pparent_obj);
-		return msg->query_attachment_table(cols, ptable->position, row_count, pset);
+		return msg->query_attachment_table(*cols, ptable->position, row_count, pset);
 	} else if (ptable->table_type == zcore_tbltype::recipient) {
 		return rcpttable_query_rows(ptable, cols, pset, row_count);
 	} else if (ptable->table_type == zcore_tbltype::container) {
@@ -919,7 +919,7 @@ bool table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 			return FALSE;	
 		static constexpr proptag_t tmp_proptag[] = {PR_ATTACH_DATA_BIN};
 		cu_reduce_proptags(&proptags, tmp_proptag);
-		if (!msg->query_attachment_table(&proptags, ptable->position, INT32_MAX, &tmp_set))
+		if (!msg->query_attachment_table(proptags, ptable->position, INT32_MAX, &tmp_set))
 			return FALSE;	
 		break;
 	}

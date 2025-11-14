@@ -60,9 +60,9 @@ struct folder_object {
 	static std::unique_ptr<folder_object> create(store_object *, uint64_t folder_id, uint8_t type, uint32_t tag_access);
 	BOOL get_all_proptags(PROPTAG_ARRAY *);
 	bool is_readonly_prop(gromox::proptag_t) const;
-	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
 	BOOL set_properties(const TPROPVAL_ARRAY *);
-	BOOL remove_properties(const PROPTAG_ARRAY *);
+	bool remove_properties(proptag_cspan);
 	BOOL get_permissions(PERMISSION_SET *);
 	BOOL set_permissions(const PERMISSION_SET *);
 	BOOL updaterules(uint32_t flags, RULE_LIST *);
@@ -150,13 +150,13 @@ struct message_object {
 	BOOL get_attachments_num(uint16_t *);
 	BOOL delete_attachment(uint32_t attachment_num);
 	BOOL get_attachment_table_all_proptags(PROPTAG_ARRAY *);
-	BOOL query_attachment_table(const PROPTAG_ARRAY *, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
+	bool query_attachment_table(proptag_cspan, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
 	BOOL clear_unsent();
 	BOOL get_all_proptags(PROPTAG_ARRAY *);
-	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
 	BOOL set_properties(TPROPVAL_ARRAY *);
-	BOOL remove_properties(const PROPTAG_ARRAY *);
-	BOOL copy_to(message_object *src, const PROPTAG_ARRAY *exclprop, BOOL force, BOOL *cycle);
+	bool remove_properties(proptag_cspan);
+	bool copy_to(message_object *src, proptag_cspan exclprop, BOOL force, BOOL *cycle);
 	BOOL set_readflag(uint8_t read_flag, BOOL *changed);
 
 	store_object *pstore = nullptr;
@@ -186,10 +186,10 @@ struct attachment_object {
 	uint32_t get_tag_access() const { return pparent->tag_access; }
 	ec_error_t save();
 	BOOL get_all_proptags(PROPTAG_ARRAY *);
-	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
 	BOOL set_properties(const TPROPVAL_ARRAY *);
-	BOOL remove_properties(const PROPTAG_ARRAY *);
-	BOOL copy_properties(attachment_object *src, const PROPTAG_ARRAY *exclprop, BOOL force, BOOL *cycle);
+	bool remove_properties(proptag_cspan);
+	bool copy_properties(attachment_object *src, proptag_cspan exclprop, BOOL force, BOOL *cycle);
 	store_object *get_store() const { return pparent->pstore; }
 	bool writable() const { return b_writable; }
 

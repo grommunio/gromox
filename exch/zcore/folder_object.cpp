@@ -412,24 +412,23 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	return FALSE;
 }
 
-BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
+bool folder_object::get_properties(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
 	auto pfolder = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (!folder_object_get_calculated_property(pfolder, tag, &pvalue))
 			tmp_proptags.emplace_back(tag);
 		else if (pvalue != nullptr)
@@ -499,7 +498,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	return TRUE;
 }
 
-BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
+bool folder_object::remove_properties(proptag_cspan pproptags)
 {
 	BINARY *pbin_pcl;
 	uint64_t last_time;
@@ -510,16 +509,13 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	TAGGED_PROPVAL propval_buff[4];
 	
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	auto pfolder = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
-		if (pfolder->is_readonly_prop(tag))
-			continue;
-		tmp_proptags.emplace_back(tag);
-	}
+	for (const auto tag : pproptags)
+		if (!pfolder->is_readonly_prop(tag))
+			tmp_proptags.emplace_back(tag);
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	if (!exmdb_client->remove_folder_properties(pfolder->pstore->get_dir(),

@@ -22,9 +22,9 @@ struct store_object {
 	BOOL get_named_propnames(const PROPID_ARRAY &, PROPNAME_ARRAY *);
 	BOOL get_named_propids(BOOL create, const PROPNAME_ARRAY *, PROPID_ARRAY *);
 	BOOL get_all_proptags(PROPTAG_ARRAY *);
-	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	bool get_properties(proptag_cspan, TPROPVAL_ARRAY *);
 	BOOL set_properties(const TPROPVAL_ARRAY *);
-	BOOL remove_properties(const PROPTAG_ARRAY *);
+	bool remove_properties(proptag_cspan);
 	BOOL get_permissions(PERMISSION_SET *);
 
 	BOOL b_private = false;
