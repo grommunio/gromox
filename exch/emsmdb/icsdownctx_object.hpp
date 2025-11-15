@@ -53,7 +53,6 @@ struct icsdownctx_object final {
 	uint32_t state_property = 0;
 	BOOL b_started = false;
 	ics_flow_list flow_list;
-	std::vector<uint32_t> group_list;
 	uint64_t last_readcn = 0, last_changenum = 0;
 	PROGRESS_INFORMATION *pprogtotal = nullptr;
 	EID_ARRAY *pmessages = nullptr, *pdeleted_messages = nullptr;
