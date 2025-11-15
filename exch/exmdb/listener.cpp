@@ -105,7 +105,7 @@ int exmdb_listener_run(const char *config_path, const char *hosts_allow)
 		return -5;
 	}
 	std::sort(acl.begin(), acl.end());
-	acl.erase(std::remove(acl.begin(), acl.end(), ""), acl.end());
+	std::erase(acl, "");
 	acl.erase(std::unique(acl.begin(), acl.end()), acl.end());
 	if (acl.size() == 0) {
 		mlog(LV_NOTICE, "exmdb_provider: defaulting to implicit access ACL containing ::1.");

@@ -265,7 +265,7 @@ int main(int argc, char **argv)
 	if (hosts_allow != nullptr)
 		g_acl_list = gx_split(hosts_allow, ' ');
 	std::sort(g_acl_list.begin(), g_acl_list.end());
-	g_acl_list.erase(std::remove(g_acl_list.begin(), g_acl_list.end(), ""), g_acl_list.end());
+	std::erase(g_acl_list, "");
 	g_acl_list.erase(std::unique(g_acl_list.begin(), g_acl_list.end()), g_acl_list.end());
 	if (g_acl_list.size() == 0) {
 		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");

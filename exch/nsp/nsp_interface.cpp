@@ -1531,13 +1531,13 @@ static ec_error_t nsp_get_proptags(const ab_tree::ab_node &node,
 	 * Trim tags that have no propval (requirement as per MS-OXNSPI v14
 	 * §3.1.4.1.6 point 5).
 	 */
-	t.erase(std::remove_if(t.begin(), t.end(), [&](proptag_t proptag) {
+	std::erase_if(t, [&](proptag_t proptag) {
 		char temp_buff[1024];
 		PROPERTY_VALUE prop_val{};
 		return nsp_interface_fetch_property(node, false, CP_UTF8,
 		       proptag, &prop_val, temp_buff,
 		       std::size(temp_buff)) != ecSuccess;
-	}), t.end());
+	});
 	return ecSuccess;
 #undef U
 } catch (const std::bad_alloc &) {

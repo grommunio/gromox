@@ -1626,7 +1626,7 @@ void imap_parser_remove_select(imap_context *pcontext)
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = sh_query(temp_string);
 	if (plist != nullptr) {
-		plist->erase(std::remove(plist->begin(), plist->end(), pcontext), plist->end());
+		std::erase(*plist, pcontext);
 		if (plist->size() == 0) {
 			g_select_hash.erase(temp_string);
 		} else {

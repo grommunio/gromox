@@ -678,8 +678,7 @@ int EWSContext::notify()
 		}
 	}
 	for (const tSubscriptionId &subscription : msg.ErrorSubscriptionIds)
-		nctx.nct_subs.erase(std::remove(nctx.nct_subs.begin(), nctx.nct_subs.end(), subscription),
-		                    nctx.nct_subs.end());
+		std::erase(nctx.nct_subs, subscription);
 	msg.success();
 	// If there are no more subscriptions to monitor or the stream expired, close it
 	// If there were more events than we could deliver in one message, proceed with the next chunk right away

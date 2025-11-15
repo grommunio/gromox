@@ -163,8 +163,8 @@ hook_plug_entity::~hook_plug_entity()
 	mlog(LV_INFO, "transporter: unloading %s", file_name);
 	if (lib_main != nullptr && completed_init)
 		lib_main(PLUGIN_FREE, server_funcs);
-	g_hook_list.erase(std::remove_if(g_hook_list.begin(), g_hook_list.end(),
-		[this](const hook_entry *e) { return e->plib == this; }), g_hook_list.end());
+	std::erase_if(g_hook_list,
+		[this](const hook_entry *e) { return e->plib == this; });
 	for (const auto &nd : list_reference)
 		service_release(nd.service_name.c_str(), file_name);
 }

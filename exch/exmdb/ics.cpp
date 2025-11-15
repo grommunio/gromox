@@ -712,12 +712,12 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		if (!cu_get_proptags(MAPI_FOLDER, fid_val1,
 		    pdb->psqlite, tags))
 			return FALSE;
-		tags.erase(std::remove_if(tags.begin(), tags.end(), [](uint32_t t) {
+		std::erase_if(tags, [](proptag_t t) {
 			return t == PR_HAS_RULES || t == PidTagChangeNumber ||
 			       t == PR_LOCAL_COMMIT_TIME || t == PR_DELETED_COUNT_TOTAL ||
 			       t == PR_NORMAL_MESSAGE_SIZE || t == PR_LOCAL_COMMIT_TIME_MAX ||
 			       t == PR_HIERARCHY_CHANGE_NUM;
-		}), tags.end());
+		});
 		tags.push_back(PidTagParentFolderId);
 		if (!cu_get_properties(MAPI_FOLDER, fid_val1, CP_ACP,
 		    pdb->psqlite, tags, &pfldchgs->pfldchgs[i]))

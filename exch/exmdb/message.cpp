@@ -1338,12 +1338,12 @@ static BOOL message_read_message(sqlite3 *psqlite, cpid_t cpid,
 	std::vector<uint32_t> mtags;
 	if (!cu_get_proptags(MAPI_MESSAGE, message_id, psqlite, mtags))
 		return FALSE;	
-	mtags.erase(std::remove_if(mtags.begin(), mtags.end(), [](uint32_t t) {
+	std::erase_if(mtags, [](proptag_t t) {
 		return t == PR_DISPLAY_TO || t == PR_DISPLAY_TO_A ||
 		       t == PR_DISPLAY_CC || t == PR_DISPLAY_CC_A ||
 		       t == PR_DISPLAY_BCC || t == PR_DISPLAY_BCC_A ||
 		       t == PR_HASATTACH;
-	}), mtags.end());
+	});
 	if (!cu_get_properties(MAPI_MESSAGE, message_id, cpid,
 	    psqlite, mtags, &(*ppmsgctnt)->proplist))
 		return FALSE;
