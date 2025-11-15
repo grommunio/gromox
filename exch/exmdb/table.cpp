@@ -53,8 +53,7 @@ struct CONTENT_ROW_PARAM {
 	uint64_t inst_id;
 	int row_type;
 	const SORTORDER_SET *psorts;
-	uint32_t instance_tag;
-	uint32_t extremum_tag;
+	proptag_t instance_tag, extremum_tag;
 };
 
 struct HIERARCHY_ROW_PARAM {
@@ -332,13 +331,12 @@ static BOOL table_load_content(db_conn_ptr &pdb, sqlite3 *psqlite,
 	int multi_index;
 	BOOL b_extremum;
 	uint64_t header_id;
-	uint32_t tmp_proptag;
-	uint32_t tmp_proptag1;
 	uint32_t unread_count;
 	
 	int64_t prev_id = -parent_id;
 	auto where = table_cond_to_where(cond_list);
 	if (depth == psorts->ccategories) {
+		proptag_t tmp_proptag;
 		multi_index = -1;
 		for (unsigned int i = 0; i < psorts->count; ++i) {
 			if ((psorts->psort[i].type & MVI_FLAG) == MVI_FLAG) {
@@ -430,7 +428,7 @@ static BOOL table_load_content(db_conn_ptr &pdb, sqlite3 *psqlite,
 		return TRUE;
 	}
 	std::string qstr;
-	tmp_proptag = PROP_TAG(psorts->psort[depth].type, psorts->psort[depth].propid);
+	auto tmp_proptag = PROP_TAG(psorts->psort[depth].type, psorts->psort[depth].propid);
 	if (depth == psorts->ccategories - 1 &&
 		psorts->count > psorts->ccategories
 		&& (TABLE_SORT_MAXIMUM_CATEGORY ==
@@ -438,7 +436,7 @@ static BOOL table_load_content(db_conn_ptr &pdb, sqlite3 *psqlite,
 		TABLE_SORT_MINIMUM_CATEGORY ==
 		psorts->psort[depth + 1].table_sort)) {
 		b_extremum = TRUE;
-		tmp_proptag1 = PROP_TAG(psorts->psort[depth+1].type, psorts->psort[depth+1].propid);
+		auto tmp_proptag1 = PROP_TAG(psorts->psort[depth+1].type, psorts->psort[depth+1].propid);
 		if (TABLE_SORT_MAXIMUM_CATEGORY ==
 			psorts->psort[depth + 1].table_sort) {
 			qstr = fmt::format("SELECT v{:x}, COUNT(*), MAX(v{:x}) AS max_field "
@@ -652,7 +650,7 @@ static BOOL table_load_content_table(db_conn_ptr &pdb, db_base_wr_ptr &dbase,
 	unsigned int col_inum = 0; /* stbl column number for inst_num */
 	size_t tag_count = 0;
 	void *pvalue;
-	uint32_t tmp_proptags[16];
+	proptag_t tmp_proptags[16];
 
 	auto conv_id = (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) ?
 	               get_conv_id(prestriction) : nullptr;
@@ -1436,13 +1434,12 @@ BOOL exmdb_server::sum_table(const char *dir,
 static BOOL table_column_content_tmptbl(
 	sqlite3_stmt *pstmt, sqlite3_stmt *pstmt1, sqlite3_stmt *pstmt2,
 	const SORTORDER_SET *psorts, uint64_t folder_id, int row_type,
-	proptag_t proptag, uint32_t instance_tag, uint32_t extremum_tag,
+    proptag_t proptag, proptag_t instance_tag, proptag_t extremum_tag,
 	void **ppvalue)
 {
 	int i;
 	int depth;
 	uint64_t row_id;
-	uint32_t tmp_proptag;
 	
 	switch (proptag) {
 	case PidTagFolderId: {
@@ -1513,7 +1510,7 @@ static BOOL table_column_content_tmptbl(
 		return TRUE;
 	}
 	for (i=psorts->ccategories-1; i>=0; i--) {
-		tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
+		auto tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 		if (proptag == tmp_proptag)
 			break;
 	}
@@ -2662,7 +2659,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 	}
 	switch (ptnode->type) {
 	case table_type::hierarchy: {
-		std::vector<uint32_t> tags;
+		std::vector<proptag_t> tags;
 		snprintf(sql_string, std::size(sql_string), "SELECT "
 			"folder_id FROM t%u", ptnode->table_id);
 		auto pstmt = pdb->eph_prep(sql_string);
@@ -2684,15 +2681,15 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 		tags.push_back(PR_DEPTH);
 		std::sort(tags.begin(), tags.end());
 		tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
-		pproptags->pproptag = cu_alloc<uint32_t>(tags.size());
+		pproptags->pproptag = cu_alloc<proptag_t>(tags.size());
 		if (pproptags->pproptag == nullptr)
 			return FALSE;
 		pproptags->count = tags.size();
-		memcpy(pproptags->pproptag, tags.data(), sizeof(uint32_t) * tags.size());
+		memcpy(pproptags->pproptag, tags.data(), sizeof(proptag_t) * tags.size());
 		return TRUE;
 	}
 	case table_type::content: {
-		std::vector<uint32_t> tags;
+		std::vector<proptag_t> tags;
 		snprintf(sql_string, std::size(sql_string), "SELECT inst_id,"
 				" row_type FROM t%u", ptnode->table_id);
 		auto pstmt = pdb->eph_prep(sql_string);
@@ -2722,16 +2719,16 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 			PR_CONTENT_COUNT, PR_CONTENT_UNREAD});
 		std::sort(tags.begin(), tags.end());
 		tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
-		pproptags->pproptag = cu_alloc<uint32_t>(tags.size());
+		pproptags->pproptag = cu_alloc<proptag_t>(tags.size());
 		if (pproptags->pproptag == nullptr)
 			return FALSE;
 		pproptags->count = tags.size();
-		memcpy(pproptags->pproptag, tags.data(), sizeof(uint32_t) * tags.size());
+		memcpy(pproptags->pproptag, tags.data(), sizeof(proptag_t) * tags.size());
 		return TRUE;
 	}
 	case table_type::permission:
 		pproptags->count = 4;
-		pproptags->pproptag = cu_alloc<uint32_t>(4);
+		pproptags->pproptag = cu_alloc<proptag_t>(4);
 		if (pproptags->pproptag == nullptr)
 			return FALSE;
 		pproptags->pproptag[0] = PR_ENTRYID;
@@ -2741,7 +2738,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 		return TRUE;
 	case table_type::rule:
 		pproptags->count = 10;
-		pproptags->pproptag = cu_alloc<uint32_t>(10);
+		pproptags->pproptag = cu_alloc<proptag_t>(10);
 		if (pproptags->pproptag == nullptr)
 			return FALSE;
 		pproptags->pproptag[0] = PR_RULE_ID;
@@ -3051,7 +3048,6 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 	sqlite3 *psqlite;
 	EXT_PUSH ext_push;
 	char tmp_buff[1024];
-	uint32_t tmp_proptag;
 	char sql_string[1024];
 	
 	auto pdb = db_engine_get_db(dir);
@@ -3190,7 +3186,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 	auto sql_len = snprintf(sql_string, std::size(sql_string), "CREATE TABLE s%u "
 			"(depth INTEGER NOT NULL ", *pstate_id);
 	for (unsigned int i = 0; i < ptnode->psorts->ccategories; ++i) {
-		tmp_proptag = PROP_TAG(ptnode->psorts->psort[i].type, ptnode->psorts->psort[i].propid);
+		auto tmp_proptag = PROP_TAG(ptnode->psorts->psort[i].type, ptnode->psorts->psort[i].propid);
 		type = ptnode->psorts->psort[i].type;
 		if (ptnode->instance_tag == tmp_proptag)
 			type &= ~MVI_FLAG;

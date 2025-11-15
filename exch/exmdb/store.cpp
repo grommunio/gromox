@@ -157,10 +157,10 @@ BOOL exmdb_server::get_store_all_proptags(const char *dir,
 	if (!pdb)
 		return FALSE;
 	/* Only one SQL operation, no transaction needed. */
-	std::vector<uint32_t> tags;
+	std::vector<proptag_t> tags;
 	if (!cu_get_proptags(MAPI_STORE, 0, pdb->psqlite, tags))
 		return FALSE;
-	pproptags->pproptag = cu_alloc<uint32_t>(tags.size());
+	pproptags->pproptag = cu_alloc<proptag_t>(tags.size());
 	if (pproptags->pproptag == nullptr)
 		return false;
 	pproptags->count = tags.size();

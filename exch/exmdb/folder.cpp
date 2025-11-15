@@ -494,7 +494,7 @@ BOOL exmdb_server::create_folder_v1(const char *dir, cpid_t cpid,
 BOOL exmdb_server::get_folder_all_proptags(const char *dir, uint64_t folder_id,
     PROPTAG_ARRAY *pproptags) try
 {
-	std::vector<uint32_t> tags;
+	std::vector<proptag_t> tags;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -506,7 +506,7 @@ BOOL exmdb_server::get_folder_all_proptags(const char *dir, uint64_t folder_id,
 	pdb.reset();
 	if (std::find(tags.cbegin(), tags.cend(), PR_SOURCE_KEY) == tags.cend())
 		tags.push_back(PR_SOURCE_KEY);
-	pproptags->pproptag = cu_alloc<uint32_t>(tags.size());
+	pproptags->pproptag = cu_alloc<proptag_t>(tags.size());
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
 	pproptags->count = tags.size();

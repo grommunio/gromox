@@ -108,11 +108,11 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	std::unique_ptr<message_content, mc_delete> pmsgctnt(message_content_init());
 	if (pmsgctnt == nullptr)
 		return FALSE;
-	std::vector<uint32_t> proptags;
+	std::vector<proptag_t> proptags;
 	if (!cu_get_proptags(MAPI_MESSAGE, message_id,
 	    psqlite, proptags))
 		return FALSE;
-	for (uint32_t tag : proptags) {
+	for (const auto tag : proptags) {
 		switch (tag) {
 		case PR_DISPLAY_TO:
 		case PR_DISPLAY_TO_A:
@@ -141,7 +141,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 					LLU{message_id}, tag);
 				break;
 			}
-			uint32_t wtag = proptag == PR_BODY ? ID_TAG_BODY : ID_TAG_BODY_STRING8;
+			proptag_t wtag = proptag == PR_BODY ? ID_TAG_BODY : ID_TAG_BODY_STRING8;
 			if (pmsgctnt->proplist.set(wtag, cid) != ecSuccess)
 				return FALSE;	
 			break;
@@ -161,8 +161,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 					LLU{message_id}, tag);
 				break;
 			}
-			tag = tag == PR_HTML ? ID_TAG_HTML : ID_TAG_RTFCOMPRESSED;
-			if (pmsgctnt->proplist.set(tag, cid) != ecSuccess)
+			auto ntag = tag == PR_HTML ? ID_TAG_HTML : ID_TAG_RTFCOMPRESSED;
+			if (pmsgctnt->proplist.set(ntag, cid) != ecSuccess)
 				return FALSE;
 			break;
 		}
@@ -183,7 +183,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 					LLU{message_id}, tag);
 				break;
 			}
-			uint32_t wtag = proptag == PR_TRANSPORT_MESSAGE_HEADERS ?
+			proptag_t wtag = proptag == PR_TRANSPORT_MESSAGE_HEADERS ?
 			                ID_TAG_TRANSPORTMESSAGEHEADERS :
 			                ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
 			if (pmsgctnt->proplist.set(wtag, cid) != ecSuccess)
@@ -220,7 +220,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			return FALSE;	
 		row_id ++;
 		uint64_t rcpt_id = pstmt.col_uint64(0);
-		std::vector<uint32_t> rcpt_tags;
+		std::vector<proptag_t> rcpt_tags;
 		if (!cu_get_proptags(MAPI_MAILUSER, rcpt_id, psqlite, rcpt_tags))
 			return false;
 		for (auto tag : rcpt_tags) {
@@ -588,7 +588,7 @@ BOOL exmdb_server::clear_message_instance(const char *dir, uint32_t instance_id)
 	return TRUE;
 }
 
-static void *fake_read_cid(unsigned int mode, uint32_t tag, const char *cid,
+static void *fake_read_cid(unsigned int mode, proptag_t tag, const char *cid,
     uint32_t *outlen) try
 {
 	std::string buf;
@@ -623,7 +623,7 @@ static void *fake_read_cid(unsigned int mode, uint32_t tag, const char *cid,
 	return nullptr;
 }
 
-void *instance_read_cid_content(const char *cid, uint32_t *plen, uint32_t tag) try
+void *instance_read_cid_content(const char *cid, uint32_t *plen, proptag_t tag) try
 {
 	struct stat node_stat;
 
@@ -1009,7 +1009,7 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
 	pproptags->count = 0;
-	pproptags->pproptag = cu_alloc<uint32_t>(pmsgctnt->proplist.count + 2);
+	pproptags->pproptag = cu_alloc<proptag_t>(pmsgctnt->proplist.count + 2);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -1533,7 +1533,7 @@ BOOL exmdb_server::unload_instance(const char *dir, uint32_t instance_id)
 	return TRUE;
 }
 
-static uint32_t msg_idtopr(uint32_t t)
+static proptag_t msg_idtopr(proptag_t t)
 {
 	switch (t) {
 	case ID_TAG_BODY: return PR_BODY;
@@ -1546,7 +1546,7 @@ static uint32_t msg_idtopr(uint32_t t)
 	}
 }
 
-static uint32_t atx_idtopr(uint32_t t)
+static proptag_t atx_idtopr(proptag_t t)
 {
 	switch (t) {
 	case ID_TAG_ATTACHDATABINARY: return PR_ATTACH_DATA_BIN;
@@ -1562,7 +1562,7 @@ static BOOL giat_message(MESSAGE_CONTENT *pmsgctnt, PROPTAG_ARRAY *pproptags)
 		pproptags->count++;
 	if (pmsgctnt->children.pattachments != nullptr)
 		pproptags->count++;
-	pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
+	pproptags->pproptag = cu_alloc<proptag_t>(pproptags->count);
 	if (NULL == pproptags->pproptag) {
 		pproptags->count = 0;
 		return FALSE;
@@ -1581,7 +1581,7 @@ static BOOL giat_attachment(ATTACHMENT_CONTENT *pattachment, PROPTAG_ARRAY *ppro
 	pproptags->count = pattachment->proplist.count + 1;
 	if (pattachment->pembedded != nullptr)
 		pproptags->count++;
-	pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
+	pproptags->pproptag = cu_alloc<proptag_t>(pproptags->count);
 	if (NULL == pproptags->pproptag) {
 		pproptags->count = 0;
 		return FALSE;
@@ -2645,11 +2645,10 @@ BOOL exmdb_server::get_message_instance_rcpts_all_proptags(const char *dir,
 	proptag_array_append(pproptags1.get(), PR_ADDRTYPE);
 	proptag_array_append(pproptags1.get(), PR_EMAIL_ADDRESS);
 	pproptags->count = pproptags1->count;
-	pproptags->pproptag = cu_alloc<uint32_t>(pproptags1->count);
+	pproptags->pproptag = cu_alloc<proptag_t>(pproptags1->count);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	memcpy(pproptags->pproptag, pproptags1->pproptag,
-				sizeof(uint32_t)*pproptags1->count);
+	memcpy(pproptags->pproptag, pproptags1->pproptag, sizeof(proptag_t) * pproptags1->count);
 	return TRUE;
 }
 
@@ -2883,11 +2882,10 @@ BOOL exmdb_server::get_message_instance_attachment_table_all_proptags(const char
 		}
 	}
 	pproptags->count = pproptags1->count;
-	pproptags->pproptag = cu_alloc<uint32_t>(pproptags1->count);
+	pproptags->pproptag = cu_alloc<proptag_t>(pproptags1->count);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	memcpy(pproptags->pproptag, pproptags1->pproptag,
-				sizeof(uint32_t)*pproptags1->count);
+	memcpy(pproptags->pproptag, pproptags1->pproptag, sizeof(proptag_t) * pproptags1->count);
 	return TRUE;
 }
 

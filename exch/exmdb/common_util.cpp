@@ -97,9 +97,9 @@ decltype(ems_send_mail) ems_send_mail;
 decltype(ems_send_vmail) ems_send_vmail;
 
 static bool cu_eval_subobj_restriction(sqlite3 *, cpid_t, uint64_t msgid, gromox::proptag_t, const RESTRICTION *);
-static bool gp_prepare_anystr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
-static bool gp_prepare_mvstr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
-static bool gp_prepare_default(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
+static bool gp_prepare_anystr(sqlite3 *, mapi_object_type, uint64_t, proptag_t, xstmt &, sqlite3_stmt *&);
+static bool gp_prepare_mvstr(sqlite3 *, mapi_object_type, uint64_t, proptag_t, xstmt &, sqlite3_stmt *&);
+static bool gp_prepare_default(sqlite3 *, mapi_object_type, uint64_t, proptag_t, xstmt &, sqlite3_stmt *&);
 static void *gp_fetch(sqlite3 *, sqlite3_stmt *, uint16_t, cpid_t, GP_RESULT &);
 
 ec_error_t cu_set_propval(TPROPVAL_ARRAY *parray, proptag_t tag, const void *data)
@@ -487,8 +487,8 @@ template<typename F> static F coalesce_propid(F first, F last)
 	return first;
 }
 
-BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
-    std::vector<uint32_t> &tags) try
+bool cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
+    std::vector<proptag_t> &tags) try
 {
 	/*
 	 * All computed/synthesized tags should appear in these tag lists (XXX:
@@ -1686,7 +1686,7 @@ static BINARY *cu_get_replmap(sqlite3 *db)
 	return bin;
 }
 
-static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
+static GP_RESULT gp_storeprop(proptag_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 {
 	uint32_t *v = nullptr;
 	switch (tag) {
@@ -1728,7 +1728,7 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 	return GP_ADV;
 }
 
-static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
+static GP_RESULT gp_folderprop(proptag_t tag, TAGGED_PROPVAL &pv,
     sqlite3 *db, uint64_t id)
 {
 	uint32_t *v = nullptr;
@@ -1835,7 +1835,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 	return GP_ADV;
 }
 
-static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
+static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
     uint64_t id, cpid_t cpid)
 {
 	switch (tag) {
@@ -1982,7 +1982,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 	return GP_UNHANDLED;
 }
 
-static GP_RESULT gp_atxprop(uint32_t tag, TAGGED_PROPVAL &pv,
+static GP_RESULT gp_atxprop(proptag_t tag, TAGGED_PROPVAL &pv,
     sqlite3 *db, uint64_t id)
 {
 	switch (tag) {
@@ -2007,7 +2007,7 @@ static GP_RESULT gp_atxprop(uint32_t tag, TAGGED_PROPVAL &pv,
 	return GP_UNHANDLED;
 }
 
-static GP_RESULT gp_spectableprop(mapi_object_type table_type, uint32_t tag,
+static GP_RESULT gp_spectableprop(mapi_object_type table_type, proptag_t tag,
     TAGGED_PROPVAL &pv, sqlite3 *db, uint64_t id, cpid_t cpid)
 {
 	pv.proptag = tag;
@@ -2220,7 +2220,7 @@ bool cu_get_properties(mapi_object_type table_type, uint64_t objid, cpid_t cpid,
 }
 
 static bool gp_prepare_anystr(sqlite3 *psqlite, mapi_object_type table_type,
-    uint64_t id, uint32_t tag, xstmt &own_stmt, sqlite3_stmt *&pstmt)
+    uint64_t id, proptag_t tag, xstmt &own_stmt, sqlite3_stmt *&pstmt)
 {
 	switch (table_type) {
 	case MAPI_STORE:
@@ -2292,7 +2292,7 @@ static bool gp_prepare_anystr(sqlite3 *psqlite, mapi_object_type table_type,
 }
 
 static bool gp_prepare_mvstr(sqlite3 *psqlite, mapi_object_type table_type,
-    uint64_t id, uint32_t tag, xstmt &own_stmt, sqlite3_stmt *&pstmt)
+    uint64_t id, proptag_t tag, xstmt &own_stmt, sqlite3_stmt *&pstmt)
 {
 	switch (table_type) {
 	case MAPI_STORE:
@@ -2361,7 +2361,7 @@ static bool gp_prepare_mvstr(sqlite3 *psqlite, mapi_object_type table_type,
 }
 
 static bool gp_prepare_default(sqlite3 *psqlite, mapi_object_type table_type,
-    uint64_t id, uint32_t tag, xstmt &own_stmt, sqlite3_stmt *&pstmt)
+    uint64_t id, proptag_t tag, xstmt &own_stmt, sqlite3_stmt *&pstmt)
 {
 	switch (table_type) {
 	case MAPI_STORE:
@@ -2871,7 +2871,7 @@ static BOOL common_util_set_message_subject(cpid_t cpid, uint64_t message_id,
 	auto subj = static_cast<const char *>(props.ppropval[subj_id].pvalue);
 	if (!cu_rebuild_subjects(subj, pfx, norm))
 		return false;
-	auto lm = [&](uint32_t tag, const char *value) {
+	auto lm = [&](proptag_t tag, const char *value) {
 	if (PROP_TYPE(tag) == PT_UNICODE) {
 		pstmt.bind_int64(1, tag);
 		pstmt.bind_text(2, value);
@@ -3070,7 +3070,7 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, mapi_object_type table_typ
 }
 
 BOOL cu_set_property(mapi_object_type table_type, uint64_t id, cpid_t cpid,
-    sqlite3 *psqlite, uint32_t tag, const void *data, BOOL *pb_result)
+    sqlite3 *psqlite, proptag_t tag, const void *data, BOOL *pb_result)
 {
 	PROBLEM_ARRAY tmp_problems;
 	const TAGGED_PROPVAL tp = {tag, deconst(data)};
@@ -3676,7 +3676,7 @@ bool cu_remove_properties(mapi_object_type table_type, uint64_t id,
 	return TRUE;
 }
 
-static inline const char *rule_tag_to_col(uint32_t tag)
+static inline const char *rule_tag_to_col(proptag_t tag)
 {
 	switch (tag) {
 	case PR_RULE_SEQUENCE: return "sequence";

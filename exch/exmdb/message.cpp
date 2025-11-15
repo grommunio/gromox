@@ -738,7 +738,7 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite, uint64_t message_id,
 	uint32_t row_id = 0;
 	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t rcpt_id = sqlite3_column_int64(pstmt, 0);
-		std::vector<uint32_t> tags;
+		std::vector<proptag_t> tags;
 		if (!cu_get_proptags(MAPI_MAILUSER, rcpt_id, psqlite, tags))
 			return false;
 		/* Nudge cu_get_properties allocation to make extra room. */
@@ -1335,7 +1335,7 @@ static BOOL message_read_message(sqlite3 *psqlite, cpid_t cpid,
 	*ppmsgctnt = cu_alloc<MESSAGE_CONTENT>();
 	if (*ppmsgctnt == nullptr)
 		return FALSE;
-	std::vector<uint32_t> mtags;
+	std::vector<proptag_t> mtags;
 	if (!cu_get_proptags(MAPI_MESSAGE, message_id, psqlite, mtags))
 		return FALSE;	
 	std::erase_if(mtags, [](proptag_t t) {
@@ -1379,7 +1379,7 @@ static BOOL message_read_message(sqlite3 *psqlite, cpid_t cpid,
 	uint32_t attach_num = 0;
 	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t attachment_id = sqlite3_column_int64(pstmt, 0);
-		std::vector<uint32_t> atags;
+		std::vector<proptag_t> atags;
 		if (!cu_get_proptags(MAPI_ATTACH, attachment_id,
 		    psqlite, atags))
 			return FALSE;
@@ -2052,7 +2052,7 @@ static BOOL message_load_folder_ext_rules(const rulexec_in &rp,
 }
 
 static BOOL message_get_real_propid(sqlite3 *psqlite,
-    NAMEDPROPERTY_INFO *ppropname_info, uint32_t *pproptag, BOOL *pb_replaced)
+    NAMEDPROPERTY_INFO *ppropname_info, proptag_t *pproptag, BOOL *pb_replaced)
 {
 	int i;
 	PROPID_ARRAY propids;

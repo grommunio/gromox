@@ -75,12 +75,12 @@ extern ec_error_t cu_allocate_cn(sqlite3 *, uint64_t *new_cn);
 BOOL common_util_allocate_folder_art(sqlite3 *psqlite, uint32_t *part);
 BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
 	uint64_t eid_val, BOOL *pb_result);
-extern BOOL cu_get_proptags(mapi_object_type, uint64_t id, sqlite3 *, std::vector<uint32_t> &);
+extern bool cu_get_proptags(mapi_object_type, uint64_t id, sqlite3 *, std::vector<gromox::proptag_t> &);
 BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 	uint16_t replid, BOOL *pb_found, GUID *pguid);
 extern BOOL cu_get_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, gromox::proptag_t, void **out);
 extern bool cu_get_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, proptag_cspan, TPROPVAL_ARRAY *);
-extern BOOL cu_set_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, uint32_t tag, const void *data, BOOL *result);
+extern BOOL cu_set_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, gromox::proptag_t, const void *data, BOOL *result);
 extern BOOL cu_set_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
 extern bool cu_remove_properties(mapi_object_type, uint64_t id, sqlite3 *, proptag_cspan);
 extern BOOL common_util_get_rule_property(uint64_t rule_id, sqlite3 *, gromox::proptag_t, void **val);

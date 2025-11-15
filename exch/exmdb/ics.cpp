@@ -708,7 +708,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		if (stm_select_chg.step() != SQLITE_ROW)
 			return FALSE;
 		auto fid_val1 = sqlite3_column_int64(stm_select_chg, 0);
-		std::vector<uint32_t> tags;
+		std::vector<proptag_t> tags;
 		if (!cu_get_proptags(MAPI_FOLDER, fid_val1,
 		    pdb->psqlite, tags))
 			return FALSE;
