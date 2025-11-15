@@ -22,6 +22,7 @@
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/flat_set.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
@@ -2666,7 +2667,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 	}
 	switch (ptnode->type) {
 	case table_type::hierarchy: {
-		std::vector<proptag_t> tags;
+		maybe_flat_set<proptag_t> tags;
 		snprintf(sql_string, std::size(sql_string), "SELECT "
 			"folder_id FROM t%u", ptnode->table_id);
 		auto pstmt = pdb->eph_prep(sql_string);
@@ -2680,23 +2681,22 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 			sqlite3_bind_int64(pstmt1, 1,
 				sqlite3_column_int64(pstmt, 0));
 			while (pstmt1.step() == SQLITE_ROW)
-				tags.push_back(pstmt1.col_int64(0));
+				tags.emplace(pstmt1.col_int64(0));
 			sqlite3_reset(pstmt1);
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
-		tags.push_back(PR_DEPTH);
-		std::sort(tags.begin(), tags.end());
-		tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
+		tags.emplace(PR_DEPTH);
+		pproptags->count = 0;
 		pproptags->pproptag = cu_alloc<proptag_t>(tags.size());
 		if (pproptags->pproptag == nullptr)
 			return FALSE;
-		pproptags->count = tags.size();
-		memcpy(pproptags->pproptag, tags.data(), sizeof(proptag_t) * tags.size());
+		for (const auto tag : tags)
+			pproptags->emplace_back(tag);
 		return TRUE;
 	}
 	case table_type::content: {
-		std::vector<proptag_t> tags;
+		maybe_flat_set<proptag_t> tags;
 		snprintf(sql_string, std::size(sql_string), "SELECT inst_id,"
 				" row_type FROM t%u", ptnode->table_id);
 		auto pstmt = pdb->eph_prep(sql_string);
@@ -2712,25 +2712,27 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 			sqlite3_bind_int64(pstmt1, 1,
 				sqlite3_column_int64(pstmt, 0));
 			while (pstmt1.step() == SQLITE_ROW)
-				tags.push_back(pstmt1.col_int64(0));
+				tags.emplace(pstmt1.col_int64(0));
 			sqlite3_reset(pstmt1);
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
 		pproptags->count = 0;
-		tags.insert(tags.end(), {PidTagMid, PR_MESSAGE_SIZE,
+		static constexpr proptag_t extras[] = {
+			PidTagMid, PR_MESSAGE_SIZE,
 			PR_ASSOCIATED, PidTagChangeNumber, PR_READ,
 			PR_HASATTACH, PR_MESSAGE_FLAGS, PR_DISPLAY_TO,
 			PR_DISPLAY_CC, PR_DISPLAY_BCC, PidTagInstID,
 			PidTagInstanceNum, PR_ROW_TYPE, PR_DEPTH,
-			PR_CONTENT_COUNT, PR_CONTENT_UNREAD});
-		std::sort(tags.begin(), tags.end());
-		tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
+			PR_CONTENT_COUNT, PR_CONTENT_UNREAD,
+		};
+		tags.insert(std::cbegin(extras), std::cend(extras));
+		pproptags->count = 0;
 		pproptags->pproptag = cu_alloc<proptag_t>(tags.size());
 		if (pproptags->pproptag == nullptr)
 			return FALSE;
-		pproptags->count = tags.size();
-		memcpy(pproptags->pproptag, tags.data(), sizeof(proptag_t) * tags.size());
+		for (const auto tag : tags)
+			pproptags->emplace_back(tag);
 		return TRUE;
 	}
 	case table_type::permission:
