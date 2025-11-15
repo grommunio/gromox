@@ -40,5 +40,5 @@ struct logon_object {
 	char dir[256]{};
 	GUID mailbox_guid{}, mapping_signature{};
 	std::unordered_map<gromox::propid_t, PROPERTY_XNAME> propid_hash;
-	std::unordered_map<std::string, uint16_t> propname_hash;
+	std::unordered_map<std::string, gromox::propid_t> propname_hash;
 };

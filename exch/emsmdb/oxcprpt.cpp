@@ -113,7 +113,7 @@ static uint16_t size_in_utf16(const char *u8str)
 }
 
 /* Caller does not care for an exact count above 0x8000, so always break early. */
-static uint32_t propval_size_xfer(uint16_t type, void *val)
+static uint32_t propval_size_xfer(propid_t type, void *val)
 {
 	if (type == PT_UNICODE)
 		return size_in_utf16(static_cast<char *>(val)) + 2;
@@ -529,7 +529,7 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 		return ecSuccess;
 	}
 	ppropidnames->count = 0;
-	ppropidnames->ppropid = cu_alloc<uint16_t>(propids.size());
+	ppropidnames->ppropid = cu_alloc<propid_t>(propids.size());
 	if (ppropidnames->ppropid == nullptr)
 		return ecServerOOM;
 	ppropidnames->ppropname = cu_alloc<PROPERTY_NAME>(propids.size());

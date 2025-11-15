@@ -162,7 +162,7 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY &propids,
 }
 
 BOOL logon_object::get_named_propid(BOOL b_create,
-    const PROPERTY_NAME *ppropname, uint16_t *ppropid)
+    const PROPERTY_NAME *ppropname, propid_t *ppropid)
 {
 	if (ppropname->guid == PS_MAPI) {
 		*ppropid = ppropname->kind == MNID_ID ? ppropname->lid : 0;
