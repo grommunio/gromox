@@ -29,7 +29,9 @@ TLS certificate parameters. Confer with the kopano-admin.cfg(5) manpage.
 The output is a JSON file containing an array of user objects. Each user object
 is a dictionary with zero or more attributes; these can be:
 .IP \(bu 4
-"na": username
+"na": username (this can have many forms, including, but not limited to,
+"user", "user@domain", "domain_user", "domain\\user"; see "loginname_format"
+line of /etc/kopano/server.cfg)
 .IP \(bu 4
 "sv": server GUID, represented as 16 ASCII characters, case-insensitive
 .IP \(bu 4
@@ -45,14 +47,18 @@ null values and empty strings are allowed. Take note that in multi-server
 Kopano installations, every LDAP user will appear in \fBall\fP the
 kopano-server databases, and with generally \fBdifferent\fP user IDs.
 .RS 4
+.PP
 .nf
 [
+
  {"em": "boss@example.domain", "na": "boss", "sv":
 "0123456789abcdef0123456789abcdef", "st": "0123456789abcdef0123456789abcdef",
 "to": "boss@domain.example", "id": 3},
+
  {"em": "boss@domain.example", "na": "boss", "sv":
 "123456789abcdef0123456789abcdef0", "st": "0123456789abcdef0123456789abcdef",
 "to": "boss@domain.example", "id": 91}
+
 ]
 .fi
 .RE

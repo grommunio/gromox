@@ -1433,22 +1433,22 @@ static int usermap_read(const char *file, LR_map &ku, LR_map &na, LR_map &ze)
 	Json::Value jval;
 	if (!str_to_json({slurp_data.get(), slurp_len}, jval) ||
 	    !jval.isArray()) {
-		fprintf(stderr, "%s: parse error\n", file);
+		fprintf(stderr, "%s: JSON parse error.\n"
+			"Try using a utility like jq(1) to discover details.\n", file);
 		return EXIT_FAILURE;
 	}
 	for (unsigned int i = 0; i < jval.size(); ++i) {
 		auto &row = jval[i];
-		if (row["id"].isNull() || row["sv"].isNull())
-			continue;
-		auto srv_guid = row["sv"].asString();
+		auto kuid = !row["id"].isNull() ? row["id"].asString() : "";
+		auto srv_guid = !row["sv"].isNull() ? row["sv"].asString() : "";
 		HX_strlower(srv_guid.data());
 		auto f_na = !row["na"].isNull() ? row["na"].asCString() : "";
 		auto f_em = !row["em"].isNull() ? row["em"].asCString() : "";
 		auto f_to = !row["to"].isNull() ? row["to"].asCString() : "";
-		if (g_acl_conv == aclconv::convert && *f_to != '\0' &&
-		    strchr(f_to, '@') != nullptr)
-			ku.emplace(row["id"].asString() + "@" + srv_guid +
-				".kopano.invalid", f_to);
+		if (g_acl_conv == aclconv::convert &&
+		    kuid.size() > 0 && srv_guid.size() > 0 &&
+		    *f_to != '\0' && strchr(f_to, '@') != nullptr)
+			ku.emplace(kuid + "@" + srv_guid + ".kopano.invalid", f_to);
 		if (*f_na != '\0' && !row["st"].isNull()) {
 			auto store_guid = row["st"].asString();
 			HX_strlower(store_guid.data());
@@ -1463,6 +1463,7 @@ static int usermap_read(const char *file, LR_map &ku, LR_map &na, LR_map &ze)
 	if (g_acl_conv == aclconv::convert)
 		fprintf(stderr, "usermap %s: %zu x kuid -> (new) emailaddr\n", file, ku.size());
 	fprintf(stderr, "usermap %s: %zu x name -> storeguid\n", file, na.size());
+	fprintf(stderr, "usermap %s: %zu x name -> emailaddr\n", file, ze.size());
 	return 0;
 }
 
