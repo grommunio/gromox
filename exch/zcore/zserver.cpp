@@ -2742,7 +2742,6 @@ ec_error_t zs_sorttable(GUID hsession,
 	uint16_t type;
 	zs_objtype mapi_type;
 	BOOL b_multi_inst;
-	uint32_t tmp_proptag;
 	
 	if (psortset->count > MAXIMUM_SORT_COUNT)
 		return ecTooComplex;
@@ -2759,7 +2758,7 @@ ec_error_t zs_sorttable(GUID hsession,
 	b_max = FALSE;
 	b_multi_inst = FALSE;
 	for (unsigned int i = 0; i < psortset->count; ++i) {
-		tmp_proptag = PROP_TAG(psortset->psort[i].type, psortset->psort[i].propid);
+		auto tmp_proptag = PROP_TAG(psortset->psort[i].type, psortset->psort[i].propid);
 		if (tmp_proptag == PR_DEPTH || tmp_proptag == PidTagInstID ||
 		    tmp_proptag == PidTagInstanceNum ||
 		    tmp_proptag == PR_CONTENT_COUNT ||
@@ -3858,7 +3857,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 			return ecError;
 		common_util_reduce_proptags(&proptags, pexclude_proptags);
 		tmp_proptags.count = 0;
-		tmp_proptags.pproptag = cu_alloc<uint32_t>(proptags.count);
+		tmp_proptags.pproptag = cu_alloc<proptag_t>(proptags.count);
 		if (tmp_proptags.pproptag == nullptr)
 			return ecServerOOM;
 		if (!b_force && !fdst->get_all_proptags(&proptags1))

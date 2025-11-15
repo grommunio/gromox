@@ -552,7 +552,7 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	    pmessage->instance_id, &tmp_proptags))
 		return FALSE;	
 	pproptags->count = 0;
-	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 15);
+	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + 15);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
 	for (unsigned int i = 0; i < tmp_proptags.count; ++i) {
@@ -712,7 +712,7 @@ BOOL message_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
@@ -854,7 +854,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags) try
 	if (problems.pproblem == nullptr)
 		return FALSE;
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	std::vector<uint16_t> poriginal_indices;

@@ -348,11 +348,10 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	
 	if (!exmdb_client->get_store_all_proptags(pstore->dir, &tmp_proptags))
 		return FALSE;	
-	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 56);
+	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + 56);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
-				sizeof(uint32_t)*tmp_proptags.count);
+	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 	if (pstore->b_private) {
 		static constexpr proptag_t ntags[] = {
@@ -829,7 +828,7 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
@@ -857,7 +856,7 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			if (i < tmp_proptags.count) {
 				memmove(tmp_proptags.pproptag + i,
 					tmp_proptags.pproptag + i + 1,
-					sizeof(uint32_t) * (tmp_proptags.count - i));
+					sizeof(proptag_t) * (tmp_proptags.count - i));
 			}
 		}	
 		if (tmp_proptags.count == 0)

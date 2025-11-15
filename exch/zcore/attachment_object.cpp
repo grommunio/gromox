@@ -127,11 +127,10 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	    pattachment->instance_id, &tmp_proptags))
 		return FALSE;	
 	pproptags->count = tmp_proptags.count;
-	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 5);
+	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + 5);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
-				sizeof(uint32_t)*tmp_proptags.count);
+	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	static constexpr proptag_t tags1[] = {
 		PR_ACCESS, PR_ACCESS_LEVEL, PR_OBJECT_TYPE,
 		PR_STORE_RECORD_KEY, PR_STORE_ENTRYID,
@@ -211,7 +210,7 @@ BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
@@ -272,7 +271,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	PROPTAG_ARRAY tmp_proptags;
 	
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
