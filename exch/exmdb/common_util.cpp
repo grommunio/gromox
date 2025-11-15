@@ -668,8 +668,7 @@ BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 	return TRUE;
 }
 
-static uint32_t common_util_calculate_childcount(
-	uint32_t folder_id, sqlite3 *psqlite)
+static uint32_t common_util_calculate_childcount(uint64_t folder_id, sqlite3 *psqlite)
 {
 	uint32_t count;
 	char sql_string[80];
@@ -688,18 +687,17 @@ static uint32_t common_util_calculate_childcount(
 	return count;
 }
 
-static BOOL common_util_check_subfolders(
-	sqlite3 *psqlite, uint32_t folder_id)
+static bool common_util_check_subfolders(sqlite3 *psqlite, uint64_t folder_id)
 {
 	char sql_string[80];
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM"
 	         " folders WHERE parent_id=%llu AND is_deleted=0", LLU{folder_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	return pstmt != nullptr && pstmt.step() == SQLITE_ROW ? TRUE : false;
+	return pstmt != nullptr && pstmt.step() == SQLITE_ROW;
 }
 
-static ec_error_t cu_calc_folder_path(uint32_t folder_id,
+static ec_error_t cu_calc_folder_path(uint64_t folder_id,
     sqlite3 *psqlite, std::string &path)
 {
 	static constexpr char delim[] = "\xEF\xBF\xBE";
