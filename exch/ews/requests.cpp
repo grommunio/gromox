@@ -30,10 +30,6 @@
 
 namespace gromox::EWS::Requests {
 
-using std::optional;
-using std::string;
-using std::min;
-using std::max;
 using namespace gromox;
 using namespace gromox::EWS::Exceptions;
 using namespace gromox::EWS::Structures;
@@ -83,7 +79,7 @@ static inline std::string &tolower_inplace(std::string &str)
  *
  * @return     Body content or empty optional on error
  */
-optional<string> readMessageBody(const std::string& path) try
+std::optional<std::string> readMessageBody(const std::string &path) try
 {
 	std::ifstream ifs(path, std::ios::in | std::ios::ate | std::ios::binary);
 	if (!ifs.is_open())
@@ -114,7 +110,7 @@ optional<string> readMessageBody(const std::string& path) try
  * @param      path    Path to the file
  * @param      reply   Reply body
  */
-void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply)
+void writeMessageBody(const std::string &path, const std::optional<tReplyBody> &reply)
 {
 	if (!reply || !reply->Message)
 		return (void) unlink(path.c_str());
@@ -1316,7 +1312,7 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 	mGetUserAvailabilityResponse data;
 	data.FreeBusyResponseArray.emplace().reserve(request.MailboxDataArray.size());
 	for (const tMailboxData &MailboxData : request.MailboxDataArray) try {
-		string maildir = ctx.get_maildir(MailboxData.Email);
+		auto maildir = ctx.get_maildir(MailboxData.Email);
 		auto start = clock::to_time_t(request.TimeZone->remove(TimeWindow.StartTime));
 		auto end   = clock::to_time_t(request.TimeZone->remove(TimeWindow.EndTime));
 		tFreeBusyView fbv(ctx.auth_info().username, maildir.c_str(), start, end);
@@ -1498,7 +1494,7 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 		CFG_TABLE_END,
 	};
 	std::string maildir = ctx.get_maildir(request.Mailbox);
-	string configPath = maildir+"/config/autoreply.cfg";
+	auto configPath = maildir + "/config/autoreply.cfg";
 	auto configFile = config_file_init(configPath.c_str(), oof_defaults);
 	unsigned int oof_state  = configFile != nullptr ? configFile->get_ll("oof_state") : 0;
 	bool allow_external_oof = configFile != nullptr ? configFile->get_ll("allow_external_oof") : false;
@@ -1526,7 +1522,7 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 		dur.StartTime = clock::now();
 		dur.EndTime = dur.StartTime + std::chrono::days(1);
 	}
-	optional<string> reply = readMessageBody(maildir + "/config/internal-reply");
+	auto reply = readMessageBody(maildir + "/config/internal-reply");
 	if (reply)
 		data.OofSettings->InternalReply.emplace(std::move(reply));
 	else
@@ -1848,20 +1844,20 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 
 	try {
 		mSyncFolderItemsResponseMessage msg;
-		msg.Changes.reserve(min(chg_mids.count + deleted_mids.count + read_mids.count + unread_mids.count, maxItems));
-		maxItems -= deleted_mids.count = min(deleted_mids.count, maxItems);
+		msg.Changes.reserve(std::min(chg_mids.count + deleted_mids.count + read_mids.count + unread_mids.count, maxItems));
+		maxItems -= deleted_mids.count = std::min(deleted_mids.count, maxItems);
 		for (auto mid : deleted_mids) {
 			msg.Changes.emplace_back(tSyncFolderItemsDelete(templId.messageId(mid).serialize()));
 			syncState.given.remove(mid);
 		}
 		clipped = clipped || nolonger_mids.count > maxItems;
-		maxItems -= nolonger_mids.count = min(nolonger_mids.count, maxItems);
+		maxItems -= nolonger_mids.count = std::min(nolonger_mids.count, maxItems);
 		for (auto mid : nolonger_mids) {
 			msg.Changes.emplace_back(tSyncFolderItemsDelete(templId.messageId(mid).serialize()));
 			syncState.given.remove(mid);
 		}
 		clipped = clipped || chg_mids.count > maxItems;
-		maxItems -= chg_mids.count = min(chg_mids.count, maxItems);
+		maxItems -= chg_mids.count = std::min(chg_mids.count, maxItems);
 		for (auto mid : chg_mids) {
 			auto changeNum = ctx.getItemProp<const uint64_t>(dir, mid, PidTagChangeNumber);
 			if (!changeNum)
@@ -1874,15 +1870,15 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 				throw DispatchError(E3065);
 		}
 		uint32_t readSynced = syncState.readOffset;
-		uint32_t skip = min(syncState.readOffset, read_mids.count);
-		read_mids.count = min(read_mids.count - skip, maxItems) + skip;
+		uint32_t skip = std::min(syncState.readOffset, read_mids.count);
+		read_mids.count = std::min(read_mids.count - skip, maxItems) + skip;
 		maxItems -= read_mids.count - skip;
 		clipped = clipped || read_mids.count - skip > maxItems;
 		for (auto mid : read_mids)
 			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(templId.messageId(mid).serialize()), true});
 		readSynced += read_mids.count - skip;
-		skip = min(unread_mids.count, syncState.readOffset - read_mids.count + skip);
-		unread_mids.count = min(unread_mids.count - skip, maxItems) + skip;
+		skip = std::min(unread_mids.count, syncState.readOffset - read_mids.count + skip);
+		unread_mids.count = std::min(unread_mids.count - skip, maxItems) + skip;
 		clipped = clipped || unread_mids.count - skip > maxItems;
 		for (auto mid : unread_mids)
 			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(templId.messageId(mid).serialize()), false});
@@ -2002,7 +1998,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	if (!mysql_adaptor_get_user_aliases(request.UnresolvedEntry.c_str(), aliases))
 		throw DispatchError(E3068);
 	if (aliases.size() > 0) {
-		aliases.resize(min(aliases.size(), static_cast<size_t>(3)));
+		aliases.resize(std::min(aliases.size(), static_cast<size_t>(3)));
 		cnt.EmailAddresses.emplace().reserve(aliases.size());
 		uint8_t index = 0;
 		for (auto &alias : aliases)
