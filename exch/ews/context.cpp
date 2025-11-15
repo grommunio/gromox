@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
+#include <climits>
 #include <cstdlib>
 #include <cstring>
 #include <sstream>
@@ -2199,7 +2200,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			auto buf = ianatz_to_tzdef(static_cast<char*>(caltz->pvalue));
 			if (buf != nullptr) {
 				size_t len = buf->size();
-				if (len > std::numeric_limits<uint32_t>::max())
+				if (len > UINT32_MAX)
 					throw InputError(E3293);
 				BINARY *temp_bin = construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
 					{reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
@@ -2417,7 +2418,7 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 			shape.write(TAGGED_PROPVAL{tag, const_cast<char*>(entry.Entry.c_str())});
 		}
 	if (item.Children) {
-		if (item.Children->size() > std::numeric_limits<uint32_t>::max())
+		if (item.Children->size() > UINT32_MAX)
 			throw InputError(E3258);
 		STRING_ARRAY* sa = construct<STRING_ARRAY>(STRING_ARRAY{static_cast<uint32_t>(item.Children->size()),
 		                                                        alloc<char*>(item.Children->size())});
@@ -2450,7 +2451,7 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 			shape.write(TAGGED_PROPVAL{PR_BODY, body});
 		} else if (item.Body.value().BodyType == Enum::HTML) {
 			size_t bodylen = strlen(body);
-			if (bodylen > std::numeric_limits<uint32_t>::max())
+			if (bodylen > UINT32_MAX)
 				throw InputError(E3256);
 			BINARY *html = construct<BINARY>(BINARY{static_cast<uint32_t>(strlen(body)),
 			                                       {reinterpret_cast<uint8_t*>(body)}});
@@ -2463,7 +2464,7 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 	if (item.Sensitivity)
 		shape.write(TAGGED_PROPVAL{PR_SENSITIVITY, construct<uint32_t>(item.Sensitivity->index())});
 	if (item.Categories && item.Categories->size() &&
-	    item.Categories->size() <= std::numeric_limits<uint32_t>::max()) {
+	    item.Categories->size() <= UINT32_MAX) {
 		uint32_t count = item.Categories->size();
 		STRING_ARRAY* categories = construct<STRING_ARRAY>(STRING_ARRAY{count, alloc<char*>(count)});
 		char** dest = categories->ppstr;
@@ -2797,7 +2798,7 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 void EWSContext::writePermissions(const std::string& dir, uint64_t fid, const std::vector<PERMISSION_DATA>& perms) const
 {
 		size_t memberCount = perms.size();
-		if (memberCount > std::numeric_limits<uint16_t>::max())
+		if (memberCount > UINT16_MAX)
 			throw InputError(E3285);
 		const auto& exmdb = m_plugin.exmdb;
 		if (!exmdb.empty_folder_permission(dir.c_str(), fid))

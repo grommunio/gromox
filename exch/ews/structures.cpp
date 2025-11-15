@@ -8,6 +8,7 @@
  * of (de-)serialization functions was moved to serialization.cpp.
  */
 #include <algorithm>
+#include <climits>
 #include <ctime>
 #include <iterator>
 #include <set>
@@ -463,7 +464,7 @@ sAttachmentId::sAttachmentId(const TAGGED_PROPVAL& tp, uint32_t num) : sMessageE
 sAttachmentId::sAttachmentId(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
-	if (size > std::numeric_limits<uint32_t>::max())
+	if (size > UINT32_MAX)
 		throw EWSError::InvalidAttachmentId(E3081);
 	ext_pull.init(data, size, EWSContext::alloc, 0);
 	TRY(ext_pull.g_msg_eid(this), E3146, "ErrorInvalidAttachmentId");
@@ -482,7 +483,7 @@ sOccurrenceId::sOccurrenceId(const TAGGED_PROPVAL& tp, uint32_t bd) : sMessageEn
 sOccurrenceId::sOccurrenceId(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
-	if (size > std::numeric_limits<uint32_t>::max())
+	if (size > UINT32_MAX)
 		throw EWSError::InvalidOccurrenceId(E3205);
 	ext_pull.init(data, size, EWSContext::alloc, 0);
 	TRY(ext_pull.g_msg_eid(this), E3206, "ErrorInvalidOccurrenceId");
@@ -509,7 +510,7 @@ sFolderEntryId::sFolderEntryId(const void* data, uint64_t size)
 void sFolderEntryId::init(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
-	if (size > std::numeric_limits<uint32_t>::max() || (data == nullptr && size > 0))
+	if (size > UINT32_MAX || (data == nullptr && size > 0))
 		throw EWSError::InvalidFolderId(E3050);
 	if (data == nullptr)
 		return;
@@ -579,7 +580,7 @@ sMessageEntryId::sMessageEntryId(const TAGGED_PROPVAL& tp)
 void sMessageEntryId::init(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
-	if (size > std::numeric_limits<uint32_t>::max() || (data == nullptr && size > 0))
+	if (size > UINT32_MAX || (data == nullptr && size > 0))
 		throw EWSError::InvalidId(E3050);
 	if (data == nullptr)
 		return;
@@ -1171,7 +1172,7 @@ void sSyncState::init(const std::string& data64)
 	seen_fai.clear();
 	if (data.size() <= 16)
 		return;
-	if (data.size() > std::numeric_limits<uint32_t>::max())
+	if (data.size() > UINT32_MAX)
 		throw EWSError::InvalidSyncStateData(E3052);
 	ext_pull.init(data.data(), data.size(), EWSContext::alloc, EXT_FLAG_WCOUNT);
 	if (ext_pull.g_tpropval_a(&propvals) != pack_result::ok)
@@ -1712,7 +1713,7 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 			auto buf = ianatz_to_tzdef(calTimezone.value().c_str());
 			if (buf != nullptr) {
 				size_t len = buf->size();
-				if (len > std::numeric_limits<uint32_t>::max())
+				if (len > UINT32_MAX)
 					throw InputError(E3293);
 				BINARY *tmp_bin = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
 					{reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
@@ -2004,7 +2005,7 @@ void tChangeDescription::convBody(const tinyxml2::XMLElement* xml, sShape& shape
 		return;
 	}
 	size_t len = strlen(text);
-	if (len > std::numeric_limits<uint32_t>::max())
+	if (len > UINT32_MAX)
 		throw InputError(E3256);
 	BINARY *html = EWSContext::construct<BINARY>(BINARY{static_cast<uint32_t>(strlen(text)),
 	               {reinterpret_cast<uint8_t*>(const_cast<char*>(text))}});
@@ -3126,7 +3127,7 @@ SORTORDER_SET* tFieldOrder::build(const std::vector<tFieldOrder>& sorts, const s
 {
 	if (sorts.empty())
 		return nullptr;
-	if (sorts.size() > std::numeric_limits<decltype(SORTORDER_SET::count)>::max())
+	if (sorts.size() > UINT16_MAX)
 		throw InputError(E3247);
 	SORTORDER_SET* sset = EWSContext::construct<SORTORDER_SET>();
 	sset->count = sorts.size();

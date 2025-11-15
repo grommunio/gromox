@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
-
 #pragma once
-
 #include <atomic>
 #include <chrono>
+#include <climits>
 #include <list>
 #include <optional>
 #include <string>
@@ -2813,10 +2812,10 @@ struct tMailTipsServiceConfiguration {
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::vector<tSmtpDomain> InternalDomains;
-	int32_t MaxRecipientsPerGetMailTipsRequest = std::numeric_limits<int32_t>::max();
-	int32_t MaxMessageSize = std::numeric_limits<int32_t>::max();
-	int32_t LargeAudienceThreshold = std::numeric_limits<int32_t>::max();
-	int32_t LargeAudienceCap = std::numeric_limits<int32_t>::max();
+	int32_t MaxRecipientsPerGetMailTipsRequest = INT32_MAX;
+	int32_t MaxMessageSize = INT32_MAX;
+	int32_t LargeAudienceThreshold = INT32_MAX;
+	int32_t LargeAudienceCap = INT32_MAX;
 	bool MailTipsEnabled = false;
 	bool PolicyTipsEnabled = false;
 	bool ShowExternalRecipientCount = false;
