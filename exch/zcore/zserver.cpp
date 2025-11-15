@@ -2695,7 +2695,7 @@ ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
 	return ecSuccess;
 }
 
-static bool table_acceptable_type(uint16_t type)
+static bool table_acceptable_type(proptype_t type)
 {
 	switch (type) {
 	case PT_SHORT:

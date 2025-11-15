@@ -12,8 +12,7 @@
 #include "rpc_ext.hpp"
 #define QRF(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
-static pack_result rpc_ext_pull_propval(
-	EXT_PULL *pext, uint16_t type, void **ppval)
+static pack_result rpc_ext_pull_propval(EXT_PULL *pext, gromox::proptype_t type, void **ppval)
 {
 #define CASE(mt, ct, fu) \
 	case (mt): \
@@ -181,7 +180,7 @@ static pack_result rpc_ext_pull_state_array(
 	return pack_result::ok;
 }
 
-static pack_result rpc_ext_push_propval(EXT_PUSH &x, uint16_t type, const void *pval)
+static pack_result rpc_ext_push_propval(EXT_PUSH &x, gromox::proptype_t type, const void *pval)
 {
 #define CASE(mt, ct, fu) \
 	case (mt): \

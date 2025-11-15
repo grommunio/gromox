@@ -42,7 +42,7 @@ static BOOL oxctable_verify_columns_and_sorts(
 	return TRUE;
 }
 
-static inline bool table_acceptable_type(uint16_t type)
+static inline bool table_acceptable_type(proptype_t type)
 {
 	switch (type) {
 	case PT_SHORT:
