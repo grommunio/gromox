@@ -59,7 +59,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 		return FALSE;
 	/* Folders are not supposed to have namedprops */
 	auto eop = std::copy_if(tmp_proptags.begin(), tmp_proptags.end(),
-	           pproptags->pproptag, [](proptag_t x) { return x < 0x80000000; });
+	           pproptags->pproptag, [](proptag_t x) { return !is_nameprop_id(PROP_ID(x)); });
 	pproptags->count = eop - pproptags->pproptag;
 	static constexpr proptag_t tags1[] = {
 		PR_ACCESS, PR_RIGHTS, PR_PARENT_ENTRYID, PR_PARENT_SOURCE_KEY,
