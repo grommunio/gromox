@@ -686,7 +686,7 @@ ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	    const_cast<RESTRICTION *>(pres)))
 			return ecError;
 
-	std::vector<uint32_t> new_tags;
+	std::vector<proptag_t> new_tags;
 	PROPTAG_ARRAY new_pta;
 	auto bodyof = pproptags->indexof(PR_BODY);
 	if (!(sync_flags & SYNC_ONLY_SPECIFIED_PROPS) &&
@@ -1570,7 +1570,7 @@ ec_error_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
 	return ecSuccess;
 }
 
-ec_error_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
+ec_error_t rop_syncuploadstatestreambegin(proptag_t proptag_state,
     uint32_t buffer_size, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;

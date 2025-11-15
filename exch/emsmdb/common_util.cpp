@@ -764,7 +764,7 @@ void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 				memmove(pproptags_minuend->pproptag + i,
 					pproptags_minuend->pproptag + i + 1,
 					(pproptags_minuend->count - i) *
-					sizeof(uint32_t));
+					sizeof(proptag_t));
 			break;
 		}
 	}
@@ -775,7 +775,7 @@ PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags)
 	auto ptmp_proptags = cu_alloc<PROPTAG_ARRAY>();
 	if (ptmp_proptags == nullptr)
 		return NULL;
-	ptmp_proptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
+	ptmp_proptags->pproptag = cu_alloc<proptag_t>(pproptags->count);
 	if (ptmp_proptags->pproptag == nullptr)
 		return NULL;
 	ptmp_proptags->count = 0;
@@ -1170,7 +1170,7 @@ BOOL common_util_modifyrecipient_to_propvals(cpid_t cpid,
 			prow->precipient_row, pcolumns, ppropvals);
 }
 
-static void common_util_convert_proptag(BOOL to_unicode, uint32_t *pproptag)
+static void common_util_convert_proptag(BOOL to_unicode, proptag_t *pproptag)
 {
 	if (to_unicode) {
 		if (PROP_TYPE(*pproptag) == PT_STRING8)

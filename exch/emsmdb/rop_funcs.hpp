@@ -126,7 +126,7 @@ extern ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *, L
 extern ec_error_t rop_syncimportmessagemove(const BINARY *src_folder_id, const BINARY *src_msg_id, const BINARY *change_list, const BINARY *dst_msg_id, const BINARY *change_number, uint64_t *msg_id, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_syncopencollector(uint8_t is_content_collector, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
 extern ec_error_t rop_syncgettransferstate(LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
-extern ec_error_t rop_syncuploadstatestreambegin(uint32_t proptag_state, uint32_t buffer_size, LOGMAP *, uint8_t logon_id, uint32_t hin);
+extern ec_error_t rop_syncuploadstatestreambegin(gromox::proptag_t state, uint32_t buffer_size, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_syncuploadstatestreamcontinue(const BINARY *stream_data, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_syncuploadstatestreamend(LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_setlocalreplicamidsetdeleted(uint32_t count, const LONG_TERM_ID_RANGE *, LOGMAP *, uint8_t logon_id, uint32_t hin);

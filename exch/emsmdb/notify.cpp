@@ -114,10 +114,10 @@ static ec_error_t copy_tags(notify_response &m, const PROPTAG_ARRAY &tags)
 	m.proptags.count = tags.count;
 	if (m.proptags.count == 0)
 		return ecSuccess;
-	m.proptags.pproptag = me_alloc<uint32_t>(tags.count);
+	m.proptags.pproptag = me_alloc<proptag_t>(tags.count);
 	if (m.proptags.pproptag == nullptr)
 		return ecServerOOM;
-	memcpy(m.proptags.pproptag, tags.pproptag, sizeof(uint32_t) * tags.count);
+	memcpy(m.proptags.pproptag, tags.pproptag, sizeof(proptag_t) * tags.count);
 	return ecSuccess;
 }
 

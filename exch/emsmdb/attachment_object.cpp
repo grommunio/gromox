@@ -176,11 +176,10 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 		return FALSE;	
 	auto nodes_num = stream_list.size() + 1;
 	pproptags->count = tmp_proptags.count;
-	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + nodes_num);
+	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + nodes_num);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
-				sizeof(uint32_t)*tmp_proptags.count);
+	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	for (auto so : stream_list)
 		pproptags->emplace_back(so->get_proptag());
 	pproptags->emplace_back(PR_ACCESS_LEVEL);
@@ -259,7 +258,7 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;

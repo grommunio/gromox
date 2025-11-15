@@ -1055,7 +1055,7 @@ icsdownctx_object::~icsdownctx_object()
 		restriction_free(pctx->prestriction);
 }
 
-BOOL icsdownctx_object::begin_state_stream(uint32_t new_state_prop)
+bool icsdownctx_object::begin_state_stream(proptag_t new_state_prop)
 {
 	auto pctx = this;
 	if (pctx->b_started)
@@ -1075,7 +1075,7 @@ BOOL icsdownctx_object::begin_state_stream(uint32_t new_state_prop)
 	default:
 		return FALSE;
 	}
-	pctx->state_property = new_state_prop;
+	pctx->state_property = std::move(new_state_prop);
 	f_state_stream.clear();
 	return TRUE;
 }
@@ -1110,7 +1110,7 @@ BOOL icsdownctx_object::end_state_stream()
 	auto pset = idset::create(idset::type::guid_packed);
 	if (pset == nullptr)
 		return FALSE;
-	auto saved_state_property = pctx->state_property;
+	auto saved_state_property = std::move(pctx->state_property);
 	pctx->state_property = 0;
 	tmp_bin.pv = f_state_stream.data();
 	tmp_bin.cb = f_state_stream.size();
@@ -1122,7 +1122,7 @@ BOOL icsdownctx_object::end_state_stream()
 		return FALSE;
 	if (!pset->convert())
 		return FALSE;
-	if (!pctx->pstate->append_idset(saved_state_property, std::move(pset)))
+	if (!pctx->pstate->append_idset(std::move(saved_state_property), std::move(pset)))
 		return FALSE;
 	return TRUE;
 }
@@ -1207,7 +1207,7 @@ BOOL icsupctx_object::end_state_stream()
 		return FALSE;
 	tmp_bin.pv = f_state_stream.data();
 	tmp_bin.cb = f_state_stream.size();
-	auto saved_state_prop = pctx->state_property;
+	auto saved_state_prop = std::move(pctx->state_property);
 	pctx->state_property = 0;
 	if (!pset->deserialize(std::move(tmp_bin)))
 		return FALSE;
@@ -1215,7 +1215,7 @@ BOOL icsupctx_object::end_state_stream()
 		return FALSE;
 	if (!pset->convert())
 		return FALSE;
-	if (!pctx->pstate->append_idset(saved_state_prop, std::move(pset)))
+	if (!pctx->pstate->append_idset(std::move(saved_state_prop), std::move(pset)))
 		return FALSE;
 	return TRUE;
 }

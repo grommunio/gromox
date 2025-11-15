@@ -42,7 +42,7 @@ static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
 	    pmessage->instance_id, &tmp_proptags))
 		return FALSE;
 	pproptags->count = 0;
-	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count);
+	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
 	for (const auto tag : tmp_proptags) {
@@ -694,7 +694,7 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	auto nodes_num = stream_list.size();
 	nodes_num += 10;
 	pproptags->count = 0;
-	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + nodes_num);
+	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + nodes_num);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
 	for (const auto tag : tmp_proptags) {
@@ -857,7 +857,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
@@ -1030,7 +1030,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	std::vector<uint16_t> poriginal_indices;

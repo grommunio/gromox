@@ -255,11 +255,10 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	
 	if (!exmdb_client->get_store_all_proptags(plogon->dir, &tmp_proptags))
 		return FALSE;	
-	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 25);
+	pproptags->pproptag = cu_alloc<proptag_t>(tmp_proptags.count + 25);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
-				sizeof(uint32_t)*tmp_proptags.count);
+	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 
 	static constexpr proptag_t pvt_tags[] = {
@@ -575,7 +574,7 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
@@ -655,7 +654,7 @@ BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<uint32_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	auto plogon = this;

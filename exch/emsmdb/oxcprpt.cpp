@@ -588,7 +588,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 	if (object_type == ems_objtype::folder && copy_flags & MAPI_MOVE)
 		return ecNotSupported;
 	proptags.count = 0;
-	proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
+	proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
 	if (proptags.pproptag == nullptr)
 		return ecServerOOM;
 	pproblems->count = 0;
@@ -800,7 +800,7 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 			return ecError;
 		common_util_reduce_proptags(&proptags, pexcluded_proptags);
 		tmp_proptags.count = 0;
-		tmp_proptags.pproptag = cu_alloc<uint32_t>(proptags.count);
+		tmp_proptags.pproptag = cu_alloc<proptag_t>(proptags.count);
 		if (tmp_proptags.pproptag == nullptr)
 			return ecServerOOM;
 		if (!b_force && !flddst->get_all_proptags(&proptags1))
