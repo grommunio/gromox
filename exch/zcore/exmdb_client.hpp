@@ -7,9 +7,7 @@
 #include <gromox/mapi_types.hpp>
 
 extern int exmdb_client_run_front(const char *);
-BOOL exmdb_client_get_named_propid(const char *dir,
-	BOOL b_create, const PROPERTY_NAME *ppropname,
-	uint16_t *ppropid);
+extern bool exmdb_client_get_named_propid(const char *dir, bool b_create, const PROPERTY_NAME *ppropname, gromox::propid_t *);
 extern BOOL exmdb_client_get_folder_property(const char *dir, cpid_t, uint64_t folder_id, gromox::proptag_t, void **val);
 extern BOOL exmdb_client_get_message_property(const char *dir, const char *username, cpid_t, uint64_t message_id, gromox::proptag_t, void **val);
 extern BOOL exmdb_client_get_instance_property(const char *dir, uint32_t instance_id, gromox::proptag_t, void **val);

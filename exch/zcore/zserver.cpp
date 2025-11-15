@@ -2739,7 +2739,6 @@ ec_error_t zs_sorttable(GUID hsession,
 	uint32_t htable, const SORTORDER_SET *psortset)
 {
 	BOOL b_max;
-	uint16_t type;
 	zs_objtype mapi_type;
 	BOOL b_multi_inst;
 	
@@ -2777,7 +2776,7 @@ ec_error_t zs_sorttable(GUID hsession,
 		default:
 			return ecInvalidParam;
 		}
-		type = psortset->psort[i].type;
+		auto type = psortset->psort[i].type;
 		if (type & MV_FLAG) {
 			/* we do not support multivalue property
 				without multivalue instances */

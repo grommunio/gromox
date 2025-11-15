@@ -26,9 +26,8 @@ int exmdb_client_run_front(const char *dir)
 	       common_util_free_environment, zs_notification_proc);
 }
 
-BOOL exmdb_client_get_named_propid(const char *dir,
-	BOOL b_create, const PROPERTY_NAME *ppropname,
-	uint16_t *ppropid)
+bool exmdb_client_get_named_propid(const char *dir, bool b_create,
+    const PROPERTY_NAME *ppropname, propid_t *ppropid)
 {
 	PROPID_ARRAY tmp_propids;
 	const PROPNAME_ARRAY tmp_propnames = {1, deconst(ppropname)};
