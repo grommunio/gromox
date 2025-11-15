@@ -624,15 +624,12 @@ bool MIME::append_field(const char *tag, const char *value) try
  *		TRUE				OK
  *		FALSE				not found
  */
-bool MIME::remove_field(const char *tag)
+void MIME::remove_field(const char *tag)
 {
 	if (strcasecmp(tag, "Content-Type") == 0)
-		return false;
-	auto mid = std::remove_if(f_other_fields.begin(), f_other_fields.end(),
+		return;
+	std::erase_if(f_other_fields,
 	           [&](const MIME_FIELD &mf) { return strcasecmp(tag, mf.name.c_str()) == 0; });
-	auto found = mid != f_other_fields.end();
-	f_other_fields.erase(mid, f_other_fields.end());
-	return found;
 }
 
 /*
