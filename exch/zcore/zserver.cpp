@@ -3504,7 +3504,7 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 }
 
 ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
-    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+    const proptag_vector *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	zs_objtype mapi_type;
 	PROPTAG_ARRAY proptags;

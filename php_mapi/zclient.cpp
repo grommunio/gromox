@@ -156,12 +156,9 @@ ec_error_t zclient_setpropval(GUID hsession, uint32_t hobject,
 ec_error_t zclient_getpropval(GUID hsession, uint32_t hobject,
     gromox::proptag_t proptag, void **ppvalue)
 {
-	PROPTAG_ARRAY proptags;
+	const gromox::proptag_t proptags[] = {proptag};
 	TPROPVAL_ARRAY propvals;
-	
-	proptags.count = 1;
-	proptags.pproptag = &proptag;
-	auto result = zclient_getpropvals(hsession, hobject, &proptags, &propvals);
+	auto result = zclient_getpropvals(hsession, hobject, proptags, &propvals);
 	if (result != ecSuccess)
 		return result;
 	*ppvalue = propvals.count == 0 ? nullptr : propvals.ppropval[0].pvalue;

@@ -499,11 +499,25 @@ struct zcreq_setpropvals final : public zcreq {
 	TPROPVAL_ARRAY *ppropvals;
 };
 
-struct zcreq_getpropvals final : public zcreq {
-	using view_t = zcreq_getpropvals;
+struct zcreq_getpropvals_v final : public zcreq {
 	GUID hsession;
 	uint32_t hobject;
-	PROPTAG_ARRAY *pproptags;
+	std::optional<proptag_cspan> pproptags;
+};
+
+struct zcreq_getpropvals final : public zcreq {
+	using view_t = zcreq_getpropvals_v;
+	GUID hsession;
+	uint32_t hobject;
+	std::optional<proptag_vector> pproptags;
+	operator view_t() const {
+		view_t v;
+		v.hsession = hsession;
+		v.hobject = hobject;
+		if (pproptags.has_value())
+			v.pproptags = *pproptags;
+		return v;
+	}
 };
 
 struct zcreq_deletepropvals final : public zcreq {

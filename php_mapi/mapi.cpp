@@ -2640,7 +2640,7 @@ static ZEND_FUNCTION(mapi_getprops)
 {
 	ZCL_MEMORY;
 	zval pzpropvals, *pzresource, *pztagarray = nullptr;
-	PROPTAG_ARRAY proptags, *pproptags = nullptr;
+	std::optional<std::vector<proptag_t>> pproptags;
 	TPROPVAL_ARRAY propvals;
 	
 	ZVAL_NULL(&pzpropvals);
@@ -2657,10 +2657,9 @@ static ZEND_FUNCTION(mapi_getprops)
 	else if (probject == nullptr)
 		pthrow(ecNotSupported);
 	if(NULL != pztagarray) {
-		auto err = php_to_proptag_array(pztagarray, &proptags);
+		auto err = php_to_proptag_array(pztagarray, pproptags);
 		if (err != ecSuccess)
 			pthrow(err);
-		pproptags = &proptags;
 	}
 	auto result = zclient_getpropvals(probject->hsession,
 				probject->hobject, pproptags, &propvals);

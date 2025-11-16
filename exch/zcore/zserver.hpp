@@ -110,7 +110,7 @@ extern ec_error_t zs_openattachment(GUID ses, uint32_t msg_handle, uint32_t atta
 extern ec_error_t zs_createattachment(GUID ses, uint32_t msg_handle, uint32_t *obj_handle);
 extern ec_error_t zs_deleteattachment(GUID ses, uint32_t msg_handle, uint32_t attach_id);
 extern ec_error_t zs_setpropvals(GUID ses, uint32_t obj, TPROPVAL_ARRAY *);
-extern ec_error_t zs_getpropvals(GUID ses, uint32_t obj_handle, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+extern ec_error_t zs_getpropvals(GUID ses, uint32_t obj_handle, const proptag_vector *, TPROPVAL_ARRAY *);
 extern ec_error_t zs_deletepropvals(GUID ses, uint32_t obj_handle, const PROPTAG_ARRAY *);
 extern ec_error_t zs_setmessagereadflag(GUID ses, uint32_t msg_handle, uint32_t flags);
 extern ec_error_t zs_openembedded(GUID ses, uint32_t atx_handle, uint32_t flags, uint32_t *obj_handle);
