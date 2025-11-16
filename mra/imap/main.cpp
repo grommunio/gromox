@@ -324,7 +324,7 @@ static void listener_stop_accept()
 
 char *capability_list(char *dst, size_t z, imap_context *ctx)
 {
-	gx_strlcpy(dst, "IMAP4rev1 XLIST SPECIAL-USE UNSELECT UIDPLUS IDLE AUTH=LOGIN LITERAL+ LITERAL-", z);
+	gx_strlcpy(dst, "IMAP4rev1 XLIST SPECIAL-USE UNSELECT UIDPLUS IDLE LITERAL+ LITERAL-", z);
 	bool offer_tls = g_support_tls;
 	if (ctx != nullptr) {
 		if (ctx->connection.ssl != nullptr || ctx->is_authed())
@@ -332,6 +332,10 @@ char *capability_list(char *dst, size_t z, imap_context *ctx)
 	}
 	if (offer_tls)
 		HX_strlcat(dst, " STARTTLS", z);
+	if (g_force_tls && ctx->connection.ssl == nullptr)
+		HX_strlcat(dst, " LOGINDISABLED", z);
+	else
+		HX_strlcat(dst, " AUTH=PLAIN", z);
 	if (parse_bool(g_config_file->get_value("enable_rfc2971_commands")))
 		HX_strlcat(dst, " ID", z);
 	return dst;
