@@ -373,12 +373,25 @@ struct zcreq_queryrows final : public zcreq {
 	}
 };
 
-struct zcreq_setcolumns final : public zcreq {
-	using view_t = zcreq_setcolumns;
+struct zcreq_setcolumns_v final : public zcreq {
 	GUID hsession;
-	uint32_t htable;
-	PROPTAG_ARRAY *pproptags;
-	uint32_t flags;
+	uint32_t htable, flags;
+	proptag_cspan pproptags;
+};
+
+struct zcreq_setcolumns final : public zcreq {
+	using view_t = zcreq_setcolumns_v;
+	GUID hsession;
+	uint32_t htable, flags;
+	proptag_vector pproptags;
+	operator view_t() const {
+		view_t v;
+		v.hsession = hsession;
+		v.htable = htable;
+		v.flags = flags;
+		v.pproptags = pproptags;
+		return v;
+	}
 };
 
 struct zcreq_seekrow final : public zcreq {

@@ -50,7 +50,7 @@ ZCIDL(storeadvise, (GUID hsession, uint32_t hstore, /*maybenull*/ const BINARY *
 ZCIDL(unadvise, (GUID hsession, uint32_t hstore, uint32_t sub_id))
 ZCIDL(notifdequeue, (const NOTIF_SINK *psink, uint32_t timeval, IDLOUT std::vector<ZNOTIFICATION> *notifications))
 ZCIDL(queryrows, (GUID hsession, uint32_t htable, uint32_t start, uint32_t count, /*maybenull*/ const RESTRICTION *prestriction, const std::optional<std::vector<gromox::proptag_t>> &pproptags, IDLOUT TARRAY_SET *rowset))
-ZCIDL(setcolumns, (GUID hsession, uint32_t htable, const PROPTAG_ARRAY *pproptags, uint32_t flags))
+ZCIDL(setcolumns, (GUID hsession, uint32_t htable, proptag_cspan pproptags, uint32_t flags))
 ZCIDL(seekrow, (GUID hsession, uint32_t htable, uint32_t bookmark, int32_t seek_rows, IDLOUT int32_t *sought_rows))
 ZCIDL(sorttable, (GUID hsession, uint32_t htable, const SORTORDER_SET *psortset))
 ZCIDL(getrowcount, (GUID hsession, uint32_t htable, IDLOUT uint32_t *count))

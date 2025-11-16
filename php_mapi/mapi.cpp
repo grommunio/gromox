@@ -1712,7 +1712,7 @@ static ZEND_FUNCTION(mapi_table_setcolumns)
 		pthrow(err);
 	auto result = zclient_setcolumns(
 		ptable->hsession, ptable->hobject,
-		&proptags, flags);
+		proptags, flags);
 	if (result != ecSuccess)
 		pthrow(result);
 	RETVAL_TRUE;

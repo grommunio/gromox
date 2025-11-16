@@ -880,10 +880,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_setcolumns &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.htable));
-	d.pproptags = x.anew<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return pack_result::alloc;
-	QRF(x.g_proptag_a(d.pproptags));
+	QRF(x.g_proptag_a(&d.pproptags));
 	QRF(x.g_uint32(&d.flags));
 	return pack_result::ok;
 }

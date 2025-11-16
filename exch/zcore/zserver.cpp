@@ -2626,7 +2626,7 @@ ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 }
 	
 ec_error_t zs_setcolumns(GUID hsession, uint32_t htable,
-	const PROPTAG_ARRAY *pproptags, uint32_t flags)
+    proptag_cspan pproptags, uint32_t flags)
 {
 	zs_objtype mapi_type;
 	auto pinfo = zs_query_session(hsession);
@@ -2637,7 +2637,7 @@ ec_error_t zs_setcolumns(GUID hsession, uint32_t htable,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	return ptable->set_columns(*pproptags) ? ecSuccess : ecError;
+	return ptable->set_columns(pproptags) ? ecSuccess : ecError;
 }
 
 ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,
