@@ -2637,7 +2637,7 @@ ec_error_t zs_setcolumns(GUID hsession, uint32_t htable,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::table)
 		return ecNotSupported;
-	return ptable->set_columns(pproptags) ? ecSuccess : ecError;
+	return ptable->set_columns(*pproptags) ? ecSuccess : ecError;
 }
 
 ec_error_t zs_seekrow(GUID hsession, uint32_t htable, uint32_t bookmark,

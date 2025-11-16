@@ -558,8 +558,8 @@ bool table_object::query_rows(/*maybenull*/ const proptag_cspan *icols,
 
 	if (icols != nullptr) {
 		cols = *icols;
-	} else if (ptable->pcolumns != nullptr) {
-		cols = *ptable->pcolumns;
+	} else if (ptable->m_colset) {
+		cols = ptable->m_columns;
 	} else {
 		if (!table_object_get_all_columns(ptable, &tmp_columns))
 			return FALSE;
@@ -638,17 +638,14 @@ void table_object::seek_current(BOOL b_forward, uint32_t row_count)
 	ptable->position -= row_count;
 }
 
-BOOL table_object::set_columns(const PROPTAG_ARRAY *cols)
+bool table_object::set_columns(proptag_cspan cols) try
 {
-	auto ptable = this;
-	if (ptable->pcolumns != nullptr)
-		proptag_array_free(ptable->pcolumns);
-	if (cols == nullptr) {
-		ptable->pcolumns = NULL;
-		return TRUE;
-	}
-	ptable->pcolumns = proptag_array_dup(cols);
-	return ptable->pcolumns != nullptr ? TRUE : false;
+	m_columns.assign(cols.begin(), cols.end());
+	m_colset = true;
+	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 
 BOOL table_object::set_sorts(const SORTORDER_SET *so)
@@ -745,7 +742,6 @@ std::unique_ptr<table_object> table_object::create(store_object *pstore,
 	}
 	ptable->table_type = table_type;
 	ptable->table_flags = table_flags;
-	ptable->pcolumns = NULL;
 	ptable->psorts = NULL;
 	ptable->prestriction = NULL;
 	ptable->position = 0;
@@ -823,10 +819,8 @@ void table_object::remove_bookmark(uint32_t index)
 
 static void table_object_reset(table_object *ptable)
 {
-	if (NULL != ptable->pcolumns) {
-		proptag_array_free(ptable->pcolumns);
-		ptable->pcolumns = NULL;
-	}
+	ptable->m_columns.clear();
+	ptable->m_colset = false;
 	if (NULL != ptable->psorts) {
 		sortorder_set_free(ptable->psorts);
 		ptable->psorts = NULL;
