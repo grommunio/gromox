@@ -615,9 +615,9 @@ void container_object_get_container_table_all_proptags(
 	pproptags->pproptag = deconst(p);
 }
 
-static BOOL
+static bool
 container_object_get_specialtables_from_node(const ab_tree::ab_node& node,
-    const PROPTAG_ARRAY *pproptags, BOOL b_depth, TARRAY_SET *pset)
+    const PROPTAG_ARRAY *pproptags, TARRAY_SET *pset)
 {
 	TPROPVAL_ARRAY **pparray;
 	auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
@@ -641,9 +641,8 @@ container_object_get_specialtables_from_node(const ab_tree::ab_node& node,
 	return TRUE;
 }
 
-static BOOL container_object_query_folder_hierarchy(
-	uint64_t folder_id, const PROPTAG_ARRAY *pproptags,
-	BOOL b_depth, TARRAY_SET *pset)
+static bool container_object_query_folder_hierarchy(uint64_t folder_id,
+    const PROPTAG_ARRAY *pproptags, TARRAY_SET *pset)
 {
 	uint32_t row_num;
 	uint32_t table_id;
@@ -708,7 +707,7 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	if (CONTAINER_TYPE_FOLDER == pcontainer->type) {
 		if (!container_object_query_folder_hierarchy(pcontainer->id.exmdb_id.folder_id,
-		    pproptags, b_depth, &tmp_set))
+		    pproptags, &tmp_set))
 			return FALSE;	
 	} else {
 		auto pbase = ab_tree::AB.get(pcontainer->id.abtree_id.base_id);
@@ -744,11 +743,11 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 			tmp_set.count ++;
 			if (b_depth && !container_object_query_folder_hierarchy(
 			    rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
-			    pproptags, TRUE, &tmp_set))
+			    pproptags, &tmp_set))
 				return FALSE;
 			for (auto it = pbase->dbegin(); it != pbase->dend(); ++it)
 				if (!container_object_get_specialtables_from_node(it,
-				    pproptags, b_depth, &tmp_set))
+				    pproptags, &tmp_set))
 					return FALSE;
 		} else if (pcontainer->id.abtree_id.minid == ab_tree::minid::SC_GAL) {
 			/* no subordinates */
