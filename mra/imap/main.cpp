@@ -492,8 +492,13 @@ int main(int argc, char **argv)
 	}
 	
 	auto imap_force_tls = parse_bool(g_config_file->get_value("imap_force_tls"));
-	if (imap_support_tls && imap_force_tls)
-		printf("[imap]: imap MUST be running with TLS\n");
+	if (imap_force_tls) {
+		if (!imap_support_tls) {
+			fprintf(stderr, "Cannot combine imap_force_tls=yes with imap_support_tls=no.\n");
+			return EXIT_FAILURE;
+		}
+		printf("[imap]: imap connections MUST be using TLS\n");
+	}
 	if (!imap_support_tls && listen_tls_port > 0)
 		listen_tls_port = 0;
 	if (listen_tls_port > 0)
