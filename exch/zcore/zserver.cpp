@@ -3607,7 +3607,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 }
 
 ec_error_t zs_deletepropvals(GUID hsession,
-	uint32_t hobject, const PROPTAG_ARRAY *pproptags)
+    uint32_t hobject, proptag_cspan pproptags)
 {
 	zs_objtype mapi_type;
 	uint32_t permission;
@@ -3620,15 +3620,15 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		return ecNullObject;
 	switch (mapi_type) {
 	case zs_objtype::profproperty:
-		for (size_t i = 0; i < pproptags->count; ++i)
-			static_cast<TPROPVAL_ARRAY *>(pobject)->erase(pproptags->pproptag[i]);
+		for (const auto tag : pproptags)
+			static_cast<TPROPVAL_ARRAY *>(pobject)->erase(tag);
 		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;
 	case zs_objtype::store: {
 		auto store = static_cast<store_object *>(pobject);
 		if (!store->owner_mode())
 			return ecAccessDenied;
-		if (!store->remove_properties(*pproptags))
+		if (!store->remove_properties(pproptags))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3642,7 +3642,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 			if (!(permission & frightsOwner))
 				return ecAccessDenied;
 		}
-		if (!folder->remove_properties(*pproptags))
+		if (!folder->remove_properties(pproptags))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3650,7 +3650,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->writable())
 			return ecAccessDenied;
-		if (!msg->remove_properties(*pproptags))
+		if (!msg->remove_properties(pproptags))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3658,7 +3658,7 @@ ec_error_t zs_deletepropvals(GUID hsession,
 		auto atx = static_cast<attachment_object *>(pobject);
 		if (!atx->writable())
 			return ecAccessDenied;
-		if (!atx->remove_properties(*pproptags))
+		if (!atx->remove_properties(pproptags))
 			return ecError;
 		return ecSuccess;
 	}

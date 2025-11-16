@@ -67,7 +67,7 @@ ZCIDL(createattachment, (GUID hsession, uint32_t hmessage, IDLOUT uint32_t *hobj
 ZCIDL(deleteattachment, (GUID hsession, uint32_t hmessage, uint32_t attach_id))
 ZCIDL(setpropvals, (GUID hsession, uint32_t hobject, const TPROPVAL_ARRAY *ppropvals))
 ZCIDL(getpropvals, (GUID hsession, uint32_t hobject, const std::optional<proptag_cspan> &pproptags, IDLOUT TPROPVAL_ARRAY *propvals))
-ZCIDL(deletepropvals, (GUID hsession, uint32_t hobject, const PROPTAG_ARRAY *pproptags))
+ZCIDL(deletepropvals, (GUID hsession, uint32_t hobject, proptag_cspan pproptags))
 ZCIDL(setmessagereadflag, (GUID hsession, uint32_t hmessage, uint32_t flags))
 ZCIDL(openembedded, (GUID hsession, uint32_t hattachment, uint32_t flags, IDLOUT uint32_t *hobject))
 ZCIDL(getnamedpropids, (GUID hsession, uint32_t hstore, const PROPNAME_ARRAY *ppropnames, IDLOUT PROPID_ARRAY *propids))

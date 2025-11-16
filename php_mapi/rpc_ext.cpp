@@ -668,7 +668,7 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_deletepropvals &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
-	TRY(x.p_proptag_a(*d.pproptags));
+	TRY(x.p_proptag_a(d.pproptags));
 	return pack_result::ok;
 }
 

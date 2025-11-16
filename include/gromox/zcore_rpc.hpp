@@ -520,11 +520,24 @@ struct zcreq_getpropvals final : public zcreq {
 	}
 };
 
-struct zcreq_deletepropvals final : public zcreq {
-	using view_t = zcreq_deletepropvals;
+struct zcreq_deletepropvals_v final : public zcreq {
 	GUID hsession;
 	uint32_t hobject;
-	PROPTAG_ARRAY *pproptags;
+	proptag_cspan pproptags;
+};
+
+struct zcreq_deletepropvals final : public zcreq {
+	using view_t = zcreq_deletepropvals_v;
+	GUID hsession;
+	uint32_t hobject;
+	proptag_vector pproptags;
+	operator view_t() const {
+		view_t v;
+		v.hsession = hsession;
+		v.hobject = hobject;
+		v.pproptags = pproptags;
+		return v;
+	}
 };
 
 struct zcreq_setmessagereadflag final : public zcreq {

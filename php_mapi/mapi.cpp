@@ -2475,7 +2475,7 @@ static ZEND_FUNCTION(mapi_deleteprops)
 	if (err != ecSuccess)
 		pthrow(err);
 	auto result = zclient_deletepropvals(probject->hsession,
-	              probject->hobject, &proptags);
+	              probject->hobject, proptags);
 	if (result != ecSuccess)
 		pthrow(result);
 	RETVAL_TRUE;
