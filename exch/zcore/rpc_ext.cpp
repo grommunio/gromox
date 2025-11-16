@@ -842,7 +842,7 @@ static pack_result zrpc_push(EXT_PUSH &x, const zcresp_notifdequeue &d)
 	return rpc_ext_push_znotification_array(x, d.notifications);
 }
 
-static pack_result zrpc_pull(EXT_PULL &x, zcreq_queryrows &d)
+static pack_result zrpc_pull(EXT_PULL &x, zcreq_queryrows &d) try
 {
 	uint8_t tmp_byte;
 	
@@ -861,14 +861,14 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_queryrows &d)
 	}
 	QRF(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		d.pproptags = nullptr;
+		d.pproptags.reset();
 	} else {
-		d.pproptags = x.anew<PROPTAG_ARRAY>();
-		if (d.pproptags == nullptr)
-			return pack_result::alloc;
-		QRF(x.g_proptag_a(d.pproptags));
+		d.pproptags.emplace();
+		QRF(x.g_proptag_a(&*d.pproptags));
 	}
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_queryrows &d)

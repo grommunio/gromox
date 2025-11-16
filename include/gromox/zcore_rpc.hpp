@@ -343,14 +343,34 @@ struct zcreq_notifdequeue final : public zcreq {
 	uint32_t timeval;
 };
 
-struct zcreq_queryrows final : public zcreq {
-	using view_t = zcreq_queryrows;
+struct zcreq_queryrows_v final : public zcreq {
 	GUID hsession;
 	uint32_t htable;
 	uint32_t start;
 	uint32_t count;
 	RESTRICTION *prestriction;
-	PROPTAG_ARRAY *pproptags;
+	std::optional<proptag_cspan> pproptags;
+};
+
+struct zcreq_queryrows final : public zcreq {
+	using view_t = zcreq_queryrows_v;
+	GUID hsession;
+	uint32_t htable;
+	uint32_t start;
+	uint32_t count;
+	RESTRICTION *prestriction;
+	std::optional<proptag_vector> pproptags;
+	operator view_t() const {
+		view_t v;
+		v.hsession = hsession;
+		v.htable = htable;
+		v.start = start;
+		v.count = count;
+		v.prestriction = prestriction;
+		if (pproptags.has_value())
+			v.pproptags = *pproptags;
+		return v;
+	}
 };
 
 struct zcreq_setcolumns final : public zcreq {

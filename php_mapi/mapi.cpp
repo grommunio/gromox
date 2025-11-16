@@ -1624,7 +1624,7 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 	zval pzrowset, *pzresource, *pzproptags = nullptr, *pzrestriction = nullptr;
 	TARRAY_SET rowset;
 	MAPI_RESOURCE *ptable;
-	PROPTAG_ARRAY proptags, *pproptags = nullptr;
+	std::optional<std::vector<proptag_t>> pproptags;
 	RESTRICTION restriction, *prestriction = nullptr;
 	
 	ZVAL_NULL(&pzrowset);
@@ -1642,10 +1642,9 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 		prestriction = &restriction;
 	}
 	if (NULL != pzproptags) {
-		auto err = php_to_proptag_array(pzproptags, &proptags);
+		auto err = php_to_proptag_array(pzproptags, pproptags);
 		if (err != ecSuccess)
 			pthrow(err);
-		pproptags = &proptags;
 	}
 	auto result = zclient_queryrows(ptable->hsession, ptable->hobject, 0,
 	         INT32_MAX, prestriction, pproptags, &rowset);
@@ -1664,7 +1663,7 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 	zval pzrowset, *pzresource, *pzproptags = nullptr;
 	TARRAY_SET rowset;
 	MAPI_RESOURCE *ptable;
-	PROPTAG_ARRAY proptags, *pproptags = nullptr;
+	std::optional<std::vector<proptag_t>> pproptags;
 	
 	ZVAL_NULL(&pzrowset);
 	zend_long start = UINT32_MAX, row_count = UINT32_MAX;
@@ -1675,11 +1674,11 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 	ZEND_FETCH_RESOURCE(ptable, pzresource, le_mapi_table);
 	if (ptable->type != zs_objtype::table)
 		pthrow(ecInvalidObject);
+
 	if (NULL != pzproptags) {
-		auto err = php_to_proptag_array(pzproptags, &proptags);
+		auto err = php_to_proptag_array(pzproptags, pproptags);
 		if (err != ecSuccess)
 			pthrow(err);
-		pproptags = &proptags;
 	}
 	auto result = zclient_queryrows(ptable->hsession,
 			ptable->hobject, start, row_count, NULL,

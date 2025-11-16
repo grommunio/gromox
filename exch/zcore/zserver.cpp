@@ -2512,7 +2512,7 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink, uint32_t timeval,
 
 ec_error_t zs_queryrows(GUID hsession, uint32_t htable, uint32_t start,
 	uint32_t count, const RESTRICTION *prestriction,
-	const PROPTAG_ARRAY *itags, TARRAY_SET *prowset)
+    const std::vector<proptag_t> *itags, TARRAY_SET *prowset)
 {
 	uint32_t row_num;
 	int32_t position;
