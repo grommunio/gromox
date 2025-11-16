@@ -66,7 +66,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 		PR_SOURCE_KEY, PR_CORRELATION_ID,
 	};
 	for (auto t : tags1)
-		pproptags->emplace_back(t);
+		pproptags->emplace_back_nd(t);
 	static constexpr proptag_t tags2[] = {
 		PR_IPM_DRAFTS_ENTRYID, PR_IPM_CONTACT_ENTRYID,
 		PR_IPM_APPOINTMENT_ENTRYID, PR_IPM_JOURNAL_ENTRYID,
@@ -75,9 +75,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	};
 	if (pfolder->plogon->is_private() && toplevel(pfolder->folder_id))
 		for (auto t : tags2)
-			pproptags->emplace_back(t);
-	std::sort(pproptags->begin(), pproptags->end());
-	pproptags->count = std::unique(pproptags->begin(), pproptags->end()) - pproptags->begin();
+			pproptags->emplace_back_nd(t);
 	return TRUE;
 }
 

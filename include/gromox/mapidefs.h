@@ -1138,6 +1138,7 @@ struct GX_EXPORT PROPTAG_ARRAY {
 	inline bool has(gromox::proptag_t t) const { return proptag_cspan(*this).has(t); }
 	inline std::string repr() const { return proptag_cspan(*this).repr(); }
 	void emplace_back(gromox::proptag_t t) { pproptag[count++] = t; }
+	void emplace_back_nd(gromox::proptag_t t) { if (!has(t)) pproptag[count++] = t; }
 
 	uint16_t count;
 	gromox::proptag_t *pproptag;

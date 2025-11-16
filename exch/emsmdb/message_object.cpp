@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
-#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -712,14 +711,12 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 		}
 	}
 	for (auto so : stream_list)
-		pproptags->emplace_back(so->get_proptag());
+		pproptags->emplace_back_nd(so->get_proptag());
 	for (auto t : {PR_ACCESS, PR_ACCESS_LEVEL, PidTagFolderId,
 	     PR_PARENT_SOURCE_KEY, PR_MESSAGE_LOCALE_ID, PR_MESSAGE_CODEPAGE})
-		pproptags->emplace_back(t);
+		pproptags->emplace_back_nd(t);
 	if (pmessage->pembedding == nullptr)
-		pproptags->emplace_back(PR_SOURCE_KEY);
-	std::sort(pproptags->begin(), pproptags->end());
-	pproptags->count = std::unique(pproptags->begin(), pproptags->end()) - pproptags->begin();
+		pproptags->emplace_back_nd(PR_SOURCE_KEY);
 	return TRUE;
 }
 

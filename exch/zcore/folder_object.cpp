@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
-#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -72,7 +71,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		PR_STORE_ENTRYID, PR_STORE_RECORD_KEY, PR_SOURCE_KEY,
 	};
 	for (auto t : tags1)
-		pproptags->emplace_back(t);
+		pproptags->emplace_back_nd(t);
 	static constexpr proptag_t tags2[] = {
 		PR_IPM_DRAFTS_ENTRYID, PR_IPM_CONTACT_ENTRYID,
 		PR_IPM_APPOINTMENT_ENTRYID, PR_IPM_JOURNAL_ENTRYID,
@@ -81,9 +80,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	};
 	if (pfolder->pstore->b_private && toplevel(pfolder->folder_id))
 		for (auto t : tags2)
-			pproptags->emplace_back(t);
-	std::sort(pproptags->begin(), pproptags->end());
-	pproptags->count = std::unique(pproptags->begin(), pproptags->end()) - pproptags->begin();
+			pproptags->emplace_back_nd(t);
 	return TRUE;
 }
 

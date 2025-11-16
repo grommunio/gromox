@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
-#include <algorithm>
 #include <climits>
 #include <cstdlib>
 #include <cstring>
@@ -136,9 +135,7 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		PR_STORE_RECORD_KEY, PR_STORE_ENTRYID,
 	};
 	for (auto t : tags1)
-		pproptags->emplace_back(t);
-	std::sort(pproptags->begin(), pproptags->end());
-	pproptags->count = std::unique(pproptags->begin(), pproptags->end()) - pproptags->begin();
+		pproptags->emplace_back_nd(t);
 	return TRUE;
 }
 
