@@ -39,7 +39,7 @@ using mapitime_t = uint64_t;
  * All the while | and << only make *sense* in an unsigned _context_ anyway
  * (i.e. the operator should have returned unsigned all the time)
  */
-#define PROP_TAG(type, tag) static_cast<gromox::proptag_t>((static_cast<uint32_t>(tag) << 16) | (type))
+#define PROP_TAG(type, tag) static_cast<gromox::proptag_t>((static_cast<gromox::proptag_t>(tag) << 16) | (type))
 namespace {
 enum {
 	/*
@@ -1107,7 +1107,7 @@ struct GX_EXPORT proptag_cspan : public std::span<const gromox::proptag_t> {
 	public:
 	using base_t::base_t;
 	size_t indexof(gromox::proptag_t) const;
-	inline bool has(uint32_t tag) const { return indexof(tag) != npos; }
+	inline bool has(gromox::proptag_t t) const { return indexof(t) != npos; }
 	std::string repr() const;
 };
 
@@ -1137,10 +1137,10 @@ struct GX_EXPORT PROPTAG_ARRAY {
 	inline size_t indexof(gromox::proptag_t t) const { return proptag_cspan(*this).indexof(t); }
 	inline bool has(gromox::proptag_t t) const { return proptag_cspan(*this).has(t); }
 	inline std::string repr() const { return proptag_cspan(*this).repr(); }
-	void emplace_back(uint32_t tag) { pproptag[count++] = tag; }
+	void emplace_back(gromox::proptag_t t) { pproptag[count++] = t; }
 
 	uint16_t count;
-	uint32_t *pproptag;
+	gromox::proptag_t *pproptag;
 	static constexpr size_t npos = -1;
 	I_BEGIN_END(pproptag, count);
 };
@@ -1234,35 +1234,35 @@ struct GX_EXPORT GEN_ARRAY {
 };
 
 struct GX_EXPORT TPROPVAL_ARRAY {
-	TAGGED_PROPVAL *find(uint32_t tag) {
+	TAGGED_PROPVAL *find(gromox::proptag_t tag) {
 		for (size_t i = 0; i < count; ++i)
 			if (ppropval[i].proptag == tag)
 				return &ppropval[i];
 		return nullptr;
 	}
-	const TAGGED_PROPVAL *find(uint32_t tag) const {
+	const TAGGED_PROPVAL *find(gromox::proptag_t tag) const {
 		for (size_t i = 0; i < count; ++i)
 			if (ppropval[i].proptag == tag)
 				return &ppropval[i];
 		return nullptr;
 	}
-	inline bool has(uint32_t tag) const { return find(tag) != nullptr; }
-	inline void *getval(uint32_t tag) {
+	inline bool has(gromox::proptag_t t) const { return find(t) != nullptr; }
+	inline void *getval(gromox::proptag_t tag) {
 		auto v = find(tag);
 		return v != nullptr ? v->pvalue : nullptr;
 	}
-	inline const void *getval(uint32_t tag) const {
+	inline const void *getval(gromox::proptag_t tag) const {
 		auto v = find(tag);
 		return v != nullptr ? v->pvalue : nullptr;
 	}
-	template<typename T> inline const T *get(uint32_t tag) const { return static_cast<const T *>(getval(tag)); }
-	template<typename T> inline T *get(uint32_t tag) { return static_cast<T *>(getval(tag)); }
-	ec_error_t set(uint32_t tag, const void *d);
+	template<typename T> inline const T *get(gromox::proptag_t t) const { return static_cast<const T *>(getval(t)); }
+	template<typename T> inline T *get(gromox::proptag_t t) { return static_cast<T *>(getval(t)); }
+	ec_error_t set(gromox::proptag_t, const void *d);
 	inline ec_error_t set(const TAGGED_PROPVAL &a) { return set(a.proptag, a.pvalue); }
-	void emplace_back(uint32_t tag, const void *d) {
+	void emplace_back(gromox::proptag_t tag, const void *d) {
 		ppropval[count++] = TAGGED_PROPVAL{tag, deconst(d)};
 	}
-	void erase(uint32_t tag);
+	void erase(gromox::proptag_t);
 	size_t erase_if(bool (*pred)(const TAGGED_PROPVAL &));
 	TPROPVAL_ARRAY *dup() const;
 	std::string repr() const;

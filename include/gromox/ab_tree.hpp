@@ -237,8 +237,8 @@ class GX_EXPORT ab_base {
 	uint32_t etyp(minid) const;
 	bool exists(minid) const;
 	const ab_domain *fetch_domain(minid) const;
-	ec_error_t fetch_prop(minid, uint32_t, std::string &) const;
-	bool fetch_props(minid, const PROPTAG_ARRAY &, std::unordered_map<uint32_t, std::string> &) const;
+	ec_error_t fetch_prop(minid, gromox::proptag_t, std::string &) const;
+	bool fetch_props(minid, const PROPTAG_ARRAY &, std::unordered_map<gromox::proptag_t, std::string> &) const;
 	const sql_user *fetch_user(minid) const;
 	uint32_t get_leaves_num(minid) const;
 	inline const GUID &guid() const { return m_guid; }
@@ -246,7 +246,7 @@ class GX_EXPORT ab_base {
 	uint32_t hidden(minid) const;
 	ec_error_t mdbdn(minid, std::string &) const;
 	bool mlist_info(minid, std::string *, std::string *, int *) const;
-	ec_error_t proplist(minid, std::vector<uint32_t> &) const;
+	ec_error_t proplist(minid, std::vector<gromox::proptag_t> &) const;
 	minid resolve(const char *) const;
 	inline size_t size() const { return m_users.size() + domains.size(); }
 	abnode_type type(minid) const;

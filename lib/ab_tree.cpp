@@ -467,7 +467,7 @@ bool ab_base::exists(minid mid) const
  *
  * @return     Exchange error code indicating success or failure
  */
-ec_error_t ab_base::fetch_prop(minid mid, uint32_t tag, std::string &prop) const
+ec_error_t ab_base::fetch_prop(minid mid, proptag_t tag, std::string &prop) const
 {
 	const sql_user *user = fetch_user(mid);
 	if (!user)
@@ -488,7 +488,7 @@ ec_error_t ab_base::fetch_prop(minid mid, uint32_t tag, std::string &prop) const
  *
  * @return     true if user object was found, false otherwise
  */
-bool ab_base::fetch_props(minid mid, const PROPTAG_ARRAY &tags, std::unordered_map<uint32_t, std::string> &props) const
+bool ab_base::fetch_props(minid mid, const PROPTAG_ARRAY &tags, std::unordered_map<proptag_t, std::string> &props) const
 {
 	const sql_user *user = fetch_user(mid);
 	if (!user)
@@ -605,7 +605,7 @@ bool ab_base::mlist_info(minid mid, std::string *mail_address, std::string *crea
  *
  * @return     Exchange error code indicating success or failure
  */
-ec_error_t ab_base::proplist(minid mid, std::vector<uint32_t> &tags) const
+ec_error_t ab_base::proplist(minid mid, std::vector<proptag_t> &tags) const
 {
 	const sql_user *user = fetch_user(mid);
 	if (!user)
