@@ -497,14 +497,12 @@ static int do_process_2(std::string_view &&data, const char *str)
 		print_unixtime(str);
 		return 0;
 	case CM_HTMLTORTF: {
-		std::unique_ptr<char[], stdlib_delete> out;
-		size_t outlen = 0;
-		auto err = html_to_rtf(data.data(), data.size(), CP_UTF8,
-		           &unique_tie(out), &outlen);
+		std::string out;
+		auto err = html_to_rtf(data, CP_UTF8, out);
 		if (err != ecSuccess) {
 			fprintf(stderr, "html_to_rtf: %s", mapi_strerror(err));
 			return -1;
-		} else if (HXio_fullwrite(STDOUT_FILENO, out.get(), outlen) < 0) {
+		} else if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
 			perror("write");
 			return -1;
 		}

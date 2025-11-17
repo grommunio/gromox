@@ -19,6 +19,7 @@
 #include <libHX/defs.h>
 #include <libHX/endian.h>
 #include <libHX/libxml_helper.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <libxml/HTMLparser.h>
 #include <gromox/defs.h>
@@ -1113,19 +1114,24 @@ static void html_enum_tables(RTF_WRITER *pwriter, xmlNode *pnode)
 		html_enum_tables(pwriter, pnode);
 }
 
-ec_error_t html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
-    char **pbuff_out, size_t *plength) try
+/**
+ * @inbuf: input data
+ * @cpid:  the actual character set of the HTML data (override; can't trust <meta>)
+ * @out:   output variable
+ *
+ * It is allowed for @inbuf to point to the same object as @out.
+ */
+ec_error_t html_to_rtf(std::string_view inbuf, cpid_t cpid, std::string &out) try
 {
 	RTF_WRITER writer;
 
-	*pbuff_out = nullptr;
 	cpid_cstr_compatible(cpid);
 	auto cset = cpid_to_cset(cpid);
 	if (cset == nullptr)
 		cset = "windows-1252";
 	cset = replace_iconv_charset(cset);
-	auto buffer = iconvtext(static_cast<const char *>(pbuff_in),
-	              length, cset, "UTF-8");
+	/* First, switch HTML to UTF-8 */
+	auto buffer = iconvtext(inbuf.data(), inbuf.size(), cset, "UTF-8");
 	if (errno == ENOMEM)
 		return ecMAPIOOM;
 	else if (errno == EINVAL)
@@ -1139,6 +1145,7 @@ ec_error_t html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
 	            HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET);
 	if (hdoc == nullptr)
 		return ecError;
+	auto cl_0 = HX::make_scope_exit([&]() { xmlFreeDoc(hdoc); });
 	auto root = xmlDocGetRootElement(hdoc);
 	if (root != nullptr) {
 		html_enum_tables(&writer, root);
@@ -1146,12 +1153,9 @@ ec_error_t html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
 		ERF(html_enum_write(&writer, root));
 		ERF(html_write_tail(&writer));
 	}
-	*plength = writer.ext_push.m_offset;
-	*pbuff_out = me_alloc<char>(*plength);
-	if (*pbuff_out != nullptr)
-		memcpy(*pbuff_out, writer.ext_push.m_udata, *plength);
-	xmlFreeDoc(hdoc);
-	return *pbuff_out != nullptr ? ecSuccess : ecMAPIOOM;
+	out.assign(writer.ext_push.m_cdata, writer.ext_push.m_offset);
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecMAPIOOM;
 }
