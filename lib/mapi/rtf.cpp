@@ -2871,7 +2871,6 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 {
 	int i;
 	int tmp_len;
-	iconv_t conv_id;
 	RTF_READER reader;
 	char tmp_buff[128];
 	SIMPLE_TREE_NODE *pnode;
@@ -2912,22 +2911,7 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	}
 	snprintf(tmp_buff, 128, "%s//TRANSLIT",
 		replace_iconv_charset(charset));
-	conv_id = iconv_open(tmp_buff, "UTF-8");
-	if ((iconv_t)-1 == conv_id) {
-		mlog(LV_ERR, "E-2115: iconv_open %s: %s",
-		        tmp_buff, strerror(errno));
-		return false;
-	}
-	auto cl_0 = HX::make_scope_exit([&]() { iconv_close(conv_id); });
-	auto pin = reader.ext_push.m_cdata;
-	/* Assumption for 3x is that no codepage maps to points beyond BMP */
-	size_t out_len = 3 * reader.ext_push.m_offset;
-	buf_out.resize(out_len);
-	auto pout = buf_out.data();
-	size_t in_len = reader.ext_push.m_offset;
-	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1))
-		return false;
-	buf_out.resize(buf_out.size() - out_len);
+	buf_out = iconvtext(reader.ext_push.m_cdata, reader.ext_push.m_offset, "UTF-8", tmp_buff);
 	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1205: ENOMEM");
