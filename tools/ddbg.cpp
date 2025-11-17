@@ -524,13 +524,12 @@ static int do_process_2(std::string_view &&data, const char *str)
 	case CM_LZXENC:
 		return do_lzx(data, 1);
 	case CM_RTFCP: {
-		auto comp(rtfcp_compress(data.data(), data.size()));
-		if (comp == nullptr) {
-			fprintf(stderr, "rtfcp_compress failed\n");
+		std::string out;
+		auto err = rtfcp_encode(data, out);
+		if (err != ecSuccess) {
+			fprintf(stderr, "rtfcp_compress: %s\n", mapi_strerror(err));
 			return -1;
-		}
-		auto cl_0 = HX::make_scope_exit([&]() { rop_util_free_binary(comp); });
-		if (HXio_fullwrite(STDOUT_FILENO, comp->pv, comp->cb) < 0) {
+		} else if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
 			perror("write");
 			return -1;
 		}

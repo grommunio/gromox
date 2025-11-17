@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2025 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -195,23 +195,23 @@ bool rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)
 	return true;
 }
 
-BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length)
+/**
+ * This uses the MELA uncompressed format.
+ * It is valid for @in and @out to refer to the same object.
+ */
+ec_error_t rtfcp_encode(std::string_view in, std::string &out) try
 {
-	EXT_PUSH ext_push;
-	
-	if (!ext_push.init(nullptr, 0, 0) ||
-	    ext_push.p_uint32(in_length + 12) != pack_result::ok ||
-	    ext_push.p_uint32(in_length) != pack_result::ok ||
-	    ext_push.p_uint32(RTF_UNCOMPRESSED) != pack_result::ok ||
-	    ext_push.p_uint32(0) != pack_result::ok ||
-	    ext_push.p_bytes(pin_buff, in_length) != pack_result::ok)
-		return nullptr;
-	auto pbin = gromox::me_alloc<BINARY>();
-	if (pbin == nullptr)
-		return nullptr;
-	pbin->cb = ext_push.m_offset;
-	pbin->pb = ext_push.release();
-	return pbin;
+	uint32_t len = std::min(in.size(), static_cast<size_t>(UINT32_MAX - 12));
+	char b[16];
+	cpu_to_le32p(&b[0], len + 12);
+	cpu_to_le32p(&b[4], len);
+	cpu_to_le32p(&b[8], RTF_UNCOMPRESSED);
+	cpu_to_le32p(&b[12], 0);
+	out = std::string(b, sizeof(b)) + std::string_view(in.data(), len);
+	/* In-place editing via string.insert(0,...) is some 90% slower in GNU stdlibc++ */
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
 }
 
 ssize_t rtfcp_uncompressed_size(const BINARY *rtf)

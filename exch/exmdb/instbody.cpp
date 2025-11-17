@@ -148,14 +148,16 @@ static int instance_conv_rtfcpfromlower(MESSAGE_CONTENT *mc,
 	std::string rtfout;
 	if (html_to_rtf(*bin, cpid, rtfout) != ecSuccess)
 		return -1;
-	std::unique_ptr<BINARY, instbody_delete> rtfcpbin(rtfcp_compress(rtfout.data(), rtfout.size()));
-	if (rtfcpbin == nullptr)
+	auto err = rtfcp_encode(rtfout, rtfout);
+	if (err != ecSuccess) {
+		mlog(LV_ERR, "rtfcp_encode_inplace: %s", mapi_strerror(err));
 		return -1;
-	bin->cb = rtfcpbin->cb;
-	bin->pv = common_util_alloc(rtfcpbin->cb);
+	}
+	bin->cb = rtfout.size();
+	bin->pv = common_util_alloc(rtfout.size());
 	if (bin->pv == nullptr)
 		return -1;
-	memcpy(bin->pv, rtfcpbin->pv, rtfcpbin->cb);
+	memcpy(bin->pv, rtfout.data(), rtfout.size());
 	return 1;
 }
 

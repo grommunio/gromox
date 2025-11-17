@@ -603,14 +603,11 @@ static void *fake_read_cid(unsigned int mode, proptag_t tag, const char *cid,
 		buf += "</tt></p></body></html>";
 	} else if (tag == ID_TAG_RTFCOMPRESSED) {
 		buf += "\\par\n\x7d";
-		auto bin = rtfcp_compress(buf.c_str(), buf.size());
-		if (bin == nullptr)
+		auto err = rtfcp_encode(buf, buf);
+		if (err != ecSuccess) {
+			mlog(LV_ERR, "rtfcp_encode: %s", mapi_strerror(err));
 			return nullptr;
-		auto out = bin->pb;
-		if (outlen != nullptr)
-			*outlen = bin->cb;
-		free(bin);
-		return out;
+		}
 	}
 	auto out = cu_alloc<char>(buf.size() + 1);
 	if (out == nullptr)
