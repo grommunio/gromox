@@ -178,8 +178,10 @@ struct GX_EXPORT errno_t {
 #endif
 	}
 	constexpr operator int() const { return m_value; }
+#ifndef COVERITY
 	constexpr operator bool() const = delete;
 	constexpr void operator!() const = delete;
+#endif
 	private:
 	int m_value = 0;
 };
