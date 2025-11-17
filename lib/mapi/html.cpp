@@ -1118,12 +1118,6 @@ ec_error_t html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
 {
 	RTF_WRITER writer;
 
-	std::unique_ptr<char[]> buff_inz(new(std::nothrow) char[length+1]);
-	if (buff_inz == nullptr)
-		return ecMAPIOOM;
-	memcpy(buff_inz.get(), pbuff_in, length);
-	buff_inz[length] = '\0';
-
 	*pbuff_out = nullptr;
 	cpid_cstr_compatible(cpid);
 	auto cset = cpid_to_cset(cpid);
