@@ -513,8 +513,10 @@ static int do_process_2(std::string_view &&data, const char *str)
 		if (html_to_plain(data.data(), data.size(), CP_OEMCP, out) < 0) {
 			fprintf(stderr, "html-to_plain failed\n");
 			return -1;
+		} else if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
+			perror("write");
+			return 01;
 		}
-		puts(out.c_str());
 		return 0;
 	}
 	case CM_LZXDEC:
@@ -540,8 +542,10 @@ static int do_process_2(std::string_view &&data, const char *str)
 		if (!rtf_to_html(data.data(), data.size(), "utf-8", out, at)) {
 			fprintf(stderr, "rtf_to_html failed\n");
 			return -1;
+		} else if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
+			perror("write");
+			return -1;
 		}
-		puts(out.c_str());
 		return 0;
 	}
 	case CM_TEXTTOHTML: {
@@ -549,8 +553,10 @@ static int do_process_2(std::string_view &&data, const char *str)
 		if (out == nullptr) {
 			fprintf(stderr, "Out of memory\n");
 			return -1;
+		} else if (HXio_fullwrite(STDOUT_FILENO, out.get(), strlen(out.get())) < 0) {
+			perror("write");
+			return -1;
 		}
-		puts(out.get());
 		return 0;
 	}
 	case CM_UNRTFCP: {
