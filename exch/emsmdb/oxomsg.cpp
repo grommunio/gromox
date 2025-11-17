@@ -197,7 +197,7 @@ static int oxomsg_test_perm(const char *account, const char *maildir, bool send_
 	auto ret = read_file_by_line(dlg_path.c_str(), delegate_list);
 	if (ret != 0 && ret != ENOENT) {
 		mlog(LV_ERR, "E-2064: %s: %s", dlg_path.c_str(), strerror(ret));
-		return ret;
+		return -1;
 	}
 	for (const auto &deleg : delegate_list)
 		if (strcasecmp(deleg.c_str(), account) == 0 ||
@@ -206,7 +206,7 @@ static int oxomsg_test_perm(const char *account, const char *maildir, bool send_
 	return 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1500: ENOMEM");
-	return false;
+	return -1;
 }
 
 /**
