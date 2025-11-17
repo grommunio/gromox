@@ -539,8 +539,9 @@ static int do_process_2(std::string_view &&data, const char *str)
 	case CM_RTFTOHTML: {
 		auto at = attachment_list_init();
 		std::string out;
-		if (!rtf_to_html(data.data(), data.size(), "utf-8", out, at)) {
-			fprintf(stderr, "rtf_to_html failed\n");
+		auto err = rtf_to_html(data, "utf-8", out, at);
+		if (err != ecSuccess) {
+			fprintf(stderr, "rtf_to_html: %s\n", mapi_strerror(err));
 			return -1;
 		} else if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
 			perror("write");

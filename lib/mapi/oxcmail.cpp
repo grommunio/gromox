@@ -3099,8 +3099,8 @@ static bool skel_find_rtf(mime_skeleton &skel, const message_content &msg,
 	skel.pattachments = attachment_list_init();
 	if (skel.pattachments == nullptr)
 		return false;
-	if (!rtf_to_html(buf.data(), buf.size(), charset,
-	    skel.rtf, skel.pattachments)) {
+	auto err = rtf_to_html(buf, charset, skel.rtf, skel.pattachments);
+	if (err != ecSuccess) {
 		skel.mail_type = oxcmail_type::tnef;
 		return true;
 	}

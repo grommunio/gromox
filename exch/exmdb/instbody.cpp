@@ -73,7 +73,8 @@ static int instance_conv_htmlfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 	std::string outbuf;
 	auto at = attachment_list_init();
 	auto at_clean = HX::make_scope_exit([&]() { attachment_list_free(at); });
-	if (!rtf_to_html(bin->pc, bin->cb, "utf-8", outbuf, at))
+	auto err = rtf_to_html(*bin, "utf-8", outbuf, at);
+	if (err != ecSuccess)
 		return -1;
 	bin->cb = outbuf.size() < UINT32_MAX ? outbuf.size() : UINT32_MAX;
 	bin->pv = common_util_alloc(bin->cb);

@@ -22,6 +22,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #define QRF(expr) do { if (pack_result{expr} != pack_result::ok) return false; } while (false)
+#define QRF2(expr) do { if (pack_result{expr} != pack_result::ok) return ecInvalidParam; } while (false)
 
 #define MAX_ATTRS						10000
 #define MAX_GROUP_DEPTH					1000
@@ -224,7 +225,7 @@ struct rtf_reader final {
 	~rtf_reader();
 	NOMOVE(rtf_reader);
 
-	bool init_reader(const char *, uint32_t, ATTACHMENT_LIST *);
+	bool init_reader(std::string_view, ATTACHMENT_LIST *);
 	bool riconv_open(const char *);
 	bool riconv_flush();
 	bool put_iconv_cache(int);
@@ -550,12 +551,12 @@ const FONTENTRY *rtf_reader::lookup_font(int num) const
 	return i != preader->pfont_hash.cend() ? &i->second : nullptr;
 }
 
-bool rtf_reader::init_reader(const char *prtf_buff, uint32_t rtf_length,
+bool rtf_reader::init_reader(std::string_view buf_in,
     ATTACHMENT_LIST *pattachments)
 {
 	auto preader = this;
 	preader->attr_stack_list.clear();
-	preader->ext_pull.init(prtf_buff, rtf_length, [](size_t) -> void * { return nullptr; }, 0);
+	preader->ext_pull.init(buf_in.data(), buf_in.size(), [](size_t) -> void * { return nullptr; }, 0);
 	if (!preader->ext_push.init(nullptr, 0, 0) ||
 	    !preader->iconv_push.init(nullptr, 0, 0))
 		return false;
@@ -2866,7 +2867,10 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 	return 0;
 }
 
-bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
+/**
+ * It is allowed for @input to refer to the same object as @buf_out.
+ */
+ec_error_t rtf_to_html(std::string_view input, const char *charset,
     std::string &buf_out, ATTACHMENT_LIST *pattachments) try
 {
 	int i;
@@ -2875,12 +2879,12 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	char tmp_buff[128];
 	SIMPLE_TREE_NODE *pnode;
 	
-	if (!reader.init_reader(pbuff_in, length, pattachments) ||
+	if (!reader.init_reader(input, pattachments) ||
 	    !reader.load_element_tree())
-		return false;
+		return ecInvalidParam;
 	auto proot = reader.element_tree.get_root();
 	if (proot == nullptr)
-		return false;
+		return ecInvalidParam;
 	for (pnode = proot->get_child(), i = 1; i <= 10 && pnode != nullptr; ++i) {
 		if (pnode->pdata == nullptr)
 			break;
@@ -2889,33 +2893,32 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 		pnode = pnode->get_sibling();
 	}
 	if (!reader.have_fromhtml) {
-		QRF(reader.ext_push.p_bytes(TAG_DOCUMENT_BEGIN, sizeof(TAG_DOCUMENT_BEGIN) - 1));
-		QRF(reader.ext_push.p_bytes(TAG_HEADER_BEGIN, sizeof(TAG_HEADER_BEGIN) - 1));
+		QRF2(reader.ext_push.p_bytes(TAG_DOCUMENT_BEGIN, sizeof(TAG_DOCUMENT_BEGIN) - 1));
+		QRF2(reader.ext_push.p_bytes(TAG_HEADER_BEGIN, sizeof(TAG_HEADER_BEGIN) - 1));
 		tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
 		          TAG_HTML_CHARSET, charset);
-		QRF(reader.ext_push.p_bytes(tmp_buff, tmp_len));
+		QRF2(reader.ext_push.p_bytes(tmp_buff, tmp_len));
 	}
 	auto ret = reader.convert_group_node(proot);
 	if (ret != 0 || !reader.end_table())
-		return false;
+		return ecError;
 	if (!reader.have_fromhtml) {
-		QRF(reader.ext_push.p_bytes(TAG_BODY_END, sizeof(TAG_BODY_END) - 1));
-		QRF(reader.ext_push.p_bytes(TAG_DOCUMENT_END, sizeof(TAG_DOCUMENT_END) - 1));
+		QRF2(reader.ext_push.p_bytes(TAG_BODY_END, sizeof(TAG_BODY_END) - 1));
+		QRF2(reader.ext_push.p_bytes(TAG_DOCUMENT_END, sizeof(TAG_DOCUMENT_END) - 1));
 	}
 	if (0 == strcasecmp(charset, "UTF-8") ||
 		0 == strcasecmp(charset, "ASCII") ||
 		0 == strcasecmp(charset, "US-ASCII")) {
-		buf_out.resize(reader.ext_push.m_offset);
-		memcpy(buf_out.data(), reader.ext_push.m_udata, reader.ext_push.m_offset);
-		return true;
+		buf_out.assign(reader.ext_push.m_cdata, reader.ext_push.m_offset);
+		return ecSuccess;
 	}
 	snprintf(tmp_buff, 128, "%s//TRANSLIT",
 		replace_iconv_charset(charset));
 	buf_out = iconvtext(reader.ext_push.m_cdata, reader.ext_push.m_offset, "UTF-8", tmp_buff);
-	return true;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1205: ENOMEM");
-	return false;
+	return ecMAPIOOM;
 }
 
 static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {

@@ -2769,8 +2769,9 @@ static ZEND_FUNCTION(mapi_decompressrtf)
 	if (atxlist == nullptr)
 		pthrow(ecMAPIOOM);
 	std::string htmlout;
-	if (!rtf_to_html(rtf_blob, rtf_len, "utf-8", htmlout, atxlist.get()))
-		pthrow(ecError);
+	auto err = rtf_to_html({rtf_blob, rtf_len}, "utf-8", htmlout, atxlist.get());
+	if (err != ecSuccess)
+		pthrow(err);
 	RETVAL_STRINGL(htmlout.data(), htmlout.size());
 	MAPI_G(hr) = ecSuccess;
 }
