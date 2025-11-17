@@ -332,7 +332,7 @@ char *capability_list(char *dst, size_t z, imap_context *ctx)
 	}
 	if (offer_tls)
 		HX_strlcat(dst, " STARTTLS", z);
-	if (g_force_tls && ctx->connection.ssl == nullptr)
+	if (g_force_tls && (ctx == nullptr || ctx->connection.ssl == nullptr))
 		HX_strlcat(dst, " LOGINDISABLED", z);
 	else
 		HX_strlcat(dst, " AUTH=PLAIN", z);
