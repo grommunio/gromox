@@ -1483,7 +1483,7 @@ static int usermap_read(const char *file, LR_map &ku, LR_map &na, LR_map &ze)
 	}
 	for (unsigned int i = 0; i < jval.size(); ++i) {
 		auto &row = jval[i];
-		auto kuid = !row["id"].isNull() ? row["id"].asString() : "";
+		const std::string &kuid = !row["id"].isNull() ? row["id"].asString() : "";
 		auto srv_guid = !row["sv"].isNull() ? row["sv"].asString() : "";
 		HX_strlower(srv_guid.data());
 		auto f_na = !row["na"].isNull() ? row["na"].asCString() : "";
