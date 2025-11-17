@@ -1287,14 +1287,6 @@ void enriched_to_html(const char *enriched_txt,
 	html[offset] = '\0';
 }
 
-static std::unique_ptr<char[]> htp_memdup(const void *src, size_t len)
-{
-	auto dst = std::make_unique<char[]>(len + 1);
-	memcpy(dst.get(), src, len);
-	dst[len] = '\0';
-	return dst;
-}
-
 /**
  * Rather trivial and uninspiring HTML-to-plaintext conversion.
  * @inbuf:  HTML input; must be ASCII-compatible.
@@ -1312,11 +1304,10 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 
 	if (len == SIZE_MAX)
 		--len;
-	auto rbuf = htp_memdup(inbuf, len);
-	auto buf = htp_memdup(inbuf, len);
-	char c = buf[0];
-	char *p = buf.get();
-	char *rp = rbuf.get();
+	std::string rp;
+	const char *const buf = static_cast<const char *>(inbuf);
+	const char *p = buf;
+	char c = *p;
 	for (size_t i = 0; i < len; ++i) {
 		switch (c) {
 		case '\0':
@@ -1329,8 +1320,7 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 			if (state == st::NONE) {
 				if (0 == strncasecmp(p, "<br>", 4) ||
 					0 == strncasecmp(p, "</p>", 4)) {
-					*(rp ++) = '\r';
-					*(rp ++) = '\n';
+					rp += "\r\n";
 					linebegin = true;
 					i += 3;
 					p += 3;
@@ -1364,23 +1354,23 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 		case '&':
 			if (state == st::NONE) {
 				if (0 == strncasecmp(p, "&quot;", 6)) {
-					*(rp ++) = '"';
+					rp += '"';
 					i += 5;
 					p += 5;
 				} else if (0 == strncasecmp(p, "&amp;", 5)) {
-					*(rp ++) = '&';
+					rp += '&';
 					i += 4;
 					p += 4;
 				} else if (0 == strncasecmp(p, "&lt;", 4)) {
-					*(rp ++) = '<';
+					rp += '<';
 					i += 3;
 					p += 3;
 				} else if (0 == strncasecmp(p, "&gt;", 4)) {
-					*(rp ++) = '>';
+					rp += '>';
 					i += 3;
 					p += 3;
 				} else if (0 == strncasecmp(p, "&nbsp;", 6)) {
-					*(rp ++) = ' ';
+					rp += ' ';
 					i += 5;
 					p += 5;
 				}
@@ -1390,7 +1380,7 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 		case '(':
 		case ')':
 			if (state == st::NONE) {
-				*(rp ++) = c;
+				rp += c;
 				linebegin = false;
 			}
 			break;
@@ -1415,13 +1405,13 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 				in_q = 0;
 				break;
 			case st::COMMENT:
-				if (p >= buf.get() + 2 && p[-1] == '-' && p[-2] == '-') {
+				if (p >= buf + 2 && p[-1] == '-' && p[-2] == '-') {
 					state = st::NONE;
 					in_q = 0;
 				}
 				break;
 			default:
-				*(rp ++) = c;
+				rp += c;
 				linebegin = false;
 				break;
 			}
@@ -1432,10 +1422,10 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 				/* Inside <!-- comment --> */
 				break;
 			} else if (state == st::NONE) {
-				*(rp ++) = c;
+				rp += c;
 				linebegin = false;
 			}
-			if (state != st::NONE && p != buf.get() &&
+			if (state != st::NONE && p != buf &&
 			    (state == st::TAG || p[-1] != '\\') && (!in_q || *p == in_q))
 				in_q = in_q ? 0 : *p;
 			break;
@@ -1446,12 +1436,12 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 				break;
 			}
 			if (state == st::NONE) {
-				*(rp ++) = c;
+				rp += c;
 				linebegin = false;
 			}
 			break;
 		case '-':
-			if (state == st::QUOTE && p >= buf.get() + 2 && p[-1] == '-' && p[-2] == '!')
+			if (state == st::QUOTE && p >= buf + 2 && p[-1] == '-' && p[-2] == '!')
 				state = st::COMMENT;
 			else
 				goto REG_CHAR;
@@ -1459,7 +1449,7 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 		case 'E':
 		case 'e':
 			/* !DOCTYPE exception */
-			if (state == st::QUOTE && p > buf.get() + 6 &&
+			if (state == st::QUOTE && p > buf + 6 &&
 			    HX_tolower(p[-6]) == 'd' && HX_tolower(p[-5]) == 'o' &&
 			    HX_tolower(p[-4]) == 'c' && HX_tolower(p[-3]) == 't' &&
 			    HX_tolower(p[-2]) == 'y' && HX_tolower(p[-1]) == 'p') {
@@ -1470,16 +1460,14 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 		default:
  REG_CHAR:
 			if (state == st::NONE && (!HX_isspace(c) || !linebegin)) {
-				*rp++ = c;
+				rp += c;
 				linebegin = false;
 			}
 			break;
 		}
 		c = *(++ p);
 	}
-	if (rp < rbuf.get() + len)
-		*rp = '\0';
-	outbuf = rbuf.get();
+	outbuf = std::move(rp);
 	return 1;
 } catch (...) {
 	return -1;
