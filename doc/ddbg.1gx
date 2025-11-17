@@ -55,6 +55,8 @@ Convert plaintext to HTML.
 .TP
 \fB\-\-unrtfcp\fP
 Decompress RTFCP (either "MELA" or "LZFU") to RTF.
+.SH Environment variables
+AVOID_W3M can be set to yes/no to control htmltotext behavior.
 .SH Examples
 .IP \(bu 4
 ddbg \-p \-\-decode\-guid 38a1bb1005e5101aa1bb08002b2a56c2

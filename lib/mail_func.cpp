@@ -1489,10 +1489,13 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
  */
 int html_to_plain(const void *inbuf, size_t len, cpid_t cpid, std::string &outbuf)
 {
-	auto ret = feed_w3m(inbuf, len, cpid_to_cset(cpid), outbuf);
-	if (ret >= 0)
-		return CP_UTF8;
-	ret = html_to_plain_boring(inbuf, len, outbuf);
+	auto s = getenv("AVOID_W3M"); /* for testing */
+	if (s == nullptr || parse_bool(s) == 0) {
+		auto ret = feed_w3m(inbuf, len, cpid_to_cset(cpid), outbuf);
+		if (ret >= 0)
+			return CP_UTF8;
+	}
+	auto ret = html_to_plain_boring(inbuf, len, outbuf);
 	if (ret < 0)
 		return ret;
 	return cpid;
