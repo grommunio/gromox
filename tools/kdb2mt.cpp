@@ -321,7 +321,7 @@ static void substitute_addrs(TPROPVAL_ARRAY *ar)
 		/* If we already have PR.*SMTP_ADDRESS, just use that */
 		if (tags.smtpaddr != 0)
 			smtpaddr = ar->get<const char>(tags.smtpaddr);
-		if (smtpaddr != nullptr) {
+		if (smtpaddr == nullptr) {
 			auto at = ar->get<const char>(tags.addrtype);
 			if (at == nullptr || strcasecmp(at, "ZARAFA") != 0)
 				continue;
