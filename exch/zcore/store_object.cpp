@@ -70,7 +70,7 @@ static BOOL store_object_cache_propname(store_object *pstore,
 	pstore->propname_hash.emplace(s, propid);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1634: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -198,7 +198,7 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY &propids,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2231: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -260,7 +260,7 @@ BOOL store_object::get_named_propids(BOOL b_create,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2233: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

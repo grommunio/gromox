@@ -224,7 +224,7 @@ ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2187: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return ecServerOOM;
 }
 

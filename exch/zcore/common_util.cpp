@@ -176,7 +176,7 @@ static int cu_test_delegate_perm_MD(const char *account,
 			return 1;
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2056: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -358,7 +358,7 @@ BOOL common_util_build_environment() try
 	g_env_key = std::make_unique<env_context>();
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1977: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -705,7 +705,7 @@ std::string cu_fid_to_entryid_s(const store_object &store, uint64_t folder_id) t
 	out.resize(ep.m_offset);
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2257: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
@@ -754,7 +754,7 @@ std::string cu_fid_to_sk_s(const store_object &store, uint64_t folder_id) try
 	out.resize(ep.m_offset);
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2258: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
@@ -829,7 +829,7 @@ std::string cu_mid_to_entryid_s(const store_object &store, uint64_t folder_id,
 	out.resize(ep.m_offset);
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2259: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
@@ -911,7 +911,7 @@ std::string cu_mid_to_sk_s(const store_object &store, uint64_t msg_id) try
 	out.resize(ep.m_offset);
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2260: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
@@ -942,7 +942,7 @@ std::string cu_xid_to_bin_s(const XID &xid) try
 	out.resize(ep.m_offset);
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2261: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
@@ -1057,7 +1057,7 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
 	*pppropname = propnames.ppropname;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2230: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -1183,7 +1183,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 		return ecWarnWithErrors;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2549: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -1206,7 +1206,7 @@ void common_util_notify_receipt(const char *username, int type,
 	if (ret != ecSuccess)
 		mlog(LV_ERR, "E-1193: cu_send_mail: %xh", static_cast<unsigned int>(ret));
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2038: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 static MOVECOPY_ACTION *cu_cvt_from_zmovecopy(const ZMOVECOPY_ACTION &src)
@@ -1378,7 +1378,7 @@ std::string cu_to_store_entryid_s(const store_object &store) try
 	out.resize(ep.m_offset);
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2262: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
@@ -1736,7 +1736,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2548: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -1755,7 +1755,7 @@ static void zc_unwrap_clearsigned(MAIL &ma) try
 	 */
 	ma.refonly_parse(part->head_begin, part->content_begin + part->content_length - part->head_begin);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1996: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
@@ -1813,7 +1813,7 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	pical_bin->pc = common_util_dup(tmp_buff);
 	return pical_bin->pc != nullptr ? TRUE : FALSE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2183: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -1838,7 +1838,7 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 	return oxcical_import_single(tmzone, ical, common_util_alloc,
 	       common_util_get_propids_create, common_util_username_to_entryid);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2184: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
 }
 
@@ -1861,7 +1861,7 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 	       common_util_get_propids_create,
 	       common_util_username_to_entryid, msgvec);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2185: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -1927,7 +1927,7 @@ ec_error_t cu_vcf_to_message2(store_object *store, char *vcf_data,
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2048: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -2008,7 +2008,7 @@ ec_error_t cu_fbdata_to_ical(const char *user, const char *fbuser,
 		return ecServerOOM;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2188: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 

@@ -460,7 +460,7 @@ bool ab_tree_resolvename(const ab_tree::ab_base* base, const char *pstr,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1678: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -582,6 +582,6 @@ BOOL ab_tree_match_minids(const ab_tree::ab_base *pbase, uint32_t container_id,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1247: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }

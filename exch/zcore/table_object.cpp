@@ -776,7 +776,7 @@ BOOL table_object::create_bookmark(uint32_t *pindex) try
 	*pindex = bookmark_list.back().index;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1635: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

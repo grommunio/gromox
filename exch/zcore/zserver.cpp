@@ -2452,7 +2452,7 @@ ec_error_t zs_unadvise(GUID hsession, uint32_t hstore,
 	g_notify_table.erase(std::move(tmp_buf));
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1498: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -3363,7 +3363,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		pmessage->clear_unsent();
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2351: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 

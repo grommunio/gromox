@@ -112,7 +112,7 @@ object_tree_init_root(const char *maildir) try
 		return NULL;
 	return prootobj;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1099: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
 }
 

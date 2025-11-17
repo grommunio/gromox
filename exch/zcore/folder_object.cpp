@@ -794,6 +794,6 @@ BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 		pfolder->folder_id, plist->count,
 		plist->prule, &b_exceed);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1491: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
