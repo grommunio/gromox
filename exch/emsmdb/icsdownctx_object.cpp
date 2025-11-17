@@ -40,7 +40,7 @@ bool ics_flow_list::record_node(ics_flow_func func_id, uint64_t param) try
 	emplace_back(func_id, param);
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1598: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -53,16 +53,10 @@ bool ics_flow_list::record_node(ics_flow_func func_id, const void *param)
 std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogon,
     folder_object *pfolder, uint8_t sync_type, uint8_t send_options,
 	uint16_t sync_flags, const RESTRICTION *prestriction,
-	uint32_t extra_flags, const PROPTAG_ARRAY *pproptags)
+	uint32_t extra_flags, const PROPTAG_ARRAY *pproptags) try
 {
 	int state_type = sync_type == SYNC_TYPE_CONTENTS ? ICS_STATE_CONTENTS_DOWN : ICS_STATE_HIERARCHY_DOWN;
-	std::unique_ptr<icsdownctx_object> pctx;
-	try {
-		pctx.reset(new icsdownctx_object);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1454: ENOMEM");
-		return NULL;
-	}
+	std::unique_ptr<icsdownctx_object> pctx(new icsdownctx_object);
 	pctx->pstate = ics_state::create(plogon, state_type);
 	if (pctx->pstate == nullptr)
 		return NULL;
@@ -86,6 +80,9 @@ std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogo
 	if (pctx->pstream == nullptr)
 		return NULL;
 	return pctx;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return nullptr;
 }
 
 static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
@@ -1094,7 +1091,7 @@ BOOL icsdownctx_object::continue_state_stream(const BINARY *pstream_data) try
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1088: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -1184,7 +1181,7 @@ BOOL icsupctx_object::continue_state_stream(const BINARY *pstream_data) try
 	f_state_stream += std::string_view(pstream_data->pc, pstream_data->cb);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1089: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

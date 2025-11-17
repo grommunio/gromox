@@ -731,7 +731,7 @@ static BOOL ftstream_parser_truncate_fd(fxstream_parser *pstream) try
 	pstream->offset = 0;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1170: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -797,6 +797,6 @@ std::unique_ptr<fxstream_parser> fxstream_parser::create(logon_object *plogon) t
 	pstream->plogon = plogon;
 	return pstream;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1450: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return nullptr;
 }

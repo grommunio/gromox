@@ -458,7 +458,7 @@ ec_error_t message_object::save() try
 			pmessage->message_id);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2906: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return ecServerOOM;
 }
 
@@ -1007,7 +1007,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1745: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -1082,7 +1082,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1746: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

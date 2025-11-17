@@ -554,7 +554,7 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2206: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -724,7 +724,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		return ecNotSupported;
 	}
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1747: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 

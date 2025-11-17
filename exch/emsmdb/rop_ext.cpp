@@ -1413,7 +1413,7 @@ static pack_result rop_ext_pull(EXT_PULL &x,
 	memcpy(r.pread_stat, tmp_array.get(), sizeof(tmp_array[0]) * r.count);
 	return pack_result::ok;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1171: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return pack_result::alloc;
 }
 
@@ -2015,7 +2015,7 @@ pack_result rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 	*pout_len = ext_push.m_offset;
 	return pack_result::ok;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1172: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return pack_result::alloc;
 }
 

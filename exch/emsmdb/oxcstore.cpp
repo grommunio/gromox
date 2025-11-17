@@ -150,7 +150,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	*phout = handle;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2554: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 	

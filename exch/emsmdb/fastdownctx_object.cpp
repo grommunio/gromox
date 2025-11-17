@@ -26,7 +26,7 @@ bool fxdown_flow_list::record_node(fxdown_flow_func func_id, uint64_t param) try
 	emplace_back(func_id, param);
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1599: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -390,19 +390,16 @@ BOOL fastdownctx_object::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 }
 
 std::unique_ptr<fastdownctx_object>
-fastdownctx_object::create(logon_object *plogon, uint8_t string_option)
+fastdownctx_object::create(logon_object *plogon, uint8_t string_option) try
 {
-	std::unique_ptr<fastdownctx_object> pctx;
-	try {
-		pctx.reset(new fastdownctx_object);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1453: ENOMEM");
-		return NULL;
-	}
+	std::unique_ptr<fastdownctx_object> pctx(new fastdownctx_object);
 	pctx->pstream = fxstream_producer::create(plogon, string_option);
 	if (pctx->pstream == nullptr)
 		return NULL;
 	return pctx;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return nullptr;
 }
 
 fastdownctx_object::~fastdownctx_object()

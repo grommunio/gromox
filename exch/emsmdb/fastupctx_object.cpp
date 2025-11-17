@@ -23,15 +23,9 @@
 using namespace gromox;
 
 std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
-    void *pobject, int root_element)
+    void *pobject, int root_element) try
 {
-	std::unique_ptr<fastupctx_object> pctx;
-	try {
-		pctx.reset(new fastupctx_object);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1451: ENOMEM");
-		return NULL;
-	}
+	std::unique_ptr<fastupctx_object> pctx(new fastupctx_object);
 	pctx->pobject = pobject;
 	pctx->root_element = root_element;
 	pctx->pstream = fxstream_parser::create(plogon);
@@ -52,6 +46,9 @@ std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
 		return NULL;
 	}
 	return pctx;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return nullptr;
 }
 
 fastupctx_object::~fastupctx_object()
@@ -221,7 +218,7 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 	return ecSuccess;
 }
 
-ec_error_t fastupctx_object::record_marker(uint32_t marker)
+ec_error_t fastupctx_object::record_marker(uint32_t marker) try
 {
 	auto pctx = this;
 	uint32_t tmp_id;
@@ -545,13 +542,11 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 	default:
 		return ecRpcFailed;
 	}
-	try {
-		pctx->marker_stack.emplace_back(std::move(new_mark));
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1600: ENOMEM");
-		return ecRpcFailed;
-	}
+	pctx->marker_stack.emplace_back(std::move(new_mark));
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return ecServerOOM;
 }
 
 static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)

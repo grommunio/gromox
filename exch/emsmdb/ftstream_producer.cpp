@@ -35,7 +35,7 @@ static void ftstream_producer_try_recode_nbp(fxstream_producer *pstream) try
 	point_node p = {point_type::normal_break, pstream->offset};
 	pstream->bp_list.push_back(std::move(p));
 } catch (const std::bad_alloc &) {
-	mlog(LV_WARN, "W-1601: ENOMEM");
+	mlog(LV_WARN, "%s: ENOMEM", __func__);
 }
 
 static void ftstream_producer_record_nbp(fxstream_producer *pstream,
@@ -46,7 +46,7 @@ static void ftstream_producer_record_nbp(fxstream_producer *pstream,
 	point_node p = {point_type::normal_break, nbp};
 	pstream->bp_list.emplace_back(std::move(p));
 } catch (const std::bad_alloc &) {
-	mlog(LV_WARN, "W-1602: ENOMEM");
+	mlog(LV_WARN, "%s: ENOMEM", __func__);
 }
 
 static void ftstream_producer_record_lvp(fxstream_producer *pstream,
@@ -63,7 +63,7 @@ static void ftstream_producer_record_lvp(fxstream_producer *pstream,
 	point_node p = {point_type::long_var, position + length};
 	pstream->bp_list.emplace_back(std::move(p));
 } catch (const std::bad_alloc &) {
-	mlog(LV_WARN, "W-1603: ENOMEM");
+	mlog(LV_WARN, "%s: ENOMEM", __func__);
 }
 
 static void ftstream_producer_record_wsp(fxstream_producer *pstream,
@@ -80,7 +80,7 @@ static void ftstream_producer_record_wsp(fxstream_producer *pstream,
 	point_node p = {point_type::wstring, position + length};
 	pstream->bp_list.emplace_back(std::move(p));
 } catch (const std::bad_alloc &) {
-	mlog(LV_WARN, "W-1604: ENOMEM");
+	mlog(LV_WARN, "%s: ENOMEM", __func__);
 }
 
 static bool fxstream_producer_open(fxstream_producer &p)
@@ -719,7 +719,7 @@ fxstream_producer::create(logon_object *plogon, uint8_t string_option) try
 	pstream->string_option = string_option;
 	return pstream;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1452: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return nullptr;
 }
 

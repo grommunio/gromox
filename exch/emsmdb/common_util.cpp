@@ -223,7 +223,7 @@ std::string cu_username_to_oneoff_s(const char *username, const char *dispname) 
 	out.resize(ep.m_offset);
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2254: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
@@ -293,7 +293,7 @@ std::string cu_fid_to_entryid_s(const logon_object &logon, uint64_t folder_id) t
 		return {};
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2246: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
@@ -341,7 +341,7 @@ std::string cu_fid_to_sk_s(const logon_object &logon, uint64_t folder_id) try
 		return {};
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2248: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
@@ -404,7 +404,7 @@ std::string cu_mid_to_entryid_s(const logon_object &logon, uint64_t folder_id,
 	out.resize(ep.m_offset);
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2252: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
@@ -448,7 +448,7 @@ std::string cu_mid_to_sk_s(const logon_object &logon, uint64_t message_id) try
 		return {};
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2253: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
@@ -529,7 +529,7 @@ std::string cu_xid_to_bin_s(const XID &xid) try
 	out.resize(ep.m_offset);
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2255: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
@@ -1423,7 +1423,7 @@ void common_util_notify_receipt(const char *username, int type,
 	if (ret != ecSuccess)
 		mlog2(LV_ERR, "E-1189: ems_send_mail: %s", mapi_strerror(ret));
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2035: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 static void common_util_set_dir(const char *dir)
@@ -1454,7 +1454,7 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
 	*pppropname = propnames.ppropname;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2234: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -1604,7 +1604,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2553: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 

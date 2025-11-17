@@ -126,8 +126,8 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		return ecRpcFailed;
 	return pmessage->save();
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1166: ENOMEM");
-	return ecRpcFailed;
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 /**
@@ -205,7 +205,7 @@ static int oxomsg_test_perm(const char *account, const char *maildir, bool send_
 			return 1;
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1500: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return -1;
 }
 
@@ -436,7 +436,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		pmessage->clear_unsent();
 	return ret;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2353: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -669,7 +669,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	auto ev_from = repr_grant >= repr_grant::send_as ? delegator.c_str() : actor;
 	return cu_send_message(plogon, pmessage, ev_from);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2352: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 

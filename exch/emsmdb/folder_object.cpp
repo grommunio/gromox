@@ -513,7 +513,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	*pproblems += std::move(tmp_problems);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1743: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

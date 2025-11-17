@@ -89,7 +89,7 @@ static pack_result aux_ext_push_aux_header(EXT_PUSH &x, const AUX_HEADER &r) try
 	TRY(x.p_bytes(subext.m_udata, subext.m_offset));
 	return x.p_bytes(paddings, size - actual_size);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1169: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return pack_result::alloc;
 }
 
@@ -132,6 +132,6 @@ pack_result aux_ext_push_aux_info(EXT_PUSH *pext, const AUX_INFO &r) try
 	TRY(pext->p_rpchdr(rpc_header_ext));
 	return pext->p_bytes(ext_buff.get(), rpc_header_ext.size);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1167: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return pack_result::alloc;
 }

@@ -147,7 +147,7 @@ int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
 		g_logon_hash.emplace(rlogon->get_dir(), 1);
 	return handle;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1974: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return -ENOMEM;
 }
 
@@ -246,7 +246,7 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	}
 	return pobjnode->handle;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1975: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return -ENOMEM;
 }
 
@@ -569,7 +569,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		return ecError;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1173: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 

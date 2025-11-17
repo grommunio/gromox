@@ -82,7 +82,7 @@ BOOL exmdb_client_shm::get_named_propname(const char *dir, propid_t propid,
 	*ppropname = *tmp_propnames.ppropname;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2235: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

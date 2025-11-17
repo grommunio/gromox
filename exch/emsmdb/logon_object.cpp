@@ -52,7 +52,7 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 	plogon->propname_hash.emplace(s, propid);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1633: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -157,7 +157,7 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY &propids,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2236: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -244,7 +244,7 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2177: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -643,7 +643,7 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	*pproblems += std::move(tmp_problems);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1744: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
