@@ -2719,7 +2719,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			auto num = pmsg->proplist.get<const uint32_t>(PR_INTERNET_CPID);
 			auto cpid = num != nullptr ? static_cast<cpid_t>(*num) : CP_OEMCP;
 			std::string plainbuf;
-			auto ret = html_to_plain(phtml_bin->pc, phtml_bin->cb, cpid, plainbuf);
+			auto ret = html_to_plain(*phtml_bin, cpid, plainbuf);
 			if (ret < 0)
 				return imp_null;
 			else if (ret == CP_OEMCP)

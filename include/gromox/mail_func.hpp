@@ -53,7 +53,7 @@ extern GX_EXPORT BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime
 extern GX_EXPORT BOOL mime_string_to_utf8(const char *charset, const char *mime_string, char *out_string, size_t out_len);
 extern GX_EXPORT void enriched_to_html(const char *enriched_txt,
 	char *html, int max_len);
-extern GX_EXPORT int html_to_plain(const void *inbuf, size_t inlen, cpid_t, std::string &outbuf);
+extern GX_EXPORT int html_to_plain(std::string_view in, cpid_t, std::string &out);
 extern GX_EXPORT ec_error_t plain_to_html(const char *in, std::string &out);
 extern GX_EXPORT ec_error_t html_init_library();
 extern GX_EXPORT ec_error_t html_to_rtf(const void *in, size_t inlen, cpid_t, char **outp, size_t *outlen);

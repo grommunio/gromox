@@ -545,10 +545,10 @@ static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size, const char
  *          inside the data), or %nullptr if unknown
  * @outbuf: result variable for caller
  *
+ * It is valid for @inbuf to point to the same object as @outbuf.
  * Returns 0 on success, non-zero on error with errno set.
  */
-int feed_w3m(const void *inbuf, size_t len, const char *cset,
-    std::string &outbuf) try
+int feed_w3m(std::string_view inbuf, const char *cset, std::string &outbuf) try
 {
 	std::string filename;
 	auto tmpdir = getenv("TMPDIR");
@@ -562,7 +562,7 @@ int feed_w3m(const void *inbuf, size_t len, const char *cset,
 	if (fp == nullptr)
 		return -1;
 	auto cl1 = HX::make_scope_exit([&]() { unlink(filename.c_str()); });
-	if (utf8_writeout(fp.get(), inbuf, len, cset) != 0)
+	if (utf8_writeout(fp.get(), inbuf.data(), inbuf.size(), cset) != 0)
 		return -1;
 	fp.reset();
 	int fout = -1;
@@ -584,7 +584,7 @@ int feed_w3m(const void *inbuf, size_t len, const char *cset,
 		return -1;
 	int status = 0;
 	auto cl3 = HX::make_scope_exit([&]() { waitpid(pid, &status, 0); });
-	outbuf = std::string();
+	outbuf.clear();
 	ssize_t ret;
 	char fbuf[4096];
 	while ((ret = read(fout, fbuf, std::size(fbuf))) > 0)

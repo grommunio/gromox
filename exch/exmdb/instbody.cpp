@@ -95,7 +95,7 @@ static int instance_conv_textfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 	auto cpraw = mc->proplist.get<const uint32_t>(PR_INTERNET_CPID);
 	cpid_t cpid = cpraw != nullptr ? static_cast<cpid_t>(*cpraw) : CP_OEMCP;
 	std::string plainbuf;
-	ret = html_to_plain(bin->pc, bin->cb, cpid, plainbuf);
+	ret = html_to_plain(*bin, cpid, plainbuf);
 	if (ret < 0)
 		return 0;
 	else if (ret == CP_OEMCP)

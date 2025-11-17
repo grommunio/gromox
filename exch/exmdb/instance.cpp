@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
@@ -1423,7 +1423,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		auto cpid  = num != nullptr ? static_cast<cpid_t>(*num) : CP_OEMCP;
 		if (pbin != nullptr) {
 			std::string plainbuf;
-			auto ret = html_to_plain(pbin->pc, pbin->cb, cpid, plainbuf);
+			auto ret = html_to_plain(*pbin, cpid, plainbuf);
 			if (ret < 0)
 				return false;
 			void *pvalue;

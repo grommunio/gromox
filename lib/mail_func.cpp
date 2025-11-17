@@ -1294,21 +1294,20 @@ void enriched_to_html(const char *enriched_txt,
  *
  * Returns 1 for success and negative numbers to indicate error.
  */
-static int html_to_plain_boring(const void *inbuf, size_t len,
-    std::string &outbuf) try
+static int html_to_plain_boring(std::string_view inbuf, std::string &outbuf) try
 {
 	enum class st { NONE, TAG, EXTRA, QUOTE, COMMENT } state = st::NONE;
 	bool linebegin = true;
 	char is_xml = 0, lc = 0;
 	int depth = 0, in_q = 0;
 
-	if (len == SIZE_MAX)
-		--len;
+	if (inbuf.size() == SIZE_MAX)
+		inbuf.remove_suffix(1);
 	std::string rp;
-	const char *const buf = static_cast<const char *>(inbuf);
+	const char *const buf = inbuf.data();
 	const char *p = buf;
-	char c = *p;
-	for (size_t i = 0; i < len; ++i) {
+	char c = buf[0];
+	for (size_t i = 0; i < inbuf.size(); ++i) {
 		switch (c) {
 		case '\0':
 			break;
@@ -1487,15 +1486,15 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
  * which puts the ball back into the caller's court.
  * Returns a negative number on error.
  */
-int html_to_plain(const void *inbuf, size_t len, cpid_t cpid, std::string &outbuf)
+int html_to_plain(std::string_view inbuf, cpid_t cpid, std::string &outbuf)
 {
 	auto s = getenv("AVOID_W3M"); /* for testing */
 	if (s == nullptr || parse_bool(s) == 0) {
-		auto ret = feed_w3m(inbuf, len, cpid_to_cset(cpid), outbuf);
+		auto ret = feed_w3m(inbuf, cpid_to_cset(cpid), outbuf);
 		if (ret >= 0)
 			return CP_UTF8;
 	}
-	auto ret = html_to_plain_boring(inbuf, len, outbuf);
+	auto ret = html_to_plain_boring(inbuf, outbuf);
 	if (ret < 0)
 		return ret;
 	return cpid;

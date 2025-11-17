@@ -512,8 +512,8 @@ static int do_process_2(std::string_view &&data, const char *str)
 	}
 	case CM_HTMLTOTEXT: {
 		std::string out;
-		if (html_to_plain(data.data(), data.size(), CP_OEMCP, out) < 0) {
-			fprintf(stderr, "html-to_plain failed\n");
+		if (html_to_plain(data, CP_OEMCP, out) < 0) {
+			fprintf(stderr, "html_to_plain failed\n");
 			return -1;
 		} else if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
 			perror("write");
