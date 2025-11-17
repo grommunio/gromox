@@ -384,7 +384,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	*pinstance_id = instance_id;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1299: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -475,7 +475,7 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
 	*pinstance_id = instance_id;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1269: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -701,7 +701,7 @@ void *instance_read_cid_content(const char *cid, uint32_t *plen, proptag_t tag) 
 		*plen = node_stat.st_size;
 	return pbuff;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1588: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
 }
 
@@ -1171,7 +1171,7 @@ BOOL exmdb_server::load_attachment_instance(const char *dir,
 	*pinstance_id = instance_id;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1268: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -1221,7 +1221,7 @@ BOOL exmdb_server::create_attachment_instance(const char *dir,
 	*pinstance_id = instance_id;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1267: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -1656,7 +1656,7 @@ static BOOL instance_get_message_display_recipients(const tarray_set *prcpts,
 	           common_util_convert_copy(false, cpid, dr.c_str());
 	return *ppvalue != nullptr ? TRUE : false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1160: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 

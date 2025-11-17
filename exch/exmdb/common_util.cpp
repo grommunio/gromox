@@ -448,7 +448,7 @@ std::unique_ptr<prepared_statements> db_conn::begin_optim() try
 	g_opt_key = op.get();
 	return op;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2358: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return nullptr;
 }
 
@@ -580,7 +580,7 @@ bool cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 	tags.erase(coalesce_propid(tags.begin(), tags.end()), tags.end());
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2135: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -1442,7 +1442,7 @@ static BOOL common_util_get_message_display_recipients(sqlite3 *psqlite,
 	           common_util_convert_copy(false, cpid, dr.c_str());
 	return *ppvalue != nullptr ? TRUE : false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1159: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -1457,7 +1457,7 @@ std::string cu_cid_path(const char *dir, const char *id, unsigned int type) try
 		path += ".v1z";
 	return path;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1608: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 
@@ -1563,7 +1563,7 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 		return nullptr;
 	return bv;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2010: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
 }
 
@@ -2992,7 +2992,7 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 		path.c_str(), strerror(err));
 	return err;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2065: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ENOMEM;
 }
 
@@ -4676,6 +4676,7 @@ static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ENOMEM;
 }
 
@@ -5004,7 +5005,7 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite, BOOL b_create,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1503: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 

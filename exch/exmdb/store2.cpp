@@ -611,7 +611,7 @@ BOOL exmdb_server::autoreply_tsquery(const char *dir, const char *peer,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2225: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -628,7 +628,7 @@ BOOL exmdb_server::autoreply_tsupdate(const char *dir, const char *peer) try
 	stm.bind_int64(2, time(nullptr));
 	return stm.step() == SQLITE_DONE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2226: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -753,7 +753,7 @@ BOOL exmdb_server::autoreply_getprop(const char *dir, cpid_t cpid,
 	}
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2227: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -891,7 +891,7 @@ BOOL exmdb_server::autoreply_setprop(const char *dir, cpid_t cpid,
 			return false;
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2229: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

@@ -156,7 +156,7 @@ static void db_engine_load_dynamic_list(db_base *dbase, sqlite3* psqlite) try
 		dbase->dynamic_list.push_back(std::move(dn));
 	}
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2137: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
@@ -234,7 +234,7 @@ bool db_engine_set_maint(const char *path, enum db_maint_mode mode) try
 	});
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1291: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -713,7 +713,7 @@ bool db_conn::open(const char *dir) try
 	m_base->get_dbs(dir, psqlite, m_sqlite_eph);
 	return psqlite && m_sqlite_eph;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1349: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -948,7 +948,7 @@ static db_conn::ID_ARRAYS db_engine_classify_id_array(const db_base &db,
 	}
 	return out;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1228: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	throw;
 }
 
@@ -970,7 +970,7 @@ static void dbeng_notify_search_completion(const db_base &dbase,
 	psearch_completed->folder_id = folder_id;
 	notifq.emplace_back(std::move(datagram), std::move(parrays));
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2118: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 /**
@@ -1190,7 +1190,7 @@ BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t cpid,
 	g_waken_cond.notify_one();
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1962: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -1229,7 +1229,7 @@ void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	else
 		*i = std::move(dn);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2136: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::delete_dynamic(uint64_t folder_id, db_base *dbase)
@@ -2262,7 +2262,7 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2161: failed to commit cttbl_add_row");
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2405: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 /*
@@ -2291,7 +2291,7 @@ void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
 	pnew_mail->pmessage_class = pstr_class;
 	notifq.emplace_back(std::move(datagram), std::move(parrays));
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2119: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 	
 void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
@@ -2326,7 +2326,7 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2120: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::notify_message_creation(uint64_t folder_id,
@@ -2353,7 +2353,7 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2121: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
@@ -2386,7 +2386,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, srch_fld), srch_fld, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2122: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 static void dbeng_notify_hiertbl_add_row(db_conn *pdb, uint64_t parent_id,
@@ -2540,7 +2540,7 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb, uint64_t parent_id,
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2167: failed to commit hiertbl_add_row");
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2406: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
@@ -2567,7 +2567,7 @@ void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2123: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 static void db_engine_update_prev_id(std::vector<rowdel_node> &list,
@@ -3054,7 +3054,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2163: failed to commit cttbl_delete_row");
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2407: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
@@ -3080,7 +3080,7 @@ void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2124: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
@@ -3113,7 +3113,7 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2125: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 static void dbeng_notify_hiertbl_delete_row(db_conn *pdb, uint64_t parent_id,
@@ -3186,7 +3186,7 @@ static void dbeng_notify_hiertbl_delete_row(db_conn *pdb, uint64_t parent_id,
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2169: failed to commit hiertbl_delete_row");
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2408: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
@@ -3210,7 +3210,7 @@ void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
 	}
 	dbeng_notify_hiertbl_delete_row(pdb, parent_id, folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2126: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 static void dbeng_notify_cttbl_modify_row(db_conn *pdb, uint64_t folder_id,
@@ -3782,7 +3782,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb, uint64_t folder_id,
 		}
 	}
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2409: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_id,
@@ -3809,7 +3809,7 @@ void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_i
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2127: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
@@ -3970,7 +3970,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 	if (sql_transact_eph.commit() != SQLITE_OK)
 		mlog(LV_ERR, "E-2171: failed to commit hiertbl_modify_row");
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2410: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
@@ -3997,7 +3997,7 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 	}
 	dbeng_notify_hiertbl_modify_row(pdb, parent_id, folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2128: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
@@ -4048,8 +4048,7 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1521: ENOMEM");
-	return;
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
@@ -4101,8 +4100,7 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id, dbase, notifq);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1522: ENOMEM");
-	return;
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base &dbase,
@@ -4123,7 +4121,7 @@ void db_conn::notify_cttbl_reload(uint32_t table_id, const db_base &dbase,
 	datagram.id_array.push_back(table_id);
 	notifq.emplace_back(datagram, table_to_idarray(*ptable));
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2411: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 void db_conn::begin_batch_mode(db_base &dbase)

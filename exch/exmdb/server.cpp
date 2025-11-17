@@ -40,7 +40,7 @@ void build_env(unsigned int flags, const char *dir) try
 	pctx->account_id = 0;
 	g_env_key = std::move(pctx);
 } catch (const std::bad_alloc &) {
-	gromox::mlog(LV_ERR, "E-2390: ENOMEM!");
+	gromox::mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
 void free_env()

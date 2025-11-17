@@ -520,7 +520,7 @@ static BOOL table_load_content(db_conn_ptr &pdb, sqlite3 *psqlite,
 	cond_list.pop_back();
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1727: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2755,7 +2755,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 	}
 	return FALSE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2042: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

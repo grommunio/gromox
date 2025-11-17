@@ -72,7 +72,7 @@ BOOL exmdb_server::get_folder_by_class(const char *dir, const char *str_class,
 	str_explicit->clear();
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2159: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -513,7 +513,7 @@ BOOL exmdb_server::get_folder_all_proptags(const char *dir, uint64_t folder_id,
 	memcpy(pproptags->pproptag, tags.data(), sizeof(tags[0]) * pproptags->count);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1164: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -1993,7 +1993,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	*pb_result = TRUE;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1161: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -2084,7 +2084,7 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
 	sqlite3_reset(pstmt);
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2059: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2473,7 +2473,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 	}
 	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1199: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

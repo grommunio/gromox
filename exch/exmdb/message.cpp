@@ -775,7 +775,7 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite, uint64_t message_id,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1165: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -1415,7 +1415,7 @@ static BOOL message_read_message(sqlite3 *psqlite, cpid_t cpid,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1163: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2000,7 +2000,7 @@ static BOOL message_load_folder_rules(const rulexec_in &rp,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1561: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2047,7 +2047,7 @@ static BOOL message_load_folder_ext_rules(const rulexec_in &rp,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1507: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2235,7 +2235,7 @@ static BOOL message_make_dem(const char *username,
 	seen.msg.emplace_back(PRIVATE_FID_DEFERRED_ACTION, mid_val);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2026: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2287,7 +2287,7 @@ static BOOL message_get_propname(propid_t propid,
 	*pppropname = propnames.ppropname;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2227: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2426,7 +2426,7 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	*pb_result = TRUE;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2551: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2611,7 +2611,7 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		mlog(LV_ERR, "E-1186: ems_send_mail: %s", mapi_strerror(ret));
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2550: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -2695,7 +2695,7 @@ static BOOL message_make_dam(const rulexec_in &rp,
 	seen.msg.emplace_back(PRIVATE_FID_DEFERRED_ACTION, mid_val);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2027: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2739,7 +2739,7 @@ static BOOL message_make_dams(const rulexec_in &rp,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2028: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2814,7 +2814,7 @@ static ec_error_t op_move_same(const rulexec_in &rp,
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2033: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -2986,7 +2986,7 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1130: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -3167,7 +3167,7 @@ static ec_error_t opx_move(const rulexec_in &rp,
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2031: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -3296,7 +3296,7 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1128: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -3692,7 +3692,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	           deliver_message_result::result_ok);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2032: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -3897,6 +3897,6 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 	dg_notify(std::move(notifq));
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2034: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }

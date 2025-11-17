@@ -114,7 +114,6 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	subject = tp.subject;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1219: ENOMEM");
 	return false;
 }
 

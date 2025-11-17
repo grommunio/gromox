@@ -63,7 +63,7 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 		ppropids->push_back(pstmt.col_int64(0));
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2209: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -307,7 +307,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2066: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -409,7 +409,7 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 	*psub_id = last_id + 1;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2130: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -453,7 +453,7 @@ static BOOL table_check_address_in_contact_folder(
 	*pb_found = FALSE;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2089: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
