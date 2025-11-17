@@ -54,7 +54,7 @@ extern GX_EXPORT BOOL mime_string_to_utf8(const char *charset, const char *mime_
 extern GX_EXPORT void enriched_to_html(const char *enriched_txt,
 	char *html, int max_len);
 extern GX_EXPORT int html_to_plain(const void *inbuf, size_t inlen, cpid_t, std::string &outbuf);
-extern GX_EXPORT char *plain_to_html(const char *rbuf);
+extern GX_EXPORT ec_error_t plain_to_html(const char *in, std::string &out);
 extern GX_EXPORT ec_error_t html_init_library();
 extern GX_EXPORT ec_error_t html_to_rtf(const void *in, size_t inlen, cpid_t, char **outp, size_t *outlen);
 extern GX_EXPORT bool rtf_init_library();

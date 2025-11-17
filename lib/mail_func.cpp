@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 /*
  *	  Addr_kids, for parse the email addr
@@ -1504,24 +1504,22 @@ int html_to_plain(const void *inbuf, size_t len, cpid_t cpid, std::string &outbu
 /*
  * Always outputs UTF-8. The caller must ensure that this is conveyed properly
  * (e.g. via PR_INTERNET_CPID=65001 [CP_UTF8]).
+ *
+ * It is allowed for @rbuf to point to the same object as @out.
  */
-char *plain_to_html(const char *rbuf)
+ec_error_t plain_to_html(const char *rbuf, std::string &out) try
 {
-	const char head[] =
+	static constexpr char head[] =
 		"<html><head><meta name=\"Generator\" content=\"gromox-texttohtml"
 		"\">\r\n</head>\r\n<body>\r\n<pre>";
-	const char footer[] = "</pre>\r\n</body>\r\n</html>";
+	static constexpr char footer[] = "</pre>\r\n</body>\r\n</html>";
 
-	char *body = HX_strquote(rbuf, HXQUOTE_HTML, nullptr);
+	std::unique_ptr<char[], stdlib_delete> body(HX_strquote(rbuf, HXQUOTE_HTML, nullptr));
 	if (body == nullptr)
-		return nullptr;
-	auto out = gromox::me_alloc<char>(strlen(head) + strlen(body) +
-	           strlen(footer) + 1);
-	if (out != nullptr) {
-		strcpy(out, head);
-		strcat(out, body);
-		strcat(out, footer);
-	}
-	free(body);
-	return out;
+		return ecMAPIOOM;
+	out = std::string(head) + body.get() + footer;
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecMAPIOOM;
 }

@@ -2744,16 +2744,15 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	if (!pmsg->proplist.has(PR_HTML)) {
 		auto s = pmsg->proplist.get<const char>(PR_BODY);
 		if (s != nullptr) {
+			std::string html_repr;
+			auto err = plain_to_html(s, html_repr);
+			if (err != ecSuccess)
+				return imp_null;
 			BINARY bv;
-			bv.pc = plain_to_html(s);
-			if (bv.pc == nullptr)
+			bv.pc = html_repr.data();
+			bv.cb = html_repr.size();
+			if (pmsg->proplist.set(PR_HTML, &bv) != ecSuccess)
 				return imp_null;
-			bv.cb = strlen(bv.pc);
-			if (pmsg->proplist.set(PR_HTML, &bv) != ecSuccess) {
-				free(bv.pc);
-				return imp_null;
-			}
-			free(bv.pc);
 			uint32_t tmp_int32 = CP_UTF8;
 			if (pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32) != ecSuccess)
 				return imp_null;

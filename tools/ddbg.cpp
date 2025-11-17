@@ -551,11 +551,12 @@ static int do_process_2(std::string_view &&data, const char *str)
 		return 0;
 	}
 	case CM_TEXTTOHTML: {
-		std::unique_ptr<char[], stdlib_delete> out(plain_to_html(str));
-		if (out == nullptr) {
-			fprintf(stderr, "Out of memory\n");
+		std::string out;
+		auto err = plain_to_html(str, out);
+		if (err != ecSuccess) {
+			fprintf(stderr, "plain_to_html: %s\n", mapi_strerror(err));
 			return -1;
-		} else if (HXio_fullwrite(STDOUT_FILENO, out.get(), strlen(out.get())) < 0) {
+		} else if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
 			perror("write");
 			return -1;
 		}

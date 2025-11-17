@@ -126,10 +126,11 @@ static int instance_conv_htmlfromlower(MESSAGE_CONTENT *mc,
 	}
 	if (ret <= 0)
 		return ret;
-	std::unique_ptr<char[], instbody_delete> htmlout(plain_to_html(bin->pc));
-	if (htmlout == nullptr)
+	std::string htmlout;
+	auto err = plain_to_html(bin->pc, htmlout);
+	if (err != ecSuccess)
 		return -1;
-	bin->pc = common_util_convert_copy(false, cpid, htmlout.get());
+	bin->pc = common_util_convert_copy(false, cpid, htmlout.c_str());
 	if (bin->pc == nullptr)
 		return -1;
 	/* instance_get_raw / instance_read_cid_content guaranteed trailing \0 */
