@@ -3,14 +3,18 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <libHX/libxml_helper.h>
 #include <libxml/HTMLparser.h>
 #include <libxml/HTMLtree.h>
+#include <vmime/generationContext.hpp>
+#include <vmime/utility/outputStreamStringAdapter.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mime.hpp>
+#include <gromox/oxcmail.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
@@ -410,6 +414,43 @@ ec_error_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props,
 		return err;
 	uint32_t cpid = CP_UTF8;
 	return props.set(PR_INTERNET_CPID, &cpid);
+}
+
+}
+
+namespace gromox {
+
+vmime::generationContext vmail_default_genctx()
+{
+	vmime::generationContext c;
+	/* Outlook is unable to read RFC 2231. */
+	c.setEncodedParameterValueMode(vmime::generationContext::EncodedParameterValueModes::PARAMETER_VALUE_RFC2231_AND_RFC2047);
+	/* Outlook is also unable to parse Content-ID:\n id... */
+	c.setWrapMessageId(false);
+	return c;
+}
+
+std::string vmail_to_string(const vmime::message &msg)
+{
+	std::string ss;
+	vmime::utility::outputStreamStringAdapter adap(ss);
+	msg.generate(vmail_default_genctx(), adap);
+	return ss;
+}
+
+bool vmail_to_mail(const vmime::message &in, MAIL &out) try
+{
+	auto str = vmail_to_string(in);
+	auto len = str.size();
+	auto buf = std::make_unique<char[]>(len);
+	memcpy(buf.get(), str.c_str(), len);
+	if (!out.refonly_parse(buf.get(), len))
+		return false;
+	out.buffer = std::move(buf);
+	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 }

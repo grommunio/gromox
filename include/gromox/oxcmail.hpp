@@ -1,6 +1,9 @@
 #pragma once
 #include <memory>
+#include <string>
 #include <vector>
+#include <vmime/generationContext.hpp>
+#include <vmime/message.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -27,6 +30,10 @@ namespace gromox {
 struct GX_EXPORT addr_tags {
 	uint32_t pr_name, pr_addrtype, pr_emaddr, pr_smtpaddr, pr_entryid;
 };
+
+extern GX_EXPORT vmime::generationContext vmail_default_genctx();
+extern GX_EXPORT std::string vmail_to_string(const vmime::message &);
+extern GX_EXPORT bool vmail_to_mail(const vmime::message &, MAIL &);
 
 extern GX_EXPORT bool g_oxcical_allday_ymd;
 extern GX_EXPORT unsigned int g_oxvcard_pedantic;
