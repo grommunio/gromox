@@ -59,9 +59,9 @@ extern GX_EXPORT ec_error_t html_init_library();
 extern GX_EXPORT ec_error_t html_to_rtf(std::string_view in, cpid_t, std::string &out);
 extern GX_EXPORT bool rtf_init_library();
 extern GX_EXPORT ec_error_t rtf_to_html(std::string_view in, const char *charset, std::string &out, attachment_list *);
-extern GX_EXPORT bool rtfcp_uncompress(const BINARY *rtf, char *out, size_t *outlen);
+extern GX_EXPORT ec_error_t rtfcp_uncompress(std::string_view in, std::string &out);
 extern GX_EXPORT ec_error_t rtfcp_encode(std::string_view in, std::string &out);
-extern GX_EXPORT ssize_t rtfcp_uncompressed_size(const BINARY *);
+extern GX_EXPORT ssize_t rtfcp_uncompressed_size(std::string_view);
 
 namespace gromox {
 

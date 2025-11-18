@@ -62,21 +62,22 @@ struct DECOMPRESSION_STATE {
 };
 
 struct OUTPUT_STATE {
-	uint32_t out_size = 0, out_pos = 0;
-	char *pbuff_out = nullptr;
-	size_t max_length = 0;
+	uint32_t test_size = 0;
+	std::string &out;
 
-	OUTPUT_STATE(uint32_t rawsize, char *o, size_t m) :
-		out_size(rawsize + RTF_HEADERLENGTH + 4),
-		pbuff_out(o), max_length(m)
-	{}
-	constexpr inline bool overflow_check() const { return out_pos <= out_size; }
-	inline void append(char c) { pbuff_out[out_pos++] = c; }
+	OUTPUT_STATE(uint32_t rawsize, std::string &o) :
+		test_size(rawsize + RTF_HEADERLENGTH + 4),
+		out(o)
+	{
+		out.reserve(rawsize);
+	}
+	constexpr inline bool overflow_check() const { return out.size() <= test_size; }
+	inline void append(char c) { out += c; }
 };
 
 }
 
-static bool rtfcp_verify_header(const uint8_t *header_data,
+static bool rtfcp_verify_header(const char *header_data,
 	uint32_t in_size, COMPRESS_HEADER *pheader)
 {
 	pheader->size = le32p_to_cpu(&header_data[0]);
@@ -121,7 +122,7 @@ void DECOMPRESSION_STATE::append_to_dict(char c)
 		(pstate->dict_writeoffset + 1)%RTF_DICTLENGTH;
 }
 
-bool rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)
+ec_error_t rtfcp_uncompress(std::string_view input, std::string &out) try
 {
 	int i;
 	char c;
@@ -130,47 +131,45 @@ bool rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)
 	DICTIONARYREF dictref;
 	COMPRESS_HEADER header;
 
-	if (prtf_bin->cb < 4*sizeof(uint32_t))
-		return false;
-	DECOMPRESSION_STATE state(*prtf_bin);
-	if (!rtfcp_verify_header(prtf_bin->pb, state.in_size, &header))
-		return false;
+	if (input.size() < 16)
+		return ecInvalidParam;
+	DECOMPRESSION_STATE state(input);
+	if (!rtfcp_verify_header(input.data(), state.in_size, &header))
+		return ecInvalidParam;
 	if (RTF_UNCOMPRESSED == header.magic) {
-		if (*plength < prtf_bin->cb - 4 * sizeof(uint32_t))
-			return false;
-		memcpy(pbuff_out, prtf_bin->pb + 4*sizeof(uint32_t),
-			prtf_bin->cb - 4*sizeof(uint32_t));
-		return true;
+		input.remove_prefix(16);
+		out.assign(input);
+		return ecSuccess;
 	}
-	OUTPUT_STATE output(header.rawsize, pbuff_out, *plength);
+	OUTPUT_STATE output(header.rawsize, out);
 	while (state.in_pos + 1 < state.in_size) {
 		control = state.get_next_ctrl();
 		for (bitmask_pos=0; bitmask_pos<8; bitmask_pos++) {
 			if (control & (1 << bitmask_pos)) {
 				dictref = state.get_next_dict_ref();
-				if (dictref.offset == state.dict_writeoffset) {
-					*plength = output.out_pos;
-					return true;
-				}
+				if (dictref.offset == state.dict_writeoffset)
+					return ecSuccess;
 				for (i =0; i<dictref.length; i++) {
 					if (!output.overflow_check())
-						return false;
+						return ecInvalidParam;
 					c = state.get_dict_entry(dictref.offset + i);
 					output.append(c);
 					state.append_to_dict(c);
 				}
 			} else { /* its a literal */
 				if (!output.overflow_check())
-					return false;
+					return ecInvalidParam;
 				c = state.get_next_literal();
 				if (!state.overflow_check())
-					return false;
+					return ecInvalidParam;
 				output.append(c);
 				state.append_to_dict(c);
 			}
 		}
 	}
-	return true;
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
 }
 
 /**
@@ -192,13 +191,13 @@ ec_error_t rtfcp_encode(std::string_view in, std::string &out) try
 	return ecMAPIOOM;
 }
 
-ssize_t rtfcp_uncompressed_size(const BINARY *rtf)
+ssize_t rtfcp_uncompressed_size(std::string_view rtf)
 {
-	if (rtf->cb < 4 * sizeof(uint32_t))
+	if (rtf.size() < 16)
 		return -1;
-	DECOMPRESSION_STATE state(*rtf);
+	DECOMPRESSION_STATE state(rtf);
 	COMPRESS_HEADER header;
-	if (!rtfcp_verify_header(rtf->pb, state.in_size, &header))
+	if (!rtfcp_verify_header(rtf.data(), state.in_size, &header))
 		return -1;
 	if (static_cast<size_t>(header.rawsize) > SSIZE_MAX)
 		return -1; /* just a limitation of this function */

@@ -2751,28 +2751,22 @@ static ZEND_FUNCTION(mapi_decompressrtf)
 		return;
 	}
 
-	BINARY rtf_bin;
-	rtf_bin.cb = Z_STRLEN_P(deref);
-	rtf_bin.pc = Z_STRVAL_P(deref);
-	ssize_t unc_size = rtfcp_uncompressed_size(&rtf_bin);
+	std::string_view sv{Z_STRVAL_P(deref), Z_STRLEN_P(deref)};
+	ssize_t unc_size = rtfcp_uncompressed_size(sv);
 	if (unc_size < 0)
 		/* Input does not look like RTFCP (MELA or LZFU) */
 		pthrow(ecInvalidParam);
-	auto rtf_blob = sta_malloc<char>(unc_size);
-	if (rtf_blob == nullptr)
-		pthrow(ecMAPIOOM);
-	auto cl_0 = HX::make_scope_exit([&]() { efree(rtf_blob); });
-	size_t rtf_len = unc_size;
-	if (!rtfcp_uncompress(&rtf_bin, rtf_blob, &rtf_len))
-		pthrow(ecError);
+	std::string blob;
+	auto err = rtfcp_uncompress(sv, blob);
+	if (err != ecSuccess)
+		pthrow(err);
 	std::unique_ptr<ATTACHMENT_LIST, mc_delete> atxlist(attachment_list_init());
 	if (atxlist == nullptr)
 		pthrow(ecMAPIOOM);
-	std::string htmlout;
-	auto err = rtf_to_html({rtf_blob, rtf_len}, "utf-8", htmlout, atxlist.get());
+	err = rtf_to_html(blob, "utf-8", blob, atxlist.get());
 	if (err != ecSuccess)
 		pthrow(err);
-	RETVAL_STRINGL(htmlout.data(), htmlout.size());
+	RETVAL_STRINGL(blob.data(), blob.size());
 	MAPI_G(hr) = ecSuccess;
 }
 

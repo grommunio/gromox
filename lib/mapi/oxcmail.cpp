@@ -3083,23 +3083,15 @@ static bool skel_find_rtf(mime_skeleton &skel, const message_content &msg,
 	auto rtf = msg.proplist.get<const BINARY>(PR_RTF_COMPRESSED);
 	if (rtf == nullptr)
 		return true;
-	ssize_t unc_size = rtfcp_uncompressed_size(rtf);
-	std::string buf;
-	if (unc_size < 0) {
+	auto err = rtfcp_uncompress(*rtf, skel.rtf);
+	if (err != ecSuccess) {
 		skel.mail_type = oxcmail_type::tnef;
 		return true;
 	}
-	buf.resize(unc_size);
-	size_t rtf_len = unc_size;
-	if (unc_size < 0 || !rtfcp_uncompress(rtf, buf.data(), &rtf_len)) {
-		skel.mail_type = oxcmail_type::tnef;
-		return true;
-	}
-	buf.resize(rtf_len);
 	skel.pattachments = attachment_list_init();
 	if (skel.pattachments == nullptr)
 		return false;
-	auto err = rtf_to_html(buf, charset, skel.rtf, skel.pattachments);
+	err = rtf_to_html(skel.rtf, charset, skel.rtf, skel.pattachments);
 	if (err != ecSuccess) {
 		skel.mail_type = oxcmail_type::tnef;
 		return true;

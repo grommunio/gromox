@@ -561,25 +561,22 @@ static int do_process_2(std::string_view &&data, const char *str)
 		return 0;
 	}
 	case CM_UNRTFCP: {
-		BINARY comp;
-		comp.cb = data.size();
-		comp.pv = deconst(data.data());
-		auto unc_size = rtfcp_uncompressed_size(&comp);
+		auto unc_size = rtfcp_uncompressed_size(data);
 		if (unc_size == -1) {
 			fprintf(stderr, "Bad header magic, or data stream is shorter than the header says it should be.\n");
 			return -1;
 		} else if (unc_size == 0) {
 			return 0;
 		}
-		std::string unc_data;
-		unc_data.resize(unc_size);
-		size_t unc_size2 = unc_size;
-		if (!rtfcp_uncompress(&comp, &unc_data[0], &unc_size2)) {
-			fprintf(stderr, "Decompression failed\n");
+		std::string out;
+		auto err = rtfcp_uncompress(data, out);
+		if (err != ecSuccess) {
+			fprintf(stderr, "rtfcp_uncompress: %s\n", mapi_strerror(err));
+			return -1;
+		} else if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0) {
+			perror("write");
 			return -1;
 		}
-		unc_data.resize(unc_size2);
-		write(STDOUT_FILENO, unc_data.c_str(), unc_data.size());
 		return 0;
 	}
 	default:

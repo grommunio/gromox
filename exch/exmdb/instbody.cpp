@@ -51,17 +51,14 @@ static int instance_get_rtf(MESSAGE_CONTENT *mc, BINARY *&bin)
 	auto ret = instance_get_raw(mc, bin, ID_TAG_RTFCOMPRESSED);
 	if (ret <= 0)
 		return ret;
-	BINARY rtf_comp = *bin;
-	ssize_t unc_size = rtfcp_uncompressed_size(&rtf_comp);
-	if (unc_size < 0)
+	std::string out;
+	if (rtfcp_uncompress(*bin, out) != ecSuccess)
 		return -1;
-	bin->pv = common_util_alloc(unc_size);
+	bin->pv = common_util_alloc(out.size());
 	if (bin->pv == nullptr)
 		return -1;
-	size_t unc_size2 = unc_size;
-	if (!rtfcp_uncompress(&rtf_comp, bin->pc, &unc_size2))
-		return -1;
-	bin->cb = unc_size2;
+	memcpy(bin->pv, out.data(), out.size());
+	bin->cb = out.size();
 	return 1;
 }
 
