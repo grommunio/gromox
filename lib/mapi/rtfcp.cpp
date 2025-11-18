@@ -62,24 +62,18 @@ struct DECOMPRESSION_STATE {
 };
 
 struct OUTPUT_STATE {
-	uint32_t out_size;
-	uint32_t out_pos;
-	char *pbuff_out;
-	size_t max_length;
+	uint32_t out_size = 0, out_pos = 0;
+	char *pbuff_out = nullptr;
+	size_t max_length = 0;
 
+	OUTPUT_STATE(uint32_t rawsize, char *o, size_t m) :
+		out_size(rawsize + RTF_HEADERLENGTH + 4),
+		pbuff_out(o), max_length(m)
+	{}
 	constexpr inline bool overflow_check() const { return out_pos <= out_size; }
-	void append(char);
+	inline void append(char c) { pbuff_out[out_pos++] = c; }
 };
 
-}
-
-static void rtfcp_init_output_state(OUTPUT_STATE *pstate,
-	uint32_t rawsize, char *pbuff_out, size_t max_length)
-{
-	pstate->out_pos = 0;
-	pstate->out_size = rawsize + RTF_HEADERLENGTH + 4;
-	pstate->pbuff_out = pbuff_out;
-	pstate->max_length = max_length;
 }
 
 static bool rtfcp_verify_header(const uint8_t *header_data,
@@ -127,19 +121,12 @@ void DECOMPRESSION_STATE::append_to_dict(char c)
 		(pstate->dict_writeoffset + 1)%RTF_DICTLENGTH;
 }
 
-void OUTPUT_STATE::append(char c)
-{
-	auto poutput = this;
-	poutput->pbuff_out[poutput->out_pos++] = c;
-}
-
 bool rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)
 {
 	int i;
 	char c;
 	uint8_t control;
 	uint8_t bitmask_pos;
-	OUTPUT_STATE output;
 	DICTIONARYREF dictref;
 	COMPRESS_HEADER header;
 
@@ -155,8 +142,7 @@ bool rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)
 			prtf_bin->cb - 4*sizeof(uint32_t));
 		return true;
 	}
-	rtfcp_init_output_state(&output,
-		header.rawsize, pbuff_out, *plength);
+	OUTPUT_STATE output(header.rawsize, pbuff_out, *plength);
 	while (state.in_pos + 1 < state.in_size) {
 		control = state.get_next_ctrl();
 		for (bitmask_pos=0; bitmask_pos<8; bitmask_pos++) {
