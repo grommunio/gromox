@@ -43,12 +43,15 @@ struct DICTIONARYREF {
 };
 
 struct DECOMPRESSION_STATE {
-	uint8_t dict[RTF_DICTLENGTH];
-	uint32_t dict_writeoffset;
-	uint8_t *compressed_data;
-	uint32_t in_size;
-	uint32_t in_pos;
+	uint8_t dict[RTF_DICTLENGTH] = RTF_INITDICT;
+	uint32_t dict_writeoffset = RTF_INITLENGTH;
+	const uint8_t *compressed_data = nullptr;
+	uint32_t in_size = 0, in_pos = RTF_HEADERLENGTH;
 
+	DECOMPRESSION_STATE(std::string_view in) :
+		compressed_data(reinterpret_cast<const uint8_t *>(in.data())),
+		in_size(std::min(in.size(), static_cast<size_t>(UINT32_MAX - 12)))
+	{}
 	constexpr inline bool overflow_check() const { return in_pos <= in_size; }
 	uint8_t get_next_byte();
 	DICTIONARYREF get_next_dict_ref();
@@ -70,16 +73,6 @@ struct OUTPUT_STATE {
 
 }
 
-static void rtfcp_init_decompress_state(uint8_t *compressed_data,
-	uint32_t in_size, DECOMPRESSION_STATE *pstate)
-{
-	memcpy(pstate->dict, RTF_INITDICT, RTF_INITLENGTH);
-	pstate->dict_writeoffset = RTF_INITLENGTH;
-	pstate->compressed_data = compressed_data;
-	pstate->in_size = in_size;
-	pstate->in_pos = RTF_HEADERLENGTH;
-}
-
 static void rtfcp_init_output_state(OUTPUT_STATE *pstate,
 	uint32_t rawsize, char *pbuff_out, size_t max_length)
 {
@@ -89,7 +82,7 @@ static void rtfcp_init_output_state(OUTPUT_STATE *pstate,
 	pstate->max_length = max_length;
 }
 
-static bool rtfcp_verify_header(uint8_t *header_data,
+static bool rtfcp_verify_header(const uint8_t *header_data,
 	uint32_t in_size, COMPRESS_HEADER *pheader)
 {
 	pheader->size = le32p_to_cpu(&header_data[0]);
@@ -149,11 +142,10 @@ bool rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)
 	OUTPUT_STATE output;
 	DICTIONARYREF dictref;
 	COMPRESS_HEADER header;
-	DECOMPRESSION_STATE	state;
 
 	if (prtf_bin->cb < 4*sizeof(uint32_t))
 		return false;
-	rtfcp_init_decompress_state(prtf_bin->pb, prtf_bin->cb, &state);
+	DECOMPRESSION_STATE state(*prtf_bin);
 	if (!rtfcp_verify_header(prtf_bin->pb, state.in_size, &header))
 		return false;
 	if (RTF_UNCOMPRESSED == header.magic) {
@@ -218,9 +210,8 @@ ssize_t rtfcp_uncompressed_size(const BINARY *rtf)
 {
 	if (rtf->cb < 4 * sizeof(uint32_t))
 		return -1;
-	DECOMPRESSION_STATE state;
+	DECOMPRESSION_STATE state(*rtf);
 	COMPRESS_HEADER header;
-	rtfcp_init_decompress_state(rtf->pb, rtf->cb, &state);
 	if (!rtfcp_verify_header(rtf->pb, state.in_size, &header))
 		return -1;
 	if (static_cast<size_t>(header.rawsize) > SSIZE_MAX)
