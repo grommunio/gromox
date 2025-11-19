@@ -29,230 +29,221 @@ using nsp_request = rpc_request;
 using nsp_response = rpc_response;
 
 struct NSPIBIND_IN final : public nsp_request {
-	uint32_t flags;
 	STAT stat;
-	FLATUID *pserver_guid;
+	uint32_t flags = 0;
+	FLATUID *pserver_guid = nullptr;
 };
 
 struct NSPIBIND_OUT final : public nsp_response {
-	FLATUID *pserver_guid;
-	NSPI_HANDLE handle;
-	ec_error_t result;
+	FLATUID *pserver_guid = nullptr;
+	NSPI_HANDLE handle{};
+	ec_error_t result{};
 };
 
 struct NSPIUNBIND_IN final : public nsp_request {
-	NSPI_HANDLE handle;
+	NSPI_HANDLE handle{};
 };
 
 struct NSPIUNBIND_OUT final : public nsp_response {
-	NSPI_HANDLE handle;
-	ec_error_t result;
+	NSPI_HANDLE handle{};
+	ec_error_t result{};
 };
 
 struct NSPIUPDATESTAT_IN final : public nsp_request {
-	NSPI_HANDLE handle;
+	NSPI_HANDLE handle{};
 	STAT stat;
-	int32_t *pdelta;
+	int32_t *pdelta = nullptr;
 };
 
 struct NSPIUPDATESTAT_OUT final : public nsp_response {
 	STAT stat;
-	int32_t *pdelta;
-	ec_error_t result;
+	ec_error_t result{};
+	int32_t *pdelta = nullptr;
 };
 
 struct NSPIQUERYROWS_IN final : public nsp_request {
-	NSPI_HANDLE handle;
-	uint32_t flags;
+	NSPI_HANDLE handle{};
 	STAT stat;
-	uint32_t table_count;
-	uint32_t *ptable;
-	uint32_t count;
-	LPROPTAG_ARRAY *pproptags;
+	uint32_t flags = 0, table_count = 0, count = 0;
+	uint32_t *ptable = nullptr;
+	LPROPTAG_ARRAY *pproptags = nullptr;
 };
 
 struct NSPIQUERYROWS_OUT final : public nsp_response {
 	STAT stat;
-	NSP_ROWSET *prows;
-	ec_error_t result;
+	ec_error_t result{};
+	NSP_ROWSET *prows = nullptr;
 };
 
 struct NSPISEEKENTRIES_IN final : public nsp_request {
-	NSPI_HANDLE handle;
-	uint32_t reserved;
+	NSPI_HANDLE handle{};
 	STAT stat;
-	PROPERTY_VALUE target;
-	MINID_ARRAY *ptable;
-	LPROPTAG_ARRAY *pproptags;
+	uint32_t reserved = 0;
+	PROPERTY_VALUE target{};
+	MINID_ARRAY *ptable = nullptr;
+	LPROPTAG_ARRAY *pproptags = nullptr;
 };
 
 struct NSPISEEKENTRIES_OUT final : public nsp_response {
 	STAT stat;
-	NSP_ROWSET *prows;
-	ec_error_t result;
+	ec_error_t result{};
+	NSP_ROWSET *prows = nullptr;
 };
 
 struct NSPIGETMATCHES_IN final : public nsp_request {
-	NSPI_HANDLE handle;
-	uint32_t reserved1;
+	NSPI_HANDLE handle{};
+	uint32_t reserved1 = 0, requested = 0;
 	STAT stat;
-	NSPRES *pfilter;
-	NSP_PROPNAME *ppropname;
-	uint32_t requested;
-	LPROPTAG_ARRAY *pproptags;
+	NSPRES *pfilter = nullptr;
+	NSP_PROPNAME *ppropname = nullptr;
+	LPROPTAG_ARRAY *pproptags = nullptr;
 };
 
 struct NSPIGETMATCHES_OUT final : public nsp_response {
 	STAT stat;
-	MINID_ARRAY *poutmids;
-	NSP_ROWSET *prows;
-	ec_error_t result;
+	ec_error_t result{};
+	MINID_ARRAY *poutmids = nullptr;
+	NSP_ROWSET *prows = nullptr;
 };
 
 struct NSPIRESORTRESTRICTION_IN final : public nsp_request {
-	NSPI_HANDLE handle;
+	NSPI_HANDLE handle{};
 	STAT stat;
-	MINID_ARRAY inmids;
+	MINID_ARRAY inmids{};
 };
 
 struct NSPIRESORTRESTRICTION_OUT final : public nsp_response {
 	STAT stat;
-	MINID_ARRAY *poutmids;
-	ec_error_t result;
+	ec_error_t result{};
+	MINID_ARRAY *poutmids = nullptr;
 };
 
 struct NSPIDNTOMID_IN final : public nsp_request {
-	NSPI_HANDLE handle;
-	STRINGS_ARRAY names;
+	NSPI_HANDLE handle{};
+	STRINGS_ARRAY names{};
 };
 
 struct NSPIDNTOMID_OUT final : public nsp_response {
-	MINID_ARRAY *poutmids;
-	ec_error_t result;
+	MINID_ARRAY *poutmids = nullptr;
+	ec_error_t result{};
 };
 
 struct NSPIGETPROPLIST_IN final : public nsp_request {
-	NSPI_HANDLE handle;
-	uint32_t flags;
-	uint32_t mid;
-	cpid_t codepage;
+	NSPI_HANDLE handle{};
+	uint32_t flags = 0, mid = 0;
+	cpid_t codepage{};
 };
 
 struct NSPIGETPROPLIST_OUT final : public nsp_response {
-	LPROPTAG_ARRAY *pproptags;
-	ec_error_t result;
+	LPROPTAG_ARRAY *pproptags = nullptr;
+	ec_error_t result{};
 };
 
 struct NSPIGETPROPS_IN final : public nsp_request {
-	NSPI_HANDLE handle;
-	uint32_t flags;
+	NSPI_HANDLE handle{};
 	STAT stat;
-	LPROPTAG_ARRAY *pproptags;
+	uint32_t flags = 0;
+	LPROPTAG_ARRAY *pproptags = nullptr;
 };
 
 struct NSPIGETPROPS_OUT final : public nsp_response {
-	NSP_PROPROW *prows;
-	ec_error_t result;
+	NSP_PROPROW *prows = nullptr;
+	ec_error_t result{};
 };
 
 struct NSPICOMPAREMIDS_IN final : public nsp_request {
-	NSPI_HANDLE handle;
+	NSPI_HANDLE handle{};
 	STAT stat;
-	uint32_t mid1;
-	uint32_t mid2;
+	uint32_t mid1 = 0, mid2 = 0;
 };
 
 struct NSPICOMPAREMIDS_OUT final : public nsp_response {
-	int32_t cmp;
-	ec_error_t result;
+	int32_t cmp = 0;
+	ec_error_t result{};
 };
 
 struct NSPIMODPROPS_IN final : public nsp_request {
-	NSPI_HANDLE handle;
+	NSPI_HANDLE handle{};
 	STAT stat;
-	LPROPTAG_ARRAY *pproptags;
-	NSP_PROPROW row;
+	LPROPTAG_ARRAY *pproptags = nullptr;
+	NSP_PROPROW row{};
 };
 
 struct NSPIMODPROPS_OUT final : public nsp_response {
-	ec_error_t result;
+	ec_error_t result{};
 };
 
 struct NSPIGETSPECIALTABLE_IN final : public nsp_request {
-	NSPI_HANDLE handle;
-	uint32_t flags;
+	NSPI_HANDLE handle{};
 	STAT stat;
-	uint32_t version;
+	uint32_t flags = 0, version = 0;
 };
 
 struct NSPIGETSPECIALTABLE_OUT final : public nsp_response {
-	uint32_t version;
-	NSP_ROWSET *prows;
-	ec_error_t result;
+	uint32_t version = 0;
+	ec_error_t result{};
+	NSP_ROWSET *prows = nullptr;
 };
 
 struct NSPIGETTEMPLATEINFO_IN final : public nsp_request {
-	NSPI_HANDLE handle;
-	uint32_t flags;
-	uint32_t type;
-	char *pdn;
-	cpid_t codepage;
-	uint32_t locale_id;
+	NSPI_HANDLE handle{};
+	uint32_t flags = 0, type = 0, locale_id = 0;
+	cpid_t codepage{};
+	char *pdn = nullptr;
 };
 
 struct NSPIGETTEMPLATEINFO_OUT final : public nsp_response {
-	NSP_PROPROW *pdata;
-	ec_error_t result;
+	NSP_PROPROW *pdata = nullptr;
+	ec_error_t result{};
 };
 
 struct NSPIMODLINKATT_IN final : public nsp_request {
-	NSPI_HANDLE handle;
-	uint32_t flags;
-	gromox::proptag_t proptag;
-	uint32_t mid;
-	BINARY_ARRAY entry_ids;
+	NSPI_HANDLE handle{};
+	uint32_t flags = 0, mid = 0;
+	gromox::proptag_t proptag{};
+	BINARY_ARRAY entry_ids{};
 };
 
 struct NSPIMODLINKATT_OUT final : public nsp_response {
-	ec_error_t result;
+	ec_error_t result{};
 };
 
 struct NSPIQUERYCOLUMNS_IN final : public nsp_request {
-	NSPI_HANDLE handle;
-	uint32_t flags;
+	NSPI_HANDLE handle{};
+	uint32_t flags = 0;
 };
 
 struct NSPIQUERYCOLUMNS_OUT final : public nsp_response {
-	LPROPTAG_ARRAY *pcolumns;
-	ec_error_t result;
+	LPROPTAG_ARRAY *pcolumns = nullptr;
+	ec_error_t result{};
 };
 
 struct NSPIRESOLVENAMES_IN final : public nsp_request {
-	NSPI_HANDLE handle;
-	uint32_t reserved;
+	NSPI_HANDLE handle{};
+	uint32_t reserved = 0;
 	STAT stat;
-	LPROPTAG_ARRAY *pproptags;
-	STRINGS_ARRAY strs;
+	LPROPTAG_ARRAY *pproptags = nullptr;
+	STRINGS_ARRAY strs{};
 };
 
 struct NSPIRESOLVENAMES_OUT final : public nsp_response {
-	MINID_ARRAY *pmids;
-	NSP_ROWSET *prows;
-	ec_error_t result;
+	MINID_ARRAY *pmids = nullptr;
+	NSP_ROWSET *prows = nullptr;
+	ec_error_t result{};
 };
 
 struct NSPIRESOLVENAMESW_IN final : public nsp_request {
-	NSPI_HANDLE handle;
-	uint32_t reserved;
+	NSPI_HANDLE handle{};
+	uint32_t reserved = 0;
 	STAT stat;
-	LPROPTAG_ARRAY *pproptags;
-	STRINGS_ARRAY strs;
+	LPROPTAG_ARRAY *pproptags = nullptr;
+	STRINGS_ARRAY strs{};
 };
 
 struct NSPIRESOLVENAMESW_OUT final : public nsp_response {
-	MINID_ARRAY *pmids;
-	NSP_ROWSET *prows;
-	ec_error_t result;
+	MINID_ARRAY *pmids = nullptr;
+	NSP_ROWSET *prows = nullptr;
+	ec_error_t result{};
 };
 
 extern pack_result exchange_nsp_ndr_pull(unsigned int op, NDR_PULL &, std::unique_ptr<rpc_request> &);
