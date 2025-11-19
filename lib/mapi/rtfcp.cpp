@@ -184,8 +184,9 @@ ec_error_t rtfcp_encode(std::string_view in, std::string &out) try
 	cpu_to_le32p(&b[4], len);
 	cpu_to_le32p(&b[8], RTF_UNCOMPRESSED);
 	cpu_to_le32p(&b[12], 0);
-	out = std::string(b, sizeof(b));
-	out.append(in.data(), len);
+	std::string t = std::string(b, sizeof(b));
+	t.append(in.data(), len);
+	out = std::move(t);
 	/* In-place editing via string.insert(0,...) is some 90% slower in GNU stdlibc++ */
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
