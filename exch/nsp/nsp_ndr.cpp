@@ -1154,7 +1154,8 @@ static pack_result nsp_ndr_push_property_value(NDR_PUSH &x,
 		/*
 		 * Despite being specified by DCERPC or implemented in e.g.
 		 * samba/openchange, it seems like emsmdb32.dll just does not
-		 * support these over RPC.
+		 * support these types over RPC. (But emsmdb32 accepts them
+		 * over mh_nsp.)
 		 */
 		switch (PROP_TYPE(r->proptag)) {
 		case PT_FLOAT:
