@@ -1,32 +1,56 @@
-Development 3.1.134
+Development 3.1.232
 ===================
 
 Enhancements:
 
-* ews: implement GetRoomLists and GetRooms handlers
-* ews: implement tItemAttachment, tUserConfigurationName types
-* ews: implement types related to CategoryList
+* ews: implement ``GetRoomLists`` and ``GetRooms`` handlers
+* ews: implement ``tItemAttachment``, ``tUserConfigurationName`` types
+* ews: implement types related to ``CategoryList``
+* ews: load ReplyTo recipients
+* ews: map item flag/reminder and message sender fields
 * istore: standalone exmdb_provider process launcher
   (splits the gromox-http process into two for better debuggability)
+* oxcmail: on export (MAPI-to-IM), recognize EX-in-ONEOFF and EMSAB (GAB)
+  entryids in the Reply-To field and substitute them accordingly
+* kdb2mt: entries in the user map file are now allowed to
+  lack the ``sv`` and ``id`` fields
+* kdb2mt: entryids and search keys for senders/recipients are now translated
+  with the help of user maps
+* delivery: the OOF autoresponder was rewritten so it does not use direct
+  filesystem access anymore (since the mailbox might not be present on the same
+  host where the LDA runs)
 
 Fixes:
 
-* mt2exm: avoid generating zero-sized /var/lib/gromox/user/*/eml/* files
+* mt2exm: avoid generating zero-sized ``/var/lib/gromox/user/*/eml/*`` files
   (and thus bogus imapstructure ext files) in the internal mailbox directory
   when a message object to import has no RFC5322 representation
-* midb: ignore incomplete imapstructure files in /var/lib/gromox/user/**/ext
+* midb: ignore incomplete imapstructure files in
+  ``/var/lib/gromox/user/**/ext``
 * delivery: stop treating non-existing users as a temporary condition
 * oxcmail: ONEOFF_ENTRYIDs did not have their email address/name set properly
   after some refactoring in 3.0, which was fixed
-* ab_tree: users with HIDE_FROM_GAL or HIDE_FROM_AL were not always hidden
+* ab_tree: users with HIDE_FROM_GAL or HIDE_FROM_AL were not hidden in all
+  cases, which has been rectified
+* imap: suppress ``AUTH=LOGIN`` advertisement before TLS established and
+  instead emit ``LOGINDISABLED`` "capability" in accordance with RFC 2595
 * ews: avoid dereference of unenganged std::optional, which had led to
   spurious use-after-free/crash
-* ews: include PR_CONTAINER_CLASS in tFolderResponseShape
-* ews: add missing locking for concurrent EWSPlugin::unsubscribe invocation
-* emsmdb: implement truncation behavior for ropOpenStream+MAPI_CREATE
-* ab_tree: rework minid encoding to avoid values >= 0x80000000
-  (solves a hypothetical problem reading the addressbook data
-  for the 589821th domain in the user database)
+* ews: include PR_CONTAINER_CLASS in response when obtaining folder properties
+* ews: add missing locking for concurrent ``EWSPlugin::unsubscribe`` invocation
+* emsmdb: ``ropOpenStream`` with MAPI_CREATE did not truncate the result to the
+  right length, which was fixed
+* html2rtf: map some CSS ``font-size`` keywords to sensible point sizes for RTF
+* ab_tree: rework our Minimal EntryID encoding to avoid values >= 0x80000000,
+  solving a hypothetical problem reading the addressbook data
+  for the 589821th domain in the user database
+
+Changes:
+
+* imap: the combination of the config directive ``imap_force_tls=yes`` with
+  ``imap_support_tls=no`` is now rejected on startup
+* exmdb: PR_OOF_STATE is now a computed property and it evaluates the OOF
+  configuration against the current time
 
 
 Gromox 3.1 (2025-10-26)
