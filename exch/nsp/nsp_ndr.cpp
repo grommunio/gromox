@@ -1772,8 +1772,9 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIBIND_OUT &r)
 
 static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIUNBIND_IN *r)
 {
+	uint32_t resv;
 	TRY(x.g_ctx_handle(&r->handle));
-	TRY(x.g_uint32(&r->reserved));
+	TRY(x.g_uint32(&resv));
 	return pack_result::ok;
 }
 
@@ -1786,10 +1787,10 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIUNBIND_OUT &r)
 
 static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIUPDATESTAT_IN *r)
 {
-	uint32_t ptr;
+	uint32_t resv, ptr;
 	
 	TRY(x.g_ctx_handle(&r->handle));
-	TRY(x.g_uint32(&r->reserved));
+	TRY(x.g_uint32(&resv));
 	TRY(nsp_ndr_pull_stat(x, &r->stat));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
@@ -1901,21 +1902,20 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPISEEKENTRIES_OUT &r)
 
 static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIGETMATCHES_IN *r)
 {
-	uint32_t ptr;
+	uint32_t resv, ptr;
 
 	TRY(x.g_ctx_handle(&r->handle));
 	TRY(x.g_uint32(&r->reserved1));
 	TRY(nsp_ndr_pull_stat(x, &r->stat));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
-		r->ptable = ndr_stack_anew<MINID_ARRAY>(NDR_STACK_IN);
-		if (r->ptable == nullptr)
+		/* Marked as reserved in OXNSPI v14 §3.1.4.1.10 */
+		auto ptable = ndr_stack_anew<MINID_ARRAY>(NDR_STACK_IN);
+		if (ptable == nullptr)
 			return pack_result::alloc;
-		TRY(nsp_ndr_pull_proptag_array(x, r->ptable));
-	} else {
-		r->ptable = NULL;
+		TRY(nsp_ndr_pull_proptag_array(x, ptable));
 	}
-	TRY(x.g_uint32(&r->reserved2));
+	TRY(x.g_uint32(&resv));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
 		r->pfilter = ndr_stack_anew<NSPRES>(NDR_STACK_IN);
@@ -1962,20 +1962,18 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIGETMATCHES_OUT &r)
 
 static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIRESORTRESTRICTION_IN *r)
 {
-	uint32_t ptr;
+	uint32_t resv, ptr;
 	
 	TRY(x.g_ctx_handle(&r->handle));
-	TRY(x.g_uint32(&r->reserved));
+	TRY(x.g_uint32(&resv));
 	TRY(nsp_ndr_pull_stat(x, &r->stat));
 	TRY(nsp_ndr_pull_proptag_array(x, &r->inmids));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
-		r->poutmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
-		if (r->poutmids == nullptr)
+		auto poutmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
+		if (poutmids == nullptr)
 			return pack_result::alloc;
-		TRY(nsp_ndr_pull_proptag_array(x, r->poutmids));
-	} else {
-		r->poutmids = NULL;
+		TRY(nsp_ndr_pull_proptag_array(x, poutmids));
 	}
 	return pack_result::ok;
 }
@@ -1991,8 +1989,9 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIRESORTRESTRICTION_OUT &r)
 
 static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIDNTOMID_IN *r)
 {
+	uint32_t resv;
 	TRY(x.g_ctx_handle(&r->handle));
-	TRY(x.g_uint32(&r->reserved));
+	TRY(x.g_uint32(&resv));
 	return nsp_ndr_pull_strings_array(x, FLAG_HEADER|FLAG_CONTENT, &r->names);
 }
 
@@ -2052,8 +2051,9 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIGETPROPS_OUT &r)
 
 static pack_result nsp_ndr_pull(NDR_PULL &x, NSPICOMPAREMIDS_IN *r)
 {
+	uint32_t resv;
 	TRY(x.g_ctx_handle(&r->handle));
-	TRY(x.g_uint32(&r->reserved));
+	TRY(x.g_uint32(&resv));
 	TRY(nsp_ndr_pull_stat(x, &r->stat));
 	TRY(x.g_uint32(&r->mid1));
 	return x.g_uint32(&r->mid2);
@@ -2067,10 +2067,10 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPICOMPAREMIDS_OUT &r)
 
 static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIMODPROPS_IN *r)
 {
-	uint32_t ptr;
+	uint32_t resv, ptr;
 	
 	TRY(x.g_ctx_handle(&r->handle));
-	TRY(x.g_uint32(&r->reserved));
+	TRY(x.g_uint32(&resv));
 	TRY(nsp_ndr_pull_stat(x, &r->stat));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
@@ -2162,8 +2162,9 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIMODLINKATT_OUT &r)
 
 static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIQUERYCOLUMNS_IN *r)
 {
+	uint32_t resv;
 	TRY(x.g_ctx_handle(&r->handle));
-	TRY(x.g_uint32(&r->reserved));
+	TRY(x.g_uint32(&resv));
 	return x.g_uint32(&r->flags);
 }
 

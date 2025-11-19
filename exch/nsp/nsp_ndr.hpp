@@ -42,7 +42,6 @@ struct NSPIBIND_OUT final : public nsp_response {
 
 struct NSPIUNBIND_IN final : public nsp_request {
 	NSPI_HANDLE handle;
-	uint32_t reserved;
 };
 
 struct NSPIUNBIND_OUT final : public nsp_response {
@@ -52,7 +51,6 @@ struct NSPIUNBIND_OUT final : public nsp_response {
 
 struct NSPIUPDATESTAT_IN final : public nsp_request {
 	NSPI_HANDLE handle;
-	uint32_t reserved;
 	STAT stat;
 	int32_t *pdelta;
 };
@@ -98,8 +96,6 @@ struct NSPIGETMATCHES_IN final : public nsp_request {
 	NSPI_HANDLE handle;
 	uint32_t reserved1;
 	STAT stat;
-	MINID_ARRAY *ptable;
-	uint32_t reserved2;
 	NSPRES *pfilter;
 	NSP_PROPNAME *ppropname;
 	uint32_t requested;
@@ -115,9 +111,8 @@ struct NSPIGETMATCHES_OUT final : public nsp_response {
 
 struct NSPIRESORTRESTRICTION_IN final : public nsp_request {
 	NSPI_HANDLE handle;
-	uint32_t reserved;
 	STAT stat;
-	MINID_ARRAY inmids, *poutmids;
+	MINID_ARRAY inmids;
 };
 
 struct NSPIRESORTRESTRICTION_OUT final : public nsp_response {
@@ -128,7 +123,6 @@ struct NSPIRESORTRESTRICTION_OUT final : public nsp_response {
 
 struct NSPIDNTOMID_IN final : public nsp_request {
 	NSPI_HANDLE handle;
-	uint32_t reserved;
 	STRINGS_ARRAY names;
 };
 
@@ -163,7 +157,6 @@ struct NSPIGETPROPS_OUT final : public nsp_response {
 
 struct NSPICOMPAREMIDS_IN final : public nsp_request {
 	NSPI_HANDLE handle;
-	uint32_t reserved;
 	STAT stat;
 	uint32_t mid1;
 	uint32_t mid2;
@@ -176,7 +169,6 @@ struct NSPICOMPAREMIDS_OUT final : public nsp_response {
 
 struct NSPIMODPROPS_IN final : public nsp_request {
 	NSPI_HANDLE handle;
-	uint32_t reserved;
 	STAT stat;
 	LPROPTAG_ARRAY *pproptags;
 	NSP_PROPROW row;
@@ -227,7 +219,6 @@ struct NSPIMODLINKATT_OUT final : public nsp_response {
 
 struct NSPIQUERYCOLUMNS_IN final : public nsp_request {
 	NSPI_HANDLE handle;
-	uint32_t reserved;
 	uint32_t flags;
 };
 
