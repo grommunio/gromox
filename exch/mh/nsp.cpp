@@ -566,7 +566,7 @@ MhNspPlugin::ProcRes MhNspPlugin::unbind(MhNspContext& ctx)
 	auto& response = ctx.response.emplace<unbind_response>();
 	if (ctx.ext_pull.g_nsp_request(request) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
-	response.result = nsp_bridge_unbind(ctx.session_guid, request.reserved);
+	response.result = nsp_bridge_unbind(ctx.session_guid, 0);
 	std::unique_lock hl_hold(hashLock);
 	removeSession(ctx.session_string);
 	hl_hold.unlock();

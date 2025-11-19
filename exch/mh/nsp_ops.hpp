@@ -44,7 +44,7 @@ struct bind_response {
 };
 
 struct unbind_request {
-	uint32_t reserved = 0, cb_auxin = 0;
+	uint32_t cb_auxin = 0;
 	uint8_t *auxin = nullptr;
 };
 
@@ -54,7 +54,7 @@ struct unbind_response {
 };
 
 struct comparemids_request {
-	uint32_t reserved = 0, mid1 = 0, mid2 = 0, cb_auxin = 0;
+	uint32_t mid1 = 0, mid2 = 0, cb_auxin = 0;
 	STAT *stat = nullptr;
 	uint8_t *auxin = nullptr;
 };
@@ -66,7 +66,7 @@ struct comparemids_response {
 };
 
 struct dntomid_request {
-	uint32_t reserved = 0, cb_auxin = 0;
+	uint32_t cb_auxin = 0;
 	STRING_ARRAY *names = nullptr;
 	uint8_t *auxin = nullptr;
 };
@@ -78,9 +78,8 @@ struct dntomid_response {
 };
 
 struct getmatches_request {
-	uint32_t reserved1 = 0, reserved2 = 0, row_count = 0, cb_auxin = 0;
+	uint32_t reserved1 = 0, row_count = 0, cb_auxin = 0;
 	STAT *stat = nullptr;
-	MID_ARRAY *inmids = nullptr;
 	RESTRICTION *filter = nullptr;
 	nsp_propname2 *propname = nullptr;
 	LPROPTAG_ARRAY *columns = nullptr;
@@ -163,7 +162,7 @@ struct modlinkatt_response {
 };
 
 struct modprops_request {
-	uint32_t reserved = 0, cb_auxin = 0;
+	uint32_t cb_auxin = 0;
 	STAT *stat = nullptr;
 	LPROPTAG_ARRAY *proptags = nullptr;
 	LTPROPVAL_ARRAY *values = nullptr;
@@ -191,7 +190,7 @@ struct queryrows_response {
 };
 
 struct querycolumns_request {
-	uint32_t reserved = 0, flags = 0, cb_auxin = 0;
+	uint32_t flags = 0, cb_auxin = 0;
 	uint8_t *auxin = nullptr;
 };
 
@@ -218,7 +217,7 @@ struct resolvenames_response {
 };
 
 struct resortrestriction_request {
-	uint32_t reserved = 0, cb_auxin = 0;
+	uint32_t cb_auxin = 0;
 	STAT *stat = nullptr;
 	MID_ARRAY *inmids = nullptr;
 	uint8_t *auxin = nullptr;
@@ -248,7 +247,7 @@ struct seekentries_response {
 };
 
 struct updatestat_request {
-	uint32_t reserved = 0, cb_auxin = 0;
+	uint32_t cb_auxin = 0;
 	uint8_t delta_requested = 0;
 	STAT *stat = nullptr;
 	uint8_t *auxin = nullptr;

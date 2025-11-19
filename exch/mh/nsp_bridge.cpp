@@ -56,14 +56,14 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
     const comparemids_request &request, comparemids_response &response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_compare_mids(ses, request.reserved, request.stat, request.mid1, request.mid2, &response.cmp);
+	return nsp_interface_compare_mids(ses, 0, request.stat, request.mid1, request.mid2, &response.cmp);
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
     const dntomid_request &request, dntomid_response &response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_dntomid(ses, request.reserved, request.names, &response.outmids);
+	return nsp_interface_dntomid(ses, 0, request.names, &response.outmids);
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
@@ -90,7 +90,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 		}
 	}
 	auto result = nsp_interface_get_matches(ses, request.reserved1, request.stat,
-	              request.inmids, request.reserved2, nspres, nspname, request.row_count,
+	              nullptr, 0, nspres, nspname, request.row_count,
 	              &response.mids, request.columns, &outrows);
 	if (Failed(result))
 		return result;
@@ -216,7 +216,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 		    !cu_proplist_to_nsp_proprow(*request.values, *row))
 			return ecRpcFailed;
 	}
-	return nsp_interface_mod_props(ses, request.reserved, request.stat,
+	return nsp_interface_mod_props(ses, 0, request.stat,
 	       request.proptags, row);
 }
 
@@ -224,7 +224,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
     const querycolumns_request &request, querycolumns_response &response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_query_columns(ses, request.reserved, request.flags, &response.columns);
+	return nsp_interface_query_columns(ses, 0, request.flags, &response.columns);
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
@@ -263,7 +263,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
     const resortrestriction_request &request, resortrestriction_response &response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_resort_restriction(ses, request.reserved,
+	return nsp_interface_resort_restriction(ses, 0,
 	       request.stat, request.inmids, &response.outmids);
 }
 
@@ -298,7 +298,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	} else {
 		response.delta = nullptr;
 	}
-	auto result = nsp_interface_update_stat(ses, request.reserved,
+	auto result = nsp_interface_update_stat(ses, 0,
 	              request.stat, &delta);
 	if (request.delta_requested != 0)
 		*response.delta = delta;
