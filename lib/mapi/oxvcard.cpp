@@ -18,6 +18,7 @@
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
 
+using namespace std::string_literals;
 using namespace gromox;
 
 namespace {
@@ -251,18 +252,14 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 {
 	int i;
 	int count;
-	int tmp_len;
 	int ufld_count;
 	int mail_count;
-	BINARY tmp_bin;
 	BOOL b_encoding;
 	struct tm tmp_tm;
 	uint8_t tmp_byte;
-	size_t decode_len;
 	uint32_t tmp_int32;
 	uint64_t tmp_int64;
 	PROPID_ARRAY propids;
-	const char *photo_type;
 	const char *address_type;
 	std::vector<std::string> child_strings;
 	ATTACHMENT_LIST *pattachments;
@@ -319,7 +316,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			if (pmsg->children.pattachments != nullptr)
 				throw unrecog(line);
 			b_encoding = FALSE;
-			photo_type = NULL;
+			const char *photo_type = nullptr;
 			for (const auto &prnode : pvline->m_params) {
 				auto pvparam = &prnode;
 				if (strcasecmp(pvparam->name(), "ENCODING") == 0) {
@@ -355,18 +352,16 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 				attachment_content_free(pattachment);
 				return imp_null;
 			}
-			tmp_len = strlen(pstring);
-			char tmp_buff[VCARD_MAX_BUFFER_LEN];
-			if (decode64(pstring, tmp_len, tmp_buff,
-			    std::size(tmp_buff), &decode_len) != 0)
-				throw unrecog(line);
-			tmp_bin.pc = tmp_buff;
-			tmp_bin.cb = decode_len;
+
+			auto picture = base64_decode(pstring);
+			BINARY tmp_bin;
+			tmp_bin.pv = deconst(picture.data());
+			tmp_bin.cb = picture.size();
 			if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != ecSuccess ||
 			    pattachment->proplist.set(PR_ATTACH_EXTENSION, photo_type) != ecSuccess)
 				return imp_null;
-			snprintf(tmp_buff, std::size(tmp_buff), "ContactPhoto.%s", photo_type);
-			if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, tmp_buff) != ecSuccess)
+			if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME,
+			    ("ContactPhoto."s + photo_type).c_str()) != ecSuccess)
 				return imp_null;
 			tmp_byte = 1;
 			if (pmsg->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != ecSuccess)
@@ -591,6 +586,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
+			BINARY tmp_bin;
 			tmp_bin.cb = strlen(pstring);
 			tmp_bin.pv = deconst(pstring);
 			if (pmsg->proplist.set(g_bcd_proptag, &tmp_bin) != ecSuccess)
