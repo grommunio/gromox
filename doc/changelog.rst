@@ -16,9 +16,6 @@ Enhancements:
   lack the ``sv`` and ``id`` fields
 * kdb2mt: entryids and search keys for senders/recipients are now translated
   with the help of user maps
-* delivery: the OOF autoresponder was rewritten so it does not use direct
-  filesystem access anymore (since the mailbox might not be present on the same
-  host where the LDA runs)
 
 Fixes:
 
@@ -44,13 +41,16 @@ Fixes:
 * ab_tree: rework our Minimal EntryID encoding to avoid values >= 0x80000000,
   solving a hypothetical problem reading the addressbook data
   for the 589821th domain in the user database
+* exmdb: MAPI table row deletion events were not being delivered,
+  which was fixed
 
 Changes:
 
 * imap: the combination of the config directive ``imap_force_tls=yes`` with
   ``imap_support_tls=no`` is now rejected on startup
-* exmdb: PR_OOF_STATE is now a computed property and it evaluates the OOF
-  configuration against the current time
+* delivery: the OOF autoresponder was rewritten so it does not use direct
+  filesystem access anymore (since the mailbox might not be present on the same
+  host where the LDA runs)
 
 
 Gromox 3.1 (2025-10-26)
