@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <array>
 #include <cstdint>
@@ -260,19 +260,16 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 	size_t decode_len;
 	uint32_t tmp_int32;
 	uint64_t tmp_int64;
-	char* child_buff[16];
 	PROPID_ARRAY propids;
 	BINARY_ARRAY bin_array;
 	const char *photo_type;
 	const char *address_type;
-	STRING_ARRAY child_strings;
+	std::vector<std::string> child_strings;
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment;
 	
 	mail_count = 0;
 	ufld_count = 0;
-	child_strings.count = 0;
-	child_strings.ppstr = child_buff;
 	if (!oxvcard_check_compatible(pvcard))
 		return imp_null;
 	std::unique_ptr<MESSAGE_CONTENT, vc_delete> pmsg(message_content_init());
@@ -603,9 +600,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
-			if (child_strings.count >= std::size(child_buff))
-				throw unrecog(line);
-			child_strings.ppstr[child_strings.count++] = deconst(pstring);
+			child_strings.emplace_back(pstring);
 		} else if (strcasecmp(pvline_name, "X-MS-TEXT") == 0) {
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
@@ -720,9 +715,17 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			return nullptr;
 		}
 	}
-	if (child_strings.count != 0 &&
-	    pmsg->proplist.set(PR_CHILDRENS_NAMES, &child_strings) != ecSuccess)
-		return imp_null;
+
+	if (child_strings.size() > 0) {
+		std::vector<const char *> ptrs;
+		for (const auto &s : child_strings)
+			ptrs.push_back(s.c_str());
+		STRING_ARRAY sa;
+		sa.count = ptrs.size();
+		sa.ppstr = const_cast<char **>(ptrs.data());
+		if (pmsg->proplist.set(PR_CHILDRENS_NAMES, &sa) != ecSuccess)
+			return imp_null;
+	}
 	if (!pmsg->proplist.has(PR_DISPLAY_NAME)) {
 		auto dn = join(pmsg->proplist.get<char>(PR_GIVEN_NAME),
 		          pmsg->proplist.get<char>(PR_MIDDLE_NAME),
@@ -765,7 +768,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 	}
 	return pmsg.release();
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1158: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
 }
 #undef imp_null
