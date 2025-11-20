@@ -47,7 +47,16 @@ unsigned int g_oxvcard_pedantic;
 static constexpr proptag_t g_n_proptags[] = 
 	{PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 	PR_DISPLAY_NAME_PREFIX, PR_GENERATION};
-/* The 8000s numbers must match up with the order of the oxvcard_get_propids::bf array */
+/*
+ * On vcf2mt, oxvcard_import produces named properties starting at 0x8000, and
+ * at the end of the function, calls get_propids and remaps to the caller's
+ * namespace.
+ *
+ * On exm2mt, oxvcard_export calls get_propids at the start, filling
+ * oxvcard_get_propids::bf. The PROP_ID parts of all our raw numbers
+ * (g_workaddr_proptags etc.) are then actually indices into the
+ * oxvcard_get_propids::bf array.
+ */
 static constexpr proptag_t g_workaddr_proptags[] =
 	{0x8000001F, 0x8001001F, 0x8002001F, 0x8003001F, 0x8004001F, 0x8005001F};
 static constexpr proptag_t g_homeaddr_proptags[] =
@@ -95,59 +104,33 @@ static BOOL oxvcard_check_compatible(const vcard *pvcard)
 static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	GET_PROPIDS get_propids)
 {
-	PROPERTY_NAME bf[21];
-	size_t start = 0, z = 0;
-
-	/* bf array must be ordered w.r.t. g_workaddr_proptags et al */
-	bf[z++].lid = PidLidWorkAddressPostOfficeBox;
-	bf[z++].lid = PidLidWorkAddressStreet;
-	bf[z++].lid = PidLidWorkAddressCity;
-	bf[z++].lid = PidLidWorkAddressState;
-	bf[z++].lid = PidLidWorkAddressPostalCode;
-	bf[z++].lid = PidLidWorkAddressCountry;
-	bf[z++].lid = PidLidEmail1EmailAddress;
-	bf[z++].lid = PidLidEmail2EmailAddress;
-	bf[z++].lid = PidLidEmail3EmailAddress;
-	bf[z++].lid = PidLidInstantMessagingAddress;
-	for (size_t i = start; i < z; ++i) {
-		bf[i].guid = PSETID_Address;
-		bf[i].kind = MNID_ID;
-	}
-
-	bf[z].guid = PS_PUBLIC_STRINGS;
-	bf[z].kind = MNID_ID;
-	bf[z++].lid = PidLidCategories;
-	bf[z].guid = PSETID_Address;
-	bf[z].kind = MNID_ID;
-	bf[z++].lid = PidLidBusinessCardDisplayDefinition;
-
-	start = z;
-	bf[z++].lid = PidLidContactUserField1;
-	bf[z++].lid = PidLidContactUserField2;
-	bf[z++].lid = PidLidContactUserField3;
-	bf[z++].lid = PidLidContactUserField4;
-	bf[z++].lid = PidLidFreeBusyLocation;
-	for (size_t i = start; i < z; ++i) {
-		bf[i].guid = PSETID_Address;
-		bf[i].kind = MNID_ID;
-	}
-	bf[z].guid = PSETID_Gromox;
-	bf[z].kind = MNID_STRING;
-	bf[z++].pname = deconst("vcarduid");
-
-	bf[z].guid = PSETID_Address;
-	bf[z].kind = MNID_ID;
-	bf[z++].lid = PidLidEmail1AddressType;
-	bf[z].guid = PSETID_Address;
-	bf[z].kind = MNID_ID;
-	bf[z++].lid = PidLidEmail2AddressType;
-	bf[z].guid = PSETID_Address;
-	bf[z].kind = MNID_ID;
-	bf[z++].lid = PidLidEmail3AddressType;
-
-	PROPNAME_ARRAY propnames;
-	propnames.count = z;
-	propnames.ppropname = bf;
+	const PROPERTY_NAME bf[21] = {
+	/* 0x0 */
+		{MNID_ID, PSETID_Address, PidLidWorkAddressPostOfficeBox},
+		{MNID_ID, PSETID_Address, PidLidWorkAddressStreet},
+		{MNID_ID, PSETID_Address, PidLidWorkAddressCity},
+		{MNID_ID, PSETID_Address, PidLidWorkAddressState},
+		{MNID_ID, PSETID_Address, PidLidWorkAddressPostalCode},
+		{MNID_ID, PSETID_Address, PidLidWorkAddressCountry},
+		{MNID_ID, PSETID_Address, PidLidEmail1EmailAddress},
+		{MNID_ID, PSETID_Address, PidLidEmail2EmailAddress},
+	/* 0x8 */
+		{MNID_ID, PSETID_Address, PidLidEmail3EmailAddress},
+		{MNID_ID, PSETID_Address, PidLidInstantMessagingAddress},
+		{MNID_ID, PS_PUBLIC_STRINGS, PidLidCategories},
+		{MNID_ID, PSETID_Address, PidLidBusinessCardDisplayDefinition},
+		{MNID_ID, PSETID_Address, PidLidContactUserField1},
+		{MNID_ID, PSETID_Address, PidLidContactUserField2},
+		{MNID_ID, PSETID_Address, PidLidContactUserField3},
+		{MNID_ID, PSETID_Address, PidLidContactUserField4},
+	/* 0x10 */
+		{MNID_ID, PSETID_Address, PidLidFreeBusyLocation},
+		{MNID_STRING, PSETID_Gromox, 0, deconst("vcarduid")},
+		{MNID_ID, PSETID_Address, PidLidEmail1AddressType},
+		{MNID_ID, PSETID_Address, PidLidEmail2AddressType},
+		{MNID_ID, PSETID_Address, PidLidEmail3AddressType},
+	};
+	const PROPNAME_ARRAY propnames  {std::size(bf), deconst(bf)};
 	return get_propids(&propnames, ppropids);
 }
 
@@ -747,6 +730,8 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 	if (i >= pmsg->proplist.count)
 		/* If no namedprops were set, we can exit early */
 		return pmsg.release();
+
+	/* Remap our "bf" propids to the caller's space */
 	if (!oxvcard_get_propids(&propids, std::move(get_propids)))
 		return imp_null;
 	for (i=0; i<pmsg->proplist.count; i++) {
@@ -775,7 +760,11 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	const char *pvalue;
 	size_t out_len;
 	struct tm tmp_tm;
-	PROPID_ARRAY propids;
+	PROPID_ARRAY propids{};
+	auto remap_tag = [&](proptag_t t) -> proptag_t {
+		/* Given one of the source pseudo proptags like 0x8000001F, emit the actual proptag */
+		return PROP_TAG(PROP_TYPE(t), propids[PROP_ID(t)-0x8000]);
+	};
 	const char *photo_type;
 	char tmp_buff[VCARD_MAX_BUFFER_LEN];
 	std::string vcarduid;
@@ -829,9 +818,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		vcard.append_line("NICKNAME", pvalue);
 	
 	for (size_t i = 0; i < std::size(g_email_proptags); ++i) {
-		auto propid = PROP_ID(g_email_proptags[i]);
-		auto proptag = PROP_TAG(PROP_TYPE(g_email_proptags[i]), propids[propid - 0x8000]);
-		pvalue = pmsg->proplist.get<char>(proptag);
+		pvalue = pmsg->proplist.get<char>(remap_tag(g_email_proptags[i]));
 		if (!has_content(pvalue))
 			continue;
 		auto &email_line = vcard.append_line("EMAIL");
@@ -891,9 +878,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	vcard.append_line("CLASS", pvalue);
 	
 	add_adr<std::size(g_workaddr_proptags)>(vcard, "WORK", [&](unsigned int idx) {
-		auto propid = PROP_ID(g_workaddr_proptags[idx]);
-		auto proptag = PROP_TAG(PROP_TYPE(g_workaddr_proptags[idx]), propids[propid - 0x8000]);
-		return pmsg->proplist.get<const char>(proptag);
+		return pmsg->proplist.get<const char>(remap_tag(g_workaddr_proptags[idx]));
 	});
 	add_adr<std::size(g_homeaddr_proptags)>(vcard, "HOME", [&](unsigned int idx) {
 		return pmsg->proplist.get<const char>(g_homeaddr_proptags[idx]);
@@ -927,9 +912,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		tel_line.append_value(pvalue);
 	}
 	
-	auto propid = PROP_ID(g_categories_proptag);
-	auto proptag = PROP_TAG(PROP_TYPE(g_categories_proptag), propids[propid - 0x8000]);
-	add_string_array(vcard, pmsg->proplist.get<const STRING_ARRAY>(proptag), "CATEGORIES");
+	add_string_array(vcard, pmsg->proplist.get<const STRING_ARRAY>(remap_tag(g_categories_proptag)), "CATEGORIES");
 	
 	pvalue = pmsg->proplist.get<char>(PR_PROFESSION);
 	if (has_content(pvalue))
@@ -949,18 +932,14 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		url_line.append_value(pvalue);
 	}
 	
-	propid = PROP_ID(g_bcd_proptag);
-	proptag = PROP_TAG(PROP_TYPE(g_bcd_proptag), propids[propid - 0x8000]);
-	pvalue = pmsg->proplist.get<char>(proptag);
+	pvalue = pmsg->proplist.get<char>(remap_tag(g_bcd_proptag));
 	if (has_content(pvalue))
 		vcard.append_line("X-MS-OL-DESIGN", pvalue);
 
 	add_string_array(vcard, pmsg->proplist.get<const STRING_ARRAY>(PR_CHILDRENS_NAMES), "X-MS-CHILD");
 	
 	for (size_t i = 0; i < std::size(g_ufld_proptags); ++i) {
-		propid = PROP_ID(g_ufld_proptags[i]);
-		proptag = PROP_TAG(PROP_TYPE(g_ufld_proptags[i]), propids[propid - 0x8000]);
-		pvalue = pmsg->proplist.get<char>(proptag);
+		pvalue = pmsg->proplist.get<char>(remap_tag(g_ufld_proptags[i]));
 		if (!has_content(pvalue))
 			continue;
 		vcard.append_line("X-MS-TEXT", pvalue);
@@ -979,7 +958,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	add_person(vcard, *pmsg, PR_MANAGER_NAME, "X-MS-MANAGER");
 	add_person(vcard, *pmsg, PR_ASSISTANT, "X-MS-ASSISTANT");
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids[PROP_ID(g_vcarduid_proptag)-0x8000]));
+	pvalue = pmsg->proplist.get<char>(remap_tag(g_vcarduid_proptag));
 	if (!has_content(pvalue)) {
 		auto guid = GUID::random_new();
 		vcarduid = "uuid:" + bin2hex(guid);
@@ -988,9 +967,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	if (has_content(pvalue))
 		vcard.append_line("UID", pvalue);
 
-	propid = PROP_ID(g_fbl_proptag);
-	proptag = PROP_TAG(PROP_TYPE(g_fbl_proptag), propids[propid - 0x8000]);
-	pvalue = pmsg->proplist.get<char>(proptag);
+	pvalue = pmsg->proplist.get<char>(remap_tag(g_fbl_proptag));
 	if (has_content(pvalue))
 		vcard.append_line("FBURL", pvalue);
 	
@@ -1014,10 +991,8 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	pvalue = pmsg->proplist.get<char>(PR_TITLE);
 	if (has_content(pvalue))
 		vcard.append_line("TITLE", pvalue);
-	
-	propid = PROP_ID(g_im_proptag);
-	proptag = PROP_TAG(PROP_TYPE(g_im_proptag), propids[propid - 0x8000]);
-	pvalue = pmsg->proplist.get<char>(proptag);
+
+	pvalue = pmsg->proplist.get<char>(remap_tag(g_im_proptag));
 	if (has_content(pvalue))
 		vcard.append_line("X-MS-IMADDRESS", pvalue);
 	
