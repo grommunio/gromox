@@ -98,7 +98,7 @@ int threads_pool_run(const char *hint) try
 	g_threads_pool_cur_thr_num = created_thr_num;
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2369: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return -1;
 }
 

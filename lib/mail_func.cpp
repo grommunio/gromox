@@ -386,7 +386,7 @@ size_t parse_mime_field(const char *in_buff, size_t buff_len,
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2025: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return 0;
 }
 
@@ -545,7 +545,7 @@ void parse_field_value(const char *in_buff, long buff_len, char *value,
 	if (paratag_len != 0 || paraval_len != 0)
 		pfile.emplace_back(MIME_FIELD{param_tag, param_value});
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1095: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return;
 }
 

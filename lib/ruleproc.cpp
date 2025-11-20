@@ -1365,7 +1365,7 @@ static ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from
 	p.do_autoproc = flags & DELIVERY_DO_MRAUTOPROC;
 	return std::move(p).run();
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1121: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 

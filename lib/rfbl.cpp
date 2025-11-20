@@ -979,7 +979,7 @@ bool get_digest(const Json::Value &jval, const char *key, std::string &out) try
 	out = jval[key].asString();
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1988: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -994,7 +994,7 @@ bool get_digest(const Json::Value &jval, const char *key, char *out, size_t outm
 		gx_strlcpy(out, memb.asString().c_str(), outmax);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1988: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -1005,7 +1005,7 @@ bool get_digest(const char *json, const char *key, char *out, size_t outmax) try
 		return false;
 	return get_digest(jval, key, out, outmax);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1324: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -1021,7 +1021,7 @@ set_digest2(char *json, size_t iomax, const char *key, T &&val) try
 	gx_strlcpy(json, Json::writeString(swb, std::move(jval)).c_str(), iomax);
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1989: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -1086,6 +1086,7 @@ int tmpfile::open_impl(const char *dir, unsigned int flags, unsigned int mode,
 	m_fd = open(m_path.c_str(), O_CREAT | flags, mode);
 	return m_fd >= 0 ? m_fd : -errno;
 } catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return -ENOMEM;
 }
 
@@ -1414,6 +1415,7 @@ errno_t gx_decompress_file(const char *infile, BINARY &outbin,
 	outbin.pb[outbin.cb] = '\0';
 	return 0;
 } catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ENOMEM;
 }
 
@@ -1517,6 +1519,7 @@ errno_t parse_imap_seq(imap_seq_list &r, const char *s) try
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ENOMEM;
 }
 
@@ -1812,6 +1815,7 @@ errno_t canonical_hostname(std::string &out) try
 	out = aires->ai_canonname;
 	return 0;
 } catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ENOMEM;
 }
 
@@ -1981,7 +1985,7 @@ void config_file::set_value(const char *sk, const char *sv) try
 		}
 	}
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2367: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 }
 
 BOOL config_file::save()
@@ -2064,6 +2068,7 @@ std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb,
 	}
 	return std::make_shared<CONFIG_FILE>(key_desc);
 } catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	errno = ENOMEM;
 	return nullptr;
 }

@@ -277,7 +277,7 @@ BOOL svc_mgr::symreg(const char *func_name, void *addr,
 	plug->list_service.push_back(std::move(e));
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1637: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

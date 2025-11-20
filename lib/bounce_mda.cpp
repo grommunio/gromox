@@ -28,7 +28,7 @@ std::string bounce_gen_thrindex(const MAIL &m) try
 		return {};
 	return b;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1218: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return {};
 }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <dirent.h>
 #include <map>
@@ -119,7 +119,7 @@ errno_t bounce_gen_init(const char *cfgdir, const char *datadir,
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1501: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ENOMEM;
 }
 
