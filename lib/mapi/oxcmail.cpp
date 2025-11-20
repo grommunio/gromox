@@ -1606,43 +1606,41 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			return;
 		}
 		size_t content_len = rdlength;
-		if (1) {
-			auto contallocsz = mb_to_utf8_xlen(content_len) + 1;
-			std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(contallocsz));
-			if (pcontent == nullptr)
-				return;
-			if (!pmime->read_content(pcontent.get(), &content_len))
-				return;
-			pcontent[content_len] = '\0';
-
-			std::string mime_charset;
-			if (!oxcmail_get_content_param(pmime, "charset", mime_charset))
-				mime_charset = utf8_valid(pcontent.get()) ?
-				               "utf-8" : pmime_enum->charset;
-
-			if (string_mb_to_utf8(mime_charset.c_str(), pcontent.get(),
-			    &pcontent[content_len+1], contallocsz - content_len - 1)) {
-				utf8_filter(&pcontent[content_len+1]);
-				vcard vcard;
-				auto ret = vcard.load_single_from_str_move(pcontent.get() + content_len + 1);
-				if (ret == ecSuccess &&
-				    (pmsg = oxvcard_import(&vcard, pmime_enum->get_propids)) != nullptr) {
-					pattachment->set_embedded_internal(pmsg);
-					tmp_int32 = ATTACH_EMBEDDED_MSG;
-					if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) == ecSuccess)
-						pmime_enum->b_result = true;
-					return;
-				}
-			}
-			/* parsing as vcard failed */
-			tmp_int32 = ATTACH_BY_VALUE;
-			if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != ecSuccess)
-				return;
-			tmp_bin.cb = content_len;
-			tmp_bin.pc = pcontent.get();
-			pmime_enum->b_result = pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) == ecSuccess;
+		auto contallocsz = mb_to_utf8_xlen(content_len) + 1;
+		std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(contallocsz));
+		if (pcontent == nullptr)
 			return;
+		if (!pmime->read_content(pcontent.get(), &content_len))
+			return;
+		pcontent[content_len] = '\0';
+
+		std::string mime_charset;
+		if (!oxcmail_get_content_param(pmime, "charset", mime_charset))
+			mime_charset = utf8_valid(pcontent.get()) ?
+				       "utf-8" : pmime_enum->charset;
+
+		if (string_mb_to_utf8(mime_charset.c_str(), pcontent.get(),
+		    &pcontent[content_len+1], contallocsz - content_len - 1)) {
+			utf8_filter(&pcontent[content_len+1]);
+			vcard vcard;
+			auto ret = vcard.load_single_from_str_move(pcontent.get() + content_len + 1);
+			if (ret == ecSuccess &&
+			    (pmsg = oxvcard_import(&vcard, pmime_enum->get_propids)) != nullptr) {
+				pattachment->set_embedded_internal(pmsg);
+				tmp_int32 = ATTACH_EMBEDDED_MSG;
+				if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) == ecSuccess)
+					pmime_enum->b_result = true;
+				return;
+			}
 		}
+		/* parsing as vcard failed */
+		tmp_int32 = ATTACH_BY_VALUE;
+		if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != ecSuccess)
+			return;
+		tmp_bin.cb = content_len;
+		tmp_bin.pc = pcontent.get();
+		pmime_enum->b_result = pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) == ecSuccess;
+		return;
 	}
 	if (strcasecmp(cttype, "message/rfc822") == 0 ||
 	    (gmf.have_orig_fn && strcasecmp(gmf.ext.c_str(), ".eml") == 0)) {
