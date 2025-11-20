@@ -80,6 +80,7 @@ static constexpr proptag_t g_ufld_proptags[] =
 	{0x800C001F, 0x800D001F, 0x800E001F, 0x800F001F};
 static constexpr proptag_t g_fbl_proptag = 0x8010001F;
 static constexpr proptag_t g_vcarduid_proptag = 0x8011001F;
+static constexpr proptag_t g_hasphoto_proptag = 0x8015000b;
 
 static BOOL oxvcard_check_compatible(const vcard *pvcard)
 {
@@ -104,7 +105,7 @@ static BOOL oxvcard_check_compatible(const vcard *pvcard)
 static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	GET_PROPIDS get_propids)
 {
-	const PROPERTY_NAME bf[21] = {
+	const PROPERTY_NAME bf[22] = {
 	/* 0x0 */
 		{MNID_ID, PSETID_Address, PidLidWorkAddressPostOfficeBox},
 		{MNID_ID, PSETID_Address, PidLidWorkAddressStreet},
@@ -129,6 +130,7 @@ static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 		{MNID_ID, PSETID_Address, PidLidEmail1AddressType},
 		{MNID_ID, PSETID_Address, PidLidEmail2AddressType},
 		{MNID_ID, PSETID_Address, PidLidEmail3AddressType},
+		{MNID_ID, PSETID_Address, PidLidHasPicture},
 	};
 	const PROPNAME_ARRAY propnames  {std::size(bf), deconst(bf)};
 	return get_propids(&propnames, ppropids);
@@ -828,13 +830,14 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		email_line.append_value(pvalue);
 	}
 	
-	auto flag = pmsg->proplist.get<const uint8_t>(PR_ATTACHMENT_CONTACTPHOTO);
+	auto flag = pmsg->proplist.get<const uint8_t>(remap_tag(g_hasphoto_proptag));
 	if (flag != nullptr && *flag != 0 && pmsg->children.pattachments != nullptr) {
 		for (auto &at : *pmsg->children.pattachments) {
+			flag = at.proplist.get<uint8_t>(PR_ATTACHMENT_CONTACTPHOTO);
+			if (flag == nullptr || *flag == 0)
+				continue;
 			pvalue = at.proplist.get<char>(PR_ATTACH_EXTENSION);
 			if (pvalue == nullptr)
-				continue;
-			if (!is_photo(pvalue))
 				continue;
 			photo_type = pvalue;
 			auto bv = at.proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
