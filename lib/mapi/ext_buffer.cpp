@@ -3403,7 +3403,7 @@ bool emsab_to_parts(EXT_PULL &ser, std::string &type, std::string &addr) try
 	addr = std::move(eid.x500dn);
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1991: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -3417,7 +3417,7 @@ bool oneoff_to_parts(EXT_PULL &ser, std::string &type, std::string &addr) try
 	addr = std::move(eid.pmail_address);
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1990: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 

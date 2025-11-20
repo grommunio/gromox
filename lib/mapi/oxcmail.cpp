@@ -412,7 +412,7 @@ static BOOL oxcmail_parse_recipient(const EMAIL_ADDR *paddr,
 		return FALSE;
 	return pproplist->set(PR_RECIPIENT_TYPE, &rcpt_type) == ecSuccess ? TRUE : false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2049: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -420,12 +420,7 @@ static BOOL oxcmail_parse_addresses(const char *field, uint32_t rcpt_type,
     TARRAY_SET *pset) try
 {
 	vmime::mailboxList mblist;
-	try {
-		mblist.parse(field);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-2023: ENOMEM");
-		return false;
-	}
+	mblist.parse(field);
 	for (const auto &compo : mblist.getChildComponents()) {
 		auto mb = vmime::dynamicCast<vmime::mailbox>(compo);
 		if (mb == nullptr)
@@ -438,7 +433,7 @@ static BOOL oxcmail_parse_addresses(const char *field, uint32_t rcpt_type,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2047: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -486,7 +481,7 @@ static BOOL oxcmail_parse_address(const char *field, uint32_t pr_name,
 	}
 	return pproplist->set(pr_entryid, &tmp_bin) == ecSuccess ? TRUE : false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1742: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -579,7 +574,7 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 		return FALSE;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2022: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -1436,7 +1431,7 @@ static bool oxcmail_parse_message_body(const char *charset, const MIME *pmime,
 		       best_charset.c_str()) == ecSuccess;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1745: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -1809,7 +1804,7 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 			oxcmail_replace_propid(&at.proplist, phash1);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2173: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2139,7 +2134,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields,
 		return false;
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2072: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2391,7 +2386,7 @@ static BOOL oxcmail_parse_smime_message(const MAIL *pmail, MESSAGE_CONTENT *pmsg
 		return FALSE;
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1972: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2776,7 +2771,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		oxcmail_remove_flag_properties(pmsg.get(), std::move(get_propids));
 	return pmsg.release();
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2182: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
 }
 #undef imp_null
@@ -2849,7 +2844,7 @@ BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
 	           org, std::move(id2user), username);
 	return ret == ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2348: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2893,7 +2888,7 @@ static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
 	}
 	return false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2349: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -3101,7 +3096,7 @@ static bool skel_find_rtf(mime_skeleton &skel, const message_content &msg,
 		skel.b_inline = TRUE;
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2263: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -4041,7 +4036,7 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 	origmime.head_touched = TRUE;
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1093: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -4219,13 +4214,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 				return exp_false;
 		} else {
 			auto alloc_size = utf8_to_mb_len(mime_skeleton.pplain);
-			std::unique_ptr<char[]> pbuff;
-			try {
-				pbuff = std::make_unique<char[]>(alloc_size);
-			} catch (const std::bad_alloc &) {
-				mlog(LV_ERR, "E-1508: ENOMEM");
-				return exp_false;
-			}
+			auto pbuff = std::make_unique<char[]>(alloc_size);
 			if (!string_utf8_to_mb(mime_skeleton.charset,
 			    mime_skeleton.pplain, pbuff.get(), alloc_size)) {
 				pbuff.reset();
@@ -4375,7 +4364,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2181: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 #undef exp_false

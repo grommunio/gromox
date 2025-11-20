@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -1593,7 +1593,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	pmsg = nullptr; /* note cl_0 scope guard */
 	return pmsg_ret;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1987: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
 }
 
@@ -2033,7 +2033,7 @@ static bool serialize_rcpt(tnef_push &ep, const MESSAGE_CONTENT &msg,
 	return ep.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_FROM, &addr) == pack_result::ok;
 	/* keep these properties for attMsgProps */
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1648: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 

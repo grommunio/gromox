@@ -1697,7 +1697,7 @@ static bool oxcical_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 			oxcical_replace_propid(&at.proplist, phash1);
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2172: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2641,7 +2641,7 @@ static bool oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) t
 	}
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2053: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -2995,7 +2995,7 @@ static ical_component *oxcical_export_timezone(ical &pical,
 	pcomponent1->append_line("TZOFFSETTO", tmp_buff);
 	return pcomponent;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2180: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
 }
 
@@ -3066,7 +3066,7 @@ static bool oxcical_export_recipient_table(ical_component &pevent_component,
 	}
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2094: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -3204,7 +3204,7 @@ static bool oxcical_export_rrule(const ical_component *ptz_component,
 	}
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2091: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -3270,7 +3270,7 @@ static bool oxcical_export_exdate(const char *tzid, bool b_date,
 	}
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2095: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -3331,7 +3331,7 @@ static bool oxcical_export_rdate(const char *tzid, bool b_date,
 	}
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2096: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -4040,7 +4040,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 
 	return oxcical_export_valarm(*pmsg, *pcomponent, std::move(get_propids));
 } catch (const std::bad_alloc &) {
-	return "E-2097: ENOMEM";
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return "E-2097";
 }
 #undef E_2201
 

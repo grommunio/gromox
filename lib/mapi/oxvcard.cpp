@@ -1021,6 +1021,6 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1605: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }

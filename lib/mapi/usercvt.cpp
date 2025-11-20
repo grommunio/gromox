@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
@@ -45,7 +45,7 @@ ec_error_t cvt_essdn_to_username(const char *idn, const char *org,
 		return ecUnknownUser;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-5208: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -278,6 +278,7 @@ const char *cvt_serverdn_to_domain(const char *essdn, const char *org) try
 	errno = 0;
 	return nullptr;
 } catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	errno = ENOMEM;
 	return nullptr;
 }

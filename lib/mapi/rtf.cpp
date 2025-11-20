@@ -2917,7 +2917,7 @@ ec_error_t rtf_to_html(std::string_view input, const char *charset,
 	buf_out = iconvtext(reader.ext_push.m_cdata, reader.ext_push.m_offset, "UTF-8", tmp_buff);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1205: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecMAPIOOM;
 }
 

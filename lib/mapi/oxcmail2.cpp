@@ -146,7 +146,7 @@ ec_error_t bodyset_plain(TPROPVAL_ARRAY &props, std::string &&rawbody,
 	}
 	return props.set(pv);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1746: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -165,7 +165,7 @@ ec_error_t bodyset_enriched(TPROPVAL_ARRAY &props,
 	bin.pc = utfbody.data();
 	return props.set(PR_HTML, &bin);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1747: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -219,7 +219,7 @@ static ec_error_t multibody_plain(std::string &&utfbody, xmldocptr &ag_doc) try
 	xmlAddChild(body, content);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1766: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -294,7 +294,7 @@ static ec_error_t multibody_html(std::string &&utfbody, xmldocptr &ag_doc) try
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1769: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -336,7 +336,7 @@ static ec_error_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
 		return ecServerOOM;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1773: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
