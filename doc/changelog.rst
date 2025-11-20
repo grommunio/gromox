@@ -1,3 +1,36 @@
+Inbetween releases / 3.1.37
+===========================
+
+Enhancements:
+
+* ews: implement ``tItemAttachment`` type
+
+Fixes:
+
+* mt2exm: avoid generating zero-sized ``/var/lib/gromox/user/*/eml/*`` files
+  (and thus bogus imapstructure ext files) in the internal mailbox directory
+  when a message object to import has no RFC5322 representation
+* midb: ignore incomplete imapstructure files in
+  ``/var/lib/gromox/user/**/ext``
+* oxcmail: ONEOFF_ENTRYIDs did not have their email address/name set properly
+  after some refactoring in 3.0, which was fixed
+* ab_tree: users with HIDE_FROM_GAL or HIDE_FROM_AL were not hidden in all
+  cases, which has been rectified
+* ews: avoid dereference of unenganged std::optional, which had led to
+  spurious use-after-free/crash
+* ab_tree: rework our Minimal EntryID encoding to avoid values >= 0x80000000,
+  solving a hypothetical problem reading the addressbook data
+  for the 589821th domain in the user database
+* exmdb: MAPI table row deletion events were not being delivered,
+  which was fixed
+
+Changes:
+
+* delivery: the OOF autoresponder was rewritten so it does not use direct
+  filesystem access anymore (since the mailbox might not be present on the same
+  host where the LDA runs)
+
+
 Gromox 3.1 (2025-10-26)
 =======================
 
@@ -8,6 +41,7 @@ Enhancements:
 * dscli: try all oxdisco URLs until one succeeds
 * exmdb: support repeated import of permission data (e.g. from kdb2mt)
 * ews: create calendar item after accepting a MR with MacMail
+* mbop: new `sync-midb` subcommand to prebuild midb caches ahead of the first IMAP login
 
 Fixes:
 
