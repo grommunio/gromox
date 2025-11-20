@@ -17,6 +17,7 @@ struct GX_EXPORT vcard_param {
 
 struct GX_EXPORT vcard_value {
 	void append_subval(const char *s) { m_subvals.emplace_back(gromox::znul(s)); }
+	void append_subval(std::string &&s) { m_subvals.emplace_back(std::move(s)); }
 	std::vector<std::string> m_subvals;
 };
 
@@ -27,6 +28,7 @@ struct GX_EXPORT vcard_line {
 	inline vcard_value &append_value(vcard_value &&o) { m_values.push_back(std::move(o)); return m_values.back(); }
 	inline vcard_value &append_value() { return m_values.emplace_back(); }
 	vcard_value &append_value(const char *);
+	vcard_value &append_value(std::string &&);
 	const char *get_first_subval() const;
 	inline const char *name() const { return m_name.c_str(); }
 

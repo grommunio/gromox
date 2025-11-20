@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
@@ -527,6 +527,13 @@ vcard_value &vcard_line::append_value(const char *v)
 {
 	auto &value = append_value();
 	value.append_subval(v);
+	return value;
+}
+
+vcard_value &vcard_line::append_value(std::string &&v)
+{
+	auto &value = append_value();
+	value.append_subval(std::move(v));
 	return value;
 }
 

@@ -219,12 +219,6 @@ static std::string join(const char *gn, const char *mn, const char *sn)
 	return r;
 }
 
-static BOOL xlog_bool(const char *func, unsigned int line)
-{
-	mlog(LV_ERR, "%s:%u returned false", func, line);
-	return false;
-}
-
 static std::nullptr_t xlog_null(const char *func, unsigned int line)
 {
 	mlog(LV_ERR, "%s:%u returned false", func, line);
@@ -754,12 +748,10 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 }
 #undef imp_null
 
-#define exp_false xlog_bool(__func__, __LINE__)
 BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
     vcard &vcard, GET_PROPIDS get_propids) try
 {
 	const char *pvalue;
-	size_t out_len;
 	struct tm tmp_tm;
 	PROPID_ARRAY propids{};
 	auto remap_tag = [&](proptag_t t) -> proptag_t {
@@ -767,7 +759,6 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		return PROP_TAG(PROP_TYPE(t), propids[PROP_ID(t)-0x8000]);
 	};
 	const char *photo_type;
-	char tmp_buff[VCARD_MAX_BUFFER_LEN];
 	std::string vcarduid;
 	static constexpr const char *tel_types[] =
 		{"HOME", "HOME", "VOICE", "WORK", "WORK",
@@ -840,18 +831,13 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 			if (pvalue == nullptr)
 				continue;
 			photo_type = pvalue;
-			auto bv = at.proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
+			auto bv = at.proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
 			if (bv == nullptr)
 				continue;
 			auto &photo_line = vcard.append_line("PHOTO");
 			photo_line.append_param("TYPE", photo_type);
 			photo_line.append_param("ENCODING", "B");
-			if (encode64(bv->pb, bv->cb, tmp_buff, VCARD_MAX_BUFFER_LEN - 1, &out_len) != 0)
-				return exp_false;
-			if (out_len >= VCARD_MAX_BUFFER_LEN)
-				return exp_false;
-			tmp_buff[out_len] = '\0';
-			photo_line.append_value(tmp_buff);
+			photo_line.append_value(base64_encode(*bv));
 			break;
 		}
 	}
@@ -981,13 +967,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	if (ba != nullptr && ba->count != 0) {
 		auto &key_line = vcard.append_line("KEY");
 		key_line.append_param("ENCODING", "B");
-		if (encode64(ba->pbin->pb, ba->pbin->cb, tmp_buff,
-		    std::size(tmp_buff) - 1, &out_len) != 0)
-			return exp_false;
-		if (out_len >= std::size(tmp_buff))
-			return exp_false;
-		tmp_buff[out_len] = '\0';
-		key_line.append_value(tmp_buff);
+		key_line.append_value(base64_encode(ba->pbin[0]));
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_TITLE);
@@ -1002,10 +982,11 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	if (lnum != nullptr) {
 		auto unix_time = rop_util_nttime_to_unix(*lnum);
 		if (gmtime_r(&unix_time, &tmp_tm) != nullptr) {
-			strftime(tmp_buff, 1024, "%Y-%m-%d", &tmp_tm);
+			char tb[16];
+			strftime(tb, std::size(tb), "%Y-%m-%d", &tmp_tm);
 			auto &day_line = vcard.append_line("BDAY");
 			day_line.append_param("VALUE", "DATE");
-			day_line.append_value(tmp_buff);
+			day_line.append_value(tb);
 		}
 	}
 	
@@ -1013,10 +994,11 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	if (lnum != nullptr) {
 		auto unix_time = rop_util_nttime_to_unix(*lnum);
 		if (gmtime_r(&unix_time, &tmp_tm) != nullptr) {
-			strftime(tmp_buff, 1024, "%Y-%m-%dT%H:%M:%SZ", &tmp_tm);
+			char tb[24];
+			strftime(tb, std::size(tb), "%Y-%m-%dT%H:%M:%SZ", &tmp_tm);
 			auto &day_line = vcard.append_line("REV");
 			day_line.append_param("VALUE", "DATE-TIME");
-			day_line.append_value(tmp_buff);
+			day_line.append_value(tb);
 		}
 	}
 	
@@ -1024,10 +1006,11 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	if (lnum != nullptr) {
 		auto unix_time = rop_util_nttime_to_unix(*lnum);
 		if (gmtime_r(&unix_time, &tmp_tm) != nullptr) {
-			strftime(tmp_buff, 1024, "%Y-%m-%d", &tmp_tm);
+			char tb[16];
+			strftime(tb, std::size(tb), "%Y-%m-%d", &tmp_tm);
 			auto &day_line = vcard.append_line("X-MS-ANNIVERSARY");
 			day_line.append_param("VALUE", "DATE");
-			day_line.append_value(tmp_buff);
+			day_line.append_value(tb);
 		}
 	}
 	return TRUE;
@@ -1035,4 +1018,3 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	mlog(LV_ERR, "E-1605: ENOMEM");
 	return false;
 }
-#undef exp_false
