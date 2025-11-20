@@ -107,20 +107,20 @@ static void t_card()
 	v.append_subval("DO2");
 	l.append_value(std::move(v));
 
-	char buf[128000];
-	if (!C.serialize(buf, std::size(buf)))
+	std::string buf;
+	if (!C.serialize(buf))
 		printf("ERROR\n");
 	else
-		printf("%s\n", buf);
+		printf("%s\n", buf.c_str());
 	C.clear();
-	C.load_single_from_str_move(buf);
-	if (!C.serialize(buf, std::size(buf)))
+	C.load_single_from_str_move(buf.data());
+	if (!C.serialize(buf))
 		printf("ERROR\n");
 	else
-		printf("%s\n", buf);
+		printf("%s\n", buf.c_str());
 
-	gx_strlcpy(buf, "BEGIN:VCARD\n\nEND:VCARD\n", sizeof(buf));
-	C.load_single_from_str_move(buf);
+	char tb[] = "BEGIN:VCARD\n\nEND:VCARD\n";
+	C.load_single_from_str_move(tb);
 }
 
 static int t_ical_api()

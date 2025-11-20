@@ -10,6 +10,7 @@ struct GX_EXPORT vcard_param {
 	vcard_param(const char *n) : m_name(n) {}
 	void append_paramval(const char *s) { m_paramvals.emplace_back(s); }
 	inline const char *name() const { return m_name.c_str(); }
+	inline const std::string &name_s() const { return m_name; }
 
 	std::string m_name;
 	std::vector<std::string> m_paramvals;
@@ -31,6 +32,7 @@ struct GX_EXPORT vcard_line {
 	vcard_value &append_value(std::string &&);
 	const char *get_first_subval() const;
 	inline const char *name() const { return m_name.c_str(); }
+	inline const std::string &name_s() const { return m_name; }
 
 	std::string m_name;
 	std::vector<vcard_param> m_params;
@@ -41,7 +43,7 @@ struct GX_EXPORT vcard_line {
 struct GX_EXPORT vcard {
 	inline void clear() { m_lines.clear(); }
 	ec_error_t load_single_from_str_move(char *in_buff);
-	BOOL serialize(char *out_buff, size_t max_length) const;
+	bool serialize(std::string &out) const;
 	vcard_line &append_line(vcard_line &&o);
 	vcard_line &append_line(const char *);
 	vcard_line &append_line(const char *, const char *);

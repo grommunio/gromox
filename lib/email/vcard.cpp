@@ -373,147 +373,96 @@ ec_error_t vcard::load_single_from_str_move(char *in_buff)
 	*this = std::move(cardvec[0]);
 	return ecSuccess;
 }
-static size_t vcard_serialize_string(char *pbuff,
-	size_t max_length, int line_offset, const char *string)
+
+static void vcard_serialize_string(std::string &out,
+    size_t &line_offset, const std::string_view sv)
 {
-	size_t i;
-	size_t offset;
-	size_t tmp_len;
-	
-	if (line_offset >= MAX_LINE)
-		line_offset %= MAX_LINE;
-	offset = 0;
-	tmp_len = strlen(string);
-	for (i=0; i<tmp_len; i++) {
-		if (offset >= max_length)
-			return offset;
+	auto string = sv.data();
+	for (size_t i = 0; i < sv.size(); ++i) {
 		if (line_offset >= MAX_LINE) {
-			if (offset + 3 >= max_length)
-				return max_length;
-			memcpy(pbuff + offset, "\r\n ", 3);
-			offset += 3;
-			line_offset = 0;
+			out += "\r\n ";
+			line_offset = 1;
 		}
 		if ('\\' == string[i] || ';' == string[i] || ',' == string[i]) {
-			if (offset + 1 >= max_length)
-				return max_length;
-			pbuff[offset++] = '\\';
-			if (line_offset >= 0)
-				line_offset ++;
+			out += '\\';
+			line_offset ++;
 		} else if ('\r' == string[i] && '\n' == string[i + 1]) {
-			if (offset + 1 >= max_length)
-				return max_length;
-			pbuff[offset++] = '\\';
-			pbuff[offset++] = 'n';
+			out += "\\n";
 			i ++;
-			if (line_offset >= 0)
-				line_offset += 2;
+			line_offset += 2;
 			continue;
 		} else if (string[i] == '\n') {
-			if (offset + 1 >= max_length)
-				return max_length;
-			pbuff[offset++] = '\\';
-			pbuff[offset++] = 'n';
-			if (line_offset >= 0)
-				line_offset += 2;
+			out += "\\n";
+			line_offset += 2;
 			continue;
 		}
-		pbuff[offset++] = string[i];
-		if (line_offset >= 0)
-			line_offset ++;
+		out += string[i];
+		line_offset ++;
 	}
-	return offset;
 }
 
-BOOL vcard::serialize(char *out_buff, size_t max_length) const
+bool vcard::serialize(std::string &out) const try
 {
-	size_t offset;
 	BOOL need_comma;
-	size_t line_begin;
 	BOOL need_semicolon;
 	
-	if (max_length <= 13)
-		return FALSE;
-	memcpy(out_buff, "BEGIN:VCARD\r\n", 13);
-	offset = 13;
+	out = "BEGIN:VCARD\r\n";
 	for (const auto &line : m_lines) {
-		line_begin = offset;
-		auto pvline = &line;
-		offset += gx_snprintf(out_buff + offset,
-		          max_length - offset, "%s", pvline->name());
-		if (offset >= max_length)
-			return FALSE;
-		for (const auto &vparam : pvline->m_params) {
-			auto pvparam = &vparam;
-			if (offset + 1 >= max_length)
-				return FALSE;
-			out_buff[offset++] = ';';
+		size_t ls = 0;
+		out += line.name_s();
+		ls  += line.name_s().size();
+
+		for (const auto &vparam : line.m_params) {
+			out += ';';
 			if (vparam.m_paramvals.size() == 0) {
-				offset += gx_snprintf(out_buff + offset,
-				          max_length - offset, "%s", pvparam->name());
-				if (offset >= max_length)
-					return FALSE;
+				out += vparam.name_s();
+				ls  += vparam.name_s().size() + 1;
 				continue;
 			}
-			offset += gx_snprintf(out_buff + offset,
-			          max_length - offset, "%s=", pvparam->name());
-			if (offset >= max_length)
-				return FALSE;
+			out += vparam.name_s();
+			out += '=';
+			ls  += vparam.name_s().size() + 2;
 			need_comma = FALSE;
 			for (const auto &pv : vparam.m_paramvals) {
 				if (!need_comma) {
 					need_comma = TRUE;
 				} else {
-					if (offset + 1 >= max_length)
-						return FALSE;
-					out_buff[offset++] = ',';
+					out += ',';
+					++ls;
 				}
-				offset += vcard_serialize_string(out_buff + offset,
-				          max_length - offset, -1, pv.c_str());
-				if (offset >= max_length)
-					return FALSE;
+				vcard_serialize_string(out, ls, pv);
 			}
 		}
-		out_buff[offset++] = ':';
-		if (offset >= max_length)
-			return FALSE;
+		out += ':';
+		++ls;
 		need_semicolon = FALSE;
-		for (const auto &vvalue : pvline->m_values) {
-			auto pvvalue = &vvalue;
+		for (const auto &vvalue : line.m_values) {
 			if (!need_semicolon) {
 				need_semicolon = TRUE;
 			} else {
-				if (offset + 1 >= max_length)
-					return FALSE;
-				out_buff[offset++] = ';';
+				out += ';';
+				++ls;
 			}
-			need_comma = FALSE;
-			for (const auto &sv : pvvalue->m_subvals) {
+			bool need_comma = false;
+			for (const auto &sv : vvalue.m_subvals) {
 				if (!need_comma) {
 					need_comma = TRUE;
 				} else {
-					if (offset + 1 >= max_length)
-						return FALSE;
-					out_buff[offset++] = ',';
+					out += ',';
+					++ls;
 				}
 				if (!sv.empty()) {
-					offset += vcard_serialize_string(out_buff + offset,
-					          max_length - offset, offset - line_begin,
-					          sv.c_str());
-					if (offset >= max_length)
-						return FALSE;
+					vcard_serialize_string(out, ls, sv);
 				}
 			}
 		}
-		if (offset + 2 >= max_length)
-			return FALSE;
-		out_buff[offset++] = '\r';
-		out_buff[offset++] = '\n';
+		out += "\r\n";
 	}
-	if (offset + 12 > max_length)
-		return FALSE;
-	memcpy(out_buff + offset, "END:VCARD\r\n", 12);
+	out += "END:VCARD\r\n";
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 
 vcard_param &vcard_line::append_param(const char *k, const char *v)

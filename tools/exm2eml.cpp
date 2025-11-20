@@ -303,12 +303,12 @@ int main(int argc, char **argv) try
 			fprintf(stderr, "oxvcard_export %s failed for an unspecified reason.\n", log_id.c_str());
 			return EXIT_FAILURE;
 		}
-		auto buf = std::make_unique<char[]>(VCARD_MAX_BUFFER_LEN);
-		if (!vc.serialize(buf.get(), VCARD_MAX_BUFFER_LEN)) {
+		std::string buf;
+		if (!vc.serialize(buf)) {
 			fprintf(stderr, "vcard::serialize %s failed for an unspecified reason.\n", log_id.c_str());
 			return EXIT_FAILURE;
 		}
-		fputs(buf.get(), stdout);
+		fwrite(buf.c_str(), buf.size(), 1, stdout);
 	} else if (g_export_mode == EXPORT_TNEF) {
 		auto bin = tnef_serialize(ctnt, log_id.c_str(), zalloc, cu_get_propname);
 		if (bin == nullptr) {

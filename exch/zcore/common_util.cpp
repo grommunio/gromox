@@ -1881,12 +1881,14 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	vcard vcard;
 	if (!oxvcard_export(pmsgctnt, log_id.c_str(), vcard, common_util_get_propids))
 		return FALSE;
-	pvcf_bin->pv = common_util_alloc(VCARD_MAX_BUFFER_LEN);
+	std::string vcf_out;
+	if (!vcard.serialize(vcf_out))
+		return FALSE;	
+	pvcf_bin->cb = vcf_out.size();
+	pvcf_bin->pv = common_util_alloc(pvcf_bin->cb);
 	if (pvcf_bin->pv == nullptr)
 		return FALSE;
-	if (!vcard.serialize(pvcf_bin->pc, VCARD_MAX_BUFFER_LEN))
-		return FALSE;	
-	pvcf_bin->cb = strlen(pvcf_bin->pc);
+	memcpy(pvcf_bin->pv, vcf_out.c_str(), vcf_out.size());
 	if (!pmessage->write_message(pmsgctnt))
 		/* ignore */;
 	return TRUE;

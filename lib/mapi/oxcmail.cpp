@@ -1606,7 +1606,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			return;
 		}
 		size_t content_len = rdlength;
-		if (content_len < VCARD_MAX_BUFFER_LEN) {
+		if (1) {
 			auto contallocsz = mb_to_utf8_xlen(content_len) + 1;
 			std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(contallocsz));
 			if (pcontent == nullptr)
@@ -3945,11 +3945,10 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	vcard vcard;
 	if (b_vcard && oxvcard_export(pattachment->pembedded,
 	    log_id, vcard, get_propids)) {
-		std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(VCARD_MAX_BUFFER_LEN));
-		if (pbuff != nullptr && vcard.serialize(pbuff.get(),
-		    VCARD_MAX_BUFFER_LEN)) {
-			if (!pmime->write_content(pbuff.get(),
-			    strlen(pbuff.get()), mime_encoding::automatic))
+		std::string vcout;
+		if (vcard.serialize(vcout)) {
+			if (!pmime->write_content(vcout.c_str(),
+			    vcout.size(), mime_encoding::automatic))
 				return FALSE;
 			return TRUE;
 		}

@@ -10,10 +10,6 @@
 #include <gromox/mail.hpp>
 #include <gromox/usercvt.hpp>
 
-enum {
-	VCARD_MAX_BUFFER_LEN = 1048576U,
-};
-
 enum class oxcmail_body {
 	plain_only = 1,
 	html_only = 2,
