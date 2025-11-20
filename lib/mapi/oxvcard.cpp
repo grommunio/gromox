@@ -201,7 +201,6 @@ static void add_adr(vcard &card, const char *type, Func &&get_part)
 	adr_line.append_param("TYPE", type);
 	for (const auto *part : parts)
 		adr_line.append_value(znul(part));
-	adr_line.append_value();
 }
 
 static std::string join(const char *gn, const char *mn, const char *sn)
