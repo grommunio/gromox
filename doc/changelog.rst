@@ -1,4 +1,4 @@
-Inbetween releases / 3.1.37
+Inbetween releases / 3.1.39
 ===========================
 
 Enhancements:
@@ -23,6 +23,7 @@ Fixes:
   for the 589821th domain in the user database
 * exmdb: MAPI table row deletion events were not being delivered,
   which was fixed
+* oxvcard: fix crash when importing/exporting PR_HOBBIES property
 
 Changes:
 
