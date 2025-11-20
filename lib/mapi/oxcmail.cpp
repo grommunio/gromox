@@ -1524,7 +1524,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			tag = PR_DISPLAY_NAME;
 		} else {
 			tag = PR_DISPLAY_NAME_A;
-			strcpy(display_name, tmp_buff);
+			gx_strlcpy(display_name, tmp_buff, std::size(display_name));
 		}
 		if (pattachment->proplist.set(tag, display_name) != ecSuccess)
 			return;
