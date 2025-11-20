@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
@@ -261,7 +262,6 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 	uint32_t tmp_int32;
 	uint64_t tmp_int64;
 	PROPID_ARRAY propids;
-	BINARY_ARRAY bin_array;
 	const char *photo_type;
 	const char *address_type;
 	std::vector<std::string> child_strings;
@@ -577,15 +577,14 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				throw unrecog(line);
-			tmp_len = strlen(pstring);
-			char tmp_buff[VCARD_MAX_BUFFER_LEN];
-			if (decode64(pstring, tmp_len, tmp_buff,
-			    std::size(tmp_buff), &decode_len) != 0)
-				throw unrecog(line);
-			bin_array.count = 1;
-			bin_array.pbin = &tmp_bin;
-			tmp_bin.pc = tmp_buff;
-			tmp_bin.cb = decode_len;
+
+			auto cert = base64_decode(pstring);
+			BINARY bin[1];
+			bin[0].pc = deconst(cert.c_str());
+			bin[0].cb = cert.size();
+			BINARY_ARRAY bin_array;
+			bin_array.count = std::size(bin);
+			bin_array.pbin = bin;
 			if (pmsg->proplist.set(PR_USER_X509_CERTIFICATE, &bin_array) != ecSuccess)
 				return imp_null;
 		} else if (strcasecmp(pvline_name, "X-MS-OL-DESIGN") == 0) {
