@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 /*
  * normally, MIME object does'n maintain its own content buffer, it just take
@@ -194,7 +194,7 @@ bool MIME::load_from_str(MIME *pmime_parent, const char *in_buff, size_t length)
 	pmime->clear();
 	return false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1090: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -314,7 +314,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 	}
 	return false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1966: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -534,7 +534,7 @@ bool MIME::search_field(const char *tag, int order, std::string &value) const tr
 	}
 	return false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1739: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -580,7 +580,7 @@ bool MIME::set_field(const char *tag, const char *value) try
 	pmime->head_touched = TRUE;
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1091: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -611,7 +611,7 @@ bool MIME::append_field(const char *tag, const char *value) try
 	pmime->head_touched = TRUE;
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1092: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -697,7 +697,7 @@ bool MIME::set_content_param(const char *tag, const char *value) try
 	pmime->head_touched = TRUE;
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1094: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -1264,7 +1264,7 @@ int MIME::make_mimes_digest(const char *id_string, size_t *poffset,
 	       make_digest_single(this, id_string, poffset, head_offset, dsarray) :
 	       make_digest_multi(this, id_string, poffset, dsarray);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1132: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return -1;
 }
 
@@ -1465,7 +1465,7 @@ int MIME::make_structure_digest(const char *id_string, size_t *poffset,
 	*poffset += mgl;
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1333: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return -1;
 }
 

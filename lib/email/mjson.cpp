@@ -189,7 +189,7 @@ BOOL MJSON::load_from_json(const Json::Value &root) try
 	}
 	return m_root.has_value() && !m_root->contains_none_type();
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2743: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -254,7 +254,7 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 	}
 	return false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2062: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 
@@ -285,7 +285,7 @@ int MJSON::fetch_structure(mjson_io &io, const char *cset, BOOL b_ext,
 	return mjson_fetch_mime_structure(io, &*m_root, nullptr, nullptr, cset,
 	       charset.c_str(), b_ext, buf);
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2061: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return -1;
 }
 
@@ -453,7 +453,7 @@ static int mjson_fetch_mime_structure(mjson_io &io, const MJSON_MIME *pmime,
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1322: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return -1;
 }
 
@@ -531,7 +531,7 @@ int MJSON::fetch_envelope(const char *cset, std::string &buf) const try
 	       " NIL)";
 	return 0;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1755: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return -1;
 }
 
@@ -633,7 +633,7 @@ static void mjson_enum_build(const MJSON_MIME *pmime, BUILD_PARAM *pbuild) { try
 		pbuild->build_result = FALSE;
 } catch (const std::bad_alloc &) {
 	pbuild->build_result = false;
-	mlog(LV_ERR, "E-1138: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }}
 
 BOOL MJSON::rfc822_build(mjson_io &io, const char *storage_path) const
@@ -686,7 +686,7 @@ BOOL MJSON::rfc822_get(mjson_io &io, MJSON *pjson, const char *storage_path,
 	}
 	return FALSE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1321: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 	

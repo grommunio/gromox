@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -50,7 +52,7 @@ std::vector<dsn_field> *DSN::new_rcpt_fields() try
 {
 	return &rcpts_fields.emplace_back().fields;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1213: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return nullptr;
 }
 
@@ -60,7 +62,7 @@ bool DSN::append_field(std::vector<dsn_field> *pfields, std::string_view tag,
 	pfields->emplace_back(std::string(tag), std::string(value));
 	return true;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1212: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return false;
 }
 

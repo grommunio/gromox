@@ -480,7 +480,7 @@ int MAIL::make_digest(Json::Value &digest) const try
 	digest["size"] = Json::Value::UInt64(offset);
 	return 1;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1131: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return -1;
 }
 

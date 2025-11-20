@@ -358,7 +358,7 @@ ec_error_t vcard_load_multi_from_str_move(char *in_buff,
 	finalvec = std::move(cardvec);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2088: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023-2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <string>
@@ -67,7 +67,7 @@ ec_error_t cu_rcpt_to_list(const TPROPVAL_ARRAY &props, const char *org_name,
 		list.emplace_back(std::move(es_result));
 	return ret == ecNullObject || ret == ecUnknownUser ? ecInvalidRecips : ret;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1122: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -138,7 +138,7 @@ ec_error_t cu_send_mail(MAIL &mail, const char *smtp_url, const char *sender,
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1196: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 
@@ -181,7 +181,7 @@ ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message> msg,
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2133: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;
 }
 

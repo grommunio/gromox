@@ -307,7 +307,7 @@ static BOOL ical_retrieve_value(ical_line *piline, char *pvalue) try
 	} while ((ptr = pnext) != NULL);
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2099: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
@@ -391,7 +391,7 @@ static bool ical_retrieve_component(ical_component &comp,
 	ical_clear_component(pcomponent);
 	return false;
 } catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2098: ENOMEM");
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return false;
 }
 
