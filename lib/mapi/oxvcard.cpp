@@ -298,8 +298,10 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			for (const auto &prnode : pvline->m_params) {
 				auto pvparam = &prnode;
 				if (strcasecmp(pvparam->name(), "ENCODING") == 0) {
-					if (pvparam->m_paramvals.size() == 0 ||
-					    strcasecmp(pvparam->m_paramvals[0].c_str(), "b") != 0)
+					if (pvparam->m_paramvals.size() == 0)
+						throw unrecog(line, prnode);
+					if (strcasecmp(pvparam->m_paramvals[0].c_str(), "b") != 0 &&
+					    strcasecmp(pvparam->m_paramvals[0].c_str(), "base64") != 0)
 						throw unrecog(line, prnode);
 					b_encoding = TRUE;
 				} else if (strcasecmp(pvparam->name(), "TYPE") == 0) {
@@ -840,7 +842,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 				continue;
 			auto &photo_line = vcard.append_line("PHOTO");
 			photo_line.append_param("TYPE", photo_type);
-			photo_line.append_param("ENCODING", "B");
+			photo_line.append_param("ENCODING", "BASE64");
 			photo_line.append_value(base64_encode(*bv));
 			break;
 		}
