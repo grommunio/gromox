@@ -830,6 +830,10 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 			pvalue = at.proplist.get<char>(PR_ATTACH_EXTENSION);
 			if (pvalue == nullptr)
 				continue;
+			if (*pvalue == '.')
+				++pvalue;
+			if (strcasecmp(pvalue, "jpg") == 0)
+				pvalue = "JPEG";
 			photo_type = pvalue;
 			auto bv = at.proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
 			if (bv == nullptr)
