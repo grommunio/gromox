@@ -702,19 +702,16 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 			auto pvvalue = pvline->m_values.cbegin();
 			if (pvvalue == pvline->m_values.cend())
 				continue;
-			std::vector<char *> ptrs;
-			STRING_ARRAY strings_array;
+			std::string str;
 			for (const auto &sv : pvvalue->m_subvals) {
 				if (sv.empty())
 					continue;
-				ptrs.push_back(deconst(sv.c_str()));
-				if (ptrs.size() >= 128)
-					break;
+				if (!str.empty())
+					str += ", ";
+				str += sv;
 			}
-			strings_array.count = ptrs.size();
-			strings_array.ppstr = ptrs.data();
-			if (strings_array.count != 0 &&
-			    pmsg->proplist.set(PR_HOBBIES, &strings_array) != ecSuccess)
+			if (!str.empty() &&
+			    pmsg->proplist.set(PR_HOBBIES, str.c_str()) != ecSuccess)
 				return imp_null;
 		}
 	} catch (const unrecog &e) {
@@ -999,7 +996,9 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 	if (has_content(pvalue))
 		vcard.append_line("FBURL", pvalue);
 	
-	add_string_array(vcard, pmsg->proplist.get<const STRING_ARRAY>(PR_HOBBIES), "X-MS-INTERESTS");
+	pvalue = pmsg->proplist.get<char>(PR_HOBBIES);
+	if (has_content(pvalue))
+		vcard.append_line("X-MS-INTERESTS", pvalue);
 	
 	auto ba = pmsg->proplist.get<const BINARY_ARRAY>(PR_USER_X509_CERTIFICATE);
 	if (ba != nullptr && ba->count != 0) {
