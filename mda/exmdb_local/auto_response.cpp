@@ -80,7 +80,7 @@ void auto_response_reply(const char *user_home,
 			return;
 		//Note: counterintuitive but intentional: known (contacts_only) -> 1, all_audiences -> 0
 		bval = ar_props.get<const uint8_t>(PR_EC_EXTERNAL_AUDIENCE);
-		if (bval != nullptr && *bval == 0) {
+		if (bval != nullptr && *bval != 0) {
 			BOOL b_found = false;
 			if (!exmdb_client_remote::check_contact_address(user_home, rcpt,
 			    &b_found) || !b_found)
