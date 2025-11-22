@@ -1468,7 +1468,9 @@ errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile,
 
 bool str_to_json(std::string_view sv, Json::Value &jv)
 {
-	return Json::Reader().parse(sv.data(), sv.data() + sv.size(), jv);
+	using reader_t = decltype(Json::CharReaderBuilder().newCharReader());
+	std::unique_ptr<std::remove_pointer_t<reader_t>> rd(Json::CharReaderBuilder().newCharReader());
+	return rd->parse(sv.data(), sv.data() + sv.size(), &jv, nullptr);
 }
 
 std::string json_to_str(const Json::Value &jv)
