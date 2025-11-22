@@ -34,6 +34,7 @@
 namespace gromox {
 
 std::optional<exmdb_client_remote> exmdb_client;
+bool g_exmdb_disallow_lpc;
 
 static int mdcl_rpc_timeout = -1;
 static constexpr unsigned int mdcl_ping_timeout = 2;
@@ -436,6 +437,8 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 
 bool exmdb_client_is_local(const char *prefix, BOOL *pvt)
 {
+	if (g_exmdb_disallow_lpc)
+		return false;
 	if (*prefix == '\0')
 		return true;
 	auto i = std::find_if(mdcl_server_list.cbegin(), mdcl_server_list.cend(),

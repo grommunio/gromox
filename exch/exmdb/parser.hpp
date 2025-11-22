@@ -44,4 +44,3 @@ extern void exmdb_parser_insert_router(std::shared_ptr<ROUTER_CONNECTION> &&);
 extern BOOL exmdb_parser_erase_router(const std::shared_ptr<ROUTER_CONNECTION> &);
 
 extern unsigned int g_exrpc_debug, g_enable_dam;
-extern bool g_exmdb_client_only;

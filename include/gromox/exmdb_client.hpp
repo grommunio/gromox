@@ -99,5 +99,6 @@ class GX_EXPORT exmdb_client_remote {
 };
 
 extern GX_EXPORT std::optional<exmdb_client_remote> exmdb_client;
+extern GX_EXPORT bool g_exmdb_disallow_lpc;
 
 }
