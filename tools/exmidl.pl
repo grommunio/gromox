@@ -89,8 +89,12 @@ while (<STDIN>) {
 	print "\tif (!exmdb_client_do_rpc(&q, &r))\n\t\treturn false;\n";
 	for (@$oargs) {
 		my($type, $field) = @$_;
-		print "\t", (substr($type, -1, 1) eq "&" ? "" : "*"),
-		      "$field = std::move(r.$field);\n";
+		if (substr($type, -1, 1) eq "&") {
+			print "\t$field = std::move(r.$field);\n";
+		} else {
+			print "\tif ($field != nullptr)\n";
+			print "\t\t*$field = std::move(r.$field);\n";
+		}
 	}
 	print "\treturn TRUE;\n}\n\n";
 }
