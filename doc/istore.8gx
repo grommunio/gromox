@@ -63,6 +63,14 @@ Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug
 .br
 Default: \fI4\fP (notice)
 .TP
+\fBistore_standalone\fP
+This directive serves as a mutual exclusion device between http(8gx) and
+istore(8gx) and controls which one of the two will execute the mailbox engine.
+If and only if this is set to yes will istore be able to startup, while http
+will disable the engine on its startup.
+.br
+Default: \fIno\fP
+.TP
 \fBrunning_identity\fP
 An unprivileged user account to switch the process to after startup.
 To inhibit the switch, assign the empty value.

@@ -75,6 +75,14 @@ custom header to convey the actual client address, Gromox can pick this up for
 its own reporting, which in turn is useful for e.g. fail2ban setups.
 .br
 Default: (empty)
+.TP
+\fBistore_standalone\fP
+This directive serves as a mutual exclusion device between http(8gx) and
+istore(8gx) and controls which one of the two is in charge of running the
+mailbox engine. If this is set to no, http will be the one and istore(8gx) has
+no function.
+.br
+Default: \fIno\fP
 .SH Configuration directives (http.cfg)
 The following directives are recognized when reading from /etc/gromox/http.cfg,
 or when the \fB\-c\fP option is used to specify a custom file:

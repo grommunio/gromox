@@ -4,12 +4,19 @@
 .SH Name
 exmdb_provider \(em Gromox Information Store
 .SH Description
-exmdb_provider is a component for http(8gx). It offers a plethora of
-low-level functions (124 of them) for operating on mailbox stores. This
-functionality is also exposed by way of a Gromox-specific network protocol on
-port 5000. The aforementioned RPC functions transparently operate over the
-network and may connect to a remote exmdb instance. In other words, this component contains
-a process-local function API, a network client, and a network server.
+exmdb_provider is the mailbox engine. It offers a plethora of stateless
+low-level functions (124 of them) for operating on mailbox stores. The
+functionality of the engine is exposed by way of a Gromox-specific network
+protocol on port 5000.
+.PP
+exmdb_provider is built as a shared library and can run in either the http(8gx)
+or istore(8gx) processes, depending on the gromox.cfg:istore_standalone config
+directive.
+.PP
+The shared library contributes an exmdb_client API, which will transparently
+pick either a local or a remote procedure call depending on whether the mailbox
+is served by the same process or not.
+.PP
 .SH Configuration directives (gromox.cfg)
 The following directives are recognized when they appear in
 /etc/gromox/gromox.cfg.
