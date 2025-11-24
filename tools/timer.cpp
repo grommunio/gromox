@@ -441,18 +441,18 @@ static void execute_timer(TIMER *ptimer)
 			_exit(-1);
 		} else if (pid > 0) {
 			if (waitpid(pid, &status, 0) > 0) {
-				strcpy(result, WIFEXITED(status) && !WEXITSTATUS(status) ? "DONE" : "EXEC-FAILURE");
+				gx_strlcpy(result, WIFEXITED(status) && !WEXITSTATUS(status) ? "DONE" : "EXEC-FAILURE", std::size(result));
 			} else {
-				strcpy(result, "FAIL-TO-WAIT");
+				gx_strlcpy(result, "FAIL-TO-WAIT", std::size(result));
 			}
 		} else {
-			strcpy(result, "FAIL-TO-FORK");
+			gx_strlcpy(result, "FAIL-TO-FORK", std::size(result));
 		}
 	} else {
-		strcpy(result, "FORMAT-ERROR");
+		gx_strlcpy(result, "FORMAT-ERROR", std::size(result));
 	}
 
-	len = sprintf(temp_buff, "%d\t0\t%s\n", ptimer->t_id, result);
+	len = snprintf(temp_buff, std::size(temp_buff), "%d\t0\t%s\n", ptimer->t_id, result);
 	if (HXio_fullwrite(g_list_fd, temp_buff, len) < 0)
 		fprintf(stderr, "write to timerlist: %s\n", strerror(errno));
 }
@@ -492,7 +492,7 @@ static int tmr_thrwork_1()
 			for (auto pos = g_exec_list.begin(); pos != g_exec_list.end(); ++pos) {
 				auto ptimer = &*pos;
 				if (t_id == ptimer->t_id) {
-					temp_len = sprintf(temp_line, "%d\t0\tCANCEL\n",
+					temp_len = snprintf(temp_line, std::size(temp_line), "%d\t0\tCANCEL\n",
 								ptimer->t_id);
 					g_exec_list.erase(pos);
 					removed_timer = true;
@@ -530,7 +530,7 @@ static int tmr_thrwork_1()
 			std::unique_lock li_hold(g_list_lock);
 			auto ptimer = put_timer(std::move(tmr));
 
-			temp_len = sprintf(temp_line, "%d\t%lld\t", ptimer->t_id,
+			temp_len = snprintf(temp_line, std::size(temp_line), "%d\t%lld\t", ptimer->t_id,
 			           static_cast<long long>(ptimer->exec_time));
 			encode_line(ptimer->command.c_str(), temp_line + temp_len);
 			temp_len = strlen(temp_line);
@@ -538,7 +538,7 @@ static int tmr_thrwork_1()
 			if (HXio_fullwrite(g_list_fd, temp_line, temp_len) < 0)
 				fprintf(stderr, "write to timerlist: %s\n", strerror(errno));
 			li_hold.unlock();
-			temp_len = sprintf(temp_line, "TRUE %d\r\n", ptimer->t_id);
+			temp_len = snprintf(temp_line, std::size(temp_line), "TRUE %d\r\n", ptimer->t_id);
 			pconnection->sk_write(temp_line, temp_len);
 		} else if (0 == strcasecmp(pconnection->line, "QUIT")) {
 			pconnection->sk_write("BYE\r\n");

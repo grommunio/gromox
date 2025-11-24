@@ -1772,7 +1772,7 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 	if (c != nullptr && *c != '\0')
 		gx_strlcpy(charset, c, std::size(charset));
 	else
-		strcpy(charset, g_default_charset);
+		gx_strlcpy(charset, g_default_charset, std::size(charset));
 	sql_meta_result mres;
 	auto tmzone = mysql_adaptor_meta(pinfo->get_username(),
 	              WANTPRIV_METAONLY, mres) == 0 ?

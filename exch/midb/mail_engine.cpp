@@ -2707,7 +2707,7 @@ static int me_pfddt(int argc, char **argv, int sockd)
 	size_t recents = pstmt.step() == SQLITE_ROW ? pstmt.col_uint64(0) : 0;
 	pstmt.finalize();
 	pidb.reset();
-	auto temp_len = sprintf(temp_buff, "TRUE %zu %zu %zu %llu %llu\r\n",
+	auto temp_len = snprintf(temp_buff, std::size(temp_buff), "TRUE %zu %zu %zu %llu %llu\r\n",
 	                total, recents, unreads, LLU{folder_id},
 	                LLU{uidnext + 1});
 	return cmd_write(sockd, temp_buff, temp_len);

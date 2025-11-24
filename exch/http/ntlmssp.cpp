@@ -343,16 +343,8 @@ static bool ntlmssp_md4hash(const char *passwd, void *p16v) try
 
 static bool ntlmssp_deshash(const char *passwd, uint8_t p16[16])
 {
-	int len;
 	char tmpbuf[14];
-	
-	if (strlen(passwd) >= sizeof(tmpbuf)) {
-		len = sizeof(tmpbuf) - 1;
-		memcpy(tmpbuf, passwd, len);
-		tmpbuf[len] = '\0';
-	} else {
-		strcpy(tmpbuf, passwd);
-	}
+	gx_strlcpy(tmpbuf, passwd, std::size(tmpbuf));
 	HX_strupper(tmpbuf);
 	/* Only the first 14 chars are considered */
 	return E_P16(reinterpret_cast<uint8_t *>(tmpbuf), p16);

@@ -85,7 +85,7 @@ int cmdh_user(std::vector<std::string> &&argv, pop3_context *pcontext)
 		return 1720;
 	gx_strlcpy(pcontext->username, argv[1].c_str(), std::size(pcontext->username));
 	if (!system_services_judge_user(pcontext->username)) {
-		string_length = sprintf(buff, "%s%s%s",
+		string_length = snprintf(buff, std::size(buff), "%s%s%s",
 				resource_get_pop3_code(1717, 1, &string_length),
 				pcontext->username,
 				resource_get_pop3_code(1717, 2, &string_length));
@@ -223,7 +223,8 @@ int cmdh_uidl(std::vector<std::string> &&argv, pop3_context *pcontext)
 		auto count = pcontext->msg_array.size();
 		for (size_t i = 0; i < count; ++i) {
 			auto punit = sa_get_item(pcontext->msg_array, i);
-			string_length = sprintf(temp_buff, "%zu %s\r\n", i + 1, punit->file_name.c_str());
+			string_length = snprintf(temp_buff, std::size(temp_buff),
+			                "%zu %s\r\n", i + 1, punit->file_name.c_str());
 			if (pcontext->stream.write(temp_buff, string_length) != STREAM_WRITE_OK)
 				return 1729;
 		}
@@ -270,7 +271,8 @@ int cmdh_list(std::vector<std::string> &&argv, pop3_context *pcontext)
 		auto count = pcontext->msg_array.size();
 		for (size_t i = 0; i < count; ++i) {
 			auto punit = sa_get_item(pcontext->msg_array, i);
-			string_length = sprintf(temp_buff, "%zu %zu\r\n", i + 1, punit->size);
+			string_length = snprintf(temp_buff, std::size(temp_buff),
+			                "%zu %zu\r\n", i + 1, punit->size);
 			if (pcontext->stream.write(temp_buff, string_length) != STREAM_WRITE_OK)
 				return 1729;
 		}
@@ -294,7 +296,7 @@ int cmdh_list(std::vector<std::string> &&argv, pop3_context *pcontext)
 	int n = strtol(argv[1].c_str(), nullptr, 0);
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->msg_array.size()) {
 		auto punit = sa_get_item(pcontext->msg_array, n - 1);
-		string_length = sprintf(temp_buff, "+OK %d %zu\r\n", n, punit->size);	
+		string_length = snprintf(temp_buff, std::size(temp_buff), "+OK %d %zu\r\n", n, punit->size);
 		pcontext->connection.write(temp_buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
@@ -436,7 +438,7 @@ int cmdh_quit(std::vector<std::string> &&argv, pop3_context *pcontext)
 	}
 
 	pcontext->msg_array.clear();
-	sprintf(temp_buff, "%s%s%s", resource_get_pop3_code(1710, 1,
+	snprintf(temp_buff, std::size(temp_buff), "%s%s%s", resource_get_pop3_code(1710, 1,
 		&string_length), znul(g_config_file->get_value("host_id")),
 			resource_get_pop3_code(1710, 2, &string_length));
 	pcontext->connection.write(temp_buff, strlen(temp_buff));

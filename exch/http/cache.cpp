@@ -337,7 +337,7 @@ static uint32_t mod_cache_calculate_content_length(CACHE_CONTEXT *pcontext)
 		/* Content-Type: xxx\r\n */
 		content_length += 16 + ctype_len;
 		/* Content-Range: bytes x-x/xxx\r\n */
-		content_length += 25 + sprintf(num_buff, "%u%u%llu",
+		content_length += 23 + snprintf(num_buff, std::size(num_buff), "%u-%u/%llu",
 		                  pcontext->range[i].begin, pcontext->range[i].end,
 		                  static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
 		content_length += 2; /* \r\n */
@@ -491,8 +491,8 @@ http_status mod_cache_take_request(http_context *phttp)
 		ptoken = strrchr(ptoken, '.');
 		if (NULL != ptoken) {
 			ptoken ++;
-			if (strlen(ptoken) < 16)
-				strcpy(suffix, ptoken);
+			if (strlen(ptoken) < std::size(suffix))
+				gx_strlcpy(suffix, ptoken, std::size(suffix));
 		}
 		auto it = g_directory_list.find(phttp->request.f_host.c_str(), request_uri);
 		if (it == g_directory_list.cend())
@@ -669,7 +669,7 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 				auto pcontent_type = pcontext->pitem->content_type;
 				if (pcontent_type == nullptr)
 					pcontent_type = "application/octet-stream";
-				tmp_len = sprintf(tmp_buff,
+				tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
 					"\r\n--%s\r\n"
 					"Content-Type: %s\r\n"
 					"Content-Range: bytes %u-%u/%llu\r\n\r\n",
@@ -678,7 +678,7 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 					pcontext->range[pcontext->range_pos].end,
 				          static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
 			} else {
-				tmp_len = sprintf(tmp_buff,
+				tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
 					"\r\n--%s--\r\n",
 					BOUNDARY_STRING);
 				pcontext->range.clear();

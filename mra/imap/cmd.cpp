@@ -1286,7 +1286,7 @@ int icp_login(int argc, char **argv, imap_context &ctx)
 			pcontext->username);
 		return 1901 | DISPATCH_SHOULD_CLOSE;
     }
-	strcpy(temp_password, argv[3]);
+	gx_strlcpy(temp_password, argv[3], std::size(temp_password));
 	HX_strltrim(temp_password);
 
 	sql_meta_result mres_auth, mres /* target */;

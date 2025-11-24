@@ -2497,7 +2497,7 @@ BOOL http_context::recycle_inchannel(const char *predecessor_cookie)
 	hch->client_keepalive = ich->client_keepalive;
 	hch->available_window = ich->available_window;
 	hch->bytes_received = ich->bytes_received;
-	strcpy(hch->assoc_group_id, ich->assoc_group_id);
+	gx_strlcpy(hch->assoc_group_id, ich->assoc_group_id, std::size(hch->assoc_group_id));
 	pvconnection->pcontext_insucc = pcontext;
 	return TRUE;
 }

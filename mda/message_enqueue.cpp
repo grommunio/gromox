@@ -232,7 +232,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 		if (getsockopt(pentity->pconnection->sockd, SOL_SOCKET,
 		    SO_DOMAIN, &af_type, &af_len) != 0 || af_len != sizeof(af_type))
 			af_type = 0;
-		auto tmp_len = sprintf(tmp_buff, "X-Lasthop: %s\r\nReceived: from %s "
+		auto tmp_len = snprintf(tmp_buff, std::size(tmp_buff), "X-Lasthop: %s\r\nReceived: from %s "
 		          "(%s [%s%s])\r\n\tby %s with %s%s;\r\n\t%s\r\n",
 		          pentity->pconnection->client_addr,
 		          pentity->penvelope->hello_domain.c_str(),

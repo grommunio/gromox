@@ -403,12 +403,12 @@ http_status mod_fastcgi_take_request(http_context *phttp)
 		if (ptoken1 != nullptr)
 			*ptoken1 = '\0';
 		auto tmp_len = strlen(ptoken);
-		if (tmp_len >= 16) {
+		if (tmp_len >= std::size(suffix)) {
 			phttp->log(LV_DEBUG, "suffix in"
 				" request uri error for mod_fastcgi");
 			return http_status::none;
 		}
-		strcpy(suffix, ptoken);
+		gx_strlcpy(suffix, ptoken, std::size(suffix));
 	} else {
 		suffix[0] = '\0';
 	}

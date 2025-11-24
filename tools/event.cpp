@@ -453,7 +453,7 @@ static int q_listen(eq_iter_t eq_node, std::unique_lock<std::mutex> &eq_hold)
 	return 2;
 }
 
-static void q_select(eq_iter_t eq_node)
+static void q_select(eq_iter_t eq_node) try
 {
 	auto penqueue = &*eq_node;
 	auto pspace = strchr(penqueue->line + 7, ' ');
@@ -462,12 +462,9 @@ static void q_select(eq_iter_t eq_node)
 		penqueue->sk_write("FALSE\r\n");
 		return;
 	}
-	char temp_string[256];
-	memcpy(temp_string, penqueue->line + 7, temp_len);
-	temp_string[temp_len++] = ':';
-	temp_string[temp_len] = '\0';
-	HX_strlower(temp_string);
-	strcat(temp_string, pspace + 1);
+	auto temp_string = std::string(&penqueue->line[7], temp_len) + ":";
+	HX_strlower(temp_string.data());
+	temp_string += &pspace[1];
 
 	bool b_result = false;
 	std::unique_lock hl_hold(g_host_lock);
@@ -476,21 +473,21 @@ static void q_select(eq_iter_t eq_node)
 		if (0 == strcmp(penqueue->res_id, phost->res_id)) {
 			time_t cur_time = time(nullptr);
 			auto time_it = phost->hash.find(temp_string);
-			if (time_it != phost->hash.end()) {
+			if (time_it != phost->hash.end())
 				time_it->second = cur_time;
-			} else try {
-				phost->hash.emplace(temp_string, cur_time);
-			} catch (const std::bad_alloc &) {
-			}
+			else
+				phost->hash.emplace(std::move(temp_string), cur_time);
 			b_result = true;
 			break;
 		}
 	}
 	hl_hold.unlock();
 	penqueue->sk_write(b_result ? "TRUE\r\n" : "FALSE\r\n");
+} catch (const std::bad_alloc &) {
+	eq_node->sk_write("FALSE\r\n");
 }
 
-static void q_unselect(eq_iter_t eq_node)
+static void q_unselect(eq_iter_t eq_node) try
 {
 	auto penqueue = &*eq_node;
 	auto pspace = strchr(penqueue->line + 9, ' ');
@@ -499,12 +496,9 @@ static void q_unselect(eq_iter_t eq_node)
 		penqueue->sk_write("FALSE\r\n");
 		return;
 	}
-	char temp_string[256];
-	memcpy(temp_string, penqueue->line + 9, temp_len);
-	temp_string[temp_len++] = ':';
-	temp_string[temp_len] = '\0';
-	HX_strlower(temp_string);
-	strcat(temp_string, pspace + 1);
+	auto temp_string = std::string(&penqueue->line[9], temp_len) + ":";
+	HX_strlower(temp_string.data());
+	temp_string += &pspace[1];
 
 	std::unique_lock hl_hold(g_host_lock);
 	auto phost = std::find_if(g_host_list.begin(), g_host_list.end(),
@@ -513,6 +507,8 @@ static void q_unselect(eq_iter_t eq_node)
 		phost->hash.erase(temp_string);
 	hl_hold.unlock();
 	penqueue->sk_write("TRUE\r\n");
+} catch (const std::bad_alloc &) {
+	eq_node->sk_write("FALSE\r\n");
 }
 
 static int q_quit(eq_iter_t eq_node, eq_lock_t &eq_hold)

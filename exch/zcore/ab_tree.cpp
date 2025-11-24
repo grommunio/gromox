@@ -39,12 +39,14 @@ static ec_error_t ab_tree_fetchprop(const ab_tree::ab_node& node,
 		*static_cast<int64_t *>(*prop) = strtoll(it->second.c_str(), nullptr, 0);
 		return ecSuccess;
 	case PT_STRING8:
-	case PT_UNICODE:
-		*prop = common_util_alloc(strlen(it->second.c_str()) + 1);
+	case PT_UNICODE: {
+		size_t tgs = it->second.size() + 1;
+		*prop = common_util_alloc(tgs);
 		if (*prop == nullptr)
 			return ecServerOOM;
-		strcpy(static_cast<char *>(*prop), it->second.c_str());
+		memcpy(static_cast<char *>(*prop), it->second.c_str(), tgs);
 		return ecSuccess;
+	}
 	case PT_BINARY: {
 		*prop = cu_alloc<BINARY>();
 		if (*prop == nullptr)
@@ -66,10 +68,11 @@ static ec_error_t ab_tree_fetchprop(const ab_tree::ab_node& node,
 		sa->ppstr = cu_alloc<char *>();
 		if (sa->ppstr == nullptr)
 			return ecServerOOM;
-		sa->ppstr[0] = cu_alloc<char>(it->second.size() + 1);
+		auto tgs = it->second.size() + 1;
+		sa->ppstr[0] = cu_alloc<char>(tgs);
 		if (sa->ppstr[0] == nullptr)
 			return ecServerOOM;
-		strcpy(sa->ppstr[0], it->second.c_str());
+		memcpy(sa->ppstr[0], it->second.c_str(), tgs);
 		return ecSuccess;
 	}
 	}
@@ -249,7 +252,7 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node &pnode,
 		bv->pv = common_util_alloc(bv->cb);
 		if (bv->pv == nullptr)
 			return FALSE;
-		sprintf(bv->pc, "EX:%s", dn.c_str());
+		snprintf(bv->pc, bv->cb, "EX:%s", dn.c_str());
 		HX_strupper(bv->pc);
 		*ppvalue = pvalue;
 		return TRUE;
@@ -330,17 +333,18 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node &pnode,
 		sa->ppstr = cu_alloc<char *>(sa->count);
 		if (sa->ppstr == nullptr)
 			return FALSE;
-		sa->ppstr[0] = cu_alloc<char>(dn.size() + 6);
+		size_t tgs = dn.size() + 6;
+		sa->ppstr[0] = cu_alloc<char>(tgs);
 		if (sa->ppstr[0] == nullptr)
 			return FALSE;
-		sprintf(sa->ppstr[0], "SMTP:%s", dn.c_str());
+		snprintf(sa->ppstr[0], tgs, "SMTP:%s", dn.c_str());
 		size_t i = 1;
 		for (const auto &a : alias_list) {
-			sa->ppstr[i] = cu_alloc<char>(a.size() + 6);
+			size_t tgs = a.size() + 6;
+			sa->ppstr[i] = cu_alloc<char>(tgs);
 			if (sa->ppstr[i] == nullptr)
 				return false;
-			strcpy(sa->ppstr[i], "SMTP:");
-			strcat(sa->ppstr[i++], a.c_str());
+			snprintf(sa->ppstr[i++], tgs, "SMTP:%s", a.c_str());
 		}
 		*ppvalue = sa;
 		return TRUE;

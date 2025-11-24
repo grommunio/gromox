@@ -71,7 +71,7 @@ static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx) try
 
     /* inform client side the esmtp type*/
     pcontext->last_cmd = T_EHLO_CMD;
-	string_length = sprintf(buff, "250-%s\r\n", znul(g_config_file->get_value("host_id")));
+	string_length = snprintf(buff, std::size(buff), "250-%s\r\n", znul(g_config_file->get_value("host_id")));
 	if (g_param.support_pipeline)
 		string_length += sprintf(buff + string_length,
                              "250-PIPELINING\r\n");
@@ -79,7 +79,7 @@ static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx) try
 		string_length += sprintf(buff + string_length,
 							"250-STARTTLS\r\n");
     
-    string_length += sprintf(buff + string_length, 
+	string_length += snprintf(&buff[string_length], std::size(buff) - string_length,
         "250-HELP\r\n"
 		"250-SIZE %zu\r\n"
         "250 8BITMIME\r\n",
@@ -152,7 +152,7 @@ int cmdh_mail(std::string_view cmd_line, smtp_context &ctx)
         /* 550 invalid user - <email_addr> */
 		smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);
 		smtp_reply_str2 = resource_get_smtp_code(516, 2, &string_length);
-        string_length = sprintf(buff2, "%s%s%s", smtp_reply_str, buff,
+		string_length = snprintf(buff2, std::size(buff2), "%s%s%s", smtp_reply_str, buff,
                         smtp_reply_str2);
 		pcontext->connection.write(buff2, string_length);
         return DISPATCH_CONTINUE;
@@ -195,7 +195,7 @@ int cmdh_rcpt(std::string_view cmd_line, smtp_context &ctx) try
         /* 550 invalid user - <email_addr> */
 		smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);
 		smtp_reply_str2 = resource_get_smtp_code(516, 2, &string_length);
-        string_length = sprintf(reason, "%s%s%s", smtp_reply_str, buff,
+		string_length = snprintf(reason, std::size(reason), "%s%s%s", smtp_reply_str, buff,
                         smtp_reply_str2);
 		pcontext->connection.write(reason, string_length);
         return DISPATCH_CONTINUE;
@@ -314,7 +314,7 @@ int cmdh_quit(std::string_view cmd_line, smtp_context &ctx)
 	if (!cmdh_check_onlycmd(cmd_line, ctx))
 		return DISPATCH_CONTINUE;
     /* 221 <domain> Good-bye */
-	sprintf(buff, "%s%s%s",
+	snprintf(buff, std::size(buff), "%s%s%s",
 		resource_get_smtp_code(203, 1, &string_length),
 		znul(g_config_file->get_value("host_id")),
 		resource_get_smtp_code(203, 2, &string_length));

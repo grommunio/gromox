@@ -256,7 +256,7 @@ tproc_status smtp_parser_process(schedule_context *vcontext)
 				string_length -= 2;
 
 			memcpy(reply_buf, smtp_reply_str, string_length);
-			string_length += sprintf(reply_buf + string_length, 
+			string_length += snprintf(&reply_buf[string_length], std::size(reply_buf) - string_length,
 							" queue-id: %d\r\n", pcontext->flusher.flush_ID);
 			auto nreply = pcontext->command_protocol == HT_SMTP ? 1U :
 			              pcontext->menv.rcpt_to.size();
@@ -355,7 +355,7 @@ tproc_status smtp_parser_process(schedule_context *vcontext)
 				auto smtp_reply_str = resource_get_smtp_code(202, 1, &string_length);
 				auto smtp_reply_str2 = resource_get_smtp_code(202, 2, &string_length);
 				host_ID = znul(g_config_file->get_value("host_id"));
-				len = sprintf(reply_buf, "%s%s%s", smtp_reply_str, host_ID,
+				len = snprintf(reply_buf, std::size(reply_buf), "%s%s%s", smtp_reply_str, host_ID,
 						      smtp_reply_str2);
 				SSL_write(pcontext->connection.ssl, reply_buf, len);
 			}

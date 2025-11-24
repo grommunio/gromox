@@ -1529,7 +1529,7 @@ static uint32_t pdu_processor_apply_async_id()
 	pasync_node->pstack_root = pstack_root;
 	gx_strlcpy(pasync_node->vconn_host, pcontext->host, std::size(pasync_node->vconn_host));
 	pasync_node->vconn_port = pcontext->port;
-	strcpy(pasync_node->vconn_cookie, pchannel_in->connection_cookie);
+	gx_strlcpy(pasync_node->vconn_cookie, pchannel_in->connection_cookie, std::size(pasync_node->vconn_cookie));
 	
 	auto ctx_num = g_connection_num * g_connection_ratio;
 	auto async_id = get_next_async_id();
