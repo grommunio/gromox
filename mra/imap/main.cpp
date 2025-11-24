@@ -335,7 +335,7 @@ char *capability_list(char *dst, size_t z, imap_context *ctx)
 	if (g_force_tls && (ctx == nullptr || ctx->connection.ssl == nullptr))
 		HX_strlcat(dst, " LOGINDISABLED", z);
 	else
-		HX_strlcat(dst, " AUTH=PLAIN", z);
+		HX_strlcat(dst, " AUTH=LOGIN", z);
 	if (parse_bool(g_config_file->get_value("enable_rfc2971_commands")))
 		HX_strlcat(dst, " ID", z);
 	return dst;
