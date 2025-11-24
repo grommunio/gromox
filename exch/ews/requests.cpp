@@ -473,10 +473,8 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		request.MessageDisposition = Enum::SaveOnly;
 	if (!request.SendMeetingInvitations)
 		request.SendMeetingInvitations = Enum::SendToNone;
-	bool sendMessages = request.MessageDisposition == Enum::SendOnly
-		|| request.MessageDisposition == Enum::SendAndSaveCopy
-		|| request.SendMeetingInvitations == Enum::SendOnlyToAll
-		|| request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy;
+	bool sendMessages = request.MessageDisposition != Enum::SaveOnly &&
+	                    request.SendMeetingInvitations != Enum::SendToNone;
 
 	data.ResponseMessages.reserve(request.Items.size());
 	for (sItem &item : request.Items) try {
@@ -485,7 +483,7 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 
 		mCreateItemResponseMessage msg;
 		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
-		bool send = std::holds_alternative<tMessage>(item) && sendMessages;
+		bool send = sendMessages && std::holds_alternative<tMessage>(item);
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
 
 		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
