@@ -71,7 +71,7 @@ struct OUTPUT_STATE {
 	{
 		out.reserve(rawsize);
 	}
-	constexpr inline bool overflow_check() const { return out.size() <= test_size; }
+	inline bool overflow_check() const { return out.size() <= test_size; }
 	inline void append(char c) { out += c; }
 };
 
