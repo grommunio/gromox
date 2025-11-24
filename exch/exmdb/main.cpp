@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 #include <libHX/string.h>
+#include <vmime/utility/url.hpp>
 #include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/database.h>
@@ -39,6 +40,7 @@ static constexpr cfg_directive exmdb_gromox_cfg_defaults[] = {
 	{"exmdb_deep_backtrace", "0", CFG_BOOL},
 	{"exmdb_force_write_txn", "0", CFG_BOOL},
 	{"exmdb_ics_log_file", ""},
+	{"outgoing_smtp_url", "sendmail://localhost"},
 	CFG_TABLE_END,
 };
 
@@ -168,6 +170,12 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 	}
 	case PLUGIN_INIT: {
 		auto pconfig = std::move(g_config_during_init);
+		auto gxcfg = config_file_initd("gromox.cfg", get_config_path(), exmdb_gromox_cfg_defaults);
+		if (gxcfg == nullptr) {
+			mlog(LV_ERR, "emsmdb: config_file_initd gromox.cfg: %s",
+			       strerror(errno));
+			return false;
+		}
 		auto org_name = pconfig->get_value("x500_org_name");
 		int connection_num = pconfig->get_ll("rpc_proxy_connection_num");
 		int threads_num = pconfig->get_ll("notify_stub_threads_num");
@@ -181,13 +189,6 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 		int max_rule = pconfig->get_ll("max_rule_number");
 		int max_ext_rule = pconfig->get_ll("max_ext_rule_number");
 		int populating_num = pconfig->get_ll("populating_threads_num");
-		mlog(LV_INFO, "exmdb_provider: x500=\"%s\", "
-		        "rpc_proxyconn_num=%d, notify_stub_threads_num=%d, "
-		        "db_hash_table_size=%d, cache_interval=%s, max_msgs_per_store=%d, "
-		        "max_rule_per_folder=%d, max_ext_rule_per_folder=%d, popul_num=%d",
-		        org_name, connection_num, threads_num, table_size,
-		        cache_int_s, max_msg_count, max_rule, max_ext_rule,
-		        populating_num);
 		auto str = pconfig->get_value("exmdb_file_compression");
 		if (str == nullptr || !parse_bool(str))
 			g_cid_compression = 0;
@@ -202,8 +203,25 @@ BOOL SVC_exmdb_provider(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_INFO, "Content File Compression: off");
 		else
 			mlog(LV_INFO, "Content File Compression: zstd-%d", g_cid_compression);
+		str = gxcfg->get_value("outgoing_smtp_url");
+		std::string smtp_url;
+		try {
+			smtp_url = vmime::utility::url(str);
+		} catch (const vmime::exceptions::malformed_url &e) {
+			mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
+				str, e.what());
+			return false;
+		}
 
-		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule);
+		mlog(LV_INFO, "exmdb_provider: x500=\"%s\", "
+		        "rpc_proxyconn_num=%d, notify_stub_threads_num=%d, "
+		        "db_hash_table_size=%d, cache_interval=%s, max_msgs_per_store=%d, "
+		        "max_rule_per_folder=%d, max_ext_rule_per_folder=%d, popul_num=%d, smtp=%s",
+		        org_name, connection_num, threads_num, table_size,
+		        cache_int_s, max_msg_count, max_rule, max_ext_rule,
+		        populating_num, smtp_url.c_str());
+
+		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule, std::move(smtp_url));
 		db_engine_init(table_size, cache_interval, populating_num);
 		uint16_t listen_port = pconfig->get_ll("exmdb_listen_port");
 		if (0 == listen_port) {

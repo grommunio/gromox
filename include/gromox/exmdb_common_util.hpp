@@ -51,8 +51,7 @@ extern bool cu_rebuild_subjects(const char *&, const char *&, const char *&);
 extern ec_error_t cu_set_propval(TPROPVAL_ARRAY *, gromox::proptag_t, const void *data);
 extern void common_util_remove_propvals(TPROPVAL_ARRAY *, gromox::proptag_t);
 extern void common_util_pass_service(const char *name, void *func);
-void common_util_init(const char *org_name, unsigned int max_msg,
-	unsigned int max_rule_num, unsigned int max_ext_rule_num);
+extern void common_util_init(const char *org_name, unsigned int max_msg, unsigned int max_rule_num, unsigned int max_ext_rule_num, std::string &&smtp_url);
 extern void common_util_build_tls();
 void* common_util_alloc(size_t size);
 template<typename T> T *cu_alloc()
@@ -159,5 +158,6 @@ extern unsigned int g_max_rule_num, g_max_extrule_num, g_cid_compression;
 extern thread_local unsigned int g_inside_flush_instance;
 extern thread_local sqlite3 *g_sqlite_for_oxcmail;
 extern char g_exmdb_org_name[];
+extern std::string g_exmdb_smtp_url;
 
 }

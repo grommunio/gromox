@@ -86,6 +86,7 @@ static thread_local prepared_statements *g_opt_key;
 
 namespace exmdb {
 
+std::string g_exmdb_smtp_url;
 char g_exmdb_org_name[256];
 thread_local unsigned int g_inside_flush_instance;
 thread_local sqlite3 *g_sqlite_for_oxcmail;
@@ -93,8 +94,6 @@ unsigned int g_max_rule_num, g_max_extrule_num;
 unsigned int g_cid_compression = 0; /* disabled(0), specific_level(n) */
 
 decltype(common_util_get_handle) common_util_get_handle;
-decltype(ems_send_mail) ems_send_mail;
-decltype(ems_send_vmail) ems_send_vmail;
 
 static bool cu_eval_subobj_restriction(sqlite3 *, cpid_t, uint64_t msgid, gromox::proptag_t, const RESTRICTION *);
 static bool gp_prepare_anystr(sqlite3 *, mapi_object_type, uint64_t, proptag_t, xstmt &, sqlite3_stmt *&);
@@ -139,19 +138,18 @@ void common_util_remove_propvals(TPROPVAL_ARRAY *parray, proptag_t proptag)
 void common_util_pass_service(const char *name, void *func)
 {
 #define E(v, ptr) do { if (strcmp(name, (v)) == 0) { (ptr) = reinterpret_cast<decltype(ptr)>(func); return; } } while (false)
-	E("ems_send_mail", ems_send_mail);
-	E("ems_send_vmail", ems_send_vmail);
 	E("get_handle", common_util_get_handle);
 #undef E
 }
 
 void common_util_init(const char *org_name, uint32_t max_msg,
-	unsigned int max_rule_num, unsigned int max_ext_rule_num)
+    unsigned int max_rule_num, unsigned int max_ext_rule_num, std::string &&smtp_url)
 {
 	gx_strlcpy(g_exmdb_org_name, org_name, std::size(g_exmdb_org_name));
 	g_max_msg = max_msg;
 	g_max_rule_num = max_rule_num;
 	g_max_extrule_num = max_ext_rule_num;
+	g_exmdb_smtp_url = std::move(smtp_url);
 }
 
 void common_util_build_tls()

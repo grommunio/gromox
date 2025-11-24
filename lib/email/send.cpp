@@ -92,7 +92,7 @@ static vmime::shared_ptr<vmime::net::transport> make_transport(const char *url)
 	return xp;
 }
 
-ec_error_t cu_send_mail(MAIL &mail, const char *smtp_url, const char *sender,
+ec_error_t cu_send_mail(const MAIL &mail, const char *smtp_url, const char *sender,
     const std::vector<std::string> &rcpt_list) try
 {
 	if (*sender == '\0') {

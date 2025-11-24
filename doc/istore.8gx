@@ -76,8 +76,5 @@ An unprivileged user account to switch the process to after startup.
 To inhibit the switch, assign the empty value.
 .br
 Default: \fIgromox\fP
-.SH Known issues
-istore cannot exercise mail sending when using the Onestep rule processing.
-You should exercise Twostep rule processor.
 .SH See also
 \fBgromox\fP(7), \fBexmdb_provider\fP(4gx)
