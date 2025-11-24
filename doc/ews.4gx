@@ -26,9 +26,14 @@ Controls whether SOAP/XML responses produced by ews(4gx) are emitted normally
 Default: \fIno\fP
 .TP
 \fBews_request_logging\fP
-Log all requests (further restricted by log_filter).
+When set to 1 or higher, requests are logged (subject to restriction by
+log_filter). When set to 2 or higher, the XML input is dumped as well.
 .br
-Default: \fIno\fP
+Default: \fI0\fP
+.TP
+\fBews_response_logging\fP
+When set to 1 or higher, responses are logged. When set to 2 or higher, the XML
+output is dumped as well.
 .SH Normative references
 .IP \(bu 4
 OXWAVLS, OXWOOF, OXWSPHOTO

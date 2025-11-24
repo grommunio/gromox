@@ -37,7 +37,10 @@ Default: \fIno\fP
 Log ICS/synchronization requests (and their results) to this file.
 .br
 Default: \fI(empty)\fP
-.SH Configuration directives
+.TP
+\fBoutgoing_smtp_url\fP
+See gromox.cfg(5):outgoing_smtp_url.
+.SH Configuration directives (exmdb_provider.cfg)
 The usual config file location is /etc/gromox/exmdb_provider.cfg.
 .TP
 \fBcache_interval\fP

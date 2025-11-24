@@ -1,5 +1,5 @@
-Development 3.1.232
-===================
+Gromox 3.2 (2025-11-24)
+=======================
 
 Enhancements:
 
@@ -35,6 +35,7 @@ Fixes:
   spurious use-after-free/crash
 * ews: include PR_CONTAINER_CLASS in response when obtaining folder properties
 * ews: add missing locking for concurrent ``EWSPlugin::unsubscribe`` invocation
+* ews: avoid sending out emClient's draft messages
 * emsmdb: ``ropOpenStream`` with MAPI_CREATE did not truncate the result to the
   right length, which was fixed
 * html2rtf: map some CSS ``font-size`` keywords to sensible point sizes for RTF
