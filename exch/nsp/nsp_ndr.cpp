@@ -132,15 +132,15 @@ static pack_result nsp_ndr_pull_proptag_array(NDR_PULL &x, LPROPTAG_ARRAY *r)
 	return x.trailer_align(4);
 }
 
-static pack_result nsp_ndr_push_proptag_array(NDR_PUSH &x, const LPROPTAG_ARRAY &r)
+static pack_result nsp_ndr_push_proptag_array(NDR_PUSH &x, proptag_cspan r)
 {
-	TRY(x.p_ulong(r.cvalues + 1));
+	TRY(x.p_ulong(r.size() + 1));
 	TRY(x.align(4));
-	TRY(x.p_uint32(r.cvalues));
+	TRY(x.p_uint32(r.size()));
 	TRY(x.p_ulong(0));
-	TRY(x.p_ulong(r.cvalues));
-	for (size_t cnt = 0; cnt < r.cvalues; ++cnt)
-		TRY(x.p_uint32(r.pproptag[cnt]));
+	TRY(x.p_ulong(r.size()));
+	for (auto t : r)
+		TRY(x.p_uint32(t));
 	return x.trailer_align(4);
 }
 

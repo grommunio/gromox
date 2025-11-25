@@ -59,6 +59,12 @@ enum {
 	TI_SCRIPT = 0x4,
 };
 
+static constexpr proptag_t nsp_default_tags[] = {
+	PR_EMS_AB_CONTAINERID, PR_OBJECT_TYPE, PR_DISPLAY_TYPE,
+	PR_DISPLAY_NAME_A, PR_PRIMARY_TELEPHONE_NUMBER_A,
+	PR_DEPARTMENT_NAME_A, PR_OFFICE_LOCATION_A,
+};
+
 unsigned int g_nsp_trace;
 static gromox::archive abkt_archive;
 
@@ -498,7 +504,7 @@ static ec_error_t nsp_interface_fetch_property(const ab_tree::ab_node &node,
 }		
 
 static ec_error_t nsp_interface_fetch_row(const ab_tree::ab_node &node,
-    bool b_ephid, cpid_t codepage, const LPROPTAG_ARRAY *pproptags,
+    bool b_ephid, cpid_t codepage, proptag_cspan pproptags,
     NSP_PROPROW *prow)
 {
 	PROPERTY_VALUE *pprop;
@@ -506,12 +512,12 @@ static ec_error_t nsp_interface_fetch_row(const ab_tree::ab_node &node,
 	auto node_type = node.type();
 	if (node_type >= ab_tree::abnode_type::containers)
 		return ecInvalidObject;
-	for (size_t i = 0; i < pproptags->cvalues; ++i) {
+	for (size_t i = 0; i < pproptags.size(); ++i) {
 		pprop = common_util_propertyrow_enlarge(prow);
 		if (pprop == nullptr)
 			return ecServerOOM;
 		auto err_val = nsp_interface_fetch_property(node, b_ephid, codepage,
-		               pproptags->pproptag[i], pprop);
+		               pproptags[i], pprop);
 		if (err_val != ecSuccess) {
 			pprop->proptag = CHANGE_PROP_TYPE(pprop->proptag, PT_ERROR);
 			pprop->value.err = err_val != ecServerOOM ? err_val : ecMAPIOOM;
@@ -698,16 +704,16 @@ ec_error_t nsp_interface_update_stat(NSPI_HANDLE handle, STAT &xstat, int32_t *p
 	return ecSuccess;
 }
 
-static void nsp_interface_make_ptyperror_row(const LPROPTAG_ARRAY *pproptags,
+static void nsp_interface_make_ptyperror_row(proptag_cspan pproptags,
     NSP_PROPROW *prow)
 {
 	prow->reserved = 0x0;
-	prow->cvalues = pproptags->cvalues;
+	prow->cvalues = pproptags.size();
 	prow->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, prow->cvalues);
 	if (prow->pprops == nullptr)
 		return;
 	for (size_t i = 0; i < prow->cvalues; ++i) {
-		prow->pprops[i].proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
+		prow->pprops[i].proptag = CHANGE_PROP_TYPE(pproptags[i], PT_ERROR);
 		prow->pprops[i].reserved = 0x0;
 		prow->pprops[i].value.err = 0;
 	}
@@ -715,7 +721,7 @@ static void nsp_interface_make_ptyperror_row(const LPROPTAG_ARRAY *pproptags,
 
 ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
     STAT &xstat, uint32_t table_count, uint32_t *ptable, uint32_t count,
-    const LPROPTAG_ARRAY *pproptags, NSP_ROWSET **pprows)
+    const LPROPTAG_ARRAY *itags, NSP_ROWSET **pprows)
 {
 	auto pstat = &xstat;
 	/*
@@ -737,27 +743,11 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	if (count == 0)
 		/* MS-OXNSPI v14 §3.1.4.1.8 point 10 */
 		count = 1;
-	
-	if (NULL == pproptags) {
-		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
-		if (nt == nullptr)
-			return ecServerOOM;
-		/* MS-OXNSPI v14 §3.1.4.1.8 point 6.2 / MS-NSPI v15 §3.1.4.8 point 6.2 */
-		pproptags = nt;
-		nt->cvalues = 7;
-		nt->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, nt->cvalues);
-		if (nt->pproptag == nullptr)
-			return ecServerOOM;
-		nt->pproptag[0] = PR_EMS_AB_CONTAINERID;
-		nt->pproptag[1] = PR_OBJECT_TYPE;
-		nt->pproptag[2] = PR_DISPLAY_TYPE;
-		nt->pproptag[3] = PR_DISPLAY_NAME_A;
-		nt->pproptag[4] = PR_PRIMARY_TELEPHONE_NUMBER_A;
-		nt->pproptag[5] = PR_DEPARTMENT_NAME_A;
-		nt->pproptag[6] = PR_OFFICE_LOCATION_A;
-	} else if (pproptags->cvalues > 100) {
+
+	/* MS-OXNSPI v14 §3.1.4.1.8 point 6.2 / MS-NSPI v15 §3.1.4.8 point 6.2 */
+	auto pproptags = itags != nullptr ? proptag_cspan(*itags) : proptag_cspan(nsp_default_tags);
+	if (pproptags.size() > 100)
 		return ecTableTooBig;
-	}
 	auto pbase = ab_tree::AB.get(handle.guid);
 	if (pbase == nullptr || !session_check(handle, *pbase))
 		return ecError;
@@ -872,7 +862,7 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 
 ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
     STAT &xstat, const PROPERTY_VALUE &target, const MID_ARRAY *ptable,
-    const LPROPTAG_ARRAY *pproptags, NSP_ROWSET **pprows)
+    const LPROPTAG_ARRAY *itags, NSP_ROWSET **pprows)
 {
 	auto pstat = &xstat;
 	*pprows = nullptr;
@@ -896,25 +886,10 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	} else {
 		return ecError;
 	}
-	if (NULL == pproptags) {
-		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
-		if (nt == nullptr)
-			return ecServerOOM;
-		pproptags = nt;
-		nt->cvalues = 7;
-		nt->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, nt->cvalues);
-		if (nt->pproptag == nullptr)
-			return ecServerOOM;
-		nt->pproptag[0] = PR_EMS_AB_CONTAINERID;
-		nt->pproptag[1] = PR_OBJECT_TYPE;
-		nt->pproptag[2] = PR_DISPLAY_TYPE;
-		nt->pproptag[3] = PR_DISPLAY_NAME_A;
-		nt->pproptag[4] = PR_PRIMARY_TELEPHONE_NUMBER_A;
-		nt->pproptag[5] = PR_DEPARTMENT_NAME_A;
-		nt->pproptag[6] = PR_OFFICE_LOCATION_A;
-	} else if (pproptags->cvalues > 100) {
+
+	auto pproptags = itags != nullptr ? proptag_cspan(*itags) : proptag_cspan(nsp_default_tags);
+	if (pproptags.size() > 100)
 		return ecTableTooBig;
-	}
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
 	auto pbase = ab_tree::AB.get(handle.guid);
@@ -1301,7 +1276,8 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 	}
 
-	if (rowset != nullptr) {
+	if (pproptags != nullptr && rowset != nullptr) {
+		proptag_cspan tags(*pproptags);
 		for (size_t i = 0; i < outmids->cvalues; ++i) {
 			auto prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr ||
@@ -1309,12 +1285,12 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				return ecServerOOM;
 			ab_tree::ab_node node(base, outmids->pproptag[i]);
 			if (!node.exists()) {
-				nsp_interface_make_ptyperror_row(pproptags, prow);
+				nsp_interface_make_ptyperror_row(tags, prow);
 			} else {
 				auto result = nsp_interface_fetch_row(node, true,
-				              pstat->codepage, pproptags, prow);
+				              pstat->codepage, tags, prow);
 				if (result != ecSuccess)
-					nsp_interface_make_ptyperror_row(pproptags, prow);
+					nsp_interface_make_ptyperror_row(tags, prow);
 			}
 		}
 	}
@@ -1651,11 +1627,11 @@ ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	ec_error_t result;
 	if (!node.exists()) {
 		/* MS-OXNSPI v14 §3.1.4.1.7 point 11 */
-		nsp_interface_make_ptyperror_row(pproptags, rowset);
+		nsp_interface_make_ptyperror_row(*pproptags, rowset);
 		result = ecWarnWithErrors;
 	} else {
 		result = nsp_interface_fetch_row(node, b_ephid,
-		         pstat->codepage, pproptags, rowset);
+		         pstat->codepage, *pproptags, rowset);
 	}
 	if (result != ecSuccess) {
 		if (result == ecWarnWithErrors)
@@ -2124,7 +2100,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			    common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
 			auto result = nsp_interface_fetch_row(ab_tree::ab_node(base, mid),
-			              false, pstat->codepage, pproptags, prow);
+			              false, pstat->codepage, *pproptags, prow);
 			if (result != ecSuccess)
 				return result;
 		}
@@ -2176,7 +2152,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			if (prow == nullptr || common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
 			auto result = nsp_interface_fetch_row({base, found},
-			              false, pstat->codepage, pproptags, prow);
+			              false, pstat->codepage, *pproptags, prow);
 			if (result != ecSuccess)
 				return result;
 		}
