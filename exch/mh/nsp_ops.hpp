@@ -87,7 +87,7 @@ struct getmatches_request {
 	STAT stat;
 	RESTRICTION *filter = nullptr;
 	nsp_propname2 *propname = nullptr;
-	LPROPTAG_ARRAY *columns = nullptr;
+	std::optional<std::vector<gromox::proptag_t>> columns;
 	uint8_t *auxin = nullptr;
 };
 

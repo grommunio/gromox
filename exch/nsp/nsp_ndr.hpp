@@ -98,7 +98,7 @@ struct NSPIGETMATCHES_IN final : public nsp_request {
 	STAT stat;
 	NSPRES *pfilter = nullptr;
 	NSP_PROPNAME *ppropname = nullptr;
-	LPROPTAG_ARRAY *pproptags = nullptr;
+	std::optional<std::vector<gromox::proptag_t>> pproptags;
 };
 
 struct NSPIGETMATCHES_OUT final : public nsp_response {

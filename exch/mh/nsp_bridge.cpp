@@ -103,7 +103,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	response.stat = request.stat;
 	auto result = nsp_interface_get_matches(ses, request.reserved1, response.stat,
 	              nspres, nspname, request.row_count,
-	              &response.mids, request.columns, &outrows);
+	              &response.mids, optional_ptr(request.columns), &outrows);
 	if (Failed(result))
 		return result;
 	if (outrows != nullptr &&

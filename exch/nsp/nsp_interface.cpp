@@ -1114,7 +1114,7 @@ static std::vector<std::string> delegates_for(const char *dir) try
  */
 ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
     STAT &xstat, const NSPRES *pfilter, const NSP_PROPNAME *ppropname,
-    uint32_t requested, MID_ARRAY **ppoutmids, const LPROPTAG_ARRAY *pproptags,
+    uint32_t requested, MID_ARRAY **ppoutmids, const std::vector<proptag_t> *pproptags,
     NSP_ROWSET **pprows)
 {
 	auto pstat = &xstat;
@@ -1142,7 +1142,7 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		return ecServerOOM;
 	NSP_ROWSET *rowset = nullptr;
 	if (pproptags != nullptr) {
-		if (pproptags->cvalues > 100)
+		if (pproptags->size() > 100)
 			return ecTableTooBig;
 		rowset = common_util_proprowset_init();
 		if (rowset == nullptr)

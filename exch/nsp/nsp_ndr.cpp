@@ -1932,10 +1932,8 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIGETMATCHES_IN *r)
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
 		/* Marked as reserved in OXNSPI v14 §3.1.4.1.10 */
-		auto ptable = ndr_stack_anew<MINID_ARRAY>(NDR_STACK_IN);
-		if (ptable == nullptr)
-			return pack_result::alloc;
-		TRY(nsp_ndr_pull_proptag_array(x, ptable));
+		std::vector<minid_t> ptable;
+		TRY(nsp_ndr_pull_proptag_array(x, &ptable));
 	}
 	TRY(x.g_uint32(&resv));
 	TRY(x.g_genptr(&ptr));
@@ -1960,12 +1958,10 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIGETMATCHES_IN *r)
 	TRY(x.g_uint32(&r->requested));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
-		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
-		if (r->pproptags == nullptr)
-			return pack_result::alloc;
-		TRY(nsp_ndr_pull_proptag_array(x, r->pproptags));
+		r->pproptags.emplace();
+		TRY(nsp_ndr_pull_proptag_array(x, &*r->pproptags));
 	} else {
-		r->pproptags = NULL;
+		r->pproptags.reset();
 	}
 	return pack_result::ok;
 }
