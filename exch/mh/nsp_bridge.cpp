@@ -296,7 +296,8 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 		return ecRpcFailed;
 	response.stat = request.stat;
 	auto result = nsp_interface_seek_entries(ses, request.reserved, response.stat,
-	              target_val, request.explicit_table, request.columns, &rows);
+	              target_val, optional_ptr(request.explicit_table),
+	              optional_ptr(request.columns), &rows);
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&

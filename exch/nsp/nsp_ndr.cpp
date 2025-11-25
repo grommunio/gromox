@@ -1893,21 +1893,17 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPISEEKENTRIES_IN *r)
 	TRY(nsp_ndr_pull_property_value(x, FLAG_HEADER|FLAG_CONTENT, &r->target));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
-		r->ptable = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
-		if (r->ptable == nullptr)
-			return pack_result::alloc;
-		TRY(nsp_ndr_pull_proptag_array(x, r->ptable));
+		r->ptable.emplace();
+		TRY(nsp_ndr_pull_proptag_array(x, &*r->ptable));
 	} else {
-		r->ptable = NULL;
+		r->ptable.reset();
 	}
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
-		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
-		if (r->pproptags == nullptr)
-			return pack_result::alloc;
-		TRY(nsp_ndr_pull_proptag_array(x, r->pproptags));
+		r->pproptags.emplace();
+		TRY(nsp_ndr_pull_proptag_array(x, &*r->pproptags));
 	} else {
-		r->pproptags = NULL;
+		r->pproptags.reset();
 	}
 	return pack_result::ok;
 }

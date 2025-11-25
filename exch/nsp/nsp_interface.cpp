@@ -843,8 +843,8 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 }
 
 ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
-    STAT &xstat, const PROPERTY_VALUE &target, const MID_ARRAY *ptable,
-    const LPROPTAG_ARRAY *itags, NSP_ROWSET **pprows)
+    STAT &xstat, const PROPERTY_VALUE &target, const std::vector<minid_t> *ptable,
+    const std::vector<proptag_t> *itags, NSP_ROWSET **pprows)
 {
 	auto pstat = &xstat;
 	*pprows = nullptr;
@@ -884,15 +884,15 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	if (NULL != ptable) {
 		size_t row = 0;
 		uint32_t tmp_minid = 0;
-		for (size_t i = 0; i < ptable->cvalues; ++i) {
-			ab_tree::ab_node node1{pbase, ptable->pproptag[i]};
+		for (size_t i = 0; i < ptable->size(); ++i) {
+			ab_tree::ab_node node1{pbase, (*ptable)[i]};
 			if (!node1.exists())
 				continue;
 			const std::string &temp_name = node1.displayname();
 			if (strcasecmp(temp_name.c_str(), ptarget->value.pstr) < 0)
 				continue;
 			if (0 == tmp_minid) {
-				tmp_minid = ptable->pproptag[i];
+				tmp_minid = (*ptable)[i];
 				row = i;
 			}
 			if (tmp_minid == 0)

@@ -516,21 +516,17 @@ pack_result nsp_ext_pull::g_nsp_request(seekentries_request &req)
 		TRY(g_tagged_pv(&req.target));
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
-		req.explicit_table = nullptr;
+		req.explicit_table.reset();
 	} else {
-		req.explicit_table = anew<MID_ARRAY>();
-		if (req.explicit_table == nullptr)
-			return pack_result::alloc;
-		TRY(g_proptag_la(req.explicit_table));
+		req.explicit_table.emplace();
+		TRY(g_proptag_a(&*req.explicit_table, 4));
 	}
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
-		req.columns = nullptr;
+		req.columns.reset();
 	} else {
-		req.columns = anew<LPROPTAG_ARRAY>();
-		if (req.columns == nullptr)
-			return pack_result::alloc;
-		TRY(g_proptag_la(req.columns));
+		req.columns.emplace();
+		TRY(g_proptag_a(&*req.columns, 4));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {

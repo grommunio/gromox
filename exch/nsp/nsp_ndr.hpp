@@ -82,8 +82,8 @@ struct NSPISEEKENTRIES_IN final : public nsp_request {
 	STAT stat;
 	uint32_t reserved = 0;
 	PROPERTY_VALUE target{};
-	MINID_ARRAY *ptable = nullptr;
-	LPROPTAG_ARRAY *pproptags = nullptr;
+	std::optional<std::vector<minid_t>> ptable;
+	std::optional<std::vector<gromox::proptag_t>> pproptags;
 };
 
 struct NSPISEEKENTRIES_OUT final : public nsp_response {

@@ -1,6 +1,7 @@
 #pragma once
 #include <optional>
 #include <string>
+#include <vector>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include "../nsp/nsp_types.hpp"
@@ -238,8 +239,8 @@ struct seekentries_request {
 	uint32_t reserved = 0, cb_auxin = 0;
 	STAT stat;
 	TAGGED_PROPVAL target{};
-	MID_ARRAY *explicit_table = nullptr;
-	LPROPTAG_ARRAY *columns = nullptr;
+	std::optional<std::vector<minid_t>> explicit_table;
+	std::optional<std::vector<gromox::proptag_t>> columns;
 	uint8_t *auxin = nullptr;
 };
 
