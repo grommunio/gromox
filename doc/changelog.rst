@@ -1,3 +1,11 @@
+Development 3.2+
+================
+
+Fixes:
+
+* Revert "ews: avoid sending out emClient's draft messages", this did not work
+
+
 Gromox 3.2 (2025-11-24)
 =======================
 
