@@ -1330,6 +1330,8 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			return ecSuccess;
 		}
 		for (auto it = node.begin() + start_pos; it != node.end(); ++it) {
+			if (outmids->cvalues >= requested)
+				break;
 			if (node.hidden() & (AB_HIDE_RESOLVE | AB_HIDE_FROM_AL) ||
 			    !nsp_interface_match_node({base, *it}, pstat->codepage, pfilter))
 				continue;
@@ -1337,8 +1339,6 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (pproptag == nullptr)
 				return ecServerOOM;
 			*pproptag = *it;
-			if (outmids->cvalues >= requested)
-				break;
 		}
 	}
 
