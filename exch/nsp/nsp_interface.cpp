@@ -1291,7 +1291,8 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		ab_tree::ab_node node = {base, pstat->cur_rec};
 		if (node.exists() && nsp_interface_fetch_property(node,
 		    true, pstat->codepage, pstat->container_id, &prop_val,
-		    temp_buff, std::size(temp_buff)) == ecSuccess) {
+		    temp_buff, std::size(temp_buff)) == ecSuccess &&
+		    outmids->cvalues < requested) {
 			auto pproptag = common_util_proptagarray_enlarge(outmids);
 			if (pproptag == nullptr)
 				return ecServerOOM;
