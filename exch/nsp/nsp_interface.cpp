@@ -1114,11 +1114,10 @@ static std::vector<std::string> delegates_for(const char *dir) try
  */
 ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
     STAT &xstat, const NSPRES *pfilter, const NSP_PROPNAME *ppropname,
-    uint32_t requested, MID_ARRAY **ppoutmids, const std::vector<proptag_t> *pproptags,
-    NSP_ROWSET **pprows)
+    uint32_t requested, std::vector<minid_t> &outmids,
+    const std::vector<proptag_t> *pproptags, NSP_ROWSET **pprows) try
 {
 	auto pstat = &xstat;
-	*ppoutmids = nullptr;
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
 	if (g_nsp_trace >= 2 && pfilter != nullptr)
@@ -1137,9 +1136,7 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	auto base = ab_tree::AB.get(handle.guid);
 	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
-	auto outmids = common_util_proptagarray_init();
-	if (outmids == nullptr)
-		return ecServerOOM;
+	outmids.clear();
 	NSP_ROWSET *rowset = nullptr;
 	if (pproptags != nullptr) {
 		if (pproptags->size() > 100)
@@ -1160,7 +1157,7 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		if (!mysql_adaptor_get_mlist_memb(mlistaddr, mlistaddr, &ret, member_list))
 			return ecError;
 		for (const auto &memb : member_list) {
-			if (outmids->cvalues >= requested)
+			if (outmids.size() >= requested)
 				break;
 			unsigned int user_id = 0;
 			if (!mysql_adaptor_get_user_ids(memb.c_str(), &user_id, nullptr, nullptr))
@@ -1171,10 +1168,7 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (pfilter != nullptr &&
 			    !nsp_interface_match_node(node, pstat->codepage, pfilter))
 				continue;	
-			auto pproptag = common_util_proptagarray_enlarge(outmids);
-			if (pproptag == nullptr)
-				return ecServerOOM;
-			*pproptag = node.mid;
+			outmids.emplace_back(node.mid);
 		}
 	} else if (pstat->container_id == PR_EMS_AB_PUBLIC_DELEGATES) {
 		ab_tree::ab_node node(base, pstat->cur_rec);
@@ -1187,7 +1181,7 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			return ecError;
 		auto delegate_list = delegates_for(mres.maildir.c_str());
 		for (const auto &deleg : delegate_list) {
-			if (outmids->cvalues > requested)
+			if (outmids.size() > requested)
 				break;
 			unsigned int user_id = 0;
 			if (!mysql_adaptor_get_user_ids(deleg.c_str(), &user_id, nullptr, nullptr))
@@ -1198,38 +1192,28 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (pfilter != nullptr &&
 			    !nsp_interface_match_node(node, pstat->codepage, pfilter))
 				continue;	
-			auto pproptag = common_util_proptagarray_enlarge(outmids);
-			if (pproptag == nullptr)
-				return ecServerOOM;
-			*pproptag = node.mid;
+			outmids.emplace_back(node.mid);
 		}
 	} else if (pfilter == nullptr) {
 		/* OXNSPI v14 §3.1.4.1.10 pg. 56 item 8 */
 		ab_tree::ab_node node = {base, pstat->cur_rec};
 		if (node.exists() && nsp_interface_fetch_property(node,
 		    true, pstat->codepage, pstat->container_id, nullptr) == ecSuccess &&
-		    outmids->cvalues < requested) {
-			auto pproptag = common_util_proptagarray_enlarge(outmids);
-			if (pproptag == nullptr)
-				return ecServerOOM;
-			*pproptag = node.mid;
-		}
+		    outmids.size() < requested)
+			outmids.emplace_back(node.mid);
 	} else if (pstat->container_id == 0) {
 		/* Alternative attempt by OL to do resolvenames */
 		uint32_t start_pos, total;
 		nsp_interface_position_in_list(pstat, base.get(), &start_pos, &total);
 		for (auto it = base->ubegin() + start_pos; it != base->uend() &&
 		     static_cast<size_t>(it - base->ubegin()) < total; ++it) {
-			if (outmids->cvalues >= requested)
+			if (outmids.size() >= requested)
 				break;
 			ab_tree::ab_node node(base, *it);
 			if (node.hidden() & (AB_HIDE_RESOLVE | AB_HIDE_FROM_GAL) ||
 			    !nsp_interface_match_node(node, pstat->codepage, pfilter))
 				continue;
-			auto pproptag = common_util_proptagarray_enlarge(outmids);
-			if (pproptag == nullptr)
-				return ecServerOOM;
-			*pproptag = *it;
+			outmids.emplace_back(*it);
 		}
 	} else {
 		ab_tree::ab_node node(base, pstat->container_id);
@@ -1240,32 +1224,28 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		if (start_pos >= node.children_count()) {
 			/* MS-OXNSPI v14 §3.1.4.1.10 point 16 */
 			pstat->container_id = pstat->cur_rec;
-			*ppoutmids = outmids;
 			*pprows = rowset;
 			nsp_trace(__func__, 1, pstat, nullptr, rowset);
 			return ecSuccess;
 		}
 		for (auto it = node.begin() + start_pos; it != node.end(); ++it) {
-			if (outmids->cvalues >= requested)
+			if (outmids.size() >= requested)
 				break;
 			if (node.hidden() & (AB_HIDE_RESOLVE | AB_HIDE_FROM_AL) ||
 			    !nsp_interface_match_node({base, *it}, pstat->codepage, pfilter))
 				continue;
-			auto pproptag = common_util_proptagarray_enlarge(outmids);
-			if (pproptag == nullptr)
-				return ecServerOOM;
-			*pproptag = *it;
+			outmids.emplace_back(*it);
 		}
 	}
 
 	if (pproptags != nullptr && rowset != nullptr) {
 		proptag_cspan tags(*pproptags);
-		for (size_t i = 0; i < outmids->cvalues; ++i) {
+		for (size_t i = 0; i < outmids.size(); ++i) {
 			auto prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr ||
 			    common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
-			ab_tree::ab_node node(base, outmids->pproptag[i]);
+			ab_tree::ab_node node(base, outmids[i]);
 			if (!node.exists()) {
 				nsp_interface_make_ptyperror_row(tags, prow);
 			} else {
@@ -1280,9 +1260,11 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	/* MS-OXNSPI v14 §3.1.4.1.10 point 16 */
 	pstat->container_id = pstat->cur_rec;
 	nsp_trace(__func__, 1, pstat, nullptr, rowset);
-	*ppoutmids = outmids;
 	*pprows = rowset;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,

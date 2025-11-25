@@ -104,7 +104,7 @@ struct NSPIGETMATCHES_IN final : public nsp_request {
 struct NSPIGETMATCHES_OUT final : public nsp_response {
 	STAT stat;
 	ec_error_t result{};
-	MINID_ARRAY *poutmids = nullptr;
+	std::vector<minid_t> poutmids;
 	NSP_ROWSET *prows = nullptr;
 };
 

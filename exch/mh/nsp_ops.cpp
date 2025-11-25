@@ -664,13 +664,10 @@ pack_result nsp_ext_push::p_nsp_response(const getmatches_response &rsp)
 	TRY(p_uint32(rsp.result));
 	TRY(p_uint8(0xFF));
 	TRY(nsp_ext_p_stat(*this, rsp.stat));
-	if (rsp.result != ecSuccess || rsp.mids == nullptr) {
+	if (rsp.result != ecSuccess) {
 		/* OXNSPI v14 §3.1.4.1.10 SPR ¶4 */
 		TRY(p_uint8(0));
-		TRY(p_uint8(0));
 	} else {
-		TRY(p_uint8(0xFF));
-		TRY(p_proptag_la(*rsp.mids));
 		TRY(p_uint8(0xFF));
 		TRY(nsp_ext_p_colrow(*this, &rsp.column_rows));
 	}

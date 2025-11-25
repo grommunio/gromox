@@ -221,7 +221,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		out->stat = in->stat;
 		out->result = nsp_interface_get_matches(in->handle,
 		              in->reserved1, out->stat, in->pfilter, in->ppropname,
-		              in->requested, &out->poutmids, optional_ptr(in->pproptags),
+		              in->requested, out->poutmids, optional_ptr(in->pproptags),
 		              &out->prows);
 		*ecode = out->result;
 		ppout = std::move(out);
