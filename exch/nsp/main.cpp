@@ -251,7 +251,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto out = std::make_unique<NSPIGETPROPLIST_OUT>();
 		out->result = nsp_interface_get_proplist(in->handle, in->flags,
 		              in->mid, static_cast<cpid_t>(in->codepage),
-		              &out->pproptags);
+		              out->proptags);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;

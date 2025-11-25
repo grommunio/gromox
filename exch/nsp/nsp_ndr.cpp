@@ -2049,9 +2049,8 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIGETPROPLIST_OUT &r)
 		/* OXNSPI v14 §3.1.4.1.6 SPR ¶1 */
 		TRY(x.p_unique_ptr(nullptr));
 	} else {
-		TRY(x.p_unique_ptr(r.pproptags));
-		if (r.pproptags != nullptr)
-			TRY(nsp_ndr_push_proptag_array(x, *r.pproptags));
+		TRY(x.p_unique_ptr(&r.proptags));
+		TRY(nsp_ndr_push_proptag_array(x, r.proptags));
 	}
 	return x.p_uint32(r.result);
 }

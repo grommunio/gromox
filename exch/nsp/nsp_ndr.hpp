@@ -137,7 +137,7 @@ struct NSPIGETPROPLIST_IN final : public nsp_request {
 };
 
 struct NSPIGETPROPLIST_OUT final : public nsp_response {
-	LPROPTAG_ARRAY *pproptags = nullptr;
+	std::vector<gromox::proptag_t> proptags;
 	ec_error_t result{};
 };
 

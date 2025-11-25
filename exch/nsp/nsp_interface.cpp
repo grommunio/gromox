@@ -1441,11 +1441,10 @@ static ec_error_t nsp_get_proptags(const ab_tree::ab_node &node,
 
 /* MS-OXNSPI v14 §3.1.4.1.6 */
 ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
-    uint32_t mid, cpid_t codepage, LPROPTAG_ARRAY **tags)
+    uint32_t mid, cpid_t codepage, std::vector<proptag_t> &ctags) try
 {
 	if (g_nsp_trace > 0)
 		fprintf(stderr, "Entering %s\n", __func__);
-	*tags = nullptr;
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
 	if (mid == 0)
@@ -1453,30 +1452,15 @@ ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	auto base = ab_tree::AB.get(handle.guid);
 	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
-	*tags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
-	if (*tags == nullptr)
-		return ecServerOOM;
 	ab_tree::ab_node node(base, mid);
-	if (!node.exists()) {
-		*tags = nullptr;
+	if (!node.exists())
 		return ecInvalidObject;
-	}
 
 	/* Grab tags */
-	std::vector<proptag_t> ctags;
 	bool b_unicode = codepage == CP_WINUNICODE;
 	auto ret = nsp_get_proptags(node, ctags, b_unicode);
 	if (ret != ecSuccess)
 		return ret;
-
-	/* Copy out */
-	(*tags)->cvalues = ctags.size();
-	(*tags)->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, ctags.size());
-	if ((*tags)->pproptag == nullptr) {
-		*tags = nullptr;
-		return ecServerOOM;
-	}
-	memcpy((*tags)->pproptag, ctags.data(), sizeof(uint32_t) * ctags.size());
 	if (g_nsp_trace >= 2) {
 		fprintf(stderr, "Leaving %s\n\ttags[%zu]={", __func__, ctags.size());
 		for (auto value : ctags)
@@ -1484,6 +1468,9 @@ ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 		fprintf(stderr, "}\n");
 	}
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 /* MS-OXNSPI v14 §3.1.4.1.7 */

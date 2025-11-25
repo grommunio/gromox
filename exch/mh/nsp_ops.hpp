@@ -108,7 +108,7 @@ struct getproplist_request {
 struct getproplist_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	LPROPTAG_ARRAY *proptags = nullptr;
+	std::vector<minid_t> proptags;
 };
 
 struct getprops_request {

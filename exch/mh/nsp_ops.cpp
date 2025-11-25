@@ -675,12 +675,12 @@ pack_result nsp_ext_push::p_nsp_response(const getproplist_response &rsp)
 	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
-	if (rsp.result != ecSuccess || rsp.proptags == nullptr) {
+	if (rsp.result != ecSuccess) {
 		/* OXNSPI v14 §3.1.4.1.6 SPR ¶1 */
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_la(*rsp.proptags));
+		TRY(p_proptag_la(rsp.proptags));
 	}
 	return p_uint32(0);
 }

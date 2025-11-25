@@ -118,7 +118,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	return nsp_interface_get_proplist(ses, request.flags, request.mid,
-	       request.codepage, &response.proptags);
+	       request.codepage, response.proptags);
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
