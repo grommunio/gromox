@@ -1242,7 +1242,7 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		if (!mysql_adaptor_get_mlist_memb(mlistaddr, mlistaddr, &ret, member_list))
 			return ecError;
 		for (const auto &memb : member_list) {
-			if (outmids->cvalues > requested)
+			if (outmids->cvalues >= requested)
 				break;
 			unsigned int user_id = 0;
 			if (!mysql_adaptor_get_user_ids(memb.c_str(), &user_id, nullptr, nullptr))
