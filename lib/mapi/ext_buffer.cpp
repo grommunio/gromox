@@ -1154,10 +1154,18 @@ pack_result EXT_PULL::g_proptag_a(PROPTAG_ARRAY *r)
 	return pack_result::ok;
 }
 
-pack_result EXT_PULL::g_proptag_a(std::vector<proptag_t> *r) try
+pack_result EXT_PULL::g_proptag_a(std::vector<proptag_t> *r, uint8_t ix) try
 {
-	uint16_t count;
-	TRY(g_uint16(&count));
+	size_t count = 0;
+	if (ix == 2) {
+		uint16_t z;
+		TRY(g_uint16(&z));
+		count = z;
+	} else if (ix == 4) {
+		uint32_t z;
+		TRY(g_uint32(&z));
+		count = z;
+	}
 	r->resize(count);
 	for (size_t i = 0; i < count; ++i)
 		TRY(g_uint32(&(*r)[i]));

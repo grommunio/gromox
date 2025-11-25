@@ -382,16 +382,14 @@ pack_result nsp_ext_pull::g_nsp_request(queryrows_request &req)
 		req.stat = {};
 	else
 		TRY(nsp_ext_g_stat(*this, req.stat));
-	TRY(g_proptag_la(&req.explicit_table));
+	TRY(g_proptag_a(&req.explicit_table, 4));
 	TRY(g_uint32(&req.count));
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
-		req.columns = nullptr;
+		req.columns.reset();
 	} else {
-		req.columns = anew<LPROPTAG_ARRAY>();
-		if (req.columns == nullptr)
-			return pack_result::alloc;
-		TRY(g_proptag_la(req.columns));
+		req.columns.emplace();
+		TRY(g_proptag_a(&*req.columns, 4));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {

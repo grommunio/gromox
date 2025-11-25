@@ -14,7 +14,7 @@ extern void nsp_interface_init();
 extern ec_error_t nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT &, FLATUID *server_guid, NSPI_HANDLE *);
 extern ec_error_t nsp_interface_unbind(NSPI_HANDLE *);
 extern ec_error_t nsp_interface_update_stat(NSPI_HANDLE, STAT &, int32_t *delta);
-extern ec_error_t nsp_interface_query_rows(NSPI_HANDLE, uint32_t flags, STAT &, uint32_t table_count, uint32_t *table, uint32_t count, const LPROPTAG_ARRAY *, NSP_ROWSET **);
+extern ec_error_t nsp_interface_query_rows(NSPI_HANDLE, uint32_t flags, STAT &, const std::vector<minid_t> *table, uint32_t maxrows, const std::vector<gromox::proptag_t> *, NSP_ROWSET **);
 extern ec_error_t nsp_interface_seek_entries(NSPI_HANDLE, uint32_t, STAT &, const PROPERTY_VALUE &target, const MID_ARRAY *table, const LPROPTAG_ARRAY *, NSP_ROWSET **);
 extern ec_error_t nsp_interface_get_matches(NSPI_HANDLE, uint32_t reserved1, STAT &, const NSPRES *filter, const NSP_PROPNAME *, uint32_t requested, MID_ARRAY **outmids, const LPROPTAG_ARRAY *, NSP_ROWSET **);
 extern ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE, STAT &, const MID_ARRAY *in, MID_ARRAY **out);

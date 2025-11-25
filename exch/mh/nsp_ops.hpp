@@ -5,6 +5,8 @@
 #include <gromox/mapi_types.hpp>
 #include "../nsp/nsp_types.hpp"
 
+using minid_t = uint32_t;
+
 struct nsp_propname2 {
 	GUID guid{};
 	uint32_t id = 0;
@@ -179,8 +181,8 @@ struct modprops_response {
 struct queryrows_request {
 	uint32_t flags = 0, count = 0, cb_auxin = 0;
 	STAT stat;
-	LPROPTAG_ARRAY *columns = nullptr;
-	MID_ARRAY explicit_table{};
+	std::vector<minid_t> explicit_table; /* nullable in OXNSPI, but not in MH */
+	std::optional<std::vector<gromox::proptag_t>> columns;
 	uint8_t *auxin = nullptr;
 };
 

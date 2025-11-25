@@ -159,7 +159,7 @@ struct GX_EXPORT EXT_PULL {
 	pack_result g_guid_a(GUID_ARRAY *);
 	pack_result g_guid_a(std::vector<GUID> *);
 	pack_result g_proptag_a(PROPTAG_ARRAY *);
-	pack_result g_proptag_a(std::vector<gromox::proptag_t> *);
+	pack_result g_proptag_a(std::vector<gromox::proptag_t> *, uint8_t lv = 2);
 	pack_result g_proptag_la(LPROPTAG_ARRAY *);
 	pack_result g_restriction(RESTRICTION *);
 	pack_result g_svreid(SVREID *);

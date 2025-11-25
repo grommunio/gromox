@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <optional>
+#include <vector>
 #include <gromox/defs.h>
 #include <gromox/ndr.hpp>
 #include "nsp_types.hpp"
@@ -65,9 +66,9 @@ struct NSPIUPDATESTAT_OUT final : public nsp_response {
 struct NSPIQUERYROWS_IN final : public nsp_request {
 	NSPI_HANDLE handle{};
 	STAT stat;
-	uint32_t flags = 0, table_count = 0, count = 0;
-	uint32_t *ptable = nullptr;
-	LPROPTAG_ARRAY *pproptags = nullptr;
+	uint32_t flags = 0, count = 0;
+	std::optional<std::vector<minid_t>> ptable; /* nullable in OXNSPI, but not in MH */
+	std::optional<std::vector<gromox::proptag_t>> pproptags;
 };
 
 struct NSPIQUERYROWS_OUT final : public nsp_response {

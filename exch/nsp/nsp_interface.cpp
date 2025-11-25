@@ -716,8 +716,8 @@ static void nsp_interface_make_ptyperror_row(proptag_cspan pproptags,
 }
 
 ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
-    STAT &xstat, uint32_t table_count, uint32_t *ptable, uint32_t count,
-    const LPROPTAG_ARRAY *itags, NSP_ROWSET **pprows)
+    STAT &xstat, const std::vector<minid_t> *ptable, uint32_t count,
+    const std::vector<proptag_t> *itags, NSP_ROWSET **pprows)
 {
 	auto pstat = &xstat;
 	/*
@@ -727,7 +727,7 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	 */
 	*pprows = nullptr;
 	if (g_nsp_trace > 0)
-		fprintf(stderr, "nsp_query_rows: table_count=%u count=%u\n", table_count, count);
+		fprintf(stderr, "nsp_query_rows: table_count=%zu count=%u\n", ptable ? ptable->size() : 0, count);
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
 	nsp_trace(__func__, 0, pstat);
@@ -753,12 +753,12 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	
 	bool b_ephid = flags & fEphID;
 	if (ptable != nullptr) {
-		for (size_t i = 0; i < table_count; ++i) {
+		for (size_t i = 0; i < ptable->size(); ++i) {
 			auto prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr ||
 			    common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
-			ab_tree::ab_node node(pbase, ptable[i]);
+			ab_tree::ab_node node(pbase, (*ptable)[i]);
 			if (!node.exists()) {
 				nsp_interface_make_ptyperror_row(pproptags, prow);
 				continue;

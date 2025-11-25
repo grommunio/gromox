@@ -132,6 +132,30 @@ static pack_result nsp_ndr_pull_proptag_array(NDR_PULL &x, LPROPTAG_ARRAY *r)
 	return x.trailer_align(4);
 }
 
+static pack_result nsp_ndr_pull_proptag_array(NDR_PULL &x, std::vector<proptag_t> *r) try
+{
+	uint32_t size, offset, length, cvalues;
+	
+	TRY(x.g_ulong(&size));
+	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
+	TRY(x.align(4));
+	TRY(x.g_uint32(&cvalues));
+	if (cvalues > 100001)
+		return pack_result::range;
+	TRY(x.g_ulong(&offset));
+	TRY(x.g_ulong(&length));
+	if (offset != 0 || length > size)
+		return pack_result::array_size;
+	if (size != cvalues || length != cvalues)
+		return pack_result::array_size;
+	r->resize(length);
+	for (size_t cnt = 0; cnt < length; ++cnt)
+		TRY(x.g_uint32(&(*r)[cnt]));
+	return x.trailer_align(4);
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
+}
+
 static pack_result nsp_ndr_push_proptag_array(NDR_PUSH &x, proptag_cspan r)
 {
 	TRY(x.p_ulong(r.size() + 1));
@@ -1810,42 +1834,38 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIUPDATESTAT_OUT &r)
 	return pack_result::ok;
 }
 
-static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIQUERYROWS_IN *r)
+static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIQUERYROWS_IN *r) try
 {
-	uint32_t ptr;
-	uint32_t size;
-	
+	uint32_t ptr, table_count, size;
 	
 	TRY(x.g_ctx_handle(&r->handle));
 	TRY(x.g_uint32(&r->flags));
 	TRY(nsp_ndr_pull_stat(x, &r->stat));
-	TRY(x.g_uint32(&r->table_count));
-	if (r->table_count > 100000)
+	TRY(x.g_uint32(&table_count));
+	if (table_count > 100000)
 		return pack_result::range;
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
 		TRY(x.g_ulong(&size));
-		if (size != r->table_count)
+		if (size != table_count)
 			return pack_result::array_size;
-		r->ptable = ndr_stack_anew<uint32_t>(NDR_STACK_IN, size);
-		if (r->ptable == nullptr)
-			return pack_result::alloc;
+		r->ptable.emplace(size);
 		for (size_t cnt = 0; cnt < size; ++cnt)
-			TRY(x.g_uint32(&r->ptable[cnt]));
+			TRY(x.g_uint32(&(*r->ptable)[cnt]));
 	} else {
-		r->ptable = NULL;
+		r->ptable.reset();
 	}
 	TRY(x.g_uint32(&r->count));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
-		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
-		if (r->pproptags == nullptr)
-			return pack_result::alloc;
-		TRY(nsp_ndr_pull_proptag_array(x, r->pproptags));
+		r->pproptags.emplace();
+		TRY(nsp_ndr_pull_proptag_array(x, &*r->pproptags));
 	} else {
-		r->pproptags = NULL;
+		r->pproptags.reset();
 	}
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIQUERYROWS_OUT &r)

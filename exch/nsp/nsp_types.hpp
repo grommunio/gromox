@@ -15,6 +15,8 @@ struct STAT {
 };
 
 /* MID_ARRAY is semantically different, but layout-compatible to LPROPTAG_ARRAY (and exchange_nsp uses the proptag deserializer). */
+using minid_t = uint32_t;
+using minid_cspan = proptag_cspan;
 using MID_ARRAY = LPROPTAG_ARRAY;
 using MINID_ARRAY = LPROPTAG_ARRAY;
 

@@ -154,7 +154,8 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 	}
 }
 
-template<typename T> static inline T *optional_ptr(std::optional<T> &p) { return p ? &*p : nullptr; }
+template<typename T> static inline auto optional_ptr(std::optional<T> &p) { return p ? &*p : nullptr; }
+template<typename T> static inline auto optional_ptr(const std::optional<T> &p) { return p ? &*p : nullptr; }
 
 static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
     uint64_t handle, const rpc_request *pin, std::unique_ptr<rpc_response> &ppout,
@@ -196,8 +197,8 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto out = std::make_unique<NSPIQUERYROWS_OUT>();
 		out->stat = in->stat;
 		out->result = nsp_interface_query_rows(in->handle, in->flags,
-		              out->stat, in->table_count, in->ptable, in->count,
-		              in->pproptags, &out->prows);
+		              out->stat, optional_ptr(in->ptable), in->count,
+		              optional_ptr(in->pproptags), &out->prows);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;

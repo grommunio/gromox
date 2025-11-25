@@ -29,6 +29,10 @@ static inline bool Failed(ec_error_t hresult)
 	return hresult != ecSuccess && hresult != ecWarnWithErrors;
 }
 
+template<typename T> static inline auto optional_ptr(std::optional<T> &p) { return p ? &*p : nullptr; }
+template<typename T> static inline auto optional_ptr(const std::optional<T> &p) { return p ? &*p : nullptr; }
+template<typename T> static inline auto optional_ptr(const std::vector<T> &p) { return p.size() != 0 ? &p : nullptr; }
+
 ec_error_t nsp_bridge_unbind(GUID session_guid)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
@@ -70,6 +74,11 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 static inline proptag_cspan optional_columns(const LPROPTAG_ARRAY *a)
 {
 	return a != nullptr ? proptag_cspan(*a) : proptag_cspan();
+}
+
+static inline proptag_cspan optional_columns(const std::optional<std::vector<gromox::proptag_t>> &a)
+{
+	return a.has_value() ? proptag_cspan(*a) : proptag_cspan();
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
@@ -243,8 +252,8 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	response.stat = request.stat;
 	auto result = nsp_interface_query_rows(ses, request.flags, response.stat,
-	              request.explicit_table.cvalues, request.explicit_table.pproptag,
-	               request.count, request.columns, &rows);
+	              optional_ptr(request.explicit_table), request.count,
+	              optional_ptr(request.columns), &rows);
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&

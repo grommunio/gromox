@@ -29,7 +29,7 @@ extern void nsp_bridge_touch_handle(const GUID&);
 extern ec_error_t (*nsp_interface_bind)(uint64_t hrpc, uint32_t flags, const STAT &, FLATUID *server_guid, NSP_HANDLE *);
 extern ec_error_t (*nsp_interface_unbind)(NSP_HANDLE *);
 extern ec_error_t (*nsp_interface_update_stat)(NSP_HANDLE, STAT &, int32_t *delta);
-extern ec_error_t (*nsp_interface_query_rows)(NSP_HANDLE, uint32_t flags, STAT &, uint32_t table_count, uint32_t *table, uint32_t count, const LPROPTAG_ARRAY *, NSP_ROWSET **);
+extern ec_error_t (*nsp_interface_query_rows)(NSP_HANDLE, uint32_t flags, STAT &, const std::vector<minid_t> *table, uint32_t maxrows, const std::vector<gromox::proptag_t> *, NSP_ROWSET **);
 extern ec_error_t (*nsp_interface_seek_entries)(NSP_HANDLE, uint32_t, STAT &, const PROPERTY_VALUE &target, const MID_ARRAY *table, const LPROPTAG_ARRAY *, NSP_ROWSET **);
 extern ec_error_t (*nsp_interface_get_matches)(NSP_HANDLE, uint32_t resv1, STAT &, const NSPRES *filter, const NSP_PROPNAME *, uint32_t requested, MID_ARRAY **outmids, const LPROPTAG_ARRAY *, NSP_ROWSET **);
 extern ec_error_t (*nsp_interface_resort_restriction)(NSP_HANDLE, STAT &, const MID_ARRAY *inmids, MID_ARRAY **outmids);
