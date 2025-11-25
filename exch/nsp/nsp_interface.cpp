@@ -544,7 +544,7 @@ ec_error_t nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT &xstat,
 		memset(phandle, 0, sizeof(NSPI_HANDLE));
 		return MAPI_E_FAILONEPROVIDER;
 	}
-	if (pstat->codepage == CP_WINUNICODE) {
+	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE) {
 		memset(phandle, 0, sizeof(NSPI_HANDLE));
 		return ecNotSupported;
 	}
@@ -576,12 +576,8 @@ ec_error_t nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT &xstat,
 	if (g_nsp_trace >= 2)
 		pbase->dump();
 	phandle->guid = pbase->guid();
-	if (NULL != pserver_guid) {
-		EXT_PUSH ep;
-		ep.init(pserver_guid, sizeof(*pserver_guid), 0);
-		if (ep.p_guid(common_util_get_server_guid()) != pack_result::ok)
-			return ecError;
-	}
+	if (pserver_guid != nullptr)
+		*pserver_guid = common_util_get_server_guid();
 	nsp_trace(__func__, 1, pstat);
 	return ecSuccess;
 }

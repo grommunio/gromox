@@ -1750,12 +1750,10 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIBIND_IN *r)
 	TRY(nsp_ndr_pull_stat(x, &r->stat));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
-		r->pserver_guid = ndr_stack_anew<FLATUID>(NDR_STACK_IN);
-		if (r->pserver_guid == nullptr)
-			return pack_result::alloc;
-		TRY(nsp_ndr_pull_flatuid(x, r->pserver_guid));
+		r->pserver_guid.emplace();
+		TRY(nsp_ndr_pull_flatuid(x, &*r->pserver_guid));
 	} else {
-		r->pserver_guid = NULL;
+		r->pserver_guid.reset();
 	}
 	return pack_result::ok;
 }
@@ -1763,7 +1761,7 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIBIND_IN *r)
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIBIND_OUT &r)
 {
 	TRY(x.p_unique_ptr(r.pserver_guid));
-	if (r.pserver_guid != nullptr)
+	if (r.pserver_guid.has_value())
 		TRY(nsp_ndr_push_flatuid(x, *r.pserver_guid));
 	TRY(x.p_ctx_handle(r.handle));
 	TRY(x.p_uint32(r.result));

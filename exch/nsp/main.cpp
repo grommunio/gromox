@@ -154,6 +154,8 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 	}
 }
 
+template<typename T> static inline T *optional_ptr(std::optional<T> &p) { return p ? &*p : nullptr; }
+
 static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
     uint64_t handle, const rpc_request *pin, std::unique_ptr<rpc_response> &ppout,
      ec_error_t *ecode) try
@@ -164,7 +166,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto out = std::make_unique<NSPIBIND_OUT>();
 		out->pserver_guid = in->pserver_guid;
 		out->result = nsp_interface_bind(handle, in->flags, in->stat,
-		              in->pserver_guid, &out->handle);
+		              optional_ptr(out->pserver_guid), &out->handle);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;

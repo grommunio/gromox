@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <optional>
 #include <gromox/defs.h>
 #include <gromox/ndr.hpp>
 #include "nsp_types.hpp"
@@ -31,11 +32,11 @@ using nsp_response = rpc_response;
 struct NSPIBIND_IN final : public nsp_request {
 	STAT stat;
 	uint32_t flags = 0;
-	FLATUID *pserver_guid = nullptr;
+	std::optional<FLATUID> pserver_guid;
 };
 
 struct NSPIBIND_OUT final : public nsp_response {
-	FLATUID *pserver_guid = nullptr;
+	std::optional<FLATUID> pserver_guid;
 	NSPI_HANDLE handle{};
 	ec_error_t result{};
 };

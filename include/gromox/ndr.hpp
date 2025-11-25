@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <optional>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -83,6 +84,10 @@ struct GX_EXPORT NDR_PUSH {
 	pack_result p_blob(DATA_BLOB);
 	pack_result p_zero(uint32_t z);
 	pack_result p_unique_ptr(const void *v);
+	template<typename T> pack_result p_unique_ptr(const std::optional<T> &x)
+	{
+		return p_unique_ptr(x.has_value() ? &*x : nullptr);
+	}
 	pack_result p_ctx_handle(const CONTEXT_HANDLE &);
 
 	uint8_t *data = nullptr;
