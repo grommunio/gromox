@@ -26,20 +26,20 @@ extern ec_error_t nsp_bridge_run(const GUID &, const updatestat_request &, updat
 
 extern void nsp_bridge_touch_handle(const GUID&);
 
-extern ec_error_t (*nsp_interface_bind)(uint64_t hrpc, uint32_t flags, const STAT *, FLATUID *server_guid, NSP_HANDLE *);
+extern ec_error_t (*nsp_interface_bind)(uint64_t hrpc, uint32_t flags, const STAT &, FLATUID *server_guid, NSP_HANDLE *);
 extern ec_error_t (*nsp_interface_unbind)(NSP_HANDLE *);
-extern ec_error_t (*nsp_interface_update_stat)(NSP_HANDLE, STAT *, int32_t *delta);
-extern ec_error_t (*nsp_interface_query_rows)(NSP_HANDLE, uint32_t flags, STAT *, uint32_t table_count, uint32_t *table, uint32_t count, const LPROPTAG_ARRAY *, NSP_ROWSET **);
-extern ec_error_t (*nsp_interface_seek_entries)(NSP_HANDLE, uint32_t, STAT *, const PROPERTY_VALUE &target, const MID_ARRAY *table, const LPROPTAG_ARRAY *, NSP_ROWSET **);
-extern ec_error_t (*nsp_interface_get_matches)(NSP_HANDLE, uint32_t resv1, STAT *, const NSPRES *filter, const NSP_PROPNAME *, uint32_t requested, MID_ARRAY **outmids, const LPROPTAG_ARRAY *, NSP_ROWSET **);
-extern ec_error_t (*nsp_interface_resort_restriction)(NSP_HANDLE, STAT *, const MID_ARRAY *inmids, MID_ARRAY **outmids);
+extern ec_error_t (*nsp_interface_update_stat)(NSP_HANDLE, STAT &, int32_t *delta);
+extern ec_error_t (*nsp_interface_query_rows)(NSP_HANDLE, uint32_t flags, STAT &, uint32_t table_count, uint32_t *table, uint32_t count, const LPROPTAG_ARRAY *, NSP_ROWSET **);
+extern ec_error_t (*nsp_interface_seek_entries)(NSP_HANDLE, uint32_t, STAT &, const PROPERTY_VALUE &target, const MID_ARRAY *table, const LPROPTAG_ARRAY *, NSP_ROWSET **);
+extern ec_error_t (*nsp_interface_get_matches)(NSP_HANDLE, uint32_t resv1, STAT &, const NSPRES *filter, const NSP_PROPNAME *, uint32_t requested, MID_ARRAY **outmids, const LPROPTAG_ARRAY *, NSP_ROWSET **);
+extern ec_error_t (*nsp_interface_resort_restriction)(NSP_HANDLE, STAT &, const MID_ARRAY *inmids, MID_ARRAY **outmids);
 extern ec_error_t (*nsp_interface_dntomid)(NSP_HANDLE, const STRINGS_ARRAY *names, MID_ARRAY **outmids);
 extern ec_error_t (*nsp_interface_get_proplist)(NSP_HANDLE, uint32_t flags, uint32_t mid, cpid_t, LPROPTAG_ARRAY **);
-extern ec_error_t (*nsp_interface_get_props)(NSP_HANDLE, uint32_t flags, const STAT *, const LPROPTAG_ARRAY *, NSP_PROPROW **);
-extern ec_error_t (*nsp_interface_compare_mids)(NSP_HANDLE, const STAT *, uint32_t mid1, uint32_t mid2, int32_t *cmp);
-extern ec_error_t (*nsp_interface_mod_props)(NSP_HANDLE, const STAT *, const LPROPTAG_ARRAY *, const NSP_PROPROW *);
-extern ec_error_t (*nsp_interface_get_specialtable)(NSP_HANDLE, uint32_t flags, const STAT *, uint32_t *version, NSP_ROWSET **);
+extern ec_error_t (*nsp_interface_get_props)(NSP_HANDLE, uint32_t flags, const STAT &, const LPROPTAG_ARRAY *, NSP_PROPROW **);
+extern ec_error_t (*nsp_interface_compare_mids)(NSP_HANDLE, const STAT &, uint32_t mid1, uint32_t mid2, int32_t *cmp);
+extern ec_error_t (*nsp_interface_mod_props)(NSP_HANDLE, const STAT &, const LPROPTAG_ARRAY *, const NSP_PROPROW *);
+extern ec_error_t (*nsp_interface_get_specialtable)(NSP_HANDLE, uint32_t flags, const STAT &, uint32_t *version, NSP_ROWSET **);
 extern ec_error_t (*nsp_interface_get_templateinfo)(NSP_HANDLE, uint32_t flags, uint32_t type, const char *dn, cpid_t, uint32_t locale_id, NSP_PROPROW **);
 extern ec_error_t (*nsp_interface_mod_linkatt)(NSP_HANDLE, uint32_t flags, gromox::proptag_t, uint32_t mid, const BINARY_ARRAY *entry_ids);
 extern ec_error_t (*nsp_interface_query_columns)(NSP_HANDLE, uint32_t flags, LPROPTAG_ARRAY **cols);
-extern ec_error_t (*nsp_interface_resolve_namesw)(NSP_HANDLE, uint32_t, const STAT *, LPROPTAG_ARRAY *&, const STRING_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
+extern ec_error_t (*nsp_interface_resolve_namesw)(NSP_HANDLE, uint32_t, const STAT &, LPROPTAG_ARRAY *&, const STRING_ARRAY *, MID_ARRAY **, NSP_ROWSET **);

@@ -40,7 +40,7 @@ ec_error_t nsp_bridge_run(GUID& session_guid, const bind_request &request,
 {
 	FLATUID server_flatuid;
 	NSP_HANDLE ses;
-	auto result = nsp_interface_bind(0, request.flags, &request.stat,
+	auto result = nsp_interface_bind(0, request.flags, request.stat,
 	              &server_flatuid, &ses);
 	if (Failed(result)) {
 		session_guid = {};
@@ -56,7 +56,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
     const comparemids_request &request, comparemids_response &response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_compare_mids(ses, &request.stat,
+	return nsp_interface_compare_mids(ses, request.stat,
 	       request.mid1, request.mid2, &response.cmp);
 }
 
@@ -91,7 +91,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 		}
 	}
 	response.stat = request.stat;
-	auto result = nsp_interface_get_matches(ses, request.reserved1, &response.stat,
+	auto result = nsp_interface_get_matches(ses, request.reserved1, response.stat,
 	              nspres, nspname, request.row_count,
 	              &response.mids, request.columns, &outrows);
 	if (Failed(result))
@@ -116,7 +116,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	NSP_PROPROW *row;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	auto result = nsp_interface_get_props(ses, request.flags,
-	              &request.stat, request.proptags, &row);
+	              request.stat, request.proptags, &row);
 	if (Failed(result)) {
 		response.row = nullptr;
 		return result;
@@ -144,7 +144,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	if (request.version != nullptr)
 		version = *request.version;
 	auto result = nsp_interface_get_specialtable(ses, request.flags,
-	              &request.stat, &version, &rows);
+	              request.stat, &version, &rows);
 	if (Failed(result)) {
 		response.version = nullptr;
 		response.count = 0;
@@ -220,7 +220,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 		    !cu_proplist_to_nsp_proprow(*request.values, *row))
 			return ecRpcFailed;
 	}
-	return nsp_interface_mod_props(ses, &request.stat, request.proptags, row);
+	return nsp_interface_mod_props(ses, request.stat, request.proptags, row);
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
@@ -236,7 +236,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	NSP_ROWSET *rows = nullptr;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	response.stat = request.stat;
-	auto result = nsp_interface_query_rows(ses, request.flags, &response.stat,
+	auto result = nsp_interface_query_rows(ses, request.flags, response.stat,
 	              request.explicit_table.cvalues, request.explicit_table.pproptag,
 	               request.count, request.columns, &rows);
 	if (Failed(result))
@@ -253,7 +253,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	NSP_ROWSET *rows = nullptr;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	auto tags = request.proptags;
-	auto result = nsp_interface_resolve_namesw(ses, request.reserved, &request.stat,
+	auto result = nsp_interface_resolve_namesw(ses, request.reserved, request.stat,
 	              tags, request.names, &response.mids, &rows);
 	if (Failed(result))
 		return result;
@@ -268,7 +268,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	response.stat = request.stat;
-	return nsp_interface_resort_restriction(ses, &response.stat,
+	return nsp_interface_resort_restriction(ses, response.stat,
 	       request.inmids, &response.outmids);
 }
 
@@ -282,7 +282,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	if (!cu_tpropval_to_propval(request.target, target_val))
 		return ecRpcFailed;
 	response.stat = request.stat;
-	auto result = nsp_interface_seek_entries(ses, request.reserved, &response.stat,
+	auto result = nsp_interface_seek_entries(ses, request.reserved, response.stat,
 	              target_val, request.explicit_table, request.columns, &rows);
 	if (Failed(result))
 		return result;
@@ -305,7 +305,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	} else {
 		response.delta = nullptr;
 	}
-	auto result = nsp_interface_update_stat(ses, &response.stat, &delta);
+	auto result = nsp_interface_update_stat(ses, response.stat, &delta);
 	if (request.delta_requested != 0)
 		*response.delta = delta;
 	return result;

@@ -65,7 +65,7 @@ static gromox::archive abkt_archive;
 static void nsp_trace(const char *func, bool is_exit, const STAT *s,
     int *delta = nullptr, NSP_ROWSET *outrows = nullptr)
 {
-	if (g_nsp_trace == 0 || s == nullptr)
+	if (g_nsp_trace == 0)
 		return;
 	fprintf(stderr, "%s %s:", is_exit ? "Leaving" : "Entering", func);
 	fprintf(stderr," {container=%xh record=%xh delta=%d fpos=%u/%u} ",
@@ -528,9 +528,10 @@ void nsp_interface_init()
 		mlog(LV_ERR, "Could not read %s: %s. Addressbook dialogs have not been loaded.", pk, strerror(err));
 }
 
-ec_error_t nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
+ec_error_t nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT &xstat,
     FLATUID *pserver_guid, NSPI_HANDLE *phandle)
 {
+	auto pstat = &xstat;
 	nsp_trace(__func__, 0, pstat);
 	auto rpc_info = get_rpc_info();
 	if (flags & fAnonymousLogin) {
@@ -649,11 +650,12 @@ static inline bool session_check(const NSPI_HANDLE &h, const ab_tree::ab_base &b
 	return true;
 }
 
-ec_error_t nsp_interface_update_stat(NSPI_HANDLE handle, STAT *pstat, int32_t *pdelta)
+ec_error_t nsp_interface_update_stat(NSPI_HANDLE handle, STAT &xstat, int32_t *pdelta)
 {
+	auto pstat = &xstat;
 	nsp_trace(__func__, 0, pstat, pdelta);
 	
-	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE)
+	if (pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
 	auto pbase = ab_tree::AB.get(handle.guid);
 	if (pbase == nullptr || !session_check(handle, *pbase))
@@ -712,9 +714,10 @@ static void nsp_interface_make_ptyperror_row(const LPROPTAG_ARRAY *pproptags,
 }
 
 ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
-    STAT *pstat, uint32_t table_count, uint32_t *ptable, uint32_t count,
+    STAT &xstat, uint32_t table_count, uint32_t *ptable, uint32_t count,
     const LPROPTAG_ARRAY *pproptags, NSP_ROWSET **pprows)
 {
+	auto pstat = &xstat;
 	/*
 	 * MS-OXNSPI says "implementations SHOULD return as many rows as
 	 * possible to improve usability of the server for clients", but then,
@@ -727,7 +730,7 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 		return ecError;
 	nsp_trace(__func__, 0, pstat);
 	
-	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE)
+	if (pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
 	if (count == 0 && ptable == nullptr)
 		return ecInvalidParam;
@@ -868,9 +871,10 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 }
 
 ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
-    STAT *pstat, const PROPERTY_VALUE &target, const MID_ARRAY *ptable,
+    STAT &xstat, const PROPERTY_VALUE &target, const MID_ARRAY *ptable,
     const LPROPTAG_ARRAY *pproptags, NSP_ROWSET **pprows)
 {
+	auto pstat = &xstat;
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
 	auto ptarget = &target;
@@ -879,8 +883,7 @@ ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			ptarget->proptag, ptarget->repr().c_str());
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
-	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE ||
-	    reserved != 0)
+	if (pstat->codepage == CP_WINUNICODE || reserved != 0)
 		return ecNotSupported;
 	if (pstat->sort_type == SortTypeDisplayName) {
 		if (ptarget->proptag != PR_DISPLAY_NAME &&
@@ -1153,10 +1156,11 @@ static std::vector<std::string> delegates_for(const char *dir) try
  * wary of HIDE flag testing.
  */
 ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
-    STAT *pstat, const NSPRES *pfilter, const NSP_PROPNAME *ppropname,
+    STAT &xstat, const NSPRES *pfilter, const NSP_PROPNAME *ppropname,
     uint32_t requested, MID_ARRAY **ppoutmids, const LPROPTAG_ARRAY *pproptags,
     NSP_ROWSET **pprows)
 {
+	auto pstat = &xstat;
 	*ppoutmids = nullptr;
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
@@ -1164,8 +1168,7 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		mlog(LV_DEBUG, "get_matches filter: %s", pfilter->repr().c_str());
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
-	
-	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE)
+	if (pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
 	if (pstat->sort_type != SortTypeDisplayName &&
 	    pstat->sort_type != SortTypePhoneticDisplayName &&
@@ -1331,13 +1334,14 @@ static int nsp_interface_cmpstring(const void *p1, const void *p2)
 }
 
 ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
-    STAT *pstat, const MID_ARRAY *pinmids, MID_ARRAY **ppoutmids)
+    STAT &xstat, const MID_ARRAY *pinmids, MID_ARRAY **ppoutmids)
 {
+	auto pstat = &xstat;
 	*ppoutmids = nullptr;
 	nsp_trace(__func__, 0, pstat);
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
-	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE)
+	if (pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
 	auto parray = ndr_stack_anew<nsp_sort_item>(NDR_STACK_IN, pinmids->cvalues);
 	if (parray == nullptr)
@@ -1562,14 +1566,13 @@ ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 
 /* MS-OXNSPI v14 §3.1.4.1.7 */
 ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
-    const STAT *pstat, const LPROPTAG_ARRAY *pproptags, NSP_PROPROW **pprows)
+    const STAT &xstat, const LPROPTAG_ARRAY *pproptags, NSP_PROPROW **pprows)
 {
+	auto pstat = &xstat;
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
-	if (pstat == nullptr)
-		return ecNotSupported;
 	bool b_ephid = flags & fEphID;
 	auto base = ab_tree::AB.get(handle.guid);
 	if (base == nullptr || !session_check(handle, *base))
@@ -1683,8 +1686,9 @@ ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 }
 
 ec_error_t nsp_interface_compare_mids(NSPI_HANDLE handle,
-    const STAT *pstat, uint32_t mid1, uint32_t mid2, int32_t *cmp)
+    const STAT &xstat, uint32_t mid1, uint32_t mid2, int32_t *cmp)
 {
+	auto pstat = &xstat;
 	nsp_trace(__func__, 0, pstat);
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
@@ -1717,9 +1721,9 @@ ec_error_t nsp_interface_compare_mids(NSPI_HANDLE handle,
 }
 
 ec_error_t nsp_interface_mod_props(NSPI_HANDLE handle,
-    const STAT *pstat, const LPROPTAG_ARRAY *pproptags, const NSP_PROPROW *prow)
+    const STAT &pstat, const LPROPTAG_ARRAY *pproptags, const NSP_PROPROW *prow)
 {
-	nsp_trace(__func__, 1, pstat);
+	nsp_trace(__func__, 1, &pstat);
 	return ecNotSupported;
 }
 
@@ -1807,8 +1811,9 @@ static ec_error_t nsp_interface_get_specialtables_from_node(
 }
 
 ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
-    const STAT *pstat, uint32_t *pversion, NSP_ROWSET **pprows)
+    const STAT &xstat, uint32_t *pversion, NSP_ROWSET **pprows)
 {
+	auto pstat = &xstat;
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
@@ -1817,7 +1822,7 @@ ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 		/* creation of templates table */
 		return ecSuccess;
 	bool b_unicode = flags & NspiUnicodeStrings;
-	cpid_t codepage = pstat == nullptr ? static_cast<cpid_t>(1252) : pstat->codepage;
+	cpid_t codepage = xstat.codepage;
 	/* MS-OXNSPI v14 §3.1.4.1.3 ¶ Server processing rules */
 	if (!b_unicode && codepage == CP_WINUNICODE)
 		return ecNotSupported;
@@ -1951,9 +1956,10 @@ ec_error_t nsp_interface_query_columns(NSPI_HANDLE handle,
 }
 
 ec_error_t nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
-    const STAT *pstat, LPROPTAG_ARRAY *&pproptags,
+    const STAT &xstat, LPROPTAG_ARRAY *&pproptags,
     const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
+	auto pstat = &xstat;
 	*ppmids = nullptr;
 	*pprows = nullptr;
 	for (size_t i = 0; i < pstrs->count; ++i) {
@@ -1964,7 +1970,7 @@ ec_error_t nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
 			return errno2mapi(errno);
 	}
 	return nsp_interface_resolve_namesw(handle, reserved,
-				pstat, pproptags, pstrs, ppmids, pprows);
+	       xstat, pproptags, pstrs, ppmids, pprows);
 }
 
 static bool nsp_interface_resolve_node(const ab_tree::ab_node &node, const char *pstr)
@@ -2043,9 +2049,10 @@ static ab_tree::minid nsp_interface_resolve_gal(const ab_tree::ab::const_base_re
  * get_matches()!
  */
 ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
-    const STAT *pstat, LPROPTAG_ARRAY *&pproptags,
+    const STAT &xstat, LPROPTAG_ARRAY *&pproptags,
     const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
+	auto pstat = &xstat;
 	*ppmids = nullptr;
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);

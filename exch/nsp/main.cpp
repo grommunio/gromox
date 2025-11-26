@@ -1,4 +1,4 @@
-	// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
@@ -163,7 +163,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto in  = static_cast<const NSPIBIND_IN *>(pin);
 		auto out = std::make_unique<NSPIBIND_OUT>();
 		out->pserver_guid = in->pserver_guid;
-		out->result = nsp_interface_bind(handle, in->flags, &in->stat,
+		out->result = nsp_interface_bind(handle, in->flags, in->stat,
 		              in->pserver_guid, &out->handle);
 		*ecode = out->result;
 		ppout = std::move(out);
@@ -184,7 +184,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		out->stat = in->stat;
 		out->pdelta = in->pdelta;
 		out->result = nsp_interface_update_stat(in->handle,
-		              &out->stat, out->pdelta);
+		              out->stat, out->pdelta);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
@@ -194,7 +194,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto out = std::make_unique<NSPIQUERYROWS_OUT>();
 		out->stat = in->stat;
 		out->result = nsp_interface_query_rows(in->handle, in->flags,
-		              &out->stat, in->table_count, in->ptable, in->count,
+		              out->stat, in->table_count, in->ptable, in->count,
 		              in->pproptags, &out->prows);
 		*ecode = out->result;
 		ppout = std::move(out);
@@ -205,7 +205,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto out = std::make_unique<NSPISEEKENTRIES_OUT>();
 		out->stat = in->stat;
 		out->result = nsp_interface_seek_entries(in->handle,
-		              in->reserved, &out->stat, in->target, in->ptable,
+		              in->reserved, out->stat, in->target, in->ptable,
 		              in->pproptags, &out->prows);
 		*ecode = out->result;
 		ppout = std::move(out);
@@ -216,7 +216,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto out = std::make_unique<NSPIGETMATCHES_OUT>();
 		out->stat = in->stat;
 		out->result = nsp_interface_get_matches(in->handle,
-		              in->reserved1, &out->stat, in->pfilter, in->ppropname,
+		              in->reserved1, out->stat, in->pfilter, in->ppropname,
 		              in->requested, &out->poutmids, in->pproptags,
 		              &out->prows);
 		*ecode = out->result;
@@ -231,8 +231,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		if (out->poutmids == nullptr)
 			return DISPATCH_FAIL;
 		out->result = nsp_interface_resort_restriction(in->handle,
-		              &out->stat, &in->inmids,
-		              &out->poutmids);
+		              out->stat, &in->inmids, &out->poutmids);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
@@ -260,7 +259,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto in  = static_cast<const NSPIGETPROPS_IN *>(pin);
 		auto out = std::make_unique<NSPIGETPROPS_OUT>();
 		out->result = nsp_interface_get_props(in->handle, in->flags,
-		              &in->stat, in->pproptags, &out->prows);
+		              in->stat, in->pproptags, &out->prows);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
@@ -269,7 +268,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto in  = static_cast<const NSPICOMPAREMIDS_IN *>(pin);
 		auto out = std::make_unique<NSPICOMPAREMIDS_OUT>();
 		out->result = nsp_interface_compare_mids(in->handle,
-		              &in->stat, in->mid1, in->mid2,
+		              in->stat, in->mid1, in->mid2,
 		              &out->cmp);
 		*ecode = out->result;
 		ppout = std::move(out);
@@ -279,7 +278,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto in  = static_cast<const NSPIMODPROPS_IN *>(pin);
 		auto out = std::make_unique<NSPIMODPROPS_OUT>();
 		out->result = nsp_interface_mod_props(in->handle,
-		              &in->stat, in->pproptags, &in->row);
+		              in->stat, in->pproptags, &in->row);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
@@ -289,7 +288,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto out = std::make_unique<NSPIGETSPECIALTABLE_OUT>();
 		out->version = in->version;
 		out->result = nsp_interface_get_specialtable(in->handle,
-		              in->flags, &in->stat, &out->version, &out->prows);
+		              in->flags, in->stat, &out->version, &out->prows);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
@@ -328,7 +327,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto out = std::make_unique<NSPIRESOLVENAMES_OUT>();
 		auto tags = in->pproptags;
 		out->result = nsp_interface_resolve_names(in->handle,
-		              in->reserved, &in->stat, tags, &in->strs,
+		              in->reserved, in->stat, tags, &in->strs,
 		              &out->pmids, &out->prows);
 		*ecode = out->result;
 		ppout = std::move(out);
@@ -339,7 +338,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto out = std::make_unique<NSPIRESOLVENAMESW_OUT>();
 		auto tags = in->pproptags;
 		out->result = nsp_interface_resolve_namesw(in->handle,
-		              in->reserved, &in->stat, tags, &in->strs,
+		              in->reserved, in->stat, tags, &in->strs,
 		              &out->pmids, &out->prows);
 		*ecode = out->result;
 		ppout = std::move(out);
