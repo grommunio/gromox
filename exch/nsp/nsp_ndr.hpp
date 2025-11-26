@@ -111,7 +111,7 @@ struct NSPIGETMATCHES_OUT final : public nsp_response {
 struct NSPIRESORTRESTRICTION_IN final : public nsp_request {
 	NSPI_HANDLE handle{};
 	STAT stat;
-	MINID_ARRAY inmids{};
+	std::vector<minid_t> inmids;
 };
 
 struct NSPIRESORTRESTRICTION_OUT final : public nsp_response {

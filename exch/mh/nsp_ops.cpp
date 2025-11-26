@@ -475,14 +475,10 @@ pack_result nsp_ext_pull::g_nsp_request(resortrestriction_request &req)
 	else
 		TRY(nsp_ext_g_stat(*this, req.stat));
 	TRY(g_uint8(&tmp_byte));
-	if (tmp_byte == 0) {
-		req.inmids = nullptr;
-	} else {
-		req.inmids = anew<MID_ARRAY>();
-		if (req.inmids == nullptr)
-			return pack_result::alloc;
-		TRY(g_proptag_la(req.inmids));
-	}
+	if (tmp_byte == 0)
+		req.inmids.clear();
+	else
+		TRY(g_proptag_a(&req.inmids, 4));
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
 		req.auxin = nullptr;

@@ -235,7 +235,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		if (out->poutmids == nullptr)
 			return DISPATCH_FAIL;
 		out->result = nsp_interface_resort_restriction(in->handle,
-		              out->stat, &in->inmids, &out->poutmids);
+		              out->stat, in->inmids, &out->poutmids);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;

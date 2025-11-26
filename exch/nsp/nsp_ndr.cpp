@@ -1993,10 +1993,8 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIRESORTRESTRICTION_IN *r)
 	TRY(nsp_ndr_pull_proptag_array(x, &r->inmids));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
-		auto poutmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
-		if (poutmids == nullptr)
-			return pack_result::alloc;
-		TRY(nsp_ndr_pull_proptag_array(x, poutmids));
+		std::vector<minid_t> poutmids;
+		TRY(nsp_ndr_pull_proptag_array(x, &poutmids));
 	}
 	return pack_result::ok;
 }

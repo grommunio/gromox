@@ -1268,7 +1268,7 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 }
 
 ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
-    STAT &xstat, const MID_ARRAY *pinmids, MID_ARRAY **ppoutmids) try
+    STAT &xstat, std::span<const minid_t> pinmids, MID_ARRAY **ppoutmids) try
 {
 	struct sitem {
 		minid_t minid = 0;
@@ -1286,7 +1286,7 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
 	auto outmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (outmids == nullptr)
 		return ecServerOOM;
-	outmids->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pinmids->cvalues);
+	outmids->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pinmids.size());
 	if (outmids->pproptag == nullptr)
 		return ecServerOOM;
 	auto base = ab_tree::AB.get(handle.guid);
@@ -1295,13 +1295,13 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
 
 	bool b_found = false;
 	std::vector<sitem> parray;
-	for (size_t i = 0; i < pinmids->cvalues; ++i) {
-		ab_tree::ab_node node(base, pinmids->pproptag[i]);
+	for (size_t i = 0; i < pinmids.size(); ++i) {
+		ab_tree::ab_node node(base, pinmids[i]);
 		if (!node.exists())
 			continue;
-		if (pstat->cur_rec == pinmids->pproptag[i])
+		if (pstat->cur_rec == pinmids[i])
 			b_found = TRUE;
-		parray.emplace_back(pinmids->pproptag[i], node.displayname());
+		parray.emplace_back(pinmids[i], node.displayname());
 	}
 	std::sort(parray.begin(), parray.end());
 	outmids->cvalues = parray.size();

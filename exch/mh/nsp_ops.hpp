@@ -224,7 +224,7 @@ struct resolvenames_response {
 struct resortrestriction_request {
 	uint32_t cb_auxin = 0;
 	STAT stat;
-	MID_ARRAY *inmids = nullptr;
+	std::vector<minid_t> inmids;
 	uint8_t *auxin = nullptr;
 };
 
