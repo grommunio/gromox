@@ -79,7 +79,7 @@ struct dntomid_request {
 struct dntomid_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	MID_ARRAY *outmids = nullptr;
+	std::vector<minid_t> outmids;
 };
 
 struct getmatches_request {

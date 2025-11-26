@@ -68,7 +68,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
     const dntomid_request &request, dntomid_response &response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_dntomid(ses, request.names, &response.outmids);
+	return nsp_interface_dntomid(ses, request.names, response.outmids);
 }
 
 static inline proptag_cspan optional_columns(const LPROPTAG_ARRAY *a)

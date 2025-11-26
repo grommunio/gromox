@@ -1314,11 +1314,10 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
 }
 
 ec_error_t nsp_interface_dntomid(NSPI_HANDLE handle,
-    const STRINGS_ARRAY *pnames, MID_ARRAY **ppoutmids)
+    const STRINGS_ARRAY *pnames, std::vector<minid_t> &outmids) try
 {
 	if (g_nsp_trace > 0)
 		fprintf(stderr, "Entering %s\n", __func__);
-	*ppoutmids = nullptr;
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
 	if (pnames == nullptr)
@@ -1326,26 +1325,21 @@ ec_error_t nsp_interface_dntomid(NSPI_HANDLE handle,
 	auto base = ab_tree::AB.get(handle.guid);
 	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
-	auto outmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
-	if (outmids == nullptr)
-		return ecServerOOM;
-	outmids->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pnames->count);
-	if (outmids->pproptag == nullptr)
-		return ecServerOOM;
-	outmids->cvalues = pnames->count;
-	memset(outmids->pproptag, 0, sizeof(uint32_t) * pnames->count);
+	outmids.resize(pnames->count);
 	for (size_t i = 0; i < pnames->count; ++i) {
 		if (pnames->ppstr[i] == nullptr)
 			continue;
 		ab_tree::minid mid = base->resolve(pnames->ppstr[i]);
 		if (base->exists(mid))
-			outmids->pproptag[i] = mid;
+			outmids[i] = mid;
 		if (g_nsp_trace >= 2)
 			fprintf(stderr, "\t[%zu] %s -> %08x\n", i,
-				znul(pnames->ppstr[i]), outmids->pproptag[i]);
+				znul(pnames->ppstr[i]), outmids[i]);
 	}
-	*ppoutmids = outmids;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 /**

@@ -241,7 +241,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto in  = static_cast<const NSPIDNTOMID_IN *>(pin);
 		auto out = std::make_unique<NSPIDNTOMID_OUT>();
 		out->result = nsp_interface_dntomid(in->handle,
-		              &in->names, &out->poutmids);
+		              &in->names, out->outmids);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;

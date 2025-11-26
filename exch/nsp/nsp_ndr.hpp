@@ -126,7 +126,7 @@ struct NSPIDNTOMID_IN final : public nsp_request {
 };
 
 struct NSPIDNTOMID_OUT final : public nsp_response {
-	MINID_ARRAY *poutmids = nullptr;
+	std::vector<minid_t> outmids;
 	ec_error_t result{};
 };
 

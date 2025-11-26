@@ -34,7 +34,7 @@ extern ec_error_t (*nsp_interface_query_rows)(NSP_HANDLE, uint32_t flags, STAT &
 extern ec_error_t (*nsp_interface_seek_entries)(NSP_HANDLE, uint32_t, STAT &, const PROPERTY_VALUE &target, const std::vector<minid_t> *table, const std::vector<gromox::proptag_t> *, NSP_ROWSET **);
 extern ec_error_t (*nsp_interface_get_matches)(NSP_HANDLE, uint32_t resv1, STAT &, const NSPRES *filter, const NSP_PROPNAME *, uint32_t requested, std::vector<minid_t> &outmids, const std::vector<gromox::proptag_t> *, NSP_ROWSET **);
 extern ec_error_t (*nsp_interface_resort_restriction)(NSP_HANDLE, STAT &, std::span<const minid_t> inmids, std::vector<minid_t> &outmids);
-extern ec_error_t (*nsp_interface_dntomid)(NSP_HANDLE, const STRINGS_ARRAY *names, MID_ARRAY **outmids);
+extern ec_error_t (*nsp_interface_dntomid)(NSP_HANDLE, const STRINGS_ARRAY *names, std::vector<minid_t> &outmids);
 extern ec_error_t (*nsp_interface_get_proplist)(NSP_HANDLE, uint32_t flags, uint32_t mid, cpid_t, LPROPTAG_ARRAY **);
 extern ec_error_t (*nsp_interface_get_props)(NSP_HANDLE, uint32_t flags, const STAT &, const LPROPTAG_ARRAY *, NSP_PROPROW **);
 extern ec_error_t (*nsp_interface_compare_mids)(NSP_HANDLE, const STAT &, uint32_t mid1, uint32_t mid2, int32_t *cmp);

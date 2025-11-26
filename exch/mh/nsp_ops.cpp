@@ -643,12 +643,12 @@ pack_result nsp_ext_push::p_nsp_response(const dntomid_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
-	if (rsp.result != ecSuccess || rsp.outmids == nullptr) {
+	if (rsp.result != ecSuccess) {
 		/* OXNSPI v14 §3.1.4.1.13 SPR ¶1 */
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_la(*rsp.outmids));
+		TRY(p_proptag_la(rsp.outmids));
 	}
 	return p_uint32(0);
 }
