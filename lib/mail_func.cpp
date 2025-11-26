@@ -1482,8 +1482,9 @@ static int html_to_plain_boring(std::string_view inbuf, std::string &outbuf) try
  *
  * Returns %CP_UTF8 to indicate conversion to UTF-8 happened.
  * Returns @cpid to indicate no charset conversion happened.
- * Thus it is possible for %CP_OEMCP to be returned again,
- * which puts the ball back into the caller's court.
+ * Thus it is possible for %CP_OEMCP to be returned again if the input cpid was
+ * %CP_OEMCP, which creates a situation where html_to_plain's caller may need
+ * to postprocess the output.
  * Returns a negative number on error.
  */
 int html_to_plain(std::string_view inbuf, cpid_t cpid, std::string &outbuf)
