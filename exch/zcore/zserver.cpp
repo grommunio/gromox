@@ -4973,7 +4973,10 @@ ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
 	    mysql_adaptor_userid_to_name, username) != ecSuccess ||
 	    mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecSuccess;
-	return get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
+	auto actor = pinfo->get_username();
+	if (strcmp(actor, mres.username.c_str()) == 0)
+		actor = nullptr;
+	return get_freebusy(actor, mres.maildir.c_str(),
 	       starttime, endtime, *fb_data);
 }
 
