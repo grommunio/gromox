@@ -4974,7 +4974,7 @@ ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
 	    mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecSuccess;
 	return get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
-	       starttime, endtime, *fb_data) ? ecSuccess : ecError;
+	       starttime, endtime, *fb_data);
 }
 
 ec_error_t zs_getuserfreebusyical(GUID hsession, BINARY entryid,
@@ -4990,9 +4990,10 @@ ec_error_t zs_getuserfreebusyical(GUID hsession, BINARY entryid,
 	    mysql_adaptor_meta(username.c_str(), WANTPRIV_METAONLY, mres) != 0)
 		return ecSuccess;
 	std::vector<freebusy_event> fb_data;
-	if (!get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
-	    starttime, endtime, fb_data))
-		return ecError;
+	auto err = get_freebusy(pinfo->get_username(), mres.maildir.c_str(),
+	           starttime, endtime, fb_data);
+	if (err != ecSuccess)
+		return err;
 	return cu_fbdata_to_ical(pinfo->get_username(), username.c_str(),
 	       starttime, endtime, fb_data, bin);
 }

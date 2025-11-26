@@ -334,7 +334,7 @@ unsigned int freebusy_perms(const char *actor, const char *target)
 	return perm & (frightsFreeBusySimple | frightsFreeBusyDetailed | frightsReadAny);
 }
 
-bool get_freebusy(const char *username, const char *dir, time_t start_time,
+ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time,
     time_t end_time, std::vector<freebusy_event> &fb_data)
 {
 	uint32_t permission = 0;
@@ -343,14 +343,14 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 	if (username != nullptr) {
 		permission = freebusy_perms(username, dir);
 		if (permission == 0)
-			return false;
+			return ecAccessDenied;
 	} else {
 		permission = frightsFreeBusyDetailed | frightsReadAny;
 	}
 
 	freebusy_tags ptag(dir);
 	if (!ptag.init_ok)
-		return false;
+		return ecRpcFailed;
 	auto start_nttime = rop_util_unix_to_nttime(start_time < 0 ? 0 : start_time);
 	auto end_nttime   = end_time < 0 ?
 	                    SYSTEMTIME::maxyear * 31557600ULL * 10000000 :
@@ -399,7 +399,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 	uint32_t table_id = 0, row_count = 0;
 	if (!exmdb_client->load_content_table(dir, CP_ACP, cal_eid, nullptr,
 	    TABLE_FLAG_NONOTIFICATIONS, &rst_26, nullptr, &table_id, &row_count))
-		return false;
+		return ecRpcFailed;
 
 	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id);});
 
@@ -413,7 +413,7 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 	TARRAY_SET rows;
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
 	    &proptags, 0, row_count, &rows))
-		return false;
+		return ecRpcFailed;
 
 	for (size_t i = 0; i < rows.count; ++i) {
 		message_content *ctnt = nullptr;
@@ -500,8 +500,8 @@ bool get_freebusy(const char *username, const char *dir, time_t start_time,
 
 	cl_0.release();
 	if (!exmdb_client->unload_table(dir, table_id))
-		return false;
+		/* ignore, there is nothing we could realistically do other than to pass up the error */;
 
-	return true;
+	return ecSuccess;
 }
 

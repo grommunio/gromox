@@ -1183,8 +1183,10 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 		auto end_ts   = rop_util_nttime_to_unix(*end_nt);
 		/* XXX: May need PR_SENDER rather than Envelope-From */
 		response_allowed = freebusy_perms(par.ev_from, par.cur.dirc()) != 0;
-		if (!get_freebusy(nullptr, par.cur.dirc(), start_ts, end_ts, fbdata))
-			mlog(LV_ERR, "W-PREC: cannot retrieve freebusy %s", par.cur.dirc());
+		auto err = get_freebusy(nullptr, par.cur.dirc(), start_ts, end_ts, fbdata);
+		if (err != ecSuccess)
+			mlog(LV_ERR, "W-PREC: cannot retrieve freebusy %s: %s",
+				par.cur.dirc(), mapi_strerror(err));
 
 		for (const freebusy_event &event : fbdata)
 			if ((event.start_time >= start_ts && event.start_time <= end_ts) ||

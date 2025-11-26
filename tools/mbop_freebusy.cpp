@@ -96,8 +96,9 @@ int main(int argc, char **argv)
 	if (g_end_txt != nullptr && xmktime(g_end_txt, &end_time) < 0)
 		return EXIT_PARAM;
 	std::vector<freebusy_event> fbout;
-	if (!get_freebusy(g_requestor, g_storedir, start_time, end_time, fbout)) {
-		mbop_fprintf(stderr, "get_freebusy call not successful\n");
+	auto err = get_freebusy(g_requestor, g_storedir, start_time, end_time, fbout);
+	if (err != ecSuccess) {
+		mbop_fprintf(stderr, "get_freebusy: %s\n", mapi_strerror(err));
 		return EXIT_FAILURE;
 	}
 	printf("Results (%zu row(s)):\n", fbout.size());
