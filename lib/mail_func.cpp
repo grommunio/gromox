@@ -1500,9 +1500,12 @@ int html_to_plain(std::string_view inbuf, cpid_t cpid, std::string &outbuf)
 	return cpid;
 }
 
-/*
- * Always outputs UTF-8. The caller must ensure that this is conveyed properly
- * (e.g. via PR_INTERNET_CPID=65001 [CP_UTF8]).
+/**
+ * @rbuf: input buffer; must be UTF-8
+ *        (this is normally the case, since props.get<char>(PR_BODY) is UTF-8)
+ * @out:  output buffer; will be filled with UTF-8
+ *        (caller may need to set PR_INTERNET_CPID=65001 [CP_UTF8] if not
+ *        already done).
  *
  * It is allowed for @rbuf to point to the same object as @out.
  */
