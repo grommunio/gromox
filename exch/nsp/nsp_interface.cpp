@@ -1268,7 +1268,7 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 }
 
 ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
-    STAT &xstat, std::span<const minid_t> pinmids, MID_ARRAY **ppoutmids) try
+    STAT &xstat, std::span<const minid_t> pinmids, std::vector<minid_t> &outmids) try
 {
 	struct sitem {
 		minid_t minid = 0;
@@ -1277,18 +1277,11 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
 	};
 
 	auto pstat = &xstat;
-	*ppoutmids = nullptr;
 	nsp_trace(__func__, 0, pstat);
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
 	if (pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
-	auto outmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
-	if (outmids == nullptr)
-		return ecServerOOM;
-	outmids->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pinmids.size());
-	if (outmids->pproptag == nullptr)
-		return ecServerOOM;
 	auto base = ab_tree::AB.get(handle.guid);
 	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
@@ -1304,17 +1297,16 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
 		parray.emplace_back(pinmids[i], node.displayname());
 	}
 	std::sort(parray.begin(), parray.end());
-	outmids->cvalues = parray.size();
+	outmids.resize(parray.size());
 	for (size_t i = 0; i < parray.size(); ++i)
-		outmids->pproptag[i] = parray[i].minid;
-	pstat->total_rec = parray.size();
+		outmids[i] = parray[i].minid;
+	pstat->total_rec = outmids.size();
 	if (!b_found) {
 		/* MS-OXNSPI v14 §3.1.4.1.11 pg 57 ¶8 */
 		pstat->cur_rec = ab_tree::minid::BEGINNING_OF_TABLE;
 		pstat->num_pos = 0;
 	}
 	nsp_trace(__func__, 1, pstat);
-	*ppoutmids = outmids;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);

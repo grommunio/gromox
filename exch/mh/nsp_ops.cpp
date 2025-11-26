@@ -814,12 +814,12 @@ pack_result nsp_ext_push::p_nsp_response(const resortrestriction_response &rsp)
 	TRY(p_uint32(rsp.result));
 	TRY(p_uint8(0xFF));
 	TRY(nsp_ext_p_stat(*this, rsp.stat));
-	if (rsp.result != ecSuccess || rsp.outmids == nullptr) {
+	if (rsp.result != ecSuccess) {
 		/* OXNSPI v14 §3.1.4.1.11 SPR ¶3 */
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_la(*rsp.outmids));
+		TRY(p_proptag_la(rsp.outmids));
 	}
 	return p_uint32(0);
 }

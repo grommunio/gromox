@@ -232,7 +232,7 @@ struct resortrestriction_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
 	STAT stat;
-	MID_ARRAY *outmids = nullptr;
+	std::vector<minid_t> outmids;
 };
 
 struct seekentries_request {

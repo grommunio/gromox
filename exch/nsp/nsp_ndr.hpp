@@ -117,7 +117,7 @@ struct NSPIRESORTRESTRICTION_IN final : public nsp_request {
 struct NSPIRESORTRESTRICTION_OUT final : public nsp_response {
 	STAT stat;
 	ec_error_t result{};
-	MINID_ARRAY *poutmids = nullptr;
+	std::vector<minid_t> outmids;
 };
 
 struct NSPIDNTOMID_IN final : public nsp_request {

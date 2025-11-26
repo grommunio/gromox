@@ -282,7 +282,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	response.stat = request.stat;
 	return nsp_interface_resort_restriction(ses, response.stat,
-	       request.inmids, &response.outmids);
+	       request.inmids, response.outmids);
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,

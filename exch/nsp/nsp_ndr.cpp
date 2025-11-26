@@ -2006,9 +2006,8 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIRESORTRESTRICTION_OUT &r)
 		/* OXNSPI v14 §3.1.4.1.11 SPR ¶3 */
 		TRY(x.p_unique_ptr(nullptr));
 	} else {
-		TRY(x.p_unique_ptr(r.poutmids));
-		if (r.poutmids != nullptr)
-			TRY(nsp_ndr_push_proptag_array(x, *r.poutmids));
+		TRY(x.p_unique_ptr(&r.outmids));
+		TRY(nsp_ndr_push_proptag_array(x, r.outmids));
 	}
 	return x.p_uint32(r.result);
 }
