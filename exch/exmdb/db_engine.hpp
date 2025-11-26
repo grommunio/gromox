@@ -78,6 +78,7 @@ struct nsub_node {
 
 #define CHANGE_MASK_HTML						0x01
 #define CHANGE_MASK_BODY						0x02
+#define CHANGE_MASK_RTF						0x04
 
 struct instance_node {
 	instance_node() = default;
