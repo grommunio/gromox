@@ -1810,16 +1810,11 @@ ec_error_t nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	return ecServerOOM;
 }
 
-ec_error_t nsp_interface_query_columns(NSPI_HANDLE handle,
-	uint32_t flags, LPROPTAG_ARRAY **ppcolumns)
+ec_error_t nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t flags,
+    std::vector<proptag_t> &columns) try
 {
 	if (g_nsp_trace > 0)
 		fprintf(stderr, "Entering %s {flags=%xh}\n", __func__, flags);
-	*ppcolumns = nullptr;
-	
-	auto pcolumns = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
-	if (pcolumns == nullptr)
-		return ecServerOOM;
 	static constexpr proptag_t utags[] = {
 		PR_DISPLAY_NAME, PR_NICKNAME,/* PR_TITLE, */
 		PR_BUSINESS_TELEPHONE_NUMBER, PR_PRIMARY_TELEPHONE_NUMBER,
@@ -1834,18 +1829,16 @@ ec_error_t nsp_interface_query_columns(NSPI_HANDLE handle,
 		PR_INSTANCE_KEY, PR_MAPPING_SIGNATURE, PR_SEND_RICH_INFO,
 		PR_TEMPLATEID, PR_EMS_AB_OBJECT_GUID, PR_CREATION_TIME,
 	};
-	pcolumns->cvalues = std::size(utags) + std::size(ntags);
-	pcolumns->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pcolumns->cvalues);
-	if (pcolumns->pproptag == nullptr)
-		return ecServerOOM;
-	size_t i = 0;
+	columns.clear();
+	columns.reserve(std::size(utags) + std::size(ntags));
 	bool b_unicode = flags & NspiUnicodeProptypes;
 	for (auto tag : utags)
-		pcolumns->pproptag[i++] = b_unicode ? tag : CHANGE_PROP_TYPE(tag, PT_STRING8);
-	for (auto tag : ntags)
-		pcolumns->pproptag[i++] = tag;
-	*ppcolumns = pcolumns;
+		columns.emplace_back(b_unicode ? tag : CHANGE_PROP_TYPE(tag, PT_STRING8));
+	columns.insert(columns.end(), std::cbegin(ntags), std::cend(ntags));
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 ec_error_t nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,

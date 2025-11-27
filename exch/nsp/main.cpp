@@ -318,7 +318,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto in  = static_cast<const NSPIQUERYCOLUMNS_IN *>(pin);
 		auto out = std::make_unique<NSPIQUERYCOLUMNS_OUT>();
 		out->result = nsp_interface_query_columns(in->handle,
-		              in->flags, &out->pcolumns);
+		              in->flags, out->columns);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;

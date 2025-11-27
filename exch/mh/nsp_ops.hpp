@@ -202,7 +202,7 @@ struct querycolumns_request {
 struct querycolumns_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	LPROPTAG_ARRAY *columns = nullptr;
+	std::vector<gromox::proptag_t> columns;
 };
 
 struct resolvenames_request {

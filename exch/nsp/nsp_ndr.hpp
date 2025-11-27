@@ -216,7 +216,7 @@ struct NSPIQUERYCOLUMNS_IN final : public nsp_request {
 };
 
 struct NSPIQUERYCOLUMNS_OUT final : public nsp_response {
-	LPROPTAG_ARRAY *pcolumns = nullptr;
+	std::vector<gromox::proptag_t> columns;
 	ec_error_t result{};
 };
 

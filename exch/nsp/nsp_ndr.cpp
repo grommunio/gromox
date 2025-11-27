@@ -2217,9 +2217,8 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIQUERYCOLUMNS_OUT &r)
 		/* OXNSPI v14 §3.1.4.1.5 SPR ¶1 */
 		TRY(x.p_unique_ptr(nullptr));
 	} else {
-		TRY(x.p_unique_ptr(r.pcolumns));
-		if (r.pcolumns != nullptr)
-			TRY(nsp_ndr_push_proptag_array(x, *r.pcolumns));
+		TRY(x.p_unique_ptr(&r.columns));
+		TRY(nsp_ndr_push_proptag_array(x, r.columns));
 	}
 	return x.p_uint32(r.result);
 }

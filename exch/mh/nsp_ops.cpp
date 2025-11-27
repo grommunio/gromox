@@ -775,12 +775,12 @@ pack_result nsp_ext_push::p_nsp_response(const querycolumns_response &rsp)
 	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
-	if (rsp.result != ecSuccess || rsp.columns == nullptr) {
+	if (rsp.result != ecSuccess) {
 		/* OXNSPI v14 §3.1.4.1.5 SPR ¶1 */
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_la(*rsp.columns));
+		TRY(p_proptag_la(rsp.columns));
 	}
 	return p_uint32(0);
 }

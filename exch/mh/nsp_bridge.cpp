@@ -239,7 +239,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
     const querycolumns_request &request, querycolumns_response &response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_query_columns(ses, request.flags, &response.columns);
+	return nsp_interface_query_columns(ses, request.flags, response.columns);
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
