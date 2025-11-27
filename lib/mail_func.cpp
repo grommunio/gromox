@@ -411,7 +411,7 @@ void parse_mime_encode_string(const char *in_buff, long ibuff_len,
 	if (in_buff[i] != '=' || in_buff[i+1] != '?') {
 		strcpy(pencode_string->charset, "default");
 		strcpy(pencode_string->encoding, "none");
-		auto title_len = std::max(buff_len, sizeof(pencode_string->title) - 1);
+		auto title_len = std::min(buff_len, sizeof(pencode_string->title) - 1);
 		memcpy(pencode_string->title, in_buff, title_len);
 		pencode_string->title[title_len] = '\0';
 		return;
