@@ -262,12 +262,13 @@ struct rtf_reader final {
 	int push_da_pic(EXT_PUSH &, const char *, const char *, const char *, const char *);
 
 	CMD_PROC_FN cmd_af, cmd_ansi, cmd_ansicpg, cmd_b, cmd_bullet, cmd_caps, cmd_cb,
-	cmd_cf, cmd_colortbl, cmd_continue, cmd_dbch, cmd_deff, cmd_dn, cmd_emboss,
+	cmd_cf, cmd_colortbl, cmd_continue, cmd_cpg, cmd_dbch, cmd_deff, cmd_dn, cmd_emboss,
 	cmd_emdash, cmd_emfblip, cmd_emspace, cmd_endash, cmd_engrave, cmd_enspace,
 	cmd_expand, cmd_f,
 	cmd_fdecor, cmd_field, cmd_fmodern, cmd_fnil, cmd_fonttbl, cmd_froman,
 	cmd_fs, cmd_fscript, cmd_fswiss, cmd_ftech, cmd_hich, cmd_highlight, cmd_htmltag,
-	cmd_i, cmd_ignore, cmd_info, cmd_intbl, cmd_jpegblip, cmd_ldblquote,
+	cmd_i, cmd_ignore, cmd_info, cmd_intbl, cmd_jpegblip,
+	cmd_lang, cmd_langfe, cmd_ldblquote,
 	cmd_line, cmd_loch, cmd_lquote, cmd_ltrmark, cmd_mac, cmd_macpict, cmd_maybe_ignore,
 	cmd_nonbreaking_hyphen, cmd_nonbreaking_space, cmd_nosupersub, cmd_outl, cmd_page, cmd_par,
 	cmd_pc, cmd_pca, cmd_pich, cmd_pict, cmd_picw, cmd_plain,
@@ -1943,6 +1944,83 @@ int rtf_reader::cmd_dbch(SIMPLE_TREE_NODE *pword, int align,
 	return CMD_RESULT_CONTINUE;
 }
 
+/*
+ * Map LCID (Language Code ID) to an appropriate code page.
+ * This helps when the font doesn't specify an encoding but the
+ * language tag gives us a hint about what encoding to use.
+ */
+static cpid_t rtf_lcid_to_cpid(int lcid)
+{
+	/*
+	 * LCID format: primary language (low byte), sublanguage (high byte)
+	 * We mainly care about the primary language for CJK support.
+	 */
+	int primary = lcid & 0x3FF;
+	switch (primary) {
+	case 0x01: return static_cast<cpid_t>(1256); /* Arabic */
+	case 0x04: return static_cast<cpid_t>(936);  /* Chinese (Simplified) */
+	case 0x08: return static_cast<cpid_t>(1253); /* Greek */
+	case 0x0D: return static_cast<cpid_t>(1255); /* Hebrew */
+	case 0x11: return static_cast<cpid_t>(932);  /* Japanese */
+	case 0x12: return static_cast<cpid_t>(949);  /* Korean */
+	case 0x19: return static_cast<cpid_t>(1251); /* Russian/Cyrillic */
+	case 0x1E: return static_cast<cpid_t>(874);  /* Thai */
+	case 0x1F: return static_cast<cpid_t>(1254); /* Turkish */
+	case 0x2A: return static_cast<cpid_t>(1258); /* Vietnamese */
+	default:
+		/* Check for Traditional Chinese (Taiwan, Hong Kong, Macao) */
+		if ((lcid & 0xFFFF) == 0x0404 || /* zh-TW */
+		    (lcid & 0xFFFF) == 0x0C04 || /* zh-HK */
+		    (lcid & 0xFFFF) == 0x1404)   /* zh-MO */
+			return static_cast<cpid_t>(950); /* Big5 */
+		return CP_ACP;
+	}
+}
+
+int rtf_reader::cmd_lang(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	if (!have_param)
+		return CMD_RESULT_CONTINUE;
+	/*
+	 * Only use lang to set encoding if we don't already have a specific
+	 * encoding from ansicpg or font table. Lang provides a fallback hint.
+	 */
+	if (have_ansicpg)
+		return CMD_RESULT_CONTINUE;
+	auto cpid = rtf_lcid_to_cpid(num);
+	if (cpid == CP_ACP)
+		return CMD_RESULT_CONTINUE;
+	auto enc = rtf_cpid_to_encoding(cpid);
+	if (enc != nullptr && default_encoding[0] == '\0')
+		default_encoding = enc;
+	return CMD_RESULT_CONTINUE;
+}
+
+int rtf_reader::cmd_langfe(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	if (!have_param)
+		return CMD_RESULT_CONTINUE;
+	/*
+	 * \langfe specifically indicates Far East language, which is a strong
+	 * hint for CJK encoding. This is particularly useful when \dbch is used.
+	 */
+	auto cpid = rtf_lcid_to_cpid(num);
+	if (cpid == CP_ACP)
+		return CMD_RESULT_CONTINUE;
+	auto enc = rtf_cpid_to_encoding(cpid);
+	if (enc == nullptr)
+		return CMD_RESULT_CONTINUE;
+	/*
+	 * When we see langfe, set it up so that \dbch mode
+	 * will use this encoding for double-byte characters.
+	 */
+	if (char_byte_mode == 2 && !riconv_open(enc))
+		return CMD_RESULT_ERROR;
+	return CMD_RESULT_CONTINUE;
+}
+
 int rtf_reader::cmd_deff(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
@@ -2541,6 +2619,20 @@ int rtf_reader::cmd_ansicpg(SIMPLE_TREE_NODE *pword,
 	auto preader = this;
 	default_encoding = rtf_cpid_to_encoding(static_cast<cpid_t>(num));
 	preader->have_ansicpg = true;
+	return CMD_RESULT_CONTINUE;
+}
+
+/* \cpg - code page switch within document body */
+int rtf_reader::cmd_cpg(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	if (!have_param)
+		return CMD_RESULT_CONTINUE;
+	auto enc = rtf_cpid_to_encoding(static_cast<cpid_t>(num));
+	if (enc == nullptr)
+		return CMD_RESULT_CONTINUE;
+	if (!riconv_open(enc))
+		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
@@ -3161,6 +3253,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"cb", &rtf_reader::cmd_cb},
 	{"cf", &rtf_reader::cmd_cf},
 	{"colortbl", &rtf_reader::cmd_colortbl},
+	{"cpg", &rtf_reader::cmd_cpg},
 	{"dbch", &rtf_reader::cmd_dbch}, /* subsequent text is double-byte characters (CJK) */
 	{"deff", &rtf_reader::cmd_deff},
 	{"dn", &rtf_reader::cmd_dn},
@@ -3204,6 +3297,8 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"intbl", &rtf_reader::cmd_intbl},
 	{"jis", &rtf_reader::cmd_ansi},
 	{"jpegblip", &rtf_reader::cmd_jpegblip},
+	{"lang", &rtf_reader::cmd_lang}, /* language tag for text (affects encoding interpretation) */
+	{"langfe", &rtf_reader::cmd_langfe}, /* language tag for Far East text (CJK encoding hint) */
 	{"ldblquote", &rtf_reader::cmd_ldblquote},
 	{"line", &rtf_reader::cmd_line},
 	{"loch", &rtf_reader::cmd_loch}, /* subsequent text is low-byte (ASCII/Latin) characters */
