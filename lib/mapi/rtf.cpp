@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -444,11 +445,57 @@ bool rtf_reader::riconv_flush()
 		return false;
 	auto in_buff = preader->iconv_push.m_cdata;
 	size_t in_size = preader->iconv_push.m_offset;
+	auto in_start = in_buff;
 	out_buff = ptmp_buff;
 	out_size = tmp_len;
-	if (iconv(preader->conv_id, &in_buff, &in_size, &out_buff, &out_size) == static_cast<size_t>(-1)) {
+	auto ret = iconv(conv_id, &in_buff, &in_size, &out_buff, &out_size);
+	if (ret == static_cast<size_t>(-1)) {
+		if (errno == EINVAL) {
+			/*
+			 * EINVAL = incomplete multi-byte sequence at end of input.
+			 * This is normal for encodings like Shift-JIS where we may
+			 * have received only the first byte of a 2-byte character.
+			 * Output what was converted and keep the remainder.
+			 */
+			tmp_len -= out_size;
+			if (tmp_len > 0) {
+				ptmp_buff[tmp_len] = '\0';
+				if (!escape_output(ptmp_buff)) {
+					free(ptmp_buff);
+					return false;
+				}
+			}
+			/* Move unconverted bytes to start of buffer */
+			if (in_size > 0 && in_buff != in_start)
+				memmove(iconv_push.m_udata, in_buff, in_size);
+			iconv_push.m_offset = in_size;
+			free(ptmp_buff);
+			return true;
+		} else if (errno == EILSEQ) {
+			/*
+			 * EILSEQ = invalid multi-byte sequence.
+			 * Skip the problematic byte and try to continue.
+			 */
+			tmp_len -= out_size;
+			if (tmp_len > 0) {
+				ptmp_buff[tmp_len] = '\0';
+				if (!escape_output(ptmp_buff)) {
+					free(ptmp_buff);
+					return false;
+				}
+			}
+			/* Skip one byte and keep the rest */
+			if (in_size > 1) {
+				memmove(iconv_push.m_udata, in_buff + 1, in_size - 1);
+				iconv_push.m_offset = in_size - 1;
+			} else {
+				iconv_push.m_offset = 0;
+			}
+			free(ptmp_buff);
+			return true;
+		}
+		/* Other error - just discard */
 		free(ptmp_buff);
-		/* ignore the characters which can not be converted */
 		preader->iconv_push.m_offset = 0;
 		return true;
 	}
