@@ -262,13 +262,13 @@ struct rtf_reader final {
 	int push_da_pic(EXT_PUSH &, const char *, const char *, const char *, const char *);
 
 	CMD_PROC_FN cmd_af, cmd_ansi, cmd_ansicpg, cmd_b, cmd_bullet, cmd_caps, cmd_cb,
-	cmd_cf, cmd_colortbl, cmd_continue, cmd_cpg, cmd_dbch, cmd_deff, cmd_dn, cmd_emboss,
+	cmd_cf, cmd_colortbl, cmd_continue, cmd_cpg, cmd_dbch, cmd_deff, cmd_deflang, cmd_dn, cmd_emboss,
 	cmd_emdash, cmd_emfblip, cmd_emspace, cmd_endash, cmd_engrave, cmd_enspace,
 	cmd_expand, cmd_f,
 	cmd_fdecor, cmd_field, cmd_fmodern, cmd_fnil, cmd_fonttbl, cmd_froman,
 	cmd_fs, cmd_fscript, cmd_fswiss, cmd_ftech, cmd_hich, cmd_highlight, cmd_htmltag,
 	cmd_i, cmd_ignore, cmd_info, cmd_intbl, cmd_jpegblip,
-	cmd_lang, cmd_langfe, cmd_ldblquote,
+	cmd_lang, cmd_langfe, cmd_langfenp, cmd_langnp, cmd_ldblquote,
 	cmd_line, cmd_loch, cmd_lquote, cmd_ltrmark, cmd_mac, cmd_macpict, cmd_maybe_ignore,
 	cmd_nonbreaking_hyphen, cmd_nonbreaking_space, cmd_nosupersub, cmd_outl, cmd_page, cmd_par,
 	cmd_pc, cmd_pca, cmd_pich, cmd_pict, cmd_picw, cmd_plain,
@@ -277,7 +277,7 @@ struct rtf_reader final {
 	cmd_strikedl, cmd_sub, cmd_super, cmd_tab, cmd_u, cmd_uc, cmd_ul,
 	cmd_uld, cmd_uldash, cmd_uldashd, cmd_uldashdd, cmd_uldb, cmd_ulnone,
 	cmd_ulth, cmd_ulthd, cmd_ulthdash, cmd_ulw, cmd_ulwave, cmd_up,
-	cmd_wbmbitspixel, cmd_wmetafile, cmd_zwbo, cmd_zwj, cmd_zwnbo, cmd_zwnj;
+	cmd_wbmbitspixel, cmd_wmetafile, cmd_zwbo, cmd_zwj, cmd_zwnbo, cmd_zwnj, flush_pending;
 
 	bool is_within_table = false, b_printed_row_begin = false;
 	bool b_printed_cell_begin = false, b_printed_row_end = false;
@@ -2021,6 +2021,36 @@ int rtf_reader::cmd_langfe(SIMPLE_TREE_NODE *pword, int align,
 	return CMD_RESULT_CONTINUE;
 }
 
+int rtf_reader::cmd_deflang(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	if (!have_param)
+		return CMD_RESULT_CONTINUE;
+	/* Set default encoding from default language if not already set */
+	if (!have_ansicpg && default_encoding[0] == '\0') {
+		auto cpid = rtf_lcid_to_cpid(num);
+		if (cpid != CP_ACP) {
+			auto enc = rtf_cpid_to_encoding(cpid);
+			if (enc != nullptr)
+				default_encoding = enc;
+		}
+	}
+	return CMD_RESULT_CONTINUE;
+}
+
+int rtf_reader::flush_pending(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	/*
+	 * LTR/RTL character property. Flush pending data. For proper LTR/RTL
+	 * support we would need to insert Unicode bidi controls, but for now
+	 * we just ensure encoding state is consistent.
+	 */
+	if (!riconv_flush())
+		return CMD_RESULT_ERROR;
+	return CMD_RESULT_CONTINUE;
+}
+
 int rtf_reader::cmd_deff(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
@@ -2475,8 +2505,13 @@ int rtf_reader::cmd_u(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
 	char tmp_string[8];
-	
-	wchar_to_utf8(num, tmp_string);
+	/*
+	 * RTF uses signed 16-bit values for Unicode. Values > 32767 are
+	 * represented as negative numbers (e.g., \u-10000 means U+55536).
+	 * Convert to unsigned 16-bit first to get the correct codepoint.
+	 */
+	uint32_t codepoint = static_cast<uint16_t>(num);
+	wchar_to_utf8(codepoint, tmp_string);
 	if (!escape_output(tmp_string))
 		return CMD_RESULT_ERROR;
 	auto preader = this;
@@ -3243,6 +3278,8 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"-", &rtf_reader::cmd_soft_hyphen},
 	{"_", &rtf_reader::cmd_nonbreaking_hyphen},
 	{"af", &rtf_reader::cmd_af}, /* associated font for double-byte characters */
+	{"afs", &rtf_reader::cmd_continue}, /* associated font size (for CJK fonts) - we don't track this separately from \fs */
+	{"alang", &rtf_reader::cmd_lang}, /* associated character language property */
 	{"ansi", &rtf_reader::cmd_ansi},
 	{"ansicpg", &rtf_reader::cmd_ansicpg},
 	{"b", &rtf_reader::cmd_b},
@@ -3256,6 +3293,8 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"cpg", &rtf_reader::cmd_cpg},
 	{"dbch", &rtf_reader::cmd_dbch}, /* subsequent text is double-byte characters (CJK) */
 	{"deff", &rtf_reader::cmd_deff},
+	{"deflang", &rtf_reader::cmd_deflang}, /* default document language */
+	{"deflangfe", &rtf_reader::cmd_deflang},
 	{"dn", &rtf_reader::cmd_dn},
 	{"embo", &rtf_reader::cmd_emboss},
 	{"emdash", &rtf_reader::cmd_emdash},
@@ -3266,6 +3305,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"expand", &rtf_reader::cmd_expand},
 	{"expnd", &rtf_reader::cmd_expand},
 	{"f", &rtf_reader::cmd_f},
+	{"fbidi", &rtf_reader::cmd_fnil}, /* Bidirectional font family - treat like fnil for now */
 	{"fdecor", &rtf_reader::cmd_fdecor},
 	{"field", &rtf_reader::cmd_field},
 	{"fjgothic", &rtf_reader::cmd_fnil},
@@ -3283,6 +3323,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"fscript", &rtf_reader::cmd_fscript},
 	{"fswiss", &rtf_reader::cmd_fswiss},
 	{"ftech", &rtf_reader::cmd_ftech},
+	{"fttruetype", &rtf_reader::cmd_continue}, /* TrueType flag is just informational; doesn't affect conversion */
 	{"header", &rtf_reader::cmd_ignore},
 	{"headerf", &rtf_reader::cmd_ignore},
 	{"headerl", &rtf_reader::cmd_ignore},
@@ -3299,10 +3340,13 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"jpegblip", &rtf_reader::cmd_jpegblip},
 	{"lang", &rtf_reader::cmd_lang}, /* language tag for text (affects encoding interpretation) */
 	{"langfe", &rtf_reader::cmd_langfe}, /* language tag for Far East text (CJK encoding hint) */
+	{"langfenp", &rtf_reader::cmd_langfe}, /* non-proportional Far East language */
+	{"langnp", &rtf_reader::cmd_lang}, /* non-proportional language (same as \lang for our purposes) */
 	{"ldblquote", &rtf_reader::cmd_ldblquote},
 	{"line", &rtf_reader::cmd_line},
 	{"loch", &rtf_reader::cmd_loch}, /* subsequent text is low-byte (ASCII/Latin) characters */
 	{"lquote", &rtf_reader::cmd_lquote},
+	{"ltrch", &rtf_reader::flush_pending},
 	{"ltrmark", &rtf_reader::cmd_ltrmark},
 	{"mac", &rtf_reader::cmd_mac},
 	{"macpict", &rtf_reader::cmd_macpict},
@@ -3325,6 +3369,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"rdblquote", &rtf_reader::cmd_rdblquote},
 	{"rquote", &rtf_reader::cmd_rquote},
 	{"rtf", &rtf_reader::cmd_continue},
+	{"rtlch", &rtf_reader::flush_pending},
 	{"rtlmark", &rtf_reader::cmd_rtlmark},
 	{"s", &rtf_reader::cmd_continue},
 	{"scaps", &rtf_reader::cmd_scaps},
@@ -3343,6 +3388,13 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"tcn", &rtf_reader::cmd_ignore},
 	{"u", &rtf_reader::cmd_u},
 	{"uc", &rtf_reader::cmd_uc},
+	/*
+	 * \ud - Unicode destination within \upr
+	 *
+	 * This marks the start of the Unicode version of text in a \upr group.
+	 * Content following this should be processed normally (including \u escapes).
+	 */
+	{"ud", &rtf_reader::cmd_continue},
 	{"ul", &rtf_reader::cmd_ul},
 	{"uld", &rtf_reader::cmd_uld},
 	{"uldash", &rtf_reader::cmd_uldash},
@@ -3356,6 +3408,16 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"ulw", &rtf_reader::cmd_ulw},
 	{"ulwave", &rtf_reader::cmd_ulwave},
 	{"up", &rtf_reader::cmd_up},
+	/*
+	 * \upr - Unicode-preserving group
+	 *
+	 * \upr groups contain two representations: the first is for legacy
+	 * readers (using the ansicpg encoding), the second is in \ud and
+	 * contains Unicode. Since we support Unicode, we skip the first
+	 * representation and process only the \ud content.
+	 * The structure is: {\upr {ansi text} {\*\ud {unicode text}}}
+	 */
+	{"upr", &rtf_reader::cmd_continue},
 	{"wbmbitspixel", &rtf_reader::cmd_wbmbitspixel},
 	{"wmetafile", &rtf_reader::cmd_wmetafile},
 	{"xe", &rtf_reader::cmd_continue},
