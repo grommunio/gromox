@@ -1424,21 +1424,6 @@ static ec_error_t nsp_get_proptags(const ab_tree::ab_node &node,
 	return ecServerOOM;
 }
 
-static ec_error_t nsp_get_proptags(const ab_tree::ab_node &node,
-    LPROPTAG_ARRAY *pproptags, bool b_unicode)
-{
-	std::vector<proptag_t> ctags;
-	auto ret = nsp_get_proptags(node, ctags, b_unicode);
-	if (ret != ecSuccess)
-		return ret;
-	pproptags->cvalues  = ctags.size();
-	pproptags->pproptag = ndr_stack_anew<proptag_t>(NDR_STACK_OUT, pproptags->cvalues);
-	if (pproptags->pproptag == nullptr)
-		return ecServerOOM;
-	memcpy(pproptags->pproptag, ctags.data(), sizeof(proptag_t) * ctags.size());
-	return ret;
-}
-
 /* MS-OXNSPI v14 §3.1.4.1.6 */
 ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
     uint32_t mid, cpid_t codepage, std::vector<proptag_t> &ctags) try
@@ -1475,7 +1460,7 @@ ec_error_t nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 
 /* MS-OXNSPI v14 §3.1.4.1.7 */
 ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
-    const STAT &xstat, const LPROPTAG_ARRAY *pproptags, NSP_PROPROW **pprows)
+    const STAT &xstat, const std::vector<proptag_t> *pproptags, NSP_PROPROW **pprows)
 {
 	auto pstat = &xstat;
 	*pprows = nullptr;
@@ -1490,16 +1475,16 @@ ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		if (pproptags == nullptr) {
 			fprintf(stderr, "\ttags=null\n");
 		} else {
-			fprintf(stderr, "\ttags[%u]={", pproptags->cvalues);
-			for (size_t i = 0; i < pproptags->cvalues; ++i)
-				fprintf(stderr, "%xh,", pproptags->pproptag[i]);
+			fprintf(stderr, "\ttags[%zu]={", pproptags->size());
+			for (size_t i = 0; i < pproptags->size(); ++i)
+				fprintf(stderr, "%xh,", (*pproptags)[i]);
 			fprintf(stderr, "}\n");
 		}
 	}
 	bool b_unicode = pstat->codepage == CP_WINUNICODE;
 	if (b_unicode && pproptags != nullptr)
-		for (size_t i = 0; i < pproptags->cvalues; ++i)
-			if (PROP_TYPE(pproptags->pproptag[i]) == PT_STRING8)
+		for (size_t i = 0; i < pproptags->size(); ++i)
+			if (PROP_TYPE((*pproptags)[i]) == PT_STRING8)
 				return ecNotSupported;
 	
 	ab_tree::ab_node node;
@@ -1529,31 +1514,30 @@ ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		if (node.exists() && pstat->container_id != 0 && !base->exists(pstat->container_id))
 			return ecInvalidBookmark;
 	}
+
 	bool b_proptags = true;
-	if (NULL == pproptags) {
+	std::vector<proptag_t> fallback_tags;
+	if (pproptags == nullptr) {
 		/* The list must be the same as for getproplist. */
 		b_proptags = false;
-		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
-		if (nt == nullptr)
-			return ecServerOOM;
-		pproptags = nt;
 		/*
 		 * This is a bit inefficient, since we are getting the values
 		 * twice (once here, and once further below with
 		 * nsp_interface_fetch_row).
 		 */
-		auto result = nsp_get_proptags(node, nt, b_unicode);
+		auto result = nsp_get_proptags(node, fallback_tags, b_unicode);
 		if (result != ecSuccess)
 			return result;
+		pproptags = &fallback_tags;
 		if (g_nsp_trace >= 2) {
-			fprintf(stderr, "\tdefault tags[%u]={", pproptags->cvalues);
-			for (size_t i = 0; i < pproptags->cvalues; ++i)
-				fprintf(stderr, "%xh,", pproptags->pproptag[i]);
+			fprintf(stderr, "\tdefault tags[%zu]={", fallback_tags.size());
+			for (size_t i = 0; i < fallback_tags.size(); ++i)
+				fprintf(stderr, "%xh,", fallback_tags[i]);
 			fprintf(stderr, "}\n");
 		}
-	} else if (pproptags->cvalues > 100) {
-		return ecTableTooBig;
 	}
+	if (pproptags->size() > 100)
+		return ecTableTooBig;
 	auto rowset = common_util_propertyrow_init(NULL);
 	if (rowset == nullptr)
 		return ecServerOOM;

@@ -145,7 +145,7 @@ struct NSPIGETPROPS_IN final : public nsp_request {
 	NSPI_HANDLE handle{};
 	STAT stat;
 	uint32_t flags = 0;
-	LPROPTAG_ARRAY *pproptags = nullptr;
+	std::optional<std::vector<gromox::proptag_t>> pproptags;
 };
 
 struct NSPIGETPROPS_OUT final : public nsp_response {

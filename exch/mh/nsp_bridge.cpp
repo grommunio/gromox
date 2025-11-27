@@ -127,7 +127,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	NSP_PROPROW *row;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	auto result = nsp_interface_get_props(ses, request.flags,
-	              request.stat, request.proptags, &row);
+	              request.stat, optional_ptr(request.proptags), &row);
 	if (Failed(result)) {
 		response.row = nullptr;
 		return result;

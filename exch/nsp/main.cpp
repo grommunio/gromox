@@ -260,7 +260,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto in  = static_cast<const NSPIGETPROPS_IN *>(pin);
 		auto out = std::make_unique<NSPIGETPROPS_OUT>();
 		out->result = nsp_interface_get_props(in->handle, in->flags,
-		              in->stat, in->pproptags, &out->prows);
+		              in->stat, optional_ptr(in->pproptags), &out->prows);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;

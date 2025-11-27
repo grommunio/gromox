@@ -114,7 +114,7 @@ struct getproplist_response {
 struct getprops_request {
 	uint32_t flags = 0, cb_auxin = 0;
 	STAT stat;
-	LPROPTAG_ARRAY *proptags = nullptr;
+	std::optional<std::vector<gromox::proptag_t>> proptags;
 	uint8_t *auxin = nullptr;
 };
 

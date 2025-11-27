@@ -21,7 +21,7 @@ extern ec_error_t nsp_interface_get_matches(NSPI_HANDLE, uint32_t, STAT &, const
 extern ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE, STAT &, std::span<const minid_t> inmids, std::vector<minid_t> &);
 extern ec_error_t nsp_interface_dntomid(NSPI_HANDLE, const STRINGS_ARRAY *names, std::vector<minid_t> &out);
 extern ec_error_t nsp_interface_get_proplist(NSPI_HANDLE, uint32_t flags, uint32_t mid, cpid_t, std::vector<gromox::proptag_t> &);
-extern ec_error_t nsp_interface_get_props(NSPI_HANDLE, uint32_t flags, const STAT &, const LPROPTAG_ARRAY *, NSP_PROPROW **);
+extern ec_error_t nsp_interface_get_props(NSPI_HANDLE, uint32_t flags, const STAT &, const std::vector<gromox::proptag_t> *, NSP_PROPROW **);
 extern ec_error_t nsp_interface_compare_mids(NSPI_HANDLE, const STAT &, uint32_t mid1, uint32_t mid2, int32_t *cmp);
 extern ec_error_t nsp_interface_mod_props(NSPI_HANDLE, const STAT &, const LPROPTAG_ARRAY *, const NSP_PROPROW *);
 extern ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE, uint32_t flags, const STAT &, uint32_t *version, NSP_ROWSET **);
