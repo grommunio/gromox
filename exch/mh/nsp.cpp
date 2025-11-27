@@ -532,7 +532,7 @@ MhNspPlugin::ProcRes MhNspPlugin::bind(MhNspContext& ctx)
 		auto sd_iter = sessions.find(ctx.session_string);
 		if (sd_iter != sessions.end()) {
 			auto& psession = sd_iter->second;
-			nsp_bridge_unbind(psession.session_guid, 0);
+			nsp_bridge_unbind(psession.session_guid);
 			psession.session_guid = ctx.session_guid;
 		}
 	} else {
@@ -544,14 +544,14 @@ MhNspPlugin::ProcRes MhNspPlugin::bind(MhNspContext& ctx)
 			auto emplaced = sessions.try_emplace(ctx.session_string, ctx.session_guid, ctx.sequence_guid, ctx.auth_info.username, exptime);
 			if (!emplaced.second) {
 				hl_hold.unlock();
-				nsp_bridge_unbind(ctx.session_guid, 0);
+				nsp_bridge_unbind(ctx.session_guid);
 				return ctx.failure_response(ecInsufficientResrc);
 			}
 			auto ucount = users.emplace(emplaced.first->second.username, 0);
 			++ucount.first->second;
 		}  catch (std::bad_alloc&) {
 			hl_hold.unlock();
-			nsp_bridge_unbind(ctx.session_guid, 0);
+			nsp_bridge_unbind(ctx.session_guid);
 			return ctx.failure_response(ecServerOOM);
 		}
 	}
@@ -566,7 +566,7 @@ MhNspPlugin::ProcRes MhNspPlugin::unbind(MhNspContext& ctx)
 	auto& response = ctx.response.emplace<unbind_response>();
 	if (ctx.ext_pull.g_nsp_request(request) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
-	response.result = nsp_bridge_unbind(ctx.session_guid, 0);
+	response.result = nsp_bridge_unbind(ctx.session_guid);
 	std::unique_lock hl_hold(hashLock);
 	removeSession(ctx.session_string);
 	hl_hold.unlock();

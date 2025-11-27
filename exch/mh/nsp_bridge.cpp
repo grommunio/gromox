@@ -29,7 +29,7 @@ static inline bool Failed(ec_error_t hresult)
 	return hresult != ecSuccess && hresult != ecWarnWithErrors;
 }
 
-ec_error_t nsp_bridge_unbind(GUID session_guid, uint32_t reserved)
+ec_error_t nsp_bridge_unbind(GUID session_guid)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	return nsp_interface_unbind(&ses);
