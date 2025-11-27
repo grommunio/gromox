@@ -993,7 +993,6 @@ pack_result rtf_reader::getchar(int *pch)
 {
 	auto preader = this;
 	int ch;
-	int8_t tmp_char;
 
 	if (preader->ungot_chars[0] >= 0) {
 		ch = preader->ungot_chars[0]; 
@@ -1005,7 +1004,8 @@ pack_result rtf_reader::getchar(int *pch)
 		return pack_result::ok;
 	}
 	do {
-		auto status = preader->ext_pull.g_int8(&tmp_char);
+		uint8_t tmp_char = 0;
+		auto status = preader->ext_pull.g_uint8(&tmp_char);
 		if (status != pack_result::success)
 			return status;
 		ch = tmp_char;
