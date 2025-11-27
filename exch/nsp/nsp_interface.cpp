@@ -1614,7 +1614,7 @@ ec_error_t nsp_interface_compare_mids(NSPI_HANDLE handle,
 }
 
 ec_error_t nsp_interface_mod_props(NSPI_HANDLE handle,
-    const STAT &pstat, const LPROPTAG_ARRAY *pproptags, const NSP_PROPROW *prow)
+    const STAT &pstat, const std::vector<proptag_t> *pproptags, const NSP_PROPROW *prow)
 {
 	nsp_trace(__func__, 1, &pstat);
 	return ecNotSupported;

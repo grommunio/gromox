@@ -338,12 +338,10 @@ pack_result nsp_ext_pull::g_nsp_request(modprops_request &req)
 		TRY(nsp_ext_g_stat(*this, req.stat));
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
-		req.proptags = nullptr;
+		req.proptags.reset();
 	} else {
-		req.proptags = anew<LPROPTAG_ARRAY>();
-		if (req.proptags == nullptr)
-			return pack_result::alloc;
-		TRY(g_proptag_la(req.proptags));
+		req.proptags.emplace();
+		TRY(g_proptag_a(&*req.proptags, 4));
 	}
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {

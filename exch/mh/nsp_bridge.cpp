@@ -231,7 +231,8 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 		    !cu_proplist_to_nsp_proprow(*request.values, *row))
 			return ecRpcFailed;
 	}
-	return nsp_interface_mod_props(ses, request.stat, request.proptags, row);
+	return nsp_interface_mod_props(ses, request.stat,
+	       optional_ptr(request.proptags), row);
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,

@@ -167,7 +167,7 @@ struct NSPICOMPAREMIDS_OUT final : public nsp_response {
 struct NSPIMODPROPS_IN final : public nsp_request {
 	NSPI_HANDLE handle{};
 	STAT stat;
-	LPROPTAG_ARRAY *pproptags = nullptr;
+	std::optional<std::vector<gromox::proptag_t>> pproptags;
 	NSP_PROPROW row{};
 };
 

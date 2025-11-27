@@ -169,7 +169,7 @@ struct modlinkatt_response {
 struct modprops_request {
 	uint32_t cb_auxin = 0;
 	STAT stat;
-	LPROPTAG_ARRAY *proptags = nullptr;
+	std::optional<std::vector<gromox::proptag_t>> proptags;
 	LTPROPVAL_ARRAY *values = nullptr;
 	uint8_t *auxin = nullptr;
 };

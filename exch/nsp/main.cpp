@@ -279,7 +279,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto in  = static_cast<const NSPIMODPROPS_IN *>(pin);
 		auto out = std::make_unique<NSPIMODPROPS_OUT>();
 		out->result = nsp_interface_mod_props(in->handle,
-		              in->stat, in->pproptags, &in->row);
+		              in->stat, optional_ptr(in->pproptags), &in->row);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
