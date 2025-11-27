@@ -10,6 +10,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <fmt/format.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/scope.hpp>
@@ -78,7 +79,7 @@
 #define TAG_TABLE_ROW_END				"</tr>\r\n"
 #define TAG_TABLE_CELL_BEGIN			"<td>\r\n"
 #define TAG_TABLE_CELL_END				"</td>\r\n"
-#define TAG_FONT_BEGIN					"<font face=\"%s\">"
+#define TAG_FONT_BEGIN					"<font face=\"{}\">"
 #define TAG_FONT_END					"</font>\r\n"
 #define TAG_FONTSIZE_BEGIN				"<span style=\"font-size:%dpt\">"
 #define TAG_FONTSIZE_END				"</span>"
@@ -98,7 +99,7 @@
 #define TAG_SMALLER_END					"</small>"
 #define TAG_BIGGER_BEGIN				"<big>"
 #define TAG_BIGGER_END					"</big>"
-#define TAG_FOREGROUND_BEGIN			"<font color=\"#%06x\">"
+#define TAG_FOREGROUND_BEGIN			"<font color=\"#{:06x}\">"
 #define TAG_FOREGROUND_END				"</font>"
 #define TAG_BACKGROUND_BEGIN			"<span style=\"background:#%06x\">"
 #define TAG_BACKGROUND_END				"</span>"
@@ -212,8 +213,7 @@ struct attrstack_node {
 };
 
 struct FONTENTRY {
-	char name[MAX_FINTNAME_LEN];
-	char encoding[32];
+	std::string name, encoding;
 };
 
 struct rtf_reader;
@@ -286,14 +286,13 @@ struct rtf_reader final {
 	bool is_within_htmlrtf = false;
 	int coming_pars_tabular = 0, ubytes_num = 1, ubytes_left = 0;
 	int picture_file_number = 1;
-	char picture_path[256]{};
+	std::string picture_path;
 	int picture_width = 0, picture_height = 0, picture_bits_per_pixel = 1;
 	int picture_type = 0, picture_wmf_type = 0;
 	const char *picture_wmf_str = nullptr;
 	int color_table[MAX_COLORS]{}, total_colors = 0;
 	int total_chars_in_line = 0;
-	char default_encoding[32] = "windows-1252", current_encoding[32]{};
-	char html_charset[32]{};
+	std::string default_encoding = "windows-1252", current_encoding, html_charset;
 	int default_font_number = 0;
 	std::unordered_map<int, FONTENTRY> pfont_hash;
 	std::vector<attrstack_node> attr_stack_list;
@@ -349,7 +348,7 @@ static int rtf_decode_hex_char(const char *in)
 bool rtf_reader::riconv_open(const char *fromcode)
 {
 	auto preader = this;
-	if (*fromcode == '\0' || strcasecmp(preader->current_encoding, fromcode) == 0)
+	if (*fromcode == '\0' || strcasecmp(current_encoding.c_str(), fromcode) == 0)
 		return true;
 	if ((iconv_t)-1 != preader->conv_id) {
 		iconv_close(preader->conv_id);
@@ -361,7 +360,7 @@ bool rtf_reader::riconv_open(const char *fromcode)
 		mlog(LV_ERR, "E-2114: iconv_open %s: %s", cs, strerror(errno));
 		return false;
 	}
-	gx_strlcpy(preader->current_encoding, fromcode, std::size(preader->current_encoding));
+	current_encoding = fromcode;
 	return true;
 }
 
@@ -435,7 +434,7 @@ bool rtf_reader::riconv_flush()
 			if (!riconv_open("windows-1252"))
 				return false;
 		} else {
-			if (!riconv_open(preader->default_encoding))
+			if (!riconv_open(default_encoding.c_str()))
 				return false;
 		}
 	}
@@ -538,7 +537,7 @@ static uint32_t rtf_fcharset_to_cpid(int num)
 
 const FONTENTRY *rtf_reader::lookup_font(int num) const
 {
-	static constexpr FONTENTRY fake_entries[] =
+	static const FONTENTRY fake_entries[] =
 		{{FONTNIL_STR, ""}, {FONTROMAN_STR, ""},
 		{FONTSWISS_STR, ""}, {FONTMODERN_STR, ""},
 		{FONTSCRIPT_STR, ""}, {FONTDECOR_STR, ""},
@@ -646,9 +645,6 @@ bool rtf_reader::express_end_fontsize(int size)
 bool rtf_reader::express_attr_begin(int attr, int param)
 {
 	auto preader = this;
-	int tmp_len;
-	const char *encoding;
-	char tmp_buff[256];
 	
 	switch (attr) {
 	case ATTR_BOLD:
@@ -674,32 +670,32 @@ bool rtf_reader::express_attr_begin(int attr, int param)
 		return express_begin_fontsize(param);
 	case ATTR_FONTFACE: {
 		auto pentry = lookup_font(param);
+		const char *encoding;
+		std::string tb;
 		if (NULL == pentry) {
-			encoding = preader->default_encoding;
+			encoding = default_encoding.c_str();
 			mlog(LV_DEBUG, "rtf: invalid font number %d", param);
-			tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
-				TAG_FONT_BEGIN, DEFAULT_FONT_STR);
+			tb = fmt::format(TAG_FONT_BEGIN, DEFAULT_FONT_STR);
 		} else {
-			encoding = pentry->encoding;
-			tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
-				TAG_FONT_BEGIN, pentry->name);
+			encoding = pentry->encoding.c_str();
+			tb = fmt::format(TAG_FONT_BEGIN, pentry->name);
 		}
 		if (!preader->have_fromhtml)
-			QRF(preader->ext_push.p_bytes(tmp_buff, tmp_len));
+			QRF(ext_push.p_bytes(tb.c_str(), tb.size()));
 		if (!riconv_open(encoding))
 			return false;
 		return true;
 	}
-	case ATTR_FOREGROUND:
-		tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
-			TAG_FOREGROUND_BEGIN, param);
-		QRF(preader->ext_push.p_bytes(tmp_buff, tmp_len));
+	case ATTR_FOREGROUND: {
+		auto tb = fmt::format(TAG_FOREGROUND_BEGIN, param);
+		QRF(ext_push.p_bytes(tb.c_str(), tb.size()));
 		return true;
-	case ATTR_BACKGROUND: 
-		tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
-			TAG_BACKGROUND_BEGIN, param);
-		QRF(preader->ext_push.p_bytes(tmp_buff, tmp_len));
+	}
+	case ATTR_BACKGROUND: {
+		auto tb = fmt::format(TAG_BACKGROUND_BEGIN, param);
+		QRF(ext_push.p_bytes(tb.c_str(), tb.size()));
 		return true;
+	}
 	case ATTR_SUPER:
 		QRF(preader->ext_push.p_bytes(TAG_SUPERSCRIPT_BEGIN, sizeof(TAG_SUPERSCRIPT_BEGIN) - 1));
 		return true;
@@ -744,7 +740,7 @@ bool rtf_reader::express_attr_begin(int attr, int param)
 		return true;
 	case ATTR_HTMLTAG:
 		preader->is_within_htmltag = true;
-		if (!riconv_open(preader->default_encoding))
+		if (!riconv_open(default_encoding.c_str()))
 			return false;
 		break;
 	}
@@ -770,7 +766,6 @@ const int *rtf_reader::stack_list_find_attr(int attr) const
 bool rtf_reader::express_attr_end(int attr, int param)
 {
 	auto preader = this;
-	const char *encoding;
 	
 	switch (attr) {
 	case ATTR_BOLD:
@@ -802,11 +797,13 @@ bool rtf_reader::express_attr_end(int attr, int param)
 		if (attr == ATTR_HTMLTAG)
 			preader->is_within_htmltag = false;
 		auto pparam = stack_list_find_attr(ATTR_FONTFACE);
+		const char *encoding;
 		if (NULL == pparam) {
-			encoding = preader->default_encoding;
+			encoding = default_encoding.c_str();
 		} else {
 			auto pentry = lookup_font(*pparam);
-			encoding = pentry != nullptr ? pentry->encoding : preader->default_encoding;
+			encoding = pentry != nullptr ? pentry->encoding.c_str() :
+			           default_encoding.c_str();
 		}
 		if (!riconv_open(encoding))
 			return false;
@@ -1484,11 +1481,11 @@ bool rtf_reader::build_font_table(SIMPLE_TREE_NODE *pword)
 		if (cpid == CP_UNSET)
 			cpid = fcharsetcp;
 		if (cpid != CP_UNSET)
-			strcpy(tmp_entry.encoding, rtf_cpid_to_encoding(cpid));
+			tmp_entry.encoding = rtf_cpid_to_encoding(cpid);
 		else if (strcasestr(name, "symbol") != nullptr)
-			tmp_entry.encoding[0] = '\0';
+			tmp_entry.encoding.clear();
 		else
-			strcpy(tmp_entry.encoding, "windows-1252");
+			tmp_entry.encoding = "windows-1252";
 		if (cpid == CP_UNSET)
 			cpid = static_cast<cpid_t>(1252);
 		if (!string_mb_to_utf8(rtf_cpid_to_encoding(cpid), tmp_buff,
@@ -1499,7 +1496,7 @@ bool rtf_reader::build_font_table(SIMPLE_TREE_NODE *pword)
 		ptoken = strchr(name, ';');
 		if (ptoken != nullptr)
 			*ptoken = '\0';
-		gx_strlcpy(tmp_entry.name, name, std::size(tmp_entry.name));
+		tmp_entry.name = name;
 		try {
 			if (preader->pfont_hash.size() < MAX_FONTS)
 				preader->pfont_hash.emplace(num, std::move(tmp_entry));
@@ -1507,11 +1504,11 @@ bool rtf_reader::build_font_table(SIMPLE_TREE_NODE *pword)
 			mlog(LV_ERR, "E-1986: ENOMEM");
 		}
 	} while ((pword = pword->get_sibling()) != nullptr);
-	if (*preader->default_encoding == '\0')
-		strcpy(preader->default_encoding, "windows-1252");
+	if (default_encoding.empty())
+		default_encoding = "windows-1252";
 	if (!preader->have_ansicpg) {
 		auto pentry = lookup_font(default_font_number);
-		strcpy(preader->default_encoding, pentry != nullptr ? pentry->encoding : "windows-1252");
+		default_encoding = pentry != nullptr ? pentry->encoding.c_str() : "windows-1252";
 	}
 	return true;
 }
@@ -1799,7 +1796,7 @@ int rtf_reader::cmd_f(SIMPLE_TREE_NODE *pword, int align,
 	if (!have_param)
 		return CMD_RESULT_CONTINUE;
 	auto pentry = lookup_font(num);
-	if (pentry == nullptr || strcasestr(pentry->name, "symbol") != nullptr)
+	if (pentry == nullptr || strcasestr(pentry->name.c_str(), "symbol") != nullptr)
 		return CMD_RESULT_CONTINUE;
 	return astk_pushx(ATTR_FONTFACE, num) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
@@ -2384,17 +2381,15 @@ int rtf_reader::cmd_outl(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_ansi(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-    strcpy(preader->default_encoding, "windows-1252");
+	default_encoding = "windows-1252";
     return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_ansicpg(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto enc = rtf_cpid_to_encoding(static_cast<cpid_t>(num));
 	auto preader = this;
-	gx_strlcpy(preader->default_encoding, enc, std::size(preader->default_encoding));
+	default_encoding = rtf_cpid_to_encoding(static_cast<cpid_t>(num));
 	preader->have_ansicpg = true;
 	return CMD_RESULT_CONTINUE;
 }
@@ -2402,24 +2397,21 @@ int rtf_reader::cmd_ansicpg(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_pc(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
-	strcpy(preader->default_encoding, "CP437");
+	default_encoding = "CP437";
     return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_pca(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
-	strcpy(preader->default_encoding, "CP850");
+	default_encoding = "CP850";
 	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_mac(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
-	strcpy(preader->default_encoding, "MAC");
+	default_encoding = "MAC";
 	return CMD_RESULT_CONTINUE;
 }
 
