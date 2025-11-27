@@ -269,7 +269,7 @@ struct rtf_reader final {
 	cmd_fs, cmd_fscript, cmd_fswiss, cmd_ftech, cmd_highlight, cmd_htmltag,
 	cmd_i, cmd_ignore, cmd_info, cmd_intbl, cmd_jpegblip, cmd_ldblquote,
 	cmd_line, cmd_lquote, cmd_mac, cmd_macpict, cmd_maybe_ignore,
-	cmd_nonbreaking_space, cmd_nosupersub, cmd_outl, cmd_page, cmd_par,
+	cmd_nonbreaking_hyphen, cmd_nonbreaking_space, cmd_nosupersub, cmd_outl, cmd_page, cmd_par,
 	cmd_pc, cmd_pca, cmd_pich, cmd_pict, cmd_picw, cmd_plain,
 	cmd_pmmetafile, cmd_pngblip, cmd_qmspace, cmd_rdblquote, cmd_rquote, cmd_scaps,
 	cmd_sect, cmd_shad, cmd_soft_hyphen, cmd_strike, cmd_striked,
@@ -2101,6 +2101,14 @@ int rtf_reader::cmd_nonbreaking_space(SIMPLE_TREE_NODE *pword,
 	return CMD_RESULT_CONTINUE;
 }
 
+int rtf_reader::cmd_nonbreaking_hyphen(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	char s[8];
+	wchar_to_utf8(0x2011, s);
+	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+}
+
 int rtf_reader::cmd_soft_hyphen(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
@@ -3051,7 +3059,7 @@ ec_error_t rtf_to_html(std::string_view input, const char *charset,
 static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"*", &rtf_reader::cmd_maybe_ignore},
 	{"-", &rtf_reader::cmd_soft_hyphen},
-	{"_", &rtf_reader::cmd_continue},
+	{"_", &rtf_reader::cmd_nonbreaking_hyphen},
 	{"ansi", &rtf_reader::cmd_ansi},
 	{"ansicpg", &rtf_reader::cmd_ansicpg},
 	{"b", &rtf_reader::cmd_b},

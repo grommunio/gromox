@@ -74,7 +74,12 @@ static int t_rtf_reader()
 	// rp_assert(lortf_head + "\\dbch{\\f0\\'89\\f1\\f0\\'bd}" + lortf_foot, "何"); // MSWord
 	rp_assert(lortf_head + "\\dbch{\\f0\\'89\\f1\\f0\\'bd}" + lortf_foot, "ｽ");
 
-	rp_assert(lortf_head + "A\\emspace\\enspace\\qmspace B" + lortf_foot, "A   B");
+	rp_assert(lortf_head + "A\\emspace\\enspace\\qmspace B\\_" + lortf_foot, "A   B‑");
+	/*
+	 * w3m is a formatter (renderer), and thus does not necessarily
+	 * preserve controlling characters verbatim. So we need to test the
+	 * pre-w3m output for some of the RTF control words.
+	 */
 	auto ret = rp_thtml(lortf_head + "A\\-\\emspace\\enspace\\qmspace B\\zwbo\\zwnbo C" + lortf_foot,
 	           "A&shy;&emsp;&ensp;&emsp14;B​﻿C");
 	if (ret != 0)
