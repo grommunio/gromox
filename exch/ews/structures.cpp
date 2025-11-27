@@ -3184,6 +3184,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"folder:DisplayName", PR_DISPLAY_NAME},
 	{"folder:FolderClass", PR_CONTAINER_CLASS},
 	{"folder:FolderId", PidTagFolderId},
+	{"folder:ManagedFolderInformation", PR_FOLDER_TYPE},
 	{"folder:ParentFolderId", PR_PARENT_ENTRYID},
 	{"folder:TotalCount", PR_CONTENT_COUNT},
 	{"folder:UnreadCount", PR_CONTENT_UNREAD},
