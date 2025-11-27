@@ -3050,8 +3050,8 @@ ec_error_t rtf_to_html(std::string_view input, const char *charset,
 
 static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"*", &rtf_reader::cmd_maybe_ignore},
-	{"-", &rtf_reader::cmd_continue},
-	{"_", &rtf_reader::cmd_soft_hyphen},
+	{"-", &rtf_reader::cmd_soft_hyphen},
+	{"_", &rtf_reader::cmd_continue},
 	{"ansi", &rtf_reader::cmd_ansi},
 	{"ansicpg", &rtf_reader::cmd_ansicpg},
 	{"b", &rtf_reader::cmd_b},
