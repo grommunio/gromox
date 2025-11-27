@@ -2735,7 +2735,7 @@ static CMD_PROC_FUNC rtf_find_fromhtml_func(const char *s)
 {
 	for (const auto x : {"par", "tab", "lquote", "rquote", "ldblquote",
 	     "rdblquote", "bullet", "endash", "emdash", "colortbl", "fonttbl",
-	     "htmltag", "uc", "u", "f", "~", "_"})
+	     "htmltag", "uc", "u", "f", "-", "~", "_"})
 		if (strcmp(s, x) == 0)
 			return rtf_find_cmd_function(s);
 	return nullptr;
