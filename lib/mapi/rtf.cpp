@@ -563,7 +563,7 @@ static int rtf_parse_control(const char *string,
 	if (('*' == string[0] || '~' == string[0] ||
 		'_' == string[0] || '-' == string[0]) &&
 		'\0' == string[1]) {
-		name[0] = '*';
+		name[0] = string[0];
 		name[1] = '\0';
 		return 0;
 	}
