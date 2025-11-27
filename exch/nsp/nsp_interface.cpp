@@ -579,7 +579,7 @@ ec_error_t nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 	return ecSuccess;
 }
 
-ec_error_t nsp_interface_unbind(NSPI_HANDLE *phandle, uint32_t reserved)
+ec_error_t nsp_interface_unbind(NSPI_HANDLE *phandle)
 {
 	if (g_nsp_trace > 0)
 		fprintf(stderr, "Entering %s\n", __func__);
@@ -649,8 +649,7 @@ static inline bool session_check(const NSPI_HANDLE &h, const ab_tree::ab_base &b
 	return true;
 }
 
-ec_error_t nsp_interface_update_stat(NSPI_HANDLE handle, uint32_t reserved,
-    STAT *pstat, int32_t *pdelta)
+ec_error_t nsp_interface_update_stat(NSPI_HANDLE handle, STAT *pstat, int32_t *pdelta)
 {
 	nsp_trace(__func__, 0, pstat, pdelta);
 	
@@ -1154,8 +1153,7 @@ static std::vector<std::string> delegates_for(const char *dir) try
  * wary of HIDE flag testing.
  */
 ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
-    STAT *pstat, const MID_ARRAY *ptable, uint32_t reserved2,
-    const NSPRES *pfilter, const NSP_PROPNAME *ppropname,
+    STAT *pstat, const NSPRES *pfilter, const NSP_PROPNAME *ppropname,
     uint32_t requested, MID_ARRAY **ppoutmids, const LPROPTAG_ARRAY *pproptags,
     NSP_ROWSET **pprows)
 {
@@ -1332,7 +1330,7 @@ static int nsp_interface_cmpstring(const void *p1, const void *p2)
 	       static_cast<const nsp_sort_item *>(p2)->string);
 }
 
-ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
+ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
     STAT *pstat, const MID_ARRAY *pinmids, MID_ARRAY **ppoutmids)
 {
 	*ppoutmids = nullptr;
@@ -1383,7 +1381,7 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserve
 	return ecSuccess;
 }
 
-ec_error_t nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
+ec_error_t nsp_interface_dntomid(NSPI_HANDLE handle,
     const STRINGS_ARRAY *pnames, MID_ARRAY **ppoutmids)
 {
 	if (g_nsp_trace > 0)
@@ -1684,7 +1682,7 @@ ec_error_t nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	return result;
 }
 
-ec_error_t nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
+ec_error_t nsp_interface_compare_mids(NSPI_HANDLE handle,
     const STAT *pstat, uint32_t mid1, uint32_t mid2, int32_t *cmp)
 {
 	nsp_trace(__func__, 0, pstat);
@@ -1718,7 +1716,7 @@ ec_error_t nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	return ecSuccess;
 }
 
-ec_error_t nsp_interface_mod_props(NSPI_HANDLE handle, uint32_t reserved,
+ec_error_t nsp_interface_mod_props(NSPI_HANDLE handle,
     const STAT *pstat, const LPROPTAG_ARRAY *pproptags, const NSP_PROPROW *prow)
 {
 	nsp_trace(__func__, 1, pstat);
@@ -1914,7 +1912,7 @@ ec_error_t nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	return ecServerOOM;
 }
 
-ec_error_t nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
+ec_error_t nsp_interface_query_columns(NSPI_HANDLE handle,
 	uint32_t flags, LPROPTAG_ARRAY **ppcolumns)
 {
 	if (g_nsp_trace > 0)
@@ -2053,7 +2051,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	nsp_trace(__func__, 0, pstat);
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
-	if (pstat->codepage == CP_WINUNICODE)
+	if (pstat->codepage == CP_WINUNICODE || reserved != 0)
 		return ecNotSupported;
 	/*
 	[MS-OXNPI] 3.1.4.1.17, If the input parameter Reserved contains

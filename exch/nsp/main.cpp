@@ -173,7 +173,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto in  = static_cast<const NSPIUNBIND_IN *>(pin);
 		auto out = std::make_unique<NSPIUNBIND_OUT>();
 		out->handle = in->handle;
-		out->result = nsp_interface_unbind(&out->handle, 0);
+		out->result = nsp_interface_unbind(&out->handle);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
@@ -184,7 +184,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		out->stat = in->stat;
 		out->pdelta = in->pdelta;
 		out->result = nsp_interface_update_stat(in->handle,
-		              0, &out->stat, out->pdelta);
+		              &out->stat, out->pdelta);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
@@ -216,8 +216,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto out = std::make_unique<NSPIGETMATCHES_OUT>();
 		out->stat = in->stat;
 		out->result = nsp_interface_get_matches(in->handle,
-		              in->reserved1, &out->stat, nullptr,
-		              0, in->pfilter, in->ppropname,
+		              in->reserved1, &out->stat, in->pfilter, in->ppropname,
 		              in->requested, &out->poutmids, in->pproptags,
 		              &out->prows);
 		*ecode = out->result;
@@ -232,7 +231,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		if (out->poutmids == nullptr)
 			return DISPATCH_FAIL;
 		out->result = nsp_interface_resort_restriction(in->handle,
-		              0, &out->stat, &in->inmids,
+		              &out->stat, &in->inmids,
 		              &out->poutmids);
 		*ecode = out->result;
 		ppout = std::move(out);
@@ -241,7 +240,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 	case nspiDNToMId: {
 		auto in  = static_cast<const NSPIDNTOMID_IN *>(pin);
 		auto out = std::make_unique<NSPIDNTOMID_OUT>();
-		out->result = nsp_interface_dntomid(in->handle, 0,
+		out->result = nsp_interface_dntomid(in->handle,
 		              &in->names, &out->poutmids);
 		*ecode = out->result;
 		ppout = std::move(out);
@@ -270,7 +269,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto in  = static_cast<const NSPICOMPAREMIDS_IN *>(pin);
 		auto out = std::make_unique<NSPICOMPAREMIDS_OUT>();
 		out->result = nsp_interface_compare_mids(in->handle,
-		              0, &in->stat, in->mid1, in->mid2,
+		              &in->stat, in->mid1, in->mid2,
 		              &out->cmp);
 		*ecode = out->result;
 		ppout = std::move(out);
@@ -279,7 +278,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 	case nspiModProps: {
 		auto in  = static_cast<const NSPIMODPROPS_IN *>(pin);
 		auto out = std::make_unique<NSPIMODPROPS_OUT>();
-		out->result = nsp_interface_mod_props(in->handle, 0,
+		out->result = nsp_interface_mod_props(in->handle,
 		              &in->stat, in->pproptags, &in->row);
 		*ecode = out->result;
 		ppout = std::move(out);
@@ -319,7 +318,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto in  = static_cast<const NSPIQUERYCOLUMNS_IN *>(pin);
 		auto out = std::make_unique<NSPIQUERYCOLUMNS_OUT>();
 		out->result = nsp_interface_query_columns(in->handle,
-		              0, in->flags, &out->pcolumns);
+		              in->flags, &out->pcolumns);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
