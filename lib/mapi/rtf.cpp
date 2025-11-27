@@ -263,14 +263,15 @@ struct rtf_reader final {
 
 	CMD_PROC_FN cmd_ansi, cmd_ansicpg, cmd_b, cmd_bullet, cmd_caps, cmd_cb,
 	cmd_cf, cmd_colortbl, cmd_continue, cmd_deff, cmd_dn, cmd_emboss,
-	cmd_emdash, cmd_emfblip, cmd_endash, cmd_engrave, cmd_expand, cmd_f,
+	cmd_emdash, cmd_emfblip, cmd_emspace, cmd_endash, cmd_engrave, cmd_enspace,
+	cmd_expand, cmd_f,
 	cmd_fdecor, cmd_field, cmd_fmodern, cmd_fnil, cmd_fonttbl, cmd_froman,
 	cmd_fs, cmd_fscript, cmd_fswiss, cmd_ftech, cmd_highlight, cmd_htmltag,
 	cmd_i, cmd_ignore, cmd_info, cmd_intbl, cmd_jpegblip, cmd_ldblquote,
 	cmd_line, cmd_lquote, cmd_mac, cmd_macpict, cmd_maybe_ignore,
 	cmd_nonbreaking_space, cmd_nosupersub, cmd_outl, cmd_page, cmd_par,
 	cmd_pc, cmd_pca, cmd_pich, cmd_pict, cmd_picw, cmd_plain,
-	cmd_pmmetafile, cmd_pngblip, cmd_rdblquote, cmd_rquote, cmd_scaps,
+	cmd_pmmetafile, cmd_pngblip, cmd_qmspace, cmd_rdblquote, cmd_rquote, cmd_scaps,
 	cmd_sect, cmd_shad, cmd_soft_hyphen, cmd_strike, cmd_striked,
 	cmd_strikedl, cmd_sub, cmd_super, cmd_tab, cmd_u, cmd_uc, cmd_ul,
 	cmd_uld, cmd_uldash, cmd_uldashd, cmd_uldashdd, cmd_uldb, cmd_ulnone,
@@ -2596,6 +2597,33 @@ int rtf_reader::cmd_emfblip(SIMPLE_TREE_NODE *pword,
 	return CMD_RESULT_CONTINUE;
 }
 
+int rtf_reader::cmd_emspace(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	if (ext_push.p_bytes("&emsp;", 6) != pack_result::ok)
+		return CMD_RESULT_ERROR;
+	++total_chars_in_line;
+	return CMD_RESULT_CONTINUE;
+}
+
+int rtf_reader::cmd_enspace(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	if (ext_push.p_bytes("&ensp;", 6) != pack_result::ok)
+		return CMD_RESULT_ERROR;
+	++total_chars_in_line;
+	return CMD_RESULT_CONTINUE;
+}
+
+int rtf_reader::cmd_qmspace(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	if (ext_push.p_bytes("&emsp14;", 8) != pack_result::ok)
+		return CMD_RESULT_ERROR;
+	++total_chars_in_line;
+	return CMD_RESULT_CONTINUE;
+}
+
 int rtf_reader::cmd_pmmetafile(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
@@ -3022,7 +3050,9 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"embo", &rtf_reader::cmd_emboss},
 	{"emdash", &rtf_reader::cmd_emdash},
 	{"emfblip", &rtf_reader::cmd_emfblip},
+	{"emspace", &rtf_reader::cmd_emspace},
 	{"endash", &rtf_reader::cmd_endash},
+	{"enspace", &rtf_reader::cmd_enspace},
 	{"expand", &rtf_reader::cmd_expand},
 	{"expnd", &rtf_reader::cmd_expand},
 	{"f", &rtf_reader::cmd_f},
@@ -3072,6 +3102,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"plain", &rtf_reader::cmd_plain},
 	{"pmmetafile", &rtf_reader::cmd_pmmetafile},
 	{"pngblip", &rtf_reader::cmd_pngblip},
+	{"qmspace", &rtf_reader::cmd_qmspace},
 	{"rdblquote", &rtf_reader::cmd_rdblquote},
 	{"rquote", &rtf_reader::cmd_rquote},
 	{"rtf", &rtf_reader::cmd_continue},

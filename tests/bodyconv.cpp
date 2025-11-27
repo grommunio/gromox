@@ -13,7 +13,7 @@
 using namespace gromox;
 
 static const std::string lortf_head =
-"\x7b\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\fswiss\\fprq0\\fcharset128 Arial;}{\\f1\\fswiss\\fprq0\\fcharset0 Arial;}}\\plain";
+"\x7b\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\fswiss\\fprq0\\fcharset128 Arial;}{\\f1\\fswiss\\fprq0\\fcharset0 Arial;}}\\plain ";
 static const std::string lortf_foot = "\x7d";
 
 static int rp_test(const std::string &complete, const char *expout)
@@ -57,6 +57,8 @@ static int t_rtf_reader()
 	// rp_assert(lortf_head + "\\dbch{\\f0\\'89\\f0\\'bd}" + lortf_foot, "�ｽ"); // SvxRTF
 	// rp_assert(lortf_head + "\\dbch{\\f0\\'89\\f1\\f0\\'bd}" + lortf_foot, "何"); // MSWord
 	rp_assert(lortf_head + "\\dbch{\\f0\\'89\\f1\\f0\\'bd}" + lortf_foot, "ｽ");
+
+	rp_assert(lortf_head + "A\\emspace\\enspace\\qmspace B" + lortf_foot, "A   B");
 	return 0;
 }
 
