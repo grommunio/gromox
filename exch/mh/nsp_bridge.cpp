@@ -265,9 +265,9 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 {
 	NSP_ROWSET *rows = nullptr;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	auto tags = request.proptags;
 	auto result = nsp_interface_resolve_namesw(ses, request.reserved, request.stat,
-	              tags, request.names, &response.mids, &rows);
+	              optional_ptr(request.proptags), request.names,
+	              &response.mids, &rows);
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&

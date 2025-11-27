@@ -28,8 +28,8 @@ extern ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE, uint32_t flags, co
 extern ec_error_t nsp_interface_get_templateinfo(NSPI_HANDLE, uint32_t flags, uint32_t type, const char *dn, cpid_t, uint32_t locale_id, NSP_PROPROW **);
 extern ec_error_t nsp_interface_mod_linkatt(NSPI_HANDLE, uint32_t flags, gromox::proptag_t, uint32_t mid, const BINARY_ARRAY *entry_ids);
 extern ec_error_t nsp_interface_query_columns(NSPI_HANDLE, uint32_t flags, std::vector<gromox::proptag_t> &cols);
-extern ec_error_t nsp_interface_resolve_names(NSPI_HANDLE, uint32_t resv, const STAT &, LPROPTAG_ARRAY *&, const STRINGS_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
-extern ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE, uint32_t resv, const STAT &, LPROPTAG_ARRAY *&, const STRINGS_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
+extern ec_error_t nsp_interface_resolve_names(NSPI_HANDLE, uint32_t, const STAT &, const std::vector<gromox::proptag_t> *, const STRINGS_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
+extern ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE, uint32_t, const STAT &, const std::vector<gromox::proptag_t> *, const STRINGS_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
 /* clean NSPI_HANDLE by system, not operation of interface */
 void nsp_interface_unbind_rpc_handle(uint64_t hrpc);
 

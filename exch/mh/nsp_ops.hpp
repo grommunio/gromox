@@ -208,7 +208,7 @@ struct querycolumns_response {
 struct resolvenames_request {
 	uint32_t reserved = 0, cb_auxin = 0;
 	STAT stat;
-	LPROPTAG_ARRAY *proptags = nullptr;
+	std::optional<std::vector<gromox::proptag_t>> proptags;
 	STRING_ARRAY *names = nullptr;
 	uint8_t *auxin = nullptr;
 };

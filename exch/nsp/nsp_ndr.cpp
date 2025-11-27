@@ -106,32 +106,6 @@ static pack_result nsp_ndr_push_flatuid(NDR_PUSH &x, const FLATUID &r)
 	return x.p_uint8_a(r.ab, 16);
 }
 
-static pack_result nsp_ndr_pull_proptag_array(NDR_PULL &x, LPROPTAG_ARRAY *r)
-{
-	uint32_t size;
-	uint32_t offset;
-	uint32_t length;
-	
-	TRY(x.g_ulong(&size));
-	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
-	TRY(x.align(4));
-	TRY(x.g_uint32(&r->cvalues));
-	if (r->cvalues > 100001)
-		return pack_result::range;
-	TRY(x.g_ulong(&offset));
-	TRY(x.g_ulong(&length));
-	if (offset != 0 || length > size)
-		return pack_result::array_size;
-	if (size != r->cvalues + 1 || length != r->cvalues)
-		return pack_result::array_size;
-	r->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, size);
-	if (r->pproptag == nullptr)
-		return pack_result::alloc;
-	for (size_t cnt = 0; cnt < length; ++cnt)
-		TRY(x.g_uint32(&r->pproptag[cnt]));
-	return x.trailer_align(4);
-}
-
 static pack_result nsp_ndr_pull_proptag_array(NDR_PULL &x, std::vector<proptag_t> *r) try
 {
 	uint32_t size, offset, length, cvalues;
@@ -2232,15 +2206,12 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIRESOLVENAMES_IN *r)
 	TRY(nsp_ndr_pull_stat(x, &r->stat));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
-		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
-		if (r->pproptags == nullptr)
-			return pack_result::alloc;
-		TRY(nsp_ndr_pull_proptag_array(x, r->pproptags));
+		r->pproptags.emplace();
+		TRY(nsp_ndr_pull_proptag_array(x, &*r->pproptags));
 	} else {
-		r->pproptags = NULL;
+		r->pproptags.reset();
 	}
 	return nsp_ndr_pull_strings_array(x, FLAG_HEADER|FLAG_CONTENT, &r->strs);
-	
 }
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIRESOLVENAMES_OUT &r)
@@ -2260,7 +2231,7 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIRESOLVENAMES_OUT &r)
 	return x.p_uint32(r.result);
 }
 
-static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIRESOLVENAMESW_IN *r)
+static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIRESOLVENAMESW_IN *r) try
 {
 	uint32_t ptr;
 	
@@ -2269,15 +2240,14 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIRESOLVENAMESW_IN *r)
 	TRY(nsp_ndr_pull_stat(x, &r->stat));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
-		r->pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
-		if (r->pproptags == nullptr)
-			return pack_result::alloc;
-		TRY(nsp_ndr_pull_proptag_array(x, r->pproptags));
+		r->pproptags.emplace();
+		TRY(nsp_ndr_pull_proptag_array(x, &*r->pproptags));
 	} else {
-		r->pproptags = NULL;
+		r->pproptags.reset();
 	}
-	
 	return nsp_ndr_pull_wstrings_array(x, FLAG_HEADER|FLAG_CONTENT, &r->strs);
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIRESOLVENAMESW_OUT &r)

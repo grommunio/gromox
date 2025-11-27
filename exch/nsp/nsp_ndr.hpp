@@ -224,7 +224,7 @@ struct NSPIRESOLVENAMES_IN final : public nsp_request {
 	NSPI_HANDLE handle{};
 	uint32_t reserved = 0;
 	STAT stat;
-	LPROPTAG_ARRAY *pproptags = nullptr;
+	std::optional<std::vector<gromox::proptag_t>> pproptags;
 	STRINGS_ARRAY strs{};
 };
 
@@ -238,7 +238,7 @@ struct NSPIRESOLVENAMESW_IN final : public nsp_request {
 	NSPI_HANDLE handle{};
 	uint32_t reserved = 0;
 	STAT stat;
-	LPROPTAG_ARRAY *pproptags = nullptr;
+	std::optional<std::vector<gromox::proptag_t>> pproptags;
 	STRINGS_ARRAY strs{};
 };
 

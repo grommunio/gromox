@@ -1842,7 +1842,7 @@ ec_error_t nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t flags,
 }
 
 ec_error_t nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
-    const STAT &xstat, LPROPTAG_ARRAY *&pproptags,
+    const STAT &xstat, const std::vector<proptag_t> *pproptags,
     const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
 	auto pstat = &xstat;
@@ -1933,9 +1933,12 @@ static ab_tree::minid nsp_interface_resolve_gal(const ab_tree::ab::const_base_re
  *
  * If Outlook does not get a resolution using this call, it will retry with
  * get_matches()!
+ *
+ * Note that if we fallback to default proptags, @pproptags is updated
+ * for the caller.
  */
 ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
-    const STAT &xstat, LPROPTAG_ARRAY *&pproptags,
+    const STAT &xstat, const std::vector<proptag_t> *itags,
     const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
 	auto pstat = &xstat;
@@ -1955,25 +1958,9 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	auto base = ab_tree::AB.get(handle.guid);
 	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
-	if (NULL == pproptags) {
-		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
-		if (nt == nullptr)
-			return ecServerOOM;
-		pproptags = nt;
-		nt->cvalues = 7;
-		nt->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, nt->cvalues);
-		if (nt->pproptag == nullptr)
-			return ecServerOOM;
-		nt->pproptag[0] = PR_EMS_AB_CONTAINERID;
-		nt->pproptag[1] = PR_OBJECT_TYPE;
-		nt->pproptag[2] = PR_DISPLAY_TYPE;
-		nt->pproptag[3] = PR_DISPLAY_NAME_A;
-		nt->pproptag[4] = PR_PRIMARY_TELEPHONE_NUMBER_A;
-		nt->pproptag[5] = PR_DEPARTMENT_NAME_A;
-		nt->pproptag[6] = PR_OFFICE_LOCATION_A;
-	} else if (pproptags->cvalues > 100) {
+	auto pproptags = itags != nullptr ? proptag_cspan(*itags) : proptag_cspan(nsp_default_tags);
+	if (pproptags.size() > 100)
 		return ecTableTooBig;
-	}
 	auto outmids = common_util_proptagarray_init();
 	if (outmids == nullptr)
 		return ecServerOOM;
@@ -2010,7 +1997,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			    common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
 			auto result = nsp_interface_fetch_row(ab_tree::ab_node(base, mid),
-			              false, pstat->codepage, *pproptags, prow);
+			              false, pstat->codepage, pproptags, prow);
 			if (result != ecSuccess)
 				return result;
 		}
@@ -2062,7 +2049,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			if (prow == nullptr || common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
 			auto result = nsp_interface_fetch_row({base, found},
-			              false, pstat->codepage, *pproptags, prow);
+			              false, pstat->codepage, pproptags, prow);
 			if (result != ecSuccess)
 				return result;
 		}
