@@ -1131,17 +1131,22 @@ ec_error_t html_to_rtf(std::string_view inbuf, cpid_t cpid, std::string &out) tr
 		cset = "windows-1252";
 	cset = replace_iconv_charset(cset);
 	/* First, switch HTML to UTF-8 */
-	auto buffer = iconvtext(inbuf.data(), inbuf.size(), cset, "UTF-8");
-	if (errno == ENOMEM)
-		return ecMAPIOOM;
-	else if (errno == EINVAL)
-		return ecInvalidParam;
-	else if (errno != 0)
-		return ecError;
+	std::string inbuf_u8;
+	if (strcasecmp(cset, "utf-8") != 0) {
+		auto buffer = iconvtext(inbuf.data(), inbuf.size(), cset, "UTF-8");
+		if (errno == ENOMEM)
+			return ecMAPIOOM;
+		else if (errno == EINVAL)
+			return ecInvalidParam;
+		else if (errno != 0)
+			return ecError;
+		inbuf = inbuf_u8;
+	}
+	/* inbuf is now always UTF-8 */
 	auto ret = html_init_writer(&writer);
 	if (ret != ecSuccess)
 		return ret;
-	auto hdoc = htmlReadMemory(buffer.c_str(), buffer.size(), nullptr, "utf-8",
+	auto hdoc = htmlReadMemory(inbuf.data(), inbuf.size(), nullptr, "utf-8",
 	            HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET);
 	if (hdoc == nullptr)
 		return ecError;

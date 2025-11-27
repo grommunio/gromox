@@ -1482,8 +1482,9 @@ static int html_to_plain_boring(std::string_view inbuf, std::string &outbuf) try
  *
  * Returns %CP_UTF8 to indicate conversion to UTF-8 happened.
  * Returns @cpid to indicate no charset conversion happened.
- * Thus it is possible for %CP_OEMCP to be returned again,
- * which puts the ball back into the caller's court.
+ * Thus it is possible for %CP_OEMCP to be returned again if the input cpid was
+ * %CP_OEMCP, which creates a situation where html_to_plain's caller may need
+ * to postprocess the output.
  * Returns a negative number on error.
  */
 int html_to_plain(std::string_view inbuf, cpid_t cpid, std::string &outbuf)
@@ -1500,9 +1501,12 @@ int html_to_plain(std::string_view inbuf, cpid_t cpid, std::string &outbuf)
 	return cpid;
 }
 
-/*
- * Always outputs UTF-8. The caller must ensure that this is conveyed properly
- * (e.g. via PR_INTERNET_CPID=65001 [CP_UTF8]).
+/**
+ * @rbuf: input buffer; must be UTF-8
+ *        (this is normally the case, since props.get<char>(PR_BODY) is UTF-8)
+ * @out:  output buffer; will be filled with UTF-8
+ *        (caller may need to set PR_INTERNET_CPID=65001 [CP_UTF8] if not
+ *        already done).
  *
  * It is allowed for @rbuf to point to the same object as @out.
  */

@@ -2623,6 +2623,8 @@ int rtf_reader::push_da_pic(EXT_PUSH &picture_push, const char *img_ctype,
     const char *pext, const char *cid_name, const char *picture_name)
 {
 	auto reader = this;
+	if (reader->pattachments == nullptr)
+		return 0;
 	BINARY bin;
 
 	bin.cb = picture_push.m_offset / 2;
@@ -2868,6 +2870,9 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 }
 
 /**
+ * @charset:      desired output charset
+ * @pattachments: put things like images in here
+ *
  * It is allowed for @input to refer to the same object as @buf_out.
  */
 ec_error_t rtf_to_html(std::string_view input, const char *charset,
