@@ -38,6 +38,18 @@ narrower set of characters. The subtituend can literally be the question mark
 (and often is), but other characters work too. ``\u225 a`` would offer ``a`` as
 a substitution for ``á``.
 
+For mixed single-byte and double-byte text (common in CJK documents), RTF uses:
+
+* ``\loch`` – subsequent text is low-byte (ASCII/Latin) characters
+* ``\hich`` – subsequent text is high-byte characters (chars with high bit set)
+* ``\dbch`` – subsequent text is double-byte characters (CJK)
+* ``\af`` – associated font number for double-byte characters
+* ``\lang`` / ``\langfe`` – language tags that can hint at encoding
+* ``\cpg`` – code page switch within document body
+
+When switching between these modes, the converter flushes any pending
+multi-byte sequences before changing the character interpretation.
+
 
 HTML
 ====
