@@ -16,6 +16,22 @@ static const std::string lortf_head =
 "\x7b\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\fswiss\\fprq0\\fcharset128 Arial;}{\\f1\\fswiss\\fprq0\\fcharset0 Arial;}}\\plain ";
 static const std::string lortf_foot = "\x7d";
 
+static int rp_thtml(const std::string &complete, const char *expout)
+{
+	std::string outdoc;
+	auto at = attachment_list_init();
+	auto cl_0 = HX::make_scope_exit([&]() { attachment_list_free(at); });
+	if (rtf_to_html(complete, "utf-8", outdoc, at) != ecSuccess) {
+		fprintf(stderr, "rtf_to_html failed on:\n%s\n", complete.c_str());
+		return -1;
+	} else if (strstr(outdoc.c_str(), expout) == nullptr) {
+		fprintf(stderr, "== Input ==\n%s\n\n== Expected needle ==\n%s\n\n== Actual output ==\n%s\n",
+			complete.c_str(), expout, outdoc.c_str());
+		return 1;
+	}
+	return 0;
+}
+
 static int rp_test(const std::string &complete, const char *expout)
 {
 	std::string outdoc;
@@ -59,6 +75,9 @@ static int t_rtf_reader()
 	rp_assert(lortf_head + "\\dbch{\\f0\\'89\\f1\\f0\\'bd}" + lortf_foot, "ｽ");
 
 	rp_assert(lortf_head + "A\\emspace\\enspace\\qmspace B" + lortf_foot, "A   B");
+	auto ret = rp_thtml(lortf_head + "A\\emspace\\enspace\\qmspace B\\zwbo\\zwnbo C" + lortf_foot, "A&emsp;&ensp;&emsp14;B​﻿C");
+	if (ret != 0)
+		return ret;
 	return 0;
 }
 
