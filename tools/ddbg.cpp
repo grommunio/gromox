@@ -538,6 +538,7 @@ static int do_process_2(std::string_view &&data, const char *str)
 	}
 	case CM_RTFTOHTML: {
 		auto at = attachment_list_init();
+		auto cl_0 = HX::make_scope_exit([&]() { attachment_list_free(at); });
 		std::string out;
 		auto err = rtf_to_html(data, "utf-8", out, at);
 		if (err != ecSuccess) {
