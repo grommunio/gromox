@@ -351,6 +351,32 @@ bool rtf_reader::riconv_open(const char *fromcode)
 	auto preader = this;
 	if (*fromcode == '\0' || strcasecmp(current_encoding.c_str(), fromcode) == 0)
 		return true;
+	/*
+	 * Flush any pending data before switching encodings.
+	 * This ensures multi-byte sequences are properly converted
+	 * before we change the character set interpretation.
+	 */
+	if (iconv_push.m_offset > 0 && conv_id != (iconv_t)-1) {
+		/*
+		 * Force flush of any remaining bytes in the old encoding.
+		 * If there's an incomplete sequence, it will be discarded
+		 * since we're switching encodings anyway.
+		 */
+		char out_buff[256];
+		auto in_buff   = iconv_push.m_cdata;
+		size_t in_size = iconv_push.m_offset;
+		char *out_ptr  = out_buff;
+		size_t out_size = sizeof(out_buff);
+		if (iconv(conv_id, &in_buff, &in_size, &out_ptr, &out_size) != static_cast<size_t>(-1) ||
+		    errno == EINVAL) {
+			size_t converted = sizeof(out_buff) - out_size;
+			if (converted > 0) {
+				out_buff[converted] = '\0';
+				escape_output(out_buff);
+			}
+		}
+		iconv_push.m_offset = 0;
+	}
 	if ((iconv_t)-1 != preader->conv_id) {
 		iconv_close(preader->conv_id);
 		preader->conv_id = (iconv_t)-1;
