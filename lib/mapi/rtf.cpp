@@ -276,7 +276,7 @@ struct rtf_reader final {
 	cmd_strikedl, cmd_sub, cmd_super, cmd_tab, cmd_u, cmd_uc, cmd_ul,
 	cmd_uld, cmd_uldash, cmd_uldashd, cmd_uldashdd, cmd_uldb, cmd_ulnone,
 	cmd_ulth, cmd_ulthd, cmd_ulthdash, cmd_ulw, cmd_ulwave, cmd_up,
-	cmd_wbmbitspixel, cmd_wmetafile, cmd_zwbo, cmd_zwnbo;
+	cmd_wbmbitspixel, cmd_wmetafile, cmd_zwbo, cmd_zwj, cmd_zwnbo, cmd_zwnj;
 
 	bool is_within_table = false, b_printed_row_begin = false;
 	bool b_printed_cell_begin = false, b_printed_row_end = false;
@@ -2641,11 +2641,27 @@ int rtf_reader::cmd_zwbo(SIMPLE_TREE_NODE *pword, int align,
 	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
+int rtf_reader::cmd_zwj(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	char s[8];
+	wchar_to_utf8(0x200D, s);
+	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+}
+
 int rtf_reader::cmd_zwnbo(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
 	char s[8];
 	wchar_to_utf8(0xFEFF, s);
+	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+}
+
+int rtf_reader::cmd_zwnj(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	char s[8];
+	wchar_to_utf8(0x200C, s);
 	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
@@ -3165,7 +3181,9 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"wmetafile", &rtf_reader::cmd_wmetafile},
 	{"xe", &rtf_reader::cmd_continue},
 	{"zwbo", &rtf_reader::cmd_zwbo},
+	{"zwj", &rtf_reader::cmd_zwj},
 	{"zwnbo", &rtf_reader::cmd_zwnbo},
+	{"zwnj", &rtf_reader::cmd_zwnj},
 	{"~", &rtf_reader::cmd_nonbreaking_space},
 };
 
