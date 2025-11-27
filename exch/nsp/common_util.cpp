@@ -7,6 +7,7 @@
 #include <ctime>
 #include <fcntl.h>
 #include <string>
+#include <string_view>
 #include <unistd.h>
 #include <libHX/endian.h>
 #include <sys/stat.h>
@@ -59,7 +60,7 @@ char *cu_strdup(std::string_view sv, unsigned int dir)
 	return out;
 }
 
-static std::string cu_cvt_str(std::string_view sv, cpid_t cpid, bool to_utf8) try
+std::string cu_cvt_str(std::string_view sv, cpid_t cpid, bool to_utf8) try
 {
 	auto cset = cpid_to_cset(cpid);
 	if (cset == nullptr) {

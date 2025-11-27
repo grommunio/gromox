@@ -11,6 +11,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <memory>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <unistd.h>
@@ -1314,26 +1315,26 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
 }
 
 ec_error_t nsp_interface_dntomid(NSPI_HANDLE handle,
-    const STRINGS_ARRAY *pnames, std::vector<minid_t> &outmids) try
+    std::span<const std::string> names, std::vector<minid_t> &outmids) try
 {
 	if (g_nsp_trace > 0)
 		fprintf(stderr, "Entering %s\n", __func__);
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
-	if (pnames == nullptr)
+	if (names.empty())
 		return ecSuccess;
 	auto base = ab_tree::AB.get(handle.guid);
 	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
-	for (const auto &keyword : *pnames) {
+	for (const auto &keyword : names) {
 		auto &outmid = outmids.emplace_back(ab_tree::minid::UNRESOLVED);
-		if (keyword == nullptr)
+		if (keyword.empty())
 			continue;
-		auto mid = base->resolve(keyword);
+		auto mid = base->resolve(keyword.c_str());
 		if (base->exists(mid))
 			outmid = mid;
 		if (g_nsp_trace >= 2)
-			fprintf(stderr, "\t+ %s -> %08x\n", keyword, outmid);
+			fprintf(stderr, "\t+ %s -> %08x\n", keyword.c_str(), outmid);
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
@@ -1842,19 +1843,23 @@ ec_error_t nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t flags,
 
 ec_error_t nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
     const STAT &xstat, const std::vector<proptag_t> *pproptags,
-    const STRINGS_ARRAY *pstrs, std::vector<minid_t> &ppmids, NSP_ROWSET **pprows)
+    std::span<const std::string> strs, std::vector<minid_t> &ppmids,
+    NSP_ROWSET **pprows) try
 {
 	auto pstat = &xstat;
 	*pprows = nullptr;
-	for (size_t i = 0; i < pstrs->count; ++i) {
-		if (pstrs->ppstr[i] == nullptr)
-			continue;
-		pstrs->ppstr[i] = cu_mb_to_utf8_dup(pstat->codepage, pstrs->ppstr[i], NDR_STACK_IN);
-		if (pstrs->ppstr[i] == nullptr)
+	std::vector<std::string> ustrs;
+	for (auto &keyword : strs) {
+		auto s = cu_cvt_str(keyword, pstat->codepage, true);
+		if (errno != 0)
 			return errno2mapi(errno);
+		ustrs.emplace_back(std::move(s));
 	}
 	return nsp_interface_resolve_namesw(handle, reserved,
-	       xstat, pproptags, pstrs, ppmids, pprows);
+	       xstat, pproptags, ustrs, ppmids, pprows);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 static bool nsp_interface_resolve_node(const ab_tree::ab_node &node, const char *pstr)
@@ -1937,7 +1942,8 @@ static ab_tree::minid nsp_interface_resolve_gal(const ab_tree::ab::const_base_re
  */
 ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
     const STAT &xstat, const std::vector<proptag_t> *itags,
-    const STRINGS_ARRAY *pstrs, std::vector<minid_t> &outmids, NSP_ROWSET **pprows) try
+    std::span<const std::string> strs, std::vector<minid_t> &outmids,
+    NSP_ROWSET **pprows) try
 {
 	auto pstat = &xstat;
 	*pprows = nullptr;
@@ -1965,16 +1971,16 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		return ecServerOOM;
 
 	if (0 == pstat->container_id) {
-		for (const auto &keyword : *pstrs) {
+		for (const auto &keyword : strs) {
 			auto &outmid = outmids.emplace_back(ab_tree::minid::UNRESOLVED);
-			if (znoval(keyword))
+			if (keyword.empty())
 				continue; /* OXNSPI v14 §3.1.4.7 */
 			/* =SMTP:user@company.com */
-			const char *ptoken = strchr(keyword, ':');
+			const char *ptoken = strchr(keyword.c_str(), ':');
 			if (ptoken != nullptr)
 				ptoken ++;
 			else
-				ptoken = keyword;
+				ptoken = keyword.c_str();
 			std::string idn_deco = gx_utf8_to_punycode(ptoken);
 			ptoken = idn_deco.c_str();
 			bool b_ambiguous = false;
@@ -2004,16 +2010,16 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	uint32_t start_pos = 0, total = 0;
 	nsp_interface_position_in_table(pstat,
 		node, &start_pos, &total);
-	for (const auto &keyword : *pstrs) {
+	for (const auto &keyword : strs) {
 		auto &outmid = outmids.emplace_back(ab_tree::minid::UNRESOLVED);
-		if (znoval(keyword))
+		if (keyword.empty())
 			continue;
 		/* =SMTP:user@company.com */
-		const char *ptoken = strchr(keyword, ':');
+		const char *ptoken = strchr(keyword.c_str(), ':');
 		if (ptoken != nullptr)
 			ptoken++;
 		else
-			ptoken = keyword;
+			ptoken = keyword.c_str();
 		std::string idn_deco = gx_utf8_to_punycode(ptoken);
 		ptoken = idn_deco.c_str();
 

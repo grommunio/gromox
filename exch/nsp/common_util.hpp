@@ -60,6 +60,7 @@ extern NSP_ROWSET *common_util_proprowset_init();
 NSP_PROPROW* common_util_proprowset_enlarge(NSP_ROWSET *pset);
 NSP_PROPROW* common_util_propertyrow_init(NSP_PROPROW *prow);
 PROPERTY_VALUE* common_util_propertyrow_enlarge(NSP_PROPROW *prow);
+extern std::string cu_cvt_str(std::string_view sv, cpid_t cpid, bool to_utf8);
 BOOL common_util_load_file(const char *path, BINARY *pbin);
 extern int common_util_run();
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <span>
+#include <string>
 #include <vector>
 #include <gromox/common_types.hpp>
 
@@ -19,7 +20,7 @@ extern ec_error_t nsp_interface_query_rows(NSPI_HANDLE, uint32_t flags, STAT &, 
 extern ec_error_t nsp_interface_seek_entries(NSPI_HANDLE, uint32_t, STAT &, const PROPERTY_VALUE &target, const std::vector<minid_t> *table, const std::vector<gromox::proptag_t> *, NSP_ROWSET **);
 extern ec_error_t nsp_interface_get_matches(NSPI_HANDLE, uint32_t, STAT &, const NSPRES *filter, const NSP_PROPNAME *, uint32_t requested, std::vector<minid_t> &outmids, const std::vector<gromox::proptag_t> *, NSP_ROWSET **);
 extern ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE, STAT &, std::span<const minid_t> inmids, std::vector<minid_t> &);
-extern ec_error_t nsp_interface_dntomid(NSPI_HANDLE, const STRINGS_ARRAY *names, std::vector<minid_t> &out);
+extern ec_error_t nsp_interface_dntomid(NSPI_HANDLE, std::span<const std::string> names, std::vector<minid_t> &out);
 extern ec_error_t nsp_interface_get_proplist(NSPI_HANDLE, uint32_t flags, uint32_t mid, cpid_t, std::vector<gromox::proptag_t> &);
 extern ec_error_t nsp_interface_get_props(NSPI_HANDLE, uint32_t flags, const STAT &, const std::vector<gromox::proptag_t> *, NSP_PROPROW **);
 extern ec_error_t nsp_interface_compare_mids(NSPI_HANDLE, const STAT &, uint32_t mid1, uint32_t mid2, int32_t *cmp);
@@ -28,8 +29,8 @@ extern ec_error_t nsp_interface_get_specialtable(NSPI_HANDLE, uint32_t flags, co
 extern ec_error_t nsp_interface_get_templateinfo(NSPI_HANDLE, uint32_t flags, uint32_t type, const char *dn, cpid_t, uint32_t locale_id, NSP_PROPROW **);
 extern ec_error_t nsp_interface_mod_linkatt(NSPI_HANDLE, uint32_t flags, gromox::proptag_t, uint32_t mid, const BINARY_ARRAY *entry_ids);
 extern ec_error_t nsp_interface_query_columns(NSPI_HANDLE, uint32_t flags, std::vector<gromox::proptag_t> &cols);
-extern ec_error_t nsp_interface_resolve_names(NSPI_HANDLE, uint32_t, const STAT &, const std::vector<gromox::proptag_t> *, const STRINGS_ARRAY *, std::vector<minid_t> &, NSP_ROWSET **);
-extern ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE, uint32_t, const STAT &, const std::vector<gromox::proptag_t> *, const STRINGS_ARRAY *, std::vector<minid_t> &, NSP_ROWSET **);
+extern ec_error_t nsp_interface_resolve_names(NSPI_HANDLE, uint32_t, const STAT &, const std::vector<gromox::proptag_t> *, std::span<const std::string>, std::vector<minid_t> &, NSP_ROWSET **);
+extern ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE, uint32_t, const STAT &, const std::vector<gromox::proptag_t> *, std::span<const std::string>, std::vector<minid_t> &, NSP_ROWSET **);
 /* clean NSPI_HANDLE by system, not operation of interface */
 void nsp_interface_unbind_rpc_handle(uint64_t hrpc);
 
