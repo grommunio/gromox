@@ -261,14 +261,14 @@ struct rtf_reader final {
 	bool word_output_date(SIMPLE_TREE_NODE *);
 	int push_da_pic(EXT_PUSH &, const char *, const char *, const char *, const char *);
 
-	CMD_PROC_FN cmd_ansi, cmd_ansicpg, cmd_b, cmd_bullet, cmd_caps, cmd_cb,
-	cmd_cf, cmd_colortbl, cmd_continue, cmd_deff, cmd_dn, cmd_emboss,
+	CMD_PROC_FN cmd_af, cmd_ansi, cmd_ansicpg, cmd_b, cmd_bullet, cmd_caps, cmd_cb,
+	cmd_cf, cmd_colortbl, cmd_continue, cmd_dbch, cmd_deff, cmd_dn, cmd_emboss,
 	cmd_emdash, cmd_emfblip, cmd_emspace, cmd_endash, cmd_engrave, cmd_enspace,
 	cmd_expand, cmd_f,
 	cmd_fdecor, cmd_field, cmd_fmodern, cmd_fnil, cmd_fonttbl, cmd_froman,
-	cmd_fs, cmd_fscript, cmd_fswiss, cmd_ftech, cmd_highlight, cmd_htmltag,
+	cmd_fs, cmd_fscript, cmd_fswiss, cmd_ftech, cmd_hich, cmd_highlight, cmd_htmltag,
 	cmd_i, cmd_ignore, cmd_info, cmd_intbl, cmd_jpegblip, cmd_ldblquote,
-	cmd_line, cmd_lquote, cmd_ltrmark, cmd_mac, cmd_macpict, cmd_maybe_ignore,
+	cmd_line, cmd_loch, cmd_lquote, cmd_ltrmark, cmd_mac, cmd_macpict, cmd_maybe_ignore,
 	cmd_nonbreaking_hyphen, cmd_nonbreaking_space, cmd_nosupersub, cmd_outl, cmd_page, cmd_par,
 	cmd_pc, cmd_pca, cmd_pich, cmd_pict, cmd_picw, cmd_plain,
 	cmd_pmmetafile, cmd_pngblip, cmd_qmspace, cmd_rdblquote, cmd_rquote, cmd_rtlmark, cmd_scaps,
@@ -287,6 +287,13 @@ struct rtf_reader final {
 	bool have_fromhtml = false, is_within_htmltag = false;
 	bool is_within_htmlrtf = false;
 	int coming_pars_tabular = 0, ubytes_num = 1, ubytes_left = 0;
+	/*
+	 * Character byte mode for mixed single/double-byte text:
+	 * 0 = loch (low-byte ASCII), 1 = hich (high-byte), 2 = dbch (double-byte)
+	 * This affects which font is used for text interpretation.
+	 */
+	int char_byte_mode = 0;
+	int associated_font_number = -1; /* font number for double-byte chars (\af) */
 	int picture_file_number = 1;
 	std::string picture_path;
 	int picture_width = 0, picture_height = 0, picture_bits_per_pixel = 1;
@@ -1887,6 +1894,55 @@ int rtf_reader::cmd_f(SIMPLE_TREE_NODE *pword, int align,
 	return astk_pushx(ATTR_FONTFACE, num) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
+int rtf_reader::cmd_af(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	if (have_param)
+		associated_font_number = num;
+	return CMD_RESULT_CONTINUE;
+}
+
+int rtf_reader::cmd_loch(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	/* Flush any pending multi-byte data before switching modes */
+	if (!riconv_flush())
+		return CMD_RESULT_ERROR;
+	char_byte_mode = 0;
+	return CMD_RESULT_CONTINUE;
+}
+
+int rtf_reader::cmd_hich(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	/* Flush any pending multi-byte data before switching modes */
+	if (!riconv_flush())
+		return CMD_RESULT_ERROR;
+	char_byte_mode = 1;
+	return CMD_RESULT_CONTINUE;
+}
+
+int rtf_reader::cmd_dbch(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	auto preader = this;
+	/* Flush any pending single-byte data before switching modes */
+	if (!riconv_flush())
+		return CMD_RESULT_ERROR;
+	char_byte_mode = 2;
+	/*
+	 * When switching to double-byte mode, use the associated font (\af)
+	 * if one was specified, as it typically has the correct CJK encoding.
+	 */
+	if (preader->associated_font_number < 0)
+		return CMD_RESULT_CONTINUE;
+	auto font = lookup_font(preader->associated_font_number);
+	if (font != nullptr && font->encoding[0] != '\0' &&
+	    !riconv_open(font->encoding.c_str()))
+		return CMD_RESULT_ERROR;
+	return CMD_RESULT_CONTINUE;
+}
+
 int rtf_reader::cmd_deff(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
@@ -3094,6 +3150,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"*", &rtf_reader::cmd_maybe_ignore},
 	{"-", &rtf_reader::cmd_soft_hyphen},
 	{"_", &rtf_reader::cmd_nonbreaking_hyphen},
+	{"af", &rtf_reader::cmd_af}, /* associated font for double-byte characters */
 	{"ansi", &rtf_reader::cmd_ansi},
 	{"ansicpg", &rtf_reader::cmd_ansicpg},
 	{"b", &rtf_reader::cmd_b},
@@ -3104,6 +3161,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"cb", &rtf_reader::cmd_cb},
 	{"cf", &rtf_reader::cmd_cf},
 	{"colortbl", &rtf_reader::cmd_colortbl},
+	{"dbch", &rtf_reader::cmd_dbch}, /* subsequent text is double-byte characters (CJK) */
 	{"deff", &rtf_reader::cmd_deff},
 	{"dn", &rtf_reader::cmd_dn},
 	{"embo", &rtf_reader::cmd_emboss},
@@ -3136,6 +3194,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"headerf", &rtf_reader::cmd_ignore},
 	{"headerl", &rtf_reader::cmd_ignore},
 	{"headerr", &rtf_reader::cmd_ignore},
+	{"hich", &rtf_reader::cmd_hich}, /* subsequent text is high-byte characters (high-bit set) */
 	{"highlight", &rtf_reader::cmd_highlight},
 	{"hl", &rtf_reader::cmd_ignore},
 	{"htmltag", &rtf_reader::cmd_htmltag},
@@ -3147,6 +3206,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"jpegblip", &rtf_reader::cmd_jpegblip},
 	{"ldblquote", &rtf_reader::cmd_ldblquote},
 	{"line", &rtf_reader::cmd_line},
+	{"loch", &rtf_reader::cmd_loch}, /* subsequent text is low-byte (ASCII/Latin) characters */
 	{"lquote", &rtf_reader::cmd_lquote},
 	{"ltrmark", &rtf_reader::cmd_ltrmark},
 	{"mac", &rtf_reader::cmd_mac},
