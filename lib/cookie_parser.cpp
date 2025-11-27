@@ -14,14 +14,15 @@ static void cookie_parser_unencode(const char *src, char *dest)
 	const char *last;
 	
 	last = src + strlen(src);
-	for (; src != last; src++, dest++) {
+	for (; src < last; src++, dest++) {
 		if (*src == '+') {
 			*dest = ' ';
 		} else if (*src == '%') {
-			if (sscanf(src+1, "%2x", &code) != 1)
+			if (last - src < 3 || sscanf(src+1, "%2x", &code) != 1)
 				code = '?';
+			else
+				src += 2;
 			*dest = code;
-			src +=2;
 		} else {
 			*dest = *src;
 		}
