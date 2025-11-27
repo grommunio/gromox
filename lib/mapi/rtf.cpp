@@ -268,10 +268,10 @@ struct rtf_reader final {
 	cmd_fdecor, cmd_field, cmd_fmodern, cmd_fnil, cmd_fonttbl, cmd_froman,
 	cmd_fs, cmd_fscript, cmd_fswiss, cmd_ftech, cmd_highlight, cmd_htmltag,
 	cmd_i, cmd_ignore, cmd_info, cmd_intbl, cmd_jpegblip, cmd_ldblquote,
-	cmd_line, cmd_lquote, cmd_mac, cmd_macpict, cmd_maybe_ignore,
+	cmd_line, cmd_lquote, cmd_ltrmark, cmd_mac, cmd_macpict, cmd_maybe_ignore,
 	cmd_nonbreaking_hyphen, cmd_nonbreaking_space, cmd_nosupersub, cmd_outl, cmd_page, cmd_par,
 	cmd_pc, cmd_pca, cmd_pich, cmd_pict, cmd_picw, cmd_plain,
-	cmd_pmmetafile, cmd_pngblip, cmd_qmspace, cmd_rdblquote, cmd_rquote, cmd_scaps,
+	cmd_pmmetafile, cmd_pngblip, cmd_qmspace, cmd_rdblquote, cmd_rquote, cmd_rtlmark, cmd_scaps,
 	cmd_sect, cmd_shad, cmd_soft_hyphen, cmd_strike, cmd_striked,
 	cmd_strikedl, cmd_sub, cmd_super, cmd_tab, cmd_u, cmd_uc, cmd_ul,
 	cmd_uld, cmd_uldash, cmd_uldashd, cmd_uldashdd, cmd_uldb, cmd_ulnone,
@@ -2730,6 +2730,24 @@ int rtf_reader::cmd_htmltag(SIMPLE_TREE_NODE *pword,
 	return CMD_RESULT_CONTINUE;
 }
 
+int rtf_reader::cmd_ltrmark(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	char s[8];
+	wchar_to_utf8(0x200E, s);
+	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+}
+
+int rtf_reader::cmd_rtlmark(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	char s[8];
+	wchar_to_utf8(0x200F, s);
+	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+}
+
+
+
 static void rtf_unescape_string(char *string)
 {
 	auto tmp_len = strlen(string);
@@ -3130,6 +3148,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"ldblquote", &rtf_reader::cmd_ldblquote},
 	{"line", &rtf_reader::cmd_line},
 	{"lquote", &rtf_reader::cmd_lquote},
+	{"ltrmark", &rtf_reader::cmd_ltrmark},
 	{"mac", &rtf_reader::cmd_mac},
 	{"macpict", &rtf_reader::cmd_macpict},
 	{"nonshppict", &rtf_reader::cmd_ignore},
@@ -3151,6 +3170,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"rdblquote", &rtf_reader::cmd_rdblquote},
 	{"rquote", &rtf_reader::cmd_rquote},
 	{"rtf", &rtf_reader::cmd_continue},
+	{"rtlmark", &rtf_reader::cmd_rtlmark},
 	{"s", &rtf_reader::cmd_continue},
 	{"scaps", &rtf_reader::cmd_scaps},
 	{"sect", &rtf_reader::cmd_sect},
