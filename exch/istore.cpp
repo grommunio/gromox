@@ -110,6 +110,10 @@ int main(int argc, char **argv)
 	if (!istore_reload_config(g_config_file))
 		return EXIT_FAILURE;
 
+	if (cfg->get_ll("istore_standalone") <= 0) {
+		mlog(LV_NOTICE, "istore not enabled (gromox.cfg:istore_standalone). Quitting.");
+		return EXIT_FAILURE;
+	}
 	auto str = cfg->get_value("host_id");
 	if (str == nullptr) {
 		std::string hn;
