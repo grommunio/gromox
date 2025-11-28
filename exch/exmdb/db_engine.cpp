@@ -2597,17 +2597,11 @@ static void *db_engine_get_extremum_value(db_conn *pdb, cpid_t cpid,
 static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
     uint64_t message_id, db_base &dbase, db_conn::NOTIFQ &notifq) try
 {
-	BOOL b_index;
-	BOOL b_break;
-	uint32_t idx;
 	uint8_t type;
 	void *pvalue;
 	void *pvalue1;
-	BOOL b_resorted;
 	int64_t prev_id;
 	int64_t prev_id1;
-	uint64_t inst_id;
-	uint32_t inst_num;
 	uint8_t table_sort;
 	uint64_t parent_id;
 	char sql_string[1024];
@@ -2662,7 +2656,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				continue;
 			uint64_t row_id = sqlite3_column_int64(pstmt, 0);
-			idx = sqlite3_column_int64(pstmt, 1);
+			uint32_t idx = sqlite3_column_int64(pstmt, 1);
 			prev_id = sqlite3_column_int64(pstmt, 2);
 			pstmt.finalize();
 			xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp1");
@@ -2701,8 +2695,8 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			notifq.emplace_back(datagram, table_to_idarray(*ptable));
 			continue;
 		}
-		b_index = FALSE;
-		b_resorted = FALSE;
+
+		bool b_index = false, b_resorted = false;
 		if (ptable->instance_tag == 0)
 			snprintf(sql_string, std::size(sql_string), "SELECT * FROM t%u"
 						" WHERE inst_id=%llu AND inst_num=0",
@@ -2742,15 +2736,15 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			continue;
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM t%u "
 					"WHERE row_id=?", ptable->table_id);
-		auto pstmt1 = pdb->eph_prep(sql_string);
-		if (pstmt1 == nullptr)
+		auto stm_del_tblrow = pdb->eph_prep(sql_string);
+		if (stm_del_tblrow == nullptr)
 			continue;
-		xstmt pstmt2, stm_upd_previd, stm_sel_ex;
+		xstmt stm_set_extremum, stm_upd_previd, stm_sel_ex;
 		if (0 != ptable->extremum_tag) {
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET "
 				"extremum=? WHERE row_id=?", ptable->table_id);
-			pstmt2 = pdb->eph_prep(sql_string);
-			if (pstmt2 == nullptr)
+			stm_set_extremum = pdb->eph_prep(sql_string);
+			if (stm_set_extremum == nullptr)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET "
 				"prev_id=? WHERE row_id=?", ptable->table_id);
@@ -2773,10 +2767,10 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			    pdelnode->depth == ptable->psorts->ccategories)
 				/* historically no-op for some reason */;
 			/* delete the row first */
-			sqlite3_bind_int64(pstmt1, 1, pdelnode->row_id);
-			if (pstmt1.step() != SQLITE_DONE)
+			sqlite3_bind_int64(stm_del_tblrow, 1, pdelnode->row_id);
+			if (stm_del_tblrow.step() != SQLITE_DONE)
 				break;
-			sqlite3_reset(pstmt1);
+			sqlite3_reset(stm_del_tblrow);
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET prev_id=%lld"
 				" WHERE prev_id=%llu", ptable->table_id,
 				LLD{pdelnode->prev_id}, LLU{pdelnode->row_id});
@@ -2839,19 +2833,21 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			if (db_engine_compare_propval(type, pvalue, pvalue1) == 0)
 				continue;
 			if (pvalue1 == nullptr)
-				sqlite3_bind_null(pstmt2, 1);
-			else if (!common_util_bind_sqlite_statement(pstmt2, 1, type, pvalue1))
+				sqlite3_bind_null(stm_set_extremum, 1);
+			else if (!common_util_bind_sqlite_statement(stm_set_extremum, 1, type, pvalue1))
 				break;
-			sqlite3_bind_int64(pstmt2, 2, row_id);
-			if (pstmt2.step() != SQLITE_DONE)
+			sqlite3_bind_int64(stm_set_extremum, 2, row_id);
+			if (stm_set_extremum.step() != SQLITE_DONE)
 				break;
-			sqlite3_reset(pstmt2);
+			sqlite3_reset(stm_set_extremum);
 			table_sort = ptable->psorts->psort[
 				ptable->psorts->ccategories - 1].table_sort;
 			prev_id = -parent_id;
+
 			uint64_t row_id1 = 0;
-			b_break = FALSE;
+			bool b_break = false;
 			stm_sel_ex.bind_int64(1, prev_id);
+
 			while (stm_sel_ex.step() == SQLITE_ROW) {
 				if (stm_sel_ex.col_uint64(0) != row_id &&
 				    row_id1 != 0 && row_id != row_id1)
@@ -2911,9 +2907,9 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			}
 		}
 		pstmt.finalize();
-		pstmt1.finalize();
+		stm_del_tblrow.finalize();
 		if (0 != ptable->extremum_tag) {
-			pstmt2.finalize();
+			stm_set_extremum.finalize();
 			stm_upd_previd.finalize();
 			stm_sel_ex.finalize();
 		}
@@ -2926,22 +2922,20 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 				continue;
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id, row_stat"
 					" FROM t%u WHERE prev_id=?", ptable->table_id);
-			pstmt = pdb->eph_prep(sql_string);
-			if (pstmt == nullptr)
+			auto stm_sel = pdb->eph_prep(sql_string);
+			if (stm_sel == nullptr)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET"
 				" idx=? WHERE row_id=?", ptable->table_id);
-			pstmt1 = pdb->eph_prep(sql_string);
-			if (pstmt1 == nullptr)
+			auto stm_upd = pdb->eph_prep(sql_string);
+			if (stm_upd == nullptr)
 				continue;
-			idx = 0;
-			sqlite3_bind_int64(pstmt, 1, 0);
-			if (pstmt.step() == SQLITE_ROW &&
+			uint32_t idx = 0;
+			sqlite3_bind_int64(stm_sel, 1, 0);
+			if (stm_sel.step() == SQLITE_ROW &&
 			    !common_util_indexing_sub_contents(ptable->psorts->ccategories,
-			    pstmt, pstmt1, &idx))
+			    stm_sel, stm_upd, &idx))
 				continue;
-			pstmt.finalize();
-			pstmt1.finalize();
 		}
 		if (sql_savepoint.commit() != SQLITE_OK)
 			continue;
@@ -2977,50 +2971,49 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 		}
 		if (notify_list.empty())
 			continue;
+
+		/* Part 4 */
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM"
 		         " t%u WHERE idx=?", ptable->table_id);
-		pstmt = pdb->eph_prep(sql_string);
-		if (pstmt == nullptr)
+		auto sel_by_idx = pdb->eph_prep(sql_string);
+		if (sel_by_idx == nullptr)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM "
 		         "t%u WHERE row_id=?", ptable->table_id);
-		pstmt1 = pdb->eph_prep(sql_string);
-		if (pstmt1 == nullptr)
+		auto sel_by_row = pdb->eph_prep(sql_string);
+		if (sel_by_row == nullptr)
 			continue;
 		for (const auto &[_, row_id] : notify_list) {
-			sqlite3_bind_int64(pstmt1, 1, row_id);
-			if (pstmt1.step() != SQLITE_ROW) {
-				sqlite3_reset(pstmt1);
+			sel_by_row.bind_int64(1, row_id);
+			if (sel_by_row.step() != SQLITE_ROW) {
+				sel_by_row.reset();
+				continue;
+			} else if (sqlite3_column_type(sel_by_row, 1) == SQLITE_NULL) {
+				sel_by_row.reset();
 				continue;
 			}
-			if (SQLITE_NULL == sqlite3_column_type(pstmt1, 1)) {
-				sqlite3_reset(pstmt1);
-				continue;
-			}
-			idx = sqlite3_column_int64(pstmt1, 1);
-			if (1 == idx) {
-				inst_id = 0;
-				inst_num = 0;
-			} else {
-				sqlite3_bind_int64(pstmt, 1, idx - 1);
-				if (pstmt.step() != SQLITE_ROW) {
-					sqlite3_reset(pstmt);
-					sqlite3_reset(pstmt1);
+			uint32_t idx = sel_by_row.col_int64(1);
+			uint64_t inst_id = 0;
+			uint32_t inst_num = 0;
+			if (idx != 1) {
+				sel_by_idx.bind_int64(1, idx - 1);
+				if (sel_by_idx.step() != SQLITE_ROW) {
+					sel_by_idx.reset();
+					sel_by_row.reset();
 					continue;
 				}
-				inst_id = sqlite3_column_int64(pstmt, 3);
-				inst_num = sqlite3_column_int64(pstmt, 10);
-				sqlite3_reset(pstmt);
+				inst_id  = sel_by_idx.col_int64(3);
+				inst_num = sel_by_idx.col_int64(10);
+				sel_by_idx.reset();
 			}
-			pmodified_row->row_message_id =
-				sqlite3_column_int64(pstmt1, 3);
+			pmodified_row->row_message_id = sel_by_row.col_int64(3);
 			pmodified_row->after_row_id = inst_id;
 			pmodified_row->after_instance = inst_num;
 			datagram1.db_notify.type = ptable->b_search ?
 			                           db_notify_type::srchtbl_row_modified :
 			                           db_notify_type::cttbl_row_modified;
 			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
-			sqlite3_reset(pstmt1);
+			sel_by_row.reset();
 		}
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
