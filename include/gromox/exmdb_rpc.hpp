@@ -11,6 +11,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapierr.hpp>
+#include <gromox/notify_types.hpp>
 
 enum class exmdb_response : uint8_t {
 	success = 0x00,

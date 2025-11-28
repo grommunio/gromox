@@ -18,6 +18,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/hpm_common.h>
+#include <gromox/notify_types.hpp>
 #include <gromox/paths.h>
 #include <gromox/rop_util.hpp>
 #include "exceptions.hpp"

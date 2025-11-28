@@ -28,6 +28,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/notify_types.hpp>
 #include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/safeint.hpp>

@@ -6,6 +6,8 @@
 #include <gromox/rpc_types.hpp>
 #include "rop_processor.hpp"
 
+struct DB_NOTIFY;
+
 enum {
 	RPCEXT2_FLAG_NOCOMPRESSION = 0x1U,
 	RPCEXT2_FLAG_NOXORMAGIC    = 0x2U,

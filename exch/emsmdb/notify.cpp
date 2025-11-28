@@ -8,6 +8,7 @@
 #include <memory>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/notify_types.hpp>
 #include <gromox/rop_util.hpp>
 #include "common_util.hpp"
 #include "emsmdb_interface.hpp"

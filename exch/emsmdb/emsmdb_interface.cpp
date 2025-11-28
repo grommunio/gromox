@@ -23,6 +23,7 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/notify_types.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>

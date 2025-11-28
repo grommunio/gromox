@@ -20,6 +20,8 @@
 #include "soaputil.hpp"
 #include "structures.hpp"
 
+struct DB_NOTIFY;
+
 namespace gromox::EWS::detail {
 
 /**

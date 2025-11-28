@@ -43,6 +43,7 @@
 #include <gromox/midb.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/notify_types.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/process.hpp>
 #include <gromox/rop_util.hpp>
