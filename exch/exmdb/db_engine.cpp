@@ -2796,10 +2796,10 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 		}
 
 		std::vector<rowinfo_node> notify_list;
-		auto del_iter = del_list.cbegin();
-		for (; del_iter != del_list.cend(); ++del_iter) {
-			auto &delnode = *del_iter;
-			auto pdelnode = &*del_iter;
+		size_t del_iter = 0;
+		for (; del_iter != del_list.size(); ++del_iter) {
+			auto &delnode = del_list[del_iter];
+			auto pdelnode = &delnode;
 			if (ptable->extremum_tag != 0 &&
 			    pdelnode->depth == ptable->psorts->ccategories)
 				/* historically no-op for some reason */;
@@ -2948,7 +2948,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			stm_upd_previd.finalize();
 			stm_sel_ex.finalize();
 		}
-		if (del_iter != del_list.cend())
+		if (del_iter != del_list.size())
 			/* Iteration through del_list stopped half-way */
 			continue;
 		if (b_index) {
