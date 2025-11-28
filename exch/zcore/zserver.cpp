@@ -3711,8 +3711,16 @@ ec_error_t zs_openembedded(GUID hsession,
 		return zh_error(hstore);
 	auto b_writable = pattachment->writable();
 	auto tag_access = pattachment->get_tag_access();
-	if ((flags & MAPI_CREATE) && !b_writable)
-		return ecAccessDenied;
+	if (!b_writable && (flags & MAPI_CREATE)) {
+		/*
+		 * MAPI_BEST_ACCESS is supposed to imply a fallback to readonly,
+		 * so downgrade MAPI_BEST_ACCESS to read-only when lacking
+		 * write permissions instead of returning ecAccessDenied.
+		 */
+		if ((flags & MAPI_BEST_ACCESS) != MAPI_BEST_ACCESS)
+			return ecAccessDenied;
+		flags &= ~MAPI_BEST_ACCESS;
+	}
 	auto pmessage = message_object::create(pstore, false, pinfo->cpid, 0,
 	                pattachment, tag_access, b_writable ? TRUE : false, nullptr);
 	if (pmessage == nullptr)
