@@ -963,10 +963,7 @@ static void dbeng_notify_search_completion(const db_base &dbase,
 		return;
 	datagram.dir = deconst(dir);
 	datagram.db_notify.type = db_notify_type::search_completed;
-	auto psearch_completed = cu_alloc<DB_NOTIFY_SEARCH_COMPLETED>();
-	if (psearch_completed == nullptr)
-		return;
-	datagram.db_notify.pdata = psearch_completed;
+	auto psearch_completed = &datagram.db_notify.pdata.emplace<DB_NOTIFY_SEARCH_COMPLETED>();
 	psearch_completed->folder_id = folder_id;
 	notifq.emplace_back(std::move(datagram), std::move(parrays));
 } catch (const std::bad_alloc &) {
@@ -1699,16 +1696,12 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb, uint64_t folder_id,
 			continue;
 		}
 		if (NULL == padded_row) {
-			padded_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>(2);
-			if (padded_row == nullptr)
-				return;
+			padded_row = &datagram.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>();
 			padded_row->row_folder_id = folder_id;
 			padded_row->row_message_id = message_id;
-			datagram.db_notify.pdata = padded_row;
-			padded_row1 = padded_row + 1;
+			padded_row1 = &datagram1.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>();
 			padded_row1->row_folder_id = folder_id;
 			padded_row1->row_instance = 0;
-			datagram1.db_notify.pdata = padded_row1;
 			optim = pdb->begin_optim();
 			if (optim == nullptr)
 				return;
@@ -2281,10 +2274,7 @@ void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
 		return;
 	datagram.dir = deconst(dir);
 	datagram.db_notify.type = db_notify_type::new_mail;
-	auto pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
-	if (pnew_mail == nullptr)
-		return;
-	datagram.db_notify.pdata = pnew_mail;
+	auto pnew_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_NEW_MAIL>();
 	pnew_mail->folder_id = folder_id;
 	pnew_mail->message_id = message_id;
 	pnew_mail->message_flags = message_flags;
@@ -2306,10 +2296,7 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::new_mail;
-		auto pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
-		if (pnew_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = pnew_mail;
+		auto pnew_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_NEW_MAIL>();
 		pnew_mail->folder_id = folder_id;
 		pnew_mail->message_id = message_id;
 		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
@@ -2340,10 +2327,7 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_created;
-		auto pcreated_mail = cu_alloc<DB_NOTIFY_MESSAGE_CREATED>();
-		if (pcreated_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = pcreated_mail;
+		auto pcreated_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_MESSAGE_CREATED>();
 		pcreated_mail->folder_id = folder_id;
 		pcreated_mail->message_id = message_id;
 		pcreated_mail->proptags.count = 0;
@@ -2372,10 +2356,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::link_created;
-		auto plinked_mail = cu_alloc<DB_NOTIFY_LINK_CREATED>();
-		if (plinked_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = plinked_mail;
+		auto plinked_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_LINK_CREATED>();
 		plinked_mail->folder_id = anchor_fld;
 		plinked_mail->message_id = message_id;
 		plinked_mail->parent_id = srch_fld;
@@ -2427,10 +2408,7 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb, uint64_t parent_id,
 			continue;
 		if (NULL == padded_row) {
 			datagram.db_notify.type = db_notify_type::hiertbl_row_added;
-			padded_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
-			if (padded_row == nullptr)
-				return;
-			datagram.db_notify.pdata = padded_row;
+			padded_row = &datagram.db_notify.pdata.emplace<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
 		}
 		datagram.id_array[0] = ptable->table_id; // reserved earlier
 		if ((ptable->table_flags & TABLE_FLAG_DEPTH) &&
@@ -2554,10 +2532,7 @@ void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_created;
-		auto pcreated_folder = cu_alloc<DB_NOTIFY_FOLDER_CREATED>();
-		if (pcreated_folder == nullptr)
-			return;
-		datagram.db_notify.pdata = pcreated_folder;
+		auto pcreated_folder = &datagram.db_notify.pdata.emplace<DB_NOTIFY_FOLDER_CREATED>();
 		pcreated_folder->folder_id = folder_id;
 		pcreated_folder->parent_id = parent_id;
 		pcreated_folder->proptags.count = 0;
@@ -2640,7 +2615,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 	DB_NOTIFY_DATAGRAM datagram1 = datagram;
 	DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *pdeleted_row;
 	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row = nullptr;
-	
+
 	pdeleted_row = NULL;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
@@ -2671,17 +2646,11 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			continue;
 		}
 		if (NULL == pdeleted_row) {
-			pdeleted_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
-			if (pdeleted_row == nullptr)
-				return;
-			datagram.db_notify.pdata = pdeleted_row;
-			pmodified_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
-			if (pmodified_row == nullptr)
-				return;
+			pdeleted_row = &datagram.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
+			pmodified_row = &datagram1.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
 			pmodified_row->row_folder_id = folder_id;
 			pmodified_row->row_instance = 0;
 			pmodified_row->after_folder_id = folder_id;
-			datagram1.db_notify.pdata = pmodified_row;
 		}
 		datagram.id_array[0] = datagram1.id_array[0] =
 			ptable->table_id; // reserved earlier
@@ -3071,10 +3040,7 @@ void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_deleted;
-		auto pdeleted_mail = cu_alloc<DB_NOTIFY_MESSAGE_DELETED>();
-		if (pdeleted_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = pdeleted_mail;
+		auto pdeleted_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_MESSAGE_DELETED>();
 		pdeleted_mail->folder_id = folder_id;
 		pdeleted_mail->message_id = message_id;
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
@@ -3103,10 +3069,7 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::link_deleted;
-		auto punlinked_mail = cu_alloc<DB_NOTIFY_LINK_DELETED>();
-		if (punlinked_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = punlinked_mail;
+		auto punlinked_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_LINK_DELETED>();
 		punlinked_mail->folder_id = folder_id;
 		punlinked_mail->message_id = message_id;
 		punlinked_mail->parent_id = parent_id;
@@ -3177,10 +3140,7 @@ static void dbeng_notify_hiertbl_delete_row(db_conn *pdb, uint64_t parent_id,
 		}
 		if (NULL == pdeleted_row) {
 			datagram.db_notify.type = db_notify_type::hiertbl_row_deleted;
-			pdeleted_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
-			if (pdeleted_row == nullptr)
-				return;
-			datagram.db_notify.pdata = pdeleted_row;
+			pdeleted_row = &datagram.db_notify.pdata.emplace<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
 			pdeleted_row->row_folder_id = folder_id;
 		}
 		datagram.id_array[0] = ptable->table_id; // reserved earlier
@@ -3203,10 +3163,7 @@ void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_deleted;
-		auto pdeleted_folder = cu_alloc<DB_NOTIFY_FOLDER_DELETED>();
-		if (pdeleted_folder == nullptr)
-			return;
-		datagram.db_notify.pdata = pdeleted_folder;
+		auto pdeleted_folder = &datagram.db_notify.pdata.emplace<DB_NOTIFY_FOLDER_DELETED>();
 		pdeleted_folder->parent_id = parent_id;
 		pdeleted_folder->folder_id = folder_id;
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
@@ -3263,10 +3220,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb, uint64_t folder_id,
 			continue;
 		pstmt.finalize();
 		if (NULL == pmodified_row) {
-			pmodified_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
-			if (pmodified_row == nullptr)
-				return;
-			datagram.db_notify.pdata = pmodified_row;
+			pmodified_row = &datagram.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
 			if (!common_util_get_message_parent_folder(pdb->psqlite,
 			    message_id, &row_folder_id))
 				return;
@@ -3799,10 +3753,7 @@ void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_i
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::message_modified;
-		auto pmodified_mail = cu_alloc<DB_NOTIFY_MESSAGE_MODIFIED>();
-		if (pmodified_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = pmodified_mail;
+		auto pmodified_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_MESSAGE_MODIFIED>();
 		pmodified_mail->folder_id = folder_id;
 		pmodified_mail->message_id = message_id;
 		pmodified_mail->proptags.count = 0;
@@ -3865,10 +3816,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 				pdb->psqlite, folder_id, ptable->prestriction)) {
 				if (NULL == padded_row) {
 					datagram2.db_notify.type = db_notify_type::hiertbl_row_added;
-					padded_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
-					if (padded_row == nullptr)
-						return;
-					datagram2.db_notify.pdata = padded_row;
+					padded_row = &datagram2.db_notify.pdata.emplace<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
 				}
 				snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (folder_id)"
 				        " VALUES (%llu)", ptable->table_id, LLU{folder_id});
@@ -3932,10 +3880,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 			}
 			if (NULL == pdeleted_row) {
 				datagram1.db_notify.type = db_notify_type::hiertbl_row_deleted;
-				pdeleted_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
-				if (pdeleted_row == nullptr)
-					return;
-				datagram1.db_notify.pdata = pdeleted_row;
+				pdeleted_row = &datagram1.db_notify.pdata.emplace<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
 				pdeleted_row->row_folder_id = folder_id;
 			}
 			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
@@ -3950,10 +3895,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 		}
 		if (NULL == pmodified_row) {
 			datagram.db_notify.type = db_notify_type::hiertbl_row_modified;
-			pmodified_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED>();
-			if (pmodified_row == nullptr)
-				return;
-			datagram.db_notify.pdata = pmodified_row;
+			pmodified_row = &datagram.db_notify.pdata.emplace<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED>();
 			pmodified_row->row_folder_id = folder_id;
 		}
 		if (1 == idx) {
@@ -3987,10 +3929,7 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 		DB_NOTIFY_DATAGRAM datagram;
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = db_notify_type::folder_modified;
-		auto pmodified_folder = cu_alloc<DB_NOTIFY_FOLDER_MODIFIED>();
-		if (pmodified_folder == nullptr)
-			return;
-		datagram.db_notify.pdata = pmodified_folder;
+		auto pmodified_folder = &datagram.db_notify.pdata.emplace<DB_NOTIFY_FOLDER_MODIFIED>();
 		pmodified_folder->folder_id = folder_id;
 		pmodified_folder->parent_id = parent_id;
 		pmodified_folder->ptotal = NULL;
@@ -4032,10 +3971,7 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = b_copy ? db_notify_type::message_copied :
 		                          db_notify_type::message_moved;
-		auto pmvcp_mail = cu_alloc<DB_NOTIFY_MESSAGE_MVCP>();
-		if (pmvcp_mail == nullptr)
-			return;
-		datagram.db_notify.pdata = pmvcp_mail;
+		auto pmvcp_mail = &datagram.db_notify.pdata.emplace<DB_NOTIFY_MESSAGE_MVCP>();
 		pmvcp_mail->folder_id = folder_id;
 		pmvcp_mail->message_id = message_id;
 		pmvcp_mail->old_folder_id = old_fid;
@@ -4084,10 +4020,7 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 		datagram.dir = deconst(dir);
 		datagram.db_notify.type = b_copy ? db_notify_type::folder_copied :
 		                          db_notify_type::folder_moved;
-		auto pmvcp_folder = cu_alloc<DB_NOTIFY_FOLDER_MVCP>();
-		if (pmvcp_folder == nullptr)
-			return;
-		datagram.db_notify.pdata = pmvcp_folder;
+		auto pmvcp_folder = &datagram.db_notify.pdata.emplace<DB_NOTIFY_FOLDER_MVCP>();
 		pmvcp_folder->folder_id = folder_id;
 		pmvcp_folder->parent_id = parent_id;
 		pmvcp_folder->old_folder_id = old_fid;

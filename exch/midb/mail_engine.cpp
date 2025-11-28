@@ -3992,7 +3992,7 @@ static void notif_handler(const char *dir,
 
 	switch (pdb_notify->type) {
 	case db_notify_type::folder_created: {
-		auto n = static_cast<const DB_NOTIFY_FOLDER_CREATED *>(pdb_notify->pdata);
+		auto n = std::any_cast<const DB_NOTIFY_FOLDER_CREATED>(&pdb_notify->pdata);
 		folder_id = n->folder_id;
 		parent_id = n->parent_id;
 		if (g_cmd_debug >= 2)
@@ -4002,7 +4002,7 @@ static void notif_handler(const char *dir,
 		break;
 	}
 	case db_notify_type::message_created: {
-		auto n = static_cast<const DB_NOTIFY_MESSAGE_CREATED *>(pdb_notify->pdata);
+		auto n = std::any_cast<const DB_NOTIFY_MESSAGE_CREATED>(&pdb_notify->pdata);
 		folder_id = n->folder_id;
 		message_id = n->message_id;
 		if (g_cmd_debug >= 2)
@@ -4012,7 +4012,7 @@ static void notif_handler(const char *dir,
 		break;
 	}
 	case db_notify_type::folder_deleted: {
-		auto n = static_cast<const DB_NOTIFY_FOLDER_DELETED *>(pdb_notify->pdata);
+		auto n = std::any_cast<const DB_NOTIFY_FOLDER_DELETED>(&pdb_notify->pdata);
 		folder_id = n->folder_id;
 		if (g_cmd_debug >= 2)
 			mlog(LV_DEBUG, "midb-async: %s fld-del f%llu",
@@ -4021,7 +4021,7 @@ static void notif_handler(const char *dir,
 		break;
 	}
 	case db_notify_type::message_deleted: {
-		auto n = static_cast<const DB_NOTIFY_MESSAGE_DELETED *>(pdb_notify->pdata);
+		auto n = std::any_cast<const DB_NOTIFY_MESSAGE_DELETED>(&pdb_notify->pdata);
 		folder_id = n->folder_id;
 		message_id = n->message_id;
 		if (g_cmd_debug >= 2)
@@ -4042,7 +4042,7 @@ static void notif_handler(const char *dir,
 		break;
 	}
 	case db_notify_type::folder_modified: {
-		auto n = static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata);
+		auto n = std::any_cast<const DB_NOTIFY_FOLDER_MODIFIED>(&pdb_notify->pdata);
 		folder_id = n->folder_id;
 		if (g_cmd_debug >= 2)
 			mlog(LV_DEBUG, "midb-async: %s fld-mod f%llu",
@@ -4051,7 +4051,7 @@ static void notif_handler(const char *dir,
 		break;
 	}
 	case db_notify_type::message_modified: {
-		auto n = static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata);
+		auto n = std::any_cast<const DB_NOTIFY_MESSAGE_MODIFIED>(&pdb_notify->pdata);
 		message_id = n->message_id;
 		folder_id = n->folder_id;
 		if (g_cmd_debug >= 2)
@@ -4060,7 +4060,7 @@ static void notif_handler(const char *dir,
 		break;
 	}
 	case db_notify_type::folder_moved: {
-		auto n = static_cast<const DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
+		auto n = std::any_cast<const DB_NOTIFY_FOLDER_MVCP>(&pdb_notify->pdata);
 		folder_id = n->folder_id;
 		parent_id = n->parent_id;
 		if (g_cmd_debug >= 2)
@@ -4070,7 +4070,7 @@ static void notif_handler(const char *dir,
 		break;
 	}
 	case db_notify_type::message_moved: {
-		auto n = static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
+		auto n = std::any_cast<const DB_NOTIFY_MESSAGE_MVCP>(&pdb_notify->pdata);
 		folder_id = n->old_folder_id;
 		message_id = n->old_message_id;
 		if (g_cmd_debug >= 2)
@@ -4091,7 +4091,7 @@ static void notif_handler(const char *dir,
 		break;
 	}
 	case db_notify_type::folder_copied: {
-		auto n = static_cast<const DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
+		auto n = std::any_cast<const DB_NOTIFY_FOLDER_MVCP>(&pdb_notify->pdata);
 		folder_id = n->folder_id;
 		parent_id = n->parent_id;
 		if (g_cmd_debug >= 2)
@@ -4102,7 +4102,7 @@ static void notif_handler(const char *dir,
 		break;
 	}
 	case db_notify_type::message_copied: {
-		auto n = static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
+		auto n = std::any_cast<const DB_NOTIFY_MESSAGE_MVCP>(&pdb_notify->pdata);
 		folder_id = n->folder_id;
 		message_id = n->message_id;
 		if (g_cmd_debug >= 2)

@@ -1,4 +1,5 @@
 #pragma once
+#include <any>
 #include <cstdint>
 #include <gromox/mapidefs.h>
 
@@ -12,9 +13,11 @@ enum class db_notify_type : uint8_t {
 	hiertbl_row_modified, cttbl_row_modified, srchtbl_row_modified,
 };
 
+using db_notify_base = gromox::universal_base;
+
 struct GX_EXPORT DB_NOTIFY {
-	enum db_notify_type type;
-	void *pdata;
+	enum db_notify_type type{};
+	std::any pdata;
 };
 
 struct GX_EXPORT DB_NOTIFY_NEW_MAIL {

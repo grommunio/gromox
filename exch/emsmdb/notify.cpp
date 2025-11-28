@@ -378,37 +378,37 @@ ec_error_t notify_response::cvt_from_dbnotify(BOOL b_cache, const DB_NOTIFY &dbn
 	switch (dbn.type) {
 	using enum db_notify_type;
 	case new_mail:
-		return cvt_new_mail(n, *static_cast<const DB_NOTIFY_NEW_MAIL *>(dbn.pdata), b_cache);
+		return cvt_new_mail(n, std::any_cast<const DB_NOTIFY_NEW_MAIL &>(dbn.pdata), b_cache);
 	case folder_created:
-		return cvt_fld_created(n, *static_cast<const DB_NOTIFY_FOLDER_CREATED *>(dbn.pdata));
+		return cvt_fld_created(n, std::any_cast<const DB_NOTIFY_FOLDER_CREATED &>(dbn.pdata));
 	case message_created:
-		return cvt_msg_created(n, *static_cast<const DB_NOTIFY_MESSAGE_CREATED *>(dbn.pdata));
+		return cvt_msg_created(n, std::any_cast<const DB_NOTIFY_MESSAGE_CREATED &>(dbn.pdata));
 	case link_created:
-		return cvt_link_created(n, *static_cast<const DB_NOTIFY_LINK_CREATED *>(dbn.pdata));
+		return cvt_link_created(n, std::any_cast<const DB_NOTIFY_LINK_CREATED &>(dbn.pdata));
 	case folder_deleted:
-		return cvt_fld_deleted(n, *static_cast<const DB_NOTIFY_FOLDER_DELETED *>(dbn.pdata));
+		return cvt_fld_deleted(n, std::any_cast<const DB_NOTIFY_FOLDER_DELETED &>(dbn.pdata));
 	case message_deleted:
-		return cvt_msg_deleted(n, *static_cast<const DB_NOTIFY_MESSAGE_DELETED *>(dbn.pdata));
+		return cvt_msg_deleted(n, std::any_cast<const DB_NOTIFY_MESSAGE_DELETED &>(dbn.pdata));
 	case link_deleted:
-		return cvt_link_deleted(n, *static_cast<const DB_NOTIFY_LINK_DELETED *>(dbn.pdata));
+		return cvt_link_deleted(n, std::any_cast<const DB_NOTIFY_LINK_DELETED &>(dbn.pdata));
 	case folder_modified:
-		return cvt_fld_modified(n, *static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(dbn.pdata));
+		return cvt_fld_modified(n, std::any_cast<const DB_NOTIFY_FOLDER_MODIFIED &>(dbn.pdata));
 	case message_modified:
-		return cvt_msg_modified(n, *static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(dbn.pdata));
+		return cvt_msg_modified(n, std::any_cast<const DB_NOTIFY_MESSAGE_MODIFIED &>(dbn.pdata));
 	case folder_moved:
 	case folder_copied: {
 		auto nf = dbn.type == folder_moved ?
 		          fnevObjectMoved : fnevObjectCopied;
-		return cvt_fld_mvcp(n, nf, *static_cast<const DB_NOTIFY_FOLDER_MVCP *>(dbn.pdata));
+		return cvt_fld_mvcp(n, nf, std::any_cast<const DB_NOTIFY_FOLDER_MVCP &>(dbn.pdata));
 	}
 	case message_moved:
 	case message_copied: {
 		auto nf = dbn.type == message_moved ?
 		          fnevObjectMoved : fnevObjectCopied;
-		return cvt_msg_mvcp(n, nf, *static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(dbn.pdata));
+		return cvt_msg_mvcp(n, nf, std::any_cast<const DB_NOTIFY_MESSAGE_MVCP &>(dbn.pdata));
 	}
 	case search_completed:
-		return cvt_fld_search_completed(n, *static_cast<const DB_NOTIFY_SEARCH_COMPLETED *>(dbn.pdata));
+		return cvt_fld_search_completed(n, std::any_cast<const DB_NOTIFY_SEARCH_COMPLETED &>(dbn.pdata));
 	case hiertbl_changed:
 		return cvt_hiertbl_changed(n);
 	case cttbl_changed:
@@ -416,23 +416,23 @@ ec_error_t notify_response::cvt_from_dbnotify(BOOL b_cache, const DB_NOTIFY &dbn
 	case srchtbl_changed:
 		return cvt_srchtbl_changed(n);
 	case hiertbl_row_added:
-		return cvt_hierrow_added(n, *static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *>(dbn.pdata));
+		return cvt_hierrow_added(n, std::any_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED &>(dbn.pdata));
 	case cttbl_row_added:
-		return cvt_ctrow_added(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *>(dbn.pdata));
+		return cvt_ctrow_added(n, std::any_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED &>(dbn.pdata));
 	case srchtbl_row_added:
-		return cvt_srchrow_added(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *>(dbn.pdata));
+		return cvt_srchrow_added(n, std::any_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED &>(dbn.pdata));
 	case hiertbl_row_deleted:
-		return cvt_hierrow_deleted(n, *static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *>(dbn.pdata));
+		return cvt_hierrow_deleted(n, std::any_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED &>(dbn.pdata));
 	case cttbl_row_deleted:
-		return cvt_ctrow_deleted(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *>(dbn.pdata));
+		return cvt_ctrow_deleted(n, std::any_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED &>(dbn.pdata));
 	case srchtbl_row_deleted:
-		return cvt_srchrow_deleted(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *>(dbn.pdata));
+		return cvt_srchrow_deleted(n, std::any_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED &>(dbn.pdata));
 	case hiertbl_row_modified:
-		return cvt_hierrow_modified(n, *static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(dbn.pdata));
+		return cvt_hierrow_modified(n, std::any_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED &>(dbn.pdata));
 	case cttbl_row_modified:
-		return cvt_ctrow_modified(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(dbn.pdata));
+		return cvt_ctrow_modified(n, std::any_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED &>(dbn.pdata));
 	case srchtbl_row_modified:
-		return cvt_srchrow_modified(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(dbn.pdata));
+		return cvt_srchrow_modified(n, std::any_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED &>(dbn.pdata));
 	default:
 		return ecInvalidParam;
 	}

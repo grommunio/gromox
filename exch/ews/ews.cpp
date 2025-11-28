@@ -811,49 +811,49 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 	};
 	switch (notification->type) {
 	case db_notify_type::new_mail: {
-		auto &evt = *static_cast<const DB_NOTIFY_NEW_MAIL *>(notification->pdata);
+		auto &evt = std::any_cast<const DB_NOTIFY_NEW_MAIL &>(notification->pdata);
 		mgr->events.emplace_back(aNewMailEvent(now,
 			mkMid(evt.folder_id, evt.message_id), mkFid(evt.folder_id)));
 		break;
 	}
 	case db_notify_type::folder_created: {
-		auto &evt = *static_cast<const DB_NOTIFY_FOLDER_CREATED *>(notification->pdata);
+		auto &evt = std::any_cast<const DB_NOTIFY_FOLDER_CREATED &>(notification->pdata);
 		mgr->events.emplace_back(aCreatedEvent(now, mkFid(evt.folder_id),
 			mkFid(evt.parent_id)));
 		break;
 	}
 	case db_notify_type::message_created: {
-		auto &evt = *static_cast<const DB_NOTIFY_MESSAGE_CREATED *>(notification->pdata);
+		auto &evt = std::any_cast<const DB_NOTIFY_MESSAGE_CREATED &>(notification->pdata);
 		mgr->events.emplace_back(aCreatedEvent(now,
 			mkMid(evt.folder_id, evt.message_id), mkFid(evt.folder_id)));
 		break;
 	}
 	case db_notify_type::folder_deleted: {
-		auto &evt = *static_cast<const DB_NOTIFY_FOLDER_DELETED *>(notification->pdata);
+		auto &evt = std::any_cast<const DB_NOTIFY_FOLDER_DELETED &>(notification->pdata);
 		mgr->events.emplace_back(aDeletedEvent(now,
 			mkFid(evt.folder_id), mkFid(evt.parent_id)));
 		break;
 	}
 	case db_notify_type::message_deleted: {
-		auto &evt = *static_cast<const DB_NOTIFY_MESSAGE_DELETED *>(notification->pdata);
+		auto &evt = std::any_cast<const DB_NOTIFY_MESSAGE_DELETED &>(notification->pdata);
 		mgr->events.emplace_back(aDeletedEvent(now,
 			mkMid(evt.folder_id, evt.message_id), mkFid(evt.folder_id)));
 		break;
 	}
 	case db_notify_type::folder_modified: {
-		auto &evt = *static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(notification->pdata);
+		auto &evt = std::any_cast<const DB_NOTIFY_FOLDER_MODIFIED &>(notification->pdata);
 		mgr->events.emplace_back(tModifiedEvent(now,
 			mkFid(evt.folder_id), mkFid(evt.parent_id)));
 		break;
 	}
 	case db_notify_type::message_modified: {
-		auto &evt = *static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(notification->pdata);
+		auto &evt = std::any_cast<const DB_NOTIFY_MESSAGE_MODIFIED &>(notification->pdata);
 		mgr->events.emplace_back(tModifiedEvent(now,
 			mkMid(evt.folder_id, evt.message_id), mkFid(evt.folder_id)));
 		break;
 	}
 	case db_notify_type::folder_moved: {
-		auto &evt = *static_cast<const DB_NOTIFY_FOLDER_MVCP *>(notification->pdata);
+		auto &evt = std::any_cast<const DB_NOTIFY_FOLDER_MVCP &>(notification->pdata);
 		mgr->events.emplace_back(aMovedEvent(now, mkFid(evt.folder_id),
 			mkFid(evt.parent_id),
 			static_cast<aOldFolderId &&>(mkFid(evt.old_folder_id)),
@@ -861,7 +861,7 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 		break;
 	}
 	case db_notify_type::message_moved: {
-		auto &evt = *static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(notification->pdata);
+		auto &evt = std::any_cast<const DB_NOTIFY_MESSAGE_MVCP &>(notification->pdata);
 		mgr->events.emplace_back(aMovedEvent(now,
 			mkMid(evt.folder_id, evt.message_id), mkFid(evt.folder_id),
 			static_cast<aOldItemId &&>(mkMid(evt.old_folder_id, evt.old_message_id)),
@@ -869,7 +869,7 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 		break;
 	}
 	case db_notify_type::folder_copied: {
-		auto &evt = *static_cast<const DB_NOTIFY_FOLDER_MVCP *>(notification->pdata);
+		auto &evt = std::any_cast<const DB_NOTIFY_FOLDER_MVCP &>(notification->pdata);
 		mgr->events.emplace_back(aCopiedEvent(now, mkFid(evt.folder_id),
 			mkFid(evt.parent_id),
 			static_cast<aOldFolderId &&>(mkFid(evt.old_folder_id)),
@@ -877,7 +877,7 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 		break;
 	}
 	case db_notify_type::message_copied: {
-		auto &evt = *static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(notification->pdata);
+		auto &evt = std::any_cast<const DB_NOTIFY_MESSAGE_MVCP &>(notification->pdata);
 		mgr->events.emplace_back(aCopiedEvent(now,
 			mkMid(evt.folder_id, evt.message_id),
 			mkFid(evt.folder_id),

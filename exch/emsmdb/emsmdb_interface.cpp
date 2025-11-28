@@ -1079,7 +1079,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		return;
 	case db_notify_type::hiertbl_row_modified:
 		if (!emsmdb_interface_merge_hierarchy_row_modified(
-		    static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(pdb_notify->pdata),
+		    std::any_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED>(&pdb_notify->pdata),
 		    obj_handle, logon_id, &phandle->notify_list))
 			break;
 		b_processing = phandle->b_processing;
@@ -1093,14 +1093,14 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		return;
 	case db_notify_type::message_modified:
 		if (!emsmdb_interface_merge_message_modified(
-		    static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata),
+		    std::any_cast<const DB_NOTIFY_MESSAGE_MODIFIED>(&pdb_notify->pdata),
 		    obj_handle, logon_id, &phandle->notify_list))
 			break;
 		emsmdb_interface_put_handle_notify_list(phandle);
 		return;
 	case db_notify_type::folder_modified:
 		if (!emsmdb_interface_merge_folder_modified(
-		    static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata),
+		    std::any_cast<const DB_NOTIFY_FOLDER_MODIFIED>(&pdb_notify->pdata),
 		    obj_handle, logon_id, &phandle->notify_list))
 			break;
 		emsmdb_interface_put_handle_notify_list(phandle);

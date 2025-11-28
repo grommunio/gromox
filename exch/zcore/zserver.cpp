@@ -299,7 +299,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	switch (pdb_notify->type) {
 	case db_notify_type::new_mail: {
 		pnotification->event_type = fnevNewMail;
-		auto nt = static_cast<const DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
+		auto nt = std::any_cast<const DB_NOTIFY_NEW_MAIL>(&pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
 		pnew_mail->pentryid = cu_mid_to_entryid_s(*pstore, folder_id, message_id);
@@ -325,7 +325,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::folder_created: {
 		pnotification->event_type = fnevObjectCreated;
-		auto nt = static_cast<const DB_NOTIFY_FOLDER_CREATED *>(pdb_notify->pdata);
+		auto nt = std::any_cast<const DB_NOTIFY_FOLDER_CREATED>(&pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
 		oz->object_type = MAPI_FOLDER;
@@ -339,7 +339,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::message_created: {
 		pnotification->event_type = fnevObjectCreated;
-		auto nt = static_cast<const DB_NOTIFY_MESSAGE_CREATED *>(pdb_notify->pdata);
+		auto nt = std::any_cast<const DB_NOTIFY_MESSAGE_CREATED>(&pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
 		oz->object_type = MAPI_MESSAGE;
@@ -353,7 +353,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::folder_deleted: {
 		pnotification->event_type = fnevObjectDeleted;
-		auto nt = static_cast<const DB_NOTIFY_FOLDER_DELETED *>(pdb_notify->pdata);
+		auto nt = std::any_cast<const DB_NOTIFY_FOLDER_DELETED>(&pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
 		oz->object_type = MAPI_FOLDER;
@@ -367,7 +367,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::message_deleted: {
 		pnotification->event_type = fnevObjectDeleted;
-		auto nt = static_cast<const DB_NOTIFY_MESSAGE_DELETED *>(pdb_notify->pdata);
+		auto nt = std::any_cast<const DB_NOTIFY_MESSAGE_DELETED>(&pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
 		oz->object_type = MAPI_MESSAGE;
@@ -381,7 +381,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::folder_modified: {
 		pnotification->event_type = fnevObjectModified;
-		auto nt = static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata);
+		auto nt = std::any_cast<const DB_NOTIFY_FOLDER_MODIFIED>(&pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		oz->object_type = MAPI_FOLDER;
 		oz->pentryid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
@@ -391,7 +391,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::message_modified: {
 		pnotification->event_type = fnevObjectModified;
-		auto nt = static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata);
+		auto nt = std::any_cast<const DB_NOTIFY_MESSAGE_MODIFIED>(&pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
 		oz->object_type = MAPI_MESSAGE;
@@ -407,7 +407,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::folder_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::folder_moved ?
 		                            fnevObjectMoved : fnevObjectCopied;
-		auto nt = static_cast<const DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
+		auto nt = std::any_cast<const DB_NOTIFY_FOLDER_MVCP>(&pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		parent_id = rop_util_nfid_to_eid(nt->parent_id);
 		old_eid = rop_util_nfid_to_eid(nt->old_folder_id);
@@ -431,7 +431,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	case db_notify_type::message_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::message_moved ?
 		                            fnevObjectMoved : fnevObjectCopied;
-		auto nt = static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
+		auto nt = std::any_cast<const DB_NOTIFY_MESSAGE_MVCP>(&pdb_notify->pdata);
 		old_parentid = rop_util_nfid_to_eid(nt->old_folder_id);
 		old_eid = rop_util_make_eid_ex(1, nt->old_message_id);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
@@ -453,7 +453,7 @@ void zs_notification_proc(const char *dir, BOOL b_table, uint32_t notify_id,
 	}
 	case db_notify_type::search_completed: {
 		pnotification->event_type = fnevSearchComplete;
-		auto nt = static_cast<const DB_NOTIFY_SEARCH_COMPLETED *>(pdb_notify->pdata);
+		auto nt = std::any_cast<const DB_NOTIFY_SEARCH_COMPLETED>(&pdb_notify->pdata);
 		folder_id = rop_util_nfid_to_eid(nt->folder_id);
 		oz->object_type = MAPI_FOLDER;
 		oz->pentryid.emplace(cu_fid_to_entryid_s(*pstore, folder_id));
