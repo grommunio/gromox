@@ -473,10 +473,10 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		request.MessageDisposition = Enum::SaveOnly;
 	if (!request.SendMeetingInvitations)
 		request.SendMeetingInvitations = Enum::SendToNone;
-	bool sendMessages = request.MessageDisposition == Enum::SendOnly
-		|| request.MessageDisposition == Enum::SendAndSaveCopy
-		|| request.SendMeetingInvitations == Enum::SendOnlyToAll
-		|| request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy;
+	bool send_message = request.MessageDisposition == Enum::SendOnly ||
+	                    request.MessageDisposition == Enum::SendAndSaveCopy;
+	bool send_invite = request.SendMeetingInvitations == Enum::SendOnlyToAll ||
+	                   request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy;
 
 	data.ResponseMessages.reserve(request.Items.size());
 	for (sItem &item : request.Items) try {
@@ -485,7 +485,6 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 
 		mCreateItemResponseMessage msg;
 		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
-		bool send = std::holds_alternative<tMessage>(item) && sendMessages;
 		auto content = ctx.toContent(dir, *targetFolder, item, persist);
 
 		auto updateRef = [&](const tItemId &refId, uint32_t resp) {
@@ -532,7 +531,7 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		}
 		if (persist)
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
-		if (std::holds_alternative<tCalendarItem>(item) && sendMessages &&
+		if (std::holds_alternative<tCalendarItem>(item) && (send_message || send_invite) &&
 		    request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy) {
 			sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
 			uint64_t newMid;
@@ -566,7 +565,7 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 				throw EWSError::ItemNotFound(E3143);
 			ctx.send(dir, messageId, *sendcontent);
 		}
-		if (send)
+		if (std::holds_alternative<tMessage>(item) && (send_message || send_invite))
 			ctx.send(dir, 0, *content);
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
