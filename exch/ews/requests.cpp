@@ -475,8 +475,6 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		request.SendMeetingInvitations = Enum::SendToNone;
 	bool send_message = request.MessageDisposition == Enum::SendOnly ||
 	                    request.MessageDisposition == Enum::SendAndSaveCopy;
-	bool send_invite = request.SendMeetingInvitations == Enum::SendOnlyToAll ||
-	                   request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy;
 
 	data.ResponseMessages.reserve(request.Items.size());
 	for (sItem &item : request.Items) try {
@@ -565,7 +563,8 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 				throw EWSError::ItemNotFound(E3143);
 			ctx.send(dir, messageId, *sendcontent);
 		}
-		if (std::holds_alternative<tMessage>(item) && send_message)
+		if ((std::holds_alternative<tMessage>(item) && send_message) ||
+		    (std::holds_alternative<tCalendarItem>(item) && request.SendMeetingInvitations == Enum::SendOnlyToAll))
 			ctx.send(dir, 0, *content);
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
