@@ -2604,9 +2604,8 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 	int64_t prev_id1;
 	uint8_t table_sort;
 	uint64_t parent_id;
-	char sql_string[1024];
-	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE, {0}};
-	DB_NOTIFY_DATAGRAM datagram1 = datagram;
+	DB_NOTIFY_DATAGRAM dg_del = {deconst(exmdb_server::get_dir()), TRUE, {0}};
+	DB_NOTIFY_DATAGRAM dg_mod = dg_del;
 	DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *pdeleted_row;
 	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row = nullptr;
 
@@ -2623,6 +2622,10 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			continue;
 		if (dbase.tables.b_batch && ptable->b_hint)
 			continue;
+
+		/* Part 1 */
+		{
+		char sql_string[1024];
 		if (ptable->instance_tag == 0)
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id "
 				"FROM t%u WHERE inst_id=%llu AND inst_num=0",
@@ -2640,15 +2643,16 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			continue;
 		}
 		if (NULL == pdeleted_row) {
-			pdeleted_row = &datagram.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
-			pmodified_row = &datagram1.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
+			pdeleted_row  = &dg_del.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
+			pmodified_row = &dg_mod.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
 			pmodified_row->row_folder_id = folder_id;
 			pmodified_row->row_instance = 0;
 			pmodified_row->after_folder_id = folder_id;
 		}
-		datagram.id_array[0] = datagram1.id_array[0] =
+		dg_del.id_array[0] = dg_mod.id_array[0] =
 			ptable->table_id; // reserved earlier
 		if (NULL == ptable->psorts || 0 == ptable->psorts->ccategories) {
+			char sql_string[1024];
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id, idx,"
 					" prev_id FROM t%u WHERE inst_id=%llu AND "
 					"inst_num=0", ptable->table_id, LLU{message_id});
@@ -2689,14 +2693,19 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 				continue;
 			pdeleted_row->row_message_id = message_id;
 			pdeleted_row->row_instance = 0;
-			datagram.db_notify.type = ptable->b_search ?
+			dg_del.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_deleted :
 			                          db_notify_type::cttbl_row_deleted;
-			notifq.emplace_back(datagram, table_to_idarray(*ptable));
+			notifq.emplace_back(dg_del, table_to_idarray(*ptable));
 			continue;
 		}
+		}
 
-		bool b_index = false, b_resorted = false;
+		bool b_index = false;
+		std::vector<rowdel_node> del_list;
+		/* Part 2 */
+		{
+		char sql_string[1024];
 		if (ptable->instance_tag == 0)
 			snprintf(sql_string, std::size(sql_string), "SELECT * FROM t%u"
 						" WHERE inst_id=%llu AND inst_num=0",
@@ -2705,11 +2714,10 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			snprintf(sql_string, std::size(sql_string), "SELECT * FROM t%u "
 						"WHERE inst_id=%llu", ptable->table_id,
 						LLU{message_id});
-		pstmt = pdb->eph_prep(sql_string);
+		auto pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
 
-		std::vector<rowdel_node> del_list;
 		while (pstmt.step() == SQLITE_ROW) {
 			rowdel_node dn, *pdelnode = &dn;
 			pdelnode->row_id = sqlite3_column_int64(pstmt, 0);
@@ -2726,12 +2734,20 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			del_list.push_back(std::move(dn));
 		}
 		pstmt.finalize();
+		}
+
+		std::vector<rowinfo_node> notify_list;
 		xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp2");
 			if (!sql_savepoint)
 				continue;
+
+		bool b_resorted = false;
+		/* Part 3 */
+		{
+		char sql_string[1024];
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM"
 			" t%u WHERE row_id=?", ptable->table_id);
-		pstmt = pdb->eph_prep(sql_string);
+		auto pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM t%u "
@@ -2739,6 +2755,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 		auto stm_del_tblrow = pdb->eph_prep(sql_string);
 		if (stm_del_tblrow == nullptr)
 			continue;
+
 		xstmt stm_set_extremum, stm_upd_previd, stm_sel_ex;
 		if (0 != ptable->extremum_tag) {
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET "
@@ -2758,7 +2775,6 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 				continue;
 		}
 
-		std::vector<rowinfo_node> notify_list;
 		size_t del_iter = 0;
 		for (; del_iter != del_list.size(); ++del_iter) {
 			auto &delnode = del_list[del_iter];
@@ -2916,7 +2932,12 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 		if (del_iter != del_list.size())
 			/* Iteration through del_list stopped half-way */
 			continue;
+		}
+
+		/* Part 4 */
+		{
 		if (b_index) {
+			char sql_string[1024];
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=NULL", ptable->table_id);
 			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
@@ -2942,12 +2963,16 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 			continue;
 		if (b_resorted) {
-			datagram1.db_notify.type = ptable->b_search ?
+			dg_mod.db_notify.type = ptable->b_search ?
 			                           db_notify_type::srchtbl_changed :
 			                           db_notify_type::cttbl_changed;
-			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
+			notifq.emplace_back(dg_mod, table_to_idarray(*ptable));
 			continue;
 		}
+		}
+
+		/* Part 5 */
+		{
 		for (const auto &delnode : del_list) {
 			auto pdelnode = &delnode;
 			if (pdelnode->idx == 0)
@@ -2964,15 +2989,18 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			}
 			pdeleted_row->row_message_id = pdelnode->inst_id;
 			pdeleted_row->row_instance = pdelnode->inst_num;
-			datagram.db_notify.type = ptable->b_search ?
+			dg_del.db_notify.type = ptable->b_search ?
 			                          db_notify_type::srchtbl_row_deleted :
 			                          db_notify_type::cttbl_row_deleted;
-			notifq.emplace_back(datagram, table_to_idarray(*ptable));
+			notifq.emplace_back(dg_del, table_to_idarray(*ptable));
 		}
 		if (notify_list.empty())
 			continue;
+		}
 
-		/* Part 4 */
+		/* Part 6 */
+		{
+		char sql_string[1024];
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM"
 		         " t%u WHERE idx=?", ptable->table_id);
 		auto sel_by_idx = pdb->eph_prep(sql_string);
@@ -3009,11 +3037,12 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			pmodified_row->row_message_id = sel_by_row.col_int64(3);
 			pmodified_row->after_row_id = inst_id;
 			pmodified_row->after_instance = inst_num;
-			datagram1.db_notify.type = ptable->b_search ?
+			dg_mod.db_notify.type = ptable->b_search ?
 			                           db_notify_type::srchtbl_row_modified :
 			                           db_notify_type::cttbl_row_modified;
-			notifq.emplace_back(datagram1, table_to_idarray(*ptable));
+			notifq.emplace_back(dg_mod, table_to_idarray(*ptable));
 			sel_by_row.reset();
+		}
 		}
 	}
 	if (sql_transact_eph.commit() != SQLITE_OK)
