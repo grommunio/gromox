@@ -531,7 +531,7 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		}
 		if (persist)
 			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
-		if (std::holds_alternative<tCalendarItem>(item) && (send_message || send_invite) &&
+		if (std::holds_alternative<tCalendarItem>(item) &&
 		    request.SendMeetingInvitations == Enum::SendToAllAndSaveCopy) {
 			sFolderSpec sentitems = ctx.resolveFolder(tDistinguishedFolderId(Enum::sentitems));
 			uint64_t newMid;
