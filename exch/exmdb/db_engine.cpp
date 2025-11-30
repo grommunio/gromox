@@ -2714,26 +2714,25 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb, uint64_t folder_id,
 			snprintf(sql_string, std::size(sql_string), "SELECT * FROM t%u "
 						"WHERE inst_id=%llu", ptable->table_id,
 						LLU{message_id});
-		auto pstmt = pdb->eph_prep(sql_string);
-		if (pstmt == nullptr)
+		auto stm_sel = pdb->eph_prep(sql_string);
+		if (stm_sel == nullptr)
 			continue;
 
-		while (pstmt.step() == SQLITE_ROW) {
-			rowdel_node dn, *pdelnode = &dn;
-			pdelnode->row_id = sqlite3_column_int64(pstmt, 0);
+		while (stm_sel.step() == SQLITE_ROW) {
+			rowdel_node dn;
+			dn.row_id    = stm_sel.col_int64(0);
 			/* will get 0 if SQLITE_NULL in 'idx' field */ 
-			pdelnode->idx = sqlite3_column_int64(pstmt, 1);
-			if (pdelnode->idx != 0)
+			dn.idx       = stm_sel.col_int64(1);
+			if (dn.idx != 0)
 				b_index = TRUE;
-			pdelnode->prev_id = sqlite3_column_int64(pstmt, 2);
-			pdelnode->inst_id = sqlite3_column_int64(pstmt, 3);
-			pdelnode->parent_id = sqlite3_column_int64(pstmt, 6);
-			pdelnode->depth = sqlite3_column_int64(pstmt, 7);
-			pdelnode->inst_num = sqlite3_column_int64(pstmt, 10);
-			pdelnode->b_read = pstmt.col_int64(12) != 0;
+			dn.prev_id   = stm_sel.col_int64(2);
+			dn.inst_id   = stm_sel.col_int64(3);
+			dn.parent_id = stm_sel.col_int64(6);
+			dn.depth     = stm_sel.col_int64(7);
+			dn.inst_num  = stm_sel.col_int64(10);
+			dn.b_read    = stm_sel.col_int64(12) != 0;
 			del_list.push_back(std::move(dn));
 		}
-		pstmt.finalize();
 		}
 
 		std::vector<rowinfo_node> notify_list;
