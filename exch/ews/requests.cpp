@@ -565,7 +565,7 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 				throw EWSError::ItemNotFound(E3143);
 			ctx.send(dir, messageId, *sendcontent);
 		}
-		if (std::holds_alternative<tMessage>(item) && (send_message || send_invite))
+		if (std::holds_alternative<tMessage>(item) && send_message)
 			ctx.send(dir, 0, *content);
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
