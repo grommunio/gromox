@@ -70,6 +70,7 @@ Makefile.in
 /lib/exmdb_rpc.cpp
 /php_mapi/zrpc.cpp
 /system/*.service
+/tests/bodyconv
 /tests/compress
 /tests/dnsbl_check
 /tests/epv_unpack
