@@ -1844,7 +1844,7 @@ int gx_mkbasedir(const char *file, unsigned int mode)
 {
 	std::unique_ptr<char[], stdlib_delete> base(HX_dirname(file));
 	if (base == nullptr)
-		return ENOMEM;
+		return -ENOMEM;
 	if (mode & (S_IRUSR | S_IWUSR))
 		mode |= S_IXUSR;
 	if (mode & (S_IRGRP | S_IWGRP))
