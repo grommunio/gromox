@@ -380,14 +380,11 @@ void process(mGetDelegateRequest&& request, XMLElement* response, const EWSConte
 	mGetDelegateResponse data;
 
 	std::vector<std::string> delegate_list;
-	std::string maildir = ctx.get_maildir(request.Mailbox);
-	auto path = maildir + "/config/delegates.txt";
-	auto err  = read_file_by_line(path.c_str(), delegate_list);
-	if (err != 0) {
+	if (!ctx.plugin().exmdb.read_delegates(ctx.get_maildir(request.Mailbox).c_str(),
+	    0, &delegate_list)) {
 		data.serialize(response);
 		return;
 	}
-
 	std::unordered_set<std::string> requested;
 	if (request.UserIds) {
 		for (auto &&uid : *request.UserIds)
