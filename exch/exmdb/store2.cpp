@@ -1006,3 +1006,58 @@ BOOL exmdb_server::imapfile_delete(const char *dir, const std::string &type,
 	}
 	return TRUE;
 }
+
+BOOL exmdb_server::read_delegates(const char *dir, uint32_t mode,
+    std::vector<std::string> *vec) try
+{
+	std::string fn = dir + "/config/"s;
+	if (mode == 0)
+		fn += "delegates.txt";
+	else if (mode == 1)
+		fn += "sendas.txt";
+	else
+		return false;
+	auto err = read_file_by_line(fn.c_str(), *vec);
+	return err == 0 || err == ENOENT;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
+}
+
+BOOL exmdb_server::write_delegates(const char *dir, uint32_t mode,
+    const std::vector<std::string> &vec)
+{
+	std::string config_dir = dir + "/config"s;
+	std::string fn = config_dir;
+	if (mode == 0)
+		fn += "/delegates.txt";
+	else if (mode == 1)
+		fn += "/sendas.txt";
+	else
+		return false;
+	int ie = gx_mkbasedir(fn.c_str(), FMODE_PUBLIC);
+	if (ie < 0) {
+		mlog(LV_ERR, "E-1490: mkbasedir for %s: %s", fn.c_str(), strerror(-ie));
+		return false;
+	}
+	gromox::tmpfile fd;
+	if (fd.open_linkable(config_dir.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC) < 0) {
+		mlog(LV_ERR, "E-2024: open %s: %s", config_dir.c_str(), strerror(errno));
+		return false;
+	}
+	for (const auto &u : vec) {
+		auto wr_ret = write(fd, u.c_str(), u.size());
+		if (wr_ret < 0 || static_cast<size_t>(wr_ret) != u.size() ||
+		    write(fd, "\r\n", 2) != 2) {
+			mlog(LV_ERR, "E-1687: write %s: %s", fd.m_path.c_str(), strerror(errno));
+			return false;
+		}
+	}
+	auto err = fd.link_to_overwrite(fn.c_str());
+	if (err != 0) {
+		mlog(LV_ERR, "E-1686: link %s %s: %s", fd.m_path.c_str(),
+			fn.c_str(), strerror(err));
+		return false;
+	}
+	return TRUE;
+}

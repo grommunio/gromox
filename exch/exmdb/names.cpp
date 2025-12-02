@@ -160,6 +160,8 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(set_maintenance),
 	E(autoreply_getprop),
 	E(autoreply_setprop),
+	E(read_delegates),
+	E(write_delegates),
 };
 #undef E
 
@@ -168,7 +170,7 @@ namespace exmdb {
 const char *exmdb_rpc_idtoname(exmdb_callid i)
 {
 	auto j = static_cast<uint8_t>(i);
-	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::autoreply_setprop) + 1);
+	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::write_delegates) + 1);
 	auto s = j < std::size(exmdb_rpc_names) ? exmdb_rpc_names[j] : nullptr;
 	return znul(s);
 }

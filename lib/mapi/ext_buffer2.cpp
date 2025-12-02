@@ -162,6 +162,19 @@ pack_result EXT_PUSH::p_str_a(std::span<const char *const> r)
 	return pack_result::ok;
 }
 
+pack_result EXT_PUSH::p_str_a(std::span<const std::string> r)
+{
+	if (r.size() > UINT32_MAX)
+		return pack_result::format;
+	TRY(p_uint32(r.size()));
+	for (uint32_t i = 0; i < r.size(); ++i) {
+		if (m_flags & EXT_FLAG_ABK)
+			TRY(p_uint8(0xFF));
+		TRY(p_str(r[i]));
+	}
+	return pack_result::ok;
+}
+
 pack_result EXT_PUSH::p_wstr_a(std::span<const char *const> r)
 {
 	if (r.size() > UINT32_MAX)

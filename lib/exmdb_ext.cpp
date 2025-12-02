@@ -2236,6 +2236,28 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_maintenance &d)
 	return x.p_uint32(d.mode);
 }
 
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_read_delegates &d)
+{
+	return x.p_str_a(d.userlist);
+}
+
+static pack_result exmdb_pull(EXT_PULL &x, exresp_read_delegates &d)
+{
+	return x.g_str_a(&d.userlist);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_write_delegates &d)
+{
+	TRY(x.p_uint32(d.mode));
+	return x.p_str_a(d.userlist);
+}
+
+static pack_result exmdb_pull(EXT_PULL &x, exreq_write_delegates &d)
+{
+	TRY(x.g_uint32(&d.mode));
+	return x.g_str_a(&d.userlist);
+}
+
 #define RQ_WITH_ARGS \
 	E(get_named_propids) \
 	E(get_named_propnames) \
@@ -2361,7 +2383,9 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_maintenance &d)
 	E(cgkreset) \
 	E(set_maintenance) \
 	E(autoreply_getprop) \
-	E(autoreply_setprop)
+	E(autoreply_setprop) \
+	E(read_delegates) \
+	E(write_delegates)
 
 /**
  * This uses *& because we do not know which request type we are going to get
@@ -3676,7 +3700,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_purge_softdelete &d)
 	E(imapfile_write) \
 	E(imapfile_delete) \
 	E(cgkreset) \
-	E(set_maintenance)
+	E(set_maintenance) \
+	E(write_delegates)
 #define RSP_WITH_ARGS \
 	E(get_all_named_propids) \
 	E(get_named_propids) \
@@ -3777,7 +3802,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_purge_softdelete &d)
 	E(imapfile_read) \
 	E(autoreply_getprop) \
 	E(autoreply_setprop) \
-	E(purge_softdelete)
+	E(purge_softdelete) \
+	E(read_delegates)
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
 /*

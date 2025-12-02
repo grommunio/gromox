@@ -178,6 +178,8 @@ enum class exmdb_callid : uint8_t {
 	set_maintenance = 0x93,
 	autoreply_getprop = 0x94,
 	autoreply_setprop = 0x95,
+	read_delegates = 0x96,
+	write_delegates = 0x97,
 	/* update exch/exmdb/names.cpp:exmdb_rpc_idtoname! */
 };
 
@@ -862,6 +864,11 @@ struct exreq_set_maintenance final : public exreq {
 	uint32_t mode = 0;
 };
 
+struct exreq_write_delegates final : public exreq {
+	uint32_t mode = 0;
+	std::vector<std::string> userlist;
+};
+
 /**
  * FOLDERS:     process folders
  * MESSAGES:    process messages
@@ -1322,6 +1329,10 @@ struct exresp_purge_softdelete final : public exresp {
 	uint64_t sz_normal = 0, sz_fai = 0;
 };
 
+struct exresp_read_delegates final : public exresp {
+	std::vector<std::string> userlist;
+};
+
 using exreq_ping_store = exreq;
 using exreq_get_all_named_propids = exreq;
 using exreq_get_store_all_proptags = exreq;
@@ -1331,6 +1342,7 @@ using exreq_vacuum = exreq;
 using exreq_unload_store = exreq;
 using exreq_purge_datafiles = exreq;
 using exreq_create_folder_v1 = exreq_create_folder;
+using exreq_read_delegates = exreq_set_maintenance;
 using exresp_remove_folder_properties = exresp;
 using exresp_reload_content_table = exresp;
 using exresp_unload_table = exresp;
@@ -1367,6 +1379,7 @@ using exresp_imapfile_write = exresp;
 using exresp_imapfile_delete = exresp;
 using exresp_cgkreset = exresp;
 using exresp_set_maintenance = exresp;
+using exresp_write_delegates = exresp;
 
 struct DB_NOTIFY_DATAGRAM {
 	char *dir = nullptr;

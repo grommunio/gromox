@@ -268,6 +268,7 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_double_a(std::span<const double>);
 	pack_result p_bin_a(std::span<const BINARY>);
 	pack_result p_str_a(std::span<const char *const>);
+	pack_result p_str_a(std::span<const std::string>);
 	pack_result p_wstr_a(std::span<const char *const>);
 	pack_result p_guid_a(std::span<const GUID>);
 	pack_result p_proptag_a(std::span<const gromox::proptag_t>);
