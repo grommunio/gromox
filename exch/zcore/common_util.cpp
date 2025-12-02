@@ -165,12 +165,8 @@ static int cu_test_delegate_perm_MD(const char *account,
     const char *maildir, bool send_as) try
 {
 	std::vector<std::string> delegate_list;
-	auto path = maildir + std::string(send_as ? "/config/sendas.txt" : "/config/delegates.txt");
-	auto ret = read_file_by_line(path.c_str(), delegate_list);
-	if (ret != 0 && ret != ENOENT) {
-		mlog(LV_WARN, "W-2057: %s: %s", path.c_str(), strerror(ret));
-		return ret;
-	}
+	if (!exmdb_client->read_delegates(maildir, send_as, &delegate_list))
+		return -1;
 	for (const auto &d : delegate_list)
 		if (strcasecmp(d.c_str(), account) == 0)
 			return 1;

@@ -691,8 +691,8 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 		pfolder->folder_id, b_freebusy, count, pperm_data);
 }
 
-static int folder_object_flush_delegates(int fd,
-    const FORWARDDELEGATE_ACTION &action)
+static int folder_object_flush_delegates(std::vector<std::string> &dlist,
+    const FORWARDDELEGATE_ACTION &action) try
 {
 	for (const auto &dlgt : action) {
 		const char *ptype = nullptr, *paddress = nullptr;
@@ -727,14 +727,13 @@ static int folder_object_flush_delegates(int fd,
 			else if (ret != ecNullObject)
 				return -1;
 		}
-		if (address_buff.size() > 0) {
-			address_buff += '\n';
-			auto ret = HXio_fullwrite(fd, address_buff.c_str(), address_buff.size());
-			if (ret < 0 || static_cast<size_t>(ret) != address_buff.size())
-				return -2;
-		}
+		if (address_buff.size() > 0)
+			dlist.emplace_back(std::move(address_buff));
 	}
 	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return -1;
 }
 
 BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
@@ -764,31 +763,19 @@ BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 	if (pfolder->pstore->b_private &&
 	    rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_INBOX &&
 	    ((flags & MODIFY_RULES_FLAG_REPLACE) || b_delegate)) {
-		auto dlg_dir  = pfolder->pstore->get_dir() + "/config"s;
-		auto dlg_path = dlg_dir + "/delegates.txt";
-		gromox::tmpfile fd;
-		auto ret = fd.open_linkable(dlg_dir.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC);
-		if (ret < 0) {
-			mlog(LV_ERR, "E-1543: open_linkable %s: %s", dlg_dir.c_str(), strerror(-ret));
-			return ecWriteFault;
-		}
+		std::vector<std::string> dlist;
 		if (b_delegate) {
 			for (const auto &a : *pactions) {
 				if (a.type != OP_DELEGATE)
 					continue;
-				auto ret = folder_object_flush_delegates(fd,
+				auto ret = folder_object_flush_delegates(dlist,
 					   *static_cast<const FORWARDDELEGATE_ACTION *>(a.pdata));
-				if (ret == -2)
-					mlog(LV_ERR, "E-2330: write %s: %s",
-						fd.m_path.c_str(), strerror(errno));
 				if (ret < 0)
 					return false;
 			}
 		}
-		auto err = fd.link_to_overwrite(dlg_path.c_str());
-		if (err != 0)
-			mlog(LV_ERR, "E-2350: link %s %s: %s", fd.m_path.c_str(),
-				dlg_path.c_str(), strerror(err));
+		if (!exmdb_client->write_delegates(pfolder->pstore->get_dir(), 0, dlist))
+			/* unclear */;
 	}
 	return exmdb_client->update_folder_rule(pfolder->pstore->get_dir(),
 		pfolder->folder_id, plist->count,
