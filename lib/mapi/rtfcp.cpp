@@ -122,6 +122,9 @@ void DECOMPRESSION_STATE::append_to_dict(char c)
 		(pstate->dict_writeoffset + 1)%RTF_DICTLENGTH;
 }
 
+/**
+ * It is allowed for @input to point to the same object as @final_out.
+ */
 ec_error_t rtfcp_uncompress(std::string_view input, std::string &out) try
 {
 	int i;
@@ -138,17 +141,20 @@ ec_error_t rtfcp_uncompress(std::string_view input, std::string &out) try
 		return ecInvalidParam;
 	if (RTF_UNCOMPRESSED == header.magic) {
 		input.remove_prefix(16);
-		out.assign(input);
+		out = std::string(input);
 		return ecSuccess;
 	}
-	OUTPUT_STATE output(header.rawsize, out);
+	std::string obuf;
+	OUTPUT_STATE output(header.rawsize, obuf);
 	while (state.in_pos + 1 < state.in_size) {
 		control = state.get_next_ctrl();
 		for (bitmask_pos=0; bitmask_pos<8; bitmask_pos++) {
 			if (control & (1 << bitmask_pos)) {
 				dictref = state.get_next_dict_ref();
-				if (dictref.offset == state.dict_writeoffset)
+				if (dictref.offset == state.dict_writeoffset) {
+					out = std::move(obuf);
 					return ecSuccess;
+				}
 				for (i =0; i<dictref.length; i++) {
 					if (!output.overflow_check())
 						return ecInvalidParam;
@@ -167,6 +173,7 @@ ec_error_t rtfcp_uncompress(std::string_view input, std::string &out) try
 			}
 		}
 	}
+	out = std::move(obuf);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecMAPIOOM;
