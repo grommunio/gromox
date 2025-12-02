@@ -1164,14 +1164,12 @@ static BOOL nsp_interface_match_node(const ab_tree::ab_node &node,
 	return false;
 }
 
-static std::unordered_set<std::string> delegates_for(const char *dir) try
+static std::vector<std::string> delegates_for(const char *dir) try
 {
 	std::vector<std::string> dl;
-	auto path = dir + "/config/delegates.txt"s;
-	auto ret = read_file_by_line(path.c_str(), dl);
-	if (ret != 0 && ret != ENOENT)
-		mlog(LV_ERR, "E-2054: %s: %s", path.c_str(), strerror(ret));
-	return std::unordered_set<std::string>{std::make_move_iterator(dl.begin()), std::make_move_iterator(dl.end())};
+	if (!read_delegates(dir, 0, &dl))
+		return {};
+	return dl;
 } catch (const std::bad_alloc &) {
 	return {};
 }
@@ -1939,7 +1937,6 @@ ec_error_t nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		return ecError;
 
 	auto tmp_list = delegates_for(mres.maildir.c_str());
-	size_t item_num = tmp_list.size();
 	for (size_t i = 0; i < pentry_ids->count; ++i) {
 		if (pentry_ids->pbin[i].cb < 20)
 			continue;
@@ -1959,34 +1956,13 @@ ec_error_t nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		auto un = tnode.user_info(ab_tree::userinfo::mail_address);
 		if (un != nullptr) {
 			if (flags & MOD_FLAG_DELETE)
-				tmp_list.erase(un);
+				std::erase(tmp_list, un);
 			else
-				tmp_list.emplace(un);
+				tmp_list.emplace_back(un);
 		}
 	}
-	if (tmp_list.size() == item_num)
-		return ecSuccess;
-	auto dlg_dir  = mres.maildir + "/config"s;
-	auto dlg_path = dlg_dir + "/delegates.txt"s;
-	gromox::tmpfile fd;
-	if (fd.open_linkable(dlg_dir.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC) < 0) {
-		mlog(LV_ERR, "E-2024: open %s: %s", dlg_path.c_str(), strerror(errno));
-		return ecWriteFault;
-	}
-	for (const auto &u : tmp_list) {
-		auto wr_ret = write(fd, u.c_str(), u.size());
-		if (wr_ret < 0 || static_cast<size_t>(wr_ret) != u.size() ||
-		    write(fd, "\r\n", 2) != 2) {
-			mlog(LV_ERR, "E-1687: write %s: %s", fd.m_path.c_str(), strerror(errno));
-			return ecWriteFault;
-		}
-	}
-	auto err = fd.link_to_overwrite(dlg_path.c_str());
-	if (err != 0) {
-		mlog(LV_ERR, "E-1686: link %s %s: %s", fd.m_path.c_str(),
-			dlg_path.c_str(), strerror(err));
-		return ecWriteFault;
-	}
+	if (!write_delegates(mres.maildir.c_str(), 0, tmp_list))
+		return ecRpcFailed;
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1919: ENOMEM");

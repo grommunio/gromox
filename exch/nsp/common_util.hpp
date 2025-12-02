@@ -64,3 +64,5 @@ extern int common_util_run();
 
 extern BOOL (*get_named_propids)(const char *dir, BOOL create, const PROPNAME_ARRAY *, PROPID_ARRAY *);
 extern BOOL (*get_store_properties)(const char *dir, cpid_t, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+extern BOOL (*read_delegates)(const char *dir, uint32_t mode, std::vector<std::string> *);
+extern BOOL (*write_delegates)(const char *dir, uint32_t mode, const std::vector<std::string> &);

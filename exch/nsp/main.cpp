@@ -87,7 +87,10 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 
 		query_service2("exmdb_client_get_named_propids", get_named_propids);
 		query_service2("exmdb_client_get_store_properties", get_store_properties);
-		if (get_named_propids == nullptr || get_store_properties == nullptr)
+		query_service2("exmdb_client_read_delegates", read_delegates);
+		query_service2("exmdb_client_write_delegates", write_delegates);
+		if (get_named_propids == nullptr || get_store_properties == nullptr ||
+		    read_delegates == nullptr || write_delegates == nullptr)
 			return false;
 #define regsvr(n) register_service(#n, n)
 		if (!regsvr(nsp_interface_bind) ||
