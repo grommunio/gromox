@@ -1898,8 +1898,9 @@ BINARY EWSContext::serialize(const XID& xid) const
  */
 bool EWSContext::streamEvents(const tSubscriptionId& subscriptionId) const
 {
-	if (m_notify)
-		m_notify->nct_subs.emplace_back(subscriptionId);
+	if (!m_notify)
+		return false;
+	m_notify->nct_subs.emplace_back(subscriptionId);
 	return m_plugin.linkSubscription(subscriptionId, *this);
 }
 
