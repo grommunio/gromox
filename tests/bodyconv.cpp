@@ -44,6 +44,13 @@ static int t_rtf_reader()
 
 	rp_assert(lortf_head + "\\dbch\\'89\\'bd" + lortf_foot, "何");
 	rp_assert(lortf_head + "\\ansicpg932\\dbch \x89\xbd" + lortf_foot, "何");
+
+	/*
+	 * Multi-byte sequences that span an RTF group are handled differently
+	 * by various implementations.
+	 */
+	rp_assert(lortf_head + "\\dbch{\\'89}{\\'bd}" + lortf_foot, "何"); // MSWord
+	// rp_assert(lortf_head + "\\dbch{\\'89}{\\'bd}" + lortf_foot, "�ｽ"); // SvxRTF
 	return 0;
 }
 

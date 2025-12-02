@@ -456,6 +456,15 @@ bool rtf_reader::riconv_flush()
 			 * This is normal for encodings like Shift-JIS where we may
 			 * have received only the first byte of a 2-byte character.
 			 * Output what was converted and keep the remainder.
+			 *
+			 * In our case, the input is one RTF group.
+			 * MSWord has a similar behavior in that it can take bytes
+			 * from multiple groups to produce a character. However,
+			 * if the sequence is still incomplete, a garbage byte is
+			 * produced.
+			 *
+			 * Libreoffice emits U+FFFD (REPLACEMENT CHARACTER)
+			 * on incomplete sequences.
 			 */
 			tmp_len -= out_size;
 			if (tmp_len > 0) {
@@ -475,6 +484,9 @@ bool rtf_reader::riconv_flush()
 			/*
 			 * EILSEQ = invalid multi-byte sequence.
 			 * Skip the problematic byte and try to continue.
+			 *
+			 * MSWord emits garbage bytes.
+			 * Libreoffice emits U+FFFD again.
 			 */
 			tmp_len -= out_size;
 			if (tmp_len > 0) {
