@@ -14,6 +14,7 @@
 #include <openssl/evp.h>
 #include <tinyxml2.h>
 #include <gromox/ab_tree.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
@@ -51,6 +52,13 @@ static constexpr uint32_t obj_flags[] = {
 	2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 static constexpr size_t OBJ_PROP_COUNT = std::size(obj_props);
+
+/* Cached OAB data for a single address book base */
+struct oab_cache_entry {
+	std::string manifest_xml, lzx_data;
+	gromox::time_point gen_time;
+	uint32_t sequence = 1;
+};
 
 /* IEEE 802.3 CRC-32 (polynomial 0xEDB88320, seeded 0xFFFFFFFF) */
 static uint32_t crc32_oab(const void *data, size_t len)
@@ -239,20 +247,43 @@ class OabPlugin {
 	OabPlugin();
 	http_status proc(int, const void *, uint64_t);
 	static BOOL preproc(int);
+	void clear_cache();
+
+	private:
+	http_status send_response(int ctx_id, const char *ct_type, const std::string &body);
+	http_status send_error(int ctx_id, http_status);
+
+	std::mutex m_cache_lock;
+	std::unordered_map<int32_t, oab_cache_entry> m_cache;
+	std::string m_org_name;
+	std::chrono::seconds m_cache_interval{300};
 };
 
 } /* anonymous namespace */
 
 DECLARE_HPM_API(,);
 
-static constexpr char
-	response[] = "<?xml version=\"1.0\" encoding=\"utf-8\"?><OAB></OAB>",
-	header[] =
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: text/xml\r\n"
-		"Content-Length: 49\r\n\r\n";
+static constexpr cfg_directive oab_nsp_cfg_defaults[] = {
+	{"cache_interval", "5min", CFG_TIME, "1s", "1d"},
+	{"x500_org_name", "Gromox default"},
+	CFG_TABLE_END,
+};
 
-OabPlugin::OabPlugin(){}
+OabPlugin::OabPlugin()
+{
+	auto cfg = config_file_initd("exchange_nsp.cfg", get_config_path(),
+	           oab_nsp_cfg_defaults);
+	if (cfg != nullptr) {
+		auto v = cfg->get_value("X500_ORG_NAME");
+		if (v != nullptr)
+			m_org_name = v;
+		auto ci = cfg->get_ll("cache_interval");
+		if (ci > 0)
+			m_cache_interval = std::chrono::seconds(ci);
+	}
+	if (m_org_name.empty())
+		m_org_name = "Gromox default";
+}
 
 BOOL OabPlugin::preproc(int ctx_id)
 {
@@ -265,13 +296,54 @@ http_status OabPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	if (auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
-	auto wr = write_response(ctx_id, header, strlen(header));
-	if (wr != http_status::ok)
-		return wr;
-	return write_response(ctx_id, response, strlen(response));
+	return send_error(ctx_id, http_status::not_found);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2092: ENOMEM");
 	return http_status::none;
+}
+
+http_status OabPlugin::send_response(int ctx_id,
+	const char *content_type, const std::string &body)
+{
+	auto hdr = fmt::format(
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Type: {}\r\n"
+		"Content-Length: {}\r\n\r\n",
+		content_type, body.size());
+	auto wr = write_response(ctx_id, hdr.data(), hdr.size());
+	if (wr != http_status::ok)
+		return wr;
+	return write_response(ctx_id, body.data(), body.size());
+}
+
+http_status OabPlugin::send_error(int ctx_id, http_status code)
+{
+	const char *text = "Error";
+	unsigned int icode = 500;
+	switch (code) {
+	case http_status::bad_request:
+		text = "Bad Request"; icode = 400; break;
+	case http_status::not_found:
+		text = "Not Found"; icode = 404; break;
+	default:
+		break;
+	}
+	auto body = fmt::format("{} {}", icode, text);
+	auto hdr = fmt::format(
+		"HTTP/1.1 {} {}\r\n"
+		"Content-Type: text/plain\r\n"
+		"Content-Length: {}\r\n\r\n",
+		icode, text, body.size());
+	auto wr = write_response(ctx_id, hdr.data(), hdr.size());
+	if (wr != http_status::ok)
+		return wr;
+	return write_response(ctx_id, body.data(), body.size());
+}
+
+void OabPlugin::clear_cache()
+{
+	std::lock_guard lock(m_cache_lock);
+	m_cache.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -282,6 +354,28 @@ static std::unique_ptr<OabPlugin> g_oab_plugin;
 static BOOL oab_init(const struct dlfuncs &apidata)
 {
 	LINK_HPM_API(apidata)
+	if (service_run_library({"libgxs_mysql_adaptor.so",
+	    SVC_mysql_adaptor}) != PLUGIN_LOAD_OK)
+		return false;
+
+	/* Initialize ab_tree (shared with NSP; init is idempotent per running count) */
+	auto cfg = config_file_initd("exchange_nsp.cfg", get_config_path(),
+	           oab_nsp_cfg_defaults);
+	if (cfg != nullptr) {
+		auto org = cfg->get_value("X500_ORG_NAME");
+		auto ci = cfg->get_ll("cache_interval");
+		if (ab_tree::AB.init(org != nullptr ? org : "Gromox default",
+		    ci > 0 ? ci : 300) != 0)
+			return false;
+	} else {
+		if (ab_tree::AB.init("Gromox default", 300) != 0)
+			return false;
+	}
+	if (!ab_tree::AB.run()) {
+		mlog(LV_ERR, "oab: failed to start ab_tree");
+		return false;
+	}
+
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &OabPlugin::preproc;
 	ifc.proc    = [](int ctx, const void *cont, uint64_t len) { return g_oab_plugin->proc(ctx, cont, len); };
@@ -300,9 +394,17 @@ static BOOL oab_init(const struct dlfuncs &apidata)
 
 BOOL HPM_oab(enum plugin_op reason, const struct dlfuncs &data)
 {
-	if (reason == PLUGIN_INIT)
+	if (reason == PLUGIN_INIT) {
 		return oab_init(data);
-	else if (reason == PLUGIN_FREE)
+	} else if (reason == PLUGIN_FREE) {
 		g_oab_plugin.reset();
+		ab_tree::AB.stop();
+		return TRUE;
+	} else if (reason == PLUGIN_RELOAD) {
+		ab_tree::AB.invalidate_cache();
+		if (g_oab_plugin)
+			g_oab_plugin->clear_cache();
+		return TRUE;
+	}
 	return TRUE;
 }
