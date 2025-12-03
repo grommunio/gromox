@@ -2106,7 +2106,7 @@ int rtf_reader::cmd_soft_hyphen(SIMPLE_TREE_NODE *pword,
 {
 	auto preader = this;
 	if (preader->ext_push.p_bytes(TAG_CHARS_SOFT_HYPHEN,
-	    sizeof(TAG_CHARS_NONBREAKING_SPACE) - 1) != pack_result::ok)
+	    sizeof(TAG_CHARS_SOFT_HYPHEN) - 1) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
 	return CMD_RESULT_CONTINUE;
