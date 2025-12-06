@@ -202,6 +202,8 @@ repr_grant cu_get_delegate_perm_AA(const char *account, const char *repr)
 	sql_meta_result mres;
 	if (mysql_adaptor_meta(repr, WANTPRIV_METAONLY, mres) != 0)
 		return repr_grant::error;
+	if (strcasecmp(account, mres.username.c_str()) == 0)
+		return repr_grant::send_as;
 	return cu_get_delegate_perm_MD(account, mres.maildir.c_str());
 }
 

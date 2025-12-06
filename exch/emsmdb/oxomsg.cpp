@@ -216,6 +216,8 @@ static repr_grant oxomsg_get_perm(const char *account, const char *repr)
 	sql_meta_result mres;
 	if (mysql_adaptor_meta(repr, WANTPRIV_METAONLY, mres) != 0)
 		return repr_grant::error;
+	if (strcasecmp(account, mres.username.c_str()) == 0)
+		return repr_grant::send_as;
 	auto repdir = mres.maildir.c_str();
 	auto ret = oxomsg_test_perm(account, repdir, true);
 	if (ret < 0)
