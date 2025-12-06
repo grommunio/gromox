@@ -1,5 +1,9 @@
-Development 3.2+
-================
+Gromox 3.2.21
+=============
+
+Enhancements:
+
+* oxvcard: do export Outlook contact photo
 
 Fixes:
 
