@@ -1045,76 +1045,77 @@ static BOOL nsp_interface_match_node(const ab_tree::ab_node &node,
 	case RES_CONTENT:
 		return FALSE;
 	case RES_PROPERTY: {
-		if (pfilter->res.res_property.pprop == nullptr)
+		auto &res = pfilter->res.res_property;
+		if (res.pprop == nullptr)
 			return TRUE;
 		char temp_buff[1024];
 		// XXX RESTRICTION_PROPERTY::comparable check
-		if (pfilter->res.res_property.proptag == PR_ANR) {
+		if (res.proptag == PR_ANR) {
 			if (nsp_interface_fetch_property(node, false, codepage,
 			    PR_ACCOUNT, &prop_val, temp_buff,
 			    std::size(temp_buff)) == ecSuccess &&
-			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
+			    strcasestr(temp_buff, res.pprop->value.pstr) != nullptr)
 				return TRUE;
-			char *ptoken = strchr(pfilter->res.res_property.pprop->value.pstr, ':');
+			char *ptoken = strchr(res.pprop->value.pstr, ':');
 			if (NULL != ptoken) {
 				/* =SMTP:user@company.com */
 				if (strcasestr(temp_buff, &ptoken[1]) != nullptr)
 					return TRUE;
-			} else if (strcasecmp(temp_buff, pfilter->res.res_property.pprop->value.pstr) == 0) {
+			} else if (strcasecmp(temp_buff, res.pprop->value.pstr) == 0) {
 				return TRUE;
 			}
 			if (nsp_interface_fetch_property(node, false, codepage,
 			    PR_DISPLAY_NAME, &prop_val, temp_buff,
 			    std::size(temp_buff)) == ecSuccess &&
-			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
+			    strcasestr(temp_buff, res.pprop->value.pstr) != nullptr)
 				return TRUE;
 			return FALSE;
-		} else if (pfilter->res.res_property.proptag == PR_ANR_A) {
+		} else if (res.proptag == PR_ANR_A) {
 			if (nsp_interface_fetch_property(node, false, codepage,
 			    PR_ACCOUNT_A, &prop_val, temp_buff,
 			    std::size(temp_buff)) == ecSuccess &&
-			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
+			    strcasestr(temp_buff, res.pprop->value.pstr) != nullptr)
 				return TRUE;
 			/* =SMTP:user@company.com */
-			char *ptoken = strchr(pfilter->res.res_property.pprop->value.pstr, ':');
+			char *ptoken = strchr(res.pprop->value.pstr, ':');
 			if (NULL != ptoken) {
 				if (strcasestr(temp_buff, &ptoken[1]) != nullptr)
 					return TRUE;
-			} else if (strcasecmp(temp_buff, pfilter->res.res_property.pprop->value.pstr) == 0) {
+			} else if (strcasecmp(temp_buff, res.pprop->value.pstr) == 0) {
 				return TRUE;
 			}
 			if (nsp_interface_fetch_property(node, false, codepage,
 			    PR_DISPLAY_NAME_A, &prop_val, temp_buff,
 			    std::size(temp_buff)) == ecSuccess &&
-			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
+			    strcasestr(temp_buff, res.pprop->value.pstr) != nullptr)
 				return TRUE;
 			return FALSE;
 		}
 		if (nsp_interface_fetch_property(node, false, codepage,
-		    pfilter->res.res_property.proptag, &prop_val,
+		    res.proptag, &prop_val,
 		    temp_buff, std::size(temp_buff)) != ecSuccess)
 			return FALSE;
 		// XXX: convert to RESTRICTION_PROPERTY::eval
 		auto cmp = std::strong_ordering::equivalent;
-		switch (PROP_TYPE(pfilter->res.res_property.proptag)) {
+		switch (PROP_TYPE(res.proptag)) {
 		case PT_SHORT:
-			cmp = prop_val.value.s <=> pfilter->res.res_property.pprop->value.s;
+			cmp = prop_val.value.s <=> res.pprop->value.s;
 			break;
 		case PT_LONG:
-			cmp = prop_val.value.l <=> pfilter->res.res_property.pprop->value.l;
+			cmp = prop_val.value.l <=> res.pprop->value.l;
 			break;
 		case PT_BOOLEAN:
-			cmp = prop_val.value.b <=> pfilter->res.res_property.pprop->value.b;
+			cmp = prop_val.value.b <=> res.pprop->value.b;
 			break;
 		case PT_STRING8:
 		case PT_UNICODE:
-			cmp = strcasecmp(prop_val.value.pstr, pfilter->res.res_property.pprop->value.pstr) <=> 0;
+			cmp = strcasecmp(prop_val.value.pstr, res.pprop->value.pstr) <=> 0;
 			break;
 		default:
-			mlog(LV_ERR, "E-1967: unhandled proptag %xh", pfilter->res.res_property.proptag);
+			mlog(LV_ERR, "E-1967: unhandled proptag %xh", res.proptag);
 			return false;
 		}
-		return three_way_eval(pfilter->res.res_property.relop, cmp) ? TRUE : false;
+		return three_way_eval(res.relop, cmp) ? TRUE : false;
 	}
 	case RES_PROPCOMPARE:
 		return FALSE;
