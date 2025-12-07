@@ -1048,52 +1048,52 @@ static BOOL nsp_interface_match_node(const ab_tree::ab_node &node,
 		auto &res = pfilter->res.res_property;
 		if (res.pprop == nullptr)
 			return TRUE;
-		char temp_buff[1024];
 		// XXX RESTRICTION_PROPERTY::comparable check
 		if (res.proptag == PR_ANR) {
 			if (nsp_interface_fetch_property(node, false, codepage,
-			    PR_ACCOUNT, &prop_val, temp_buff,
-			    std::size(temp_buff)) == ecSuccess &&
-			    strcasestr(temp_buff, res.pprop->value.pstr) != nullptr)
-				return TRUE;
-			char *ptoken = strchr(res.pprop->value.pstr, ':');
-			if (NULL != ptoken) {
-				/* =SMTP:user@company.com */
-				if (strcasestr(temp_buff, &ptoken[1]) != nullptr)
+			    PR_ACCOUNT, &prop_val, nullptr, 0) == ecSuccess &&
+			    prop_val.value.pstr != nullptr) {
+				if (strcasestr(prop_val.value.pstr, res.pprop->value.pstr) != nullptr)
 					return TRUE;
-			} else if (strcasecmp(temp_buff, res.pprop->value.pstr) == 0) {
-				return TRUE;
+				char *ptoken = strchr(res.pprop->value.pstr, ':');
+				if (ptoken != nullptr) {
+					/* =SMTP:user@company.com */
+					if (strcasestr(prop_val.value.pstr, &ptoken[1]) != nullptr)
+						return TRUE;
+				} else if (strcasecmp(prop_val.value.pstr, res.pprop->value.pstr) == 0) {
+					return TRUE;
+				}
 			}
 			if (nsp_interface_fetch_property(node, false, codepage,
-			    PR_DISPLAY_NAME, &prop_val, temp_buff,
-			    std::size(temp_buff)) == ecSuccess &&
-			    strcasestr(temp_buff, res.pprop->value.pstr) != nullptr)
+			    PR_DISPLAY_NAME, &prop_val, nullptr, 0) == ecSuccess &&
+			    prop_val.value.pstr != nullptr &&
+			    strcasestr(prop_val.value.pstr, res.pprop->value.pstr) != nullptr)
 				return TRUE;
 			return FALSE;
 		} else if (res.proptag == PR_ANR_A) {
 			if (nsp_interface_fetch_property(node, false, codepage,
-			    PR_ACCOUNT_A, &prop_val, temp_buff,
-			    std::size(temp_buff)) == ecSuccess &&
-			    strcasestr(temp_buff, res.pprop->value.pstr) != nullptr)
-				return TRUE;
-			/* =SMTP:user@company.com */
-			char *ptoken = strchr(res.pprop->value.pstr, ':');
-			if (NULL != ptoken) {
-				if (strcasestr(temp_buff, &ptoken[1]) != nullptr)
+			    PR_ACCOUNT_A, &prop_val, nullptr, 0) == ecSuccess &&
+			    prop_val.value.pstr != nullptr) {
+				if (strcasestr(prop_val.value.pstr, res.pprop->value.pstr) != nullptr)
 					return TRUE;
-			} else if (strcasecmp(temp_buff, res.pprop->value.pstr) == 0) {
-				return TRUE;
+				/* =SMTP:user@company.com */
+				char *ptoken = strchr(res.pprop->value.pstr, ':');
+				if (ptoken != nullptr) {
+					if (strcasestr(prop_val.value.pstr, &ptoken[1]) != nullptr)
+						return TRUE;
+				} else if (strcasecmp(prop_val.value.pstr, res.pprop->value.pstr) == 0) {
+					return TRUE;
+				}
 			}
 			if (nsp_interface_fetch_property(node, false, codepage,
-			    PR_DISPLAY_NAME_A, &prop_val, temp_buff,
-			    std::size(temp_buff)) == ecSuccess &&
-			    strcasestr(temp_buff, res.pprop->value.pstr) != nullptr)
+			    PR_DISPLAY_NAME_A, &prop_val, nullptr, 0) == ecSuccess &&
+			    prop_val.value.pstr != nullptr &&
+			    strcasestr(prop_val.value.pstr, res.pprop->value.pstr) != nullptr)
 				return TRUE;
 			return FALSE;
 		}
 		if (nsp_interface_fetch_property(node, false, codepage,
-		    res.proptag, &prop_val,
-		    temp_buff, std::size(temp_buff)) != ecSuccess)
+		    res.proptag, &prop_val, nullptr, 0) != ecSuccess)
 			return FALSE;
 		// XXX: convert to RESTRICTION_PROPERTY::eval
 		auto cmp = std::strong_ordering::equivalent;
