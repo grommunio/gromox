@@ -6,7 +6,7 @@ enum {
 	MIDB_UPGRADE_AUTO,
 };
 
-extern void me_init(const char *dfl_cset, const char *org_name, size_t table_size);
+extern void me_init(const char *org_name, size_t table_size);
 extern int me_run();
 extern void me_stop();
 

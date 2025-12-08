@@ -86,7 +86,6 @@ static constexpr cfg_directive gromox_cfg_defaults[] = {
 static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR},
 	{"data_path", PKGDATADIR "/midb:" PKGDATADIR},
-	{"default_charset", "windows-1252"},
 	{"midb_cache_interval", "30min", CFG_TIME, "1min", "1year"},
 	{"midb_cmd_debug", "0"},
 	{"midb_hosts_allow", ""}, /* ::1 default set later during startup */
@@ -355,8 +354,7 @@ int main(int argc, char **argv)
 	auto cl_6 = HX::make_scope_exit([]() { exmdb_client.reset(); });
 	listener_init(listen_ip, listen_port);
 	auto cl_3 = HX::make_scope_exit(listener_stop);
-	me_init(g_config_file->get_value("default_charset"),
-		g_config_file->get_value("x500_org_name"), table_size);
+	me_init(g_config_file->get_value("x500_org_name"), table_size);
 	auto cl_5 = HX::make_scope_exit(me_stop);
 
 	cmd_parser_init(threads_num, SOCKET_TIMEOUT, cmd_debug);

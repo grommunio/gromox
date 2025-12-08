@@ -173,7 +173,6 @@ static size_t g_table_size;
 static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
 static pthread_t g_scan_tid;
 static char g_org_name[256];
-static char g_default_charset[32];
 static std::mutex g_hash_lock;
 static std::unordered_map<std::string, IDB_ITEM> g_hash_table;
 
@@ -4126,10 +4125,9 @@ static void notif_handler(const char *dir,
 	mlog(LV_ERR, "E-2346: ENOMEM");
 }
 
-void me_init(const char *default_charset, const char *org_name,
+void me_init(const char *org_name,
     size_t table_size)
 {
-	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
 	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
 	g_table_size = table_size;
 }
