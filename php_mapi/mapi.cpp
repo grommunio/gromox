@@ -2751,13 +2751,8 @@ static ZEND_FUNCTION(mapi_decompressrtf)
 		return;
 	}
 
-	std::string_view sv{Z_STRVAL_P(deref), Z_STRLEN_P(deref)};
-	ssize_t unc_size = rtfcp_uncompressed_size(sv);
-	if (unc_size < 0)
-		/* Input does not look like RTFCP (MELA or LZFU) */
-		pthrow(ecInvalidParam);
 	std::string blob;
-	auto err = rtfcp_uncompress(sv, blob);
+	auto err = rtfcp_uncompress({Z_STRVAL_P(deref), Z_STRLEN_P(deref)}, blob);
 	if (err != ecSuccess)
 		pthrow(err);
 	std::unique_ptr<ATTACHMENT_LIST, mc_delete> atxlist(attachment_list_init());

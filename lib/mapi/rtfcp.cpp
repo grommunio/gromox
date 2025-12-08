@@ -199,16 +199,3 @@ ec_error_t rtfcp_encode(std::string_view in, std::string &out) try
 } catch (const std::bad_alloc &) {
 	return ecMAPIOOM;
 }
-
-ssize_t rtfcp_uncompressed_size(std::string_view rtf)
-{
-	if (rtf.size() < 16)
-		return -1;
-	DECOMPRESSION_STATE state(rtf);
-	COMPRESS_HEADER header;
-	if (!rtfcp_verify_header(rtf.data(), state.in_size, &header))
-		return -1;
-	if (static_cast<size_t>(header.rawsize) > SSIZE_MAX)
-		return -1; /* just a limitation of this function */
-	return header.rawsize;
-}
