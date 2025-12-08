@@ -1524,8 +1524,8 @@ errno_t parse_imap_seq(imap_seq_list &r, const char *s) try
 }
 
 /**
- * @h: class on message
- * @n: class to test
+ * @h:  PR_MESSAGE_CLASS/PR_CONTAINER_CLASS value
+ * @n:  prefix to test for
  *
  * On match, 0 is returned; otherwise whatever strcasecmp would yield.
  */
@@ -1541,7 +1541,11 @@ int class_match_prefix(const char *h, const char *n)
 }
 
 /**
+ * @h:  PR_MESSAGE_CLASS/PR_CONTAINER_CLASS value
+ * @n:  suffix to test for
+ *
  * On match, 0 is returned; otherwise anything non-zero.
+ * This function is not meant for testing for root classes like "IPM".
  */
 int class_match_suffix(const char *h, const char *n)
 {
