@@ -631,6 +631,11 @@ static int setup_charset(MYSQL *m)
 	return mysql_set_character_set(m, "utf8mb4");
 }
 
+static inline const char *snul(const std::string &s)
+{
+	return s.size() != 0 ? s.c_str() : nullptr;
+}
+
 static std::unique_ptr<driver> make_driver(const sql_login_param &sqp)
 {
 	auto drv = std::make_unique<driver>();
