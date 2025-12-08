@@ -2179,10 +2179,7 @@ static int me_minst(int argc, char **argv, int sockd) try
 	auto charset = mret == 0 ? lang_to_charset(mres.lang.c_str()) : nullptr;
 	if (*znul(charset) == '\0')
 		charset = g_default_charset;
-	auto tmzone = mret == 0 ? mres.timezone.c_str() : nullptr;
-	if (*znul(tmzone) == '\0')
-		tmzone = GROMOX_FALLBACK_TIMEZONE;
-	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
+	auto pmsgctnt = oxcmail_import(charset, &imail,
 	                cu_alloc_bytes, cu_get_propids_create);
 	imail.clear();
 	pbuff.clear();

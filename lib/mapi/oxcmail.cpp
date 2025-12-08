@@ -1666,8 +1666,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			tmp_int32 = ATTACH_EMBEDDED_MSG;
 			if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != ecSuccess)
 				return;
-			pmsg = oxcmail_import(pmime_enum->charset,
-				pmime_enum->str_zone, &mail,
+			pmsg = oxcmail_import(pmime_enum->charset, &mail,
 				pmime_enum->alloc, pmime_enum->get_propids);
 			if (pmsg == nullptr)
 				return;
@@ -2465,7 +2464,7 @@ static std::nullptr_t xlog_null(const char *func, unsigned int line)
 }
 
 #define imp_null xlog_null(__func__, __LINE__)
-MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
+MESSAGE_CONTENT *oxcmail_import(const char *charset,
     const MAIL *pmail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
 	namemap phash;
@@ -2609,7 +2608,6 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	mime_enum.b_result = true;
 	mime_enum.attach_id = 0;
 	mime_enum.charset = default_charset.c_str();
-	mime_enum.str_zone = str_zone;
 	mime_enum.get_propids = get_propids;
 	mime_enum.alloc = alloc;
 	mime_enum.pmsg = pmsg.get();

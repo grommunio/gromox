@@ -244,7 +244,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
     const char *address) try
 {
 	uint64_t nt_time;
-	char tmzone[64], hostname[UDOM_SIZE];
+	char hostname[UDOM_SIZE];
 	uint32_t tmp_int32;
 	uint32_t suppress_mask = 0;
 	BOOL b_bounce_delivered = false;
@@ -265,9 +265,6 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		return delivery_status::no_user;
 	}
 	auto home_dir = mres.maildir.c_str();
-	if (*znul(tmzone) == '\0')
-		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
-	
 	auto pmail = &pcontext->mail;
 	gx_strlcpy(hostname, get_host_ID(), std::size(hostname));
 	if ('\0' == hostname[0]) {
@@ -323,7 +320,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	digest["file"] = std::move(mid_string);
 	auto djson = json_to_str(digest);
 	g_storedir = mres.maildir.c_str();
-	auto pmsg = oxcmail_import(nullptr, tmzone, pmail, exmdb_local_alloc,
+	auto pmsg = oxcmail_import(nullptr, pmail, exmdb_local_alloc,
 	            exmdb_local_get_propids);
 	g_storedir = nullptr;
 	if (NULL == pmsg) {

@@ -25,7 +25,7 @@ struct MIME_ENUM_PARAM {
 
 	bool b_result = false;
 	int attach_id = 0;
-	const char *charset = nullptr, *str_zone = nullptr;
+	const char *charset = nullptr;
 	GET_PROPIDS get_propids{};
 	EXT_BUFFER_ALLOC alloc{};
 	message_content *pmsg = nullptr;

@@ -1122,7 +1122,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	imail.set_header("X-Mailer", ZCORE_UA);
 	if (zcore_backfill_transporthdr) {
 		std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import(nullptr,
-			"UTC", &imail, common_util_alloc, common_util_get_propids));
+			&imail, common_util_alloc, common_util_get_propids));
 		if (rmsg != nullptr) {
 			for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
 				auto th = rmsg->proplist.get<const char>(tag);
@@ -1771,14 +1771,8 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 		gx_strlcpy(charset, c, std::size(charset));
 	else
 		gx_strlcpy(charset, g_default_charset, std::size(charset));
-	sql_meta_result mres;
-	auto tmzone = mysql_adaptor_meta(pinfo->get_username(),
-	              WANTPRIV_METAONLY, mres) == 0 ?
-	              mres.timezone.c_str() : nullptr;
-	if (*znul(tmzone) == '\0')
-		tmzone = common_util_get_default_timezone();
 	common_util_set_dir(pstore->get_dir());
-	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
+	auto pmsgctnt = oxcmail_import(charset, &imail,
 	                common_util_alloc, common_util_get_propids_create);
 	return pmsgctnt;
 }
