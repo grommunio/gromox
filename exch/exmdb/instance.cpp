@@ -2279,7 +2279,7 @@ static BOOL xns_set_msg_subj(TPROPVAL_ARRAY &msgprop,
 			return false;
 	} else {
 		norm = cu_mb_to_utf8_dup(cpid, norm);
-		if (norm == nullptr || msgprop.set(normtag, norm) != 0)
+		if (norm == nullptr || msgprop.set(normtag, norm) != ecSuccess)
 			return false;
 	}
 	return TRUE;
