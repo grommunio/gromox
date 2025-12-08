@@ -67,10 +67,8 @@ static void xa_refresh_once()
 		return;
 	auto n_contacts = newmap->size() - n_aliases;
 	std::unique_lock lk(xa_alias_lock);
-	if (newmap != nullptr)
-		xa_alias_map = std::move(newmap);
-	if (newdom != nullptr)
-		xa_domain_set = std::move(newdom);
+	xa_alias_map  = std::move(newmap);
+	xa_domain_set = std::move(newdom);
 	mlog(LV_INFO, "I-1612: refreshed alias_resolve map with %zu aliases and %zu contact objects",
 		n_aliases, n_contacts);
 }
