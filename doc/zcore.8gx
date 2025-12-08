@@ -69,9 +69,6 @@ files.
 .br
 Default: \fI/usr/share/gromox/zcore\fP
 .TP
-\fBdefault_charset\fP
-Default: \fIutf-8\fP
-.TP
 \fBhost_id\fP
 A unique identifier for this system. It is used for the HELO line of outgoing
 SMTP connections, and as an unused identifier within muidStoreWrap entryids.

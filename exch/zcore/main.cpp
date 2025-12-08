@@ -92,7 +92,6 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"address_table_size", "3000", CFG_SIZE, "1"},
 	{"config_file_path", PKGSYSCONFDIR "/zcore:" PKGSYSCONFDIR},
 	{"data_file_path", PKGDATADIR "/zcore:" PKGDATADIR},
-	{"default_charset", "utf-8"},
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
 	{"mailbox_ping_interval", "5min", CFG_TIME, "1min", "1h"},
 	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
@@ -319,7 +318,6 @@ int main(int argc, char **argv)
 	mlog(LV_NOTICE, "system: SMTP server is %s", smtp_url.c_str());
 	
 	common_util_init(g_config_file->get_value("x500_org_name"),
-		g_config_file->get_value("default_charset"),
 		max_rcpt, max_length, max_rule_len, std::move(smtp_url),
 		g_config_file->get_value("submit_command"));
 	

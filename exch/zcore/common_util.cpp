@@ -89,7 +89,6 @@ char g_org_name[256];
 static thread_local const char *g_dir_key;
 static thread_local unsigned int g_env_refcount;
 static thread_local std::unique_ptr<env_context> g_env_key;
-static char g_default_charset[32];
 static char g_submit_command[1024];
 static constexpr char ZCORE_UA[] = PACKAGE_NAME "-zcore " PACKAGE_VERSION;
 
@@ -326,12 +325,11 @@ BOOL common_util_exmdb_locinfo_from_string(
 	return TRUE;
 }
 
-void common_util_init(const char *org_name, const char *default_charset,
+void common_util_init(const char *org_name,
     unsigned int max_rcpt, size_t max_mail_len,
     unsigned int max_rule_len, std::string &&smtp_url, const char *submit_command)
 {
 	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
-	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
 	g_max_rcpt = max_rcpt;
 	g_max_mail_len = max_mail_len;
 	g_max_rule_len = g_max_extrule_len = max_rule_len;
