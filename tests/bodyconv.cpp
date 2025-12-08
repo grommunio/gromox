@@ -92,6 +92,6 @@ int main()
 {
 	textmaps_init();
 	if (t_rtf_reader() != 0)
-		return EXIT_SUCCESS;
-	return EXIT_FAILURE;
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
 }
