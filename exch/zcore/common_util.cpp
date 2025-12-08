@@ -1818,13 +1818,6 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) try
 {
 	ical ical;
-	auto pinfo = zs_get_info();
-	sql_meta_result mres;
-	auto tmzone = mysql_adaptor_meta(pinfo->get_username(),
-	              WANTPRIV_METAONLY, mres) == 0 ?
-	              mres.timezone.c_str() : nullptr;
-	if (*znul(tmzone) == '\0')
-		tmzone = common_util_get_default_timezone();
 	auto pbuff = cu_alloc<char>(pical_bin->cb + 1);
 	if (pbuff == nullptr)
 		return nullptr;
@@ -1833,7 +1826,7 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 	if (!ical.load_from_str_move(pbuff))
 		return NULL;
 	common_util_set_dir(pstore->get_dir());
-	return oxcical_import_single(tmzone, ical, common_util_alloc,
+	return oxcical_import_single(ical, common_util_alloc,
 	       common_util_get_propids_create, common_util_username_to_entryid);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
@@ -1843,19 +1836,11 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
     std::vector<message_ptr> &msgvec) try
 {
-	auto info = zs_get_info();
-	sql_meta_result mres;
-	auto tmzone = mysql_adaptor_meta(info->get_username(),
-	              WANTPRIV_METAONLY, mres) == 0 ?
-	              mres.timezone.c_str() : nullptr;
-	if (*znul(tmzone) == '\0')
-		tmzone = common_util_get_default_timezone();
-
 	ical icobj;
 	if (!icobj.load_from_str_move(ical_data))
 		return ecError;
 	common_util_set_dir(store->get_dir());
-	return oxcical_import_multi(tmzone, icobj, common_util_alloc,
+	return oxcical_import_multi(icobj, common_util_alloc,
 	       common_util_get_propids_create,
 	       common_util_username_to_entryid, msgvec);
 } catch (const std::bad_alloc &) {

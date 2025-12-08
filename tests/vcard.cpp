@@ -239,7 +239,7 @@ static int t_ical_dt()
 			fprintf(stderr, "ical_parse unsuccessful\n");
 			return EXIT_FAILURE;
 		}
-		auto mc = oxcical_import_single("UTC", ical, zalloc,
+		auto mc = oxcical_import_single(ical, zalloc,
 		          ee_get_propids, oxcmail_username_to_entryid);
 		if (mc == nullptr) {
 			fprintf(stderr, "oxcical_import unsuccessful\n");
@@ -299,7 +299,7 @@ static int t_rrule()
 	bool succ = icalin.load_from_str_move(input.data());
 	if (!succ)
 		return EXIT_FAILURE;
-	auto msg = oxcical_import_single("UTC", icalin, zalloc, ee_get_propids,
+	auto msg = oxcical_import_single(icalin, zalloc, ee_get_propids,
 	           oxcmail_username_to_entryid);
 	assert(msg != nullptr);
 
@@ -307,7 +307,7 @@ static int t_rrule()
 	succ = icalin.load_from_str_move(input.data());
 	if (!succ)
 		return EXIT_FAILURE;
-	msg = oxcical_import_single("UTC", icalin, zalloc, ee_get_propids,
+	msg = oxcical_import_single(icalin, zalloc, ee_get_propids,
 	      oxcmail_username_to_entryid);
 	assert(msg != nullptr);
 	return EXIT_SUCCESS;

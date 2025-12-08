@@ -2046,7 +2046,7 @@ static inline unsigned int dfl_alarm_offset(bool allday)
 	return allday ? 1080 : 15;
 }
 
-static const char *oxcical_import_internal(const char *str_zone, const char *method,
+static const char *oxcical_import_internal(const char *method,
     bool b_proposal, uint16_t calendartype, const ical &pical,
     const event_list_t &pevent_list, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
@@ -2355,7 +2355,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			} catch (...) {
 				return "E-2727: ENOMEM";
 			}
-			mev_error = oxcical_import_internal(str_zone, method,
+			mev_error = oxcical_import_internal(method,
 			            false, calendartype, pical, tmp_list, alloc,
 			            get_propids, username_to_entryid, pembedded,
 			            &start_itime, &end_itime,
@@ -2463,7 +2463,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 	return nullptr;
 }
 
-static bool oxcical_import_events(const char *str_zone, uint16_t calendartype,
+static bool oxcical_import_events(uint16_t calendartype,
     const ical &pical, const uidxevent_list_t &uid_list, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
     std::vector<message_ptr> &msgvec)
@@ -2477,7 +2477,7 @@ static bool oxcical_import_events(const char *str_zone, uint16_t calendartype,
 		auto pembedded = msgvec.back().get();
 		if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment") != ecSuccess)
 			return false;
-		auto err = oxcical_import_internal(str_zone, "PUBLISH", false,
+		auto err = oxcical_import_internal("PUBLISH", false,
 		           calendartype, pical, event_list, alloc, get_propids,
 		           username_to_entryid, pembedded, nullptr, nullptr,
 		           nullptr, nullptr);
@@ -2699,7 +2699,7 @@ static uint32_t oxcical_get_calendartype(const ical_line *piline)
  * Read a bunch of VCALENDAR/VEVENT items from @pical and put each of them as
  * messages into @finalvec.
  */
-ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
+ec_error_t oxcical_import_multi(const ical &pical,
     EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
     USERNAME_TO_ENTRYID username_to_entryid, std::vector<message_ptr> &finalvec)
 {
@@ -2753,7 +2753,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 	}
 	piline = pical.get_line("METHOD");
 	if (piline == nullptr) {
-		if (!oxcical_import_events(str_zone, calendartype,
+		if (!oxcical_import_events(calendartype,
 		    pical, uid_list, alloc, get_propids,
 		    username_to_entryid, msgvec))
 			return ecError;
@@ -2765,8 +2765,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 	if (pvalue != nullptr) {
 		if (strcasecmp(pvalue, "PUBLISH") == 0) {
 			if (uid_list.size() > 1) {
-				if (!oxcical_import_events(str_zone,
-				    calendartype, pical,
+				if (!oxcical_import_events(calendartype, pical,
 				    uid_list, alloc, std::move(get_propids),
 				    username_to_entryid, msgvec))
 					return ecError;
@@ -2811,7 +2810,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 	auto ecr = pmsg->proplist.set(PR_MESSAGE_CLASS, mclass);
 	if (ecr != ecSuccess)
 		return ecr;
-	auto err = oxcical_import_internal(str_zone, pvalue, b_proposal,
+	auto err = oxcical_import_internal(pvalue, b_proposal,
 	           calendartype, pical, uid_list.begin()->second, alloc,
 	           std::move(get_propids), username_to_entryid, pmsg,
 	           nullptr, nullptr, nullptr, nullptr);
@@ -2831,12 +2830,11 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
  * item, the message_content object will be a blank IPM.Note with embedded
  * message attachments (IPM.Appointment).
  */
-message_ptr oxcical_import_single(const char *str_zone,
-    const ical &pical, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
+message_ptr oxcical_import_single(const ical &pical, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
     USERNAME_TO_ENTRYID username_to_entryid)
 {
 	std::vector<message_ptr> vec;
-	if (oxcical_import_multi(str_zone, pical, alloc, std::move(get_propids),
+	if (oxcical_import_multi(pical, alloc, std::move(get_propids),
 	    username_to_entryid, vec) != ecSuccess || vec.size() == 0)
 		return nullptr;
 	if (vec.size() == 1)
