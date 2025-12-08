@@ -133,7 +133,7 @@ static pack_result abkt_read_row(EXT_PULL &bin, Json::Value &jrow,
 			TRY(bin.g_str(&text));
 			auto cset = cpid_to_cset(cpid);
 			if (cset != nullptr) {
-				text = iconvtext(text.c_str(), text.size(), cset, "UTF-8");
+				text = iconvtext(text, cset, "UTF-8");
 				if (errno == ENOMEM)
 					return pack_result::alloc;
 				else if (errno != 0)
@@ -212,7 +212,7 @@ static pack_result abkt_write_row(Json::Value &jrow, EXT_PUSH &bin,
 	if (cpid != CP_ACP) {
 		auto cset = cpid_to_cset(cpid);
 		if (cset != nullptr) {
-			text = iconvtext(text.data(), text.size(), "UTF-8", cset);
+			text = iconvtext(text, "UTF-8", cset);
 			if (errno == ENOMEM)
 				return pack_result::alloc;
 			else if (errno != 0)

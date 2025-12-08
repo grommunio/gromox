@@ -182,8 +182,7 @@ std::string cu_cvt_str(std::string_view sv, cpid_t cpid, bool to_utf8) try
 	auto cset = cpid_to_cset(cpid);
 	if (cset == nullptr)
 		cset = "windows-1252";
-	return iconvtext(sv.data(), sv.size(), to_utf8 ? cset : "UTF-8",
-	       to_utf8 ? "UTF-8" : cset); /* sets errno */
+	return iconvtext(sv, to_utf8 ? cset : "UTF-8", to_utf8 ? "UTF-8" : cset); /* sets errno */
 } catch (const std::bad_alloc &) {
 	errno = ENOMEM;
 	return {};
@@ -2774,7 +2773,7 @@ static BOOL cu_update_object_cid(sqlite3 *psqlite, mapi_object_type table_type,
 static int subj_pfxlen(const char *s) try
 {
 	/* Note we do not recognize NFD/NKFD. Oh well. */
-	auto ustr  = iconvtext(s, strlen(s), "UTF-8", "wchar_t");
+	auto ustr = iconvtext(s, "UTF-8", "wchar_t");
 	if (errno != 0)
 		return -1;
 	auto units = ustr.size() / sizeof(wchar_t);

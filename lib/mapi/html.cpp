@@ -1133,7 +1133,7 @@ ec_error_t html_to_rtf(std::string_view inbuf, cpid_t cpid, std::string &out) tr
 	/* First, switch HTML to UTF-8 */
 	std::string inbuf_u8;
 	if (strcasecmp(cset, "utf-8") != 0) {
-		auto buffer = iconvtext(inbuf.data(), inbuf.size(), cset, "UTF-8");
+		auto buffer = iconvtext(inbuf, cset, "UTF-8");
 		if (errno == ENOMEM)
 			return ecMAPIOOM;
 		else if (errno == EINVAL)

@@ -85,7 +85,7 @@ enum {
 	ICONVTEXT_TRANSLIT = 0x1U,
 };
 
-extern GX_EXPORT std::string iconvtext(const char *, size_t, const char *from, const char *to, unsigned int flags = 0);
+extern GX_EXPORT std::string iconvtext(std::string_view, const char *from, const char *to, unsigned int flags = 0);
 extern GX_EXPORT pid_t popenfd(const char *const *, int *, int *, int *, const char *const *);
 extern GX_EXPORT int feed_w3m(std::string_view, const char *in_cset, std::string &out);
 extern GX_EXPORT std::vector<std::string> gx_split(const std::string_view &, char sep);

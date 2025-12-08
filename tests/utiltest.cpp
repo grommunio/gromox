@@ -82,19 +82,19 @@ static int t_convert()
 		return EXIT_FAILURE;
 
 	static constexpr char s1[] = "\x41\xe2\x98\x83\xef\xb8\x8f\x42";
-	auto sout = iconvtext(s1, strlen(s1), "utf-8", "iso-8859-1");
+	auto sout = iconvtext(s1, "utf-8", "iso-8859-1");
 	assert(strcmp(sout.c_str(), "AB") == 0);
-	sout = iconvtext(s1, strlen(s1), "utf-8", "iso-8859-1", ICONVTEXT_TRANSLIT);
+	sout = iconvtext(s1, "utf-8", "iso-8859-1", ICONVTEXT_TRANSLIT);
 	assert(strcmp(sout.c_str(), "A?B") == 0);
 
 	std::string s2(4095, 'A');
 	s2 += "\xe4";
-	sout = iconvtext(s2.c_str(), s2.size(), "iso-8859-1", "utf-8");
+	sout = iconvtext(s2, "iso-8859-1", "utf-8");
 	assert(sout.size() == 4097 && static_cast<unsigned char>(sout[4095]) == 0xC3 &&
 	       static_cast<unsigned char>(sout[4096]) == 0xA4U);
 
 	static constexpr char s3[] = "\x1B\x24\x42";
-	sout = iconvtext(s3, strlen(s3), "iso-2022-jp", "utf-8");
+	sout = iconvtext(s3, "iso-2022-jp", "utf-8");
 	assert(sout.size() == 0);
 	return EXIT_SUCCESS;
 }

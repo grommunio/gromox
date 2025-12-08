@@ -352,9 +352,9 @@ static bool tpropval_subject_handler(TPROPVAL_ARRAY *ar, const TAGGED_PROPVAL &p
 	return true;
 }
 
-static char *u16convert(const uint8_t *data, size_t inbytes)
+static char *u16convert(std::string_view sv)
 {
-	auto s = iconvtext(reinterpret_cast<const char *>(data), inbytes, "UTF-16LE", "UTF-8");
+	auto s = iconvtext(sv, "UTF-16LE", "UTF-8");
 	return strndup(s.c_str(), s.size());
 }
 
@@ -413,7 +413,7 @@ mv_decode_str(proptag_t proptag, const uint8_t *data, size_t dsize)
 		if (PROP_TYPE(proptag) == PT_MV_STRING8)
 			ba->ppstr[i] = strndup(reinterpret_cast<const char *>(&data[ofs]), next_ofs - ofs);
 		else
-			ba->ppstr[i] = u16convert(&data[ofs], next_ofs - ofs);
+			ba->ppstr[i] = u16convert({reinterpret_cast<const char *>(&data[ofs]), next_ofs - ofs});
 		if (ba->ppstr[i] == nullptr)
 			throw std::bad_alloc();
 	}
@@ -629,7 +629,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 				throw az_error("PF-1036", err);
 		} else if (vtype == PT_UNICODE) {
 			fprintf(stderr, "PF-1041: Garbage in string which cannot be represented in UTF-8\n");
-			auto s = iconvtext(reinterpret_cast<char *>(buf.get()), dsize,
+			auto s = iconvtext({reinterpret_cast<char *>(buf.get()), dsize},
 			         "UTF-16", "UTF-8");
 			if (errno != 0)
 				throw YError("PF-1140: "s + strerror(errno));
@@ -638,7 +638,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 			memcpy(buf.get(), s.data(), dsize);
 		} else if (vtype == PT_STRING8) {
 			fprintf(stderr, "PF-1041: Garbage in string which cannot be represented in UTF-8\n");
-			auto s = iconvtext(reinterpret_cast<char *>(buf.get()), dsize,
+			auto s = iconvtext({reinterpret_cast<char *>(buf.get()), dsize},
 			         g_ascii_charset, "UTF-8");
 			if (errno != 0)
 				throw YError("PF-1141: "s + strerror(errno));

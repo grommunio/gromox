@@ -66,8 +66,7 @@ static std::string cu_cvt_str(std::string_view sv, cpid_t cpid, bool to_utf8) tr
 		errno = EINVAL;
 		return {};
 	}
-	return iconvtext(sv.data(), sv.size(), to_utf8 ? cset : "UTF-8",
-	       to_utf8 ? "UTF-8" : cset);
+	return iconvtext(sv, to_utf8 ? cset : "UTF-8", to_utf8 ? "UTF-8" : cset);
 } catch (const std::bad_alloc &) {
 	errno = ENOMEM;
 	return {};

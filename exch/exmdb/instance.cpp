@@ -136,7 +136,7 @@ static BOOL sync_message_body_formats(instance_node *pinstance,
 					auto cset = cpid_to_cset(new_cpid);
 					if (cset == nullptr)
 						cset = "windows-1252";
-					newdoc = iconvtext(newdoc.data(), newdoc.size(), cset, "utf-8");
+					newdoc = iconvtext(newdoc, cset, "utf-8");
 					if (!set_plain(newdoc.c_str()))
 						return false;
 				}

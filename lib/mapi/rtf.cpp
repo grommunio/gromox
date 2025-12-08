@@ -3265,7 +3265,8 @@ ec_error_t rtf_to_html(std::string_view input, const char *charset,
 		buf_out.assign(reader.ext_push.m_cdata, reader.ext_push.m_offset);
 		return ecSuccess;
 	}
-	buf_out = iconvtext(reader.ext_push.m_cdata, reader.ext_push.m_offset, "UTF-8", tmp_buff, ICONVTEXT_TRANSLIT);
+	buf_out = iconvtext(std::string_view{reader.ext_push.m_cdata, reader.ext_push.m_offset},
+	          "UTF-8", tmp_buff, ICONVTEXT_TRANSLIT);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
