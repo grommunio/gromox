@@ -10,13 +10,19 @@
 #include <vmime/mailbox.hpp>
 #include <vmime/mailboxList.hpp>
 #include <vmime/message.hpp>
+#include <vmime/net/service.hpp>
 #include <vmime/net/transport.hpp>
-#include <vmime/security/cert/defaultCertificateVerifier.hpp>
+#include <vmime/security/cert/certificateVerifier.hpp>
 #include <vmime/utility/inputStreamStringAdapter.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapierr.hpp>
 #include <gromox/usercvt.hpp>
+#if defined(VMIME_HAVE_TLS_SUPPORT) && VMIME_HAVE_TLS_SUPPORT
+#	define WITH_TLS 1
+#else
+#	define WITH_TLS 0
+#endif
 
 namespace gromox {
 
@@ -76,11 +82,19 @@ static vmime::shared_ptr<vmime::net::transport> make_transport(const char *url)
 	vmime::utility::url vurl(url);
 	bool uv  = strncmp(url, "smtp+unverifiedtls:", 9) == 0;
 	bool tls = uv || strncmp(url, "smtp+tls:", 9) == 0;
-	if (tls)
+	if (tls) {
+#if WITH_TLS
 		vurl.setProtocol("smtp");
+		mlog(LV_ERR, "Unable to create vmime transport for \"%s\": "
+			"vmime/wmime was built without TLS", url);
+#else
+		return nullptr;
+#endif
+	}
 	auto xp = vmime::net::session::create()->getTransport(std::move(vurl));
 	if (!tls)
 		return xp;
+#if WITH_TLS
 	xp->setProperty("connection.tls", true);
 	if (!uv)
 		return xp;
@@ -90,6 +104,9 @@ static vmime::shared_ptr<vmime::net::transport> make_transport(const char *url)
 	};
 	xp->setCertificateVerifier(vmime::make_shared<uv_impl>());
 	return xp;
+#else
+	return nullptr;
+#endif
 }
 
 ec_error_t cu_send_mail(const MAIL &mail, const char *smtp_url, const char *sender,
