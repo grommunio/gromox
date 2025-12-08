@@ -216,7 +216,7 @@ static void read_col(libesedb_record_t *row, unsigned int x,
 			throw az_error("EE-1019", err);
 		if (dsize64 == 0)
 			return;
-		dsize = std::max(dsize64, static_cast<uint64_t>(UINT32_MAX));
+		dsize = std::min(dsize64, static_cast<uint64_t>(UINT32_MAX));
 		udata.resize(dsize);
 		if (libesedb_long_value_get_data(lv.get(),
 		    TOU8(udata.data()), dsize, &~unique_tie(err)) < 1)
