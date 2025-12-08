@@ -2326,15 +2326,15 @@ static const char *oxcical_import_internal(const char *method,
 		}
 
 		ATTACHMENT_LIST *pattachments = nullptr;
-		if (pevent_list.size() > 1) {
-			pattachments = attachment_list_init();
-			if (pattachments == nullptr)
-				return "E-2722: ENOMEM";
-			pmsg->set_attachments_internal(pattachments);
-		}
 		for (auto event : pevent_list) {
 			if (event == pmain_event)
 				continue;
+			if (pattachments == nullptr) {
+				pattachments = attachment_list_init();
+				if (pattachments == nullptr)
+					return "E-2722: ENOMEM";
+				pmsg->set_attachments_internal(pattachments);
+			}
 			auto pattachment = attachment_content_init();
 			if (pattachment == nullptr)
 				return "E-2723: ENOMEM";
