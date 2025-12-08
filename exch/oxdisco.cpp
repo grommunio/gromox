@@ -264,7 +264,8 @@ std::pair<unsigned int, std::string> OxdiscoPlugin::access_ok(int ctx_id,
 	    strncasecmp(target, public_folder_email, 19) == 0)
 		return {ok_code, {}};
 	unsigned int auth_user_id = 0, auth_domain_id = 0;
-	mysql_adaptor_get_user_ids(actor, &auth_user_id, &auth_domain_id, nullptr);
+	if (!mysql_adaptor_get_user_ids(actor, &auth_user_id, &auth_domain_id, nullptr))
+		return {server_error_code, server_error_msg};
 	std::vector<sql_user> hints;
 	auto err = mysql_adaptor_scndstore_hints(auth_user_id, hints);
 	if (err != 0) {
@@ -673,7 +674,8 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 			mlog(LV_ERR, "oxdisco: could not obtain PR_DISPLAY_NAME for \"%s\"", email);
 			return -1;
 		}
-		mysql_adaptor_get_user_ids(email, &user_id, &domain_id, nullptr);
+		if (!mysql_adaptor_get_user_ids(email, &user_id, &domain_id, nullptr))
+			return -1;
 		if (cvt_username_to_essdn(email, x500_org_name.c_str(),
 		    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
 		    essdn) != ecSuccess)
