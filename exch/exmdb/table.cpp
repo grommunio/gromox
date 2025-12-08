@@ -15,6 +15,7 @@
 #include <vector>
 #include <fmt/core.h>
 #include <libHX/scope.hpp>
+#include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/database.h>
@@ -1538,25 +1539,25 @@ static BOOL table_column_content_tmptbl(
 
 static void table_truncate_string(cpid_t cpid, char *pstring)
 {
-	size_t in_len;
-	size_t out_len;
-	int string_len;
 	iconv_t conv_id;
 	char *pin, *pout;
 	char tmp_buff[512];
 	char tmp_charset[256];
 	
 	cpid_cstr_compatible(cpid);
-	string_len = strlen(pstring);
+	auto string_len = strlen(pstring);
 	if (string_len <= 510)
 		return;
-	string_len ++;
 	pstring[510] = '\0';
+	/*
+	 * We might have cut off the value in the middle of a multibyte
+	 * sequence, which now needs fixup. To that end, iconv is employed,
+	 * which will stop at the first illegal/incomplete sequence.
+	 */
 	auto charset = cpid_to_cset(cpid);
 	if (charset == nullptr)
 		return;
-	in_len = string_len;
-	out_len = sizeof(tmp_buff);
+	size_t in_len = 510, out_len = std::min(string_len, std::size(tmp_buff));
 	pin = pstring;
 	pout = tmp_buff;
 	memset(tmp_buff, 0, sizeof(tmp_buff));
@@ -1564,10 +1565,11 @@ static void table_truncate_string(cpid_t cpid, char *pstring)
 	conv_id = iconv_open(tmp_charset, charset);
 	if (conv_id == (iconv_t)-1)
 		return;
-	iconv(conv_id, &pin, &in_len, &pout, &out_len);
+	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1))
+		/* ignore */;
 	iconv_close(conv_id);
 	if (out_len < sizeof(tmp_buff))
-		strcpy(pstring, tmp_buff);
+		gx_strlcpy(pstring, tmp_buff, string_len + 1);
 }
 
 const table_node *db_base::find_table(uint32_t table_id) const
