@@ -381,7 +381,8 @@ bool rtf_reader::riconv_open(const char *fromcode)
 			size_t converted = sizeof(out_buff) - out_size;
 			if (converted > 0) {
 				out_buff[converted] = '\0';
-				escape_output(out_buff);
+				if (!escape_output(out_buff))
+					return false;
 			}
 		}
 		iconv_push.m_offset = 0;
