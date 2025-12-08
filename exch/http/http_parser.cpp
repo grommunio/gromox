@@ -777,7 +777,7 @@ tproc_status http_parser::rdhead_mt(http_context *pcontext, char *line,
 	} else if (0 == strcasecmp(field_name, "Cookie")) {
 		auto &j = pcontext->request.f_cookie;
 		if (!j.empty())
-			j += ", ";
+			j += "; ";
 		j.append(ptoken, tmp_len);
 	} else if (g_http_remote_host_hdr.size() > 0 &&
 	    strcasecmp(field_name, g_http_remote_host_hdr.c_str()) == 0) {
