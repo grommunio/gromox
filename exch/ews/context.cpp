@@ -1919,7 +1919,7 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, std::string&
 		throw EWSError::ItemCorrupt(E3123);
 	auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
 	{*ids = getNamedPropIds(dir, *names, true); return TRUE;};
-	MCONT_PTR cnt(oxcmail_import("utf-8", &mail, EWSContext::alloc, getPropIds));
+	MCONT_PTR cnt(oxcmail_import(&mail, EWSContext::alloc, getPropIds));
 	if (!cnt)
 		throw EWSError::ItemCorrupt(E3124);
 	return cnt;

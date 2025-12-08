@@ -2173,13 +2173,7 @@ static int me_minst(int argc, char **argv, int sockd) try
 	unsigned int user_id = 0;
 	if (!mysql_adaptor_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
-	sql_meta_result mres;
-	auto mret = mysql_adaptor_meta(pidb->username.c_str(),
-	            WANTPRIV_METAONLY, mres);
-	auto charset = mret == 0 ? lang_to_charset(mres.lang.c_str()) : nullptr;
-	if (*znul(charset) == '\0')
-		charset = g_default_charset;
-	auto pmsgctnt = oxcmail_import(charset, &imail,
+	auto pmsgctnt = oxcmail_import(&imail,
 	                cu_alloc_bytes, cu_get_propids_create);
 	imail.clear();
 	pbuff.clear();
@@ -2246,12 +2240,9 @@ static int me_minst(int argc, char **argv, int sockd) try
 	if (newval == nullptr ||
 	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != ecSuccess)
 		return MIDB_E_NO_MEMORY;
-	auto cpid = cset_to_cpid(charset);
-	if (cpid == CP_ACP)
-		cpid = static_cast<cpid_t>(1252);
 	ec_error_t e_result = ecRpcFailed;
 	uint64_t outmid = 0, outcn = 0;
-	if (!exmdb_client->write_message(argv[1], cpid,
+	if (!exmdb_client->write_message(argv[1], CP_ACP,
 	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, djson.c_str(),
 	    &outmid, &outcn, &e_result) || e_result != ecSuccess)
 		return MIDB_E_MDB_WRITEMESSAGE;

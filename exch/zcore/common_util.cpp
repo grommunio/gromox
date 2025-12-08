@@ -1121,7 +1121,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 
 	imail.set_header("X-Mailer", ZCORE_UA);
 	if (zcore_backfill_transporthdr) {
-		std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import(nullptr,
+		std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import(
 			&imail, common_util_alloc, common_util_get_propids));
 		if (rmsg != nullptr) {
 			for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
@@ -1759,20 +1759,13 @@ static void zc_unwrap_clearsigned(MAIL &ma) try
 MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
     unsigned int mxf_flags, /* effective-moved-from */ BINARY *peml_bin)
 {
-	char charset[32];
-	auto pinfo = zs_get_info();
 	MAIL imail;
 	if (!imail.refonly_parse(peml_bin->pc, peml_bin->cb))
 		return NULL;
 	if (mxf_flags & MXF_UNWRAP_SMIME_CLEARSIGNED)
 		zc_unwrap_clearsigned(imail);
-	auto c = lang_to_charset(pinfo->get_lang());
-	if (c != nullptr && *c != '\0')
-		gx_strlcpy(charset, c, std::size(charset));
-	else
-		gx_strlcpy(charset, g_default_charset, std::size(charset));
 	common_util_set_dir(pstore->get_dir());
-	auto pmsgctnt = oxcmail_import(charset, &imail,
+	auto pmsgctnt = oxcmail_import(&imail,
 	                common_util_alloc, common_util_get_propids_create);
 	return pmsgctnt;
 }

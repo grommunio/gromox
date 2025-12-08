@@ -1469,7 +1469,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 
 	imail.set_header("X-Mailer", EMSMDB_UA);
 	if (emsmdb_backfill_transporthdr) {
-		std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import("utf-8",
+		std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import(
 			&imail, common_util_alloc, common_util_get_propids));
 		if (rmsg != nullptr) {
 			for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
