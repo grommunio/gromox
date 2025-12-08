@@ -50,7 +50,7 @@ static int direct_ldap(const char *uri, const char *bind_user,
     const char *bind_pass)
 {
 	std::unique_ptr<LDAP, ldapfree> ld;
-	auto ret = ldap_initialize(&unique_tie(ld), *znul(uri) == '\0' ? nullptr : uri);
+	auto ret = ldap_initialize(&unique_tie(ld), zhasval(uri) ? uri : nullptr);
 	if (ret != LDAP_SUCCESS) {
 		fprintf(stderr, "ldap_initialize failed: %s\n", ldap_err2string(ret));
 		return EXIT_FAILURE;

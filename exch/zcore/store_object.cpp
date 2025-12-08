@@ -771,7 +771,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		sql_meta_result mres;
 		auto tmzone = mysql_adaptor_meta(pstore->account, WANTPRIV_METAONLY, mres) == 0 ?
 		              mres.timezone.c_str() : nullptr;
-		if (*znul(tmzone) == '\0') {
+		if (znoval(tmzone)) {
 			*ppvalue = deconst(common_util_get_default_timezone());
 			return TRUE;
 		}

@@ -266,7 +266,7 @@ bool ldap_plugin::ldaplogin_dpool(const char *username, const char *password)
 
 bool ldap_plugin::login3(const char *user, const char *pass, const sql_meta_result &m)
 {
-	if (*znul(pass) == '\0')
+	if (znoval(pass))
 		return false;
 	bool pooling_enabled = g_conn_pool.capacity() > 0;
 	if (m.ldap_uri.empty() && pooling_enabled)

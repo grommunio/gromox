@@ -69,7 +69,7 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	    psqlite, PR_MESSAGE_SIZE, &pvalue))
 		return FALSE;
 	auto message_size = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
-	if (*znul(charset) == '\0') {
+	if (znoval(charset)) {
 		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
 		    PR_INTERNET_CPID, &pvalue))
 			return FALSE;

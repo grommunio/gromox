@@ -43,7 +43,7 @@ static bool bounce_producer_make_content(meta_t meta,
 	auto message_size = pbrief->proplist.get<const uint32_t>(PR_MESSAGE_SIZE);
 	if (message_size == nullptr)
 		return false;
-	if (*znul(charset) == '\0') {
+	if (znoval(charset)) {
 		auto cpid = pbrief->proplist.get<const uint32_t>(PR_INTERNET_CPID);
 		if (cpid != nullptr)
 			charset = cpid_to_cset(static_cast<cpid_t>(*cpid));
