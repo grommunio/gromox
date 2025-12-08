@@ -869,12 +869,13 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 }
 
 ec_error_t nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
-    STAT *pstat, const PROPERTY_VALUE *ptarget, const MID_ARRAY *ptable,
+    STAT *pstat, const PROPERTY_VALUE &target, const MID_ARRAY *ptable,
     const LPROPTAG_ARRAY *pproptags, NSP_ROWSET **pprows)
 {
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
-	if (g_nsp_trace >= 2 && ptarget != nullptr)
+	auto ptarget = &target;
+	if (g_nsp_trace >= 2)
 		fprintf(stderr, "seek_entries target={%xh,%s}\n",
 			ptarget->proptag, ptarget->repr().c_str());
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)

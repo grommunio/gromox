@@ -205,7 +205,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto out = std::make_unique<NSPISEEKENTRIES_OUT>();
 		out->stat = in->stat;
 		out->result = nsp_interface_seek_entries(in->handle,
-		              in->reserved, &out->stat, &in->target, in->ptable,
+		              in->reserved, &out->stat, in->target, in->ptable,
 		              in->pproptags, &out->prows);
 		*ecode = out->result;
 		ppout = std::move(out);
