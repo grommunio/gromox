@@ -184,7 +184,8 @@ enum {
 	ATTR_DBL_STRIKE, 
 	ATTR_EXPAND,
 	ATTR_UBYTES,
-	ATTR_HTMLTAG
+	ATTR_HTMLTAG,
+	ATTR_HIDDEN,
 };
 
 enum {
@@ -277,7 +278,7 @@ struct rtf_reader final {
 	cmd_sect, cmd_shad, cmd_soft_hyphen, cmd_strike, cmd_striked,
 	cmd_strikedl, cmd_sub, cmd_super, cmd_tab, cmd_u, cmd_uc, cmd_ul,
 	cmd_uld, cmd_uldash, cmd_uldashd, cmd_uldashdd, cmd_uldb, cmd_ulnone,
-	cmd_ulth, cmd_ulthd, cmd_ulthdash, cmd_ulw, cmd_ulwave, cmd_up,
+	cmd_ulth, cmd_ulthd, cmd_ulthdash, cmd_ulw, cmd_ulwave, cmd_up, cmd_v,
 	cmd_wbmbitspixel, cmd_wmetafile, cmd_zwbo, cmd_zwj, cmd_zwnbo, cmd_zwnj, flush_pending;
 
 	bool is_within_table = false, b_printed_row_begin = false;
@@ -456,6 +457,9 @@ bool rtf_reader::push_text_encoded(const char *string, size_t len)
 			return true;
 	}
 	if (len == 0)
+		return true;
+	/* suppress output for hidden text (\v) */
+	if (stack_list_find_attr(ATTR_HIDDEN) != nullptr)
 		return true;
 	if (iconv_push.p_bytes(string, len) != pack_result::ok)
 		return false;
@@ -2501,6 +2505,19 @@ int rtf_reader::cmd_up(SIMPLE_TREE_NODE *pword, int align,
 	return CMD_RESULT_CONTINUE;
 }
 
+int rtf_reader::cmd_v(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	if (have_param && num == 0) {
+		if (!astk_popx(ATTR_HIDDEN))
+			return CMD_RESULT_ERROR;
+	} else {
+		if (!astk_pushx(ATTR_HIDDEN, 0))
+			return CMD_RESULT_ERROR;
+	}
+	return CMD_RESULT_CONTINUE;
+}
+
 int rtf_reader::cmd_u(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
@@ -3404,6 +3421,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	 * The structure is: {\upr {ansi text} {\*\ud {unicode text}}}
 	 */
 	{"upr", &rtf_reader::cmd_continue},
+	{"v", &rtf_reader::cmd_v}, /* hidden text */
 	{"wbmbitspixel", &rtf_reader::cmd_wbmbitspixel},
 	{"wmetafile", &rtf_reader::cmd_wmetafile},
 	{"xe", &rtf_reader::cmd_continue},
