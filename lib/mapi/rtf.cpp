@@ -34,6 +34,7 @@
 #define MAX_CONTROL_LEN					32
 #define MAX_FINTNAME_LEN				64
 
+#define AUTO_COLOR -1
 #define DEFAULT_FONT_STR				"Times,TimesRoman,TimesNewRoman"
 
 #define FONTNIL_STR						"Times,TimesRoman,TimesNewRoman"
@@ -1766,6 +1767,7 @@ static void rtf_process_color_table(
 	int r;
 	int g;
 	int b;
+	bool has_color = false;
 	
 	r = 0;
 	g = 0;
@@ -1777,22 +1779,31 @@ static void rtf_process_color_table(
 			r = strtol(&pword->cdata[4], nullptr, 0);
 			while (r > 255)
 				r >>= 8;
+			has_color = true;
 		} else if (strncmp("\\green", pword->cdata, 6) == 0) {
 			g = strtol(&pword->cdata[6], nullptr, 0);
 			while (g > 255)
 				g >>= 8;
+			has_color = true;
 		} else if (strncmp("\\blue", pword->cdata, 5) == 0) {
 			b = strtol(&pword->cdata[5], nullptr, 0);
 			while (b > 255)
 				b >>= 8;
+			has_color = true;
 		} else if (strcmp(pword->cdata, ";") == 0) {
+			/*
+			 * If color definition is omitted (semicolon without
+			 * RGB values), it means "auto" color, inherited from
+			 * context. Use -1 as marker for auto color.
+			 */
 			preader->color_table[preader->total_colors++] =
-				(r << 16) | (g << 8) | b;
+				has_color ? ((r << 16) | (g << 8) | b) : AUTO_COLOR;
 			if (preader->total_colors >= MAX_COLORS)
 				return;
 			r = 0;
 			g = 0;
 			b = 0;
+			has_color = false;
 		}
 	} while ((pword = pword->get_sibling()) != nullptr);
 }
@@ -1808,6 +1819,8 @@ int rtf_reader::cmd_cf(SIMPLE_TREE_NODE *pword, int align,
 	auto preader = this;
 	if (!have_param || num < 0 || num >= preader->total_colors)
 		mlog(LV_DEBUG, "rtf: font color change to %xh is invalid", num);
+	else if (color_table[num] == AUTO_COLOR)
+		return CMD_RESULT_CONTINUE;
 	else if (!astk_pushx(ATTR_FOREGROUND, color_table[num]))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
@@ -1819,6 +1832,8 @@ int rtf_reader::cmd_cb(SIMPLE_TREE_NODE *pword, int align,
 	auto preader = this;
 	if (!have_param || num < 0 || num >= preader->total_colors)
 		mlog(LV_DEBUG, "rtf: font color change attempted is invalid");
+	else if (color_table[num] == AUTO_COLOR)
+		return CMD_RESULT_CONTINUE;
 	else if (!astk_pushx(ATTR_BACKGROUND, color_table[num]))
 			return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
@@ -2085,6 +2100,8 @@ int rtf_reader::cmd_highlight(SIMPLE_TREE_NODE *pword,
 	if (!have_param || num < 0 || num >= preader->total_colors)
 		mlog(LV_DEBUG, "rtf: font background "
 			"color change attempted is invalid");
+	else if (color_table[num] == AUTO_COLOR)
+		return CMD_RESULT_CONTINUE;
 	else if (!astk_pushx(ATTR_BACKGROUND, color_table[num]))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
