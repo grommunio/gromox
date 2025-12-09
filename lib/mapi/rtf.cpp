@@ -2376,6 +2376,11 @@ int rtf_reader::cmd_line(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	auto preader = this;
+	if (have_fromhtml) {
+		if (ext_push.p_bytes("\r\n") != pack_result::ok)
+			return CMD_RESULT_ERROR;
+		return CMD_RESULT_CONTINUE;
+	}
 	if (ext_push.p_bytes(TAG_LINE_BREAK) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	preader->total_chars_in_line ++;
