@@ -308,7 +308,7 @@ struct rtf_reader final {
 	int color_table[MAX_COLORS]{}, total_colors = 0;
 	int total_chars_in_line = 0;
 	std::string default_encoding = "windows-1252", current_encoding, html_charset;
-	int default_font_number = 0;
+	int default_font_number = -1; /* -1 means no explicit default, 0+ is valid font number */
 	std::unordered_map<int, FONTENTRY> pfont_hash;
 	std::vector<attrstack_node> attr_stack_list;
 	EXT_PULL ext_pull{};
@@ -1652,9 +1652,10 @@ bool rtf_reader::build_font_table(SIMPLE_TREE_NODE *pword)
 	} while ((pword = pword->get_sibling()) != nullptr);
 	if (default_encoding.empty())
 		default_encoding = "windows-1252";
-	if (!preader->have_ansicpg) {
-		auto pentry = lookup_font(default_font_number);
-		default_encoding = pentry != nullptr ? pentry->encoding.c_str() : "windows-1252";
+	if (!have_ansicpg && default_font_number >= 0) {
+		auto entry = lookup_font(default_font_number);
+		if (entry != nullptr && !entry->encoding.empty())
+			default_encoding = entry->encoding;
 	}
 	return true;
 }
@@ -2180,8 +2181,8 @@ int rtf_reader::cmd_plain(SIMPLE_TREE_NODE *pword,
 	 */
 	if (!astk_popx_all())
 		return CMD_RESULT_ERROR;
-	/* Reset to default font (if defined) */
-	if (default_font_number != 0 && !astk_pushx(ATTR_FONTFACE, default_font_number))
+	/* Reset to default font (if defined via \deff) */
+	if (default_font_number >= 0 && !astk_pushx(ATTR_FONTFACE, default_font_number))
 		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
