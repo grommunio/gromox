@@ -15,6 +15,7 @@ enum plugin_op {
 	PLUGIN_RELOAD,
 	PLUGIN_EARLY_INIT,
 	PLUGIN_REPORT,
+	PLUGIN_QUENCH_ASYNC, /* stop async operations */
 };
 
 /* enumeration for the return value of xxx_load_library */

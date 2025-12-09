@@ -260,8 +260,6 @@ void asyncemsmdb_interface_wakeup(std::string &&tag, uint16_t cxr) try
 
 static void *aemsi_thrwork(void *param)
 {
-	std::mutex g_cond_mutex;
-
 	while (true) {
 		std::shared_ptr<ASYNC_WAIT> pnode;
 		{
@@ -273,7 +271,7 @@ static void *aemsi_thrwork(void *param)
 				break;
 			if (g_wakeup_list.empty())
 				continue;
-			pnode = g_wakeup_list.front();
+			pnode = std::move(g_wakeup_list.front());
 			g_wakeup_list.erase(g_wakeup_list.begin());
 		}
 		asyncemsmdb_interface_activate(std::move(pnode), TRUE);

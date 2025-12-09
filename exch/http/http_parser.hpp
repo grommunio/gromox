@@ -137,7 +137,6 @@ extern SCHEDULE_CONTEXT **http_parser_get_contexts_list();
 int http_parser_threads_event_proc(int action);
 extern bool http_parser_get_password(const char *username, char *password);
 extern HTTP_CONTEXT *http_parser_get_context();
-extern void http_parser_shutdown_async();
 void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall);
 extern void http_report();

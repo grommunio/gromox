@@ -244,6 +244,10 @@ BOOL PROC_exchange_emsmdb(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 		return TRUE;
 	}
+	case PLUGIN_QUENCH_ASYNC:
+		asyncemsmdb_interface_stop();
+		emsmdb_interface_stop();
+		return TRUE;
 	case PLUGIN_FREE:
 		asyncemsmdb_interface_stop();
 		emsmdb_interface_stop();

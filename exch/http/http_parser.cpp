@@ -341,6 +341,7 @@ int http_parser::run()
 
 void http_parser_stop()
 {
+	g_parser->g_async_stop = true;
 	g_parser.reset();
 }
 
@@ -2224,14 +2225,10 @@ tproc_status http_parser_process(schedule_context *vcontext)
 	return g_parser->http_end(pcontext);
 }
 
-void http_parser_shutdown_async()
-{
-	g_parser->g_async_stop = true;
-}
-
 void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall)
 {
+	/* called from aemsi_thrwork */
 	g_parser->vconnection_async_reply(host, port, connection_cookie, pcall);
 }
 

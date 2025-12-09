@@ -418,7 +418,10 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	/* accept the connection */
+	/*
+	 * The listening socket comes last. The htls_thrwork function
+	 * needs an initialized contexts_pool object.
+	 */
 	if (listener_trigger_accept() != 0) {
 		mlog(LV_ERR, "system: failed listening socket setup");
 		return EXIT_FAILURE;
@@ -443,11 +446,13 @@ int main(int argc, char **argv)
 			pdu_processor_trigger(PLUGIN_REPORT);
 		}
 	}
+	service_trigger_all(PLUGIN_QUENCH_ASYNC);
+	pdu_processor_trigger(PLUGIN_QUENCH_ASYNC);
+	pdu_processor_trigger(PLUGIN_QUENCH_ASYNC);
 	return retcode;
 }
 
 static void term_handler(int signo)
 {
-	http_parser_shutdown_async();
 	g_httpmain_stop = true;
 }
