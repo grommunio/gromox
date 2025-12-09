@@ -13,7 +13,7 @@ EID_ARRAY* eid_array_init()
 		return NULL;
 	parray->count = 0;
 	auto count = strange_roundup(parray->count, SR_GROW_EID_ARRAY);
-	parray->pids = me_alloc<uint64_t>(count);
+	parray->pids = me_alloc<eid_t>(count);
 	if (NULL == parray->pids) {
 		free(parray);
 		return NULL;
@@ -30,12 +30,12 @@ void eid_array_free(EID_ARRAY *parray)
 	free(parray);
 }
 
-bool eid_array_append(EID_ARRAY *parray, uint64_t id)
+bool eid_array_append(EID_ARRAY *parray, eid_t id)
 {
 	auto count = strange_roundup(parray->count, SR_GROW_EID_ARRAY);
 	if (parray->count + 1 >= count) {
 		count += SR_GROW_EID_ARRAY;
-		auto pids = re_alloc<uint64_t>(parray->pids, count);
+		auto pids = re_alloc<eid_t>(parray->pids, count);
 		if (pids == nullptr)
 			return false;
 		parray->pids = pids;
@@ -44,19 +44,19 @@ bool eid_array_append(EID_ARRAY *parray, uint64_t id)
 	return true;
 }
 
-bool eid_array_batch_append(EID_ARRAY *parray, uint32_t id_count, uint64_t *pids)
+bool eid_array_batch_append(EID_ARRAY *parray, uint32_t id_count, eid_t *pids)
 {
 	if (id_count == 0)
 		return true;
 	auto count = strange_roundup(parray->count, SR_GROW_EID_ARRAY);
 	if (parray->count + id_count >= count) {
 		count = strange_roundup(parray->count + id_count, SR_GROW_EID_ARRAY);
-		auto ptmp_ids = re_alloc<uint64_t>(parray->pids, count);
+		auto ptmp_ids = re_alloc<eid_t>(parray->pids, count);
 		if (ptmp_ids == nullptr)
 			return false;
 		parray->pids = ptmp_ids;
 	}
-	memcpy(parray->pids + parray->count, pids, id_count*sizeof(uint64_t));
+	memcpy(&parray->pids[parray->count], pids, id_count * sizeof(eid_t));
 	parray->count += id_count;
 	return true;
 }
@@ -68,18 +68,18 @@ EID_ARRAY* eid_array_dup(const EID_ARRAY *parray)
 		return NULL;
 	parray1->count = parray->count;
 	auto count = strange_roundup(parray->count, SR_GROW_EID_ARRAY);
-	parray1->pids = me_alloc<uint64_t>(count);
+	parray1->pids = me_alloc<eid_t>(count);
 	if (NULL == parray1->pids) {
 		free(parray1);
 		return NULL;
 	}
 	assert(parray->pids != nullptr || parray->count == 0);
 	if (parray->pids != nullptr)
-		memcpy(parray1->pids, parray->pids, parray->count * sizeof(uint64_t));
+		memcpy(parray1->pids, parray->pids, parray->count * sizeof(eid_t));
 	return parray1;
 }
 
-bool eid_array_check(const EID_ARRAY *parray, uint64_t eid)
+bool eid_array_check(const EID_ARRAY *parray, eid_t eid)
 {
 	for (auto elem : *parray)
 		if (eid == elem)
@@ -87,14 +87,14 @@ bool eid_array_check(const EID_ARRAY *parray, uint64_t eid)
 	return false;
 }
 
-void eid_array_remove(EID_ARRAY *parray, uint64_t eid)
+void eid_array_remove(EID_ARRAY *parray, eid_t eid)
 {
 	for (size_t i = 0; i < parray->count; ) {
 		if (parray->pids[i] == eid) {
 			parray->count --;
 			if (i != parray->count)
 				memmove(parray->pids + i, parray->pids + i + 1,
-						sizeof(uint64_t)*(parray->count - i));
+					sizeof(eid_t) * (parray->count - i));
 			continue;
 		}
 		i ++;

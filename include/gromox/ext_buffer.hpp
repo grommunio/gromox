@@ -305,7 +305,7 @@ struct GX_EXPORT EXT_PUSH {
 	pack_result p_abk_eid(const EMSAB_ENTRYID_view &);
 	pack_result p_oneoff_eid(const ONEOFF_ENTRYID_view &);
 	pack_result p_persistdata_a(std::span<const PERSISTDATA>);
-	pack_result p_eid_a(std::span<const uint64_t>);
+	pack_result p_eid_a(std::span<const eid_t>, uint8_t ix = 4);
 	pack_result p_systime(const SYSTEMTIME &);
 	pack_result p_tzstruct(const TZSTRUCT &);
 	pack_result p_tzdef(const TZDEF &);

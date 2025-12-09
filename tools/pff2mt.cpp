@@ -573,10 +573,6 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 	union {
 		BINARY bin;
 		GUID guid;
-		struct {
-			BINARY svbin;
-			SVREID svreid;
-		};
 		SHORT_ARRAY sa;
 		LONG_ARRAY la;
 		LONGLONG_ARRAY lla;
@@ -584,6 +580,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 		DOUBLE_ARRAY da;
 		GUID_ARRAY ga;
 	} u;
+	SVREID svreid;
 	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> uextra;
 	TAGGED_PROPVAL pv;
 	pv.proptag = PROP_TAG(vtype, etype);
@@ -665,13 +662,13 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent,
 		pv.pvalue = &u.guid;
 		break;
 	case PT_SVREID:
-		pv.pvalue = &u.svreid;
-		u.svbin.cb = dsize;
-		u.svbin.pv = buf.get();
-		u.svreid.pbin = &u.svbin;
-		u.svreid.folder_id = 0;
-		u.svreid.message_id = 0;
-		u.svreid.instance = 0;
+		u.bin.cb = dsize;
+		u.bin.pv = buf.get();
+		svreid.pbin = &u.bin;
+		svreid.folder_id = eid_t{};
+		svreid.message_id = eid_t{};
+		svreid.instance = 0;
+		pv.pvalue = &svreid;
 		break;
 	case PT_MV_SHORT:
 		u.sa.count = dsize / sizeof(uint16_t);

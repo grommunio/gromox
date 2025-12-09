@@ -26,7 +26,7 @@ struct message_object {
 	ec_error_t check_original_touched() const;
 	bool importing() const { return message_id != 0 && pstate != nullptr; }
 	gromox::errno_t init_message(bool fai, cpid_t);
-	uint64_t get_id() const { return message_id; }
+	eid_t get_id() const { return message_id; }
 	cpid_t get_cpid() const { return cpid; }
 	uint32_t get_tag_access() const { return tag_access; }
 	uint8_t get_open_flags() const { return open_flags; }
@@ -58,7 +58,8 @@ struct message_object {
 
 	logon_object *plogon = nullptr;
 	BOOL b_new = false, b_touched = false;
-	uint64_t change_num = 0, message_id = 0, folder_id = 0;
+	uint64_t change_num = 0;
+	eid_t message_id{}, folder_id{};
 	cpid_t cpid = CP_ACP;
 	uint32_t instance_id = 0;
 	uint32_t tag_access = 0;

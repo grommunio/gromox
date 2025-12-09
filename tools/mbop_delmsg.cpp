@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 	}
 	if (rop_util_get_gc_value(g_folderid) == 0)
 		return help();
-	std::vector<uint64_t> eids;
+	std::vector<eid_t> eids;
 	for (int uidx = 0; uidx < result.nargs; ++uidx) {
 		eid_t eid = gi_lookup_eid_by_name(g_storedir, result.uarg[uidx]);
 		if (eid == 0) {

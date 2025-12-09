@@ -96,9 +96,7 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
 extern BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin, unsigned int etyp = DT_MAILUSER);
-BOOL common_util_exmdb_locinfo_from_string(
-	const char *loc_string, uint8_t *ptype,
-	int *pdb_id, uint64_t *peid);
+extern bool common_util_exmdb_locinfo_from_string(const char *loc_string, uint8_t *ptype, int *pdb_id, eid_t *);
 extern BOOL common_util_build_environment();
 extern void common_util_free_environment();
 void* common_util_alloc(size_t size);
@@ -117,8 +115,8 @@ extern int common_util_get_clifd();
 extern char *common_util_dup(std::string_view);
 extern bool cu_parse_abkeid(BINARY, uint32_t *type, std::string &essdn);
 uint16_t common_util_get_messaging_entryid_type(BINARY bin);
-extern BOOL cu_entryid_to_fid(BINARY bin, BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id);
-extern BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id, uint64_t *pmessage_id);
+extern bool cu_entryid_to_fid(BINARY bin, BOOL *pb_private, int *pdb_id, eid_t *folder_id);
+extern bool cu_entryid_to_mid(BINARY bin, BOOL *pb_private, int *pdb_id, eid_t *folder_id, eid_t *msg_id);
 extern BINARY *cu_to_store_entryid(const store_object &);
 extern std::string cu_to_store_entryid_s(const store_object &);
 extern BINARY *cu_fid_to_entryid(const store_object &, uint64_t folder_id);

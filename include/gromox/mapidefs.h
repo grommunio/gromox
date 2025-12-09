@@ -1190,10 +1190,9 @@ struct GX_EXPORT STRING_ARRAY {
 };
 
 struct GX_EXPORT SVREID {
-	BINARY *pbin;
-	uint64_t folder_id;
-	uint64_t message_id;
-	uint32_t instance;
+	BINARY *pbin = nullptr;
+	eid_t folder_id{}, message_id{};
+	uint32_t instance = 0;
 
 	std::strong_ordering operator<=>(const SVREID &) const;
 	inline bool operator==(const SVREID &o) const { return (*this <=> o) == 0; }

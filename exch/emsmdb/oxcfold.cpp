@@ -748,7 +748,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		return ecSuccess;
 	}
 	b_partial = FALSE;
-	EID_ARRAY ids = {0, cu_alloc<uint64_t>(pmessage_ids->count)};
+	EID_ARRAY ids = {0, cu_alloc<eid_t>(pmessage_ids->count)};
 	if (ids.pids == nullptr)
 		return ecError;
 	for (const auto msgid : *pmessage_ids) {

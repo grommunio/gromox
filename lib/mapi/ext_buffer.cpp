@@ -804,8 +804,8 @@ pack_result EXT_PULL::g_svreid(SVREID *r)
 	TRY(g_uint16(&length));
 	TRY(g_uint8(&ours));
 	if (!ours) {
-		r->folder_id = 0;
-		r->message_id = 0;
+		r->folder_id = eid_t(0);
+		r->message_id = eid_t(0);
 		r->instance = 0;
 		r->pbin = anew<BINARY>();
 		if (r->pbin == nullptr)
@@ -821,8 +821,8 @@ pack_result EXT_PULL::g_svreid(SVREID *r)
 	if (length != 21)
 		return pack_result::format;
 	r->pbin = NULL;
-	TRY(g_uint64(&r->folder_id));
-	TRY(g_uint64(&r->message_id));
+	TRY(g_uint64(&r->folder_id.m_value));
+	TRY(g_uint64(&r->message_id.m_value));
 	return g_uint32(&r->instance);
 }
 
@@ -911,8 +911,8 @@ static pack_result ext_buffer_pull_zreply_action(EXT_PULL *e, ZREPLY_ACTION *r)
 
 static pack_result ext_buffer_pull_reply_action(EXT_PULL *pext, REPLY_ACTION *r)
 {
-	TRY(pext->g_uint64(&r->template_folder_id));
-	TRY(pext->g_uint64(&r->template_message_id));
+	TRY(pext->g_uint64(&r->template_folder_id.m_value));
+	TRY(pext->g_uint64(&r->template_message_id.m_value));
 	return pext->g_guid(&r->template_guid);
 }
 
@@ -1780,13 +1780,13 @@ pack_result EXT_PULL::g_eid_a(EID_ARRAY *r, uint8_t ix)
 		r->pids = NULL;
 		return pack_result::ok;
 	}
-	r->pids = anew<uint64_t>(r->count);
+	r->pids = anew<eid_t>(r->count);
 	if (r->pids == nullptr) {
 		r->count = 0;
 		return pack_result::alloc;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(g_uint64(&r->pids[i]));
+		TRY(g_uint64(&r->pids[i].m_value));
 	return pack_result::ok;
 }
 

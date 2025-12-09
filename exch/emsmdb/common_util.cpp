@@ -1404,7 +1404,7 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
 ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
     const char *ev_from) try
 {
-	uint64_t message_id = msg->get_id();
+	auto message_id = msg->get_id();
 	MAIL imail;
 	void *pvalue;
 	BOOL b_result;

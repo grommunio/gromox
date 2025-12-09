@@ -407,12 +407,18 @@ pack_result EXT_PUSH::p_problem_a(std::span<const PROPERTY_PROBLEM> r)
 	return pack_result::ok;
 }
 
-pack_result EXT_PUSH::p_eid_a(std::span<const uint64_t> r)
+pack_result EXT_PUSH::p_eid_a(std::span<const eid_t> r, uint8_t ix)
 {
-	if (r.size() > UINT32_MAX)
-		return pack_result::format;
-	TRY(p_uint32(r.size()));
+	if (ix == 2) {
+		if (r.size() > UINT16_MAX)
+			return pack_result::format;
+		TRY(p_uint16(r.size()));
+	} else if (ix == 4) {
+		if (r.size() > UINT32_MAX)
+			return pack_result::format;
+		TRY(p_uint32(r.size()));
+	}
 	for (auto eid : r)
-		TRY(p_uint64(eid));
+		TRY(p_uint64(eid.m_value));
 	return pack_result::ok;
 }

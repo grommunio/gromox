@@ -52,7 +52,7 @@ std::unique_ptr<message_object> message_object::create(store_object *pstore,
 	pmessage->pstore = pstore;
 	pmessage->b_new = b_new;
 	pmessage->cpid = cpid;
-	pmessage->message_id = message_id;
+	pmessage->message_id = eid_t{message_id};
 	pmessage->tag_access = tag_access;
 	pmessage->b_writable = b_writable;
 	pmessage->pstate = std::move(pstate);
@@ -68,7 +68,7 @@ std::unique_ptr<message_object> message_object::create(store_object *pstore,
 		if (!b_new && pmessage->instance_id == 0)
 			return pmessage;
 	} else {
-		pmessage->folder_id = *static_cast<uint64_t *>(pparent);
+		pmessage->folder_id = *static_cast<eid_t *>(pparent);
 		if (pmessage->pstore->b_private) {
 			if (!exmdb_client->load_message_instance(pstore->get_dir(),
 			    nullptr, cpid, b_new, pmessage->folder_id, message_id,

@@ -2265,7 +2265,7 @@ static int me_mdele(int argc, char **argv, int sockd)
 	EID_ARRAY message_ids;
 
 	message_ids.count = 0;
-	message_ids.pids = cu_alloc<uint64_t>(argc - 3);
+	message_ids.pids = cu_alloc<eid_t>(argc - 3);
 	if (message_ids.pids == nullptr)
 		return MIDB_E_NO_MEMORY;
 	auto pidb = me_get_idb(argv[1]);

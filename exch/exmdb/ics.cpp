@@ -344,8 +344,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	pchg_mids->count = 0;
 	pupdated_mids->count = 0;
 	if (count > 0) {
-		pupdated_mids->pids = cu_alloc<uint64_t>(count);
-		pchg_mids->pids = cu_alloc<uint64_t>(count);
+		pupdated_mids->pids = cu_alloc<eid_t>(count);
+		pchg_mids->pids = cu_alloc<eid_t>(count);
 		if (pupdated_mids->pids == nullptr || pchg_mids->pids == nullptr)
 			return FALSE;
 	} else {
@@ -405,7 +405,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	enum_param.stm_msg.finalize();
 	pdeleted_mids->count = enum_param.pdeleted_eids->count;
 	if (0 != enum_param.pdeleted_eids->count) {
-		pdeleted_mids->pids = cu_alloc<uint64_t>(pdeleted_mids->count);
+		pdeleted_mids->pids = cu_alloc<eid_t>(pdeleted_mids->count);
 		if (NULL == pdeleted_mids->pids) {
 			pdeleted_mids->count = 0;
 			return FALSE;
@@ -418,7 +418,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	}
 	pnolonger_mids->count = enum_param.pnolonger_mids->count;
 	if (0 != enum_param.pnolonger_mids->count) {
-		pnolonger_mids->pids = cu_alloc<uint64_t>(pnolonger_mids->count);
+		pnolonger_mids->pids = cu_alloc<eid_t>(pnolonger_mids->count);
 		if (NULL == pnolonger_mids->pids) {
 			pnolonger_mids->count = 0;
 			return FALSE;
@@ -447,7 +447,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (count <= 0) {
 		pgiven_mids->pids = NULL;
 	} else {
-		pgiven_mids->pids = cu_alloc<uint64_t>(count);
+		pgiven_mids->pids = cu_alloc<eid_t>(count);
 		if (pgiven_mids->pids == nullptr)
 			return FALSE;
 		auto stm_select_ex = gx_sql_prep(psqlite, "SELECT message_id"
@@ -475,10 +475,10 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			pread_mids->pids = NULL;
 			punread_mids->pids = NULL;
 		} else {
-			pread_mids->pids = cu_alloc<uint64_t>(count);
+			pread_mids->pids = cu_alloc<eid_t>(count);
 			if (pread_mids->pids == nullptr)
 				return FALSE;
-			punread_mids->pids = cu_alloc<uint64_t>(count);
+			punread_mids->pids = cu_alloc<eid_t>(count);
 			if (punread_mids->pids == nullptr)
 				return FALSE;
 			stm_select_rd = gx_sql_prep(psqlite,
@@ -741,7 +741,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	if (count <= 0) {
 		pgiven_fids->pids = NULL;
 	} else {
-		pgiven_fids->pids = cu_alloc<uint64_t>(count);
+		pgiven_fids->pids = cu_alloc<eid_t>(count);
 		if (pgiven_fids->pids == nullptr)
 			return FALSE;
 		auto stm_select_ex = gx_sql_prep(psqlite, "SELECT folder_id"
@@ -778,7 +778,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 			return FALSE;	
 
 	pdeleted_fids->count = enum_param.pdeleted_eids->count;
-	pdeleted_fids->pids = cu_alloc<uint64_t>(pdeleted_fids->count);
+	pdeleted_fids->pids = cu_alloc<eid_t>(pdeleted_fids->count);
 	if (NULL == pdeleted_fids->pids) {
 		pdeleted_fids->count = 0;
 		return FALSE;

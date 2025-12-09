@@ -361,7 +361,7 @@ static pack_result rop_ext_push(EXT_PUSH &x, const GETSEARCHCRITERIA_RESPONSE &r
 		x.m_offset = offset2;
 	}
 	TRY(x.p_uint8(r.logon_id));
-	TRY(x.p_uint64_sa(r.folder_ids));
+	TRY(x.p_eid_a(r.folder_ids, 2));
 	return x.p_uint32(r.search_status);
 }
 

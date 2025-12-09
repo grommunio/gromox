@@ -647,7 +647,7 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 		}
 		exmdb_client->unload_table(plogon->dir, table_id);
 		if (result_set.count > 0) {
-			alt_msgs.pids = cu_alloc<uint64_t>(result_set.count);
+			alt_msgs.pids = cu_alloc<eid_t>(result_set.count);
 			if (alt_msgs.pids == nullptr)
 				return ecServerOOM;
 			for (const auto &row : result_set)

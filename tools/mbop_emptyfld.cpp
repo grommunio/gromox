@@ -32,7 +32,7 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static int generic_del(eid_t fid, const std::vector<uint64_t> &chosen)
+static int generic_del(eid_t fid, const std::vector<eid_t> &chosen)
 {
 	BOOL partial_complete = false;
 	EID_ARRAY ea;
@@ -47,7 +47,7 @@ static int generic_del(eid_t fid, const std::vector<uint64_t> &chosen)
 }
 
 static int select_mids_by_time(eid_t fid, unsigned int tbl_flags,
-    std::vector<uint64_t> &chosen)
+    std::vector<eid_t> &chosen)
 {
 	uint32_t table_id = 0, row_count = 0;
 	static constexpr RESTRICTION_EXIST rst_a = {PR_LAST_MODIFICATION_TIME};
@@ -80,7 +80,7 @@ static int select_mids_by_time(eid_t fid, unsigned int tbl_flags,
 
 static int do_contents(eid_t fid, unsigned int tbl_flags)
 {
-	std::vector<uint64_t> chosen;
+	std::vector<eid_t> chosen;
 	auto ret = select_mids_by_time(fid, tbl_flags, chosen);
 	if (ret != EXIT_SUCCESS)
 		return ret;

@@ -136,7 +136,7 @@ struct message_object {
 	bool importing() const { return message_id != 0 && pstate != nullptr; }
 	bool writable() const { return b_writable; }
 	gromox::errno_t init_message(bool fai, cpid_t);
-	uint64_t get_id() const { return message_id; }
+	eid_t get_id() const { return message_id; }
 	store_object *get_store() const { return pstore; }
 	ec_error_t save();
 	BOOL reload();
@@ -161,7 +161,8 @@ struct message_object {
 
 	store_object *pstore = nullptr;
 	BOOL b_new = false, b_writable = false, b_touched = false;
-	uint64_t change_num = 0, message_id = 0, folder_id = 0;
+	uint64_t change_num = 0;
+	eid_t message_id{}, folder_id{};
 	cpid_t cpid = CP_ACP;
 	uint32_t instance_id = 0, tag_access = 0;
 	attachment_object *pembedding = nullptr;

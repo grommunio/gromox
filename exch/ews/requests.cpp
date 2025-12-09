@@ -761,8 +761,8 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 
 			data.ResponseMessages.emplace_back().success();
 		} else {
-			uint64_t eid = meid.messageId();
-			uint64_t fid = rop_util_make_eid_ex(1, meid.folderId());
+			auto eid = meid.messageId();
+			auto fid = rop_util_make_eid_ex(1, meid.folderId());
 			EID_ARRAY eids{1, &eid};
 			BOOL hardDelete = request.DeleteType == Enum::HardDelete ? TRUE : false;
 			BOOL partial;

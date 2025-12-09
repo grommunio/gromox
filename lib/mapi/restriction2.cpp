@@ -86,7 +86,7 @@ std::string SVREID::repr(bool verbose) const
 {
 	if (pbin == nullptr)
 		return fmt::format("fid=0x{:x},mid=0x{:x},ins=0x{:x}",
-		       folder_id, message_id, instance);
+		       folder_id.m_value, message_id.m_value, instance);
 	else if (verbose)
 		return bin2hex(pbin->pv, pbin->cb);
 	return fmt::format("[{} bytes]", pbin->cb);

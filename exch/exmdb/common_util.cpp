@@ -4120,7 +4120,7 @@ static SVREID *cu_get_msg_parent_svreid(sqlite3 *psqlite, uint64_t message_id)
 		return NULL;
 	s->pbin = nullptr;
 	s->folder_id = rop_util_make_eid_ex(1, folder_id);
-	s->message_id = 0;
+	s->message_id = eid_t(0);
 	s->instance = 0;
 	return s;
 }

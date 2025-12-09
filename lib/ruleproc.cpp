@@ -750,7 +750,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	/* Copy done, delete original message object */
 	EID_ARRAY del_mids{};
 	del_mids.count = 1;
-	del_mids.pids = reinterpret_cast<uint64_t *>(&par.cur.mid);
+	del_mids.pids  = &par.cur.mid;
 	BOOL partial = false;
 	if (!exmdb_client->delete_messages(par.cur.dirc(), CP_UTF8, nullptr,
 	    par.cur.fid, &del_mids, true, &partial))
@@ -1316,7 +1316,7 @@ ec_error_t rxparam::run()
 			break;
 	}
 	if (del) {
-		const EID_ARRAY ids = {1, reinterpret_cast<uint64_t *>(&cur.mid)};
+		const EID_ARRAY ids = {1, &cur.mid};
 		BOOL partial;
 		if (!exmdb_client->delete_messages(cur.dirc(), CP_ACP, nullptr,
 		    cur.fid, &ids, true/*hard*/, &partial))

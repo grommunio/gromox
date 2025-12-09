@@ -453,9 +453,9 @@ static errno_t clear_rwz()
 	if (!exmdb_client->query_table(g_storedir, nullptr, CP_ACP, table_id,
 	    &qtags, 0, rowcount, &rowset))
 		return EIO;
-	std::vector<uint64_t> ids;
+	std::vector<eid_t> ids;
 	for (unsigned int i = 0; i < rowset.count; ++i) {
-		auto mid = rowset.pparray[i]->get<const uint64_t>(PidTagMid);
+		auto mid = rowset.pparray[i]->get<const eid_t>(PidTagMid);
 		if (mid != nullptr)
 			ids.push_back(*mid);
 	}

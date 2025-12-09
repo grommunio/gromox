@@ -288,9 +288,8 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 	return TRUE;	
 }
 
-BOOL common_util_exmdb_locinfo_from_string(
-	const char *loc_string, uint8_t *ptype,
-	int *pdb_id, uint64_t *peid)
+bool common_util_exmdb_locinfo_from_string(const char *loc_string,
+    uint8_t *ptype, int *pdb_id, eid_t *peid)
 {
 	int tmp_len;
 	uint64_t tmp_val;
@@ -533,8 +532,7 @@ uint16_t common_util_get_messaging_entryid_type(BINARY bin)
 	return folder_type;
 }
 
-BOOL cu_entryid_to_fid(BINARY bin,
-	BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id)
+bool cu_entryid_to_fid(BINARY bin, BOOL *pb_private, int *pdb_id, eid_t *pfolder_id)
 {
 	uint16_t replid;
 	EXT_PULL ext_pull;
@@ -573,8 +571,8 @@ BOOL cu_entryid_to_fid(BINARY bin,
 	}
 }
 
-BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
-	int *pdb_id, uint64_t *pfolder_id, uint64_t *pmessage_id)
+bool cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
+    int *pdb_id, eid_t *pfolder_id, eid_t *pmessage_id)
 {
 	uint16_t replid;
 	EXT_PULL ext_pull;
@@ -1060,12 +1058,10 @@ static BOOL common_util_get_propname(propid_t propid, PROPERTY_NAME **pppropname
 ec_error_t cu_send_message(store_object *pstore, message_object *msg,
     const char *ev_from) try
 {
-	uint64_t message_id = msg->get_id();
+	eid_t message_id = msg->get_id();
 	void *pvalue;
 	BOOL b_private, b_partial = false;
 	int account_id;
-	uint64_t new_id;
-	uint64_t folder_id;
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
@@ -1150,6 +1146,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagSentMailSvrEID);
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
+		eid_t folder_id{}, new_id{};
 		if (!cu_entryid_to_mid(*ptarget,
 		    &b_private, &account_id, &folder_id, &new_id))
 			return ecWarnWithErrors;
@@ -1169,6 +1166,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 	if (!exmdb_client->clear_submit(pstore->get_dir(), message_id, false))
 		return ecWarnWithErrors;
 	ptarget = pmsgctnt->proplist.get<BINARY>(PR_SENTMAIL_ENTRYID);
+	eid_t folder_id{};
 	if (ptarget == nullptr || !cu_entryid_to_fid(*ptarget,
 	    &b_private, &account_id, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
@@ -1248,7 +1246,7 @@ static MOVECOPY_ACTION *cu_cvt_from_zmovecopy(const ZMOVECOPY_ACTION &src)
 	if (!cu_entryid_to_fid(src.folder_eid,
 	    &b_private, &db_id, &psvreid->folder_id))
 		return NULL;
-	psvreid->message_id = 0;
+	psvreid->message_id = eid_t(0);
 	psvreid->instance = 0;
 	dst->pfolder_eid = psvreid;
 	return dst;
@@ -1600,11 +1598,11 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 	if (pmessage_ids == nullptr)
 		return NULL;
 	pmessage_ids->count = 0;
-	pmessage_ids->pids = cu_alloc<uint64_t>(tmp_set.count);
+	pmessage_ids->pids = cu_alloc<eid_t>(tmp_set.count);
 	if (pmessage_ids->pids == nullptr)
 		return NULL;
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
+		auto pmid = tmp_set.pparray[i]->get<eid_t>(PidTagMid);
 		if (pmid == nullptr)
 			return NULL;
 		pmessage_ids->pids[pmessage_ids->count++] = *pmid;

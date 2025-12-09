@@ -62,9 +62,8 @@ struct GX_EXPORT EXT_MOVECOPY_ACTION {
 
 /* reply or OOF action */
 struct GX_EXPORT REPLY_ACTION {
-	uint64_t template_folder_id;
-	uint64_t template_message_id;
-	GUID template_guid;
+	eid_t template_folder_id{}, template_message_id{};
+	GUID template_guid{};
 
 	std::string repr() const;
 };
@@ -699,9 +698,9 @@ struct GX_EXPORT GLOBALOBJECTID {
 
 struct GX_EXPORT EID_ARRAY {
 	uint32_t count;
-	uint64_t *pids;
+	eid_t *pids;
 	I_BEGIN_END(pids, count);
-	void emplace_back(uint64_t t) { pids[count++] = t; }
+	void emplace_back(eid_t t) { pids[count++] = t; }
 };
 
 using INDEX_ARRAY = PROPTAG_ARRAY;

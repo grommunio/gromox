@@ -1248,7 +1248,6 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	XID tmp_xid;
 	void *pvalue;
 	BOOL b_exist;
-	uint64_t eid;
 	BOOL b_owner;
 	BOOL b_result;
 	BOOL b_partial;
@@ -1293,7 +1292,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	auto pbins = static_cast<BINARY_ARRAY *>(ppropvals->ppropval[0].pvalue);
 	if (SYNC_TYPE_CONTENTS == sync_type) {
 		message_ids.count = 0;
-		message_ids.pids = cu_alloc<uint64_t>(pbins->count);
+		message_ids.pids  = cu_alloc<eid_t>(pbins->count);
 		if (message_ids.pids == nullptr)
 			return ecServerOOM;
 	}
@@ -1305,6 +1304,8 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 		}
 		if (!common_util_binary_to_xid(&bxid, &tmp_xid))
 			return ecError;
+
+		eid_t eid;
 		if (plogon->is_private()) {
 			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 			if (tmp_guid != tmp_xid.guid) {
@@ -1366,7 +1367,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {
-			message_ids.pids[message_ids.count++] = eid;
+			message_ids.emplace_back(eid);
 		} else {
 			unsigned int empty_flags = DEL_MESSAGES | DEL_ASSOCIATED | DEL_FOLDERS;
 			empty_flags |= b_hard ? DELETE_HARD_DELETE : 0;
