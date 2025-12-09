@@ -3360,6 +3360,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"hich", &rtf_reader::cmd_hich}, /* subsequent text is high-byte characters (high-bit set) */
 	{"highlight", &rtf_reader::cmd_highlight},
 	{"hl", &rtf_reader::cmd_ignore},
+	{"hsv", &rtf_reader::cmd_ignore}, /* shape theme color info */
 	{"htmltag", &rtf_reader::cmd_htmltag},
 	{"i", &rtf_reader::cmd_i},
 	{"impr", &rtf_reader::cmd_engrave},
@@ -3411,8 +3412,11 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"scaps", &rtf_reader::cmd_scaps},
 	{"sect", &rtf_reader::cmd_sect},
 	{"shad", &rtf_reader::cmd_shad},
-	{"shp", &rtf_reader::cmd_continue},
-	{"shppict", &rtf_reader::cmd_continue},
+	{"shpinst", &rtf_reader::cmd_ignore}, /* shape instructions - properties we cannot render */
+	{"sn", &rtf_reader::cmd_ignore}, /* shape property name */
+	{"sp", &rtf_reader::cmd_ignore}, /* shape property */
+	{"sv", &rtf_reader::cmd_ignore}, /* shape property value */
+	{"svb", &rtf_reader::cmd_ignore}, /* shape binary property value */
 	{"strike", &rtf_reader::cmd_strike},
 	{"striked", &rtf_reader::cmd_striked},
 	{"strikedl", &rtf_reader::cmd_strikedl},
