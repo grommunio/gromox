@@ -46,44 +46,18 @@ static int generic_del(eid_t fid, const std::vector<eid_t> &chosen)
 	return EXIT_SUCCESS;
 }
 
-static int select_mids_by_time(eid_t fid, unsigned int tbl_flags,
-    std::vector<eid_t> &chosen)
+static int do_contents(eid_t fid, unsigned int tbl_flags)
 {
-	uint32_t table_id = 0, row_count = 0;
+	std::vector<eid_t> chosen;
 	static constexpr RESTRICTION_EXIST rst_a = {PR_LAST_MODIFICATION_TIME};
 	RESTRICTION_PROPERTY rst_b = {RELOP_LE, PR_LAST_MODIFICATION_TIME,
 		{PR_LAST_MODIFICATION_TIME, &g_cutoff_time}};
 	RESTRICTION rst_c[2] = {{RES_EXIST, {deconst(&rst_a)}}, {RES_PROPERTY, {deconst(&rst_b)}}};
 	RESTRICTION_AND_OR rst_d = {std::size(rst_c), deconst(rst_c)};
 	RESTRICTION rst_e = {RES_AND, {deconst(&rst_d)}};
-	if (!exmdb_client->load_content_table(g_storedir, CP_ACP, fid, nullptr,
-	    tbl_flags, &rst_e, nullptr, &table_id, &row_count)) {
-		mbop_fprintf(stderr, "fid 0x%llx load_content_table failed\n", LLU{rop_util_get_gc_value(fid)});
-		return EXIT_FAILURE;
-	}
-	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(g_storedir, table_id); });
-	static constexpr proptag_t mtags[] = {PidTagMid};
-	static constexpr PROPTAG_ARRAY mtaghdr = {std::size(mtags), deconst(mtags)};
-	tarray_set rowset{};
-	if (!exmdb_client->query_table(g_storedir, nullptr, CP_ACP, table_id,
-	    &mtaghdr, 0, row_count, &rowset)) {
-		mbop_fprintf(stderr, "fid 0x%llx query_table failed\n", LLU{rop_util_get_gc_value(fid)});
-		return EXIT_FAILURE;
-	}
-	for (const auto &row : rowset) {
-		auto mid = row.get<const eid_t>(PidTagMid);
-		if (mid != nullptr)
-			chosen.push_back(*mid);
-	}
-	return EXIT_SUCCESS;
-}
-
-static int do_contents(eid_t fid, unsigned int tbl_flags)
-{
-	std::vector<eid_t> chosen;
-	auto ret = select_mids_by_time(fid, tbl_flags, chosen);
-	if (ret != EXIT_SUCCESS)
-		return ret;
+	auto err = select_contents_from_folder(fid, tbl_flags, &rst_e, chosen);
+	if (err != 0)
+		return err;
 	return generic_del(fid, std::move(chosen));
 }
 
@@ -110,27 +84,12 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 	if (!g_recurse)
 		return EXIT_SUCCESS;
 
-	uint32_t table_id = 0, row_count = 0;
-	if (!exmdb_client->load_hierarchy_table(g_storedir, fid,
-	    nullptr, 0, nullptr, &table_id, &row_count)) {
-		mbop_fprintf(stderr, "fid 0x%llx load_content_table failed\n", LLU{rop_util_get_gc_value(fid)});
+	std::vector<eid_t> chosen_fids;
+	auto err = select_hierarchy(fid, 0, chosen_fids);
+	if (err != 0)
 		return EXIT_FAILURE;
-	}
-	auto cl_1 = HX::make_scope_exit([=]() { exmdb_client->unload_table(g_storedir, table_id); });
-	static constexpr proptag_t ftags[] = {PidTagFolderId};
-	static constexpr PROPTAG_ARRAY ftaghdr = {std::size(ftags), deconst(ftags)};
-	tarray_set rowset{};
-	if (!exmdb_client->query_table(g_storedir, nullptr, CP_ACP, table_id,
-	    &ftaghdr, 0, row_count, &rowset)) {
-		mbop_fprintf(stderr, "fid 0x%llx query_table failed\n", LLU{rop_util_get_gc_value(fid)});
-		return EXIT_FAILURE;
-	}
-	exmdb_client->unload_table(g_storedir, table_id);
-	for (const auto &row : rowset) {
-		auto p = row.get<const eid_t>(PidTagFolderId);
-		if (p != nullptr)
-			do_hierarchy(*p, depth + 1);
-	}
+	for (auto fid : chosen_fids)
+		do_hierarchy(fid, depth + 1);
 	}
 
 	if (depth == 0 || !g_delempty)

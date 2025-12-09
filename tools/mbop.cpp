@@ -5,3 +5,4 @@
 #include "mbop_locale.cpp"
 #include "mbop_main.cpp"
 #include "mbop_purge.cpp"
+#include "mbop_walk.cpp"

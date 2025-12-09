@@ -33,6 +33,9 @@ extern unsigned int g_continuous_mode, g_verbose_mode, g_command_num;
 
 }
 
+extern ec_error_t select_contents_from_folder(eid_t, unsigned int flags, const RESTRICTION *, std::vector<eid_t> &);
+extern ec_error_t select_hierarchy(eid_t, unsigned int flags, std::vector<eid_t> &);
+
 template<typename... Args> int mbop_fprintf(FILE *f, Args &&...args)
 {
 	if (global::g_verbose_mode)
