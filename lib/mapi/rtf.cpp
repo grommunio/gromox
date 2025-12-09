@@ -279,7 +279,7 @@ struct rtf_reader final {
 	cmd_sect, cmd_shad, cmd_soft_hyphen, cmd_strike, cmd_striked,
 	cmd_strikedl, cmd_sub, cmd_super, cmd_tab, cmd_u, cmd_uc, cmd_ul,
 	cmd_uld, cmd_uldash, cmd_uldashd, cmd_uldashdd, cmd_uldb, cmd_ulnone,
-	cmd_ulth, cmd_ulthd, cmd_ulthdash, cmd_ulw, cmd_ulwave, cmd_up, cmd_v,
+	cmd_ulth, cmd_ulthd, cmd_ulthdash, cmd_ulw, cmd_ulwave, cmd_up, cmd_upr, cmd_v,
 	cmd_wbmbitspixel, cmd_wmetafile, cmd_zwbo, cmd_zwj, cmd_zwnbo, cmd_zwnj, flush_pending;
 
 	bool is_within_table = false, b_printed_row_begin = false;
@@ -2508,6 +2508,50 @@ int rtf_reader::cmd_up(SIMPLE_TREE_NODE *pword, int align,
 	return CMD_RESULT_CONTINUE;
 }
 
+int rtf_reader::cmd_upr(SIMPLE_TREE_NODE *pword, int align,
+    bool have_param, int num)
+{
+	/*
+	 * \upr groups contain two representations:
+	 * {\upr {ansi_text} {\*\ud {unicode_text}}}
+	 *
+	 * The first child is the ANSI representation for legacy readers. The
+	 * \ud destination contains the Unicode representation. As a
+	 * Unicode-aware reader, we skip the ANSI part and process only the \ud
+	 * content.
+	 */
+	for (auto sibling = pword->get_sibling(); sibling != nullptr;
+	     sibling = sibling->get_sibling()) {
+		/* Look for a group node (pdata == nullptr means it's a group) */
+		if (sibling->pdata != nullptr)
+			continue;
+		auto child = sibling->get_child();
+		if (child == nullptr || child->pdata == nullptr)
+			continue;
+		/* Check for \* prefix */
+		if (strcmp(child->cdata, "\\*") != 0)
+			continue;
+		/* Look for \ud in the group */
+		for (auto word2 = child->get_sibling(); word2 != nullptr;
+		     word2 = word2->get_sibling()) {
+			if (word2->pdata == nullptr ||
+			    strcmp(word2->cdata, "\\ud") != 0)
+				continue;
+			/* Found \ud; process the rest of this group */
+			auto ud_content = word2->get_sibling();
+			if (ud_content != nullptr) {
+				auto ret = convert_group_node(ud_content);
+				if (ret != 0)
+					return CMD_RESULT_ERROR;
+			}
+			/* Skip the ANSI representation */
+			return CMD_RESULT_IGNORE_REST;
+		}
+	}
+	/* No \ud found, fall back to processing everything (ANSI content) */
+	return CMD_RESULT_CONTINUE;
+}
+
 int rtf_reader::cmd_v(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
@@ -3465,16 +3509,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"ulw", &rtf_reader::cmd_ulw},
 	{"ulwave", &rtf_reader::cmd_ulwave},
 	{"up", &rtf_reader::cmd_up},
-	/*
-	 * \upr - Unicode-preserving group
-	 *
-	 * \upr groups contain two representations: the first is for legacy
-	 * readers (using the ansicpg encoding), the second is in \ud and
-	 * contains Unicode. Since we support Unicode, we skip the first
-	 * representation and process only the \ud content.
-	 * The structure is: {\upr {ansi text} {\*\ud {unicode text}}}
-	 */
-	{"upr", &rtf_reader::cmd_continue},
+	{"upr", &rtf_reader::cmd_upr}, /* Unicode-preserving group - skip ANSI, process \ud */
 	{"v", &rtf_reader::cmd_v}, /* hidden text */
 	{"wbmbitspixel", &rtf_reader::cmd_wbmbitspixel},
 	{"wmetafile", &rtf_reader::cmd_wmetafile},
