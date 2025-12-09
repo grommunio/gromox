@@ -31,7 +31,7 @@
 #define MAX_GROUP_DEPTH					1000
 #define MAX_COLORS						1024
 #define MAX_FONTS						1024
-#define MAX_CONTROL_LEN					50
+#define MAX_CONTROL_LEN					32
 #define MAX_FINTNAME_LEN				64
 
 #define DEFAULT_FONT_STR				"Times,TimesRoman,TimesNewRoman"
