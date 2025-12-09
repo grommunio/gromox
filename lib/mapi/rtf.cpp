@@ -290,7 +290,8 @@ struct rtf_reader final {
 	bool is_within_picture = false, have_printed_body = false;
 	bool is_within_header = true, have_ansicpg = false;
 	bool have_fromhtml = false, is_within_htmltag = false;
-	bool is_within_htmlrtf = false;
+	bool is_within_htmlrtf = false, paragraph_open = false;
+	bool skip_objattph_space = false;
 	int coming_pars_tabular = 0, ubytes_num = 1, ubytes_left = 0;
 	/*
 	 * Character byte mode for mixed single/double-byte text:
@@ -791,6 +792,12 @@ bool rtf_reader::express_attr_begin(int attr, int param)
 	case ATTR_FONTSIZE:
 		return express_begin_fontsize(param);
 	case ATTR_FONTFACE: {
+		if (is_within_htmlrtf) {
+			auto entry = lookup_font(param);
+			auto encoding = entry != nullptr ? entry->encoding.c_str() :
+			                default_encoding.c_str();
+			return riconv_open(encoding);
+		}
 		auto pentry = lookup_font(param);
 		const char *encoding;
 		std::string tb;
@@ -908,6 +915,18 @@ bool rtf_reader::express_attr_end(int attr, int param)
 	case ATTR_FONTSIZE:
 		return express_end_fontsize(param);
 	case ATTR_FONTFACE: 
+		if (is_within_htmlrtf) {
+			auto param = stack_list_find_attr(ATTR_FONTFACE);
+			const char *encoding;
+			if (param == nullptr) {
+				encoding = default_encoding.c_str();
+			} else {
+				auto entry = lookup_font(*param);
+				encoding = entry != nullptr ? entry->encoding.c_str() :
+				           default_encoding.c_str();
+			}
+			return riconv_open(encoding);
+		}
 		if (!preader->have_fromhtml)
 			QRF(ext_push.p_bytes(TAG_FONT_END));
 		[[fallthrough]];
@@ -1004,7 +1023,7 @@ bool rtf_reader::astk_pushx(int attr, int param)
 		mlog(LV_DEBUG, "rtf: too many attributes");
 		return false;
 	}
-	if (!start_body() || !start_text())
+	if (!is_within_htmlrtf && (!start_body() || !start_text()))
 		return false;
 	pattrstack->tos ++;
 	pattrstack->attr_stack[pattrstack->tos] = attr;
@@ -1425,11 +1444,20 @@ bool rtf_reader::start_par(int align)
 		QRF(ext_push.p_bytes(TAG_JUSTIFY_BEGIN));
 		break;
 	}
+	if (!have_fromhtml && !paragraph_open) {
+		QRF(ext_push.p_bytes(TAG_PARAGRAPH_BEGIN));
+		paragraph_open = true;
+		total_chars_in_line = 0;
+	}
 	return true;
 }
 
 bool rtf_reader::end_par(int align)
 {
+	if (paragraph_open && !have_fromhtml) {
+		QRF(ext_push.p_bytes(TAG_PARAGRAPH_END));
+		paragraph_open = false;
+	}
 	switch (align) {
 	case ALIGN_CENTER:
 		QRF(ext_push.p_bytes(TAG_CENTER_END));
@@ -2373,9 +2401,7 @@ int rtf_reader::cmd_par(SIMPLE_TREE_NODE *pword, int align,
 	if (preader->have_fromhtml)
 		return preader->ext_push.p_bytes("\r\n") == pack_result::ok ?
 		       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
-	/* \par marks end of paragraph, output paragraph end/begin tags */
-	if (ext_push.p_bytes(TAG_PARAGRAPH_END) != pack_result::ok ||
-	    ext_push.p_bytes(TAG_PARAGRAPH_BEGIN) != pack_result::ok)
+	if (!start_body() || !start_text() || !end_par(align) || !start_par(align))
 		return CMD_RESULT_ERROR;
 	total_chars_in_line = 0;
 	return CMD_RESULT_CONTINUE;
@@ -2676,6 +2702,7 @@ int rtf_reader::cmd_objattph(SIMPLE_TREE_NODE *pword,
 	if (ext_push.p_bytes(wchar_to_utf8(0xFFFC)) != pack_result::ok)
 		return CMD_RESULT_ERROR;
 	++total_chars_in_line;
+	skip_objattph_space = true;
 	return CMD_RESULT_CONTINUE;
 }
 
@@ -3162,6 +3189,9 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 	}
 	while (NULL != pnode) {    
 		if (NULL != pnode->pdata) {
+			if (skip_objattph_space && pnode->cdata[0] == '\\' &&
+			    pnode->cdata[1] != '\'')
+				skip_objattph_space = false;
 			if (preader->have_fromhtml) {
 				if (strcasecmp(pnode->cdata, "\\htmlrtf") == 0 ||
 				    strcasecmp(pnode->cdata, "\\htmlrtf1") == 0) {
@@ -3170,15 +3200,6 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 					preader->is_within_htmlrtf = false;
 				}
 				if (preader->is_within_htmlrtf) {
-					/*
-					 * MS-OXRTFEX v15 §2.2.3.2: "The de-encapsulating RTF
-					 * reader SHOULD track the current font even when the
-					 * corresponding \fN control word is inside of a fragment
-					 * that is disabled with an HTMLRTF control word."
-					 *
-					 * Process \f control words to maintain font/encoding
-					 * state, skip everything else.
-					 */
 					if (strncasecmp(pnode->cdata, "\\f", 2) == 0 &&
 					    (pnode->cdata[2] >= '0' && pnode->cdata[2] <= '9')) {
 						int font_num = strtol(pnode->cdata + 2, nullptr, 10);
@@ -3195,6 +3216,16 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 			if (*string == ' ' && preader->is_within_header) {
 				/* do nothing  */
 			} else if ('\\' != string[0]) {
+				if (skip_objattph_space) {
+					skip_objattph_space = false;
+					if (string[0] == ' ') {
+						if (string[1] == '\0') {
+							pnode = pnode->get_sibling();
+							continue;
+						}
+						++string;
+					}
+				}
 				if (!start_body() || !start_text())
 					return -EINVAL;
 				if (!b_paragraph_begun) {
@@ -3279,6 +3310,13 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 					}
 				} else if (string[0] == '\'' && string[1] != '\0' && string[2] != '\0') {
 					ch = rtf_decode_hex_char(string + 1);
+					if (skip_objattph_space) {
+						skip_objattph_space = false;
+						if (ch == 0x20) {
+							pnode = pnode->get_sibling();
+							continue;
+						}
+					}
 					if (!put_iconv_cache(ch))
 						return -EINVAL;
 				} else {
@@ -3293,7 +3331,6 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 						/* \b is like \b1 */
 						num = 1;
 					}
-
 
 					func = preader->have_fromhtml ? rtf_find_fromhtml_func(name) : rtf_find_cmd_function(name);
 					if (NULL != func) {
@@ -3311,6 +3348,8 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 								/* nothing */;
 							break;
 						}
+						if (func == &rtf_reader::cmd_par)
+							b_paragraph_begun = true;
 					}
 				}
 			}
