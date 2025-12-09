@@ -42,7 +42,7 @@ struct BACK_CONN {
 
 }
 
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_timeragent_stop;
 static char g_timer_ip[40];
 static uint16_t g_timer_port;
 static pthread_t g_scan_id;
@@ -69,7 +69,7 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 	switch(reason) {
 	case PLUGIN_INIT: {
 		LINK_SVC_API(ppdata);
-		g_notify_stop = true;
+		g_timeragent_stop = true;
 		auto pfile = config_file_initd("timer_agent.cfg",
 		             get_config_path(), timer_agent_cfg_defaults);
 		if (NULL == pfile) {
@@ -93,10 +93,10 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_ERR, "E-1655: ENOMEM");
 		}
 		bk_hold.unlock();
-		g_notify_stop = false;
+		g_timeragent_stop = false;
 		auto ret = pthread_create4(&g_scan_id, nullptr, tmrag_scanwork, nullptr);
 		if (ret != 0) {
-			g_notify_stop = true;
+			g_timeragent_stop = true;
 			bk_hold.lock();
 			g_back_list.clear();
 			mlog(LV_ERR, "timer_agent: failed to create scan thread: %s",
@@ -115,8 +115,8 @@ BOOL SVC_timer_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE: {
-		if (!g_notify_stop) {
-			g_notify_stop = true;
+		if (!g_timeragent_stop) {
+			g_timeragent_stop = true;
 			if (!pthread_equal(g_scan_id, {})) {
 				pthread_kill(g_scan_id, SIGALRM);
 				pthread_join(g_scan_id, NULL);
@@ -146,7 +146,7 @@ static void *tmrag_scanwork(void *param)
 	struct pollfd pfd_read;
 	std::list<BACK_CONN> temp_list;
 
-	while (!g_notify_stop) {
+	while (!g_timeragent_stop) {
 		std::unique_lock bk_hold(g_back_lock);
 		auto now_time = time(nullptr);
 		auto tail = g_back_list.size() > 0 ? &g_back_list.back() : nullptr;

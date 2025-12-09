@@ -97,7 +97,7 @@ static time_point g_start_time;
 static pthread_t g_scan_id;
 static std::mutex g_lock; /* protects g_handle_hash & g_user_hash */
 static std::mutex g_notify_lock;
-static gromox::atomic_bool g_notify_stop{true};
+static gromox::atomic_bool g_emsi_stop{true};
 static thread_local HANDLE_DATA *g_handle_key;
 static std::unordered_map<GUID, HANDLE_DATA> g_handle_hash;
 static std::unordered_map<std::string, std::vector<HANDLE_DATA *>> g_user_hash;
@@ -435,10 +435,10 @@ void emsmdb_interface_init()
 
 int emsmdb_interface_run()
 {
-	g_notify_stop = false;
+	g_emsi_stop = false;
 	auto ret = pthread_create4(&g_scan_id, nullptr, emsi_scanwork, nullptr);
 	if (ret != 0) {
-		g_notify_stop = true;
+		g_emsi_stop = true;
 		mlog(LV_ERR, "E-1447: pthread_create: %s", strerror(ret));
 		return -4;
 	}
@@ -448,8 +448,8 @@ int emsmdb_interface_run()
 
 void emsmdb_interface_stop()
 {
-	if (!g_notify_stop) {
-		g_notify_stop = true;
+	if (!g_emsi_stop) {
+		g_emsi_stop = true;
 		if (!pthread_equal(g_scan_id, {})) {
 			pthread_kill(g_scan_id, SIGALRM);
 			pthread_join(g_scan_id, NULL);
@@ -1163,7 +1163,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 
 static void *emsi_scanwork(void *pparam)
 {
-	while (!g_notify_stop) {
+	while (!g_emsi_stop) {
 		std::vector<GUID> temp_list;
 		auto cur_time = tp_now();
 		std::unique_lock gl_hold(g_lock);

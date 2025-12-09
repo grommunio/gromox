@@ -71,7 +71,7 @@ struct NOTIFY_ITEM {
 }
 
 static size_t g_table_size;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_zserver_stop;
 static int g_ping_interval;
 static pthread_t g_scan_id;
 static int g_cache_interval;
@@ -160,7 +160,7 @@ static void *zcorezs_scanwork(void *param)
 	zcresp_notifdequeue response{};
 	response.call_id = zcore_callid::notifdequeue;
 	response.result = ecSuccess;
-	while (!g_notify_stop) {
+	while (!g_zserver_stop) {
 		sleep(1);
 		count ++;
 		if (count >= g_ping_interval)
@@ -513,7 +513,7 @@ void zserver_init(size_t table_size, int cache_interval, int ping_interval)
 
 int zserver_run()
 {
-	g_notify_stop = false;
+	g_zserver_stop = false;
 	auto ret = pthread_create4(&g_scan_id, nullptr, zcorezs_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "E-1443: pthread_create: %s", strerror(ret));
@@ -525,7 +525,7 @@ int zserver_run()
 
 void zserver_stop()
 {
-	g_notify_stop = true;
+	g_zserver_stop = true;
 	if (!pthread_equal(g_scan_id, {})) {
 		pthread_kill(g_scan_id, SIGALRM);
 		pthread_join(g_scan_id, NULL);

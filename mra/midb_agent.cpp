@@ -85,7 +85,7 @@ static int connect_midb(const char *host, uint16_t port);
 
 std::atomic<size_t> g_midb_command_buffer_size{256 * 1024};
 static int g_conn_num;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_midbagent_stop;
 static pthread_t g_scan_id;
 static std::list<BACK_CONN> g_lost_list;
 static std::list<BACK_SVR> g_server_list;
@@ -163,7 +163,7 @@ BOOL SVC_midb_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	case PLUGIN_INIT: {
 		LINK_SVC_API(ppdata);
-		g_notify_stop = true;
+		g_midbagent_stop = true;
 		auto pconfig = config_file_initd("midb_agent.cfg",
 		               get_config_path(), midb_agent_cfg_defaults);
 		if (NULL == pconfig) {
@@ -176,7 +176,7 @@ BOOL SVC_midb_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 		if (!list_file_read_midb("midb_list.txt"))
 			return false;
 
-		g_notify_stop = false;
+		g_midbagent_stop = false;
 		auto ret = pthread_create4(&g_scan_id, nullptr, midbag_scanwork, nullptr);
 		if (ret != 0) {
 			printf("[midb_agent]: failed to create scan thread: %s\n", strerror(ret));
@@ -186,8 +186,8 @@ BOOL SVC_midb_agent(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		if (!g_notify_stop) {
-			g_notify_stop = true;
+		if (!g_midbagent_stop) {
+			g_midbagent_stop = true;
 			if (!pthread_equal(g_scan_id, {})) {
 				pthread_kill(g_scan_id, SIGALRM);
 				pthread_join(g_scan_id, NULL);
@@ -215,7 +215,7 @@ static void *midbag_scanwork(void *param)
 	struct pollfd pfd_read;
 	std::list<BACK_CONN> temp_list;
 
-	while (!g_notify_stop) {
+	while (!g_midbagent_stop) {
 		std::unique_lock sv_hold(g_server_lock);
 		auto now_time = time(nullptr);
 		for (auto &srv : g_server_list) {
@@ -291,7 +291,7 @@ static BACK_CONN_floating get_connection(const char *prefix)
 		return fc;
 	}
 	sv_hold.unlock();
-	for (size_t j = 0; j < SOCKET_TIMEOUT && !g_notify_stop; ++j) {
+	for (size_t j = 0; j < SOCKET_TIMEOUT && !g_midbagent_stop; ++j) {
 		sleep(1);
 		sv_hold.lock();
 		if (i->conn_list.size() > 0) {

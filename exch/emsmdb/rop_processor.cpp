@@ -42,7 +42,7 @@ using namespace gromox;
 
 static int g_scan_interval;
 static pthread_t g_scan_id;
-static gromox::atomic_bool g_notify_stop{true};
+static gromox::atomic_bool g_rop_stop{true};
 static std::mutex g_hash_lock;
 static std::unordered_map<std::string, uint32_t> g_logon_hash;
 static unsigned int g_emsmdb_full_parenting;
@@ -317,7 +317,7 @@ static void *emsrop_scanwork(void *param)
 	int count;
 	
 	count = 0;
-	while (!g_notify_stop) try {
+	while (!g_rop_stop) try {
 		sleep(1);
 		count ++;
 		if (count < g_scan_interval) {
@@ -347,10 +347,10 @@ void rop_processor_init(int scan_interval)
 
 int rop_processor_run()
 {
-	g_notify_stop = false;
+	g_rop_stop = false;
 	auto ret = pthread_create4(&g_scan_id, nullptr, emsrop_scanwork, nullptr);
 	if (ret != 0) {
-		g_notify_stop = true;
+		g_rop_stop = true;
 		mlog(LV_ERR, "emsmdb: failed to create scanning thread "
 		       "for logon hash table: %s", strerror(ret));
 		return -5;
@@ -361,8 +361,8 @@ int rop_processor_run()
 
 void rop_processor_stop()
 {
-	if (!g_notify_stop) {
-		g_notify_stop = true;
+	if (!g_rop_stop) {
+		g_rop_stop = true;
 		if (!pthread_equal(g_scan_id, {})) {
 			pthread_kill(g_scan_id, SIGALRM);
 			pthread_join(g_scan_id, NULL);

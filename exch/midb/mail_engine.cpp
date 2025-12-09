@@ -170,7 +170,7 @@ unsigned int g_midb_cache_interval, g_midb_reload_interval;
 
 static constexpr time_duration DB_LOCK_TIMEOUT = std::chrono::seconds(60);
 static size_t g_table_size;
-static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
+static gromox::atomic_bool g_midb_stop; /* stop signal for scanning thread */
 static pthread_t g_scan_tid;
 static char g_org_name[256];
 static std::mutex g_hash_lock;
@@ -1549,7 +1549,7 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 	if (stm_upd_msg == nullptr)
 		return FALSE;
 	for (const auto &[message_id, entry] : syncmessagelist) {
-		if (g_notify_stop)
+		if (g_midb_stop)
 			break;
 		stm_select_msg.reset();
 		stm_select_msg.bind_int64(1, message_id);
@@ -1568,7 +1568,7 @@ static BOOL me_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 			mlog(LV_NOTICE, "sync_contents %s fld %llu progress: %zu/%zu",
 			        dir, LLU{folder_id}, procmsgs, totalmsgs);
 	}
-	if (g_notify_stop)
+	if (g_midb_stop)
 		return true;
 	if (procmsgs > 512)
 		/* display final value */
@@ -1764,7 +1764,7 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 	if (stm_insert == nullptr)
 		return false;
 	for (const auto &[folder_id, entry] : syncfolderlist) {
-		if (g_notify_stop)
+		if (g_midb_stop)
 			break;
 		switch (me_get_top_folder_id(syncfolderlist, folder_id)) {
 		case PRIVATE_FID_OUTBOX:
@@ -1822,7 +1822,7 @@ static BOOL me_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false) try
 			gx_sql_exec(pidb->psqlite, qstr.c_str());
 		}
 	}
-	if (g_notify_stop)
+	if (g_midb_stop)
 		return true;
 	stm_select.finalize();
 	stm_insert.finalize();
@@ -2015,7 +2015,7 @@ static void *midbme_scanwork(void *param)
 	int count;
 
 	count = 0;
-	while (!g_notify_stop) {
+	while (!g_midb_stop) {
 		std::vector<std::pair<std::string, uint32_t>> unsub_list;
 		sleep(1);
 		if (count < 10) {
@@ -4175,7 +4175,7 @@ int me_run()
 		mlog(LV_ERR, "mail_engine: failed to init oxcmail library");
 		return -1;
 	}
-	g_notify_stop = false;
+	g_midb_stop = false;
 	auto ret = pthread_create4(&g_scan_tid, nullptr, midbme_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "mail_engine: failed to create scan thread: %s", strerror(ret));
@@ -4190,7 +4190,7 @@ int me_run()
 
 void me_stop()
 {
-	g_notify_stop = true;
+	g_midb_stop = true;
 	if (!pthread_equal(g_scan_tid, {})) {
 		pthread_kill(g_scan_tid, SIGALRM);
 		pthread_join(g_scan_tid, NULL);

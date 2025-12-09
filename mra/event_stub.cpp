@@ -46,7 +46,7 @@ struct BACK_CONN {
 
 using EVENT_STUB_FUNC = void (*)(char *);
 
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_eventstub_stop;
 static char g_event_ip[40];
 static uint16_t g_event_port;
 static std::list<BACK_CONN> g_back_list;
@@ -84,7 +84,7 @@ BOOL SVC_event_stub(enum plugin_op reason, const struct dlfuncs &ppdata)
 	switch(reason) {
 	case PLUGIN_INIT: {
 		LINK_SVC_API(ppdata);
-		g_notify_stop = true;
+		g_eventstub_stop = true;
 		g_event_stub_func = NULL;
 		auto pfile = config_file_initd("event_stub.cfg",
 		             get_config_path(), nullptr);
@@ -118,7 +118,7 @@ BOOL SVC_event_stub(enum plugin_op reason, const struct dlfuncs &ppdata)
 		       *g_event_ip == '\0' ? "*" : g_event_ip, g_event_port,
 		       conn_num);
 
-		g_notify_stop = false;
+		g_eventstub_stop = false;
 		int ret = 0;
 		for (i = 0; i < conn_num; ++i) try {
 			g_back_list.emplace_back(i);
@@ -128,7 +128,7 @@ BOOL SVC_event_stub(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 
 		if (i < conn_num) {
-			g_notify_stop = true;
+			g_eventstub_stop = true;
 			g_back_list.clear();
 			printf("[event_stub]: failed to create stub thread: %s\n", strerror(ret));
 			return FALSE;
@@ -139,7 +139,7 @@ BOOL SVC_event_stub(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		g_notify_stop = true;
+		g_eventstub_stop = true;
 		g_back_list.clear();
 		g_event_stub_func = NULL;
 		return TRUE;
@@ -216,14 +216,14 @@ static void *evst_thrwork(void *param)
 	char buff[MAX_CMD_LENGTH];	
 	auto pback = static_cast<BACK_CONN *>(param);
 
-	while (!g_notify_stop) {
+	while (!g_eventstub_stop) {
 		pback->sockd = connect_event();
 		if (pback->sockd < 0) {
 			sleep(3);
 			continue;
 		}
 
-		while (!g_notify_stop) {
+		while (!g_eventstub_stop) {
 			if (-1 == read_line(pback->sockd, buff, MAX_CMD_LENGTH)) {
 				close(pback->sockd);
 				pback->sockd = -1;

@@ -93,7 +93,7 @@ struct rowdel_node {
 
 static size_t g_table_size; /* hash table size */
 static unsigned int g_threads_num;
-static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
+static gromox::atomic_bool g_dbeng_stop; /* stop signal for scanning thread */
 static pthread_t g_scan_tid;
 static gromox::time_duration g_cache_interval; /* maximum living interval in table */
 static std::vector<pthread_t> g_thread_ids;
@@ -778,7 +778,7 @@ static void *db_expiry_thread(void *param)
 	int count;
 
 	count = 0;
-	while (!g_notify_stop) {
+	while (!g_dbeng_stop) {
 		sleep(1);
 		if (count < 10) {
 			count ++;
@@ -861,7 +861,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 	});
 	sql_transact = xtransaction();
 	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
-		if (g_notify_stop)
+		if (g_dbeng_stop)
 			break;
 		auto sql_transact1 = gx_sql_begin(pdb->psqlite, txn_mode::write);
 		if (!sql_transact1)
@@ -979,11 +979,11 @@ static void *sf_popul_thread(void *param)
 	if (nice(g_exmdb_search_nice) < 0)
 		/* ignore */;
 	
-	while (!g_notify_stop) {
+	while (!g_dbeng_stop) {
  NEXT_SEARCH:
 		std::unique_lock lhold(g_list_lock);
-		g_waken_cond.wait(lhold, []() { return g_notify_stop || g_populating_list.size() > 0; });
-		if (g_notify_stop)
+		g_waken_cond.wait(lhold, []() { return g_dbeng_stop || g_populating_list.size() > 0; });
+		if (g_dbeng_stop)
 			break;
 		if (g_populating_list.size() == 0)
 			continue;
@@ -1015,14 +1015,14 @@ static void *sf_popul_thread(void *param)
 		if (!pdb)
 			goto NEXT_SEARCH;
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
-			if (g_notify_stop)
+			if (g_dbeng_stop)
 				break;
 			if (!db_engine_search_folder(psearch->dir.c_str(),
 			    psearch->cpid, psearch->folder_id,
 			    pfolder_ids->pids[i], psearch->prestriction, pdb))
 				break;
 		}
-		if (g_notify_stop)
+		if (g_dbeng_stop)
 			break;
 		db_conn::NOTIFQ notifq;
 		auto dbase = pdb->lock_base_wr();
@@ -1061,7 +1061,7 @@ static void *sf_popul_thread(void *param)
 
 void db_engine_init(size_t table_size, int cache_interval, unsigned int threads_num)
 {
-	g_notify_stop = true;
+	g_dbeng_stop = true;
 	g_table_size = table_size;
 	g_cache_interval = std::chrono::seconds{cache_interval};
 	g_threads_num = threads_num;
@@ -1081,7 +1081,7 @@ int db_engine_run()
 		mlog(LV_ERR, "exmdb_provider: Failed to initialize sqlite engine");
 		return -2;
 	}
-	g_notify_stop = false;
+	g_dbeng_stop = false;
 	auto ret = pthread_create4(&g_scan_tid, nullptr,
 	           db_expiry_thread, nullptr);
 	if (ret != 0) {
@@ -1107,8 +1107,8 @@ int db_engine_run()
 
 void db_engine_stop()
 {
-	if (!g_notify_stop) {
-		g_notify_stop = true;
+	if (!g_dbeng_stop) {
+		g_dbeng_stop = true;
 		g_waken_cond.notify_all();
 		for (auto tid : g_thread_ids) {
 			pthread_kill(tid, SIGALRM);

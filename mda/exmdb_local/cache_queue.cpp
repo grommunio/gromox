@@ -36,7 +36,7 @@ static int g_scan_interval;
 static int g_retrying_times;
 static pthread_t g_thread_id;
 static std::mutex g_id_lock;
-static gromox::atomic_bool g_notify_stop{true};
+static gromox::atomic_bool g_cachequeue_stop{true};
 
 static unsigned long cache_queue_retrieve_mess_ID();
 static void *mdl_thrwork(void *);
@@ -52,7 +52,7 @@ void cache_queue_init(const char *path, int scan_interval, int retrying_times)
 	gx_strlcpy(g_path, path, std::size(g_path));
 	g_scan_interval = scan_interval;
 	g_retrying_times = retrying_times;
-	g_notify_stop = true;
+	g_cachequeue_stop = true;
 }
 
 /*
@@ -77,10 +77,10 @@ int cache_queue_run()
 		std::lock_guard lk(g_id_lock);
 		g_mess_id = cache_queue_retrieve_mess_ID();
 	}
-	g_notify_stop = false;
+	g_cachequeue_stop = false;
 	auto ret = pthread_create4(&g_thread_id, nullptr, mdl_thrwork, nullptr);
 	if (ret != 0) {
-		g_notify_stop = true;
+		g_cachequeue_stop = true;
 		mlog(LV_ERR, "exmdb_local: failed to create timer thread: %s", strerror(ret));
 		return -3;
 	}
@@ -90,8 +90,8 @@ int cache_queue_run()
 
 void cache_queue_stop()
 {
-	if (!g_notify_stop) {
-		g_notify_stop = true;
+	if (!g_cachequeue_stop) {
+		g_cachequeue_stop = true;
 		if (!pthread_equal(g_thread_id, {})) {
 			pthread_kill(g_thread_id, SIGALRM);
 			pthread_join(g_thread_id, NULL);
@@ -255,7 +255,7 @@ static void *mdl_thrwork(void *arg)
 	}
 	i = 0;
 	scan_interval = g_scan_interval;
-	while (!g_notify_stop) {
+	while (!g_cachequeue_stop) {
 		if (i < scan_interval) {
 			i ++;
 			sleep(1);
@@ -264,7 +264,7 @@ static void *mdl_thrwork(void *arg)
 		seekdir(dirp.m_dir.get(), 0);
 		auto scan_begin = time(nullptr);
 		while ((direntp = readdir(dirp.m_dir.get())) != nullptr) {
-			if (g_notify_stop)
+			if (g_cachequeue_stop)
 				break;
 			if (strcmp(direntp->d_name, ".") == 0 ||
 			    strcmp(direntp->d_name, "..") == 0)

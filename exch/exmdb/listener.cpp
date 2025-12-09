@@ -34,15 +34,15 @@ using namespace gromox;
 
 static uint16_t g_listen_port;
 static int g_listen_sockd;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_exmdblisten_stop;
 static char g_listen_ip[40];
 static std::vector<std::string> g_acl_list;
 static pthread_t g_listener_id;
 
 static void *sockaccept_thread(void *param)
 {
-	while (!g_notify_stop) {
-		auto conn = generic_connection::accept(g_listen_sockd, false, &g_notify_stop);
+	while (!g_exmdblisten_stop) {
+		auto conn = generic_connection::accept(g_listen_sockd, false, &g_exmdblisten_stop);
 		if (conn.sockd == -2)
 			return nullptr;
 		else if (conn.sockd < 0)
@@ -80,7 +80,7 @@ void exmdb_listener_init(const char *ip, uint16_t port)
 		gx_strlcpy(g_listen_ip, ip, std::size(g_listen_ip));
 	g_listen_port = port;
 	g_listen_sockd = -1;
-	g_notify_stop = true;
+	g_exmdblisten_stop = true;
 }
 
 int exmdb_listener_run(const char *config_path, const char *hosts_allow)
@@ -119,7 +119,7 @@ int exmdb_listener_trigger_accept()
 	if (0 == g_listen_port) {
 		return 0;
 	}
-	g_notify_stop = false;
+	g_exmdblisten_stop = false;
 	auto ret = pthread_create4(&g_listener_id, nullptr, sockaccept_thread, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "exmdb_provider: failed to create exmdb listener thread: %s", strerror(ret));
@@ -134,8 +134,8 @@ void exmdb_listener_stop()
 	if (0 == g_listen_port) {
 		return;
 	}
-	if (!g_notify_stop) {
-		g_notify_stop = true;
+	if (!g_exmdblisten_stop) {
+		g_exmdblisten_stop = true;
 		if (g_listen_sockd >= 0)
 			shutdown(g_listen_sockd, SHUT_RDWR);
 		if (!pthread_equal(g_listener_id, {})) {

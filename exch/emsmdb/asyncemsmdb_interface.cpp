@@ -47,7 +47,7 @@ struct ASYNC_WAIT {
 static unsigned int g_threads_num;
 static pthread_t g_scan_id;
 static std::vector<pthread_t> g_thread_ids;
-static gromox::atomic_bool g_notify_stop{true};
+static gromox::atomic_bool g_aemsi_stop{true};
 static std::vector<std::shared_ptr<ASYNC_WAIT>> g_wakeup_list;
 static std::unordered_map<std::string, std::shared_ptr<ASYNC_WAIT>> g_tag_hash;
 static size_t g_tag_hash_max;
@@ -79,12 +79,12 @@ int asyncemsmdb_interface_run()
 	
 	context_num = get_context_num();
 	g_tag_hash_max = context_num;
-	g_notify_stop = false;
+	g_aemsi_stop = false;
 	auto ret = pthread_create4(&g_scan_id, nullptr, aemsi_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "emsmdb: failed to create scanning thread "
 		       "for asyncemsmdb: %s", strerror(ret));
-		g_notify_stop = true;
+		g_aemsi_stop = true;
 		return -5;
 	}
 	pthread_setname_np(g_scan_id, "asyncems/scan");
@@ -107,8 +107,8 @@ int asyncemsmdb_interface_run()
 
 void asyncemsmdb_interface_stop()
 {
-	if (!g_notify_stop) {
-		g_notify_stop = true;
+	if (!g_aemsi_stop) {
+		g_aemsi_stop = true;
 		g_waken_cond.notify_all();
 		if (!pthread_equal(g_scan_id, {})) {
 			pthread_kill(g_scan_id, SIGALRM);
@@ -267,9 +267,9 @@ static void *aemsi_thrwork(void *param)
 		{
 			std::unique_lock<std::mutex> holder(g_list_lock);
 			g_waken_cond.wait(holder, [] {
-				return g_notify_stop || g_wakeup_list.size() > 0;
+				return g_aemsi_stop || g_wakeup_list.size() > 0;
 			});
-			if (g_notify_stop)
+			if (g_aemsi_stop)
 				break;
 			if (g_wakeup_list.empty())
 				continue;
@@ -285,7 +285,7 @@ static void *aemsi_scanwork(void *param)
 {
 	std::vector<std::shared_ptr<ASYNC_WAIT>> tl;
 	
-	while (!g_notify_stop) {
+	while (!g_aemsi_stop) {
 		sleep(1);
 		auto cur_time = time(nullptr);
 		std::unique_lock as_hold(g_async_lock);

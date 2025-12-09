@@ -81,7 +81,7 @@ class directory_list : public std::vector<dir_node> {
 }
 
 static int g_context_num;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_httpcache_stpo;
 static pthread_t g_scan_tid;
 static std::mutex g_hash_lock;
 static directory_list g_directory_list;
@@ -125,7 +125,7 @@ static void *mod_cache_scanwork(void *pparam)
 	struct stat node_stat;
 	
 	count = 0;
-	while (!g_notify_stop) {
+	while (!g_httpcache_stpo) {
 		count ++;
 		if (count < 600) {
 			sleep(1);
@@ -148,7 +148,7 @@ static void *mod_cache_scanwork(void *pparam)
 
 void mod_cache_init(int context_num)
 {
-	g_notify_stop = true;
+	g_httpcache_stpo = true;
 	g_context_num = context_num;
 }
 
@@ -190,11 +190,11 @@ int mod_cache_run() try
 	if (ret < 0)
 		return ret;
 	g_context_list = std::make_unique<cache_context[]>(g_context_num);
-	g_notify_stop = false;
+	g_httpcache_stpo = false;
 	ret = pthread_create4(&g_scan_tid, nullptr, mod_cache_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "mod_cache: failed to create scanning thread: %s", strerror(ret));
-		g_notify_stop = true;
+		g_httpcache_stpo = true;
 		return -4;
 	}
 	pthread_setname_np(g_scan_tid, "mod_cache");
@@ -206,8 +206,8 @@ int mod_cache_run() try
 
 void mod_cache_stop()
 {
-	if (!g_notify_stop) {
-		g_notify_stop = true;
+	if (!g_httpcache_stpo) {
+		g_httpcache_stpo = true;
 		if (!pthread_equal(g_scan_tid, {})) {
 			pthread_kill(g_scan_tid, SIGALRM);
 			pthread_join(g_scan_tid, NULL);

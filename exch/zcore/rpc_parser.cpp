@@ -45,7 +45,7 @@ struct CLIENT_NODE {
 }
 
 static unsigned int g_thread_num;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_zrpc_stop;
 static std::vector<pthread_t> g_thread_ids;
 static DOUBLE_LIST g_conn_list;
 static std::condition_variable g_waken_cond;
@@ -54,7 +54,7 @@ unsigned int g_zrpc_debug;
 
 void rpc_parser_init(unsigned int thread_num)
 {
-	g_notify_stop = true;
+	g_zrpc_stop = true;
 	g_thread_num = thread_num;
 	g_thread_ids.reserve(thread_num);
 }
@@ -120,7 +120,7 @@ static void *zcrp_thrwork(void *param)
 	pnode = double_list_pop_front(&g_conn_list);
 	cl_hold.unlock();
 	if (NULL == pnode) {
-		if (g_notify_stop)
+		if (g_zrpc_stop)
 			return nullptr;
 		goto WAIT_CLIFD;
 	}
@@ -230,7 +230,7 @@ static void *zcrp_thrwork(void *param)
 
 int rpc_parser_run()
 {
-	g_notify_stop = false;
+	g_zrpc_stop = false;
 	int ret = 0;
 	for (unsigned int i = 0; i < g_thread_num; ++i) {
 		pthread_t tid;
@@ -250,7 +250,7 @@ int rpc_parser_run()
 
 void rpc_parser_stop()
 {
-	g_notify_stop = true;
+	g_zrpc_stop = true;
 	g_waken_cond.notify_all();
 	for (auto tid : g_thread_ids) {
 		pthread_kill(tid, SIGALRM);

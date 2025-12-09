@@ -70,7 +70,7 @@ static size_t g_context_num;
 static time_duration g_timeout, g_autologout_time;
 static pthread_t g_thr_id;
 static pthread_t g_scan_id;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_parser_stop;
 static std::unique_ptr<imap_context[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static std::unordered_map<std::string, std::vector<imap_context *>> g_select_hash; /* username=>context */
@@ -93,7 +93,7 @@ void imap_parser_init(int context_num, int average_num,
 	g_block_auth_fail       = block_auth_fail;
 	g_support_tls       = support_tls;
 	g_ssl_mutex_buf = nullptr;
-	g_notify_stop = true;
+	g_parser_stop = true;
 	if (!support_tls)
 		return;
 	g_force_tls = force_tls;
@@ -188,18 +188,18 @@ int imap_parser_run()
         return -10;
     }
 
-	g_notify_stop = false;
+	g_parser_stop = false;
 	auto ret = pthread_create4(&g_thr_id, nullptr, imps_thrwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "imap_parser: failed to create sleeping list scanning thread: %s", strerror(ret));
-		g_notify_stop = true;
+		g_parser_stop = true;
 		return -11;
 	}
 	pthread_setname_np(g_thr_id, "parser/worker");
 	ret = pthread_create4(&g_scan_id, nullptr, imps_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "Failed to create select hash scanning thread: %s", strerror(ret));
-		g_notify_stop = true;
+		g_parser_stop = true;
 		if (!pthread_equal(g_thr_id, {})) {
 			pthread_kill(g_thr_id, SIGALRM);
 			pthread_join(g_thr_id, nullptr);
@@ -214,8 +214,8 @@ int imap_parser_run()
 void imap_parser_stop()
 {
 	system_services_install_event_stub(nullptr);
-	if (!g_notify_stop) {
-		g_notify_stop = true;
+	if (!g_parser_stop) {
+		g_parser_stop = true;
 		if (!pthread_equal(g_thr_id, {}))
 			pthread_kill(g_thr_id, SIGALRM);
 		if (!pthread_equal(g_scan_id, {}))
@@ -1496,7 +1496,7 @@ static void *imps_thrwork(void *argp)
 	int peek_len;
 	char tmp_buff;
 
-	while (!g_notify_stop) {
+	while (!g_parser_stop) {
 		std::unique_lock ll_hold(g_list_lock);
 		imap_context *ptail = nullptr, *pcontext = nullptr;
 		if (g_sleeping_list.size() > 0)
@@ -1654,7 +1654,7 @@ static void *imps_scanwork(void *argp)
 	int i = 0;
 	int err_num;
 
-	while (!g_notify_stop) {
+	while (!g_parser_stop) {
 		i ++;
 		sleep(1);
 		if (i < SCAN_INTERVAL)

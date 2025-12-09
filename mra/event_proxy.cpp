@@ -42,7 +42,7 @@ struct BACK_CONN {
 
 }
 
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_eventproxy_stop;
 static char g_event_ip[40];
 static uint16_t g_event_port;
 static pthread_t g_scan_id;
@@ -63,7 +63,7 @@ BOOL SVC_event_proxy(enum plugin_op reason, const struct dlfuncs &ppdata)
 	switch(reason) {
 	case PLUGIN_INIT: {
 		LINK_SVC_API(ppdata);
-		g_notify_stop = true;
+		g_eventproxy_stop = true;
 		auto pfile = config_file_initd("event_proxy.cfg",
 		             get_config_path(), nullptr);
 		if (NULL == pfile) {
@@ -102,10 +102,10 @@ BOOL SVC_event_proxy(enum plugin_op reason, const struct dlfuncs &ppdata)
 			mlog(LV_ERR, "E-1657: ENOMEM");
 		}
 
-		g_notify_stop = false;
+		g_eventproxy_stop = false;
 		auto ret = pthread_create4(&g_scan_id, nullptr, evpx_scanwork, nullptr);
 		if (ret != 0) {
-			g_notify_stop = true;
+			g_eventproxy_stop = true;
 			g_back_list.clear();
 			printf("[event_proxy]: failed to create scan thread: %s\n", strerror(ret));
 			return FALSE;
@@ -120,8 +120,8 @@ BOOL SVC_event_proxy(enum plugin_op reason, const struct dlfuncs &ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		if (!g_notify_stop) {
-			g_notify_stop = true;
+		if (!g_eventproxy_stop) {
+			g_eventproxy_stop = true;
 			if (!pthread_equal(g_scan_id, {})) {
 				pthread_kill(g_scan_id, SIGALRM);
 				pthread_join(g_scan_id, NULL);
@@ -146,7 +146,7 @@ static void *evpx_scanwork(void *param)
 	struct pollfd pfd_read;
 	std::list<BACK_CONN> temp_list;
 	
-	while (!g_notify_stop) {
+	while (!g_eventproxy_stop) {
 		std::unique_lock bl_hold(g_back_lock);
 		auto now_time = time(nullptr);
 		auto tail = g_back_list.size() > 0 ? &g_back_list.back() : nullptr;

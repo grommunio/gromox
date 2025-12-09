@@ -54,7 +54,7 @@ static evqueue g_poll_ctx;
 static pthread_t g_scan_id;
 static SCHEDULE_CONTEXT **g_context_ptr;
 static pthread_t g_thread_id;
-static gromox::atomic_bool g_notify_stop{true};
+static gromox::atomic_bool g_ctxpool_stop{true};
 static DOUBLE_LIST g_context_lists[static_cast<int>(sctx_status::_alloc_max)];
 static std::mutex g_context_locks[static_cast<int>(sctx_status::_alloc_max)]; /* protects g_context_lists */
 
@@ -192,7 +192,7 @@ int contexts_pool_get_param(int type)
 
 static void *ctxp_thrwork(void *pparam)
 {
-	while (!g_notify_stop) {
+	while (!g_ctxpool_stop) {
 		auto num = g_poll_ctx.wait();
 		if (num <= 0)
 			continue;
@@ -230,7 +230,7 @@ static void *ctxp_scanwork(void *pparam)
 	SCHEDULE_CONTEXT *pcontext;
 	
 	double_list_init(&temp_list);
-	while (!g_notify_stop) {
+	while (!g_ctxpool_stop) {
 		std::unique_lock poll_hold(g_context_locks[static_cast<int>(sctx_status::polling)]);
 		auto current_time = tp_now();
 		auto ptail = double_list_get_tail(&g_context_lists[static_cast<int>(sctx_status::polling)]);
@@ -310,18 +310,18 @@ int contexts_pool_run()
 		mlog(LV_ERR, "contexts_pool: evqueue: %s", strerror(ret));
 		return -1;
 	}
-	g_notify_stop = false;
+	g_ctxpool_stop = false;
 	ret = pthread_create4(&g_thread_id, nullptr, ctxp_thrwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "contexts_pool: failed to create epoll thread: %s", strerror(ret));
-		g_notify_stop = true;
+		g_ctxpool_stop = true;
 		return -3;
 	}
 	pthread_setname_np(g_thread_id, "epollctx/work");
 	ret = pthread_create4(&g_scan_id, nullptr, ctxp_scanwork, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "contexts_pool: failed to create scan thread: %s", strerror(ret));
-		g_notify_stop = true;
+		g_ctxpool_stop = true;
 		if (!pthread_equal(g_thread_id, {})) {
 			pthread_kill(g_thread_id, SIGALRM);
 			pthread_join(g_thread_id, NULL);
@@ -334,7 +334,7 @@ int contexts_pool_run()
 
 void contexts_pool_stop()
 {
-	g_notify_stop = true;
+	g_ctxpool_stop = true;
 	if (!pthread_equal(g_thread_id, {}))
 		pthread_kill(g_thread_id, SIGALRM);
 	if (!pthread_equal(g_scan_id, {}))

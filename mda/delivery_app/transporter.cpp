@@ -88,7 +88,7 @@ static std::span<const generic_module> g_plugin_names;
 static std::string g_local_path;
 static HOOK_FUNCTION g_local_hook;
 static unsigned int g_threads_max, g_threads_min, g_free_num;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_transporter_stop;
 static DOUBLE_LIST		g_threads_list;
 static DOUBLE_LIST		g_free_threads;
 static std::vector<MESSAGE_CONTEXT *> g_free_list, g_queue_list; /* ctx for generating new messages */
@@ -183,7 +183,7 @@ void transporter_init(const char *path, const std::span<const generic_module> &n
 	gx_strlcpy(g_path, path, std::size(g_path));
 	g_plugin_names = names;
 	g_local_path.clear();
-	g_notify_stop = false;
+	g_transporter_stop = false;
 	g_threads_min = threads_min;
 	g_threads_max = threads_max;
 	g_free_num = free_num;
@@ -250,7 +250,7 @@ int transporter_run()
 	/* create the scanning thread */
 	auto ret = pthread_create4(&g_scan_id, nullptr, dxp_scanwork, nullptr);
 	if (ret != 0) {
-		g_notify_stop = true;
+		g_transporter_stop = true;
 		mlog(LV_ERR, "transporter: failed to create scanner thread: %s", strerror(ret));
 		return -11;
 	}
@@ -264,7 +264,7 @@ void transporter_stop()
 {
 	DOUBLE_LIST_NODE *pnode;
 
-	g_notify_stop = true;
+	g_transporter_stop = true;
 	std::unique_lock tl_hold(g_threads_list_mutex);
 	g_waken_cond.notify_all();
 	while ((pnode = double_list_pop_front(&g_threads_list)) != nullptr) {
@@ -352,7 +352,7 @@ static void *dxp_thrwork(void *arg)
 		g_waken_cond.wait(cm_hold);
 	}
 	
-	while (!g_notify_stop) {
+	while (!g_transporter_stop) {
 		pmessage = message_dequeue_get();
 		if (NULL == pmessage) {
 			pcontext = transporter_dequeue_context();	
@@ -443,7 +443,7 @@ static void *dxp_scanwork(void *arg)
 {
 	DOUBLE_LIST_NODE *pnode;
 
-	while (!g_notify_stop) {
+	while (!g_transporter_stop) {
 		sleep(SCAN_INTERVAL);
 		if (message_dequeue_get_param(MESSAGE_DEQUEUE_HOLDING) == 0)
 			continue;

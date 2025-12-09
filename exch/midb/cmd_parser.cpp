@@ -35,7 +35,7 @@
 using namespace gromox;
 
 static unsigned int g_threads_num;
-static gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_midbcmd_stop;
 static int g_timeout_interval;
 static std::vector<pthread_t> g_thread_ids;
 static std::mutex g_connection_lock; /* protects g_connlist_active, g_connlist_idle */
@@ -83,7 +83,7 @@ void cmd_parser_insert_conn(std::list<midb_conn> &&holder)
 int cmd_parser_run()
 {
 	cmd_parser_register_command("PING", {cmd_parser_ping, 2});
-	g_notify_stop = false;
+	g_midbcmd_stop = false;
 
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
@@ -102,7 +102,7 @@ int cmd_parser_run()
 
 void cmd_parser_stop()
 {
-	g_notify_stop = true;
+	g_midbcmd_stop = true;
 	g_waken_cond.notify_all();
 	std::unique_lock chold(g_connection_lock);
 	for (auto &c : g_connlist_active) {
@@ -179,7 +179,7 @@ int cmd_write(int fd, const char *sbuf, size_t z)
 
 static std::pair<bool, int> midcp_exec1(int argc, char **argv, MIDB_CONNECTION *conn)
 {
-	if (g_notify_stop)
+	if (g_midbcmd_stop)
 		return {false, 0};
 	auto cmd_iter = g_cmd_entry.find(argv[0]);
 	if (cmd_iter == g_cmd_entry.end())
@@ -230,11 +230,11 @@ static void *midcp_thrwork(void *param)
 	struct pollfd pfd_read;
 	char buffer[CONN_BUFFLEN];
 
-	while (!g_notify_stop) {
+	while (!g_midbcmd_stop) {
 		{
 			std::unique_lock cm_hold(g_cond_mutex);
-			g_waken_cond.wait(cm_hold, []() { return g_notify_stop.load() || connlist_idle_size() > 0; });
-			if (g_notify_stop)
+			g_waken_cond.wait(cm_hold, []() { return g_midbcmd_stop.load() || connlist_idle_size() > 0; });
+			if (g_midbcmd_stop)
 				return nullptr;
 		}
 
@@ -250,7 +250,7 @@ static void *midcp_thrwork(void *param)
 		}
 		offset = 0;
 
-		while (!g_notify_stop) {
+		while (!g_midbcmd_stop) {
 			tv_msec = g_timeout_interval * 1000;
 			pfd_read.fd = pconnection->sockd;
 			pfd_read.events = POLLIN | POLLPRI;

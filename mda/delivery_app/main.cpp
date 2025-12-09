@@ -29,7 +29,7 @@
 
 using namespace gromox;
 
-gromox::atomic_bool g_notify_stop;
+gromox::atomic_bool g_mda_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 std::string g_outgoing_smtp_url;
 static const char *opt_config_file;
@@ -236,7 +236,7 @@ int main(int argc, char **argv)
 
 	retcode = EXIT_SUCCESS;
 	mlog(LV_INFO, "system: LDA is now running");
-	while (!g_notify_stop) {
+	while (!g_mda_stop) {
         sleep(3);
 		if (g_hup_signalled.exchange(false)) {
 			delivery_reload_config(nullptr);
@@ -249,5 +249,5 @@ int main(int argc, char **argv)
 
 static void term_handler(int signo)
 {
-	g_notify_stop = true;
+	g_mda_stop = true;
 }
