@@ -2403,7 +2403,7 @@ int rtf_reader::cmd_uld(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_uldb(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	return astk_pushx(ATTR_DOT_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	return astk_pushx(ATTR_DOUBLE_UL, 0) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_uldash(SIMPLE_TREE_NODE *pword,
