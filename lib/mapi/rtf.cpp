@@ -3058,10 +3058,13 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 	auto preader = this;
 	auto uc_prev_active = b_ubytes_switch;
 	auto uc_prev_num = ubytes_num;
+	auto htmlrtf_prev = is_within_htmlrtf;
 	auto uc_guard = HX::make_scope_exit([&,this]() {
 		b_ubytes_switch = uc_prev_active;
 		ubytes_num = uc_prev_num;
 		ubytes_left = 0;
+		/* Restore htmlrtf state per toggle control word semantics (MS-OXRTFEX 2.1.3.1.3) */
+		is_within_htmlrtf = htmlrtf_prev;
 	});
 	try {
 		preader->attr_stack_list.emplace_back();
