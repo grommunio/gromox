@@ -3081,6 +3081,20 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 					preader->is_within_htmlrtf = false;
 				}
 				if (preader->is_within_htmlrtf) {
+					/*
+					 * MS-OXRTFEX v15 §2.2.3.2: "The de-encapsulating RTF
+					 * reader SHOULD track the current font even when the
+					 * corresponding \fN control word is inside of a fragment
+					 * that is disabled with an HTMLRTF control word."
+					 *
+					 * Process \f control words to maintain font/encoding
+					 * state, skip everything else.
+					 */
+					if (strncasecmp(pnode->cdata, "\\f", 2) == 0 &&
+					    (pnode->cdata[2] >= '0' && pnode->cdata[2] <= '9')) {
+						int font_num = strtol(pnode->cdata + 2, nullptr, 10);
+						cmd_f(pnode, ALIGN_LEFT, true, font_num);
+					}
 					pnode = pnode->get_sibling();
 					continue;
 				}
