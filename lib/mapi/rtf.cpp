@@ -3044,7 +3044,7 @@ static void rtf_unescape_string(char *string)
 	for (size_t i = 0; i < tmp_len; ++i)
 		if ('\\' == string[i] && ('\\' == string[i + 1] ||
 			'{' == string[i + 1] || '}' == string[i + 1])) {
-			memmove(string + i, string + 1, tmp_len - i);
+			memmove(&string[i], &string[i+1], tmp_len - i);
 			tmp_len --;
 		}
 }
