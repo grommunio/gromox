@@ -272,7 +272,8 @@ struct rtf_reader final {
 	cmd_i, cmd_ignore, cmd_info, cmd_intbl, cmd_jpegblip,
 	cmd_lang, cmd_langfe, cmd_langfenp, cmd_langnp, cmd_ldblquote,
 	cmd_line, cmd_loch, cmd_lquote, cmd_ltrmark, cmd_mac, cmd_macpict, cmd_maybe_ignore,
-	cmd_nonbreaking_hyphen, cmd_nonbreaking_space, cmd_nosupersub, cmd_outl, cmd_page, cmd_par,
+	cmd_nonbreaking_hyphen, cmd_nonbreaking_space, cmd_nosupersub,
+	cmd_objattph, cmd_outl, cmd_page, cmd_par,
 	cmd_pc, cmd_pca, cmd_pich, cmd_pict, cmd_picw, cmd_plain,
 	cmd_pmmetafile, cmd_pngblip, cmd_qmspace, cmd_rdblquote, cmd_rquote, cmd_rtlmark, cmd_scaps,
 	cmd_sect, cmd_shad, cmd_soft_hyphen, cmd_strike, cmd_striked,
@@ -2568,6 +2569,25 @@ int rtf_reader::cmd_nosupersub(SIMPLE_TREE_NODE *pword,
 	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
+/**
+ * Object Attachment Placeholder
+ *
+ * MS-OXRTFEX v15 §2.2.3.4: This control word marks where in the text stream
+ * the next attachment should appear. It is followed by a space character that
+ * acts as a placeholder for the attachment.
+ *
+ * For HTML output, the Unicode Object Replacement Character is emitted, which
+ * is the standard placeholder for inline objects.
+ */
+int rtf_reader::cmd_objattph(SIMPLE_TREE_NODE *pword,
+    int align, bool have_param, int num)
+{
+	if (ext_push.p_bytes(wchar_to_utf8(0xFFFC)) != pack_result::ok)
+		return CMD_RESULT_ERROR;
+	++total_chars_in_line;
+	return CMD_RESULT_CONTINUE;
+}
+
 int rtf_reader::cmd_super(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
@@ -3356,6 +3376,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"nonshppict", &rtf_reader::cmd_ignore},
 	{"noproof", &rtf_reader::cmd_continue},
 	{"nosupersub", &rtf_reader::cmd_nosupersub},
+	{"objattph", &rtf_reader::cmd_objattph},
 	{"outl", &rtf_reader::cmd_outl},
 	{"page", &rtf_reader::cmd_page},
 	{"par", &rtf_reader::cmd_par},
