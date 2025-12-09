@@ -1816,26 +1816,32 @@ int rtf_reader::cmd_continue(SIMPLE_TREE_NODE *, int, bool, int)
 int rtf_reader::cmd_cf(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
-	if (!have_param || num < 0 || num >= preader->total_colors)
+	if (!have_param || num < 0 || num >= total_colors) {
 		mlog(LV_DEBUG, "rtf: font color change to %xh is invalid", num);
-	else if (color_table[num] == AUTO_COLOR)
+	} else if (color_table[num] == AUTO_COLOR) {
+		/* Reset to default color */
+		if (!astk_find_popx(ATTR_FOREGROUND))
+			return CMD_RESULT_ERROR;
 		return CMD_RESULT_CONTINUE;
-	else if (!astk_pushx(ATTR_FOREGROUND, color_table[num]))
+	} else if (!astk_pushx(ATTR_FOREGROUND, color_table[num])) {
 		return CMD_RESULT_ERROR;
+	}
 	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_cb(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	auto preader = this;
-	if (!have_param || num < 0 || num >= preader->total_colors)
+	if (!have_param || num < 0 || num >= total_colors) {
 		mlog(LV_DEBUG, "rtf: font color change attempted is invalid");
-	else if (color_table[num] == AUTO_COLOR)
-		return CMD_RESULT_CONTINUE;
-	else if (!astk_pushx(ATTR_BACKGROUND, color_table[num]))
+	} else if (color_table[num] == AUTO_COLOR) {
+		/* Reset to default background */
+		if (!astk_find_popx(ATTR_BACKGROUND))
 			return CMD_RESULT_ERROR;
+		return CMD_RESULT_CONTINUE;
+	} else if (!astk_pushx(ATTR_BACKGROUND, color_table[num])) {
+		return CMD_RESULT_ERROR;
+	}
 	return CMD_RESULT_CONTINUE;
 }
 
@@ -2096,14 +2102,17 @@ int rtf_reader::cmd_deff(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_highlight(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	auto preader = this;
-	if (!have_param || num < 0 || num >= preader->total_colors)
+	if (!have_param || num < 0 || num >= total_colors) {
 		mlog(LV_DEBUG, "rtf: font background "
 			"color change attempted is invalid");
-	else if (color_table[num] == AUTO_COLOR)
+	} else if (color_table[num] == AUTO_COLOR) {
+		/* Reset to default background */
+		if (!astk_find_popx(ATTR_BACKGROUND))
+			return CMD_RESULT_ERROR;
 		return CMD_RESULT_CONTINUE;
-	else if (!astk_pushx(ATTR_BACKGROUND, color_table[num]))
+	} else if (!astk_pushx(ATTR_BACKGROUND, color_table[num])) {
 		return CMD_RESULT_ERROR;
+	}
 	return CMD_RESULT_CONTINUE;
 }
 
