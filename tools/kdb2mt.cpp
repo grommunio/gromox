@@ -36,6 +36,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
+#include "kdbsub.cpp"
 #include "staticnpmap.cpp"
 
 using namespace std::string_literals;
@@ -143,8 +144,6 @@ struct sql_login_param {
 
 }
 
-using LR_map = std::map<std::string, std::string>;
-
 static int do_item(driver &, unsigned int, const parent_desc &, kdb_item &);
 
 static const char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
@@ -154,7 +153,7 @@ static unsigned int g_mlog_level = MLOG_DEFAULT_LEVEL;
 static enum aclconv g_acl_conv = aclconv::automatic;
 static int g_with_hidden = -1;
 static std::vector<uint32_t> g_only_objs;
-static LR_map g_kuid_to_email, g_username_to_storeguid, g_zaddr_to_email;
+static kdb_user_map g_user_map;
 static uint32_t g_proptag_stubbed;
 
 static void cb_only_obj(const HXoptcb *cb) {
@@ -303,77 +302,6 @@ errno_t ace_list::emplace(std::string &&s, uint32_t r)
 	return 0;
 }
 
-static void substitute_addrs(TPROPVAL_ARRAY *ar)
-{
-	static constexpr struct {
-		proptag_t addrtype, emaddr, entryid, srchkey, smtpaddr;
-	} propsets[] = {
-		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_SEARCH_KEY, PR_SENT_REPRESENTING_SMTP_ADDRESS},
-		{PR_ORIGINAL_SENDER_ADDRTYPE, PR_ORIGINAL_SENDER_EMAIL_ADDRESS, PR_ORIGINAL_SENDER_ENTRYID, PR_ORIGINAL_SENDER_SEARCH_KEY},
-		{PR_ORIGINAL_SENT_REPRESENTING_ADDRTYPE, PR_ORIGINAL_SENT_REPRESENTING_EMAIL_ADDRESS, PR_ORIGINAL_SENT_REPRESENTING_ENTRYID, PR_ORIGINAL_SENT_REPRESENTING_SEARCH_KEY},
-		{PR_RECEIVED_BY_ADDRTYPE, PR_RECEIVED_BY_EMAIL_ADDRESS, PR_RECEIVED_BY_ENTRYID, PR_RECEIVED_BY_SEARCH_KEY},
-		{PR_RCVD_REPRESENTING_ADDRTYPE, PR_RCVD_REPRESENTING_EMAIL_ADDRESS, PR_RCVD_REPRESENTING_ENTRYID, PR_RCVD_REPRESENTING_SEARCH_KEY},
-		{PR_ORIGINAL_AUTHOR_ADDRTYPE, PR_ORIGINAL_AUTHOR_EMAIL_ADDRESS, PR_ORIGINAL_AUTHOR_ENTRYID, PR_ORIGINAL_AUTHOR_SEARCH_KEY},
-		{PR_ORIGINALLY_INTENDED_RECIP_ADDRTYPE, PR_ORIGINALLY_INTENDED_RECIP_EMAIL_ADDRESS, PR_ORIGINALLY_INTENDED_RECIP_ENTRYID, 0},
-		{PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_ENTRYID, PR_SENDER_SEARCH_KEY, PR_SENDER_SMTP_ADDRESS},
-		{PR_ADDRTYPE, PR_EMAIL_ADDRESS, PR_ENTRYID, PR_SEARCH_KEY, PR_SMTP_ADDRESS},
-	};
-	for (const auto &tags : propsets) {
-		const char *smtpaddr = nullptr;
-		/* If we already have PR.*SMTP_ADDRESS, just use that */
-		if (tags.smtpaddr != 0)
-			smtpaddr = ar->get<const char>(tags.smtpaddr);
-		if (smtpaddr == nullptr) {
-			auto at = ar->get<const char>(tags.addrtype);
-			if (at == nullptr || strcasecmp(at, "ZARAFA") != 0)
-				continue;
-			auto em = ar->get<const char>(tags.emaddr);
-			if (em == nullptr)
-				continue;
-			auto repl = g_zaddr_to_email.find(em);
-			if (repl == g_zaddr_to_email.end())
-				continue;
-			smtpaddr = repl->second.c_str();
-		}
-
-		ONEOFF_ENTRYID e{};
-		e.ctrl_flags    = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
-		e.pdisplay_name = smtpaddr;
-		e.paddress_type = "SMTP";
-		e.pmail_address = smtpaddr;
-		std::string out;
-		out.resize(1280);
-		EXT_PUSH ep;
-		if (!ep.init(out.data(), out.size(), EXT_FLAG_UTF16) ||
-		    ep.p_oneoff_eid(e) != pack_result::success)
-			continue;
-		BINARY ebin;
-		ebin.cb = ep.m_offset;
-		ebin.pb = ep.m_udata;
-		std::string srchkey = "SMTP:"s + smtpaddr;
-		HX_strupper(srchkey.data());
-		BINARY sbin;
-		sbin.cb = srchkey.size() + 1;
-		sbin.pc = deconst(srchkey.c_str());
-
-		/*
-		 * No need to set PR_SMTP_ADDRESS:
-		 * - if it existed, it is the source truth (and is not changing)
-		 * - it did not exist before, don't add redundant
-		 *   data (PR_EMAIL_ADDRESS already contains everything)
-		 */
-		if (ar->set(TAGGED_PROPVAL{tags.addrtype, deconst("SMTP")}) == ecServerOOM ||
-		    ar->set(TAGGED_PROPVAL{tags.emaddr, deconst(smtpaddr)}) == ecServerOOM)
-			throw std::bad_alloc();
-		if (tags.entryid != 0 &&
-		    ar->set(TAGGED_PROPVAL{tags.entryid, &ebin}) == ecServerOOM)
-			throw std::bad_alloc();
-		if (tags.srchkey != 0 &&
-		    ar->set(TAGGED_PROPVAL{tags.srchkey, &sbin}) == ecServerOOM)
-			throw std::bad_alloc();
-	}
-}
-
 static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 {
 	auto res = drv.query(qstr);
@@ -418,7 +346,7 @@ static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 	}
 
 	if (g_user_map_file != nullptr)
-		substitute_addrs(ar);
+		subst_addrs_entryids(g_user_map, ar);
 }
 
 static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
@@ -743,7 +671,7 @@ static void present_user_stores(const char *storeuser)
 	fmt::print(stderr, "Server/Store                          Username\n");
 	bdash(79);
 	std::string last_srv;
-	for (const auto &e : g_username_to_storeguid) {
+	for (const auto &e : g_user_map.login_to_guid) {
 		auto slash = e.first.find('/');
 		if (slash == e.first.npos) {
 			fmt::print(stderr, "Malformed user-map entry: {}\n", e.first);
@@ -784,8 +712,8 @@ int driver::open_by_user(const char *storeuser)
 		present_user_stores(storeuser);
 		throw YError("PK-1013: \"%s\" was ambiguous.\n", storeuser);
 	}
-	auto it = g_username_to_storeguid.find(server_guid + "/" + storeuser);
-	if (it == g_username_to_storeguid.end())
+	auto it = g_user_map.login_to_guid.find(server_guid + "/" + storeuser);
+	if (it == g_user_map.login_to_guid.end())
 		throw YError("PK-1022: no store for that user");
 	fmt::print(stderr, "Store GUID for user \"{}\": {}\n", storeuser, it->second);
 	return open_by_guid_1(it->second.c_str());
@@ -1042,8 +970,8 @@ std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 		uint32_t rights = strtoul(row[1], nullptr, 0);
 		rights &= ~(frightsGromoxSendAs | frightsGromoxStoreOwner);
 		auto synthid = std::to_string(ben_id) + "@" + drv.server_guid + ".kopano.invalid";
-		auto it = g_kuid_to_email.find(synthid);
-		if (it != g_kuid_to_email.end())
+		auto it = g_user_map.uid_to_email.find(synthid);
+		if (it != g_user_map.uid_to_email.end())
 			synthid = it->second;
 		auto ret = yi->m_acl.emplace(std::move(synthid), rights);
 		if (ret == ENOMEM)
@@ -1473,51 +1401,6 @@ static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 	return 0;
 }
 
-static int usermap_read(const char *file, LR_map &ku, LR_map &na, LR_map &ze)
-{
-	size_t slurp_len = 0;
-	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(file, &slurp_len));
-	if (slurp_data == nullptr) {
-		fprintf(stderr, "Could not read %s: %s\n", file, strerror(errno));
-		return EXIT_FAILURE;
-	}
-	Json::Value jval;
-	if (!str_to_json({slurp_data.get(), slurp_len}, jval) ||
-	    !jval.isArray()) {
-		fprintf(stderr, "%s: JSON parse error.\n"
-			"Try using a utility like jq(1) to discover details.\n", file);
-		return EXIT_FAILURE;
-	}
-	for (unsigned int i = 0; i < jval.size(); ++i) {
-		auto &row = jval[i];
-		const std::string &kuid = !row["id"].isNull() ? row["id"].asString() : "";
-		auto srv_guid = !row["sv"].isNull() ? row["sv"].asString() : "";
-		HX_strlower(srv_guid.data());
-		auto f_na = !row["na"].isNull() ? row["na"].asCString() : "";
-		auto f_em = !row["em"].isNull() ? row["em"].asCString() : "";
-		auto f_to = !row["to"].isNull() ? row["to"].asCString() : "";
-		if (g_acl_conv == aclconv::convert &&
-		    kuid.size() > 0 && srv_guid.size() > 0 &&
-		    *f_to != '\0' && strchr(f_to, '@') != nullptr)
-			ku.emplace(kuid + "@" + srv_guid + ".kopano.invalid", f_to);
-		if (*f_na != '\0' && !row["st"].isNull()) {
-			auto store_guid = row["st"].asString();
-			HX_strlower(store_guid.data());
-			auto p = std::move(srv_guid) + "/" + f_na;
-			na.emplace(std::move(p), std::move(store_guid));
-		}
-		if (*f_na != '\0' && *f_to != '\0')
-			ze.emplace(f_na, f_to);
-		if (*f_em != '\0' && *f_to != '\0')
-			ze.emplace(f_em, f_to);
-	}
-	if (g_acl_conv == aclconv::convert)
-		fprintf(stderr, "usermap %s: %zu x kuid -> (new) emailaddr\n", file, ku.size());
-	fprintf(stderr, "usermap %s: %zu x name -> storeguid\n", file, na.size());
-	fprintf(stderr, "usermap %s: %zu x name -> emailaddr\n", file, ze.size());
-	return 0;
-}
-
 static void terse_help()
 {
 	fprintf(stderr, "Usage: SQLPASS=sqlpass gromox-kdb2mt --sql-host kdb.lan "
@@ -1586,10 +1469,9 @@ int main(int argc, char **argv)
 		}
 	}
 	if (g_user_map_file != nullptr) {
-		int ret = usermap_read(g_user_map_file, g_kuid_to_email,
-		          g_username_to_storeguid, g_zaddr_to_email);
-		if (ret != EXIT_SUCCESS)
-			return ret;
+		auto err = g_user_map.read(g_user_map_file);
+		if (err != 0)
+			return EXIT_FAILURE;
 	}
 	if (argp.nargs != 0) {
 		terse_help();
