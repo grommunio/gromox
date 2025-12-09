@@ -90,7 +90,7 @@ static int t_rtf_reader()
 
 int main()
 {
-	textmaps_init();
+	textmaps_init(getenv("TEST_PATH"));
 	if (t_rtf_reader() != 0)
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
