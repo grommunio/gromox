@@ -2333,9 +2333,11 @@ int rtf_reader::cmd_par(SIMPLE_TREE_NODE *pword, int align,
 	if (preader->have_fromhtml)
 		return preader->ext_push.p_bytes("\r\n") == pack_result::ok ?
 		       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
-	if (ext_push.p_bytes(TAG_LINE_BREAK) != pack_result::ok)
+	/* \par marks end of paragraph, output paragraph end/begin tags */
+	if (ext_push.p_bytes(TAG_PARAGRAPH_END) != pack_result::ok ||
+	    ext_push.p_bytes(TAG_PARAGRAPH_BEGIN) != pack_result::ok)
 		return CMD_RESULT_ERROR;
-	preader->total_chars_in_line ++;
+	total_chars_in_line = 0;
 	return CMD_RESULT_CONTINUE;
 }
 
