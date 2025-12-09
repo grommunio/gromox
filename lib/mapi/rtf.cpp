@@ -3377,6 +3377,10 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"noproof", &rtf_reader::cmd_continue},
 	{"nosupersub", &rtf_reader::cmd_nosupersub},
 	{"objattph", &rtf_reader::cmd_objattph},
+	{"objclass", &rtf_reader::cmd_ignore}, /* object class name destination */
+	{"objdata", &rtf_reader::cmd_ignore}, /* OLE object data destination - binary data we cannot render */
+	{"objname", &rtf_reader::cmd_ignore}, /* object name destination */
+	{"objtime", &rtf_reader::cmd_ignore}, /* object update time destination */
 	{"outl", &rtf_reader::cmd_outl},
 	{"page", &rtf_reader::cmd_page},
 	{"par", &rtf_reader::cmd_par},
