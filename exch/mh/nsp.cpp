@@ -156,9 +156,7 @@ private:
 	ProcRes unbind(MhNspContext&);
 	ProcRes getMailboxUrl(MhNspContext&);
 	ProcRes getAddressBookUrl(MhNspContext&);
-
-	template<size_t RI, bool copystat = false>
-	ProcRes proxy(MhNspContext&);
+	template<size_t RI> ProcRes proxy(MhNspContext &);
 
 	gromox::atomic_bool stop = false;
 	pthread_t scan;
@@ -173,7 +171,7 @@ private:
 		{"dntomid", &MhNspPlugin::proxy<IDntomid>},
 		{"getaddressbookurl", &MhNspPlugin::getAddressBookUrl},
 		{"getmailboxurl", &MhNspPlugin::getMailboxUrl},
-		{"getmatches", &MhNspPlugin::proxy<IGetmatches, true>},
+		{"getmatches", &MhNspPlugin::proxy<IGetmatches>},
 		{"getproplist", &MhNspPlugin::proxy<IGetproplist>},
 		{"getprops", &MhNspPlugin::proxy<IGetprops>},
 		{"getspecialtable", &MhNspPlugin::proxy<IGetspecialtable>},
@@ -181,12 +179,12 @@ private:
 		{"modlinkatt", &MhNspPlugin::proxy<IModlinkatt>},
 		{"modprops", &MhNspPlugin::proxy<IModprops>},
 		{"querycolumn", &MhNspPlugin::proxy<IQuerycolumns>},
-		{"queryrows", &MhNspPlugin::proxy<IQueryrows, true>},
+		{"queryrows", &MhNspPlugin::proxy<IQueryrows>},
 		{"resolvenames", &MhNspPlugin::proxy<IResolvenames>},
-		{"resortrestriction", &MhNspPlugin::proxy<IResortrestriction, true>},
-		{"seekentries", &MhNspPlugin::proxy<ISeekentries, true>},
+		{"resortrestriction", &MhNspPlugin::proxy<IResortrestriction>},
+		{"seekentries", &MhNspPlugin::proxy<ISeekentries>},
 		{"unbind", &MhNspPlugin::unbind},
-		{"updatestat", &MhNspPlugin::proxy<IUpdatestat, true>},
+		{"updatestat", &MhNspPlugin::proxy<IUpdatestat>},
 	};
 };
 
@@ -575,16 +573,13 @@ MhNspPlugin::ProcRes MhNspPlugin::unbind(MhNspContext& ctx)
 	return std::nullopt;
 }
 
-template<size_t RI, bool copystat>
-MhNspPlugin::ProcRes MhNspPlugin::proxy(MhNspContext& ctx)
+template<size_t RI> MhNspPlugin::ProcRes MhNspPlugin::proxy(MhNspContext &ctx)
 {
 	auto& request = ctx.request.emplace<RI>();
 	auto& response = ctx.response.emplace<RI>();
 	if (ctx.ext_pull.g_nsp_request(request) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	response.result = nsp_bridge_run(ctx.session_guid, request, response);
-	if constexpr(copystat)
-		response.stat = request.stat;
 	if (ctx.ext_push.p_nsp_response(response) != pack_result::ok)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
 	return std::nullopt;

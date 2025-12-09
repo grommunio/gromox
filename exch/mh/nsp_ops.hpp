@@ -1,4 +1,6 @@
 #pragma once
+#include <optional>
+#include <string>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include "../nsp/nsp_types.hpp"
@@ -33,7 +35,7 @@ struct nsp_entryids {
 
 struct bind_request {
 	uint32_t flags = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	uint8_t *auxin = nullptr;
 };
 
@@ -55,7 +57,7 @@ struct unbind_response {
 
 struct comparemids_request {
 	uint32_t mid1 = 0, mid2 = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	uint8_t *auxin = nullptr;
 };
 
@@ -79,7 +81,7 @@ struct dntomid_response {
 
 struct getmatches_request {
 	uint32_t reserved1 = 0, row_count = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	RESTRICTION *filter = nullptr;
 	nsp_propname2 *propname = nullptr;
 	LPROPTAG_ARRAY *columns = nullptr;
@@ -89,7 +91,7 @@ struct getmatches_request {
 struct getmatches_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	STAT *stat = nullptr;
+	STAT stat;
 	MID_ARRAY *mids = nullptr;
 	nsp_rowset2 column_rows{};
 };
@@ -108,7 +110,7 @@ struct getproplist_response {
 
 struct getprops_request {
 	uint32_t flags = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	LPROPTAG_ARRAY *proptags = nullptr;
 	uint8_t *auxin = nullptr;
 };
@@ -122,7 +124,7 @@ struct getprops_response {
 
 struct getspecialtable_request {
 	uint32_t flags = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	uint32_t *version = nullptr;
 	uint8_t *auxin = nullptr;
 };
@@ -163,7 +165,7 @@ struct modlinkatt_response {
 
 struct modprops_request {
 	uint32_t cb_auxin = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	LPROPTAG_ARRAY *proptags = nullptr;
 	LTPROPVAL_ARRAY *values = nullptr;
 	uint8_t *auxin = nullptr;
@@ -176,7 +178,7 @@ struct modprops_response {
 
 struct queryrows_request {
 	uint32_t flags = 0, count = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	LPROPTAG_ARRAY *columns = nullptr;
 	MID_ARRAY explicit_table{};
 	uint8_t *auxin = nullptr;
@@ -185,7 +187,7 @@ struct queryrows_request {
 struct queryrows_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	STAT *stat = nullptr;
+	STAT stat;
 	nsp_rowset2 column_rows{};
 };
 
@@ -202,7 +204,7 @@ struct querycolumns_response {
 
 struct resolvenames_request {
 	uint32_t reserved = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	LPROPTAG_ARRAY *proptags = nullptr;
 	STRING_ARRAY *names = nullptr;
 	uint8_t *auxin = nullptr;
@@ -218,7 +220,7 @@ struct resolvenames_response {
 
 struct resortrestriction_request {
 	uint32_t cb_auxin = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	MID_ARRAY *inmids = nullptr;
 	uint8_t *auxin = nullptr;
 };
@@ -226,13 +228,13 @@ struct resortrestriction_request {
 struct resortrestriction_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	STAT *stat = nullptr;
+	STAT stat;
 	MID_ARRAY *outmids = nullptr;
 };
 
 struct seekentries_request {
 	uint32_t reserved = 0, cb_auxin = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	TAGGED_PROPVAL target{};
 	MID_ARRAY *explicit_table = nullptr;
 	LPROPTAG_ARRAY *columns = nullptr;
@@ -242,21 +244,21 @@ struct seekentries_request {
 struct seekentries_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	STAT *stat = nullptr;
+	STAT stat;
 	nsp_rowset2 column_rows{};
 };
 
 struct updatestat_request {
 	uint32_t cb_auxin = 0;
 	uint8_t delta_requested = 0;
-	STAT *stat = nullptr;
+	STAT stat;
 	uint8_t *auxin = nullptr;
 };
 
 struct updatestat_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
-	STAT *stat = nullptr;
+	STAT stat;
 	int32_t *delta = nullptr;
 };
 
