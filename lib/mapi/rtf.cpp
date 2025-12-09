@@ -3148,7 +3148,9 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 						return -EINVAL;
 					paragraph_align = ALIGN_LEFT;
 					b_paragraph_begun = false;
-				} else if (0 == strcmp(string, "cell")) {
+				} else if (strcmp(string, "cell") == 0 ||
+				           strcmp(string, "nestcell") == 0) {
+					/* \cell ends table cell, \nestcell ends nested table cell */
 					is_cell_group = true;
 					if (!preader->b_printed_cell_begin) {
 						if (ext_push.p_bytes(TAG_TABLE_CELL_BEGIN) != pack_result::ok)
@@ -3160,7 +3162,9 @@ int rtf_reader::convert_group_node(SIMPLE_TREE_NODE *pnode)
 						return -ENOBUFS;
 					preader->b_printed_cell_begin = false;
 					preader->b_printed_cell_end = true;
-				} else if (0 == strcmp(string, "row")) {
+				} else if (strcmp(string, "row") == 0 ||
+				           strcmp(string, "nestrow") == 0) {
+					/* \row ends table row, \nestrow ends nested table row */
 					if (preader->is_within_table) {
 						if (ext_push.p_bytes(TAG_TABLE_ROW_END) != pack_result::ok)
 							return -ENOBUFS;
@@ -3375,6 +3379,8 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"ltrmark", &rtf_reader::cmd_ltrmark},
 	{"mac", &rtf_reader::cmd_mac},
 	{"macpict", &rtf_reader::cmd_macpict},
+	{"nesttableprops", &rtf_reader::cmd_ignore}, /* nested table properties destination */
+	{"nonesttables", &rtf_reader::cmd_ignore}, /* fallback content for readers without nested table support */
 	{"nonshppict", &rtf_reader::cmd_ignore},
 	{"noproof", &rtf_reader::cmd_continue},
 	{"nosupersub", &rtf_reader::cmd_nosupersub},
