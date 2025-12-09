@@ -2115,7 +2115,21 @@ int rtf_reader::cmd_tab(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_plain(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	return astk_popx_all() ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	/*
+	 * Per the spec, \plain resets character formatting to defaults:
+	 *
+	 * - Disable bold, italic, underline, etc.
+	 * - Reset font size to 12pt (24 half-points)
+	 * - Reset to default font
+	 *
+	 * First, close all current formatting, then apply defaults.
+	 */
+	if (!astk_popx_all())
+		return CMD_RESULT_ERROR;
+	/* Reset to default font (if defined) */
+	if (default_font_number != 0 && !astk_pushx(ATTR_FONTFACE, default_font_number))
+		return CMD_RESULT_ERROR;
+	return CMD_RESULT_CONTINUE;
 }
 
 int rtf_reader::cmd_fnil(SIMPLE_TREE_NODE *pword,
