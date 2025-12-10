@@ -547,14 +547,10 @@ pack_result nsp_ext_pull::g_nsp_request(seekentries_request &req)
 		TRY(nsp_ext_g_stat(*this, *req.stat));
 	}
 	TRY(g_uint8(&tmp_byte));
-	if (tmp_byte == 0) {
-		req.target = nullptr;
-	} else {
-		req.target = anew<TAGGED_PROPVAL>();
-		if (req.target == nullptr)
-			return pack_result::alloc;
-		TRY(g_tagged_pv(req.target));
-	}
+	if (tmp_byte == 0)
+		req.target = {};
+	else
+		TRY(g_tagged_pv(&req.target));
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
 		req.explicit_table = nullptr;

@@ -271,17 +271,13 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
     const seekentries_request &request, seekentries_response &response)
 {
 	NSP_ROWSET *rows = nullptr;
-	PROPERTY_VALUE *target_val = nullptr;
+	PROPERTY_VALUE target_val{};
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 
-	if (request.target != nullptr) {
-		target_val = cu_alloc<PROPERTY_VALUE>();
-		if (target_val == nullptr ||
-		    !cu_tpropval_to_propval(*request.target, *target_val))
-			return ecRpcFailed;
-	}
+	if (!cu_tpropval_to_propval(request.target, target_val))
+		return ecRpcFailed;
 	auto result = nsp_interface_seek_entries(ses, request.reserved, request.stat,
-	              *target_val, request.explicit_table, request.columns, &rows);
+	              target_val, request.explicit_table, request.columns, &rows);
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&

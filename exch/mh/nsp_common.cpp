@@ -64,6 +64,9 @@ BOOL cu_propname_to_nsp(const nsp_propname2 &a, NSP_PROPNAME &p)
 static BOOL cu_propval_to_valunion(uint16_t type, const void *x, PROP_VAL_UNION &u)
 {
 	switch (type) {
+	case PT_UNSPECIFIED:
+	case PT_NULL:
+		return TRUE;
 	case PT_SHORT:
 		u.s = *static_cast<const uint16_t *>(x);
 		return TRUE;

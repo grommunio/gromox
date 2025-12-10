@@ -234,7 +234,7 @@ struct resortrestriction_response {
 struct seekentries_request {
 	uint32_t reserved = 0, cb_auxin = 0;
 	STAT *stat = nullptr;
-	TAGGED_PROPVAL *target = nullptr;
+	TAGGED_PROPVAL target{};
 	MID_ARRAY *explicit_table = nullptr;
 	LPROPTAG_ARRAY *columns = nullptr;
 	uint8_t *auxin = nullptr;
