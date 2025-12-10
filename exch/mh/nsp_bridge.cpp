@@ -67,6 +67,11 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	return nsp_interface_dntomid(ses, request.names, &response.outmids);
 }
 
+static inline proptag_cspan optional_columns(const LPROPTAG_ARRAY *a)
+{
+	return a != nullptr ? proptag_cspan(*a) : proptag_cspan();
+}
+
 ec_error_t nsp_bridge_run(const GUID &session_guid,
     const getmatches_request &request, getmatches_response &response)
 {
@@ -97,7 +102,8 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	if (Failed(result))
 		return result;
 	if (outrows != nullptr &&
-	    !cu_nsp_rowset_to_colrow(request.columns, *outrows, response.column_rows))
+	    !cu_nsp_rowset_to_colrow(optional_columns(request.columns),
+	    *outrows, response.column_rows))
 		return ecRpcFailed;
 	return result;
 }
@@ -242,7 +248,8 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&
-	    !cu_nsp_rowset_to_colrow(request.columns, *rows, response.column_rows))
+	    !cu_nsp_rowset_to_colrow(optional_columns(request.columns),
+	    *rows, response.column_rows))
 		return ecRpcFailed;
 	return result;
 }
@@ -258,7 +265,8 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&
-	    !cu_nsp_rowset_to_colrow(request.proptags, *rows, response.column_rows))
+	    !cu_nsp_rowset_to_colrow(optional_columns(request.proptags),
+	    *rows, response.column_rows))
 		return ecRpcFailed;
 	return result;
 }
@@ -287,7 +295,8 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&
-	    !cu_nsp_rowset_to_colrow(request.columns, *rows, response.column_rows))
+	    !cu_nsp_rowset_to_colrow(optional_columns(request.columns),
+	    *rows, response.column_rows))
 		return ecRpcFailed;
 	return result;
 }

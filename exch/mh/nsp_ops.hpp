@@ -11,7 +11,7 @@ struct nsp_propname2 {
 };
 
 struct nsp_rowset2 {
-	LPROPTAG_ARRAY columns{};
+	proptag_vector columns;
 	uint32_t row_count = 0;
 	PROPERTY_ROW *rows = nullptr;
 };
