@@ -53,13 +53,13 @@ struct NSPIUNBIND_OUT final : public nsp_response {
 struct NSPIUPDATESTAT_IN final : public nsp_request {
 	NSPI_HANDLE handle{};
 	STAT stat;
-	int32_t *pdelta = nullptr;
+	std::optional<int32_t> pdelta;
 };
 
 struct NSPIUPDATESTAT_OUT final : public nsp_response {
 	STAT stat;
 	ec_error_t result{};
-	int32_t *pdelta = nullptr;
+	std::optional<int32_t> pdelta;
 };
 
 struct NSPIQUERYROWS_IN final : public nsp_request {

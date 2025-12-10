@@ -1792,12 +1792,10 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIUPDATESTAT_IN *r)
 	TRY(nsp_ndr_pull_stat(x, &r->stat));
 	TRY(x.g_genptr(&ptr));
 	if (0 != ptr) {
-		r->pdelta = ndr_stack_anew<int32_t>(NDR_STACK_IN);
-		if (r->pdelta == nullptr)
-			return pack_result::alloc;
-		TRY(x.g_int32(r->pdelta));
+		r->pdelta.emplace();
+		TRY(x.g_int32(&*r->pdelta));
 	} else {
-		r->pdelta = NULL;
+		r->pdelta.reset();
 	}
 	return pack_result::ok;
 }
@@ -1806,7 +1804,7 @@ static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIUPDATESTAT_OUT &r)
 {
 	TRY(nsp_ndr_push_stat(x, r.stat));
 	TRY(x.p_unique_ptr(r.pdelta));
-	if (r.pdelta != nullptr)
+	if (r.pdelta.has_value())
 		TRY(x.p_int32(*r.pdelta));
 	TRY(x.p_uint32(r.result));
 	return pack_result::ok;

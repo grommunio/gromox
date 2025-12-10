@@ -304,19 +304,12 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 ec_error_t nsp_bridge_run(const GUID &session_guid,
     const updatestat_request &request, updatestat_response &response)
 {
-	int32_t delta;
+	int32_t delta = 0;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	response.stat = request.stat;
-	if (request.delta_requested != 0) {
-		response.delta = cu_alloc<int32_t>();
-		if (response.delta == nullptr)
-			return ecRpcFailed;
-	} else {
-		response.delta = nullptr;
-	}
 	auto result = nsp_interface_update_stat(ses, response.stat, &delta);
 	if (request.delta_requested != 0)
-		*response.delta = delta;
+		response.delta.emplace(delta);
 	return result;
 }
 

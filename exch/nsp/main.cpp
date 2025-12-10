@@ -186,7 +186,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		out->stat = in->stat;
 		out->pdelta = in->pdelta;
 		out->result = nsp_interface_update_stat(in->handle,
-		              out->stat, out->pdelta);
+		              out->stat, optional_ptr(out->pdelta));
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;

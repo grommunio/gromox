@@ -855,7 +855,7 @@ pack_result nsp_ext_push::p_nsp_response(const updatestat_response &rsp)
 	TRY(p_uint32(rsp.result));
 	TRY(p_uint8(0xFF));
 	TRY(nsp_ext_p_stat(*this, rsp.stat));
-	if (rsp.delta == nullptr) {
+	if (!rsp.delta.has_value()) {
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));

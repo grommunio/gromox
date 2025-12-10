@@ -259,7 +259,7 @@ struct updatestat_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
 	STAT stat;
-	int32_t *delta = nullptr;
+	std::optional<int32_t> delta;
 };
 
 struct getmailboxurl_request {
