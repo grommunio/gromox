@@ -649,7 +649,6 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 	uint32_t *pcb_auxout, uint32_t *ptrans_time) try
 {
 	auto pcxh = &cxh;
-	char username[UADDR_SIZE];
 	HANDLE_DATA *phandle;
 	auto input_flags = *pflags;
 	*pflags = 0;
@@ -705,7 +704,7 @@ ec_error_t emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 		input_flags |= GROMOX_READSTREAM_NOCHAIN;
 
 	auto result = rop_processor_proc(input_flags, pin, cb_in, pout, pcb_out);
-	std::string usrname = phandle->username;
+	std::string username = phandle->username;
 	uint16_t cxr = phandle->cxr;
 	BOOL b_wakeup = double_list_get_nodes_num(&phandle->notify_list) == 0 ? false : TRUE;
 	emsmdb_interface_put_handle_data(phandle);
