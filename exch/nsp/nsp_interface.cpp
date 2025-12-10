@@ -734,11 +734,9 @@ ec_error_t nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	
 	if (pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
-	if (count == 0 && ptable == nullptr)
-		return ecInvalidParam;
 	if (count == 0)
-		/* MS-OXNSPI v14 §3.1.4.1.8 point 10 */
-		count = 1;
+		/* MS-OXNSPI v14 §3.1.4.1.8 point 2 & 9 */
+		return ecInvalidParam;
 
 	/* MS-OXNSPI v14 §3.1.4.1.8 point 6.2 / MS-NSPI v15 §3.1.4.8 point 6.2 */
 	auto pproptags = itags != nullptr ? proptag_cspan(*itags) : proptag_cspan(nsp_default_tags);
