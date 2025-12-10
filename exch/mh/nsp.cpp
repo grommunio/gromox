@@ -127,7 +127,7 @@ struct MhNspContext : public MhContext
 	}
 
 	ec_error_t getaddressbookurl(std::string *);
-	ec_error_t getmailboxurl();
+	ec_error_t getmailboxurl(const getmailboxurl_request &, getmailboxurl_response &);
 
 	NspRequest request{};
 	NspResponse response{};
@@ -406,10 +406,9 @@ ec_error_t MhNspContext::getaddressbookurl(std::string *dest) try
 	return ecServerOOM;
 }
 
-ec_error_t MhNspContext::getmailboxurl() try
+ec_error_t MhNspContext::getmailboxurl(const getmailboxurl_request &req,
+    getmailboxurl_response &resp) try
 {
-	const auto& req = std::get<getmailboxurl_request>(request);
-	auto& resp = std::get<getmailboxurl_response>(response);
 	std::string tmp_buff = req.user_dn;
 	auto token = strrchr(tmp_buff.data(), '/');
 	if (token == nullptr || strncasecmp(token, "/cn=", 4) != 0)
@@ -589,7 +588,7 @@ MhNspPlugin::ProcRes MhNspPlugin::getMailboxUrl(MhNspContext& ctx)
 	auto &response = ctx.response.emplace<getmailboxurl_response>();
 	if (ctx.ext_pull.g_nsp_request(request) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
-	response.result = ctx.getmailboxurl();
+	response.result = ctx.getmailboxurl(request, response);
 	if (ctx.ext_push.p_nsp_response(response) != pack_result::ok)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
 	return std::nullopt;
