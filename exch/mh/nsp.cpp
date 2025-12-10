@@ -586,7 +586,7 @@ template<size_t RI> MhNspPlugin::ProcRes MhNspPlugin::proxy(MhNspContext &ctx)
 MhNspPlugin::ProcRes MhNspPlugin::getMailboxUrl(MhNspContext& ctx)
 {
 	auto& request = ctx.request.emplace<getmailboxurl_request>();
-	auto& response = ctx.response.emplace<getmatches_response>();
+	auto &response = ctx.response.emplace<getmailboxurl_response>();
 	if (ctx.ext_pull.g_nsp_request(request) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
 	response.result = ctx.getmailboxurl();
