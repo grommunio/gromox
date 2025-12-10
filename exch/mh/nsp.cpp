@@ -126,7 +126,7 @@ struct MhNspContext : public MhContext
 		epush = &ext_push;
 	}
 
-	ec_error_t getaddressbookurl(std::string * = nullptr);
+	ec_error_t getaddressbookurl(std::string *);
 	ec_error_t getmailboxurl();
 
 	NspRequest request{};
@@ -386,8 +386,6 @@ ec_error_t MhNspContext::getaddressbookurl(std::string *dest) try
 {
 	unsigned int user_id = 0;
 
-	if (dest == nullptr)
-		dest = &std::get<getaddressbookurl_response>(response).server_url;
 	if (!mysql_adaptor_get_user_ids(auth_info.username, &user_id, nullptr, nullptr))
 		return ecError;
 	char username1[13]{};
@@ -603,7 +601,7 @@ MhNspPlugin::ProcRes MhNspPlugin::getAddressBookUrl(MhNspContext& ctx)
 	auto& response = ctx.response.emplace<getaddressbookurl_response>();
 	if (ctx.ext_pull.g_nsp_request(request) != pack_result::ok)
 		return ctx.error_responsecode(resp_code::invalid_rq_body);
-	response.result = ctx.getaddressbookurl();
+	response.result = ctx.getaddressbookurl(&response.server_url);
 	if (ctx.ext_push.p_nsp_response(response) != pack_result::ok)
 		return ctx.failure_response(RPC_X_BAD_STUB_DATA);
 	return std::nullopt;
