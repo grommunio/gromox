@@ -81,6 +81,7 @@ static BOOL cu_get_propname(propid_t propid, PROPERTY_NAME **name) try
 static void terse_help()
 {
 	fprintf(stderr, "Usage: gromox-exm2eml -u source@mbox.de msgid >dump.eml\n");
+	fprintf(stderr, "       gromox-exm2mt -u source@mbox.de msgid >dump.mt\n");
 }
 
 static constexpr generic_module g_dfl_svc_plugins[] =
@@ -144,7 +145,9 @@ static int fetch_message(const char *idstr, std::string &log_id,
 int main(int argc, char **argv) try
 {
 	auto bn = HX_basename(argv[0]);
-	if (strcmp(bn, "gromox-exm2eml") == 0) {
+	if (strcmp(bn, "gromox-export") == 0) {
+		g_export_mode = EXPORT_GXMT;
+	} else if (strcmp(bn, "gromox-exm2eml") == 0) {
 		g_export_mode = EXPORT_MAIL;
 	} else if (strcmp(bn, "gromox-exm2mt") == 0) {
 		g_export_mode = EXPORT_GXMT;
@@ -323,6 +326,6 @@ int main(int argc, char **argv) try
 	}
 	return EXIT_SUCCESS;
 } catch (const std::exception &e) {
-	fprintf(stderr, "exm2eml: Exception: %s\n", e.what());
+	fprintf(stderr, "gromox-export: Exception: %s\n", e.what());
 	return EXIT_FAILURE;
 }

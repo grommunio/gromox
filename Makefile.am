@@ -38,7 +38,7 @@ dist_unit_DATA = system/gromox-cleaner.service system/gromox-cleaner.timer \
 	system/gromox-snapshot.service system/gromox-snapshot.timer \
 	system/gromox-timer.service system/gromox-zcore.service
 
-sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbck gromox-mbop gromox-mbsize gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
+sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-export gromox-import gromox-mailq gromox-mbck gromox-mbop gromox-mbsize gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt
 if HAVE_CURL
 sbin_PROGRAMS += gromox-dscli
 endif
@@ -51,7 +51,7 @@ endif
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
-dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-exm2ical tools/gromox-exm2mt tools/gromox-exm2tnef tools/gromox-exm2vcf tools/gromox-ical2mt tools/gromox-mbox2mt tools/gromox-tnef2mt tools/gromox-vcf2mt
+dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-exm2eml tools/gromox-exm2ical tools/gromox-exm2mt tools/gromox-exm2tnef tools/gromox-exm2vcf tools/gromox-ical2mt tools/gromox-mbox2mt tools/gromox-mt2exm tools/gromox-tnef2mt tools/gromox-vcf2mt
 dist_pkglibexec_SCRIPTS = tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 
@@ -191,8 +191,8 @@ gromox_eml2mbox_SOURCES = tools/eml2mbox.cpp
 gromox_eml2mbox_LDADD = ${libHX_LIBS}
 gromox_eml2mt_SOURCES = tools/eml2mt.cpp tools/genimport.cpp tools/genimport.hpp
 gromox_eml2mt_LDADD = ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
-gromox_exm2eml_SOURCES = tools/exm2eml.cpp tools/genimport.cpp tools/genimport.hpp
-gromox_exm2eml_LDADD = ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
+gromox_export_SOURCES = tools/exm2eml.cpp tools/genimport.cpp tools/genimport.hpp
+gromox_export_LDADD = ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la
 gromox_mailq_SOURCES = tools/mailq.cpp
 gromox_mailq_LDADD = libgromox_common.la
 gromox_mbck_SOURCES = tools/mbck.cpp
@@ -210,8 +210,8 @@ gromox_mkpublic_SOURCES = tools/mkpublic.cpp tools/mkshared.cpp tools/mkshared.h
 gromox_mkpublic_LDADD = ${fmt_LIBS} ${libHX_LIBS} ${mysql_LIBS} ${libssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_dbop.la libgromox_mapi.la
 gromox_kdb2mt_SOURCES = tools/genimport.cpp tools/genimport.hpp tools/kdb2mt.cpp
 gromox_kdb2mt_LDADD = ${fmt_LIBS} ${libHX_LIBS} ${jsoncpp_LIBS} ${mysql_LIBS} ${libpff_LIBS} ${zlib_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la
-gromox_mt2exm_SOURCES = tools/genimport.cpp tools/genimport.hpp tools/mt2exm.cpp
-gromox_mt2exm_LDADD = ${fmt_LIBS} ${jsoncpp_LIBS} ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la libgxs_ruleproc.la
+gromox_import_SOURCES = tools/genimport.cpp tools/genimport.hpp tools/mt2exm.cpp
+gromox_import_LDADD = ${fmt_LIBS} ${jsoncpp_LIBS} ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la libgxs_mysql_adaptor.la libgxs_ruleproc.la
 gromox_oxm2mt_SOURCES = tools/genimport.cpp tools/genimport.hpp tools/oxm2mt.cpp
 gromox_oxm2mt_LDADD = ${libHX_LIBS} ${fmt_LIBS} ${iconv_LIBS} ${mysql_LIBS} ${libolecf_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la
 gromox_pff2mt_SOURCES = tools/genimport.cpp tools/genimport.hpp tools/pff2mt.cpp
@@ -291,13 +291,14 @@ dist_man_MANS = \
 	doc/gromox-abktpull.8 doc/gromox-cleaner.service.8 \
 	doc/gromox-dbop.8 doc/gromox-dscli.8 \
 	doc/gromox-e2ghelper.8 \
-	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 doc/gromox-exm2eml.8 \
+	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 \
 	doc/gromox-exm2ical.8 doc/gromox-exm2mt.8 doc/gromox-exm2tnef.8 \
-	doc/gromox-exm2vcf.8 doc/gromox-ical2mt.8 \
+	doc/gromox-exm2vcf.8 doc/gromox-export.8 doc/gromox-ical2mt.8 \
+	doc/gromox-import.8 \
 	doc/gromox-kdb2mt.8 doc/gromox-mailq.8 doc/gromox-mbck.8 doc/gromox-mbop.8 \
 	doc/gromox-mbsize.8 \
 	doc/gromox-mkmidb.8 doc/gromox-mkprivate.8 doc/gromox-mkpublic.8 \
-	doc/gromox-mt2exm.8 doc/gromox-selinux.5 \
+	doc/gromox-selinux.5 \
 	doc/gromox-snapshot.8 doc/gromox-vcf2mt.8 doc/http.8gx \
 	doc/imap.8gx doc/istore.8gx \
 	doc/kdb-uidextract.8 doc/kdb-uidextract-limited.8 \

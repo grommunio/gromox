@@ -40,7 +40,8 @@ Makefile.in
 /gromox-edb2mt
 /gromox-eml2mbox
 /gromox-eml2mt
-/gromox-exm2eml
+/gromox-export
+/gromox-import
 /gromox-kdb2mt
 /gromox-mailq
 /gromox-mbck
@@ -49,7 +50,6 @@ Makefile.in
 /gromox-mkmidb
 /gromox-mkprivate
 /gromox-mkpublic
-/gromox-mt2exm
 /gromox-oxm2mt
 /gromox-pff2mt
 /gromox-snapshot

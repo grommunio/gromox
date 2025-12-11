@@ -4,7 +4,7 @@
 /*
  * e2ghelper performs the equivalent of
  *
- * 	gromox-pff2mt [...] | gromox-mt2exm [...];
+ * 	gromox-pff2mt [...] | gromox-import [...];
  * 	test ${PIPESTATUS[0]} = 0 && test ${PIPESTATUS[1]} = 0
  *
  * e2ghelper exists because replicating that behavior in POSIX sh is awkward -
@@ -68,7 +68,7 @@ int main(int argc, char **argv) try
 		pff_argv[pff_argc++] = argp.uarg[i];
 	pff_argv[pff_argc] = nullptr;
 
-	import_argv[import_argc++] = "gromox-mt2exm";
+	import_argv[import_argc++] = "gromox-import";
 	if (g_username != nullptr) {
 		import_argv[import_argc++] = "-u";
 		import_argv[import_argc++] = g_username;

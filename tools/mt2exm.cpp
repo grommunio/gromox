@@ -198,7 +198,7 @@ static void exm_adjust_namedprops(TPROPVAL_ARRAY &props)
 		if (name_iter == g_src_name_map.end())
 			name_iter = g_src_name_map.find(CHANGE_PROP_TYPE(old_tag, PT_UNSPECIFIED));
 		if (name_iter == g_src_name_map.end()) {
-			fprintf(stderr, "mt2exm: broken input stream does not specify namedpropinfo for tag %xh.\n", old_tag);
+			fprintf(stderr, "gromox-import: broken input stream does not specify namedpropinfo for tag %xh.\n", old_tag);
 			continue;
 		}
 		auto new_id = gi_resolve_namedprop(name_iter->second);
@@ -565,7 +565,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 	if (!g_do_delivery) {
 		for (auto i = 0U; i < g_repeat_iter; ++i) {
 			if (i > 0 && i % 1024 == 0)
-				fprintf(stderr, "mt2exm repeat %u/%u\n", i, g_repeat_iter);
+				fprintf(stderr, "importer repeat cycle %u/%u\n", i, g_repeat_iter);
 			auto ret = exm_create_msg(folder_it->second.fid_to,
 			           &ctnt, im_repr, digest);
 			if (ret != EXIT_SUCCESS)
@@ -586,7 +586,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 		mode |= DELIVERY_MRAUTOPROC;
 	for (auto i = 0U; i < g_repeat_iter; ++i) {
 		if (i > 0 && i % 1024 == 0)
-			fprintf(stderr, "mt2exm repeat %u/%u\n", i, g_repeat_iter);
+			fprintf(stderr, "importer repeat cycle %u/%u\n", i, g_repeat_iter);
 		auto ret = exm_deliver_msg(g_username, &ctnt, im_repr,
 		           digest, mode);
 		if (ret != EXIT_SUCCESS)
@@ -673,9 +673,9 @@ static void gi_dump_thru_map(const propididmap_t &map)
 
 static void terse_help()
 {
-	fprintf(stderr, "Usage: gromox-mt2exm -u target@mbox.de <stream.dump\n");
-	fprintf(stderr, "Option overview: gromox-mt2exm -?\n");
-	fprintf(stderr, "Documentation: man gromox-mt2exm\n");
+	fprintf(stderr, "Usage: gromox-import -u target@mbox.de <stream.dump\n");
+	fprintf(stderr, "Option overview: gromox-import -?\n");
+	fprintf(stderr, "Documentation: man gromox-import\n");
 }
 
 int main(int argc, char **argv) try
@@ -698,7 +698,7 @@ int main(int argc, char **argv) try
 	if (g_twostep)
 		g_do_delivery = true;
 	if (g_do_delivery && g_anchor_folder != 0)
-		fprintf(stderr, "mt2exm: -B option has no effect when -D is used\n");
+		fprintf(stderr, "gromox-import: -B option has no effect when -D is used\n");
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	service_init({nullptr, g_dfl_svc_plugins, 1});
@@ -748,6 +748,6 @@ int main(int argc, char **argv) try
 	gi_dump_thru_map(g_thru_name_map);
 	return iret;
 } catch (const std::exception &e) {
-	fprintf(stderr, "mt2exm: Exception: %s\n", e.what());
+	fprintf(stderr, "gromox-import: Exception: %s\n", e.what());
 	return EXIT_FAILURE;
 }

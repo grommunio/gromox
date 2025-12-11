@@ -1,2 +1,2 @@
 #!/bin/sh
-exec gromox-exm2eml --tnef "$@"
+exec gromox-export --tnef "$@"
