@@ -32,6 +32,33 @@ enum {
 	SW_QUOTED_SECOND
 };
 
+struct htmlent {
+	char input[9];
+	char output[4];
+	uint8_t olen;
+};
+
+static constexpr struct htmlent html_entities[] = {
+#define E(s,d) {(s), (d), sizeof(d)-1}
+	E("&amp;", "&"),
+	E("&bull;", "•"),
+	E("&emsp14;", " "),
+	E("&emsp;", " "),
+	E("&ensp;", " "),
+	E("&gt;", ">"),
+	E("&ldquo;", "“"),
+	E("&lsquo;", "‘"),
+	E("&lt;", "<"),
+	E("&mdash;", "—"),
+	E("&nbsp;", " "),
+	E("&ndash;", "–"),
+	E("&quot;", "\""),
+	E("&rdquo;", "”"),
+	E("&rsquo;", "’"),
+	E("&shy;", "­"),
+#undef E
+};
+
 static constexpr uint32_t g_uri_usual[] = {
     0xffffdbfe, /* 1111 1111 1111 1111  1101 1011 1111 1110 */
 
@@ -1350,32 +1377,33 @@ static int html_to_plain_boring(std::string_view inbuf, std::string &outbuf) try
 				}
 			}
 			break;
-		case '&':
-			if (state == st::NONE) {
-				if (0 == strncasecmp(p, "&quot;", 6)) {
-					rp += '"';
-					i += 5;
-					p += 5;
-				} else if (0 == strncasecmp(p, "&amp;", 5)) {
-					rp += '&';
-					i += 4;
-					p += 4;
-				} else if (0 == strncasecmp(p, "&lt;", 4)) {
-					rp += '<';
-					i += 3;
-					p += 3;
-				} else if (0 == strncasecmp(p, "&gt;", 4)) {
-					rp += '>';
-					i += 3;
-					p += 3;
-				} else if (0 == strncasecmp(p, "&nbsp;", 6)) {
-					rp += ' ';
-					i += 5;
-					p += 5;
+		case '&': {
+			if (state != st::NONE)
+				break;
+			linebegin = false;
+			auto semi = strchr(p, ';');
+			size_t ilen = semi != nullptr ? semi - p : strlen(p);
+			// there is a ++p after the switch() // ilen thus one short
+			if (p[1] == '#') {
+				char *end;
+				auto uc = strtoul(&p[2], &end, 10);
+				if (end != &p[2] && end != nullptr && *end == ';') {
+					rp += wchar_to_utf8(uc);
+					i += ilen;
+					p += ilen;
+					break;
 				}
-				linebegin = false;
 			}
+			auto it = std::lower_bound(std::cbegin(html_entities), std::cend(html_entities), p,
+				  [&](const htmlent &e, const char *p) { return strncasecmp(e.input, p, ilen + 1) < 0; });
+			if (it != std::cend(html_entities) && strncasecmp(p, it->input, ilen + 1) == 0)
+				rp += std::string_view(it->output, it->olen);
+			else
+				rp += wchar_to_utf8(0xfffd);
+			i += ilen;
+			p += ilen;
 			break;
+		}
 		case '(':
 		case ')':
 			if (state == st::NONE) {

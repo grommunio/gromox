@@ -3355,7 +3355,7 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 	{"plain", &rtf_reader::cmd_plain},
 	{"pmmetafile", &rtf_reader::cmd_pmmetafile},
 	{"pngblip", &rtf_reader::cmd_pngblip},
-	{"qmspace", &rtf_reader::cmd_qmspace},
+	{"qmspace", &rtf_reader::cmd_qmspace}, /* One Quarter Space */
 	{"rdblquote", &rtf_reader::cmd_rdblquote},
 	{"rquote", &rtf_reader::cmd_rquote},
 	{"rtf", &rtf_reader::cmd_continue},
