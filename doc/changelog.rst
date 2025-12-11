@@ -1,9 +1,28 @@
-Development 3.2+
-================
+Gromox 3.2.139
+==============
+
+Enhancements:
+
+* oxvcard: do export Outlook contact photo
+* exmdb: include RTF in the cross-body format synchronization when the message
+  is saved, making Outlook Notes or Outlook Contact notes display something in
+  grommunio-web and other clients
+* exmdb: new read_delegate/write_delegate EXRPCs so that delegates.txt is no
+  longer accessed via filesystem
+* exch: allow user sending mail with From: line set to own aliases
 
 Fixes:
 
-* Revert "ews: avoid sending out emClient's draft messages", this did not work
+* ews: avoid sending newly created message items when message invitation flag
+  is set
+* zcore: obtain freebusy information for own mailbox using owner mode, so that
+  setting e.g. the "default" ACL default for one's calender does not deprive
+  the user of his own freebusy view.
+* exmdb: the event volley when the last row of a MAPI table with categories
+  got deleted had wrong event data
+* nsp: results from nspiGetMatches were not always capped as requested by
+  clients (potentially crashing OL)
+* zcore: make openstream treat MAPI_BEST_ACCESS as documented
 
 
 Gromox 3.2 (2025-11-24)
