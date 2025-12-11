@@ -95,9 +95,23 @@ static int t_rtf_reader()
 	return 0;
 }
 
+static int t_html_plain()
+{
+	std::string obuf;
+	if (html_to_plain("&lt;&gt;&quot;&amp;&#33;", CP_UTF8, obuf) != CP_UTF8)
+		return -1;
+	if (strncmp(obuf.c_str(), "<>\"&!", 5) != 0) {
+		fprintf(stderr, "output: >%s<\n", obuf.c_str());
+		return -1;
+	}
+	return 0;
+}
+
 int main()
 {
 	textmaps_init(getenv("TEST_PATH"));
+	if (t_html_plain() != 0)
+		return EXIT_FAILURE;
 	if (t_rtf_reader() != 0)
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
