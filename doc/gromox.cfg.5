@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 .TH gromox.cfg 5 "" "Gromox" "Gromox admin reference"
 .SH Name
 gromox.cfg \(em Central configuration file for Gromox services
@@ -27,7 +27,7 @@ Try to fill the PR_TRANSPORT_MESSAGE_HEADERS property when messages are
 submitted.
 Turning this option on requires extra storage (usually between 0.5KB and 1KB
 per sent message). Transport headers for sent messages can be generated on the
-fly from the regular MAPI message data structures e.g. via gromox-exm2eml(8)
+fly from the regular MAPI message data structures e.g. via gromox\-export(8)
 for analysis, so unless there is a need to retain the results from older
 generator versions, you should leave this off.
 .br
@@ -91,7 +91,7 @@ Make the "TWOSTEP" Client-Side Inbox Rule Processor emit information about the
 conditions it is evaluating and the actions it is carrying out. The surrounding
 process also needs to have log level set to at least 6 (debug) to see anything,
 i.e. delivery.cfg:lda_log_level=6 in case of delivery(8gx), or \-\-loglevel=6
-in case of command-line tools like case of gromox\-mt2exm(8). [The Rule
+in case of command-line tools like case of gromox\-import(8). [The Rule
 Processor implementation inside exmdb_provider(8gx) logs unconditionally, and
 its log messages will be seen, provided level 6 is set with
 http.cfg:http_log_level=6.]

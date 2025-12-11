@@ -6,7 +6,7 @@ gromox\-oxm2mt \(em Utility for analysis of Outlook .msg files
 .SH Description
 gromox\-oxm2mt reads an Outlook .msg file, and re-exports the data in a
 Gromox-specific mailbox transfer format to stdout for consumption by pipe by
-the gromox-mt2exm(8gx) program. Optionally, oxm2mt can print a tree summary of
+the gromox\-import(8) program. Optionally, oxm2mt can print a tree summary of
 the message.
 .SH Options
 .TP
@@ -28,7 +28,7 @@ Default: \fI4\fP (notice)
 .SH Examples
 Import of a message to drafts:
 .PP
-gromox\-oxm2mt saved.msg | gromox\-mt2exm \-u user@domain.example \-B drafts
+gromox\-oxm2mt saved.msg | gromox\-import \-u user@domain.example \-B drafts
 .SH Normative references
 .IP \(bu 4
 MS-CFB: Compound File Binary Format (CFBF)
@@ -46,4 +46,4 @@ oxm2mt uses the libolecf C library to read the CDF structure of .msg files
 per [MS-CFB], and then applies own code to make sense of the files as per
 [MS-OXMSG].
 .SH See also
-\fBgromox\fP(7), \fBgromox\-mt2exm\fP(8), \fBolecfexport(1)\fP
+\fBgromox\fP(7), \fBgromox\-import\fP(8), \fBolecfexport\fP(1)

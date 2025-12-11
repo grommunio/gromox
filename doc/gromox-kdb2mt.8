@@ -14,7 +14,7 @@ SQL-stored mailboxes
 gromox\-kdb2mt reads one store from a Zarafa/Kopano SQL database and, for
 attachments, the associated filesystem. The data is then re-exported in a
 Gromox-specific mailbox transfer format to stdout, intended for consumption by
-pipe by the gromox-mt2exm(8gx) program. Optionally, kdb2mt can print a summary
+pipe by the gromox\-import(8) program. Optionally, kdb2mt can print a summary
 of the hierarchy during extraction.
 .PP
 The SQL server that carries the Zarafa/Kopano database for the home server
@@ -110,7 +110,7 @@ kopano-server.cfg, call kdb2mt with the L1 and L2 options.
 Extract just the object with the given hierarchy id. This option may be
 specified multiple times to selectively extract more objects. In the output
 stream, objects so extracted will be declared as unanchored so they can be
-imported to a folder of choice later (cf. gromox-mt2exm \-B).
+imported to a folder of choice later (cf. gromox-import's \-B option).
 .TP
 \fB\-\-acl\fP={\fIauto\fP|\fIno\fP|\fInoextract\fP|\fIextract\fP|\fIconvert\fP}
 Handling for ACLs on MAPI objects: ignore, extract to synthetic address, or
@@ -184,7 +184,7 @@ e.g. /run/mysql/mysql.sock). Command:
 .RS 4
 SQLPASS=kopanosqlpass gromox\-kdb2mt \-\-sql\-host 127.0.0.1 \-\-sql\-port
 12345 \-\-sql\-user kopano \-\-src\-attach /mnt \-\-mbox\-mro jdoe |
-gromox\-mt2exm \-u user@domain.example
+gromox\-import \-u user@domain.example
 .RE
 .PP
 Done! The speed of the operation depends on the capabilities of the network
@@ -287,4 +287,4 @@ company@username) or the (SMTP) email address; it is not entirely consistent.
 With the help of a user map file, the ZARAFA-type addresses can be converted to
 SMTP addresses.
 .SH See also
-\fBgromox\fP(7), \fBgromox\-mt2exm\fP(8)
+\fBgromox\fP(7), \fBgromox\-import\fP(8)

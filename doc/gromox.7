@@ -127,29 +127,30 @@ gromox\-mkpublic(8) \(em Tool for creating a blank public store
 gromox\-eml2mbox(8) \(em Utility for converting RFC5322 Internet Mail messages
 into a RFC4155 mbox-format mailbox
 .IP \(bu 4
-gromox\-eml2mt(8) \(em Utility for analysis of/importing RFC5322 Internet Mail
-messages
+gromox\-import(8) \(em Utility for analysis of/importing messages from a Gromox
+Message Transfer datastream
 .IP \(bu 4
-gromox\-exm2eml(8) \(em Utility for exporting messages as RFC5322 Internet Mail
+gromox\-export(8) \(em Utility for exporting messages
 .IP \(bu 4
-gromox\-exm2ical(8) \(em Utility for exporting messages as RFC5545 iCalendar
-objects
+gromox\-exm2eml(8) \(em Wrapper for gromox\-export selecting RFC5322 Internet
+Mail output
 .IP \(bu 4
-gromox\-exm2mt(8) \(em Utility for exporting messages as a Gromox Mailbox
-Transfer stream
+gromox\-exm2ical(8) \(em Wrapper for gromox\-export selecting RFC5545 iCalendar
+output
 .IP \(bu 4
-gromox\-exm2tnef(8) \(em Utility for exporting messages as TNEF objects
+gromox\-exm2mt(8) \(em Wrapper for gromox\-export selecting Gromox Mailbox
+Transfer stream output
 .IP \(bu 4
-gromox\-exm2vcf(8) \(em Utility for exporting messages as RFC6540 vCard objects
+gromox\-exm2tnef(8) \(em Wrapper for gromox\-export selecting TNEF output
+.IP \(bu 4
+gromox\-exm2vcf(8) \(em Wrapper for gromox\-export selecting RFC6540 vCard
+output
 .IP \(bu 4
 gromox\-ical2mt(8) \(em Utility for analysis of/importing RFC5545 iCalendar
 objects
 .IP \(bu 4
 gromox\-kdb2mt(8) \(em Utility for analysis of/importing Zarafa/Kopano
 SQL-stored mailboxes
-.IP \(bu 4
-gromox\-mt2exm(8) \(em Utility for bulk-importing mail items into a Gromox
-store
 .IP \(bu 4
 gromox\-oxm2mt(8) \(em Utility for analysis and import of Outlook .msg files
 .IP \(bu 4
@@ -176,6 +177,11 @@ mysql_adaptor(4gx) \(em MySQL/MariaDB connector for user metadata and
 authentication
 .IP \(bu 4
 timer_agent(4gx) \(em Client for timer(8gx)
+.SS Historic commands that have been removed
+The following is a list of programs that no longer exist. It is intended solely
+to capture keyword searches within the documentation for said obsolete/removed commands.
+.IP \(bu 4
+gromox\-mt2exm: renamed to gromox\-import
 .SS Language bindings
 .IP \(bu 4
 mapi(4gx) \(em PHP module providing MAPI functions

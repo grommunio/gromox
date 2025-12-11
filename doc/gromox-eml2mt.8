@@ -16,7 +16,7 @@ gromox\-eml2mt \(em Utility for analysis/importing various formats
 .SH Description
 gromox\-eml2mt reads one or more RFC5322-formatted e-mail messages and
 re-exports the data in a Gromox-specific mailbox transfer format to stdout for
-consumption by pipe by the gromox-mt2exm(8gx) program. Each file must contain
+consumption by pipe by the gromox\-import(8) program. Each file must contain
 at most one RFC5322 message.
 .PP
 When called as gromox\-mbox2mt, the input is treated as RFC4155-formatted Unix
@@ -31,11 +31,11 @@ vCard objects (.vcf).
 When called as gromox\-tnef2mt, the input is treated as a MS-OXTNEF object.
 .PP
 eml2mt will resolve email addresses to Gromox objects already, so the emitted
-data stream should be consumed by an mt2exm invocation on the \fIsame\fP Gromox
-cluster.
+data stream should be consumed by a gromox-import invocation on the \fIsame\fP
+Gromox cluster.
 .PP
 All objects in the output stream are unanchored so that the \-B option of
-gromox\-mt2exm can be used to select placement. (Prior to Gromox 2.46,
+gromox-import can be used to select placement. (Prior to Gromox 2.46,
 some modes like \-\-ical and \-\-vcard emitted an anchor.)
 .SH Options
 .TP
@@ -92,10 +92,10 @@ Show a diagnostic tree view of the source data as it is being read.
 .SH Examples
 Import of an RFC5322 message (sometimes with .eml file extension) to drafts:
 .PP
-gromox\-eml2mt msg.eml | gromox\-mt2exm \-u recipient@domain.example \-B drafts
+gromox\-eml2mt msg.eml | gromox\-import \-u recipient@domain.example \-B drafts
 .PP
 Import of calendar objects:
 .PP
-gromox\-ical2mt meeting.ics | gromox\-mt2exm \-u recipient@domain.example
+gromox\-ical2mt meeting.ics | gromox\-import \-u recipient@domain.example
 .SH See also
-\fBgromox\fP(7), \fBgromox\-exm2eml\fP(8), \fBgromox\-mt2exm\fP(8)
+\fBgromox\fP(7), \fBgromox\-export\fP(8), \fBgromox\-import\fP(8)

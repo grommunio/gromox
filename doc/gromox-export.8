@@ -1,8 +1,8 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2024 grommunio GmbH
-.TH gromox\-exm2eml 8 "" "Gromox" "Gromox admin reference"
+.\" SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
+.TH gromox\-export 8 "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-exm2eml \(em Utility to export Gromox messages to various formats
+gromox\-export \(em Utility to export Gromox messages to various formats
 .SH Synopsis
 \fBgromox\-exm2eml \-u\fP \fIuser@domain.example\fP
 [\fIfolder_id\fP\fB:\fP]\fImessage_id\fP
@@ -19,12 +19,14 @@ gromox\-exm2eml \(em Utility to export Gromox messages to various formats
 \fBgromox\-exm2tnef \-u\fP \fIuser@domain.example\fP
 [\fIfolder_id\fP\fB:\fP]\fImessage_id\fP >file.tnef
 .SH Description
-gromox\-exm2eml reads one message from an exmdb information store and exports
-it as Internet Mail (RFC 5322), iCalendar (RFC 5545), vCard (RFC 6350), the
-Gromox mailbox transfer format (cf. gromox-mt2exm) or TNEF.
+gromox-export reads one message from an exmdb information store and exports it
+as Gromox Mailbox Transfer (GXMT) datastream, Internet Mail (RFC 5322),
+iCalendar (RFC 5545), vCard (RFC 6350), or TNEF, depending on which name it was
+invoked under. ("exm" is short for exmdb and refers to the network protocol
+used to talk to the message store.)
 .PP
-When \fIfolder_id\fP is specified, exm2eml validates that the message is in
-that particular folder.
+When \fIfolder_id\fP is specified, the exporter validates that the message is
+in that particular folder and fail the operation if it is not.
 .PP
 An alternate way to get an EML representation is using grommunio-web's "Export
 as > EML file(s)" function from the context menu of a mail item.

@@ -9,8 +9,8 @@ Whereas a TNEF file only records one object, GXMT can record many, folders
 included. GXMT is streamable; there are no forward references, so the stream
 need not be buffered by a reader to resolve refs. Backreferences are typically
 named properties and folders that were created as part of processing earlier
-parts of a stream. Out of convenience of implementation, the mt2exm program
-buffers one entire object at a time before acting on it.
+parts of a stream. Out of convenience of implementation, the gromox-import
+program buffers one entire object at a time before acting on it.
 
 
 Spec
@@ -65,8 +65,9 @@ All integers are to be in little-endian form.
 		  translations if the proptype matches.
 		* PROPERTY_NAME serialized struct
 
-The remainder of the stream is a set of "instructions" (so to speak) to mt2exm
-to create folders/messages in the target mailbox. Each packet/frame is:
+The remainder of the stream is a set of "instructions" (so to speak) to
+gromox-import to create folders/messages in the target mailbox. Each
+packet/frame is:
 
 * ``uint64_t obj_size;``
   Size in bytes for this frame.
