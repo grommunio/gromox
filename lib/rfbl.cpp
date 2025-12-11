@@ -2188,3 +2188,37 @@ generic_connection generic_connection::accept(int sv_sock,
 	conn.last_timestamp = tp_now();
 	return conn;
 }
+
+/**
+ * Convert Unicode code point @wchar to its UTF-8 representation.
+ */
+std::string wchar_to_utf8(uint32_t w)
+{
+	std::string s;
+	if (w <= 0x7f) {
+		s.resize(1);
+		s[0] = w;
+	} else if (w <= 0x7ff) {
+		s.resize(2);
+		s[0] = 192 + w / 64;
+		s[1] = 128 + w % 64;
+	} else if (w <= 0xffff) {
+		s.resize(3);
+		s[0] = 224 + w / 4096;
+		s[1] = 128 + w / 64 % 64;
+		s[2] = 128 + w % 64;
+	} else if (w <= 0x10ffff) {
+		s.resize(4);
+		s[0] = 240 + w / 262144;
+		s[1] = 128 + w / 4096 % 64;
+		s[2] = 128 + w / 64 % 64;
+		s[3] = 128 + w % 64;
+	} else {
+		s.resize(3);
+		w = 0xfffd;
+		s[0] = 224 + w / 4096;
+		s[1] = 128 + w / 64 % 64;
+		s[2] = 128 + w % 64;
+	}
+	return s;
+}

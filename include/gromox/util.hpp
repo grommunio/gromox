@@ -42,7 +42,7 @@ using ALLOC_CONTEXT = alloc_context;
 extern GX_EXPORT bool utf8_valid(const char *str);
 extern GX_EXPORT BOOL utf8_truncate(char *str, int length);
 extern GX_EXPORT void utf8_filter(char *string);
-extern GX_EXPORT void wchar_to_utf8(uint32_t wchar, char *string);
+extern GX_EXPORT std::string wchar_to_utf8(uint32_t wchar);
 extern GX_EXPORT const char *replace_iconv_charset(const char *charset);
 extern GX_EXPORT BOOL string_mb_to_utf8(const char *charset, const char *in_string, char *out_string, size_t out_len);
 extern GX_EXPORT BOOL string_utf8_to_mb(const char *charset, const char *in_string, char *out_string, size_t out_len);

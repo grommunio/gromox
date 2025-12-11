@@ -1545,7 +1545,8 @@ bool rtf_reader::build_font_table(SIMPLE_TREE_NODE *pword)
 			}
 			/* ret > 0 */
 			if (0 == strcmp(tmp_name, "u")) {
-				wchar_to_utf8(param, tmp_name);
+				auto buf = wchar_to_utf8(param);
+				gx_strlcpy(tmp_name, buf.c_str(), std::size(tmp_name));
 				cpid_t tmp_cpid = cpid != CP_UNSET ? cpid :
 				                   fcharsetcp != CP_UNSET ? fcharsetcp :
 				                   static_cast<cpid_t>(1252);
@@ -2269,9 +2270,8 @@ int rtf_reader::cmd_nonbreaking_space(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_nonbreaking_hyphen(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	char s[8];
-	wchar_to_utf8(0x2011, s);
-	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	return escape_output(wchar_to_utf8(0x2011).data()) ?
+	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_soft_hyphen(SIMPLE_TREE_NODE *pword,
@@ -2505,15 +2505,13 @@ int rtf_reader::cmd_up(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_u(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	char tmp_string[8];
 	/*
 	 * RTF uses signed 16-bit values for Unicode. Values > 32767 are
 	 * represented as negative numbers (e.g., \u-10000 means U+55536).
 	 * Convert to unsigned 16-bit first to get the correct codepoint.
 	 */
 	uint32_t codepoint = static_cast<uint16_t>(num);
-	wchar_to_utf8(codepoint, tmp_string);
-	if (!escape_output(tmp_string))
+	if (!escape_output(wchar_to_utf8(codepoint).data()))
 		return CMD_RESULT_ERROR;
 	auto preader = this;
 	if (preader->b_ubytes_switch)
@@ -2819,34 +2817,30 @@ int rtf_reader::cmd_qmspace(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_zwbo(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	char s[8];
-	wchar_to_utf8(0x200B, s);
 	/* Not updating total_chars_in_line, since this is zero-width */
-	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	return escape_output(wchar_to_utf8(0x200B).data()) ?
+	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_zwj(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	char s[8];
-	wchar_to_utf8(0x200D, s);
-	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	return escape_output(wchar_to_utf8(0x200D).data()) ?
+	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_zwnbo(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	char s[8];
-	wchar_to_utf8(0xFEFF, s);
-	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	return escape_output(wchar_to_utf8(0xFEFF).data()) ?
+	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_zwnj(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	char s[8];
-	wchar_to_utf8(0x200C, s);
-	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	return escape_output(wchar_to_utf8(0x200C).data()) ?
+	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_pmmetafile(SIMPLE_TREE_NODE *pword,
@@ -2917,20 +2911,16 @@ int rtf_reader::cmd_htmltag(SIMPLE_TREE_NODE *pword,
 int rtf_reader::cmd_ltrmark(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	char s[8];
-	wchar_to_utf8(0x200E, s);
-	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	return escape_output(wchar_to_utf8(0x200E).data()) ?
+	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
 
 int rtf_reader::cmd_rtlmark(SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	char s[8];
-	wchar_to_utf8(0x200F, s);
-	return escape_output(s) ? CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
+	return escape_output(wchar_to_utf8(0x200F).data()) ?
+	       CMD_RESULT_CONTINUE : CMD_RESULT_ERROR;
 }
-
-
 
 static void rtf_unescape_string(char *string)
 {
