@@ -295,7 +295,7 @@ static int emit_message_tnef(const message_content &ctnt, const std::string &log
 	return 0;
 }
 
-static int do_message(const char *idstr)
+static int do_message(const char *idstr, int msgcounter)
 {
 	std::string log_id;
 	MESSAGE_CONTENT *ctnt = nullptr;
@@ -306,14 +306,14 @@ static int do_message(const char *idstr)
 	if (ret != 0)
 		return EXIT_FAILURE;
 	if (g_show_tree) {
-		fprintf(stderr, "Message 0\n");
+		fprintf(stderr, "Message %d\n", msgcounter);
 		gi_print(0, *ctnt);
 	}
 
 	if (g_export_mode == EXPORT_MAIL)
 		return emit_message_im(*ctnt, log_id);
 	else if (g_export_mode == EXPORT_GXMT)
-		return emit_message_gxmt(*ctnt, msg_id);
+		return emit_message_gxmt(*ctnt, msgcounter);
 	else if (g_export_mode == EXPORT_ICAL)
 		return emit_message_ical(*ctnt, log_id);
 	else if (g_export_mode == EXPORT_VCARD)
@@ -348,6 +348,10 @@ int main(int argc, char **argv) try
 	if (HX_getopt6(g_options_table, argc, argv, &argp,
 	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	if (argp.nargs > 1 && g_export_mode != EXPORT_GXMT) {
+		fprintf(stderr, "Attempted to export more than one object, which is only supported with GXMT format.\n");
+		return EXIT_FAILURE;
+	}
 	for (int i = 0; i < argp.nopts; ++i)
 		if (argp.desc[i]->sh == 'u')
 			g_username = argp.oarg[i];
@@ -397,7 +401,12 @@ int main(int argc, char **argv) try
 	if (g_export_mode == EXPORT_GXMT)
 		if (emit_header_gxmt() != 0)
 			return EXIT_FAILURE;
-	return do_message(argp.uarg[0]);
+	for (int i = 0; i < argp.nargs; ++i) {
+		auto err = do_message(argp.uarg[i], i + 1);
+		if (err != 0)
+			return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
 } catch (const std::exception &e) {
 	fprintf(stderr, "gromox-export: Exception: %s\n", e.what());
 	return EXIT_FAILURE;

@@ -14,7 +14,7 @@ gromox\-export \(em Utility to export Gromox messages to various formats
 [\fIfolder_id\fP\fB:\fP]\fImessage_id\fP
 .PP
 \fBgromox\-exm2mt \-u\fP \fIuser@domain.example\fP
-[\fIfolder_id\fP\fB:\fP]\fImessage_id\fP >file.mt
+[\fIfolder_id\fP\fB:\fP]\fImessage_id\fP... >file.mt
 .PP
 \fBgromox\-exm2tnef \-u\fP \fIuser@domain.example\fP
 [\fIfolder_id\fP\fB:\fP]\fImessage_id\fP >file.tnef
@@ -26,7 +26,9 @@ invoked under. ("exm" is short for exmdb and refers to the network protocol
 used to talk to the message store.)
 .PP
 When \fIfolder_id\fP is specified, the exporter validates that the message is
-in that particular folder and fail the operation if it is not.
+in that particular folder and fail the operation if it is not. In addition, the
+importer will also use a different RPC, but this detail should not make a
+difference to end-users.
 .PP
 An alternate way to get an EML representation is using grommunio-web's "Export
 as > EML file(s)" function from the context menu of a mail item.
