@@ -348,7 +348,7 @@ static bool cu_nsp_proprow_to_proprow(const std::vector<proptag_t> &cols,
 bool cu_nsp_rowset_to_colrow(proptag_cspan cols, const NSP_ROWSET &set,
     nsp_rowset2 &row) try
 {
-	row.columns.assign(cols.cbegin(), cols.cend());
+	row.columns.assign(cols.begin(), cols.end());
 	row.row_count = set.crows;
 	row.rows = cu_alloc<PROPERTY_ROW>(set.crows);
 	if (row.rows == nullptr)
