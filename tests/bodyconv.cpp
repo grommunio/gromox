@@ -24,6 +24,9 @@ static int rp_thtml(const std::string &complete, const char *expout)
 	if (rtf_to_html(complete, "utf-8", outdoc, at) != ecSuccess) {
 		fprintf(stderr, "rtf_to_html failed on:\n%s\n", complete.c_str());
 		return -1;
+	} else if (*expout == '\0') {
+		fprintf(stderr, "expout cannot be empty\n");
+		return -1;
 	} else if (strstr(outdoc.c_str(), expout) == nullptr) {
 		fprintf(stderr, "== Input ==\n%s\n\n== Expected needle ==\n%s\n\n== Actual output ==\n%s\n",
 			complete.c_str(), expout, outdoc.c_str());
@@ -83,6 +86,10 @@ static int t_rtf_reader()
 	 */
 	auto ret = rp_thtml(lortf_head + "A\\-\\emspace\\enspace\\qmspace B\\zwbo\\zwnbo C" + lortf_foot,
 	           "A&shy;&emsp;&ensp;&emsp14;B​﻿C");
+	if (ret != 0)
+		return ret;
+	ret = rp_thtml(lortf_head + "@@\\u127\\'3f@@\\u2047\\'3f@@\\u32767\\'3f@@\\u-1\\'3f@@" + lortf_foot,
+	      "@@\x7f@@߿@@翿@@￿@@");
 	if (ret != 0)
 		return ret;
 	return 0;

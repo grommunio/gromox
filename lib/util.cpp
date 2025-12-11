@@ -187,32 +187,32 @@ void utf8_filter(char *string)
 void wchar_to_utf8(uint32_t wchar, char *zstring)
 {
 	auto string = reinterpret_cast<unsigned char *>(zstring);
-	if (wchar < 0x7f) {
+	if (wchar <= 0x7f) {
 		string[0] = wchar;
 		string[1] = '\0';
-	} else if (wchar < 0x7ff) {
+	} else if (wchar <= 0x7ff) {
 		string[0] = 192 + (wchar/64);
 		string[1] = 128 + (wchar%64);
 		string[2] = '\0';
-	} else if (wchar < 0xffff) {
+	} else if (wchar <= 0xffff) {
 		string[0] = 224 + wchar/(64*64);
 		string[1] = 128 + (wchar/64)%64;
 		string[2] = 128 + wchar%64;
 		string[3] = '\0';
-	} else if (wchar < 0x1FFFFF) {
+	} else if (wchar <= 0x1FFFFF) {
 		string[0] = 240 + wchar/(64*64*64);
 		string[1] = 128 + (wchar/(64*64))%64;
 		string[2] = 128 + (wchar/64)%64;
 		string[3] = 128 + wchar % 64;
 		string[4] = '\0';
-	} else if (wchar < 0x3FFFFFF) {
+	} else if (wchar <= 0x3FFFFFF) {
 		string[0] = 248 + wchar/(64*64*64*64);
 		string[1] = 128 + (wchar/(64*64*64))%64;
 		string[2] = 128 + (wchar/(64*64))%64;
 		string[3] = 128 + (wchar/64)%64;
 		string[4] = 128 + wchar % 64;
 		string[5] = '\0';
-	} else if (wchar < 0x7FFFFFFF) {
+	} else if (wchar <= 0x7FFFFFFF) {
 		string[0] = 252 + wchar/(64*64*64*64*64);
 		string[1] = 128 + (wchar/(64*64*64*64))%64;
 		string[2] = 128 + (wchar/(64*64*64))%64;
