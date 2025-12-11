@@ -142,81 +142,11 @@ static int fetch_message(const char *idstr, std::string &log_id,
 	return 0;
 }
 
-int main(int argc, char **argv) try
+static int do_message(const char *idstr)
 {
-	auto bn = HX_basename(argv[0]);
-	if (strcmp(bn, "gromox-export") == 0) {
-		g_export_mode = EXPORT_GXMT;
-	} else if (strcmp(bn, "gromox-exm2eml") == 0) {
-		g_export_mode = EXPORT_MAIL;
-	} else if (strcmp(bn, "gromox-exm2mt") == 0) {
-		g_export_mode = EXPORT_GXMT;
-	} else if (strcmp(bn, "gromox-exm2ical") == 0) {
-		g_export_mode = EXPORT_ICAL;
-	} else if (strcmp(bn, "gromox-exm2vcf") == 0) {
-		g_export_mode = EXPORT_VCARD;
-	} else if (strcmp(bn, "gromox-exm2tnef") == 0) {
-		g_export_mode = EXPORT_TNEF;
-	} else {
-		fprintf(stderr, "Invocation of this utility as \"%s\" not recognized\n", argv[0]);
-		return EXIT_FAILURE;
-	}
-
-	HXopt6_auto_result argp;
-	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt6(g_options_table, argc, argv, &argp,
-	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
-	for (int i = 0; i < argp.nopts; ++i)
-		if (argp.desc[i]->sh == 'u')
-			g_username = argp.oarg[i];
-	if (g_username == nullptr || argp.nargs < 1) {
-		terse_help();
-		return EXIT_FAILURE;
-	}
-	if ((g_export_mode == EXPORT_GXMT || g_export_mode == EXPORT_TNEF) &&
-	    isatty(STDOUT_FILENO)) {
-		fprintf(stderr, "Refusing to output binary streams to a terminal.\n"
-			"You probably wanted to redirect output into a file or pipe.\n");
-		return EXIT_FAILURE;
-	}
-	if (g_allday_mode >= 0)
-		g_oxcical_allday_ymd = g_allday_mode;
-	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
-	if (iconv_validate() != 0)
-		return EXIT_FAILURE;
-	textmaps_init(PKGDATADIR);
-	g_config_file = config_file_prg(nullptr, "midb.cfg",
-	                exm2eml_cfg_defaults);
-	if (g_config_file == nullptr) {
-		fprintf(stderr, "Something went wrong with config files (e.g. permission denied)\n");
-		return EXIT_FAILURE;
-	}
-	service_init({g_config_file, g_dfl_svc_plugins, 1});
-	auto cl_1 = HX::make_scope_exit(service_stop);
-	if (service_run_early() != 0 || service_run() != 0) {
-		fprintf(stderr, "service_run: failed\n");
-		return EXIT_FAILURE;
-	}
-
-	if (!oxcmail_init_library(g_config_file->get_value("x500_org_name"),
-	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
-	    mysql_adaptor_userid_to_name)) {
-		fprintf(stderr, "oxcmail_init: unspecified error\n");
-		return EXIT_FAILURE;
-	}
-	MAIL imail;
-
-	if (gi_setup_from_user(g_username) != EXIT_SUCCESS)
-		return EXIT_FAILURE;
-	if (gi_startup_client() != EXIT_SUCCESS)
-		return EXIT_FAILURE;
-	auto cl_5 = HX::make_scope_exit(gi_shutdown);
-
 	std::string log_id;
 	MESSAGE_CONTENT *ctnt = nullptr;
 	uint64_t msg_id = 0;
-	auto idstr = argp.uarg[0];
 	auto ret = strchr(idstr, ':') != nullptr ?
 	           fetch_as_instance(idstr, log_id, msg_id, ctnt) :
 	           fetch_message(idstr, log_id, msg_id, ctnt);
@@ -226,6 +156,8 @@ int main(int argc, char **argv) try
 		fprintf(stderr, "Message 0\n");
 		gi_print(0, *ctnt);
 	}
+
+	MAIL imail;
 	if (g_export_mode == EXPORT_MAIL) {
 		if (!oxcmail_export(ctnt, log_id.c_str(), false, oxcmail_body::plain_and_html,
 		    &imail, zalloc, cu_get_propids,
@@ -356,6 +288,79 @@ int main(int argc, char **argv) try
 		}
 	}
 	return EXIT_SUCCESS;
+}
+
+int main(int argc, char **argv) try
+{
+	auto bn = HX_basename(argv[0]);
+	if (strcmp(bn, "gromox-export") == 0) {
+		g_export_mode = EXPORT_GXMT;
+	} else if (strcmp(bn, "gromox-exm2eml") == 0) {
+		g_export_mode = EXPORT_MAIL;
+	} else if (strcmp(bn, "gromox-exm2mt") == 0) {
+		g_export_mode = EXPORT_GXMT;
+	} else if (strcmp(bn, "gromox-exm2ical") == 0) {
+		g_export_mode = EXPORT_ICAL;
+	} else if (strcmp(bn, "gromox-exm2vcf") == 0) {
+		g_export_mode = EXPORT_VCARD;
+	} else if (strcmp(bn, "gromox-exm2tnef") == 0) {
+		g_export_mode = EXPORT_TNEF;
+	} else {
+		fprintf(stderr, "Invocation of this utility as \"%s\" not recognized\n", argv[0]);
+		return EXIT_FAILURE;
+	}
+
+	HXopt6_auto_result argp;
+	setvbuf(stdout, nullptr, _IOLBF, 0);
+	if (HX_getopt6(g_options_table, argc, argv, &argp,
+	    HXOPT_USAGEONERR | HXOPT_ITER_OA) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	for (int i = 0; i < argp.nopts; ++i)
+		if (argp.desc[i]->sh == 'u')
+			g_username = argp.oarg[i];
+	if (g_username == nullptr || argp.nargs < 1) {
+		terse_help();
+		return EXIT_FAILURE;
+	}
+	if ((g_export_mode == EXPORT_GXMT || g_export_mode == EXPORT_TNEF) &&
+	    isatty(STDOUT_FILENO)) {
+		fprintf(stderr, "Refusing to output binary streams to a terminal.\n"
+			"You probably wanted to redirect output into a file or pipe.\n");
+		return EXIT_FAILURE;
+	}
+	if (g_allday_mode >= 0)
+		g_oxcical_allday_ymd = g_allday_mode;
+	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
+	if (iconv_validate() != 0)
+		return EXIT_FAILURE;
+	textmaps_init(PKGDATADIR);
+	g_config_file = config_file_prg(nullptr, "midb.cfg",
+	                exm2eml_cfg_defaults);
+	if (g_config_file == nullptr) {
+		fprintf(stderr, "Something went wrong with config files (e.g. permission denied)\n");
+		return EXIT_FAILURE;
+	}
+	service_init({g_config_file, g_dfl_svc_plugins, 1});
+	auto cl_1 = HX::make_scope_exit(service_stop);
+	if (service_run_early() != 0 || service_run() != 0) {
+		fprintf(stderr, "service_run: failed\n");
+		return EXIT_FAILURE;
+	}
+
+	if (!oxcmail_init_library(g_config_file->get_value("x500_org_name"),
+	    mysql_adaptor_get_user_ids, mysql_adaptor_get_domain_ids,
+	    mysql_adaptor_userid_to_name)) {
+		fprintf(stderr, "oxcmail_init: unspecified error\n");
+		return EXIT_FAILURE;
+	}
+	MAIL imail;
+
+	if (gi_setup_from_user(g_username) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (gi_startup_client() != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	auto cl_5 = HX::make_scope_exit(gi_shutdown);
+	return do_message(argp.uarg[0]);
 } catch (const std::exception &e) {
 	fprintf(stderr, "gromox-export: Exception: %s\n", e.what());
 	return EXIT_FAILURE;
