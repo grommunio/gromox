@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 		return help();
 	std::vector<eid_t> eids;
 	for (int uidx = 0; uidx < result.nargs; ++uidx) {
-		eid_t eid = gi_lookup_eid_by_name(g_storedir, result.uarg[uidx]);
+		uint64_t eid = strtoul(result.uarg[uidx], nullptr, 0);
 		if (eid == 0) {
 			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", result.uarg[uidx]);
 			return EXIT_FAILURE;
