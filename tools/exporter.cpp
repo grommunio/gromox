@@ -243,12 +243,14 @@ int main(int argc, char **argv) try
 			return EXIT_FAILURE;
 		}
 	} else if (g_export_mode == EXPORT_GXMT) {
-		std::vector<uint16_t> tags;
+		std::vector<propid_t> tags;
 		for (const auto &p : ctnt->proplist)
-			tags.push_back(PROP_ID(p.proptag));
+			if (is_nameprop_id(PROP_ID(p.proptag)))
+				tags.push_back(PROP_ID(p.proptag));
 		PROPNAME_ARRAY propnames{};
-		if (!exmdb_client_remote::get_named_propnames(g_storedir, tags, &propnames) ||
-		    propnames.size() != tags.size()) {
+		if (tags.size() > 0 &&
+		    (!exmdb_client_remote::get_named_propnames(g_storedir, tags, &propnames) ||
+		    propnames.size() != tags.size())) {
 			fprintf(stderr, "get_all_named_propids failed\n");
 			return EXIT_FAILURE;
 		}

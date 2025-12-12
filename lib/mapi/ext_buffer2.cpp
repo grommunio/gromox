@@ -214,11 +214,11 @@ pack_result EXT_PUSH::p_guid_a(std::span<const GUID> r)
 	return pack_result::ok;
 }
 
-pack_result EXT_PULL::g_propid_a(std::vector<uint16_t> *a)
+pack_result EXT_PULL::g_propid_a(std::vector<propid_t> *a)
 {
 	uint16_t count;
 	TRY(g_uint16(&count));
-	count = std::min(count, std::numeric_limits<uint16_t>::max());
+	count = std::min(count, std::numeric_limits<propid_t>::max());
 	return g_uint16_an(a, count);
 }
 
