@@ -716,7 +716,7 @@ int main(int argc, char **argv) try
 	if (g_anchor_folder_str == nullptr) {
 		g_anchor_folder = PRIVATE_FID_DRAFT;
 	} else {
-		g_anchor_folder = rop_util_get_gc_value(gi_lookup_eid_by_name(g_storedir, g_anchor_folder_str));
+		g_anchor_folder = rop_util_get_gc_value(gi_lookup_eid_any_way(g_storedir, g_anchor_folder_str));
 		if (g_anchor_folder == 0) {
 			fprintf(stderr, "Folder not recognized/found: \"%s\"\n", g_anchor_folder_str);
 			return EXIT_FAILURE;

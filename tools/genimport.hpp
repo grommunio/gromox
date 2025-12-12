@@ -107,5 +107,6 @@ extern int gi_setup_from_user(const char *);
 extern int gi_setup_from_dir(const char *);
 extern int gi_startup_client(unsigned int maxconn = 1);
 extern eid_t gi_lookup_eid_by_name(const char *dir, const char *name);
+extern eid_t gi_lookup_eid_any_way(const char *dir, const char *name); /* also accepts numeric folder ID */
 extern void gi_shutdown();
 extern gromox::errno_t gi_decapsulate_attachment(message_content_ptr &, unsigned int);

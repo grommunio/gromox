@@ -45,14 +45,8 @@ int main(int argc, char **argv)
 		else if (result.desc[i]->val == 'f')
 			g_folderstr = result.oarg[i];
 	}
-	if (g_folderstr != nullptr) {
-		char *end = nullptr;
-		uint64_t fid = strtoul(g_folderstr, &end, 0);
-		if (end == g_folderstr || *end != '\0')
-			g_folderid = gi_lookup_eid_by_name(g_storedir, g_folderstr);
-		else
-			g_folderid = rop_util_make_eid_ex(1, fid);
-	}
+	if (g_folderstr != nullptr)
+		g_folderid = gi_lookup_eid_any_way(g_storedir, g_folderstr);
 	if (rop_util_get_gc_value(g_folderid) == 0)
 		return help();
 	std::vector<eid_t> eids;

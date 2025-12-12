@@ -426,11 +426,6 @@ static constexpr std::pair<const char *, uint8_t> fld_special_names[] = {
 
 eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 {
-	char *end = nullptr;
-	auto pure_id = strtoull(name, &end, 0);
-	if (end != name && *znul(end) == '\0')
-		return rop_util_make_eid_ex(1, pure_id);
-
 	const char *sep = strpbrk(name, "/\\"); /* CONST-STRCHR-MARKER */
 	if (sep == nullptr)
 		sep = "/";
@@ -482,6 +477,15 @@ eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 		fid = *newfid;
 	}
 	return fid;
+}
+
+eid_t gi_lookup_eid_any_way(const char *dir, const char *name)
+{
+	char *end = nullptr;
+	auto pure_id = strtoull(name, &end, 0);
+	if (end != name && *znul(end) == '\0')
+		return rop_util_make_eid_ex(1, pure_id);
+	return gi_lookup_eid_by_name(dir, name);
 }
 
 int gi_startup_client(unsigned int maxconn)

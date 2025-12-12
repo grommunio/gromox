@@ -173,7 +173,7 @@ int main(int argc, char **argv)
 	int ret = EXIT_SUCCESS;
 	for (int uidx = 0; uidx < result.nargs; ++uidx) {
 		BOOL partial = false;
-		eid_t eid = gi_lookup_eid_by_name(g_storedir, result.uarg[uidx]);
+		auto eid = gi_lookup_eid_any_way(g_storedir, result.uarg[uidx]);
 		if (eid == 0) {
 			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", result.uarg[uidx]);
 			return EXIT_FAILURE;

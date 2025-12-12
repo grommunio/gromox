@@ -270,7 +270,7 @@ int main(int argc, char **argv)
 	} else if (strcasecmp(g_folder_spec, "all") == 0) {
 		ret = send_cmd(host, port, "X-RSYM " + g_storedir_s + "\r\n");
 	} else {
-		eid_t eid = gi_lookup_eid_by_name(g_storedir, g_folder_spec);
+		auto eid = gi_lookup_eid_any_way(g_storedir, g_folder_spec);
 		if (eid == 0) {
 			mbop_fprintf(stderr, "Not recognized/found: \"%s\"\n", g_folder_spec);
 			return EXIT_FAILURE;
