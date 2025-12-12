@@ -142,6 +142,159 @@ static int fetch_message(const char *idstr, std::string &log_id,
 	return 0;
 }
 
+static int emit_message_im(const message_content &ctnt, const std::string &log_id)
+{
+	MAIL imail;
+	if (!oxcmail_export(&ctnt, log_id.c_str(), false, oxcmail_body::plain_and_html,
+	    &imail, zalloc, cu_get_propids,
+	    cu_get_propname)) {
+		fprintf(stderr, "oxcmail_export failed for an unspecified reason.\n");
+		return -1;
+	}
+	auto err = imail.to_fd(STDOUT_FILENO);
+	if (err == EPIPE) {
+		perror("pipe");
+		return -1;
+	} else if (err != 0) {
+		fprintf(stderr, "Writeout failed for an unspecified reason. %s\n", strerror(err));
+		return -1;
+	}
+	return 0;
+}
+
+static int emit_header_gxmt()
+{
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0004", 8) < 0)
+		throw YError("PG-1014: %s", strerror(errno));
+	uint8_t flag = false;
+	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* splice flag */
+		throw YError("PG-1015: %s", strerror(errno));
+	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* public store flag */
+		throw YError("PG-1016: %s", strerror(errno));
+	gi_dump_name_map(static_namedprop_map.fwd);
+	gi_name_map_write(static_namedprop_map.fwd);
+	return 0;
+}
+
+static int emit_message_gxmt(const message_content &ctnt, eid_t msg_id)
+{
+	std::vector<propid_t> tags;
+	for (const auto &p : ctnt.proplist)
+		if (is_nameprop_id(PROP_ID(p.proptag)))
+			tags.push_back(PROP_ID(p.proptag));
+	PROPNAME_ARRAY propnames{};
+	if (tags.size() > 0 &&
+	    (!exmdb_client_remote::get_named_propnames(g_storedir, tags, &propnames) ||
+	    propnames.size() != tags.size())) {
+		fprintf(stderr, "get_all_named_propids failed\n");
+		return -1;
+	}
+	for (size_t i = 0; i < tags.size() && i < propnames.count; ++i) {
+		const auto &p = propnames.ppropname[i];
+		if (p.kind > MNID_STRING)
+			continue;
+		if (!static_namedprop_map.emplace_2(tags[i], p).second)
+			continue; /* alreay added previously */
+
+		EXT_PUSH ep;
+		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
+			throw YError("ENOMEM");
+		auto proptag = PROP_TAG(PT_UNSPECIFIED, tags[i]);
+		if (ep.p_uint32(GXMT_NAMEDPROP) != pack_result::success ||
+		    ep.p_uint32(proptag) != pack_result::success ||
+		    ep.p_uint32(0) != pack_result::success ||
+		    ep.p_uint64(0) != pack_result::success ||
+		    ep.p_propname(p) != pack_result::success)
+			throw YError("PG-1143");
+		uint64_t xsize = cpu_to_le64(ep.m_offset);
+		if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
+			throw YError("PG-1144: %s", strerror(errno));
+		if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
+			throw YError("PG-1145: %s", strerror(errno));
+
+		/* Emit report */
+		if (!g_show_props)
+			continue;
+		char g[40];
+		p.guid.to_str(g, std::size(g), 38);
+		if (p.kind == MNID_ID)
+			fprintf(stderr, "Recorded namedprop: %08xh -> {MNID_ID, %s, %xh}\n",
+				proptag, g, static_cast<unsigned int>(p.lid));
+		else if (p.kind == MNID_STRING)
+			fprintf(stderr, "Recorded namedprop: %08xh -> {MNID_STRING, %s, %s}\n",
+				proptag, g, p.pname);
+	}
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
+		throw YError("ENOMEM");
+	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
+	    ep.p_uint32(msg_id.m_value) != pack_result::ok ||
+	    ep.p_uint32(static_cast<uint32_t>(0)) != pack_result::ok ||
+	    ep.p_uint64(MAILBOX_FID_UNANCHORED) != pack_result::ok ||
+	    ep.p_msgctnt(ctnt) != pack_result::ok ||
+	    ep.p_str("") != pack_result::ok ||
+	    ep.p_str("") != pack_result::ok) {
+		fprintf(stderr, "E-2005\n");
+		return -1;
+	}
+	uint64_t xsize = cpu_to_le64(ep.m_offset);
+	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
+		throw YError("PG-1017: %s", strerror(errno));
+	if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
+		throw YError("PG-1018: %s", strerror(errno));
+	return 0;
+}
+
+static int emit_message_ical(const message_content &ctnt, const std::string &log_id)
+{
+	ical ic;
+	if (!oxcical_export(&ctnt, log_id.c_str(), ic,
+	    g_config_file->get_value("x500_org_name"),
+	    zalloc, cu_get_propids, mysql_adaptor_userid_to_name)) {
+		fprintf(stderr, "oxcical_export failed for an unspecified reason.\n");
+		return -1;
+	}
+	std::string buf;
+	auto err = ic.serialize(buf);
+	if (err != ecSuccess) {
+		fprintf(stderr, "ical::serialize: %s\n", mapi_strerror(err));
+		return -1;
+	}
+	fputs(buf.c_str(), stdout);
+	return 0;
+}
+
+static int emit_message_vcard(const message_content &ctnt, const std::string &log_id)
+{
+	vcard vc;
+	if (!oxvcard_export(&ctnt, log_id.c_str(), vc, cu_get_propids)) {
+		fprintf(stderr, "oxvcard_export %s failed for an unspecified reason.\n", log_id.c_str());
+		return -1;
+	}
+	std::string buf;
+	if (!vc.serialize(buf)) {
+		fprintf(stderr, "vcard::serialize %s failed for an unspecified reason.\n", log_id.c_str());
+		return -1;
+	}
+	fwrite(buf.c_str(), buf.size(), 1, stdout);
+	return 0;
+}
+
+static int emit_message_tnef(const message_content &ctnt, const std::string &log_id)
+{
+	auto bin = tnef_serialize(&ctnt, log_id.c_str(), zalloc, cu_get_propname);
+	if (bin == nullptr) {
+		fprintf(stderr, "tnef_serialize failed for an unspecified reason.\n");
+		return -1;
+	}
+	auto ret = write(STDOUT_FILENO, bin->pv, bin->cb);
+	if (ret < 0 || static_cast<size_t>(ret) != bin->cb) {
+		fprintf(stderr, "write: %s\n", strerror(errno));
+		return -1;
+	}
+	return 0;
+}
+
 static int do_message(const char *idstr)
 {
 	std::string log_id;
@@ -157,137 +310,17 @@ static int do_message(const char *idstr)
 		gi_print(0, *ctnt);
 	}
 
-	MAIL imail;
-	if (g_export_mode == EXPORT_MAIL) {
-		if (!oxcmail_export(ctnt, log_id.c_str(), false, oxcmail_body::plain_and_html,
-		    &imail, zalloc, cu_get_propids,
-		    cu_get_propname)) {
-			fprintf(stderr, "oxcmail_export failed for an unspecified reason.\n");
-			return EXIT_FAILURE;
-		}
-		auto err = imail.to_fd(STDOUT_FILENO);
-		if (err == EPIPE) {
-			perror("pipe");
-			return EXIT_FAILURE;
-		}
-		if (err != 0) {
-			fprintf(stderr, "Writeout failed for an unspecified reason. %s\n", strerror(err));
-			return EXIT_FAILURE;
-		}
-	} else if (g_export_mode == EXPORT_GXMT) {
-		std::vector<propid_t> tags;
-		for (const auto &p : ctnt->proplist)
-			if (is_nameprop_id(PROP_ID(p.proptag)))
-				tags.push_back(PROP_ID(p.proptag));
-		PROPNAME_ARRAY propnames{};
-		if (tags.size() > 0 &&
-		    (!exmdb_client_remote::get_named_propnames(g_storedir, tags, &propnames) ||
-		    propnames.size() != tags.size())) {
-			fprintf(stderr, "get_all_named_propids failed\n");
-			return EXIT_FAILURE;
-		}
-		if (HXio_fullwrite(STDOUT_FILENO, "GXMT0004", 8) < 0)
-			throw YError("PG-1014: %s", strerror(errno));
-		uint8_t flag = false;
-		if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* splice flag */
-			throw YError("PG-1015: %s", strerror(errno));
-		if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* public store flag */
-			throw YError("PG-1016: %s", strerror(errno));
-		gi_dump_name_map(static_namedprop_map.fwd);
-		gi_name_map_write(static_namedprop_map.fwd);
-		for (size_t i = 0; i < tags.size() && i < propnames.count; ++i) {
-			const auto &p = propnames.ppropname[i];
-			if (p.kind > MNID_STRING)
-				continue;
-			if (!static_namedprop_map.emplace_2(tags[i], p).second)
-				continue; /* alreay added previously */
-
-			EXT_PUSH ep;
-			if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
-				throw YError("ENOMEM");
-			auto proptag = PROP_TAG(PT_UNSPECIFIED, tags[i]);
-			if (ep.p_uint32(GXMT_NAMEDPROP) != pack_result::success ||
-			    ep.p_uint32(proptag) != pack_result::success ||
-			    ep.p_uint32(0) != pack_result::success ||
-			    ep.p_uint64(0) != pack_result::success ||
-			    ep.p_propname(p) != pack_result::success)
-				throw YError("PG-1143");
-			uint64_t xsize = cpu_to_le64(ep.m_offset);
-			if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
-				throw YError("PG-1144: %s", strerror(errno));
-			if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
-				throw YError("PG-1145: %s", strerror(errno));
-
-			/* Emit report */
-			if (!g_show_props)
-				continue;
-			char g[40];
-			p.guid.to_str(g, std::size(g), 38);
-			if (p.kind == MNID_ID)
-				fprintf(stderr, "Recorded namedprop: %08xh -> {MNID_ID, %s, %xh}\n",
-					proptag, g, static_cast<unsigned int>(p.lid));
-			else if (p.kind == MNID_STRING)
-				fprintf(stderr, "Recorded namedprop: %08xh -> {MNID_STRING, %s, %s}\n",
-					proptag, g, p.pname);
-		}
-		EXT_PUSH ep;
-		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
-			throw YError("ENOMEM");
-		if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
-		    ep.p_uint32(msg_id) != pack_result::ok ||
-		    ep.p_uint32(static_cast<uint32_t>(0)) != pack_result::ok ||
-		    ep.p_uint64(MAILBOX_FID_UNANCHORED) != pack_result::ok ||
-		    ep.p_msgctnt(*ctnt) != pack_result::ok ||
-		    ep.p_str("") != pack_result::ok ||
-		    ep.p_str("") != pack_result::ok) {
-			fprintf(stderr, "E-2005\n");
-			return EXIT_FAILURE;
-		}
-		uint64_t xsize = cpu_to_le64(ep.m_offset);
-		if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
-			throw YError("PG-1017: %s", strerror(errno));
-		if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
-			throw YError("PG-1018: %s", strerror(errno));
-	} else if (g_export_mode == EXPORT_ICAL) {
-		ical ic;
-		if (!oxcical_export(ctnt, log_id.c_str(), ic,
-		    g_config_file->get_value("x500_org_name"),
-		    zalloc, cu_get_propids, mysql_adaptor_userid_to_name)) {
-			fprintf(stderr, "oxcical_export failed for an unspecified reason.\n");
-			return EXIT_FAILURE;
-		}
-		std::string buf;
-		auto err = ic.serialize(buf);
-		if (err != ecSuccess) {
-			fprintf(stderr, "ical::serialize: %s\n", mapi_strerror(err));
-			return EXIT_FAILURE;
-		}
-		fputs(buf.c_str(), stdout);
-	} else if (g_export_mode == EXPORT_VCARD) {
-		vcard vc;
-		if (!oxvcard_export(ctnt, log_id.c_str(), vc, cu_get_propids)) {
-			fprintf(stderr, "oxvcard_export %s failed for an unspecified reason.\n", log_id.c_str());
-			return EXIT_FAILURE;
-		}
-		std::string buf;
-		if (!vc.serialize(buf)) {
-			fprintf(stderr, "vcard::serialize %s failed for an unspecified reason.\n", log_id.c_str());
-			return EXIT_FAILURE;
-		}
-		fwrite(buf.c_str(), buf.size(), 1, stdout);
-	} else if (g_export_mode == EXPORT_TNEF) {
-		auto bin = tnef_serialize(ctnt, log_id.c_str(), zalloc, cu_get_propname);
-		if (bin == nullptr) {
-			fprintf(stderr, "tnef_serialize failed for an unspecified reason.\n");
-			return EXIT_FAILURE;
-		}
-		auto ret = write(STDOUT_FILENO, bin->pv, bin->cb);
-		if (ret < 0 || static_cast<size_t>(ret) != bin->cb) {
-			fprintf(stderr, "write: %s\n", strerror(errno));
-			return EXIT_FAILURE;
-		}
-	}
-	return EXIT_SUCCESS;
+	if (g_export_mode == EXPORT_MAIL)
+		return emit_message_im(*ctnt, log_id);
+	else if (g_export_mode == EXPORT_GXMT)
+		return emit_message_gxmt(*ctnt, msg_id);
+	else if (g_export_mode == EXPORT_ICAL)
+		return emit_message_ical(*ctnt, log_id);
+	else if (g_export_mode == EXPORT_VCARD)
+		return emit_message_vcard(*ctnt, log_id);
+	else if (g_export_mode == EXPORT_TNEF)
+		return emit_message_tnef(*ctnt, log_id);
+	return 0;
 }
 
 int main(int argc, char **argv) try
@@ -360,6 +393,10 @@ int main(int argc, char **argv) try
 	if (gi_startup_client() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	auto cl_5 = HX::make_scope_exit(gi_shutdown);
+
+	if (g_export_mode == EXPORT_GXMT)
+		if (emit_header_gxmt() != 0)
+			return EXIT_FAILURE;
 	return do_message(argp.uarg[0]);
 } catch (const std::exception &e) {
 	fprintf(stderr, "gromox-export: Exception: %s\n", e.what());
