@@ -185,6 +185,8 @@ static void exm_adjust_staticprops(TPROPVAL_ARRAY &props)
 
 static void exm_adjust_namedprops(TPROPVAL_ARRAY &props)
 {
+	if (g_username == nullptr)
+		return;
 	for (size_t i = 0; i < props.count; ++i) {
 		auto old_tag = props.ppropval[i].proptag;
 		if (!is_nameprop_id(PROP_ID(old_tag)))
@@ -312,6 +314,10 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 			static_cast<unsigned long long>(obd.parent.folder_id));
 		if (g_show_props)
 			gi_print(0, props, ee_get_propname);
+	}
+	if (g_username == nullptr) {
+		g_folder_map.try_emplace(obd.nid, tgt_folder{false, obd.nid});
+		return 0;
 	}
 	exm_folder_adjust(props);
 
@@ -547,6 +553,8 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 		tlog("adjusted properties:\n");
 		gi_print(0, ctnt, ee_get_propname);
 	}
+	if (g_username == nullptr)
+		return 0;
 
 	Json::Value digest;
 	if (im_repr.size() > 0) {
@@ -671,13 +679,6 @@ static void gi_dump_thru_map(const propididmap_t &map)
 		fprintf(stderr, "\t%04xh <-> %04xh\n", from, to);
 }
 
-static void terse_help()
-{
-	fprintf(stderr, "Usage: gromox-import -u target@mbox.de <stream.dump\n");
-	fprintf(stderr, "Option overview: gromox-import -?\n");
-	fprintf(stderr, "Documentation: man gromox-import\n");
-}
-
 int main(int argc, char **argv) try
 {
 	HXopt6_auto_result argp;
@@ -688,10 +689,8 @@ int main(int argc, char **argv) try
 	for (int i = 0; i < argp.nopts; ++i)
 		if (argp.desc[i]->sh == 'u')
 			g_username = argp.oarg[i];
-	if (g_username == nullptr) {
-		terse_help();
-		return EXIT_FAILURE;
-	}
+	if (g_username == nullptr)
+		fprintf(stderr, "No username (-u) was given. The importer will operate in read-only mode.\n");
 	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
 	if (g_continuous_mode)
 		fprintf(stderr, "Continuous mode has been selcted: On errors, the import will NOT abort\n");
@@ -708,7 +707,7 @@ int main(int argc, char **argv) try
 		return EXIT_FAILURE;
 	}
 	textmaps_init(PKGDATADIR);
-	if (gi_setup_from_user(g_username) != EXIT_SUCCESS)
+	if (g_username != nullptr && gi_setup_from_user(g_username) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	if (gi_startup_client() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
