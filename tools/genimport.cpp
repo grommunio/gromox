@@ -85,7 +85,7 @@ void gi_dump_name_map(const gi_name_map &map)
 {
 	if (!g_show_props)
 		return;
-	fprintf(stderr, "Preamble's named property map (%zu entries):\n", map.size());
+	fprintf(stderr, "Prologue's named property map (%zu entries):\n", map.size());
 	fprintf(stderr, "\t# proptag (hex) -> MAPINAMEID definition:\n");
 	for (const auto &[proptag, propname] : map) {
 		char g[40];

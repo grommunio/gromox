@@ -254,11 +254,6 @@ int main(int argc, char **argv) try
 			fprintf(stderr, "get_all_named_propids failed\n");
 			return EXIT_FAILURE;
 		}
-		for (size_t i = 0; i < tags.size() && i < propnames.count; ++i) {
-			const auto &p = propnames.ppropname[i];
-			if (p.kind <= MNID_STRING)
-				static_namedprop_map.emplace(tags[i], p);
-		}
 		if (HXio_fullwrite(STDOUT_FILENO, "GXMT0004", 8) < 0)
 			throw YError("PG-1014: %s", strerror(errno));
 		uint8_t flag = false;
@@ -266,9 +261,43 @@ int main(int argc, char **argv) try
 			throw YError("PG-1015: %s", strerror(errno));
 		if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* public store flag */
 			throw YError("PG-1016: %s", strerror(errno));
-		gi_folder_map_write({});
 		gi_dump_name_map(static_namedprop_map.fwd);
 		gi_name_map_write(static_namedprop_map.fwd);
+		for (size_t i = 0; i < tags.size() && i < propnames.count; ++i) {
+			const auto &p = propnames.ppropname[i];
+			if (p.kind > MNID_STRING)
+				continue;
+			if (!static_namedprop_map.emplace_2(tags[i], p).second)
+				continue; /* alreay added previously */
+
+			EXT_PUSH ep;
+			if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
+				throw YError("ENOMEM");
+			auto proptag = PROP_TAG(PT_UNSPECIFIED, tags[i]);
+			if (ep.p_uint32(GXMT_NAMEDPROP) != pack_result::success ||
+			    ep.p_uint32(proptag) != pack_result::success ||
+			    ep.p_uint32(0) != pack_result::success ||
+			    ep.p_uint64(0) != pack_result::success ||
+			    ep.p_propname(p) != pack_result::success)
+				throw YError("PG-1143");
+			uint64_t xsize = cpu_to_le64(ep.m_offset);
+			if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
+				throw YError("PG-1144: %s", strerror(errno));
+			if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
+				throw YError("PG-1145: %s", strerror(errno));
+
+			/* Emit report */
+			if (!g_show_props)
+				continue;
+			char g[40];
+			p.guid.to_str(g, std::size(g), 38);
+			if (p.kind == MNID_ID)
+				fprintf(stderr, "Recorded namedprop: %08xh -> {MNID_ID, %s, %xh}\n",
+					proptag, g, static_cast<unsigned int>(p.lid));
+			else if (p.kind == MNID_STRING)
+				fprintf(stderr, "Recorded namedprop: %08xh -> {MNID_STRING, %s, %s}\n",
+					proptag, g, p.pname);
+		}
 		EXT_PUSH ep;
 		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 			throw YError("ENOMEM");
