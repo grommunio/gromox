@@ -538,7 +538,7 @@ static void do_folder(mbox_state &mbs, const edb_folder &folder)
  */
 static errno_t do_mbox(mbox_state &mbs)
 {
-	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0004", 8) < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0005", 8) < 0)
 		throw YError("PG-1014: %s", strerror(errno));
 	uint8_t flag = false;
 	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* splice flag */
@@ -626,7 +626,7 @@ static errno_t do_file(const char *filename) try
 		return EXIT_FAILURE;
 	}
 	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
-	    ep.p_uint32(1) != pack_result::ok ||
+	    ep.p_uint64(1) != pack_result::ok ||
 	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
 	    ep.p_uint64(parent.folder_id) != pack_result::ok ||
 	    ep.p_msgctnt(*ctnt) != pack_result::ok ||

@@ -164,7 +164,7 @@ static int emit_message_im(const message_content &ctnt, const std::string &log_i
 
 static int emit_header_gxmt()
 {
-	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0004", 8) < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0005", 8) < 0)
 		throw YError("PG-1014: %s", strerror(errno));
 	uint8_t flag = false;
 	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* splice flag */
@@ -228,7 +228,7 @@ static int emit_message_gxmt(const message_content &ctnt, eid_t msg_id)
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw YError("ENOMEM");
 	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
-	    ep.p_uint32(msg_id.m_value) != pack_result::ok ||
+	    ep.p_uint64(msg_id.m_value) != pack_result::ok ||
 	    ep.p_uint32(static_cast<uint32_t>(0)) != pack_result::ok ||
 	    ep.p_uint64(MAILBOX_FID_UNANCHORED) != pack_result::ok ||
 	    ep.p_msgctnt(ctnt) != pack_result::ok ||

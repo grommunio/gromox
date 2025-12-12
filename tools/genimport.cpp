@@ -77,7 +77,7 @@ void gi_dump_folder_map(const gi_folder_map_t &map)
 	fprintf(stderr, "Folder map (%zu entries):\n", map.size());
 	fprintf(stderr, "\t# HierID (hex) -> Target name\n");
 	for (const auto &[nid, tgt] : map)
-		fprintf(stderr, "\t%xh -> %s (%s %llxh)\n", nid, tgt.create_name.c_str(),
+		fprintf(stderr, "\t%llxh -> %s (%s %llxh)\n", LLU{nid}, tgt.create_name.c_str(),
 		        tgt.create ? "create under" : "splice into", LLU{tgt.fid_to});
 }
 
@@ -107,11 +107,11 @@ void gi_folder_map_read(const void *buf, size_t bufsize, gi_folder_map_t &map)
 	if (ep.g_uint64(&max) != pack_result::ok)
 		throw YError("PG-1100");
 	for (size_t n = 0; n < max; ++n) {
-		uint32_t nid;
+		uint64_t nid;
 		uint8_t create;
 		uint64_t fidto;
 		std::unique_ptr<char[], gi_delete> name;
-		if (ep.g_uint32(&nid) != pack_result::ok ||
+		if (ep.g_uint64(&nid) != pack_result::ok ||
 		    ep.g_uint8(&create) != pack_result::ok ||
 		    ep.g_uint64(&fidto) != pack_result::ok ||
 		    ep.g_str(&unique_tie(name)) != pack_result::ok)
@@ -128,7 +128,7 @@ void gi_folder_map_write(const gi_folder_map_t &map)
 	if (ep.p_uint64(map.size()) != pack_result::ok)
 		throw YError("PG-1102");
 	for (const auto &[nid, tgt] : map)
-		if (ep.p_uint32(nid) != pack_result::ok ||
+		if (ep.p_uint64(nid) != pack_result::ok ||
 		    ep.p_uint8(!!tgt.create) != pack_result::ok ||
 		    ep.p_uint64(tgt.fid_to) != pack_result::ok ||
 		    ep.p_str(tgt.create_name.c_str()) != pack_result::ok)

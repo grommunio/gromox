@@ -523,7 +523,7 @@ static void emit_namedprop(namedprop_bimap &name_map, libpff_record_entry_t *ren
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
 	if (ep.p_uint32(GXMT_NAMEDPROP) != pack_result::success ||
-	    ep.p_uint32(proptag) != pack_result::success ||
+	    ep.p_uint64(proptag) != pack_result::success ||
 	    ep.p_uint32(0) != pack_result::success ||
 	    ep.p_uint64(0) != pack_result::success ||
 	    ep.p_propname(static_cast<PROPERTY_NAME>(pn_req)) != pack_result::success)
@@ -842,7 +842,7 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
 	ep.p_uint32(static_cast<uint32_t>(MAPI_FOLDER));
-	ep.p_uint32(ident);
+	ep.p_uint64(ident);
 	ep.p_uint32(static_cast<uint32_t>(parent.type));
 	ep.p_uint64(parent.folder_id);
 	ep.p_tpropval_a(*props);
@@ -913,7 +913,7 @@ static int do_message(unsigned int depth, const parent_desc &parent,
 		throw std::bad_alloc();
 	++g_msg_count;
 	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
-	    ep.p_uint32(ident) != pack_result::ok ||
+	    ep.p_uint64(ident) != pack_result::ok ||
 	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
 	    ep.p_uint64(parent.folder_id) != pack_result::ok ||
 	    ep.p_msgctnt(*ctnt) != pack_result::ok ||
@@ -1189,7 +1189,7 @@ static errno_t do_file(const char *filename) try
 	}
 
 	uint8_t xsplice = g_splice;
-	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0004", 8) < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0005", 8) < 0)
 		throw YError("PF-1132: %s", strerror(errno));
 	if (HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice)) < 0)
 		throw YError("PF-1133: %s", strerror(errno));

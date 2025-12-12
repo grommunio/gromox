@@ -37,7 +37,7 @@ namespace {
 
 struct ob_desc {
 	enum mapi_object_type mapitype = MAPI_STORE;
-	uint32_t nid = 0;
+	uint64_t nid = 0;
 	parent_desc parent;
 };
 
@@ -100,11 +100,11 @@ static void validate_magic(const char *magic)
 	if (memcmp(magic, "GXMT", 4) != 0 || !HX_isdigit(magic[4]) ||
 	    !HX_isdigit(magic[5]) || !HX_isdigit(magic[6]) ||
 	    !HX_isdigit(magic[7]))
-		throw YError("PG-1127: Unrecognized input format. GXMT0004 file signature is missing.");
-	if (memcmp(&magic[4], "0004", 4) == 0)
+		throw YError("PG-1127: Unrecognized input format. GXMT0005 file signature is missing.");
+	if (memcmp(&magic[4], "0005", 4) == 0)
 		return;
 	throw YError("PG-1127: Input is from an unsupported version. "
-		"Observed signature \"%.8s\", but only \"GXMT0004\" is understood.", magic);
+		"Observed signature \"%.8s\", but only \"GXMT0005\" is understood.", magic);
 }
 
 static int exm_read_base_maps()
@@ -309,9 +309,8 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
     const std::vector<PERMISSION_DATA> &perms)
 {
 	if (g_show_tree) {
-		fprintf(stderr, "exm: Folder %lxh (parent=%llxh)\n",
-			static_cast<unsigned long>(obd.nid),
-			static_cast<unsigned long long>(obd.parent.folder_id));
+		fprintf(stderr, "exm: Folder %llxh (parent=%llxh)\n",
+			LLU{obd.nid}, LLU{obd.parent.folder_id});
 		if (g_show_props)
 			gi_print(0, props, ee_get_propname);
 	}
@@ -335,15 +334,12 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 		auto ret = exm_create_folder(current_it->second.fid_to,
 			   &props, g_oexcl, &new_fid);
 		if (ret < 0) {
-			fprintf(stderr, "exm: folder for input object %lxh could not be created\n",
-			        static_cast<unsigned long>(obd.nid));
+			fprintf(stderr, "exm: folder for input object %llxh could not be created\n", LLU{obd.nid});
 			return ret;
 		}
 		if (new_fid != 0) {
 			if (g_show_tree)
-				fprintf(stderr, "Updated mapping {%lxh -> %llxh}\n",
-				        static_cast<unsigned long>(obd.nid),
-				        static_cast<unsigned long long>(new_fid));
+				fprintf(stderr, "Updated mapping {%llxh -> %llxh}\n", LLU{obd.nid}, LLU{new_fid});
 			current_it->second.create = false;
 			current_it->second.fid_to = new_fid;
 		}
@@ -366,22 +362,19 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 		auto ret = exm_create_folder(parent_it->second.fid_to,
 			   &props, !g_splice && g_oexcl, &new_fid);
 		if (ret < 0) {
-			fprintf(stderr, "exm: folder for input object %lxh could not be created\n",
-			        static_cast<unsigned long>(obd.nid));
+			fprintf(stderr, "exm: folder for input object %llxh could not be created\n", LLU{obd.nid});
 			return ret;
 		}
 		if (new_fid != 0) {
 			/* Make subobjects (seen later) to take exm_folder case #3/exm_messages case #n. */
 			if (g_show_tree)
-				fprintf(stderr, "exm: Learned new folder {%lxh -> %llxh}\n",
-				        static_cast<unsigned long>(obd.nid),
-				        static_cast<unsigned long long>(new_fid));
+				fprintf(stderr, "exm: Learned new folder {%llxh -> %llxh}\n",
+					LLU{obd.nid}, LLU{new_fid});
 			g_folder_map.try_emplace(obd.nid, tgt_folder{false, new_fid});
 		}
 		return exm_permissions(new_fid, perms);
 	}
-	fprintf(stderr, "exm: No known placement method for NID %lxh, skipping.\n",
-	        static_cast<unsigned long>(obd.nid));
+	fprintf(stderr, "exm: No known placement method for NID %llxh, skipping.\n", LLU{obd.nid});
 	return 0;
 }
 
@@ -532,9 +525,8 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
     const std::string &im_repr)
 {
 	if (g_show_tree) {
-		fprintf(stderr, "exm: Message %lxh (parent=%llxh)",
-			static_cast<unsigned long>(obd.nid),
-			static_cast<unsigned long long>(obd.parent.folder_id));
+		fprintf(stderr, "exm: Message %llxh (parent=%llxh)",
+			LLU{obd.nid}, LLU{obd.parent.folder_id});
 		if (im_repr.size() > 0)
 			fprintf(stderr, " [RFC5322: %zu bytes]", im_repr.size());
 		fprintf(stderr, "\n");
@@ -610,7 +602,7 @@ static int exm_packet(const void *buf, size_t bufsize)
 	ob_desc obd;
 	uint32_t type = 0, parent_type = 0;
 	if (ep.g_uint32(&type) != pack_result::ok ||
-	    ep.g_uint32(&obd.nid) != pack_result::ok)
+	    ep.g_uint64(&obd.nid) != pack_result::ok)
 		throw YError("PG-1121");
 	if (ep.g_uint32(&parent_type) != pack_result::success ||
 	    ep.g_uint64(&obd.parent.folder_id) != pack_result::ok)

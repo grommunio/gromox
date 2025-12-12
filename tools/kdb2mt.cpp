@@ -1107,7 +1107,7 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
 	ep.p_uint32(static_cast<uint32_t>(MAPI_FOLDER));
-	ep.p_uint32(item.m_hid);
+	ep.p_uint64(item.m_hid);
 	ep.p_uint32(static_cast<uint32_t>(parent.type));
 	ep.p_uint64(parent.folder_id);
 	ep.p_tpropval_a(*props);
@@ -1182,7 +1182,7 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
 	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != pack_result::ok ||
-	    ep.p_uint32(item.m_hid) != pack_result::ok ||
+	    ep.p_uint64(item.m_hid) != pack_result::ok ||
 	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != pack_result::ok ||
 	    ep.p_uint64(parent.folder_id) != pack_result::ok ||
 	    ep.p_msgctnt(*ctnt) != pack_result::ok ||
@@ -1366,7 +1366,7 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 {
 	uint8_t xsplice = g_splice;
-	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0004", 8) < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0005", 8) < 0)
 		throw YError("PK-1032: %s", strerror(errno));
 	if (HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice)) < 0)
 		throw YError("PK-1034: %s", strerror(errno));

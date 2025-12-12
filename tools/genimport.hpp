@@ -78,7 +78,7 @@ struct tgt_folder {
 };
 
 using attachment_content_ptr = std::unique_ptr<ATTACHMENT_CONTENT, gi_delete>;
-using gi_folder_map_t = std::unordered_map<uint32_t, tgt_folder>;
+using gi_folder_map_t = std::unordered_map<uint64_t, tgt_folder>;
 using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>;
 using propname_array_ptr = std::unique_ptr<PROPNAME_ARRAY, gi_delete>;
 using tarray_set_ptr = std::unique_ptr<TARRAY_SET, gi_delete>;
