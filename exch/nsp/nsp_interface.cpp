@@ -1843,10 +1843,9 @@ ec_error_t nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t flags,
 
 ec_error_t nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
     const STAT &xstat, const std::vector<proptag_t> *pproptags,
-    const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
+    const STRINGS_ARRAY *pstrs, std::vector<minid_t> &ppmids, NSP_ROWSET **pprows)
 {
 	auto pstat = &xstat;
-	*ppmids = nullptr;
 	*pprows = nullptr;
 	for (size_t i = 0; i < pstrs->count; ++i) {
 		if (pstrs->ppstr[i] == nullptr)
@@ -1939,10 +1938,9 @@ static ab_tree::minid nsp_interface_resolve_gal(const ab_tree::ab::const_base_re
  */
 ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
     const STAT &xstat, const std::vector<proptag_t> *itags,
-    const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
+    const STRINGS_ARRAY *pstrs, std::vector<minid_t> &outmids, NSP_ROWSET **pprows) try
 {
 	auto pstat = &xstat;
-	*ppmids = nullptr;
 	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
@@ -1961,22 +1959,16 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	auto pproptags = itags != nullptr ? proptag_cspan(*itags) : proptag_cspan(nsp_default_tags);
 	if (pproptags.size() > 100)
 		return ecTableTooBig;
-	auto outmids = common_util_proptagarray_init();
-	if (outmids == nullptr)
-		return ecServerOOM;
+	outmids.clear();
 	auto rowset = common_util_proprowset_init();
 	if (rowset == nullptr)
 		return ecServerOOM;
 
 	if (0 == pstat->container_id) {
 		for (size_t i = 0; i < pstrs->count; ++i) {
-			auto pproptag = common_util_proptagarray_enlarge(outmids);
-			if (pproptag == nullptr)
-				return ecServerOOM;
-			if (pstrs->ppstr[i] == nullptr) {
-				*pproptag = ab_tree::minid::UNRESOLVED;
+			auto &outmid = outmids.emplace_back(ab_tree::minid::UNRESOLVED);
+			if (pstrs->ppstr[i] == nullptr)
 				continue;
-			}
 			/* =SMTP:user@company.com */
 			const char *ptoken = strchr(pstrs->ppstr[i], ':');
 			if (ptoken != nullptr)
@@ -1988,10 +1980,10 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			bool b_ambiguous = false;
 			auto mid = nsp_interface_resolve_gal(base, ptoken, b_ambiguous);
 			if (!mid.valid()) {
-				*pproptag = b_ambiguous ? ab_tree::minid::AMBIGUOUS : ab_tree::minid::UNRESOLVED;
+				outmid = b_ambiguous ? ab_tree::minid::AMBIGUOUS : ab_tree::minid::UNRESOLVED;
 				continue;
 			}
-			*pproptag = ab_tree::minid::RESOLVED;
+			outmid = ab_tree::minid::RESOLVED;
 			auto prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr ||
 			    common_util_propertyrow_init(prow) == nullptr)
@@ -2001,7 +1993,6 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			if (result != ecSuccess)
 				return result;
 		}
-		*ppmids = outmids;
 		*pprows = rowset;
 		nsp_trace(__func__, 1, pstat, nullptr, *pprows);
 		return ecSuccess;
@@ -2014,13 +2005,9 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	nsp_interface_position_in_table(pstat,
 		node, &start_pos, &total);
 	for (size_t i = 0; i < pstrs->count; ++i) {
-		auto pproptag = common_util_proptagarray_enlarge(outmids);
-		if (pproptag == nullptr)
-			return ecServerOOM;
-		if (pstrs->ppstr[i] == nullptr) {
-			*pproptag = ab_tree::minid::UNRESOLVED;
+		auto &outmid = outmids.emplace_back(ab_tree::minid::UNRESOLVED);
+		if (pstrs->ppstr[i] == nullptr)
 			continue;
-		}
 		/* =SMTP:user@company.com */
 		const char *ptoken = strchr(pstrs->ppstr[i], ':');
 		if (ptoken != nullptr)
@@ -2029,22 +2016,21 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			ptoken = pstrs->ppstr[i];
 		std::string idn_deco = gx_utf8_to_punycode(ptoken);
 		ptoken = idn_deco.c_str();
-		*pproptag = ab_tree::minid::UNRESOLVED;
 
 		ab_tree::minid found;
 		for (ab_tree::minid mid : node) {
 			ab_tree::ab_node node1(base, mid);
 			// Removed container check as there are currently no recursive containers
 			if (nsp_interface_resolve_node(node, ptoken)) {
-				if (*pproptag == ab_tree::minid::RESOLVED) {
-					*pproptag = ab_tree::minid::AMBIGUOUS;
+				if (outmid == ab_tree::minid::RESOLVED) {
+					outmid = ab_tree::minid::AMBIGUOUS;
 					break;
 				}
-				*pproptag = ab_tree::minid::RESOLVED;
+				outmid = ab_tree::minid::RESOLVED;
 				found = mid;
 			}
 		}
-		if (*pproptag == ab_tree::minid::RESOLVED) {
+		if (outmid == ab_tree::minid::RESOLVED) {
 			auto prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr || common_util_propertyrow_init(prow) == nullptr)
 				return ecServerOOM;
@@ -2054,10 +2040,12 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				return result;
 		}
 	}
-	*ppmids = outmids;
 	*pprows = rowset;
 	nsp_trace(__func__, 1, pstat, nullptr, *pprows);
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 void nsp_interface_unbind_rpc_handle(uint64_t hrpc)

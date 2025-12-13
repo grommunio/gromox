@@ -229,7 +229,7 @@ struct NSPIRESOLVENAMES_IN final : public nsp_request {
 };
 
 struct NSPIRESOLVENAMES_OUT final : public nsp_response {
-	MINID_ARRAY *pmids = nullptr;
+	std::vector<minid_t> mids;
 	NSP_ROWSET *prows = nullptr;
 	ec_error_t result{};
 };
@@ -243,7 +243,7 @@ struct NSPIRESOLVENAMESW_IN final : public nsp_request {
 };
 
 struct NSPIRESOLVENAMESW_OUT final : public nsp_response {
-	MINID_ARRAY *pmids = nullptr;
+	std::vector<minid_t> mids;
 	NSP_ROWSET *prows = nullptr;
 	ec_error_t result{};
 };

@@ -267,7 +267,7 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	auto result = nsp_interface_resolve_namesw(ses, request.reserved, request.stat,
 	              optional_ptr(request.proptags), request.names,
-	              &response.mids, &rows);
+	              response.mids, &rows);
 	if (Failed(result))
 		return result;
 	if (rows != nullptr &&

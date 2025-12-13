@@ -43,4 +43,4 @@ extern ec_error_t (*nsp_interface_get_specialtable)(NSP_HANDLE, uint32_t flags, 
 extern ec_error_t (*nsp_interface_get_templateinfo)(NSP_HANDLE, uint32_t flags, uint32_t type, const char *dn, cpid_t, uint32_t locale_id, NSP_PROPROW **);
 extern ec_error_t (*nsp_interface_mod_linkatt)(NSP_HANDLE, uint32_t flags, gromox::proptag_t, uint32_t mid, const BINARY_ARRAY *entry_ids);
 extern ec_error_t (*nsp_interface_query_columns)(NSP_HANDLE, uint32_t flags, std::vector<gromox::proptag_t> &cols);
-extern ec_error_t (*nsp_interface_resolve_namesw)(NSP_HANDLE, uint32_t, const STAT &, const std::vector<gromox::proptag_t> *, const STRING_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
+extern ec_error_t (*nsp_interface_resolve_namesw)(NSP_HANDLE, uint32_t, const STAT &, const std::vector<gromox::proptag_t> *, const STRING_ARRAY *, std::vector<minid_t> &, NSP_ROWSET **);

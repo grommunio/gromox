@@ -211,36 +211,6 @@ PROPERTY_VALUE* common_util_propertyrow_enlarge(NSP_PROPROW *prow)
 	return &prow->pprops[prow->cvalues - 1]; 
 }
 
-LPROPTAG_ARRAY* common_util_proptagarray_init()
-{
-	auto pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
-	if (pproptags == nullptr)
-		return NULL;
-	memset(pproptags, 0, sizeof(LPROPTAG_ARRAY));
-	auto count = strange_roundup(pproptags->cvalues, SR_GROW_PROPTAG_ARRAY);
-	pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, count);
-	if (pproptags->pproptag == nullptr)
-		return NULL;
-	return pproptags;
-}
-
-uint32_t* common_util_proptagarray_enlarge(LPROPTAG_ARRAY *pproptags)
-{
-	uint32_t *pproptag;
-	auto count = strange_roundup(pproptags->cvalues, SR_GROW_PROPTAG_ARRAY);
-	if (pproptags->cvalues + 1 >= count) {
-		count += SR_GROW_PROPTAG_ARRAY;
-		pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, count);
-		if (pproptag == nullptr)
-			return NULL;
-		memcpy(pproptag, pproptags->pproptag,
-			sizeof(uint32_t)*pproptags->cvalues);
-		pproptags->pproptag = pproptag;
-	}
-	pproptags->cvalues ++;
-	return &pproptags->pproptag[pproptags->cvalues - 1]; 
-}
-
 BOOL common_util_load_file(const char *path, BINARY *pbin)
 {
 	struct stat node_state;

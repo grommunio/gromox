@@ -217,7 +217,7 @@ struct resolvenames_response {
 	uint32_t status = 0;
 	ec_error_t result = ecSuccess;
 	cpid_t codepage = CP_UTF16;
-	MID_ARRAY *mids = nullptr;
+	std::vector<minid_t> mids;
 	nsp_rowset2 column_rows{};
 };
 
