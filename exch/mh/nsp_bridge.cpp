@@ -91,18 +91,14 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	if (request.filter != nullptr) {
 		nspres = cu_alloc<NSPRES>();
 		if (nspres == nullptr ||
-		    !cu_restriction_to_nspres(*request.filter, *nspres)) {
-			response.mids = nullptr;
+		    !cu_restriction_to_nspres(*request.filter, *nspres))
 			return ecRpcFailed;
-		}
 	}
 	if (request.propname != nullptr) {
 		nspname = cu_alloc<NSP_PROPNAME>();
 		if (nspname == nullptr ||
-		    !cu_propname_to_nsp(*request.propname, *nspname)) {
-			response.mids = nullptr;
+		    !cu_propname_to_nsp(*request.propname, *nspname))
 			return ecRpcFailed;
-		}
 	}
 	response.stat = request.stat;
 	auto result = nsp_interface_get_matches(ses, request.reserved1, response.stat,

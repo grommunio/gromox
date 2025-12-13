@@ -653,7 +653,8 @@ pack_result nsp_ext_push::p_nsp_response(const dntomid_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
-	if (rsp.outmids == nullptr) {
+	if (rsp.result != ecSuccess || rsp.outmids == nullptr) {
+		/* OXNSPI v14 §3.1.4.1.13 SPR ¶1 */
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
@@ -669,15 +670,13 @@ pack_result nsp_ext_push::p_nsp_response(const getmatches_response &rsp)
 	TRY(p_uint32(rsp.result));
 	TRY(p_uint8(0xFF));
 	TRY(nsp_ext_p_stat(*this, rsp.stat));
-	if (rsp.mids == nullptr) {
+	if (rsp.result != ecSuccess || rsp.mids == nullptr) {
+		/* OXNSPI v14 §3.1.4.1.10 SPR ¶4 */
+		TRY(p_uint8(0));
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
 		TRY(p_proptag_la(*rsp.mids));
-	}
-	if (rsp.result != ecSuccess) {
-		TRY(p_uint8(0));
-	} else {
 		TRY(p_uint8(0xFF));
 		TRY(nsp_ext_p_colrow(*this, &rsp.column_rows));
 	}
@@ -689,7 +688,8 @@ pack_result nsp_ext_push::p_nsp_response(const getproplist_response &rsp)
 	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
-	if (rsp.proptags == nullptr) {
+	if (rsp.result != ecSuccess || rsp.proptags == nullptr) {
+		/* OXNSPI v14 §3.1.4.1.6 SPR ¶1 */
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
@@ -704,7 +704,9 @@ pack_result nsp_ext_push::p_nsp_response(const getprops_response &rsp)
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	TRY(p_uint32(rsp.codepage));
-	if (rsp.row == nullptr) {
+	if ((rsp.result != ecSuccess && rsp.result != ecWarnWithErrors) ||
+	    rsp.row == nullptr) {
+		/* ONXSPI v14 §3.1.4.1.7 SPR ¶2 */
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
@@ -725,7 +727,10 @@ pack_result nsp_ext_push::p_nsp_response(const getspecialtable_response &rsp)
 		TRY(p_uint8(0xFF));
 		TRY(p_uint32(*rsp.version));
 	}
-	if (rsp.count == 0) {
+	if (rsp.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.3 SPR ¶2 */
+		TRY(p_uint8(0));
+	} else if (rsp.count == 0) {
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
@@ -773,6 +778,7 @@ pack_result nsp_ext_push::p_nsp_response(const queryrows_response &rsp)
 	TRY(p_uint8(0xFF));
 	TRY(nsp_ext_p_stat(*this, rsp.stat));
 	if (rsp.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.8 SPR ¶3 */
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
@@ -786,7 +792,8 @@ pack_result nsp_ext_push::p_nsp_response(const querycolumns_response &rsp)
 	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
-	if (rsp.columns == nullptr) {
+	if (rsp.result != ecSuccess || rsp.columns == nullptr) {
+		/* OXNSPI v14 §3.1.4.1.5 SPR ¶1 */
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
@@ -801,15 +808,13 @@ pack_result nsp_ext_push::p_nsp_response(const resolvenames_response &rsp)
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	TRY(p_uint32(rsp.codepage));
-	if (rsp.mids == nullptr) {
+	if (rsp.result != ecSuccess || rsp.mids == nullptr) {
+		/* OXNSPI v14 §3.1.4.1.16 SPR ¶3 */
+		TRY(p_uint8(0));
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
 		TRY(p_proptag_la(*rsp.mids));
-	}
-	if (rsp.result != ecSuccess) {
-		TRY(p_uint8(0));
-	} else {
 		TRY(p_uint8(0xFF));
 		TRY(nsp_ext_p_colrow(*this, &rsp.column_rows));
 	}
@@ -822,7 +827,8 @@ pack_result nsp_ext_push::p_nsp_response(const resortrestriction_response &rsp)
 	TRY(p_uint32(rsp.result));
 	TRY(p_uint8(0xFF));
 	TRY(nsp_ext_p_stat(*this, rsp.stat));
-	if (rsp.outmids == nullptr) {
+	if (rsp.result != ecSuccess || rsp.outmids == nullptr) {
+		/* OXNSPI v14 §3.1.4.1.11 SPR ¶3 */
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
@@ -839,6 +845,7 @@ pack_result nsp_ext_push::p_nsp_response(const seekentries_response &rsp)
 	TRY(p_uint8(0xFF));
 	TRY(nsp_ext_p_stat(*this, rsp.stat));
 	if (rsp.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.9 SPR ¶4 */
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
