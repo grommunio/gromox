@@ -1325,16 +1325,15 @@ ec_error_t nsp_interface_dntomid(NSPI_HANDLE handle,
 	auto base = ab_tree::AB.get(handle.guid);
 	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
-	outmids.resize(pnames->count);
-	for (size_t i = 0; i < pnames->count; ++i) {
-		if (pnames->ppstr[i] == nullptr)
+	for (const auto &keyword : *pnames) {
+		auto &outmid = outmids.emplace_back(ab_tree::minid::UNRESOLVED);
+		if (keyword == nullptr)
 			continue;
-		ab_tree::minid mid = base->resolve(pnames->ppstr[i]);
+		auto mid = base->resolve(keyword);
 		if (base->exists(mid))
-			outmids[i] = mid;
+			outmid = mid;
 		if (g_nsp_trace >= 2)
-			fprintf(stderr, "\t[%zu] %s -> %08x\n", i,
-				znul(pnames->ppstr[i]), outmids[i]);
+			fprintf(stderr, "\t+ %s -> %08x\n", keyword, outmid);
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
@@ -1965,16 +1964,16 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		return ecServerOOM;
 
 	if (0 == pstat->container_id) {
-		for (size_t i = 0; i < pstrs->count; ++i) {
+		for (const auto &keyword : *pstrs) {
 			auto &outmid = outmids.emplace_back(ab_tree::minid::UNRESOLVED);
-			if (pstrs->ppstr[i] == nullptr)
+			if (keyword == nullptr)
 				continue;
 			/* =SMTP:user@company.com */
-			const char *ptoken = strchr(pstrs->ppstr[i], ':');
+			const char *ptoken = strchr(keyword, ':');
 			if (ptoken != nullptr)
 				ptoken ++;
 			else
-				ptoken = pstrs->ppstr[i];
+				ptoken = keyword;
 			std::string idn_deco = gx_utf8_to_punycode(ptoken);
 			ptoken = idn_deco.c_str();
 			bool b_ambiguous = false;
@@ -2004,16 +2003,16 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	uint32_t start_pos = 0, total = 0;
 	nsp_interface_position_in_table(pstat,
 		node, &start_pos, &total);
-	for (size_t i = 0; i < pstrs->count; ++i) {
+	for (const auto &keyword : *pstrs) {
 		auto &outmid = outmids.emplace_back(ab_tree::minid::UNRESOLVED);
-		if (pstrs->ppstr[i] == nullptr)
+		if (keyword == nullptr)
 			continue;
 		/* =SMTP:user@company.com */
-		const char *ptoken = strchr(pstrs->ppstr[i], ':');
+		const char *ptoken = strchr(keyword, ':');
 		if (ptoken != nullptr)
 			ptoken++;
 		else
-			ptoken = pstrs->ppstr[i];
+			ptoken = keyword;
 		std::string idn_deco = gx_utf8_to_punycode(ptoken);
 		ptoken = idn_deco.c_str();
 
