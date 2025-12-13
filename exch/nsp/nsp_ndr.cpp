@@ -1871,9 +1871,14 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIQUERYROWS_IN *r) try
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIQUERYROWS_OUT &r)
 {
 	TRY(nsp_ndr_push_stat(x, r.stat));
-	TRY(x.p_unique_ptr(r.prows));
-	if (r.prows != nullptr)
-		TRY(nsp_ndr_push_proprow_set(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	if (r.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.8 SPR ¶3 */
+		TRY(x.p_unique_ptr(nullptr));
+	} else {
+		TRY(x.p_unique_ptr(r.prows));
+		if (r.prows != nullptr)
+			TRY(nsp_ndr_push_proprow_set(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	}
 	TRY(x.p_uint32(r.result));
 	return pack_result::ok;
 }
@@ -1910,9 +1915,14 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPISEEKENTRIES_IN *r)
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPISEEKENTRIES_OUT &r)
 {
 	TRY(nsp_ndr_push_stat(x, r.stat));
-	TRY(x.p_unique_ptr(r.prows));
-	if (r.prows != nullptr)
-		TRY(nsp_ndr_push_proprow_set(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	if (r.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.9 SPR ¶4 */
+		TRY(x.p_unique_ptr(nullptr));
+	} else {
+		TRY(x.p_unique_ptr(r.prows));
+		if (r.prows != nullptr)
+			TRY(nsp_ndr_push_proprow_set(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	}
 	return x.p_uint32(r.result);
 }
 
@@ -1967,12 +1977,18 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIGETMATCHES_IN *r)
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIGETMATCHES_OUT &r)
 {
 	TRY(nsp_ndr_push_stat(x, r.stat));
-	TRY(x.p_unique_ptr(r.poutmids));
-	if (r.poutmids != nullptr)
-		TRY(nsp_ndr_push_proptag_array(x, *r.poutmids));
-	TRY(x.p_unique_ptr(r.prows));
-	if (r.prows != nullptr)
-		TRY(nsp_ndr_push_proprow_set(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	if (r.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.10 SPR ¶4 */
+		TRY(x.p_unique_ptr(nullptr));
+		TRY(x.p_unique_ptr(nullptr));
+	} else {
+		TRY(x.p_unique_ptr(r.poutmids));
+		if (r.poutmids != nullptr)
+			TRY(nsp_ndr_push_proptag_array(x, *r.poutmids));
+		TRY(x.p_unique_ptr(r.prows));
+		if (r.prows != nullptr)
+			TRY(nsp_ndr_push_proprow_set(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	}
 	return x.p_uint32(r.result);
 }
 
@@ -1997,9 +2013,14 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIRESORTRESTRICTION_IN *r)
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIRESORTRESTRICTION_OUT &r)
 {
 	TRY(nsp_ndr_push_stat(x, r.stat));
-	TRY(x.p_unique_ptr(r.poutmids));
-	if (r.poutmids != nullptr)
-		TRY(nsp_ndr_push_proptag_array(x, *r.poutmids));
+	if (r.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.11 SPR ¶3 */
+		TRY(x.p_unique_ptr(nullptr));
+	} else {
+		TRY(x.p_unique_ptr(r.poutmids));
+		if (r.poutmids != nullptr)
+			TRY(nsp_ndr_push_proptag_array(x, *r.poutmids));
+	}
 	return x.p_uint32(r.result);
 }
 
@@ -2013,9 +2034,14 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIDNTOMID_IN *r)
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIDNTOMID_OUT &r)
 {
-	TRY(x.p_unique_ptr(r.poutmids));
-	if (r.poutmids != nullptr)
-		TRY(nsp_ndr_push_proptag_array(x, *r.poutmids));
+	if (r.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.13 SPR ¶1 */
+		TRY(x.p_unique_ptr(nullptr));
+	} else {
+		TRY(x.p_unique_ptr(r.poutmids));
+		if (r.poutmids != nullptr)
+			TRY(nsp_ndr_push_proptag_array(x, *r.poutmids));
+	}
 	return x.p_uint32(r.result);
 }
 
@@ -2032,9 +2058,14 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIGETPROPLIST_IN *r)
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIGETPROPLIST_OUT &r)
 {
-	TRY(x.p_unique_ptr(r.pproptags));
-	if (r.pproptags != nullptr)
-		TRY(nsp_ndr_push_proptag_array(x, *r.pproptags));
+	if (r.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.6 SPR ¶1 */
+		TRY(x.p_unique_ptr(nullptr));
+	} else {
+		TRY(x.p_unique_ptr(r.pproptags));
+		if (r.pproptags != nullptr)
+			TRY(nsp_ndr_push_proptag_array(x, *r.pproptags));
+	}
 	return x.p_uint32(r.result);
 }
 
@@ -2059,9 +2090,14 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIGETPROPS_IN *r)
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIGETPROPS_OUT &r)
 {
-	TRY(x.p_unique_ptr(r.prows));
-	if (r.prows != nullptr)
-		TRY(nsp_ndr_push_property_row(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	if (r.result != ecSuccess && r.result != ecWarnWithErrors) {
+		/* OXNSPI v14 §3.1.4.1.7 SPR ¶1 */
+		TRY(x.p_unique_ptr(nullptr));
+	} else {
+		TRY(x.p_unique_ptr(r.prows));
+		if (r.prows != nullptr)
+			TRY(nsp_ndr_push_property_row(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	}
 	return x.p_uint32(r.result);
 }
 
@@ -2117,9 +2153,14 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIGETSPECIALTABLE_IN *r)
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIGETSPECIALTABLE_OUT &r)
 {
 	TRY(x.p_uint32(r.version));
-	TRY(x.p_unique_ptr(r.prows));
-	if (r.prows != nullptr)
-		TRY(nsp_ndr_push_proprow_set(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	if (r.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.3 SPR ¶2 */
+		TRY(x.p_unique_ptr(nullptr));
+	} else {
+		TRY(x.p_unique_ptr(r.prows));
+		if (r.prows != nullptr)
+			TRY(nsp_ndr_push_proprow_set(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	}
 	return x.p_uint32(r.result);
 }
 
@@ -2156,9 +2197,14 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIGETTEMPLATEINFO_IN *r)
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIGETTEMPLATEINFO_OUT &r)
 {
-	TRY(x.p_unique_ptr(r.pdata));
-	if (r.pdata != nullptr)
-		TRY(nsp_ndr_push_property_row(x, FLAG_HEADER | FLAG_CONTENT, *r.pdata));
+	if (r.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.18 SPR ¶1 */
+		TRY(x.p_unique_ptr(nullptr));
+	} else {
+		TRY(x.p_unique_ptr(r.pdata));
+		if (r.pdata != nullptr)
+			TRY(nsp_ndr_push_property_row(x, FLAG_HEADER | FLAG_CONTENT, *r.pdata));
+	}
 	return x.p_uint32(r.result);
 }
 
@@ -2186,9 +2232,14 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIQUERYCOLUMNS_IN *r)
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIQUERYCOLUMNS_OUT &r)
 {
-	TRY(x.p_unique_ptr(r.pcolumns));
-	if (r.pcolumns != nullptr)
-		TRY(nsp_ndr_push_proptag_array(x, *r.pcolumns));
+	if (r.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.5 SPR ¶1 */
+		TRY(x.p_unique_ptr(nullptr));
+	} else {
+		TRY(x.p_unique_ptr(r.pcolumns));
+		if (r.pcolumns != nullptr)
+			TRY(nsp_ndr_push_proptag_array(x, *r.pcolumns));
+	}
 	return x.p_uint32(r.result);
 }
 
@@ -2214,12 +2265,18 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIRESOLVENAMES_IN *r)
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIRESOLVENAMES_OUT &r)
 {
-	TRY(x.p_unique_ptr(r.pmids));
-	if (r.pmids != nullptr)
-		TRY(nsp_ndr_push_proptag_array(x, *r.pmids));
-	TRY(x.p_unique_ptr(r.prows));
-	if (r.prows != nullptr)
-		TRY(nsp_ndr_push_proprow_set(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	if (r.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.16 SPR ¶3 */
+		TRY(x.p_unique_ptr(nullptr));
+		TRY(x.p_unique_ptr(nullptr));
+	} else {
+		TRY(x.p_unique_ptr(r.pmids));
+		if (r.pmids != nullptr)
+			TRY(nsp_ndr_push_proptag_array(x, *r.pmids));
+		TRY(x.p_unique_ptr(r.prows));
+		if (r.prows != nullptr)
+			TRY(nsp_ndr_push_proprow_set(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	}
 	return x.p_uint32(r.result);
 }
 
@@ -2245,12 +2302,18 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIRESOLVENAMESW_IN *r)
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIRESOLVENAMESW_OUT &r)
 {
-	TRY(x.p_unique_ptr(r.pmids));
-	if (r.pmids != nullptr)
-		TRY(nsp_ndr_push_proptag_array(x, *r.pmids));
-	TRY(x.p_unique_ptr(r.prows));
-	if (r.prows != nullptr)
-		TRY(nsp_ndr_push_proprow_set(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	if (r.result != ecSuccess) {
+		/* OXNSPI v14 §3.1.4.1.17 SPR ¶3 */
+		TRY(x.p_unique_ptr(nullptr));
+		TRY(x.p_unique_ptr(nullptr));
+	} else {
+		TRY(x.p_unique_ptr(r.pmids));
+		if (r.pmids != nullptr)
+			TRY(nsp_ndr_push_proptag_array(x, *r.pmids));
+		TRY(x.p_unique_ptr(r.prows));
+		if (r.prows != nullptr)
+			TRY(nsp_ndr_push_proprow_set(x, FLAG_HEADER | FLAG_CONTENT, *r.prows));
+	}
 	return x.p_uint32(r.result);
 }
 
