@@ -42,18 +42,6 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-namespace {
-
-struct nsp_sort_item {
-	uint32_t minid;
-	union {
-		char *string;
-		void *strv;
-	};
-};
-
-}
-
 enum {
 	TI_TEMPLATE = 0x1,
 	TI_SCRIPT = 0x4,
@@ -1297,15 +1285,15 @@ ec_error_t nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	return ecSuccess;
 }
 
-static int nsp_interface_cmpstring(const void *p1, const void *p2)
-{
-	return strcasecmp(static_cast<const nsp_sort_item *>(p1)->string,
-	       static_cast<const nsp_sort_item *>(p2)->string);
-}
-
 ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
-    STAT &xstat, const MID_ARRAY *pinmids, MID_ARRAY **ppoutmids)
+    STAT &xstat, const MID_ARRAY *pinmids, MID_ARRAY **ppoutmids) try
 {
+	struct sitem {
+		minid_t minid = 0;
+		std::string str;
+		auto operator<=>(const sitem &o) const { return strcasecmp(str.c_str(), o.str.c_str()) <=> 0; }
+	};
+
 	auto pstat = &xstat;
 	*ppoutmids = nullptr;
 	nsp_trace(__func__, 0, pstat);
@@ -1313,9 +1301,6 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
 		return ecError;
 	if (pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
-	auto parray = ndr_stack_anew<nsp_sort_item>(NDR_STACK_IN, pinmids->cvalues);
-	if (parray == nullptr)
-		return ecServerOOM;
 	auto outmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (outmids == nullptr)
 		return ecServerOOM;
@@ -1326,25 +1311,21 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
 	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
 
-	size_t count = 0;
 	bool b_found = false;
+	std::vector<sitem> parray;
 	for (size_t i = 0; i < pinmids->cvalues; ++i) {
 		ab_tree::ab_node node(base, pinmids->pproptag[i]);
 		if (!node.exists())
 			continue;
-		parray[count].minid = pinmids->pproptag[i];
 		if (pstat->cur_rec == pinmids->pproptag[i])
 			b_found = TRUE;
-		parray[count].strv = cu_strdup(node.displayname(), NDR_STACK_IN);
-		if (parray[count].strv == nullptr)
-			return ecServerOOM;
-		++count;
+		parray.emplace_back(pinmids->pproptag[i], node.displayname());
 	}
-	qsort(parray, count, sizeof(nsp_sort_item), nsp_interface_cmpstring);
-	outmids->cvalues = count;
-	for (size_t i = 0; i < count; ++i)
+	std::sort(parray.begin(), parray.end());
+	outmids->cvalues = parray.size();
+	for (size_t i = 0; i < parray.size(); ++i)
 		outmids->pproptag[i] = parray[i].minid;
-	pstat->total_rec = count;
+	pstat->total_rec = parray.size();
 	if (!b_found) {
 		/* MS-OXNSPI v14 §3.1.4.1.11 pg 57 ¶8 */
 		pstat->cur_rec = ab_tree::minid::BEGINNING_OF_TABLE;
@@ -1353,6 +1334,9 @@ ec_error_t nsp_interface_resort_restriction(NSPI_HANDLE handle,
 	nsp_trace(__func__, 1, pstat);
 	*ppoutmids = outmids;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 ec_error_t nsp_interface_dntomid(NSPI_HANDLE handle,
