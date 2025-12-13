@@ -319,6 +319,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
 		return 0;
 	}
 	exm_folder_adjust(props);
+	props.erase(PidTagFolderId);
 
 	auto current_it  = g_folder_map.find(obd.nid);
 	auto parent_it   = g_folder_map.find(obd.parent.folder_id);
@@ -540,6 +541,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
 		return 0;
 	}
 	exm_adjust_propids(ctnt);
+	ctnt.proplist.erase(PidTagMid);
 	if (g_show_tree && g_show_props) {
 		tree(0);
 		tlog("adjusted properties:\n");

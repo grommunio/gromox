@@ -14,21 +14,26 @@ gromox\-export \(em Utility to export Gromox messages to various formats
 [\fIfolder_id\fP\fB:\fP]\fImessage_id\fP
 .PP
 \fBgromox\-exm2mt \-u\fP \fIuser@domain.example\fP
-[\fIfolder_id\fP\fB:\fP]\fImessage_id\fP... >file.mt
+[\fB\-rs\fP]
+{\fIfolder_spec\fP|\fBf\fP\fIfolder_id\fP|[\fIfolder_id\fP\fB:\fP]\fImessage_id\fP}... >file.mt
 .PP
 \fBgromox\-exm2tnef \-u\fP \fIuser@domain.example\fP
 [\fIfolder_id\fP\fB:\fP]\fImessage_id\fP >file.tnef
 .SH Description
-gromox-export reads one message from an exmdb information store and exports it
+gromox-export reads folders or messages from an exmdb information store and exports it
 as Gromox Mailbox Transfer (GXMT) datastream, Internet Mail (RFC 5322),
 iCalendar (RFC 5545), vCard (RFC 6350), or TNEF, depending on which name it was
 invoked under. ("exm" is short for exmdb and refers to the network protocol
-used to talk to the message store.)
+used to talk to the message store.) Multiple messages may only be exported to
+GXMT. ACLs are not extracted yet.
 .PP
-When \fIfolder_id\fP is specified, the exporter validates that the message is
-in that particular folder and fail the operation if it is not. In addition, the
-importer will also use a different RPC, but this detail should not make a
-difference to end-users.
+Folders can be selected by symbolic name or by folder path
+(see gromox\-mbop(8) section "Folder specification" for that).
+To select a folder by numeric ID, use the f prefix, e.g. \fBf13\fP.
+To select a message by numeric ID, use the ID \fB262145\fP or \fB0x10001\fP.
+The syntax \fB13:262145\fP reads a message using the Instance API (i.e. using a
+copy-on-write object) and validates that the message is indeed in that folder;
+this mode is only relevant for developers really.
 .PP
 An alternate way to get an EML representation is using grommunio-web's "Export
 as > EML file(s)" function from the context menu of a mail item.
@@ -41,6 +46,14 @@ If set to 0 however, allday events are emitted as precise-time events.
 Default: 1
 \fB\-p\fP
 Show properties in detail (enhances \fB\-t\fP).
+.TP
+\fB\-r\fP
+Process folders recursively. (Only in conjunction with GXMT export.)
+.TP
+\fB\-s\fP
+Mark objects for splicing when later imported. For example, objects exported
+from, and originally located in Sent Items are, upon import, placed in the
+target mailbox's Sent Items.
 .TP
 \fB\-t\fP
 As the source message is read, print a diagnostic tree view of the MAPI
@@ -55,5 +68,19 @@ to \fB\-p\fP, \fB\-t\fP or \fB\-v\fP). 1=crit, 2=error, 3=warn, 4=notice,
 5=info, 6=debug.
 .br
 Default: \fI4\fP (notice)
+.SH Examples
+.IP \(bu 4
+Export entire mailbox: gromox\-export \-u user@example.com \-r / >dump.mt
+.IP \(bu 4
+Export most of the mailbox (as Outlook would): gromox\-export \-u u@e.xz \-r
+IPM_SUBTREE >dump.mt
+.IP \(bu 4
+Export two folders without subordinates: gromox\-export \-u u@e.xz
+IPM_SUBTREE/Foo IPM_SUBTREE/Bar >dump.mt
+.IP \(bu 4
+Export a single message as RFC5322: gromox\-exm2eml \-u u@e.xz 0x10001
+>10001.eml
+.IP \(bu 4
+Export a MAPI contact as vcard: gromox\-exm2vcf \-u u@e.xz 0x30001 >30001.vcf
 .SH See also
 \fBgromox\fP(7), \fBgromox\-eml2mt\fP(8)
