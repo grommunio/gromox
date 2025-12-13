@@ -76,6 +76,8 @@ thaw: unfreeze a mailbox
 unload: issue the "unload_store" RPC for a mailbox
 .IP \(bu 4
 vacuum: issue the "vacuum" RPC for a mailbox
+.IP \(bu 4
+zaddrxlat: replace all "ZARAFA" type addresses in the mailbox's contents
 .SH Further documentation
 .IP \(bu 4
 SQLite recovery: https://docs.grommunio.com/kb/sqlite.html
@@ -426,6 +428,26 @@ the mailbox via a notification channel.
 Issue the SQLite ".vacuum" command on the user's exchange.sqlite3 file in an
 attempt to reclaim unused disk space and shrink it. This operation can
 potentially run for quite some time, during which the mailbox is inaccessible.
+.SH zaddrxlat
+Scans messages in the given folders and replaces PR_ADDRTYPE="ZARAFA" and
+related properties by normal SMTP addresses. See gromox\\-kdb2mt(8) section
+"ZARAFA Address Type" for some details. The use case for zaddrxlat is for
+fixing up addresses after the fact, i.e. when the administrator forgot to
+employ a user map at the time of running kdb2mt. zaddrxlat does not change
+ACLs.
+.SS Synopsis
+\fBzaddrxlat \-m\fP \fIfile\fP [\fB\-r\fP] \fIfolder_spec\fP[...]
+.SS Options
+.TP
+\fB\-m\fP \fIfile\fP
+User map to utilize for translation. See kdb\-uidextract(8) for a format
+description.
+.TP
+\fB\-r\fP
+Process folders recursively.
+.SH Example
+.PP
+zaddrxlat -m u.map -r "IPM_SUBTREE/Import of blah @2025-12-26"
 .SH Folder specification
 \fIfolder_spec\fP must conform to one of three forms. Either:
 .IP \(bu 4

@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdio>
+#include "genimport.hpp"
 
 /*
  * Override HX_getopt_help_cb because it calls exit(0), which is really bad for
@@ -22,6 +23,7 @@ namespace getfreebusy { extern int main(int, char **); }
 namespace purgesoftdel { extern int main(int, char **); }
 namespace set_locale { extern int main(int, char **); }
 namespace sync_midb { extern int main(int, char **); }
+namespace zaddrxlat { extern int main(int, char **); }
 
 namespace global {
 
