@@ -1966,8 +1966,8 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	if (0 == pstat->container_id) {
 		for (const auto &keyword : *pstrs) {
 			auto &outmid = outmids.emplace_back(ab_tree::minid::UNRESOLVED);
-			if (keyword == nullptr)
-				continue;
+			if (znoval(keyword))
+				continue; /* OXNSPI v14 §3.1.4.7 */
 			/* =SMTP:user@company.com */
 			const char *ptoken = strchr(keyword, ':');
 			if (ptoken != nullptr)
@@ -1982,7 +1982,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				outmid = b_ambiguous ? ab_tree::minid::AMBIGUOUS : ab_tree::minid::UNRESOLVED;
 				continue;
 			}
-			outmid = ab_tree::minid::RESOLVED;
+			outmid = ab_tree::minid::RESOLVED; /* precise minid not allowed */
 			auto prow = common_util_proprowset_enlarge(rowset);
 			if (prow == nullptr ||
 			    common_util_propertyrow_init(prow) == nullptr)
@@ -2005,7 +2005,7 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		node, &start_pos, &total);
 	for (const auto &keyword : *pstrs) {
 		auto &outmid = outmids.emplace_back(ab_tree::minid::UNRESOLVED);
-		if (keyword == nullptr)
+		if (znoval(keyword))
 			continue;
 		/* =SMTP:user@company.com */
 		const char *ptoken = strchr(keyword, ':');
