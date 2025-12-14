@@ -1944,14 +1944,15 @@ ec_error_t nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	nsp_trace(__func__, 0, pstat);
 	if (handle.handle_type != HANDLE_EXCHANGE_NSP)
 		return ecError;
-	if (pstat->codepage == CP_WINUNICODE || reserved != 0)
-		return ecNotSupported;
 	/*
-	[MS-OXNPI] 3.1.4.1.17, If the input parameter Reserved contains
-	any value other than 0, the server MUST return one of the return
-	values specified in section 2.2.1.2, but Outlook 2010 always send
-	non-zero so we skip it.
-	*/
+	 * MS-OXNPI §3.1.4.1.17 states that "If the input parameter Reserved
+	 * contains any value other than 0, the server MUST return one of the
+	 * return values specified in section 2.2.1.2". But, Outlook 2010 (and
+	 * 2019 still) always send 0x80000000... could it be a flags parameter
+	 * with MAPI_UNICODE?
+	 */
+	if (pstat->codepage == CP_WINUNICODE /* || reserved == 0 */)
+		return ecNotSupported;
 	auto base = ab_tree::AB.get(handle.guid);
 	if (base == nullptr || !session_check(handle, *base))
 		return ecError;
