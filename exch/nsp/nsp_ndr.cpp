@@ -6,7 +6,9 @@
 #include <cstring>
 #include <iconv.h>
 #include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
@@ -28,6 +30,15 @@ loosely speaking, which means that a lot of genptrs can stack up:
  * Varying array with strings (StringArray_r):
    <struct-front-pad> <member:count> <array-genptr> <struct-back-pad>
    <array-elem-count> <string-genptr>*elem-count <string>*elem-count
+
+DCERPC allows for NULL array pointers and NULL string pointers, effectively
+``optional<vector<optional<string>>>`` in C++.
+
+MS-OXNSPI v14 explicitly allows for *some* arrays to be NULL, such as
+dntomid::pPropTags, but otherwise does not mention it, which suggests NULL is
+not allowed. ANR (§3.1.4.7) is also supposed to exhibit same behavior on NULL
+strings vs. zero-length strings. Thus, I think we can get away with just using
+vector<string>.
 **/
 
 using namespace gromox;
@@ -263,31 +274,32 @@ static pack_result nsp_ndr_push_string_array(NDR_PUSH &x,
  * Extract a conformant array of strings
  */
 static pack_result nsp_ndr_pull_strings_array(NDR_PULL &x,
-    STRINGS_ARRAY *r)
+    std::vector<std::string> &r) try
 {
+	std::vector<bool> isset_v;
 	{
-		uint32_t size = 0;
+		uint32_t size = 0, count = 0;
 		TRY(x.g_ulong(&size));
 		size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 		TRY(x.align(5));
-		TRY(x.g_uint32(&r->count));
-		if (r->count > 100000)
+		TRY(x.g_uint32(&count));
+		if (count > 100000)
 			return pack_result::range;
-		if (r->count != size)
+		if (count != size)
 			return pack_result::array_size;
-		r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
-		if (r->ppstr == nullptr)
-			return pack_result::alloc;
+		r.clear();
+		r.resize(size);
+		isset_v.resize(size);
 		for (size_t cnt = 0; cnt < size; ++cnt) {
 			uint32_t ptr = 0;
 			TRY(x.g_genptr(&ptr));
-			r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
+			isset_v[cnt] = ptr != 0;
 		}
 		TRY(x.trailer_align(5));
 	}
 	
-	for (size_t cnt = 0; cnt < r->count; ++cnt) {
-		if (r->ppstr[cnt] == nullptr)
+	for (size_t cnt = 0; cnt < r.size(); ++cnt) {
+		if (!isset_v[cnt])
 			continue;
 		uint32_t size1 = 0, offset = 0, length1 = 0;
 		TRY(x.g_ulong(&size1));
@@ -296,12 +308,13 @@ static pack_result nsp_ndr_pull_strings_array(NDR_PULL &x,
 		if (offset != 0 || length1 > size1)
 			return pack_result::array_size;
 		TRY(x.check_str(length1, sizeof(uint8_t)));
-		r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, length1 + 1);
-		if (r->ppstr[cnt] == nullptr)
-			return pack_result::alloc;
-		TRY(x.g_str(r->ppstr[cnt], length1));
+		std::string s;
+		TRY(x.g_str(&s, length1));
+		r[cnt] = std::move(s);
 	}
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result nsp_ndr_pull_wstring_array(NDR_PULL &x,
@@ -402,37 +415,35 @@ static pack_result nsp_ndr_push_wstring_array(NDR_PUSH &x,
 }
 
 static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL &x,
-    STRINGS_ARRAY *r)
+    std::vector<std::string> &r) try
 {
+	std::vector<bool> isset_v;
 	{
-		uint32_t size = 0;
+		uint32_t size = 0, count = 0;
 		TRY(x.g_ulong(&size));
 		size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 		TRY(x.align(5));
-		TRY(x.g_uint32(&r->count));
-		if (r->count > 100000) {
-			r->count = 0;
+		TRY(x.g_uint32(&count));
+		if (count > 100000) {
+			count = 0;
 			return pack_result::range;
 		}
-		if (r->count != size) {
-			r->count = 0;
+		if (count != size) {
+			count = 0;
 			return pack_result::array_size;
 		}
-		r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
-		if (r->ppstr == nullptr) {
-			r->count = 0;
-			return pack_result::alloc;
-		}
+		r.clear();
+		r.resize(size);
 		for (size_t cnt = 0; cnt < size; ++cnt) {
 			uint32_t ptr = 0;
 			TRY(x.g_genptr(&ptr));
-			r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
+			isset_v[cnt] = ptr != 0;
 		}
 		TRY(x.trailer_align(5));
 	}
 	
-	for (size_t cnt = 0; cnt < r->count; ++cnt) {
-		if (r->ppstr[cnt] == nullptr)
+	for (size_t cnt = 0; cnt < r.size(); ++cnt) {
+		if (!isset_v[cnt])
 			continue;
 		uint32_t size1 = 0, offset = 0, length1 = 0;
 		TRY(x.g_ulong(&size1));
@@ -441,22 +452,20 @@ static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL &x,
 		if (offset != 0 || length1 > size1)
 			return pack_result::array_size;
 		TRY(x.check_str(length1, sizeof(uint16_t)));
-		std::unique_ptr<char[]> pwstring;
-		try {
-			pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length1 + 1);
-		} catch (const std::bad_alloc &) {
-			return pack_result::alloc;
-		}
+		auto pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length1 + 1);
 		TRY(x.g_str(pwstring.get(), sizeof(uint16_t) * length1));
-		r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1);
-		if (r->ppstr[cnt] == nullptr)
+		auto astr = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1);
+		if (astr == nullptr)
 			return pack_result::alloc;
 		if (!nsp_ndr_to_utf8(x.flags, pwstring.get(),
-		    sizeof(uint16_t) * length1, r->ppstr[cnt],
+		    sizeof(uint16_t) * length1, astr,
 		    2 * sizeof(uint16_t) * length1))
 			return pack_result::charconv;
+		r[cnt] = std::move(astr);
 	}
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result nsp_ndr_pull_binary(NDR_PULL &x, unsigned int flag, BINARY *r)
@@ -1991,7 +2000,7 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIDNTOMID_IN *r)
 	uint32_t resv;
 	TRY(x.g_ctx_handle(&r->handle));
 	TRY(x.g_uint32(&resv));
-	return nsp_ndr_pull_strings_array(x, &r->names);
+	return nsp_ndr_pull_strings_array(x, r->names);
 }
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIDNTOMID_OUT &r)
@@ -2211,7 +2220,7 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIRESOLVENAMES_IN *r)
 	} else {
 		r->pproptags.reset();
 	}
-	return nsp_ndr_pull_strings_array(x, &r->strs);
+	return nsp_ndr_pull_strings_array(x, r->strs);
 }
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIRESOLVENAMES_OUT &r)
@@ -2244,7 +2253,7 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIRESOLVENAMESW_IN *r) try
 	} else {
 		r->pproptags.reset();
 	}
-	return nsp_ndr_pull_wstrings_array(x, &r->strs);
+	return nsp_ndr_pull_wstrings_array(x, r->strs);
 } catch (const std::bad_alloc &) {
 	return pack_result::alloc;
 }

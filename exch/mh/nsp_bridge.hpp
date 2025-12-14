@@ -7,7 +7,6 @@
 #include "nsp_ops.hpp"
 
 using NSP_HANDLE = CONTEXT_HANDLE;
-using STRINGS_ARRAY = STRING_ARRAY;
 
 extern ec_error_t nsp_bridge_unbind(GUID session);
 extern ec_error_t nsp_bridge_run(GUID &, const bind_request &, bind_response &);

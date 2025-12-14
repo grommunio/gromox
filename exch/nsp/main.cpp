@@ -159,15 +159,6 @@ BOOL PROC_exchange_nsp(enum plugin_op reason, const struct dlfuncs &ppdata)
 template<typename T> static inline auto optional_ptr(std::optional<T> &p) { return p ? &*p : nullptr; }
 template<typename T> static inline auto optional_ptr(const std::optional<T> &p) { return p ? &*p : nullptr; }
 
-static std::vector<std::string> cvt_to_vec(const STRING_ARRAY *ivec)
-{
-	std::vector<std::string> ovec;
-	if (ivec != nullptr)
-		for (auto s : *ivec)
-			ovec.emplace_back(znul(s));
-	return ovec;
-}
-
 static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
     uint64_t handle, const rpc_request *pin, std::unique_ptr<rpc_response> &ppout,
      ec_error_t *ecode) try
@@ -252,7 +243,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto in  = static_cast<const NSPIDNTOMID_IN *>(pin);
 		auto out = std::make_unique<NSPIDNTOMID_OUT>();
 		out->result = nsp_interface_dntomid(in->handle,
-		              cvt_to_vec(&in->names), out->outmids);
+		              in->names, out->outmids);
 		*ecode = out->result;
 		ppout = std::move(out);
 		return DISPATCH_SUCCESS;
@@ -339,7 +330,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto out = std::make_unique<NSPIRESOLVENAMES_OUT>();
 		out->result = nsp_interface_resolve_names(in->handle,
 		              in->reserved, in->stat,
-		              optional_ptr(in->pproptags), cvt_to_vec(&in->strs),
+		              optional_ptr(in->pproptags), in->strs,
 		              out->mids, &out->prows);
 		*ecode = out->result;
 		ppout = std::move(out);
@@ -351,7 +342,7 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 		auto tags = in->pproptags;
 		out->result = nsp_interface_resolve_namesw(in->handle,
 		              in->reserved, in->stat,
-		              optional_ptr(in->pproptags), cvt_to_vec(&in->strs),
+		              optional_ptr(in->pproptags), in->strs,
 		              out->mids, &out->prows);
 		*ecode = out->result;
 		ppout = std::move(out);

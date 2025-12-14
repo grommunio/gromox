@@ -122,7 +122,7 @@ struct NSPIRESORTRESTRICTION_OUT final : public nsp_response {
 
 struct NSPIDNTOMID_IN final : public nsp_request {
 	NSPI_HANDLE handle{};
-	STRINGS_ARRAY names{};
+	std::vector<std::string> names;
 };
 
 struct NSPIDNTOMID_OUT final : public nsp_response {
@@ -225,7 +225,7 @@ struct NSPIRESOLVENAMES_IN final : public nsp_request {
 	uint32_t reserved = 0;
 	STAT stat;
 	std::optional<std::vector<gromox::proptag_t>> pproptags;
-	STRINGS_ARRAY strs{};
+	std::vector<std::string> strs;
 };
 
 struct NSPIRESOLVENAMES_OUT final : public nsp_response {
@@ -239,7 +239,7 @@ struct NSPIRESOLVENAMESW_IN final : public nsp_request {
 	uint32_t reserved = 0;
 	STAT stat;
 	std::optional<std::vector<gromox::proptag_t>> pproptags;
-	STRINGS_ARRAY strs{};
+	std::vector<std::string> strs;
 };
 
 struct NSPIRESOLVENAMESW_OUT final : public nsp_response {
