@@ -243,9 +243,9 @@ static pack_result nsp_ndr_push_string_array(NDR_PUSH &x,
 }
 
 static pack_result nsp_ndr_pull_strings_array(NDR_PULL &x,
-    unsigned int flag, STRINGS_ARRAY *r)
+    STRINGS_ARRAY *r)
 {
-	if (flag & FLAG_HEADER) {
+	{
 		uint32_t size = 0;
 		TRY(x.g_ulong(&size));
 		size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
@@ -266,8 +266,6 @@ static pack_result nsp_ndr_pull_strings_array(NDR_PULL &x,
 		TRY(x.trailer_align(5));
 	}
 	
-	if (!(flag & FLAG_CONTENT))
-		return pack_result::ok;
 	for (size_t cnt = 0; cnt < r->count; ++cnt) {
 		if (r->ppstr[cnt] == nullptr)
 			continue;
@@ -384,9 +382,9 @@ static pack_result nsp_ndr_push_wstring_array(NDR_PUSH &x,
 }
 
 static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL &x,
-    unsigned int flag, STRINGS_ARRAY *r)
+    STRINGS_ARRAY *r)
 {
-	if (flag & FLAG_HEADER) {
+	{
 		uint32_t size = 0;
 		TRY(x.g_ulong(&size));
 		size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
@@ -413,8 +411,6 @@ static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL &x,
 		TRY(x.trailer_align(5));
 	}
 	
-	if (!(flag & FLAG_CONTENT))
-		return pack_result::ok;
 	for (size_t cnt = 0; cnt < r->count; ++cnt) {
 		if (r->ppstr[cnt] == nullptr)
 			continue;
@@ -1975,7 +1971,7 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIDNTOMID_IN *r)
 	uint32_t resv;
 	TRY(x.g_ctx_handle(&r->handle));
 	TRY(x.g_uint32(&resv));
-	return nsp_ndr_pull_strings_array(x, FLAG_HEADER|FLAG_CONTENT, &r->names);
+	return nsp_ndr_pull_strings_array(x, &r->names);
 }
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIDNTOMID_OUT &r)
@@ -2195,7 +2191,7 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIRESOLVENAMES_IN *r)
 	} else {
 		r->pproptags.reset();
 	}
-	return nsp_ndr_pull_strings_array(x, FLAG_HEADER|FLAG_CONTENT, &r->strs);
+	return nsp_ndr_pull_strings_array(x, &r->strs);
 }
 
 static pack_result nsp_ndr_push(NDR_PUSH &x, const NSPIRESOLVENAMES_OUT &r)
@@ -2228,7 +2224,7 @@ static pack_result nsp_ndr_pull(NDR_PULL &x, NSPIRESOLVENAMESW_IN *r) try
 	} else {
 		r->pproptags.reset();
 	}
-	return nsp_ndr_pull_wstrings_array(x, FLAG_HEADER|FLAG_CONTENT, &r->strs);
+	return nsp_ndr_pull_wstrings_array(x, &r->strs);
 } catch (const std::bad_alloc &) {
 	return pack_result::alloc;
 }
