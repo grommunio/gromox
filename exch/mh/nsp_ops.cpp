@@ -109,14 +109,10 @@ pack_result nsp_ext_pull::g_nsp_request(dntomid_request &req)
 
 	TRY(g_uint32(&resv));
 	TRY(g_uint8(&tmp_byte));
-	if (tmp_byte == 0) {
-		req.names = nullptr;
-	} else {
-		req.names = anew<STRING_ARRAY>();
-		if (req.names == nullptr)
-			return pack_result::alloc;
-		TRY(g_str_a(req.names));
-	}
+	if (tmp_byte == 0)
+		req.names.clear();
+	else
+		TRY(g_str_a(&req.names));
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
 		req.auxin = nullptr;
@@ -436,13 +432,10 @@ pack_result nsp_ext_pull::g_nsp_request(resolvenames_request &req)
 	}
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
-		req.names = nullptr;
+		req.names.clear();
 	} else {
-		req.names = anew<STRING_ARRAY>();
-		if (req.names == nullptr)
-			return pack_result::alloc;
 		SCOPED_ABK_DISABLE(*this);
-		TRY(g_wstr_a(req.names));
+		TRY(g_wstr_a(&req.names));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {

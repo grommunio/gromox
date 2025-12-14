@@ -2,7 +2,6 @@
 #include <optional>
 #include <vector>
 #include <gromox/rpc_types.hpp>
-#include <gromox/util.hpp>
 #include "nsp_bridge.hpp"
 #include "nsp_common.hpp"
 
@@ -68,23 +67,11 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	       request.mid1, request.mid2, &response.cmp);
 }
 
-static std::vector<std::string> cvt_to_vec(const STRING_ARRAY *ivec)
-{
-	std::vector<std::string> ovec;
-	if (ivec != nullptr)
-		for (auto s : *ivec)
-			ovec.emplace_back(gromox::znul(s));
-	return ovec;
-}
-
 ec_error_t nsp_bridge_run(const GUID &session_guid,
-    const dntomid_request &request, dntomid_response &response) try
+    const dntomid_request &request, dntomid_response &response)
 {
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
-	return nsp_interface_dntomid(ses, cvt_to_vec(request.names), response.outmids);
-} catch (const std::bad_alloc &) {
-	gromox::mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return ecServerOOM;
+	return nsp_interface_dntomid(ses, request.names, response.outmids);
 }
 
 static inline proptag_cspan optional_columns(const LPROPTAG_ARRAY *a)
@@ -277,12 +264,12 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,
-    const resolvenames_request &request, resolvenames_response &response) try
+    const resolvenames_request &request, resolvenames_response &response)
 {
 	NSP_ROWSET *rows = nullptr;
 	NSP_HANDLE ses = {HANDLE_EXCHANGE_NSP, session_guid};
 	auto result = nsp_interface_resolve_namesw(ses, request.reserved, request.stat,
-	              optional_ptr(request.proptags), cvt_to_vec(request.names),
+	              optional_ptr(request.proptags), request.names,
 	              response.mids, &rows);
 	if (Failed(result))
 		return result;
@@ -291,9 +278,6 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	    *rows, response.column_rows))
 		return ecRpcFailed;
 	return result;
-} catch (const std::bad_alloc &) {
-	gromox::mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return ecServerOOM;
 }
 
 ec_error_t nsp_bridge_run(const GUID &session_guid,

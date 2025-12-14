@@ -72,7 +72,7 @@ struct comparemids_response {
 
 struct dntomid_request {
 	uint32_t cb_auxin = 0;
-	STRING_ARRAY *names = nullptr;
+	std::vector<std::string> names;
 	uint8_t *auxin = nullptr;
 };
 
@@ -209,7 +209,7 @@ struct resolvenames_request {
 	uint32_t reserved = 0, cb_auxin = 0;
 	STAT stat;
 	std::optional<std::vector<gromox::proptag_t>> proptags;
-	STRING_ARRAY *names = nullptr;
+	std::vector<std::string> names;
 	uint8_t *auxin = nullptr;
 };
 
