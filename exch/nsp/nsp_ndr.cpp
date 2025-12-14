@@ -16,6 +16,20 @@
 #define FLAG_CONTENT		0x2
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 
+/**
+DCERPC has Fixed Arrays, Conformant Arrays (conceptually like C struct-trailing
+Flexible Array Members), and Varying Arrays. Strings are varying arrays of char,
+loosely speaking, which means that a lot of genptrs can stack up:
+
+ * Conforming array with strings (StringsArray_r):
+   <flexarray-elem-count> <struct-front-pad> <member:count>
+   <string-genptr>*flex-count <struct-back-pad> <string>*flex-count
+
+ * Varying array with strings (StringArray_r):
+   <struct-front-pad> <member:count> <array-genptr> <struct-back-pad>
+   <array-elem-count> <string-genptr>*elem-count <string>*elem-count
+**/
+
 using namespace gromox;
 
 static pack_result nsp_ndr_pull_restriction(NDR_PULL &, unsigned int flag, NSPRES *r);
@@ -167,6 +181,9 @@ static pack_result nsp_ndr_pull_property_name(NDR_PULL &x,
 	return pack_result::ok;
 }
 
+/*
+ * Extract a varying array of strings
+ */
 static pack_result nsp_ndr_pull_string_array(NDR_PULL &x,
     unsigned int flag, STRING_ARRAY *r)
 {
@@ -242,6 +259,9 @@ static pack_result nsp_ndr_push_string_array(NDR_PUSH &x,
 	return pack_result::ok;
 }
 
+/**
+ * Extract a conformant array of strings
+ */
 static pack_result nsp_ndr_pull_strings_array(NDR_PULL &x,
     STRINGS_ARRAY *r)
 {
