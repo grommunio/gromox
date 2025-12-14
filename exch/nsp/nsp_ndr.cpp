@@ -170,19 +170,12 @@ static pack_result nsp_ndr_pull_property_name(NDR_PULL &x,
 static pack_result nsp_ndr_pull_string_array(NDR_PULL &x,
     unsigned int flag, STRING_ARRAY *r)
 {
-	uint32_t ptr;
-	uint32_t cnt;
-	uint32_t size;
-	uint32_t size1;
-	uint32_t offset;
-	uint32_t length1;
-	
-
 	if (flag & FLAG_HEADER) {
 		TRY(x.align(5));
 		TRY(x.g_uint32(&r->count));
 		if (r->count > 100000)
 			return pack_result::range;
+		uint32_t ptr = 0;
 		TRY(x.g_genptr(&ptr));
 		r->ppstr = ptr != 0 ? reinterpret_cast<char **>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(x.trailer_align(5));
@@ -190,6 +183,7 @@ static pack_result nsp_ndr_pull_string_array(NDR_PULL &x,
 	
 	if (!(flag & FLAG_CONTENT) || r->ppstr == nullptr)
 		return pack_result::ok;
+	uint32_t size = 0;
 	TRY(x.g_ulong(&size));
 	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->count)
@@ -198,13 +192,15 @@ static pack_result nsp_ndr_pull_string_array(NDR_PULL &x,
 	r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 	if (r->ppstr == nullptr)
 		return pack_result::alloc;
-	for (cnt = 0; cnt < size; cnt++) {
+	for (size_t cnt = 0; cnt < size; ++cnt) {
+		uint32_t ptr = 0;
 		TRY(x.g_genptr(&ptr));
 		r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 	}
-	for (cnt = 0; cnt < size; cnt++) {
+	for (size_t cnt = 0; cnt < size; ++cnt) {
 		if (r->ppstr[cnt] == nullptr)
 			continue;
+		uint32_t size1 = 0, offset = 0, length1 = 0;
 		TRY(x.g_ulong(&size1));
 		TRY(x.g_ulong(&offset));
 		TRY(x.g_ulong(&length1));
@@ -222,8 +218,6 @@ static pack_result nsp_ndr_pull_string_array(NDR_PULL &x,
 static pack_result nsp_ndr_push_string_array(NDR_PUSH &x,
     unsigned int flag, const STRING_ARRAY &r)
 {
-	uint32_t length;
-	
 	if (flag & FLAG_HEADER) {
 		TRY(x.align(5));
 		TRY(x.p_uint32(r.count));
@@ -239,7 +233,7 @@ static pack_result nsp_ndr_push_string_array(NDR_PUSH &x,
 	for (size_t cnt = 0; cnt < r.count; ++cnt) {
 		if (r.ppstr[cnt] == nullptr)
 			continue;
-		length = strlen(r.ppstr[cnt]) + 1;
+		auto length = strlen(r.ppstr[cnt]) + 1;
 		TRY(x.p_ulong(length));
 		TRY(x.p_ulong(0));
 		TRY(x.p_ulong(length));
@@ -251,13 +245,8 @@ static pack_result nsp_ndr_push_string_array(NDR_PUSH &x,
 static pack_result nsp_ndr_pull_strings_array(NDR_PULL &x,
     unsigned int flag, STRINGS_ARRAY *r)
 {
-	uint32_t ptr;
-	uint32_t size;
-	uint32_t size1;
-	uint32_t offset;
-	uint32_t length1;
-	
 	if (flag & FLAG_HEADER) {
+		uint32_t size = 0;
 		TRY(x.g_ulong(&size));
 		size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 		TRY(x.align(5));
@@ -270,6 +259,7 @@ static pack_result nsp_ndr_pull_strings_array(NDR_PULL &x,
 		if (r->ppstr == nullptr)
 			return pack_result::alloc;
 		for (size_t cnt = 0; cnt < size; ++cnt) {
+			uint32_t ptr = 0;
 			TRY(x.g_genptr(&ptr));
 			r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		}
@@ -281,6 +271,7 @@ static pack_result nsp_ndr_pull_strings_array(NDR_PULL &x,
 	for (size_t cnt = 0; cnt < r->count; ++cnt) {
 		if (r->ppstr[cnt] == nullptr)
 			continue;
+		uint32_t size1 = 0, offset = 0, length1 = 0;
 		TRY(x.g_ulong(&size1));
 		TRY(x.g_ulong(&offset));
 		TRY(x.g_ulong(&length1));
@@ -298,19 +289,12 @@ static pack_result nsp_ndr_pull_strings_array(NDR_PULL &x,
 static pack_result nsp_ndr_pull_wstring_array(NDR_PULL &x,
     unsigned int flag, STRING_ARRAY *r)
 {
-	uint32_t ptr;
-	uint32_t cnt;
-	uint32_t size;
-	uint32_t size1;
-	uint32_t offset;
-	uint32_t length1;
-	
-
 	if (flag & FLAG_HEADER) {
 		TRY(x.align(5));
 		TRY(x.g_uint32(&r->count));
 		if (r->count > 100000)
 			return pack_result::range;
+		uint32_t ptr = 0;
 		TRY(x.g_genptr(&ptr));
 		r->ppstr = ptr != 0 ? reinterpret_cast<char **>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(x.trailer_align(5));
@@ -318,6 +302,8 @@ static pack_result nsp_ndr_pull_wstring_array(NDR_PULL &x,
 	
 	if (!(flag & FLAG_CONTENT) || r->ppstr == nullptr)
 		return pack_result::ok;
+
+	uint32_t size = 0;
 	TRY(x.g_ulong(&size));
 	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->count)
@@ -326,13 +312,15 @@ static pack_result nsp_ndr_pull_wstring_array(NDR_PULL &x,
 	r->ppstr = ndr_stack_anew<char *>(NDR_STACK_IN, size);
 	if (r->ppstr == nullptr)
 		return pack_result::alloc;
-	for (cnt = 0; cnt < size; cnt++) {
+	for (size_t cnt = 0; cnt < size; ++cnt) {
+		uint32_t ptr = 0;
 		TRY(x.g_genptr(&ptr));
 		r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 	}
-	for (cnt = 0; cnt < size; cnt++) {
+	for (size_t cnt = 0; cnt < size; ++cnt) {
 		if (r->ppstr[cnt] == nullptr)
 			continue;
+		uint32_t size1 = 0, offset = 0, length1 = 0;
 		TRY(x.g_ulong(&size1));
 		TRY(x.g_ulong(&offset));
 		TRY(x.g_ulong(&length1));
@@ -398,13 +386,8 @@ static pack_result nsp_ndr_push_wstring_array(NDR_PUSH &x,
 static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL &x,
     unsigned int flag, STRINGS_ARRAY *r)
 {
-	uint32_t ptr;
-	uint32_t size;
-	uint32_t size1;
-	uint32_t offset;
-	uint32_t length1;
-	
 	if (flag & FLAG_HEADER) {
+		uint32_t size = 0;
 		TRY(x.g_ulong(&size));
 		size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 		TRY(x.align(5));
@@ -423,6 +406,7 @@ static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL &x,
 			return pack_result::alloc;
 		}
 		for (size_t cnt = 0; cnt < size; ++cnt) {
+			uint32_t ptr = 0;
 			TRY(x.g_genptr(&ptr));
 			r->ppstr[cnt] = ptr != 0 ? reinterpret_cast<char *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		}
@@ -434,6 +418,7 @@ static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL &x,
 	for (size_t cnt = 0; cnt < r->count; ++cnt) {
 		if (r->ppstr[cnt] == nullptr)
 			continue;
+		uint32_t size1 = 0, offset = 0, length1 = 0;
 		TRY(x.g_ulong(&size1));
 		TRY(x.g_ulong(&offset));
 		TRY(x.g_ulong(&length1));
@@ -460,9 +445,6 @@ static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL &x,
 
 static pack_result nsp_ndr_pull_binary(NDR_PULL &x, unsigned int flag, BINARY *r)
 {
-	uint32_t ptr;
-	uint32_t size;
-
 	if (flag & FLAG_HEADER) {
 		TRY(x.align(5));
 		TRY(x.g_uint32(&r->cb));
@@ -470,6 +452,7 @@ static pack_result nsp_ndr_pull_binary(NDR_PULL &x, unsigned int flag, BINARY *r
 			r->cb = 0;
 			return pack_result::range;
 		}
+		uint32_t ptr = 0;
 		TRY(x.g_genptr(&ptr));
 		r->pb = ptr != 0 ? reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(ptr)) : nullptr;
 		TRY(x.trailer_align(5));
@@ -477,6 +460,7 @@ static pack_result nsp_ndr_pull_binary(NDR_PULL &x, unsigned int flag, BINARY *r
 	
 	if (!(flag & FLAG_CONTENT) || r->pb == nullptr)
 		return pack_result::ok;
+	uint32_t size = 0;
 	TRY(x.g_ulong(&size));
 	size = std::min(size, static_cast<uint32_t>(UINT32_MAX));
 	if (size != r->cb) {
