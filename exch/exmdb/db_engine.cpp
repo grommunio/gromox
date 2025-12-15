@@ -119,7 +119,6 @@ static void db_engine_load_dynamic_list(db_base *dbase, sqlite3* psqlite) try
 	EXT_PULL ext_pull;
 	char sql_string[256];
 	uint32_t search_flags;
-	LONGLONG_ARRAY tmp_fids;
 	RESTRICTION tmp_restriction;
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id,"
@@ -144,15 +143,16 @@ static void db_engine_load_dynamic_list(db_base *dbase, sqlite3* psqlite) try
 		pdynamic->prestriction = tmp_restriction.dup();
 		if (pdynamic->prestriction == nullptr)
 			break;
-		if (!common_util_load_search_scopes(psqlite,
-		    pdynamic->folder_id, &tmp_fids))
+		std::vector<uint64_t> src_fo;
+		if (!cu_load_search_scopes(psqlite,
+		    pdynamic->folder_id, src_fo))
 			continue;
-		pdynamic->folder_ids.count = tmp_fids.count;
-		pdynamic->folder_ids.pll = me_alloc<uint64_t>(tmp_fids.count);
+		pdynamic->folder_ids.count = src_fo.size();
+		pdynamic->folder_ids.pll = me_alloc<uint64_t>(src_fo.size());
 		if (pdynamic->folder_ids.pll == nullptr)
 			break;
-		memcpy(pdynamic->folder_ids.pll, tmp_fids.pll,
-					sizeof(uint64_t)*tmp_fids.count);
+		memcpy(pdynamic->folder_ids.pll, src_fo.data(),
+			sizeof(uint64_t) * src_fo.size());
 		dbase->dynamic_list.push_back(std::move(dn));
 	}
 } catch (const std::bad_alloc &) {

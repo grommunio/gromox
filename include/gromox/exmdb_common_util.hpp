@@ -119,8 +119,7 @@ extern BOOL cu_get_folder_permission(sqlite3 *, uint64_t folder_id, const char *
 extern BOOL cu_is_descendant_folder(sqlite3 *, uint64_t inner_fid, uint64_t outer_fid, BOOL *pb_included);
 BOOL common_util_get_message_parent_folder(sqlite3 *psqlite,
 	uint64_t message_id, uint64_t *pfolder_id);
-BOOL common_util_load_search_scopes(sqlite3 *psqlite,
-	uint64_t folder_id, LONGLONG_ARRAY *pfolder_ids);
+extern bool cu_load_search_scopes(sqlite3 *, uint64_t folder_id, std::vector<uint64_t> &src_fo);
 extern bool cu_eval_folder_restriction(sqlite3 *, uint64_t folder_id, const RESTRICTION *);
 extern bool cu_eval_msg_restriction(sqlite3 *, cpid_t, uint64_t msgid, const RESTRICTION *);
 BOOL common_util_check_search_result(sqlite3 *psqlite,

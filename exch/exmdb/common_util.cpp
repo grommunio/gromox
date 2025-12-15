@@ -4134,8 +4134,8 @@ static BINARY *cu_get_msg_parent_entryid(sqlite3 *psqlite, uint64_t message_id)
 	return cu_fid_to_entryid(psqlite, folder_id);
 }
 
-BOOL common_util_load_search_scopes(sqlite3 *psqlite,
-	uint64_t folder_id, LONGLONG_ARRAY *pfolder_ids)
+bool cu_load_search_scopes(sqlite3 *psqlite, uint64_t folder_id,
+    std::vector<uint64_t> &src_folders) try
 {
 	char sql_string[128];
 	
@@ -4144,19 +4144,18 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
-	pfolder_ids->count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	pfolder_ids->pll = cu_alloc<uint64_t>(pfolder_ids->count);
-	if (pfolder_ids->pll == nullptr)
-		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT included_fid FROM"
 	          " search_scopes WHERE folder_id=%llu", LLU{folder_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	for (size_t i = 0; i < pfolder_ids->count && pstmt.step() == SQLITE_ROW; )
-		pfolder_ids->pll[i++] = sqlite3_column_int64(pstmt, 0);
+	while (pstmt.step() == SQLITE_ROW)
+		src_folders.emplace_back(pstmt.col_uint64(0));
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
