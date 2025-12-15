@@ -73,7 +73,7 @@ struct POPULATING_NODE {
 	cpid_t cpid = CP_ACP;
 	BOOL b_recursive = false;
 	RESTRICTION *prestriction = nullptr;
-	LONGLONG_ARRAY folder_ids{};
+	std::vector<uint64_t> scope_list;
 };
 
 struct rowinfo_node {
@@ -913,7 +913,6 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 POPULATING_NODE::~POPULATING_NODE()
 {
 	restriction_free(prestriction);
-	free(folder_ids.pll);
 }
 
 /**
@@ -989,14 +988,13 @@ static void *sf_popul_thread(void *param)
 		auto cl_1 = HX::make_scope_exit([&]() { eid_array_free(pfolder_ids); });
 		exmdb_server::build_env(EM_PRIVATE, psearch->dir.c_str());
 		auto cl_2 = HX::make_scope_exit(exmdb_server::free_env);
-		for (size_t i = 0; i < psearch->folder_ids.count; ++i) {
-			if (!eid_array_append(pfolder_ids,
-			    psearch->folder_ids.pll[i]))
+		for (auto le_folder : psearch->scope_list) {
+			if (!eid_array_append(pfolder_ids, le_folder))
 				goto NEXT_SEARCH;	
 			if (!psearch->b_recursive)
 				continue;
 			if (!db_engine_load_folder_descendant(psearch->dir.c_str(),
-			    psearch->b_recursive, psearch->folder_ids.pll[i], pfolder_ids))
+			    psearch->b_recursive, le_folder, pfolder_ids))
 				goto NEXT_SEARCH;
 		}
 		auto pdb = db_engine_get_db(psearch->dir.c_str());
@@ -1160,11 +1158,7 @@ bool db_engine_enqueue_populating_criteria(const char *dir, cpid_t cpid,
 	psearch->prestriction = prestriction->dup();
 	if (psearch->prestriction == nullptr)
 		return FALSE;
-	psearch->folder_ids.count = scope_list.size();
-	psearch->folder_ids.pll = me_alloc<uint64_t>(scope_list.size());
-	if (psearch->folder_ids.pll == nullptr)
-		return FALSE;
-	memcpy(psearch->folder_ids.pll, scope_list.data(), sizeof(uint64_t) * scope_list.size());
+	psearch->scope_list = scope_list;
 	psearch->cpid = cpid;
 	psearch->folder_id = folder_id;
 	psearch->b_recursive = b_recursive;
