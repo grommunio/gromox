@@ -143,16 +143,9 @@ static void db_engine_load_dynamic_list(db_base *dbase, sqlite3* psqlite) try
 		pdynamic->prestriction = tmp_restriction.dup();
 		if (pdynamic->prestriction == nullptr)
 			break;
-		std::vector<uint64_t> src_fo;
 		if (!cu_load_search_scopes(psqlite,
-		    pdynamic->folder_id, src_fo))
+		    pdynamic->folder_id, dn.scope_list))
 			continue;
-		pdynamic->folder_ids.count = src_fo.size();
-		pdynamic->folder_ids.pll = me_alloc<uint64_t>(src_fo.size());
-		if (pdynamic->folder_ids.pll == nullptr)
-			break;
-		memcpy(pdynamic->folder_ids.pll, src_fo.data(),
-			sizeof(uint64_t) * src_fo.size());
 		dbase->dynamic_list.push_back(std::move(dn));
 	}
 } catch (const std::bad_alloc &) {
@@ -494,18 +487,15 @@ BOOL db_engine_cgkreset(const char *dir, uint32_t flags)
 
 dynamic_node::dynamic_node(dynamic_node &&o) noexcept :
 	folder_id(o.folder_id), search_flags(o.search_flags),
-	prestriction(o.prestriction), folder_ids(o.folder_ids)
+	prestriction(o.prestriction), scope_list(std::move(o.scope_list))
 {
 	o.prestriction = nullptr;
-	o.folder_ids = {};
 }
 
 dynamic_node::~dynamic_node()
 {
 	if (prestriction != nullptr)
 		restriction_free(prestriction);
-	if (folder_ids.pll != nullptr)
-		free(folder_ids.pll);
 }
 
 dynamic_node &dynamic_node::operator=(dynamic_node &&o) noexcept
@@ -513,9 +503,7 @@ dynamic_node &dynamic_node::operator=(dynamic_node &&o) noexcept
 	folder_id = o.folder_id;
 	search_flags = o.search_flags;
 	std::swap(prestriction, o.prestriction);
-	folder_ids.count = o.folder_ids.count;
-	o.folder_ids.count = 0;
-	std::swap(folder_ids.pll, o.folder_ids.pll);
+	scope_list = std::move(o.scope_list);
 	return *this;
 }
 
@@ -1213,11 +1201,7 @@ void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	dn.prestriction = prestriction->dup();
 	if (dn.prestriction == nullptr)
 		return;
-	dn.folder_ids.count = scope_list.size();
-	dn.folder_ids.pll   = me_alloc<uint64_t>(scope_list.size());
-	if (dn.folder_ids.pll == nullptr)
-		return;
-	memcpy(dn.folder_ids.pll, scope_list.data(), sizeof(uint64_t) * scope_list.size());
+	dn.scope_list = std::move(scope_list);
 	auto i = std::find_if(dbase.dynamic_list.begin(), dbase.dynamic_list.end(),
 	         [=](const dynamic_node &n) { return n.folder_id == folder_id; });
 	if (i == dbase.dynamic_list.end())
@@ -1246,9 +1230,9 @@ static void dbeng_dynevt_1(db_conn *pdb, cpid_t cpid, uint64_t id1,
 		return;
 
 	if (!cu_is_descendant_folder(pdb->psqlite,
-	    id1, pdynamic->folder_ids.pll[i], &b_included) ||
+	    id1, pdynamic->scope_list[i], &b_included) ||
 	    !cu_is_descendant_folder(pdb->psqlite,
-	    id2, pdynamic->folder_ids.pll[i], &b_included1)) {
+	    id2, pdynamic->scope_list[i], &b_included1)) {
 		mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 		return;
 	}
@@ -1304,14 +1288,14 @@ static void dbeng_dynevt_2(db_conn *pdb, cpid_t cpid, dynamic_event event_type,
 
 	if (pdynamic->search_flags & RECURSIVE_SEARCH) {
 		if (!cu_is_descendant_folder(pdb->psqlite,
-		    id1, pdynamic->folder_ids.pll[i], &b_included)) {
+		    id1, pdynamic->scope_list[i], &b_included)) {
 			mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 			return;
 		}
 		if (!b_included)
 			return;
 	} else {
-		if (id1 != pdynamic->folder_ids.pll[i])
+		if (id1 != pdynamic->scope_list[i])
 			return;
 	}
 	switch (event_type) {
@@ -1430,7 +1414,7 @@ void db_conn::proc_dynamic_event(cpid_t cpid, dynamic_event event_type,
 		 * [In conjunction with dynevt_1/2] if id1 is within the scope,
 		 * pdynamic gets the event.
 		 */
-		for (size_t i = 0; i < pdynamic->folder_ids.count; ++i) {
+		for (size_t i = 0; i < pdynamic->scope_list.size(); ++i) {
 			if (dynamic_event::move_folder == event_type) {
 				dbeng_dynevt_1(pdb, cpid, id1, id2, id3,
 					folder_type, pdynamic, i, dbase, notifq);

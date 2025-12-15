@@ -36,7 +36,7 @@ struct dynamic_node {
 	uint64_t folder_id = 0; /* search folder ID */
 	uint32_t search_flags = 0;
 	RESTRICTION *prestriction = nullptr;
-	LONGLONG_ARRAY folder_ids{}; /* source folder IDs */
+	std::vector<uint64_t> scope_list; /* source folder IDs */
 };
 
 enum class table_type : uint8_t {
