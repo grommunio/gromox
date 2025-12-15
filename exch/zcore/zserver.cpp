@@ -4725,7 +4725,7 @@ ec_error_t zs_getsearchcriteria(GUID hsession,
 	RESTRICTION **pprestriction, uint32_t *psearch_stat)
 {
 	zs_objtype mapi_type;
-	LONGLONG_ARRAY folder_ids;
+	EID_ARRAY folder_ids;
 	
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
@@ -4750,7 +4750,7 @@ ec_error_t zs_getsearchcriteria(GUID hsession,
 	if (pfolder_array->pbin == nullptr)
 		return ecServerOOM;
 	for (size_t i = 0; i < folder_ids.count; ++i) {
-		auto pbin = cu_fid_to_entryid(*pstore, folder_ids.pll[i]);
+		auto pbin = cu_fid_to_entryid(*pstore, folder_ids.pids[i]);
 		if (pbin == nullptr)
 			return ecError;
 		pfolder_array->pbin[i] = *pbin;
@@ -4767,7 +4767,7 @@ ec_error_t zs_setsearchcriteria(GUID hsession, uint32_t hfolder, uint32_t flags,
 	zs_objtype mapi_type;
 	uint32_t permission;
 	uint32_t search_status;
-	LONGLONG_ARRAY folder_ids;
+	EID_ARRAY folder_ids;
 	
 	if (!(flags & (RESTART_SEARCH | STOP_SEARCH)))
 		/* make the default search_flags */
@@ -4804,18 +4804,18 @@ ec_error_t zs_setsearchcriteria(GUID hsession, uint32_t hfolder, uint32_t flags,
 			return ecSuccess;
 	}
 	folder_ids.count = pfolder_array->count;
-	folder_ids.pll   = cu_alloc<uint64_t>(folder_ids.count);
-	if (folder_ids.pll == nullptr)
+	folder_ids.pids  = cu_alloc<uint64_t>(folder_ids.count);
+	if (folder_ids.pids == nullptr)
 		return ecServerOOM;
 	for (size_t i = 0; i < pfolder_array->count; ++i) {
 		if (!cu_entryid_to_fid(pfolder_array->pbin[i],
-		    &b_private, &db_id, &folder_ids.pll[i]))
+		    &b_private, &db_id, &folder_ids.pids[i]))
 			return ecError;
 		if (!b_private || db_id != pstore->account_id)
 			return ecSearchFolderScopeViolation;
 		if (!pstore->owner_mode()) {
 			if (!exmdb_client->get_folder_perm(pstore->get_dir(),
-			    folder_ids.pll[i], pinfo->get_username(), &permission))
+			    folder_ids.pids[i], pinfo->get_username(), &permission))
 				return ecError;
 			if (!(permission & (frightsOwner | frightsReadAny)))
 				return ecAccessDenied;

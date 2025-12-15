@@ -55,6 +55,7 @@
 
 using LLD = long long;
 using LLU = unsigned long long;
+using GCV_ARRAY = LONGLONG_ARRAY;
 using namespace gromox;
 
 struct db_close {
@@ -890,8 +891,8 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 	return TRUE;
 }
 
-static BOOL db_engine_load_folder_descendant(const char *dir,
-	BOOL b_recursive, uint64_t folder_id, EID_ARRAY *pfolder_ids)
+static bool db_engine_load_folder_descendant(const char *dir,
+    bool b_recursive, uint64_t folder_id, EID_ARRAY *pfolder_ids)
 {
 	char sql_string[128];
 	
@@ -982,7 +983,7 @@ static void *sf_popul_thread(void *param)
 			g_populating_list_active.erase(psearch);
 			lhold.unlock();
 		});
-		auto pfolder_ids = eid_array_init();
+		auto pfolder_ids = eid_array_init(); /* Actually it's just GCVs */
 		if (pfolder_ids == nullptr)
 			goto NEXT_SEARCH;	
 		auto cl_1 = HX::make_scope_exit([&]() { eid_array_free(pfolder_ids); });

@@ -330,7 +330,7 @@ struct exreq_set_search_criteria final : public exreq {
 	uint64_t folder_id;
 	uint32_t search_flags;
 	RESTRICTION *prestriction;
-	LONGLONG_ARRAY *pfolder_ids;
+	EID_ARRAY *pfolder_ids;
 };
 
 struct exreq_movecopy_message final : public exreq {
@@ -1004,7 +1004,7 @@ struct exresp_copy_folder_internal final : public exresp {
 struct exresp_get_search_criteria final : public exresp {
 	uint32_t search_status;
 	RESTRICTION *prestriction;
-	LONGLONG_ARRAY folder_ids;
+	EID_ARRAY folder_ids;
 };
 
 struct exresp_set_search_criteria final : public exresp {

@@ -335,7 +335,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, SETSEARCHCRITERIA_REQUEST &r)
 			return pack_result::format;
 		x.m_offset = offset;
 	}
-	TRY(x.g_uint64_sa(&r.folder_ids));
+	TRY(x.g_eid_a(&r.folder_ids, 2));
 	return x.g_uint32(&r.search_flags);
 }
 
@@ -368,7 +368,7 @@ static pack_result rop_ext_push(EXT_PUSH &x, const GETSEARCHCRITERIA_RESPONSE &r
 static pack_result rop_ext_pull(EXT_PULL &x, MOVECOPYMESSAGES_REQUEST &r)
 {
 	TRY(x.g_uint8(&r.dhindex));
-	TRY(x.g_uint64_sa(&r.message_ids));
+	TRY(x.g_eid_a(&r.message_ids, 2));
 	TRY(x.g_uint8(&r.want_asynchronous));
 	return x.g_uint8(&r.want_copy);
 }
@@ -409,14 +409,14 @@ static pack_result rop_ext_pull(EXT_PULL &x, DELETEMESSAGES_REQUEST &r)
 {
 	TRY(x.g_uint8(&r.want_asynchronous));
 	TRY(x.g_uint8(&r.notify_non_read));
-	return x.g_uint64_sa(&r.message_ids);
+	return x.g_eid_a(&r.message_ids, 2);
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, HARDDELETEMESSAGES_REQUEST &r)
 {
 	TRY(x.g_uint8(&r.want_asynchronous));
 	TRY(x.g_uint8(&r.notify_non_read));
-	return x.g_uint64_sa(&r.message_ids);
+	return x.g_eid_a(&r.message_ids, 2);
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, GETHIERARCHYTABLE_REQUEST &r)
@@ -787,7 +787,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, SETREADFLAGS_REQUEST &r)
 {
 	TRY(x.g_uint8(&r.want_asynchronous));
 	TRY(x.g_uint8(&r.read_flags));
-	return x.g_uint64_sa(&r.message_ids);
+	return x.g_eid_a(&r.message_ids, 2);
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, SETMESSAGEREADFLAG_REQUEST &r,
@@ -1320,7 +1320,7 @@ static pack_result rop_ext_pull(EXT_PULL &x,
     FASTTRANSFERSOURCECOPYMESSAGES_REQUEST &r)
 {
 	TRY(x.g_uint8(&r.ohindex));
-	TRY(x.g_uint64_sa(&r.message_ids));
+	TRY(x.g_eid_a(&r.message_ids, 2));
 	TRY(x.g_uint8(&r.flags));
 	return x.g_uint8(&r.send_options);
 }

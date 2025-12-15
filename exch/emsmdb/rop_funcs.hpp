@@ -23,15 +23,15 @@ extern ec_error_t rop_writeperuserinformation(const LONG_TERM_ID *, uint8_t has_
 extern ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags, uint8_t *has_rules, GHOST_SERVER **, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
 extern ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode, uint8_t open_existing, uint8_t reserved, const char *fld_name, const char *fld_comment, uint64_t *fld_id, uint8_t *is_existing, uint8_t *has_rules, GHOST_SERVER **, LOGMAP *, uint8_t logon_id,  uint32_t hin, uint32_t *hout);
 extern ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hin);
-extern ec_error_t rop_setsearchcriteria(RESTRICTION *, const LONGLONG_ARRAY *folder_ids, uint32_t search_flags, LOGMAP *, uint8_t logon_id, uint32_t hin);
-extern ec_error_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restriction, uint8_t include_folders, RESTRICTION **, LONGLONG_ARRAY *folder_ids, uint32_t *search_flags, LOGMAP *, uint8_t logon_id, uint32_t hin);
-extern ec_error_t rop_movecopymessages(const LONGLONG_ARRAY *msg_ids, uint8_t want_async, uint8_t want_copy, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hsrc, uint32_t hdst);
+extern ec_error_t rop_setsearchcriteria(RESTRICTION *, const EID_ARRAY *folder_ids, uint32_t search_flags, LOGMAP *, uint8_t logon_id, uint32_t hin);
+extern ec_error_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restriction, uint8_t include_folders, RESTRICTION **, EID_ARRAY *folder_ids, uint32_t *search_flags, LOGMAP *, uint8_t logon_id, uint32_t hin);
+extern ec_error_t rop_movecopymessages(const EID_ARRAY *msg_ids, uint8_t want_async, uint8_t want_copy, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hsrc, uint32_t hdst);
 extern ec_error_t rop_movefolder(uint8_t want_async, uint8_t use_unicode, uint64_t folder_id, const char *new_name, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hsrc, uint32_t hdst);
 extern ec_error_t rop_copyfolder(uint8_t want_async, uint8_t want_recursive, uint8_t use_unicode, uint64_t folder_id, const char *new_name, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hsrc, uint32_t hdst);
 extern ec_error_t rop_emptyfolder(uint8_t want_async, uint8_t want_delete_associated, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_harddeletemessagesandsubfolders(uint8_t want_async, uint8_t want_delete_associated, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hin);
-extern ec_error_t rop_deletemessages(uint8_t want_async, uint8_t notify_non_read, const LONGLONG_ARRAY *msg_ids, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hin);
-extern ec_error_t rop_harddeletemessages(uint8_t want_async, uint8_t notify_non_read, const LONGLONG_ARRAY *msg_ids, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hin);
+extern ec_error_t rop_deletemessages(uint8_t want_async, uint8_t notify_non_read, const EID_ARRAY *msg_ids, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hin);
+extern ec_error_t rop_harddeletemessages(uint8_t want_async, uint8_t notify_non_read, const EID_ARRAY *msg_ids, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_gethierarchytable(uint8_t tbl_flags, uint32_t *row_count, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
 extern ec_error_t rop_getcontentstable(uint8_t tbl_flags, uint32_t *row_count, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
 extern ec_error_t rop_setcolumns(uint8_t tbl_flags, const PROPTAG_ARRAY *, uint8_t *tbl_status, LOGMAP *, uint8_t logon_id, uint32_t hin);
@@ -62,7 +62,7 @@ extern ec_error_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t
 extern ec_error_t rop_reloadcachedinformation(uint16_t reserved, uint8_t *has_named_properties, TYPED_STRING *subject_prefix, TYPED_STRING *normalized_subject, uint16_t *rcpt_count, PROPTAG_ARRAY *rcpt_cols, uint8_t *row_count, OPENRECIPIENT_ROW **rcpt_row, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_setmessagestatus(uint64_t msg_id, uint32_t msg_status, uint32_t status_mask, uint32_t *msg_status_out, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_getmessagestatus(uint64_t msg_id, uint32_t *msg_status, LOGMAP *, uint8_t logon_id, uint32_t hin);
-extern ec_error_t rop_setreadflags(uint8_t want_async, uint8_t read_flags, const LONGLONG_ARRAY *msg_ids, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hin);
+extern ec_error_t rop_setreadflags(uint8_t want_async, uint8_t read_flags, const EID_ARRAY *msg_ids, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_setmessagereadflag(uint8_t read_flags, const LONG_TERM_ID *client_data, uint8_t *read_change, LOGMAP *, uint8_t logon_id, uint32_t hresponse, uint32_t hin);
 extern ec_error_t rop_openattachment(uint8_t flags, uint32_t attachment_id, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
 extern ec_error_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
@@ -114,7 +114,7 @@ extern ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_
 extern ec_error_t rop_fasttransferdestputbuffer(const BINARY *xfer_data, uint16_t *xfer_status, uint16_t *in_progress_count, uint16_t *total_step_count, uint8_t *reserved, uint16_t *used_size, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size, uint16_t max_buffer_size, uint16_t *xfer_status, uint16_t *in_progress_count, uint16_t *total_step_count, uint8_t *reserved, BINARY *xfer_data, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern ec_error_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
-extern ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *msg_ids, uint8_t flags, uint8_t send_options, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
+extern ec_error_t rop_fasttransfersourcecopymessages(const EID_ARRAY *msg_ids, uint8_t flags, uint8_t send_options, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
 extern ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags, uint8_t send_options, const PROPTAG_ARRAY *, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
 extern ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags, uint8_t send_options, const PROPTAG_ARRAY *, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
 extern ec_error_t rop_tellversion(const uint16_t *version, LOGMAP *, uint8_t logon_id, uint32_t hin);

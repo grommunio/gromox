@@ -412,14 +412,6 @@ pack_result EXT_PULL::g_uint64_a(LONGLONG_ARRAY *r)
 	return g_uint64_an(r, r->count);
 }
 
-pack_result EXT_PULL::g_uint64_sa(LONGLONG_ARRAY *r)
-{
-	uint16_t count;
-	TRY(g_uint16(&count));
-	CLAMP16(count);
-	return g_uint64_an(r, count);
-}
-
 pack_result EXT_PULL::g_float_an(FLOAT_ARRAY *r, uint32_t count)
 {
 	r->count = count;
@@ -1769,14 +1761,25 @@ pack_result EXT_PULL::g_flatentry_a(BINARY_ARRAY *r)
 	return pack_result::ok;
 }
 
-pack_result EXT_PULL::g_eid_a(EID_ARRAY *r)
+pack_result EXT_PULL::g_eid_a(EID_ARRAY *r, uint8_t ix)
 {
-	TRY(g_uint32(&r->count));
+	size_t count = 0;
+	if (ix == 2) {
+		uint16_t z;
+		TRY(g_uint16(&z));
+		CLAMP16(z);
+		count = z;
+	} else {
+		uint32_t z;
+		TRY(g_uint32(&z));
+		CLAMP32(z);
+		count = z;
+	}
+	r->count = count;
 	if (r->count == 0) {
 		r->pids = NULL;
 		return pack_result::ok;
 	}
-	CLAMP32(r->count);
 	r->pids = anew<uint64_t>(r->count);
 	if (r->pids == nullptr) {
 		r->count = 0;

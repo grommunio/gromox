@@ -1758,7 +1758,7 @@ BOOL exmdb_server::movecopy_folder(const char *dir, cpid_t cpid, BOOL b_guest,
 
 BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
     uint32_t *psearch_status, RESTRICTION **pprestriction,
-    LONGLONG_ARRAY *pfolder_ids)
+    EID_ARRAY *pfolder_ids)
 {
 	char sql_string[256];
 	
@@ -1787,7 +1787,7 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 			*pprestriction = NULL;
 		if (NULL != pfolder_ids) {
 			pfolder_ids->count = 0;
-			pfolder_ids->pll = NULL;
+			pfolder_ids->pids  = nullptr;
 		}
 		return TRUE;
 	}
@@ -1809,11 +1809,11 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 	pdb.reset();
 	if (pfolder_ids != nullptr) {
 		pfolder_ids->count = 0;
-		pfolder_ids->pll = cu_alloc<uint64_t>(src_fo.size());
-		if (pfolder_ids->pll == nullptr)
+		pfolder_ids->pids = cu_alloc<uint64_t>(src_fo.size());
+		if (pfolder_ids->pids == nullptr)
 			return false;
 		for (size_t i = 0; i < pfolder_ids->count; ++i)
-			pfolder_ids->pll[i] = rop_util_make_eid_ex(1, src_fo[i]);
+			pfolder_ids->pids[i] = rop_util_make_eid_ex(1, src_fo[i]);
 	}
 	*psearch_status = 0;
 	if (db_engine_check_populating(dir, fid_val))
@@ -1857,7 +1857,7 @@ static BOOL folder_clear_search_folder(db_conn_ptr &pdb,
 
 BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
     uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction,
-    const LONGLONG_ARRAY *pfolder_ids, BOOL *pb_result) try
+    const EID_ARRAY *pfolder_ids, BOOL *pb_result) try
 {
 	EXT_PULL ext_pull;
 	EXT_PUSH ext_push;
@@ -1876,7 +1876,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	if (pfolder_ids->count > 0) {
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
-			auto fid_val1 = rop_util_get_gc_value(pfolder_ids->pll[i]);
+			auto fid_val1 = rop_util_get_gc_value(pfolder_ids->pids[i]);
 			BOOL b_included = false;
 			if (!cu_is_descendant_folder(pdb->psqlite, fid_val,
 			    fid_val1, &b_included))
@@ -1947,7 +1947,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 		if (pstmt1 == nullptr)
 			return false;
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
-			auto &le_folder = scope_list.emplace_back(rop_util_get_gc_value(pfolder_ids->pll[i]));
+			auto &le_folder = scope_list.emplace_back(rop_util_get_gc_value(pfolder_ids->pids[i]));
 			pstmt1.bind_int64(1, le_folder);
 			if (pstmt1.step() != SQLITE_ROW)
 				return false;

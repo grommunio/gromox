@@ -357,7 +357,7 @@ ec_error_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 	return ecSuccess;
 }
 
-ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids,
+ec_error_t rop_fasttransfersourcecopymessages(const EID_ARRAY *pmessage_ids,
     uint8_t flags, uint8_t send_options, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin, uint32_t *phout)
 {
@@ -396,7 +396,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 	if (pmids == nullptr)
 		return ecServerOOM;
 	if (!eid_array_batch_append(pmids, pmessage_ids->count,
-	    pmessage_ids->pll)) {
+	    pmessage_ids->pids)) {
 		eid_array_free(pmids);
 		return ecServerOOM;
 	}

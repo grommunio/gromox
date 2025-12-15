@@ -701,6 +701,7 @@ struct GX_EXPORT EID_ARRAY {
 	uint32_t count;
 	uint64_t *pids;
 	I_BEGIN_END(pids, count);
+	void emplace_back(uint64_t t) { pids[count++] = t; }
 };
 
 using INDEX_ARRAY = PROPTAG_ARRAY;

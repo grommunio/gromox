@@ -341,7 +341,7 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 }
 
 ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
-    const LONGLONG_ARRAY *pfolder_ids, uint32_t search_flags, LOGMAP *plogmap,
+    const EID_ARRAY *pfolder_ids, uint32_t search_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_result;
@@ -411,7 +411,7 @@ ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
 }
 
 ec_error_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restriction,
-    uint8_t include_folders, RESTRICTION **ppres, LONGLONG_ARRAY *pfolder_ids,
+    uint8_t include_folders, RESTRICTION **ppres, EID_ARRAY *pfolder_ids,
     uint32_t *psearch_flags, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
@@ -445,7 +445,7 @@ ec_error_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restrictio
 	return ecSuccess;
 }
 
-ec_error_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
+ec_error_t rop_movecopymessages(const EID_ARRAY *pmessage_ids,
     uint8_t want_asynchronous, uint8_t want_copy, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
@@ -485,7 +485,7 @@ ec_error_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 			return ecAccessDenied;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	const EID_ARRAY ids = {pmessage_ids->count, pmessage_ids->pll};
+	const EID_ARRAY ids = {pmessage_ids->count, pmessage_ids->pids};
 	if (!exmdb_client->movecopy_messages(plogon->get_dir(), pinfo->cpid,
 	    b_guest, rpc_user, psrc_folder->folder_id, pdst_folder->folder_id,
 	    b_copy, &ids, &b_partial))
@@ -706,7 +706,7 @@ ec_error_t rop_harddeletemessagesandsubfolders(uint8_t want_asynchronous,
 }
 
 static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
-    uint8_t notify_non_read, const LONGLONG_ARRAY *pmessage_ids,
+    uint8_t notify_non_read, const EID_ARRAY *pmessage_ids,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_owner;
@@ -740,7 +740,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 	else
 		return ecAccessDenied;
 	if (0 == notify_non_read) {
-		const EID_ARRAY ids = {pmessage_ids->count, pmessage_ids->pll};
+		const EID_ARRAY ids = {pmessage_ids->count, pmessage_ids->pids};
 		if (!exmdb_client->delete_messages(dir, pinfo->cpid,
 		    username, pfolder->folder_id, &ids, b_hard, &b_partial))
 			return ecError;
@@ -788,7 +788,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 }
 
 ec_error_t rop_deletemessages(uint8_t want_asynchronous, uint8_t notify_non_read,
-    const LONGLONG_ARRAY *pmessage_ids, uint8_t *ppartial_completion,
+    const EID_ARRAY *pmessage_ids, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	return oxcfold_deletemessages(!emsmdb_pvt_folder_softdel, want_asynchronous,
@@ -797,7 +797,7 @@ ec_error_t rop_deletemessages(uint8_t want_asynchronous, uint8_t notify_non_read
 }
 
 ec_error_t rop_harddeletemessages(uint8_t want_asynchronous,
-    uint8_t notify_non_read, const LONGLONG_ARRAY *pmessage_ids,
+    uint8_t notify_non_read, const EID_ARRAY *pmessage_ids,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	return oxcfold_deletemessages(TRUE, want_asynchronous,

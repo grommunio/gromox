@@ -442,10 +442,10 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_set_search_criteria &d)
 			return pack_result::alloc;
 		TRY(x.g_restriction(d.prestriction));
 	}
-	d.pfolder_ids = cu_alloc<LONGLONG_ARRAY>();
+	d.pfolder_ids = cu_alloc<EID_ARRAY>();
 	if (d.pfolder_ids == nullptr)
 		return pack_result::alloc;
-	return x.g_uint64_a(d.pfolder_ids);
+	return x.g_eid_a(d.pfolder_ids);
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_search_criteria &d)
@@ -2776,7 +2776,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_get_search_criteria &d)
 			return pack_result::alloc;
 		TRY(x.g_restriction(d.prestriction));
 	}
-	return x.g_uint64_a(&d.folder_ids);
+	return x.g_eid_a(&d.folder_ids);
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_search_criteria &d)

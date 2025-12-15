@@ -194,7 +194,7 @@ struct DELETEFOLDER_REQUEST final : public rop_request {
 
 struct SETSEARCHCRITERIA_REQUEST final : public rop_request {
 	RESTRICTION *pres;
-	LONGLONG_ARRAY folder_ids;
+	EID_ARRAY folder_ids;
 	uint32_t search_flags;
 };
 
@@ -207,13 +207,13 @@ struct GETSEARCHCRITERIA_REQUEST final : public rop_request {
 struct GETSEARCHCRITERIA_RESPONSE final : public rop_response {
 	RESTRICTION *pres;
 	uint8_t logon_id;
-	LONGLONG_ARRAY folder_ids;
+	EID_ARRAY folder_ids;
 	uint32_t search_status;
 };
 
 struct MOVECOPYMESSAGES_REQUEST final : public rop_request {
 	uint8_t dhindex;
-	LONGLONG_ARRAY message_ids;
+	EID_ARRAY message_ids;
 	uint8_t want_asynchronous;
 	uint8_t want_copy;
 };
@@ -263,13 +263,13 @@ struct HARDDELETEMESSAGESANDSUBFOLDERS_REQUEST final : public rop_request {
 struct DELETEMESSAGES_REQUEST final : public rop_request {
 	uint8_t want_asynchronous;
 	uint8_t notify_non_read;
-	LONGLONG_ARRAY message_ids;
+	EID_ARRAY message_ids;
 };
 
 struct HARDDELETEMESSAGES_REQUEST final : public rop_request {
 	uint8_t want_asynchronous;
 	uint8_t notify_non_read;
-	LONGLONG_ARRAY message_ids;
+	EID_ARRAY message_ids;
 };
 
 struct GETHIERARCHYTABLE_REQUEST final : public rop_request {
@@ -487,7 +487,7 @@ struct RELOADCACHEDINFORMATION_RESPONSE final : public rop_response {
 struct SETREADFLAGS_REQUEST final : public rop_request {
 	uint8_t want_asynchronous;
 	uint8_t read_flags;
-	LONGLONG_ARRAY message_ids;
+	EID_ARRAY message_ids;
 };
 
 struct SETMESSAGESTATUS_REQUEST final : public rop_request {
@@ -859,7 +859,7 @@ struct FASTTRANSFERSOURCECOPYFOLDER_REQUEST final : public rop_request {
 
 struct FASTTRANSFERSOURCECOPYMESSAGES_REQUEST final : public rop_request {
 	uint8_t ohindex;
-	LONGLONG_ARRAY message_ids;
+	EID_ARRAY message_ids;
 	uint8_t flags;
 	uint8_t send_options;
 };
