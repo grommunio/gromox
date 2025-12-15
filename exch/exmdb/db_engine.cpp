@@ -1161,9 +1161,9 @@ void db_engine_stop()
 	sqlite3_shutdown();
 }
 
-BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t cpid,
-    uint64_t folder_id, BOOL b_recursive, const RESTRICTION *prestriction,
-    const LONGLONG_ARRAY *pfolder_ids) try
+bool db_engine_enqueue_populating_criteria(const char *dir, cpid_t cpid,
+    uint64_t folder_id, bool b_recursive, const RESTRICTION *prestriction,
+    std::vector<uint64_t> &&scope_list) try
 {
 	std::list<POPULATING_NODE> holder;
 	holder.emplace_back();
@@ -1172,15 +1172,14 @@ BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t cpid,
 	psearch->prestriction = prestriction->dup();
 	if (psearch->prestriction == nullptr)
 		return FALSE;
-	psearch->folder_ids.pll = me_alloc<uint64_t>(pfolder_ids->count);
+	psearch->folder_ids.count = scope_list.size();
+	psearch->folder_ids.pll = me_alloc<uint64_t>(scope_list.size());
 	if (psearch->folder_ids.pll == nullptr)
 		return FALSE;
-	memcpy(psearch->folder_ids.pll, pfolder_ids->pll,
-		sizeof(uint64_t)*pfolder_ids->count);
+	memcpy(psearch->folder_ids.pll, scope_list.data(), sizeof(uint64_t) * scope_list.size());
 	psearch->cpid = cpid;
 	psearch->folder_id = folder_id;
 	psearch->b_recursive = b_recursive;
-	psearch->folder_ids.count = pfolder_ids->count;
 	std::unique_lock lhold(g_list_lock);
 	g_populating_list.splice(g_populating_list.end(), std::move(holder));
 	lhold.unlock();
@@ -1204,7 +1203,7 @@ bool db_engine_check_populating(const char *dir, uint64_t folder_id)
 }
 
 void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
-    const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids,
+    const RESTRICTION *prestriction, const std::vector<uint64_t> &scope_list,
     db_base &dbase) try
 {
 	dynamic_node dn;
@@ -1214,11 +1213,11 @@ void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	dn.prestriction = prestriction->dup();
 	if (dn.prestriction == nullptr)
 		return;
-	dn.folder_ids.count = pfolder_ids->count;
-	dn.folder_ids.pll   = me_alloc<uint64_t>(pfolder_ids->count);
+	dn.folder_ids.count = scope_list.size();
+	dn.folder_ids.pll   = me_alloc<uint64_t>(scope_list.size());
 	if (dn.folder_ids.pll == nullptr)
 		return;
-	memcpy(dn.folder_ids.pll, pfolder_ids->pll, sizeof(*pfolder_ids->pll) * pfolder_ids->count);
+	memcpy(dn.folder_ids.pll, scope_list.data(), sizeof(uint64_t) * scope_list.size());
 	auto i = std::find_if(dbase.dynamic_list.begin(), dbase.dynamic_list.end(),
 	         [=](const dynamic_node &n) { return n.folder_id == folder_id; });
 	if (i == dbase.dynamic_list.end())

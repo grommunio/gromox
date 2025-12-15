@@ -9,6 +9,7 @@
 #include <shared_mutex>
 #include <sqlite3.h>
 #include <string>
+#include <vector>
 #include <gromox/clock.hpp>
 #include <gromox/database.h>
 #include <gromox/element_data.hpp>
@@ -184,7 +185,7 @@ struct db_conn {
 	bool open(const char *dir);
 	db_base_rd_ptr lock_base_rd() const;
 	db_base_wr_ptr lock_base_wr();
-	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids, db_base &);
+	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *, const std::vector<uint64_t> &scope_list, db_base &);
 	void delete_dynamic(uint64_t folder_id, db_base *);
 	void proc_dynamic_event(cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3, db_base &, NOTIFQ &);
 	void notify_new_mail(uint64_t folder_id, uint64_t msg_id, db_base &, NOTIFQ &);
@@ -232,7 +233,7 @@ extern db_conn_ptr db_engine_get_db(const char *dir);
 extern BOOL db_engine_vacuum(const char *path);
 extern BOOL db_engine_cgkreset(const char *dir, uint32_t flags);
 BOOL db_engine_unload_db(const char *path);
-extern BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t, uint64_t folder_id, BOOL recursive, const RESTRICTION *, const LONGLONG_ARRAY *folder_ids);
+extern bool db_engine_enqueue_populating_criteria(const char *dir, cpid_t, uint64_t folder_id, bool recursive, const RESTRICTION *, std::vector<uint64_t> &&scope_list);
 extern bool db_engine_check_populating(const char *dir, uint64_t folder_id);
 extern void dg_notify(db_conn::NOTIFQ &&);
 
