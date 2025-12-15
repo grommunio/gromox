@@ -7,6 +7,8 @@
 #include <vector>
 #include <gromox/ext_buffer.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::success) return klfdv; } while (false)
+#define CLAMP16(v) ((v) = std::min((v), static_cast<uint16_t>(UINT16_MAX)))
+#define CLAMP32(v) ((v) = std::min((v), static_cast<uint32_t>(UINT32_MAX)))
 using namespace gromox;
 
 /*
@@ -40,11 +42,20 @@ using namespace gromox;
 	}
 
 #define PULL_AC(T, t, C, c, fn) \
-	pack_result EXT_PULL::g_ ## fn ## _a(std::vector<T> *r) \
+	pack_result EXT_PULL::g_ ## fn ## _a(std::vector<T> *r, uint8_t ix) \
 	{ \
-		C count; \
-		TRY(g_ ## c(&count)); \
-		count = std::min(count, std::numeric_limits<C>::max()); \
+		size_t count = 0; \
+		if (ix == 2) { \
+			uint16_t z; \
+			TRY(g_uint16(&z)); \
+			CLAMP16(z); \
+			count = z; \
+		} else if (ix == 4) { \
+			uint32_t z; \
+			TRY(g_uint32(&z)); \
+			CLAMP32(z); \
+			count = z; \
+		} \
 		return g_ ## t ## _an(r, count); \
 	}
 
