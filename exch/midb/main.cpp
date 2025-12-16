@@ -196,6 +196,7 @@ static void *midls_thrwork(void *param)
 		}
 		auto holder = cmd_parser_make_conn();
 		if (holder.size() == 0) {
+			mlog(LV_NOTICE, "Maximum connection count reached (cf. midb.cfg:threads_num)\n");
 			if (HXio_fullwrite(gco.sockd, "FALSE Maximum Connection Reached!\r\n", 35) < 0)
 				/* ignore */;
 			continue;
