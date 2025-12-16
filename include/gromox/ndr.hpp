@@ -61,9 +61,11 @@ struct GX_EXPORT NDR_PULL {
 };
 
 struct GX_EXPORT NDR_PUSH {
-	void init(void *d, uint32_t asize, uint32_t fl);
+	NDR_PUSH() = default;
+	~NDR_PUSH();
+	NOMOVE(NDR_PUSH);
+	bool init(void *d, uint32_t asize, uint32_t fl, const EXT_BUFFER_MGT * = nullptr);
 	void set_ptrcnt(uint32_t c) { ptr_count = c; }
-	void destroy();
 	pack_result align(size_t);
 	pack_result union_align(size_t);
 	pack_result trailer_align(size_t);
@@ -93,4 +95,5 @@ struct GX_EXPORT NDR_PUSH {
 	uint8_t *data = nullptr;
 	uint32_t flags = 0, alloc_size = 0, offset = 0, ptr_count = 0;
 	DOUBLE_LIST full_ptr_list{};
+	EXT_BUFFER_MGT m_mgt{};
 };

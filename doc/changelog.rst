@@ -1,4 +1,4 @@
-Gromox 3.2.139
+Gromox 3.2.144
 ==============
 
 Enhancements:
@@ -23,6 +23,8 @@ Fixes:
 * nsp: results from nspiGetMatches were not always capped as requested by
   clients (potentially crashing OL)
 * zcore: make openstream treat MAPI_BEST_ACCESS as documented
+* emsmdb: calls over RPCH with large outputs would sometimes just report an
+  error due to insufficient buffer sizes, which has been fixed.
 
 
 Gromox 3.2 (2025-11-24)

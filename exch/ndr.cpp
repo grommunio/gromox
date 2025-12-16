@@ -10,6 +10,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/ndr.hpp>
+#include <gromox/util.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::ok) return klfdv; } while (false)
 #define NDR_BE(pndr) ((pndr->flags & NDR_FLAG_BIGENDIAN) != 0)
 #define CLAMP16(v) ((v) = std::min((v), static_cast<uint16_t>(UINT16_MAX)))
@@ -343,18 +344,32 @@ pack_result NDR_PULL::g_ctx_handle(CONTEXT_HANDLE *r)
 	return pack_result::ok;
 }
 
-void NDR_PUSH::init(void *d, uint32_t as, uint32_t fl)
+bool NDR_PUSH::init(void *d, uint32_t as, uint32_t fl, const EXT_BUFFER_MGT *mgt)
 {
+	const EXT_BUFFER_MGT default_mgt = {gromox::zalloc, realloc, free};
 	auto pndr = this;
-	data = static_cast<uint8_t *>(d);
-	alloc_size = as;
+	m_mgt = mgt != nullptr ? *mgt : default_mgt;
 	flags = fl;
+	if (d == nullptr) {
+		flags |= EXT_FLAG_DYNAMIC;
+		alloc_size = 8192;
+		data = static_cast<uint8_t *>(m_mgt.alloc(alloc_size));
+		if (data == nullptr) {
+			alloc_size = 0;
+			return false;
+		}
+	} else {
+		flags &= ~EXT_FLAG_DYNAMIC;
+		data = static_cast<uint8_t *>(d);
+		alloc_size = as;
+	}
 	pndr->offset = 0;
 	pndr->ptr_count = 0;
 	double_list_init(&pndr->full_ptr_list);
+	return true;
 }
 
-void NDR_PUSH::destroy()
+NDR_PUSH::~NDR_PUSH()
 {
 	auto pndr = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -362,10 +377,8 @@ void NDR_PUSH::destroy()
 	while ((pnode = double_list_pop_front(&pndr->full_ptr_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&pndr->full_ptr_list);
-	pndr->data = NULL;
-	pndr->alloc_size = 0;
-	pndr->flags = 0;
-	pndr->offset = 0;
+	if (flags & EXT_FLAG_DYNAMIC)
+		m_mgt.free(data);
 }
 
 static bool ndr_push_check_overflow(NDR_PUSH *pndr, uint32_t extra_size)
