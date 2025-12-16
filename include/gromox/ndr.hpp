@@ -60,9 +60,9 @@ struct GX_EXPORT NDR_PULL {
 };
 
 struct GX_EXPORT NDR_PUSH {
+	~NDR_PUSH();
 	void init(void *d, uint32_t asize, uint32_t fl);
 	void set_ptrcnt(uint32_t c) { ptr_count = c; }
-	void destroy();
 	pack_result align(size_t);
 	pack_result union_align(size_t);
 	pack_result trailer_align(size_t);

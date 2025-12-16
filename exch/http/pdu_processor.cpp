@@ -1847,7 +1847,6 @@ static void pdu_processor_process_orphaned(DCERPC_CALL *pcall)
 void pdu_processor_rts_echo(char *pbuff)
 {
 	int flags;
-	NDR_PUSH ndr;
 	dcerpc_ncacn_packet pkt(g_bigendian);
 	
 	pkt.pkt_type = DCERPC_PKT_RTS;
@@ -1862,9 +1861,9 @@ void pdu_processor_rts_echo(char *pbuff)
 		flags = NDR_FLAG_BIGENDIAN;
 	else
 		flags = 0;
+	NDR_PUSH ndr;
 	ndr.init(pbuff, 20, flags);
 	pdu_ndr_push_ncacnpkt(&ndr, &pkt);
-	ndr.destroy();
 }
 
 BOOL dcerpc_call::rts_ping() try

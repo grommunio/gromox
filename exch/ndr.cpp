@@ -354,7 +354,7 @@ void NDR_PUSH::init(void *d, uint32_t as, uint32_t fl)
 	double_list_init(&pndr->full_ptr_list);
 }
 
-void NDR_PUSH::destroy()
+NDR_PUSH::~NDR_PUSH()
 {
 	auto pndr = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -362,10 +362,6 @@ void NDR_PUSH::destroy()
 	while ((pnode = double_list_pop_front(&pndr->full_ptr_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&pndr->full_ptr_list);
-	pndr->data = NULL;
-	pndr->alloc_size = 0;
-	pndr->flags = 0;
-	pndr->offset = 0;
 }
 
 static bool ndr_push_check_overflow(NDR_PUSH *pndr, uint32_t extra_size)
