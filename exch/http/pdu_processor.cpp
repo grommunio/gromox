@@ -1393,7 +1393,9 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	/* marshaling the NDR out param data */
 	auto ret = pcall->pcontext->pinterface->ndr_push(prequest->opnum, ndr_push, pout);
 	if (ret != pack_result::ok) {
-		mlog(LV_ERR, "E-1918: ndr_push failed with result code %u",
+		mlog(LV_ERR, "E-1918: ndr_push(%s,%u) failed with pack_result::%u",
+			pcall->pcontext->pinterface->name,
+			prequest->opnum,
 			static_cast<unsigned int>(ret));
 		pdu_processor_free_stack_root(pstack_root);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR);
