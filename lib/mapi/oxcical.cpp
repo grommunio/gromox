@@ -2727,7 +2727,7 @@ ec_error_t oxcical_import_multi(const ical &pical,
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Task") != ecSuccess)
 			return ecError;
 		auto err = oxcical_import_todo(pical, *first_comp, alloc,
-			  get_propids, pmsg);
+		           std::move(get_propids), pmsg);
 		if (err != nullptr) {
 			mlog(LV_ERR, "%s", err);
 			return ecError;
