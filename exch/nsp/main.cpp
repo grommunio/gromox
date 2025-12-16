@@ -339,7 +339,6 @@ static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
 	case nspiResolveNamesW: {
 		auto in  = static_cast<const NSPIRESOLVENAMESW_IN *>(pin);
 		auto out = std::make_unique<NSPIRESOLVENAMESW_OUT>();
-		auto tags = in->pproptags;
 		out->result = nsp_interface_resolve_namesw(in->handle,
 		              in->reserved, in->stat,
 		              optional_ptr(in->pproptags), in->strs,
