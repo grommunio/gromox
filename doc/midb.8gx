@@ -119,7 +119,9 @@ Default: \fIyes\fP
 Default: \fI5000\fP
 .TP
 \fBmidb_threads_num\fP
-The minimum number of client processing threads to keep around.
+The exact number of client processing threads to keep around. This also
+controls the maximum number of concurrent connections by external clients
+towards midb.
 .br
 Default: \fI100\fP
 .TP
@@ -127,6 +129,8 @@ Default: \fI100\fP
 Default: \fI10\fP
 .TP
 \fBrpc_proxy_connection_num\fP
+The maximum number of concurrent connections that midb may open towards exmdb.
+Every prefix in exmdb_list.txt takes up one slot effectively.
 .br
 Default: \fI10\fP
 .TP
