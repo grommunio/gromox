@@ -563,9 +563,27 @@ static tproc_status ps_literal_processing(imap_context &ctx)
 }
 
 /**
+ * Returns a pair consisting of:
+ * - the position of the newline (unspecified value if not found),
+ * - number of bytes representing the newline (0 if none found)
+ */
+static std::pair<uint32_t, uint8_t> nl_detect(const char *base, uint32_t size)
+{
+	auto ptr = static_cast<const char *>(memchr(base, '\n', size));
+	if (ptr == nullptr)
+		return {0, 0};
+	size_t pos = ptr - base;
+	if (pos >= size)
+		return {0, 0};
+	if (pos == 0 || base[pos-1] != '\r')
+		return {pos, 1};
+	return {pos - 1, 2};
+}
+
+/**
  * This function tries to mark off a whole line (i.e. find the newline). If
  * none is there yet, ps_cmd_processing will soon be invoked again, with a
- * read_buffer that has been _appended_ to -- so we will see the same leading
+ * read_buffer that has been _appended_ to – so we will see the same leading
  * string in pcontext->read_buffer.
  *
  * The maximum line length is sizeof(read_buffer), i.e. 64K.
@@ -574,23 +592,31 @@ static tproc_status ps_literal_processing(imap_context &ctx)
 static tproc_status ps_cmd_processing(imap_context &ctx)
 {
 	auto pcontext = &ctx;
-	for (ssize_t i = 0; i < pcontext->read_offset; ++i) {
-		auto nl_len = newline_size(&pcontext->read_buffer[i], pcontext->read_offset - i);
+	while (true) {
+		auto [i, nl_len] = nl_detect(ctx.read_buffer, ctx.read_offset);
 		if (nl_len == 0)
-			continue;
-		if (i >= 64 * 1024 || pcontext->command_len + i >= 64 * 1024) {
+			break;
+		if (ctx.command_len + i >= std::size(ctx.command_buffer)) {
 			imap_parser_log_info(pcontext, LV_WARN, "error in command buffer length");
 			/* IMAP_CODE_2180017: BAD literal size too large */
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
+
+		/* Copy line to Command Buffer */
 		memcpy(pcontext->command_buffer + pcontext->command_len,
 		       pcontext->read_buffer, i);
 		pcontext->command_len += i;
 		pcontext->command_buffer[pcontext->command_len] = '\0';
+
+		/* Pop front off read_buffer for the sake of the next iteration. */
 		pcontext->read_offset -= i + nl_len;
 		if (pcontext->read_offset > 0 && pcontext->read_offset < 64 * 1024)
+			/*
+			 * i=65535,nl_len=2 is impossible, but cov-scan does
+			 * not know that and complains about memmove.
+			 */
 			memmove(pcontext->read_buffer, &pcontext->read_buffer[i+nl_len],
 			        pcontext->read_offset);
 		else
