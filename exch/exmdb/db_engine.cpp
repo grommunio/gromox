@@ -1159,7 +1159,7 @@ bool db_engine_enqueue_populating_criteria(const char *dir, cpid_t cpid,
 	psearch->prestriction = prestriction->dup();
 	if (psearch->prestriction == nullptr)
 		return FALSE;
-	psearch->scope_list = scope_list;
+	psearch->scope_list = std::move(scope_list);
 	psearch->cpid = cpid;
 	psearch->folder_id = folder_id;
 	psearch->b_recursive = b_recursive;
@@ -1196,7 +1196,7 @@ void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	dn.prestriction = prestriction->dup();
 	if (dn.prestriction == nullptr)
 		return;
-	dn.scope_list = std::move(scope_list);
+	dn.scope_list = scope_list;
 	auto i = std::find_if(dbase.dynamic_list.begin(), dbase.dynamic_list.end(),
 	         [=](const dynamic_node &n) { return n.folder_id == folder_id; });
 	if (i == dbase.dynamic_list.end())
