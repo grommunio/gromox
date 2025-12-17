@@ -86,7 +86,7 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 
 	std::vector<eid_t> chosen_fids;
 	auto err = select_hierarchy(fid, 0, chosen_fids);
-	if (err != 0)
+	if (err != ecSuccess)
 		return EXIT_FAILURE;
 	for (auto fid : chosen_fids)
 		do_hierarchy(fid, depth + 1);
