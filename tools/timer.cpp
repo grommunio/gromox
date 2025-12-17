@@ -205,6 +205,21 @@ static TIMER *put_timer(TIMER &&ptimer)
 	return &g_exec_list.back();
 }
 
+static void do_tasks(time_t &last_cltime)
+{
+	std::unique_lock li_hold(g_list_lock);
+	auto cur_time = time(nullptr);
+	for (auto ptimer = g_exec_list.begin(); ptimer != g_exec_list.end(); ) {
+		if (ptimer->exec_time > cur_time)
+			break;
+		std::list<TIMER> stash;
+		stash.splice(stash.end(), g_exec_list, ptimer++);
+		execute_timer(&stash.front());
+	}
+	if (cur_time - last_cltime > 7 * 86400)
+		save_timers(last_cltime, cur_time);
+}
+
 int main(int argc, char **argv)
 {
 	pthread_t thr_accept_id{};
@@ -279,7 +294,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	auto cur_time = time(nullptr);
 	for (size_t i = 0; i < item_num; ++i) {
 		if (pitem[i].tid > g_last_tid)
 			g_last_tid = pitem[i].tid;
@@ -360,21 +374,8 @@ int main(int argc, char **argv)
 	printf("[system]: TIMER is now running\n");
 
 	while (!g_notify_stop) {
-		std::unique_lock li_hold(g_list_lock);
-		cur_time = time(nullptr);
-		for (auto ptimer = g_exec_list.begin(); ptimer != g_exec_list.end(); ) {
-			if (ptimer->exec_time > cur_time)
-				break;
-			std::list<TIMER> stash;
-			stash.splice(stash.end(), g_exec_list, ptimer++);
-			execute_timer(&stash.front());
-		}
-
-		if (cur_time - last_cltime > 7 * 86400)
-			save_timers(last_cltime, cur_time);
-		li_hold.unlock();
+		do_tasks(last_cltime);
 		sleep(1);
-
 	}
 	return EXIT_SUCCESS;
 }
