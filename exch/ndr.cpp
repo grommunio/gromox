@@ -383,10 +383,20 @@ NDR_PUSH::~NDR_PUSH()
 
 static bool ndr_push_check_overflow(NDR_PUSH *pndr, uint32_t extra_size)
 {
-	uint32_t size;
-	
-	size = extra_size + pndr->offset;
-	return size <= pndr->alloc_size;
+	auto reqtot = extra_size + pndr->offset;
+	if (pndr->alloc_size >= reqtot)
+		return TRUE;
+	if (!(pndr->flags & EXT_FLAG_DYNAMIC))
+		return FALSE;
+	if (reqtot < pndr->alloc_size * 2)
+		/* Exponential growth policy, needed to reach amoreqtotized linear time (like std::string) */
+		reqtot = pndr->alloc_size * 2;
+	auto pdata = static_cast<uint8_t *>(pndr->m_mgt.realloc(pndr->data, reqtot));
+	if (pdata == nullptr)
+		return FALSE;
+	pndr->data = pdata;
+	pndr->alloc_size = reqtot;
+	return TRUE;
 }
 
 pack_result NDR_PUSH::p_uint8_a(const uint8_t *pdata, uint32_t n)
