@@ -434,6 +434,7 @@ static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL &x,
 		}
 		r.clear();
 		r.resize(size);
+		isset_v.resize(size);
 		for (size_t cnt = 0; cnt < size; ++cnt) {
 			uint32_t ptr = 0;
 			TRY(x.g_genptr(&ptr));
