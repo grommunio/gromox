@@ -1212,6 +1212,7 @@ enum {
 	PidLidMonthOfYearMask = 0x0017,
 	PidLidOwnerCriticalChange = 0x001A,
 	PidLidCleanGlobalObjectId = 0x0023,
+	PidLidAppointmentMessageClass = 0x0024,
 	PidLidMeetingType = 0x0026,
 
 	/* PSETID_Common */
@@ -1237,5 +1238,6 @@ enum {
 	PidLidClassificationDescription = 0x85B7,
 	PidLidClassificationGuid = 0x85B8,
 	PidLidClassificationKeep = 0x85BA,
+	PidLidCommon85D8 = 0x85D8, /* undocumented */
 	PROP_ID_INVALID = 0xFFFF,
 };

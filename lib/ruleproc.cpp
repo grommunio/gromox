@@ -998,10 +998,11 @@ static ec_error_t mr_insert_to_cal(rxparam &par, const PROPID_ARRAY &propids,
 	};
 	for (auto t : rmprops)
 		prop.erase(t);
-	static constexpr uint32_t v_busy = olBusy;
+	static constexpr uint32_t v_busy = olBusy, stateflags = asfMeeting | asfReceived;
 	ec_error_t err;
 	if ((err = prop.set(PROP_TAG(PT_LONG, propids[l_response_status]), &accept_type)) != ecSuccess ||
 	    (err = prop.set(PROP_TAG(PT_LONG, propids[l_busy_status]), &v_busy)) != ecSuccess ||
+	    (err = prop.set(PROP_TAG(PT_LONG, propids[l_appt_state_flags]), &stateflags)) != ecSuccess ||
 	    (err = prop.set(PR_MESSAGE_CLASS, "IPM.Appointment")) != ecSuccess)
 		return err;
 	uint64_t cal_mid = 0, cal_cn = 0;
@@ -1209,7 +1210,7 @@ static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
 	}
 
 	/* Enter meeting into calendar */
-	auto tent = policy.accept_appts ? respAccepted : respTentative;
+	auto tent = policy.accept_appts ? respAccepted : respNotResponded;
 	auto cal_fid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
 	auto err = mr_insert_to_cal(par, propids, cal_fid, tent);
 	if (err != ecSuccess)

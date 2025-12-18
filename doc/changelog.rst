@@ -1,3 +1,12 @@
+Gromox 3.3.9
+============
+
+Fixes:
+
+* mrautoproc: server-side processed meeting requests automatically entered into
+  the calendar had lacked the flags asfMeeting+asfReceived, which was fixed.
+
+
 Gromox 3.3 (2025-12-27)
 =======================
 
