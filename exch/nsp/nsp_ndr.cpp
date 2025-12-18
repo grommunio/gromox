@@ -145,7 +145,7 @@ static pack_result nsp_ndr_pull_proptag_array(NDR_PULL &x, std::vector<proptag_t
 	TRY(x.g_ulong(&length));
 	if (offset != 0 || length > size)
 		return pack_result::array_size;
-	if (size != cvalues || length != cvalues)
+	if (size != cvalues + 1 || length != cvalues)
 		return pack_result::array_size;
 	r->resize(length);
 	for (size_t cnt = 0; cnt < length; ++cnt)
