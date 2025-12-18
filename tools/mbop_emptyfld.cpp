@@ -47,7 +47,7 @@ static int generic_del(eid_t fid, const std::vector<eid_t> &chosen)
 	return EXIT_SUCCESS;
 }
 
-static int do_contents(eid_t fid, unsigned int tbl_flags)
+static ec_error_t do_contents(eid_t fid, unsigned int tbl_flags)
 {
 	std::vector<eid_t> chosen;
 	static constexpr RESTRICTION_EXIST rst_a = {PR_LAST_MODIFICATION_TIME};
@@ -57,12 +57,12 @@ static int do_contents(eid_t fid, unsigned int tbl_flags)
 	RESTRICTION_AND_OR rst_d = {std::size(rst_c), deconst(rst_c)};
 	RESTRICTION rst_e = {RES_AND, {deconst(&rst_d)}};
 	auto err = select_contents_from_folder(fid, tbl_flags, &rst_e, chosen);
-	if (err != 0)
+	if (err != ecSuccess)
 		return err;
-	return generic_del(fid, std::move(chosen));
+	return generic_del(fid, std::move(chosen)) == 0 ? ecSuccess : ecError;
 }
 
-static int do_hierarchy(eid_t fid, uint32_t depth)
+static ec_error_t do_hierarchy(eid_t fid, uint32_t depth)
 {
 	{
 	uint32_t prev_delc, prev_fldc;
@@ -74,33 +74,36 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 	});
 	if (g_del_flags & DEL_MESSAGES) {
 		auto ret = do_contents(fid, 0);
-		if (ret != EXIT_SUCCESS)
+		if (ret != ecSuccess)
 			return ret;
 	}
 	if (g_del_flags & DEL_ASSOCIATED) {
 		auto ret = do_contents(fid, MAPI_ASSOCIATED);
-		if (ret != EXIT_SUCCESS)
+		if (ret != ecSuccess)
 			return ret;
 	}
 	if (!g_recurse)
-		return EXIT_SUCCESS;
+		return ecSuccess;
 
 	std::vector<eid_t> chosen_fids;
 	auto err = select_hierarchy(fid, 0, chosen_fids);
 	if (err != ecSuccess)
-		return EXIT_FAILURE;
-	for (auto fid : chosen_fids)
-		do_hierarchy(fid, depth + 1);
+		return err;
+	for (auto fid : chosen_fids) {
+		err = do_hierarchy(fid, depth + 1);
+		if (err != ecSuccess)
+			return err;
+	}
 	}
 
 	if (depth == 0 || !g_delempty)
-		return EXIT_SUCCESS;
+		return ecSuccess;
 	static constexpr proptag_t ftags2[] = {PR_CONTENT_COUNT, PR_ASSOC_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT};
 	static constexpr PROPTAG_ARRAY ftaghdr2 = {std::size(ftags2), deconst(ftags2)};
 	TPROPVAL_ARRAY props{};
 	if (!exmdb_client->get_folder_properties(g_storedir, CP_ACP, fid, &ftaghdr2, &props)) {
 		mbop_fprintf(stderr, "fid 0x%llx get_folder_props failed\n", LLU{fid});
-		return EXIT_FAILURE;
+		return ecRpcFailed;
 	}
 	auto p1 = props.get<const uint32_t>(PR_CONTENT_COUNT);
 	auto p2 = props.get<const uint32_t>(PR_ASSOC_CONTENT_COUNT);
@@ -109,18 +112,18 @@ static int do_hierarchy(eid_t fid, uint32_t depth)
 	auto n2 = p2 != nullptr ? *p2 : 0;
 	auto n3 = p3 != nullptr ? *p3 : 0;
 	if (n1 != 0 || n2 != 0 || n3 != 0)
-		return EXIT_SUCCESS;
+		return ecSuccess;
 	BOOL b_result = false;
 	if (!exmdb_client->delete_folder(g_storedir, CP_ACP, fid,
 	    g_del_flags & DELETE_HARD_DELETE, &b_result)) {
 		mbop_fprintf(stderr, "fid 0x%llx delete_folder RPC rejected/malformed\n", LLU{rop_util_get_gc_value(fid)});
-		return EXIT_FAILURE;
+		return ecRpcFailed;
 	} else if (!b_result) {
 		mbop_fprintf(stderr, "fid 0x%llx delete_folder unsuccessful (no permissions etc.)\n", LLU{rop_util_get_gc_value(fid)});
 	} else {
 		mbop_fprintf(stderr, "Folder 0x%llx: deleted due to --delempty\n", LLU{rop_util_get_gc_value(fid)});
 	}
-	return EXIT_SUCCESS;
+	return ecSuccess;
 }
 
 int main(int argc, char **argv)
@@ -177,9 +180,9 @@ int main(int argc, char **argv)
 		}
 		if (g_cutoff_time != 0 || g_recurse) {
 			/* Deletion via client */
-			ret = do_hierarchy(eid, 0);
-			if (ret != EXIT_SUCCESS)
-				return ret;
+			auto err = do_hierarchy(eid, 0);
+			if (err != ecSuccess)
+				return EXIT_FAILURE;
 			continue;
 		}
 		uint32_t prev_delc, prev_fldc, curr_delc, curr_fldc;
