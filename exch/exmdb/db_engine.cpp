@@ -104,7 +104,7 @@ static std::unordered_map<std::string, db_base> g_hash_table; /* protected by g_
 static std::unordered_map<std::string, db_maint_mode> g_maint_table; /* protected by g_maint_lock */
 /* List of queued searchcriteria, and list of searchcriteria evaluated right now */
 static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
-static std::optional<std::counting_semaphore<1>> g_autoupg_limiter;
+static std::optional<std::counting_semaphore<>> g_autoupg_limiter;
 unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 unsigned long long g_exmdb_search_pacing_time = 2000000000;
 unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
