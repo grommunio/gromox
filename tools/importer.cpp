@@ -309,7 +309,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props,
     const std::vector<PERMISSION_DATA> &perms)
 {
 	if (g_show_tree) {
-		printf("exm: Folder %lxh (parent=%llxh)\n",
+		fprintf(stderr, "exm: Folder %lxh (parent=%llxh)\n",
 			static_cast<unsigned long>(obd.nid),
 			static_cast<unsigned long long>(obd.parent.folder_id));
 		if (g_show_props)
@@ -532,12 +532,12 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt,
     const std::string &im_repr)
 {
 	if (g_show_tree) {
-		printf("exm: Message %lxh (parent=%llxh)",
+		fprintf(stderr, "exm: Message %lxh (parent=%llxh)",
 			static_cast<unsigned long>(obd.nid),
 			static_cast<unsigned long long>(obd.parent.folder_id));
 		if (im_repr.size() > 0)
-			printf(" [RFC5322: %zu bytes]", im_repr.size());
-		printf("\n");
+			fprintf(stderr, " [RFC5322: %zu bytes]", im_repr.size());
+		fprintf(stderr, "\n");
 	}
 	if (g_show_tree && g_show_props)
 		gi_print(0, ctnt, ee_get_propname);
