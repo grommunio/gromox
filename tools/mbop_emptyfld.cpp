@@ -57,8 +57,10 @@ static ec_error_t do_contents(eid_t fid, unsigned int tbl_flags)
 	RESTRICTION_AND_OR rst_d = {std::size(rst_c), deconst(rst_c)};
 	RESTRICTION rst_e = {RES_AND, {deconst(&rst_d)}};
 	auto err = select_contents_from_folder(fid, tbl_flags, &rst_e, chosen);
-	if (err != ecSuccess)
+	if (err != ecSuccess) {
+		mbop_fprintf(stderr, "load_contents %llxh failed\n", LLU{fid});
 		return err;
+	}
 	return generic_del(fid, std::move(chosen)) == 0 ? ecSuccess : ecError;
 }
 
@@ -87,8 +89,10 @@ static ec_error_t do_hierarchy(eid_t fid, uint32_t depth)
 
 	std::vector<eid_t> chosen_fids;
 	auto err = select_hierarchy(fid, 0, chosen_fids);
-	if (err != ecSuccess)
+	if (err != ecSuccess) {
+		mbop_fprintf(stderr, "load_hierarchy %llxh failed\n", LLU{fid});
 		return err;
+	}
 	for (auto fid : chosen_fids) {
 		err = do_hierarchy(fid, depth + 1);
 		if (err != ecSuccess)
