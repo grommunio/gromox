@@ -25,7 +25,8 @@ as Gromox Mailbox Transfer (GXMT) datastream, Internet Mail (RFC 5322),
 iCalendar (RFC 5545), vCard (RFC 6350), or TNEF, depending on which name it was
 invoked under. ("exm" is short for exmdb and refers to the network protocol
 used to talk to the message store.) Multiple messages may only be exported to
-GXMT. ACLs are not extracted yet.
+GXMT. ACLs are not extracted yet. Export to PST is not possible: the external
+library libpff has only implemented reading.
 .PP
 Folders can be selected by symbolic name or by folder path
 (see gromox\-mbop(8) section "Folder specification" for that).
