@@ -88,10 +88,28 @@ static int t_rtf_reader()
 	return 0;
 }
 
+static int t_htmltortf()
+{
+	std::string out;
+	auto err = html_to_rtf("", static_cast<cpid_t>(1252), out);
+	if (err != 0) {
+		fprintf(stderr, "html_to_rtf failed\n");
+		return EXIT_FAILURE;
+	}
+	err = html_to_rtf("1", static_cast<cpid_t>(1252), out);
+	if (err != 0) {
+		fprintf(stderr, "html_to_rtf failed\n");
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
 int main()
 {
 	textmaps_init(getenv("TEST_PATH"));
 	if (t_rtf_reader() != 0)
+		return EXIT_FAILURE;
+	if (t_htmltortf() != 0)
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }
