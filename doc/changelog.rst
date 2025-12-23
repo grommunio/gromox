@@ -3,13 +3,19 @@ Gromox 3.2.144
 
 Enhancements:
 
-* oxvcard: do export Outlook contact photo
+* oxvcard: include photo when converting MAPI contact objects to VCARD
+* exporter: support export of multiple messages to GXMT
+* exporter: support for folder export to GXMT
+* importer: support a read-only mode
 * exmdb: include RTF in the cross-body format synchronization when the message
   is saved, making Outlook Notes or Outlook Contact notes display something in
   grommunio-web and other clients
 * exmdb: new read_delegate/write_delegate EXRPCs so that delegates.txt is no
   longer accessed via filesystem
 * exch: allow user sending mail with From: line set to own aliases
+* mysql_adaptor: regard aliases for user_ids and displayname
+* midb: log when incoming connection count has been reached
+* ews: recognize <TimeZoneContext> elements located in the SOAP header
 
 Fixes:
 
@@ -25,6 +31,14 @@ Fixes:
 * zcore: make openstream treat MAPI_BEST_ACCESS as documented
 * emsmdb: calls over RPCH with large outputs would sometimes just report an
   error due to insufficient buffer sizes, which has been fixed.
+* rtf_to_html and html_to_plain misconverted U+007F,U+07FF,U+7FFF,U+7FFFF to
+  faulty UTF-8, which has been fixed
+
+Changes:
+
+* tools: renamed gromox-{mt2exm,exm2eml} to gromox-{import,export}
+  and added the old aliases for the tools
+* nsp: make resolvenames skip over empty strings in line with the specification
 
 
 Gromox 3.2 (2025-11-24)
