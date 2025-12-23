@@ -92,12 +92,12 @@ static int t_htmltortf()
 {
 	std::string out;
 	auto err = html_to_rtf("", static_cast<cpid_t>(1252), out);
-	if (err != 0) {
+	if (err != ecSuccess) {
 		fprintf(stderr, "html_to_rtf failed\n");
 		return EXIT_FAILURE;
 	}
 	err = html_to_rtf("1", static_cast<cpid_t>(1252), out);
-	if (err != 0) {
+	if (err != ecSuccess) {
 		fprintf(stderr, "html_to_rtf failed\n");
 		return EXIT_FAILURE;
 	}
