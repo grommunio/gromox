@@ -1133,7 +1133,7 @@ ec_error_t html_to_rtf(std::string_view inbuf, cpid_t cpid, std::string &out) tr
 	/* First, switch HTML to UTF-8 */
 	std::string inbuf_u8;
 	if (strcasecmp(cset, "utf-8") != 0) {
-		auto buffer = iconvtext(inbuf, cset, "UTF-8");
+		inbuf_u8 = iconvtext(inbuf, cset, "UTF-8");
 		if (errno == ENOMEM)
 			return ecMAPIOOM;
 		else if (errno == EINVAL)
@@ -1148,6 +1148,10 @@ ec_error_t html_to_rtf(std::string_view inbuf, cpid_t cpid, std::string &out) tr
 		return ret;
 	auto hdoc = htmlReadMemory(inbuf.data(), inbuf.size(), nullptr, "utf-8",
 	            HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET);
+	if (hdoc == nullptr && inbuf.size() == 0)
+		/* Old libxml (prior to v2.13.0) has problems with 0-sized documents */
+		hdoc = htmlReadMemory("<!-- -->", 7, nullptr, "utf-8",
+		            HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET);
 	if (hdoc == nullptr)
 		return ecError;
 	auto cl_0 = HX::make_scope_exit([&]() { xmlFreeDoc(hdoc); });

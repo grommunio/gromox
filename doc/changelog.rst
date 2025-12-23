@@ -1,4 +1,4 @@
-Gromox 3.2.144
+Gromox 3.2.229
 ==============
 
 Enhancements:
@@ -31,6 +31,7 @@ Fixes:
 * zcore: make openstream treat MAPI_BEST_ACCESS as documented
 * emsmdb: calls over RPCH with large outputs would sometimes just report an
   error due to insufficient buffer sizes, which has been fixed.
+* mapi_lib: repair botched html_to_rtf with non-UTF-8 HTML input
 * rtf_to_html and html_to_plain misconverted U+007F,U+07FF,U+7FFF,U+7FFFF to
   faulty UTF-8, which has been fixed
 
