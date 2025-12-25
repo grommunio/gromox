@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <memory>
 #include <new>
+#include <optional>
 #include <pthread.h>
 #include <string>
 #include <string_view>
@@ -570,7 +571,7 @@ bool cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 	return false;
 }
 
-static BINARY* common_util_get_mailbox_guid(sqlite3 *psqlite)
+static std::optional<GUID> common_util_get_mailbox_guid(sqlite3 *psqlite)
 {
 	GUID tmp_guid;
 	char sql_string[128];
@@ -580,20 +581,10 @@ static BINARY* common_util_get_mailbox_guid(sqlite3 *psqlite)
 				CONFIG_ID_MAILBOX_GUID);
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
-		return NULL;
+		return {};
 	if (!tmp_guid.from_str(pstmt.col_text(0)))
-		return NULL;
-	pstmt.finalize();
-	auto ptmp_bin = cu_alloc<BINARY>();
-	if (ptmp_bin == nullptr)
-		return NULL;
-	ptmp_bin->pv = common_util_alloc(16);
-	if (ptmp_bin->pv == nullptr)
-		return NULL;
-	ptmp_bin->cb = 16;
-	FLATUID f = tmp_guid;
-	memcpy(ptmp_bin->pv, &f, sizeof(f));
-	return ptmp_bin;
+		return {};
+	return {std::move(tmp_guid)};
 }
 
 static BINARY *cu_get_mapping_sig(sqlite3 *db)
@@ -1085,9 +1076,9 @@ static BINARY *cu_fid_to_entryid(sqlite3 *psqlite, uint64_t folder_id)
 	tmp_entryid.flags = 0;
 	if (exmdb_server::is_private()) {
 		auto pbin = common_util_get_mailbox_guid(psqlite);
-		if (pbin == nullptr)
+		if (!pbin)
 			return NULL;
-		memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
+		tmp_entryid.provider_uid  = *pbin;
 		tmp_entryid.folder_dbguid = rop_util_make_user_guid(account_id);
 		tmp_entryid.eid_type      = EITLT_PRIVATE_FOLDER;
 	} else {
@@ -1126,9 +1117,9 @@ static BINARY *cu_mid_to_entryid(sqlite3 *psqlite, uint64_t message_id)
 	tmp_entryid.flags = 0;
 	if (exmdb_server::is_private()) {
 		auto pbin = common_util_get_mailbox_guid(psqlite);
-		if (pbin == nullptr)
+		if (!pbin)
 			return NULL;
-		memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
+		tmp_entryid.provider_uid  = *pbin;
 		tmp_entryid.folder_dbguid = rop_util_make_user_guid(account_id);
 		tmp_entryid.eid_type      = EITLT_PRIVATE_MESSAGE;
 	} else {
@@ -1994,9 +1985,22 @@ static GP_RESULT gp_spectableprop(mapi_object_type table_type, proptag_t tag,
 {
 	pv.proptag = tag;
 	switch (tag) {
-	case PR_STORE_RECORD_KEY:
-		pv.pvalue = common_util_get_mailbox_guid(db);
-		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
+	case PR_STORE_RECORD_KEY: {
+		auto guid = common_util_get_mailbox_guid(db);
+		if (!guid.has_value())
+			return GP_ERR;
+		auto bin = cu_alloc<BINARY>();
+		if (bin == nullptr)
+			return GP_ERR;
+		FLATUID *f = cu_alloc<FLATUID>();
+		if (f == nullptr)
+			return GP_ERR;
+		*f = *guid;
+		bin->pv = f;
+		bin->cb = sizeof(*f);
+		pv.pvalue = bin;
+		return GP_ADV;
+	}
 	case PR_MAPPING_SIGNATURE:
 		pv.pvalue = cu_get_mapping_sig(db);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
@@ -3920,19 +3924,19 @@ BINARY* common_util_to_private_folder_entryid(
 	FOLDER_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	auto pbin = common_util_get_mailbox_guid(psqlite);
-	if (pbin == nullptr)
+	auto guid = common_util_get_mailbox_guid(psqlite);
+	if (!guid)
 		return nullptr;
-	memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
 	unsigned int user_id = 0;
 	if (!mysql_adaptor_get_user_ids(username, &user_id, nullptr, nullptr))
 		return nullptr;
+	tmp_entryid.provider_uid  = *guid;
 	tmp_entryid.folder_dbguid = rop_util_make_user_guid(user_id);
 	tmp_entryid.eid_type      = EITLT_PRIVATE_FOLDER;
 	tmp_entryid.folder_gc     = rop_util_get_gc_array(folder_id);
 	tmp_entryid.pad1[0] = 0;
 	tmp_entryid.pad1[1] = 0;
-	pbin = cu_alloc<BINARY>();
+	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
 	pbin->pv = common_util_alloc(46); /* MS-OXCDATA v19 §2.2.4.1 */
@@ -3951,13 +3955,13 @@ BINARY* common_util_to_private_message_entryid(
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	auto pbin = common_util_get_mailbox_guid(psqlite);
-	if (pbin == nullptr)
+	auto guid = common_util_get_mailbox_guid(psqlite);
+	if (!guid)
 		return nullptr;
-	memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
 	unsigned int user_id = 0;
 	if (!mysql_adaptor_get_user_ids(username, &user_id, nullptr, nullptr))
 		return nullptr;
+	tmp_entryid.provider_uid   = *guid;
 	tmp_entryid.folder_dbguid  = rop_util_make_user_guid(user_id);
 	tmp_entryid.eid_type       = EITLT_PRIVATE_MESSAGE;
 	tmp_entryid.message_dbguid = tmp_entryid.folder_dbguid;
@@ -3967,7 +3971,7 @@ BINARY* common_util_to_private_message_entryid(
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
 	tmp_entryid.pad2[1] = 0;
-	pbin = cu_alloc<BINARY>();
+	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
 	pbin->pv = common_util_alloc(70); /* MS-OXCDATA v19 §2.2.4.2 */
