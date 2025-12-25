@@ -211,20 +211,20 @@ ec_error_t autoreply_make_oofstate(const char *dir, void *&outptr)
  * @fai_size:    Size that the caller should subtract from store size/FAI
  * @msg_count:   Indicator for the caller to update the folder commit time
  */
-static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
+static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
     const char *username, uint64_t folder_id, unsigned int del_flags,
     bool *partial, uint64_t *normal_size, uint64_t *fai_size,
     uint32_t *msg_count, uint32_t *fld_count, mapitime_t cutoff,
     const db_base *dbase, db_conn::NOTIFQ &notifq)
 {
 	uint32_t folder_type = 0;
-	if (!common_util_get_folder_type(db->psqlite, folder_id, &folder_type))
+	if (!common_util_get_folder_type(db.psqlite, folder_id, &folder_type))
 		return false;
 	if (folder_type == FOLDER_SEARCH)
 		/* Search folders do not have real messages */
 		return true;
 
-	auto ret = need_msg_perm_check(db->psqlite, username, folder_id);
+	auto ret = need_msg_perm_check(db.psqlite, username, folder_id);
 	if (ret < 0)
 		return false;
 	auto b_check = ret > 0;
@@ -237,9 +237,9 @@ static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
 		         "ON m.message_id=mp.message_id AND m.is_deleted=1 AND m.parent_fid=%llu AND "
 		         "mp.proptag=%u AND mp.propval<=%llu GROUP BY m.is_associated",
 		         LLU{folder_id}, PR_LAST_MODIFICATION_TIME, LLU{cutoff});
-		if (gx_sql_exec(db->psqlite, qstr) != SQLITE_OK)
+		if (gx_sql_exec(db.psqlite, qstr) != SQLITE_OK)
 			return false;
-		auto stm = gx_sql_prep(db->psqlite, qstr);
+		auto stm = gx_sql_prep(db.psqlite, qstr);
 		if (stm == nullptr)
 			return false;
 		while (stm.step() == SQLITE_ROW) {
@@ -259,7 +259,7 @@ static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
 		         "ON m.message_id=mp.message_id AND m.is_deleted=1 AND m.parent_fid=%llu AND "
 		         "mp.proptag=%u AND mp.propval<=%llu)",
 			 LLU{folder_id}, PR_LAST_MODIFICATION_TIME, LLU{cutoff});
-		if (gx_sql_exec(db->psqlite, qstr) != SQLITE_OK)
+		if (gx_sql_exec(db.psqlite, qstr) != SQLITE_OK)
 			return false;
 	} else {
 		char qstr[257];
@@ -268,12 +268,12 @@ static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
 		         "ON m.message_id=mp.message_id AND m.is_deleted=1 AND m.parent_fid=%llu AND "
 		         "mp.proptag=%u AND mp.propval<=%llu",
 			 LLU{folder_id}, PR_LAST_MODIFICATION_TIME, LLU{cutoff});
-		auto stmt = gx_sql_prep(db->psqlite, qstr);
+		auto stmt = gx_sql_prep(db.psqlite, qstr);
 		if (stmt == nullptr)
 			return false;
 		while (stmt.step() == SQLITE_ROW) {
 			auto msgid = stmt.col_uint64(0);
-			ret = have_delete_perm(db->psqlite, username, folder_id, msgid);
+			ret = have_delete_perm(db.psqlite, username, folder_id, msgid);
 			if (ret < 0)
 				return false;
 			if (ret == 0) {
@@ -288,7 +288,7 @@ static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
 			else if (assoc && fai_size != nullptr)
 				*fai_size += stmt.col_uint64(1);
 			snprintf(qstr, sizeof(qstr), "DELETE FROM messages WHERE message_id=%llu", LLU{msgid});
-			if (gx_sql_exec(db->psqlite, qstr) != SQLITE_OK)
+			if (gx_sql_exec(db.psqlite, qstr) != SQLITE_OK)
 				return false;
 		}
 	}
@@ -299,7 +299,7 @@ static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
 	char qstr[80];
 	snprintf(qstr, sizeof(qstr), "SELECT folder_id,"
 	         " is_deleted FROM folders WHERE parent_id=%llu", LLU{folder_id});
-	auto stm = gx_sql_prep(db->psqlite, qstr);
+	auto stm = gx_sql_prep(db.psqlite, qstr);
 	if (stm == nullptr)
 		return FALSE;
 	while (stm.step() == SQLITE_ROW) {
@@ -321,7 +321,7 @@ static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
 		bool is_del = stm.col_int64(1);
 		if (!is_del)
 			continue;
-		ret = have_delete_perm(db->psqlite, username, subfld);
+		ret = have_delete_perm(db.psqlite, username, subfld);
 		if (ret < 0)
 			return false;
 		if (ret == 0) {
@@ -332,9 +332,9 @@ static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
 			++*fld_count;
 		snprintf(qstr, sizeof(qstr), "DELETE FROM folders "
 		         "WHERE folder_id=%llu", LLU{subfld});
-		if (gx_sql_exec(db->psqlite, qstr) != SQLITE_OK)
+		if (gx_sql_exec(db.psqlite, qstr) != SQLITE_OK)
 			return false;
-		db->notify_folder_deletion(folder_id, subfld, *dbase, notifq);
+		db.notify_folder_deletion(folder_id, subfld, *dbase, notifq);
 	}
 	return true;
 }
@@ -365,7 +365,7 @@ BOOL exmdb_server::purge_softdelete(const char *dir, const char *username,
 
 	auto dbase = db->lock_base_wr();
 	db_conn::NOTIFQ notifq;
-	if (!folder_purge_softdel(db, CP_ACP, username, fid_val, del_flags,
+	if (!folder_purge_softdel(*db, CP_ACP, username, fid_val, del_flags,
 	    &partial, &normal_size, &fai_size, &msg_count, &fld_count, cutoff,
 	    dbase.get(), notifq))
 		return false;

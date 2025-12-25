@@ -804,17 +804,17 @@ void dg_notify(db_conn::NOTIFQ &&notifq)
 	notifq.clear();
 }
 
-static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
+static bool db_engine_search_folder(const char *dir, cpid_t cpid,
     uint64_t search_fid, uint64_t scope_fid, const RESTRICTION *prestriction,
-    db_conn_ptr &pdb)
+    db_conn &db)
 {
 	char sql_string[128];
-	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read); // ends before writes take place
+	auto sql_transact = gx_sql_begin(db.psqlite, txn_mode::read); // ends before writes take place
 	if (!sql_transact)
 		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT is_search "
 	          "FROM folders WHERE folder_id=%llu", LLU{scope_fid});
-	auto pstmt = pdb->prep(sql_string);
+	auto pstmt = db.prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW)
@@ -828,7 +828,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 		          " search_result WHERE folder_id=%llu",
 		          static_cast<unsigned long long>(scope_fid));
 	pstmt.finalize();
-	pstmt = pdb->prep(sql_string);
+	pstmt = db.prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	auto pmessage_ids = eid_array_init();
@@ -852,16 +852,16 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
 		if (g_dbeng_stop)
 			break;
-		auto sql_transact1 = gx_sql_begin(pdb->psqlite, txn_mode::write);
+		auto sql_transact1 = gx_sql_begin(db.psqlite, txn_mode::write);
 		if (!sql_transact1)
 			return false;
-		if (!cu_eval_msg_restriction(pdb->psqlite,
+		if (!cu_eval_msg_restriction(db.psqlite,
 		    cpid, pmessage_ids->pids[i], prestriction))
 			continue;
 		snprintf(sql_string, std::size(sql_string), "REPLACE INTO search_result "
 		         "(folder_id, message_id) VALUES (%llu, %llu)",
 		         LLU{search_fid}, LLU{pmessage_ids->pids[i]});
-		auto ret = pdb->exec(sql_string, SQLEXEC_SILENT_CONSTRAINT);
+		auto ret = db.exec(sql_string, SQLEXEC_SILENT_CONSTRAINT);
 		if (ret == SQLITE_CONSTRAINT)
 			/*
 			 * Search folder is closed (deleted) already, INSERT
@@ -878,13 +878,13 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 		 * folder; exmdb_provider only does a descendant check).
 		 */
 		db_conn::NOTIFQ notifq;
-		auto dbase = pdb->lock_base_wr();
-		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
+		auto dbase = db.lock_base_wr();
+		db.proc_dynamic_event(cpid, dynamic_event::new_msg,
 			search_fid, pmessage_ids->pids[i], 0, *dbase, notifq);
 		/*
 		 * Regular notifications
 		 */
-		pdb->notify_link_creation(search_fid, pmessage_ids->pids[i], *dbase, notifq);
+		db.notify_link_creation(search_fid, pmessage_ids->pids[i], *dbase, notifq);
 		dg_notify(std::move(notifq));
 		dbase.reset();
 	}
@@ -1006,7 +1006,7 @@ static void *sf_popul_thread(void *param)
 				break;
 			if (!db_engine_search_folder(psearch->dir.c_str(),
 			    psearch->cpid, psearch->folder_id,
-			    pfolder_ids->pids[i], psearch->prestriction, pdb))
+			    pfolder_ids->pids[i], psearch->prestriction, *pdb))
 				break;
 		}
 		if (g_dbeng_stop)
