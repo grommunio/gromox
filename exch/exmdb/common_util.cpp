@@ -2136,15 +2136,17 @@ static GP_RESULT gp_fallbackprop(mapi_object_type table_type, uint64_t objid,
 	return GP_UNHANDLED;
 }
 
+/**
+ * @pv: caller-determined target slot where to write propval
+ */
 static GP_RESULT cu_get_properties1(mapi_object_type table_type, uint64_t id,
-    cpid_t cpid, sqlite3 *psqlite, proptag_t tag, TPROPVAL_ARRAY *ppropvals)
+    cpid_t cpid, sqlite3 *psqlite, proptag_t tag, TAGGED_PROPVAL &pv)
 {
 	if (PROP_TYPE(tag) == PT_OBJECT &&
 	    (table_type != MAPI_ATTACH || tag != PR_ATTACH_DATA_OBJ))
 		return GP_SKIP;
 
 	/* Computed property (if): generate value */
-	auto &pv = ppropvals->ppropval[ppropvals->count];
 	auto ret = gp_spectableprop(table_type, tag, pv, psqlite, id, cpid);
 	if (ret != GP_UNHANDLED)
 		return ret;
@@ -2173,18 +2175,17 @@ static GP_RESULT cu_get_properties1(mapi_object_type table_type, uint64_t id,
 
 	/* Transfer from sqlite to memory */
 	ret = GP_ERR;
-	auto pvalue = gp_fetch(psqlite, pstmt, proptype, cpid, ret);
-	if (pvalue == nullptr)
+	pv.pvalue = gp_fetch(psqlite, pstmt, proptype, cpid, ret);
+	if (pv.pvalue == nullptr)
 		return ret;
 
 	/* Fix up property values */
-	auto bin = static_cast<BINARY *>(pvalue);
+	auto bin = static_cast<BINARY *>(pv.pvalue);
 	if (tag == PR_ENTRYID && bin->cb == 0) {
 		bin->cb = std::size(empty_entryid);
 		bin->pv = deconst(empty_entryid);
 	}
-	ppropvals->emplace_back(tag, pvalue);
-	return GP_SKIP; /* emplace_back already did the GP_ADV part */
+	return GP_ADV;
 }
 
 bool cu_get_properties(mapi_object_type table_type, uint64_t objid, cpid_t cpid,
@@ -2196,7 +2197,7 @@ bool cu_get_properties(mapi_object_type table_type, uint64_t objid, cpid_t cpid,
 		return FALSE;
 	for (size_t i = 0; i < pproptags.size(); ++i) {
 		auto ret = cu_get_properties1(table_type, objid, cpid, psqlite,
-		           pproptags[i], ppropvals);
+		           pproptags[i], ppropvals->ppropval[ppropvals->count]);
 		if (ret == GP_ADV)
 			++ppropvals->count;
 		else if (ret == GP_ERR)
