@@ -163,6 +163,15 @@ static constexpr char tbl_msgprops_4[] =
 static constexpr char tbl_msgprops_move4[] =
 "INSERT INTO message_properties SELECT message_id, proptag, propval FROM u0";
 
+static constexpr char tbl_msgprops_25[] =
+"CREATE TABLE message_properties ("
+"  message_id INTEGER NOT NULL,"
+"  proptag INTEGER NOT NULL,"
+"  propval BLOB NOT NULL,"
+"  FOREIGN KEY (message_id) REFERENCES messages (message_id) ON DELETE CASCADE ON UPDATE CASCADE);"
+"CREATE INDEX mid_properties_index4 ON message_properties(message_id);"
+"CREATE UNIQUE INDEX message_property_index4 ON message_properties(message_id, proptag);";
+
 static constexpr char tbl_msgchgs_0[] =
 "CREATE TABLE message_changes ("
 "  message_id INTEGER NOT NULL,"
@@ -386,6 +395,8 @@ tbl_addmsgtimeindex_23[] =
 static constexpr char tbl_mboxpermissionindex_24[] =
 /* this helps determining mbox perm (bitwise-OR of all folders) */
 "CREATE UNIQUE INDEX folder_username_index2 ON permissions(username, folder_id);";
+static constexpr char tbl_droppropvalindex_25[] =
+"DROP INDEX proptag_propval_index4";
 
 static constexpr char tbl_pub_folders_0[] =
 "CREATE TABLE folders ("
@@ -467,7 +478,7 @@ static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"folder_properties", tbl_fldprops_3},
 	{"permissions", tbl_perms_24},
 	{"rules", tbl_rules_0},
-	{"message_properties", tbl_msgprops_4},
+	{"message_properties", tbl_msgprops_25},
 	{"message_changes", tbl_msgchgs_0},
 	{"recipients", tbl_rcpts_0},
 	{"recipients_properties", tbl_rcptprops_5},
@@ -514,7 +525,7 @@ static constexpr tbl_init tbl_pub_init_top[] = {
 	{"folder_properties", tbl_fldprops_3},
 	{"permissions", tbl_perms_24},
 	{"rules", tbl_rules_0},
-	{"message_properties", tbl_msgprops_4},
+	{"message_properties", tbl_msgprops_25},
 	{"message_changes", tbl_msgchgs_0},
 	{"recipients", tbl_rcpts_0},
 	{"recipients_properties", tbl_rcptprops_5},
@@ -655,6 +666,7 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{22, tbl_msgtimeindex_22},
 	{23, tbl_addmsgtimeindex_23},
 	{24, tbl_mboxpermissionindex_24},
+	{25, tbl_droppropvalindex_25},
 	/* advance schema numbers in lockstep with public stores */
 	TABLE_END,
 };
@@ -676,6 +688,7 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 	{22, tbl_msgtimeindex_22},
 	{23, tbl_addmsgtimeindex_23},
 	{24, tbl_mboxpermissionindex_24},
+	{25, tbl_droppropvalindex_25},
 	/* advance schema numbers in lockstep with private stores */
 	TABLE_END,
 };
