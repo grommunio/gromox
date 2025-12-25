@@ -287,6 +287,11 @@ static ustat count_dirs(const std::string &path)
 	return out;
 }
 
+static uint64_t subabs(uint64_t a, uint64_t b)
+{
+	return a >= b ? a - b : b - a;
+}
+
 int main(int argc, char **argv) try
 {
 	if (argc < 2) {
@@ -345,9 +350,9 @@ int main(int argc, char **argv) try
 	printf("%-30s  %6llu MB  %6llu MB\n", "... Bodies", msg_ic.du.mb(), msg_ic.du.pmb());
 	printf("%-30s  %6llu MB  %6llu MB\n", "... Attachments", atx_ic.du.mb(), atx_ic.du.pmb());
 	printf("%-30s  %6llu MB  %6llu MB\n", "... FS directories", cid_dirs.mb(), cid_dirs.pmb());
-	printf("%-30s  %6.1f %%   %6.1f %%\n\n", "NTS deviation",
-		100 * ratio(nts - du.size, du.size),
-		100 * ratio(nts - du.pad, du.pad));
+	printf("%-30s  %6.1f %%   %6.1f %%\n\n", "NTS error",
+		100 * ratio(subabs(nts, du.size), du.size),
+		100 * ratio(subabs(nts, du.pad), du.pad));
 
 	du += rfc.total;
 	printf("%-30s  %6llu MB   %6llu MB\n", "Total MAPI+RFC", du.mb(), du.pmb());
