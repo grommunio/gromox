@@ -3830,13 +3830,12 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 	auto cl_0 = HX::make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	auto mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
-	auto optim = pdb->begin_optim();
-	if (optim == nullptr)
+	if (!pdb->begin_optim())
 		return FALSE;
+	auto cl_1 = HX::make_scope_exit([&]() { pdb->end_optim(); });
 	auto ret = message_read_message(*pdb, cpid, mid_val, ppmsgctnt);
 	if (!ret)
 		return FALSE;
-	optim.reset();
 	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }
 

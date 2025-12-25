@@ -82,7 +82,6 @@ enum GP_RESULT { GP_ADV, GP_UNHANDLED, GP_SKIP, GP_ERR };
 static constexpr uint8_t empty_entryid[20]{};
 
 static unsigned int g_max_msg, g_cid_use_xxhash = 1;
-static thread_local prepared_statements *g_opt_key;
 
 namespace exmdb {
 
@@ -419,20 +418,11 @@ bool prepared_statements::begin(sqlite3 *psqlite)
 	return true;
 }
 
-prepared_statements::~prepared_statements()
-{
-	if (g_opt_key == this)
-		g_opt_key = nullptr;
-}
-
 std::unique_ptr<prepared_statements> db_conn::begin_optim() try
 {
 	auto op = std::make_unique<prepared_statements>();
 	if (!op->begin(psqlite))
 		return nullptr;
-	if (g_opt_key != nullptr)
-		mlog(LV_ERR, "E-2359: overlapping optimize_statements");
-	g_opt_key = op.get();
 	return op;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
@@ -442,13 +432,13 @@ std::unique_ptr<prepared_statements> db_conn::begin_optim() try
 namespace exmdb {
 
 static sqlite3_stmt *
-cu_get_optimize_stmt(const db_conn &, mapi_object_type table_type, bool b_normal)
+cu_get_optimize_stmt(const db_conn &db, mapi_object_type table_type, bool b_normal)
 {
 	if (table_type != MAPI_MESSAGE && table_type != MAPI_MAILUSER)
 		return NULL;	
-	auto op = g_opt_key;
-	if (op == nullptr)
-		return NULL;
+	if (db.m_prepstm == nullptr)
+		return nullptr;
+	auto op = db.m_prepstm.get();
 	if (table_type == MAPI_MESSAGE)
 		return b_normal ? op->msg_norm : op->msg_str;
 	return b_normal ? op->rcpt_norm : op->rcpt_str;

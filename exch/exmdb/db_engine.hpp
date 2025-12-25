@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <shared_mutex>
 #include <sqlite3.h>
 #include <string>
@@ -98,9 +99,7 @@ struct instance_node {
 };
 
 struct prepared_statements {
-	~prepared_statements();
 	bool begin(sqlite3 *);
-
 	gromox::xstmt msg_norm, msg_str, rcpt_norm, rcpt_str;
 };
 
@@ -206,6 +205,7 @@ struct db_conn {
 	static void commit_batch_mode_release(std::optional<db_conn> &&pdb, db_base_wr_ptr &&base);
 	void cancel_batch_mode(db_base &);
 	std::unique_ptr<prepared_statements> begin_optim();
+	void end_optim() { m_prepstm.reset(); }
 
 	gromox::xstmt prep(const char *q) const { return gromox::gx_sql_prep(psqlite, q); }
 	gromox::xstmt prep(const std::string &q) const { return gromox::gx_sql_prep(psqlite, q.c_str()); }
@@ -218,6 +218,7 @@ struct db_conn {
 	inline uint32_t next_table_id() { return ++m_base->tables.last_id; }
 
 	sqlite3 *psqlite = nullptr, *m_sqlite_eph = nullptr;
+	std::unique_ptr<prepared_statements> m_prepstm;
 
 	private:
 	db_base *m_base = nullptr;

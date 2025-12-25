@@ -469,9 +469,9 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
-	auto optim = pdb->begin_optim();
-	if (optim == nullptr)
+	if (!pdb->begin_optim())
 		return FALSE;
+	auto cl_1 = HX::make_scope_exit([&]() { pdb->end_optim(); });
 	auto ret = instance_load_message(*pdb, mid_val, &pinstance->last_id,
 	           reinterpret_cast<MESSAGE_CONTENT **>(&pinstance->pcontent));
 	if (!ret)

@@ -1708,9 +1708,9 @@ static bool query_content(db_conn &db, cpid_t cpid, uint32_t table_id,
 	auto sql_transact_eph = gx_sql_begin(db.m_sqlite_eph, txn_mode::read);
 	if (!sql_transact_eph)
 		return false;
-	auto optim = db.begin_optim();
-	if (optim == nullptr)
+	if (!db.begin_optim())
 		return FALSE;
+	auto cl_0 = HX::make_scope_exit([&]() { db.end_optim(); });
 	while (pstmt.step() == SQLITE_ROW) {
 		auto inst_id = pstmt.col_uint64(3);
 		uint32_t row_type = pstmt.col_uint64(4);
@@ -1752,7 +1752,6 @@ static bool query_content(db_conn &db, cpid_t cpid, uint32_t table_id,
 		}
 		++pset->count;
 	}
-	optim.reset();
 	sql_transact_eph = xtransaction();
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
@@ -2192,9 +2191,9 @@ static bool match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 	auto sql_transact_eph = gx_sql_begin(db.m_sqlite_eph, txn_mode::read);
 	if (!sql_transact_eph)
 		return false;
-	auto optim = db.begin_optim();
-	if (optim == nullptr)
+	if (!db.begin_optim())
 		return FALSE;
+	auto cl_0 = HX::make_scope_exit([&]() { db.end_optim(); });
 	while (pstmt.step() == SQLITE_ROW) {
 		CONTENT_ROW_PARAM content_param{db};
 
@@ -2249,7 +2248,6 @@ static bool match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		}
 		break;
 	}
-	optim.reset();
 	sql_transact_eph = xtransaction();
 	if (sql_transact.commit() != SQLITE_OK)
 		return false;
