@@ -1,5 +1,5 @@
-Gromox 3.2.229
-==============
+Gromox 3.3 (2025-12-27)
+=======================
 
 Enhancements:
 
@@ -34,6 +34,8 @@ Fixes:
 * mapi_lib: repair botched html_to_rtf with non-UTF-8 HTML input
 * rtf_to_html and html_to_plain misconverted U+007F,U+07FF,U+7FFF,U+7FFFF to
   faulty UTF-8, which has been fixed
+* mbsize: NTS error rate computation had an unsigned underflow and was
+  misreported
 
 Changes:
 
