@@ -80,14 +80,13 @@ static constexpr HXoption g_options_table[] = {
 
 void command_overview()
 {
-	fprintf(stderr, "Commands:\n\tcgkreset clear-photo clear-profile clear-rwz delmsg "
-		"echo-maildir echo-username "
-		"emptyfld freeze get-freebusy get-photo get-websettings "
-		"get-websettings-persistent "
-		"get-websettings-recipients ping "
+	fprintf(stderr, "Commands:\n\tcgkreset clear-photo clear-profile "
+		"clear-rwz delmsg echo-maildir echo-username emptyfld "
+		"freeze get-freebusy get-photo get-websettings "
+		"get-websettings-persistent get-websettings-recipients ping "
 		"purge-datafiles purge-softdelete recalc-sizes set-locale "
 		"set-photo set-websettings set-websettings-persistent "
-		"set-websettings-recipients thaw unload vacuum\n");
+		"set-websettings-recipients sync-midb thaw unload vacuum\n");
 	fprintf(stderr, "Command chaining: ( command1 c1args... ) ( command2 c2args... )...\n");
 }
 
