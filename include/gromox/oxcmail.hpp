@@ -49,6 +49,7 @@ struct GX_EXPORT oxcmail_converter {
 	GET_PROPIDS get_propids = nullptr;
 	GET_PROPNAME get_propname = nullptr;
 	oxcmail_body body_type = oxcmail_body::plain_and_html;
+	bool add_rcvd_timestamp = false;
 };
 
 struct GX_EXPORT oxcical_converter {

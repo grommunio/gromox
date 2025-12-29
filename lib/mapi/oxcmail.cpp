@@ -2522,6 +2522,11 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 /*	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &mime_enum.nttime_stamp) != ecSuccess */)
 		return imp_null;
 
+	if (add_rcvd_timestamp &&
+	    !pmsg->proplist.has(PR_MESSAGE_DELIVERY_TIME) &&
+	    pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &mime_enum.nttime_stamp) != ecSuccess)
+		return imp_null;
+
 	auto head_ct = phead->content_type;
 	if (strcasecmp(head_ct, "application/ms-tnef") == 0 &&
 	    tnef_vfy_get_field(phead, tmp_buff, std::size(tmp_buff))) {

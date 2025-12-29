@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -3722,6 +3722,8 @@ static ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 				php_error_docref(nullptr, E_WARNING, "imtomapi: options array ought to use string keys");
 			else if (strcmp(key->val, "parse_smime_signed") == 0)
 				mxf_flags |= MXF_UNWRAP_SMIME_CLEARSIGNED;
+			else if (strcmp(key->val, "add_rcvd_timestamp") == 0)
+				mxf_flags |= MXF_ADD_RCVD_TIMESTAMP;
 			else
 				php_error_docref(nullptr, E_WARNING, "Unknown imtomapi option: \"%s\"", key->val);
 		} ZEND_HASH_FOREACH_END();

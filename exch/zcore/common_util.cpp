@@ -1762,6 +1762,8 @@ std::unique_ptr<message_content, mc_delete> cu_rfc822_to_message(store_object *p
 	oxcmail_converter cvt;
 	cvt.alloc = common_util_alloc;
 	cvt.get_propids = common_util_get_propids_create;
+	if (mxf_flags & MXF_ADD_RCVD_TIMESTAMP)
+		cvt.add_rcvd_timestamp = true;
 	return cvt.inet_to_mapi(imail);
 }
 

@@ -1157,4 +1157,5 @@ using zcresp_logon_np = zcresp_logon;
 
 enum {
 	MXF_UNWRAP_SMIME_CLEARSIGNED = 0x1U,
+	MXF_ADD_RCVD_TIMESTAMP = 0x2U,
 };
