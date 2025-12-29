@@ -109,12 +109,17 @@ static int fetch_as_instance(const char *idstr, std::string &log_id,
 {
 	char *sep = nullptr;
 	eid_t folder_id(1, strtoull(idstr, &sep, 0));
-	if (sep == nullptr || *sep != ':') {
-		fprintf(stderr, "Unparsable: \"%s\"\n", idstr);
+	if (sep == nullptr || sep == idstr || *sep != ':') {
+		fprintf(stderr, "Could not parse part of \"%s\" as a folder ID\n", idstr);
 		return -1;
 	}
 	log_id = idstr;
-	msg_id = eid_t(1, strtoull(sep + 1, nullptr, 0));
+	idstr  = sep + 1;
+	msg_id = eid_t(1, strtoull(idstr, &sep, 0));
+	if (sep == nullptr || sep == idstr || *sep != '\0') {
+		fprintf(stderr, "Could not parse \"%s\" as a message ID\n", idstr);
+		return -1;
+	}
 	uint32_t inst_id = 0;
 	ctnt = message_content_init();
 	if (ctnt == nullptr)
@@ -136,7 +141,12 @@ static int fetch_as_instance(const char *idstr, std::string &log_id,
 static int fetch_message(const char *idstr, std::string &log_id, eid_t &msg_id,
     message_content *&ctnt)
 {
-	msg_id = eid_t(1, strtoull(idstr, nullptr, 0));
+	char *sep = nullptr;
+	msg_id = eid_t(1, strtoull(idstr, &sep, 0));
+	if (sep == nullptr || sep == idstr || *sep != '\0') {
+		fprintf(stderr, "Could not parse \"%s\" as a message ID\n", idstr);
+		return -1;
+	}
 	log_id = g_storedir_s + ":m" + std::to_string(msg_id);
 	if (!exmdb_client_remote::read_message(g_storedir, nullptr, CP_UTF8,
 	    msg_id, &ctnt)) {
@@ -450,7 +460,11 @@ static int do_item(const char *idstr, const parent_desc &pd)
 	if (eid != 0)
 		return do_folder(eid, pd);
 	if (*idstr == 'f') {
-		eid = rop_util_make_eid_ex(1, strtoull(&idstr[1], nullptr, 0));
+		eid = gi_lookup_eid_any_way(g_storedir, idstr + 1);
+		if (eid == 0) {
+			fprintf(stderr, "Could not parse part of \"%s\" as a folder ID\n", idstr + 1);
+			return -1;
+		}
 		return do_folder(eid, pd);
 	}
 

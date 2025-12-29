@@ -30,7 +30,8 @@ library libpff has only implemented reading.
 .PP
 Folders can be selected by symbolic name or by folder path
 (see gromox\-mbop(8) section "Folder specification" for that).
-To select a folder by numeric ID, use the f prefix, e.g. \fBf13\fP.
+To select a folder by numeric ID, use the f prefix, e.g. \fBf13\fP or
+\fBf0xd\fP.
 To select a message by numeric ID, use the ID \fB262145\fP or \fB0x10001\fP.
 The syntax \fB13:262145\fP reads a message using the Instance API (i.e. using a
 copy-on-write object) and validates that the message is indeed in that folder;
