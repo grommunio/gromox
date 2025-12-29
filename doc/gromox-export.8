@@ -14,7 +14,7 @@ gromox\-export \(em Utility to export Gromox messages to various formats
 [\fIfolder_id\fP\fB:\fP]\fImessage_id\fP
 .PP
 \fBgromox\-exm2mt \-u\fP \fIuser@domain.example\fP
-[\fB\-rs\fP]
+[\fB\-ars\fP]
 {\fIfolder_spec\fP|\fBf\fP\fIfolder_id\fP|[\fIfolder_id\fP\fB:\fP]\fImessage_id\fP}... >file.mt
 .PP
 \fBgromox\-exm2tnef \-u\fP \fIuser@domain.example\fP
@@ -45,6 +45,12 @@ If set to 1, allday events are emitted as so-called floating dates.
 If set to 0 however, allday events are emitted as precise-time events.
 .br
 Default: 1
+.TP
+\fB\-a\fP
+Include Folder Associated Information (FAI), a.k.a. MAPI_ASSOCIATED messages in
+the export as well. (PST export from Outlook would omit them; hence this is
+also a separate option for gromox-export.)
+.TP
 \fB\-p\fP
 Show properties in detail (enhances \fB\-t\fP).
 .TP
@@ -71,7 +77,7 @@ to \fB\-p\fP, \fB\-t\fP or \fB\-v\fP). 1=crit, 2=error, 3=warn, 4=notice,
 Default: \fI4\fP (notice)
 .SH Examples
 .IP \(bu 4
-Export entire mailbox: gromox\-export \-u user@example.com \-r / >dump.mt
+Export entire mailbox: gromox\-export \-u user@example.com \-ar / >dump.mt
 .IP \(bu 4
 Export most of the mailbox (as Outlook would): gromox\-export \-u u@e.xz \-r
 IPM_SUBTREE >dump.mt

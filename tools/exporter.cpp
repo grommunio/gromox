@@ -49,10 +49,11 @@ enum {
 static std::shared_ptr<config_file> g_config_file;
 static const char *g_username;
 static unsigned int g_export_mode = EXPORT_MAIL, g_mlog_level = MLOG_DEFAULT_LEVEL;
-static unsigned int g_recursive, g_splice;
+static unsigned int g_recursive, g_associated, g_splice;
 static int g_allday_mode = -1;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'Y', HXTYPE_INT, &g_allday_mode, nullptr, nullptr, 0, "Allday emission mode (default=-1, YMDHMS=0, YMD=1)"},
+	{nullptr, 'a', HXTYPE_NONE, &g_associated, nullptr, nullptr, 0, "Include Associated Messages (FAI) in the export"},
 	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 'r', HXTYPE_NONE, &g_recursive, {}, {}, 0, "Export folders recursively"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, {}, {}, 0, "Splice objects into existing store hierarchy"},
@@ -404,10 +405,12 @@ static int do_folder(eid_t folder_id, const parent_desc &pd)
 		fprintf(stderr, "get_contents RPC failed\n");
 		return -1;
 	}
-	err = select_contents_from_folder(folder_id, TABLE_FLAG_ASSOCIATED, nullptr, chosen);
-	if (err != ecSuccess) {
-		fprintf(stderr, "get_contents RPC failed\n");
-		return -1;
+	if (g_associated) {
+		err = select_contents_from_folder(folder_id, TABLE_FLAG_ASSOCIATED, nullptr, chosen);
+		if (err != ecSuccess) {
+			fprintf(stderr, "get_contents RPC failed\n");
+			return -1;
+		}
 	}
 	std::string log_id_unused;
 	for (auto msg_id : chosen) {
