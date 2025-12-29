@@ -189,7 +189,7 @@ instance_node &instance_node::operator=(instance_node &&o) noexcept
 	return *this;
 }
 
-static BOOL instance_load_message(sqlite3 *psqlite,
+static bool instance_load_message(db_conn &db,
 	uint64_t message_id, uint32_t *plast_id,
 	MESSAGE_CONTENT **ppmsgctnt)
 {
@@ -197,6 +197,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT message_id FROM"
 	          " messages WHERE message_id=%llu", LLU{message_id});
+	auto &psqlite = db.psqlite;
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -293,7 +294,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		default: {
 			void *newval = nullptr;
 			if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
-			    psqlite, tag, &newval))
+			    db, tag, &newval))
 				return false;
 			if (newval == nullptr)
 				continue;
@@ -326,7 +327,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		for (auto tag : rcpt_tags) {
 			void *newval = nullptr;
 			if (!cu_get_property(MAPI_MAILUSER, rcpt_id, CP_ACP,
-			    psqlite, tag, &newval))
+			    db, tag, &newval))
 				return false;
 			if (newval == nullptr)
 				continue;
@@ -384,7 +385,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			default: {
 				void *newval = nullptr;
 				if (!cu_get_property(MAPI_ATTACH, attachment_id,
-				    CP_ACP, psqlite, tag, &newval))
+				    CP_ACP, db, tag, &newval))
 					return false;
 				if (newval == nullptr)
 					continue;
@@ -399,7 +400,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			uint64_t message_id1 = pstmt1.col_uint64(0);
 			uint32_t last_id = 0;
 			message_content *pmsgctnt1 = nullptr;
-			if (!instance_load_message(psqlite, message_id1,
+			if (!instance_load_message(db, message_id1,
 			    &last_id, &pmsgctnt1))
 				return FALSE;
 			pattachment->set_embedded_internal(pmsgctnt1);
@@ -471,7 +472,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	auto optim = pdb->begin_optim();
 	if (optim == nullptr)
 		return FALSE;
-	auto ret = instance_load_message(pdb->psqlite, mid_val, &pinstance->last_id,
+	auto ret = instance_load_message(*pdb, mid_val, &pinstance->last_id,
 	           reinterpret_cast<MESSAGE_CONTENT **>(&pinstance->pcontent));
 	if (!ret)
 		return FALSE;
@@ -625,7 +626,7 @@ BOOL exmdb_server::reload_message_instance(const char *dir,
 		if (lnum == nullptr)
 			return FALSE;
 		last_id = 0;
-		if (!instance_load_message(pdb->psqlite, *lnum, &last_id, &pmsgctnt))
+		if (!instance_load_message(*pdb, *lnum, &last_id, &pmsgctnt))
 			return FALSE;	
 		if (NULL == pmsgctnt) {
 			*pb_result = FALSE;

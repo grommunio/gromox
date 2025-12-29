@@ -40,6 +40,7 @@ enum {
 };
 
 struct MAIL;
+struct db_conn;
 
 namespace exmdb {
 
@@ -82,15 +83,15 @@ BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
 extern bool cu_get_proptags(mapi_object_type, uint64_t id, sqlite3 *, std::vector<gromox::proptag_t> &);
 BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 	uint16_t replid, BOOL *pb_found, GUID *pguid);
-extern BOOL cu_get_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, gromox::proptag_t, void **out);
-extern bool cu_get_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, proptag_cspan, TPROPVAL_ARRAY *);
+extern bool cu_get_property(mapi_object_type, uint64_t id, cpid_t, const db_conn &, gromox::proptag_t, void **out);
+extern bool cu_get_properties(mapi_object_type, uint64_t id, cpid_t, const db_conn &, proptag_cspan, TPROPVAL_ARRAY *);
 extern BOOL cu_set_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, gromox::proptag_t, const void *data, BOOL *result);
 extern BOOL cu_set_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
 extern bool cu_remove_properties(mapi_object_type, uint64_t id, sqlite3 *, proptag_cspan);
 extern BOOL common_util_get_rule_property(uint64_t rule_id, sqlite3 *, gromox::proptag_t, void **val);
 extern bool cu_get_permission_property(int64_t member_id, sqlite3 *, gromox::proptag_t, void **outval);
 BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite);
-extern bool cu_check_msgsize_overflow(sqlite3 *, gromox::proptag_t);
+extern bool cu_check_msgsize_overflow(const db_conn &, gromox::proptag_t);
 extern uint32_t cu_folder_unread_count(sqlite3 *psqlite, uint64_t folder_id, unsigned int flags = 0);
 extern BOOL common_util_get_folder_type(sqlite3 *, uint64_t folder_id, uint32_t *type, const char *dir = nullptr);
 uint64_t common_util_get_folder_parent_fid(
@@ -100,9 +101,7 @@ BOOL common_util_get_folder_by_name(
 	const char *str_name, uint64_t *pfolder_id);
 BOOL common_util_check_message_associated(
 	sqlite3 *psqlite, uint64_t message_id);
-BOOL common_util_get_message_flags(sqlite3 *psqlite,
-	uint64_t message_id, BOOL b_native,
-	uint32_t **ppmessage_flags);
+extern bool cu_get_msg_flags(const db_conn &, uint64_t msg_id, bool b_native, uint32_t **out);
 extern std::string cu_cid_path(const char *dir, const char *cid, unsigned int type);
 void common_util_set_message_read(sqlite3 *psqlite,
 	uint64_t message_id, uint8_t is_read);
@@ -120,17 +119,16 @@ extern BOOL cu_is_descendant_folder(sqlite3 *, uint64_t inner_fid, uint64_t oute
 BOOL common_util_get_message_parent_folder(sqlite3 *psqlite,
 	uint64_t message_id, uint64_t *pfolder_id);
 extern bool cu_load_search_scopes(sqlite3 *, uint64_t folder_id, std::vector<uint64_t> &src_fo);
-extern bool cu_eval_folder_restriction(sqlite3 *, uint64_t folder_id, const RESTRICTION *);
-extern bool cu_eval_msg_restriction(sqlite3 *, cpid_t, uint64_t msgid, const RESTRICTION *);
+extern bool cu_eval_folder_restriction(const db_conn &, uint64_t folder_id, const RESTRICTION *);
+extern bool cu_eval_msg_restriction(const db_conn &, cpid_t, uint64_t msgid, const RESTRICTION *);
 BOOL common_util_check_search_result(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t message_id, BOOL *pb_exist);
 BOOL common_util_get_mid_string(sqlite3 *psqlite,
 	uint64_t message_id, char **ppmid_string);
 BOOL common_util_set_mid_string(sqlite3 *psqlite,
 	uint64_t message_id, const char *pmid_string);
-BOOL common_util_check_message_owner(sqlite3 *psqlite,
-	uint64_t message_id, const char *username, BOOL *pb_owner);
-extern BOOL cu_copy_message(sqlite3 *, uint64_t msg_id, uint64_t folder_id, uint64_t *dst_mid, BOOL *result, uint32_t *msg_size);
+extern bool cu_msg_test_owner(const db_conn &, uint64_t msg_id, const char *username, BOOL *status);
+extern bool cu_copy_message(const db_conn &, uint64_t msg_id, uint64_t folder_id, uint64_t *dst_mid, BOOL *result, uint32_t *msg_size);
 BOOL common_util_get_named_propids(sqlite3 *psqlite,
 	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids);
@@ -152,7 +150,7 @@ extern uint32_t common_util_calculate_message_size(const message_content *);
 extern uint32_t common_util_calculate_attachment_size(const attachment_content *);
 extern const char *exmdb_rpc_idtoname(exmdb_callid);
 extern int need_msg_perm_check(sqlite3 *, const char *user, uint64_t fid);
-extern int have_delete_perm(sqlite3 *, const char *user, uint64_t fid, uint64_t mid = 0);
+extern int have_delete_perm(const db_conn &, const char *user, uint64_t fid, uint64_t mid = 0);
 extern bool timeindex_delete(sqlite3 *db, uint64_t fid, uint64_t mid);
 extern bool timeindex_insert(sqlite3 *db, uint64_t fid, uint64_t mid);
 extern bool timeindex_refresh(sqlite3 *db, uint64_t fid, uint64_t mid);

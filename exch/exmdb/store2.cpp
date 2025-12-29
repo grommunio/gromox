@@ -138,12 +138,12 @@ int need_msg_perm_check(sqlite3 *db, const char *user, uint64_t fid)
 	return -1;
 }
 
-int have_delete_perm(sqlite3 *db, const char *user, uint64_t fid, uint64_t mid)
+int have_delete_perm(const db_conn &db, const char *user, uint64_t fid, uint64_t mid)
 {
 	if (user == STORE_OWNER_GRANTED)
 		return true;
 	uint32_t perms;
-	if (!cu_get_folder_permission(db, fid, user, &perms))
+	if (!cu_get_folder_permission(db.psqlite, fid, user, &perms))
 		return -1;
 	if (mid == 0)
 		/* Whether the folder itself may be deleted */
@@ -155,7 +155,7 @@ int have_delete_perm(sqlite3 *db, const char *user, uint64_t fid, uint64_t mid)
 	if (!(perms & frightsDeleteOwned))
 		return false;
 	BOOL owner = false;
-	if (!common_util_check_message_owner(db, mid, user, &owner))
+	if (!cu_msg_test_owner(db, mid, user, &owner))
 		return -1;
 	return !!owner;
 }
@@ -273,7 +273,7 @@ static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
 			return false;
 		while (stmt.step() == SQLITE_ROW) {
 			auto msgid = stmt.col_uint64(0);
-			ret = have_delete_perm(db.psqlite, username, folder_id, msgid);
+			ret = have_delete_perm(db, username, folder_id, msgid);
 			if (ret < 0)
 				return false;
 			if (ret == 0) {
@@ -321,7 +321,7 @@ static bool folder_purge_softdel(db_conn &db, cpid_t cpid,
 		bool is_del = stm.col_int64(1);
 		if (!is_del)
 			continue;
-		ret = have_delete_perm(db.psqlite, username, subfld);
+		ret = have_delete_perm(db, username, subfld);
 		if (ret < 0)
 			return false;
 		if (ret == 0) {

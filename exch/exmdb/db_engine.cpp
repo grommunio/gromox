@@ -855,7 +855,7 @@ static bool db_engine_search_folder(const char *dir, cpid_t cpid,
 		auto sql_transact1 = gx_sql_begin(db.psqlite, txn_mode::write);
 		if (!sql_transact1)
 			return false;
-		if (!cu_eval_msg_restriction(db.psqlite,
+		if (!cu_eval_msg_restriction(db,
 		    cpid, pmessage_ids->pids[i], prestriction))
 			continue;
 		snprintf(sql_string, std::size(sql_string), "REPLACE INTO search_result "
@@ -1260,7 +1260,7 @@ static void dbeng_dynevt_1(db_conn &db, cpid_t cpid, uint64_t id1,
 				mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 			continue;
 		}
-		if (!cu_eval_msg_restriction(pdb->psqlite,
+		if (!cu_eval_msg_restriction(db,
 		    cpid, message_id, pdynamic->prestriction))
 			return;
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO search_result "
@@ -1304,7 +1304,7 @@ static void dbeng_dynevt_2(db_conn &db, cpid_t cpid, dynamic_event event_type,
 		}
 		if (b_exist)
 			return;
-		if (!cu_eval_msg_restriction(pdb->psqlite,
+		if (!cu_eval_msg_restriction(db,
 		    cpid, id2, pdynamic->prestriction))
 			return;
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO search_result "
@@ -1342,7 +1342,7 @@ static void dbeng_dynevt_2(db_conn &db, cpid_t cpid, dynamic_event event_type,
 			return;
 		}
 		if (cu_eval_msg_restriction(
-			pdb->psqlite, cpid, id2, pdynamic->prestriction)) {
+		    db, cpid, id2, pdynamic->prestriction)) {
 			if (b_exist) {
 				dbeng_notify_cttbl_modify_row(db, pdynamic->folder_id, id2, dbase, notifq);
 				pdb->notify_folder_modification(
@@ -1640,7 +1640,7 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 	uint8_t *pread_byte = nullptr;
 	void *pvalue0;
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
-	    pdb->psqlite, PR_ASSOCIATED, &pvalue0))
+	    db, PR_ASSOCIATED, &pvalue0))
 		return;	
 	char qstr[256];
 	snprintf(qstr, std::size(qstr), "SELECT is_deleted FROM messages WHERE message_id=%llu", LLU{message_id});
@@ -1669,7 +1669,7 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 		if (dbase.tables.b_batch && ptable->b_hint)
 			continue;
 		if (ptable->prestriction != nullptr &&
-		    !cu_eval_msg_restriction(pdb->psqlite,
+		    !cu_eval_msg_restriction(db,
 		    ptable->cpid, message_id, ptable->prestriction))
 			continue;
 		if (dbase.tables.b_batch) {
@@ -1741,7 +1741,7 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 			for (size_t i = 0; i < ptable->psorts->count; ++i) {
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (!cu_get_property(MAPI_MESSAGE, message_id,
-				    ptable->cpid, pdb->psqlite, propvals[i].proptag,
+				    ptable->cpid, db, propvals[i].proptag,
 				    &propvals[i].pvalue))
 					return;
 			}
@@ -1763,7 +1763,7 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 				for (size_t i = 0; i < ptable->psorts->count; ++i) {
 					void *pvalue = nullptr;
 					if (!cu_get_property(MAPI_MESSAGE, inst_id1,
-					    ptable->cpid, pdb->psqlite,
+					    ptable->cpid, db,
 					    propvals[i].proptag, &pvalue))
 						return;
 					auto result = db_engine_compare_propval(ptable->psorts->psort[i].type, propvals[i].pvalue, pvalue);
@@ -1844,7 +1844,7 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 		}
 		if (NULL == pread_byte) {
 			if (!cu_get_property(MAPI_MESSAGE,
-			    message_id, ptable->cpid, pdb->psqlite, PR_READ,
+			    message_id, ptable->cpid, db, PR_READ,
 			    reinterpret_cast<void **>(&pread_byte)) ||
 			    pread_byte == nullptr)
 				return;
@@ -1858,11 +1858,11 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 				multi_index = i;
 				if (!cu_get_property(
 				    MAPI_MESSAGE, message_id, ptable->cpid,
-				    pdb->psqlite, propvals[i].proptag & ~MV_INSTANCE,
+				    db, propvals[i].proptag & ~MV_INSTANCE,
 				    &propvals[i].pvalue))
 					return;
 			} else if (!cu_get_property(MAPI_MESSAGE, message_id,
-			    ptable->cpid, pdb->psqlite, propvals[i].proptag,
+			    ptable->cpid, db, propvals[i].proptag,
 			    &propvals[i].pvalue)) {
 				return;
 			}
@@ -1977,7 +1977,7 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 				     i < ptable->psorts->count; i++) {
 					void *pvalue = nullptr;
 					if (!cu_get_property(MAPI_MESSAGE, inst_id,
-					    ptable->cpid, pdb->psqlite,
+					    ptable->cpid, db,
 					    propvals[i].proptag, &pvalue))
 						return;
 					auto result = db_engine_compare_propval(ptable->psorts->psort[i].type, propvals[i].pvalue, pvalue);
@@ -2281,11 +2281,11 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 		pnew_mail->folder_id = folder_id;
 		pnew_mail->message_id = message_id;
 		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
-		    pdb->psqlite, PR_MESSAGE_FLAGS, &pvalue) || pvalue == nullptr)
+		    *pdb, PR_MESSAGE_FLAGS, &pvalue) || pvalue == nullptr)
 			return;
 		pnew_mail->message_flags = *static_cast<uint32_t *>(pvalue);
 		if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
-		    pdb->psqlite, PR_MESSAGE_CLASS, &pvalue) || pvalue == nullptr)
+		    *pdb, PR_MESSAGE_CLASS, &pvalue) || pvalue == nullptr)
 			return;
 		pnew_mail->pmessage_class = static_cast<char *>(pvalue);
 		notifq.emplace_back(std::move(datagram), std::move(parrays));
@@ -2385,7 +2385,7 @@ static void dbeng_notify_hiertbl_add_row(db_conn &db, uint64_t parent_id,
 				continue;
 		}
 		if (ptable->prestriction != nullptr &&
-		    !cu_eval_folder_restriction(pdb->psqlite,
+		    !cu_eval_folder_restriction(db,
 		    folder_id, ptable->prestriction))
 			continue;
 		if (NULL == padded_row) {
@@ -2558,7 +2558,7 @@ static void *db_engine_get_extremum_value(db_conn &db, cpid_t cpid,
 	while (pstmt.step() == SQLITE_ROW) {
 		message_id = sqlite3_column_int64(pstmt, 0);
 		if (!cu_get_property(MAPI_MESSAGE, message_id,
-		    cpid, pdb->psqlite, extremum_tag, &pvalue1))
+		    cpid, db, extremum_tag, &pvalue1))
 			continue;	
 		if (!b_first) {
 			pvalue = pvalue1;
@@ -3274,7 +3274,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn &db, uint64_t folder_id,
 			for (i=0; i<ptable->psorts->count; i++) {
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (!cu_get_property(MAPI_MESSAGE, message_id,
-				    ptable->cpid, pdb->psqlite, propvals[i].proptag,
+				    ptable->cpid, db, propvals[i].proptag,
 				    &propvals[i].pvalue))
 					break;
 			}
@@ -3311,7 +3311,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn &db, uint64_t folder_id,
 				if (inst_id == 0)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, inst_id,
-					ptable->cpid, pdb->psqlite,
+					ptable->cpid, db,
 					propvals[i].proptag, &pvalue)) {
 					b_error = TRUE;
 					break;
@@ -3331,7 +3331,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn &db, uint64_t folder_id,
 				if (inst_id1 == 0)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, inst_id1,
-					ptable->cpid, pdb->psqlite,
+					ptable->cpid, db,
 					propvals[i].proptag, &pvalue)) {
 					b_error = TRUE;
 					break;
@@ -3368,7 +3368,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn &db, uint64_t folder_id,
 		if (0 != ptable->instance_tag) {
 			type = PROP_TYPE(ptable->instance_tag) & ~MVI_FLAG;
 			if (!cu_get_property(MAPI_MESSAGE,
-			    message_id, ptable->cpid, pdb->psqlite,
+			    message_id, ptable->cpid, db,
 			    ptable->instance_tag & ~MV_INSTANCE, &pmultival))
 				continue;
 			if (NULL != pmultival) {
@@ -3423,7 +3423,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn &db, uint64_t folder_id,
 			if (propvals[i].proptag == ptable->instance_tag)
 				propvals[i].pvalue = NULL;
 			else if (!cu_get_property(MAPI_MESSAGE, message_id,
-			    ptable->cpid, pdb->psqlite, propvals[i].proptag,
+			    ptable->cpid, db, propvals[i].proptag,
 			    &propvals[i].pvalue))
 				break;
 		}
@@ -3544,7 +3544,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn &db, uint64_t folder_id,
 				if (inst_id == 0)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, inst_id,
-				    ptable->cpid, pdb->psqlite,
+				    ptable->cpid, db,
 				    propvals[i].proptag, &pvalue)) {
 					b_error = TRUE;
 					break;
@@ -3570,7 +3570,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn &db, uint64_t folder_id,
 				if (inst_id1 == 0)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, inst_id1,
-				    ptable->cpid, pdb->psqlite,
+				    ptable->cpid, db,
 				    propvals[i].proptag, &pvalue)) {
 					b_error = TRUE;
 					break;
@@ -3590,7 +3590,7 @@ static void dbeng_notify_cttbl_modify_row(db_conn &db, uint64_t folder_id,
 			if (b_error)
 				break;
 			if (!cu_get_property(MAPI_MESSAGE, message_id,
-			    CP_ACP, pdb->psqlite, PR_READ, &pvalue) ||
+			    CP_ACP, db, PR_READ, &pvalue) ||
 			    pvalue == nullptr) {
 				b_error = TRUE;
 				break;
@@ -3821,7 +3821,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn &db,
 			pstmt.finalize();
 			if (NULL != ptable->prestriction &&
 			    cu_eval_folder_restriction(
-				pdb->psqlite, folder_id, ptable->prestriction)) {
+			    db, folder_id, ptable->prestriction)) {
 				if (NULL == padded_row) {
 					datagram2.db_notify.type = db_notify_type::hiertbl_row_added;
 					padded_row = &datagram2.db_notify.pdata.emplace<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
@@ -3859,7 +3859,7 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn &db,
 		idx = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
 		if (NULL != ptable->prestriction &&
-		    !cu_eval_folder_restriction(pdb->psqlite,
+		    !cu_eval_folder_restriction(db,
 		    folder_id, ptable->prestriction)) {
 			xsavepoint sql_savepoint(pdb->m_sqlite_eph, "sp1");
 			if (!sql_savepoint)

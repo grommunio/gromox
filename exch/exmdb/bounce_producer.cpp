@@ -25,11 +25,12 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
+#include "db_engine.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;
 
-static std::string exmdb_bouncer_attachs(sqlite3 *psqlite, uint64_t message_id)
+static std::string exmdb_bouncer_attachs(const db_conn &db, uint64_t message_id)
 {
 	std::string r;
 	void *pvalue;
@@ -37,13 +38,14 @@ static std::string exmdb_bouncer_attachs(sqlite3 *psqlite, uint64_t message_id)
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT attachment_id FROM "
 	        "attachments WHERE message_id=%llu", static_cast<unsigned long long>(message_id));
+	auto &psqlite = db.psqlite;
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return {};
 	while (pstmt.step() == SQLITE_ROW) {
 		auto attachment_id = pstmt.col_uint64(0);
 		if (!cu_get_property(MAPI_ATTACH, attachment_id, CP_ACP,
-		    psqlite, PR_ATTACH_LONG_FILENAME, &pvalue))
+		    db, PR_ATTACH_LONG_FILENAME, &pvalue))
 			return {};
 		if (pvalue == nullptr)
 			continue;
@@ -54,8 +56,8 @@ static std::string exmdb_bouncer_attachs(sqlite3 *psqlite, uint64_t message_id)
 	return r;
 }
 
-BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
-    sqlite3 *psqlite, uint64_t message_id, const char *bounce_type,
+bool exmdb_bouncer_make_content(const char *from, const char *rcpt,
+    const db_conn &psqlite, uint64_t message_id, const char *bounce_type,
     std::string &subject, std::string &content) try
 {
 	void *pvalue;
@@ -117,7 +119,7 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	return false;
 }
 
-BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
+bool exmdb_bouncer_make(const char *from, const char *rcpt, const db_conn &psqlite,
     uint64_t message_id, const char *bounce_type,
     vmime::shared_ptr<vmime::message> &pmail) try
 {

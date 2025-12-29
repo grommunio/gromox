@@ -175,7 +175,7 @@ BOOL exmdb_server::get_store_properties(const char *dir, cpid_t cpid,
 	if (!pdb)
 		return FALSE;
 	/* Only one SQL operation, no transaction needed. */
-	return cu_get_properties(MAPI_STORE, 0, cpid, pdb->psqlite,
+	return cu_get_properties(MAPI_STORE, 0, cpid, *pdb,
 	       *pproptags, ppropvals);
 }
 

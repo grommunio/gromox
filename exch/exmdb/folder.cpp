@@ -526,7 +526,7 @@ BOOL exmdb_server::get_folder_properties(const char *dir, cpid_t cpid,
 		return FALSE;
 	/* Only one SQL operation, no transaction needed. */
 	return cu_get_properties(MAPI_FOLDER, rop_util_get_gc_value(folder_id),
-	       cpid, pdb->psqlite, *pproptags, ppropvals);
+	       cpid, *pdb, *pproptags, ppropvals);
 }
 
 /* no PROPERTY_PROBLEM for PidTagChangeNumber and PR_CHANGE_KEY */
@@ -636,7 +636,7 @@ static bool folder_empty_sf(db_conn &db, cpid_t cpid, const char *username,
 			continue;
 		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 		uint64_t parent_fid = sqlite3_column_int64(pstmt, 1);
-		auto ret = have_delete_perm(db.psqlite, username, parent_fid, message_id);
+		auto ret = have_delete_perm(db, username, parent_fid, message_id);
 		if (ret < 0)
 			return false;
 		if (ret == 0) {
@@ -731,7 +731,7 @@ static bool folder_empty_folder(db_conn &db, cpid_t cpid,
 			bool is_associated = sqlite3_column_int64(pstmt, 2);
 			if (b_check) {
 				BOOL b_owner = false;
-				if (!common_util_check_message_owner(db.psqlite,
+				if (!cu_msg_test_owner(db,
 				    message_id, username, &b_owner))
 					return FALSE;
 				if (!b_owner) {
@@ -800,7 +800,7 @@ static bool folder_empty_folder(db_conn &db, cpid_t cpid,
 		bool is_deleted = pstmt.col_int64(1);
 		if (!b_hard && is_deleted)
 			continue;
-		auto ret = have_delete_perm(db.psqlite, username, fid_val);
+		auto ret = have_delete_perm(db, username, fid_val);
 		if (ret < 0)
 			return false;
 		if (ret == 0) {
@@ -962,7 +962,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 			change_num});
 		if (nprop[1].pvalue == nullptr ||
 		    !cu_get_property(MAPI_FOLDER, fid_val, CP_ACP,
-		    pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST, &pvalue))
+		    *pdb, PR_PREDECESSOR_CHANGE_LIST, &pvalue))
 			return false;
 		nprop[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		nprop[2].pvalue = common_util_pcl_append(static_cast<BINARY *>(pvalue),
@@ -1352,7 +1352,7 @@ static bool folder_copy_sf_int(db_conn &db, cpid_t cpid,
 				/* do nothing */
 			} else {
 				BOOL b_owner = false;
-				if (!common_util_check_message_owner(db.psqlite,
+				if (!cu_msg_test_owner(db,
 				    message_id, username, &b_owner))
 					return FALSE;
 				if (!b_owner) {
@@ -1364,7 +1364,7 @@ static bool folder_copy_sf_int(db_conn &db, cpid_t cpid,
 		uint64_t message_id1 = 0;
 		uint32_t message_size = 0;
 		BOOL b_result = false;
-		if (!cu_copy_message(db.psqlite, message_id, dst_fid,
+		if (!cu_copy_message(db, message_id, dst_fid,
 		    &message_id1, &b_result, &message_size))
 			return FALSE;
 		if (!b_result) {
@@ -1441,7 +1441,7 @@ static bool folder_copy_folder_internal(db_conn &db,
 			auto message_id = pstmt.col_uint64(0);
 			if (b_check) {
 				BOOL b_owner = false;
-				if (!common_util_check_message_owner(db.psqlite,
+				if (!cu_msg_test_owner(db,
 				    message_id, username, &b_owner))
 					return FALSE;
 				if (!b_owner) {
@@ -1450,7 +1450,7 @@ static bool folder_copy_folder_internal(db_conn &db,
 				}
 			}
 			uint64_t message_id1 = 0;
-			if (!cu_copy_message(db.psqlite, message_id, dst_fid,
+			if (!cu_copy_message(db, message_id, dst_fid,
 			    &message_id1, &b_result, &message_size))
 				return FALSE;
 			if (!b_result) {
@@ -1626,7 +1626,7 @@ BOOL exmdb_server::movecopy_folder(const char *dir, cpid_t cpid, BOOL b_guest,
 	if (!sql_transact)
 		return false;
 	if (b_copy &&
-	    cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) &&
+	    cu_check_msgsize_overflow(*pdb, PR_STORAGE_QUOTA_LIMIT) &&
 	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		*errcode = ecQuotaExceeded;
 		return TRUE;		

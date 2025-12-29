@@ -45,6 +45,7 @@ struct condition_node {
 };
 
 struct CONTENT_ROW_PARAM {
+	const db_conn &db;
 	cpid_t cpid;
 	sqlite3 *psqlite;
 	sqlite3_stmt *pstmt;
@@ -58,6 +59,7 @@ struct CONTENT_ROW_PARAM {
 };
 
 struct HIERARCHY_ROW_PARAM {
+	const db_conn &db;
 	cpid_t cpid;
 	sqlite3 *psqlite;
 	sqlite3_stmt *pstmt;
@@ -142,7 +144,7 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 /**
  * @username:   Used for retrieving public store readstates
  */
-static BOOL table_load_hierarchy(sqlite3 *psqlite,
+static bool table_load_hierarchy(const db_conn &db,
 	uint64_t folder_id, const char *username, uint8_t table_flags,
 	const RESTRICTION *prestriction, sqlite3_stmt *pstmt, int depth,
 	uint32_t *prow_count)
@@ -154,6 +156,7 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM"
 	         " folders WHERE parent_id=%llu AND is_deleted=%u",
 	         LLU{folder_id}, !!(table_flags & TABLE_FLAG_SOFTDELETES));
+	auto &psqlite = db.psqlite;
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
@@ -167,7 +170,7 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 				continue;
 		}
 		if (prestriction != nullptr &&
-		    !cu_eval_folder_restriction(psqlite, folder_id1, prestriction))
+		    !cu_eval_folder_restriction(db, folder_id1, prestriction))
 			goto LOAD_SUBFOLDER;
 		sqlite3_bind_int64(pstmt, 1, folder_id1);
 		sqlite3_bind_int64(pstmt, 2, depth);
@@ -177,7 +180,7 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 		sqlite3_reset(pstmt);
  LOAD_SUBFOLDER:
 		if ((table_flags & TABLE_FLAG_DEPTH) &&
-		    !table_load_hierarchy(psqlite, folder_id1, username,
+		    !table_load_hierarchy(db, folder_id1, username,
 		    table_flags, prestriction, pstmt, depth + 1, prow_count))
 			return FALSE;
 	}
@@ -265,7 +268,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 	auto sql_transact = gx_sql_begin(pdb->psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
-	if (!table_load_hierarchy(pdb->psqlite, fid_val, username, table_flags,
+	if (!table_load_hierarchy(*pdb, fid_val, username, table_flags,
 	    prestriction, pstmt, 1, prow_count))
 		return FALSE;
 	sql_transact = xtransaction();
@@ -878,7 +881,7 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 			if (parent_fid == 0)
 				continue;
 		} else if (prestriction != nullptr &&
-		    !cu_eval_msg_restriction(db.psqlite, cpid, mid_val, prestriction)) {
+		    !cu_eval_msg_restriction(db, cpid, mid_val, prestriction)) {
 			continue;
 		}
 		sqlite3_bind_int64(pstmt1, 1, mid_val);
@@ -888,7 +891,7 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 				if (tmp_proptag == ptnode->instance_tag)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, mid_val,
-				    cpid, db.psqlite, tmp_proptag, &pvalue))
+				    cpid, db, tmp_proptag, &pvalue))
 					return false;
 				if (pvalue == nullptr)
 					sqlite3_bind_null(pstmt1, i + 2);
@@ -898,7 +901,7 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 			}
 			if (psorts->ccategories > 0) {
 				if (!cu_get_property(MAPI_MESSAGE, mid_val,
-				    CP_ACP, db.psqlite, PR_READ, &pvalue))
+				    CP_ACP, db, PR_READ, &pvalue))
 					return false;
 				sqlite3_bind_int64(pstmt1, col_read,
 					pvb_disabled(pvalue) ? 0 : 1);
@@ -906,7 +909,7 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 			/* insert all instances into stbl */
 			if (0 != ptnode->instance_tag) {
 				if (!cu_get_property(MAPI_MESSAGE,
-				    mid_val, cpid, db.psqlite,
+				    mid_val, cpid, db,
 				    ptnode->instance_tag & ~MV_INSTANCE, &pvalue))
 					return false;
 				if (NULL == pvalue) {
@@ -1631,7 +1634,7 @@ static bool query_hierarchy(db_conn &db, cpid_t cpid, uint32_t table_id,
 				*v = sqlite3_column_int64(pstmt, 1);
 			} else {
 				if (!cu_get_property(MAPI_FOLDER, folder_id, cpid,
-				    db.psqlite, tag, &pvalue))
+				    db, tag, &pvalue))
 					return FALSE;
 				if (pvalue == nullptr)
 					continue;
@@ -1728,7 +1731,7 @@ static bool query_content(db_conn &db, cpid_t cpid, uint32_t table_id,
 				if (row_type == CONTENT_ROW_HEADER)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, inst_id, cpid,
-				    db.psqlite, tag, &pvalue))
+				    db, tag, &pvalue))
 					return FALSE;
 			}
 			if (pvalue == nullptr)
@@ -1961,7 +1964,7 @@ static bool table_get_content_row_property(const void *pparam, proptag_t proptag
 			return TRUE;
 		}
 		if (!cu_get_property(MAPI_MESSAGE, prow_param->inst_id,
-		    prow_param->cpid, prow_param->psqlite, proptag,
+		    prow_param->cpid, prow_param->db, proptag,
 		    ppvalue))
 			return FALSE;	
 	}
@@ -1974,7 +1977,7 @@ static bool table_get_hierarchy_row_property(const void *pparam, proptag_t propt
 	auto prow_param = static_cast<const HIERARCHY_ROW_PARAM *>(pparam);
 	if (proptag != PR_DEPTH)
 		return cu_get_property(MAPI_FOLDER, prow_param->folder_id,
-		       prow_param->cpid, prow_param->psqlite, proptag, ppvalue);
+		       prow_param->cpid, prow_param->db, proptag, ppvalue);
 	auto v = cu_alloc<uint32_t>();
 	*ppvalue = v;
 	if (*ppvalue == nullptr)
@@ -2094,7 +2097,7 @@ static bool match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 	if (!sql_transact)
 		return false;
 	while (pstmt.step() == SQLITE_ROW) {
-		HIERARCHY_ROW_PARAM hierarchy_param;
+		HIERARCHY_ROW_PARAM hierarchy_param{db};
 		uint64_t folder_id;
 
 		folder_id = sqlite3_column_int64(pstmt, 0);
@@ -2120,7 +2123,7 @@ static bool match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 				*v = sqlite3_column_int64(pstmt, 2);
 			} else {
 				if (!cu_get_property(MAPI_FOLDER, folder_id, cpid,
-				    db.psqlite, tag, &pvalue))
+				    db, tag, &pvalue))
 					return FALSE;
 				if (pvalue == nullptr)
 					continue;
@@ -2193,7 +2196,7 @@ static bool match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 	if (optim == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
-		CONTENT_ROW_PARAM content_param;
+		CONTENT_ROW_PARAM content_param{db};
 
 		inst_id = sqlite3_column_int64(pstmt, 3);
 		row_type = sqlite3_column_int64(pstmt, 4);
@@ -2225,7 +2228,7 @@ static bool match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 				if (row_type == CONTENT_ROW_HEADER)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, inst_id, cpid,
-				    db.psqlite, tag, &pvalue))
+				    db, tag, &pvalue))
 					return FALSE;
 			}
 			if (pvalue == nullptr)
@@ -2452,7 +2455,7 @@ static bool read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 			*v = depth;
 		} else {
 			if (!cu_get_property(MAPI_FOLDER, folder_id, cpid,
-			    db.psqlite, tag, &pvalue))
+			    db, tag, &pvalue))
 				return FALSE;
 			if (pvalue == nullptr)
 				continue;
@@ -2530,7 +2533,7 @@ static bool read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 			if (row_type == CONTENT_ROW_HEADER)
 				continue;
 			if (!cu_get_property(MAPI_MESSAGE, inst_id, cpid,
-			    db.psqlite, tag, &pvalue))
+			    db, tag, &pvalue))
 				return FALSE;
 		}
 		if (pvalue == nullptr)

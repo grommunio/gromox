@@ -233,7 +233,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 				continue;
 		}
 		if (prestriction != nullptr &&
-		    !cu_eval_msg_restriction(pdb->psqlite,
+		    !cu_eval_msg_restriction(*pdb,
 		    cpid, mid_val, prestriction))
 			continue;	
 		sqlite3_reset(stm_insert_exist);
@@ -720,7 +720,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		});
 		tags.push_back(PidTagParentFolderId);
 		if (!cu_get_properties(MAPI_FOLDER, fid_val1, CP_ACP,
-		    pdb->psqlite, tags, &pfldchgs->pfldchgs[i]))
+		    *pdb, tags, &pfldchgs->pfldchgs[i]))
 			return FALSE;
 	}
 	stm_select_chg.finalize();
