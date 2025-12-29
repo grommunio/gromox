@@ -1276,8 +1276,7 @@ BOOL common_util_get_message_flags(sqlite3 *psqlite,
 	return TRUE;
 }
 
-static void* common_util_get_message_parent_display(
-	sqlite3 *psqlite, uint64_t message_id)
+static char *cu_get_msg_parent_display(sqlite3 *psqlite, uint64_t message_id)
 {
 	void *pvalue;
 	uint64_t folder_id;
@@ -1287,7 +1286,7 @@ static void* common_util_get_message_parent_display(
 	if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP,
 	    psqlite, PR_DISPLAY_NAME, &pvalue))
 		return NULL;	
-	return pvalue;
+	return static_cast<char *>(pvalue);
 }
 
 /**
@@ -1849,10 +1848,10 @@ static GP_RESULT gp_msgprop(proptag_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		return GP_ADV;
 	}
 	case PR_PARENT_DISPLAY:
-		pv.pvalue = common_util_get_message_parent_display(db, id);
+		pv.pvalue = cu_get_msg_parent_display(db, id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	case PR_PARENT_DISPLAY_A: {
-		auto pstring = static_cast<char *>(common_util_get_message_parent_display(db, id));
+		auto pstring = cu_get_msg_parent_display(db, id);
 		if (pstring == nullptr)
 			return GP_ERR;
 		pv.pvalue = cu_utf8_to_mb_dup(cpid, pstring);
