@@ -404,7 +404,7 @@ static int do_folder(eid_t folder_id, const parent_desc &pd)
 		fprintf(stderr, "get_contents RPC failed\n");
 		return -1;
 	}
-	err = select_contents_from_folder(folder_id, MAPI_ASSOCIATED, nullptr, chosen);
+	err = select_contents_from_folder(folder_id, TABLE_FLAG_ASSOCIATED, nullptr, chosen);
 	if (err != ecSuccess) {
 		fprintf(stderr, "get_contents RPC failed\n");
 		return -1;
