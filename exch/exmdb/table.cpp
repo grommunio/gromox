@@ -66,7 +66,7 @@ struct HIERARCHY_ROW_PARAM {
 
 }
 
-using TABLE_GET_ROW_PROPERTY = BOOL (*)(void *, uint32_t, void **);
+using TABLE_GET_ROW_PROPERTY = bool (*)(const void *, uint32_t, void **);
 
 static bool table_sum_table_count(db_conn &db, uint32_t table_id, uint32_t *prows)
 {
@@ -1921,13 +1921,13 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 	return TRUE;
 }
 
-static BOOL table_get_content_row_property(void *pparam, proptag_t proptag,
+static bool table_get_content_row_property(const void *pparam, proptag_t proptag,
     void **ppvalue)
 {
 	uint32_t *pinst_num;
 	uint64_t parent_fid;
 	
-	auto prow_param = static_cast<CONTENT_ROW_PARAM *>(pparam);
+	auto prow_param = static_cast<const CONTENT_ROW_PARAM *>(pparam);
 	if (proptag == PR_INSTANCE_SVREID) {
 		auto eid = cu_alloc<SVREID>();
 		if (eid == nullptr)
@@ -1968,10 +1968,10 @@ static BOOL table_get_content_row_property(void *pparam, proptag_t proptag,
 	return TRUE;
 }
 
-static BOOL table_get_hierarchy_row_property(void *pparam, proptag_t proptag,
+static bool table_get_hierarchy_row_property(const void *pparam, proptag_t proptag,
     void **ppvalue)
 {
-	auto prow_param = static_cast<HIERARCHY_ROW_PARAM *>(pparam);
+	auto prow_param = static_cast<const HIERARCHY_ROW_PARAM *>(pparam);
 	if (proptag != PR_DEPTH)
 		return cu_get_property(MAPI_FOLDER, prow_param->folder_id,
 		       prow_param->cpid, prow_param->psqlite, proptag, ppvalue);
