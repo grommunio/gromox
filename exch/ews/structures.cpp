@@ -1659,6 +1659,15 @@ void tCalendarItem::update(const sShape& shape)
 	fromProp(shape.get(NtFInvited), MeetingRequestWasSent);
 	fromProp(shape.get(NtLocation), Location);
 
+	if ((prop = shape.get(NtCalendarTimeZone))) {
+		std::optional<std::string> tzid;
+		fromProp(prop, tzid);
+		if (tzid) {
+			StartTimeZoneId = *tzid;
+			EndTimeZoneId = *tzid;
+		}
+	}
+
 	if ((prop = shape.get(NtResponseStatus))) {
 		const uint8_t* responseStatus = static_cast<const uint8_t*>(prop->pvalue);
 		Enum::ResponseTypeType responseType = Enum::Unknown;
@@ -1712,6 +1721,8 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 		fromProp(shape.writes(NtCalendarTimeZone), calTimezone);
 		if (calTimezone.has_value()) {
 			auto buf = ianatz_to_tzdef(calTimezone.value().c_str());
+			if (buf == nullptr)
+				buf = wintz_to_tzdef(calTimezone.value().c_str());
 			if (buf != nullptr) {
 				size_t len = buf->size();
 				if (len > UINT32_MAX)
@@ -1903,6 +1914,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"Department", {[](auto&&... args){convText(PR_DEPARTMENT_NAME, args...);}}},
 	{"DisplayName", {[](auto&&... args){convText(PR_DISPLAY_NAME, args...);}}},
 	{"End", {[](auto&&... args){convDate(NtCommonEnd, args...);}}},
+	{"EndTimeZoneId", {[](auto&&... args){convText(NtCalendarTimeZone, args...);}}},
 	{"FileAs", {[](auto&&... args){convText(NtFileAs, args...);}}},
 	{"Generation", {[](auto&&... args){convText(PR_GENERATION, args...);}}},
 	{"GivenName", {[](auto&&... args){convText(PR_GIVEN_NAME, args...);}}},
@@ -1925,6 +1937,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"Surname", {[](auto&&... args){convText(PR_SURNAME, args...);}}},
 	{"SpouseName", {[](auto&&... args){convText(PR_SPOUSE_NAME, args...);}}},
 	{"Start", {[](auto&&... args){convDate(NtCommonStart, args...);}}},
+	{"StartTimeZoneId", {[](auto&&... args){convText(NtCalendarTimeZone, args...);}}},
 	{"WeddingAnniversary", {[](auto&&... args){convDate(PR_WEDDING_ANNIVERSARY, args...);}}},
 }};
 
@@ -3235,6 +3248,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:AppointmentSequenceNumber", {NtAppointmentSequence, PT_LONG}},
 	{"calendar:End", {NtAppointmentEndWhole, PT_SYSTIME}},
 	{"calendar:End", {NtCommonEnd, PT_SYSTIME}},
+	{"calendar:EndTimeZoneId", {NtCalendarTimeZone, PT_UNICODE}},
 	{"calendar:IsAllDayEvent", {NtAppointmentSubType, PT_BOOLEAN}},
 	{"calendar:IsCancelled", {NtAppointmentStateFlags, PT_LONG}},
 	{"calendar:IsMeeting", {NtAppointmentStateFlags, PT_LONG}},
@@ -3247,6 +3261,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:DeletedOccurrences", {NtAppointmentRecur, PT_BINARY}},
 	{"calendar:Start", {NtAppointmentStartWhole, PT_SYSTIME}},
 	{"calendar:Start", {NtCommonStart, PT_SYSTIME}},
+	{"calendar:StartTimeZoneId", {NtCalendarTimeZone, PT_UNICODE}},
 	{"calendar:UID", {NtGlobalObjectId, PT_BINARY}},
 	{"calendar:RecurrenceId", {NtExceptionReplaceTime, PT_SYSTIME}},
 	{"contacts:DisplayName", {NtFileAs, PT_UNICODE}},
@@ -3724,6 +3739,7 @@ sItem tItem::create(const sShape& shape)
 decltype(tItemResponseShape::namedTagsDefault) tItemResponseShape::namedTagsDefault = {{
 	{&NtCommonStart, PT_SYSTIME},
 	{&NtCommonEnd, PT_SYSTIME},
+	{&NtCalendarTimeZone, PT_UNICODE},
 	{&NtEmailAddress1, PT_UNICODE},
 	{&NtEmailAddress2, PT_UNICODE},
 	{&NtEmailAddress3, PT_UNICODE},

@@ -2024,6 +2024,13 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	}
 	// TODO handle no start and/or end times
 
+	if (!shape.writes(NtCalendarTimeZone)) {
+		if (item.StartTimeZoneId)
+			shape.write(NtCalendarTimeZone, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.StartTimeZoneId)});
+		else if (item.EndTimeZoneId)
+			shape.write(NtCalendarTimeZone, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.EndTimeZoneId)});
+	}
+
 	if (item.IsAllDayEvent)
 		shape.write(NtAppointmentSubType, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(item.IsAllDayEvent.value())});
 	else
@@ -2215,6 +2222,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		const TAGGED_PROPVAL* caltz = shape.writes(NtCalendarTimeZone);
 		if (caltz) {
 			auto buf = ianatz_to_tzdef(static_cast<char*>(caltz->pvalue));
+			if (buf == nullptr)
+				buf = wintz_to_tzdef(static_cast<char*>(caltz->pvalue));
 			if (buf != nullptr) {
 				size_t len = buf->size();
 				if (len > UINT32_MAX)
