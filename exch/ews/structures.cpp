@@ -1655,6 +1655,7 @@ void tCalendarItem::update(const sShape& shape)
 	if ((prop = shape.get(NtCommonStart)))
 		Start.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
 
+	fromProp(shape.get(NtRecurring), IsRecurring);
 	fromProp(shape.get(NtFInvited), MeetingRequestWasSent);
 	fromProp(shape.get(NtLocation), Location);
 
