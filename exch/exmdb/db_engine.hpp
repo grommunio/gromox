@@ -6,7 +6,6 @@
 #include <map>
 #include <memory>
 #include <mutex>
-#include <optional>
 #include <shared_mutex>
 #include <sqlite3.h>
 #include <string>
@@ -204,7 +203,7 @@ struct db_conn {
 	/* pdb will also be put */
 	static void commit_batch_mode_release(std::optional<db_conn> &&pdb, db_base_wr_ptr &&base);
 	void cancel_batch_mode(db_base &);
-	std::unique_ptr<prepared_statements> begin_optim();
+	bool begin_optim();
 	void end_optim() { m_prepstm.reset(); }
 
 	gromox::xstmt prep(const char *q) const { return gromox::gx_sql_prep(psqlite, q); }

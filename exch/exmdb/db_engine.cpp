@@ -1650,7 +1650,8 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 	auto b_del = stm.step() != SQLITE_ROW || stm.col_uint64(0) != 0;
 	stm.finalize();
 
-	auto cl_0 = HX::make_scope_exit([&]() { pdb->end_optim(); });
+	bool did_optim = false;
+	auto cl_0 = HX::make_scope_exit([&]() { if (did_optim) db.end_optim(); });
 	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::write);
 	if (!sql_transact_eph) {
@@ -1683,8 +1684,9 @@ static void dbeng_notify_cttbl_add_row(db_conn &db, uint64_t folder_id,
 			padded_row1 = &datagram1.db_notify.pdata.emplace<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>();
 			padded_row1->row_folder_id = folder_id;
 			padded_row1->row_instance = 0;
-			if (db.begin_optim())
+			if (!pdb->begin_optim())
 				return;
+			did_optim = true;
 		}
 		datagram.id_array[0] = datagram1.id_array[0] =
 			ptable->table_id; // reserved earlier

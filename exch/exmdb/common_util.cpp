@@ -418,15 +418,16 @@ bool prepared_statements::begin(sqlite3 *psqlite)
 	return true;
 }
 
-std::unique_ptr<prepared_statements> db_conn::begin_optim() try
+bool db_conn::begin_optim() try
 {
 	auto op = std::make_unique<prepared_statements>();
 	if (!op->begin(psqlite))
-		return nullptr;
-	return op;
+		return false;
+	m_prepstm = std::move(op);
+	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
-	return nullptr;
+	return false;
 }
 
 namespace exmdb {
