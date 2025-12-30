@@ -72,12 +72,12 @@ to \fB\-p\fP, \fB\-t\fP or \fB\-v\fP). 1=crit, 2=error, 3=warn, 4=notice,
 Default: \fI4\fP (notice)
 .SH Examples
 .IP \(bu 4
-Export entire mailbox: gromox\-export \-u user@example.com \-ar / >dump.mt
+Export entire mailbox: gromox\-exm2mt \-u user@example.com \-ar / >dump.mt
 .IP \(bu 4
-Export most of the mailbox (as Outlook would): gromox\-export \-u u@e.xz \-r
+Export most of the mailbox (as Outlook would): gromox\-exm2mt \-u u@e.xz \-r
 IPM_SUBTREE >dump.mt
 .IP \(bu 4
-Export two folders without subordinates: gromox\-export \-u u@e.xz
+Export two folders without subordinates: gromox\-exm2mt \-u u@e.xz
 IPM_SUBTREE/Foo IPM_SUBTREE/Bar >dump.mt
 .IP \(bu 4
 Export a single message as RFC5322: gromox\-exm2eml \-u u@e.xz 0x10001
