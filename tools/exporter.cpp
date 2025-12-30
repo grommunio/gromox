@@ -155,7 +155,7 @@ static int fetch_message(const char *idstr, std::string &log_id, eid_t &msg_id,
 	}
 	if (ctnt == nullptr) {
 		fprintf(stderr, "A message by the id %llxh was not found\n",
-			static_cast<unsigned long long>(msg_id));
+			static_cast<unsigned long long>(msg_id.gcv()));
 		return -1;
 	}
 	return 0;
