@@ -97,7 +97,6 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
 	{"max_rcpt_num", "256", CFG_SIZE, "1"},
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
-	{"oxcical_allday_ymd", "1", CFG_BOOL},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
 	{"submit_command", "/usr/bin/php " PKGDATADIR "/submit.php"},
 	{"user_cache_interval", "1h", CFG_TIME, "1min", "1day"},
@@ -145,7 +144,6 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
 		pconfig->get_ll("zcore_log_level"),
 		pconfig->get_value("running_identity"));
 	g_zrpc_debug = pconfig->get_ll("zrpc_debug");
-	g_oxcical_allday_ymd = pconfig->get_ll("oxcical_allday_ymd");
 	zcore_max_obh_per_session = pconfig->get_ll("zcore_max_obh_per_session");
 	return true;
 }

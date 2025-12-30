@@ -40,7 +40,6 @@ static constexpr cfg_directive gromox_cfg_defaults[] = {
 	{"istore_fd_limit", "0", CFG_SIZE},
 	{"istore_log_file", "-"},
 	{"istore_log_level", "4" /* LV_NOTICE */},
-	{"oxcical_allday_ymd", "1", CFG_BOOL},
 	{"running_identity", RUNNING_IDENTITY},
 	CFG_TABLE_END,
 };
@@ -66,7 +65,6 @@ static bool istore_reload_config(std::shared_ptr<config_file> cfg = nullptr)
 		return false;
 	mlog_init("gromox-istore", cfg->get_value("istore_log_file"),
 		cfg->get_ll("istore_log_level"), cfg->get_value("running_identity"));
-	g_oxcical_allday_ymd = cfg->get_ll("oxcical_allday_ymd");
 	return true;
 }
 
