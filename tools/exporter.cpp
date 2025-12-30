@@ -50,9 +50,7 @@ static std::shared_ptr<config_file> g_config_file;
 static const char *g_username;
 static unsigned int g_export_mode = EXPORT_MAIL, g_mlog_level = MLOG_DEFAULT_LEVEL;
 static unsigned int g_recursive, g_associated, g_splice;
-static int g_allday_mode = -1;
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'Y', HXTYPE_INT, &g_allday_mode, nullptr, nullptr, 0, "Allday emission mode (default=-1, YMDHMS=0, YMD=1)"},
 	{nullptr, 'a', HXTYPE_NONE, &g_associated, nullptr, nullptr, 0, "Include Associated Messages (FAI) in the export"},
 	{nullptr, 'p', HXTYPE_NONE | HXOPT_INC, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 'r', HXTYPE_NONE, &g_recursive, {}, {}, 0, "Export folders recursively"},
@@ -522,8 +520,6 @@ int main(int argc, char **argv) try
 			"You probably wanted to redirect output into a file or pipe.\n");
 		return EXIT_FAILURE;
 	}
-	if (g_allday_mode >= 0)
-		g_oxcical_allday_ymd = g_allday_mode;
 	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
