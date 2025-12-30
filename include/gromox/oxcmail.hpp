@@ -31,7 +31,6 @@ extern GX_EXPORT vmime::generationContext vmail_default_genctx();
 extern GX_EXPORT std::string vmail_to_string(const vmime::message &);
 extern GX_EXPORT bool vmail_to_mail(const vmime::message &, MAIL &);
 
-extern GX_EXPORT bool g_oxcical_allday_ymd;
 extern GX_EXPORT unsigned int g_oxvcard_pedantic;
 
 }
