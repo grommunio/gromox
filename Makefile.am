@@ -299,7 +299,7 @@ dist_man_MANS = \
 	doc/gromox-mbsize.8 \
 	doc/gromox-mkmidb.8 doc/gromox-mkprivate.8 doc/gromox-mkpublic.8 \
 	doc/gromox-selinux.5 \
-	doc/gromox-snapshot.8 doc/gromox-vcf2mt.8 doc/http.8gx \
+	doc/gromox-snapshot.8 doc/gromox-tnef2mt.8 doc/gromox-vcf2mt.8 doc/http.8gx \
 	doc/imap.8gx doc/istore.8gx \
 	doc/kdb-uidextract.8 doc/kdb-uidextract-limited.8 \
 	doc/ldap_adaptor.4gx \
