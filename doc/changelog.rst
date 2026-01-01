@@ -1,9 +1,14 @@
-Gromox 3.3.16 (Development)
+Gromox 3.3.32 (Development)
 ===========================
 
 Enhancements:
 
 * mbop: new "zaddrxlat" command
+
+Fixes:
+
+* mrautoproc: server-side processed meeting requests automatically entered into
+  the calendar had lacked the flags asfMeeting+asfReceived, which was fixed.
 
 
 Gromox 3.3 (2025-12-27)
