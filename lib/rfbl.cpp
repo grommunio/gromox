@@ -591,7 +591,7 @@ int feed_w3m(std::string_view inbuf, const char *cset, std::string &outbuf) try
 		outbuf.append(fbuf, ret);
 	cl3.release();
 	waitpid(pid, &status, 0);
-	if (!WIFEXITED(status))
+	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		return -1;
 	if (outbuf.empty())
 		return 0;
