@@ -546,9 +546,10 @@ static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size, const char
  * @outbuf: result variable for caller
  *
  * It is valid for @inbuf to point to the same object as @outbuf.
- * Returns 0 on success, non-zero on error with errno set.
+ * Returns 0 on success, negative non-zero on error with errno set.
+ * @outbuf is only replaced on success.
  */
-int feed_w3m(std::string_view inbuf, const char *cset, std::string &outbuf) try
+int feed_w3m(std::string_view inbuf, const char *cset, std::string &final_buf) try
 {
 	std::string filename;
 	auto tmpdir = getenv("TMPDIR");
@@ -584,7 +585,8 @@ int feed_w3m(std::string_view inbuf, const char *cset, std::string &outbuf) try
 		return -1;
 	int status = 0;
 	auto cl3 = HX::make_scope_exit([&]() { waitpid(pid, &status, 0); });
-	outbuf.clear();
+
+	std::string outbuf;
 	ssize_t ret;
 	char fbuf[4096];
 	while ((ret = read(fout, fbuf, std::size(fbuf))) > 0)
@@ -593,6 +595,7 @@ int feed_w3m(std::string_view inbuf, const char *cset, std::string &outbuf) try
 	waitpid(pid, &status, 0);
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		return -1;
+	final_buf = std::move(outbuf);
 	if (outbuf.empty())
 		return 0;
 	/* The caller can just look at outbuf.size() */
