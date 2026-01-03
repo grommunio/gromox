@@ -589,6 +589,8 @@ int feed_w3m(std::string_view inbuf, const char *cset, std::string &outbuf) try
 	char fbuf[4096];
 	while ((ret = read(fout, fbuf, std::size(fbuf))) > 0)
 		outbuf.append(fbuf, ret);
+	cl3.release();
+	waitpid(pid, &status, 0);
 	if (!WIFEXITED(status))
 		return -1;
 	if (outbuf.empty())
