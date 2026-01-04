@@ -726,7 +726,7 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_copyto &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hsrcobject));
-	TRY(x.p_proptag_a(*d.pexclude_proptags));
+	TRY(x.p_proptag_a(d.pexclude_proptags));
 	TRY(x.p_uint32(d.hdstobject));
 	TRY(x.p_uint32(d.flags));
 	return pack_result::ok;

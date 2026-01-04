@@ -2392,7 +2392,7 @@ static ZEND_FUNCTION(mapi_copyto)
 	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzsrc, *pzdst, *pzexcludeiids, *pzexcludeprops;
-	PROPTAG_ARRAY exclude_proptags, *pexclude_proptags = nullptr;
+	PROPTAG_ARRAY exclude_proptags{};
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "raar|l",
 		&pzsrc, &pzexcludeiids, &pzexcludeprops, &pzdst, &flags)
@@ -2410,15 +2410,14 @@ static ZEND_FUNCTION(mapi_copyto)
 		pthrow(ecInvalidObject);
 	else if (pdstobject == nullptr)
 		pthrow(ecInvalidParam);
-
-	if (pzexcludeprops != nullptr) {
-		auto err = php_to_proptag_array(pzexcludeprops, &exclude_proptags);
-		if (err != ecSuccess)
-			pthrow(err);
-		pexclude_proptags = &exclude_proptags;
-	}
+	if (pzexcludeprops == nullptr)
+		/* can't happen because parse_param always fills non-optional zvals */
+		pthrow(ecInvalidParam);
+	auto err = php_to_proptag_array(pzexcludeprops, &exclude_proptags);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_copyto(psrcobject->hsession,
-				psrcobject->hobject, pexclude_proptags,
+				psrcobject->hobject, exclude_proptags,
 				pdstobject->hobject, flags);
 	if (result != ecSuccess)
 		pthrow(result);

@@ -568,13 +568,28 @@ struct zcreq_getpropnames final : public zcreq {
 	PROPID_ARRAY ppropids;
 };
 
+struct zcreq_copyto_v final : public zcreq {
+	GUID hsession;
+	uint32_t hsrcobject = 0, hdstobject = 0, flags = 0;
+	proptag_cspan pexclude_proptags;
+};
+
 struct zcreq_copyto final : public zcreq {
-	using view_t = zcreq_copyto;
+	using view_t = zcreq_copyto_v;
 	GUID hsession;
 	uint32_t hsrcobject;
-	PROPTAG_ARRAY *pexclude_proptags;
 	uint32_t hdstobject;
 	uint32_t flags;
+	proptag_vector pexclude_proptags;
+	operator view_t() const {
+		view_t v;
+		v.hsession = hsession;
+		v.hsrcobject = hsrcobject;
+		v.hdstobject = hdstobject;
+		v.flags = flags;
+		v.pexclude_proptags = pexclude_proptags;
+		return v;
+	}
 };
 
 struct zcreq_savechanges final : public zcreq {

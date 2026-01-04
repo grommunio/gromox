@@ -3786,7 +3786,7 @@ ec_error_t zs_getpropnames(GUID hsession, uint32_t hstore,
 }
 
 ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
-    const PROPTAG_ARRAY *pexclude_proptags, uint32_t hdstobject, uint32_t flags)
+    proptag_cspan pexclude_proptags, uint32_t hdstobject, uint32_t flags)
 {
 	BOOL b_cycle;
 	BOOL b_collid;
@@ -3840,7 +3840,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 				return ecAccessDenied;
 		}
 		BOOL b_sub;
-		if (!pexclude_proptags->has(PR_CONTAINER_HIERARCHY)) {
+		if (!pexclude_proptags.has(PR_CONTAINER_HIERARCHY)) {
 			if (!exmdb_client->is_descendant_folder(pstore->get_dir(),
 			    folder->folder_id, fdst->folder_id, &b_cycle))
 				return ecError;
@@ -3850,11 +3850,11 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		} else {
 			b_sub = FALSE;
 		}
-		BOOL b_normal = !pexclude_proptags->has(PR_CONTAINER_CONTENTS) ? TRUE : false;
-		BOOL b_fai    = !pexclude_proptags->has(PR_FOLDER_ASSOCIATED_CONTENTS) ? TRUE : false;
+		BOOL b_normal = !pexclude_proptags.has(PR_CONTAINER_CONTENTS) ? TRUE : false;
+		BOOL b_fai    = !pexclude_proptags.has(PR_FOLDER_ASSOCIATED_CONTENTS) ? TRUE : false;
 		if (!static_cast<folder_object *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
-		cu_reduce_proptags(&proptags, *pexclude_proptags);
+		cu_reduce_proptags(&proptags, pexclude_proptags);
 		tmp_proptags.count = 0;
 		tmp_proptags.pproptag = cu_alloc<proptag_t>(proptags.count);
 		if (tmp_proptags.pproptag == nullptr)
@@ -3893,7 +3893,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		if (!mdst->writable())
 			return ecAccessDenied;
 		if (!mdst->copy_to(static_cast<message_object *>(pobject),
-		    *pexclude_proptags, b_force, &b_cycle))
+		    pexclude_proptags, b_force, &b_cycle))
 			return ecError;
 		return b_cycle ? ecMsgCycle : ecSuccess;
 	}
@@ -3902,7 +3902,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		if (!adst->writable())
 			return ecAccessDenied;
 		if (!adst->copy_properties(static_cast<attachment_object *>(pobject),
-		    *pexclude_proptags, b_force, &b_cycle))
+		    pexclude_proptags, b_force, &b_cycle))
 			return ecError;
 		return b_cycle ? ecMsgCycle : ecSuccess;
 	}

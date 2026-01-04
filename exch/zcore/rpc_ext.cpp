@@ -1163,10 +1163,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_copyto &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hsrcobject));
-	d.pexclude_proptags = x.anew<PROPTAG_ARRAY>();
-	if (d.pexclude_proptags == nullptr)
-		return pack_result::alloc;
-	QRF(x.g_proptag_a(d.pexclude_proptags));
+	QRF(x.g_proptag_a(&d.pexclude_proptags));
 	QRF(x.g_uint32(&d.hdstobject));
 	QRF(x.g_uint32(&d.flags));
 	return pack_result::ok;
