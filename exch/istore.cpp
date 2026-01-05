@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2025–2026 grommunio GmbH
 // This file is part of Gromox.
 /*
  * Standalone launcher program for the Information Store (which is a shared
@@ -130,6 +130,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	if (switch_user_exec(*cfg, argv) != 0)
 		return EXIT_FAILURE;
+	setup_utf8_locale();
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	textmaps_init();

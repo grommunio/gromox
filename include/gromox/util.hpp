@@ -92,6 +92,7 @@ extern GX_EXPORT unsigned int newline_size(const char *, size_t);
 extern GX_EXPORT ec_error_t cu_validate_msgclass(const char *);
 extern GX_EXPORT bool cpid_cstr_compatible(cpid_t);
 extern GX_EXPORT bool cset_cstr_compatible(const char *);
+extern GX_EXPORT bool setup_utf8_locale();
 extern GX_EXPORT int iconv_validate();
 extern GX_EXPORT const std::string_view *ianatz_to_tzdef(const char *);
 extern GX_EXPORT const std::string_view *wintz_to_tzdef(const char *);

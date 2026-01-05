@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cerrno>
@@ -198,6 +198,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE; /* e.g. permission error */
 	if (!http_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
+	setup_utf8_locale();
 
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <chrono>
@@ -414,6 +414,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE; /* e.g. permission error */
 	if (!imap_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
+	setup_utf8_locale();
 
 	uint16_t listen_port = g_config_file->get_ll("imap_listen_port");
 	uint16_t listen_tls_port = g_config_file->get_ll("imap_listen_tls_port");

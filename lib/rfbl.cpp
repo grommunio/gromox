@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -954,17 +954,19 @@ bool cset_cstr_compatible(const char *s)
 	return true;
 }
 
-static void init_locale()
+bool setup_utf8_locale()
 {
-	setlocale(LC_ALL, "C.UTF-8");
-	if (iswalnum(0x79C1))
-		return;
-	setlocale(LC_ALL, "en_US.UTF-8");
+	if (setlocale(LC_ALL, "C.UTF-8") != nullptr && iswalnum(0x79C1))
+		return true;
+	if (setlocale(LC_ALL, "en_US.UTF-8") != nullptr)
+		return true;
+	mlog(LV_INFO, "Could not set the program to UTF-8 locale. "
+		"Text operations, e.g. PR_SUBJECT_PREFIX extraction, may fail to produce results.");
+	return false;
 }
 
 int iconv_validate()
 {
-	init_locale();
 	for (const auto s : {"UTF-16LE", "windows-1252",
 	     "iso-8859-1", "iso-2022-jp"}) {
 		auto k = iconv_open("UTF-8", s);

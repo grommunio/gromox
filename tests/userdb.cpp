@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
@@ -187,6 +187,7 @@ int main(int argc, char **argv)
 	}
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
+	setup_utf8_locale();
 	service_init({nullptr, g_dfl_svc_plugins, 1});
 	auto cl_1 = HX::make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {

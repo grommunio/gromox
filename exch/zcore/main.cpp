@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <csignal>
@@ -274,6 +274,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	if (!zcore_reload_config(gxconfig, pconfig))
 		return EXIT_FAILURE;
+	setup_utf8_locale();
 
 	unsigned int threads_num = pconfig->get_ll("zcore_threads_num");
 	mlog(LV_INFO, "system: connection threads number is %d", threads_num);

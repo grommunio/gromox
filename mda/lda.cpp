@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2025–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
@@ -320,6 +320,7 @@ int main(int argc, char **argv)
 		mlog(LV_ERR, "system: failed to run services");
 		return EXIT_FAILURE;
 	}
+	setup_utf8_locale();
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	textmaps_init();

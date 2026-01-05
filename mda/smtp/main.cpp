@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <chrono>
@@ -300,6 +300,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE; /* e.g. permission error */
 	if (!dq_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
+	setup_utf8_locale();
 
 	mlog_init("gromox-delivery-queue", g_config_file->get_value("lda_log_file"),
 		g_config_file->get_ll("lda_log_level"),

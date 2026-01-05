@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -685,6 +685,7 @@ int main(int argc, char **argv)
 	}
 #endif
 	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
+	setup_utf8_locale();
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	textmaps_init(PKGDATADIR);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -686,6 +686,7 @@ int main(int argc, char **argv) try
 	if (g_username == nullptr)
 		fprintf(stderr, "No username (-u) was given. The importer will operate in read-only mode.\n");
 	mlog_init(nullptr, nullptr, g_mlog_level, nullptr);
+	setup_utf8_locale();
 	if (g_continuous_mode)
 		fprintf(stderr, "Continuous mode has been selcted: On errors, the import will NOT abort\n");
 	if (g_twostep)
