@@ -315,7 +315,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 {
 	HANDLE_DATA temp_handle;
 	
-	if (!verify_cpid(cpid))
+	if (!acceptable_cpid_for_mapi(cpid))
 		return FALSE;
 	temp_handle.info.cpid = cpid;
 	temp_handle.info.lcid_string = lcid_string;

@@ -537,7 +537,7 @@ ec_error_t nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT &xstat,
 		return ecNotSupported;
 	}
 	/* check if valid cpid has been supplied */
-	if (!verify_cpid(pstat->codepage)) {
+	if (!acceptable_cpid_for_mapi(pstat->codepage)) {
 		memset(phandle, 0, sizeof(NSPI_HANDLE));
 		return MAPI_E_UNKNOWN_CPID;
 	}
@@ -2068,7 +2068,7 @@ ec_error_t nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 	*ppdata = nullptr;
 	if ((flags & (TI_TEMPLATE | TI_SCRIPT)) != TI_TEMPLATE)
 		return ecNotSupported;
-	if (!verify_cpid(codepage))
+	if (!acceptable_cpid_for_mapi(codepage))
 		return MAPI_E_UNKNOWN_CPID;
 	if (dn != nullptr) {
 		mlog(LV_WARN, "nsp: unimplemented templateinfo dn=%s", dn);

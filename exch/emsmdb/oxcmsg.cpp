@@ -48,7 +48,7 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 			return ecError;
 		cpid = pinfo->cpid;
 	}
-	if (!verify_cpid(cpid))
+	if (!acceptable_cpid_for_mapi(cpid))
 		return MAPI_E_UNKNOWN_CPID;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -176,7 +176,7 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 			return ecError;
 		cpid = pinfo->cpid;
 	}
-	if (!verify_cpid(cpid))
+	if (!acceptable_cpid_for_mapi(cpid))
 		return MAPI_E_UNKNOWN_CPID;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
@@ -821,7 +821,7 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 			return ecError;
 		cpid = pinfo->cpid;
 	}
-	if (!verify_cpid(cpid))
+	if (!acceptable_cpid_for_mapi(cpid))
 		return MAPI_E_UNKNOWN_CPID;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)

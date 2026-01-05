@@ -138,7 +138,7 @@ static void folder_namedb_read(const char *file, const char *dirs, folder_name_m
 	}
 }
 
-bool verify_cpid(uint32_t id)
+bool acceptable_cpid_for_mapi(uint32_t id)
 {
 	return g_cpid2name_map.find(id) != g_cpid2name_map.cend() &&
 	       id != CP_UTF16 && id != CP_UTF16BE &&
