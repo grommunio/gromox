@@ -185,11 +185,6 @@ bool TNEF_PROPLIST::emplace_back(uint32_t tag, const void *d, GET_PROPNAME gpn)
 	return true;
 }
 
-void tnef_init_library()
-{
-	textmaps_init();
-}
-	
 static BOOL tnef_username_to_oneoff(const char *username,
 	const char *pdisplay_name, BINARY *pbin)
 {
