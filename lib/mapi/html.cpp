@@ -52,7 +52,7 @@ struct RTF_WRITER {
 	std::map<rgb_t, unsigned int> pcolor_hash; /* color -> index */
 	std::vector<rgb_t> colors_ordered; /* index -> color */
 	std::vector<std::string> fonts_ordered; /* index -> font */
-	iconv_t cd;
+	iconv_t cd = iconv_t(-1);
 };
 
 enum class htag : uint8_t {
@@ -264,19 +264,6 @@ RTF_WRITER::~RTF_WRITER()
 		{"yellow",				0xffff00},
 		{"yellowgreen",			0x9acd32},
 	};
-
-ec_error_t html_init_library()
-{
-	textmaps_init();
-	/* Test for availability of converters */
-	auto cd = html_iconv_open();
-	if (cd == (iconv_t)-1) {
-		mlog(LV_ERR, "E-2107: iconv_open: %s", strerror(errno));
-		return ecError;
-	}
-	iconv_close(cd);
-	return ecSuccess;
-}
 
 static void html_set_fonttable(RTF_WRITER *w, const char *name) try
 {
@@ -1124,6 +1111,11 @@ static void html_enum_tables(RTF_WRITER *pwriter, xmlNode *pnode)
 ec_error_t html_to_rtf(std::string_view inbuf, cpid_t cpid, std::string &out) try
 {
 	RTF_WRITER writer;
+	textmaps_init();
+	if (writer.cd == (iconv_t)-1) {
+		mlog(LV_ERR, "E-2107: iconv_open: %s", strerror(errno));
+		return ecError;
+	}
 
 	cpid_cstr_compatible(cpid);
 	auto cset = cpid_to_cset(cpid);
