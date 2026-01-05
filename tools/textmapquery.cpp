@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
@@ -7,7 +7,6 @@
 #include <functional>
 #include <string>
 #include <sys/stat.h>
-#include <gromox/paths.h>
 #include <gromox/textmaps.hpp>
 
 using namespace gromox;
@@ -59,7 +58,7 @@ int main(int argc, char **argv)
 		help(argv[0]);
 		return EXIT_FAILURE;
 	}
-	textmaps_init(PKGDATADIR);
+	textmaps_init();
 	if (strcmp(argv[1], "cpidtocset") == 0)
 		return q_generic(argc, argv, +[](const char *a) { return cpid_to_cset(static_cast<cpid_t>(strtoul(a, nullptr, 0))); });
 	if (strcmp(argv[1], "csettocpid") == 0)

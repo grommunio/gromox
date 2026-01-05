@@ -32,7 +32,6 @@
 #include <gromox/json.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/usercvt.hpp>
-#include <gromox/paths.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
@@ -1436,7 +1435,7 @@ int main(int argc, char **argv)
 	setup_utf8_locale();
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
-	textmaps_init(PKGDATADIR);
+	textmaps_init();
 	if (g_with_hidden < 0)
 		g_with_hidden = !g_splice;
 	if (g_srcmbox != nullptr && g_user_map_file == nullptr) {

@@ -15,7 +15,6 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
-#include <gromox/paths.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
@@ -619,7 +618,7 @@ int main(int argc, char **argv)
 	setup_utf8_locale();
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
-	textmaps_init(PKGDATADIR);
+	textmaps_init();
 	if (argp.nargs == 0) {
 		size_t slurp_len = 0;
 		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_fd(STDIN_FILENO, &slurp_len));

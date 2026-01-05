@@ -17,7 +17,6 @@
 #include <libHX/scope.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapitags.hpp>
-#include <gromox/paths.h>
 #include <gromox/propval.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
@@ -688,7 +687,7 @@ int main(int argc, char **argv)
 	setup_utf8_locale();
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
-	textmaps_init(PKGDATADIR);
+	textmaps_init();
 
 	auto ret = do_file(argp.uarg[0]);
 	if (ret != 0) {

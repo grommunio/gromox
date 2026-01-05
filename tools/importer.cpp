@@ -21,7 +21,6 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/json.hpp>
 #include <gromox/mail.hpp>
-#include <gromox/paths.h>
 #include <gromox/svc_loader.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tie.hpp>
@@ -701,7 +700,7 @@ int main(int argc, char **argv) try
 		fprintf(stderr, "service_run: failed\n");
 		return EXIT_FAILURE;
 	}
-	textmaps_init(PKGDATADIR);
+	textmaps_init();
 	if (g_username != nullptr && gi_setup_from_user(g_username) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	if (gi_startup_client() != EXIT_SUCCESS)

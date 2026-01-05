@@ -330,7 +330,7 @@ int main(int argc, char **argv) try
 	setup_utf8_locale();
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
-	textmaps_init(PKGDATADIR);
+	textmaps_init();
 	g_config_file = config_file_prg(nullptr, "midb.cfg", eml2mt_cfg_defaults);
 	if (g_config_file == nullptr) {
 		fprintf(stderr, "Something went wrong with config files (e.g. permission denied)\n");

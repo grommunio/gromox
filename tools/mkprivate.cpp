@@ -307,7 +307,7 @@ int main(int argc, char **argv)
 	std::string db_name = znul(pconfig->get_value("mysql_dbname"));
 
 	const char *datadir = opt_datadir != nullptr ? opt_datadir : PKGDATADIR;
-	textmaps_init(datadir);
+	textmaps_init();
 	std::unique_ptr<MYSQL, mysql_delete> conn(mysql_init(nullptr));
 	if (conn == nullptr) {
 		printf("Failed to init mysql object\n");

@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 	if (HX_getopt6(g_options_table, argc, argv, nullptr,
 	    HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	textmaps_init(PKGDATADIR);
+	textmaps_init();
 	if (g_cpid != CP_ACP && cpid_to_cset(g_cpid) == nullptr) {
 		fprintf(stderr, "Unknown codepage %u\n", g_cpid);
 		return EXIT_FAILURE;
