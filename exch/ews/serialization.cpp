@@ -655,7 +655,9 @@ tCalendarItem::tCalendarItem(const tinyxml2::XMLElement* xml) :
 	XMLINIT(AppointmentSequenceNumber),
 	XMLINIT(AppointmentState),
 	XMLINIT(Recurrence),
-	XMLINIT(AllowNewTimeProposal)
+	XMLINIT(AllowNewTimeProposal),
+	XMLINIT(StartTimeZoneId),
+	XMLINIT(EndTimeZoneId)
 {}
 
 void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
@@ -688,6 +690,8 @@ void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(ModifiedOccurrences);
 	XMLDUMPT(DeletedOccurrences);
 	XMLDUMPT(AllowNewTimeProposal);
+	XMLDUMPT(StartTimeZoneId);
+	XMLDUMPT(EndTimeZoneId);
 }
 
 tCalendarPermission::tCalendarPermission(const tinyxml2::XMLElement* xml) :

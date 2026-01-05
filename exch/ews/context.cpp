@@ -2022,7 +2022,17 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		endOffset = std::chrono::duration_cast<std::chrono::minutes>(item.End.value().offset).count();
 		calcEndOffset = item.End.value().needCalcOffset();
 	}
-	// TODO handle no start and/or end times
+	if (!item.Start || !item.End) {
+		const char* missing = item.Start ? "End" : "Start";
+		throw EWSError::ItemCorrupt(E3046(missing, "CalendarItem"));
+	}
+
+	if (!shape.writes(NtCalendarTimeZone)) {
+		if (item.StartTimeZoneId)
+			shape.write(NtCalendarTimeZone, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.StartTimeZoneId)});
+		else if (item.EndTimeZoneId)
+			shape.write(NtCalendarTimeZone, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.EndTimeZoneId)});
+	}
 
 	if (item.IsAllDayEvent)
 		shape.write(NtAppointmentSubType, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(item.IsAllDayEvent.value())});
@@ -2215,6 +2225,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		const TAGGED_PROPVAL* caltz = shape.writes(NtCalendarTimeZone);
 		if (caltz) {
 			auto buf = ianatz_to_tzdef(static_cast<char*>(caltz->pvalue));
+			if (buf == nullptr)
+				buf = wintz_to_tzdef(static_cast<char*>(caltz->pvalue));
 			if (buf != nullptr) {
 				size_t len = buf->size();
 				if (len > UINT32_MAX)
