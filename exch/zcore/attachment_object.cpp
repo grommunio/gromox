@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
-#include <algorithm>
 #include <climits>
 #include <cstdlib>
 #include <cstring>
@@ -136,9 +135,7 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		PR_STORE_RECORD_KEY, PR_STORE_ENTRYID,
 	};
 	for (auto t : tags1)
-		pproptags->emplace_back(t);
-	std::sort(pproptags->begin(), pproptags->end());
-	pproptags->count = std::unique(pproptags->begin(), pproptags->end()) - pproptags->begin();
+		pproptags->emplace_back_nd(t);
 	return TRUE;
 }
 
@@ -199,24 +196,22 @@ static BOOL attachment_object_get_calculated_property(attachment_object *pattach
 	return FALSE;
 }
 
-BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
-    TPROPVAL_ARRAY *ppropvals)
+bool attachment_object::get_properties(proptag_cspan tags, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pattachment = this;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(tags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(tags.size());
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : tags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (!attachment_object_get_calculated_property(pattachment, tag, &pvalue))
 			tmp_proptags.emplace_back(tag);
 		else if (pvalue != nullptr)
@@ -227,7 +222,7 @@ BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	if (!exmdb_client->get_instance_properties(pattachment->pparent->pstore->get_dir(),
-	    0, pattachment->instance_id, &tmp_proptags, &tmp_propvals))
+	    0, pattachment->instance_id, tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count == 0)
 		return TRUE;
@@ -264,36 +259,34 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	return TRUE;
 }
 
-BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags)
+bool attachment_object::remove_properties(proptag_cspan tags)
 {
 	auto pattachment = this;
 	PROBLEM_ARRAY tmp_problems;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(tags.size());
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
-		if (aobj_is_readonly_prop(pattachment, tag))
-			continue;
-		tmp_proptags.emplace_back(tag);
-	}
+	for (const auto tag : tags)
+		if (!aobj_is_readonly_prop(pattachment, tag))
+			tmp_proptags.emplace_back(tag);
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	if (!exmdb_client->remove_instance_properties(pattachment->pparent->pstore->get_dir(),
-	    pattachment->instance_id, &tmp_proptags, &tmp_problems))
+	    pattachment->instance_id, tmp_proptags, &tmp_problems))
 		return FALSE;	
 	if (tmp_problems.count < tmp_proptags.count)
 		pattachment->b_touched = TRUE;
 	return TRUE;
 }
 
-BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
-	const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force, BOOL *pb_cycle)
+bool attachment_object::copy_properties(attachment_object *pattachment_src,
+    proptag_cspan excluded_proptags, BOOL b_force, BOOL *pb_cycle)
 {
 	auto pattachment = this;
+	auto pexcluded_proptags = &excluded_proptags;
 	int i;
 	PROBLEM_ARRAY tmp_problems;
 	ATTACHMENT_CONTENT attctnt;

@@ -191,10 +191,9 @@ bool EWSPlugin::_exmdb::get_message_property(const char *dir,
     const char *username, cpid_t cpid, uint64_t message_id, proptag_t proptag,
     void **ppval) const
 {
-	PROPTAG_ARRAY tmp_proptags{1, &proptag};
 	TPROPVAL_ARRAY propvals;
-
-	if (!get_message_properties(dir, username, cpid, message_id, &tmp_proptags, &propvals))
+	if (!get_message_properties(dir, username, cpid, message_id,
+	    {&proptag, 1}, &propvals))
 		return false;
 	*ppval = propvals.count == 1 && propvals.ppropval->proptag == proptag ?
 	         propvals.ppropval->pvalue : nullptr;

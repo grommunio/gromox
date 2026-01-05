@@ -458,10 +458,9 @@ eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 		auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id); });
 
 		static constexpr proptag_t qtags[] = {PidTagFolderId};
-		static constexpr PROPTAG_ARRAY qtaginfo = {std::size(qtags), deconst(qtags)};
 		tarray_set rowset;
 		if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
-		    &qtaginfo, 0, rowcount, &rowset)) {
+		    qtags, 0, rowcount, &rowset)) {
 			mlog(LV_ERR, "query_table RPC rejected");
 			return 0;
 		}

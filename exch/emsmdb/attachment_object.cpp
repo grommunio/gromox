@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
 // This file is part of Gromox.
-#include <algorithm>
 #include <climits>
 #include <cstdint>
 #include <cstdlib>
@@ -181,10 +180,8 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 		return FALSE;
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag, sizeof(proptag_t) * tmp_proptags.count);
 	for (auto so : stream_list)
-		pproptags->emplace_back(so->get_proptag());
-	pproptags->emplace_back(PR_ACCESS_LEVEL);
-	std::sort(pproptags->begin(), pproptags->end());
-	pproptags->count = std::unique(pproptags->begin(), pproptags->end()) - pproptags->begin();
+		pproptags->emplace_back_nd(so->get_proptag());
+	pproptags->emplace_back_nd(PR_ACCESS_LEVEL);
 	return TRUE;
 }
 
@@ -249,20 +246,20 @@ static const void *attachment_object_get_stream_property_value(const attachment_
 	return NULL;
 }
 
-BOOL attachment_object::get_properties(uint32_t size_limit,
-    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals) const
+bool attachment_object::get_properties(uint32_t size_limit,
+    proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals) const
 {
 	auto pattachment = this;
 	static const uint32_t err_code = ecError;
 	
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (const auto tag : *pproptags) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
 		if (attachment_object_get_calculated_property(pattachment, tag, &pvalue)) {
 			if (pvalue != nullptr)
@@ -282,7 +279,7 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 		return TRUE;
 	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client->get_instance_properties(pattachment->pparent->plogon->get_dir(),
-	    size_limit, pattachment->instance_id, &tmp_proptags, &tmp_propvals))
+	    size_limit, pattachment->instance_id, tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count == 0)
 		return TRUE;
@@ -348,21 +345,21 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	return false;
 }
 
-BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
+bool attachment_object::remove_properties(proptag_cspan pproptags,
     PROBLEM_ARRAY *pproblems) try
 {
 	auto pattachment = this;
 	
 	pproblems->count = 0;
-	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags.size());
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	std::vector<uint16_t> poriginal_indices;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (unsigned int i = 0; i < pproptags.size(); ++i) {
+		const auto tag = pproptags[i];
 		if (is_readonly_prop(tag) ||
 		    ao_has_open_streams(pattachment, tag)) {
 			pproblems->emplace_back(i, tag, ecAccessDenied);
@@ -375,7 +372,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		return TRUE;
 	PROBLEM_ARRAY tmp_problems;
 	if (!exmdb_client->remove_instance_properties(pattachment->pparent->plogon->get_dir(),
-	    pattachment->instance_id, &tmp_proptags, &tmp_problems))
+	    pattachment->instance_id, tmp_proptags, &tmp_problems))
 		return FALSE;	
 	if (0 == tmp_problems.count) {
 		pattachment->b_touched = TRUE;
@@ -383,7 +380,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	tmp_problems.transform(poriginal_indices);
 	*pproblems += std::move(tmp_problems);
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (unsigned int i = 0; i < pproptags.size(); ++i) {
 		if (!pproblems->have_index(i)) {
 			pattachment->b_touched = TRUE;
 			break;
@@ -395,8 +392,8 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	return false;
 }
 
-BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
-	const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force,
+bool attachment_object::copy_properties(attachment_object *pattachment_src,
+    proptag_cspan pexcluded_proptags, BOOL b_force,
 	BOOL *pb_cycle, PROBLEM_ARRAY *pproblems)
 {
 	auto pattachment = this;
@@ -417,14 +414,14 @@ BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
 	common_util_remove_propvals(&attctnt.proplist, PR_ATTACH_NUM);
 	i = 0;
 	while (i < attctnt.proplist.count) {
-		if (pexcluded_proptags->has(attctnt.proplist.ppropval[i].proptag)) {
+		if (pexcluded_proptags.has(attctnt.proplist.ppropval[i].proptag)) {
 			common_util_remove_propvals(&attctnt.proplist,
 					attctnt.proplist.ppropval[i].proptag);
 			continue;
 		}
 		i ++;
 	}
-	if (pexcluded_proptags->has(PR_ATTACH_DATA_OBJ))
+	if (pexcluded_proptags.has(PR_ATTACH_DATA_OBJ))
 		attctnt.pembedded = NULL;
 	if (!exmdb_client->write_attachment_instance(dstdir,
 	    pattachment->instance_id, &attctnt, b_force, pproblems))

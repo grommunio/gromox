@@ -23,9 +23,8 @@
 
 using namespace gromox;
 
-static BOOL oxctable_verify_columns_and_sorts(
-	const PROPTAG_ARRAY *pcolumns,
-	const SORTORDER_SET *psort_criteria)
+static bool verify_columns_and_sorts(proptag_cspan pcolumns,
+    const SORTORDER_SET *psort_criteria)
 {
 	proptag_t proptag = 0;
 	for (const auto &crit : *psort_criteria) {
@@ -36,7 +35,7 @@ static BOOL oxctable_verify_columns_and_sorts(
 		proptag = PROP_TAG(crit.type, crit.propid);
 		break;
 	}
-	for (const auto ctag : *pcolumns)
+	for (const auto ctag : pcolumns)
 		if (ctag & MV_INSTANCE && proptag != ctag)
 			return false;
 	return TRUE;
@@ -86,19 +85,19 @@ static inline bool table_acceptable_type(proptype_t type)
 	}
 }
 
-ec_error_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
+ec_error_t rop_setcolumns(uint8_t table_flags, proptag_cspan pproptags,
     uint8_t *ptable_status, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
 	
-	if (pproptags->count == 0)
+	if (pproptags.empty())
 		return ecInvalidParam;
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
 	if (ptable == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
 		return ecNotSupported;
-	for (const auto tag : *pproptags) {
+	for (const auto tag : pproptags) {
 		auto type = PROP_TYPE(tag);
 		if ((type & MVI_FLAG) == MVI_FLAG) {
 				if (ropGetContentsTable != ptable->rop_id)
@@ -109,9 +108,10 @@ ec_error_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 			return ecInvalidParam;
 	}
 	auto psorts = ptable->get_sorts();
-	if (psorts != nullptr && !oxctable_verify_columns_and_sorts(pproptags, psorts))
+	if (psorts != nullptr && !verify_columns_and_sorts(pproptags, psorts))
 		return ecNotSupported;
-	if (!ptable->set_columns(pproptags))
+	proptag_vector new_tags{pproptags.begin(), pproptags.end()};
+	if (!ptable->set_columns(std::move(new_tags)))
 		return ecServerOOM;
 	*ptable_status = TBLSTAT_COMPLETE;
 	return ecSuccess;
@@ -179,7 +179,7 @@ ec_error_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteri
 	}
 	auto pcolumns = ptable->get_columns();
 	if (b_multi_inst && pcolumns != nullptr && 
-	    !oxctable_verify_columns_and_sorts(pcolumns, psort_criteria))
+	    !verify_columns_and_sorts(*pcolumns, psort_criteria))
 		return ecNotSupported;
 	if (!ptable->set_sorts(psort_criteria))
 		return ecServerOOM;
@@ -248,13 +248,13 @@ ec_error_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count
 	if (0 == tmp_set.count) {
 		*pcount = 0;
 	} else {
+		const auto cols = ptable->get_columns();
 		size_t i;
 		for (i=0; i<tmp_set.count; i++) {
-			if (!common_util_propvals_to_row(tmp_set.pparray[i],
-			    ptable->get_columns(), &tmp_row))
+			if (!cu_propvals_to_row(tmp_set.pparray[i], *cols, &tmp_row))
 				return ecServerOOM;
 			uint32_t last_offset = ext.m_offset;
-			if (pext->p_proprow(*ptable->get_columns(), tmp_row) != pack_result::ok) {
+			if (pext->p_proprow(*cols, tmp_row) != pack_result::ok) {
 				ext.m_offset = last_offset;
 				break;
 			}
@@ -466,7 +466,7 @@ ec_error_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
 
 ec_error_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
     const BINARY *pbookmark, uint8_t *pbookmark_invisible, PROPERTY_ROW **pprow,
-    PROPTAG_ARRAY **ppcolumns, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
+    proptag_vector *pcolumns, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin) try
 {
 	ems_objtype object_type;
 	int32_t position;
@@ -520,16 +520,23 @@ ec_error_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 		return ecError;
 	if (!ptable->match_row(b_forward, pres, &position, &propvals))
 		return ecError;
-	*ppcolumns = deconst(ptable->get_columns());
+	auto colptr = ptable->get_columns();
+	if (colptr == nullptr)
+		pcolumns->clear();
+	else
+		pcolumns->assign(colptr->cbegin(), colptr->cend());
 	if (position < 0)
 		return ecNotFound;
 	ptable->set_position(position);
 	*pprow = cu_alloc<PROPERTY_ROW>();
 	if (*pprow == nullptr)
 		return ecServerOOM;
-	if (!common_util_propvals_to_row(&propvals, *ppcolumns, *pprow))
+	if (!cu_propvals_to_row(&propvals, *pcolumns, *pprow))
 		return ecServerOOM;
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return ecServerOOM;
 }
 
 ec_error_t rop_freebookmark(const BINARY *pbookmark, LOGMAP *plogmap,
@@ -614,12 +621,12 @@ ec_error_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 		return ecError;
 	}
 	ptable->set_position(old_position);
+	const auto *cols = ptable->get_columns();
 	for (i = 0; i < tmp_set.count; ++i) {
-		if (!common_util_propvals_to_row(tmp_set.pparray[i],
-		    ptable->get_columns(), &tmp_row))
+		if (!cu_propvals_to_row(tmp_set.pparray[i], *cols, &tmp_row))
 			return ecServerOOM;
 		uint32_t last_offset = ext.m_offset;
-		if (pext->p_proprow(*ptable->get_columns(), tmp_row) != pack_result::ok) {
+		if (pext->p_proprow(*cols, tmp_row) != pack_result::ok) {
 			ext.m_offset = last_offset;
 			break;
 		}
@@ -885,7 +892,6 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	uint32_t permission;
 	uint64_t fid_deferred;
 	PROBLEM_ARRAY problems;
-	PROPTAG_ARRAY proptags;
 	RESTRICTION restriction;
 	TPROPVAL_ARRAY propvals;
 	TAGGED_PROPVAL propval_buff[2];
@@ -919,10 +925,8 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 		return ecError;
 
 	static constexpr proptag_t tmp_proptag = PidTagMid;
-	proptags.count = 1;
-	proptags.pproptag = deconst(&tmp_proptag);
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
-	    table_id, &proptags, 0, row_count, &tmp_set))
+	    table_id, {&tmp_proptag, 1}, 0, row_count, &tmp_set))
 		return ecError;
 	exmdb_client->unload_table(dir, table_id);
 

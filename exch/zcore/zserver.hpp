@@ -93,8 +93,8 @@ extern ec_error_t zs_entryidfromsourcekey(GUID ses, uint32_t store_handle, BINAR
 extern ec_error_t zs_storeadvise(GUID ses, uint32_t store_handle, const BINARY *entryid, uint32_t event_mask, uint32_t *sub_id);
 extern ec_error_t zs_unadvise(GUID ses, uint32_t store_handle, uint32_t sub_id);
 extern ec_error_t zs_notifdequeue(const NOTIF_SINK *, uint32_t timeval, std::vector<ZNOTIFICATION> *);
-extern ec_error_t zs_queryrows(GUID ses, uint32_t tbl_handle, uint32_t start, uint32_t count, const RESTRICTION *, const PROPTAG_ARRAY *, TARRAY_SET *);
-extern ec_error_t zs_setcolumns(GUID ses, uint32_t tbl_handle, const PROPTAG_ARRAY *, uint32_t flags);
+extern ec_error_t zs_queryrows(GUID ses, uint32_t tbl_handle, uint32_t start, uint32_t count, const RESTRICTION *, const std::vector<gromox::proptag_t> *, TARRAY_SET *);
+extern ec_error_t zs_setcolumns(GUID ses, uint32_t tbl_handle, proptag_cspan, uint32_t flags);
 extern ec_error_t zs_seekrow(GUID ses, uint32_t tbl_handle, uint32_t bookmark, int32_t seek_rows, int32_t *sought);
 extern ec_error_t zs_sorttable(GUID ses, uint32_t tbl_handle, const SORTORDER_SET *);
 extern ec_error_t zs_getrowcount(GUID ses, uint32_t tbl_handle, uint32_t *count);
@@ -110,13 +110,13 @@ extern ec_error_t zs_openattachment(GUID ses, uint32_t msg_handle, uint32_t atta
 extern ec_error_t zs_createattachment(GUID ses, uint32_t msg_handle, uint32_t *obj_handle);
 extern ec_error_t zs_deleteattachment(GUID ses, uint32_t msg_handle, uint32_t attach_id);
 extern ec_error_t zs_setpropvals(GUID ses, uint32_t obj, TPROPVAL_ARRAY *);
-extern ec_error_t zs_getpropvals(GUID ses, uint32_t obj_handle, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
-extern ec_error_t zs_deletepropvals(GUID ses, uint32_t obj_handle, const PROPTAG_ARRAY *);
+extern ec_error_t zs_getpropvals(GUID ses, uint32_t obj_handle, const proptag_vector *, TPROPVAL_ARRAY *);
+extern ec_error_t zs_deletepropvals(GUID ses, uint32_t obj_handle, proptag_cspan);
 extern ec_error_t zs_setmessagereadflag(GUID ses, uint32_t msg_handle, uint32_t flags);
 extern ec_error_t zs_openembedded(GUID ses, uint32_t atx_handle, uint32_t flags, uint32_t *obj_handle);
 extern ec_error_t zs_getnamedpropids(GUID ses, uint32_t store_handle, const PROPNAME_ARRAY *, PROPID_ARRAY *);
 extern ec_error_t zs_getpropnames(GUID ses, uint32_t store_handle, const PROPID_ARRAY &, PROPNAME_ARRAY *);
-extern ec_error_t zs_copyto(GUID ses, uint32_t srcobj_handle, const PROPTAG_ARRAY *exclprop, uint32_t dstobj_handle, uint32_t flags);
+extern ec_error_t zs_copyto(GUID ses, uint32_t srcobj_handle, proptag_cspan exclprop, uint32_t dstobj_handle, uint32_t flags);
 extern ec_error_t zs_savechanges(GUID ses, uint32_t obj_handle);
 extern ec_error_t zs_hierarchysync(GUID ses, uint32_t fld_handle, uint32_t *obj_handle);
 extern ec_error_t zs_contentsync(GUID ses, uint32_t fld_handle, uint32_t *obj_handle);

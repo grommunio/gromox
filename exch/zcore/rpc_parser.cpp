@@ -52,6 +52,10 @@ static std::condition_variable g_waken_cond;
 static std::mutex g_conn_lock;
 unsigned int g_zrpc_debug;
 
+template<typename T> static inline auto optional_ptr(std::optional<T> &p) { return p ? &*p : nullptr; }
+template<typename T> static inline auto optional_ptr(const std::optional<T> &p) { return p ? &*p : nullptr; }
+template<typename T> static inline auto optional_ptr(const std::vector<T> &p) { return p.size() != 0 ? &p : nullptr; }
+
 void rpc_parser_init(unsigned int thread_num)
 {
 	g_zrpc_stop = true;

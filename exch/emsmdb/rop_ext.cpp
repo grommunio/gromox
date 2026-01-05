@@ -570,7 +570,7 @@ static pack_result rop_ext_push(EXT_PUSH &x, const FINDROW_RESPONSE &r)
 	if (r.prow == nullptr)
 		return x.p_uint8(0);
 	TRY(x.p_uint8(1));
-	TRY(x.p_proprow(*r.pcolumns, *r.prow));
+	TRY(x.p_proprow(r.pcolumns, *r.prow));
 	return pack_result::ok;
 }
 
@@ -995,7 +995,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, GETPROPERTIESSPECIFIC_REQUEST &r)
 static pack_result rop_ext_push(EXT_PUSH &x,
     const GETPROPERTIESSPECIFIC_RESPONSE &r)
 {
-	return x.p_proprow(*r.pproptags, r.row);
+	return x.p_proprow(r.pproptags, r.row);
 }
 
 static pack_result rop_ext_pull(EXT_PULL &x, GETPROPERTIESALL_REQUEST &r)

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
 // This file is part of Gromox.
-#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -72,7 +71,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		PR_STORE_ENTRYID, PR_STORE_RECORD_KEY, PR_SOURCE_KEY,
 	};
 	for (auto t : tags1)
-		pproptags->emplace_back(t);
+		pproptags->emplace_back_nd(t);
 	static constexpr proptag_t tags2[] = {
 		PR_IPM_DRAFTS_ENTRYID, PR_IPM_CONTACT_ENTRYID,
 		PR_IPM_APPOINTMENT_ENTRYID, PR_IPM_JOURNAL_ENTRYID,
@@ -81,9 +80,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	};
 	if (pfolder->pstore->b_private && toplevel(pfolder->folder_id))
 		for (auto t : tags2)
-			pproptags->emplace_back(t);
-	std::sort(pproptags->begin(), pproptags->end());
-	pproptags->count = std::unique(pproptags->begin(), pproptags->end()) - pproptags->begin();
+			pproptags->emplace_back_nd(t);
 	return TRUE;
 }
 
@@ -412,24 +409,23 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	return FALSE;
 }
 
-BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
+bool folder_object::get_properties(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
 	auto pfolder = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (!folder_object_get_calculated_property(pfolder, tag, &pvalue))
 			tmp_proptags.emplace_back(tag);
 		else if (pvalue != nullptr)
@@ -441,7 +437,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return TRUE;
 	auto pinfo = zs_get_info();
 	if (!exmdb_client->get_folder_properties(pfolder->pstore->get_dir(),
-	    pinfo->cpid, pfolder->folder_id, &tmp_proptags, &tmp_propvals))
+	    pinfo->cpid, pfolder->folder_id, tmp_proptags, &tmp_propvals))
 		return FALSE;
 	if (tmp_propvals.count == 0)
 		return TRUE;
@@ -499,7 +495,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	return TRUE;
 }
 
-BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
+bool folder_object::remove_properties(proptag_cspan pproptags)
 {
 	BINARY *pbin_pcl;
 	uint64_t last_time;
@@ -510,20 +506,17 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	TAGGED_PROPVAL propval_buff[4];
 	
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	auto pfolder = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
-		if (pfolder->is_readonly_prop(tag))
-			continue;
-		tmp_proptags.emplace_back(tag);
-	}
+	for (const auto tag : pproptags)
+		if (!pfolder->is_readonly_prop(tag))
+			tmp_proptags.emplace_back(tag);
 	if (tmp_proptags.count == 0)
 		return TRUE;
 	if (!exmdb_client->remove_folder_properties(pfolder->pstore->get_dir(),
-	    pfolder->folder_id, &tmp_proptags))
+	    pfolder->folder_id, tmp_proptags))
 		return FALSE;	
 	tmp_propvals.count = 4;
 	tmp_propvals.ppropval = propval_buff;
@@ -559,7 +552,6 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 	uint32_t table_id;
 	TARRAY_SET permission_set;
 	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	
 	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();
@@ -571,7 +563,7 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 		return FALSE;
 	}
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
-		table_id, &proptags, 0, row_num, &permission_set)) {
+	    table_id, proptag_buff, 0, row_num, &permission_set)) {
 		exmdb_client->unload_table(dir, table_id);
 		return FALSE;
 	}
@@ -609,9 +601,8 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 	    pfolder->folder_id, 0, &table_id, &row_num))
 		return FALSE;
 	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_ID};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP,
-		table_id, &proptags, 0, row_num, &permission_set)) {
+	    table_id, proptag_buff, 0, row_num, &permission_set)) {
 		exmdb_client->unload_table(dir, table_id);
 		return FALSE;
 	}

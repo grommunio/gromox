@@ -295,7 +295,7 @@ class EWSContext {
 	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
 	template<typename T> const T *getItemProp(const std::string &, uint64_t, proptag_t) const;
-	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
+	TPROPVAL_ARRAY getItemProps(const std::string &, uint64_t, proptag_cspan) const;
 	GUID getMailboxGuid(const std::string&) const;
 	Structures::sMailboxInfo getMailboxInfo(const std::string&, bool) const;
 	propid_t getNamedPropId(const std::string &, const PROPERTY_NAME &, bool = false) const;

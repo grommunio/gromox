@@ -376,7 +376,7 @@ static int do_folder(eid_t folder_id, const parent_desc &pd)
 
 	TPROPVAL_ARRAY fld_propvals{};
 	if (!exmdb_client->get_folder_properties(g_storedir, CP_UTF8,
-	    folder_id, &ptall, &fld_propvals)) {
+	    folder_id, ptall, &fld_propvals)) {
 		fprintf(stderr, "get_folder_properties: RPC failed\n");
 		return -1;
 	}

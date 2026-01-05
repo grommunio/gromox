@@ -37,16 +37,16 @@ oneoff_object::oneoff_object(ONEOFF_ENTRYID &&e) :
 	m_addrtype(std::move(e.paddress_type)), m_emaddr(std::move(e.pmail_address))
 {}
 
-ec_error_t oneoff_object::get_props(const PROPTAG_ARRAY *tags, TPROPVAL_ARRAY *vals)
+ec_error_t oneoff_object::get_props(proptag_cspan tags, TPROPVAL_ARRAY *vals)
 {
 	static constexpr uint32_t disptype = DT_MAILUSER;
 	static constexpr auto objtype = static_cast<uint32_t>(MAPI_MAILUSER);
 	vals->ppropval = cu_alloc<TAGGED_PROPVAL>(std::size(all_tags_raw));
 	if (vals->ppropval == nullptr)
 		return ecServerOOM;
-	for (size_t i = 0; i < tags->count; ++i) {
+	for (const auto tag : tags) {
 		auto &vc = vals->ppropval[vals->count];
-		switch (tags->pproptag[i]) {
+		switch (tag) {
 		case PR_ADDRTYPE:      vc.pvalue = deconst(m_addrtype.c_str()); break;
 		case PR_DISPLAY_NAME:  vc.pvalue = deconst(m_dispname.c_str()); break;
 		case PR_DISPLAY_TYPE:  vc.pvalue = deconst(&disptype); break;
@@ -88,7 +88,7 @@ ec_error_t oneoff_object::get_props(const PROPTAG_ARRAY *tags, TPROPVAL_ARRAY *v
 		default:
 			continue;
 		}
-		vals->ppropval[vals->count++].proptag = tags->pproptag[i];
+		vals->ppropval[vals->count++].proptag = tag;
 	}
 	return ecSuccess;
 }
@@ -123,7 +123,7 @@ bool user_object::valid()
 	return true;
 }
 
-BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
+bool user_object::get_properties(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	auto puser = this;
@@ -138,12 +138,12 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	pbase.reset();
 	/* if user is hidden from addressbook tree, we simply
 		return the necessary information to the caller */
-	auto w_otype = pproptags->has(PR_OBJECT_TYPE);
-	auto w_atype = pproptags->has(PR_ADDRTYPE);
-	auto w_smtp  = pproptags->has(PR_SMTP_ADDRESS);
-	auto w_email = pproptags->has(PR_EMAIL_ADDRESS);
-	auto w_dname = pproptags->has(PR_DISPLAY_NAME);
-	auto w_acct  = pproptags->has(PR_ACCOUNT);
+	auto w_otype = pproptags.has(PR_OBJECT_TYPE);
+	auto w_atype = pproptags.has(PR_ADDRTYPE);
+	auto w_smtp  = pproptags.has(PR_SMTP_ADDRESS);
+	auto w_email = pproptags.has(PR_EMAIL_ADDRESS);
+	auto w_dname = pproptags.has(PR_DISPLAY_NAME);
+	auto w_acct  = pproptags.has(PR_ACCOUNT);
 	bool wx_name = w_smtp || w_email || w_dname || w_acct;
 	if (!w_otype && !w_atype && !wx_name) {
 		ppropvals->count = 0;
@@ -228,7 +228,7 @@ ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 	return ecServerOOM;
 }
 
-ec_error_t user_object::query_member_table(const PROPTAG_ARRAY *proptags,
+ec_error_t user_object::query_member_table(proptag_cspan proptags,
     uint32_t start_pos, int32_t row_needed, TARRAY_SET *set)
 {
 	bool b_forward;

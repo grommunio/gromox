@@ -403,16 +403,15 @@ ec_error_t get_freebusy(const char *username, const char *dir, time_t start_time
 
 	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(dir, table_id);});
 
-	proptag_t proptag_buff[] = {
+	proptag_t proptags[] = {
 		ptag.apptstartwhole, ptag.apptendwhole, ptag.busystatus,
 		ptag.recurring, ptag.apptsubtype, ptag.private_flag,
 		ptag.apptstateflags, ptag.location, ptag.reminderset,
 		PR_SUBJECT, PidTagMid,
 	};
-	const PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	TARRAY_SET rows;
 	if (!exmdb_client->query_table(dir, nullptr, CP_ACP, table_id,
-	    &proptags, 0, row_count, &rows))
+	    proptags, 0, row_count, &rows))
 		return ecRpcFailed;
 
 	for (size_t i = 0; i < rows.count; ++i) {

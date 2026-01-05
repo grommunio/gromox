@@ -132,7 +132,7 @@ BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count,
 	assert(is_loaded());
 	auto ptable = this;
 	
-	if (m_columns == nullptr)
+	if (!m_colset)
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
@@ -172,16 +172,14 @@ void table_object::seek_current(BOOL b_forward, uint16_t row_count)
 	}
 }
 
-BOOL table_object::set_columns(const PROPTAG_ARRAY *pcolumns)
+bool table_object::set_columns(proptag_cspan pcolumns) try
 {
-	if (m_columns != nullptr)
-		proptag_array_free(m_columns);
-	if (NULL == pcolumns) {
-		m_columns = nullptr;
-		return TRUE;
-	}
-	m_columns = proptag_array_dup(pcolumns);
-	return m_columns != nullptr ? TRUE : false;
+	m_columns.assign(pcolumns.begin(), pcolumns.end());
+	m_colset = true;
+	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 
 BOOL table_object::set_sorts(const SORTORDER_SET *psorts)
@@ -313,10 +311,8 @@ void table_object::remove_bookmark(uint32_t index)
 void table_object::reset()
 {
 	auto ptable = this;
-	if (m_columns != nullptr) {
-		proptag_array_free(m_columns);
-		m_columns = nullptr;
-	}
+	m_columns.clear();
+	m_colset = false;
 	if (m_sorts != nullptr) {
 		sortorder_set_free(m_sorts);
 		m_sorts = nullptr;
@@ -344,7 +340,7 @@ BOOL table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals) const
 {
 	auto ptable = this;
-	if (m_columns == nullptr)
+	if (!m_colset)
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	return exmdb_client->match_table(ptable->plogon->get_dir(),
@@ -357,7 +353,7 @@ BOOL table_object::read_row(uint64_t inst_id, uint32_t inst_num,
     TPROPVAL_ARRAY *ppropvals) const
 {
 	auto ptable = this;
-	if (m_columns == nullptr)
+	if (!m_colset)
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	return exmdb_client->read_table_row(ptable->plogon->get_dir(),

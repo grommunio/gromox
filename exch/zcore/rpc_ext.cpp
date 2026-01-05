@@ -842,7 +842,7 @@ static pack_result zrpc_push(EXT_PUSH &x, const zcresp_notifdequeue &d)
 	return rpc_ext_push_znotification_array(x, d.notifications);
 }
 
-static pack_result zrpc_pull(EXT_PULL &x, zcreq_queryrows &d)
+static pack_result zrpc_pull(EXT_PULL &x, zcreq_queryrows &d) try
 {
 	uint8_t tmp_byte;
 	
@@ -861,14 +861,14 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_queryrows &d)
 	}
 	QRF(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		d.pproptags = nullptr;
+		d.pproptags.reset();
 	} else {
-		d.pproptags = x.anew<PROPTAG_ARRAY>();
-		if (d.pproptags == nullptr)
-			return pack_result::alloc;
-		QRF(x.g_proptag_a(d.pproptags));
+		d.pproptags.emplace();
+		QRF(x.g_proptag_a(&*d.pproptags));
 	}
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_queryrows &d)
@@ -880,10 +880,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_setcolumns &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.htable));
-	d.pproptags = x.anew<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return pack_result::alloc;
-	QRF(x.g_proptag_a(d.pproptags));
+	QRF(x.g_proptag_a(&d.pproptags));
 	QRF(x.g_uint32(&d.flags));
 	return pack_result::ok;
 }
@@ -1077,7 +1074,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_setpropvals &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_pull(EXT_PULL &x, zcreq_getpropvals &d)
+static pack_result zrpc_pull(EXT_PULL &x, zcreq_getpropvals &d) try
 {
 	uint8_t tmp_byte;
 	
@@ -1085,14 +1082,14 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_getpropvals &d)
 	QRF(x.g_uint32(&d.hobject));
 	QRF(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		d.pproptags = nullptr;
+		d.pproptags.reset();
 	} else {
-		d.pproptags = x.anew<PROPTAG_ARRAY>();
-		if (d.pproptags == nullptr)
-			return pack_result::alloc;
-		QRF(x.g_proptag_a(d.pproptags));
+		d.pproptags.emplace();
+		QRF(x.g_proptag_a(&*d.pproptags));
 	}
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_getpropvals &d)
@@ -1105,10 +1102,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_deletepropvals &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hobject));
-	d.pproptags = x.anew<PROPTAG_ARRAY>();
-	if (d.pproptags == nullptr)
-		return pack_result::alloc;
-	QRF(x.g_proptag_a(d.pproptags));
+	QRF(x.g_proptag_a(&d.pproptags));
 	return pack_result::ok;
 }
 
@@ -1169,10 +1163,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_copyto &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_uint32(&d.hsrcobject));
-	d.pexclude_proptags = x.anew<PROPTAG_ARRAY>();
-	if (d.pexclude_proptags == nullptr)
-		return pack_result::alloc;
-	QRF(x.g_proptag_a(d.pexclude_proptags));
+	QRF(x.g_proptag_a(&d.pexclude_proptags));
 	QRF(x.g_uint32(&d.hdstobject));
 	QRF(x.g_uint32(&d.flags));
 	return pack_result::ok;

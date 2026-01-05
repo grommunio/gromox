@@ -376,6 +376,7 @@ class sShape {
 	const TAGGED_PROPVAL* writes(const PROPERTY_NAME&) const;
 
 	PROPTAG_ARRAY remove() const;
+	const std::vector<gromox::proptag_t> &remove_vec() const { return dTags; }
 
 	bool requested(proptag_t, uint8_t = FL_FIELD) const;
 	const TAGGED_PROPVAL *get(proptag_t, uint8_t = FL_FIELD) const;

@@ -36,12 +36,12 @@ struct table_object {
 	public:
 	~table_object();
 	static std::unique_ptr<table_object> create(store_object *, void *parent, zcore_tbltype, uint32_t table_flags);
-	const PROPTAG_ARRAY *get_columns() const { return pcolumns; }
-	BOOL set_columns(const PROPTAG_ARRAY *);
+	const proptag_vector *get_columns() const { return m_colset ? &m_columns : nullptr; }
+	bool set_columns(proptag_cspan);
 	BOOL set_sorts(const SORTORDER_SET *);
 	BOOL load();
 	void unload();
-	BOOL query_rows(const PROPTAG_ARRAY *cols, uint32_t row_count, TARRAY_SET *);
+	bool query_rows(const proptag_cspan *cols, uint32_t row_count, TARRAY_SET *);
 	BOOL set_restriction(const RESTRICTION *);
 	void seek_current(BOOL forward, uint32_t row_count);
 	uint32_t get_position() const { return position; }
@@ -59,9 +59,9 @@ struct table_object {
 	uint32_t handle = 0, table_flags = 0;
 	void *pparent_obj = nullptr;
 	zcore_tbltype table_type{};
-	bool m_loaded = false;
+	bool m_loaded = false, m_colset = false;
 	tarray_set *fixed_data = nullptr;
-	PROPTAG_ARRAY *pcolumns = nullptr;
+	proptag_vector m_columns;
 	SORTORDER_SET *psorts = nullptr;
 	RESTRICTION *prestriction = nullptr;
 	uint32_t position = 0, table_id = 0, bookmark_index = 0;

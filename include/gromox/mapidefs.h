@@ -1102,13 +1102,13 @@ struct GX_EXPORT PROPNAME_ARRAY {
 struct GX_EXPORT proptag_cspan : public std::span<const gromox::proptag_t> {
 	private:
 	using base_t = std::span<const gromox::proptag_t>;
-	static constexpr size_t npos = -1;
 
 	public:
 	using base_t::base_t;
 	size_t indexof(gromox::proptag_t) const;
 	inline bool has(gromox::proptag_t t) const { return indexof(t) != npos; }
 	std::string repr() const;
+	static constexpr size_t npos = -1;
 };
 
 struct GX_EXPORT proptag_span : public std::span<gromox::proptag_t> {
@@ -1138,6 +1138,7 @@ struct GX_EXPORT PROPTAG_ARRAY {
 	inline bool has(gromox::proptag_t t) const { return proptag_cspan(*this).has(t); }
 	inline std::string repr() const { return proptag_cspan(*this).repr(); }
 	void emplace_back(gromox::proptag_t t) { pproptag[count++] = t; }
+	void emplace_back_nd(gromox::proptag_t t) { if (!has(t)) pproptag[count++] = t; }
 
 	uint16_t count;
 	gromox::proptag_t *pproptag;

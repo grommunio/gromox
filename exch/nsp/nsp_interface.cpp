@@ -95,9 +95,8 @@ static const BINARY *nsp_photo_rpc(const char *dir)
 	    name_rsp.size() != name_req.size() || name_rsp[0] == 0)
 		return nullptr;
 	auto proptag = PROP_TAG(PT_BINARY, name_rsp[0]);
-	const PROPTAG_ARRAY tags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY values{};
-	if (!get_store_properties(dir, CP_ACP, &tags, &values))
+	if (!get_store_properties(dir, CP_ACP, {&proptag, 1}, &values))
 		return nullptr;
 	return values.get<const BINARY>(proptag);
 }

@@ -51,11 +51,10 @@ void mbop_usage_cb(const struct HXoptcb *cbi)
 void delcount(eid_t fid, uint32_t *delc, uint32_t *fldc)
 {
 	static constexpr proptag_t tags[] = {PR_DELETED_COUNT_TOTAL, PR_FOLDER_CHILD_COUNT};
-	static constexpr PROPTAG_ARRAY taghdr = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY props;
 	*delc = *fldc = 0;
 	if (!exmdb_client->get_folder_properties(g_storedir, CP_ACP, fid,
-	    &taghdr, &props)) {
+	    tags, &props)) {
 		mbop_fprintf(stderr, "delcount: get_folder_properties failed\n");
 		return;
 	}
@@ -123,9 +122,8 @@ static bool recalc_sizes(const char *dir)
 		PR_MESSAGE_SIZE_EXTENDED, PR_NORMAL_MESSAGE_SIZE_EXTENDED,
 		PR_ASSOC_MESSAGE_SIZE_EXTENDED
 	};
-	static constexpr PROPTAG_ARRAY tags1 = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY vals;
-	auto ok = exmdb_client->get_store_properties(dir, CP_ACP, &tags1, &vals);
+	auto ok = exmdb_client->get_store_properties(dir, CP_ACP, tags, &vals);
 	if (!ok)
 		return false;
 	printf("Old: %llu bytes (%llu normal, %llu FAI)\n",
@@ -135,7 +133,7 @@ static bool recalc_sizes(const char *dir)
 	ok = exmdb_client->recalc_store_size(g_storedir, 0);
 	if (!ok)
 		return false;
-	ok = exmdb_client->get_store_properties(g_storedir, CP_ACP, &tags1, &vals);
+	ok = exmdb_client->get_store_properties(g_storedir, CP_ACP, tags, &vals);
 	if (!ok)
 		return false;
 	printf("New: %llu bytes (%llu normal, %llu FAI)\n",
@@ -312,7 +310,7 @@ static int delstoreprop(int argc, char **argv, const GUID &guid,
 		return EXIT_FAILURE;
 	auto proptag = PROP_TAG(type, propid);
 	const PROPTAG_ARRAY tags = {1, &proptag};
-	if (!exmdb_client->remove_store_properties(g_storedir, &tags))
+	if (!exmdb_client->remove_store_properties(g_storedir, tags))
 		return EXIT_FAILURE;
 	if (strcmp(name, "zcore_profsect") == 0)
 		unlink((g_storedir + "/config/zarafa.dat"s).c_str());
@@ -323,9 +321,9 @@ static int delstoreprop(int argc, char **argv, const GUID &guid,
 
 static errno_t showstoreprop(proptag_t proptag)
 {
-	const PROPTAG_ARRAY tags = {1, &proptag};
 	TPROPVAL_ARRAY vals{};
-	if (!exmdb_client->get_store_properties(g_storedir, CP_ACP, &tags, &vals))
+	if (!exmdb_client->get_store_properties(g_storedir, CP_ACP,
+	    {&proptag, 1}, &vals))
 		return EINVAL;
 	switch (PROP_TYPE(proptag)) {
 	case PT_BINARY: {
@@ -447,10 +445,9 @@ static errno_t clear_rwz()
 	}
 
 	static constexpr proptag_t qtags1[] = {PidTagMid};
-	static constexpr PROPTAG_ARRAY qtags = {std::size(qtags1), deconst(qtags1)};
 	TARRAY_SET rowset{};
 	if (!exmdb_client->query_table(g_storedir, nullptr, CP_ACP, table_id,
-	    &qtags, 0, rowcount, &rowset))
+	    qtags1, 0, rowcount, &rowset))
 		return EIO;
 	std::vector<eid_t> ids;
 	for (unsigned int i = 0; i < rowset.count; ++i) {

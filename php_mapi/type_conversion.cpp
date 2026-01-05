@@ -186,6 +186,30 @@ ec_error_t php_to_proptag_array(zval *pzval, PROPTAG_ARRAY *pproptags)
 	return ecSuccess;
 }
 
+ec_error_t php_to_proptag_array(zval *pzval, std::vector<proptag_t> &tags) try
+{
+	if (pzval == nullptr)
+		return ecInvalidParam;
+	ZVAL_DEREF(pzval);
+	auto ptarget_hash = HASH_OF(pzval);
+	if (ptarget_hash == nullptr)
+		return ecInvalidParam;
+	tags.clear();
+	zval *entry;
+	ZEND_HASH_FOREACH_VAL(ptarget_hash, entry) {
+		tags.emplace_back(zval_get_long(entry));
+	} ZEND_HASH_FOREACH_END();
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
+ec_error_t php_to_proptag_array(zval *zv, std::optional<std::vector<proptag_t>> &tags)
+{
+	tags.emplace();
+	return php_to_proptag_array(zv, *tags);
+}
+
 static void *php_to_propval(zval *entry, proptype_t proptype)
 {
 	int j = 0;

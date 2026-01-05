@@ -729,13 +729,13 @@ static ec_error_t autoreply_getprop1(const char *dir,
 }
 
 BOOL exmdb_server::autoreply_getprop(const char *dir, cpid_t cpid,
-    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals) try
+    proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals) try
 {
 	ppropvals->count = 0;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return false;
-	for (proptag_t tag : *pproptags) {
+	for (const auto tag : pproptags) {
 		void *value = nullptr;
 		auto err = autoreply_getprop1(dir, tag, value);
 		if (err == ecSuccess) {

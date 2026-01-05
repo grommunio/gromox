@@ -920,8 +920,8 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 		TARRAY_SET table;
 		uint32_t offset = paging ? paging->offset(rowCount) : 0;
 		uint32_t results = maxResults ? std::min(maxResults, rowCount - offset) : rowCount;
-		exmdb.query_table(dir.c_str(), ctx.auth_info().username, CP_UTF8, tableId, &tags, offset,
-			              results, &table);
+		exmdb.query_table(dir.c_str(), ctx.auth_info().username,
+			CP_UTF8, tableId, tags, offset, results, &table);
 		mFindFolderResponseMessage msg;
 		msg.RootFolder.emplace().Folders.reserve(rowCount);
 		for (const TPROPVAL_ARRAY &props : table) {
@@ -1010,7 +1010,8 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 		TARRAY_SET table;
 		uint32_t offset = paging ? paging->offset(rowCount) : 0;
 		uint32_t results = maxResults ? std::min(maxResults, rowCount - offset) : rowCount;
-		exmdb.query_table(dir.c_str(), ctx.auth_info().username, CP_UTF8, tableId, &tags, offset, results, &table);
+		exmdb.query_table(dir.c_str(), ctx.auth_info().username,
+			CP_UTF8, tableId, tags, offset, results, &table);
 		mFindItemResponseMessage msg;
 		msg.RootFolder.emplace().Items.reserve(rowCount);
 		for (const TPROPVAL_ARRAY &props : table) {
@@ -1457,9 +1458,9 @@ void process(mGetUserConfigurationRequest&& request, XMLElement* response, const
 			throw EWSError::ItemNotFound(E3143);
 
 		static constexpr proptag_t midTag = PidTagMid;
-		static constexpr PROPTAG_ARRAY midTags = {1, deconst(&midTag)};
 		TARRAY_SET rows;
-		exmdb.query_table(dir.c_str(), username, CP_UTF8, tableId, &midTags, 0, 1, &rows);
+		exmdb.query_table(dir.c_str(), username, CP_UTF8, tableId,
+			{&midTag, 1}, 0, 1, &rows);
 		if (rows.count == 0 || rows.pparray[0] == nullptr)
 			throw EWSError::ItemNotFound(E3143);
 		auto mid = rows.pparray[0]->get<const uint64_t>(PidTagMid);
@@ -1607,10 +1608,9 @@ void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& c
 		PROPID_ARRAY propIds = ctx.getNamedPropIds(dir, propNames);
 		if (propIds.size() != 1)
 			throw std::runtime_error("failed to get photo property id");
-		proptag_t tag = PROP_TAG(PT_BINARY, propIds[0]);
-		PROPTAG_ARRAY tags{1, &tag};
+		const proptag_t tag = PROP_TAG(PT_BINARY, propIds[0]);
 		TPROPVAL_ARRAY props;
-		ctx.plugin().exmdb.get_store_properties(dir.c_str(), CP_ACP, &tags, & props);
+		ctx.plugin().exmdb.get_store_properties(dir.c_str(), CP_ACP, {&tag, 1}, &props);
 		auto photodata = props.get<const BINARY>(tag);
 		if (photodata && photodata->cb)
 			data.PictureData = photodata;
@@ -2148,7 +2148,7 @@ void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSCont
 		    folder.folderId, &props, &problems))
 			throw EWSError::FolderSave(E3175);
 		if (!ctx.plugin().exmdb.remove_folder_properties(dir.c_str(),
-		    folder.folderId, &tagsRm))
+		    folder.folderId, tagsRm))
 			throw EWSError::FolderSave(E3176);
 		if (shape.permissionSet)
 			ctx.writePermissions(dir, folder.folderId, tPermissionSet(shape.permissionSet).write());
@@ -2264,10 +2264,10 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 				throw EWSError::ItemSave(E3255);
 		} else {
 			TPROPVAL_ARRAY props = shape.write();
-			PROPTAG_ARRAY tagsRm = shape.remove();
+			const auto &tagsRm = shape.remove_vec();
 			PROBLEM_ARRAY problems;
 			if (!ctx.plugin().exmdb.remove_message_properties(dir.c_str(),
-			    CP_ACP, mid.messageId(), &tagsRm))
+			    CP_ACP, mid.messageId(), tagsRm))
 				throw EWSError::ItemSave(E3093);
 			if (!ctx.plugin().exmdb.set_message_properties(dir.c_str(),
 			    username, CP_ACP, mid.messageId(), &props, &problems))

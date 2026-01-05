@@ -22,6 +22,7 @@
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/flat_set.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
@@ -1583,7 +1584,7 @@ const table_node *db_base::find_table(uint32_t table_id) const
 }
 
 static bool query_hierarchy(db_conn &db, cpid_t cpid, uint32_t table_id,
-    const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed,
+    proptag_cspan pproptags, uint32_t start_pos, int32_t row_needed,
     TARRAY_SET *pset)
 {
 	char sql_string[1024];
@@ -1620,12 +1621,11 @@ static bool query_hierarchy(db_conn &db, cpid_t cpid, uint32_t table_id,
 		if (mrow == nullptr)
 			return FALSE;
 		mrow->count = 0;
-		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (mrow->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue = nullptr;
-			const auto tag = pproptags->pproptag[i];
 			if (tag == PR_DEPTH) {
 				auto v = cu_alloc<uint32_t>();
 				pvalue = v;
@@ -1661,7 +1661,7 @@ static bool query_hierarchy(db_conn &db, cpid_t cpid, uint32_t table_id,
 }
 
 static bool query_content(db_conn &db, cpid_t cpid, uint32_t table_id,
-    const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed,
+    proptag_cspan pproptags, uint32_t start_pos, int32_t row_needed,
     const table_node *ptnode, TARRAY_SET *pset)
 {
 	char sql_string[1024];
@@ -1718,12 +1718,11 @@ static bool query_content(db_conn &db, cpid_t cpid, uint32_t table_id,
 		if (mrow == nullptr)
 			return FALSE;
 		mrow->count = 0;
-		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (mrow->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue = nullptr;
-			const auto tag = pproptags->pproptag[i];
 			if (!table_column_content_tmptbl(pstmt, pstmt1,
 			    pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
 			    tag, ptnode->instance_tag,
@@ -1759,7 +1758,7 @@ static bool query_content(db_conn &db, cpid_t cpid, uint32_t table_id,
 }
 
 static bool query_perm(db_conn &db, cpid_t cpid, uint32_t table_id,
-    const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed,
+    proptag_cspan pproptags, uint32_t start_pos, int32_t row_needed,
     const table_node *ptnode, TARRAY_SET *pset)
 {
 	char sql_string[1024];
@@ -1791,12 +1790,11 @@ static bool query_perm(db_conn &db, cpid_t cpid, uint32_t table_id,
 		if (mrow == nullptr)
 			return FALSE;
 		mrow->count = 0;
-		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (mrow->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue = nullptr;
-			const auto tag = pproptags->pproptag[i];
 			auto u_tag = tag;
 			if (u_tag == PR_MEMBER_NAME_A)
 				u_tag = PR_MEMBER_NAME;
@@ -1822,7 +1820,7 @@ static bool query_perm(db_conn &db, cpid_t cpid, uint32_t table_id,
 }
 
 static bool query_rule(db_conn &db, cpid_t cpid, uint32_t table_id,
-    const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed,
+    proptag_cspan pproptags, uint32_t start_pos, int32_t row_needed,
     TARRAY_SET *pset)
 {
 	char sql_string[1024];
@@ -1854,12 +1852,11 @@ static bool query_rule(db_conn &db, cpid_t cpid, uint32_t table_id,
 		if (mrow == nullptr)
 			return FALSE;
 		mrow->count = 0;
-		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (mrow->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue = nullptr;
-			const auto tag = pproptags->pproptag[i];
 			auto u_tag = tag;
 			if (u_tag == PR_RULE_NAME_A)
 				u_tag = PR_RULE_NAME;
@@ -1890,7 +1887,7 @@ static bool query_rule(db_conn &db, cpid_t cpid, uint32_t table_id,
  * any other way.
  */
 BOOL exmdb_server::query_table(const char *dir, const char *username,
-    cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
+    cpid_t cpid, uint32_t table_id, proptag_cspan pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -2075,7 +2072,7 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 }
 
 static bool match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
-    uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
+    uint32_t start_pos, const RESTRICTION *pres, proptag_cspan pproptags,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_conn &db)
 {
 	char sql_string[1024];
@@ -2108,12 +2105,11 @@ static bool match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		    &hierarchy_param, table_get_hierarchy_row_property))
 			continue;
 		idx = sqlite3_column_int64(pstmt, 1);
-		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (ppropvals->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue;
-			const auto tag = pproptags->pproptag[i];
 			if (tag == PR_DEPTH) {
 				auto v = cu_alloc<uint32_t>();
 				pvalue = v;
@@ -2150,7 +2146,7 @@ static bool match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 }
 
 static bool match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
-    uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
+    uint32_t start_pos, const RESTRICTION *pres, proptag_cspan pproptags,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_conn &db,
     const table_node *ptnode)
 {
@@ -2214,12 +2210,11 @@ static bool match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		    &content_param, table_get_content_row_property))
 			continue;
 		idx = sqlite3_column_int64(pstmt, 1);
-		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (ppropvals->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue;
-			const auto tag = pproptags->pproptag[i];
 			if (!table_column_content_tmptbl(pstmt, pstmt1,
 			    pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
 			    tag, ptnode->instance_tag,
@@ -2256,7 +2251,7 @@ static bool match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 }
 
 static bool match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
-    uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
+    uint32_t start_pos, const RESTRICTION *pres, proptag_cspan pproptags,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_conn &db)
 {
 	char sql_string[1024];
@@ -2280,12 +2275,11 @@ static bool match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		    db.psqlite, rule_id, pres))
 			continue;
 		ppropvals->count = 0;
-		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 		if (ppropvals->ppropval == nullptr)
 			return FALSE;
-		for (unsigned int i = 0; i < pproptags->count; ++i) {
+		for (const auto tag : pproptags) {
 			void *pvalue;
-			const auto tag = pproptags->pproptag[i];
 			auto u_tag = tag;
 			if (u_tag == PR_RULE_NAME_A)
 				u_tag = PR_RULE_NAME;
@@ -2313,7 +2307,7 @@ static bool match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
  */
 BOOL exmdb_server::match_table(const char *dir, const char *username,
     cpid_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos,
-	const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
+	const RESTRICTION *pres, proptag_cspan pproptags,
 	int32_t *pposition, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -2411,7 +2405,7 @@ BOOL exmdb_server::locate_table(const char *dir,
 }
 
 static bool read_tblrow_hier(cpid_t cpid, uint32_t table_id,
-    const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
+    proptag_cspan pproptags, uint64_t inst_id, uint32_t inst_num,
     TPROPVAL_ARRAY *ppropvals, db_conn &db)
 {
 	uint32_t depth;
@@ -2439,12 +2433,11 @@ static bool read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 	auto sql_transact = gx_sql_begin(db.psqlite, txn_mode::read);
 	if (!sql_transact)
 		return false;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (tag == PR_DEPTH) {
 			auto v = cu_alloc<uint32_t>();
 			pvalue = v;
@@ -2476,7 +2469,7 @@ static bool read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 }
 
 static bool read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
-    const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
+    proptag_cspan pproptags, uint64_t inst_id, uint32_t inst_num,
     TPROPVAL_ARRAY *ppropvals, db_conn &db, const table_node *ptnode)
 {
 	int row_type;
@@ -2518,12 +2511,11 @@ static bool read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 	auto sql_transact_eph = gx_sql_begin(db.m_sqlite_eph, txn_mode::read);
 	if (!sql_transact_eph)
 		return false;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (!table_column_content_tmptbl(pstmt, pstmt1,
 		    pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
 		    tag, ptnode->instance_tag,
@@ -2558,7 +2550,7 @@ static bool read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
  * @username:   Used for retrieving public store readstates
  */
 BOOL exmdb_server::read_table_row(const char *dir, const char *username,
-    cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
+    cpid_t cpid, uint32_t table_id, proptag_cspan pproptags,
 	uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -2666,7 +2658,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 	}
 	switch (ptnode->type) {
 	case table_type::hierarchy: {
-		std::vector<proptag_t> tags;
+		maybe_flat_set<proptag_t> tags;
 		snprintf(sql_string, std::size(sql_string), "SELECT "
 			"folder_id FROM t%u", ptnode->table_id);
 		auto pstmt = pdb->eph_prep(sql_string);
@@ -2680,23 +2672,22 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 			sqlite3_bind_int64(pstmt1, 1,
 				sqlite3_column_int64(pstmt, 0));
 			while (pstmt1.step() == SQLITE_ROW)
-				tags.push_back(pstmt1.col_int64(0));
+				tags.emplace(pstmt1.col_int64(0));
 			sqlite3_reset(pstmt1);
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
-		tags.push_back(PR_DEPTH);
-		std::sort(tags.begin(), tags.end());
-		tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
+		tags.emplace(PR_DEPTH);
+		pproptags->count = 0;
 		pproptags->pproptag = cu_alloc<proptag_t>(tags.size());
 		if (pproptags->pproptag == nullptr)
 			return FALSE;
-		pproptags->count = tags.size();
-		memcpy(pproptags->pproptag, tags.data(), sizeof(proptag_t) * tags.size());
+		for (const auto tag : tags)
+			pproptags->emplace_back(tag);
 		return TRUE;
 	}
 	case table_type::content: {
-		std::vector<proptag_t> tags;
+		maybe_flat_set<proptag_t> tags;
 		snprintf(sql_string, std::size(sql_string), "SELECT inst_id,"
 				" row_type FROM t%u", ptnode->table_id);
 		auto pstmt = pdb->eph_prep(sql_string);
@@ -2712,25 +2703,27 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 			sqlite3_bind_int64(pstmt1, 1,
 				sqlite3_column_int64(pstmt, 0));
 			while (pstmt1.step() == SQLITE_ROW)
-				tags.push_back(pstmt1.col_int64(0));
+				tags.emplace(pstmt1.col_int64(0));
 			sqlite3_reset(pstmt1);
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
 		pproptags->count = 0;
-		tags.insert(tags.end(), {PidTagMid, PR_MESSAGE_SIZE,
+		static constexpr proptag_t extras[] = {
+			PidTagMid, PR_MESSAGE_SIZE,
 			PR_ASSOCIATED, PidTagChangeNumber, PR_READ,
 			PR_HASATTACH, PR_MESSAGE_FLAGS, PR_DISPLAY_TO,
 			PR_DISPLAY_CC, PR_DISPLAY_BCC, PidTagInstID,
 			PidTagInstanceNum, PR_ROW_TYPE, PR_DEPTH,
-			PR_CONTENT_COUNT, PR_CONTENT_UNREAD});
-		std::sort(tags.begin(), tags.end());
-		tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
+			PR_CONTENT_COUNT, PR_CONTENT_UNREAD,
+		};
+		tags.insert(std::cbegin(extras), std::cend(extras));
+		pproptags->count = 0;
 		pproptags->pproptag = cu_alloc<proptag_t>(tags.size());
 		if (pproptags->pproptag == nullptr)
 			return FALSE;
-		pproptags->count = tags.size();
-		memcpy(pproptags->pproptag, tags.data(), sizeof(proptag_t) * tags.size());
+		for (const auto tag : tags)
+			pproptags->emplace_back(tag);
 		return TRUE;
 	}
 	case table_type::permission:

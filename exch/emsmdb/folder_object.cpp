@@ -66,7 +66,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 		PR_SOURCE_KEY, PR_CORRELATION_ID,
 	};
 	for (auto t : tags1)
-		pproptags->emplace_back(t);
+		pproptags->emplace_back_nd(t);
 	static constexpr proptag_t tags2[] = {
 		PR_IPM_DRAFTS_ENTRYID, PR_IPM_CONTACT_ENTRYID,
 		PR_IPM_APPOINTMENT_ENTRYID, PR_IPM_JOURNAL_ENTRYID,
@@ -75,9 +75,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	};
 	if (pfolder->plogon->is_private() && toplevel(pfolder->folder_id))
 		for (auto t : tags2)
-			pproptags->emplace_back(t);
-	std::sort(pproptags->begin(), pproptags->end());
-	pproptags->count = std::unique(pproptags->begin(), pproptags->end()) - pproptags->begin();
+			pproptags->emplace_back_nd(t);
 	return TRUE;
 }
 
@@ -407,7 +405,7 @@ static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
 	return FALSE;
 }
 
-BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
+bool folder_object::get_properties(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals) const
 {
 	static const uint32_t err_code = ecError;
@@ -415,15 +413,15 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
 		return FALSE;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
 	auto pfolder = this;
-	for (auto tag : *pproptags) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
 		if (!folder_object_get_calculated_property(pfolder, tag, &pvalue))
 			tmp_proptags.emplace_back(tag);
@@ -436,7 +434,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return TRUE;
 	TPROPVAL_ARRAY tmp_propvals;
 	if (!exmdb_client->get_folder_properties(pfolder->plogon->get_dir(),
-	    pinfo->cpid, pfolder->folder_id, &tmp_proptags, &tmp_propvals))
+	    pinfo->cpid, pfolder->folder_id, tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count > 0) {
 		memcpy(ppropvals->ppropval + ppropvals->count,
@@ -444,7 +442,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 		ppropvals->count += tmp_propvals.count;
 	}
-	if (pproptags->has(PR_SOURCE_KEY) && !ppropvals->has(PR_SOURCE_KEY)) {
+	if (pproptags.has(PR_SOURCE_KEY) && !ppropvals->has(PR_SOURCE_KEY)) {
 		auto v = cu_fid_to_sk(*pfolder->plogon, pfolder->folder_id);
 		if (v == nullptr)
 			return FALSE;
@@ -517,21 +515,21 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	return false;
 }
 
-BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
+bool folder_object::remove_properties(proptag_cspan pproptags,
     PROBLEM_ARRAY *pproblems)
 {
 	uint64_t change_num;
 	
 	pproblems->count = 0;
-	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags.size());
 	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags->count)};
+	PROPTAG_ARRAY tmp_proptags = {0, cu_alloc<proptag_t>(pproptags.size())};
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	auto pfolder = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (unsigned int i = 0; i < pproptags.size(); ++i) {
+		const auto tag = pproptags[i];
 		if (pfolder->is_readonly_prop(tag))
 			pproblems->emplace_back(i, tag, ecAccessDenied);
 		else
@@ -541,7 +539,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		return TRUE;
 	auto dir = plogon->get_dir();
 	if (!exmdb_client->remove_folder_properties(dir,
-	    pfolder->folder_id, &tmp_proptags))
+	    pfolder->folder_id, tmp_proptags))
 		return FALSE;	
 
 	BINARY *pbin_pcl = nullptr;

@@ -111,10 +111,9 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 	                &folder_id, tag_access, open_mode_flags, nullptr);
 	if (pmessage == nullptr)
 		return ecServerOOM;
-	static constexpr proptag_t proptag_buff[] =
+	static constexpr proptag_t proptags[] =
 		{PR_HAS_NAMED_PROPERTIES, PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-	if (!pmessage->get_properties(0, &proptags, &propvals))
+	if (!pmessage->get_properties(0, proptags, &propvals))
 		return ecError;
 	auto flag = propvals.get<const uint8_t>(PR_HAS_NAMED_PROPERTIES);
 	*phas_named_properties = flag != nullptr && *flag != 0;
@@ -149,8 +148,8 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 			return ecServerOOM;
 	}
 	for (size_t i = 0; i < rcpts.count; ++i) {
-		if (!common_util_propvals_to_openrecipient(cpid,
-		    rcpts.pparray[i], pcolumns, &(*pprecipient_row)[i]))
+		if (!cu_propvals_to_openrecipient(cpid, rcpts.pparray[i],
+		    *pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
@@ -199,12 +198,10 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	} else {
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 	}
-	static constexpr proptag_t proptag_buff[] =
+	static constexpr proptag_t tmp_proptags[] =
 		{PR_MESSAGE_SIZE_EXTENDED, PR_STORAGE_QUOTA_LIMIT,
 		PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT};
-	static constexpr PROPTAG_ARRAY tmp_proptags =
-		{std::size(proptag_buff), deconst(proptag_buff)};
-	if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
+	if (!plogon->get_properties(tmp_proptags, &tmp_propvals))
 		return ecError;
 	auto num = tmp_propvals.get<const uint32_t>(PR_STORAGE_QUOTA_LIMIT);
 	uint64_t max_quota = ULLONG_MAX;
@@ -265,8 +262,7 @@ ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 			return ret;
 	}
 	static constexpr proptag_t tmp_proptag[] = {PidTagMid};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
-	if (!pmessage->get_properties(0, &proptags, &propvals))
+	if (!pmessage->get_properties(0, tmp_proptag, &propvals))
 		return ecError;
 	auto pvalue = propvals.get<uint64_t>(PidTagMid);
 	if (pvalue == nullptr)
@@ -298,16 +294,16 @@ ec_error_t rop_removeallrecipients(uint32_t reserved, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
+ec_error_t rop_modifyrecipients(proptag_cspan pproptags, uint16_t count,
     const MODIFYRECIPIENT_ROW *prow, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin)
 {
 	ems_objtype object_type;
 	TARRAY_SET tmp_set;
 	
-	if (pproptags->count >= 0x7FEF || count >= 0x7FEF)
+	if (pproptags.size() >= 0x7FEF || count >= 0x7FEF)
 		return ecInvalidParam;
-	for (const auto tag : *pproptags) {
+	for (const auto tag : pproptags) {
 		switch (tag) {
 		case PR_ADDRTYPE:
 		case PR_DISPLAY_NAME:
@@ -345,7 +341,7 @@ ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 			ppropvals->ppropval->proptag = PR_ROWID;
 			ppropvals->ppropval->pvalue = deconst(&prow[i].row_id);
 		} else {
-			if (!common_util_modifyrecipient_to_propvals(pinfo->cpid,
+			if (!cu_modifyrecipient_to_propvals(pinfo->cpid,
 			    &prow[i], pproptags, ppropvals))
 				return ecServerOOM;
 		}
@@ -375,8 +371,8 @@ ec_error_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcoun
 	if (tmp_set.count == 0)
 		return ecNotFound;
 	for (i = 0; i < tmp_set.count; ++i) {
-		if (!common_util_propvals_to_readrecipient(pmessage->get_cpid(),
-		    tmp_set.pparray[i], pmessage->get_rcpt_columns(), &tmp_row))
+		if (!cu_propvals_to_readrecipient(pmessage->get_cpid(),
+		    tmp_set.pparray[i], *pmessage->get_rcpt_columns(), &tmp_row))
 			return ecServerOOM;
 		uint32_t last_offset = ext.m_offset;
 		if (pext->p_readrecipient_row(*pmessage->get_rcpt_columns(),
@@ -407,11 +403,9 @@ ec_error_t rop_reloadcachedinformation(uint16_t reserved,
 		return ecNullObject;
 	if (object_type != ems_objtype::message)
 		return ecNotSupported;
-	static constexpr proptag_t proptag_buff[] =
+	static constexpr proptag_t proptags[] =
 		{PR_HAS_NAMED_PROPERTIES, PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT};
-	static constexpr PROPTAG_ARRAY proptags =
-		{std::size(proptag_buff), deconst(proptag_buff)};
-	if (!pmessage->get_properties(0, &proptags, &propvals))
+	if (!pmessage->get_properties(0, proptags, &propvals))
 		return ecError;
 	auto flag = propvals.get<const uint8_t>(PR_HAS_NAMED_PROPERTIES);
 	*phas_named_properties = flag != nullptr && *flag != 0;
@@ -442,8 +436,8 @@ ec_error_t rop_reloadcachedinformation(uint16_t reserved,
 	if (*pprecipient_row == nullptr)
 		return ecServerOOM;
 	for (size_t i = 0; i < rcpts.count; ++i)
-		if (!common_util_propvals_to_openrecipient(pmessage->get_cpid(),
-		    rcpts.pparray[i], pcolumns, *pprecipient_row + i))
+		if (!cu_propvals_to_openrecipient(pmessage->get_cpid(),
+		    rcpts.pparray[i], *pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
 	return ecSuccess;
 }
@@ -638,10 +632,10 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 		    &res_top, nullptr, &table_id, &row_count))
 			return ecError;
 		static constexpr proptag_t one_proptag = PidTagMid;
-		static constexpr PROPTAG_ARRAY proptags = {1, deconst(&one_proptag)};
 		TARRAY_SET result_set;
 		if (!exmdb_client->query_table(plogon->dir, username,
-		    CP_ACP, table_id, &proptags, 0, row_count, &result_set)) {
+		    CP_ACP, table_id, {&one_proptag, 1},
+		    0, row_count, &result_set)) {
 			exmdb_client->unload_table(plogon->dir, table_id);
 			return ecError;
 		}
@@ -858,9 +852,8 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 		if (pmessage->init_message(false, cpid) != 0)
 			return ecError;
 
-		static constexpr proptag_t proptag_buff[] = {PidTagMid};
-		static constexpr PROPTAG_ARRAY proptags = {1, deconst(proptag_buff)};
-		if (!pmessage->get_properties(0, &proptags, &propvals))
+		static constexpr proptag_t proptags[] = {PidTagMid};
+		if (!pmessage->get_properties(0, proptags, &propvals))
 			return ecError;
 		auto mid_p = propvals.get<const eid_t>(PidTagMid);
 		if (mid_p == nullptr)
@@ -884,12 +877,10 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 		return ecSuccess;
 	}
 
-	static constexpr proptag_t proptag_buff[] =
+	static constexpr proptag_t proptags[] =
 		{PidTagMid, PR_HAS_NAMED_PROPERTIES,
 		PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT};
-	static constexpr PROPTAG_ARRAY proptags =
-		{std::size(proptag_buff), deconst(proptag_buff)};
-	if (!pmessage->get_properties(0, &proptags, &propvals))
+	if (!pmessage->get_properties(0, proptags, &propvals))
 		return ecError;
 	auto mid_p = propvals.get<const eid_t>(PidTagMid);
 	if (mid_p == nullptr)
@@ -924,8 +915,8 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 	if (*pprecipient_row == nullptr)
 		return ecServerOOM;
 	for (size_t i = 0; i < rcpts.count; ++i)
-		if (!common_util_propvals_to_openrecipient(pmessage->get_cpid(),
-		    rcpts.pparray[i], pcolumns, *pprecipient_row + i))
+		if (!cu_propvals_to_openrecipient(pmessage->get_cpid(),
+		    rcpts.pparray[i], *pcolumns, &(*pprecipient_row)[i]))
 			return ecServerOOM;
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});

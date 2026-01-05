@@ -597,10 +597,9 @@ std::optional<uint64_t> EWSContext::findExistingByGoid(const sFolderSpec& calend
 		return std::nullopt;
 
 	static constexpr proptag_t midTagValue = PidTagMid;
-	static constexpr PROPTAG_ARRAY proptags = {1, deconst(&midTagValue)};
 	TARRAY_SET rows{};
 	if (!m_plugin.exmdb.query_table(calendarDir.c_str(), calUser, CP_ACP,
-	    tableId, &proptags, 0, 1, &rows))
+	    tableId, {&midTagValue, 1}, 0, 1, &rows))
 		throw EWSError::ItemCorrupt(E3284);
 	if (rows.count == 0 || rows.pparray[0] == nullptr)
 		return std::nullopt;
@@ -1004,11 +1003,9 @@ TAGGED_PROPVAL EWSContext::getFolderEntryId(const std::string& dir, uint64_t fol
 TPROPVAL_ARRAY EWSContext::getFolderProps(const std::string &dir,
     uint64_t folderId, proptag_cspan tags) const
 {
-	PROPTAG_ARRAY props;
-	props.count    = std::min(tags.size(), static_cast<size_t>(UINT16_MAX));
-	props.pproptag = deconst(tags.data());
 	TPROPVAL_ARRAY result;
-	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folderId, &props, &result))
+	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP,
+	    folderId, tags, &result))
 		throw EWSError::FolderPropertyRequestFailed(E3023);
 	return result;
 }
@@ -1079,11 +1076,12 @@ const void *EWSContext::getItemProp(const std::string &dir, uint64_t mid,
  *
  * @return    Property values
  */
-TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, const PROPTAG_ARRAY& props) const
+TPROPVAL_ARRAY EWSContext::getItemProps(const std::string &dir, uint64_t mid,
+    proptag_cspan props) const
 {
 	TPROPVAL_ARRAY result;
 	if (!m_plugin.exmdb.get_message_properties(dir.c_str(), m_auth_info.username,
-	    CP_ACP, mid, &props, &result))
+	    CP_ACP, mid, props, &result))
 		throw EWSError::ItemPropertyRequestFailed(E3025);
 	return result;
 }
@@ -1098,9 +1096,9 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
 GUID EWSContext::getMailboxGuid(const std::string& dir) const
 {
 	static constexpr proptag_t recordKeyTag = PR_STORE_RECORD_KEY;
-	static constexpr PROPTAG_ARRAY recordKeyTags = {1, deconst(&recordKeyTag)};
 	TPROPVAL_ARRAY recordKeyProp;
-	if (!m_plugin.exmdb.get_store_properties(dir.c_str(), CP_ACP, &recordKeyTags, &recordKeyProp) ||
+	if (!m_plugin.exmdb.get_store_properties(dir.c_str(), CP_ACP,
+	    {&recordKeyTag, 1}, &recordKeyProp) ||
 	   recordKeyProp.count != 1 || recordKeyProp.ppropval->proptag != PR_STORE_RECORD_KEY)
 		throw DispatchError(E3194);
 	const BINARY* recordKeyData = static_cast<const BINARY*>(recordKeyProp.ppropval->pvalue);
@@ -1180,8 +1178,8 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
 		PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS,
 	};
 	TPROPVAL_ARRAY props;
-	static constexpr PROPTAG_ARRAY tags{std::size(tagIDs), deconst(tagIDs)};
-	if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
+	if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0,
+	    aInst->instanceId, proptag_cspan{tagIDs}, &props))
 		throw DispatchError(E3083);
 	sShape shape(props);
 
@@ -1214,9 +1212,9 @@ TARRAY_SET EWSContext::loadPermissions(const std::string& dir, uint64_t fid) con
 		throw EWSError::ItemCorrupt(E3283);
 	auto unloadTable = HX::make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
 	static constexpr proptag_t tags[] = {PR_MEMBER_ID, PR_MEMBER_NAME, PR_MEMBER_RIGHTS, PR_SMTP_ADDRESS};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tags), deconst(tags)};
 	TARRAY_SET propTable;
-	if (!exmdb.query_table(dir.c_str(), "", CP_UTF8, tableId, &proptags, 0, rowCount, &propTable))
+	if (!exmdb.query_table(dir.c_str(), "", CP_UTF8, tableId,
+	    proptag_cspan{tags}, 0, rowCount, &propTable))
 		throw EWSError::ItemCorrupt(E3284);
 	return propTable;
 }
@@ -1344,8 +1342,8 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		for (uint16_t i = 0; i < count; ++i) {
 			auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 			TPROPVAL_ARRAY props;
-			static constexpr PROPTAG_ARRAY tags = {std::size(tagIDs), deconst(tagIDs)};
-			if (!exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
+			if (!exmdb.get_instance_properties(dir.c_str(), 0,
+			    aInst->instanceId, proptag_cspan{tagIDs}, &props))
 				throw DispatchError(E3080);
 			sShape shape(props);
 			auto method = props.get<const uint32_t>(PR_ATTACH_METHOD);
@@ -1561,7 +1559,6 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	TPROPVAL_ARRAY props;
 	auto tags_1 = shape.proptags_vec();
 	tags_1.emplace_back(ex_replace_time_tag);
-	const PROPTAG_ARRAY tags = {static_cast<uint16_t>(tags_1.size()), deconst(tags_1.data())};
 
 	auto basedate_ts = clock::to_time_t(rop_util_rtime_to_unix2(basedate));
 	struct tm basedate_local;
@@ -1570,7 +1567,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	for (uint16_t i = 0; i < count; ++i) {
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
-		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, &tags, &props))
+		if (!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, tags_1, &props))
 			throw DispatchError(E3211);
 
 		auto exstarttime = props.get<const uint64_t>(ex_replace_time_tag);
@@ -1623,9 +1620,9 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
                                     bool copy) const
 {
 	static constexpr proptag_t tagIds[] = {PidTagParentFolderId, PR_DISPLAY_NAME};
-	static constexpr PROPTAG_ARRAY tags = {std::size(tagIds), deconst(tagIds)};
 	TPROPVAL_ARRAY props;
-	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folder.folderId, &tags, &props))
+	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP,
+	    folder.folderId, proptag_cspan{tagIds}, &props))
 		throw DispatchError(E3159);
 	uint64_t* parentFid = props.get<uint64_t>(PidTagParentFolderId);
 	auto folderName = props.get<const char>(PR_DISPLAY_NAME);

@@ -184,6 +184,7 @@ enum class exmdb_callid : uint8_t {
 };
 
 struct exreq {
+	using view_t = exreq;
 	exreq() = default; /* Prevent use of direct-list-init */
 	virtual ~exreq() = default;
 	exmdb_callid call_id{};
@@ -191,38 +192,52 @@ struct exreq {
 };
 
 struct exreq_connect final : public exreq {
+	using view_t = exreq_connect;
 	char *prefix;
 	char *remote_id;
 	BOOL b_private;
 };
 
 struct exreq_listen_notification final : public exreq {
+	using view_t = exreq_listen_notification;
 	char *remote_id;
 };
 
 struct exreq_get_named_propids final : public exreq {
+	using view_t = exreq_get_named_propids;
 	BOOL b_create;
 	PROPNAME_ARRAY *ppropnames;
 };
 
 struct exreq_get_named_propnames final : public exreq {
+	using view_t = exreq_get_named_propnames;
 	PROPID_ARRAY ppropids;
 };
 
 struct exreq_get_mapping_guid final : public exreq {
+	using view_t = exreq_get_mapping_guid;
 	uint16_t replid;
 };
 
 struct exreq_get_mapping_replid final : public exreq {
+	using view_t = exreq_get_mapping_replid;
 	GUID guid;
 };
 
-struct exreq_get_store_properties final : public exreq {
+struct exreq_get_store_properties_v final : public exreq {
 	cpid_t cpid;
-	PROPTAG_ARRAY *pproptags;
+	proptag_cspan pproptags;
+};
+
+struct exreq_get_store_properties final : public exreq {
+	using view_t = exreq_get_store_properties_v;
+	operator view_t() const { view_t v; v.cpid = cpid; v.pproptags = pproptags; return v; }
+	cpid_t cpid;
+	proptag_vector pproptags;
 };
 
 struct exreq_set_store_properties final : public exreq {
+	using view_t = exreq_set_store_properties;
 	cpid_t cpid;
 	TPROPVAL_ARRAY *ppropvals;
 };
@@ -231,74 +246,113 @@ struct exreq_set_store_properties final : public exreq {
 using exreq_autoreply_getprop = exreq_get_store_properties;
 using exreq_autoreply_setprop = exreq_set_store_properties;
 
+struct exreq_remove_store_properties_v final : public exreq {
+	proptag_cspan pproptags;
+};
+
 struct exreq_remove_store_properties final : public exreq {
-	PROPTAG_ARRAY *pproptags;
+	using view_t = exreq_remove_store_properties_v;
+	proptag_vector pproptags;
+	operator view_t() const { view_t v; v.pproptags = pproptags; return v; }
 };
 
 struct exreq_get_mbox_perm final : public exreq {
+	using view_t = exreq_get_mbox_perm;
 	char *username;
 };
 
 struct exreq_get_folder_by_class final : public exreq {
+	using view_t = exreq_get_folder_by_class;
 	char *str_class;
 };
 
 struct exreq_set_folder_by_class final : public exreq {
+	using view_t = exreq_set_folder_by_class;
 	uint64_t folder_id;
 	char *str_class;
 };
 
 struct exreq_is_folder_present final : public exreq {
+	using view_t = exreq_is_folder_present;
 	uint64_t folder_id;
 };
 
 struct exreq_is_folder_deleted final : public exreq {
+	using view_t = exreq_is_folder_deleted;
 	uint64_t folder_id;
 };
 
 struct exreq_get_folder_by_name final : public exreq {
+	using view_t = exreq_get_folder_by_name;
 	uint64_t parent_id;
 	char *str_name;
 };
 
 struct exreq_get_folder_perm final : public exreq {
+	using view_t = exreq_get_folder_perm;
 	uint64_t folder_id;
 	char *username;
 };
 
 struct exreq_create_folder final : public exreq {
+	using view_t = exreq_create_folder;
 	cpid_t cpid;
 	TPROPVAL_ARRAY *pproperties;
 };
 
 struct exreq_delete_folder final : public exreq {
+	using view_t = exreq_delete_folder;
 	cpid_t cpid;
 	uint64_t folder_id;
 	BOOL b_hard;
 };
 
 struct exreq_get_folder_all_proptags final : public exreq {
+	using view_t = exreq_get_folder_all_proptags;
 	uint64_t folder_id;
+};
+
+struct exreq_get_folder_properties_v final : public exreq {
+	cpid_t cpid;
+	uint64_t folder_id;
+	proptag_cspan pproptags;
 };
 
 struct exreq_get_folder_properties final : public exreq {
+	using view_t = exreq_get_folder_properties_v;
 	cpid_t cpid;
 	uint64_t folder_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_vector pproptags;
+	operator view_t() const {
+		view_t v;
+		v.cpid = cpid;
+		v.folder_id = folder_id;
+		v.pproptags = pproptags;
+		return v;
+	}
 };
 
 struct exreq_set_folder_properties final : public exreq {
+	using view_t = exreq_set_folder_properties;
 	cpid_t cpid;
 	uint64_t folder_id;
 	TPROPVAL_ARRAY *pproperties;
 };
 
-struct exreq_remove_folder_properties final : public exreq {
+struct exreq_remove_folder_properties_v final : public exreq {
 	uint64_t folder_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_cspan pproptags;
+};
+
+struct exreq_remove_folder_properties final : public exreq {
+	using view_t = exreq_remove_folder_properties_v;
+	uint64_t folder_id;
+	proptag_vector pproptags;
+	operator view_t() const { view_t v; v.folder_id = folder_id; v.pproptags = pproptags; return v; }
 };
 
 struct exreq_empty_folder final : public exreq {
+	using view_t = exreq_empty_folder;
 	cpid_t cpid;
 	char *username;
 	uint64_t folder_id;
@@ -306,10 +360,12 @@ struct exreq_empty_folder final : public exreq {
 };
 
 struct exreq_is_descendant_folder final : public exreq {
+	using view_t = exreq_is_descendant_folder;
 	uint64_t parent_fid, child_fid;
 };
 
 struct exreq_copy_folder_internal final : public exreq {
+	using view_t = exreq_copy_folder_internal;
 	int32_t account_id;
 	cpid_t cpid;
 	BOOL b_guest;
@@ -322,10 +378,12 @@ struct exreq_copy_folder_internal final : public exreq {
 };
 
 struct exreq_get_search_criteria final : public exreq {
+	using view_t = exreq_get_search_criteria;
 	uint64_t folder_id;
 };
 
 struct exreq_set_search_criteria final : public exreq {
+	using view_t = exreq_set_search_criteria;
 	cpid_t cpid;
 	uint64_t folder_id;
 	uint32_t search_flags;
@@ -334,6 +392,7 @@ struct exreq_set_search_criteria final : public exreq {
 };
 
 struct exreq_movecopy_message final : public exreq {
+	using view_t = exreq_movecopy_message;
 	cpid_t cpid;
 	uint64_t message_id;
 	uint64_t dst_fid;
@@ -342,6 +401,7 @@ struct exreq_movecopy_message final : public exreq {
 };
 
 struct exreq_movecopy_messages final : public exreq {
+	using view_t = exreq_movecopy_messages;
 	cpid_t cpid;
 	BOOL b_guest;
 	char *username;
@@ -352,6 +412,7 @@ struct exreq_movecopy_messages final : public exreq {
 };
 
 struct exreq_movecopy_folder final : public exreq {
+	using view_t = exreq_movecopy_folder;
 	cpid_t cpid;
 	BOOL b_guest;
 	char *username;
@@ -363,6 +424,7 @@ struct exreq_movecopy_folder final : public exreq {
 };
 
 struct exreq_delete_messages final : public exreq {
+	using view_t = exreq_delete_messages;
 	int32_t account_id;
 	cpid_t cpid;
 	char *username;
@@ -372,23 +434,27 @@ struct exreq_delete_messages final : public exreq {
 };
 
 struct exreq_get_message_brief final : public exreq {
+	using view_t = exreq_get_message_brief;
 	cpid_t cpid;
 	uint64_t message_id;
 };
 
 struct exreq_sum_hierarchy final : public exreq {
+	using view_t = exreq_sum_hierarchy;
 	uint64_t folder_id;
 	char *username;
 	BOOL b_depth;
 };
 
 struct exreq_sum_content final : public exreq {
+	using view_t = exreq_sum_content;
 	uint64_t folder_id;
 	BOOL b_fai;
 	BOOL b_deleted;
 };
 
 struct exreq_load_hierarchy_table final : public exreq {
+	using view_t = exreq_load_hierarchy_table;
 	uint64_t folder_id;
 	char *username;
 	uint8_t table_flags;
@@ -396,6 +462,7 @@ struct exreq_load_hierarchy_table final : public exreq {
 };
 
 struct exreq_load_content_table final : public exreq {
+	using view_t = exreq_load_content_table;
 	cpid_t cpid;
 	uint64_t folder_id;
 	char *username;
@@ -405,102 +472,179 @@ struct exreq_load_content_table final : public exreq {
 };
 
 struct exreq_reload_content_table final : public exreq {
+	using view_t = exreq_reload_content_table;
 	uint32_t table_id;
 };
 
 struct exreq_load_permission_table final : public exreq {
+	using view_t = exreq_load_permission_table;
 	uint64_t folder_id;
 	uint32_t table_flags;
 };
 
 struct exreq_load_rule_table final : public exreq {
+	using view_t = exreq_load_rule_table;
 	uint64_t folder_id;
 	uint8_t table_flags;
 	RESTRICTION *prestriction;
 };
 
 struct exreq_unload_table final : public exreq {
+	using view_t = exreq_unload_table;
 	uint32_t table_id;
 };
 
 struct exreq_sum_table final : public exreq {
+	using view_t = exreq_sum_table;
 	uint32_t table_id;
 };
 
-struct exreq_query_table final : public exreq {
-	char *username;
+struct exreq_query_table_v final : public exreq {
+	const char *username;
 	cpid_t cpid;
 	uint32_t table_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_cspan pproptags;
 	uint32_t start_pos;
 	int32_t row_needed;
 };
 
+struct exreq_query_table final : public exreq {
+	using view_t = exreq_query_table_v;
+	char *username;
+	cpid_t cpid;
+	uint32_t table_id;
+	proptag_vector pproptags;
+	uint32_t start_pos;
+	int32_t row_needed;
+	operator view_t() const {
+		view_t v;
+		v.username = username;
+		v.cpid = cpid;
+		v.table_id = table_id;
+		v.pproptags = pproptags;
+		v.start_pos = start_pos;
+		v.row_needed = row_needed;
+		return v;
+	}
+};
+
+struct exreq_match_table_v final : public exreq {
+	const char *username;
+	cpid_t cpid;
+	uint32_t table_id;
+	BOOL b_forward;
+	uint32_t start_pos;
+	RESTRICTION *pres;
+	proptag_cspan pproptags;
+};
+
 struct exreq_match_table final : public exreq {
+	using view_t = exreq_match_table_v;
 	char *username;
 	cpid_t cpid;
 	uint32_t table_id;
 	BOOL b_forward;
 	uint32_t start_pos;
 	RESTRICTION *pres;
-	PROPTAG_ARRAY *pproptags;
+	proptag_vector pproptags;
+	operator view_t() const {
+		view_t v;
+		v.username = username;
+		v.cpid = cpid;
+		v.table_id = table_id;
+		v.b_forward = b_forward;
+		v.start_pos = start_pos;
+		v.pres = pres;
+		v.pproptags = pproptags;
+		return v;
+	}
 };
 
 struct exreq_locate_table final : public exreq {
+	using view_t = exreq_locate_table;
 	uint32_t table_id;
+	uint64_t inst_id;
+	uint32_t inst_num;
+};
+
+struct exreq_read_table_row_v final : public exreq {
+	const char *username;
+	cpid_t cpid;
+	uint32_t table_id;
+	proptag_cspan pproptags;
 	uint64_t inst_id;
 	uint32_t inst_num;
 };
 
 struct exreq_read_table_row final : public exreq {
+	using view_t = exreq_read_table_row_v;
 	char *username;
 	cpid_t cpid;
 	uint32_t table_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_vector pproptags;
 	uint64_t inst_id;
 	uint32_t inst_num;
+	operator view_t() const {
+		view_t v;
+		v.username = username;
+		v.cpid = cpid;
+		v.table_id = table_id;
+		v.pproptags = pproptags;
+		v.inst_id = inst_id;
+		v.inst_num = inst_num;
+		return v;
+	}
 };
 
 struct exreq_mark_table final : public exreq {
+	using view_t = exreq_mark_table;
 	uint32_t table_id;
 	uint32_t position;
 };
 
 struct exreq_get_table_all_proptags final : public exreq {
+	using view_t = exreq_get_table_all_proptags;
 	uint32_t table_id;
 };
 
 struct exreq_expand_table final : public exreq {
+	using view_t = exreq_expand_table;
 	uint32_t table_id;
 	uint64_t inst_id;
 };
 
 struct exreq_collapse_table final : public exreq {
+	using view_t = exreq_collapse_table;
 	uint32_t table_id;
 	uint64_t inst_id;
 };
 
 struct exreq_store_table_state final : public exreq {
+	using view_t = exreq_store_table_state;
 	uint32_t table_id;
 	uint64_t inst_id;
 	uint32_t inst_num;
 };
 
 struct exreq_restore_table_state final : public exreq {
+	using view_t = exreq_restore_table_state;
 	uint32_t table_id;
 	uint32_t state_id;
 };
 
 struct exreq_is_msg_present final : public exreq {
+	using view_t = exreq_is_msg_present;
 	uint64_t folder_id;
 	uint64_t message_id;
 };
 
 struct exreq_is_msg_deleted final : public exreq {
+	using view_t = exreq_is_msg_deleted;
 	uint64_t message_id;
 };
 
 struct exreq_load_message_instance final : public exreq {
+	using view_t = exreq_load_message_instance;
 	char *username;
 	cpid_t cpid;
 	BOOL b_new;
@@ -509,159 +653,241 @@ struct exreq_load_message_instance final : public exreq {
 };
 
 struct exreq_load_embedded_instance final : public exreq {
+	using view_t = exreq_load_embedded_instance;
 	BOOL b_new;
 	uint32_t attachment_instance_id;
 };
 
 struct exreq_get_embedded_cn final : public exreq {
+	using view_t = exreq_get_embedded_cn;
 	uint32_t instance_id;
 };
 
 struct exreq_reload_message_instance final : public exreq {
+	using view_t = exreq_reload_message_instance;
 	uint32_t instance_id;
 };
 
 struct exreq_clear_message_instance final : public exreq {
+	using view_t = exreq_clear_message_instance;
 	uint32_t instance_id;
 };
 
 struct exreq_read_message_instance final : public exreq {
+	using view_t = exreq_read_message_instance;
 	uint32_t instance_id;
 };
 
 struct exreq_write_message_instance final : public exreq {
+	using view_t = exreq_write_message_instance;
 	uint32_t instance_id;
 	MESSAGE_CONTENT *pmsgctnt;
 	BOOL b_force;
 };
 
 struct exreq_load_attachment_instance final : public exreq {
+	using view_t = exreq_load_attachment_instance;
 	uint32_t message_instance_id;
 	uint32_t attachment_num;
 };
 
 struct exreq_create_attachment_instance final : public exreq {
+	using view_t = exreq_create_attachment_instance;
 	uint32_t message_instance_id;
 };
 
 struct exreq_read_attachment_instance final : public exreq {
+	using view_t = exreq_read_attachment_instance;
 	uint32_t instance_id;
 };
 
 struct exreq_write_attachment_instance final : public exreq {
+	using view_t = exreq_write_attachment_instance;
 	uint32_t instance_id;
 	ATTACHMENT_CONTENT *pattctnt;
 	BOOL b_force;
 };
 
 struct exreq_delete_message_instance_attachment final : public exreq {
+	using view_t = exreq_delete_message_instance_attachment;
 	uint32_t message_instance_id;
 	uint32_t attachment_num;
 };
 
 struct exreq_flush_instance final : public exreq {
+	using view_t = exreq_flush_instance;
 	uint32_t instance_id;
 };
 
 struct exreq_unload_instance final : public exreq {
+	using view_t = exreq_unload_instance;
 	uint32_t instance_id;
 };
 
 struct exreq_get_instance_all_proptags final : public exreq {
+	using view_t = exreq_get_instance_all_proptags;
 	uint32_t instance_id;
+};
+
+struct exreq_get_instance_properties_v final : public exreq {
+	uint32_t size_limit;
+	uint32_t instance_id;
+	proptag_cspan pproptags;
 };
 
 struct exreq_get_instance_properties final : public exreq {
+	using view_t = exreq_get_instance_properties_v;
 	uint32_t size_limit;
 	uint32_t instance_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_vector pproptags;
+	operator view_t() const {
+		view_t v;
+		v.size_limit = size_limit;
+		v.instance_id = instance_id;
+		v.pproptags = pproptags;
+		return v;
+	}
 };
 
 struct exreq_set_instance_properties final : public exreq {
+	using view_t = exreq_set_instance_properties;
 	uint32_t instance_id;
 	TPROPVAL_ARRAY *pproperties;
 };
 
-struct exreq_remove_instance_properties final : public exreq {
+struct exreq_remove_instance_properties_v final : public exreq {
 	uint32_t instance_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_cspan pproptags;
+};
+
+struct exreq_remove_instance_properties final : public exreq {
+	using view_t = exreq_remove_instance_properties_v;
+	uint32_t instance_id;
+	proptag_vector pproptags;
+	operator view_t() const { view_t v; v.instance_id = instance_id; v.pproptags = pproptags; return v; }
 };
 
 struct exreq_is_descendant_instance final : public exreq {
+	using view_t = exreq_is_descendant_instance;
 	uint32_t parent_iid, child_iid;
 };
 
 struct exreq_empty_message_instance_rcpts final : public exreq {
+	using view_t = exreq_empty_message_instance_rcpts;
 	uint32_t instance_id;
 };
 
 struct exreq_get_message_instance_rcpts_num final : public exreq {
+	using view_t = exreq_get_message_instance_rcpts_num;
 	uint32_t instance_id;
 };
 
 struct exreq_get_message_instance_rcpts_all_proptags final : public exreq {
+	using view_t = exreq_get_message_instance_rcpts_all_proptags;
 	uint32_t instance_id;
 };
 
 struct exreq_get_message_instance_rcpts final : public exreq {
+	using view_t = exreq_get_message_instance_rcpts;
 	uint32_t instance_id;
 	uint32_t row_id;
 	uint16_t need_count;
 };
 
 struct exreq_update_message_instance_rcpts final : public exreq {
+	using view_t = exreq_update_message_instance_rcpts;
 	uint32_t instance_id;
 	TARRAY_SET *pset;
 };
 
 struct exreq_copy_instance_rcpts final : public exreq {
+	using view_t = exreq_copy_instance_rcpts;
 	BOOL b_force;
 	uint32_t src_instance_id;
 	uint32_t dst_instance_id;
 };
 
 struct exreq_empty_message_instance_attachments final : public exreq {
+	using view_t = exreq_empty_message_instance_attachments;
 	uint32_t instance_id;
 };
 
 struct exreq_get_message_instance_attachments_num final : public exreq {
+	using view_t = exreq_get_message_instance_attachments_num;
 	uint32_t instance_id;
 };
 
 struct exreq_get_message_instance_attachment_table_all_proptags final : public exreq {
+	using view_t = exreq_get_message_instance_attachment_table_all_proptags;
 	uint32_t instance_id;
 };
 
-struct exreq_query_message_instance_attachment_table final : public exreq {
+struct exreq_query_message_instance_attachment_table_v final : public exreq {
 	uint32_t instance_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_cspan pproptags;
 	uint32_t start_pos;
 	int32_t row_needed;
 };
 
+struct exreq_query_message_instance_attachment_table final : public exreq {
+	using view_t = exreq_query_message_instance_attachment_table_v;
+	uint32_t instance_id;
+	proptag_vector pproptags;
+	uint32_t start_pos;
+	int32_t row_needed;
+	operator view_t() const {
+		view_t v;
+		v.instance_id = instance_id;
+		v.pproptags = pproptags;
+		v.start_pos = start_pos;
+		v.row_needed = row_needed;
+		return v;
+	}
+};
+
 struct exreq_copy_instance_attachments final : public exreq {
+	using view_t = exreq_copy_instance_attachments;
 	BOOL b_force;
 	uint32_t src_instance_id;
 	uint32_t dst_instance_id;
 };
 
 struct exreq_set_message_instance_conflict final : public exreq {
+	using view_t = exreq_set_message_instance_conflict;
 	uint32_t instance_id;
 	MESSAGE_CONTENT *pmsgctnt;
 };
 
 struct exreq_get_message_rcpts final : public exreq {
+	using view_t = exreq_get_message_rcpts;
 	uint64_t message_id;
+};
+
+struct exreq_get_message_properties_v final : public exreq {
+	const char *username;
+	cpid_t cpid;
+	uint64_t message_id;
+	proptag_cspan pproptags;
 };
 
 struct exreq_get_message_properties final : public exreq {
+	using view_t = exreq_get_message_properties_v;
 	char *username;
 	cpid_t cpid;
 	uint64_t message_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_vector pproptags;
+	operator view_t() const {
+		view_t v;
+		v.username = username;
+		v.cpid = cpid;
+		v.message_id = message_id;
+		v.pproptags = pproptags;
+		return v;
+	}
 };
 
 struct exreq_set_message_properties final : public exreq {
+	using view_t = exreq_set_message_properties;
 	char *username;
 	cpid_t cpid;
 	uint64_t message_id;
@@ -669,47 +895,69 @@ struct exreq_set_message_properties final : public exreq {
 };
 
 struct exreq_set_message_read_state final : public exreq {
+	using view_t = exreq_set_message_read_state;
 	char *username;
 	uint64_t message_id;
 	uint8_t mark_as_read;
 };
 
-struct exreq_remove_message_properties final : public exreq {
+struct exreq_remove_message_properties_v final : public exreq {
 	cpid_t cpid;
 	uint64_t message_id;
-	PROPTAG_ARRAY *pproptags;
+	proptag_cspan pproptags;
+};
+
+struct exreq_remove_message_properties final : public exreq {
+	using view_t = exreq_remove_message_properties_v;
+	cpid_t cpid;
+	uint64_t message_id;
+	proptag_vector pproptags;
+	operator view_t() const {
+		view_t v;
+		v.cpid = cpid;
+		v.message_id = message_id;
+		v.pproptags = pproptags;
+		return v;
+	}
 };
 
 struct exreq_allocate_message_id final : public exreq {
+	using view_t = exreq_allocate_message_id;
 	uint64_t folder_id;
 };
 
 struct exreq_mark_modified final : public exreq {
+	using view_t = exreq_mark_modified;
 	uint64_t message_id;
 };
 
 struct exreq_try_mark_submit final : public exreq {
+	using view_t = exreq_try_mark_submit;
 	uint64_t message_id;
 };
 
 struct exreq_clear_submit final : public exreq {
+	using view_t = exreq_clear_submit;
 	uint64_t message_id;
 	BOOL b_unsent;
 };
 
 struct exreq_link_message final : public exreq {
+	using view_t = exreq_link_message;
 	cpid_t cpid;
 	uint64_t folder_id;
 	uint64_t message_id;
 };
 
 struct exreq_unlink_message final : public exreq {
+	using view_t = exreq_unlink_message;
 	cpid_t cpid;
 	uint64_t folder_id;
 	uint64_t message_id;
 };
 
 struct exreq_rule_new_message final : public exreq {
+	using view_t = exreq_rule_new_message;
 	char *username;
 	cpid_t cpid;
 	uint64_t folder_id;
@@ -717,19 +965,23 @@ struct exreq_rule_new_message final : public exreq {
 };
 
 struct exreq_set_message_timer final : public exreq {
+	using view_t = exreq_set_message_timer;
 	uint64_t message_id;
 	uint32_t timer_id;
 };
 
 struct exreq_get_message_timer final : public exreq {
+	using view_t = exreq_get_message_timer;
 	uint64_t message_id;
 };
 
 struct exreq_empty_folder_permission final : public exreq {
+	using view_t = exreq_empty_folder_permission;
 	uint64_t folder_id;
 };
 
 struct exreq_update_folder_permission final : public exreq {
+	using view_t = exreq_update_folder_permission;
 	uint64_t folder_id;
 	BOOL b_freebusy;
 	uint16_t count;
@@ -737,10 +989,12 @@ struct exreq_update_folder_permission final : public exreq {
 };
 
 struct exreq_empty_folder_rule final : public exreq {
+	using view_t = exreq_empty_folder_rule;
 	uint64_t folder_id;
 };
 
 struct exreq_update_folder_rule final : public exreq {
+	using view_t = exreq_update_folder_rule;
 	uint64_t folder_id;
 	uint16_t count;
 	RULE_DATA *prow;
@@ -753,6 +1007,7 @@ enum delivery_flags {
 };
 
 struct exreq_deliver_message final : public exreq {
+	using view_t = exreq_deliver_message;
 	char *from_address;
 	char *account;
 	cpid_t cpid;
@@ -762,6 +1017,7 @@ struct exreq_deliver_message final : public exreq {
 };
 
 struct exreq_write_message final : public exreq {
+	using view_t = exreq_write_message;
 	cpid_t cpid{};
 	uint64_t folder_id = 0;
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
@@ -769,12 +1025,14 @@ struct exreq_write_message final : public exreq {
 };
 
 struct exreq_read_message final : public exreq {
+	using view_t = exreq_read_message;
 	char *username;
 	cpid_t cpid;
 	uint64_t message_id;
 };
 
 struct exreq_get_content_sync final : public exreq {
+	using view_t = exreq_get_content_sync;
 	uint64_t folder_id;
 	char *username;
 	gromox::idset *pgiven, *pseen, *pseen_fai, *pread;
@@ -784,16 +1042,19 @@ struct exreq_get_content_sync final : public exreq {
 };
 
 struct exreq_get_hierarchy_sync final : public exreq {
+	using view_t = exreq_get_hierarchy_sync;
 	uint64_t folder_id;
 	char *username;
 	gromox::idset *pgiven, *pseen;
 };
 
 struct exreq_allocate_ids final : public exreq {
+	using view_t = exreq_allocate_ids;
 	uint32_t count;
 };
 
 struct exreq_subscribe_notification final : public exreq {
+	using view_t = exreq_subscribe_notification;
 	uint16_t notification_type;
 	BOOL b_whole;
 	uint64_t folder_id;
@@ -801,10 +1062,12 @@ struct exreq_subscribe_notification final : public exreq {
 };
 
 struct exreq_unsubscribe_notification final : public exreq {
+	using view_t = exreq_unsubscribe_notification;
 	uint32_t sub_id;
 };
 
 struct exreq_transport_new_mail final : public exreq {
+	using view_t = exreq_transport_new_mail;
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t message_flags;
@@ -812,23 +1075,28 @@ struct exreq_transport_new_mail final : public exreq {
 };
 
 struct exreq_check_contact_address final : public exreq {
+	using view_t = exreq_check_contact_address;
 	char *paddress;
 };
 
 struct exreq_get_public_folder_unread_count final : public exreq {
+	using view_t = exreq_get_public_folder_unread_count;
 	char *username;
 	uint64_t folder_id;
 };
 
 struct exreq_notify_new_mail final : public exreq {
+	using view_t = exreq_notify_new_mail;
 	uint64_t folder_id, message_id;
 };
 
 struct exreq_store_eid_to_user final : public exreq {
+	using view_t = exreq_store_eid_to_user;
 	STORE_ENTRYID *store_eid;
 };
 
 struct exreq_purge_softdelete final : public exreq {
+	using view_t = exreq_purge_softdelete;
 	char *username;
 	uint64_t folder_id = 0;
 	uint32_t del_flags = 0;
@@ -836,23 +1104,28 @@ struct exreq_purge_softdelete final : public exreq {
 };
 
 struct exreq_autoreply_tsquery final : public exreq {
+	using view_t = exreq_autoreply_tsquery;
 	char *peer = nullptr;
 	uint64_t window = 0;
 };
 
 struct exreq_autoreply_tsupdate final : public exreq {
+	using view_t = exreq_autoreply_tsupdate;
 	char *peer = nullptr;
 };
 
 struct exreq_recalc_store_size final : public exreq {
+	using view_t = exreq_recalc_store_size;
 	uint32_t flags = 0;
 };
 
 struct exreq_imapfile_read final : public exreq {
+	using view_t = exreq_imapfile_read;
 	std::string type, mid;
 };
 
 struct exreq_imapfile_write final : public exreq {
+	using view_t = exreq_imapfile_write;
 	std::string type, mid, data;
 };
 
@@ -861,10 +1134,12 @@ enum class db_maint_mode {
 };
 
 struct exreq_set_maintenance final : public exreq {
+	using view_t = exreq_set_maintenance;
 	uint32_t mode = 0;
 };
 
 struct exreq_write_delegates final : public exreq {
+	using view_t = exreq_write_delegates;
 	uint32_t mode = 0;
 	std::vector<std::string> userlist;
 };
@@ -890,40 +1165,49 @@ struct exresp {
 };
 
 struct exresp_error final : public exresp {
+	using view_t = exresp_error;
 	ec_error_t e_result{};
 };
 
 struct exresp_get_all_named_propids final : public exresp {
+	using view_t = exresp_get_all_named_propids;
 	PROPID_ARRAY propids;
 };
 
 struct exresp_get_named_propids final : public exresp {
+	using view_t = exresp_get_named_propids;
 	PROPID_ARRAY propids;
 };
 
 struct exresp_get_named_propnames final : public exresp {
+	using view_t = exresp_get_named_propnames;
 	PROPNAME_ARRAY propnames;
 };
 
 struct exresp_get_mapping_guid final : public exresp {
+	using view_t = exresp_get_mapping_guid;
 	BOOL b_found;
 	GUID guid;
 };
 
 struct exresp_get_mapping_replid final : public exresp {
+	using view_t = exresp_get_mapping_replid;
 	uint16_t replid = 0;
 	ec_error_t e_result = ecSuccess;
 };
 
 struct exresp_get_store_all_proptags final : public exresp {
+	using view_t = exresp_get_store_all_proptags;
 	PROPTAG_ARRAY proptags;
 };
 
 struct exresp_get_store_properties final : public exresp {
+	using view_t = exresp_get_store_properties;
 	TPROPVAL_ARRAY propvals;
 };
 
 struct exresp_set_store_properties final : public exresp {
+	using view_t = exresp_set_store_properties;
 	PROBLEM_ARRAY problems;
 };
 
@@ -931,321 +1215,396 @@ using exresp_autoreply_getprop = exresp_get_store_properties;
 using exresp_autoreply_setprop = exresp_set_store_properties;
 
 struct exresp_get_mbox_perm final : public exresp {
+	using view_t = exresp_get_mbox_perm;
 	uint32_t permission;
 };
 
 struct exresp_get_folder_by_class final : public exresp {
+	using view_t = exresp_get_folder_by_class;
 	uint64_t id;
 	std::string str_explicit;
 };
 
 struct exresp_set_folder_by_class final : public exresp {
+	using view_t = exresp_set_folder_by_class;
 	BOOL b_result;
 };
 
 struct exresp_get_folder_class_table final : public exresp {
+	using view_t = exresp_get_folder_class_table;
 	TARRAY_SET table;
 };
 
 struct exresp_is_folder_present final : public exresp {
+	using view_t = exresp_is_folder_present;
 	BOOL b_exist;
 };
 
 struct exresp_is_folder_deleted final : public exresp {
+	using view_t = exresp_is_folder_deleted;
 	BOOL b_del;
 };
 
 struct exresp_get_folder_by_name final : public exresp {
+	using view_t = exresp_get_folder_by_name;
 	uint64_t folder_id;
 };
 
 struct exresp_get_folder_perm final : public exresp {
+	using view_t = exresp_get_folder_perm;
 	uint32_t permission;
 };
 
 struct exresp_create_folder_v1 final : public exresp {
+	using view_t = exresp_create_folder_v1;
 	uint64_t folder_id;
 };
 
 struct exresp_create_folder final : public exresp {
+	using view_t = exresp_create_folder;
 	uint64_t folder_id;
 	ec_error_t e_result;
 };
 
 struct exresp_get_folder_all_proptags final : public exresp {
+	using view_t = exresp_get_folder_all_proptags;
 	PROPTAG_ARRAY proptags;
 };
 
 struct exresp_get_folder_properties final : public exresp {
+	using view_t = exresp_get_folder_properties;
 	TPROPVAL_ARRAY propvals;
 };
 
 struct exresp_set_folder_properties final : public exresp {
+	using view_t = exresp_set_folder_properties;
 	PROBLEM_ARRAY problems;
 };
 
 struct exresp_delete_folder final : public exresp {
+	using view_t = exresp_delete_folder;
 	BOOL b_result;
 };
 
 struct exresp_empty_folder final : public exresp {
+	using view_t = exresp_empty_folder;
 	BOOL b_partial;
 };
 
 struct exresp_is_descendant_folder final : public exresp {
+	using view_t = exresp_is_descendant_folder;
 	BOOL b_included;
 };
 
 struct exresp_copy_folder_internal final : public exresp {
+	using view_t = exresp_copy_folder_internal;
 	BOOL b_collid;
 	BOOL b_partial;
 };
 
 struct exresp_get_search_criteria final : public exresp {
+	using view_t = exresp_get_search_criteria;
 	uint32_t search_status;
 	RESTRICTION *prestriction;
 	EID_ARRAY folder_ids;
 };
 
 struct exresp_set_search_criteria final : public exresp {
+	using view_t = exresp_set_search_criteria;
 	BOOL b_result;
 };
 
 struct exresp_movecopy_message final : public exresp {
+	using view_t = exresp_movecopy_message;
 	BOOL b_result;
 };
 
 struct exresp_movecopy_messages final : public exresp {
+	using view_t = exresp_movecopy_messages;
 	BOOL b_partial;
 };
 
 struct exresp_delete_messages final : public exresp {
+	using view_t = exresp_delete_messages;
 	BOOL b_partial;
 };
 
 struct exresp_get_message_brief final : public exresp {
+	using view_t = exresp_get_message_brief;
 	MESSAGE_CONTENT *pbrief;
 };
 
 struct exresp_sum_hierarchy final : public exresp {
+	using view_t = exresp_sum_hierarchy;
 	uint32_t count;
 };
 
 struct exresp_load_hierarchy_table final : public exresp {
+	using view_t = exresp_load_hierarchy_table;
 	uint32_t table_id;
 	uint32_t row_count;
 };
 
 struct exresp_sum_content final : public exresp {
+	using view_t = exresp_sum_content;
 	uint32_t count;
 };
 
 struct exresp_load_content_table final : public exresp {
+	using view_t = exresp_load_content_table;
 	uint32_t table_id;
 	uint32_t row_count;
 };
 
 struct exresp_load_permission_table final : public exresp {
+	using view_t = exresp_load_permission_table;
 	uint32_t table_id;
 	uint32_t row_count;
 };
 
 struct exresp_load_rule_table final : public exresp {
+	using view_t = exresp_load_rule_table;
 	uint32_t table_id;
 	uint32_t row_count;
 };
 
 struct exresp_sum_table final : public exresp {
+	using view_t = exresp_sum_table;
 	uint32_t rows;
 };
 
 struct exresp_query_table final : public exresp {
+	using view_t = exresp_query_table;
 	TARRAY_SET set;
 };
 
 struct exresp_match_table final : public exresp {
+	using view_t = exresp_match_table;
 	int32_t position;
 	TPROPVAL_ARRAY propvals;
 };
 
 struct exresp_locate_table final : public exresp {
+	using view_t = exresp_locate_table;
 	int32_t position;
 	uint32_t row_type;
 };
 
 struct exresp_read_table_row final : public exresp {
+	using view_t = exresp_read_table_row;
 	TPROPVAL_ARRAY propvals;
 };
 
 struct exresp_mark_table final : public exresp {
+	using view_t = exresp_mark_table;
 	uint64_t inst_id;
 	uint32_t inst_num;
 	uint32_t row_type;
 };
 
 struct exresp_get_table_all_proptags final : public exresp {
+	using view_t = exresp_get_table_all_proptags;
 	PROPTAG_ARRAY proptags;
 };
 
 struct exresp_expand_table final : public exresp {
+	using view_t = exresp_expand_table;
 	BOOL b_found;
 	int32_t position;
 	uint32_t row_count;
 };
 
 struct exresp_collapse_table final : public exresp {
+	using view_t = exresp_collapse_table;
 	BOOL b_found;
 	int32_t position;
 	uint32_t row_count;
 };
 
 struct exresp_store_table_state final : public exresp {
+	using view_t = exresp_store_table_state;
 	uint32_t state_id;
 };
 
 struct exresp_restore_table_state final : public exresp {
+	using view_t = exresp_restore_table_state;
 	int32_t position;
 };
 
 struct exresp_is_msg_present final : public exresp {
+	using view_t = exresp_is_msg_present;
 	BOOL b_exist;
 };
 
 struct exresp_is_msg_deleted final : public exresp {
+	using view_t = exresp_is_msg_deleted;
 	BOOL b_del;
 };
 
 struct exresp_load_message_instance final : public exresp {
+	using view_t = exresp_load_message_instance;
 	uint32_t instance_id;
 };
 
 struct exresp_load_embedded_instance final : public exresp {
+	using view_t = exresp_load_embedded_instance;
 	uint32_t instance_id;
 };
 
 struct exresp_get_embedded_cn final : public exresp {
+	using view_t = exresp_get_embedded_cn;
 	uint64_t *pcn;
 };
 
 struct exresp_reload_message_instance final : public exresp {
+	using view_t = exresp_reload_message_instance;
 	BOOL b_result;
 };
 
 struct exresp_read_message_instance final : public exresp {
+	using view_t = exresp_read_message_instance;
 	MESSAGE_CONTENT msgctnt;
 };
 
 struct exresp_write_message_instance final : public exresp {
+	using view_t = exresp_write_message_instance;
 	PROPTAG_ARRAY proptags;
 	PROBLEM_ARRAY problems;
 };
 
 struct exresp_load_attachment_instance final : public exresp {
+	using view_t = exresp_load_attachment_instance;
 	uint32_t instance_id;
 };
 
 struct exresp_create_attachment_instance final : public exresp {
+	using view_t = exresp_create_attachment_instance;
 	uint32_t instance_id;
 	uint32_t attachment_num;
 };
 
 struct exresp_read_attachment_instance final : public exresp {
+	using view_t = exresp_read_attachment_instance;
 	ATTACHMENT_CONTENT attctnt;
 };
 
 struct exresp_write_attachment_instance final : public exresp {
+	using view_t = exresp_write_attachment_instance;
 	PROBLEM_ARRAY problems;
 };
 
 struct exresp_get_instance_all_proptags final : public exresp {
+	using view_t = exresp_get_instance_all_proptags;
 	PROPTAG_ARRAY proptags;
 };
 
 struct exresp_get_instance_properties final : public exresp {
+	using view_t = exresp_get_instance_properties;
 	TPROPVAL_ARRAY propvals;
 };
 
 struct exresp_set_instance_properties final : public exresp {
+	using view_t = exresp_set_instance_properties;
 	PROBLEM_ARRAY problems;
 };
 
 struct exresp_remove_instance_properties final : public exresp {
+	using view_t = exresp_remove_instance_properties;
 	PROBLEM_ARRAY problems;
 };
 
 struct exresp_is_descendant_instance final : public exresp {
+	using view_t = exresp_is_descendant_instance;
 	BOOL b_included;
 };
 
 struct exresp_get_message_instance_rcpts_num final : public exresp {
+	using view_t = exresp_get_message_instance_rcpts_num;
 	uint16_t num;
 };
 
 struct exresp_get_message_instance_rcpts_all_proptags final : public exresp {
+	using view_t = exresp_get_message_instance_rcpts_all_proptags;
 	PROPTAG_ARRAY proptags;
 };
 
 struct exresp_get_message_instance_rcpts final : public exresp {
+	using view_t = exresp_get_message_instance_rcpts;
 	TARRAY_SET set;
 };
 
 struct exresp_copy_instance_rcpts final : public exresp {
+	using view_t = exresp_copy_instance_rcpts;
 	BOOL b_result;
 };
 
 struct exresp_get_message_instance_attachments_num final : public exresp {
+	using view_t = exresp_get_message_instance_attachments_num;
 	uint16_t num;
 };
 
 struct exresp_get_message_instance_attachment_table_all_proptags final : public exresp {
+	using view_t = exresp_get_message_instance_attachment_table_all_proptags;
 	PROPTAG_ARRAY proptags;
 };
 
 struct exresp_query_message_instance_attachment_table final : public exresp {
+	using view_t = exresp_query_message_instance_attachment_table;
 	TARRAY_SET set;
 };
 
 struct exresp_copy_instance_attachments final : public exresp {
+	using view_t = exresp_copy_instance_attachments;
 	BOOL b_result;
 };
 
 struct exresp_get_message_rcpts final : public exresp {
+	using view_t = exresp_get_message_rcpts;
 	TARRAY_SET set;
 };
 
 struct exresp_get_message_properties final : public exresp {
+	using view_t = exresp_get_message_properties;
 	TPROPVAL_ARRAY propvals;
 };
 
 struct exresp_set_message_properties final : public exresp {
+	using view_t = exresp_set_message_properties;
 	PROBLEM_ARRAY problems;
 };
 
 struct exresp_set_message_read_state final : public exresp {
+	using view_t = exresp_set_message_read_state;
 	uint64_t read_cn;
 };
 
 struct exresp_allocate_message_id final : public exresp {
+	using view_t = exresp_allocate_message_id;
 	uint64_t message_id;
 };
 
 struct exresp_allocate_cn final : public exresp {
+	using view_t = exresp_allocate_cn;
 	uint64_t cn;
 };
 
 struct exresp_try_mark_submit final : public exresp {
+	using view_t = exresp_try_mark_submit;
 	BOOL b_marked;
 };
 
 struct exresp_link_message final : public exresp {
+	using view_t = exresp_link_message;
 	BOOL b_result;
 };
 
 struct exresp_get_message_timer final : public exresp {
+	using view_t = exresp_get_message_timer;
 	uint32_t *ptimer_id;
 };
 
 struct exresp_update_folder_rule final : public exresp {
+	using view_t = exresp_update_folder_rule;
 	BOOL b_exceed;
 };
 
@@ -1259,15 +1618,18 @@ enum deliver_message_result {
 };
 
 struct exresp_deliver_message final : public exresp {
+	using view_t = exresp_deliver_message;
 	uint64_t folder_id, message_id;
 	uint32_t result;
 };
 
 struct exresp_read_message final : public exresp {
+	using view_t = exresp_read_message;
 	MESSAGE_CONTENT *pmsgctnt;
 };
 
 struct exresp_get_content_sync final : public exresp {
+	using view_t = exresp_get_content_sync;
 	uint32_t fai_count;
 	uint64_t fai_total;
 	uint32_t normal_count;
@@ -1284,6 +1646,7 @@ struct exresp_get_content_sync final : public exresp {
 };
 
 struct exresp_get_hierarchy_sync final : public exresp {
+	using view_t = exresp_get_hierarchy_sync;
 	FOLDER_CHANGES fldchgs;
 	uint64_t last_cn;
 	EID_ARRAY given_fids;
@@ -1291,45 +1654,55 @@ struct exresp_get_hierarchy_sync final : public exresp {
 };
 
 struct exresp_allocate_ids final : public exresp {
+	using view_t = exresp_allocate_ids;
 	uint64_t begin_eid;
 };
 
 struct exresp_subscribe_notification final : public exresp {
+	using view_t = exresp_subscribe_notification;
 	uint32_t sub_id;
 };
 
 struct exresp_check_contact_address final : public exresp {
+	using view_t = exresp_check_contact_address;
 	BOOL b_found;
 };
 
 struct exresp_get_public_folder_unread_count final : public exresp {
+	using view_t = exresp_get_public_folder_unread_count;
 	uint32_t count;
 };
 
 struct exresp_store_eid_to_user final : public exresp {
+	using view_t = exresp_store_eid_to_user;
 	char *maildir = nullptr;
 	unsigned int user_id = 0, domain_id = 0;
 };
 
 struct exresp_autoreply_tsquery final : public exresp {
+	using view_t = exresp_autoreply_tsquery;
 	uint64_t tdiff = 0;
 };
 
 struct exresp_write_message final : public exresp {
+	using view_t = exresp_write_message;
 	uint64_t outmid = 0, outcn = 0;
 	ec_error_t e_result{};
 };
 
 struct exresp_imapfile_read final : public exresp {
+	using view_t = exresp_imapfile_read;
 	std::string data;
 };
 
 struct exresp_purge_softdelete final : public exresp {
+	using view_t = exresp_purge_softdelete;
 	uint32_t cnt_folders = 0, cnt_messages = 0;
 	uint64_t sz_normal = 0, sz_fai = 0;
 };
 
 struct exresp_read_delegates final : public exresp {
+	using view_t = exresp_read_delegates;
 	std::vector<std::string> userlist;
 };
 

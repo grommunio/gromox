@@ -87,10 +87,8 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 
 	static constexpr proptag_t proptag_buff[] =
 		{PR_STORE_RECORD_KEY, PR_OOF_STATE, PR_MAPPING_SIGNATURE};
-	static constexpr PROPTAG_ARRAY proptags =
-		{std::size(proptag_buff), deconst(proptag_buff)};
 	if (!exmdb_client->get_store_properties(maildir.c_str(), CP_ACP,
-	    &proptags, &propvals))
+	    proptag_cspan{proptag_buff}, &propvals))
 		return ecError;
 	auto bin = propvals.get<const BINARY>(PR_STORE_RECORD_KEY);
 	if (bin == nullptr)
@@ -324,8 +322,7 @@ ec_error_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
 	if (prows->prows == nullptr)
 		return ecServerOOM;
 	for (size_t i = 0; i < class_table.count; ++i)
-		if (!common_util_propvals_to_row(class_table.pparray[i],
-		    &columns, &prows->prows[i]))
+		if (!cu_propvals_to_row(class_table.pparray[i], columns, &prows->prows[i]))
 			return ecServerOOM;
 	return ecSuccess;
 }

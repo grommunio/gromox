@@ -1803,16 +1803,15 @@ static BOOL instance_get_message_subject(TPROPVAL_ARRAY *pproplist,
 
 static BOOL instance_get_attachment_properties(cpid_t cpid,
 	const uint64_t *pmessage_id, ATTACHMENT_CONTENT *pattachment,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+    proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	uint32_t length;
 	
 	ppropvals->count = 0;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (const auto tag : pproptags) {
 		auto pvalue = pattachment->proplist.getval(tag);
 		if (NULL != pvalue) {
 			ppropvals->emplace_back(tag, pvalue);
@@ -1966,7 +1965,7 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 }	
 
 BOOL exmdb_server::get_instance_properties(const char *dir,
-    uint32_t size_limit, uint32_t instance_id, const PROPTAG_ARRAY *pproptags,
+    uint32_t size_limit, uint32_t instance_id, proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	uint32_t length;
@@ -1993,12 +1992,11 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 	}
 	pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	ppropvals->count = 0;
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : pproptags) {
 		auto &vc = ppropvals->ppropval[ppropvals->count];
-		const auto tag = pproptags->pproptag[i];
 		if (tag == PR_MESSAGE_FLAGS) {
 			vc.proptag = tag;
 			auto uv = cu_alloc<uint32_t>();
@@ -2527,11 +2525,10 @@ BOOL exmdb_server::set_instance_properties(const char *dir,
 	return set_xns_props_atx(ins, props, prob);
 }
 
-static BOOL rip_message(MESSAGE_CONTENT *pmsgctnt,
-    const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
+static bool rip_message(MESSAGE_CONTENT *pmsgctnt,
+    proptag_cspan pproptags, PROBLEM_ARRAY *pproblems)
 {
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (const auto tag : pproptags) {
 		switch (tag) {
 		case PR_BODY:
 		case PR_BODY_A:
@@ -2582,11 +2579,10 @@ static BOOL rip_message(MESSAGE_CONTENT *pmsgctnt,
 	return TRUE;
 }
 
-static BOOL rip_attachment(ATTACHMENT_CONTENT *pattachment,
-    const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
+static bool rip_attachment(ATTACHMENT_CONTENT *pattachment,
+    proptag_cspan pproptags, PROBLEM_ARRAY *pproblems)
 {
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (const auto tag : pproptags) {
 		switch (tag) {
 		case PR_ATTACH_DATA_BIN:
 			pattachment->proplist.erase(ID_TAG_ATTACHDATABINARY);
@@ -2615,7 +2611,7 @@ static BOOL rip_attachment(ATTACHMENT_CONTENT *pattachment,
 }
 
 BOOL exmdb_server::remove_instance_properties(const char *dir,
-    uint32_t instance_id, const PROPTAG_ARRAY *pproptags,
+    uint32_t instance_id, proptag_cspan pproptags,
     PROBLEM_ARRAY *pproblems)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -2627,9 +2623,10 @@ BOOL exmdb_server::remove_instance_properties(const char *dir,
 	if (pinstance == nullptr)
 		return FALSE;
 	pproblems->count = 0;
-	return pinstance->type == instance_type::message ?
-	       rip_message(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pproptags, pproblems) :
-	       rip_attachment(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pproptags, pproblems);
+	auto ret = pinstance->type == instance_type::message ?
+	           rip_message(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pproptags, pproblems) :
+	           rip_attachment(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pproptags, pproblems);
+	return ret ? TRUE : false;
 }
 
 BOOL exmdb_server::is_descendant_instance(const char *dir,
@@ -3001,7 +2998,7 @@ BOOL exmdb_server::copy_instance_attachments(const char *dir, BOOL b_force,
 }
 
 BOOL exmdb_server::query_message_instance_attachment_table(const char *dir,
-    uint32_t instance_id, const PROPTAG_ARRAY *pproptags, uint32_t start_pos,
+    uint32_t instance_id, proptag_cspan pproptags, uint32_t start_pos,
     int32_t row_needed, TARRAY_SET *pset)
 {
 	int i;

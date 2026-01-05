@@ -488,12 +488,13 @@ ec_error_t ab_base::fetch_prop(minid mid, proptag_t tag, std::string &prop) cons
  *
  * @return     true if user object was found, false otherwise
  */
-bool ab_base::fetch_props(minid mid, const PROPTAG_ARRAY &tags, std::unordered_map<proptag_t, std::string> &props) const
+bool ab_base::fetch_props(minid mid, proptag_cspan tags,
+    std::unordered_map<proptag_t, std::string> &props) const
 {
 	const sql_user *user = fetch_user(mid);
 	if (!user)
 		return false;
-	for (auto tag  : tags) {
+	for (auto tag : tags) {
 		auto it = user->propvals.find(tag);
 		if (it == user->propvals.end())
 			continue;

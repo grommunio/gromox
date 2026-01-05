@@ -78,11 +78,10 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	int account_id, const char *account, const char *dir)
 {
 	static constexpr proptag_t proptag = PR_STORE_RECORD_KEY;
-	const PROPTAG_ARRAY proptags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY propvals;
 	
 	if (!exmdb_client->get_store_properties(dir, CP_ACP,
-	    &proptags, &propvals)) {
+	    {&proptag, 1}, &propvals)) {
 		mlog(LV_ERR, "get_store_properties %s: failed", dir);
 		return NULL;	
 	}
@@ -396,9 +395,8 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 static void *store_object_get_oof_property(const char *maildir,
     proptag_t proptag)
 {
-	const PROPTAG_ARRAY tags = {1, &proptag};
 	TPROPVAL_ARRAY props{};
-	if (!exmdb_client->autoreply_getprop(maildir, CP_UTF8, &tags, &props) ||
+	if (!exmdb_client->autoreply_getprop(maildir, CP_UTF8, {&proptag, 1}, &props) ||
 	    props.count == 0 || props[0].proptag != proptag)
 		return nullptr;
 	return props[0].pvalue;
@@ -818,24 +816,22 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	return FALSE;
 }
 
-BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
-    TPROPVAL_ARRAY *ppropvals)
+bool store_object::get_properties(proptag_cspan pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags->count);
+	tmp_proptags.pproptag = cu_alloc<proptag_t>(pproptags.size());
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
 	auto pstore = this;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : pproptags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (!store_object_get_calculated_property(this, tag, &pvalue))
 			tmp_proptags.emplace_back(tag);
 		else if (pvalue != nullptr)
@@ -862,9 +858,8 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		if (tmp_proptags.count == 0)
 			return TRUE;
 	}
-	if (!exmdb_client->get_store_properties(
-		pstore->dir, pinfo->cpid, &tmp_proptags,
-	    &tmp_propvals))
+	if (!exmdb_client->get_store_properties(pstore->dir, pinfo->cpid,
+	    tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (tmp_propvals.count == 0)
 		return TRUE;
@@ -1054,12 +1049,11 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	return TRUE;
 }
 
-BOOL store_object::remove_properties(const PROPTAG_ARRAY *pproptags)
+bool store_object::remove_properties(proptag_cspan pproptags)
 {
 	auto pstore = this;
 	auto pinfo = zs_get_info();
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (const auto tag : pproptags) {
 		if (store_object_is_readonly_prop(pstore, tag))
 			continue;
 		pinfo->ptree->remove_zstore_propval(tag);
@@ -1076,13 +1070,12 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 	TARRAY_SET permission_set;
 	PERMISSION_ROW *pperm_row;
 	static constexpr proptag_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	
 	if (!exmdb_client->load_permission_table(
 	    pstore->dir, folder_id, 0, &table_id, &row_num))
 		return FALSE;
 	if (!exmdb_client->query_table(pstore->dir, nullptr, CP_ACP, table_id,
-	    &proptags, 0, row_num, &permission_set)) {
+	    proptag_buff, 0, row_num, &permission_set)) {
 		exmdb_client->unload_table(pstore->dir, table_id);
 		return FALSE;
 	}
@@ -1137,9 +1130,8 @@ BOOL store_object::get_permissions(PERMISSION_SET *pperm_set)
 	    NULL, &table_id, &row_num))
 		return FALSE;
 	static constexpr proptag_t tmp_proptag[] = {PidTagFolderId};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 	if (!exmdb_client->query_table(pstore->dir, nullptr, CP_ACP, table_id,
-	    &proptags, 0, row_num, &tmp_set))
+	    tmp_proptag, 0, row_num, &tmp_set))
 		return FALSE;
 	pperm_set->count = 0;
 	pperm_set->prows = NULL;

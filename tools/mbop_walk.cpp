@@ -24,10 +24,9 @@ ec_error_t select_contents_from_folder(eid_t fid, unsigned int tbl_flags,
 		return ecRpcFailed;
 	auto cl_0 = HX::make_scope_exit([&]() { exmdb_client->unload_table(g_storedir, table_id); });
 	static constexpr proptag_t mtags[] = {PidTagMid};
-	static constexpr PROPTAG_ARRAY mtaghdr = {std::size(mtags), deconst(mtags)};
 	tarray_set rowset{};
 	if (!exmdb_client->query_table(g_storedir, nullptr, CP_ACP, table_id,
-	    &mtaghdr, 0, row_count, &rowset))
+	    mtags, 0, row_count, &rowset))
 		return ecRpcFailed;
 	for (const auto &row : rowset) {
 		auto mid = row.get<const eid_t>(PidTagMid);
@@ -56,10 +55,9 @@ ec_error_t select_hierarchy(eid_t fid, unsigned int tbl_flags,
 		return ecRpcFailed;
 	auto cl_0 = HX::make_scope_exit([=]() { exmdb_client->unload_table(g_storedir, table_id); });
 	static constexpr proptag_t ftags[] = {PidTagFolderId};
-	static constexpr PROPTAG_ARRAY ftaghdr = {std::size(ftags), deconst(ftags)};
 	tarray_set rowset{};
 	if (!exmdb_client->query_table(g_storedir, nullptr, CP_ACP, table_id,
-	    &ftaghdr, 0, row_count, &rowset))
+	    ftags, 0, row_count, &rowset))
 		return ecRpcFailed;
 	exmdb_client->unload_table(g_storedir, table_id);
 	for (const auto &row : rowset) {

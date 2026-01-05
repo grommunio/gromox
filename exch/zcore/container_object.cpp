@@ -246,7 +246,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 		for (auto t : ntags)
 			proptags.emplace_back(t);
 		if (!exmdb_client->query_table(pinfo->get_maildir(), nullptr,
-		    pinfo->cpid, table_id, &proptags, 0, row_num, &tmp_set))
+		    pinfo->cpid, table_id, proptags, 0, row_num, &tmp_set))
 			return FALSE;
 		pparent_entryid = zcsab_prepend(cu_fid_to_entryid(*pstore,
 		                  pcontainer->id.exmdb_id.folder_id), MAPI_ABCONT, UINT32_MAX);
@@ -425,17 +425,15 @@ BOOL container_object_fetch_special_property(uint8_t special_type,
 	return TRUE;
 }
 
-static BOOL container_object_fetch_special_properties(
-	uint8_t special_type, const PROPTAG_ARRAY *pproptags,
-	TPROPVAL_ARRAY *ppropvals)
+static bool container_object_fetch_special_properties(uint8_t special_type,
+    proptag_cspan tags, TPROPVAL_ARRAY *ppropvals)
 {
-	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(tags.size());
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
+	for (const auto tag : tags) {
 		void *pvalue = nullptr;
-		const auto tag = pproptags->pproptag[i];
 		if (!container_object_fetch_special_property(special_type, tag, &pvalue))
 			return FALSE;	
 		if (pvalue == nullptr)
@@ -445,20 +443,18 @@ static BOOL container_object_fetch_special_properties(
 	return TRUE;
 }
 
-static BOOL container_object_fetch_folder_properties(
-	const TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pproptags,
-	TPROPVAL_ARRAY *pout_propvals)
+static bool container_object_fetch_folder_properties(const TPROPVAL_ARRAY *ppropvals,
+     proptag_cspan tags, TPROPVAL_ARRAY *pout_propvals)
 {
 	auto pvfid = ppropvals->get<uint64_t>(PidTagFolderId);
 	if (pvfid == nullptr)
 		return FALSE;
 	auto folder_id = *pvfid;
 	pout_propvals->count = 0;
-	pout_propvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	pout_propvals->ppropval = cu_alloc<TAGGED_PROPVAL>(tags.size());
 	if (pout_propvals->ppropval == nullptr)
 		return FALSE;
-	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		const auto tag = pproptags->pproptag[i];
+	for (const auto tag : tags) {
 		switch (tag) {
 		case PR_AB_PROVIDER_ID: {
 			auto bv = cu_alloc<BINARY>();
@@ -548,18 +544,13 @@ static BOOL container_object_fetch_folder_properties(
 	return TRUE;
 }
 
-static const PROPTAG_ARRAY* container_object_get_folder_proptags()
-{
-	static constexpr proptag_t p[] = {
-		PidTagFolderId, PR_SUBFOLDERS, PR_DISPLAY_NAME,
-		PR_CONTAINER_CLASS, PR_FOLDER_PATHNAME,
-		PidTagParentFolderId, PR_ATTR_HIDDEN,
-	};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(p), deconst(p)};
-	return &proptags;
-}
+static constexpr proptag_t container_object_get_folder_proptags[] = {
+	PidTagFolderId, PR_SUBFOLDERS, PR_DISPLAY_NAME,
+	PR_CONTAINER_CLASS, PR_FOLDER_PATHNAME,
+	PidTagParentFolderId, PR_ATTR_HIDDEN,
+};
 
-BOOL container_object::get_properties(const PROPTAG_ARRAY *pproptags,
+bool container_object::get_properties(proptag_cspan pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	auto pcontainer = this;
@@ -569,7 +560,7 @@ BOOL container_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		auto pinfo = zs_get_info();
 		if (!exmdb_client->get_folder_properties(pinfo->get_maildir(),
 		    pinfo->cpid, pcontainer->id.exmdb_id.folder_id,
-		    container_object_get_folder_proptags(), &tmp_propvals))
+		    container_object_get_folder_proptags, &tmp_propvals))
 			return FALSE;
 		return container_object_fetch_folder_properties(
 					&tmp_propvals, pproptags, ppropvals);
@@ -596,7 +587,7 @@ BOOL container_object::get_container_table_num(BOOL b_depth, uint32_t *pnum)
 	
 	proptags.count = 0;
 	proptags.pproptag = NULL;
-	if (!pcontainer->query_container_table(&proptags, b_depth, 0,
+	if (!pcontainer->query_container_table(proptags, b_depth, 0,
 	    INT32_MAX, &tmp_set))
 		return FALSE;	
 	*pnum = tmp_set.count;
@@ -615,9 +606,8 @@ void container_object_get_container_table_all_proptags(
 	pproptags->pproptag = deconst(p);
 }
 
-static bool
-container_object_get_specialtables_from_node(const ab_tree::ab_node& node,
-    const PROPTAG_ARRAY *pproptags, TARRAY_SET *pset)
+static bool container_object_get_specialtables_from_node(const ab_tree::ab_node &node,
+    proptag_cspan pproptags, TARRAY_SET *pset)
 {
 	TPROPVAL_ARRAY **pparray;
 	auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
@@ -642,7 +632,7 @@ container_object_get_specialtables_from_node(const ab_tree::ab_node& node,
 }
 
 static bool container_object_query_folder_hierarchy(uint64_t folder_id,
-    const PROPTAG_ARRAY *pproptags, TARRAY_SET *pset)
+    proptag_cspan pproptags, TARRAY_SET *pset)
 {
 	uint32_t row_num;
 	uint32_t table_id;
@@ -656,7 +646,7 @@ static bool container_object_query_folder_hierarchy(uint64_t folder_id,
 	if (row_num == 0)
 		tmp_set.count = 0;
 	else if (!exmdb_client->query_table(pinfo->get_maildir(), nullptr,
-	    pinfo->cpid, table_id, container_object_get_folder_proptags(),
+	    pinfo->cpid, table_id, container_object_get_folder_proptags,
 	    0, row_num, &tmp_set))
 		return FALSE;
 	exmdb_client->unload_table(pinfo->get_maildir(), table_id);
@@ -688,7 +678,7 @@ static bool container_object_query_folder_hierarchy(uint64_t folder_id,
 	return TRUE;
 }
 
-BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
+bool container_object::query_container_table(proptag_cspan pproptags,
 	BOOL b_depth, uint32_t start_pos, int32_t row_needed,
 	TARRAY_SET *pset)
 {
@@ -734,7 +724,7 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 			auto pinfo = zs_get_info();
 			if (!exmdb_client->get_folder_properties(pinfo->get_maildir(),
 				pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
-				container_object_get_folder_proptags(), &tmp_propvals)) {
+			    container_object_get_folder_proptags, &tmp_propvals)) {
 				return FALSE;
 			}
 			if (!container_object_fetch_folder_properties(&tmp_propvals,
@@ -835,7 +825,7 @@ void container_object_get_user_table_all_proptags(
 	pproptags->pproptag = deconst(p);
 }
 
-BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
+bool container_object::query_user_table(proptag_cspan pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
 	auto pcontainer = this;

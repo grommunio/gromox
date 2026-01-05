@@ -440,7 +440,7 @@ static pack_result zrpc_pull(PULL_CTX &x, zcresp_notifdequeue &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_push(PUSH_CTX &x, const zcreq_queryrows &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_queryrows_v &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
@@ -452,14 +452,13 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_queryrows &d)
 		TRY(x.p_uint8(1));
 		TRY(x.p_restriction(*d.prestriction));
 	}
-	if (d.pproptags == nullptr) {
+	if (!d.pproptags.has_value()) {
 		TRY(x.p_uint8(0));
-	return pack_result::ok;
 	} else {
 		TRY(x.p_uint8(1));
 		TRY(x.p_proptag_a(*d.pproptags));
-	return pack_result::ok;
 	}
+	return pack_result::ok;
 }
 
 static pack_result zrpc_pull(PULL_CTX &x, zcresp_queryrows &d)
@@ -472,7 +471,7 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setcolumns &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
-	TRY(x.p_proptag_a(*d.pproptags));
+	TRY(x.p_proptag_a(d.pproptags));
 	TRY(x.p_uint32(d.flags));
 	return pack_result::ok;
 }
@@ -650,14 +649,13 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getpropvals &d)
 {	
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
-	if (d.pproptags == nullptr) {
+	if (!d.pproptags.has_value()) {
 		TRY(x.p_uint8(0));
-	return pack_result::ok;
 	} else {
 		TRY(x.p_uint8(1));
 		TRY(x.p_proptag_a(*d.pproptags));
-		return pack_result::ok;
 	}
+	return pack_result::ok;
 }
 
 static pack_result zrpc_pull(PULL_CTX &x, zcresp_getpropvals &d)
@@ -670,7 +668,7 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_deletepropvals &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
-	TRY(x.p_proptag_a(*d.pproptags));
+	TRY(x.p_proptag_a(d.pproptags));
 	return pack_result::ok;
 }
 
@@ -728,7 +726,7 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_copyto &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hsrcobject));
-	TRY(x.p_proptag_a(*d.pexclude_proptags));
+	TRY(x.p_proptag_a(d.pexclude_proptags));
 	TRY(x.p_uint32(d.hdstobject));
 	TRY(x.p_uint32(d.flags));
 	return pack_result::ok;

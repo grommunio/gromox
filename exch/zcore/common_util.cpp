@@ -92,9 +92,7 @@ static thread_local std::unique_ptr<env_context> g_env_key;
 static char g_submit_command[1024];
 static constexpr char ZCORE_UA[] = PACKAGE_NAME "-zcore " PACKAGE_VERSION;
 
-BOOL common_util_verify_columns_and_sorts(
-	const PROPTAG_ARRAY *pcolumns,
-	const SORTORDER_SET *psort_criteria)
+bool cu_verify_columns_and_sorts(proptag_cspan cols, const SORTORDER_SET *psort_criteria)
 {
 	proptag_t proptag = 0;
 	for (size_t i = 0; i < psort_criteria->count; ++i) {
@@ -105,9 +103,8 @@ BOOL common_util_verify_columns_and_sorts(
 		proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
 		break;
 	}
-	for (size_t i = 0; i < pcolumns->count; ++i)
-		if (pcolumns->pproptag[i] & MV_INSTANCE &&
-		    proptag != pcolumns->pproptag[i])
+	for (const auto t : cols)
+		if (t & MV_INSTANCE && proptag != t)
 			return FALSE;
 	return TRUE;
 }
@@ -119,8 +116,7 @@ bool cu_extract_delegator(message_object *pmessage, std::string &username)
 	static constexpr proptag_t proptag_buff[] =
 		{PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
 		PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID};
-	static constexpr PROPTAG_ARRAY tmp_proptags = {std::size(proptag_buff), deconst(proptag_buff)};
-	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
+	if (!pmessage->get_properties(proptag_buff, &tmp_propvals))
 		return FALSE;	
 	if (0 == tmp_propvals.count) {
 		username.clear();
@@ -244,12 +240,12 @@ void common_util_remove_propvals(TPROPVAL_ARRAY *parray, proptag_t proptag)
 	}
 }
 
-void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
-	const PROPTAG_ARRAY *pproptags_subtractor)
+void cu_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
+    proptag_cspan pproptags_subtractor)
 {
-	for (unsigned int j = 0; j < pproptags_subtractor->count; ++j) {
+	for (const auto t : pproptags_subtractor) {
 		for (unsigned int i = 0; i < pproptags_minuend->count; ++i) {
-			if (pproptags_subtractor->pproptag[j] != pproptags_minuend->pproptag[i])
+			if (t != pproptags_minuend->pproptag[i])
 				continue;
 			pproptags_minuend->count--;
 			if (i < pproptags_minuend->count)
@@ -1589,9 +1585,8 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 	    nullptr, nullptr, &table_id, &row_count))
 		return NULL;	
 	static constexpr proptag_t tmp_proptag[] = {PidTagMid};
-	static constexpr PROPTAG_ARRAY proptags = {std::size(tmp_proptag), deconst(tmp_proptag)};
 	if (!exmdb_client->query_table(pstore->get_dir(), nullptr, CP_ACP,
-	    table_id, &proptags, 0, row_count, &tmp_set))
+	    table_id, tmp_proptag, 0, row_count, &tmp_set))
 		return NULL;	
 	exmdb_client->unload_table(pstore->get_dir(), table_id);
 	pmessage_ids = cu_alloc<EID_ARRAY>();
@@ -1626,7 +1621,7 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 	    folder_id, &tmp_proptags))
 		return ecError;
 	if (!exmdb_client->get_folder_properties(src_store->get_dir(), CP_ACP,
-	    folder_id, &tmp_proptags, &tmp_propvals))
+	    folder_id, tmp_proptags, &tmp_propvals))
 		return ecError;
 	if (new_name != nullptr) {
 		auto err = cu_set_propval(&tmp_propvals, PR_DISPLAY_NAME, new_name);
@@ -1662,9 +1657,8 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 		return ecError;
 
 	static constexpr proptag_t xb_proptag[] = {PidTagFolderId};
-	static constexpr PROPTAG_ARRAY xb_proptags = {std::size(xb_proptag), deconst(xb_proptag)};
 	if (!exmdb_client->query_table(src_store->get_dir(), nullptr, CP_ACP,
-	    table_id, &xb_proptags, 0, row_count, &tmp_set))
+	    table_id, xb_proptag, 0, row_count, &tmp_set))
 		return ecError;
 	exmdb_client->unload_table(src_store->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
@@ -1921,9 +1915,9 @@ void *cu_read_storenamedprop(const char *dir, const GUID &guid,
 	    name_rsp.size() != name_req.size() || name_rsp[0] == 0)
 		return nullptr;
 	auto proptag = PROP_TAG(proptype, name_rsp[0]);
-	const PROPTAG_ARRAY tags = {1, deconst(&proptag)};
 	TPROPVAL_ARRAY values{};
-	if (!exmdb_client->get_store_properties(dir, CP_ACP, &tags, &values))
+	if (!exmdb_client->get_store_properties(dir, CP_ACP,
+	    {&proptag, 1}, &values))
 		return nullptr;
 	return values.getval(proptag);
 }

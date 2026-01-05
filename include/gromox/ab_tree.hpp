@@ -10,8 +10,9 @@
 #include <type_traits>
 #include <unordered_map>
 #include <variant>
-#include <gromox/mysql_adaptor.hpp>
 #include <gromox/clock.hpp>
+#include <gromox/mapidefs.h>
+#include <gromox/mysql_adaptor.hpp>
 
 namespace gromox::ab_tree {
 
@@ -238,7 +239,7 @@ class GX_EXPORT ab_base {
 	bool exists(minid) const;
 	const ab_domain *fetch_domain(minid) const;
 	ec_error_t fetch_prop(minid, gromox::proptag_t, std::string &) const;
-	bool fetch_props(minid, const PROPTAG_ARRAY &, std::unordered_map<gromox::proptag_t, std::string> &) const;
+	bool fetch_props(minid, proptag_cspan, std::unordered_map<gromox::proptag_t, std::string> &) const;
 	const sql_user *fetch_user(minid) const;
 	uint32_t get_leaves_num(minid) const;
 	inline const GUID &guid() const { return m_guid; }

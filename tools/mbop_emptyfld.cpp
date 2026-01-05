@@ -103,9 +103,8 @@ static ec_error_t do_hierarchy(eid_t fid, uint32_t depth)
 	if (depth == 0 || !g_delempty)
 		return ecSuccess;
 	static constexpr proptag_t ftags2[] = {PR_CONTENT_COUNT, PR_ASSOC_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT};
-	static constexpr PROPTAG_ARRAY ftaghdr2 = {std::size(ftags2), deconst(ftags2)};
 	TPROPVAL_ARRAY props{};
-	if (!exmdb_client->get_folder_properties(g_storedir, CP_ACP, fid, &ftaghdr2, &props)) {
+	if (!exmdb_client->get_folder_properties(g_storedir, CP_ACP, fid, ftags2, &props)) {
 		mbop_fprintf(stderr, "fid 0x%llx get_folder_props failed\n", LLU{fid});
 		return ecRpcFailed;
 	}
