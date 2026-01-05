@@ -310,20 +310,20 @@ void textmaps_init(const char *datapath)
 		datapath = PKGDATADIR;
 	std::call_once(g_textmaps_done, [=]() {
 		xmap_read("cpid.txt", datapath, g_cpid2name_map, g_cpname2id_map);
-		mlog(LV_INFO, "textmaps: cpid: %zu IDs, %zu names",
+		mlog(LV_DEBUG, "textmaps: cpid: %zu IDs, %zu names",
 		        g_cpid2name_map.size(), g_cpname2id_map.size());
 		xmap_read("lcid.txt", datapath, g_lcid2tag_map, g_lctag2id_map);
-		mlog(LV_INFO, "textmaps: lcid: %zu IDs, %zu names",
+		mlog(LV_DEBUG, "textmaps: lcid: %zu IDs, %zu names",
 		        g_lcid2tag_map.size(), g_lctag2id_map.size());
 		smap_read("lang_charset.txt", datapath, g_lang2cset_map, g_ignore_map);
-		mlog(LV_INFO, "textmaps: lang_charset: %zu mappings",
+		mlog(LV_DEBUG, "textmaps: lang_charset: %zu mappings",
 		        g_lang2cset_map.size());
 		smap_read("mime_extension.txt", datapath, g_ext2mime_map, g_mime2ext_map);
 		smap_read("/etc/mime.types", datapath, g_mime2ext_map, g_ext2mime_map);
-		mlog(LV_INFO, "textmaps: mime_extension: %zu exts, %zu mimetypes",
+		mlog(LV_DEBUG, "textmaps: mime_extension: %zu exts, %zu mimetypes",
 		        g_ext2mime_map.size(), g_mime2ext_map.size());
 		folder_namedb_read("folder_names.txt", datapath, folder_name_map);
-		mlog(LV_INFO, "textmaps: %zu translations in folder namedb", folder_name_map.size());
+		mlog(LV_DEBUG, "textmaps: %zu translations in folder namedb", folder_name_map.size());
 		mapitags_read(DATADIR "/mapitags/mapitags.txt", g_mapitags);
 		mapitags_read(DATADIR "/mapitags/gromox.txt", g_mapitags);
 	});
