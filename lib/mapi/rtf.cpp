@@ -648,6 +648,7 @@ const FONTENTRY *rtf_reader::lookup_font(int num) const
 bool rtf_reader::init_reader(std::string_view buf_in,
     ATTACHMENT_LIST *pattachments)
 {
+	textmaps_init();
 	auto preader = this;
 	preader->attr_stack_list.clear();
 	preader->ext_pull.init(buf_in.data(), buf_in.size(), [](size_t) -> void * { return nullptr; }, 0);
@@ -3426,10 +3427,4 @@ static CMD_PROC_FUNC rtf_find_cmd_function(const char *cmd)
 	         });
 	return i != std::cend(g_cmd_map) && strcasecmp(i->first, cmd) == 0 ?
 	       i->second : nullptr;
-}
-
-bool rtf_init_library()
-{
-	textmaps_init();
-	return true;
 }

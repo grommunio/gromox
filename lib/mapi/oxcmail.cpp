@@ -158,8 +158,6 @@ BOOL oxcmail_init_library(const char *org_name, GET_USER_IDS get_user_ids,
 	oxcmail_get_username = get_username;
 	textmaps_init();
 	tnef_init_library();
-	if (!rtf_init_library())
-		return FALSE;	
 	return TRUE;
 }
 

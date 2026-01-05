@@ -419,10 +419,6 @@ PHP_INI_END()
 
 static PHP_MINIT_FUNCTION(mapi)
 {
-	if (!rtf_init_library()) {
-		fprintf(stderr, "rtf_init_library failed\n");
-		return FAILURE;
-	}
 	le_mapi_session = zend_register_list_destructors_ex(
 		mapi_resource_dtor, NULL, name_mapi_session, module_number);
 	le_mapi_addressbook = zend_register_list_destructors_ex(
