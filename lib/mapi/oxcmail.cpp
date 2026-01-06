@@ -1591,11 +1591,13 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 		if (string_mb_to_utf8(mime_charset.c_str(), pcontent.get(),
 		    &pcontent[content_len+1], contallocsz - content_len - 1)) {
 			utf8_filter(&pcontent[content_len+1]);
+			oxvcard_converter vc_cvt;
+			vc_cvt.get_propids = pmime_enum->get_propids;
 			vcard vcard;
 			std::unique_ptr<message_content, mc_delete> pmsg;
 			auto ret = vcard.load_single_from_str_move(pcontent.get() + content_len + 1);
 			if (ret == ecSuccess &&
-			    (pmsg = oxvcard_import(&vcard, pmime_enum->get_propids)) != nullptr) {
+			    (pmsg = vc_cvt.vcard_to_mapi(vcard)) != nullptr) {
 				pattachment->set_embedded_internal(pmsg.release());
 				tmp_int32 = ATTACH_EMBEDDED_MSG;
 				if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) == ecSuccess)
@@ -3899,9 +3901,11 @@ bool oxcmail_export_attachment(attachment_content *pattachment,
 		return FALSE;
 	
 	{
+	oxvcard_converter vc_cvt;
+	vc_cvt.log_id = log_id;
+	vc_cvt.get_propids = get_propids;
 	vcard vcard;
-	if (b_vcard && oxvcard_export(pattachment->pembedded,
-	    log_id, vcard, get_propids)) {
+	if (b_vcard && vc_cvt.mapi_to_vcard(*pattachment->pembedded, vcard)) {
 		std::string vcout;
 		if (vcard.serialize(vcout)) {
 			if (!pmime->write_content(vcout.c_str(),

@@ -267,8 +267,10 @@ static errno_t do_vcard(const char *file, std::vector<message_ptr> &mv)
 			file, static_cast<unsigned int>(ret));
 		return EIO;
 	}
+	oxvcard_converter cvt;
+	cvt.get_propids = ee_get_propids;
 	for (const auto &card : cardvec) {
-		message_ptr mc(oxvcard_import(&card, ee_get_propids));
+		auto mc = cvt.vcard_to_mapi(card);
 		if (mc == nullptr) {
 			fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
 			return EIO;

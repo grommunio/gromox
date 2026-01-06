@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <array>
 #include <cstdint>
@@ -223,8 +223,9 @@ static std::nullptr_t xlog_null(const char *func, unsigned int line)
 
 #define imp_null xlog_null(__func__, __LINE__)
 std::unique_ptr<message_content, mc_delete>
-oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) try
+oxvcard_converter::vcard_to_mapi(const vcard &vcard) try
 {
+	auto pvcard = &vcard;
 	int i;
 	int count;
 	int ufld_count;
@@ -747,9 +748,9 @@ oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) try
 }
 #undef imp_null
 
-BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
-    vcard &vcard, GET_PROPIDS get_propids) try
+bool oxvcard_converter::mapi_to_vcard(const message_content &msg, vcard &vcard) try
 {
+	auto pmsg = &msg;
 	const char *pvalue;
 	struct tm tmp_tm;
 	PROPID_ARRAY propids{};
@@ -775,7 +776,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg, const char *log_id,
 		PR_COMPANY_MAIN_PHONE_NUMBER, PR_RADIO_TELEPHONE_NUMBER,
 		PR_TTYTDD_PHONE_NUMBER};
 	
-	if (!oxvcard_get_propids(&propids, std::move(get_propids)))
+	if (!oxvcard_get_propids(&propids, get_propids))
 		return FALSE;
 	vcard.clear();
 	vcard.append_line("VERSION", "4.0");

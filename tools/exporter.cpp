@@ -312,8 +312,11 @@ static int emit_message_ical(const message_content &ctnt, const std::string &log
 
 static int emit_message_vcard(const message_content &ctnt, const std::string &log_id)
 {
+	oxvcard_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.get_propids = cu_get_propids;
 	vcard vc;
-	if (!oxvcard_export(&ctnt, log_id.c_str(), vc, cu_get_propids)) {
+	if (!cvt.mapi_to_vcard(ctnt, vc)) {
 		fprintf(stderr, "oxvcard_export %s failed for an unspecified reason.\n", log_id.c_str());
 		return -1;
 	}

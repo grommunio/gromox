@@ -33,6 +33,14 @@ extern GX_EXPORT unsigned int g_oxvcard_pedantic;
 
 }
 
+struct GX_EXPORT oxvcard_converter {
+	std::unique_ptr<message_content, gromox::mc_delete> vcard_to_mapi(const vcard &);
+	bool mapi_to_vcard(const message_content &, vcard &out);
+
+	const char *log_id = "";
+	GET_PROPIDS get_propids = nullptr;
+};
+
 extern GX_EXPORT BOOL oxcmail_init_library(const char *org_name, GET_USER_IDS, GET_DOMAIN_IDS, GET_USERNAME);
 extern GX_EXPORT ec_error_t oxcical_import_multi(const ical &, EXT_BUFFER_ALLOC, GET_PROPIDS, USERNAME_TO_ENTRYID, std::vector<std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>> &);
 extern GX_EXPORT std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete> oxcical_import_single(const ical &, EXT_BUFFER_ALLOC, GET_PROPIDS, USERNAME_TO_ENTRYID);
@@ -43,6 +51,3 @@ extern GX_EXPORT bool oxcmail_export_AF(const message_content &, const std::stri
 extern GX_EXPORT bool oxcmail_export_PH(const message_content &, const std::string &log_id, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
 extern GX_EXPORT BOOL oxcmail_username_to_entryid(const char *user, const char *disp, BINARY *, enum display_type *);
 extern GX_EXPORT BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &, const gromox::addr_tags *, const char *org, gromox::cvt_id2user, std::string &out);
-
-extern GX_EXPORT std::unique_ptr<message_content, gromox::mc_delete> oxvcard_import(const vcard *, GET_PROPIDS);
-extern GX_EXPORT BOOL oxvcard_export(const MESSAGE_CONTENT *, const char *log_id, vcard &, GET_PROPIDS) __attribute__((nonnull(2)));

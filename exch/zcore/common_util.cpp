@@ -1831,9 +1831,13 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
 	common_util_set_dir(pstore->get_dir());
-	auto log_id = pstore->get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
+
+	std::string cvt_log_id = pstore->get_dir() + ":m"s + std::to_string(rop_util_get_gc_value(message_id));
+	oxvcard_converter cvt;
+	cvt.log_id = cvt_log_id.c_str();
+	cvt.get_propids = common_util_get_propids;
 	vcard vcard;
-	if (!oxvcard_export(pmsgctnt, log_id.c_str(), vcard, common_util_get_propids))
+	if (!cvt.mapi_to_vcard(*pmsgctnt, vcard))
 		return FALSE;
 	std::string vcf_out;
 	if (!vcard.serialize(vcf_out))
@@ -1860,7 +1864,10 @@ message_ptr common_util_vcf_to_message(store_object *pstore, const BINARY *pvcf_
 	if (ret != ecSuccess)
 		return nullptr;
 	common_util_set_dir(pstore->get_dir());
-	return oxvcard_import(&vcard, common_util_get_propids_create);
+
+	oxvcard_converter cvt;
+	cvt.get_propids = common_util_get_propids_create;
+	return cvt.vcard_to_mapi(vcard);
 }
 
 ec_error_t cu_vcf_to_message2(store_object *store, char *vcf_data,
@@ -1871,8 +1878,11 @@ ec_error_t cu_vcf_to_message2(store_object *store, char *vcf_data,
 	if (ret != ecSuccess)
 		return ret;
 	common_util_set_dir(store->get_dir());
+
+	oxvcard_converter cvt;
+	cvt.get_propids = common_util_get_propids_create;
 	for (const auto &vcard : cardvec) {
-		message_ptr mc(oxvcard_import(&vcard, common_util_get_propids_create));
+		auto mc = cvt.vcard_to_mapi(vcard);
 		if (mc == nullptr)
 			return ecError;
 		msgvec.push_back(std::move(mc));
