@@ -397,14 +397,14 @@ static constexpr proptag_t trimtags[] = {
 	PR_PREDECESSOR_CHANGE_LIST,
 };
 
-BOOL message_object::write_message(const MESSAGE_CONTENT *pmsgctnt)
+bool message_object::write_message(const MESSAGE_CONTENT &content)
 {
+	auto pmsgctnt = &content;
 	auto pmessage = this;
 	PROPTAG_ARRAY proptags;
-	MESSAGE_CONTENT msgctnt;
 	PROBLEM_ARRAY tmp_problems;
 	
-	msgctnt = *pmsgctnt;
+	auto msgctnt = content;
 	msgctnt.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count);
 	if (msgctnt.proplist.ppropval == nullptr)
 		return FALSE;

@@ -1844,7 +1844,7 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	if (pvcf_bin->pv == nullptr)
 		return FALSE;
 	memcpy(pvcf_bin->pv, vcf_out.c_str(), vcf_out.size());
-	if (!pmessage->write_message(pmsgctnt))
+	if (!pmessage->write_message(*pmsgctnt))
 		/* ignore */;
 	return TRUE;
 }

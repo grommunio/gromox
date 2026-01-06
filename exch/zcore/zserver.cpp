@@ -4847,7 +4847,7 @@ ec_error_t zs_rfc822tomessage(GUID hsession, uint32_t hmessage,
 	std::unique_ptr<MESSAGE_CONTENT, mc_delete> pmsgctnt(cu_rfc822_to_message(pmessage->get_store(), mxf_flags, peml_bin));
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(pmsgctnt.get()) ? ecSuccess : ecError;
+	return pmessage->write_message(*pmsgctnt) ? ecSuccess : ecError;
 }
 
 ec_error_t zs_messagetoical(GUID hsession, uint32_t hmessage, BINARY *pical_bin)
@@ -4880,7 +4880,7 @@ ec_error_t zs_icaltomessage(GUID hsession,
 	auto pmsgctnt = cu_ical_to_message(pmessage->get_store(), pical_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(pmsgctnt.get()) ? ecSuccess : ecError;
+	return pmessage->write_message(*pmsgctnt) ? ecSuccess : ecError;
 }
 
 ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
@@ -4920,7 +4920,7 @@ ec_error_t zs_imtomessage2(GUID session, uint32_t fld_handle,
 			return rt2;
 		auto zmo = info->ptree->get_object<message_object>(msg_handle, &mapi_type);
 		if (zmo == nullptr || mapi_type != zs_objtype::message ||
-		    !zmo->write_message(msgctnt.get()))
+		    !zmo->write_message(*msgctnt))
 			return ecError;
 		outhandles->pl[outhandles->count++] = msg_handle;
 	}
@@ -4957,7 +4957,7 @@ ec_error_t zs_vcftomessage(GUID hsession,
 	auto pmsgctnt = common_util_vcf_to_message(pmessage->get_store(), pvcf_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(pmsgctnt) ? ecSuccess : ecError;
+	return pmessage->write_message(*pmsgctnt) ? ecSuccess : ecError;
 }
 
 ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,

@@ -140,7 +140,7 @@ struct message_object {
 	store_object *get_store() const { return pstore; }
 	ec_error_t save();
 	BOOL reload();
-	BOOL write_message(const message_content *);
+	bool write_message(const message_content &);
 	BOOL get_recipient_all_proptags(PROPTAG_ARRAY *);
 	BOOL read_recipients(uint32_t row_id, uint16_t need_count, TARRAY_SET *);
 	BOOL get_rowid_begin(uint32_t *begin_id);
