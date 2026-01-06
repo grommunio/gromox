@@ -1849,8 +1849,7 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	return TRUE;
 }
 	
-MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
-    const BINARY *pvcf_bin)
+message_ptr common_util_vcf_to_message(store_object *pstore, const BINARY *pvcf_bin)
 {
 	auto pbuff = cu_alloc<char>(pvcf_bin->cb + 1);
 	if (pbuff == nullptr)
@@ -1862,7 +1861,7 @@ MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
 	if (ret != ecSuccess)
 		return nullptr;
 	common_util_set_dir(pstore->get_dir());
-	return oxvcard_import(&vcard, common_util_get_propids_create).release();
+	return oxvcard_import(&vcard, common_util_get_propids_create);
 }
 
 ec_error_t cu_vcf_to_message2(store_object *store, char *vcf_data,
