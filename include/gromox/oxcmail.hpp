@@ -44,5 +44,5 @@ extern GX_EXPORT bool oxcmail_export_PH(const message_content &, const std::stri
 extern GX_EXPORT BOOL oxcmail_username_to_entryid(const char *user, const char *disp, BINARY *, enum display_type *);
 extern GX_EXPORT BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &, const gromox::addr_tags *, const char *org, gromox::cvt_id2user, std::string &out);
 
-extern GX_EXPORT MESSAGE_CONTENT *oxvcard_import(const vcard *, GET_PROPIDS);
+extern GX_EXPORT std::unique_ptr<message_content, gromox::mc_delete> oxvcard_import(const vcard *, GET_PROPIDS);
 extern GX_EXPORT BOOL oxvcard_export(const MESSAGE_CONTENT *, const char *log_id, vcard &, GET_PROPIDS) __attribute__((nonnull(2)));

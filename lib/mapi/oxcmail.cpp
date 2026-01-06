@@ -1454,7 +1454,6 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	uint32_t tmp_int32;
 	char tmp_buff[1024];
 	char date_buff[128];
-	MESSAGE_CONTENT *pmsg;
 	char display_name[512];
 	ATTACHMENT_CONTENT *pattachment;
 	
@@ -1593,10 +1592,11 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 		    &pcontent[content_len+1], contallocsz - content_len - 1)) {
 			utf8_filter(&pcontent[content_len+1]);
 			vcard vcard;
+			std::unique_ptr<message_content, mc_delete> pmsg;
 			auto ret = vcard.load_single_from_str_move(pcontent.get() + content_len + 1);
 			if (ret == ecSuccess &&
 			    (pmsg = oxvcard_import(&vcard, pmime_enum->get_propids)) != nullptr) {
-				pattachment->set_embedded_internal(pmsg);
+				pattachment->set_embedded_internal(pmsg.release());
 				tmp_int32 = ATTACH_EMBEDDED_MSG;
 				if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) == ecSuccess)
 					pmime_enum->b_result = true;
@@ -1641,7 +1641,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			tmp_int32 = ATTACH_EMBEDDED_MSG;
 			if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != ecSuccess)
 				return;
-			pmsg = oxcmail_import(&mail,
+			auto pmsg = oxcmail_import(&mail,
 				pmime_enum->alloc, pmime_enum->get_propids);
 			if (pmsg == nullptr)
 				return;

@@ -23,10 +23,6 @@ using namespace gromox;
 
 namespace {
 
-struct vc_delete {
-	inline void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
-};
-
 struct unrecog {
 	unrecog(const vcard_line &l) :
 		m_what("Line " + std::to_string(l.m_lnum)) {}
@@ -226,7 +222,8 @@ static std::nullptr_t xlog_null(const char *func, unsigned int line)
 }
 
 #define imp_null xlog_null(__func__, __LINE__)
-message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) try
+std::unique_ptr<message_content, mc_delete>
+oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) try
 {
 	int i;
 	int count;
@@ -247,7 +244,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 	ufld_count = 0;
 	if (!oxvcard_check_compatible(pvcard))
 		return imp_null;
-	std::unique_ptr<MESSAGE_CONTENT, vc_delete> pmsg(message_content_init());
+	std::unique_ptr<message_content, mc_delete> pmsg(message_content_init());
 	if (pmsg == nullptr)
 		return imp_null;
 	if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Contact") != ecSuccess)
@@ -726,7 +723,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 	}
 	if (i >= pmsg->proplist.count)
 		/* If no namedprops were set, we can exit early */
-		return pmsg.release();
+		return pmsg;
 
 	/* Remap our "bf" propids to the caller's space */
 	if (!oxvcard_get_propids(&propids, std::move(get_propids)))
@@ -743,7 +740,7 @@ message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) tr
 		pmsg->proplist.ppropval[i].proptag =
 			PROP_TAG(PROP_TYPE(pmsg->proplist.ppropval[i].proptag), proptag);
 	}
-	return pmsg.release();
+	return pmsg;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
