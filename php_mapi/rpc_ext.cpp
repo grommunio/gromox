@@ -467,7 +467,7 @@ static pack_result zrpc_pull(PULL_CTX &x, zcresp_queryrows &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setcolumns &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setcolumns_v &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
@@ -645,7 +645,7 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setpropvals &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getpropvals &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getpropvals_v &d)
 {	
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
@@ -664,7 +664,7 @@ static pack_result zrpc_pull(PULL_CTX &x, zcresp_getpropvals &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_push(PUSH_CTX &x, const zcreq_deletepropvals &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_deletepropvals_v &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
@@ -722,7 +722,7 @@ static pack_result zrpc_pull(PULL_CTX &x, zcresp_getpropnames &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_push(PUSH_CTX &x, const zcreq_copyto &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_copyto_v &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hsrcobject));
@@ -1133,7 +1133,7 @@ pack_result rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
 	TRY(push_ctx.advance(sizeof(uint32_t)));
 	TRY(push_ctx.p_uint8(static_cast<uint8_t>(prequest->call_id)));
 	switch (prequest->call_id) {
-#define E(t) case zcore_callid::t: b_result = zrpc_push(push_ctx, *static_cast<const zcreq_ ## t *>(prequest)); break;
+#define E(t) case zcore_callid::t: b_result = zrpc_push(push_ctx, *static_cast<const zcreq_ ## t ::view_t *>(prequest)); break;
 	E(logon)
 	E(checksession)
 	E(uinfo)

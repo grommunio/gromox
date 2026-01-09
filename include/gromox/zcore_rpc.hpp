@@ -367,8 +367,10 @@ struct zcreq_queryrows final : public zcreq {
 		v.start = start;
 		v.count = count;
 		v.prestriction = prestriction;
-		if (pproptags.has_value())
-			v.pproptags = *pproptags;
+		if (pproptags.has_value()) {
+			auto &x = *pproptags;
+			v.pproptags.emplace(x);
+		}
 		return v;
 	}
 };
@@ -514,8 +516,10 @@ struct zcreq_getpropvals final : public zcreq {
 		view_t v;
 		v.hsession = hsession;
 		v.hobject = hobject;
-		if (pproptags.has_value())
-			v.pproptags = *pproptags;
+		if (pproptags.has_value()) {
+			proptag_cspan cs(*pproptags);
+			v.pproptags.emplace(cs);
+		}
 		return v;
 	}
 };

@@ -1766,7 +1766,7 @@ pack_result rpc_ext_push_response(const zcresp *presponse, BINARY *pbin_out)
 	case zcore_callid::linkmessage:
 		b_result = pack_result::ok;
 		break;
-#define E(t) case zcore_callid::t: b_result = zrpc_push(ext_push, *static_cast<const zcresp_ ## t *>(presponse)); break;
+#define E(t) case zcore_callid::t: b_result = zrpc_push(ext_push, *static_cast<const zcresp_ ## t ::view_t *>(presponse)); break;
 	E(logon)	
 	E(uinfo)
 	E(openentry)

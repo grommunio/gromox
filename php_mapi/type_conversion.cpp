@@ -197,7 +197,7 @@ ec_error_t php_to_proptag_array(zval *pzval, std::vector<proptag_t> &tags) try
 	tags.clear();
 	zval *entry;
 	ZEND_HASH_FOREACH_VAL(ptarget_hash, entry) {
-		tags.emplace_back(zval_get_long(entry));
+		tags.emplace_back(phptag_to_proptag(zval_get_long(entry)));
 	} ZEND_HASH_FOREACH_END();
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
