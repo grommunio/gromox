@@ -286,37 +286,32 @@ tools_tzdump_SOURCES = tools/tzdump.cpp
 tools_tzdump_LDADD = ${libHX_LIBS} libgromox_common.la
 
 dist_man_MANS = \
-	doc/alias_resolve.4gx \
-	doc/authmgr.4gx doc/authtry.8gx doc/autoconfig.7 doc/autodiscover.4gx \
-	doc/autodiscover.7 doc/cgkrepair.8gx doc/gromox-compress.8 \
-	doc/ddbg.1gx \
-	doc/delivery.8gx doc/delivery-queue.8gx doc/dnsbl_filter.4gx \
-	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
-	doc/ews.4gx doc/exchange_emsmdb.4gx \
-	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
-	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
-	doc/gromox.7 doc/gromox.cfg.5 doc/gromox-abktconv.8 \
-	doc/gromox-abktpull.8 doc/gromox-cleaner.service.8 \
-	doc/gromox-dbop.8 doc/gromox-dscli.8 \
-	doc/gromox-e2ghelper.8 \
-	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 doc/gromox-mbox2mt.8 \
-	doc/gromox-exm2ical.8 doc/gromox-exm2mt.8 doc/gromox-exm2tnef.8 \
-	doc/gromox-exm2vcf.8 doc/gromox-export.8 doc/gromox-ical2mt.8 \
-	doc/gromox-import.8 \
-	doc/gromox-kdb2mt.8 doc/gromox-mailq.8 doc/gromox-mbck.8 doc/gromox-mbop.8 \
-	doc/gromox-mbsize.8 \
+	doc/alias_resolve.4gx doc/authmgr.4gx doc/authtry.8gx \
+	doc/autoconfig.7 doc/autodiscover.4gx doc/autodiscover.7 \
+	doc/cgkrepair.8gx doc/ddbg.1gx doc/delivery.8gx \
+	doc/delivery-queue.8gx doc/dnsbl_filter.4gx doc/event.8gx \
+	doc/event_proxy.4gx doc/event_stub.4gx doc/ews.4gx \
+	doc/exchange_emsmdb.4gx doc/exchange_nsp.4gx \
+	doc/exchange_rfr.4gx doc/exmdb_local.4gx doc/exmdb_provider.4gx \
+	doc/gromox.7 doc/gromox-abktconv.8 doc/gromox-abktpull.8 \
+	doc/gromox.cfg.5 doc/gromox-cleaner.service.8 \
+	doc/gromox-compress.8 doc/gromox-dbop.8 doc/gromox-dscli.8 \
+	doc/gromox-e2ghelper.8 doc/gromox-edb2mt.8 doc/gromox-eml2mbox.8 \
+	doc/gromox-eml2mt.8 doc/gromox-exm2eml.8 doc/gromox-exm2ical.8 \
+	doc/gromox-exm2mt.8 doc/gromox-exm2tnef.8 doc/gromox-exm2vcf.8 \
+	doc/gromox-export.8 doc/gromox-ical2mt.8 doc/gromox-import.8 \
+	doc/gromox-kdb2mt.8 doc/gromox-mailq.8 doc/gromox-mbck.8 \
+	doc/gromox-mbop.8 doc/gromox-mbox2mt.8 doc/gromox-mbsize.8 \
 	doc/gromox-mkmidb.8 doc/gromox-mkprivate.8 doc/gromox-mkpublic.8 \
-	doc/gromox-selinux.5 \
-	doc/gromox-snapshot.8 doc/gromox-tnef2mt.8 doc/gromox-vcf2mt.8 doc/http.8gx \
-	doc/imap.8gx doc/istore.8gx \
+	doc/gromox-mt2exm.8 doc/gromox-oxm2mt.8 doc/gromox-pff2mt.8 \
+	doc/gromox-selinux.5 doc/gromox-snapshot.8 doc/gromox-tnef2mt.8 \
+	doc/gromox-vcf2mt.8 doc/http.8gx doc/imap.8gx doc/istore.8gx \
 	doc/kdb-uidextract.8 doc/kdb-uidextract-limited.8 \
-	doc/ldap_adaptor.4gx \
-	doc/mapi.4gx doc/mapi.7gx doc/midb.8gx doc/midb_agent.4gx \
-	doc/mh_emsmdb.4gx doc/mh_nsp.4gx \
-	doc/mod_cache.4gx doc/mod_fastcgi.4gx doc/mod_rewrite.4gx \
-	doc/mysql_adaptor.4gx \
-	doc/pam_gromox.4gx doc/php-mapi.4 doc/pop3.8gx doc/user_filter.4gx \
-	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
+	doc/ldap_adaptor.4gx doc/mapi.4gx doc/mapi.7gx doc/mh_emsmdb.4gx \
+	doc/mh_nsp.4gx doc/midb.8gx doc/midb_agent.4gx doc/mod_cache.4gx \
+	doc/mod_fastcgi.4gx doc/mod_rewrite.4gx doc/mysql_adaptor.4gx \
+	doc/pam_gromox.4gx doc/php-mapi.4 doc/pop3.8gx doc/timer.8gx \
+	doc/timer_agent.4gx doc/user_filter.4gx doc/zcore.8gx
 if HAVE_ESEDB
 dist_man_MANS += doc/gromox-edb2mt.8
 endif
