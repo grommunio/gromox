@@ -294,9 +294,14 @@ static int emit_message_gxmt(const message_content &ctnt,
 static int emit_message_ical(const message_content &ctnt, const std::string &log_id)
 {
 	ical ic;
-	if (!oxcical_export(&ctnt, log_id.c_str(), ic,
-	    g_config_file->get_value("x500_org_name"),
-	    zalloc, cu_get_propids, mysql_adaptor_userid_to_name)) {
+	oxcical_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.org_name = g_config_file->get_value("x500_org_name");
+	cvt.alloc = zalloc;
+	cvt.get_propids = cu_get_propids;
+	cvt.id2user = mysql_adaptor_userid_to_name;
+
+	if (!cvt.mapi_to_ical(ctnt, ic)) {
 		fprintf(stderr, "oxcical_export failed for an unspecified reason.\n");
 		return -1;
 	}

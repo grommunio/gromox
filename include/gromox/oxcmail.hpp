@@ -33,6 +33,18 @@ extern GX_EXPORT unsigned int g_oxvcard_pedantic;
 
 }
 
+struct GX_EXPORT oxcical_converter {
+	ec_error_t ical_to_mapi_multi(const ical &, std::vector<std::unique_ptr<message_content, gromox::mc_delete>> &);
+	std::unique_ptr<message_content, gromox::mc_delete> ical_to_mapi_single(const ical &);
+	bool mapi_to_ical(const message_content &, ical &);
+
+	const char *log_id = "", *org_name = "";
+	EXT_BUFFER_ALLOC alloc = nullptr;
+	GET_PROPIDS get_propids = nullptr;
+	USERNAME_TO_ENTRYID username_to_entryid = nullptr;
+	gromox::cvt_id2user id2user = nullptr;
+};
+
 struct GX_EXPORT oxvcard_converter {
 	std::unique_ptr<message_content, gromox::mc_delete> vcard_to_mapi(const vcard &);
 	bool mapi_to_vcard(const message_content &, vcard &out);
@@ -42,9 +54,6 @@ struct GX_EXPORT oxvcard_converter {
 };
 
 extern GX_EXPORT BOOL oxcmail_init_library(const char *org_name, GET_USER_IDS, GET_DOMAIN_IDS, GET_USERNAME);
-extern GX_EXPORT ec_error_t oxcical_import_multi(const ical &, EXT_BUFFER_ALLOC, GET_PROPIDS, USERNAME_TO_ENTRYID, std::vector<std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>> &);
-extern GX_EXPORT std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete> oxcical_import_single(const ical &, EXT_BUFFER_ALLOC, GET_PROPIDS, USERNAME_TO_ENTRYID);
-extern GX_EXPORT bool oxcical_export(const MESSAGE_CONTENT *, const char *log_id, ical &, const char *org, EXT_BUFFER_ALLOC, GET_PROPIDS, gromox::cvt_id2user) __attribute__((nonnull(2)));
 extern GX_EXPORT bool oxcical_export_freebusy(const char *, const char *, time_t, time_t, const std::vector<freebusy_event> &, ical &);
 extern GX_EXPORT std::unique_ptr<message_content, gromox::mc_delete> oxcmail_import(const MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS);
 extern GX_EXPORT bool oxcmail_export_AF(const message_content &, const std::string &log_id, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);

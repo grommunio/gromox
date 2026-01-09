@@ -379,7 +379,12 @@ static void ical_export_1()
 	const MESSAGE_CONTENT msgctnt = {{std::size(props), deconst(props)}};
 	ical icalout;
 	fprintf(stderr, "=== ical_export_1\n");
-	if (!oxcical_export(&msgctnt, "-", icalout, "x500org", malloc, get_propids, nullptr)) {
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.org_name = "x500org";
+	cvt.alloc = malloc;
+	cvt.get_propids = get_propids;
+	if (!cvt.mapi_to_ical(msgctnt, icalout)) {
 		fprintf(stderr, "oxcical_export failed\n");
 		return;
 	}
@@ -422,8 +427,13 @@ static void ical_export_2()
 	};
 	fprintf(stderr, "=== ical_export_2\n");
 	const MESSAGE_CONTENT msgctnt = {{std::size(props), deconst(props)}};
+	oxcical_converter cvt;
+	cvt.log_id = "-";
+	cvt.org_name = "x500org";
+	cvt.alloc = malloc;
+	cvt.get_propids = get_propids;
 	ical icalout;
-	if (!oxcical_export(&msgctnt, "-", icalout, "x500org", malloc, get_propids, nullptr)) {
+	if (!cvt.mapi_to_ical(msgctnt, icalout)) {
 		fprintf(stderr, "oxcical_export failed\n");
 		return;
 	}

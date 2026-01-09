@@ -1768,8 +1768,13 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 		return FALSE;
 	common_util_set_dir(dir);
 	auto log_id = dir + ":m"s + std::to_string(message_id);
-	if (!oxcical_export(pmsgctnt, log_id.c_str(), ical, g_org_name,
-	    common_util_alloc, common_util_get_propids, mysql_adaptor_userid_to_name)) {
+	oxcical_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.org_name = g_org_name;
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids;
+	cvt.id2user = mysql_adaptor_userid_to_name;
+	if (!cvt.mapi_to_ical(*pmsgctnt, ical)) {
 		mlog(LV_ERR, "E-2202: oxcical_export %s failed", log_id.c_str());
 		return FALSE;
 	}
@@ -1797,8 +1802,12 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 	if (!ical.load_from_str_move(pbuff))
 		return NULL;
 	common_util_set_dir(pstore->get_dir());
-	return oxcical_import_single(ical, common_util_alloc,
-	       common_util_get_propids_create, common_util_username_to_entryid);
+
+	oxcical_converter cvt;
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids_create;
+	cvt.username_to_entryid = common_util_username_to_entryid;
+	return cvt.ical_to_mapi_single(ical);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;
@@ -1811,9 +1820,12 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 	if (!icobj.load_from_str_move(ical_data))
 		return ecError;
 	common_util_set_dir(store->get_dir());
-	return oxcical_import_multi(icobj, common_util_alloc,
-	       common_util_get_propids_create,
-	       common_util_username_to_entryid, msgvec);
+
+	oxcical_converter cvt;
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids_create;
+	cvt.username_to_entryid = common_util_username_to_entryid;
+	return cvt.ical_to_mapi_multi(icobj, msgvec);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return ecServerOOM;

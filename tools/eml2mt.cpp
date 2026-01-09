@@ -239,8 +239,12 @@ static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
 		return EIO;
 	}
-	auto err = oxcical_import_multi(ical, zalloc, ee_get_propids,
-	           oxcmail_username_to_entryid, mv);
+
+	oxcical_converter cvt;
+	cvt.alloc = zalloc;
+	cvt.get_propids = ee_get_propids;
+	cvt.username_to_entryid = oxcmail_username_to_entryid;
+	auto err = cvt.ical_to_mapi_multi(ical, mv);
 	if (err == ecNotFound) {
 		fprintf(stderr, "%s: Not an iCalendar object, or an incomplete one.\n", file);
 		return EIO;

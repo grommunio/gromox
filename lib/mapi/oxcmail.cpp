@@ -2639,8 +2639,11 @@ std::unique_ptr<message_content, mc_delete> oxcmail_import(const MAIL *pmail, EX
 			if (!ical.load_from_str_move(&pcontent[content_len+1])) {
 				mime_enum.pcalendar = nullptr;
 			} else {
-				pmsg1 = oxcical_import_single(ical, alloc,
-				        get_propids, oxcmail_username_to_entryid);
+				oxcical_converter ical_cvt;
+				ical_cvt.alloc = alloc;
+				ical_cvt.get_propids = get_propids;
+				ical_cvt.username_to_entryid = oxcmail_username_to_entryid;
+				pmsg1 = ical_cvt.ical_to_mapi_single(ical);
 				if (pmsg1 == nullptr) {
 					mlog(LV_WARN, "W-2728: oxcmail_import_single returned no object (parse error?); placing ical as attachment instead");
 					mime_enum.pcalendar = NULL;
@@ -4228,8 +4231,14 @@ bool oxcmail_export(const message_content *pmsg, const char *log_id,
 	}
 	
 	if (NULL != pcalendar) {
-		if (!oxcical_export(pmsg, log_id, ical, g_oxcmail_org_name, alloc,
-		    get_propids, oxcmail_get_username)) {
+		oxcical_converter cvt;
+		cvt.log_id = log_id;
+		cvt.org_name = g_oxcmail_org_name;
+		cvt.alloc = alloc;
+		cvt.get_propids = get_propids;
+		cvt.id2user = oxcmail_get_username;
+		
+		if (!cvt.mapi_to_ical(*pmsg, ical)) {
 			mlog(LV_WARN, "W-2186: oxcical_export %s failed (unspecified reason)", log_id);
 			return exp_false;
 		}

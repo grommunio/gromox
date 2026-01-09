@@ -239,15 +239,20 @@ static int t_ical_dt()
 			fprintf(stderr, "ical_parse unsuccessful\n");
 			return EXIT_FAILURE;
 		}
-		auto mc = oxcical_import_single(ical, zalloc,
-		          ee_get_propids, oxcmail_username_to_entryid);
+		oxcical_converter cvt;
+		cvt.log_id = "-";
+		cvt.org_name = "x500";
+		cvt.alloc = zalloc;
+		cvt.get_propids = ee_get_propids;
+		cvt.username_to_entryid = oxcmail_username_to_entryid;
+		cvt.id2user = [](unsigned int, std::string &) -> ec_error_t { return ecNotFound; };
+		auto mc = cvt.ical_to_mapi_single(ical);
 		if (mc == nullptr) {
 			fprintf(stderr, "oxcical_import unsuccessful\n");
 			return EXIT_FAILURE;
 		}
 		ical = {};
-		auto id2user = [](unsigned int, std::string &) -> ec_error_t { return ecNotFound; };
-		if (!oxcical_export(mc.get(), "-", ical, "x500", zalloc, ee_get_propids, id2user)) {
+		if (!cvt.mapi_to_ical(*mc, ical)) {
 			fprintf(stderr, "oxcical_export unsuccessful\n");
 			return EXIT_FAILURE;
 		}
@@ -299,16 +304,18 @@ static int t_rrule()
 	bool succ = icalin.load_from_str_move(input.data());
 	if (!succ)
 		return EXIT_FAILURE;
-	auto msg = oxcical_import_single(icalin, zalloc, ee_get_propids,
-	           oxcmail_username_to_entryid);
+	oxcical_converter cvt;
+	cvt.alloc = zalloc;
+	cvt.get_propids = ee_get_propids;
+	cvt.username_to_entryid = oxcmail_username_to_entryid;
+	auto msg = cvt.ical_to_mapi_single(icalin);
 	assert(msg != nullptr);
 
 	input = head + "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=8\n" + foot;
 	succ = icalin.load_from_str_move(input.data());
 	if (!succ)
 		return EXIT_FAILURE;
-	msg = oxcical_import_single(icalin, zalloc, ee_get_propids,
-	      oxcmail_username_to_entryid);
+	msg = cvt.ical_to_mapi_single(icalin);
 	assert(msg != nullptr);
 	return EXIT_SUCCESS;
 }
