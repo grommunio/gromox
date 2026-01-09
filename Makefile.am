@@ -299,7 +299,7 @@ dist_man_MANS = \
 	doc/gromox-abktpull.8 doc/gromox-cleaner.service.8 \
 	doc/gromox-dbop.8 doc/gromox-dscli.8 \
 	doc/gromox-e2ghelper.8 \
-	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 \
+	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 doc/gromox-mbox2mt.8 \
 	doc/gromox-exm2ical.8 doc/gromox-exm2mt.8 doc/gromox-exm2tnef.8 \
 	doc/gromox-exm2vcf.8 doc/gromox-export.8 doc/gromox-ical2mt.8 \
 	doc/gromox-import.8 \
