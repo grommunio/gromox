@@ -2272,7 +2272,8 @@ void tResolution::serialize(XMLElement *xml) const
 void tResolutionSet::serialize(XMLElement *xml) const
 {
 	tFindResponsePagingAttributes::serialize(xml);
-	XMLDUMPT(Resolution);
+	for (const auto &resol : Resolution)
+		toXMLNode(xml, "t:Resolution", resol);
 }
 
 mResolveNamesRequest::mResolveNamesRequest(const XMLElement *xml) :
