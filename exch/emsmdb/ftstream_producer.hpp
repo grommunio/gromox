@@ -13,11 +13,11 @@
 #define STRING_OPTION_FORCE_UNICODE				0x08
 
 struct attachment_content;
-struct FOLDER_CHANGES;
+struct folder_changes;
 struct logon_object;
 struct message_content;
-struct PROGRESS_INFORMATION;
-struct PROGRESS_MESSAGE;
+struct progress_information;
+struct progress_message;
 
 enum point_type {
 	normal_break, long_var, wstring,

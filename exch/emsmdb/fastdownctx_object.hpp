@@ -5,8 +5,8 @@
 #include <gromox/mapi_types.hpp>
 
 struct attachment_content;
-struct FOLDER_CONTENT;
-struct FOLDER_MESSAGES;
+struct folder_content;
+struct folder_messages;
 struct fxstream_producer;
 struct ics_state;
 struct logon_object;

@@ -24,22 +24,25 @@ struct GX_EXPORT attachment_list {
 };
 using ATTACHMENT_LIST = attachment_list;
 
-struct GX_EXPORT MESSAGE_CHILDREN {
+struct GX_EXPORT message_children {
 	TARRAY_SET *prcpts;
 	ATTACHMENT_LIST *pattachments;
 };
+using MESSAGE_CHILDREN = message_children;
 
-struct GX_EXPORT CHANGE_PART {
+struct GX_EXPORT change_part {
 	uint32_t group;
 	TPROPVAL_ARRAY proplist;
 };
+using CHANGE_PART = change_part;
 
-struct GX_EXPORT PROGRESS_MESSAGE {
+struct GX_EXPORT progress_message {
 	uint32_t message_size;
 	BOOL b_fai;
 };
+using PROGRESS_MESSAGE = progress_message;
 
-struct GX_EXPORT PROGRESS_INFORMATION {
+struct GX_EXPORT progress_information {
 	uint16_t version;
 	uint16_t padding1;
 	uint32_t fai_count;
@@ -48,6 +51,7 @@ struct GX_EXPORT PROGRESS_INFORMATION {
 	uint32_t padding2;
 	uint64_t normal_size;
 };
+using PROGRESS_INFORMATION = progress_information;
 
 struct GX_EXPORT message_content {
 	TPROPVAL_ARRAY *get_proplist() { return &proplist; }
@@ -69,31 +73,34 @@ struct GX_EXPORT attachment_content {
 };
 using ATTACHMENT_CONTENT = attachment_content;
 
-struct GX_EXPORT FOLDER_MESSAGES {
+struct GX_EXPORT folder_messages {
 	EID_ARRAY *pfai_msglst;
 	EID_ARRAY *pnormal_msglst;
 };
+using FOLDER_MESSAGES = folder_messages;
 
-struct GX_EXPORT FOLDER_CONTENT {
-	FOLDER_CONTENT();
-	FOLDER_CONTENT(FOLDER_CONTENT &&) noexcept;
-	~FOLDER_CONTENT();
-	void operator=(FOLDER_CONTENT &&) noexcept = delete;
-	BOOL append_subfolder_internal(FOLDER_CONTENT &&);
+struct GX_EXPORT folder_content {
+	folder_content();
+	folder_content(folder_content &&) noexcept;
+	~folder_content();
+	void operator=(folder_content &&) noexcept = delete;
+	bool append_subfolder_internal(folder_content &&);
 	TPROPVAL_ARRAY *get_proplist() { return &proplist; }
 	void append_failist_internal(EID_ARRAY *);
 	void append_normallist_internal(EID_ARRAY *);
 
 	TPROPVAL_ARRAY proplist{};
 	FOLDER_MESSAGES fldmsgs{};
-	std::vector<FOLDER_CONTENT> psubflds;
+	std::vector<folder_content> psubflds;
 };
+using FOLDER_CONTENT = folder_content;
 
-struct GX_EXPORT FOLDER_CHANGES {
+struct GX_EXPORT folder_changes {
 	uint32_t count;
 	TPROPVAL_ARRAY *pfldchgs;
 	I_BEGIN_END(pfldchgs, count);
 };
+using FOLDER_CHANGES = folder_changes;
 
 extern GX_EXPORT attachment_content *attachment_content_init();
 extern GX_EXPORT void attachment_content_free(attachment_content *);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdlib>
@@ -153,13 +153,13 @@ attachment_list *attachment_list::dup() const
 	return dst;
 }
 
-FOLDER_CONTENT::FOLDER_CONTENT()
+folder_content::folder_content()
 {
 	if (!tpropval_array_init_internal(&proplist))
 		throw std::bad_alloc();
 }
 
-FOLDER_CONTENT::FOLDER_CONTENT(FOLDER_CONTENT &&o) noexcept :
+folder_content::folder_content(folder_content &&o) noexcept :
 	proplist(std::move(o.proplist)), fldmsgs(std::move(o.fldmsgs)),
 	psubflds(std::move(o.psubflds))
 {
@@ -167,14 +167,14 @@ FOLDER_CONTENT::FOLDER_CONTENT(FOLDER_CONTENT &&o) noexcept :
 	o.fldmsgs = {}; // FOLDER_MESSAGES yet without move
 }
 
-std::unique_ptr<FOLDER_CONTENT> folder_content_init() try
+std::unique_ptr<folder_content> folder_content_init() try
 {
-	return std::make_unique<FOLDER_CONTENT>();
+	return std::make_unique<folder_content>();
 } catch (const std::bad_alloc &) {
 	return nullptr;
 }
 
-BOOL FOLDER_CONTENT::append_subfolder_internal(FOLDER_CONTENT &&psubfld) try
+bool folder_content::append_subfolder_internal(folder_content &&psubfld) try
 {
 	auto pfldctnt = this;
 	pfldctnt->psubflds.push_back(std::move(psubfld));
@@ -183,7 +183,7 @@ BOOL FOLDER_CONTENT::append_subfolder_internal(FOLDER_CONTENT &&psubfld) try
 	return false;
 }
 
-FOLDER_CONTENT::~FOLDER_CONTENT()
+folder_content::~folder_content()
 {
 	auto pfldctnt = this;
 	tpropval_array_free_internal(&pfldctnt->proplist);
@@ -195,7 +195,7 @@ FOLDER_CONTENT::~FOLDER_CONTENT()
 	}
 }
 
-void FOLDER_CONTENT::append_failist_internal(EID_ARRAY *plist)
+void folder_content::append_failist_internal(EID_ARRAY *plist)
 {
 	auto pfldctnt = this;
 	if (NULL != pfldctnt->fldmsgs.pfai_msglst) {
@@ -204,7 +204,7 @@ void FOLDER_CONTENT::append_failist_internal(EID_ARRAY *plist)
 	pfldctnt->fldmsgs.pfai_msglst = plist;
 }
 
-void FOLDER_CONTENT::append_normallist_internal(EID_ARRAY *plist)
+void folder_content::append_normallist_internal(EID_ARRAY *plist)
 {
 	auto pfldctnt = this;
 	if (NULL != pfldctnt->fldmsgs.pnormal_msglst) {
