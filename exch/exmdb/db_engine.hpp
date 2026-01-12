@@ -149,16 +149,35 @@ struct db_base {
 	std::vector<db_handle> mx_sqlite, mx_sqlite_eph;
 };
 
-struct db_base_unlock_rd {
-	inline void operator()(const db_base *b) const { b->giant_lock.unlock_shared(); }
+class db_base_rd_ptr {
+	public:
+	constexpr db_base_rd_ptr(db_base *x) : m_base(x) {}
+	~db_base_rd_ptr() { reset(); }
+	NOMOVE(db_base_rd_ptr);
+
+	constexpr db_base *get() { return m_base; }
+	constexpr db_base *operator->() { return m_base; }
+	constexpr db_base &operator*() { return *m_base; }
+	void reset() { if (m_base != nullptr) { m_base->giant_lock.unlock(); m_base = nullptr; } }
+
+	private:
+	db_base *m_base = nullptr;
 };
 
-struct db_base_unlock_wr {
-	inline void operator()(db_base *b) const { b->giant_lock.unlock(); }
-};
+class db_base_wr_ptr {
+	public:
+	constexpr db_base_wr_ptr(db_base *x) : m_base(x) {}
+	~db_base_wr_ptr() { reset(); }
+	NOMOVE(db_base_wr_ptr);
 
-using db_base_rd_ptr = std::unique_ptr<const db_base, db_base_unlock_rd>;
-using db_base_wr_ptr = std::unique_ptr<db_base, db_base_unlock_wr>;
+	constexpr db_base *get() { return m_base; }
+	constexpr db_base *operator->() { return m_base; }
+	constexpr db_base &operator*() { return *m_base; }
+	void reset() { if (m_base != nullptr) { m_base->giant_lock.unlock(); m_base = nullptr; } }
+
+	private:
+	db_base *m_base = nullptr;
+};
 
 class db_item_deleter;
 struct db_conn {
