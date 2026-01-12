@@ -104,7 +104,7 @@ static message_ptr do_mail(const char *file, const char *data, size_t dsize)
 		fprintf(stderr, "Unable to parse %s\n", file);
 		return nullptr;
 	}
-	message_ptr msg(oxcmail_import(&imail, gi_alloc, ee_get_propids));
+	auto msg = oxcmail_import(&imail, gi_alloc, ee_get_propids);
 	if (msg == nullptr)
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
 	return msg;

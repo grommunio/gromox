@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <climits>
@@ -4844,7 +4844,7 @@ ec_error_t zs_rfc822tomessage(GUID hsession, uint32_t hmessage,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	std::unique_ptr<MESSAGE_CONTENT, mc_delete> pmsgctnt(cu_rfc822_to_message(pmessage->get_store(), mxf_flags, peml_bin));
+	auto pmsgctnt = cu_rfc822_to_message(pmessage->get_store(), mxf_flags, peml_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
 	return pmessage->write_message(*pmsgctnt) ? ecSuccess : ecError;

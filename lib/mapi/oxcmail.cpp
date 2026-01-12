@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -1645,7 +1645,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 				pmime_enum->alloc, pmime_enum->get_propids);
 			if (pmsg == nullptr)
 				return;
-			pattachment->set_embedded_internal(pmsg);
+			pattachment->set_embedded_internal(pmsg.release());
 			pmime_enum->b_result = true;
 			return;
 		}
@@ -2439,7 +2439,7 @@ static std::nullptr_t xlog_null(const char *func, unsigned int line)
 }
 
 #define imp_null xlog_null(__func__, __LINE__)
-MESSAGE_CONTENT *oxcmail_import(const MAIL *pmail, EXT_BUFFER_ALLOC alloc,
+std::unique_ptr<message_content, mc_delete> oxcmail_import(const MAIL *pmail, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids) try
 {
 	namemap phash;
@@ -2530,7 +2530,7 @@ MESSAGE_CONTENT *oxcmail_import(const MAIL *pmail, EXT_BUFFER_ALLOC alloc,
 			std::swap(pmsg->children.prcpts, pmsg1->children.prcpts);
 			if (field_param.b_flag_del)
 				oxcmail_remove_flag_properties(pmsg1.get(), std::move(get_propids));
-			return pmsg1.release();
+			return pmsg1;
 		}
 	}
 
@@ -2564,7 +2564,7 @@ MESSAGE_CONTENT *oxcmail_import(const MAIL *pmail, EXT_BUFFER_ALLOC alloc,
 				std::swap(pmsg->children.prcpts, pmsg1->children.prcpts);
 				if (field_param.b_flag_del)
 					oxcmail_remove_flag_properties(pmsg1.get(), std::move(get_propids));
-				return pmsg1.release();
+				return pmsg1;
 			}
 		}
 	} else if (smime_clearsigned(head_ct, phead)) {
@@ -2637,8 +2637,8 @@ MESSAGE_CONTENT *oxcmail_import(const MAIL *pmail, EXT_BUFFER_ALLOC alloc,
 			if (!ical.load_from_str_move(&pcontent[content_len+1])) {
 				mime_enum.pcalendar = nullptr;
 			} else {
-				pmsg1.reset(oxcical_import_single(ical, alloc,
-				        get_propids, oxcmail_username_to_entryid).release());
+				pmsg1 = oxcical_import_single(ical, alloc,
+				        get_propids, oxcmail_username_to_entryid);
 				if (pmsg1 == nullptr) {
 					mlog(LV_WARN, "W-2728: oxcmail_import_single returned no object (parse error?); placing ical as attachment instead");
 					mime_enum.pcalendar = NULL;
@@ -2740,7 +2740,7 @@ MESSAGE_CONTENT *oxcmail_import(const MAIL *pmail, EXT_BUFFER_ALLOC alloc,
 	}
 	if (field_param.b_flag_del)
 		oxcmail_remove_flag_properties(pmsg.get(), std::move(get_propids));
-	return pmsg.release();
+	return pmsg;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 	return nullptr;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -1108,8 +1108,7 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 
 	imail.set_header("X-Mailer", ZCORE_UA);
 	if (zcore_backfill_transporthdr) {
-		std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import(
-			&imail, common_util_alloc, common_util_get_propids));
+		auto rmsg = oxcmail_import(&imail, common_util_alloc, common_util_get_propids);
 		if (rmsg != nullptr) {
 			for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
 				auto th = rmsg->proplist.get<const char>(tag);
@@ -1741,7 +1740,7 @@ static void zc_unwrap_clearsigned(MAIL &ma) try
 	mlog(LV_ERR, "%s: ENOMEM", __func__);
 }
 
-MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
+std::unique_ptr<message_content, mc_delete> cu_rfc822_to_message(store_object *pstore,
     unsigned int mxf_flags, /* effective-moved-from */ BINARY *peml_bin)
 {
 	MAIL imail;

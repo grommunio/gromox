@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <climits>
@@ -229,12 +229,12 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 }
 
 static void lq_report(unsigned int qid, unsigned long long mid, const char *txt,
-    const message_content *ct)
+    const message_content &ct)
 {
-	auto &props = ct->proplist;
+	auto &props = ct.proplist;
 	auto from = props.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	auto subj = props.get<const char>(PR_SUBJECT);
-	auto abox = ct->children.pattachments;
+	auto abox = ct.children.pattachments;
 	auto acount = abox != nullptr ? abox->count : 0;
 	mlog(LV_DEBUG, "QID %u/MID %llu/%s: from=<%s> subj=<%s> attachments=%u",
 		qid, mid, txt, znul(from), znul(subj), acount);
@@ -331,7 +331,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 			"to convert rfc5322 into MAPI message object");
 		return delivery_status::perm_fail;
 	}
-	lq_report(pcontext->ctrl.queue_ID, 0, "before_delivery", pmsg);
+	lq_report(pcontext->ctrl.queue_ID, 0, "before_delivery", *pmsg);
 
 	nt_time = rop_util_current_nttime();
 	if (pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != ecSuccess)
@@ -350,7 +350,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		flags = 0;
 	if (!exmdb_client_remote::deliver_message(home_dir,
 	    pcontext->ctrl.from, address, CP_ACP, flags,
-	    pmsg, djson.c_str(), &folder_id, &message_id, &r32))
+	    pmsg.get(), djson.c_str(), &folder_id, &message_id, &r32))
 		return delivery_status::perm_fail;
 
 	auto dm_status = static_cast<deliver_message_result>(r32);
@@ -386,9 +386,10 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		if (exmdb_client_remote::read_message(home_dir, nullptr, CP_ACP,
 		    message_id, &rbct) && rbct != nullptr)
 			lq_report(pcontext->ctrl.queue_ID, rop_util_get_gc_value(message_id),
-				"after_delivery", rbct);
+				"after_delivery", *rbct);
 	}
-	message_content_free(pmsg);
+	pmsg.reset();
+
 	switch (dm_status) {
 	case deliver_message_result::result_ok:
 		exmdb_local_log_info(pcontext->ctrl, address, LV_DEBUG,

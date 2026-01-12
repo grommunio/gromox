@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <chrono>
@@ -386,7 +386,6 @@ void uid_to_goid(const char* uid, BINARY &goid_bin)
 namespace detail {
 
 void Cleaner::operator()(BINARY* x) {rop_util_free_binary(x);}
-void Cleaner::operator()(MESSAGE_CONTENT *x) {message_content_free(x);}
 
 } // gromox::EWS::detail
 
@@ -1915,7 +1914,7 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, std::string&
 		throw EWSError::ItemCorrupt(E3123);
 	auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
 	{*ids = getNamedPropIds(dir, *names, true); return TRUE;};
-	MCONT_PTR cnt(oxcmail_import(&mail, EWSContext::alloc, getPropIds));
+	auto cnt = oxcmail_import(&mail, EWSContext::alloc, getPropIds);
 	if (!cnt)
 		throw EWSError::ItemCorrupt(E3124);
 	return cnt;

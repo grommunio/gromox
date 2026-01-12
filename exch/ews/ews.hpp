@@ -31,7 +31,6 @@ namespace gromox::EWS::detail {
  */
 struct Cleaner {
 	void operator()(BINARY*);
-	void operator()(MESSAGE_CONTENT*);
 };
 
 struct AttachmentInstanceKey {
@@ -267,7 +266,7 @@ class EWSPlugin {
  */
 class EWSContext {
 	public:
-	using MCONT_PTR = std::unique_ptr<MESSAGE_CONTENT, detail::Cleaner>; ///< Unique pointer to MESSAGE_CONTENT
+	using MCONT_PTR = std::unique_ptr<message_content, gromox::mc_delete>;
 
 	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE, S_STREAM_NOTIFY};
 

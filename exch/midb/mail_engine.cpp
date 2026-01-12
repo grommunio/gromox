@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -2175,7 +2175,6 @@ static int me_minst(int argc, char **argv, int sockd) try
 	pbuff.clear();
 	if (pmsgctnt == nullptr)
 		return MIDB_E_OXCMAIL_IMPORT;
-	auto cl_msg = HX::make_scope_exit([&]() { message_content_free(pmsgctnt); });
 	auto nt_time = rop_util_unix_to_nttime(strtol(argv[5], nullptr, 0));
 	if (pmsgctnt->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != ecSuccess)
 		return MIDB_E_NO_MEMORY;
@@ -2239,7 +2238,7 @@ static int me_minst(int argc, char **argv, int sockd) try
 	ec_error_t e_result = ecRpcFailed;
 	uint64_t outmid = 0, outcn = 0;
 	if (!exmdb_client->write_message(argv[1], CP_ACP,
-	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, djson.c_str(),
+	    rop_util_make_eid_ex(1, folder_id), pmsgctnt.get(), djson.c_str(),
 	    &outmid, &outcn, &e_result) || e_result != ecSuccess)
 		return MIDB_E_MDB_WRITEMESSAGE;
 	return cmd_write(sockd, "TRUE\r\n");

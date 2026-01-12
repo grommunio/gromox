@@ -139,7 +139,7 @@ extern ec_error_t cu_remote_copy_message(store_object *s0, uint64_t message_id, 
 extern ec_error_t cu_remote_copy_folder(store_object *s0, uint64_t folder_id, store_object *s1, uint64_t folder_id1, const char *new_name);
 extern ec_error_t cu_send_message(store_object *, message_object *, const char *ev_from);
 extern BOOL common_util_message_to_rfc822(store_object *, uint64_t inst_id, BINARY *eml);
-extern message_content *cu_rfc822_to_message(store_object *, unsigned int mxf_flags, BINARY *eml);
+extern std::unique_ptr<message_content, gromox::mc_delete> cu_rfc822_to_message(store_object *, unsigned int mxf_flags, BINARY *eml);
 extern BOOL common_util_message_to_ical(store_object *, uint64_t msg_id, BINARY *ical);
 extern std::unique_ptr<message_content, gromox::mc_delete> cu_ical_to_message(store_object *, const BINARY *ical);
 extern ec_error_t cu_ical_to_message2(store_object *, char *ical_data, std::vector<std::unique_ptr<message_content, gromox::mc_delete>> &);
