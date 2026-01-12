@@ -715,12 +715,20 @@ void EWSContext::enableEventStream(int timeout)
 std::string EWSContext::exportContent(const std::string& dir, const MESSAGE_CONTENT& content, const std::string& log_id) const
 {
 	MAIL mail;
-	auto getPropIds  = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
-		{ *ids = getNamedPropIds(dir, *names); return TRUE; };
-	auto getPropName = [&](propid_t id, PROPERTY_NAME **name) { *name = getPropertyName(dir, id); return TRUE; };
-	if (!oxcmail_export_PH(content, log_id.c_str(), &mail,
-	    alloc, getPropIds, getPropName))
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = alloc;
+	cvt.get_propids = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) {
+	                  	*ids = getNamedPropIds(dir, *names);
+	                  	return TRUE;
+	                  };
+	cvt.get_propname = [&](propid_t id, PROPERTY_NAME **name) {
+	                   	*name = getPropertyName(dir, id);
+	                   	return TRUE;
+	                   };
+	if (!cvt.mapi_to_inet(content, mail))
 		throw EWSError::ItemCorrupt(E3072);
+
 	auto mail_len = mail.get_length();
 	if (mail_len < 0)
 		throw EWSError::ItemCorrupt(E3073);
@@ -1840,15 +1848,23 @@ void EWSContext::send(const std::string &dir, uint64_t log_msg_id,
 	if (!content.children.prcpts)
 		throw EWSError::MissingRecipients(E3115);
 	MAIL mail;
-	auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
-		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
-	auto getPropName = [&](propid_t id, PROPERTY_NAME **name)
-					   {*name = getPropertyName(dir, id); return TRUE;};
 	std::string log_id;
+	oxcmail_converter cvt;
+	cvt.get_propids = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) {
+	                  	*ids = getNamedPropIds(dir, *names);
+	                  	return TRUE;
+	                  };
+	cvt.get_propname = [&](propid_t id, PROPERTY_NAME **name) {
+	                   	*name = getPropertyName(dir, id);
+	                   	return TRUE;
+	                   };
 	if (log_msg_id != 0)
 		log_id = dir + ":m" + std::to_string(log_msg_id);
-	if (!oxcmail_export_PH(content, log_id, &mail, alloc, getPropIds, getPropName))
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = alloc;
+	if (!cvt.mapi_to_inet(content, mail))
 		throw EWSError::ItemCorrupt(E3116);
+
 	std::vector<std::string> rcpts;
 	rcpts.reserve(content.children.prcpts->count);
 	for (auto &rcpt : *content.children.prcpts) {
@@ -1912,9 +1928,13 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, std::string&
 	MAIL mail;
 	if (!mail.refonly_parse(mimeContent.data(), mimeContent.size()))
 		throw EWSError::ItemCorrupt(E3123);
-	auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
-	{*ids = getNamedPropIds(dir, *names, true); return TRUE;};
-	auto cnt = oxcmail_import(&mail, EWSContext::alloc, getPropIds);
+	oxcmail_converter cvt;
+	cvt.alloc = EWSContext::alloc;
+	cvt.get_propids = [&](const PROPNAME_ARRAY *names, PROPID_ARRAY *ids) {
+	                  	*ids = getNamedPropIds(dir, *names, true);
+	                  	return TRUE;
+	                  };
+	auto cnt = cvt.inet_to_mapi(mail);
 	if (!cnt)
 		throw EWSError::ItemCorrupt(E3124);
 	return cnt;

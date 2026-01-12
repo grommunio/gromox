@@ -1643,8 +1643,10 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			tmp_int32 = ATTACH_EMBEDDED_MSG;
 			if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != ecSuccess)
 				return;
-			auto pmsg = oxcmail_import(&mail,
-				pmime_enum->alloc, pmime_enum->get_propids);
+			oxcmail_converter cvt;
+			cvt.alloc = pmime_enum->alloc;
+			cvt.get_propids = pmime_enum->get_propids;
+			auto pmsg = cvt.inet_to_mapi(mail);
 			if (pmsg == nullptr)
 				return;
 			pattachment->set_embedded_internal(pmsg.release());
@@ -2441,9 +2443,9 @@ static std::nullptr_t xlog_null(const char *func, unsigned int line)
 }
 
 #define imp_null xlog_null(__func__, __LINE__)
-std::unique_ptr<message_content, mc_delete> oxcmail_import(const MAIL *pmail, EXT_BUFFER_ALLOC alloc,
-    GET_PROPIDS get_propids) try
+std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(const MAIL &imail) try
 {
+	auto pmail = &imail;
 	namemap phash;
 	MIME_ENUM_PARAM mime_enum{phash};
 	FIELD_ENUM_PARAM field_param{phash};
@@ -4316,12 +4318,8 @@ bool oxcmail_export(const message_content *pmsg, const char *log_id,
 #undef exp_false
 
 /* automatic format selection */
-bool oxcmail_export_AF(const MESSAGE_CONTENT &mc, const std::string &log_id,
-    MAIL *mail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
-    GET_PROPNAME get_propname)
+void oxcmail_converter::use_format_override(const message_content &mc)
 {
-	oxcmail_body body_type;
-
 	auto v = mc.proplist.get<uint32_t>(PR_INETMAIL_OVERRIDE_FORMAT);
 	if (v == nullptr)
 		body_type = oxcmail_body::plain_and_html;
@@ -4331,15 +4329,10 @@ bool oxcmail_export_AF(const MESSAGE_CONTENT &mc, const std::string &log_id,
 		body_type = oxcmail_body::html_only;
 	else
 		body_type = oxcmail_body::plain_only;
-
-	return oxcmail_export(&mc, log_id.c_str(), false, body_type,
-	       mail, alloc, get_propids, get_propname);
 }
 
-bool oxcmail_export_PH(const MESSAGE_CONTENT &mc, const std::string &log_id,
-    MAIL *mail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
-    GET_PROPNAME get_propname)
+bool oxcmail_converter::mapi_to_inet(const message_content &mc, MAIL &out)
 {
-	return oxcmail_export(&mc, log_id.c_str(), false, oxcmail_body::plain_and_html,
-	       mail, alloc, get_propids, get_propname);
+	return oxcmail_export(&mc, log_id, false, body_type,
+	       &out, alloc, get_propids, get_propname);
 }

@@ -164,7 +164,11 @@ static int excess_attachment()
 	static char data[] = "Content-Type: message/rfc822\n";
 	MAIL m;
 	assert(m.refonly_parse(data, strlen(data)));
-	auto mc = oxcmail_import(&m, g_alloc, ee_get_propids);
+
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	auto mc = cvt.inet_to_mapi(m);
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
 	assert(atl != nullptr);
@@ -190,7 +194,11 @@ static int select_parts_1()
 	            appl_mixed_footer + appl_alt_footer;
 	MAIL m;
 	assert(m.refonly_parse(data.data(), data.size()));
-	auto mc = oxcmail_import(&m, g_alloc, ee_get_propids);
+
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	auto mc = cvt.inet_to_mapi(m);
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
 	assert(atl != nullptr);
@@ -216,7 +224,11 @@ static int select_parts_2()
 	            appl_html1 + appl_zip + appl_mixed_footer + appl_alt_footer;
 	MAIL m;
 	assert(m.refonly_parse(data.data(), data.size()));
-	auto mc = oxcmail_import(&m, g_alloc, ee_get_propids);
+
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	auto mc = cvt.inet_to_mapi(m);
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
 	assert(atl != nullptr);
@@ -279,7 +291,11 @@ static int select_parts_3()
 
 	MAIL m;
 	assert(m.refonly_parse(data, std::size(data)));
-	auto mc = oxcmail_import(&m, g_alloc, ee_get_propids);
+
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	auto mc = cvt.inet_to_mapi(m);
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
 	assert(atl != nullptr);
@@ -302,7 +318,11 @@ static int select_parts_4()
 	fprintf(stderr, "== T4\n");
 	MAIL m;
 	assert(m.refonly_parse(data_4, std::size(data_4)));
-	auto mc = oxcmail_import(&m, g_alloc, ee_get_propids);
+
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	auto mc = cvt.inet_to_mapi(m);
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
 	assert(atl != nullptr);
@@ -335,7 +355,11 @@ static int select_parts_5()
 	fprintf(stderr, "== T5\n");
 	MAIL m;
 	assert(m.refonly_parse(data_5, std::size(data_5)));
-	auto mc = oxcmail_import(&m, g_alloc, ee_get_propids);
+
+	oxcmail_converter cvt;
+	cvt.alloc = g_alloc;
+	cvt.get_propids = ee_get_propids;
+	auto mc = cvt.inet_to_mapi(m);
 	assert(mc != nullptr);
 	auto atl = mc->children.pattachments;
 	assert(atl != nullptr);

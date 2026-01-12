@@ -320,8 +320,11 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	digest["file"] = std::move(mid_string);
 	auto djson = json_to_str(digest);
 	g_storedir = mres.maildir.c_str();
-	auto pmsg = oxcmail_import(pmail, exmdb_local_alloc,
-	            exmdb_local_get_propids);
+
+	oxcmail_converter cvt;
+	cvt.alloc = exmdb_local_alloc;
+	cvt.get_propids = exmdb_local_get_propids;
+	auto pmsg = cvt.inet_to_mapi(*pmail);
 	g_storedir = nullptr;
 	if (NULL == pmsg) {
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)

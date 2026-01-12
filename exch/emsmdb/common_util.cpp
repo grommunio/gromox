@@ -1443,19 +1443,28 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	}
 	if (rcpt_list.size() == 0) {
 		/* What would EXC do? */
-		mlog2(LV_ERR, "E-1282: Empty converted recipients list attempting to send %s", log_id.c_str());
+		mlog2(LV_ERR, "E-1282: Empty converted recipients list attempting to send %s",
+			log_id.c_str());
 		return MAPI_E_NO_RECIPIENTS;
 	}
 	common_util_set_dir(dir);
-	if (!oxcmail_export_AF(*pmsgctnt, log_id, &imail, common_util_alloc,
-	    common_util_get_propids, common_util_get_propname)) {
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids;
+	cvt.get_propname = common_util_get_propname;
+	cvt.use_format_override(*pmsgctnt);
+	if (!cvt.mapi_to_inet(*pmsgctnt, imail)) {
 		mlog2(LV_ERR, "E-1281: oxcmail_export %s failed", log_id.c_str());
 		return ecError;	
 	}
 
 	imail.set_header("X-Mailer", EMSMDB_UA);
 	if (emsmdb_backfill_transporthdr) {
-		auto rmsg = oxcmail_import(&imail, common_util_alloc, common_util_get_propids);
+		oxcmail_converter cvt;
+		cvt.alloc = common_util_alloc;
+		cvt.get_propids = common_util_get_propids;
+		auto rmsg = cvt.inet_to_mapi(imail);
 		if (rmsg != nullptr) {
 			for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
 				auto th = rmsg->proplist.get<const char>(tag);
@@ -1492,16 +1501,19 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
 		if (!cu_entryid_to_mid(*plogon, ptarget, &folder_id, &new_id)) {
-			mlog2(LV_WARN, "W-1279: PR_TARGET_ENTRYID inconvertible in %s", log_id.c_str());
+			mlog2(LV_WARN, "W-1279: PR_TARGET_ENTRYID inconvertible in %s",
+				log_id.c_str());
 			return ecWarnWithErrors;	
 		}
 		if (!exmdb_client->clear_submit(dir, message_id, false)) {
-			mlog2(LV_WARN, "W-1278: exrpc clear_submit %s failed", log_id.c_str());
+			mlog2(LV_WARN, "W-1278: exrpc clear_submit %s failed",
+				log_id.c_str());
 			return ecWarnWithErrors;
 		}
 		if (!exmdb_client->movecopy_message(dir, cpid, message_id,
 		    folder_id, new_id, TRUE, &b_result)) {
-			mlog2(LV_WARN, "W-1277: exrpc movecopy_message %s failed", log_id.c_str());
+			mlog2(LV_WARN, "W-1277: exrpc movecopy_message %s failed",
+				log_id.c_str());
 			return ecWarnWithErrors;
 		}
 		return ecSuccess;
@@ -1511,7 +1523,8 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 		return ecSuccess;
 	}
 	if (!exmdb_client->clear_submit(dir, message_id, false)) {
-		mlog2(LV_WARN, "W-1276: exrpc clear_submit %s failed", log_id.c_str());
+		mlog2(LV_WARN, "W-1276: exrpc clear_submit %s failed",
+			log_id.c_str());
 		return ecWarnWithErrors;
 	}
 
@@ -1524,7 +1537,8 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 	if (!exmdb_client->movecopy_messages(dir, cpid,
 	    false, STORE_OWNER_GRANTED, parent_id, folder_id, false,
 	    &ids, &b_partial)) {
-		mlog2(LV_WARN, "W-1275: exrpc movecopy_message %s failed", log_id.c_str());
+		mlog2(LV_WARN, "W-1275: exrpc movecopy_message %s failed",
+			log_id.c_str());
 		return ecWarnWithErrors;
 	}
 	return ecSuccess;

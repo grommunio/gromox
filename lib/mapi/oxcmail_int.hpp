@@ -12,12 +12,6 @@ struct MIME;
 struct attachment_content;
 struct message_content;
 
-enum class oxcmail_body {
-	plain_only = 1,
-	html_only = 2,
-	plain_and_html = 3,
-};
-
 enum class oxcmail_type {
 	normal, xsigned, encrypted, dsn, mdn, calendar, tnef,
 };

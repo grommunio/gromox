@@ -1368,8 +1368,12 @@ static void me_insert_message(xstmt &stm_insert, uint32_t *puidnext,
 		}
 		auto log_id = dir + ":m"s + std::to_string(message_id);
 		MAIL imail;
-		if (!oxcmail_export_PH(*pmsgctnt, log_id, &imail, cu_alloc_bytes,
-		    cu_get_propids, cu_get_propname)) {
+		oxcmail_converter cvt;
+		cvt.log_id = log_id.c_str();
+		cvt.alloc = cu_alloc_bytes;
+		cvt.get_propids = cu_get_propids;
+		cvt.get_propname = cu_get_propname;
+		if (!cvt.mapi_to_inet(*pmsgctnt, imail)) {
 			mlog(LV_ERR, "E-1222: oxcmail_export %s failed", log_id.c_str());
 			cu_switch_allocator();
 			return;
@@ -2169,8 +2173,10 @@ static int me_minst(int argc, char **argv, int sockd) try
 	unsigned int user_id = 0;
 	if (!mysql_adaptor_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
-	auto pmsgctnt = oxcmail_import(&imail,
-	                cu_alloc_bytes, cu_get_propids_create);
+	oxcmail_converter cvt;
+	cvt.alloc = cu_alloc_bytes;
+	cvt.get_propids = cu_get_propids_create;
+	auto pmsgctnt = cvt.inet_to_mapi(imail);
 	imail.clear();
 	pbuff.clear();
 	if (pmsgctnt == nullptr)

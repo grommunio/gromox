@@ -162,8 +162,11 @@ static int fetch_message(const char *idstr, std::string &log_id, eid_t &msg_id,
 static int emit_message_im(const message_content &ctnt, const std::string &log_id)
 {
 	MAIL imail;
-	if (!oxcmail_export_PH(ctnt, log_id, &imail, zalloc, cu_get_propids,
-	    cu_get_propname)) {
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = zalloc;
+	cvt.get_propids = cu_get_propids;
+	if (!cvt.mapi_to_inet(ctnt, imail)) {
 		fprintf(stderr, "oxcmail_export failed for an unspecified reason.\n");
 		return -1;
 	}

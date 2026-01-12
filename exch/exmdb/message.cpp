@@ -2403,8 +2403,12 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	g_sqlite_for_oxcmail = rp.sqlite;
 	auto log_id = rp.ev_to + ":m"s + std::to_string(rop_util_get_gc_value(template_message_id));
 	MAIL imail;
-	if (!oxcmail_export_PH(*pmsgctnt, log_id, &imail, common_util_alloc,
-	    message_get_propids, message_get_propname)) {
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = message_get_propids;
+	cvt.get_propname = message_get_propname;
+	if (!cvt.mapi_to_inet(*pmsgctnt, imail)) {
 		g_sqlite_for_oxcmail = nullptr;
 		return FALSE;
 	}
@@ -2540,8 +2544,13 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 			return ecError;
 		g_sqlite_for_oxcmail = rp.sqlite;
 		auto log_id = rp.ev_to + ":m"s + std::to_string(rop_util_get_gc_value(rp.message_id));
-		if (!oxcmail_export_AF(*pmsgctnt, log_id, &imail, common_util_alloc,
-		    message_get_propids, message_get_propname)) {
+		oxcmail_converter cvt;
+		cvt.log_id = log_id.c_str();
+		cvt.alloc = common_util_alloc;
+		cvt.get_propids = message_get_propids;
+		cvt.get_propname = message_get_propname;
+		cvt.use_format_override(*pmsgctnt);
+		if (!cvt.mapi_to_inet(*pmsgctnt, imail)) {
 			g_sqlite_for_oxcmail = nullptr;
 			return ecError;
 		}

@@ -1102,13 +1102,18 @@ ec_error_t cu_send_message(store_object *pstore, message_object *msg,
 
 	common_util_set_dir(pstore->get_dir());
 	MAIL imail;
-	if (!oxcmail_export_AF(*pmsgctnt, log_id, &imail, common_util_alloc,
-	    common_util_get_propids, common_util_get_propname))
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids;
+	cvt.get_propname = common_util_get_propname;
+	cvt.use_format_override(*pmsgctnt);
+	if (!cvt.mapi_to_inet(*pmsgctnt, imail))
 		return ecError;
 
 	imail.set_header("X-Mailer", ZCORE_UA);
 	if (zcore_backfill_transporthdr) {
-		auto rmsg = oxcmail_import(&imail, common_util_alloc, common_util_get_propids);
+		auto rmsg = cvt.inet_to_mapi(imail);
 		if (rmsg != nullptr) {
 			for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
 				auto th = rmsg->proplist.get<const char>(tag);
@@ -1695,8 +1700,13 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id,
 	common_util_set_dir(pstore->get_dir());
 	auto log_id = pstore->get_dir() + ":i"s + std::to_string(inst_id);
 	MAIL imail;
-	if (!oxcmail_export_AF(*pmsgctnt, log_id, &imail, common_util_alloc,
-	    common_util_get_propids, common_util_get_propname))
+	oxcmail_converter cvt;
+	cvt.log_id = log_id.c_str();
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids;
+	cvt.get_propname = common_util_get_propname;
+	cvt.use_format_override(*pmsgctnt);
+	if (!cvt.mapi_to_inet(*pmsgctnt, imail))
 		return FALSE;	
 	auto mail_len = imail.get_length();
 	if (mail_len < 0)
@@ -1749,9 +1759,10 @@ std::unique_ptr<message_content, mc_delete> cu_rfc822_to_message(store_object *p
 	if (mxf_flags & MXF_UNWRAP_SMIME_CLEARSIGNED)
 		zc_unwrap_clearsigned(imail);
 	common_util_set_dir(pstore->get_dir());
-	auto pmsgctnt = oxcmail_import(&imail,
-	                common_util_alloc, common_util_get_propids_create);
-	return pmsgctnt;
+	oxcmail_converter cvt;
+	cvt.alloc = common_util_alloc;
+	cvt.get_propids = common_util_get_propids_create;
+	return cvt.inet_to_mapi(imail);
 }
 
 BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
