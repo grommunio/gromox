@@ -597,10 +597,7 @@ int feed_w3m(std::string_view inbuf, const char *cset, std::string &final_buf) t
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		return -1;
 	final_buf = std::move(outbuf);
-	if (outbuf.empty())
-		return 0;
-	/* The caller can just look at outbuf.size() */
-	return 1;
+	return 0;
 } catch (...) {
 	return -1;
 }
