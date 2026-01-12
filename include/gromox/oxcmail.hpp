@@ -33,17 +33,31 @@ extern GX_EXPORT unsigned int g_oxvcard_pedantic;
 
 }
 
+namespace oxcmail {
+
+struct mime_skeleton;
+
+};
+
 enum class oxcmail_body {
 	plain_only = 1,
 	html_only = 2,
 	plain_and_html = 3,
 };
 
-struct GX_EXPORT oxcmail_converter {
+class GX_EXPORT oxcmail_converter {
+	public:
 	void use_format_override(const message_content &);
 	bool mapi_to_inet(const message_content &, MAIL &);
 	std::unique_ptr<message_content, gromox::mc_delete> inet_to_mapi(const MAIL &);
 
+	private:
+	bool do_export(const message_content &, bool force_tnef, MAIL &);
+	ec_error_t export_attachments(const message_content &, const oxcmail::mime_skeleton &, MAIL &, MIME *, MIME *);
+	bool export_attachment(const attachment_content &, bool b_inline, const oxcmail::mime_skeleton &, MIME &);
+	ec_error_t export_tnef_body(const oxcmail::mime_skeleton &, MAIL &, MIME *);
+
+	public:
 	const char *log_id = "";
 	EXT_BUFFER_ALLOC alloc = nullptr;
 	GET_PROPIDS get_propids = nullptr;

@@ -122,8 +122,6 @@ static constexpr addr_tags tags_read_rcpt = {
 
 }
 
-using MIME_SKELETON = mime_skeleton;
-
 static constexpr char
 	PidNameContentClass[] = "Content-Class",
 	PidNameKeywords[] = "Keywords";
@@ -3784,13 +3782,12 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
 	return false;
 }
 
-bool oxcmail_export_attachment(const attachment_content &atc,
-    const char *log_id,
-    bool b_inline, const mime_skeleton &skel, EXT_BUFFER_ALLOC alloc,
-    GET_PROPIDS get_propids, GET_PROPNAME get_propname, MIME *pmime)
+bool oxcmail_converter::export_attachment(const attachment_content &atc,
+    bool b_inline, const mime_skeleton &skel, MIME &mimeout)
 {
 	auto pattachment = &atc;
 	auto pskeleton = &skel;
+	auto pmime = &mimeout;
 	int tmp_len;
 	BOOL b_vcard;
 	size_t offset;
@@ -3931,9 +3928,7 @@ bool oxcmail_export_attachment(const attachment_content &atc,
 	if (NULL != pattachment->pembedded) {
 		auto b_tnef = pskeleton->mail_type == oxcmail_type::tnef;
 		MAIL imail;
-		if (!oxcmail_export(*pattachment->pembedded, log_id,
-		    b_tnef, pskeleton->body_type, &imail,
-		    alloc, std::move(get_propids), std::move(get_propname)))
+		if (!do_export(*pattachment->pembedded, b_tnef, imail))
 			return FALSE;
 		auto mail_len = imail.get_length();
 		if (mail_len < 0)
@@ -4021,11 +4016,11 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 }
 
 #define exp_false xlog_bool(__func__, __LINE__)
-bool oxcmail_export(const message_content &imsg, const char *log_id,
-    bool b_tnef, enum oxcmail_body body_type, MAIL *pmail, EXT_BUFFER_ALLOC alloc,
-    GET_PROPIDS get_propids, GET_PROPNAME get_propname) try
+bool oxcmail_converter::do_export(const message_content &imsg,
+    bool b_tnef, MAIL &imail) try
 {
 	const auto pmsg = &imsg;
+	auto pmail = &imail;
 	ical ical;
 	MIME *phtml;
 	MIME *pmime;
@@ -4305,14 +4300,12 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 			return exp_false;
 	}
 
-	auto err = oxcmail::export_tnef_body(log_id, skel, *pmail,
-	           prelated, alloc, get_propids, get_propname);
+	auto err = export_tnef_body(skel, *pmail, prelated);
 	if (err != ecSuccess) {
 		mlog(LV_ERR, "E-2941: %s", mapi_strerror(err));
 		return false;
 	}
-	err = oxcmail::export_attachments(*pmsg, log_id, skel,
-	      *pmail, prelated, pmixed, alloc, get_propids, get_propname);
+	err = export_attachments(*pmsg, skel, *pmail, prelated, pmixed);
 	if (err != ecSuccess) {
 		mlog(LV_ERR, "E-2940: %s", mapi_strerror(err));
 		return false;
@@ -4340,6 +4333,5 @@ void oxcmail_converter::use_format_override(const message_content &mc)
 
 bool oxcmail_converter::mapi_to_inet(const message_content &mc, MAIL &out)
 {
-	return oxcmail_export(mc, log_id, false, body_type,
-	       &out, alloc, get_propids, get_propname);
+	return do_export(mc, false, out);
 }

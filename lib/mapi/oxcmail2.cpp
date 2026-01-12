@@ -22,8 +22,9 @@
 #include <gromox/util.hpp>
 #include "oxcmail_int.hpp"
 
-using namespace gromox;
 using namespace std::string_literals;
+using namespace gromox;
+using namespace oxcmail;
 
 namespace oxcmail {
 
@@ -437,10 +438,11 @@ bool attachment_is_inline(const attachment_content &at)
 	       at.proplist.has(PR_ATTACH_CONTENT_LOCATION);
 }
 
+}
+
 /* For exporting MAPI Attachments as MIME parts */
-ec_error_t export_attachments(const message_content &mc, const char *log_id,
-    const mime_skeleton &skel, MAIL &m_mail, MIME *m_related, MIME *m_mixed,
-    EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids, GET_PROPNAME get_propname)
+ec_error_t oxcmail_converter::export_attachments(const message_content &mc,
+    const mime_skeleton &skel, MAIL &m_mail, MIME *m_related, MIME *m_mixed)
 {
 	if (mc.children.pattachments == nullptr)
 		return ecSuccess;
@@ -451,17 +453,15 @@ ec_error_t export_attachments(const message_content &mc, const char *log_id,
 		auto new_part = m_mail.add_child(b_inline ? m_related : m_mixed, MIME_ADD_LAST);
 		if (new_part == nullptr)
 			return ecMAPIOOM;
-		if (!oxcmail_export_attachment(at, log_id, b_inline, skel,
-		    alloc, get_propids, get_propname, new_part))
+		if (!export_attachment(at, b_inline, skel, *new_part))
 			return ecError;
 	}
 	return ecSuccess;
 }
 
 /* Certain MAPI objects can only be expressed in MIME as TNEF */
-ec_error_t export_tnef_body(const char *log_id, const mime_skeleton &skel,
-    MAIL &mail, MIME *m_related, EXT_BUFFER_ALLOC alloc,
-    GET_PROPIDS get_propids, GET_PROPNAME get_propname)
+ec_error_t oxcmail_converter::export_tnef_body(const mime_skeleton &skel,
+    MAIL &mail, MIME *m_related)
 {
 	if (skel.pattachments == nullptr)
 		return ecSuccess;
@@ -469,13 +469,10 @@ ec_error_t export_tnef_body(const char *log_id, const mime_skeleton &skel,
 		auto new_part = mail.add_child(m_related, MIME_ADD_LAST);
 		if (new_part == nullptr)
 			return ecMAPIOOM;
-		if (!oxcmail_export_attachment(at, log_id, true, skel, alloc,
-		    get_propids, get_propname, new_part))
+		if (!export_attachment(at, true, skel, *new_part))
 			return ecError;
 	}
 	return ecSuccess;
-}
-
 }
 
 namespace gromox {
