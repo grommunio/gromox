@@ -3305,11 +3305,11 @@ static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
 	return false;
 }
 
-static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
-	MIME_SKELETON *pskeleton, EXT_BUFFER_ALLOC alloc,
-	GET_PROPIDS get_propids, GET_PROPNAME get_propname,
-	MIME *phead)
+static bool oxcmail_export_mail_head(const message_content &imsg, const mime_skeleton &skel,
+    EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids, GET_PROPNAME get_propname, MIME *phead)
 {
+	auto pmsg = &imsg;
+	auto pskeleton = &skel;
 	size_t tmp_len = 0;
 	time_t tmp_time;
 	size_t base64_len;
@@ -3784,11 +3784,13 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
 	return false;
 }
 
-bool oxcmail_export_attachment(attachment_content *pattachment,
+bool oxcmail_export_attachment(const attachment_content &atc,
     const char *log_id,
-    BOOL b_inline, MIME_SKELETON *pskeleton, EXT_BUFFER_ALLOC alloc,
+    bool b_inline, const mime_skeleton &skel, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, GET_PROPNAME get_propname, MIME *pmime)
 {
+	auto pattachment = &atc;
+	auto pskeleton = &skel;
 	int tmp_len;
 	BOOL b_vcard;
 	size_t offset;
@@ -3929,7 +3931,7 @@ bool oxcmail_export_attachment(attachment_content *pattachment,
 	if (NULL != pattachment->pembedded) {
 		auto b_tnef = pskeleton->mail_type == oxcmail_type::tnef;
 		MAIL imail;
-		if (!oxcmail_export(pattachment->pembedded, log_id,
+		if (!oxcmail_export(*pattachment->pembedded, log_id,
 		    b_tnef, pskeleton->body_type, &imail,
 		    alloc, std::move(get_propids), std::move(get_propname)))
 			return FALSE;
@@ -4019,10 +4021,11 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 }
 
 #define exp_false xlog_bool(__func__, __LINE__)
-bool oxcmail_export(const message_content *pmsg, const char *log_id,
+bool oxcmail_export(const message_content &imsg, const char *log_id,
     bool b_tnef, enum oxcmail_body body_type, MAIL *pmail, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, GET_PROPNAME get_propname) try
 {
+	const auto pmsg = &imsg;
 	ical ical;
 	MIME *phtml;
 	MIME *pmime;
@@ -4152,7 +4155,7 @@ bool oxcmail_export(const message_content *pmsg, const char *log_id,
 		break;
 	}
 	
-	if (!oxcmail_export_mail_head(pmsg, &mime_skeleton, alloc,
+	if (!oxcmail_export_mail_head(imsg, mime_skeleton, alloc,
 	    get_propids, get_propname, phead))
 		return exp_false;
 	
@@ -4338,6 +4341,6 @@ void oxcmail_converter::use_format_override(const message_content &mc)
 
 bool oxcmail_converter::mapi_to_inet(const message_content &mc, MAIL &out)
 {
-	return oxcmail_export(&mc, log_id, false, body_type,
+	return oxcmail_export(mc, log_id, false, body_type,
 	       &out, alloc, get_propids, get_propname);
 }

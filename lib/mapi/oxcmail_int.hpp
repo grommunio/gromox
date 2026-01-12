@@ -82,11 +82,11 @@ extern ec_error_t bodyset_plain(TPROPVAL_ARRAY &, std::string &&, const char *);
 extern ec_error_t bodyset_enriched(TPROPVAL_ARRAY &, std::string &&, const char *);
 extern ec_error_t bodyset_multi(MIME_ENUM_PARAM &, TPROPVAL_ARRAY &, const char *);
 extern bool attachment_is_inline(const attachment_content &);
-extern ec_error_t export_tnef_body(const char *log_id, mime_skeleton &, MAIL &, MIME *related, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
-extern ec_error_t export_attachments(const message_content &, const char *log_id, mime_skeleton &, MAIL &, MIME *related, MIME *mixed, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
+extern ec_error_t export_tnef_body(const char *log_id, const mime_skeleton &, MAIL &, MIME *related, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
+extern ec_error_t export_attachments(const message_content &, const char *log_id, const mime_skeleton &, MAIL &, MIME *related, MIME *mixed, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
 
 }
 
 extern bool oxcmail_get_content_param(const MIME *, const char *tag, std::string &);
-extern bool oxcmail_export_attachment(attachment_content *, const char *log_id, BOOL b_inline, oxcmail::mime_skeleton *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME, MIME *);
-extern bool oxcmail_export(const message_content *, const char *log_id, bool b_tnef, enum oxcmail_body, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
+extern bool oxcmail_export_attachment(const attachment_content &, const char *log_id, bool b_inline, const oxcmail::mime_skeleton &, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME, MIME *);
+extern bool oxcmail_export(const message_content &, const char *log_id, bool b_tnef, enum oxcmail_body, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);

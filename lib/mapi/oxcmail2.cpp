@@ -439,19 +439,19 @@ bool attachment_is_inline(const attachment_content &at)
 
 /* For exporting MAPI Attachments as MIME parts */
 ec_error_t export_attachments(const message_content &mc, const char *log_id,
-    mime_skeleton &skel, MAIL &m_mail, MIME *m_related, MIME *m_mixed,
+    const mime_skeleton &skel, MAIL &m_mail, MIME *m_related, MIME *m_mixed,
     EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids, GET_PROPNAME get_propname)
 {
 	if (mc.children.pattachments == nullptr)
 		return ecSuccess;
-	for (auto &at : *mc.children.pattachments) {
+	for (const auto &at : *mc.children.pattachments) {
 		if (att_is_mtg_exception(at))
 			continue;
 		auto b_inline = attachment_is_inline(at);
 		auto new_part = m_mail.add_child(b_inline ? m_related : m_mixed, MIME_ADD_LAST);
 		if (new_part == nullptr)
 			return ecMAPIOOM;
-		if (!oxcmail_export_attachment(&at, log_id, b_inline, &skel,
+		if (!oxcmail_export_attachment(at, log_id, b_inline, skel,
 		    alloc, get_propids, get_propname, new_part))
 			return ecError;
 	}
@@ -459,17 +459,17 @@ ec_error_t export_attachments(const message_content &mc, const char *log_id,
 }
 
 /* Certain MAPI objects can only be expressed in MIME as TNEF */
-ec_error_t export_tnef_body(const char *log_id, mime_skeleton &skel,
+ec_error_t export_tnef_body(const char *log_id, const mime_skeleton &skel,
     MAIL &mail, MIME *m_related, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, GET_PROPNAME get_propname)
 {
 	if (skel.pattachments == nullptr)
 		return ecSuccess;
-	for (auto &at : *skel.pattachments) {
+	for (const auto &at : *skel.pattachments) {
 		auto new_part = mail.add_child(m_related, MIME_ADD_LAST);
 		if (new_part == nullptr)
 			return ecMAPIOOM;
-		if (!oxcmail_export_attachment(&at, log_id, true, &skel, alloc,
+		if (!oxcmail_export_attachment(at, log_id, true, skel, alloc,
 		    get_propids, get_propname, new_part))
 			return ecError;
 	}
