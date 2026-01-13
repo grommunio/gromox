@@ -4044,9 +4044,9 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 		pcharset = cpid_to_cset(static_cast<cpid_t>(*num));
 	if (pcharset == nullptr)
 		pcharset = "utf-8";
-	mime_skeleton mime_skeleton;
+	mime_skeleton skel;
 	if (!oxcmail_load_mime_skeleton(pmsg, pcharset, b_tnef,
-	    body_type, &mime_skeleton))
+	    body_type, &skel))
 		return exp_false;
 	auto phead = pmail->add_head();
 	if (phead == nullptr)
@@ -4057,39 +4057,39 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 	pmixed = NULL;
 	prelated = NULL;
 	pcalendar = NULL;
-	switch (mime_skeleton.mail_type) {
+	switch (skel.mail_type) {
 	case oxcmail_type::dsn:
 	case oxcmail_type::mdn:
 	case oxcmail_type::normal:
 	case oxcmail_type::calendar:
-		if (mime_skeleton.mail_type == oxcmail_type::dsn) {
+		if (skel.mail_type == oxcmail_type::dsn) {
 			pmixed = pmime;
 			if (!pmime->set_content_type("multipart/report") ||
 			    !pmime->set_content_param("report-type", "delivery-status") ||
 			    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 				return exp_false;
-		} else if (mime_skeleton.mail_type == oxcmail_type::mdn) {
+		} else if (skel.mail_type == oxcmail_type::mdn) {
 			pmixed = pmime;
 			if (!pmime->set_content_type("multipart/report") ||
 			    !pmime->set_content_param("report-type", "disposition-notification") ||
 			    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 				return exp_false;
 		} else {
-			if (mime_skeleton.b_attachment) {
+			if (skel.b_attachment) {
 				pmixed = pmime;
 				if (!pmime->set_content_type("multipart/mixed") ||
 				    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 					return exp_false;
 			}
 		}
-		if (mime_skeleton.b_inline) {
+		if (skel.b_inline) {
 			prelated = pmime;
 			if (!pmime->set_content_type("multipart/related") ||
 			    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 				return exp_false;
 		}
-		if (mime_skeleton.body_type == oxcmail_body::plain_and_html &&
-			NULL != mime_skeleton.pplain && NULL != mime_skeleton.phtml) {
+		if (skel.body_type == oxcmail_body::plain_and_html &&
+		    skel.pplain != nullptr && skel.phtml != nullptr) {
 			if (!pmime->set_content_type("multipart/alternative"))
 				return exp_false;
 			pplain = pmail->add_child(pmime, MIME_ADD_LAST);
@@ -4097,16 +4097,16 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 			if (pplain == nullptr || !pplain->set_content_type("text/plain") ||
 			    phtml == nullptr || !phtml->set_content_type("text/html"))
 				return exp_false;
-			if (mime_skeleton.mail_type == oxcmail_type::calendar) {
+			if (skel.mail_type == oxcmail_type::calendar) {
 				pcalendar = pmail->add_child(pmime, MIME_ADD_LAST);
 				if (pcalendar == nullptr ||
 				    !pcalendar->set_content_type("text/calendar"))
 					return exp_false;
 			}
-		} else if (mime_skeleton.body_type == oxcmail_body::plain_only &&
-		    mime_skeleton.pplain != nullptr) {
+		} else if (skel.body_type == oxcmail_body::plain_only &&
+		    skel.pplain != nullptr) {
  PLAIN_ONLY:
-			if (mime_skeleton.mail_type != oxcmail_type::calendar) {
+			if (skel.mail_type != oxcmail_type::calendar) {
 				if (!pmime->set_content_type("text/plain"))
 					return exp_false;
 				pplain = pmime;
@@ -4119,10 +4119,10 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 				    pcalendar == nullptr || !pcalendar->set_content_type("text/calendar"))
 					return exp_false;
 			}
-		} else if (mime_skeleton.body_type == oxcmail_body::html_only &&
-		    mime_skeleton.phtml != nullptr) {
+		} else if (skel.body_type == oxcmail_body::html_only &&
+		    skel.phtml != nullptr) {
  HTML_ONLY:
-			if (mime_skeleton.mail_type != oxcmail_type::calendar) {
+			if (skel.mail_type != oxcmail_type::calendar) {
 				if (!pmime->set_content_type("text/html"))
 					return exp_false;
 				phtml = pmime;
@@ -4135,11 +4135,11 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 				    pcalendar == nullptr || !pcalendar->set_content_type("text/calendar"))
 					return exp_false;
 			}
-		} else if (NULL != mime_skeleton.phtml) {
-			mime_skeleton.body_type = oxcmail_body::html_only;
+		} else if (skel.phtml != nullptr) {
+			skel.body_type = oxcmail_body::html_only;
 			goto HTML_ONLY;
 		} else {
-			mime_skeleton.body_type = oxcmail_body::plain_only;
+			skel.body_type = oxcmail_body::plain_only;
 			goto PLAIN_ONLY;
 		}
 		break;
@@ -4155,13 +4155,13 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 		break;
 	}
 	
-	if (!oxcmail_export_mail_head(imsg, mime_skeleton, alloc,
+	if (!oxcmail_export_mail_head(imsg, skel, alloc,
 	    get_propids, get_propname, phead))
 		return exp_false;
 	
-	if (mime_skeleton.mail_type == oxcmail_type::encrypted ||
-	    mime_skeleton.mail_type == oxcmail_type::xsigned) {
-		if (mime_skeleton.mail_type == oxcmail_type::encrypted &&
+	if (skel.mail_type == oxcmail_type::encrypted ||
+	    skel.mail_type == oxcmail_type::xsigned) {
+		if (skel.mail_type == oxcmail_type::encrypted &&
 		    !pmime->set_content_type("application/pkcs7-mime"))
 			return exp_false;
 		auto a = pmsg->children.pattachments;
@@ -4174,7 +4174,7 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 			return TRUE;
 		}
 		auto pbin = a->pplist[0]->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
-		if (mime_skeleton.mail_type == oxcmail_type::encrypted) {
+		if (skel.mail_type == oxcmail_type::encrypted) {
 			if (pbin != nullptr && !pmime->write_content(pbin->pc,
 			    pbin->cb, mime_encoding::base64))
 				return exp_false;
@@ -4186,32 +4186,31 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 	}
 	
 	if (NULL != pplain) {
-		if (NULL == mime_skeleton.pplain ||
-			'\0' == mime_skeleton.pplain[0]) {
+		if (skel.pplain == nullptr || *skel.pplain == '\0') {
 			if (!pplain->write_content("\r\n", 2, mime_encoding::base64))
 				return exp_false;
 		} else {
-			auto alloc_size = utf8_to_mb_len(mime_skeleton.pplain);
+			auto alloc_size = utf8_to_mb_len(skel.pplain);
 			auto pbuff = std::make_unique<char[]>(alloc_size);
-			if (!string_utf8_to_mb(mime_skeleton.charset,
-			    mime_skeleton.pplain, pbuff.get(), alloc_size)) {
+			if (!string_utf8_to_mb(skel.charset,
+			    skel.pplain, pbuff.get(), alloc_size)) {
 				pbuff.reset();
-				if (!pplain->write_content(mime_skeleton.pplain,
-				    strlen(mime_skeleton.pplain), mime_encoding::automatic))
+				if (!pplain->write_content(skel.pplain,
+				    strlen(skel.pplain), mime_encoding::automatic))
 					return exp_false;
 				strcpy(tmp_charset, "\"utf-8\"");
 			} else {
 				if (!pplain->write_content(pbuff.get(),
 				    strlen(pbuff.get()), mime_encoding::automatic))
 					return exp_false;
-				snprintf(tmp_charset, std::size(tmp_charset), "\"%s\"", mime_skeleton.charset);
+				snprintf(tmp_charset, std::size(tmp_charset), "\"%s\"", skel.charset);
 			}
 			if (!pplain->set_content_param("charset", tmp_charset))
 				return exp_false;
 		}
 	}
 	
-	if (mime_skeleton.mail_type == oxcmail_type::tnef) {
+	if (skel.mail_type == oxcmail_type::tnef) {
 		pmime = pmail->add_child(pmime, MIME_ADD_LAST);
 		BINARY *pbin = nullptr;
 		if (pmime == nullptr || !pmime->set_content_type("application/ms-tnef"))
@@ -4232,10 +4231,10 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 	}
 	
 	if (NULL != phtml) {
-		if (!phtml->write_content(mime_skeleton.phtml->pc,
-		    mime_skeleton.phtml->cb, mime_encoding::automatic))
+		if (!phtml->write_content(skel.phtml->pc,
+		    skel.phtml->cb, mime_encoding::automatic))
 			return exp_false;
-		snprintf(tmp_charset, std::size(tmp_charset), "\"%s\"", mime_skeleton.charset);
+		snprintf(tmp_charset, std::size(tmp_charset), "\"%s\"", skel.charset);
 		if (!phtml->set_content_param("charset", tmp_charset))
 			return exp_false;
 	}
@@ -4274,7 +4273,7 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 			pcalendar->set_content_param("method", tmp_method);
 	}
 	
-	if (mime_skeleton.mail_type == oxcmail_type::dsn) {
+	if (skel.mail_type == oxcmail_type::dsn) {
 		char tmp_buff[1024*1024];
 		
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
@@ -4282,14 +4281,14 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 			return exp_false;
 		if (!pmime->set_content_type("message/delivery-status"))
 			return exp_false;
-		if (!oxcmail_export_dsn(pmsg, mime_skeleton.charset,
-		    mime_skeleton.pmessage_class, g_oxcmail_org_name,
+		if (!oxcmail_export_dsn(pmsg, skel.charset,
+		    skel.pmessage_class, g_oxcmail_org_name,
 		    oxcmail_get_username, tmp_buff, sizeof(tmp_buff)))
 			return exp_false;
 		if (!pmime->write_content(tmp_buff, strlen(tmp_buff),
 		    mime_encoding::none))
 			return exp_false;
-	} else if (mime_skeleton.mail_type == oxcmail_type::mdn) {
+	} else if (skel.mail_type == oxcmail_type::mdn) {
 		char tmp_buff[1024*1024];
 		
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
@@ -4297,8 +4296,8 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 			return exp_false;
 		if (!pmime->set_content_type("message/disposition-notification"))
 			return exp_false;
-		if (!oxcmail_export_mdn(pmsg, mime_skeleton.charset,
-		    mime_skeleton.pmessage_class, tmp_buff,
+		if (!oxcmail_export_mdn(pmsg, skel.charset,
+		    skel.pmessage_class, tmp_buff,
 		    std::size(tmp_buff)))
 			return exp_false;
 		if (!pmime->write_content(tmp_buff, strlen(tmp_buff),
@@ -4306,13 +4305,13 @@ bool oxcmail_export(const message_content &imsg, const char *log_id,
 			return exp_false;
 	}
 
-	auto err = oxcmail::export_tnef_body(log_id, mime_skeleton, *pmail,
+	auto err = oxcmail::export_tnef_body(log_id, skel, *pmail,
 	           prelated, alloc, get_propids, get_propname);
 	if (err != ecSuccess) {
 		mlog(LV_ERR, "E-2941: %s", mapi_strerror(err));
 		return false;
 	}
-	err = oxcmail::export_attachments(*pmsg, log_id, mime_skeleton,
+	err = oxcmail::export_attachments(*pmsg, log_id, skel,
 	      *pmail, prelated, pmixed, alloc, get_propids, get_propname);
 	if (err != ecSuccess) {
 		mlog(LV_ERR, "E-2940: %s", mapi_strerror(err));
