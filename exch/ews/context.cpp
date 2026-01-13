@@ -1330,13 +1330,18 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		    content == nullptr)
 			throw EWSError::ItemNotFound(E3071);
 		auto log_id = dir + ":m" + std::to_string(mid);
-		item.MimeContent.emplace(exportContent(dir, *content, log_id));
+		try {
+			item.MimeContent.emplace(exportContent(dir, *content, log_id));
+		} catch (const std::exception &e) {
+			mlog(LV_WARN, "[ews] %s: MIME export failed: %s", log_id.c_str(), e.what());
+		}
 	}
 	if (special & sShape::Attachments) {
 		static constexpr proptag_t tagIDs[] = {
 			PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG,
 			PR_ATTACH_CONTENT_ID, PR_ATTACH_LONG_FILENAME,
 			PR_ATTACHMENT_FLAGS, PR_ATTACH_SIZE,
+			PR_ATTACHMENT_HIDDEN,
 		};
 		auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
 		uint16_t count;
@@ -1350,6 +1355,9 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			if (!exmdb.get_instance_properties(dir.c_str(), 0,
 			    aInst->instanceId, proptag_cspan{tagIDs}, &props))
 				throw DispatchError(E3080);
+			auto hidden = props.get<const uint8_t>(PR_ATTACHMENT_HIDDEN);
+			if (hidden && *hidden)
+				continue;
 			sShape shape(props);
 			auto method = props.get<const uint32_t>(PR_ATTACH_METHOD);
 			if (method != nullptr && *method == ATTACH_EMBEDDED_MSG) {
@@ -1358,7 +1366,12 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 				if (!exmdb.read_message_instance(dir.c_str(), eInst->instanceId, &eInstContent))
 					throw DispatchError(E3208);
 				auto log_id = dir + ":a" + std::to_string(i);
-				shape.mimeContent.emplace(exportContent(dir, eInstContent, log_id));
+				try {
+					shape.mimeContent.emplace(exportContent(dir, eInstContent, log_id));
+				} catch (const std::exception &e) {
+					mlog(LV_WARN, "[ews] %s: MIME export failed, skipping attachment", log_id.c_str());
+					continue;
+				}
 			}
 			aid.attachment_num = i;
 			item.Attachments->emplace_back(tAttachment::create(aid, std::move(shape)));

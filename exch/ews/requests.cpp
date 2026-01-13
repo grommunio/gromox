@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -1912,10 +1912,15 @@ void process(mSyncFolderItemsRequest &&request, XMLElement *response, const EWSC
 			auto changeNum = ctx.getItemProp<const uint64_t>(dir, mid, PidTagChangeNumber);
 			if (!changeNum)
 				continue;
-			if (eid_array_check(&updated_mids, mid))
-				msg.Changes.emplace_back(tSyncFolderItemsUpdate{{{}, ctx.loadItem(dir, folder.folderId, mid, shape)}});
-			else
-				msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, ctx.loadItem(dir, folder.folderId, mid, shape)}});
+			try {
+				if (eid_array_check(&updated_mids, mid))
+					msg.Changes.emplace_back(tSyncFolderItemsUpdate{{{}, ctx.loadItem(dir, folder.folderId, mid, shape)}});
+				else
+					msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, ctx.loadItem(dir, folder.folderId, mid, shape)}});
+			} catch (const std::exception &e) {
+				mlog(LV_WARN, "[ews] skipping mid %llxh in sync: %s",
+					static_cast<unsigned long long>(mid), e.what());
+			}
 			if (!syncState.given.append(mid) || !syncState.seen.append(*changeNum))
 				throw DispatchError(E3065);
 		}
@@ -1995,6 +2000,8 @@ void process(mGetItemRequest &&request, XMLElement *response, const EWSContext &
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
+	} catch (const std::exception &) {
+		data.ResponseMessages.emplace_back(EWSError::ItemCorrupt(E3303));
 	}
 
 	data.serialize(response);

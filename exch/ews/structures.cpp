@@ -1145,7 +1145,8 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 	}
 	if (namedCache.size() == namedTags.size()) {
 		for (size_t index = 0; index < namedTags.size(); ++index)
-			if (namedCache[index].proptag)
+			if (namedCache[index].proptag != 0 &&
+			    PROP_ID(namedTags[index]) != 0)
 				write(names[index], TAGGED_PROPVAL{namedTags[index], namedCache[index].pvalue});
 		namedCache.clear();
 	}
@@ -3836,7 +3837,8 @@ sItem tItem::create(const sShape& shape)
 	    class_match_prefix(itemClass, "IPM.StickyNote") == 0 ||
 	    class_match_prefix(itemClass, "REPORT.IPM") == 0)
 		return tMessage(shape);
-	else if (class_match_prefix(itemClass, "IPM.Appointment") == 0)
+	else if (class_match_prefix(itemClass, "IPM.Appointment") == 0 ||
+	    strcasecmp(itemClass, IPM_Appointment_Exception) == 0)
 		return tCalendarItem(shape);
 	else if (class_match_prefix(itemClass, "IPM.Contact") == 0)
 		return tContact(shape);
