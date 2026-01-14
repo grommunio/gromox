@@ -93,8 +93,8 @@ static ec_error_t do_hierarchy(eid_t fid, uint32_t depth)
 		mbop_fprintf(stderr, "load_hierarchy %llxh failed\n", LLU{fid});
 		return err;
 	}
-	for (auto fid : chosen_fids) {
-		err = do_hierarchy(fid, depth + 1);
+	for (auto sub_fid : chosen_fids) {
+		err = do_hierarchy(sub_fid, depth + 1);
 		if (err != ecSuccess)
 			return err;
 	}

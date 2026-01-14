@@ -1744,11 +1744,11 @@ static GP_RESULT gp_folderprop(proptag_t tag, TAGGED_PROPVAL &pv,
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	}
 	case PR_CI_SEARCH_ENABLED: {
-		auto v = cu_alloc<uint8_t>();
-		pv.pvalue = v;
-		if (v == nullptr)
+		auto u = cu_alloc<uint8_t>();
+		pv.pvalue = u;
+		if (u == nullptr)
 			return GP_ERR;
-		*v = false;
+		*u = false;
 		return GP_ADV;
 	}
 	case PR_SUBFOLDERS: {

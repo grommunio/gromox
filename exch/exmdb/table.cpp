@@ -848,10 +848,10 @@ static bool table_load_content_table(db_conn &db, db_base_wr_ptr &dbase,
 		if (pstmt1 == nullptr)
 			return false;
 	} else {
-		auto sql_string = fmt::format("INSERT INTO t{} (inst_id,"
-		                  " prev_id, row_type, depth, inst_num, idx) VALUES "
-		                  "(?, ?, {}, 0, 0, ?)",
-		                  table_id, CONTENT_ROW_MESSAGE);
+		sql_string = fmt::format("INSERT INTO t{} (inst_id,"
+		             " prev_id, row_type, depth, inst_num, idx) VALUES "
+		             "(?, ?, {}, 0, 0, ?)",
+		             table_id, CONTENT_ROW_MESSAGE);
 		pstmt1 = db.eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			return false;

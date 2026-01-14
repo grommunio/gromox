@@ -313,18 +313,18 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 	if (l == 0)
 		return http_status::none;
 	auto uri = req->f_request_uri.c_str();
-	if (auto z = umatch(uri, uri_wkmc11_xml); z != SIZE_MAX) {
-		if (uri[z] != '?')
+	if (auto z0 = umatch(uri, uri_wkmc11_xml); z0 != SIZE_MAX) {
+		if (uri[z0] != '?')
 			return resp_autocfg(ctx_id, auth_info.username);
 		auto username = extract_qparam(&uri[45], "emailaddress");
 		return resp_autocfg(ctx_id, username.c_str());
-	} else if (auto z = umatch(uri, uri_wkcaldav); z != SIZE_MAX && uri[z] != '/') {
+	} else if (auto z1 = umatch(uri, uri_wkcaldav); z1 != SIZE_MAX && uri[z1] != '/') {
 		/* Not using mod_rewrite: Silent rewrite disallowed by RFC */
 		return resp_dav(ctx_id);
-	} else if (auto z = umatch(uri, uri_wkcarddav); z != SIZE_MAX && uri[z] != '/') {
+	} else if (auto z2 = umatch(uri, uri_wkcarddav); z2 != SIZE_MAX && uri[z2] != '/') {
 		return resp_dav(ctx_id);
-	} else if (auto z = umatch(uri, uri_mc11_xml); z != SIZE_MAX) {
-		if (uri[z] != '?')
+	} else if (auto z3 = umatch(uri, uri_mc11_xml); z3 != SIZE_MAX) {
+		if (uri[z3] != '?')
 			return resp_autocfg(ctx_id, auth_info.username);
 		auto username = extract_qparam(&uri[45], "emailaddress");
 		return resp_autocfg(ctx_id, username.c_str());

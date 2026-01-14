@@ -96,8 +96,7 @@ bool user_filter::judge(std::string &&id)
 		return true;
 	auto now = tp_now();
 	std::lock_guard hold(m_act_lock);
-	auto it = m_activity.find(id);
-	if (it != m_activity.end()) {
+	if (auto it = m_activity.find(id); it != m_activity.end()) {
 		auto &act = it->second;
 		if (act.tries < m_maxtries) {
 			if (now - act.first >= m_window) {
@@ -118,7 +117,7 @@ bool user_filter::judge(std::string &&id)
 	activity act = {now, now, 1};
 	if (m_activity.size() >= m_maxact)
 		/* try pruning some outdated activity entries */
-		std::erase_if(m_activity, [&](const auto &it) { return now - it.second.last >= m_window; });
+		std::erase_if(m_activity, [&](const auto &entry) { return now - entry.second.last >= m_window; });
 	if (m_activity.size() < m_maxact)
 		m_activity.emplace(std::move(id), std::move(act));
 	return true;

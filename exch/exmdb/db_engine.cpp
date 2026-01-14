@@ -1092,6 +1092,15 @@ int db_engine_run()
 	return 0;
 }
 
+static void async_db_clean(size_t tid, decltype(g_hash_table)::iterator iter, size_t skip)
+{
+	while (iter != g_hash_table.end()) {
+		iter->second.drop_all();
+		for (size_t i = 0; i < skip && iter != g_hash_table.end(); ++i)
+			++iter;
+	}
+}
+
 void db_engine_stop()
 {
 	if (!g_dbeng_stop) {
@@ -1126,13 +1135,7 @@ void db_engine_stop()
 		for (size_t tid = 0; tid < conc; ++tid) {
 			if (iter == g_hash_table.end())
 				break;
-			futs.emplace_back(std::async([](size_t tid, decltype(g_hash_table)::iterator iter, size_t skip) -> void {
-				while (iter != g_hash_table.end()) {
-					iter->second.drop_all();
-					for (size_t i = 0; i < skip && iter != g_hash_table.end(); ++i)
-						++iter;
-				}
-			}, tid, iter, conc));
+			futs.emplace_back(std::async(async_db_clean, tid, iter, conc));
 			++iter;
 		}
 		futs.clear();
@@ -2637,7 +2640,6 @@ static void dbeng_notify_cttbl_delete_row(db_conn &db, uint64_t folder_id,
 		dg_del.id_array[0] = dg_mod.id_array[0] =
 			ptable->table_id; // reserved earlier
 		if (NULL == ptable->psorts || 0 == ptable->psorts->ccategories) {
-			char sql_string[1024];
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id, idx,"
 					" prev_id FROM t%u WHERE inst_id=%llu AND "
 					"inst_num=0", ptable->table_id, LLU{message_id});
@@ -2786,17 +2788,17 @@ static void dbeng_notify_cttbl_delete_row(db_conn &db, uint64_t folder_id,
 			if (pstmt.step() != SQLITE_ROW)
 				break;
 			if (1 == sqlite3_column_int64(pstmt, 8)) {
-				rowdel_node nn, *pdelnode = &nn;
-				pdelnode->row_id = sqlite3_column_int64(pstmt, 0);
-				pdelnode->idx = sqlite3_column_int64(pstmt, 1);
-				if (pdelnode->idx != 0)
+				rowdel_node nn;
+				nn.row_id = pstmt.col_int64(0);
+				nn.idx    = pstmt.col_int64(1);
+				if (nn.idx != 0)
 					b_index = TRUE;
-				pdelnode->prev_id = sqlite3_column_int64(pstmt, 2);
-				pdelnode->inst_id = sqlite3_column_int64(pstmt, 3);
-				pdelnode->parent_id = sqlite3_column_int64(pstmt, 6);
-				pdelnode->depth = sqlite3_column_int64(pstmt, 7);
-				pdelnode->inst_num = 0;
-				pdelnode->b_read = delnode.b_read;
+				nn.prev_id   = pstmt.col_int64(2);
+				nn.inst_id   = pstmt.col_int64(3);
+				nn.parent_id = pstmt.col_int64(6);
+				nn.depth     = pstmt.col_int64(7);
+				nn.inst_num  = 0;
+				nn.b_read    = delnode.b_read;
 				del_list.push_back(std::move(nn));
 				sqlite3_reset(pstmt);
 				continue;

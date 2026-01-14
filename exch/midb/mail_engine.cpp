@@ -3217,7 +3217,6 @@ static int me_prflg(int argc, char **argv, int sockd) try
 	uint64_t read_cn;
 	uint64_t message_id;
 	PROBLEM_ARRAY problems;
-	TPROPVAL_ARRAY propvals;
 
 	auto pidb = me_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -3259,6 +3258,7 @@ static int me_prflg(int argc, char **argv, int sockd) try
 
 	if (set_unsent) {
 		static constexpr proptag_t tmp_proptag[] = {PR_MESSAGE_FLAGS};
+		TPROPVAL_ARRAY propvals{};
 		if (!exmdb_client->get_message_properties(argv[1], nullptr,
 		    CP_ACP, rop_util_make_eid_ex(1, message_id),
 		    tmp_proptag, &propvals) || propvals.count == 0)

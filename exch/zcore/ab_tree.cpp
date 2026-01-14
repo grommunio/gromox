@@ -340,7 +340,7 @@ static BOOL ab_tree_fetch_node_property(const ab_tree::ab_node &pnode,
 		snprintf(sa->ppstr[0], tgs, "SMTP:%s", dn.c_str());
 		size_t i = 1;
 		for (const auto &a : alias_list) {
-			size_t tgs = a.size() + 6;
+			tgs = a.size() + 6;
 			sa->ppstr[i] = cu_alloc<char>(tgs);
 			if (sa->ppstr[i] == nullptr)
 				return false;

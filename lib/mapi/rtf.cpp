@@ -645,8 +645,7 @@ const FONTENTRY *rtf_reader::lookup_font(int num) const
 	return i != preader->pfont_hash.cend() ? &i->second : nullptr;
 }
 
-bool rtf_reader::init_reader(std::string_view buf_in,
-    ATTACHMENT_LIST *pattachments)
+bool rtf_reader::init_reader(std::string_view buf_in, attachment_list *atl)
 {
 	textmaps_init();
 	auto preader = this;
@@ -658,7 +657,7 @@ bool rtf_reader::init_reader(std::string_view buf_in,
 	b_ubytes_switch = true;
 	ubytes_num = 1;
 	ubytes_left = 0;
-	preader->pattachments = pattachments;
+	preader->pattachments = std::move(atl);
 	return true;
 }
 

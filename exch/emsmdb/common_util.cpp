@@ -1461,9 +1461,6 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg,
 
 	imail.set_header("X-Mailer", EMSMDB_UA);
 	if (emsmdb_backfill_transporthdr) {
-		oxcmail_converter cvt;
-		cvt.alloc = common_util_alloc;
-		cvt.get_propids = common_util_get_propids;
 		auto rmsg = cvt.inet_to_mapi(imail);
 		if (rmsg != nullptr) {
 			for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {

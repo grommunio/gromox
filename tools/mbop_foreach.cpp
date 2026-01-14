@@ -104,6 +104,30 @@ static int filter_users(const char *mode, std::vector<sql_user> &ul)
 	return 0;
 }
 
+/* async handlers */
+using Sem = std::counting_semaphore<1>;
+
+static void ah_ping(const std::string *maildir, Sem *sem, int *ret)
+{
+	if (!exmdb_client->ping_store(maildir->c_str()))
+		*ret = EXIT_FAILURE;
+	sem->release();
+}
+
+static void ah_unload_store(const std::string *maildir, Sem *sem, int *ret)
+{
+	if (!exmdb_client->unload_store(maildir->c_str()))
+		*ret = EXIT_FAILURE;
+	sem->release();
+}
+
+static void ah_vacuum(const std::string *maildir, Sem *sem, int *ret)
+{
+	if (!exmdb_client->vacuum(maildir->c_str()))
+		*ret = EXIT_FAILURE;
+	sem->release();
+}
+
 int main(int argc, char **argv)
 {
 	HXopt6_auto_result result;
@@ -132,7 +156,6 @@ int main(int argc, char **argv)
 		return ret;
 	auto cl_1 = HX::make_scope_exit(gi_shutdown);
 	ret = EXIT_SUCCESS;
-	using Sem = std::counting_semaphore<1>;
 	std::vector<std::future<void>> futs;
 	Sem sem(g_numthreads);
 
@@ -145,11 +168,7 @@ int main(int argc, char **argv)
 			sem.acquire();
 			if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
 				break;
-			futs.emplace_back(std::async([](const std::string *maildir, Sem *sem, int *ret) {
-				if (!exmdb_client->ping_store(maildir->c_str()))
-					*ret = EXIT_FAILURE;
-				sem->release();
-			}, &user.maildir, &sem, &ret));
+			futs.emplace_back(std::async(ah_ping, &user.maildir, &sem, &ret));
 		}
 	} else if (strcmp(argv[0], "unload") == 0) {
 		if (HX_getopt6(empty_options_table, argc, argv, nullptr,
@@ -160,11 +179,7 @@ int main(int argc, char **argv)
 			sem.acquire();
 			if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
 				return ret;
-			futs.emplace_back(std::async([](const std::string *maildir, Sem *sem, int *ret) {
-				if (!exmdb_client->unload_store(maildir->c_str()))
-					*ret = EXIT_FAILURE;
-				sem->release();
-			}, &user.maildir, &sem, &ret));
+			futs.emplace_back(std::async(ah_unload_store, &user.maildir, &sem, &ret));
 		}
 	} else if (strcmp(argv[0], "vacuum") == 0) {
 		if (HX_getopt6(empty_options_table, argc, argv, nullptr,
@@ -175,11 +190,7 @@ int main(int argc, char **argv)
 			sem.acquire();
 			if (ret != EXIT_SUCCESS && !global::g_continuous_mode)
 				return ret;
-			futs.emplace_back(std::async([](const std::string *maildir, Sem *sem, int *ret) {
-				if (!exmdb_client->vacuum(maildir->c_str()))
-					*ret = EXIT_FAILURE;
-				sem->release();
-			}, &user.maildir, &sem, &ret));
+			futs.emplace_back(std::async(ah_vacuum, &user.maildir, &sem, &ret));
 		}
 	} else {
 		auto saved_cnum = global::g_command_num;

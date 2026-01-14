@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2025–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdio>
@@ -64,12 +64,12 @@ static ec_error_t do_message(const kdb_user_map &map, eid_t folder_id, eid_t msg
 	return ecSuccess;
 }
 
-static ec_error_t do_folder(const kdb_user_map &umap, eid_t folder_id)
+static ec_error_t do_folder(const kdb_user_map &umap, eid_t base_folder_id)
 {
-	std::vector<eid_t> fld_list{folder_id};
+	std::vector<eid_t> fld_list{base_folder_id};
 	if (g_recursive) {
 		/* Grab subordinates as well */
-		auto err = select_hierarchy(folder_id, TABLE_FLAG_DEPTH, fld_list);
+		auto err = select_hierarchy(base_folder_id, TABLE_FLAG_DEPTH, fld_list);
 		if (err != ecSuccess)
 			return err;
 	}
@@ -116,8 +116,8 @@ int main(int argc, char **argv)
 			fprintf(stderr, "Argument not understood: \"%s\"\n", result.uarg[i]);
 			return EXIT_FAILURE;
 		}
-		auto err = do_folder(umap, folder_id);
-		if (err != ecSuccess)
+		auto ec_err = do_folder(umap, folder_id);
+		if (ec_err != ecSuccess)
 			return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

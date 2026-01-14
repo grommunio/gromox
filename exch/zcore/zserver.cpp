@@ -1682,7 +1682,6 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
     uint32_t hdstfolder, const BINARY_ARRAY *pentryids, uint32_t flags)
 {
 	BOOL b_guest = TRUE, b_owner;
-	BOOL b_partial;
 	BOOL b_private;
 	int account_id;
 	zs_objtype mapi_type;
@@ -1786,6 +1785,7 @@ ec_error_t zs_copymessages(GUID hsession, uint32_t hsrcfolder,
 	} else {
 		b_guest = FALSE;
 	}
+	BOOL b_partial = false;
 	return exmdb_client->movecopy_messages(src_store->get_dir(),
 	       pinfo->cpid, b_guest, pinfo->get_username(),
 	       psrc_folder->folder_id, pdst_folder->folder_id, b_copy, &ids,
@@ -2990,7 +2990,6 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 	static constexpr uint8_t persist_true = true, persist_false = false;
 	BOOL b_found;
 	zs_objtype mapi_type;
-	EXT_PULL ext_pull;
 	uint32_t tmp_flags;
 	char tmp_buff[256];
 	uint32_t last_rowid;
@@ -3062,6 +3061,8 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 		    (prcpt->has(PR_EMAIL_ADDRESS) &&
 		    prcpt->has(PR_ADDRTYPE) && prcpt->has(PR_DISPLAY_NAME)))
 			continue;
+
+		EXT_PULL ext_pull;
 		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 		if (ext_pull.g_uint32(&tmp_flags) != pack_result::ok ||
 		    tmp_flags != 0)
@@ -3070,7 +3071,6 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 			continue;
 		if (provider_uid == muidEMSAB) {
 			EMSAB_ENTRYID ab_entryid;
-			EXT_PULL ext_pull;
 
 			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 			if (ext_pull.g_abk_eid(&ab_entryid) != pack_result::ok ||
@@ -3107,7 +3107,6 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 			cu_set_propval(prcpt, PR_DISPLAY_NAME, dupval);
 		} else if (provider_uid == muidOOP) {
 			ONEOFF_ENTRYID oneoff_entry;
-			EXT_PULL ext_pull;
 
 			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 			if (ext_pull.g_oneoff_eid(&oneoff_entry) != pack_result::ok ||

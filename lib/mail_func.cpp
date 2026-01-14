@@ -1395,7 +1395,9 @@ static int html_to_plain_boring(std::string_view inbuf, std::string &outbuf) try
 				}
 			}
 			auto it = std::lower_bound(std::cbegin(html_entities), std::cend(html_entities), p,
-				  [&](const htmlent &e, const char *p) { return strncasecmp(e.input, p, ilen + 1) < 0; });
+				  [&](const htmlent &entry, const char *given) {
+				  	return strncasecmp(entry.input, given, ilen + 1) < 0;
+				  });
 			if (it != std::cend(html_entities) && strncasecmp(p, it->input, ilen + 1) == 0)
 				rp += std::string_view(it->output, it->olen);
 			else

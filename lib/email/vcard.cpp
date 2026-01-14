@@ -403,9 +403,6 @@ static void vcard_serialize_string(std::string &out,
 
 bool vcard::serialize(std::string &out) const try
 {
-	BOOL need_comma;
-	BOOL need_semicolon;
-	
 	out = "BEGIN:VCARD\r\n";
 	for (const auto &line : m_lines) {
 		size_t ls = 0;
@@ -422,7 +419,7 @@ bool vcard::serialize(std::string &out) const try
 			out += vparam.name_s();
 			out += '=';
 			ls  += vparam.name_s().size() + 2;
-			need_comma = FALSE;
+			bool need_comma = false;
 			for (const auto &pv : vparam.m_paramvals) {
 				if (!need_comma) {
 					need_comma = TRUE;
@@ -435,7 +432,7 @@ bool vcard::serialize(std::string &out) const try
 		}
 		out += ':';
 		++ls;
-		need_semicolon = FALSE;
+		bool need_semicolon = false;
 		for (const auto &vvalue : line.m_values) {
 			if (!need_semicolon) {
 				need_semicolon = TRUE;
