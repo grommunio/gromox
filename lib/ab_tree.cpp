@@ -253,8 +253,10 @@ const std::vector<std::string> &ab_base::aliases(minid mid) const
  */
 minid ab_base::at(uint32_t idx) const
 {
-	return idx < domains.size() ? minid(minid::domain, domains[idx].id) :
-	       idx - domains.size() < m_users.size() ? minid(minid::address, m_users[idx-domains.size()].id) : minid();
+	if (idx < domains.size())
+		return minid(minid::domain, domains[idx].id);
+	idx -= domains.size();
+	return idx < m_users.size() ? minid(minid::address, m_users[idx].id) : minid();
 }
 
 minid ab_base::at_filtered(uint32_t idx) const
