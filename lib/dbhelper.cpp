@@ -38,17 +38,25 @@ xstmt gx_sql_prep(sqlite3 *db, const char *query)
 {
 	xstmt out;
 	if (gx_sqlite_debug >= 1)
-		mlog(LV_DEBUG, "> sqlite3_prep(%s, %s)", sqlite_unique_name(db).c_str(), query);
+		mlog(LV_DEBUG, "[T%lu] > sqlite3_prep(%p, %s, %s)",
+			gx_gettid(), db,
+			sqlite_unique_name(db).c_str(), query);
 	auto state = sqlite3_txn_state(db, "main");
 	if (state == SQLITE_TXN_READ && write_statement(query))
-		mlog(LV_ERR, "sqlite_prep(%s) \"%s\": illegal ro->rw switch at [%s]",
+		mlog(LV_ERR, "[T%lu] sqlite_prep(%p, %s) \"%s\": illegal ro->rw switch at [%s]",
+			gx_gettid(), db,
 			sqlite_unique_name(db).c_str(),
 			query, simple_backtrace().c_str());
 	int ret = sqlite3_prepare_v2(db, query, -1, &out.m_ptr, nullptr);
 	if (ret != SQLITE_OK)
-		mlog(LV_ERR, "sqlite_prep(%s) \"%s\": %s (%d)",
+		mlog(LV_ERR, "[T%lu] sqlite_prep(%p, %s) \"%s\": %s (%d)",
+			gx_gettid(), db,
 			sqlite_unique_name(db).c_str(),
 		        query, sqlite3_errstr(ret), ret);
+	else if (gx_sqlite_debug >= 1)
+		mlog(LV_DEBUG, "[T%lu] >> sqlite3_prep(%p, %s, %s) = %p",
+			gx_gettid(), db,
+			sqlite_unique_name(db).c_str(), query, out.m_ptr);
 	return out;
 }
 
@@ -181,10 +189,13 @@ int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 {
 	char *estr = nullptr;
 	if (gx_sqlite_debug >= 1)
-		mlog(LV_DEBUG, "> sqlite3_exec(%s, %s)", sqlite_unique_name(db).c_str(), query);
+		mlog(LV_DEBUG, "[T%lu] > sqlite3_exec(%p, %s, %s)",
+			gx_gettid(), db,
+			sqlite_unique_name(db).c_str(), query);
 	auto state = sqlite3_txn_state(db, "main");
 	if (state == SQLITE_TXN_READ && write_statement(query))
-		mlog(LV_ERR, "sqlite_prep(%s) \"%s\": illegal ro->rw switch at [%s]",
+		mlog(LV_ERR, "[T%lu] sqlite_prep(%p, %s) \"%s\": illegal ro->rw switch at [%s]",
+			gx_gettid(), db,
 			sqlite_unique_name(db).c_str(),
 			query, simple_backtrace().c_str());
 	auto ret = sqlite3_exec(db, query, nullptr, nullptr, &estr);
@@ -193,7 +204,8 @@ int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 	else if (ret == SQLITE_CONSTRAINT && (flags & SQLEXEC_SILENT_CONSTRAINT))
 		;
 	else
-		mlog(LV_ERR, "sqlite3_exec(%s) \"%s\": %s (%d) at [%s]",
+		mlog(LV_ERR, "[T%lu] sqlite3_exec(%p, %s) \"%s\": %s (%d) at [%s]",
+			gx_gettid(), db,
 			sqlite_unique_name(db).c_str(), query,
 		        estr != nullptr ? estr : sqlite3_errstr(ret), ret,
 		        simple_backtrace().c_str());
@@ -207,7 +219,7 @@ int gx_sql_step(sqlite3_stmt *stm, unsigned int flags)
 	char *exp = nullptr;
 	if (gx_sqlite_debug >= 1) {
 		exp = sqlite3_expanded_sql(stm);
-		mlog(LV_DEBUG, "> sqlite3_step(%s)", exp);
+		mlog(LV_DEBUG, "[T%lu] > sqlite3_step(%p, %s)", gx_gettid(), stm, exp);
 	}
 	if (ret == SQLITE_OK || ret == SQLITE_ROW || ret == SQLITE_DONE)
 		return ret;
@@ -220,7 +232,8 @@ int gx_sql_step(sqlite3_stmt *stm, unsigned int flags)
 	auto msg = sqlite3_errmsg(db);
 	if (msg == nullptr || *msg == '\0')
 		msg = sqlite3_errstr(ret);
-	mlog(LV_ERR, "sqlite3_step(%s) \"%s\": %s (%d)", fn.c_str(), exp != nullptr ?
+	mlog(LV_ERR, "[T%lu] sqlite3_step(%p, %s) \"%s\": %s (%d)",
+		gx_gettid(), stm, fn.c_str(), exp != nullptr ?
 		exp : sqlite3_sql(stm), znul(msg), ret);
 	sqlite3_free(exp);
 	return ret;
