@@ -674,7 +674,7 @@ ec_error_t nsp_interface_update_stat(NSPI_HANDLE handle, STAT &xstat, int32_t *p
 		row = total;
 		pstat->cur_rec = ab_tree::minid::END_OF_TABLE;
 	} else {
-		pstat->cur_rec = pstat->container_id == 0 ? pbase->at(row) : node[row];
+		pstat->cur_rec = pstat->container_id == 0 ? pbase->at_filtered(row) : node[row];
 		if (0 == pstat->cur_rec) {
 			row = total;
 			pstat->cur_rec = ab_tree::minid::END_OF_TABLE;
