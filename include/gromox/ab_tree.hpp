@@ -161,7 +161,7 @@ class GX_EXPORT ab_base {
 		iterator(const ab_base *b, const std::vector<ab_domain>::const_iterator &i) :
 			m_base(b), it(i)
 		{
-			if (i != m_base->domains.cend())
+			if (i != m_base->m_domains.cend())
 				mid = minid(minid::domain, i->id);
 			else
 				mid = 0;
@@ -249,14 +249,14 @@ class GX_EXPORT ab_base {
 	bool mlist_info(minid, std::string *, std::string *, int *) const;
 	ec_error_t proplist(minid, std::vector<gromox::proptag_t> &) const;
 	minid resolve(const char *) const;
-	inline size_t size() const { return m_users.size() + domains.size(); }
+	inline size_t size() const { return m_users.size() + m_domains.size(); }
 	abnode_type type(minid) const;
 	inline size_t user_count() const { return m_users.size(); }
 	const char *user_info(minid, userinfo) const;
 
-	inline iterator begin() const { return iterator(this, domains.cbegin()); } ///< Iterator to beginning of address book
+	inline iterator begin() const { return iterator(this, m_domains.cbegin()); } ///< Iterator to beginning of address book
 	inline iterator end() const { return iterator(this, m_users.cend()); } ///< Iterator to end of address book
-	inline iterator dbegin() const { return iterator(this, domains.cbegin()); } ///< Iterator to beginning of domain list
+	inline iterator dbegin() const { return iterator(this, m_domains.cbegin()); } ///< Iterator to beginning of domain list
 	inline iterator dend() const { return iterator(this, m_users.cbegin()); } ///< Iterator to end of domain list
 	inline iterator ubegin() const { return iterator(this, m_users.cbegin()); } ///< Iterator to beginning of user list
 	inline iterator uend() const { return iterator(this, m_users.cend()); } ///< Iterator to end of user list
@@ -282,7 +282,7 @@ class GX_EXPORT ab_base {
 	 *             @domains will have exactly one entry.
 	 */
 	int m_base_id = 0;
-	std::vector<ab_domain> domains; ///< list of domains belonging to the base
+	std::vector<ab_domain> m_domains; ///< list of domains belonging to the base
 	std::vector<sql_user> m_users; ///< list of users from all those domains, sorted by displayname
 	std::vector<minid> filtered_gal;
 	std::unordered_map<minid, uint32_t> minid_idx_map; ///< map from minid to index in domain/user list
