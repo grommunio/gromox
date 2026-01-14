@@ -259,7 +259,7 @@ minid ab_base::at(uint32_t idx) const
 
 minid ab_base::at_filtered(uint32_t idx) const
 {
-	return idx < filtered_gal.size() ? minid(minid::address, filtered_gal[idx]) : minid();
+	return idx < filtered_gal.size() ? filtered_gal[idx] : minid();
 }
 
 /**
