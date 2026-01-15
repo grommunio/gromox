@@ -376,8 +376,26 @@ BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len)
 	}
 	auto pin  = static_cast<char *>(deconst(src));
 	auto pout = dst;
+	auto out_len = len;
 	memset(dst, 0, len);
-	if (iconv(conv_id, &pin, &src_len, &pout, &len) == static_cast<size_t>(-1)) {
+	static const char unul[2]{};
+	while (src_len > 0) {
+		auto ret = iconv(conv_id, &pin, &src_len, &pout, &out_len);
+		if (ret != static_cast<size_t>(-1))
+			continue;
+		if (errno == E2BIG)
+			break;
+		if (errno == EILSEQ || errno == EINVAL) {
+			if (src_len >= 2) {
+				pin += 2;
+				src_len -= 2;
+				continue;
+			} else if (pin != unul) {
+				pin = deconst(unul);
+				src_len = 2;
+				continue;
+			}
+		}
 		iconv_close(conv_id);
 		return FALSE;
 	}

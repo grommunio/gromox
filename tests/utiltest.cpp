@@ -132,6 +132,10 @@ static int t_convert()
 
 	assert(utf8_to_utf16le("A\xed\xa0\x80""B", largeout, std::size(largeout)) == 6);
 	assert(memcmp(largeout, "A\x00""B\x00\x00\x00", 6) == 0);
+	assert(utf16le_to_utf8("A\x00\x00\xd8""B\x00\x00\x00", 8, largeout, std::size(largeout)));
+	assert(strcmp(largeout, "AB") == 0);
+	assert(utf16le_to_utf8("A\x00""B", 3, largeout, std::size(largeout)));
+	assert(strcmp(largeout, "A") == 0);
 	return EXIT_SUCCESS;
 }
 
