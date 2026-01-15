@@ -231,8 +231,6 @@ const char* replace_iconv_charset(const char *charset)
 BOOL string_mb_to_utf8(const char *charset, const char *in_string,
     char *out_string, size_t out_len)
 {
-	iconv_t conv_id;
-	char *pin, *pout;
 	char tmp_charset[64];
 	
 	if (0 == strcasecmp(charset, "UTF-8") ||
@@ -253,15 +251,15 @@ BOOL string_mb_to_utf8(const char *charset, const char *in_string,
 		/* Leave room for \0 */
 		--out_len;
 	snprintf(tmp_charset, std::size(tmp_charset), "%s//IGNORE", replace_iconv_charset(charset));
-	conv_id = iconv_open("UTF-8", tmp_charset);
+	auto conv_id = iconv_open("UTF-8", tmp_charset);
 	if (conv_id == iconv_t(-1)) {
 		/* EINVAL could happen as a result of EMFILE... */
 		mlog(LV_ERR, "E-2108: iconv_open %s: %s",
 		        tmp_charset, strerror(errno));
 		return FALSE;
 	}
-	pin = (char*)in_string;
-	pout = out_string;
+	auto pin  = deconst(in_string);
+	auto pout = out_string;
 	auto in_len = length;
 	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
@@ -314,50 +312,41 @@ BOOL string_utf8_to_mb(const char *charset, const char *in_string,
 
 ssize_t utf8_to_utf16le(const char *src, void *dst, size_t len)
 {
-	size_t in_len;
-	size_t out_len;
-	iconv_t conv_id;
-
 	len = std::min(len, static_cast<size_t>(SSIZE_MAX));
-	conv_id = iconv_open("UTF-16LE", "UTF-8");
+	auto conv_id = iconv_open("UTF-16LE", "UTF-8");
 	if (conv_id == (iconv_t)-1) {
 		mlog(LV_ERR, "E-2110: iconv_open: %s", strerror(errno));
 		return -1;
 	}
 	auto pin  = deconst(src);
 	auto pout = static_cast<char *>(dst);
-	in_len = strlen(src) + 1;
+	auto in_len = strlen(src) + 1;
 	memset(dst, 0, len);
-	out_len = len;
+	auto out_len = len;
 	if (iconv(conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return -1;
-	} else {
-		iconv_close(conv_id);
-		return out_len - len;
 	}
+	iconv_close(conv_id);
+	return out_len - len;
 }
 
 BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len)
 {
-	char *pin, *pout;
-	iconv_t conv_id;
-	
-	conv_id = iconv_open("UTF-8", "UTF-16LE");
+	auto conv_id = iconv_open("UTF-8", "UTF-16LE");
 	if (conv_id == (iconv_t)-1) {
 		mlog(LV_ERR, "E-2111: iconv_open: %s", strerror(errno));
 		return false;
 	}
-	pin = (char*)src;
-	pout = dst;
+	auto pin  = static_cast<char *>(deconst(src));
+	auto pout = dst;
 	memset(dst, 0, len);
 	if (iconv(conv_id, &pin, &src_len, &pout, &len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return FALSE;
-	} else {
-		iconv_close(conv_id);
-		return TRUE;
 	}
+	iconv_close(conv_id);
+	return TRUE;
 }
 
 /*
