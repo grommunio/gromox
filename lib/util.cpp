@@ -234,8 +234,6 @@ const char* replace_iconv_charset(const char *charset)
 BOOL string_mb_to_utf8(const char *charset, const char *in_string,
     char *out_string, size_t out_len)
 {
-	char tmp_charset[64];
-	
 	if (0 == strcasecmp(charset, "UTF-8") ||
 		0 == strcasecmp(charset, "ASCII") ||
 		0 == strcasecmp(charset, "US-ASCII")) {
@@ -253,18 +251,29 @@ BOOL string_mb_to_utf8(const char *charset, const char *in_string,
 	if (out_len > 0)
 		/* Leave room for \0 */
 		--out_len;
-	snprintf(tmp_charset, std::size(tmp_charset), "%s//IGNORE", replace_iconv_charset(charset));
-	auto conv_id = iconv_open("UTF-8", tmp_charset);
+	auto cs = replace_iconv_charset(charset);
+	auto conv_id = iconv_open("UTF-8", cs);
 	if (conv_id == iconv_t(-1)) {
 		/* EINVAL could happen as a result of EMFILE... */
-		mlog(LV_ERR, "E-2108: iconv_open %s: %s",
-		        tmp_charset, strerror(errno));
+		mlog(LV_ERR, "E-2108: iconv_open %s: %s", cs, strerror(errno));
 		return FALSE;
 	}
 	auto pin  = deconst(in_string);
 	auto pout = out_string;
 	auto in_len = length;
-	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
+	while (in_len > 0) {
+		auto ret = iconv(conv_id, &pin, &in_len, &pout, &out_len);
+		if (ret != static_cast<size_t>(-1))
+			continue;
+		if (errno == E2BIG)
+			break;
+		if (errno == EILSEQ || errno == EINVAL) {
+			if (in_len > 0) {
+				++pin;
+				--in_len;
+			}
+			continue;
+		}
 		iconv_close(conv_id);
 		return FALSE;
 	}

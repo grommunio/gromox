@@ -127,6 +127,8 @@ static int t_convert()
 	assert(strcmp(largeout, "AB") == 0);
 	assert(string_utf8_to_mb("windows-1252", "A\xff""B", largeout, std::size(largeout)));
 	assert(strcmp(largeout, "AB") == 0);
+	assert(string_mb_to_utf8("windows-1252", "A\x81""B", largeout, std::size(largeout)));
+	assert(strcmp(largeout, "AB") == 0);
 	return EXIT_SUCCESS;
 }
 
