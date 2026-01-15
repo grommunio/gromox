@@ -136,6 +136,11 @@ static int t_convert()
 	assert(strcmp(largeout, "AB") == 0);
 	assert(utf16le_to_utf8("A\x00""B", 3, largeout, std::size(largeout)));
 	assert(strcmp(largeout, "A") == 0);
+
+	sout = iconvtext("E", "windows-1258", "utf-8");
+	assert(sout.size() == 1);
+	assert(string_mb_to_utf8("windows-1258", "E", largeout, std::size(largeout)));
+	assert(strcmp(largeout, "E") == 0);
 	return EXIT_SUCCESS;
 }
 

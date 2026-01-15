@@ -534,7 +534,16 @@ static int utf8_writeout(FILE *fp, const void *vsrc, size_t src_size, const char
 		if (fwrite(buffer, sizeof(buffer) - dst_size, 1, fp) != 1)
 			return -1;
 	}
-	errno = 0;
+
+	/* Flush pending shift and/or state */
+	auto dst = buffer;
+	size_t dst_size = sizeof(buffer);
+	auto ret = iconv(cd, nullptr, 0, &dst, &dst_size);
+	if (ret == static_cast<size_t>(-1))
+		/* ignore */;
+	if (dst_size != sizeof(buffer) &&
+	    fwrite(buffer, sizeof(buffer) - dst_size, 1, fp) != 1)
+		return -1;
 	return 0;
 }
 
@@ -1627,6 +1636,19 @@ std::string iconvtext(std::string_view sv,
 					last_bad = true;
 				}
 			}
+		}
+
+		/* Flush pending shift and/or state */
+		auto dst = buffer;
+		size_t dst_size = sizeof(buffer);
+		errno = 0;
+		auto ret = iconv(cd, nullptr, 0, &dst, &dst_size);
+		if (dst_size != sizeof(buffer))
+			out.append(buffer, sizeof(buffer) - dst_size);
+		if (ret != (size_t)-1 || src_size == 0) {
+		} else if (errno == EILSEQ || errno == EINVAL) {
+			if (flags & ICONVTEXT_TRANSLIT)
+				out += '?';
 		}
 		errno = 0;
 		iconv_close(cd);

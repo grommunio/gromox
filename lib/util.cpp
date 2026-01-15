@@ -277,6 +277,12 @@ BOOL string_mb_to_utf8(const char *charset, const char *in_string,
 		iconv_close(conv_id);
 		return FALSE;
 	}
+	auto ret = iconv(conv_id, nullptr, nullptr, &pout, &out_len);
+	if (ret == static_cast<size_t>(-1) && errno != E2BIG &&
+	    errno != EILSEQ && errno != EINVAL) {
+		iconv_close(conv_id);
+		return false;
+	}
 	iconv_close(conv_id);
 	if (orig_outlen > 0)
 		*pout = '\0';
