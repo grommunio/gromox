@@ -897,10 +897,10 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 	case ropGetPropertiesSpecific: {
 		auto rsp = std::make_unique<GETPROPERTIESSPECIFIC_RESPONSE>();
 		auto rq = CAST_TO(GETPROPERTIESSPECIFIC);
-		rsp->pproptags = std::move(rq->proptags);
+		rsp->pproptags = rq->proptags;
 		rsp->hindex = prequest->hindex;
 		rsp->result = rop_getpropertiesspecific(
-			rq->size_limit, rq->want_unicode, rq->proptags, &rsp->row,
+			rq->size_limit, rq->want_unicode, rsp->pproptags, &rsp->row,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		rshead = std::move(rsp);
 		break;
@@ -1266,7 +1266,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 			return ecInvalidObject;
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_fasttransfersourcecopyproperties(
-			rq->level, rq->flags, rq->send_options, std::move(rq->proptags),
+			rq->level, rq->flags, rq->send_options, rq->proptags,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
@@ -1285,7 +1285,7 @@ ec_error_t rop_dispatch(const rop_request &request, std::unique_ptr<rop_response
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_syncconfigure(rq->sync_type,
 			rq->send_options, rq->sync_flags, rq->pres,
-			rq->extra_flags, std::move(rq->proptags),
+			rq->extra_flags, rq->proptags,
 			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
