@@ -347,12 +347,24 @@ ssize_t utf8_to_utf16le(const char *src, void *dst, size_t len)
 	auto in_len = strlen(src) + 1;
 	memset(dst, 0, len);
 	auto out_len = len;
-	if (iconv(conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1)) {
+	while (in_len > 0) {
+		auto ret = iconv(conv_id, &pin, &in_len, &pout, &out_len);
+		if (ret != static_cast<size_t>(-1))
+			continue;
+		if (errno == E2BIG)
+			break;
+		if (errno == EILSEQ || errno == EINVAL) {
+			if (in_len > 0) {
+				++pin;
+				--in_len;
+			}
+			continue;
+		}
 		iconv_close(conv_id);
 		return -1;
 	}
 	iconv_close(conv_id);
-	return out_len - len;
+	return len - out_len;
 }
 
 BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len)
