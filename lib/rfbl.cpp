@@ -1598,38 +1598,44 @@ std::string iconvtext(std::string_view sv,
 		errno = EINVAL;
 		return {};
 	}
-	auto cleanup = HX::make_scope_exit([&]() { iconv_close(cd); });
-	char buffer[4096];
-	std::string out;
-	bool last_bad = false;
-	auto src = deconst(sv.data());
-	size_t src_size = sv.size();
+	try {
+		char buffer[4096];
+		std::string out;
+		bool last_bad = false;
+		auto src = deconst(sv.data());
+		size_t src_size = sv.size();
 
-	while (src_size > 0) {
-		auto dst = buffer;
-		size_t dst_size = sizeof(buffer);
-		errno = 0;
-		auto ret = iconv(cd, &src, &src_size, &dst, &dst_size);
-		if (dst_size != sizeof(buffer)) {
-			last_bad = false;
-			out.append(buffer, sizeof(buffer) - dst_size);
-		}
-		if (ret != (size_t)-1 || src_size == 0) {
-			last_bad = false;
-			continue;
-		}
-		if (errno == EILSEQ || errno == EINVAL) {
-			--src_size;
-			++src;
-			if (flags & ICONVTEXT_TRANSLIT) {
-				if (!last_bad)
-					out += '?';
-				last_bad = true;
+		while (src_size > 0) {
+			auto dst = buffer;
+			size_t dst_size = sizeof(buffer);
+			errno = 0;
+			auto ret = iconv(cd, &src, &src_size, &dst, &dst_size);
+			if (dst_size != sizeof(buffer)) {
+				last_bad = false;
+				out.append(buffer, sizeof(buffer) - dst_size);
+			}
+			if (ret != (size_t)-1 || src_size == 0) {
+				last_bad = false;
+				continue;
+			}
+			if (errno == EILSEQ || errno == EINVAL) {
+				--src_size;
+				++src;
+				if (flags & ICONVTEXT_TRANSLIT) {
+					if (!last_bad)
+						out += '?';
+					last_bad = true;
+				}
 			}
 		}
+		errno = 0;
+		iconv_close(cd);
+		return out;
+	} catch (const std::bad_alloc &) {
+		iconv_close(cd);
+		errno = ENOMEM;
+		return {};
 	}
-	errno = 0;
-	return out;
 } catch (const std::bad_alloc &) {
 	errno = ENOMEM;
 	return {};
