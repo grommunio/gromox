@@ -141,6 +141,8 @@ static int t_convert()
 	assert(sout.size() == 1);
 	assert(string_mb_to_utf8("windows-1258", "E", largeout, std::size(largeout)));
 	assert(strcmp(largeout, "E") == 0);
+	assert(string_utf8_to_mb("windows-1258", "\xc2", largeout, std::size(largeout)));
+	assert(*largeout == '\0');
 	return EXIT_SUCCESS;
 }
 

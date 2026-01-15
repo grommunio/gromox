@@ -334,6 +334,12 @@ BOOL string_utf8_to_mb(const char *charset, const char *in_string,
 		iconv_close(conv_id);
 		return FALSE;
 	}
+	auto ret = iconv(conv_id, nullptr, nullptr, &pout, &out_len);
+	if (ret == static_cast<size_t>(-1) && errno != E2BIG &&
+	    errno != EILSEQ && errno != EINVAL) {
+		iconv_close(conv_id);
+		return false;
+	}
 	iconv_close(conv_id);
 	if (orig_outlen > 0)
 		*pout = '\0';
@@ -366,6 +372,12 @@ ssize_t utf8_to_utf16le(const char *src, void *dst, size_t len)
 			}
 			continue;
 		}
+		iconv_close(conv_id);
+		return -1;
+	}
+	auto ret = iconv(conv_id, nullptr, nullptr, &pout, &out_len);
+	if (ret == static_cast<size_t>(-1) && errno != E2BIG &&
+	    errno != EILSEQ && errno != EINVAL) {
 		iconv_close(conv_id);
 		return -1;
 	}
@@ -404,6 +416,12 @@ BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len)
 		}
 		iconv_close(conv_id);
 		return FALSE;
+	}
+	auto ret = iconv(conv_id, nullptr, nullptr, &pout, &out_len);
+	if (ret == static_cast<size_t>(-1) && errno != E2BIG &&
+	    errno != EILSEQ && errno != EINVAL) {
+		iconv_close(conv_id);
+		return false;
 	}
 	iconv_close(conv_id);
 	return TRUE;
