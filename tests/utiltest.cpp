@@ -120,6 +120,13 @@ static int t_convert()
 	static constexpr char s3[] = "\x1B\x24\x42";
 	sout = iconvtext(s3, "iso-2022-jp", "utf-8");
 	assert(sout.size() == 0);
+
+	assert(string_utf8_to_mb("windows-1252", "A┌B", largeout, std::size(largeout)));
+	assert(strcmp(largeout, "AB") == 0);
+	assert(string_utf8_to_mb("windows-1252", "A\xed\xa0\x80""B", largeout, std::size(largeout)));
+	assert(strcmp(largeout, "AB") == 0);
+	assert(string_utf8_to_mb("windows-1252", "A\xff""B", largeout, std::size(largeout)));
+	assert(strcmp(largeout, "AB") == 0);
 	return EXIT_SUCCESS;
 }
 

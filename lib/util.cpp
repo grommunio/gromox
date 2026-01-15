@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
+// This file is part of Gromox.
 /*
  *	this file includes some utility functions that will be used by many 
  *	programs
@@ -20,6 +22,7 @@
 #include <unistd.h>
 #include <json/reader.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/scope.hpp>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -297,10 +300,22 @@ BOOL string_utf8_to_mb(const char *charset, const char *in_string,
 		mlog(LV_ERR, "E-2109: iconv_open %s: %s", cs, strerror(errno));
 		return FALSE;
 	}
-	auto pin = const_cast<char *>(in_string);
-	auto pout = out_string;
+	auto pin    = deconst(in_string);
+	auto pout   = out_string;
 	auto in_len = length;
-	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
+	while (in_len > 0) {
+		auto ret = iconv(conv_id, &pin, &in_len, &pout, &out_len);
+		if (ret != static_cast<size_t>(-1))
+			continue;
+		if (errno == E2BIG)
+			break;
+		if (errno == EILSEQ || errno == EINVAL) {
+			if (in_len > 0) {
+				++pin;
+				--in_len;
+			}
+			continue;
+		}
 		iconv_close(conv_id);
 		return FALSE;
 	}
