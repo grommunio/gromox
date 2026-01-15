@@ -503,8 +503,10 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 		}
 		textmaps_init();
 		auto cfg = config_file_initd("gromox.cfg", get_config_path(), mdlgx_cfg_defaults);
-		if (cfg != nullptr)
+		if (cfg != nullptr) {
 			autoreply_silence_window = cfg->get_ll("autoreply_silence_window");
+			g_junk_rules = parse_junk_rules(cfg->get_value("lda_junk_rules"));
+		}
 
 		auto pfile = config_file_initd("exmdb_local.cfg",
 		             get_config_path(), nullptr);
@@ -513,7 +515,6 @@ BOOL HOOK_exmdb_local(enum plugin_op reason, const struct dlfuncs &ppdata)
 				strerror(errno));
 			return FALSE;
 		}
-		g_junk_rules = parse_junk_rules(cfg->get_value("lda_junk_rules"));
 
 		sprintf(cache_path, "%s/cache", get_queue_path());
 		auto str_value = pfile->get_value("X500_ORG_NAME");
