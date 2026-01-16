@@ -3862,6 +3862,29 @@ decltype(tItemResponseShape::namedTagsDefault) tItemResponseShape::namedTagsDefa
 	{&NtEmailAddress1, PT_UNICODE},
 	{&NtEmailAddress2, PT_UNICODE},
 	{&NtEmailAddress3, PT_UNICODE},
+	{&NtAppointmentRecur, PT_BINARY},
+	{&NtRecurring, PT_BOOLEAN},
+	{&NtExceptionReplaceTime, PT_SYSTIME},
+	{&NtAppointmentStateFlags, PT_LONG},
+	{&NtBusyStatus, PT_LONG},
+	{&NtAppointmentSubType, PT_BOOLEAN},
+	{&NtResponseStatus, PT_LONG},
+	{&NtLocation, PT_UNICODE},
+	{&NtGlobalObjectId, PT_BINARY},
+	{&NtFInvited, PT_BOOLEAN},
+}};
+
+decltype(tItemResponseShape::namedTagsAllProperties) tItemResponseShape::namedTagsAllProperties = {{
+	{&NtAppointmentNotAllowPropose, PT_BOOLEAN},
+	{&NtAppointmentReplyTime, PT_SYSTIME},
+	{&NtAppointmentSequence, PT_LONG},
+	{&NtAppointmentDuration, PT_LONG},
+	{&NtTimeZone, PT_UNICODE},
+	{&NtConferencingType, PT_LONG},
+	{&NtConferencingCheck, PT_BOOLEAN},
+	{&NtMeetingWorkspaceUrl, PT_UNICODE},
+	{&NtNetShowUrl, PT_UNICODE},
+	{&NtMeetingDoNotForward, PT_BOOLEAN},
 }};
 
 /**
@@ -3875,6 +3898,16 @@ void tItemResponseShape::tags(sShape& shape) const
 		shape.add(tag);
 	for (auto tag : tagsIdOnly)
 		shape.add(tag, sShape::FL_FIELD);
+	/*
+	 * CalendarItemType detection and recurrence tz_offset need these
+	 * regardless of base shape. PR_START_DATE is always set on calendar
+	 * items and is required to compute the timezone offset between real
+	 * UTC and blob local-as-UTC rtimes.
+	 */
+	shape.add(NtAppointmentRecur, PT_BINARY, sShape::FL_FIELD);
+	shape.add(NtRecurring, PT_BOOLEAN, sShape::FL_FIELD);
+	shape.add(NtExceptionReplaceTime, PT_SYSTIME, sShape::FL_FIELD);
+	shape.add(PR_START_DATE, sShape::FL_FIELD);
 	std::string_view type = BodyType ? *BodyType : Enum::Best;
 	if ((IncludeMimeContent && *IncludeMimeContent) || (BodyType && type == Enum::Best))
 		shape.special |= sShape::MimeContent;
@@ -3899,6 +3932,9 @@ void tItemResponseShape::tags(sShape& shape) const
 		for (const auto& named : namedTagsDefault)
 			shape.add(*named.first, named.second, sShape::FL_FIELD);
 	}
+	if (baseShape >= 2)
+		for (const auto &named : namedTagsAllProperties)
+			shape.add(*named.first, named.second, sShape::FL_FIELD);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
