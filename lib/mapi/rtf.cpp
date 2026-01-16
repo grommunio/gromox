@@ -25,6 +25,7 @@
 #include <gromox/util.hpp>
 #define QRF(expr) do { if (pack_result{expr} != pack_result::ok) return false; } while (false)
 #define QRF2(expr) do { if (pack_result{expr} != pack_result::ok) return ecInvalidParam; } while (false)
+#define ICONV_UNSET iconv_t(-1)
 
 #define MAX_ATTRS						10000
 #define MAX_GROUP_DEPTH					1000
@@ -228,7 +229,7 @@ struct rtf_reader final {
 
 	bool init_reader(std::string_view, ATTACHMENT_LIST *);
 	bool riconv_open(const char *);
-	bool riconv_flush();
+	bool riconv_flush(bool reset_iconv = false);
 	bool put_iconv_cache(int);
 	pack_result getchar(int *);
 	void ungetchar(int);
@@ -309,7 +310,7 @@ struct rtf_reader final {
 	EXT_PULL ext_pull{};
 	EXT_PUSH ext_push{};
 	int ungot_chars[3] = {-1, -1, -1}, last_returned_ch = 0;
-	iconv_t conv_id{iconv_t(-1)};
+	iconv_t conv_id = ICONV_UNSET;
 	EXT_PUSH iconv_push{};
 	SIMPLE_TREE element_tree{};
 	ATTACHMENT_LIST *pattachments = nullptr;
@@ -375,15 +376,18 @@ bool rtf_reader::riconv_open(const char *fromcode)
 		auto in_buff   = iconv_push.m_cdata;
 		size_t in_size = iconv_push.m_offset;
 		char *out_ptr  = out_buff;
-		size_t out_size = sizeof(out_buff);
-		if (iconv(conv_id, &in_buff, &in_size, &out_ptr, &out_size) != static_cast<size_t>(-1) ||
-		    errno == EINVAL) {
-			size_t converted = sizeof(out_buff) - out_size;
-			if (converted > 0) {
-				out_buff[converted] = '\0';
-				if (!escape_output(out_buff))
-					return false;
-			}
+		size_t out_size = sizeof(out_buff) - 1;
+		auto ret = iconv(conv_id, &in_buff, &in_size, &out_ptr, &out_size);
+		if (ret == static_cast<size_t>(-1))
+			/* ignore/discard broken sequences or outofspace */;
+		ret = iconv(conv_id, nullptr, nullptr, &out_ptr, &out_size);
+		if (ret == static_cast<size_t>(-1))
+			/* ignore/discard */;
+		size_t converted = sizeof(out_buff) - out_size;
+		if (converted > 0) {
+			out_buff[converted] = '\0';
+			if (!escape_output(out_buff))
+				return false;
 		}
 		iconv_push.m_offset = 0;
 	}
@@ -458,15 +462,15 @@ bool rtf_reader::push_text_encoded(const char *string, size_t len)
 	return riconv_flush();
 }
 
-bool rtf_reader::riconv_flush()
+bool rtf_reader::riconv_flush(bool reset_iconv)
 {
-	char *out_buff;
-	size_t out_size;
+	char *out_buff = nullptr;
+	size_t out_size = 0;
 	auto preader = this;
 	
-	if (preader->iconv_push.m_offset == 0)
+	if (preader->iconv_push.m_offset == 0 && !reset_iconv)
 		return true;
-	if ((iconv_t)-1 == preader->conv_id) {
+	if (preader->conv_id == ICONV_UNSET) {
 		if ('\0' == preader->default_encoding[0]) {
 			if (!riconv_open("windows-1252"))
 				return false;
@@ -475,7 +479,14 @@ bool rtf_reader::riconv_flush()
 				return false;
 		}
 	}
-	size_t tmp_len = 4 * preader->iconv_push.m_offset;
+	/*
+	 * *4: conversion from ascii to utf8mb4
+	 * +4: m_offset may be 0 (in case of reset_iconv=true), but we still
+	 * need enough room to potentially emit an extra utf8mb4 char (special
+	 * case of combining chars in e.g. cp1258)
+	 * +1: for \0
+	 */
+	size_t tmp_len = 4 * preader->iconv_push.m_offset + 5;
 	auto ptmp_buff = me_alloc<char>(tmp_len);
 	if (ptmp_buff == nullptr)
 		return false;
@@ -487,6 +498,10 @@ bool rtf_reader::riconv_flush()
 	auto ret = iconv(conv_id, &in_buff, &in_size, &out_buff, &out_size);
 	if (ret == static_cast<size_t>(-1)) {
 		if (errno == EINVAL) {
+			if (reset_iconv &&
+			    iconv(conv_id, nullptr, nullptr, &out_buff, &out_size) ==
+			    static_cast<size_t>(-1))
+				/* ignore */;
 			/*
 			 * EINVAL = incomplete multi-byte sequence at end of input.
 			 * This is normal for encodings like Shift-JIS where we may
@@ -517,6 +532,10 @@ bool rtf_reader::riconv_flush()
 			free(ptmp_buff);
 			return true;
 		} else if (errno == EILSEQ) {
+			if (reset_iconv &&
+			    iconv(conv_id, nullptr, nullptr, &out_buff, &out_size) ==
+			    static_cast<size_t>(-1))
+				/* ignore */;
 			/*
 			 * EILSEQ = invalid multi-byte sequence.
 			 * Skip the problematic byte and try to continue.
@@ -547,6 +566,10 @@ bool rtf_reader::riconv_flush()
 		preader->iconv_push.m_offset = 0;
 		return true;
 	}
+	if (reset_iconv &&
+	    iconv(conv_id, nullptr, nullptr, &out_buff, &out_size) ==
+	    static_cast<size_t>(-1))
+		/* ignore */;
 	tmp_len -= out_size;
 	ptmp_buff[tmp_len] = '\0';
 	if (!escape_output(ptmp_buff)) {
@@ -675,7 +698,7 @@ rtf_reader::~rtf_reader()
 	if (proot != nullptr)
 		preader->element_tree.destroy_node(proot, rtf_delete_tree_node);
 	preader->element_tree.clear();
-	if (preader->conv_id != iconv_t(-1))
+	if (preader->conv_id != ICONV_UNSET)
 		iconv_close(preader->conv_id);
 }
 
@@ -3245,6 +3268,7 @@ ec_error_t rtf_to_html(std::string_view input, const char *charset,
 	auto ret = reader.convert_group_node(proot);
 	if (ret != 0 || !reader.end_table())
 		return ecError;
+	reader.riconv_flush(true);
 	if (!reader.have_fromhtml) {
 		QRF2(reader.ext_push.p_bytes(TAG_BODY_END, sizeof(TAG_BODY_END) - 1));
 		QRF2(reader.ext_push.p_bytes(TAG_DOCUMENT_END, sizeof(TAG_DOCUMENT_END) - 1));
