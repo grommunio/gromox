@@ -245,13 +245,13 @@ AC_ARG_WITH([unitdir],
 	[AS_HELP_STRING([--with-unitdir=PATH], [Path to systemd service unit directory])],
 	[unitdir="$withval"],
 	[
-		unitdir=$("$PKG_CONFIG" systemd --variable systemdsystemunitdir 2>/dev/null)
+		unitdir="$($PKG_CONFIG systemd --variable systemdsystemunitdir 2>/dev/null)"
 		AS_IF([test -z "$unitdir"], [unitdir='${prefix}/lib/systemd/system'])
 	])
 AC_SUBST([unitdir])
 
-sysusersdir=$("$PKG_CONFIG" systemd --variable sysusersdir 2>/dev/null)
-tmpfilesdir=$("$PKG_CONFIG" systemd --variable tmpfilesdir 2>/dev/null)
+sysusersdir="$($PKG_CONFIG systemd --variable sysusersdir 2>/dev/null)"
+tmpfilesdir="$($PKG_CONFIG systemd --variable tmpfilesdir 2>/dev/null)"
 AC_ARG_WITH([dcprefix],
 	[AS_HELP_STRING([Extra path inserted for distcheck])],
 	[dcprefix="$withval"])
