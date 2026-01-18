@@ -1992,6 +1992,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"Department", {[](auto&&... args){convText(PR_DEPARTMENT_NAME, args...);}}},
 	{"DisplayName", {[](auto&&... args){convText(PR_DISPLAY_NAME, args...);}}},
 	{"End", {[](auto&&... args){convDate(NtCommonEnd, args...);}}},
+	{"EndTimeZone", {[](auto &&...args) { convTzAttr(NtCalendarTimeZone, args...); }}},
 	{"EndTimeZoneId", {[](auto&&... args){convText(NtCalendarTimeZone, args...);}}},
 	{"FileAs", {[](auto&&... args){convText(NtFileAs, args...);}}},
 	{"Generation", {[](auto&&... args){convText(PR_GENERATION, args...);}}},
@@ -2004,18 +2005,22 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"IsReadReceiptRequested", {[](auto&&... args){convBool(PR_READ_RECEIPT_REQUESTED, args...);}}},
 	{"JobTitle", {[](auto&&... args){convText(PR_TITLE, args...);}}},
 	{"LastModifiedName", {[](auto&&... args){convText(PR_LAST_MODIFIER_NAME, args...);}}},
+	{"Location", {[](auto &&...args) { convText(NtLocation, args...); }, "CalendarItem"}},
 	{"MimeContent", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.mimeContent = base64_decode(xml->GetText()); }}},
 	{"Nickname", {[](auto&&... args){convText(PR_NICKNAME, args...);}}},
 	{"OfficeLocation", {[](auto&&... args){convText(PR_OFFICE_LOCATION, args...);}}},
 	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.calendarPermissionSet = xml; }, "CalendarFolder"}},
 	{"PermissionSet", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.permissionSet = xml; }}},
+	{"Recurrence", {[](const tinyxml2::XMLElement *xml, sShape &shape) { shape.recurrence = xml; }, "CalendarItem"}},
 	{"PostalAddressIndex", {[](auto&&... args) {convEnumIndex<Enum::PhysicalAddressIndexType>(NtPostalAddressIndex, args...);}}},
 	{"Sensitivity", {[](auto&&... args) {convEnumIndex<Enum::SensitivityChoicesType>(PR_SENSITIVITY, args...);}}},
 	{"Subject", {[](auto&&... args){convText(PR_SUBJECT, args...);}}},
 	{"Surname", {[](auto&&... args){convText(PR_SURNAME, args...);}}},
 	{"SpouseName", {[](auto&&... args){convText(PR_SPOUSE_NAME, args...);}}},
 	{"Start", {[](auto&&... args){convDate(NtCommonStart, args...);}}},
+	{"StartTimeZone", {[](auto &&...args) { convTzAttr(NtCalendarTimeZone, args...); }}},
 	{"StartTimeZoneId", {[](auto&&... args){convText(NtCalendarTimeZone, args...);}}},
+	{"UID", {[](auto &&...args) { convUID(args...); }}},
 	{"WeddingAnniversary", {[](auto&&... args){convDate(PR_WEDDING_ANNIVERSARY, args...);}}},
 }};
 
@@ -2227,6 +2232,32 @@ void tChangeDescription::convText(const PROPERTY_NAME &name, const XMLElement *v
 	auto tag = shape.tag(name);
 	if (tag)
 		convText(tag, v, shape);
+}
+
+void tChangeDescription::convTzAttr(const PROPERTY_NAME &name, const XMLElement *v, sShape &shape)
+{
+	const char *id = v->Attribute("Id");
+	if (!id || !*id)
+		return;
+	auto tag = shape.tag(name);
+	if (tag)
+		shape.write(TAGGED_PROPVAL{tag, EWSContext::cpystr(id)});
+}
+
+void tChangeDescription::convUID(const XMLElement *v, sShape &shape)
+{
+	const char *text = v->GetText();
+	if (!text || !*text)
+		return;
+	auto bin = gromox::hex2bin(text);
+	if (bin.empty())
+		return;
+	auto *goid = EWSContext::construct<BINARY>(BINARY{
+	             static_cast<uint32_t>(bin.size()),
+	             static_cast<uint8_t *>(EWSContext::alloc(bin.size()))});
+	memcpy(goid->pb, bin.data(), bin.size());
+	shape.write(NtGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
+	shape.write(NtCleanGlobalObjectId, TAGGED_PROPVAL{PT_BINARY, goid});
 }
 
 void tChangeDescription::convStrArray(proptag_t tag, const XMLElement *v, sShape &shape)
@@ -3334,12 +3365,16 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:AppointmentReplyTime", {NtAppointmentReplyTime, PT_SYSTIME}},
 	{"calendar:AppointmentState", {NtAppointmentStateFlags, PT_LONG}},
 	{"calendar:AppointmentSequenceNumber", {NtAppointmentSequence, PT_LONG}},
+	{"calendar:CalendarItemType", {NtAppointmentRecur, PT_BINARY}},
+	{"calendar:CalendarItemType", {NtRecurring, PT_BOOLEAN}},
+	{"calendar:CalendarItemType", {NtExceptionReplaceTime, PT_SYSTIME}},
 	{"calendar:ConferenceType", {NtConferencingType, PT_LONG}},
 	{"calendar:Duration", {NtAppointmentDuration, PT_LONG}},
 	{"calendar:DeletedOccurrences", {NtAppointmentRecur, PT_BINARY}},
 	{"calendar:DoNotForwardMeeting", {NtMeetingDoNotForward, PT_BOOLEAN}},
 	{"calendar:End", {NtAppointmentEndWhole, PT_SYSTIME}},
 	{"calendar:End", {NtCommonEnd, PT_SYSTIME}},
+	{"calendar:EndTimeZone", {NtCalendarTimeZone, PT_UNICODE}},
 	{"calendar:EndTimeZoneId", {NtCalendarTimeZone, PT_UNICODE}},
 	{"calendar:IsAllDayEvent", {NtAppointmentSubType, PT_BOOLEAN}},
 	{"calendar:IsCancelled", {NtAppointmentStateFlags, PT_LONG}},
@@ -3350,12 +3385,15 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:Location", {NtLocation, PT_UNICODE}},
 	{"calendar:MeetingRequestWasSent", {NtFInvited, PT_BOOLEAN}},
 	{"calendar:MeetingWorkspaceUrl", {NtMeetingWorkspaceUrl, PT_UNICODE}},
+	{"calendar:ModifiedOccurrences", {NtAppointmentRecur, PT_BINARY}},
 	{"calendar:MyResponseType", {NtResponseStatus, PT_LONG}},
 	{"calendar:NetShowUrl", {NtNetShowUrl, PT_UNICODE}},
+	{"calendar:OriginalStart", {NtExceptionReplaceTime, PT_SYSTIME}},
 	{"calendar:Recurrence", {NtAppointmentRecur, PT_BINARY}},
 	{"calendar:RecurrenceId", {NtExceptionReplaceTime, PT_SYSTIME}},
 	{"calendar:Start", {NtAppointmentStartWhole, PT_SYSTIME}},
 	{"calendar:Start", {NtCommonStart, PT_SYSTIME}},
+	{"calendar:StartTimeZone", {NtCalendarTimeZone, PT_UNICODE}},
 	{"calendar:StartTimeZoneId", {NtCalendarTimeZone, PT_UNICODE}},
 	{"calendar:TimeZone", {NtTimeZone, PT_UNICODE}},
 	{"calendar:UID", {NtGlobalObjectId, PT_BINARY}},

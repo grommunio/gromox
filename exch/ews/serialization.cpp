@@ -669,7 +669,33 @@ tCalendarItem::tCalendarItem(const tinyxml2::XMLElement *xml) :
 	XMLINIT(AllowNewTimeProposal),
 	XMLINIT(StartTimeZoneId),
 	XMLINIT(EndTimeZoneId)
-{}
+{
+	/*
+	 * StartTimeZone/EndTimeZone are complex elements with an Id attribute.
+	 * If the simple StartTimeZoneId was not provided, fall back to
+	 * extracting the Id from the complex element.
+	 */
+	if (!StartTimeZoneId) {
+		auto el = xml->FirstChildElement("StartTimeZone");
+		if (!el)
+			el = xml->FirstChildElement("t:StartTimeZone");
+		if (el) {
+			const char *id = el->Attribute("Id");
+			if (id && *id)
+				StartTimeZoneId.emplace(id);
+		}
+	}
+	if (!EndTimeZoneId) {
+		auto el = xml->FirstChildElement("EndTimeZone");
+		if (!el)
+			el = xml->FirstChildElement("t:EndTimeZone");
+		if (el) {
+			const char *id = el->Attribute("Id");
+			if (id && *id)
+				EndTimeZoneId.emplace(id);
+		}
+	}
+}
 
 void tCalendarItem::serialize(tinyxml2::XMLElement *xml) const
 {

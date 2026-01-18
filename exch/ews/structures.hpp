@@ -391,6 +391,7 @@ class sShape {
 	std::optional<std::string> mimeContent; ///< MimeContent to write
 	const tinyxml2::XMLElement *permissionSet = nullptr; ///< PermissionSet for update
 	const tinyxml2::XMLElement *calendarPermissionSet = nullptr; ///< CalendarPermissionSet for update
+	const tinyxml2::XMLElement *recurrence = nullptr; ///< Recurrence for update
 	std::vector<proptag_t> offsetProps; ///< Datetime related MAPI props which require timezone offset calculation
 };
 
@@ -1307,12 +1308,14 @@ struct tChangeDescription {
 	static void convDate(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
 	static void convText(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	static void convText(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
+	static void convTzAttr(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
 	static void convStrArray(proptag_t, const tinyxml2::XMLElement *, sShape &);
 	static void convStrArray(const PROPERTY_NAME &, const tinyxml2::XMLElement *, sShape &);
+	static void convUID(const tinyxml2::XMLElement *, sShape &);
 	static void convBody(const tinyxml2::XMLElement *, sShape &);
 
 	static std::array<const char*, 15> itemTypes;

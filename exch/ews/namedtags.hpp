@@ -76,6 +76,7 @@ static const PROPERTY_NAME NtNetShowUrl = {MNID_ID, PSETID_Appointment, PidLidNe
 static const PROPERTY_NAME NtAppointmentNotAllowPropose = {MNID_ID, PSETID_Appointment, PidLidAppointmentNotAllowPropose};
 static const PROPERTY_NAME NtAppointmentTimeZoneDefinitionStartDisplay = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionStartDisplay};
 static const PROPERTY_NAME NtAppointmentTimeZoneDefinitionEndDisplay = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionEndDisplay};
+static const PROPERTY_NAME NtAppointmentTimeZoneDefinitionRecur = {MNID_ID, PSETID_Appointment, PidLidAppointmentTimeZoneDefinitionRecur};
 
 /* PSETID_Common */
 static const PROPERTY_NAME NtReminderDelta = {MNID_ID, PSETID_Common, PidLidReminderDelta};
