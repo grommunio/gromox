@@ -1566,6 +1566,8 @@ static void table_truncate_string(cpid_t cpid, char *pstring)
 	while (in_len > 0)
 		if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1))
 			/* ignore */;
+	if (iconv(conv_id, nullptr, nullptr, &pout, &out_len) == static_cast<size_t>(-1))
+		/* ignore */;
 	iconv_close(conv_id);
 	if (out_len < sizeof(tmp_buff))
 		gx_strlcpy(pstring, tmp_buff, string_len + 1);
