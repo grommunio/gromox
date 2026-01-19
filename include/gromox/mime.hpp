@@ -37,6 +37,7 @@ struct GX_EXPORT MIME {
 	int get_field_num(const char *tag) const;
 	bool search_field(const char *tag, int order, std::string &value) const;
 	bool set_field(const char *tag, const char *value);
+	bool set_field(const char *tag, std::string &&value);
 	bool append_field(const char *tag, const char *value);
 	void remove_field(const char *tag);
 	bool get_content_param(const char *tag, std::string &value) const;
@@ -58,11 +59,11 @@ struct GX_EXPORT MIME {
 	SIMPLE_TREE_NODE stree{};
 	enum mime_type mime_type = mime_type::none;
 	int boundary_len = 0;
+	bool head_touched = false;
 	char content_type[VALUE_LEN]{}, boundary_string[VALUE_LEN]{};
 	std::vector<kvpair> f_type_params;
 	/* For @f_other_fields, we want (need?) some container that retains insertion order. */
 	std::vector<MIME_FIELD> f_other_fields;
-	BOOL head_touched = false;
 	const char *head_begin = nullptr;
 	std::unique_ptr<char[], gromox::stdlib_delete> content_buf;
 	const char *content_begin = nullptr;

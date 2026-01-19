@@ -584,6 +584,32 @@ bool MIME::set_field(const char *tag, const char *value) try
 	return false;
 }
 
+bool MIME::set_field(const char *tag, std::string &&value) try
+{
+	if (strcasecmp(tag, "Content-Type") == 0) {
+		char tmp_buff[256];
+		f_type_params.clear();
+		parse_field_value(value.c_str(), value.size(),
+			tmp_buff, std::size(tmp_buff), f_type_params);
+		if (!set_content_type(tmp_buff)) {
+			f_type_params.clear();
+			return false;
+		}
+		return true;
+	}
+	auto it = std::find_if(f_other_fields.begin(), f_other_fields.end(),
+	          [&](const MIME_FIELD &mf) { return strcasecmp(tag, mf.name.c_str()) == 0; });
+	if (it == f_other_fields.end())
+		f_other_fields.emplace_back(tag, std::move(value));
+	else
+		it->value = std::move(value);
+	head_touched = true;
+	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
+}
+
 /*
  *	append the mime field, whether it already exists or not! the tag
  *	cannot be "content-type"
