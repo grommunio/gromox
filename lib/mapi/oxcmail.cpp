@@ -554,9 +554,6 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 static BOOL oxcmail_parse_subject(const char *charset, const char *field,
     TPROPVAL_ARRAY *pproplist)
 {
-	int i;
-	int tmp_len;
-	char *ptoken;
 	char tmp_buff1[4096];
 	char prefix_buff[32];
 	char tmp_buff[MIME_FIELD_LEN];
@@ -583,13 +580,13 @@ static BOOL oxcmail_parse_subject(const char *charset, const char *field,
 	utf16le_to_utf8(tmp_buff, subject_len, tmp_buff1, sizeof(tmp_buff1));
 	if (pproplist->set(PR_SUBJECT, tmp_buff1) != ecSuccess)
 		return FALSE;
-	ptoken = static_cast<char *>(memmem(tmp_buff, subject_len, seperator, 4));
+	auto ptoken = static_cast<char *>(memmem(tmp_buff, subject_len, seperator, 4));
 	if (ptoken == nullptr)
 		return TRUE;
-	tmp_len = ptoken - tmp_buff;
+	size_t tmp_len = ptoken - tmp_buff;
 	if (tmp_len < 2 || tmp_len > 6)
 		return TRUE;
-	for (i = 0; i < tmp_len; i += 2)
+	for (size_t i = 0; i < tmp_len; i += 2)
 		if ((tmp_buff[i] == ':' || tmp_buff[i] == ' ' || HX_isdigit(tmp_buff[0])) &&
 		    tmp_buff[i+1] == '\0')
 			return TRUE;
