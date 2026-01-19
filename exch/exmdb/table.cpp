@@ -1555,17 +1555,17 @@ static void table_truncate_string(cpid_t cpid, char *pstring)
 	auto charset = cpid_to_cset(cpid);
 	if (charset == nullptr)
 		return;
-	char tmp_buff[512], tmp_charset[256];
+	char tmp_buff[512];
 	size_t in_len = 510, out_len = std::min(string_len, std::size(tmp_buff));
 	auto pin  = pstring;
 	auto pout = tmp_buff;
 	memset(tmp_buff, 0, sizeof(tmp_buff));
-	snprintf(tmp_charset, std::size(tmp_charset), "%s//IGNORE", charset);
-	auto conv_id = iconv_open(tmp_charset, charset);
+	auto conv_id = iconv_open(charset, charset);
 	if (conv_id == (iconv_t)-1)
 		return;
-	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1))
-		/* ignore */;
+	while (in_len > 0)
+		if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1))
+			/* ignore */;
 	iconv_close(conv_id);
 	if (out_len < sizeof(tmp_buff))
 		gx_strlcpy(pstring, tmp_buff, string_len + 1);
