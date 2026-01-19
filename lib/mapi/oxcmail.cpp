@@ -552,23 +552,24 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 }
 
 static BOOL oxcmail_parse_subject(const char *charset, const char *field,
-    TPROPVAL_ARRAY *pproplist)
+    TPROPVAL_ARRAY *pproplist) try
 {
-	char tmp_buff1[4096];
 	char prefix_buff[32];
-	char tmp_buff[MIME_FIELD_LEN];
-	char utf8_field[MIME_FIELD_LEN];
 	static constexpr uint8_t seperator[] = {':', 0x00, ' ', 0x00};
-	
-	if (!mime_string_to_utf8(charset, field, utf8_field, std::size(utf8_field)))
+
+	static constexpr size_t utf8_field_size = MIME_FIELD_LEN;
+	auto utf8_field = std::make_unique<char[]>(utf8_field_size);
+	if (!mime_string_to_utf8(charset, field, utf8_field.get(), utf8_field_size))
 		return pproplist->set(PR_SUBJECT_A, field) == ecSuccess ? TRUE : false;
 
-	auto subject_len = utf8_to_utf16le(utf8_field,
-	              tmp_buff, sizeof(tmp_buff));
+	static constexpr size_t tmp_buff_size = utf8_field_size;
+	auto tmp_buff = std::make_unique<char[]>(tmp_buff_size);
+	auto subject_len = utf8_to_utf16le(utf8_field.get(),
+	              tmp_buff.get(), tmp_buff_size);
 	if (subject_len < 0) {
-		utf8_truncate(utf8_field, 255);
-		subject_len = utf8_to_utf16le(utf8_field,
-		              tmp_buff, sizeof(tmp_buff));
+		utf8_truncate(utf8_field.get(), 255);
+		subject_len = utf8_to_utf16le(utf8_field.get(),
+		              tmp_buff.get(), tmp_buff_size);
 		if (subject_len < 0)
 			subject_len = 0;
 	}
@@ -577,13 +578,16 @@ static BOOL oxcmail_parse_subject(const char *charset, const char *field,
 		tmp_buff[510] = '\0';
 		tmp_buff[511] = '\0';
 	}
-	utf16le_to_utf8(tmp_buff, subject_len, tmp_buff1, sizeof(tmp_buff1));
-	if (pproplist->set(PR_SUBJECT, tmp_buff1) != ecSuccess)
+
+	static constexpr size_t tmp_buff1_size = 4096;
+	auto tmp_buff1 = std::make_unique<char[]>(tmp_buff1_size);
+	utf16le_to_utf8(tmp_buff.get(), subject_len, tmp_buff1.get(), tmp_buff1_size);
+	if (pproplist->set(PR_SUBJECT, tmp_buff1.get()) != ecSuccess)
 		return FALSE;
-	auto ptoken = static_cast<char *>(memmem(tmp_buff, subject_len, seperator, 4));
+	auto ptoken = static_cast<char *>(memmem(tmp_buff.get(), subject_len, seperator, 4));
 	if (ptoken == nullptr)
 		return TRUE;
-	size_t tmp_len = ptoken - tmp_buff;
+	size_t tmp_len = ptoken - tmp_buff.get();
 	if (tmp_len < 2 || tmp_len > 6)
 		return TRUE;
 	for (size_t i = 0; i < tmp_len; i += 2)
@@ -591,41 +595,51 @@ static BOOL oxcmail_parse_subject(const char *charset, const char *field,
 		    tmp_buff[i+1] == '\0')
 			return TRUE;
 	tmp_len += sizeof(seperator);
-	memcpy(tmp_buff1, tmp_buff, tmp_len);
+	memcpy(tmp_buff1.get(), tmp_buff.get(), tmp_len);
 	tmp_buff1[tmp_len] = '\0';
 	tmp_buff1[tmp_len + 1] = '\0';
-	utf16le_to_utf8(tmp_buff1, tmp_len + 2,
+	utf16le_to_utf8(tmp_buff1.get(), tmp_len + 2,
 		prefix_buff, sizeof(prefix_buff));
 	if (pproplist->set(PR_SUBJECT_PREFIX, prefix_buff) != ecSuccess)
 		return FALSE;
-	utf16le_to_utf8(tmp_buff + tmp_len,
-		subject_len - tmp_len, tmp_buff1,
-		sizeof(tmp_buff1));
-	return pproplist->set(PR_NORMALIZED_SUBJECT, tmp_buff1) == ecSuccess ? TRUE : false;
+	utf16le_to_utf8(&tmp_buff[tmp_len], subject_len - tmp_len,
+		tmp_buff1.get(), tmp_buff1_size);
+	return pproplist->set(PR_NORMALIZED_SUBJECT, tmp_buff1.get()) == ecSuccess ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 static BOOL oxcmail_parse_thread_topic(const char *charset,
-    const char *field, TPROPVAL_ARRAY *pproplist)
+    const char *field, TPROPVAL_ARRAY *pproplist) try
 {
-	char utf8_field[MIME_FIELD_LEN];
+	static constexpr size_t utf8_field_size = MIME_FIELD_LEN;
+	auto utf8_field = std::make_unique<char[]>(utf8_field_size);
 	
-	if (mime_string_to_utf8(charset, field, utf8_field, std::size(utf8_field)))
-		return pproplist->set(PR_CONVERSATION_TOPIC, utf8_field) == ecSuccess ? TRUE : false;
+	if (mime_string_to_utf8(charset, field, utf8_field.get(), utf8_field_size))
+		return pproplist->set(PR_CONVERSATION_TOPIC, utf8_field.get()) == ecSuccess;
 	return pproplist->set(PR_CONVERSATION_TOPIC_A, field) == ecSuccess ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 static BOOL oxcmail_parse_thread_index(const char *charset, const char *field,
-    TPROPVAL_ARRAY *pproplist)
+    TPROPVAL_ARRAY *pproplist) try
 {
-	char tmp_buff[MIME_FIELD_LEN];
+	static constexpr size_t len = MIME_FIELD_LEN;
+	auto tmp_buff = std::make_unique<char[]>(len);
 	
-	if (!mime_string_to_utf8(charset, field, tmp_buff, std::size(tmp_buff)))
+	if (!mime_string_to_utf8(charset, field, tmp_buff.get(), len))
 		return TRUE;
-	auto raw = base64_decode(tmp_buff);
+	auto raw = base64_decode(tmp_buff.get());
 	BINARY tmp_bin;
 	tmp_bin.pc = raw.data();
 	tmp_bin.cb = std::min(raw.size(), static_cast<size_t>(UINT32_MAX));
 	return pproplist->set(PR_CONVERSATION_INDEX, &tmp_bin) == ecSuccess ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 static inline bool cttype_is_voiceaudio(const char *s)
@@ -1261,22 +1275,21 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_transport_message_header(const MIME *pmime,
-    TPROPVAL_ARRAY *pproplist)
+static bool oxcmail_parse_transport_message_header(const MIME *pmime,
+    TPROPVAL_ARRAY *pproplist) try
 {
-	size_t tmp_len;
-	char tmp_buff[1024*1024];
-	
-	tmp_len = sizeof(tmp_buff) - 1;
-	if (!pmime->read_head(tmp_buff, &tmp_len))
+	size_t tmp_len = pmime->head_length + 3; /* weird behavior of read_head needs 2 extra */
+	auto tmp_buff = std::make_unique<char[]>(tmp_len);
+	if (!pmime->read_head(tmp_buff.get(), &tmp_len))
 		return TRUE;
 	tmp_buff[tmp_len] = '\0';
-	uint32_t tag = str_isascii(tmp_buff) ?
+	uint32_t tag = str_isascii(tmp_buff.get()) ?
 	               PR_TRANSPORT_MESSAGE_HEADERS :
 	               PR_TRANSPORT_MESSAGE_HEADERS_A;
-	if (pproplist->set(tag, tmp_buff) != ecSuccess)
-		return FALSE;
-	return TRUE;
+	return pproplist->set(tag, tmp_buff.get()) == ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 
 static bool oxcmail_parse_message_body(const char *charset, const MIME *pmime,
@@ -2042,12 +2055,9 @@ static inline const char *om_actsev_to_mclass(unsigned int s)
 	return nullptr;
 }
 
-static const MIME *oxcmail_parse_dsn(const MAIL *pmail, MESSAGE_CONTENT *pmsg)
+static const MIME *oxcmail_parse_dsn(const MAIL *pmail, MESSAGE_CONTENT *pmsg) try
 {
-	size_t content_len;
 	DSN_ENUM_INFO dsn_info;
-	char tmp_buff[256*1024];
-	
 	auto pmime = pmail->get_head();
 	pmime = pmime->get_child();
 	if (pmime == nullptr)
@@ -2059,15 +2069,18 @@ static const MIME *oxcmail_parse_dsn(const MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	if (pmime == nullptr)
 		return NULL;
 	auto mgl = pmime->get_length();
-	if (mgl < 0 || static_cast<size_t>(mgl) > sizeof(tmp_buff))
-		return NULL;
-	content_len = sizeof(tmp_buff);
-	if (!pmime->read_content(tmp_buff, &content_len))
+	if (mgl < 0)
+		return nullptr;
+
+	auto content_len = static_cast<size_t>(mgl) + 1;
+	auto tmp_buff = std::make_unique<char[]>(content_len);
+	if (!pmime->read_content(tmp_buff.get(), &content_len))
 		return NULL;
 
 	DSN dsn;
-	if (!dsn.load_from_str(tmp_buff, content_len))
+	if (!dsn.load_from_str(tmp_buff.get(), content_len))
 		return NULL;
+	tmp_buff.reset();
 	dsn_info.action_severity = -1;
 	dsn.enum_rcpts_fields(oxcmail_enum_dsn_action_fields,
 		&dsn_info.action_severity);
@@ -2090,12 +2103,13 @@ static const MIME *oxcmail_parse_dsn(const MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	    oxcmail_enum_dsn_reporting_mta, pmsg))
 		return NULL;
 	auto as = om_actsev_to_mclass(dsn_info.action_severity);
-	if (as != nullptr) {
-		gx_strlcpy(tmp_buff, as, std::size(tmp_buff));
-		if (pmsg->proplist.set(PR_MESSAGE_CLASS, tmp_buff) != ecSuccess)
-			return NULL;
-	}
+	if (as != nullptr &&
+	    pmsg->proplist.set(PR_MESSAGE_CLASS, as) != ecSuccess)
+		return nullptr;
 	return pmime;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return nullptr;
 }
 
 static bool oxcmail_enum_mdn(const char *tag,
@@ -2157,11 +2171,8 @@ static bool oxcmail_enum_mdn(const char *tag,
 	return true;
 }
 
-static const MIME *oxcmail_parse_mdn(const MAIL *pmail, MESSAGE_CONTENT *pmsg)
+static const MIME *oxcmail_parse_mdn(const MAIL *pmail, MESSAGE_CONTENT *pmsg) try
 {
-	size_t content_len;
-	char tmp_buff[256*1024];
-	
 	auto pmime = pmail->get_head();
 	if (strcasecmp(pmime->content_type, "message/disposition-notification") != 0) {
 		pmime = pmime->get_child();
@@ -2175,17 +2186,20 @@ static const MIME *oxcmail_parse_mdn(const MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	if (pmime == nullptr)
 		return NULL;
 	auto mgl = pmime->get_length();
-	if (mgl < 0 || static_cast<size_t>(mgl) > sizeof(tmp_buff))
-		return NULL;
-	content_len = sizeof(tmp_buff);
-	if (!pmime->read_content(tmp_buff, &content_len))
+	if (mgl < 0)
+		return nullptr;
+
+	auto content_len = static_cast<size_t>(mgl) + 1;
+	auto tmp_buff = std::make_unique<char[]>(content_len);
+	if (!pmime->read_content(tmp_buff.get(), &content_len))
 		return NULL;
 
 	DSN dsn;
-	if (!dsn.load_from_str(tmp_buff, content_len) ||
+	if (!dsn.load_from_str(tmp_buff.get(), content_len) ||
 	    !dsn.enum_fields(*dsn.get_message_fields(), oxcmail_enum_mdn, pmsg))
 		return NULL;
 	dsn.clear();
+	tmp_buff.reset();
 	auto ts = pmsg->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
 	if (pmsg->proplist.set(PR_ORIGINAL_DELIVERY_TIME, ts) != ecSuccess ||
 	    pmsg->proplist.set(PR_RECEIPT_TIME, ts) != ecSuccess)
@@ -2194,6 +2208,9 @@ static const MIME *oxcmail_parse_mdn(const MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		if (rcpt.set(PR_REPORT_TIME, ts) != ecSuccess)
 			return NULL;
 	return pmime;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return nullptr;
 }
 
 static BOOL oxcmail_parse_encrypted(const MIME *phead, uint16_t *plast_propid,
@@ -3199,7 +3216,6 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	    !oxcmail_export_receiptflg(pmsg, phead, sched) ||
 	    !oxcmail_export_tocc(pmsg, pskeleton, phead))
 		return false;
-	char tmp_field[MIME_FIELD_LEN];
 	auto adrlist = vmime::make_shared<vmime::addressList>();
 	if (oxcmail_export_reply_to(pmsg, *adrlist)) {
 		auto mg = adrlist->generate();
@@ -3272,9 +3288,11 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	auto lnum = pmsg->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
 	tmp_time = lnum == nullptr ? time(nullptr) :
 	           rop_util_nttime_to_unix(*lnum);
-	strftime(tmp_field, 128, "%a, %d %b %Y %H:%M:%S %z",
+	static constexpr size_t tmp_field_size = MIME_FIELD_LEN;
+	auto tmp_field = std::make_unique<char[]>(tmp_field_size);
+	strftime(tmp_field.get(), tmp_field_size, "%a, %d %b %Y %H:%M:%S %z",
 					localtime_r(&tmp_time, &time_buff));
-	if (!phead->set_field("Date", tmp_field))
+	if (!phead->set_field("Date", tmp_field.get()))
 		return FALSE;
 	
 	str  = pmsg->proplist.get<char>(PR_SUBJECT_PREFIX);
@@ -3405,10 +3423,11 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 			return FALSE;
 		lnum = pmsg->proplist.get<uint64_t>(PR_REPLY_TIME);
 		if (lnum != nullptr) {
+			char buf[64];
 			tmp_time = rop_util_nttime_to_unix(*lnum);
-			strftime(tmp_field, 128, "%a, %d %b %Y %H:%M:%S %z",
+			strftime(buf, std::size(buf), "%a, %d %b %Y %H:%M:%S %z",
 							localtime_r(&tmp_time, &time_buff));
-			if (!phead->set_field("Reply-By", tmp_field))
+			if (!phead->set_field("Reply-By", buf))
 				return FALSE;
 		}
 	}
@@ -4093,7 +4112,8 @@ bool oxcmail_converter::do_export(const message_content &imsg,
 	}
 	
 	if (skel.mail_type == oxcmail_type::dsn) {
-		char tmp_buff[1024*1024];
+		static constexpr size_t tmp_buff_size = 1024 * 1024;
+		auto tmp_buff = std::make_unique<char[]>(tmp_buff_size);
 		
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (pmime == nullptr)
@@ -4102,13 +4122,14 @@ bool oxcmail_converter::do_export(const message_content &imsg,
 			return exp_false;
 		if (!oxcmail_export_dsn(pmsg, skel.charset,
 		    skel.pmessage_class, g_oxcmail_org_name,
-		    oxcmail_get_username, tmp_buff, sizeof(tmp_buff)))
+		    oxcmail_get_username, tmp_buff.get(), tmp_buff_size))
 			return exp_false;
-		if (!pmime->write_content(tmp_buff, strlen(tmp_buff),
+		if (!pmime->write_content(tmp_buff.get(), strlen(tmp_buff.get()),
 		    mime_encoding::none))
 			return exp_false;
 	} else if (skel.mail_type == oxcmail_type::mdn) {
-		char tmp_buff[1024*1024];
+		static constexpr size_t tmp_buff_size = 1024 * 1024;
+		auto tmp_buff = std::make_unique<char[]>(tmp_buff_size);
 		
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (pmime == nullptr)
@@ -4116,10 +4137,9 @@ bool oxcmail_converter::do_export(const message_content &imsg,
 		if (!pmime->set_content_type("message/disposition-notification"))
 			return exp_false;
 		if (!oxcmail_export_mdn(pmsg, skel.charset,
-		    skel.pmessage_class, tmp_buff,
-		    std::size(tmp_buff)))
+		    skel.pmessage_class, tmp_buff.get(), tmp_buff_size))
 			return exp_false;
-		if (!pmime->write_content(tmp_buff, strlen(tmp_buff),
+		if (!pmime->write_content(tmp_buff.get(), strlen(tmp_buff.get()),
 		    mime_encoding::none))
 			return exp_false;
 	}
