@@ -15,7 +15,6 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
-#include <iconv.h>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -201,35 +200,12 @@ static std::string make_midb_path(const char *d)
 	return d + "/exmdb/midb.sqlite3"s;
 }
 
-static std::unique_ptr<char[]> me_ct_to_utf8(const char *charset,
-    const char *string) try
+static std::string me_ct_to_utf8(const char *charset, const char *string)
 {
-	int length;
-	iconv_t conv_id;
-	size_t in_len, out_len;
-
 	if (strcasecmp(charset, "UTF-8") == 0||
 	    strcasecmp(charset, "US-ASCII") == 0)
-		return std::unique_ptr<char[]>(strdup(string));
-	cset_cstr_compatible(charset);
-	length = strlen(string) + 1;
-	auto ret_string = std::make_unique<char[]>(2 * length);
-	conv_id = iconv_open("UTF-8", charset);
-	if (conv_id == (iconv_t)-1)
-		return NULL;
-	auto pin = deconst(string);
-	auto pout = ret_string.get();
-	in_len = length;
-	out_len = 2*length;
-	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
-		iconv_close(conv_id);
-		return NULL;
-	}
-	iconv_close(conv_id);
-	return ret_string;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1963: ENOMEM");
-	return nullptr;
+		return string;
+	return iconvtext(string, charset, "UTF-8");
 }
 
 static uint64_t me_get_digest(sqlite3 *psqlite, const char *mid_string,
@@ -313,11 +289,8 @@ static std::unique_ptr<char[]> me_ct_decode_mime(const char *charset,
 				temp_buff[begin_pos - last_pos] = '\0';
 				HX_strltrim(temp_buff);
 				auto tmp_string = me_ct_to_utf8(charset, temp_buff);
-				if (tmp_string == nullptr)
-					return NULL;
-				auto tmp_len = strlen(tmp_string.get());
-				memcpy(out_buff + offset, tmp_string.get(), tmp_len);
-				offset += tmp_len;
+				memcpy(&out_buff[offset], tmp_string.c_str(), tmp_string.size());
+				offset += tmp_string.size();
 				last_pos = i;
 			}
 		}
@@ -329,7 +302,7 @@ static std::unique_ptr<char[]> me_ct_decode_mime(const char *charset,
 			parse_mime_encode_string(in_buff + begin_pos, 
 				end_pos - begin_pos + 1, &encode_string);
 			auto tmp_len = strlen(encode_string.title);
-			std::unique_ptr<char[]> tmp_string;
+			std::string tmp_string;
 			if (strcasecmp(encode_string.encoding, "base64") == 0) {
 				size_t decode_len = 0;
 				decode64(encode_string.title, tmp_len,
@@ -346,11 +319,8 @@ static std::unique_ptr<char[]> me_ct_decode_mime(const char *charset,
 			} else {
 				tmp_string = me_ct_to_utf8(charset, encode_string.title);
 			}
-			if (tmp_string == nullptr)
-				return NULL;
-			tmp_len = strlen(tmp_string.get());
-			memcpy(out_buff + offset, tmp_string.get(), tmp_len);
-			offset += tmp_len;
+			memcpy(&out_buff[offset], tmp_string.c_str(), tmp_string.size());
+			offset += tmp_string.size();
 			
 			last_pos = end_pos + 1;
 			i = end_pos;
@@ -361,11 +331,8 @@ static std::unique_ptr<char[]> me_ct_decode_mime(const char *charset,
 	}
 	if (i > last_pos) {
 		auto tmp_string = me_ct_to_utf8(charset, &in_buff[last_pos]);
-		if (tmp_string == nullptr)
-			return NULL;
-		auto tmp_len = strlen(tmp_string.get());
-		memcpy(out_buff + offset, tmp_string.get(), tmp_len);
-		offset += tmp_len;
+		memcpy(&out_buff[offset], tmp_string.c_str(), tmp_string.size());
+		offset += tmp_string.size();
 	} 
 	out_buff[offset] = '\0';
 	return ret_string;
@@ -410,7 +377,7 @@ static void me_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	auto charset = pmime->get_charset();
 	auto rs = me_ct_to_utf8(*charset != '\0' ?
 	          charset : penum->charset, content.c_str());
-	if (rs != nullptr && strcasestr(rs.get(), penum->keyword) != nullptr)
+	if (strcasestr(rs.c_str(), penum->keyword) != nullptr)
 		penum->b_result = TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1970: ENOMEM");
@@ -1103,7 +1070,7 @@ static std::unique_ptr<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			i ++;
 			if (i + 1 > argc)
 				return {};
-			ptree_node->ct_keyword = me_ct_to_utf8(charset, argv[i]).release();
+			ptree_node->ct_keyword = strdup(me_ct_to_utf8(charset, argv[i]).c_str());
 			if (ptree_node->ct_keyword == nullptr)
 				return {};
 		} else if (array_find_istr(kwlist2, argv[i])) {
