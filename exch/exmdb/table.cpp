@@ -1542,11 +1542,6 @@ static BOOL table_column_content_tmptbl(
 
 static void table_truncate_string(cpid_t cpid, char *pstring)
 {
-	iconv_t conv_id;
-	char *pin, *pout;
-	char tmp_buff[512];
-	char tmp_charset[256];
-	
 	cpid_cstr_compatible(cpid);
 	auto string_len = strlen(pstring);
 	if (string_len <= 510)
@@ -1560,12 +1555,13 @@ static void table_truncate_string(cpid_t cpid, char *pstring)
 	auto charset = cpid_to_cset(cpid);
 	if (charset == nullptr)
 		return;
+	char tmp_buff[512], tmp_charset[256];
 	size_t in_len = 510, out_len = std::min(string_len, std::size(tmp_buff));
-	pin = pstring;
-	pout = tmp_buff;
+	auto pin  = pstring;
+	auto pout = tmp_buff;
 	memset(tmp_buff, 0, sizeof(tmp_buff));
 	snprintf(tmp_charset, std::size(tmp_charset), "%s//IGNORE", charset);
-	conv_id = iconv_open(tmp_charset, charset);
+	auto conv_id = iconv_open(tmp_charset, charset);
 	if (conv_id == (iconv_t)-1)
 		return;
 	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1))
