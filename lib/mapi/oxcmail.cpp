@@ -2939,25 +2939,22 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 	return false;
 }
 
-static bool oxcmail_export_content_class(const char *pmessage_class,
-    char *field, size_t len)
+static bool oxcmail_export_content_class(const char *pmessage_class, std::string &field)
 {
 	if (class_match_prefix(pmessage_class, "IPM.Note.Microsoft.Fax") == 0)
-		gx_strlcpy(field, "fax", len);
+		field = "fax";
 	else if (class_match_prefix(pmessage_class, "IPM.Note.Microsoft.Fax.CA") == 0)
-		gx_strlcpy(field, "fax-ca", len);
+		field = "fax-ca";
 	else if (class_match_prefix(pmessage_class, "IPM.Note.Microsoft.Missed.Voice") == 0)
-		gx_strlcpy(field, "missedcall", len);
+		field = "missedcall";
 	else if (class_match_prefix(pmessage_class, "IPM.Note.Microsoft.Conversation.Voice") == 0)
-		gx_strlcpy(field, "voice-uc", len);
+		field = "voice-uc";
 	else if (class_match_prefix(pmessage_class, "IPM.Note.Microsoft.Voicemail.UM.CA") == 0)
-		gx_strlcpy(field, "voice-ca", len);
+		field = "voice-ca";
 	else if (class_match_prefix(pmessage_class, "IPM.Note.Microsoft.Voicemail.UM") == 0)
-		gx_strlcpy(field, "voice", len);
+		field = "voice";
 	else if (strncasecmp(pmessage_class, "IPM.Note.Custom.", 16) == 0)
-		snprintf(field, len,
-			"urn:content-class:custom.%s",
-			pmessage_class + 16);
+		field = "urn:content-class:custom."s + pmessage_class;
 	else
 		return FALSE;
 	return TRUE;
@@ -3322,8 +3319,9 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	if (!get_propids(&propnames, &propids) || propids.size() != propnames.size())
 		return false;
 
-	if (oxcmail_export_content_class(pskeleton->pmessage_class, tmp_field, std::size(tmp_field))) {
-		if (!phead->set_field("Content-Class", tmp_field))
+	std::string ostr;
+	if (oxcmail_export_content_class(pskeleton->pmessage_class, ostr)) {
+		if (!phead->set_field("Content-Class", std::move(ostr)))
 			return FALSE;
 	} else if (0 == strncasecmp(
 		pskeleton->pmessage_class,
