@@ -3194,7 +3194,8 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg,
 		auto mb = vmime::make_shared<vmime::mailbox>("");
 		if (!oxcmail_export_address(pmsg, tags_sender, *mb))
 			return true; /* not present */
-		if (!phead->set_field("Sender", mb->generate().c_str()))
+		auto mg = mb->generate();
+		if (!phead->set_field("Sender", std::move(mg)))
 			return FALSE;
 		return true;
 	}
@@ -3208,9 +3209,11 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg,
 	if (str == nullptr || str1 == nullptr || strcasecmp(str, str1) == 0)
 		return true;
 	auto mb = vmime::make_shared<vmime::mailbox>("");
-	if (oxcmail_export_address(pmsg, tags_sender, *mb))
-		if (!phead->set_field("Sender", mb->generate().c_str()))
+	if (oxcmail_export_address(pmsg, tags_sender, *mb)) {
+		auto mg = mb->generate();
+		if (!phead->set_field("Sender", std::move(mg)))
 			return false;
+	}
 	return true;
 } catch (...) {
 	return false;
@@ -3221,16 +3224,21 @@ static bool oxcmail_export_fromsender(const MESSAGE_CONTENT *pmsg,
 {
 	auto mb = vmime::make_shared<vmime::mailbox>("");
 	if (sched) {
-		if (oxcmail_export_address(pmsg, tags_sender, *mb))
-			if (!phead->set_field("From", mb->generate().c_str()))
+		if (oxcmail_export_address(pmsg, tags_sender, *mb)) {
+			auto mg = mb->generate();
+			if (!phead->set_field("From", std::move(mg)))
 				return false;
+		}
 		return true;
 	}
-	if (oxcmail_export_address(pmsg, tags_sent_repr, *mb)) {
-		if (!phead->set_field("From", mb->generate().c_str()))
+	if (oxcmail_export_address(pmsg, tags_sent_repr, *mb)) { {
+		auto mg = mb->generate();
+		if (!phead->set_field("From", std::move(mg)))
 			return FALSE;
+	}
 	} else if (oxcmail_export_address(pmsg, tags_sender, *mb)) {
-		if (!phead->set_field("Sender", mb->generate().c_str()))
+		auto mg = mb->generate();
+		if (!phead->set_field("Sender", std::move(mg)))
 			return FALSE;
 	}
 	return true;
@@ -3253,7 +3261,8 @@ static bool oxcmail_export_receiptto(const MESSAGE_CONTENT *pmsg,
 		/* ok */;
 	else
 		return true; /* No recipient */
-	return phead->set_field("Return-Receipt-To", mb->generate().c_str());
+	auto mg = mb->generate();
+	return phead->set_field("Return-Receipt-To", std::move(mg));
 } catch (...) {
 	return false;
 }
@@ -3273,7 +3282,8 @@ static bool oxcmail_export_receiptflg(const MESSAGE_CONTENT *pmsg,
 		/* ok */;
 	else
 		return true; /* No recipient */
-	return phead->set_field("Disposition-Notification-To", mb->generate().c_str());
+	auto mg = mb->generate();
+	return phead->set_field("Disposition-Notification-To", std::move(mg));
 } catch (...) {
 	return false;
 }
@@ -3284,20 +3294,26 @@ static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
 	if (pmsg->children.prcpts == nullptr)
 		return true;
 	auto mblist = vmime::make_shared<vmime::mailboxList>();
-	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_TO, *mblist))
-		if (!phead->set_field("To", mblist->generate().c_str()))
+	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_TO, *mblist)) {
+		auto mg = mblist->generate();
+		if (!phead->set_field("To", std::move(mg)))
 			return FALSE;
+	}
 	mblist = vmime::make_shared<vmime::mailboxList>();
-	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_CC, *mblist))
-		if (!phead->set_field("Cc", mblist->generate().c_str()))
+	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_CC, *mblist)) {
+		auto mg = mblist->generate();
+		if (!phead->set_field("Cc", std::move(mg)))
 			return FALSE;
+	}
 	if (class_match_prefix(pskeleton->pmessage_class, "IPM.Schedule.Meeting") == 0 ||
 	    class_match_prefix(pskeleton->pmessage_class, "IPM.Task") == 0)
 		return true;
 	mblist = vmime::make_shared<vmime::mailboxList>();
-	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_BCC, *mblist))
-		if (!phead->set_field("Bcc", mblist->generate().c_str()))
+	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_BCC, *mblist)) {
+		auto mg = mblist->generate();
+		if (!phead->set_field("Bcc", std::move(mg)))
 			return FALSE;
+	}
 	return true;
 } catch (...) {
 	return false;
@@ -3310,7 +3326,6 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	auto pskeleton = &skel;
 	size_t tmp_len = 0;
 	time_t tmp_time;
-	size_t base64_len;
 	struct tm time_buff;
 	PROPID_ARRAY propids;
 
@@ -3325,9 +3340,11 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	char tmp_buff[MIME_FIELD_LEN];
 	char tmp_field[MIME_FIELD_LEN];
 	auto adrlist = vmime::make_shared<vmime::addressList>();
-	if (oxcmail_export_reply_to(pmsg, *adrlist))
-		if (!phead->set_field("Reply-To", adrlist->generate().c_str()))
+	if (oxcmail_export_reply_to(pmsg, *adrlist)) {
+		auto mg = adrlist->generate();
+		if (!phead->set_field("Reply-To", std::move(mg)))
 			return FALSE;
+	}
 
 	const PROPERTY_NAME namequeries[] = {
 		{MNID_ID, PSETID_Common, PidLidInfoPathFromName},
@@ -3359,8 +3376,7 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 			auto str1 = strrchr(str, '.');
 			if (str1 != nullptr)
 				str = str1 + 1;
-			snprintf(tmp_field, 1024, "InfoPathForm.%s", str);
-			if (!phead->set_field("Content-Class", tmp_field))
+			if (!phead->set_field("Content-Class", "InfoPathForm."s + str))
 				return FALSE;
 		}
 	}
@@ -3368,20 +3384,16 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	if (str != nullptr && !phead->set_field("X-CallingTelephoneNumber", str))
 		return FALSE;
 	auto num = pmsg->proplist.get<const uint32_t>(PidTagVoiceMessageDuration);
-	if (num != nullptr) {
-		snprintf(tmp_field, std::size(tmp_field), "%ld", static_cast<long>(*num));
-		if (!phead->set_field("X-VoiceMessageDuration", tmp_field))
-			return FALSE;
-	}
+	if (num != nullptr &&
+	    !phead->set_field("X-VoiceMessageDuration", std::to_string(*num)))
+		return FALSE;
 	str = pmsg->proplist.get<char>(PidTagVoiceMessageSenderName);
 	if (str != nullptr && !phead->set_field("X-VoiceMessageSenderName", str))
 		return FALSE;
 	num = pmsg->proplist.get<uint32_t>(PidTagFaxNumberOfPages);
-	if (num != nullptr) {
-		snprintf(tmp_field, std::size(tmp_field), "%lu", static_cast<unsigned long>(*num));
-		if (!phead->set_field("X-FaxNumberOfPages", tmp_field))
-			return FALSE;
-	}
+	if (num != nullptr &&
+	    !phead->set_field("X-FaxNumberOfPages", std::to_string(*num)))
+		return FALSE;
 	str = pmsg->proplist.get<char>(PidTagVoiceMessageAttachmentOrder);
 	if (str != nullptr && !phead->set_field("X-AttachmentOrder", str))
 		return FALSE;
@@ -3425,8 +3437,7 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 		return FALSE;
 	auto bv = pmsg->proplist.get<BINARY>(PR_CONVERSATION_INDEX);
 	if (bv != nullptr &&
-	    encode64(bv->pb, bv->cb, tmp_field, 1024, &base64_len) == 0 &&
-	    !phead->set_field("Thread-Index", tmp_field))
+	    !phead->set_field("Thread-Index", base64_encode(*bv)))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PR_INTERNET_MESSAGE_ID);
 	if (str != nullptr && !phead->set_field("Message-ID", str))
@@ -3549,11 +3560,9 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 		return FALSE;
 	
 	auto inum = pmsg->proplist.get<const int32_t>(PR_CONTENT_FILTER_SCL);
-	if (inum != nullptr) {
-		snprintf(tmp_field, std::size(tmp_field), "%ld", static_cast<long>(*inum));
-		if (!phead->set_field("X-MS-Exchange-Organization-SCL", tmp_field))
-			return FALSE;
-	}
+	if (inum != nullptr &&
+	    !phead->set_field("X-MS-Exchange-Organization-SCL", std::to_string(*inum)))
+		return FALSE;
 	
 	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids[l_flagreq]));
 	if (str != nullptr && *str != '\0') {
@@ -3587,11 +3596,9 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	}
 	
 	str = pmsg->proplist.get<char>(PR_BODY_CONTENT_ID);
-	if (str != nullptr) {
-		snprintf(tmp_buff, sizeof(tmp_buff), "<%s>", str);
-		if (!phead->set_field("Content-ID", tmp_buff))
-			return FALSE;
-	}
+	if (str != nullptr &&
+	    !phead->set_field("Content-ID", "<"s + str + ">"))
+		return FALSE;
 	
 	str = pmsg->proplist.get<char>(PR_BODY_CONTENT_LOCATION);
 	if (str != nullptr && !phead->set_field("Content-Location", str))
@@ -3897,11 +3904,9 @@ bool oxcmail_converter::export_attachment(const attachment_content &atc,
 		return FALSE;
 	
 	str = pattachment->proplist.get<char>(PR_ATTACH_CONTENT_ID);
-	if (str != nullptr) {
-		snprintf(tmp_field, sizeof(tmp_field), "<%s>", str);
-		if (!pmime->set_field("Content-ID", tmp_field))
-			return FALSE;
-	}
+	if (str != nullptr &&
+	    !pmime->set_field("Content-ID", "<"s + str + ">"))
+		return FALSE;
 	str = pattachment->proplist.get<char>(PR_ATTACH_CONTENT_LOCATION);
 	if (str != nullptr && !pmime->set_field("Content-Location", str))
 		return FALSE;
