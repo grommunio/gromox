@@ -3237,7 +3237,6 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 {
 	auto pmsg = &imsg;
 	auto pskeleton = &skel;
-	size_t tmp_len = 0;
 	time_t tmp_time;
 	struct tm time_buff;
 	PROPID_ARRAY propids;
@@ -3413,37 +3412,23 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 			if (!phead->set_field("X-Auto-Response-Suppress", "ALL"))
 				return FALSE;
 		} else {
-			*tmp_field = '\0';
+			ostr.clear();
 			if (*num & AUTO_RESPONSE_SUPPRESS_DR)
-				strcat(tmp_field, "DR");
-			if (*num & AUTO_RESPONSE_SUPPRESS_NDR) {
-				if (*tmp_field != '\0')
-					strcat(tmp_field, ", ");
-				strcat(tmp_field, "NDR");
-			}
-			if (*num & AUTO_RESPONSE_SUPPRESS_RN) {
-				if (*tmp_field != '\0')
-					strcat(tmp_field, ", ");
-				strcat(tmp_field, "RN");
-			}
-			if (*num & AUTO_RESPONSE_SUPPRESS_NRN) {
-				if (*tmp_field != '\0')
-					strcat(tmp_field, ", ");
-				strcat(tmp_field, "NRN");
-			}
-			if (*num & AUTO_RESPONSE_SUPPRESS_OOF) {
-				if (*tmp_field != '\0')
-					strcat(tmp_field, ", ");
-				strcat(tmp_field, "OOF");
-			}
-			if (*num & AUTO_RESPONSE_SUPPRESS_AUTOREPLY) {
-				if (*tmp_field != '\0')
-					strcat(tmp_field, ", ");
-				strcat(tmp_field, "AutoReply");
-			}
+				ostr += "DR";
+			if (*num & AUTO_RESPONSE_SUPPRESS_NDR)
+				ostr += ostr.empty() ? "NDR" : ",NDR";
+			if (*num & AUTO_RESPONSE_SUPPRESS_RN)
+				ostr += ostr.empty() ? "RN" : ",RN";
+			if (*num & AUTO_RESPONSE_SUPPRESS_NRN)
+				ostr += ostr.empty() ? "NRN" : ",NRN";
+			if (*num & AUTO_RESPONSE_SUPPRESS_OOF)
+				ostr += ostr.empty() ? "OOF" : ",OOF";
+			if (*num & AUTO_RESPONSE_SUPPRESS_AUTOREPLY)
+				ostr += ostr.empty() ? "AutoReply" : ",AutoReply";
+			if (ostr.size() > 0 &&
+			    !phead->set_field("X-Auto-Response-Suppress", std::move(ostr)))
+				return FALSE;
 		}
-		if (tmp_len != 0 && !phead->set_field("X-Auto-Response-Suppress", tmp_field))
-			return FALSE;
 	}
 	
 	flag = pmsg->proplist.get<uint8_t>(PR_AUTO_FORWARDED);
