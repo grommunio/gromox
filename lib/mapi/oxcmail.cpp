@@ -620,16 +620,14 @@ static BOOL oxcmail_parse_thread_topic(const char *charset,
 static BOOL oxcmail_parse_thread_index(const char *charset, const char *field,
     TPROPVAL_ARRAY *pproplist)
 {
-	BINARY tmp_bin;
 	char tmp_buff[MIME_FIELD_LEN];
 	
 	if (!mime_string_to_utf8(charset, field, tmp_buff, std::size(tmp_buff)))
 		return TRUE;
-	auto len = sizeof(tmp_buff);
-	if (decode64(field, strlen(field), tmp_buff, std::size(tmp_buff), &len) != 0)
-		return TRUE;
-	tmp_bin.pc = tmp_buff;
-	tmp_bin.cb = len;
+	auto raw = base64_decode(tmp_buff);
+	BINARY tmp_bin;
+	tmp_bin.pc = raw.data();
+	tmp_bin.cb = std::min(raw.size(), static_cast<size_t>(UINT32_MAX));
 	return pproplist->set(PR_CONVERSATION_INDEX, &tmp_bin) == ecSuccess ? TRUE : false;
 }
 
