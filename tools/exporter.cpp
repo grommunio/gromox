@@ -166,6 +166,7 @@ static int emit_message_im(const message_content &ctnt, const std::string &log_i
 	cvt.log_id = log_id.c_str();
 	cvt.alloc = zalloc;
 	cvt.get_propids = cu_get_propids;
+	cvt.get_propname = cu_get_propname;
 	if (!cvt.mapi_to_inet(ctnt, imail)) {
 		fprintf(stderr, "oxcmail_export failed for an unspecified reason.\n");
 		return -1;
