@@ -3399,8 +3399,8 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	if (sa != nullptr) {
 		tmp_len = 0;
 		for (size_t i = 0; i < sa->count; ++i) {
-			if (0 != tmp_len) {
-				strcpy(tmp_field, " ,");
+			if (tmp_len != 0 && tmp_len <= MIME_FIELD_LEN - 2) {
+				strcpy(&tmp_field[tmp_len], ", ");
 				tmp_len += 2;
 			}
 			if (tmp_len >= MIME_FIELD_LEN)
