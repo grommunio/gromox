@@ -633,47 +633,6 @@ static BOOL oxcmail_parse_thread_index(const char *charset, const char *field,
 	return pproplist->set(PR_CONVERSATION_INDEX, &tmp_bin) == ecSuccess ? TRUE : false;
 }
 
-static BOOL oxcmail_parse_keywords(const char *charset, const char *field,
-    propid_t propid, TPROPVAL_ARRAY *pproplist)
-{
-	int i, len;
-	BOOL b_start;
-	char *ptoken_prev;
-	STRING_ARRAY strings;
-	char* string_buff[1024];
-	char tmp_buff[MIME_FIELD_LEN];
-	uint32_t tag;
-	
-	if (!mime_string_to_utf8(charset, field, tmp_buff, std::size(tmp_buff))) {
-		tag = PROP_TAG(PT_MV_STRING8, propid);
-		gx_strlcpy(tmp_buff, field, std::size(tmp_buff));
-	} else {
-		tag = PROP_TAG(PT_MV_UNICODE, propid);
-	}
-	strings.count = 0;
-	strings.ppstr = string_buff;
-	len = strlen(tmp_buff);
-	tmp_buff[len++] = ';';
-	ptoken_prev = tmp_buff;
-	b_start = FALSE;
-	for (i=0; i<len&&strings.count<1024; i++) {
-		if (!b_start && (tmp_buff[i] == ' ' || tmp_buff[i] == '\t')) {
-			ptoken_prev = tmp_buff + i + 1;
-			continue;
-		}
-		b_start = TRUE;
-		if (',' == tmp_buff[i] || ';' == tmp_buff[i]) {
-			tmp_buff[i] = '\0';
-			strings.ppstr[strings.count++] = ptoken_prev;
-			b_start = FALSE;
-			ptoken_prev = tmp_buff + i + 1;
-		}
-	}
-	if (strings.count == 0)
-		return TRUE;
-	return pproplist->set(tag, &strings) == ecSuccess ? TRUE : false;
-}
-
 static BOOL oxcmail_parse_response_suppress(const char *unfield,
     TPROPVAL_ARRAY *pproplist)
 {
@@ -1163,8 +1122,8 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		if (namemap_add(penum_param->phash, penum_param->last_propid,
 		    std::move(propname)) != 0)
 			return FALSE;
-		if (!oxcmail_parse_keywords(penum_param->charset, field,
-		    penum_param->last_propid, &penum_param->pmsg->proplist))
+		if (!oxcmail::parse_keywords(penum_param->charset, field,
+		    penum_param->last_propid, penum_param->pmsg->proplist))
 			return FALSE;
 		penum_param->last_propid ++;
 	} else if (strcasecmp(key, "Expires") == 0 ||

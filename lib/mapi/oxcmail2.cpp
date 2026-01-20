@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
+#include <libHX/ctype_helper.h>
 #include <libHX/libxml_helper.h>
+#include <libHX/string.h>
 #include <libxml/HTMLparser.h>
 #include <libxml/HTMLtree.h>
 #include <vmime/generationContext.hpp>
@@ -436,6 +438,38 @@ bool attachment_is_inline(const attachment_content &at)
 		return false;
 	return at.proplist.has(PR_ATTACH_CONTENT_ID) ||
 	       at.proplist.has(PR_ATTACH_CONTENT_LOCATION);
+}
+
+bool parse_keywords(const char *charset, const char *field,
+    propid_t propid, TPROPVAL_ARRAY &props) try
+{
+	proptag_t tag;
+	char tmp_buff[MIME_FIELD_LEN];
+
+	if (!mime_string_to_utf8(charset, field, tmp_buff, std::size(tmp_buff))) {
+		tag = PROP_TAG(PT_MV_STRING8, propid);
+		gx_strlcpy(tmp_buff, field, std::size(tmp_buff));
+	} else {
+		tag = PROP_TAG(PT_MV_UNICODE, propid);
+	}
+	std::vector<char *> vec;
+	char *saveptr = nullptr;
+	for (auto token = strtok_r(tmp_buff, ",;", &saveptr);
+	     token != nullptr;
+	     token = strtok_r(nullptr, ",;", &saveptr)) {
+		while (HX_isspace(*token))
+			++token;
+		vec.emplace_back(token);
+	}
+	if (vec.empty())
+		return TRUE;
+	STRING_ARRAY sa;
+	sa.count = std::min(vec.size(), static_cast<size_t>(UINT32_MAX));
+	sa.ppstr = vec.data();
+	return props.set(tag, &sa) == ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
+	return false;
 }
 
 }
