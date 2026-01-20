@@ -3291,7 +3291,6 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	    !oxcmail_export_receiptflg(pmsg, phead, sched) ||
 	    !oxcmail_export_tocc(pmsg, pskeleton, phead))
 		return false;
-	char tmp_buff[MIME_FIELD_LEN];
 	char tmp_field[MIME_FIELD_LEN];
 	auto adrlist = vmime::make_shared<vmime::addressList>();
 	if (oxcmail_export_reply_to(pmsg, *adrlist)) {
@@ -3373,9 +3372,8 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	str  = pmsg->proplist.get<char>(PR_SUBJECT_PREFIX);
 	auto str1 = pmsg->proplist.get<const char>(PR_NORMALIZED_SUBJECT);
 	if (str != nullptr && str1 != nullptr) {
-		snprintf(tmp_buff, MIME_FIELD_LEN, "%s%s", str, str1);
 		if (oxcmail_encode_mime_string(pskeleton->charset,
-		    tmp_buff, tmp_field, std::size(tmp_field)) > 0 &&
+		    (std::string(str) + str1).c_str(), tmp_field, std::size(tmp_field)) > 0 &&
 		    !phead->set_field("Subject", tmp_field))
 			return FALSE;
 	} else {
