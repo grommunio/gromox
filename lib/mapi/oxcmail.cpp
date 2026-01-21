@@ -628,55 +628,6 @@ static BOOL oxcmail_parse_thread_index(const char *charset, const char *field,
 	return pproplist->set(PR_CONVERSATION_INDEX, &tmp_bin) == ecSuccess ? TRUE : false;
 }
 
-static BOOL oxcmail_parse_response_suppress(const char *unfield,
-    TPROPVAL_ARRAY *pproplist)
-{
-	BOOL b_start;
-	char *ptoken_prev;
-	uint32_t tmp_int32;
-	
-	if (strcasecmp(unfield, "NONE") == 0) {
-		return TRUE;
-	} else if (strcasecmp(unfield, "ALL") == 0) {
-		tmp_int32 = UINT32_MAX;
-		return pproplist->set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32) == ecSuccess ? TRUE : false;
-	}
-	char field[MIME_FIELD_LEN];
-	gx_strlcpy(field, unfield, std::size(field));
-	auto len = strlen(field);
-	field[len++] = ';';
-	ptoken_prev = field;
-	b_start = FALSE;
-	tmp_int32 = 0;
-	for (size_t i = 0; i < len; ++i) {
-		if (!b_start && (field[i] == ' ' || field[i] == '\t')) {
-			ptoken_prev = field + i + 1;
-			continue;
-		}
-		b_start = TRUE;
-		if (',' == field[i] || ';' == field[i]) {
-			field[i] = '\0';
-			if (strcasecmp("DR", ptoken_prev) == 0)
-				tmp_int32 |= AUTO_RESPONSE_SUPPRESS_DR;
-			else if (strcasecmp("NDR", ptoken_prev) == 0)
-				tmp_int32 |= AUTO_RESPONSE_SUPPRESS_NDR;
-			else if (strcasecmp("RN", ptoken_prev) == 0)
-				tmp_int32 |= AUTO_RESPONSE_SUPPRESS_RN;
-			else if (strcasecmp("NRN", ptoken_prev) == 0)
-				tmp_int32 |= AUTO_RESPONSE_SUPPRESS_NRN;
-			else if (strcasecmp("OOF", ptoken_prev) == 0)
-				tmp_int32 |= AUTO_RESPONSE_SUPPRESS_OOF;
-			else if (strcasecmp("AutoReply", ptoken_prev) == 0)
-				tmp_int32 |= AUTO_RESPONSE_SUPPRESS_AUTOREPLY;
-			b_start = FALSE;
-			ptoken_prev = field + i + 1;
-		}
-	}
-	if (tmp_int32 == 0)
-		return TRUE;
-	return pproplist->set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32) == ecSuccess ? TRUE : false;
-}
-
 static inline bool cttype_is_voiceaudio(const char *s)
 {
 	static constexpr char types[][10] =
@@ -1129,8 +1080,8 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 				return FALSE;
 		}
 	} else if (strcasecmp(key, "X-Auto-Response-Suppress") == 0) {
-		if (!oxcmail_parse_response_suppress(field,
-		    &penum_param->pmsg->proplist))
+		if (!oxcmail::parse_response_suppress(field,
+		    penum_param->pmsg->proplist))
 			return FALSE;
 	} else if (strcasecmp(key, "Precedence") == 0) {
 		if (penum_param->pmsg->proplist.set(PR_INTERNET_PRECEDENCE, field) != ecSuccess)

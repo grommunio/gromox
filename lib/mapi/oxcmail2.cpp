@@ -472,6 +472,43 @@ bool parse_keywords(const char *charset, const char *field,
 	return false;
 }
 
+bool parse_response_suppress(const char *raw, TPROPVAL_ARRAY &props) try
+{
+	std::string field = raw;
+	uint32_t v = 0;
+	char *saveptr = nullptr;
+
+	for (auto token = strtok_r(field.data(), ",;", &saveptr);
+	     token != nullptr;
+	     token = strtok_r(nullptr, ",;", &saveptr)) {
+		while (HX_isspace(*token))
+			++token;
+		HX_strrtrim(token);
+		if (strcasecmp(token, "ALL") == 0)
+			v = ~0U;
+		else if (strcasecmp(token, "NONE") == 0)
+			v = 0;
+		else if (strcasecmp(token, "DR") == 0)
+			v |= AUTO_RESPONSE_SUPPRESS_DR;
+		else if (strcasecmp(token, "NDR") == 0)
+			v |= AUTO_RESPONSE_SUPPRESS_NDR;
+		else if (strcasecmp(token, "RN") == 0)
+			v |= AUTO_RESPONSE_SUPPRESS_RN;
+		else if (strcasecmp(token, "NRN") == 0)
+			v |= AUTO_RESPONSE_SUPPRESS_NRN;
+		else if (strcasecmp(token, "OOF") == 0)
+			v |= AUTO_RESPONSE_SUPPRESS_OOF;
+		else if (strcasecmp(token, "AutoReply") == 0)
+			v |= AUTO_RESPONSE_SUPPRESS_AUTOREPLY;
+	}
+	if (v == 0)
+		return true;
+	return props.set(PR_AUTO_RESPONSE_SUPPRESS, &v) == ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
+}
+
 }
 
 /* For exporting MAPI Attachments as MIME parts */
