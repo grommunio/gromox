@@ -2080,9 +2080,30 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	if (item.Recurrence) {
 		auto localStartTime = clock::to_time_t(item.Start.value().time);
 		auto localEndTime = clock::to_time_t(item.End.value().time);
+		bool isAllDay = item.IsAllDayEvent && item.IsAllDayEvent.value();
+		/*
+		 * For recurring all-day events, normalize End to exactly one
+		 * day after Start. Clients may send End spanning multiple
+		 * days, but each occurrence should be exactly 24h (XXX:
+		 * timezone change days!) so they do not overlap.
+		 */
+		if (isAllDay) {
+			localEndTime = localStartTime + 86400;
+			endTime = localEndTime;
+		}
 		auto duration = localEndTime - localStartTime;
 		struct tm startdate_tm;
-		if (localtime_r(&localStartTime, &startdate_tm) == nullptr)
+		/*
+		 * Use the RecurrenceRange's StartDate for the recurrence
+		 * start. For all-day events, the Start field is midnight local
+		 * time expressed in UTC (e.g. 23:00Z for CET), but the
+		 * StartDate in the RecurrenceRange is the correct date-only
+		 * value.
+		 */
+		auto &rr = item.Recurrence->RecurrenceRange;
+		auto rangeStart = clock::to_time_t(std::visit(
+		                  [](const auto &r) { return r.StartDate; }, rr));
+		if (gmtime_r(&rangeStart, &startdate_tm) == nullptr)
 			throw EWSError::CalendarInvalidRecurrence(E3265);
 		APPOINTMENT_RECUR_PAT apr{};
 		uint32_t deleted_dates[1024], modified_dates[1024];
@@ -2094,8 +2115,55 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		apr.exceptioncount = 0;
 		apr.pexceptioninfo = exceptions;
 		apr.pextendedexception = ext_exceptions;
-		apr.starttimeoffset = 60 * startdate_tm.tm_hour + startdate_tm.tm_min;
-		apr.endtimeoffset = apr.starttimeoffset + duration / 60;
+		if (isAllDay) {
+			apr.starttimeoffset = 0;
+			apr.endtimeoffset = 1440;
+		} else {
+			/*
+			 * The blob stores times in the appointment's local
+			 * timezone. Compute the local appointment time:
+			 *
+			 * - calcStartOffset=true: client sent time without TZ
+			 *   suffix, so .time already *is* in local time.
+			 * - calcStartOffset=false: client sent explicit TZ,
+			 *   compute real UTC (time+offset), then convert to
+			 *   local via calendar timezone bias.
+			 */
+			time_t appt_local;
+			if (calcStartOffset) {
+				appt_local = localStartTime;
+			} else {
+				int64_t tz_off = 0;
+				/*
+				 * Read timezone name directly from the item
+				 * rather than shape – the shape's named
+				 * property cache has not been resolved yet.
+				 */
+				const char *tz_name = nullptr;
+				if (item.StartTimeZoneId)
+					tz_name = item.StartTimeZoneId->c_str();
+				else if (item.EndTimeZoneId)
+					tz_name = item.EndTimeZoneId->c_str();
+				if (tz_name) {
+					auto buf = ianatz_to_tzdef(tz_name);
+					if (!buf)
+						buf = wintz_to_tzdef(tz_name);
+					if (buf) {
+						EXT_PULL ep;
+						TZDEF tz;
+						ep.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+						if (ep.g_tzdef(&tz) == pack_result::ok)
+							offset_from_tz(&tz, localStartTime, tz_off);
+					}
+				}
+				auto real_utc = localStartTime + static_cast<time_t>(startOffset) * 60;
+				appt_local    = real_utc - static_cast<time_t>(tz_off) * 60;
+			}
+			struct tm start_tm;
+			gmtime_r(&appt_local, &start_tm);
+			apr.starttimeoffset = 60 * start_tm.tm_hour + start_tm.tm_min;
+			apr.endtimeoffset   = apr.starttimeoffset + duration / 60;
+		}
 		apr.recur_pat.readerversion = 0x3004;
 		apr.recur_pat.writerversion = 0x3004;
 		apr.recur_pat.calendartype = CAL_DEFAULT;
@@ -2111,7 +2179,6 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		apr.recur_pat.startdate = rop_util_unix_to_rtime(startdate);
 		uint8_t rectype = rectypeNone;
 		auto& rp = item.Recurrence->RecurrencePattern;
-		auto& rr = item.Recurrence->RecurrenceRange;
 
 		if (std::holds_alternative<tDailyRecurrencePattern>(rp)) {
 			auto interval = std::get<tDailyRecurrencePattern>(rp).Interval;
@@ -2246,41 +2313,73 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	}
 	shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(isrecurring)});
 
-	proptag_t tag = shape.tag(NtCalendarTimeZone);
-	if (tag != 0) {
-		const TAGGED_PROPVAL* caltz = shape.writes(NtCalendarTimeZone);
-		if (caltz) {
-			auto buf = ianatz_to_tzdef(static_cast<char*>(caltz->pvalue));
-			if (buf == nullptr)
-				buf = wintz_to_tzdef(static_cast<char*>(caltz->pvalue));
-			if (buf != nullptr) {
-				size_t len = buf->size();
-				if (len > UINT32_MAX)
-					throw InputError(E3293);
-				BINARY *temp_bin = construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
-					{reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
-				shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
-					TAGGED_PROPVAL{PT_BINARY, temp_bin});
-				shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
-					TAGGED_PROPVAL{PT_BINARY, temp_bin});
+	/*
+	 * Read timezone name directly from item rather than shape – the
+	 * shape's named property cache has not been resolved yet at this
+	 * point, so shape.writes(NtCalendarTimeZone) would return nullptr even
+	 * though the value was written above.
+	 */
+	const char *tz_name = nullptr;
+	if (item.StartTimeZoneId)
+		tz_name = item.StartTimeZoneId->c_str();
+	else if (item.EndTimeZoneId)
+		tz_name = item.EndTimeZoneId->c_str();
+	if (tz_name) {
+		auto buf = ianatz_to_tzdef(tz_name);
+		if (buf == nullptr)
+			buf = wintz_to_tzdef(tz_name);
+		if (buf == nullptr)
+			mlog(LV_WARN, "[ews] unknown timezone \"%s\"", tz_name);
+		if (buf != nullptr) {
+			size_t len = buf->size();
+			if (len > UINT32_MAX)
+				throw InputError(E3293);
+			BINARY *temp_bin = construct<BINARY>(BINARY{static_cast<uint32_t>(buf->size()),
+			                   {reinterpret_cast<uint8_t*>(const_cast<char*>(buf->data()))}});
+			shape.write(NtAppointmentTimeZoneDefinitionStartDisplay,
+				TAGGED_PROPVAL{PT_BINARY, temp_bin});
+			shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
+				TAGGED_PROPVAL{PT_BINARY, temp_bin});
+			shape.write(NtAppointmentTimeZoneDefinitionRecur,
+				TAGGED_PROPVAL{PT_BINARY, temp_bin});
 
-				// If the offsets of start or end times are 0 and
-				// the client didn't send the offset information in date tags,
-				// try to get the offset from the timezone definition.
-				if ((startOffset == 0 && calcStartOffset) || (endOffset == 0 && calcEndOffset)) {
-					EXT_PULL ext_pull;
-					TZDEF tzdef;
-					ext_pull.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
-					if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
-						throw EWS::DispatchError(E3294);
-					if (calcStartOffset && !offset_from_tz(&tzdef, startTime, startOffset))
-						throw EWSError::TimeZone(E3300);
-					if (calcEndOffset && !offset_from_tz(&tzdef, endTime, endOffset))
-						throw EWSError::TimeZone(E3300);
-				}
-				item.Start.value().offset = std::chrono::minutes(startOffset);
-				item.End.value().offset = std::chrono::minutes(endOffset);
+			EXT_PULL ext_pull;
+			TZDEF tzdef;
+			ext_pull.init(buf->data(), buf->size(), alloc, EXT_FLAG_UTF16);
+			if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
+				throw EWS::DispatchError(E3294);
+
+			/*
+			 * Write PidLidTimeZoneStruct – the freebusy and
+			 * recurrence expansion code uses this to determine the
+			 * timezone of times in the recurrence blob.
+			 */
+			if (tzdef.crules > 0) {
+				TZSTRUCT tzs{};
+				auto &rule = tzdef.prules[tzdef.crules - 1];
+				tzs.bias = rule.bias;
+				tzs.daylightbias = rule.daylightbias;
+				tzs.standarddate = rule.standarddate;
+				tzs.daylightdate = rule.daylightdate;
+				tzs.standardyear = tzs.standarddate.year;
+				tzs.daylightyear = tzs.daylightdate.year;
+				auto *tzdata = alloc<uint8_t>(48);
+				EXT_PUSH ep;
+				if (ep.init(tzdata, 48, 0) &&
+				    ep.p_tzstruct(tzs) == pack_result::ok)
+					shape.write(NtTimeZoneStruct,
+						TAGGED_PROPVAL{PT_BINARY,
+						construct<BINARY>(BINARY{ep.m_offset, {tzdata}})});
 			}
+
+			if ((startOffset == 0 && calcStartOffset) &&
+			    !offset_from_tz(&tzdef, startTime, startOffset))
+				throw EWSError::TimeZone(E3300);
+			if ((endOffset == 0 && calcEndOffset) &&
+			    !offset_from_tz(&tzdef, endTime, endOffset))
+				throw EWSError::TimeZone(E3300);
+			item.Start.value().offset = std::chrono::minutes(startOffset);
+			item.End.value().offset = std::chrono::minutes(endOffset);
 		}
 	}
 	// The named prop tags are not available in the shape at this point, so set
@@ -2913,7 +3012,12 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	BINARY* changeKeyContainer = construct<BINARY>(serialize(changeKey));
 	shape.write(TAGGED_PROPVAL{PR_CHANGE_KEY, changeKeyContainer});
 
-	const BINARY* currentPclContainer = getItemProp<BINARY>(dir, mid.messageId(), PR_PREDECESSOR_CHANGE_LIST);
+	const BINARY *currentPclContainer = nullptr;
+	proptag_t pcl_tag = PR_PREDECESSOR_CHANGE_LIST;
+	PROPTAG_ARRAY pcl_tags{1, &pcl_tag};
+	TPROPVAL_ARRAY pcl_result = getItemProps(dir, mid.messageId(), pcl_tags);
+	if (pcl_result.count == 1 && pcl_result.ppropval->proptag == pcl_tag)
+		currentPclContainer = static_cast<const BINARY *>(pcl_result.ppropval->pvalue);
 	PCL pcl;
 	if (currentPclContainer != nullptr && !pcl.deserialize(currentPclContainer))
 		throw DispatchError(E3087);

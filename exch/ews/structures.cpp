@@ -434,6 +434,12 @@ tRecurrenceRange get_recurrence_range(const RECURRENCE_PATTERN& recur_pat)
 	}
 }
 
+static inline std::chrono::system_clock::time_point
+rtime_to_tp(std::chrono::seconds tz_offset, uint32_t rtime)
+{
+	return rop_util_rtime_to_unix2(rtime) + tz_offset;
+}
+
 /**
  * @brief process deleted and modified occurrences
  *
@@ -441,10 +447,12 @@ tRecurrenceRange get_recurrence_range(const RECURRENCE_PATTERN& recur_pat)
  * @param apprecurr    Appointment recurrence pattern
  * @param modOccs      Vector containing modified occurrences
  * @param delOccs      Vector containing deleted occurrences
+ * @param tz_offset    Timezone offset (UTC minus local) in seconds
  */
 void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_PAT& apprecurr,
 	std::vector<tOccurrenceInfoType>& modOccs,
-	std::vector<tDeletedOccurrenceInfoType>& delOccs)
+	std::vector<tDeletedOccurrenceInfoType> &delOccs,
+	std::chrono::seconds tz_offset)
 {
 	std::set<uint32_t> mod_insts(apprecurr.recur_pat.pmodifiedinstancedates,
 		apprecurr.recur_pat.pmodifiedinstancedates + apprecurr.recur_pat.modifiedinstancecount);
@@ -454,12 +462,12 @@ void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_
 		if (mod_insts.find(apprecurr.recur_pat.pdeletedinstancedates[i]) != mod_insts.end()) {
 			modOccs.emplace_back(tOccurrenceInfoType({
 				sOccurrenceId(*entryid, apprecurr.pexceptioninfo[i-del_count].originalstartdate),
-				rop_util_rtime_to_unix2(apprecurr.pexceptioninfo[i-del_count].startdatetime),
-				rop_util_rtime_to_unix2(apprecurr.pexceptioninfo[i-del_count].enddatetime),
-				rop_util_rtime_to_unix2(apprecurr.pexceptioninfo[i-del_count].originalstartdate)}));
+				rtime_to_tp(tz_offset, apprecurr.pexceptioninfo[i-del_count].startdatetime),
+				rtime_to_tp(tz_offset, apprecurr.pexceptioninfo[i-del_count].enddatetime),
+				rtime_to_tp(tz_offset, apprecurr.pexceptioninfo[i-del_count].originalstartdate)}));
 		} else {
 			del_count++;
-			delOccs.emplace_back(tDeletedOccurrenceInfoType{rop_util_rtime_to_unix2(
+			delOccs.emplace_back(tDeletedOccurrenceInfoType{rtime_to_tp(tz_offset,
 				apprecurr.recur_pat.pdeletedinstancedates[i] + apprecurr.starttimeoffset)});
 		}
 	}
@@ -1669,7 +1677,16 @@ void tCalendarItem::update(const sShape& shape)
 				std::vector<tOccurrenceInfoType> modOccs;
 				std::vector<tDeletedOccurrenceInfoType> delOccs;
 				auto entryid_propval = shape.get(PR_ENTRYID);
-				process_occurrences(entryid_propval, apprecurr, modOccs, delOccs);
+				std::chrono::seconds tz_offset{0};
+				auto sp = shape.get<uint64_t>(PR_START_DATE);
+				if (!sp)
+					sp = shape.get<uint64_t>(NtCommonStart);
+				if (sp) {
+					auto su = rop_util_nttime_to_unix(*sp);
+					auto sl = rop_util_rtime_to_unix(apprecurr.recur_pat.startdate + apprecurr.starttimeoffset);
+					tz_offset = std::chrono::seconds(su - sl);
+				}
+				process_occurrences(entryid_propval, apprecurr, modOccs, delOccs, tz_offset);
 				if (modOccs.size() > 0)
 					ModifiedOccurrences.emplace(modOccs);
 				if (delOccs.size() > 0)
@@ -1811,11 +1828,35 @@ void tCalendarItem::setDatetimeFields(sShape& shape)
 					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
 				shape.write(NtAppointmentTimeZoneDefinitionEndDisplay,
 					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
+				shape.write(NtAppointmentTimeZoneDefinitionRecur,
+					TAGGED_PROPVAL{PT_BINARY, tmp_bin});
 				EXT_PULL ext_pull;
 				TZDEF tzdef;
 				ext_pull.init(buf->data(), buf->size(), EWSContext::alloc, EXT_FLAG_UTF16);
 				if (ext_pull.g_tzdef(&tzdef) != pack_result::ok)
 					throw EWSError::InternalServerError(E3294);
+				/*
+				 * Write PidLidTimeZoneStruct for freebusy and
+				 * recurrence expansion code.
+				 */
+				if (tzdef.crules > 0) {
+					TZSTRUCT tzs{};
+					auto &rule = tzdef.prules[tzdef.crules-1];
+					tzs.bias = rule.bias;
+					tzs.daylightbias = rule.daylightbias;
+					tzs.standarddate = rule.standarddate;
+					tzs.daylightdate = rule.daylightdate;
+					tzs.standardyear = tzs.standarddate.year;
+					tzs.daylightyear = tzs.daylightdate.year;
+					auto *tzdata = EWSContext::alloc<uint8_t>(48);
+					EXT_PUSH ep;
+					if (ep.init(tzdata, 48, 0) &&
+					    ep.p_tzstruct(tzs) == pack_result::ok)
+						shape.write(NtTimeZoneStruct,
+							TAGGED_PROPVAL{PT_BINARY,
+							EWSContext::construct<BINARY>(
+							BINARY{ep.m_offset, {tzdata}})});
+				}
 				auto& op = shape.offsetProps;
 				if ((tag = shape.tag(NtCommonStart)) &&
 				    startTime.has_value() &&
@@ -4138,7 +4179,16 @@ void tMeetingRequestMessage::update(const sShape& shape)
 				std::vector<tOccurrenceInfoType> modOccs;
 				std::vector<tDeletedOccurrenceInfoType> delOccs;
 				auto entryid_propval = shape.get(PR_ENTRYID);
-				process_occurrences(entryid_propval, apprecurr, modOccs, delOccs);
+				std::chrono::seconds tz_offset{0};
+				auto sp = shape.get<uint64_t>(PR_START_DATE);
+				if (!sp)
+					sp = shape.get<uint64_t>(NtCommonStart);
+				if (sp) {
+					auto su = rop_util_nttime_to_unix(*sp);
+					auto sl = rop_util_rtime_to_unix(apprecurr.recur_pat.startdate + apprecurr.starttimeoffset);
+					tz_offset = std::chrono::seconds(su - sl);
+				}
+				process_occurrences(entryid_propval, apprecurr, modOccs, delOccs, tz_offset);
 				if (modOccs.size() > 0)
 					ModifiedOccurrences.emplace(modOccs);
 				if (delOccs.size() > 0)
