@@ -293,43 +293,27 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	char guidtxt[GUIDSTR_SIZE]{};
 	GUID::random_new().to_str(guidtxt, std::size(guidtxt), 32);
 	auto mid_string = fmt::format("R-{}/{}", &guidtxt[30], guidtxt);
-	auto eml_path = mres.maildir + "/eml/" + mid_string;
 
-	auto iret = gx_mkbasedir(eml_path.c_str(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
-	if (iret < 0) {
-		mlog(LV_ERR, "E-1493: mkbasedir for %s: %s", eml_path.c_str(), strerror(-iret));
-		return delivery_status::temp_fail;
+	{
+		std::string eml_content;
+		auto syserr = pmail->to_str(eml_content);
+		if (syserr != 0) {
+			exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
+				"%s: pmail->to_str failed: %s",
+				mid_string.c_str(), strerror(syserr));
+			return delivery_status::temp_fail;
+		}
+		if (!exmdb_client_remote::imapfile_write(home_dir, "eml", mid_string,
+		    std::move(eml_content))) {
+			mlog(LV_ERR, "E-1765: write %s/eml/%s failed",
+				home_dir, mid_string.c_str());
+			return delivery_status::perm_fail;
+		}
 	}
-	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
-	if (fd.get() < 0) {
-		auto se = errno;
-		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
-			"open WR %s: %s", eml_path.c_str(), strerror(se));
-		errno = se;
-		return delivery_status::temp_fail;
-	}
-	
-	auto syserr = pmail->to_fd(fd.get());
-	if (syserr != 0) {
-		fd.close_rd();
-		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1386: remove %s: %s",
-			        eml_path.c_str(), strerror(errno));
-		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
-			"%s: pmail->to_fd failed: %s",
-			eml_path.c_str(), strerror(syserr));
-		return delivery_status::temp_fail;
-	}
-	auto ret = fd.close_wr();
-	if (ret < 0)
-		mlog(LV_ERR, "E-1120: close %s: %s", eml_path.c_str(), strerror(ret));
 
 	Json::Value digest;
 	auto result = pmail->make_digest(digest);
 	if (result <= 0) {
-		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1387: remove %s: %s",
-			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"permanent failure getting mail digest");
 		return delivery_status::perm_fail;
@@ -344,9 +328,6 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	auto pmsg = cvt.inet_to_mapi(*pmail);
 	g_storedir = nullptr;
 	if (NULL == pmsg) {
-		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1388: remove %s: %s",
-			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail "
 			"to convert rfc5322 into MAPI message object");
 		return delivery_status::perm_fail;
@@ -415,7 +396,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	switch (dm_status) {
 	case deliver_message_result::result_ok:
 		exmdb_local_log_info(pcontext->ctrl, address, LV_DEBUG,
-			"message %s was delivered OK", eml_path.c_str());
+			"message %s was delivered OK", mid_string.c_str());
 		if (pcontext->ctrl.need_bounce &&
 		    strcmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) != 0&&
 		    !(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF))
