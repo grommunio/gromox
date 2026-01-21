@@ -3464,19 +3464,16 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	}
 	
 	if (pskeleton->mail_type == oxcmail_type::tnef) {
-		*tmp_field = '\0';
+		ostr.clear();
 		bv = pmsg->proplist.get<BINARY>(PR_TNEF_CORRELATION_KEY);
 		if (bv == nullptr) {
 			str = pmsg->proplist.get<char>(PR_INTERNET_MESSAGE_ID);
 			if (str != nullptr)
-				strncpy(tmp_field, str, 1024);
-		} else {
-			if (bv->cb < 1024) {
-				memcpy(tmp_field, bv->pb, bv->cb);
-				tmp_field[bv->cb] = '\0';
-			}
+				ostr = str;
+		} else if (bv->cb < 1024) {
+			ostr.assign(bv->pc, bv->cb);
 		}
-		if (!phead->set_field("X-MS-TNEF-Correlator", tmp_field))
+		if (!phead->set_field("X-MS-TNEF-Correlator", std::move(ostr)))
 			return FALSE;
 	}
 	
