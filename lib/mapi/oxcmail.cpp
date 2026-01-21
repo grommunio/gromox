@@ -3645,7 +3645,8 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
 }
 
 bool oxcmail_converter::export_attachment(const attachment_content &atc,
-    bool b_inline, const mime_skeleton &skel, MIME &mimeout) try
+    bool b_inline, const mime_skeleton &skel, MIME &mimeout,
+    unsigned int mail_depth) try
 {
 	auto pattachment = &atc;
 	auto pskeleton = &skel;
@@ -3765,10 +3766,18 @@ bool oxcmail_converter::export_attachment(const attachment_content &atc,
 	}
 	}
 	
+	if (pattachment->pembedded != nullptr &&
+	    mail_depth >= m_max_attach_depth) {
+		auto msg = fmt::format("Content-Type: text/plain\r\n\r\n"
+		           "This embedded attachment was suppressed upon sending "
+		           "because it is nested too deeply (maximum {})\r\n\r\n",
+		           m_max_attach_depth);
+		return pmime->write_content(msg.c_str(), msg.size(), mime_encoding::none);
+	}
 	if (NULL != pattachment->pembedded) {
 		auto b_tnef = pskeleton->mail_type == oxcmail_type::tnef;
 		MAIL imail;
-		if (!do_export(*pattachment->pembedded, b_tnef, imail))
+		if (!do_export(*pattachment->pembedded, b_tnef, imail, mail_depth + 1))
 			return FALSE;
 		auto mail_len = imail.get_length();
 		if (mail_len < 0)
@@ -3860,7 +3869,7 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 
 #define exp_false xlog_bool(__func__, __LINE__)
 bool oxcmail_converter::do_export(const message_content &imsg,
-    bool b_tnef, MAIL &imail) try
+    bool b_tnef, MAIL &imail, unsigned int mail_depth) try
 {
 	const auto pmsg = &imsg;
 	auto pmail = &imail;
@@ -4144,12 +4153,12 @@ bool oxcmail_converter::do_export(const message_content &imsg,
 			return exp_false;
 	}
 
-	auto err = export_tnef_body(skel, *pmail, prelated);
+	auto err = export_tnef_body(skel, *pmail, prelated, mail_depth);
 	if (err != ecSuccess) {
 		mlog(LV_ERR, "E-2941: %s", mapi_strerror(err));
 		return false;
 	}
-	err = export_attachments(*pmsg, skel, *pmail, prelated, pmixed);
+	err = export_attachments(*pmsg, skel, *pmail, prelated, pmixed, mail_depth);
 	if (err != ecSuccess) {
 		mlog(LV_ERR, "E-2940: %s", mapi_strerror(err));
 		return false;
@@ -4177,5 +4186,5 @@ void oxcmail_converter::use_format_override(const message_content &mc)
 
 bool oxcmail_converter::mapi_to_inet(const message_content &mc, MAIL &out)
 {
-	return do_export(mc, false, out);
+	return do_export(mc, false, out, 0);
 }

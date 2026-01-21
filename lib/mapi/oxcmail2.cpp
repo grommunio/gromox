@@ -514,7 +514,8 @@ bool parse_response_suppress(const char *raw, TPROPVAL_ARRAY &props) try
 
 /* For exporting MAPI Attachments as MIME parts */
 ec_error_t oxcmail_converter::export_attachments(const message_content &mc,
-    const mime_skeleton &skel, MAIL &m_mail, MIME *m_related, MIME *m_mixed)
+    const mime_skeleton &skel, MAIL &m_mail, MIME *m_related, MIME *m_mixed,
+    unsigned int mail_depth)
 {
 	if (mc.children.pattachments == nullptr)
 		return ecSuccess;
@@ -525,7 +526,7 @@ ec_error_t oxcmail_converter::export_attachments(const message_content &mc,
 		auto new_part = m_mail.add_child(b_inline ? m_related : m_mixed, MIME_ADD_LAST);
 		if (new_part == nullptr)
 			return ecMAPIOOM;
-		if (!export_attachment(at, b_inline, skel, *new_part))
+		if (!export_attachment(at, b_inline, skel, *new_part, mail_depth))
 			return ecError;
 	}
 	return ecSuccess;
@@ -533,7 +534,7 @@ ec_error_t oxcmail_converter::export_attachments(const message_content &mc,
 
 /* Certain MAPI objects can only be expressed in MIME as TNEF */
 ec_error_t oxcmail_converter::export_tnef_body(const mime_skeleton &skel,
-    MAIL &mail, MIME *m_related)
+    MAIL &mail, MIME *m_related, unsigned int mail_depth)
 {
 	if (skel.pattachments == nullptr)
 		return ecSuccess;
@@ -541,7 +542,7 @@ ec_error_t oxcmail_converter::export_tnef_body(const mime_skeleton &skel,
 		auto new_part = mail.add_child(m_related, MIME_ADD_LAST);
 		if (new_part == nullptr)
 			return ecMAPIOOM;
-		if (!export_attachment(at, true, skel, *new_part))
+		if (!export_attachment(at, true, skel, *new_part, mail_depth))
 			return ecError;
 	}
 	return ecSuccess;

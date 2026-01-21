@@ -52,10 +52,10 @@ class GX_EXPORT oxcmail_converter {
 	std::unique_ptr<message_content, gromox::mc_delete> inet_to_mapi(const MAIL &);
 
 	private:
-	bool do_export(const message_content &, bool force_tnef, MAIL &);
-	ec_error_t export_attachments(const message_content &, const oxcmail::mime_skeleton &, MAIL &, MIME *, MIME *);
-	bool export_attachment(const attachment_content &, bool b_inline, const oxcmail::mime_skeleton &, MIME &);
-	ec_error_t export_tnef_body(const oxcmail::mime_skeleton &, MAIL &, MIME *);
+	bool do_export(const message_content &, bool force_tnef, MAIL &, unsigned int mdepth);
+	ec_error_t export_attachments(const message_content &, const oxcmail::mime_skeleton &, MAIL &, MIME *, MIME *, unsigned int mdepth);
+	bool export_attachment(const attachment_content &, bool b_inline, const oxcmail::mime_skeleton &, MIME &, unsigned int mdepth);
+	ec_error_t export_tnef_body(const oxcmail::mime_skeleton &, MAIL &, MIME *, unsigned int mdepth);
 
 	public:
 	const char *log_id = "";
@@ -63,6 +63,7 @@ class GX_EXPORT oxcmail_converter {
 	GET_PROPIDS get_propids = nullptr;
 	GET_PROPNAME get_propname = nullptr;
 	oxcmail_body body_type = oxcmail_body::plain_and_html;
+	unsigned int m_max_attach_depth = 7;
 	bool add_rcvd_timestamp = false;
 };
 
