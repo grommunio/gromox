@@ -3725,7 +3725,7 @@ void tItem::update(const sShape& shape)
 			defaulted(Flag).DueDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
 		if ((prop = shape.get(NtTaskStartDate)))
 			defaulted(Flag).StartDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
-	} else {
+	} else if(shape.requested(PR_FLAG_STATUS)) {
 		defaulted(Flag).FlagStatus = Enum::NotFlagged;
 	}
 
