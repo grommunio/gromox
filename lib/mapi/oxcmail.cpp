@@ -1250,16 +1250,15 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		if (penum_param->pmsg->proplist.set(PidTagFaxNumberOfPages, &tmp_int32) != ecSuccess)
 			return FALSE;
 	} else if (strcasecmp(key, "Content-ID") == 0) {
-		size_t tmp_int32 = strlen(field);
-		if (tmp_int32 > 0) {
-			char rw[MIME_FIELD_LEN];
-			if (field[0] == '<' && field[tmp_int32-1] == '>') {
-				snprintf(rw, std::size(rw), "%.*s",
-				         static_cast<int>(tmp_int32 - 2), &field[1]);
-				field = rw;
-			}
-			uint32_t tag = str_isascii(field) ?
-			               PR_BODY_CONTENT_ID : PR_BODY_CONTENT_ID_A;
+		uint32_t tag = str_isascii(field) ?
+			       PR_BODY_CONTENT_ID : PR_BODY_CONTENT_ID_A;
+		if (field[0] == '<' && field[1] != '\0') {
+			std::string rw = field + 1;
+			if (rw.back() == '>')
+				rw.pop_back();
+			if (penum_param->pmsg->proplist.set(tag, rw.c_str()) != ecSuccess)
+				return FALSE;
+		} else {
 			if (penum_param->pmsg->proplist.set(tag, field) != ecSuccess)
 				return FALSE;
 		}
