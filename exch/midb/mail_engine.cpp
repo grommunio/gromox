@@ -122,19 +122,19 @@ struct ct_node {
 
 	union {
 		char *ct_headers[2]{};
-		char *ct_keyword;
 		time_t ct_time;
 		size_t ct_size;
 		imap_seq_list *ct_seq;
 	};
+	std::string ct_keyword;
 };
 using CONDITION_TREE_NODE = ct_node;
 
 struct KEYWORD_ENUM {
-	MJSON *pjson;
-	BOOL b_result;
-	const char *charset;
-	const char *keyword;
+	MJSON *pjson = nullptr;
+	BOOL b_result = false;
+	const char *charset = nullptr;
+	const char *keyword = nullptr;
 };
 
 struct IDB_ITEM {
@@ -500,7 +500,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				keyword_enum.pjson = &temp_mjson;
 				keyword_enum.b_result = FALSE;
 				keyword_enum.charset = charset;
-				keyword_enum.keyword = ptree_node->ct_keyword;
+				keyword_enum.keyword = ptree_node->ct_keyword.c_str();
 				temp_mjson.enum_mime(me_ct_enum_mime, &keyword_enum);
 				if (keyword_enum.b_result)
 					b_result1 = true;
@@ -519,7 +519,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				temp_buff1[temp_len] = '\0';
 				auto rs = me_ct_decode_mime(charset, temp_buff1);
 				if (rs != nullptr && strcasestr(rs.get(),
-				    ptree_node->ct_keyword) != nullptr)
+				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
 				break;
 			}
@@ -563,7 +563,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				temp_buff1[temp_len] = '\0';
 				auto rs = me_ct_decode_mime(charset, temp_buff1);
 				if (rs != nullptr && strcasestr(rs.get(),
-				    ptree_node->ct_keyword) != nullptr)
+				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
 				break;
 			}
@@ -701,7 +701,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				temp_buff1[temp_len] = '\0';
 				auto rs = me_ct_decode_mime(charset, temp_buff1);
 				if (rs != nullptr && strcasestr(rs.get(),
-				    ptree_node->ct_keyword) != nullptr)
+				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
 				break;
 			}
@@ -717,7 +717,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					temp_buff1[temp_len] = '\0';
 					auto rs = me_ct_decode_mime(charset, temp_buff1);
 					if (rs != nullptr && strcasestr(rs.get(),
-					    ptree_node->ct_keyword) != nullptr)
+					    ptree_node->ct_keyword.c_str()) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
@@ -728,7 +728,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					temp_buff1[temp_len] = '\0';
 					auto rs = me_ct_decode_mime(charset, temp_buff1);
 					if (rs != nullptr && strcasestr(rs.get(),
-					    ptree_node->ct_keyword) != nullptr)
+					    ptree_node->ct_keyword.c_str()) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
@@ -739,7 +739,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					temp_buff1[temp_len] = '\0';
 					auto rs = me_ct_decode_mime(charset, temp_buff1);
 					if (rs != nullptr && strcasestr(rs.get(),
-					    ptree_node->ct_keyword) != nullptr)
+					    ptree_node->ct_keyword.c_str()) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
@@ -750,7 +750,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					temp_buff1[temp_len] = '\0';
 					auto rs = me_ct_decode_mime(charset, temp_buff1);
 					if (rs != nullptr && strcasestr(rs.get(),
-					    ptree_node->ct_keyword) != nullptr)
+					    ptree_node->ct_keyword.c_str()) != nullptr)
 						b_result1 = true;
 				}
 				if (b_result1)
@@ -764,7 +764,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				keyword_enum.pjson = &temp_mjson;
 				keyword_enum.b_result = FALSE;
 				keyword_enum.charset = charset;
-				keyword_enum.keyword = ptree_node->ct_keyword;
+				keyword_enum.keyword = ptree_node->ct_keyword.c_str();
 				temp_mjson.enum_mime(me_ct_enum_mime, &keyword_enum);
 				if (keyword_enum.b_result)
 					b_result1 = true;
@@ -783,7 +783,7 @@ static bool me_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				temp_buff1[temp_len] = '\0';
 				auto rs = me_ct_decode_mime(charset, temp_buff1);
 				if (rs != nullptr && strcasestr(rs.get(),
-				    ptree_node->ct_keyword) != nullptr)
+				    ptree_node->ct_keyword.c_str()) != nullptr)
 					b_result1 = true;
 				break;
 			}
@@ -952,8 +952,7 @@ ct_node::ct_node(ct_node &&o) :
 		o.ct_seq = nullptr;
 		break;
 	case midb_cond::bcc ... midb_cond::unkeyword:
-		ct_keyword = o.ct_keyword;
-		o.ct_keyword = nullptr;
+		ct_keyword = std::move(o.ct_keyword);
 		break;
 	case midb_cond::header:
 		ct_headers[0] = o.ct_headers[0];
@@ -977,9 +976,6 @@ ct_node::~ct_node()
 	if (pbranch != nullptr)
 		return;
 	switch (condition) {
-	case midb_cond::bcc ... midb_cond::unkeyword:
-		free(ct_keyword);
-		break;
 	case midb_cond::id ... midb_cond::uid:
 		delete ct_seq;
 		break;
@@ -1070,9 +1066,7 @@ static std::unique_ptr<CONDITION_TREE> me_ct_build_internal(const char *charset,
 			i ++;
 			if (i + 1 > argc)
 				return {};
-			ptree_node->ct_keyword = strdup(me_ct_to_utf8(charset, argv[i]).c_str());
-			if (ptree_node->ct_keyword == nullptr)
-				return {};
+			ptree_node->ct_keyword = me_ct_to_utf8(charset, argv[i]);
 		} else if (array_find_istr(kwlist2, argv[i])) {
 			if (i + 1 > argc)
 				return {};
