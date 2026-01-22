@@ -59,24 +59,17 @@ static std::string nsp_ndr_to_utf16(int ndr_flag, const char *src)
 	return iconvtext(std::string_view(src, strlen(src) + 1), "UTF-8", cs, 0);
 }
 
-static BOOL nsp_ndr_to_utf8(int ndr_flag, const char *src,
-	size_t src_len, char *dst, size_t len)
+/**
+ * @src: UTF-16 byte sequence (\0\0 must be included)
+ *
+ * Returns @src in UTF-8 encoding (final \0 is implicit).
+ */
+static std::string nsp_ndr_to_utf8(int ndr_flag, std::string_view src)
 {
-	iconv_t conv_id = (ndr_flag & NDR_FLAG_BIGENDIAN) ?
-	                  iconv_open("UTF-8", "UTF-16") :
-	                  iconv_open("UTF-8", "UTF-16LE");
-	if (conv_id == (iconv_t)-1)
-		return false;
-	auto pin = deconst(src);
-	auto pout = dst;
-	memset(dst, 0, len);
-	if (iconv(conv_id, &pin, &src_len, &pout, &len) == static_cast<size_t>(-1)) {
-		iconv_close(conv_id);
-		return FALSE;
-	} else {
-		iconv_close(conv_id);
-		return TRUE;
-	}
+	if (src.size() >= 2)
+		src.remove_suffix(2);
+	auto cs = (ndr_flag & NDR_FLAG_BIGENDIAN) ? "UTF-16BE" : "UTF-16LE";
+	return iconvtext(src, cs, "UTF-8", 0);
 }
 
 static pack_result nsp_ndr_pull_stat(NDR_PULL &x, STAT *r)
@@ -308,7 +301,7 @@ static pack_result nsp_ndr_pull_strings_array(NDR_PULL &x,
 }
 
 static pack_result nsp_ndr_pull_wstring_array(NDR_PULL &x,
-    unsigned int flag, STRING_ARRAY *r)
+    unsigned int flag, STRING_ARRAY *r) try
 {
 	if (flag & FLAG_HEADER) {
 		TRY(x.align(5));
@@ -347,23 +340,19 @@ static pack_result nsp_ndr_pull_wstring_array(NDR_PULL &x,
 		TRY(x.g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
 			return pack_result::array_size;
+		std::string w;
 		TRY(x.check_str(length1, sizeof(uint16_t)));
-		std::unique_ptr<char[]> pwstring;
-		try {
-			pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length1 + 1);
-		} catch (const std::bad_alloc &) {
-			return pack_result::alloc;
-		}
-		TRY(x.g_str(pwstring.get(), sizeof(uint16_t) * length1));
-		r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1);
+		w.resize(sizeof(char16_t) * length1);
+		TRY(x.g_str(w.data(), sizeof(char16_t) * length1));
+		w = nsp_ndr_to_utf8(x.flags, w);
+		r->ppstr[cnt] = ndr_stack_anew<char>(NDR_STACK_IN, w.size() + 1);
 		if (r->ppstr[cnt] == nullptr)
 			return pack_result::alloc;
-		if (!nsp_ndr_to_utf8(x.flags, pwstring.get(),
-		    sizeof(uint16_t) * length1, r->ppstr[cnt],
-		    2 * sizeof(uint16_t) * length1))
-			return pack_result::charconv;
+		memcpy(r->ppstr[cnt], w.c_str(), w.size() + 1);
 	}
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result nsp_ndr_push_wstring_array(NDR_PUSH &x,
@@ -433,17 +422,11 @@ static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL &x,
 		TRY(x.g_ulong(&length1));
 		if (offset != 0 || length1 > size1)
 			return pack_result::array_size;
+		std::string w;
 		TRY(x.check_str(length1, sizeof(uint16_t)));
-		auto pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length1 + 1);
-		TRY(x.g_str(pwstring.get(), sizeof(uint16_t) * length1));
-		auto astr = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length1);
-		if (astr == nullptr)
-			return pack_result::alloc;
-		if (!nsp_ndr_to_utf8(x.flags, pwstring.get(),
-		    sizeof(uint16_t) * length1, astr,
-		    2 * sizeof(uint16_t) * length1))
-			return pack_result::charconv;
-		r[cnt] = std::move(astr);
+		w.resize(sizeof(char16_t) * length1);
+		TRY(x.g_str(w.data(), sizeof(char16_t) * length1));
+		r[cnt] = nsp_ndr_to_utf8(x.flags, w);
 	}
 	return pack_result::ok;
 } catch (const std::bad_alloc &) {
@@ -895,21 +878,15 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL &x,
 		TRY(x.g_ulong(&length));
 		if (offset != 0 || length > size)
 			return pack_result::array_size;
+		std::string w;
 		TRY(x.check_str(length, sizeof(uint16_t)));
-		std::unique_ptr<char[]> pwstring;
-		try {
-			pwstring = std::make_unique<char[]>(sizeof(uint16_t) * length + 1);
-		} catch (const std::bad_alloc &) {
-			return pack_result::alloc;
-		}
-		TRY(x.g_str(pwstring.get(), sizeof(uint16_t) * length));
-		r->pstr = ndr_stack_anew<char>(NDR_STACK_IN, 2 * sizeof(uint16_t) * length);
+		w.resize(sizeof(char16_t) * length);
+		TRY(x.g_str(w.data(), sizeof(char16_t) * length));
+		w = nsp_ndr_to_utf8(x.flags, w);
+		r->pstr = ndr_stack_anew<char>(NDR_STACK_IN, w.size() + 1);
 		if (r->pstr == nullptr)
 			return pack_result::alloc;
-		if (!nsp_ndr_to_utf8(x.flags, pwstring.get(),
-		    sizeof(uint16_t) * length, r->pstr,
-		    2 * sizeof(uint16_t) * length))
-			return pack_result::charconv;
+		memcpy(r->pstr, w.c_str(), w.size() + 1);
 		break;
 	}
 	case PT_BINARY:
