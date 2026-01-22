@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
@@ -46,27 +47,16 @@ using namespace gromox;
 static pack_result nsp_ndr_pull_restriction(NDR_PULL &, unsigned int flag, NSPRES *r);
 static pack_result nsp_ndr_push_restriction(NDR_PUSH &, unsigned int flag, const NSPRES &r);
 
-static int32_t nsp_ndr_to_utf16(int ndr_flag, const char *src, char *dst, size_t len)
+/**
+ * @src: \0-terminated C string in UTF-8 encoding
+ *
+ * Returns @src in UTF-16 encoding, with explicit \0\0 bytes included.
+ * (Because std::string would only give us a single \0 byte implicitly.)
+ */
+static std::string nsp_ndr_to_utf16(int ndr_flag, const char *src)
 {
-	size_t in_len;
-	size_t out_len;
-	iconv_t conv_id = (ndr_flag & NDR_FLAG_BIGENDIAN) ?
-	                  iconv_open("UTF-16", "UTF-8") :
-	                  iconv_open("UTF-16LE", "UTF-8");
-	if (conv_id == (iconv_t)-1)
-		return -1;
-	auto pin = deconst(src);
-	auto pout = dst;
-	in_len = strlen(src) + 1;
-	memset(dst, 0, len);
-	out_len = len;
-	if (iconv(conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1)) {
-		iconv_close(conv_id);
-		return -1;
-	} else {
-		iconv_close(conv_id);
-		return out_len - len;
-	}
+	auto cs = (ndr_flag & NDR_FLAG_BIGENDIAN) ? "UTF-16BE" : "UTF-16LE";
+	return iconvtext(std::string_view(src, strlen(src) + 1), "UTF-8", cs, 0);
 }
 
 static BOOL nsp_ndr_to_utf8(int ndr_flag, const char *src,
@@ -377,7 +367,7 @@ static pack_result nsp_ndr_pull_wstring_array(NDR_PULL &x,
 }
 
 static pack_result nsp_ndr_push_wstring_array(NDR_PUSH &x,
-    unsigned int flag, const STRING_ARRAY &r)
+    unsigned int flag, const STRING_ARRAY &r) try
 {
 	if (flag & FLAG_HEADER) {
 		TRY(x.align(5));
@@ -394,24 +384,15 @@ static pack_result nsp_ndr_push_wstring_array(NDR_PUSH &x,
 	for (size_t cnt = 0; cnt < r.count; ++cnt) {
 		if (r.ppstr[cnt] == nullptr)
 			continue;
-		uint32_t length = utf8_to_utf16_len(r.ppstr[cnt]);
-		std::unique_ptr<char[]> pwstring;
-		try {
-			pwstring = std::make_unique<char[]>(length);
-		} catch (const std::bad_alloc &) {
-			return pack_result::alloc;
-		}
-		auto z = nsp_ndr_to_utf16(x.flags,
-		         r.ppstr[cnt], pwstring.get(), length);
-		if (z < 0)
-			return pack_result::charconv;
-		length = z;
-		TRY(x.p_ulong(length / sizeof(uint16_t)));
+		auto w = nsp_ndr_to_utf16(x.flags, r.ppstr[cnt]);
+		TRY(x.p_ulong(w.size() / sizeof(char16_t)));
 		TRY(x.p_ulong(0));
-		TRY(x.p_ulong(length / sizeof(uint16_t)));
-		TRY(x.p_str(pwstring.get(), length));
+		TRY(x.p_ulong(w.size() / sizeof(char16_t)));
+		TRY(x.p_str(w.c_str(), w.size()));
 	}
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result nsp_ndr_pull_wstrings_array(NDR_PULL &x,
@@ -968,7 +949,7 @@ static pack_result nsp_ndr_pull_prop_val_union(NDR_PULL &x,
 
 /* This is for RPCH-based NSP only; mh_nsp is serialized elsewhere */
 static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH &x,
-    unsigned int flag, uint32_t type, const PROP_VAL_UNION &r)
+    unsigned int flag, uint32_t type, const PROP_VAL_UNION &r) try
 {
 	uint32_t length;
 	
@@ -1086,14 +1067,11 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH &x,
 		} catch (const std::bad_alloc &) {
 			return pack_result::alloc;
 		}
-		auto z = nsp_ndr_to_utf16(x.flags, r.pstr, pwstring.get(), 2 * length);
-		if (z < 0)
-			return pack_result::charconv;
-		length = z;
-		TRY(x.p_ulong(length / sizeof(uint16_t)));
+		auto w = nsp_ndr_to_utf16(x.flags, r.pstr);
+		TRY(x.p_ulong(w.size() / sizeof(char16_t)));
 		TRY(x.p_ulong(0));
-		TRY(x.p_ulong(length / sizeof(uint16_t)));
-		TRY(x.p_str(pwstring.get(), length));
+		TRY(x.p_ulong(w.size() / sizeof(char16_t)));
+		TRY(x.p_str(w.c_str(), w.size()));
 		break;
 	}
 	case PT_BINARY:
@@ -1129,6 +1107,8 @@ static pack_result nsp_ndr_push_prop_val_union(NDR_PUSH &x,
 		return pack_result::bad_switch;
 	}
 	return pack_result::ok;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result nsp_ndr_pull_property_value(NDR_PULL &x,
