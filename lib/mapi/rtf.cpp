@@ -383,7 +383,7 @@ bool rtf_reader::riconv_open(const char *fromcode)
 		ret = iconv(conv_id, nullptr, nullptr, &out_ptr, &out_size);
 		if (ret == static_cast<size_t>(-1))
 			/* ignore/discard */;
-		size_t converted = sizeof(out_buff) - out_size;
+		size_t converted = sizeof(out_buff) - 1 - out_size;
 		if (converted > 0) {
 			out_buff[converted] = '\0';
 			if (!escape_output(out_buff))
