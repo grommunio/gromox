@@ -1,4 +1,4 @@
-Gromox 3.3.32 (Development)
+Gromox 3.3.139 (Development)
 ===========================
 
 Enhancements:
@@ -11,6 +11,18 @@ Fixes:
 
 * mrautoproc: server-side processed meeting requests automatically entered into
   the calendar had lacked the flags asfMeeting+asfReceived, which was fixed.
+* nsp: seeking backwards with the seekEntries routine jumped too far backwards,
+  causing the last screenful of the Outlook GAL to be misrepresented.
+* oxcmail: the "Keywords:" RFC5322 header (Categories) used to get filled with
+  text garbage, which is now fixed.
+* zcore: plug a memory leak occuring when importing vCards
+
+Changes:
+
+* oxcmail: limit nesting depth of attachments during export to 7
+* exporter: FAI messages are no longer emitted by default and explicitly need
+  to be requested with the -a option.
+* daemons: deleted the oxcical_allday_ymd config directive
 
 
 Gromox 3.3 (2025-12-27)
