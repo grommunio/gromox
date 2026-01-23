@@ -2126,7 +2126,7 @@ void tChangeDescription::convDate(const PROPERTY_NAME& name, const XMLElement* v
 template<typename ET, typename PT>
 void tChangeDescription::convEnumIndex(proptag_t tag, const XMLElement *v, sShape &shape)
 {
-	shape.write(mkProp(tag, PT{ET{v->GetText()}.index()}));
+	shape.write(mkProp(tag, PT{ET{znul(v->GetText())}.index()}));
 }
 
 /**
@@ -2144,7 +2144,7 @@ void tChangeDescription::convEnumIndex(proptag_t tag, const XMLElement *v, sShap
 template<typename ET, typename PT>
 void tChangeDescription::convEnumIndex(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
 {
-	shape.write(mkProp(shape.tag(name), PT(ET(v->GetText()).index())));
+	shape.write(mkProp(shape.tag(name), PT(ET(znul(v->GetText())).index())));
 }
 
 /**
