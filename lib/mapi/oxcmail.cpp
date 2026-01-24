@@ -3302,7 +3302,7 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 			return FALSE;
 	} else {
 		str = pmsg->proplist.get<char>(PR_SUBJECT);
-		if (!phead->set_field("Subject", enc_text(str)))
+		if (str != nullptr && !phead->set_field("Subject", enc_text(str)))
 			return FALSE;
 	}
 	str = pmsg->proplist.get<char>(PR_CONVERSATION_TOPIC);
@@ -3323,6 +3323,8 @@ static bool oxcmail_export_mail_head(const message_content &imsg, const mime_ske
 	if (sa != nullptr) {
 		ostr.clear();
 		for (size_t i = 0; i < sa->count; ++i) {
+			if (sa->ppstr[i] == nullptr)
+				continue;
 			if (!ostr.empty())
 				ostr += ", ";
 			ostr += enc_text(sa->ppstr[i]);
