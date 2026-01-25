@@ -150,7 +150,7 @@ static void *smls_thrwork(void *arg)
 			auto str2 = resource_get_smtp_code(401, 2, &sl);
 			auto host_ID = znul(g_config_file->get_value("host_id"));
 			char buff[1024];
-			auto len = snprintf(buff, std::size(buff), "%s%s%s",
+			auto len = gx_snprintf(buff, std::size(buff), "%s%s%s",
 			           str, host_ID, str2);
 			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				/* ignore */;
@@ -164,7 +164,7 @@ static void *smls_thrwork(void *arg)
 			auto str2 = resource_get_smtp_code(202, 2, &sl);
 			auto host_ID = znul(g_config_file->get_value("host_id"));
 			char buff[1024];
-			auto len = snprintf(buff, std::size(buff), "%s%s%s",
+			auto len = gx_snprintf(buff, std::size(buff), "%s%s%s",
 			           str, host_ID, str2);
 			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				/* ignore */;

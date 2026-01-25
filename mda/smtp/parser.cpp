@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 /* smtp parser is a module, which first read data from socket, parses the smtp 
  * commands and then do the corresponding action. 
@@ -238,7 +238,7 @@ tproc_status smtp_parser_process(schedule_context *vcontext)
 	auto pcontext = static_cast<smtp_context *>(vcontext);
 	char *line, reply_buf[1024];
 	int actual_read, ssl_errno;
-	int size = READ_BUFFER_SIZE, len;
+	int size = READ_BUFFER_SIZE;
 	time_point current_time;
 	const char *host_ID;
 	char *pbuff = nullptr;
@@ -256,7 +256,7 @@ tproc_status smtp_parser_process(schedule_context *vcontext)
 				string_length -= 2;
 
 			memcpy(reply_buf, smtp_reply_str, string_length);
-			string_length += snprintf(&reply_buf[string_length], std::size(reply_buf) - string_length,
+			string_length += gx_snprintf(&reply_buf[string_length], std::size(reply_buf) - string_length,
 							" queue-id: %d\r\n", pcontext->flusher.flush_ID);
 			auto nreply = pcontext->command_protocol == HT_SMTP ? 1U :
 			              pcontext->menv.rcpt_to.size();
@@ -355,7 +355,7 @@ tproc_status smtp_parser_process(schedule_context *vcontext)
 				auto smtp_reply_str = resource_get_smtp_code(202, 1, &string_length);
 				auto smtp_reply_str2 = resource_get_smtp_code(202, 2, &string_length);
 				host_ID = znul(g_config_file->get_value("host_id"));
-				len = snprintf(reply_buf, std::size(reply_buf), "%s%s%s", smtp_reply_str, host_ID,
+				auto len = gx_snprintf(reply_buf, std::size(reply_buf), "%s%s%s", smtp_reply_str, host_ID,
 						      smtp_reply_str2);
 				SSL_write(pcontext->connection.ssl, reply_buf, len);
 			}

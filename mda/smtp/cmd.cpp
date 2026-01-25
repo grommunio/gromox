@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 /* collection of functions for handling the smtp command
  */ 
@@ -51,7 +51,6 @@ static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx) try
 {
 	auto pcontext = &ctx;
 	int line_length = cmd_line.size();
-	size_t string_length = 0;
     char buff[1024];
             
 	/* SAME AS HELO [begin] */
@@ -71,7 +70,7 @@ static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx) try
 
     /* inform client side the esmtp type*/
     pcontext->last_cmd = T_EHLO_CMD;
-	string_length = snprintf(buff, std::size(buff), "250-%s\r\n", znul(g_config_file->get_value("host_id")));
+	size_t string_length = gx_snprintf(buff, std::size(buff), "250-%s\r\n", znul(g_config_file->get_value("host_id")));
 	if (g_param.support_pipeline)
 		string_length += sprintf(buff + string_length,
                              "250-PIPELINING\r\n");
@@ -79,7 +78,7 @@ static int cmdh_xhlo(std::string_view cmd_line, smtp_context &ctx) try
 		string_length += sprintf(buff + string_length,
 							"250-STARTTLS\r\n");
     
-	string_length += snprintf(&buff[string_length], std::size(buff) - string_length,
+	string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
         "250-HELP\r\n"
 		"250-SIZE %zu\r\n"
         "250 8BITMIME\r\n",
@@ -152,7 +151,7 @@ int cmdh_mail(std::string_view cmd_line, smtp_context &ctx)
         /* 550 invalid user - <email_addr> */
 		smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);
 		smtp_reply_str2 = resource_get_smtp_code(516, 2, &string_length);
-		string_length = snprintf(buff2, std::size(buff2), "%s%s%s", smtp_reply_str, buff,
+		string_length = gx_snprintf(buff2, std::size(buff2), "%s%s%s", smtp_reply_str, buff,
                         smtp_reply_str2);
 		pcontext->connection.write(buff2, string_length);
         return DISPATCH_CONTINUE;
@@ -195,7 +194,7 @@ int cmdh_rcpt(std::string_view cmd_line, smtp_context &ctx) try
         /* 550 invalid user - <email_addr> */
 		smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);
 		smtp_reply_str2 = resource_get_smtp_code(516, 2, &string_length);
-		string_length = snprintf(reason, std::size(reason), "%s%s%s", smtp_reply_str, buff,
+		string_length = gx_snprintf(reason, std::size(reason), "%s%s%s", smtp_reply_str, buff,
                         smtp_reply_str2);
 		pcontext->connection.write(reason, string_length);
         return DISPATCH_CONTINUE;

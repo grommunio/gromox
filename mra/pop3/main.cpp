@@ -208,7 +208,7 @@ static void *p3ls_thrwork(void *arg)
 			auto str2 = resource_get_pop3_code(1713, 2, &sl);
 			auto host_ID = znul(g_config_file->get_value("host_id"));
 			char buff[1024];
-			auto len = snprintf(buff, std::size(buff), "%s%s%s",
+			auto len = gx_snprintf(buff, std::size(buff), "%s%s%s",
 			           str, host_ID, str2);
 			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				/* ignore */;
@@ -223,7 +223,7 @@ static void *p3ls_thrwork(void *arg)
 			auto str = resource_get_pop3_code(1712, 1, &sl);
 			auto str2 = resource_get_pop3_code(1712, 2, &sl);
 			char buff[1024];
-			auto len = snprintf(buff, std::size(buff), "%s%s%s",
+			auto len = gx_snprintf(buff, std::size(buff), "%s%s%s",
 			           str, conn.client_addr, str2);
 			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				/* ignore */;
@@ -240,7 +240,7 @@ static void *p3ls_thrwork(void *arg)
 			auto str2 = resource_get_pop3_code(1711, 2, &sl);
 			auto host_ID = znul(g_config_file->get_value("host_id"));
 			char buff[1024];
-			auto len = snprintf(buff, std::size(buff), "%s%s%s",
+			auto len = gx_snprintf(buff, std::size(buff), "%s%s%s",
 			           str, host_ID, str2);
 			if (HXio_fullwrite(conn.sockd, buff, len) < 0)
 				/* ignore */;

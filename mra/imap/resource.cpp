@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 /*
  *  user config resource file, which provide some interface for 
@@ -195,7 +195,7 @@ const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_
 	thread_local char reason[40];
 	auto it = g_def_code_table.find(code_type);
 	if (it == g_def_code_table.end()) {
-		auto w = snprintf(reason, std::size(reason), "Unknown IMAPCODE %u\r\n", code_type);
+		auto w = gx_snprintf(reason, std::size(reason), "Unknown IMAPCODE %u\r\n", code_type);
 		if (len != nullptr)
 			*len = w;
 		return reason;

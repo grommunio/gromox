@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -705,7 +705,6 @@ rtf_reader::~rtf_reader()
 bool rtf_reader::express_begin_fontsize(int size)
 {
 	auto preader = this;
-	int tmp_len;
 	char tmp_buff[128];
 	
 	switch (size) {
@@ -728,7 +727,7 @@ bool rtf_reader::express_begin_fontsize(int size)
 		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE24_BEGIN, sizeof(TAG_FONTSIZE24_BEGIN) - 1));
 		return true;
 	}
-	tmp_len = snprintf(tmp_buff, std::size(tmp_buff), TAG_FONTSIZE_BEGIN, size);
+	auto tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff), TAG_FONTSIZE_BEGIN, size);
 	QRF(preader->ext_push.p_bytes(tmp_buff, tmp_len));
 	return true;
 }
@@ -1640,7 +1639,6 @@ bool rtf_reader::word_output_date(SIMPLE_TREE_NODE *pword)
 	int year;
 	int month;
 	int minute;
-	int tmp_len;
 	char tmp_buff[32];
 	
 	day = 0;
@@ -1671,9 +1669,9 @@ bool rtf_reader::word_output_date(SIMPLE_TREE_NODE *pword)
 	day    = std::max(0, std::min(99, day));
 	hour   = std::max(0, std::min(99, hour));
 	minute = std::max(0, std::min(99, minute));
-	tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff), "%04d-%02d-%02d ", year, month, day);
+	auto tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff), "%04d-%02d-%02d ", year, month, day);
 	if (hour >= 0 && minute >= 0)
-		tmp_len += snprintf(&tmp_buff[tmp_len], std::size(tmp_buff)-tmp_len, "%02d:%02d ", hour, minute);
+		tmp_len += gx_snprintf(&tmp_buff[tmp_len], std::size(tmp_buff)-tmp_len, "%02d:%02d ", hour, minute);
 	QRF(preader->ext_push.p_bytes(tmp_buff, tmp_len));
 	return true;
 }
@@ -1841,7 +1839,6 @@ int rtf_reader::cmd_fs(SIMPLE_TREE_NODE *pword, int align,
 int rtf_reader::cmd_field(SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	int tmp_len;
 	char tmp_buff[1024];
 	bool b_endnotecitations = false;
 	auto preader = this;
@@ -1870,7 +1867,7 @@ int rtf_reader::cmd_field(SIMPLE_TREE_NODE *pword,
 					int ch = strtol(pword4->cdata, nullptr, 0);
 					if (!astk_pushx(ATTR_FONTFACE, -7))
 						return CMD_RESULT_ERROR;
-					tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
+					auto tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 					          TAG_UNISYMBOL_PRINT, ch);
 					if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != pack_result::ok)
 						return CMD_RESULT_ERROR;
@@ -1897,7 +1894,7 @@ int rtf_reader::cmd_field(SIMPLE_TREE_NODE *pword,
 				    strcmp(pword4->cdata, " ") == 0)
 					pword4 = pword4->get_sibling();
 				if (NULL != pword4 && NULL != pword4->pdata) {
-					tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
+					auto tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 						  TAG_HYPERLINK_BEGIN, pword4->cdata);
 					if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != pack_result::ok)
 						return CMD_RESULT_ERROR;
@@ -3240,7 +3237,6 @@ ec_error_t rtf_to_html(std::string_view input, const char *charset,
     std::string &buf_out, ATTACHMENT_LIST *pattachments) try
 {
 	int i;
-	int tmp_len;
 	RTF_READER reader;
 	char tmp_buff[128];
 	SIMPLE_TREE_NODE *pnode;
@@ -3261,7 +3257,7 @@ ec_error_t rtf_to_html(std::string_view input, const char *charset,
 	if (!reader.have_fromhtml) {
 		QRF2(reader.ext_push.p_bytes(TAG_DOCUMENT_BEGIN, sizeof(TAG_DOCUMENT_BEGIN) - 1));
 		QRF2(reader.ext_push.p_bytes(TAG_HEADER_BEGIN, sizeof(TAG_HEADER_BEGIN) - 1));
-		tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
+		auto tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 		          TAG_HTML_CHARSET, charset);
 		QRF2(reader.ext_push.p_bytes(tmp_buff, tmp_len));
 	}

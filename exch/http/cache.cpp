@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -669,7 +669,7 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 				auto pcontent_type = pcontext->pitem->content_type;
 				if (pcontent_type == nullptr)
 					pcontent_type = "application/octet-stream";
-				tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
+				tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 					"\r\n--%s\r\n"
 					"Content-Type: %s\r\n"
 					"Content-Range: bytes %u-%u/%llu\r\n\r\n",
@@ -678,7 +678,7 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 					pcontext->range[pcontext->range_pos].end,
 				          static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
 			} else {
-				tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
+				tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 					"\r\n--%s--\r\n",
 					BOUNDARY_STRING);
 				pcontext->range.clear();

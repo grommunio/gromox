@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
@@ -427,7 +427,6 @@ static void *tmr_acceptwork(void *param)
 
 static void execute_timer(TIMER *ptimer)
 {
-	int len;
 	int status;
 	pid_t pid;
 	char result[1024];
@@ -453,7 +452,7 @@ static void execute_timer(TIMER *ptimer)
 		gx_strlcpy(result, "FORMAT-ERROR", std::size(result));
 	}
 
-	len = snprintf(temp_buff, std::size(temp_buff), "%d\t0\t%s\n", ptimer->t_id, result);
+	auto len = gx_snprintf(temp_buff, std::size(temp_buff), "%d\t0\t%s\n", ptimer->t_id, result);
 	if (HXio_fullwrite(g_list_fd, temp_buff, len) < 0)
 		fprintf(stderr, "write to timerlist: %s\n", strerror(errno));
 }
@@ -462,7 +461,6 @@ enum { X_STOP, X_LOOP };
 
 static int tmr_thrwork_1()
 {
-	int temp_len;
 	char *pspace, temp_line[1024];
 	
 	std::unique_lock co_hold(g_connection_lock);
@@ -493,7 +491,7 @@ static int tmr_thrwork_1()
 			for (auto pos = g_exec_list.begin(); pos != g_exec_list.end(); ++pos) {
 				auto ptimer = &*pos;
 				if (t_id == ptimer->t_id) {
-					temp_len = snprintf(temp_line, std::size(temp_line), "%d\t0\tCANCEL\n",
+					auto temp_len = gx_snprintf(temp_line, std::size(temp_line), "%d\t0\tCANCEL\n",
 								ptimer->t_id);
 					g_exec_list.erase(pos);
 					removed_timer = true;
@@ -531,7 +529,7 @@ static int tmr_thrwork_1()
 			std::unique_lock li_hold(g_list_lock);
 			auto ptimer = put_timer(std::move(tmr));
 
-			temp_len = snprintf(temp_line, std::size(temp_line), "%d\t%lld\t", ptimer->t_id,
+			auto temp_len = gx_snprintf(temp_line, std::size(temp_line), "%d\t%lld\t", ptimer->t_id,
 			           static_cast<long long>(ptimer->exec_time));
 			encode_line(ptimer->command.c_str(), temp_line + temp_len);
 			temp_len = strlen(temp_line);
@@ -539,7 +537,7 @@ static int tmr_thrwork_1()
 			if (HXio_fullwrite(g_list_fd, temp_line, temp_len) < 0)
 				fprintf(stderr, "write to timerlist: %s\n", strerror(errno));
 			li_hold.unlock();
-			temp_len = snprintf(temp_line, std::size(temp_line), "TRUE %d\r\n", ptimer->t_id);
+			temp_len = gx_snprintf(temp_line, std::size(temp_line), "TRUE %d\r\n", ptimer->t_id);
 			pconnection->sk_write(temp_line, temp_len);
 		} else if (0 == strcasecmp(pconnection->line, "QUIT")) {
 			pconnection->sk_write("BYE\r\n");

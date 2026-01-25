@@ -261,7 +261,7 @@ void cu_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 BOOL common_util_essdn_to_uid(const char *pessdn, int *puid)
 {
 	char tmp_essdn[1024];
-	auto tmp_len = snprintf(tmp_essdn, std::size(tmp_essdn),
+	auto tmp_len = gx_snprintf(tmp_essdn, std::size(tmp_essdn),
 	               "/o=%s/" EAG_RCPTS "/cn=", g_org_name);
 	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
 	    pessdn[tmp_len+16] != '-')
@@ -274,7 +274,7 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 	int *pdomain_id, int *puser_id)
 {
 	char tmp_essdn[1024];
-	auto tmp_len = snprintf(tmp_essdn, std::size(tmp_essdn),
+	auto tmp_len = gx_snprintf(tmp_essdn, std::size(tmp_essdn),
 	               "/o=%s/" EAG_RCPTS "/cn=", g_org_name);
 	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
 	    pessdn[tmp_len+16] != '-')

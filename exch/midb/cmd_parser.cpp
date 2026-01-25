@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <condition_variable>
@@ -23,6 +23,7 @@
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/midb.hpp>
 #include <gromox/process.hpp>
 #include <gromox/util.hpp>
@@ -213,7 +214,7 @@ static int midcp_exec(int argc, char **argv, MIDB_CONNECTION *conn)
 	if (result == MIDB_E_NETIO)
 		return MIDB_E_NETIO;
 	char rsp[20];
-	auto len = snprintf(rsp, std::size(rsp), "FALSE %d\r\n", result);
+	auto len = gx_snprintf(rsp, std::size(rsp), "FALSE %d\r\n", result);
 	return cmd_write_x(1, conn->sockd, rsp, len) < 0 ? MIDB_E_NETIO : 0;
 }
 

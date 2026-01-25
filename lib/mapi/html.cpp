@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -403,14 +403,13 @@ static ec_error_t html_write_string(RTF_WRITER *pwriter, const char *string)
 /* writes RTF document header */
 static ec_error_t html_write_header(RTF_WRITER*pwriter)
 {
-	int length;
 	char tmp_string[256];
 	size_t i = 0;
 	
 	static constexpr char head[] = "{\\rtf1\\ansi\\fbidis\\ansicpg1252\\deff0{\\fonttbl";
 	QRF(pwriter->ext_push.p_bytes(head, strlen(head)));
 	for (const auto &font : pwriter->fonts_ordered) {
-		length = snprintf(tmp_string, std::size(tmp_string),
+		auto length = gx_snprintf(tmp_string, std::size(tmp_string),
 		         "{\\f%zu\\fswiss\\fcharset%d ", i++,
 		         strcasecmp(font.c_str(), "symbol") == 0 ? 2 : 0);
 		QRF(pwriter->ext_push.p_bytes(tmp_string, length));
@@ -419,7 +418,7 @@ static ec_error_t html_write_header(RTF_WRITER*pwriter)
 	}
 	QRF(pwriter->ext_push.p_bytes("}{\\colortbl", 11));
 	for (auto color : pwriter->colors_ordered) {
-		length = snprintf(tmp_string, std::size(tmp_string), "\\red%d\\green%d\\blue%d;",
+		auto length = gx_snprintf(tmp_string, std::size(tmp_string), "\\red%d\\green%d\\blue%d;",
 		         (color >> 16) & 0xff, (color >> 8) & 0xff,
 		         color & 0xFF);
 		QRF(pwriter->ext_push.p_bytes(tmp_string, length));
@@ -441,12 +440,11 @@ static ec_error_t html_write_close_brace(RTF_WRITER *pwriter)
 static ec_error_t html_write_style_color(RTF_WRITER *pwriter, int color)
 {
 	int index;
-	int length;
 	char tmp_buff[256];
 	
 	index = html_get_colortable(pwriter, color);
 	if (index >= 0) {
-		length = snprintf(tmp_buff, std::size(tmp_buff), "\\cf%d ", index);
+		auto length = gx_snprintf(tmp_buff, std::size(tmp_buff), "\\cf%d ", index);
 		QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	}
 	return ecSuccess;
@@ -456,12 +454,11 @@ static ec_error_t html_write_style_font_family(
 	RTF_WRITER *pwriter, const char *font_name)
 {
 	int index;
-	int length;
 	char tmp_buff[256];
 	
 	index = html_get_fonttable(pwriter, font_name);
 	if (index >= 0) {
-		length = snprintf(tmp_buff, std::size(tmp_buff), "\\f%d ", index);
+		auto length = gx_snprintf(tmp_buff, std::size(tmp_buff), "\\f%d ", index);
 		QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	}
 	return ecSuccess;
@@ -470,7 +467,6 @@ static ec_error_t html_write_style_font_family(
 static ec_error_t html_write_style_font_size(RTF_WRITER *pwriter,
     int font_size, bool unit_point)
 {
-	int length;
 	char tmp_buff[256];
 	
 	if (!unit_point)
@@ -478,37 +474,34 @@ static ec_error_t html_write_style_font_size(RTF_WRITER *pwriter,
 		font_size = static_cast<double>(font_size) * 0.75 * 2;
 	else
 		font_size *= 2;
-	length = snprintf(tmp_buff, std::size(tmp_buff), "\\fs%d ", font_size);
+	auto length = gx_snprintf(tmp_buff, std::size(tmp_buff), "\\fs%d ", font_size);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_style_line_height(RTF_WRITER *pwriter, int line_height)
 {
-	int length;
 	char tmp_buff[256];
 	
-	length = snprintf(tmp_buff, std::size(tmp_buff), "\\sl%d ", line_height*15);
+	auto length = gx_snprintf(tmp_buff, std::size(tmp_buff), "\\sl%d ", line_height*15);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_style_margin_top(RTF_WRITER *pwriter, int margin_top)
 {
-	int length;
 	char tmp_buff[256];
 	
-	length = snprintf(tmp_buff, std::size(tmp_buff), "\\sa%d ", margin_top*15);
+	auto length = gx_snprintf(tmp_buff, std::size(tmp_buff), "\\sa%d ", margin_top*15);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_style_text_indent(RTF_WRITER *pwriter, int text_indent)
 {
-	int length;
 	char tmp_buff[256];
 	
-	length = snprintf(tmp_buff, std::size(tmp_buff), "\\fi%d ", text_indent*15);
+	auto length = gx_snprintf(tmp_buff, std::size(tmp_buff), "\\fi%d ", text_indent*15);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	return ecSuccess;
 }
@@ -816,13 +809,12 @@ static ec_error_t html_write_span_begin(RTF_WRITER *pwriter)
 static ec_error_t html_write_mark_begin(RTF_WRITER *pwriter)
 {
 	int index;
-	int length;
 	char tmp_buff[256];
 	
 	QRF(pwriter->ext_push.p_uint8('{'));
 	index = html_get_colortable(pwriter, 0xFFFF00);
 	if (index >= 0) {
-		length = snprintf(tmp_buff, std::size(tmp_buff), "\\highlight%d ", index);
+		auto length = gx_snprintf(tmp_buff, std::size(tmp_buff), "\\highlight%d ", index);
 		QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	}
 	return ecSuccess;
@@ -855,7 +847,6 @@ static ec_error_t html_write_th_end(RTF_WRITER *pwriter)
 static ec_error_t html_write_tr_begin(RTF_WRITER *pwriter, int cell_num)
 {
 	int i;
-	int length;
 	char tmp_buff[256];
 	
 	QRF(pwriter->ext_push.p_bytes("{\\trowd\\trgaph10 ", 16));
@@ -863,7 +854,7 @@ static ec_error_t html_write_tr_begin(RTF_WRITER *pwriter, int cell_num)
 		return ecSuccess;
 	auto percell = 8503.0 / cell_num;
 	for (i=0; i<cell_num; i++) {
-		length = snprintf(tmp_buff, std::size(tmp_buff), "\\clbrdrt\\brdrw15\\brdrs"
+		auto length = gx_snprintf(tmp_buff, std::size(tmp_buff), "\\clbrdrt\\brdrw15\\brdrs"
 				"\\clbrdrl\\brdrw15\\brdrs\\clbrdrb\\brdrw15"
 				"\\brdrs\\clbrdrr\\brdrw15\\brdrs\\cellx%d\n",
 				(int)(percell*(i + 1)));

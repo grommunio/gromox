@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
@@ -915,7 +915,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 					return FALSE;
 				}
 				if (rq.b_chunked) {
-					tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
+					tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 					          "%x\r\n", std_stream.length);
 					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write(std_stream.buffer, std_stream.length) != STREAM_WRITE_OK ||
@@ -1019,7 +1019,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			response_offset = response_buff + response_offset - pbody;
 			if (response_offset > 0) {
 				if (rq.b_chunked) {
-					tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
+					tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 					          "%x\r\n", response_offset);
 					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write(pbody, response_offset) != STREAM_WRITE_OK ||

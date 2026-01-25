@@ -3181,7 +3181,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 	}
 	if (ptnode->psorts == nullptr || ptnode->psorts->ccategories == 0)
 		return TRUE;
-	auto sql_len = snprintf(sql_string, std::size(sql_string), "CREATE TABLE s%u "
+	auto sql_len = gx_snprintf(sql_string, std::size(sql_string), "CREATE TABLE s%u "
 			"(depth INTEGER NOT NULL ", *pstate_id);
 	for (unsigned int i = 0; i < ptnode->psorts->ccategories; ++i) {
 		auto tmp_proptag = PROP_TAG(ptnode->psorts->psort[i].type, ptnode->psorts->psort[i].propid);
@@ -3237,7 +3237,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 	pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	sql_len = snprintf(sql_string, std::size(sql_string), "INSERT"
+	sql_len = gx_snprintf(sql_string, std::size(sql_string), "INSERT"
 		" INTO s%u VALUES (?", *pstate_id);
 	for (unsigned int i = 0; i < ptnode->psorts->ccategories; ++i)
 		sql_len += gx_snprintf(sql_string + sql_len,

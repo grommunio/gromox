@@ -225,7 +225,7 @@ static void *imls_thrwork(void *arg)
 			auto imap_reply_str = resource_get_imap_code(1816, 1);
 			auto imap_reply_str2 = resource_get_imap_code(1816, 2);
 			char buff[1024];
-			auto len = snprintf(buff, std::size(buff), "* %s%s%s",
+			auto len = gx_snprintf(buff, std::size(buff), "* %s%s%s",
 			           imap_reply_str, conn.client_addr, imap_reply_str2);
 			if (HXio_fullwrite(conn.sockd, buff, len) != len)
 				/* ignore */;
