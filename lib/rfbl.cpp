@@ -2196,12 +2196,6 @@ std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb,
 	return nullptr;
 }
 
-static const char *default_searchpath()
-{
-	const char *ed = getenv("GROMOX_CONFIG_PATH");
-	return ed != nullptr ? ed : PKGSYSCONFDIR;
-}
-
 /**
  * Routine intended for programs:
  *
@@ -2212,7 +2206,7 @@ std::shared_ptr<CONFIG_FILE> config_file_prg(const char *ov, const char *fb,
     const cfg_directive *key_desc)
 {
 	if (ov == nullptr)
-		return config_file_initd(fb, default_searchpath(), key_desc);
+		return config_file_initd(fb, PKGSYSCONFDIR, key_desc);
 	auto cfg = config_file_init(ov, key_desc);
 	if (cfg == nullptr)
 		mlog(LV_ERR, "config_file_init %s: %s", ov, strerror(errno));
