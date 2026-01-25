@@ -3046,7 +3046,6 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 	sqlite3 *psqlite;
 	EXT_PUSH ext_push;
 	char tmp_buff[1024];
-	char sql_string[1024];
 	
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -3078,7 +3077,7 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 		}
 		gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
 		gx_sql_exec(psqlite, "PRAGMA synchronous=OFF");
-		sprintf(sql_string,
+		const char *sql_string = (
 			"CREATE TABLE state_info "
 			"(state_id INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"folder_id INTEGER NOT NULL, "
@@ -3094,8 +3093,8 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 				mlog(LV_WARN, "W-1348: remove %s: %s", state_path.c_str(), strerror(errno));
 			return FALSE;
 		}
-		snprintf(sql_string, std::size(sql_string), "CREATE UNIQUE INDEX state_index"
-			" ON state_info (folder_id, table_flags, sorts)");
+		sql_string = ("CREATE UNIQUE INDEX state_index"
+		             " ON state_info (folder_id, table_flags, sorts)");
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK) {
 			sqlite3_close(psqlite);
 			remove(state_path.c_str());
@@ -3114,20 +3113,22 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 		return false;
 	}
 	auto cl_0 = HX::make_scope_exit([&]() { sqlite3_close(psqlite); });
-	if (ptnode->psorts != nullptr && ptnode->psorts->ccategories != 0)
-		strcpy(sql_string, "SELECT state_id FROM "
-			"state_info WHERE folder_id=? AND table_flags=? "
-			"AND sorts=?");
-	else
-		strcpy(sql_string, "SELECT state_id FROM "
-			"state_info WHERE folder_id=? AND table_flags=? "
-			"AND sorts IS NULL");
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
+	static constexpr char sel_with_sort[] =
+		("SELECT state_id FROM "
+		"state_info WHERE folder_id=? AND table_flags=? "
+		"AND sorts=?");
+	static constexpr char sel_no_sort[] =
+		("SELECT state_id FROM "
+		"state_info WHERE folder_id=? AND table_flags=? "
+		"AND sorts IS NULL");
+	bool cond_with_sort = ptnode->psorts != nullptr && ptnode->psorts->ccategories != 0;
+	auto pstmt = gx_sql_prep(psqlite, cond_with_sort ?
+	             sel_with_sort : sel_no_sort);
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, ptnode->folder_id);
 	sqlite3_bind_int64(pstmt, 2, ptnode->table_flags);
-	if (NULL != ptnode->psorts && 0 != ptnode->psorts->ccategories) {
+	if (cond_with_sort) {
 		if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
 		    ext_push.p_sortorder_set(*ptnode->psorts) != pack_result::ok)
 			return FALSE;
@@ -3140,8 +3141,8 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 	if (!sql_transact)
 		return false;
 	if (0 == *pstate_id) {
-		strcpy(sql_string, "INSERT INTO state_info"
-			"(folder_id, table_flags, sorts) VALUES (?, ?, ?)");
+		const char *sql_string = ("INSERT INTO state_info"
+		                         "(folder_id, table_flags, sorts) VALUES (?, ?, ?)");
 		pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
@@ -3157,31 +3158,31 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 		pstmt.finalize();
 	} else {
 		if (NULL != ptnode->psorts && 0 != ptnode->psorts->ccategories) {
-			snprintf(sql_string, std::size(sql_string), "DROP TABLE s%u", *pstate_id);
+			auto sql_string = fmt::format("DROP TABLE s{}", *pstate_id);
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
 		}
 		if (1 != rop_util_get_replid(inst_id)) {
-			snprintf(sql_string, std::size(sql_string), "UPDATE "
+			auto sql_string = fmt::format("UPDATE "
 				"state_info SET message_id=NULL, "
-				"inst_num=NULL WHERE state_id=%u",
+				"inst_num=NULL WHERE state_id={}",
 				*pstate_id);
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
 		}
 	}
 	if (1 == rop_util_get_replid(inst_id)) {
-		snprintf(sql_string, std::size(sql_string), "UPDATE "
-			"state_info SET message_id=%llu, "
-			"inst_num=%u WHERE state_id=%u",
-			LLU{rop_util_get_gc_value(inst_id)},
+		auto sql_string = fmt::format("UPDATE "
+			"state_info SET message_id={}, "
+			"inst_num={} WHERE state_id={}",
+			rop_util_get_gc_value(inst_id),
 			inst_num, *pstate_id);
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
 	if (ptnode->psorts == nullptr || ptnode->psorts->ccategories == 0)
 		return TRUE;
-	auto sql_len = gx_snprintf(sql_string, std::size(sql_string), "CREATE TABLE s%u "
+	auto sql_string = fmt::format("CREATE TABLE s{} "
 			"(depth INTEGER NOT NULL ", *pstate_id);
 	for (unsigned int i = 0; i < ptnode->psorts->ccategories; ++i) {
 		auto tmp_proptag = PROP_TAG(ptnode->psorts->psort[i].type, ptnode->psorts->psort[i].propid);
@@ -3191,16 +3192,12 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 		switch (type) {
 		case PT_STRING8:
 		case PT_UNICODE:
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len,
-						", v%x TEXT", tmp_proptag);
+			sql_string += fmt::format(", v{:x} TEXT", tmp_proptag);
 			break;
 		case PT_FLOAT:
 		case PT_DOUBLE:
 		case PT_APPTIME:
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len,
-						", v%x REAL", tmp_proptag);
+			sql_string += fmt::format(", v{:x} REAL", tmp_proptag);
 			break;
 		case PT_CURRENCY:
 		case PT_I8:
@@ -3208,52 +3205,48 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 		case PT_SHORT:
 		case PT_LONG:
 		case PT_BOOLEAN:
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len,
-						", v%x INTEGER", tmp_proptag);
+			sql_string += fmt::format(", v{:x} INTEGER", tmp_proptag);
 			break;
 		case PT_CLSID:
 		case PT_SVREID:
 		case PT_OBJECT:
 		case PT_BINARY:
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len,
-						", v%x BLOB", tmp_proptag);
+			sql_string += fmt::format(", v{:x} BLOB", tmp_proptag);
 			break;
 		default:
 			return FALSE;
 		}
 	}
-	sql_string[sql_len++] = ')';
-	sql_string[sql_len] = '\0';
+	sql_string += ')';
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 
 	auto sql_transact_eph = gx_sql_begin(pdb->m_sqlite_eph, txn_mode::read);
 	if (!sql_transact_eph)
 		return false;
-	snprintf(sql_string, std::size(sql_string), "SELECT row_id, inst_id,"
-			" row_stat, depth FROM t%u", ptnode->table_id);
+
+	sql_string = fmt::format("SELECT row_id, inst_id,"
+	             " row_stat, depth FROM t{}", ptnode->table_id);
 	pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	sql_len = gx_snprintf(sql_string, std::size(sql_string), "INSERT"
-		" INTO s%u VALUES (?", *pstate_id);
+
+	sql_string = fmt::format("INSERT INTO s{} VALUES (?", *pstate_id);
 	for (unsigned int i = 0; i < ptnode->psorts->ccategories; ++i)
-		sql_len += gx_snprintf(sql_string + sql_len,
-		           std::size(sql_string) - sql_len, ", ?");
-	sql_string[sql_len++] = ')';
-	sql_string[sql_len] = '\0';
+		sql_string += ", ?";
+	sql_string += ')';
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
-	snprintf(sql_string, std::size(sql_string), "SELECT parent_id FROM"
-			" t%u WHERE row_id=?", ptnode->table_id);
+
+	sql_string = fmt::format("SELECT parent_id FROM"
+	             " t{} WHERE row_id=?", ptnode->table_id);
 	auto pstmt2 = pdb->eph_prep(sql_string);
 	if (pstmt2 == nullptr)
 		return FALSE;
-	snprintf(sql_string, std::size(sql_string), "SELECT value FROM"
-			" t%u WHERE row_id=?", ptnode->table_id);
+
+	sql_string = fmt::format("SELECT value FROM"
+	             " t{} WHERE row_id=?", ptnode->table_id);
 	auto stm_sel_vtx = pdb->eph_prep(sql_string);
 	if (stm_sel_vtx == nullptr)
 		return FALSE;
@@ -3266,8 +3259,8 @@ BOOL exmdb_server::store_table_state(const char *dir, uint32_t table_id,
 			continue;	
 		if (gx_sql_col_uint64(pstmt, 1) == inst_id1) {
 			last_id = sqlite3_last_insert_rowid(psqlite);
-			snprintf(sql_string, std::size(sql_string), "UPDATE state_info SET header_id=%llu,"
-				" header_stat=%llu WHERE state_id=%u", LLU{last_id + 1},
+			sql_string = fmt::format("UPDATE state_info SET header_id={},"
+				" header_stat={} WHERE state_id={}", LLU{last_id + 1},
 				LLU{pstmt.col_uint64(2)}, *pstate_id);
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
