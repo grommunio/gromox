@@ -795,77 +795,67 @@ static BOOL autoreply_setprop1(const char *dir, const TAGGED_PROPVAL &pv)
 	case PR_EC_EXTERNAL_REPLY: {
 		wrapfd fd = open(path.c_str(), O_RDONLY);
 		struct stat st{};
-		ssize_t buff_len = 0;
-		char *buf = nullptr;
+		std::string buf;
 
+		static constexpr char ct_hdr[] = "Content-Type: text/html; charset=\"utf-8\"\r\n\r\n";
 		if (fd.get() < 0 || fstat(fd.get(), &st) != 0) {
-			buff_len = strlen(static_cast<const char *>(pv.pvalue));
-			buf = cu_alloc<char>(buff_len + 256);
-			if (buf == nullptr)
-				return false;
-			buff_len = gx_snprintf(buf, buff_len + 256,
-				   "Content-Type: text/html; charset=\"utf-8\"\r\n\r\n%s",
-				   static_cast<const char *>(pv.pvalue));
+			buf = ct_hdr;
 		} else {
-			buff_len = st.st_size;
-			buf = cu_alloc<char>(buff_len + strlen(static_cast<const char *>(pv.pvalue)) + 1);
-			if (buf == nullptr || read(fd.get(), buf, buff_len) != buff_len)
+			buf.resize(st.st_size);
+			auto rdret = read(fd.get(), buf.data(), buf.size());
+			if (rdret < 0 || static_cast<size_t>(rdret) != buf.size())
 				return false;
-			buf[buff_len] = '\0';
-			auto token = strstr(buf, "\r\n\r\n");
-			if (token != nullptr) {
-				strcpy(&token[4], static_cast<const char *>(pv.pvalue));
-				buff_len = strlen(buf);
-			} else {
-				buff_len = sprintf(buf,
-					   "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\n\r\n%s",
-					   static_cast<const char *>(pv.pvalue));
-			}
+			auto token = buf.find("\r\n\r\n");
+			if (token != buf.npos)
+				buf.erase(token + 4);
+			else
+				buf = ct_hdr;
 		}
+		buf += static_cast<const char *>(pv.pvalue);
 		gromox::tmpfile tf;
 		auto fdw = tf.open_linkable((dir + "/config"s).c_str(), O_WRONLY, FMODE_PUBLIC);
-		if (fdw < 0 || HXio_fullwrite(fdw, buf, buff_len) != buff_len)
+		if (fdw < 0)
+			return false;
+		auto wrret = HXio_fullwrite(fdw, buf.c_str(), buf.size());
+		if (wrret < 0 || static_cast<size_t>(wrret) != buf.size())
 			return false;
 		return tf.link_to_overwrite(path.c_str()) == 0;
 	}
 	case PR_EC_OUTOFOFFICE_SUBJECT:
 	case PR_EC_EXTERNAL_SUBJECT: {
+		auto newsubj = static_cast<const char *>(pv.pvalue);
 		wrapfd fd = open(path.c_str(), O_RDONLY);
 		struct stat st{};
-		ssize_t buff_len = 0;
-		char *buf = nullptr;
+		std::string buf;
 
 		if (fd.get() < 0 || fstat(fd.get(), &st) != 0) {
-			buff_len = strlen(static_cast<const char *>(pv.pvalue));
-			buf = cu_alloc<char>(buff_len + 256);
-			if (buf == nullptr)
-				return false;
-			buff_len = sprintf(buf,
-				   "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\nSubject: %s\r\n\r\n",
-				   static_cast<const char *>(pv.pvalue));
+			buf = fmt::format(
+				   "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\nSubject: {}\r\n\r\n",
+				   newsubj);
 		} else {
-			buff_len = st.st_size;
-			buf = cu_alloc<char>(buff_len + strlen(static_cast<const char *>(pv.pvalue)) + 16);
-			if (buf == nullptr)
+			buf.resize(st.st_size);
+			auto rdret = read(fd.get(), buf.data(), buf.size());
+			if (rdret < 0 || static_cast<size_t>(rdret) != buf.size())
 				return false;
-			auto token = cu_alloc<char>(buff_len + 1);
-			if (token == nullptr ||
-			    read(fd.get(), token, buff_len) != buff_len)
-				return false;
-			token[buff_len] = '\0';
-			auto body = strstr(token, "\r\n\r\n");
-			if (body == nullptr)
-				buff_len = sprintf(buf,
-				           "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\nSubject: %s\r\n\r\n",
-				           static_cast<const char *>(pv.pvalue));
-			else
-				buff_len = sprintf(buf,
-				           "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\nSubject: %s%s",
-				           static_cast<const char *>(pv.pvalue), body);
+			auto marker = buf.find("\r\n\r\n");
+			if (marker == buf.npos) {
+				buf = fmt::format(
+				      "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\nSubject: {}\r\n\r\n",
+				      newsubj);
+			} else {
+				std::string_view body_sv(buf);
+				body_sv.remove_prefix(marker);
+				buf = fmt::format(
+				      "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\nSubject: {}{}",
+				      newsubj, body_sv);
+			}
 		}
 		gromox::tmpfile tf;
 		auto fdw = tf.open_linkable((dir + "/config"s).c_str(), O_WRONLY, FMODE_PUBLIC);
-		if (fdw < 0 || HXio_fullwrite(fdw, buf, buff_len) != buff_len)
+		if (fdw < 0)
+			return false;
+		auto wrret = HXio_fullwrite(fdw, buf.c_str(), buf.size());
+		if (wrret < 0 || static_cast<size_t>(wrret) != buf.size())
 			return false;
 		return tf.link_to_overwrite(path.c_str()) == 0;
 	}
