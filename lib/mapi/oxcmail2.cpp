@@ -439,14 +439,14 @@ bool attachment_is_inline(const attachment_content &at)
 	       at.proplist.has(PR_ATTACH_CONTENT_LOCATION);
 }
 
-bool parse_keywords(const char *charset, const char *field,
-    propid_t propid, TPROPVAL_ARRAY &props) try
+bool parse_keywords(const char *field, propid_t propid,
+    TPROPVAL_ARRAY &props) try
 {
 	proptag_t tag;
 	static constexpr size_t tmp_buff_size = MIME_FIELD_LEN;
 	auto tmp_buff = std::make_unique<char[]>(tmp_buff_size);
 
-	if (!mime_string_to_utf8(charset, field, tmp_buff.get(), tmp_buff_size)) {
+	if (!mime_string_to_utf8("us-ascii", field, tmp_buff.get(), tmp_buff_size)) {
 		tag = PROP_TAG(PT_MV_STRING8, propid);
 		gx_strlcpy(tmp_buff.get(), field, tmp_buff_size);
 	} else {

@@ -83,7 +83,7 @@ extern ec_error_t bodyset_plain(TPROPVAL_ARRAY &, std::string &&, const char *);
 extern ec_error_t bodyset_enriched(TPROPVAL_ARRAY &, std::string &&, const char *);
 extern ec_error_t bodyset_multi(MIME_ENUM_PARAM &, TPROPVAL_ARRAY &);
 extern bool attachment_is_inline(const attachment_content &);
-extern bool parse_keywords(const char *cset, const char *fieldvalue, gromox::propid_t, TPROPVAL_ARRAY &);
+extern bool parse_keywords(const char *fieldvalue, gromox::propid_t, TPROPVAL_ARRAY &);
 extern bool parse_response_suppress(const char *raw, TPROPVAL_ARRAY &);
 
 }

@@ -68,7 +68,6 @@ struct FIELD_ENUM_PARAM {
 	MESSAGE_CONTENT *pmsg = nullptr;
 	namemap &phash;
 	uint16_t last_propid = 0;
-	const char *charset = nullptr;
 	bool b_classified = false, b_flag_del = false;
 	const MAIL *pmail = nullptr;
 };
@@ -551,15 +550,14 @@ static BOOL oxcmail_parse_reply_to(const char *field, TPROPVAL_ARRAY *pproplist)
 	return false;
 }
 
-static BOOL oxcmail_parse_subject(const char *charset, const char *field,
-    TPROPVAL_ARRAY *pproplist) try
+static BOOL oxcmail_parse_subject(const char *field, TPROPVAL_ARRAY *pproplist) try
 {
 	char prefix_buff[32];
 	static constexpr uint8_t seperator[] = {':', 0x00, ' ', 0x00};
 
 	static constexpr size_t utf8_field_size = MIME_FIELD_LEN;
 	auto utf8_field = std::make_unique<char[]>(utf8_field_size);
-	if (!mime_string_to_utf8(charset, field, utf8_field.get(), utf8_field_size))
+	if (!mime_string_to_utf8("us-ascii", field, utf8_field.get(), utf8_field_size))
 		return pproplist->set(PR_SUBJECT_A, field) == ecSuccess ? TRUE : false;
 
 	static constexpr size_t tmp_buff_size = utf8_field_size;
@@ -610,13 +608,13 @@ static BOOL oxcmail_parse_subject(const char *charset, const char *field,
 	return false;
 }
 
-static BOOL oxcmail_parse_thread_topic(const char *charset,
-    const char *field, TPROPVAL_ARRAY *pproplist) try
+static BOOL oxcmail_parse_thread_topic(const char *field,
+    TPROPVAL_ARRAY *pproplist) try
 {
 	static constexpr size_t utf8_field_size = MIME_FIELD_LEN;
 	auto utf8_field = std::make_unique<char[]>(utf8_field_size);
 	
-	if (mime_string_to_utf8(charset, field, utf8_field.get(), utf8_field_size))
+	if (mime_string_to_utf8("us-ascii", field, utf8_field.get(), utf8_field_size))
 		return pproplist->set(PR_CONVERSATION_TOPIC, utf8_field.get()) == ecSuccess;
 	return pproplist->set(PR_CONVERSATION_TOPIC_A, field) == ecSuccess ? TRUE : false;
 } catch (const std::bad_alloc &) {
@@ -624,13 +622,13 @@ static BOOL oxcmail_parse_thread_topic(const char *charset,
 	return false;
 }
 
-static BOOL oxcmail_parse_thread_index(const char *charset, const char *field,
+static BOOL oxcmail_parse_thread_index(const char *field,
     TPROPVAL_ARRAY *pproplist) try
 {
 	static constexpr size_t len = MIME_FIELD_LEN;
 	auto tmp_buff = std::make_unique<char[]>(len);
 	
-	if (!mime_string_to_utf8(charset, field, tmp_buff.get(), len))
+	if (!mime_string_to_utf8("us-ascii", field, tmp_buff.get(), len))
 		return TRUE;
 	auto raw = base64_decode(tmp_buff.get());
 	BINARY tmp_bin;
@@ -1024,8 +1022,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		if (penum_param->pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != ecSuccess)
 			return FALSE;
 	} else if (strcasecmp(key, "Subject") == 0) {
-		if (!oxcmail_parse_subject(penum_param->charset, field,
-		    &penum_param->pmsg->proplist))
+		if (!oxcmail_parse_subject(field, &penum_param->pmsg->proplist))
 			return FALSE;
 		if (!penum_param->pmsg->proplist.has(PR_SUBJECT_PREFIX)) {
 			tmp_byte = '\0';
@@ -1042,12 +1039,10 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 			}
 		}
 	} else if (strcasecmp(key, "Thread-Topic") == 0) {
-		if (!oxcmail_parse_thread_topic(penum_param->charset, field,
-		    &penum_param->pmsg->proplist))
+		if (!oxcmail_parse_thread_topic(field, &penum_param->pmsg->proplist))
 			return FALSE;
 	} else if (strcasecmp(key, "Thread-Index") == 0) {
-		if (!oxcmail_parse_thread_index(penum_param->charset, field,
-		    &penum_param->pmsg->proplist))
+		if (!oxcmail_parse_thread_index(field, &penum_param->pmsg->proplist))
 				return FALSE;
 	} else if (strcasecmp(key, "In-Reply-To") == 0) {
 		uint32_t tag = str_isascii(field) ?
@@ -1082,7 +1077,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		if (namemap_add(penum_param->phash, penum_param->last_propid,
 		    std::move(propname)) != 0)
 			return FALSE;
-		if (!oxcmail::parse_keywords(penum_param->charset, field,
+		if (!oxcmail::parse_keywords(field,
 		    penum_param->last_propid, penum_param->pmsg->proplist))
 			return FALSE;
 		penum_param->last_propid ++;
@@ -2383,7 +2378,6 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 	field_param.alloc = alloc;
 	field_param.pmail = pmail;
 	field_param.pmsg = pmsg.get();
-	field_param.charset = "us-ascii";
 	field_param.last_propid = 0x8000;
 	field_param.b_flag_del = false;
 	const MIME *phead = pmail->get_head();
