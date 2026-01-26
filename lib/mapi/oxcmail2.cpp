@@ -357,8 +357,7 @@ static ec_error_t multibody_image(MIME_ENUM_PARAM &epar, const MIME *mime,
  * @epar:  input mail and its parts
  * @props: target MAPI message properties
  */
-ec_error_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props,
-    const char *charset)
+ec_error_t bodyset_multi(MIME_ENUM_PARAM &epar, TPROPVAL_ARRAY &props)
 {
 	xmldocptr ag_doc;
 

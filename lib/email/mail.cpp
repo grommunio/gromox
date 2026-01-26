@@ -23,8 +23,6 @@ enum {
 };
 
 static bool mail_retrieve_to_mime(MAIL *, MIME *parent, const char *begin, const char *end);
-static void mail_enum_text_mime_charset(const MIME *, void *);
-static void mail_enum_html_charset(const MIME *, void *);
 
 void MAIL::clear()
 {
@@ -307,55 +305,6 @@ MIME *MAIL::get_head()
 
 const MIME *MAIL::get_head() const { return deconst(this)->get_head(); }
 
-bool MAIL::get_charset(std::string &charset) const try
-{
-	auto pmail = this;
-	char temp_buff[1024];
-	ENCODE_STRING encode_string;
-	
-#ifdef _DEBUG_UMTA
-	if (charset == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
-	charset.clear();
-	auto pnode = pmail->tree.get_root();
-	if (pnode == nullptr)
-		return false;
-	auto pmime = static_cast<const MIME *>(pnode->pdata);
-	if (pmime->get_field("Subject", temp_buff, 512)) {
-		parse_mime_encode_string(temp_buff, strlen(temp_buff),
-			&encode_string);
-		if (0 != strcmp(encode_string.charset, "default")) {
-			charset = encode_string.charset;
-			return true;
-		}
-	}
-	if (pmime->get_field("From", temp_buff, 512)) {
-		parse_mime_encode_string(temp_buff, strlen(temp_buff),
-			&encode_string);
-		if (0 != strcmp(encode_string.charset, "default")) {
-			charset = encode_string.charset;
-			return true;
-		}
-	}
-	pmail->enum_mime(mail_enum_text_mime_charset, &charset);
-	if (!charset.empty())
-		return true;
-	pmail->enum_mime(mail_enum_html_charset, &charset);
-	return !charset.empty();
-} catch (const std::bad_alloc &) {
-	return false;
-}
-
-static void replace_qb(char *s)
-{
-	for (; *s != '\0'; ++s)
-		if (*s == '"' || *s == '\\')
-			*s = ' ';
-}
-
 /*
  *	get the digest string of mail
  *	@return
@@ -433,8 +382,6 @@ int MAIL::make_digest(Json::Value &digest) const try
 		}
 	}
 
-	std::string email_charset;
-	get_charset(email_charset);
 	digest["uid"]       = 0;
 	digest["recent"]    = 1;
 	digest["read"]      = 0;
@@ -443,10 +390,6 @@ int MAIL::make_digest(Json::Value &digest) const try
 	digest["forwarded"] = 0;
 	digest["flag"]      = 0;
 	digest["priority"]  = Json::Value::UInt64(priority);
-	if (!email_charset.empty() && str_isasciipr(email_charset.c_str())) {
-		replace_qb(email_charset.data());
-		digest["charset"] = std::move(email_charset);
-	}
 	if (pmime->get_field("Disposition-Notification-To", temp_buff, 1024))
 		digest["notification"] = base64_encode(temp_buff);
 	if (pmime->get_field("References", temp_buff, 1024))
@@ -482,57 +425,6 @@ int MAIL::make_digest(Json::Value &digest) const try
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "%s: ENOMEM", __PRETTY_FUNCTION__);
 	return -1;
-}
-
-static void mail_enum_text_mime_charset(const MIME *pmime, void *param)
-{
-	auto &cset = *static_cast<std::string *>(param);
-	
-	if (!cset.empty())
-		return; /* already found something earlier */
-	if (0 == strncasecmp(pmime->content_type, "text/", 5) &&
-	    pmime->get_content_param("charset", cset)) {
-		replace_qb(cset.data());
-		HX_strrtrim(cset.data());
-		HX_strltrim(cset.data());
-		cset.resize(strlen(cset.c_str()));
-	}
-}
-
-static void mail_enum_html_charset(const MIME *pmime, void *param) try
-{
-	auto &cset = *static_cast<std::string *>(param);
-	int i;
-	/* read_content won't do partial reads, so this buf is kinda large. yuck. */
-	auto buff = std::make_unique<char[]>(128*1024);
-	
-	if (!cset.empty())
-		return; /* already found something earlier */
-	if (strcasecmp(pmime->content_type, "text/html") != 0)
-		return;
-	size_t length = 128 * 1024 - 1;
-	if (!pmime->read_content(buff.get(), &length))
-		return;
-	if (length > 4096)
-		length = 4096;
-	buff[length] = '\0';
-	const char *ptr = strcasestr(buff.get(), "charset=");
-	if (ptr == nullptr)
-		return;
-	ptr += 8;
-	if (*ptr == '"' || *ptr == '\'')
-		ptr ++;
-	auto start = ptr, stop = ptr;
-	for (i=0; i<32; i++) {
-		if ('"' == ptr[i] || '\'' == ptr[i] || ' ' == ptr[i] ||
-			',' == ptr[i] || ';' == ptr[i] || '>' == ptr[i]) {
-			break;
-		} else {
-			++stop;
-		}
-	}
-	cset.assign(start, stop - start);
-} catch (const std::bad_alloc &) {
 }
 
 /*

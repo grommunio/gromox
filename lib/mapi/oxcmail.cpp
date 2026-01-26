@@ -1292,7 +1292,7 @@ static bool oxcmail_parse_transport_message_header(const MIME *pmime,
 	return false;
 }
 
-static bool oxcmail_parse_message_body(const char *charset, const MIME *pmime,
+static bool oxcmail_parse_message_body(const MIME *pmime,
     TPROPVAL_ARRAY *pproplist) try
 {
 	auto rdlength = pmime->get_length();
@@ -1309,7 +1309,7 @@ static bool oxcmail_parse_message_body(const char *charset, const MIME *pmime,
 
 	std::string best_charset;
 	if (!oxcmail_get_content_param(pmime, "charset", best_charset))
-		best_charset = charset;
+		best_charset = "us-ascii";
 	if (strcasecmp(pmime->content_type, "text/html") == 0)
 		return bodyset_html(*pproplist, std::move(rawbody),
 		       best_charset.c_str()) == ecSuccess;
@@ -2380,13 +2380,10 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 		return imp_null;
 	pmsg->set_rcpts_internal(prcpts);
 
-	std::string default_charset;
-	if (!pmail->get_charset(default_charset))
-		default_charset = "us-ascii";
 	field_param.alloc = alloc;
 	field_param.pmail = pmail;
 	field_param.pmsg = pmsg.get();
-	field_param.charset = default_charset.c_str();
+	field_param.charset = "us-ascii";
 	field_param.last_propid = 0x8000;
 	field_param.b_flag_del = false;
 	const MIME *phead = pmail->get_head();
@@ -2484,7 +2481,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 		    tnef_vfy_get_field(phead, tmp_buff, std::size(tmp_buff))) {
 			std::unique_ptr<message_content, mc_delete> pmsg1(oxcmail_parse_tnef(pmime1, alloc, get_propids));
 			if (pmsg1 != nullptr && tnef_vfy_check_key(pmsg1.get(), tmp_buff)) {
-				if (!oxcmail_parse_message_body(default_charset.c_str(), pmime, &pmsg->proplist) ||
+				if (!oxcmail_parse_message_body(pmime, &pmsg->proplist) ||
 				    !oxcmail_fetch_propname(pmsg.get(), phash, alloc, get_propids))
 					return imp_null;
 				if (!oxcmail_copy_message_proplist(pmsg.get(), pmsg1.get()))
@@ -2508,7 +2505,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 	}
 	mime_enum.b_result = true;
 	mime_enum.attach_id = 0;
-	mime_enum.charset = default_charset.c_str();
+	mime_enum.charset = "us-ascii";
 	mime_enum.get_propids = get_propids;
 	mime_enum.alloc = alloc;
 	mime_enum.pmsg = pmsg.get();
@@ -2516,22 +2513,18 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 	select_parts(phead, mime_enum, 0);
 
 	if (mime_enum.pplain != nullptr &&
-	    !oxcmail_parse_message_body(default_charset.c_str(),
-	    mime_enum.pplain, &pmsg->proplist))
+	    !oxcmail_parse_message_body(mime_enum.pplain, &pmsg->proplist))
 		return imp_null;
 	if (mime_enum.htmls.size() > 1) {
 		assert(mime_enum.hjoin.size() >= mime_enum.htmls.size());
-		auto err = bodyset_multi(mime_enum, pmsg->proplist,
-		           default_charset.c_str());
+		auto err = bodyset_multi(mime_enum, pmsg->proplist);
 		if (err != ecSuccess)
 			return imp_null;
 	} else if (mime_enum.htmls.size() > 0) {
-		if (!oxcmail_parse_message_body(default_charset.c_str(),
-		    mime_enum.htmls.front(), &pmsg->proplist))
+		if (!oxcmail_parse_message_body(mime_enum.htmls.front(), &pmsg->proplist))
 			return imp_null;
 	} else if (NULL != mime_enum.penriched) {
-		if (!oxcmail_parse_message_body(default_charset.c_str(),
-		    mime_enum.penriched, &pmsg->proplist))
+		if (!oxcmail_parse_message_body(mime_enum.penriched, &pmsg->proplist))
 			return imp_null;
 	}
 	size_t content_len = 0;
@@ -2554,8 +2547,7 @@ std::unique_ptr<message_content, mc_delete> oxcmail_converter::inet_to_mapi(cons
 		std::string mime_charset;
 		if (!oxcmail_get_content_param(mime_enum.pcalendar, "charset",
 		    mime_charset))
-			mime_charset = utf8_valid(pcontent.get()) ?
-			               "utf-8" : default_charset;
+			mime_charset = "us-ascii";
 		if (!string_mb_to_utf8(mime_charset.c_str(), pcontent.get(),
 		    &pcontent[content_len+1], contoutsize - content_len - 1)) {
 			mime_enum.pcalendar = NULL;
