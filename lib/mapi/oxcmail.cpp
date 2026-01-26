@@ -226,12 +226,6 @@ static unsigned int pick_strtype(const char *token)
 	return str_isascii(token) ? PT_UNICODE : PT_STRING8;
 }
 
-static inline bool oxcmail_check_crlf(const char *s)
-{
-	return std::any_of(s, s + strlen(s),
-	       [](char c) { return c == '\n' || c == '\r'; });
-}
-
 bool oxcmail_get_content_param(const MIME *pmime,
     const char *tag, std::string &value)
 {

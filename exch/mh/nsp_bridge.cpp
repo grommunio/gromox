@@ -74,11 +74,6 @@ ec_error_t nsp_bridge_run(const GUID &session_guid,
 	return nsp_interface_dntomid(ses, request.names, response.outmids);
 }
 
-static inline proptag_cspan optional_columns(const LPROPTAG_ARRAY *a)
-{
-	return a != nullptr ? proptag_cspan(*a) : proptag_cspan();
-}
-
 static inline proptag_cspan optional_columns(const std::optional<std::vector<gromox::proptag_t>> &a)
 {
 	return a.has_value() ? proptag_cspan(*a) : proptag_cspan();

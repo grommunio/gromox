@@ -2377,7 +2377,6 @@ ec_error_t zs_storeadvise(GUID hsession, uint32_t hstore,
 		return ecNotSupported;
 	eid_t folder_id{}, message_id{};
 	if (NULL != pentryid) {
-		eid_t eid{};
 		auto type = common_util_get_messaging_entryid_type(*pentryid);
 		switch (type) {
 		case EITLT_PRIVATE_FOLDER:
