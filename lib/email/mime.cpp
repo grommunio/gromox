@@ -409,6 +409,20 @@ static bool mime_get_content_type_field(const MIME *pmime, char *value, size_t l
 	return true;
 }
 
+static bool mime_get_content_type_field(const MIME *pmime, std::string &out)
+{
+	out = pmime->content_type;
+	for (const auto &[k, v] : pmime->f_type_params) {
+		out += "; ";
+		out += k;
+		if (!v.empty()) {
+			out += '=';
+			out += v;
+		}
+	}
+	return true;
+}
+
 /*
  *	get the field of MIME object
  *	@param
@@ -430,6 +444,26 @@ bool MIME::get_field(const char *tag, char *value, size_t length) const
 			gx_strlcpy(value, v.c_str(), length);
 			return true;
 		} 
+	}
+	return false;
+}
+
+bool MIME::get_field(const char *tag, std::string &value) const
+{
+	auto pmime = this;
+#ifdef _DEBUG_UMTA
+	if (tag == nullptr) {
+		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
+		return false;
+	}
+#endif
+	if (strcasecmp(tag, "Content-Type") == 0)
+		return mime_get_content_type_field(pmime, value);
+	for (const auto &[k, v] : f_other_fields) {
+		if (strcasecmp(tag, k.c_str()) == 0) {
+			value = v;
+			return true;
+		}
 	}
 	return false;
 }
