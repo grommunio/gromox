@@ -6,6 +6,7 @@ Enhancements:
 * mbop: new "zaddrxlat" command
 * delivery: add pre-delivery junk shelving and ``lda_junk_rules``
   config directive
+exmdb_local: replace direct disk I/O with imapfile_read/write EXRPCs
 
 Fixes:
 
@@ -16,10 +17,14 @@ Fixes:
 * oxcmail: the "Keywords:" RFC5322 header (Categories) used to get filled with
   text garbage, which is now fixed.
 * zcore: plug a memory leak occuring when importing vCards
+* Any data, when converted from windows-1255 or 1258 character set to Unicode,
+  sometimes lost the last character in the conversion, which has been fixed.
 
 Changes:
 
 * oxcmail: limit nesting depth of attachments during export to 7
+* oxcmail: RFC 5322 header fields are now treated as US-ASCII as mandated,
+  and no longer magically assumed to be in the same charset as the body.
 * exporter: FAI messages are no longer emitted by default and explicitly need
   to be requested with the -a option.
 * daemons: deleted the oxcical_allday_ymd config directive
