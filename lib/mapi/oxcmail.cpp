@@ -240,27 +240,22 @@ bool oxcmail_get_content_param(const MIME *pmime,
 	return !value.empty();
 }
 
-static BOOL oxcmail_get_field_param(char *field,
-	const char *tag, char *value, int length)
+static bool oxcmail_get_field_param(const char *field, const char *tag,
+    char *value, size_t length)
 {
-	char *pend;
-	int tmp_len;
-	char *pbegin;
-	char *ptoken;
-	
-	ptoken = strchr(field, ';');
+	const char *ptoken = strchr(field, ';'); /* CONST-STRCHR-MARKER */
 	if (ptoken == nullptr)
 		return FALSE;
 	ptoken ++;
-	pbegin = strcasestr(ptoken, tag);
+	const char *pbegin = strcasestr(ptoken, tag); /* CONST-STRCHR-MARKER */
 	if (pbegin == nullptr)
 		return FALSE;
 	pbegin += strlen(tag);
 	if (*pbegin != '=')
 		return FALSE;
 	pbegin ++;
-	pend = strchr(pbegin, ';');
-	tmp_len = pend == nullptr ? strlen(pbegin) : pend - pbegin;
+	const char *pend = strchr(pbegin, ';'); /* CONST-STRCHR-MARKER */
+	size_t tmp_len = pend == nullptr ? strlen(pbegin) : pend - pbegin;
 	if (tmp_len >= length)
 		return FALSE;
 	memmove(value, pbegin, tmp_len);
@@ -273,7 +268,7 @@ static BOOL oxcmail_get_field_param(char *field,
 		value[tmp_len - 1] = '\0';
 		memmove(value, value + 1, tmp_len - 1);
 	}
-	return *value == '\0' ? TRUE : false;
+	return *value == '\0';
 }
 
 static void replace_reserved_chars(char *s)
